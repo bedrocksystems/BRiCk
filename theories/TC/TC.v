@@ -1,21 +1,13 @@
-Require Import Lens.Lens.
-
-Set Primitive Projections.
-
-Require Import Template.monad_utils Template.Ast.
-Import MonadNotation.
-
-Record Foo : Set :=
-{ foo : nat
-; bar : bool }.
-
-Require Import Template.Ast.
-
-Declare ML Module "template_coq".
-
 Require Import Coq.Lists.List.
 Require Import Coq.Strings.String.
 Local Open Scope string_scope.
+
+From Template Require Import monad_utils Ast Loader.
+Import MonadNotation.
+
+Require Import Lens.Lens.
+
+Set Primitive Projections.
 
 Record Info : Set :=
 { type : ident
@@ -29,12 +21,12 @@ Fixpoint countTo (n : nat) : list nat :=
   | S m => countTo m ++ (m :: nil)
   end.
 
-Definition prepend (ls : string) (i : ident) : ident :=
+Definition lensName (ls : string) (i : ident) : ident :=
   ls ++ i.
 
-Quote Definition cBuild_Lens := Build_Lens.
+Local Quote Definition cBuild_Lens := Build_Lens.
 
-Definition mkLens (At : term) (fields : list (ident * term)) (i : nat)
+Local Definition mkLens (At : term) (fields : list (ident * term)) (i : nat)
 : option (ident * term) :=
   match At with
   | tInd ind args =>
@@ -53,7 +45,7 @@ Definition mkLens (At : term) (fields : list (ident * term)) (i : nat)
       let update_body :=
           tApp ctor (map f (countTo (List.length fields)))
       in
-      Some ( prepend "_" name
+      Some ( lensName "_" name
            , tApp cBuild_Lens
                   (At :: At :: Bt :: Bt ::
                       tLambda nAnon At get_body ::
@@ -63,25 +55,20 @@ Definition mkLens (At : term) (fields : list (ident * term)) (i : nat)
   | _ => None
   end.
 
-Definition getFields (mi : mutual_inductive_body)
-: option Info :=
-  match mi.(ind_bodies) with
-  | oib :: nil =>
+Local Definition getFields (mi : mutual_inductive_body) (n : nat)
+: TemplateMonad Info :=
+  match nth_error mi.(ind_bodies) n with
+  | None => tmFail "no body for index"
+  | Some oib =>
     match oib.(ind_ctors) with
+    | nil => tmFail "`getFields` got empty type"
     | ctor :: nil =>
-      Some {| type := oib.(ind_name)
-            ; ctor := let '(x,_,_) := ctor in x
-            ; fields := oib.(ind_projs)
+      ret {| type := oib.(ind_name)
+           ; ctor := let '(x,_,_) := ctor in x
+           ; fields := oib.(ind_projs)
            |}
-    | _ => None
+    | _ => tmFail "`getFields` got variant type"
     end
-  | _ => None
-  end.
-
-Fixpoint mconcat (ls : list (TemplateMonad unit)) : TemplateMonad unit :=
-  match ls with
-  | nil => tmReturn tt
-  | m :: ms => tmBind m (fun _ => mconcat ms)
   end.
 
 Definition genLens (T : Type) : TemplateMonad unit :=
@@ -90,9 +77,8 @@ Definition genLens (T : Type) : TemplateMonad unit :=
   | tInd i _ =>
     let name := i.(inductive_mind) in
     ind <- tmQuoteInductive name ;;
-    match getFields ind with
-    | Some info =>
-      let gen i :=
+    info <- getFields ind i.(inductive_ind) ;;
+    let gen i :=
           match mkLens ty info.(fields) i return TemplateMonad unit with
           | None => tmFail "failed to build lens"
           | Some x =>
@@ -101,10 +87,7 @@ Definition genLens (T : Type) : TemplateMonad unit :=
                                      ret tt)
           end
       in
-      mconcat (map gen (countTo (List.length info.(fields))))
-    | None => tmFail "failed to get info"
-    end
+      monad_map gen (countTo (List.length info.(fields))) ;;
+      ret tt
   | _ => tmFail "given type is not inductive"
   end.
-
-Run TemplateProgram (genLens Foo).
