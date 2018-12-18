@@ -4,7 +4,10 @@ set( LLVM_LINK_COMPONENTS
   Support
   )
 
+include_directories(include)
+
 add_clang_executable(cpp2v
+  src/ToCoq.cpp
   cpp2v.cpp
   )
 
@@ -14,8 +17,6 @@ target_link_libraries(cpp2v
   clangBasic
   clangDriver
   clangFrontend
-  clangRewriteFrontend
-  clangStaticAnalyzerFrontend
   clangTooling
   )
 
