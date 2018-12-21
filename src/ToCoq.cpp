@@ -51,8 +51,9 @@ public:
 
 Outputter Outputter::outs = Outputter ();
 
-class ToCoq : public ConstStmtVisitor<ToCoq, void>, public ConstDeclVisitor<
-    ToCoq, void>, public TypeVisitor<ToCoq, void>
+class ToCoq : public ConstStmtVisitor<ToCoq, void>
+            , public ConstDeclVisitor<ToCoq, void>
+            , public TypeVisitor<ToCoq, void>
 {
 private:
   Outputter* out;
@@ -73,6 +74,12 @@ private:
   {
     return out->line ();
   }
+
+  llvm::raw_ostream&
+    error () const
+    {
+      return llvm::errs();
+    }
 private:
   void
   go (const Stmt *s)
@@ -120,6 +127,22 @@ public:
     line () << type->getNameAsCString (PrintingPolicy (LangOptions ()));
   }
 
+  void
+  VisitReferenceType(const ReferenceType* type)
+  {
+    line() << "(Treference ";
+    goType(type->getPointeeType().getTypePtr());
+    line() << ")";
+  }
+
+  void
+  VisitPointerType(const PointerType* type)
+  {
+    line() << "(Tpointer ";
+    goType(type->getPointeeType().getTypePtr());
+    line() << ")";
+  }
+
   // Visiting declarations
   void
   VisitDecl (const Decl* d)
@@ -144,9 +167,34 @@ public:
   }
 
   void
-  VisitCXXRecordDecl (const CXXRecordDecl *Declaration)
+  VisitCXXRecordDecl (const CXXRecordDecl *decl)
   {
-    line () << "class declaration " << Declaration->getNameAsString () << "\n";
+    if (decl != decl->getCanonicalDecl()) return;
+
+    line() << "Tstruct \"" << decl->getNameAsString () << "\"";
+
+    indent();
+    // print the base classes
+    if (decl->getNumBases() > 0) {
+	error() << "base classes no supported\n";
+    }
+
+    // print the fields
+    line() << "[";
+    for (auto i = decl->field_begin(), e = decl->field_end(); i != e; ) {
+	line() << "(\"" << (*i)->getNameAsString() << "\", ";
+	goType((*i)->getType().getTypePtr());
+	line() << ")";
+	if (++i != e) { line() << ";"; }
+    }
+    line() << "]";
+
+    // print the methods
+    if (decl->method_begin() != decl->method_end()) {
+	error() << "methods not supported\n";
+    }
+
+    outdent();
   }
 
   void
@@ -210,6 +258,51 @@ public:
 	  }
 	outdent ();
       }
+  }
+
+  void
+  VisitWhileStmt(const WhileStmt* stmt)
+  {
+    line() << "Swhile ";
+    indent();
+    if (stmt->getConditionVariable()) {
+	line() << "(Some ";
+	goDecl(stmt->getConditionVariable());
+	line() << ")";
+    } else {
+	line() << "None";
+    }
+    goStmt(stmt->getCond());
+    goStmt(stmt->getBody());
+    outdent();
+  }
+
+  void
+  VisitDoStmt(const DoStmt* stmt)
+  {
+    line() << "Sdo ";
+    indent();
+    goStmt(stmt->getBody());
+    goStmt(stmt->getCond());
+    outdent();
+  }
+
+  void
+  VisitIfStmt(const IfStmt* stmt)
+  {
+    line() << "Sif ";
+    indent();
+    if (stmt->getConditionVariable()) {
+      line() << "(Some ";
+      goDecl(stmt->getConditionVariable());
+      line() << ")";
+    } else {
+      line() << "None";
+    }
+    goStmt(stmt->getCond());
+    goStmt(stmt->getThen());
+    goStmt(stmt->getElse());
+    outdent();
   }
 
   void
