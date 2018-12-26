@@ -8,7 +8,7 @@ include_directories(include)
 
 add_clang_executable(cpp2v
   src/ToCoq.cpp
-  cpp2v.cpp
+  src/cpp2v.cpp
   )
 
 target_link_libraries(cpp2v
