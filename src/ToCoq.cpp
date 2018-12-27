@@ -1,3 +1,4 @@
+#include <assert.h>
 #include "clang/AST/Type.h"
 #include "clang/AST/StmtVisitor.h"
 #include "clang/AST/DeclVisitor.h"
@@ -7,30 +8,48 @@ using namespace clang;
 
 class Outputter;
 
+#if 0
+struct NBSP {};
+
+NBSP
+nbsp() { return NBSP(); }
+#endif
+
 class Outputter
 {
 private:
   unsigned int depth;
+  unsigned int spaces;
 
 public:
   explicit
   Outputter ()
-	  : depth(0) {
+	  : depth(0), spaces(0) {
   }
 
   llvm::raw_ostream&
-  line () const {
+  line () {
 	llvm::outs() << "\n";
 	unsigned int d = this->depth;
 	while (d--) {
 	  llvm::outs() << " ";
 	}
+	spaces = 0;
 	return llvm::outs();
   }
 
   llvm::raw_ostream&
-  nobreak () const {
+  nobreak () {
+	while (spaces > 0) {
+	  llvm::outs() << " ";
+	  spaces--;
+	}
 	return llvm::outs();
+  }
+
+  void
+  nbsp () {
+	spaces++;
   }
 
   void
@@ -39,14 +58,20 @@ public:
   }
   void
   outdent () {
+	assert(this->depth >= 2);
 	this->depth -= 2;
   }
 
+  llvm::raw_ostream&
+  error () const {
+	return llvm::errs();
+  }
+
 public:
-  static Outputter outs;
+  static Outputter default_output;
 };
 
-Outputter Outputter::outs = Outputter();
+Outputter Outputter::default_output = Outputter();
 
 void
 printCastKind (llvm::raw_ostream& out, const CastKind ck) {
@@ -54,9 +79,21 @@ printCastKind (llvm::raw_ostream& out, const CastKind ck) {
 	out << "Cl2r";
   } else if (ck == CastKind::CK_FunctionToPointerDecay) {
 	out << "Cfunction2pointer";
+  } else if (ck == CastKind::CK_NoOp) {
+	out << "Cnoop";
+  } else if (ck == CastKind::CK_IntegralCast) {
+	out << "Cintegral";
+  } else if (ck == CastKind::CK_PointerToIntegral) {
+	out << "Cpointer2int";
+  } else if (ck == CastKind::CK_ArrayToPointerDecay) {
+	out << "Carray2pointer";
+  } else if (ck == CastKind::CK_ConstructorConversion) {
+  	out << "Cconstructorconversion";
+  } else if (ck == CastKind::CK_BuiltinFnToFnPtr) {
+  	out << "Cbulitin2function";
   } else {
 	llvm::errs() << "unsupported cast kind \"" << CastExpr::getCastKindName(ck)
-		<< "\"";
+		<< "\"\n";
 	out << "Cunsupported";
   }
 }
@@ -64,38 +101,29 @@ printCastKind (llvm::raw_ostream& out, const CastKind ck) {
 #define DELEGATE_OUTPUT(parent) \
   void indent () { parent->indent (); } \
   void outdent () { parent->outdent (); } \
+  void nbsp() { parent->nbsp(); } \
   llvm::raw_ostream& line () const { return parent->line (); } \
   llvm::raw_ostream& nobreak() const { return parent->nobreak (); } \
   llvm::raw_ostream& error () const { return parent->error(); }
+
+#define PRINT_LIST(iterator, fn) \
+	nobreak() << "["; \
+	indent(); \
+    for (auto i = iterator##_begin(), e = iterator##_end(); i != e; ) { \
+	  fn(*i); \
+	  if (++i != e) { \
+	      nobreak() << ";"; \
+	  } \
+    } \
+	outdent(); \
+    nobreak() << "]";
 
 class ToCoq : public ConstDeclVisitor<ToCoq, void>
 {
 private:
   Outputter* out;
 
-  void
-  indent () {
-	out->indent();
-  }
-  void
-  outdent () {
-	out->outdent();
-  }
-
-  llvm::raw_ostream&
-  line () const {
-	return out->line();
-  }
-
-  llvm::raw_ostream&
-  nobreak () const {
-	return out->nobreak();
-  }
-
-  llvm::raw_ostream&
-  error () const {
-	return llvm::errs();
-  }
+  DELEGATE_OUTPUT(out)
 
   class PrintType : public TypeVisitor<PrintType, void>
   {
@@ -116,26 +144,60 @@ private:
 	  error() << "\n";
 	  nobreak() << "Tunknown";
 	}
+
+	void
+	VisitEnumType (const EnumType* type) {
+	  parent->nobreak() << "(Talias \"" << type->getDecl()->getNameAsString()
+		  << "\")";
+	}
+
+	void
+	VisitParenType (const ParenType* type) {
+	  this->Visit(type->getInnerType().getTypePtr());
+	}
+
+	void
+	VisitRecordType (const RecordType *type) {
+	  parent->nobreak() << "(Talias \"" << type->getDecl()->getNameAsString()
+		  << "\")";
+	}
+
 	void
 	VisitBuiltinType (const BuiltinType* type) {
 	  if (type->getKind() == BuiltinType::Kind::Bool) {
 		nobreak() << "Tbool";
 	  } else if (type->getKind() == BuiltinType::Kind::Int128) {
-		nobreak() << "(Tint (Some 128) true)";
+		nobreak() << "T_int128";
 	  } else if (type->getKind() == BuiltinType::Kind::UInt128) {
-		nobreak() << "(Tint (Some 128) false)";
+		nobreak() << "T_uint128";
 	  } else if (type->getKind() == BuiltinType::Kind::Int) {
-		nobreak() << "(Tint None true)";
+		nobreak() << "T_int";
+	  } else if (type->getKind() == BuiltinType::Kind::UInt) {
+		nobreak() << "T_uint";
+	  } else if (type->getKind() == BuiltinType::Kind::ULong) {
+		nobreak() << "T_ulong";
+	  } else if (type->getKind() == BuiltinType::Kind::UShort) {
+		nobreak() << "T_ushort";
+	  } else if (type->getKind() == BuiltinType::Kind::LongLong) {
+		nobreak() << "T_longlong";
+	  } else if (type->getKind() == BuiltinType::Kind::ULongLong) {
+		nobreak() << "T_ulonglong";
+	  } else if (type->getKind() == BuiltinType::Kind::Short) {
+		nobreak() << "T_short";
 	  } else if (type->getKind() == BuiltinType::Kind::Char16) {
-		nobreak() << "(Tchar (Some 16) true)";
+		nobreak() << "T_char16";
 	  } else if (type->getKind() == BuiltinType::Kind::Char_S) {
-		nobreak() << "(Tchar None true)";
+		nobreak() << "T_schar";
+	  } else if (type->getKind() == BuiltinType::Kind::SChar) {
+		nobreak() << "T_schar";
+	  } else if (type->getKind() == BuiltinType::Kind::UChar) {
+		nobreak() << "T_uchar";
 	  } else if (type->getKind() == BuiltinType::Kind::Char_U) {
-		nobreak() << "(Tchar None false)";
+		nobreak() << "T_uchar";
 	  } else if (type->getKind() == BuiltinType::Kind::Char8) {
-		nobreak() << "(Tchar (Some 8) false)";
+		nobreak() << "T_char8";
 	  } else if (type->getKind() == BuiltinType::Kind::Char32) {
-		nobreak() << "(Tchar (Some 32) false)";
+		nobreak() << "T_char32";
 	  } else if (type->getKind() == BuiltinType::Kind::Void) {
 		nobreak() << "Tvoid";
 	  } else {
@@ -157,6 +219,43 @@ private:
 	  parent->line() << "(Tpointer ";
 	  parent->goType(type->getPointeeType().getTypePtr());
 	  parent->nobreak() << ")";
+	}
+
+	void
+	VisitTypedefType (const TypedefType *type) {
+	  parent->nobreak() << "(Talias \"" << type->getDecl()->getNameAsString()
+		  << "\")";
+	}
+
+	void
+	VisitFunctionProtoType (const FunctionProtoType *type) {
+	  parent->line() << "(Tfunction ";
+	  parent->goType(type->getReturnType().getTypePtr());
+	  parent->nobreak() << " [";
+	  parent->indent();
+	  for (auto i = type->param_type_begin(), e = type->param_type_end();
+		  i != e;) {
+		parent->goType((*i).getTypePtr());
+		if (++i != e) {
+		  parent->nobreak() << "; ";
+		}
+	  }
+	  parent->nobreak() << "])";
+	  parent->outdent();
+	}
+
+	void
+	VisitElaboratedType(const ElaboratedType *type) {
+	  this->Visit(type->getNamedType().getTypePtr());
+	}
+
+	void
+	VisitConstantArrayType(const ConstantArrayType *type) {
+	  line() << "(Tarray";
+	  nbsp();
+	  parent->goType(type->getElementType().getTypePtr());
+	  nbsp();
+	  nobreak() << "(Some " << type->getSize().getLimitedValue() << "))";
 	}
   };
 
@@ -239,8 +338,7 @@ private:
 		nobreak() << "]";
 	  } else {
 		indent();
-		for (DeclGroupRef::const_iterator i = decl->decl_begin(), e =
-			decl->decl_end(); i != e; ++i) {
+		for (auto i = decl->decl_begin(), e = decl->decl_end(); i != e; ++i) {
 		  parent->goLocalDecl(*i);
 		}
 		outdent();
@@ -286,7 +384,11 @@ private:
 	  }
 	  parent->goStmt(stmt->getCond());
 	  parent->goStmt(stmt->getThen());
-	  parent->goStmt(stmt->getElse());
+	  if (stmt->getElse()) {
+		parent->goStmt(stmt->getElse());
+	  } else {
+		nobreak() << "Sskip";
+	  }
 	  nobreak() << ")";
 	  outdent();
 	}
@@ -315,17 +417,9 @@ private:
 
 	void
 	VisitCompoundStmt (const CompoundStmt *stmt) {
-	  line() << "(Sseq [";
-	  indent();
-	  for (CompoundStmt::const_body_iterator I = stmt->body_begin(), E =
-		  stmt->body_end(); I != E; ++I) {
-		if (I != stmt->body_begin()) {
-		  line() << "; ";
-		}
-		parent->goStmt(*I);
-	  }
-	  nobreak() << "])";
-	  outdent();
+	  line() << "(Sseq ";
+	  PRINT_LIST(stmt->body, parent->goStmt)
+	  nobreak() << ")";
 	}
 
 	void
@@ -351,11 +445,27 @@ private:
 	}
 
 	void
+	VisitExpr (const Expr* expr) {
+	  error() << "unrecognized expression '"
+		      << expr->getStmtClassName() << "'\n";
+	}
+
+	void
 	VisitBinaryOperator (const BinaryOperator *expr) {
 	  line() << "(Ebinop \"" << expr->getOpcodeStr() << "\"";
 	  indent();
 	  parent->goExpr(expr->getLHS());
 	  parent->goExpr(expr->getRHS());
+	  nobreak() << ")";
+	  outdent();
+	}
+
+	void
+	VisitUnaryOperator (const UnaryOperator *expr) {
+	  line() << "(Eunop \"" << UnaryOperator::getOpcodeStr(expr->getOpcode())
+		  << "\"";
+	  indent();
+	  parent->goExpr(expr->getSubExpr());
 	  nobreak() << ")";
 	  outdent();
 	}
@@ -370,14 +480,9 @@ private:
 	  line() << "(Ecall";
 	  indent();
 	  parent->goExpr(expr->getCallee());
-	  nobreak() << " [";
-	  indent();
-	  for (CallExpr::const_arg_iterator i = expr->arg_begin(), e =
-		  expr->arg_end(); i != e; ++i) {
-		parent->goExpr(*i);
-	  }
-	  outdent();
-	  nobreak() << "])";
+	  nbsp();
+	  PRINT_LIST(expr->arg, parent->goExpr)
+	  nobreak() << ")";
 	  outdent();
 	}
 
@@ -407,6 +512,81 @@ private:
 		nobreak() << "(Ebool false)";
 	  }
 	}
+
+	void
+	VisitMemberExpr (const MemberExpr *expr) {
+	  line() << "(Emember ";
+	  indent();
+	  parent->goExpr(expr->getBase());
+	  nobreak() << " ";
+	  if (FieldDecl* f = dyn_cast<clang::FieldDecl>(expr->getMemberDecl())) {
+		line() << "\"" << f->getNameAsString() << "\"";
+	  } else {
+		error() << "member not pointing to field";
+	  }
+	  nobreak() << ")";
+	  outdent();
+	}
+
+	void
+	VisitArraySubscriptExpr (const ArraySubscriptExpr *expr) {
+	  line() << "(Esubscript ";
+	  indent();
+	  parent->goExpr(expr->getLHS());
+	  nobreak() << " ";
+	  parent->goExpr(expr->getRHS());
+	  nobreak() << ")";
+	  outdent();
+	}
+
+	void
+	VisitCXXConstructExpr (const CXXConstructExpr *expr) {
+	  line() << "(Econstructor ";
+	  indent();
+	  nobreak() << "\"" << expr->getConstructor()->getParent()->getNameAsString() << "\"";
+	  nbsp();
+	  PRINT_LIST(expr->arg, parent->goExpr)
+	  nobreak() << ")";
+	  outdent();
+	}
+
+	void
+	VisitCXXDefaultArgExpr (const CXXDefaultArgExpr *expr) {
+	  line() << "(Eimplicit ";
+	  indent();
+	  parent->goExpr(expr->getExpr());
+	  nobreak() << ")";
+	  outdent();
+	}
+
+	void
+	VisitConstantExpr(const ConstantExpr *expr) {
+	  this->Visit(expr->getSubExpr());
+	}
+
+	void
+	VisitParenExpr(const ParenExpr *e) {
+	  this->Visit(e->getSubExpr());
+	}
+
+	void
+	VisitInitListExpr(const InitListExpr *expr) {
+	  line() << "(Einitlist [";
+	  indent();
+	  for (auto i = expr->begin(), e = expr->end(); i != e; ) {
+		parent->goExpr(*i);
+		if (++i != e) {
+		  nobreak() << ";";
+		}
+	  }
+	  outdent();
+	  nobreak() << "]";
+	}
+
+	void
+	VisitCXXThisExpr(const CXXThisExpr *expr) {
+	  nobreak() << "Ethis";
+	}
   };
 
 private:
@@ -419,7 +599,7 @@ private:
 public:
   explicit
   ToCoq (ASTContext*ctx)
-	  : out(&Outputter::outs), printType(this), printLocalDecl(this), printParam(
+	  : out(&Outputter::default_output), printType(this), printLocalDecl(this), printParam(
 		  this), printStmt(this), printExpr(this), Context(ctx) {
   }
 
@@ -456,16 +636,11 @@ public:
 
   void
   VisitTranslationUnitDecl (const TranslationUnitDecl* decl) {
-	line() << "Definition module : list Decl := [";
-	indent();
-	for (auto i = decl->decls_begin(), e = decl->decls_end(); i != e;) {
-	  goDecl(*i);
-	  if (++i != e) {
-		nobreak() << ";";
-	  }
-	}
-	nobreak() << "].\n";
-	outdent();
+	line() << "Definition module : list Decl :=";
+	nbsp();
+	PRINT_LIST(decl->decls, goDecl)
+	nobreak() << ".";
+	line();
   }
 
   void
@@ -473,6 +648,11 @@ public:
 	error() << "unsupported type declaration `" << type->getDeclKindName()
 		<< "`\n";
 	nobreak() << "Tunknown";
+  }
+
+  void
+  VisitEmptyDecl (const EmptyDecl *decl) {
+	line() << "Dempty";
   }
 
   void
@@ -492,8 +672,19 @@ public:
 	indent();
 	// print the base classes
 	if (decl->getNumBases() > 0) {
-	  error() << "base classes no supported\n";
+	  error() << "base classes not supported\n";
 	}
+#if 0
+	auto print_base = [this](const CXXBaseSpecifier &base) {
+	  auto rec = dyn_cast<RecordType>(base.getType().getTypePtr());
+	  if (rec) {
+		nobreak() << "\"" << rec->getDecl()->getNameAsString() << "\"";
+	  } else {
+		error() << "base class is not a RecordTypd";
+	  }
+	};
+	PRINT_LIST(decl->bases, print_base)
+#endif
 
 	// print the fields
 	line() << "[";
@@ -508,6 +699,14 @@ public:
 	line() << "]";
 
 	// print the methods
+#if 0
+	auto print_method = [this](const CXXMethodDecl *decl) {
+	  // todo(gmm): this is probably wrong because of subtyping. we need to handle constructors
+	  // and destructors separately.
+	  goDecl(decl);
+	};
+	PRINT_LIST(decl->method, print_method)
+#endif
 	if (decl->method_begin() != decl->method_end()) {
 	  error() << "methods not supported\n";
 	}
@@ -556,20 +755,69 @@ public:
 	outdent();
   }
 
+  void
+  VisitUsingDecl (const UsingDecl *decl) {
+	nobreak() << "Dempty"; // note(gmm): this is an artifact because of the way that lists work
+  }
+
+  void
+  VisitNamespaceDecl (const NamespaceDecl *decl) {
+	line() << "(Dnamespace \"" << decl->getNameAsString() << "\" ";
+	PRINT_LIST(decl->decls, goDecl)
+	nobreak() << ")";
+  }
+
+  void
+  VisitEnumDecl (const EnumDecl *decl) {
+	line() << "(Denum \"" << decl->getNameAsString() << "\" [";
+	nbsp();
+	indent();
+	if (auto t = decl->getIntegerType().getTypePtr()) {
+	  line() << "(Some";
+	  nbsp();
+	  goType(t);
+	  nobreak() << ")";
+	} else {
+	  nobreak() << "None";
+	}
+	nbsp();
+	nobreak() << "[";
+	for (auto i = decl->enumerator_begin(), e = decl->enumerator_end(); i != e; ) {
+
+	  line() << "(\"" << (*i)->getNameAsString() << "\",";
+	  nbsp();
+	  if (auto init = (*i)->getInitExpr()) {
+		nobreak() << "Some";
+		nbsp();
+		goExpr(init);
+	  } else {
+		nobreak() << "None";
+	  }
+	  nobreak() << ")";
+
+	  if (++i != e) {
+		nobreak() << ";";
+		nbsp();
+	  }
+	}
+	nobreak() << "])";
+	outdent();
+  }
+
 private:
   ASTContext *Context;
-
 };
 
-Outputter* defaultOutput = &Outputter::outs;
+
+Outputter* defaultOutput = &Outputter::default_output;
 
 void
 declToCoq (ASTContext *ctxt, const clang::Decl* decl) {
   ToCoq(ctxt).goDecl(decl);
 }
 
+
 void
 stmtToCoq (ASTContext *ctxt, const clang::Stmt* stmt) {
   ToCoq(ctxt).goStmt(stmt);
 }
-

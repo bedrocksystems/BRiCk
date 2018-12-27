@@ -40,7 +40,7 @@ using namespace llvm;
 
 // Apply a custom category to all command-line options so that they are the
 // only ones displayed.
-static cl::OptionCategory MyToolCategory("cpp2v options");
+static cl::OptionCategory Cpp2V("cpp2v options");
 
 // CommonOptionsParser declares HelpMessage with a description of the common
 // command-line options related to the compilation database and input files.
@@ -48,7 +48,7 @@ static cl::OptionCategory MyToolCategory("cpp2v options");
 static cl::extrahelp CommonHelp(CommonOptionsParser::HelpMessage);
 
 int main(int argc, const char **argv) {
-  CommonOptionsParser OptionsParser(argc, argv, MyToolCategory);
+  CommonOptionsParser OptionsParser(argc, argv, Cpp2V);
   ClangTool Tool(OptionsParser.getCompilations(),
                  OptionsParser.getSourcePathList());
   return Tool.run(newFrontendActionFactory<ToCoqAction>().get());
