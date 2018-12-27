@@ -1,24 +1,24 @@
-set( LLVM_LINK_COMPONENTS
-  ${LLVM_TARGETS_TO_BUILD}
-  Option
-  Support
-  )
+cmake_minimum_required(VERSION 2.8)
 
-include_directories(include)
+set(CMAKE_MODULE_PATH
+  ${CMAKE_MODULE_PATH}
+  "${CMAKE_SOURCE_DIR}/cmake/modules"
+)
 
-add_clang_executable(cpp2v
+find_package(LibClangTooling REQUIRED)
+
+add_definitions(${LibClangTooling_DEFINITIONS})
+
+include_directories(
+  ${LibClangTooling_INCLUDE_DIRS}
+  include
+)
+
+add_executable(cpp2v
   src/ToCoq.cpp
   src/cpp2v.cpp
-  )
+)
 
 target_link_libraries(cpp2v
-  PRIVATE
-  clangAST
-  clangBasic
-  clangDriver
-  clangFrontend
-  clangTooling
-  )
-
-install(TARGETS cpp2v
-  RUNTIME DESTINATION bin)
+  ${LibClangTooling_LIBRARIES}
+)

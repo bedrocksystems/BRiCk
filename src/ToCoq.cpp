@@ -1,4 +1,5 @@
 #include <assert.h>
+#include "clang/Basic/Version.inc"
 #include "clang/AST/Type.h"
 #include "clang/AST/StmtVisitor.h"
 #include "clang/AST/DeclVisitor.h"
@@ -92,8 +93,12 @@ printCastKind (llvm::raw_ostream& out, const CastKind ck) {
   } else if (ck == CastKind::CK_BuiltinFnToFnPtr) {
   	out << "Cbulitin2function";
   } else {
+#if CLANG_VERSION_MAJOR >= 8
 	llvm::errs() << "unsupported cast kind \"" << CastExpr::getCastKindName(ck)
 		<< "\"\n";
+#else
+	llvm::errs() << "unsupported cast kind ...\n";
+#endif
 	out << "Cunsupported";
   }
 }
@@ -194,8 +199,10 @@ private:
 		nobreak() << "T_uchar";
 	  } else if (type->getKind() == BuiltinType::Kind::Char_U) {
 		nobreak() << "T_uchar";
+#if CLANG_VERSION_MAJOR > 7
 	  } else if (type->getKind() == BuiltinType::Kind::Char8) {
 		nobreak() << "T_char8";
+#endif
 	  } else if (type->getKind() == BuiltinType::Kind::Char32) {
 		nobreak() << "T_char32";
 	  } else if (type->getKind() == BuiltinType::Kind::Void) {
@@ -559,10 +566,12 @@ private:
 	  outdent();
 	}
 
+#if CLANG_VERSION_MAJOR >= 7
 	void
 	VisitConstantExpr(const ConstantExpr *expr) {
 	  this->Visit(expr->getSubExpr());
 	}
+#endif
 
 	void
 	VisitParenExpr(const ParenExpr *e) {
