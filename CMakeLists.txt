@@ -15,6 +15,7 @@ include_directories(
 )
 
 add_executable(cpp2v
+  src/Formatter.cpp
   src/ToCoq.cpp
   src/cpp2v.cpp
 )

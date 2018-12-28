@@ -1,78 +1,13 @@
-#include <assert.h>
+#include <Formatter.hpp>
 #include "clang/Basic/Version.inc"
 #include "clang/AST/Type.h"
 #include "clang/AST/StmtVisitor.h"
 #include "clang/AST/DeclVisitor.h"
 #include "clang/AST/TypeVisitor.h"
 
+
 using namespace clang;
-
-class Outputter;
-
-#if 0
-struct NBSP {};
-
-NBSP
-nbsp() { return NBSP(); }
-#endif
-
-class Outputter
-{
-private:
-  unsigned int depth;
-  unsigned int spaces;
-
-public:
-  explicit
-  Outputter ()
-	  : depth(0), spaces(0) {
-  }
-
-  llvm::raw_ostream&
-  line () {
-	llvm::outs() << "\n";
-	unsigned int d = this->depth;
-	while (d--) {
-	  llvm::outs() << " ";
-	}
-	spaces = 0;
-	return llvm::outs();
-  }
-
-  llvm::raw_ostream&
-  nobreak () {
-	while (spaces > 0) {
-	  llvm::outs() << " ";
-	  spaces--;
-	}
-	return llvm::outs();
-  }
-
-  void
-  nbsp () {
-	spaces++;
-  }
-
-  void
-  indent () {
-	this->depth += 2;
-  }
-  void
-  outdent () {
-	assert(this->depth >= 2);
-	this->depth -= 2;
-  }
-
-  llvm::raw_ostream&
-  error () const {
-	return llvm::errs();
-  }
-
-public:
-  static Outputter default_output;
-};
-
-Outputter Outputter::default_output = Outputter();
+using namespace fmt;
 
 void
 printCastKind (llvm::raw_ostream& out, const CastKind ck) {
@@ -82,6 +17,8 @@ printCastKind (llvm::raw_ostream& out, const CastKind ck) {
 	out << "Cfunction2pointer";
   } else if (ck == CastKind::CK_NoOp) {
 	out << "Cnoop";
+  } else if (ck == CastKind::CK_BitCast) {
+  	out << "Cbitcast";
   } else if (ck == CastKind::CK_IntegralCast) {
 	out << "Cintegral";
   } else if (ck == CastKind::CK_PointerToIntegral) {
@@ -92,12 +29,18 @@ printCastKind (llvm::raw_ostream& out, const CastKind ck) {
   	out << "Cconstructorconversion";
   } else if (ck == CastKind::CK_BuiltinFnToFnPtr) {
   	out << "Cbulitin2function";
+  } else if (ck == CastKind::CK_NullToPointer) {
+	out << "Cnull2ptr";
+  } else if (ck == CastKind::CK_DerivedToBase || ck == CastKind::CK_UncheckedDerivedToBase) {
+    out << "Cderived2base";
+  } else if (ck == CastKind::CK_BaseToDerived) {
+      out << "Cbase2derived";
   } else {
 #if CLANG_VERSION_MAJOR >= 8
 	llvm::errs() << "unsupported cast kind \"" << CastExpr::getCastKindName(ck)
 		<< "\"\n";
 #else
-	llvm::errs() << "unsupported cast kind ...\n";
+	llvm::errs() << "unsupported cast kind ..." << ck << "\n";
 #endif
 	out << "Cunsupported";
   }
@@ -109,7 +52,18 @@ printCastKind (llvm::raw_ostream& out, const CastKind ck) {
   void nbsp() { parent->nbsp(); } \
   llvm::raw_ostream& line () const { return parent->line (); } \
   llvm::raw_ostream& nobreak() const { return parent->nobreak (); } \
-  llvm::raw_ostream& error () const { return parent->error(); }
+  fmt::Formatter& output() const { return parent->output(); } \
+  llvm::raw_ostream& error () const { return llvm::errs(); }
+
+#define DELEGATE_OUTPUT_I(parent) \
+  void indent () { parent.indent (); } \
+  void outdent () { parent.outdent (); } \
+  void nbsp() { parent.nbsp(); } \
+  llvm::raw_ostream& line () { return parent.line (); } \
+  llvm::raw_ostream& nobreak() { return parent.nobreak (); } \
+  fmt::Formatter& output() { return parent; } \
+  llvm::raw_ostream& error () const { return llvm::errs(); }
+
 
 #define PRINT_LIST(iterator, fn) \
 	nobreak() << "["; \
@@ -126,9 +80,9 @@ printCastKind (llvm::raw_ostream& out, const CastKind ck) {
 class ToCoq : public ConstDeclVisitor<ToCoq, void>
 {
 private:
-  Outputter* out;
+  Formatter out;
 
-  DELEGATE_OUTPUT(out)
+  DELEGATE_OUTPUT_I(out)
 
   class PrintType : public TypeVisitor<PrintType, void>
   {
@@ -528,8 +482,10 @@ private:
 	  nobreak() << " ";
 	  if (FieldDecl* f = dyn_cast<clang::FieldDecl>(expr->getMemberDecl())) {
 		line() << "\"" << f->getNameAsString() << "\"";
+	  } else if (CXXMethodDecl* meth = dyn_cast<clang::CXXMethodDecl>(expr->getMemberDecl())) {
+		line() << "\"" << meth->getNameAsString() << "\"";
 	  } else {
-		error() << "member not pointing to field";
+		error() << "member not pointing to field " << expr->getMemberDecl()->getDeclKindName() << "\n";
 	  }
 	  nobreak() << ")";
 	  outdent();
@@ -559,11 +515,26 @@ private:
 
 	void
 	VisitCXXDefaultArgExpr (const CXXDefaultArgExpr *expr) {
-	  line() << "(Eimplicit ";
+	  line() << "(Eimplicit";
+	  nbsp();
 	  indent();
 	  parent->goExpr(expr->getExpr());
 	  nobreak() << ")";
 	  outdent();
+	}
+
+	void
+	VisitConditionalOperator(const ConditionalOperator *expr) {
+	  line() << "(Eif";
+	  nbsp();
+	  indent();
+	  parent->goExpr(expr->getCond());
+	  nbsp();
+	  parent->goExpr(expr->getTrueExpr());
+	  nbsp();
+	  parent->goExpr(expr->getFalseExpr());
+	  outdent();
+	  nobreak() << ")";
 	}
 
 #if CLANG_VERSION_MAJOR >= 7
@@ -594,7 +565,35 @@ private:
 
 	void
 	VisitCXXThisExpr(const CXXThisExpr *expr) {
-	  nobreak() << "Ethis";
+	  output() << "Ethis";
+	}
+
+	void
+	VisitCXXNullPtrLiteralExpr(const CXXNullPtrLiteralExpr *expr) {
+	  output() << "Enull";
+	}
+
+	void
+	VisitUnaryExprOrTypeTraitExpr(const UnaryExprOrTypeTraitExpr *expr) {
+	  auto do_arg = [this, expr]() {
+		if (expr->isArgumentType()) {
+		  parent->goType(expr->getArgumentType().getTypePtr());
+		} else {
+		  parent->goExpr(expr->getArgumentExpr());
+		}
+	  };
+
+	  if (expr->getKind() == UnaryExprOrTypeTrait::UETT_AlignOf) {
+		output() << fmt::lparen << "Ealign_of" << fmt::nbsp;
+		do_arg();
+		output() << fmt::rparen;
+	  } else if (expr->getKind() == UnaryExprOrTypeTrait::UETT_SizeOf) {
+		output() << fmt::lparen << "Esize_of" << fmt::nbsp;
+		do_arg();
+		output() << fmt::rparen;
+	  } else {
+		error() << "unsupported expression `UnaryExprOrTypeTraitExpr`\n";
+	  }
 	}
   };
 
@@ -608,7 +607,7 @@ private:
 public:
   explicit
   ToCoq (ASTContext*ctx)
-	  : out(&Outputter::default_output), printType(this), printLocalDecl(this), printParam(
+	  : out(Formatter(llvm::outs())), printType(this), printLocalDecl(this), printParam(
 		  this), printStmt(this), printExpr(this), Context(ctx) {
   }
 
@@ -640,7 +639,7 @@ public:
   // Visiting declarations
   void
   VisitDecl (const Decl* d) {
-	line() << "visiting declaration..." << d->getDeclKindName() << "\n";
+	error() << "visiting declaration..." << d->getDeclKindName() << "\n";
   }
 
   void
@@ -661,14 +660,14 @@ public:
 
   void
   VisitEmptyDecl (const EmptyDecl *decl) {
-	line() << "Dempty";
+	output() << "Dempty";
   }
 
   void
   VisitTypedefNameDecl (const TypedefNameDecl* type) {
-	line() << "(Dtypedef \"" << type->getNameAsString() << "\" ";
+	output() << lparen << "Dtypedef \"" << type->getNameAsString() << "\" ";
 	goType(type->getUnderlyingType().getTypePtr()); // note(gmm): uses of `getTypePtr` are ignoring modifiers such as `const`
-	nobreak() << ")";
+	nobreak() << rparen;
   }
 
   void
@@ -680,20 +679,18 @@ public:
 
 	indent();
 	// print the base classes
-	if (decl->getNumBases() > 0) {
-	  error() << "base classes not supported\n";
-	}
-#if 0
 	auto print_base = [this](const CXXBaseSpecifier &base) {
+	  if (base.isVirtual()) {
+		error() << "virtual base classes not supported\n";
+	  }
 	  auto rec = dyn_cast<RecordType>(base.getType().getTypePtr());
 	  if (rec) {
 		nobreak() << "\"" << rec->getDecl()->getNameAsString() << "\"";
 	  } else {
-		error() << "base class is not a RecordTypd";
+		error() << "base class is not a RecordType";
 	  }
 	};
 	PRINT_LIST(decl->bases, print_base)
-#endif
 
 	// print the fields
 	line() << "[";
@@ -708,17 +705,12 @@ public:
 	line() << "]";
 
 	// print the methods
-#if 0
 	auto print_method = [this](const CXXMethodDecl *decl) {
 	  // todo(gmm): this is probably wrong because of subtyping. we need to handle constructors
 	  // and destructors separately.
 	  goDecl(decl);
 	};
 	PRINT_LIST(decl->method, print_method)
-#endif
-	if (decl->method_begin() != decl->method_end()) {
-	  error() << "methods not supported\n";
-	}
 
 	nobreak() << ")";
 	outdent();
@@ -770,6 +762,11 @@ public:
   }
 
   void
+  VisitUsingDirectiveDecl(const UsingDirectiveDecl *decl) {
+	output() << "Dempty";
+  }
+
+  void
   VisitNamespaceDecl (const NamespaceDecl *decl) {
 	line() << "(Dnamespace \"" << decl->getNameAsString() << "\" ";
 	PRINT_LIST(decl->decls, goDecl)
@@ -817,8 +814,6 @@ private:
   ASTContext *Context;
 };
 
-
-Outputter* defaultOutput = &Outputter::default_output;
 
 void
 declToCoq (ASTContext *ctxt, const clang::Decl* decl) {
