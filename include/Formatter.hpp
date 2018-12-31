@@ -73,6 +73,11 @@ operator<<(Formatter &out, const LPAREN *_);
 struct RPAREN;
 extern const RPAREN* rparen;
 
+struct LINE;
+extern const LINE* line;
+Formatter&
+operator<<(Formatter &out, const LINE *_);
+
 Formatter&
 operator<<(Formatter &out, const RPAREN *_);
 
@@ -81,7 +86,6 @@ operator<<(Formatter &out, const char *str);
 
 Formatter&
 operator<<(Formatter &out, const std::string &str);
-
 
 }
 

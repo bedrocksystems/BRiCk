@@ -21,6 +21,7 @@ Inductive type : Set :=
 | Tvoid
 | Tunknown.
 
+
 Record TypeInfo : Set :=
 { alignment : nat
 ; size : nat
@@ -85,6 +86,12 @@ Inductive Decl : Set :=
 | Dtypedef (_ : name) (_ : type)
 | Dfunction (_ : name) (_ : list (name * type)) (_ : type) (_ : option Stmt)
 | Dstruct (_ : name) (fields : list (name * type))
+| Denum   (_ : name) (_ : option type) (branches : list (name * Expr))
+          (* the initializers need to be constant expressions *)
+| Dempty
+  (* ^ this will be erased *)
+| Dnamespace (_ : name) (_ : Decl)
+  (* ^ this will be erased *)
 .
 
 Coercion Sexpr : Expr >-> Stmt.

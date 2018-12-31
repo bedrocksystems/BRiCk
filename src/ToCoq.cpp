@@ -64,14 +64,13 @@ printCastKind (llvm::raw_ostream& out, const CastKind ck) {
   fmt::Formatter& output() { return parent; } \
   llvm::raw_ostream& error () const { return llvm::errs(); }
 
-
 #define PRINT_LIST(iterator, fn) \
 	nobreak() << "["; \
 	indent(); \
     for (auto i = iterator##_begin(), e = iterator##_end(); i != e; ) { \
 	  fn(*i); \
 	  if (++i != e) { \
-	      nobreak() << ";"; \
+	      nobreak() << ";"; line(); \
 	  } \
     } \
 	outdent(); \
@@ -83,6 +82,48 @@ private:
   Formatter out;
 
   DELEGATE_OUTPUT_I(out)
+
+  void
+  writeDeclContext(const DeclContext *ctx) {
+  	if (ctx->getParent()) {
+  	  writeDeclContext(ctx->getParent());
+  	  output() << fmt::nbsp << "!::" << fmt::nbsp; // note(gmm): this should be more like snoc
+  	}
+
+  	if (const auto *ns = dyn_cast<NamespaceDecl>(ctx)) {
+  	  output() << "\"" << ns->getNameAsString() << "\"";
+  	} else if (isa<TranslationUnitDecl>(ctx)) {
+  	  output() << "NStop";
+  	} else if (const auto *ns = dyn_cast<RecordDecl>(ctx)) {
+  	  output() << "\"" << ns->getNameAsString() << "\"";
+  	} else if (const auto *ns = dyn_cast<EnumDecl>(ctx)) {
+  	  output() << "\"" << ns->getNameAsString() << "\"";
+  	} else {
+  	  error() << "something unexpected " << ctx->getDeclKindName() << "\n";
+  	}
+  }
+
+  void
+  printGlobalName(const NamedDecl *decl) {
+	assert(!decl->getDeclContext()->isFunctionOrMethod());
+	output() << fmt::lparen;
+	writeDeclContext(decl->getDeclContext());
+	output() << "," << fmt::nbsp << "\"" << decl->getNameAsString() << "\"";
+	output() << fmt::rparen;
+  }
+
+  void
+  printName(const NamedDecl *decl) {
+	output() << fmt::lparen;
+	if (decl->getDeclContext()->isFunctionOrMethod()) {
+	  output() << "Lname";
+	  output() << fmt::nbsp << "\"" << decl->getNameAsString() << "\"";
+	} else {
+	  output() << "Gname" << fmt::nbsp;
+	  printGlobalName(decl);
+	}
+	output() << fmt::rparen;
+  }
 
   class PrintType : public TypeVisitor<PrintType, void>
   {
@@ -106,19 +147,20 @@ private:
 
 	void
 	VisitEnumType (const EnumType* type) {
-	  parent->nobreak() << "(Talias \"" << type->getDecl()->getNameAsString()
-		  << "\")";
+	  output() << fmt::lparen << "Talias" << fmt::nbsp;
+	  parent->printName(type->getDecl());
+	  output() << fmt::rparen;
+	}
+	void
+	VisitRecordType (const RecordType *type) {
+	  output() << fmt::lparen << "Talias" << fmt::nbsp;
+	  parent->printName(type->getDecl());
+	  output() << fmt::rparen;
 	}
 
 	void
 	VisitParenType (const ParenType* type) {
 	  this->Visit(type->getInnerType().getTypePtr());
-	}
-
-	void
-	VisitRecordType (const RecordType *type) {
-	  parent->nobreak() << "(Talias \"" << type->getDecl()->getNameAsString()
-		  << "\")";
 	}
 
 	void
@@ -170,22 +212,23 @@ private:
 
 	void
 	VisitReferenceType (const ReferenceType* type) {
-	  parent->line() << "(Treference ";
+	  output() << fmt::lparen << "Treference" << fmt::nbsp;
 	  parent->goType(type->getPointeeType().getTypePtr());
-	  parent->nobreak() << ")";
+	  output() << fmt::rparen;
 	}
 
 	void
 	VisitPointerType (const PointerType* type) {
-	  parent->line() << "(Tpointer ";
+	  output() << fmt::lparen << "Tpointer" << fmt::nbsp;
 	  parent->goType(type->getPointeeType().getTypePtr());
-	  parent->nobreak() << ")";
+	  output() << fmt::rparen;
 	}
 
 	void
 	VisitTypedefType (const TypedefType *type) {
-	  parent->nobreak() << "(Talias \"" << type->getDecl()->getNameAsString()
-		  << "\")";
+	  output() << fmt::lparen << "Talias" << fmt::nbsp;
+	  parent->printGlobalName(type->getDecl());
+	  output() << fmt::rparen;
 	}
 
 	void
@@ -267,11 +310,9 @@ private:
 	}
 	void
 	VisitParmVarDecl (const ParmVarDecl *decl) {
-	  line() << "(\"" << decl->getNameAsString() << "\", ";
-	  indent();
+	  output() << fmt::lparen << "\"" << decl->getNameAsString() << "\"," << fmt::nbsp;
 	  parent->goType(decl->getType().getTypePtr());
-	  nobreak() << ")";
-	  outdent();
+	  output() << fmt::rparen;
 	}
 
 	void
@@ -433,7 +474,9 @@ private:
 
 	void
 	VisitDeclRefExpr (const DeclRefExpr *expr) {
-	  line() << "(Evar \"" << expr->getDecl()->getNameAsString() << "\")";
+	  output() << fmt::lparen << "Evar" << fmt::nbsp;
+	  parent->printName(expr->getDecl());
+	  output() << fmt::rparen;
 	}
 
 	void
@@ -511,6 +554,17 @@ private:
 	  PRINT_LIST(expr->arg, parent->goExpr)
 	  nobreak() << ")";
 	  outdent();
+	}
+
+	void
+	VisitCXXMemberCallExpr (const CXXMemberCallExpr *expr) {
+	  output() << fmt::line << fmt::lparen << "Emember_call" << fmt::nbsp;
+	  parent->printName(expr->getMethodDecl());
+	  output() << fmt::nbsp;
+	  parent->goExpr(expr->getImplicitObjectArgument());
+	  output() << fmt::nbsp;
+	  PRINT_LIST(expr->arg, parent->goExpr)
+	  output() << fmt::rparen;
 	}
 
 	void
@@ -667,7 +721,7 @@ public:
   VisitTypedefNameDecl (const TypedefNameDecl* type) {
 	output() << lparen << "Dtypedef \"" << type->getNameAsString() << "\" ";
 	goType(type->getUnderlyingType().getTypePtr()); // note(gmm): uses of `getTypePtr` are ignoring modifiers such as `const`
-	nobreak() << rparen;
+	output() << rparen;
   }
 
   void

@@ -102,6 +102,15 @@ operator<<(Formatter &out, const RPAREN *_)
   return out;
 }
 
+struct LINE;
+const LINE* line;
+Formatter&
+operator<<(Formatter &out, const LINE *_)
+{
+  out.line();
+  return out;
+}
+
 Formatter&
 operator<<(Formatter &out, const char *str)
 {
