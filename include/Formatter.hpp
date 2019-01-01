@@ -18,6 +18,7 @@ private:
   llvm::raw_ostream &out;
   unsigned int depth;
   unsigned int spaces;
+  bool blank;
 
 public:
   explicit
@@ -41,6 +42,13 @@ public:
 
   llvm::raw_ostream&
   error () const;
+
+  template<typename T>
+  Formatter& operator<<(T val) {
+	nobreak() << val;
+	blank = false;
+	return *this;
+  }
 
 public:
   static Formatter default_output;
@@ -81,11 +89,6 @@ operator<<(Formatter &out, const LINE *_);
 Formatter&
 operator<<(Formatter &out, const RPAREN *_);
 
-Formatter&
-operator<<(Formatter &out, const char *str);
-
-Formatter&
-operator<<(Formatter &out, const std::string &str);
 
 }
 

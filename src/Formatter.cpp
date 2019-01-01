@@ -6,7 +6,7 @@
 namespace fmt {
 
 Formatter::Formatter ()
-  : out(llvm::outs()), depth(0), spaces(0) {
+  : Formatter(llvm::outs()) {
 }
 
 Formatter::Formatter (llvm::raw_ostream &_out)
@@ -16,16 +16,19 @@ Formatter::Formatter (llvm::raw_ostream &_out)
 llvm::raw_ostream&
 Formatter::line () {
   out << "\n";
-  unsigned int d = this->depth;
-  while (d--) {
-	out << " ";
-  }
+  blank = true;
   spaces = 0;
   return out;
 }
 
 llvm::raw_ostream&
 Formatter::nobreak () {
+  if (blank) {
+	for (unsigned int d = this->depth; d > 0; --d) {
+	  out << " ";
+	}
+	blank = false;
+  }
   while (spaces > 0) {
 	out << " ";
 	spaces--;
@@ -106,20 +109,6 @@ Formatter&
 operator<<(Formatter &out, const LINE *_)
 {
   out.line();
-  return out;
-}
-
-Formatter&
-operator<<(Formatter &out, const char *str)
-{
-  out.nobreak() << str;
-  return out;
-}
-
-Formatter&
-operator<<(Formatter &out, const std::string &str)
-{
-  out.nobreak() << str;
   return out;
 }
 

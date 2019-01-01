@@ -54,7 +54,8 @@ printCastKind (llvm::raw_ostream& out, const CastKind ck) {
   llvm::raw_ostream& line () const { return parent->line (); } \
   llvm::raw_ostream& nobreak() const { return parent->nobreak (); } \
   fmt::Formatter& output() const { return parent->output(); } \
-  llvm::raw_ostream& error () const { return llvm::errs(); }
+  llvm::raw_ostream& error () const { return llvm::errs(); } \
+  fmt::Formatter& ctor(const char* ctor, bool line=true) { return parent->ctor(ctor, line); }
 
 #define DELEGATE_OUTPUT_I(parent) \
   void indent () { parent.indent (); } \
@@ -66,16 +67,14 @@ printCastKind (llvm::raw_ostream& out, const CastKind ck) {
   llvm::raw_ostream& error () const { return llvm::errs(); }
 
 #define PRINT_LIST(iterator, fn) \
-	nobreak() << "["; \
-	indent(); \
+	output() << "[" << fmt::indent; \
     for (auto i = iterator##_begin(), e = iterator##_end(); i != e; ) { \
 	  fn(*i); \
 	  if (++i != e) { \
-	      nobreak() << ";"; line(); \
+	      output() << ";" << fmt::line; \
 	  } \
     } \
-	outdent(); \
-    nobreak() << "]";
+	output() << fmt::outdent << "]";
 
 class ToCoq : public ConstDeclVisitor<ToCoq, void>
 {
@@ -83,6 +82,14 @@ private:
   Formatter out;
 
   DELEGATE_OUTPUT_I(out)
+
+  fmt::Formatter&
+  ctor(const char* ctor, bool line=true) {
+	if (line) {
+	  output() << fmt::line;
+	}
+	return output() << fmt::lparen << ctor << fmt::nbsp;
+  }
 
   void
   writeDeclContext(const DeclContext *ctx) {
@@ -133,12 +140,11 @@ private:
 
   void
   printName(const NamedDecl *decl) {
-	output() << fmt::lparen;
 	if (decl->getDeclContext()->isFunctionOrMethod()) {
-	  output() << "Lname";
+	  ctor("Lname");
 	  output() << fmt::nbsp << "\"" << decl->getNameAsString() << "\"";
 	} else {
-	  output() << "Gname" << fmt::nbsp;
+	  ctor("Gname");
 	  printGlobalName(decl);
 	}
 	output() << fmt::rparen;
@@ -166,13 +172,13 @@ private:
 
 	void
 	VisitEnumType (const EnumType* type) {
-	  output() << fmt::lparen << "Tref" << fmt::nbsp;
+	  ctor("Tref");
 	  parent->printGlobalName(type->getDecl());
 	  output() << fmt::rparen;
 	}
 	void
 	VisitRecordType (const RecordType *type) {
-	  output() << fmt::lparen << "Tref" << fmt::nbsp;
+	  ctor("Tref");
 	  parent->printGlobalName(type->getDecl());
 	  output() << fmt::rparen;
 	}
@@ -231,40 +237,38 @@ private:
 
 	void
 	VisitReferenceType (const ReferenceType* type) {
-	  output() << fmt::lparen << "Treference" << fmt::nbsp;
+	  ctor("Treference");
 	  parent->goType(type->getPointeeType().getTypePtr());
 	  output() << fmt::rparen;
 	}
 
 	void
 	VisitPointerType (const PointerType* type) {
-	  output() << fmt::lparen << "Tpointer" << fmt::nbsp;
+	  ctor("Tpointer");
 	  parent->goType(type->getPointeeType().getTypePtr());
 	  output() << fmt::rparen;
 	}
 
 	void
 	VisitTypedefType (const TypedefType *type) {
-	  output() << fmt::lparen << "Tref" << fmt::nbsp;
+	  ctor("Tref");
 	  parent->printGlobalName(type->getDecl());
 	  output() << fmt::rparen;
 	}
 
 	void
 	VisitFunctionProtoType (const FunctionProtoType *type) {
-	  parent->line() << "(Tfunction ";
+	  ctor("Tfunction");
 	  parent->goType(type->getReturnType().getTypePtr());
-	  parent->nobreak() << " [";
-	  parent->indent();
+	  output() << fmt::nbsp << "[" << fmt::indent;
 	  for (auto i = type->param_type_begin(), e = type->param_type_end();
 		  i != e;) {
 		parent->goType((*i).getTypePtr());
 		if (++i != e) {
-		  parent->nobreak() << "; ";
+		  output() << ";" << fmt::nbsp;
 		}
 	  }
-	  parent->nobreak() << "])";
-	  parent->outdent();
+	  output() << "]" << fmt::rparen;
 	}
 
 	void
@@ -274,11 +278,10 @@ private:
 
 	void
 	VisitConstantArrayType(const ConstantArrayType *type) {
-	  line() << "(Tarray";
-	  nbsp();
+	  ctor("Tarray");
 	  parent->goType(type->getElementType().getTypePtr());
-	  nbsp();
-	  nobreak() << "(Some " << type->getSize().getLimitedValue() << "))";
+	  output() << fmt::nbsp;
+	  output() << "(Some " << type->getSize().getLimitedValue() << ")" << fmt::rparen;
 	}
   };
 
@@ -349,26 +352,14 @@ private:
 
 	void
 	VisitDeclStmt (const DeclStmt* decl) {
-	  line() << "(Sdecl [";
-	  if (decl->isSingleDecl()) {
-		indent();
-		parent->goLocalDecl(decl->getSingleDecl());
-		outdent();
-		nobreak() << "]";
-	  } else {
-		indent();
-		for (auto i = decl->decl_begin(), e = decl->decl_end(); i != e; ++i) {
-		  parent->goLocalDecl(*i);
-		}
-		outdent();
-	  }
-	  nobreak() << ")";
+	  ctor("Sdecl");
+	  PRINT_LIST(decl->decl, parent->goLocalDecl)
+	  output() << fmt::rparen;
 	}
 
 	void
 	VisitWhileStmt (const WhileStmt* stmt) {
-	  line() << "(Swhile ";
-	  indent();
+	  ctor("Swhile");
 	  if (stmt->getConditionVariable()) {
 		error() << "unsupported variable declaration in while";
 	  } else {
@@ -376,24 +367,21 @@ private:
 	  }
 	  parent->goStmt(stmt->getCond());
 	  parent->goStmt(stmt->getBody());
-	  nobreak() << ")";
-	  outdent();
+	  output() << fmt::rparen;
 	}
 
 	void
 	VisitDoStmt (const DoStmt* stmt) {
-	  line() << "(Sdo ";
-	  indent();
+	  ctor("Sdo");
 	  parent->goStmt(stmt->getBody());
+	  output() << fmt::nbsp;
 	  parent->goStmt(stmt->getCond());
-	  nobreak() << ")";
-	  outdent();
+	  output() << fmt::rparen;
 	}
 
 	void
 	VisitIfStmt (const IfStmt* stmt) {
-	  line() << "(Sif ";
-	  indent();
+	  ctor("Sif");
 	  if (stmt->getConditionVariable()) {
 		output() << fmt::line << fmt::lparen << "Some" << fmt::nbsp;
 		parent->goDecl(stmt->getConditionVariable());
@@ -402,19 +390,20 @@ private:
 		line() << "None";
 	  }
 	  parent->goStmt(stmt->getCond());
+	  output() << fmt::nbsp;
 	  parent->goStmt(stmt->getThen());
+	  output() << fmt::nbsp;
 	  if (stmt->getElse()) {
 		parent->goStmt(stmt->getElse());
 	  } else {
 		nobreak() << "Sskip";
 	  }
-	  nobreak() << ")";
-	  outdent();
+	  output() << fmt::rparen;
 	}
 
 	void
 	VisitExpr (const Expr *expr) {
-	  output() << fmt::line << fmt::lparen << "Sexpr" << fmt::nbsp;
+	  ctor("Sexpr");
 	  parent->goExpr(expr);
 	  output() << fmt::rparen;
 	}
@@ -422,12 +411,9 @@ private:
 	void
 	VisitReturnStmt (const ReturnStmt *stmt) {
 	  if (stmt->getRetValue() != nullptr) {
-		line() << "(Sreturn (Some";
-		nbsp();
-		indent();
+		ctor("Sreturn (Some");
 		parent->goExpr(stmt->getRetValue());
-		nobreak() << "))";
-		outdent();
+		output() << ")" << fmt::rparen;
 	  } else {
 		nobreak() << "(Sreturn None)";
 	  }
@@ -435,7 +421,7 @@ private:
 
 	void
 	VisitCompoundStmt (const CompoundStmt *stmt) {
-	  output() << fmt::line << fmt::lparen << "Sseq" << fmt::nbsp;
+	  ctor("Sseq");
 	  PRINT_LIST(stmt->body, parent->goStmt)
 	  output() << fmt::rparen;
 	}
@@ -470,60 +456,52 @@ private:
 
 	void
 	VisitBinaryOperator (const BinaryOperator *expr) {
-	  line() << "(Ebinop \"" << expr->getOpcodeStr() << "\"";
-	  output() << fmt::nbsp;
-	  indent();
+	  ctor("Ebinop");
+	  output() << "\"" << expr->getOpcodeStr() << "\"" << fmt::nbsp;
 	  parent->goExpr(expr->getLHS());
+	  output() << fmt::nbsp;
 	  parent->goExpr(expr->getRHS());
-	  nobreak() << ")";
-	  outdent();
+	  output() << fmt::rparen;
 	}
 
 	void
 	VisitUnaryOperator (const UnaryOperator *expr) {
-	  line() << "(Eunop \"" << UnaryOperator::getOpcodeStr(expr->getOpcode())
-		  << "\"";
-	  output() << fmt::nbsp;
-	  indent();
+	  ctor("Eunop") << "\"" << UnaryOperator::getOpcodeStr(expr->getOpcode()) << "\""
+		            << fmt::nbsp;
 	  parent->goExpr(expr->getSubExpr());
-	  nobreak() << ")";
-	  outdent();
+	  output() << fmt::rparen;
 	}
 
 	void
 	VisitDeclRefExpr (const DeclRefExpr *expr) {
-	  output() << fmt::lparen << "Evar" << fmt::nbsp;
+	  ctor("Evar");
 	  parent->printName(expr->getDecl());
 	  output() << fmt::rparen;
 	}
 
 	void
 	VisitCallExpr (const CallExpr *expr) {
-	  line() << "(Ecall";
-	  indent();
+	  ctor("Ecall");
 	  parent->goExpr(expr->getCallee());
-	  nbsp();
+	  output() << fmt::nbsp;
 	  PRINT_LIST(expr->arg, parent->goExpr)
-	  nobreak() << ")";
-	  outdent();
+	  output() << fmt::rparen;
 	}
 
 	void
 	VisitCastExpr (const CastExpr *expr) {
-	  line() << "(Ecast ";
+	  ctor("Ecast");
 	  printCastKind(nobreak(), expr->getCastKind());
-	  nobreak() << " ";
-	  indent();
+	  output() << fmt::nbsp;
 	  parent->goExpr(expr->getSubExpr());
-	  nobreak() << ")";
-	  outdent();
+	  output() << fmt::rparen;
 	}
 
 	void
 	VisitIntegerLiteral (const IntegerLiteral *lit) {
-	  line() << "(Eint " << lit->getValue() << " ";
+	  ctor("Eint") << fmt::nbsp << lit->getValue() << fmt::nbsp;
 	  parent->goType(lit->getType().getTypePtr());
-	  nobreak() << ")";
+	  output() << fmt::rparen;
 	}
 
 	void
@@ -554,24 +532,20 @@ private:
 
 	void
 	VisitArraySubscriptExpr (const ArraySubscriptExpr *expr) {
-	  line() << "(Esubscript ";
-	  indent();
+	  ctor("Esubscript");
 	  parent->goExpr(expr->getLHS());
-	  nobreak() << " ";
+	  output() << fmt::nbsp;
 	  parent->goExpr(expr->getRHS());
-	  nobreak() << ")";
-	  outdent();
+	  output() << fmt::rparen;
 	}
 
 	void
 	VisitCXXConstructExpr (const CXXConstructExpr *expr) {
-	  line() << "(Econstructor ";
-	  indent();
+	  ctor("Econstructor");
 	  parent->printGlobalName(expr->getConstructor());
-	  nbsp();
+	  output() << fmt::nbsp;
 	  PRINT_LIST(expr->arg, parent->goExpr)
-	  nobreak() << ")";
-	  outdent();
+	  output() << fmt::rparen;
 	}
 
 	void
@@ -587,12 +561,9 @@ private:
 
 	void
 	VisitCXXDefaultArgExpr (const CXXDefaultArgExpr *expr) {
-	  line() << "(Eimplicit";
-	  nbsp();
-	  indent();
+	  ctor("Eimplicit");
 	  parent->goExpr(expr->getExpr());
-	  nobreak() << ")";
-	  outdent();
+	  output() << fmt::rparen;
 	}
 
 	void
@@ -747,7 +718,7 @@ public:
 	if (decl != decl->getCanonicalDecl())
 	  return;
 
-	output() << fmt::lparen << "Dstruct \"" << decl->getNameAsString() << "\"" << fmt::nbsp;
+	ctor("Dstruct") << "\"" << decl->getNameAsString() << "\"" << fmt::nbsp;
 
 	// print the base classes
 	auto print_base = [this](const CXXBaseSpecifier &base) {
@@ -765,16 +736,12 @@ public:
 
 	output() << fmt::nbsp;
 	// print the fields
-	line() << "[";
-	for (auto i = decl->field_begin(), e = decl->field_end(); i != e;) {
-	  nobreak() << "(\"" << (*i)->getNameAsString() << "\", ";
-	  goType((*i)->getType().getTypePtr());
-	  nobreak() << ")";
-	  if (++i != e) {
-		nobreak() << ";";
-	  }
-	}
-	line() << "]";
+	auto print_field = [this](const FieldDecl *field) {
+	  output() << "(\"" << field->getNameAsString() << "\"," << fmt::nbsp;
+	  goType(field->getType().getTypePtr());
+	  output() << ")";
+	};
+	PRINT_LIST(decl->field, print_field)
 	output() << fmt::nbsp;
 
 	// print the methods
