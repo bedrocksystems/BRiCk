@@ -1,2 +1,8 @@
 *~
 *#
+.coqdeps.d
+Makefile.coq
+Makefile.coq.conf
+*.glob
+*.vo
+*.aux

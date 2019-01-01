@@ -82,7 +82,6 @@ operator<<(Formatter &out, const OUTDENT *_)
 
 struct LPAREN;
 const LPAREN* lparen;
-
 Formatter&
 operator<<(Formatter &out, const LPAREN *_)
 {
@@ -93,7 +92,6 @@ operator<<(Formatter &out, const LPAREN *_)
 
 struct RPAREN;
 const RPAREN* rparen;
-
 Formatter&
 operator<<(Formatter &out, const RPAREN *_)
 {
