@@ -76,10 +76,17 @@ printCastKind (llvm::raw_ostream& out, const CastKind ck) {
     } \
 	output() << fmt::outdent << "]";
 
+/*
+ * note(gmm): ideally, i wouldn't really need nested classes here, instead
+ * i would just pass the `Formatter` argument to each of the classes and everything
+ * would be top-level definitions. however, Clang doesn't permit arguments to all
+ * of their visitors (only to `TypeVisitor`) so instead we have to have a configuration
+ * and then maintain pointers to it everywhere.
+ */
 class ToCoq : public ConstDeclVisitor<ToCoq, void>
 {
 private:
-  Formatter out;
+  Formatter &out;
 
   DELEGATE_OUTPUT_I(out)
 
@@ -150,6 +157,25 @@ private:
 	output() << fmt::rparen;
   }
 
+  void
+  printQualType(const QualType &qt) {
+	if (qt.isLocalConstQualified()) {
+	  if (qt.isVolatileQualified()) {
+		ctor("Qconst_volatile");
+	  } else {
+		ctor("Qconst");
+	  }
+	} else {
+	  if (qt.isLocalVolatileQualified()) {
+		ctor("Qmut_volatile");
+	  } else {
+		ctor("Qmut");
+	  }
+	}
+	goType(qt.getTypePtr());
+    output() << fmt::rparen;
+  }
+
   class PrintType : public TypeVisitor<PrintType, void>
   {
   private:
@@ -185,7 +211,7 @@ private:
 
 	void
 	VisitParenType (const ParenType* type) {
-	  this->Visit(type->getInnerType().getTypePtr());
+	  parent->printQualType(type->getInnerType());
 	}
 
 	void
@@ -238,14 +264,14 @@ private:
 	void
 	VisitReferenceType (const ReferenceType* type) {
 	  ctor("Treference");
-	  parent->goType(type->getPointeeType().getTypePtr());
+	  parent->printQualType(type->getPointeeType());
 	  output() << fmt::rparen;
 	}
 
 	void
 	VisitPointerType (const PointerType* type) {
 	  ctor("Tpointer");
-	  parent->goType(type->getPointeeType().getTypePtr());
+	  parent->printQualType(type->getPointeeType());
 	  output() << fmt::rparen;
 	}
 
@@ -259,11 +285,11 @@ private:
 	void
 	VisitFunctionProtoType (const FunctionProtoType *type) {
 	  ctor("Tfunction");
-	  parent->goType(type->getReturnType().getTypePtr());
+	  parent->printQualType(type->getReturnType());
 	  output() << fmt::nbsp << "[" << fmt::indent;
 	  for (auto i = type->param_type_begin(), e = type->param_type_end();
 		  i != e;) {
-		parent->goType((*i).getTypePtr());
+		parent->printQualType(*i);
 		if (++i != e) {
 		  output() << ";" << fmt::nbsp;
 		}
@@ -273,13 +299,13 @@ private:
 
 	void
 	VisitElaboratedType(const ElaboratedType *type) {
-	  this->Visit(type->getNamedType().getTypePtr());
+	  parent->printQualType(type->getNamedType());
 	}
 
 	void
 	VisitConstantArrayType(const ConstantArrayType *type) {
 	  ctor("Tarray");
-	  parent->goType(type->getElementType().getTypePtr());
+	  parent->printQualType(type->getElementType());
 	  output() << fmt::nbsp;
 	  output() << "(Some " << type->getSize().getLimitedValue() << ")" << fmt::rparen;
 	}
@@ -299,7 +325,7 @@ private:
 	void
 	VisitVarDecl (const VarDecl *decl) {
 	  output() << fmt::lparen << "\"" << decl->getNameAsString() << "\"," << fmt::nbsp;
-	  parent->goType(decl->getType().getTypePtr());
+	  parent->printQualType(decl->getType());
 	  output() << "," << fmt::nbsp;
 	  if (decl->hasInit()) {
 		output() << fmt::line << fmt::lparen << "Some" << fmt::nbsp;
@@ -331,7 +357,7 @@ private:
 	void
 	VisitParmVarDecl (const ParmVarDecl *decl) {
 	  output() << fmt::lparen << "\"" << decl->getNameAsString() << "\"," << fmt::nbsp;
-	  parent->goType(decl->getType().getTypePtr());
+	  parent->printQualType(decl->getType());
 	  output() << fmt::rparen;
 	}
 
@@ -500,7 +526,7 @@ private:
 	void
 	VisitIntegerLiteral (const IntegerLiteral *lit) {
 	  ctor("Eint") << fmt::nbsp << lit->getValue() << fmt::nbsp;
-	  parent->goType(lit->getType().getTypePtr());
+	  parent->printQualType(lit->getType());
 	  output() << fmt::rparen;
 	}
 
@@ -620,7 +646,7 @@ private:
 	VisitUnaryExprOrTypeTraitExpr(const UnaryExprOrTypeTraitExpr *expr) {
 	  auto do_arg = [this, expr]() {
 		if (expr->isArgumentType()) {
-		  parent->goType(expr->getArgumentType().getTypePtr());
+		  parent->goType(expr->getArgumentType().getTypePtr()); // constness isn't relevant here
 		} else {
 		  parent->goExpr(expr->getArgumentExpr());
 		}
@@ -649,10 +675,9 @@ private:
 
 public:
   explicit
-  ToCoq (ASTContext*ctx)
-	  : out(Formatter(llvm::outs())), printType(this), printLocalDecl(this), printParam(
-		  this), printStmt(this), printExpr(this), Context(ctx) {
-  }
+  ToCoq(ASTContext *ctxt, Formatter &fmt)
+  : out(fmt), printType(this), printLocalDecl(this), printParam(
+  		  this), printStmt(this), printExpr(this), Context(ctxt) { }
 
   void
   goDecl (const Decl* d) {
@@ -709,7 +734,7 @@ public:
   void
   VisitTypedefNameDecl (const TypedefNameDecl* type) {
 	output() << fmt::lparen << "Dtypedef \"" << type->getNameAsString() << "\"" << fmt::nbsp;
-	goType(type->getUnderlyingType().getTypePtr()); // note(gmm): uses of `getTypePtr` are ignoring modifiers such as `const`
+	printQualType(type->getUnderlyingType()); // note(gmm): uses of `getTypePtr` are ignoring modifiers such as `const`
 	output() << fmt::rparen;
   }
 
@@ -738,7 +763,7 @@ public:
 	// print the fields
 	auto print_field = [this](const FieldDecl *field) {
 	  output() << "(\"" << field->getNameAsString() << "\"," << fmt::nbsp;
-	  goType(field->getType().getTypePtr());
+	  printQualType(field->getType());
 	  output() << ")";
 	};
 	PRINT_LIST(decl->field, print_field)
@@ -759,7 +784,7 @@ public:
   printFunction(const FunctionDecl *decl) {
 	PRINT_LIST(decl->param, printParam.Visit);
 	output() << fmt::nbsp;
-	goType(decl->getCallResultType().getTypePtr());
+	printQualType(decl->getCallResultType());
 	output() << fmt::nbsp;
 	if (decl->getBody()) {
 	  output() << fmt::lparen << "Some" << fmt::nbsp;
@@ -812,18 +837,16 @@ public:
 
   void
   VisitVarDecl (const VarDecl *decl) {
-	line() << "(Dvar \"" << decl->getNameAsString() << "\" ";
-	indent();
-	goType(decl->getType().getTypePtr());
+	ctor("Dvar") << "\"" << decl->getNameAsString() << "\"" << fmt::nbsp;
+	printQualType(decl->getType());
 	if (decl->hasInit()) {
 	  output() << fmt::line << fmt::nbsp << fmt::lparen << "Some" << fmt::nbsp;
 	  goExpr(decl->getInit());
 	  output() << fmt::rparen;
 	} else {
-	  nobreak() << " None";
+	  output() << "None";
 	}
-	nobreak() << ")";
-	outdent();
+	output() << fmt::rparen;
   }
 
   void
@@ -848,10 +871,11 @@ public:
 	line() << "(Denum \"" << decl->getNameAsString() << "\" [";
 	nbsp();
 	indent();
-	if (auto t = decl->getIntegerType().getTypePtr()) {
+	auto t = decl->getIntegerType();
+	if (!t.isNull()) {
 	  line() << "(Some";
 	  nbsp();
-	  goType(t);
+	  printQualType(decl->getIntegerType());
 	  nobreak() << ")";
 	} else {
 	  nobreak() << "None";
@@ -887,11 +911,24 @@ private:
 
 void
 declToCoq (ASTContext *ctxt, const clang::Decl* decl) {
-  ToCoq(ctxt).goDecl(decl);
+  Formatter fmt(llvm::outs());
+  ToCoq(ctxt, fmt).goDecl(decl);
 }
 
 
 void
 stmtToCoq (ASTContext *ctxt, const clang::Stmt* stmt) {
-  ToCoq(ctxt).goStmt(stmt);
+  Formatter fmt(llvm::outs());
+  ToCoq(ctxt, fmt).goStmt(stmt);
 }
+
+void toCoqModule(clang::ASTContext *ctxt, const clang::TranslationUnitDecl *decl) {
+  Formatter fmt(llvm::outs());
+
+  fmt << "From Cpp Require Import Parser." << fmt::line << fmt::line
+      << "Local Open Scope string_scope." << fmt::line
+	  << "Import ListNotations." << fmt::line;
+
+  ToCoq(ctxt, fmt).goDecl(decl);
+}
+

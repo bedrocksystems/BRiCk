@@ -8,9 +8,13 @@ Record globname : Set :=
 Definition localname : Set := name.
 
 Record field : Set :=
-{ f_type : globname
+{ f_type : globname (* name of struct or class *)
 ; f_name : name
 }.
+Record type_qualifiers : Set :=
+{ q_const : bool
+; q_volatile : bool }.
+
 Inductive type : Set :=
 | Tpointer (_ : type)
 | Treference (_ : type)
@@ -20,25 +24,31 @@ Inductive type : Set :=
 | Tunknown
 | Tarray (_ : type) (_ : option nat)
 | Tref (_ : globname)
-| Tfunction (_ : type) (_ : list type).
+| Tfunction (_ : type) (_ : list type)
+| Tqualified (_ : type_qualifiers) (_ : type).
 
 
+Definition Qconst_volatile : type -> type :=
+  Tqualified {| q_const := true ; q_volatile := true |}.
+Definition Qconst : type -> type :=
+  Tqualified {| q_const := true ; q_volatile := false |}.
+Definition Qmut_volatile : type -> type :=
+  Tqualified {| q_const := false ; q_volatile := true |}.
+Definition Qmut : type -> type :=
+  Tqualified {| q_const := false ; q_volatile := false |}.
+
+(*
 Record TypeInfo : Set :=
 { alignment : nat
 ; size : nat
 ; offset : list (field * nat)
 }.
 
-(*
 Class Ctxt :  Type :=
 { resolve_glob : globname -> option addr
 ; type_info : type -> option TypeInfo
 }.
 *)
-
-
-Inductive op : Set :=
-| Add | Sub | Mul.
 
 Variant Cast : Set :=
 | Cbitcast
@@ -54,7 +64,6 @@ Variant Cast : Set :=
 
 Definition UnOp : Set := string.
 Definition BinOp : Set := string.
-
 
 Require Import Coq.ZArith.BinIntDef.
 
@@ -113,13 +122,6 @@ Inductive Decl : Set :=
 
 Coercion Sexpr : Expr >-> Stmt.
 
-
-Require Import Coq.Strings.String.
-Require Import Coq.Lists.List.
-
-Notation "a !:: b" := (a :: b) (at level 30).
-Local Open Scope string_scope.
-Import ListNotations.
 
 Definition T_int128 := Tint (Some 128) true.
 Definition T_uint128 := Tint (Some 128) false.

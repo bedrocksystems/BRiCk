@@ -20,7 +20,7 @@ public:
     : ctxt(Context) {}
 
   virtual void HandleTranslationUnit(clang::ASTContext &Context) {
-    declToCoq(this->ctxt, Context.getTranslationUnitDecl());
+    toCoqModule(this->ctxt, Context.getTranslationUnitDecl());
   }
 private:
   ASTContext* ctxt;
