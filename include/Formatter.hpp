@@ -89,7 +89,6 @@ operator<<(Formatter &out, const LINE *_);
 Formatter&
 operator<<(Formatter &out, const RPAREN *_);
 
-
 }
 
 

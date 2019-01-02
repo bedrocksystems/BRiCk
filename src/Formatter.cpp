@@ -10,7 +10,7 @@ Formatter::Formatter ()
 }
 
 Formatter::Formatter (llvm::raw_ostream &_out)
-	: out(_out), depth(0), spaces(0) {
+	: out(_out), depth(0), spaces(0), blank(true) {
 }
 
 llvm::raw_ostream&

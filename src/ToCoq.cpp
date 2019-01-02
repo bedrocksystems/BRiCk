@@ -11,7 +11,7 @@ using namespace clang;
 using namespace fmt;
 
 void
-printCastKind (llvm::raw_ostream& out, const CastKind ck) {
+printCastKind (Formatter& out, const CastKind ck) {
   if (ck == CastKind::CK_LValueToRValue) {
 	out << "Cl2r";
   } else if (ck == CastKind::CK_FunctionToPointerDecay) {
@@ -22,20 +22,24 @@ printCastKind (llvm::raw_ostream& out, const CastKind ck) {
   	out << "Cbitcast";
   } else if (ck == CastKind::CK_IntegralCast) {
 	out << "Cintegral";
+  } else if (ck == CastKind::CK_IntegralToBoolean) {
+  	out << "Cint2bool";
   } else if (ck == CastKind::CK_PointerToIntegral) {
 	out << "Cpointer2int";
+  } else if (ck == CastKind::CK_IntegralToPointer) {
+  	out << "Cint2pointer";
   } else if (ck == CastKind::CK_ArrayToPointerDecay) {
 	out << "Carray2pointer";
   } else if (ck == CastKind::CK_ConstructorConversion) {
   	out << "Cconstructorconversion";
   } else if (ck == CastKind::CK_BuiltinFnToFnPtr) {
-  	out << "Cbulitin2function";
+  	out << "Cbuiltin2function";
   } else if (ck == CastKind::CK_NullToPointer) {
 	out << "Cnull2ptr";
   } else if (ck == CastKind::CK_DerivedToBase || ck == CastKind::CK_UncheckedDerivedToBase) {
     out << "Cderived2base";
   } else if (ck == CastKind::CK_BaseToDerived) {
-      out << "Cbase2derived";
+    out << "Cbase2derived";
   } else {
 #if CLANG_VERSION_MAJOR >= 8
 	llvm::errs() << "unsupported cast kind \"" << CastExpr::getCastKindName(ck)
@@ -48,21 +52,11 @@ printCastKind (llvm::raw_ostream& out, const CastKind ck) {
 }
 
 #define DELEGATE_OUTPUT(parent) \
-  void indent () { parent->indent (); } \
-  void outdent () { parent->outdent (); } \
-  void nbsp() { parent->nbsp(); } \
-  llvm::raw_ostream& line () const { return parent->line (); } \
-  llvm::raw_ostream& nobreak() const { return parent->nobreak (); } \
   fmt::Formatter& output() const { return parent->output(); } \
   llvm::raw_ostream& error () const { return llvm::errs(); } \
   fmt::Formatter& ctor(const char* ctor, bool line=true) { return parent->ctor(ctor, line); }
 
 #define DELEGATE_OUTPUT_I(parent) \
-  void indent () { parent.indent (); } \
-  void outdent () { parent.outdent (); } \
-  void nbsp() { parent.nbsp(); } \
-  llvm::raw_ostream& line () { return parent.line (); } \
-  llvm::raw_ostream& nobreak() { return parent.nobreak (); } \
   fmt::Formatter& output() { return parent; } \
   llvm::raw_ostream& error () const { return llvm::errs(); }
 
@@ -75,6 +69,13 @@ printCastKind (llvm::raw_ostream& out, const CastKind ck) {
 	  } \
     } \
 	output() << fmt::outdent << "]";
+
+#define OPTIONAL(p, v) \
+	if (v) { \
+      ctor("Some"); p(v); output() << fmt::rparen; \
+	} else { \
+	  output() << "None"; \
+	}
 
 /*
  * note(gmm): ideally, i wouldn't really need nested classes here, instead
@@ -125,6 +126,9 @@ private:
 		output() << "\"" << crd->getNameAsString() << "\"" << fmt::nbsp << "!::" << fmt::nbsp;;
 	  } else if (const auto *ed = dyn_cast<EnumDecl>(dc)) {
 		output() << "\"" << ed->getNameAsString() << "\"" << fmt::nbsp << "!::" << fmt::nbsp;;
+	  } else if (isa<LinkageSpecDecl>(dc)) {
+		// linkage specifications don't have names
+		continue;
 	  } else if (isa<TranslationUnitDecl>(dc)) {
 		assert(false);
 	  } else {
@@ -193,7 +197,7 @@ private:
 	  error() << "Unsupported type: ";
 	  type->dump(error());
 	  error() << "\n";
-	  nobreak() << "Tunknown";
+	  output() << "(Tunknown \"" << type->getTypeClassName() << "\")";
 	}
 
 	void
@@ -217,47 +221,47 @@ private:
 	void
 	VisitBuiltinType (const BuiltinType* type) {
 	  if (type->getKind() == BuiltinType::Kind::Bool) {
-		nobreak() << "Tbool";
+		output() << "Tbool";
 	  } else if (type->getKind() == BuiltinType::Kind::Int128) {
-		nobreak() << "T_int128";
+		output() << "T_int128";
 	  } else if (type->getKind() == BuiltinType::Kind::UInt128) {
-		nobreak() << "T_uint128";
+		output() << "T_uint128";
 	  } else if (type->getKind() == BuiltinType::Kind::Int) {
-		nobreak() << "T_int";
+		output() << "T_int";
 	  } else if (type->getKind() == BuiltinType::Kind::UInt) {
-		nobreak() << "T_uint";
+		output() << "T_uint";
 	  } else if (type->getKind() == BuiltinType::Kind::ULong) {
-		nobreak() << "T_ulong";
+		output() << "T_ulong";
 	  } else if (type->getKind() == BuiltinType::Kind::UShort) {
-		nobreak() << "T_ushort";
+		output() << "T_ushort";
 	  } else if (type->getKind() == BuiltinType::Kind::LongLong) {
-		nobreak() << "T_longlong";
+		output() << "T_longlong";
 	  } else if (type->getKind() == BuiltinType::Kind::ULongLong) {
-		nobreak() << "T_ulonglong";
+		output() << "T_ulonglong";
 	  } else if (type->getKind() == BuiltinType::Kind::Short) {
-		nobreak() << "T_short";
+		output() << "T_short";
 	  } else if (type->getKind() == BuiltinType::Kind::Char16) {
-		nobreak() << "T_char16";
+		output() << "T_char16";
 	  } else if (type->getKind() == BuiltinType::Kind::Char_S) {
-		nobreak() << "T_schar";
+		output() << "T_schar";
 	  } else if (type->getKind() == BuiltinType::Kind::SChar) {
-		nobreak() << "T_schar";
+		output() << "T_schar";
 	  } else if (type->getKind() == BuiltinType::Kind::UChar) {
-		nobreak() << "T_uchar";
+		output() << "T_uchar";
 	  } else if (type->getKind() == BuiltinType::Kind::Char_U) {
-		nobreak() << "T_uchar";
+		output() << "T_uchar";
 #if CLANG_VERSION_MAJOR > 7
 	  } else if (type->getKind() == BuiltinType::Kind::Char8) {
-		nobreak() << "T_char8";
+		output() << "T_char8";
 #endif
 	  } else if (type->getKind() == BuiltinType::Kind::Char32) {
-		nobreak() << "T_char32";
+		output() << "T_char32";
 	  } else if (type->getKind() == BuiltinType::Kind::Void) {
-		nobreak() << "Tvoid";
+		output() << "Tvoid";
 	  } else {
 		error() << "Unsupported type \""
 			<< type->getNameAsCString(PrintingPolicy(LangOptions())) << "\"\n";
-		nobreak() << "Tunknown";
+		output() << "Tunknown";
 	  }
 	}
 
@@ -308,6 +312,11 @@ private:
 	  parent->printQualType(type->getElementType());
 	  output() << fmt::nbsp;
 	  output() << "(Some " << type->getSize().getLimitedValue() << ")" << fmt::rparen;
+	}
+
+	void
+	VisitSubstTemplateTypeParmType(const SubstTemplateTypeParmType *type) {
+	  parent->printQualType(type->getReplacementType());
 	}
   };
 
@@ -377,9 +386,14 @@ private:
 	}
 
 	void
-	VisitDeclStmt (const DeclStmt* decl) {
+	VisitStmt(const Stmt *stmt) {
+	  error() << "unsupported statement " << stmt->getStmtClassName() << "\n";
+	}
+
+	void
+	VisitDeclStmt (const DeclStmt* stmt) {
 	  ctor("Sdecl");
-	  PRINT_LIST(decl->decl, parent->goLocalDecl)
+	  PRINT_LIST(stmt->decl, parent->goLocalDecl)
 	  output() << fmt::rparen;
 	}
 
@@ -388,10 +402,22 @@ private:
 	  ctor("Swhile");
 	  if (stmt->getConditionVariable()) {
 		error() << "unsupported variable declaration in while";
-	  } else {
-		nobreak() << "None ";
 	  }
-	  parent->goStmt(stmt->getCond());
+	  parent->goExpr(stmt->getCond());
+	  output() << fmt::nbsp;
+	  parent->goStmt(stmt->getBody());
+	  output() << fmt::rparen;
+	}
+
+	void
+	VisitForStmt (const ForStmt* stmt) {
+	  ctor("Sfor");
+	  OPTIONAL(parent->goStmt, stmt->getInit())
+	  output() << fmt::nbsp;
+	  OPTIONAL(parent->goExpr, stmt->getCond())
+	  output() << fmt::nbsp;
+	  OPTIONAL(parent->goExpr, stmt->getInc())
+	  output() << fmt::nbsp;
 	  parent->goStmt(stmt->getBody());
 	  output() << fmt::rparen;
 	}
@@ -409,20 +435,21 @@ private:
 	VisitIfStmt (const IfStmt* stmt) {
 	  ctor("Sif");
 	  if (stmt->getConditionVariable()) {
-		output() << fmt::line << fmt::lparen << "Some" << fmt::nbsp;
-		parent->goDecl(stmt->getConditionVariable());
+		ctor("Some");
+		parent->goLocalDecl(stmt->getConditionVariable());
 		output() << fmt::rparen;
 	  } else {
-		line() << "None";
+		output() << "None";
 	  }
-	  parent->goStmt(stmt->getCond());
+	  output() << fmt::nbsp;
+	  parent->goExpr(stmt->getCond());
 	  output() << fmt::nbsp;
 	  parent->goStmt(stmt->getThen());
 	  output() << fmt::nbsp;
 	  if (stmt->getElse()) {
 		parent->goStmt(stmt->getElse());
 	  } else {
-		nobreak() << "Sskip";
+		output() << "Sskip";
 	  }
 	  output() << fmt::rparen;
 	}
@@ -441,7 +468,7 @@ private:
 		parent->goExpr(stmt->getRetValue());
 		output() << ")" << fmt::rparen;
 	  } else {
-		nobreak() << "(Sreturn None)";
+		output() << "(Sreturn None)";
 	  }
 	}
 
@@ -454,7 +481,14 @@ private:
 
 	void
 	VisitNullStmt (const NullStmt *stmt) {
-	  line() << "Sskip";
+	  output() << "Sskip";
+	}
+
+	void
+	VisitGCCAsmStmt (const GCCAsmStmt *stmt) {
+	  // todo(gmm): more to do here to support assembly
+	  ctor("Sasm") << "\"" << stmt->getAsmString()->getString() << "\"";
+	  output() << fmt::rparen;
 	}
 
   };
@@ -517,7 +551,7 @@ private:
 	void
 	VisitCastExpr (const CastExpr *expr) {
 	  ctor("Ecast");
-	  printCastKind(nobreak(), expr->getCastKind());
+	  printCastKind(output(), expr->getCastKind());
 	  output() << fmt::nbsp;
 	  parent->goExpr(expr->getSubExpr());
 	  output() << fmt::rparen;
@@ -525,7 +559,7 @@ private:
 
 	void
 	VisitIntegerLiteral (const IntegerLiteral *lit) {
-	  ctor("Eint") << fmt::nbsp << lit->getValue() << fmt::nbsp;
+	  ctor("Eint") << lit->getValue() << fmt::nbsp;
 	  parent->printQualType(lit->getType());
 	  output() << fmt::rparen;
 	}
@@ -533,27 +567,29 @@ private:
 	void
 	VisitCXXBoolLiteralExpr (const CXXBoolLiteralExpr *lit) {
 	  if (lit->getValue()) {
-		nobreak() << "(Ebool true)";
+		output() << "(Ebool true)";
 	  } else {
-		nobreak() << "(Ebool false)";
+		output() << "(Ebool false)";
 	  }
 	}
 
 	void
 	VisitMemberExpr (const MemberExpr *expr) {
-	  line() << "(Emember ";
-	  indent();
+	  ctor("Emember");
 	  parent->goExpr(expr->getBase());
-	  nobreak() << " ";
+	  output() << fmt::nbsp;
 	  if (FieldDecl* f = dyn_cast<clang::FieldDecl>(expr->getMemberDecl())) {
-		line() << "\"" << f->getNameAsString() << "\"";
+		output() << "{| f_type :=" << fmt::nbsp;
+		parent->printGlobalName(f->getParent());
+		output() << fmt::nbsp << "; f_name := \"" << f->getNameAsString() << "\" |}";
 	  } else if (CXXMethodDecl* meth = dyn_cast<clang::CXXMethodDecl>(expr->getMemberDecl())) {
-		line() << "\"" << meth->getNameAsString() << "\"";
+		output() << "{| f_type :=" << fmt::nbsp;
+		parent->printGlobalName(meth->getParent());
+		output() << fmt::nbsp << "; f_name := \"" << meth->getNameAsString() << "\" |}";
 	  } else {
 		error() << "member not pointing to field " << expr->getMemberDecl()->getDeclKindName() << "\n";
 	  }
-	  nobreak() << ")";
-	  outdent();
+	  output() << fmt::rparen;
 	}
 
 	void
@@ -577,7 +613,7 @@ private:
 	void
 	VisitCXXMemberCallExpr (const CXXMemberCallExpr *expr) {
 	  output() << fmt::line << fmt::lparen << "Emember_call" << fmt::nbsp;
-	  parent->printName(expr->getMethodDecl());
+	  parent->printGlobalName(expr->getMethodDecl());
 	  output() << fmt::nbsp;
 	  parent->goExpr(expr->getImplicitObjectArgument());
 	  output() << fmt::nbsp;
@@ -594,16 +630,13 @@ private:
 
 	void
 	VisitConditionalOperator(const ConditionalOperator *expr) {
-	  line() << "(Eif";
-	  nbsp();
-	  indent();
+	  ctor("Eif");
 	  parent->goExpr(expr->getCond());
-	  nbsp();
+	  output() << fmt::nbsp;
 	  parent->goExpr(expr->getTrueExpr());
-	  nbsp();
+	  output() << fmt::nbsp;
 	  parent->goExpr(expr->getFalseExpr());
-	  outdent();
-	  nobreak() << ")";
+	  output() << fmt::rparen;
 	}
 
 #if CLANG_VERSION_MAJOR >= 7
@@ -620,16 +653,15 @@ private:
 
 	void
 	VisitInitListExpr(const InitListExpr *expr) {
-	  line() << "(Einitlist [";
-	  indent();
+	  ctor("Einitlist") << "[";
+	  // I can't use PRINT_LIST here because there is no prefix to `begin` and `end`
 	  for (auto i = expr->begin(), e = expr->end(); i != e; ) {
 		parent->goExpr(*i);
 		if (++i != e) {
-		  nobreak() << ";";
+		  output() << ";";
 		}
 	  }
-	  outdent();
-	  nobreak() << "]";
+	  output() << "]" << fmt::rparen;
 	}
 
 	void
@@ -646,9 +678,13 @@ private:
 	VisitUnaryExprOrTypeTraitExpr(const UnaryExprOrTypeTraitExpr *expr) {
 	  auto do_arg = [this, expr]() {
 		if (expr->isArgumentType()) {
+		  ctor("inl");
 		  parent->goType(expr->getArgumentType().getTypePtr()); // constness isn't relevant here
+		  output() << fmt::rparen;
 		} else {
+		  ctor("inr");
 		  parent->goExpr(expr->getArgumentExpr());
+		  output() << fmt::rparen;
 		}
 	  };
 
@@ -663,6 +699,11 @@ private:
 	  } else {
 		error() << "unsupported expression `UnaryExprOrTypeTraitExpr`\n";
 	  }
+	}
+
+	void
+	VisitSubstNonTypeTemplateParmExpr(const SubstNonTypeTemplateParmExpr *expr) {
+	  this->Visit(expr->getReplacement());
 	}
   };
 
@@ -712,18 +753,16 @@ public:
 
   void
   VisitTranslationUnitDecl (const TranslationUnitDecl* decl) {
-	line() << "Definition module : list Decl :=";
-	nbsp();
+	output() << "Definition module : list Decl :=" << fmt::nbsp;
 	PRINT_LIST(decl->decls, goDecl)
-	nobreak() << ".";
-	line();
+	output() << "." << fmt::line;
   }
 
   void
   VisitTypeDecl (const TypeDecl* type) {
 	error() << "unsupported type declaration `" << type->getDeclKindName()
 		<< "`\n";
-	nobreak() << "Tunknown";
+	output() << "Tunknown";
   }
 
   void
@@ -791,7 +830,7 @@ public:
 	  goStmt(decl->getBody());
 	  output() << fmt::rparen;
 	} else {
-	  nobreak() << "None";
+	  output() << "None";
 	}
   }
 
@@ -817,7 +856,7 @@ public:
 	  goStmt(decl->getBody());
 	  output() << fmt::rparen;
 	} else {
-	  nobreak() << "None";
+	  output() << "None";
 	}
 	output() << fmt::rparen;
   }
@@ -830,7 +869,7 @@ public:
 	  goStmt(decl->getBody());
 	  output() << fmt::rparen;
 	} else {
-	  nobreak() << "None";
+	  output() << "None";
 	}
   	output() << fmt::rparen;
   }
@@ -851,7 +890,7 @@ public:
 
   void
   VisitUsingDecl (const UsingDecl *decl) {
-	nobreak() << "Dempty"; // note(gmm): this is an artifact because of the way that lists work
+	output() << "Dempty"; // note(gmm): this is an artifact because of the way that lists work
   }
 
   void
@@ -861,47 +900,57 @@ public:
 
   void
   VisitNamespaceDecl (const NamespaceDecl *decl) {
-	line() << "(Dnamespace \"" << decl->getNameAsString() << "\" ";
+	ctor("Dnamespace") << fmt::nbsp << "\"" << decl->getNameAsString() << "\" ";
 	PRINT_LIST(decl->decls, goDecl)
-	nobreak() << ")";
+	output() << fmt::rparen;
   }
 
   void
   VisitEnumDecl (const EnumDecl *decl) {
-	line() << "(Denum \"" << decl->getNameAsString() << "\" [";
-	nbsp();
-	indent();
+	ctor("Denum") << "\"" << decl->getNameAsString() << "\"" << fmt::nbsp;
 	auto t = decl->getIntegerType();
 	if (!t.isNull()) {
-	  line() << "(Some";
-	  nbsp();
+	  ctor("Some");
 	  printQualType(decl->getIntegerType());
-	  nobreak() << ")";
+	  output() << fmt::rparen;
 	} else {
-	  nobreak() << "None";
+	  output() << "None";
 	}
-	nbsp();
-	nobreak() << "[";
-	for (auto i = decl->enumerator_begin(), e = decl->enumerator_end(); i != e; ) {
+	output() << fmt::nbsp;;
 
-	  line() << "(\"" << (*i)->getNameAsString() << "\",";
-	  nbsp();
-	  if (auto init = (*i)->getInitExpr()) {
-		nobreak() << "Some";
-		nbsp();
+	auto print_case = [this](const EnumConstantDecl *i) {
+	  output() << fmt::line << "(\"" << i->getNameAsString() << "\",";
+	  output() << fmt::nbsp;;
+	  if (auto init = i->getInitExpr()) {
+		output() << "Some" << fmt::nbsp;;
 		goExpr(init);
 	  } else {
-		nobreak() << "None";
+		output() << "None";
 	  }
-	  nobreak() << ")";
+	  output() << ")";
+	};
 
-	  if (++i != e) {
-		nobreak() << ";";
-		nbsp();
-	  }
-	}
-	nobreak() << "])";
-	outdent();
+	PRINT_LIST(decl->enumerator, print_case)
+
+	output() << fmt::rparen;
+  }
+
+  void
+  VisitLinkageSpecDecl (const LinkageSpecDecl *decl) {
+	// todo(gmm): need to do the language spec
+	ctor("Dextern");
+	PRINT_LIST(decl->decls, goDecl)
+	output() << fmt::rparen;
+  }
+
+  void
+  VisitFunctionTemplateDecl(const FunctionTemplateDecl *decl) {
+	// note(gmm): for now, i am just going to return the type of the specializations.
+	ctor("Dtemplate_function");
+
+	PRINT_LIST(decl->spec, goDecl)
+
+	output() << fmt::rparen;
   }
 
 private:

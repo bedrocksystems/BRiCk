@@ -4,4 +4,4 @@ From Coq Require Export
 
 From Cpp Require Export Ast.
 
-Notation "a !:: b" := (a :: b) (at level 30).
+Notation "a !:: b" := (a :: b) (at level 30, right associativity).

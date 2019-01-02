@@ -25,7 +25,8 @@ Inductive type : Set :=
 | Tarray (_ : type) (_ : option nat)
 | Tref (_ : globname)
 | Tfunction (_ : type) (_ : list type)
-| Tqualified (_ : type_qualifiers) (_ : type).
+| Tqualified (_ : type_qualifiers) (_ : type)
+| Tbool.
 
 
 Definition Qconst_volatile : type -> type :=
@@ -57,9 +58,14 @@ Variant Cast : Set :=
 | Cnoop
 | Carray2pointer
 | Cfunction2pointer
-| Cint2ptr
-| Cptr2int
+| Cint2pointer
+| Cpointer2int
 | Cderived2base
+| Cintegral
+| Cint2bool
+| Cnull2ptr
+| Cbuiltin2function
+| Cconstructorconversion
 .
 
 Definition UnOp : Set := string.
@@ -81,13 +87,18 @@ Inductive Expr : Set :=
 | Ebool    (_ : bool)
 | Ecall    (_ : Expr) (_ : list Expr)
 | Ecast    (_ : Cast) (_ : Expr)
+
 | Emember  (_ : Expr) (_ : field)
+| Emember_call (_ : globname) (obj : Expr) (_ : list Expr)
+
 | Esubscript (_ : Expr) (_ : Expr)
 | Esize_of (_ : type + Expr)
 | Econstructor (_ : globname) (_ : list Expr)
-| Emember_call (_ : globname) (obj : Expr) (_ : list Expr)
 | Eimplicit (_ : Expr)
 | Eif       (_ _ _ : Expr)
+| Ethis
+| Enull
+| Einitlist (_ : list Expr)
 .
 
 Inductive Stmt : Set :=
@@ -95,13 +106,15 @@ Inductive Stmt : Set :=
 | Sseq    (_ : list Stmt)
 | Sdecl   (_ : list (name * type * option Expr))
 
-| Sif     (_ : Expr) (_ _ : Stmt)
-| Swhile  (_ : option unit) (_ : Stmt) (_ : Stmt)
-
+| Sif     (_ : option (name * type * option Expr)) (_ : Expr) (_ _ : Stmt)
+| Swhile  (_ : Expr) (_ : Stmt)
+| Sfor    (_ : option Stmt) (_ _ : option Expr) (_ : Stmt)
 
 | Sreturn (_ : option Expr)
 
 | Sexpr   (_ : Expr)
+
+| Sasm (_ : string)
 .
 
 (* global declarations *)
@@ -112,19 +125,38 @@ Inductive Decl : Set :=
 | Dconstructor (_ : list (name * type)) (_ : option Stmt)
 | Ddestructor (_ : option Stmt)
 | Dstruct (_ : name) (bases : list globname) (fields : list (name * type)) (methods : list Decl)
-| Denum   (_ : name) (_ : option type) (branches : list (name * Expr))
+| Denum   (_ : name) (_ : option type) (branches : list (name * option Expr))
           (* the initializers need to be constant expressions *)
 | Dempty
   (* ^ this will be erased *)
-| Dnamespace (_ : name) (_ : Decl)
+| Dnamespace (_ : name) (_ : list Decl)
   (* ^ this will be erased *)
+| Dextern (_ : list Decl)
+| Dtemplate_function (_ : list Decl)
 .
 
 Coercion Sexpr : Expr >-> Stmt.
 
 
+Definition T_int8 := Tint (Some 8) true.
+Definition T_uint8 := Tint (Some 8) false.
+Definition T_int16 := Tint (Some 16) true.
+Definition T_uint16 := Tint (Some 16) false.
+Definition T_int32 := Tint (Some 32) true.
+Definition T_uint32 := Tint (Some 32) false.
+Definition T_int64 := Tint (Some 64) true.
+Definition T_uint64 := Tint (Some 64) false.
 Definition T_int128 := Tint (Some 128) true.
 Definition T_uint128 := Tint (Some 128) false.
+
+Parameter T_ushort : type.
+Parameter T_short : type.
+Parameter T_long : type.
+Parameter T_ulong : type.
+Parameter T_ulonglong : type.
+Parameter T_longlong : type.
+Parameter T_uint : type.
+
 Definition T_schar : type := Tchar None true.
 Definition T_uchar : type := Tchar None false.
 Definition T_int := Tint None true.
