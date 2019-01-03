@@ -84,7 +84,7 @@ printCastKind (Formatter& out, const CastKind ck) {
  * of their visitors (only to `TypeVisitor`) so instead we have to have a configuration
  * and then maintain pointers to it everywhere.
  */
-class ToCoq : public ConstDeclVisitor<ToCoq, void>
+class ToCoq
 {
 private:
   Formatter &out;
@@ -176,14 +176,14 @@ private:
 		ctor("Qmut");
 	  }
 	}
-	goType(qt.getTypePtr());
+	printType(qt.getTypePtr());
     output() << fmt::rparen;
   }
 
   class PrintType : public TypeVisitor<PrintType, void>
   {
   private:
-	ToCoq *parent;
+	ToCoq *const parent;
 
 	DELEGATE_OUTPUT(parent)
 
@@ -338,7 +338,7 @@ private:
 	  output() << "," << fmt::nbsp;
 	  if (decl->hasInit()) {
 		output() << fmt::line << fmt::lparen << "Some" << fmt::nbsp;
-		parent->goExpr(decl->getInit());
+		parent->printExpr(decl->getInit());
 		output() << fmt::rparen;
 	  } else {
 		output() << fmt::nbsp << "None";
@@ -393,7 +393,7 @@ private:
 	void
 	VisitDeclStmt (const DeclStmt* stmt) {
 	  ctor("Sdecl");
-	  PRINT_LIST(stmt->decl, parent->goLocalDecl)
+	  PRINT_LIST(stmt->decl, parent->printLocalDecl)
 	  output() << fmt::rparen;
 	}
 
@@ -403,31 +403,31 @@ private:
 	  if (stmt->getConditionVariable()) {
 		error() << "unsupported variable declaration in while";
 	  }
-	  parent->goExpr(stmt->getCond());
+	  parent->printExpr(stmt->getCond());
 	  output() << fmt::nbsp;
-	  parent->goStmt(stmt->getBody());
+	  parent->printStmt(stmt->getBody());
 	  output() << fmt::rparen;
 	}
 
 	void
 	VisitForStmt (const ForStmt* stmt) {
 	  ctor("Sfor");
-	  OPTIONAL(parent->goStmt, stmt->getInit())
+	  OPTIONAL(parent->printStmt, stmt->getInit())
 	  output() << fmt::nbsp;
-	  OPTIONAL(parent->goExpr, stmt->getCond())
+	  OPTIONAL(parent->printExpr, stmt->getCond())
 	  output() << fmt::nbsp;
-	  OPTIONAL(parent->goExpr, stmt->getInc())
+	  OPTIONAL(parent->printExpr, stmt->getInc())
 	  output() << fmt::nbsp;
-	  parent->goStmt(stmt->getBody());
+	  parent->printStmt(stmt->getBody());
 	  output() << fmt::rparen;
 	}
 
 	void
 	VisitDoStmt (const DoStmt* stmt) {
 	  ctor("Sdo");
-	  parent->goStmt(stmt->getBody());
+	  parent->printStmt(stmt->getBody());
 	  output() << fmt::nbsp;
-	  parent->goStmt(stmt->getCond());
+	  parent->printStmt(stmt->getCond());
 	  output() << fmt::rparen;
 	}
 
@@ -436,18 +436,18 @@ private:
 	  ctor("Sif");
 	  if (stmt->getConditionVariable()) {
 		ctor("Some");
-		parent->goLocalDecl(stmt->getConditionVariable());
+		parent->printLocalDecl(stmt->getConditionVariable());
 		output() << fmt::rparen;
 	  } else {
 		output() << "None";
 	  }
 	  output() << fmt::nbsp;
-	  parent->goExpr(stmt->getCond());
+	  parent->printExpr(stmt->getCond());
 	  output() << fmt::nbsp;
-	  parent->goStmt(stmt->getThen());
+	  parent->printStmt(stmt->getThen());
 	  output() << fmt::nbsp;
 	  if (stmt->getElse()) {
-		parent->goStmt(stmt->getElse());
+		parent->printStmt(stmt->getElse());
 	  } else {
 		output() << "Sskip";
 	  }
@@ -457,7 +457,7 @@ private:
 	void
 	VisitExpr (const Expr *expr) {
 	  ctor("Sexpr");
-	  parent->goExpr(expr);
+	  parent->printExpr(expr);
 	  output() << fmt::rparen;
 	}
 
@@ -465,7 +465,7 @@ private:
 	VisitReturnStmt (const ReturnStmt *stmt) {
 	  if (stmt->getRetValue() != nullptr) {
 		ctor("Sreturn (Some");
-		parent->goExpr(stmt->getRetValue());
+		parent->printExpr(stmt->getRetValue());
 		output() << ")" << fmt::rparen;
 	  } else {
 		output() << "(Sreturn None)";
@@ -475,7 +475,7 @@ private:
 	void
 	VisitCompoundStmt (const CompoundStmt *stmt) {
 	  ctor("Sseq");
-	  PRINT_LIST(stmt->body, parent->goStmt)
+	  PRINT_LIST(stmt->body, parent->printStmt)
 	  output() << fmt::rparen;
 	}
 
@@ -518,9 +518,9 @@ private:
 	VisitBinaryOperator (const BinaryOperator *expr) {
 	  ctor("Ebinop");
 	  output() << "\"" << expr->getOpcodeStr() << "\"" << fmt::nbsp;
-	  parent->goExpr(expr->getLHS());
+	  parent->printExpr(expr->getLHS());
 	  output() << fmt::nbsp;
-	  parent->goExpr(expr->getRHS());
+	  parent->printExpr(expr->getRHS());
 	  output() << fmt::rparen;
 	}
 
@@ -528,7 +528,7 @@ private:
 	VisitUnaryOperator (const UnaryOperator *expr) {
 	  ctor("Eunop") << "\"" << UnaryOperator::getOpcodeStr(expr->getOpcode()) << "\""
 		            << fmt::nbsp;
-	  parent->goExpr(expr->getSubExpr());
+	  parent->printExpr(expr->getSubExpr());
 	  output() << fmt::rparen;
 	}
 
@@ -542,9 +542,9 @@ private:
 	void
 	VisitCallExpr (const CallExpr *expr) {
 	  ctor("Ecall");
-	  parent->goExpr(expr->getCallee());
+	  parent->printExpr(expr->getCallee());
 	  output() << fmt::nbsp;
-	  PRINT_LIST(expr->arg, parent->goExpr)
+	  PRINT_LIST(expr->arg, parent->printExpr)
 	  output() << fmt::rparen;
 	}
 
@@ -553,7 +553,7 @@ private:
 	  ctor("Ecast");
 	  printCastKind(output(), expr->getCastKind());
 	  output() << fmt::nbsp;
-	  parent->goExpr(expr->getSubExpr());
+	  parent->printExpr(expr->getSubExpr());
 	  output() << fmt::rparen;
 	}
 
@@ -576,7 +576,7 @@ private:
 	void
 	VisitMemberExpr (const MemberExpr *expr) {
 	  ctor("Emember");
-	  parent->goExpr(expr->getBase());
+	  parent->printExpr(expr->getBase());
 	  output() << fmt::nbsp;
 	  if (FieldDecl* f = dyn_cast<clang::FieldDecl>(expr->getMemberDecl())) {
 		output() << "{| f_type :=" << fmt::nbsp;
@@ -595,9 +595,9 @@ private:
 	void
 	VisitArraySubscriptExpr (const ArraySubscriptExpr *expr) {
 	  ctor("Esubscript");
-	  parent->goExpr(expr->getLHS());
+	  parent->printExpr(expr->getLHS());
 	  output() << fmt::nbsp;
-	  parent->goExpr(expr->getRHS());
+	  parent->printExpr(expr->getRHS());
 	  output() << fmt::rparen;
 	}
 
@@ -606,7 +606,7 @@ private:
 	  ctor("Econstructor");
 	  parent->printGlobalName(expr->getConstructor());
 	  output() << fmt::nbsp;
-	  PRINT_LIST(expr->arg, parent->goExpr)
+	  PRINT_LIST(expr->arg, parent->printExpr)
 	  output() << fmt::rparen;
 	}
 
@@ -615,27 +615,27 @@ private:
 	  output() << fmt::line << fmt::lparen << "Emember_call" << fmt::nbsp;
 	  parent->printGlobalName(expr->getMethodDecl());
 	  output() << fmt::nbsp;
-	  parent->goExpr(expr->getImplicitObjectArgument());
+	  parent->printExpr(expr->getImplicitObjectArgument());
 	  output() << fmt::nbsp;
-	  PRINT_LIST(expr->arg, parent->goExpr)
+	  PRINT_LIST(expr->arg, parent->printExpr)
 	  output() << fmt::rparen;
 	}
 
 	void
 	VisitCXXDefaultArgExpr (const CXXDefaultArgExpr *expr) {
 	  ctor("Eimplicit");
-	  parent->goExpr(expr->getExpr());
+	  parent->printExpr(expr->getExpr());
 	  output() << fmt::rparen;
 	}
 
 	void
 	VisitConditionalOperator(const ConditionalOperator *expr) {
 	  ctor("Eif");
-	  parent->goExpr(expr->getCond());
+	  parent->printExpr(expr->getCond());
 	  output() << fmt::nbsp;
-	  parent->goExpr(expr->getTrueExpr());
+	  parent->printExpr(expr->getTrueExpr());
 	  output() << fmt::nbsp;
-	  parent->goExpr(expr->getFalseExpr());
+	  parent->printExpr(expr->getFalseExpr());
 	  output() << fmt::rparen;
 	}
 
@@ -656,7 +656,7 @@ private:
 	  ctor("Einitlist") << "[";
 	  // I can't use PRINT_LIST here because there is no prefix to `begin` and `end`
 	  for (auto i = expr->begin(), e = expr->end(); i != e; ) {
-		parent->goExpr(*i);
+		parent->printExpr(*i);
 		if (++i != e) {
 		  output() << ";";
 		}
@@ -679,11 +679,11 @@ private:
 	  auto do_arg = [this, expr]() {
 		if (expr->isArgumentType()) {
 		  ctor("inl");
-		  parent->goType(expr->getArgumentType().getTypePtr()); // constness isn't relevant here
+		  parent->printType(expr->getArgumentType().getTypePtr()); // constness isn't relevant here
 		  output() << fmt::rparen;
 		} else {
 		  ctor("inr");
-		  parent->goExpr(expr->getArgumentExpr());
+		  parent->printExpr(expr->getArgumentExpr());
 		  output() << fmt::rparen;
 		}
 	  };
@@ -707,250 +707,267 @@ private:
 	}
   };
 
+  class PrintDecl : public ConstDeclVisitor<PrintDecl, void> {
+  private:
+  	ToCoq *parent;
+
+  	DELEGATE_OUTPUT(parent)
+
+  public:
+  	PrintDecl(ToCoq *_parent)
+	  : parent(_parent) {
+	}
+
+	void
+	VisitDecl (const Decl* d) {
+	  error() << "visiting declaration..." << d->getDeclKindName() << "\n";
+	}
+
+	void
+	VisitTranslationUnitDecl (const TranslationUnitDecl* decl) {
+	  output() << "Definition module : list Decl :=" << fmt::nbsp;
+	  PRINT_LIST(decl->decls, parent->printDecl)
+	  output() << "." << fmt::line;
+	}
+
+	void
+	VisitTypeDecl (const TypeDecl* type) {
+	  error() << "unsupported type declaration `" << type->getDeclKindName()
+		  << "`\n";
+	  output() << "Tunknown";
+	}
+
+	void
+	VisitEmptyDecl (const EmptyDecl *decl) {
+	  output() << "Dempty";
+	}
+
+	void
+	VisitTypedefNameDecl (const TypedefNameDecl* type) {
+	  output() << fmt::lparen << "Dtypedef \"" << type->getNameAsString() << "\"" << fmt::nbsp;
+	  parent->printQualType(type->getUnderlyingType()); // note(gmm): uses of `getTypePtr` are ignoring modifiers such as `const`
+	  output() << fmt::rparen;
+	}
+
+	void
+	VisitCXXRecordDecl (const CXXRecordDecl *decl) {
+	  if (decl != decl->getCanonicalDecl())
+		return;
+
+	  ctor("Dstruct") << "\"" << decl->getNameAsString() << "\"" << fmt::nbsp;
+
+	  // print the base classes
+	  auto print_base = [this](const CXXBaseSpecifier &base) {
+		if (base.isVirtual()) {
+		  error() << "virtual base classes not supported\n";
+		}
+		auto rec = dyn_cast<RecordType>(base.getType().getTypePtr());
+		if (rec) {
+		  parent->printGlobalName(rec->getDecl());
+		} else {
+		  error() << "base class is not a RecordType";
+		}
+	  };
+	  PRINT_LIST(decl->bases, print_base)
+
+	  output() << fmt::nbsp;
+	  // print the fields
+	  auto print_field = [this](const FieldDecl *field) {
+		output() << "(\"" << field->getNameAsString() << "\"," << fmt::nbsp;
+		parent->printQualType(field->getType());
+		output() << ")";
+	  };
+	  PRINT_LIST(decl->field, print_field)
+	  output() << fmt::nbsp;
+
+	  // print the methods
+	  auto print_method = [this](const CXXMethodDecl *decl) {
+		// todo(gmm): this is probably wrong because of subtyping. we need to handle constructors
+		// and destructors separately.
+		parent->printDecl(decl);
+	  };
+	  PRINT_LIST(decl->method, print_method)
+
+	  output() << fmt::rparen;
+	}
+
+	void
+	printFunction(const FunctionDecl *decl) {
+	  PRINT_LIST(decl->param, parent->printParam);
+	  output() << fmt::nbsp;
+	  parent->printQualType(decl->getCallResultType());
+	  output() << fmt::nbsp;
+	  if (decl->getBody()) {
+		output() << fmt::lparen << "Some" << fmt::nbsp;
+		parent->printStmt(decl->getBody());
+		output() << fmt::rparen;
+	  } else {
+		output() << "None";
+	  }
+	}
+
+	void
+	VisitFunctionDecl (const FunctionDecl *decl) {
+	  output() << fmt::line << fmt::lparen << "Dfunction \"" << decl->getNameAsString() << "\"" << fmt::nbsp;
+	  printFunction(decl);
+	  output() << fmt::rparen;
+	}
+
+	void
+	VisitCXXMethodDecl (const CXXMethodDecl *decl) {
+	  this->VisitFunctionDecl(decl);
+	}
+
+	void
+	VisitCXXConstructorDecl (const CXXConstructorDecl *decl) {
+	  output() << fmt::line << fmt::lparen << "Dconstructor" << fmt::nbsp;
+	  PRINT_LIST(decl->param, parent->printParam)
+	  output() << fmt::nbsp;
+	  if (decl->getBody()) {
+		output() << fmt::lparen << "Some" << fmt::nbsp;
+		parent->printStmt(decl->getBody());
+		output() << fmt::rparen;
+	  } else {
+		output() << "None";
+	  }
+	  output() << fmt::rparen;
+	}
+
+	void
+	VisitCXXDestructorDecl (const CXXDestructorDecl *decl) {
+	  output() << fmt::line << fmt::lparen << "Ddestructor" << fmt::nbsp;
+	  if (decl->getBody()) {
+		output() << fmt::lparen << "Some" << fmt::nbsp;
+		parent->printStmt(decl->getBody());
+		output() << fmt::rparen;
+	  } else {
+		output() << "None";
+	  }
+	  output() << fmt::rparen;
+	}
+
+	void
+	VisitVarDecl (const VarDecl *decl) {
+	  ctor("Dvar") << "\"" << decl->getNameAsString() << "\"" << fmt::nbsp;
+	  parent->printQualType(decl->getType());
+	  if (decl->hasInit()) {
+		output() << fmt::line << fmt::nbsp << fmt::lparen << "Some" << fmt::nbsp;
+		parent->printExpr(decl->getInit());
+		output() << fmt::rparen;
+	  } else {
+		output() << "None";
+	  }
+	  output() << fmt::rparen;
+	}
+
+	void
+	VisitUsingDecl (const UsingDecl *decl) {
+	  output() << "Dempty"; // note(gmm): this is an artifact because of the way that lists work
+	}
+
+	void
+	VisitUsingDirectiveDecl(const UsingDirectiveDecl *decl) {
+	  output() << "Dempty";
+	}
+
+	void
+	VisitNamespaceDecl (const NamespaceDecl *decl) {
+	  ctor("Dnamespace") << fmt::nbsp << "\"" << decl->getNameAsString() << "\" ";
+	  PRINT_LIST(decl->decls, parent->printDecl)
+	  output() << fmt::rparen;
+	}
+
+	void
+	VisitEnumDecl (const EnumDecl *decl) {
+	  ctor("Denum") << "\"" << decl->getNameAsString() << "\"" << fmt::nbsp;
+	  auto t = decl->getIntegerType();
+	  if (!t.isNull()) {
+		ctor("Some");
+		parent->printQualType(decl->getIntegerType());
+		output() << fmt::rparen;
+	  } else {
+		output() << "None";
+	  }
+	  output() << fmt::nbsp;;
+
+	  auto print_case = [this](const EnumConstantDecl *i) {
+		output() << fmt::line << "(\"" << i->getNameAsString() << "\",";
+		output() << fmt::nbsp;;
+		if (auto init = i->getInitExpr()) {
+		  output() << "Some" << fmt::nbsp;;
+		  parent->printExpr(init);
+		} else {
+		  output() << "None";
+		}
+		output() << ")";
+	  };
+
+	  PRINT_LIST(decl->enumerator, print_case)
+
+	  output() << fmt::rparen;
+	}
+
+	void
+	VisitLinkageSpecDecl (const LinkageSpecDecl *decl) {
+	  // todo(gmm): need to do the language spec
+	  ctor("Dextern");
+	  PRINT_LIST(decl->decls, parent->printDecl)
+	  output() << fmt::rparen;
+	}
+
+	void
+	VisitFunctionTemplateDecl(const FunctionTemplateDecl *decl) {
+	  // note(gmm): for now, i am just going to return the type of the specializations.
+	  ctor("Dtemplate_function");
+
+	  PRINT_LIST(decl->spec, parent->printDecl)
+
+	  output() << fmt::rparen;
+	}
+  };
+
 private:
-  PrintType printType;
-  PrintLocalDecl printLocalDecl;
-  PrintParam printParam;
-  PrintStmt printStmt;
-  PrintExpr printExpr;
+  PrintType typePrinter;
+  PrintLocalDecl localPrinter;
+  PrintParam paramPrinter;
+  PrintStmt stmtPrinter;
+  PrintExpr exprPrinter;
+  PrintDecl declPrinter;
 
 public:
   explicit
   ToCoq(ASTContext *ctxt, Formatter &fmt)
-  : out(fmt), printType(this), printLocalDecl(this), printParam(
-  		  this), printStmt(this), printExpr(this), Context(ctxt) { }
+  : out(fmt), typePrinter(this), localPrinter(this), paramPrinter(
+  		  this), stmtPrinter(this), exprPrinter(this), declPrinter(this), Context(ctxt) { }
 
   void
-  goDecl (const Decl* d) {
-	ConstDeclVisitor<ToCoq, void>::Visit(d);
+  printDecl (const Decl* d) {
+	declPrinter.Visit(d);
   }
 
   void
-  goLocalDecl (const Decl* d) {
-	printLocalDecl.Visit(d);
+  printParam (const ParmVarDecl* d) {
+	paramPrinter.Visit(d);
   }
 
   void
-  goStmt (const Stmt* s) {
-	printStmt.Visit(s);
+  printLocalDecl (const Decl* d) {
+	localPrinter.Visit(d);
   }
 
   void
-  goType (const Type* t) {
-	printType.Visit(t);
+  printStmt (const Stmt* s) {
+	stmtPrinter.Visit(s);
   }
 
   void
-  goExpr (const Stmt* d) {
-	printExpr.Visit(d);
-  }
-
-  // Visiting declarations
-  void
-  VisitDecl (const Decl* d) {
-	error() << "visiting declaration..." << d->getDeclKindName() << "\n";
+  printType (const Type* t) {
+	typePrinter.Visit(t);
   }
 
   void
-  VisitTranslationUnitDecl (const TranslationUnitDecl* decl) {
-	output() << "Definition module : list Decl :=" << fmt::nbsp;
-	PRINT_LIST(decl->decls, goDecl)
-	output() << "." << fmt::line;
-  }
-
-  void
-  VisitTypeDecl (const TypeDecl* type) {
-	error() << "unsupported type declaration `" << type->getDeclKindName()
-		<< "`\n";
-	output() << "Tunknown";
-  }
-
-  void
-  VisitEmptyDecl (const EmptyDecl *decl) {
-	output() << "Dempty";
-  }
-
-  void
-  VisitTypedefNameDecl (const TypedefNameDecl* type) {
-	output() << fmt::lparen << "Dtypedef \"" << type->getNameAsString() << "\"" << fmt::nbsp;
-	printQualType(type->getUnderlyingType()); // note(gmm): uses of `getTypePtr` are ignoring modifiers such as `const`
-	output() << fmt::rparen;
-  }
-
-  void
-  VisitCXXRecordDecl (const CXXRecordDecl *decl) {
-	if (decl != decl->getCanonicalDecl())
-	  return;
-
-	ctor("Dstruct") << "\"" << decl->getNameAsString() << "\"" << fmt::nbsp;
-
-	// print the base classes
-	auto print_base = [this](const CXXBaseSpecifier &base) {
-	  if (base.isVirtual()) {
-		error() << "virtual base classes not supported\n";
-	  }
-	  auto rec = dyn_cast<RecordType>(base.getType().getTypePtr());
-	  if (rec) {
-		this->printGlobalName(rec->getDecl());
-	  } else {
-		error() << "base class is not a RecordType";
-	  }
-	};
-	PRINT_LIST(decl->bases, print_base)
-
-	output() << fmt::nbsp;
-	// print the fields
-	auto print_field = [this](const FieldDecl *field) {
-	  output() << "(\"" << field->getNameAsString() << "\"," << fmt::nbsp;
-	  printQualType(field->getType());
-	  output() << ")";
-	};
-	PRINT_LIST(decl->field, print_field)
-	output() << fmt::nbsp;
-
-	// print the methods
-	auto print_method = [this](const CXXMethodDecl *decl) {
-	  // todo(gmm): this is probably wrong because of subtyping. we need to handle constructors
-	  // and destructors separately.
-	  goDecl(decl);
-	};
-	PRINT_LIST(decl->method, print_method)
-
-	output() << fmt::rparen;
-  }
-
-  void
-  printFunction(const FunctionDecl *decl) {
-	PRINT_LIST(decl->param, printParam.Visit);
-	output() << fmt::nbsp;
-	printQualType(decl->getCallResultType());
-	output() << fmt::nbsp;
-	if (decl->getBody()) {
-	  output() << fmt::lparen << "Some" << fmt::nbsp;
-	  goStmt(decl->getBody());
-	  output() << fmt::rparen;
-	} else {
-	  output() << "None";
-	}
-  }
-
-  void
-  VisitFunctionDecl (const FunctionDecl *decl) {
-	output() << fmt::line << fmt::lparen << "Dfunction \"" << decl->getNameAsString() << "\"" << fmt::nbsp;
-	printFunction(decl);
-	output() << fmt::rparen;
-  }
-
-  void
-  VisitCXXMethodDecl (const CXXMethodDecl *decl) {
-	this->VisitFunctionDecl(decl);
-  }
-
-  void
-  VisitCXXConstructorDecl (const CXXConstructorDecl *decl) {
-	output() << fmt::line << fmt::lparen << "Dconstructor" << fmt::nbsp;
-	PRINT_LIST(decl->param, printParam.Visit);
-	output() << fmt::nbsp;
-	if (decl->getBody()) {
-	  output() << fmt::lparen << "Some" << fmt::nbsp;
-	  goStmt(decl->getBody());
-	  output() << fmt::rparen;
-	} else {
-	  output() << "None";
-	}
-	output() << fmt::rparen;
-  }
-
-  void
-  VisitCXXDestructorDecl (const CXXDestructorDecl *decl) {
-  	output() << fmt::line << fmt::lparen << "Ddestructor" << fmt::nbsp;
-	if (decl->getBody()) {
-	  output() << fmt::lparen << "Some" << fmt::nbsp;
-	  goStmt(decl->getBody());
-	  output() << fmt::rparen;
-	} else {
-	  output() << "None";
-	}
-  	output() << fmt::rparen;
-  }
-
-  void
-  VisitVarDecl (const VarDecl *decl) {
-	ctor("Dvar") << "\"" << decl->getNameAsString() << "\"" << fmt::nbsp;
-	printQualType(decl->getType());
-	if (decl->hasInit()) {
-	  output() << fmt::line << fmt::nbsp << fmt::lparen << "Some" << fmt::nbsp;
-	  goExpr(decl->getInit());
-	  output() << fmt::rparen;
-	} else {
-	  output() << "None";
-	}
-	output() << fmt::rparen;
-  }
-
-  void
-  VisitUsingDecl (const UsingDecl *decl) {
-	output() << "Dempty"; // note(gmm): this is an artifact because of the way that lists work
-  }
-
-  void
-  VisitUsingDirectiveDecl(const UsingDirectiveDecl *decl) {
-	output() << "Dempty";
-  }
-
-  void
-  VisitNamespaceDecl (const NamespaceDecl *decl) {
-	ctor("Dnamespace") << fmt::nbsp << "\"" << decl->getNameAsString() << "\" ";
-	PRINT_LIST(decl->decls, goDecl)
-	output() << fmt::rparen;
-  }
-
-  void
-  VisitEnumDecl (const EnumDecl *decl) {
-	ctor("Denum") << "\"" << decl->getNameAsString() << "\"" << fmt::nbsp;
-	auto t = decl->getIntegerType();
-	if (!t.isNull()) {
-	  ctor("Some");
-	  printQualType(decl->getIntegerType());
-	  output() << fmt::rparen;
-	} else {
-	  output() << "None";
-	}
-	output() << fmt::nbsp;;
-
-	auto print_case = [this](const EnumConstantDecl *i) {
-	  output() << fmt::line << "(\"" << i->getNameAsString() << "\",";
-	  output() << fmt::nbsp;;
-	  if (auto init = i->getInitExpr()) {
-		output() << "Some" << fmt::nbsp;;
-		goExpr(init);
-	  } else {
-		output() << "None";
-	  }
-	  output() << ")";
-	};
-
-	PRINT_LIST(decl->enumerator, print_case)
-
-	output() << fmt::rparen;
-  }
-
-  void
-  VisitLinkageSpecDecl (const LinkageSpecDecl *decl) {
-	// todo(gmm): need to do the language spec
-	ctor("Dextern");
-	PRINT_LIST(decl->decls, goDecl)
-	output() << fmt::rparen;
-  }
-
-  void
-  VisitFunctionTemplateDecl(const FunctionTemplateDecl *decl) {
-	// note(gmm): for now, i am just going to return the type of the specializations.
-	ctor("Dtemplate_function");
-
-	PRINT_LIST(decl->spec, goDecl)
-
-	output() << fmt::rparen;
+  printExpr (const Stmt* d) {
+	exprPrinter.Visit(d);
   }
 
 private:
@@ -961,14 +978,14 @@ private:
 void
 declToCoq (ASTContext *ctxt, const clang::Decl* decl) {
   Formatter fmt(llvm::outs());
-  ToCoq(ctxt, fmt).goDecl(decl);
+  ToCoq(ctxt, fmt).printDecl(decl);
 }
 
 
 void
 stmtToCoq (ASTContext *ctxt, const clang::Stmt* stmt) {
   Formatter fmt(llvm::outs());
-  ToCoq(ctxt, fmt).goStmt(stmt);
+  ToCoq(ctxt, fmt).printStmt(stmt);
 }
 
 void toCoqModule(clang::ASTContext *ctxt, const clang::TranslationUnitDecl *decl) {
@@ -978,6 +995,6 @@ void toCoqModule(clang::ASTContext *ctxt, const clang::TranslationUnitDecl *decl
       << "Local Open Scope string_scope." << fmt::line
 	  << "Import ListNotations." << fmt::line;
 
-  ToCoq(ctxt, fmt).goDecl(decl);
+  ToCoq(ctxt, fmt).printDecl(decl);
 }
 
