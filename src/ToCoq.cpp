@@ -828,9 +828,19 @@ private:
 			ctor("Some");
 			ctor("UserDefined") << fmt::lparen;
 			auto print_init = [this](const CXXCtorInitializer* init) {
-			  output() << fmt::lparen << "\"" << init->getMember()->getNameAsString() << "\"," << fmt::nbsp;
-			  parent->printExpr(init->getInit());
-			  output() << fmt::rparen;
+			  if (init->isMemberInitializer()) {
+				output() << fmt::lparen << "Field \"" << init->getMember()->getNameAsString() << "\"," << fmt::nbsp;
+				parent->printExpr(init->getInit());
+				output() << fmt::rparen;
+			  } else if (init->isBaseInitializer()) {
+				output() << fmt::lparen << "Base" << fmt::nbsp;
+				parent->printGlobalName(init->getBaseClass()->getAsCXXRecordDecl());
+			    output() << "," << fmt::nbsp;
+				parent->printExpr(init->getInit());
+				output() << fmt::rparen;
+			  } else {
+				error() << "[ERR] unknown base initializer\n";
+			  }
 			};
 			PRINT_LIST(cd->init, print_init)
 			output() << "," << fmt::nbsp;
@@ -1038,6 +1048,10 @@ private:
 		output() << fmt::rparen;
 		return true;
   	  } else {
+  		if (decl->isVirtual()) {
+  		  error() << "[ERR] virtual functions not supported: " << decl->getNameAsString() << "\n";
+  		  return false;
+  		}
   		ctor("Dmethod") << "\"" << decl->getNameAsString() << "\"" << fmt::nbsp;
   		parent->printGlobalName(decl->getParent());
   		output() << fmt::nbsp;

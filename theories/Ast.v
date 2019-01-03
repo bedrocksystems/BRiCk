@@ -128,9 +128,14 @@ Variant OrDefault {t : Set} : Set :=
 | UserDefined (_ : t).
 Arguments OrDefault : clear implicits.
 
+Variant FieldOrBase {f b : Set} : Set :=
+| Base (_ : b)
+| Field (_ : f).
+Arguments FieldOrBase : clear implicits.
+
 Record Ctor : Set :=
 { c_params : list (ident * type)
-; c_body   : option (OrDefault (list (ident * Expr) * Stmt))
+; c_body   : option (OrDefault (list (FieldOrBase ident globname * Expr) * Stmt))
 }.
 
 Record Func : Set :=
@@ -148,7 +153,7 @@ Record Struct {Decl : Set} : Set :=
   (* ^ constructors *)
 ; s_dtor  : option (OrDefault Stmt)
   (* ^ destructor *)
-; s_nested  : list Decl
+; s_nested : list Decl
   (* ^ non-members, e.g. nested types, static functions, etc. *)
 }.
 Arguments Struct : clear implicits.
