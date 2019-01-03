@@ -823,6 +823,7 @@ private:
 		  PRINT_LIST(cd->param, parent->printParam);
 		  output() << fmt::line << " ; c_body :=" << fmt::nbsp << fmt::indent << fmt::indent;
 		  if (cd->isDefaulted()) {
+			// todo(gmm): i need to figure out how to generate the default constructors
 			output() << "(Some Default)";
 		  } else if (cd->hasBody()) {
 			ctor("Some");
