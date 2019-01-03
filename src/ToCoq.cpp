@@ -803,40 +803,31 @@ private:
 	  output() << fmt::outdent;
 
 	  // print the constructors
-	  output() << fmt::line << "; s_ctors :=" << fmt::indent << fmt::nbsp;
-	  output() << fmt::line << "[" << fmt::nbsp << fmt::indent;
-	  {
-		bool first = true;
-		for (auto i = decl->ctor_begin(), e = decl->ctor_end(); i != e; ++i) {
-		  if (!first) {
-			output() << fmt::outdent << fmt::line << ";" << fmt::indent << fmt::nbsp;
-		  }
+	  output() << fmt::line << "; s_ctors :=" << fmt::indent << fmt::line;
+	  for (auto i = decl->ctor_begin(), e = decl->ctor_end(); i != e; ++i) {
+		const CXXConstructorDecl *cd = *i;
+		if (cd->isDeleted()) {
+		  error() << "[INFO] skipping deleted constructor\n";
+		} else {
+		  output() << "{| c_params :=" << fmt::nbsp;
+		  PRINT_LIST(cd->param, parent->printParam);
 
-		  const CXXConstructorDecl *cd = *i;
-		  if (cd->isDeleted()) {
-			error() << "[INFO] skipping deleted constructor\n";
-			continue;
+		  output() << fmt::line << " ; c_body :=" << fmt::nbsp << fmt::indent << fmt::indent;
+		  if (cd->isDefaulted()) {
+			output() << "(Some Default)";
+		  } else if (cd->hasBody()) {
+			ctor("Some");
+			ctor("UserDefined");
+			parent->printStmt(cd->getBody());
+			output() << fmt::rparen << fmt::rparen;
 		  } else {
-			output() << "{| c_params :=" << fmt::nbsp;
-			PRINT_LIST(cd->param, parent->printParam);
-
-			output() << fmt::line << " ; c_body :=" << fmt::nbsp << fmt::indent << fmt::indent;
-			if (cd->isDefaulted()) {
-			  output() << "(Some Default)";
-			} else if (cd->hasBody()) {
-			  ctor("Some");
-			  ctor("UserDefined");
-			  parent->printStmt(cd->getBody());
-			  output() << fmt::rparen << fmt::rparen;
-			} else {
-			  output() << "None";
-			}
-			output() << fmt::outdent << fmt::outdent << fmt::nbsp << "|}";
+			output() << "None";
 		  }
-		  first = false;
+		  output() << fmt::outdent << fmt::outdent << fmt::nbsp << "|}";
+		  output() << "::" << fmt::nbsp;
 		}
 	  }
-	  output() << fmt::outdent << fmt::outdent << "]" << fmt::line;
+	  output() << fmt::outdent << "nil" << fmt::line;
 
 	  // print the destructor
 	  output() << fmt::line << "; s_dtor :=" << fmt::nbsp << fmt::indent;
@@ -847,8 +838,9 @@ private:
 		  ctor("Some") << "Default" << fmt::rparen;
 		} else {
 		  ctor("Some");
+		  ctor("UserDefined");
 		  parent->printStmt(dd->getBody());
-		  output() << fmt::rparen;
+		  output() << fmt::rparen << fmt::rparen;
 		}
 	  } else {
 		ctor("Some") << "Default" << fmt::rparen;
@@ -1064,18 +1056,14 @@ public:
 
   void
   translateModule (const TranslationUnitDecl* decl) {
-	output() << "Definition module : list Decl :=" << fmt::line;
-	output() << "[" << fmt::nbsp << fmt::indent;
-	for (auto i = decl->decls_begin(), e = decl->decls_end(); i != e; ) {
+	output() << "Definition module : list Decl :=" << fmt::indent << fmt::line;
+	for (auto i = decl->decls_begin(), e = decl->decls_end(); i != e; ++i) {
 	  if (printDecl(*i)) {
-		if (++i != e)
-		  output() << ";" << fmt::line;
-	  } else {
-		++i;
+		output() << fmt::line << "::" << fmt::nbsp;
 	  }
 	}
-	output() << fmt::outdent << "]";
-	output() << "." << fmt::line;
+	output() << "nil." << fmt::outdent;
+	output() << fmt::line;
   }
 
 private:
