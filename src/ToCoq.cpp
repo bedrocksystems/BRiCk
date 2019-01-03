@@ -212,10 +212,15 @@ private:
 
 	void
 	VisitType (const Type* type) {
-	  error() << "Unsupported type: ";
+	  error() << "[ERR] unsupported type: ";
 	  type->dump(error());
 	  error() << "\n";
 	  output() << "(Tunknown \"" << type->getTypeClassName() << "\")";
+	}
+
+	void
+	VisitTemplateTypeParmType(const TemplateTypeParmType *type) {
+	  ctor("Ttemplate") << "\"" << type->getDecl()->getNameAsString() << "\"" << fmt::rparen;
 	}
 
 	void
@@ -341,7 +346,7 @@ private:
   class PrintLocalDecl : public ConstDeclVisitor<PrintLocalDecl, void>
   {
   private:
-	ToCoq *parent;
+	ToCoq *const parent;
 
 	DELEGATE_OUTPUT(parent)
 
@@ -373,7 +378,7 @@ private:
   class PrintParam : public ConstDeclVisitor<PrintParam, void>
   {
   private:
-	ToCoq *parent;
+	ToCoq *const parent;
 
 	DELEGATE_OUTPUT(parent)
 
@@ -397,7 +402,9 @@ private:
   class PrintStmt : public ConstStmtVisitor<PrintStmt, void>
   {
   private:
-	ToCoq *parent;DELEGATE_OUTPUT(parent)
+	ToCoq *const parent;
+
+	DELEGATE_OUTPUT(parent)
   public:
 	PrintStmt (ToCoq *_parent)
 		: parent(_parent) {
@@ -514,7 +521,8 @@ private:
   class PrintExpr : public ConstStmtVisitor<PrintExpr, void>
   {
   private:
-	ToCoq *parent;DELEGATE_OUTPUT(parent)
+	ToCoq *const parent;
+	DELEGATE_OUTPUT(parent)
   public:
 	PrintExpr (ToCoq *_parent)
 		: parent(_parent) {
@@ -727,7 +735,7 @@ private:
 
   class PrintDecl : public ConstDeclVisitor<PrintDecl, bool> {
   protected:
-  	ToCoq *parent;
+  	ToCoq *const parent;
 
   	DELEGATE_OUTPUT(parent)
 
@@ -965,8 +973,12 @@ private:
 
 	bool
 	VisitFunctionTemplateDecl(const FunctionTemplateDecl *decl) {
-	  // note(gmm): for now, i am just going to return the type of the specializations.
+	  // note(gmm): for now, i am just going to return the specializations.
 	  ctor("Dtemplate_function");
+
+
+	  parent->printDecl(decl->getTemplatedDecl());
+	  output() << fmt::nbsp;
 
 	  PRINT_LIST(decl->spec, parent->printDecl)
 
@@ -977,7 +989,7 @@ private:
 
   class PrintMemberDecl : public ConstDeclVisitor<PrintMemberDecl, bool> {
   protected:
-	ToCoq *parent;
+	ToCoq *const parent;
 
 	DELEGATE_OUTPUT(parent)
 	const CXXRecordDecl *const record;
@@ -988,7 +1000,7 @@ private:
 
   	bool
 	VisitDecl(const Decl *decl) {
-  	  error() << "[WARN] printing member, got type " << decl->getDeclKindName() << "\n";
+  	  error() << "[ERR] printing member, got type " << decl->getDeclKindName() << "\n";
   	  return false;
   	}
 

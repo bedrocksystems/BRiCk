@@ -30,7 +30,8 @@ Inductive type : Set :=
 | Tref (_ : globname)
 | Tfunction (_ : type) (_ : list type)
 | Tqualified (_ : type_qualifiers) (_ : type)
-| Tbool.
+| Tbool
+| Ttemplate (_ : ident).
 
 
 Definition Qconst_volatile : type -> type :=
@@ -167,7 +168,7 @@ Inductive Decl : Set :=
   (* ^ enumerations (the initializers need to be constant expressions) *)
 | Dnamespace   (_ : ident) (_ : list Decl)
   (* ^ this will be erased *)
-| Dexterns                 (_ : list Decl)
+| Dextern                  (_ : list Decl)
 | Dtemplate_function       (_ : Decl) (instantiations : list Decl)
   (* ^ right now this just expands the template, it should change *)
 .
