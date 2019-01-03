@@ -57,6 +57,7 @@ Class Ctxt :  Type :=
 *)
 
 Variant Cast : Set :=
+| Cdependent (* this doesn't have any semantics *)
 | Cbitcast
 | Clvaluebitcast
 | Cl2r

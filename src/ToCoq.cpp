@@ -14,6 +14,8 @@ void
 printCastKind (Formatter& out, const CastKind ck) {
   if (ck == CastKind::CK_LValueToRValue) {
 	out << "Cl2r";
+  } else if (ck == CastKind::CK_Dependent) {
+	out << "Cdependent";
   } else if (ck == CastKind::CK_FunctionToPointerDecay) {
 	out << "Cfunction2pointer";
   } else if (ck == CastKind::CK_NoOp) {
@@ -925,8 +927,13 @@ private:
 
 	bool
 	VisitNamespaceDecl (const NamespaceDecl *decl) {
-	  ctor("Dnamespace") << fmt::nbsp << "\"" << decl->getNameAsString() << "\" ";
-	  PRINT_LIST(decl->decls, parent->printDecl)
+	  ctor("Dnamespace") << "\"" << decl->getNameAsString() << "\"" << fmt::line << fmt::lparen;
+	  for (auto d : decl->decls()) {
+		if(parent->printDecl(d)) {
+		  output() << "::" << fmt::nbsp;
+		}
+	  }
+	  output() << "nil" << fmt::rparen;
 	  output() << fmt::rparen;
 	  return true;
 	}
@@ -982,9 +989,8 @@ private:
 		  output() << "(NotType" << fmt::nbsp;
 		  parent->printQualType(nt->getType());
 		  output() << ",\"" << (*i)->getNameAsString() << "\") ::" << fmt::nbsp;
-		} else if (auto *nt = dyn_cast<TemplateTypeParmDecl>(*i)) {
+		} else if (isa<TemplateTypeParmDecl>(*i)) {
 		  output() << "(Typename, \"" << (*i)->getNameAsString() << "\") ::" << fmt::nbsp;
-
 		} else {
 		  error() << "[ERR] unsupported template parameter type " << (*i)->getDeclKindName() << "\n";
 		}
