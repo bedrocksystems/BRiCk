@@ -152,6 +152,10 @@ Record Struct {Decl : Set} : Set :=
 }.
 Arguments Struct : clear implicits.
 
+Variant OrType {t : Set} : Set :=
+| Typename
+| NotType (_ : t).
+Arguments OrType : clear implicits.
 
 (* global declarations *)
 Inductive Decl : Set :=
@@ -169,12 +173,10 @@ Inductive Decl : Set :=
 | Dnamespace   (_ : ident) (_ : list Decl)
   (* ^ this will be erased *)
 | Dextern                  (_ : list Decl)
-| Dtemplate_function       (_ : Decl) (instantiations : list Decl)
+| Dtemplated   (_ : list (OrType type * ident)) (_ : Decl)
+               (instantiations : list Decl)
   (* ^ right now this just expands the template, it should change *)
 .
-
-
-
 
 Coercion Sexpr : Expr >-> Stmt.
 

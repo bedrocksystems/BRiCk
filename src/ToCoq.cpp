@@ -974,8 +974,22 @@ private:
 	bool
 	VisitFunctionTemplateDecl(const FunctionTemplateDecl *decl) {
 	  // note(gmm): for now, i am just going to return the specializations.
-	  ctor("Dtemplate_function");
+	  ctor("Dtemplated");
 
+	  output() << "(";
+	  for (auto i = decl->getTemplateParameters()->begin(), e = decl->getTemplateParameters()->end(); i != e; ++i) {
+		if (auto *nt = dyn_cast<NonTypeTemplateParmDecl>(*i)) {
+		  output() << "(NotType" << fmt::nbsp;
+		  parent->printQualType(nt->getType());
+		  output() << ",\"" << (*i)->getNameAsString() << "\") ::" << fmt::nbsp;
+		} else if (auto *nt = dyn_cast<TemplateTypeParmDecl>(*i)) {
+		  output() << "(Typename, \"" << (*i)->getNameAsString() << "\") ::" << fmt::nbsp;
+
+		} else {
+		  error() << "[ERR] unsupported template parameter type " << (*i)->getDeclKindName() << "\n";
+		}
+	  }
+	  output() << "nil)";
 
 	  parent->printDecl(decl->getTemplatedDecl());
 	  output() << fmt::nbsp;
