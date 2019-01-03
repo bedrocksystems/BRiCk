@@ -130,7 +130,7 @@ Arguments OrDefault : clear implicits.
 
 Record Ctor : Set :=
 { c_params : list (ident * type)
-; c_body   : option (OrDefault Stmt)
+; c_body   : option (OrDefault (list (ident * Expr) * Stmt))
 }.
 
 Record Func : Set :=

@@ -821,15 +821,21 @@ private:
 		} else {
 		  output() << "{| c_params :=" << fmt::nbsp;
 		  PRINT_LIST(cd->param, parent->printParam);
-
 		  output() << fmt::line << " ; c_body :=" << fmt::nbsp << fmt::indent << fmt::indent;
 		  if (cd->isDefaulted()) {
 			output() << "(Some Default)";
 		  } else if (cd->hasBody()) {
 			ctor("Some");
-			ctor("UserDefined");
+			ctor("UserDefined") << fmt::lparen;
+			auto print_init = [this](const CXXCtorInitializer* init) {
+			  output() << fmt::lparen << "\"" << init->getMember()->getNameAsString() << "\"," << fmt::nbsp;
+			  parent->printExpr(init->getInit());
+			  output() << fmt::rparen;
+			};
+			PRINT_LIST(cd->init, print_init)
+			output() << "," << fmt::nbsp;
 			parent->printStmt(cd->getBody());
-			output() << fmt::rparen << fmt::rparen;
+			output() << fmt::rparen << fmt::rparen << fmt::rparen;
 		  } else {
 			output() << "None";
 		  }
