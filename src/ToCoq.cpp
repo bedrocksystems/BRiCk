@@ -5,6 +5,7 @@
 #include "clang/AST/StmtVisitor.h"
 #include "clang/AST/DeclVisitor.h"
 #include "clang/AST/TypeVisitor.h"
+#include "DeclVisitorWithArgs.h"
 
 
 using namespace clang;
@@ -79,6 +80,84 @@ printCastKind (Formatter& out, const CastKind ck) {
 	  output() << "None"; \
 	}
 
+class Filter {
+public:
+  enum What : unsigned int {
+	NOTHING = 0,
+	DECLARATION = 1,
+	DEFINITION = 2
+  };
+
+  static
+  What
+  min(What a, What b) {
+	if (a < b) { return a; } else { return b; }
+  }
+
+  virtual What shouldInclude(const Decl*) = 0;
+};
+
+template<Filter::What def>
+class Default : public Filter {
+public:
+  virtual What shouldInclude(const Decl*) { return def; }
+};
+
+class NoInclude : public Filter {
+private:
+  const SourceManager &SM;
+
+public:
+  NoInclude(SourceManager &_SM):SM(_SM) {}
+
+  virtual
+  What
+  shouldInclude(const Decl *d) {
+	SourceLocation loc = d->getSourceRange().getBegin();
+	if (!loc.isValid()) {
+	  return What::DECLARATION;
+	} else {
+	  PresumedLoc PLoc = SM.getPresumedLoc(d->getSourceRange().getBegin());
+	  if (PLoc.isInvalid()) {
+		return What::DECLARATION;
+	  } else {
+		if (PLoc.getIncludeLoc().isValid()) {
+		  return What::DECLARATION;
+		} else {
+		  return What::DEFINITION;
+		}
+	  }
+	}
+  }
+};
+
+class NoPrivate : public Filter {
+public:
+  virtual What
+  shouldInclude(const Decl *d) {
+	return What::DEFINITION;
+  }
+};
+
+class Least : public Filter {
+private:
+  const std::list<Filter*> &filters;
+public:
+  Least(std::list<Filter*> &f):filters(f) {}
+
+  virtual What
+  shouldInclude(const Decl *d) {
+	What result = What::DEFINITION;
+
+	for (auto x : filters) {
+	  result = Filter::min(result, x->shouldInclude(d));
+	}
+
+	return result;
+  }
+};
+
+
 /*
  * note(gmm): ideally, i wouldn't really need nested classes here, instead
  * i would just pass the `Formatter` argument to each of the classes and everything
@@ -102,7 +181,7 @@ private:
   }
 
   void
-  writeDeclContext(const DeclContext *ctx) {
+  printDeclContext(const DeclContext *ctx) {
 	std::list<const DeclContext*> ctxs;
 
 	ctxs.push_front(ctx);
@@ -146,7 +225,7 @@ private:
   printGlobalName(const NamedDecl *decl) {
 	assert(!decl->getDeclContext()->isFunctionOrMethod());
 	output() << fmt::indent << "{| g_path :=" << fmt::nbsp;
-	writeDeclContext(decl->getDeclContext());
+	printDeclContext(decl->getDeclContext());
 	output() << "; g_name :=" << fmt::nbsp << "\"" << decl->getNameAsString() << "\" |}";
 	output() << fmt::outdent;
   }
@@ -183,14 +262,14 @@ private:
   }
 
   void
-  printFunction(const FunctionDecl *decl) {
+  printFunction(const FunctionDecl *decl, Filter::What what) {
 	output() << "{| f_return :=" << fmt::indent;
 	output() << fmt::nbsp;
 	printQualType(decl->getCallResultType());
 	output() << "; f_params :=" << fmt::nbsp;
 	PRINT_LIST(decl->param, printParam);
 	output() << "; f_body :=" << fmt::nbsp;
-	if (decl->getBody()) {
+	if (decl->getBody() && what >= Filter::DEFINITION) {
 	  output() << fmt::lparen << "Some" << fmt::nbsp;
 	  printStmt(decl->getBody());
 	  output() << fmt::rparen;
@@ -345,7 +424,7 @@ private:
 	}
   };
 
-  class PrintLocalDecl : public ConstDeclVisitor<PrintLocalDecl, void>
+  class PrintLocalDecl : public ConstDeclVisitorArgs<PrintLocalDecl, void>
   {
   private:
 	ToCoq *const parent;
@@ -377,7 +456,7 @@ private:
 	}
   };
 
-  class PrintParam : public ConstDeclVisitor<PrintParam, void>
+  class PrintParam : public ConstDeclVisitorArgs<PrintParam, void>
   {
   private:
 	ToCoq *const parent;
@@ -735,7 +814,7 @@ private:
 	}
   };
 
-  class PrintDecl : public ConstDeclVisitor<PrintDecl, bool> {
+  class PrintDecl : public ConstDeclVisitorArgs<PrintDecl, bool, Filter::What> {
   protected:
   	ToCoq *const parent;
 
@@ -747,33 +826,33 @@ private:
 	}
 
 	bool
-	VisitDecl (const Decl* d) {
+	VisitDecl (const Decl* d, Filter::What what) {
 	  error() << "visiting declaration..." << d->getDeclKindName() << "\n";
 	  return false;
 	}
 
 	bool
-	VisitTypeDecl (const TypeDecl* type) {
+	VisitTypeDecl (const TypeDecl* type, Filter::What what) {
 	  error() << "unsupported type declaration `" << type->getDeclKindName()
 		  << "`\n";
 	  return false;
 	}
 
 	bool
-	VisitEmptyDecl (const EmptyDecl *decl) {
+	VisitEmptyDecl (const EmptyDecl *decl, Filter::What what) {
 	  return false;
 	}
 
 	bool
-	VisitTypedefNameDecl (const TypedefNameDecl* type) {
+	VisitTypedefNameDecl (const TypedefNameDecl* type, Filter::What what) {
 	  output() << fmt::lparen << "Dtypedef \"" << type->getNameAsString() << "\"" << fmt::nbsp;
-	  parent->printQualType(type->getUnderlyingType()); // note(gmm): uses of `getTypePtr` are ignoring modifiers such as `const`
+	  parent->printQualType(type->getUnderlyingType());
 	  output() << fmt::rparen;
 	  return true;
 	}
 
 	bool
-	VisitCXXRecordDecl (const CXXRecordDecl *decl) {
+	VisitCXXRecordDecl (const CXXRecordDecl *decl, Filter::What what) {
 	  if (decl != decl->getCanonicalDecl())
 		return false;
 
@@ -880,7 +959,7 @@ private:
 		PrintMemberDecl printMemberDecl(this->parent, decl);
 		for (auto i = decl->method_begin(), e = decl->method_end(); i != e; ++i) {
 		  if (!isa<CXXConstructorDecl>(*i) && !isa<CXXDestructorDecl>(*i)) {
-			if (printMemberDecl.Visit(*i)) {
+			if (printMemberDecl.Visit(*i, what)) {
 			  output() << fmt::line << "::" << fmt::nbsp;
 			}
 		  }
@@ -893,35 +972,35 @@ private:
 	}
 
 	bool
-	VisitFunctionDecl (const FunctionDecl *decl) {
+	VisitFunctionDecl (const FunctionDecl *decl, Filter::What what) {
 	  ctor("Dfunction") << "\"" << decl->getNameAsString() << "\"" << fmt::nbsp;
-	  parent->printFunction(decl);
+	  parent->printFunction(decl, what);
 	  output() << fmt::rparen;
 	  return true;
 	}
 
 	bool
-	VisitCXXMethodDecl (const CXXMethodDecl *decl) {
+	VisitCXXMethodDecl (const CXXMethodDecl *decl, Filter::What what) {
 	  // note(gmm): method bodies are recorded inline in the class, so we don't need
 	  // to print them when we are not inside the class.
 	  return false;
 	}
 
 	bool
-	VisitCXXConstructorDecl (const CXXConstructorDecl *decl) {
+	VisitCXXConstructorDecl (const CXXConstructorDecl *decl, Filter::What what) {
 	  return false;
 	}
 
 	bool
-	VisitCXXDestructorDecl (const CXXDestructorDecl *decl) {
+	VisitCXXDestructorDecl (const CXXDestructorDecl *decl, Filter::What what) {
 	  return false;
 	}
 
 	bool
-	VisitVarDecl (const VarDecl *decl) {
+	VisitVarDecl (const VarDecl *decl, Filter::What what) {
 	  ctor("Dvar") << "\"" << decl->getNameAsString() << "\"" << fmt::nbsp;
 	  parent->printQualType(decl->getType());
-	  if (decl->hasInit()) {
+	  if (decl->hasInit() && what >= Filter::DEFINITION) {
 		output() << fmt::line << fmt::nbsp << fmt::lparen << "Some" << fmt::nbsp;
 		parent->printExpr(decl->getInit());
 		output() << fmt::rparen;
@@ -933,21 +1012,23 @@ private:
 	}
 
 	bool
-	VisitUsingDecl (const UsingDecl *decl) {
+	VisitUsingDecl (const UsingDecl *decl, Filter::What what) {
 	  return false;
 	}
 
 	bool
-	VisitUsingDirectiveDecl(const UsingDirectiveDecl *decl) {
+	VisitUsingDirectiveDecl(const UsingDirectiveDecl *decl, Filter::What what) {
 	  return false;
 	}
 
 	bool
-	VisitNamespaceDecl (const NamespaceDecl *decl) {
+	VisitNamespaceDecl (const NamespaceDecl *decl, Filter::What what) {
 	  ctor("Dnamespace") << "\"" << decl->getNameAsString() << "\"" << fmt::line << fmt::lparen;
-	  for (auto d : decl->decls()) {
-		if(parent->printDecl(d)) {
-		  output() << "::" << fmt::nbsp;
+	  if (what >= Filter::What::DEFINITION) {
+		for (auto d : decl->decls()) {
+		  if(parent->printDecl(d)) {
+			output() << "::" << fmt::nbsp;
+		  }
 		}
 	  }
 	  output() << "nil" << fmt::rparen;
@@ -956,7 +1037,7 @@ private:
 	}
 
 	bool
-	VisitEnumDecl (const EnumDecl *decl) {
+	VisitEnumDecl (const EnumDecl *decl, Filter::What what) {
 	  ctor("Denum") << "\"" << decl->getNameAsString() << "\"" << fmt::nbsp;
 	  auto t = decl->getIntegerType();
 	  if (!t.isNull()) {
@@ -968,12 +1049,14 @@ private:
 	  }
 	  output() << fmt::nbsp;;
 
-	  auto print_case = [this](const EnumConstantDecl *i) {
+	  auto print_case = [this, what](const EnumConstantDecl *i) {
 		output() << fmt::line << "(\"" << i->getNameAsString() << "\",";
 		output() << fmt::nbsp;;
 		if (auto init = i->getInitExpr()) {
-		  output() << "Some" << fmt::nbsp;;
-		  parent->printExpr(init);
+		  if (what >= Filter::What::DEFINITION) {
+			output() << "Some" << fmt::nbsp;;
+			parent->printExpr(init);
+		  }
 		} else {
 		  output() << "None";
 		}
@@ -987,7 +1070,7 @@ private:
 	}
 
 	bool
-	VisitLinkageSpecDecl (const LinkageSpecDecl *decl) {
+	VisitLinkageSpecDecl (const LinkageSpecDecl *decl, Filter::What what) {
 	  // todo(gmm): need to do the language spec
 	  ctor("Dextern");
 	  PRINT_LIST(decl->decls, parent->printDecl)
@@ -996,7 +1079,7 @@ private:
 	}
 
 	bool
-	VisitFunctionTemplateDecl(const FunctionTemplateDecl *decl) {
+	VisitFunctionTemplateDecl(const FunctionTemplateDecl *decl, Filter::What what) {
 	  // note(gmm): for now, i am just going to return the specializations.
 	  ctor("Dtemplated");
 
@@ -1024,7 +1107,7 @@ private:
 	}
   };
 
-  class PrintMemberDecl : public ConstDeclVisitor<PrintMemberDecl, bool> {
+  class PrintMemberDecl : public ConstDeclVisitorArgs<PrintMemberDecl, bool, Filter::What> {
   protected:
 	ToCoq *const parent;
 
@@ -1036,16 +1119,16 @@ private:
 	}
 
   	bool
-	VisitDecl(const Decl *decl) {
+	VisitDecl(const Decl *decl, Filter::What what) {
   	  error() << "[ERR] printing member, got type " << decl->getDeclKindName() << "\n";
   	  return false;
   	}
 
   	bool
-	VisitCXXMethodDecl (const CXXMethodDecl *decl) {
+	VisitCXXMethodDecl (const CXXMethodDecl *decl, Filter::What what) {
   	  if (decl->isStatic()) {
   		ctor("Dfunction") << "\"" << decl->getNameAsString() << "\"" << fmt::nbsp;
-		parent->printFunction(decl);
+		parent->printFunction(decl, what);
 		output() << fmt::rparen;
 		return true;
   	  } else {
@@ -1056,7 +1139,7 @@ private:
   		ctor("Dmethod") << "\"" << decl->getNameAsString() << "\"" << fmt::nbsp;
   		parent->printGlobalName(decl->getParent());
   		output() << fmt::nbsp;
-		parent->printFunction(decl);
+		parent->printFunction(decl, what);
 		output() << fmt::rparen;
   		return true;
   	  }
@@ -1070,16 +1153,20 @@ private:
   PrintStmt stmtPrinter;
   PrintExpr exprPrinter;
   PrintDecl declPrinter;
+  Filter *const filter;
 
 public:
   explicit
-  ToCoq(ASTContext *ctxt, Formatter &fmt)
+  ToCoq(ASTContext *ctxt, Formatter &fmt, Filter *f)
   : out(fmt), typePrinter(this), localPrinter(this), paramPrinter(
-  		  this), stmtPrinter(this), exprPrinter(this), declPrinter(this), Context(ctxt) { }
+  		  this), stmtPrinter(this), exprPrinter(this), declPrinter(this), filter(f), Context(ctxt) { }
 
   bool
   printDecl (const Decl* d) {
-	return declPrinter.Visit(d);
+	if (filter->shouldInclude(d) != Filter::What::NOTHING) {
+	  return declPrinter.Visit(d, filter->shouldInclude(d));
+	}
+	return false;
   }
 
   void
@@ -1127,23 +1214,27 @@ private:
 void
 declToCoq (ASTContext *ctxt, const clang::Decl* decl) {
   Formatter fmt(llvm::outs());
-  ToCoq(ctxt, fmt).printDecl(decl);
+  Default<Filter::What::DEFINITION> filter;
+  ToCoq(ctxt, fmt, &filter).printDecl(decl);
 }
 
 
 void
 stmtToCoq (ASTContext *ctxt, const clang::Stmt* stmt) {
   Formatter fmt(llvm::outs());
-  ToCoq(ctxt, fmt).printStmt(stmt);
+  Default<Filter::What::DEFINITION> filter;
+  ToCoq(ctxt, fmt, &filter).printStmt(stmt);
 }
 
-void toCoqModule(clang::ASTContext *ctxt, const clang::TranslationUnitDecl *decl) {
+void
+toCoqModule(clang::ASTContext *ctxt, const clang::TranslationUnitDecl *decl) {
+  NoInclude filter(ctxt->getSourceManager());
   Formatter fmt(llvm::outs());
 
   fmt << "From Cpp Require Import Parser." << fmt::line << fmt::line
       << "Local Open Scope string_scope." << fmt::line
 	  << "Import ListNotations." << fmt::line;
 
-  ToCoq(ctxt, fmt).translateModule(decl);
+  ToCoq(ctxt, fmt, &filter).translateModule(decl);
 }
 
