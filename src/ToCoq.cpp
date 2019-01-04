@@ -3,7 +3,7 @@
 #include "clang/Basic/Version.inc"
 #include "clang/AST/Type.h"
 #include "clang/AST/StmtVisitor.h"
-#include "clang/AST/TypeVisitor.h"
+#include "TypeVisitorWithArgs.h"
 #include "DeclVisitorWithArgs.h"
 
 
@@ -93,6 +93,12 @@ public:
 	if (a < b) { return a; } else { return b; }
   }
 
+  static
+  What
+  max(What a, What b) {
+	if (a < b) { return b; } else { return a; }
+  }
+
   virtual What shouldInclude(const Decl*) = 0;
 };
 
@@ -138,30 +144,56 @@ public:
   }
 };
 
-class Least : public Filter {
+template<Filter::What unit, Filter::What (*combine)(Filter::What, Filter::What)>
+class Combine : public Filter {
 private:
   const std::list<Filter*> &filters;
 public:
-  Least(std::list<Filter*> &f):filters(f) {}
+  Combine(std::list<Filter*> &f):filters(f) {}
 
   virtual What
   shouldInclude(const Decl *d) {
-	What result = What::DEFINITION;
+	What result = unit;
 
 	for (auto x : filters) {
-	  result = Filter::min(result, x->shouldInclude(d));
+	  result = combine(result, x->shouldInclude(d));
 	}
 
 	return result;
   }
 };
 
+class FromComment : public Filter {
+private:
+  const ASTContext *const ctxt;
+public:
+  FromComment(const ASTContext *_ctxt):ctxt(_ctxt) {
+  }
+
+  virtual
+  What
+  shouldInclude(const Decl *d) {
+	if (auto comment = ctxt->getRawCommentForDeclNoCache(d)) {
+	  auto text = comment->getRawText(ctxt->getSourceManager());
+	  if (StringRef::npos != text.find("definition")) {
+		return What::DEFINITION;
+	  } else if (StringRef::npos != text.find("declaration")) {
+		return What::DECLARATION;
+	  } else {
+		return What::NOTHING;
+	  }
+	} else {
+	  // private by default
+	  return What::NOTHING;
+	}
+  }
+};
 
 /*
  * note(gmm): ideally, i wouldn't really need nested classes here, instead
  * i would just pass the `Formatter` argument to each of the classes and everything
  * would be top-level definitions. however, Clang doesn't permit arguments to all
- * of their visitors (only to `TypeVisitor`) so instead we have to have a configuration
+ * of their visitors (only to `StmtVisitor`) so instead we have to have a configuration
  * and then maintain pointers to it everywhere.
  */
 class ToCoq
@@ -1162,8 +1194,9 @@ public:
 
   bool
   printDecl (const Decl* d) {
-	if (filter->shouldInclude(d) != Filter::What::NOTHING) {
-	  return declPrinter.Visit(d, filter->shouldInclude(d));
+	Filter::What what = filter->shouldInclude(d);
+	if (what != Filter::What::NOTHING) {
+	  return declPrinter.Visit(d, what);
 	}
 	return false;
   }
@@ -1227,7 +1260,15 @@ stmtToCoq (ASTContext *ctxt, const clang::Stmt* stmt) {
 
 void
 toCoqModule(clang::ASTContext *ctxt, const clang::TranslationUnitDecl *decl) {
-  NoInclude filter(ctxt->getSourceManager());
+
+  NoInclude noInclude(ctxt->getSourceManager());
+  FromComment fromComment(ctxt);
+  std::list<Filter*> filters;
+  filters.push_back(&noInclude);
+  filters.push_back(&fromComment);
+  Combine<Filter::What::NOTHING, Filter::max> filter(filters);
+
+
   Formatter fmt(llvm::outs());
 
   fmt << "From Cpp Require Import Parser." << fmt::line << fmt::line
