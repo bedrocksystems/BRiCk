@@ -3,7 +3,6 @@
 #include "clang/Basic/Version.inc"
 #include "clang/AST/Type.h"
 #include "clang/AST/StmtVisitor.h"
-#include "clang/AST/DeclVisitor.h"
 #include "clang/AST/TypeVisitor.h"
 #include "DeclVisitorWithArgs.h"
 

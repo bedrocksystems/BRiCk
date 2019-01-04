@@ -68,14 +68,14 @@ public:
 /// ConstDeclVisitor).
 template<typename ImplClass, typename RetTy = void, typename... ParamTys>
 class DeclVisitorArgs
- : public declvisitor2::Base<declvisitor::make_ptr, ImplClass, RetTy, ParamTys...> {};
+ : public declvisitor2::Base<declvisitor2::make_ptr, ImplClass, RetTy, ParamTys...> {};
 
 /// \brief A simple visitor class that helps create declaration visitors.
 ///
 /// This class preserves constness of Decl pointers (see also DeclVisitor).
 template<typename ImplClass, typename RetTy = void, typename... ParamTys>
 class ConstDeclVisitorArgs
- : public declvisitor2::Base<declvisitor::make_const_ptr, ImplClass, RetTy, ParamTys...> {};
+ : public declvisitor2::Base<declvisitor2::make_const_ptr, ImplClass, RetTy, ParamTys...> {};
 
 } // namespace clang
 
