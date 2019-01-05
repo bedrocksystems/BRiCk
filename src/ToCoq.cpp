@@ -5,7 +5,8 @@
 #include "clang/AST/StmtVisitor.h"
 #include "TypeVisitorWithArgs.h"
 #include "DeclVisitorWithArgs.h"
-
+#include "Filter.hpp"
+#include "CommentScanner.hpp"
 
 using namespace clang;
 using namespace fmt;
@@ -43,7 +44,7 @@ printCastKind (Formatter& out, const CastKind ck) {
   } else if (ck == CastKind::CK_BaseToDerived) {
     out << "Cbase2derived";
   } else {
-#if CLANG_VERSION_MAJOR >= 8
+#if CLANG_VERSION_MAJOR >= 7
 	llvm::errs() << "unsupported cast kind \"" << CastExpr::getCastKindName(ck)
 		<< "\"\n";
 #else
@@ -79,116 +80,6 @@ printCastKind (Formatter& out, const CastKind ck) {
 	  output() << "None"; \
 	}
 
-class Filter {
-public:
-  enum What : unsigned int {
-	NOTHING = 0,
-	DECLARATION = 1,
-	DEFINITION = 2
-  };
-
-  static
-  What
-  min(What a, What b) {
-	if (a < b) { return a; } else { return b; }
-  }
-
-  static
-  What
-  max(What a, What b) {
-	if (a < b) { return b; } else { return a; }
-  }
-
-  virtual What shouldInclude(const Decl*) = 0;
-};
-
-template<Filter::What def>
-class Default : public Filter {
-public:
-  virtual What shouldInclude(const Decl*) { return def; }
-};
-
-class NoInclude : public Filter {
-private:
-  const SourceManager &SM;
-
-public:
-  NoInclude(SourceManager &_SM):SM(_SM) {}
-
-  virtual
-  What
-  shouldInclude(const Decl *d) {
-	SourceLocation loc = d->getSourceRange().getBegin();
-	if (!loc.isValid()) {
-	  return What::DECLARATION;
-	} else {
-	  PresumedLoc PLoc = SM.getPresumedLoc(d->getSourceRange().getBegin());
-	  if (PLoc.isInvalid()) {
-		return What::DECLARATION;
-	  } else {
-		if (PLoc.getIncludeLoc().isValid()) {
-		  return What::DECLARATION;
-		} else {
-		  return What::DEFINITION;
-		}
-	  }
-	}
-  }
-};
-
-class NoPrivate : public Filter {
-public:
-  virtual What
-  shouldInclude(const Decl *d) {
-	return What::DEFINITION;
-  }
-};
-
-template<Filter::What unit, Filter::What (*combine)(Filter::What, Filter::What)>
-class Combine : public Filter {
-private:
-  const std::list<Filter*> &filters;
-public:
-  Combine(std::list<Filter*> &f):filters(f) {}
-
-  virtual What
-  shouldInclude(const Decl *d) {
-	What result = unit;
-
-	for (auto x : filters) {
-	  result = combine(result, x->shouldInclude(d));
-	}
-
-	return result;
-  }
-};
-
-class FromComment : public Filter {
-private:
-  const ASTContext *const ctxt;
-public:
-  FromComment(const ASTContext *_ctxt):ctxt(_ctxt) {
-  }
-
-  virtual
-  What
-  shouldInclude(const Decl *d) {
-	if (auto comment = ctxt->getRawCommentForDeclNoCache(d)) {
-	  auto text = comment->getRawText(ctxt->getSourceManager());
-	  if (StringRef::npos != text.find("definition")) {
-		return What::DEFINITION;
-	  } else if (StringRef::npos != text.find("declaration")) {
-		return What::DECLARATION;
-	  } else {
-		return What::NOTHING;
-	  }
-	} else {
-	  // private by default
-	  return What::NOTHING;
-	}
-  }
-};
-
 /*
  * note(gmm): ideally, i wouldn't really need nested classes here, instead
  * i would just pass the `Formatter` argument to each of the classes and everything
@@ -203,111 +94,13 @@ private:
 
   DELEGATE_OUTPUT_I(out)
 
+  // todo(gmm): this should move to Formatter
   fmt::Formatter&
   ctor(const char* ctor, bool line=true) {
 	if (line) {
 	  output() << fmt::line;
 	}
 	return output() << fmt::lparen << ctor << fmt::nbsp;
-  }
-
-  void
-  printDeclContext(const DeclContext *ctx) {
-	std::list<const DeclContext*> ctxs;
-
-	ctxs.push_front(ctx);
-	while ( (ctx = ctx->getParent()) ) {
-	  ctxs.push_front(ctx);
-	}
-
-	// pop the translation unit
-	assert(ctxs.front()->getDeclKind() == Decl::Kind::TranslationUnit);
-	ctxs.pop_front();
-
-	while(!ctxs.empty()) {
-	  const DeclContext *dc = ctxs.front();
-	  ctxs.pop_front();
-
-	  assert(dc);
-
-	  if (const auto *ns = dyn_cast<NamespaceDecl>(dc)) {
-		output() << "\"" << ns->getNameAsString() << "\"" << fmt::nbsp << "!::" << fmt::nbsp;
-	  } else if (const auto *rd = dyn_cast<CXXRecordDecl>(dc)) {
-	  	output() << "\"" << rd->getNameAsString() << "\"" << fmt::nbsp << "!::" << fmt::nbsp;;
-	  } else if (const auto *crd = dyn_cast<RecordDecl>(dc)) {
-		output() << "\"" << crd->getNameAsString() << "\"" << fmt::nbsp << "!::" << fmt::nbsp;;
-	  } else if (const auto *ed = dyn_cast<EnumDecl>(dc)) {
-		output() << "\"" << ed->getNameAsString() << "\"" << fmt::nbsp << "!::" << fmt::nbsp;;
-	  } else if (isa<LinkageSpecDecl>(dc)) {
-		// linkage specifications don't have names
-		continue;
-	  } else if (isa<TranslationUnitDecl>(dc)) {
-		assert(false);
-	  } else {
-		error() << "something unexpected " << dc->getDeclKindName() << "\n";
-		return;
-	  }
-	}
-
-	output() << "NStop";
-  }
-
-  void
-  printGlobalName(const NamedDecl *decl) {
-	assert(!decl->getDeclContext()->isFunctionOrMethod());
-	output() << fmt::indent << "{| g_path :=" << fmt::nbsp;
-	printDeclContext(decl->getDeclContext());
-	output() << "; g_name :=" << fmt::nbsp << "\"" << decl->getNameAsString() << "\" |}";
-	output() << fmt::outdent;
-  }
-
-  void
-  printName(const NamedDecl *decl) {
-	if (decl->getDeclContext()->isFunctionOrMethod()) {
-	  ctor("Lname");
-	  output() << fmt::nbsp << "\"" << decl->getNameAsString() << "\"";
-	} else {
-	  ctor("Gname");
-	  printGlobalName(decl);
-	}
-	output() << fmt::rparen;
-  }
-
-  void
-  printQualType(const QualType &qt) {
-	if (qt.isLocalConstQualified()) {
-	  if (qt.isVolatileQualified()) {
-		ctor("Qconst_volatile");
-	  } else {
-		ctor("Qconst");
-	  }
-	} else {
-	  if (qt.isLocalVolatileQualified()) {
-		ctor("Qmut_volatile");
-	  } else {
-		ctor("Qmut");
-	  }
-	}
-	printType(qt.getTypePtr());
-    output() << fmt::rparen;
-  }
-
-  void
-  printFunction(const FunctionDecl *decl, Filter::What what) {
-	output() << "{| f_return :=" << fmt::indent;
-	output() << fmt::nbsp;
-	printQualType(decl->getCallResultType());
-	output() << "; f_params :=" << fmt::nbsp;
-	PRINT_LIST(decl->param, printParam);
-	output() << "; f_body :=" << fmt::nbsp;
-	if (decl->getBody() && what >= Filter::DEFINITION) {
-	  output() << fmt::lparen << "Some" << fmt::nbsp;
-	  printStmt(decl->getBody());
-	  output() << fmt::rparen;
-	} else {
-	  output() << "None";
-	}
-	output() << fmt::outdent << "|}";
   }
 
   class PrintType : public TypeVisitor<PrintType, void>
@@ -385,17 +178,15 @@ private:
 		output() << "T_uchar";
 	  } else if (type->getKind() == BuiltinType::Kind::Char_U) {
 		output() << "T_uchar";
-#if CLANG_VERSION_MAJOR > 7
 	  } else if (type->getKind() == BuiltinType::Kind::Char8) {
 		output() << "T_char8";
-#endif
 	  } else if (type->getKind() == BuiltinType::Kind::Char32) {
 		output() << "T_char32";
 	  } else if (type->getKind() == BuiltinType::Kind::Void) {
 		output() << "Tvoid";
 	  } else {
 		error() << "Unsupported type \""
-			<< type->getNameAsCString(PrintingPolicy(LangOptions())) << "\"\n";
+			    << type->getNameAsCString(PrintingPolicy(LangOptions())) << "\"\n";
 		output() << "Tunknown";
 	  }
 	}
@@ -777,7 +568,7 @@ private:
 	  output() << fmt::rparen;
 	}
 
-#if CLANG_VERSION_MAJOR >= 7
+#if CLANG_VERSION_MAJOR >= 8
 	void
 	VisitConstantExpr(const ConstantExpr *expr) {
 	  this->Visit(expr->getSubExpr());
@@ -1192,8 +983,55 @@ public:
   : out(fmt), typePrinter(this), localPrinter(this), paramPrinter(
   		  this), stmtPrinter(this), exprPrinter(this), declPrinter(this), filter(f), Context(ctxt) { }
 
+  SourceLocation
+  getStartSourceLocWithComment(const Decl* d) {
+	if (auto comment = Context->getRawCommentForDeclNoCache(d)) {
+	  return comment->getLocStart();
+	} else {
+	  return d->getLocStart();
+	}
+  }
+
+  Decl*
+  getPreviousDeclInContext(const Decl* d) {
+	auto dc = d->getLexicalDeclContext();
+
+	Decl* prev = nullptr;
+	for (auto it : dc->decls()) {
+	  if (it == d) {
+		return prev;
+	  } else {
+		prev = it;
+	  }
+	}
+	return nullptr;
+  }
+
+  SourceLocation
+  getPrevSourceLoc(const Decl* d) {
+	SourceManager &sm = Context->getSourceManager();
+	auto pd = getPreviousDeclInContext(d);
+	if (pd && pd->getLocEnd().isValid()) {
+	  return pd->getLocEnd();
+	} else {
+	  return sm.getLocForStartOfFile(sm.getFileID(d->getSourceRange().getBegin()));
+	}
+  }
+
   bool
   printDecl (const Decl* d) {
+	SourceManager &sm = Context->getSourceManager();
+	auto start = getPrevSourceLoc(d);
+	auto end = getStartSourceLocWithComment(d);
+	if (start.isValid() && end.isValid()) {
+	  comment::CommentScanner comments(StringRef(sm.getCharacterData(start), sm.getCharacterData(end) - sm.getCharacterData(start)));
+	  StringRef comment;
+	  while (comments.next(comment)) {
+		error() << "comment:\n";
+		error() << comment << "\n";
+	  }
+	}
+
 	Filter::What what = filter->shouldInclude(d);
 	if (what != Filter::What::NOTHING) {
 	  return declPrinter.Visit(d, what);
@@ -1227,6 +1065,105 @@ public:
   }
 
   void
+  printDeclContext(const DeclContext *ctx) {
+	std::list<const DeclContext*> ctxs;
+
+	ctxs.push_front(ctx);
+	while ( (ctx = ctx->getParent()) ) {
+	  ctxs.push_front(ctx);
+	}
+
+	// pop the translation unit
+	assert(ctxs.front()->getDeclKind() == Decl::Kind::TranslationUnit);
+	ctxs.pop_front();
+
+	while(!ctxs.empty()) {
+	  const DeclContext *dc = ctxs.front();
+	  ctxs.pop_front();
+
+	  assert(dc);
+
+	  if (const auto *ns = dyn_cast<NamespaceDecl>(dc)) {
+		output() << "\"" << ns->getNameAsString() << "\"" << fmt::nbsp << "!::" << fmt::nbsp;
+	  } else if (const auto *rd = dyn_cast<CXXRecordDecl>(dc)) {
+	  	output() << "\"" << rd->getNameAsString() << "\"" << fmt::nbsp << "!::" << fmt::nbsp;;
+	  } else if (const auto *crd = dyn_cast<RecordDecl>(dc)) {
+		output() << "\"" << crd->getNameAsString() << "\"" << fmt::nbsp << "!::" << fmt::nbsp;;
+	  } else if (const auto *ed = dyn_cast<EnumDecl>(dc)) {
+		output() << "\"" << ed->getNameAsString() << "\"" << fmt::nbsp << "!::" << fmt::nbsp;;
+	  } else if (isa<LinkageSpecDecl>(dc)) {
+		// linkage specifications don't have names
+		continue;
+	  } else if (isa<TranslationUnitDecl>(dc)) {
+		assert(false);
+	  } else {
+		error() << "something unexpected " << dc->getDeclKindName() << "\n";
+		return;
+	  }
+	}
+
+	output() << "NStop";
+  }
+
+  void
+  printGlobalName(const NamedDecl *decl) {
+	assert(!decl->getDeclContext()->isFunctionOrMethod());
+	output() << fmt::indent << "{| g_path :=" << fmt::nbsp;
+	printDeclContext(decl->getDeclContext());
+	output() << "; g_name :=" << fmt::nbsp << "\"" << decl->getNameAsString() << "\" |}";
+	output() << fmt::outdent;
+  }
+
+  void
+  printName(const NamedDecl *decl) {
+	if (decl->getDeclContext()->isFunctionOrMethod()) {
+	  ctor("Lname");
+	  output() << fmt::nbsp << "\"" << decl->getNameAsString() << "\"";
+	} else {
+	  ctor("Gname");
+	  printGlobalName(decl);
+	}
+	output() << fmt::rparen;
+  }
+
+  void
+  printQualType(const QualType &qt) {
+	if (qt.isLocalConstQualified()) {
+	  if (qt.isVolatileQualified()) {
+		ctor("Qconst_volatile");
+	  } else {
+		ctor("Qconst");
+	  }
+	} else {
+	  if (qt.isLocalVolatileQualified()) {
+		ctor("Qmut_volatile");
+	  } else {
+		ctor("Qmut");
+	  }
+	}
+	printType(qt.getTypePtr());
+    output() << fmt::rparen;
+  }
+
+  void
+  printFunction(const FunctionDecl *decl, Filter::What what) {
+	output() << "{| f_return :=" << fmt::indent;
+	output() << fmt::nbsp;
+	printQualType(decl->getCallResultType());
+	output() << "; f_params :=" << fmt::nbsp;
+	PRINT_LIST(decl->param, printParam);
+	output() << "; f_body :=" << fmt::nbsp;
+	if (decl->getBody() && what >= Filter::DEFINITION) {
+	  output() << fmt::lparen << "Some" << fmt::nbsp;
+	  printStmt(decl->getBody());
+	  output() << fmt::rparen;
+	} else {
+	  output() << "None";
+	}
+	output() << fmt::outdent << "|}";
+  }
+
+  void
   translateModule (const TranslationUnitDecl* decl) {
 	output() << "Definition module : list Decl :=" << fmt::indent << fmt::line;
 	for (auto i = decl->decls_begin(), e = decl->decls_end(); i != e; ++i) {
@@ -1246,7 +1183,7 @@ private:
 void
 declToCoq (ASTContext *ctxt, const clang::Decl* decl) {
   Formatter fmt(llvm::outs());
-  Default<Filter::What::DEFINITION> filter;
+  Default filter(Filter::What::DEFINITION);
   ToCoq(ctxt, fmt, &filter).printDecl(decl);
 }
 
@@ -1254,13 +1191,12 @@ declToCoq (ASTContext *ctxt, const clang::Decl* decl) {
 void
 stmtToCoq (ASTContext *ctxt, const clang::Stmt* stmt) {
   Formatter fmt(llvm::outs());
-  Default<Filter::What::DEFINITION> filter;
+  Default filter(Filter::What::DEFINITION);
   ToCoq(ctxt, fmt, &filter).printStmt(stmt);
 }
 
 void
 toCoqModule(clang::ASTContext *ctxt, const clang::TranslationUnitDecl *decl) {
-
   NoInclude noInclude(ctxt->getSourceManager());
   FromComment fromComment(ctxt);
   std::list<Filter*> filters;
