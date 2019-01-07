@@ -21,7 +21,7 @@ private:
 	auto eol = block.find("\n", first);
 	assert(eol != StringRef::npos && "end of line necessary");
 	auto next_comment = block.find("//", eol+1);
-	while (next_comment != StringRef::npos && block.find("\n", eol+1) < next_comment) {
+	while (next_comment != StringRef::npos && block.find("\n", eol+1) > next_comment) {
 	  eol = block.find("\n", next_comment);
 	  next_comment = block.find("//", eol+1);
 	}
@@ -47,7 +47,6 @@ public:
 	auto first_para = block.find("/*", offset);
 
 	if (first_line == StringRef::npos && first_para == StringRef::npos) {
-
 	  return false;
 	} else if (first_line < first_para) {
 	  // this is a line comment, keep getting the next line until there is a line that is not a comment.
