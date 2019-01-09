@@ -1,4 +1,3 @@
-Require Import Coq.NArith.BinNat.
 Require Import Coq.Strings.String.
 
 Set Primitive Projections.
@@ -74,8 +73,27 @@ Variant Cast : Set :=
 | Cconstructorconversion
 .
 
-Definition UnOp : Set := string.
-Definition BinOp : Set := string.
+Variant UnOp : Set :=
+| Uother (_ : string).
+Inductive BinOp : Set :=
+| Badd
+| Band (* & *)
+| Bcmp (* <=> *)
+| Bdiv (* / *)
+| Beq
+| Bge
+| Bgt
+| Ble
+| Blt
+| Bmul
+| Bneq
+| Bor  (* | *)
+| Bmod
+| Bshl
+| Bshr
+| Bxor (* ^ *)
+| Bop_assign (_ : BinOp)
+.
 
 Require Import Coq.ZArith.BinIntDef.
 
@@ -85,12 +103,34 @@ Variant VarRef : Set :=
 
 Inductive Expr : Set :=
 | Evar     (_ : VarRef)
-| Eload    (_ : Expr)
-| Eunop    (_ : UnOp) (_ : Expr)
-| Ebinop   (_ : BinOp) (_ _ : Expr)
+  (* ^ local variable reference *)
 
 | Eint     (_ : Z) (_ : type)
 | Ebool    (_ : bool)
+  (* ^ literals *)
+
+| Eunop    (_ : UnOp) (_ : Expr)
+| Ebinop   (_ : BinOp) (_ _ : Expr)
+ (* ^ note(gmm): overloaded operators are already resolved. so an overloaded
+  * operator shows up as a function call, not a `Eunop` or `Ebinop`.
+  * this includes the assignment operator for classes.
+  *)
+| Ederef (_ : Expr)
+| Eaddrof (_ : Expr)
+| Eassign (_ _ : Expr)
+  (* ^ these are specialized because they are common *)
+
+| Epreinc (_ : Expr)
+| Epostinc (_ : Expr)
+| Epredec (_ : Expr)
+| Epostdec (_ : Expr)
+  (* ^ special unary operators *)
+
+| Eseqand (_ _ : Expr)
+| Eseqor  (_ _ : Expr)
+| Ecomma  (_ _ : Expr)
+  (* ^ these are specialized because they have special control flow semantics *)
+
 | Ecall    (_ : Expr) (_ : list Expr)
 | Ecast    (_ : Cast) (_ : Expr)
 
@@ -102,6 +142,7 @@ Inductive Expr : Set :=
 | Econstructor (_ : globname) (_ : list Expr)
 | Eimplicit (_ : Expr)
 | Eif       (_ _ _ : Expr)
+
 | Ethis
 | Enull
 | Einitlist (_ : list Expr)

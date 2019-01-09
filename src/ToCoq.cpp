@@ -444,9 +444,65 @@ private:
 	}
 
 	void
+	printBinaryOperator(BinaryOperator::Opcode op, StringRef def) {
+	  switch (op) {
+#define CASE(k, s) \
+		case BinaryOperatorKind::BO_##k: output() << s; break;
+		CASE(Add, "Badd")
+		CASE(AddAssign, "(Bop_assign Badd)")
+		CASE(And, "Band")
+		CASE(AndAssign, "(Bop_assign Band)")
+		CASE(Cmp, "Bcmp")
+		CASE(Div, "Bdiv")
+		CASE(DivAssign, "(Bop_assign Bdiv)")
+		CASE(EQ, "Beq")
+		CASE(GE, "Bge")
+		CASE(GT, "Bgt")
+		CASE(LE, "Ble")
+		CASE(LT, "Blt")
+		CASE(Mul, "Bmul")
+		CASE(MulAssign, "(Bop_assign Bmul)")
+		CASE(NE, "Bneq")
+		CASE(Or, "Bor")
+		CASE(OrAssign, "(Bop_assign Bor)")
+		CASE(Rem, "Bmod")
+		CASE(RemAssign, "(Bop_assign Bmod)")
+		CASE(Shl, "Bshl")
+		CASE(ShlAssign, "(Bop_assign Bshl)")
+		CASE(Shr, "Bshr")
+		CASE(ShrAssign, "(Bop_assign Bshr)")
+		CASE(Xor, "Bxor")
+		CASE(XorAssign, "(Bop_assign Bxor)")
+#undef CASE
+		default:
+		  error() << "defaulting binary operator\n";
+		  ctor("Bother") << "\"" <<  def << "\"" << fmt::rparen;
+		  break;
+	  }
+	}
+
+	void
 	VisitBinaryOperator (const BinaryOperator *expr) {
-	  ctor("Ebinop");
-	  output() << "\"" << expr->getOpcodeStr() << "\"" << fmt::nbsp;
+	  switch (expr->getOpcode()) {
+		case BinaryOperatorKind::BO_Comma:
+		  ctor("Ecomma");
+		  break;
+		case BinaryOperatorKind::BO_LAnd:
+		  ctor("Eseqand");
+		  break;
+		case BinaryOperatorKind::BO_LOr:
+		  ctor("Eseqor");
+		  break;
+		case BinaryOperatorKind::BO_Assign:
+		  ctor("Eassign");
+		  break;
+		default:
+		  ctor("Ebinop");
+		  printBinaryOperator(expr->getOpcode(), expr->getOpcodeStr());
+		  output() << fmt::nbsp;
+		  break;
+	  }
+
 	  parent->printExpr(expr->getLHS());
 	  output() << fmt::nbsp;
 	  parent->printExpr(expr->getRHS());
@@ -454,9 +510,62 @@ private:
 	}
 
 	void
+	VisitDependentScopeDeclRefExpr(const DependentScopeDeclRefExpr *expr) {
+	  ConstStmtVisitor<PrintExpr, void>::VisitDependentScopeDeclRefExpr(expr);
+#if 0
+	  // todo(gmm): this doesn't work.
+	  error() << "DependentScopeDecl"
+	  ctor("Edynref");
+	  output() << "\"";
+	  expr->getQualifier()->dump();
+	  output() << expr->getDeclName().getAsString() << "\"";
+	  for (auto a : expr->template_arguments()) {
+		output() << fmt::nbsp;
+		parent->printExpr(a.getArgument().getAsExpr());
+	  }
+	  output() << fmt::rparen;
+#endif
+	}
+
+	void
+	printUnaryOperator(UnaryOperator::Opcode op) {
+	  switch (op) {
+#define CASE(k, s) \
+		case UnaryOperatorKind::UO_##k: output() << s; break;
+		CASE(Minus, "Uminus")
+		CASE(Not, "Unot")
+		CASE(PostDec, "<PostDec>")
+		CASE(PostInc, "<PostInc>")
+		CASE(PreDec, "<PreDec>")
+		CASE(PreInc, "<PreInc>")
+#undef CASE
+		default:
+		  error() << "unsupported unary operator\n";
+		  output() << "(Uother \"" << UnaryOperator::getOpcodeStr(op) << "\")";
+		  break;
+	  }
+	}
+
+	void
 	VisitUnaryOperator (const UnaryOperator *expr) {
-	  ctor("Eunop") << "\"" << UnaryOperator::getOpcodeStr(expr->getOpcode()) << "\""
-		            << fmt::nbsp;
+	  switch (expr->getOpcode()) {
+		case UnaryOperatorKind::UO_PostInc:
+		  ctor("Epostinc");
+		  break;
+		case UnaryOperatorKind::UO_PreInc:
+		  ctor("Epreinc");
+		  break;
+		case UnaryOperatorKind::UO_PostDec:
+		  ctor("Epostdec");
+		  break;
+		case UnaryOperatorKind::UO_PreDec:
+		  ctor("Epredec");
+		  break;
+		default:
+		  ctor("Eunop");
+		  printUnaryOperator(expr->getOpcode());
+		  output() << fmt::nbsp;
+	  }
 	  parent->printExpr(expr->getSubExpr());
 	  output() << fmt::rparen;
 	}
