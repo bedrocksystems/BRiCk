@@ -148,6 +148,7 @@ private:
 
 	void
 	VisitBuiltinType (const BuiltinType* type) {
+	  // todo(gmm): record bitwidths from the context when they are defaulted.
 	  if (type->getKind() == BuiltinType::Kind::Bool) {
 		output() << "Tbool";
 	  } else if (type->getKind() == BuiltinType::Kind::Int128) {
@@ -171,13 +172,13 @@ private:
 	  } else if (type->getKind() == BuiltinType::Kind::Char16) {
 		output() << "T_char16";
 	  } else if (type->getKind() == BuiltinType::Kind::Char_S) {
-		output() << "T_schar";
+		output() << "(Tchar (Some " << parent->Context->getCharWidth() << ") true)";
 	  } else if (type->getKind() == BuiltinType::Kind::SChar) {
-		output() << "T_schar";
+		output() << "(Tchar (Some " << parent->Context->getCharWidth() << ") true)";
 	  } else if (type->getKind() == BuiltinType::Kind::UChar) {
-		output() << "T_uchar";
+		output() << "(Tchar (Some " << parent->Context->getCharWidth() << ") false)";
 	  } else if (type->getKind() == BuiltinType::Kind::Char_U) {
-		output() << "T_uchar";
+		output() << "(Tchar (Some " << parent->Context->getCharWidth() << ") false)";
 	  } else if (type->getKind() == BuiltinType::Kind::Char8) {
 		output() << "T_char8";
 	  } else if (type->getKind() == BuiltinType::Kind::Char32) {
@@ -355,8 +356,18 @@ private:
 	  ctor("Sdo");
 	  parent->printStmt(stmt->getBody());
 	  output() << fmt::nbsp;
-	  parent->printStmt(stmt->getCond());
+	  parent->printExpr(stmt->getCond());
 	  output() << fmt::rparen;
+	}
+
+	void
+	VisitBreakStmt(const BreakStmt* stmt) {
+	  output() << "Sbreak";
+	}
+
+	void
+	VisitContinueStmt(const ContinueStmt* stmt) {
+	  output() << "Scontinue";
 	}
 
 	void

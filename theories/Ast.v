@@ -149,13 +149,16 @@ Inductive Expr : Set :=
 .
 
 Inductive Stmt : Set :=
-| Sskip
 | Sseq    (_ : list Stmt)
 | Sdecl   (_ : list (ident * type * option Expr))
 
 | Sif     (_ : option (ident * type * option Expr)) (_ : Expr) (_ _ : Stmt)
 | Swhile  (_ : Expr) (_ : Stmt)
 | Sfor    (_ : option Stmt) (_ _ : option Expr) (_ : Stmt)
+| Sdo     (_ : Stmt) (_ : Expr)
+
+| Sbreak
+| Scontinue
 
 | Sreturn (_ : option Expr)
 
@@ -242,9 +245,12 @@ Definition T_uint64 := Tint (Some 64) false.
 Definition T_int128 := Tint (Some 128) true.
 Definition T_uint128 := Tint (Some 128) false.
 
+Definition Sskip := Sseq nil.
+
 (* note(gmm): types without explicit size information need to
  * be parameters of the underlying code, otherwise we can't
  * describe the semantics correctly.
+ * - cpp2v should probably insert these types.
  *)
 Parameter T_ushort : type.
 Parameter T_short : type.

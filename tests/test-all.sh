@@ -1,6 +1,6 @@
 CPP2V=./cpp2v
 COQC=coqc
-TESTS=`seq 1 9`
+TESTS=`seq 1 10`
 
 for x in $TESTS
 do
