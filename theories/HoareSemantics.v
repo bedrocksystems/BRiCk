@@ -51,70 +51,38 @@ Module Type logic.
   Parameter ILLater_mpred : ILLater mpred.
   Global Existing Instance ILLater_mpred.
 
+  (** the semantics, axiomatically *)
   Parameter ptr : Type.
   Parameter val : Type.
   Parameter Vptr : ptr -> val.
   Parameter Vint : Z -> val.
 
-  (* these are the core predicates *)
+  Parameter eval_unop : UnOp -> type -> val -> val -> Prop.
+  Parameter eval_binop : BinOp -> type -> val -> val -> val -> Prop.
 
-  Parameter ptsto : val -> val -> mpred.
+  Parameter offset_ptr : val -> Z -> val.
 
-  Parameter addr_of : ident -> val -> mpred.
+  Parameter is_true : val -> bool.
 
   Parameter genv : Type.
 
-  (* todo(gmm): maybe `wp_lhs` and `wp_rhs` should be indexed by the types
-   * todo(gmm): maybe these two should be indexed by an evaluation mechanism,
-   *            i.e. lhs or rhs.
+
+  (** core assertions
+   * note that the resource algebra contains the code memory as well as
+   * the heap.
    *)
-  Variant mode : Set := Lvalue | Rvalue.
-
-  Parameter wpe
-  : forall (resolve : genv), mode -> Expr -> (val -> mpred) -> mpred.
-  Definition wp_rhs (resolve : genv) : Expr -> (val -> mpred) -> mpred :=
-    wpe resolve Rvalue.
-  Definition wp_lhs (resolve : genv) : Expr -> (val -> mpred) -> mpred :=
-    wpe resolve Lvalue.
-
-  Parameter fspec : forall (n : val) (ls : list val) (Q : val -> mpred), mpred.
-
-  Fixpoint wps (resolve : genv)
-           (es : list Expr) (Q : list val -> mpred) : mpred :=
-    match es with
-    | nil => Q nil
-    | e :: es => wp_rhs resolve e (fun v => wps resolve es (fun vs => Q (cons v vs)))
-    end.
-
   Notation "'[|'  P  '|]'" := (only_provable P).
 
-(*
-  Lemma provable_star : forall P (Q : Prop) R,
-      Q ->
-      P |-- R ->
-      P |-- [| Q |] ** R.
-  Proof.
-    intros.
-    unfold provable.
-    rewrite <- empSPL.
-    eapply scME; auto.
-    discharge. auto.
-  Qed.
+  (* heap points to *)
+  Parameter ptsto : val -> val -> mpred.
 
-  Lemma provable_intro : forall (P : Prop) Q R,
-      (P -> Q |-- R) ->
-      [| P |] ** Q |-- R.
-  Proof.
-    intros.
-    unfold provable.
-    rewrite embedPropExists.
-    rewrite landexistsDL1.
-    rewrite bilexistsscL2.
-    apply lexistsL. intros.
-    rewrite <- H; auto. discharge.
-    eapply landL2. reflexivity.
-  Qed.
-*)
+  (* address of a local variable *)
+  Parameter addr_of : ident -> val -> mpred.
+
+  (* the pointer contains the code *)
+  Parameter code_at : ptr -> Func -> mpred.
+  (* code_at is freely duplicable *)
+  Axiom code_at_dup : forall p f, code_at p f -|- code_at p f ** code_at p f.
 
   (* it might be more uniform to have this be an `mpred` *)
   Parameter glob_addr : genv -> globname -> ptr -> Prop.
@@ -123,12 +91,92 @@ Module Type logic.
 
   Parameter size_of : forall {c : genv} (t : type) (e : N), Prop.
 
-  Parameter offset_ptr : val -> Z -> val.
+  Parameter align_of : forall {c : genv} (t : type) (e : N), Prop.
 
-  Parameter eval_unop : UnOp -> type -> val -> val -> Prop.
-  Parameter eval_binop : BinOp -> type -> val -> val -> val -> Prop.
+  Parameter with_genv : (genv -> mpred) -> mpred.
+  Axiom with_genv_single : forall f g,
+      with_genv f //\\ with_genv g -|- with_genv (fun r => f r //\\ g r).
 
-  Parameter is_true : val -> bool.
+  Parameter func_ok_raw : Func -> list val -> (val -> mpred) -> mpred.
+  (* this assserts the frame axiom for function specifications
+   *)
+  Axiom func_ok_frame : forall v vs Q F,
+      func_ok_raw v vs Q ** F |-- func_ok_raw v vs (fun res => Q res ** F).
+
+  Definition fspec (n : val) (ls : list val) (Q : val -> mpred) : mpred :=
+    Exists f, [| n = Vptr f |] **
+    Exists func, code_at f func ** func_ok_raw func ls Q.
+
+
+  Definition function_spec (ret : type) (targs : list type) : Type :=
+    arrowFrom val targs ((val -> mpred) -> mpred).
+
+  (* this is the denotation of modules *)
+  Fixpoint sepSPs (ls : list mpred) : mpred :=
+    match ls with
+    | nil => empSP
+    | l :: ls => l ** sepSPs ls
+    end.
+
+  Fixpoint denoteDecl (ns : list ident) (d : Decl) : mpred :=
+    match d with
+    | Dvar v _ _ =>
+      let n := {| g_path := ns ; g_name := v |} in
+      Exists a, with_genv (fun resolve => [| glob_addr resolve n a |])
+    | Dtypedef _ _ => empSP
+                       (* note(gmm): this is compile time, and shouldn't be a
+                        * problem.
+                        *)
+    | Dfunction n f =>
+      let n := {| g_path := ns ; g_name := n |} in
+      match f.(f_body) return mpred with
+      | None =>
+        Exists a, with_genv (fun resolve => [| glob_addr resolve n a |])
+      | Some body =>
+        Exists a,
+        with_genv (fun resolve => [| glob_addr resolve n a |]) //\\
+                  code_at a f
+      end
+    | Dmethod n t f =>
+      let n := {| g_path := t.(g_path) ++ t.(g_name) :: nil ; g_name := n |} in
+      Exists a,
+      with_genv (fun resolve => [| glob_addr resolve n a |]) //\\
+                code_at a f
+    | Dstruct _ _ => empSP
+      (* ^ this should really record size and offset information
+       *)
+    | Denum _ _ _ => empSP
+      (* ^ this should record enumeration information
+       *)
+    | Dnamespace n ds =>
+      sepSPs (map (denoteDecl (ns ++ n :: nil)) ds)
+    | Dextern ds =>
+      sepSPs (map (denoteDecl ns) ds)
+    | Dtemplated _ _ ds =>
+      sepSPs (map (denoteDecl ns) ds)
+    end.
+
+  (** Weakest pre-condition for expressions
+   *)
+  Variant mode : Set := Lvalue | Rvalue.
+
+  (* todo(gmm): `wpe` should be indexed by types *)
+  Parameter wpe
+  : forall (resolve : genv), mode -> Expr -> (val -> mpred) -> mpred.
+
+  (* note(gmm): the handling variables wrt lvalue and rvalues isn't correct
+   * right now.
+   *
+   * primitives, e.g. int, int*:
+   *    local x val ~ (Ex a, addr_of x a ** ptsto a val)
+   * references, int&:
+   *    ref x a'     ~ (Ex a, addr_of x a ** ptsto a a')
+   *    (references are modeled as pointers)
+   *    -- if this is true, then i can simplify things a little bit.
+   * structures, T:
+   *    local x (Inv y)
+   *)
+
 
   (* the biggest question in these semantics is how types fit into things.
    * > C semantics doesn't use a lot of implicit casts.
@@ -136,9 +184,19 @@ Module Type logic.
   Section with_resolver.
     Context {resolve : genv}.
 
-    (* stack variables will be maintained through regions.
-     *)
+    Definition wp_rhs : Expr -> (val -> mpred) -> mpred :=
+      wpe resolve Rvalue.
+    Definition wp_lhs : Expr -> (val -> mpred) -> mpred :=
+      wpe resolve Lvalue.
 
+    Fixpoint wps (es : list Expr) (Q : list val -> mpred) : mpred :=
+      match es with
+      | nil => Q nil
+      | e :: es => wp_rhs e (fun v => wps es (fun vs => Q (cons v vs)))
+      end.
+
+    (* todo(gmm): maintain stack variables through regions
+     *)
     Parameter has_type : val -> type -> Prop.
 
     Definition tptsto (ty : type) (p : val) (v : val) : mpred :=
@@ -146,58 +204,57 @@ Module Type logic.
 
     Axiom wp_rhs_int : forall n ty Q,
         embed (has_type (Vint n) ty) //\\ Q (Vint n)
-        |-- wp_rhs resolve (Eint n ty) Q.
+        |-- wp_rhs (Eint n ty) Q.
 
     Axiom wp_rhs_bool : forall (b : bool) Q,
         (if b
          then Q (Vint 1)
          else Q (Vint 0))
-        |-- wp_rhs resolve (Ebool b) Q.
+        |-- wp_rhs (Ebool b) Q.
 
     (* todo(gmm): what about the type? *)
     Axiom wp_lhs_lvar : forall x Q,
       Exists a, (addr_of x a ** ltrue) //\\ Q a
-      |-- wp_lhs resolve (Evar (Lname x)) Q.
+      |-- wp_lhs (Evar (Lname x)) Q.
 
     (* what about the type? if it exists *)
     Axiom wp_lhs_gvar : forall x Q,
-      Exists a, embed (glob_addr resolve x a)
-           //\\ Q (Vptr a)
-      |-- wp_lhs resolve (Evar (Gname x)) Q.
+      Exists a, [| glob_addr resolve x a |] ** Q (Vptr a)
+      |-- wp_lhs (Evar (Gname x)) Q.
 
     Axiom wp_lhs_member : forall e f Q,
-      wp_lhs resolve e (fun base =>
+      wp_lhs e (fun base =>
          Exists offset,
-                embed (@offset_of resolve (Tref f.(f_type)) f.(f_name) offset)
-           //\\ Q (offset_ptr base offset))
-      |-- wp_lhs resolve (Emember e f) Q.
+                [| @offset_of resolve (Tref f.(f_type)) f.(f_name) offset |]
+           ** Q (offset_ptr base offset))
+      |-- wp_lhs (Emember e f) Q.
 
     (* y = *x; *)
     Axiom wp_rhs_deref : forall e ty Q,
-        wp_rhs resolve e (fun a => Exists v, (tptsto ty a v ** ltrue) -* Q v)
-        |-- wp_rhs resolve (Ederef e) Q.
+        wp_rhs e (fun a => Exists v, (tptsto ty a v ** ltrue) -* Q v)
+        |-- wp_rhs (Ederef e) Q.
 
     (* *x = 3; *)
     Axiom wp_lhs_deref : forall e (Q : val -> mpred),
-        wp_rhs resolve e Q
-        |-- wp_lhs resolve (Ederef e) Q.
+        wp_rhs e Q
+        |-- wp_lhs (Ederef e) Q.
 
     Axiom wp_rhs_addrof : forall e Q,
-        wp_lhs resolve e Q
-        |-- wp_rhs resolve (Eaddrof e) Q.
+        wp_lhs e Q
+        |-- wp_rhs (Eaddrof e) Q.
 
     Axiom wp_rhs_unop : forall o e ty Q,
-        wp_rhs resolve e (fun v => Exists v', embed (eval_unop o ty v v') //\\ Q v')
-        |-- wp_rhs resolve (Eunop o e) Q.
+        wp_rhs e (fun v => Exists v', embed (eval_unop o ty v v') //\\ Q v')
+        |-- wp_rhs (Eunop o e) Q.
 
     Axiom wp_rhs_binop : forall o e1 e2 ty Q,
-        wp_rhs resolve e1 (fun v1 => wp_rhs resolve e2 (fun v2 =>
+        wp_rhs e1 (fun v1 => wp_rhs e2 (fun v2 =>
             Exists v', embed (eval_binop o ty v1 v2 v') //\\ Q v'))
-        |-- wp_rhs resolve (Ebinop o e1 e2) Q.
+        |-- wp_rhs (Ebinop o e1 e2) Q.
 
     Axiom wp_rhs_cast_l2r : forall e Q,
-        wp_lhs resolve e (fun a => Exists v, (ptsto a v ** ltrue) //\\ Q v)
-        |-- wp_rhs resolve (Ecast Cl2r e) Q.
+        wp_lhs e (fun a => Exists v, (ptsto a v ** ltrue) //\\ Q v)
+        |-- wp_rhs (Ecast Cl2r e) Q.
 
     Axiom wp_rhs_cast_noop : forall m e Q,
         wpe resolve m e Q
@@ -210,45 +267,44 @@ Module Type logic.
     Axiom wp_rhs_cast : True.
 
     Axiom wp_rhs_seqand : forall e1 e2 Q,
-        wp_rhs resolve e1 (fun v1 =>
+        wp_rhs e1 (fun v1 =>
            if is_true v1
-           then wp_rhs resolve e2 (fun v2 =>
+           then wp_rhs e2 (fun v2 =>
                                      if is_true v2
                                      then Q (Vint 1)
                                      else Q (Vint 0))
            else Q (Vint 0))
-        |-- wp_rhs resolve (Eseqand e1 e2) Q.
+        |-- wp_rhs (Eseqand e1 e2) Q.
 
     Axiom wp_rhs_seqor : forall e1 e2 Q,
-        wp_rhs resolve e1 (fun v1 =>
+        wp_rhs e1 (fun v1 =>
            if is_true v1
            then Q (Vint 1)
-           else wp_rhs resolve e2 (fun v2 =>
+           else wp_rhs e2 (fun v2 =>
                                      if is_true v2
                                      then Q (Vint 1)
                                      else Q (Vint 0)))
-        |-- wp_rhs resolve (Eseqor e1 e2) Q.
+        |-- wp_rhs (Eseqor e1 e2) Q.
 
     Axiom wpe_comma : forall {m} e1 e2 Q,
-        wpe resolve m e1 (fun _ =>
-           wpe resolve m e2 Q)
+        wpe resolve m e1 (fun _ => wpe resolve m e2 Q)
         |-- wpe resolve m (Ecomma e1 e2) Q.
 
     Axiom wp_rhs_condition : forall m tst th el Q,
-        wp_rhs resolve tst (fun v1 =>
+        wp_rhs tst (fun v1 =>
            if is_true v1
            then wpe resolve m th Q
            else wpe resolve m el Q)
         |-- wpe resolve m (Eif tst th el) Q.
 
     Axiom wp_rhs_sizeof : forall ty Q,
-        Exists sz, embed (@size_of resolve ty sz) //\\ Q (Vint (Z.of_N sz))
-        |-- wp_rhs resolve (Esize_of (inl ty)) Q.
+        Exists sz, [| @size_of resolve ty sz |] ** Q (Vint (Z.of_N sz))
+        |-- wp_rhs (Esize_of (inl ty)) Q.
 
     Axiom wp_lhs_assign : forall l r Q,
-        wp_lhs resolve l (fun la => wp_rhs resolve r (fun rv =>
+        wp_lhs l (fun la => wp_rhs r (fun rv =>
            (Exists v, ptsto la v) ** (ptsto la rv -* Q la)))
-        |-- wp_lhs resolve (Eassign l r) Q.
+        |-- wp_lhs (Eassign l r) Q.
 
 (*
     Axiom wp_rhs_postincr : forall inc_or_dec l ty Q,
@@ -257,15 +313,19 @@ Module Type logic.
         |-- wp_rhs resolve (Epostincr inc_or_dec l ty) Q.
 *)
 
+    Axiom wp_rhs_cast_function2pointer : forall g Q,
+        wp_lhs (Evar (Gname g)) Q
+        |-- wp_rhs (Ecast Cfunction2pointer (Evar (Gname g))) Q.
+
     Axiom wp_call : forall f es Q,
-        wp_rhs resolve f (fun f => wps resolve es (fun vs => |> fspec f vs Q))
-        |-- wp_rhs resolve (Ecall f es) Q.
+        wp_rhs f (fun f => wps es (fun vs => |> fspec f vs Q))
+        |-- wp_rhs (Ecall f es) Q.
 
     Axiom wp_member_call : forall f obj es Q,
         Exists fa, [| glob_addr resolve f fa |] **
-        wp_rhs resolve obj (fun this => wps resolve es (fun vs =>
+        wp_rhs obj (fun this => wps es (fun vs =>
             |> fspec (Vptr fa) (this :: vs) Q))
-        |-- wp_rhs resolve (Emember_call f obj es) Q.
+        |-- wp_rhs (Emember_call f obj es) Q.
 
     Local Open Scope string_scope.
 
@@ -273,7 +333,6 @@ Module Type logic.
       Exists a, addr_of x a ** ptsto a v.
     Definition tlocal (ty : type) (x : ident) (v : val) : mpred :=
       Exists a, addr_of x a ** tptsto ty a v.
-
 
     Ltac simplify_wp :=
       repeat first [ rewrite <- wp_lhs_assign
@@ -316,7 +375,7 @@ Module Type logic.
 
     (* int x ; x = 0 ; *)
     Goal (tlocal T_int32 _x 3
-         |-- wp_lhs resolve (Eassign (Evar (Lname _x)) (Eint 0 T_int32)) (fun xa => addr_of _x xa ** tptsto T_int32 xa 0))%Z.
+         |-- wp_lhs (Eassign (Evar (Lname _x)) (Eint 0 T_int32)) (fun xa => addr_of _x xa ** tptsto T_int32 xa 0))%Z.
     Proof.
       unfold tlocal.
       repeat (t; simplify_wp).
@@ -329,7 +388,7 @@ Module Type logic.
 
     (* int *x ; *x = 0 ; *)
     Goal local "x" 3%Z ** ptsto 3%Z 12%Z
-         |-- wp_lhs resolve
+         |-- wp_lhs
              (Eassign (Ederef (Ecast Cl2r (Evar (Lname "x")))) (Eint 0 T_int32))
              (fun x => embed (x = 3)%Z //\\ local "x" x ** ptsto x 0%Z).
     Proof.
@@ -340,7 +399,7 @@ Module Type logic.
 
     (* int *x ; int y ; x = &y ; *)
     Goal local _x 3%Z ** local _y 12%Z
-         |-- wp_lhs resolve (Eassign (Evar (Lname _x)) (Eaddrof (Evar (Lname _y))))
+         |-- wp_lhs (Eassign (Evar (Lname _x)) (Eaddrof (Evar (Lname _y))))
          (fun xa => addr_of _x xa ** Exists ya, addr_of _y ya ** ptsto xa ya ** ptsto ya 12)%Z.
     Proof.
       unfold local.
@@ -349,7 +408,7 @@ Module Type logic.
 
     (* int *x ; int y ; *(x = &y) = 3; *)
     Goal local _x 3%Z ** local _y 9%Z
-      |-- wp_lhs resolve (Eassign (Ederef (El2r (Eassign (Evar (Lname _x)) (Eaddrof (Evar (Lname _y)))))) (Eint 3 T_int32))%Z (fun ya => local _x ya ** ptsto ya 3%Z ** addr_of _y ya).
+      |-- wp_lhs (Eassign (Ederef (El2r (Eassign (Evar (Lname _x)) (Eaddrof (Evar (Lname _y)))))) (Eint 3 T_int32))%Z (fun ya => local _x ya ** ptsto ya 3%Z ** addr_of _y ya).
     Proof.
       unfold local.
       repeat (t; simplify_wp).
@@ -401,6 +460,9 @@ Module Type logic.
     Definition Kfree (a : mpred) : Kpreds -> Kpreds :=
       Kseq_all (fun P => a ** P).
 
+    (** weakest pre-condition for statements
+     *)
+
     Parameter wp
     : forall (resolve : genv), Stmt -> Kpreds -> mpred.
 
@@ -420,7 +482,7 @@ Module Type logic.
     Axiom wp_return_void : forall Q,
         Q.(k_return) None |-- wp resolve (Sreturn None) Q.
     Axiom wp_return_val : forall e Q,
-        wp_rhs resolve e (fun res => Q.(k_return) (Some res))
+        wp_rhs e (fun res => Q.(k_return) (Some res))
         |-- wp resolve (Sreturn (Some e)) Q.
 
     Axiom wp_break : forall Q,
@@ -429,15 +491,15 @@ Module Type logic.
         Q.(k_continue) |-- wp resolve Scontinue Q.
 
     Axiom wp_do : forall e Q,
-        wp_rhs resolve e (fun _ => Q.(k_normal))
+        wp_rhs e (fun _ => Q.(k_normal))
         |-- wp resolve (Sexpr e) Q.
 
     Axiom wp_if : forall e thn els Q,
-        wp_rhs resolve e (fun v =>
-                            if is_true v then
-                              wp resolve els Q
-                            else
-                              wp resolve thn Q)
+        wp_rhs e (fun v =>
+                    if is_true v then
+                      wp resolve els Q
+                    else
+                      wp resolve thn Q)
         |-- wp resolve (Sif None e thn els) Q.
 
     (* note(gmm): this rule is not sound for a total hoare logic
@@ -474,7 +536,7 @@ Module Type logic.
           (* references must be initialized *)
         | Some init =>
           (* i should use the type here *)
-          wp_rhs resolve init (fun a => addr_of x a -* k (Kfree (addr_of x a) Q))
+          wp_rhs init (fun a => addr_of x a -* k (Kfree (addr_of x a) Q))
         end
       | _ =>
         match classify_type ty with
@@ -483,13 +545,13 @@ Module Type logic.
           | None =>
             Exists v, tlocal ty x v -* k (Kfree (Exists v', tlocal ty x v') Q)
           | Some init =>
-            wp_rhs resolve init (fun v => tlocal ty x v -* k (Kfree (Exists v', tlocal ty x v') Q))
+            wp_rhs init (fun v => tlocal ty x v -* k (Kfree (Exists v', tlocal ty x v') Q))
           end
         | inr sz => (* not a primitive *)
           match init with
           | Some (Econstructor gn es) =>
             Exists ctor, [| glob_addr resolve gn ctor |] **
-            wps resolve es (fun vs =>
+            wps es (fun vs =>
                    Exists a, Exists sz, uninitialized sz a
                 -* |> fspec (Vptr ctor) (a :: vs) (fun _ => k (Kfree (uninitialized sz a) Q)))
           | _ => lfalse
@@ -504,10 +566,6 @@ Module Type logic.
 
     Require Import Cpp.Parser.
     Import ListNotations.
-
-    Axiom wp_rhs_cast_function2pointer : forall g Q,
-        wp_lhs resolve (Evar (Gname g)) Q
-               |-- wp_rhs resolve (Ecast Cfunction2pointer (Evar (Gname g))) Q.
 
     Ltac simplify_wps :=
       repeat first [ progress simplify_wp
@@ -526,6 +584,92 @@ Module Type logic.
                    | rewrite <- wp_rhs_cast_function2pointer
                    ].
 
+(*
+    { P } - { Q } = [] (P -* wp code Q)
+*)
+
+    Fixpoint ForallEach {t u T U} (ls : list t)
+    : forall (v : arrowFrom u ls T) (v' : arrowFrom u ls U)
+        (P : T -> U -> list (t * u) -> mpred), mpred :=
+      match ls with
+      | nil => fun v v' P => P v v' nil
+      | l :: ls => fun v v' P => Forall x,
+                            ForallEach ls (v x) (v' x) (fun z z' xs => P z z' (cons (l, x) xs))
+      end.
+
+
+
+    Require Import Coq.Lists.List.
+
+    Section zip.
+      Context {A B C : Type} (f : A -> B -> C).
+      Fixpoint zip (x : list A) (y : list B) : list C :=
+        match x , y with
+        | nil , _
+        | _ , nil => nil
+        | x :: xs , y :: ys => f x y :: zip xs ys
+        end.
+    End zip.
+
+    Definition func_ok (ret : type) (params : list (ident * type))
+               (body : Stmt)
+               (spec : function_spec ret (map snd params))
+    : Prop.
+      red in spec.
+      eapply forallEach. eapply spec.
+      refine (fun P args => forall Q : val -> mpred,
+                  (* this is what is created from the parameters *)
+                  let binds := sepSPs (zip (fun '(x, t) '(_, v) => tlocal t x v) params args) in
+                  (* this is what is freed on return *)
+                  let frees := sepSPs (map (fun '(x, t) => Exists v, tlocal t x v) params) in
+                  (binds ** P Q) |-- (wp resolve body (Kfree frees (val_return Q)))
+             ).
+    Qed.
+
+(*
+    Definition ht
+               (ret : type) (targs : list type)
+               (ghost : Type)
+               (P : ghost -> arrowFrom val targs mpred)
+               (Q : ghost -> arrowFrom val targs (val -> mpred))
+    : function_spec ret targs.
+
+    Definition triple
+               (f : val)
+               (ret : type) (targs : list type)
+               (ghost : Type)
+               (P : ghost -> arrowFrom val targs mpred)
+               (Q : ghost -> arrowFrom val targs (val -> mpred))
+    : mpred :=
+      Exists p, [| f = Vptr p |] **
+      Exists body, Exists fargs,
+           code_at p
+                   {| f_return := ret
+                    ; f_params := fargs
+                    ; f_body := Some body |}
+      //\\ (Forall g : ghost, ForallEach P Q (fun P Q => P -* wp resolve body (val_return Q)).
+
+
+
+
+
+
+
+      Forall vs, fspec f vs Q -* Exists res, Q res.
+
+    Definition ht
+               (ret : type) (targs : list type)
+               (ghost : Type)
+               (P : ghost -> arrowFrom val targs mpred)
+               (Q : ghost -> arrowFrom val targs (val -> mpred))
+    : function_spec ret targs.
+    red.
+    revert P Q.
+    induction targs; simpl.
+    { intros P Q Q'.
+      refine (Exists g : ghost, P g -* _).
+      refine (embed (
+*)
 
     Definition triple (p : val) (ret : type) (targs : list type)
     : arrowFrom val targs ((val -> mpred) -> mpred) -> mpred.
@@ -600,6 +744,29 @@ Module Type logic.
       t.
     Qed.
 
+(*
+
+    Goal func_ok (Qmut T_int)
+         [("x",(Qmut T_int))]
+         (Sseq [
+              (Sreturn (Some
+                          (Ebinop Badd
+                                  (Ecall
+                                     (Ecast Cfunction2pointer
+                                            (Evar
+                                               (Gname {| g_path := "A" !:: NStop; g_name := "bar" |}))) [
+                                       (Ebinop Badd
+                                               (Ecast Cl2r
+                                                      (Evar
+                                                         (Lname  "x")))
+                                               (Eint 5
+                                                     (Qmut T_int)))])
+                                  (Eint 1
+                                        (Qmut T_int)))))])
+         (fun x k => _).
+:: nil.
+
+*)
 
   End with_resolver.
 

@@ -1,3 +1,4 @@
+-Q ../../hoare/master/theories auto
 -Q theories Cpp
 
 theories/Ast.v
