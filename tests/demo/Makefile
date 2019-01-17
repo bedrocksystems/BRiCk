@@ -7,7 +7,7 @@ coq: Makefile.coq $(VS)
 	$(MAKE) -f Makefile.coq
 
 clean:
-	@ rm $(VS)
+	@ rm $(VS) $(VOS)
 
 A_cpp.v: A.cpp
 	./../cpp2v $< > $@
