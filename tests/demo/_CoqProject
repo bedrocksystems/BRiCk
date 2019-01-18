@@ -1,0 +1,16 @@
+-Q ../../theories Cpp
+-Q ../../../../hoare/master/theories auto
+
+-Q . Demo
+
+A_hpp.v
+A_cpp.v
+B_cpp.v
+
+A_hpp_spec.v
+A_hpp_proof.v
+
+A_cpp_spec.v
+A_cpp_proof.v
+
+A_o.v

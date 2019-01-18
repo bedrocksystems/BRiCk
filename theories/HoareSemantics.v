@@ -166,6 +166,8 @@ Module Type logic.
     | l :: ls => l ** sepSPs ls
     end.
 
+  (* note(gmm): the denotation of modules should be moved to another module.
+   *)
   Fixpoint denoteDecl (ns : list ident) (d : Decl) : mpred :=
     match d with
     | Dvar v _ _ =>
@@ -210,9 +212,22 @@ Module Type logic.
     | d :: ds => denoteDecl ns d ** denoteModule ns ds
     end.
 
-  Inductive module_declares : list Decl -> globname -> Func -> Prop :=.
+  Inductive module_declares : list Decl -> globname -> Func -> Prop :=
+  | MDfound {body nm f}
+      (_ : f.(f_body) = Some body)
+    : module_declares (Dfunction nm f :: nil)
+                      {| g_path := NStop ; g_name := nm |}
+                      f
+  | MDnamespace {ds ns nss nm f}
+                (_ : module_declares ds {| g_path := nss ; g_name := nm |} f)
+    : module_declares (Dnamespace ns ds :: nil)
+                      {| g_path := ns :: nss ; g_name := nm |}
+                      f
+  | MDskip {d ds nm f}
+      (_ : module_declares ds nm f)
+    : module_declares (d :: ds) nm f
+  .
 
-  Axiom todo : forall t, t.
 
   Parameter func_ok_raw : Func -> list val -> (val -> mpred) -> mpred.
   (* this assserts the frame axiom for function specifications
@@ -435,16 +450,18 @@ Module Type logic.
     Parameter has_type_qual : forall v q ty,
         has_type v ty -> has_type v (Tqualified q ty).
 
-    Ltac has_type :=
-      first [ eapply has_type_int ; lia
-            | eapply has_type_int32 ; lia
-            | eapply has_type_qual ; has_type ].
-
     Lemma eval_add : forall ty (a b c : Z),
         c = (Z.add a b) ->
         has_type (Vint c) ty ->
         eval_binop Badd ty (Vint a) (Vint b) (Vint c).
+    Proof using.
+      clear.
     Admitted.
+
+    Ltac has_type :=
+      first [ eapply has_type_int ; lia
+            | eapply has_type_int32 ; lia
+            | eapply has_type_qual ; has_type ].
 
     Ltac operator :=
       first [ subst ; eapply eval_add; [ first [ reflexivity | nia ] | has_type ] ].
@@ -931,40 +948,6 @@ Module Type logic.
     Defined.
 
     Definition A__bar := {| g_path := "A" !:: NStop; g_name := "bar" |}.
-(*
-    Goal
-           (Exists abara, [| glob_addr resolve A__bar abara |] **
-            (cptr' (Vptr abara) T_int32 (T_int32 :: nil)
-                    (ht' T_int32 (T_int32 :: nil)
-                     (fun x => {| wpp_with := _
-                              ; wpp_pre v := [| x = Vint v |]
-                              ; wpp_post v res := [| res = Vint (Z.add v 1) |] |}))))
-        ** local "x" 3%Z
-      |-- wp resolve (Sseq [
-                (Sreturn (Some
-                  (Ebinop Badd
-                    (Ecall
-                      (Ecast Cfunction2pointer
-                        (Evar
-                          (Gname A__bar))) [
-                        (Ebinop Badd
-                          (Ecast Cl2r
-                            (Evar
-                              (Lname  "x")))
-                          (Eint 5
-                            (Qmut T_int32)))])
-                    (Eint 1
-                      (Qmut T_int32)))))])
-      (val_return (fun val => local "x" 3%Z ** [| val = Vint 10%Z |])).
-    Proof.
-      intros.
-      unfold local.
-      repeat (t; simplify_wps).
-
-      t. subst.  simplify_wps.
-      t.
-    Qed.
-*)
 
     Definition cglob' (gn : globname) (spec : function_spec')
     : mpred :=
@@ -977,6 +960,7 @@ Module Type logic.
     : Proper (eq ==> eq ==> eq ==> pointwise_relation _ lequiv ==> lequiv) wpe.
     Axiom Proper_wpe_entails
     : Proper (eq ==> eq ==> eq ==> pointwise_relation _ lentails ==> lentails) wpe.
+
 
     Lemma wps_frame : forall es k F,
         wps es k ** F -|- wps es (fun x => k x ** F).
@@ -1008,7 +992,7 @@ Module Type logic.
                 Exists g : wpp.(wpp_with),
                   wpp.(wpp_pre) g ** F' **
                   (Forall r, wpp.(wpp_post) g r -* K r))) ->
-        cglob' f (ht' ret ts PQ) ** F
+        (|> cglob' f (ht' ret ts PQ)) ** F
         |-- wp_rhs (Ecall (Ecast Cfunction2pointer (Evar (Gname f))) es) K ** F'.
     Proof.
 (*
@@ -1050,7 +1034,7 @@ Module Type logic.
                    | rewrite <- wp_rhs_cast_function2pointer
                    ].
 
-    Goal cglob' A__bar
+    Goal |> cglob' A__bar
          (ht' T_int32 (T_int32 :: nil)
               (fun x => {| wpp_with := _
                        ; wpp_pre v := [| x = Vint v |]
@@ -1085,14 +1069,24 @@ Module Type logic.
       simpl.
       t. subst.
       simplifying.
-      repeat perm_left ltac:(idtac; perm_right ltac:(idtac; eapply wp_call_glob)).  simpl.
-      simplifying.
+      repeat perm_left ltac:(idtac; perm_right ltac:(eapply wp_call_glob)).        simplifying.
       unfold tlocal, tptsto.
       t.
       simplify_wps. t.
       simplify_wps.
       t.
     Qed.
+
+    Lemma verify_func : forall g s module retT params body (F : mpred),
+        module_declares module g {| f_return := retT
+                                  ; f_params := params
+                                  ; f_body := Some body |} ->
+        F (* ** denoteModule nil mod *)
+        |-- func_ok' retT params body s ->
+        denoteModule nil module ** F |-- cglob' g s.
+    Proof.
+      induction 1; simpl.
+    Admitted.
 
   End with_resolver.
 
@@ -1102,93 +1096,45 @@ Declare Module L : logic.
 
 Export L.
 
+  Ltac simplify_wp :=
+    repeat first [ rewrite <- wp_lhs_assign
+                 | rewrite <- wp_lhs_lvar
+                 | rewrite <- wp_lhs_gvar
+                 | rewrite <- wp_rhs_int
+                 | rewrite <- wp_lhs_deref
+                 | rewrite <- wp_rhs_addrof
+                 | rewrite <- wp_rhs_cast_l2r
+                 ].
 
 
+  Ltac simplifying :=
+      repeat first [ progress simplify_wp
+                   | progress simpl wps
+                   | rewrite <- wp_skip
+                   | rewrite <- wp_seq_nil
+                   | rewrite <- wp_seq_cons
+                   | rewrite <- wp_decl_nil
+                   | rewrite <- wp_decl_cons
+                   | rewrite <- wp_return_val
+                   | rewrite <- wp_return_void
+                   | rewrite <- wp_if
+                   | rewrite <- wp_continue
+                   | rewrite <- wp_break
+                   | rewrite <- wp_rhs_binop
+                   | rewrite <- wp_rhs_cast_function2pointer
+                   ].
 
-(*
-    Definition ht
-               (ret : type) (targs : list type)
-               (ghost : Type)
-               (P : ghost -> arrowFrom val targs mpred)
-               (Q : ghost -> arrowFrom val targs (val -> mpred))
-    : function_spec ret targs.
+  Ltac has_type :=
+    first [ eapply has_type_int ; lia
+          | eapply has_type_int32 ; lia
+          | eapply has_type_qual ; has_type ].
 
-    Definition triple
-               (f : val)
-               (ret : type) (targs : list type)
-               (ghost : Type)
-               (P : ghost -> arrowFrom val targs mpred)
-               (Q : ghost -> arrowFrom val targs (val -> mpred))
-    : mpred :=
-      Exists p, [| f = Vptr p |] **
-      Exists body, Exists fargs,
-           code_at p
-                   {| f_return := ret
-                    ; f_params := fargs
-                    ; f_body := Some body |}
-      //\\ (Forall g : ghost, ForallEach P Q (fun P Q => P -* wp resolve body (val_return Q)).
+  Ltac operator :=
+    first [ subst ; eapply eval_add; [ first [ reflexivity | nia ] | has_type ] ].
 
-
-
-
-
-
-
-      Forall vs, fspec f vs Q -* Exists res, Q res.
-
-    Definition ht
-               (ret : type) (targs : list type)
-               (ghost : Type)
-               (P : ghost -> arrowFrom val targs mpred)
-               (Q : ghost -> arrowFrom val targs (val -> mpred))
-    : function_spec ret targs.
-    red.
-    revert P Q.
-    induction targs; simpl.
-    { intros P Q Q'.
-      refine (Exists g : ghost, P g -* _).
-      refine (embed (
-*)
-
-(*
-  Theorem triple_sound : forall p r t PQ v Z,
-      triple p r (t :: nil) PQ ** PQ v Z |-- fspec p (v :: nil) Z.
-  Proof.
-    unfold triple.
-    intros.
-    rewrite sepSPC.
-    rewrite bilforallscR.
-    eapply lforallL with (x := v).
-    rewrite bilforallscR.
-    eapply lforallL with (x := Z).
-    simpl.
-    eapply sepSPAdj'.
-    reflexivity.
-  Qed.
-
-  Theorem triple_apply : forall p r t F F' PQ v Z,
-      F |-- PQ v Z ** F' ->
-      triple p r (t :: nil) PQ ** F |-- fspec p (v :: nil) Z ** F'.
-  Proof.
-    intros.
-    rewrite H.
-    rewrite <- triple_sound.
-    discharge auto.
-  Qed.
-*)
-
-    (*
-  Definition func_ok (ret : type) (params : list (ident * type))
-             (body : Stmt)
-             (spec : function_spec ret (map snd params))
-  : Prop.
-    red in spec.
-    refine (forall args (Q : val -> mpred),
-      (* this is what is created from the parameters *)
-      let binds := sepSPs (zip (fun '(x, t) 'v => tlocal t x v) params args) in
-      (* this is what is freed on return *)
-      let frees := sepSPs (map (fun '(x, t) => Exists v, tlocal t x v) params) in
-      (binds ** spec args Q) |-- (wp resolve body (Kfree frees (val_return Q)))
-           ).
-  Defined.
-     *)
+  Ltac work :=
+    let tac := try match goal with
+                   | |- @eq val _ _ => try f_equal
+                   end ;
+        try solve [ eauto | reflexivity | has_type | operator | lia ] in
+    discharge ltac:(canceler fail tac) tac.

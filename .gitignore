@@ -6,3 +6,4 @@ Makefile.coq.conf
 *.glob
 *.vo
 *.aux
+.lia.cache
