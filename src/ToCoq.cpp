@@ -27,6 +27,8 @@ printCastKind (Formatter& out, const CastKind ck) {
 	out << "Cintegral";
   } else if (ck == CastKind::CK_IntegralToBoolean) {
   	out << "Cint2bool";
+  } else if (ck == CastKind::CK_PointerToBoolean) {
+	out << "Cptr2bool";
   } else if (ck == CastKind::CK_PointerToIntegral) {
 	out << "Cpointer2int";
   } else if (ck == CastKind::CK_IntegralToPointer) {
@@ -544,7 +546,8 @@ private:
 #define CASE(k, s) \
 		case UnaryOperatorKind::UO_##k: output() << s; break;
 		CASE(Minus, "Uminus")
-		CASE(Not, "Unot")
+		CASE(Not, "Ubnot")
+		CASE(LNot, "Unot")
 		CASE(PostDec, "<PostDec>")
 		CASE(PostInc, "<PostInc>")
 		CASE(PreDec, "<PreDec>")
@@ -796,6 +799,8 @@ private:
 	bool
 	VisitCXXRecordDecl (const CXXRecordDecl *decl, Filter::What what) {
 	  if (decl != decl->getCanonicalDecl())
+		return false;
+	  if (!decl->hasBody()) // note that i might need a forward declaration for a class.
 		return false;
 
 	  ctor("Dstruct") << "\"" << decl->getNameAsString() << "\"";
