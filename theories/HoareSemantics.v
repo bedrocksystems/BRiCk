@@ -707,6 +707,8 @@ Module Type logic.
               Forall Q, PQ Q -* fspec p (List.map snd args) Q)).
     Defined.
 
+    Axiom cptr'_dup : forall p fs, cptr' p fs -|- cptr' p fs ** cptr' p fs.
+
     Definition cptr (p : val) (PQ : function_spec) : mpred.
       refine (
           Forall vs,
