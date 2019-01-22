@@ -852,10 +852,7 @@ private:
 		  output() << "{| c_params :=" << fmt::nbsp;
 		  PRINT_LIST(cd->param, parent->printParam);
 		  output() << fmt::line << " ; c_body :=" << fmt::nbsp << fmt::indent << fmt::indent;
-		  if (cd->isDefaulted()) {
-			// todo(gmm): i need to figure out how to generate the default constructors
-			output() << "(Some Default)";
-		  } else if (cd->hasBody()) {
+		  if (cd->hasBody()) {
 			ctor("Some");
 			ctor("UserDefined") << fmt::lparen;
 			auto print_init = [this](const CXXCtorInitializer* init) {
@@ -877,11 +874,14 @@ private:
 			output() << "," << fmt::nbsp;
 			parent->printStmt(cd->getBody());
 			output() << fmt::rparen << fmt::rparen << fmt::rparen;
+		  } else if (cd->isDefaulted()) {
+			// todo(gmm): i need to figure out how to generate the default constructors
+			output() << "(Some Default)";
 		  } else {
 			output() << "None";
 		  }
 		  output() << fmt::outdent << fmt::outdent << fmt::nbsp << "|}";
-		  output() << "::" << fmt::nbsp;
+		  output() << "::" << fmt::line;
 		}
 	  }
 	  output() << fmt::outdent << "nil" << fmt::line;
