@@ -798,12 +798,16 @@ private:
 
 	bool
 	VisitCXXRecordDecl (const CXXRecordDecl *decl, Filter::What what) {
-	  if (decl != decl->getCanonicalDecl())
+	  if (decl != decl->getCanonicalDecl()) {
 		return false;
-	  if (!decl->hasBody()) // note that i might need a forward declaration for a class.
-		return false;
+	  }
+	  ctor("Dstruct") << "\"" << decl->getNameAsString() << "\"" << fmt::nbsp;
+	  if (!decl->isCompleteDefinition()) {
+		output() << "None" << fmt::rparen;
+		return true;
+	  }
 
-	  ctor("Dstruct") << "\"" << decl->getNameAsString() << "\"";
+	  ctor("Some");
 
 	  // print the base classes
 	  output() << fmt::line << "{| s_bases :=" << fmt::nbsp;
@@ -914,7 +918,7 @@ private:
 		output() << "nil" << fmt::outdent;
 	  }
 
-	  output() << "|}" << fmt::rparen;
+	  output() << "|}" << fmt::rparen << fmt::rparen;
 	  return true;
 	}
 
@@ -935,6 +939,7 @@ private:
 
 	bool
 	VisitCXXConstructorDecl (const CXXConstructorDecl *decl, Filter::What what) {
+	  error() << "seeing a constructor\n";
 	  return false;
 	}
 
