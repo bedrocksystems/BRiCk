@@ -2,12 +2,34 @@ Require Import Coq.Strings.String.
 
 Set Primitive Projections.
 
+(* this represents names that exist in object files. *)
+Definition obj_name : Set := string.
+
 Definition ident : Set := string.
 
+(* naming in C++ is complex.
+ * - everything has a path, e.g. namespaces, classes, etc.
+ *   examples: ::foo         -- the namespace `foo`
+ *             ::Foo         -- the class/struct/enum `Foo`
+ *             ::Foo<int, 1> -- templated class (template parameters are types *and* expressions)
+ * - functions (but not variables) can be overloaded.
+ *   (this is addressed via name mangling)
+ * - types (classes, structs, typedefs, etc) are not mangled because they are
+ *   not present in the object file
+ * - there are also "unnamed" functions, e.g. constructors and destructors
+ *)
+Definition globname : Set := string.
+  (* these are mangled names. for consistency, we're going to
+   * mangle everything.
+   *)
+(*
 Record globname : Set :=
 { g_path : list ident
 ; g_name : ident
 }.
+Parameter to_obj_name : globname -> obj_name.
+*)
+
 Definition localname : Set := ident.
 
 Record field : Set :=
@@ -209,24 +231,28 @@ Arguments OrType : clear implicits.
 
 (* global declarations *)
 Inductive Decl : Set :=
-| Dvar         (_ : ident) (_ : type) (_ : option Expr)
-| Dtypedef     (_ : ident) (_ : type)
+| Dvar         (_ : type) (_ : option Expr)
+| Dtypedef     (_ : type)
 
-| Dfunction    (_ : ident) (_ : Func)
-| Dmethod      (_ : ident) (_ : globname) (_ : Func)
+| Dfunction    (_ : Func)
+| Dmethod      (_ : globname) (_ : Func)
 
-| Dstruct      (_ : ident) (_ : Struct Decl)
+| Dstruct      (_ : Struct Decl)
   (* ^ structures & classes *)
 
-| Denum        (_ : ident) (_ : option type) (branches : list (ident * option Expr))
+| Denum        (_ : option type) (branches : list (ident * option Expr))
   (* ^ enumerations (the initializers need to be constant expressions) *)
-| Dnamespace   (_ : ident) (_ : list Decl)
+| Dnamespace   (_ : list Decl)
   (* ^ this will be erased *)
 | Dextern                  (_ : list Decl)
 | Dtemplated   (_ : list (OrType type * ident)) (_ : Decl)
                (instantiations : list Decl)
   (* ^ right now this just expands the template, it should change *)
 .
+
+Definition module : Set :=
+  list (globname * Decl).
+
 
 Coercion Sexpr : Expr >-> Stmt.
 

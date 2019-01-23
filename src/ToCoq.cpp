@@ -3,6 +3,7 @@
 #include "clang/Basic/Version.inc"
 #include "clang/AST/Type.h"
 #include "clang/AST/StmtVisitor.h"
+#include "clang/AST/Mangle.h"
 #include "TypeVisitorWithArgs.h"
 #include "DeclVisitorWithArgs.h"
 #include "Filter.hpp"
@@ -93,6 +94,8 @@ class ToCoq
 {
 private:
   Formatter &out;
+  DiagnosticsEngine engine;
+  MangleContext * mangleContext;
 
   DELEGATE_OUTPUT_I(out)
 
@@ -801,7 +804,9 @@ private:
 	  if (decl != decl->getCanonicalDecl()) {
 		return false;
 	  }
-	  ctor("Dstruct") << "\"" << decl->getNameAsString() << "\"" << fmt::nbsp;
+	  ctor("Dstruct");
+	  parent->printDecl(decl);
+	  output() << fmt::nbsp;
 	  if (!decl->isCompleteDefinition()) {
 		output() << "None" << fmt::rparen;
 		return true;
@@ -843,6 +848,7 @@ private:
 	  output() << fmt::outdent;
 
 	  // print the constructors
+	  // todo(gmm): check on the semantics of the instructions. in particular, determine the order of constructor initialization.
 	  output() << fmt::line << "; s_ctors :=" << fmt::indent << fmt::line;
 	  for (auto i = decl->ctor_begin(), e = decl->ctor_end(); i != e; ++i) {
 		const CXXConstructorDecl *cd = *i;
@@ -924,7 +930,9 @@ private:
 
 	bool
 	VisitFunctionDecl (const FunctionDecl *decl, Filter::What what) {
-	  ctor("Dfunction") << "\"" << decl->getNameAsString() << "\"" << fmt::nbsp;
+	  ctor("Dfunction");
+	  parent->printGlobalName(decl);
+	  output() << fmt::nbsp;
 	  parent->printFunction(decl, what);
 	  output() << fmt::rparen;
 	  return true;
@@ -950,7 +958,9 @@ private:
 
 	bool
 	VisitVarDecl (const VarDecl *decl, Filter::What what) {
-	  ctor("Dvar") << "\"" << decl->getNameAsString() << "\"" << fmt::nbsp;
+	  ctor("Dvar");
+	  parent->printGlobalName(decl);
+	  output() << fmt::nbsp;
 	  parent->printQualType(decl->getType());
 	  if (decl->hasInit() && what >= Filter::DEFINITION) {
 		output() << fmt::line << fmt::nbsp << fmt::lparen << "Some" << fmt::nbsp;
@@ -1110,8 +1120,11 @@ private:
 public:
   explicit
   ToCoq(ASTContext *ctxt, Formatter &fmt, Filter *f)
-  : out(fmt), typePrinter(this), localPrinter(this), paramPrinter(
-  		  this), stmtPrinter(this), exprPrinter(this), declPrinter(this), filter(f), Context(ctxt) { }
+  : out(fmt), engine(IntrusiveRefCntPtr<DiagnosticIDs>(), IntrusiveRefCntPtr<DiagnosticOptions>()), typePrinter(this), localPrinter(this), paramPrinter(
+  		  this), stmtPrinter(this), exprPrinter(this), declPrinter(this), filter(f), Context(ctxt) {
+	mangleContext = ItaniumMangleContext::create(*ctxt, engine);
+
+  }
 
   SourceLocation
   getStartSourceLocWithComment(const Decl* d) {
@@ -1238,10 +1251,16 @@ public:
   void
   printGlobalName(const NamedDecl *decl) {
 	assert(!decl->getDeclContext()->isFunctionOrMethod());
-	output() << fmt::indent << "{| g_path :=" << fmt::nbsp;
-	printDeclContext(decl->getDeclContext());
-	output() << "; g_name :=" << fmt::nbsp << "\"" << decl->getNameAsString() << "\" |}";
-	output() << fmt::outdent;
+
+	output() << "\"";
+	mangleContext->mangleCXXName(decl, out.nobreak());
+	output() << "\"";
+
+	// llvm::errs() << "\n";
+	// output() << fmt::indent << "{| g_path :=" << fmt::nbsp;
+	// printDeclContext(decl->getDeclContext());
+	// output() << "; g_name :=" << fmt::nbsp << "\"" << decl->getNameAsString() << "\" |}";
+	// output() << fmt::outdent;
   }
 
   void
