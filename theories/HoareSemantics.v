@@ -146,7 +146,7 @@ Module Type logic.
   Axiom code_at_drop : forall p f, code_at p f |-- empSP.
 
   (* it might be more uniform to have this be an `mpred` *)
-  Parameter glob_addr : genv -> globname -> ptr -> Prop.
+  Parameter glob_addr : genv -> obj_name -> ptr -> Prop.
 
   Parameter offset_of : forall {c : genv} (t : type) (f : ident) (e : Z), Prop.
 
@@ -168,17 +168,15 @@ Module Type logic.
 
   (* note(gmm): the denotation of modules should be moved to another module.
    *)
-  Fixpoint denoteDecl (ns : list ident) (d : Decl) : mpred :=
+  Fixpoint denoteDecl (d : Decl) : mpred :=
     match d with
-    | Dvar v _ _ =>
-      let n := {| g_path := ns ; g_name := v |} in
+    | Dvar n _ _ =>
       Exists a, with_genv (fun resolve => [| glob_addr resolve n a |])
-    | Dtypedef _ _ => empSP
+    | Dtypedef gn _ => empSP
                        (* note(gmm): this is compile time, and shouldn't be a
                         * problem.
                         *)
     | Dfunction n f =>
-      let n := {| g_path := ns ; g_name := n |} in
       match f.(f_body) return mpred with
       | None =>
         Exists a, with_genv (fun resolve => [| glob_addr resolve n a |])
@@ -188,40 +186,39 @@ Module Type logic.
                   code_at a f
       end
     | Dmethod n t f =>
-      let n := {| g_path := t.(g_path) ++ t.(g_name) :: nil ; g_name := n |} in
       Exists a,
       with_genv (fun resolve => [| glob_addr resolve n a |]) //\\
                 code_at a f
-    | Dstruct _ _ => empSP
+    | Dstruct gn _ => empSP
       (* ^ this should record size and offset information
        *)
-    | Denum _ _ _ => empSP
+    | Denum gn _ _ => empSP
       (* ^ this should record enumeration information
        *)
-    | Dnamespace n ds =>
-      sepSPs (map (denoteDecl (ns ++ n :: nil)) ds)
+    | Dnamespace ds =>
+      sepSPs (map denoteDecl ds)
     | Dextern ds =>
-      sepSPs (map (denoteDecl ns) ds)
-    | Dtemplated _ _ ds =>
-      sepSPs (map (denoteDecl ns) ds)
+      sepSPs (map denoteDecl ds)
+(*    | Dtemplated _ _ ds =>
+      sepSPs (map denoteDecl ds) *)
     end.
 
-  Fixpoint denoteModule (ns : list ident) (d : list Decl) : mpred :=
+  Fixpoint denoteModule (d : list Decl) : mpred :=
     match d with
     | nil => empSP
-    | d :: ds => denoteDecl ns d ** denoteModule ns ds
+    | d :: ds => denoteDecl d ** denoteModule ds
     end.
 
-  Inductive module_declares : list Decl -> globname -> Func -> Prop :=
+  Inductive module_declares : list Decl -> obj_name -> Func -> Prop :=
   | MDfound {body nm f}
       (_ : f.(f_body) = Some body)
     : module_declares (Dfunction nm f :: nil)
-                      {| g_path := NStop ; g_name := nm |}
+                      nm
                       f
-  | MDnamespace {ds ns nss nm f}
-                (_ : module_declares ds {| g_path := nss ; g_name := nm |} f)
-    : module_declares (Dnamespace ns ds :: nil)
-                      {| g_path := ns :: nss ; g_name := nm |}
+  | MDnamespace {ds nm f}
+                (_ : module_declares ds nm f)
+    : module_declares (Dnamespace ds :: nil)
+                      nm
                       f
   | MDskip {d ds nm f}
       (_ : module_declares ds nm f)
@@ -949,8 +946,6 @@ Module Type logic.
       ).
     Defined.
 
-    Definition A__bar := {| g_path := "A" !:: NStop; g_name := "bar" |}.
-
     Definition cglob' (gn : globname) (spec : function_spec')
     : mpred :=
       Exists a, [| glob_addr resolve gn a |] ** cptr' (Vptr a) spec.
@@ -1036,6 +1031,9 @@ Module Type logic.
                    | rewrite <- wp_rhs_cast_function2pointer
                    ].
 
+    Definition A__bar := "_Z1A3bar".
+
+
     Goal |> cglob' A__bar
          (ht' T_int32 (T_int32 :: nil)
               (fun x => {| wpp_with := _
@@ -1050,7 +1048,7 @@ Module Type logic.
                                   (Ecall
                                      (Ecast Cfunction2pointer
                                             (Evar
-                                               (Gname {| g_path := "A" !:: NStop; g_name := "bar" |}))) [
+                                               (Gname A__bar))) [
                                        (Ebinop Badd
                                                (Ecast Cl2r
                                                       (Evar
@@ -1085,7 +1083,7 @@ Module Type logic.
                                   ; f_body := Some body |} ->
         F (* ** denoteModule nil mod *)
         |-- func_ok' retT params body s ->
-        denoteModule nil module ** F |-- cglob' g s.
+        denoteModule module ** F |-- cglob' g s.
     Proof.
       induction 1; simpl.
     Admitted.

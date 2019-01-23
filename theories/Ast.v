@@ -231,22 +231,24 @@ Arguments OrType : clear implicits.
 
 (* global declarations *)
 Inductive Decl : Set :=
-| Dvar         (_ : type) (_ : option Expr)
-| Dtypedef     (_ : type)
+| Dvar         (name : obj_name) (_ : type) (_ : option Expr)
+| Dtypedef     (name : globname) (_ : type)
 
-| Dfunction    (_ : Func)
-| Dmethod      (_ : globname) (_ : Func)
+| Dfunction    (name : obj_name) (_ : Func)
+| Dmethod      (name : obj_name) (_ : globname) (_ : Func)
 
-| Dstruct      (_ : Struct Decl)
+| Dstruct      (name : globname) (_ : option (Struct Decl))
   (* ^ structures & classes *)
 
-| Denum        (_ : option type) (branches : list (ident * option Expr))
+| Denum        (name : globname) (_ : option type) (branches : list (ident * option Expr))
   (* ^ enumerations (the initializers need to be constant expressions) *)
 | Dnamespace   (_ : list Decl)
   (* ^ this will be erased *)
 | Dextern                  (_ : list Decl)
+(*
 | Dtemplated   (_ : list (OrType type * ident)) (_ : Decl)
                (instantiations : list Decl)
+*)
   (* ^ right now this just expands the template, it should change *)
 .
 

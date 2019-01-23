@@ -34,8 +34,8 @@ Proof. Abort.
 
 Definition module_link (a b : list Decl) : list Decl := a ++ b.
 
-Axiom denoteModule_link : forall nss a b,
-    denoteModule nss (module_link a b) -|- denoteModule nss a ** denoteModule nss b.
+Axiom denoteModule_link : forall a b,
+    denoteModule (module_link a b) -|- denoteModule a ** denoteModule b.
 
 Lemma lob_link : forall A B : mpred,
     ((|> A) -* B) ** ((|> B) -* A) |-- A ** B.
@@ -60,4 +60,4 @@ Axiom illater_sepSP : forall P Q, |> (P ** Q) |-- (|> P) ** (|> Q).
 Axiom cglob'_dup : forall resolve p fs,
     cglob' (resolve:=resolve) p fs -|- cglob' (resolve:=resolve) p fs ** cglob' (resolve:=resolve) p fs.
 Axiom denote_module_dup : forall module,
-    denoteModule nil module -|- denoteModule nil module ** denoteModule nil module.
+    denoteModule module -|- denoteModule module ** denoteModule module.

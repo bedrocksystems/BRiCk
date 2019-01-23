@@ -805,7 +805,7 @@ private:
 		return false;
 	  }
 	  ctor("Dstruct");
-	  parent->printDecl(decl);
+	  parent->printGlobalName(decl);
 	  output() << fmt::nbsp;
 	  if (!decl->isCompleteDefinition()) {
 		output() << "None" << fmt::rparen;
@@ -985,7 +985,7 @@ private:
 
 	bool
 	VisitNamespaceDecl (const NamespaceDecl *decl, Filter::What what) {
-	  ctor("Dnamespace") << "\"" << decl->getNameAsString() << "\"" << fmt::line << fmt::lparen;
+	  ctor("Dnamespace") /* << "\"" << decl->getNameAsString() << "\"" */ << fmt::line << fmt::lparen;
 	  if (what >= Filter::What::DEFINITION) {
 		for (auto d : decl->decls()) {
 		  if(parent->printDecl(d)) {
@@ -1043,8 +1043,9 @@ private:
 	bool
 	VisitFunctionTemplateDecl(const FunctionTemplateDecl *decl, Filter::What what) {
 	  // note(gmm): for now, i am just going to return the specializations.
-	  ctor("Dtemplated");
+	  //ctor("Dtemplated");
 
+	  /*
 	  output() << "(";
 	  for (auto i = decl->getTemplateParameters()->begin(), e = decl->getTemplateParameters()->end(); i != e; ++i) {
 		if (auto *nt = dyn_cast<NonTypeTemplateParmDecl>(*i)) {
@@ -1061,10 +1062,23 @@ private:
 
 	  parent->printDecl(decl->getTemplatedDecl());
 	  output() << fmt::nbsp;
+	  */
 
-	  PRINT_LIST(decl->spec, parent->printDecl)
+	  if (decl->spec_begin() == decl->spec_end()) {
+		return false;
+	  }
 
-	  output() << fmt::rparen;
+	  bool first = true;
+	  for (auto i : decl->specializations()) {
+		if (!first) {
+		  output() << "::";
+		  first = false;
+		}
+		parent->printDecl(i);
+	  }
+
+	  //PRINT_LIST(decl->spec, parent->printDecl)
+	  //output() << fmt::rparen;
 	  return true;
 	}
   };
