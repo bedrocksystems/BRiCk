@@ -20,7 +20,7 @@ Opaque denoteModule.
 
 (* soundness of the specification *)
 Theorem A_hpp_sound : forall (resolve : genv),
-    denoteModule nil A_hpp.module |-- A_hpp_spec resolve.
+    denoteModule A_hpp.module |-- A_hpp_spec resolve.
 Proof.
   intros.
   simpl.

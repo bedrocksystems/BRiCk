@@ -25,7 +25,7 @@ Qed.
 Require Import Cpp.Linking.
 
 Theorem A_o_sound (resolve : _)
-: |-- denoteModule nil (module_link A_hpp.module A_cpp.module) -*
+: |-- denoteModule (module_link A_hpp.module A_cpp.module) -*
       cglob' (resolve:=resolve) A__foo A__foo_spec **
       cglob' (resolve:=resolve) A__bar A__bar_spec.
 Proof.

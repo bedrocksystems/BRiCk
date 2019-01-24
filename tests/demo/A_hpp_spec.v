@@ -11,7 +11,7 @@ Require Import Cpp.Parser.
 Require Import Cpp.HoareSemantics.
 Require Demo.A_hpp.
 
-Definition A__foo := {| g_path := "A" :: NStop ; g_name := "foo" |}.
+Definition A__foo := "_ZN1A3fooEi".
 Definition A__foo_spec : function_spec' :=
   ht' (Qmut T_int) (Qmut T_int :: nil)
       (fun x =>
@@ -20,7 +20,7 @@ Definition A__foo_spec : function_spec' :=
           ; wpp_post := fun y (r : val) => [| r = Vint (y + 6)%Z |]
           |}).
 
-Definition A__bar := {| g_path := "A" :: NStop ; g_name := "bar" |}.
+Definition A__bar := "_ZN1A3barEi".
 Definition A__bar_spec : function_spec' :=
   ht' (Qmut T_int) (Qmut T_int :: nil)
       (fun x =>
