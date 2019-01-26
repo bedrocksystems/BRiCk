@@ -46,6 +46,8 @@ printCastKind (Formatter& out, const CastKind ck) {
     out << "Cderived2base";
   } else if (ck == CastKind::CK_BaseToDerived) {
     out << "Cbase2derived";
+  } else if (ck == CastKind::CK_ToVoid) {
+	out << "C2void";
   } else {
 #if CLANG_VERSION_MAJOR >= 7
 	llvm::errs() << "unsupported cast kind \"" << CastExpr::getCastKindName(ck)
@@ -168,6 +170,10 @@ private:
 		output() << "T_ulong";
 	  } else if (type->getKind() == BuiltinType::Kind::UShort) {
 		output() << "T_ushort";
+	  } else if (type->getKind() == BuiltinType::Kind::Long) {
+		output() << "T_long";
+	  } else if (type->getKind() == BuiltinType::Kind::LongDouble) {
+	  	output() << "T_long_double";
 	  } else if (type->getKind() == BuiltinType::Kind::LongLong) {
 		output() << "T_longlong";
 	  } else if (type->getKind() == BuiltinType::Kind::ULongLong) {
@@ -249,6 +255,28 @@ private:
 	void
 	VisitSubstTemplateTypeParmType(const SubstTemplateTypeParmType *type) {
 	  parent->printQualType(type->getReplacementType());
+	}
+
+	void
+	VisitIncompleteArrayType(const IncompleteArrayType *type) {
+	  // note(gmm): i might want to note the sugar.
+	  ctor("Qconst");
+	  ctor("Tpointer");
+	  parent->printQualType(type->getElementType());
+	  output() << fmt::rparen << fmt::rparen;
+	}
+
+	void
+	VisitDecayedType(const DecayedType *type) {
+	  parent->printQualType(type->getPointeeType());
+	}
+
+	void
+	VisitTemplateSpecializationType(const TemplateSpecializationType *type) {
+	  ctor("Tref");
+	  output() << "\"";
+	  parent->mangleContext->mangleCXXName(type->getAsCXXRecordDecl(), parent->out.nobreak());
+	  output() << "\"" << fmt::rparen;
 	}
   };
 
@@ -399,6 +427,44 @@ private:
 	}
 
 	void
+	VisitSwitchStmt(const SwitchStmt *stmt) {
+	  ctor("Sswitch");
+	  parent->printExpr(stmt->getCond());
+	  const SwitchCase *sc = stmt->getSwitchCaseList();
+	  output() << fmt::lparen;
+	  while (sc) {
+		output() << fmt::lparen;
+		if (isa<DefaultStmt>(sc)) {
+		  output() << "None";
+		} else if (auto cs = dyn_cast<CaseStmt>(sc)) {
+		  ctor("Some");
+		  output() << "(";
+		  parent->printExpr(cs->getLHS());
+		  output() << "," << fmt::nbsp;
+		  if (cs->getRHS()) {
+			output() << "Some" << fmt::nbsp;
+			parent->printExpr(cs->getRHS());
+		  } else {
+			output() << "None";
+		  }
+		  output() << ")" << fmt::rparen;
+		} else {
+		  error() << "switch body not default or case.\n";
+		  llvm::errs().flush();
+		  assert(false);
+		}
+		output() << "," << fmt::nbsp;
+		error() << (sc->getSubStmt() == nullptr) << "\n";
+		llvm::errs().flush();
+	    parent->printStmt(sc->getSubStmt());
+	    output() << fmt::rparen;
+
+		sc = sc->getNextSwitchCase();
+	  }
+	  output() << "::nil" << fmt::rparen << fmt::rparen;
+	}
+
+	void
 	VisitExpr (const Expr *expr) {
 	  ctor("Sexpr");
 	  parent->printExpr(expr);
@@ -434,7 +500,6 @@ private:
 	  ctor("Sasm") << "\"" << stmt->getAsmString()->getString() << "\"";
 	  output() << fmt::rparen;
 	}
-
   };
 
   class PrintExpr : public ConstStmtVisitor<PrintExpr, void>
@@ -487,6 +552,8 @@ private:
 		CASE(ShlAssign, "(Bop_assign Bshl)")
 		CASE(Shr, "Bshr")
 		CASE(ShrAssign, "(Bop_assign Bshr)")
+		CASE(Sub, "Bsub")
+		CASE(SubAssign, "(Bop_assign Bsub)")
 		CASE(Xor, "Bxor")
 		CASE(XorAssign, "(Bop_assign Bxor)")
 #undef CASE
@@ -566,6 +633,12 @@ private:
 	void
 	VisitUnaryOperator (const UnaryOperator *expr) {
 	  switch (expr->getOpcode()) {
+		case UnaryOperatorKind::UO_AddrOf:
+		  ctor("Eaddrof");
+		  break;
+		case UnaryOperatorKind::UO_Deref:
+		  ctor("Ederef");
+		  break;
 		case UnaryOperatorKind::UO_PostInc:
 		  ctor("Epostinc");
 		  break;
@@ -605,9 +678,50 @@ private:
 
 	void
 	VisitCastExpr (const CastExpr *expr) {
+	  error() << "unnamed cast\n";
+	  	  llvm::errs().flush();
 	  ctor("Ecast");
-	  printCastKind(output(), expr->getCastKind());
+	  if (expr->getConversionFunction()) {
+		ctor("Cuser");
+		parent->printGlobalName(expr->getConversionFunction());
+		output() << fmt::rparen;
+	  } else {
+		ctor("CCast");
+		printCastKind(output(), expr->getCastKind());
+		output() << fmt::rparen;
+	  }
+
 	  output() << fmt::nbsp;
+	  parent->printExpr(expr->getSubExpr());
+	  output() << fmt::rparen;
+	}
+
+	void
+	VisitCXXNamedCastExpr(const CXXNamedCastExpr *expr) {
+	  error() << "named cast\n";
+	  llvm::errs().flush();
+	  ctor("Ecast");
+	  if (expr->getConversionFunction()) {
+		return VisitCastExpr(expr);
+	  }
+
+	  if (isa<CXXReinterpretCastExpr>(expr)) {
+		ctor("Creinterpret");
+	  } else if (isa<CXXConstCastExpr>(expr)) {
+		ctor("Cconst");
+		output() << fmt::rparen;
+	  } else if (isa<CXXStaticCastExpr>(expr)) {
+		ctor("Cstatic");
+	  } else if (isa<CXXDynamicCastExpr>(expr)) {
+		ctor("Cdynamic");
+	  } else {
+		error() << "unknown named cast\n";
+		llvm::errs().flush();
+		assert(false);
+	  }
+	  parent->printQualType(expr->getType());
+	  output() << fmt::rparen << fmt::nbsp;
+
 	  parent->printExpr(expr->getSubExpr());
 	  output() << fmt::rparen;
 	}
@@ -617,6 +731,18 @@ private:
 	  ctor("Eint") << lit->getValue() << fmt::nbsp;
 	  parent->printQualType(lit->getType());
 	  output() << fmt::rparen;
+	}
+
+	void
+	VisitCharacterLiteral (const CharacterLiteral *lit) {
+	  ctor("Echar") << lit->getValue() << fmt::nbsp;
+	  parent->printQualType(lit->getType());
+	  output() << fmt::rparen;
+	}
+
+	void
+	VisitStringLiteral (const StringLiteral *lit) {
+	  ctor("Estring") << "\"" << lit->getBytes() << "\"" << fmt::rparen;
 	}
 
 	void
@@ -667,8 +793,8 @@ private:
 
 	void
 	VisitCXXMemberCallExpr (const CXXMemberCallExpr *expr) {
-	  output() << fmt::line << fmt::lparen << "Emember_call" << fmt::nbsp;
-	  parent->printGlobalName(expr->getMethodDecl());
+	  ctor("Emember_call");
+	  parent->printExpr(expr->getCallee());
 	  output() << fmt::nbsp;
 	  parent->printExpr(expr->getImplicitObjectArgument());
 	  output() << fmt::nbsp;
@@ -734,12 +860,16 @@ private:
 	  auto do_arg = [this, expr]() {
 		if (expr->isArgumentType()) {
 		  ctor("inl");
-		  parent->printType(expr->getArgumentType().getTypePtr()); // constness isn't relevant here
+		  parent->printQualType(expr->getArgumentType());
 		  output() << fmt::rparen;
-		} else {
+		} else if (expr->getArgumentExpr()){
 		  ctor("inr");
+		  assert(expr->getArgumentExpr());
 		  parent->printExpr(expr->getArgumentExpr());
 		  output() << fmt::rparen;
+		} else {
+		  error() << "argument isnt' a type or an expression\n";
+		  llvm::errs().flush();
 		}
 	  };
 
@@ -759,6 +889,43 @@ private:
 	void
 	VisitSubstNonTypeTemplateParmExpr(const SubstNonTypeTemplateParmExpr *expr) {
 	  this->Visit(expr->getReplacement());
+	}
+
+	void
+	VisitCXXNewExpr(const CXXNewExpr *expr) {
+	  ctor("Enew");
+	  if (expr->getOperatorNew()) {
+		ctor("Some");
+		parent->printName(expr->getOperatorNew());
+		output() << fmt::lparen;
+	  } else {
+		output() << "None";
+	  }
+
+	  output() << fmt::nbsp;
+
+	  parent->printExpr(expr->getConstructExpr());
+
+	  output() << fmt::rparen;
+	}
+
+	void
+	VisitCXXDeleteExpr(const CXXDeleteExpr *expr) {
+	  ctor("Edelete");
+	  output() << (expr->isArrayForm() ? "true" : "false") << fmt::nbsp;
+
+	  if (expr->getOperatorDelete()) {
+		ctor("Some");
+		parent->printName(expr->getOperatorDelete());
+		output() << fmt::lparen;
+	  } else {
+		output() << "None";
+	  }
+	  output() << fmt::nbsp;
+
+	  parent->printExpr(expr->getArgument());
+
+	  output() << fmt::rparen;
 	}
   };
 
@@ -820,9 +987,10 @@ private:
 		if (base.isVirtual()) {
 		  error() << "virtual base classes not supported\n";
 		}
-		auto rec = dyn_cast<RecordType>(base.getType().getTypePtr());
+
+		auto rec = base.getType().getTypePtr()->getAsCXXRecordDecl();
 		if (rec) {
-		  parent->printGlobalName(rec->getDecl());
+		  parent->printGlobalName(rec);
 		} else {
 		  error() << "base class is not a RecordType";
 		}
@@ -899,11 +1067,14 @@ private:
 		  output() << "None";
 		} else if (dd->isDefaulted()) {
 		  ctor("Some") << "Default" << fmt::rparen;
-		} else {
+		} else if (dd->getBody()) {
 		  ctor("Some");
 		  ctor("UserDefined");
 		  parent->printStmt(dd->getBody());
 		  output() << fmt::rparen << fmt::rparen;
+		} else {
+		  error() << "destructor has no body\n";
+		  output() << "None";
 		}
 	  } else {
 		ctor("Some") << "Default" << fmt::rparen;
@@ -947,6 +1118,8 @@ private:
 
 	bool
 	VisitCXXConstructorDecl (const CXXConstructorDecl *decl, Filter::What what) {
+	  // note(gmm): i could actually see this if the constructor implementation is in the cpp file, but the
+	  // definition is in the hpp file.
 	  error() << "seeing a constructor\n";
 	  return false;
 	}
@@ -1081,6 +1254,26 @@ private:
 	  //output() << fmt::rparen;
 	  return true;
 	}
+
+	bool
+	VisitClassTemplateDecl(const ClassTemplateDecl *decl, Filter::What what) {
+	  if (decl->spec_begin() == decl->spec_end()) {
+		return false;
+	  }
+
+	  bool first = true;
+	  for (auto i : decl->specializations()) {
+		if (!first) {
+		  output() << "::";
+		  first = false;
+		}
+		parent->printDecl(i);
+	  }
+
+	  //PRINT_LIST(decl->spec, parent->printDecl)
+	  //output() << fmt::rparen;
+	  return true;
+	}
   };
 
   class PrintMemberDecl : public ConstDeclVisitorArgs<PrintMemberDecl, bool, Filter::What> {
@@ -1177,6 +1370,7 @@ public:
 
   bool
   printDecl (const Decl* d) {
+#if 0
 	SourceManager &sm = Context->getSourceManager();
 	auto start = getPrevSourceLoc(d);
 	auto end = getStartSourceLocWithComment(d);
@@ -1188,6 +1382,7 @@ public:
 		error() << comment << "\n";
 	  }
 	}
+#endif
 
 	Filter::What what = filter->shouldInclude(d);
 	if (what != Filter::What::NOTHING) {
