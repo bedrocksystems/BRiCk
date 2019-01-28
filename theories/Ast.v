@@ -77,7 +77,7 @@ Class Ctxt :  Type :=
 }.
 *)
 
-Variant Cast : Set :=
+Variant PrimCast : Set :=
 | Cdependent (* this doesn't have any semantics *)
 | Cbitcast
 | Clvaluebitcast
@@ -93,6 +93,15 @@ Variant Cast : Set :=
 | Cnull2ptr
 | Cbuiltin2function
 | Cconstructorconversion
+.
+
+Variant Cast : Set :=
+| CCcast (_ : PrimCast)
+| Cuser (conversion_function : globname)
+| Creinterpret (_ : type)
+| Cstatic      (_ : type)
+| Cdynamic     (_ : type)
+| Cconst       (_ : type)
 .
 
 Variant UnOp : Set :=
@@ -168,6 +177,9 @@ Inductive Expr : Set :=
 | Ethis
 | Enull
 | Einitlist (_ : list Expr)
+
+| Enew (_ : option globname) (_ : Expr)
+| Edelete (is_array : bool) (_ : option globname) (_ : Expr)
 .
 
 Inductive Stmt : Set :=
@@ -291,3 +303,5 @@ Parameter T_uint : type.
 Definition T_schar : type := Tchar None true.
 Definition T_uchar : type := Tchar None false.
 Definition T_int := Tint None true.
+
+Coercion CCcast : PrimCast >-> Cast.

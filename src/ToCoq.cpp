@@ -682,7 +682,7 @@ private:
 		parent->printGlobalName(expr->getConversionFunction());
 		output() << fmt::rparen;
 	  } else {
-		ctor("CCast");
+		ctor("CCcast");
 		printCastKind(output(), expr->getCastKind());
 		output() << fmt::rparen;
 	  }
@@ -890,7 +890,7 @@ private:
 	  ctor("Enew");
 	  if (expr->getOperatorNew()) {
 		ctor("Some");
-		parent->printName(expr->getOperatorNew());
+		parent->printGlobalName(expr->getOperatorNew());
 		output() << fmt::lparen;
 	  } else {
 		output() << "None";
@@ -910,8 +910,8 @@ private:
 
 	  if (expr->getOperatorDelete()) {
 		ctor("Some");
-		parent->printName(expr->getOperatorDelete());
-		output() << fmt::lparen;
+		parent->printGlobalName(expr->getOperatorDelete());
+		output() << fmt::rparen;
 	  } else {
 		output() << "None";
 	  }
