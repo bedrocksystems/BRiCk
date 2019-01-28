@@ -9,15 +9,13 @@ coq: Makefile.coq $(VS)
 clean:
 	@ rm $(VS) $(VOS)
 
-A_cpp.v: A.cpp
-	./../cpp2v $< > $@
-A_hpp.v: A.hpp
-	./../cpp2v $< > $@
-B_cpp.v: B.cpp
-	./../cpp2v $< > $@
+%_cpp.v: %.cpp
+	./../cpp2v $< -- > $@
+%_hpp.v: %.hpp
+	./../cpp2v $< -- > $@
 
 %.o: %.cpp
 	gcc -c $<
 
 Makefile.coq: $(VS)
-	coq_makefile -f _CoqProject > Makefile.coq
+	coq_makefile -f _CoqProject -o Makefile.coq
