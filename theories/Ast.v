@@ -122,6 +122,7 @@ Inductive BinOp : Set :=
 | Bmod
 | Bshl
 | Bshr
+| Bsub
 | Bxor (* ^ *)
 | Bop_assign (_ : BinOp)
 .
@@ -165,8 +166,8 @@ Inductive Expr : Set :=
 | Ecall    (_ : Expr) (_ : list Expr)
 | Ecast    (_ : Cast) (_ : Expr)
 
-| Emember  (_ : Expr) (_ : field)
-| Emember_call (_ : globname) (obj : Expr) (_ : list Expr)
+| Emember  (obj : Expr) (_ : field)
+| Emember_call (is_virtual : bool) (method : globname) (obj : Expr) (_ : list Expr)
 
 | Esubscript (_ : Expr) (_ : Expr)
 | Esize_of (_ : type + Expr)

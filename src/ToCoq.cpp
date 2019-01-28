@@ -785,8 +785,11 @@ private:
 
 	void
 	VisitCXXMemberCallExpr (const CXXMemberCallExpr *expr) {
+	  auto method = expr->getMethodDecl();
 	  ctor("Emember_call");
-	  parent->printExpr(expr->getCallee());
+	  output() << (method->isVirtual() ? "true" : "false") << fmt::nbsp;
+
+	  parent->printGlobalName(method);
 	  output() << fmt::nbsp;
 	  parent->printExpr(expr->getImplicitObjectArgument());
 	  output() << fmt::nbsp;

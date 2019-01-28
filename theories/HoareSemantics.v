@@ -413,7 +413,7 @@ Module Type logic.
         Exists fa, [| glob_addr resolve f fa |] **
         wp_rhs obj (fun this => wps es (fun vs =>
             |> fspec (Vptr fa) (this :: vs) Q))
-        |-- wp_rhs (Emember_call f obj es) Q.
+        |-- wp_rhs (Emember_call false f obj es) Q.
 
     Local Open Scope string_scope.
 
@@ -622,7 +622,7 @@ Module Type logic.
      *      exists a, uninitialized (size_of t) a -*
      *        addr_of x a ** ctor(a, args...)
      *)
-    Parameter classify_type : type -> N + N.
+    Parameter classify_type : type -> N + ((* destructor : *) globname * N).
     Definition wp_decl (x : ident) (ty : type) (init : option Expr)
                (k : Kpreds -> mpred) (Q : Kpreds)
     : mpred :=
@@ -644,13 +644,20 @@ Module Type logic.
           | Some init =>
             wp_rhs init (fun v => tlocal ty x v -* k (Kfree (Exists v', tlocal ty x v') Q))
           end
-        | inr sz => (* not a primitive *)
+        | inr (gnd, sz) => (* not a primitive *)
           match init with
           | Some (Econstructor gn es) =>
             Exists ctor, [| glob_addr resolve gn ctor |] **
+            (* we don't need the destructor until later, but if we prove it
+             * early, then we don't need to resolve it over multiple paths.
+             *)
+            Exists dtor, [| glob_addr resolve gnd dtor |] **
             wps es (fun vs =>
                    Exists a, Exists sz, uninitialized sz a
-                -* |> fspec (Vptr ctor) (a :: vs) (fun _ => k (Kfree (uninitialized sz a) Q)))
+                -* |> fspec (Vptr ctor) (a :: vs) (fun _ =>
+                   addr_of x a -*
+                   k (Kseq_all (fun Q => |> fspec (Vptr dtor) (a :: nil)
+                                     (fun _ => addr_of x a ** uninitialized sz a ** Q)) Q)))
           | _ => lfalse
             (* all non-primitive declarations must have initializers *)
           end
@@ -1096,45 +1103,45 @@ Declare Module L : logic.
 
 Export L.
 
-  Ltac simplify_wp :=
-    repeat first [ rewrite <- wp_lhs_assign
-                 | rewrite <- wp_lhs_lvar
-                 | rewrite <- wp_lhs_gvar
-                 | rewrite <- wp_rhs_int
-                 | rewrite <- wp_lhs_deref
-                 | rewrite <- wp_rhs_addrof
-                 | rewrite <- wp_rhs_cast_l2r
-                 ].
+Ltac simplify_wp :=
+  repeat first [ rewrite <- wp_lhs_assign
+               | rewrite <- wp_lhs_lvar
+               | rewrite <- wp_lhs_gvar
+               | rewrite <- wp_rhs_int
+               | rewrite <- wp_lhs_deref
+               | rewrite <- wp_rhs_addrof
+               | rewrite <- wp_rhs_cast_l2r
+               ].
 
 
-  Ltac simplifying :=
-      repeat first [ progress simplify_wp
-                   | progress simpl wps
-                   | rewrite <- wp_skip
-                   | rewrite <- wp_seq_nil
-                   | rewrite <- wp_seq_cons
-                   | rewrite <- wp_decl_nil
-                   | rewrite <- wp_decl_cons
-                   | rewrite <- wp_return_val
-                   | rewrite <- wp_return_void
-                   | rewrite <- wp_if
-                   | rewrite <- wp_continue
-                   | rewrite <- wp_break
-                   | rewrite <- wp_rhs_binop
-                   | rewrite <- wp_rhs_cast_function2pointer
-                   ].
+Ltac simplifying :=
+  repeat first [ progress simplify_wp
+               | progress simpl wps
+               | rewrite <- wp_skip
+               | rewrite <- wp_seq_nil
+               | rewrite <- wp_seq_cons
+               | rewrite <- wp_decl_nil
+               | rewrite <- wp_decl_cons
+               | rewrite <- wp_return_val
+               | rewrite <- wp_return_void
+               | rewrite <- wp_if
+               | rewrite <- wp_continue
+               | rewrite <- wp_break
+               | rewrite <- wp_rhs_binop
+               | rewrite <- wp_rhs_cast_function2pointer
+               ].
 
-  Ltac has_type :=
-    first [ eapply has_type_int ; lia
-          | eapply has_type_int32 ; lia
-          | eapply has_type_qual ; has_type ].
+Ltac has_type :=
+  first [ eapply has_type_int ; lia
+        | eapply has_type_int32 ; lia
+        | eapply has_type_qual ; has_type ].
 
-  Ltac operator :=
-    first [ subst ; eapply eval_add; [ first [ reflexivity | nia ] | has_type ] ].
+Ltac operator :=
+  first [ subst ; eapply eval_add; [ first [ reflexivity | nia ] | has_type ] ].
 
-  Ltac work :=
-    let tac := try match goal with
-                   | |- @eq val _ _ => try f_equal
-                   end ;
-        try solve [ eauto | reflexivity | has_type | operator | lia ] in
-    discharge ltac:(canceler fail tac) tac.
+Ltac work :=
+  let tac := try match goal with
+                 | |- @eq val _ _ => try f_equal
+                 end ;
+             try solve [ eauto | reflexivity | has_type | operator | lia ] in
+  discharge ltac:(canceler fail tac) tac.
