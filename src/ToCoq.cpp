@@ -454,8 +454,6 @@ private:
 		  assert(false);
 		}
 		output() << "," << fmt::nbsp;
-		error() << (sc->getSubStmt() == nullptr) << "\n";
-		llvm::errs().flush();
 	    parent->printStmt(sc->getSubStmt());
 	    output() << fmt::rparen;
 
@@ -678,8 +676,6 @@ private:
 
 	void
 	VisitCastExpr (const CastExpr *expr) {
-	  error() << "unnamed cast\n";
-	  	  llvm::errs().flush();
 	  ctor("Ecast");
 	  if (expr->getConversionFunction()) {
 		ctor("Cuser");
@@ -698,8 +694,6 @@ private:
 
 	void
 	VisitCXXNamedCastExpr(const CXXNamedCastExpr *expr) {
-	  error() << "named cast\n";
-	  llvm::errs().flush();
 	  ctor("Ecast");
 	  if (expr->getConversionFunction()) {
 		return VisitCastExpr(expr);
@@ -925,6 +919,37 @@ private:
 
 	  parent->printExpr(expr->getArgument());
 
+	  output() << fmt::rparen;
+	}
+
+	// todo(gmm): we could probably get around having the next three definitions.
+
+	void
+	VisitExprWithCleanups(const ExprWithCleanups *expr) {
+	  error() << "[ERR] ExprWithCleanps is not supported, consider changing your code to explicitly allocate the temporary.\n";
+	  exit(1);
+
+	  // note(gmm): my intuition is that these are expressions that create temporaries and then
+	  // free them.
+	  // note(gmm): it doesn't seem like there is any way to determine the number or type of the
+	  // temporaries that are constructed just from looking at this node.
+	  ctor("Eandclean");
+	  parent->printExpr(expr->getSubExpr());
+	  output() << fmt::rparen;
+	}
+
+	void
+	VisitMaterializeTemporaryExpr(const MaterializeTemporaryExpr *expr) {
+	  error() << "mangling number = " << expr->getManglingNumber() << "\n";
+	  parent->printExpr(expr->GetTemporaryExpr());
+	}
+
+	void
+	VisitCXXTemporaryObjectExpr(const CXXTemporaryObjectExpr *expr) {
+	  ctor("Econstructor");
+	  parent->printGlobalName(expr->getConstructor());
+	  output() << fmt::nbsp;
+	  PRINT_LIST(expr->arg, parent->printExpr)
 	  output() << fmt::rparen;
 	}
   };
@@ -1561,7 +1586,6 @@ toCoqModule(clang::ASTContext *ctxt, const clang::TranslationUnitDecl *decl) {
   filters.push_back(&noInclude);
   filters.push_back(&fromComment);
   Combine<Filter::What::NOTHING, Filter::max> filter(filters);
-
 
   Formatter fmt(llvm::outs());
 

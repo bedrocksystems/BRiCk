@@ -47,6 +47,10 @@ static cl::OptionCategory Cpp2V("cpp2v options");
 // It's nice to have this help message in all tools.
 static cl::extrahelp CommonHelp(CommonOptionsParser::HelpMessage);
 
+// todo(gmm): i need to figure out how to thread this value through so that we
+// output to that file.
+// static cl::opt<StringRef> VFileOutput("out", cl::cat(Cpp2V));
+
 int main(int argc, const char **argv) {
   CommonOptionsParser OptionsParser(argc, argv, Cpp2V);
   ClangTool Tool(OptionsParser.getCompilations(),

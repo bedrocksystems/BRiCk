@@ -1,5 +1,5 @@
 /*
- * Output.hpp
+ * Formatter.hpp
  *
  *  Created on: Dec 28, 2018
  *      Author: gmalecha
@@ -8,6 +8,7 @@
 #pragma once
 
 #include "llvm/Support/raw_ostream.h"
+#include "llvm/ADT/StringRef.h"
 #include <string.h>
 
 namespace fmt {
