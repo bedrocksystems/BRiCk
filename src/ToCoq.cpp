@@ -435,19 +435,17 @@ private:
 	  while (sc) {
 		output() << fmt::lparen;
 		if (isa<DefaultStmt>(sc)) {
-		  output() << "None";
+		  output() << "Default";
 		} else if (auto cs = dyn_cast<CaseStmt>(sc)) {
-		  ctor("Some");
-		  output() << "(";
-		  parent->printExpr(cs->getLHS());
-		  output() << "," << fmt::nbsp;
 		  if (cs->getRHS()) {
-			output() << "Some" << fmt::nbsp;
+			output() << "Range" << fmt::nbsp;
+			parent->printExpr(cs->getLHS());
+			output() << fmt::nbsp;
 			parent->printExpr(cs->getRHS());
 		  } else {
-			output() << "None";
+			output() << "Exact" << fmt::nbsp;
+			parent->printExpr(cs->getLHS());
 		  }
-		  output() << ")" << fmt::rparen;
 		} else {
 		  error() << "switch body not default or case.\n";
 		  llvm::errs().flush();
@@ -1075,7 +1073,7 @@ private:
 			output() << fmt::rparen << fmt::rparen << fmt::rparen;
 		  } else if (cd->isDefaulted()) {
 			// todo(gmm): i need to figure out how to generate the default constructors
-			output() << "(Some Default)";
+			output() << "(Some Defaulted)";
 		  } else {
 			output() << "None";
 		  }
@@ -1091,7 +1089,8 @@ private:
 		if (dd->isDeleted()) {
 		  output() << "None";
 		} else if (dd->isDefaulted()) {
-		  ctor("Some") << "Default" << fmt::rparen;
+		  // todo(gmm): I need go generate this.
+		  ctor("Some") << "Defaulted" << fmt::rparen;
 		} else if (dd->getBody()) {
 		  ctor("Some");
 		  ctor("UserDefined");
@@ -1102,7 +1101,7 @@ private:
 		  output() << "None";
 		}
 	  } else {
-		ctor("Some") << "Default" << fmt::rparen;
+		ctor("Some") << "Defaulted" << fmt::rparen;
 	  }
 	  output() << fmt::outdent << fmt::line;
 

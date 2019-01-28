@@ -182,6 +182,12 @@ Inductive Expr : Set :=
 | Edelete (is_array : bool) (_ : option globname) (_ : Expr)
 .
 
+Variant SwitchBranch : Set :=
+| Default
+| Exact (_ : Expr)
+| Range (_ _ : Expr)
+.
+
 Inductive Stmt : Set :=
 | Sseq    (_ : list Stmt)
 | Sdecl   (_ : list (ident * type * option Expr))
@@ -190,6 +196,8 @@ Inductive Stmt : Set :=
 | Swhile  (_ : Expr) (_ : Stmt)
 | Sfor    (_ : option Stmt) (_ _ : option Expr) (_ : Stmt)
 | Sdo     (_ : Stmt) (_ : Expr)
+
+| Sswitch (_ : Expr) (_ : list (SwitchBranch * Stmt))
 
 | Sbreak
 | Scontinue
@@ -202,7 +210,7 @@ Inductive Stmt : Set :=
 .
 
 Variant OrDefault {t : Set} : Set :=
-| Default
+| Defaulted
 | UserDefined (_ : t).
 Arguments OrDefault : clear implicits.
 
