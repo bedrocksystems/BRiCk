@@ -127,7 +127,7 @@ private:
 	  error() << "[ERR] unsupported type: ";
 	  type->dump(error());
 	  error() << "\n";
-	  output() << "(Tunknown \"" << type->getTypeClassName() << "\")";
+	  exit(1);
 	}
 
 	void
@@ -199,7 +199,8 @@ private:
 	  } else {
 		error() << "Unsupported type \""
 			    << type->getNameAsCString(PrintingPolicy(LangOptions())) << "\"\n";
-		output() << "Tunknown";
+		llvm::errs().flush();
+		exit(1);
 	  }
 	}
 
@@ -1041,6 +1042,10 @@ private:
 	  PRINT_LIST(decl->field, print_field)
 	  output() << fmt::outdent;
 
+	  // note(gmm): i don't want to print any of the nested definitions, but i do need to print
+	  // any definitions that are implicit, e.g. default constructor, copy constructor, move constructor,
+	  // and the destructor
+
 	  // print the constructors
 	  // todo(gmm): check on the semantics of the instructions. in particular, determine the order of constructor initialization.
 	  output() << fmt::line << "; s_ctors :=" << fmt::indent << fmt::line;
@@ -1109,20 +1114,17 @@ private:
 	  output() << fmt::outdent << fmt::line;
 
 	  // print the methods
-	  output() << fmt::line << "; s_nested :=" << fmt::nbsp << fmt::indent << fmt::line;
+	  output() << fmt::line << "; s_nested := nil |}" << fmt::rparen << fmt::rparen;
+
 	  {
-		PrintMemberDecl printMemberDecl(this->parent, decl);
+		bool skip = false;
 		for (auto i = decl->method_begin(), e = decl->method_end(); i != e; ++i) {
-		  if (!isa<CXXConstructorDecl>(*i) && !isa<CXXDestructorDecl>(*i)) {
-			if (printMemberDecl.Visit(*i, what)) {
-			  output() << fmt::line << "::" << fmt::nbsp;
-			}
-		  }
+		  if (!skip)
+			output() << fmt::line << "::" << fmt::nbsp;
+		  skip = !this->Visit(*i, what);
 		}
-		output() << "nil" << fmt::outdent;
 	  }
 
-	  output() << "|}" << fmt::rparen << fmt::rparen;
 	  return true;
 	}
 
@@ -1138,23 +1140,57 @@ private:
 
 	bool
 	VisitCXXMethodDecl (const CXXMethodDecl *decl, Filter::What what) {
-	  // note(gmm): method bodies are recorded inline in the class, so we don't need
-	  // to print them when we are not inside the class.
-	  return false;
+	  if (decl->isStatic()) {
+		ctor("Dfunction") << "\"" << decl->getNameAsString() << "\"" << fmt::nbsp;
+		parent->printFunction(decl, what);
+		output() << fmt::rparen;
+		return true;
+	  } else {
+		if (decl->isVirtual()) {
+		  error() << "[ERR] virtual functions not supported: " << decl->getNameAsString() << "\n";
+		  return false;
+		}
+		ctor("Dmethod");
+		parent->printGlobalName(decl);
+		output() << fmt::nbsp;
+		// << "\"" << decl->getNameAsString() << "\"" << fmt::nbsp;
+		parent->printGlobalName(decl->getParent());
+		output() << fmt::nbsp;
+		parent->printMethod(decl, what);
+		output() << fmt::rparen;
+		return true;
+	  }
 	}
 
-	bool
-	VisitCXXConstructorDecl (const CXXConstructorDecl *decl, Filter::What what) {
-	  // note(gmm): i could actually see this if the constructor implementation is in the cpp file, but the
-	  // definition is in the hpp file.
-	  error() << "seeing a constructor\n";
-	  return false;
-	}
+  	bool
+	VisitCXXConstructorDecl(const CXXConstructorDecl *decl, Filter::What what) {
+  	  ctor("Dconstructor");
+  	  parent->printGlobalName(decl);
+  	  output() << fmt::nbsp;
+  	  parent->printGlobalName(decl->getParent());
+  	  output() << fmt::nbsp;
 
-	bool
-	VisitCXXDestructorDecl (const CXXDestructorDecl *decl, Filter::What what) {
-	  return false;
-	}
+  	  // todo(gmm): this shouldn't be a function, this is more like a method.
+  	  parent->printMethod(decl, what);
+  	  output() << fmt::rparen;
+
+  	  return true;
+  	}
+
+  	bool
+	VisitCXXDestructorDecl(const CXXDestructorDecl *decl, Filter::What what) {
+  	  ctor("Ddestructor");
+  	  parent->printGlobalName(decl);
+  	  output() << fmt::nbsp;
+  	  parent->printGlobalName(decl->getParent());
+  	  output() << fmt::nbsp;
+
+  	  // todo(gmm): this shouldn't be a function, this is more like a method.
+  	  parent->printMethod(decl, what);
+  	  output() << fmt::rparen;
+
+  	  return true;
+  	}
 
 	bool
 	VisitVarDecl (const VarDecl *decl, Filter::What what) {
@@ -1303,6 +1339,7 @@ private:
 	}
   };
 
+#if 0
   class PrintMemberDecl : public ConstDeclVisitorArgs<PrintMemberDecl, bool, Filter::What> {
   protected:
 	ToCoq *const parent;
@@ -1321,6 +1358,36 @@ private:
   	}
 
   	bool
+	VisitCXXConstructorDecl(const CXXConstructorDecl *decl, Filter::What what) {
+  	  ctor("Dconstructor");
+  	  parent->printGlobalName(decl);
+  	  output() << fmt::nbsp;
+  	  parent->printGlobalName(decl->getParent());
+  	  output() << fmt::nbsp;
+
+  	  // todo(gmm): this shouldn't be a function, this is more like a method.
+  	  parent->printFunction(decl, what);
+  	  output() << fmt::rparen;
+
+  	  return true;
+  	}
+
+  	bool
+	VisitCXXDestructorDecl(const CXXDestructorDecl *decl, Filter::What what) {
+  	  ctor("Ddestructor");
+  	  parent->printGlobalName(decl);
+  	  output() << fmt::nbsp;
+  	  parent->printGlobalName(decl->getParent());
+  	  output() << fmt::nbsp;
+
+  	  // todo(gmm): this shouldn't be a function, this is more like a method.
+  	  parent->printFunction(decl, what);
+  	  output() << fmt::rparen;
+
+  	  return true;
+  	}
+
+  	bool
 	VisitCXXMethodDecl (const CXXMethodDecl *decl, Filter::What what) {
   	  if (decl->isStatic()) {
   		ctor("Dfunction") << "\"" << decl->getNameAsString() << "\"" << fmt::nbsp;
@@ -1332,7 +1399,10 @@ private:
   		  error() << "[ERR] virtual functions not supported: " << decl->getNameAsString() << "\n";
   		  return false;
   		}
-  		ctor("Dmethod") << "\"" << decl->getNameAsString() << "\"" << fmt::nbsp;
+  		ctor("Dmethod");
+  		parent->printGlobalName(decl);
+  		output() << fmt::nbsp;
+  		// << "\"" << decl->getNameAsString() << "\"" << fmt::nbsp;
   		parent->printGlobalName(decl->getParent());
   		output() << fmt::nbsp;
 		parent->printFunction(decl, what);
@@ -1341,6 +1411,7 @@ private:
   	  }
 	}
   };
+#endif
 
 private:
   PrintType typePrinter;
@@ -1547,6 +1618,30 @@ public:
 	}
 	output() << fmt::outdent << "|}";
   }
+
+  void
+  printMethod(const CXXMethodDecl *decl, Filter::What what) {
+	output() << "{| m_return :=" << fmt::indent;
+	printQualType(decl->getCallResultType());
+	output() << fmt::line << "; m_class :=" << fmt::nbsp;
+	printGlobalName(decl->getParent());
+	output() << fmt::line << "; m_this_qual :=" << fmt::indent;
+	output() << "{| q_const :=" << (decl->isConst() ? "true" : "false")
+		     << "; q_volatile :=" << (decl->isVolatile() ? "true" : "false")
+			 << "|}" << fmt::outdent << fmt::line;
+	output() << "; m_params :=" << fmt::nbsp;
+	PRINT_LIST(decl->param, printParam);
+	output() << "; m_body :=" << fmt::nbsp;
+	if (decl->getBody() && what >= Filter::DEFINITION) {
+	  output() << fmt::lparen << "Some" << fmt::nbsp;
+	  printStmt(decl->getBody());
+	  output() << fmt::rparen;
+	} else {
+	  output() << "None";
+	}
+	output() << fmt::outdent << "|}";
+  }
+
 
   void
   translateModule (const TranslationUnitDecl* decl) {

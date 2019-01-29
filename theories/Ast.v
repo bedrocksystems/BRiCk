@@ -22,6 +22,7 @@ Definition globname : Set := string.
   (* these are mangled names. for consistency, we're going to
    * mangle everything.
    *)
+
 (*
 Record globname : Set :=
 { g_path : list ident
@@ -231,11 +232,19 @@ Record Func : Set :=
 ; f_body   : option Stmt
 }.
 
+Record Method : Set :=
+{ m_return  : type
+; m_class   : globname
+; m_this_qual : type_qualifiers
+; m_params  : list (ident * type)
+; m_body    : option Stmt
+}.
+
 Record Struct {Decl : Set} : Set :=
 { s_bases : list globname
   (* ^ base classes *)
 ; s_fields : list (ident * type * option Expr)
-  (* ^ fields (with optional initializers *)
+  (* ^ fields (with optional initializers) *)
 ; s_ctors : list Ctor
   (* ^ constructors *)
 ; s_dtor  : option (OrDefault Stmt)
@@ -256,7 +265,9 @@ Inductive Decl : Set :=
 | Dtypedef     (name : globname) (_ : type)
 
 | Dfunction    (name : obj_name) (_ : Func)
-| Dmethod      (name : obj_name) (_ : globname) (_ : Func)
+| Dmethod      (name : obj_name) (_ : globname) (_ : Method)
+| Dconstructor (name : obj_name) (_ : globname) (_ : Method)
+| Ddestructor  (name : obj_name) (_ : globname) (_ : Method)
 
 | Dstruct      (name : globname) (_ : option (Struct Decl))
   (* ^ structures & classes *)

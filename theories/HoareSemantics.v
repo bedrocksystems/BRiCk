@@ -40,9 +40,6 @@ Section withLogic.
   Context {L : Type}.
   Context {ILogicOps_L : ILogicOps L}.
   Existing Instance ILogicOps_L.
-  (* Context {ILogic_L : ILogic L}. *)
-  (* Existing Instance ILogic_L. *)
-
 
   Fixpoint applyEach {t u T} (ls : list t) (vals : list u)
     : forall (v : arrowFrom u ls T)
@@ -136,6 +133,7 @@ Module Type logic.
   (* heap points to *)
   Parameter ptsto : val -> val -> mpred.
 
+  (* todo(gmm): this is thread local *)
   (* address of a local variable *)
   Parameter addr_of : ident -> val -> mpred.
 
@@ -157,6 +155,19 @@ Module Type logic.
   Parameter with_genv : (genv -> mpred) -> mpred.
   Axiom with_genv_single : forall f g,
       with_genv f //\\ with_genv g -|- with_genv (fun r => f r //\\ g r).
+
+  (* todo(gmm): maintain stack variables through regions
+   *)
+  Parameter has_type : val -> type -> Prop.
+
+  Definition tptsto (ty : type) (p : val) (v : val) : mpred :=
+    ptsto p v ** (embed (has_type v ty) //\\ empSP).
+
+
+  Definition local (x : ident) (v : val) : mpred :=
+    Exists a, addr_of x a ** ptsto a v.
+  Definition tlocal (ty : type) (x : ident) (v : val) : mpred :=
+    Exists a, addr_of x a ** tptsto ty a v.
 
 
   (* this is the denotation of modules *)
@@ -185,10 +196,21 @@ Module Type logic.
         with_genv (fun resolve => [| glob_addr resolve n a |]) //\\
                   code_at a f
       end
-    | Dmethod n t f =>
-      Exists a,
-      with_genv (fun resolve => [| glob_addr resolve n a |]) //\\
-                code_at a f
+    | Dmethod n t m
+    | Dconstructor n t m
+    | Ddestructor n t m =>
+      (* todo(gmm): in the future, we might want to separate constructors and destructors. *)
+      match m.(m_body) return mpred with
+      | None =>
+        Exists a,
+        with_genv (fun resolve => [| glob_addr resolve n a |])
+      | Some body =>
+        Exists a,
+        with_genv (fun resolve => [| glob_addr resolve n a |]) //\\
+                  code_at a {| f_return := m.(m_return)
+                             ; f_params := ("#this"%string, Tqualified m.(m_this_qual) (Tref m.(m_class))) :: m.(m_params)
+                             ; f_body := m.(m_body) |}
+      end
     | Dstruct gn _ => empSP
       (* ^ this should record size and offset information
        *)
@@ -241,8 +263,6 @@ Module Type logic.
     forall (p : val) (vs : list val) (K m : val -> mpred),
       (forall r : val, m r |-- K r) -> fspec p vs m |-- fspec p vs K.
 
-
-
   (** Weakest pre-condition for expressions
    *)
   Variant mode : Set := Lvalue | Rvalue.
@@ -285,12 +305,6 @@ Module Type logic.
       | e :: es => wp_rhs e (fun v => wps es (fun vs => Q (cons v vs)))
       end.
 
-    (* todo(gmm): maintain stack variables through regions
-     *)
-    Parameter has_type : val -> type -> Prop.
-
-    Definition tptsto (ty : type) (p : val) (v : val) : mpred :=
-      ptsto p v ** (embed (has_type v ty) //\\ empSP).
 
     Axiom wp_rhs_int : forall n ty Q,
         embed (has_type (Vint n) ty) //\\ Q (Vint n)
@@ -303,6 +317,10 @@ Module Type logic.
         |-- wp_rhs (Ebool b) Q.
 
     (* todo(gmm): what about the type? *)
+    Axiom wp_rhs_this : forall Q,
+      Exists a, (addr_of "#this"%string a ** ltrue) //\\ Q a
+      |-- wp_rhs Ethis Q.
+
     Axiom wp_lhs_lvar : forall x Q,
       Exists a, (addr_of x a ** ltrue) //\\ Q a
       |-- wp_lhs (Evar (Lname x)) Q.
@@ -313,7 +331,7 @@ Module Type logic.
       |-- wp_lhs (Evar (Gname x)) Q.
 
     Axiom wp_lhs_member : forall e f Q,
-      wp_lhs e (fun base =>
+      wp_rhs e (fun base =>
          Exists offset,
                 [| @offset_of resolve (Tref f.(f_type)) f.(f_name) offset |]
            ** Q (offset_ptr base offset))
@@ -417,11 +435,6 @@ Module Type logic.
 
     Local Open Scope string_scope.
 
-    Definition local (x : ident) (v : val) : mpred :=
-      Exists a, addr_of x a ** ptsto a v.
-    Definition tlocal (ty : type) (x : ident) (v : val) : mpred :=
-      Exists a, addr_of x a ** tptsto ty a v.
-
     Ltac simplify_wp :=
       repeat first [ rewrite <- wp_lhs_assign
                    | rewrite <- wp_lhs_lvar
@@ -432,8 +445,6 @@ Module Type logic.
                    | rewrite <- wp_rhs_cast_l2r
                    ].
 
-    Parameter _x : ident.
-    Parameter _y : ident.
     Coercion Vint : Z >-> val.
     Coercion Z.of_N : N >-> Z.
     Definition El2r := Ecast Cl2r.
@@ -469,6 +480,9 @@ Module Type logic.
             end ;
         try solve [ eauto | reflexivity | has_type | operator | lia ] in
       discharge ltac:(canceler fail tac) tac.
+
+    Parameter _x : ident.
+    Parameter _y : ident.
 
     (* int x ; x = 0 ; *)
     Goal (tlocal T_int32 _x 3
@@ -610,8 +624,6 @@ Module Type logic.
                  ; k_normal   := Q.(k_normal) |})
         |-- wp resolve (Swhile t b) Q.
 
-    Axiom wp_decl_nil : forall Q, Q.(k_normal) |-- wp resolve (Sdecl nil) Q.
-
     (* note(gmm): this definition is crucial to everything going on.
      * 1. look at the type.
      *    > reference: if a is the lvalue of the rhs
@@ -622,47 +634,58 @@ Module Type logic.
      *      exists a, uninitialized (size_of t) a -*
      *        addr_of x a ** ctor(a, args...)
      *)
-    Parameter classify_type : type -> N + ((* destructor : *) globname * N).
-    Definition wp_decl (x : ident) (ty : type) (init : option Expr)
+    Fixpoint wp_decl (x : ident) (ty : type) (init : option Expr)
                (k : Kpreds -> mpred) (Q : Kpreds)
     : mpred :=
       match ty with
       | Treference t =>
         match init with
         | None => lfalse
-          (* references must be initialized *)
+          (* ^ references must be initialized *)
         | Some init =>
           (* i should use the type here *)
-          wp_rhs init (fun a => addr_of x a -* k (Kfree (addr_of x a) Q))
+          wp_lhs init (fun a => addr_of x a -* k (Kfree (addr_of x a) Q))
         end
-      | _ =>
-        match classify_type ty with
-        | inl _ =>
-          match init with
-          | None =>
-            Exists v, tlocal ty x v -* k (Kfree (Exists v', tlocal ty x v') Q)
-          | Some init =>
-            wp_rhs init (fun v => tlocal ty x v -* k (Kfree (Exists v', tlocal ty x v') Q))
-          end
-        | inr (gnd, sz) => (* not a primitive *)
-          match init with
-          | Some (Econstructor gn es) =>
-            Exists ctor, [| glob_addr resolve gn ctor |] **
-            (* we don't need the destructor until later, but if we prove it
-             * early, then we don't need to resolve it over multiple paths.
-             *)
-            Exists dtor, [| glob_addr resolve gnd dtor |] **
-            wps es (fun vs =>
-                   Exists a, Exists sz, uninitialized sz a
-                -* |> fspec (Vptr ctor) (a :: vs) (fun _ =>
-                   addr_of x a -*
-                   k (Kseq_all (fun Q => |> fspec (Vptr dtor) (a :: nil)
-                                     (fun _ => addr_of x a ** uninitialized sz a ** Q)) Q)))
-          | _ => lfalse
-            (* all non-primitive declarations must have initializers *)
-          end
+      | Tfunction _ _ =>
+        (* inline functions are not supported *)
+        lfalse
+      | Tvoid
+      | Tunknown
+      | Ttemplate _ => lfalse
+      | Tqualified q ty =>
+        wp_decl x ty init k Q
+      | Tpointer _
+      | Tbool
+      | Tchar _ _
+      | Tint _ _ =>
+        match init with
+        | None =>
+          Exists v, tlocal ty x v -* k (Kfree (Exists v', tlocal ty x v') Q)
+        | Some init =>
+          wp_rhs init (fun v => tlocal ty x v -* k (Kfree (Exists v', tlocal ty x v') Q))
+        end
+      | Tarray _ _ => lfalse (* todo(gmm): arrays not yet supported *)
+      | Tref gn =>
+        match init with
+        | Some (Econstructor cnd es) =>
+          Exists sz, [| @size_of resolve (Tref gn) sz |] **
+          Exists ctor, [| glob_addr resolve cnd ctor |] **
+          (* we don't need the destructor until later, but if we prove it
+           * early, then we don't need to resolve it over multiple paths.
+           *)
+          Exists dtor, [| glob_addr resolve (gn ++ "D1") dtor |] **
+          wps es (fun vs =>
+                 Exists a, Exists sz, uninitialized sz a
+              -* |> fspec (Vptr ctor) (a :: vs) (fun _ =>
+                 addr_of x a -*
+                 k (Kseq_all (fun Q => |> fspec (Vptr dtor) (a :: nil)
+                                   (fun _ => addr_of x a ** uninitialized sz a ** Q)) Q)))
+        | _ => lfalse
+          (* ^ all non-primitive declarations must have initializers *)
         end
       end.
+
+    Axiom wp_decl_nil : forall Q, Q.(k_normal) |-- wp resolve (Sdecl nil) Q.
 
     Axiom wp_decl_cons : forall x ty init ds Q,
         wp_decl x ty init (wp resolve (Sdecl ds)) Q
@@ -953,6 +976,36 @@ Module Type logic.
       ).
     Defined.
 
+
+    Definition method_ok' (ret : type)
+               (this_type : type)
+               (params : list (ident * type))
+               (body : Stmt)
+               (spec : function_spec')
+    : mpred.
+    refine (
+      [| spec.(fs'_return) = ret |] **
+      [| spec.(fs'_arguments) = this_type :: List.map snd params |] **
+      ForallEach' _ spec.(fs'_specification) (fun PQ args =>
+        let vals := List.map snd args in
+
+        match vals with
+        | nil => lfalse
+        | this_val :: rest_vals =>
+          (* this is what is created from the parameters *)
+          let binds :=
+              addr_of "#this" this_val **
+              sepSPs (zip (fun '(x, t) 'v => tlocal t x v) params rest_vals) in
+          (* this is what is freed on return *)
+          let frees :=
+              addr_of "#this" this_val **
+              sepSPs (map (fun '(x, t) => Exists v, tlocal t x v) params) in
+          Forall Q : val -> mpred,
+          (binds ** PQ Q) -* (wp resolve body (Kfree frees (val_return Q)))
+      end)
+      ).
+    Defined.
+
     Definition cglob' (gn : globname) (spec : function_spec')
     : mpred :=
       Exists a, [| glob_addr resolve gn a |] ** cptr' (Vptr a) spec.
@@ -1111,6 +1164,8 @@ Ltac simplify_wp :=
                | rewrite <- wp_lhs_deref
                | rewrite <- wp_rhs_addrof
                | rewrite <- wp_rhs_cast_l2r
+               | rewrite <- wp_lhs_member
+               | rewrite <- wp_rhs_this
                ].
 
 
