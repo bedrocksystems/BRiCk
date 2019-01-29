@@ -1,2 +1,5 @@
-*.v
+*_cpp.v
+*_hpp.v
+*.o
+*.glob
 cpp2v
