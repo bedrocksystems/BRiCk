@@ -222,8 +222,14 @@ Variant FieldOrBase {f b : Set} : Set :=
 Arguments FieldOrBase : clear implicits.
 
 Record Ctor : Set :=
-{ c_params : list (ident * type)
+{ c_class  : globname
+; c_params : list (ident * type)
 ; c_body   : option (OrDefault (list (FieldOrBase ident globname * Expr) * Stmt))
+}.
+
+Record Dtor : Set :=
+{ d_class  : globname
+; d_body   : option (OrDefault (Stmt * list (FieldOrBase ident globname * globname)))
 }.
 
 Record Func : Set :=
@@ -245,12 +251,12 @@ Record Struct {Decl : Set} : Set :=
   (* ^ base classes *)
 ; s_fields : list (ident * type * option Expr)
   (* ^ fields (with optional initializers) *)
-; s_ctors : list Ctor
-  (* ^ constructors *)
-; s_dtor  : option (OrDefault Stmt)
-  (* ^ destructor *)
-; s_nested : list Decl
-  (* ^ non-members, e.g. nested types, static functions, etc. *)
+(* ; s_ctors : list Ctor *)
+(*   (* ^ constructors *) *)
+(* ; s_dtor  : option  *)
+(*   (* ^ destructor *) *)
+(* ; s_nested : list Decl *)
+(*   (* ^ non-members, e.g. nested types, static functions, etc. *) *)
 }.
 Arguments Struct : clear implicits.
 
@@ -265,9 +271,9 @@ Inductive Decl : Set :=
 | Dtypedef     (name : globname) (_ : type)
 
 | Dfunction    (name : obj_name) (_ : Func)
-| Dmethod      (name : obj_name) (_ : globname) (_ : Method)
-| Dconstructor (name : obj_name) (_ : globname) (_ : Method)
-| Ddestructor  (name : obj_name) (_ : globname) (_ : Method)
+| Dmethod      (name : obj_name) (_ : Method)
+| Dconstructor (name : obj_name) (_ : Ctor)
+| Ddestructor  (name : obj_name) (_ : Dtor)
 
 | Dstruct      (name : globname) (_ : option (Struct Decl))
   (* ^ structures & classes *)

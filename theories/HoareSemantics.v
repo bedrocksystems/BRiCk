@@ -8,81 +8,14 @@ Require Import Coq.Strings.String.
 From ChargeCore.Logics Require Import
      ILogic BILogic ILEmbed Later.
 
-Require Import Cpp.Ast.
-Require Cpp.Parser.
+From Cpp Require Ast Parser.
+Import Cpp.Parser.
+Require Import  Cpp.Sem.Util.
 
 Require Import Coq.ZArith.BinInt.
 Require Import Coq.micromega.Lia.
 
 From auto.Tactics Require Import Discharge.
-
-
-
-Fixpoint arrowFrom {t} u (ls : list t) (T : Type)
-: Type :=
-  match ls with
-  | nil => T
-  | cons l ls => u -> arrowFrom u ls T
-  end.
-
-Section zip.
-  Context {A B C : Type} (f : A -> B -> C).
-  Fixpoint zip (x : list A) (y : list B) : list C :=
-    match x , y with
-    | nil , _
-    | _ , nil => nil
-    | x :: xs , y :: ys => f x y :: zip xs ys
-    end.
-End zip.
-
-
-Section withLogic.
-  Context {L : Type}.
-  Context {ILogicOps_L : ILogicOps L}.
-  Existing Instance ILogicOps_L.
-
-  Fixpoint applyEach {t u T} (ls : list t) (vals : list u)
-    : forall (v : arrowFrom u ls T)
-        (P : T -> list (t * u) -> L), L :=
-    match ls , vals with
-    | nil , nil => fun v P => P v nil
-    | l :: ls , x :: xs => fun v P =>
-      applyEach ls xs (v x) (fun z xs => P z (cons (l, x) xs))
-    | _ , _ => fun _ _ => lfalse
-    end.
-
-  Fixpoint ForallEach {t u T} (ls : list t)
-    : forall (v : arrowFrom u ls T)
-        (P : T -> list (t * u) -> L), L :=
-    match ls with
-    | nil => fun v P => P v nil
-    | l :: ls => fun v P => Forall x,
-      ForallEach ls (v x) (fun z xs => P z (cons (l, x) xs))
-    end.
-
-  Fixpoint Forall2Each {t u T U} (ls : list t)
-    : forall (v : arrowFrom u ls T) (v' : arrowFrom u ls U)
-        (P : T -> U -> list (t * u) -> L), L :=
-    match ls with
-    | nil => fun v v' P => P v v' nil
-    | l :: ls => fun v v' P => Forall x,
-      Forall2Each ls (v x) (v' x) (fun z z' xs => P z z' (cons (l, x) xs))
-    end.
-
-  Fixpoint ExistsEach {t u T} (ls : list t)
-    : forall (v : arrowFrom u ls T)
-        (P : T -> list (t * u) -> L), L :=
-    match ls with
-    | nil => fun v P => P v nil
-    | l :: ls => fun v P => Exists x,
-      ExistsEach ls (v x) (fun z xs => P z (cons (l, x) xs))
-    end.
-
-End withLogic.
-
-Definition forallEach := @ForallEach Prop _.
-Arguments forallEach {_ _ _}.
-
 
 Module Type logic.
 
@@ -143,6 +76,9 @@ Module Type logic.
   Axiom code_at_dup : forall p f, code_at p f -|- code_at p f ** code_at p f.
   Axiom code_at_drop : forall p f, code_at p f |-- empSP.
 
+  Parameter ctor_at : ptr -> Ctor -> mpred.
+  Parameter dtor_at : ptr -> Dtor -> mpred.
+
   (* it might be more uniform to have this be an `mpred` *)
   Parameter glob_addr : genv -> obj_name -> ptr -> Prop.
 
@@ -177,6 +113,14 @@ Module Type logic.
     | l :: ls => l ** sepSPs ls
     end.
 
+  (* note(gmm): two ways to support initializer lists.
+   * 1/ add them to all functions (they are almost always empty
+   * 2/ make a `ctor_at` (similar to `code_at`) that handles
+   *    constructors.
+   * ===
+   * 2 seems like the more natural way to go.
+   *)
+
   (* note(gmm): the denotation of modules should be moved to another module.
    *)
   Fixpoint denoteDecl (d : Decl) : mpred :=
@@ -196,10 +140,7 @@ Module Type logic.
         with_genv (fun resolve => [| glob_addr resolve n a |]) //\\
                   code_at a f
       end
-    | Dmethod n t m
-    | Dconstructor n t m
-    | Ddestructor n t m =>
-      (* todo(gmm): in the future, we might want to separate constructors and destructors. *)
+    | Dmethod n m =>
       match m.(m_body) return mpred with
       | None =>
         Exists a,
@@ -211,6 +152,24 @@ Module Type logic.
                              ; f_params := ("#this"%string, Tqualified m.(m_this_qual) (Tref m.(m_class))) :: m.(m_params)
                              ; f_body := m.(m_body) |}
       end
+    | Dconstructor n m =>
+      match m.(c_body) return mpred with
+      | None =>
+        Exists a,
+        with_genv (fun resolve => [| glob_addr resolve n a |])
+      | Some body =>
+        Exists a,
+        with_genv (fun resolve => [| glob_addr resolve n a |]) //\\ ctor_at a m
+      end
+    | Ddestructor n m =>
+      match m.(d_body) return mpred with
+      | None =>
+        Exists a,
+        with_genv (fun resolve => [| glob_addr resolve n a |])
+      | Some body =>
+        Exists a,
+        with_genv (fun resolve => [| glob_addr resolve n a |]) //\\ dtor_at a m
+      end
     | Dstruct gn _ => empSP
       (* ^ this should record size and offset information
        *)
@@ -221,8 +180,6 @@ Module Type logic.
       sepSPs (map denoteDecl ds)
     | Dextern ds =>
       sepSPs (map denoteDecl ds)
-(*    | Dtemplated _ _ ds =>
-      sepSPs (map denoteDecl ds) *)
     end.
 
   Fixpoint denoteModule (d : list Decl) : mpred :=
@@ -230,22 +187,6 @@ Module Type logic.
     | nil => empSP
     | d :: ds => denoteDecl d ** denoteModule ds
     end.
-
-  Inductive module_declares : list Decl -> obj_name -> Func -> Prop :=
-  | MDfound {body nm f}
-      (_ : f.(f_body) = Some body)
-    : module_declares (Dfunction nm f :: nil)
-                      nm
-                      f
-  | MDnamespace {ds nm f}
-                (_ : module_declares ds nm f)
-    : module_declares (Dnamespace ds :: nil)
-                      nm
-                      f
-  | MDskip {d ds nm f}
-      (_ : module_declares ds nm f)
-    : module_declares (d :: ds) nm f
-  .
 
 
   Parameter func_ok_raw : Func -> list val -> (val -> mpred) -> mpred.
@@ -533,6 +474,10 @@ Module Type logic.
     Definition uninitialized (size : N) : val -> mpred :=
       uninitializedN (BinNatDef.N.to_nat size).
 
+    Definition uninitialized_ty (tn : type) (p : val) : mpred :=
+      Exists sz, with_genv (fun g => [| @size_of g tn sz |]) **
+                 uninitialized sz p.
+
 
     (** statements *)
     Record Kpreds :=
@@ -571,6 +516,7 @@ Module Type logic.
     Definition Kfree (a : mpred) : Kpreds -> Kpreds :=
       Kseq_all (fun P => a ** P).
 
+
     (** weakest pre-condition for statements
      *)
 
@@ -584,9 +530,9 @@ Module Type logic.
 
     Axiom wp_seq_cons : forall c cs Q,
         wp resolve c {| k_normal   := wp resolve (Sseq cs) Q
-                       ; k_break    := Q.(k_break)
-                       ; k_continue := Q.(k_continue)
-                       ; k_return v := Q.(k_return) v |}
+                      ; k_break    := Q.(k_break)
+                      ; k_continue := Q.(k_continue)
+                      ; k_return v := Q.(k_return) v |}
         |-- wp resolve (Sseq (c :: cs)) Q.
 
 
@@ -675,11 +621,11 @@ Module Type logic.
            *)
           Exists dtor, [| glob_addr resolve (gn ++ "D1") dtor |] **
           wps es (fun vs =>
-                 Exists a, Exists sz, uninitialized sz a
+                 Exists a, uninitialized_ty (Tref gn) a
               -* |> fspec (Vptr ctor) (a :: vs) (fun _ =>
                  addr_of x a -*
                  k (Kseq_all (fun Q => |> fspec (Vptr dtor) (a :: nil)
-                                   (fun _ => addr_of x a ** uninitialized sz a ** Q)) Q)))
+                                   (fun _ => addr_of x a ** uninitialized_ty (Tref gn) a ** Q)) Q)))
         | _ => lfalse
           (* ^ all non-primitive declarations must have initializers *)
         end
@@ -1136,6 +1082,24 @@ Module Type logic.
       simplify_wps.
       t.
     Qed.
+
+
+    Inductive module_declares : list Decl -> obj_name -> Func -> Prop :=
+    | MDfound {body nm f}
+              (_ : f.(f_body) = Some body)
+      : module_declares (Dfunction nm f :: nil)
+                        nm
+                        f
+    | MDnamespace {ds nm f}
+                  (_ : module_declares ds nm f)
+      : module_declares (Dnamespace ds :: nil)
+                        nm
+                        f
+    | MDskip {d ds nm f}
+             (_ : module_declares ds nm f)
+      : module_declares (d :: ds) nm f
+    .
+
 
     Lemma verify_func : forall g s module retT params body (F : mpred),
         module_declares module g {| f_return := retT

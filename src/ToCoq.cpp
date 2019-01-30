@@ -12,6 +12,14 @@
 using namespace clang;
 using namespace fmt;
 
+__attribute__((noreturn))
+void
+fatal(StringRef msg) {
+  llvm::errs() << "[FATAL ERROR] " << msg << "\n";
+  llvm::errs().flush();
+  exit(1);
+}
+
 void
 printCastKind (Formatter& out, const CastKind ck) {
   if (ck == CastKind::CK_LValueToRValue) {
@@ -592,19 +600,6 @@ private:
 	void
 	VisitDependentScopeDeclRefExpr(const DependentScopeDeclRefExpr *expr) {
 	  ConstStmtVisitor<PrintExpr, void>::VisitDependentScopeDeclRefExpr(expr);
-#if 0
-	  // todo(gmm): this doesn't work.
-	  error() << "DependentScopeDecl"
-	  ctor("Edynref");
-	  output() << "\"";
-	  expr->getQualifier()->dump();
-	  output() << expr->getDeclName().getAsString() << "\"";
-	  for (auto a : expr->template_arguments()) {
-		output() << fmt::nbsp;
-		parent->printExpr(a.getArgument().getAsExpr());
-	  }
-	  output() << fmt::rparen;
-#endif
 	}
 
 	void
@@ -1042,79 +1037,9 @@ private:
 	  PRINT_LIST(decl->field, print_field)
 	  output() << fmt::outdent;
 
-	  // note(gmm): i don't want to print any of the nested definitions, but i do need to print
-	  // any definitions that are implicit, e.g. default constructor, copy constructor, move constructor,
-	  // and the destructor
+	  // note(gmm): i need to print any implicit declarations.
 
-	  // print the constructors
-	  // todo(gmm): check on the semantics of the instructions. in particular, determine the order of constructor initialization.
-	  output() << fmt::line << "; s_ctors :=" << fmt::indent << fmt::line;
-	  for (auto i = decl->ctor_begin(), e = decl->ctor_end(); i != e; ++i) {
-		const CXXConstructorDecl *cd = *i;
-		if (cd->isDeleted()) {
-		  error() << "[INFO] skipping deleted constructor\n";
-		} else {
-		  output() << "{| c_params :=" << fmt::nbsp;
-		  PRINT_LIST(cd->param, parent->printParam);
-		  output() << fmt::line << " ; c_body :=" << fmt::nbsp << fmt::indent << fmt::indent;
-		  if (cd->hasBody()) {
-			ctor("Some");
-			ctor("UserDefined") << fmt::lparen;
-			auto print_init = [this](const CXXCtorInitializer* init) {
-			  if (init->isMemberInitializer()) {
-				output() << fmt::lparen << "Field \"" << init->getMember()->getNameAsString() << "\"," << fmt::nbsp;
-				parent->printExpr(init->getInit());
-				output() << fmt::rparen;
-			  } else if (init->isBaseInitializer()) {
-				output() << fmt::lparen << "Base" << fmt::nbsp;
-				parent->printGlobalName(init->getBaseClass()->getAsCXXRecordDecl());
-			    output() << "," << fmt::nbsp;
-				parent->printExpr(init->getInit());
-				output() << fmt::rparen;
-			  } else {
-				error() << "[ERR] unknown base initializer\n";
-			  }
-			};
-			PRINT_LIST(cd->init, print_init)
-			output() << "," << fmt::nbsp;
-			parent->printStmt(cd->getBody());
-			output() << fmt::rparen << fmt::rparen << fmt::rparen;
-		  } else if (cd->isDefaulted()) {
-			// todo(gmm): i need to figure out how to generate the default constructors
-			output() << "(Some Defaulted)";
-		  } else {
-			output() << "None";
-		  }
-		  output() << fmt::outdent << fmt::outdent << fmt::nbsp << "|}";
-		  output() << "::" << fmt::line;
-		}
-	  }
-	  output() << fmt::outdent << "nil" << fmt::line;
-
-	  // print the destructor
-	  output() << fmt::line << "; s_dtor :=" << fmt::nbsp << fmt::indent;
-	  if (const CXXDestructorDecl *dd = decl->getDestructor()) {
-		if (dd->isDeleted()) {
-		  output() << "None";
-		} else if (dd->isDefaulted()) {
-		  // todo(gmm): I need go generate this.
-		  ctor("Some") << "Defaulted" << fmt::rparen;
-		} else if (dd->getBody()) {
-		  ctor("Some");
-		  ctor("UserDefined");
-		  parent->printStmt(dd->getBody());
-		  output() << fmt::rparen << fmt::rparen;
-		} else {
-		  error() << "destructor has no body\n";
-		  output() << "None";
-		}
-	  } else {
-		ctor("Some") << "Defaulted" << fmt::rparen;
-	  }
-	  output() << fmt::outdent << fmt::line;
-
-	  // print the methods
-	  output() << fmt::line << "; s_nested := nil |}" << fmt::rparen << fmt::rparen;
+	  output() << fmt::line << "|}" << fmt::rparen << fmt::rparen;
 
 	  {
 		bool skip = false;
@@ -1152,12 +1077,9 @@ private:
 		}
 		ctor("Dmethod");
 		parent->printGlobalName(decl);
-		output() << fmt::nbsp;
-		// << "\"" << decl->getNameAsString() << "\"" << fmt::nbsp;
-		parent->printGlobalName(decl->getParent());
-		output() << fmt::nbsp;
+		output() << fmt::line << fmt::indent;
 		parent->printMethod(decl, what);
-		output() << fmt::rparen;
+		output() << fmt::outdent << fmt::rparen;
 		return true;
 	  }
 	}
@@ -1166,14 +1088,9 @@ private:
 	VisitCXXConstructorDecl(const CXXConstructorDecl *decl, Filter::What what) {
   	  ctor("Dconstructor");
   	  parent->printGlobalName(decl);
-  	  output() << fmt::nbsp;
-  	  parent->printGlobalName(decl->getParent());
-  	  output() << fmt::nbsp;
-
-  	  // todo(gmm): this shouldn't be a function, this is more like a method.
-  	  parent->printMethod(decl, what);
+  	  output() << fmt::line;
+  	  parent->printConstructor(decl, what);
   	  output() << fmt::rparen;
-
   	  return true;
   	}
 
@@ -1181,14 +1098,9 @@ private:
 	VisitCXXDestructorDecl(const CXXDestructorDecl *decl, Filter::What what) {
   	  ctor("Ddestructor");
   	  parent->printGlobalName(decl);
-  	  output() << fmt::nbsp;
-  	  parent->printGlobalName(decl->getParent());
-  	  output() << fmt::nbsp;
-
-  	  // todo(gmm): this shouldn't be a function, this is more like a method.
-  	  parent->printMethod(decl, what);
+  	  output() << fmt::line;
+  	  parent->printDestructor(decl, what);
   	  output() << fmt::rparen;
-
   	  return true;
   	}
 
@@ -1338,80 +1250,6 @@ private:
 	  return true;
 	}
   };
-
-#if 0
-  class PrintMemberDecl : public ConstDeclVisitorArgs<PrintMemberDecl, bool, Filter::What> {
-  protected:
-	ToCoq *const parent;
-
-	DELEGATE_OUTPUT(parent)
-	const CXXRecordDecl *const record;
-  public:
-  	PrintMemberDecl(ToCoq *_parent, const CXXRecordDecl *_record)
-	  : parent(_parent), record(_record) {
-	}
-
-  	bool
-	VisitDecl(const Decl *decl, Filter::What what) {
-  	  error() << "[ERR] printing member, got type " << decl->getDeclKindName() << "\n";
-  	  return false;
-  	}
-
-  	bool
-	VisitCXXConstructorDecl(const CXXConstructorDecl *decl, Filter::What what) {
-  	  ctor("Dconstructor");
-  	  parent->printGlobalName(decl);
-  	  output() << fmt::nbsp;
-  	  parent->printGlobalName(decl->getParent());
-  	  output() << fmt::nbsp;
-
-  	  // todo(gmm): this shouldn't be a function, this is more like a method.
-  	  parent->printFunction(decl, what);
-  	  output() << fmt::rparen;
-
-  	  return true;
-  	}
-
-  	bool
-	VisitCXXDestructorDecl(const CXXDestructorDecl *decl, Filter::What what) {
-  	  ctor("Ddestructor");
-  	  parent->printGlobalName(decl);
-  	  output() << fmt::nbsp;
-  	  parent->printGlobalName(decl->getParent());
-  	  output() << fmt::nbsp;
-
-  	  // todo(gmm): this shouldn't be a function, this is more like a method.
-  	  parent->printFunction(decl, what);
-  	  output() << fmt::rparen;
-
-  	  return true;
-  	}
-
-  	bool
-	VisitCXXMethodDecl (const CXXMethodDecl *decl, Filter::What what) {
-  	  if (decl->isStatic()) {
-  		ctor("Dfunction") << "\"" << decl->getNameAsString() << "\"" << fmt::nbsp;
-		parent->printFunction(decl, what);
-		output() << fmt::rparen;
-		return true;
-  	  } else {
-  		if (decl->isVirtual()) {
-  		  error() << "[ERR] virtual functions not supported: " << decl->getNameAsString() << "\n";
-  		  return false;
-  		}
-  		ctor("Dmethod");
-  		parent->printGlobalName(decl);
-  		output() << fmt::nbsp;
-  		// << "\"" << decl->getNameAsString() << "\"" << fmt::nbsp;
-  		parent->printGlobalName(decl->getParent());
-  		output() << fmt::nbsp;
-		parent->printFunction(decl, what);
-		output() << fmt::rparen;
-  		return true;
-  	  }
-	}
-  };
-#endif
 
 private:
   PrintType typePrinter;
@@ -1640,6 +1478,104 @@ public:
 	  output() << "None";
 	}
 	output() << fmt::outdent << "|}";
+  }
+
+  void
+  printConstructor(const CXXConstructorDecl *decl, Filter::What what) {
+  	output() << "{| c_class :=" << fmt::nbsp;
+  	printGlobalName(decl->getParent());
+  	output() << fmt::line << " ; c_params :=" << fmt::nbsp;
+  	PRINT_LIST(decl->param, printParam);
+  	output() << fmt::line << " ; c_body :=" << fmt::nbsp;
+  	if (decl->getBody() && what >= Filter::DEFINITION) {
+  	  output() << "Some" << fmt::nbsp;
+  	  ctor("UserDefined") << fmt::lparen;
+  	  // print the initializer list
+  	  // todo(gmm): parent constructors are defaulted if they are not listed,
+  	  //   i need to make sure that everything ends up in the list, and in the right order
+  	  for (auto init : decl->inits()) {
+  		if (init->isMemberInitializer()) {
+		  output() << fmt::lparen << "Field \"" << init->getMember()->getNameAsString() << "\"," << fmt::nbsp;
+		  printExpr(init->getInit());
+		  output() << fmt::rparen;
+		} else if (init->isBaseInitializer()) {
+		  output() << fmt::lparen << "Base" << fmt::nbsp;
+		  printGlobalName(init->getBaseClass()->getAsCXXRecordDecl());
+		  output() << "," << fmt::nbsp;
+		  printExpr(init->getInit());
+		  output() << fmt::rparen;
+		} else {
+		  fatal("unknown base initializer");
+		}
+  		output() << "::" << fmt::nbsp;
+  	  }
+
+  	  output() << "nil," << fmt::nbsp;
+  	  printStmt(decl->getBody());
+  	  output() << fmt::rparen << fmt::rparen;
+  	} else {
+  	  output() << "None";
+  	}
+  	output() << "|}";
+  }
+
+
+  void
+  printDestructor(const CXXDestructorDecl *decl, Filter::What what) {
+	auto record = decl->getParent();
+	output() << "{| d_class :=" << fmt::nbsp;
+	printGlobalName(record);
+	output() << fmt::line << " ; d_body :=";
+	if (decl->isDefaulted()) {
+	  // todo(gmm): I need to generate this.
+	  output() << "Some Defaulted";
+	} else if (decl->getBody()) {
+	  output() << "Some" << fmt::nbsp;
+	  ctor("UserDefined") << fmt::lparen;
+	  printStmt(decl->getBody());
+	  output() << "," << fmt::nbsp;
+
+	  // i need to destruct each field, and then each parent class
+	  // in the REVERSE order of construction
+	  {
+		std::list<const FieldDecl*> fields(record->field_begin(), record->field_end());
+		for (auto i = fields.crbegin(), e = fields.crend(); i != e; i++) {
+		  const FieldDecl* fd = *i;
+		  if (auto rd = fd->getType().getTypePtr()->getAsCXXRecordDecl()) {
+			ctor("Field") << "\"" << fd->getName() << "\"";
+			printGlobalName(rd->getDestructor());
+			output() << fmt::rparen << "::";
+		  }
+		}
+	  }
+
+	  // base classes
+	  {
+		std::list<CXXBaseSpecifier> bases(record->bases_begin(), record->bases_end());
+		for (auto i = bases.crbegin(), e = bases.crend(); i != e; i++) {
+		  if (i->isVirtual()) {
+			fatal("virtual base classes are not supported.");
+		  }
+		  auto rec = i->getType().getTypePtr()->getAsCXXRecordDecl();
+		  if (rec) {
+			ctor("Base");
+			printGlobalName(rec);
+			output() << "," << fmt::nbsp;
+			printGlobalName(rec->getDestructor());
+			output() << fmt::rparen;
+		  } else {
+			fatal("base class is not a RecordType.");
+		  }
+		  output() << "::";
+		}
+	  }
+	  output() << "nil";
+
+	  output() << fmt::rparen << fmt::rparen << "|}";
+	} else {
+	  error() << "destructor has no body\n";
+	  output() << "None";
+	}
   }
 
 

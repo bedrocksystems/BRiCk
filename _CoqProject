@@ -4,5 +4,6 @@
 theories/Ast.v
 theories/Parser.v
 
+theories/Sem/Util.v
 theories/HoareSemantics.v
 theories/Linking.v
