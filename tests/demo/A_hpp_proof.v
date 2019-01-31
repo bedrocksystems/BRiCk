@@ -14,8 +14,6 @@ Require Import auto.Tactics.Discharge.
 Require Demo.A_hpp.
 Require Import Demo.A_hpp_spec.
 
-
-
 Opaque denoteModule.
 
 (* soundness of the specification *)
@@ -37,6 +35,7 @@ Proof.
   unfold tlocal, tptsto.
   work. subst.
   simplifying.
+  eapply has_type_qual with (q:={| q_const:=false ; q_volatile:=false |}) in H1.
   generalize (has_type_int_bound H1). intro.
   work.
   simplifying.

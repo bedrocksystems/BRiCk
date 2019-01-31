@@ -916,6 +916,20 @@ Module Type logic.
                             ForallEach' ls (v x) (fun z xs => P z (cons (l, x) xs))
       end.
 
+    Fixpoint is_void (t : type) : bool :=
+      match t with
+      | Tqualified _ t => is_void t
+      | Tvoid => true
+      | _ => false
+      end.
+
+    Fixpoint bind_type (t : type) (x : ident) (v : val) : mpred :=
+      match t with
+      | Tqualified _ t => bind_type t x v
+      | Treference ref => addr_of x v
+      | _ => tlocal t x v
+      end.
+
     Definition func_ok' (ret : type) (params : list (ident * type))
                (body : Stmt)
                (spec : function_spec')
@@ -927,43 +941,146 @@ Module Type logic.
         let vals := List.map snd args in
 
         (* this is what is created from the parameters *)
-        let binds := sepSPs (zip (fun '(x, t) 'v => tlocal t x v) params vals) in
+        let binds := sepSPs (zip (fun '(x, t) 'v => bind_type t x v) params vals) in
         (* this is what is freed on return *)
-        let frees := sepSPs (map (fun '(x, t) => Exists v, tlocal t x v) params) in
+        let frees := sepSPs (map (fun '(x, t) => Exists v, bind_type t x v) params) in
         Forall Q : val -> mpred,
         (binds ** PQ Q) -* (wp resolve body (Kfree frees (val_return Q))))
       ).
     Defined.
 
+    Definition method_ok' (resolve : genv)
+               (meth : Method) (spec : function_spec')
+      : mpred :=
+      match meth.(m_body) with
+      | None => lfalse
+      | Some body =>
+        let this_type :=
+            Qconst (Tpointer (Tqualified meth.(m_this_qual) (Tref meth.(m_class))))
+        in
+        [| spec.(fs'_return) = meth.(m_return) |] **
+        [| spec.(fs'_arguments) = this_type :: List.map snd meth.(m_params) |] **
+        ForallEach' _ spec.(fs'_specification) (fun PQ args =>
+          let vals := List.map snd args in
+          match vals with
+          | nil => lfalse
+          | this_val :: rest_vals =>
+            (* this is what is created from the parameters *)
+            let binds :=
+                addr_of "#this" this_val **
+                sepSPs (zip (fun '(x, t) 'v => bind_type t x v) meth.(m_params) rest_vals)
+            in
+            (* this is what is freed on return *)
+            let frees :=
+                addr_of "#this" this_val **
+                sepSPs (map (fun '(x, t) => Exists v, bind_type t x v) meth.(m_params))
+            in
+            if is_void meth.(m_return)
+            then
+              Forall Q : mpred,
+              (binds ** PQ (fun _ => Q)) -* (wp resolve body (Kfree frees (void_return Q)))
+            else
+              Forall Q : val -> mpred,
+              (binds ** PQ Q) -* (wp resolve body (Kfree frees (val_return Q)))
+          end)
+      end.
 
-    Definition method_ok' (ret : type)
-               (this_type : type)
-               (params : list (ident * type))
-               (body : Stmt)
-               (spec : function_spec')
-    : mpred.
-    refine (
-      [| spec.(fs'_return) = ret |] **
-      [| spec.(fs'_arguments) = this_type :: List.map snd params |] **
-      ForallEach' _ spec.(fs'_specification) (fun PQ args =>
-        let vals := List.map snd args in
+    Parameter wpi
+      : forall (resolve : genv)
+          (cls : globname) (this : val) (init : FieldOrBase ident globname * Expr)
+          (Q : mpred), mpred.
 
-        match vals with
-        | nil => lfalse
-        | this_val :: rest_vals =>
-          (* this is what is created from the parameters *)
-          let binds :=
-              addr_of "#this" this_val **
-              sepSPs (zip (fun '(x, t) 'v => tlocal t x v) params rest_vals) in
-          (* this is what is freed on return *)
-          let frees :=
-              addr_of "#this" this_val **
-              sepSPs (map (fun '(x, t) => Exists v, tlocal t x v) params) in
-          Forall Q : val -> mpred,
-          (binds ** PQ Q) -* (wp resolve body (Kfree frees (val_return Q)))
-      end)
-      ).
-    Defined.
+    Fixpoint wpis (resolve : genv) (cls : globname)
+             (this : val) (inits : list (FieldOrBase ident globname * Expr))
+             (Q : mpred) : mpred :=
+      match inits with
+      | nil => Q
+      | i :: is => wpi resolve cls this i (wpis resolve cls this is Q)
+      end.
+
+    (* todo(gmm): should the `uninitialized` be part of the this, rather than
+     * part of the specification?
+     *)
+    Definition ctor_ok' (resolve : genv)
+               (ctor : Ctor) (spec : function_spec')
+      : mpred :=
+      match ctor.(c_body) with
+      | None => lfalse
+      | Some Defaulted => lfalse
+      (* ^ defaulted constructors are not supported yet *)
+      | Some (UserDefined (init, body)) =>
+        let this_type :=
+            Qconst (Tpointer (Qmut (Tref ctor.(c_class))))
+        in
+        [| spec.(fs'_return) = Qmut Tvoid |] **
+        [| spec.(fs'_arguments) = this_type :: List.map snd ctor.(c_params) |] **
+        ForallEach' _ spec.(fs'_specification) (fun PQ args =>
+          let vals := List.map snd args in
+          match vals with
+          | nil => lfalse
+          | this_val :: rest_vals =>
+            (* this is what is created from the parameters *)
+            let binds :=
+                addr_of "#this" this_val **
+                sepSPs (zip (fun '(x, t) 'v => bind_type t x v) ctor.(c_params) rest_vals)
+            in
+            (* this is what is freed on return *)
+            let frees :=
+                addr_of "#this" this_val **
+                sepSPs (map (fun '(x, t) => Exists v, bind_type t x v) ctor.(c_params))
+            in
+            Forall Q : mpred,
+            (binds ** PQ (fun _ => Q)) -*
+            (wpis resolve ctor.(c_class) this_val init (wp resolve body (Kfree frees (void_return Q))))
+          end)
+      end.
+
+    (** destructor lists
+     *  the opposite of initializer lists, this is just a call to the
+     *  destructors *in the right order*
+     *)
+    Parameter wpd
+    : forall (resolve : genv) (init : FieldOrBase ident globname * globname)
+        (Q : mpred), mpred.
+
+    Fixpoint wpds (resolve : genv)
+             (dests : list (FieldOrBase ident globname * globname))
+             (Q : mpred) : mpred :=
+      match dests with
+      | nil => Q
+      | d :: ds => wpd resolve d (wpds resolve ds Q)
+      end.
+
+    (* todo(gmm): should the `uninitialized` be part of the this, rather than
+     * part of the specification?
+     *)
+    Definition dtor_ok' (resolve : genv)
+               (dtor : Dtor) (spec : function_spec')
+      : mpred :=
+      match dtor.(d_body) with
+      | None => lfalse
+      | Some Defaulted => lfalse
+      (* ^ defaulted constructors are not supported yet *)
+      | Some (UserDefined (body, deinit)) =>
+        let this_type :=
+            Qconst (Tpointer (Qmut (Tref dtor.(d_class))))
+        in
+        [| spec.(fs'_return) = Qmut Tvoid |] **
+        [| spec.(fs'_arguments) = this_type :: nil |] **
+        ForallEach' _ spec.(fs'_specification) (fun PQ args =>
+          let vals := List.map snd args in
+          match vals with
+          | nil => lfalse
+          | this_val :: rest_vals =>
+            (* this is what is created from the parameters *)
+            let binds := addr_of "#this" this_val in
+            (* this is what is freed on return *)
+            let frees := addr_of "#this" this_val in
+            Forall Q : mpred,
+           (binds ** PQ (fun _ => Q)) -*
+           (wp resolve body (Kfree frees (void_return Q)))
+          end)
+      end.
 
     Definition cglob' (gn : globname) (spec : function_spec')
     : mpred :=
@@ -976,7 +1093,6 @@ Module Type logic.
     : Proper (eq ==> eq ==> eq ==> pointwise_relation _ lequiv ==> lequiv) wpe.
     Axiom Proper_wpe_entails
     : Proper (eq ==> eq ==> eq ==> pointwise_relation _ lentails ==> lentails) wpe.
-
 
     Lemma wps_frame : forall es k F,
         wps es k ** F -|- wps es (fun x => k x ** F).

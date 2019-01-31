@@ -72,3 +72,14 @@ End withLogic.
 
 Definition forallEach := @ForallEach Prop _.
 Arguments forallEach {_ _ _}.
+
+Section arrowFrom_map.
+  Context {t u : Type}.
+  Context {T U : Type} (f : T -> U).
+
+  Fixpoint arrowFrom_map {ls : list t} : arrowFrom u ls T -> arrowFrom u ls U :=
+    match ls as ls return arrowFrom u ls T -> arrowFrom u ls U with
+    | nil => f
+    | l :: ls => fun X X0 => arrowFrom_map (X X0)
+    end.
+End arrowFrom_map.
