@@ -107,7 +107,7 @@ Variant Cast : Set :=
 
 Variant UnOp : Set :=
 | Uother (_ : string).
-Inductive BinOp : Set :=
+Variant BinOp : Set :=
 | Badd
 | Band (* & *)
 | Bcmp (* <=> *)
@@ -125,7 +125,6 @@ Inductive BinOp : Set :=
 | Bshr
 | Bsub
 | Bxor (* ^ *)
-| Bop_assign (_ : BinOp)
 .
 
 Require Import Coq.ZArith.BinIntDef.
@@ -151,6 +150,7 @@ Inductive Expr : Set :=
 | Ederef (_ : Expr)
 | Eaddrof (_ : Expr)
 | Eassign (_ _ : Expr)
+| Eassign_op (_ : BinOp) (_ _ : Expr)
   (* ^ these are specialized because they are common *)
 
 | Epreinc (_ : Expr)

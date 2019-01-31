@@ -535,32 +535,22 @@ private:
 #define CASE(k, s) \
 		case BinaryOperatorKind::BO_##k: output() << s; break;
 		CASE(Add, "Badd")
-		CASE(AddAssign, "(Bop_assign Badd)")
 		CASE(And, "Band")
-		CASE(AndAssign, "(Bop_assign Band)")
 		CASE(Cmp, "Bcmp")
 		CASE(Div, "Bdiv")
-		CASE(DivAssign, "(Bop_assign Bdiv)")
 		CASE(EQ, "Beq")
 		CASE(GE, "Bge")
 		CASE(GT, "Bgt")
 		CASE(LE, "Ble")
 		CASE(LT, "Blt")
 		CASE(Mul, "Bmul")
-		CASE(MulAssign, "(Bop_assign Bmul)")
 		CASE(NE, "Bneq")
 		CASE(Or, "Bor")
-		CASE(OrAssign, "(Bop_assign Bor)")
 		CASE(Rem, "Bmod")
-		CASE(RemAssign, "(Bop_assign Bmod)")
 		CASE(Shl, "Bshl")
-		CASE(ShlAssign, "(Bop_assign Bshl)")
 		CASE(Shr, "Bshr")
-		CASE(ShrAssign, "(Bop_assign Bshr)")
 		CASE(Sub, "Bsub")
-		CASE(SubAssign, "(Bop_assign Bsub)")
 		CASE(Xor, "Bxor")
-		CASE(XorAssign, "(Bop_assign Bxor)")
 #undef CASE
 		default:
 		  error() << "defaulting binary operator\n";
@@ -571,6 +561,8 @@ private:
 
 	void
 	VisitBinaryOperator (const BinaryOperator *expr) {
+#define ACASE(k, v) \
+	  case BinaryOperatorKind::BO_##k##Assign: ctor("Eassign_op") << #v << fmt::nbsp; break;
 	  switch (expr->getOpcode()) {
 		case BinaryOperatorKind::BO_Comma:
 		  ctor("Ecomma");
@@ -584,13 +576,23 @@ private:
 		case BinaryOperatorKind::BO_Assign:
 		  ctor("Eassign");
 		  break;
+		ACASE(Add, Badd)
+		ACASE(And, Band)
+		ACASE(Div, Bdiv)
+		ACASE(Mul, Bmul)
+		ACASE(Or, Bor)
+		ACASE(Rem, Bmod)
+		ACASE(Shl, Bshl)
+		ACASE(Shr, Bshr)
+		ACASE(Sub, Bsub)
+		ACASE(Xor, Bxor)
 		default:
 		  ctor("Ebinop");
 		  printBinaryOperator(expr->getOpcode(), expr->getOpcodeStr());
 		  output() << fmt::nbsp;
 		  break;
 	  }
-
+#undef ACASE
 	  parent->printExpr(expr->getLHS());
 	  output() << fmt::nbsp;
 	  parent->printExpr(expr->getRHS());
@@ -745,7 +747,13 @@ private:
 	void
 	VisitMemberExpr (const MemberExpr *expr) {
 	  ctor("Emember");
-	  parent->printExpr(expr->getBase());
+	  if (expr->isArrow()) {
+		ctor("Ederef");
+		parent->printExpr(expr->getBase());
+		output() << fmt::rparen;
+	  } else {
+		parent->printExpr(expr->getBase());
+	  }
 	  output() << fmt::nbsp;
 	  if (FieldDecl* f = dyn_cast<clang::FieldDecl>(expr->getMemberDecl())) {
 		output() << "{| f_type :=" << fmt::nbsp;
@@ -784,10 +792,16 @@ private:
 	  auto method = expr->getMethodDecl();
 	  ctor("Emember_call");
 	  output() << (method->isVirtual() ? "true" : "false") << fmt::nbsp;
-
 	  parent->printGlobalName(method);
 	  output() << fmt::nbsp;
-	  parent->printExpr(expr->getImplicitObjectArgument());
+	  auto me = dyn_cast<MemberExpr>(expr->getCallee());
+	  if (me->isArrow()) {
+		ctor("Ederef");
+		parent->printExpr(expr->getImplicitObjectArgument());
+		output() << fmt::rparen;
+	  } else {
+		parent->printExpr(expr->getImplicitObjectArgument());
+	  }
 	  output() << fmt::nbsp;
 	  PRINT_LIST(expr->arg, parent->printExpr)
 	  output() << fmt::rparen;
@@ -1469,7 +1483,7 @@ public:
 			 << "|}" << fmt::outdent << fmt::line;
 	output() << "; m_params :=" << fmt::nbsp;
 	PRINT_LIST(decl->param, printParam);
-	output() << "; m_body :=" << fmt::nbsp;
+	output() << fmt::line << "; m_body :=" << fmt::nbsp;
 	if (decl->getBody() && what >= Filter::DEFINITION) {
 	  output() << fmt::lparen << "Some" << fmt::nbsp;
 	  printStmt(decl->getBody());
