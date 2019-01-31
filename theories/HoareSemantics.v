@@ -546,8 +546,10 @@ Module Type logic.
     Axiom wp_continue : forall Q,
         Q.(k_continue) |-- wp resolve Scontinue Q.
 
-    Axiom wp_do : forall e Q,
-        wp_rhs e (fun _ => Q.(k_normal))
+    (* todo(gmm): the expression can be any value category.
+     *)
+    Axiom wp_expr : forall e Q,
+        wp_lhs e (fun _ => Q.(k_normal))
         |-- wp resolve (Sexpr e) Q.
 
     Axiom wp_if : forall e thn els Q,
@@ -865,7 +867,42 @@ Module Type logic.
         refine (fun x => IHtargs (PQ x)). }
     Defined.
 
+    Definition ctor' (class : globname)
+               (targs : list type)
+               (PQ : val -> arrowFrom val targs WithPrePost)
+    : function_spec' :=
+      let this_type := Qmut (Tref class) in
+      ht' (Qmut Tvoid) (Qconst (Tpointer this_type) :: targs)
+          (fun this => arrowFrom_map (fun wpp =>
+             {| wpp_with := wpp.(wpp_with)
+              ; wpp_pre  := fun m =>
+                  uninitialized_ty this_type this ** wpp.(wpp_pre) m
+              ; wpp_post := wpp.(wpp_post)
+              |}) (PQ this)).
 
+    Definition dtor' (class : globname)
+               (PQ : val -> WithPrePost)
+    : function_spec' :=
+      let this_type := Qmut (Tref class) in
+      ht' (Qmut Tvoid) (Qconst (Tpointer this_type) :: nil)
+          (fun this =>
+             {| wpp_with := (PQ this).(wpp_with)
+              ; wpp_pre := (PQ this).(wpp_pre)
+              ; wpp_post := fun m res =>
+                  uninitialized_ty this_type this ** (PQ this).(wpp_post) m res
+              |}).
+
+    Definition method' (class : globname) (qual : type_qualifiers)
+               (ret : type) (targs : list type)
+               (PQ : val -> arrowFrom val targs WithPrePost)
+    : function_spec' :=
+      let class_type := Tref class in
+      let this_type := Tqualified qual class_type in
+      ht' ret (Qconst (Tpointer this_type) :: targs) PQ.
+      (* ^ todo(gmm): this looks wrong. something isn't going
+       * to fit together with respect to calling conventions and
+       * specifications.
+       *)
 
     Theorem triple_sound : forall p r ts PQ vs,
         List.length vs = List.length ts ->
@@ -1292,6 +1329,7 @@ Ltac simplifying :=
                | rewrite <- wp_seq; simpl wp_block; simpl wp_decls
                | rewrite <- wp_return_val
                | rewrite <- wp_return_void
+               | rewrite <- wp_expr
                | rewrite <- wp_if
                | rewrite <- wp_continue
                | rewrite <- wp_break
@@ -1313,3 +1351,5 @@ Ltac work :=
                  end ;
              try solve [ eauto | reflexivity | has_type | operator | lia ] in
   discharge ltac:(canceler fail tac) tac.
+
+Arguments denoteModule _ : simpl never.

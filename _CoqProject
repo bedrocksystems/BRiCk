@@ -1,9 +1,15 @@
 -Q ../../hoare/master/theories auto
 -Q theories Cpp
 
+# Modules for cpp2v
 theories/Ast.v
 theories/Parser.v
 
+# Semantics
 theories/Sem/Util.v
 theories/HoareSemantics.v
 theories/Linking.v
+
+# Automation
+theories/Auto/mvcg.v
+theories/Auto/Lemmas.v
