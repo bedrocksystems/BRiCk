@@ -532,22 +532,8 @@ Module Type logic.
 
     (** weakest pre-condition for statements
      *)
-
     Parameter wp
     : forall (resolve : genv), Stmt -> Kpreds -> mpred.
-
-    Axiom wp_skip : forall Q, Q.(k_normal) |-- wp resolve Sskip Q.
-
-    Axiom wp_seq_nil : forall Q,
-        Q.(k_normal) |-- wp resolve (Sseq nil) Q.
-
-    Axiom wp_seq_cons : forall c cs Q,
-        wp resolve c {| k_normal   := wp resolve (Sseq cs) Q
-                      ; k_break    := Q.(k_break)
-                      ; k_continue := Q.(k_continue)
-                      ; k_return v := Q.(k_return) v |}
-        |-- wp resolve (Sseq (c :: cs)) Q.
-
 
     Axiom wp_return_void : forall Q,
         Q.(k_return) None |-- wp resolve (Sreturn None) Q.
@@ -595,6 +581,10 @@ Module Type logic.
      *)
     Fixpoint wp_decl (x : ident) (ty : type) (init : option Expr)
                (k : Kpreds -> mpred) (Q : Kpreds)
+               (* ^ Q is the continuation for after the entire declaration
+                *     is complete
+                * ^ k is the rest of the declaration
+                *)
     : mpred :=
       match ty with
       | Treference t =>
@@ -621,7 +611,8 @@ Module Type logic.
         | None =>
           Exists v, tlocal ty x v -* k (Kfree (Exists v', tlocal ty x v') Q)
         | Some init =>
-          wp_rhs init (fun v => tlocal ty x v -* k (Kfree (Exists v', tlocal ty x v') Q))
+          wp_rhs init (fun v =>
+                 tlocal ty x v -* k (Kfree (Exists v', tlocal ty x v') Q))
         end
       | Tarray _ _ => lfalse (* todo(gmm): arrays not yet supported *)
       | Tref gn =>
@@ -644,11 +635,36 @@ Module Type logic.
         end
       end.
 
-    Axiom wp_decl_nil : forall Q, Q.(k_normal) |-- wp resolve (Sdecl nil) Q.
+    Fixpoint wp_decls (ds : list (ident * type * option Expr))
+             (k : Kpreds -> mpred) : Kpreds -> mpred :=
+      match ds with
+      | nil => k
+      | (x, ty, init) :: ds =>
+        wp_decl x ty init (wp_decls ds k)
+      end.
 
-    Axiom wp_decl_cons : forall x ty init ds Q,
-        wp_decl x ty init (wp resolve (Sdecl ds)) Q
-        |-- wp resolve (Sdecl ((x,ty,init) :: ds)) Q.
+    (* note(gmm): this rule is slightly non-compositional because
+     * wp_decls requires the rest of the block computation
+     * - i could fix this in the syntax tree if i split up Sseq
+     *   and made Edecl take the continuation
+     *)
+    Fixpoint wp_block (ss : list Stmt) (Q : Kpreds) : mpred.
+    refine
+      match ss with
+      | nil => Q.(k_normal)
+      | Sdecl ds :: ss =>
+        wp_decls ds (wp_block ss) Q
+      | s :: ss =>
+        wp resolve s {| k_normal   := wp_block ss Q
+                      ; k_break    := Q.(k_break)
+                      ; k_continue := Q.(k_continue)
+                      ; k_return v := Q.(k_return) v |}
+      end.
+    Defined.
+
+    Axiom wp_seq : forall Q ss,
+        wp_block ss Q |-- wp resolve (Sseq ss) Q.
+
 
     Import Cpp.Parser.
     Import ListNotations.
@@ -656,11 +672,8 @@ Module Type logic.
     Ltac simplify_wps :=
       repeat first [ progress simplify_wp
                    | progress simpl wps
-                   | rewrite <- wp_skip
-                   | rewrite <- wp_seq_nil
-                   | rewrite <- wp_seq_cons
-                   | rewrite <- wp_decl_nil
-                   | rewrite <- wp_decl_cons
+                   | rewrite <- wp_seq;
+                     simpl wp_block
                    | rewrite <- wp_return_val
                    | rewrite <- wp_return_void
                    | rewrite <- wp_if
@@ -670,6 +683,20 @@ Module Type logic.
                    | rewrite <- wp_call
                    | rewrite <- wp_rhs_cast_function2pointer
                    ].
+
+    Goal empSP
+         |-- wp resolve (Sseq
+                           ((Sdecl (("x", T_int, Some (Eint 1 T_int))
+                                      :: nil))
+                              :: Sdecl (("y", T_int, Some (Eint 12 T_int)) :: nil)
+                              :: Sreturn (Some (El2r (Evar (Lname "x"))))
+                              :: nil))
+         (val_return (fun x => [| x = Vint 1 |])).
+    Proof.
+      simplify_wps. simpl.
+      unfold tlocal, tptsto.
+      t.
+    Qed.
 
 (*
     { P } - { Q } = [] (P -* wp code Q)
@@ -1152,11 +1179,7 @@ Module Type logic.
     Ltac simplifying :=
       repeat first [ progress simplify_wp
                    | progress simpl wps
-                   | rewrite <- wp_skip
-                   | rewrite <- wp_seq_nil
-                   | rewrite <- wp_seq_cons
-                   | rewrite <- wp_decl_nil
-                   | rewrite <- wp_decl_cons
+                   | rewrite <- wp_seq; simpl wp_block; simpl wp_decls
                    | rewrite <- wp_return_val
                    | rewrite <- wp_return_void
                    | rewrite <- wp_if
@@ -1204,7 +1227,8 @@ Module Type logic.
       simpl.
       t. subst.
       simplifying.
-      repeat perm_left ltac:(idtac; perm_right ltac:(eapply wp_call_glob)).        simplifying.
+      repeat perm_left ltac:(idtac; perm_right ltac:(eapply wp_call_glob)).
+      simplifying.
       unfold tlocal, tptsto.
       t.
       simplify_wps. t.
@@ -1265,11 +1289,7 @@ Ltac simplify_wp :=
 Ltac simplifying :=
   repeat first [ progress simplify_wp
                | progress simpl wps
-               | rewrite <- wp_skip
-               | rewrite <- wp_seq_nil
-               | rewrite <- wp_seq_cons
-               | rewrite <- wp_decl_nil
-               | rewrite <- wp_decl_cons
+               | rewrite <- wp_seq; simpl wp_block; simpl wp_decls
                | rewrite <- wp_return_val
                | rewrite <- wp_return_void
                | rewrite <- wp_if
