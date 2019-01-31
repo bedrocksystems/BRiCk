@@ -207,6 +207,7 @@ Module Type logic.
   (** Weakest pre-condition for expressions
    *)
   Variant mode : Set := Lvalue | Rvalue.
+  (* ^ this is not complete with respect to the latest versions of C++ *)
 
   (* todo(gmm): `wpe` should be indexed by types
    * question(gmm): are lvalues just references? or is there something
@@ -257,7 +258,6 @@ Module Type logic.
          else Q (Vint 0))
         |-- wp_rhs (Ebool b) Q.
 
-    (* todo(gmm): what about the type? *)
     Axiom wp_rhs_this : forall Q,
       Exists a, (addr_of "#this"%string a ** ltrue) //\\ Q a
       |-- wp_rhs Ethis Q.
@@ -271,17 +271,22 @@ Module Type logic.
       Exists a, [| glob_addr resolve x a |] ** Q (Vptr a)
       |-- wp_lhs (Evar (Gname x)) Q.
 
+    (* this is a "prvalue" if
+     * - `e` is a member enumerator or non-static member function
+     * - `e` is an rvalue and `m` is non-static data of non-reference type
+     *)
     Axiom wp_lhs_member : forall e f Q,
-      wp_rhs e (fun base =>
+      wp_lhs e (fun base =>
          Exists offset,
                 [| @offset_of resolve (Tref f.(f_type)) f.(f_name) offset |]
            ** Q (offset_ptr base offset))
       |-- wp_lhs (Emember e f) Q.
 
-    (* y = *x; *)
-    Axiom wp_rhs_deref : forall e ty Q,
-        wp_rhs e (fun a => Exists v, (tptsto ty a v ** ltrue) -* Q v)
-        |-- wp_rhs (Ederef e) Q.
+(*
+    Axiom wp_lhs_subscript : forall e n Q,
+        wp_rhs e (fun base => wp_rhs n (fun i => _))
+        |-- wp_lhs (Esubscript e n) Q.
+*)
 
     (* *x = 3; *)
     Axiom wp_lhs_deref : forall e (Q : val -> mpred),
@@ -353,7 +358,15 @@ Module Type logic.
            (Exists v, ptsto la v) ** (ptsto la rv -* Q la)))
         |-- wp_lhs (Eassign l r) Q.
 
+    Axiom wp_lhs_bop_assign : forall o l r Q,
+        wp_lhs (Eassign l (Ebinop o (Ecast Cl2r l) r)) Q
+        |-- wp_lhs (Eassign_op o l r) Q.
+
 (*
+    Axiom wp_lhs_preinc : forall e Q,
+        wp_lhs e (fun a => Exists v, tptsto T_int a v ** (tptsto T_int a (_)
+        |-- wp_lhs (Epreinc e) Q.
+
     Axiom wp_rhs_postincr : forall inc_or_dec l ty Q,
         wp_lhs resolve l (fun a =>
           Exists v, Exists v', (tptsto ty a v ** embed _) -* tptsto ty a v' ** Q v)
@@ -370,7 +383,7 @@ Module Type logic.
 
     Axiom wp_member_call : forall f obj es Q,
         Exists fa, [| glob_addr resolve f fa |] **
-        wp_rhs obj (fun this => wps es (fun vs =>
+        wp_lhs obj (fun this => wps es (fun vs =>
             |> fspec (Vptr fa) (this :: vs) Q))
         |-- wp_rhs (Emember_call false f obj es) Q.
 
