@@ -7,3 +7,4 @@ Makefile.coq.conf
 *.vo
 *.aux
 .lia.cache
+.nia.cache
