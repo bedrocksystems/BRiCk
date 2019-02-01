@@ -172,6 +172,7 @@ Inductive Expr : Set :=
 
 | Esubscript (_ : Expr) (_ : Expr)
 | Esize_of (_ : type + Expr)
+| Ealign_of (_ : type + Expr)
 | Econstructor (_ : globname) (_ : list Expr)
 | Eimplicit (_ : Expr)
 | Eif       (_ _ _ : Expr)

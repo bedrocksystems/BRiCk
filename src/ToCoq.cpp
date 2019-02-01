@@ -867,17 +867,18 @@ private:
 		  ctor("inl");
 		  parent->printQualType(expr->getArgumentType());
 		  output() << fmt::rparen;
-		} else if (expr->getArgumentExpr()){
+		} else if (expr->getArgumentExpr()) {
 		  ctor("inr");
-		  assert(expr->getArgumentExpr());
 		  parent->printExpr(expr->getArgumentExpr());
 		  output() << fmt::rparen;
 		} else {
-		  error() << "argument isnt' a type or an expression\n";
-		  llvm::errs().flush();
+		  fatal("argument to sizeof/alignof is not a type or an expression.");
 		}
 	  };
 
+	  // todo(gmm): is there any benefit to not just desugaring `sizeof(e)` into
+	  // `sizeof(t)` where `t` is the type of `e`?
+	  // similarly for `alignof`?
 	  if (expr->getKind() == UnaryExprOrTypeTrait::UETT_AlignOf) {
 		output() << fmt::lparen << "Ealign_of" << fmt::nbsp;
 		do_arg();
