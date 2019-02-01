@@ -7,8 +7,14 @@ theories/Parser.v
 
 # Semantics
 theories/Sem/Util.v
-theories/Sem/HoareSemantics.v
+theories/Sem/Semantics.v
+theories/Sem/Logic.v
+theories/Sem/Expr.v
+theories/Sem/Stmt.v
+theories/Sem/Func.v
+theories/Sem/Modules.v
 theories/Sem/Linking.v
+theories/Sem.v
 
 # Automation
 theories/Auto/mvcg.v

@@ -2,12 +2,17 @@ From ChargeCore.Logics Require Import
      ILogic BILogic ILEmbed Later.
 
 From Cpp Require Import
-     Ast
-     HoareSemantics.
+     Ast.
+From Cpp.Sem Require Import
+     Logic Modules.
 
 Axiom lob_ind : forall P S,
     S //\\ |> P |-- P ->
     S |-- P.
+Axiom illater_wandSP : forall P Q, |> (P -* Q) |-- (|> P) -* (|> Q).
+Axiom illater_sepSP : forall P Q, |> (P ** Q) |-- (|> P) ** (|> Q).
+Axiom later_empSP : |> empSP -|- empSP.
+
 
 (* note that the meaning of a module must be persistent,
  * if you have non-persistent terms (e.g. ptsto), then you either need
@@ -52,12 +57,3 @@ Abort.
      * |>B ==> A
      * A //\\ B
      *)
-
-Axiom illater_wandSP : forall P Q, |> (P -* Q) |-- (|> P) -* (|> Q).
-Axiom illater_sepSP : forall P Q, |> (P ** Q) |-- (|> P) ** (|> Q).
-
-
-Axiom cglob'_dup : forall resolve p fs,
-    cglob' (resolve:=resolve) p fs -|- cglob' (resolve:=resolve) p fs ** cglob' (resolve:=resolve) p fs.
-Axiom denote_module_dup : forall module,
-    denoteModule module -|- denoteModule module ** denoteModule module.
