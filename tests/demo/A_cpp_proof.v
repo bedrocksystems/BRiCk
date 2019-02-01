@@ -6,9 +6,7 @@ Local Open Scope string_scope.
 From ChargeCore.Logics Require Import
      ILogic BILogic ILEmbed Later.
 
-Require Import Cpp.Parser.
-Require Import Cpp.HoareSemantics.
-Require Import auto.Tactics.Discharge.
+From Cpp Require Import Auto.
 
 Require Demo.A_cpp.
 Require Import Demo.A_cpp_spec.

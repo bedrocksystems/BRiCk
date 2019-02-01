@@ -1,5 +1,6 @@
 From Cpp Require Import
-     Ast HoareSemantics.
+     Auto.
+Require Import Cpp.Sem.Linking.
 From ChargeCore.Logics Require Import
      ILogic BILogic ILEmbed Later.
 
@@ -21,8 +22,6 @@ Proof.
   eapply sepSPAdj.
   reflexivity.
 Qed.
-
-Require Import Cpp.Linking.
 
 Theorem A_o_sound (resolve : _)
 : |-- denoteModule (module_link A_hpp.module A_cpp.module) -*
