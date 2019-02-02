@@ -512,6 +512,13 @@ private:
   private:
 	ToCoq *const parent;
 	DELEGATE_OUTPUT(parent)
+
+	void
+	done(const Expr* expr) {
+	  output() << fmt::nbsp;
+	  parent->printQualType(expr->getType());
+	  output() << fmt::rparen;
+	}
   public:
 	PrintExpr (ToCoq *_parent)
 		: parent(_parent) {
@@ -596,7 +603,7 @@ private:
 	  parent->printExpr(expr->getLHS());
 	  output() << fmt::nbsp;
 	  parent->printExpr(expr->getRHS());
-	  output() << fmt::rparen;
+	  done(expr);
 	}
 
 	void
@@ -651,14 +658,14 @@ private:
 		  output() << fmt::nbsp;
 	  }
 	  parent->printExpr(expr->getSubExpr());
-	  output() << fmt::rparen;
+	  done(expr);
 	}
 
 	void
 	VisitDeclRefExpr (const DeclRefExpr *expr) {
 	  ctor("Evar");
 	  parent->printName(expr->getDecl());
-	  output() << fmt::rparen;
+	  done(expr);
 	}
 
 	void
@@ -667,43 +674,43 @@ private:
 	  parent->printExpr(expr->getCallee());
 	  output() << fmt::nbsp;
 	  PRINT_LIST(expr->arg, parent->printExpr)
-	  output() << fmt::rparen;
+	  done(expr);
 	}
 
 	void
 	VisitCastExpr (const CastExpr *expr) {
 	  ctor("Ecast");
 	  if (expr->getConversionFunction()) {
-		ctor("Cuser");
+		ctor("Cuser", false);
 		parent->printGlobalName(expr->getConversionFunction());
 		output() << fmt::rparen;
 	  } else {
-		ctor("CCcast");
+		ctor("CCcast", false);
 		printCastKind(output(), expr->getCastKind());
 		output() << fmt::rparen;
 	  }
 
 	  output() << fmt::nbsp;
 	  parent->printExpr(expr->getSubExpr());
-	  output() << fmt::rparen;
+	  done(expr);
 	}
 
 	void
 	VisitCXXNamedCastExpr(const CXXNamedCastExpr *expr) {
-	  ctor("Ecast");
 	  if (expr->getConversionFunction()) {
 		return VisitCastExpr(expr);
 	  }
 
+	  ctor("Ecast");
 	  if (isa<CXXReinterpretCastExpr>(expr)) {
-		ctor("Creinterpret");
+		ctor("Creinterpret", false);
 	  } else if (isa<CXXConstCastExpr>(expr)) {
-		ctor("Cconst");
+		ctor("Cconst", false);
 		output() << fmt::rparen;
 	  } else if (isa<CXXStaticCastExpr>(expr)) {
-		ctor("Cstatic");
+		ctor("Cstatic", false);
 	  } else if (isa<CXXDynamicCastExpr>(expr)) {
-		ctor("Cdynamic");
+		ctor("Cdynamic", false);
 	  } else {
 		error() << "unknown named cast\n";
 		llvm::errs().flush();
@@ -713,26 +720,25 @@ private:
 	  output() << fmt::rparen << fmt::nbsp;
 
 	  parent->printExpr(expr->getSubExpr());
-	  output() << fmt::rparen;
+	  done(expr);
 	}
 
 	void
 	VisitIntegerLiteral (const IntegerLiteral *lit) {
 	  ctor("Eint") << lit->getValue() << fmt::nbsp;
-	  parent->printQualType(lit->getType());
-	  output() << fmt::rparen;
+	  done(lit);
 	}
 
 	void
 	VisitCharacterLiteral (const CharacterLiteral *lit) {
 	  ctor("Echar") << lit->getValue() << fmt::nbsp;
-	  parent->printQualType(lit->getType());
-	  output() << fmt::rparen;
+	  done(lit);
 	}
 
 	void
 	VisitStringLiteral (const StringLiteral *lit) {
-	  ctor("Estring") << "\"" << lit->getBytes() << "\"" << fmt::rparen;
+	  ctor("Estring") << "\"" << lit->getBytes() << "\"";
+	  done(lit);
 	}
 
 	void
@@ -750,7 +756,7 @@ private:
 	  if (expr->isArrow()) {
 		ctor("Ederef");
 		parent->printExpr(expr->getBase());
-		output() << fmt::rparen;
+		done(expr->getBase());
 	  } else {
 		parent->printExpr(expr->getBase());
 	  }
@@ -766,7 +772,7 @@ private:
 	  } else {
 		error() << "member not pointing to field " << expr->getMemberDecl()->getDeclKindName() << "\n";
 	  }
-	  output() << fmt::rparen;
+	  done(expr);
 	}
 
 	void
@@ -775,7 +781,7 @@ private:
 	  parent->printExpr(expr->getLHS());
 	  output() << fmt::nbsp;
 	  parent->printExpr(expr->getRHS());
-	  output() << fmt::rparen;
+	  done(expr);
 	}
 
 	void
@@ -784,7 +790,7 @@ private:
 	  parent->printGlobalName(expr->getConstructor());
 	  output() << fmt::nbsp;
 	  PRINT_LIST(expr->arg, parent->printExpr)
-	  output() << fmt::rparen;
+	  done(expr);
 	}
 
 	void
@@ -798,20 +804,20 @@ private:
 	  if (me->isArrow()) {
 		ctor("Ederef");
 		parent->printExpr(expr->getImplicitObjectArgument());
-		output() << fmt::rparen;
+		done(expr->getImplicitObjectArgument());
 	  } else {
 		parent->printExpr(expr->getImplicitObjectArgument());
 	  }
 	  output() << fmt::nbsp;
 	  PRINT_LIST(expr->arg, parent->printExpr)
-	  output() << fmt::rparen;
+	  done(expr);
 	}
 
 	void
 	VisitCXXDefaultArgExpr (const CXXDefaultArgExpr *expr) {
 	  ctor("Eimplicit");
 	  parent->printExpr(expr->getExpr());
-	  output() << fmt::rparen;
+	  done(expr);
 	}
 
 	void
@@ -822,7 +828,7 @@ private:
 	  parent->printExpr(expr->getTrueExpr());
 	  output() << fmt::nbsp;
 	  parent->printExpr(expr->getFalseExpr());
-	  output() << fmt::rparen;
+	  done(expr);
 	}
 
 #if CLANG_VERSION_MAJOR >= 8
@@ -852,23 +858,25 @@ private:
 
 	void
 	VisitCXXThisExpr(const CXXThisExpr *expr) {
-	  output() << "Ethis";
+	  ctor("Ethis", false);
+	  done(expr);
 	}
 
 	void
 	VisitCXXNullPtrLiteralExpr(const CXXNullPtrLiteralExpr *expr) {
-	  output() << "Enull";
+	  ctor("Enull", false);
+	  done(expr);
 	}
 
 	void
 	VisitUnaryExprOrTypeTraitExpr(const UnaryExprOrTypeTraitExpr *expr) {
 	  auto do_arg = [this, expr]() {
 		if (expr->isArgumentType()) {
-		  ctor("inl");
+		  ctor("inl", false);
 		  parent->printQualType(expr->getArgumentType());
 		  output() << fmt::rparen;
 		} else if (expr->getArgumentExpr()) {
-		  ctor("inr");
+		  ctor("inr", false);
 		  parent->printExpr(expr->getArgumentExpr());
 		  output() << fmt::rparen;
 		} else {
@@ -880,13 +888,13 @@ private:
 	  // `sizeof(t)` where `t` is the type of `e`?
 	  // similarly for `alignof`?
 	  if (expr->getKind() == UnaryExprOrTypeTrait::UETT_AlignOf) {
-		output() << fmt::lparen << "Ealign_of" << fmt::nbsp;
+		ctor("Ealign_of", false);
 		do_arg();
-		output() << fmt::rparen;
+		done(expr);
 	  } else if (expr->getKind() == UnaryExprOrTypeTrait::UETT_SizeOf) {
-		output() << fmt::lparen << "Esize_of" << fmt::nbsp;
+		ctor("Esize_of", false);
 		do_arg();
-		output() << fmt::rparen;
+		done(expr);
 	  } else {
 		error() << "unsupported expression `UnaryExprOrTypeTraitExpr`\n";
 	  }
@@ -901,9 +909,9 @@ private:
 	VisitCXXNewExpr(const CXXNewExpr *expr) {
 	  ctor("Enew");
 	  if (expr->getOperatorNew()) {
-		ctor("Some");
+		ctor("Some", false);
 		parent->printGlobalName(expr->getOperatorNew());
-		output() << fmt::lparen;
+		output() << fmt::rparen;
 	  } else {
 		output() << "None";
 	  }
@@ -912,7 +920,7 @@ private:
 
 	  parent->printExpr(expr->getConstructExpr());
 
-	  output() << fmt::rparen;
+	  done(expr);
 	}
 
 	void
@@ -921,7 +929,7 @@ private:
 	  output() << (expr->isArrayForm() ? "true" : "false") << fmt::nbsp;
 
 	  if (expr->getOperatorDelete()) {
-		ctor("Some");
+		ctor("Some", false);
 		parent->printGlobalName(expr->getOperatorDelete());
 		output() << fmt::rparen;
 	  } else {
@@ -931,7 +939,7 @@ private:
 
 	  parent->printExpr(expr->getArgument());
 
-	  output() << fmt::rparen;
+	  done(expr);
 	}
 
 	// todo(gmm): we could probably get around having the next three definitions.
@@ -947,7 +955,7 @@ private:
 	  // temporaries that are constructed just from looking at this node.
 	  ctor("Eandclean");
 	  parent->printExpr(expr->getSubExpr());
-	  output() << fmt::rparen;
+	  done(expr);
 	}
 
 	void
@@ -962,7 +970,7 @@ private:
 	  parent->printGlobalName(expr->getConstructor());
 	  output() << fmt::nbsp;
 	  PRINT_LIST(expr->arg, parent->printExpr)
-	  output() << fmt::rparen;
+	  done(expr);
 	}
   };
 

@@ -35,6 +35,11 @@ Axiom has_type_int_bound : forall {q x},
     has_type (Vint x) (Tqualified q T_int) ->
     (-(2^31) < x < 2^31 - 1)%Z.
 
+Axiom has_type_mut : forall x ty, has_type x ty -> has_type x (Qmut ty).
+
+Hint Resolve has_type_int_any has_type_int_bound has_type_mut
+  : has_type.
+
 
 Parameter eval_unop : UnOp -> type -> val -> val -> Prop.
 Parameter eval_binop : BinOp -> type -> val -> val -> val -> Prop.

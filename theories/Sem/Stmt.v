@@ -155,7 +155,7 @@ Module Type Stmt.
       | Tarray _ _ => lfalse (* todo(gmm): arrays not yet supported *)
       | Tref gn =>
         match init with
-        | Some (Econstructor cnd es) =>
+        | Some (Econstructor cnd es _) =>
           Exists sz, [| @size_of resolve (Tref gn) sz |] **
           Exists ctor, [| glob_addr resolve cnd ctor |] **
           (* we don't need the destructor until later, but if we prove it

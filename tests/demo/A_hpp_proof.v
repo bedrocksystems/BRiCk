@@ -31,7 +31,8 @@ Proof.
     repeat perm_left ltac:(idtac; perm_right ltac:(idtac; eapply wp_call_glob)).
     simplifying.
     unfold tlocal, tptsto.
-    work. subst.
+    work.
+    subst.
     eapply has_type_qual with (q:={| q_const:=false ; q_volatile:=false |}) in H1.
     generalize (has_type_int_bound H1). intro.
     work.

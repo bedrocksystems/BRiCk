@@ -53,7 +53,8 @@ Inductive type : Set :=
 | Tfunction (_ : type) (_ : list type)
 | Tqualified (_ : type_qualifiers) (_ : type)
 | Tbool
-| Ttemplate (_ : ident).
+| Ttemplate (_ : ident)
+.
 
 
 Definition Qconst_volatile : type -> type :=
@@ -134,55 +135,55 @@ Variant VarRef : Set :=
 | Gname (_ : globname).
 
 Inductive Expr : Set :=
-| Evar     (_ : VarRef)
+| Evar     (_ : VarRef) (_ : type)
   (* ^ local variable reference *)
 
 | Eint     (_ : Z) (_ : type)
 | Ebool    (_ : bool)
   (* ^ literals *)
 
-| Eunop    (_ : UnOp) (_ : Expr)
-| Ebinop   (_ : BinOp) (_ _ : Expr)
+| Eunop    (_ : UnOp) (_ : Expr) (_ : type)
+| Ebinop   (_ : BinOp) (_ _ : Expr) (_ : type)
  (* ^ note(gmm): overloaded operators are already resolved. so an overloaded
   * operator shows up as a function call, not a `Eunop` or `Ebinop`.
   * this includes the assignment operator for classes.
   *)
-| Ederef (_ : Expr)
-| Eaddrof (_ : Expr)
-| Eassign (_ _ : Expr)
-| Eassign_op (_ : BinOp) (_ _ : Expr)
+| Ederef (_ : Expr) (_ : type)
+| Eaddrof (_ : Expr) (_ : type)
+| Eassign (_ _ : Expr) (_ : type)
+| Eassign_op (_ : BinOp) (_ _ : Expr) (_ : type)
   (* ^ these are specialized because they are common *)
 
-| Epreinc (_ : Expr)
-| Epostinc (_ : Expr)
-| Epredec (_ : Expr)
-| Epostdec (_ : Expr)
+| Epreinc (_ : Expr) (_ : type)
+| Epostinc (_ : Expr) (_ : type)
+| Epredec (_ : Expr) (_ : type)
+| Epostdec (_ : Expr) (_ : type)
   (* ^ special unary operators *)
 
-| Eseqand (_ _ : Expr)
-| Eseqor  (_ _ : Expr)
-| Ecomma  (_ _ : Expr)
+| Eseqand (_ _ : Expr) (_ : type)
+| Eseqor  (_ _ : Expr) (_ : type)
+| Ecomma  (_ _ : Expr) (_ : type)
   (* ^ these are specialized because they have special control flow semantics *)
 
-| Ecall    (_ : Expr) (_ : list Expr)
-| Ecast    (_ : Cast) (_ : Expr)
+| Ecall    (_ : Expr) (_ : list Expr) (_ : type)
+| Ecast    (_ : Cast) (_ : Expr) (_ : type)
 
-| Emember  (obj : Expr) (_ : field)
-| Emember_call (is_virtual : bool) (method : globname) (obj : Expr) (_ : list Expr)
+| Emember  (obj : Expr) (_ : field) (_ : type)
+| Emember_call (is_virtual : bool) (method : globname) (obj : Expr) (_ : list Expr) (_ : type)
 
-| Esubscript (_ : Expr) (_ : Expr)
-| Esize_of (_ : type + Expr)
-| Ealign_of (_ : type + Expr)
-| Econstructor (_ : globname) (_ : list Expr)
-| Eimplicit (_ : Expr)
-| Eif       (_ _ _ : Expr)
+| Esubscript (_ : Expr) (_ : Expr) (_ : type)
+| Esize_of (_ : type + Expr) (_ : type)
+| Ealign_of (_ : type + Expr) (_ : type)
+| Econstructor (_ : globname) (_ : list Expr) (_ : type)
+| Eimplicit (_ : Expr) (_ : type)
+| Eif       (_ _ _ : Expr) (_ : type)
 
-| Ethis
-| Enull
-| Einitlist (_ : list Expr)
+| Ethis (_ : type)
+| Enull (_ : type)
+| Einitlist (_ : list Expr) (_ : type)
 
-| Enew (_ : option globname) (_ : Expr)
-| Edelete (is_array : bool) (_ : option globname) (_ : Expr)
+| Enew (_ : option globname) (_ : Expr) (_ : type)
+| Edelete (is_array : bool) (_ : option globname) (_ : Expr) (_ : type)
 .
 
 Variant SwitchBranch : Set :=

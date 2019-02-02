@@ -36,20 +36,13 @@ Proof.
     work. subst.
     simplifying.
     eapply landR.
-    work.
-    (* todo(gmm): figure out why replacing this with `work` diverges *)
-    discharge ltac:(canceler ltac:(fail) tac) tac.
-    eapply embedPropR.
-    eapply eval_add.
-    Unshelve. reflexivity. instantiate (1:=T_int).
-    Unshelve.  eapply has_type_int_any.
-    simpl.
+    work. simpl.
     work.
     rewrite denoteModule_weaken.
     rewrite cglob'_emp.
     rewrite later_empSP.
     work. }
-  
+
   rewrite denoteModule_weaken.
   rewrite cglob'_emp.
   rewrite later_empSP.

@@ -613,14 +613,16 @@ Module Type Func.
         eauto. }
     Qed.
 *)
-    Theorem wp_call_glob : forall f ret ts es K PQ F F',
+    Theorem wp_call_glob : forall f ret ts es K PQ F F' ty ty' ty'',
         F (* ** cglob' f ret ts (ht' ret ts PQ) *)
         |-- wps (wp_rhs (resolve:=resolve)) es (fun vs => applyEach ts vs PQ (fun wpp _ =>
                 Exists g : wpp.(wpp_with),
                   wpp.(wpp_pre) g ** F' **
                   (Forall r, wpp.(wpp_post) g r -* K r))) ->
         (|> cglob' f (SFunction ret ts PQ)) ** F
-        |-- wp_rhs (resolve:=resolve) (Ecall (Ecast Cfunction2pointer (Evar (Gname f))) es) K ** F'.
+        |-- wp_rhs (resolve:=resolve)
+                   (Ecall (Ecast Cfunction2pointer (Evar (Gname f) ty) ty') es ty'')
+                   K ** F'.
     Proof.
 (*
       intros.
