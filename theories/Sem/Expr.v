@@ -20,13 +20,12 @@ Require auto.Tactics.Discharge.
 Module Type Expr.
 
   Definition tptsto (ty : type) (p : val) (v : val) : mpred :=
-    ptsto p v ** [| has_type v ty |].
+    ptsto p v ** [| has_type v (drop_qualifiers ty) |].
 
-
-  Definition local (x : ident) (v : val) : mpred :=
-    Exists a, addr_of x a ** ptsto a v.
   Definition tlocal (ty : type) (x : ident) (v : val) : mpred :=
-    Exists a, addr_of x a ** tptsto ty a v.
+    Exists a, addr_of x a **
+              [| has_type a (Tpointer ty) |] **
+              tptsto ty a v.
 
   Fixpoint uninitializedN (size : nat) (a : val) : mpred :=
     match size with
@@ -113,7 +112,7 @@ Module Type Expr.
 
     (* integer literals are rvalues *)
     Axiom wp_rhs_int : forall n ty Q,
-      [! has_type (Vint n) ty !] //\\ Q (Vint n)
+      [! has_type (Vint n) (drop_qualifiers ty) !] //\\ Q (Vint n)
       |-- wp_rhs (Eint n ty) Q.
 
     (* boolean literals are rvalues *)
@@ -167,38 +166,38 @@ Module Type Expr.
 
     (* unary operators *)
     Axiom wp_rhs_unop : forall o e ty Q,
-        wp_rhs e (fun v => Exists v', embed (eval_unop o ty v v') //\\ Q v')
+        wp_rhs e (fun v => Exists v', embed (eval_unop o (drop_qualifiers ty) v v') //\\ Q v')
         |-- wp_rhs (Eunop o e ty) Q.
 
     (* note(gmm): operators need types! *)
     Axiom wp_lhs_preinc : forall e ty Q,
         wp_lhs e (fun a => Exists v', Exists v'',
-              ptsto a v' ** [| eval_binop Badd ty v' (Vint 1) v'' |] **
+              ptsto a v' ** [| eval_binop Badd (drop_qualifiers ty) v' (Vint 1) v'' |] **
               (ptsto a v'' -* Q a))
         |-- wp_lhs (Epreinc e ty) Q.
 
     Axiom wp_lhs_predec : forall e ty Q,
         wp_lhs e (fun a => Exists v', Exists v'',
-              tptsto ty a v' ** [| eval_binop Bsub ty v' (Vint 1) v'' |] **
-              (tptsto ty a v'' -* Q a))
+              tptsto (drop_qualifiers ty) a v' ** [| eval_binop Bsub (drop_qualifiers ty) v' (Vint 1) v'' |] **
+              (tptsto (drop_qualifiers ty) a v'' -* Q a))
         |-- wp_lhs (Epredec e ty) Q.
 
     Axiom wp_rhs_postinc : forall e ty Q,
         wp_lhs e (fun a => Exists v', Exists v'',
-              tptsto ty a v' ** [| eval_binop Badd ty v' (Vint 1) v'' |] **
-              (tptsto ty a v'' -* Q v'))
+              tptsto (drop_qualifiers ty) a v' ** [| eval_binop Badd (drop_qualifiers ty) v' (Vint 1) v'' |] **
+              (tptsto (drop_qualifiers ty) a v'' -* Q v'))
         |-- wp_rhs (Epostinc e ty) Q.
 
     Axiom wp_rhs_postdec : forall e ty Q,
         wp_lhs e (fun a => Exists v', Exists v'',
-              tptsto ty a v' ** [| eval_binop Bsub ty v' (Vint 1) v'' |] **
-              (tptsto ty a v'' -* Q v'))
+              tptsto (drop_qualifiers ty) a v' ** [| eval_binop Bsub (drop_qualifiers ty) v' (Vint 1) v'' |] **
+              (tptsto (drop_qualifiers ty) a v'' -* Q v'))
         |-- wp_lhs (Epostdec e ty) Q.
 
     (** binary operators *)
     Axiom wp_rhs_binop : forall o e1 e2 ty Q,
         wp_rhs e1 (fun v1 => wp_rhs e2 (fun v2 =>
-            Exists v', embed (eval_binop o ty v1 v2 v') //\\ Q v'))
+            Exists v', embed (eval_binop o (drop_qualifiers ty) v1 v2 v') //\\ Q v'))
         |-- wp_rhs (Ebinop o e1 e2 ty) Q.
 
     Axiom wp_lhs_assign : forall ty l r Q,
@@ -243,7 +242,7 @@ Module Type Expr.
 
     (** casts *)
     Axiom wp_rhs_cast_l2r : forall ty e Q,
-        wp_lhs e (fun a => Exists v, (tptsto ty a v ** ltrue) //\\ Q v)
+        wp_lhs e (fun a => Exists v, (tptsto (drop_qualifiers ty) a v ** ltrue) //\\ Q v)
         |-- wp_rhs (Ecast Cl2r e ty) Q.
 
     Axiom wp_rhs_cast_noop : forall ty m e Q,
@@ -313,8 +312,7 @@ Module Type Expr.
 
     Ltac has_type :=
       first [ eapply has_type_int ; lia
-            | eapply has_type_int32 ; lia
-            | eapply has_type_qual ; has_type ].
+            | eapply has_type_int32 ; lia ].
 
     Ltac operator :=
       first [ subst ; eapply eval_add; [ first [ reflexivity | nia ] | has_type ] ].
@@ -332,24 +330,22 @@ Module Type Expr.
 
       (* int x ; x = 0 ; *)
       Goal
-        tlocal T_int32 "x" 3
+        tlocal (Qmut T_int32) "x" 3
         |-- wp_lhs (resolve:=resolve)
-                   (Eassign (Evar (Lname "x") T_int32) (Eint 0 T_int32) (Treference T_int32))
+                   (Eassign (Evar (Lname "x") (Qmut T_int32)) (Eint 0 (Qmut T_int32)) (Qmut (Treference (Qmut T_int32))))
                    (fun xa => addr_of "x" xa ** tptsto T_int32 xa 0).
       Proof.
-        unfold tlocal.
+        unfold tlocal, tptsto.
         repeat (t; simplify_wp).
-        unfold tptsto.
-        t.
       Qed.
 
-(*
       Definition local_at (l : ident) (a : val) (v : val) : mpred :=
         addr_of l a ** ptsto a v.
 
       (* int *x ; *x = 0 ; *)
       Goal forall addr,
-        tlocal T_int "x" addr ** tptsto T_int addr 12%Z
+        tlocal (Qmut (Tpointer (Qmut T_int))) "x" addr **
+        tptsto T_int addr 12%Z
         |-- wp_lhs (resolve:=resolve)
         (Eassign
            (Ederef
@@ -366,37 +362,68 @@ Module Type Expr.
            (Eint 0
                  (Qmut T_int))
            (Qmut T_int))
-                   (fun x => embed (x = addr) //\\ tlocal T_int "x" x ** tptsto T_int x 0%Z).
+                   (fun x => embed (x = addr) //\\ tlocal (Qmut (Tpointer (Qmut T_int))) "x" x ** tptsto T_int x 0%Z).
       Proof.
         intros.
+        unfold tlocal, tptsto.
         repeat (t; simplify_wp).
+        simpl.
+        unfold tptsto. t.
       Qed.
 
       (* int *x ; int y ; x = &y ; *)
       Goal
-        local "x" 3%Z ** local "y" 12%Z
+        tlocal (Qmut (Tpointer (Qmut T_int))) "x" 3%Z **
+        tlocal (Qmut T_int) "y" 12%Z
         |-- wp_lhs (resolve:=resolve)
-                   (Eassign (Evar (Lname "x")) (Eaddrof (Evar (Lname "y"))))
-                   (fun xa => Exists ya, local "x" ya ** addr_of "y" ya ** ptsto ya 12).
+                   (Eassign (Evar (Lname "x") (Qmut (Tpointer (Qmut T_int))))
+                            (Eaddrof (Evar (Lname "y") (Qmut T_int)) (Qconst (Tpointer (Qmut T_int))))
+                            (Qmut (Tpointer (Qmut T_int))))
+                   (fun xa => Exists ya, tlocal (Qmut (Tpointer (Qmut (T_int)))) "x" ya ** addr_of "y" ya ** ptsto ya 12).
       Proof.
-        unfold local.
+        unfold tlocal, tptsto.
         repeat (t; simplify_wp).
       Qed.
 
       (* int *x ; int y ; *(x = &y) = 3; *)
       Goal
-        local "x" 3%Z ** local "y" 9%Z
+        tlocal (Qmut (Tpointer (Qmut T_int))) "x" 3%Z **
+        tlocal (Qmut T_int) "y" 9%Z
         |-- wp_lhs (resolve:=resolve)
                    (Eassign
-                      (Ederef (El2r (Eassign (Evar (Lname "x"))
-                                             (Eaddrof (Evar (Lname "y"))))))
-                      (Eint 3 T_int32))%Z
-                   (fun ya => local "x" ya ** ptsto ya 3%Z ** addr_of "y" ya).
+                (Ederef
+                  (Ecast (CCcast Cl2r)
+                    (Eassign
+                      (Evar
+                        (Lname  "x")
+                        (Qmut
+                          (Tpointer
+                            (Qmut T_int))))
+                      (Eaddrof
+                        (Evar
+                          (Lname  "y")
+                          (Qmut T_int))
+                        (Qmut
+                          (Tpointer
+                            (Qmut T_int))))
+                      (Qmut
+                        (Tpointer
+                          (Qmut T_int))))
+                    (Qmut
+                      (Tpointer
+                        (Qmut T_int))))
+                  (Qmut T_int))
+                (Eint 3
+                  (Qmut T_int))
+                (Qmut T_int))
+                   (fun ya => tlocal (Qmut (Tpointer (Qmut T_int))) "x" ya **
+                            tptsto T_int ya 3%Z ** addr_of "y" ya).
       Proof.
-        unfold local.
+        unfold tlocal, tptsto.
         repeat (t; simplify_wp).
+        unfold tptsto. t.
       Qed.
-*)
+
     End with_resolve.
 
   End examples.

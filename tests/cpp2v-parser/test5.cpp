@@ -1,4 +1,4 @@
-typedef union {
+union blah {
     int X;
     bool Y;
-} blah;
+};

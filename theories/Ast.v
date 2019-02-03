@@ -41,21 +41,43 @@ Record type_qualifiers : Set :=
 { q_const : bool
 ; q_volatile : bool }.
 
+Definition merge_tq (a b : type_qualifiers) : type_qualifiers :=
+  {| q_const := a.(q_const) || b.(q_const)
+   ; q_volatile := a.(q_volatile) || b.(q_volatile)
+   |}.
+
 Inductive type : Set :=
 | Tpointer (_ : type)
 | Treference (_ : type)
 | Tint (size : option nat) (signed : bool)
 | Tchar (size : option nat) (signed : bool)
 | Tvoid
-| Tunknown
-| Tarray (_ : type) (_ : option nat)
+| Tarray (_ : type) (_ : nat) (* unknown sizes are represented by pointers *)
 | Tref (_ : globname)
 | Tfunction (_ : type) (_ : list type)
-| Tqualified (_ : type_qualifiers) (_ : type)
 | Tbool
-| Ttemplate (_ : ident)
+| Tqualified (_ : type_qualifiers) (_ : type)
 .
 
+Fixpoint erase_qualifiers (t : type) : type :=
+  match t with
+  | Tpointer t => Tpointer (erase_qualifiers t)
+  | Treference t => Treference (erase_qualifiers t)
+  | Tint _ _
+  | Tchar _ _
+  | Tbool
+  | Tvoid
+  | Tref _ => t
+  | Tarray t sz => Tarray (erase_qualifiers t) sz
+  | Tfunction t ts => Tfunction (erase_qualifiers t) (List.map erase_qualifiers ts)
+  | Tqualified _ t => erase_qualifiers t
+  end.
+
+Fixpoint drop_qualifiers (t : type) : type :=
+  match t with
+  | Tqualified _ t => drop_qualifiers t
+  | _ => t
+  end.
 
 Definition Qconst_volatile : type -> type :=
   Tqualified {| q_const := true ; q_volatile := true |}.

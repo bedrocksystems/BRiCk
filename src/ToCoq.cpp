@@ -228,7 +228,7 @@ private:
 
 	void
 	VisitTypedefType (const TypedefType *type) {
-	  ctor("Tref");
+	  ctor("Tref", false);
 	  parent->printGlobalName(type->getDecl());
 	  output() << fmt::rparen;
 	}
@@ -257,8 +257,7 @@ private:
 	VisitConstantArrayType(const ConstantArrayType *type) {
 	  ctor("Tarray");
 	  parent->printQualType(type->getElementType());
-	  output() << fmt::nbsp;
-	  output() << "(Some " << type->getSize().getLimitedValue() << ")" << fmt::rparen;
+	  output() << fmt::nbsp << type->getSize().getLimitedValue() << fmt::rparen;
 	}
 
 	void
@@ -282,8 +281,7 @@ private:
 
 	void
 	VisitTemplateSpecializationType(const TemplateSpecializationType *type) {
-	  ctor("Tref");
-	  output() << "\"";
+	  ctor("Tref") << "\"";
 	  parent->mangleContext->mangleCXXName(type->getAsCXXRecordDecl(), parent->out.nobreak());
 	  output() << "\"" << fmt::rparen;
 	}
@@ -306,11 +304,11 @@ private:
 	  parent->printQualType(decl->getType());
 	  output() << "," << fmt::nbsp;
 	  if (decl->hasInit()) {
-		output() << fmt::line << fmt::lparen << "Some" << fmt::nbsp;
+		ctor("Some", false);
 		parent->printExpr(decl->getInit());
 		output() << fmt::rparen;
 	  } else {
-		output() << fmt::nbsp << "None";
+		output() << "None";
 	  }
 	  output() << fmt::rparen;
 	}
@@ -663,7 +661,7 @@ private:
 
 	void
 	VisitDeclRefExpr (const DeclRefExpr *expr) {
-	  ctor("Evar");
+	  ctor("Evar", false);
 	  parent->printName(expr->getDecl());
 	  done(expr);
 	}
@@ -1005,7 +1003,7 @@ private:
 
 	bool
 	VisitTypedefNameDecl (const TypedefNameDecl* type, Filter::What what) {
-	  output() << fmt::lparen << "Dtypedef \"" << type->getNameAsString() << "\"" << fmt::nbsp;
+	  ctor("Dtypedef", false) << "\"" << type->getNameAsString() << "\"" << fmt::nbsp;
 	  parent->printQualType(type->getUnderlyingType());
 	  output() << fmt::rparen;
 	  return true;
@@ -1013,6 +1011,9 @@ private:
 
 	bool
 	VisitCXXRecordDecl (const CXXRecordDecl *decl, Filter::What what) {
+	  if (decl->getNameAsString() == "") {
+		fatal("anonymous structs/classes are not supported");
+	  }
 	  if (decl != decl->getCanonicalDecl()) {
 		return false;
 	  }
@@ -1024,7 +1025,7 @@ private:
 		return true;
 	  }
 
-	  ctor("Some");
+	  ctor("Some", false);
 
 	  // print the base classes
 	  output() << fmt::line << "{| s_bases :=" << fmt::nbsp;
@@ -1049,7 +1050,7 @@ private:
 		parent->printQualType(field->getType());
 		output() << ","  << fmt::nbsp;
 		if (const Expr* init = field->getInClassInitializer()) {
-		 ctor("Some");
+		 ctor("Some", false);
 		 parent->printExpr(init);
 		 output() << fmt::rparen;
 		} else {
@@ -1171,10 +1172,13 @@ private:
 
 	bool
 	VisitEnumDecl (const EnumDecl *decl, Filter::What what) {
+	  if (decl->getNameAsString() == "") {
+		fatal("anonymous enumerations are not supported");
+	  }
 	  ctor("Denum") << "\"" << decl->getNameAsString() << "\"" << fmt::nbsp;
 	  auto t = decl->getIntegerType();
 	  if (!t.isNull()) {
-		ctor("Some");
+		ctor("Some", false);
 		parent->printQualType(decl->getIntegerType());
 		output() << fmt::rparen;
 	  } else {
@@ -1551,7 +1555,7 @@ public:
 	output() << fmt::line << " ; d_body :=";
 	if (decl->isDefaulted()) {
 	  // todo(gmm): I need to generate this.
-	  output() << "Some Defaulted";
+	  output() << "Some Defaulted |}";
 	} else if (decl->getBody()) {
 	  output() << "Some" << fmt::nbsp;
 	  ctor("UserDefined") << fmt::lparen;

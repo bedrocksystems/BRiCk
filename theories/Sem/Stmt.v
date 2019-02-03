@@ -136,11 +136,7 @@ Module Type Stmt.
       | Tfunction _ _ =>
         (* inline functions are not supported *)
         lfalse
-      | Tvoid
-      | Tunknown
-      | Ttemplate _ => lfalse
-      | Tqualified q ty =>
-        wp_decl x ty init k Q
+      | Tvoid => lfalse
       | Tpointer _
       | Tbool
       | Tchar _ _
@@ -172,6 +168,7 @@ Module Type Stmt.
         | _ => lfalse
           (* ^ all non-primitive declarations must have initializers *)
         end
+      | Tqualified _ ty => wp_decl x ty init k Q
       end.
 
     Fixpoint wp_decls (ds : list (ident * type * option Expr))
