@@ -675,7 +675,7 @@ Module Type Func.
 *)
     Theorem wp_call_glob : forall f ret ts es K PQ F F' ty ty' ty'',
         F (* ** cglob' f ret ts (ht' ret ts PQ) *)
-        |-- wps (wp_rhs (resolve:=resolve)) es (fun vs => applyEach ts vs PQ (fun wpp _ =>
+        |-- wps (wpAny (resolve:=resolve)) es (fun vs => applyEach ts vs PQ (fun wpp _ =>
                 Exists g : wpp.(wpp_with),
                   wpp.(wpp_pre) g ** F' **
                   (Forall r, wpp.(wpp_post) g r -* K r))) ->

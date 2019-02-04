@@ -414,7 +414,7 @@ private:
 	VisitIfStmt (const IfStmt* stmt) {
 	  ctor("Sif");
 	  if (stmt->getConditionVariable()) {
-		ctor("Some");
+		ctor("Some", false);
 		parent->printLocalDecl(stmt->getConditionVariable());
 		output() << fmt::rparen;
 	  } else {
@@ -470,6 +470,8 @@ private:
 	void
 	VisitExpr (const Expr *expr) {
 	  ctor("Sexpr");
+	  parent->printValCat(expr);
+	  output() << fmt::nbsp;
 	  parent->printExpr(expr);
 	  output() << fmt::rparen;
 	}
@@ -571,6 +573,8 @@ private:
 	  switch (expr->getOpcode()) {
 		case BinaryOperatorKind::BO_Comma:
 		  ctor("Ecomma");
+		  parent->printValCat(expr->getLHS());
+		  output() << fmt::nbsp;
 		  break;
 		case BinaryOperatorKind::BO_LAnd:
 		  ctor("Eseqand");
@@ -670,8 +674,12 @@ private:
 	VisitCallExpr (const CallExpr *expr) {
 	  ctor("Ecall");
 	  parent->printExpr(expr->getCallee());
-	  output() << fmt::nbsp;
-	  PRINT_LIST(expr->arg, parent->printExpr)
+	  output() << fmt::nbsp << fmt::lparen;
+	  for(auto i : expr->arguments()) {
+		parent->printExprAndValCat(i);
+		output() << "::";
+	  }
+	  output() << "nil" << fmt::rparen;
 	  done(expr);
 	}
 
@@ -786,8 +794,12 @@ private:
 	VisitCXXConstructExpr (const CXXConstructExpr *expr) {
 	  ctor("Econstructor");
 	  parent->printGlobalName(expr->getConstructor());
-	  output() << fmt::nbsp;
-	  PRINT_LIST(expr->arg, parent->printExpr)
+	  output() << fmt::nbsp << fmt::lparen;
+	  for (auto i : expr->arguments()) {
+		parent->printExprAndValCat(i);
+		output() << "::";
+	  }
+	  output() << "nil" << fmt::rparen;
 	  done(expr);
 	}
 
@@ -806,8 +818,12 @@ private:
 	  } else {
 		parent->printExpr(expr->getImplicitObjectArgument());
 	  }
-	  output() << fmt::nbsp;
-	  PRINT_LIST(expr->arg, parent->printExpr)
+	  output() << fmt::nbsp << fmt::lparen;
+	  for (auto i : expr->arguments()) {
+		parent->printExprAndValCat(i);
+		output() << "::";
+	  }
+	  output() << "nil" << fmt::rparen;
 	  done(expr);
 	}
 
@@ -843,15 +859,12 @@ private:
 
 	void
 	VisitInitListExpr(const InitListExpr *expr) {
-	  ctor("Einitlist") << "[";
-	  // I can't use PRINT_LIST here because there is no prefix to `begin` and `end`
-	  for (auto i = expr->begin(), e = expr->end(); i != e; ) {
-		parent->printExpr(*i);
-		if (++i != e) {
-		  output() << ";";
-		}
+	  ctor("Einitlist") << fmt::lparen;
+	  for (auto i : expr->inits()) {
+		parent->printExpr(i);
+		output() << "::";
 	  }
-	  output() << "]" << fmt::rparen;
+	  output() << "nil" << fmt::rparen << fmt::rparen;
 	}
 
 	void
@@ -1375,8 +1388,31 @@ public:
   }
 
   void
-  printExpr (const Stmt* d) {
+  printExpr (const Expr* d) {
 	exprPrinter.Visit(d);
+  }
+
+  void
+  printValCat(const Expr* d) {
+  	auto Class = d->Classify(*Context);
+  	if (Class.isLValue()) {
+  	  output() << "Lvalue";
+  	} else if (Class.isXValue()) {
+  	  output() << "Xvalue";
+  	} else if (Class.isRValue()) {
+  	  output() << "Rvalue";
+  	} else {
+  	  fatal("unknown value category");
+  	}
+  }
+
+  void
+  printExprAndValCat(const Expr* d) {
+	output() << fmt::lparen;
+	printValCat(d);
+	output() << "," << fmt::nbsp;
+	printExpr(d);
+	output() << fmt::rparen;
   }
 
   void

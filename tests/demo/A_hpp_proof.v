@@ -29,6 +29,7 @@ Proof.
     work.
     simplifying.
     repeat perm_left ltac:(idtac; perm_right ltac:(idtac; eapply wp_call_glob)).
+    simpl.
     simplifying.
     unfold tlocal, tptsto.
     work.

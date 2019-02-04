@@ -84,9 +84,9 @@ Module Type Stmt.
 
     (* todo(gmm): the expression can be any value category.
      *)
-    Axiom wp_expr : forall e Q,
-        wp_lhs (resolve:=resolve) e (fun _ => Q.(k_normal))
-        |-- wp resolve (Sexpr e) Q.
+    Axiom wp_expr : forall vc e Q,
+        wpAny (resolve:=resolve) (vc,e) (fun _ => Q.(k_normal))
+        |-- wp resolve (Sexpr vc e) Q.
 
     Axiom wp_if : forall e thn els Q,
         wp_rhs (resolve:=resolve) e (fun v =>
@@ -159,7 +159,7 @@ Module Type Stmt.
            *)
           Exists dtor, [| glob_addr resolve (gn ++ "D1") dtor |] **
           (* todo(gmm): is there a better way to get the destructor? *)
-          wps (wp_rhs (resolve:=resolve)) es (fun vs =>
+          wps (fun '(vc,e) => wpe resolve vc e) es (fun vs =>
                  Exists a, uninitialized_ty (Tref gn) a
               -* |> fspec (Vptr ctor) (a :: vs) (fun _ =>
                  addr_of x a -*

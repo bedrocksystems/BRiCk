@@ -156,6 +156,8 @@ Variant VarRef : Set :=
 | Lname (_ : localname)
 | Gname (_ : globname).
 
+Variant ValCat : Set := Lvalue | Rvalue | Xvalue.
+
 Inductive Expr : Set :=
 | Evar     (_ : VarRef) (_ : type)
   (* ^ local variable reference *)
@@ -184,19 +186,19 @@ Inductive Expr : Set :=
 
 | Eseqand (_ _ : Expr) (_ : type)
 | Eseqor  (_ _ : Expr) (_ : type)
-| Ecomma  (_ _ : Expr) (_ : type)
+| Ecomma (vc : ValCat) (_ _ : Expr) (_ : type)
   (* ^ these are specialized because they have special control flow semantics *)
 
-| Ecall    (_ : Expr) (_ : list Expr) (_ : type)
+| Ecall    (_ : Expr) (_ : list (ValCat * Expr)) (_ : type)
 | Ecast    (_ : Cast) (_ : Expr) (_ : type)
 
 | Emember  (obj : Expr) (_ : field) (_ : type)
-| Emember_call (is_virtual : bool) (method : globname) (obj : Expr) (_ : list Expr) (_ : type)
+| Emember_call (is_virtual : bool) (method : globname) (obj : Expr) (_ : list (ValCat * Expr)) (_ : type)
 
 | Esubscript (_ : Expr) (_ : Expr) (_ : type)
 | Esize_of (_ : type + Expr) (_ : type)
 | Ealign_of (_ : type + Expr) (_ : type)
-| Econstructor (_ : globname) (_ : list Expr) (_ : type)
+| Econstructor (_ : globname) (_ : list (ValCat * Expr)) (_ : type)
 | Eimplicit (_ : Expr) (_ : type)
 | Eif       (_ _ _ : Expr) (_ : type)
 
@@ -230,7 +232,7 @@ Inductive Stmt : Set :=
 
 | Sreturn (_ : option Expr)
 
-| Sexpr   (_ : Expr)
+| Sexpr   (_ : ValCat) (_ : Expr)
 
 | Sasm (_ : string)
 .
@@ -316,9 +318,6 @@ Inductive Decl : Set :=
 
 Definition module : Set :=
   list (globname * Decl).
-
-
-Coercion Sexpr : Expr >-> Stmt.
 
 Definition NStop : list ident := nil.
 

@@ -76,12 +76,10 @@ Module Type Expr.
   (**
    * Weakest pre-condition for expressions
    *)
-  Variant mode : Set := Lvalue | Rvalue.
-  (* ^ this is not complete with respect to the latest versions of C++ *)
 
   (* todo(gmm): `wpe` should be indexed by types
    *)
-  Parameter wpe : forall (resolve : genv), mode -> Expr -> (val -> mpred) -> mpred.
+  Parameter wpe : forall (resolve : genv), ValCat -> Expr -> (val -> mpred) -> mpred.
 
   (* note(gmm): the handling variables wrt lvalue and rvalues isn't correct
    * right now.
@@ -107,6 +105,12 @@ Module Type Expr.
     Definition wp_lhs : Expr -> (val -> mpred) -> mpred :=
       wpe resolve Lvalue.
 
+    Definition wpAny (vce : ValCat * Expr) : (val -> mpred) -> mpred :=
+      match vce with
+      | (Lvalue,e) => wp_lhs e
+      | (Rvalue,e) => wp_rhs e
+      | (Xvalue,e) => wp_lhs e
+      end.
 
     Notation "[! P !]" := (embed P).
 
@@ -215,9 +219,13 @@ Module Type Expr.
      * depending on what the second expression is.
      * todo(gmm): the first expression can be any value category.
      *)
-    Axiom wpe_comma : forall {m} ty e1 e2 Q,
-        wpe resolve m e1 (fun _ => wpe resolve m e2 Q)
-        |-- wpe resolve m (Ecomma e1 e2 ty) Q.
+    Axiom wpe_comma : forall {m vc} ty e1 e2 Q,
+        match vc with
+        | Ast.Lvalue => wp_lhs e1
+        | Ast.Rvalue => wp_rhs e1
+        | Xvalue => wp_lhs e1
+        end (fun _ => wpe resolve m e2 Q)
+        |-- wpe resolve m (Ecomma vc e1 e2 ty) Q.
 
     (** short-circuting operators *)
     Axiom wp_rhs_seqand : forall ty e1 e2 Q,
@@ -281,7 +289,7 @@ Module Type Expr.
      * function being called.
      *)
     Axiom wp_call : forall ty f es Q,
-        wp_rhs f (fun f => wps wp_rhs es (fun vs => |> fspec f vs Q))
+        wp_rhs f (fun f => wps wpAny es (fun vs => |> fspec f vs Q))
         |-- wp_rhs (Ecall f es ty) Q.
 
     (* todo(gmm): the evaluation mode for the arguments depends on the
@@ -289,7 +297,7 @@ Module Type Expr.
      *)
     Axiom wp_member_call : forall ty f obj es Q,
         Exists fa, [| glob_addr resolve f fa |] **
-        wp_lhs obj (fun this => wps wp_rhs es (fun vs =>
+        wp_lhs obj (fun this => wps wpAny es (fun vs =>
             |> fspec (Vptr fa) (this :: vs) Q))
         |-- wp_rhs (Emember_call false f obj es ty) Q.
 
