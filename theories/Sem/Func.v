@@ -568,6 +568,66 @@ Module Type Func.
           end)
       end.
 
+
+(*
+    Lemma ctor_ok_ctor:
+      forall (resolve : genv) P cls params init body PQ Z ZZ,
+        (forall this : val,
+            P |-- ForallEach' (u:=val) (T:=(val -> mpred) -> mpred)
+                          (map snd params)
+                          (Z this) (ZZ this)) ->
+        P
+        |-- ctor_ok' resolve
+            {| c_class := cls
+             ; c_params := params
+             ; c_body := Some (UserDefined (init, body)) |}
+            (ctor' cls (List.map snd params) PQ).
+    Proof.
+      unfold ctor', ctor_ok'; simpl.
+      intros.
+      work.
+      rename x into this.
+      rewrite (H this); clear H.
+      assert (Z this = (list_rect
+           (fun targs : list type =>
+            arrowFrom val targs WithPrePost ->
+            arrowFrom val targs ((val -> mpred) -> mpred))
+           (fun (PQ0 : WithPrePost) (Q : val -> mpred) =>
+            Exists g : wpp_with PQ0,
+            (Forall res : val, wpp_post PQ0 g res -* Q res) ** wpp_pre PQ0 g)
+           (fun (_ : type) (targs : list type)
+              (IHtargs : arrowFrom val targs WithPrePost ->
+                         arrowFrom val targs ((val -> mpred) -> mpred))
+              (PQ0 : val -> arrowFrom val targs WithPrePost)
+              (x : val) => IHtargs (PQ0 x)) (map snd params)
+           (arrowFrom_map
+              (fun wpp : WithPrePost =>
+               {|
+               wpp_with := wpp_with wpp;
+               wpp_pre := fun m : wpp_with wpp =>
+                          uninitialized_ty (Qmut (Tref cls)) this **
+                          wpp_pre wpp m;
+               wpp_post := wpp_post wpp |}) (PQ this)))).
+      clear.
+      { induction params; simpl.
+        Focus 2.
+        About ht'.
+
+
+
+      induction params.
+      { simpl.
+        Print ctor_ok'.
+        assert (ZZ = fun this wpp args =>
+                        Forall Q : mpred,
+                                   addr_of "#this" this **
+                                   Exists g : (PQ this).(wpp_with),
+                                              (Forall res : val, wpp_post (PQ this) g res -* Q)  ** uninitialized_ty (Qmut (Tref cls)) this ** (PQ this).(wpp_pre) g -* wpis resolve init
+        (wp resolve body
+           (Kfree (addr_of "#this" this ** empSP) (void_return Q)))).
+*)
+
+
     Definition cglob' (gn : globname) (spec : function_spec')
     : mpred :=
       Exists a, [| glob_addr resolve gn a |] ** cptr' (Vptr a) spec.

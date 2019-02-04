@@ -32,11 +32,10 @@ Proof.
     simplifying.
     unfold tlocal, tptsto.
     work.
-    subst.
-    eapply has_type_qual with (q:={| q_const:=false ; q_volatile:=false |}) in H1.
-    generalize (has_type_int_bound H1). intro.
-    work.
     simplifying.
+    subst.
+    simpl in H2.
+    generalize (has_type_int_bound H2). intro.
     work. }
 
   rewrite denoteModule_weaken.
