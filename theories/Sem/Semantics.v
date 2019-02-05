@@ -1,7 +1,7 @@
 (**
  * The "operational" style definitions about C++.
  *
- * The definitions in this file are based on CompCert.
+ * The definitions in this file are based (loosely) on CompCert.
  *)
 Require Import Coq.ZArith.BinInt.
 From Cpp Require Import
@@ -15,12 +15,12 @@ Parameter ptr : Type.
 Parameter Vptr : ptr -> val.
 Parameter Vint : Z -> val.
 
+(* this is the stack frame *)
 Parameter region : Type.
+(* this is the thread information *)
+Parameter thread_info : Type.
 
-(* todo(gmm): maintain stack variables through regions
- *)
 Parameter has_type : val -> type -> Prop.
-
 
 Axiom has_type_int : forall z,
     (-Z.pow 2 31 < z < Z.pow 2 31 - 1)%Z ->

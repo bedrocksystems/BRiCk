@@ -44,20 +44,20 @@ Module Type Expr.
 
 
 
-  Parameter func_ok_raw : Func -> list val -> (val -> mpred) -> mpred.
+  Parameter func_ok_raw : Func -> list val -> thread_info -> (val -> mpred) -> mpred.
   (* this assserts the frame axiom for function specifications
    *)
-  Axiom func_ok_frame : forall v vs Q F,
-      func_ok_raw v vs Q ** F |-- func_ok_raw v vs (fun res => Q res ** F).
+  Axiom func_ok_frame : forall v vs ti Q F,
+      func_ok_raw v vs ti Q ** F |-- func_ok_raw v vs ti (fun res => Q res ** F).
 
-  Definition fspec (n : val) (ls : list val) (Q : val -> mpred) : mpred :=
+  Definition fspec (n : val) (ls : list val) (ti : thread_info) (Q : val -> mpred) : mpred :=
     Exists f, [| n = Vptr f |] **
-    Exists func, code_at f func ** func_ok_raw func ls Q.
+    Exists func, code_at f func ** func_ok_raw func ls ti Q.
 
   (* todo(gmm): this is because func_ok is implemented using wp. *)
   Axiom fspec_conseq:
-    forall (p : val) (vs : list val) (K m : val -> mpred),
-      (forall r : val, m r |-- K r) -> fspec p vs m |-- fspec p vs K.
+    forall (p : val) (vs : list val) ti (K m : val -> mpred),
+      (forall r : val, m r |-- K r) -> fspec p vs ti m |-- fspec p vs ti K.
 
   (* this just applies `wp` across a list *)
   Section wps.
@@ -82,7 +82,7 @@ Module Type Expr.
 
   (* todo(gmm): `wpe` should be indexed by types
    *)
-  Parameter wpe : forall (resolve : genv), region -> ValCat -> Expr -> (val -> mpred) -> mpred.
+  Parameter wpe : forall (resolve : genv), thread_info -> region -> ValCat -> Expr -> (val -> mpred) -> mpred.
 
   (* note(gmm): the handling variables wrt lvalue and rvalues isn't correct
    * right now.
@@ -98,6 +98,7 @@ Module Type Expr.
    *)
   Section with_resolve.
     Context {resolve : genv}.
+    Variable ti : thread_info.
     Variable ρ : region.
 
 
@@ -105,9 +106,9 @@ Module Type Expr.
      * > C semantics doesn't use a lot of implicit casts.
      *)
     Definition wp_rhs : Expr -> (val -> mpred) -> mpred :=
-      wpe resolve ρ Rvalue.
+      wpe resolve ti ρ Rvalue.
     Definition wp_lhs : Expr -> (val -> mpred) -> mpred :=
-      wpe resolve ρ Lvalue.
+      wpe resolve ti ρ Lvalue.
 
     Definition wpAny (vce : ValCat * Expr) : (val -> mpred) -> mpred :=
       match vce with
@@ -224,8 +225,8 @@ Module Type Expr.
      * todo(gmm): the first expression can be any value category.
      *)
     Axiom wpe_comma : forall {m vc} ty e1 e2 Q,
-        wpAny (vc, e1) (fun _ => wpe resolve ρ m e2 Q)
-        |-- wpe resolve ρ m (Ecomma vc e1 e2 ty) Q.
+        wpAny (vc, e1) (fun _ => wpe resolve ti ρ m e2 Q)
+        |-- wpe resolve ti ρ m (Ecomma vc e1 e2 ty) Q.
 
     (** short-circuting operators *)
     Axiom wp_rhs_seqand : forall ty e1 e2 Q,
@@ -254,12 +255,12 @@ Module Type Expr.
         |-- wp_rhs (Ecast Cl2r e ty) Q.
 
     Axiom wp_rhs_cast_noop : forall ty m e Q,
-        wpe resolve ρ m e Q
-        |-- wpe resolve ρ m (Ecast Cnoop e ty) Q.
+        wpe resolve ti ρ m e Q
+        |-- wpe resolve ti ρ m (Ecast Cnoop e ty) Q.
 
     Axiom wp_rhs_cast_int2bool : forall ty m e Q,
-        wpe resolve ρ m e Q
-        |-- wpe resolve ρ m (Ecast Cint2bool e ty) Q.
+        wpe resolve ti ρ m e Q
+        |-- wpe resolve ti ρ m (Ecast Cint2bool e ty) Q.
 
     Axiom wp_rhs_cast_function2pointer : forall ty ty' g Q,
         wp_lhs (Evar (Gname g) ty') Q
@@ -269,9 +270,9 @@ Module Type Expr.
     Axiom wp_rhs_condition : forall ty m tst th el Q,
         wp_rhs tst (fun v1 =>
            if is_true v1
-           then wpe resolve ρ m th Q
-           else wpe resolve ρ m el Q)
-        |-- wpe resolve ρ m (Eif tst th el ty) Q.
+           then wpe resolve ti ρ m th Q
+           else wpe resolve ti ρ m el Q)
+        |-- wpe resolve ti ρ m (Eif tst th el ty) Q.
 
     (** `sizeof` and `alignof` *)
     Axiom wp_rhs_sizeof : forall ty' ty Q,
@@ -289,7 +290,7 @@ Module Type Expr.
      * function being called.
      *)
     Axiom wp_call : forall ty f es Q,
-        wp_rhs f (fun f => wps wpAny es (fun vs => |> fspec f vs Q))
+        wp_rhs f (fun f => wps wpAny es (fun vs => |> fspec f vs ti Q))
         |-- wp_rhs (Ecall f es ty) Q.
 
     (* todo(gmm): the evaluation mode for the arguments depends on the
@@ -298,7 +299,7 @@ Module Type Expr.
     Axiom wp_member_call : forall ty f obj es Q,
         Exists fa, [| glob_addr resolve f fa |] **
         wp_lhs obj (fun this => wps wpAny es (fun vs =>
-            |> fspec (Vptr fa) (this :: vs) Q))
+            |> fspec (Vptr fa) (this :: vs) ti Q))
         |-- wp_rhs (Emember_call false f obj es ty) Q.
 
   End with_resolve.
@@ -334,13 +335,14 @@ Module Type Expr.
 
     Section with_resolve.
       Context {resolve : genv}.
+      Variable ti : thread_info.
       Variable ρ : region.
       Local Open Scope Z_scope.
 
       (* int x ; x = 0 ; *)
       Goal
         tlocal ρ (Qmut T_int32) "x" 3
-        |-- wp_lhs (resolve:=resolve) ρ
+        |-- wp_lhs (resolve:=resolve) ti ρ
                    (Eassign (Evar (Lname "x") (Qmut T_int32)) (Eint 0 (Qmut T_int32)) (Qmut (Treference (Qmut T_int32))))
                    (fun xa => addr_of ρ "x" xa ** tptsto T_int32 xa 0).
       Proof.
@@ -353,7 +355,7 @@ Module Type Expr.
       Goal forall addr,
         tlocal ρ (Qmut (Tpointer (Qmut T_int))) "x" addr **
         tptsto T_int addr 12%Z
-        |-- wp_lhs (resolve:=resolve) ρ
+        |-- wp_lhs (resolve:=resolve) ti ρ
         (Eassign
            (Ederef
               (Ecast (CCcast Cl2r)
@@ -382,7 +384,7 @@ Module Type Expr.
       Goal
         tlocal ρ (Qmut (Tpointer (Qmut T_int))) "x" 3%Z **
         tlocal ρ (Qmut T_int) "y" 12%Z
-        |-- wp_lhs (resolve:=resolve) ρ
+        |-- wp_lhs (resolve:=resolve) ti ρ
                    (Eassign (Evar (Lname "x") (Qmut (Tpointer (Qmut T_int))))
                             (Eaddrof (Evar (Lname "y") (Qmut T_int)) (Qconst (Tpointer (Qmut T_int))))
                             (Qmut (Tpointer (Qmut T_int))))
@@ -396,7 +398,7 @@ Module Type Expr.
       Goal
         tlocal ρ (Tpointer (Qmut T_int)) "x" 3%Z **
         tlocal ρ T_int "y" 9%Z
-        |-- wp_lhs (resolve:=resolve) ρ
+        |-- wp_lhs (resolve:=resolve) ti ρ
                    (Eassign
                 (Ederef
                   (Ecast (CCcast Cl2r)

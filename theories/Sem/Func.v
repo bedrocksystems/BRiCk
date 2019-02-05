@@ -133,57 +133,19 @@ Module Type Func.
     { P } - { Q } = [] (P -* wp code Q)
    *)
 
-
-  (* the pointer contains the code *)
-  Parameter code_at : ptr -> Func -> mpred.
-  (* code_at is freely duplicable *)
-  Axiom code_at_dup : forall p f, code_at p f -|- code_at p f ** code_at p f.
-  Axiom code_at_drop : forall p f, code_at p f |-- empSP.
-
-  Parameter ctor_at : ptr -> Ctor -> mpred.
-  Parameter dtor_at : ptr -> Dtor -> mpred.
-
-  Parameter func_ok_raw : Func -> list val -> (val -> mpred) -> mpred.
-  (* this assserts the frame axiom for function specifications
-   *)
-  Axiom func_ok_frame : forall v vs Q F,
-      func_ok_raw v vs Q ** F |-- func_ok_raw v vs (fun res => Q res ** F).
-
-  Definition fspec (n : val) (ls : list val) (Q : val -> mpred) : mpred :=
-    Exists f, [| n = Vptr f |] **
-    Exists func, code_at f func ** func_ok_raw func ls Q.
-
-  (* todo(gmm): this is because func_ok is implemented using wp. *)
-  Axiom fspec_conseq:
-    forall (p : val) (vs : list val) (K m : val -> mpred),
-      (forall r : val, m r |-- K r) -> fspec p vs m |-- fspec p vs K.
-
-  Fixpoint uninitializedN (size : nat) (a : val) : mpred :=
-    match size with
-    | 0 => empSP
-    | S size => (Exists x, ptsto a x) ** uninitializedN size (offset_ptr a 1)
-    end.
-  Definition uninitialized (size : N) : val -> mpred :=
-    uninitializedN (BinNatDef.N.to_nat size).
-
-  Definition uninitialized_ty (tn : type) (p : val) : mpred :=
-    Exists sz, with_genv (fun g => [| @size_of g tn sz |]) **
-                         uninitialized sz p.
-
-
   (** initialization lists
    *)
   Parameter wpi
-  : forall {resolve : genv}
+  : forall {resolve : genv} (ti : thread_info) (ρ : region)
       (cls : globname) (this : val) (init : FieldOrBase ident globname * Expr)
       (Q : mpred), mpred.
 
-  Fixpoint wpis {resolve : genv} (cls : globname) (this : val)
+  Fixpoint wpis {resolve : genv} ti ρ (cls : globname) (this : val)
            (inits : list (FieldOrBase ident globname * Expr))
            (Q : mpred) : mpred :=
     match inits with
     | nil => Q
-    | i :: is => @wpi resolve cls this i (@wpis resolve cls this is Q)
+    | i :: is => @wpi resolve ti ρ cls this i (@wpis resolve ti ρ cls this is Q)
     end.
 
   (** destructor lists
@@ -192,16 +154,18 @@ Module Type Func.
    *  destructors *in the right order*
    *)
   Parameter wpd
-    : forall {resolve : genv} (cls : globname) (this : val)
+    : forall {resolve : genv} (ti : thread_info) (ρ : region)
+        (cls : globname) (this : val)
         (init : FieldOrBase ident globname * globname)
         (Q : mpred), mpred.
 
-  Fixpoint wpds {resolve : genv} (cls : globname) (this : val)
+  Fixpoint wpds {resolve : genv} (ti : thread_info) (ρ : region)
+           (cls : globname) (this : val)
            (dests : list (FieldOrBase ident globname * globname))
            (Q : mpred) : mpred :=
     match dests with
     | nil => Q
-    | d :: ds => @wpd resolve cls this d (@wpds resolve cls this ds Q)
+    | d :: ds => @wpd resolve ti ρ cls this d (@wpds resolve ti ρ cls this ds Q)
     end.
 
   (* function specifications written in weakest pre-condition style.
@@ -215,15 +179,14 @@ Module Type Func.
   ; fs_specification : list val -> (val -> mpred) -> mpred
   }.
 
-
   (* todo(gmm): this might need to make some additional assumptions in
    * C/C++, e.g. the arguments are typed appropriately (in addition to being
    * the right length).
    *)
-  Definition cptr (p : val) (PQ : function_spec) : mpred :=
+  Definition cptr (p : val) ti (PQ : function_spec) : mpred :=
     Forall vs,
     [| List.length vs = List.length PQ.(fs_arguments) |] -*
-    Forall Q, PQ.(fs_specification) vs Q -* fspec p vs Q.
+    Forall Q, PQ.(fs_specification) vs Q -* fspec p vs ti Q.
 
 
   (* function specifications written in weakest pre-condition style.
@@ -239,9 +202,9 @@ Module Type Func.
   }.
 
   (* this is the core definition that everything will be based on. *)
-  Definition cptr' (p : val) (fs : function_spec') : mpred :=
+  Definition cptr' (p : val) ti (fs : function_spec') : mpred :=
     ForallEach _ fs.(fs'_specification) (fun PQ args =>
-       Forall Q, PQ Q -* fspec p (List.map snd args) Q).
+       Forall Q, PQ Q -* fspec p (List.map snd args) ti Q).
 
 (*
     Axiom cptr'_dup : forall p fs, cptr' p fs -|- cptr' p fs ** cptr' p fs.
@@ -258,15 +221,13 @@ Module Type Func.
 
     Definition ht (ret : type) (targs : list type)
                (PQ : list val -> WithPrePost)
-      : function_spec.
-      refine (
-          {| fs_return := ret
-           ; fs_arguments := targs
-           ; fs_specification := fun args Q =>
-                Exists g : (PQ args).(wpp_with),
-                           (Forall res, (PQ args).(wpp_post) g res -* Q res)
-                             ** (PQ args).(wpp_pre) g |}).
-    Defined.
+    : function_spec :=
+      {| fs_return := ret
+       ; fs_arguments := targs
+       ; fs_specification := fun args Q =>
+           Exists g : (PQ args).(wpp_with),
+                      (Forall res, (PQ args).(wpp_post) g res -* Q res)
+                   ** (PQ args).(wpp_pre) g |}.
 
     (* Hoare triple for a function.
      *)
@@ -327,27 +288,26 @@ Module Type Func.
 
 
 
-    Lemma cptr_cptr' : forall p fs fs',
+    Lemma cptr_cptr' : forall p ti fs fs',
         fs.(fs_arguments) = fs'.(fs'_arguments) ->
         fs.(fs_return) = fs'.(fs'_return) ->
         (forall Q vs,
             fs.(fs_specification) vs Q -|- applyEach fs'.(fs'_arguments) vs fs'.(fs'_specification) (fun k _ => k Q)) ->
-        cptr p fs -|- cptr' p fs'.
+        cptr p ti fs -|- cptr' p ti fs'.
     Proof.
       unfold cptr. intros.
       destruct fs, fs'. simpl in *. subst.
       setoid_rewrite H1; clear H1.
-      unfold cptr'.
-      rewrite <- forallEach_primes. reflexivity.
+      unfold cptr'. simpl.
+      rewrite <- forallEach_primes with (Z:=fun a b => fspec p a ti b).
+      reflexivity.
     Qed.
 
-
-
-    Theorem triple_sound : forall p r ts PQ vs,
+    Theorem triple_sound : forall p r ts ti PQ vs,
         List.length vs = List.length ts ->
         forall g : (PQ vs).(wpp_with),
-          cptr p (ht r ts PQ) ** (PQ vs).(wpp_pre) g
-          |-- fspec p vs ((PQ vs).(wpp_post) g).
+          cptr p ti (ht r ts PQ) ** (PQ vs).(wpp_pre) g
+          |-- fspec p vs ti ((PQ vs).(wpp_post) g).
     Proof.
       unfold ht, cptr.
       intros.
@@ -361,15 +321,15 @@ Module Type Func.
       discharge ltac:(canceler fail auto) auto.
     Qed.
 
-    Theorem triple_apply : forall p r ts F F' vs (PQ : list val -> WithPrePost) K,
+    Theorem triple_apply : forall p r ts F F' vs ti (PQ : list val -> WithPrePost) K,
         List.length vs = List.length ts -> (* trivial *)
         forall g : (PQ vs).(wpp_with), (* existential quantifier *)
           F |-- (PQ vs).(wpp_pre) g ** F' -> (* pre-condition *)
           (forall r, (PQ vs).(wpp_post) g r |-- K r) ->
-          cptr p (ht r ts PQ) ** F |-- fspec p vs K ** F'.
+          cptr p ti (ht r ts PQ) ** F |-- fspec p vs ti K ** F'.
     Proof.
       intros.
-      specialize (triple_sound p r ts PQ vs H).
+      specialize (triple_sound p r ts ti PQ vs H).
       unfold ht in *.
       rewrite H0 in *; clear H0.
       intros.
@@ -381,13 +341,13 @@ Module Type Func.
     Qed.
 
     Theorem triple'_apply
-    : forall p r ts F F' vs (PQ : arrowFrom val ts WithPrePost) K,
+    : forall p r ts F F' vs ti (PQ : arrowFrom val ts WithPrePost) K,
         List.length vs = List.length ts ->
         F |-- applyEach ts vs PQ (fun wpp _ =>
                  Exists g : wpp.(wpp_with),
                  wpp.(wpp_pre) g **
                  (Forall r, wpp.(wpp_post) g r -* K r)) ** F' ->
-        cptr' p (SFunction r ts PQ) ** F |-- fspec p vs K ** F'.
+        cptr' p ti (SFunction r ts PQ) ** F |-- fspec p vs ti K ** F'.
     Proof.
       intros.
       rewrite <- cptr_cptr'.
@@ -443,7 +403,7 @@ Module Type Func.
      *)
     Definition func_ok' (ret : type) (params : list (ident * type))
                (body : Stmt)
-               (spec : function_spec')
+               (ti : thread_info) (spec : function_spec')
     : mpred :=
       [| ret = spec.(fs'_return) |] **
       [| spec.(fs'_arguments) = List.map snd params |] **
@@ -458,13 +418,13 @@ Module Type Func.
         if is_void ret
         then
           Forall Q : mpred,
-          (binds ** PQ (fun _ => Q)) -* (wp resolve body (Kfree frees (void_return Q)))
+          (binds ** PQ (fun _ => Q)) -* (wp resolve ti ρ body (Kfree frees (void_return Q)))
         else
           Forall Q : val -> mpred,
-          (binds ** PQ Q) -* (wp resolve body (Kfree frees (val_return Q)))).
+          (binds ** PQ Q) -* (wp resolve ti ρ body (Kfree frees (val_return Q)))).
 
     Definition method_ok' (resolve : genv)
-               (meth : Method) (spec : function_spec')
+               (meth : Method) (ti : thread_info) (spec : function_spec')
       : mpred :=
       match meth.(m_body) with
       | None => lfalse
@@ -493,10 +453,10 @@ Module Type Func.
             if is_void meth.(m_return)
             then
               Forall Q : mpred,
-              (binds ** PQ (fun _ => Q)) -* (wp resolve body (Kfree frees (void_return Q)))
+              (binds ** PQ (fun _ => Q)) -* (wp resolve ti ρ body (Kfree frees (void_return Q)))
             else
               Forall Q : val -> mpred,
-              (binds ** PQ Q) -* (wp resolve body (Kfree frees (val_return Q)))
+              (binds ** PQ Q) -* (wp resolve ti ρ body (Kfree frees (val_return Q)))
           end)
       end.
 
@@ -505,7 +465,7 @@ Module Type Func.
      * part of the specification?
      *)
     Definition ctor_ok' (resolve : genv)
-               (ctor : Ctor) (spec : function_spec')
+               (ctor : Ctor) (ti : thread_info) (spec : function_spec')
       : mpred :=
       match ctor.(c_body) with
       | None => lfalse
@@ -535,7 +495,7 @@ Module Type Func.
             in
             Forall Q : mpred,
             (binds ** PQ (fun _ => Q)) -*
-            (wpis (resolve:=resolve) ctor.(c_class) this_val init (wp resolve body (Kfree frees (void_return Q))))
+            (wpis (resolve:=resolve) ti ρ ctor.(c_class) this_val init (wp resolve ti ρ body (Kfree frees (void_return Q))))
           end)
       end.
 
@@ -544,7 +504,7 @@ Module Type Func.
      * part of the specification?
      *)
     Definition dtor_ok' (resolve : genv)
-               (dtor : Dtor) (spec : function_spec')
+               (dtor : Dtor) (ti : thread_info) (spec : function_spec')
       : mpred :=
       match dtor.(d_body) with
       | None => lfalse
@@ -568,7 +528,7 @@ Module Type Func.
             let frees := addr_of ρ "#this" this_val in
             Forall Q : mpred,
            (binds ** PQ (fun _ => Q)) -*
-           (wp resolve body (Kfree frees (void_return (wpds (resolve:=resolve) dtor.(d_class) this_val deinit Q))))
+           (wp resolve ti ρ body (Kfree frees (void_return (wpds (resolve:=resolve) ti ρ dtor.(d_class) this_val deinit Q))))
           end)
       end.
 
@@ -632,19 +592,19 @@ Module Type Func.
 *)
 
 
-    Definition cglob' (gn : globname) (spec : function_spec')
+    Definition cglob' (gn : globname) ti (spec : function_spec')
     : mpred :=
-      Exists a, [| glob_addr resolve gn a |] ** cptr' (Vptr a) spec.
+      Exists a, [| glob_addr resolve gn a |] ** cptr' (Vptr a) ti spec.
 
-    Axiom cglob'_dup : forall p fs,
-        cglob' p fs -|- cglob' p fs ** cglob' p fs.
+    Axiom cglob'_dup : forall p ti fs,
+        cglob' p ti fs -|- cglob' p ti fs ** cglob' p ti fs.
     (* i was thinking that i could store static variables in invariants.
      * i'm not sure how this works with function pointer weakening.
      *)
-    Axiom cglob'_weaken : forall a b, cglob' a b |-- empSP.
+    Axiom cglob'_weaken : forall a b c, cglob' a b c |-- empSP.
 
-    Axiom wpe_frame : forall resolve ρ m e k F,
-        wpe m resolve ρ e k ** F -|- wpe m resolve ρ e (fun x => k x ** F).
+    Axiom wpe_frame : forall resolve ti ρ m e k F,
+        wpe m resolve ti ρ e k ** F -|- wpe m resolve ti ρ e (fun x => k x ** F).
 
 (*
     Axiom Proper_wpe_equiv
@@ -677,14 +637,14 @@ Module Type Func.
         eauto. }
     Qed.
 *)
-    Theorem wp_call_glob : forall ρ f ret ts es K PQ F F' ty ty' ty'',
+    Theorem wp_call_glob : forall ti ρ f ret ts es K PQ F F' ty ty' ty'',
         F (* ** cglob' f ret ts (ht' ret ts PQ) *)
-        |-- wps (wpAny (resolve:=resolve) ρ) es (fun vs => applyEach ts vs PQ (fun wpp _ =>
+        |-- wps (wpAny (resolve:=resolve) ti ρ) es (fun vs => applyEach ts vs PQ (fun wpp _ =>
                 Exists g : wpp.(wpp_with),
                   wpp.(wpp_pre) g ** F' **
                   (Forall r, wpp.(wpp_post) g r -* K r))) ->
-        (|> cglob' f (SFunction ret ts PQ)) ** F
-        |-- wp_rhs (resolve:=resolve) ρ
+        (|> cglob' f ti (SFunction ret ts PQ)) ** F
+        |-- wp_rhs (resolve:=resolve) ti ρ
                    (Ecall (Ecast Cfunction2pointer (Evar (Gname f) ty) ty') es ty'')
                    K ** F'.
     Proof.

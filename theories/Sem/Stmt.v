@@ -66,47 +66,48 @@ Module Type Stmt.
   (** weakest pre-condition for statements
    *)
   Parameter wp
-    : forall (resolve : genv), Ast.Stmt -> Kpreds -> mpred.
+    : forall (resolve : genv), thread_info -> region -> Ast.Stmt -> Kpreds -> mpred.
 
   Section with_resolver.
     Context {resolve : genv}.
+    Variable ti : thread_info.
     Variable ρ : region.
 
     Axiom wp_return_void : forall Q,
-        Q.(k_return) None |-- wp resolve (Sreturn None) Q.
+        Q.(k_return) None |-- wp resolve ti ρ (Sreturn None) Q.
     Axiom wp_return_val : forall e Q,
-        wp_rhs (resolve:=resolve) ρ e (fun res => Q.(k_return) (Some res))
-        |-- wp resolve (Sreturn (Some e)) Q.
+        wp_rhs (resolve:=resolve) ti ρ e (fun res => Q.(k_return) (Some res))
+        |-- wp resolve ti ρ (Sreturn (Some e)) Q.
 
     Axiom wp_break : forall Q,
-        Q.(k_break) |-- wp resolve Sbreak Q.
+        Q.(k_break) |-- wp resolve ti ρ Sbreak Q.
     Axiom wp_continue : forall Q,
-        Q.(k_continue) |-- wp resolve Scontinue Q.
+        Q.(k_continue) |-- wp resolve ti ρ Scontinue Q.
 
     (* todo(gmm): the expression can be any value category.
      *)
     Axiom wp_expr : forall vc e Q,
-        wpAny (resolve:=resolve) ρ (vc,e) (fun _ => Q.(k_normal))
-        |-- wp resolve (Sexpr vc e) Q.
+        wpAny (resolve:=resolve) ti ρ (vc,e) (fun _ => Q.(k_normal))
+        |-- wp resolve ti ρ (Sexpr vc e) Q.
 
     Axiom wp_if : forall e thn els Q,
-        wp_rhs (resolve:=resolve) ρ e (fun v =>
+        wp_rhs (resolve:=resolve) ti ρ e (fun v =>
                     if is_true v then
-                      wp resolve els Q
+                      wp resolve ti ρ els Q
                     else
-                      wp resolve thn Q)
-        |-- wp resolve (Sif None e thn els) Q.
+                      wp resolve ti ρ thn Q)
+        |-- wp resolve ti ρ (Sif None e thn els) Q.
 
     (* note(gmm): this rule is not sound for a total hoare logic
      *)
     Axiom wp_while : forall t b Q,
         Exists I,
-            (wp resolve (Sif None t (Sseq (b :: Scontinue :: nil)) Sskip)
+            (wp resolve ti ρ (Sif None t (Sseq (b :: Scontinue :: nil)) Sskip)
                 {| k_break    := Q.(k_normal)
                  ; k_continue := I
                  ; k_return v := Q.(k_return) v
                  ; k_normal   := Q.(k_normal) |})
-        |-- wp resolve (Swhile t b) Q.
+        |-- wp resolve ti ρ (Swhile t b) Q.
 
     (* note(gmm): this definition is crucial to everything going on.
      * 1. look at the type.
@@ -132,7 +133,7 @@ Module Type Stmt.
           (* ^ references must be initialized *)
         | Some init =>
           (* i should use the type here *)
-          wp_lhs (resolve:=resolve) ρ init (fun a => addr_of ρ x a -* k (Kfree (addr_of ρ x a) Q))
+          wp_lhs (resolve:=resolve) ti ρ init (fun a => addr_of ρ x a -* k (Kfree (addr_of ρ x a) Q))
         end
       | Tfunction _ _ =>
         (* inline functions are not supported *)
@@ -146,7 +147,7 @@ Module Type Stmt.
         | None =>
           Exists v, tlocal ρ ty x v -* k (Kfree (Exists v', tlocal ρ ty x v') Q)
         | Some init =>
-          wp_rhs (resolve:=resolve) ρ init (fun v =>
+          wp_rhs (resolve:=resolve) ti ρ init (fun v =>
                  tlocal ρ ty x v -* k (Kfree (Exists v', tlocal ρ ty x v') Q))
         end
       | Tarray _ _ => lfalse (* todo(gmm): arrays not yet supported *)
@@ -160,11 +161,11 @@ Module Type Stmt.
            *)
           Exists dtor, [| glob_addr resolve (gn ++ "D1") dtor |] **
           (* todo(gmm): is there a better way to get the destructor? *)
-          wps (wpAny (resolve:=resolve) ρ) es (fun vs =>
+          wps (wpAny (resolve:=resolve) ti ρ) es (fun vs =>
                  Exists a, uninitialized_ty (Tref gn) a
-              -* |> fspec (Vptr ctor) (a :: vs) (fun _ =>
+              -* |> fspec (Vptr ctor) (a :: vs) ti (fun _ =>
                  addr_of ρ x a -*
-                 k (Kseq_all (fun Q => |> fspec (Vptr dtor) (a :: nil)
+                 k (Kseq_all (fun Q => |> fspec (Vptr dtor) (a :: nil) ti
                                    (fun _ => addr_of ρ x a ** uninitialized_ty (Tref gn) a ** Q)) Q)))
         | _ => lfalse
           (* ^ all non-primitive declarations must have initializers *)
@@ -191,14 +192,15 @@ Module Type Stmt.
       | Sdecl ds :: ss =>
         wp_decls ds (wp_block ss) Q
       | s :: ss =>
-        wp resolve s {| k_normal   := wp_block ss Q
-                      ; k_break    := Q.(k_break)
-                      ; k_continue := Q.(k_continue)
-                      ; k_return v := Q.(k_return) v |}
+        wp resolve ti ρ s
+           {| k_normal   := wp_block ss Q
+            ; k_break    := Q.(k_break)
+            ; k_continue := Q.(k_continue)
+            ; k_return v := Q.(k_return) v |}
       end.
 
     Axiom wp_seq : forall Q ss,
-        wp_block ss Q |-- wp resolve (Sseq ss) Q.
+        wp_block ss Q |-- wp resolve ti ρ (Sseq ss) Q.
 
   End  with_resolver.
 
