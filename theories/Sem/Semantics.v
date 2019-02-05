@@ -15,6 +15,7 @@ Parameter ptr : Type.
 Parameter Vptr : ptr -> val.
 Parameter Vint : Z -> val.
 
+Parameter region : Type.
 
 (* todo(gmm): maintain stack variables through regions
  *)

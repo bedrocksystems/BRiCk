@@ -53,7 +53,7 @@ Module Type logic.
 
   (* todo(gmm): this is thread local *)
   (* address of a local variable *)
-  Parameter addr_of : ident -> val -> mpred.
+  Parameter addr_of : region -> ident -> val -> mpred.
 
   (* the pointer contains the code *)
   Parameter code_at : ptr -> Func -> mpred.

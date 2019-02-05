@@ -22,10 +22,13 @@ Module Type Expr.
   Definition tptsto (ty : type) (p : val) (v : val) : mpred :=
     ptsto p v ** [| has_type v (drop_qualifiers ty) |].
 
-  Definition tlocal (ty : type) (x : ident) (v : val) : mpred :=
-    Exists a, addr_of x a **
+  Definition tlocal (r : region) (ty : type) (x : ident) (v : val) : mpred :=
+    Exists a, addr_of r x a **
               [| has_type a (Tpointer ty) |] **
               tptsto ty a v.
+
+  Definition tlocal_at (r : region) (t : type) (l : ident) (a : val) (v : val) : mpred :=
+    addr_of r l a ** ptsto a v.
 
   Fixpoint uninitializedN (size : nat) (a : val) : mpred :=
     match size with
@@ -79,7 +82,7 @@ Module Type Expr.
 
   (* todo(gmm): `wpe` should be indexed by types
    *)
-  Parameter wpe : forall (resolve : genv), ValCat -> Expr -> (val -> mpred) -> mpred.
+  Parameter wpe : forall (resolve : genv), region -> ValCat -> Expr -> (val -> mpred) -> mpred.
 
   (* note(gmm): the handling variables wrt lvalue and rvalues isn't correct
    * right now.
@@ -95,15 +98,16 @@ Module Type Expr.
    *)
   Section with_resolve.
     Context {resolve : genv}.
+    Variable ρ : region.
 
 
     (* the biggest question in these semantics is how types fit into things.
      * > C semantics doesn't use a lot of implicit casts.
      *)
     Definition wp_rhs : Expr -> (val -> mpred) -> mpred :=
-      wpe resolve Rvalue.
+      wpe resolve ρ Rvalue.
     Definition wp_lhs : Expr -> (val -> mpred) -> mpred :=
-      wpe resolve Lvalue.
+      wpe resolve ρ Lvalue.
 
     Definition wpAny (vce : ValCat * Expr) : (val -> mpred) -> mpred :=
       match vce with
@@ -128,17 +132,17 @@ Module Type Expr.
 
     (* `this` is an rvalue *)
     Axiom wp_rhs_this : forall ty Q,
-      Exists a, (addr_of "#this"%string a ** ltrue) //\\ Q a
+      Exists a, (addr_of ρ "#this"%string a ** ltrue) //\\ Q a
       |-- wp_rhs (Ethis ty) Q.
 
     (* variables are lvalues *)
     Axiom wp_lhs_lvar : forall ty x Q,
-      Exists a, (addr_of x a ** ltrue) //\\ Q a
+      Exists a, (addr_of ρ x a ** ltrue) //\\ Q a
       |-- wp_lhs (Evar (Lname x) ty) Q.
 
     (* what about the type? if it exists *)
     Axiom wp_lhs_gvar : forall ty x Q,
-        Exists a, [! glob_addr resolve x a !]//\\ Q (Vptr a)
+        Exists a, [! glob_addr resolve x a !] //\\ Q (Vptr a)
         |-- wp_lhs (Evar (Gname x) ty) Q.
 
     (* this is a "prvalue" if
@@ -220,12 +224,8 @@ Module Type Expr.
      * todo(gmm): the first expression can be any value category.
      *)
     Axiom wpe_comma : forall {m vc} ty e1 e2 Q,
-        match vc with
-        | Ast.Lvalue => wp_lhs e1
-        | Ast.Rvalue => wp_rhs e1
-        | Xvalue => wp_lhs e1
-        end (fun _ => wpe resolve m e2 Q)
-        |-- wpe resolve m (Ecomma vc e1 e2 ty) Q.
+        wpAny (vc, e1) (fun _ => wpe resolve ρ m e2 Q)
+        |-- wpe resolve ρ m (Ecomma vc e1 e2 ty) Q.
 
     (** short-circuting operators *)
     Axiom wp_rhs_seqand : forall ty e1 e2 Q,
@@ -254,12 +254,12 @@ Module Type Expr.
         |-- wp_rhs (Ecast Cl2r e ty) Q.
 
     Axiom wp_rhs_cast_noop : forall ty m e Q,
-        wpe resolve m e Q
-        |-- wpe resolve m (Ecast Cnoop e ty) Q.
+        wpe resolve ρ m e Q
+        |-- wpe resolve ρ m (Ecast Cnoop e ty) Q.
 
     Axiom wp_rhs_cast_int2bool : forall ty m e Q,
-        wpe resolve m e Q
-        |-- wpe resolve m (Ecast Cint2bool e ty) Q.
+        wpe resolve ρ m e Q
+        |-- wpe resolve ρ m (Ecast Cint2bool e ty) Q.
 
     Axiom wp_rhs_cast_function2pointer : forall ty ty' g Q,
         wp_lhs (Evar (Gname g) ty') Q
@@ -269,9 +269,9 @@ Module Type Expr.
     Axiom wp_rhs_condition : forall ty m tst th el Q,
         wp_rhs tst (fun v1 =>
            if is_true v1
-           then wpe resolve m th Q
-           else wpe resolve m el Q)
-        |-- wpe resolve m (Eif tst th el ty) Q.
+           then wpe resolve ρ m th Q
+           else wpe resolve ρ m el Q)
+        |-- wpe resolve ρ m (Eif tst th el ty) Q.
 
     (** `sizeof` and `alignof` *)
     Axiom wp_rhs_sizeof : forall ty' ty Q,
@@ -334,27 +334,26 @@ Module Type Expr.
 
     Section with_resolve.
       Context {resolve : genv}.
+      Variable ρ : region.
       Local Open Scope Z_scope.
 
       (* int x ; x = 0 ; *)
       Goal
-        tlocal (Qmut T_int32) "x" 3
-        |-- wp_lhs (resolve:=resolve)
+        tlocal ρ (Qmut T_int32) "x" 3
+        |-- wp_lhs (resolve:=resolve) ρ
                    (Eassign (Evar (Lname "x") (Qmut T_int32)) (Eint 0 (Qmut T_int32)) (Qmut (Treference (Qmut T_int32))))
-                   (fun xa => addr_of "x" xa ** tptsto T_int32 xa 0).
+                   (fun xa => addr_of ρ "x" xa ** tptsto T_int32 xa 0).
       Proof.
         unfold tlocal, tptsto.
         repeat (t; simplify_wp).
       Qed.
 
-      Definition local_at (l : ident) (a : val) (v : val) : mpred :=
-        addr_of l a ** ptsto a v.
 
       (* int *x ; *x = 0 ; *)
       Goal forall addr,
-        tlocal (Qmut (Tpointer (Qmut T_int))) "x" addr **
+        tlocal ρ (Qmut (Tpointer (Qmut T_int))) "x" addr **
         tptsto T_int addr 12%Z
-        |-- wp_lhs (resolve:=resolve)
+        |-- wp_lhs (resolve:=resolve) ρ
         (Eassign
            (Ederef
               (Ecast (CCcast Cl2r)
@@ -370,7 +369,7 @@ Module Type Expr.
            (Eint 0
                  (Qmut T_int))
            (Qmut T_int))
-                   (fun x => embed (x = addr) //\\ tlocal (Qmut (Tpointer (Qmut T_int))) "x" x ** tptsto T_int x 0%Z).
+                   (fun x => embed (x = addr) //\\ tlocal ρ (Qmut (Tpointer (Qmut T_int))) "x" x ** tptsto T_int x 0%Z).
       Proof.
         intros.
         unfold tlocal, tptsto.
@@ -381,13 +380,13 @@ Module Type Expr.
 
       (* int *x ; int y ; x = &y ; *)
       Goal
-        tlocal (Qmut (Tpointer (Qmut T_int))) "x" 3%Z **
-        tlocal (Qmut T_int) "y" 12%Z
-        |-- wp_lhs (resolve:=resolve)
+        tlocal ρ (Qmut (Tpointer (Qmut T_int))) "x" 3%Z **
+        tlocal ρ (Qmut T_int) "y" 12%Z
+        |-- wp_lhs (resolve:=resolve) ρ
                    (Eassign (Evar (Lname "x") (Qmut (Tpointer (Qmut T_int))))
                             (Eaddrof (Evar (Lname "y") (Qmut T_int)) (Qconst (Tpointer (Qmut T_int))))
                             (Qmut (Tpointer (Qmut T_int))))
-                   (fun xa => Exists ya, tlocal (Qmut (Tpointer (Qmut (T_int)))) "x" ya ** addr_of "y" ya ** ptsto ya 12).
+                   (fun xa => Exists ya, tlocal ρ (Qmut (Tpointer (Qmut (T_int)))) "x" ya ** addr_of ρ "y" ya ** ptsto ya 12).
       Proof.
         unfold tlocal, tptsto.
         repeat (t; simplify_wp).
@@ -395,9 +394,9 @@ Module Type Expr.
 
       (* int *x ; int y ; *(x = &y) = 3; *)
       Goal
-        tlocal (Qmut (Tpointer (Qmut T_int))) "x" 3%Z **
-        tlocal (Qmut T_int) "y" 9%Z
-        |-- wp_lhs (resolve:=resolve)
+        tlocal ρ (Tpointer (Qmut T_int)) "x" 3%Z **
+        tlocal ρ T_int "y" 9%Z
+        |-- wp_lhs (resolve:=resolve) ρ
                    (Eassign
                 (Ederef
                   (Ecast (CCcast Cl2r)
@@ -424,13 +423,15 @@ Module Type Expr.
                 (Eint 3
                   (Qmut T_int))
                 (Qmut T_int))
-                   (fun ya => tlocal (Qmut (Tpointer (Qmut T_int))) "x" ya **
-                            tptsto T_int ya 3%Z ** addr_of "y" ya).
+                   (fun ya => tlocal ρ (Tpointer (Qmut T_int)) "x" ya **
+                            tptsto T_int ya 3%Z ** addr_of ρ "y" ya).
       Proof.
         unfold tlocal, tptsto.
-        repeat (t; simplify_wp).
-        unfold tptsto. t.
-      Qed.
+        repeat (t; simplify_wp; simpl).
+        unfold tptsto. t. simpl. t. simpl in *.
+      Admitted. (* todo(gmm): this is problematic, there is an issue with
+                 * types
+                 *)
 
     End with_resolve.
 

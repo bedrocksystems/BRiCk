@@ -70,11 +70,12 @@ Module Type Stmt.
 
   Section with_resolver.
     Context {resolve : genv}.
+    Variable ρ : region.
 
     Axiom wp_return_void : forall Q,
         Q.(k_return) None |-- wp resolve (Sreturn None) Q.
     Axiom wp_return_val : forall e Q,
-        wp_rhs (resolve:=resolve) e (fun res => Q.(k_return) (Some res))
+        wp_rhs (resolve:=resolve) ρ e (fun res => Q.(k_return) (Some res))
         |-- wp resolve (Sreturn (Some e)) Q.
 
     Axiom wp_break : forall Q,
@@ -85,11 +86,11 @@ Module Type Stmt.
     (* todo(gmm): the expression can be any value category.
      *)
     Axiom wp_expr : forall vc e Q,
-        wpAny (resolve:=resolve) (vc,e) (fun _ => Q.(k_normal))
+        wpAny (resolve:=resolve) ρ (vc,e) (fun _ => Q.(k_normal))
         |-- wp resolve (Sexpr vc e) Q.
 
     Axiom wp_if : forall e thn els Q,
-        wp_rhs (resolve:=resolve) e (fun v =>
+        wp_rhs (resolve:=resolve) ρ e (fun v =>
                     if is_true v then
                       wp resolve els Q
                     else
@@ -131,7 +132,7 @@ Module Type Stmt.
           (* ^ references must be initialized *)
         | Some init =>
           (* i should use the type here *)
-          wp_lhs (resolve:=resolve) init (fun a => addr_of x a -* k (Kfree (addr_of x a) Q))
+          wp_lhs (resolve:=resolve) ρ init (fun a => addr_of ρ x a -* k (Kfree (addr_of ρ x a) Q))
         end
       | Tfunction _ _ =>
         (* inline functions are not supported *)
@@ -143,10 +144,10 @@ Module Type Stmt.
       | Tint _ _ =>
         match init with
         | None =>
-          Exists v, tlocal ty x v -* k (Kfree (Exists v', tlocal ty x v') Q)
+          Exists v, tlocal ρ ty x v -* k (Kfree (Exists v', tlocal ρ ty x v') Q)
         | Some init =>
-          wp_rhs (resolve:=resolve) init (fun v =>
-                 tlocal ty x v -* k (Kfree (Exists v', tlocal ty x v') Q))
+          wp_rhs (resolve:=resolve) ρ init (fun v =>
+                 tlocal ρ ty x v -* k (Kfree (Exists v', tlocal ρ ty x v') Q))
         end
       | Tarray _ _ => lfalse (* todo(gmm): arrays not yet supported *)
       | Tref gn =>
@@ -159,12 +160,12 @@ Module Type Stmt.
            *)
           Exists dtor, [| glob_addr resolve (gn ++ "D1") dtor |] **
           (* todo(gmm): is there a better way to get the destructor? *)
-          wps (fun '(vc,e) => wpe resolve vc e) es (fun vs =>
+          wps (wpAny (resolve:=resolve) ρ) es (fun vs =>
                  Exists a, uninitialized_ty (Tref gn) a
               -* |> fspec (Vptr ctor) (a :: vs) (fun _ =>
-                 addr_of x a -*
+                 addr_of ρ x a -*
                  k (Kseq_all (fun Q => |> fspec (Vptr dtor) (a :: nil)
-                                   (fun _ => addr_of x a ** uninitialized_ty (Tref gn) a ** Q)) Q)))
+                                   (fun _ => addr_of ρ x a ** uninitialized_ty (Tref gn) a ** Q)) Q)))
         | _ => lfalse
           (* ^ all non-primitive declarations must have initializers *)
         end

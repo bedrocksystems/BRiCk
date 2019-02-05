@@ -417,11 +417,11 @@ Module Type Func.
       Context {resolve : genv}.
 
 
-    Fixpoint bind_type (t : type) (x : ident) (v : val) : mpred :=
+    Fixpoint bind_type ρ (t : type) (x : ident) (v : val) : mpred :=
       match t with
-      | Tqualified _ t => bind_type t x v
-      | Treference ref => addr_of x v
-      | _ => tlocal t x v
+      | Tqualified _ t => bind_type ρ t x v
+      | Treference ref => addr_of ρ x v
+      | _ => tlocal ρ t x v
       end.
 
 (*
@@ -448,12 +448,13 @@ Module Type Func.
       [| ret = spec.(fs'_return) |] **
       [| spec.(fs'_arguments) = List.map snd params |] **
       ForallEach' _ spec.(fs'_specification) (fun PQ args =>
+        Forall ρ : region,
         let vals := List.map snd args in
 
         (* this is what is created from the parameters *)
-        let binds := sepSPs (zip (fun '(x, t) 'v => bind_type t x v) params vals) in
+        let binds := sepSPs (zip (fun '(x, t) 'v => bind_type ρ t x v) params vals) in
         (* this is what is freed on return *)
-        let frees := sepSPs (map (fun '(x, t) => Exists v, bind_type t x v) params) in
+        let frees := sepSPs (map (fun '(x, t) => Exists v, bind_type ρ t x v) params) in
         if is_void ret
         then
           Forall Q : mpred,
@@ -474,19 +475,20 @@ Module Type Func.
         [| spec.(fs'_return) = meth.(m_return) |] **
         [| spec.(fs'_arguments) = this_type :: List.map snd meth.(m_params) |] **
         ForallEach' _ spec.(fs'_specification) (fun PQ args =>
+          Forall ρ : region,
           let vals := List.map snd args in
           match vals with
           | nil => lfalse
           | this_val :: rest_vals =>
             (* this is what is created from the parameters *)
             let binds :=
-                addr_of "#this" this_val **
-                sepSPs (zip (fun '(x, t) 'v => bind_type t x v) meth.(m_params) rest_vals)
+                addr_of ρ "#this" this_val **
+                sepSPs (zip (fun '(x, t) 'v => bind_type ρ t x v) meth.(m_params) rest_vals)
             in
             (* this is what is freed on return *)
             let frees :=
-                addr_of "#this" this_val **
-                sepSPs (map (fun '(x, t) => Exists v, bind_type t x v) meth.(m_params))
+                addr_of ρ "#this" this_val **
+                sepSPs (map (fun '(x, t) => Exists v, bind_type ρ t x v) meth.(m_params))
             in
             if is_void meth.(m_return)
             then
@@ -516,19 +518,20 @@ Module Type Func.
         [| spec.(fs'_return) = Qmut Tvoid |] **
         [| spec.(fs'_arguments) = this_type :: List.map snd ctor.(c_params) |] **
         ForallEach' _ spec.(fs'_specification) (fun PQ args =>
+          Forall ρ,
           let vals := List.map snd args in
           match vals with
           | nil => lfalse
           | this_val :: rest_vals =>
             (* this is what is created from the parameters *)
             let binds :=
-                addr_of "#this" this_val **
-                sepSPs (zip (fun '(x, t) 'v => bind_type t x v) ctor.(c_params) rest_vals)
+                addr_of ρ "#this" this_val **
+                sepSPs (zip (fun '(x, t) 'v => bind_type ρ t x v) ctor.(c_params) rest_vals)
             in
             (* this is what is freed on return *)
             let frees :=
-                addr_of "#this" this_val **
-                sepSPs (map (fun '(x, t) => Exists v, bind_type t x v) ctor.(c_params))
+                addr_of ρ "#this" this_val **
+                sepSPs (map (fun '(x, t) => Exists v, bind_type ρ t x v) ctor.(c_params))
             in
             Forall Q : mpred,
             (binds ** PQ (fun _ => Q)) -*
@@ -554,14 +557,15 @@ Module Type Func.
         [| spec.(fs'_return) = Qmut Tvoid |] **
         [| spec.(fs'_arguments) = this_type :: nil |] **
         ForallEach' _ spec.(fs'_specification) (fun PQ args =>
+          Forall ρ,
           let vals := List.map snd args in
           match vals with
           | nil => lfalse
           | this_val :: rest_vals =>
             (* this is what is created from the parameters *)
-            let binds := addr_of "#this" this_val in
+            let binds := addr_of ρ "#this" this_val in
             (* this is what is freed on return *)
-            let frees := addr_of "#this" this_val in
+            let frees := addr_of ρ "#this" this_val in
             Forall Q : mpred,
            (binds ** PQ (fun _ => Q)) -*
            (wp resolve body (Kfree frees (void_return (wpds (resolve:=resolve) dtor.(d_class) this_val deinit Q))))
@@ -639,8 +643,8 @@ Module Type Func.
      *)
     Axiom cglob'_weaken : forall a b, cglob' a b |-- empSP.
 
-    Axiom wpe_frame : forall resolve m e k F,
-        wpe m resolve e k ** F -|- wpe m resolve e (fun x => k x ** F).
+    Axiom wpe_frame : forall resolve ρ m e k F,
+        wpe m resolve ρ e k ** F -|- wpe m resolve ρ e (fun x => k x ** F).
 
 (*
     Axiom Proper_wpe_equiv
@@ -673,14 +677,14 @@ Module Type Func.
         eauto. }
     Qed.
 *)
-    Theorem wp_call_glob : forall f ret ts es K PQ F F' ty ty' ty'',
+    Theorem wp_call_glob : forall ρ f ret ts es K PQ F F' ty ty' ty'',
         F (* ** cglob' f ret ts (ht' ret ts PQ) *)
-        |-- wps (wpAny (resolve:=resolve)) es (fun vs => applyEach ts vs PQ (fun wpp _ =>
+        |-- wps (wpAny (resolve:=resolve) ρ) es (fun vs => applyEach ts vs PQ (fun wpp _ =>
                 Exists g : wpp.(wpp_with),
                   wpp.(wpp_pre) g ** F' **
                   (Forall r, wpp.(wpp_post) g r -* K r))) ->
         (|> cglob' f (SFunction ret ts PQ)) ** F
-        |-- wp_rhs (resolve:=resolve)
+        |-- wp_rhs (resolve:=resolve) ρ
                    (Ecall (Ecast Cfunction2pointer (Evar (Gname f) ty) ty') es ty'')
                    K ** F'.
     Proof.
