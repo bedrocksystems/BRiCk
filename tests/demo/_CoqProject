@@ -1,5 +1,4 @@
 -Q ../../theories Cpp
--Q ../../../../hoare/master/theories auto
 
 -Q . Demo
 

@@ -15,7 +15,7 @@ Require Import Coq.micromega.Lia.
 
 (* note: this is used only for testing purposes.
  *)
-Require auto.Tactics.Discharge.
+Require Cpp.Auto.Discharge.
 
 Module Type Expr.
 
@@ -305,7 +305,7 @@ Module Type Expr.
   End with_resolve.
 
   Module examples.
-    Import auto.Tactics.Discharge.
+    Import Cpp.Auto.Discharge.
 
     Local Open Scope string_scope.
 

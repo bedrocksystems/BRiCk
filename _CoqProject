@@ -17,6 +17,7 @@ theories/Sem/Linking.v
 theories/Sem.v
 
 # Automation
+theories/Auto/Discharge.v
 theories/Auto/mvcg.v
 theories/Auto/Lemmas.v
 

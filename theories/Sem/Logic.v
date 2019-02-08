@@ -1,8 +1,11 @@
+Require Import Coq.ZArith.BinInt.
+Require Import Coq.micromega.Lia.
+Require Import Coq.Lists.List.
+Require Import Coq.Strings.String.
+
 From Coq.Classes Require Import
      RelationClasses Morphisms.
 
-Require Import Coq.Lists.List.
-Require Import Coq.Strings.String.
 
 From ChargeCore.Logics Require Import
      ILogic BILogic ILEmbed Later.
@@ -11,11 +14,8 @@ From Cpp Require Import
      Ast.
 From Cpp.Sem Require Import
      Semantics.
-
-Require Import Coq.ZArith.BinInt.
-Require Import Coq.micromega.Lia.
-
-From auto.Tactics Require Import Discharge.
+From Cpp.Auto Require Import
+     Discharge.
 
 Module Type logic.
 

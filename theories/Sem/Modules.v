@@ -16,7 +16,7 @@ From Cpp.Sem Require Import
 Require Import Coq.ZArith.BinInt.
 Require Import Coq.micromega.Lia.
 
-From auto.Tactics Require Import Discharge.
+From Cpp.Auto Require Import Discharge.
 
 Module Type modules.
 

@@ -12,7 +12,7 @@ Require Import Coq.ZArith.BinInt.
 Require Import Coq.micromega.Lia.
 
 (* note: only used for demonstration purposes. *)
-From auto.Tactics Require Import Discharge.
+From Cpp.Auto Require Import Discharge.
 
 
 Fixpoint sepSPs (ls : list mpred) : mpred :=

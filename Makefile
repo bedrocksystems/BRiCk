@@ -19,3 +19,6 @@ install: Makefile.coq
 
 Makefile.coq: _CoqProject
 	$(COQMAKEFILE) -f _CoqProject -o Makefile.coq
+
+test:
+	$(MAKE) -C tests
