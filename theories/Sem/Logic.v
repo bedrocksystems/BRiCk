@@ -7,8 +7,8 @@ Require Import Coq.Strings.String.
 From ChargeCore.Logics Require Import
      ILogic BILogic ILEmbed Later.
 
-From Cpp Require Ast Parser.
-Import Cpp.Parser.
+From Cpp Require Import
+     Ast.
 From Cpp.Sem Require Import
      Semantics.
 

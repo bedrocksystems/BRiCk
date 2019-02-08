@@ -26,9 +26,9 @@ Proof.
   { (* A::bar(int) *)
     rewrite denoteModule_weaken.
     unfold func_ok'. simpl.
-    work.
+    repeat work.
     simplifying.
-    repeat perm_left ltac:(idtac; perm_right ltac:(idtac; eapply wp_call_glob)).
+    repeat perm_left ltac:(idtac; perm_right ltac:(idtac; eapply wp_call_glob_any_ti)).
     simpl.
     simplifying.
     unfold tlocal, tptsto.
@@ -40,7 +40,7 @@ Proof.
     work. }
 
   rewrite denoteModule_weaken.
-  rewrite cglob'_weaken.
-  rewrite later_empSP.
+  rewrite spec_later_forall.
+  rewrite cglob'_weaken_any_ti_later.
   work.
 Qed.

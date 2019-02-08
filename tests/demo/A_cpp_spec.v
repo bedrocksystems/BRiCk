@@ -12,4 +12,5 @@ From Demo Require Import A_hpp_spec.
 
 
 Definition A_cpp_spec (resolve : _) :=
-      (|> cglob' (resolve:=resolve) A__bar A__bar_spec) -* cglob' (resolve:=resolve) A__foo A__foo_spec.
+      (|> Forall ti, cglob' (resolve:=resolve) A__bar ti A__bar_spec) -*
+          Forall ti, cglob' (resolve:=resolve) A__foo ti A__foo_spec.

@@ -319,6 +319,8 @@ Module Type Func.
       eapply wandSP_lentails_m; try reflexivity.
       red.
       discharge ltac:(canceler fail auto) auto.
+      eapply wandSPI.
+      discharge ltac:(canceler fail auto) auto.
     Qed.
 
     Theorem triple_apply : forall p r ts F F' vs ti (PQ : list val -> WithPrePost) K,
@@ -603,6 +605,32 @@ Module Type Func.
      *)
     Axiom cglob'_weaken : forall a b c, cglob' a b c |-- empSP.
 
+    (* this is problematic because if `thread_info` was empty, then
+     * the left hand side woudl be ltrue, not empSP
+     *)
+    Lemma cglob'_weaken_any_ti :
+      forall (a : globname) (c : function_spec'),
+        (Forall ti, cglob' a ti c) |-- empSP.
+    Proof.
+      intros.
+      etransitivity.
+      eapply lforall_lentails_m.
+      red. intros. instantiate (1:=fun _ => empSP).
+      eapply cglob'_weaken.
+      admit.
+    Admitted.
+
+    Lemma cglob'_weaken_any_ti_later :
+      forall (a : globname) (c : function_spec'),
+        (Forall ti, |> cglob' a ti c) |-- empSP.
+    Proof.
+      intros.
+      etransitivity.
+      eapply lforall_lentails_m.
+      red. intros. instantiate (1:=fun _ => empSP).
+      admit.
+    Admitted.
+
     Axiom wpe_frame : forall resolve ti ρ m e k F,
         wpe m resolve ti ρ e k ** F -|- wpe m resolve ti ρ e (fun x => k x ** F).
 
@@ -669,6 +697,25 @@ Module Type Func.
       eapply spec_later_weaken.
 *)
     Admitted.
+
+    Theorem wp_call_glob_any_ti : forall ti ρ f ret ts es K PQ F F' ty ty' ty'',
+        F (* ** cglob' f ret ts (ht' ret ts PQ) *)
+        |-- wps (wpAny (resolve:=resolve) ti ρ) es (fun vs => applyEach ts vs PQ (fun wpp _ =>
+                Exists g : wpp.(wpp_with),
+                  wpp.(wpp_pre) g ** F' **
+                  (Forall r, wpp.(wpp_post) g r -* K r))) ->
+        (|> Forall ti, cglob' f ti (SFunction ret ts PQ)) ** F
+        |-- wp_rhs (resolve:=resolve) ti ρ
+                   (Ecall (Ecast Cfunction2pointer (Evar (Gname f) ty) ty') es ty'')
+                   K ** F'.
+    Proof.
+      intros.
+      eapply wp_call_glob in H.
+      rewrite <- H; clear H.
+      eapply scME; [ | reflexivity ].
+      eapply spec_later_entails.
+      eapply lforallL. reflexivity.
+    Qed.
 
 (*
     Ltac simplifying :=

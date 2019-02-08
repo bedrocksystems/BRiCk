@@ -5,8 +5,8 @@
 Require Import Coq.Lists.List.
 Require Import Coq.Strings.String.
 
-From Cpp Require Ast Parser.
-Import Cpp.Parser.
+From Cpp Require Import
+     Ast.
 From Cpp.Sem Require Import
      Util Logic Semantics.
 
