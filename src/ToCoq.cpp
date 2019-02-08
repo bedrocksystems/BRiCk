@@ -953,17 +953,8 @@ private:
 	  done(expr);
 	}
 
-	// todo(gmm): we could probably get around having the next three definitions.
-
 	void
 	VisitExprWithCleanups(const ExprWithCleanups *expr) {
-	  error() << "[ERR] ExprWithCleanps is not supported, consider changing your code to explicitly allocate the temporary.\n";
-	  exit(1);
-
-	  // note(gmm): my intuition is that these are expressions that create temporaries and then
-	  // free them.
-	  // note(gmm): it doesn't seem like there is any way to determine the number or type of the
-	  // temporaries that are constructed just from looking at this node.
 	  ctor("Eandclean");
 	  parent->printExpr(expr->getSubExpr());
 	  done(expr);
@@ -971,8 +962,17 @@ private:
 
 	void
 	VisitMaterializeTemporaryExpr(const MaterializeTemporaryExpr *expr) {
+#if 0
+	  if (expr->getExtendingDecl()) {
+		parent->printName(expr->getExtendingDecl());
+	  } else {
+		error() << "no extending decl\n";
+	  }
 	  error() << "mangling number = " << expr->getManglingNumber() << "\n";
+#endif
+	  ctor("Etemp") << fmt::nbsp;
 	  parent->printExpr(expr->GetTemporaryExpr());
+	  output() << fmt::rparen;
 	}
 
 	void
@@ -1148,7 +1148,7 @@ private:
 	  output() << fmt::nbsp;
 	  parent->printQualType(decl->getType());
 	  if (decl->hasInit() && what >= Filter::DEFINITION) {
-		output() << fmt::line << fmt::nbsp << fmt::lparen << "Some" << fmt::nbsp;
+		ctor("Some", true);
 		parent->printExpr(decl->getInit());
 		output() << fmt::rparen;
 	  } else {
@@ -1474,10 +1474,10 @@ public:
   void
   printName(const NamedDecl *decl) {
 	if (decl->getDeclContext()->isFunctionOrMethod()) {
-	  ctor("Lname");
+	  ctor("Lname", false);
 	  output() << fmt::nbsp << "\"" << decl->getNameAsString() << "\"";
 	} else {
-	  ctor("Gname");
+	  ctor("Gname", false);
 	  printGlobalName(decl);
 	}
 	output() << fmt::rparen;
@@ -1511,7 +1511,7 @@ public:
 	PRINT_LIST(decl->param, printParam);
 	output() << "; f_body :=" << fmt::nbsp;
 	if (decl->getBody() && what >= Filter::DEFINITION) {
-	  output() << fmt::lparen << "Some" << fmt::nbsp;
+	  ctor("Some", false);
 	  printStmt(decl->getBody());
 	  output() << fmt::rparen;
 	} else {
