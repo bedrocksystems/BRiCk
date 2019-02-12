@@ -28,19 +28,13 @@ Proof.
     unfold func_ok'. simpl.
     repeat work.
     simplifying.
-    repeat perm_left ltac:(idtac; perm_right ltac:(idtac; eapply wp_call_glob_any_ti)).
-    simpl.
-    simplifying.
     unfold tlocal, tptsto.
-    work.
+    repeat work.
     simplifying.
     subst.
-    simpl in H2.
-    generalize (has_type_int_bound H2). intro.
+    work.
+    rewrite ti_cglob'_weaken.
     work. }
 
-  rewrite denoteModule_weaken.
-  rewrite spec_later_forall.
-  rewrite cglob'_weaken_any_ti_later.
-  work.
+  finish_module.
 Qed.

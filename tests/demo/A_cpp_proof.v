@@ -11,9 +11,6 @@ From Cpp Require Import Auto.
 Require Demo.A_cpp.
 Require Import Demo.A_cpp_spec.
 
-(* this is an axiom *)
-Axiom has_type_int_any : forall x, has_type (Vint x) T_int.
-
 Opaque denoteModule.
 
 (* soundness of the specification *)
@@ -29,12 +26,9 @@ Proof.
     unfold  func_ok'. simpl.
     repeat work.
     simplifying.
-    repeat perm_left ltac:(idtac; perm_right ltac:(idtac; eapply wp_call_glob)).
-    simplifying.
     unfold tlocal, tptsto.
     work. subst.
     simplifying.
-    eapply landR.
     work. simpl.
     work.
     rewrite denoteModule_weaken.
@@ -42,8 +36,5 @@ Proof.
     rewrite later_empSP.
     work. }
 
-  rewrite denoteModule_weaken.
-  rewrite cglob'_weaken_any_ti.
-  rewrite later_empSP.
-  work.
+  finish_module.
 Qed.

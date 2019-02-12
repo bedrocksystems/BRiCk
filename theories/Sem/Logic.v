@@ -77,6 +77,11 @@ Module Type logic.
   Axiom with_genv_single : forall f g,
       with_genv f //\\ with_genv g -|- with_genv (fun r => f r //\\ g r).
 
+  (* todo(gmm): this is wildly unsound. *)
+  Axiom with_genv_is : forall (g : genv) (f : genv -> _), with_genv f -|- f g.
+
+
+
 End logic.
 
 Declare Module L : logic.

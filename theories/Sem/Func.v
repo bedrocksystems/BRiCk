@@ -148,6 +148,43 @@ Module Type Func.
     | i :: is => @wpi resolve ti ρ cls this i (@wpis resolve ti ρ cls this is Q)
     end.
 
+
+  Definition uninit (t : type) (p : val -> mpred) : mpred :=
+  Exists x, p x ** Exists v, tptsto t x v.
+
+  Definition _at (f : field) (b : val) (p : val) : mpred :=
+    with_genv (fun g => Exists off : Z,
+    [| offset_of (c:=g) (Tref f.(f_type)) f.(f_name) off |] **
+    [| offset_ptr b off = p |]).
+
+  Definition tat_field (t : type) (base : val) (f : field) (v : val) : mpred :=
+    with_genv (fun g => Exists offset,
+          [| offset_of (c:=g) (Tref f.(f_type)) f.(f_name) offset |]
+       ** tptsto t (offset_ptr base offset) v).
+
+  Axiom wpi_field_at : forall resolve ti r this_val x e cls ty Q,
+      wp_rhs (resolve:=resolve) ti r e (fun v free =>
+        let f := {| f_name := x ; f_type := cls |} in
+        uninit ty (_at f this_val) ** (tat_field ty this_val f v -* (free ** Q)))
+      |-- wpi (resolve:=resolve) ti r cls this_val (Field x, e) Q.
+
+
+  Axiom wpi_field : forall resolve ti r this_val x e cls ty Q,
+      wp_rhs (resolve:=resolve) ti r e (fun v free =>
+         (Exists off, [| offset_of (c:=resolve) (Tref cls) x off |] **
+                      uninitialized_ty ty (offset_ptr this_val off)) **
+                      (tat_field ty this_val {| f_name := x ; f_type := cls |} v
+                      -* (free ** Q)))
+      |-- wpi (resolve:=resolve) ti r cls this_val (Field x, e) Q.
+
+  Lemma tat_uninitialized
+    : forall t b f v F F',
+      F |-- F' ->
+      tat_field t b f v ** F |-- uninit t (_at f b) ** F'.
+  Proof. Admitted.
+
+
+
   (** destructor lists
    *
    *  the opposite of initializer lists, this is just a call to the
@@ -320,8 +357,6 @@ Module Type Func.
       eapply (lforallL (wpp_post (PQ vs) g)).
       eapply wandSP_lentails_m; try reflexivity.
       red.
-      discharge ltac:(canceler fail auto) auto.
-      eapply wandSPI.
       discharge ltac:(canceler fail auto) auto.
     Qed.
 
