@@ -187,6 +187,8 @@ Module Type Func.
     Forall vs,
     [| List.length vs = List.length PQ.(fs_arguments) |] -*
     Forall Q, PQ.(fs_specification) vs Q -* fspec p vs ti Q.
+    (* ^ todo(gmm): this should be a timeless assertion.
+     *)
 
 
   (* function specifications written in weakest pre-condition style.
@@ -638,17 +640,6 @@ Module Type Func.
     Axiom Proper_wpe_entails
     : Proper (eq ==> eq ==> eq ==> pointwise_relation _ lentails ==> lentails) wpe.
 
-
-    Lemma wps_frame : forall es k F,
-        wps es k ** F -|- wps es (fun x => k x ** F).
-    Proof.
-      induction es; simpl; intros.
-      { reflexivity. }
-      { unfold wp_rhs. rewrite wpe_frame.
-        eapply Proper_wpe_equiv; eauto.
-        red. intros. rewrite IHes. reflexivity. }
-    Qed.
-
     Lemma Proper_wps_entails
     : Proper (eq ==> pointwise_relation _ lentails ==> lentails)
              wps.
@@ -663,57 +654,7 @@ Module Type Func.
         eauto. }
     Qed.
 *)
-    Theorem wp_call_glob : forall ti ρ f ret ts es K PQ F F' ty ty' ty'',
-        F (* ** cglob' f ret ts (ht' ret ts PQ) *)
-        |-- wps (wpAnys (resolve:=resolve) ti ρ) es (fun vs free => applyEach ts vs PQ (fun wpp _ =>
-                Exists g : wpp.(wpp_with),
-                  wpp.(wpp_pre) g ** F' **
-                  (Forall r, wpp.(wpp_post) g r -* K r free))) empSP ->
-        (|> cglob' f ti (SFunction ret ts PQ)) ** F
-        |-- wp_rhs (resolve:=resolve) ti ρ
-                   (Ecall (Ecast Cfunction2pointer (Evar (Gname f) ty) ty') es ty'')
-                   K ** F'.
-    Proof.
-(*
-      intros.
-      rewrite H; clear H.
-      rewrite <- wp_call.
-      rewrite <- wp_rhs_cast_function2pointer.
-      simplify_wp.
-      unfold cglob'.
-      discharge ltac:(canceler fail eauto) eauto.
-      rewrite wps_frame.
-      rewrite sepSPC.
-      rewrite wps_frame.
-      eapply Proper_wps_entails; eauto.
-      red. intros.
-      rewrite sepSPC.
-      etransitivity.
-      eapply triple'_apply with (vs:=a).
-      reflexivity.
-      discharge auto.
-      eapply spec_later_weaken.
-*)
-    Admitted.
 
-    Theorem wp_call_glob_any_ti : forall ti ρ f ret ts es K PQ F F' ty ty' ty'',
-        F (* ** cglob' f ret ts (ht' ret ts PQ) *)
-        |-- wps (wpAnys (resolve:=resolve) ti ρ) es (fun vs free => applyEach ts vs PQ (fun wpp _ =>
-                Exists g : wpp.(wpp_with),
-                  wpp.(wpp_pre) g ** F' **
-                  (Forall r, wpp.(wpp_post) g r -* K r free))) empSP ->
-        (|> Forall ti, cglob' f ti (SFunction ret ts PQ)) ** F
-        |-- wp_rhs (resolve:=resolve) ti ρ
-                   (Ecall (Ecast Cfunction2pointer (Evar (Gname f) ty) ty') es ty'')
-                   K ** F'.
-    Proof.
-      intros.
-      eapply wp_call_glob in H.
-      rewrite <- H; clear H.
-      eapply scME; [ | reflexivity ].
-      eapply spec_later_entails.
-      eapply lforallL. reflexivity.
-    Qed.
 
 (*
     Ltac simplifying :=
