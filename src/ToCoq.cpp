@@ -213,8 +213,15 @@ private:
 	}
 
 	void
-	VisitReferenceType (const ReferenceType* type) {
+	VisitLValueReferenceType (const LValueReferenceType* type) {
 	  ctor("Treference");
+	  parent->printQualType(type->getPointeeType());
+	  output() << fmt::rparen;
+	}
+
+	void
+	VisitRValueReferenceType (const RValueReferenceType* type) {
+	  ctor("Trv_reference");
 	  parent->printQualType(type->getPointeeType());
 	  output() << fmt::rparen;
 	}
@@ -875,8 +882,7 @@ private:
 
 	void
 	VisitCXXNullPtrLiteralExpr(const CXXNullPtrLiteralExpr *expr) {
-	  ctor("Enull", false);
-	  done(expr);
+	  output() << "Enull"; // note(gmm): null has a special "nullptr_t" type
 	}
 
 	void

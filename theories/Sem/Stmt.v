@@ -127,6 +127,7 @@ Module Type Stmt.
                 *)
     : mpred :=
       match ty with
+      | Trv_reference t
       | Treference t =>
         match init with
         | None => lfalse

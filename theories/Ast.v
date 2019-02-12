@@ -49,6 +49,7 @@ Definition merge_tq (a b : type_qualifiers) : type_qualifiers :=
 Inductive type : Set :=
 | Tpointer (_ : type)
 | Treference (_ : type)
+| Trv_reference (_ : type)
 | Tint (size : option nat) (signed : bool)
 | Tchar (size : option nat) (signed : bool)
 | Tvoid
@@ -63,6 +64,7 @@ Fixpoint erase_qualifiers (t : type) : type :=
   match t with
   | Tpointer t => Tpointer (erase_qualifiers t)
   | Treference t => Treference (erase_qualifiers t)
+  | Trv_reference t => Trv_reference (erase_qualifiers t)
   | Tint _ _
   | Tchar _ _
   | Tbool
@@ -203,7 +205,7 @@ Inductive Expr : Set :=
 | Eif       (_ _ _ : Expr) (_ : type)
 
 | Ethis (_ : type)
-| Enull (_ : type)
+| Enull
 | Einitlist (_ : list Expr) (_ : type)
 
 | Enew (_ : option globname) (_ : Expr) (_ : type)
