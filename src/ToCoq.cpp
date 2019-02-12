@@ -145,13 +145,13 @@ private:
 
 	void
 	VisitEnumType (const EnumType* type) {
-	  ctor("Tref");
+	  ctor("Tref", false);
 	  parent->printGlobalName(type->getDecl());
 	  output() << fmt::rparen;
 	}
 	void
 	VisitRecordType (const RecordType *type) {
-	  ctor("Tref");
+	  ctor("Tref", false);
 	  parent->printGlobalName(type->getDecl());
 	  output() << fmt::rparen;
 	}
@@ -269,7 +269,7 @@ private:
 	VisitIncompleteArrayType(const IncompleteArrayType *type) {
 	  // note(gmm): i might want to note the sugar.
 	  ctor("Qconst");
-	  ctor("Tpointer");
+	  ctor("Tpointer", false);
 	  parent->printQualType(type->getElementType());
 	  output() << fmt::rparen << fmt::rparen;
 	}
@@ -281,7 +281,7 @@ private:
 
 	void
 	VisitTemplateSpecializationType(const TemplateSpecializationType *type) {
-	  ctor("Tref") << "\"";
+	  ctor("Tref", false) << "\"";
 	  parent->mangleContext->mangleCXXName(type->getAsCXXRecordDecl(), parent->out.nobreak());
 	  output() << "\"" << fmt::rparen;
 	}
@@ -970,9 +970,9 @@ private:
 	  }
 	  error() << "mangling number = " << expr->getManglingNumber() << "\n";
 #endif
-	  ctor("Etemp") << fmt::nbsp;
+	  ctor("Etemp");
 	  parent->printExpr(expr->GetTemporaryExpr());
-	  output() << fmt::rparen;
+	  done(expr);
 	}
 
 	void
