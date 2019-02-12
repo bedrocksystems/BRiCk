@@ -76,7 +76,7 @@ Module Type Stmt.
     Axiom wp_return_void : forall Q,
         Q.(k_return) None |-- wp resolve ti ρ (Sreturn None) Q.
     Axiom wp_return_val : forall e Q,
-        wp_rhs (resolve:=resolve) ti ρ e (fun res => Q.(k_return) (Some res))
+        wp_rhs (resolve:=resolve) ti ρ e (finish (fun res => Q.(k_return) (Some res)))
         |-- wp resolve ti ρ (Sreturn (Some e)) Q.
 
     Axiom wp_break : forall Q,
@@ -87,12 +87,12 @@ Module Type Stmt.
     (* todo(gmm): the expression can be any value category.
      *)
     Axiom wp_expr : forall vc e Q,
-        wpAny (resolve:=resolve) ti ρ (vc,e) (fun _ => Q.(k_normal))
+        wpAny (resolve:=resolve) ti ρ (vc,e) (finish (fun _ => Q.(k_normal)))
         |-- wp resolve ti ρ (Sexpr vc e) Q.
 
     Axiom wp_if : forall e thn els Q,
-        wp_rhs (resolve:=resolve) ti ρ e (fun v =>
-                    if is_true v then
+        wp_rhs (resolve:=resolve) ti ρ e (fun v free =>
+            free ** if is_true v then
                       wp resolve ti ρ els Q
                     else
                       wp resolve ti ρ thn Q)
@@ -133,7 +133,8 @@ Module Type Stmt.
           (* ^ references must be initialized *)
         | Some init =>
           (* i should use the type here *)
-          wp_lhs (resolve:=resolve) ti ρ init (fun a => addr_of ρ x a -* k (Kfree (addr_of ρ x a) Q))
+          wp_lhs (resolve:=resolve) ti ρ init (fun a free =>
+             addr_of ρ x a -* (free ** k (Kfree (addr_of ρ x a) Q)))
         end
       | Tfunction _ _ =>
         (* inline functions are not supported *)
@@ -147,26 +148,29 @@ Module Type Stmt.
         | None =>
           Exists v, tlocal ρ ty x v -* k (Kfree (Exists v', tlocal ρ ty x v') Q)
         | Some init =>
-          wp_rhs (resolve:=resolve) ti ρ init (fun v =>
-                 tlocal ρ ty x v -* k (Kfree (Exists v', tlocal ρ ty x v') Q))
+          wp_rhs (resolve:=resolve) ti ρ init (fun v free =>
+                 tlocal ρ ty x v
+              -* (free ** k (Kfree (Exists v', tlocal ρ ty x v') Q)))
         end
       | Tarray _ _ => lfalse (* todo(gmm): arrays not yet supported *)
       | Tref gn =>
         match init with
         | Some (Econstructor cnd es _) =>
-          Exists sz, [| @size_of resolve (Tref gn) sz |] **
+          (* todo(gmm): constructors and destructors need to be handled through
+           * `cglob`.
+           *)
           Exists ctor, [| glob_addr resolve cnd ctor |] **
           (* we don't need the destructor until later, but if we prove it
            * early, then we don't need to resolve it over multiple paths.
            *)
           Exists dtor, [| glob_addr resolve (gn ++ "D1") dtor |] **
           (* todo(gmm): is there a better way to get the destructor? *)
-          wps (wpAny (resolve:=resolve) ti ρ) es (fun vs =>
+          wps (wpAnys (resolve:=resolve) ti ρ) es (fun vs free =>
                  Exists a, uninitialized_ty (Tref gn) a
               -* |> fspec (Vptr ctor) (a :: vs) ti (fun _ =>
                  addr_of ρ x a -*
-                 k (Kseq_all (fun Q => |> fspec (Vptr dtor) (a :: nil) ti
-                                   (fun _ => addr_of ρ x a ** uninitialized_ty (Tref gn) a ** Q)) Q)))
+                 (free ** k (Kseq_all (fun Q => |> fspec (Vptr dtor) (a :: nil) ti
+                                   (fun _ => addr_of ρ x a ** uninitialized_ty (Tref gn) a ** Q)) Q)))) empSP
         | _ => lfalse
           (* ^ all non-primitive declarations must have initializers *)
         end

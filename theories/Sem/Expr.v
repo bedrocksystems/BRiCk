@@ -80,9 +80,32 @@ Module Type Expr.
    * Weakest pre-condition for expressions
    *)
 
+  Definition FreeTemps := mpred.
+(*
+  Variant FreeTemps : Type :=
+  | Emp
+  | Temps (_ : mpred).
+
+  Definition thn (a b : FreeTemps) : FreeTemps :=
+    match a , b with
+    | Emp , b => b
+    | a , Emp => a
+    | Temps a , Temps b =>
+      Temps (a ** b)
+    end.
+*)
+
+  Definition finish (Q : val -> mpred) (v : val) (free : FreeTemps) : mpred :=
+    free ** Q v.
+
   (* todo(gmm): `wpe` should be indexed by types
    *)
-  Parameter wpe : forall (resolve : genv), thread_info -> region -> ValCat -> Expr -> (val -> mpred) -> mpred.
+  Parameter wpe
+  : forall (resolve : genv),
+      thread_info -> region ->
+      ValCat -> Expr ->
+      (val -> FreeTemps -> mpred) -> (* result -> free -> post *)
+      mpred. (* pre-condition *)
 
   (* note(gmm): the handling variables wrt lvalue and rvalues isn't correct
    * right now.
@@ -101,16 +124,16 @@ Module Type Expr.
     Variable ti : thread_info.
     Variable ρ : region.
 
-
     (* the biggest question in these semantics is how types fit into things.
      * > C semantics doesn't use a lot of implicit casts.
      *)
-    Definition wp_rhs : Expr -> (val -> mpred) -> mpred :=
+    Definition wp_rhs : Expr -> (val -> FreeTemps -> mpred) -> mpred :=
       wpe resolve ti ρ Rvalue.
-    Definition wp_lhs : Expr -> (val -> mpred) -> mpred :=
+    Definition wp_lhs : Expr -> (val -> FreeTemps -> mpred) -> mpred :=
       wpe resolve ti ρ Lvalue.
 
-    Definition wpAny (vce : ValCat * Expr) : (val -> mpred) -> mpred :=
+    Definition wpAny (vce : ValCat * Expr)
+    : (val -> FreeTemps -> mpred) -> mpred :=
       match vce with
       | (Lvalue,e) => wp_lhs e
       | (Rvalue,e) => wp_rhs e
@@ -121,29 +144,29 @@ Module Type Expr.
 
     (* integer literals are rvalues *)
     Axiom wp_rhs_int : forall n ty Q,
-      [! has_type (Vint n) (drop_qualifiers ty) !] //\\ Q (Vint n)
+      [! has_type (Vint n) (drop_qualifiers ty) !] //\\ Q (Vint n) empSP
       |-- wp_rhs (Eint n ty) Q.
 
     (* boolean literals are rvalues *)
     Axiom wp_rhs_bool : forall (b : bool) Q,
       (if b
-       then Q (Vint 1)
-       else Q (Vint 0))
+       then Q (Vint 1) empSP
+       else Q (Vint 0) empSP)
       |-- wp_rhs (Ebool b) Q.
 
     (* `this` is an rvalue *)
     Axiom wp_rhs_this : forall ty Q,
-      Exists a, (addr_of ρ "#this"%string a ** ltrue) //\\ Q a
+      Exists a, (addr_of ρ "#this"%string a ** ltrue) //\\ Q a empSP
       |-- wp_rhs (Ethis ty) Q.
 
     (* variables are lvalues *)
     Axiom wp_lhs_lvar : forall ty x Q,
-      Exists a, (addr_of ρ x a ** ltrue) //\\ Q a
+      Exists a, (addr_of ρ x a ** ltrue) //\\ Q a empSP
       |-- wp_lhs (Evar (Lname x) ty) Q.
 
     (* what about the type? if it exists *)
     Axiom wp_lhs_gvar : forall ty x Q,
-        Exists a, [! glob_addr resolve x a !] //\\ Q (Vptr a)
+        Exists a, [! glob_addr resolve x a !] //\\ Q (Vptr a) empSP
         |-- wp_lhs (Evar (Gname x) ty) Q.
 
     (* this is a "prvalue" if
@@ -151,10 +174,10 @@ Module Type Expr.
      * - `e` is an rvalue and `m` is non-static data of non-reference type
      *)
     Axiom wp_lhs_member : forall ty e f Q,
-      wp_lhs e (fun base =>
+      wp_lhs e (fun base free =>
          Exists offset,
                 [| @offset_of resolve (Tref f.(f_type)) f.(f_name) offset |]
-           ** Q (offset_ptr base offset))
+           ** Q (offset_ptr base offset) free)
       |-- wp_lhs (Emember e f ty) Q.
 
 (*
@@ -164,7 +187,7 @@ Module Type Expr.
 *)
 
     (* the `*` operator is an lvalue *)
-    Axiom wp_lhs_deref : forall ty e (Q : val -> mpred),
+    Axiom wp_lhs_deref : forall ty e Q,
         wp_rhs e Q
         |-- wp_lhs (Ederef e ty) Q.
 
@@ -175,43 +198,58 @@ Module Type Expr.
 
     (* unary operators *)
     Axiom wp_rhs_unop : forall o e ty Q,
-        wp_rhs e (fun v => Exists v', embed (eval_unop o (drop_qualifiers ty) v v') //\\ Q v')
+        wp_rhs e (fun v free =>
+          Exists v', embed (eval_unop o (drop_qualifiers ty) v v') //\\ Q v' free)
         |-- wp_rhs (Eunop o e ty) Q.
 
     (* note(gmm): operators need types! *)
     Axiom wp_lhs_preinc : forall e ty Q,
-        wp_lhs e (fun a => Exists v', Exists v'',
+        wp_lhs e (fun a free => Exists v', Exists v'',
               ptsto a v' ** [| eval_binop Badd (drop_qualifiers ty) v' (Vint 1) v'' |] **
-              (ptsto a v'' -* Q a))
+              (ptsto a v'' -* Q a free))
         |-- wp_lhs (Epreinc e ty) Q.
 
     Axiom wp_lhs_predec : forall e ty Q,
-        wp_lhs e (fun a => Exists v', Exists v'',
+        wp_lhs e (fun a free => Exists v', Exists v'',
               tptsto (drop_qualifiers ty) a v' ** [| eval_binop Bsub (drop_qualifiers ty) v' (Vint 1) v'' |] **
-              (tptsto (drop_qualifiers ty) a v'' -* Q a))
+              (tptsto (drop_qualifiers ty) a v'' -* Q a free))
         |-- wp_lhs (Epredec e ty) Q.
 
     Axiom wp_rhs_postinc : forall e ty Q,
-        wp_lhs e (fun a => Exists v', Exists v'',
+        wp_lhs e (fun a free => Exists v', Exists v'',
               tptsto (drop_qualifiers ty) a v' ** [| eval_binop Badd (drop_qualifiers ty) v' (Vint 1) v'' |] **
-              (tptsto (drop_qualifiers ty) a v'' -* Q v'))
+              (tptsto (drop_qualifiers ty) a v'' -* Q v' free))
         |-- wp_rhs (Epostinc e ty) Q.
 
     Axiom wp_rhs_postdec : forall e ty Q,
-        wp_lhs e (fun a => Exists v', Exists v'',
+        wp_lhs e (fun a free => Exists v', Exists v'',
               tptsto (drop_qualifiers ty) a v' ** [| eval_binop Bsub (drop_qualifiers ty) v' (Vint 1) v'' |] **
-              (tptsto (drop_qualifiers ty) a v'' -* Q v'))
+              (tptsto (drop_qualifiers ty) a v'' -* Q v' free))
         |-- wp_lhs (Epostdec e ty) Q.
+
+
+    Section wpsk.
+      Context {T U V : Type}.
+      Variable wp : T -> (U -> mpred -> V) -> V.
+
+      Fixpoint wpsk (es : list T) (Q : list U -> mpred -> V) {struct es} : V.
+      refine
+        match es with
+        | nil => Q nil empSP
+        | e :: es => wp e (fun v free => wpsk es (fun vs free' => Q (cons v vs) (free ** free')))
+        end.
+      Defined.
+    End wpsk.
 
     (** binary operators *)
     Axiom wp_rhs_binop : forall o e1 e2 ty Q,
-        wp_rhs e1 (fun v1 => wp_rhs e2 (fun v2 =>
-            Exists v', embed (eval_binop o (drop_qualifiers ty) v1 v2 v') //\\ Q v'))
+        wp_rhs e1 (fun v1 free1 => wp_rhs e2 (fun v2 free2 =>
+            Exists v', embed (eval_binop o (drop_qualifiers ty) v1 v2 v') //\\ Q v' (free1 ** free2)))
         |-- wp_rhs (Ebinop o e1 e2 ty) Q.
 
     Axiom wp_lhs_assign : forall ty l r Q,
-        wp_lhs l (fun la => wp_rhs r (fun rv =>
-           (Exists v, ptsto la v) ** (ptsto la rv -* Q la)))
+        wp_lhs l (fun la free1 => wp_rhs r (fun rv free2 =>
+           (Exists v, ptsto la v) ** (ptsto la rv -* Q la (free1 ** free2))))
         |-- wp_lhs (Eassign l r ty) Q.
 
 (*
@@ -225,33 +263,34 @@ Module Type Expr.
      * todo(gmm): the first expression can be any value category.
      *)
     Axiom wpe_comma : forall {m vc} ty e1 e2 Q,
-        wpAny (vc, e1) (fun _ => wpe resolve ti ρ m e2 Q)
+        wpAny (vc, e1) (fun _ free1 => wpe resolve ti ρ m e2 (fun val free2 => Q val (free1 ** free2)))
         |-- wpe resolve ti ρ m (Ecomma vc e1 e2 ty) Q.
 
     (** short-circuting operators *)
     Axiom wp_rhs_seqand : forall ty e1 e2 Q,
-        wp_rhs e1 (fun v1 =>
+        wp_rhs e1 (fun v1 free1 =>
            if is_true v1
-           then wp_rhs e2 (fun v2 =>
+           then wp_rhs e2 (fun v2 free2 =>
                                      if is_true v2
-                                     then Q (Vint 1)
-                                     else Q (Vint 0))
-           else Q (Vint 0))
+                                     then Q (Vint 1) (free1 ** free2)
+                                     else Q (Vint 0) (free1 ** free2))
+           else Q (Vint 0) free1)
         |-- wp_rhs (Eseqand e1 e2 ty) Q.
 
     Axiom wp_rhs_seqor : forall ty e1 e2 Q,
-        wp_rhs e1 (fun v1 =>
+        wp_rhs e1 (fun v1 free1 =>
            if is_true v1
-           then Q (Vint 1)
-           else wp_rhs e2 (fun v2 =>
+           then Q (Vint 1) free1
+           else wp_rhs e2 (fun v2 free2 =>
                                      if is_true v2
-                                     then Q (Vint 1)
-                                     else Q (Vint 0)))
+                                     then Q (Vint 1) (free1 ** free2)
+                                     else Q (Vint 0) (free1 ** free2)))
         |-- wp_rhs (Eseqor e1 e2 ty) Q.
 
     (** casts *)
     Axiom wp_rhs_cast_l2r : forall ty e Q,
-        wp_lhs e (fun a => Exists v, (tptsto (drop_qualifiers ty) a v ** ltrue) //\\ Q v)
+        wp_lhs e (fun a free =>
+          Exists v, (tptsto (drop_qualifiers ty) a v ** ltrue) //\\ Q v free)
         |-- wp_rhs (Ecast Cl2r e ty) Q.
 
     Axiom wp_rhs_cast_noop : forall ty m e Q,
@@ -268,15 +307,15 @@ Module Type Expr.
 
     (** the ternary operator `_ ? _ : _` *)
     Axiom wp_rhs_condition : forall ty m tst th el Q,
-        wp_rhs tst (fun v1 =>
+        wp_rhs tst (fun v1 free =>
            if is_true v1
-           then wpe resolve ti ρ m th Q
-           else wpe resolve ti ρ m el Q)
+           then wpe resolve ti ρ m th (fun v free' => Q v (free ** free'))
+           else wpe resolve ti ρ m el (fun v free' => Q v (free ** free')))
         |-- wpe resolve ti ρ m (Eif tst th el ty) Q.
 
     (** `sizeof` and `alignof` *)
     Axiom wp_rhs_sizeof : forall ty' ty Q,
-        Exists sz, [| @size_of resolve ty sz |] ** Q (Vint (Z.of_N sz))
+        Exists sz, [| @size_of resolve ty sz |] ** Q (Vint (Z.of_N sz)) empSP
         |-- wp_rhs (Esize_of (inl ty) ty') Q.
 
 (*
@@ -285,12 +324,32 @@ Module Type Expr.
         |-- wp_rhs (Ealign_of (inl ty)) Q.
 *)
 
+      Definition wpAnys := fun ve Q free => wpAny ve (fun v f => Q v (f ** free)).
+
+    (** constructors (these should probably get moved) *)
+    Axiom wp_rhs_constructor
+    : forall cls cname dname (es : list (ValCat * Expr)) (ty : type) (Q : val -> FreeTemps -> mpred),
+     (Exists ctor, [| glob_addr resolve cname ctor |] **
+      (* we don't need the destructor until later, but if we prove it
+       * early, then we don't need to resolve it over multiple paths.
+       *)
+      
+      Exists dtor, [| glob_addr resolve dname dtor |] **
+      (* todo(gmm): is there a better way to get the destructor? *)
+      wps wpAnys es (fun vs free => Exists a, uninitialized_ty (Tref cls) a
+          -* |> fspec (Vptr ctor) (a :: vs) ti (fun _ =>
+                   Q a (|> fspec (Vptr dtor) (a :: nil) ti
+                              (fun _ => uninitialized_ty (Tref cls) a ** free)))) empSP)
+      |-- wp_lhs (Econstructor cname es (Tref cls)) Q.
+    (* ^ todo(gmm): confirm that this works. *)
+
+
     (** function calls *)
     (* todo(gmm): the evaluation mode for the arguments depends on the
      * function being called.
      *)
     Axiom wp_call : forall ty f es Q,
-        wp_rhs f (fun f => wps wpAny es (fun vs => |> fspec f vs ti Q))
+        wp_rhs f (fun f => wps wpAnys es (fun vs free => |> fspec f vs ti (fun v => Q v free)))
         |-- wp_rhs (Ecall f es ty) Q.
 
     (* todo(gmm): the evaluation mode for the arguments depends on the
@@ -298,8 +357,8 @@ Module Type Expr.
      *)
     Axiom wp_member_call : forall ty f obj es Q,
         Exists fa, [| glob_addr resolve f fa |] **
-        wp_lhs obj (fun this => wps wpAny es (fun vs =>
-            |> fspec (Vptr fa) (this :: vs) ti Q))
+        wp_lhs obj (fun this => wps wpAnys es (fun vs free =>
+            |> fspec (Vptr fa) (this :: vs) ti (fun v => Q v free)))
         |-- wp_rhs (Emember_call false f obj es ty) Q.
 
   End with_resolve.
@@ -339,15 +398,17 @@ Module Type Expr.
       Variable ρ : region.
       Local Open Scope Z_scope.
 
+      Definition wp_ok e Q := wp_lhs (resolve:=resolve) ti ρ e (finish Q).
+
       (* int x ; x = 0 ; *)
       Goal
         tlocal ρ (Qmut T_int32) "x" 3
-        |-- wp_lhs (resolve:=resolve) ti ρ
-                   (Eassign (Evar (Lname "x") (Qmut T_int32)) (Eint 0 (Qmut T_int32)) (Qmut (Treference (Qmut T_int32))))
-                   (fun xa => addr_of ρ "x" xa ** tptsto T_int32 xa 0).
+        |-- wp_ok (Eassign (Evar (Lname "x") (Qmut T_int32)) (Eint 0 (Qmut T_int32)) (Qmut (Treference (Qmut T_int32))))
+                  (fun xa => addr_of ρ "x" xa ** tptsto T_int32 xa 0).
       Proof.
+        unfold wp_ok.
         unfold tlocal, tptsto.
-        repeat (t; simplify_wp).
+        repeat (t; simplify_wp; unfold wp_ok, finish).
       Qed.
 
 
@@ -355,7 +416,7 @@ Module Type Expr.
       Goal forall addr,
         tlocal ρ (Qmut (Tpointer (Qmut T_int))) "x" addr **
         tptsto T_int addr 12%Z
-        |-- wp_lhs (resolve:=resolve) ti ρ
+        |-- wp_ok
         (Eassign
            (Ederef
               (Ecast (CCcast Cl2r)
@@ -375,7 +436,7 @@ Module Type Expr.
       Proof.
         intros.
         unfold tlocal, tptsto.
-        repeat (t; simplify_wp).
+        repeat (t; simplify_wp; unfold wp_ok, finish).
         simpl.
         unfold tptsto. t.
       Qed.
@@ -384,21 +445,21 @@ Module Type Expr.
       Goal
         tlocal ρ (Qmut (Tpointer (Qmut T_int))) "x" 3%Z **
         tlocal ρ (Qmut T_int) "y" 12%Z
-        |-- wp_lhs (resolve:=resolve) ti ρ
+        |-- wp_ok
                    (Eassign (Evar (Lname "x") (Qmut (Tpointer (Qmut T_int))))
                             (Eaddrof (Evar (Lname "y") (Qmut T_int)) (Qconst (Tpointer (Qmut T_int))))
                             (Qmut (Tpointer (Qmut T_int))))
                    (fun xa => Exists ya, tlocal ρ (Qmut (Tpointer (Qmut (T_int)))) "x" ya ** addr_of ρ "y" ya ** ptsto ya 12).
       Proof.
         unfold tlocal, tptsto.
-        repeat (t; simplify_wp).
+        repeat (t; simplify_wp; unfold wp_ok, finish).
       Qed.
 
       (* int *x ; int y ; *(x = &y) = 3; *)
       Goal
         tlocal ρ (Tpointer (Qmut T_int)) "x" 3%Z **
         tlocal ρ T_int "y" 9%Z
-        |-- wp_lhs (resolve:=resolve) ti ρ
+        |-- wp_ok
                    (Eassign
                 (Ederef
                   (Ecast (CCcast Cl2r)
@@ -429,10 +490,10 @@ Module Type Expr.
                             tptsto T_int ya 3%Z ** addr_of ρ "y" ya).
       Proof.
         unfold tlocal, tptsto.
-        repeat (t; simplify_wp; simpl).
+        repeat (t; simplify_wp; unfold wp_ok, finish; simpl).
         unfold tptsto. t. simpl. t. simpl in *.
       Admitted. (* todo(gmm): this is problematic, there is an issue with
-                 * types
+                 * types and mutability.
                  *)
 
     End with_resolve.

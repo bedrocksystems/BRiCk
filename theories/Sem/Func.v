@@ -631,8 +631,6 @@ Module Type Func.
       admit.
     Admitted.
 
-    Axiom wpe_frame : forall resolve ti ρ m e k F,
-        wpe m resolve ti ρ e k ** F -|- wpe m resolve ti ρ e (fun x => k x ** F).
 
 (*
     Axiom Proper_wpe_equiv
@@ -667,10 +665,10 @@ Module Type Func.
 *)
     Theorem wp_call_glob : forall ti ρ f ret ts es K PQ F F' ty ty' ty'',
         F (* ** cglob' f ret ts (ht' ret ts PQ) *)
-        |-- wps (wpAny (resolve:=resolve) ti ρ) es (fun vs => applyEach ts vs PQ (fun wpp _ =>
+        |-- wps (wpAnys (resolve:=resolve) ti ρ) es (fun vs free => applyEach ts vs PQ (fun wpp _ =>
                 Exists g : wpp.(wpp_with),
                   wpp.(wpp_pre) g ** F' **
-                  (Forall r, wpp.(wpp_post) g r -* K r))) ->
+                  (Forall r, wpp.(wpp_post) g r -* K r free))) empSP ->
         (|> cglob' f ti (SFunction ret ts PQ)) ** F
         |-- wp_rhs (resolve:=resolve) ti ρ
                    (Ecall (Ecast Cfunction2pointer (Evar (Gname f) ty) ty') es ty'')
@@ -700,10 +698,10 @@ Module Type Func.
 
     Theorem wp_call_glob_any_ti : forall ti ρ f ret ts es K PQ F F' ty ty' ty'',
         F (* ** cglob' f ret ts (ht' ret ts PQ) *)
-        |-- wps (wpAny (resolve:=resolve) ti ρ) es (fun vs => applyEach ts vs PQ (fun wpp _ =>
+        |-- wps (wpAnys (resolve:=resolve) ti ρ) es (fun vs free => applyEach ts vs PQ (fun wpp _ =>
                 Exists g : wpp.(wpp_with),
                   wpp.(wpp_pre) g ** F' **
-                  (Forall r, wpp.(wpp_post) g r -* K r))) ->
+                  (Forall r, wpp.(wpp_post) g r -* K r free))) empSP ->
         (|> Forall ti, cglob' f ti (SFunction ret ts PQ)) ** F
         |-- wp_rhs (resolve:=resolve) ti ρ
                    (Ecall (Ecast Cfunction2pointer (Evar (Gname f) ty) ty') es ty'')

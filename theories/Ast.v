@@ -208,6 +208,9 @@ Inductive Expr : Set :=
 
 | Enew (_ : option globname) (_ : Expr) (_ : type)
 | Edelete (is_array : bool) (_ : option globname) (_ : Expr) (_ : type)
+
+| Eandclean (_ : Expr) (_ : type)
+| Etemp (_ : Expr) (_ : type)
 .
 
 Variant SwitchBranch : Set :=
