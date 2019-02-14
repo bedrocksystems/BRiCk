@@ -158,6 +158,7 @@ private:
 
 	void
 	VisitParenType (const ParenType* type) {
+	  error() << "paren-type\n";
 	  parent->printQualType(type->getInnerType());
 	}
 
@@ -257,6 +258,7 @@ private:
 
 	void
 	VisitElaboratedType(const ElaboratedType *type) {
+	  error() << "elaborated type\n";
 	  parent->printQualType(type->getNamedType());
 	}
 
@@ -283,14 +285,18 @@ private:
 
 	void
 	VisitDecayedType(const DecayedType *type) {
+	  ctor("Qconst");
+	  ctor("Tpointer", false);
 	  parent->printQualType(type->getPointeeType());
+	  output() << fmt::rparen << fmt::rparen;
 	}
 
 	void
 	VisitTemplateSpecializationType(const TemplateSpecializationType *type) {
-	  ctor("Tref", false) << "\"";
-	  parent->mangleContext->mangleCXXName(type->getAsCXXRecordDecl(), parent->out.nobreak());
-	  output() << "\"" << fmt::rparen;
+	  ctor("Tref", false);
+	  parent->printGlobalName(type->getAsCXXRecordDecl());
+	  //parent->mangleContext->mangleCXXName(type->getAsCXXRecordDecl(), parent->out.nobreak());
+	  output() << fmt::rparen;
 	}
   };
 
