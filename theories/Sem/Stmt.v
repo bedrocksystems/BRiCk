@@ -100,14 +100,48 @@ Module Type Stmt.
 
     (* note(gmm): this rule is not sound for a total hoare logic
      *)
-    Axiom wp_while : forall t b Q,
-        Exists I,
-            (wp resolve ti ρ (Sif None t (Sseq (b :: Scontinue :: nil)) Sskip)
+    Axiom wp_while : forall t b Q {T : Type} I,
+        I |-- wp resolve ti ρ (Sif None t (Sseq (b :: Scontinue :: nil)) Sskip)
                 {| k_break    := Q.(k_normal)
                  ; k_continue := I
                  ; k_return v := Q.(k_return) v
-                 ; k_normal   := Q.(k_normal) |})
-        |-- wp resolve ti ρ (Swhile t b) Q.
+                 ; k_normal   := Q.(k_normal) |} ->
+        I |-- wp resolve ti ρ (Swhile t b) Q.
+
+    (* note(gmm): this rule is not sound for a total hoare logic
+     *)
+    Axiom wp_for : forall init test incr b Q Inv,
+        match test with
+        | None =>
+          Inv |-- wp resolve ti ρ (Sseq (b :: Scontinue :: nil))
+                {| k_break    := Q.(k_normal)
+                 ; k_continue :=
+                     match incr with
+                     | None => Inv
+                     | Some incr => wpAny (resolve:=resolve) ti ρ incr (fun _ _ => Inv)
+                     end
+                 ; k_return v := Q.(k_return) v
+                 ; k_normal   := Q.(k_normal) |}
+        | Some test =>
+          Inv |-- wp resolve ti ρ (Sif None test (Sseq (b :: Scontinue :: nil)) Sskip)
+                {| k_break    := Q.(k_normal)
+                 ; k_continue :=
+                     match incr with
+                     | None => Inv
+                     | Some incr => wpAny (resolve:=resolve) ti ρ incr (fun _ _ => Inv)
+                     end
+                 ; k_return v := Q.(k_return) v
+                 ; k_normal   := Q.(k_normal) |}
+        end ->
+        Inv |-- wp resolve ti ρ (Sfor init test incr b) Q.
+
+    Axiom wp_do : forall t b Q {T : Type} I,
+        I |-- wp resolve ti ρ (Sseq (b :: (Sif None t Scontinue Sskip) :: nil))
+                {| k_break    := Q.(k_normal)
+                 ; k_continue := I
+                 ; k_return v := Q.(k_return) v
+                 ; k_normal   := Q.(k_normal) |} ->
+        I |-- wp resolve ti ρ (Sdo b t) Q.
 
     (* note(gmm): this definition is crucial to everything going on.
      * 1. look at the type.

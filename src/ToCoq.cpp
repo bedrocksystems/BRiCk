@@ -392,7 +392,7 @@ private:
 	  output() << fmt::nbsp;
 	  OPTIONAL(parent->printExpr, stmt->getCond())
 	  output() << fmt::nbsp;
-	  OPTIONAL(parent->printExpr, stmt->getInc())
+	  OPTIONAL(parent->printExprAndValCat, stmt->getInc())
 	  output() << fmt::nbsp;
 	  parent->printStmt(stmt->getBody());
 	  output() << fmt::rparen;

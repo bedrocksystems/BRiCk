@@ -227,7 +227,7 @@ Inductive Stmt : Set :=
 
 | Sif     (_ : option (ident * type * option Expr)) (_ : Expr) (_ _ : Stmt)
 | Swhile  (_ : Expr) (_ : Stmt)
-| Sfor    (_ : option Stmt) (_ _ : option Expr) (_ : Stmt)
+| Sfor    (_ : option Stmt) (_ : option Expr) (_ : option (ValCat * Expr)) (_ : Stmt)
 | Sdo     (_ : Stmt) (_ : Expr)
 
 | Sswitch (_ : Expr) (_ : list (SwitchBranch * Stmt))
