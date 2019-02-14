@@ -333,15 +333,15 @@ Module Type Expr.
       (* we don't need the destructor until later, but if we prove it
        * early, then we don't need to resolve it over multiple paths.
        *)
-      
       Exists dtor, [| glob_addr resolve dname dtor |] **
       (* todo(gmm): is there a better way to get the destructor? *)
       wps wpAnys es (fun vs free => Exists a, uninitialized_ty (Tref cls) a
           -* |> fspec (Vptr ctor) (a :: vs) ti (fun _ =>
+                   (* note(gmm): constructors are rvalues but my semantics actually
+                    * treats them like lvalues. *)
                    Q a (|> fspec (Vptr dtor) (a :: nil) ti
                               (fun _ => uninitialized_ty (Tref cls) a ** free)))) empSP)
-      |-- wp_lhs (Econstructor cname es (Tref cls)) Q.
-    (* ^ todo(gmm): confirm that this works. *)
+      |-- wp_rhs (Econstructor cname es (Tref cls)) Q.
 
 
     (** function calls *)

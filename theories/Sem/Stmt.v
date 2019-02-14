@@ -147,7 +147,7 @@ Module Type Stmt.
       | Tint _ _ =>
         match init with
         | None =>
-          Exists v, tlocal ρ ty x v -* k (Kfree (Exists v', tlocal ρ ty x v') Q)
+          Forall v, tlocal ρ ty x v -* k (Kfree (Exists v', tlocal ρ ty x v') Q)
         | Some init =>
           wp_rhs (resolve:=resolve) ti ρ init (fun v free =>
                  tlocal ρ ty x v
@@ -167,7 +167,7 @@ Module Type Stmt.
           Exists dtor, [| glob_addr resolve (gn ++ "D1") dtor |] **
           (* todo(gmm): is there a better way to get the destructor? *)
           wps (wpAnys (resolve:=resolve) ti ρ) es (fun vs free =>
-                 Exists a, uninitialized_ty (Tref gn) a
+                 Forall a, uninitialized_ty (Tref gn) a
               -* |> fspec (Vptr ctor) (a :: vs) ti (fun _ =>
                  addr_of ρ x a -*
                  (free ** k (Kseq_all (fun Q => |> fspec (Vptr dtor) (a :: nil) ti

@@ -292,7 +292,7 @@ Module Type Func.
           (fun this => arrowFrom_map (fun wpp =>
              {| wpp_with := wpp.(wpp_with)
               ; wpp_pre  := fun m =>
-                  uninitialized_ty this_type this ** wpp.(wpp_pre) m
+                  uninitialized_ty (Tref class) this ** wpp.(wpp_pre) m
               ; wpp_post := wpp.(wpp_post)
               |}) (PQ this)).
 
@@ -307,7 +307,7 @@ Module Type Func.
              {| wpp_with := (PQ this).(wpp_with)
               ; wpp_pre := (PQ this).(wpp_pre)
               ; wpp_post := fun m res =>
-                  uninitialized_ty this_type this ** (PQ this).(wpp_post) m res
+                  uninitialized_ty (Tref class) this ** (PQ this).(wpp_post) m res
               |}).
 
     (* Hoare triple for a method.
@@ -420,6 +420,7 @@ Module Type Func.
       match t with
       | Tqualified _ t => bind_type ρ t x v
       | Treference ref => addr_of ρ x v
+      | Tref _         => addr_of ρ x v
       | _ => tlocal ρ t x v
       end.
 
