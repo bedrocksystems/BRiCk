@@ -14,6 +14,8 @@ Require Import Demo.A_hpp_spec.
 
 Opaque denoteModule.
 
+Set Nested Proofs Allowed.
+
 (* soundness of the specification *)
 Theorem A_hpp_sound : forall (resolve : genv),
     denoteModule A_hpp.module |-- A_hpp_spec resolve.
@@ -24,17 +26,12 @@ Proof.
 
   verifyF_forget A__bar.
   { (* A::bar(int) *)
-    rewrite denoteModule_weaken.
-    unfold func_ok'. simpl.
-    repeat work.
+    start_proof.
     simplifying.
-    unfold tlocal, tptsto.
-    repeat work.
-    simplifying.
-    subst.
     work.
-    rewrite ti_cglob'_weaken.
-    work. }
+    simplifying.
+    work.
+    done_proof. }
 
   finish_module.
 Qed.

@@ -28,7 +28,7 @@ Module Type Expr.
               tptsto ty a v.
 
   Definition tlocal_at (r : region) (t : type) (l : ident) (a : val) (v : val) : mpred :=
-    addr_of r l a ** ptsto a v.
+    addr_of r l a ** tptsto t a v.
 
   Fixpoint uninitializedN (size : nat) (a : val) : mpred :=
     match size with
@@ -205,8 +205,8 @@ Module Type Expr.
     (* note(gmm): operators need types! *)
     Axiom wp_lhs_preinc : forall e ty Q,
         wp_lhs e (fun a free => Exists v', Exists v'',
-              ptsto a v' ** [| eval_binop Badd (drop_qualifiers ty) v' (Vint 1) v'' |] **
-              (ptsto a v'' -* Q a free))
+              tptsto (drop_qualifiers ty) a v' ** [| eval_binop Badd (drop_qualifiers ty) v' (Vint 1) v'' |] **
+              (tptsto (drop_qualifiers ty) a v'' -* Q a free))
         |-- wp_lhs (Epreinc e ty) Q.
 
     Axiom wp_lhs_predec : forall e ty Q,
@@ -249,7 +249,7 @@ Module Type Expr.
 
     Axiom wp_lhs_assign : forall ty l r Q,
         wp_lhs l (fun la free1 => wp_rhs r (fun rv free2 =>
-           (Exists v, ptsto la v) ** (ptsto la rv -* Q la (free1 ** free2))))
+           (Exists v, tptsto (drop_qualifiers ty) la v) ** (tptsto (drop_qualifiers ty) la rv -* Q la (free1 ** free2))))
         |-- wp_lhs (Eassign l r ty) Q.
 
 (*
@@ -293,11 +293,11 @@ Module Type Expr.
           Exists v, (tptsto (drop_qualifiers ty) a v ** ltrue) //\\ Q v free)
         |-- wp_rhs (Ecast Cl2r e ty) Q.
 
-    Axiom wp_rhs_cast_noop : forall ty m e Q,
+    Axiom wpe_cast_noop : forall ty m e Q,
         wpe resolve ti ρ m e Q
         |-- wpe resolve ti ρ m (Ecast Cnoop e ty) Q.
 
-    Axiom wp_rhs_cast_int2bool : forall ty m e Q,
+    Axiom wpe_cast_int2bool : forall ty m e Q,
         wpe resolve ti ρ m e Q
         |-- wpe resolve ti ρ m (Ecast Cint2bool e ty) Q.
 
@@ -402,12 +402,12 @@ Module Type Expr.
 
       (* int x ; x = 0 ; *)
       Goal
-        tlocal ρ (Qmut T_int32) "x" 3
-        |-- wp_ok (Eassign (Evar (Lname "x") (Qmut T_int32)) (Eint 0 (Qmut T_int32)) (Qmut (Treference (Qmut T_int32))))
+        tlocal ρ T_int32 "x" 3
+        |-- wp_ok (Eassign (Evar (Lname "x") (Qmut T_int32)) (Eint 0 (Qmut T_int32)) (Qmut T_int32))
                   (fun xa => addr_of ρ "x" xa ** tptsto T_int32 xa 0).
       Proof.
         unfold wp_ok.
-        unfold tlocal, tptsto.
+        unfold tlocal.
         repeat (t; simplify_wp; unfold wp_ok, finish).
       Qed.
 
@@ -435,23 +435,21 @@ Module Type Expr.
                    (fun x => embed (x = addr) //\\ tlocal ρ (Qmut (Tpointer (Qmut T_int))) "x" x ** tptsto T_int x 0%Z).
       Proof.
         intros.
-        unfold tlocal, tptsto.
+        unfold tlocal.
         repeat (t; simplify_wp; unfold wp_ok, finish).
-        simpl.
-        unfold tptsto. t.
       Qed.
 
       (* int *x ; int y ; x = &y ; *)
       Goal
-        tlocal ρ (Qmut (Tpointer (Qmut T_int))) "x" 3%Z **
-        tlocal ρ (Qmut T_int) "y" 12%Z
+        tlocal ρ (Tpointer (Qmut T_int)) "x" 3%Z **
+        tlocal ρ T_int "y" 12%Z
         |-- wp_ok
                    (Eassign (Evar (Lname "x") (Qmut (Tpointer (Qmut T_int))))
                             (Eaddrof (Evar (Lname "y") (Qmut T_int)) (Qconst (Tpointer (Qmut T_int))))
                             (Qmut (Tpointer (Qmut T_int))))
-                   (fun xa => Exists ya, tlocal ρ (Qmut (Tpointer (Qmut (T_int)))) "x" ya ** addr_of ρ "y" ya ** ptsto ya 12).
+                   (fun xa => Exists ya, tlocal ρ (Tpointer (Qmut (T_int))) "x" ya ** addr_of ρ "y" ya ** tptsto T_int ya 12).
       Proof.
-        unfold tlocal, tptsto.
+        unfold tlocal.
         repeat (t; simplify_wp; unfold wp_ok, finish).
       Qed.
 
@@ -489,12 +487,9 @@ Module Type Expr.
                    (fun ya => tlocal ρ (Tpointer (Qmut T_int)) "x" ya **
                             tptsto T_int ya 3%Z ** addr_of ρ "y" ya).
       Proof.
-        unfold tlocal, tptsto.
+        unfold tlocal.
         repeat (t; simplify_wp; unfold wp_ok, finish; simpl).
-        unfold tptsto. t. simpl. t. simpl in *.
-      Admitted. (* todo(gmm): this is problematic, there is an issue with
-                 * types and mutability.
-                 *)
+      Qed.
 
     End with_resolve.
 
