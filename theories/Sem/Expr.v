@@ -297,9 +297,10 @@ Module Type Expr.
         wpe resolve ti ρ m e Q
         |-- wpe resolve ti ρ m (Ecast Cnoop e ty) Q.
 
-    Axiom wpe_cast_int2bool : forall ty m e Q,
-        wpe resolve ti ρ m e Q
-        |-- wpe resolve ti ρ m (Ecast Cint2bool e ty) Q.
+    Axiom wp_rhs_cast_int2bool : forall ty e Q,
+        wp_rhs e Q
+        |-- wp_rhs (Ecast Cint2bool e ty) Q.
+    (* ^ todo(gmm): confirm that this doesn't change the value *)
 
     Axiom wp_rhs_cast_function2pointer : forall ty ty' g Q,
         wp_lhs (Evar (Gname g) ty') Q

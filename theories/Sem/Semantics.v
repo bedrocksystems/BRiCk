@@ -57,6 +57,9 @@ Admitted.
 Parameter offset_ptr : val -> Z -> val.
 
 Parameter is_true : val -> bool.
+Axiom is_true_int : forall i,
+    is_true (Vint i) =
+    BinIntDef.Z.eqb i 0.
 
 (** global environments
  *)

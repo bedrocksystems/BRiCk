@@ -84,64 +84,9 @@ Module Type Stmt.
     Axiom wp_continue : forall Q,
         Q.(k_continue) |-- wp resolve ti ρ Scontinue Q.
 
-    (* todo(gmm): the expression can be any value category.
-     *)
     Axiom wp_expr : forall vc e Q,
         wpAny (resolve:=resolve) ti ρ (vc,e) (finish (fun _ => Q.(k_normal)))
         |-- wp resolve ti ρ (Sexpr vc e) Q.
-
-    Axiom wp_if : forall e thn els Q,
-        wp_rhs (resolve:=resolve) ti ρ e (fun v free =>
-            free ** if is_true v then
-                      wp resolve ti ρ els Q
-                    else
-                      wp resolve ti ρ thn Q)
-        |-- wp resolve ti ρ (Sif None e thn els) Q.
-
-    (* note(gmm): this rule is not sound for a total hoare logic
-     *)
-    Axiom wp_while : forall t b Q {T : Type} I,
-        I |-- wp resolve ti ρ (Sif None t (Sseq (b :: Scontinue :: nil)) Sskip)
-                {| k_break    := Q.(k_normal)
-                 ; k_continue := I
-                 ; k_return v := Q.(k_return) v
-                 ; k_normal   := Q.(k_normal) |} ->
-        I |-- wp resolve ti ρ (Swhile t b) Q.
-
-    (* note(gmm): this rule is not sound for a total hoare logic
-     *)
-    Axiom wp_for : forall init test incr b Q Inv,
-        match test with
-        | None =>
-          Inv |-- wp resolve ti ρ (Sseq (b :: Scontinue :: nil))
-                {| k_break    := Q.(k_normal)
-                 ; k_continue :=
-                     match incr with
-                     | None => Inv
-                     | Some incr => wpAny (resolve:=resolve) ti ρ incr (fun _ _ => Inv)
-                     end
-                 ; k_return v := Q.(k_return) v
-                 ; k_normal   := Q.(k_normal) |}
-        | Some test =>
-          Inv |-- wp resolve ti ρ (Sif None test (Sseq (b :: Scontinue :: nil)) Sskip)
-                {| k_break    := Q.(k_normal)
-                 ; k_continue :=
-                     match incr with
-                     | None => Inv
-                     | Some incr => wpAny (resolve:=resolve) ti ρ incr (fun _ _ => Inv)
-                     end
-                 ; k_return v := Q.(k_return) v
-                 ; k_normal   := Q.(k_normal) |}
-        end ->
-        Inv |-- wp resolve ti ρ (Sfor init test incr b) Q.
-
-    Axiom wp_do : forall t b Q {T : Type} I,
-        I |-- wp resolve ti ρ (Sseq (b :: (Sif None t Scontinue Sskip) :: nil))
-                {| k_break    := Q.(k_normal)
-                 ; k_continue := I
-                 ; k_return v := Q.(k_return) v
-                 ; k_normal   := Q.(k_normal) |} ->
-        I |-- wp resolve ti ρ (Sdo b t) Q.
 
     (* note(gmm): this definition is crucial to everything going on.
      * 1. look at the type.
@@ -155,8 +100,8 @@ Module Type Stmt.
      *)
     Fixpoint wp_decl (x : ident) (ty : type) (init : option Expr)
                (k : Kpreds -> mpred) (Q : Kpreds)
-               (* ^ Q is the continuation for after the entire declaration
-                *     is complete
+               (* ^ Q is the continuation for after the declaration
+                *   goes out of scope.
                 * ^ k is the rest of the declaration
                 *)
     : mpred :=
@@ -240,6 +185,76 @@ Module Type Stmt.
 
     Axiom wp_seq : forall Q ss,
         wp_block ss Q |-- wp resolve ti ρ (Sseq ss) Q.
+
+
+    Axiom wp_if : forall e thn els Q,
+        wp_rhs (resolve:=resolve) ti ρ e (fun v free =>
+            free ** if is_true v then
+                      wp resolve ti ρ els Q
+                    else
+                      wp resolve ti ρ thn Q)
+        |-- wp resolve ti ρ (Sif None e thn els) Q.
+
+    Axiom wp_if_decl : forall d e thn els Q,
+        wp resolve ti ρ (Sseq
+                           (Sdecl (d :: nil) ::
+                            Sif None e thn els :: nil)) Q
+        |-- wp resolve ti ρ (Sif (Some d) e thn els) Q.
+
+    (* note(gmm): this rule is not sound for a total hoare logic
+     *)
+    Axiom wp_while : forall t b Q I,
+        I |-- wp resolve ti ρ (Sif None t (Sseq (b :: Scontinue :: nil)) Sskip)
+                {| k_break    := Q.(k_normal)
+                 ; k_continue := I
+                 ; k_return v := Q.(k_return) v
+                 ; k_normal   := Q.(k_normal) |} ->
+        I |-- wp resolve ti ρ (Swhile None t b) Q.
+
+    Axiom wp_while_decl : forall d t b Q,
+        wp resolve ti ρ (Sseq (Sdecl (d :: nil) :: Swhile None t b :: nil)) Q
+        |-- wp resolve ti ρ (Swhile (Some d) t b) Q.
+
+
+    (* note(gmm): this rule is not sound for a total hoare logic
+     *)
+    Axiom wp_for : forall test incr b Q Inv,
+        match test with
+        | None =>
+          Inv |-- wp resolve ti ρ (Sseq (b :: Scontinue :: nil))
+                {| k_break    := Q.(k_normal)
+                 ; k_continue :=
+                     match incr with
+                     | None => Inv
+                     | Some incr => wpAny (resolve:=resolve) ti ρ incr (fun _ _ => Inv)
+                     end
+                 ; k_return v := Q.(k_return) v
+                 ; k_normal   := Q.(k_normal) |}
+        | Some test =>
+          Inv |-- wp resolve ti ρ (Sif None test (Sseq (b :: Scontinue :: nil)) Sskip)
+                {| k_break    := Q.(k_normal)
+                 ; k_continue :=
+                     match incr with
+                     | None => Inv
+                     | Some incr => wpAny (resolve:=resolve) ti ρ incr (fun _ _ => Inv)
+                     end
+                 ; k_return v := Q.(k_return) v
+                 ; k_normal   := Q.(k_normal) |}
+        end ->
+        Inv |-- wp resolve ti ρ (Sfor None test incr b) Q.
+
+    Axiom wp_for_init : forall init test incr b Q,
+        wp resolve ti ρ (Sseq (init :: Sfor None test incr b :: nil)) Q
+        |-- wp resolve ti ρ (Sfor (Some init) test incr b) Q.
+
+    Axiom wp_do : forall t b Q {T : Type} I,
+        I |-- wp resolve ti ρ (Sseq (b :: (Sif None t Scontinue Sskip) :: nil))
+                {| k_break    := Q.(k_normal)
+                 ; k_continue := I
+                 ; k_return v := Q.(k_return) v
+                 ; k_normal   := Q.(k_normal) |} ->
+        I |-- wp resolve ti ρ (Sdo b t) Q.
+
 
   End  with_resolver.
 

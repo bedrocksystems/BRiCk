@@ -376,9 +376,8 @@ private:
 	void
 	VisitWhileStmt (const WhileStmt* stmt) {
 	  ctor("Swhile");
-	  if (stmt->getConditionVariable()) {
-		error() << "unsupported variable declaration in while";
-	  }
+	  OPTIONAL(parent->printLocalDecl, stmt->getConditionVariable())
+	  output() << fmt::nbsp;
 	  parent->printExpr(stmt->getCond());
 	  output() << fmt::nbsp;
 	  parent->printStmt(stmt->getBody());
@@ -420,13 +419,7 @@ private:
 	void
 	VisitIfStmt (const IfStmt* stmt) {
 	  ctor("Sif");
-	  if (stmt->getConditionVariable()) {
-		ctor("Some", false);
-		parent->printLocalDecl(stmt->getConditionVariable());
-		output() << fmt::rparen;
-	  } else {
-		output() << "None";
-	  }
+	  OPTIONAL(parent->printLocalDecl, stmt->getConditionVariable())
 	  output() << fmt::nbsp;
 	  parent->printExpr(stmt->getCond());
 	  output() << fmt::nbsp;
@@ -738,19 +731,19 @@ private:
 
 	void
 	VisitIntegerLiteral (const IntegerLiteral *lit) {
-	  ctor("Eint") << lit->getValue() << fmt::nbsp;
+	  ctor("Eint", false) << lit->getValue() << fmt::nbsp;
 	  done(lit);
 	}
 
 	void
 	VisitCharacterLiteral (const CharacterLiteral *lit) {
-	  ctor("Echar") << lit->getValue() << fmt::nbsp;
+	  ctor("Echar", false) << "\"" << lit->getValue() << "\"" << fmt::nbsp;
 	  done(lit);
 	}
 
 	void
 	VisitStringLiteral (const StringLiteral *lit) {
-	  ctor("Estring") << "\"" << lit->getBytes() << "\"";
+	  ctor("Estring", false) << "\"" << lit->getBytes() << "\"";
 	  done(lit);
 	}
 
@@ -988,6 +981,11 @@ private:
 	  output() << fmt::nbsp;
 	  PRINT_LIST(expr->arg, parent->printExpr)
 	  done(expr);
+	}
+
+	void
+	VisitOpaqueValueExpr(const OpaqueValueExpr *expr) {
+	  parent->printExpr(expr->getSourceExpr());
 	}
   };
 

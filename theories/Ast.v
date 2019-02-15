@@ -131,6 +131,9 @@ Variant Cast : Set :=
 .
 
 Variant UnOp : Set :=
+| Uminus
+| Unot
+| Ubnot
 | Uother (_ : string).
 Variant BinOp : Set :=
 | Badd
@@ -226,7 +229,7 @@ Inductive Stmt : Set :=
 | Sdecl   (_ : list (ident * type * option Expr))
 
 | Sif     (_ : option (ident * type * option Expr)) (_ : Expr) (_ _ : Stmt)
-| Swhile  (_ : Expr) (_ : Stmt)
+| Swhile  (_ : option (ident * type * option Expr)) (_ : Expr) (_ : Stmt)
 | Sfor    (_ : option Stmt) (_ : option Expr) (_ : option (ValCat * Expr)) (_ : Stmt)
 | Sdo     (_ : Stmt) (_ : Expr)
 
