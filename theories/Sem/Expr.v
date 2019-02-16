@@ -180,11 +180,13 @@ Module Type Expr.
            ** Q (offset_ptr base offset) free)
       |-- wp_lhs (Emember e f ty) Q.
 
-(*
-    Axiom wp_lhs_subscript : forall e n Q,
-        wp_rhs e (fun base => wp_rhs n (fun i => _))
-        |-- wp_lhs (Esubscript e n) Q.
-*)
+    Axiom wp_lhs_subscript : forall e i t Q,
+      wp_rhs e (fun base free =>
+        wp_rhs i (fun idx free' =>
+          Exists sz, [| @size_of resolve (drop_qualifiers t) sz |] **
+          Exists i, [| idx = Vint i |] **
+          Q (offset_ptr base (i * Z.of_N sz)) (free' ** free)))
+      |-- wp_lhs (Esubscript e i t) Q.
 
     (* the `*` operator is an lvalue *)
     Axiom wp_lhs_deref : forall ty e Q,
@@ -306,8 +308,12 @@ Module Type Expr.
         wp_lhs (Evar (Gname g) ty') Q
         |-- wp_rhs (Ecast Cfunction2pointer (Evar (Gname g) ty') ty) Q.
 
+    Axiom wp_rhs_bitcast : forall e t Q,
+        wp_rhs e Q
+        |-- wp_rhs (Ecast Cbitcast e t) Q.
+
     (** the ternary operator `_ ? _ : _` *)
-    Axiom wp_rhs_condition : forall ty m tst th el Q,
+    Axiom wp_condition : forall ty m tst th el Q,
         wp_rhs tst (fun v1 free =>
            if is_true v1
            then wpe resolve ti ρ m th (fun v free' => Q v (free ** free'))
@@ -319,13 +325,11 @@ Module Type Expr.
         Exists sz, [| @size_of resolve ty sz |] ** Q (Vint (Z.of_N sz)) empSP
         |-- wp_rhs (Esize_of (inl ty) ty') Q.
 
-(*
-    Axiom wp_rhs_alignof : forall ty Q,
-        Exists sz, [| @align_of resolve ty sz |] ** Q (Vint (Z.of_N sz))
-        |-- wp_rhs (Ealign_of (inl ty)) Q.
-*)
+    Axiom wp_rhs_alignof : forall ty' ty Q,
+        Exists sz, [| @align_of resolve ty sz |] ** Q (Vint (Z.of_N sz)) empSP
+        |-- wp_rhs (Ealign_of (inl ty) ty') Q.
 
-      Definition wpAnys := fun ve Q free => wpAny ve (fun v f => Q v (f ** free)).
+    Definition wpAnys := fun ve Q free => wpAny ve (fun v f => Q v (f ** free)).
 
     (** constructors (these should probably get moved) *)
     Axiom wp_rhs_constructor

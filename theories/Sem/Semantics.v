@@ -3,6 +3,7 @@
  *
  * The definitions in this file are based (loosely) on CompCert.
  *)
+Require Import Coq.NArith.BinNat.
 Require Import Coq.ZArith.BinInt.
 From Cpp Require Import
      Ast.
@@ -49,10 +50,7 @@ Lemma eval_add : forall ty (a b c : Z),
     c = (Z.add a b) ->
     has_type (Vint c) ty ->
     eval_binop Badd ty (Vint a) (Vint b) (Vint c).
-Proof using.
-  clear.
-Admitted.
-
+Proof using. Admitted.
 
 Parameter offset_ptr : val -> Z -> val.
 
@@ -64,3 +62,20 @@ Axiom is_true_int : forall i,
 (** global environments
  *)
 Parameter genv : Type.
+
+
+
+Parameter glob_addr : genv -> obj_name -> ptr -> Prop.
+
+Parameter offset_of : forall {c : genv} (t : type) (f : ident) (e : Z), Prop.
+
+Parameter size_of : forall {c : genv} (t : type) (e : N), Prop.
+Axiom size_of_int : forall {c : genv} s w,
+    @size_of c (Tint (Some w) s) (N.div (N.of_nat w) 8).
+Axiom size_of_char : forall {c : genv} s w,
+    @size_of c (Tchar (Some w) s) (N.div (N.of_nat w) 8).
+Axiom size_of_bool : forall {c : genv},
+    @size_of c Tbool 1.
+Parameter pointer_size : N. (* in bytes *)
+Axiom size_of_pointer : forall {c : genv} t,
+    @size_of c (Tpointer t) pointer_size.

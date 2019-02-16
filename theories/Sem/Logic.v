@@ -64,13 +64,6 @@ Module Type logic.
   Parameter ctor_at : ptr -> Ctor -> mpred.
   Parameter dtor_at : ptr -> Dtor -> mpred.
 
-  (* it might be more uniform to have this be an `mpred` *)
-  Parameter glob_addr : genv -> obj_name -> ptr -> Prop.
-
-  Parameter offset_of : forall {c : genv} (t : type) (f : ident) (e : Z), Prop.
-
-  Parameter size_of : forall {c : genv} (t : type) (e : N), Prop.
-
   Parameter align_of : forall {c : genv} (t : type) (e : N), Prop.
 
   Parameter with_genv : (genv -> mpred) -> mpred.
