@@ -158,7 +158,6 @@ private:
 
 	void
 	VisitParenType (const ParenType* type) {
-	  error() << "paren-type\n";
 	  parent->printQualType(type->getInnerType());
 	}
 
@@ -258,7 +257,6 @@ private:
 
 	void
 	VisitElaboratedType(const ElaboratedType *type) {
-	  error() << "elaborated type\n";
 	  parent->printQualType(type->getNamedType());
 	}
 
