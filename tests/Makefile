@@ -1,4 +1,4 @@
-all: cpp2v-parser demo local-scope class value-cat
+all: cpp2v-parser demo local-scope class value-cat c-test
 
 cpp2v-parser:
 	(cd cpp2v-parser; ./test-all.sh)
@@ -15,4 +15,7 @@ value-cat:
 class:
 	$(MAKE) -C class
 
-.PHONY: cpp2v-parser demo local-scope class value-cat
+c-test:
+	$(MAKE) -C c-test
+
+.PHONY: cpp2v-parser demo local-scope class value-cat c-test
