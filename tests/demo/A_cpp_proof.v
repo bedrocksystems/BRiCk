@@ -3,9 +3,6 @@ Require Import Coq.Strings.String.
 
 Local Open Scope string_scope.
 
-From ChargeCore.Logics Require Import
-     ILogic BILogic ILEmbed Later.
-
 From Cpp Require Import Auto.
 
 Require Demo.A_cpp.

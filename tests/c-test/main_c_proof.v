@@ -4,9 +4,6 @@ Require Import Coq.Strings.String.
 Local Open Scope Z_scope.
 Local Open Scope string_scope.
 
-From ChargeCore.Logics Require Import
-     ILogic BILogic ILEmbed Later.
-
 From Cpp Require Import
      Auto.
 
@@ -54,9 +51,6 @@ Proof.
     work.
     simplifying.
     work.
-    { simpl.
-      eapply embedPropR.
-      eapply eval_lt; try reflexivity. subst. reflexivity. }
     rewrite is_true_int.
     destruct (ZArith_dec.Z_lt_ge_dec x4 (Z.of_nat (Datatypes.length x3))).
     { simpl.

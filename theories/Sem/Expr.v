@@ -19,6 +19,44 @@ Require Cpp.Auto.Discharge.
 
 Module Type Expr.
 
+  Fixpoint type_of (e : Expr) : type :=
+    match e with
+    | Evar _ t
+    | Eint _ t => t
+    | Ebool _ => Tbool
+    | Eunop _ _ t
+    | Ebinop _ _ _ t
+    | Ederef _ t
+    | Eaddrof _ t
+    | Eassign _ _ t
+    | Eassign_op _ _ _ t
+    | Epreinc _ t
+    | Epostinc _ t
+    | Epredec _ t
+    | Epostdec _ t
+    | Eseqand _ _ t
+    | Eseqor _ _ t
+    | Ecomma _ _ _ t
+    | Ecall _ _ t
+    | Ecast _ _ t
+    | Emember _ _ t
+    | Emember_call _ _ _ _ t
+    | Esubscript _ _ t
+    | Esize_of _ t
+    | Ealign_of _ t
+    | Econstructor _ _ t
+    | Eimplicit _ t
+    | Eif _ _ _ t
+    | Ethis t => t
+    | Enull => Tpointer Tvoid
+      (* todo(gmm): c++ seems to have a special nullptr type *)
+    | Einitlist _ t => t
+    | Enew _ _ t
+    | Edelete _ _ _ t
+    | Eandclean _ t
+    | Etemp _ t => t
+    end.
+
   Definition tptsto (ty : type) (p : val) (v : val) : mpred :=
     ptsto p v ** [| has_type v (drop_qualifiers ty) |].
 
@@ -41,8 +79,6 @@ Module Type Expr.
   Definition uninitialized_ty (tn : type) (p : val) : mpred :=
     Exists sz, with_genv (fun g => [| @size_of g tn sz |]) **
                          uninitialized sz p.
-
-
 
   Parameter func_ok_raw : Func -> list val -> thread_info -> (val -> mpred) -> mpred.
   (* this assserts the frame axiom for function specifications
@@ -201,31 +237,36 @@ Module Type Expr.
     (* unary operators *)
     Axiom wp_rhs_unop : forall o e ty Q,
         wp_rhs e (fun v free =>
-          Exists v', embed (eval_unop o (drop_qualifiers ty) v v') //\\ Q v' free)
+          Exists v',
+          embed (eval_unop o (drop_qualifiers ty) (drop_qualifiers ty) v v') //\\ Q v' free)
         |-- wp_rhs (Eunop o e ty) Q.
 
     (* note(gmm): operators need types! *)
     Axiom wp_lhs_preinc : forall e ty Q,
         wp_lhs e (fun a free => Exists v', Exists v'',
-              tptsto (drop_qualifiers ty) a v' ** [| eval_binop Badd (drop_qualifiers ty) v' (Vint 1) v'' |] **
+              tptsto (drop_qualifiers ty) a v' **
+              [| eval_binop Badd (drop_qualifiers (type_of e)) (drop_qualifiers (type_of e)) (drop_qualifiers ty) v' (Vint 1) v'' |] **
               (tptsto (drop_qualifiers ty) a v'' -* Q a free))
         |-- wp_lhs (Epreinc e ty) Q.
 
     Axiom wp_lhs_predec : forall e ty Q,
         wp_lhs e (fun a free => Exists v', Exists v'',
-              tptsto (drop_qualifiers ty) a v' ** [| eval_binop Bsub (drop_qualifiers ty) v' (Vint 1) v'' |] **
+              tptsto (drop_qualifiers ty) a v' **
+              [| eval_binop Bsub (drop_qualifiers (type_of e)) (drop_qualifiers (type_of e)) (drop_qualifiers ty) v' (Vint 1) v'' |] **
               (tptsto (drop_qualifiers ty) a v'' -* Q a free))
         |-- wp_lhs (Epredec e ty) Q.
 
     Axiom wp_rhs_postinc : forall e ty Q,
         wp_lhs e (fun a free => Exists v', Exists v'',
-              tptsto (drop_qualifiers ty) a v' ** [| eval_binop Badd (drop_qualifiers ty) v' (Vint 1) v'' |] **
+              tptsto (drop_qualifiers ty) a v' **
+              [| eval_binop Badd (drop_qualifiers (type_of e)) (drop_qualifiers (type_of e)) (drop_qualifiers ty) v' (Vint 1) v'' |] **
               (tptsto (drop_qualifiers ty) a v'' -* Q v' free))
         |-- wp_rhs (Epostinc e ty) Q.
 
     Axiom wp_rhs_postdec : forall e ty Q,
         wp_lhs e (fun a free => Exists v', Exists v'',
-              tptsto (drop_qualifiers ty) a v' ** [| eval_binop Bsub (drop_qualifiers ty) v' (Vint 1) v'' |] **
+              tptsto (drop_qualifiers ty) a v' **
+              [| eval_binop Bsub (drop_qualifiers (type_of e)) (drop_qualifiers (type_of e)) (drop_qualifiers ty) v' (Vint 1) v'' |] **
               (tptsto (drop_qualifiers ty) a v'' -* Q v' free))
         |-- wp_lhs (Epostdec e ty) Q.
 
@@ -246,7 +287,7 @@ Module Type Expr.
     (** binary operators *)
     Axiom wp_rhs_binop : forall o e1 e2 ty Q,
         wp_rhs e1 (fun v1 free1 => wp_rhs e2 (fun v2 free2 =>
-            Exists v', embed (eval_binop o (drop_qualifiers ty) v1 v2 v') //\\ Q v' (free1 ** free2)))
+            Exists v', embed (eval_binop o (drop_qualifiers (type_of e1)) (drop_qualifiers (type_of e2)) (drop_qualifiers ty) v1 v2 v') //\\ Q v' (free1 ** free2)))
         |-- wp_rhs (Ebinop o e1 e2 ty) Q.
 
     Axiom wp_lhs_assign : forall ty l r Q,
@@ -254,11 +295,9 @@ Module Type Expr.
            (Exists v, tptsto (drop_qualifiers ty) la v) ** (tptsto (drop_qualifiers ty) la rv -* Q la (free1 ** free2))))
         |-- wp_lhs (Eassign l r ty) Q.
 
-(*
     Axiom wp_lhs_bop_assign : forall ty o l r Q,
-        wp_lhs (Eassign l (Ebinop o (Ecast Cl2r l _) r ty) ty) Q
+        wp_lhs (Eassign l (Ebinop o (Ecast Cl2r l (type_of l)) r ty) ty) Q
         |-- wp_lhs (Eassign_op o l r ty) Q.
-*)
 
     (* note: the comma operator can be both an lvalue and a prvalue
      * depending on what the second expression is.
@@ -319,6 +358,7 @@ Module Type Expr.
            then wpe resolve ti ρ m th (fun v free' => Q v (free ** free'))
            else wpe resolve ti ρ m el (fun v free' => Q v (free ** free')))
         |-- wpe resolve ti ρ m (Eif tst th el ty) Q.
+    (* ^ todo(gmm): it would be sound for `free` to occur in the branches *)
 
     (** `sizeof` and `alignof` *)
     Axiom wp_rhs_sizeof : forall ty' ty Q,

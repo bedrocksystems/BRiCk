@@ -190,9 +190,9 @@ Module Type Stmt.
     Axiom wp_if : forall e thn els Q,
         wp_rhs (resolve:=resolve) ti ρ e (fun v free =>
             free ** if is_true v then
-                      wp resolve ti ρ els Q
+                      wp resolve ti ρ thn Q
                     else
-                      wp resolve ti ρ thn Q)
+                      wp resolve ti ρ els Q)
         |-- wp resolve ti ρ (Sif None e thn els) Q.
 
     Axiom wp_if_decl : forall d e thn els Q,

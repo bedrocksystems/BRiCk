@@ -4,9 +4,6 @@ Require Import Coq.Strings.String.
 Local Open Scope Z_scope.
 Local Open Scope string_scope.
 
-From ChargeCore.Logics Require Import
-     ILogic BILogic ILEmbed Later.
-
 Require Import Cpp.Auto.
 Require Demo.A_hpp.
 
