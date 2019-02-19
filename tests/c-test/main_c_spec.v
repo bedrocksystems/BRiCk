@@ -11,6 +11,19 @@ From Cpp Require Import
 Require C.main_c.
 Require Import C.array.
 
+Inductive itree (E : Type -> Type) (T : Type) : Type :=
+| Ret (_ : T)
+| Vis {u} (_ : E u) (_ : u -> itree E T)
+| Tau (_ : itree E T).
+Arguments Ret {_ _} _.
+Arguments Vis {_ _ _} _ _.
+Arguments Tau {_ _} _.
+
+Parameter trace : forall {E : Type -> Type}, itree E unit -> mpred.
+
+Variant PutStr : Type -> Type :=
+| putstr (_ : string) : PutStr unit.
+
 Definition args_array (p : val) (ls : list string) : mpred :=
   tarray (Tpointer (Qmut T_char))
     (fun (p : val) (v : string) =>
@@ -22,10 +35,17 @@ Definition args_array (p : val) (ls : list string) : mpred :=
 Definition putstr_spec : function_spec' :=
   SFunction (Qmut Tvoid) (Qmut (Tpointer (Qmut T_char)) :: nil)
             (fun p =>
-               {| wpp_with := string
-                ; wpp_pre s := c_string p s
-                ; wpp_post s _ := c_string p s
+               {| wpp_with := string * itree PutStr unit
+                ; wpp_pre '(s,k) := c_string p s **
+                                    trace (Vis (putstr s) (fun _ => k))
+                ; wpp_post '(s,k) _ := c_string p s ** trace k
                 |}).
+
+Fixpoint printEach (ls : list string) : itree PutStr unit :=
+  match ls with
+  | nil => Ret tt
+  | l :: ls => Vis (putstr l) (fun _ => printEach ls)
+  end.
 
 Definition main_spec : function_spec' :=
   SFunction (Qmut T_int)
@@ -38,9 +58,11 @@ Definition main_spec : function_spec' :=
          {| wpp_with := list string
           ; wpp_pre m :=
               [| Vint (Z.of_nat (length m)) = argc |] **
-              args_array argv m
+              args_array argv m **
+              trace (printEach m) **
+              [| has_type argc T_int |]
           ; wpp_post m (r : val) := [| r = Vint 0 |] **
-              args_array argv m
+              args_array argv m ** @trace PutStr (Ret tt)
          |}).
 
 Definition spec (resolve : _) :=
