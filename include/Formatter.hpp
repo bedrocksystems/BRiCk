@@ -1,10 +1,8 @@
 /*
- * Formatter.hpp
+ * Copyright (C) BedRock Systems Inc. 2019 Gregory Malecha
  *
- *  Created on: Dec 28, 2018
- *      Author: gmalecha
+ * SPDX-License-Identifier:AGPL-3.0-or-later
  */
-
 #pragma once
 
 #include "llvm/Support/raw_ostream.h"

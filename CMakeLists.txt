@@ -12,6 +12,7 @@ add_definitions(${LibClangTooling_DEFINITIONS})
 include_directories(
   ${LibClangTooling_INCLUDE_DIRS}
   include
+  llvm-include
 )
 
 add_executable(cpp2v

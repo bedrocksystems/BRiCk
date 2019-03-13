@@ -1,3 +1,11 @@
+/*
+ * Copyright (C) BedRock Systems Inc. 2019 Gregory Malecha
+ *
+ * SPDX-License-Identifier:AGPL-3.0-or-later
+ *
+ * This file is based on the tutorial here:
+ * https://clang.llvm.org/docs/LibASTMatchersTutorial.html
+ */
 #include "clang/AST/ASTConsumer.h"
 #include "clang/Frontend/CompilerInstance.h"
 #include "clang/Frontend/FrontendAction.h"
