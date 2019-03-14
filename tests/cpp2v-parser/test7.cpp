@@ -1,3 +1,9 @@
+/*
+ * Copyright (C) BedRock Systems Inc. 2019 Gregory Malecha
+ *
+ * SPDX-License-Identifier:MIT-0
+ */
+
 template<typename T, int res>
 int g(T x) {
     return res;

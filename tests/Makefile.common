@@ -1,7 +1,13 @@
+#
+# Copyright (C) BedRock Systems Inc. 2019 Gregory Malecha
+#
+# SPDX-License-Identifier:AGPL-3.0-or-later
+#
 CS=$(wildcard *.c)
 HS=$(wildcard *.h)
 CPPS=$(wildcard *.cpp)
 HPPS=$(wildcard *.hpp)
+CPP2V?=cpp2v
 
 VS=$(patsubst %.h,%_h.v,$(HS)) $(patsubst %.hpp,%_hpp.v,$(HPPS)) $(patsubst %.c,%_c.v,$(CS)) $(patsubst %.cpp,%_cpp.v,$(CPPS))
 VOS=$(patsubst %.v,%.vo,$(VS))
@@ -15,13 +21,13 @@ clean:
 	@ rm $(VS) $(VOS)
 
 %_c.v: %.c
-	./../cpp2v $< -- $(CFLAGS) > $@
+	$(CPP2v) $< -- $(CFLAGS) > $@
 %_h.v: %.h
-	./../cpp2v $< -- $(CFLAGS) > $@
+	$(CPP2v) $< -- $(CFLAGS) > $@
 %_cpp.v: %.cpp
-	./../cpp2v $< -- $(CFLAGS) > $@
+	$(CPP2v) $< -- $(CFLAGS) > $@
 %_hpp.v: %.hpp
-	./../cpp2v $< -- $(CFLAGS) > $@
+	$(CPP2v) $< -- $(CFLAGS) > $@
 
 %.o: %.cpp
 	gcc -c $<

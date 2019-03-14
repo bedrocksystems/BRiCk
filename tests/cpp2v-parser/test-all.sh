@@ -1,4 +1,9 @@
-CPP2V=./../cpp2v
+#
+# Copyright (C) BedRock Systems Inc. 2019 Gregory Malecha
+#
+# SPDX-License-Identifier:AGPL-3.0-or-later
+#
+CPP2V=cpp2v
 COQC=coqc
 TESTS=`seq 1 16`
 
