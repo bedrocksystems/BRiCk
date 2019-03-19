@@ -144,6 +144,11 @@ private:
 	}
 
 	void
+	VisitAutoType(const AutoType* type) {
+	  parent->printQualType(type->getDeducedType());
+	}
+
+	void
 	VisitTemplateTypeParmType(const TemplateTypeParmType *type) {
 	  ctor("Ttemplate") << "\"" << type->getDecl()->getNameAsString() << "\"" << fmt::rparen;
 	}
