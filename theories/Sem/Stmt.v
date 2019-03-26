@@ -29,7 +29,7 @@ Module Type Stmt.
    *
    * note(gmm): technically, they can also raise exceptions; however,
    * our current semantics doesn't capture this. if we want to support
-   * exceptions, we should simply be able to add another case,
+   * exceptions, we should be able to add another case,
    * `k_throw : val -> mpred`.
    *)
   Record Kpreds :=
@@ -59,14 +59,33 @@ Module Type Stmt.
      ; k_continue := lfalse
      |}.
 
-  Definition Kseq_all (Q : mpred -> mpred) (k : Kpreds) : Kpreds :=
+  Definition Kseq (Q : mpred) (k : Kpreds) : Kpreds :=
+    {| k_normal   := Q
+     ; k_return   := k.(k_return)
+     ; k_break    := k.(k_break)
+     ; k_continue := k.(k_continue)
+     |}.
+  Definition Kcontinue (Q : mpred) (k : Kpreds) : Kpreds :=
+    {| k_normal   := k.(k_normal)
+     ; k_return   := k.(k_return)
+     ; k_break    := k.(k_break)
+     ; k_continue := Q
+     |}.
+  Definition Kloop (I : mpred) (Q : Kpreds) : Kpreds :=
+    {| k_break    := Q.(k_normal)
+     ; k_continue := I
+     ; k_return   := Q.(k_return)
+     ; k_normal   := Q.(k_normal) |}.
+
+  Definition Kat_exit (Q : mpred -> mpred) (k : Kpreds) : Kpreds :=
     {| k_normal   := Q k.(k_normal)
      ; k_return v := Q (k.(k_return) v)
      ; k_break    := Q k.(k_break)
      ; k_continue := Q k.(k_continue)
      |}.
+
   Definition Kfree (a : mpred) : Kpreds -> Kpreds :=
-    Kseq_all (fun P => a ** P).
+    Kat_exit (fun P => a ** P).
 
   (** weakest pre-condition for statements
    *)
@@ -154,7 +173,7 @@ Module Type Stmt.
                  Forall a, uninitialized_ty (Tref gn) a
               -* |> fspec (Vptr ctor) (a :: vs) ti (fun _ =>
                  addr_of ρ x a -*
-                 (free ** k (Kseq_all (fun Q => |> fspec (Vptr dtor) (a :: nil) ti
+                 (free ** k (Kat_exit (fun Q => |> fspec (Vptr dtor) (a :: nil) ti
                                    (fun _ => addr_of ρ x a ** uninitialized_ty (Tref gn) a ** Q)) Q)))) empSP
         | _ => lfalse
           (* ^ all non-primitive declarations must have initializers *)
@@ -170,6 +189,7 @@ Module Type Stmt.
         wp_decl x ty init (wp_decls ds k)
       end.
 
+
     (* note(gmm): this rule is slightly non-compositional because
      * wp_decls requires the rest of the block computation
      * - i could fix this in the syntax tree if i split up Sseq
@@ -181,11 +201,7 @@ Module Type Stmt.
       | Sdecl ds :: ss =>
         wp_decls ds (wp_block ss) Q
       | s :: ss =>
-        wp resolve ti ρ s
-           {| k_normal   := wp_block ss Q
-            ; k_break    := Q.(k_break)
-            ; k_continue := Q.(k_continue)
-            ; k_return v := Q.(k_return) v |}
+        wp resolve ti ρ s (Kseq (wp_block ss Q) Q)
       end.
 
     Axiom wp_seq : forall Q ss,
@@ -210,10 +226,7 @@ Module Type Stmt.
      *)
     Axiom wp_while : forall t b Q I,
         I |-- wp resolve ti ρ (Sif None t (Sseq (b :: Scontinue :: nil)) Sskip)
-                {| k_break    := Q.(k_normal)
-                 ; k_continue := I
-                 ; k_return v := Q.(k_return) v
-                 ; k_normal   := Q.(k_normal) |} ->
+                (Kcontinue I Q) ->
         I |-- wp resolve ti ρ (Swhile None t b) Q.
 
     Axiom wp_while_decl : forall d t b Q,
@@ -227,24 +240,16 @@ Module Type Stmt.
         match test with
         | None =>
           Inv |-- wp resolve ti ρ (Sseq (b :: Scontinue :: nil))
-                {| k_break    := Q.(k_normal)
-                 ; k_continue :=
-                     match incr with
+              (Kloop match incr with
                      | None => Inv
                      | Some incr => wpAny (resolve:=resolve) ti ρ incr (fun _ _ => Inv)
-                     end
-                 ; k_return v := Q.(k_return) v
-                 ; k_normal   := Q.(k_normal) |}
+                     end Q)
         | Some test =>
           Inv |-- wp resolve ti ρ (Sif None test (Sseq (b :: Scontinue :: nil)) Sskip)
-                {| k_break    := Q.(k_normal)
-                 ; k_continue :=
-                     match incr with
+              (Kloop match incr with
                      | None => Inv
                      | Some incr => wpAny (resolve:=resolve) ti ρ incr (fun _ _ => Inv)
-                     end
-                 ; k_return v := Q.(k_return) v
-                 ; k_normal   := Q.(k_normal) |}
+                     end Q)
         end ->
         Inv |-- wp resolve ti ρ (Sfor None test incr b) Q.
 
@@ -254,10 +259,7 @@ Module Type Stmt.
 
     Axiom wp_do : forall t b Q {T : Type} I,
         I |-- wp resolve ti ρ (Sseq (b :: (Sif None t Scontinue Sskip) :: nil))
-                {| k_break    := Q.(k_normal)
-                 ; k_continue := I
-                 ; k_return v := Q.(k_return) v
-                 ; k_normal   := Q.(k_normal) |} ->
+                (Kloop I Q) ->
         I |-- wp resolve ti ρ (Sdo b t) Q.
 
 
