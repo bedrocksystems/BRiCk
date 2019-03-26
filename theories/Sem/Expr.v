@@ -122,24 +122,13 @@ Module Type Expr.
    *)
 
   Definition FreeTemps := mpred.
-(*
-  Variant FreeTemps : Type :=
-  | Emp
-  | Temps (_ : mpred).
-
-  Definition thn (a b : FreeTemps) : FreeTemps :=
-    match a , b with
-    | Emp , b => b
-    | a , Emp => a
-    | Temps a , Temps b =>
-      Temps (a ** b)
-    end.
-*)
 
   Definition finish (Q : val -> mpred) (v : val) (free : FreeTemps) : mpred :=
     free ** Q v.
 
   (* todo(gmm): `wpe` should be indexed by types
+   * - this might not be strictly necessary if all of the expressions
+   *   are annotated.
    *)
   Parameter wpe
   : forall (resolve : genv),
@@ -148,18 +137,6 @@ Module Type Expr.
       (val -> FreeTemps -> mpred) -> (* result -> free -> post *)
       mpred. (* pre-condition *)
 
-  (* note(gmm): the handling variables wrt lvalue and rvalues isn't correct
-   * right now.
-   *
-   * primitives, e.g. int, int*:
-   *    local x val ~ (Ex a, addr_of x a ** ptsto a val)
-   * references, int&:
-   *    ref x a'     ~ (Ex a, addr_of x a ** ptsto a a')
-   *    (references are modeled as pointers)
-   *    -- if this is true, then i can simplify things a little bit.
-   * structures, T:
-   *    local x (Inv y)
-   *)
   Section with_resolve.
     Context {resolve : genv}.
     Variable ti : thread_info.
