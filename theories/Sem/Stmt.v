@@ -99,6 +99,7 @@ Module Type Stmt.
 
     Axiom wp_return_void : forall Q,
         Q.(k_return) None |-- wp resolve ti ρ (Sreturn None) Q.
+    (* todo(gmm): it is possible to return left-hand-values, e.g. a reference *)
     Axiom wp_return_val : forall e Q,
         wp_rhs (resolve:=resolve) ti ρ e (finish (fun res => Q.(k_return) (Some res)))
         |-- wp resolve ti ρ (Sreturn (Some e)) Q.

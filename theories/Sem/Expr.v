@@ -71,7 +71,17 @@ Module Type Expr.
               tptsto ty a v.
 
   Definition tlocal_at (r : region) (t : type) (l : ident) (a : val) (v : val) : mpred :=
-    addr_of r l a ** tptsto t a v.
+    addr_of r l a ** [| has_type a (Tpointer t) |] ** tptsto t a v.
+
+  Lemma tlocal_at_tlocal : forall r ty x a v F F',
+      F |-- F' ->
+      tlocal_at r ty x a v ** F |-- tlocal r ty x v ** F'.
+  Proof.
+    clear. unfold tlocal_at, tlocal.
+    intros.
+    rewrite H.
+    Discharge.discharge fail eauto.
+  Qed.
 
   Fixpoint uninitializedN (size : nat) (a : val) : mpred :=
     match size with
@@ -250,7 +260,7 @@ Module Type Expr.
               tptsto (drop_qualifiers ty) a v' **
               [| eval_binop Bsub (drop_qualifiers (type_of e)) (drop_qualifiers (type_of e)) (drop_qualifiers ty) v' (Vint 1) v'' |] **
               (tptsto (drop_qualifiers ty) a v'' -* Q v' free))
-        |-- wp_lhs (Epostdec e ty) Q.
+        |-- wp_rhs (Epostdec e ty) Q.
 
 
     Section wpsk.
@@ -372,16 +382,10 @@ Module Type Expr.
 
 
     (** function calls *)
-    (* todo(gmm): the evaluation mode for the arguments depends on the
-     * function being called.
-     *)
     Axiom wp_call : forall ty f es Q,
         wp_rhs f (fun f => wps wpAnys es (fun vs free => |> fspec f vs ti (fun v => Q v free)))
         |-- wp_rhs (Ecall f es ty) Q.
 
-    (* todo(gmm): the evaluation mode for the arguments depends on the
-     * function being called.
-     *)
     Axiom wp_member_call : forall ty f obj es Q,
         Exists fa, [| glob_addr resolve f fa |] **
         wp_lhs obj (fun this => wps wpAnys es (fun vs free =>
