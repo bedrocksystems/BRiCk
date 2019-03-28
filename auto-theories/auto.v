@@ -1,0 +1,1 @@
+Require Export bedrock.auto.rvc.
