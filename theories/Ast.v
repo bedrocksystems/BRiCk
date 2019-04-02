@@ -243,7 +243,7 @@ Inductive Stmt : Set :=
 | Sbreak
 | Scontinue
 
-| Sreturn (_ : option Expr)
+| Sreturn (_ : option (ValCat * Expr))
 
 | Sexpr   (_ : ValCat) (_ : Expr)
 

@@ -100,9 +100,9 @@ Module Type Stmt.
     Axiom wp_return_void : forall Q,
         Q.(k_return) None |-- wp resolve ti ρ (Sreturn None) Q.
     (* todo(gmm): it is possible to return left-hand-values, e.g. a reference *)
-    Axiom wp_return_val : forall e Q,
-        wp_rhs (resolve:=resolve) ti ρ e (finish (fun res => Q.(k_return) (Some res)))
-        |-- wp resolve ti ρ (Sreturn (Some e)) Q.
+    Axiom wp_return_val : forall c e Q,
+        wpe resolve ti ρ c e (finish (fun res => Q.(k_return) (Some res)))
+        |-- wp resolve ti ρ (Sreturn (Some (c, e))) Q.
 
     Axiom wp_break : forall Q,
         Q.(k_break) |-- wp resolve ti ρ Sbreak Q.
