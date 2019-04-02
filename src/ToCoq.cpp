@@ -493,9 +493,11 @@ private:
 	void
 	VisitReturnStmt (const ReturnStmt *stmt) {
 	  if (stmt->getRetValue() != nullptr) {
-		ctor("Sreturn (Some");
+		ctor("Sreturn (Some") << "(";
+		parent->printValCat(stmt->getRetValue());
+		output() << "," << fmt::nbsp;
 		parent->printExpr(stmt->getRetValue());
-		output() << ")" << fmt::rparen;
+		output() << "))" << fmt::rparen;
 	  } else {
 		output() << "(Sreturn None)";
 	  }
