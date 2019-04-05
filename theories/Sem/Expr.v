@@ -56,7 +56,7 @@ Module Type Expr.
     | Enull => Tpointer Tvoid
       (* todo(gmm): c++ seems to have a special nullptr type *)
     | Einitlist _ t => t
-    | Enew _ _ t
+    | Enew _ _ _ t
     | Edelete _ _ _ t
     | Eandclean _ t
     | Etemp _ t => t

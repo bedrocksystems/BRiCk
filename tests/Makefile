@@ -6,7 +6,7 @@
 all: cpp2v-parser demo local-scope class value-cat c-test
 
 cpp2v-parser:
-	(cd cpp2v-parser; ./test-all.sh)
+	$(MAKE) -C cpp2v-parser
 
 demo:
 	$(MAKE) -C demo
