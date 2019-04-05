@@ -944,7 +944,11 @@ private:
 
 	  output() << fmt::nbsp;
 
-	  parent->printExpr(expr->getConstructExpr());
+	  OPTIONAL(parent->printExpr, expr->getArraySize());
+
+	  output() << fmt::nbsp;
+
+	  OPTIONAL(parent->printExpr, expr->getConstructExpr());
 
 	  done(expr);
 	}
