@@ -21,26 +21,26 @@
 
 using namespace clang;
 
-
-class ToCoqConsumer : public clang::ASTConsumer {
+class ToCoqConsumer: public clang::ASTConsumer {
 public:
-  explicit ToCoqConsumer(ASTContext *Context)
-    : ctxt(Context) {}
+	explicit ToCoqConsumer(ASTContext *Context) :
+			ctxt(Context) {
+	}
 
-  virtual void HandleTranslationUnit(clang::ASTContext &Context) {
-    toCoqModule(this->ctxt, Context.getTranslationUnitDecl());
-  }
+	virtual void HandleTranslationUnit(clang::ASTContext &Context) {
+		toCoqModule(this->ctxt, Context.getTranslationUnitDecl());
+	}
 private:
-  ASTContext* ctxt;
+	ASTContext* ctxt;
 };
 
-class ToCoqAction : public clang::ASTFrontendAction {
+class ToCoqAction: public clang::ASTFrontendAction {
 public:
-  virtual std::unique_ptr<clang::ASTConsumer> CreateASTConsumer(
-    clang::CompilerInstance &Compiler, llvm::StringRef InFile) {
-    return std::unique_ptr<clang::ASTConsumer>(
-        new ToCoqConsumer(&Compiler.getASTContext()));
-  }
+	virtual std::unique_ptr<clang::ASTConsumer> CreateASTConsumer(
+			clang::CompilerInstance &Compiler, llvm::StringRef InFile) {
+		return std::unique_ptr < clang::ASTConsumer
+				> (new ToCoqConsumer(&Compiler.getASTContext()));
+	}
 };
 
 using namespace clang::tooling;
@@ -60,8 +60,8 @@ static cl::extrahelp CommonHelp(CommonOptionsParser::HelpMessage);
 // static cl::opt<StringRef> VFileOutput("out", cl::cat(Cpp2V));
 
 int main(int argc, const char **argv) {
-  CommonOptionsParser OptionsParser(argc, argv, Cpp2V);
-  ClangTool Tool(OptionsParser.getCompilations(),
-                 OptionsParser.getSourcePathList());
-  return Tool.run(newFrontendActionFactory<ToCoqAction>().get());
+	CommonOptionsParser OptionsParser(argc, argv, Cpp2V);
+	ClangTool Tool(OptionsParser.getCompilations(),
+			OptionsParser.getSourcePathList());
+	return Tool.run(newFrontendActionFactory<ToCoqAction>().get());
 }
