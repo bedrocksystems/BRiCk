@@ -27,6 +27,8 @@ Module Type Expr.
   Fixpoint type_of (e : Expr) : type :=
     match e with
     | Evar _ t
+    | Echar _ t
+    | Estring _ t
     | Eint _ t => t
     | Ebool _ => Tbool
     | Eunop _ _ t
@@ -174,6 +176,12 @@ Module Type Expr.
     Axiom wp_rhs_int : forall n ty Q,
       [! has_type (Vint n) (drop_qualifiers ty) !] //\\ Q (Vint n) empSP
       |-- wp_rhs (Eint n ty) Q.
+
+    (* note that `char` is acutally `byte` *)
+    Axiom wp_rhs_char : forall c ty Q,
+      let n := Ascii.N_of_ascii c in
+      [! has_type (Vint n) (drop_qualifiers ty) !] //\\ Q (Vint n) empSP
+      |-- wp_rhs (Echar c ty) Q.
 
     (* boolean literals are rvalues *)
     Axiom wp_rhs_bool : forall (b : bool) Q,

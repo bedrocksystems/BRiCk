@@ -172,6 +172,8 @@ Inductive Expr : Set :=
 | Evar     (_ : VarRef) (_ : type)
   (* ^ local variable reference *)
 
+| Echar    (_ : Ascii.ascii) (_ : type)
+| Estring  (_ : String.string) (_ : type)
 | Eint     (_ : Z) (_ : type)
 | Ebool    (_ : bool)
   (* ^ literals *)
