@@ -216,7 +216,7 @@ Inductive Expr : Set :=
 | Enull
 | Einitlist (_ : list Expr) (_ : type)
 
-| Enew (_ : option globname) (_ : Expr) (_ : type)
+| Enew (_ : option globname) (array_size : option Expr) (init : option Expr) (_ : type)
 | Edelete (is_array : bool) (_ : option globname) (_ : Expr) (_ : type)
 
 | Eandclean (_ : Expr) (_ : type)

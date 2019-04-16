@@ -25,7 +25,6 @@ void fatal(StringRef msg) {
 	exit(1);
 }
 
-
 void declToCoq(ASTContext *ctxt, const clang::Decl* decl) {
 	Formatter fmt(llvm::outs());
 	Default filter(Filter::What::DEFINITION);
