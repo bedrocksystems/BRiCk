@@ -192,7 +192,7 @@ public:
       cprint.printStmt(i, print);
       print.output() << "::";
     }
-    print.output() << fmt::rparen << fmt::rparen;
+    print.output() << "nil" << fmt::rparen << fmt::rparen;
   }
 
   void VisitNullStmt(

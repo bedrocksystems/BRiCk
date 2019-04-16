@@ -23,7 +23,7 @@ public:
 		if (line) {
 			this->output_ << fmt::line;
 		}
-		this->output_ << fmt::lparen << "Some" << fmt::nbsp;
+		this->output_ << fmt::lparen << ctor << fmt::nbsp;
 		return this->output_;
 	}
 	fmt::Formatter& begin_record(bool line=true) {
