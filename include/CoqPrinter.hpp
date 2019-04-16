@@ -17,17 +17,49 @@
 
 class CoqPrinter {
 public:
-	CoqPrinter() = default;
+	CoqPrinter(fmt::Formatter& output):output_(output) {}
 
-	fmt::Formatter& ctor(const char* ctor, bool line=true);
-	fmt::Formatter& begin_record(bool line=true);
-	fmt::Formatter& end_record(bool line=true);
-	fmt::Formatter& record_field(const char* field, bool line=true);
+	fmt::Formatter& ctor(const char* ctor, bool line=true) {
+		if (line) {
+			this->output_ << fmt::line;
+		}
+		this->output_ << fmt::lparen << "Some" << fmt::nbsp;
+		return this->output_;
+	}
+	fmt::Formatter& begin_record(bool line=true) {
+		if (line) {
+			this->output_ << fmt::line;
+		}
+		this->output_ << "{|" << fmt::nbsp;
+		return this->output_;
+	}
+	fmt::Formatter& end_record(bool line=true) {
+		if (line) {
+			this->output_ << fmt::line;
+		}
+		this->output_ << fmt::nbsp << "|}";
+		return this->output_;
+	}
+	fmt::Formatter& record_field(const char* field, bool line=true) {
+		this->output_ << field << fmt::nbsp << ":=" << fmt::nbsp;
+		return this->output_;
+	}
 
-	fmt::Formatter& some();
-	fmt::Formatter& none();
+	fmt::Formatter& some() {
+		return this->ctor("Some");
+	}
+	fmt::Formatter& none() {
+		return this->output_ << "None";
+	}
 
 public:
-	fmt::Formatter& output();
-	llvm::raw_ostream& error () const;
+	fmt::Formatter& output() {
+		return this->output_;
+	}
+	llvm::raw_ostream& error () const {
+		return llvm::errs();
+	}
+
+private:
+	fmt::Formatter& output_;
 };

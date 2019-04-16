@@ -30,7 +30,6 @@ class ToCoq {
 private:
 	Formatter &out;
 	DiagnosticsEngine engine;
-	MangleContext * mangleContext;
 
 
 private:
@@ -103,60 +102,10 @@ public:
 		return false;
 	}
 
-	void
-	printLocalDecl (const Decl* d) {
-		localPrinter.Visit(d);
-	}
 
-	void
-	printValCat(const Expr* d) {
-		auto Class = d->Classify(*Context);
-		if (Class.isLValue()) {
-			output() << "Lvalue";
-		} else if (Class.isXValue()) {
-			output() << "Xvalue";
-		} else if (Class.isRValue()) {
-			output() << "Rvalue";
-		} else {
-			fatal("unknown value category");
-		}
-	}
 
-	void
-	printExprAndValCat(const Expr* d) {
-		output() << fmt::lparen;
-		printValCat(d);
-		output() << "," << fmt::nbsp;
-		printExpr(d);
-		output() << fmt::rparen;
-	}
 
-	void
-	printGlobalName(const NamedDecl *decl) {
-		assert(!decl->getDeclContext()->isFunctionOrMethod());
-
-		output() << "\"";
-		mangleContext->mangleCXXName(decl, out.nobreak());
-		output() << "\"";
-
-		// llvm::errs() << "\n";
-		// output() << fmt::indent << "{| g_path :=" << fmt::nbsp;
-		// printDeclContext(decl->getDeclContext());
-		// output() << "; g_name :=" << fmt::nbsp << "\"" << decl->getNameAsString() << "\" |}";
-		// output() << fmt::outdent;
-	}
-
-	void
-	printName(const NamedDecl *decl) {
-		if (decl->getDeclContext()->isFunctionOrMethod()) {
-			ctor("Lname", false);
-			output() << fmt::nbsp << "\"" << decl->getNameAsString() << "\"";
-		} else {
-			ctor("Gname", false);
-			printGlobalName(decl);
-		}
-		output() << fmt::rparen;
-	}
+	
 
 	void
 	printQualType(const QualType &qt) {
@@ -179,35 +128,41 @@ public:
 
 
 
-	void
-	translateModule (const TranslationUnitDecl* decl) {
-		output() << "Definition module : list Decl :=" << fmt::indent << fmt::line;
-		for (auto i = decl->decls_begin(), e = decl->decls_end(); i != e; ++i) {
-			if (printDecl(*i)) {
-				output() << fmt::line << "::" << fmt::nbsp;
-			}
-		}
-		output() << "nil." << fmt::outdent;
-		output() << fmt::line;
-	}
 
 private:
 	ASTContext *Context;
 };
 #endif
 
+#include "ClangPrinter.hpp"
+#include "CoqPrinter.hpp"
+
 void declToCoq(ASTContext *ctxt, const clang::Decl* decl) {
 	Formatter fmt(llvm::outs());
 	Default filter(Filter::What::DEFINITION);
 	SpecCollector specs;
-	ToCoq(ctxt, fmt, &filter, specs).printDecl(decl);
+	CoqPrinter cprint(fmt);
+	ClangPrinter(ctxt).printDecl(decl, cprint);
 }
 
 void stmtToCoq(ASTContext *ctxt, const clang::Stmt* stmt) {
 	Formatter fmt(llvm::outs());
 	Default filter(Filter::What::DEFINITION);
 	SpecCollector specs;
-	ToCoq(ctxt, fmt, &filter, specs).printStmt(stmt);
+	CoqPrinter cprint(fmt);
+	ClangPrinter(ctxt).printStmt(stmt, cprint);
+}
+
+
+void
+translateModule (const TranslationUnitDecl* decl, CoqPrinter& print, ClangPrinter& cprint) {
+	print.output() << "Definition module : list Decl :=" << fmt::indent << fmt::line;
+	for (auto i : decl->decls()) {
+		cprint.printDecl(i, print);
+		print.output() << fmt::line << "::" << fmt::nbsp;
+	}
+	print.output() << "nil." << fmt::outdent;
+	print.output() << fmt::line;
 }
 
 void toCoqModule(clang::ASTContext *ctxt,
@@ -226,6 +181,9 @@ void toCoqModule(clang::ASTContext *ctxt,
 			<< "Import ListNotations." << fmt::line;
 
 	SpecCollector specs;
-	ToCoq(ctxt, fmt, &filter, specs).translateModule(decl);
+
+	CoqPrinter print(fmt);
+	ClangPrinter cprint(ctxt);
+	translateModule(decl, print, cprint);
 }
 

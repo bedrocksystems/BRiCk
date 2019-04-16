@@ -1,10 +1,10 @@
 #include "CoqPrinter.hpp"
+#include "ClangPrinter.hpp"
 #include "DeclVisitorWithArgs.h"
-#include "ToCoq.hpp"
-#include "clang/AST/Mangle.h"
-#include "clang/AST/Type.h"
-#include "clang/Basic/Version.inc"
+#include "clang/AST/Decl.h"
 #include <Formatter.hpp>
+
+using namespace clang;
 
 void printFunction(
         const FunctionDecl *decl, CoqPrinter &print, ClangPrinter &cprint)
@@ -14,7 +14,7 @@ void printFunction(
   cprint.printQualType(decl->getCallResultType(), print);
   print.output() << "; f_params :=" << fmt::nbsp;
 
-  for (auto i : decl->parameters) {
+  for (auto i : decl->parameters()) {
     cprint.printParam(i, print);
     print.output() << "::";
   }
@@ -44,7 +44,7 @@ void printMethod(
                  << "|}" << fmt::outdent << fmt::line;
   print.output() << "; m_params :=" << fmt::nbsp;
 
-  for (auto i : decl->parameters) {
+  for (auto i : decl->parameters()) {
     cprint.printParam(i, print);
     print.output() << "::";
   }
@@ -68,7 +68,7 @@ void printConstructor(
   cprint.printGlobalName(decl->getParent(), print);
   print.output() << fmt::line << " ; c_params :=" << fmt::nbsp;
 
-  for (auto i : decl->parameters) {
+  for (auto i : decl->parameters()) {
     cprint.printParam(i, print);
     print.output() << "::";
   }
@@ -148,7 +148,8 @@ void printDestructor(
               record->bases_begin(), record->bases_end());
       for (auto i = bases.crbegin(), e = bases.crend(); i != e; i++) {
         if (i->isVirtual()) {
-          fatal("virtual base classes are not supported.");
+          // fatal("virtual base classes are not supported.");
+          assert(false);
         }
         auto rec = i->getType().getTypePtr()->getAsCXXRecordDecl();
         if (rec) {
@@ -158,7 +159,8 @@ void printDestructor(
           cprint.printGlobalName(rec->getDestructor(), print);
           print.output() << fmt::rparen;
         } else {
-          fatal("base class is not a RecordType.");
+          //fatal("base class is not a RecordType.");
+          assert(false);
         }
         print.output() << "::";
       }
@@ -210,7 +212,8 @@ class PrintDecl : public ConstDeclVisitorArgs<PrintDecl, void, CoqPrinter &,
           const CXXRecordDecl *decl, CoqPrinter &print, ClangPrinter &cprint)
   {
     if (decl->getNameAsString() == "") {
-      fatal("anonymous structs/classes are not supported");
+      assert (false);
+      //fatal("anonymous structs/classes are not supported");
     }
     if (decl != decl->getCanonicalDecl()) {
       return;
@@ -264,12 +267,9 @@ class PrintDecl : public ConstDeclVisitorArgs<PrintDecl, void, CoqPrinter &,
 
     print.output() << fmt::line << "|}" << fmt::rparen << fmt::rparen;
 
-    for (auto i : decl->methods) {
-      for (auto i = decl->method_begin(), e = decl->method_end(); i != e; ++i) {
-        if (!skip)
-          print.output() << fmt::line << "::" << fmt::nbsp;
-        skip = !this->Visit(*i, what);
-      }
+    for (auto i : decl->methods()) {
+      this->Visit(i, print, cprint);
+      print.output() << "::";
     }
   }
 
@@ -277,9 +277,9 @@ class PrintDecl : public ConstDeclVisitorArgs<PrintDecl, void, CoqPrinter &,
           const FunctionDecl *decl, CoqPrinter &print, ClangPrinter &cprint)
   {
     print.ctor("Dfunction");
-    parent->printGlobalName(decl);
+    cprint.printGlobalName(decl, print);
     print.output() << fmt::nbsp;
-    parent->printFunction(decl, what);
+    printFunction(decl, print, cprint);
     print.output() << fmt::rparen;
   }
 
@@ -288,7 +288,7 @@ class PrintDecl : public ConstDeclVisitorArgs<PrintDecl, void, CoqPrinter &,
   {
     if (decl->isStatic()) {
       print.ctor("Dfunction") << "\"" << decl->getNameAsString() << "\"" << fmt::nbsp;
-      parent->printFunction(decl, what);
+      printFunction(decl, print, cprint);
       print.output() << fmt::rparen;
     } else {
       if (decl->isVirtual()) {
@@ -369,7 +369,8 @@ class PrintDecl : public ConstDeclVisitorArgs<PrintDecl, void, CoqPrinter &,
           const EnumDecl *decl, CoqPrinter &print, ClangPrinter &cprint)
   {
     if (decl->getNameAsString() == "") {
-      fatal("anonymous enumerations are not supported");
+      // fatal("anonymous enumerations are not supported");
+      assert(false);
     }
     print.ctor("Denum") << "\"" << decl->getNameAsString() << "\"" << fmt::nbsp;
     auto t = decl->getIntegerType();
@@ -396,7 +397,6 @@ class PrintDecl : public ConstDeclVisitorArgs<PrintDecl, void, CoqPrinter &,
     print.output() << "nil" << fmt::rparen;
 
     print.output() << fmt::rparen;
-    return;
   }
 
   void VisitLinkageSpecDecl(
@@ -425,7 +425,7 @@ class PrintDecl : public ConstDeclVisitorArgs<PrintDecl, void, CoqPrinter &,
 			 for (auto i = decl->getTemplateParameters()->begin(), e = decl->getTemplateParameters()->end(); i != e; ++i) {
 			 if (auto *nt = dyn_cast<NonTypeTemplateParmDecl>(*i)) {
 			 print.output() << "(NotType" << fmt::nbsp;
-			 parent->printQualType(nt->getType());
+			 cprint.printQualType(nt->getType());
 			 print.output() << ",\"" << (*i)->getNameAsString() << "\") ::" << fmt::nbsp;
 			 } else if (isa<TemplateTypeParmDecl>(*i)) {
 			 print.output() << "(Typename, \"" << (*i)->getNameAsString() << "\") ::" << fmt::nbsp;
@@ -435,46 +435,27 @@ class PrintDecl : public ConstDeclVisitorArgs<PrintDecl, void, CoqPrinter &,
 			 }
 			 print.output() << "nil)";
 
-			 parent->printDecl(decl->getTemplatedDecl());
+			 cprint.printDecl(decl->getTemplatedDecl());
 			 print.output() << fmt::nbsp;
 			 */
 
-    if (decl->spec_begin() == decl->spec_end()) {
-      return false;
-    }
-
-    void first = true;
     for (auto i : decl->specializations()) {
-      if (!first) {
-        print.output() << "::";
-        first = false;
-      }
-      parent->printDecl(i);
+      cprint.printDecl(i, print);
+      print.output() << "::";
     }
-
-    //PRINT_LIST(decl->spec, parent->printDecl)
-    //print.output() << fmt::rparen;
-    return;
   }
 
   void VisitClassTemplateDecl(const ClassTemplateDecl *decl, CoqPrinter &print,
           ClangPrinter &cprint)
   {
-    if (decl->spec_begin() == decl->spec_end()) {
-      return;
-    }
-
-    void first = true;
     for (auto i : decl->specializations()) {
-      if (!first) {
-
-        first = false;
-      }
       cprint.printDecl(i, print);
       print.output() << "::";
     }
   }
 };
+
+PrintDecl PrintDecl::printer;
 
 void ClangPrinter::printDecl(const clang::Decl *decl, CoqPrinter &print)
 {

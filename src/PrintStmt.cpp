@@ -1,10 +1,12 @@
 #include "CoqPrinter.hpp"
-#include "ToCoq.hpp"
+#include "ClangPrinter.hpp"
 #include "clang/AST/Mangle.h"
 #include "clang/AST/Type.h"
 #include "clang/AST/StmtVisitor.h"
 #include "clang/Basic/Version.inc"
 #include <Formatter.hpp>
+
+using namespace clang;
 
 class PrintStmt
         : public ConstStmtVisitor<PrintStmt, void, CoqPrinter &, ClangPrinter &> {

@@ -1,5 +1,5 @@
 #include "CoqPrinter.hpp"
-#include "ToCoq.hpp"
+#include "ClangPrinter.hpp"
 #include "clang/AST/Mangle.h"
 #include "clang/AST/Type.h"
 #include "clang/AST/Decl.h"

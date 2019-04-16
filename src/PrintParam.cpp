@@ -1,10 +1,12 @@
 #include "CoqPrinter.hpp"
-#include "ToCoq.hpp"
+#include "ClangPrinter.hpp"
 #include "clang/AST/Mangle.h"
 #include "clang/AST/Type.h"
 #include "clang/Basic/Version.inc"
 #include "DeclVisitorWithArgs.h"
 #include <Formatter.hpp>
+
+using namespace clang;
 
 class PrintParam : public ConstDeclVisitorArgs<PrintParam, void, CoqPrinter&, ClangPrinter&> {
 private:

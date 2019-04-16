@@ -7,7 +7,7 @@
 #include "clang/AST/Mangle.h"
 #include "TypeVisitorWithArgs.h"
 #include "CoqPrinter.hpp"
-#include "ToCoq.hpp"
+#include "ClangPrinter.hpp"
 
 using namespace clang;
 using namespace fmt;

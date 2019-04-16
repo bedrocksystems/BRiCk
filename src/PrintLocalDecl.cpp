@@ -1,10 +1,9 @@
 #include "CoqPrinter.hpp"
-#include "ToCoq.hpp"
-#include "clang/AST/Mangle.h"
-#include "clang/AST/Type.h"
-#include "clang/Basic/Version.inc"
+#include "ClangPrinter.hpp"
 #include "DeclVisitorWithArgs.h"
 #include <Formatter.hpp>
+
+using namespace clang;
 
 class PrintLocalDecl : public ConstDeclVisitorArgs<PrintLocalDecl, void, CoqPrinter&, ClangPrinter&> {
 private:
@@ -34,6 +33,8 @@ public:
     print.error() << "unexpected local declaration";
   }
 };
+
+PrintLocalDecl PrintLocalDecl::printer;
 
 void ClangPrinter::printLocalDecl(const clang::Decl* decl, CoqPrinter& print) {
   PrintLocalDecl::printer.Visit(decl, print, *this);
