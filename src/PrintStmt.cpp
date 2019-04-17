@@ -26,6 +26,11 @@ public:
   {
     print.ctor("Sdecl") << fmt::lparen;
     for (auto i : stmt->decls()) {
+      if (auto sl = dyn_cast<VarDecl>(i)) {
+        if (sl->isStaticLocal()) {
+          continue;
+        }
+      }
       cprint.printLocalDecl(i, print);
       print.output() << fmt::nbsp << "::";
     }

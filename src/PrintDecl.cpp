@@ -408,44 +408,14 @@ class PrintDecl : public ConstDeclVisitorArgs<PrintDecl, void, CoqPrinter &,
   void VisitLinkageSpecDecl(
           const LinkageSpecDecl *decl, CoqPrinter &print, ClangPrinter &cprint)
   {
-    // todo(gmm): this is problematic with the new specification
-    // todo(gmm): need to do the language spec
-    print.ctor("Dextern") << fmt::lparen;
-
-    for (auto i : decl->decls()) {
-      cprint.printDecl(i, print);
-      print.output() << "::";
-    }
-
-
-    print.output() << fmt::rparen << fmt::rparen;
+    // we never print these things.
+    assert(false);
   }
 
   void VisitFunctionTemplateDecl(const FunctionTemplateDecl *decl,
           CoqPrinter &print, ClangPrinter &cprint)
   {
     // note(gmm): for now, i am just going to return the specializations.
-    //print.ctor("Dtemplated");
-
-    /*
-			 print.output() << "(";
-			 for (auto i = decl->getTemplateParameters()->begin(), e = decl->getTemplateParameters()->end(); i != e; ++i) {
-			 if (auto *nt = dyn_cast<NonTypeTemplateParmDecl>(*i)) {
-			 print.output() << "(NotType" << fmt::nbsp;
-			 cprint.printQualType(nt->getType());
-			 print.output() << ",\"" << (*i)->getNameAsString() << "\") ::" << fmt::nbsp;
-			 } else if (isa<TemplateTypeParmDecl>(*i)) {
-			 print.output() << "(Typename, \"" << (*i)->getNameAsString() << "\") ::" << fmt::nbsp;
-			 } else {
-			 print.error() << "[ERR] unsupported template parameter type " << (*i)->getDeclKindName() << "\n";
-			 }
-			 }
-			 print.output() << "nil)";
-
-			 cprint.printDecl(decl->getTemplatedDecl());
-			 print.output() << fmt::nbsp;
-			 */
-
     for (auto i : decl->specializations()) {
       cprint.printDecl(i, print);
       print.output() << "::";

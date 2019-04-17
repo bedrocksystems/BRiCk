@@ -330,7 +330,7 @@ Inductive Decl : Set :=
 .
 
 Definition module : Set :=
-  list (globname * Decl).
+  list Decl.
 
 Definition NStop : list ident := nil.
 

@@ -71,28 +71,24 @@ void toCoqModule(clang::ASTContext *ctxt,
 			<< "Local Open Scope string_scope." << fmt::line
 			<< "Import ListNotations." << fmt::line;
 
+#if 0
 	fmt << fmt::line
 			<< "Definition imports : Ast.module :=" << fmt::indent;
 	for (auto entry : mod.imports()) {
 		auto decl = entry.second.first;
-		print.output() << fmt::line << "(";
-		cprint.printGlobalName(decl, print);
-		print.output() << "," << fmt::indent << fmt::nbsp;
 		cprint.printDecl(decl, print);
-		print.output() << ")" << fmt::outdent << fmt::nbsp << "::";
+		print.output() << fmt::nbsp << "::";
 	}
 	fmt << "nil." << fmt::outdent << fmt::line;
+#endif
 
 	fmt << fmt::line
 			<< "Definition module : Ast.module :=" << fmt::indent;
 
 	for (auto entry : mod.definitions()) {
 		auto decl = entry.second;
-		print.output() << fmt::line << "(";
-		cprint.printGlobalName(decl, print);
-		print.output() << "," << fmt::indent << fmt::nbsp;
 		cprint.printDecl(decl, print);
-		print.output() << ")" << fmt::outdent << fmt::nbsp << "::";
+		print.output() << fmt::nbsp << "::";
 	}
 	print.output() << "nil." << fmt::outdent << fmt::line;
 }

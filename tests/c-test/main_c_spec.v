@@ -71,7 +71,7 @@ Definition main_spec : function_spec' :=
          |}).
 
 Definition spec (resolve : _) :=
-  ti_cglob' (resolve:=resolve) "_Z6putstr" putstr_spec -*
-  ti_cglob' (resolve:=resolve) "_Z4main" main_spec.
+  ti_cglob' (resolve:=resolve) "putstr" putstr_spec -*
+  ti_cglob' (resolve:=resolve) "main" main_spec.
 
 Export C.array.

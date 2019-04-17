@@ -54,11 +54,6 @@ public:
 	void
 	printQualType(const clang::QualType &qt, CoqPrinter& print);
 
-/*
-	void
-	printFunction(const clang::FunctionDecl *decl, CoqPrinter& print);
-*/
-
 	void
 	printExprAndValCat(const clang::Expr *expr, CoqPrinter& print);
 
@@ -67,7 +62,7 @@ public:
 	ClangPrinter(clang::ASTContext* context);
 
 private:
-	clang::ASTContext * const context_;
+	clang::ASTContext * context_;
 	clang::MangleContext * mangleContext_;
 	clang::DiagnosticsEngine engine_;
 };

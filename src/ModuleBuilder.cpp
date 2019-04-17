@@ -10,20 +10,22 @@ class BuildModule : public ConstDeclVisitorArgs<BuildModule, void> {
   Filter& filter_;
 
 private:
-  void go(const NamedDecl* decl, bool definition=true) {
-    switch (filter_.shouldInclude(decl)) {
+  Filter::What go(const NamedDecl* decl, bool definition=true) {
+    auto what = filter_.shouldInclude(decl);
+    switch (what) {
     case Filter::What::DEFINITION:
       if (definition) {
         module_.add_definition(decl);
+        return what;
       } else {
         module_.add_declaration(decl);
+        return Filter::What::DECLARATION;
       }
-      break;
     case Filter::What::DECLARATION:
       module_.add_declaration(decl);
-      break;
+      return Filter::What::DECLARATION;
     default:
-      break;
+      return Filter::What::NOTHING;
     }
   }
 
@@ -33,6 +35,10 @@ public:
   void VisitDecl(const Decl *d)
   {
     llvm::errs() << "visiting declaration..." << d->getDeclKindName() << "\n";
+  }
+
+  void VisitAccessSpecDecl(const AccessSpecDecl*) {
+    // ignore
   }
 
   void VisitTranslationUnitDecl(const TranslationUnitDecl* decl) {
@@ -54,26 +60,37 @@ public:
   }
 
   void VisitTagDecl(const TagDecl* decl) {
-    llvm::errs() << decl->getName() << ": "
-                 << decl << " "
-                 << decl->getDefinition() << " "
-                 << decl->getPreviousDecl() << " "
-                 << decl->isThisDeclarationADefinition() << "\n";
     auto defn = decl->getDefinition();
     if (defn == decl) {
       go(decl, true);
     } else if (defn == nullptr && decl->getPreviousDecl() == nullptr) {
       go(decl, false);
-    } else {
-      llvm::errs() << "skipping";
     }
+  }
+
+  void VisitCXXRecordDecl(const CXXRecordDecl* decl) {
+    // find any static functions or fields
+    for (auto i : decl->decls()) {
+      Visit(i);
+    }
+
+    VisitTagDecl(decl);
   }
 
   void VisitFunctionDecl(const FunctionDecl *decl)
   {
     auto defn = decl->getDefinition();
     if (defn == decl) {
-      go(decl, true);
+      if (go(decl, true) >= Filter::What::DEFINITION) {
+        // search for static local variables
+        for (auto i : decl->decls()) {
+          if (auto d = dyn_cast<VarDecl>(i)) {
+            if (d->isStaticLocal()) {
+              go(d);
+            }
+          }
+        }
+      }
     } else if (defn == nullptr && decl->getPreviousDecl() == nullptr) {
       go(decl, false);
     }
@@ -83,18 +100,19 @@ public:
     go(decl);
   }
 
-  void VisitVarDecl(const VarDecl *decl)
-  {
+  void VisitVarDecl(const VarDecl *decl) {
     go(decl);
   }
 
-  void VisitUsingDecl(const UsingDecl *decl)
-  {
+  void VisitFieldDecl(const FieldDecl*) {
     // ignore
   }
 
-  void VisitUsingDirectiveDecl(const UsingDirectiveDecl *decl)
-  {
+  void VisitUsingDecl(const UsingDecl *) {
+    // ignore
+  }
+
+  void VisitUsingDirectiveDecl(const UsingDirectiveDecl *) {
     // ignore
   }
 
