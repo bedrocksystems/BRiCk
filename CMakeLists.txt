@@ -22,6 +22,7 @@ add_executable(cpp2v
   src/PrintParam.cpp
   src/PrintDecl.cpp
   src/PrintLocalDecl.cpp
+  src/ModuleBuilder.cpp
   src/CommentScanner.cpp
   src/Formatter.cpp
   src/ToCoq.cpp

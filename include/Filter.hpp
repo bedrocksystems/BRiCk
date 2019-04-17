@@ -12,7 +12,7 @@ using namespace clang;
 
 class Filter {
 public:
-	enum What
+	enum class What
 		: unsigned int {
 			NOTHING = 0, DECLARATION = 1, DEFINITION = 2
 	};

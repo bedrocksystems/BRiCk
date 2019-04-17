@@ -15,6 +15,7 @@
 #include "SpecCollector.hpp"
 #include "ClangPrinter.hpp"
 #include "CoqPrinter.hpp"
+#include "ModuleBuilder.hpp"
 
 using namespace clang;
 using namespace fmt;
@@ -66,39 +67,9 @@ void toCoqModule(clang::ASTContext *ctxt,
 	SpecCollector specs;
 	DeclCollector decls;
 
-	std::list<const DeclContext*> worklist;
-	worklist.push_back(decl);
+	::Module mod;
 
-	do {
-		const DeclContext* dc = worklist.back();
-		worklist.pop_back();
-		for (auto i : dc->decls()) {
-			if (auto t = dyn_cast<ClassTemplateDecl>(i)) {
-				for (auto s : t->specializations()) {
-					decls.add_decl(s);
-				}
-				continue;
-			} else if (auto t = dyn_cast<FunctionTemplateDecl>(i)) {
-				for (auto s : t->specializations()) {
-					decls.add_decl(s);
-				}
-				continue;
-			}
-
-			if (!isa<NamespaceDecl>(i) && filter.shouldInclude(i)) {
-				decls.add_decl(i);
-			}
-
-			// todo(gmm): this is too naive, e.g. EnumDecl is a DeclContext, also Class
-			if (auto dc = dyn_cast<DeclContext>(i)) {
-				if (!isa<FunctionDecl>(dc)) {
-					worklist.push_back(dc);
-				}
-			} else {
-				// todo(gmm): templates
-			}
-		}
-	} while (!worklist.empty());
+	build_module(decl, mod, filter);
 
 	Formatter fmt(llvm::outs());
 	CoqPrinter print(fmt);
@@ -109,19 +80,13 @@ void toCoqModule(clang::ASTContext *ctxt,
 			<< "Import ListNotations." << fmt::line << fmt::line
 			<< "Definition module : Ast.module :=" << fmt::indent;
 
-	for (const Decl* decl : decls.declarations_) {
-		if (isa<FieldDecl>(decl) || isa<AccessSpecDecl>(decl) || isa<EmptyDecl>(decl)) {
-			continue;
-		}
-		if (auto nd = dyn_cast<NamedDecl>(decl)) {
-			print.output() << fmt::line << "(";
-			cprint.printGlobalName(nd, print);
-			print.output() << "," << fmt::indent << fmt::nbsp;
-			cprint.printDecl(decl, print);
-			print.output() << ")" << fmt::outdent << fmt::nbsp << "::";
-		} else {
-			llvm::errs() << "Not a named decl: " << decl->getDeclKindName() << "\n";
-		}
+	for (auto entry : mod.definitions()) {
+		auto decl = entry.second;
+		print.output() << fmt::line << "(";
+		cprint.printGlobalName(decl, print);
+		print.output() << "," << fmt::indent << fmt::nbsp;
+		cprint.printDecl(decl, print);
+		print.output() << ")" << fmt::outdent << fmt::nbsp << "::";
 	}
 	print.output() << "nil." << fmt::outdent << fmt::line;
 }
