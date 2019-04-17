@@ -85,7 +85,7 @@ public:
   void VisitNamespaceDecl(const NamespaceDecl *decl)
   {
     for (auto d : decl->decls()) {
-      this->Visit(decl);
+      this->Visit(d);
     }
   }
 
