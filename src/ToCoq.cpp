@@ -7,8 +7,9 @@
 #include <Formatter.hpp>
 #include "clang/Basic/Version.inc"
 #include "clang/AST/Type.h"
-#include "clang/AST/StmtVisitor.h"
-#include "clang/AST/Mangle.h"
+#include "clang/AST/Decl.h"
+#include "clang/AST/DeclCXX.h"
+#include "clang/AST/DeclTemplate.h"
 #include "Filter.hpp"
 #include "CommentScanner.hpp"
 #include "SpecCollector.hpp"
@@ -72,11 +73,27 @@ void toCoqModule(clang::ASTContext *ctxt,
 		const DeclContext* dc = worklist.back();
 		worklist.pop_back();
 		for (auto i : dc->decls()) {
-			if (filter.shouldInclude(i)) {
+			if (auto t = dyn_cast<ClassTemplateDecl>(i)) {
+				for (auto s : t->specializations()) {
+					decls.add_decl(s);
+				}
+				continue;
+			} else if (auto t = dyn_cast<FunctionTemplateDecl>(i)) {
+				for (auto s : t->specializations()) {
+					decls.add_decl(s);
+				}
+				continue;
+			}
+
+			if (!isa<NamespaceDecl>(i) && filter.shouldInclude(i)) {
 				decls.add_decl(i);
 			}
+
+			// todo(gmm): this is too naive, e.g. EnumDecl is a DeclContext, also Class
 			if (auto dc = dyn_cast<DeclContext>(i)) {
-				worklist.push_back(dc);
+				if (!isa<FunctionDecl>(dc)) {
+					worklist.push_back(dc);
+				}
 			} else {
 				// todo(gmm): templates
 			}
@@ -89,11 +106,23 @@ void toCoqModule(clang::ASTContext *ctxt,
 
 	fmt << "From Cpp Require Import Parser." << fmt::line << fmt::line
 			<< "Local Open Scope string_scope." << fmt::line
-			<< "Import ListNotations." << fmt::line;
-
+			<< "Import ListNotations." << fmt::line << fmt::line
+			<< "Definition module : Ast.module :=" << fmt::indent;
 
 	for (const Decl* decl : decls.declarations_) {
-		cprint.printDecl(decl, print);
+		if (isa<FieldDecl>(decl) || isa<AccessSpecDecl>(decl) || isa<EmptyDecl>(decl)) {
+			continue;
+		}
+		if (auto nd = dyn_cast<NamedDecl>(decl)) {
+			print.output() << fmt::line << "(";
+			cprint.printGlobalName(nd, print);
+			print.output() << "," << fmt::indent << fmt::nbsp;
+			cprint.printDecl(decl, print);
+			print.output() << ")" << fmt::outdent << fmt::nbsp << "::";
+		} else {
+			llvm::errs() << "Not a named decl: " << decl->getDeclKindName() << "\n";
+		}
 	}
+	print.output() << "nil." << fmt::outdent << fmt::line;
 }
 

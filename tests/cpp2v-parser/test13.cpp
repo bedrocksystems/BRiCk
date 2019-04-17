@@ -12,8 +12,8 @@ enum A : int { B , C };
 typedef X TD;
 typedef A TE;
 
-#if 0
-typedef enum { U } Unit;
-
-typedef enum { V } unit;
-#endif
+void foo() {
+  A a = B;
+  X x = Y;
+  TD z = Z;
+}

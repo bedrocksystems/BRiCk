@@ -169,6 +169,8 @@ Variant VarRef : Set :=
 Variant ValCat : Set := Lvalue | Rvalue | Xvalue.
 
 Inductive Expr : Set :=
+| Econst_ref (_ : VarRef) (_ : type)
+  (* ^ these are different because they do not have addresses *)
 | Evar     (_ : VarRef) (_ : type)
   (* ^ local variable reference *)
 

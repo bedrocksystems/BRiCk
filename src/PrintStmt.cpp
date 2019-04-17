@@ -27,9 +27,9 @@ public:
     print.ctor("Sdecl") << fmt::lparen;
     for (auto i : stmt->decls()) {
       cprint.printLocalDecl(i, print);
-      print.output() << "::";
+      print.output() << fmt::nbsp << "::";
     }
-    print.output() << fmt::rparen << fmt::rparen;
+    print.output() << fmt::nbsp << "nil" << fmt::rparen << fmt::rparen;
   }
 
   void VisitWhileStmt(
@@ -72,7 +72,7 @@ public:
     print.output() << fmt::nbsp;
     if (auto v = stmt->getInc()) {
       print.some();
-      cprint.printExpr(v, print);
+      cprint.printExprAndValCat(v, print);
       print.output() << fmt::rparen;
     } else {
       print.none();

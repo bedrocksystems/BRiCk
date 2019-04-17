@@ -10,9 +10,8 @@ void printFunction(
         const FunctionDecl *decl, CoqPrinter &print, ClangPrinter &cprint)
 {
   print.output() << "{| f_return :=" << fmt::indent;
-  print.output() << fmt::nbsp;
   cprint.printQualType(decl->getCallResultType(), print);
-  print.output() << "; f_params :=" << fmt::nbsp;
+  print.output() << fmt::line << "; f_params :=" << fmt::nbsp;
 
   for (auto i : decl->parameters()) {
     cprint.printParam(i, print);
@@ -20,7 +19,7 @@ void printFunction(
   }
   print.output() << "nil";
 
-  print.output() << "; f_body :=" << fmt::nbsp;
+  print.output() << fmt::line << "; f_body :=" << fmt::nbsp;
   if (decl->getBody()) {
     print.ctor("Some", false);
     cprint.printStmt(decl->getBody(), print);
@@ -137,7 +136,7 @@ void printDestructor(
         if (auto rd = fd->getType().getTypePtr()->getAsCXXRecordDecl()) {
           print.ctor("Field") << "\"" << fd->getName() << "\"";
           cprint.printGlobalName(rd->getDestructor(), print);
-          print.output() << fmt::rparen << "::";
+          print.output() << fmt::rparen << fmt::nbsp << "::";
         }
       }
     }
@@ -202,7 +201,7 @@ class PrintDecl : public ConstDeclVisitorArgs<PrintDecl, void, CoqPrinter &,
   void VisitTypedefNameDecl(
           const TypedefNameDecl *type, CoqPrinter &print, ClangPrinter &cprint)
   {
-    print.ctor("Dtypedef", false)
+    print.ctor("Dtypedef")
             << "\"" << type->getNameAsString() << "\"" << fmt::nbsp;
     cprint.printQualType(type->getUnderlyingType(), print);
     print.output() << fmt::rparen;
@@ -266,11 +265,6 @@ class PrintDecl : public ConstDeclVisitorArgs<PrintDecl, void, CoqPrinter &,
     // note(gmm): i need to print any implicit declarations.
 
     print.output() << fmt::line << "|}" << fmt::rparen << fmt::rparen;
-
-    for (auto i : decl->methods()) {
-      this->Visit(i, print, cprint);
-      print.output() << "::";
-    }
   }
 
   void VisitFunctionDecl(
@@ -278,7 +272,7 @@ class PrintDecl : public ConstDeclVisitorArgs<PrintDecl, void, CoqPrinter &,
   {
     print.ctor("Dfunction");
     cprint.printGlobalName(decl, print);
-    print.output() << fmt::nbsp;
+    print.output() << fmt::line;
     printFunction(decl, print, cprint);
     print.output() << fmt::rparen;
   }
@@ -287,7 +281,7 @@ class PrintDecl : public ConstDeclVisitorArgs<PrintDecl, void, CoqPrinter &,
           const CXXMethodDecl *decl, CoqPrinter &print, ClangPrinter &cprint)
   {
     if (decl->isStatic()) {
-      print.ctor("Dfunction") << "\"" << decl->getNameAsString() << "\"" << fmt::nbsp;
+      print.ctor("Dfunction") << "\"" << decl->getNameAsString() << "\"" << fmt::line;
       printFunction(decl, print, cprint);
       print.output() << fmt::rparen;
     } else {
@@ -302,6 +296,16 @@ class PrintDecl : public ConstDeclVisitorArgs<PrintDecl, void, CoqPrinter &,
         print.output() << fmt::outdent << fmt::rparen;
       }
     }
+  }
+
+  void VisitEnumConstantDecl(const EnumConstantDecl *decl,
+          CoqPrinter &print, ClangPrinter &cprint) {
+    print.ctor("Dconstant");
+    assert(decl->getNameAsString() != nullptr);
+    cprint.printGlobalName(decl, print);
+    print.output() << fmt::nbsp;
+    print.output() << decl->getInitVal();
+    print.output() << fmt::rparen;
   }
 
   void VisitCXXConstructorDecl(const CXXConstructorDecl *decl,
@@ -324,10 +328,13 @@ class PrintDecl : public ConstDeclVisitorArgs<PrintDecl, void, CoqPrinter &,
     print.output() << fmt::rparen;
   }
 
-  void VisitVarDecl(
-          const VarDecl *decl, CoqPrinter &print, ClangPrinter &cprint)
+  void VisitVarDecl(const VarDecl *decl, CoqPrinter &print, ClangPrinter &cprint)
   {
-    print.ctor("Dvar");
+    if (decl->isConstexpr()) {
+      print.ctor("Dconstant");
+    } else {
+      print.ctor("Dvar");
+    }
     cprint.printGlobalName(decl, print);
     print.output() << fmt::nbsp;
     cprint.printQualType(decl->getType(), print);
@@ -339,7 +346,6 @@ class PrintDecl : public ConstDeclVisitorArgs<PrintDecl, void, CoqPrinter &,
       print.none();
     }
     print.output() << fmt::rparen;
-    return;
   }
 
   void VisitUsingDecl(
@@ -392,7 +398,7 @@ class PrintDecl : public ConstDeclVisitorArgs<PrintDecl, void, CoqPrinter &,
       } else {
         print.none();
       }
-      print.output() << ")";
+      print.output() << ") ::";
     }
     print.output() << "nil" << fmt::rparen;
 
@@ -402,6 +408,7 @@ class PrintDecl : public ConstDeclVisitorArgs<PrintDecl, void, CoqPrinter &,
   void VisitLinkageSpecDecl(
           const LinkageSpecDecl *decl, CoqPrinter &print, ClangPrinter &cprint)
   {
+    // todo(gmm): this is problematic with the new specification
     // todo(gmm): need to do the language spec
     print.ctor("Dextern") << fmt::lparen;
 
@@ -410,8 +417,8 @@ class PrintDecl : public ConstDeclVisitorArgs<PrintDecl, void, CoqPrinter &,
       print.output() << "::";
     }
 
+
     print.output() << fmt::rparen << fmt::rparen;
-    return;
   }
 
   void VisitFunctionTemplateDecl(const FunctionTemplateDecl *decl,

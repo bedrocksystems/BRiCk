@@ -26,6 +26,7 @@ Module Type Expr.
 
   Fixpoint type_of (e : Expr) : type :=
     match e with
+    | Econst_ref _ t
     | Evar _ t
     | Eint _ t => t
     | Ebool _ => Tbool

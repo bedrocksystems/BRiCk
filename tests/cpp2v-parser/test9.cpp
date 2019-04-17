@@ -4,7 +4,7 @@
  * SPDX-License-Identifier:MIT-0
  */
 
-int main() {
+int foo() {
     int x = 0;
     ++x;
     --x;

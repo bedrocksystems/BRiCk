@@ -215,7 +215,11 @@ public:
 
   void VisitDeclRefExpr(const DeclRefExpr *expr, CoqPrinter& print, ClangPrinter& cprint)
   {
-    print.ctor("Evar", false);
+    if (isa<EnumConstantDecl>(expr->getDecl())) {
+      print.ctor("Econst_ref", false);
+    } else {
+      print.ctor("Evar", false);
+    }
     cprint.printName(expr->getDecl(), print);
     done(expr, print, cprint);
   }
