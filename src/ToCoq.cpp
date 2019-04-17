@@ -20,13 +20,6 @@
 using namespace clang;
 using namespace fmt;
 
-__attribute__((noreturn))
-void fatal(StringRef msg) {
-	llvm::errs() << "[FATAL ERROR] " << msg << "\n";
-	llvm::errs().flush();
-	exit(1);
-}
-
 void declToCoq(ASTContext *ctxt, const clang::Decl* decl) {
 	Formatter fmt(llvm::outs());
 	Default filter(Filter::What::DEFINITION);
@@ -65,7 +58,6 @@ void toCoqModule(clang::ASTContext *ctxt,
 	Combine<Filter::What::NOTHING, Filter::max> filter(filters);
 
 	SpecCollector specs;
-	DeclCollector decls;
 
 	::Module mod;
 
