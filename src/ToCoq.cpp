@@ -69,7 +69,21 @@ void toCoqModule(clang::ASTContext *ctxt,
 
 	fmt << "From Cpp Require Import Parser." << fmt::line << fmt::line
 			<< "Local Open Scope string_scope." << fmt::line
-			<< "Import ListNotations." << fmt::line << fmt::line
+			<< "Import ListNotations." << fmt::line;
+
+	fmt << fmt::line
+			<< "Definition imports : Ast.module :=" << fmt::indent;
+	for (auto entry : mod.imports()) {
+		auto decl = entry.second.first;
+		print.output() << fmt::line << "(";
+		cprint.printGlobalName(decl, print);
+		print.output() << "," << fmt::indent << fmt::nbsp;
+		cprint.printDecl(decl, print);
+		print.output() << ")" << fmt::outdent << fmt::nbsp << "::";
+	}
+	fmt << "nil." << fmt::outdent << fmt::line;
+
+	fmt << fmt::line
 			<< "Definition module : Ast.module :=" << fmt::indent;
 
 	for (auto entry : mod.definitions()) {

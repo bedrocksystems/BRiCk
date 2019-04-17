@@ -25,14 +25,16 @@ void ClangPrinter::printGlobalName(const NamedDecl *decl, CoqPrinter &print)
   assert(!decl->getDeclContext()->isFunctionOrMethod());
 
   print.output() << "\"";
-  mangleContext_->mangleCXXName(decl, print.output().nobreak());
+  if (auto fd = dyn_cast<FunctionDecl>(decl)) {
+    if (fd->getLanguageLinkage() == LanguageLinkage::CLanguageLinkage) {
+      print.output() << fd->getName();
+    } else {
+      mangleContext_->mangleCXXName(decl, print.output().nobreak());
+    }
+  } else {
+    mangleContext_->mangleCXXName(decl, print.output().nobreak());
+  }
   print.output() << "\"";
-
-  // llvm::errs() << "\n";
-  // output() << fmt::indent << "{| g_path :=" << fmt::nbsp;
-  // printDeclContext(decl->getDeclContext());
-  // output() << "; g_name :=" << fmt::nbsp << "\"" << decl->getNameAsString() << "\" |}";
-  // output() << fmt::outdent;
 }
 
 void ClangPrinter::printName(const NamedDecl *decl, CoqPrinter &print)

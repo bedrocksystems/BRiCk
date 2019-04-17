@@ -321,9 +321,7 @@ Inductive Decl : Set :=
 
 | Denum        (name : globname) (_ : option type) (branches : list (ident * option Expr))
   (* ^ enumerations (the initializers need to be constant expressions) *)
-| Dnamespace   (_ : list Decl)
-  (* ^ this will be erased *)
-| Dextern                  (_ : list Decl)
+| Dconstant    (name : globname) (_ : type) (_ : nat)
 (*
 | Dtemplated   (_ : list (OrType type * ident)) (_ : Decl)
                (instantiations : list Decl)

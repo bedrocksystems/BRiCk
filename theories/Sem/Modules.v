@@ -95,10 +95,11 @@ Module Type modules.
     | Denum gn _ _ => empSP
       (* ^ this should record enumeration information
        *)
-    | Dnamespace ds =>
-      sepSPs (map denoteDecl ds)
-    | Dextern ds =>
-      sepSPs (map denoteDecl ds)
+    | Dconstant gn val _ => empSP
+    (* | Dnamespace ds => *)
+    (*   sepSPs (map denoteDecl ds) *)
+    (* | Dextern ds => *)
+    (*   sepSPs (map denoteDecl ds) *)
     end.
 
   Fixpoint denoteModule (d : list Decl) : mpred :=

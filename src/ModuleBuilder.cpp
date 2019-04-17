@@ -10,10 +10,14 @@ class BuildModule : public ConstDeclVisitorArgs<BuildModule, void> {
   Filter& filter_;
 
 private:
-  void go(const NamedDecl* decl) {
+  void go(const NamedDecl* decl, bool definition=true) {
     switch (filter_.shouldInclude(decl)) {
     case Filter::What::DEFINITION:
-      module_.add_definition(decl);
+      if (definition) {
+        module_.add_definition(decl);
+      } else {
+        module_.add_declaration(decl);
+      }
       break;
     case Filter::What::DECLARATION:
       module_.add_declaration(decl);
@@ -46,30 +50,42 @@ public:
 
   void VisitTypedefNameDecl(const TypedefNameDecl *type)
   {
-    module_.add_definition(type);
+    go(type);
   }
 
-  void VisitCXXRecordDecl(const CXXRecordDecl *decl)
-  {
-    if (decl->isCompleteDefinition()) {
-      module_.add_definition(decl);
+  void VisitTagDecl(const TagDecl* decl) {
+    llvm::errs() << decl->getName() << ": "
+                 << decl << " "
+                 << decl->getDefinition() << " "
+                 << decl->getPreviousDecl() << " "
+                 << decl->isThisDeclarationADefinition() << "\n";
+    auto defn = decl->getDefinition();
+    if (defn == decl) {
+      go(decl, true);
+    } else if (defn == nullptr && decl->getPreviousDecl() == nullptr) {
+      go(decl, false);
     } else {
-      module_.add_declaration(decl);
+      llvm::errs() << "skipping";
     }
   }
 
   void VisitFunctionDecl(const FunctionDecl *decl)
   {
-    module_.add_definition(decl);
+    auto defn = decl->getDefinition();
+    if (defn == decl) {
+      go(decl, true);
+    } else if (defn == nullptr && decl->getPreviousDecl() == nullptr) {
+      go(decl, false);
+    }
   }
 
   void VisitEnumConstantDecl(const EnumConstantDecl *decl) {
-    module_.add_definition(decl);
+    go(decl);
   }
 
   void VisitVarDecl(const VarDecl *decl)
   {
-    module_.add_definition(decl);
+    go(decl);
   }
 
   void VisitUsingDecl(const UsingDecl *decl)
@@ -91,7 +107,10 @@ public:
 
   void VisitEnumDecl(const EnumDecl *decl)
   {
-    module_.add_definition(decl);
+    go(decl);
+    for (auto i : decl->enumerators()) {
+      go(i);
+    }
   }
 
   void VisitLinkageSpecDecl(const LinkageSpecDecl *decl)
@@ -104,27 +123,6 @@ public:
   void VisitFunctionTemplateDecl(const FunctionTemplateDecl *decl)
   {
     // note(gmm): for now, i am just going to return the specializations.
-    //print.ctor("Dtemplated");
-
-    /*
-			 print.output() << "(";
-			 for (auto i = decl->getTemplateParameters()->begin(), e = decl->getTemplateParameters()->end(); i != e; ++i) {
-			 if (auto *nt = dyn_cast<NonTypeTemplateParmDecl>(*i)) {
-			 print.output() << "(NotType" << fmt::nbsp;
-			 cprint.printQualType(nt->getType());
-			 print.output() << ",\"" << (*i)->getNameAsString() << "\") ::" << fmt::nbsp;
-			 } else if (isa<TemplateTypeParmDecl>(*i)) {
-			 print.output() << "(Typename, \"" << (*i)->getNameAsString() << "\") ::" << fmt::nbsp;
-			 } else {
-			 print.error() << "[ERR] unsupported template parameter type " << (*i)->getDeclKindName() << "\n";
-			 }
-			 }
-			 print.output() << "nil)";
-
-			 cprint.printDecl(decl->getTemplatedDecl());
-			 print.output() << fmt::nbsp;
-			 */
-
     for (auto i : decl->specializations()) {
       this->Visit(i);
     }

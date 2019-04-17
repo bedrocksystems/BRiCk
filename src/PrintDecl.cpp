@@ -214,9 +214,7 @@ class PrintDecl : public ConstDeclVisitorArgs<PrintDecl, void, CoqPrinter &,
       assert (false);
       //fatal("anonymous structs/classes are not supported");
     }
-    if (decl != decl->getCanonicalDecl()) {
-      return;
-    }
+
     print.ctor("Dstruct");
     cprint.printGlobalName(decl, print);
     print.output() << fmt::nbsp;
@@ -303,6 +301,8 @@ class PrintDecl : public ConstDeclVisitorArgs<PrintDecl, void, CoqPrinter &,
     print.ctor("Dconstant");
     assert(decl->getNameAsString() != nullptr);
     cprint.printGlobalName(decl, print);
+    print.output() << fmt::nbsp;
+    cprint.printQualType(decl->getType(), print);
     print.output() << fmt::nbsp;
     print.output() << decl->getInitVal();
     print.output() << fmt::rparen;
