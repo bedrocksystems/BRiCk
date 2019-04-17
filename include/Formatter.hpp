@@ -11,46 +11,45 @@
 
 namespace fmt {
 
-class Formatter
-{
+class Formatter {
 private:
-  llvm::raw_ostream &out;
-  unsigned int depth;
-  unsigned int spaces;
-  bool blank;
+	llvm::raw_ostream &out;
+	unsigned int depth;
+	unsigned int spaces;
+	bool blank;
 
 public:
-  explicit
-  Formatter ();
-  explicit
-  Formatter (llvm::raw_ostream&);
+	explicit
+	Formatter();
+	explicit
+	Formatter(llvm::raw_ostream&);
 
-  llvm::raw_ostream&
-  line ();
+	llvm::raw_ostream&
+	line();
 
-  llvm::raw_ostream&
-  nobreak ();
+	llvm::raw_ostream&
+	nobreak();
 
-  void
-  nbsp ();
+	void
+	nbsp();
 
-  void
-  indent ();
-  void
-  outdent ();
+	void
+	indent();
+	void
+	outdent();
 
-  llvm::raw_ostream&
-  error () const;
+	llvm::raw_ostream&
+	error() const;
 
-  template<typename T>
-  Formatter& operator<<(T val) {
-	nobreak() << val;
-	blank = false;
-	return *this;
-  }
+	template<typename T>
+	Formatter& operator<<(T val) {
+		nobreak() << val;
+		blank = false;
+		return *this;
+	}
 
 public:
-  static Formatter default_output;
+	static Formatter default_output;
 };
 
 struct NBSP;
@@ -89,7 +88,4 @@ Formatter&
 operator<<(Formatter &out, const RPAREN *_);
 
 }
-
-
-
 

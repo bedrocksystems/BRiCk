@@ -16,9 +16,18 @@ include_directories(
 )
 
 add_executable(cpp2v
+  src/PrintExpr.cpp
+  src/PrintStmt.cpp
+  src/PrintType.cpp
+  src/PrintParam.cpp
+  src/PrintDecl.cpp
+  src/PrintLocalDecl.cpp
+  src/ModuleBuilder.cpp
+  src/CommentScanner.cpp
   src/Formatter.cpp
   src/ToCoq.cpp
   src/cpp2v.cpp
+  src/ClangPrinter.cpp
 )
 
 target_link_libraries(cpp2v

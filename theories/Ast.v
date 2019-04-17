@@ -169,6 +169,8 @@ Variant VarRef : Set :=
 Variant ValCat : Set := Lvalue | Rvalue | Xvalue.
 
 Inductive Expr : Set :=
+| Econst_ref (_ : VarRef) (_ : type)
+  (* ^ these are different because they do not have addresses *)
 | Evar     (_ : VarRef) (_ : type)
   (* ^ local variable reference *)
 
@@ -321,9 +323,7 @@ Inductive Decl : Set :=
 
 | Denum        (name : globname) (_ : option type) (branches : list (ident * option Expr))
   (* ^ enumerations (the initializers need to be constant expressions) *)
-| Dnamespace   (_ : list Decl)
-  (* ^ this will be erased *)
-| Dextern                  (_ : list Decl)
+| Dconstant    (name : globname) (_ : type) (_ : nat)
 (*
 | Dtemplated   (_ : list (OrType type * ident)) (_ : Decl)
                (instantiations : list Decl)
@@ -332,7 +332,7 @@ Inductive Decl : Set :=
 .
 
 Definition module : Set :=
-  list (globname * Decl).
+  list Decl.
 
 Definition NStop : list ident := nil.
 

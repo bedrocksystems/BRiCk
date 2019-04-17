@@ -66,7 +66,7 @@ Proof.
   unfold spec.
   start_module.
 
-  verifyF_forget "_Z4main".
+  verifyF_forget "main".
   { (* ::main(int argc, char* argv[]) *)
     start_proof.
     rewrite denoteModule_weaken.
@@ -76,7 +76,7 @@ Proof.
      * todo(gmm): i need to clean this up a lot!
      *)
     transitivity (
-        (ti_cglob' (resolve:=resolve) "_Z6putstr" putstr_spec **
+        (ti_cglob' (resolve:=resolve) "putstr" putstr_spec **
          tlocal x1 (Tint None true) "argc" x **
          tlocal x1 (Tpointer (Qmut (Tpointer (Qmut T_char)))) "argv" x0) **
          (Forall res : val, [| res = 0 |] ** args_array x0 x3 ** @trace PutStr (Ret tt) -* x2 res) **

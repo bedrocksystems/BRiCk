@@ -23,4 +23,12 @@ class:
 c-test:
 	$(MAKE) -C c-test
 
-.PHONY: cpp2v-parser demo local-scope class value-cat c-test
+.PHONY: cpp2v-parser demo local-scope class value-cat c-test clean
+
+clean:
+	$(MAKE) -C cpp2v-parser clean
+	$(MAKE) -C demo clean
+	$(MAKE) -C local-scope clean
+	$(MAKE) -C value-cat clean
+	$(MAKE) -C class clean
+	$(MAKE) -C c-test clean
