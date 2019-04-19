@@ -422,7 +422,8 @@ public:
       cprint.printExpr(i, print);
       print.output() << "::";
     }
-    print.output() << "nil" << fmt::rparen << fmt::rparen;
+    print.output() << "nil" << fmt::rparen;
+    done(expr, print, cprint);
   }
 
   void VisitCXXThisExpr(const CXXThisExpr *expr, CoqPrinter& print, ClangPrinter& cprint)
