@@ -23,3 +23,5 @@ theories/Auto/vc.v
 theories/Auto/mvcg.v
 
 theories/Auto.v
+
+# Libraries
