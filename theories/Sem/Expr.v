@@ -352,6 +352,10 @@ Module Type Expr.
         wp_rhs e Q
         |-- wp_rhs (Ecast Cbitcast e t) Q.
 
+    Axiom wp_rhs_integral : forall e t Q,
+        wp_rhs e (fun v free => [| has_type v t |] ** Q v free)
+        |-- wp_rhs (Ecast Cintegral e t) Q.
+
     (** the ternary operator `_ ? _ : _` *)
     Axiom wp_condition : forall ty m tst th el Q,
         wp_rhs tst (fun v1 free =>
