@@ -28,9 +28,9 @@ Definition putstr_spec : function_spec' :=
   SFunction (Qmut Tvoid) (Qmut (Tpointer (Qmut T_char)) :: nil)
             (fun p =>
                {| wpp_with := string * itree PutStr unit
-                ; wpp_pre '(s,k) := c_string p s **
+                ; wpp_pre '(s,k) := c_string s p **
                                     trace (Vis (putstr s) (fun _ => k))
-                ; wpp_post '(s,k) _ := c_string p s ** trace k
+                ; wpp_post '(s,k) _ := c_string s p ** trace k
                 |}).
 
 Fixpoint printEach (ls : list string) : itree PutStr unit :=

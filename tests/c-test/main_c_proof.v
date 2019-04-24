@@ -81,8 +81,8 @@ Proof.
         (ti_cglob' (resolve:=resolve) "putstr" putstr_spec **
          tlocal x1 (Tint None true) "argc" x **
          tlocal x1 (Tpointer (Qmut (Tpointer (Qmut T_char)))) "argv" x0) **
-         (Forall res : val, [| res = 0 |] ** main.args_array x0 x3 ** @trace PutStr (Ret tt) -* x2 res) **
-         main.args_array x0 x3 **
+         (Forall res : val, [| res = 0 |] ** main.args_array x3 x0 ** @trace PutStr (Ret tt) -* x2 res) **
+         main.args_array x3 x0 **
          Exists i,
            [| 0 <= i <= Z.of_nat (Datatypes.length x3) |] **
            tlocal x1 T_int "i" i **
