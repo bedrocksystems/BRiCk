@@ -4,6 +4,5 @@
 
 main_c.v
 
-array.v
 main_c_spec.v
 main_c_proof.v

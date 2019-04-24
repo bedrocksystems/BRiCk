@@ -10,6 +10,9 @@ COQMAKEFILE=$(COQBIN)coq_makefile
 
 all: Makefile.coq
 	$(MAKE) -f Makefile.coq
+	mkdir -p build/
+	rm -rf build/Cpp
+	cp -r theories/ build/Cpp
 
 doc: all
 	$(MAKE) -f Makefile.coq html

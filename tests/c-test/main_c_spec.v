@@ -12,38 +12,25 @@ Local Open Scope string_scope.
 
 From Cpp Require Import
      Auto.
+From Cpp.lib Require Import
+     array main trace.
 
 Require C.main_c.
-Require Import C.array.
 
-Inductive itree (E : Type -> Type) (T : Type) : Type :=
-| Ret (_ : T)
-| Vis {u} (_ : E u) (_ : u -> itree E T)
-| Tau (_ : itree E T).
-Arguments Ret {_ _} _.
-Arguments Vis {_ _ _} _ _.
-Arguments Tau {_ _} _.
 
-Parameter trace : forall {E : Type -> Type}, itree E unit -> mpred.
 
 Variant PutStr : Type -> Type :=
 | putstr (_ : string) : PutStr unit.
 
-Definition args_array (p : val) (ls : list string) : mpred :=
-  tarray (Tpointer (Qmut T_char))
-    (fun (p : val) (v : string) =>
-       Exists s : val,
-         tptsto (Tpointer (Qmut T_char)) p s ** c_string s v) p
-    ls.
 
 
 Definition putstr_spec : function_spec' :=
   SFunction (Qmut Tvoid) (Qmut (Tpointer (Qmut T_char)) :: nil)
             (fun p =>
                {| wpp_with := string * itree PutStr unit
-                ; wpp_pre '(s,k) := c_string p s **
+                ; wpp_pre '(s,k) := c_string s p **
                                     trace (Vis (putstr s) (fun _ => k))
-                ; wpp_post '(s,k) _ := c_string p s ** trace k
+                ; wpp_post '(s,k) _ := c_string s p ** trace k
                 |}).
 
 Fixpoint printEach (ls : list string) : itree PutStr unit :=
@@ -53,25 +40,14 @@ Fixpoint printEach (ls : list string) : itree PutStr unit :=
   end.
 
 Definition main_spec : function_spec' :=
-  SFunction (Qmut T_int)
-            (Qmut T_int :: Qmut
-                  (Qconst (Tpointer
-                             (Qmut
-                                (Tpointer
-                                   (Qmut T_char))))) :: nil)
-      (fun argc argv =>
-         {| wpp_with := list string
-          ; wpp_pre m :=
-              [| Vint (Z.of_nat (length m)) = argc |] **
-              args_array argv m **
-              trace (printEach m) **
-              [| has_type argc T_int |]
-          ; wpp_post m (r : val) := [| r = Vint 0 |] **
-              args_array argv m ** @trace PutStr (Ret tt)
-         |}).
+  main.main_spec (fun m =>
+                    {| wpp_with := unit
+                     ; wpp_pre _ := trace (printEach m)
+                     ; wpp_post _ r := @trace PutStr (Ret tt)
+                     |}).
 
 Definition spec (resolve : _) :=
   ti_cglob' (resolve:=resolve) "putstr" putstr_spec -*
   ti_cglob' (resolve:=resolve) "main" main_spec.
 
-Export C.array.
+Export lib.array lib.trace.

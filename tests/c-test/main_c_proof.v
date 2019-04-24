@@ -70,6 +70,8 @@ Proof.
   { (* ::main(int argc, char* argv[]) *)
     start_proof.
     rewrite denoteModule_weaken.
+    destruct x3 as [ x3 u ]; clear u.
+    repeat learn.
     simplifying.
     work.
     (* this is the loop invariant
@@ -79,23 +81,25 @@ Proof.
         (ti_cglob' (resolve:=resolve) "putstr" putstr_spec **
          tlocal x1 (Tint None true) "argc" x **
          tlocal x1 (Tpointer (Qmut (Tpointer (Qmut T_char)))) "argv" x0) **
-         (Forall res : val, [| res = 0 |] ** args_array x0 x3 ** @trace PutStr (Ret tt) -* x2 res) **
-         args_array x0 x3 **
+         (Forall res : val, [| res = 0 |] ** main.args_array x3 x0 ** @trace PutStr (Ret tt) -* x2 res) **
+         main.args_array x3 x0 **
          Exists i,
            [| 0 <= i <= Z.of_nat (Datatypes.length x3) |] **
            tlocal x1 T_int "i" i **
            trace (printEach (skipn (Z.to_nat i) x3))).
     { work. }
     eapply wp_for.
+    learn.
     simplifying.
     work.
     simplifying.
     work.
+    simpl.
     rewrite is_true_int.
     destruct (ZArith_dec.Z_lt_ge_dec x4 (Z.of_nat (Datatypes.length x3))).
     { simpl.
       simplifying.
-      unfold args_array.
+      unfold main.args_array.
       assert (exists v, exists i, Z.of_nat i = x4 /\ nth_error x3 i = Some v).
       { eapply can_get_element; eauto. }
       destruct H2 as [ ? [ ? [ ? ? ] ] ].
@@ -112,7 +116,6 @@ Proof.
       simpl.
       unfold tlocal.
       lift_ex_l.
-      perm_left ltac:(idtac; eapply (Lemmas.learn_bounds x4); simpl; intros).
       work.
       cutrewrite (skipn (Z.to_nat x4) x3 = x5 :: skipn (S (Z.to_nat x4)) x3).
       { simpl. work.

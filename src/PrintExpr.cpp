@@ -291,7 +291,9 @@ public:
 
   void VisitCharacterLiteral(const CharacterLiteral *lit, CoqPrinter& print, ClangPrinter& cprint)
   {
-    print.ctor("Echar", false) << "\"" << lit->getValue() << "\"" << fmt::nbsp;
+    print.ctor("Echar", false);
+    print.ascii(lit->getValue());
+    print.output() << fmt::nbsp;
     done(lit, print, cprint);
   }
 
