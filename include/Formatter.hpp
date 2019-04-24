@@ -38,6 +38,9 @@ public:
 	void
 	outdent();
 
+	void
+	ascii(int c);
+
 	llvm::raw_ostream&
 	error() const;
 

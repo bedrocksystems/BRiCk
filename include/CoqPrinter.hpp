@@ -52,6 +52,12 @@ public:
 		return this->output_ << "None";
 	}
 
+	fmt::Formatter& ascii(int c) {
+		assert(0 <= c && c < 256);
+		this->output_.ascii(c);
+		return this->output_;
+	}
+
 public:
 	fmt::Formatter& output() {
 		return this->output_;

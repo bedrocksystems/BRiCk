@@ -53,6 +53,14 @@ void Formatter::outdent() {
 	this->depth -= 2;
 }
 
+void Formatter::ascii(int val) {
+	out << "\"";
+	out << (char)((val >> 6) + '0');
+	out << (char)(((val >> 3) & 0x7) + '0');
+	out << (char)((val & 0x7) + '0');
+	out << "\"";
+}
+
 Formatter Formatter::default_output = Formatter();
 
 struct NBSP;
