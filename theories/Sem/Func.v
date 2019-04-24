@@ -11,7 +11,7 @@ Local Open Scope string_scope.
 From Cpp Require Import
      Ast.
 From Cpp.Sem Require Import
-     Util Logic Expr Stmt Semantics.
+     Util Logic PLogic Expr Stmt Semantics.
 
 Require Import Coq.ZArith.BinInt.
 Require Import Coq.micromega.Lia.
@@ -153,41 +153,60 @@ Module Type Func.
     | i :: is => @wpi resolve ti ρ cls this i (@wpis resolve ti ρ cls this is Q)
     end.
 
-
-  Definition uninit (t : type) (p : val -> mpred) : mpred :=
-  Exists x, p x ** Exists v, tptsto t x v.
-
-  Definition _at (f : field) (b : val) (p : val) : mpred :=
-    with_genv (fun g => Exists off : Z,
-    [| offset_of (c:=g) (Tref f.(f_type)) f.(f_name) off |] **
-    [| offset_ptr b off = p |]).
-
-  Definition tat_field (t : type) (base : val) (f : field) (v : val) : mpred :=
-    with_genv (fun g => Exists offset,
-          [| offset_of (c:=g) (Tref f.(f_type)) f.(f_name) offset |]
-       ** tptsto t (offset_ptr base offset) v).
+  Fixpoint wpi_field (resolve : genv) ti ρ (cls : globname) (this : val)
+           (ty : type) (f : field) (init : Expr)
+           (k : mpred)
+    : mpred :=
+      match ty with
+      | Trv_reference t
+      | Treference t =>
+        (* i should use the type here *)
+        wp_lhs (resolve:=resolve) ti ρ init (fun a free =>
+              (* note(gmm): this is consistent with the specification, but also very strange *)
+              _field f (_eq this) @@ a
+           -* (free ** k))
+      | Tfunction _ _ =>
+        (* fields can not be function type *)
+        lfalse
+      | Tvoid => lfalse
+      | Tpointer _
+      | Tbool
+      | Tchar _ _
+      | Tint _ _ =>
+        wp_rhs (resolve:=resolve) ti ρ init (fun v free =>
+           _atP this (p_dot f p_done) (uninit ty) **
+           (   _atP this (p_dot f p_done) (tprim ty v)
+            -* (free ** k)))
+      | Tarray _ _ => lfalse (* todo(gmm): arrays not yet supported *)
+      | Tref gn =>
+        match init with
+        | Econstructor cnd es _ =>
+          (* todo(gmm): constructors need to be handled through `cglob`.
+           *)
+          Exists ctor, [| glob_addr resolve cnd ctor |] **
+          (* todo(gmm): is there a better way to get the destructor? *)
+          wps (wpAnys (resolve:=resolve) ti ρ) es (fun vs free =>
+              Forall a, (_field f (_eq this) @@ a ** ltrue) //\\
+              |> fspec (Vptr ctor) (a :: vs) ti (fun _ =>
+                 (free ** k))) empSP
+        | _ => lfalse
+          (* ^ all non-primitive declarations must have initializers *)
+        end
+      | Tqualified _ ty => wpi_field resolve ti ρ cls this ty f init k
+      end.
 
   Axiom wpi_field_at : forall resolve ti r this_val x e cls ty Q,
-      wp_rhs (resolve:=resolve) ti r e (fun v free =>
-        let f := {| f_name := x ; f_type := cls |} in
-        uninit ty (_at f this_val) ** (tat_field ty this_val f v -* (free ** Q)))
+      wpi_field resolve ti r cls this_val ty {| f_type := cls ; f_name := x |} e Q
       |-- wpi (resolve:=resolve) ti r cls this_val (Field x, e) Q.
 
 
-  Axiom wpi_field : forall resolve ti r this_val x e cls ty Q,
-      wp_rhs (resolve:=resolve) ti r e (fun v free =>
-         (Exists off, [| offset_of (c:=resolve) (Tref cls) x off |] **
-                      uninitialized_ty ty (offset_ptr this_val off)) **
-                      (tat_field ty this_val {| f_name := x ; f_type := cls |} v
-                      -* (free ** Q)))
-      |-- wpi (resolve:=resolve) ti r cls this_val (Field x, e) Q.
-
-  Lemma tat_uninitialized
-    : forall t b f v F F',
-      F |-- F' ->
-      tat_field t b f v ** F |-- uninit t (_at f b) ** F'.
-  Proof. Admitted.
-
+  (* Axiom wpi_field : forall resolve ti r this_val x e cls ty Q, *)
+  (*     wp_rhs (resolve:=resolve) ti r e (fun v free => *)
+  (*        (Exists off, [| offset_of (c:=resolve) (Tref cls) x off |] ** *)
+  (*                     uninitialized_ty ty (offset_ptr this_val off)) ** *)
+  (*                     (tat_field ty this_val {| f_name := x ; f_type := cls |} v *)
+  (*                     -* (free ** Q))) *)
+  (*     |-- wpi (resolve:=resolve) ti r cls this_val (Field x, e) Q. *)
 
 
   (** destructor lists
@@ -249,13 +268,6 @@ Module Type Func.
   Definition cptr' (p : val) ti (fs : function_spec') : mpred :=
     ForallEach _ fs.(fs'_specification) (fun PQ args =>
        Forall Q, PQ Q -* fspec p (List.map snd args) ti Q).
-
-(*
-    Axiom cptr'_dup : forall p fs, cptr' p fs -|- cptr' p fs ** cptr' p fs.
-*)
-
-
-
 
     Record WithPrePost : Type :=
     { wpp_with : Type
@@ -328,9 +340,6 @@ Module Type Func.
        * to fit together with respect to calling conventions and
        * specifications.
        *)
-
-
-
 
     Lemma cptr_cptr' : forall p ti fs fs',
         fs.(fs_arguments) = fs'.(fs'_arguments) ->
@@ -424,8 +433,8 @@ Module Type Func.
     Fixpoint bind_type ρ (t : type) (x : ident) (v : val) : mpred :=
       match t with
       | Tqualified _ t => bind_type ρ t x v
-      | Treference ref => addr_of ρ x v
-      | Tref _         => addr_of ρ x v
+      | Treference ref => _local ρ x @@ v
+      | Tref _         => _local ρ x @@ v
       | _ => tlocal ρ t x v
       end.
 
@@ -487,12 +496,12 @@ Module Type Func.
           | this_val :: rest_vals =>
             (* this is what is created from the parameters *)
             let binds :=
-                addr_of ρ "#this" this_val **
+                _local ρ "#this" @@ this_val **
                 sepSPs (zip (fun '(x, t) 'v => bind_type ρ t x v) meth.(m_params) rest_vals)
             in
             (* this is what is freed on return *)
             let frees :=
-                addr_of ρ "#this" this_val **
+                _local ρ "#this" @@ this_val **
                 sepSPs (map (fun '(x, t) => Exists v, bind_type ρ t x v) meth.(m_params))
             in
             if is_void meth.(m_return)
@@ -506,9 +515,6 @@ Module Type Func.
       end.
 
 
-    (* todo(gmm): should the `uninitialized` be part of the this, rather than
-     * part of the specification?
-     *)
     Definition ctor_ok' (resolve : genv)
                (ctor : Ctor) (ti : thread_info) (spec : function_spec')
       : mpred :=
@@ -530,12 +536,12 @@ Module Type Func.
           | this_val :: rest_vals =>
             (* this is what is created from the parameters *)
             let binds :=
-                addr_of ρ "#this" this_val **
+                _local ρ "#this" @@ this_val **
                 sepSPs (zip (fun '(x, t) 'v => bind_type ρ t x v) ctor.(c_params) rest_vals)
             in
             (* this is what is freed on return *)
             let frees :=
-                addr_of ρ "#this" this_val **
+                _local ρ "#this" @@ this_val **
                 sepSPs (map (fun '(x, t) => Exists v, bind_type ρ t x v) ctor.(c_params))
             in
             Forall Q : mpred,
@@ -544,10 +550,6 @@ Module Type Func.
           end)
       end.
 
-
-    (* todo(gmm): should the `uninitialized` be part of the this, rather than
-     * part of the specification?
-     *)
     Definition dtor_ok' (resolve : genv)
                (dtor : Dtor) (ti : thread_info) (spec : function_spec')
       : mpred :=
@@ -568,9 +570,9 @@ Module Type Func.
           | nil => lfalse
           | this_val :: rest_vals =>
             (* this is what is created from the parameters *)
-            let binds := addr_of ρ "#this" this_val in
+            let binds := _local ρ "#this" @@ this_val in
             (* this is what is freed on return *)
-            let frees := addr_of ρ "#this" this_val in
+            let frees := _local ρ "#this" @@ this_val in
             Forall Q : mpred,
            (binds ** PQ (fun _ => Q)) -*
            (wp resolve ti ρ body (Kfree frees (void_return (wpds (resolve:=resolve) ti ρ dtor.(d_class) this_val deinit Q))))
@@ -629,11 +631,11 @@ Module Type Func.
         Print ctor_ok'.
         assert (ZZ = fun this wpp args =>
                         Forall Q : mpred,
-                                   addr_of "#this" this **
+                                   _local "#this" this **
                                    Exists g : (PQ this).(wpp_with),
                                               (Forall res : val, wpp_post (PQ this) g res -* Q)  ** uninitialized_ty (Qmut (Tref cls)) this ** (PQ this).(wpp_pre) g -* wpis resolve init
         (wp resolve body
-           (Kfree (addr_of "#this" this ** empSP) (void_return Q)))).
+           (Kfree (_local "#this" this ** empSP) (void_return Q)))).
 *)
 
 

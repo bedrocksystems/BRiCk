@@ -11,6 +11,7 @@ theories/Parser.v
 theories/Sem/Util.v
 theories/Sem/Semantics.v
 theories/Sem/Logic.v
+theories/Sem/PLogic.v
 theories/Sem/Expr.v
 theories/Sem/Stmt.v
 theories/Sem/Func.v

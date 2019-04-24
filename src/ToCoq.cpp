@@ -38,7 +38,7 @@ void stmtToCoq(ASTContext *ctxt, const clang::Stmt* stmt) {
 
 
 void
-translateModule (const TranslationUnitDecl* decl, CoqPrinter& print, ClangPrinter& cprint) {
+translateModule(const TranslationUnitDecl* decl, CoqPrinter& print, ClangPrinter& cprint) {
 	print.output() << "Definition module : list Decl :=" << fmt::indent << fmt::line;
 	for (auto i : decl->decls()) {
 		cprint.printDecl(i, print);
@@ -92,4 +92,3 @@ void toCoqModule(clang::ASTContext *ctxt,
 	}
 	print.output() << "nil." << fmt::outdent << fmt::line;
 }
-

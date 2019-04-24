@@ -9,6 +9,9 @@ From Coq.Classes Require Import
 Require Import Coq.Lists.List.
 Require Import Coq.Lists.List.
 Require Import Coq.Strings.String.
+Require Import Coq.ZArith.BinInt.
+Require Import Coq.micromega.Lia.
+
 
 From ChargeCore.Logics Require Import
      ILogic BILogic ILEmbed Later.
@@ -16,12 +19,7 @@ From ChargeCore.Logics Require Import
 From Cpp Require Import
      Ast.
 From Cpp.Sem Require Import
-     Util Logic Semantics.
-
-Require Import Coq.ZArith.BinInt.
-Require Import Coq.micromega.Lia.
-
-From Cpp.Auto Require Import Discharge.
+     Util Logic Semantics PLogic.
 
 Module Type modules.
 
@@ -57,7 +55,7 @@ Module Type modules.
       | Some body =>
         Exists a,
         with_genv (fun resolve => [| glob_addr resolve n a |]) //\\
-                  code_at a f
+                  code_at f a
       end
     | Dmethod n m =>
       match m.(m_body) return mpred with
@@ -67,9 +65,9 @@ Module Type modules.
       | Some body =>
         Exists a,
         with_genv (fun resolve => [| glob_addr resolve n a |]) //\\
-                  code_at a {| f_return := m.(m_return)
-                             ; f_params := ("#this"%string, Tqualified m.(m_this_qual) (Tref m.(m_class))) :: m.(m_params)
-                             ; f_body := m.(m_body) |}
+                  code_at {| f_return := m.(m_return)
+                           ; f_params := ("#this"%string, Tqualified m.(m_this_qual) (Tref m.(m_class))) :: m.(m_params)
+                           ; f_body := m.(m_body) |} a
       end
     | Dconstructor n m =>
       match m.(c_body) return mpred with

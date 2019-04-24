@@ -12,13 +12,10 @@ From Coq Require Import
 
 From Cpp Require Import Ast.
 From Cpp.Sem Require Import
-        Util Semantics Logic Expr.
+        Util Semantics Logic Expr PLogic.
 
 Require Import Coq.ZArith.BinInt.
 Require Import Coq.micromega.Lia.
-
-(* note: this is only used for demonstration purposes *)
-From Cpp.Auto Require Import Discharge.
 
 Module Type Stmt.
   Local Open Scope string_scope.
@@ -133,7 +130,7 @@ Module Type Stmt.
         | Some init =>
           (* i should use the type here *)
           wp_lhs (resolve:=resolve) ti ρ init (fun a free =>
-             addr_of ρ x a -* (free ** k (Kfree (addr_of ρ x a) Q)))
+             _local ρ x @@ a -* (free ** k (Kfree (_local ρ x @@ a) Q)))
         end
       | Tfunction _ _ =>
         (* inline functions are not supported *)
@@ -167,9 +164,9 @@ Module Type Stmt.
           wps (wpAnys (resolve:=resolve) ti ρ) es (fun vs free =>
                  Forall a, uninitialized_ty (Tref gn) a
               -* |> fspec (Vptr ctor) (a :: vs) ti (fun _ =>
-                 addr_of ρ x a -*
+                 _local ρ x @@ a -*
                  (free ** k (Kat_exit (fun Q => |> fspec (Vptr dtor) (a :: nil) ti
-                                   (fun _ => addr_of ρ x a ** uninitialized_ty (Tref gn) a ** Q)) Q)))) empSP
+                                   (fun _ => _local ρ x @@ a ** uninitialized_ty (Tref gn) a ** Q)) Q)))) empSP
         | _ => lfalse
           (* ^ all non-primitive declarations must have initializers *)
         end
@@ -183,6 +180,24 @@ Module Type Stmt.
       | (x, ty, init) :: ds =>
         wp_decl x ty init (wp_decls ds k)
       end.
+
+(*
+    (** constructors *)
+    Axiom wp_rhs_constructor
+    : forall cls cname dname (es : list (ValCat * Expr)) (ty : type) (Q : val -> FreeTemps -> mpred),
+     (Exists ctor, [| glob_addr resolve cname ctor |] **
+      (* we don't need the destructor until later, but if we prove it
+       * early, then we don't need to resolve it over multiple paths.
+       *)
+      wps wpAnys es (fun vs free => Exists a, uninitialized_ty (Tref cls) a
+          -* |> fspec (Vptr ctor) (a :: vs) ti (fun _ =>
+                   (* note(gmm): constructors are rvalues but my semantics actually
+                    * treats them like lvalues.
+                    *)
+                   Q a (|> fspec (Vptr dtor) (a :: nil) ti
+                              (fun _ => uninitialized_ty (Tref cls) a ** free))) empSP)
+      |-- wp_rhs (Econstructor cname es (Tref cls)) Q.
+*)
 
 
     (* note(gmm): this rule is slightly non-compositional because
@@ -261,37 +276,6 @@ Module Type Stmt.
   End  with_resolver.
 
   Module example.
-
-    (* Ltac simplify_wps := *)
-    (*   repeat first [ progress simplify_wp *)
-    (*                | progress simpl wps *)
-    (*                | rewrite <- wp_seq; *)
-    (*                  simpl wp_block *)
-    (*                | rewrite <- wp_return_val *)
-    (*                | rewrite <- wp_return_void *)
-    (*                | rewrite <- wp_if *)
-    (*                | rewrite <- wp_continue *)
-    (*                | rewrite <- wp_break *)
-    (*                | rewrite <- wp_rhs_binop *)
-    (*                | rewrite <- wp_call *)
-    (*                | rewrite <- wp_rhs_cast_function2pointer *)
-    (*                ]. *)
-
-(*
-    Goal empSP
-         |-- wp resolve (Sseq
-                           ((Sdecl (("x", T_int, Some (Eint 1 T_int))
-                                      :: nil))
-                              :: Sdecl (("y", T_int, Some (Eint 12 T_int)) :: nil)
-                              :: Sreturn (Some (El2r (Evar (Lname "x"))))
-                              :: nil))
-         (val_return (fun x => [| x = Vint 1 |])).
-    Proof.
-      simplify_wps. simpl.
-      unfold tlocal, tptsto.
-      t.
-    Qed.
-*)
 
   End example.
 

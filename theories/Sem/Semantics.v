@@ -124,19 +124,14 @@ Axiom eval_le_int :
 Axiom eval_ge_int :
   ltac:(let x := eval hnf in (eval_int_rel_op_int Bge ZArith_dec.Z_ge_lt_dec) in refine x).
 
-Parameter offset_ptr : val -> Z -> val.
-Axiom offset_ptr_combine : forall b o o',
-    offset_ptr (offset_ptr b o) o' = offset_ptr b (o + o').
-Axiom offset_ptr_0 : forall b,
-    offset_ptr b 0 = b.
 
-Parameter is_true : val -> bool.
-Axiom is_true_int : forall i,
-    is_true (Vint i) = negb (BinIntDef.Z.eqb i 0).
+
 
 (** global environments
  *)
 Parameter genv : Type.
+
+Parameter align_of : forall {c : genv} (t : type) (e : N), Prop.
 
 
 
@@ -154,3 +149,11 @@ Axiom size_of_bool : forall {c : genv},
 Parameter pointer_size : N. (* in bytes *)
 Axiom size_of_pointer : forall {c : genv} t,
     @size_of c (Tpointer t) pointer_size.
+
+(** pointer offsets
+ *)
+Parameter offset_ptr : val -> Z -> val.
+Axiom offset_ptr_combine : forall b o o',
+    offset_ptr (offset_ptr b o) o' = offset_ptr b (o + o').
+Axiom offset_ptr_0 : forall b,
+    offset_ptr b 0 = b.

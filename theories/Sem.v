@@ -7,6 +7,7 @@ From Cpp.Sem Require Export
      Util
      Logic
      Semantics
+     PLogic
      Expr
      Stmt
      Func

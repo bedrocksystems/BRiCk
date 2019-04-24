@@ -53,32 +53,12 @@ Module Type logic.
    * the heap.
    *)
 
-  (* heap points to *)
-  Parameter ptsto : val -> val -> mpred.
-
-  (* todo(gmm): this is thread local *)
-  (* address of a local variable *)
-  Parameter addr_of : region -> ident -> val -> mpred.
-
-  (* the pointer contains the code *)
-  Parameter code_at : ptr -> Func -> mpred.
-  (* code_at is freely duplicable *)
-  Axiom code_at_dup : forall p f, code_at p f -|- code_at p f ** code_at p f.
-  Axiom code_at_drop : forall p f, code_at p f |-- empSP.
-
-  Parameter ctor_at : ptr -> Ctor -> mpred.
-  Parameter dtor_at : ptr -> Dtor -> mpred.
-
-  Parameter align_of : forall {c : genv} (t : type) (e : N), Prop.
-
   Parameter with_genv : (genv -> mpred) -> mpred.
   Axiom with_genv_single : forall f g,
       with_genv f //\\ with_genv g -|- with_genv (fun r => f r //\\ g r).
 
   (* todo(gmm): this is wildly unsound. *)
   Axiom with_genv_is : forall (g : genv) (f : genv -> _), with_genv f -|- f g.
-
-
 
 End logic.
 
