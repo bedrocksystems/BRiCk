@@ -304,7 +304,13 @@ class PrintDecl : public ConstDeclVisitorArgs<PrintDecl, void, CoqPrinter &,
     print.output() << fmt::nbsp;
     cprint.printQualType(decl->getType(), print);
     print.output() << fmt::nbsp;
-    print.output() << decl->getInitVal();
+    if (decl->getInitExpr()) {
+      cprint.printExpr(decl->getInitExpr(), print);
+    } else {
+      print.ctor("Eint") << decl->getInitVal() << fmt::nbsp;
+      cprint.printQualType(decl->getType(), print);
+      print.output() << fmt::rparen;
+    }
     print.output() << fmt::rparen;
   }
 
@@ -332,20 +338,26 @@ class PrintDecl : public ConstDeclVisitorArgs<PrintDecl, void, CoqPrinter &,
   {
     if (decl->isConstexpr()) {
       print.ctor("Dconstant");
-    } else {
-      print.ctor("Dvar");
-    }
-    cprint.printGlobalName(decl, print);
-    print.output() << fmt::nbsp;
-    cprint.printQualType(decl->getType(), print);
-    if (decl->hasInit()) {
-      print.ctor("Some", true);
+      cprint.printGlobalName(decl, print);
+      print.output() << fmt::nbsp;
+      cprint.printQualType(decl->getType(), print);
       cprint.printExpr(decl->getInit(), print);
       print.output() << fmt::rparen;
     } else {
-      print.none();
+      print.ctor("Dvar");
+      cprint.printGlobalName(decl, print);
+      print.output() << fmt::nbsp;
+      cprint.printQualType(decl->getType(), print);
+      if (decl->hasInit()) {
+        print.some();
+        cprint.printExpr(decl->getInit(), print);
+        print.output() << fmt::rparen;
+      } else {
+        print.none();
+      }
+      print.output() << fmt::rparen;
     }
-    print.output() << fmt::rparen;
+
   }
 
   void VisitUsingDecl(
