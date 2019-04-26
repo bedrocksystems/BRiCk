@@ -15,9 +15,8 @@ ClangPrinter::ClangPrinter(clang::ASTContext *context)
   mangleContext_ = ItaniumMangleContext::create(*context, engine_);
 }
 
-unsigned ClangPrinter::getCharWidth() const
-{
-  return this->context_->getCharWidth();
+unsigned ClangPrinter::getTypeSize(const BuiltinType* t) const {
+  return this->context_->getTypeSize(t);
 }
 
 void ClangPrinter::printGlobalName(const NamedDecl *decl, CoqPrinter &print)

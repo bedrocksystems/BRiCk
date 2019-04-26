@@ -16,6 +16,7 @@ class FunctionDecl;
 class TranslationUnitDecl;
 class ParmVarDecl;
 class Type;
+class BuiltinType;
 class ASTContext;
 class MangleContext;
 }
@@ -57,7 +58,7 @@ public:
 	void
 	printExprAndValCat(const clang::Expr *expr, CoqPrinter& print);
 
-	unsigned getCharWidth() const;
+	unsigned getTypeSize(const clang::BuiltinType* type) const;
 
 	ClangPrinter(clang::ASTContext* context);
 
