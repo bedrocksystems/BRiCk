@@ -1,5 +1,8 @@
 -Q theories Cpp
 
+# Utility modules
+theories/Util.v
+
 # Modules for cpp2v
 theories/Ast.v
 theories/Parser.v
