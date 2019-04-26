@@ -79,7 +79,7 @@ Proof.
      *)
     transitivity (
         (ti_cglob' (resolve:=resolve) "putstr" putstr_spec **
-         tlocal x1 (Tint None true) "argc" x **
+         tlocal x1 T_int "argc" x **
          tlocal x1 (Tpointer (Qmut (Tpointer (Qmut T_char)))) "argv" x0) **
          (Forall res : val, [| res = 0 |] ** main.args_array x3 x0 ** @trace PutStr (Ret tt) -* x2 res) **
          main.args_array x3 x0 **
