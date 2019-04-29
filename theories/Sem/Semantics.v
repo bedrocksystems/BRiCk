@@ -21,6 +21,8 @@ Parameter ptr : Type.
 Parameter Vptr : ptr -> val.
 Parameter Vint : Z -> val.
 
+Axiom Vint_inj : forall a b, Vint a = Vint b -> a = b.
+
 (* this is the stack frame *)
 Parameter region : Type.
 (* this is the thread information *)
