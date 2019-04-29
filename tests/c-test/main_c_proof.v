@@ -21,7 +21,20 @@ Lemma can_get_element {T} :
     0 <= x4 <= Z.of_nat (Datatypes.length x3) ->
     x4 < Z.of_nat (Datatypes.length x3) ->
     exists (v : T) (i : nat), Z.of_nat i = x4 /\ nth_error x3 i = Some v.
-Proof. Admitted.
+Proof.
+  induction x3.
+  { simpl. intros. exfalso. lia. }
+  { Opaque Z.of_nat. simpl in *. intros.
+    destruct H.
+    destruct x4.
+    { exists a. exists 0%nat. simpl. tauto. }
+    { specialize (IHx3 (Z.pos p - 1)). destruct IHx3; try lia.
+      destruct H2. destruct H2.
+      exists x. exists (S x0). simpl. split; eauto.
+      lia. }
+    { exfalso. lia. } }
+Qed.
+Transparent Z.of_nat.
 
 Lemma skipn_allZ : forall {T} (ls : list T) x,
     x >= Z.of_nat (Datatypes.length ls) ->
@@ -57,6 +70,22 @@ Proof.
   rewrite <- Znat.Z2Nat.inj_succ; lia.
 Qed.
 
+Lemma nth_error_skipn:
+  forall (x3 : list string) (x6 : nat) (x5 : string),
+    nth_error x3 x6 = Some x5 ->
+    skipn x6 x3 = x5 :: match x3 with
+                       | nil => nil
+                       | _ :: l => skipn x6 l
+                       end.
+Proof.
+  induction x3.
+  { destruct x6; simpl in *; congruence. }
+  { intros.
+    destruct x6; simpl in *.
+    inversion H; clear H; subst; auto.
+    eauto. }
+Qed.
+
 (* soundness of the specification *)
 Theorem main_cpp_sound : forall (resolve : genv),
     denoteModule main_c.module |-- spec resolve.
@@ -71,7 +100,7 @@ Proof.
     start_proof.
     rewrite denoteModule_weaken.
     destruct x3 as [ x3 u ]; clear u.
-    repeat learn.
+    work.
     simplifying.
     work.
     (* this is the loop invariant
@@ -79,7 +108,7 @@ Proof.
      *)
     transitivity (
         (ti_cglob' (resolve:=resolve) "putstr" putstr_spec **
-         tlocal x1 (Tint None true) "argc" x **
+         tlocal x1 T_int "argc" (Z.of_nat (Datatypes.length x3)) **
          tlocal x1 (Tpointer (Qmut (Tpointer (Qmut T_char)))) "argv" x0) **
          (Forall res : val, [| res = 0 |] ** main.args_array x3 x0 ** @trace PutStr (Ret tt) -* x2 res) **
          main.args_array x3 x0 **
@@ -96,13 +125,13 @@ Proof.
     work.
     simpl.
     rewrite is_true_int.
-    destruct (ZArith_dec.Z_lt_ge_dec x4 (Z.of_nat (Datatypes.length x3))).
+    destruct (ZArith_dec.Z_lt_ge_dec x (Z.of_nat (Datatypes.length x3))).
     { simpl.
       simplifying.
       unfold main.args_array.
-      assert (exists v, exists i, Z.of_nat i = x4 /\ nth_error x3 i = Some v).
+      assert (exists v, exists i, Z.of_nat i = x /\ nth_error x3 i = Some v).
       { eapply can_get_element; eauto. }
-      destruct H2 as [ ? [ ? [ ? ? ] ] ].
+      destruct H4 as [ ? [ ? [ ? ? ] ] ].
       rewrite tarray_cell; eauto with size_of.
       rewrite <- wp_lhs_subscript.
       simplifying.
@@ -112,12 +141,12 @@ Proof.
       work.
       { subst. work. }
       simplifying.
-      instantiate (1 := (x5, printEach (skipn (S (Z.to_nat x4)) x3))).
+      instantiate (1 := (x5, printEach (skipn (S (Z.to_nat x)) x3))).
       simpl.
       unfold tlocal.
       lift_ex_l.
       work.
-      cutrewrite (skipn (Z.to_nat x4) x3 = x5 :: skipn (S (Z.to_nat x4)) x3).
+      cutrewrite (skipn (Z.to_nat x) x3 = x5 :: skipn (S (Z.to_nat x)) x3).
       { simpl. work.
         simplifying.
         work.
@@ -126,16 +155,8 @@ Proof.
         erewrite skipn_to_nat_of_nat; eauto. reflexivity. }
       { simpl. subst.
         rewrite Znat.Nat2Z.id.
-        clear - H3.
-        generalize dependent x6.
-        induction x3.
-        { destruct x6; simpl in *; congruence. }
-        { intros.
-          destruct x6; simpl in *.
-          inversion H3; clear H3; subst; auto.
-          eauto. } } }
+        eauto using nth_error_skipn. } }
     { simpl.
-      unfold Sskip.
       simplifying.
       work.
       rewrite skipn_allZ; eauto.

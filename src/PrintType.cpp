@@ -75,6 +75,30 @@ public:
     cprint.printQualType(type->getInnerType(), print);
   }
 
+  void printTypeSugar(const BuiltinType *type, CoqPrinter& print, ClangPrinter& cprint) {
+    if (type->isSignedIntegerType()) {
+      switch (auto sz = cprint.getTypeSize(type)) {
+      case 8: print.output() << "T_int8"; break;
+      case 16: print.output() << "T_int16"; break;
+      case 32: print.output() << "T_int32"; break;
+      case 64: print.output() << "T_int64"; break;
+      case 128: print.output() << "T_int128"; break;
+      default:
+        print.output() << "(Tint (Some " << sz << ") true)";
+      }
+    } else if (type->isUnsignedIntegerType()) {
+      switch (auto sz = cprint.getTypeSize(type)) {
+      case 8: print.output() << "T_uint8"; break;
+      case 16: print.output() << "T_uint16"; break;
+      case 32: print.output() << "T_uint32"; break;
+      case 64: print.output() << "T_uint64"; break;
+      case 128: print.output() << "T_uint128"; break;
+      default:
+        print.output() << "(Tint (Some " << sz << ") false)";
+      }
+    }
+  }
+
   void VisitBuiltinType(const BuiltinType *type, CoqPrinter& print, ClangPrinter& cprint)
   {
     // todo(gmm): record bitwidths from the context when they are defaulted.
@@ -105,13 +129,13 @@ public:
     } else if (type->getKind() == BuiltinType::Kind::Char16) {
       print.output() << "T_char16";
     } else if (type->getKind() == BuiltinType::Kind::Char_S) {
-      print.output() << "(Tchar (Some " << cprint.getCharWidth() << ") true)";
+      print.output() << "(Tchar (Some " << cprint.getTypeSize(type) << ") true)";
     } else if (type->getKind() == BuiltinType::Kind::SChar) {
-      print.output() << "(Tchar (Some " << cprint.getCharWidth() << ") true)";
+      print.output() << "(Tchar (Some " << cprint.getTypeSize(type) << ") true)";
     } else if (type->getKind() == BuiltinType::Kind::UChar) {
-      print.output() << "(Tchar (Some " << cprint.getCharWidth() << ") false)";
+      print.output() << "(Tchar (Some " << cprint.getTypeSize(type) << ") false)";
     } else if (type->getKind() == BuiltinType::Kind::Char_U) {
-      print.output() << "(Tchar (Some " << cprint.getCharWidth() << ") false)";
+      print.output() << "(Tchar (Some " << cprint.getTypeSize(type) << ") false)";
     } else if (type->getKind() == BuiltinType::Kind::Char8) {
       print.output() << "T_char8";
     } else if (type->getKind() == BuiltinType::Kind::Char32) {

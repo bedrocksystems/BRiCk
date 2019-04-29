@@ -428,8 +428,7 @@ Module Type Expr.
                    ].
 
     Ltac has_type :=
-      first [ eapply has_type_int ; lia
-            | eapply has_type_int32 ; lia ].
+      first [ eapply has_int_type ; unfold bound; simpl; lia ].
 
     Ltac operator :=
       first [ subst ; eapply eval_add; [ first [ reflexivity | nia ] | has_type ] ].

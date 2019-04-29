@@ -357,16 +357,22 @@ Definition Sskip := Sseq nil.
  * describe the semantics correctly.
  * - cpp2v should probably insert these types.
  *)
-Parameter T_ushort : type.
-Parameter T_short : type.
-Parameter T_long : type.
-Parameter T_ulong : type.
-Parameter T_ulonglong : type.
-Parameter T_longlong : type.
-Parameter T_uint : type.
+Definition char_bits : nat := 8.
+Definition short_bits : nat := 16.
+Definition int_bits : nat := 32.
+Definition long_bits : nat := 64.
+Definition long_long_bits : nat := 128.
 
-Definition T_schar : type := Tchar None true.
-Definition T_uchar : type := Tchar None false.
-Definition T_int := Tint None true.
+Definition T_ushort : type := Tint (Some short_bits) false.
+Definition T_short : type := Tint (Some short_bits) true.
+Definition T_ulong : type := Tint (Some long_bits) false.
+Definition T_long : type := Tint (Some long_bits) true.
+Definition T_ulonglong : type := Tint (Some long_long_bits) false.
+Definition T_longlong : type := Tint (Some long_long_bits) true.
+Definition T_uint : type := Tint (Some int_bits) false.
+Definition T_int : type := Tint (Some int_bits) true.
+
+Definition T_schar : type := Tchar (Some char_bits) true.
+Definition T_uchar : type := Tchar (Some char_bits) false.
 
 Coercion CCcast : PrimCast >-> Cast.

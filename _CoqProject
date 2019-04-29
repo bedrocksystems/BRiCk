@@ -1,5 +1,8 @@
 -Q theories Cpp
 
+# Utility modules
+theories/Util.v
+
 # Modules for cpp2v
 theories/Ast.v
 theories/Parser.v
@@ -19,6 +22,8 @@ theories/Sem.v
 theories/Auto/Discharge.v
 theories/Auto/Definitions.v
 theories/Auto/Lemmas.v
+theories/Auto/type.v
+theories/Auto/operator.v
 theories/Auto/vc.v
 theories/Auto/mvcg.v
 
