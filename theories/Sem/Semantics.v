@@ -28,24 +28,20 @@ Parameter thread_info : Type.
 
 Parameter has_type : val -> type -> Prop.
 
-Axiom has_type_int : forall z,
-    (-Z.pow 2 31 < z < Z.pow 2 31 - 1)%Z ->
-    has_type (Vint z) T_int.
-Axiom has_type_int32 : forall z,
-    (-Z.pow 2 31 < z < Z.pow 2 31 - 1)%Z ->
-    has_type (Vint z) T_int32.
+Definition bound (bits : nat) (sgn : bool) (v : Z) : Prop :=
+  if sgn then
+    (-Z.pow 2 (Z.of_nat bits - 1) < v < Z.pow 2 (Z.of_nat bits - 1) - 1)%Z
+  else
+    (0 <= v < Z.pow 2 (Z.of_nat bits))%Z.
 
-(* this is an axiom *)
-Axiom has_type_int_any : forall x, has_type (Vint x) T_int.
-Axiom has_type_int_bound : forall {x},
-    has_type (Vint x) T_int ->
-    (-(2^31) < x < 2^31 - 1)%Z.
+Axiom has_int_type : forall (sz : nat) (sgn : bool) z,
+    bound sz sgn z <-> has_type (Vint z) (Tint (Some sz) sgn).
+
 Axiom has_type_qual : forall t q x,
     has_type x (drop_qualifiers t) ->
     has_type x (Tqualified q t).
 
-Hint Resolve has_type_int_any has_type_int_bound has_type_qual
-  : has_type.
+Hint Resolve has_type_qual : has_type.
 
 
 Parameter eval_unop : UnOp -> type -> type -> val -> val -> Prop.
@@ -61,12 +57,20 @@ Axiom eval_add :
   ltac:(let x := eval hnf in (eval_int_op Badd Z.add) in refine x).
 Axiom eval_sub :
   ltac:(let x := eval hnf in (eval_int_op Bsub Z.sub) in refine x).
-Axiom eval_ :
+Axiom eval_mul :
   ltac:(let x := eval hnf in (eval_int_op Bmul Z.mul) in refine x).
 Axiom eval_div :
-  ltac:(let x := eval hnf in (eval_int_op Bdiv Z.div) in refine x).
+  forall (w : option nat) (s : bool) (a b c : Z),
+    b <> 0%Z ->
+    c = (a / b)%Z ->
+    has_type (Vint c) (Tint w s) ->
+    eval_binop Bdiv (Tint w s) (Tint w s) (Tint w s) (Vint a) (Vint b) (Vint c).
 Axiom eval_mod :
   ltac:(let x := eval hnf in (eval_int_op Bmod Z.modulo) in refine x).
+Axiom eval_shl :
+  ltac:(let x := eval hnf in (eval_int_op Bmod Z.shiftl) in refine x).
+Axiom eval_shr :
+  ltac:(let x := eval hnf in (eval_int_op Bmod Z.shiftr) in refine x).
 
 Definition eval_int_rel_op (bo : BinOp) {P Q : Z -> Z -> Prop}
            (o : forall a b : Z, {P a b} + {Q a b}) : Prop :=

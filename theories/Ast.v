@@ -357,11 +357,11 @@ Definition Sskip := Sseq nil.
  * describe the semantics correctly.
  * - cpp2v should probably insert these types.
  *)
-Parameter char_bits : nat.
-Parameter short_bits : nat.
-Parameter int_bits : nat.
-Parameter long_bits : nat.
-Parameter long_long_bits : nat.
+Definition char_bits : nat := 8.
+Definition short_bits : nat := 16.
+Definition int_bits : nat := 32.
+Definition long_bits : nat := 64.
+Definition long_long_bits : nat := 128.
 
 Definition T_ushort : type := Tint (Some short_bits) false.
 Definition T_short : type := Tint (Some short_bits) true.
