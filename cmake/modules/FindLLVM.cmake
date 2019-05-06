@@ -1,29 +1,34 @@
+find_program (LLVM_CONFIG
+  llvm-config
+  NAMES llvm-config llvm-config-7 llvm-config-8 llvm-config-9
+  DOC "llvm-config program. if this fails, check that you have the -dev dependencies installed")
+
 execute_process(
-  COMMAND llvm-config --cxxflags
+  COMMAND ${LLVM_CONFIG} --cxxflags
   OUTPUT_VARIABLE LLVM_DEFINITIONS)
 
 execute_process(
-  COMMAND llvm-config --includedir
+  COMMAND ${LLVM_CONFIG} --includedir
   OUTPUT_VARIABLE LLVM_INCLUDE_DIR
   OUTPUT_STRIP_TRAILING_WHITESPACE)
 
 execute_process(
-  COMMAND llvm-config --libdir
+  COMMAND ${LLVM_CONFIG} --libdir
   OUTPUT_VARIABLE LLVM_LIB_DIR
   OUTPUT_STRIP_TRAILING_WHITESPACE)
 
 execute_process(
-  COMMAND llvm-config --version
+  COMMAND ${LLVM_CONFIG} --version
   OUTPUT_VARIABLE LLVM_VERSION
   OUTPUT_STRIP_TRAILING_WHITESPACE)
 
 execute_process(
-  COMMAND llvm-config --system-libs
+  COMMAND ${LLVM_CONFIG} --system-libs
   OUTPUT_VARIABLE LLVM_SYSTEM_LIBS
   OUTPUT_STRIP_TRAILING_WHITESPACE)
 
 execute_process(
-  COMMAND llvm-config --libs
+  COMMAND ${LLVM_CONFIG} --libs
   OUTPUT_VARIABLE LLVM_LIBS
   OUTPUT_STRIP_TRAILING_WHITESPACE)
 
