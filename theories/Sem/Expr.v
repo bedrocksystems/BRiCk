@@ -351,6 +351,18 @@ Module Type Expr.
 
     Definition wpAnys := fun ve Q free => wpAny ve (fun v f => Q v (f ** free)).
 
+    (** constructors (these should probably get moved) *)
+    Axiom wp_rhs_constructor
+    : forall cls cname (es : list (ValCat * Expr)) (ty : type) (Q : val -> FreeTemps -> mpred),
+     (Exists ctor, [| glob_addr resolve cname ctor |] **
+      (* todo(gmm): is there a better way to get the destructor? *)
+      wps wpAnys es (fun vs free => Exists a, uninitialized_ty (Tref cls) a
+          -* |> fspec (Vptr ctor) (a :: vs) ti (fun _ =>
+                   (* note(gmm): constructors are rvalues but my semantics actually
+                    * treats them like lvalues. *)
+                   Q a free)) empSP)
+      |-- wp_rhs (Econstructor cname es (Tref cls)) Q.
+
     (** function calls *)
     Axiom wp_call : forall ty f es Q,
         wp_rhs f (fun f => wps wpAnys es (fun vs free => |> fspec f vs ti (fun v => Q v free)))

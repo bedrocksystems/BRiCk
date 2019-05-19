@@ -334,6 +334,34 @@ Variant OrType {t : Set} : Set :=
 | NotType (_ : t).
 Arguments OrType : clear implicits.
 
+Variant Ctor_type : Set := Ct_Complete | Ct_Base | Ct_Comdat.
+
+(* Definition ctor_name (type : Ctor_type) (cls : globname) : obj_name := *)
+(*   match cls with *)
+(*   | String _ (String _ s) => *)
+(*     "_ZN" ++ s ++ "C" ++ (match type with *)
+(*                           | Ct_Complete => "1" *)
+(*                           | Ct_Base => "2" *)
+(*                           | Ct_Comdat => "5" *)
+(*                           end) ++ "Ev" *)
+(*   | _ => "" *)
+(*   end%string. *)
+
+Variant Dtor_type : Set := Dt_Deleting | Dt_Complete | Dt_Base | Dt_Comdat.
+
+Definition dtor_name (type : Dtor_type) (cls : globname) : obj_name :=
+  match cls with
+  | String _ (String _ s) =>
+    "_ZN" ++ s ++ "D" ++ (match type with
+                          | Dt_Deleting => "0"
+                          | Dt_Complete => "1"
+                          | Dt_Base => "2"
+                          | Dt_Comdat => "5"
+                          end) ++ "Ev"
+  | _ => ""
+  end%string.
+
+
 (* global declarations *)
 Inductive Decl : Set :=
 | Dvar         (name : obj_name) (_ : type) (_ : option Expr)

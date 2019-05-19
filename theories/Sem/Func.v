@@ -434,6 +434,14 @@ Module Type Func.
       | _              => tlocal ρ x (tprim t v)
       end.
 
+    Fixpoint bind_type_free ti ρ (t : type) (x : ident) (v : val) : mpred :=
+      match t with
+      | Tqualified _ t => bind_type_free ti ρ t x v
+      | Treference ref => _local ρ x &~ v
+      | Tref cls       => _local ρ x &~ v ** destruct (resolve:=resolve) ti Dt_Deleting cls v empSP
+      | _              => tlocal ρ x (tprim t v)
+      end.
+
 (*
     Definition func_ok (ret : type) (params : list (ident * type))
                (body : Stmt)
@@ -464,7 +472,7 @@ Module Type Func.
         (* this is what is created from the parameters *)
         let binds := sepSPs (zip (fun '(x, t) 'v => bind_type ρ t x v) params vals) in
         (* this is what is freed on return *)
-        let frees := sepSPs (map (fun '(x, t) => Exists v, bind_type ρ t x v) params) in
+        let frees := sepSPs (map (fun '(x, t) => Exists v, bind_type_free ti ρ t x v) (rev params)) in
         if is_void ret
         then
           Forall Q : mpred,
@@ -473,7 +481,7 @@ Module Type Func.
           Forall Q : val -> mpred,
           (binds ** PQ Q) -* (wp resolve ti ρ body (Kfree frees (val_return Q)))).
 
-    Definition method_ok' (resolve : genv)
+    Definition method_ok'
                (meth : Method) (ti : thread_info) (spec : function_spec')
       : mpred :=
       match meth.(m_body) with
@@ -498,7 +506,7 @@ Module Type Func.
             (* this is what is freed on return *)
             let frees :=
                 _local ρ "#this" &~ this_val **
-                sepSPs (map (fun '(x, t) => Exists v, bind_type ρ t x v) meth.(m_params))
+                sepSPs (map (fun '(x, t) => Exists v, bind_type_free ti ρ t x v) (rev meth.(m_params)))
             in
             if is_void meth.(m_return)
             then
@@ -510,8 +518,7 @@ Module Type Func.
           end)
       end.
 
-
-    Definition ctor_ok' (resolve : genv)
+    Definition ctor_ok'
                (ctor : Ctor) (ti : thread_info) (spec : function_spec')
       : mpred :=
       match ctor.(c_body) with
@@ -538,7 +545,7 @@ Module Type Func.
             (* this is what is freed on return *)
             let frees :=
                 _local ρ "#this" &~ this_val **
-                sepSPs (map (fun '(x, t) => Exists v, bind_type ρ t x v) ctor.(c_params))
+                sepSPs (map (fun '(x, t) => Exists v, bind_type_free ti ρ t x v) (rev ctor.(c_params)))
             in
             Forall Q : mpred,
             (binds ** PQ (fun _ => Q)) -*
@@ -546,7 +553,7 @@ Module Type Func.
           end)
       end.
 
-    Definition dtor_ok' (resolve : genv)
+    Definition dtor_ok'
                (dtor : Dtor) (ti : thread_info) (spec : function_spec')
       : mpred :=
       match dtor.(d_body) with

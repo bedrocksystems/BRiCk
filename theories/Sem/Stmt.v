@@ -104,6 +104,12 @@ Module Type Stmt.
         wpAny (resolve:=resolve) ti ρ (vc,e) (finish (fun _ => Q.(k_normal)))
         |-- wp resolve ti ρ (Sexpr vc e) Q.
 
+
+    Definition destruct ti parent (cls : globname) (v : val) (Q : mpred) : mpred :=
+      Exists da, [| glob_addr resolve (dtor_name parent cls) da |] **
+                 |> fspec (Vptr da) (v :: nil) ti
+                              (fun _ => _at (_eq v) (tany (Tref cls))).
+
     (* note(gmm): this definition is crucial to everything going on.
      * 1. look at the type.
      *    > reference: if a is the lvalue of the rhs
@@ -167,17 +173,12 @@ Module Type Stmt.
            * `cglob`.
            *)
           Exists ctor, [| glob_addr resolve cnd ctor |] **
-          (* we don't need the destructor until later, but if we prove it
-           * early, then we don't need to resolve it over multiple paths.
-           *)
-          Exists dtor, [| glob_addr resolve (gn ++ "D1") dtor |] **
           (* todo(gmm): is there a better way to get the destructor? *)
           wps (wpAnys (resolve:=resolve) ti ρ) es (fun vs free =>
                  Forall a, _at (_eq a) (uninit (Tref gn))
               -* |> fspec (Vptr ctor) (a :: vs) ti (fun _ =>
                  _local ρ x &~ a -*
-                 (free ** k (Kat_exit (fun Q => |> fspec (Vptr dtor) (a :: nil) ti
-                                   (fun _ => _local ρ x &~ a ** _at (_eq a) (tany (Tref gn)) ** Q)) Q)))) empSP
+                 (free ** k (Kat_exit (fun Q => _local ρ x &~ a ** |> destruct ti Dt_Deleting gn a Q) Q)))) empSP
         | _ => lfalse
           (* ^ all non-primitive declarations must have initializers *)
         end
