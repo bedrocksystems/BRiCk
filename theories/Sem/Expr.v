@@ -169,13 +169,13 @@ Module Type Expr.
 
     (* `this` is an rvalue *)
     Axiom wp_rhs_this : forall ty Q,
-      Exists a, ((_local ρ "#this"%string) @@ a ** ltrue) //\\ Q a empSP
+      Exists a, ((_local ρ "#this"%string) &~ a ** ltrue) //\\ Q a empSP
       |-- wp_rhs (Ethis ty) Q.
 
 
     (* variables are lvalues *)
     Axiom wp_lhs_lvar : forall ty x Q,
-      Exists a, (_local ρ x @@ a ** ltrue) //\\ Q a empSP
+      Exists a, (_local ρ x &~ a ** ltrue) //\\ Q a empSP
       |-- wp_lhs (Evar (Lname x) ty) Q.
 
     (* what about the type? if it exists *)
@@ -189,14 +189,15 @@ Module Type Expr.
      *)
     Axiom wp_lhs_member : forall ty e f Q,
       wp_lhs e (fun base free =>
-                  Exists addr, _addr base (p_dot f p_done) @@ addr ** Q addr free)
+                  Exists addr, (_offsetL (_field f) (_eq base) &~ addr ** ltrue) //\\ Q addr free)
       |-- wp_lhs (Emember e f ty) Q.
 
     Axiom wp_lhs_subscript : forall e i t Q,
       wp_rhs e (fun base free =>
         wp_rhs i (fun idx free' =>
-          Exists i, [| idx = Vint i |] **
-          Exists addr, _addr base (p_sub t i p_done) @@ addr **
+          Exists addr,
+          (Exists i, [| idx = Vint i |] **
+          _offsetL (_sub t i) (_eq base) &~ addr ** ltrue) //\\
           Q addr (free' ** free)))
       |-- wp_lhs (Esubscript e i t) Q.
 
@@ -268,7 +269,7 @@ Module Type Expr.
 
     Axiom wp_lhs_assign : forall ty l r Q,
         wp_lhs l (fun la free1 => wp_rhs r (fun rv free2 =>
-           _at (_eq la) (uninit (drop_qualifiers ty)) **
+            _at (_eq la) (uninit (drop_qualifiers ty)) **
            (_at (_eq la) (tprim (drop_qualifiers ty) rv) -* Q la (free1 ** free2))))
         |-- wp_lhs (Eassign l r ty) Q.
 
@@ -401,26 +402,44 @@ Module Type Expr.
       Definition wp_ok e Q := wp_lhs (resolve:=resolve) ti ρ e (finish Q).
 
       Ltac t :=
+        let fwd :=
+            idtac;
+            eapply refine_tprim_ptr;
+            lazymatch goal with
+            | |- forall x, Vptr _ = Vptr x -> _ => fail
+            | |- _ => let H := fresh in intros ? H; destruct H
+            end
+        in
         let ctac :=
             idtac;
-            first [ eapply _at_cancel; [ solve [ reflexivity | eapply val_uninit ] | ] ]
+            first [ eapply _at_cancel; [ solve [ reflexivity
+                                               | eapply tprim_tptr
+                                               | eapply tprim_tint
+                                               | eapply tprim_tuint
+                                               | eapply tprim_uninit
+                                               | eapply tptr_uninit
+                                               | eapply tint_uninit
+                                               | eapply tuint_uninit
+                                               ] | ] ]
         in
-        let tac := try match goal with
-                       | |- @eq val _ _ => try f_equal
-                       end ;
-                   try solve [ eauto | reflexivity | has_type | operator | lia ] in
-        discharge ltac:(canceler ctac tac) tac.
+        let tac :=
+            idtac;
+            try match goal with
+                | |- @eq val _ _ => try f_equal
+                end ;
+            try solve [ eauto | reflexivity | has_type | operator | lia ] in
+        discharge ltac:(fwd) ltac:(canceler ctac tac) ltac:(tac).
 
       (* int x ; x = 0 ; *)
       Goal
-        tlocal ρ T_int32 "x" 3
+        tlocal ρ "x" (tint 32 3)
         |-- wp_ok (Eassign (Evar (Lname "x") (Qmut T_int32)) (Eint 0 (Qmut T_int32)) (Qmut T_int32))
-                  (fun xa => tlocal_at ρ T_int32 "x" xa 0).
+                  (fun xa => tlocal_at ρ "x" xa (tint 32 0)).
       Proof.
         unfold wp_ok.
         unfold tlocal, tlocal_at.
-        repeat (t; simplify_wp; unfold wp_ok, finish).
-      Qed.
+        Time repeat (t; simplify_wp; unfold wp_ok, finish).
+      Time Qed.
 
       (* note(gmm):
        * having two layers of logic makes sense.
@@ -430,8 +449,8 @@ Module Type Expr.
 
       (* int *x ; *x = 0 ; *)
       Goal forall addr,
-        tlocal ρ (Qmut (Tpointer (Qmut T_int))) "x" addr **
-        _at (_eq addr) (tprim T_int 12%Z)
+        tlocal ρ "x" (tptr (Qmut T_int) addr) **
+        _at (_eq (Vptr addr)) (tprim T_int 12%Z)
         |-- wp_ok
         (Eassign
            (Ederef
@@ -448,33 +467,36 @@ Module Type Expr.
            (Eint 0
                  (Qmut T_int))
            (Qmut T_int))
-                   (fun x => embed (x = addr) //\\ tlocal ρ (Qmut (Tpointer (Qmut T_int))) "x" x ** _at (_eq x) (tprim T_int 0%Z)).
+                   (fun x => embed (x = Vptr addr) //\\
+                          tlocal ρ "x" (tptr T_int addr) **
+                          _at (_eq x) (tprim T_int 0%Z)).
       Proof.
         intros.
         unfold tlocal, tlocal_at.
-        repeat (t; simplify_wp; unfold wp_ok, finish).
+        Time repeat (t; simplify_wp; unfold wp_ok, finish).
       Qed.
 
       (* int *x ; int y ; x = &y ; *)
-      Goal
-        tlocal ρ (Tpointer (Qmut T_int)) "x" 3%Z **
-        tlocal ρ T_int "y" 12%Z
+      Goal forall p,
+        tlocal ρ "x" (tptr (Qmut T_int) p) **
+        tlocal ρ "y" (tint 32 12)
         |-- wp_ok
                    (Eassign (Evar (Lname "x") (Qmut (Tpointer (Qmut T_int))))
                             (Eaddrof (Evar (Lname "y") (Qmut T_int)) (Qconst (Tpointer (Qmut T_int))))
                             (Qmut (Tpointer (Qmut T_int))))
                    (fun xa => Exists ya,
-                           tlocal_at ρ (Tpointer (Qmut (T_int))) "x" xa ya **
-                           tlocal_at ρ T_int "y" ya 12%Z).
+                           tlocal_at ρ "x" xa (tptr (Qmut T_int) ya) **
+                           tlocal_at ρ "y" (Vptr ya) (tint int_bits 12)).
       Proof.
+        intros.
         unfold tlocal, tlocal_at.
-        repeat (t; simplify_wp; unfold wp_ok, finish).
+        Time repeat (t; simplify_wp; unfold wp_ok, finish).
       Qed.
 
       (* int *x ; int y ; *(x = &y) = 3; *)
-      Goal
-        tlocal ρ (Tpointer (Qmut T_int)) "x" 3%Z **
-        tlocal ρ T_int "y" 9%Z
+      Goal forall p,
+        tlocal ρ "x" (tptr (Qmut T_int) p) **
+        tlocal ρ "y" (tint 32 9%Z)
         |-- wp_ok
                    (Eassign
                 (Ederef
@@ -502,11 +524,13 @@ Module Type Expr.
                 (Eint 3
                   (Qmut T_int))
                 (Qmut T_int))
-                   (fun ya => tlocal ρ (Tpointer (Qmut T_int)) "x" ya **
-                            tlocal_at ρ T_int "y" ya 3%Z).
+                   (fun ya => Exists pp, [| ya = Vptr pp |] **
+                            tlocal ρ "x" (tptr T_int pp) **
+                            tlocal_at ρ "y" ya (tint 32 3%Z)).
       Proof.
+        intros.
         unfold tlocal, tlocal_at.
-        repeat (t; simplify_wp; unfold wp_ok, finish; simpl).
+        Time repeat (t; simplify_wp; unfold wp_ok, finish; simpl).
       Qed.
 
     End with_resolve.

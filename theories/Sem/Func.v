@@ -46,7 +46,7 @@ Proof.
   2: reflexivity.
   rewrite <- empSPR at 1.
   eapply scME. reflexivity.
-  discharge auto auto.
+  discharge fail auto auto.
 Qed.
 
 
@@ -58,14 +58,14 @@ Proof.
   unfold only_provable.
   eapply wandSPI.
   rewrite <- embedPropExists'.
-  specialize (landexistsDL1 (fun _: A => ltrue) empSP). simpl.
+  specialize (landexistsDL1 (fun _: A => ltrue) (@empSP mpred _)). simpl.
   intros. rewrite H0.
   setoid_rewrite landtrueL.
   rewrite <- bilexistssc.
   eapply lexistsL.
   intros.
   etransitivity; [ | eapply H ]; auto.
-  discharge fail auto.
+  discharge fail fail auto.
 Qed.
 
 Lemma forallEach_primes:
@@ -153,7 +153,7 @@ Module Type Func.
     | i :: is => @wpi resolve ti ρ cls this i (@wpis resolve ti ρ cls this is Q)
     end.
 
-  Fixpoint wpi_field (resolve : genv) ti ρ (cls : globname) (this : val)
+  Fixpoint wpi_field (resolve : genv) ti ρ (cls : globname) (this : Loc)
            (ty : type) (f : field) (init : Expr)
            (k : mpred)
     : mpred :=
@@ -163,7 +163,7 @@ Module Type Func.
         (* i should use the type here *)
         wp_lhs (resolve:=resolve) ti ρ init (fun a free =>
               (* note(gmm): this is consistent with the specification, but also very strange *)
-              _field f (_eq this) @@ a
+              _offsetL (_field f) this &~ a
            -* (free ** k))
       | Tfunction _ _ =>
         (* fields can not be function type *)
@@ -174,8 +174,8 @@ Module Type Func.
       | Tchar _ _
       | Tint _ _ =>
         wp_rhs (resolve:=resolve) ti ρ init (fun v free =>
-           _atP this (p_dot f p_done) (uninit ty) **
-           (   _atP this (p_dot f p_done) (tprim ty v)
+           _at (_offsetL (_field f) this) (uninit ty) **
+           (   _at (_offsetL (_field f) this) (tprim ty v)
             -* (free ** k)))
       | Tarray _ _ => lfalse (* todo(gmm): arrays not yet supported *)
       | Tref gn =>
@@ -186,7 +186,7 @@ Module Type Func.
           Exists ctor, [| glob_addr resolve cnd ctor |] **
           (* todo(gmm): is there a better way to get the destructor? *)
           wps (wpAnys (resolve:=resolve) ti ρ) es (fun vs free =>
-              Forall a, (_field f (_eq this) @@ a ** ltrue) //\\
+              Forall a, (_offsetL (_field f) this &~ a ** ltrue) //\\
               |> fspec (Vptr ctor) (a :: vs) ti (fun _ =>
                  (free ** k))) empSP
         | _ => lfalse
@@ -195,8 +195,8 @@ Module Type Func.
       | Tqualified _ ty => wpi_field resolve ti ρ cls this ty f init k
       end.
 
-  Axiom wpi_field_at : forall resolve ti r this_val x e cls ty Q,
-      wpi_field resolve ti r cls this_val ty {| f_type := cls ; f_name := x |} e Q
+  Axiom wpi_field_at : forall resolve ti r this_val x e cls Q,
+      wpi_field resolve ti r cls (_eq this_val) (drop_qualifiers (type_of e)) {| f_type := cls ; f_name := x |} e Q
       |-- wpi (resolve:=resolve) ti r cls this_val (Field x, e) Q.
 
 
@@ -284,7 +284,7 @@ Module Type Func.
            Exists g : (PQ args).(wpp_with),
                       (Forall res, (PQ args).(wpp_post) g res -* Q res)
                    ** (PQ args).(wpp_pre) g |}.
-
+    
     (* Hoare triple for a function.
      *)
     Definition SFunction (ret : type) (targs : list type)
@@ -309,7 +309,7 @@ Module Type Func.
           (fun this => arrowFrom_map (fun wpp =>
              {| wpp_with := wpp.(wpp_with)
               ; wpp_pre  := fun m =>
-                  uninitialized_ty (Tref class) this ** wpp.(wpp_pre) m
+                  (uninitialized_ty (Tref class)).(repr) this ** wpp.(wpp_pre) m
               ; wpp_post := wpp.(wpp_post)
               |}) (PQ this)).
 
@@ -324,7 +324,7 @@ Module Type Func.
              {| wpp_with := (PQ this).(wpp_with)
               ; wpp_pre := (PQ this).(wpp_pre)
               ; wpp_post := fun m res =>
-                  uninitialized_ty (Tref class) this ** (PQ this).(wpp_post) m res
+                  (uninitialized_ty (Tref class)).(repr) this ** (PQ this).(wpp_post) m res
               |}).
 
     (* Hoare triple for a method.
@@ -371,7 +371,7 @@ Module Type Func.
       eapply (lforallL (wpp_post (PQ vs) g)).
       eapply wandSP_lentails_m; try reflexivity.
       red.
-      discharge ltac:(canceler fail auto) auto.
+      discharge fail ltac:(canceler fail auto) auto.
     Qed.
 
     Theorem triple_apply : forall p r ts F F' vs ti (PQ : list val -> WithPrePost) K,
@@ -389,7 +389,7 @@ Module Type Func.
       specialize (H0 g).
       rewrite <- sepSPA.
       rewrite H0.
-      discharge ltac:(canceler fail auto) auto.
+      discharge fail ltac:(canceler fail auto) auto.
       eapply fspec_conseq. assumption.
     Qed.
 
@@ -419,11 +419,11 @@ Module Type Func.
       eapply wandSPAdj.
       eapply wandSP_cancel.
       rewrite H0; clear H0.
-      discharge ltac:(canceler fail auto) auto.
+      discharge fail ltac:(canceler fail auto) auto.
       clear.
       revert vs. induction ts; destruct vs; simpl; try reflexivity.
-      { discharge ltac:(canceler fail auto) auto. }
-      { rewrite IHts. discharge ltac:(canceler fail auto) auto. }
+      { discharge fail ltac:(canceler fail auto) auto. }
+      { rewrite IHts. discharge fail ltac:(canceler fail auto) auto. }
     Qed.
 
     Section with_resolver.
@@ -433,9 +433,9 @@ Module Type Func.
     Fixpoint bind_type ρ (t : type) (x : ident) (v : val) : mpred :=
       match t with
       | Tqualified _ t => bind_type ρ t x v
-      | Treference ref => _local ρ x @@ v
-      | Tref _         => _local ρ x @@ v
-      | _ => tlocal ρ t x v
+      | Treference ref => _local ρ x &~ v
+      | Tref _         => _local ρ x &~ v
+      | _              => tlocal ρ x (tprim t v)
       end.
 
 (*
@@ -496,12 +496,12 @@ Module Type Func.
           | this_val :: rest_vals =>
             (* this is what is created from the parameters *)
             let binds :=
-                _local ρ "#this" @@ this_val **
+                _local ρ "#this" &~ this_val **
                 sepSPs (zip (fun '(x, t) 'v => bind_type ρ t x v) meth.(m_params) rest_vals)
             in
             (* this is what is freed on return *)
             let frees :=
-                _local ρ "#this" @@ this_val **
+                _local ρ "#this" &~ this_val **
                 sepSPs (map (fun '(x, t) => Exists v, bind_type ρ t x v) meth.(m_params))
             in
             if is_void meth.(m_return)
@@ -536,12 +536,12 @@ Module Type Func.
           | this_val :: rest_vals =>
             (* this is what is created from the parameters *)
             let binds :=
-                _local ρ "#this" @@ this_val **
+                _local ρ "#this" &~ this_val **
                 sepSPs (zip (fun '(x, t) 'v => bind_type ρ t x v) ctor.(c_params) rest_vals)
             in
             (* this is what is freed on return *)
             let frees :=
-                _local ρ "#this" @@ this_val **
+                _local ρ "#this" &~ this_val **
                 sepSPs (map (fun '(x, t) => Exists v, bind_type ρ t x v) ctor.(c_params))
             in
             Forall Q : mpred,
@@ -570,9 +570,9 @@ Module Type Func.
           | nil => lfalse
           | this_val :: rest_vals =>
             (* this is what is created from the parameters *)
-            let binds := _local ρ "#this" @@ this_val in
+            let binds := _local ρ "#this" &~ this_val in
             (* this is what is freed on return *)
-            let frees := _local ρ "#this" @@ this_val in
+            let frees := _local ρ "#this" &~ this_val in
             Forall Q : mpred,
            (binds ** PQ (fun _ => Q)) -*
            (wp resolve ti ρ body (Kfree frees (void_return (wpds (resolve:=resolve) ti ρ dtor.(d_class) this_val deinit Q))))

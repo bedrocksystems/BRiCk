@@ -21,6 +21,11 @@ Parameter ptr : Type.
 Parameter Vptr : ptr -> val.
 Parameter Vint : Z -> val.
 
+Parameter is_true : val -> bool.
+Axiom is_true_int : forall i,
+    is_true (Vint i) = negb (BinIntDef.Z.eqb i 0).
+
+
 Axiom Vint_inj : forall a b, Vint a = Vint b -> a = b.
 
 (* this is the stack frame *)
@@ -137,6 +142,7 @@ Parameter align_of : forall {c : genv} (t : type) (e : N), Prop.
 
 Parameter glob_addr : genv -> obj_name -> ptr -> Prop.
 
+(* todo(gmm): this isn't sound due to reference fields *)
 Parameter offset_of : forall {c : genv} (t : type) (f : ident) (e : Z), Prop.
 
 Parameter size_of : forall {c : genv} (t : type) (e : N), Prop.

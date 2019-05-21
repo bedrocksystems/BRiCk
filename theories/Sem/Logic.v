@@ -60,6 +60,19 @@ Module Type logic.
   (* todo(gmm): this is wildly unsound. *)
   Axiom with_genv_is : forall (g : genv) (f : genv -> _), with_genv f -|- f g.
 
+  (* heap points to *)
+  (* note(gmm): this needs to support fractional permissions and other features *)
+  Parameter ptsto : forall addr value : val, mpred.
+
+  (* the pointer contains the code *)
+  Parameter code_at : Func -> ptr -> mpred.
+  (* code_at is freely duplicable *)
+  Axiom code_at_dup : forall p f, code_at p f -|- code_at p f ** code_at p f.
+  Axiom code_at_drop : forall p f, code_at p f |-- empSP.
+
+  Parameter ctor_at : ptr -> Ctor -> mpred.
+  Parameter dtor_at : ptr -> Dtor -> mpred.
+
 End logic.
 
 Declare Module L : logic.

@@ -130,23 +130,34 @@ Module Type Stmt.
         | Some init =>
           (* i should use the type here *)
           wp_lhs (resolve:=resolve) ti ρ init (fun a free =>
-             _local ρ x @@ a -* (free ** k (Kfree (_local ρ x @@ a) Q)))
+             _local ρ x &~ a -* (free ** k (Kfree (_local ρ x &~ a) Q)))
         end
       | Tfunction _ _ =>
         (* inline functions are not supported *)
         lfalse
       | Tvoid => lfalse
-      | Tpointer _
+      | Tpointer pty =>
+        match init with
+        | None =>
+          Forall p, tlocal ρ x (tptr pty p) -*
+                    k (Kfree (tlocal ρ x (uninit ty)) Q)
+        | Some init =>
+          wp_rhs (resolve:=resolve) ti ρ init (fun v free =>
+                 tlocal ρ x (tprim ty v)
+              -* (free ** k (Kfree (tlocal ρ x (uninit ty)) Q)))
+        end
+
       | Tbool
       | Tchar _ _
       | Tint _ _ =>
         match init with
         | None =>
-          Forall v, tlocal ρ ty x v -* k (Kfree (Exists v', tlocal ρ ty x v') Q)
+          Forall v, tlocal ρ x (tprim ty v) -*
+                    k (Kfree (tlocal ρ x (uninit ty)) Q)
         | Some init =>
           wp_rhs (resolve:=resolve) ti ρ init (fun v free =>
-                 tlocal ρ ty x v
-              -* (free ** k (Kfree (Exists v', tlocal ρ ty x v') Q)))
+                 tlocal ρ x (tprim ty v)
+              -* (free ** k (Kfree (tlocal ρ x (uninit ty)) Q)))
         end
       | Tarray _ _ => lfalse (* todo(gmm): arrays not yet supported *)
       | Tref gn =>
@@ -162,11 +173,11 @@ Module Type Stmt.
           Exists dtor, [| glob_addr resolve (gn ++ "D1") dtor |] **
           (* todo(gmm): is there a better way to get the destructor? *)
           wps (wpAnys (resolve:=resolve) ti ρ) es (fun vs free =>
-                 Forall a, uninitialized_ty (Tref gn) a
+                 Forall a, (uninitialized_ty (Tref gn)).(repr) a
               -* |> fspec (Vptr ctor) (a :: vs) ti (fun _ =>
-                 _local ρ x @@ a -*
+                 _local ρ x &~ a -*
                  (free ** k (Kat_exit (fun Q => |> fspec (Vptr dtor) (a :: nil) ti
-                                   (fun _ => _local ρ x @@ a ** uninitialized_ty (Tref gn) a ** Q)) Q)))) empSP
+                                   (fun _ => _local ρ x &~ a ** (uninitialized_ty (Tref gn)).(repr) a ** Q)) Q)))) empSP
         | _ => lfalse
           (* ^ all non-primitive declarations must have initializers *)
         end
