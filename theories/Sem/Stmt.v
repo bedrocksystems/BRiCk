@@ -65,12 +65,6 @@ Module Type Stmt.
      ; k_break    := k.(k_break)
      ; k_continue := k.(k_continue)
      |}.
-  Definition Kcontinue (Q : mpred) (k : Kpreds) : Kpreds :=
-    {| k_normal   := k.(k_normal)
-     ; k_return   := k.(k_return)
-     ; k_break    := k.(k_break)
-     ; k_continue := Q
-     |}.
   Definition Kloop (I : mpred) (Q : Kpreds) : Kpreds :=
     {| k_break    := Q.(k_normal)
      ; k_continue := I
@@ -227,7 +221,7 @@ Module Type Stmt.
      *)
     Axiom wp_while : forall t b Q I,
         I |-- wp resolve ti ρ (Sif None t (Sseq (b :: Scontinue :: nil)) Sskip)
-                (Kcontinue I Q) ->
+                (Kloop I Q) ->
         I |-- wp resolve ti ρ (Swhile None t b) Q.
 
     Axiom wp_while_decl : forall d t b Q,
