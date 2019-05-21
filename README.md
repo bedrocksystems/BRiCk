@@ -13,10 +13,8 @@ You will need the following packages (they can be installed via `apt` on a ubunt
 You can get all of the Coq dependencies via opam with the following command.
 
 ```shell
-$ opam install coq coq-charge-core
+$ opam install coq coq-charge-core coq-ltac-iter
 ```
-
-You should be installing coq 8.9 and charge-core 1.2 as well as their dependencies.
 
 ## Building
 You can build `cpp2v` using the following commands.
