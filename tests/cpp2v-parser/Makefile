@@ -1,6 +1,7 @@
-COQC=coqc
-CPP2V=$(shell which cpp2v)
-ALL=$(wildcard *.cpp)
+COQC	?= coqc
+CPP2V	?= $(shell which cpp2v)
+
+ALL	= $(wildcard *.cpp)
 
 all: $(ALL:%.cpp=%_cpp.vo)
 
