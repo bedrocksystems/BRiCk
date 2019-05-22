@@ -231,9 +231,9 @@ public:
     print.output() << fmt::nbsp << fmt::lparen;
     for (auto i : expr->arguments()) {
       cprint.printExprAndValCat(i, print);
-      print.output() << "::";
+      print.cons();
     }
-    print.output() << "nil" << fmt::rparen;
+    print.end_list();
     done(expr, print, cprint);
   }
 
@@ -357,9 +357,9 @@ public:
     print.output() << fmt::nbsp << fmt::lparen;
     for (auto i : expr->arguments()) {
       cprint.printExprAndValCat(i, print);
-      print.output() << "::";
+      print.cons();
     }
-    print.output() << "nil" << fmt::rparen;
+    print.end_list();
     done(expr, print, cprint);
   }
 
@@ -378,12 +378,13 @@ public:
     } else {
       cprint.printExpr(expr->getImplicitObjectArgument(), print);
     }
+
     print.output() << fmt::nbsp << fmt::lparen;
     for (auto i : expr->arguments()) {
       cprint.printExprAndValCat(i, print);
-      print.output() << "::";
+      print.cons();
     }
-    print.output() << "nil" << fmt::rparen;
+    print.end_list();
     done(expr, print, cprint);
   }
 
@@ -419,12 +420,13 @@ public:
 
   void VisitInitListExpr(const InitListExpr *expr, CoqPrinter& print, ClangPrinter& cprint)
   {
-    print.ctor("Einitlist") << fmt::lparen;
+    print.ctor("Einitlist");
+    print.begin_list();
     for (auto i : expr->inits()) {
       cprint.printExpr(i, print);
-      print.output() << "::";
+      print.cons();
     }
-    print.output() << "nil" << fmt::rparen;
+    print.end_list();
     done(expr, print, cprint);
   }
 
@@ -559,12 +561,12 @@ public:
     cprint.printGlobalName(expr->getConstructor(), print);
     print.output() << fmt::nbsp;
 
-    print.output() << fmt::lparen;
+    print.begin_list();
     for (auto i : expr->arguments()) {
       cprint.printExpr(i, print);
-      print.output() << "::";
+      print.cons();
     }
-    print.output() << "nil" << fmt::rparen;
+    print.end_list();
 
     done(expr, print, cprint);
   }
@@ -572,6 +574,27 @@ public:
   void VisitOpaqueValueExpr(const OpaqueValueExpr *expr, CoqPrinter& print, ClangPrinter& cprint)
   {
     cprint.printExpr(expr->getSourceExpr(), print);
+  }
+
+  void VisitAtomicExpr(const clang::AtomicExpr *expr, CoqPrinter& print, ClangPrinter& cprint) {
+    print.ctor("Eatomic");
+
+    switch (expr->getOp()) {
+    #define BUILTIN(ID, TYPE, ATTRS)
+    #define ATOMIC_BUILTIN(ID, TYPE, ATTRS) case clang::AtomicExpr::AO ## ID: print.output() << "AO" #ID << fmt::nbsp; break;
+    #include "clang/Basic/Builtins.def"
+    #undef BUILTIN
+    #undef ATOMIC_BUILTIN
+    }
+
+    print.begin_list();
+    for (unsigned i = 0; i < expr->getNumSubExprs(); ++i) {
+      cprint.printExprAndValCat(expr->getSubExprs()[i], print);
+      print.cons();
+    }
+    print.end_list();
+
+    done(expr, print, cprint);
   }
 };
 

@@ -63,6 +63,7 @@ Module Type Expr.
     | Edelete _ _ _ t
     | Eandclean _ t
     | Etemp _ t => t
+    | Eatomic _ _ t => t
     end.
 
   Definition tptsto (ty : type) (p : val) (v : val) : mpred :=

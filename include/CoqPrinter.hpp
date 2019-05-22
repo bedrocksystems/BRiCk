@@ -58,6 +58,21 @@ public:
 		return this->output_;
 	}
 
+	fmt::Formatter& str(const char* str) {
+		return this->output_ << "\"" << str << "\"";
+	}
+
+	fmt::Formatter& begin_list() {
+		return this->output_ << fmt::lparen;
+	}
+	fmt::Formatter& end_list() {
+		return this->output_ << "nil" << fmt::rparen;
+	}
+	fmt::Formatter& cons() {
+		return this->output_ << fmt::nbsp << "::" << fmt::nbsp;
+	}
+
+
 public:
 	fmt::Formatter& output() {
 		return this->output_;

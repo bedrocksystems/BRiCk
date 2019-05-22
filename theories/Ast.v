@@ -169,6 +169,29 @@ Variant VarRef : Set :=
 
 Variant ValCat : Set := Lvalue | Rvalue | Xvalue.
 
+Variant AtomicOp : Set :=
+| AO__atomic_load
+| AO__atomic_load_n
+| AO__atomic_store
+| AO__atomic_store_n
+| AO__atomic_compare_exchange
+| AO__atomic_compare_exchange_n
+| AO__atomic_exchange
+| AO__atomic_exchange_n
+| AO__atomic_fetch_add
+| AO__atomic_fetch_sub
+| AO__atomic_fetch_and
+| AO__atomic_fetch_or
+| AO__atomic_fetch_xor
+| AO__atomic_fetch_nand
+| AO__atomic_add_fetch
+| AO__atomic_sub_fetch
+| AO__atomic_and_fetch
+| AO__atomic_or_fetch
+| AO__atomic_xor_fetch
+| AO__atomic_nand_fetch
+.
+
 Inductive Expr : Set :=
 | Econst_ref (_ : VarRef) (_ : type)
   (* ^ these are different because they do not have addresses *)
@@ -226,6 +249,8 @@ Inductive Expr : Set :=
 
 | Eandclean (_ : Expr) (_ : type)
 | Etemp (_ : Expr) (_ : type)
+
+| Eatomic (_ : AtomicOp) (_ : list (ValCat * Expr)) (_ : type)
 .
 
 Variant SwitchBranch : Set :=
