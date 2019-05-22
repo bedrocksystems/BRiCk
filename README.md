@@ -6,17 +6,15 @@ Tool for converting C++ files into Coq files.
 ### C++
 You will need the following packages (they can be installed via `apt` on a ubuntu distribution).
 
-1. `clang-7`, `libclang-7-dev`
+1. `llvm-7`, `llvm-7-dev`, `clang-7`, `libclang-7-dev`
 2. `cmake`
 
 ### Coq
 You can get all of the Coq dependencies via opam with the following command.
 
 ```shell
-$ opam install coq coq-charge-core
+$ opam install coq coq-charge-core coq-ltac-iter
 ```
-
-You should be installing coq 8.9 and charge-core 1.2 as well as their dependencies.
 
 ## Building
 You can build `cpp2v` using the following commands.
