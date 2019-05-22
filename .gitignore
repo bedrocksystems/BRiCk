@@ -8,3 +8,4 @@ Makefile.coq.conf
 *.aux
 .lia.cache
 .nia.cache
+build
