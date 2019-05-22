@@ -58,7 +58,7 @@ static SourceLocation getPrevSourceLoc(SourceManager &sm, const Decl *d)
   }
 }
 
-CommentScanner&& CommentScanner::decl_comments(
+CommentScanner CommentScanner::decl_comments(
         const clang::Decl *decl, clang::ASTContext *ctxt)
 {
   SourceManager &sm = ctxt->getSourceManager();

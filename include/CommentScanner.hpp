@@ -75,7 +75,7 @@ public:
 		}
 	}
 
-	static CommentScanner&& decl_comments(const clang::Decl* decl, clang::ASTContext* ctxt);
+	static CommentScanner decl_comments(const clang::Decl* decl, clang::ASTContext* ctxt);
 };
 
 }
