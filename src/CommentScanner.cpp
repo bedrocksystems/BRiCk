@@ -25,11 +25,13 @@ using namespace comment;
 static SourceLocation getStartSourceLocWithComment(
         clang::ASTContext *ctxt, const Decl *d)
 {
-  if (auto comment = ctxt->getRawCommentForDeclNoCache(d)) {
-    return comment->getLocStart();
-  } else {
-    return d->getLocStart();
-  }
+  auto comment = ctxt->getRawCommentForDeclNoCache(d);
+  return comment ?
+#if CLANG_VERSION_MAJOR >= 8
+          comment->getBeginLoc() : d->getBeginLoc();
+#else
+          comment->getLocStart() : d->getLocStart();
+#endif
 }
 
 static Decl *getPreviousDeclInContext(const Decl *d)
@@ -50,12 +52,12 @@ static Decl *getPreviousDeclInContext(const Decl *d)
 static SourceLocation getPrevSourceLoc(SourceManager &sm, const Decl *d)
 {
   auto pd = getPreviousDeclInContext(d);
-  if (pd && pd->getLocEnd().isValid()) {
-    return pd->getLocEnd();
-  } else {
-    return sm.getLocForStartOfFile(
-            sm.getFileID(d->getSourceRange().getBegin()));
-  }
+#if CLANG_VERSION_MAJOR >= 8
+  return (pd && pd->getEndLoc().isValid()) ? pd->getEndLoc()
+#else
+      return (pd && pd->getLocEnd().isValid()) ? pd->getLocEnd()
+#endif
+      : sm.getLocForStartOfFile(sm.getFileID(d->getSourceRange().getBegin()));
 }
 
 CommentScanner CommentScanner::decl_comments(

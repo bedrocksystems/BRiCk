@@ -299,7 +299,7 @@ class PrintDecl : public ConstDeclVisitorArgs<PrintDecl, void, CoqPrinter &,
   void VisitEnumConstantDecl(const EnumConstantDecl *decl,
           CoqPrinter &print, ClangPrinter &cprint) {
     print.ctor("Dconstant");
-    assert(decl->getNameAsString() != nullptr);
+    assert((decl != nullptr) && (!decl->getNameAsString().empty()));
     cprint.printGlobalName(decl, print);
     print.output() << fmt::nbsp;
     cprint.printQualType(decl->getType(), print);
