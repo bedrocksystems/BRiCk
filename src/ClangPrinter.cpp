@@ -6,6 +6,7 @@
 #include <clang/AST/Mangle.h>
 #include <clang/AST/Stmt.h>
 
+#include <cstdio>
 using namespace clang;
 
 ClangPrinter::ClangPrinter(clang::ASTContext *context)
@@ -21,8 +22,6 @@ unsigned ClangPrinter::getTypeSize(const BuiltinType* t) const {
 
 void ClangPrinter::printGlobalName(const NamedDecl *decl, CoqPrinter &print)
 {
-  assert(!decl->getDeclContext()->isFunctionOrMethod());
-
   print.output() << "\"";
   if (auto fd = dyn_cast<FunctionDecl>(decl)) {
     if (fd->getLanguageLinkage() == LanguageLinkage::CLanguageLinkage) {

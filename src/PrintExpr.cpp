@@ -406,10 +406,10 @@ public:
     done(expr, print, cprint);
   }
 
-#if CLANG_VERSION_MAJOR > 8
+#if CLANG_VERSION_MAJOR >= 8
   void VisitConstantExpr(const ConstantExpr *expr, CoqPrinter& print, ClangPrinter& cprint)
   {
-    this->Visit(expr->getSubExpr());
+    this->Visit(expr->getSubExpr(), print, cprint);
   }
 #endif
 

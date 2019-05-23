@@ -12,11 +12,12 @@ public:
     if (opaque) {
       add_declaration(d);
     } else {
-      definitions_.insert(std::make_pair(d->getName(), d));
+      definitions_.insert(std::make_pair(llvm::StringRef(d->getNameAsString()), d));
     }
   }
+
   void add_declaration(const clang::NamedDecl* d) {
-    imports_.insert(std::make_pair(d->getName(), std::make_pair(d, true)));
+    imports_.insert(std::make_pair(llvm::StringRef(d->getNameAsString()), std::make_pair(d, true)));
   }
 
   const std::multimap<clang::StringRef, std::pair<const clang::NamedDecl*, bool> >& imports() const {
