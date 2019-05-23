@@ -87,8 +87,8 @@ Module Type cclogic.
 
   (*todo(isk): Ask Gregory the magic wand.*)
   Axiom rule_ghost_intro:
-  forall  g P E Q CMI (guard: In CMI guard_container) (ptriple: mwand P (wp_ghst E Q)),
-     mwand P ( wp_ghst E (fun v =>  (Q v) ** (Exists l, logical_ghost CMI  guard l g))).
+  forall  g P E Qp CMI (guard: In CMI guard_container) (ptriple: mwand P (wp_ghst E Qp)),
+     mwand P ( wp_ghst E (fun v =>  (Qp v) ** (Exists l, logical_ghost CMI  guard l g))).
  
     (********ATOMIC EXPRESSIONS*****)
     (*clang atomic expressions 
@@ -119,12 +119,24 @@ Module Type cclogic.
    (* AtomPerm(E, Linv(E)) *)
   Parameter AtomPerm :  Expr -> (Expr -> mpred ) -> mpred .
 
-  Parameter PureFact : val -> mpred.
+  (*Duplicabbel*)
+  Axiom Persistent_AtomPerm : forall E Qp,  AtomPerm E Qp -|- AtomPerm E Qp ** AtomPerm E Qp.
  
-  (*TODO(isk) ask Gregory the exact values for vcat and acc_type has to be passed *)
-  Axiom rule_atomic_load: forall (acc_type:type) (vcat:ValCat) P E Q, mwand (P ** AtomPerm E Q)
-                                                              (wp_atom AO__atomic_load ((vcat,E)::nil) acc_type (fun  x =>  PureFact x)).
-                                                                                                                            
+  (*todo(isk) ask Gregory the exact values for vcat and acc_type has to be passed *)
+  Axiom rule_atomic_load: forall (acc_type:type) (vcat:ValCat) P E Qp (OwnSucc: val -> mpred) , mwand (P ** AtomPerm E Qp)
+                                                              (wp_atom AO__atomic_load ((vcat,E)::nil) acc_type (fun x =>  OwnSucc x )).
+
+  (*todo(isk): Ask Gregory the eval of Exprs*)
+  Parameter get_val_of_expr : ValCat -> Expr -> val.
+  (*atomic compare and exchange rule*)
+  (*todo(isk): Ask the types of vcats etc.*)
+  (*todo(isk): b has to to be changed -- (fun x => if(x == (get_val_of_expr vcat' E')) then (OwnSucc E') else  ((P E') ** AtomPerm E Qp))) *)
+  Axiom rule_compare_exchange :
+     forall P E E' E'' Qp (acc_type : type) (vcat:ValCat) (vcat':ValCat) (vcat'':ValCat) (OwnSucc: val -> mpred) (b: bool),
+        mwand ((P E) ** AtomPerm E Qp)
+              (wp_atom AO__atomic_compare_exchange ((vcat,E)::(vcat',E')::(vcat'',E'')::nil) acc_type
+                       (fun x => if(b) then (OwnSucc (get_val_of_expr vcat' E') ) else  ((P E') ** AtomPerm E Qp))).
+
 End cclogic.
 
 Declare Module CCL : cclogic.
