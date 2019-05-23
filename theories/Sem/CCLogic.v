@@ -76,15 +76,23 @@ Module Type cclogic.
   Axiom logical_ghost: forall (ghost : carrier_monoid) (guard : In ghost guard_container)  (gl : Set) (gv : val), mpred.
 
   (*Introducing ghost*)
+  Parameter mwand : mpred -> mpred -> Prop. (*todo(ISK): I dont want to have one more pred for Prop->mpred. I need -* in mpred *)
   Parameter wp_ghst : Expr -> (val -> mpred) -> mpred.
-     
+
+  (*
+       {P} E {Q}
+    ------------
+    {P} E {Q * exists l. l:g} //ghost locatoin l carries the ghost resource g
+   *)
+
+  (*todo(isk): Ask Gregory the magic wand.*)
   Axiom rule_ghost_intro:
-  forall  g P E QQ CMI (guard: In CMI guard_container) (premise: P |-- wp_ghst E QQ),
-     P |-- wp_ghst E (fun v =>  (QQ v) ** (Exists l, logical_ghost CMI  guard l g)).
+  forall  g P E Q CMI (guard: In CMI guard_container) (ptriple: mwand P (wp_ghst E Q)),
+     mwand P ( wp_ghst E (fun v =>  (Q v) ** (Exists l, logical_ghost CMI  guard l g))).
  
     (********ATOMIC EXPRESSIONS*****)
     (*clang atomic expressions 
-    Expression : Eatomic (_ : AtomicOp) (_ : list (ValCat * Expr)) (_ : type) where 
+    Expression : Eatomic (_ : AtomicOp) (_ : list (ValCat * Expr)) (_ : type) where AtomicOP can be
     | AO__atomic_load
     | AO__atomic_load_n
     | AO__atomic_store
@@ -107,34 +115,16 @@ Module Type cclogic.
     | AO__atomic_nand_fetch
    *)
 
+  Parameter wp_atom : AtomicOp -> list (ValCat * Expr) -> type -> (val -> mpred) -> mpred.
+   (* AtomPerm(E, Linv(E)) *)
+  Parameter AtomPerm :  Expr -> (Expr -> mpred ) -> mpred .
 
-  Inductive access_type :=
-    | a_type
-    | na_type.
-  
-  (* RMW access types *)
-  Inductive atom_access_types :=
-    | asc_type
-    | ara_type
-    | arlx_type(*for future*).
-
-  (*Write access types*)
-  Inductive write_access_types : Set:=
-    | wrel_type
-    | wna_type
-    | wseqc_type
-    | wrlx_type.
-    
-  (*Read access types*)
-  Inductive read_access_types : Set:=
-    | racq_type
-    | rna_type
-    | rseqc_type
-    | rrlx_type.
-
-   (*TODO: Up to the point where we define cas, rmw etc. *)
-  
-
+  Parameter PureFact : val -> mpred.
+ 
+  (*TODO(isk) ask Gregory the exact values for vcat and acc_type has to be passed *)
+  Axiom rule_atomic_load: forall (acc_type:type) (vcat:ValCat) P E Q, mwand (P ** AtomPerm E Q)
+                                                              (wp_atom AO__atomic_load ((vcat,E)::nil) acc_type (fun  x =>  PureFact x)).
+                                                                                                                            
 End cclogic.
 
 Declare Module CCL : cclogic.
