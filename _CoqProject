@@ -19,6 +19,7 @@ theories/Sem/Stmt.v
 theories/Sem/Func.v
 theories/Sem/Modules.v
 theories/Sem/Linking.v
+theories/Sem/CCLogic.v
 theories/Sem.v
 
 # Automation
