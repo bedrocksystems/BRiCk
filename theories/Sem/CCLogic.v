@@ -131,8 +131,10 @@ Module Type cclogic.
   Axiom Persistent_AtomPerm : forall E Qp,  AtomPerm E Qp -|- AtomPerm E Qp ** AtomPerm E Qp.
  
   (*todo(isk) ask Gregory the exact values for vcat and acc_type has to be passed *)
-  Axiom rule_atomic_load: forall (acc_type:type) (vcat:ValCat) P E Qp (ownedsucc: val -> mpred) , mwand (P ** AtomPerm E Qp)
-                                                              (wp_atom AO__atomic_load ((vcat,E)::nil) acc_type (fun x =>  ownedsucc x )).
+  Axiom rule_atomic_load: forall (acc_type:type) (vcat:ValCat) P E Qp (ownedsucc: val -> mpred),
+      mwand (P ** AtomPerm E Qp)
+            (wp_atom AO__atomic_load ((vcat,E)::nil) acc_type
+            (fun x =>  ownedsucc x )).
 
   (*todo(isk): Ask Gregory the eval of Exprs*)
   Parameter get_val_of_expr : ValCat -> Expr -> val.
@@ -147,7 +149,6 @@ Module Type cclogic.
   Axiom rule_atomic_compare_exchange :
     forall P (keptforinv: val->mpred) (ownedsucc: val->mpred)
            E E' E'' Qp 
-           (b: bool) (*this line will be removed*)
            (acc_type : type) (vcat:ValCat) (vcat':ValCat) (vcat'':ValCat) (*this line will be removed. pass rvalue for values and lvalue for addresses*)
            (split: Qp E' |-- Exists z, (keptforinv z) ** (ownedsucc z) )
            (preserve: forall z, P ** (keptforinv z) |-- (Qp E'') ),
@@ -159,7 +160,6 @@ Module Type cclogic.
   (*Note: one more pass needed on this rule*)
   Axiom rule_atomic_fetch_add : 
     forall P released keptforinv E Qp pls
-         (b: bool) (*this line will be removed*)
          (acc_type : type) (vcat:ValCat) (vcat':ValCat) (vcat'':ValCat) (*this line will be removed*)
          (split: forall v,  P |-- ((released (get_val_of_expr vcat' v)) ** (keptforinv (get_val_of_expr vcat' v))))
          (atom_xchng: forall v, mwand ((released (get_val_of_expr vcat' v)) ** (AtomPerm E Qp))
