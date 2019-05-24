@@ -2,7 +2,7 @@ Require Import Coq.ZArith.BinInt.
 Require Import Coq.micromega.Lia.
 Require Import Coq.Lists.List.
 Require Import Coq.Strings.String.
-Require Import Coq.QArith.QArith_base.
+Require Import Coq.Logic.ClassicalDescription.
 
 From Coq.Classes Require Import
      RelationClasses Morphisms.
@@ -76,7 +76,7 @@ Module Type cclogic.
   Axiom logical_ghost: forall (ghost : carrier_monoid) (guard : In ghost guard_container)  (gl : Set) (gv : val), mpred.
 
   (*Introducing ghost*)
-  Parameter mwand : mpred -> mpred -> Prop. (*todo(ISK): I dont want to have one more pred for Prop->mpred. I need -* in mpred *)
+  Parameter mwand : mpred -> mpred -> Prop. (*todo(ISK): I need -* in mpred *)
   Parameter wp_ghst : Expr -> (val -> mpred) -> mpred.
 
    (*
@@ -131,11 +131,14 @@ Module Type cclogic.
   Axiom Persistent_AtomPerm : forall E Qp,  AtomPerm E Qp -|- AtomPerm E Qp ** AtomPerm E Qp.
  
   (*todo(isk) ask Gregory the exact values for vcat and acc_type has to be passed *)
-  Axiom rule_atomic_load: forall (acc_type:type) (vcat:ValCat) P E Qp (OwnOnSucc: val -> mpred) , mwand (P ** AtomPerm E Qp)
-                                                              (wp_atom AO__atomic_load ((vcat,E)::nil) acc_type (fun x =>  OwnOnSucc x )).
+  Axiom rule_atomic_load: forall (acc_type:type) (vcat:ValCat) P E Qp (ownedsucc: val -> mpred) , mwand (P ** AtomPerm E Qp)
+                                                              (wp_atom AO__atomic_load ((vcat,E)::nil) acc_type (fun x =>  ownedsucc x )).
 
   (*todo(isk): Ask Gregory the eval of Exprs*)
   Parameter get_val_of_expr : ValCat -> Expr -> val.
+
+  Definition atomdec (P: Prop) :=
+   if (excluded_middle_informative P) then true else false.
   
   (*atomic compare and exchange rule*)
   (*Expl: on successful CXCHG we give away P and acquire OwnSucc E' otherwise all resources preserved.*)
@@ -145,27 +148,29 @@ Module Type cclogic.
     forall P (keptforinv: val->mpred) (ownedsucc: val->mpred)
            E E' E'' Qp 
            (b: bool) (*this line will be removed*)
-           (acc_type : type) (vcat:ValCat) (vcat':ValCat) (vcat'':ValCat) (*this line will be removed*)
+           (acc_type : type) (vcat:ValCat) (vcat':ValCat) (vcat'':ValCat) (*this line will be removed. pass rvalue for values and lvalue for addresses*)
            (split: Qp E' |-- Exists z, (keptforinv z) ** (ownedsucc z) )
            (preserve: forall z, P ** (keptforinv z) |-- (Qp E'') ),
            mwand (P  ** AtomPerm E Qp)
              (wp_atom AO__atomic_compare_exchange ((vcat,E)::(vcat',E')::(vcat'',E'')::nil) acc_type
-                (fun x => if(b) then (ownedsucc (get_val_of_expr vcat' E') ) else  (P  ** AtomPerm E Qp))).
+                      (fun x => if(excluded_middle_informative(eq x (get_val_of_expr vcat' E'))) then
+                                  (ownedsucc (get_val_of_expr vcat' E') ) else  (P  ** AtomPerm E Qp))).
 
   (*Note: one more pass needed on this rule*)
   Axiom rule_atomic_fetch_add : 
-    forall P given kept E Qp pls
+    forall P released keptforinv E Qp pls
          (b: bool) (*this line will be removed*)
          (acc_type : type) (vcat:ValCat) (vcat':ValCat) (vcat'':ValCat) (*this line will be removed*)
-         (split: forall v,  P |-- ((given (get_val_of_expr vcat' v)) ** (kept (get_val_of_expr vcat' v))))
-         (atom_xchng: forall v, mwand ((given (get_val_of_expr vcat' v)) ** (AtomPerm E Qp))
+         (split: forall v,  P |-- ((released (get_val_of_expr vcat' v)) ** (keptforinv (get_val_of_expr vcat' v))))
+         (atom_xchng: forall v, mwand ((released (get_val_of_expr vcat' v)) ** (AtomPerm E Qp))
                         (wp_atom AO__atomic_compare_exchange  ((vcat,E)::(vcat',v)::(vcat'',pls)::nil) acc_type
-                          (fun x => if (b) then (kept (get_val_of_expr vcat' v)) else ((given (get_val_of_expr vcat' v)) ** (AtomPerm E Qp))))),
-                         (*(fun x ⇒ if (x == v) ... -- this has to replace the previous*)
+                                 (fun x:val => if (excluded_middle_informative(eq x (get_val_of_expr vcat' v))) then
+                                                 (keptforinv (get_val_of_expr vcat' v)) else
+                                                 ((released (get_val_of_expr vcat' v)) ** (AtomPerm E Qp))))),
             mwand (P ** (AtomPerm E Qp))
               (wp_atom AO__atomic_fetch_add ((vcat,E)::(vcat',pls )::nil) acc_type
-                (fun x => kept x)).
-  
+                       (fun x:val => keptforinv x)).
+
 End cclogic.
 
 Declare Module CCL : cclogic.
