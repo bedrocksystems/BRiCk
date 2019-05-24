@@ -131,8 +131,8 @@ Module Type cclogic.
   Axiom Persistent_AtomPerm : forall E Qp,  AtomPerm E Qp -|- AtomPerm E Qp ** AtomPerm E Qp.
  
   (*todo(isk) ask Gregory the exact values for vcat and acc_type has to be passed *)
-  Axiom rule_atomic_load: forall (acc_type:type) (vcat:ValCat) P E Qp (OwnSucc: val -> mpred) , mwand (P ** AtomPerm E Qp)
-                                                              (wp_atom AO__atomic_load ((vcat,E)::nil) acc_type (fun x =>  OwnSucc x )).
+  Axiom rule_atomic_load: forall (acc_type:type) (vcat:ValCat) P E Qp (OwnOnSucc: val -> mpred) , mwand (P ** AtomPerm E Qp)
+                                                              (wp_atom AO__atomic_load ((vcat,E)::nil) acc_type (fun x =>  OwnOnSucc x )).
 
   (*todo(isk): Ask Gregory the eval of Exprs*)
   Parameter get_val_of_expr : ValCat -> Expr -> val.
@@ -142,17 +142,29 @@ Module Type cclogic.
   (*todo(isk): Ask the types of vcats etc.*)
   (*todo(isk): b has to to be changed -- (fun x => if(x == (get_val_of_expr vcat' E')) then (OwnSucc E') else  ((P E') ** AtomPerm E Qp))) *) 
   Axiom rule_atomic_compare_exchange :
-    forall P (kept: val->mpred) (given: val->mpred) (pure_fact: val -> mpred)
-           E E' E'' Qp
-           (b: bool) (*will be removed*)
-           (acc_type : type) (vcat:ValCat) (vcat':ValCat) (vcat'':ValCat) (*will be removed*)
-           (split: Qp E' |-- Exists z, (kept z) ** (given z) )
-           (preserve: forall z, P ** (kept z) |-- (Qp E'') ),
-      mwand (P  ** AtomPerm E Qp)
-              (wp_atom AO__atomic_compare_exchange ((vcat,E)::(vcat',E')::(vcat'',E'')::nil) acc_type
-                       (fun x => if(b) then (given (get_val_of_expr vcat' E') ) else  (P  ** AtomPerm E Qp))).
+    forall P (keptforinv: val->mpred) (ownedsucc: val->mpred)
+           E E' E'' Qp 
+           (b: bool) (*this line will be removed*)
+           (acc_type : type) (vcat:ValCat) (vcat':ValCat) (vcat'':ValCat) (*this line will be removed*)
+           (split: Qp E' |-- Exists z, (keptforinv z) ** (ownedsucc z) )
+           (preserve: forall z, P ** (keptforinv z) |-- (Qp E'') ),
+           mwand (P  ** AtomPerm E Qp)
+             (wp_atom AO__atomic_compare_exchange ((vcat,E)::(vcat',E')::(vcat'',E'')::nil) acc_type
+                (fun x => if(b) then (ownedsucc (get_val_of_expr vcat' E') ) else  (P  ** AtomPerm E Qp))).
 
-
+  (*Note: one more pass needed on this rule*)
+  Axiom rule_atomic_fetch_add : 
+    forall P given kept E Qp pls
+         (b: bool) (*this line will be removed*)
+         (acc_type : type) (vcat:ValCat) (vcat':ValCat) (vcat'':ValCat) (*this line will be removed*)
+         (split: forall v,  P |-- ((given (get_val_of_expr vcat' v)) ** (kept (get_val_of_expr vcat' v))))
+         (atom_xchng: forall v, mwand ((given (get_val_of_expr vcat' v)) ** (AtomPerm E Qp))
+                        (wp_atom AO__atomic_compare_exchange  ((vcat,E)::(vcat',v)::(vcat'',pls)::nil) acc_type
+                          (fun x => if (b) then (kept (get_val_of_expr vcat' v)) else ((given (get_val_of_expr vcat' v)) ** (AtomPerm E Qp))))),
+                         (*(fun x ⇒ if (x == v) ... -- this has to replace the previous*)
+            mwand (P ** (AtomPerm E Qp))
+              (wp_atom AO__atomic_fetch_add ((vcat,E)::(vcat',pls )::nil) acc_type
+                (fun x => kept x)).
   
 End cclogic.
 
