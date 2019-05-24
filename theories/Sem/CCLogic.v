@@ -79,11 +79,19 @@ Module Type cclogic.
   Parameter mwand : mpred -> mpred -> Prop. (*todo(ISK): I dont want to have one more pred for Prop->mpred. I need -* in mpred *)
   Parameter wp_ghst : Expr -> (val -> mpred) -> mpred.
 
-  (*
+   (*
        {P} E {Q}
     ------------
-    {P} E {Q * exists l. l:g} //ghost locatoin l carries the ghost resource g
+    {P} E {Q * exists l. l:g} //ghost location l carries the ghost resource g
    *)
+
+  (**************************************
+    A General Note to Gregory : If we want to refer to resources encoded via monoids -- let's say Pg -- then we have to bookkeep/pass
+    guard and containers (guard: In monoid_instance guard_container). Specs below assume that we do not refer to any resource encoded 
+    via monoids so there exists no guard and monoid container that we defined above. In case we want you can introduce them to the specs below.
+  **************************************)
+
+  (*******Atomic Instruction Specification*******)
 
   (*todo(isk): Ask Gregory the magic wand.*)
   Axiom rule_ghost_intro:
@@ -128,15 +136,24 @@ Module Type cclogic.
 
   (*todo(isk): Ask Gregory the eval of Exprs*)
   Parameter get_val_of_expr : ValCat -> Expr -> val.
+  
   (*atomic compare and exchange rule*)
+  (*Expl: on successful CXCHG we give away P and acquire OwnSucc E' otherwise all resources preserved.*)
   (*todo(isk): Ask the types of vcats etc.*)
-  (*todo(isk): b has to to be changed -- (fun x => if(x == (get_val_of_expr vcat' E')) then (OwnSucc E') else  ((P E') ** AtomPerm E Qp))) *)
-  Axiom rule_compare_exchange :
-     forall P E E' E'' Qp (acc_type : type) (vcat:ValCat) (vcat':ValCat) (vcat'':ValCat) (OwnSucc: val -> mpred) (b: bool),
-        mwand ((P E) ** AtomPerm E Qp)
+  (*todo(isk): b has to to be changed -- (fun x => if(x == (get_val_of_expr vcat' E')) then (OwnSucc E') else  ((P E') ** AtomPerm E Qp))) *) 
+  Axiom rule_atomic_compare_exchange :
+    forall P (kept: val->mpred) (given: val->mpred) (pure_fact: val -> mpred)
+           E E' E'' Qp
+           (b: bool) (*will be removed*)
+           (acc_type : type) (vcat:ValCat) (vcat':ValCat) (vcat'':ValCat) (*will be removed*)
+           (split: Qp E' |-- Exists z, (kept z) ** (given z) )
+           (preserve: forall z, P ** (kept z) |-- (Qp E'') ),
+      mwand (P  ** AtomPerm E Qp)
               (wp_atom AO__atomic_compare_exchange ((vcat,E)::(vcat',E')::(vcat'',E'')::nil) acc_type
-                       (fun x => if(b) then (OwnSucc (get_val_of_expr vcat' E') ) else  ((P E') ** AtomPerm E Qp))).
+                       (fun x => if(b) then (given (get_val_of_expr vcat' E') ) else  (P  ** AtomPerm E Qp))).
 
+
+  
 End cclogic.
 
 Declare Module CCL : cclogic.
