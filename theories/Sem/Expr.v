@@ -69,10 +69,6 @@ Module Type Expr.
 
 
   Parameter func_ok_raw : Func -> list val -> thread_info -> (val -> mpred) -> mpred.
-  (* this assserts the frame axiom for function specifications
-   *)
-  Axiom func_ok_frame : forall v vs ti Q F,
-      func_ok_raw v vs ti Q ** F |-- func_ok_raw v vs ti (fun res => Q res ** F).
 
   Definition fspec (n : val) (ls : list val) (ti : thread_info) (Q : val -> mpred) : mpred :=
     Exists f, [| n = Vptr f |] **
@@ -94,7 +90,6 @@ Module Type Expr.
       | e :: es => wp e (fun v => wps es (fun vs => Q (cons v vs)))
       end.
   End wps.
-
 
   Coercion Vint : Z >-> val.
   Coercion Z.of_N : N >-> Z.
@@ -154,7 +149,7 @@ Module Type Expr.
       [! has_type (Vint n) (drop_qualifiers ty) !] //\\ Q (Vint n) empSP
       |-- wp_rhs (Eint n ty) Q.
 
-    (* note that `char` is acutally `byte` *)
+    (* note that `char` is actually `byte` *)
     Axiom wp_rhs_char : forall c ty Q,
       let n := Ascii.N_of_ascii c in
       [! has_type (Vint n) (drop_qualifiers ty) !] //\\ Q (Vint n) empSP
@@ -162,21 +157,19 @@ Module Type Expr.
 
     (* boolean literals are rvalues *)
     Axiom wp_rhs_bool : forall (b : bool) Q,
-      (if b
-       then Q (Vint 1) empSP
-       else Q (Vint 0) empSP)
+      Q (Vint (if b then 1 else 0)) empSP
       |-- wp_rhs (Ebool b) Q.
 
     (* `this` is an rvalue *)
     Axiom wp_rhs_this : forall ty Q,
-      Exists a, ((_local ρ "#this"%string) &~ a ** ltrue) //\\ Q a empSP
+      Exists a, (_this ρ &~ a ** ltrue) //\\ Q a empSP
       |-- wp_rhs (Ethis ty) Q.
 
 
     (* variables are lvalues *)
     Axiom wp_lhs_lvar : forall ty x Q,
-      Exists a, (_local ρ x &~ a ** ltrue) //\\ Q a empSP
-      |-- wp_lhs (Evar (Lname x) ty) Q.
+        Exists a, (_local ρ x &~ a ** ltrue) //\\ Q a empSP
+        |-- wp_lhs (Evar (Lname x) ty) Q.
 
     (* what about the type? if it exists *)
     Axiom wp_lhs_gvar : forall ty x Q,
@@ -269,7 +262,7 @@ Module Type Expr.
 
     Axiom wp_lhs_assign : forall ty l r Q,
         wp_lhs l (fun la free1 => wp_rhs r (fun rv free2 =>
-            _at (_eq la) (uninit (drop_qualifiers ty)) **
+            _at (_eq la) (tany (drop_qualifiers ty)) **
            (_at (_eq la) (tprim (drop_qualifiers ty) rv) -* Q la (free1 ** free2))))
         |-- wp_lhs (Eassign l r ty) Q.
 
@@ -392,6 +385,7 @@ Module Type Expr.
     Ltac operator :=
       first [ subst ; eapply eval_add; [ first [ reflexivity | nia ] | has_type ] ].
 
+    Opaque _local.
 
     Section with_resolve.
       Context {resolve : genv}.
@@ -401,26 +395,38 @@ Module Type Expr.
 
       Definition wp_ok e Q := wp_lhs (resolve:=resolve) ti ρ e (finish Q).
 
+      Definition is_pointer (t : type) : bool :=
+        match t with
+        | Tpointer _ => true
+        | _ => false
+        end.
+
       Ltac t :=
         let fwd :=
             idtac;
-            eapply refine_tprim_ptr;
             lazymatch goal with
-            | |- forall x, Vptr _ = Vptr x -> _ => fail
-            | |- _ => let H := fresh in intros ? H; destruct H
+            | |- _at _ (tprim ?X ?V) ** _ |-- _ =>
+              lazymatch eval compute in (is_pointer X) with
+              | true =>
+                lazymatch V with
+                | Vptr _ => fail
+                | _ => eapply refine_tprim_ptr; let H := fresh in intros ? H; destruct H
+                end
+              end
             end
         in
+        let bwd := idtac; fail in
         let ctac :=
             idtac;
-            first [ eapply _at_cancel; [ solve [ reflexivity
-                                               | eapply tprim_tptr
-                                               | eapply tprim_tint
-                                               | eapply tprim_tuint
-                                               | eapply tprim_uninit
-                                               | eapply tptr_uninit
-                                               | eapply tint_uninit
-                                               | eapply tuint_uninit
-                                               ] | ] ]
+            first [ simple eapply _at_cancel; [ solve [ reflexivity
+                                                      | eapply tprim_tptr
+                                                      | eapply tprim_tint
+                                                      | eapply tprim_tuint
+                                                      | simple eapply tprim_any
+                                                      | simple eapply tptr_any
+                                                      | simple eapply tint_any
+                                                      | simple eapply tuint_any
+                                                      ] | ] ]
         in
         let tac :=
             idtac;
@@ -428,7 +434,7 @@ Module Type Expr.
                 | |- @eq val _ _ => try f_equal
                 end ;
             try solve [ eauto | reflexivity | has_type | operator | lia ] in
-        discharge ltac:(fwd) ltac:(canceler ctac tac) ltac:(tac).
+        discharge ltac:(fwd) ltac:(bwd) ltac:(canceler ctac tac) ltac:(tac).
 
       (* int x ; x = 0 ; *)
       Goal
@@ -439,7 +445,7 @@ Module Type Expr.
         unfold wp_ok.
         unfold tlocal, tlocal_at.
         Time repeat (t; simplify_wp; unfold wp_ok, finish).
-      Time Qed.
+      Qed.
 
       (* note(gmm):
        * having two layers of logic makes sense.
@@ -473,7 +479,7 @@ Module Type Expr.
       Proof.
         intros.
         unfold tlocal, tlocal_at.
-        Time repeat (t; simplify_wp; unfold wp_ok, finish).
+        repeat (t; simplify_wp; unfold wp_ok, finish).
       Qed.
 
       (* int *x ; int y ; x = &y ; *)
@@ -490,7 +496,7 @@ Module Type Expr.
       Proof.
         intros.
         unfold tlocal, tlocal_at.
-        Time repeat (t; simplify_wp; unfold wp_ok, finish).
+        repeat (t; simplify_wp; unfold wp_ok, finish).
       Qed.
 
       (* int *x ; int y ; *(x = &y) = 3; *)
@@ -530,7 +536,7 @@ Module Type Expr.
       Proof.
         intros.
         unfold tlocal, tlocal_at.
-        Time repeat (t; simplify_wp; unfold wp_ok, finish; simpl).
+        repeat (t; simplify_wp; unfold wp_ok, finish; simpl).
       Qed.
 
     End with_resolve.

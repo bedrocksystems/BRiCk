@@ -19,12 +19,8 @@ Require Import Coq.micromega.Lia.
 (* note: only used for demonstration purposes. *)
 From Cpp.Auto Require Import Discharge.
 
-
-Fixpoint sepSPs (ls : list mpred) : mpred :=
-  match ls with
-  | nil => empSP
-  | l :: ls => l ** sepSPs ls
-  end.
+Local Ltac t :=
+  discharge fail fail ltac:(canceler fail auto) auto.
 
 Fixpoint is_void (t : type) : bool :=
   match t with
@@ -46,7 +42,7 @@ Proof.
   2: reflexivity.
   rewrite <- empSPR at 1.
   eapply scME. reflexivity.
-  discharge fail auto auto.
+  t.
 Qed.
 
 
@@ -65,7 +61,7 @@ Proof.
   eapply lexistsL.
   intros.
   etransitivity; [ | eapply H ]; auto.
-  discharge fail fail auto.
+  t.
 Qed.
 
 Lemma forallEach_primes:
@@ -284,7 +280,7 @@ Module Type Func.
            Exists g : (PQ args).(wpp_with),
                       (Forall res, (PQ args).(wpp_post) g res -* Q res)
                    ** (PQ args).(wpp_pre) g |}.
-    
+
     (* Hoare triple for a function.
      *)
     Definition SFunction (ret : type) (targs : list type)
@@ -309,7 +305,7 @@ Module Type Func.
           (fun this => arrowFrom_map (fun wpp =>
              {| wpp_with := wpp.(wpp_with)
               ; wpp_pre  := fun m =>
-                  (uninitialized_ty (Tref class)).(repr) this ** wpp.(wpp_pre) m
+                  _at (_eq this) (uninit (Tref class)) ** wpp.(wpp_pre) m
               ; wpp_post := wpp.(wpp_post)
               |}) (PQ this)).
 
@@ -324,7 +320,7 @@ Module Type Func.
              {| wpp_with := (PQ this).(wpp_with)
               ; wpp_pre := (PQ this).(wpp_pre)
               ; wpp_post := fun m res =>
-                  (uninitialized_ty (Tref class)).(repr) this ** (PQ this).(wpp_post) m res
+                  _at (_eq this) (tany (Tref class)) ** (PQ this).(wpp_post) m res
               |}).
 
     (* Hoare triple for a method.
@@ -371,7 +367,7 @@ Module Type Func.
       eapply (lforallL (wpp_post (PQ vs) g)).
       eapply wandSP_lentails_m; try reflexivity.
       red.
-      discharge fail ltac:(canceler fail auto) auto.
+      t.
     Qed.
 
     Theorem triple_apply : forall p r ts F F' vs ti (PQ : list val -> WithPrePost) K,
@@ -389,7 +385,7 @@ Module Type Func.
       specialize (H0 g).
       rewrite <- sepSPA.
       rewrite H0.
-      discharge fail ltac:(canceler fail auto) auto.
+      t.
       eapply fspec_conseq. assumption.
     Qed.
 
@@ -419,11 +415,11 @@ Module Type Func.
       eapply wandSPAdj.
       eapply wandSP_cancel.
       rewrite H0; clear H0.
-      discharge fail ltac:(canceler fail auto) auto.
+      t.
       clear.
       revert vs. induction ts; destruct vs; simpl; try reflexivity.
-      { discharge fail ltac:(canceler fail auto) auto. }
-      { rewrite IHts. discharge fail ltac:(canceler fail auto) auto. }
+      { t. }
+      { rewrite IHts. t. }
     Qed.
 
     Section with_resolver.
@@ -580,65 +576,6 @@ Module Type Func.
       end.
 
 
-(*
-    Lemma ctor_ok_ctor:
-      forall (resolve : genv) P cls params init body PQ Z ZZ,
-        (forall this : val,
-            P |-- ForallEach' (u:=val) (T:=(val -> mpred) -> mpred)
-                          (map snd params)
-                          (Z this) (ZZ this)) ->
-        P
-        |-- ctor_ok' resolve
-            {| c_class := cls
-             ; c_params := params
-             ; c_body := Some (UserDefined (init, body)) |}
-            (ctor' cls (List.map snd params) PQ).
-    Proof.
-      unfold ctor', ctor_ok'; simpl.
-      intros.
-      work.
-      rename x into this.
-      rewrite (H this); clear H.
-      assert (Z this = (list_rect
-           (fun targs : list type =>
-            arrowFrom val targs WithPrePost ->
-            arrowFrom val targs ((val -> mpred) -> mpred))
-           (fun (PQ0 : WithPrePost) (Q : val -> mpred) =>
-            Exists g : wpp_with PQ0,
-            (Forall res : val, wpp_post PQ0 g res -* Q res) ** wpp_pre PQ0 g)
-           (fun (_ : type) (targs : list type)
-              (IHtargs : arrowFrom val targs WithPrePost ->
-                         arrowFrom val targs ((val -> mpred) -> mpred))
-              (PQ0 : val -> arrowFrom val targs WithPrePost)
-              (x : val) => IHtargs (PQ0 x)) (map snd params)
-           (arrowFrom_map
-              (fun wpp : WithPrePost =>
-               {|
-               wpp_with := wpp_with wpp;
-               wpp_pre := fun m : wpp_with wpp =>
-                          uninitialized_ty (Qmut (Tref cls)) this **
-                          wpp_pre wpp m;
-               wpp_post := wpp_post wpp |}) (PQ this)))).
-      clear.
-      { induction params; simpl.
-        Focus 2.
-        About ht'.
-
-
-
-      induction params.
-      { simpl.
-        Print ctor_ok'.
-        assert (ZZ = fun this wpp args =>
-                        Forall Q : mpred,
-                                   _local "#this" this **
-                                   Exists g : (PQ this).(wpp_with),
-                                              (Forall res : val, wpp_post (PQ this) g res -* Q)  ** uninitialized_ty (Qmut (Tref cls)) this ** (PQ this).(wpp_pre) g -* wpis resolve init
-        (wp resolve body
-           (Kfree (_local "#this" this ** empSP) (void_return Q)))).
-*)
-
-
     Definition cglob' (gn : globname) ti (spec : function_spec')
     : mpred :=
       Exists a, [| glob_addr resolve gn a |] ** cptr' (Vptr a) ti spec.
@@ -675,29 +612,6 @@ Module Type Func.
       red. intros. instantiate (1:=fun _ => empSP).
       admit.
     Admitted.
-
-
-(*
-    Axiom Proper_wpe_equiv
-    : Proper (eq ==> eq ==> eq ==> pointwise_relation _ lequiv ==> lequiv) wpe.
-    Axiom Proper_wpe_entails
-    : Proper (eq ==> eq ==> eq ==> pointwise_relation _ lentails ==> lentails) wpe.
-
-    Lemma Proper_wps_entails
-    : Proper (eq ==> pointwise_relation _ lentails ==> lentails)
-             wps.
-    Proof.
-      do 3 red. intros. subst.
-      generalize dependent x0; revert y0.
-      induction y; simpl; intros.
-      { eapply H0. }
-      { simpl. eapply Proper_wpe_entails; eauto.
-        red. intros.
-        eapply IHy. red.
-        eauto. }
-    Qed.
-*)
-
 
 (*
     Ltac simplifying :=

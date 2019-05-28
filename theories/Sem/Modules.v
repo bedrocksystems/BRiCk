@@ -24,11 +24,6 @@ From Cpp.Sem Require Import
 Module Type modules.
 
   (* this is the denotation of modules *)
-  Fixpoint sepSPs (ls : list mpred) : mpred :=
-    match ls with
-    | nil => empSP
-    | l :: ls => l ** sepSPs ls
-    end.
 
   (* note(gmm): two ways to support initializer lists.
    * 1/ add them to all functions (they are almost always empty

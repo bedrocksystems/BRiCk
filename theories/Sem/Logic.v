@@ -57,12 +57,11 @@ Module Type logic.
   Axiom with_genv_single : forall f g,
       with_genv f //\\ with_genv g -|- with_genv (fun r => f r //\\ g r).
 
-  (* todo(gmm): this is wildly unsound. *)
-  Axiom with_genv_is : forall (g : genv) (f : genv -> _), with_genv f -|- f g.
-
   (* heap points to *)
   (* note(gmm): this needs to support fractional permissions and other features *)
   Parameter ptsto : forall addr value : val, mpred.
+
+  Parameter local_addr : region -> ident -> ptr -> mpred.
 
   (* the pointer contains the code *)
   Parameter code_at : Func -> ptr -> mpred.
@@ -72,6 +71,17 @@ Module Type logic.
 
   Parameter ctor_at : ptr -> Ctor -> mpred.
   Parameter dtor_at : ptr -> Dtor -> mpred.
+
+  (* todo(gmm): this should move to charge-core *)
+  Section with_logic.
+    Context {L : Type} {BIL : BILogicOps L}.
+    Fixpoint sepSPs (ls : list L) : L :=
+      match ls with
+      | nil => empSP
+      | l :: nil => l
+      | l :: ls => l ** sepSPs ls
+      end.
+  End with_logic.
 
 End logic.
 

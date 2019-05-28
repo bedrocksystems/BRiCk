@@ -173,11 +173,11 @@ Module Type Stmt.
           Exists dtor, [| glob_addr resolve (gn ++ "D1") dtor |] **
           (* todo(gmm): is there a better way to get the destructor? *)
           wps (wpAnys (resolve:=resolve) ti ρ) es (fun vs free =>
-                 Forall a, (uninitialized_ty (Tref gn)).(repr) a
+                 Forall a, _at (_eq a) (uninit (Tref gn))
               -* |> fspec (Vptr ctor) (a :: vs) ti (fun _ =>
                  _local ρ x &~ a -*
                  (free ** k (Kat_exit (fun Q => |> fspec (Vptr dtor) (a :: nil) ti
-                                   (fun _ => _local ρ x &~ a ** (uninitialized_ty (Tref gn)).(repr) a ** Q)) Q)))) empSP
+                                   (fun _ => _local ρ x &~ a ** _at (_eq a) (tany (Tref gn)) ** Q)) Q)))) empSP
         | _ => lfalse
           (* ^ all non-primitive declarations must have initializers *)
         end

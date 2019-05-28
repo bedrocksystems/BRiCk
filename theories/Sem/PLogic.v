@@ -14,10 +14,12 @@ From Cpp.Sem Require Import Logic Semantics.
 
 Local Open Scope string_scope.
 
+Local Ltac t := Discharge.discharge fail fail fail eauto.
+
 (* todo(gmm): these can be moved somewhere more generic *)
-Class Affine {L : Type} {LL : ILogicOps L} {LS : BILogicOps L} (P : L) : Prop :=
+Class Duplicable {L : Type} {LL : ILogicOps L} {LS : BILogicOps L} (P : L) : Prop :=
 { can_dup : P |-- P ** P }.
-Class Droppable {L : Type} {LL : ILogicOps L} {LS : BILogicOps L} (P : L) : Prop :=
+Class Affine {L : Type} {LL : ILogicOps L} {LS : BILogicOps L} (P : L) : Prop :=
 { can_drop : P |-- empSP }.
 
 (* representations are predicates over a location, they should be used to
@@ -115,27 +117,32 @@ Definition _eq (a : val) : Loc :=
   {| addr_of p := [| p = a |] |}.
 
 (* note(gmm): this is *not* duplicable *)
-Definition _local (r : region) (x : ident) : Loc.
-Admitted.
-Axiom _local_det : forall r x, LocEq (_local r x) (_local r x).
+Definition _local (r : region) (x : ident) : Loc :=
+  {| addr_of v := Exists p, [| v = Vptr p |] ** local_addr r x p |}.
 
 Definition _this (r : region) : Loc :=
   _local r "#this".
 
-
-Definition _global (x : globname) : Loc.
-Admitted.
+Definition _global (x : obj_name) : Loc :=
+  {| addr_of v := Exists p, [| v = Vptr p |] **
+                  with_genv (fun env => [| glob_addr env x p |]) |}.
 
 (* offsets *)
 Definition _field (f : field) : Offset.
+  (* this is duplicable for non-reference fields *)
 Admitted.
 
 Definition _sub (t : type) (i : Z) : Offset.
+  (* this is always duplicable *)
 Admitted.
 
 (* this represents static_cast *)
 Definition _super (from to : type) : Offset.
+  (* this is always duplicable *)
 Admitted.
+
+Definition _deref (ty : type) : Offset :=
+  {| offset from to := ptsto from to ** [| has_type from (Tpointer ty) |] |}.
 
 Definition _id : Offset :=
   {| offset a b := embed (a = b) |}.
@@ -148,7 +155,7 @@ Lemma _offsetL_dot : forall o1 o2 l,
     _offsetL o2 (_offsetL o1 l) -|- _offsetL (_dot o1 o2) l.
 Proof.
   unfold _offsetL, _dot; simpl.
-  constructor; simpl; intros; Discharge.discharge fail fail idtac.
+  constructor; simpl; intros; t.
 Qed.
 
 Definition _offsetR (o : Offset) (r : Rep) : Rep :=
@@ -157,11 +164,8 @@ Lemma _offsetR_dot : forall o1 o2 l,
     _offsetR o1 (_offsetR o2 l) -|- _offsetR (_dot o1 o2) l.
 Proof.
   unfold _offsetL, _dot; simpl.
-  constructor; simpl; intros; Discharge.discharge fail fail idtac.
+  constructor; simpl; intros; t.
 Qed.
-
-
-
 
 (*
 (** pointer offsets *)
@@ -177,25 +181,6 @@ Parameter parent_addr : forall (parent derived : globname) (base : val), Loc.
 Parameter local_addr : region -> ident -> Loc.
 *)
 
-(* heap points to *)
-(* note(gmm): this needs to support fractional permissions and other features *)
-Parameter ptsto : forall addr value : val, mpred.
-
-
-
-(* the pointer contains the code *)
-Parameter code_at : Func -> ptr -> mpred.
-(* code_at is freely duplicable *)
-Axiom code_at_dup : forall p f, code_at p f -|- code_at p f ** code_at p f.
-Axiom code_at_drop : forall p f, code_at p f |-- empSP.
-
-Parameter ctor_at : ptr -> Ctor -> mpred.
-Parameter dtor_at : ptr -> Dtor -> mpred.
-
-
-Parameter is_true : val -> bool.
-Axiom is_true_int : forall i,
-    is_true (Vint i) = negb (BinIntDef.Z.eqb i 0).
 
 (* there shouldn't be locals because locals need a spatial ownership (over
  * the region)
@@ -219,105 +204,103 @@ Fixpoint pathD (p : path) : Offset :=
          (_dot (_sub (drop_qualifiers t) i) (pathD p)).(offset) b a |}
   end.
 
-Require Import Cpp.Auto.Discharge.
-
-(* Lemma pathD_det : forall p l1 l2, *)
-(*     LocEq l1 l2  -> LocEq (pathD p l1) (pathD p l2). *)
-(* Proof. *)
-(*   induction p; simpl; intros; eauto. *)
-(*   { eapply IHp. eapply Proper__field; eauto. } *)
-(*   { eapply IHp. eapply Proper__super. eauto. } *)
-(*   { red. simpl. intros. *)
-(*     rewrite landexistsDL1; eapply lexistsL; intro. *)
-(*     rewrite landexistsDL2; eapply lexistsL; intro. *)
-(*     unfold only_provable. *)
-(*     admit. } *)
-(* Admitted. *)
-
-
 (* Definition _addr (base : val) (p : path) : Loc := *)
 (*   pathD p (_eq base). *)
-
-Notation "a &~ b" := (a.(addr_of) b) (at level 30, no associativity).
 
 (* Theorem _addr_det : forall p b a1 a2, *)
 (*     _addr b p @@ a1 ** _addr b p @@ a2 |-- _addr b p @@ a1 ** [| a1 = a2 |]. *)
 (* Proof. Admitted. *)
 
+Notation "a &~ b" := (a.(addr_of) b) (at level 30, no associativity).
+
 Class Duplicable_Offset (o : Offset) : Prop :=
   { dup_offset : o |-- o ** o }.
 Arguments dup_offset {_ _}.
 
-Global Instance Duplicable_offset o {Do : Duplicable_Offset o} a b : Affine (offset o a b).
+Global Instance Duplicable_offset o {Do : Duplicable_Offset o} a b : Duplicable (offset o a b).
 Proof.
   constructor. eapply dup_offset.
 Qed.
 
-
 Definition _at (base : Loc) (P : Rep) : mpred :=
   Exists a, base.(addr_of) a ** P.(repr) a.
 
+(* drop _atP
 Definition _atP (base : Loc) (p : Offset) (P : Rep) : mpred :=
   _at (_offsetL p base) P.
 
 Theorem _atP_at : forall b p P,
     _atP b p P -|- _at (_offsetL p b) P.
 Proof. reflexivity. Qed.
+*)
 
 Arguments can_dup {_ _ _} _ {_}.
 
-Lemma offset_consolidate p a b c :
-  offset p a b ** offset p a c |-- offset p a b ** [| b = c |].
-Proof. Admitted.
+(* Lemma offset_consolidate p a b c : *)
+(*   offset p a b ** offset p a c |-- offset p a b ** [| b = c |]. *)
+(* Proof. Admitted. *)
 
+(*
 Lemma _atP_sepSP : forall b p P Q,
     Duplicable_Offset p ->
     _atP (_eq b) p (P ** Q) -|- _atP (_eq b) p P ** _atP (_eq b) p Q.
 Proof.
   intros; split.
   { unfold _atP, _at, _eq, _offsetL. simpl.
-    lift_ex_l fail.
+    Discharge.lift_ex_l fail.
     rewrite (can_dup (offset p x0 x)).
-    Discharge.discharge fail fail idtac.
-    eapply provable_star; auto.
-    eapply only_provable_only; eauto. }
+    t. }
   { unfold _atP, _at, _eq, _offsetL. simpl.
-    lift_ex_l fail.
+    Discharge.lift_ex_l fail.
     subst.
     transitivity ((offset p b x1 ** offset p b x) ** repr P x ** repr Q x1).
-    - Discharge.discharge fail fail idtac.
+    - t.
     - rewrite offset_consolidate.
-      Discharge.discharge fail fail idtac.
+      t.
       subst.
-      Discharge.discharge fail fail idtac.
-      eapply only_provable_only; eauto. }
+      t. }
+Qed.
+
+Lemma _at_eq : forall l p Q,
+    _atP l p Q -|- Exists a, _at (_eq a) Q ** (_offsetL p l) &~ a.
+Proof.
+  unfold _atP, _at, _eq, _offsetL. split; simpl.
+  { t. }
+  { t. subst. t. }
 Qed.
 
 Lemma _atP_exists : forall b p T (P : T -> _),
     _atP b p (lexists P) -|- Exists x : T, _atP b p (P x).
 Proof.
-  unfold _atP, _at; simpl.
-  split.
-  { Discharge.discharge fail fail idtac. }
-  { Discharge.discharge fail fail idtac. }
+  unfold _atP, _at; simpl; split; t.
 Qed.
 
 Lemma _atP_offsetR : forall b p o P,
     _atP b p (_offsetR o P) -|- _atP b (_dot p o) P.
 Proof.
-  unfold _atP, _at, _offsetR; simpl. split.
-  { Discharge.discharge fail fail idtac. }
-  { Discharge.discharge fail fail idtac. }
+  unfold _atP, _at, _offsetR; simpl; split; t.
+Qed.
+*)
+Lemma _at_sepSP : forall x P Q,
+    _at (_eq x) (P ** Q) -|- _at (_eq x) P ** _at (_eq x) Q.
+Proof.
+  unfold _at; split; simpl; t. subst. t.
 Qed.
 
+Lemma _at_empSP : forall x,
+    _at (_eq x) empSP -|- empSP.
+Proof. unfold _at. simpl. intros. split; t. Qed.
 
+Lemma _at_offsetL_offsetR : forall base o r,
+    _at base (_offsetR o r) -|- _at (_offsetL o base) r.
+Proof.
+  unfold _at, _offsetR, _offsetL. split; simpl; t.
+Qed.
 
-
-(* this should probably be split up into a bunch of simpler definitions, e.g.
- * - `tint (size : nat) : N -> Rep`
- * - `tuint (size : nat) : N -> Rep`
- * - ...etc...
+(** Values
+ * These `Rep` predicates wrap `ptsto` facts
  *)
+
 Definition tint (sz : nat) (v : Z) : Rep :=
   {| repr := fun addr =>
                ptsto addr (Vint v) **
@@ -347,9 +330,11 @@ Definition uninit (ty : type) : Rep :=
                (* with_genv (fun env => [| size_of env ty size |]) ** *)
                (tprim ty bits).(repr) addr |}.
 
+(* this should mean "anything, including uninitialized" *)
 Definition tany (t : type) : Rep :=
   {| repr := fun addr =>
-               Exists v, [| has_type v t |] ** (tprim t v).(repr) addr |}.
+               (Exists v, (tprim t v).(repr) addr) \\//
+               (uninit t).(repr) addr |}.
 
 (* this isn't really necessary, we should simply drop it and write
  * predicates in this way to start with
@@ -357,17 +342,35 @@ Definition tany (t : type) : Rep :=
 Definition tinv {model} (Inv : val -> model -> mpred) (m : model) : Rep :=
   {| repr := fun addr => Inv addr m |}.
 
-Lemma tint_uninit : forall sz v, tint sz v |-- uninit (Tint (Some sz) true).
+Lemma tint_any : forall sz v, tint sz v |-- tany (Tint (Some sz) true).
+Proof.
+  simpl; intros. t.
+  eapply lorR1. t.
+Qed.
+Lemma tuint_any : forall sz v, tuint sz v |-- tany (Tint (Some sz) false).
+Proof.
+  simpl; intros. t.
+  eapply lorR1. t.
+Qed.
+Lemma tptr_any : forall ty p, tptr ty p |-- tany (Tpointer ty).
+Proof.
+  simpl; intros. t.
+  eapply lorR1. t.
+  assert (has_type (Vptr p) (Tpointer ty)).
+  { admit. }
+  t.
 Admitted.
-Lemma tuint_uninit : forall sz v, tuint sz v |-- uninit (Tint (Some sz) false).
-Admitted.
-Lemma tptr_uninit : forall ty p, tptr ty p |-- uninit (Tpointer ty).
-Admitted.
-Lemma tprim_uninit : forall t v, tprim t v |-- uninit t.
-Proof. Admitted.
+Lemma tprim_any : forall t v, tprim t v |-- tany t.
+Proof.
+  simpl; intros; t.
+  eapply lorR1. t.
+Qed.
 
-Lemma val_any : forall t v, tprim t v |-- tany t.
-Proof. Admitted.
+Lemma tuninit_any : forall t, uninit t |-- tany t.
+Proof.
+  simpl; intros; t.
+  eapply lorR2. t.
+Qed.
 
 Lemma refine_tprim_ptr : forall p ty v F Q,
     (forall pt, Vptr pt = v ->
@@ -376,17 +379,22 @@ Lemma refine_tprim_ptr : forall p ty v F Q,
 Proof.
   unfold _at, tprim.
   intros; simpl.
-Admitted.
+  t.
+  destruct (has_type_pointer _ _ H0).
+  erewrite <- H; eauto. simpl. subst. t.
+Qed.
 
 Definition _at_cancel : forall a (V V' : Rep) P Q,
     V |-- V' ->
     P |-- Q ->
     _at a V ** P |-- _at a V' ** Q.
-Proof. Admitted.
+Proof.
+  unfold _at. simpl in *. intros. t.
+  eapply scME; eauto.
+Qed.
 
 Definition tlocal_at (r : region) (l : ident) (a : val) (v : Rep) : mpred :=
-  _local r l &~ a **
-  _at (_eq a) v.
+  _local r l &~ a ** _at (_eq a) v.
 
 Definition tlocal (r : region) (x : ident) (v : Rep) : mpred :=
   Exists a, tlocal_at r x a v.
@@ -398,43 +406,8 @@ Proof.
   clear. unfold tlocal, tlocal_at.
   intros.
   rewrite H.
-  Discharge.discharge ltac:(fail) fail eauto.
+  t.
 Qed.
 
-Fixpoint uninitializedN (size : nat) (a : val) : mpred :=
-  match size with
-  | 0 => empSP
-  | S size => (Exists x, ptsto a x) ** uninitializedN size (offset_ptr a 1)
-  end.
-Definition uninitialized (size : N) : Rep :=
-  {| repr := uninitializedN (BinNatDef.N.to_nat size) |}.
-
-Definition uninitialized_ty (tn : type) : Rep :=
-{| repr := fun p : val =>
-  Exists sz, with_genv (fun g => [| @size_of g tn sz |]) **
-                       (uninitialized sz).(repr) p |}.
-
-Opaque uninitialized_ty.
-
-(*
-(* p is a path
- * P is a predicate over the resulting value
- *)
-Definition data (P : val -> mpred) (p : val -> mpred) : mpred.
-refine (Exists v, p v //\\ P v).
-Defined.
-*)
-
-(* Require Import Coq.Lists.List. *)
-
-(* Definition tptsto t a v := *)
-(*   _at a (tprim (drop_qualifiers t) v). *)
-
-(* Definition tat_field (t : type) (base : val) (f : field) (v : val) : mpred := *)
-(*   _atP base (p_dot f p_done) (tprim t v). *)
-
-(* Lemma tat_uninitialized *)
-(*   : forall t b f v F F', *)
-(*     F |-- F' -> *)
-(*     tat_field t b f v ** F |-- _atP b (p_dot f p_done) (uninit t). *)
-(* Proof. Admitted. *)
+(* Global Opaque uninitialized_ty any_ty. *)
+Global Opaque _local _global _at _sub _field _offsetR _offsetL tprim tint tuint tptr sepSP empSP.

@@ -35,6 +35,9 @@ Parameter thread_info : Type.
 
 Parameter has_type : val -> type -> Prop.
 
+Axiom has_type_pointer : forall v ty, has_type v (Tpointer ty) ->
+                                 exists p, v = Vptr p.
+
 Definition bound (bits : nat) (sgn : bool) (v : Z) : Prop :=
   if sgn then
     (-Z.pow 2 (Z.of_nat bits - 1) < v < Z.pow 2 (Z.of_nat bits - 1) - 1)%Z
@@ -49,7 +52,6 @@ Axiom has_type_qual : forall t q x,
     has_type x (Tqualified q t).
 
 Hint Resolve has_type_qual : has_type.
-
 
 Parameter eval_unop : UnOp -> type -> type -> val -> val -> Prop.
 Parameter eval_binop : BinOp -> type -> type -> type -> val -> val -> val -> Prop.
@@ -137,8 +139,6 @@ Axiom eval_ge_int :
 Parameter genv : Type.
 
 Parameter align_of : forall {c : genv} (t : type) (e : N), Prop.
-
-
 
 Parameter glob_addr : genv -> obj_name -> ptr -> Prop.
 
