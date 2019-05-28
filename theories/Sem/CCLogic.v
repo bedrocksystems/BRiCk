@@ -31,7 +31,7 @@ Module Type cclogic.
   (****** Logical State ********)
   
   (*carrier is the data type through which we would like to 
-    represent bookkeeping in resource algebra. Simply, the 
+     represent bookkeeping in resource algebra. Simply, the 
     type to be passed to the resource algebra -- carrier.
     ex: Inductive FracPerm_Carrier :=
                 | QPermission (f:Q)
@@ -76,7 +76,14 @@ Module Type cclogic.
   Axiom logical_ghost: forall (ghost : carrier_monoid) (guard : In ghost guard_container)  (gl : Set) (gv : val), mpred.
 
   (*Introducing ghost*)
-  Parameter mwand : mpred -> mpred -> Prop. (*todo(ISK): I need -* in mpred *)
+  (*repalce mwand with |-- *)
+ (* Parameter mwand : mpred -> mpred -> Prop. (*todo(ISK): I need -* in mpred *)*)
+  (* There is no need for a special wp_ghost. wpe
+     resolve : genv -> thread_info -> ValCat -> Expr -> (val -> FreeTemps -> mpred) -> mpred
+   *)
+  (*
+    Gregory suggests emp |- Exists g. g:m
+  *)
   Parameter wp_ghst : Expr -> (val -> mpred) -> mpred.
 
    (*
@@ -95,8 +102,8 @@ Module Type cclogic.
 
   (*todo(isk): Ask Gregory the magic wand.*)
   Axiom rule_ghost_intro:
-  forall  g P E Qp CMI (guard: In CMI guard_container) (ptriple: mwand P (wp_ghst E Qp)),
-     mwand P ( wp_ghst E (fun v =>  (Qp v) ** (Exists l, logical_ghost CMI  guard l g))).
+  forall  g P E Qp CMI (guard: In CMI guard_container) (ptriple: P |-- (wp_ghst E Qp)),
+     P |-- ( wp_ghst E (fun v =>  (Qp v) ** (Exists l, logical_ghost CMI  guard l g))).
  
     (********ATOMIC EXPRESSIONS*****)
     (*clang atomic expressions 
@@ -122,43 +129,89 @@ Module Type cclogic.
     | AO__atomic_xor_fetch
     | AO__atomic_nand_fetch
    *)
-
-  Parameter wp_atom : AtomicOp -> list (ValCat * Expr) -> type -> (val -> mpred) -> mpred.
+ (* list ValCat * Expr*)
+  Parameter wp_atom : AtomicOp -> list val -> type -> (val -> mpred) -> mpred.
   
-  (* AtomPerm(E, Linv(E)) where E is expression to be evaluated to lvalue *)
-  Parameter AtomPerm :  Expr -> (Expr -> mpred ) -> mpred .
-
-  (*Atomic access permission is duplicable*)
-  Axiom Persistent_AtomPerm : forall E Qp,  AtomPerm E Qp -|- AtomPerm E Qp ** AtomPerm E Qp.
- 
-  (*todo(isk): Ask Gregory the eval of Exprs*)
+  (*todo(isk): Ask Gregory the eval of Exprs
   Parameter get_val_of_expr : ValCat -> Expr -> val.
-
+   *)
+  
   Definition atomdec (P: Prop) :=
    if (excluded_middle_informative P) then true else false.
 
-  (*todo(isk) ask Gregory the exact values for vcat and acc_type has to be passed *)
-  Axiom rule_atomic_load: forall (acc_type:type) (vcat:ValCat) P E Qp (ownedsucc: val -> mpred),
-      mwand (P ** AtomPerm E Qp)
-            (wp_atom AO__atomic_load ((vcat,E)::nil) acc_type
-            (fun x => ownedsucc x )).
 
+  (*Ideas adopted from the paper: Relaxed Separation Logic: A program logic for C11 Concurrency -- Vefeiadis et al. *)
+
+  (*Facts that needs to hold when a location is initialized*)
+  Parameter Init: val -> mpred.
+
+  (*Init is freely duplicable*)
+  Axiom Persistent_Initialization : forall l , Init  l -|- Init  l ** Init  l.
+  
+  (* AtomCASPerm(E, LocInv(E)) where E is expression to be evaluated to lvalue 
+     LocInv: Expr -> mpred.
+  *)
+  Parameter AtomCASPerm :  val -> (val -> mpred) -> mpred .
+  (*Atomic READ access permission*)
+  Parameter AtomRDPerm: val -> (val -> mpred) -> mpred.
+    (*Atomic WRITE access permission*)
+  Parameter AtomWRTPerm: val -> (val -> mpred) -> mpred.
+ 
+  (*Atomic CAS access permission is duplicable*)
+  Axiom Persistent_CASPerm : forall l LocInv,  AtomCASPerm l LocInv -|- AtomCASPerm l LocInv  ** AtomCASPerm l LocInv.
+
+  (*Atomic load access permission is splittable and joinable.
+    We want multiple readers should have accesses 
+    LocInv' l ** LocInv -|- Exists LocInv''. LocInv
+   *)
+(* Correct  Parameter Composable_LocInv: val -> (val -> mpred) -> (val->mpred) -> (val->mpred) -> mpred.*)
+  
+  (*Any two reads in the multiple reader env. is allowed
+   Thus, read permissions should be splittable and joinable
+  
+   *)
+(*  Axiom Splittable_RDPerm : forall LocInv LocInv' l vcat ,  AtomRDPerm l LocInv  ** AtomRDPerm l LocInv'  -|-
+                                                                       Exists LocInv'', LocInv'' (get_val_of_expr vcat l) **
+                                                                              (Composable_LocInv (get_val_of_expr vcat l) LocInv' LocInv LocInv'').
+*)
+
+(*  Axiom Splittable_WRTPerm : forall LocInv LocInv' l vcat, AtomWRTPerm l LocInv ** AtomWRTPerm l LocInv' -|-
+                                                                       Exists LocInv''.*)
+  (* r := l.load -- we can think of this as r := l.load(acc_type) *)
+  (*todo(isk): give up the permission to read the same value again with same permission *)
+  Axiom rule_atomic_load: forall (acc_type:type)  l (LocInv: val -> mpred),
+      (Init  l ** AtomRDPerm l LocInv) |--
+            (wp_atom AO__atomic_load (l::nil) acc_type
+            (fun r => LocInv r)).
+
+ 
+  (* l.store(v) -- we can think of it as l.store(v,acc_type)
+     
+  *)
+   Axiom rule_atomic_store : forall (acc_type:type) v l (LocInv: val -> mpred),
+      (AtomWRTPerm l LocInv ** LocInv l) |--
+            (wp_atom AO__atomic_store (l::v::nil) acc_type
+            (fun r => Init l ** AtomWRTPerm l LocInv)).
+  
+  
   (*atomic compare and exchange rule*)
   (*Expl: on successful CXCHG we give away P and acquire OwnSucc E' otherwise all resources preserved.*)
   (*todo(isk): Ask the types of vcats etc.*)
   (*todo(isk): b has to to be changed -- (fun x => if(x == (get_val_of_expr vcat' E')) then (OwnSucc E') else  ((P E') ** AtomPerm E Qp))) *) 
   Axiom rule_atomic_compare_exchange :
-    forall P (keptforinv: val->mpred) (ownedsucc: val->mpred)
-           E E' E'' Qp 
-           (acc_type : type) (vcat:ValCat) (vcat':ValCat) (vcat'':ValCat) (*this line will be removed. pass rvalue for values and lvalue for addresses*)
-           (split: Qp E' |-- Exists v, (keptforinv v) ** (ownedsucc v) )
-           (preserve: forall v, P ** (keptforinv v) |-- (Qp E'') ),
-           mwand (P  ** AtomPerm E Qp)
-             (wp_atom AO__atomic_compare_exchange ((vcat,E)::(vcat',E')::(vcat'',E'')::nil) acc_type
-                      (fun x => if(excluded_middle_informative(eq x (get_val_of_expr vcat' E'))) then
-                                  (ownedsucc (get_val_of_expr vcat' E') ) else
-                                  (P  ** AtomPerm E Qp))).
-
+    forall P
+           E E' E'' Qp  Q
+           (acc_type : type) 
+           (preserve:  P ** Qp E'  |-- (Qp E'') ** Q),
+           (P  ** AtomCASPerm E Qp)|--
+             (wp_atom AO__atomic_compare_exchange (E::E'::E''::nil) acc_type
+                      (fun x => if(excluded_middle_informative(eq x E')) then
+                                  (Q ** AtomCASPerm E Qp) else
+                                  (P  ** AtomCASPerm E Qp))).
+  Axiom wp_rhs_atomic: forall rslv ti r ao es ty Q,
+      wps (wpAnys (resolve:=rslv) ti r) es  (fun (vs : list val) (free : FreeTemps) =>  wp_atom ao vs ty (fun v=> Q v free)) empSP
+          |-- wp_rhs (resolve:=rslv) ti r (Eatomic ao es ty) Q.
+      
   (*Note: one more pass needed on this rule*)
   Axiom rule_atomic_fetch_add : 
     forall P released keptforinv E Qp pls
@@ -168,8 +221,8 @@ Module Type cclogic.
                         (wp_atom AO__atomic_compare_exchange  ((vcat,E)::(vcat',v)::(vcat'',pls)::nil) acc_type
                                  (fun x:val => if (excluded_middle_informative(eq x (get_val_of_expr vcat' v))) then
                                                  (keptforinv (get_val_of_expr vcat' v)) else
-                                                 ((released (get_val_of_expr vcat' v)) ** (AtomPerm E Qp))))),
-            mwand (P ** (AtomPerm E Qp))
+                                                 ((released (get_val_of_expr vcat' v)) ** (AtomCASPerm E Qp))))),
+            mwand (P ** (AtomCASPerm E Qp))
               (wp_atom AO__atomic_fetch_add ((vcat,E)::(vcat',pls )::nil) acc_type
                        (fun x:val => keptforinv x)).
 
