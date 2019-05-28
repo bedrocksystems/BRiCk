@@ -205,8 +205,8 @@ Module Type cclogic.
            (preserve:  P ** Qp E'  |-- (Qp E'') ** Q),
            (P  ** AtomCASPerm E Qp)|--
              (wp_atom AO__atomic_compare_exchange (E::E'::E''::nil) acc_type
-                      (fun x => if(excluded_middle_informative(eq x E')) then
-                                  (Q ** AtomCASPerm E Qp) else
+                      (fun x => if excluded_middle_informative (x = E') then
+                                  Q else
                                   (P  ** AtomCASPerm E Qp))).
   Axiom wp_rhs_atomic: forall rslv ti r ao es ty Q,
       wps (wpAnys (resolve:=rslv) ti r) es  (fun (vs : list val) (free : FreeTemps) =>  wp_atom ao vs ty (fun v=> Q v free)) empSP
@@ -215,15 +215,15 @@ Module Type cclogic.
   (*Note: one more pass needed on this rule*)
   Axiom rule_atomic_fetch_add : 
     forall P released keptforinv E Qp pls
-         (acc_type : type) (vcat:ValCat) (vcat':ValCat) (vcat'':ValCat) (*this line will be removed*)
-         (split: forall v,  P |-- ((released (get_val_of_expr vcat' v)) ** (keptforinv (get_val_of_expr vcat' v))))
-         (atom_xchng: forall v, mwand ((released (get_val_of_expr vcat' v)) ** (AtomPerm E Qp))
-                        (wp_atom AO__atomic_compare_exchange  ((vcat,E)::(vcat',v)::(vcat'',pls)::nil) acc_type
-                                 (fun x:val => if (excluded_middle_informative(eq x (get_val_of_expr vcat' v))) then
-                                                 (keptforinv (get_val_of_expr vcat' v)) else
-                                                 ((released (get_val_of_expr vcat' v)) ** (AtomCASPerm E Qp))))),
-            mwand (P ** (AtomCASPerm E Qp))
-              (wp_atom AO__atomic_fetch_add ((vcat,E)::(vcat',pls )::nil) acc_type
+         (acc_type : type)
+         (split: forall v,  P |-- (released v) ** (keptforinv v))
+         (atom_xchng: forall v, ((released v) ** (AtomCASPerm E Qp)) |--
+                        (wp_atom AO__atomic_compare_exchange  (E::v::pls::nil) acc_type
+                                 (fun x:val => if (excluded_middle_informative(x = v)) then
+                                                 (keptforinv v) else
+                                                 ((released v) ** (AtomCASPerm E Qp))))),
+      (P ** (AtomCASPerm E Qp)) |--
+              (wp_atom AO__atomic_fetch_add (E::pls::nil) acc_type
                        (fun x:val => keptforinv x)).
 
 End cclogic.
