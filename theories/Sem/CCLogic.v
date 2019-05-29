@@ -156,20 +156,17 @@ Module Type cclogic.
   (*Atomic CAS access permission is duplicable*)
   Axiom Persistent_CASPerm : forall l LocInv,  AtomCASPerm l LocInv -|- AtomCASPerm l LocInv  ** AtomCASPerm l LocInv.
 
+  Parameter Composable_LocInv: val -> (val -> mpred) -> (val->mpred) -> (val-> mpred).
+  
   (*Atomic load access permission is splittable and joinable.
     We want multiple readers should have accesses 
-    LocInv' l ** LocInv -|- Exists LocInv''. LocInv
+    Perm LocInv' l ** Perm LocInv l -|-  Perm LocInv*LocInv' l
+    where LocInv*LocInv' is composable on l
    *)
-(* Correct  Parameter Composable_LocInv: val -> (val -> mpred) -> (val->mpred) -> (val->mpred) -> mpred.*)
-  
-  (*Any two reads in the multiple reader env. is allowed
-   Thus, read permissions should be splittable and joinable
-  
-   *)
-(*  Axiom Splittable_RDPerm : forall LocInv LocInv' l vcat ,  AtomRDPerm l LocInv  ** AtomRDPerm l LocInv'  -|-
-                                                                       Exists LocInv'', LocInv'' (get_val_of_expr vcat l) **
-                                                                              (Composable_LocInv (get_val_of_expr vcat l) LocInv' LocInv LocInv'').
-*)
+  Axiom Splittable_RDPerm : forall LocInv LocInv' l ,  AtomRDPerm l LocInv  ** AtomRDPerm l LocInv'
+                                                            -|-  AtomRDPerm l (Composable_LocInv l LocInv LocInv').
+
+
 
   (*  Axiom Splittable_WRTPerm : forall LocInv LocInv' l vcat, AtomWRTPerm l LocInv ** AtomWRTPerm l LocInv' -|-
                                                                        Exists LocInv''.*)
@@ -199,16 +196,16 @@ Module Type cclogic.
         |-- (wp_atom AO__atomic_compare_exchange (E::E'::E''::nil) acc_type
             (fun x => if excluded_middle_informative (x = E') then
                                   Q else
-                                  (P  ** AtomCASPerm E Qp))).
+                                  P  ** AtomCASPerm E Qp)).
       
-  (*Note: one more pass needed on this rule*)
+  (*atomic fetch and add rule*)
   Axiom rule_atomic_fetch_add : 
     forall P released keptforinv E Qp pls
          (acc_type : type)
          (split: forall v,  P |-- (released v) ** (keptforinv v))
          (atom_xchng: forall v, ((released v) ** (AtomCASPerm E Qp)) |--
                         (wp_atom AO__atomic_compare_exchange  (E::v::pls::nil) acc_type
-                                 (fun x:val => if (excluded_middle_informative(x = v)) then
+                                 (fun x => if (excluded_middle_informative(x = v)) then
                                                  (keptforinv v) else
                                                  ((released v) ** (AtomCASPerm E Qp))))),
       (P ** (AtomCASPerm E Qp)) |--
