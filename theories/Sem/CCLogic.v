@@ -72,10 +72,10 @@ Module Type cclogic.
   (*A generic fractional points to relation encoded using monoids x points to v with permission p.  
    Ex: logical_fptsto FracPerm (bookeeping_already_existing_resources) (QPermission frac) x v 
   *)
-  Axiom logical_fptsto: forall  (perm : carrier_monoid) (guard : In perm guard_container)  (p : Set (*has to be perm*)) (x : val) (v : val), mpred.
+  Axiom logical_fptsto: forall  (perm : carrier_monoid) (guard : In perm guard_container)  (p : Set (*todo(isk): has to be perm*)) (x : val) (v : val), mpred.
 
   (*A generic ghost location gl and a value kept gv.  ghost *)
-  Axiom logical_ghost: forall (ghost : carrier_monoid) (guard : In ghost guard_container)  (gl : Set (*has to be ghost*)) (gv : val), mpred.
+  Axiom logical_ghost: forall (ghost : carrier_monoid) (guard : In ghost guard_container)  (gl : Set (*todo(isk): has to be ghost*)) (gv : val), mpred.
 
   (*Introducing ghost*)
   (*
@@ -105,15 +105,15 @@ Module Type cclogic.
     (********ATOMIC EXPRESSIONS*****)
     (*clang atomic expressions 
     Expression : Eatomic (_ : AtomicOp) (_ : list (ValCat * Expr)) (_ : type) where AtomicOP can be
-    | AO__atomic_load
+    | AO__atomic_load -- DONE
     | AO__atomic_load_n
-    | AO__atomic_store
+    | AO__atomic_store -- DONE
     | AO__atomic_store_n
-    | AO__atomic_compare_exchange
+    | AO__atomic_compare_exchange -- DONE
     | AO__atomic_compare_exchange_n
     | AO__atomic_exchange
     | AO__atomic_exchange_n
-    | AO__atomic_fetch_add
+    | AO__atomic_fetch_add -- DONE
     | AO__atomic_fetch_sub
     | AO__atomic_fetch_and
     | AO__atomic_fetch_or
@@ -147,8 +147,15 @@ Module Type cclogic.
   (*Atomic READ access permission*)
   Parameter AtomRDPerm: val -> (val -> mpred) -> mpred.
   
-    (*Atomic WRITE access permission*)
+  (*Atomic WRITE access permission*)
   Parameter AtomWRTPerm: val -> (val -> mpred) -> mpred.
+
+  (* Perm LocInv l * Perm LocInv' l -|- Perm LocInv*LocInv' l 
+    Composability of two location invariant maps: val -> mpred on location l
+    todo(isk): Existentials are weak?
+   *)
+  Axiom Splittable_RDPerm: forall (LocInv: val->mpred) (LocInv':val->mpred) l ,  AtomRDPerm l LocInv **  AtomRDPerm l LocInv' 
+                          -|- Exists v, (Exists LocInv'', (LocInv'' v -* (LocInv' v ** LocInv v)) //\\ (AtomRDPerm v LocInv'')). 
   
   (*Init is freely duplicable*)
   Axiom Persistent_Initialization : forall l , Init  l -|- Init  l ** Init  l.
@@ -156,20 +163,10 @@ Module Type cclogic.
   (*Atomic CAS access permission is duplicable*)
   Axiom Persistent_CASPerm : forall l LocInv,  AtomCASPerm l LocInv -|- AtomCASPerm l LocInv  ** AtomCASPerm l LocInv.
 
-  Parameter Composable_LocInv: val -> (val -> mpred) -> (val->mpred) -> (val-> mpred).
+  (* *)
+  Axiom Splittable_WRTPerm: forall (LocInv: val->mpred) (LocInv':val->mpred) l ,  AtomRDPerm l LocInv **  AtomRDPerm l LocInv' 
+                           -|- Exists v, (Exists LocInv'', (LocInv'' v -* (LocInv' v \\// LocInv v)) //\\ (AtomRDPerm v LocInv'')).
   
-  (*Atomic load access permission is splittable and joinable.
-    We want multiple readers should have accesses 
-    Perm LocInv' l ** Perm LocInv l -|-  Perm LocInv*LocInv' l
-    where LocInv*LocInv' is composable on l
-   *)
-  Axiom Splittable_RDPerm : forall LocInv LocInv' l ,  AtomRDPerm l LocInv  ** AtomRDPerm l LocInv'
-                                                            -|-  AtomRDPerm l (Composable_LocInv l LocInv LocInv').
-
-
-
-  (*  Axiom Splittable_WRTPerm : forall LocInv LocInv' l vcat, AtomWRTPerm l LocInv ** AtomWRTPerm l LocInv' -|-
-                                                                       Exists LocInv''.*)
   (* r := l.load -- we can think of this as r := l.load(acc_type) *)
   (*todo(isk): give up the permission to read the same value again with same permission *)
   Axiom rule_atomic_load: forall (acc_type:type)  l (LocInv: val -> mpred),
