@@ -97,6 +97,7 @@ Proof.
 
   verifyF_forget "main".
   { (* ::main(int argc, char* argv[]) *)
+    simpl.
     start_proof.
     rewrite denoteModule_weaken.
     destruct x3 as [ x3 u ]; clear u.
@@ -107,15 +108,16 @@ Proof.
      * todo(gmm): i need to clean this up a lot!
      *)
     transitivity (
-        (ti_cglob' (resolve:=resolve) "putstr" putstr_spec **
-         tlocal x1 T_int "argc" (Z.of_nat (Datatypes.length x3)) **
-         tlocal x1 (Tpointer (Qmut (Tpointer (Qmut T_char)))) "argv" x0) **
-         (Forall res : val, [| res = 0 |] ** main.args_array x3 x0 ** @trace PutStr (Ret tt) -* x2 res) **
-         main.args_array x3 x0 **
-         Exists i,
-           [| 0 <= i <= Z.of_nat (Datatypes.length x3) |] **
-           tlocal x1 T_int "i" i **
-           trace (printEach (skipn (Z.to_nat i) x3))).
+  ti_cglob' (resolve:=resolve) "putstr" putstr_spec **
+  (tlocal_at x1 "argc" a (tprim (Tint (Some int_bits) true) x) **
+   tlocal_at x1 "argv" a0
+     (tprim (Tpointer (Qmut (Tpointer (Qmut (Tchar (Some 8%nat) true))))) x0)) **
+  (Forall res : val, _at (_eq x0) (main.args_array x3) ** @trace PutStr (Ret tt) -* x2 res) **
+  _at (_eq x0) (main.args_array x3) **
+  Exists i : Z,
+           tlocal_at x1 "i" a1 (tprim (Tint (Some 32%nat) true) i) **
+           trace (printEach (skipn (Z.to_nat i) x3)) **
+           [| 0 <= i <= Z.of_nat (Datatypes.length x3) |]).
     { work. }
     eapply wp_for.
     learn.
@@ -124,14 +126,18 @@ Proof.
     simplifying.
     work.
     simpl.
+    repeat lazymatch goal with
+           | H : Vint _ = Vint _ |- _ => eapply Vint_inj in H
+           end.
+    subst.
     rewrite is_true_int.
     destruct (ZArith_dec.Z_lt_ge_dec x (Z.of_nat (Datatypes.length x3))).
     { simpl.
       simplifying.
-      unfold main.args_array.
       assert (exists v, exists i, Z.of_nat i = x /\ nth_error x3 i = Some v).
       { eapply can_get_element; eauto. }
-      destruct H4 as [ ? [ ? [ ? ? ] ] ].
+      destruct H0 as [ ? [ ? [ ? ? ] ] ].
+      unfold main.args_array.
       rewrite tarray_cell; eauto with size_of.
       rewrite <- wp_lhs_subscript.
       simplifying.
@@ -141,18 +147,21 @@ Proof.
       work.
       { subst. work. }
       simplifying.
-      instantiate (1 := (x5, printEach (skipn (S (Z.to_nat x)) x3))).
+      instantiate (1 := (x4, printEach (skipn (S (Z.to_nat x)) x3))).
       simpl.
       unfold tlocal.
-      lift_ex_l.
       work.
-      cutrewrite (skipn (Z.to_nat x) x3 = x5 :: skipn (S (Z.to_nat x)) x3).
-      { simpl. work.
+      cutrewrite (skipn (Z.to_nat x) x3 = x4 :: skipn (S (Z.to_nat x)) x3).
+      { simpl.
+        work.
         simplifying.
         work.
-        rewrite tarray_cell with (ms :=x3); eauto with size_of.
+        simpl.
+        unfold tlocal_at.
         work.
-        erewrite skipn_to_nat_of_nat; eauto. reflexivity. }
+        rewrite tarray_cell with (ms :=x3); eauto with size_of.
+        erewrite skipn_to_nat_of_nat; eauto.
+        work. }
       { simpl. subst.
         rewrite Znat.Nat2Z.id.
         eauto using nth_error_skipn. } }
@@ -160,9 +169,8 @@ Proof.
       simplifying.
       work.
       rewrite skipn_allZ; eauto.
+      work.
       done_proof. } }
 
   finish_module.
-  Unshelve.
-  all: eassumption.
 Qed.

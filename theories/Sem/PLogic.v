@@ -229,6 +229,21 @@ Qed.
 Definition _at (base : Loc) (P : Rep) : mpred :=
   Exists a, base.(addr_of) a ** P.(repr) a.
 
+Global Instance Proper__at : Proper (lequiv ==> lentails ==> lentails) _at.
+Proof.
+  unfold _at. red. red. red.
+  intros.
+  destruct H. simpl in *.
+  t. rewrite H. rewrite H0. t.
+Qed.
+
+Lemma _at_eq : forall l r,
+    _at l r -|- Exists a, l &~ a ** _at (_eq a) r.
+Proof. unfold _at, _eq. intros.
+       split; t; simpl; t.
+       subst. t.
+Qed.
+
 (* drop _atP
 Definition _atP (base : Loc) (p : Offset) (P : Rep) : mpred :=
   _at (_offsetL p base) P.
@@ -290,6 +305,11 @@ Lemma _at_sepSP : forall x P Q,
 Proof.
   unfold _at; split; simpl; t. subst. t.
 Qed.
+Lemma _at_lexists : forall x T (P : T -> _),
+    _at x (lexists P) -|- Exists v, _at x (P v).
+Proof.
+  unfold _at; split; simpl; t.
+Qed.
 
 Lemma _at_empSP : forall x,
     _at (_eq x) empSP -|- empSP.
@@ -304,23 +324,26 @@ Qed.
 (** Values
  * These `Rep` predicates wrap `ptsto` facts
  *)
+Definition pureR (P : mpred) : Rep :=
+  {| repr _ := P |}.
+Coercion pureR : mpred >-> Rep.
 
 Definition tint (sz : nat) (v : Z) : Rep :=
-  {| repr := fun addr =>
-               ptsto addr (Vint v) **
-               [| has_type (Vint v) (Tint (Some sz) true) |] |}.
+  {| repr addr :=
+       ptsto addr (Vint v) **
+       [| has_type (Vint v) (Tint (Some sz) true) |] |}.
 Definition tuint (sz : nat) (v : Z) : Rep :=
-  {| repr := fun addr =>
-               ptsto addr (Vint v) **
-               [| has_type (Vint v) (Tint (Some sz) false) |] |}.
+  {| repr addr :=
+       ptsto addr (Vint v) **
+       [| has_type (Vint v) (Tint (Some sz) false) |] |}.
 Definition tptr (ty : type) (p : ptr) : Rep :=
-  {| repr := fun addr => ptsto addr (Vptr p) |}.
+  {| repr addr := ptsto addr (Vptr p) |}.
 Definition tref (ty : type) (p : val) : Rep :=
   {| repr addr := [| addr = p |] |}.
 
 
 Definition tprim (ty : type) (v : val) : Rep :=
-  {| repr := fun addr => ptsto addr v ** [| has_type v (drop_qualifiers ty) |] |}.
+  {| repr addr := ptsto addr v ** [| has_type v (drop_qualifiers ty) |] |}.
 Axiom tprim_tint : forall sz v,
     tprim (Tint (Some sz) true) (Vint v) -|- tint sz v.
 Axiom tprim_tuint : forall sz v,
@@ -329,22 +352,22 @@ Axiom tprim_tptr : forall ty p,
     tprim (Tpointer ty) (Vptr p) -|- tptr (drop_qualifiers ty) p.
 
 Definition uninit (ty : type) : Rep :=
-  {| repr := fun addr =>
-               Exists bits,
-               (* with_genv (fun env => [| size_of env ty size |]) ** *)
-               (tprim ty bits).(repr) addr |}.
+  {| repr addr :=
+       Exists bits,
+       (* with_genv (fun env => [| size_of env ty size |]) ** *)
+       (tprim ty bits).(repr) addr |}.
 
 (* this should mean "anything, including uninitialized" *)
 Definition tany (t : type) : Rep :=
-  {| repr := fun addr =>
-               (Exists v, (tprim t v).(repr) addr) \\//
-               (uninit t).(repr) addr |}.
+  {| repr addr :=
+       (Exists v, (tprim t v).(repr) addr) \\//
+       (uninit t).(repr) addr |}.
 
 (* this isn't really necessary, we should simply drop it and write
  * predicates in this way to start with
  *)
 Definition tinv {model} (Inv : val -> model -> mpred) (m : model) : Rep :=
-  {| repr := fun addr => Inv addr m |}.
+  {| repr addr := Inv addr m |}.
 
 Lemma tint_any : forall sz v, tint sz v |-- tany (Tint (Some sz) true).
 Proof.
@@ -376,6 +399,12 @@ Proof.
   eapply lorR2. t.
 Qed.
 
+Lemma _at_pureR : forall x P,
+    _at (_eq x) (pureR P) -|- P.
+Proof.
+  unfold _at; split; simpl; t.
+Qed.
+
 Lemma refine_tprim_ptr : forall p ty v F Q,
     (forall pt, Vptr pt = v ->
            _at p (tptr (drop_qualifiers ty) pt) ** F |-- Q) ->
@@ -403,15 +432,18 @@ Definition tlocal_at (r : region) (l : ident) (a : val) (v : Rep) : mpred :=
 Definition tlocal (r : region) (x : ident) (v : Rep) : mpred :=
   Exists a, tlocal_at r x a v.
 
-Lemma tlocal_at_tlocal : forall r x a v F F',
+Lemma tlocal_at_tlocal : forall r x a v v' F F',
+    v |-- v' ->
     F |-- F' ->
-    tlocal_at r x a v ** F |-- tlocal r x v ** F'.
+    tlocal_at r x a v ** F |-- tlocal r x v' ** F'.
 Proof.
   clear. unfold tlocal, tlocal_at.
   intros.
   rewrite H.
-  t.
+  t. assumption.
 Qed.
 
-(* Global Opaque uninitialized_ty any_ty. *)
-Global Opaque _local _global _at _sub _field _offsetR _offsetL tprim tint tuint tptr sepSP empSP.
+
+
+Global Opaque _local _global _at _sub _field _offsetR _offsetL tprim tint tuint tptr.
+Global Opaque lexists sepSP empSP land lor lforall ltrue lfalse.

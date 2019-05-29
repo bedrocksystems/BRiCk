@@ -193,25 +193,6 @@ Module Type Stmt.
         wp_decl x ty init (wp_decls ds k)
       end.
 
-(*
-    (** constructors *)
-    Axiom wp_rhs_constructor
-    : forall cls cname dname (es : list (ValCat * Expr)) (ty : type) (Q : val -> FreeTemps -> mpred),
-     (Exists ctor, [| glob_addr resolve cname ctor |] **
-      (* we don't need the destructor until later, but if we prove it
-       * early, then we don't need to resolve it over multiple paths.
-       *)
-      wps wpAnys es (fun vs free => Exists a, uninitialized_ty (Tref cls) a
-          -* |> fspec (Vptr ctor) (a :: vs) ti (fun _ =>
-                   (* note(gmm): constructors are rvalues but my semantics actually
-                    * treats them like lvalues.
-                    *)
-                   Q a (|> fspec (Vptr dtor) (a :: nil) ti
-                              (fun _ => uninitialized_ty (Tref cls) a ** free))) empSP)
-      |-- wp_rhs (Econstructor cname es (Tref cls)) Q.
-*)
-
-
     (* note(gmm): this rule is slightly non-compositional because
      * wp_decls requires the rest of the block computation
      * - i could fix this in the syntax tree if i split up Sseq

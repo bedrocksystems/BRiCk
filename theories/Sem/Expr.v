@@ -189,7 +189,7 @@ Module Type Expr.
         wp_rhs i (fun idx free' =>
           Exists addr,
           (Exists i, [| idx = Vint i |] **
-          _offsetL (_sub t i) (_eq base) &~ addr ** ltrue) //\\
+          _offsetL (_sub (drop_qualifiers t) i) (_eq base) &~ addr ** ltrue) //\\
           Q addr (free' ** free)))
       |-- wp_lhs (Esubscript e i t) Q.
 
@@ -455,7 +455,7 @@ Module Type Expr.
       Proof.
         unfold wp_ok.
         unfold tlocal, tlocal_at.
-        Time repeat (t; simplify_wp; unfold wp_ok, finish).
+        repeat (t; simplify_wp; unfold wp_ok, finish).
       Qed.
 
       (* note(gmm):
