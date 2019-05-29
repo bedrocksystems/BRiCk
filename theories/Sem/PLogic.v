@@ -132,14 +132,18 @@ Definition _field (f : field) : Offset.
   (* this is duplicable for non-reference fields *)
 Admitted.
 
-Definition _sub (t : type) (i : Z) : Offset.
-  (* this is always duplicable *)
-Admitted.
+Definition _sub (t : type) (i : Z) : Offset :=
+  {| offset from to :=
+       Exists sz, with_genv (fun prg => [| size_of (c:=prg) t sz |]) **
+                  [| to = offset_ptr from (i * Z.of_N sz) |]
+  |}.
 
 (* this represents static_cast *)
-Definition _super (from to : type) : Offset.
-  (* this is always duplicable *)
-Admitted.
+Definition _super (from to : globname) : Offset :=
+  {| offset base addr :=
+       Exists off, with_genv (fun prg => [| parent_offset (c:=prg) from to off |]) **
+                   [| addr = offset_ptr base off |]
+  |}.
 
 Definition _deref (ty : type) : Offset :=
   {| offset from to := ptsto from to ** [| has_type from (Tpointer ty) |] |}.
@@ -189,7 +193,7 @@ Parameter local_addr : region -> ident -> Loc.
 Inductive path : Type :=
 | p_done
 | p_dot  (_ : field) (_ : path) (* field offset *)
-| p_cast (from to : type)  (_ : path) (* parent-class offset, i.e. static_cast *)
+| p_cast (from to : globname)  (_ : path) (* parent-class offset, i.e. static_cast *)
 | p_sub  (_ : type) (_ : val) (_ : path).
 
 Fixpoint pathD (p : path) : Offset :=
@@ -197,7 +201,7 @@ Fixpoint pathD (p : path) : Offset :=
   | p_done => _id
   | p_dot f p => _dot (_field f) (pathD p)
   | p_cast from to p =>
-    _dot (_super (drop_qualifiers from) (drop_qualifiers to)) (pathD p)
+    _dot (_super from to) (pathD p)
   | p_sub t v p =>
     {| offset b a := Exists i : Z,
          [| Vint i = v |] //\\

@@ -67,7 +67,6 @@ Module Type Expr.
     | Eatomic _ _ t => t
     end.
 
-
   Parameter func_ok_raw : Func -> list val -> thread_info -> (val -> mpred) -> mpred.
 
   Definition fspec (n : val) (ls : list val) (ti : thread_info) (Q : val -> mpred) : mpred :=
@@ -356,7 +355,7 @@ Module Type Expr.
     : forall cls cname (es : list (ValCat * Expr)) (ty : type) (Q : val -> FreeTemps -> mpred),
      (Exists ctor, [| glob_addr resolve cname ctor |] **
       (* todo(gmm): is there a better way to get the destructor? *)
-      wps wpAnys es (fun vs free => Exists a, uninitialized_ty (Tref cls) a
+      wps wpAnys es (fun vs free => Exists a, _at (_eq a) (uninit (Tref cls))
           -* |> fspec (Vptr ctor) (a :: vs) ti (fun _ =>
                    (* note(gmm): constructors are rvalues but my semantics actually
                     * treats them like lvalues. *)

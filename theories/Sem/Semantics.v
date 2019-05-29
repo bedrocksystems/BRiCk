@@ -144,6 +144,7 @@ Parameter glob_addr : genv -> obj_name -> ptr -> Prop.
 
 (* todo(gmm): this isn't sound due to reference fields *)
 Parameter offset_of : forall {c : genv} (t : type) (f : ident) (e : Z), Prop.
+Parameter parent_offset : forall {c : genv} (t : globname) (f : globname) (e : Z), Prop.
 
 Parameter size_of : forall {c : genv} (t : type) (e : N), Prop.
 Axiom size_of_int : forall {c : genv} s w,
