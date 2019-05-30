@@ -20,7 +20,7 @@ Require Import Coq.micromega.Lia.
 From Cpp.Auto Require Import Discharge.
 
 Local Ltac t :=
-  discharge fail fail ltac:(canceler fail auto) auto.
+  discharge fail idtac fail ltac:(canceler fail auto) auto.
 
 Fixpoint is_void (t : type) : bool :=
   match t with
@@ -28,7 +28,6 @@ Fixpoint is_void (t : type) : bool :=
   | Tvoid => true
   | _ => false
   end.
-
 
 Lemma wandSP_only_provableL : forall (P : Prop) Q R,
     P ->
@@ -100,7 +99,6 @@ Proof.
       eapply wandSP_only_provableL; [ simpl; f_equal; eassumption | ].
       reflexivity. }
     { eapply lforallR; intros.
-
       eapply wandSP_only_provableR; intros.
       destruct x.
       { eapply lforallR; intro.
@@ -194,16 +192,6 @@ Module Type Func.
   Axiom wpi_field_at : forall resolve ti r this_val x e cls Q,
       wpi_field resolve ti r cls (_eq this_val) (drop_qualifiers (type_of e)) {| f_type := cls ; f_name := x |} e Q
       |-- wpi (resolve:=resolve) ti r cls this_val (Field x, e) Q.
-
-
-  (* Axiom wpi_field : forall resolve ti r this_val x e cls ty Q, *)
-  (*     wp_rhs (resolve:=resolve) ti r e (fun v free => *)
-  (*        (Exists off, [| offset_of (c:=resolve) (Tref cls) x off |] ** *)
-  (*                     uninitialized_ty ty (offset_ptr this_val off)) ** *)
-  (*                     (tat_field ty this_val {| f_name := x ; f_type := cls |} v *)
-  (*                     -* (free ** Q))) *)
-  (*     |-- wpi (resolve:=resolve) ti r cls this_val (Field x, e) Q. *)
-
 
   (** destructor lists
    *
@@ -438,24 +426,10 @@ Module Type Func.
       match t with
       | Tqualified _ t => bind_type_free ti ρ t x v
       | Treference ref => _local ρ x &~ v
-      | Tref cls       => _local ρ x &~ v ** destruct (resolve:=resolve) ti Dt_Deleting cls v empSP
+      | Tref cls       => _local ρ x &~ v **
+                          destruct (resolve:=resolve) ti Dt_Deleting cls v empSP
       | _              => tlocal ρ x (tprim t v)
       end.
-
-(*
-    Definition func_ok (ret : type) (params : list (ident * type))
-               (body : Stmt)
-               (spec : function_spec)
-    : mpred :=
-      [| ret = spec.(fs_return) |] **
-      [| List.map snd params = spec.(fs_arguments) |] **
-      Forall args, Forall Q : val -> mpred,
-        (* this is what is created from the parameters *)
-        let binds := sepSPs (zip (fun '(x, t) 'v => tlocal t x v) params args) in
-        (* this is what is freed on return *)
-        let frees := sepSPs (map (fun '(x, t) => Exists v, tlocal t x v) params) in
-        (binds ** spec.(fs_specification) args Q) -* (wp resolve body (Kfree frees (val_return Q))).
-*)
 
     (* the proof obligation for a function
      *)

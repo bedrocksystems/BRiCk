@@ -445,7 +445,7 @@ Module Type Expr.
                 | |- @eq val _ _ => try f_equal
                 end ;
             try solve [ eauto | reflexivity | has_type | operator | lia ] in
-        discharge ltac:(fwd) ltac:(bwd) ltac:(canceler ctac tac) ltac:(tac).
+        discharge ltac:(fwd) idtac ltac:(bwd) ltac:(canceler ctac tac) ltac:(tac).
 
       (* int x ; x = 0 ; *)
       Goal

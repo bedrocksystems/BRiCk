@@ -45,5 +45,5 @@ Proof.
   rewrite <- illater_sepSP.
   Discharge.perm_right ltac:(idtac; Discharge.perm_left ltac:(eapply wand_apply)).
   rewrite <- spec_later_weaken.
-  Discharge.discharge fail fail ltac:(Discharge.canceler fail eauto) eauto.
+  Discharge.discharge fail idtac fail ltac:(Discharge.canceler fail eauto) eauto.
 Qed.

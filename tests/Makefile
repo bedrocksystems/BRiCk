@@ -3,7 +3,7 @@
 #
 # SPDX-License-Identifier:AGPL-3.0-or-later
 #
-all: cpp2v-parser demo local-scope class value-cat c-test
+all: cpp2v-parser demo local-scope class value-cat c-test alloc
 
 cpp2v-parser:
 	$(MAKE) -C cpp2v-parser
@@ -23,7 +23,10 @@ class:
 c-test:
 	$(MAKE) -C c-test
 
-.PHONY: cpp2v-parser demo local-scope class value-cat c-test clean
+alloc:
+	$(MAKE) -C alloc
+
+.PHONY: cpp2v-parser demo local-scope class value-cat c-test alloc clean
 
 clean:
 	$(MAKE) -C cpp2v-parser clean
@@ -32,3 +35,4 @@ clean:
 	$(MAKE) -C value-cat clean
 	$(MAKE) -C class clean
 	$(MAKE) -C c-test clean
+	$(MAKE) -C alloc clean
