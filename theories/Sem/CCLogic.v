@@ -97,35 +97,10 @@ Module Type cclogic.
 
   (*******Atomic Instruction Specification*******)
 
-  (*todo(isk): Ask Gregory the magic wand.*)
   Axiom rule_ghost_intro:
   forall  g P E Qp CMI (guard: In CMI guard_container) (ptriple: P |-- (wp_ghst E Qp)),
-     P |-- ( wp_ghst E (fun v =>  (Qp v) ** (Exists l, logical_ghost CMI  guard l g))).
- 
-    (********ATOMIC EXPRESSIONS*****)
-    (*clang atomic expressions 
-    Expression : Eatomic (_ : AtomicOp) (_ : list (ValCat * Expr)) (_ : type) where AtomicOP can be
-    | AO__atomic_load -- DONE
-    | AO__atomic_load_n
-    | AO__atomic_store -- DONE
-    | AO__atomic_store_n
-    | AO__atomic_compare_exchange -- DONE
-    | AO__atomic_compare_exchange_n
-    | AO__atomic_exchange
-    | AO__atomic_exchange_n
-    | AO__atomic_fetch_add -- DONE
-    | AO__atomic_fetch_sub
-    | AO__atomic_fetch_and
-    | AO__atomic_fetch_or
-    | AO__atomic_fetch_xor
-    | AO__atomic_fetch_nand
-    | AO__atomic_add_fetch
-    | AO__atomic_sub_fetch
-    | AO__atomic_and_fetch
-    | AO__atomic_or_fetch
-    | AO__atomic_xor_fetch
-    | AO__atomic_nand_fetch
-   *)
+     P |-- ( wp_ghst E (fun v =>  (Qp v) ** (Exists l, logical_ghost CMI  guard l g))). 
+
  (* list ValCat * Expr*)
   Parameter wp_atom : AtomicOp -> list val -> type -> (val -> mpred) -> mpred.
 
@@ -162,6 +137,10 @@ Module Type cclogic.
   
   (*Atomic CAS access permission is duplicable*)
   Axiom Persistent_CASPerm : forall l LocInv,  AtomCASPerm l LocInv -|- AtomCASPerm l LocInv  ** AtomCASPerm l LocInv.
+
+  Check tptsto.
+  
+  Axiom Generate_CASPerm : forall (Inv:mpred) x (t:type) (InvM:val->mpred), Exists v, tptsto t x v ** InvM v |-- AtomCASPerm x InvM.
 
   (* *)
   Axiom Splittable_WRTPerm: forall (LocInv: val->mpred) (LocInv':val->mpred) l ,  AtomRDPerm l LocInv **  AtomRDPerm l LocInv' 
