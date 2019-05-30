@@ -142,7 +142,7 @@ Module Type cclogic.
   Parameter Init: val -> mpred.
   
   (*Atomic CAS access permission*)
-  Parameter AtomCASPerm :  val -> (val -> mpred) -> mpred .
+  Parameter AtomCASPerm :  val -> (val ->mpred) -> mpred .
   
   (*Atomic READ access permission*)
   Parameter AtomRDPerm: val -> (val -> mpred) -> mpred.
@@ -209,6 +209,66 @@ Module Type cclogic.
               (wp_atom AO__atomic_fetch_add (E::pls::nil) acc_type
                        (fun x:val => keptforinv x)).
 
+  (****************A Lock Example***************)
+  
+  (*
+  ------------------------------
+   Definition new_lock := 
+      {I}
+      x := alloc();
+     {I*AtomCASPerm*AtomWRTPerm}
+      x:= 0;
+     {LockPerm x I}
+
+   {I} new_lock() {x. LockPerm x I}
+  ------------------------------
+  Definition lock (x) := 
+    {LockPerm x I}
+    do{
+      {LockPerm x I}
+      r := CAS(x,0,1); 
+      { (r. (r=0 /\ I) \/ (r=1 /\ LockPerm x I ) )}     
+
+    }while(!r)
+    {I ** LockPerm x I}
+
+
+   SPEC: {LockPerm x I} lock(x) {I ** LockPerm x I}
+  ----------------------------------------
+   Definition unlock(x) := 
+     x := 0;
+
+   SPEC: {I ** LockPerm x I} unlock(x) {LockPerm x I}
+   *** We use AtomWRTPerm of LockPerm
+   -----------------------------------------
+
+   We also have to give spec to alloc for init.
+   {emp} alloc  {I*AtomCASPerm*AtomWRTPerm}
+   *)
+ 
+  (* LocInv asserts the invariant associated with the location implementing lock.
+     When the lock is held it asserts empty ownership otherwise it asserts the 
+     ownership of invariant I ( which is picked by verification engineer)
+   *)
+  Parameter s:val. (*succ*)
+  Parameter f:val. (*fail*)
+
+  (*LocInv asserts the invariant I associated with the location x implementing lock
+   When lock is held 
+  *)
+  Definition LockInv  I ( x: val) :=
+    if   excluded_middle_informative (  x = f) then
+      empSP   else
+      if excluded_middle_informative (  x = s) then
+         I     else
+        lfalse.
+  (*
+   LockPerm asserts permission to access to a lock.
+   It contains AtomPerm to access the lock via CAS
+   *)
+  Definition LockPerm x I  :=  AtomWRTPerm  x (LockInv I) **  AtomCASPerm x (LockInv I) ** Init x .
+  (**********The lock example ends***********)
+  
 End cclogic.
 
 Declare Module CCL : cclogic.
