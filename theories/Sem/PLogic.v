@@ -7,6 +7,7 @@ Require Import Coq.Classes.Morphisms.
 Require Import Coq.NArith.BinNat.
 Require Import Coq.ZArith.BinInt.
 Require Import Coq.Strings.String.
+Require Import LtacIter.LtacIter.
 
 From Cpp Require Import Ast.
 
@@ -29,6 +30,14 @@ Class Affine {L : Type} {LL : ILogicOps L} {LS : BILogicOps L} (P : L) : Prop :=
 Record Rep : Type :=
   { repr : forall addr : val, mpred }.
 
+Create HintDb logic discriminated.
+Hint Resolve ltrueR lfalseL lexistsL lexistsR landL1 landL2 landR lorL lorR1 lorR2 lforallR lforallL landAdj limplAdj : logic.
+Ltac logic :=
+  simpl; intros;
+  try (first_of [ db:logic ] ltac:(fun x => solve [ eapply x; eauto using lexistsL, lexistsR, landL1, landL2, landR, lorL, lorR1, lorR2, lforallR, lforallL, landAdj, limplAdj with typeclass_instances ]));
+  eauto using ltrueR, lfalseL, lexistsL, lexistsR, landL1, landL2, landR, lorL, lorR1, lorR2, lforallR, lforallL, landAdj, limplAdj.
+
+
 Global Instance ILogicOps_Rep : ILogicOps Rep :=
 { lentails P Q := forall a, P.(repr) a |-- Q.(repr) a
 ; ltrue := {| repr _ := ltrue |}
@@ -40,14 +49,26 @@ Global Instance ILogicOps_Rep : ILogicOps Rep :=
 ; lexists T P := {| repr a := lexists (fun v : T => (P v).(repr) a) |}
 }.
 Global Instance ILogic_Rep : ILogic Rep.
-Admitted.
+Proof.
+  constructor; try solve [ simpl; logic ].
+  { constructor; simpl; red.
+    - reflexivity.
+    - intros. etransitivity; eauto. }
+Qed.
 Global Instance BILogicOps_Rep : BILogicOps Rep :=
 { empSP := {| repr _ := empSP |}
 ; sepSP P Q := {| repr a := sepSP (P.(repr) a) (Q.(repr) a) |}
 ; wandSP P Q := {| repr a := wandSP (P.(repr) a) (Q.(repr) a) |}
 }.
 Global Instance BILogic_Rep : BILogic Rep.
-Admitted.
+Proof.
+  constructor; eauto with typeclass_instances.
+  { simpl; intros. eapply sepSPC. }
+  { simpl; intros. eapply sepSPA. }
+  { simpl; intros. split; intros; eapply wandSepSPAdj; eauto. }
+  { simpl; intros. eapply bilsep; eauto. }
+  { simpl; intros. split; simpl; intros; eapply empSPR; eauto. }
+Qed.
 
 
 (* locations are predicates over a location and are used to do address
@@ -69,14 +90,26 @@ Global Instance ILogicOps_Loc : ILogicOps Loc :=
 ; lexists T P := {| addr_of a := lexists (fun v : T => (P v).(addr_of) a) |}
 }.
 Global Instance ILogic_Loc : ILogic Loc.
-Admitted.
+Proof.
+  constructor; try solve [ simpl; intros; logic ].
+  { constructor; simpl; red.
+    - reflexivity.
+    - intros. etransitivity; eauto. }
+Qed.
 Global Instance BILogicOps_Loc : BILogicOps Loc :=
 { empSP := {| addr_of _ := empSP |}
 ; sepSP P Q := {| addr_of a := sepSP (P.(addr_of) a) (Q.(addr_of) a) |}
 ; wandSP P Q := {| addr_of a := wandSP (P.(addr_of) a) (Q.(addr_of) a) |}
 }.
 Global Instance BILogic_Loc : BILogic Loc.
-Admitted.
+Proof.
+  constructor; eauto with typeclass_instances.
+  { simpl; intros. eapply sepSPC. }
+  { simpl; intros. eapply sepSPA. }
+  { simpl; intros. split; intros; eapply wandSepSPAdj; eauto. }
+  { simpl; intros. eapply bilsep; eauto. }
+  { simpl; intros. split; simpl; intros; eapply empSPR; eauto. }
+Qed.
 
 
 
@@ -94,16 +127,28 @@ Global Instance ILogicOps_Offset : ILogicOps Offset :=
 ; lexists T P := {| offset a := lexists (fun v : T => (P v).(offset) a) |}
 }.
 Global Instance ILogic_Offset : ILogic Offset.
-Admitted.
+Proof.
+  constructor; try solve [ simpl; intros; logic ].
+  { constructor; simpl; red.
+    - reflexivity.
+    - intros. etransitivity; eauto. }
+  { simpl; intros. eapply landAdj. eapply H. }
+  { simpl; intros. eapply limplAdj. eapply H. }
+Qed.
 Global Instance BILogicOps_Offset : BILogicOps Offset :=
 { empSP := {| offset _ _ := empSP |}
 ; sepSP P Q := {| offset a b := sepSP (P.(offset) a b) (Q.(offset) a b) |}
 ; wandSP P Q := {| offset a b := wandSP (P.(offset) a b) (Q.(offset) a b) |}
 }.
 Global Instance BILogic_Offset : BILogic Offset.
-Admitted.
-
-
+Proof.
+  constructor; eauto with typeclass_instances.
+  { simpl; intros. eapply sepSPC. }
+  { simpl; intros. eapply sepSPA. }
+  { simpl; intros. split; intros; eapply wandSepSPAdj; eauto. }
+  { simpl; intros. eapply bilsep; eauto. }
+  { simpl; intros. split; simpl; intros; eapply empSPR; eauto. }
+Qed.
 
 
 Definition LocEq (l1 l2 : Loc) : Prop :=
@@ -208,12 +253,6 @@ Fixpoint pathD (p : path) : Offset :=
          (_dot (_sub (drop_qualifiers t) i) (pathD p)).(offset) b a |}
   end.
 
-(* Definition _addr (base : val) (p : path) : Loc := *)
-(*   pathD p (_eq base). *)
-
-(* Theorem _addr_det : forall p b a1 a2, *)
-(*     _addr b p @@ a1 ** _addr b p @@ a2 |-- _addr b p @@ a1 ** [| a1 = a2 |]. *)
-(* Proof. Admitted. *)
 
 Notation "a &~ b" := (a.(addr_of) b) (at level 30, no associativity).
 
@@ -244,62 +283,6 @@ Proof. unfold _at, _eq. intros.
        subst. t.
 Qed.
 
-(* drop _atP
-Definition _atP (base : Loc) (p : Offset) (P : Rep) : mpred :=
-  _at (_offsetL p base) P.
-
-Theorem _atP_at : forall b p P,
-    _atP b p P -|- _at (_offsetL p b) P.
-Proof. reflexivity. Qed.
-*)
-
-Arguments can_dup {_ _ _} _ {_}.
-
-(* Lemma offset_consolidate p a b c : *)
-(*   offset p a b ** offset p a c |-- offset p a b ** [| b = c |]. *)
-(* Proof. Admitted. *)
-
-(*
-Lemma _atP_sepSP : forall b p P Q,
-    Duplicable_Offset p ->
-    _atP (_eq b) p (P ** Q) -|- _atP (_eq b) p P ** _atP (_eq b) p Q.
-Proof.
-  intros; split.
-  { unfold _atP, _at, _eq, _offsetL. simpl.
-    Discharge.lift_ex_l fail.
-    rewrite (can_dup (offset p x0 x)).
-    t. }
-  { unfold _atP, _at, _eq, _offsetL. simpl.
-    Discharge.lift_ex_l fail.
-    subst.
-    transitivity ((offset p b x1 ** offset p b x) ** repr P x ** repr Q x1).
-    - t.
-    - rewrite offset_consolidate.
-      t.
-      subst.
-      t. }
-Qed.
-
-Lemma _at_eq : forall l p Q,
-    _atP l p Q -|- Exists a, _at (_eq a) Q ** (_offsetL p l) &~ a.
-Proof.
-  unfold _atP, _at, _eq, _offsetL. split; simpl.
-  { t. }
-  { t. subst. t. }
-Qed.
-
-Lemma _atP_exists : forall b p T (P : T -> _),
-    _atP b p (lexists P) -|- Exists x : T, _atP b p (P x).
-Proof.
-  unfold _atP, _at; simpl; split; t.
-Qed.
-
-Lemma _atP_offsetR : forall b p o P,
-    _atP b p (_offsetR o P) -|- _atP b (_dot p o) P.
-Proof.
-  unfold _atP, _at, _offsetR; simpl; split; t.
-Qed.
-*)
 Lemma _at_sepSP : forall x P Q,
     _at (_eq x) (P ** Q) -|- _at (_eq x) P ** _at (_eq x) Q.
 Proof.
@@ -383,9 +366,6 @@ Lemma tptr_any : forall ty p, tptr ty p |-- tany (Tpointer ty).
 Proof.
   simpl; intros. t.
   eapply lorR1. t.
-  assert (has_type (Vptr p) (Tpointer ty)).
-  { admit. }
-  t.
 Admitted.
 Lemma tprim_any : forall t v, tprim t v |-- tany t.
 Proof.
