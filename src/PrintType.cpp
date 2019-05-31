@@ -174,7 +174,9 @@ public:
 
   void VisitTypedefType(const TypedefType *type, CoqPrinter& print, ClangPrinter& cprint)
   {
-    print.ctor("Tref", false);
+    print.ctor("@Talias");
+    cprint.printQualType(type->getDecl()->getCanonicalDecl()->getUnderlyingType(), print);
+    print.output() << fmt::nbsp;
     cprint.printGlobalName(type->getDecl(), print);
     print.output() << fmt::rparen;
   }

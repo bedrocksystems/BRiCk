@@ -64,6 +64,8 @@ Inductive type : Set :=
 | Tbool
 | Tqualified (_ : type_qualifiers) (_ : type)
 .
+Definition Talias (underlying : type) (name : globname) : type :=
+  underlying.
 
 Fixpoint erase_qualifiers (t : type) : type :=
   match t with
