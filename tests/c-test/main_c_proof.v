@@ -100,7 +100,7 @@ Proof.
     simpl.
     start_proof.
     rewrite denoteModule_weaken.
-    destruct x3 as [ x3 u ]; clear u.
+    destruct x as [ x u ]; clear u.
     work.
     simplifying.
     work.
@@ -109,15 +109,15 @@ Proof.
      *)
     transitivity (
   ti_cglob' (resolve:=resolve) "putstr" putstr_spec **
-  (tlocal_at x1 "argc" a (tprim (Tint (Some int_bits) true) x) **
+  (tlocal_at x1 "argc" a (tprim (Tint (Some int_bits) true) vv) **
    tlocal_at x1 "argv" a0
      (tprim (Tpointer (Qmut (Tpointer (Qmut (Tchar (Some 8%nat) true))))) x0)) **
-  (Forall res : val, _at (_eq x0) (main.args_array x3) ** @trace PutStr (Ret tt) -* x2 res) **
-  _at (_eq x0) (main.args_array x3) **
+  (Forall res : val, _at (_eq x0) (main.args_array x) ** @trace PutStr (Ret tt) -* x2 res) **
+  _at (_eq x0) (main.args_array x) **
   Exists i : Z,
            tlocal_at x1 "i" a1 (tprim (Tint (Some 32%nat) true) i) **
-           trace (printEach (skipn (Z.to_nat i) x3)) **
-           [| 0 <= i <= Z.of_nat (Datatypes.length x3) |]).
+           trace (printEach (skipn (Z.to_nat i) x)) **
+           [| 0 <= i <= Z.of_nat (Datatypes.length x) |]).
     { work. }
     eapply wp_for.
     learn.
@@ -131,10 +131,10 @@ Proof.
            end.
     subst.
     rewrite is_true_int.
-    destruct (ZArith_dec.Z_lt_ge_dec x (Z.of_nat (Datatypes.length x3))).
+    destruct (ZArith_dec.Z_lt_ge_dec x3 (Z.of_nat (Datatypes.length x))).
     { simpl.
       simplifying.
-      assert (exists v, exists i, Z.of_nat i = x /\ nth_error x3 i = Some v).
+      assert (exists v, exists i, Z.of_nat i = x3 /\ nth_error x i = Some v).
       { eapply can_get_element; eauto. }
       destruct H0 as [ ? [ ? [ ? ? ] ] ].
       unfold main.args_array.
@@ -146,12 +146,13 @@ Proof.
       simplifying.
       work.
       { subst. work. }
+      { subst. work. }
       simplifying.
-      instantiate (1 := (x4, printEach (skipn (S (Z.to_nat x)) x3))).
+      instantiate (1 := (x4, printEach (skipn (S (Z.to_nat x3)) x))).
       simpl.
       unfold tlocal.
       work.
-      cutrewrite (skipn (Z.to_nat x) x3 = x4 :: skipn (S (Z.to_nat x)) x3).
+      cutrewrite (skipn (Z.to_nat x3) x = x4 :: skipn (S (Z.to_nat x3)) x).
       { simpl.
         work.
         simplifying.
@@ -159,7 +160,7 @@ Proof.
         simpl.
         unfold tlocal_at.
         work.
-        rewrite tarray_cell with (ms :=x3); eauto with size_of.
+        rewrite tarray_cell with (ms :=x); eauto with size_of.
         erewrite skipn_to_nat_of_nat; eauto.
         work. }
       { simpl. subst.
