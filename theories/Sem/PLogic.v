@@ -327,12 +327,17 @@ Definition tref (ty : type) (p : val) : Rep :=
 
 Definition tprim (ty : type) (v : val) : Rep :=
   {| repr addr := ptsto addr v ** [| has_type v (drop_qualifiers ty) |] |}.
-Axiom tprim_tint : forall sz v,
+Lemma tprim_tint : forall sz v,
     tprim (Tint (Some sz) true) (Vint v) -|- tint sz v.
-Axiom tprim_tuint : forall sz v,
+Proof. reflexivity. Qed.
+Lemma tprim_tuint : forall sz v,
     tprim (Tint (Some sz) false) (Vint v) -|- tuint sz v.
-Axiom tprim_tptr : forall ty p,
+Proof. reflexivity. Qed.
+Lemma tprim_tptr : forall ty p,
     tprim (Tpointer ty) (Vptr p) -|- tptr (drop_qualifiers ty) p.
+Proof.
+  unfold tprim, tptr; split; intros; simpl; intros; t.
+Admitted.
 
 Definition uninit (ty : type) : Rep :=
   {| repr addr :=
