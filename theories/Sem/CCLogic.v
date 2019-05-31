@@ -138,10 +138,14 @@ Module Type cclogic.
   (*Atomic CAS access permission is duplicable*)
   Axiom Persistent_CASPerm : forall l LocInv,  AtomCASPerm l LocInv -|- AtomCASPerm l LocInv  ** AtomCASPerm l LocInv.
 
-  Check tptsto.
-  
-  Axiom Generate_CASPerm : forall (Inv:mpred) x (t:type) (InvM:val->mpred), Exists v, tptsto t x v ** InvM v |-- AtomCASPerm x InvM.
+  (*Generate atomic access token via consuming the initially holding invariant*)
+  Axiom Generate_CASPerm : forall x (t:type) (Inv:val->mpred) , Exists v, tptsto t x v **  Inv v  |-- AtomCASPerm x Inv.
 
+  (*Memory Ordering Patterns: Now we only have _SEQ_CST *)
+  Definition _SEQ_CST := Vint 5.
+  Definition Vbool (b : bool) :=
+    Vint (if b then 1 else 0).
+  
   (* *)
   Axiom Splittable_WRTPerm: forall (LocInv: val->mpred) (LocInv':val->mpred) l ,  AtomRDPerm l LocInv **  AtomRDPerm l LocInv' 
                            -|- Exists v, (Exists LocInv'', (LocInv'' v -* (LocInv' v \\// LocInv v)) //\\ (AtomRDPerm v LocInv'')).
@@ -163,7 +167,9 @@ Module Type cclogic.
             (fun r => Init l ** AtomWRTPerm l LocInv)).
   
   
-  (*atomic compare and exchange rule*)
+  (*atomic compare and exchange rule
+   todo(isk): check the number of args -- 6 -- and order of them.
+  *)
   Axiom rule_atomic_compare_exchange :
     forall P E E' E'' Qp  Q
            (acc_type : type) 
@@ -172,8 +178,18 @@ Module Type cclogic.
         |-- (wp_atom AO__atomic_compare_exchange (E::E'::E''::nil) acc_type
             (fun x => if excluded_middle_informative (x = E') then
                                   Q else
-                                  P  ** AtomCASPerm E Qp)).
-      
+                        P  ** AtomCASPerm E Qp)).
+  (*Atomic compare and exchange n -- we use this in spinlock module*)
+  Axiom rule_atomic_compare_exchange_n:
+    forall P E E' E'' wk succmemord failmemord Qp Q'  (Q:mpred)
+           (acc_type : type) 
+           (preserve:  P ** Qp E'  |-- Qp E'' ** Q),
+      (P  ** AtomCASPerm E Qp ** [|wk = Vbool false|] ** [|succmemord = _SEQ_CST|] ** [| failmemord = _SEQ_CST |]) **
+       (Forall x, (if excluded_middle_informative (x = E') then
+                                  Q else
+                    P  ** AtomCASPerm E Qp) -* Q' x) |-- 
+       wp_atom AO__atomic_compare_exchange_n (E::succmemord::E'::failmemord::E''::wk::nil) acc_type Q'.
+         
   (*atomic fetch and add rule*)
   Axiom rule_atomic_fetch_add : 
     forall P released keptforinv E Qp pls
@@ -187,66 +203,6 @@ Module Type cclogic.
       (P ** (AtomCASPerm E Qp)) |--
               (wp_atom AO__atomic_fetch_add (E::pls::nil) acc_type
                        (fun x:val => keptforinv x)).
-
-  (****************A Lock Example***************)
-  
-  (*
-  ------------------------------
-   Definition new_lock := 
-      {I}
-      x := alloc();
-     {I*AtomCASPerm*AtomWRTPerm}
-      x:= 0;
-     {LockPerm x I}
-
-   {I} new_lock() {x. LockPerm x I}
-  ------------------------------
-  Definition lock (x) := 
-    {LockPerm x I}
-    do{
-      {LockPerm x I}
-      r := CAS(x,0,1); 
-      { (r. (r=0 /\ I) \/ (r=1 /\ LockPerm x I ) )}     
-
-    }while(!r)
-    {I ** LockPerm x I}
-
-
-   SPEC: {LockPerm x I} lock(x) {I ** LockPerm x I}
-  ----------------------------------------
-   Definition unlock(x) := 
-     x := 0;
-
-   SPEC: {I ** LockPerm x I} unlock(x) {LockPerm x I}
-   *** We use AtomWRTPerm of LockPerm
-   -----------------------------------------
-
-   We also have to give spec to alloc for init.
-   {emp} alloc  {I*AtomCASPerm*AtomWRTPerm}
-   *)
- 
-  (* LocInv asserts the invariant associated with the location implementing lock.
-     When the lock is held it asserts empty ownership otherwise it asserts the 
-     ownership of invariant I ( which is picked by verification engineer)
-   *)
-  Parameter s:val. (*succ*)
-  Parameter f:val. (*fail*)
-
-  (*LocInv asserts the invariant I associated with the location x implementing lock
-   When lock is held 
-  *)
-  Definition LockInv  I ( x: val) :=
-    if   excluded_middle_informative (  x = f) then
-      empSP   else
-      if excluded_middle_informative (  x = s) then
-         I     else
-        lfalse.
-  (*
-   LockPerm asserts permission to access to a lock.
-   It contains AtomPerm to access the lock via CAS
-   *)
-  Definition LockPerm x I  :=  AtomWRTPerm  x (LockInv I) **  AtomCASPerm x (LockInv I) ** Init x .
-  (**********The lock example ends***********)
   
 End cclogic.
 
