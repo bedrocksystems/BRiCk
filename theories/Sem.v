@@ -8,6 +8,7 @@ From Cpp.Sem Require Export
      Logic
      Semantics
      PLogic
+     Wp
      Expr
      Stmt
      Func

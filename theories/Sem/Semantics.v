@@ -10,6 +10,8 @@
  *)
 Require Import Coq.NArith.BinNat.
 Require Import Coq.ZArith.BinInt.
+Require Import Coq.Strings.Ascii.
+
 From Cpp Require Import
      Ast.
 
@@ -20,6 +22,12 @@ Parameter ptr : Type.
 
 Parameter Vptr : ptr -> val.
 Parameter Vint : Z -> val.
+
+Definition Vchar (a : Ascii.ascii) : val :=
+  Vint (Z.of_N (N_of_ascii a)).
+Definition Vbool (b : bool) : val :=
+  Vint (if b then 1 else 0).
+
 
 Parameter is_true : val -> bool.
 Axiom is_true_int : forall i,
@@ -159,7 +167,7 @@ Axiom size_of_pointer : forall {c : genv} t,
 
 (** pointer offsets
  *)
-Parameter offset_ptr : val -> Z -> val.
+Parameter offset_ptr : val -> Z -> val. (* todo(gmm): not sound *)
 Axiom offset_ptr_combine : forall b o o',
     offset_ptr (offset_ptr b o) o' = offset_ptr b (o + o').
 Axiom offset_ptr_0 : forall b,

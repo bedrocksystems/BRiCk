@@ -28,8 +28,6 @@ Proof.
   { (* ::get_ref(int* ) *)
     start_proof.
     simplifying.
-    change (wpe resolve ti x0 Lvalue) with (wp_lhs (resolve:=resolve) ti x0).
-    simplifying.
     work.
     done_proof. }
 

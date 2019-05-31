@@ -14,7 +14,7 @@ Require Import Coq.Strings.String.
 From Cpp Require Import
      Ast.
 From Cpp.Sem Require Import
-     Util Logic Semantics PLogic.
+     Util Logic Semantics PLogic Wp Typing.
 
 Require Import Coq.ZArith.BinInt.
 Require Import Coq.micromega.Lia.
@@ -25,71 +25,6 @@ Require Cpp.Auto.Discharge.
 
 Module Type Expr.
 
-  Fixpoint type_of (e : Expr) : type :=
-    match e with
-    | Econst_ref _ t
-    | Evar _ t
-    | Echar _ t
-    | Estring _ t
-    | Eint _ t => t
-    | Ebool _ => Tbool
-    | Eunop _ _ t
-    | Ebinop _ _ _ t
-    | Ederef _ t
-    | Eaddrof _ t
-    | Eassign _ _ t
-    | Eassign_op _ _ _ t
-    | Epreinc _ t
-    | Epostinc _ t
-    | Epredec _ t
-    | Epostdec _ t
-    | Eseqand _ _ t
-    | Eseqor _ _ t
-    | Ecomma _ _ _ t
-    | Ecall _ _ t
-    | Ecast _ _ t
-    | Emember _ _ t
-    | Emember_call _ _ _ _ t
-    | Esubscript _ _ t
-    | Esize_of _ t
-    | Ealign_of _ t
-    | Econstructor _ _ t
-    | Eimplicit _ t
-    | Eif _ _ _ t
-    | Ethis t => t
-    | Enull => Tpointer Tvoid
-      (* todo(gmm): c++ seems to have a special nullptr type *)
-    | Einitlist _ t => t
-    | Enew _ _ _ t
-    | Edelete _ _ _ t
-    | Eandclean _ t
-    | Etemp _ t => t
-    | Eatomic _ _ t => t
-    end.
-
-  Parameter func_ok_raw : Func -> list val -> thread_info -> (val -> mpred) -> mpred.
-
-  Definition fspec (n : val) (ls : list val) (ti : thread_info) (Q : val -> mpred) : mpred :=
-    Exists f, [| n = Vptr f |] **
-    Exists func, code_at func f ** func_ok_raw func ls ti Q.
-
-  (* todo(gmm): this is because func_ok is implemented using wp. *)
-  Axiom fspec_conseq:
-    forall (p : val) (vs : list val) ti (K m : val -> mpred),
-      (forall r : val, m r |-- K r) -> fspec p vs ti m |-- fspec p vs ti K.
-
-  (* this just applies `wp` across a list *)
-  Section wps.
-    Context {T U V : Type}.
-    Variable wp : T -> (U -> V) -> V.
-
-    Fixpoint wps (es : list T) (Q : list U -> V) : V :=
-      match es with
-      | nil => Q nil
-      | e :: es => wp e (fun v => wps es (fun vs => Q (cons v vs)))
-      end.
-  End wps.
-
   Coercion Vint : Z >-> val.
   Coercion Z.of_N : N >-> Z.
   Definition El2r := Ecast Cl2r.
@@ -98,48 +33,16 @@ Module Type Expr.
    * Weakest pre-condition for expressions
    *)
 
-  Definition FreeTemps := mpred.
-
-  Definition finish (Q : val -> mpred) (v : val) (free : FreeTemps) : mpred :=
-    free ** Q v.
-
-  (* todo(gmm): `wpe` should be indexed by types
-   * - this might not be strictly necessary if all of the expressions
-   *   are annotated.
-   *)
-  Parameter wpe
-  : forall (resolve : genv),
-      thread_info -> region ->
-      ValCat -> Expr ->
-      (val -> FreeTemps -> mpred) -> (* result -> free -> post *)
-      mpred. (* pre-condition *)
-
-  Axiom Proper_wpe : forall resolve ti r c e,
-      Proper ((pointwise_relation _ (pointwise_relation _ lentails)) ==> lentails)
-             (wpe resolve ti r c e).
-  Global Existing Instance Proper_wpe.
-
-
   Section with_resolve.
     Context {resolve : genv}.
     Variable ti : thread_info.
     Variable ρ : region.
 
-    (* the biggest question in these semantics is how types fit into things.
-     * > C semantics doesn't use a lot of implicit casts.
-     *)
-    Definition wp_rhs : Expr -> (val -> FreeTemps -> mpred) -> mpred :=
-      wpe resolve ti ρ Rvalue.
-    Definition wp_lhs : Expr -> (val -> FreeTemps -> mpred) -> mpred :=
-      wpe resolve ti ρ Lvalue.
-
-    Definition wpAny (vce : ValCat * Expr)
-    : (val -> FreeTemps -> mpred) -> mpred :=
-      match vce with
-      | (Lvalue,e) => wp_lhs e
-      | (Rvalue,e) => wp_rhs e
-      | (Xvalue,e) => wp_lhs e
-      end.
+    Local Notation wp_lhs := (wp_lhs (resolve:=resolve) ti ρ).
+    Local Notation wp_rhs := (wp_rhs (resolve:=resolve) ti ρ).
+    Local Notation wpAny := (wpAny (resolve:=resolve) ti ρ).
+    Local Notation wpe := (wpe (resolve:=resolve) ti ρ).
+    Local Notation wpAnys := (wpAnys (resolve:=resolve) ti ρ).
 
     Notation "[! P !]" := (embed P).
 
@@ -239,20 +142,6 @@ Module Type Expr.
               (_at (_eq a) (tprim (drop_qualifiers ty) v'') -* Q v' free))
         |-- wp_rhs (Epostdec e ty) Q.
 
-
-    Section wpsk.
-      Context {T U V : Type}.
-      Variable wp : T -> (U -> mpred -> V) -> V.
-
-      Fixpoint wpsk (es : list T) (Q : list U -> mpred -> V) {struct es} : V.
-      refine
-        match es with
-        | nil => Q nil empSP
-        | e :: es => wp e (fun v free => wpsk es (fun vs free' => Q (cons v vs) (free ** free')))
-        end.
-      Defined.
-    End wpsk.
-
     (** binary operators *)
     Axiom wp_rhs_binop : forall o e1 e2 ty Q,
         wp_rhs e1 (fun v1 free1 => wp_rhs e2 (fun v2 free2 =>
@@ -274,8 +163,8 @@ Module Type Expr.
      * todo(gmm): the first expression can be any value category.
      *)
     Axiom wpe_comma : forall {m vc} ty e1 e2 Q,
-        wpAny (vc, e1) (fun _ free1 => wpe resolve ti ρ m e2 (fun val free2 => Q val (free1 ** free2)))
-        |-- wpe resolve ti ρ m (Ecomma vc e1 e2 ty) Q.
+        wpAny (vc, e1) (fun _ free1 => wpe m e2 (fun val free2 => Q val (free1 ** free2)))
+        |-- wpe m (Ecomma vc e1 e2 ty) Q.
 
     (** short-circuting operators *)
     Axiom wp_rhs_seqand : forall ty e1 e2 Q,
@@ -305,8 +194,8 @@ Module Type Expr.
         |-- wp_rhs (Ecast Cl2r e ty) Q.
 
     Axiom wpe_cast_noop : forall ty m e Q,
-        wpe resolve ti ρ m e Q
-        |-- wpe resolve ti ρ m (Ecast Cnoop e ty) Q.
+        wpe m e Q
+        |-- wpe m (Ecast Cnoop e ty) Q.
 
     Axiom wp_rhs_cast_int2bool : forall ty e Q,
         wp_rhs e Q
@@ -334,9 +223,9 @@ Module Type Expr.
     Axiom wp_condition : forall ty m tst th el Q,
         wp_rhs tst (fun v1 free =>
            if is_true v1
-           then wpe resolve ti ρ m th (fun v free' => Q v (free ** free'))
-           else wpe resolve ti ρ m el (fun v free' => Q v (free ** free')))
-        |-- wpe resolve ti ρ m (Eif tst th el ty) Q.
+           then wpe m th (fun v free' => Q v (free ** free'))
+           else wpe m el (fun v free' => Q v (free ** free')))
+        |-- wpe m (Eif tst th el ty) Q.
     (* ^ todo(gmm): it would be sound for `free` to occur in the branches *)
 
     (** `sizeof` and `alignof` *)
@@ -348,15 +237,13 @@ Module Type Expr.
         Exists sz, [| @align_of resolve ty sz |] ** Q (Vint (Z.of_N sz)) empSP
         |-- wp_rhs (Ealign_of (inl ty) ty') Q.
 
-    Definition wpAnys := fun ve Q free => wpAny ve (fun v f => Q v (f ** free)).
-
     (** constructors (these should probably get moved) *)
     Axiom wp_rhs_constructor
     : forall cls cname (es : list (ValCat * Expr)) (ty : type) (Q : val -> FreeTemps -> mpred),
      (Exists ctor, [| glob_addr resolve cname ctor |] **
       (* todo(gmm): is there a better way to get the destructor? *)
       wps wpAnys es (fun vs free => Exists a, _at (_eq a) (uninit (Tref cls))
-          -* |> fspec (Vptr ctor) (a :: vs) ti (fun _ =>
+          -* |> fspec (resolve:=resolve) (Vptr ctor) (a :: vs) ti (fun _ =>
                    (* note(gmm): constructors are rvalues but my semantics actually
                     * treats them like lvalues. *)
                    Q a free)) empSP)
@@ -364,13 +251,14 @@ Module Type Expr.
 
     (** function calls *)
     Axiom wp_call : forall ty f es Q,
-        wp_rhs f (fun f => wps wpAnys es (fun vs free => |> fspec f vs ti (fun v => Q v free)))
+        wp_rhs f (fun f => wps wpAnys es (fun vs free =>
+            |> fspec (resolve:=resolve) f vs ti (fun v => Q v free)))
         |-- wp_rhs (Ecall f es ty) Q.
 
     Axiom wp_member_call : forall ty f obj es Q,
         Exists fa, [| glob_addr resolve f fa |] **
         wp_lhs obj (fun this => wps wpAnys es (fun vs free =>
-            |> fspec (Vptr fa) (this :: vs) ti (fun v => Q v free)))
+            |> fspec (resolve:=resolve) (Vptr fa) (this :: vs) ti (fun v => Q v free)))
         |-- wp_rhs (Emember_call false f obj es ty) Q.
 
   End with_resolve.

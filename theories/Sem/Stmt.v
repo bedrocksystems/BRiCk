@@ -12,7 +12,7 @@ From Coq Require Import
 
 From Cpp Require Import Ast.
 From Cpp.Sem Require Import
-        Util Semantics Logic Expr PLogic.
+        Util Semantics Logic PLogic Wp.
 
 Require Import Coq.ZArith.BinInt.
 Require Import Coq.micromega.Lia.
@@ -20,95 +20,35 @@ Require Import Coq.micromega.Lia.
 Module Type Stmt.
   Local Open Scope string_scope.
 
-
-  (** continuations
-   * C++ statements can terminate in 4 ways.
-   *
-   * note(gmm): technically, they can also raise exceptions; however,
-   * our current semantics doesn't capture this. if we want to support
-   * exceptions, we should be able to add another case,
-   * `k_throw : val -> mpred`.
-   *)
-  Record Kpreds :=
-    { k_normal   : mpred
-    ; k_return   : option val -> mpred
-    ; k_break    : mpred
-    ; k_continue : mpred
-    }.
-
-  Definition void_return (P : mpred) : Kpreds :=
-    {| k_normal := P
-     ; k_return := fun r => match r with
-                         | None => P
-                         | Some _ => lfalse
-                         end
-     ; k_break := lfalse
-     ; k_continue := lfalse
-     |}.
-
-  Definition val_return (P : val -> mpred) : Kpreds :=
-    {| k_normal := lfalse
-     ; k_return := fun r => match r with
-                         | None => lfalse
-                         | Some v => P v
-                         end
-     ; k_break := lfalse
-     ; k_continue := lfalse
-     |}.
-
-  Definition Kseq (Q : mpred) (k : Kpreds) : Kpreds :=
-    {| k_normal   := Q
-     ; k_return   := k.(k_return)
-     ; k_break    := k.(k_break)
-     ; k_continue := k.(k_continue)
-     |}.
-  Definition Kloop (I : mpred) (Q : Kpreds) : Kpreds :=
-    {| k_break    := Q.(k_normal)
-     ; k_continue := I
-     ; k_return   := Q.(k_return)
-     ; k_normal   := Q.(k_normal) |}.
-
-  Definition Kat_exit (Q : mpred -> mpred) (k : Kpreds) : Kpreds :=
-    {| k_normal   := Q k.(k_normal)
-     ; k_return v := Q (k.(k_return) v)
-     ; k_break    := Q k.(k_break)
-     ; k_continue := Q k.(k_continue)
-     |}.
-
-  Definition Kfree (a : mpred) : Kpreds -> Kpreds :=
-    Kat_exit (fun P => a ** P).
-
   (** weakest pre-condition for statements
    *)
-  Parameter wp
-    : forall (resolve : genv), thread_info -> region -> Ast.Stmt -> Kpreds -> mpred.
-
   Section with_resolver.
     Context {resolve : genv}.
     Variable ti : thread_info.
     Variable ρ : region.
 
+    Local Notation wp := (wp (resolve:=resolve)  ti ρ).
+    Local Notation wpe := (wpe (resolve:=resolve) ti ρ).
+    Local Notation wp_lhs := (wp_lhs (resolve:=resolve) ti ρ).
+    Local Notation wp_rhs := (wp_rhs (resolve:=resolve) ti ρ).
+    Local Notation wpAny := (wpAny (resolve:=resolve) ti ρ).
+    Local Notation wpAnys := (wpAnys (resolve:=resolve) ti ρ).
+
     Axiom wp_return_void : forall Q,
-        Q.(k_return) None |-- wp resolve ti ρ (Sreturn None) Q.
+        Q.(k_return) None |-- wp (Sreturn None) Q.
     (* todo(gmm): it is possible to return left-hand-values, e.g. a reference *)
     Axiom wp_return_val : forall c e Q,
-        wpe resolve ti ρ c e (finish (fun res => Q.(k_return) (Some res)))
-        |-- wp resolve ti ρ (Sreturn (Some (c, e))) Q.
+        wpe c e (finish (fun res => Q.(k_return) (Some res)))
+        |-- wp (Sreturn (Some (c, e))) Q.
 
     Axiom wp_break : forall Q,
-        Q.(k_break) |-- wp resolve ti ρ Sbreak Q.
+        Q.(k_break) |-- wp Sbreak Q.
     Axiom wp_continue : forall Q,
-        Q.(k_continue) |-- wp resolve ti ρ Scontinue Q.
+        Q.(k_continue) |-- wp Scontinue Q.
 
     Axiom wp_expr : forall vc e Q,
-        wpAny (resolve:=resolve) ti ρ (vc,e) (finish (fun _ => Q.(k_normal)))
-        |-- wp resolve ti ρ (Sexpr vc e) Q.
-
-
-    Definition destruct ti parent (cls : globname) (v : val) (Q : mpred) : mpred :=
-      Exists da, [| glob_addr resolve (dtor_name parent cls) da |] **
-                 |> fspec (Vptr da) (v :: nil) ti
-                              (fun _ => _at (_eq v) (tany (Tref cls))).
+        wpAny (vc,e) (finish (fun _ => Q.(k_normal)))
+        |-- wp (Sexpr vc e) Q.
 
     (* note(gmm): this definition is crucial to everything going on.
      * 1. look at the type.
@@ -135,7 +75,7 @@ Module Type Stmt.
           (* ^ references must be initialized *)
         | Some init =>
           (* i should use the type here *)
-          wp_lhs (resolve:=resolve) ti ρ init (fun a free =>
+          wp_lhs init (fun a free =>
              _local ρ x &~ a -* (free ** k (Kfree (_local ρ x &~ a) Q)))
         end
       | Tfunction _ _ =>
@@ -145,12 +85,11 @@ Module Type Stmt.
       | Tpointer pty =>
         match init with
         | None =>
-          Forall p, tlocal ρ x (tptr pty p) -*
-                    k (Kfree (tlocal ρ x (uninit ty)) Q)
+          tlocal ρ x (uninit ty) -* k (Kfree (tlocal ρ x (tany ty)) Q)
         | Some init =>
-          wp_rhs (resolve:=resolve) ti ρ init (fun v free =>
+          wp_rhs init (fun v free =>
                  tlocal ρ x (tprim ty v)
-              -* (free ** k (Kfree (tlocal ρ x (uninit ty)) Q)))
+              -* (free ** k (Kfree (tlocal ρ x (tany ty)) Q)))
         end
 
       | Tbool
@@ -158,12 +97,11 @@ Module Type Stmt.
       | Tint _ _ =>
         match init with
         | None =>
-          Forall v, tlocal ρ x (tprim ty v) -*
-                    k (Kfree (tlocal ρ x (uninit ty)) Q)
+          tlocal ρ x (uninit ty) -* k (Kfree (tlocal ρ x (tany ty)) Q)
         | Some init =>
-          wp_rhs (resolve:=resolve) ti ρ init (fun v free =>
+          wp_rhs init (fun v free =>
                  tlocal ρ x (tprim ty v)
-              -* (free ** k (Kfree (tlocal ρ x (uninit ty)) Q)))
+              -* (free ** k (Kfree (tlocal ρ x (tany ty)) Q)))
         end
       | Tarray _ _ => lfalse (* todo(gmm): arrays not yet supported *)
       | Tref gn =>
@@ -174,11 +112,11 @@ Module Type Stmt.
            *)
           Exists ctor, [| glob_addr resolve cnd ctor |] **
           (* todo(gmm): is there a better way to get the destructor? *)
-          wps (wpAnys (resolve:=resolve) ti ρ) es (fun vs free =>
+          wps wpAnys es (fun vs free =>
                  Forall a, _at (_eq a) (uninit (Tref gn))
-              -* |> fspec (Vptr ctor) (a :: vs) ti (fun _ =>
+              -* |> fspec (resolve:=resolve) (Vptr ctor) (a :: vs) ti (fun _ =>
                  _local ρ x &~ a -*
-                 (free ** k (Kat_exit (fun Q => _local ρ x &~ a ** |> destruct ti Dt_Deleting gn a Q) Q)))) empSP
+                 (free ** k (Kat_exit (fun Q => _local ρ x &~ a ** |> destroy (resolve:=resolve) ti Dt_Deleting gn a Q) Q)))) empSP
         | _ => lfalse
           (* ^ all non-primitive declarations must have initializers *)
         end
@@ -204,37 +142,35 @@ Module Type Stmt.
       | Sdecl ds :: ss =>
         wp_decls ds (wp_block ss) Q
       | s :: ss =>
-        wp resolve ti ρ s (Kseq (wp_block ss Q) Q)
+        wp s (Kseq (wp_block ss Q) Q)
       end.
 
     Axiom wp_seq : forall Q ss,
-        wp_block ss Q |-- wp resolve ti ρ (Sseq ss) Q.
+        wp_block ss Q |-- wp (Sseq ss) Q.
 
 
     Axiom wp_if : forall e thn els Q,
-        wp_rhs (resolve:=resolve) ti ρ e (fun v free =>
+        wp_rhs e (fun v free =>
             free ** if is_true v then
-                      wp resolve ti ρ thn Q
+                      wp thn Q
                     else
-                      wp resolve ti ρ els Q)
-        |-- wp resolve ti ρ (Sif None e thn els) Q.
+                      wp els Q)
+        |-- wp (Sif None e thn els) Q.
 
     Axiom wp_if_decl : forall d e thn els Q,
-        wp resolve ti ρ (Sseq
-                           (Sdecl (d :: nil) ::
-                            Sif None e thn els :: nil)) Q
-        |-- wp resolve ti ρ (Sif (Some d) e thn els) Q.
+        wp (Sseq (Sdecl (d :: nil) :: Sif None e thn els :: nil)) Q
+        |-- wp (Sif (Some d) e thn els) Q.
 
     (* note(gmm): this rule is not sound for a total hoare logic
      *)
     Axiom wp_while : forall t b Q I,
-        I |-- wp resolve ti ρ (Sif None t (Sseq (b :: Scontinue :: nil)) Sskip)
+        I |-- wp (Sif None t (Sseq (b :: Scontinue :: nil)) Sskip)
                 (Kloop I Q) ->
-        I |-- wp resolve ti ρ (Swhile None t b) Q.
+        I |-- wp (Swhile None t b) Q.
 
     Axiom wp_while_decl : forall d t b Q,
-        wp resolve ti ρ (Sseq (Sdecl (d :: nil) :: Swhile None t b :: nil)) Q
-        |-- wp resolve ti ρ (Swhile (Some d) t b) Q.
+        wp (Sseq (Sdecl (d :: nil) :: Swhile None t b :: nil)) Q
+        |-- wp (Swhile (Some d) t b) Q.
 
 
     (* note(gmm): this rule is not sound for a total hoare logic
@@ -242,35 +178,30 @@ Module Type Stmt.
     Axiom wp_for : forall test incr b Q Inv,
         match test with
         | None =>
-          Inv |-- wp resolve ti ρ (Sseq (b :: Scontinue :: nil))
+          Inv |-- wp (Sseq (b :: Scontinue :: nil))
               (Kloop match incr with
                      | None => Inv
-                     | Some incr => wpAny (resolve:=resolve) ti ρ incr (fun _ _ => Inv)
+                     | Some incr => wpAny incr (fun _ _ => Inv)
                      end Q)
         | Some test =>
-          Inv |-- wp resolve ti ρ (Sif None test (Sseq (b :: Scontinue :: nil)) Sskip)
+          Inv |-- wp (Sif None test (Sseq (b :: Scontinue :: nil)) Sskip)
               (Kloop match incr with
                      | None => Inv
-                     | Some incr => wpAny (resolve:=resolve) ti ρ incr (fun _ _ => Inv)
+                     | Some incr => wpAny incr (fun _ _ => Inv)
                      end Q)
         end ->
-        Inv |-- wp resolve ti ρ (Sfor None test incr b) Q.
+        Inv |-- wp (Sfor None test incr b) Q.
 
     Axiom wp_for_init : forall init test incr b Q,
-        wp resolve ti ρ (Sseq (init :: Sfor None test incr b :: nil)) Q
-        |-- wp resolve ti ρ (Sfor (Some init) test incr b) Q.
+        wp (Sseq (init :: Sfor None test incr b :: nil)) Q
+        |-- wp (Sfor (Some init) test incr b) Q.
 
     Axiom wp_do : forall t b Q {T : Type} I,
-        I |-- wp resolve ti ρ (Sseq (b :: (Sif None t Scontinue Sskip) :: nil))
-                (Kloop I Q) ->
-        I |-- wp resolve ti ρ (Sdo b t) Q.
+        I |-- wp (Sseq (b :: (Sif None t Scontinue Sskip) :: nil)) (Kloop I Q) ->
+        I |-- wp (Sdo b t) Q.
 
 
   End  with_resolver.
-
-  Module example.
-
-  End example.
 
 End Stmt.
 
