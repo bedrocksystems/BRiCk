@@ -18,8 +18,8 @@ Definition get_ref_spec : function_spec' :=
   SFunction (Qmut T_int) (Qmut (Tpointer (Qmut T_int)) :: nil)
       (fun x =>
          {| wpp_with := val
-          ; wpp_pre := fun m => tptsto T_int x m
-          ; wpp_post := fun m (r : val) => [| r = x |] ** tptsto T_int x m
+          ; wpp_pre m := _at (_eq x) (tprim T_int m)
+          ; wpp_post m r := [| r = x |] ** _at (_eq x) (tprim T_int m)
           |}).
 
 Definition test_cpp_spec (resolve : _) :=
