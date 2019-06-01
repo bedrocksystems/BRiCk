@@ -103,11 +103,6 @@ Record TypeInfo : Set :=
 ; size : nat
 ; offset : list (field * nat)
 }.
-
-Class Ctxt :  Type :=
-{ resolve_glob : globname -> option addr
-; type_info : type -> option TypeInfo
-}.
 *)
 
 Variant PrimCast : Set :=
@@ -317,19 +312,17 @@ Record Method : Set :=
 ; m_body    : option Stmt
 }.
 
-Record Struct {Decl : Set} : Set :=
+Record Union : Set :=
+{ u_fields : list (ident * type * option Expr)
+  (* ^ fields (with optional initializers) *)
+}.
+
+Record Struct : Set :=
 { s_bases : list globname
   (* ^ base classes *)
 ; s_fields : list (ident * type * option Expr)
   (* ^ fields (with optional initializers) *)
-(* ; s_ctors : list Ctor *)
-(*   (* ^ constructors *) *)
-(* ; s_dtor  : option  *)
-(*   (* ^ destructor *) *)
-(* ; s_nested : list Decl *)
-(*   (* ^ non-members, e.g. nested types, static functions, etc. *) *)
 }.
-Arguments Struct : clear implicits.
 
 Variant OrType {t : Set} : Set :=
 | Typename
@@ -374,7 +367,8 @@ Inductive Decl : Set :=
 | Dconstructor (name : obj_name) (_ : Ctor)
 | Ddestructor  (name : obj_name) (_ : Dtor)
 
-| Dstruct      (name : globname) (_ : option (Struct Decl))
+| Dunion       (name : globname) (_ : option Union)
+| Dstruct      (name : globname) (_ : option Struct)
   (* ^ structures & classes *)
 
 | Denum        (name : globname) (_ : option type) (branches : list (ident * option Expr))

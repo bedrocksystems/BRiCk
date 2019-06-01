@@ -20,9 +20,9 @@ unsigned ClangPrinter::getTypeSize(const BuiltinType* t) const {
   return this->context_->getTypeSize(t);
 }
 
-void ClangPrinter::printGlobalName(const NamedDecl *decl, CoqPrinter &print)
+void ClangPrinter::printGlobalName(const NamedDecl *decl, CoqPrinter &print, bool raw)
 {
-  print.output() << "\"";
+  if (!raw) { print.output() << "\""; }
   if (auto fd = dyn_cast<FunctionDecl>(decl)) {
     if (fd->getLanguageLinkage() == LanguageLinkage::CLanguageLinkage) {
       print.output() << fd->getName();
@@ -32,7 +32,7 @@ void ClangPrinter::printGlobalName(const NamedDecl *decl, CoqPrinter &print)
   } else {
     mangleContext_->mangleCXXName(decl, print.output().nobreak());
   }
-  print.output() << "\"";
+  if (!raw) { print.output() << "\""; }
 }
 
 void ClangPrinter::printName(const NamedDecl *decl, CoqPrinter &print)

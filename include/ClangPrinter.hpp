@@ -47,7 +47,7 @@ public:
 	printValCat(const clang::Expr* d, CoqPrinter& print);
 
 	void
-	printGlobalName(const clang::NamedDecl *decl, CoqPrinter& print);
+	printGlobalName(const clang::NamedDecl *decl, CoqPrinter& print, bool raw=false);
 
 	void
 	printName(const clang::NamedDecl *decl, CoqPrinter& print);

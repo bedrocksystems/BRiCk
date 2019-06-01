@@ -207,13 +207,56 @@ class PrintDecl : public ConstDeclVisitorArgs<PrintDecl, void, CoqPrinter &,
     print.output() << fmt::rparen;
   }
 
-  void VisitCXXRecordDecl(
-          const CXXRecordDecl *decl, CoqPrinter &print, ClangPrinter &cprint)
-  {
-    if (decl->getNameAsString() == "") {
-      assert (false);
-      //fatal("anonymous structs/classes are not supported");
+  void printFields(const CXXRecordDecl *decl, CoqPrinter &print, ClangPrinter &cprint) {
+    for (auto field : decl->fields()) {
+      print.output() << "(";
+      if (field->isAnonymousStructOrUnion()) {
+        // note(gmm): a form of mangling
+        print.output() << "\"#";
+        cprint.printGlobalName(field->getType()->getAsCXXRecordDecl(), print, true);
+        print.output() << "\"";
+      } else {
+        print.str(field->getName());
+      }
+      print.output() << "," << fmt::nbsp;
+      cprint.printQualType(field->getType(), print);
+      print.output() << "," << fmt::nbsp;
+      if (const Expr *init = field->getInClassInitializer()) {
+        print.ctor("Some", false);
+        cprint.printExpr(init, print);
+        print.output() << fmt::rparen;
+      } else {
+        print.output() << "None";
+      }
+      print.output() << ")";
+      print.cons();
+    };
+    print.output() << "nil";
+  }
+
+
+  void VisitUnionDecl(const CXXRecordDecl *decl, CoqPrinter &print, ClangPrinter &cprint) {
+    assert(decl->getTagKind() == TagTypeKind::TTK_Union);
+    print.ctor("Dunion");
+
+    cprint.printGlobalName(decl, print);
+    print.output() << fmt::nbsp;
+    if (!decl->isCompleteDefinition()) {
+      print.output() << "None" << fmt::rparen;
+      return;
     }
+
+    print.ctor("Some", false);
+
+    print.begin_record();
+    print.record_field("u_fields");
+    printFields(decl, print, cprint);
+    print.end_record();
+    print.output() << fmt::rparen << fmt::rparen;
+  }
+
+  void VisitStructDecl(const CXXRecordDecl *decl, CoqPrinter &print, ClangPrinter &cprint) {
+    assert(decl->getTagKind() == TagTypeKind::TTK_Class || decl->getTagKind() == TagTypeKind::TTK_Struct);
 
     print.ctor("Dstruct");
     cprint.printGlobalName(decl, print);
@@ -243,31 +286,32 @@ class PrintDecl : public ConstDeclVisitorArgs<PrintDecl, void, CoqPrinter &,
     print.output() << "nil";
 
     // print the fields
-    print.output() << fmt::line << "; s_fields :=" << fmt::indent << fmt::line;
-    for (auto field : decl->fields()) {
-      print.output() << "(\"" << field->getNameAsString() << "\"," << fmt::nbsp;
-      cprint.printQualType(field->getType(), print);
-      print.output() << "," << fmt::nbsp;
-      if (const Expr *init = field->getInClassInitializer()) {
-        print.ctor("Some", false);
-        cprint.printExpr(init, print);
-        print.output() << fmt::rparen;
-      } else {
-        print.output() << "None";
-      }
-      print.output() << ") ::";
-    };
-    print.output() << "nil";
-    print.output() << fmt::outdent;
+    print.output() << fmt::line << " ; s_fields :=" << fmt::indent << fmt::line;
+    printFields(decl, print, cprint);
 
     // note(gmm): i need to print any implicit declarations.
 
     print.output() << fmt::line << "|}" << fmt::rparen << fmt::rparen;
   }
 
-  void VisitFunctionDecl(
-          const FunctionDecl *decl, CoqPrinter &print, ClangPrinter &cprint)
-  {
+  void VisitCXXRecordDecl(const CXXRecordDecl *decl, CoqPrinter &print, ClangPrinter &cprint) {
+    switch (decl->getTagKind()) {
+      case TagTypeKind::TTK_Class:
+      case TagTypeKind::TTK_Struct:
+        return VisitStructDecl(decl, print, cprint);
+      case TagTypeKind::TTK_Union:
+        return VisitUnionDecl(decl, print, cprint);
+      case TagTypeKind::TTK_Interface:
+      default:
+        assert(false && "unknown record tag kind");
+    }
+  }
+
+  void VisitIndirectFieldDecl(const IndirectFieldDecl *decl, CoqPrinter &print, ClangPrinter &cprint) {
+    assert(true);
+  }
+
+  void VisitFunctionDecl(const FunctionDecl *decl, CoqPrinter &print, ClangPrinter &cprint) {
     print.ctor("Dfunction");
     cprint.printGlobalName(decl, print);
     print.output() << fmt::line;

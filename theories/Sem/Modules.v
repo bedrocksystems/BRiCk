@@ -85,6 +85,9 @@ Module Type modules.
     | Dstruct gn _ => empSP
       (* ^ this should record size and offset information
        *)
+    | Dunion gn _ => empSP
+      (* ^ this should record size and offset information
+       *)
     | Denum gn _ _ => empSP
       (* ^ this should record enumeration information
        *)

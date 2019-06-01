@@ -13,6 +13,7 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+#include "llvm/ADT/StringRef.h"
 #include "Formatter.hpp"
 
 class CoqPrinter {
@@ -61,6 +62,10 @@ public:
 	fmt::Formatter& str(const char* str) {
 		return this->output_ << "\"" << str << "\"";
 	}
+	fmt::Formatter& str(llvm::StringRef str) {
+		return this->output_ << "\"" << str << "\"";
+	}
+
 
 	fmt::Formatter& begin_list() {
 		return this->output_ << fmt::lparen;
