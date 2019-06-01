@@ -161,7 +161,12 @@ Module Type cclogic.
    This type extends as we introduce new logical assertions such as logical_ghost etc. 
    A generic ghost location gl and a value kept gv. 
    
-  A NOTE to Gregory: I did not do bookeeping of Monoids -- guard: In MONID LIST MONOID -- for fractional permis  sions and pointsto but in general we have to have the following structure for all logical predicates.  
+     A General Note to Gregory : If we want to refer to resources encoded via monoids 
+      -- let's say Pg -- then we     have to bookkeep/pass  guard and containers (guard: In monoid_instance guard_container). 
+
+    I did not do bookeeping of Monoids -- guard: In MONID LIST MONOID -- for fractional permissions and pointsto but in general we have to have the following structure for all logical predicates.  
+
+   Specs below assume that we do not refer to any resource encoded via monoids so there exists no guard and monoid container that we defined above. In case we want you can introduce them to the specs below.
    *)
   Variable guard_container : list SA.
   Axiom logical_ghost: forall (ghost : SA) (guard : In ghost guard_container)  (gl : ghost) (gv : val), mpred.
@@ -176,12 +181,6 @@ Module Type cclogic.
     ------------
     {P} E {Q * exists l. l:g} //ghost location l carries the ghost resource g
    *)
-
-  (**************************************
-    A General Note to Gregory : If we want to refer to resources encoded via monoids -- let's say Pg -- then we have to bookkeep/pass
-    guard and containers (guard: In monoid_instance guard_container). Specs below assume that we do not refer to any resource encoded 
-    via monoids so there exists no guard and monoid container that we defined above. In case we want you can introduce them to the specs below.
-  **************************************)
 
   (*******Atomic Instruction Specification*******)
   Axiom rule_ghost_intro:
