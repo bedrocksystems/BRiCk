@@ -116,6 +116,10 @@ public:
     // ignore
   }
 
+  void VisitIndirectFieldDecl(const IndirectFieldDecl *) {
+    // ignore
+  }
+
   void VisitNamespaceDecl(const NamespaceDecl *decl)
   {
     for (auto d : decl->decls()) {

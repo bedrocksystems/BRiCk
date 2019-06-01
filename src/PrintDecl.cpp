@@ -208,7 +208,7 @@ class PrintDecl : public ConstDeclVisitorArgs<PrintDecl, void, CoqPrinter &,
   }
 
   void printFields(const CXXRecordDecl *decl, CoqPrinter &print, ClangPrinter &cprint) {
-    for (auto field : decl->fields()) {
+    for (const FieldDecl *field : decl->fields()) {
       print.output() << "(";
       if (field->isAnonymousStructOrUnion()) {
         // note(gmm): a form of mangling

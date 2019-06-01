@@ -312,32 +312,49 @@ public:
     }
   }
 
+  void printField(const NamedDecl *decl, CoqPrinter& print, ClangPrinter& cprint) {
+    if (const FieldDecl *f = dyn_cast<clang::FieldDecl>(decl)) {
+      print.output() << "{| f_type :=" << fmt::nbsp;
+      cprint.printGlobalName(f->getParent(), print);
+      print.output() << fmt::nbsp << "; f_name := ";
+
+      if (decl->getName() == "") {
+        const CXXRecordDecl *rd = f->getType()->getAsCXXRecordDecl();
+        assert(rd && "unnamed field must be a record");
+        print.output() << "\"#";
+        cprint.printGlobalName(rd, print, true);
+        print.output() << "\"";
+      } else {
+        print.str(decl->getName());
+      }
+      print.output() << " |}";
+    } else if (const CXXMethodDecl *meth = dyn_cast<clang::CXXMethodDecl>(decl)) {
+      print.output() << "{| f_type :=" << fmt::nbsp;
+      cprint.printGlobalName(meth->getParent(), print);
+      print.output() << fmt::nbsp << "; f_name := \"" << decl->getNameAsString() << "\" |}";
+    } else {
+      print.error() << "member not pointing to field "
+                    << decl->getDeclKindName() << "\n";
+      assert(false && "member not pointing to field");
+    }
+
+  }
+
   void VisitMemberExpr(const MemberExpr *expr, CoqPrinter& print, ClangPrinter& cprint)
   {
     print.ctor("Emember");
+
+    auto base = expr->getBase();
     if (expr->isArrow()) {
       print.ctor("Ederef");
-      cprint.printExpr(expr->getBase(), print);
-      done(expr->getBase(), print, cprint);
+      cprint.printExpr(base, print);
+      done(base, print, cprint);
     } else {
-      cprint.printExpr(expr->getBase(), print);
+      cprint.printExpr(base, print);
     }
+
     print.output() << fmt::nbsp;
-    if (FieldDecl *f = dyn_cast<clang::FieldDecl>(expr->getMemberDecl())) {
-      print.output() << "{| f_type :=" << fmt::nbsp;
-      cprint.printGlobalName(f->getParent(), print);
-      print.output() << fmt::nbsp << "; f_name := \"" << f->getNameAsString()
-               << "\" |}";
-    } else if (CXXMethodDecl *meth
-            = dyn_cast<clang::CXXMethodDecl>(expr->getMemberDecl())) {
-      print.output() << "{| f_type :=" << fmt::nbsp;
-      cprint.printGlobalName(meth->getParent(), print);
-      print.output() << fmt::nbsp << "; f_name := \"" << meth->getNameAsString()
-               << "\" |}";
-    } else {
-      print.error() << "member not pointing to field "
-                    << expr->getMemberDecl()->getDeclKindName() << "\n";
-    }
+    printField(expr->getMemberDecl(), print, cprint);
     done(expr, print, cprint);
   }
 
