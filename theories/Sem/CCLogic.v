@@ -193,10 +193,7 @@ Module Type cclogic.
   Axiom wp_rhs_atomic: forall rslv ti r ao es ty Q,
     wps (wpAnys (resolve:=rslv) ti r) es  (fun (vs : list val) (free : FreeTemps) => wp_atom ao vs ty (fun v=> Q v free)) empSP
         |-- wp_rhs (resolve:=rslv) ti r (Eatomic ao es ty) Q.
-  
-  Definition atomdec (P: Prop) :=
-   if (excluded_middle_informative P) then true else false.
-
+ 
   (*Ideas adopted from the paper: Relaxed Separation Logic: A program logic for C11 Concurrency -- Vefeiadis et al. *)
 
   (*Facts that needs to hold when a location is initialized*)
