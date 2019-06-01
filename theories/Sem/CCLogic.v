@@ -3,6 +3,9 @@ Require Import Coq.micromega.Lia.
 Require Import Coq.Lists.List.
 Require Import Coq.Strings.String.
 Require Import Coq.Logic.ClassicalDescription.
+Require Import Coq.QArith.QArith.
+
+Require Import Coq.ssr.ssrbool.
 
 From Coq.Classes Require Import
      RelationClasses Morphisms.
@@ -40,44 +43,120 @@ Module Type cclogic.
     Note: Deciding what the carrier is going to be depends on
     the verification problem.
    *)
+  (*Doesn't make sense to keep this carrier just for terminology *)
   Definition carrier := Type.
 
+  Structure SA := 
+  { s_type :> Type;
+    s_bot: s_type;
+    s_top: s_type; 
+    s_undef: s_type;
+    s_compose: s_type -> s_type -> s_type;
+    s_compose_com: forall s1 s2, s_compose s1 s2 = s_compose s2 s1;
+    s_compose_assoc: forall s1 s2 s3, s_compose (s_compose s1 s2) s3 = s_compose s1 (s_compose s2 s3);
+    s_compose_cancel: forall s1 s1' s2, s_compose s1 s2 <> s_undef ->
+                                        s_compose s1 s2 = s_compose s1' s2 -> s1 = s1';
+    s_compose_bot: forall s1 s2, s_compose s1 s2 = s_bot -> s1 = s_bot /\ s2 = s_bot;
+    s_compose_w_bot: forall s, s_compose s s_bot = s;
+    s_compose_w_undef: forall s, s_compose s s_undef = s_undef;
+    s_compose_complete_top: forall s, s_compose s_top s <> s_undef -> s = s_bot;
+    s_top_not_bot: s_top <> s_bot;
+    s_top_not_undef: s_top <> s_undef;
+    s_ord : rel s_type; 
+    s_ord_refl : reflexive s_ord;
+    s_ord_antis : antisymmetric s_ord;
+    s_ord_trans : transitive s_ord;
+    s_ord_total : total s_ord
+  }.
+  
+  (*Example carrier*)
+  Inductive FracPerm_Carrier :=
+  | FPerm (f:Q) (UNIT: 0 <= f <= 1)
+  | FPermUndef.
+
+ Axiom FPerm_Equal: forall f g UNITf UNITg ,
+      f = g -> FPerm f UNITf  = FPerm g UNITg .
+ 
+ (*Composition over fractional permissions*)
+ Definition FPerm_Compose f g :=
+   match f, g return FracPerm_Carrier with
+   | FPermUndef, _ => FPermUndef
+   | _, FPermUndef => FPermUndef
+   | FPerm f' _ , FPerm g' _ => match excluded_middle_informative (0 <= f' + g' <= 1) with
+                                |left Pred => FPerm (f' + g') Pred
+                                | right _ => FPermUndef
+                                               
+                                end
+   end.
+ 
+ (*Order*)
+ Definition FPerm_Order f g : bool := 
+  match f, g with
+    | FPermUndef, _ => true
+    | FPerm _ _, FPermUndef => false
+    | FPerm f' _, FPerm g' _ => if (excluded_middle_informative  (f' <= g')) then true else false
+  end.
+      
   (*
-    Resource Algebra Record: TODO: Ask Gregory the type for the ChargeCore. 
-    For now let's call it carrier_monoid but normally it has to have 
-    
     Here is an example to a carrier_monoid
-    
-    Program Definition FracPerm_{
-      RA :> Type // Ex: we pass our FracPerm_Carrier type
-                 // Ex: we create one instance of FracPerm via 
-                 // a constructor of the carrier QPermission(1/2)
-
-      RA_emp     // Ex: Define what is Emp for FracPerm_Carrier and pass it here
-      RA_plus/join // Ex: Composition of the two FracPerm_Carriers has to be defined and passed here
-      ...
-      RA_refl
-      RA_trans
-      //structural rules    
-    }
-
    *)
 
+  (*We keep this just for terminology*)
   Parameter carrier_monoid : Type.
 
-  (* carrier_monoid has to be guarded against duplicability *)
-  Parameter carrier_guard : carrier_monoid -> list carrier_monoid -> mpred.
-  Variable guard_container : list carrier_monoid.
+  (*Example carrier monoid*)
+  Program Definition FracPerm_Carrier_Monoid := 
+  {| s_type := FracPerm_Carrier; 
+     s_bot := FPerm 0 _; 
+     s_top := FPerm 1 _; 
+     s_undef := FPermUndef;
+     s_compose := FPerm_Compose; 
+     s_ord := FPerm_Order 
+  |}.
+  Next Obligation.
+  Admitted.
+  Next Obligation.
+  Admitted.
+  Next Obligation.
+  Admitted.
+  Next Obligation.
+  Admitted.
+  Next Obligation.
+  Admitted.
+  Next Obligation.
+  Admitted.
+  Next Obligation.
+  Admitted.
+  Next Obligation.
+  Admitted.
+  Next Obligation.
+  Admitted.
+  Next Obligation.
+  Admitted.
+  Next Obligation.
+  Admitted.
+  Next Obligation.
+  Admitted.
+  Next Obligation.
+  Admitted.
+
+
+  (* carrier_monoid has to be guarded against duplicability -- just for terminology*)
+  Parameter carrier_guard : SA -> list SA -> mpred. 
+  Variable guard_container : list SA. 
+             
+
+  (*TODO(ISK): All these logical assertion has to be a type logical_X. logical_ghost or logical_fptsto*)
 
   (*A generic fractional points to relation encoded using monoids x points to v with permission p.  
    Ex: logical_fptsto FracPerm (bookeeping_already_existing_resources) (QPermission frac) x v 
-  *)
-  Axiom logical_fptsto: forall  (perm : carrier_monoid) (guard : In perm guard_container)  (p : Set (*todo(isk): has to be perm*)) (x : val) (v : val), mpred.
-
+  `*)  
+  Axiom logical_fptsto: forall  (perm : SA) (guard : In perm guard_container)
+                                (p:perm) (x : val) (v : val), mpred.
+ 
+  (*Similarly we can encode ghost state using SA*)
   (*A generic ghost location gl and a value kept gv.  ghost *)
-  Axiom logical_ghost: forall (ghost : carrier_monoid) (guard : In ghost guard_container)  (gl : Set (*todo(isk): has to be ghost*)) (gv : val), mpred.
-
-  (*Introducing ghost*)
+  Axiom logical_ghost: forall (ghost : SA) (guard : In ghost guard_container)  (gl : ghost) (gv : val), mpred.
   (*
     Gregory suggests emp |- Exists g. g:m
   *)
