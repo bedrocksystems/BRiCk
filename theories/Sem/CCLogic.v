@@ -43,8 +43,6 @@ Module Type cclogic.
     Note: Deciding what the carrier is going to be depends on
     the verification problem.
    *)
-  (*Doesn't make sense to keep this carrier just for terminology *)
-  Definition carrier := Type.
 
   Structure SA := 
   { s_type :> Type;
@@ -139,24 +137,35 @@ Module Type cclogic.
   Admitted.
   Next Obligation.
   Admitted.
-
-
-  (* carrier_monoid has to be guarded against duplicability -- just for terminology*)
-  Parameter carrier_guard : SA -> list SA -> mpred. 
-  Variable guard_container : list SA. 
              
+ (*A note to Gregory, If I were to paramterize mpred (p:FracPerm_Carrier_Monoid) ... 
+  I wouldn't need this inductive type.
+  THIS WOUDL BE A NEAT SOLUTION.
 
-  (*TODO(ISK): All these logical assertion has to be a type logical_X. logical_ghost or logical_fptsto*)
+  I dont like them to be separate axioms. It is a ad-hoc solution, but lets keep it as it for now. 
+ *)
 
-  (*A generic fractional points to relation encoded using monoids x points to v with permission p.  
-   Ex: logical_fptsto FracPerm (bookeeping_already_existing_resources) (QPermission frac) x v 
-  `*)  
-  Axiom logical_fptsto: forall  (perm : SA) (guard : In perm guard_container)
-                                (p:perm) (x : val) (v : val), mpred.
- 
-  (*Similarly we can encode ghost state using SA*)
-  (*A generic ghost location gl and a value kept gv.  ghost *)
+  Axiom logical_fptsto: forall (Prm: SA) (p: Prm)  (l: val) (v : val), mpred.
+  
+  Program Definition Frac_PointsTo l q v :=
+    match excluded_middle_informative (0 <= q  <= 1)  with
+     | right _ => lfalse
+     | left _ => match excluded_middle_informative (q == 0) with
+                    | left _ => empSP 
+                    | right _ =>  logical_fptsto FracPerm_Carrier_Monoid  (FPerm  q _)  l v
+                  end  
+   end.
+      
+  (*Similaryl one can encode ghost state using SA*) 
+  (*
+   This type extends as we introduce new logical assertions such as logical_ghost etc. 
+   A generic ghost location gl and a value kept gv. 
+   
+  A NOTE to Gregory: I did not do bookeeping of Monoids -- guard: In MONID LIST MONOID -- for fractional permis  sions and pointsto but in general we have to have the following structure for all logical predicates.  
+   *)
+  Variable guard_container : list SA.
   Axiom logical_ghost: forall (ghost : SA) (guard : In ghost guard_container)  (gl : ghost) (gv : val), mpred.
+
   (*
     Gregory suggests emp |- Exists g. g:m
   *)
@@ -175,7 +184,6 @@ Module Type cclogic.
   **************************************)
 
   (*******Atomic Instruction Specification*******)
-
   Axiom rule_ghost_intro:
   forall  g P E Qp CMI (guard: In CMI guard_container) (ptriple: P |-- (wp_ghst E Qp)),
      P |-- ( wp_ghst E (fun v =>  (Qp v) ** (Exists l, logical_ghost CMI  guard l g))). 
