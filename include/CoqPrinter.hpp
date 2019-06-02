@@ -20,12 +20,22 @@ class CoqPrinter {
 public:
 	CoqPrinter(fmt::Formatter& output):output_(output) {}
 
+	fmt::Formatter& begin_tuple() {
+		return this->output_ << "(";
+	}
+	fmt::Formatter& end_tuple() {
+		return this->output_ << ")";
+	}
+	fmt::Formatter& next_tuple() {
+		return this->output_ << "," << fmt::nbsp;
+	}
+
+
 	fmt::Formatter& ctor(const char* ctor, bool line=true) {
 		if (line) {
 			this->output_ << fmt::line;
 		}
-		this->output_ << fmt::lparen << ctor << fmt::nbsp;
-		return this->output_;
+		return this->output_ << fmt::lparen << ctor << fmt::nbsp;
 	}
 	fmt::Formatter& end_ctor() {
 		return this->output_ << fmt::rparen;
@@ -34,19 +44,16 @@ public:
 		if (line) {
 			this->output_ << fmt::line;
 		}
-		this->output_ << "{|" << fmt::nbsp;
-		return this->output_;
+		return this->output_ << "{|" << fmt::nbsp;
 	}
 	fmt::Formatter& end_record(bool line=true) {
 		if (line) {
 			this->output_ << fmt::line;
 		}
-		this->output_ << fmt::nbsp << "|}";
-		return this->output_;
+		return this->output_ << fmt::nbsp << "|}";
 	}
 	fmt::Formatter& record_field(const char* field, bool line=true) {
-		this->output_ << field << fmt::nbsp << ":=" << fmt::nbsp;
-		return this->output_;
+		return this->output_ << field << fmt::nbsp << ":=" << fmt::nbsp;
 	}
 
 	fmt::Formatter& some() {

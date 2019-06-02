@@ -274,20 +274,21 @@ Variant OrDefault {t : Set} : Set :=
 | UserDefined (_ : t).
 Arguments OrDefault : clear implicits.
 
-Variant FieldOrBase {f b : Set} : Set :=
-| Base (_ : b)
-| Field (_ : f).
-Arguments FieldOrBase : clear implicits.
+Variant FieldOrBase : Set :=
+| Base (_ : globname)
+| Field (_ : ident)
+| Indirect (anon_path : list (ident (* this will be anonymized *)* globname))
+           (_ : ident).
 
 Record Ctor : Set :=
 { c_class  : globname
 ; c_params : list (ident * type)
-; c_body   : option (OrDefault (list (FieldOrBase ident globname * Expr) * Stmt))
+; c_body   : option (OrDefault (list (FieldOrBase * Expr) * Stmt))
 }.
 
 Record Dtor : Set :=
 { d_class  : globname
-; d_body   : option (OrDefault (Stmt * list (FieldOrBase ident globname * globname)))
+; d_body   : option (OrDefault (Stmt * list (FieldOrBase * globname)))
 }.
 
 Record Func : Set :=

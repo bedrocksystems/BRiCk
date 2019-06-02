@@ -63,51 +63,7 @@ void printMethod(
 void printConstructor(
         const CXXConstructorDecl *decl, CoqPrinter &print, ClangPrinter &cprint)
 {
-  print.output() << "{| c_class :=" << fmt::nbsp;
-  cprint.printGlobalName(decl->getParent(), print);
-  print.output() << fmt::line << " ; c_params :=" << fmt::nbsp;
 
-  for (auto i : decl->parameters()) {
-    cprint.printParam(i, print);
-    print.output() << "::";
-  }
-  print.output() << "nil";
-
-  print.output() << fmt::line << " ; c_body :=" << fmt::nbsp;
-  if (decl->getBody()) {
-    print.output() << "Some" << fmt::nbsp;
-    print.ctor("UserDefined") << fmt::lparen;
-    // print the initializer list
-    // todo(gmm): parent constructors are defaulted if they are not listed,
-    //   i need to make sure that everything ends up in the list, and in the right order
-    for (auto init : decl->inits()) {
-      if (init->isMemberInitializer()) {
-        print.output() << fmt::lparen << "Field \""
-                       << init->getMember()->getNameAsString() << "\","
-                       << fmt::nbsp;
-        cprint.printExpr(init->getInit(), print);
-        print.output() << fmt::rparen;
-      } else if (init->isBaseInitializer()) {
-        print.output() << fmt::lparen << "Base" << fmt::nbsp;
-        cprint.printGlobalName(
-                init->getBaseClass()->getAsCXXRecordDecl(), print);
-        print.output() << "," << fmt::nbsp;
-        cprint.printExpr(init->getInit(), print);
-        print.output() << fmt::rparen;
-      } else {
-        assert(false);
-        // fatal("unknown base initializer");
-      }
-      print.output() << "::" << fmt::nbsp;
-    }
-
-    print.output() << "nil," << fmt::nbsp;
-    cprint.printStmt(decl->getBody(), print);
-    print.output() << fmt::rparen << fmt::rparen;
-  } else {
-    print.output() << "None";
-  }
-  print.output() << "|}";
 }
 
 void printDestructor(
@@ -207,16 +163,20 @@ class PrintDecl : public ConstDeclVisitorArgs<PrintDecl, void, CoqPrinter &,
     print.output() << fmt::rparen;
   }
 
+  void printMangledFieldName(const FieldDecl *field, CoqPrinter &print, ClangPrinter &cprint) {
+    if (field->isAnonymousStructOrUnion()) {
+      print.ctor("Nanon", false);
+      cprint.printGlobalName(field->getType()->getAsCXXRecordDecl(), print);
+      print.end_ctor();
+    } else {
+      print.str(field->getName());
+    }
+  }
+
   void printFields(const CXXRecordDecl *decl, CoqPrinter &print, ClangPrinter &cprint) {
     for (const FieldDecl *field : decl->fields()) {
       print.output() << "(";
-      if (field->isAnonymousStructOrUnion()) {
-        print.ctor("Nanon", false);
-        cprint.printGlobalName(field->getType()->getAsCXXRecordDecl(), print);
-        print.end_ctor();
-      } else {
-        print.str(field->getName());
-      }
+      printMangledFieldName(field, print, cprint);
       print.output() << "," << fmt::nbsp;
       cprint.printQualType(field->getType(), print);
       print.output() << "," << fmt::nbsp;
@@ -232,7 +192,6 @@ class PrintDecl : public ConstDeclVisitorArgs<PrintDecl, void, CoqPrinter &,
     };
     print.output() << "nil";
   }
-
 
   void VisitUnionDecl(const CXXRecordDecl *decl, CoqPrinter &print, ClangPrinter &cprint) {
     assert(decl->getTagKind() == TagTypeKind::TTK_Union);
@@ -363,7 +322,83 @@ class PrintDecl : public ConstDeclVisitorArgs<PrintDecl, void, CoqPrinter &,
     print.ctor("Dconstructor");
     cprint.printGlobalName(decl, print);
     print.output() << fmt::line;
-    printConstructor(decl, print, cprint);
+    print.output() << "{| c_class :=" << fmt::nbsp;
+    cprint.printGlobalName(decl->getParent(), print);
+    print.output() << fmt::line << " ; c_params :=" << fmt::nbsp;
+
+    for (auto i : decl->parameters()) {
+      cprint.printParam(i, print);
+      print.output() << "::";
+    }
+    print.output() << "nil";
+
+    print.output() << fmt::line << " ; c_body :=" << fmt::nbsp;
+    if (decl->getBody()) {
+      print.output() << "Some" << fmt::nbsp;
+      print.ctor("UserDefined");
+      print.begin_tuple();
+
+      // print the initializer list
+      // todo(gmm): parent constructors are defaulted if they are not listed,
+      //   i need to make sure that everything ends up in the list, and in the right order
+      print.begin_list();
+      for (auto init : decl->inits()) {
+        print.begin_tuple();
+        if (init->isMemberInitializer()) {
+          print.ctor("Field") << "\""
+                        << init->getMember()->getNameAsString() << "\"";
+          print.end_ctor();
+        } else if (init->isBaseInitializer()) {
+          print.ctor("Base");
+          cprint.printGlobalName(
+                  init->getBaseClass()->getAsCXXRecordDecl(), print);
+          print.end_ctor();
+        } else if (init->isIndirectMemberInitializer()) {
+          auto im = init->getIndirectMember();
+          print.ctor("Indirect");
+
+          bool completed = false;
+          print.begin_list();
+          for (auto i : im->chain()) {
+            if (i->getName() == "") {
+              if (const FieldDecl *field = dyn_cast<FieldDecl>(i)) {
+                print.begin_tuple();
+                printMangledFieldName(field, print, cprint);
+                print.next_tuple();
+                cprint.printGlobalName(field->getType()->getAsCXXRecordDecl(), print);
+                print.end_tuple();
+                print.cons();
+              } else {
+                assert(false && "indirect field decl contains non FieldDecl");
+              }
+            } else {
+              completed = true;
+              print.end_list();
+              print.output() << fmt::nbsp;
+              print.str(i->getName());
+              break;
+            }
+          }
+          assert(completed && "didn't find a named field");
+
+          print.end_ctor();
+        } else {
+          assert(false && "unknown initializer type");
+        }
+        print.next_tuple();
+        cprint.printExpr(init->getInit(), print);
+        print.end_tuple();
+        print.cons();
+      }
+      print.end_list();
+      print.next_tuple();
+      cprint.printStmt(decl->getBody(), print);
+      print.end_tuple();
+      print.end_ctor();
+    } else {
+      print.none();
+    }
+    print.output() << "|}";
     print.output() << fmt::rparen;
   }
 
@@ -430,8 +465,7 @@ class PrintDecl : public ConstDeclVisitorArgs<PrintDecl, void, CoqPrinter &,
           const EnumDecl *decl, CoqPrinter &print, ClangPrinter &cprint)
   {
     if (decl->getNameAsString() == "") {
-      // fatal("anonymous enumerations are not supported");
-      assert(false);
+      assert(false && "anonymous enumerations are not supported");
     }
     print.ctor("Denum") << "\"" << decl->getNameAsString() << "\"" << fmt::nbsp;
     auto t = decl->getIntegerType();

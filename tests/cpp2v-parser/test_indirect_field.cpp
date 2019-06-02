@@ -15,6 +15,8 @@ struct Foo {
         struct { int p; };
         struct { char q; };
     };
+
+    Foo():b(0),x(1),p(3) {}
 };
 
 int foo(Foo f) {
