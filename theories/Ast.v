@@ -3,7 +3,9 @@
  *
  * SPDX-License-Identifier:AGPL-3.0-or-later
  *)
-Require Import Coq.Strings.String.
+From Coq.Strings Require Import
+     Ascii String.
+Require Import Coq.ZArith.BinIntDef.
 
 Set Primitive Projections.
 
@@ -27,14 +29,6 @@ Definition globname : Set := string.
   (* these are mangled names. for consistency, we're going to
    * mangle everything.
    *)
-
-(*
-Record globname : Set :=
-{ g_path : list ident
-; g_name : ident
-}.
-Parameter to_obj_name : globname -> obj_name.
-*)
 
 Definition localname : Set := ident.
 
@@ -157,8 +151,6 @@ Variant BinOp : Set :=
 | Bsub
 | Bxor (* ^ *)
 .
-
-Require Import Coq.ZArith.BinIntDef.
 
 Variant VarRef : Set :=
 | Lname (_ : localname)
@@ -324,11 +316,6 @@ Record Struct : Set :=
   (* ^ fields (with optional initializers) *)
 }.
 
-Variant OrType {t : Set} : Set :=
-| Typename
-| NotType (_ : t).
-Arguments OrType : clear implicits.
-
 Variant Ctor_type : Set := Ct_Complete | Ct_Base | Ct_Comdat.
 
 (* Definition ctor_name (type : Ctor_type) (cls : globname) : obj_name := *)
@@ -383,8 +370,6 @@ Inductive Decl : Set :=
 
 Definition module : Set :=
   list Decl.
-
-Definition NStop : list ident := nil.
 
 (* types with explicit size information
  *)

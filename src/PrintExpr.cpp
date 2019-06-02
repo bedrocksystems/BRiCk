@@ -312,7 +312,7 @@ public:
     }
   }
 
-  void printField(const NamedDecl *decl, CoqPrinter& print, ClangPrinter& cprint) {
+  void printField(const ValueDecl *decl, CoqPrinter& print, ClangPrinter& cprint) {
     if (const FieldDecl *f = dyn_cast<clang::FieldDecl>(decl)) {
       print.output() << "{| f_type :=" << fmt::nbsp;
       cprint.printGlobalName(f->getParent(), print);
@@ -321,9 +321,9 @@ public:
       if (decl->getName() == "") {
         const CXXRecordDecl *rd = f->getType()->getAsCXXRecordDecl();
         assert(rd && "unnamed field must be a record");
-        print.output() << "\"#";
-        cprint.printGlobalName(rd, print, true);
-        print.output() << "\"";
+        print.ctor("Nanon", false);
+        cprint.printGlobalName(rd, print);
+        print.end_ctor();
       } else {
         print.str(decl->getName());
       }
@@ -337,7 +337,6 @@ public:
                     << decl->getDeclKindName() << "\n";
       assert(false && "member not pointing to field");
     }
-
   }
 
   void VisitMemberExpr(const MemberExpr *expr, CoqPrinter& print, ClangPrinter& cprint)

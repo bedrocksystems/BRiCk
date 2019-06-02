@@ -11,3 +11,11 @@ From Coq Require Export
 Require Export Coq.ZArith.BinInt.
 
 From Cpp Require Export Ast.
+
+Definition Nanon (ty : globname) : globname :=
+  String "#"%char ty.
+
+Definition Talias (underlying : type) (name : globname) : type :=
+  underlying.
+
+Definition NStop : list ident := nil.

@@ -27,6 +27,9 @@ public:
 		this->output_ << fmt::lparen << ctor << fmt::nbsp;
 		return this->output_;
 	}
+	fmt::Formatter& end_ctor() {
+		return this->output_ << fmt::rparen;
+	}
 	fmt::Formatter& begin_record(bool line=true) {
 		if (line) {
 			this->output_ << fmt::line;

@@ -211,10 +211,9 @@ class PrintDecl : public ConstDeclVisitorArgs<PrintDecl, void, CoqPrinter &,
     for (const FieldDecl *field : decl->fields()) {
       print.output() << "(";
       if (field->isAnonymousStructOrUnion()) {
-        // note(gmm): a form of mangling
-        print.output() << "\"#";
-        cprint.printGlobalName(field->getType()->getAsCXXRecordDecl(), print, true);
-        print.output() << "\"";
+        print.ctor("Nanon", false);
+        cprint.printGlobalName(field->getType()->getAsCXXRecordDecl(), print);
+        print.end_ctor();
       } else {
         print.str(field->getName());
       }
