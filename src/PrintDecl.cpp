@@ -419,6 +419,8 @@ class PrintDecl : public ConstDeclVisitorArgs<PrintDecl, void, CoqPrinter &,
       cprint.printGlobalName(decl, print);
       print.output() << fmt::nbsp;
       cprint.printQualType(decl->getType(), print);
+      print.output() << fmt::nbsp;
+      assert(decl->getInit() && "missing initialization of constexpr");
       cprint.printExpr(decl->getInit(), print);
       print.output() << fmt::rparen;
     } else {
@@ -461,10 +463,9 @@ class PrintDecl : public ConstDeclVisitorArgs<PrintDecl, void, CoqPrinter &,
     print.output() << fmt::rparen;
   }
 
-  void VisitEnumDecl(
-          const EnumDecl *decl, CoqPrinter &print, ClangPrinter &cprint)
+  void VisitEnumDecl(const EnumDecl *decl, CoqPrinter &print, ClangPrinter &cprint)
   {
-    if (decl->getNameAsString() == "") {
+    if (decl->getName() == "") {
       assert(false && "anonymous enumerations are not supported");
     }
     print.ctor("Denum") << "\"" << decl->getNameAsString() << "\"" << fmt::nbsp;

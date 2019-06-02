@@ -258,7 +258,8 @@ public:
   void VisitImplicitCastExpr(const ImplicitCastExpr *expr, CoqPrinter& print, ClangPrinter& cprint) {
     // todo(gmm): this is a complete hack!
     if (auto ref = dyn_cast<DeclRefExpr>(expr->getSubExpr())) {
-      if (ref->getDecl()->getName().startswith("__builtin")) {
+      if (ref->getDecl()->isImplicit()) {
+        // assume that this is a builtin
         print.ctor("Evar");
         cprint.printGlobalName(ref->getDecl(), print);
         done(expr, print, cprint);

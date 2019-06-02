@@ -277,8 +277,7 @@ Arguments OrDefault : clear implicits.
 Variant FieldOrBase : Set :=
 | Base (_ : globname)
 | Field (_ : ident)
-| Indirect (anon_path : list (ident (* this will be anonymized *)* globname))
-           (_ : ident).
+| Indirect (anon_path : list (ident * globname)) (_ : ident).
 
 Record Ctor : Set :=
 { c_class  : globname
