@@ -261,7 +261,9 @@ public:
       if (ref->getDecl()->isImplicit()) {
         // assume that this is a builtin
         print.ctor("Evar");
+        print.ctor("Gname", false);
         cprint.printGlobalName(ref->getDecl(), print);
+        print.end_ctor();
         done(expr, print, cprint);
         return;
       }

@@ -210,7 +210,43 @@ public:
           const GCCAsmStmt *stmt, CoqPrinter &print, ClangPrinter &cprint)
   {
     // todo(gmm): more to do here to support assembly
-    print.ctor("Sasm") << "\"" << stmt->getAsmString()->getString() << "\"";
+    print.ctor("Sasm");
+    print.str(stmt->getAsmString()->getString()) << fmt::nbsp;
+
+    print.output() << (stmt->isVolatile() ? "true" : "false") << fmt::nbsp;
+
+    // inputs
+    print.begin_list();
+    for (unsigned i = 0; i < stmt->getNumInputs(); ++i) {
+      print.begin_tuple();
+      print.str(stmt->getInputConstraint(i));
+      print.next_tuple();
+      cprint.printExpr(stmt->getInputExpr(i), print);
+      print.end_tuple();
+      print.cons();
+    }
+    print.end_list();
+
+    // outputs
+    print.begin_list();
+    for (unsigned i = 0; i < stmt->getNumOutputs(); ++i) {
+      print.begin_tuple();
+      print.str(stmt->getOutputConstraint(i));
+      print.next_tuple();
+      cprint.printExpr(stmt->getOutputExpr(i), print);
+      print.end_tuple();
+      print.cons();
+    }
+    print.end_list();
+
+    // clobbers
+    print.begin_list();
+    for (unsigned i = 0; i < stmt->getNumClobbers(); ++i) {
+      print.str(stmt->getClobber(i));
+      print.cons();
+    }
+    print.end_list();
+
     print.output() << fmt::rparen;
   }
 };

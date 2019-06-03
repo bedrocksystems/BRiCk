@@ -266,7 +266,10 @@ Inductive Stmt : Set :=
 
 | Sexpr   (_ : ValCat) (_ : Expr)
 
-| Sasm (_ : string)
+| Sasm (_ : string) (volatile : bool)
+       (inputs : list (string * Expr))
+       (outputs : list (string * Expr))
+       (clobbers : list string)
 .
 
 Variant OrDefault {t : Set} : Set :=
