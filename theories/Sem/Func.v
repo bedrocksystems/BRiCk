@@ -149,11 +149,11 @@ Module Type Func.
    *)
   Parameter wpi
   : forall {resolve : genv} (ti : thread_info) (ρ : region)
-      (cls : globname) (this : val) (init : FieldOrBase ident globname * Expr)
+      (cls : globname) (this : val) (init : FieldOrBase * Expr)
       (Q : mpred), mpred.
 
   Fixpoint wpis (cls : globname) (this : val)
-           (inits : list (FieldOrBase ident globname * Expr))
+           (inits : list (FieldOrBase * Expr))
            (Q : mpred) : mpred :=
     match inits with
     | nil => Q
@@ -214,12 +214,12 @@ Module Type Func.
   Parameter wpd
     : forall {resolve : genv} (ti : thread_info) (ρ : region)
         (cls : globname) (this : val)
-        (init : FieldOrBase ident globname * globname)
+        (init : FieldOrBase * globname)
         (Q : mpred), mpred.
 
   Fixpoint wpds
            (cls : globname) (this : val)
-           (dests : list (FieldOrBase ident globname * globname))
+           (dests : list (FieldOrBase * globname))
            (Q : mpred) : mpred :=
     match dests with
     | nil => Q
