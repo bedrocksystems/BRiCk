@@ -138,10 +138,7 @@ Module Type cclogic.
   Next Obligation.
   Admitted.
              
- (*A note to Gregory, If I were to paramterize mpred (p:FracPerm_Carrier_Monoid) ... 
-  I wouldn't need this inductive type.
-  THIS WOUDL BE A NEAT SOLUTION.
-
+ (*A note to Gregory, If I were to paramterize mpred (p:FracPerm_Carrier_Monoid) ...  THIS WOUDL BE A NEAT SOLUTION.
   I dont like them to be separate axioms. It is a ad-hoc solution, but lets keep it as it for now. 
  *)
 
