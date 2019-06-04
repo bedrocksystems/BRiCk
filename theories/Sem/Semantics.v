@@ -20,6 +20,7 @@ Parameter val : Type.
 
 Parameter ptr : Type.
 
+Parameter nullptr : ptr.
 Parameter Vptr : ptr -> val.
 Parameter Vint : Z -> val.
 

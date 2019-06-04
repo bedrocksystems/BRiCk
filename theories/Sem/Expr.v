@@ -261,6 +261,11 @@ Module Type Expr.
             |> fspec (resolve:=resolve) (Vptr fa) (this :: vs) ti (fun v => Q v free)))
         |-- wp_rhs (Emember_call false f obj es ty) Q.
 
+    (* null *)
+    Axiom wp_null : forall Q,
+        Q (Vptr nullptr) empSP
+        |-- wp_rhs Enull Q.
+
   End with_resolve.
 
   Module examples.
