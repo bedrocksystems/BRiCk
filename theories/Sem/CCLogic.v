@@ -76,36 +76,20 @@ Module Type cclogic.
   | FPerm (f:Q) (UNIT: 0 <= f <= 1)
   | FPermUndef.
 
-  Lemma nat_le_irrelevant : forall {a b : nat} (pf pf' : le a b), pf = pf'.
-  Proof.
-    induction a.
-    { destruct pf.
-      refine (fun pf' => match pf' as pf' in le _ X
-                            return match X return _ -> Prop with
-                                   | 0 => fun pf' => le_n 0 = pf'
-                                   | S n => fun _ => True
-                                   end%nat pf'
-                      with
-                      | le_n _ => eq_refl
-                      | le_S _ _ _ => I
-                      end).
-  Admitted.
-
   Lemma FPerm_Equal: forall f g UNITf UNITg ,
       f = g -> FPerm f UNITf  = FPerm g UNITg.
-  Proof.
-    intros. subst. f_equal.
-  Admitted.
+  Proof. Admitted.
 
   (*Composition over fractional permissions*)
   Definition FPerm_Compose f g :=
     match f, g return FracPerm_Carrier with
     | FPermUndef, _ => FPermUndef
     | _, FPermUndef => FPermUndef
-    | FPerm f' _ , FPerm g' _ => match excluded_middle_informative (0 <= f' + g' <= 1) with
-                                |left Pred => FPerm (f' + g') Pred
-                                | right _ => FPermUndef
-                                end
+    | FPerm f' _ , FPerm g' _ =>
+      match excluded_middle_informative (0 <= f' + g' <= 1) with
+      | left Pred => FPerm (f' + g') Pred
+      | right _ => FPermUndef
+      end
     end.
 
   (*Order*)
@@ -113,7 +97,8 @@ Module Type cclogic.
     match f, g with
     | FPermUndef, _ => true
     | FPerm _ _, FPermUndef => false
-    | FPerm f' _, FPerm g' _ => if (excluded_middle_informative  (f' <= g')) then true else false
+    | FPerm f' _, FPerm g' _ =>
+      if excluded_middle_informative (f' <= g') then true else false
     end.
 
   (*
@@ -169,12 +154,13 @@ Module Type cclogic.
   Axiom logical_fptsto: forall (Prm: SA) (p: Prm)  (l: val) (v : val), mpred.
   
   Program Definition Frac_PointsTo l q v :=
-    match excluded_middle_informative (0 <= q  <= 1)  with
-     | right _ => lfalse
-     | left _ => match excluded_middle_informative (q == 0) with
-                    | left _ => empSP 
-                    | right _ =>  logical_fptsto FracPerm_Carrier_Monoid  (FPerm  q _)  l v
-                  end  
+    match excluded_middle_informative (0 <= q  <= 1) with
+    | right _ => lfalse
+    | left _ =>
+      match excluded_middle_informative (q == 0) with
+      | left _ => empSP
+      | right _ => logical_fptsto FracPerm_Carrier_Monoid (FPerm  q _)  l v
+      end
    end.
 
   (*Similarly one can encode ghost state using SA*)
