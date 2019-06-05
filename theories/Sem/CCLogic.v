@@ -18,9 +18,13 @@ From ChargeCore.Logics Require Import
 From Cpp Require Import
      Ast.
 From Cpp.Sem Require Import
-     Semantics Logic Expr.
+     Semantics Logic PLogic Wp Expr.
 From Cpp.Auto Require Import
      Discharge.
+
+(* semantics of atomic builtins
+ * https://gcc.gnu.org/onlinedocs/gcc/_005f_005fatomic-Builtins.html
+ *)
 
 Module Type cclogic.
 
@@ -72,29 +76,46 @@ Module Type cclogic.
   | FPerm (f:Q) (UNIT: 0 <= f <= 1)
   | FPermUndef.
 
- Axiom FPerm_Equal: forall f g UNITf UNITg ,
-      f = g -> FPerm f UNITf  = FPerm g UNITg .
- 
- (*Composition over fractional permissions*)
- Definition FPerm_Compose f g :=
-   match f, g return FracPerm_Carrier with
-   | FPermUndef, _ => FPermUndef
-   | _, FPermUndef => FPermUndef
-   | FPerm f' _ , FPerm g' _ => match excluded_middle_informative (0 <= f' + g' <= 1) with
+  Lemma nat_le_irrelevant : forall {a b : nat} (pf pf' : le a b), pf = pf'.
+  Proof.
+    induction a.
+    { destruct pf.
+      refine (fun pf' => match pf' as pf' in le _ X
+                            return match X return _ -> Prop with
+                                   | 0 => fun pf' => le_n 0 = pf'
+                                   | S n => fun _ => True
+                                   end%nat pf'
+                      with
+                      | le_n _ => eq_refl
+                      | le_S _ _ _ => I
+                      end).
+  Admitted.
+
+  Lemma FPerm_Equal: forall f g UNITf UNITg ,
+      f = g -> FPerm f UNITf  = FPerm g UNITg.
+  Proof.
+    intros. subst. f_equal.
+  Admitted.
+
+  (*Composition over fractional permissions*)
+  Definition FPerm_Compose f g :=
+    match f, g return FracPerm_Carrier with
+    | FPermUndef, _ => FPermUndef
+    | _, FPermUndef => FPermUndef
+    | FPerm f' _ , FPerm g' _ => match excluded_middle_informative (0 <= f' + g' <= 1) with
                                 |left Pred => FPerm (f' + g') Pred
                                 | right _ => FPermUndef
-                                               
                                 end
-   end.
- 
- (*Order*)
- Definition FPerm_Order f g : bool := 
-  match f, g with
+    end.
+
+  (*Order*)
+  Definition FPerm_Order f g : bool :=
+    match f, g with
     | FPermUndef, _ => true
     | FPerm _ _, FPermUndef => false
     | FPerm f' _, FPerm g' _ => if (excluded_middle_informative  (f' <= g')) then true else false
-  end.
-      
+    end.
+
   (*
     Here is an example to a carrier_monoid
    *)
@@ -112,6 +133,14 @@ Module Type cclogic.
      s_ord := FPerm_Order 
   |}.
   Next Obligation.
+    compute; split; congruence.
+  Qed.
+  Next Obligation.
+    compute; split; congruence.
+  Qed.
+  Next Obligation.
+    destruct s1; destruct s2; simpl; auto.
+    Print Qlt.
   Admitted.
   Next Obligation.
   Admitted.
@@ -133,15 +162,10 @@ Module Type cclogic.
   Admitted.
   Next Obligation.
   Admitted.
-  Next Obligation.
-  Admitted.
-  Next Obligation.
-  Admitted.
-             
- (*A note to Gregory, If I were to paramterize mpred (p:FracPerm_Carrier_Monoid) ...  THIS WOUDL BE A NEAT SOLUTION.
-  I dont like them to be separate axioms. It is a ad-hoc solution, but lets keep it as it for now. 
- *)
 
+  (*A note to Gregory, If I were to paramterize mpred (p:FracPerm_Carrier_Monoid) ...  THIS WOULD BE A NEAT SOLUTION.
+  I dont like them to be separate axioms. It is a ad-hoc solution, but lets keep it as it for now.
+   *)
   Axiom logical_fptsto: forall (Prm: SA) (p: Prm)  (l: val) (v : val), mpred.
   
   Program Definition Frac_PointsTo l q v :=
@@ -152,8 +176,8 @@ Module Type cclogic.
                     | right _ =>  logical_fptsto FracPerm_Carrier_Monoid  (FPerm  q _)  l v
                   end  
    end.
-      
-  (*Similaryl one can encode ghost state using SA*) 
+
+  (*Similarly one can encode ghost state using SA*)
   (*
    This type extends as we introduce new logical assertions such as logical_ghost etc. 
    A generic ghost location gl and a value kept gv. 
@@ -184,7 +208,7 @@ Module Type cclogic.
   forall  g P E Qp CMI (guard: In CMI guard_container) (ptriple: P |-- (wp_ghst E Qp)),
      P |-- ( wp_ghst E (fun v =>  (Qp v) ** (Exists l, logical_ghost CMI  guard l g))). 
 
- (* list ValCat * Expr*)
+  (* list ValCat * Expr*)
   Parameter wp_atom : AtomicOp -> list val -> type -> (val -> mpred) -> mpred.
 
   Axiom wp_rhs_atomic: forall rslv ti r ao es ty Q,
@@ -193,43 +217,47 @@ Module Type cclogic.
  
   (*Ideas adopted from the paper: Relaxed Separation Logic: A program logic for C11 Concurrency -- Vefeiadis et al. *)
 
-  (*Facts that needs to hold when a location is initialized*)
-  Parameter Init: val -> mpred.
-  
   (*Atomic CAS access permission*)
-  Parameter AtomCASPerm :  val -> (val ->mpred) -> mpred .
-  
+  Parameter AtomInv : (val -> mpred) -> Rep.
+
+(*
   (*Atomic READ access permission*)
   Parameter AtomRDPerm: val -> (val -> mpred) -> mpred.
   
   (*Atomic WRITE access permission*)
   Parameter AtomWRTPerm: val -> (val -> mpred) -> mpred.
+*)
 
-  (* Perm LocInv l * Perm LocInv' l -|- Perm LocInv*LocInv' l 
+(*
+  (* Perm LocInv l * Perm LocInv' l -|- Perm LocInv*LocInv' l
     Composability of two location invariant maps: val -> mpred on location l
     todo(isk): Existentials are weak?
    *)
-  Axiom Splittable_RDPerm: forall (LocInv: val->mpred) (LocInv':val->mpred) l ,  AtomRDPerm l LocInv **  AtomRDPerm l LocInv' 
-                          -|- Exists v, (Exists LocInv'', (LocInv'' v -* (LocInv' v ** LocInv v)) //\\ (AtomRDPerm v LocInv'')). 
-  
-  (*Init is freely duplicable*)
-  Axiom Persistent_Initialization : forall l , Init  l -|- Init  l ** Init  l.
-  
+  Axiom Splittable_RDPerm: forall (LocInv: val->mpred) (LocInv':val->mpred) l,
+      AtomRDPerm l LocInv **  AtomRDPerm l LocInv'
+      -|- Exists v, (Exists LocInv'', (LocInv'' v -* (LocInv' v ** LocInv v)) //\\ (AtomRDPerm v LocInv'')).
+*)
+
   (*Atomic CAS access permission is duplicable*)
-  Axiom Persistent_CASPerm : forall l LocInv,  AtomCASPerm l LocInv -|- AtomCASPerm l LocInv  ** AtomCASPerm l LocInv.
+  Axiom Persistent_CASPerm : forall LocInv,
+      AtomInv LocInv -|- AtomInv LocInv ** AtomInv LocInv.
 
   (*Generate atomic access token via consuming the initially holding invariant*)
-  Axiom Generate_CASPerm : forall x (t:type) (Inv:val->mpred) , Exists v, tptsto t x v **  Inv v  |-- AtomCASPerm x Inv.
+  Axiom Generate_CASPerm : forall x (t:type) (Inv:val->mpred),
+      Exists v, _at (_eq x) (tprim t v) ** Inv v  |-- _at (_eq x) (AtomInv Inv).
 
   (*Memory Ordering Patterns: Now we only have _SEQ_CST *)
   Definition _SEQ_CST := Vint 5.
   Definition Vbool (b : bool) :=
     Vint (if b then 1 else 0).
-  
+
+(*
   (* *)
   Axiom Splittable_WRTPerm: forall (LocInv: val->mpred) (LocInv':val->mpred) l ,  AtomRDPerm l LocInv **  AtomRDPerm l LocInv' 
                            -|- Exists v, (Exists LocInv'', (LocInv'' v -* (LocInv' v \\// LocInv v)) //\\ (AtomRDPerm v LocInv'')).
-  
+*)
+
+(* note(gmm): these used for weak memory
   (* r := l.load -- we can think of this as r := l.load(acc_type) *)
   (*todo(isk): give up the permission to read the same value again with same permission *)
   Axiom rule_atomic_load: forall (acc_type:type)  l (LocInv: val -> mpred),
@@ -245,7 +273,6 @@ Module Type cclogic.
       (AtomWRTPerm l LocInv ** LocInv l)
         |-- (wp_atom AO__atomic_store (l::v::nil) acc_type
             (fun r => Init l ** AtomWRTPerm l LocInv)).
-  
   
   (*atomic compare and exchange rule
    todo(isk): check the number of args -- 6 -- and order of them.
@@ -284,10 +311,87 @@ Module Type cclogic.
               (wp_atom AO__atomic_fetch_add (E::pls::nil) acc_type
                        (fun x:val => keptforinv x)).
   
+*)
+
+
+  (* atomic compare and exchange n *)
+  Axiom rule_atomic_compare_exchange_n:
+    forall P E E' E'' wk succmemord failmemord Qp Q'  (Q:mpred)
+           (acc_type : type)
+           v'
+           (preserve:  P ** Qp v'  |-- Qp E'' ** Q),
+         _at (_eq E') (tprim acc_type v') ** P **
+         _at (_eq E) (AtomInv Qp) **
+         [|wk = Vbool false|] ** [|succmemord = _SEQ_CST|] ** [| failmemord = _SEQ_CST |] **
+         (Forall x, _at (_eq E') (tprim acc_type x) **
+                    _at (_eq E) (AtomInv Qp) **
+                    (([| x = v' |] ** Q) \\//
+                     ([| x <> v' |] ** P ** _at (_eq E) (AtomInv Qp))) -* Q' x)
+       |-- wp_atom AO__atomic_compare_exchange_n
+                   (E::succmemord::E'::failmemord::E''::wk::nil) acc_type Q'.
+
+  (* atomic compare and exchange rule
+   *)
+  Axiom rule_atomic_compare_exchange:
+    forall P E E' E'' wk succmemord failmemord Qp Q'  (Q:mpred)
+           (acc_type : type)
+           v' v''
+           (preserve:  P ** Qp v'  |-- Qp E'' ** Q),
+         _at (_eq E') (tprim acc_type v') ** _at (_eq E'') (tprim acc_type v'') ** P **
+         _at (_eq E) (AtomInv Qp) **
+         [|wk = Vbool false|] ** [|succmemord = _SEQ_CST|] ** [| failmemord = _SEQ_CST |] **
+         (Forall x, _at (_eq E') (tprim acc_type x) ** _at (_eq E'') (tprim acc_type v'') **
+                    _at (_eq E) (AtomInv Qp) **
+                    (([| x = v' |] ** Q) \\//
+                     ([| x <> v' |] ** P ** _at (_eq E) (AtomInv Qp))) -* Q' x)
+       |-- wp_atom AO__atomic_compare_exchange
+                   (E::succmemord::E'::failmemord::E''::wk::nil) acc_type Q'.
+
+
+  (* atomic fetch and xxx rule *)
+  Definition rule_fetch_xxx ao op : Prop :=
+    forall P E Qp pls memorder Q Q'
+         (acc_type : type)
+         (split: forall v,  P ** Qp v |--
+                         Exists v', [| eval_binop op acc_type acc_type acc_type v pls v' |] **
+                                    Qp v' ** Q v),
+         P ** _at (_eq E) (AtomInv Qp) **
+         [| memorder = _SEQ_CST |] **
+         (Forall x, (_at (_eq E) (AtomInv Qp) ** Q x) -* Q' x)
+       |-- wp_atom ao (E::pls::memorder::nil) acc_type Q'.
+
+
+  Ltac fetch_xxx ao op :=
+    let G := eval unfold rule_fetch_xxx in (rule_fetch_xxx ao op) in exact G.
+
+  Axiom wp_atomic_fetch_add : ltac:(fetch_xxx AO__atomic_fetch_add Badd).
+  Axiom rule_atomic_fetch_sub : ltac:(fetch_xxx AO__atomic_fetch_sub Bsub).
+  Axiom rule_atomic_fetch_and : ltac:(fetch_xxx AO__atomic_fetch_and Band).
+  Axiom rule_atomic_fetch_xor : ltac:(fetch_xxx AO__atomic_fetch_xor Bxor).
+  Axiom rule_atomic_fetch_or : ltac:(fetch_xxx AO__atomic_fetch_or Bor).
+
+  (* atomic xxx and fetch rule *)
+  Definition rule_xxx_fetch ao op : Prop :=
+    forall P E Qp pls memorder Q Q'
+         (acc_type : type)
+         (split: forall v,  P ** Qp v |--
+                         Exists v', [| eval_binop op acc_type acc_type acc_type v pls v' |] **
+                                    Qp v' ** Q v'),
+         P ** _at (_eq E) (AtomInv Qp) **
+         [| memorder = _SEQ_CST |] **
+         (Forall x, (_at (_eq E) (AtomInv Qp) ** Q x) -* Q' x)
+       |-- wp_atom ao (E::pls::memorder::nil) acc_type Q'.
+
+  Ltac xxx_fetch ao op :=
+    let G := eval unfold rule_xxx_fetch in (rule_xxx_fetch ao op) in exact G.
+
+  Axiom wp_atomic_add_fetch : ltac:(xxx_fetch AO__atomic_add_fetch Badd).
+  Axiom rule_atomic_sub_fetch : ltac:(xxx_fetch AO__atomic_sub_fetch Bsub).
+  Axiom rule_atomic_and_fetch : ltac:(xxx_fetch AO__atomic_and_fetch Band).
+  Axiom rule_atomic_xor_fetch : ltac:(xxx_fetch AO__atomic_xor_fetch Bxor).
+  Axiom rule_atomic_or_fetch : ltac:(xxx_fetch AO__atomic_or_fetch Bor).
 End cclogic.
 
 Declare Module CCL : cclogic.
 
 Export CCL.
-
-Export ILogic BILogic ILEmbed Later.
