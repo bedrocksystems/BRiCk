@@ -245,61 +245,26 @@ Module Type cclogic.
                            -|- Exists v, (Exists LocInv'', (LocInv'' v -* (LocInv' v \\// LocInv v)) //\\ (AtomRDPerm v LocInv'')).
 *)
 
-(* note(gmm): these used for weak memory
-  (* r := l.load -- we can think of this as r := l.load(acc_type) *)
+  (* note(gmm): these are used for reading and writing without compare *)
   (*todo(isk): give up the permission to read the same value again with same permission *)
-  Axiom rule_atomic_load: forall (acc_type:type)  l (LocInv: val -> mpred),
-      (Init  l ** AtomRDPerm l LocInv) |--
-            (wp_atom AO__atomic_load (l::nil) acc_type
-            (fun r => LocInv r)).
+  Axiom rule_atomic_load_cst
+  : forall q memorder (acc_type:type) l (Inv Qlearn: val -> mpred) P Q
+      (read : forall v, P ** Inv v |-- Inv v ** Qlearn v),
+      _at (_eq l) (AtomInv q acc_type Inv) **
+      P **
+      [| memorder = _SEQ_CST |] **
+      (Forall x, (Qlearn x ** _at (_eq l) (AtomInv q acc_type Inv)) -* Q x)
+      |-- wp_atom AO__atomic_load_n (l :: memorder :: nil) acc_type Q.
 
- 
-  (* l.store(v) -- we can think of it as l.store(v,acc_type)
-     
-  *)
-   Axiom rule_atomic_store : forall (acc_type:type) v l (LocInv: val -> mpred),
-      (AtomWRTPerm l LocInv ** LocInv l)
-        |-- (wp_atom AO__atomic_store (l::v::nil) acc_type
-            (fun r => Init l ** AtomWRTPerm l LocInv)).
-  
-  (*atomic compare and exchange rule
-   todo(isk): check the number of args -- 6 -- and order of them.
-  *)
-  Axiom rule_atomic_compare_exchange :
-    forall P E E' E'' Qp  Q
-           (acc_type : type) 
-           (preserve:  P ** Qp E'  |-- Qp E'' ** Q),
-      (P  ** AtomCASPerm E Qp)
-        |-- (wp_atom AO__atomic_compare_exchange (E::E'::E''::nil) acc_type
-            (fun x => if excluded_middle_informative (x = E') then
-                                  Q else
-                        P  ** AtomCASPerm E Qp)).
-  (*Atomic compare and exchange n -- we use this in spinlock module*)
-  Axiom rule_atomic_compare_exchange_n:
-    forall P E E' E'' wk succmemord failmemord Qp Q'  (Q:mpred)
-           (acc_type : type) 
-           (preserve:  P ** Qp E'  |-- Qp E'' ** Q),
-      (P  ** AtomCASPerm E Qp ** [|wk = Vbool false|] ** [|succmemord = _SEQ_CST|] ** [| failmemord = _SEQ_CST |]) **
-       (Forall x, (if excluded_middle_informative (x = E') then
-                                  Q else
-                    P  ** AtomCASPerm E Qp) -* Q' x) |-- 
-       wp_atom AO__atomic_compare_exchange_n (E::succmemord::E'::failmemord::E''::wk::nil) acc_type Q'.
-         
-  (*atomic fetch and add rule*)
-  Axiom rule_atomic_fetch_add : 
-    forall P released keptforinv E Qp pls
-         (acc_type : type)
-         (split: forall v,  P |-- (released v) ** (keptforinv v))
-         (atom_xchng: forall v, ((released v) ** (AtomCASPerm E Qp)) |--
-                        (wp_atom AO__atomic_compare_exchange  (E::v::pls::nil) acc_type
-                                 (fun x => if (excluded_middle_informative(x = v)) then
-                                                 (keptforinv v) else
-                                                 ((released v) ** (AtomCASPerm E Qp))))),
-      (P ** (AtomCASPerm E Qp)) |--
-              (wp_atom AO__atomic_fetch_add (E::pls::nil) acc_type
-                       (fun x:val => keptforinv x)).
-  
-*)
+  Axiom rule_atomic_store_cst
+  : forall q memorder (acc_type:type) l (Inv Qlearn : val -> mpred) P Q
+      val
+      (store : forall v, P ** Inv v |-- Inv val ** Qlearn v),
+      _at (_eq l) (AtomInv q acc_type Inv) **
+      P **
+      [| memorder = _SEQ_CST |] **
+      (Forall x, (Qlearn x ** _at (_eq l) (AtomInv q acc_type Inv)) -* Q x)
+      |-- wp_atom AO__atomic_store_n (l :: memorder :: val :: nil) (Qmut Tvoid) Q.
 
   Definition Fp_readable (f : Fp) : Prop :=
     exists f : Q, (0 < f /\ f <= 1)%Q.
