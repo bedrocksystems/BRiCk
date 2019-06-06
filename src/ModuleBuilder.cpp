@@ -144,6 +144,20 @@ public:
     }
   }
 
+  void VisitCXXConstructorDecl(const CXXConstructorDecl *decl) {
+    if (decl->isDeleted()) {
+      return;
+    }
+    this->ConstDeclVisitorArgs::VisitCXXConstructorDecl(decl);
+  }
+
+  void VisitCXXDestructorDecl(const CXXDestructorDecl *decl) {
+    if (decl->isDeleted()) {
+      return;
+    }
+    this->ConstDeclVisitorArgs::VisitCXXDestructorDecl(decl);
+  }
+
   void VisitFunctionTemplateDecl(const FunctionTemplateDecl *decl)
   {
     // note(gmm): for now, i am just going to return the specializations.
