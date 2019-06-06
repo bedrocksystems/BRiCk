@@ -125,7 +125,6 @@ Module Type cclogic.
   Qed.
   Next Obligation.
     destruct s1; destruct s2; simpl; auto.
-    Print Qlt.
   Admitted.
   Next Obligation.
   Admitted.
@@ -198,13 +197,13 @@ Module Type cclogic.
   Parameter wp_atom : AtomicOp -> list val -> type -> (val -> mpred) -> mpred.
 
   Axiom wp_rhs_atomic: forall rslv ti r ao es ty Q,
-    wps (wpAnys (resolve:=rslv) ti r) es  (fun (vs : list val) (free : FreeTemps) => wp_atom ao vs ty (fun v=> Q v free)) empSP
+    wps (wpAnys (resolve:=rslv) ti r) es  (fun (vs : list val) (free : FreeTemps) => wp_atom ao vs ty (fun v => Q v free)) empSP
         |-- wp_rhs (resolve:=rslv) ti r (Eatomic ao es ty) Q.
  
   (*Ideas adopted from the paper: Relaxed Separation Logic: A program logic for C11 Concurrency -- Vefeiadis et al. *)
 
   (*Atomic CAS access permission*)
-  Parameter AtomInv : (val -> mpred) -> Rep.
+  Parameter AtomInv : type -> (val -> mpred) -> Rep.
 
 (*
   (*Atomic READ access permission*)
@@ -225,12 +224,12 @@ Module Type cclogic.
 *)
 
   (*Atomic CAS access permission is duplicable*)
-  Axiom Persistent_CASPerm : forall LocInv,
-      AtomInv LocInv -|- AtomInv LocInv ** AtomInv LocInv.
+  Axiom Persistent_CASPerm : forall ty LocInv,
+      AtomInv ty LocInv -|- AtomInv ty LocInv ** AtomInv ty LocInv.
 
   (*Generate atomic access token via consuming the initially holding invariant*)
   Axiom Generate_CASPerm : forall x (t:type) (Inv:val->mpred),
-      Exists v, _at (_eq x) (tprim t v) ** Inv v  |-- _at (_eq x) (AtomInv Inv).
+      Exists v, _at (_eq x) (tprim t v) ** Inv v  |-- _at (_eq x) (AtomInv t Inv).
 
   (*Memory Ordering Patterns: Now we only have _SEQ_CST *)
   Definition _SEQ_CST := Vint 5.
@@ -302,37 +301,54 @@ Module Type cclogic.
 
   (* atomic compare and exchange n *)
   Axiom rule_atomic_compare_exchange_n:
-    forall P E E' E'' wk succmemord failmemord Qp Q'  (Q:mpred)
-           (acc_type : type)
-           v'
-           (preserve:  P ** Qp v'  |-- Qp E'' ** Q),
-         _at (_eq E') (tprim acc_type v') ** P **
-         _at (_eq E) (AtomInv Qp) **
+    forall P val_p expected_p desired wk succmemord failmemord Qp Q' Qlearn (Q:mpred)
+           (ty : type)
+           expected
+           (preserve:  P ** Qp expected  |-- Qp desired ** Q)
+           (learn : forall actual, actual <> expected ->
+                              P ** Qp actual |-- (Qlearn actual //\\ empSP) ** ltrue),
+         _at (_eq expected_p) (tprim ty expected) **
+         _at (_eq val_p) (AtomInv ty Qp) **
+         P **
          [|wk = Vbool false|] ** [|succmemord = _SEQ_CST|] ** [| failmemord = _SEQ_CST |] **
-         (Forall x, _at (_eq E') (tprim acc_type x) **
-                    _at (_eq E) (AtomInv Qp) **
-                    (([| x = v' |] ** Q) \\//
-                     ([| x <> v' |] ** P ** _at (_eq E) (AtomInv Qp))) -* Q' x)
+         ((((* success *)
+            _at (_eq expected_p) (tprim ty expected) **
+            _at (_eq val_p) (AtomInv ty Qp) ** Q) -* Q' (Vbool true)) //\\
+          (((* failure *)
+            Exists x, [| x <> expected |] ** Qlearn x **
+              _at (_eq expected_p) (tprim ty x) **
+              _at (_eq val_p) (AtomInv ty Qp) **
+              P) -* Q' (Vbool false)))
        |-- wp_atom AO__atomic_compare_exchange_n
-                   (E::succmemord::E'::failmemord::E''::wk::nil) acc_type Q'.
+                   (val_p::succmemord::expected_p::failmemord::desired::wk::nil) (Qmut Tbool) Q'.
+
+
 
   (* atomic compare and exchange rule
    *)
   Axiom rule_atomic_compare_exchange:
-    forall P E E' E'' wk succmemord failmemord Qp Q'  (Q:mpred)
-           (acc_type : type)
-           v' v''
-           (preserve:  P ** Qp v'  |-- Qp E'' ** Q),
-         _at (_eq E') (tprim acc_type v') ** _at (_eq E'') (tprim acc_type v'') ** P **
-         _at (_eq E) (AtomInv Qp) **
+    forall P val_p expected_p desired_p wk succmemord failmemord Qp Q' Qlearn (Q:mpred)
+           (ty : type)
+           expected desired
+           (preserve:  P ** Qp expected  |-- Qp desired ** Q)
+           (learn : forall actual, actual <> expected ->
+                              P ** Qp actual |-- (Qlearn actual //\\ empSP) ** ltrue),
+         _at (_eq expected_p) (tprim ty expected) **
+         _at (_eq desired_p) (tprim ty desired) **
+         _at (_eq val_p) (AtomInv ty Qp) ** P **
          [|wk = Vbool false|] ** [|succmemord = _SEQ_CST|] ** [| failmemord = _SEQ_CST |] **
-         (Forall x, _at (_eq E') (tprim acc_type x) ** _at (_eq E'') (tprim acc_type v'') **
-                    _at (_eq E) (AtomInv Qp) **
-                    (([| x = v' |] ** Q) \\//
-                     ([| x <> v' |] ** P ** _at (_eq E) (AtomInv Qp))) -* Q' x)
+         ((((* success *)
+            _at (_eq expected_p) (tprim ty expected) **
+            _at (_eq desired_p) (tprim ty desired) **
+            _at (_eq val_p) (AtomInv ty Qp) ** Q) -* Q' (Vbool true)) //\\
+          (((* failure *)
+            Exists x, [| x <> expected |] ** Qlearn x **
+              _at (_eq expected_p) (tprim ty x) **
+              _at (_eq desired_p) (tprim ty desired) **
+              _at (_eq val_p) (AtomInv ty Qp) **
+              P) -* Q' (Vbool false)))
        |-- wp_atom AO__atomic_compare_exchange
-                   (E::succmemord::E'::failmemord::E''::wk::nil) acc_type Q'.
-
+                   (val_p::succmemord::expected_p::failmemord::desired::wk::nil) (Qmut Tbool) Q'.
 
   (* atomic fetch and xxx rule *)
   Definition rule_fetch_xxx ao op : Prop :=
@@ -341,9 +357,9 @@ Module Type cclogic.
          (split: forall v,  P ** Qp v |--
                          Exists v', [| eval_binop op acc_type acc_type acc_type v pls v' |] **
                                     Qp v' ** Q v),
-         P ** _at (_eq E) (AtomInv Qp) **
-         [| memorder = _SEQ_CST |] **
-         (Forall x, (_at (_eq E) (AtomInv Qp) ** Q x) -* Q' x)
+         _at (_eq E) (AtomInv acc_type Qp) **
+         [| memorder = _SEQ_CST |] ** P **
+         (Forall x, (_at (_eq E) (AtomInv acc_type Qp) ** Q x) -* Q' x)
        |-- wp_atom ao (E::pls::memorder::nil) acc_type Q'.
 
 
@@ -363,9 +379,9 @@ Module Type cclogic.
          (split: forall v,  P ** Qp v |--
                          Exists v', [| eval_binop op acc_type acc_type acc_type v pls v' |] **
                                     Qp v' ** Q v'),
-         P ** _at (_eq E) (AtomInv Qp) **
+         P ** _at (_eq E) (AtomInv acc_type Qp) **
          [| memorder = _SEQ_CST |] **
-         (Forall x, (_at (_eq E) (AtomInv Qp) ** Q x) -* Q' x)
+         (Forall x, (_at (_eq E) (AtomInv acc_type Qp) ** Q x) -* Q' x)
        |-- wp_atom ao (E::pls::memorder::nil) acc_type Q'.
 
   Ltac xxx_fetch ao op :=

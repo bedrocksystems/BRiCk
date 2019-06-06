@@ -139,6 +139,7 @@ Axiom eval_le_int :
 Axiom eval_ge_int :
   ltac:(let x := eval hnf in (eval_int_rel_op_int Bge ZArith_dec.Z_ge_lt_dec) in refine x).
 
+Axiom eval_not_bool : forall a, eval_unop Unot Tbool Tbool (Vbool a) (Vbool (negb a)).
 
 
 
