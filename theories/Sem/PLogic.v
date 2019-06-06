@@ -357,6 +357,12 @@ Definition tany (t : type) : Rep :=
 Definition tinv {model} (Inv : val -> model -> mpred) (m : model) : Rep :=
   {| repr addr := Inv addr m |}.
 
+Definition is_null : Rep :=
+  {| repr addr := [| addr = Vptr nullptr |] |}.
+
+Definition is_nonnull : Rep :=
+  {| repr addr := Exists p, [| p <> nullptr |] ** [| addr = Vptr p |] |}.
+
 Lemma tint_any : forall sz v, tint sz v |-- tany (Tint (Some sz) true).
 Proof.
   simpl; intros. t.
@@ -388,6 +394,24 @@ Lemma _at_pureR : forall x P,
     _at (_eq x) (pureR P) -|- P.
 Proof.
   unfold _at; split; simpl; t.
+Qed.
+
+Lemma _at_eq_tref : forall x ty v,
+    _at (_eq x) (tref ty v) -|- [| x = v |].
+Proof.
+  unfold _at; split; cbn; t; subst; t.
+Qed.
+
+Lemma _at_eq_is_null : forall x,
+    _at (_eq x) is_null -|- [| x = Vptr nullptr |].
+Proof.
+  unfold _at; split; cbn; t; subst; t.
+Qed.
+
+Lemma _at_eq_is_nonnull : forall x,
+    _at (_eq x) is_nonnull -|- Exists p, [| p <> nullptr |] ** [| x = Vptr p |].
+Proof.
+  unfold _at; split; cbn; t; subst; t.
 Qed.
 
 Lemma refine_tprim_ptr : forall p ty v F Q,
@@ -430,5 +454,5 @@ Qed.
 
 
 
-Global Opaque _local _global _at _sub _field _offsetR _offsetL tprim tint tuint tptr.
+Global Opaque _local _global _at _sub _field _offsetR _offsetL tprim tint tuint tptr is_null is_nonnull.
 Global Opaque lexists sepSP empSP land lor lforall ltrue lfalse.
