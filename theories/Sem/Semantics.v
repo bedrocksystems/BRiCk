@@ -19,6 +19,7 @@ From Cpp Require Import
 Parameter val : Type.
 
 Parameter ptr : Type.
+Parameter ptr_eq_dec : forall (x y : ptr), { x = y } + { x <> y }.
 
 Parameter nullptr : ptr.
 Parameter Vptr : ptr -> val.
@@ -140,7 +141,18 @@ Axiom eval_le_int :
 Axiom eval_ge_int :
   ltac:(let x := eval hnf in (eval_int_rel_op_int Bge ZArith_dec.Z_ge_lt_dec) in refine x).
 
-
+Axiom eval_eq_ptr :
+  forall ty a b av bv c,
+    a = Vptr av ->
+    b = Vptr bv ->
+    c = (if ptr_eq_dec av bv then 1 else 0)%Z ->
+    eval_binop Beq ty ty Tbool a b (Vint c).
+Axiom eval_neq_ptr :
+  forall ty a b av bv c,
+    a = Vptr av ->
+    b = Vptr bv ->
+    c = (if ptr_eq_dec av bv then 0 else 1)%Z ->
+    eval_binop Bneq ty ty Tbool a b (Vint c).
 
 
 (** global environments
