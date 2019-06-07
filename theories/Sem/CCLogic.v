@@ -267,7 +267,10 @@ Module Type cclogic.
       |-- wp_atom AO__atomic_store_n (l :: memorder :: val :: nil) (Qmut Tvoid) Q.
 
   Definition Fp_readable (f : Fp) : Prop :=
-    exists f : Q, (0 < f /\ f <= 1)%Q.
+    match f with
+    | FPerm f _ => (0 < f)%Q
+    | _ => False
+    end.
 
   (* atomic compare and exchange n *)
   Axiom rule_atomic_compare_exchange_n:
