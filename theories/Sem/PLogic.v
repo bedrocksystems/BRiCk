@@ -452,6 +452,17 @@ Proof.
   t. assumption.
 Qed.
 
+Lemma tlocal_at_tlocal_at : forall r x a v v' F F',
+    v |-- v' ->
+    F |-- F' ->
+    tlocal_at r x a v ** F |-- tlocal_at r x a v' ** F'.
+Proof.
+  clear. unfold tlocal, tlocal_at.
+  intros.
+  rewrite H.
+  t. assumption.
+Qed.
+
 
 
 Global Opaque _local _global _at _sub _field _offsetR _offsetL tprim tint tuint tptr is_null is_nonnull.
