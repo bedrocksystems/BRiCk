@@ -191,7 +191,7 @@ Definition _super (from to : globname) : Offset :=
   |}.
 
 Definition _deref (ty : type) : Offset :=
-  {| offset from to := ptsto from to ** [| has_type from (Tpointer ty) |] |}.
+  {| offset from to := tptsto ty from to ** [| has_type from (Tpointer ty) |] |}.
 
 Definition _id : Offset :=
   {| offset a b := embed (a = b) |}.
@@ -313,20 +313,20 @@ Coercion pureR : mpred >-> Rep.
 
 Definition tint (sz : nat) (v : Z) : Rep :=
   {| repr addr :=
-       ptsto addr (Vint v) **
+       tptsto (Tint (Some sz) true) addr (Vint v) **
        [| has_type (Vint v) (Tint (Some sz) true) |] |}.
 Definition tuint (sz : nat) (v : Z) : Rep :=
   {| repr addr :=
-       ptsto addr (Vint v) **
+       tptsto (Tint (Some sz) false) addr (Vint v) **
        [| has_type (Vint v) (Tint (Some sz) false) |] |}.
 Definition tptr (ty : type) (p : ptr) : Rep :=
-  {| repr addr := ptsto addr (Vptr p) |}.
+  {| repr addr := tptsto (Tpointer ty) addr (Vptr p) |}.
 Definition tref (ty : type) (p : val) : Rep :=
   {| repr addr := [| addr = p |] |}.
 
 
 Definition tprim (ty : type) (v : val) : Rep :=
-  {| repr addr := ptsto addr v ** [| has_type v (drop_qualifiers ty) |] |}.
+  {| repr addr := tptsto ty addr v ** [| has_type v (drop_qualifiers ty) |] |}.
 Lemma tprim_tint : forall sz v,
     tprim (Tint (Some sz) true) (Vint v) -|- tint sz v.
 Proof. reflexivity. Qed.
@@ -334,10 +334,12 @@ Lemma tprim_tuint : forall sz v,
     tprim (Tint (Some sz) false) (Vint v) -|- tuint sz v.
 Proof. reflexivity. Qed.
 Lemma tprim_tptr : forall ty p,
-    tprim (Tpointer ty) (Vptr p) -|- tptr (drop_qualifiers ty) p.
+    tprim (Tpointer ty) (Vptr p) -|- tptr ty p.
 Proof.
-  unfold tprim, tptr; split; intros; simpl; intros; t.
-Admitted.
+  unfold tprim, tptr; split; intros; simpl; intros.
+  { t. }
+  { eapply tptsto_has_type. }
+Qed.
 
 Definition uninit (ty : type) : Rep :=
   {| repr addr :=
@@ -392,7 +394,7 @@ Qed.
 
 Lemma refine_tprim_ptr : forall p ty v F Q,
     (forall pt, Vptr pt = v ->
-           _at p (tptr (drop_qualifiers ty) pt) ** F |-- Q) ->
+           _at p (tptr ty pt) ** F |-- Q) ->
     _at p (tprim (Tpointer ty) v) ** F |-- Q.
 Proof.
   unfold _at, tprim.

@@ -373,7 +373,7 @@ Module Type Expr.
                  (Qmut T_int))
            (Qmut T_int))
                    (fun x => embed (x = Vptr addr) //\\
-                          tlocal ρ "x" (tptr T_int addr) **
+                          tlocal ρ "x" (tptr (Qmut T_int) addr) **
                           _at (_eq x) (tprim T_int 0%Z)).
       Proof.
         intros.
@@ -430,7 +430,7 @@ Module Type Expr.
                   (Qmut T_int))
                 (Qmut T_int))
                    (fun ya => Exists pp, [| ya = Vptr pp |] **
-                            tlocal ρ "x" (tptr T_int pp) **
+                            tlocal ρ "x" (tptr (Qmut T_int) pp) **
                             tlocal_at ρ "y" ya (tint 32 3%Z)).
       Proof.
         intros.
