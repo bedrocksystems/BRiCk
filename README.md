@@ -6,7 +6,7 @@ Tool for converting C++ files into Coq files.
 ### C++
 You will need the following packages (they can be installed via `apt` on a ubuntu distribution).
 
-1. `llvm-7`, `llvm-7-dev`, `clang-7`, `libclang-7-dev`
+1. `llvm-8`, `llvm-8-dev`, `clang-8`, `libclang-8-dev`
 2. `cmake`
 
 ### Coq
