@@ -219,6 +219,11 @@ Module Type Expr.
         wp_rhs e (fun v free => [| has_type v t |] ** Q v free)
         |-- wp_rhs (Ecast Cintegral e t) Q.
 
+    Axiom wp_rhs_cast_null : forall e t Q,
+        wp_rhs e Q
+        |-- wp_rhs (Ecast Cnull2ptr e t) Q.
+    (* ^ todo(jmgrosen): confirm that this doesn't change the value *)
+
     (** the ternary operator `_ ? _ : _` *)
     Axiom wp_condition : forall ty m tst th el Q,
         wp_rhs tst (fun v1 free =>
@@ -260,6 +265,11 @@ Module Type Expr.
         wp_lhs obj (fun this => wps wpAnys es (fun vs free =>
             |> fspec (resolve:=resolve) (Vptr fa) (this :: vs) ti (fun v => Q v free)))
         |-- wp_rhs (Emember_call false f obj es ty) Q.
+
+    (* null *)
+    Axiom wp_null : forall Q,
+        Q (Vptr nullptr) empSP
+        |-- wp_rhs Enull Q.
 
   End with_resolve.
 
