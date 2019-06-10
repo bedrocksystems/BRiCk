@@ -59,7 +59,10 @@ Module Type logic.
 
   (* heap points to *)
   (* note(gmm): this needs to support fractional permissions and other features *)
-  Parameter ptsto : forall addr value : val, mpred.
+  Parameter tptsto : type -> forall addr value : val, mpred.
+
+  Axiom tptsto_has_type : forall t a v,
+      tptsto t a v |-- tptsto t a v ** [| has_type v t |].
 
   Parameter local_addr : region -> ident -> ptr -> mpred.
 

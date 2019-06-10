@@ -67,7 +67,7 @@ void toCoqModule(clang::ASTContext *ctxt,
 	CoqPrinter print(fmt);
 	ClangPrinter cprint(ctxt);
 
-	fmt << "From Cpp Require Import Parser." << fmt::line << fmt::line
+	fmt << "Require Import Cpp.Parser." << fmt::line << fmt::line
 			<< "Local Open Scope string_scope." << fmt::line
 			<< "Import ListNotations." << fmt::line;
 

@@ -154,6 +154,8 @@ Axiom eval_neq_ptr :
     c = (if ptr_eq_dec av bv then 0 else 1)%Z ->
     eval_binop Bneq ty ty Tbool a b (Vint c).
 
+Axiom eval_not_bool : forall a, eval_unop Unot Tbool Tbool (Vbool a) (Vbool (negb a)).
+
 
 (** global environments
  *)
