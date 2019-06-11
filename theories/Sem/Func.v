@@ -20,7 +20,7 @@ Require Import Coq.micromega.Lia.
 From Cpp.Auto Require Import Discharge.
 
 Local Ltac t :=
-  discharge fail idtac fail ltac:(canceler fail auto) auto.
+  discharge fail fail fail ltac:(canceler fail auto) auto.
 
 Fixpoint is_void (t : type) : bool :=
   match t with
@@ -37,10 +37,7 @@ Proof.
   intros.
   rewrite <- H0; clear H0.
   etransitivity.
-  2: eapply sepSPAdj.
-  2: reflexivity.
-  rewrite <- empSPR at 1.
-  eapply scME. reflexivity.
+  2: eapply sepSPAdj; reflexivity.
   t.
 Qed.
 
@@ -266,110 +263,114 @@ Module Type Func.
     ForallEach _ fs.(fs'_specification) (fun PQ args =>
        Forall Q, PQ Q -* fspec p (List.map snd args) ti Q).
 
-    Record WithPrePost : Type :=
-    { wpp_with : Type
-    ; wpp_pre  : wpp_with -> mpred
-    ; wpp_post : wpp_with -> val -> mpred
-    }.
 
-    Definition ht (ret : type) (targs : list type)
-               (PQ : list val -> WithPrePost)
-    : function_spec :=
-      {| fs_return := ret
-       ; fs_arguments := targs
-       ; fs_specification := fun args Q =>
-           Exists g : (PQ args).(wpp_with),
-                      (Forall res, (PQ args).(wpp_post) g res -* Q res)
-                   ** (PQ args).(wpp_pre) g |}.
+  Record WithPrePost : Type :=
+    { wpp_with : tele
+    ; wpp_pre : teleF mpred wpp_with
+    ; wpp_post : teleF (val -> mpred) wpp_with }.
 
-    (* Hoare triple for a function.
-     *)
-    Definition SFunction (ret : type) (targs : list type)
-               (PQ : arrowFrom val targs WithPrePost)
-    : function_spec' :=
-      {| fs'_return := ret
-       ; fs'_arguments := targs
-       ; fs'_specification := arrowFrom_map
-            (fun wpp (Q : val -> mpred) =>
-               Exists g : wpp.(wpp_with),
-                          (Forall res : val, wpp.(wpp_post) g res -* Q res) **
-                          wpp.(wpp_pre) g) PQ |}.
+  Fixpoint WppD {t : tele}
+  : forall (P : teleF mpred t) (Q : teleF (val -> mpred) t), (val -> mpred) -> mpred :=
+    match t as t
+          return forall (P : teleF mpred t) (Q : teleF (val -> mpred) t),
+                 (val -> mpred) -> mpred
+    with
+    | tdone => fun P Q Q' => P ** (Forall result, Q result -* Q' result)
+    | tcons ts => fun P Q Q' => Exists x, @WppD (ts x) (P x) (Q x) Q'
+    end.
 
-    (* Hoare triple for a constructor.
-     *)
-    Definition SConstructor (class : globname)
-               (targs : list type)
-               (PQ : val -> arrowFrom val targs WithPrePost)
-    : function_spec' :=
-      let this_type := Qmut (Tref class) in
-      SFunction (Qmut Tvoid) (Qconst (Tpointer this_type) :: targs)
-          (fun this => arrowFrom_map (fun wpp =>
-             {| wpp_with := wpp.(wpp_with)
-              ; wpp_pre  := fun m =>
-                  _at (_eq this) (uninit (Tref class)) ** wpp.(wpp_pre) m
-              ; wpp_post := wpp.(wpp_post)
-              |}) (PQ this)).
+  Definition ht (ret : type) (targs : list type)
+             (PQ : list val -> WithPrePost)
+  : function_spec :=
+    {| fs_return := ret
+     ; fs_arguments := targs
+     ; fs_specification := fun args Q =>
+       let PQ := PQ args in @WppD PQ.(wpp_with) PQ.(wpp_pre) PQ.(wpp_post) Q |}.
 
-    (* Hoare triple for a destructor.
-     *)
-    Definition SDestructor (class : globname)
-               (PQ : val -> WithPrePost)
-    : function_spec' :=
-      let this_type := Qmut (Tref class) in
-      SFunction (Qmut Tvoid) (Qconst (Tpointer this_type) :: nil)
-          (fun this =>
-             {| wpp_with := (PQ this).(wpp_with)
-              ; wpp_pre := (PQ this).(wpp_pre)
-              ; wpp_post := fun m res =>
-                  _at (_eq this) (tany (Tref class)) ** (PQ this).(wpp_post) m res
-              |}).
+  (* Hoare triple for a function.
+   *)
+  Definition SFunction (ret : type) (targs : list type)
+             (PQ : arrowFrom val targs WithPrePost)
+  : function_spec' :=
+    {| fs'_return := ret
+     ; fs'_arguments := targs
+     ; fs'_specification := arrowFrom_map
+          (fun wpp => WppD wpp.(wpp_pre) wpp.(wpp_post)) PQ |}.
 
-    (* Hoare triple for a method.
-     *)
-    Definition SMethod (class : globname) (qual : type_qualifiers)
-               (ret : type) (targs : list type)
-               (PQ : val -> arrowFrom val targs WithPrePost)
-    : function_spec' :=
-      let class_type := Tref class in
-      let this_type := Tqualified qual class_type in
-      SFunction ret (Qconst (Tpointer this_type) :: targs) PQ.
+  (* Hoare triple for a constructor.
+   *)
+  Definition SConstructor (class : globname)
+             (targs : list type)
+             (PQ : val -> arrowFrom val targs WithPrePost)
+  : function_spec' :=
+    let this_type := Qmut (Tref class) in
+    SFunction (Qmut Tvoid) (Qconst (Tpointer this_type) :: targs)
+              (fun this => arrowFrom_map (fun wpp =>
+                 {| wpp_with := wpp.(wpp_with)
+                  ; wpp_pre :=
+                    teleF_map (fun P => _at (_eq this) (uninit (Tref class)) ** P) wpp.(wpp_pre)
+                  ; wpp_post := wpp.(wpp_post)
+                  |}) (PQ this)).
+
+  (* Hoare triple for a destructor.
+   *)
+  Definition SDestructor (class : globname) (PQ : val -> WithPrePost)
+  : function_spec' :=
+    let this_type := Qmut (Tref class) in
+    SFunction (Qmut Tvoid) (Qconst (Tpointer this_type) :: nil)
+              (fun this =>
+                 {| wpp_with := (PQ this).(wpp_with)
+                  ; wpp_pre := (PQ this).(wpp_pre)
+                  ; wpp_post := teleF_map (fun Q res => _at (_eq this) (tany (Tref class)) ** Q res) (PQ this).(wpp_post)
+                  |}).
+
+  (* Hoare triple for a method.
+   *)
+  Definition SMethod (class : globname) (qual : type_qualifiers)
+             (ret : type) (targs : list type)
+             (PQ : val -> arrowFrom val targs WithPrePost)
+  : function_spec' :=
+    let class_type := Tref class in
+    let this_type := Tqualified qual class_type in
+    SFunction ret (Qconst (Tpointer this_type) :: targs) PQ.
       (* ^ todo(gmm): this looks wrong. something isn't going
        * to fit together with respect to calling conventions and
        * specifications.
        *)
 
-    Lemma cptr_cptr' : forall p fs fs',
-        fs.(fs_arguments) = fs'.(fs'_arguments) ->
-        fs.(fs_return) = fs'.(fs'_return) ->
-        (forall Q vs,
-            fs.(fs_specification) vs Q -|- applyEach fs'.(fs'_arguments) vs fs'.(fs'_specification) (fun k _ => k Q)) ->
-        cptr p ti fs -|- cptr' p ti fs'.
-    Proof.
-      unfold cptr. intros.
-      destruct fs, fs'. simpl in *. subst.
-      setoid_rewrite H1; clear H1.
-      unfold cptr'. simpl.
-      rewrite <- forallEach_primes with (Z:=fun a b => fspec p a ti b).
-      reflexivity.
-    Qed.
+  Lemma cptr_cptr' : forall p fs fs',
+      fs.(fs_arguments) = fs'.(fs'_arguments) ->
+      fs.(fs_return) = fs'.(fs'_return) ->
+      (forall Q vs,
+          fs.(fs_specification) vs Q -|- applyEach fs'.(fs'_arguments) vs fs'.(fs'_specification) (fun k _ => k Q)) ->
+      cptr p ti fs -|- cptr' p ti fs'.
+  Proof.
+    unfold cptr. intros.
+    destruct fs, fs'. simpl in *. subst.
+    setoid_rewrite H1; clear H1.
+    unfold cptr'. simpl.
+    rewrite <- forallEach_primes with (Z:=fun a b => fspec p a ti b).
+    reflexivity.
+  Qed.
 
-    Theorem triple_sound : forall p r ts ti PQ vs,
-        List.length vs = List.length ts ->
-        forall g : (PQ vs).(wpp_with),
-          cptr p ti (ht r ts PQ) ** (PQ vs).(wpp_pre) g
-          |-- fspec p vs ti ((PQ vs).(wpp_post) g).
-    Proof.
-      unfold ht, cptr.
-      intros.
-      eapply sepSPAdj.
-      eapply (lforallL vs).
-      simpl.
-      eapply wandSP_only_provableL. auto.
-      eapply (lforallL (wpp_post (PQ vs) g)).
-      eapply wandSP_lentails_m; try reflexivity.
-      red.
-      t.
-    Qed.
+(*
+  Theorem triple_sound : forall p r ts ti PQ vs,
+      List.length vs = List.length ts ->
+      forall g : (PQ vs).(wpp_with),
+        cptr p ti (ht r ts PQ) ** (PQ vs).(wpp_pre) g
+        |-- fspec p vs ti ((PQ vs).(wpp_post) g).
+  Proof.
+    unfold ht, cptr.
+    intros.
+    eapply sepSPAdj.
+    eapply (lforallL vs).
+    simpl.
+    eapply wandSP_only_provableL. auto.
+    eapply (lforallL (wpp_post (PQ vs) g)).
+    eapply wandSP_lentails_m; try reflexivity.
+    red.
+    t.
+  Qed.
 
     Theorem triple_apply : forall p r ts F F' vs (PQ : list val -> WithPrePost) K,
         List.length vs = List.length ts -> (* trivial *)
@@ -389,140 +390,75 @@ Module Type Func.
       t.
       eapply fspec_conseq. assumption.
     Qed.
-
-    Theorem triple'_apply
-    : forall p r ts F F' vs (PQ : arrowFrom val ts WithPrePost) K,
-        List.length vs = List.length ts ->
-        F |-- applyEach ts vs PQ (fun wpp _ =>
-                 Exists g : wpp.(wpp_with),
-                 wpp.(wpp_pre) g **
-                 (Forall r, wpp.(wpp_post) g r -* K r)) ** F' ->
-        cptr' p ti (SFunction r ts PQ) ** F |-- fspec p vs ti K ** F'.
-    Proof.
-      intros.
-      rewrite <- cptr_cptr'.
-      instantiate (1:=
-        {| fs_return := r
-         ; fs_arguments := ts
-         ; fs_specification := fun vs0 Q =>
-              applyEach ts vs0 (SFunction r ts PQ).(fs'_specification)
-              (fun (k : (val -> mpred) -> mpred) _ => k Q) |}).
-      2,3,4: reflexivity.
-      unfold cptr. simpl.
-      eapply sepSPAdj.
-      eapply (lforallL vs).
-      eapply wandSP_only_provableL; eauto.
-      eapply (lforallL K).
-      eapply wandSPAdj.
-      eapply wandSP_cancel.
-      rewrite H0; clear H0.
-      t.
-      clear.
-      revert vs. induction ts; destruct vs; simpl; try reflexivity.
-      { t. }
-      { rewrite IHts. t. }
-    Qed.
-
-    Definition cglob' (gn : globname) ti (spec : function_spec')
-    : mpred :=
-      Exists a, [| glob_addr resolve gn a |] ** cptr' (Vptr a) ti spec.
-
-    Axiom cglob'_dup : forall p ti fs,
-        cglob' p ti fs -|- cglob' p ti fs ** cglob' p ti fs.
-    (* i was thinking that i could store static variables in invariants.
-     * i'm not sure how this works with function pointer weakening.
-     *)
-    Axiom cglob'_weaken : forall a b c, cglob' a b c |-- empSP.
-
-    (* this is problematic because if `thread_info` was empty, then
-     * the left hand side woudl be ltrue, not empSP
-     *)
-    Lemma cglob'_weaken_any_ti :
-      forall (a : globname) (c : function_spec'),
-        (Forall ti, cglob' a ti c) |-- empSP.
-    Proof.
-      intros.
-      etransitivity.
-      eapply lforall_lentails_m.
-      red. intros. instantiate (1:=fun _ => empSP).
-      eapply cglob'_weaken.
-      admit.
-    Admitted.
-
-    Lemma cglob'_weaken_any_ti_later :
-      forall (a : globname) (c : function_spec'),
-        (Forall ti, |> cglob' a ti c) |-- empSP.
-    Proof.
-      intros.
-      etransitivity.
-      eapply lforall_lentails_m.
-      red. intros. instantiate (1:=fun _ => empSP).
-      admit.
-    Admitted.
-
-(*
-    Ltac simplifying :=
-      repeat first [ progress simplify_wp
-                   | progress simpl wps
-                   | rewrite <- wp_seq; simpl wp_block; simpl wp_decls
-                   | rewrite <- wp_return_val
-                   | rewrite <- wp_return_void
-                   | rewrite <- wp_if
-                   | rewrite <- wp_continue
-                   | rewrite <- wp_break
-                   | rewrite <- wp_rhs_binop
-                   | rewrite <- wp_rhs_cast_function2pointer
-                   ].
 *)
 
-    Definition A__bar := "_Z1A3bar".
+  Theorem triple'_apply
+  : forall p r ts F F' vs (PQ : arrowFrom val ts WithPrePost) K,
+      List.length vs = List.length ts ->
+      F |-- applyEach ts vs PQ (fun wpp _ =>
+               WppD wpp.(wpp_pre) wpp.(wpp_post)) K ** F' ->
+      cptr' p ti (SFunction r ts PQ) ** F |-- fspec p vs ti K ** F'.
+  Proof.
+    intros.
+    rewrite <- cptr_cptr'.
+    instantiate (1:=
+                   {| fs_return := r
+                      ; fs_arguments := ts
+                      ; fs_specification := fun vs0 Q =>
+                                              applyEach ts vs0 (SFunction r ts PQ).(fs'_specification)
+                                                                                     (fun (k : (val -> mpred) -> mpred) _ => k Q) |}).
+    2,3,4: reflexivity.
+    unfold cptr. simpl.
+    eapply sepSPAdj.
+    eapply (lforallL vs).
+    eapply wandSP_only_provableL; eauto.
+    eapply (lforallL K).
+    eapply wandSPAdj.
+    eapply wandSP_cancel.
+    rewrite H0; clear H0.
+    t.
+    clear.
+    revert vs. induction ts; destruct vs; simpl; try reflexivity.
+    { rewrite IHts. t. }
+  Qed.
 
+  Definition cglob' (gn : globname) ti (spec : function_spec')
+  : mpred :=
+    Exists a, [| glob_addr resolve gn a |] ** cptr' (Vptr a) ti spec.
 
-(*
-    Goal |> cglob' A__bar
-         (ht' T_int32 (T_int32 :: nil)
-              (fun x => {| wpp_with := _
-                       ; wpp_pre v := [| x = Vint v |]
-                       ; wpp_post v res := [| res = Vint (Z.add v 1) |] |}))
-         |--
-         func_ok' (Qmut T_int32)
-         (("x",(Qmut T_int32)) :: nil)
-         (Sseq (
-              (Sreturn (Some
-                          (Ebinop Badd
-                                  (Ecall
-                                     (Ecast Cfunction2pointer
-                                            (Evar
-                                               (Gname A__bar))) (
-                                       (Ebinop Badd
-                                               (Ecast Cl2r
-                                                      (Evar
-                                                         (Lname  "x")))
-                                               (Eint 5
-                                                     (Qmut T_int))) :: nil))
-                                  (Eint 1
-                                        (Qmut T_int))))) :: nil))
-         (ht' (Qmut T_int32) (Qmut T_int32 :: nil) (fun x =>
-              {| wpp_with := Z
-               ; wpp_pre v := [| x = Vint v |] ** [| -100 < v < 100 |]%Z
-               ; wpp_post v res := [| res = Vint (Z.add v 7) |] |})).
-    Proof.
-      Opaque cglob' ht'.
-      unfold func_ok'. simpl.
-      Transparent ht'.
-      simpl. Opaque ht'.
-      simpl.
-      t. subst.
-      simplifying.
-      repeat perm_left ltac:(idtac; perm_right ltac:(eapply wp_call_glob)).
-      simplifying.
-      unfold tlocal, tptsto.
-      t.
-      simplify_wps. t.
-      simplify_wps.
-      t.
-    Qed.
-*)
+  Axiom cglob'_dup : forall p ti fs,
+      cglob' p ti fs -|- cglob' p ti fs ** cglob' p ti fs.
+  (* i was thinking that i could store static variables in invariants.
+   * i'm not sure how this works with function pointer weakening.
+   *)
+  Axiom cglob'_weaken : forall a b c, cglob' a b c |-- empSP.
+
+  (* this is problematic because if `thread_info` was empty, then
+   * the left hand side woudl be ltrue, not empSP
+   *)
+  Lemma cglob'_weaken_any_ti :
+    forall (a : globname) (c : function_spec'),
+      (Forall ti, cglob' a ti c) |-- empSP.
+  Proof.
+    intros.
+    etransitivity.
+    eapply lforall_lentails_m.
+    red. intros. instantiate (1:=fun _ => empSP).
+    eapply cglob'_weaken.
+    admit.
+  Admitted.
+
+  Lemma cglob'_weaken_any_ti_later :
+    forall (a : globname) (c : function_spec'),
+      (Forall ti, |> cglob' a ti c) |-- empSP.
+  Proof.
+    intros.
+    etransitivity.
+    eapply lforall_lentails_m.
+    red. intros. instantiate (1:=fun _ => empSP).
+    admit.
+  Admitted.
+
 
   End with_resolve.
 
@@ -540,7 +476,7 @@ Module Type Func.
       | Treference ref => _local ρ x &~ v
       | Tref cls       => _local ρ x &~ v **
                           destroy (resolve:=resolve) ti Dt_Deleting cls v empSP
-      | _              => tlocal ρ x (tprim t v)
+      | _              => tlocal ρ x (tany t)
       end.
     (* todo(gmm): c++ guarantees the order of destruction *)
 
@@ -562,9 +498,9 @@ Module Type Func.
             sepSPs (zip (fun '(x, t) 'v => bind_type ρ t x v) params vals) in
         (* this is what is freed on return *)
         let frees :=
-            sepSPs (map (fun '(x, t) =>
-                           Exists v, bind_type_free (resolve:=resolve) ti ρ t x v)
-                   (rev params)) in
+            sepSPs (zip (fun '(x, t) 'v =>
+                           bind_type_free (resolve:=resolve) ti ρ t x v)
+                   (rev params) (rev vals)) in
         if is_void ret
         then
           Forall Q : mpred,
@@ -597,7 +533,7 @@ Module Type Func.
             (* this is what is freed on return *)
             let frees :=
                 _local ρ "#this" &~ this_val **
-                sepSPs (map (fun '(x, t) => Exists v, bind_type_free (resolve:=resolve) ti ρ t x v) (rev meth.(m_params)))
+                sepSPs (zip (fun '(x, t) 'v => bind_type_free (resolve:=resolve) ti ρ t x v) (rev meth.(m_params)) (rev rest_vals))
             in
             if is_void meth.(m_return)
             then
@@ -635,7 +571,7 @@ Module Type Func.
             (* this is what is freed on return *)
             let frees :=
                 _local ρ "#this" &~ this_val **
-                sepSPs (map (fun '(x, t) => Exists v, bind_type_free (resolve:=resolve) ti ρ t x v) (rev ctor.(c_params)))
+                sepSPs (zip (fun '(x, t) 'v => bind_type_free (resolve:=resolve) ti ρ t x v) (rev ctor.(c_params)) (rev rest_vals))
             in
             Forall Q : mpred,
             (binds ** PQ (fun _ => Q)) -*
