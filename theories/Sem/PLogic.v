@@ -15,7 +15,7 @@ From Cpp.Sem Require Import Logic Semantics.
 
 Local Open Scope string_scope.
 
-Local Ltac t := Discharge.discharge fail idtac fail fail eauto.
+Local Ltac t := Discharge.discharge fail fail fail fail eauto.
 
 (* todo(gmm): these can be moved somewhere more generic *)
 Class Duplicable {L : Type} {LL : ILogicOps L} {LS : BILogicOps L} (P : L) : Prop :=
