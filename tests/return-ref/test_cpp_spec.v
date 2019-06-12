@@ -17,10 +17,9 @@ Require RetRef.test_cpp.
 Definition get_ref_spec : function_spec' :=
   SFunction (Qmut T_int) (Qmut (Tpointer (Qmut T_int)) :: nil)
       (fun x =>
-         {| wpp_with := val
-          ; wpp_pre m := _at (_eq x) (tprim T_int m)
-          ; wpp_post m r := [| r = x |] ** _at (_eq x) (tprim T_int m)
-          |}).
+         \with (m : val)
+         \pre  _at (_eq x) (tprim T_int m)
+         \post [ r ] [| r = x |] ** _at (_eq x) (tprim T_int m)).
 
 Definition test_cpp_spec (resolve : _) :=
   ti_cglob' (resolve:=resolve) "_Z7get_refPi" get_ref_spec.
