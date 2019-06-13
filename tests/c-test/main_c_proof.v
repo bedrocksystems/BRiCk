@@ -108,13 +108,13 @@ Proof.
      *)
     transitivity (
   ti_cglob' (resolve:=resolve) "putstr" putstr_spec **
-  (tlocal_at x1 "argc" a (tprim (Tint (Some int_bits) true) vv) **
-   tlocal_at x1 "argv" a0
+  (tlocal_at ρ "argc" a (tprim (Tint (Some int_bits) true) vv) **
+   tlocal_at ρ "argv" a0
      (tprim (Tpointer (Qmut (Tpointer (Qmut (Tchar (Some 8%nat) true))))) x0)) **
-  (Forall res : val, _at (_eq x0) (main.args_array x) ** @trace PutStr (Ret tt) -* x2 res) **
+  (Forall res : val, _at (_eq x0) (main.args_array x) ** @trace PutStr (Ret tt) -* Q res) **
   _at (_eq x0) (main.args_array x) **
   Exists i : Z,
-           tlocal_at x1 "i" a1 (tprim (Tint (Some 32%nat) true) i) **
+           tlocal_at ρ "i" a1 (tprim (Tint (Some 32%nat) true) i) **
            trace (printEach (skipn (Z.to_nat i) x)) **
            [| 0 <= i <= Z.of_nat (Datatypes.length x) |]).
     { work. }
@@ -144,7 +144,7 @@ Proof.
       { subst. work. }
       { subst. work. }
       simplifying.
-      cutrewrite (skipn (Z.to_nat i) x = x3 :: skipn (S (Z.to_nat i)) x).
+      cutrewrite (skipn (Z.to_nat i) x = x1 :: skipn (S (Z.to_nat i)) x).
       2:{ simpl. subst.
           rewrite Znat.Nat2Z.id.
           eauto using nth_error_skipn. }
