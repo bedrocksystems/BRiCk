@@ -52,6 +52,12 @@ public:
 	}
 
 public:
+	// debugging
+	unsigned int get_depth() const {
+		return depth;
+	}
+
+public:
 	static Formatter default_output;
 };
 

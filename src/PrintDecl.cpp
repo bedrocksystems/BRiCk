@@ -247,9 +247,9 @@ class PrintDecl : public ConstDeclVisitorArgs<PrintDecl, void, CoqPrinter &,
     print.output() << fmt::line << " ; s_fields :=" << fmt::indent << fmt::line;
     printFields(decl, print, cprint);
 
-    // note(gmm): i need to print any implicit declarations.
+    // todo(gmm): i need to print any implicit declarations.
 
-    print.output() << fmt::line << "|}" << fmt::rparen << fmt::rparen;
+    print.output() << fmt::outdent << fmt::line << "|}" << fmt::rparen << fmt::rparen;
   }
 
   void VisitCXXRecordDecl(const CXXRecordDecl *decl, CoqPrinter &print, ClangPrinter &cprint) {

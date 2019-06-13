@@ -228,7 +228,8 @@ public:
   {
     print.ctor("Ecall");
     cprint.printExpr(expr->getCallee(), print);
-    print.output() << fmt::nbsp << fmt::lparen;
+    print.output() << fmt::line;
+    print.begin_list();
     for (auto i : expr->arguments()) {
       cprint.printExprAndValCat(i, print);
       print.cons();
@@ -250,7 +251,7 @@ public:
       print.output() << fmt::rparen;
     }
 
-    print.output() << fmt::nbsp;
+    print.output() << fmt::line;
     cprint.printExpr(expr->getSubExpr(), print);
     done(expr, print, cprint);
   }
@@ -634,5 +635,7 @@ PrintExpr PrintExpr::printer;
 
 void
 ClangPrinter::printExpr(const clang::Expr* expr, CoqPrinter& print) {
+  auto depth = print.output().get_depth();
   PrintExpr::printer.Visit(expr, print, *this);
+  assert(depth == print.output().get_depth());
 }
