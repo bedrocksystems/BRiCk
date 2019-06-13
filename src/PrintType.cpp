@@ -16,15 +16,15 @@ void
 printQualType(const QualType& qt, CoqPrinter& print, ClangPrinter& cprint) {
   if (qt.isLocalConstQualified()) {
     if (qt.isVolatileQualified()) {
-      print.ctor("Qconst_volatile");
+      print.ctor("Qconst_volatile", false);
     } else {
-      print.ctor("Qconst");
+      print.ctor("Qconst", false);
     }
   } else {
     if (qt.isLocalVolatileQualified()) {
-      print.ctor("Qmut_volatile");
+      print.ctor("Qmut_volatile", false);
     } else {
-      print.ctor("Qmut");
+      print.ctor("Qmut", false);
     }
   }
   cprint.printType(qt.getTypePtr(), print);
@@ -185,15 +185,15 @@ public:
   {
     print.ctor("Tfunction");
     printQualType(type->getReturnType(), print, cprint);
-    print.output() << fmt::nbsp << "[" << fmt::indent;
-    for (auto i = type->param_type_begin(), e = type->param_type_end();
-            i != e;) {
-      printQualType(*i, print, cprint);
-      if (++i != e) {
-        print.output() << ";" << fmt::nbsp;
-      }
+    print.output() << fmt::nbsp;
+    print.begin_list();
+    for (auto i : type->param_types()) {
+      printQualType(i, print, cprint);
+      print.cons();
     }
-    print.output() << "]" << fmt::rparen;
+    print.end_list();
+
+    print.output() << fmt::rparen;
   }
 
   void VisitElaboratedType(const ElaboratedType *type, CoqPrinter& print, ClangPrinter& cprint)
@@ -243,10 +243,14 @@ PrintType PrintType::printer;
 
 void
 ClangPrinter::printType(const clang::Type* type, CoqPrinter& print) {
+  auto depth = print.output().get_depth();
   PrintType::printer.Visit(type, print, *this);
+  assert(depth == print.output().get_depth());
 }
 
 void
 ClangPrinter::printQualType(const QualType& qt, CoqPrinter& print) {
+  auto depth = print.output().get_depth();
   ::printQualType(qt, print, *this);
+  assert(depth == print.output().get_depth());
 }

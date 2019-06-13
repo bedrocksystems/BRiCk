@@ -64,9 +64,11 @@ void ClangPrinter::printValCat(const Expr *d, CoqPrinter &print)
 
 void ClangPrinter::printExprAndValCat(const Expr *d, CoqPrinter &print)
 {
+  auto depth = print.output().get_depth();
   print.output() << fmt::lparen;
   printValCat(d, print);
   print.output() << "," << fmt::nbsp;
   printExpr(d, print);
   print.output() << fmt::rparen;
+  assert(depth == print.output().get_depth());
 }
