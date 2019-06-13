@@ -3,18 +3,20 @@
 #
 # SPDX-License-Identifier:AGPL-3.0-or-later
 #
-default_target: all
+default_target: coq
 
 COQPATHFILE=$(wildcard _CoqPath)
 COQMAKEFILE=$(COQBIN)coq_makefile
 
-all: Makefile.coq
+all: coq test
+
+coq: Makefile.coq
 	$(MAKE) -f Makefile.coq
 	mkdir -p build/
 	rm -rf build/Cpp
 	cp -r theories/ build/Cpp
 
-doc: all
+doc: coq
 	$(MAKE) -f Makefile.coq html
 html: doc
 
@@ -28,5 +30,5 @@ install: Makefile.coq
 Makefile.coq: _CoqProject
 	$(COQMAKEFILE) -f _CoqProject -o Makefile.coq
 
-test:
+test: coq
 	$(MAKE) -C tests

@@ -27,11 +27,10 @@ Variant PutStr : Type -> Type :=
 Definition putstr_spec : function_spec' :=
   SFunction (Qmut Tvoid) (Qmut (Tpointer (Qmut T_char)) :: nil)
             (fun p =>
-               {| wpp_with := [ string , itree PutStr unit ]
-                ; wpp_pre s k := _at (_eq p) (c_string s) **
-                                    trace (Vis (putstr s) (fun _ => k))
-                ; wpp_post s k _ := _at (_eq p) (c_string s) ** trace k
-                |}).
+               \with (s : string) (k : itree PutStr unit)
+               \pre _at (_eq p) (c_string s) **
+                    trace (Vis (putstr s) (fun _ => k))
+               \post _at (_eq p) (c_string s) ** trace k).
 
 Fixpoint printEach (ls : list string) : itree PutStr unit :=
   match ls with
@@ -41,10 +40,8 @@ Fixpoint printEach (ls : list string) : itree PutStr unit :=
 
 Definition main_spec : function_spec' :=
   main.main_spec (fun m =>
-                    {| wpp_with := []
-                     ; wpp_pre := trace (printEach m)
-                     ; wpp_post r := @trace PutStr (Ret tt)
-                     |}).
+                    \pre trace (printEach m)
+                    \post @trace PutStr (Ret tt)).
 
 Definition spec (resolve : _) :=
   ti_cglob' (resolve:=resolve) "putstr" putstr_spec -*

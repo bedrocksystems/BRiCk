@@ -1,4 +1,7 @@
+[![Build Status](https://travis-ci.com/bedrocksystems/cpp2v.svg?branch=master)](https://travis-ci.com/bedrocksystems/cpp2v)
+
 # cpp2v
+
 Tool for converting C++ files into Coq files.
 
 ## Dependencies
