@@ -44,6 +44,6 @@ Fixpoint type_of (e : Expr) : type :=
   | Enew _ _ _ t
   | Edelete _ _ _ t
   | Eandclean _ t
-  | Etemp _ t => t
+  | Ematerialize_temp _ t => t
   | Eatomic _ _ t => t
   end.

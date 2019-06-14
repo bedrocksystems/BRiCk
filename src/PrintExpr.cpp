@@ -64,7 +64,7 @@ class PrintExpr : public ConstStmtVisitor<PrintExpr, void, CoqPrinter &, ClangPr
   {
     print.output() << fmt::nbsp;
     cprint.printQualType(expr->getType(), print);
-    print.output() << fmt::rparen;
+    print.end_ctor();
   }
 public:
   static PrintExpr printer;
@@ -240,20 +240,25 @@ public:
 
   void VisitCastExpr(const CastExpr *expr, CoqPrinter& print, ClangPrinter& cprint)
   {
-    print.ctor("Ecast");
-    if (expr->getConversionFunction()) {
-      print.ctor("Cuser", false);
-      cprint.printGlobalName(expr->getConversionFunction(), print);
-      print.output() << fmt::rparen;
+    if (auto cf = expr->getConversionFunction()) {
+      // desugar user casts to function calls
+      print.ctor("Ecast");
+      print.ctor("Cuser");
+      cprint.printGlobalName(cf, print);
+      print.end_ctor();
+
+      cprint.printExpr(expr->getSubExpr(), print);
+      done(expr, print, cprint);
     } else {
+      print.ctor("Ecast");
       print.ctor("CCcast", false);
       printCastKind(print.output(), expr->getCastKind());
-      print.output() << fmt::rparen;
-    }
+      print.end_ctor();
 
-    print.output() << fmt::line;
-    cprint.printExpr(expr->getSubExpr(), print);
-    done(expr, print, cprint);
+      print.output() << fmt::nbsp;
+      cprint.printExpr(expr->getSubExpr(), print);
+      done(expr, print, cprint);
+    }
   }
 
   void VisitImplicitCastExpr(const ImplicitCastExpr *expr, CoqPrinter& print, ClangPrinter& cprint) {
@@ -283,7 +288,6 @@ public:
       print.ctor("Creinterpret", false);
     } else if (isa<CXXConstCastExpr>(expr)) {
       print.ctor("Cconst", false);
-      print.output() << fmt::rparen;
     } else if (isa<CXXStaticCastExpr>(expr)) {
       print.ctor("Cstatic", false);
     } else if (isa<CXXDynamicCastExpr>(expr)) {
@@ -294,7 +298,7 @@ public:
       assert(false);
     }
     cprint.printQualType(expr->getType(), print);
-    print.output() << fmt::rparen << fmt::nbsp;
+    print.end_ctor() << fmt::nbsp;
 
     cprint.printExpr(expr->getSubExpr(), print);
     done(expr, print, cprint);
@@ -386,6 +390,7 @@ public:
   void VisitCXXConstructExpr(const CXXConstructExpr *expr, CoqPrinter& print, ClangPrinter& cprint)
   {
     print.ctor("Econstructor");
+    // print.output() << expr->isElidable() << fmt::nbsp;
     cprint.printGlobalName(expr->getConstructor(), print);
     print.output() << fmt::nbsp << fmt::lparen;
     for (auto i : expr->arguments()) {
@@ -583,7 +588,7 @@ public:
 	  }
 	  error() << "mangling number = " << expr->getManglingNumber() << "\n";
 #endif
-    print.ctor("Etemp");
+    print.ctor("Ematerialize_temp");
     cprint.printExpr(expr->GetTemporaryExpr(), print);
     done(expr, print, cprint);
   }
@@ -591,6 +596,7 @@ public:
   void VisitCXXTemporaryObjectExpr(const CXXTemporaryObjectExpr *expr, CoqPrinter& print, ClangPrinter& cprint)
   {
     print.ctor("Econstructor");
+    // print.output() << expr->isElidable() << fmt::nbsp;
     cprint.printGlobalName(expr->getConstructor(), print);
     print.output() << fmt::nbsp;
 
@@ -637,5 +643,8 @@ void
 ClangPrinter::printExpr(const clang::Expr* expr, CoqPrinter& print) {
   auto depth = print.output().get_depth();
   PrintExpr::printer.Visit(expr, print, *this);
-  assert(depth == print.output().get_depth());
+  if (depth != print.output().get_depth()) {
+    llvm::errs() << "indentation bug in during: " << expr->getStmtClassName() << "\n";
+    assert(false);
+  }
 }

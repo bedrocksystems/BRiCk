@@ -470,12 +470,11 @@ Module Type Func.
       | _              => tlocal ρ x (tprim t v)
       end.
 
-    Fixpoint bind_type_free {resolve} ti ρ (t : type) (x : ident) (v : val) : mpred :=
+    Fixpoint bind_type_free ρ (t : type) (x : ident) (v : val) : mpred :=
       match t with
-      | Tqualified _ t => @bind_type_free resolve ti ρ t x v
+      | Tqualified _ t => bind_type_free ρ t x v
       | Treference ref => _local ρ x &~ v
-      | Tref cls       => _local ρ x &~ v **
-                          destroy (resolve:=resolve) ti Dt_Deleting cls v empSP
+      | Tref cls       => _local ρ x &~ v
       | _              => tlocal ρ x (tany t)
       end.
     (* todo(gmm): c++ guarantees the order of destruction *)
@@ -499,7 +498,7 @@ Module Type Func.
         (* this is what is freed on return *)
         let frees :=
             sepSPs (zip (fun '(x, t) 'v =>
-                           bind_type_free (resolve:=resolve) ti ρ t x v)
+                           bind_type_free ρ t x v)
                    (rev params) (rev vals)) in
         if is_void ret
         then
@@ -533,7 +532,7 @@ Module Type Func.
             (* this is what is freed on return *)
             let frees :=
                 _local ρ "#this" &~ this_val **
-                sepSPs (zip (fun '(x, t) 'v => bind_type_free (resolve:=resolve) ti ρ t x v) (rev meth.(m_params)) (rev rest_vals))
+                sepSPs (zip (fun '(x, t) 'v => bind_type_free ρ t x v) (rev meth.(m_params)) (rev rest_vals))
             in
             if is_void meth.(m_return)
             then
@@ -571,7 +570,7 @@ Module Type Func.
             (* this is what is freed on return *)
             let frees :=
                 _local ρ "#this" &~ this_val **
-                sepSPs (zip (fun '(x, t) 'v => bind_type_free (resolve:=resolve) ti ρ t x v) (rev ctor.(c_params)) (rev rest_vals))
+                sepSPs (zip (fun '(x, t) 'v => bind_type_free ρ t x v) (rev ctor.(c_params)) (rev rest_vals))
             in
             Forall Q : mpred,
             (binds ** PQ (fun _ => Q)) -*

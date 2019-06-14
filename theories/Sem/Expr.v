@@ -224,6 +224,13 @@ Module Type Expr.
         |-- wp_rhs (Ecast Cnull2ptr e t) Q.
     (* ^ todo(jmgrosen): confirm that this doesn't change the value *)
 
+    (* note(gmm): in the clang AST, the subexpression is the call.
+     * in essence, `Ecast (Cuser ..)` is a syntax annotation.
+     *)
+    Axiom wp_rhs_cast_user : forall e ty Z Q,
+        wp_rhs e Q
+        |-- wp_rhs (Ecast (Cuser Z) e ty) Q.
+
     (** the ternary operator `_ ? _ : _` *)
     Axiom wp_condition : forall ty m tst th el Q,
         wp_rhs tst (fun v1 free =>
@@ -242,16 +249,15 @@ Module Type Expr.
         Exists sz, [| @align_of resolve ty sz |] ** Q (Vint (Z.of_N sz)) empSP
         |-- wp_rhs (Ealign_of (inl ty) ty') Q.
 
-    (** constructors (these should probably get moved) *)
+    (** constructors *)
     Axiom wp_rhs_constructor
     : forall cls cname (es : list (ValCat * Expr)) (ty : type) (Q : val -> FreeTemps -> mpred),
      (Exists ctor, [| glob_addr resolve cname ctor |] **
-      (* todo(gmm): is there a better way to get the destructor? *)
       wps wpAnys es (fun vs free => Exists a, _at (_eq a) (uninit (Tref cls))
           -* |> fspec (resolve:=resolve) (Vptr ctor) (a :: vs) ti (fun _ =>
                    (* note(gmm): constructors are rvalues but my semantics actually
                     * treats them like lvalues. *)
-                   Q a free)) empSP)
+                   Q a (destroy (resolve:=resolve) ti Dt_Complete cls a free))) empSP)
       |-- wp_rhs (Econstructor cname es (Tref cls)) Q.
 
     (** function calls *)
@@ -270,6 +276,17 @@ Module Type Expr.
     Axiom wp_null : forall Q,
         Q (Vptr nullptr) empSP
         |-- wp_rhs Enull Q.
+
+    (* temporary expressions
+     * note(gmm): these axioms should be reviewed thoroughly
+     *)
+    Axiom wp_rhs_clean : forall e ty Q,
+        wp_rhs e Q
+        |-- wp_rhs (Eandclean e ty) Q.
+    Axiom wp_lhs_temp : forall e ty Q,
+        wp_rhs e Q
+        |-- wp_lhs (Ematerialize_temp e ty) Q.
+
 
   End with_resolve.
 

@@ -237,7 +237,7 @@ Inductive Expr : Set :=
 | Edelete (is_array : bool) (_ : option globname) (_ : Expr) (_ : type)
 
 | Eandclean (_ : Expr) (_ : type)
-| Etemp (_ : Expr) (_ : type)
+| Ematerialize_temp (_ : Expr) (_ : type)
 
 | Eatomic (_ : AtomicOp) (_ : list (ValCat * Expr)) (_ : type)
 .
@@ -337,12 +337,12 @@ Variant Dtor_type : Set := Dt_Deleting | Dt_Complete | Dt_Base | Dt_Comdat.
 Definition dtor_name (type : Dtor_type) (cls : globname) : obj_name :=
   match cls with
   | String _ (String _ s) =>
-    "_ZN" ++ s ++ "D" ++ (match type with
+    "_ZN" ++ s ++ "D" ++ ("0" (*match type with
                           | Dt_Deleting => "0"
                           | Dt_Complete => "1"
                           | Dt_Base => "2"
                           | Dt_Comdat => "5"
-                          end) ++ "Ev"
+                          end *)) ++ "Ev"
   | _ => ""
   end%string.
 
