@@ -10,7 +10,7 @@ From Coq Require Import
 From Cpp Require Import
      Ast Sem.
 From Cpp.Sem Require Import
-     Util Logic Semantics.
+     Util Logic Semantics Typing.
 From Cpp.Auto Require Import
      Lemmas.
 
@@ -107,7 +107,7 @@ Section refl.
     match e with
     | Evar (Lname x) ty =>
       lvalue cat ;;
-      ret (fun Q => Exists a, (addr_of r x a ** ltrue) //\\ Q a empSP)
+      ret (fun Q => Exists a, (_local r x &~ a ** ltrue) //\\ Q a empSP)
     | Evar (Gname x) ty =>
       lvalue cat ;;
       ret (fun Q => Exists a, [! glob_addr resolve x a !] //\\ Q (Vptr a) empSP)
@@ -127,23 +127,23 @@ Section refl.
                  else Q (Vint 0) empSP)
     | Ethis ty =>
       rvalue cat ;;
-      ret (fun Q => Exists a, (addr_of r "#this"%string a ** ltrue) //\\ Q a empSP)
+      ret (fun Q => Exists a, (_this r &~ a ** ltrue) //\\ Q a empSP)
     | Emember e f ty =>
       QT <- wpe Lvalue e ;;
       ret (fun Q => QT (fun base free =>
-         Exists offset,
-                [| @offset_of resolve (Tref f.(f_type)) f.(f_name) offset |]
-           ** Q (offset_ptr base offset) free))
+         Exists addr,
+           (_offsetL (_field f) (_eq base) &~ addr ** ltrue) //\\
+           Q addr free))
     | Esubscript e i ty =>
       let ty := drop_qualifiers ty in
       Qe <- wpe Rvalue e ;;
       Qi <- wpe Rvalue i ;;
       ret (fun Q => Qe (fun base free => Qi
          (fun idx free' =>
-          Exists sz, [| @size_of resolve ty sz |] **
-          Exists i, [| idx = Vint i |] **
-          Q (offset_ptr base (i * Z.of_N sz)) (free' ** free))))
-
+          Exists addr,
+          (Exists i, [| idx = Vint i |] **
+                     _offsetL (_sub ty i) (_eq base) &~ addr ** ltrue) //\\
+          Q addr (free' ** free))))
     | Ederef e ty =>
       lvalue cat ;;
       wpe Rvalue e
@@ -151,6 +151,7 @@ Section refl.
       rvalue cat ;;
       wpe Lvalue e
     | Eunop o e ty =>
+      (* todo(jmgrosen): port this over to wp_eval *)
       let ty := drop_qualifiers ty in
       rvalue cat ;;
       Qe <- wpe Rvalue e ;;
@@ -164,16 +165,16 @@ Section refl.
         rvalue cat ;;
         match e with
         | Evar (Lname x) _ => (* this is a very common form *)
-          ret (fun Q => Exists v, (tlocal r ty x v ** ltrue) //\\ Q v empSP)
+          ret (fun Q => Exists v, (tlocal r x (tprim ty v) ** ltrue) //\\ Q v empSP)
         | _ =>
           Qe <- wpe Lvalue e ;;
           ret (fun Q => Qe (fun a free =>
-          Exists v, (tptsto ty a v ** ltrue) //\\ Q v free))
+          Exists v, (_at (_eq a) (tprim ty v) ** ltrue) //\\ Q v free))
         end
       | Cint2bool =>
         rvalue cat ;;
         wpe Rvalue e
-      | _ => ret (fun _ => lfalse)
+      | _ => ret (fun _ => unsupported e)
       end
     | Eassign l rhs ty =>
       lvalue cat ;;
@@ -182,15 +183,15 @@ Section refl.
       | Evar (Lname x) ty' =>
         let ty' := drop_qualifiers ty' in
         (* note(gmm): this is a common case that has a simpler rule. *)
-        ret (fun Q => Qr (fun rv free => Exists la, Exists val,
-                tlocal_at r ty' x la val **
-               (tlocal_at r ty' x la rv -* Q la free)))
+        ret (fun Q => Qr (fun rv free => Exists la,
+                tlocal_at r x la (tany ty') **
+               (tlocal_at r x la (tprim ty' rv) -* Q la free)))
       | _ =>
         let ty := drop_qualifiers ty in
         Ql <- wpe Lvalue l ;;
         ret (fun Q => Ql (fun la free1 =>  Qr (fun rv free2 =>
-           (Exists v, tptsto ty la v) **
-                     (tptsto ty la rv -* Q la (free1 ** free2)))))
+                _at (_eq la) (tany ty) **
+               (_at (_eq la) (tprim ty rv) -* Q la (free1 ** free2)))))
       end
     | Epostinc e ty =>
       rvalue cat ;;
@@ -200,15 +201,15 @@ Section refl.
       | Evar (Lname x) ty' =>
         let ty' := drop_qualifiers ty' in
         ret (fun Q => Exists la, Exists val, Exists val',
-                tlocal_at r ty' x la val **
+                tlocal_at r x la (tprim ty val) **
                [| eval_binop Badd tye tye ty val (Vint 1) val' |] **
-               (tlocal_at r ty' x la val' -* Q la empSP))
+               (tlocal_at r x la (tprim ty val') -* Q la empSP))
       | _ =>
         Qe <- wpe Lvalue e ;;
         ret (fun Q => Qe (fun a free => Exists v', Exists v'',
-              tptsto ty a v' **
+              _at (_eq a) (tprim ty v') **
               [| eval_binop Badd tye tye ty v' (Vint 1) v'' |] **
-              (tptsto ty a v'' -* Q v' free)))
+              (_at (_eq a) (tprim ty v'') -* Q v' free)))
       end
     | _ => _
     end.
@@ -241,7 +242,7 @@ Section refl.
           ret (fun k Q =>
           (* i should use the type here *)
           Qi (fun a free =>
-             addr_of r x a -* (free ** k (Kfree (addr_of r x a) Q))))
+             _local r x &~ a -* (free ** k (Kfree (_local r x &~ a) Q))))
         end
       | Tfunction _ _ =>
         (* inline functions are not supported *)
@@ -254,14 +255,14 @@ Section refl.
       | Tint _ _ =>
         match init with
         | None =>
-          ret (fun k Q => Forall xa, Forall v,
-                   tlocal_at r ty x xa v -*
-                   k (Kfree (Exists v', tlocal r ty x v') Q))
+          ret (fun k Q =>
+                   tlocal r x (uninit ty) -*
+                   k (Kfree (tlocal r x (tany ty)) Q))
         | Some init =>
           Qi <- wpe Rvalue init ;;
-          ret (fun k Q => Qi (fun v free => Forall xa,
-                 (tlocal_at r ty x xa v
-              -* (free ** k (Kfree (Exists v', tlocal r ty x v') Q)))))
+          ret (fun k Q => Qi (fun v free =>
+                 (tlocal r x (tprim ty v)
+              -* (free ** k (Kfree (tlocal r x (tany ty)) Q)))))
         end
       | Tarray _ _ => lfalse (* todo(gmm): arrays not yet supported *)
       | Tref gn =>
@@ -273,17 +274,12 @@ Section refl.
            * `cglob`.
            *)
           Exists ctor, [| glob_addr resolve cnd ctor |] **
-          (* we don't need the destructor until later, but if we prove it
-           * early, then we don't need to resolve it over multiple paths.
-           *)
-          Exists dtor, [| glob_addr resolve (gn ++ "D1")%string dtor |] **
           (* todo(gmm): is there a better way to get the destructor? *)
           Qes (fun vs free =>
-                 Forall a, uninitialized_ty (Tref gn) a
-              -* |> fspec (Vptr ctor) (a :: vs) ti (fun _ =>
-                 addr_of r x a -*
-                 (free ** k (Kat_exit (fun Q => |> fspec (Vptr dtor) (a :: nil) ti
-                                   (fun _ => addr_of r x a ** uninitialized_ty (Tref gn) a ** Q)) Q)))) empSP)
+                 Forall a, _at (_eq a) (uninit (Tref gn))
+              -* |> fspec (resolve:=resolve) (Vptr ctor) (a :: vs) ti (fun _ =>
+                 _local r x &~ a -*
+                 (free ** k (Kat_exit (fun Q => _local r x &~ a ** |> destroy (resolve:=resolve) ti Dt_Deleting gn a Q) Q)))) empSP)
         | _ => ret (fun _ _ =>
                      error "all non-primitive declarations must have initializers")
         end
@@ -328,8 +324,8 @@ Section refl.
       match e with
       | None =>
         ret (fun k => k.(k_return) None)
-      | Some e =>
-        Qe <- wpe Rvalue e ;;
+      | Some (c, e) =>
+        Qe <- wpe c e ;;
         ret (fun Q => Qe (fun res free => free ** Q.(k_return) (Some res)))
       end
     | Sif decl test thn els =>
@@ -358,10 +354,10 @@ Section refl.
     | Swhile decl test body =>
       match decl with
       | None =>
-        ret (@Stmt.S.wp resolve ti r s)
+        ret (@Wp.wp resolve ti r s)
       | Some (x, ty, init) =>
         (* todo(gmm): i should at least evaluate the declaration *)
-        ret (@Stmt.S.wp resolve ti r s)
+        ret (@Wp.wp resolve ti r s)
       end
     | Sexpr cat e =>
       Qe <- wpe cat e ;;
@@ -373,7 +369,7 @@ Section refl.
 
   Theorem wp_sound : forall s K Q,
       wp s = Some Q ->
-      Q K |-- @S.wp resolve ti r s K.
+      Q K |-- @Wp.wp resolve ti r s K.
   Proof. Admitted.
 
 End refl.
@@ -385,7 +381,7 @@ Local Open Scope string_scope.
 Lemma test:
   forall  resolve ti r (x0 : val -> mpred),
     (Forall res : val, [| res = 3%Z |] -* x0 res)
-      |-- S.wp resolve ti r
+      |-- @Wp.wp resolve ti r
       (Sseq
          (Sdecl
             (("x", Qmut T_int, Some (Eint 1 (Qmut T_int)))
@@ -408,15 +404,15 @@ Lemma test:
                           (Qmut T_int)) (Qmut Tbool))
             (Sseq
                (Sreturn
-                  (Some
+                  (Some (Rvalue,
                      (Ecast Cl2r (Evar (Lname "x") (Qmut T_int))
-                            (Qmut T_int))) :: nil))
-            (Sseq (Sreturn (Some (Eint 0 (Qmut T_int))) :: nil))
+                            (Qmut T_int)))) :: nil))
+            (Sseq (Sreturn (Some (Rvalue, (Eint 0 (Qmut T_int)))) :: nil))
             :: nil)) (Kfree empSP (val_return x0)).
 Proof.
   intros.
   rewrite <- wp_sound by (simpl; reflexivity).
   simpl.
   vc.work.
-  rewrite is_true_int in H. inversion H.
+  rewrite is_true_int in *. cbn in *. congruence.
 Qed.
