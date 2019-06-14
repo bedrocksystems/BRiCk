@@ -2,8 +2,10 @@ Require Import Coq.ZArith.BinInt.
 Require Import Coq.micromega.Lia.
 Require Import Coq.Lists.List.
 Require Import Coq.Strings.String.
-Require Import Coq.Logic.ClassicalDescription.
-Require Import Coq.QArith.QArith.
+From Coq.QArith Require Import QArith Qcanon.
+Require Import Coq.QArith.Qfield.
+From Coq.micromega Require Import
+     QMicromega Psatz.
 
 Require Import Coq.ssr.ssrbool.
 
@@ -28,30 +30,16 @@ From Cpp.Auto Require Import
 
 Module Type cclogic.
 
-
-  (* fractional points to relation val_{Q} -> val
-     I comment out this fractional points to relation
-     as we can encode this through RA. So there is no
-     need for a hard-coded default one.
-  *)
-  (*Parameter fptsto : val -> Q -> val -> mpred.*)
-  
   (****** Logical State ********)
-  
-  (*carrier is the data type through which we would like to 
-     represent bookkeeping in resource algebra. Simply, the 
-    type to be passed to the resource algebra -- carrier.
-    ex: Inductive FracPerm_Carrier :=
-                | QPermission (f:Q)
-                | QPermissionUndef.
-    Note: Deciding what the carrier is going to be depends on
-    the verification problem.
-   *)
 
-  Structure SA := 
+  (* the type of (functional) separation algebras
+   * note(gmm): this definition differs from the ChargeCore definition
+   * because it defines `compose` as a function rather than as a relation.
+   *)
+  Structure SA :=
   { s_type :> Type;
     s_bot: s_type;
-    s_top: s_type; 
+    s_top: s_type;
     s_undef: s_type;
     s_compose: s_type -> s_type -> s_type;
     s_compose_com: forall s1 s2, s_compose s1 s2 = s_compose s2 s1;
@@ -64,115 +52,208 @@ Module Type cclogic.
     s_compose_complete_top: forall s, s_compose s_top s <> s_undef -> s = s_bot;
     s_top_not_bot: s_top <> s_bot;
     s_top_not_undef: s_top <> s_undef;
-    s_ord : rel s_type; 
+    s_ord : rel s_type;
     s_ord_refl : reflexive s_ord;
     s_ord_antis : antisymmetric s_ord;
     s_ord_trans : transitive s_ord;
     s_ord_total : total s_ord
   }.
-  
-  (*Example carrier*)
-  Inductive Fp :=
-  | FPerm (f:Q) (UNIT: 0 <= f <= 1)
-  | FPermUndef.
 
-  Definition Fp_full : Fp := FPerm (1 # 1) ltac:(compute; split; congruence).
+  (** The Fractional Permission Separation Algebra **)
+  Module Fp.
+    Local Definition ok (q : Qc) : Prop :=
+      match Qccompare 0 q , Qccompare q 1 with
+      | Gt , _
+      | _ , Gt => False
+      | _ , _ => True
+      end.
+    Lemma to_prop : forall q, ok q <-> 0 <= q <= 1.
+    Proof.
+      intros; unfold ok.
+      destruct (0 ?= q) eqn:?.
+      { eapply Qceq_alt in Heqc; subst.
+        compute. firstorder congruence. }
+      { eapply Qclt_alt in Heqc.
+        destruct (q ?= 1) eqn:X;
+          [ eapply Qceq_alt in X | eapply Qclt_alt in X | eapply Qcgt_alt in X ].
+        { subst. split; auto.
+          compute; firstorder; congruence. }
+        { split; auto.
+          intro. split;
+          eapply Qclt_le_weak; eauto. }
+        { split; try tauto.
+          destruct 1.
+          eapply Qclt_not_le in X. tauto. } }
+      { split; try tauto.
+        eapply Qcgt_alt in Heqc.
+        eapply Qclt_not_le in Heqc.
+        destruct 1. tauto. }
+    Qed.
 
-  Lemma FPerm_Equal: forall f g UNITf UNITg ,
-      f = g -> FPerm f UNITf  = FPerm g UNITg.
-  Proof. Admitted.
+    Definition is_ok q : {ok q} + {~ok q}.
+      unfold ok.
+      destruct (0 ?= q); destruct (q ?= 1);
+        solve [ left ; trivial | right; tauto ].
+    Defined.
 
-  (*Composition over fractional permissions*)
-  Definition FPerm_Compose f g :=
-    match f, g return Fp with
-    | FPermUndef, _ => FPermUndef
-    | _, FPermUndef => FPermUndef
-    | FPerm f' _ , FPerm g' _ =>
-      match excluded_middle_informative (0 <= f' + g' <= 1) with
-      | left Pred => FPerm (f' + g') Pred
-      | right _ => FPermUndef
-      end
-    end.
+    Lemma ok_irr : forall a (x y : ok a), x = y.
+    Proof.
+      unfold ok. intros.
+      destruct (0 ?= a); destruct (a ?= 1); try contradiction.
+      all: destruct x; destruct y; auto.
+    Qed.
 
-  (*Order*)
-  Definition FPerm_Order f g : bool :=
-    match f, g with
-    | FPermUndef, _ => true
-    | FPerm _ _, FPermUndef => false
-    | FPerm f' _, FPerm g' _ =>
-      if excluded_middle_informative (f' <= g') then true else false
-    end.
+    Inductive Fp :=
+    | FPerm (f:Qc) (UNIT: ok f)
+    | FPermUndef.
 
-  (*
-    Here is an example to a carrier_monoid
+    Definition Fp_zero : Fp :=
+      FPerm 0 ltac:(compute; split; congruence).
+
+    Definition Fp_full : Fp :=
+      FPerm 1 ltac:(compute; split; congruence).
+
+    Lemma FPerm_Equal: forall f g UNITf UNITg ,
+        f = g -> FPerm f UNITf = FPerm g UNITg.
+    Proof.
+      intros. subst. f_equal.
+      eapply ok_irr.
+    Qed.
+
+    Lemma FPerm_Inj : forall a b c d,
+        FPerm a b = FPerm c d ->
+        a = c.
+    Proof. inversion 1; auto. Qed.
+
+    (*Composition over fractional permissions*)
+    Definition FPerm_Compose f g :=
+      match f, g return Fp with
+      | FPermUndef, _ => FPermUndef
+      | _, FPermUndef => FPermUndef
+      | FPerm f' _ , FPerm g' _ =>
+        match is_ok (f' + g') with
+        | left Pred => FPerm (f' + g') Pred
+        | right _ => FPermUndef
+        end
+      end.
+
+    (*Order*)
+    Definition FPerm_Order f g : bool :=
+      match f, g with
+      | FPermUndef, _ => true
+      | FPerm _ _, FPermUndef => false
+      | FPerm f' _, FPerm g' _ =>
+        match Qccompare f' g' with
+        | Lt | Eq => true
+        | _ => false
+        end
+      end.
+
+    (* Example carrier monoid *)
+    Program Definition Fp_Monoid : SA :=
+      {| s_type := Fp;
+         s_bot := Fp_zero ;
+         s_top := Fp_full ;
+         s_undef := FPermUndef;
+         s_compose := FPerm_Compose;
+         s_ord := FPerm_Order
+      |}.
+    Next Obligation.
+      destruct s1; destruct s2; simpl; auto.
+      rewrite Qcplus_comm. reflexivity.
+    Qed.
+    Next Obligation.
+      destruct s1; destruct s2; destruct s3; simpl; auto.
+      unfold FPerm_Compose.
+      repeat match goal with
+             | |- _ => eapply FPerm_Equal
+             | |- FPerm _ _ = FPermUndef => exfalso
+             | |- FPermUndef = FPerm _ _ => exfalso
+             | _ : context [ match ?X with _ => _ end ] |- _ =>
+               lazymatch X with
+               | match _ with _ => _ end => fail
+               | _ => destruct X; simpl
+               end
+             | |- context [ match ?X with _ => _ end ] =>
+               lazymatch X with
+               | match _ with _ => _ end => fail
+               | _ => destruct X; simpl
+               end
+             | H : FPerm _ _ = FPerm _ _ |- _ => inversion H; clear H; subst
+             | H : ok _ |- _ => eapply to_prop in H
+             end; simpl; eauto.
+      - ring.
+      - eapply n. eapply to_prop. rewrite Qcplus_assoc. auto.
+      - eapply n. eapply to_prop. rewrite Qcplus_comm.
+        admit.
+      - admit.
+      - admit.
+      - unfold FPerm_Compose.
+        destruct (is_ok (f + f0)); auto.
+    Admitted.
+    Next Obligation.
+      unfold FPerm_Compose in *.
+      destruct s1; destruct s2; try congruence.
+      destruct s1'; try congruence.
+      destruct (is_ok (f + f0)).
+      { destruct (is_ok (f1 + f0)).
+        { eapply FPerm_Inj in H0.
+          revert UNIT. cutrewrite (f = f1).
+          intros.
+          eapply FPerm_Equal; eauto.
+          admit. }
+        { congruence. } }
+      { congruence. }
+    Admitted.
+    Next Obligation.
+      split.
+    Admitted.
+    Next Obligation.
+    Admitted.
+    Next Obligation.
+    Admitted.
+    Next Obligation.
+    Admitted.
+    Next Obligation.
+    Admitted.
+    Next Obligation.
+    Admitted.
+    Next Obligation.
+    Admitted.
+    Next Obligation.
+    Admitted.
+
+  End Fp.
+
+  Import Fp.
+
+  (* A note to Gregory, If I were to paramterize mpred (p:Fp_Monoid) ...
+   * THIS WOULD BE A NEAT SOLUTION.
+   * I dont like them to be separate axioms. It is a ad-hoc solution,
+   * but lets keep it as it for now.
    *)
+  Axiom logical_fptsto: forall (Prm: SA) (p: Prm) (l: val) (v : val), mpred.
 
-  (*We keep this just for terminology*)
-  Parameter carrier_monoid : Type.
-
-  (*Example carrier monoid*)
-  Program Definition Fp_Monoid :=
-  {| s_type := Fp;
-     s_bot := FPerm 0 _;
-     s_top := FPerm 1 _;
-     s_undef := FPermUndef;
-     s_compose := FPerm_Compose; 
-     s_ord := FPerm_Order 
-  |}.
-  Next Obligation.
-    compute; split; congruence.
-  Qed.
-  Next Obligation.
-    compute; split; congruence.
-  Qed.
-  Next Obligation.
-    destruct s1; destruct s2; simpl; auto.
-  Admitted.
-  Next Obligation.
-  Admitted.
-  Next Obligation.
-  Admitted.
-  Next Obligation.
-  Admitted.
-  Next Obligation.
-  Admitted.
-  Next Obligation.
-  Admitted.
-  Next Obligation.
-  Admitted.
-  Next Obligation.
-  Admitted.
-  Next Obligation.
-  Admitted.
-  Next Obligation.
-  Admitted.
-  Next Obligation.
-  Admitted.
-
-  (*A note to Gregory, If I were to paramterize mpred (p:Fp_Monoid) ...  THIS WOULD BE A NEAT SOLUTION.
-  I dont like them to be separate axioms. It is a ad-hoc solution, but lets keep it as it for now.
-   *)
-  Axiom logical_fptsto: forall (Prm: SA) (p: Prm)  (l: val) (v : val), mpred.
-  
-  Program Definition Frac_PointsTo l q v :=
-    match excluded_middle_informative (0 <= q  <= 1) with
+  Definition Frac_PointsTo l q v :=
+    match is_ok q with
     | right _ => lfalse
-    | left _ =>
-      match excluded_middle_informative (q == 0) with
-      | left _ => empSP
-      | right _ => logical_fptsto Fp_Monoid (FPerm  q _)  l v
+    | left pf =>
+      match q ?= 0 with
+      | Eq => empSP
+      | _ => logical_fptsto Fp.Fp_Monoid (Fp.FPerm q pf)  l v
       end
-   end.
+    end.
+
 
   (*Similarly one can encode ghost state using SA*)
   (*
-   This type extends as we introduce new logical assertions such as logical_ghost etc. 
-   A generic ghost location gl and a value kept gv. 
-   
-     A General Note to Gregory : If we want to refer to resources encoded via monoids 
-      -- let's say Pg -- then we     have to bookkeep/pass  guard and containers (guard: In monoid_instance guard_container). 
+   This type extends as we introduce new logical assertions such as logical_ghost etc.
+   A generic ghost location gl and a value kept gv.
 
-    I did not do bookeeping of Monoids -- guard: In MONID LIST MONOID -- for fractional permissions and pointsto but in general we have to have the following structure for all logical predicates.  
+     A General Note to Gregory : If we want to refer to resources encoded via monoids
+      -- let's say Pg -- then we     have to bookkeep/pass  guard and containers (guard: In monoid_instance guard_container).
+
+    I did not do bookeeping of Monoids -- guard: In MONID LIST MONOID -- for fractional permissions and pointsto but in general we have to have the following structure for all logical predicates.
 
    Specs below assume that we do not refer to any resource encoded via monoids so there exists no guard and monoid container that we defined above. In case we want you can introduce them to the specs below.
    *)
@@ -193,24 +274,29 @@ Module Type cclogic.
   (*******Atomic Instruction Specification*******)
   Axiom rule_ghost_intro:
   forall  g P E Qp CMI (guard: In CMI guard_container) (ptriple: P |-- (wp_ghst E Qp)),
-     P |-- ( wp_ghst E (fun v =>  (Qp v) ** (Exists l, logical_ghost CMI  guard l g))). 
+     P |-- wp_ghst E (fun v =>  (Qp v) ** (Exists l, logical_ghost CMI  guard l g)).
 
-  (* list ValCat * Expr*)
+  (****** Wp Semantics for atomic operations
+   * These are given in the style of function call axioms
+   *)
   Parameter wp_atom : AtomicOp -> list val -> type -> (val -> mpred) -> mpred.
 
   Axiom wp_rhs_atomic: forall rslv ti r ao es ty Q,
-    wps (wpAnys (resolve:=rslv) ti r) es  (fun (vs : list val) (free : FreeTemps) => wp_atom ao vs ty (fun v => Q v free)) empSP
-        |-- wp_rhs (resolve:=rslv) ti r (Eatomic ao es ty) Q.
- 
-  (*Ideas adopted from the paper: Relaxed Separation Logic: A program logic for C11 Concurrency -- Vefeiadis et al. *)
+      wps (wpAnys (resolve:=rslv) ti r) es  (fun (vs : list val) (free : FreeTemps) =>
+           wp_atom ao vs ty (fun v => Q v free)) empSP
+      |-- wp_rhs (resolve:=rslv) ti r (Eatomic ao es ty) Q.
+
+  (* Ideas adopted from the paper:
+   * Relaxed Separation Logic: A program logic for C11 Concurrency -- Vefeiadis et al.
+   *)
 
   (*Atomic CAS access permission*)
-  Parameter AtomInv : Fp -> type -> (val -> mpred) -> Rep.
+  Parameter AtomInv : Fp.Fp -> type -> (val -> mpred) -> Rep.
 
 (*
   (*Atomic READ access permission*)
   Parameter AtomRDPerm: val -> (val -> mpred) -> mpred.
-  
+
   (*Atomic WRITE access permission*)
   Parameter AtomWRTPerm: val -> (val -> mpred) -> mpred.
 *)
@@ -226,9 +312,8 @@ Module Type cclogic.
 *)
 
   (*Atomic CAS access permission is duplicable*)
-  Axiom Persistent_CASPerm : forall q q1 q2 ty LocInv,
-      q = s_compose Fp_Monoid q1 q2 ->
-      AtomInv q ty LocInv -|- AtomInv q1 ty LocInv ** AtomInv q2 ty LocInv.
+  Axiom Persistent_CASPerm : forall q1 q2 ty LocInv,
+      AtomInv (s_compose Fp_Monoid q1 q2) ty LocInv -|- AtomInv q1 ty LocInv ** AtomInv q2 ty LocInv.
 
   (*Generate atomic access token via consuming the memory cell and the invariant *)
   Axiom Intro_AtomInv : forall x (t:type) (Inv:val->mpred),
@@ -239,7 +324,7 @@ Module Type cclogic.
 
 (*
   (* *)
-  Axiom Splittable_WRTPerm: forall (LocInv: val->mpred) (LocInv':val->mpred) l ,  AtomRDPerm l LocInv **  AtomRDPerm l LocInv' 
+  Axiom Splittable_WRTPerm: forall (LocInv: val->mpred) (LocInv':val->mpred) l ,  AtomRDPerm l LocInv **  AtomRDPerm l LocInv'
                            -|- Exists v, (Exists LocInv'', (LocInv'' v -* (LocInv' v \\// LocInv v)) //\\ (AtomRDPerm v LocInv'')).
 *)
 
