@@ -211,9 +211,13 @@ Section refl.
               [| eval_binop Badd tye tye ty v' (Vint 1) v'' |] **
               (_at (_eq a) (tprim ty v'') -* Q v' free)))
       end
-    | _ => _
+    | _ =>
+      match cat with
+      | Rvalue => Some (wp_rhs (resolve:=resolve) ti r e)
+      | Lvalue => Some (wp_lhs (resolve:=resolve) ti r e)
+      | Xvalue => Some (wp_lhs (resolve:=resolve) ti r e)
+      end
     end.
-  all: refine (ret (fun Q => unsupported e)).
   Defined.
 
   Section block.
@@ -362,9 +366,9 @@ Section refl.
     | Sexpr cat e =>
       Qe <- wpe cat e ;;
       ret (fun Q => Qe (fun _ free => free ** Q.(k_normal)))
-    | _ => _
+    | _ =>
+      Some (Wp.wp (resolve:=resolve) ti r s)
     end.
-  all: refine (ret (fun _ => error "not implemented")).
   Defined.
 
   Theorem wp_sound : forall s K Q,
