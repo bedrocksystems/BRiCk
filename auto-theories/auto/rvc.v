@@ -13,6 +13,7 @@ From Cpp.Sem Require Import
      Util Logic Semantics Typing.
 From Cpp.Auto Require Import
      Lemmas.
+From bedrock.auto.Lemmas Require Wp Eval.
 
 (* the option monad *)
 Definition lvalue (c : ValCat) : option unit :=
@@ -100,10 +101,20 @@ Section refl.
       end.
   End wpes.
 
+  (* todo(gmm): convert `FreeTemps` into `option mpred` and eliminate redundant
+   * `empSP`.
+   *)
   Fixpoint wpe (cat : ValCat) (e : Expr)
            {struct e}
   : option (forall (Q : val -> FreeTemps -> mpred), mpred).
   refine
+    (let default :=
+      match cat with
+      | Rvalue => ret (wp_rhs (resolve:=resolve) ti r e)
+      | Lvalue => ret (wp_lhs (resolve:=resolve) ti r e)
+      | Xvalue => ret (wp_lhs (resolve:=resolve) ti r e)
+      end
+    in
     match e with
     | Evar (Lname x) ty =>
       lvalue cat ;;
@@ -138,8 +149,7 @@ Section refl.
       let ty := drop_qualifiers ty in
       Qe <- wpe Rvalue e ;;
       Qi <- wpe Rvalue i ;;
-      ret (fun Q => Qe (fun base free => Qi
-         (fun idx free' =>
+      ret (fun Q => Qe (fun base free => Qi (fun idx free' =>
           Exists addr,
           (Exists i, [| idx = Vint i |] **
                      _offsetL (_sub ty i) (_eq base) &~ addr ** ltrue) //\\
@@ -150,14 +160,22 @@ Section refl.
     | Eaddrof e ty =>
       rvalue cat ;;
       wpe Lvalue e
-    | Eunop o e ty =>
-      (* todo(jmgrosen): port this over to wp_eval *)
+    | Ebinop o lhs rhs ty =>
+      rvalue cat ;; (* all operators (except assignment which isn't an operator) return rvalues *)
+      Ql <- wpe Rvalue lhs ;;
+      Qr <- wpe Rvalue rhs ;;
+      let tl := drop_qualifiers (Typing.type_of lhs) in
+      let tr := drop_qualifiers (Typing.type_of rhs) in
       let ty := drop_qualifiers ty in
+      ret (fun Q => Ql (fun v1 free1 => Qr (fun v2 free2 =>
+            Eval.wp_eval_binop o tl tr ty v1 v2 (fun v' => Q v' (free1 ** free2)))))
+    | Eunop o e ty =>
       rvalue cat ;;
       Qe <- wpe Rvalue e ;;
+      let te := drop_qualifiers (Typing.type_of e) in
+      let ty := drop_qualifiers ty in
       ret (fun Q => Qe (fun v free =>
-          Exists v',
-          embed (eval_unop o ty ty v v') //\\ Q v' free))
+            Eval.wp_eval_unop o te ty v (fun v' => Q v' free)))
     | Ecast c e ty =>
       let ty := drop_qualifiers ty in
       match c with
@@ -174,7 +192,7 @@ Section refl.
       | Cint2bool =>
         rvalue cat ;;
         wpe Rvalue e
-      | _ => ret (fun _ => unsupported e)
+      | _ => default
       end
     | Eassign l rhs ty =>
       lvalue cat ;;
@@ -211,14 +229,17 @@ Section refl.
               [| eval_binop Badd tye tye ty v' (Vint 1) v'' |] **
               (_at (_eq a) (tprim ty v'') -* Q v' free)))
       end
-    | _ =>
-      match cat with
-      | Rvalue => Some (wp_rhs (resolve:=resolve) ti r e)
-      | Lvalue => Some (wp_lhs (resolve:=resolve) ti r e)
-      | Xvalue => Some (wp_lhs (resolve:=resolve) ti r e)
-      end
-    end.
+    | _ => default
+    end).
   Defined.
+
+  Theorem wpe_sound : forall e vc K Q,
+      wpe vc e = Some Q ->
+      Q K |-- @Wp.wpe resolve ti r vc e K.
+  Proof.
+    induction e; simpl; intros.
+  Admitted.
+
 
   Section block.
     Variable wp : forall (s : Stmt), option (Kpreds -> mpred).
