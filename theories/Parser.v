@@ -19,3 +19,8 @@ Definition Talias (underlying : type) (name : globname) : type :=
   underlying.
 
 Definition NStop : list ident := nil.
+
+Bind Scope string_scope with globname.
+Bind Scope string_scope with obj_name.
+Bind Scope string_scope with ident.
+Bind Scope string_scope with localname.
