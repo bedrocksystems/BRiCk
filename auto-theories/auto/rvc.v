@@ -103,6 +103,9 @@ Section refl.
 
   (* todo(gmm): convert `FreeTemps` into `option mpred` and eliminate redundant
    * `empSP`.
+   * todo(gmm): introduce an environment of specifications for globals to
+   *            support global calls.
+   * todo(gmm): should we semi-reflect `mpred`?
    *)
   Fixpoint wpe (cat : ValCat) (e : Expr)
            {struct e}
@@ -373,8 +376,8 @@ Section refl.
             Qr
               (fun (v : val) (free : FreeTemps) =>
                free **
-               ([| is_true v = true |] -* Wthn k //\\
-                [| is_true v = false |] -* Wels k))) K)
+               (([| is_true v = true |] -* Wthn k) //\\
+                ([| is_true v = false |] -* Wels k)))) K)
       end
     | Swhile decl test body =>
       match decl with
