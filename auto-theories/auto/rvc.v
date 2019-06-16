@@ -374,45 +374,5 @@ Section refl.
 
 End refl.
 
-Require Cpp.Auto.vc.
-
-Local Open Scope string_scope.
-
-Lemma test:
-  forall  resolve ti r (x0 : val -> mpred),
-    (Forall res : val, [| res = 3%Z |] -* x0 res)
-      |-- @Wp.wp resolve ti r
-      (Sseq
-         (Sdecl
-            (("x", Qmut T_int, Some (Eint 1 (Qmut T_int)))
-               :: ("z", Qmut T_int, Some (Eint 12 (Qmut T_int)))
-               :: ("k", Qmut T_int, Some (Eint 5 (Qmut T_int))) :: nil)
-            :: Sseq
-            (Sdecl (("y", Qmut T_int, Some (Eint 3 (Qmut T_int))) :: nil)
-                   :: Sexpr Lvalue
-                   (Eassign (Evar (Lname "x") (Qmut T_int))
-                            (Ecast Cl2r (Evar (Lname "y") (Qmut T_int))
-                                   (Qmut T_int)) (Qmut T_int)) :: nil)
-            :: Sif
-            (Some
-               ("q", Qmut T_int,
-                Some
-                  (Ecast Cl2r (Evar (Lname "x") (Qmut T_int))
-                         (Qmut T_int))))
-            (Ecast Cint2bool
-                   (Ecast Cl2r (Evar (Lname "q") (Qmut T_int))
-                          (Qmut T_int)) (Qmut Tbool))
-            (Sseq
-               (Sreturn
-                  (Some (Rvalue,
-                     (Ecast Cl2r (Evar (Lname "x") (Qmut T_int))
-                            (Qmut T_int)))) :: nil))
-            (Sseq (Sreturn (Some (Rvalue, (Eint 0 (Qmut T_int)))) :: nil))
-            :: nil)) (Kfree empSP (val_return x0)).
-Proof.
-  intros.
-  rewrite <- wp_sound by (simpl; reflexivity).
-  simpl.
-  vc.work.
-  rewrite is_true_int in *. cbn in *. congruence.
-Qed.
+Ltac simplifying :=
+  progress (rewrite <- wp_sound by (simpl; reflexivity); simpl).
