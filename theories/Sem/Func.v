@@ -127,6 +127,7 @@ Module Type Func.
 
   Section with_resolve.
     Context {resolve : genv}.
+    Section with_thread_info.
     Variable ti : thread_info.
     Variable ρ : region.
 
@@ -223,6 +224,8 @@ Module Type Func.
     | d :: ds => @wpd resolve ti ρ cls this d (wpds cls this ds Q)
     end.
 
+  End with_thread_info.
+
   (* function specifications written in weakest pre-condition style.
    *
    * note(gmm): it might be better to make the `list val` into a
@@ -231,7 +234,7 @@ Module Type Func.
   Record function_spec : Type :=
   { fs_return : type
   ; fs_arguments : list type
-  ; fs_specification : list val -> (val -> mpred) -> mpred
+  ; fs_specification : thread_info -> list val -> (val -> mpred) -> mpred
   }.
 
   (* todo(gmm): this might need to make some additional assumptions in
@@ -241,7 +244,7 @@ Module Type Func.
   Definition cptr (p : val) ti (PQ : function_spec) : mpred :=
     Forall vs,
     [| List.length vs = List.length PQ.(fs_arguments) |] -*
-    Forall Q, PQ.(fs_specification) vs Q -* fspec p vs ti Q.
+    Forall Q, (PQ.(fs_specification) ti) vs Q -* fspec (resolve:=resolve) p vs ti Q.
     (* ^ todo(gmm): this should be a timeless assertion.
      *)
 
@@ -255,13 +258,13 @@ Module Type Func.
   Record function_spec' : Type :=
   { fs'_return : type
   ; fs'_arguments : list type
-  ; fs'_specification : arrowFrom val fs'_arguments ((val -> mpred) -> mpred)
+  ; fs'_specification : thread_info -> arrowFrom val fs'_arguments ((val -> mpred) -> mpred)
   }.
 
   (* this is the core definition that everything will be based on. *)
   Definition cptr' (p : val) ti (fs : function_spec') : mpred :=
-    ForallEach _ fs.(fs'_specification) (fun PQ args =>
-       Forall Q, PQ Q -* fspec p (List.map snd args) ti Q).
+    ForallEach _ (fs.(fs'_specification) ti) (fun PQ args =>
+       Forall Q, PQ Q -* fspec (resolve:=resolve) p (List.map snd args) ti Q).
 
 
   Record WithPrePost : Type :=
@@ -279,70 +282,94 @@ Module Type Func.
     | tcons ts => fun P Q Q' => Exists x, @WppD (ts x) (P x) (Q x) Q'
     end.
 
+
+(*
   Definition ht (ret : type) (targs : list type)
-             (PQ : list val -> WithPrePost)
+             (PQ : thread_info -> list val -> WithPrePost)
   : function_spec :=
     {| fs_return := ret
      ; fs_arguments := targs
-     ; fs_specification := fun args Q =>
+     ; fs_specification ti args Q :=
        let PQ := PQ args in @WppD PQ.(wpp_with) PQ.(wpp_pre) PQ.(wpp_post) Q |}.
+*)
 
   (* Hoare triple for a function.
    *)
-  Definition SFunction (ret : type) (targs : list type)
-             (PQ : arrowFrom val targs WithPrePost)
+  Definition TSFunction (ret : type) (targs : list type)
+             (PQ : thread_info -> arrowFrom val targs WithPrePost)
   : function_spec' :=
     {| fs'_return := ret
      ; fs'_arguments := targs
-     ; fs'_specification := arrowFrom_map
-          (fun wpp => WppD wpp.(wpp_pre) wpp.(wpp_post)) PQ |}.
+     ; fs'_specification ti := arrowFrom_map
+          (fun wpp => WppD wpp.(wpp_pre) wpp.(wpp_post)) (PQ ti) |}.
+
+
+  Definition SFunction (ret : type) (targs : list type)
+             (PQ : arrowFrom val targs WithPrePost)
+  : function_spec' :=
+    TSFunction ret targs (fun _ => PQ).
 
   (* Hoare triple for a constructor.
    *)
-  Definition SConstructor (class : globname)
+  Definition TSConstructor (class : globname)
              (targs : list type)
-             (PQ : val -> arrowFrom val targs WithPrePost)
+             (PQ : thread_info -> val -> arrowFrom val targs WithPrePost)
   : function_spec' :=
     let this_type := Qmut (Tref class) in
-    SFunction (Qmut Tvoid) (Qconst (Tpointer this_type) :: targs)
-              (fun this => arrowFrom_map (fun wpp =>
+    TSFunction (Qmut Tvoid) (Qconst (Tpointer this_type) :: targs)
+              (fun ti this => arrowFrom_map (fun wpp =>
                  {| wpp_with := wpp.(wpp_with)
                   ; wpp_pre :=
                     teleF_map (fun P => _at (_eq this) (uninit (Tref class)) ** P) wpp.(wpp_pre)
                   ; wpp_post := wpp.(wpp_post)
-                  |}) (PQ this)).
+                  |}) (PQ ti this)).
+
+  Definition SConstructor (class : globname) (targs : list type)
+             (PQ : val -> arrowFrom val targs WithPrePost)
+  : function_spec' := TSConstructor class targs (fun _ => PQ).
 
   (* Hoare triple for a destructor.
    *)
-  Definition SDestructor (class : globname) (PQ : val -> WithPrePost)
+  Definition TSDestructor (class : globname) (PQ : thread_info -> val -> WithPrePost)
   : function_spec' :=
     let this_type := Qmut (Tref class) in
-    SFunction (Qmut Tvoid) (Qconst (Tpointer this_type) :: nil)
-              (fun this =>
-                 {| wpp_with := (PQ this).(wpp_with)
-                  ; wpp_pre := (PQ this).(wpp_pre)
-                  ; wpp_post := teleF_map (fun Q res => _at (_eq this) (tany (Tref class)) ** Q res) (PQ this).(wpp_post)
+    TSFunction (Qmut Tvoid) (Qconst (Tpointer this_type) :: nil)
+               (fun ti this =>
+                  let PQ := PQ ti this in
+                 {| wpp_with := PQ.(wpp_with)
+                  ; wpp_pre := PQ.(wpp_pre)
+                  ; wpp_post := teleF_map (fun Q res => _at (_eq this) (tany (Tref class)) ** Q res) PQ.(wpp_post)
                   |}).
+
+  Definition SDestructor (class : globname) (PQ : val -> WithPrePost)
+  : function_spec' := TSDestructor class (fun _ => PQ).
 
   (* Hoare triple for a method.
    *)
-  Definition SMethod (class : globname) (qual : type_qualifiers)
+  Definition TSMethod (class : globname) (qual : type_qualifiers)
              (ret : type) (targs : list type)
-             (PQ : val -> arrowFrom val targs WithPrePost)
+             (PQ : thread_info -> val -> arrowFrom val targs WithPrePost)
   : function_spec' :=
     let class_type := Tref class in
     let this_type := Tqualified qual class_type in
-    SFunction ret (Qconst (Tpointer this_type) :: targs) PQ.
+    TSFunction ret (Qconst (Tpointer this_type) :: targs) PQ.
       (* ^ todo(gmm): this looks wrong. something isn't going
        * to fit together with respect to calling conventions and
        * specifications.
        *)
 
-  Lemma cptr_cptr' : forall p fs fs',
+  Definition SMethod (class : globname) (qual : type_qualifiers)
+             (ret : type) (targs : list type)
+             (PQ : val -> arrowFrom val targs WithPrePost)
+  : function_spec' := TSMethod class qual ret targs (fun _ => PQ).
+
+
+  Lemma cptr_cptr' : forall ti p fs fs',
       fs.(fs_arguments) = fs'.(fs'_arguments) ->
       fs.(fs_return) = fs'.(fs'_return) ->
       (forall Q vs,
-          fs.(fs_specification) vs Q -|- applyEach fs'.(fs'_arguments) vs fs'.(fs'_specification) (fun k _ => k Q)) ->
+          (fs.(fs_specification) ti) vs Q -|-
+          applyEach fs'.(fs'_arguments) vs (fs'.(fs'_specification) ti) (fun k _ => k Q)) ->
       cptr p ti fs -|- cptr' p ti fs'.
   Proof.
     unfold cptr. intros.
@@ -393,20 +420,20 @@ Module Type Func.
 *)
 
   Theorem triple'_apply
-  : forall p r ts F F' vs (PQ : arrowFrom val ts WithPrePost) K,
+  : forall ti p r ts F F' vs (PQ : arrowFrom val ts WithPrePost) K,
       List.length vs = List.length ts ->
       F |-- applyEach ts vs PQ (fun wpp _ =>
                WppD wpp.(wpp_pre) wpp.(wpp_post)) K ** F' ->
-      cptr' p ti (SFunction r ts PQ) ** F |-- fspec p vs ti K ** F'.
+      cptr' p ti (SFunction r ts PQ) ** F |-- fspec (resolve:=resolve) p vs ti K ** F'.
   Proof.
     intros.
     rewrite <- cptr_cptr'.
     instantiate (1:=
                    {| fs_return := r
                       ; fs_arguments := ts
-                      ; fs_specification := fun vs0 Q =>
-                                              applyEach ts vs0 (SFunction r ts PQ).(fs'_specification)
-                                                                                     (fun (k : (val -> mpred) -> mpred) _ => k Q) |}).
+                      ; fs_specification ti vs0 Q :=
+                        applyEach ts vs0 ((SFunction r ts PQ).(fs'_specification) ti)
+                                  (fun (k : (val -> mpred) -> mpred) _ => k Q) |}).
     2,3,4: reflexivity.
     unfold cptr. simpl.
     eapply sepSPAdj.
@@ -488,7 +515,7 @@ Module Type Func.
     : mpred :=
       [| ret = spec.(fs'_return) |] **
       [| spec.(fs'_arguments) = List.map snd params |] **
-      ForallEach' _ spec.(fs'_specification) (fun PQ args =>
+      ForallEach' _ (spec.(fs'_specification) ti) (fun PQ args =>
         Forall ρ : region,
         let vals := List.map snd args in
 
@@ -518,7 +545,7 @@ Module Type Func.
         in
         [| spec.(fs'_return) = meth.(m_return) |] **
         [| spec.(fs'_arguments) = this_type :: List.map snd meth.(m_params) |] **
-        ForallEach' _ spec.(fs'_specification) (fun PQ args =>
+        ForallEach' _ (spec.(fs'_specification) ti) (fun PQ args =>
           Forall ρ : region,
           let vals := List.map snd args in
           match vals with
@@ -556,7 +583,7 @@ Module Type Func.
         in
         [| spec.(fs'_return) = Qmut Tvoid |] **
         [| spec.(fs'_arguments) = this_type :: List.map snd ctor.(c_params) |] **
-        ForallEach' _ spec.(fs'_specification) (fun PQ args =>
+        ForallEach' _ (spec.(fs'_specification) ti) (fun PQ args =>
           Forall ρ,
           let vals := List.map snd args in
           match vals with
@@ -590,7 +617,7 @@ Module Type Func.
         in
         [| spec.(fs'_return) = Qmut Tvoid |] **
         [| spec.(fs'_arguments) = this_type :: nil |] **
-        ForallEach' _ spec.(fs'_specification) (fun PQ args =>
+        ForallEach' _ (spec.(fs'_specification) ti) (fun PQ args =>
           Forall ρ,
           let vals := List.map snd args in
           match vals with
