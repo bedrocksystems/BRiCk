@@ -82,13 +82,13 @@ Axiom eval_mul :
 Axiom eval_div :
   forall (w : option nat) (s : bool) (a b c : Z),
     b <> 0%Z ->
-    c = (a / b)%Z ->
+    c = Z.quot a b ->
     has_type (Vint c) (Tint w s) ->
     eval_binop Bdiv (Tint w s) (Tint w s) (Tint w s) (Vint a) (Vint b) (Vint c).
 Axiom eval_mod :
   forall (w : option nat) (s : bool) (a b c : Z),
     b <> 0%Z ->
-    c = (a mod b)%Z ->
+    c = Z.rem a b ->
     has_type (Vint c) (Tint w s) ->
     eval_binop Bmod (Tint w s) (Tint w s) (Tint w s) (Vint a) (Vint b) (Vint c).
 Axiom eval_shl :
