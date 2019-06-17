@@ -72,6 +72,7 @@ Definition eval_int_op (bo : BinOp) (o : Z -> Z -> Z) : Prop :=
     has_type (Vint c) (Tint w s) ->
     eval_binop bo (Tint w s) (Tint w s) (Tint w s) (Vint a) (Vint b) (Vint c).
 
+(* todo(jmgrosen): allow wrapping in the unsigned case *)
 Axiom eval_add :
   ltac:(let x := eval hnf in (eval_int_op Badd Z.add) in refine x).
 Axiom eval_sub :
@@ -87,9 +88,9 @@ Axiom eval_div :
 Axiom eval_mod :
   ltac:(let x := eval hnf in (eval_int_op Bmod Z.modulo) in refine x).
 Axiom eval_shl :
-  ltac:(let x := eval hnf in (eval_int_op Bmod Z.shiftl) in refine x).
+  ltac:(let x := eval hnf in (eval_int_op Bshl Z.shiftl) in refine x).
 Axiom eval_shr :
-  ltac:(let x := eval hnf in (eval_int_op Bmod Z.shiftr) in refine x).
+  ltac:(let x := eval hnf in (eval_int_op Bshr Z.shiftr) in refine x).
 
 Definition eval_int_rel_op (bo : BinOp) {P Q : Z -> Z -> Prop}
            (o : forall a b : Z, {P a b} + {Q a b}) : Prop :=
@@ -131,7 +132,7 @@ Axiom eval_neq_int :
     a = Vint av ->
     b = Vint bv ->
     c = (if Z.eq_dec av bv then 0 else 1)%Z ->
-    eval_binop Bneq ty ty Tbool a b (Vint c).
+    eval_binop Bneq ty ty T_int a b (Vint c).
 Axiom eval_lt_int :
   ltac:(let x := eval hnf in (eval_int_rel_op_int Blt ZArith_dec.Z_lt_ge_dec) in refine x).
 Axiom eval_gt_int :
@@ -141,18 +142,18 @@ Axiom eval_le_int :
 Axiom eval_ge_int :
   ltac:(let x := eval hnf in (eval_int_rel_op_int Bge ZArith_dec.Z_ge_lt_dec) in refine x).
 
-Axiom eval_eq_ptr :
+Axiom eval_ptr_eq :
   forall ty a b av bv c,
     a = Vptr av ->
     b = Vptr bv ->
     c = (if ptr_eq_dec av bv then 1 else 0)%Z ->
-    eval_binop Beq ty ty Tbool a b (Vint c).
-Axiom eval_neq_ptr :
+    eval_binop Beq (Tpointer ty) (Tpointer ty) Tbool a b (Vint c).
+Axiom eval_ptr_neq :
   forall ty a b av bv c,
     a = Vptr av ->
     b = Vptr bv ->
     c = (if ptr_eq_dec av bv then 0 else 1)%Z ->
-    eval_binop Bneq ty ty Tbool a b (Vint c).
+    eval_binop Bneq (Tpointer ty) (Tpointer ty) Tbool a b (Vint c).
 
 Axiom eval_not_bool : forall a, eval_unop Unot Tbool Tbool (Vbool a) (Vbool (negb a)).
 
