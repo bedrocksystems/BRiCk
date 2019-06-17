@@ -10,7 +10,7 @@ From Coq Require Import
 From Cpp Require Import
      Ast Sem.
 From Cpp.Sem Require Import
-     Util Logic Semantics Typing.
+     Util Logic Semantics.
 From Cpp.Auto Require Import
      Definitions Lemmas.
 From Cpp Require Auto.vc.
@@ -324,10 +324,11 @@ Section refl.
       Qo <- wpuo o te ty ;;
       ret (fun Q => Qe (fun v free =>
             Qo v (fun v' => Q v' free)))
-    | Ecast c e ty =>
+    | Ecast c (vc, e) ty =>
       let ty := drop_qualifiers ty in
       match c with
       | Cl2r =>
+        lvalue vc ;;
         rvalue cat ;;
         match e with
         | Evar (Lname x) _ => (* this is a very common form *)
@@ -338,13 +339,16 @@ Section refl.
           Exists v, (_at (_eq a) (tprim ty v) ** ltrue) //\\ Q v free))
         end
       | Cint2bool =>
+        rvalue vc ;;
         rvalue cat ;;
         wpe Rvalue e
       | Cintegral =>
+        rvalue vc ;;
         rvalue cat ;;
         Qe <- wpe Rvalue e ;;
         ret (fun Q => Qe (fun v free => [| has_type v ty |] ** Q v free))
       | Cnull2ptr =>
+        rvalue vc ;;
         rvalue cat ;;
         wpe Rvalue e
       | _ => default
@@ -385,16 +389,20 @@ Section refl.
                 (_at (_eq a) (tprim ty v') -* Q a empSP))))
       end
     | Enull => ret (fun Q => Q (Vptr nullptr) empSP)
-    | Ecall (Ecast Cfunction2pointer (Evar (Gname f) _) _) es _ =>
-      rvalue cat ;;
-      Qes <- wpes (wpAnys' wpe) es ;;
-      match find (fun '(f', _) => if string_dec f f' then true else false) specs with
-      | Some (_, fs) =>
-        ret (fun Q =>
-               Qes (fun vs free =>
-                 applyEach (fs_arguments fs) vs (fs_spec fs ti) (fun Qf _ =>
-                   Qf (fun r => Q r free))) empSP)
-      | None => default
+    | Ecall (Ecast Cfunction2pointer (vc, Evar (Gname f) _) _) es _ =>
+      match vc with
+      | Lvalue | Rvalue =>
+        rvalue cat ;;
+        Qes <- wpes (wpAnys' wpe) es ;;
+        match find (fun '(f', _) => if string_dec f f' then true else false) specs with
+        | Some (_, fs) =>
+          ret (fun Q =>
+                 Qes (fun vs free =>
+                   applyEach (fs_arguments fs) vs (fs_spec fs ti) (fun Qf _ =>
+                     Qf (fun r => Q r free))) empSP)
+        | None => default
+        end
+      | _ => default
       end
     | Emember_call false gn obj es ty =>
       rvalue cat ;;
@@ -439,13 +447,100 @@ Section refl.
     (*          end. *)
   Admitted.
 
-  Section block.
-    Variable wp : forall (s : Stmt), option (Kpreds -> mpred).
-
     Definition wpAnys (ve : ValCat * Expr)
     : option ((val -> FreeTemps -> mpred) -> FreeTemps -> mpred) :=
       Qe <- wpe (fst ve) (snd ve) ;;
       ret (fun Q free => Qe (fun v f => Q v (f ** free))).
+
+
+    (* mostly copied from Cpp.Sem.Func *)
+    Fixpoint wpi_init (ty : type) (init : option Expr)
+    : option (val -> mpred -> mpred) :=
+      match ty with
+      | Trv_reference _ => ret (fun _ _ => lfalse)
+      | Treference t =>
+        match init with
+        | None => ret (fun _ _ => error "references must be initialized")
+          (* ^ references must be initialized *)
+        | Some init => ret (fun _ _ => error "refernce fields are not supported")
+        end
+      | Tfunction _ _ =>
+        (* inline functions are not supported *)
+        ret (fun _ _ => error "unsupported: declarations of functions")
+      | Tvoid =>
+        ret (fun _ _ => error "declaration of void")
+      | Tpointer _
+      | Tbool
+      | Tchar _ _
+      | Tint _ _ =>
+        match init with
+        | None =>
+          ret (fun loc Q => Q)
+        | Some init =>
+          Qi <- wpe Rvalue init ;;
+          ret (fun loc Q => Qi (fun v free =>
+                 _at (_eq loc) (uninit ty)
+              ** (_at (_eq loc) (uninit ty) -*
+                      (free ** Q))))
+        end
+      | Tarray _ _ => lfalse (* todo(gmm): arrays not yet supported *)
+      | Tref gn =>
+        match init with
+        | Some (Econstructor cnd es _) =>
+          Qes <- wpes wpAnys es ;;
+          ret (fun loc Q =>
+          (* todo(gmm): constructors and destructors need to be handled through
+           * `cglob`.
+           *)
+          Exists ctor, [| glob_addr resolve cnd ctor |] **
+          (* todo(gmm): is there a better way to get the destructor? *)
+          Qes (fun vs free =>
+              |> fspec (resolve:=resolve) (Vptr ctor) (loc :: vs) ti (fun _ =>
+                 (free ** Q))) empSP)
+        | _ => ret (fun _ _ =>
+                     error "all non-primitive declarations must have initializers")
+        end
+      | Tqualified _ ty => wpi_init ty init
+      end.
+
+
+  Fixpoint to_path (from : globname) (final : ident) (ls : list (ident * globname))
+  : Offset :=
+    match ls with
+    | nil => _field {| f_type := from ; f_name := final |}
+    | (i,c) :: ls =>
+      _dot (_field {| f_type := from ; f_name := i |}) (to_path c final ls)
+    end.
+
+  Definition wpi (cls : globname) (f : FieldOrBase) (i : Expr)
+  : option (val -> mpred -> mpred).
+  refine (
+      let default :=
+          ret (fun this Q => wpi (resolve:=resolve) ti r cls this (f, i) Q)
+      in
+      match f with
+      | Base base =>
+        Qe <- wpi_init (type_of i) (Some i) ;; (* `type_of i` isn't correct *)
+        ret (fun this Q => Exists fl,
+                        (_offsetL (_super cls base) (_eq this) &~ fl ** ltrue) //\\
+                        Qe fl Q)
+      | Field id =>
+        Qe <- wpi_init (type_of i) (Some i) ;; (* `type_of i` isn't correct *)
+        let f := {| f_type := cls ; f_name := id |} in
+        ret (fun this Q => Exists fl,
+                        (_offsetL (_field f) (_eq this) &~ fl ** ltrue) //\\
+                        Qe fl Q)
+      | Indirect path f =>
+        Qe <- wpi_init (type_of i) (Some i) ;; (* `type_of i` isn't correct *)
+        let p := to_path cls f path in
+        ret (fun this Q => Exists fl,
+                        (_offsetL p (_eq this) &~ fl ** ltrue) //\\
+                        Qe fl Q)
+      end).
+  Defined.
+
+  Section block.
+    Variable wp : forall (s : Stmt), option (Kpreds -> mpred).
 
     (* mostly copied from Cpp.Sem.Stmt *)
     Fixpoint wp_decl (x : ident) (ty : type) (init : option Expr)
