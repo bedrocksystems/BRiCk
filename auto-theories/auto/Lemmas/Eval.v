@@ -72,18 +72,45 @@ Lemma wp_eval_div : forall t1 t2 t3 w s a b av bv Q,
     a = Vint av ->
     b = Vint bv ->
     bv <> 0%Z ->
-    has_type (Vint (av / bv)%Z) (Tint w s) ->
-    Q (Vint (av / bv)%Z)
+    has_type (Vint (Z.quot av bv)) (Tint w s) ->
+    Q (Vint (Z.quot av bv))
     |-- wp_eval_binop Bdiv t1 t2 t3 a b Q.
 Proof. prove_binop eval_div. Qed.
 
-Lemma wp_eval_mod : ltac:(let x := eval hnf in (wp_eval_int_op Bmod Z.modulo) in refine x).
+Lemma wp_eval_mod : forall t1 t2 t3 w s a b av bv Q,
+    t1 = Tint w s ->
+    t2 = Tint w s ->
+    t3 = Tint w s ->
+    a = Vint av ->
+    b = Vint bv ->
+    bv <> 0%Z ->
+    has_type (Vint (Z.rem av bv)) (Tint w s) ->
+    Q (Vint (Z.rem av bv))
+    |-- wp_eval_binop Bmod t1 t2 t3 a b Q.
 Proof. prove_binop eval_mod. Qed.
 
-Lemma wp_eval_shl : ltac:(let x := eval hnf in (wp_eval_int_op Bshl Z.shiftl) in refine x).
+Lemma wp_eval_shl : forall t1 t2 t3 w s a b av bv Q,
+    t1 = Tint (Some w) s ->
+    t2 = Tint (Some w) s ->
+    t3 = Tint (Some w) s ->
+    a = Vint av ->
+    b = Vint bv ->
+    (0 <= bv < Z.of_nat w)%Z ->
+    has_type (Vint (Z.shiftl av bv)) (Tint (Some w) s) ->
+    Q (Vint (Z.shiftl av bv))
+    |-- wp_eval_binop Bshl t1 t2 t3 a b Q.
 Proof. prove_binop eval_shl. Qed.
 
-Lemma wp_eval_shr : ltac:(let x := eval hnf in (wp_eval_int_op Bshr Z.shiftr) in refine x).
+Lemma wp_eval_shr : forall t1 t2 t3 w s a b av bv Q,
+    t1 = Tint (Some w) s ->
+    t2 = Tint (Some w) s ->
+    t3 = Tint (Some w) s ->
+    a = Vint av ->
+    b = Vint bv ->
+    (0 <= bv < Z.of_nat w)%Z ->
+    has_type (Vint (Z.shiftr av bv)) (Tint (Some w) s) ->
+    Q (Vint (Z.shiftr av bv))
+    |-- wp_eval_binop Bshr t1 t2 t3 a b Q.
 Proof. prove_binop eval_shr. Qed.
 
 Definition wp_eval_int_rel_op (bo : BinOp) {P P' : Z -> Z -> Prop}
@@ -143,7 +170,7 @@ Lemma wp_eval_neq_int : forall t1 t2 t3 w s a b av bv (Q : val -> mpred),
     a = Vint av ->
     b = Vint bv ->
     Q (Vint (if Z.eq_dec av bv then 0 else 1)%Z)
-    |-- wp_eval_binop Bneq (Tint w s) (Tint w s) T_int av bv Q.
+    |-- wp_eval_binop Bneq t1 t2 t3 av bv Q.
 Proof. prove_binop eval_neq_int. Qed.
 
 Lemma wp_eval_lt_int : ltac:(let x := eval hnf in (wp_eval_int_rel_op_int Blt ZArith_dec.Z_lt_ge_dec) in refine x).
