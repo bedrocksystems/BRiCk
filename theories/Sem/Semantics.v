@@ -86,11 +86,25 @@ Axiom eval_div :
     has_type (Vint c) (Tint w s) ->
     eval_binop Bdiv (Tint w s) (Tint w s) (Tint w s) (Vint a) (Vint b) (Vint c).
 Axiom eval_mod :
-  ltac:(let x := eval hnf in (eval_int_op Bmod Z.modulo) in refine x).
+  forall (w : option nat) (s : bool) (a b c : Z),
+    b <> 0%Z ->
+    c = (a mod b)%Z ->
+    has_type (Vint c) (Tint w s) ->
+    eval_binop Bmod (Tint w s) (Tint w s) (Tint w s) (Vint a) (Vint b) (Vint c).
 Axiom eval_shl :
-  ltac:(let x := eval hnf in (eval_int_op Bshl Z.shiftl) in refine x).
+  forall w s (a b c : Z),
+    (0 <= b < Z.of_nat w)%Z ->
+    c = Z.shiftl a b ->
+    has_type (Vint c) (Tint (Some w) s) ->
+    (* todo(jmgrosen): what to do for [Tint None s]? *)
+    eval_binop Bshl (Tint (Some w) s) (Tint (Some w) s) (Tint (Some w) s) (Vint a) (Vint b) (Vint c).
 Axiom eval_shr :
-  ltac:(let x := eval hnf in (eval_int_op Bshr Z.shiftr) in refine x).
+  forall w s (a b c : Z),
+    (0 <= b < Z.of_nat w)%Z ->
+    c = Z.shiftr a b ->
+    has_type (Vint c) (Tint (Some w) s) ->
+    (* todo(jmgrosen): what to do for [Tint None s]? *)
+    eval_binop Bshr (Tint (Some w) s) (Tint (Some w) s) (Tint (Some w) s) (Vint a) (Vint b) (Vint c).
 
 Definition eval_int_rel_op (bo : BinOp) {P Q : Z -> Z -> Prop}
            (o : forall a b : Z, {P a b} + {Q a b}) : Prop :=
