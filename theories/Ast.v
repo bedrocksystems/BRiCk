@@ -60,6 +60,11 @@ Inductive type : Set :=
 .
 Definition Talias (underlying : type) (name : globname) : type :=
   underlying.
+Definition type_eq_dec : forall (ty1 ty2 : type), { ty1 = ty2 } + { ty1 <> ty2 }.
+Proof.
+  fix IHty1 1.
+  repeat (decide equality).
+Defined.
 
 Fixpoint erase_qualifiers (t : type) : type :=
   match t with
