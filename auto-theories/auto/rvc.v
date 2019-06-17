@@ -13,6 +13,7 @@ From Cpp.Sem Require Import
      Util Logic Semantics Typing.
 From Cpp.Auto Require Import
      Lemmas.
+From Cpp Require Auto.vc.
 From bedrock.auto.Lemmas Require Wp Eval.
 
 (* the option monad *)
@@ -25,6 +26,11 @@ Definition rvalue (c : ValCat) : option unit :=
   match c with
   | Rvalue => Some tt
   | _ => None
+  end.
+Definition guard {P Q} (b : { P } + { Q }) : option unit :=
+  match b with
+  | left _ => Some tt
+  | right _ => None
   end.
 
 (* working in the option monad *)
@@ -58,6 +64,8 @@ Definition join {t} (a : option (option t)) : option t :=
   | _ => None
   end.
 
+Definition option_eq_dec {t} (H : forall (x y : t), { x = y } + { x <> y }) : forall (x y : option t), { x = y } + { x <> y }.
+Proof. decide equality. Defined.
 
 Section refl.
 
@@ -100,6 +108,96 @@ Section refl.
         ret (fun Q => Qe (fun v => Qes (fun vs => Q (cons v vs))))
       end.
   End wpes.
+
+  Definition wpuo (o : UnOp) (tye ty : type) : option (val -> (val -> mpred) -> mpred) :=
+    match o, tye, ty with
+    | Unot, Tbool, Tbool =>
+      ret (fun v Q => Exists b, [| v = Vbool b |] ** Q (Vbool (negb b)))
+    | Unot, _, _ => ret (fun _ _ => error "Unot needs a boolean argument and return")
+    | _, _, _ => ret (fun _ _ => lfalse)
+    end.
+
+  Definition int_arith_ops (o : BinOp) (w : nat) : option ((Z -> Z -> Prop) * (Z -> Z -> Z)) :=
+    match o with
+    | Badd => Some (fun _ _ => True, Z.add)
+    | Bsub => Some (fun _ _ => True, Z.sub)
+    | Bmul => Some (fun _ _ => True, Z.mul)
+    | Bdiv => Some (fun _ b => b <> 0, Z.div)
+    | Bmod => Some (fun _ b => b <> 0, Z.modulo)
+    | Bshl => Some (fun _ b => 0 <= b < Z.of_nat w, Z.shiftl)
+    | Bshr => Some (fun _ b => 0 <= b < Z.of_nat w, Z.shiftr)
+    | _ => None
+    end%Z.
+
+  Definition int_rel_ops (o : BinOp) : option (Z -> Z -> Z) :=
+    match o with
+    | Beq => Some (fun a b => if Z.eq_dec a b then 1 else 0)
+    | Bneq => Some (fun a b => if Z.eq_dec a b then 0 else 1)
+    | Blt => Some (fun a b => if ZArith_dec.Z_lt_ge_dec a b then 1 else 0)
+    | Bgt => Some (fun a b => if ZArith_dec.Z_gt_le_dec a b then 1 else 0)
+    | Ble => Some (fun a b => if ZArith_dec.Z_le_gt_dec a b then 1 else 0)
+    | Bge => Some (fun a b => if ZArith_dec.Z_ge_lt_dec a b then 1 else 0)
+    | _ => None
+    end%Z.
+
+  Definition wpbo (o : BinOp) (tyl tyr ty : type) : option (val -> val -> (val -> mpred) -> mpred) :=
+    match tyl, ty with
+    | Tint (Some w) _, Tint _ _ =>
+      match int_arith_ops o w with
+      | Some (cond, f) =>
+        guard (type_eq_dec tyl tyr) ;;
+        guard (type_eq_dec tyl ty) ;;
+        ret (fun v1 v2 Q =>
+               Exists i1, Exists i2,
+                 [| v1 = Vint i1 |] **
+                 [| v2 = Vint i2 |] **
+                 [| cond i1 i2 |] **
+                 [| has_type (Vint (f i1 i2)) ty |] **
+                 Q (Vint (f i1 i2)))
+      | None =>
+        match int_rel_ops o with
+        | Some f =>
+          guard (type_eq_dec tyl tyr) ;;
+          guard (type_eq_dec ty T_int) ;;
+          ret (fun v1 v2 Q =>
+                 Exists i1, Exists i2,
+                   [| v1 = Vint i1 |] **
+                   [| v2 = Vint i2 |] **
+                   Q (Vint (f i1 i2)))
+        | None => ret (fun _ _ _ => error "unrecognized arith op")
+        end
+      end
+    | Tint _ _, Tbool =>
+      match int_rel_ops o with
+      | Some f =>
+        guard (type_eq_dec tyl tyr) ;;
+        ret (fun v1 v2 Q =>
+               Exists i1, Exists i2,
+                 [| v1 = Vint i1 |] **
+                 [| v2 = Vint i2 |] **
+                 Q (Vint (f i1 i2)))
+      | None => ret (fun _ _ _ => error "unrecognized comparison op")
+      end
+    | Tpointer _, Tbool =>
+      match o with
+      | Beq =>
+        guard (type_eq_dec tyl tyr) ;;
+        ret (fun v1 v2 Q =>
+               Exists p1, Exists p2,
+                 [| v1 = Vptr p1 |] **
+                 [| v2 = Vptr p2 |] **
+                 Q (if ptr_eq_dec p1 p2 then Vint 1 else Vint 0))
+      | Bneq =>
+        guard (type_eq_dec tyl tyr) ;;
+        ret (fun v1 v2 Q =>
+               Exists p1, Exists p2,
+                 [| v1 = Vptr p1 |] **
+                 [| v2 = Vptr p2 |] **
+                 Q (if ptr_eq_dec p1 p2 then Vint 0 else Vint 1))
+      | _ => ret (fun _ _ _ => error "unrecognized pointer comparison op")
+      end
+    | _, _ => ret (fun _ _ _ => error "unrecognized binop")
+    end%Z.
 
   (* todo(gmm): convert `FreeTemps` into `option mpred` and eliminate redundant
    * `empSP`.
@@ -170,15 +268,17 @@ Section refl.
       let tl := drop_qualifiers (Typing.type_of lhs) in
       let tr := drop_qualifiers (Typing.type_of rhs) in
       let ty := drop_qualifiers ty in
+      Qo <- wpbo o tl tr ty ;;
       ret (fun Q => Ql (fun v1 free1 => Qr (fun v2 free2 =>
-            Eval.wp_eval_binop o tl tr ty v1 v2 (fun v' => Q v' (free1 ** free2)))))
+            Qo v1 v2 (fun v' => Q v' (free1 ** free2)))))
     | Eunop o e ty =>
       rvalue cat ;;
       Qe <- wpe Rvalue e ;;
       let te := drop_qualifiers (Typing.type_of e) in
       let ty := drop_qualifiers ty in
+      Qo <- wpuo o te ty ;;
       ret (fun Q => Qe (fun v free =>
-            Eval.wp_eval_unop o te ty v (fun v' => Q v' free)))
+            Qo v (fun v' => Q v' free)))
     | Ecast c e ty =>
       let ty := drop_qualifiers ty in
       match c with
@@ -193,6 +293,13 @@ Section refl.
           Exists v, (_at (_eq a) (tprim ty v) ** ltrue) //\\ Q v free))
         end
       | Cint2bool =>
+        rvalue cat ;;
+        wpe Rvalue e
+      | Cintegral =>
+        rvalue cat ;;
+        Qe <- wpe Rvalue e ;;
+        ret (fun Q => Qe (fun v free => [| has_type v ty |] ** Q v free))
+      | Cnull2ptr =>
         rvalue cat ;;
         wpe Rvalue e
       | _ => default
@@ -218,20 +325,21 @@ Section refl.
       rvalue cat ;;
       let ty := drop_qualifiers ty in
       let tye := drop_qualifiers (type_of e) in
+      Qo <- wpbo Badd tye tye ty ;;
       match e with
-      | Evar (Lname x) ty' =>
-        let ty' := drop_qualifiers ty' in
-        ret (fun Q => Exists la, Exists val, Exists val',
-                tlocal_at r x la (tprim ty val) **
-               [| eval_binop Badd tye tye ty val (Vint 1) val' |] **
-               (tlocal_at r x la (tprim ty val') -* Q la empSP))
+      | Evar (Lname x) _ =>
+        ret (fun Q => Exists la, Exists v,
+                tlocal_at r x la (tprim ty v) **
+                Qo v (Vint 1) (fun v' =>
+                  (tlocal_at r x la (tprim ty v') -* Q la empSP)))
       | _ =>
         Qe <- wpe Lvalue e ;;
-        ret (fun Q => Qe (fun a free => Exists v', Exists v'',
-              _at (_eq a) (tprim ty v') **
-              [| eval_binop Badd tye tye ty v' (Vint 1) v'' |] **
-              (_at (_eq a) (tprim ty v'') -* Q v' free)))
+        ret (fun Q => Qe (fun a free => Exists v,
+              _at (_eq a) (tprim ty v) **
+              Qo v (Vint 1) (fun v' =>
+                (_at (_eq a) (tprim ty v') -* Q a empSP))))
       end
+    | Enull => ret (fun Q => Q (Vptr nullptr) empSP)
     | _ => default
     end).
   Defined.
