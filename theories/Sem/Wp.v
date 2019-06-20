@@ -251,11 +251,3 @@ Axiom fspec_conseq:
   forall {resolve} (p : val) (vs : list val) ti (K m : val -> mpred),
     (forall r : val, m r |-- K r) ->
     fspec (resolve:=resolve) p vs ti m |-- fspec (resolve:=resolve) p vs ti K.
-
-Require Import Cpp.Sem.PLogic.
-
-(* remove from the stack *)
-Definition destroy {resolve} ti (parent : Dtor_type) (cls : globname) (v : val) (Q : mpred) : mpred :=
-  Exists da, _global (dtor_name parent cls) &~ da **
-                     |> fspec (resolve:=resolve) da (v :: nil) ti
-                     (fun _ => _at (_eq v) (tany (Tref cls)) ** Q).

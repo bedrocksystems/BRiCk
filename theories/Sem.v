@@ -9,6 +9,7 @@ From Cpp.Sem Require Export
      Semantics
      PLogic
      Wp
+     Destroy
      Expr
      Stmt
      Init

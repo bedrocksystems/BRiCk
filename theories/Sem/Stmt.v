@@ -12,7 +12,7 @@ From Coq Require Import
 
 From Cpp Require Import Ast.
 From Cpp.Sem Require Import
-        Util Semantics Logic PLogic Wp.
+        Util Semantics Logic PLogic Destroy Wp.
 
 Require Import Coq.ZArith.BinInt.
 Require Import Coq.micromega.Lia.

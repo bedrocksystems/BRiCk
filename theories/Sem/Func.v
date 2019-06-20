@@ -138,14 +138,15 @@ Module Type Func.
   }.
 
   (* this is the core definition that everything will be based on. *)
-  Definition cptr' {resolve} (p : val) ti (fs : function_spec') : mpred :=
-    Forall vs,
-    [| List.length vs = List.length fs.(fs'_arguments) |] -*
-    Forall Q, (fs.(fs'_spec) ti) vs Q -* fspec (resolve:=resolve) p vs ti Q.
+  Definition cptr' {resolve} ti (fs : function_spec') : Rep :=
+    {| repr p :=
+         Forall vs,
+         [| List.length vs = List.length fs.(fs'_arguments) |] -*
+         Forall Q, (fs.(fs'_spec) ti) vs Q -* fspec (resolve:=resolve) p vs ti Q |}.
 
   (* function specifications written in weakest pre-condition style.
    *
-   * the motivation for `function_spec'` is to avoid having to destruct things
+   * the motivation for `function_spec` is to avoid having to destruct things
    * repeatedly; however, they are more difficult to prove things about, so
    * it might be better to do this reasoning post-facto.
    *)
@@ -253,21 +254,19 @@ Module Type Func.
              (PQ : val -> arrowFrom val targs WithPrePost)
   : function_spec := TSMethod class qual ret targs (fun _ => PQ).
 
-  Lemma cptr_cptr' : forall ti p fs fs',
+  Lemma cptr_cptr' : forall ti fs fs',
       fs'.(fs'_arguments) = fs.(fs_arguments) ->
       fs'.(fs'_return) = fs.(fs_return) ->
       (forall Q vs,
           (fs'.(fs'_spec) ti) vs Q -|-
           applyEach fs.(fs_arguments) vs (fs.(fs_spec) ti) (fun k _ => k Q)) ->
-      _at (_eq p) (cptr (resolve:=resolve) ti fs) -|- cptr' (resolve:=resolve) p ti fs'.
+      cptr (resolve:=resolve) ti fs -|- cptr' (resolve:=resolve) ti fs'.
   Proof.
     unfold cptr'. intros.
     destruct fs, fs'. simpl in *. subst.
+    eapply Rep_equiv_ext_equiv. simpl; intros.
     setoid_rewrite H1; clear H1.
-    unfold cptr. simpl.
-    Transparent _at _eq. unfold _at, _eq. simpl. Opaque _at _eq.
-    rewrite lexists_known.
-    rewrite <- forallEach_primes with (Z:=fun a b => fspec p a ti b).
+    rewrite <- forallEach_primes with (Z:=fun a b => fspec x a ti b).
     reflexivity.
   Qed.
 
@@ -314,7 +313,8 @@ Module Type Func.
   : forall ti p r ts F F' vs (PQ : arrowFrom val ts WithPrePost) K,
       List.length vs = List.length ts ->
       F |-- applyEach ts vs PQ (fun wpp _ => WppD wpp) K ** F' ->
-      _at (_eq p) (cptr (resolve:=resolve) ti (SFunction r ts PQ)) ** F |-- fspec (resolve:=resolve) p vs ti K ** F'.
+      _at (_eq p) (cptr (resolve:=resolve) ti (SFunction r ts PQ)) ** F
+      |-- fspec (resolve:=resolve) p vs ti K ** F'.
   Proof.
     intros.
     rewrite cptr_cptr'.
@@ -325,7 +325,8 @@ Module Type Func.
          applyEach ts vs0 ((SFunction r ts PQ).(fs_spec) ti)
                    (fun (k : (val -> mpred) -> mpred) _ => k Q) |}).
     2,3,4: reflexivity.
-    unfold cptr. simpl.
+    Transparent _at _eq. unfold _at, _eq. simpl. Opaque _at _eq.
+    rewrite lexists_known.
     eapply sepSPAdj.
     eapply (lforallL vs).
     eapply wandSP_only_provableL; eauto.
