@@ -30,8 +30,8 @@ Qed.
 
 Theorem A_o_sound (resolve : _)
 : |-- denoteModule (module_link A_hpp.module A_cpp.module) -*
-      (Forall ti, cglob' (resolve:=resolve) A__foo ti A__foo_spec) **
-      (Forall ti, cglob' (resolve:=resolve) A__bar ti A__bar_spec).
+      (Forall ti, cglob (resolve:=resolve) A__foo ti A__foo_spec) **
+      (Forall ti, cglob (resolve:=resolve) A__bar ti A__bar_spec).
 Proof.
   eapply spec_lob.
   eapply wandSPAdj.

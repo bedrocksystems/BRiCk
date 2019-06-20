@@ -14,7 +14,7 @@ From Cpp Require Import
 
 Require RetRef.test_cpp.
 
-Definition get_ref_spec : function_spec' :=
+Definition get_ref_spec : function_spec :=
   SFunction (Qmut T_int) (Qmut (Tpointer (Qmut T_int)) :: nil)
       (fun x =>
          \with (m : val)
@@ -22,4 +22,4 @@ Definition get_ref_spec : function_spec' :=
          \post [ r ] [| r = x |] ** _at (_eq x) (tprim T_int m)).
 
 Definition test_cpp_spec (resolve : _) :=
-  ti_cglob' (resolve:=resolve) "_Z7get_refPi" get_ref_spec.
+  ti_cglob (resolve:=resolve) "_Z7get_refPi" get_ref_spec.

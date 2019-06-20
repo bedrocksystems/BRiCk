@@ -13,7 +13,7 @@ Require Import Cpp.Auto.
 Require Demo.A_hpp.
 
 Definition A__foo := "_ZN1A3fooEi".
-Definition A__foo_spec : function_spec' :=
+Definition A__foo_spec : function_spec :=
   SFunction (Qmut T_int) (Qmut T_int :: nil)
       (fun x =>
          \with (y : Z)
@@ -21,7 +21,7 @@ Definition A__foo_spec : function_spec' :=
          \post [r] [| r = Vint (y + 6)%Z |]).
 
 Definition A__bar := "_ZN1A3barEi".
-Definition A__bar_spec : function_spec' :=
+Definition A__bar_spec : function_spec :=
   SFunction (Qmut T_int) (Qmut T_int :: nil)
       (fun x =>
          \with (y : Z)
@@ -29,5 +29,5 @@ Definition A__bar_spec : function_spec' :=
          \post [r] [| r = Vint (y + 7)%Z |]).
 
 Definition A_hpp_spec (resolve : _) :=
-      (|> ti_cglob' (resolve:=resolve) A__foo A__foo_spec) -*
-          ti_cglob' (resolve:=resolve) A__bar A__bar_spec.
+      (|> ti_cglob (resolve:=resolve) A__foo A__foo_spec) -*
+          ti_cglob (resolve:=resolve) A__bar A__bar_spec.

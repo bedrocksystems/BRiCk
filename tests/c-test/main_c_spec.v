@@ -24,7 +24,7 @@ Variant PutStr : Type -> Type :=
 
 
 
-Definition putstr_spec : function_spec' :=
+Definition putstr_spec : function_spec :=
   SFunction (Qmut Tvoid) (Qmut (Tpointer (Qmut T_char)) :: nil)
             (fun p =>
                \with (s : string) (k : itree PutStr unit)
@@ -38,13 +38,13 @@ Fixpoint printEach (ls : list string) : itree PutStr unit :=
   | l :: ls => Vis (putstr l) (fun _ => printEach ls)
   end.
 
-Definition main_spec : function_spec' :=
+Definition main_spec : function_spec :=
   main.main_spec (fun m =>
                     \pre trace (printEach m)
                     \post @trace PutStr (Ret tt)).
 
 Definition spec (resolve : _) :=
-  ti_cglob' (resolve:=resolve) "putstr" putstr_spec -*
-  ti_cglob' (resolve:=resolve) "main" main_spec.
+  ti_cglob (resolve:=resolve) "putstr" putstr_spec -*
+  ti_cglob (resolve:=resolve) "main" main_spec.
 
 Export lib.array lib.trace.

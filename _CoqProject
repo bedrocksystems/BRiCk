@@ -16,6 +16,8 @@ theories/Sem/Typing.v
 theories/Sem/Wp.v
 theories/Sem/Expr.v
 theories/Sem/Stmt.v
+theories/Sem/Init.v
+theories/Sem/Deinit.v
 theories/Sem/Func.v
 theories/Sem/Modules.v
 theories/Sem/Linking.v

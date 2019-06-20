@@ -11,6 +11,8 @@ From Cpp.Sem Require Export
      Wp
      Expr
      Stmt
+     Init
+     Deinit
      Func
      Modules
      Linking

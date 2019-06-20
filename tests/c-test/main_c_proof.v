@@ -107,7 +107,7 @@ Proof.
      * todo(gmm): i need to clean this up a lot!
      *)
     transitivity (
-  ti_cglob' (resolve:=resolve) "putstr" putstr_spec **
+  ti_cglob (resolve:=resolve) "putstr" putstr_spec **
   (tlocal_at ρ "argc" a (tprim (Tint (Some int_bits) true) vv) **
    tlocal_at ρ "argv" a0
      (tprim (Tpointer (Qmut (Tpointer (Qmut (Tchar (Some 8%nat) true))))) x0)) **
