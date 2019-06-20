@@ -14,7 +14,7 @@ Require Import Coq.Strings.String.
 From Cpp Require Import
      Ast.
 From Cpp.Sem Require Import
-     Util Logic Semantics PLogic Wp Typing.
+     Util Logic Semantics PLogic Destroy Wp Typing.
 
 Require Import Coq.ZArith.BinInt.
 Require Import Coq.micromega.Lia.

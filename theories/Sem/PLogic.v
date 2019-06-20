@@ -70,6 +70,13 @@ Proof.
   { simpl; intros. split; simpl; intros; eapply empSPR; eauto. }
 Qed.
 
+Lemma Rep_equiv_ext_equiv : forall P Q : Rep,
+    (forall x, P.(repr) x -|- Q.(repr) x) ->
+    P -|- Q.
+Proof.
+  split; red; simpl; eapply H.
+Qed.
+
 
 (* locations are predicates over a location and are used to do address
  * arithmetic.
