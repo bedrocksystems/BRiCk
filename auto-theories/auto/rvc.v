@@ -256,9 +256,9 @@ Section refl.
   : option (forall (Q : val -> FreeTemps -> mpred), mpred) :=
     let default :=
       match cat with
-      | Rvalue => ret (wp_rhs (resolve:=resolve) ti r e)
-      | Lvalue => ret (wp_lhs (resolve:=resolve) ti r e)
-      | Xvalue => ret (wp_lhs (resolve:=resolve) ti r e)
+      | Rvalue => wp_rhs (resolve:=resolve) ti r e
+      | Lvalue => wp_lhs (resolve:=resolve) ti r e
+      | Xvalue => wp_lhs (resolve:=resolve) ti r e
       end
     in
     match e with
@@ -347,7 +347,7 @@ Section refl.
       | Cnull2ptr =>
         rvalue cat ;;
         wpe Rvalue e
-      | _ => default
+      | _ => ret default
       end
     | Eassign l rhs ty =>
       lvalue cat ;;
@@ -388,21 +388,27 @@ Section refl.
     | Ecall (Ecast Cfunction2pointer (Evar (Gname f) _) _) es _ =>
       rvalue cat ;;
       Qes <- wpes (wpAnys' wpe) es ;;
-      fs <- fmap snd (find (fun '(f', _) => if string_dec f f' then true else false) specs) ;;
-      ret (fun Q =>
-             Qes (fun vs free =>
-               applyEach (fs_arguments fs) vs (fs_spec fs ti) (fun Qf _ =>
-                 Qf (fun r => Q r free))) empSP)
+      ret (match find (fun '(f', _) => if string_dec f f' then true else false) specs with
+           | Some (_, fs) =>
+             fun Q =>
+               Qes (fun vs free =>
+                 applyEach (fs_arguments fs) vs (fs_spec fs ti) (fun Qf _ =>
+                   Qf (fun r => Q r free))) empSP
+           | None => default
+           end)
     | Emember_call false gn obj es ty =>
       rvalue cat ;;
       Qo <- wpe Lvalue obj ;;
       Qes <- wpes (wpAnys' wpe) es ;;
-      fs <- fmap snd (find (fun '(f', _) => if string_dec gn f' then true else false) specs) ;;
-      ret (fun Q =>
-             Qo (fun this => Qes (fun vs free =>
-               applyEach (fs_arguments fs) (this :: vs) (fs_spec fs ti) (fun Qf _ =>
-                 Qf (fun r => Q r free)))))
-    | _ => default
+      ret (match find (fun '(f', _) => if string_dec gn f' then true else false) specs with
+           | Some (_, fs) =>
+             fun Q =>
+               Qo (fun this => Qes (fun vs free =>
+                 applyEach (fs_arguments fs) (this :: vs) (fs_spec fs ti) (fun Qf _ =>
+                   Qf (fun r => Q r free))))
+           | None => default
+           end)
+    | _ => ret default
     end.
 
   Definition specs_reqs :=
