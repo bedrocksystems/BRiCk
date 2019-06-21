@@ -231,6 +231,13 @@ Module Type Expr.
         wp_rhs e Q
         |-- wp_rhs (Ecast (Cuser Z) e ty) Q.
 
+    Axiom wp_lhs_static_cast : forall from to e ty Q,
+      wp_lhs e (fun addr free => Exists addr',
+                  (_offsetL (_super from to) (_eq addr) &~ addr' //\\ ltrue) **
+                          (* ^ this is a down-cast *)
+                  Q addr' free)
+      |-- wp_lhs (Ecast (Cstatic from to) e ty) Q.
+
     (** the ternary operator `_ ? _ : _` *)
     Axiom wp_condition : forall ty m tst th el Q,
         wp_rhs tst (fun v1 free =>

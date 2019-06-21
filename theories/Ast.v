@@ -121,14 +121,15 @@ Variant PrimCast : Set :=
 | Cnull2ptr
 | Cbuiltin2function
 | Cconstructorconversion
+| C2void
 .
 
 Variant Cast : Set :=
-| CCcast (_ : PrimCast)
-| Cuser (conversion_function : globname)
+| CCcast       (_ : PrimCast)
+| Cuser        (conversion_function : globname)
 | Creinterpret (_ : type)
-| Cstatic      (_ : type)
-| Cdynamic     (_ : type)
+| Cstatic      (from to : globname)
+| Cdynamic     (from to : globname)
 | Cconst       (_ : type)
 .
 

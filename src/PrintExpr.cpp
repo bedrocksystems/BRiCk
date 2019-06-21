@@ -286,19 +286,42 @@ public:
     print.ctor("Ecast");
     if (isa<CXXReinterpretCastExpr>(expr)) {
       print.ctor("Creinterpret", false);
+      cprint.printQualType(expr->getType(), print);
+      print.end_ctor();
     } else if (isa<CXXConstCastExpr>(expr)) {
       print.ctor("Cconst", false);
+      cprint.printQualType(expr->getType(), print);
+      print.end_ctor();
     } else if (isa<CXXStaticCastExpr>(expr)) {
-      print.ctor("Cstatic", false);
+      auto from = expr->getSubExpr()->getType().getTypePtr()->getPointeeCXXRecordDecl();
+      auto to = expr->getType().getTypePtr()->getPointeeCXXRecordDecl();
+      if (from && to) {
+        print.ctor("Cstatic", false);
+        cprint.printGlobalName(from, print);
+        print.output() << fmt::nbsp;
+        cprint.printGlobalName(to, print);
+        print.end_ctor();
+      } else {
+        print.output() << "Cbad";
+      }
     } else if (isa<CXXDynamicCastExpr>(expr)) {
-      print.ctor("Cdynamic", false);
+      auto from = expr->getSubExpr()->getType().getTypePtr()->getPointeeCXXRecordDecl();
+      auto to = expr->getType().getTypePtr()->getPointeeCXXRecordDecl();
+      if (from && to) {
+        print.ctor("Cdynamic", false);
+        cprint.printGlobalName(from, print);
+        print.output() << fmt::nbsp;
+        cprint.printGlobalName(to, print);
+        print.end_ctor();
+      } else {
+        print.output() << "Cbad";
+      }
     } else {
       print.error() << "unknown named cast\n";
       llvm::errs().flush();
       assert(false);
     }
-    cprint.printQualType(expr->getType(), print);
-    print.end_ctor() << fmt::nbsp;
+    print.output() << fmt::nbsp;
 
     cprint.printExpr(expr->getSubExpr(), print);
     done(expr, print, cprint);
