@@ -377,6 +377,28 @@ Section refl.
                 _at (_eq la) (tany ty) **
                (_at (_eq la) (tprim ty rv) -* Q la (free1 ** free2)))))
       end
+    | Eassign_op o lhs rhs ty =>
+      lvalue cat ;;
+      let tyl := drop_qualifiers (type_of lhs) in
+      let tyr := drop_qualifiers (type_of rhs) in
+      let ty := drop_qualifiers ty in
+      Qr <- wpe Rvalue rhs ;;
+      Qo <- wpbo o tyl tyr ty ;;
+      match lhs with
+      | Evar (Lname x) ty' =>
+        let ty' := drop_qualifiers ty' in
+        (* note(gmm): this is a common case that has a simpler rule. *)
+        ret (fun Q => Qr (fun rv free => Exists la, Exists lv,
+                tlocal_at r x la (tprim ty' lv) **
+                Qo lv rv (fun v' =>
+                  (tlocal_at r x la (tprim ty' v') -* Q la free))))
+      | _ =>
+        Ql <- wpe Lvalue lhs ;;
+        ret (fun Q => Ql (fun la free1 =>  Qr (fun rv free2 => Exists lv,
+                _at (_eq la) (tprim ty lv) **
+                Qo lv rv (fun v' =>
+                            (_at (_eq la) (tprim ty v') -* Q la (free1 ** free2))))))
+      end
     | Epostinc e ty =>
       rvalue cat ;;
       let ty := drop_qualifiers ty in
