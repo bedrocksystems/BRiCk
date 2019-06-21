@@ -70,10 +70,10 @@ Proof. Admitted.
 
 
 Theorem wp_call_glob : forall resolve ti ρ f ret ts es K PQ F F' ty ty' ty'',
-   F |-- (|> cglob' (resolve:=resolve) f ti (SFunction ret ts PQ)) ** ltrue ->
+   F |-- (|> cglob (resolve:=resolve) f ti (SFunction ret ts PQ)) ** ltrue ->
    F
    |-- wps (wpAnys (resolve:=resolve) ti ρ) es (fun vs free => applyEach ts vs PQ (fun wpp _ =>
-            WppD wpp.(wpp_pre) wpp.(wpp_post) (fun r => K r free))) empSP ** F' ->
+            WppD wpp (fun r => K r free))) empSP ** F' ->
    F
    |-- wp_rhs (resolve:=resolve) ti ρ
          (Ecall (Ecast Cfunction2pointer (Evar (Gname f) ty) ty') es ty'')
@@ -86,24 +86,24 @@ Lemma wp_member_call_glob:
     (ts : list type) es (K : val -> FreeTemps -> mpred)
     (PQ : val -> arrowFrom val ts WithPrePost) (F F' : mpred)
     cls q,
-    F |-- (|> cglob' (resolve:=resolve) gn ti (SMethod cls q ret ts PQ)) ** ltrue ->
+    F |-- (|> cglob (resolve:=resolve) gn ti (SMethod cls q ret ts PQ)) ** ltrue ->
     F
     |-- wp_lhs (resolve:=resolve) ti ρ this (fun this =>
           wps (wpAnys (resolve:=resolve) ti ρ) es (fun (vs : list val) free =>
             applyEach ts vs (PQ this) (fun wpp _ =>
-              WppD wpp.(wpp_pre) wpp.(wpp_post) (fun r => K r free)))) ** F' ->
+              WppD wpp (fun r => K r free)))) ** F' ->
     F
     |-- wp_rhs (resolve:=resolve) ti ρ (Emember_call false gn this es ty) K ** F'.
 Proof. Admitted.
 
 Theorem wp_constructor_glob : forall resolve ti ρ cname cls ts es K PQ F F' ty,
-   F |-- (|> cglob' (resolve:=resolve) cname ti (SConstructor cls ts PQ)) ** ltrue ->
+   F |-- (|> cglob (resolve:=resolve) cname ti (SConstructor cls ts PQ)) ** ltrue ->
    F
    |-- wps (wpAnys (resolve:=resolve) ti ρ) es (fun vs free =>
              (* note(gmm): this is cancelling the `uninitialized_ty`
               * which is inserted into the pre-condition by `SConstructor` *)
              Forall a, applyEach ts vs (PQ a) (fun wpp _ =>
-               WppD wpp.(wpp_pre) wpp.(wpp_post) (fun _ => K a free))) empSP ** F' ->
+               WppD wpp (fun _ => K a free))) empSP ** F' ->
    F
    |-- wp_rhs (resolve:=resolve) ti ρ
          (Econstructor cname es ty)
@@ -115,7 +115,7 @@ Proof.
       rewrite <- wp_call.
       rewrite <- wp_rhs_cast_function2pointer.
       simplify_wp.
-      unfold cglob'.
+      unfold cglob.
       discharge ltac:(canceler fail eauto) eauto.
       rewrite wps_frame.
       rewrite sepSPC.
@@ -133,17 +133,17 @@ Admitted.
 
 Theorem wp_decl_class
 : forall resolve ti ρ x ty es cls cname (k : Kpreds -> mpred) ts PQ F F' Q dname PQ',
-    F |-- (|> cglob' (resolve:=resolve) cname ti (SConstructor cls ts PQ)) ** ltrue ->
-    F |-- (|> cglob' (resolve:=resolve) dname ti (SDestructor cls PQ')) ** ltrue ->
+    F |-- (|> cglob (resolve:=resolve) cname ti (SConstructor cls ts PQ)) ** ltrue ->
+    F |-- (|> cglob (resolve:=resolve) dname ti (SDestructor cls PQ')) ** ltrue ->
     F
     |-- wps (wpAnys (resolve:=resolve) ti ρ) es (fun vs free =>
              (* note(gmm): this is cancelling the `uninitialized_ty`
               * which is inserted into the pre-condition by `SConstructor` *)
              Forall a, applyEach ts vs (PQ a) (fun wpp _ =>
-               WppD wpp.(wpp_pre) wpp.(wpp_post)
+               WppD wpp
                     (fun _ => free ** (_local ρ x &~ a -* k (Kat_exit (fun Q' =>
                        let wpp := PQ' a in
-                       WppD wpp.(wpp_pre) wpp.(wpp_post)
+                       WppD wpp
                             (fun _ =>
                                (* note(gmm): this is canceling the dead memory
                                 * that is inserted by `SDestructor` *)
@@ -155,10 +155,10 @@ Proof. Admitted.
 
 Theorem wp_destroy
 : forall resolve ti this cls F F' Q PQ' dt,
-    F |-- (|> cglob' (resolve:=resolve) (dtor_name dt cls) ti (SDestructor cls PQ')) ** ltrue ->
+    F |-- (|> cglob (resolve:=resolve) (dtor_name dt cls) ti (SDestructor cls PQ')) ** ltrue ->
     F
     |-- (let wpp := PQ' this in
-         WppD wpp.(wpp_pre) wpp.(wpp_post)
+         WppD wpp
               (fun _ => Q) ** F') ->
     F
     |-- destroy (resolve:=resolve) ti dt cls this Q ** F'.

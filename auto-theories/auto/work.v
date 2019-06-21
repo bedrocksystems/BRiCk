@@ -38,22 +38,22 @@ Ltac find_left tac :=
 
 (* this tactic solves goals of the form
  *
- *   F |-- |> cglob' f ti s ** ltrue
+ *   F |-- |> cglob f ti s ** ltrue
  *
  * which arise from various forms of calls.
  *)
 Ltac find_spec :=
   let try_this_one :=
-      first [ simple eapply auto.Lemmas.Functions.cglob'_by_cglob'_gen;
+      first [ simple eapply auto.Lemmas.Functions.cglob_by_cglob_gen;
               solve [ reflexivity
                     | eapply (@Lemmas.Functions.unify_SFunction _ _ _ _ _ _ eq_refl eq_refl eq_refl) ]
-            | simple eapply Lemmas.Functions.cglob'_by_ti_cglob'_gen;
+            | simple eapply Lemmas.Functions.cglob_by_ti_cglob_gen;
               solve [ reflexivity
                     | eapply (@Lemmas.Functions.unify_SFunction _ _ _ _ _ _ eq_refl eq_refl eq_refl) ]
-            | simple eapply Lemmas.Functions.cglob'_by_later_cglob'_gen;
+            | simple eapply Lemmas.Functions.cglob_by_later_cglob_gen;
               solve [ reflexivity
                     | eapply (@Lemmas.Functions.unify_SFunction _ _ _ _ _ _ eq_refl eq_refl eq_refl) ]
-            | simple eapply Lemmas.Functions.cglob'_by_later_ti_cglob'_gen;
+            | simple eapply Lemmas.Functions.cglob_by_later_ti_cglob_gen;
               solve [ reflexivity
                     | eapply (@Lemmas.Functions.unify_SFunction _ _ _ _ _ _ eq_refl eq_refl eq_refl) ]
             ]
@@ -198,8 +198,8 @@ Ltac work_ctac :=
                | simple eapply tlocal_at_tlocal_at; [ solve [ work_rep_tac ] | ]
                | simple eapply Lemmas.PLogic._local_tlocal
                | simple eapply Lemmas.PLogic._local_tlocal_at
-               | simple eapply Lemmas.Functions.ti_cglob'_cglob'_cancel
-               | simple eapply Lemmas.Functions.ti_cglob'_later_cglob'_cancel
+               | simple eapply Lemmas.Functions.ti_cglob_cglob_cancel
+               | simple eapply Lemmas.Functions.ti_cglob_later_cglob_cancel
                | simple eapply Lemmas.Util.cancel_with_later
                | lazymatch goal with
                  | |- @lforall _ _ _ _ ** _ |-- _ =>

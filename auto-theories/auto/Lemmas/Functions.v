@@ -9,25 +9,25 @@ From Cpp.Auto Require Import
      Definitions.
 
 (* ways to find function specifications *)
-Lemma cglob'_by_cglob'_gen : forall resolve g ti s s' P,
+Lemma cglob_by_cglob_gen : forall resolve g ti s s' P,
     s = s' ->
-    cglob' (resolve:=resolve) g ti s ** P
-    |-- (|> cglob' (resolve:=resolve) g ti s') ** ltrue.
+    cglob (resolve:=resolve) g ti s ** P
+    |-- (|> cglob (resolve:=resolve) g ti s') ** ltrue.
 Proof. Admitted.
-Lemma cglob'_by_ti_cglob'_gen : forall resolve g ti s s' P,
+Lemma cglob_by_ti_cglob_gen : forall resolve g ti s s' P,
     s = s' ->
-    ti_cglob' (resolve:=resolve) g s ** P
-    |-- (|> cglob' (resolve:=resolve) g ti s') ** ltrue.
+    ti_cglob (resolve:=resolve) g s ** P
+    |-- (|> cglob (resolve:=resolve) g ti s') ** ltrue.
 Proof. Admitted.
-Lemma cglob'_by_later_cglob'_gen : forall resolve g ti s s' P,
+Lemma cglob_by_later_cglob_gen : forall resolve g ti s s' P,
     s = s' ->
-    (|> cglob' (resolve:=resolve) g ti s) ** P
-    |-- (|> cglob' (resolve:=resolve) g ti s') ** ltrue.
+    (|> cglob (resolve:=resolve) g ti s) ** P
+    |-- (|> cglob (resolve:=resolve) g ti s') ** ltrue.
 Proof. Admitted.
-Lemma cglob'_by_later_ti_cglob'_gen : forall resolve g ti s s' P,
+Lemma cglob_by_later_ti_cglob_gen : forall resolve g ti s s' P,
     s = s' ->
-    (|> ti_cglob' (resolve:=resolve) g s) ** P
-    |-- (|> cglob' (resolve:=resolve) g ti s') ** ltrue.
+    (|> ti_cglob (resolve:=resolve) g s) ** P
+    |-- (|> cglob (resolve:=resolve) g ti s') ** ltrue.
 Proof. Admitted.
 Lemma unify_SFunction : forall a b c a' b' c',
     a = a' ->
@@ -36,30 +36,30 @@ Lemma unify_SFunction : forall a b c a' b' c',
     SFunction a b c = SFunction a' b' c'.
 Proof. intros; subst. reflexivity. Qed.
 
-Lemma ti_cglob'_cglob' : forall resolve g ti s,
-    ti_cglob' (resolve:=resolve) g s |-- cglob' (resolve:=resolve) g ti s.
+Lemma ti_cglob_cglob : forall resolve g ti s,
+    ti_cglob (resolve:=resolve) g s |-- cglob (resolve:=resolve) g ti s.
 Proof.
   intros.
   eapply lforallL. reflexivity.
 Qed.
 
-Lemma ti_cglob'_cglob'_sepSP :
+Lemma ti_cglob_cglob_sepSP :
   forall (resolve : genv) (g : globname) (ti : thread_info)
-    (s : function_spec') P Q,
-    cglob' (resolve:=resolve) g ti s ** P |-- Q ->
-    ti_cglob' (resolve:=resolve) g s ** P |-- Q.
-Proof. intros. rewrite ti_cglob'_cglob'. eassumption. Qed.
+    (s : function_spec) P Q,
+    cglob (resolve:=resolve) g ti s ** P |-- Q ->
+    ti_cglob (resolve:=resolve) g s ** P |-- Q.
+Proof. intros. rewrite ti_cglob_cglob. eassumption. Qed.
 
-Lemma ti_cglob'_cglob'_cancel :
+Lemma ti_cglob_cglob_cancel :
   forall (resolve : genv) (g : globname) (ti : thread_info)
-    (s : function_spec') P Q,
-    ti_cglob' (resolve:=resolve) g s ** P |-- Q ->
-    ti_cglob' (resolve:=resolve) g s ** P |-- cglob' (resolve:=resolve) g ti s ** Q.
+    (s : function_spec) P Q,
+    ti_cglob (resolve:=resolve) g s ** P |-- Q ->
+    ti_cglob (resolve:=resolve) g s ** P |-- cglob (resolve:=resolve) g ti s ** Q.
 Proof. intros. rewrite <- H. Admitted.
 
-Lemma ti_cglob'_later_cglob'_cancel :
+Lemma ti_cglob_later_cglob_cancel :
   forall (resolve : genv) (g : globname) (ti : thread_info)
-    (s : function_spec') P Q,
-    ti_cglob' (resolve:=resolve) g s ** P |-- Q ->
-    ti_cglob' (resolve:=resolve) g s ** P |-- (|> cglob' (resolve:=resolve) g ti s) ** Q.
+    (s : function_spec) P Q,
+    ti_cglob (resolve:=resolve) g s ** P |-- Q ->
+    ti_cglob (resolve:=resolve) g s ** P |-- (|> cglob (resolve:=resolve) g ti s) ** Q.
 Proof. intros. rewrite <- H. Admitted.
