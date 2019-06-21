@@ -35,7 +35,7 @@ Parameter is_true : val -> bool.
 Axiom is_true_int : forall i,
     is_true (Vint i) = negb (BinIntDef.Z.eqb i 0).
 
-
+Axiom Vptr_inj : forall p1 p2, Vptr p1 = Vptr p2 -> p1 = p2.
 Axiom Vint_inj : forall a b, Vint a = Vint b -> a = b.
 
 (* this is the stack frame *)
