@@ -788,4 +788,5 @@ Ltac simplifying :=
      first [ rewrite <- wp_sound with (specs := s) by (simpl; reflexivity)
            | rewrite <- wp_ctor_sound with (specs:=s) by (simpl; reflexivity)
            | rewrite <- wp_dtor_sound with (specs:=s) by (simpl; reflexivity)
+             (* todo(jmgrosen): support rvc.simplifying wp_lhs and wp_rhs *)
            ]); cbn).
