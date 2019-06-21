@@ -12,7 +12,7 @@ From Cpp Require Import
 From Cpp.Sem Require Import
      Util Logic Semantics Typing.
 From Cpp.Auto Require Import
-     Lemmas.
+     Definitions Lemmas.
 From Cpp Require Auto.vc.
 From bedrock.auto.Lemmas Require Wp Eval.
 
@@ -67,9 +67,11 @@ Definition join {t} (a : option (option t)) : option t :=
 Definition option_eq_dec {t} (H : forall (x y : t), { x = y } + { x <> y }) : forall (x y : option t), { x = y } + { x <> y }.
 Proof. decide equality. Defined.
 
+Definition function_specs := list (globname * function_spec).
+
 Section refl.
 
-  Variable (resolve : genv) (ti : thread_info) (r : region).
+  Variable (resolve : genv) (ti : thread_info) (r : region) (specs : function_specs).
 
   Local Notation "[! P !]" := (embed P).
 
@@ -87,13 +89,18 @@ Section refl.
     | _ => Some false
     end%bool.
 
-  Definition unsupported (e : Expr) : mpred.
-    exact lfalse.
-  Qed.
+  Definition unsupported (e : Expr) : mpred := lfalse.
+  Definition error (e : string) : mpred := lfalse.
 
-  Definition error (e : string) : mpred.
-    exact lfalse.
-  Qed.
+  Lemma unsupported_defn : forall e,
+      unsupported e -|- lfalse.
+  Proof. reflexivity. Qed.
+
+  Lemma error_defn : forall s,
+      error s -|- lfalse.
+  Proof. reflexivity. Qed.
+
+  Global Opaque unsupported error.
 
   Section wpes.
     Context {T U V : Type}.
@@ -114,7 +121,7 @@ Section refl.
     | Unot, Tbool, Tbool =>
       ret (fun v Q => Exists b, [| v = Vbool b |] ** Q (Vbool (negb b)))
     | Unot, _, _ => ret (fun _ _ => error "Unot needs a boolean argument and return")
-    | _, _, _ => ret (fun _ _ => lfalse)
+    | _, _, _ => ret (fun _ _ => error "unrecognized unop")
     end.
 
   Definition int_arith_ops (o : BinOp) (w : nat) : option ((Z -> Z -> Prop) * (Z -> Z -> Z)) :=
@@ -186,18 +193,57 @@ Section refl.
                Exists p1, Exists p2,
                  [| v1 = Vptr p1 |] **
                  [| v2 = Vptr p2 |] **
-                 Q (if ptr_eq_dec p1 p2 then Vint 1 else Vint 0))
+                 Q (Vint (if ptr_eq_dec p1 p2 then 1 else 0)))
       | Bneq =>
         guard (type_eq_dec tyl tyr) ;;
         ret (fun v1 v2 Q =>
                Exists p1, Exists p2,
                  [| v1 = Vptr p1 |] **
                  [| v2 = Vptr p2 |] **
-                 Q (if ptr_eq_dec p1 p2 then Vint 0 else Vint 1))
+                 Q (Vint (if ptr_eq_dec p1 p2 then 0 else 1)))
       | _ => ret (fun _ _ _ => error "unrecognized pointer comparison op")
       end
     | _, _ => ret (fun _ _ _ => error "unrecognized binop")
     end%Z.
+
+  Local Ltac foo :=
+    match goal with
+    | H : Some _ = Some _ |- _ => inversion H; clear H; subst
+    | _ : None = Some _ |- _ => discriminate
+    end.
+
+  Lemma wpbo_sound : forall o tyl tyr ty v1 v2 Q K,
+      wpbo o tyl tyr ty = Some Q ->
+      Q v1 v2 K |-- Eval.wp_eval_binop o tyl tyr ty v1 v2 K.
+  Proof.
+    Opaque type_eq_dec.
+    destruct tyl, ty; cbn.
+    all: intros.
+    all: cbv [ret] in H.
+    all: try foo.
+    all: try (rewrite error_defn; apply lfalseL).
+    all: repeat match goal with
+                | H : context[match ?e with | _ => _ end] |- _ => destruct e; cbn in H
+                end.
+    all: try foo.
+    all: try (rewrite error_defn; apply lfalseL).
+    all: repeat (destruct type_eq_dec; subst).
+    all: cbn in *.
+    all: try foo.
+    all: rewrite Eval.wp_eval_binop_defn.
+    all: vc.work.
+    all: subst.
+    all: apply embedPropR.
+    all: try match goal with
+             | H : Tint _ _ = Tint _ _ |- _ => inversion H; clear H; subst
+             end.
+    all: admit.
+  Admitted.
+
+  Definition wpAnys' (wpe' : ValCat -> Expr -> option ((val -> FreeTemps -> mpred) -> mpred)) (ve : ValCat * Expr)
+    : option ((val -> FreeTemps -> mpred) -> FreeTemps -> mpred) :=
+       Qe <- wpe' (fst ve) (snd ve) ;;
+       ret (fun Q free => Qe (fun v f => Q v (f ** free))).
 
   (* todo(gmm): convert `FreeTemps` into `option mpred` and eliminate redundant
    * `empSP`.
@@ -207,9 +253,8 @@ Section refl.
    *)
   Fixpoint wpe (cat : ValCat) (e : Expr)
            {struct e}
-  : option (forall (Q : val -> FreeTemps -> mpred), mpred).
-  refine
-    (let default :=
+  : option (forall (Q : val -> FreeTemps -> mpred), mpred) :=
+    let default :=
       match cat with
       | Rvalue => ret (wp_rhs (resolve:=resolve) ti r e)
       | Lvalue => ret (wp_lhs (resolve:=resolve) ti r e)
@@ -229,7 +274,7 @@ Section refl.
       ret (fun Q =>
              match is_const_int ty n with
              | None => [! has_type (Vint n) ty !] //\\ Q (Vint n) empSP
-             | Some false => lfalse
+             | Some false => error "is_const_int ty n = Some false"
              | Some true => Q (Vint n) empSP
              end)
     | Ebool b =>
@@ -340,17 +385,53 @@ Section refl.
                 (_at (_eq a) (tprim ty v') -* Q a empSP))))
       end
     | Enull => ret (fun Q => Q (Vptr nullptr) empSP)
+    | Ecall (Ecast Cfunction2pointer (Evar (Gname f) _) _) es _ =>
+      rvalue cat ;;
+      Qes <- wpes (wpAnys' wpe) es ;;
+      fs <- fmap snd (find (fun '(f', _) => if string_dec f f' then true else false) specs) ;;
+      ret (fun Q =>
+             Qes (fun vs free =>
+               applyEach (fs_arguments fs) vs (fs_spec fs ti) (fun Qf _ =>
+                 Qf (fun r => Q r free))) empSP)
+    | Emember_call false gn obj es ty =>
+      rvalue cat ;;
+      Qo <- wpe Lvalue obj ;;
+      Qes <- wpes (wpAnys' wpe) es ;;
+      fs <- fmap snd (find (fun '(f', _) => if string_dec gn f' then true else false) specs) ;;
+      ret (fun Q =>
+             Qo (fun this => Qes (fun vs free =>
+               applyEach (fs_arguments fs) (this :: vs) (fs_spec fs ti) (fun Qf _ =>
+                 Qf (fun r => Q r free)))))
     | _ => default
-    end).
-  Defined.
+    end.
+
+  Definition specs_reqs :=
+    map (fun '(f, fs) => |> cglob (resolve:=resolve) f ti fs) specs.
 
   Theorem wpe_sound : forall e vc K Q,
       wpe vc e = Some Q ->
-      Q K |-- @Wp.wpe resolve ti r vc e K.
+      sepSPs specs_reqs ** Q K |-- @Wp.wpe resolve ti r vc e K.
   Proof.
-    induction e; simpl; intros.
+    (* induction e; *)
+    (*   cbn; *)
+    (*   destruct vc; *)
+    (*   cbv [ret]; *)
+    (*   intros; *)
+    (*   try solve [ foo; cbn; reflexivity ]. *)
+    (* all: try match goal with *)
+    (*          | H : context[match ?e with | _ => _ end] |- _ => *)
+    (*            destruct e; cbn in H *)
+    (*          end. *)
+    (* all: try foo; cbn. *)
+    (* all: try vc.simplifying. *)
+    (* all: try reflexivity. *)
+    (* all: cbn in *. *)
+    (* all: try foo; cbn. *)
+    (* all: try match goal with *)
+    (*          | H : context[match ?e with | _ => _ end] |- _ => *)
+    (*            destruct e; cbn in H *)
+    (*          end. *)
   Admitted.
-
 
   Section block.
     Variable wp : forall (s : Stmt), option (Kpreds -> mpred).
@@ -400,7 +481,7 @@ Section refl.
                  (tlocal r x (tprim ty v)
               -* (free ** k (Kfree (tlocal r x (tany ty)) Q)))))
         end
-      | Tarray _ _ => lfalse (* todo(gmm): arrays not yet supported *)
+      | Tarray _ _ => ret (fun _ _ => error "arrays unsupported") (* todo(gmm): arrays not yet supported *)
       | Tref gn =>
         match init with
         | Some (Econstructor cnd es _) =>
@@ -505,10 +586,24 @@ Section refl.
 
   Theorem wp_sound : forall s K Q,
       wp s = Some Q ->
-      Q K |-- @Wp.wp resolve ti r s K.
+      sepSPs specs_reqs ** Q K |-- @Wp.wp resolve ti r s K.
   Proof. Admitted.
 
 End refl.
 
+Ltac with_specs' c specs k :=
+  match c with
+  | ?l ** ?r =>
+    with_specs' l specs ltac:(fun specs' => with_specs' r specs' k)
+  | ti_cglob ?f ?spec => k constr:((f, spec) :: specs)
+  | cglob ?f _ ?spec => k constr:((f, spec) :: specs)
+  | _ => k specs
+  end.
+
+Ltac with_specs k :=
+  match goal with
+  | |- ?l |-- _ => with_specs' l constr:(@nil (globname * function_spec)) k
+  end.
+
 Ltac simplifying :=
-  progress (rewrite <- wp_sound by (simpl; reflexivity); simpl).
+  progress (with_specs ltac:(fun s => rewrite <- wp_sound with (specs := s) by (simpl; reflexivity)); cbn).
