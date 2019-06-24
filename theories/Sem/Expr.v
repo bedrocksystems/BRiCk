@@ -14,7 +14,7 @@ Require Import Coq.Strings.String.
 From Cpp Require Import
      Ast.
 From Cpp.Sem Require Import
-     Util Logic Semantics PLogic Destroy Wp Typing.
+     Util Logic Semantics PLogic Destroy Wp.
 
 Require Import Coq.ZArith.BinInt.
 Require Import Coq.micromega.Lia.
@@ -155,7 +155,7 @@ Module Type Expr.
         |-- wp_lhs (Eassign l r ty) Q.
 
     Axiom wp_lhs_bop_assign : forall ty o l r Q,
-        wp_lhs (Eassign l (Ebinop o (Ecast Cl2r l (type_of l)) r ty) ty) Q
+        wp_lhs (Eassign l (Ebinop o (Ecast Cl2r (Lvalue, l) (type_of l)) r ty) ty) Q
         |-- wp_lhs (Eassign_op o l r ty) Q.
 
     (* note: the comma operator can be both an lvalue and a prvalue
@@ -191,37 +191,44 @@ Module Type Expr.
     Axiom wp_rhs_cast_l2r : forall ty e Q,
         wp_lhs e (fun a free =>
           Exists v, (_at (_eq a) (tprim (drop_qualifiers ty) v) ** ltrue) //\\ Q v free)
-        |-- wp_rhs (Ecast Cl2r e ty) Q.
+        |-- wp_rhs (Ecast Cl2r (Lvalue, e) ty) Q.
 
     Axiom wpe_cast_noop : forall ty m e Q,
         wpe m e Q
-        |-- wpe m (Ecast Cnoop e ty) Q.
+        |-- wpe m (Ecast Cnoop (m, e) ty) Q.
 
     Axiom wp_rhs_cast_int2bool : forall ty e Q,
         wp_rhs e Q
-        |-- wp_rhs (Ecast Cint2bool e ty) Q.
+        |-- wp_rhs (Ecast Cint2bool (Rvalue, e) ty) Q.
     (* ^ todo(gmm): confirm that this doesn't change the value *)
 
     Axiom wp_rhs_cast_ptr2bool : forall ty e Q,
         wp_rhs e Q
-        |-- wp_rhs (Ecast Cptr2bool e ty) Q.
+        |-- wp_rhs (Ecast Cptr2bool (Rvalue, e) ty) Q.
     (* ^ todo(gmm): confirm that this doesn't change the value *)
 
-    Axiom wp_rhs_cast_function2pointer : forall ty ty' g Q,
+    Axiom wp_rhs_cast_function2pointer_c : forall ty ty' g Q,
         wp_lhs (Evar (Gname g) ty') Q
-        |-- wp_rhs (Ecast Cfunction2pointer (Evar (Gname g) ty') ty) Q.
+        |-- wp_rhs (Ecast Cfunction2pointer (Rvalue, Evar (Gname g) ty') ty) Q.
+    Axiom wp_rhs_cast_function2pointer_cpp : forall ty ty' g Q,
+        wp_lhs (Evar (Gname g) ty') Q
+        |-- wp_rhs (Ecast Cfunction2pointer (Lvalue, Evar (Gname g) ty') ty) Q.
+    (* ^ note(gmm): C and C++ classify function names differently
+     * - in C, function names are Rvalues, and
+     * - in C++, function names are Lvalues
+     *)
 
     Axiom wp_rhs_cast_bitcast : forall e t Q,
         wp_rhs e Q
-        |-- wp_rhs (Ecast Cbitcast e t) Q.
+        |-- wp_rhs (Ecast Cbitcast (Rvalue, e) t) Q.
 
     Axiom wp_rhs_cast_integral : forall e t Q,
         wp_rhs e (fun v free => [| has_type v t |] ** Q v free)
-        |-- wp_rhs (Ecast Cintegral e t) Q.
+        |-- wp_rhs (Ecast Cintegral (Rvalue, e) t) Q.
 
     Axiom wp_rhs_cast_null : forall e t Q,
         wp_rhs e Q
-        |-- wp_rhs (Ecast Cnull2ptr e t) Q.
+        |-- wp_rhs (Ecast Cnull2ptr (Rvalue, e) t) Q.
     (* ^ todo(jmgrosen): confirm that this doesn't change the value *)
 
     (* note(gmm): in the clang AST, the subexpression is the call.
@@ -229,7 +236,18 @@ Module Type Expr.
      *)
     Axiom wp_rhs_cast_user : forall e ty Z Q,
         wp_rhs e Q
-        |-- wp_rhs (Ecast (Cuser Z) e ty) Q.
+        |-- wp_rhs (Ecast (Cuser Z) (Rvalue, e) ty) Q.
+
+    Axiom wp_lhs_static_cast : forall vc from to e ty Q,
+      wpe vc e (fun addr free => Exists addr',
+                  (_offsetL (_super from to) (_eq addr) &~ addr' //\\ ltrue) **
+                          (* ^ this is a down-cast *)
+                  Q addr' free)
+      |-- wp_lhs (Ecast (Cstatic from to) (vc, e) ty) Q.
+
+    Axiom wpe_cast_tovoid : forall vc e ty Q,
+      wpe vc e (fun _ free => Q (Vint 0) free)
+      |-- wpe vc (Ecast C2void (vc, e) ty) Q.
 
     (** the ternary operator `_ ? _ : _` *)
     Axiom wp_condition : forall ty m tst th el Q,
@@ -387,7 +405,7 @@ Module Type Expr.
         (Eassign
            (Ederef
               (Ecast (CCcast Cl2r)
-                     (Evar
+                     (Lvalue, Evar
                         (Lname  "x")
                         (Qmut
                            (Tpointer
@@ -433,7 +451,7 @@ Module Type Expr.
                    (Eassign
                 (Ederef
                   (Ecast (CCcast Cl2r)
-                    (Eassign
+                    (Lvalue, Eassign
                       (Evar
                         (Lname  "x")
                         (Qmut
