@@ -60,8 +60,6 @@ void ClangPrinter::printValCat(const Expr *d, CoqPrinter &print)
   } else if (Class.isXValue()) {
     print.output() << "Xvalue";
   } else if (Class.isRValue()) {
-    assert(!d->isLValue());
-    assert(d->isRValue());
     print.output() << "Rvalue";
   } else {
     assert(false);

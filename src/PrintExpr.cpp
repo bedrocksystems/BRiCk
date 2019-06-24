@@ -49,9 +49,9 @@ void printCastKind(Formatter& out, const CastKind ck) {
 		out << "Cderived2base";
 	} else if (ck == CastKind::CK_BaseToDerived) {
 		out << "Cbase2derived";
-  } else if (ck == CastKind::CK_ToVoid) {
-    out << "C2void";
-	} else {
+	} else if (ck == CastKind::CK_ToVoid) {
+		out << "C2void";
+  } else {
 #if CLANG_VERSION_MAJOR >= 7
 		llvm::errs() << "unsupported cast kind \""
 				<< CastExpr::getCastKindName(ck) << "\"\n";
