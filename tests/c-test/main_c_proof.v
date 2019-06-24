@@ -104,7 +104,7 @@ Proof.
     simplifying.
     work.
     (* this is the loop invariant
-     * todo(gmm): i need to clean this up a lot!
+     * todo(gmm): i need to clean this up.
      *)
     transitivity (
   ti_cglob (resolve:=resolve) "putstr" putstr_spec **

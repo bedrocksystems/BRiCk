@@ -11,7 +11,7 @@ Local Open Scope string_scope.
 From Cpp Require Import
      Ast.
 From Cpp.Sem Require Import
-     Util Logic PLogic Semantics Wp Typing Init Deinit.
+     Util Logic PLogic Semantics Wp Init Deinit.
 
 Require Import Coq.ZArith.BinInt.
 Require Import Coq.micromega.Lia.

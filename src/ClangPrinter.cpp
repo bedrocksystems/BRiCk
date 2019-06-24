@@ -1,3 +1,8 @@
+/*
+ * Copyright (C) BedRock Systems Inc. 2019 Gregory Malecha
+ *
+ * SPDX-License-Identifier:AGPL-3.0-or-later
+ */
 #include "ClangPrinter.hpp"
 #include "CoqPrinter.hpp"
 #include "Formatter.hpp"
@@ -55,6 +60,8 @@ void ClangPrinter::printValCat(const Expr *d, CoqPrinter &print)
   } else if (Class.isXValue()) {
     print.output() << "Xvalue";
   } else if (Class.isRValue()) {
+    assert(!d->isLValue());
+    assert(d->isRValue());
     print.output() << "Rvalue";
   } else {
     assert(false);

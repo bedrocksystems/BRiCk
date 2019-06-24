@@ -27,10 +27,7 @@ Proof.
   verifyF_forget A__bar.
   { (* A::bar(int) *)
     start_proof.
-    simplifying.
-    work.
-    simplifying.
-    work.
+    repeat (simplifying; work).
     done_proof. }
 
   finish_module.

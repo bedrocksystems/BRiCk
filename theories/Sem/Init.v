@@ -11,7 +11,7 @@ Local Open Scope string_scope.
 From Cpp Require Import
      Ast.
 From Cpp.Sem Require Import
-     Util Logic PLogic Semantics Wp Typing.
+     Util Logic PLogic Semantics Wp.
 
 Module Type Init.
 

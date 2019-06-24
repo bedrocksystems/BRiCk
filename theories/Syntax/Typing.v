@@ -3,8 +3,7 @@
  *
  * SPDX-License-Identifier:AGPL-3.0-or-later
  *)
-From Cpp Require Import
-     Ast.
+Require Import Cpp.Syntax.Ast.
 
 Fixpoint type_of (e : Expr) : type :=
   match e with
@@ -46,4 +45,25 @@ Fixpoint type_of (e : Expr) : type :=
   | Eandclean _ t
   | Ematerialize_temp _ t => t
   | Eatomic _ _ t => t
+  end.
+
+Fixpoint erase_qualifiers (t : type) : type :=
+  match t with
+  | Tpointer t => Tpointer (erase_qualifiers t)
+  | Treference t => Treference (erase_qualifiers t)
+  | Trv_reference t => Trv_reference (erase_qualifiers t)
+  | Tint _ _
+  | Tchar _ _
+  | Tbool
+  | Tvoid
+  | Tref _ => t
+  | Tarray t sz => Tarray (erase_qualifiers t) sz
+  | Tfunction t ts => Tfunction (erase_qualifiers t) (List.map erase_qualifiers ts)
+  | Tqualified _ t => erase_qualifiers t
+  end.
+
+Fixpoint drop_qualifiers (t : type) : type :=
+  match t with
+  | Tqualified _ t => drop_qualifiers t
+  | _ => t
   end.
