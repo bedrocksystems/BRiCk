@@ -501,41 +501,13 @@ Section refl.
       | Tqualified _ ty => wpi_init ty init
       end.
 
-
-  Fixpoint to_path (from : globname) (final : ident) (ls : list (ident * globname))
-  : Offset :=
-    match ls with
-    | nil => _field {| f_type := from ; f_name := final |}
-    | (i,c) :: ls =>
-      _dot (_field {| f_type := from ; f_name := i |}) (to_path c final ls)
-    end.
-
   Definition wpi (cls : globname) (f : FieldOrBase) (i : Expr)
-  : option (val -> mpred -> mpred).
-  refine (
-      let default :=
-          ret (fun this Q => wpi (resolve:=resolve) ti r cls this (f, i) Q)
-      in
-      match f with
-      | Base base =>
-        Qe <- wpi_init (type_of i) (Some i) ;; (* `type_of i` isn't correct *)
-        ret (fun this Q => Exists fl,
-                        (_offsetL (_super cls base) (_eq this) &~ fl ** ltrue) //\\
-                        Qe fl Q)
-      | Field id =>
-        Qe <- wpi_init (type_of i) (Some i) ;; (* `type_of i` isn't correct *)
-        let f := {| f_type := cls ; f_name := id |} in
-        ret (fun this Q => Exists fl,
-                        (_offsetL (_field f) (_eq this) &~ fl ** ltrue) //\\
-                        Qe fl Q)
-      | Indirect path f =>
-        Qe <- wpi_init (type_of i) (Some i) ;; (* `type_of i` isn't correct *)
-        let p := to_path cls f path in
-        ret (fun this Q => Exists fl,
-                        (_offsetL p (_eq this) &~ fl ** ltrue) //\\
-                        Qe fl Q)
-      end).
-  Defined.
+  : option (val -> mpred -> mpred) :=
+    Qe <- wpi_init (type_of i) (Some i) ;; (* `type_of i` isn't correct *)
+    let p := offset_for cls f in
+    ret (fun this Q => Exists fl,
+                    (_offsetL p (_eq this) &~ fl ** ltrue) //\\
+                    Qe fl Q).
 
   Theorem wpi_sound : forall cls fi Q this K,
       wpi cls (fst fi) (snd fi) = Some Q ->
@@ -554,8 +526,46 @@ Section refl.
 
   Theorem wpis_sound : forall cls is Q this K,
       wpis cls is = Some Q ->
-      sig (resolve:=resolve) ti specs ** Q this K |-- IN.wpis (resolve:=resolve) ti r cls this is K.
+      sig (resolve:=resolve) ti specs ** Q this K
+      |-- IN.wpis (resolve:=resolve) ti r cls this is K.
   Proof. Admitted.
+
+  Definition wpd (cls : globname) (f : FieldOrBase) (dtor : obj_name)
+  : option (val -> mpred -> mpred) :=
+    let default := ret (fun this Q => wpd (resolve:=resolve) ti r cls this (f, dtor) Q) in
+    let p := offset_for cls f in
+    match find (fun '(f', _) => if string_dec dtor f' then true else false) specs with
+    | Some (_, fs) =>
+      match fs.(fs_arguments) as X
+            return (thread_info -> arrowFrom val X ((val -> mpred) -> mpred)) -> _
+      with
+      | _ :: nil => fun spec => ret (fun this Q => spec ti this (fun _ => Q))
+      | _ => fun _ => default
+      end fs.(fs_spec)
+    | None => default
+    end.
+
+  Theorem wpd_sound : forall cls fi Q this K,
+      wpd cls (fst fi) (snd fi) = Some Q ->
+      sig (resolve:=resolve) ti specs ** Q this K |-- D.wpd (resolve:=resolve) ti r cls this fi K.
+  Proof. Admitted.
+
+  Fixpoint wpds (cls : globname) (f : list (FieldOrBase * obj_name))
+  : option (val -> mpred -> mpred) :=
+    match f with
+    | nil => ret (fun _ Q => Q)
+    | (f,i) :: is =>
+      Qi <- wpd cls f i ;;
+      Qis <- wpds cls is ;;
+      ret (fun this Q => Qi this (Qis this Q))
+    end.
+
+  Theorem wpds_sound : forall cls is Q this K,
+      wpds cls is = Some Q ->
+      sig (resolve:=resolve) ti specs ** Q this K
+      |-- D.wpds (resolve:=resolve) ti r cls this is K.
+  Proof. Admitted.
+
 
   Section block.
     Variable wp : forall (s : Stmt), option (Kpreds -> mpred).
@@ -720,6 +730,18 @@ Section refl.
       sig (resolve:=resolve) ti specs ** Q this K |-- F.wp_ctor (resolve:=resolve) cls ti r this is b K.
   Proof. Admitted.
 
+  Definition wp_dtor (cls : globname)
+             (body : Stmt) (ds : list (FieldOrBase * obj_name))
+  : option (val -> mpred -> mpred -> mpred) :=
+    Qbody <- wp body ;;
+    Qd <- wpds cls ds ;;
+    ret (fun this frees Q => Qbody (Kfree frees (void_return (Qd this Q)))).
+
+  Theorem wp_dtor_sound : forall cls is b K Q this free,
+      wp_dtor cls b is = Some Q ->
+      sig (resolve:=resolve) ti specs ** Q this free K |-- F.wp_dtor (resolve:=resolve) cls ti r this b is free K.
+  Proof. Admitted.
+
 End refl.
 
 Ltac with_specs' c specs k :=
@@ -739,5 +761,7 @@ Ltac with_specs k :=
 
 Ltac simplifying :=
   progress (with_specs ltac:(fun s =>
-                               first [ rewrite <- wp_sound with (specs := s) by (simpl; reflexivity)
-                                     | rewrite <- wp_ctor_sound with (specs:=s) by (simpl; reflexivity) ]); cbn).
+     first [ rewrite <- wp_sound with (specs := s) by (simpl; reflexivity)
+           | rewrite <- wp_ctor_sound with (specs:=s) by (simpl; reflexivity)
+           | rewrite <- wp_dtor_sound with (specs:=s) by (simpl; reflexivity)
+           ]); cbn).
