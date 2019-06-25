@@ -236,8 +236,6 @@ Module Type cclogic.
 
   (*Memory Ordering Patterns: Now we only have _SEQ_CST *)
   Definition _SEQ_CST := Vint 5.
-  Definition Vbool (b : bool) :=
-    Vint (if b then 1 else 0).
 
 (*
   (* *)
