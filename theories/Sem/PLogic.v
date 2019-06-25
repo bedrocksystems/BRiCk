@@ -191,9 +191,9 @@ Definition _sub (t : type) (i : Z) : Offset :=
   |}.
 
 (* this represents static_cast *)
-Definition _super (from to : globname) : Offset :=
+Definition _super (sub super : globname) : Offset :=
   {| offset base addr :=
-       Exists off, with_genv (fun prg => [| parent_offset (c:=prg) from to off |]) **
+       Exists off, with_genv (fun prg => [| parent_offset (c:=prg) sub super off |]) **
                    [| addr = offset_ptr base off |]
   |}.
 
@@ -472,6 +472,23 @@ Proof.
   t. assumption.
 Qed.
 
+(* this is for `Indirect` field references *)
+Fixpoint path_to_Offset (from : globname) (final : ident)
+         (ls : list (ident * globname))
+: Offset :=
+  match ls with
+  | nil => _field {| f_type := from ; f_name := final |}
+  | cons (i,c) ls =>
+    _dot (_field {| f_type := from ; f_name := i |}) (path_to_Offset c final ls)
+  end.
+
+Definition offset_for (cls : globname) (f : FieldOrBase) : Offset :=
+  match f with
+  | Base parent => _super cls parent
+  | Field i => _field {| f_type := cls ; f_name := i |}
+  | Indirect ls final =>
+    path_to_Offset cls final ls
+  end.
 
 
 Global Opaque _local _global _at _sub _field _offsetR _offsetL tprim tint tuint tptr is_null is_nonnull.

@@ -25,25 +25,32 @@ Module Type Deinit.
     Local Notation wpAnys := (wpAnys (resolve:=resolve) ti ρ).
     Local Notation fspec := (fspec (resolve:=resolve)).
 
-  (** destructor lists
-   *
-   *  the opposite of initializer lists, this is just a call to the
-   *  destructors *in the right order*
-   *)
-  Parameter wpd
-    : forall {resolve : genv} (ti : thread_info) (ρ : region)
-        (cls : globname) (this : val)
-        (init : FieldOrBase * globname)
-        (Q : mpred), mpred.
+    (** destructor lists
+     *
+     *  the opposite of initializer lists, this is just a call to the
+     *  destructors *in the right order*
+     *)
+    Parameter wpd
+      : forall {resolve : genv} (ti : thread_info) (ρ : region)
+          (cls : globname) (this : val)
+          (init : FieldOrBase * obj_name)
+          (Q : mpred), mpred.
 
-  Fixpoint wpds
-           (cls : globname) (this : val)
-           (dests : list (FieldOrBase * globname))
-           (Q : mpred) : mpred :=
-    match dests with
-    | nil => Q
-    | d :: ds => @wpd resolve ti ρ cls this d (wpds cls this ds Q)
-    end.
+    Fixpoint wpds
+             (cls : globname) (this : val)
+             (dests : list (FieldOrBase * globname))
+             (Q : mpred) : mpred :=
+      match dests with
+      | nil => Q
+      | d :: ds => @wpd resolve ti ρ cls this d (wpds cls this ds Q)
+      end.
+
+    Axiom wpd_deinit : forall cls this path dn Q,
+        Exists dp, Exists fp,
+           (_global dn &~ dp **
+            _offsetL (offset_for cls path) (_eq this) &~ fp ** ltrue) //\\
+                   |> fspec dp (this :: nil) ti (fun _ => Q)
+        |-- wpd (resolve:=resolve) ti ρ cls this (path, dn) Q.
 
   End with_resolve.
 

@@ -106,7 +106,7 @@ Variant PrimCast : Set :=
 
 Variant Cast : Set :=
 | CCcast       (_ : PrimCast)
-| Cuser        (conversion_function : globname)
+| Cuser        (conversion_function : obj_name)
 | Creinterpret (_ : type)
 | Cstatic      (from to : globname)
 | Cdynamic     (from to : globname)
@@ -276,7 +276,7 @@ Record Ctor : Set :=
 
 Record Dtor : Set :=
 { d_class  : globname
-; d_body   : option (OrDefault (Stmt * list (FieldOrBase * globname)))
+; d_body   : option (OrDefault (Stmt * list (FieldOrBase * obj_name)))
 }.
 
 Record Func : Set :=
