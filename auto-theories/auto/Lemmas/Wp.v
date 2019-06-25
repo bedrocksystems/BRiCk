@@ -17,7 +17,7 @@ Local Ltac work :=
 
 Lemma wp_rhs_local (ty : type) : forall ti resolve ρ x Q,
     Exists v, (tlocal ρ x (tprim (drop_qualifiers ty) v) ** ltrue) //\\ Q v empSP
-    |-- wp_rhs (resolve:=resolve) ti ρ (Ecast Cl2r (Evar (Lname x) ty) ty) Q.
+    |-- wp_rhs (resolve:=resolve) ti ρ (Ecast Cl2r (Lvalue, Evar (Lname x) ty) ty) Q.
 Proof.
   unfold tlocal. intros.
   work.
@@ -46,7 +46,7 @@ Lemma wp_rhs_dot : forall resolve ti x0 obj f fty z Q,
        Exists val,
          (_at (_offsetL (_field f) (_eq base)) (tprim (drop_qualifiers fty) val) ** ltrue) //\\
        Q val free)
-    |-- wp_rhs (resolve:=resolve) ti x0 (Ecast Cl2r (Emember obj f fty) z) Q.
+    |-- wp_rhs (resolve:=resolve) ti x0 (Ecast Cl2r (Lvalue, Emember obj f fty) z) Q.
 Proof. Admitted.
 
 Lemma wp_lhs_assign_member_ignore : forall resolve ti r f t obj e t' Q,
@@ -69,14 +69,15 @@ Lemma wp_lhs_assign_member : forall resolve ti r f t obj e t' Q,
 Proof. Admitted.
 
 
-Theorem wp_call_glob : forall resolve ti ρ f ret ts es K PQ F F' ty ty' ty'',
+Theorem wp_call_glob : forall resolve vc ti ρ f ret ts es K PQ F F' ty ty' ty'',
+   (vc = Lvalue \/ vc = Rvalue) ->
    F |-- (|> cglob (resolve:=resolve) f ti (SFunction ret ts PQ)) ** ltrue ->
    F
    |-- wps (wpAnys (resolve:=resolve) ti ρ) es (fun vs free => applyEach ts vs PQ (fun wpp _ =>
             WppD wpp (fun r => K r free))) empSP ** F' ->
    F
    |-- wp_rhs (resolve:=resolve) ti ρ
-         (Ecall (Ecast Cfunction2pointer (Evar (Gname f) ty) ty') es ty'')
+         (Ecall (Ecast Cfunction2pointer (vc, Evar (Gname f) ty) ty') es ty'')
          K ** F'.
 Proof. Admitted.
 
@@ -142,8 +143,7 @@ Theorem wp_decl_class
              Forall a, applyEach ts vs (PQ a) (fun wpp _ =>
                WppD wpp
                     (fun _ => free ** (_local ρ x &~ a -* k (Kat_exit (fun Q' =>
-                       let wpp := PQ' a in
-                       WppD wpp
+                       WppD (PQ' a)
                             (fun _ =>
                                (* note(gmm): this is canceling the dead memory
                                 * that is inserted by `SDestructor` *)
@@ -167,13 +167,13 @@ Proof. Admitted.
 Lemma wp_rhs_cast_noop:
   forall (resolve : genv) (ti : thread_info) (ρ : region)
     (ty : type) (e : Expr) (Q : val -> FreeTemps -> mpred),
-  wp_rhs (resolve:=resolve) ti ρ e Q |-- wp_rhs (resolve:=resolve) ti ρ (Ecast Cnoop e ty) Q.
+  wp_rhs (resolve:=resolve) ti ρ e Q |-- wp_rhs (resolve:=resolve) ti ρ (Ecast Cnoop (Rvalue, e) ty) Q.
 Proof. intros. eapply wpe_cast_noop with (m:=Rvalue). Qed.
 
 Lemma wp_lhs_cast_noop:
   forall (resolve : genv) (ti : thread_info) (ρ : region)
     (ty : type) (e : Expr) (Q : val -> FreeTemps -> mpred),
-  wp_lhs (resolve:=resolve) ti ρ e Q |-- wp_lhs (resolve:=resolve) ti ρ (Ecast Cnoop e ty) Q.
+  wp_lhs (resolve:=resolve) ti ρ e Q |-- wp_lhs (resolve:=resolve) ti ρ (Ecast Cnoop (Lvalue, e) ty) Q.
 Proof. intros; eapply wpe_cast_noop with (m:=Lvalue). Qed.
 
 Theorem wp_decl_reference : forall resolve ρ x ty ti init k Q,
