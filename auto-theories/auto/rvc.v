@@ -445,6 +445,10 @@ Section refl.
                    Qf (fun r => Q r free)))))
       | None => default
       end
+    | Eatomic ao es ty =>
+      rvalue cat ;;
+      Qes <- wpes (wpAnys' wpe) es ;;
+      ret (fun Q => Qes (fun vs free => wp_atom ao vs ty (fun v => Q v free)) empSP)
     | _ => default
     end.
 
