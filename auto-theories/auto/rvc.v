@@ -15,6 +15,7 @@ From Cpp.Auto Require Import
      Definitions Lemmas.
 From Cpp Require Auto.vc.
 From bedrock.auto.Lemmas Require Wp Eval.
+Require Import bedrock.Signatures.
 
 (* the option monad *)
 Definition lvalue (c : ValCat) : option unit :=
@@ -71,7 +72,7 @@ Definition function_specs := list (globname * function_spec).
 
 Section refl.
 
-  Variable (resolve : genv) (ti : thread_info) (r : region) (specs : function_specs).
+  Variable (resolve : genv) (ti : thread_info) (r : region) (specs : signature).
 
   Local Notation "[! P !]" := (embed P).
 
@@ -419,12 +420,9 @@ Section refl.
     | _ => default
     end.
 
-  Definition specs_reqs :=
-    map (fun '(f, fs) => |> cglob (resolve:=resolve) f ti fs) specs.
-
   Theorem wpe_sound : forall e vc K Q,
       wpe vc e = Some Q ->
-      sepSPs specs_reqs ** Q K |-- @Wp.wpe resolve ti r vc e K.
+      sig (resolve:=resolve) ti specs ** Q K |-- @Wp.wpe resolve ti r vc e K.
   Proof.
     (* induction e; *)
     (*   cbn; *)
@@ -538,6 +536,26 @@ Section refl.
                         Qe fl Q)
       end).
   Defined.
+
+  Theorem wpi_sound : forall cls fi Q this K,
+      wpi cls (fst fi) (snd fi) = Some Q ->
+      sig (resolve:=resolve) ti specs ** Q this K |-- IN.wpi (resolve:=resolve) ti r cls this fi K.
+  Proof. Admitted.
+
+  Fixpoint wpis (cls : globname) (f : list (FieldOrBase * Expr))
+  : option (val -> mpred -> mpred) :=
+    match f with
+    | nil => ret (fun _ Q => Q)
+    | (f,i) :: is =>
+      Qi <- wpi cls f i ;;
+      Qis <- wpis cls is ;;
+      ret (fun this Q => Qi this (Qis this Q))
+    end.
+
+  Theorem wpis_sound : forall cls is Q this K,
+      wpis cls is = Some Q ->
+      sig (resolve:=resolve) ti specs ** Q this K |-- IN.wpis (resolve:=resolve) ti r cls this is K.
+  Proof. Admitted.
 
   Section block.
     Variable wp : forall (s : Stmt), option (Kpreds -> mpred).
@@ -687,7 +705,19 @@ Section refl.
 
   Theorem wp_sound : forall s K Q,
       wp s = Some Q ->
-      sepSPs specs_reqs ** Q K |-- @Wp.wp resolve ti r s K.
+      sig (resolve:=resolve) ti specs ** Q K |-- @Wp.wp resolve ti r s K.
+  Proof. Admitted.
+
+  Definition wp_ctor (cls : globname)
+             (inits : list (FieldOrBase * Expr)) (body : Stmt)
+  : option (val -> Kpreds -> mpred) :=
+    Qi <- wpis cls inits ;;
+    Qbody <- wp body ;;
+    ret (fun this Q => Qi this (Qbody Q)).
+
+  Theorem wp_ctor_sound : forall cls is b K Q this,
+      wp_ctor cls is b = Some Q ->
+      sig (resolve:=resolve) ti specs ** Q this K |-- F.wp_ctor (resolve:=resolve) cls ti r this is b K.
   Proof. Admitted.
 
 End refl.
@@ -696,6 +726,7 @@ Ltac with_specs' c specs k :=
   match c with
   | ?l ** ?r =>
     with_specs' l specs ltac:(fun specs' => with_specs' r specs' k)
+  | @sig _ _ ?spec => k constr:(List.app spec specs)
   | ti_cglob ?f ?spec => k constr:((f, spec) :: specs)
   | cglob ?f _ ?spec => k constr:((f, spec) :: specs)
   | _ => k specs
@@ -707,4 +738,6 @@ Ltac with_specs k :=
   end.
 
 Ltac simplifying :=
-  progress (with_specs ltac:(fun s => rewrite <- wp_sound with (specs := s) by (simpl; reflexivity)); cbn).
+  progress (with_specs ltac:(fun s =>
+                               first [ rewrite <- wp_sound with (specs := s) by (simpl; reflexivity)
+                                     | rewrite <- wp_ctor_sound with (specs:=s) by (simpl; reflexivity) ]); cbn).
