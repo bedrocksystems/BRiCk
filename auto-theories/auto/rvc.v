@@ -449,6 +449,13 @@ Section refl.
       rvalue cat ;;
       Qes <- wpes (wpAnys' wpe) es ;;
       ret (fun Q => Qes (fun vs free => wp_atom ao vs ty (fun v => Q v free)) empSP)
+    | Eif test thn els ty =>
+      Qr <- wpe Rvalue test ;;
+      Qthn <- wpe cat thn ;;
+      Qels <- wpe cat els ;;
+      ret (fun Q => Qr (fun v free =>
+             (     ([| is_true v = true |]  -* Qthn (fun v' free' => Q v' (free ** free')))
+              //\\ ([| is_true v = false |] -* Qels (fun v' free' => Q v' (free ** free'))))))
     | _ => default
     end.
 
