@@ -157,9 +157,7 @@ Theorem wp_destroy
 : forall resolve ti this cls F F' Q PQ' dt,
     F |-- (|> cglob (resolve:=resolve) (dtor_name dt cls) ti (SDestructor cls PQ')) ** ltrue ->
     F
-    |-- (let wpp := PQ' this in
-         WppD wpp
-              (fun _ => Q) ** F') ->
+    |-- (WppD (PQ' this) (fun _ => Q) ** F') ->
     F
     |-- destroy (resolve:=resolve) ti dt cls this Q ** F'.
 Proof. Admitted.
