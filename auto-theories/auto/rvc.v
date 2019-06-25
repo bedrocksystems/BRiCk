@@ -774,7 +774,9 @@ Ltac with_specs' c specs k :=
     with_specs' l specs ltac:(fun specs' => with_specs' r specs' k)
   | @sig _ _ ?spec => k constr:(List.app spec specs)
   | ti_cglob ?f ?spec => k constr:((f, spec) :: specs)
+  | |> ti_cglob ?f ?spec => k constr:((f, spec) :: specs)
   | cglob ?f _ ?spec => k constr:((f, spec) :: specs)
+  | |> cglob ?f _ ?spec => k constr:((f, spec) :: specs)
   | _ => k specs
   end.
 
