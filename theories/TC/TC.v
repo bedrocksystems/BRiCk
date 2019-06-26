@@ -1,8 +1,10 @@
+Require Import Coq.Classes.DecidableClass.
 Require Import Coq.Lists.List.
 Require Import Coq.Strings.String.
 Local Open Scope string_scope.
 
-From Template Require Import monad_utils Ast Loader.
+From MetaCoq.Template Require Import
+     monad_utils Ast Loader TemplateMonad.
 Import MonadNotation.
 
 Require Import Lens.Lens.
@@ -55,6 +57,12 @@ Local Definition mkLens (At : term) (fields : list (ident * term)) (i : nat)
   | _ => None
   end.
 
+Fixpoint get_arity (t : term) : nat :=
+  match t with
+  | tProd _ _ t => S (get_arity t)
+  | _ => 0
+  end.
+
 Local Definition getFields (mi : mutual_inductive_body) (n : nat)
 : TemplateMonad Info :=
   match nth_error mi.(ind_bodies) n with
@@ -63,8 +71,17 @@ Local Definition getFields (mi : mutual_inductive_body) (n : nat)
     match oib.(ind_ctors) with
     | nil => tmFail "`getFields` got empty type"
     | ctor :: nil =>
+      let '(ctor_name,ctor_type,_) := ctor in
+      match oib.(ind_projs) with
+      | nil =>
+        let ctor_arity := get_arity ctor_type in
+        if decide (ctor_arity > get_arity oib.(ind_type)) then
+          print_nf ("info: the constructor " ++ ctor_name ++ " has no projections but an arity of " ++ (utils.string_of_nat ctor_arity) ++ ". Perhaps you forgot to enable primitive projections.")
+        else ret tt
+      | _ => ret tt
+      end ;;
       ret {| type := oib.(ind_name)
-           ; ctor := let '(x,_,_) := ctor in x
+           ; ctor := ctor_name
            ; fields := oib.(ind_projs)
            |}
     | _ => tmFail "`getFields` got variant type"

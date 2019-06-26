@@ -1,5 +1,11 @@
+Require Import Coq.Strings.String.
 Require Import Lens.Lens.
 Require Import Lens.TC.TC.
+
+Record Oops : Set :=
+{ oops1 : nat }.
+
+Run TemplateProgram (genLens Oops).
 
 Set Primitive Projections.
 
