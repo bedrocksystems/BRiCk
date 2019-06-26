@@ -484,6 +484,28 @@ Section refl.
     (*          end. *)
   Admitted.
 
+  Corollary wp_lhs_sound : forall e K Q,
+      wpe Lvalue e = Some Q ->
+      sig (resolve:=resolve) ti specs ** Q K |-- @Wp.wp_lhs resolve ti r e K.
+  Proof.
+    intros.
+    pose proof (wpe_sound e Lvalue).
+    rewrite H0;
+      cbn;
+      trivial.
+  Qed.
+
+  Corollary wp_rhs_sound : forall e K Q,
+      wpe Rvalue e = Some Q ->
+      sig (resolve:=resolve) ti specs ** Q K |-- @Wp.wp_rhs resolve ti r e K.
+  Proof.
+    intros.
+    pose proof (wpe_sound e Rvalue).
+    rewrite H0;
+      cbn;
+      trivial.
+  Qed.
+
   Definition wpAnys (ve : ValCat * Expr)
   : option ((val -> FreeTemps -> mpred) -> FreeTemps -> mpred) :=
     Qe <- wpe (fst ve) (snd ve) ;;
@@ -801,5 +823,6 @@ Ltac simplifying :=
      first [ rewrite <- wp_sound with (specs := s) by (simpl; reflexivity)
            | rewrite <- wp_ctor_sound with (specs:=s) by (simpl; reflexivity)
            | rewrite <- wp_dtor_sound with (specs:=s) by (simpl; reflexivity)
-             (* todo(jmgrosen): support rvc.simplifying wp_lhs and wp_rhs *)
+           | rewrite <- wp_lhs_sound with (specs := s) by (simpl; reflexivity)
+           | rewrite <- wp_rhs_sound with (specs := s) by (simpl; reflexivity)
            ]); cbn).
