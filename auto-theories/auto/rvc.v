@@ -490,19 +490,11 @@ Section refl.
       match init with
       | Some (Econstructor cnd es _) =>
         Qes <- wpes wpAnys es ;;
-        match get_spec cnd with
-        | Some ctor_spec =>
-          match ctor_spec.(fs_arguments) as X
-                return (thread_info -> arrowFrom val X ((val -> mpred) -> mpred)) -> _
-          with
-          | _ :: _ => fun spec =>
-            ret (fun loc Q =>
-                 Qes (fun vs free =>
-                        applyEach _ vs (spec ti loc) (fun Q' _ => Q' (fun _ => free ** Q))) empSP)
-          | _ => fun _ => None
-          end ctor_spec.(fs_spec)
-        | _ => None
-        end
+        ctor_spec <- get_spec cnd ;;
+        ret (fun loc Q =>
+             Qes (fun vs free =>
+                  applyEach _ (loc :: vs) (ctor_spec.(fs_spec) ti) (fun Q' _ =>
+                    Q' (fun _ => free ** Q))) empSP)
       | _ => ret (fun _ _ =>
                    error "all non-primitive declarations must have initializers")
       end
@@ -624,16 +616,18 @@ Section refl.
         match init with
         | Some (Econstructor cnd es _) =>
           Qes <- wpes wpAnys es ;;
-          match get_spec cnd , get_spec (dtor_name Dt_Deleting gn) with
-          | Some ctor_spec , Some dtor_spec =>
-            ret (fun k Q =>
-                   Qes (fun vs free =>
-                          Forall a, _at (_eq a) (uninit (Tref gn))
-                       -* applyEach _ (a :: vs) (ctor_spec.(fs_spec) ti) (fun Q' _ =>
-                            Q' (fun _ => _local r x &~ a -*
-                            (free ** k (Kat_exit (fun Q'' => _local r x &~ a ** applyEach _ (a :: nil) (dtor_spec.(fs_spec) ti) (fun Q _ => Q (fun _ => Q''))) Q))))) empSP)
-          | _ , _ => None
-          end
+          ctor_spec <- get_spec cnd ;;
+          dtor_spec <- get_spec (dtor_name Dt_Deleting gn) ;;
+          ret (fun k Q =>
+                 Qes (fun vs free =>
+                   Forall a,
+                     _at (_eq a) (uninit (Tref gn)) -*
+                     applyEach _ (a :: vs) (ctor_spec.(fs_spec) ti) (fun Q' _ =>
+                       Q' (fun _ =>
+                         _local r x &~ a -*
+                         (free ** k (Kat_exit (fun Q'' =>
+                           _local r x &~ a **
+                           applyEach _ (a :: nil) (dtor_spec.(fs_spec) ti) (fun Q _ => Q (fun _ => Q''))) Q))))) empSP)
         | _ => ret (fun _ _ =>
                      error "all non-primitive declarations must have initializers")
         end
