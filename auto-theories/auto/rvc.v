@@ -148,7 +148,8 @@ Section refl.
     | _ => None
     end%Z.
 
-  Definition wpbo (o : BinOp) (tyl tyr ty : type) : option (val -> val -> (val -> mpred) -> mpred) :=
+  Definition wpbo (o : BinOp) (tyl tyr ty : type)
+  : option (val -> val -> (val -> mpred) -> mpred) :=
     match tyl, ty with
     | Tint (Some w) _, Tint _ _ =>
       match int_arith_ops o w with
@@ -252,8 +253,7 @@ Section refl.
    *            support global calls.
    * todo(gmm): should we semi-reflect `mpred`?
    *)
-  Fixpoint wpe (cat : ValCat) (e : Expr)
-           {struct e}
+  Fixpoint wpe (cat : ValCat) (e : Expr) {struct e}
   : option (forall (Q : val -> FreeTemps -> mpred), mpred) :=
     let default :=
       match cat with
@@ -445,61 +445,60 @@ Section refl.
     (*          end. *)
   Admitted.
 
-    Definition wpAnys (ve : ValCat * Expr)
-    : option ((val -> FreeTemps -> mpred) -> FreeTemps -> mpred) :=
-      Qe <- wpe (fst ve) (snd ve) ;;
-      ret (fun Q free => Qe (fun v f => Q v (f ** free))).
+  Definition wpAnys (ve : ValCat * Expr)
+  : option ((val -> FreeTemps -> mpred) -> FreeTemps -> mpred) :=
+    Qe <- wpe (fst ve) (snd ve) ;;
+    ret (fun Q free => Qe (fun v f => Q v (f ** free))).
 
 
-    (* mostly copied from Cpp.Sem.Func *)
-    Fixpoint wpi_init (ty : type) (init : option Expr)
-    : option (val -> mpred -> mpred) :=
-      match ty with
-      | Trv_reference _ => ret (fun _ _ => lfalse)
-      | Treference t =>
-        match init with
-        | None => ret (fun _ _ => error "references must be initialized")
-          (* ^ references must be initialized *)
-        | Some init => ret (fun _ _ => error "refernce fields are not supported")
-        end
-      | Tfunction _ _ =>
-        (* inline functions are not supported *)
-        ret (fun _ _ => error "unsupported: declarations of functions")
-      | Tvoid =>
-        ret (fun _ _ => error "declaration of void")
-      | Tpointer _
-      | Tbool
-      | Tchar _ _
-      | Tint _ _ =>
-        match init with
-        | None =>
-          ret (fun loc Q => Q)
-        | Some init =>
-          Qi <- wpe Rvalue init ;;
-          ret (fun loc Q => Qi (fun v free =>
-                 _at (_eq loc) (uninit ty)
-              ** (_at (_eq loc) (uninit ty) -*
-                      (free ** Q))))
-        end
-      | Tarray _ _ => lfalse (* todo(gmm): arrays not yet supported *)
-      | Tref gn =>
-        match init with
-        | Some (Econstructor cnd es _) =>
-          Qes <- wpes wpAnys es ;;
-          ret (fun loc Q =>
-          (* todo(gmm): constructors and destructors need to be handled through
-           * `cglob`.
-           *)
-          Exists ctor, [| glob_addr resolve cnd ctor |] **
-          (* todo(gmm): is there a better way to get the destructor? *)
-          Qes (fun vs free =>
-              |> fspec (resolve:=resolve) (Vptr ctor) (loc :: vs) ti (fun _ =>
-                 (free ** Q))) empSP)
-        | _ => ret (fun _ _ =>
-                     error "all non-primitive declarations must have initializers")
-        end
-      | Tqualified _ ty => wpi_init ty init
-      end.
+  (* mostly copied from Cpp.Sem.Func *)
+  Fixpoint wpi_init (ty : type) (init : option Expr)
+  : option (val -> mpred -> mpred) :=
+    match ty with
+    | Trv_reference _ => ret (fun _ _ => lfalse)
+    | Treference t =>
+      match init with
+      | None => ret (fun _ _ => error "references must be initialized")
+      | Some init => ret (fun _ _ => error "refernce fields are not supported")
+      end
+    | Tfunction _ _ =>
+      (* inline functions are not supported *)
+      ret (fun _ _ => error "unsupported: declarations of functions")
+    | Tvoid =>
+      ret (fun _ _ => error "declaration of void")
+    | Tpointer _
+    | Tbool
+    | Tchar _ _
+    | Tint _ _ =>
+      match init with
+      | None =>
+        ret (fun loc Q => Q)
+      | Some init =>
+        Qi <- wpe Rvalue init ;;
+        ret (fun loc Q => Qi (fun v free =>
+               _at (_eq loc) (uninit ty)
+            ** (_at (_eq loc) (tprim ty v) -*
+                    (free ** Q))))
+      end
+    | Tarray _ _ => lfalse (* todo(gmm): arrays not yet supported *)
+    | Tref gn =>
+      match init with
+      | Some (Econstructor cnd es _) =>
+        Qes <- wpes wpAnys es ;;
+        ret (fun loc Q =>
+        (* todo(gmm): constructors and destructors need to be handled through
+         * `cglob`.
+         *)
+        Exists ctor, [| glob_addr resolve cnd ctor |] **
+        (* todo(gmm): is there a better way to get the destructor? *)
+        Qes (fun vs free =>
+            |> fspec (resolve:=resolve) (Vptr ctor) (loc :: vs) ti (fun _ =>
+               (free ** Q))) empSP)
+      | _ => ret (fun _ _ =>
+                   error "all non-primitive declarations must have initializers")
+      end
+    | Tqualified _ ty => wpi_init ty init
+    end.
 
   Definition wpi (cls : globname) (f : FieldOrBase) (i : Expr)
   : option (val -> mpred -> mpred) :=
@@ -511,7 +510,8 @@ Section refl.
 
   Theorem wpi_sound : forall cls fi Q this K,
       wpi cls (fst fi) (snd fi) = Some Q ->
-      sig (resolve:=resolve) ti specs ** Q this K |-- IN.wpi (resolve:=resolve) ti r cls this fi K.
+      sig (resolve:=resolve) ti specs ** Q this K
+      |-- IN.wpi (resolve:=resolve) ti r cls this fi K.
   Proof. Admitted.
 
   Fixpoint wpis (cls : globname) (f : list (FieldOrBase * Expr))
