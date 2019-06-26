@@ -12,11 +12,35 @@ You will need the following packages (they can be installed via `apt` on a ubunt
 1. `llvm-8`, `llvm-8-dev`, `clang-8`, `libclang-8-dev`
 2. `cmake`
 
+#### OSX Instructions
+
+```sh
+$ brew install llvm cmake
+$ export PATH=/usr/local/opt/llvm/bin:${PATH}
+```
+
+Install the Coq dependencies.
+```sh
+$ opam install coq coq-charge-core coq-ltac-iter
+```
+
+
 ### Coq
-You can get all of the Coq dependencies via opam with the following command.
+You can get all of the Coq dependencies via `opam` with the following command.
 
 ```shell
 $ opam install coq coq-charge-core coq-ltac-iter
+```
+
+See [`opam` installation instructions](http://coq-blog.clarus.me/use-opam-for-coq.html) for help installing opam in Linux.
+
+#### OSX Instructions
+
+On OSX, `opam` can be installed via `brew`.
+
+```sh
+$ brew install opam
+$ opam repo add coq-released https://coq.inria.fr/opam/released
 ```
 
 ## Building
@@ -36,11 +60,11 @@ $ (cd tests; make)
 ```
 
 ## Examples
-See the examples in the `tests` directory. Namely, `demo`, `local-scope`, and `class`.
+See the examples in the `tests` directory.
 More examples will be added as the feature set evolves.
 
 ## Repository Layout
 The implementation of the `cpp2v` tool is in `src` and `include`.
-The definition of the accompanying Coq data types is in `theories/Ast.v` (and `theories/Parser.v`).
+The definition of the accompanying Coq data types is in `theories/Syntax/Ast.v` (and `theories/Parser.v`).
 The axiomatic semantics of the abstract syntax tree is defined in the `theories/Sem` directory.
 Some *basic* automation is included in `theories/Auto.v`.
