@@ -247,6 +247,12 @@ Section refl.
        Qe <- wpe' (fst ve) (snd ve) ;;
        ret (fun Q free => Qe (fun v f => Q v (f ** free))).
 
+  Definition get_spec (f : obj_name) : option function_spec :=
+    match find (fun '(f', _) => if string_dec f f' then true else false) specs with
+    | None => None
+    | Some (_, x) => Some x
+    end.
+
   (* todo(gmm): convert `FreeTemps` into `option mpred` and eliminate redundant
    * `empSP`.
    * todo(gmm): introduce an environment of specifications for globals to
@@ -395,8 +401,8 @@ Section refl.
       | Lvalue | Rvalue =>
         rvalue cat ;;
         Qes <- wpes (wpAnys' wpe) es ;;
-        match find (fun '(f', _) => if string_dec f f' then true else false) specs with
-        | Some (_, fs) =>
+        match get_spec f with
+        | Some fs =>
           ret (fun Q =>
                  Qes (fun vs free =>
                    applyEach (fs_arguments fs) vs (fs_spec fs ti) (fun Qf _ =>
@@ -409,8 +415,8 @@ Section refl.
       rvalue cat ;;
       Qo <- wpe Lvalue obj ;;
       Qes <- wpes (wpAnys' wpe) es ;;
-      match find (fun '(f', _) => if string_dec gn f' then true else false) specs with
-      | Some (_, fs) =>
+      match get_spec gn with
+      | Some fs =>
         ret (fun Q =>
                Qo (fun this => Qes (fun vs free =>
                  applyEach (fs_arguments fs) (this :: vs) (fs_spec fs ti) (fun Qf _ =>
@@ -450,7 +456,6 @@ Section refl.
     Qe <- wpe (fst ve) (snd ve) ;;
     ret (fun Q free => Qe (fun v f => Q v (f ** free))).
 
-
   (* mostly copied from Cpp.Sem.Func *)
   Fixpoint wpi_init (ty : type) (init : option Expr)
   : option (val -> mpred -> mpred) :=
@@ -485,15 +490,19 @@ Section refl.
       match init with
       | Some (Econstructor cnd es _) =>
         Qes <- wpes wpAnys es ;;
-        ret (fun loc Q =>
-        (* todo(gmm): constructors and destructors need to be handled through
-         * `cglob`.
-         *)
-        Exists ctor, [| glob_addr resolve cnd ctor |] **
-        (* todo(gmm): is there a better way to get the destructor? *)
-        Qes (fun vs free =>
-            |> fspec (resolve:=resolve) (Vptr ctor) (loc :: vs) ti (fun _ =>
-               (free ** Q))) empSP)
+        match get_spec cnd with
+        | Some ctor_spec =>
+          match ctor_spec.(fs_arguments) as X
+                return (thread_info -> arrowFrom val X ((val -> mpred) -> mpred)) -> _
+          with
+          | _ :: _ => fun spec =>
+            ret (fun loc Q =>
+                 Qes (fun vs free =>
+                        applyEach _ vs (spec ti loc) (fun Q' _ => Q' (fun _ => free ** Q))) empSP)
+          | _ => fun _ => None
+          end ctor_spec.(fs_spec)
+        | _ => None
+        end
       | _ => ret (fun _ _ =>
                    error "all non-primitive declarations must have initializers")
       end
@@ -534,8 +543,8 @@ Section refl.
   : option (val -> mpred -> mpred) :=
     let default := ret (fun this Q => wpd (resolve:=resolve) ti r cls this (f, dtor) Q) in
     let p := offset_for cls f in
-    match find (fun '(f', _) => if string_dec dtor f' then true else false) specs with
-    | Some (_, fs) =>
+    match get_spec dtor with
+    | Some fs =>
       match fs.(fs_arguments) as X
             return (thread_info -> arrowFrom val X ((val -> mpred) -> mpred)) -> _
       with
@@ -615,17 +624,16 @@ Section refl.
         match init with
         | Some (Econstructor cnd es _) =>
           Qes <- wpes wpAnys es ;;
-          ret (fun k Q =>
-          (* todo(gmm): constructors and destructors need to be handled through
-           * `cglob`.
-           *)
-          Exists ctor, [| glob_addr resolve cnd ctor |] **
-          (* todo(gmm): is there a better way to get the destructor? *)
-          Qes (fun vs free =>
-                 Forall a, _at (_eq a) (uninit (Tref gn))
-              -* |> fspec (resolve:=resolve) (Vptr ctor) (a :: vs) ti (fun _ =>
-                 _local r x &~ a -*
-                 (free ** k (Kat_exit (fun Q => _local r x &~ a ** |> destroy (resolve:=resolve) ti Dt_Deleting gn a Q) Q)))) empSP)
+          match get_spec cnd , get_spec (dtor_name Dt_Deleting gn) with
+          | Some ctor_spec , Some dtor_spec =>
+            ret (fun k Q =>
+                   Qes (fun vs free =>
+                          Forall a, _at (_eq a) (uninit (Tref gn))
+                       -* applyEach _ (a :: vs) (ctor_spec.(fs_spec) ti) (fun Q' _ =>
+                            Q' (fun _ => _local r x &~ a -*
+                            (free ** k (Kat_exit (fun Q'' => _local r x &~ a ** applyEach _ (a :: nil) (dtor_spec.(fs_spec) ti) (fun Q _ => Q (fun _ => Q''))) Q))))) empSP)
+          | _ , _ => None
+          end
         | _ => ret (fun _ _ =>
                      error "all non-primitive declarations must have initializers")
         end
