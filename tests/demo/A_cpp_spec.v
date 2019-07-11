@@ -14,5 +14,5 @@ From Demo Require Import A_hpp_spec.
 
 
 Definition A_cpp_spec (resolve : _) :=
-      (|> ti_cglob (resolve:=resolve) A__bar A__bar_spec) -*
-          ti_cglob (resolve:=resolve) A__foo A__foo_spec.
+      module empSP
+             (ti_cglob (resolve:=resolve) A__foo A__foo_spec).

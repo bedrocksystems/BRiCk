@@ -20,16 +20,13 @@ Theorem A_cpp_sound : forall (resolve : genv),
     denoteModule A_cpp.module |-- A_cpp_spec resolve.
 Proof.
   intros.
-  unfold A_cpp_spec.
+  unfold A_cpp_spec, module.
   work.
 
   verifyF_forget A_hpp_spec.A__foo.
   { (* A::foo(int) *)
     start_proof.
-    simplifying.
-    work.
-    simplifying.
-    work.
+    repeat (simplifying; work).
     done_proof. }
 
   finish_module.

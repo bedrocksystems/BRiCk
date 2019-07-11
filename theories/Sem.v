@@ -15,6 +15,6 @@ From Cpp.Sem Require Export
      Init
      Deinit
      Func
-     Modules
+     CompilationUnit
      Linking
      CCLogic.

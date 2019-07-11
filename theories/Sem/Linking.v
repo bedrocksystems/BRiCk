@@ -9,13 +9,13 @@ From ChargeCore.Logics Require Import
 From Cpp Require Import
      Ast.
 From Cpp.Sem Require Import
-     Logic Modules.
+     Logic CompilationUnit.
 
 Axiom lob_ind : forall P S,
     S //\\ |> P |-- P ->
     S |-- P.
-Axiom illater_wandSP : forall P Q, |> (P -* Q) |-- (|> P) -* (|> Q).
-Axiom illater_sepSP : forall P Q, |> (P ** Q) |-- (|> P) ** (|> Q).
+Axiom illater_wandSP : forall P Q, |> (P -* Q) -|- (|> P) -* (|> Q).
+Axiom illater_sepSP : forall P Q, |> (P ** Q) -|- (|> P) ** (|> Q).
 Axiom later_empSP : |> empSP -|- empSP.
 
 
@@ -26,14 +26,27 @@ Axiom later_empSP : |> empSP -|- empSP.
  * a function call, but I don't think that you can actually do that).
  *)
 Definition module (imports exports : mpred) : mpred :=
-  (|> imports) -->> exports.
+  (|> imports) -* exports.
 
+Theorem use_module_prim
+: forall (all sub rem : compilation_unit) spec,
+    match link sub rem with
+    | None => False
+    | Some all' => compilation_unit_eq all all' = true
+    end ->
+    denoteModule sub |-- spec ->
+    denoteModule all |-- denoteModule rem ** spec.
+Proof. Admitted.
+
+
+(*
 Theorem module_self_link (E : mpred) :
   module E E |-- E.
 Proof.
   eapply lob_ind.
   unfold module.
-  eapply landAdj. reflexivity.
+  eapply landAdj.
+  reflexivity.
 Qed.
 
 Theorem module_link (I1 I2 E1 E2 : mpred) :
@@ -41,23 +54,29 @@ Theorem module_link (I1 I2 E1 E2 : mpred) :
   |-- module (I1 ** I2) (E1 ** E2).
 Proof. Abort.
 
-
-Definition module_link (a b : list Decl) : list Decl := a ++ b.
-
-Axiom denoteModule_link : forall a b,
-    denoteModule (module_link a b) -|- denoteModule a ** denoteModule b.
-
 Lemma lob_link : forall A B : mpred,
-    ((|> A) -* B) ** ((|> B) -* A) |-- A ** B.
+    ((|> A) -->> B) //\\ ((|> B) -->> A) |-- A //\\ B.
 Proof.
-  intros.
+  intros. (*
   eapply sepSPAdj'.
   rewrite <- empSPL.
   eapply sepSPAdj.
   rewrite <- (landtrueR empSP).
   apply landL2.
+  rewrite <- wand_curry.
+  eapply wandSPAdj.
+  eapply lob_ind.
+  rewrite illater_sepSP.
   eapply spec_lob.
+  eapply wandSPAdj.
+  eapply wandSPE.
+  reflexivity.
+  eapply scME. 
+  instantiate (1:=|> ((|> B) -* A) ** ((|> A))).
+*)
+
 Abort.
+*)
     (* |>A ==> B
      * |>B ==> A
      * A //\\ B

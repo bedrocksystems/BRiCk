@@ -48,14 +48,16 @@ translateModule(const TranslationUnitDecl* decl, CoqPrinter& print, ClangPrinter
 	print.output() << fmt::line;
 }
 
-void toCoqModule(clang::ASTContext *ctxt,
-		const clang::TranslationUnitDecl *decl) {
+void toCoqModule(clang::ASTContext *ctxt, const clang::TranslationUnitDecl *decl) {
+#if 0
 	NoInclude noInclude(ctxt->getSourceManager());
 	FromComment fromComment(ctxt);
 	std::list<Filter*> filters;
 	filters.push_back(&noInclude);
 	filters.push_back(&fromComment);
 	Combine<Filter::What::NOTHING, Filter::max> filter(filters);
+#endif
+  Default filter(Filter::What::DEFINITION);
 
 	SpecCollector specs;
 
@@ -83,12 +85,15 @@ void toCoqModule(clang::ASTContext *ctxt,
 #endif
 
 	fmt << fmt::line
-			<< "Definition module : Ast.module :=" << fmt::indent;
+			<< "Definition module : compilation_unit := " << fmt::indent << fmt::line
+      << "Eval reduce_compilation_unit in decls" << fmt::nbsp;
 
+  print.begin_list();
 	for (auto entry : mod.definitions()) {
 		auto decl = entry.second;
 		cprint.printDecl(decl, print);
-		print.output() << fmt::nbsp << "::";
+    print.cons();
 	}
-	print.output() << "nil." << fmt::outdent << fmt::line;
+  print.end_list();
+	print.output() << "." << fmt::outdent << fmt::line;
 }

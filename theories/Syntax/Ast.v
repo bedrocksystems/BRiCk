@@ -335,10 +335,12 @@ Definition dtor_name (type : Dtor_type) (cls : globname) : obj_name :=
   end%string.
 
 
+
+
+(*
 (* global declarations *)
-Inductive Decl : Set :=
+Variant Decl : Set :=
 | Dvar         (name : obj_name) (_ : type) (_ : option Expr)
-| Dtypedef     (name : globname) (_ : type)
 
 | Dfunction    (name : obj_name) (_ : Func)
 | Dmethod      (name : obj_name) (_ : Method)
@@ -352,6 +354,8 @@ Inductive Decl : Set :=
 | Denum        (name : globname) (_ : option type) (branches : list (ident * option Expr))
   (* ^ enumerations (the initializers need to be constant expressions) *)
 | Dconstant    (name : globname) (_ : type) (_ : Expr)
+
+| Dtypedef     (name : globname) (_ : type)
 (*
 | Dtemplated   (_ : list (OrType type * ident)) (_ : Decl)
                (instantiations : list Decl)
@@ -361,6 +365,7 @@ Inductive Decl : Set :=
 
 Definition module : Set :=
   list Decl.
+*)
 
 (* types with explicit size information
  *)

@@ -346,13 +346,14 @@ Module Type Func.
 
   Axiom cglob_dup : forall p ti fs,
       cglob p ti fs -|- cglob p ti fs ** cglob p ti fs.
+
   (* i was thinking that i could store static variables in invariants.
    * i'm not sure how this works with function pointer weakening.
    *)
   Axiom cglob_weaken : forall a b c, cglob a b c |-- empSP.
 
-  (* this is problematic because if `thread_info` was empty, then
-   * the left hand side woudl be ltrue, not empSP
+  (* todo(gmm): this is problematic because if `thread_info` was empty, then
+   * the left hand side would be ltrue, not empSP
    *)
   Lemma cglob_weaken_any_ti :
     forall (a : globname) (c : function_spec),

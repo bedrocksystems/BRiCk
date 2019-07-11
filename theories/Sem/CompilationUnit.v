@@ -4,7 +4,7 @@
  * SPDX-License-Identifier:AGPL-3.0-or-later
  *)
 From Coq.Classes Require Import
-     RelationClasses Morphisms.
+     RelationClasses Morphisms DecidableClass.
 
 Require Import Coq.Lists.List.
 Require Import Coq.Lists.List.
@@ -12,38 +12,23 @@ Require Import Coq.Strings.String.
 Require Import Coq.ZArith.BinInt.
 Require Import Coq.micromega.Lia.
 
-
 From ChargeCore.Logics Require Import
      ILogic BILogic ILEmbed Later.
 
+Require Import Cpp.Util.
 From Cpp Require Import
      Ast.
 From Cpp.Sem Require Import
      Util Logic Semantics PLogic.
 
+
 Module Type modules.
 
-  (* this is the denotation of modules *)
-
-  (* note(gmm): two ways to support initializer lists.
-   * 1/ add them to all functions (they are almost always empty
-   * 2/ make a `ctor_at` (similar to `code_at`) that handles
-   *    constructors.
-   * ===
-   * 2 seems like the more natural way to go.
-   *)
-
-  (* note(gmm): the denotation of modules should be moved to another module.
-   *)
-  Fixpoint denoteDecl (d : Decl) : mpred :=
-    match d with
-    | Dvar n _ _ =>
+  Definition denoteSymbol (n : obj_name) (o : ObjValue) : mpred :=
+    match o with
+    | Ovar _ _ =>
       Exists a, with_genv (fun resolve => [| glob_addr resolve n a |])
-    | Dtypedef gn _ => empSP
-                       (* note(gmm): this is compile time, and shouldn't be a
-                        * problem.
-                        *)
-    | Dfunction n f =>
+    | Ofunction f =>
       match f.(f_body) return mpred with
       | None =>
         Exists a, with_genv (fun resolve => [| glob_addr resolve n a |])
@@ -52,7 +37,7 @@ Module Type modules.
         with_genv (fun resolve => [| glob_addr resolve n a |]) //\\
                   code_at f a
       end
-    | Dmethod n m =>
+    | Omethod m =>
       match m.(m_body) return mpred with
       | None =>
         Exists a,
@@ -64,51 +49,55 @@ Module Type modules.
                            ; f_params := ("#this"%string, Tqualified m.(m_this_qual) (Tref m.(m_class))) :: m.(m_params)
                            ; f_body := m.(m_body) |} a
       end
-    | Dconstructor n m =>
-      match m.(c_body) return mpred with
+    | Oconstructor c =>
+      match c.(c_body) return mpred with
       | None =>
         Exists a,
         with_genv (fun resolve => [| glob_addr resolve n a |])
       | Some body =>
         Exists a,
-        with_genv (fun resolve => [| glob_addr resolve n a |]) //\\ ctor_at a m
+        with_genv (fun resolve => [| glob_addr resolve n a |]) //\\ ctor_at a c
       end
-    | Ddestructor n m =>
-      match m.(d_body) return mpred with
+    | Odestructor d =>
+      match d.(d_body) return mpred with
       | None =>
         Exists a,
         with_genv (fun resolve => [| glob_addr resolve n a |])
       | Some body =>
         Exists a,
-        with_genv (fun resolve => [| glob_addr resolve n a |]) //\\ dtor_at a m
+        with_genv (fun resolve => [| glob_addr resolve n a |]) //\\ dtor_at a d
       end
-    | Dstruct gn _ => empSP
-      (* ^ this should record size and offset information
-       *)
-    | Dunion gn _ => empSP
-      (* ^ this should record size and offset information
-       *)
-    | Denum gn _ _ => empSP
-      (* ^ this should record enumeration information
-       *)
-    | Dconstant gn val _ => empSP
-    (* | Dnamespace ds => *)
-    (*   sepSPs (map denoteDecl ds) *)
-    (* | Dextern ds => *)
-    (*   sepSPs (map denoteDecl ds) *)
     end.
 
-  Fixpoint denoteModule (d : list Decl) : mpred :=
-    match d with
-    | nil => empSP
-    | d :: ds => denoteDecl d ** denoteModule ds
+  Definition denoteGlobal (gn : globname) (g : GlobDecl) : mpred :=
+    match g with
+    | Gtypedef _ => empSP
+      (* note(gmm): this is compile time, and shouldn't be a problem.
+       *)
+    | Gstruct _ => empSP
+      (* ^ this should record size and offset information *)
+    | Gunion _ => empSP
+      (* ^ this should record size and offset information *)
+    | Genum _ => empSP
+      (* ^ this should record enumeration information *)
+    | Gconstant val _ => empSP
+      (* ^ this should record constant information *)
+    | Gtypedec => empSP
     end.
 
+  Definition denoteModule (d : compilation_unit) : mpred :=
+    sepSPs (List.map (fun '(gn,g) => denoteGlobal gn g) d.(globals)) **
+    sepSPs (List.map (fun '(on,o) => denoteSymbol on o) d.(symbols)).
 
   Axiom denoteModule_weaken : forall m, denoteModule m |-- empSP.
 
-  Axiom denote_module_dup : forall module,
-      denoteModule module -|- denoteModule module ** denoteModule module.
+  (* Axiom denote_module_dup : forall module, *)
+  (*     denoteModule module -|- denoteModule module ** denoteModule module. *)
+
+  Theorem denoteModule_link : forall a b c,
+      link a b = Some c ->
+      denoteModule c -|- denoteModule a ** denoteModule b.
+  Proof. Admitted.
 
 End modules.
 
