@@ -14,20 +14,21 @@
 using namespace clang;
 
 class PrintStmt
-        : public ConstStmtVisitor<PrintStmt, void, CoqPrinter &, ClangPrinter &> {
+        : public ConstStmtVisitor<PrintStmt, void, CoqPrinter &, ClangPrinter &, ASTContext&> {
 private:
   PrintStmt() {}
+
 public:
   static PrintStmt printer;
 
-  void VisitStmt(const Stmt *stmt, CoqPrinter &print, ClangPrinter &cprint)
+  void VisitStmt(const Stmt *stmt, CoqPrinter &print, ClangPrinter &cprint, ASTContext&)
   {
     print.error() << "unsupported statement " << stmt->getStmtClassName()
                   << "\n";
   }
 
   void VisitDeclStmt(
-          const DeclStmt *stmt, CoqPrinter &print, ClangPrinter &cprint)
+          const DeclStmt *stmt, CoqPrinter &print, ClangPrinter &cprint, ASTContext&)
   {
     print.ctor("Sdecl") << fmt::lparen;
     for (auto i : stmt->decls()) {
@@ -43,7 +44,7 @@ public:
   }
 
   void VisitWhileStmt(
-          const WhileStmt *stmt, CoqPrinter &print, ClangPrinter &cprint)
+          const WhileStmt *stmt, CoqPrinter &print, ClangPrinter &cprint, ASTContext&)
   {
     print.ctor("Swhile");
     if (auto v = stmt->getConditionVariable()) {
@@ -61,7 +62,7 @@ public:
   }
 
   void VisitForStmt(
-          const ForStmt *stmt, CoqPrinter &print, ClangPrinter &cprint)
+          const ForStmt *stmt, CoqPrinter &print, ClangPrinter &cprint, ASTContext&)
   {
     print.ctor("Sfor");
     if (auto v = stmt->getInit()) {
@@ -92,7 +93,7 @@ public:
     print.output() << fmt::rparen;
   }
 
-  void VisitDoStmt(const DoStmt *stmt, CoqPrinter &print, ClangPrinter &cprint)
+  void VisitDoStmt(const DoStmt *stmt, CoqPrinter &print, ClangPrinter &cprint, ASTContext&)
   {
     print.ctor("Sdo");
     cprint.printStmt(stmt->getBody(), print);
@@ -102,18 +103,18 @@ public:
   }
 
   void VisitBreakStmt(
-          const BreakStmt *stmt, CoqPrinter &print, ClangPrinter &cprint)
+          const BreakStmt *stmt, CoqPrinter &print, ClangPrinter &cprint, ASTContext&)
   {
     print.output() << "Sbreak";
   }
 
   void VisitContinueStmt(
-          const ContinueStmt *stmt, CoqPrinter &print, ClangPrinter &cprint)
+          const ContinueStmt *stmt, CoqPrinter &print, ClangPrinter &cprint, ASTContext&)
   {
     print.output() << "Scontinue";
   }
 
-  void VisitIfStmt(const IfStmt *stmt, CoqPrinter &print, ClangPrinter &cprint)
+  void VisitIfStmt(const IfStmt *stmt, CoqPrinter &print, ClangPrinter &cprint, ASTContext&)
   {
     print.ctor("Sif");
     if (auto v = stmt->getConditionVariable()) {
@@ -136,19 +137,19 @@ public:
     print.output() << fmt::rparen;
   }
 
-  void VisitCaseStmt(const CaseStmt *stmt, CoqPrinter &print, ClangPrinter &cprint) {
+  void VisitCaseStmt(const CaseStmt *stmt, CoqPrinter &print, ClangPrinter &cprint, ASTContext& ctxt) {
     // note, this only occurs when printing the body of a switch statement
     print.ctor("Scase");
 
     if (stmt->getRHS()) {
-      print.ctor("Range", false);
-      cprint.printExpr(stmt->getLHS(), print);
-      print.output() << fmt::nbsp;
-      cprint.printExpr(stmt->getRHS(), print);
+      print.ctor("Range", false)
+          << stmt->getLHS()->EvaluateKnownConstInt(ctxt) << "%Z"
+          << fmt::nbsp
+          << stmt->getRHS()->EvaluateKnownConstInt(ctxt) << "%Z";
       print.end_ctor();
     } else {
-      print.ctor("Exact", false);
-      cprint.printExpr(stmt->getLHS(), print);
+      print.ctor("Exact", false)
+          << stmt->getLHS()->EvaluateKnownConstInt(ctxt) << "%Z";
       print.end_ctor();
     }
 
@@ -159,12 +160,12 @@ public:
     cprint.printStmt(stmt->getSubStmt(), print);
   }
 
-  void VisitDefaultStmt(const DefaultStmt *stmt, CoqPrinter &print, ClangPrinter &cprint) {
+  void VisitDefaultStmt(const DefaultStmt *stmt, CoqPrinter &print, ClangPrinter &cprint, ASTContext&) {
     print.output() << "Sdefault";
   }
 
   void VisitSwitchStmt(
-          const SwitchStmt *stmt, CoqPrinter &print, ClangPrinter &cprint)
+          const SwitchStmt *stmt, CoqPrinter &print, ClangPrinter &cprint, ASTContext&)
   {
     print.ctor("Sswitch");
     cprint.printExpr(stmt->getCond(), print);
@@ -173,7 +174,7 @@ public:
     print.end_ctor();
   }
 
-  void VisitExpr(const Expr *expr, CoqPrinter &print, ClangPrinter &cprint)
+  void VisitExpr(const Expr *expr, CoqPrinter &print, ClangPrinter &cprint, ASTContext&)
   {
     print.ctor("Sexpr");
     cprint.printValCat(expr, print);
@@ -183,7 +184,7 @@ public:
   }
 
   void VisitReturnStmt(
-          const ReturnStmt *stmt, CoqPrinter &print, ClangPrinter &cprint)
+          const ReturnStmt *stmt, CoqPrinter &print, ClangPrinter &cprint, ASTContext&)
   {
     if (stmt->getRetValue() != nullptr) {
       print.ctor("Sreturn (Some") << "(";
@@ -197,7 +198,7 @@ public:
   }
 
   void VisitCompoundStmt(
-          const CompoundStmt *stmt, CoqPrinter &print, ClangPrinter &cprint)
+          const CompoundStmt *stmt, CoqPrinter &print, ClangPrinter &cprint, ASTContext&)
   {
     print.ctor("Sseq");
     print.begin_list();
@@ -210,13 +211,13 @@ public:
   }
 
   void VisitNullStmt(
-          const NullStmt *stmt, CoqPrinter &print, ClangPrinter &cprint)
+          const NullStmt *stmt, CoqPrinter &print, ClangPrinter &cprint, ASTContext&)
   {
     print.output() << "Sskip";
   }
 
   void VisitGCCAsmStmt(
-          const GCCAsmStmt *stmt, CoqPrinter &print, ClangPrinter &cprint)
+          const GCCAsmStmt *stmt, CoqPrinter &print, ClangPrinter &cprint, ASTContext&)
   {
     // todo(gmm): more to do here to support assembly
     print.ctor("Sasm");
@@ -266,6 +267,6 @@ PrintStmt PrintStmt::printer;
 void ClangPrinter::printStmt(const clang::Stmt *stmt, CoqPrinter &print)
 {
   auto depth = print.output().get_depth();
-  PrintStmt::printer.Visit(stmt, print, *this);
+  PrintStmt::printer.Visit(stmt, print, *this, *this->context_);
   assert(depth == print.output().get_depth());
 }

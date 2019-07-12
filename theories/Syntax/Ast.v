@@ -229,9 +229,8 @@ Inductive Expr : Set :=
 .
 
 Variant SwitchBranch : Set :=
-| Default
-| Exact (_ : Expr)
-| Range (_ _ : Expr)
+| Exact (_ : Z)
+| Range (_ _ : Z)
 .
 
 Inductive Stmt : Set :=
