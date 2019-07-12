@@ -136,39 +136,41 @@ public:
     print.output() << fmt::rparen;
   }
 
+  void VisitCaseStmt(const CaseStmt *stmt, CoqPrinter &print, ClangPrinter &cprint) {
+    // note, this only occurs when printing the body of a switch statement
+    print.ctor("Scase");
+
+    if (stmt->getRHS()) {
+      print.ctor("Range", false);
+      cprint.printExpr(stmt->getLHS(), print);
+      print.output() << fmt::nbsp;
+      cprint.printExpr(stmt->getRHS(), print);
+      print.end_ctor();
+    } else {
+      print.ctor("Exact", false);
+      cprint.printExpr(stmt->getLHS(), print);
+      print.end_ctor();
+    }
+
+    print.end_ctor();
+
+    print.cons();
+
+    cprint.printStmt(stmt->getSubStmt(), print);
+  }
+
+  void VisitDefaultStmt(const DefaultStmt *stmt, CoqPrinter &print, ClangPrinter &cprint) {
+    print.output() << "Sdefault";
+  }
+
   void VisitSwitchStmt(
           const SwitchStmt *stmt, CoqPrinter &print, ClangPrinter &cprint)
   {
     print.ctor("Sswitch");
     cprint.printExpr(stmt->getCond(), print);
-    const SwitchCase *sc = stmt->getSwitchCaseList();
-    print.output() << fmt::lparen;
-    while (sc) {
-      print.output() << fmt::lparen;
-      if (isa<DefaultStmt>(sc)) {
-        print.output() << "Default";
-      } else if (auto cs = dyn_cast<CaseStmt>(sc)) {
-        if (cs->getRHS()) {
-          print.output() << "Range" << fmt::nbsp;
-          cprint.printExpr(cs->getLHS(), print);
-          print.output() << fmt::nbsp;
-          cprint.printExpr(cs->getRHS(), print);
-        } else {
-          print.output() << "Exact" << fmt::nbsp;
-          cprint.printExpr(cs->getLHS(), print);
-        }
-      } else {
-        print.error() << "switch body not default or case.\n";
-        llvm::errs().flush();
-        assert(false);
-      }
-      print.output() << "," << fmt::nbsp;
-      cprint.printStmt(sc->getSubStmt(), print);
-      print.output() << fmt::rparen;
 
-      sc = sc->getNextSwitchCase();
-    }
-    print.output() << "::nil" << fmt::rparen << fmt::rparen;
+    cprint.printStmt(stmt->getBody(), print);
+    print.end_ctor();
   }
 
   void VisitExpr(const Expr *expr, CoqPrinter &print, ClangPrinter &cprint)
@@ -197,12 +199,14 @@ public:
   void VisitCompoundStmt(
           const CompoundStmt *stmt, CoqPrinter &print, ClangPrinter &cprint)
   {
-    print.ctor("Sseq") << fmt::lparen;
+    print.ctor("Sseq");
+    print.begin_list();
     for (auto i : stmt->body()) {
       cprint.printStmt(i, print);
-      print.output() << "::";
+      print.cons();
     }
-    print.output() << "nil" << fmt::rparen << fmt::rparen;
+    print.end_list();
+    print.end_ctor();
   }
 
   void VisitNullStmt(

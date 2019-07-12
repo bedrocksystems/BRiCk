@@ -243,7 +243,9 @@ Inductive Stmt : Set :=
 | Sfor    (_ : option Stmt) (_ : option Expr) (_ : option (ValCat * Expr)) (_ : Stmt)
 | Sdo     (_ : Stmt) (_ : Expr)
 
-| Sswitch (_ : Expr) (_ : list (SwitchBranch * Stmt))
+| Sswitch (_ : Expr) (_ : Stmt)
+| Scase   (_ : SwitchBranch)
+| Sdefault
 
 | Sbreak
 | Scontinue

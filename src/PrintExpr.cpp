@@ -334,7 +334,7 @@ public:
 
   void VisitIntegerLiteral(const IntegerLiteral *lit, CoqPrinter& print, ClangPrinter& cprint)
   {
-    print.ctor("Eint", false) << lit->getValue() << fmt::nbsp;
+    print.ctor("Eint", false) << lit->getValue();
     done(lit, print, cprint);
   }
 
@@ -342,7 +342,6 @@ public:
   {
     print.ctor("Echar", false);
     print.ascii(lit->getValue());
-    print.output() << fmt::nbsp;
     done(lit, print, cprint);
   }
 
