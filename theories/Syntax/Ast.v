@@ -228,6 +228,8 @@ Inductive Expr : Set :=
 | Eatomic (_ : AtomicOp) (_ : list (ValCat * Expr)) (_ : type)
 .
 
+Definition Edefault_init_expr (e : Expr) : Expr := e.
+
 Variant SwitchBranch : Set :=
 | Default
 | Exact (_ : Expr)

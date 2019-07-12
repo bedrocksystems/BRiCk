@@ -663,6 +663,12 @@ public:
 
     done(expr, print, cprint);
   }
+
+  void VisitCXXDefaultInitExpr(const CXXDefaultInitExpr *expr, CoqPrinter& print, ClangPrinter& cprint) {
+    print.ctor("Edefault_init_expr");
+    cprint.printExpr(expr->getExpr(), print);
+    print.end_ctor();
+  }
 };
 
 PrintExpr PrintExpr::printer;
