@@ -217,9 +217,7 @@ Module Type Stmt.
       | Sdefault :: ls =>
         [| ~L |] -* wp_switch_block e L ls Q
       | s :: ls => wp_switch_block e L ls Q
-        (* ^ todo(gmm): assert that s does not contain any case or default statements
-         *   not guarded by a switch
-         *)
+        (* todo(gmm): this should still catch some more issues *)
       | nil => lfalse
       end.
     (* ^ note(gmm): this could be optimized to avoid re-proving lines of code in the
@@ -285,7 +283,7 @@ Module Type Stmt.
         switch_ok b = true ->
         wp_rhs e (fun v free =>
                     Exists vv : Z, [| v = Vint vv |] **
-                    wp_switch_block vv True (switch_body b)
+                    wp_switch_block vv False (switch_body b)
                     (Kswitch Q))
         |-- wp (Sswitch e b) Q.
 
