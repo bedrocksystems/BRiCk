@@ -11,9 +11,10 @@ Require Import LtacIter.LtacIter.
 From Cpp Require Import Parser Sem.
 From Cpp.Auto Require Lemmas type.
 
-From Cpp.Auto Require Import Discharge Definitions.
+From Cpp.Auto Require Import Definitions.
 From bedrock.auto.Lemmas Require
      Eval Functions PLogic Util Wp.
+Require bedrock.auto.Discharge bedrock.auto.learn.
 
 (* we are working in a fairly rich separation logic, however, the fragment that
  * shows up in practice is relatively small.
@@ -81,7 +82,7 @@ Hint Resolve Lemmas.PLogic.learn_bounds_at_tuint
 
 Ltac learn_here :=
   idtac;
-  let go l := (eapply l; try solve [ eauto with typeclass_instances ]; [ Discharge.learn ]) in
+  let go l := (eapply l; try solve [ eauto with typeclass_instances ]; [ learn.learn ]) in
   first [ eapply refine_tprim_ptr;
               lazymatch goal with
               | |- forall x, Vptr x = Vptr _ -> _ => fail
@@ -90,18 +91,18 @@ Ltac learn_here :=
         | lazymatch goal with
           | |- _at _ (tprim (Tint _ _) ?v) ** _ |-- _ =>
             lazymatch v with
-            | Vint _ => simple apply Lemmas.PLogic.learn_bounds_at_int_Vint; Discharge.learn
-            | _ => simple apply Lemmas.PLogic.learn_bounds_at_int_val; do 2 intro; try subst v; Discharge.learn
+            | Vint _ => simple apply Lemmas.PLogic.learn_bounds_at_int_Vint; learn.learn
+            | _ => simple apply Lemmas.PLogic.learn_bounds_at_int_val; do 2 intro; try subst v; learn.learn
             end
           | |- tlocal_at _ _ _ (tprim (Tint _ _) ?v) ** _ |-- _ =>
             lazymatch v with
-            | Vint _ => simple apply Lemmas.PLogic.learn_bounds_tlocal_at_Vint; Discharge.learn
-            | _ => simple apply Lemmas.PLogic.learn_bounds_tlocal_at_val; do 2 intro; try subst v; intro; Discharge.learn
+            | Vint _ => simple apply Lemmas.PLogic.learn_bounds_tlocal_at_Vint; learn.learn
+            | _ => simple apply Lemmas.PLogic.learn_bounds_tlocal_at_val; do 2 intro; try subst v; intro; learn.learn
             end
           | |- tlocal _ _ (tprim (Tint _ _) ?v) ** _ |-- _ =>
             lazymatch v with
-            | Vint _ => simple apply Lemmas.PLogic.learn_bounds_tlocal_Vint; Discharge.learn
-            | _ => simple apply Lemmas.PLogic.learn_bounds_tlocal_val; do 3 intro; try subst v; Discharge.learn
+            | Vint _ => simple apply Lemmas.PLogic.learn_bounds_tlocal_Vint; learn.learn
+            | _ => simple apply Lemmas.PLogic.learn_bounds_tlocal_val; do 3 intro; try subst v; learn.learn
             end
           end
         | first_of [ db:learning ] go
@@ -124,7 +125,7 @@ Ltac learn_here :=
 
 Ltac learn :=
   idtac;
-  repeat perm_left learn_here; repeat Auto.type.learn.
+  repeat Discharge.perm_left learn_here; repeat Auto.type.learn.
 
 Create HintDb rep.
 Hint Resolve tprim_tptr tprim_tint tprim_tuint tprim_any tptr_any tint_any tuint_any : rep.
@@ -211,4 +212,4 @@ Ltac work_ctac :=
   end.
 
 Ltac work :=
-  discharge ltac:(work_fwd) ltac:(repeat Auto.type.learn) ltac:(work_bwd) ltac:(work_ctac) ltac:(work_tac).
+  Discharge.discharge ltac:(work_fwd) ltac:(repeat Auto.type.learn) ltac:(work_bwd) ltac:(work_ctac) ltac:(work_tac).
