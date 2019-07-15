@@ -207,30 +207,6 @@ Module Type Stmt.
       | Range low high => low <= v <= high
       end%Z.
 
-    (* apply the [wp] calculation to the body of a switch *)
-    Fixpoint wp_switch_block (e : Z) (L : Prop) (ls : list Stmt) (Q : Kpreds) : mpred :=
-      match ls with
-      | Scase sb :: ls =>
-        let here := wp_switch_branch e sb in
-        ([| here |] -* wp (Sseq ls) Q) //\\
-        wp_switch_block e (L \/ here) ls Q
-      | Sdefault :: ls =>
-        [| ~L |] -* wp_switch_block e L ls Q
-      | s :: ls => wp_switch_block e L ls Q
-        (* todo(gmm): this should still catch some more issues *)
-      | nil => lfalse
-      end.
-    (* ^ note(gmm): this could be optimized to avoid re-proving lines of code in the
-     * case of fall-throughs
-     *)
-
-    (* this just peels of [Sseq] statements *)
-    Fixpoint switch_body (s : Stmt) : list Stmt :=
-      match s with
-      | Sseq ls => flat_map switch_body ls
-      | _ => s :: nil
-      end.
-
     Fixpoint no_case (s : Stmt) : bool :=
       match s with
       | Sseq ls => forallb no_case ls
@@ -250,28 +226,25 @@ Module Type Stmt.
       end.
 
 
-    (* note(gmm): this determines if the switch statement is "reasonable",
-     * e.g. you aren't switching into the middle of a loop.
-     * to support the full generality of [switch], you need
-     * to compile the [switch] into continuations.
-     *)
-    Fixpoint switch_ok (s : Stmt) : bool :=
-      match s with
-      | Sseq ls => forallb switch_ok ls
-      | Sdecl _ => false
-      | Sif _ _ a b => no_case a && no_case b
-      | Swhile _ _ s => no_case s
-      | Sfor _ _ _ s => no_case s
-      | Sdo s _ => no_case s
-      | Sswitch _ _
-      | Scase _
-      | Sdefault
-      | Sbreak
-      | Scontinue
-      | Sreturn _
-      | Sexpr _ _
-      | Sasm _ _ _ _ _ => true
+    (* apply the [wp] calculation to the body of a switch *)
+    Fixpoint wp_switch_block (e : Z) (L : Prop) (ls : list Stmt) (Q : Kpreds) : mpred :=
+      match ls with
+      | Scase sb :: ls =>
+        let here := wp_switch_branch e sb in
+        ([| here |] -* wp (Sseq ls) Q) //\\
+        wp_switch_block e (L \/ here) ls Q
+      | Sdefault :: ls =>
+        [| ~L |] -* wp_switch_block e L ls Q
+      | s :: ls =>
+        if no_case s then
+          wp_switch_block e L ls Q
+        else
+          lfalse
+      | nil => lfalse
       end.
+    (* ^ note(gmm): this could be optimized to avoid re-proving lines of code in the
+     * case of fall-throughs
+     *)
 
     Definition Kswitch (k : Kpreds) : Kpreds :=
       {| k_normal := k.(k_normal)
@@ -280,12 +253,10 @@ Module Type Stmt.
        ; k_continue := k.(k_continue) |}.
 
     Axiom wp_switch : forall e b Q,
-        switch_ok b = true ->
         wp_rhs e (fun v free =>
                     Exists vv : Z, [| v = Vint vv |] **
-                    wp_switch_block vv False (switch_body b)
-                    (Kswitch Q))
-        |-- wp (Sswitch e b) Q.
+                    wp_switch_block vv False b (Kswitch Q))
+        |-- wp (Sswitch e (Sseq b)) Q.
 
     (* note: case and default statements are only meaningful inside of [switch].
      * this is handled by [wp_switch_block].
