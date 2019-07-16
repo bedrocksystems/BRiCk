@@ -200,8 +200,71 @@ Module Type Stmt.
         I |-- wp (Sseq (b :: (Sif None t Scontinue Sskip) :: nil)) (Kloop I Q) ->
         I |-- wp (Sdo b t) Q.
 
+    (* compute the [Prop] that is known if this switch branch is taken *)
+    Definition wp_switch_branch (v : Z) (s : SwitchBranch) : Prop :=
+      match s with
+      | Exact i => v = i
+      | Range low high => low <= v <= high
+      end%Z.
 
-  End  with_resolver.
+    Fixpoint no_case (s : Stmt) : bool :=
+      match s with
+      | Sseq ls => forallb no_case ls
+      | Sdecl _ => true
+      | Sif _ _ a b => no_case a && no_case b
+      | Swhile _ _ s => no_case s
+      | Sfor _ _ _ s => no_case s
+      | Sdo s _ => no_case s
+      | Sswitch _ _ => true
+      | Scase _
+      | Sdefault => false
+      | Sbreak
+      | Scontinue
+      | Sreturn _
+      | Sexpr _ _
+      | Sasm _ _ _ _ _ => true
+      end.
+
+
+    (* apply the [wp] calculation to the body of a switch *)
+    Fixpoint wp_switch_block (e : Z) (L : Prop) (ls : list Stmt) (Q : Kpreds) : mpred :=
+      match ls with
+      | Scase sb :: ls =>
+        let here := wp_switch_branch e sb in
+        ([| here |] -* wp (Sseq ls) Q) //\\
+        wp_switch_block e (L \/ here) ls Q
+      | Sdefault :: ls =>
+        [| ~L |] -* wp_switch_block e L ls Q
+      | s :: ls =>
+        if no_case s then
+          wp_switch_block e L ls Q
+        else
+          lfalse
+      | nil => lfalse
+      end.
+    (* ^ note(gmm): this could be optimized to avoid re-proving lines of code in the
+     * case of fall-throughs
+     *)
+
+    Definition Kswitch (k : Kpreds) : Kpreds :=
+      {| k_normal := k.(k_normal)
+       ; k_return := k.(k_return)
+       ; k_break  := k.(k_normal)
+       ; k_continue := k.(k_continue) |}.
+
+    Axiom wp_switch : forall e b Q,
+        wp_rhs e (fun v free =>
+                    Exists vv : Z, [| v = Vint vv |] **
+                    wp_switch_block vv False b (Kswitch Q))
+        |-- wp (Sswitch e (Sseq b)) Q.
+
+    (* note: case and default statements are only meaningful inside of [switch].
+     * this is handled by [wp_switch_block].
+     *)
+    Axiom wp_case : forall sb Q, Q.(k_normal) |-- wp (Scase sb) Q.
+    Axiom wp_default : forall Q, Q.(k_normal) |-- wp Sdefault Q.
+
+  End with_resolver.
 
 End Stmt.
 

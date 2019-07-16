@@ -231,9 +231,8 @@ Inductive Expr : Set :=
 Definition Edefault_init_expr (e : Expr) : Expr := e.
 
 Variant SwitchBranch : Set :=
-| Default
-| Exact (_ : Expr)
-| Range (_ _ : Expr)
+| Exact (_ : Z)
+| Range (_ _ : Z)
 .
 
 Inductive Stmt : Set :=
@@ -245,7 +244,9 @@ Inductive Stmt : Set :=
 | Sfor    (_ : option Stmt) (_ : option Expr) (_ : option (ValCat * Expr)) (_ : Stmt)
 | Sdo     (_ : Stmt) (_ : Expr)
 
-| Sswitch (_ : Expr) (_ : list (SwitchBranch * Stmt))
+| Sswitch (_ : Expr) (_ : Stmt)
+| Scase   (_ : SwitchBranch)
+| Sdefault
 
 | Sbreak
 | Scontinue
