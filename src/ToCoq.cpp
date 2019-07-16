@@ -75,12 +75,12 @@ void toCoqModule(clang::ASTContext *ctxt, const clang::TranslationUnitDecl *decl
 			<< "Definition module : compilation_unit := " << fmt::indent << fmt::line
 			<< "Eval reduce_compilation_unit in decls" << fmt::nbsp;
 
-  print.begin_list();
+	print.begin_list();
 	for (auto entry : mod.definitions()) {
 		auto decl = entry.second;
 		cprint.printDecl(decl, print);
-    print.cons();
+		print.cons();
 	}
-  print.end_list();
+	print.end_list();
 	print.output() << "." << fmt::outdent << fmt::line;
 }
