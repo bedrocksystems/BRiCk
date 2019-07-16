@@ -57,9 +57,7 @@ void toCoqModule(clang::ASTContext *ctxt, const clang::TranslationUnitDecl *decl
 	filters.push_back(&fromComment);
 	Combine<Filter::What::NOTHING, Filter::max> filter(filters);
 #endif
-  Default filter(Filter::What::DEFINITION);
-
-	SpecCollector specs;
+	Default filter(Filter::What::DEFINITION);
 
 	::Module mod;
 
@@ -73,20 +71,9 @@ void toCoqModule(clang::ASTContext *ctxt, const clang::TranslationUnitDecl *decl
 			<< "Local Open Scope string_scope." << fmt::line
 			<< "Import ListNotations." << fmt::line;
 
-#if 0
-	fmt << fmt::line
-			<< "Definition imports : Ast.module :=" << fmt::indent;
-	for (auto entry : mod.imports()) {
-		auto decl = entry.second.first;
-		cprint.printDecl(decl, print);
-		print.output() << fmt::nbsp << "::";
-	}
-	fmt << "nil." << fmt::outdent << fmt::line;
-#endif
-
 	fmt << fmt::line
 			<< "Definition module : compilation_unit := " << fmt::indent << fmt::line
-      << "Eval reduce_compilation_unit in decls" << fmt::nbsp;
+			<< "Eval reduce_compilation_unit in decls" << fmt::nbsp;
 
   print.begin_list();
 	for (auto entry : mod.definitions()) {

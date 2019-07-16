@@ -505,26 +505,15 @@ class PrintDecl : public ConstDeclVisitorArgs<PrintDecl, void, CoqPrinter &,
   void VisitFunctionTemplateDecl(const FunctionTemplateDecl *decl,
           CoqPrinter &print, ClangPrinter &cprint)
   {
+    // we only print specializations
     assert(false);
-#if 0
-    // note(gmm): for now, i am just going to return the specializations.
-    for (auto i : decl->specializations()) {
-      cprint.printDecl(i, print);
-      print.output() << "::";
-    }
-#endif
   }
 
   void VisitClassTemplateDecl(const ClassTemplateDecl *decl, CoqPrinter &print,
           ClangPrinter &cprint)
   {
+    // we only print specializations
     assert(false);
-#if 0
-    for (auto i : decl->specializations()) {
-      cprint.printDecl(i, print);
-      print.output() << "::";
-    }
-#endif
   }
 };
 
