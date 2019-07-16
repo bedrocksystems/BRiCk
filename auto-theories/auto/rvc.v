@@ -399,23 +399,51 @@ Section refl.
                 Qo lv rv (fun v' =>
                             (_at (_eq la) (tprim ty v') -* Q la (free1 ** free2))))))
       end
-    | Epostinc e ty =>
+    | Epostinc e' ty
+    | Epostdec e' ty =>
       rvalue cat ;;
       let ty := drop_qualifiers ty in
       let tye := drop_qualifiers (type_of e) in
-      Qo <- wpbo Badd tye tye ty ;;
-      match e with
+      let op := match e with
+                | Epostinc _ _ => Badd
+                | _            => Bsub
+                end in
+      Qo <- wpbo op tye tye ty ;;
+      match e' with
+      | Evar (Lname x) _ =>
+        ret (fun Q => Exists la, Exists v,
+                tlocal_at r x la (tprim ty v) **
+                Qo v (Vint 1) (fun v' =>
+                  (tlocal_at r x la (tprim ty v') -* Q v empSP)))
+      | _ =>
+        Qe <- wpe Lvalue e' ;;
+        ret (fun Q => Qe (fun a free => Exists v,
+              _at (_eq a) (tprim ty v) **
+              Qo v (Vint 1) (fun v' =>
+                (_at (_eq a) (tprim ty v') -* Q v free))))
+      end
+    | Epreinc e' ty
+    | Epredec e' ty =>
+      lvalue cat ;;
+      let ty := drop_qualifiers ty in
+      let tye := drop_qualifiers (type_of e) in
+      let op := match e with
+                | Epostinc _ _ => Badd
+                | _            => Bsub
+                end in
+      Qo <- wpbo op tye tye ty ;;
+      match e' with
       | Evar (Lname x) _ =>
         ret (fun Q => Exists la, Exists v,
                 tlocal_at r x la (tprim ty v) **
                 Qo v (Vint 1) (fun v' =>
                   (tlocal_at r x la (tprim ty v') -* Q la empSP)))
       | _ =>
-        Qe <- wpe Lvalue e ;;
+        Qe <- wpe Lvalue e' ;;
         ret (fun Q => Qe (fun a free => Exists v,
               _at (_eq a) (tprim ty v) **
               Qo v (Vint 1) (fun v' =>
-                (_at (_eq a) (tprim ty v') -* Q a empSP))))
+                (_at (_eq a) (tprim ty v') -* Q a free))))
       end
     | Enull => ret (fun Q => Q (Vptr nullptr) empSP)
     | Ecall (Ecast Cfunction2pointer (vc, Evar (Gname f) _) _) es _ =>
