@@ -36,17 +36,20 @@ Module Type cclogic.
    * note(gmm): this definition differs from the ChargeCore definition
    * because it defines `compose` as a function rather than as a relation.
    *)
-  Structure SA :=
+  Polymorphic Structure SA :=
   { s_type :> Type;
     s_bot: s_type;
     s_top: s_type;
     s_undef: s_type;
     s_compose: s_type -> s_type -> s_type;
     s_compose_com: forall s1 s2, s_compose s1 s2 = s_compose s2 s1;
-    s_compose_assoc: forall s1 s2 s3, s_compose (s_compose s1 s2) s3 = s_compose s1 (s_compose s2 s3);
-    s_compose_cancel: forall s1 s1' s2, s_compose s1 s2 <> s_undef ->
-                                        s_compose s1 s2 = s_compose s1' s2 -> s1 = s1';
-    s_compose_bot: forall s1 s2, s_compose s1 s2 = s_bot -> s1 = s_bot /\ s2 = s_bot;
+    s_compose_assoc: forall s1 s2 s3,
+        s_compose (s_compose s1 s2) s3 = s_compose s1 (s_compose s2 s3);
+    s_compose_cancel: forall s1 s1' s2,
+        s_compose s1 s2 <> s_undef ->
+        s_compose s1 s2 = s_compose s1' s2 -> s1 = s1';
+    s_compose_bot: forall s1 s2,
+        s_compose s1 s2 = s_bot -> s1 = s_bot /\ s2 = s_bot;
     s_compose_w_bot: forall s, s_compose s s_bot = s;
     s_compose_w_undef: forall s, s_compose s s_undef = s_undef;
     s_compose_complete_top: forall s, s_compose s_top s <> s_undef -> s = s_bot;
@@ -103,7 +106,7 @@ Module Type cclogic.
       all: destruct x; destruct y; auto.
     Qed.
 
-    Inductive Fp :=
+    Variant Fp : Set :=
     | FPerm (f:Qc) (UNIT: ok f)
     | FPermUndef.
 
@@ -184,7 +187,7 @@ Module Type cclogic.
              end; simpl; eauto.
       - ring.
       - eapply n. eapply to_prop. rewrite Qcplus_assoc. auto.
-      - eapply n. eapply to_prop. rewrite Qcplus_comm.
+      - eapply n; clear n. eapply to_prop.
         admit.
       - admit.
       - admit.
@@ -224,46 +227,92 @@ Module Type cclogic.
     Admitted.
 
   End Fp.
-
   Import Fp.
+
+  Notation "a ⊕ b" := (s_compose _ a b) (at level 50, left associativity).
+
+
+  (* named invariants *)
+  Parameter Inv : forall (name : Type) (I : mpred), mpred.
+  (* ^ the invariant [I] must be droppable and duplicable *)
+
+  Axiom Inv_dup : forall n I, Inv n I -|- Inv n I ** Inv n I.
+  Axiom Inv_drop : forall n I, Inv n I |-- empSP.
+
+  (* trackable (named) invariants *)
+  Parameter TInv : Fp -> forall {nm : Type} (_ : nm)  (I : mpred), mpred.
+  (* ^ the invariant [I] has no restrictions *)
+
+  Axiom TInv_new : forall nm I,
+      I |-- Exists n : nm, TInv Fp_Monoid.(s_top) n I.
+  Axiom TInv_delete : forall nm (n : nm) I,
+      TInv Fp_Monoid.(s_top) n I |-- I.
+  Axiom TInv_split : forall (f1 f2 : Fp_Monoid) nm (n : nm) I,
+      TInv (f1 ⊕ f2) n I -|- TInv f1 n I ** TInv f2 n I.
+
+  Require Import Coq.Classes.DecidableClass.
+  Parameter SA_fmap : forall (k : Type) {_ : forall a b : k, Decidable (a = b)} (v : SA), SA.
+  Parameter fmap_singleton : forall {k} {dec : forall a b : k, Decidable (a = b)} (v : SA),
+      k -> v.(s_type) -> (@SA_fmap k dec v).(s_type).
 
   (* A note to Gregory, If I were to paramterize mpred (p:Fp_Monoid) ...
    * THIS WOULD BE A NEAT SOLUTION.
    * I dont like them to be separate axioms. It is a ad-hoc solution,
    * but lets keep it as it for now.
+   * ^^ note(gmm): agreed. this would be a fairly simple solution.
+   *    it would require that all of our code is verified with respect to
+   *    arbitrary `Fp_Monoid` that contain some (relevant) monoids.
+   *    an alternative would be to build a universal [Fp_Monoid] (up to
+   *    universe polymorphism) and then provide means for monoid.
+   *    this would be analagous to:
+   *      [mpred Universal]
+   *    where [Universal] is:
+   *      Definition Universal@{i j | j < i} : Type@{i} :=
+   *        forall ra : RA@{j}, ra.(s_type).
+   *    which gives me access to any resource algebra of universe less than [i].
+   *    it is important to note that in almost all circumstances, the practical
+   *    separation algebras that we are going to use are those with finite maps,
+   *    so it might be a little bit easier to say.
+   *      Definition Universal@{i j | j < i} : Type@{i} :=
+   *        forall ra : RA@{j}, Fmap nat ra.(s_type), 
    *)
-  Axiom logical_fptsto: forall (Prm: SA) (p: Prm) (l: val) (v : val), mpred.
+  Parameter ghost_is : forall (Prm: SA) (value : Prm), mpred.
+  Definition ghost_ptsto {ptr : Type} {dec : forall a b : ptr, Decidable (a = b)}
+             (Prm : SA) (p : ptr) (value : Prm) : mpred :=
+    ghost_is (SA_fmap ptr Prm) (@fmap_singleton ptr _ Prm p value).
 
-  Definition Frac_PointsTo l q v :=
-    match is_ok q with
-    | right _ => lfalse
-    | left pf =>
-      match q ?= 0 with
-      | Eq => empSP
-      | _ => logical_fptsto Fp.Fp_Monoid (Fp.FPerm q pf)  l v
-      end
-    end.
+  (* Definition Frac_PointsTo l q v := *)
+  (*   match is_ok q with *)
+  (*   | right _ => lfalse *)
+  (*   | left pf => *)
+  (*     match q ?= 0 with *)
+  (*     | Eq => empSP *)
+  (*     | _ => ghost_ptsto Fp.Fp_Monoid (Fp.FPerm q pf)  l v *)
+  (*     end *)
+  (*   end. *)
 
 
   (*Similarly one can encode ghost state using SA*)
   (*
-   This type extends as we introduce new logical assertions such as logical_ghost etc.
+   This type extends as we introduce new logical assertions such as
+   logical_ghost etc.
    A generic ghost location gl and a value kept gv.
-
-     A General Note to Gregory : If we want to refer to resources encoded via monoids
-      -- let's say Pg -- then we     have to bookkeep/pass  guard and containers (guard: In monoid_instance guard_container).
+   A General Note to Gregory : If we want to refer to resources encoded via monoids
+      -- let's say Pg -- then we have to bookkeep/pass guard and containers (guard: In monoid_instance guard_container).
 
     I did not do bookeeping of Monoids -- guard: In MONID LIST MONOID -- for fractional permissions and pointsto but in general we have to have the following structure for all logical predicates.
 
    Specs below assume that we do not refer to any resource encoded via monoids so there exists no guard and monoid container that we defined above. In case we want you can introduce them to the specs below.
    *)
+(*
   Variable guard_container : list SA.
   Axiom logical_ghost: forall (ghost : SA) (guard : In ghost guard_container)  (gl : ghost) (gv : val), mpred.
+*)
 
   (*
     Gregory suggests emp |- Exists g. g:m
   *)
-  Parameter wp_ghst : Expr -> (val -> mpred) -> mpred.
+  (* Parameter wp_ghst : Expr -> (val -> mpred) -> mpred. *)
 
    (*
      {P} E {Q}
@@ -271,10 +320,10 @@ Module Type cclogic.
     {P} E {Q * exists l. l:g} //ghost location l carries the ghost resource g
    *)
 
-  (*******Atomic Instruction Specification*******)
-  Axiom rule_ghost_intro:
-  forall  g P E Qp CMI (guard: In CMI guard_container) (ptriple: P |-- (wp_ghst E Qp)),
-     P |-- wp_ghst E (fun v =>  (Qp v) ** (Exists l, logical_ghost CMI  guard l g)).
+  (* (*******Atomic Instruction Specification*******) *)
+  (* Axiom rule_ghost_intro: *)
+  (* forall  g P E Qp CMI (guard: In CMI guard_container) (ptriple: P |-- wp_ghst E Qp), *)
+  (*    P |-- wp_ghst E (fun v =>  (Qp v) ** (Exists l, logical_ghost CMI  guard l g)). *)
 
   (****** Wp Semantics for atomic operations
    * These are given in the style of function call axioms
@@ -291,7 +340,8 @@ Module Type cclogic.
    *)
 
   (*Atomic CAS access permission*)
-  Parameter AtomInv : Fp.Fp -> type -> (val -> mpred) -> Rep.
+  Definition AtomInv (fp : Fp.Fp) (t : type) (I : val -> mpred) : Rep :=
+    {| repr p := TInv fp p (Exists v, _at (_eq p) (tprim t v) ** I v) |}.
 
 (*
   (*Atomic READ access permission*)
@@ -312,12 +362,18 @@ Module Type cclogic.
 *)
 
   (*Atomic CAS access permission is duplicable*)
-  Axiom Persistent_CASPerm : forall q1 q2 ty LocInv,
-      AtomInv (s_compose Fp_Monoid q1 q2) ty LocInv -|- AtomInv q1 ty LocInv ** AtomInv q2 ty LocInv.
+  Axiom Persistent_CASPerm : forall (q1 q2 : Fp_Monoid) ty LocInv,
+      AtomInv (q1 ⊕ q2) ty LocInv -|- AtomInv q1 ty LocInv ** AtomInv q2 ty LocInv.
 
   (*Generate atomic access token via consuming the memory cell and the invariant *)
-  Axiom Intro_AtomInv : forall x (t:type) (Inv:val->mpred),
-      Exists v, _at (_eq x) (tprim t v) ** Inv v -|- _at (_eq x) (AtomInv Fp_full t Inv).
+  Theorem Intro_AtomInv : forall x (t:type) (Inv:val->mpred),
+      Exists v, _at (_eq x) (tprim t v) ** Inv v |-- _at (_eq x) (AtomInv Fp_full t Inv).
+  Proof.
+    intros.
+    unfold AtomInv.
+    Transparent _at. unfold _at. Opaque _at.
+    simpl.
+  Admitted.
 
   (*Memory Ordering Patterns: Now we only have _SEQ_CST *)
   Definition _SEQ_CST := Vint 5.
