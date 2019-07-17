@@ -1,6 +1,7 @@
 Require Import Coq.Classes.DecidableClass.
 Require Import ExtLib.Structures.Monad.
 Require Import ExtLib.Data.Monads.OptionMonad.
+Require Import ExtLib.Data.Map.FMapAList.
 
 From Coq.Strings Require Import
      Ascii String.
@@ -8,40 +9,20 @@ From Coq.Strings Require Import
 Require Import Cpp.Util.
 Require Import Cpp.Syntax.Ast.
 
-Definition VarRef_eq_dec : forall a b : VarRef, {a = b} + {a <> b}.
-Proof.
-  decide equality.
-  eapply string_dec.
-  eapply string_dec.
-Defined.
-
-Definition UnOp_eq_dec : forall a b : UnOp, {a = b} + {a <> b}.
-decide equality.
-eapply string_dec.
-Defined.
-
-Definition BinOp_eq_dec : forall a b : BinOp, {a = b} + {a <> b}.
-decide equality.
-Defined.
-
-Definition ValCat_eq_dec : forall a b : ValCat, {a = b} + {a <> b}.
-decide equality.
-Defined.
-
 Definition Expr_eq_dec : forall a b : Expr, {a = b} + {a <> b}.
 Proof.
   generalize type_eq_dec.
-  generalize VarRef_eq_dec.
+  generalize (fun a b => @Decidable_dec _ _ _ (Decidable_eq_VarRef a b)).
   generalize BinInt.Z.eq_dec.
   generalize ascii_dec.
   generalize string_dec.
   generalize Bool.bool_dec.
-  generalize UnOp_eq_dec.
-  generalize BinOp_eq_dec.
-  generalize ValCat_eq_dec.
+  generalize (fun a b => @Decidable_dec _ _ _ (Decidable_eq_UnOp a b)).
+  generalize (fun a b => @Decidable_dec _ _ _ (Decidable_eq_BinOp a b)).
+  generalize (fun a b => @Decidable_dec _ _ _ (Decidable_eq_ValCat a b)).
   do 9 intro.
   refine (fix Expr_dec a b : {a = b} + {a <> b} :=
-            _).
+             _).
   decide equality.
   all: try eapply List.list_eq_dec.
   all: decide equality.
@@ -52,14 +33,14 @@ Defined.
 Definition Stmt_eq_dec : forall a b : Stmt, {a = b} + {a <> b}.
 Proof.
   generalize type_eq_dec.
-  generalize VarRef_eq_dec.
+  generalize (fun a b => @Decidable_dec _ _ _ (Decidable_eq_VarRef a b)).
   generalize BinInt.Z.eq_dec.
   generalize ascii_dec.
   generalize string_dec.
   generalize Bool.bool_dec.
-  generalize UnOp_eq_dec.
-  generalize BinOp_eq_dec.
-  generalize ValCat_eq_dec.
+  generalize (fun a b => @Decidable_dec _ _ _ (Decidable_eq_UnOp a b)).
+  generalize (fun a b => @Decidable_dec _ _ _ (Decidable_eq_BinOp a b)).
+  generalize (fun a b => @Decidable_dec _ _ _ (Decidable_eq_ValCat a b)).
   generalize Expr_eq_dec.
   do 10 intro.
   refine (fix Stmt_dec a b : {a = b} + {a <> b} :=
@@ -72,46 +53,17 @@ Proof.
   all: decide equality.
 Defined.
 
-Definition Decidable_dec {T} (a b : T) {Dec : Decidable (a = b)}
-  : {a = b} + {a <> b}.
-destruct Dec.
-destruct Decidable_witness.
-- left. apply Decidable_spec. reflexivity.
-- right. intro. apply Decidable_spec in H. congruence.
-Defined.
-
-Definition dec_Decidable {T} {a b : T} (Dec : {a = b} + {a <> b})
-  : Decidable (a = b).
-Proof.
-  refine {| Decidable_witness := if Dec then true else false |}.
-  destruct Dec; split; congruence.
-Defined.
 
 
-Global Instance Decidable_eq_type_qualifiers (a b : type_qualifiers) : Decidable (a = b).
-refine
-  {| Decidable_witness := decide (a.(q_const) = b.(q_const)) && decide (a.(q_volatile) = b.(q_volatile))
-   |}.
-rewrite Bool.andb_true_iff.
-rewrite (Decidable_eq_bool _ _).(@Decidable_spec _).
-rewrite (Decidable_eq_bool _ _).(@Decidable_spec _).
-destruct a; destruct b; simpl; firstorder; congruence.
-Defined.
-Global Instance Decidable_eq_type (a b : type) : Decidable (a = b) :=
-  dec_Decidable (type_eq_dec a b).
-Global Instance Decidable_eq_expr (a b : Expr) : Decidable (a = b) :=
+
+Global Instance Decidable_eq_Expr (a b : Expr) : Decidable (a = b) :=
   dec_Decidable (Expr_eq_dec a b).
 
-Global Instance Decidable_eq_stmt (a b : Stmt) : Decidable (a = b) :=
+Global Instance Decidable_eq_Stmt (a b : Stmt) : Decidable (a = b) :=
   dec_Decidable (Stmt_eq_dec a b).
 
-Lemma decide_ok : forall P {ok : Decidable P}, decide P = true <-> P.
-Proof.
-  intros. eapply Decidable_spec.
-Qed.
-
 Section Decidable_or_default.
-  Context {T : Set} (dec : forall a b : T, Decidable (a = b)).
+  Context {T : Set} (dec : resolve (forall a b : T, Decidable (a = b))).
   Global Instance Decidable_eq_OrDefault (a b : OrDefault T) : Decidable (a = b).
   Proof.
     refine {| Decidable_witness :=
@@ -122,86 +74,95 @@ Section Decidable_or_default.
                 end |}.
     destruct a; destruct b; try solve [ split; congruence ].
     rewrite decide_ok. split; congruence.
+    Unshelve. eapply dec.
   Defined.
 End Decidable_or_default.
 
 Global Instance Decidable_FieldOrBase (a b : FieldOrBase) : Decidable (a = b).
-refine {| Decidable_witness :=
-            match a , b with
-            | Base a , Base b => decide (a = b)
-            | Field a , Field b => decide (a = b)
-            | Indirect a a' , Indirect b b' => decide (a = b) && decide (a' = b')
-            | _ , _ => false
-            end |}.
-destruct a; destruct b; repeat rewrite Bool.andb_true_iff; repeat rewrite decide_ok; try solve [ split; congruence ].
-firstorder; congruence.
+Proof.
+  refine {| Decidable_witness :=
+              match a , b with
+              | Base a , Base b => decide (a = b)
+              | Field a , Field b => decide (a = b)
+              | Indirect a a' , Indirect b b' => decide (a = b) && decide (a' = b')
+              | _ , _ => false
+              end |}.
+  destruct a; destruct b; repeat rewrite Bool.andb_true_iff; repeat rewrite decide_ok; try solve [ split; congruence ].
+  firstorder; congruence.
 Defined.
 
 Global Instance Decidable_eq_Func (a b : Func) : Decidable (a = b).
-refine
-  {| Decidable_witness :=
-       decide (a.(f_return) = b.(f_return)) &&
-       decide (a.(f_params) = b.(f_params)) &&
-       decide (a.(f_body) = b.(f_body))
-   |}.
-repeat rewrite Bool.andb_true_iff.
-repeat rewrite Decidable_spec.
-destruct a; destruct b; simpl; firstorder; try congruence.
+Proof.
+  refine
+    {| Decidable_witness :=
+         decide (a.(f_return) = b.(f_return)) &&
+                decide (a.(f_params) = b.(f_params)) &&
+                decide (a.(f_body) = b.(f_body))
+    |}.
+  repeat rewrite Bool.andb_true_iff.
+  repeat rewrite Decidable_spec.
+  destruct a; destruct b; simpl; firstorder; try congruence.
 Defined.
+
 Global Instance Decidable_eq_Method (a b : Method) : Decidable (a = b).
-refine
-  {| Decidable_witness :=
-       decide (a.(m_return) = b.(m_return)) &&
-       decide (a.(m_class) = b.(m_class)) &&
-       decide (a.(m_this_qual) = b.(m_this_qual)) &&
-       decide (a.(m_params) = b.(m_params)) &&
-       decide (a.(m_body) = b.(m_body))
-   |}.
-repeat rewrite Bool.andb_true_iff.
-repeat rewrite Decidable_spec.
-destruct a; destruct b; simpl; firstorder; try congruence.
+Proof.
+  refine
+    {| Decidable_witness :=
+         decide (a.(m_return) = b.(m_return)) &&
+                decide (a.(m_class) = b.(m_class)) &&
+                decide (a.(m_this_qual) = b.(m_this_qual)) &&
+                decide (a.(m_params) = b.(m_params)) &&
+                decide (a.(m_body) = b.(m_body))
+    |}.
+  repeat rewrite Bool.andb_true_iff.
+  repeat rewrite Decidable_spec.
+  destruct a; destruct b; simpl; firstorder; try congruence.
 Defined.
 Global Instance Decidable_eq_Ctor (a b : Ctor) : Decidable (a = b).
 refine
   {| Decidable_witness :=
        decide (a.(c_class) = b.(c_class)) &&
-       decide (a.(c_params) = b.(c_params)) &&
-       decide (a.(c_body) = b.(c_body))
-   |}.
+              decide (a.(c_params) = b.(c_params)) &&
+              decide (a.(c_body) = b.(c_body))
+  |}.
 repeat rewrite Bool.andb_true_iff.
 repeat rewrite Decidable_spec.
 destruct a; destruct b; simpl; firstorder; try congruence.
 Defined.
 
 Global Instance Decidable_eq_Dtor (a b : Dtor) : Decidable (a = b).
-refine
-  {| Decidable_witness :=
-       decide (a.(d_class) = b.(d_class)) &&
-       decide (a.(d_body) = b.(d_body))
-   |}.
-repeat rewrite Bool.andb_true_iff.
-repeat rewrite Decidable_spec.
-destruct a; destruct b; simpl; firstorder; try congruence.
+Proof.
+  refine
+    {| Decidable_witness :=
+         decide (a.(d_class) = b.(d_class)) &&
+                decide (a.(d_body) = b.(d_body))
+    |}.
+  repeat rewrite Bool.andb_true_iff.
+  repeat rewrite Decidable_spec.
+  destruct a; destruct b; simpl; firstorder; try congruence.
 Defined.
 
 
-Global Instance Decidable_eq_union (a b : Union) : Decidable (a = b).
-refine
-  {| Decidable_witness := decide (a.(u_fields) = b.(u_fields))
-   |}.
-simpl.
-rewrite dec_list_ok.
-destruct a; destruct b. simpl.
-split; congruence.
+Global Instance Decidable_eq_Union (a b : Union) : Decidable (a = b).
+Proof.
+  refine
+    {| Decidable_witness := decide (a.(u_fields) = b.(u_fields))
+    |}.
+  simpl.
+  rewrite dec_list_ok.
+  destruct a; destruct b. simpl.
+  split; congruence.
 Defined.
+
 Global Instance Decidable_eq_struct (a b : Struct) : Decidable (a = b).
-refine
-  {| Decidable_witness := decide (a.(s_fields) = b.(s_fields)) && decide (a.(s_bases) = b.(s_bases))
-   |}.
-simpl.
-rewrite Bool.andb_true_iff.
-do 2 rewrite dec_list_ok.
-destruct a; destruct b; simpl; firstorder; congruence.
+Proof.
+  refine
+    {| Decidable_witness := decide (a.(s_fields) = b.(s_fields)) && decide (a.(s_bases) = b.(s_bases))
+    |}.
+  simpl.
+  rewrite Bool.andb_true_iff.
+  do 2 rewrite dec_list_ok.
+  destruct a; destruct b; simpl; firstorder; congruence.
 Defined.
 
 
@@ -216,14 +177,15 @@ Variant ObjValue : Set :=
 .
 
 Definition ObjValue_eq_dec : forall a b : ObjValue, {a = b} + {a <> b}.
-generalize Expr_eq_dec.
-generalize type_eq_dec.
-decide equality.
-eapply Decidable_dec; eauto with typeclass_instances.
-eapply Decidable_dec; eauto with typeclass_instances.
-eapply Decidable_dec; eauto with typeclass_instances.
-eapply Decidable_dec; eauto with typeclass_instances.
-eapply Decidable_dec; eauto with typeclass_instances.
+Proof.
+  generalize Expr_eq_dec.
+  generalize type_eq_dec.
+  decide equality.
+  eapply Decidable_dec; eauto with typeclass_instances.
+  eapply Decidable_dec; eauto with typeclass_instances.
+  eapply Decidable_dec; eauto with typeclass_instances.
+  eapply Decidable_dec; eauto with typeclass_instances.
+  eapply Decidable_dec; eauto with typeclass_instances.
 Defined.
 
 Global Instance Decidable_eq_ObjValue (a b : ObjValue) : Decidable (a = b) :=
@@ -253,8 +215,8 @@ Definition ObjValue_merge (a b : ObjValue) : option ObjValue :=
     require (decide (f.(f_params) = f'.(f_params))) ;;
     match f.(f_body) , f'.(f_body) with
     | Some b , Some b' =>
-      (* require (decide (b = b')) ;;
-      Some a *) None
+      require (decide (b = b')) ;;
+      Some a
     | None , _ => Some b
     | _ , None => Some a
     end
@@ -265,8 +227,8 @@ Definition ObjValue_merge (a b : ObjValue) : option ObjValue :=
     require (decide (m.(m_params) = m'.(m_params))) ;;
     match m.(m_body) , m'.(m_body) with
     | Some b , Some b' =>
-      (* require (decide (b = b')) ;;
-      Some a *) None
+      require (decide (b = b')) ;;
+      Some a
     | None , _ => Some b
     | _ , None => Some a
     end
@@ -276,14 +238,16 @@ Definition ObjValue_merge (a b : ObjValue) : option ObjValue :=
     match c.(c_body) , c'.(c_body) with
     | None , _ => Some b
     | _ , None => Some a
-    | Some _ , Some _ => None
+    | Some x , Some y =>
+      require (decide (x = y)) ;; Some a
     end
   | Odestructor d , Odestructor d' =>
     require (decide (d.(d_class) = d'.(d_class))) ;;
     match d.(d_body) , d'.(d_body) with
     | None , _ => Some b
     | _ , None => Some a
-    | Some _ , Some _ => None
+    | Some x , Some y =>
+      require (decide (x = y)) ;; Some a
     end
   | _ , _ => None
   end%monad.
@@ -298,11 +262,12 @@ Variant GlobDecl : Set :=
 .
 
 Definition GlobDecl_eq_dec : forall a b : GlobDecl, {a = b} + {a <> b}.
-generalize Expr_eq_dec.
-generalize type_eq_dec.
-decide equality.
-eapply Decidable_dec; eauto with typeclass_instances.
-eapply Decidable_dec; eauto with typeclass_instances.
+Proof.
+  generalize Expr_eq_dec.
+  generalize type_eq_dec.
+  decide equality.
+  eapply Decidable_dec; eauto with typeclass_instances.
+  eapply Decidable_dec; eauto with typeclass_instances.
 Defined.
 
 Global Instance Decidable_eq_GlobDecl (a b : GlobDecl) : Decidable (a = b) :=
@@ -337,7 +302,7 @@ Definition GlobDecl_merge (a b : GlobDecl) : option GlobDecl :=
   | _ , _ => None
   end%monad.
 
-Require Import ExtLib.Data.Map.FMapAList.
+
 
 (* if these were association lists, then... *)
 Record compilation_unit : Set :=
@@ -353,22 +318,20 @@ Section merge.
   Existing Instance RelDec_eq_K.
 
   Definition alist_merge (f : V -> V -> option V)
-             (l r : alist K V) : option (alist K V).
-    refine
-      (fold_alist (fun k v acc =>
-                     match acc with
-                     | None => None
-                     | Some acc =>
-                       match @alist_find _ _ _ _  k acc with
-                       | None => Some (alist_add _ k v acc)
-                       | Some v' =>
-                         match f v v' with
-                         | None => None
-                         | Some v => Some (alist_add _ k v acc)
-                         end
-                       end
-                     end) (Some r) l).
-  Defined.
+             (l r : alist K V) : option (alist K V) :=
+    fold_alist (fun k v acc =>
+                  match acc with
+                  | None => None
+                  | Some acc =>
+                    match @alist_find _ _ _ _  k acc with
+                    | None => Some (alist_add _ k v acc)
+                    | Some v' =>
+                      match f v v' with
+                      | None => None
+                      | Some v => Some (alist_add _ k v acc)
+                      end
+                    end
+                  end) (Some r) l.
 End merge.
 
 Definition link (a b : compilation_unit) : option compilation_unit :=

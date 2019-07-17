@@ -3,9 +3,12 @@
  *
  * SPDX-License-Identifier:AGPL-3.0-or-later
  *)
+Require Import Coq.Classes.DecidableClass.
 From Coq.Strings Require Import
      Ascii String.
 Require Import Coq.ZArith.BinIntDef.
+
+Require Import Cpp.Util.
 
 Set Primitive Projections.
 
@@ -29,16 +32,40 @@ Definition globname : Set := string.
   (* these are mangled names. for consistency, we're going to
    * mangle everything.
    *)
+Global Instance Decidable_eq_globname : forall a b : globname, Decidable (a = b) :=
+  Decidable_eq_string.
 
+(* local names *)
 Definition localname : Set := ident.
+
+Global Instance Decidable_eq_localname : forall a b : localname, Decidable (a = b) :=
+  Decidable_eq_string.
 
 Record field : Set :=
 { f_type : globname (* name of struct or class *)
 ; f_name : ident
 }.
+Global Instance Decidable_eq_field (a b : field) : Decidable (a = b).
+Proof.
+refine
+  {| Decidable_witness :=
+       decide (a.(f_type) = b.(f_type)) && decide (a.(f_name) = b.(f_name))
+   ; Decidable_spec := _ |}.
+  rewrite Bool.andb_true_iff. repeat rewrite decide_ok.
+  destruct a, b; simpl; split; firstorder congruence.
+Defined.
+
 Record type_qualifiers : Set :=
 { q_const : bool
 ; q_volatile : bool }.
+Global Instance Decidable_eq_type_qualifiers (a b : type_qualifiers) : Decidable (a = b).
+Proof.
+refine
+  {| Decidable_witness := decide (a.(q_const) = b.(q_const)) && decide (a.(q_volatile) = b.(q_volatile))
+   |}.
+rewrite Bool.andb_true_iff. repeat rewrite decide_ok.
+destruct a; destruct b; simpl; firstorder; congruence.
+Defined.
 
 Definition merge_tq (a b : type_qualifiers) : type_qualifiers :=
   {| q_const := a.(q_const) || b.(q_const)
@@ -65,7 +92,8 @@ Proof.
   fix IHty1 1.
   repeat (decide equality).
 Defined.
-
+Global Instance Decidable_eq_type (a b : type) : Decidable (a = b) :=
+  dec_Decidable (type_eq_dec a b).
 
 Definition Qconst_volatile : type -> type :=
   Tqualified {| q_const := true ; q_volatile := true |}.
@@ -103,6 +131,8 @@ Variant PrimCast : Set :=
 | Cconstructorconversion
 | C2void
 .
+Global Instance Decidable_eq_PrimCast (a b : PrimCast) : Decidable (a = b) :=
+  dec_Decidable (ltac:(decide equality) : {a = b} + {a <> b}).
 
 Variant Cast : Set :=
 | CCcast       (_ : PrimCast)
@@ -112,12 +142,18 @@ Variant Cast : Set :=
 | Cdynamic     (from to : globname)
 | Cconst       (_ : type)
 .
+Global Instance Decidable_eq_Cast (a b : Cast) : Decidable (a = b) :=
+  dec_Decidable (ltac:(decide equality; eapply Decidable_dec; refine _) : {a = b} + {a <> b}).
+
 
 Variant UnOp : Set :=
 | Uminus
 | Unot
 | Ubnot
 | Uother (_ : string).
+Global Instance Decidable_eq_UnOp (a b : UnOp) : Decidable (a = b) :=
+  dec_Decidable (ltac:(decide equality; eapply Decidable_dec; refine _) : {a = b} + {a <> b}).
+
 Variant BinOp : Set :=
 | Badd
 | Band (* & *)
@@ -137,12 +173,20 @@ Variant BinOp : Set :=
 | Bsub
 | Bxor (* ^ *)
 .
+Global Instance Decidable_eq_BinOp (a b : BinOp) : Decidable (a = b) :=
+  dec_Decidable (ltac:(decide equality; eapply Decidable_dec; refine _) : {a = b} + {a <> b}).
 
 Variant VarRef : Set :=
 | Lname (_ : localname)
 | Gname (_ : globname).
+Global Instance Decidable_eq_VarRef (a b : VarRef) : Decidable (a = b) :=
+  dec_Decidable (ltac:(decide equality; eapply Decidable_dec; refine _) : {a = b} + {a <> b}).
+
 
 Variant ValCat : Set := Lvalue | Rvalue | Xvalue.
+Global Instance Decidable_eq_ValCat (a b : ValCat) : Decidable (a = b) :=
+  dec_Decidable (ltac:(decide equality; eapply Decidable_dec; refine _) : {a = b} + {a <> b}).
+
 
 Variant AtomicOp : Set :=
 | AO__atomic_load
@@ -166,6 +210,8 @@ Variant AtomicOp : Set :=
 | AO__atomic_xor_fetch
 | AO__atomic_nand_fetch
 .
+Global Instance Decidable_eq_AtomicOp (a b : AtomicOp) : Decidable (a = b) :=
+  dec_Decidable (ltac:(decide equality; eapply Decidable_dec; refine _) : {a = b} + {a <> b}).
 
 Inductive Expr : Set :=
 | Econst_ref (_ : VarRef) (_ : type)
