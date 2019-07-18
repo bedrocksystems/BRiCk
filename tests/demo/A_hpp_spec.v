@@ -29,5 +29,5 @@ Definition A__bar_spec : function_spec :=
          \post [r] [| r = Vint (y + 7)%Z |]).
 
 Definition A_hpp_spec (resolve : _) :=
-      (|> ti_cglob (resolve:=resolve) A__foo A__foo_spec) -*
-          ti_cglob (resolve:=resolve) A__bar A__bar_spec.
+  module (ti_cglob (resolve:=resolve) A__foo A__foo_spec)
+         (ti_cglob (resolve:=resolve) A__bar A__bar_spec).

@@ -3,6 +3,7 @@
  *
  * SPDX-License-Identifier:AGPL-3.0-or-later
  *)
+Require Import Coq.Classes.DecidableClass.
 Require Import Cpp.Syntax.Ast.
 
 Fixpoint type_of (e : Expr) : type :=
@@ -67,3 +68,14 @@ Fixpoint drop_qualifiers (t : type) : type :=
   | Tqualified _ t => drop_qualifiers t
   | _ => t
   end.
+
+Section decidable.
+
+  Global Instance Decidable_type (a b : type) : Decidable (a = b).
+  refine 
+    {| Decidable_witness := if type_eq_dec a b then true else false
+     ; Decidable_spec := _ |}.
+  destruct (type_eq_dec a b); split; congruence.
+  Defined.
+
+End decidable.

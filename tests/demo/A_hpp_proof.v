@@ -16,12 +16,13 @@ Require Import Demo.A_hpp_spec.
 
 Opaque denoteModule.
 
+
 (* soundness of the specification *)
 Theorem A_hpp_sound : forall (resolve : genv),
     denoteModule A_hpp.module |-- A_hpp_spec resolve.
 Proof.
   intros.
-  unfold A_hpp_spec.
+  unfold A_hpp_spec, module.
   work.
 
   verifyF_forget A__bar.

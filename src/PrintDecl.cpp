@@ -20,7 +20,7 @@ void printFunction(
 
   for (auto i : decl->parameters()) {
     cprint.printParam(i, print);
-    print.output() << "::";
+    print.cons();
   }
   print.output() << "nil";
 
@@ -459,13 +459,14 @@ class PrintDecl : public ConstDeclVisitorArgs<PrintDecl, void, CoqPrinter &,
           const NamespaceDecl *decl, CoqPrinter &print, ClangPrinter &cprint)
   {
     print.ctor("Dnamespace") /* << "\"" << decl->getNameAsString() << "\"" */
-            << fmt::line << fmt::lparen;
+            << fmt::line;
+    print.begin_list();
     for (auto d : decl->decls()) {
       cprint.printDecl(d, print);
-      print.output() << "::" << fmt::nbsp;
+      print.cons();
     }
-    print.output() << "nil" << fmt::rparen;
-    print.output() << fmt::rparen;
+    print.end_list();
+    print.end_ctor();
   }
 
   void VisitEnumDecl(const EnumDecl *decl, CoqPrinter &print, ClangPrinter &cprint)
@@ -484,20 +485,14 @@ class PrintDecl : public ConstDeclVisitorArgs<PrintDecl, void, CoqPrinter &,
     }
     print.output() << fmt::nbsp;
 
-    print.output() << fmt::lparen;
+    print.begin_list();
     for (auto i : decl->enumerators()) {
-      print.output() << fmt::line << "(\"" << i->getNameAsString() << "\"," << fmt::nbsp;
-      if (auto init = i->getInitExpr()) {
-        print.output() << "Some" << fmt::nbsp;
-        cprint.printExpr(init, print);
-      } else {
-        print.none();
-      }
-      print.output() << ") ::";
+      print.output() << fmt::line << "(\"" << i->getNameAsString() << "\"," << fmt::nbsp << i->getInitVal().getExtValue() << "%Z)";
+      print.cons();
     }
-    print.output() << "nil" << fmt::rparen;
+    print.end_list();
 
-    print.output() << fmt::rparen;
+    print.end_ctor();
   }
 
   void VisitLinkageSpecDecl(
@@ -510,20 +505,15 @@ class PrintDecl : public ConstDeclVisitorArgs<PrintDecl, void, CoqPrinter &,
   void VisitFunctionTemplateDecl(const FunctionTemplateDecl *decl,
           CoqPrinter &print, ClangPrinter &cprint)
   {
-    // note(gmm): for now, i am just going to return the specializations.
-    for (auto i : decl->specializations()) {
-      cprint.printDecl(i, print);
-      print.output() << "::";
-    }
+    // we only print specializations
+    assert(false);
   }
 
   void VisitClassTemplateDecl(const ClassTemplateDecl *decl, CoqPrinter &print,
           ClangPrinter &cprint)
   {
-    for (auto i : decl->specializations()) {
-      cprint.printDecl(i, print);
-      print.output() << "::";
-    }
+    // we only print specializations
+    assert(false);
   }
 };
 
