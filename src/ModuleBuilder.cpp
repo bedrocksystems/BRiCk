@@ -6,13 +6,18 @@
 #include "DeclVisitorWithArgs.h"
 #include "ModuleBuilder.hpp"
 #include "Filter.hpp"
+#include "SpecCollector.hpp"
+#include "CommentScanner.hpp"
+#include "Formatter.hpp"
 
 using namespace clang;
 
 class BuildModule : public ConstDeclVisitorArgs<BuildModule, void> {
-  private:
+private:
   ::Module& module_;
   Filter& filter_;
+  SpecCollector &specs_;
+  clang::ASTContext * const context_;
 
 private:
   Filter::What go(const NamedDecl* decl, bool definition=true) {
@@ -35,7 +40,8 @@ private:
   }
 
 public:
-  BuildModule(::Module& m, Filter& filter):module_(m),filter_(filter) {}
+  BuildModule(::Module& m, Filter& filter, clang::ASTContext *context, SpecCollector &specs)
+    :module_(m),filter_(filter),specs_(specs),context_(context) {}
 
   void VisitDecl(const Decl *d)
   {
@@ -84,8 +90,14 @@ public:
 
   void VisitFunctionDecl(const FunctionDecl *decl)
   {
+    using namespace comment;
     auto defn = decl->getDefinition();
     if (defn == decl) {
+
+      if(auto c = context_->getRawCommentForDeclNoCache(decl)) {
+				this->specs_.add_specification(decl, c, *context_);
+      }
+
       if (go(decl, true) >= Filter::What::DEFINITION) {
         // search for static local variables
         for (auto i : decl->decls()) {
@@ -179,7 +191,7 @@ public:
   }
 };
 
-
-void build_module(const clang::TranslationUnitDecl* tu, ::Module &mod, Filter& filter) {
-  BuildModule(mod, filter).VisitTranslationUnitDecl(tu);
+void build_module(const clang::TranslationUnitDecl* tu, ::Module &mod, Filter& filter, SpecCollector &specs) {
+  auto &ctxt = tu->getASTContext();
+  BuildModule(mod, filter, &ctxt, specs).VisitTranslationUnitDecl(tu);
 }

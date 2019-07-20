@@ -5,26 +5,30 @@
  */
 #pragma once
 
+#include <optional>
+
 namespace clang {
-class Decl;
-class Stmt;
-class Expr;
-class NamedDecl;
-class QualType;
-class FunctionDecl;
 class TranslationUnitDecl;
-class ParmVarDecl;
-class Type;
 }
 
 class CoqPrinter;
 
 using namespace clang;
 
-void declToCoq(clang::ASTContext *ctxt, const clang::Decl *decl);
+class ToCoqConsumer: public clang::ASTConsumer {
+public:
+	explicit ToCoqConsumer(const Optional<std::string> output_file, const Optional<std::string> spec_file) :
+			spec_file_(spec_file),output_file_(output_file) {
+	}
 
-void stmtToCoq(clang::ASTContext *ctxt, const clang::Stmt *stmt);
+	virtual void HandleTranslationUnit(clang::ASTContext &Context) {
+		toCoqModule(&Context, Context.getTranslationUnitDecl());
+	}
 
-void toCoqModule(clang::ASTContext *ctxt,
-		const clang::TranslationUnitDecl *decl);
+private:
+  void toCoqModule(clang::ASTContext *ctxt, const clang::TranslationUnitDecl *decl);
 
+private:
+  const Optional<std::string> spec_file_;
+  const Optional<std::string> output_file_;
+};
