@@ -76,6 +76,9 @@ public:
 		return this->output_ << "\"" << str << "\"";
 	}
 
+	fmt::Formatter& boolean(bool b) {
+		return this->output_ << (b ? "true" : "false");
+	}
 
 	fmt::Formatter& begin_list() {
 		return this->output_ << fmt::lparen;

@@ -3,15 +3,14 @@
  *
  * SPDX-License-Identifier:AGPL-3.0-or-later
  */
+#include <cstdio>
+#include <clang/AST/ASTContext.h>
+#include <clang/AST/Mangle.h>
+#include <clang/AST/DeclCXX.h>
+
 #include "ClangPrinter.hpp"
 #include "CoqPrinter.hpp"
 #include "Formatter.hpp"
-#include <clang/AST/ASTContext.h>
-#include <clang/AST/Expr.h>
-#include <clang/AST/Mangle.h>
-#include <clang/AST/Stmt.h>
-
-#include <cstdio>
 using namespace clang;
 
 ClangPrinter::ClangPrinter(clang::ASTContext *context)
@@ -76,4 +75,34 @@ void ClangPrinter::printExprAndValCat(const Expr *d, CoqPrinter &print)
   printExpr(d, print);
   print.output() << fmt::rparen;
   assert(depth == print.output().get_depth());
+}
+
+void ClangPrinter::printField(const ValueDecl *decl, CoqPrinter &print)
+{
+	if (const FieldDecl *f = dyn_cast<clang::FieldDecl>(decl)) {
+		print.begin_record();
+		print.output() << "f_type :=" << fmt::nbsp;
+		this->printGlobalName(f->getParent(), print);
+		print.output() << fmt::nbsp << "; f_name := ";
+
+		if (decl->getName() == "") {
+			const CXXRecordDecl *rd = f->getType()->getAsCXXRecordDecl();
+			assert(rd && "unnamed field must be a record");
+			print.ctor("Nanon", false);
+			this->printGlobalName(rd, print);
+			print.end_ctor();
+		} else {
+			print.str(decl->getName());
+		}
+		print.end_record();
+	} else if (const CXXMethodDecl *meth = dyn_cast<clang::CXXMethodDecl>(decl)) {
+		print.begin_record() << "f_type :=" << fmt::nbsp;
+		this->printGlobalName(meth->getParent(), print);
+		print.output() << fmt::nbsp << "; f_name := \"" << decl->getNameAsString() << "\"";
+		print.end_record();
+	} else {
+		print.error() << "member not pointing to field "
+									<< decl->getDeclKindName() << "\n";
+		assert(false && "member not pointing to field");
+	}
 }

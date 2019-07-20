@@ -10,8 +10,6 @@
 #include <clang/AST/Decl.h>
 
 class Module {
-
-
 public:
   void add_definition(const clang::NamedDecl* d, bool opaque=false) {
     if (opaque) {
@@ -41,5 +39,6 @@ private:
 };
 
 class Filter;
+class SpecCollector;
 
-void build_module(const clang::TranslationUnitDecl* tu, ::Module &mod, Filter &f);
+void build_module(const clang::TranslationUnitDecl* tu, ::Module &mod, Filter& filter, SpecCollector &specs);

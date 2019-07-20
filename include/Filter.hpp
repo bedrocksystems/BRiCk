@@ -57,23 +57,27 @@ public:
 			SM(_SM) {
 	}
 
-	virtual What shouldInclude(const Decl *d) {
-		SourceLocation loc = d->getSourceRange().getBegin();
+	/* is this location in an include'd file?
+	 */
+	bool isIncluded(SourceLocation loc) {
 		if (!loc.isValid()) {
-			return What::DECLARATION;
+			return false;
+		}
+		PresumedLoc PLoc = SM.getPresumedLoc(loc);
+		if (PLoc.isInvalid()) {
+			return false;
 		} else {
-			PresumedLoc PLoc = SM.getPresumedLoc(
-					d->getSourceRange().getBegin());
-			if (PLoc.isInvalid()) {
-				return What::DECLARATION;
+			if (PLoc.getIncludeLoc().isValid()) {
+				return true;
 			} else {
-				if (PLoc.getIncludeLoc().isValid()) {
-					return What::DECLARATION;
-				} else {
-					return What::DEFINITION;
-				}
+				return false;
 			}
 		}
+	}
+
+	virtual What shouldInclude(const Decl *d) {
+		SourceLocation loc = d->getSourceRange().getBegin();
+		return isIncluded(loc) ? What::DECLARATION : What::DEFINITION;
 	}
 };
 

@@ -20,6 +20,7 @@
 using namespace clang;
 using namespace fmt;
 
+#if 0
 void declToCoq(ASTContext *ctxt, const clang::Decl* decl) {
 	Formatter fmt(llvm::outs());
 	Default filter(Filter::What::DEFINITION);
@@ -47,8 +48,23 @@ translateModule(const TranslationUnitDecl* decl, CoqPrinter& print, ClangPrinter
 	print.output() << "nil." << fmt::outdent;
 	print.output() << fmt::line;
 }
+#endif
 
-void toCoqModule(clang::ASTContext *ctxt, const clang::TranslationUnitDecl *decl) {
+
+#include "clang/AST/ASTConsumer.h"
+#include "clang/Frontend/CompilerInstance.h"
+#include "clang/Frontend/FrontendAction.h"
+
+// Declares clang::SyntaxOnlyAction.
+#include "clang/Frontend/FrontendActions.h"
+
+#include "SpecCollector.hpp"
+#include "ToCoq.hpp"
+
+using namespace clang;
+
+void
+ToCoqConsumer::toCoqModule(clang::ASTContext *ctxt, const clang::TranslationUnitDecl *decl) {
 #if 0
 	NoInclude noInclude(ctxt->getSourceManager());
 	FromComment fromComment(ctxt);
@@ -57,30 +73,52 @@ void toCoqModule(clang::ASTContext *ctxt, const clang::TranslationUnitDecl *decl
 	filters.push_back(&fromComment);
 	Combine<Filter::What::NOTHING, Filter::max> filter(filters);
 #endif
+	SpecCollector specs;
 	Default filter(Filter::What::DEFINITION);
 
 	::Module mod;
 
-	build_module(decl, mod, filter);
+	build_module(decl, mod, filter, specs);
 
-	Formatter fmt(llvm::outs());
-	CoqPrinter print(fmt);
-	ClangPrinter cprint(ctxt);
+	if (output_file_.hasValue()) {
+		std::error_code ec;
+		llvm::raw_fd_ostream code_output(*output_file_, ec);
+		if (ec.value()) {
+			llvm::errs() << "Failed to open generation file: " << *output_file_ << "\n"
+									 << ec.message() << "\n";
+		} else {
+			Formatter fmt(code_output);
+			CoqPrinter print(fmt);
+			ClangPrinter cprint(ctxt);
 
-	fmt << "Require Import Cpp.Parser." << fmt::line << fmt::line
-			<< "Local Open Scope string_scope." << fmt::line
-			<< "Import ListNotations." << fmt::line;
+			fmt << "Require Import Cpp.Parser." << fmt::line << fmt::line
+					<< "Local Open Scope string_scope." << fmt::line
+					<< "Import ListNotations." << fmt::line;
 
-	fmt << fmt::line
-			<< "Definition module : compilation_unit := " << fmt::indent << fmt::line
-			<< "Eval reduce_compilation_unit in decls" << fmt::nbsp;
+			fmt << fmt::line
+					<< "Definition module : compilation_unit := " << fmt::indent << fmt::line
+					<< "Eval reduce_compilation_unit in decls" << fmt::nbsp;
 
-	print.begin_list();
-	for (auto entry : mod.definitions()) {
-		auto decl = entry.second;
-		cprint.printDecl(decl, print);
-		print.cons();
+			print.begin_list();
+			for (auto entry : mod.definitions()) {
+				auto decl = entry.second;
+				cprint.printDecl(decl, print);
+				print.cons();
+			}
+			print.end_list();
+			print.output() << "." << fmt::outdent << fmt::line;
+		}
 	}
-	print.end_list();
-	print.output() << "." << fmt::outdent << fmt::line;
+
+  if (spec_file_.hasValue()) {
+    std::error_code ec;
+		llvm::raw_fd_ostream spec_output(*spec_file_, ec);
+		if (ec.value()) {
+			llvm::errs() << "Failed to open specification file: " << *spec_file_ << "\n"
+									 << ec.message() << "\n";
+		} else {
+			fmt::Formatter spec_fmt(spec_output);
+			write_spec(&mod, specs, decl, filter, spec_fmt);
+		}
+  }
 }

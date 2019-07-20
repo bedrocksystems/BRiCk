@@ -3,12 +3,11 @@
  *
  * SPDX-License-Identifier:AGPL-3.0-or-later
  *)
-From Coq Require Export
-     Strings.Ascii
-     Strings.String
-     Lists.List.
-
-Require Export Coq.ZArith.BinInt.
+Require Export
+        Coq.Strings.Ascii
+        Coq.Strings.String
+        Coq.Lists.List
+        Coq.ZArith.BinInt.
 
 From Cpp Require Export Ast.
 
@@ -24,3 +23,10 @@ Bind Scope string_scope with globname.
 Bind Scope string_scope with obj_name.
 Bind Scope string_scope with ident.
 Bind Scope string_scope with localname.
+Bind Scope Z_scope with Z.
+
+Declare Custom Entry cppglobal.
+Delimit Scope cppfield_scope with field.
+Bind Scope cppfield_scope with field.
+
+Notation "` e `" := e (e custom cppglobal at level 200, at level 0) : cppfield_scope.

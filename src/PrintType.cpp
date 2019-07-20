@@ -31,6 +31,16 @@ printQualType(const QualType& qt, CoqPrinter& print, ClangPrinter& cprint) {
   print.output() << fmt::rparen;
 }
 
+void printQualifier(const QualType& qt, CoqPrinter& print) {
+	print.begin_record();
+	print.record_field("q_const");
+	print.boolean(qt.isConstQualified());
+	print.output() << ";" << fmt::nbsp;
+	print.record_field("q_volatile");
+	print.boolean(qt.isVolatileQualified());
+	print.end_record();
+}
+
 class PrintType : public TypeVisitor<PrintType, void, CoqPrinter&, ClangPrinter&> {
 private:
   PrintType() {}
@@ -253,4 +263,22 @@ ClangPrinter::printQualType(const QualType& qt, CoqPrinter& print) {
   auto depth = print.output().get_depth();
   ::printQualType(qt, print, *this);
   assert(depth == print.output().get_depth());
+}
+
+void
+ClangPrinter::printQualifier(const QualType& qt, CoqPrinter& print) const {
+  auto depth = print.output().get_depth();
+  ::printQualifier(qt, print);
+  assert(depth == print.output().get_depth());
+}
+
+void
+ClangPrinter::printQualifier(bool is_const, bool is_volatile, CoqPrinter& print) const {
+  print.begin_record();
+	print.record_field("q_const");
+	print.boolean(is_const);
+	print.output() << ";" << fmt::nbsp;
+	print.record_field("q_volatile");
+	print.boolean(is_volatile);
+	print.end_record();
 }

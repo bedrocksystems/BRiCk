@@ -30,7 +30,7 @@ static SourceLocation getStartSourceLocWithComment(
 #if CLANG_VERSION_MAJOR >= 8
           comment->getBeginLoc() : d->getBeginLoc();
 #else
-          comment->getLocStart() : d->getLocStart();
+          comment->getLocEnd() : d->getLocStart();
 #endif
 }
 
@@ -67,10 +67,15 @@ CommentScanner CommentScanner::decl_comments(
   auto start = getPrevSourceLoc(sm, decl);
   auto end = getStartSourceLocWithComment(ctxt, decl);
 
+  llvm::errs() << "start/end: " << start.printToString(sm) << " " << end.printToString(sm) << "\n";
+
   if (start.isValid() && end.isValid()) {
+    llvm::errs() << StringRef(sm.getCharacterData(start),
+            sm.getCharacterData(end) - sm.getCharacterData(start)) << "\n";
     return comment::CommentScanner(StringRef(sm.getCharacterData(start),
             sm.getCharacterData(end) - sm.getCharacterData(start)));
   } else {
+
     return comment::CommentScanner("");
   }
 }

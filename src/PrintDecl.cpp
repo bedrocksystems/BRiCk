@@ -43,9 +43,7 @@ void printMethod(
   print.output() << fmt::line << "; m_class :=" << fmt::nbsp;
   cprint.printGlobalName(decl->getParent(), print);
   print.output() << fmt::line << "; m_this_qual :=" << fmt::indent;
-  print.output() << "{| q_const :=" << (decl->isConst() ? "true" : "false")
-                 << "; q_volatile :=" << (decl->isVolatile() ? "true" : "false")
-                 << "|}" << fmt::outdent << fmt::line;
+	cprint.printQualifier(decl->isConst(), decl->isVolatile(), print);
   print.output() << "; m_params :=" << fmt::nbsp;
 
   for (auto i : decl->parameters()) {

@@ -9,6 +9,7 @@ theories/Syntax/CompilationUnit.v
 theories/Syntax/Typing.v
 theories/Ast.v
 theories/Parser.v
+theories/Signature.v
 
 # Semantics
 theories/Sem/Util.v

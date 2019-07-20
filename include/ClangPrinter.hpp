@@ -19,6 +19,7 @@ class Type;
 class BuiltinType;
 class ASTContext;
 class MangleContext;
+class ValueDecl;
 }
 
 class CoqPrinter;
@@ -56,7 +57,16 @@ public:
 	printQualType(const clang::QualType &qt, CoqPrinter& print);
 
 	void
+	printQualifier(const clang::QualType &qt, CoqPrinter& print) const;
+
+	void
+	printQualifier(bool is_const, bool is_volatile, CoqPrinter& print) const;
+
+	void
 	printExprAndValCat(const clang::Expr *expr, CoqPrinter& print);
+
+	void
+	printField(const clang::ValueDecl*, CoqPrinter&);
 
 	unsigned getTypeSize(const clang::BuiltinType* type) const;
 

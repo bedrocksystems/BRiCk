@@ -6,6 +6,7 @@
  * This file is based on the tutorial here:
  * https://clang.llvm.org/docs/LibASTMatchersTutorial.html
  */
+#include <optional>
 #include "clang/AST/ASTConsumer.h"
 #include "clang/Frontend/CompilerInstance.h"
 #include "clang/Frontend/FrontendAction.h"
@@ -20,29 +21,6 @@
 #include "ToCoq.hpp"
 
 using namespace clang;
-
-class ToCoqConsumer: public clang::ASTConsumer {
-public:
-	explicit ToCoqConsumer(ASTContext *Context) :
-			ctxt(Context) {
-	}
-
-	virtual void HandleTranslationUnit(clang::ASTContext &Context) {
-		toCoqModule(this->ctxt, Context.getTranslationUnitDecl());
-	}
-private:
-	ASTContext* ctxt;
-};
-
-class ToCoqAction: public clang::ASTFrontendAction {
-public:
-	virtual std::unique_ptr<clang::ASTConsumer> CreateASTConsumer(
-			clang::CompilerInstance &Compiler, llvm::StringRef InFile) {
-		return std::unique_ptr < clang::ASTConsumer
-				> (new ToCoqConsumer(&Compiler.getASTContext()));
-	}
-};
-
 using namespace clang::tooling;
 using namespace llvm;
 
@@ -55,9 +33,33 @@ static cl::OptionCategory Cpp2V("cpp2v options");
 // It's nice to have this help message in all tools.
 static cl::extrahelp CommonHelp(CommonOptionsParser::HelpMessage);
 
-// todo(gmm): i need to figure out how to thread this value through so that we
-// output to that file.
-// static cl::opt<StringRef> VFileOutput("out", cl::cat(Cpp2V));
+static cl::opt<std::string> SpecFile("spec", cl::desc("path to generate specifications"), cl::Optional, cl::cat(Cpp2V));
+
+static cl::opt<std::string> VFileOutput("o", cl::desc("path to generate the module"), cl::Optional, cl::cat(Cpp2V));
+
+class ToCoqAction: public clang::ASTFrontendAction {
+public:
+	virtual std::unique_ptr<clang::ASTConsumer> CreateASTConsumer(
+			clang::CompilerInstance &Compiler, llvm::StringRef InFile) {
+#if 0
+		Compiler.getInvocation().getLangOpts()->CommentOpts.BlockCommandNames.push_back("with");
+		Compiler.getInvocation().getLangOpts()->CommentOpts.BlockCommandNames.push_back("internal");
+    for (auto i : Compiler.getInvocation().getLangOpts()->CommentOpts.BlockCommandNames) {
+			llvm::errs() << i << "\n";
+		}
+#endif
+		auto result = new ToCoqConsumer(to_opt(VFileOutput), to_opt(SpecFile));
+		return std::unique_ptr < clang::ASTConsumer > (result);
+	}
+
+  template<typename T> Optional<T> to_opt(const cl::opt<T>& val) {
+    if (val.empty()) {
+      return Optional<T>();
+    } else {
+      return Optional<T>(val.getValue());
+    }
+  }
+};
 
 int main(int argc, const char **argv) {
 	CommonOptionsParser OptionsParser(argc, argv, Cpp2V);
