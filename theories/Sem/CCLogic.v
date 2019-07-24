@@ -10,7 +10,7 @@ From Coq.micromega Require Import
 Require Import Coq.ssr.ssrbool.
 
 From Coq.Classes Require Import
-     RelationClasses Morphisms.
+     RelationClasses Morphisms DecidableClass.
 
 From ChargeCore.SepAlg Require Import SepAlg.
 
@@ -231,26 +231,75 @@ Module Type cclogic.
 
   Notation "a ⊕ b" := (s_compose _ a b) (at level 50, left associativity).
 
+  (* the names of invariants *)
+  Record iname : Type :=
+    { n_type : Type
+    ; n_name : n_type }.
+
 
   (* named invariants *)
-  Parameter Inv : forall (name : Type) (I : mpred), mpred.
-  (* ^ the invariant [I] must be droppable and duplicable *)
+  Parameter Inv : forall {name : Type} (_ : name) (I : mpred), mpred.
+  (* ^ the invariant [I] must be droppable *)
 
-  Axiom Inv_dup : forall n I, Inv n I -|- Inv n I ** Inv n I.
-  Axiom Inv_drop : forall n I, Inv n I |-- empSP.
+  Definition infinite (t : Type) : Prop :=
+    exists (for_each : nat -> t),
+      forall n1 n2, n1 <> n2 -> for_each n1 <> for_each n2.
+
+  Axiom Inv_new : forall name I,
+      infinite name ->
+      I |-- empSP -> (* droppable *)
+      empSP |-- Exists n : name, Inv n I.
+  Axiom Inv_dup : forall name (n : name) I, Inv n I -|- Inv n I ** Inv n I.
+  Axiom Inv_drop : forall name (n : name) I, Inv n I |-- empSP.
 
   (* trackable (named) invariants *)
   Parameter TInv : Fp -> forall {nm : Type} (_ : nm)  (I : mpred), mpred.
   (* ^ the invariant [I] has no restrictions *)
 
   Axiom TInv_new : forall nm I,
+      infinite nm ->
       I |-- Exists n : nm, TInv Fp_Monoid.(s_top) n I.
   Axiom TInv_delete : forall nm (n : nm) I,
       TInv Fp_Monoid.(s_top) n I |-- I.
   Axiom TInv_split : forall (f1 f2 : Fp_Monoid) nm (n : nm) I,
       TInv (f1 ⊕ f2) n I -|- TInv f1 n I ** TInv f2 n I.
 
-  Require Import Coq.Classes.DecidableClass.
+  (* view shifts
+   * - this is an entirely different notion of entailment.
+   *)
+  Definition disjoint {T} (xs ys : list T) : Prop :=
+    List.Forall (fun x => ~List.In x ys) xs.
+  Definition subset {T} (xs ys : list T) : Prop :=
+    List.Forall (fun x => List.In x ys) xs.
+  Inductive shift (P : mpred) : list iname -> list iname -> mpred -> mpred -> Prop :=
+  | Done {ls Q} : shift P ls ls Q Q
+  | Open {l ls rs Q R S} (_ : ~In l ls) (_ : P |-- Inv l Q ** ltrue)
+         (_ : shift P (l :: ls) rs (Q ** R) S)
+    : shift P ls rs R S
+  | Close {ls r rs Q R S} (_ : In r rs) (_ : P |-- Inv r Q ** ltrue)
+         (_ : shift P ls (r :: rs) Q (R ** S))
+    : shift P ls rs R S
+  | OpenT {q l ls rs Q R S} (_ : ~In l ls) (_ : P |-- TInv q l Q ** ltrue)
+         (_ : shift P (l :: ls) rs (Q ** R) S)
+    : shift P ls rs R S
+  | CloseT {q ls r rs Q R S} (_ : In r rs) (_ : P |-- TInv q r Q ** ltrue)
+         (_ : shift P ls (r :: rs) Q (R ** S))
+    : shift P ls rs R S
+  | ConseqL {ls rs Q R S} (_ : R |-- Q) (_ : shift P ls rs Q S)
+    : shift P ls rs R S
+  | ConseqR {ls rs Q R S} (_ : R |-- S) (_ : shift P ls rs Q R)
+    : shift P ls rs Q S
+  | Frame {ls ls' rs rs' Q R S}
+          (_ : disjoint ls ls') (_ : disjoint rs rs')
+          (_ : shift P ls rs Q R)
+    : shift P (ls ++ ls') (rs ++ rs') (Q ** S) (R ** S)
+  | Trans {e1 e2 e3 Q R S}
+          (_ : subset e2 (e1 ++ e3))
+          (_ : shift P e1 e2 Q R)
+          (_ : shift P e2 e3 R S)
+    : shift P e1 e3 Q S.
+
+
   Parameter SA_fmap : forall (k : Type) {_ : forall a b : k, Decidable (a = b)} (v : SA), SA.
   Parameter fmap_singleton : forall {k} {dec : forall a b : k, Decidable (a = b)} (v : SA),
       k -> v.(s_type) -> (@SA_fmap k dec v).(s_type).
@@ -263,7 +312,7 @@ Module Type cclogic.
    *    it would require that all of our code is verified with respect to
    *    arbitrary `Fp_Monoid` that contain some (relevant) monoids.
    *    an alternative would be to build a universal [Fp_Monoid] (up to
-   *    universe polymorphism) and then provide means for monoid.
+   *    universe polymorphism) and then provide a way to do allocation.
    *    this would be analagous to:
    *      [mpred Universal]
    *    where [Universal] is:
@@ -274,12 +323,20 @@ Module Type cclogic.
    *    separation algebras that we are going to use are those with finite maps,
    *    so it might be a little bit easier to say.
    *      Definition Universal@{i j | j < i} : Type@{i} :=
-   *        forall ra : RA@{j}, Fmap nat ra.(s_type), 
+   *        forall ra : RA@{j}, Fmap nat ra.(s_type),
    *)
   Parameter ghost_is : forall (Prm: SA) (value : Prm), mpred.
-  Definition ghost_ptsto {ptr : Type} {dec : forall a b : ptr, Decidable (a = b)}
-             (Prm : SA) (p : ptr) (value : Prm) : mpred :=
-    ghost_is (SA_fmap ptr Prm) (@fmap_singleton ptr _ Prm p value).
+  Definition ghost_ptsto {loc : Type} {dec : forall a b : loc, Decidable (a = b)}
+             (Prm : SA) (p : loc) (value : Prm) : mpred :=
+    ghost_is (SA_fmap loc Prm) (@fmap_singleton loc _ Prm p value).
+
+  (* note(gmm): i can update any ghost location as long as I have exclusive
+   * ownership of it.
+   *)
+  Axiom shift_ghost_update : forall loc dec prm p v v' P,
+      shift P nil nil
+            (@ghost_ptsto loc dec prm p v)
+            (@ghost_ptsto loc dec prm p v').
 
   (* Definition Frac_PointsTo l q v := *)
   (*   match is_ok q with *)
@@ -309,9 +366,6 @@ Module Type cclogic.
   Axiom logical_ghost: forall (ghost : SA) (guard : In ghost guard_container)  (gl : ghost) (gv : val), mpred.
 *)
 
-  (*
-    Gregory suggests emp |- Exists g. g:m
-  *)
   (* Parameter wp_ghst : Expr -> (val -> mpred) -> mpred. *)
 
    (*
@@ -325,14 +379,57 @@ Module Type cclogic.
   (* forall  g P E Qp CMI (guard: In CMI guard_container) (ptriple: P |-- wp_ghst E Qp), *)
   (*    P |-- wp_ghst E (fun v =>  (Qp v) ** (Exists l, logical_ghost CMI  guard l g)). *)
 
+  (* a "weakest pre-condition" for view shifts
+   * note(gmm): in this style, we don't need to explicitly quantify over the
+   * final open invariants.
+   *)
+  Parameter wp_shift : forall (mask : list iname), (list iname -> mpred) -> mpred.
+
+  Axiom wp_shift_done : forall P mask,
+      P mask |-- wp_shift mask P.
+
+  (* the rest of these need access to [P] in order to know where
+   * to pull invariants from.
+   *)
+  Axiom wp_shift_vs : forall P from to Q R Z,
+    shift P from to Q R ->
+    P |-- Q ** (R -* wp_shift to Z) ->
+    P |-- wp_shift from Z.
+
+  (* the next 4 axioms should be derivable from [wp_shift_vs] *)
+  Axiom wp_shift_open : forall P Q hide n I,
+      P |-- Inv n I ** ltrue ->
+      ~In n hide ->
+      P |-- I -* wp_shift (n :: hide) Q ->
+      P |-- wp_shift hide Q.
+  Axiom wp_shift_openT : forall q P Q hide n I,
+      P |-- TInv q n I ** ltrue ->
+      ~In n hide ->
+      P |-- I -* wp_shift (n :: hide) Q ->
+      P |-- wp_shift hide Q.
+
+  Axiom wp_shift_close : forall P Q hide hideL hideR n I,
+      P |-- Inv n I ** ltrue ->
+      hide = hideL ++ n :: hideR ->
+      P |-- I ** wp_shift (hideL ++ hideR) Q ->
+      P |-- wp_shift hide Q.
+  Axiom wp_shift_closeT : forall q P Q hide hideL hideR n I,
+      P |-- TInv q n I ** ltrue ->
+      hide = hideL ++ n :: hideR ->
+      P |-- I ** wp_shift (hideL ++ hideR) Q ->
+      P |-- wp_shift hide Q.
+
   (****** Wp Semantics for atomic operations
    * These are given in the style of function call axioms
    *)
   Parameter wp_atom : AtomicOp -> list val -> type -> (val -> mpred) -> mpred.
 
+  (* note that this rule captures all of the interesting reasoning about atomics
+   * through the use of [wp_shift]
+   *)
   Axiom wp_rhs_atomic: forall rslv ti r ao es ty Q,
       wps (wpAnys (resolve:=rslv) ti r) es  (fun (vs : list val) (free : FreeTemps) =>
-           wp_atom ao vs ty (fun v => Q v free)) empSP
+           wp_shift nil (fun opened => wp_atom ao vs ty (fun v => wp_shift opened (fun to => [| to = nil |] ** (Q v free))))) empSP
       |-- wp_rhs (resolve:=rslv) ti r (Eatomic ao es ty) Q.
 
   (* Ideas adopted from the paper:
@@ -340,8 +437,16 @@ Module Type cclogic.
    *)
 
   (*Atomic CAS access permission*)
-  Definition AtomInv (fp : Fp.Fp) (t : type) (I : val -> mpred) : Rep :=
-    {| repr p := TInv fp p (Exists v, _at (_eq p) (tprim t v) ** I v) |}.
+  Definition AtomInv (fp : Fp.Fp) {nm : Type} (n : nm) (t : type) (I : val -> mpred) : Rep :=
+    {| repr p := TInv fp n (Exists v, _at (_eq p) (tprim t v) ** I v) |}.
+  (* ^ note(gmm): i introduced names here so that these can fit into TInv, but another way
+   * to do this is to track the used tokens by associating them with the pointers.
+   * this would mean that you have a simple atomics library that provides a logical
+   * way to allocate an [AtomInv]. Doing this seems to *require* a way to
+   * drop the [infinite] premise above and state "this token is not used".
+   * - alternatively, there is the possibility to allocate 1 large invariant
+   *   and use it to mitigate all of the definitions.
+   *)
 
 (*
   (*Atomic READ access permission*)
@@ -361,49 +466,72 @@ Module Type cclogic.
       -|- Exists v, (Exists LocInv'', (LocInv'' v -* (LocInv' v ** LocInv v)) //\\ (AtomRDPerm v LocInv'')).
 *)
 
-  (*Atomic CAS access permission is duplicable*)
-  Axiom Persistent_CASPerm : forall (q1 q2 : Fp_Monoid) ty LocInv,
-      AtomInv (q1 ⊕ q2) ty LocInv -|- AtomInv q1 ty LocInv ** AtomInv q2 ty LocInv.
+  (* Atomic CAS access permission is a trackable invariant *)
+  Theorem Persistent_CASPerm : forall (q1 q2 : Fp_Monoid) {nm} (n : nm) ty LocInv,
+      AtomInv (q1 ⊕ q2) n ty LocInv -|- AtomInv q1 n ty LocInv ** AtomInv q2 n ty LocInv.
+  Proof.
+    unfold AtomInv.
+    split; simpl; intros; eapply TInv_split.
+  Qed.
 
   (*Generate atomic access token via consuming the memory cell and the invariant *)
-  Theorem Intro_AtomInv : forall x (t:type) (Inv:val->mpred),
-      Exists v, _at (_eq x) (tprim t v) ** Inv v |-- _at (_eq x) (AtomInv Fp_full t Inv).
+  Theorem Intro_AtomInv : forall x {nm} (t:type) (Inv:val->mpred),
+      infinite nm ->
+      Exists v, _at (_eq x) (tprim t v) ** Inv v
+      |-- Exists n : nm, _at (_eq x) (AtomInv Fp_full n t Inv).
   Proof.
     intros.
     unfold AtomInv.
+    etransitivity.
+    eapply TInv_new; eauto.
     Transparent _at. unfold _at. Opaque _at.
     simpl.
-  Admitted.
+    discharge fail fail fail fail eauto.
+  Qed.
 
   (*Memory Ordering Patterns: Now we only have _SEQ_CST *)
   Definition _SEQ_CST := Vint 5.
 
-(*
-  (* *)
-  Axiom Splittable_WRTPerm: forall (LocInv: val->mpred) (LocInv':val->mpred) l ,  AtomRDPerm l LocInv **  AtomRDPerm l LocInv'
-                           -|- Exists v, (Exists LocInv'', (LocInv'' v -* (LocInv' v \\// LocInv v)) //\\ (AtomRDPerm v LocInv'')).
-*)
-
-  (* note(gmm): these are used for reading and writing without compare *)
-  (*todo(isk): give up the permission to read the same value again with same permission *)
+  (* note(gmm): these are used for reading and writing values shared between
+   * threads.
+   * note(gmm): these look exactly like the standard read and write assertions
+   * because all of the invariant reasoning is encapsulated in [wp_shift].
+   *)
   Axiom rule_atomic_load_cst
-  : forall q memorder (acc_type:type) l (Inv Qlearn: val -> mpred) P Q
-      (read : forall v, P ** Inv v |-- Inv v ** Qlearn v),
-      _at (_eq l) (AtomInv q acc_type Inv) **
-      P **
+  : forall memorder (acc_type:type) (l : val) (Q : val -> mpred),
       [| memorder = _SEQ_CST |] **
-      (Forall x, (Qlearn x ** _at (_eq l) (AtomInv q acc_type Inv)) -* Q x)
+      (Exists v, (_at (_eq l) (tprim acc_type v) ** ltrue //\\ Q v))
       |-- wp_atom AO__atomic_load_n (l :: memorder :: nil) acc_type Q.
 
-  Axiom rule_atomic_store_cst
-  : forall q memorder (acc_type:type) l (Inv Qlearn : val -> mpred) P Q
-      val
-      (store : forall v, P ** Inv v |-- Inv val ** Qlearn v),
-      _at (_eq l) (AtomInv q acc_type Inv) **
+(*
+  Axiom rule_atomic_load_cst
+  : forall q memorder (acc_type:type) name (nm : name) l (Inv Qlearn: val -> mpred) P Q
+      (read : forall v, P ** Inv v |-- Inv v ** Qlearn v),
+      _at (_eq l) (AtomInv q nm acc_type Inv) **
       P **
       [| memorder = _SEQ_CST |] **
-      (Forall x, (Qlearn x ** _at (_eq l) (AtomInv q acc_type Inv)) -* Q x)
+      (Forall x, (Qlearn x ** _at (_eq l) (AtomInv q nm acc_type Inv)) -* Q x)
+      |-- wp_atom AO__atomic_load_n (l :: memorder :: nil) acc_type Q.
+*)
+
+  Axiom rule_atomic_store_cst
+  : forall memorder (acc_type:type) l Q val,
+      [| memorder = _SEQ_CST |] **
+      (Exists val, _at (_eq l) (tprim acc_type val)) **
+      (_at (_eq l) (tprim acc_type val) -* Forall void, Q void)
       |-- wp_atom AO__atomic_store_n (l :: memorder :: val :: nil) (Qmut Tvoid) Q.
+
+(*
+  Axiom rule_atomic_store_cst
+  : forall q memorder (acc_type:type) {name} (nm : name) l (Inv Qlearn : val -> mpred) P Q
+      val
+      (store : forall v, P ** Inv v |-- Inv val ** Qlearn v),
+      _at (_eq l) (AtomInv q nm acc_type Inv) **
+      P **
+      [| memorder = _SEQ_CST |] **
+      (Forall x, (Qlearn x ** _at (_eq l) (AtomInv q nm acc_type Inv)) -* Q x)
+      |-- wp_atom AO__atomic_store_n (l :: memorder :: val :: nil) (Qmut Tvoid) Q.
+*)
 
   Definition Fp_readable (f : Fp) : Prop :=
     match f with
@@ -411,6 +539,7 @@ Module Type cclogic.
     | _ => False
     end.
 
+(*
   (* atomic compare and exchange n *)
   Axiom rule_atomic_compare_exchange_n:
     forall q P val_p expected_p desired wk succmemord failmemord Qp Q' Qlearn (Q:mpred)
@@ -507,6 +636,7 @@ Module Type cclogic.
   Axiom rule_atomic_and_fetch : ltac:(xxx_fetch AO__atomic_and_fetch Band).
   Axiom rule_atomic_xor_fetch : ltac:(xxx_fetch AO__atomic_xor_fetch Bxor).
   Axiom rule_atomic_or_fetch : ltac:(xxx_fetch AO__atomic_or_fetch Bor).
+*)
 End cclogic.
 
 Declare Module CCL : cclogic.
