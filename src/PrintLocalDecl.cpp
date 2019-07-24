@@ -1,7 +1,8 @@
 #include "CoqPrinter.hpp"
 #include "ClangPrinter.hpp"
 #include "DeclVisitorWithArgs.h"
-#include <Formatter.hpp>
+#include "Formatter.hpp"
+#include "Logging.hpp"
 
 using namespace clang;
 
@@ -30,7 +31,9 @@ public:
 
   void VisitDecl(const Decl *decl, CoqPrinter& print, ClangPrinter& cprint)
   {
-    print.error() << "unexpected local declaration";
+		using namespace logging;
+    fatal() << "unexpected local declaration";
+		die();
   }
 };
 
