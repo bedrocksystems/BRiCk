@@ -18,6 +18,7 @@
 // Declares llvm::cl::extrahelp.
 #include "llvm/Support/CommandLine.h"
 
+#include "Logging.hpp"
 #include "ToCoq.hpp"
 
 using namespace clang;
@@ -36,6 +37,8 @@ static cl::extrahelp CommonHelp(CommonOptionsParser::HelpMessage);
 static cl::opt<std::string> SpecFile("spec", cl::desc("path to generate specifications"), cl::Optional, cl::cat(Cpp2V));
 
 static cl::opt<std::string> VFileOutput("o", cl::desc("path to generate the module"), cl::Optional, cl::cat(Cpp2V));
+
+static cl::opt<bool> Verbose("v", cl::desc("verbose"), cl::Optional, cl::cat(Cpp2V));
 
 class ToCoqAction: public clang::ASTFrontendAction {
 public:
@@ -65,5 +68,10 @@ int main(int argc, const char **argv) {
 	CommonOptionsParser OptionsParser(argc, argv, Cpp2V);
 	ClangTool Tool(OptionsParser.getCompilations(),
 			OptionsParser.getSourcePathList());
+
+	if (Verbose) {
+		logging::set_level(logging::VERBOSE);
+	}
+
 	return Tool.run(newFrontendActionFactory<ToCoqAction>().get());
 }

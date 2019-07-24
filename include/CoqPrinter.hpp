@@ -95,9 +95,6 @@ public:
 	fmt::Formatter& output() {
 		return this->output_;
 	}
-	llvm::raw_ostream& error () const {
-		return llvm::errs();
-	}
 
 private:
 	fmt::Formatter& output_;

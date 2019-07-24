@@ -7,7 +7,8 @@
 #include "ClangPrinter.hpp"
 #include "DeclVisitorWithArgs.h"
 #include "clang/AST/Decl.h"
-#include <Formatter.hpp>
+#include "Formatter.hpp"
+#include "Logging.hpp"
 
 using namespace clang;
 
@@ -66,7 +67,7 @@ void printMethod(
 void printConstructor(
         const CXXConstructorDecl *decl, CoqPrinter &print, ClangPrinter &cprint)
 {
-
+	// ignore
 }
 
 void printDestructor(
@@ -127,8 +128,7 @@ void printDestructor(
 
     print.output() << fmt::rparen << fmt::rparen << "|}";
   } else {
-    print.error() << "destructor has no body\n";
-    print.output() << "None";
+		print.none();
   }
 }
 
@@ -142,19 +142,24 @@ class PrintDecl : public ConstDeclVisitorArgs<PrintDecl, void, CoqPrinter &,
 
   void VisitDecl(const Decl *d, CoqPrinter &print, ClangPrinter &cprint)
   {
-    print.error() << "visiting declaration..." << d->getDeclKindName() << "\n";
+		using namespace logging;
+    fatal() << "visiting declaration..." << d->getDeclKindName() << "\n";
+		die();
   }
 
   void VisitTypeDecl(
           const TypeDecl *type, CoqPrinter &print, ClangPrinter &cprint)
   {
-    print.error() << "unsupported type declaration `" << type->getDeclKindName()
+		using namespace logging;
+    fatal() << "unsupported type declaration `" << type->getDeclKindName()
             << "`\n";
+    die();
   }
 
   void VisitEmptyDecl(
           const EmptyDecl *decl, CoqPrinter &print, ClangPrinter &cprint)
   {
+		// ignore
   }
 
   void VisitTypedefNameDecl(
@@ -231,20 +236,23 @@ class PrintDecl : public ConstDeclVisitorArgs<PrintDecl, void, CoqPrinter &,
 
     // print the base classes
     print.output() << fmt::line << "{| s_bases :=" << fmt::nbsp;
+		print.begin_list();
     for (auto base : decl->bases()) {
       if (base.isVirtual()) {
-        print.error() << "virtual base classes not supported\n";
+				logging::unsupported() << "virtual base classes not supported\n";
       }
 
       auto rec = base.getType().getTypePtr()->getAsCXXRecordDecl();
       if (rec) {
         cprint.printGlobalName(rec, print);
       } else {
-        print.error() << "base class is not a RecordType";
+        using namespace logging;
+        fatal() << "base class is not a RecordType\n";
+				die();
       }
-      print.output() << "::";
+      print.cons();
     }
-    print.output() << "nil";
+		print.end_list();
 
     // print the fields
     print.output() << fmt::line << " ; s_fields :=" << fmt::indent << fmt::line;
@@ -289,8 +297,10 @@ class PrintDecl : public ConstDeclVisitorArgs<PrintDecl, void, CoqPrinter &,
       print.output() << fmt::rparen;
     } else {
       if (decl->isVirtual()) {
-        print.error() << "[ERR] virtual functions not supported: "
+        using namespace logging;
+        fatal() << "[ERR] virtual functions not supported: "
                 << decl->getNameAsString() << "\n";
+        die();
       } else {
         print.ctor("Dmethod");
         cprint.printGlobalName(decl, print);

@@ -11,6 +11,7 @@
 #include "Formatter.hpp"
 #include "CoqPrinter.hpp"
 #include "ClangPrinter.hpp"
+#include "Logging.hpp"
 
 using namespace clang;
 using namespace fmt;
@@ -53,10 +54,10 @@ void printCastKind(Formatter& out, const CastKind ck) {
 		out << "C2void";
 	} else {
 #if CLANG_VERSION_MAJOR >= 7
-		llvm::errs() << "unsupported cast kind \""
-				<< CastExpr::getCastKindName(ck) << "\"\n";
+    logging::unsupported() << "unsupported cast kind \""
+                           << CastExpr::getCastKindName(ck) << "\"\n";
 #else
-		llvm::errs() << "unsupported cast kind ..." << ck << "\n";
+		logging::unsupported() << "unsupported cast kind ..." << ck << "\n";
 #endif
 		out << "Cunsupported";
 	}
@@ -76,13 +77,16 @@ public:
 
   void VisitStmt(const Stmt *stmt, CoqPrinter &print, ClangPrinter &)
   {
-    print.error() << "while printing an expr, got a statement '"
-                  << stmt->getStmtClassName() << "'\n";
+    logging::fatal() << "while printing an expr, got a statement '"
+                  	 << stmt->getStmtClassName() << "'\n";
+		logging::die();
   }
 
   void VisitExpr(const Expr *expr, CoqPrinter& print, ClangPrinter& cprint)
   {
-    print.error() << "unrecognized expression '" << expr->getStmtClassName() << "'\n";
+    using namespace logging;
+    fatal() << "unrecognized expression '" << expr->getStmtClassName() << "'\n";
+		die();
   }
 
   void printBinaryOperator(BinaryOperator::Opcode op, StringRef def, CoqPrinter& print)
@@ -111,7 +115,7 @@ public:
       CASE(Xor, "Bxor")
 #undef CASE
     default:
-      print.error() << "defaulting binary operator\n";
+      logging::unsupported() << "defaulting binary operator\n";
       print.ctor("Bother") << "\"" << def << "\"" << fmt::rparen;
       break;
     }
@@ -182,7 +186,7 @@ public:
       CASE(PreInc, "<PreInc>")
 #undef CASE
     default:
-      print.error() << "unsupported unary operator\n";
+      logging::unsupported() << "unsupported unary operator\n";
       print.output() << "(Uother \"" << UnaryOperator::getOpcodeStr(op) << "\")";
       break;
     }
@@ -322,9 +326,9 @@ public:
         print.output() << "Cbad";
       }
     } else {
-      print.error() << "unknown named cast\n";
-      llvm::errs().flush();
-      assert(false);
+      using namespace logging;
+      fatal() << "unknown named cast" << expr->getCastKindName() << "\n";
+      die();
     }
     print.output() << fmt::nbsp;
 
@@ -508,7 +512,9 @@ public:
       do_arg();
       done(expr, print, cprint);
     } else {
-      print.error() << "unsupported expression `UnaryExprOrTypeTraitExpr`\n";
+      using namespace logging;
+      fatal() << "unsupported expression `UnaryExprOrTypeTraitExpr`\n";
+			die();
     }
   }
 
@@ -650,7 +656,8 @@ ClangPrinter::printExpr(const clang::Expr* expr, CoqPrinter& print) {
   auto depth = print.output().get_depth();
   PrintExpr::printer.Visit(expr, print, *this);
   if (depth != print.output().get_depth()) {
-    llvm::errs() << "indentation bug in during: " << expr->getStmtClassName() << "\n";
+    using namespace logging;
+    fatal() << "indentation bug in during: " << expr->getStmtClassName() << "\n";
     assert(false);
   }
 }

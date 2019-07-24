@@ -3,7 +3,6 @@
  *
  * SPDX-License-Identifier:AGPL-3.0-or-later
  */
-#include <cstdio>
 #include <clang/AST/ASTContext.h>
 #include <clang/AST/Mangle.h>
 #include <clang/AST/DeclCXX.h>
@@ -11,6 +10,8 @@
 #include "ClangPrinter.hpp"
 #include "CoqPrinter.hpp"
 #include "Formatter.hpp"
+#include "Logging.hpp"
+
 using namespace clang;
 
 ClangPrinter::ClangPrinter(clang::ASTContext *context)
@@ -101,8 +102,9 @@ void ClangPrinter::printField(const ValueDecl *decl, CoqPrinter &print)
 		print.output() << fmt::nbsp << "; f_name := \"" << decl->getNameAsString() << "\"";
 		print.end_record();
 	} else {
-		print.error() << "member not pointing to field "
-									<< decl->getDeclKindName() << "\n";
-		assert(false && "member not pointing to field");
-	}
+    using namespace logging;
+    fatal() << "member not pointing to field " << decl->getDeclKindName()
+            << "\n";
+    assert(false && "member not pointing to field");
+  }
 }

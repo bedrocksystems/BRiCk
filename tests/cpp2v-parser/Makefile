@@ -6,7 +6,7 @@ ALL	= $(wildcard *.cpp)
 all: $(ALL:%.cpp=%_cpp.vo)
 
 %_cpp.v: %.cpp $(CPP2V)
-	$(CPP2V) -o $@ $< --
+	$(CPP2V) -v -o $@ $< --
 
 %.vo: %.v
 	$(COQC) -Q ../../theories Cpp $<

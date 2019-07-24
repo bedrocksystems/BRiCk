@@ -9,6 +9,7 @@
 #include "SpecCollector.hpp"
 #include "CommentScanner.hpp"
 #include "Formatter.hpp"
+#include "Logging.hpp"
 
 using namespace clang;
 
@@ -45,7 +46,7 @@ public:
 
   void VisitDecl(const Decl *d)
   {
-    llvm::errs() << "visiting declaration..." << d->getDeclKindName() << "\n";
+    logging::log() << "visiting declaration..." << d->getDeclKindName() << "\n";
   }
 
   void VisitAccessSpecDecl(const AccessSpecDecl*) {
@@ -60,7 +61,7 @@ public:
 
   void VisitTypeDecl(const TypeDecl *type)
   {
-    llvm::errs() << "unsupported type declaration `" << type->getDeclKindName() << "`\n";
+    logging::log() << "unsupported type declaration `" << type->getDeclKindName() << "`\n";
   }
 
   void VisitEmptyDecl(const EmptyDecl *decl) {}

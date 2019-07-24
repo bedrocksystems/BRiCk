@@ -26,6 +26,7 @@ add_executable(cpp2v
   src/CommentScanner.cpp
   src/SpecWriter.cpp
   src/Formatter.cpp
+  src/Logging.cpp
   src/ToCoq.cpp
   src/cpp2v.cpp
   src/ClangPrinter.cpp

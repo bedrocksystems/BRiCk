@@ -8,6 +8,7 @@
 #include "TypeVisitorWithArgs.h"
 #include "CoqPrinter.hpp"
 #include "ClangPrinter.hpp"
+#include "Logging.hpp"
 
 using namespace clang;
 using namespace fmt;
@@ -50,10 +51,11 @@ public:
 
   void VisitType(const Type *type, CoqPrinter& print, ClangPrinter& cprint)
   {
-    print.error() << "[ERR] unsupported type: ";
-    type->dump(print.error());
-    print.error() << "\n";
-    exit(1);
+		using namespace logging;
+    fatal() << "[ERR] unsupported type: ";
+    type->dump(fatal());
+    fatal() << "\n";
+    die();
   }
 
   void VisitAutoType(const AutoType *type, CoqPrinter& print, ClangPrinter& cprint)
@@ -153,11 +155,11 @@ public:
     } else if (type->getKind() == BuiltinType::Kind::Void) {
       print.output() << "Tvoid";
     } else {
-      print.error() << "Unsupported type \""
-                    << type->getNameAsCString(PrintingPolicy(LangOptions()))
-                    << "\"\n";
-      llvm::errs().flush();
-      exit(1);
+			using namespace logging;
+      fatal() << "Unsupported type \""
+              << type->getNameAsCString(PrintingPolicy(LangOptions()))
+              << "\"\n";
+      die();
     }
   }
 

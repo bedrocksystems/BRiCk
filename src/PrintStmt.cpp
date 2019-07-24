@@ -9,7 +9,8 @@
 #include "clang/AST/Type.h"
 #include "clang/AST/StmtVisitor.h"
 #include "clang/Basic/Version.inc"
-#include <Formatter.hpp>
+#include "Formatter.hpp"
+#include "Logging.hpp"
 
 using namespace clang;
 
@@ -23,8 +24,9 @@ public:
 
   void VisitStmt(const Stmt *stmt, CoqPrinter &print, ClangPrinter &cprint, ASTContext&)
   {
-    print.error() << "unsupported statement " << stmt->getStmtClassName()
-                  << "\n";
+    using namespace logging;
+    fatal() << "unsupported statement " << stmt->getStmtClassName() << "\n";
+		die();
   }
 
   void VisitDeclStmt(
