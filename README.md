@@ -43,6 +43,19 @@ $ brew install opam
 $ opam repo add coq-released https://coq.inria.fr/opam/released
 ```
 
+More detailed code for building.
+
+```sh
+$ brew install llvm cmake
+$ export PATH=/usr/local/opt/llvm/bin:${PATH}
+$ git clone https://github.com/bedrocksystems/cpp2v.git
+$ cd cpp2v
+$ mkdir build && cd build
+$ cmake -D CMAKE_EXE_LINKER_FLAGS=-L/usr/local/opt/llvm/lib ..
+$ cmake --build .
+```
+
+
 ## Building
 You can build `cpp2v` using the following commands.
 
