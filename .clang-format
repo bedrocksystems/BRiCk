@@ -42,7 +42,7 @@ BreakBeforeTernaryOperators: false
 BreakConstructorInitializersBeforeComma: false
 BreakConstructorInitializers: BeforeColon
 BreakStringLiterals: true
-ColumnLimit:     120
+ColumnLimit:     80
 CompactNamespaces: false
 ConstructorInitializerAllOnOneLineOrOnePerLine: false
 ConstructorInitializerIndentWidth: 4
