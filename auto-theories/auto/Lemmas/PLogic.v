@@ -29,16 +29,11 @@ Global Opaque with_addr.
 (* there is a problem with using `tat_field` for uninitialized because
  * `tat_field` says that the data has the appropriate type.
  *)
-Fixpoint find_struct_decl (nm : globname) (d : Decl) {struct d}
-: option Struct :=
-  match d with
-  | Dstruct nm' (Some s) =>
-    if string_dec nm nm' then Some s else None
+Definition find_struct (nm : globname) (m : compilation_unit) : option Struct :=
+  match CompilationUnit.lookup_global m nm with
+  | Some (Gstruct s) => Some s
   | _ => None
   end.
-
-Definition find_struct (nm : globname) : list Decl -> option Struct :=
-  find_in_list (find_struct_decl nm).
 
 Lemma uninit_class_fwd
 : forall cls base m st F Q,

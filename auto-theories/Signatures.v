@@ -6,4 +6,4 @@ Require Import Cpp.Auto.
 Definition signature := list (obj_name * function_spec).
 
 Definition sig {resolve} (ti : thread_info) (s : signature) : mpred :=
-  sepSPs (map (fun '(f, fs) => cglob (resolve:=resolve) f ti fs) s).
+  sepSPs (map (fun '(f, fs) => |> cglob (resolve:=resolve) f ti fs) s).
