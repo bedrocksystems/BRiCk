@@ -666,6 +666,13 @@ public:
         cprint.printExpr(expr->getExpr(), print);
         print.end_ctor();
     }
+
+    void VisitPredefinedExpr(const PredefinedExpr* expr, CoqPrinter& print,
+                             ClangPrinter& cprint) {
+        print.ctor("Estring");
+        print.str(expr->getFunctionName()->getString());
+        done(expr, print, cprint);
+    }
 };
 
 PrintExpr PrintExpr::printer;
