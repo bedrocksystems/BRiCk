@@ -622,7 +622,7 @@ public:
 
         print.begin_list();
         for (auto i : expr->arguments()) {
-            cprint.printExpr(i, print);
+            cprint.printExprAndValCat(i, print);
             print.cons();
         }
         print.end_list();
