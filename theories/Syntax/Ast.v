@@ -301,6 +301,8 @@ Inductive Stmt : Set :=
 
 | Sexpr   (_ : ValCat) (_ : Expr)
 
+| Sattr (_ : list string) (_ : Stmt)
+
 | Sasm (_ : string) (volatile : bool)
        (inputs : list (string * Expr))
        (outputs : list (string * Expr))
