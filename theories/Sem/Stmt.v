@@ -215,6 +215,7 @@ Module Type Stmt.
       | Swhile _ _ s => no_case s
       | Sfor _ _ _ s => no_case s
       | Sdo s _ => no_case s
+      | Sattr _ s => no_case s
       | Sswitch _ _ => true
       | Scase _
       | Sdefault => false

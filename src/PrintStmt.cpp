@@ -254,6 +254,23 @@ public:
 
         print.output() << fmt::rparen;
     }
+
+    void VisitAttributedStmt(const clang::AttributedStmt *stmt,
+                             CoqPrinter &print, ClangPrinter &cprint,
+                             ASTContext &) {
+
+        print.ctor("Sattr");
+        print.begin_list();
+        for (auto i : stmt->getAttrs()) {
+            print.str(i->getSpelling());
+            print.cons();
+        }
+        print.end_list();
+
+        cprint.printStmt(stmt->getSubStmt(), print);
+
+        print.end_ctor();
+    }
 };
 
 PrintStmt PrintStmt::printer;

@@ -279,6 +279,11 @@ public:
         //cprint.mangleContext->mangleCXXName(type->getAsCXXRecordDecl(), cprint.out.nobreak());
         print.output() << fmt::rparen;
     }
+
+    void VisitDecltypeType(const DecltypeType* type, CoqPrinter& print,
+                           ClangPrinter& cprint) {
+        cprint.printQualType(type->desugar(), print);
+    }
 };
 
 PrintType PrintType::printer;
