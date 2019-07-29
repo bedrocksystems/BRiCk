@@ -145,6 +145,17 @@ public:
         return get_tag(cmt, "\\internal") != nullptr;
     }
 
+    bool has_specification(clang::comments::FullComment &cmt) {
+        for (auto i : cmt.getBlocks()) {
+            auto txt = get_text(i->getSourceRange());
+            if (txt.startswith("\\pre") || txt.startswith("\\post") ||
+                txt.startswith("\\spec")) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     void VisitCXXMethodDecl(const CXXMethodDecl *decl, CoqPrinter &print,
                             ClangPrinter &cprint,
                             clang::comments::FullComment &cmt) {
@@ -371,6 +382,9 @@ write_spec(::Module *mod, const SpecCollector &specs,
 
                 const NamedDecl *decl = di.getValue();
                 auto comment = ctxt.getCommentForDecl(decl, nullptr);
+                if (!printer.has_specification(*comment)) {
+                    continue;
+                }
                 assert(comment && "decl with comment does not have comment");
 
                 output << "(* BEGIN_SOURCE("
