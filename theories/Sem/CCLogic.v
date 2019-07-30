@@ -2,6 +2,7 @@ Require Import Coq.ZArith.BinInt.
 Require Import Coq.micromega.Lia.
 Require Import Coq.Lists.List.
 Require Import Coq.Strings.String.
+Require Import Coq.Sorting.Permutation.
 From Coq.QArith Require Import QArith Qcanon.
 Require Import Coq.QArith.Qfield.
 From Coq.micromega Require Import
@@ -271,33 +272,38 @@ Module Type cclogic.
     List.Forall (fun x => ~List.In x ys) xs.
   Definition subset {T} (xs ys : list T) : Prop :=
     List.Forall (fun x => List.In x ys) xs.
-  Inductive shift (P : mpred) : list iname -> list iname -> mpred -> mpred -> Prop :=
-  | Done {ls Q} : shift P ls ls Q Q
-  | Open {l ls rs Q R S} (_ : ~In l ls) (_ : P |-- Inv l Q ** ltrue)
-         (_ : shift P (l :: ls) rs (Q ** R) S)
-    : shift P ls rs R S
-  | Close {ls r rs Q R S} (_ : In r rs) (_ : P |-- Inv r Q ** ltrue)
-         (_ : shift P ls (r :: rs) Q (R ** S))
-    : shift P ls rs R S
-  | OpenT {q l ls rs Q R S} (_ : ~In l ls) (_ : P |-- TInv q l Q ** ltrue)
-         (_ : shift P (l :: ls) rs (Q ** R) S)
-    : shift P ls rs R S
-  | CloseT {q ls r rs Q R S} (_ : In r rs) (_ : P |-- TInv q r Q ** ltrue)
-         (_ : shift P ls (r :: rs) Q (R ** S))
-    : shift P ls rs R S
-  | ConseqL {ls rs Q R S} (_ : R |-- Q) (_ : shift P ls rs Q S)
-    : shift P ls rs R S
-  | ConseqR {ls rs Q R S} (_ : R |-- S) (_ : shift P ls rs Q R)
-    : shift P ls rs Q S
-  | Frame {ls ls' rs rs' Q R S}
-          (_ : disjoint ls ls') (_ : disjoint rs rs')
-          (_ : shift P ls rs Q R)
-    : shift P (ls ++ ls') (rs ++ rs') (Q ** S) (R ** S)
-  | Trans {e1 e2 e3 Q R S}
-          (_ : subset e2 (e1 ++ e3))
-          (_ : shift P e1 e2 Q R)
-          (_ : shift P e2 e3 R S)
-    : shift P e1 e3 Q S.
+
+  Parameter shift : mpred -> list iname -> list iname -> mpred -> mpred -> Prop.
+
+  Axiom shift_id : forall P,
+      shift P nil nil empSP empSP.
+  Axiom shift_frame : forall P e1 e2 e' Q R S,
+      disjoint e1 e' ->
+      disjoint e2 e' ->
+      shift P e1 e2 Q R ->
+      shift P (e1 ++ e') (e2 ++ e') (Q ** S) (R ** S).
+  Axiom shift_trans : forall P e1 e2 e3 Q R S,
+      subset e2 (e1 ++ e3) ->
+      shift P e1 e2 Q R ->
+      shift P e2 e3 R S ->
+      shift P e1 e3 Q S.
+  Axiom shift_open : forall P Q i,
+      P |-- Inv i Q ** ltrue ->
+      shift P (i :: nil) nil empSP Q.
+  Axiom shift_close : forall P Q i,
+      P |-- Inv i Q ** ltrue ->
+      shift P nil (i :: nil) Q empSP.
+  Axiom shift_opent : forall P Q i q,
+      P |-- TInv q i Q ** ltrue ->
+      shift P (i :: nil) nil empSP Q.
+  Axiom shift_closet : forall P Q i q,
+      P |-- TInv q i Q ** ltrue ->
+      shift P nil (i :: nil) Q empSP.
+
+  Axiom shift_Proper :
+    Proper (lentails ++> @Permutation iname ++> @Permutation iname ++> lentails --> lentails ++> Basics.impl)
+           shift.
+  Global Existing Instance shift_Proper.
 
 
   Parameter SA_fmap : forall (k : Type) {_ : forall a b : k, Decidable (a = b)} (v : SA), SA.
@@ -385,8 +391,8 @@ Module Type cclogic.
    *)
   Parameter wp_shift : forall (mask : list iname), (list iname -> mpred) -> mpred.
 
-  Axiom wp_shift_done : forall P mask,
-      P mask |-- wp_shift mask P.
+  Axiom wp_shift_done : forall Q mask,
+      Q mask |-- wp_shift mask Q.
 
   (* the rest of these need access to [P] in order to know where
    * to pull invariants from.
