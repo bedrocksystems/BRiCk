@@ -4,6 +4,7 @@
 #include "DeclVisitorWithArgs.h"
 #include "Filter.hpp"
 #include "Formatter.hpp"
+#include "Logging.hpp"
 #include "ModuleBuilder.hpp"
 #include "SpecCollector.hpp"
 
@@ -337,6 +338,10 @@ write_globals(::Module &mod, CoqPrinter &print, ClangPrinter &cprint) {
                 print.output()
                     << " (in custom cppglobal at level 0)." << fmt::line;
             }
+        } else {
+            using namespace logging;
+            log(Level::VERBOSE) << "unknown declaration type "
+                                << def->getDeclKindName() << "\n";
         }
     }
 

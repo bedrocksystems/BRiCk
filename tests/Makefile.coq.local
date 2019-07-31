@@ -8,19 +8,27 @@ CPP2V?=$(shell which cpp2v)
 CFLAGS=
 
 %_c.v: %.c $(CPP2V)
-	$(CPP2V) -o $@ $< -- $(CFLAGS)
+	$(CPP2V) -v -o $@ $< -- $(CFLAGS)
 %_h.v: %.h $(CPP2V)
-	$(CPP2V) -o $@ $< -- $(CFLAGS)
+	$(CPP2V) -v -o $@ $< -- $(CFLAGS)
 %_cpp.v: %.cpp $(CPP2V)
-	$(CPP2V) -o $@ $< -- $(CFLAGS)
+	$(CPP2V) -v -o $@ $< -- $(CFLAGS)
 %_hpp.v: %.hpp $(CPP2V)
-	$(CPP2V) -o $@ $< -- $(CFLAGS)
+	$(CPP2V) -v -o $@ $< -- $(CFLAGS)
 
 %_c_spec.v: %.c $(CPP2V)
-	$(CPP2V) -spec $@ $< -- $(CFLAGS)
+	$(CPP2V) -v -spec $@ $< -- $(CFLAGS)
+	@ echo $@
+	@ cat $@
 %_h_spec.v: %.h $(CPP2V)
-	$(CPP2V) -spec $@ $< -- $(CFLAGS)
+	$(CPP2V) -v -spec $@ $< -- $(CFLAGS)
+	@ echo $@
+	@ cat $@
 %_cpp_spec.v: %.cpp $(CPP2V)
-	$(CPP2V) -spec $@ $< -- $(CFLAGS)
+	$(CPP2V) -v -spec $@ $< -- $(CFLAGS)
+	@ echo $@
+	@ cat $@
 %_hpp_spec.v: %.hpp $(CPP2V)
-	$(CPP2V) -spec $@ $< -- $(CFLAGS)
+	$(CPP2V) -v -spec $@ $< -- $(CFLAGS)
+	@ echo $@
+	@ cat $@

@@ -6,6 +6,7 @@ set(CMAKE_MODULE_PATH
 )
 
 find_package(LibClangTooling REQUIRED)
+find_package(ClangPlugin REQUIRED)
 
 add_definitions(${LibClangTooling_DEFINITIONS})
 
@@ -27,9 +28,26 @@ add_executable(cpp2v
   src/SpecWriter.cpp
   src/Formatter.cpp
   src/Logging.cpp
+  src/ClangPrinter.cpp
   src/ToCoq.cpp
   src/cpp2v.cpp
+)
+
+add_clang_plugin(cpp2v_plugin
+  src/PrintExpr.cpp
+  src/PrintStmt.cpp
+  src/PrintType.cpp
+  src/PrintParam.cpp
+  src/PrintDecl.cpp
+  src/PrintLocalDecl.cpp
+  src/ModuleBuilder.cpp
+  src/CommentScanner.cpp
+  src/SpecWriter.cpp
+  src/Formatter.cpp
+  src/Logging.cpp
   src/ClangPrinter.cpp
+  src/ToCoq.cpp
+  src/cpp2v_plugin.cpp
 )
 
 target_link_libraries(cpp2v
