@@ -25,6 +25,20 @@ From Cpp.Sem Require Import
 From Cpp.Auto Require Import
      Discharge.
 
+Require Import ExtLib.Data.Member.
+Fixpoint remove {T} {t : T} {ls : list T} (m : member t ls) : list T :=
+  match m with
+  | @MZ _ _ ls => ls
+  | @MN _ _ l _ m => l :: remove m
+  end.
+
+
+Lemma lforall_specialize : forall {T} (x : T) (P : T -> mpred),
+    lforall P |-- P x.
+Proof. intros. eapply lforallL. reflexivity. Qed.
+
+(* todo(gmm): move the above definitions *)
+
 (* semantics of atomic builtins
  * https://gcc.gnu.org/onlinedocs/gcc/_005f_005fatomic-Builtins.html
  *)
@@ -233,78 +247,122 @@ Module Type cclogic.
   Notation "a ⊕ b" := (s_compose _ a b) (at level 50, left associativity).
 
   (* the names of invariants *)
-  Record iname : Type :=
-    { n_type : Type
-    ; n_name : n_type }.
+  Definition iname : Set := (string * string).
 
+  Definition namespace (pkg s : string) : iname :=
+    (pkg, s)%string.
 
   (* named invariants *)
-  Parameter Inv : forall {name : Type} (_ : name) (I : mpred), mpred.
+  Parameter Inv : forall (name : iname) (I : mpred), mpred.
   (* ^ the invariant [I] must be droppable *)
 
   Definition infinite (t : Type) : Prop :=
     exists (for_each : nat -> t),
       forall n1 n2, n1 <> n2 -> for_each n1 <> for_each n2.
 
-  Axiom Inv_new : forall name I,
-      infinite name ->
+  Axiom Inv_new : forall pkg I,
       I |-- empSP -> (* droppable *)
-      empSP |-- Exists n : name, Inv n I.
-  Axiom Inv_dup : forall name (n : name) I, Inv n I -|- Inv n I ** Inv n I.
-  Axiom Inv_drop : forall name (n : name) I, Inv n I |-- empSP.
+      empSP |-- Exists n : _, Inv (namespace pkg n) I.
+  Axiom Inv_dup : forall (n : iname) I, Inv n I -|- Inv n I ** Inv n I.
+  Axiom Inv_drop : forall (n : iname) I, Inv n I |-- empSP.
 
   (* trackable (named) invariants *)
-  Parameter TInv : Fp -> forall {nm : Type} (_ : nm)  (I : mpred), mpred.
+  Parameter TInv : forall (_ : iname) (I : mpred), mpred.
   (* ^ the invariant [I] has no restrictions *)
+  Axiom TInv_dup : forall (n : iname) I, TInv n I -|- TInv n I ** TInv n I.
+  Axiom TInv_drop : forall (n : iname) I, TInv n I |-- empSP.
 
-  Axiom TInv_new : forall nm I,
-      infinite nm ->
-      I |-- Exists n : nm, TInv Fp_Monoid.(s_top) n I.
-  Axiom TInv_delete : forall nm (n : nm) I,
-      TInv Fp_Monoid.(s_top) n I |-- I.
-  Axiom TInv_split : forall (f1 f2 : Fp_Monoid) nm (n : nm) I,
-      TInv (f1 ⊕ f2) n I -|- TInv f1 n I ** TInv f2 n I.
+  Parameter OPerm : Fp -> iname -> mpred.
+  Parameter DPerm : iname -> mpred.
+  Axiom OPerm_split : forall (f1 f2 : Fp_Monoid) n,
+      OPerm (f1 ⊕ f2) n -|- OPerm f1 n ** OPerm f2 n.
 
-  (* view shifts
-   * - this is an entirely different notion of entailment.
-   *)
+  Axiom TInv_new : forall pkg I,
+      I |-- Exists n : _,
+            let n := namespace pkg n in
+            TInv n I ** OPerm Fp_Monoid.(s_top) n ** DPerm n.
+
   Definition disjoint {T} (xs ys : list T) : Prop :=
     List.Forall (fun x => ~List.In x ys) xs.
   Definition subset {T} (xs ys : list T) : Prop :=
     List.Forall (fun x => List.In x ys) xs.
 
-  Parameter shift : mpred -> list iname -> list iname -> mpred -> mpred -> Prop.
+  (* view shifts
+   * - this is an entirely different notion of entailment because it enables
+   *   updating ghost state.
+   *)
+  Module shift.
+    Parameter shift : mpred -> list iname -> list iname -> mpred -> mpred -> Prop.
 
-  Axiom shift_id : forall P,
-      shift P nil nil empSP empSP.
-  Axiom shift_frame : forall P e1 e2 e' Q R S,
-      disjoint e1 e' ->
-      disjoint e2 e' ->
-      shift P e1 e2 Q R ->
-      shift P (e1 ++ e') (e2 ++ e') (Q ** S) (R ** S).
-  Axiom shift_trans : forall P e1 e2 e3 Q R S,
-      subset e2 (e1 ++ e3) ->
-      shift P e1 e2 Q R ->
-      shift P e2 e3 R S ->
-      shift P e1 e3 Q S.
-  Axiom shift_open : forall P Q i,
-      P |-- Inv i Q ** ltrue ->
-      shift P (i :: nil) nil empSP Q.
-  Axiom shift_close : forall P Q i,
-      P |-- Inv i Q ** ltrue ->
-      shift P nil (i :: nil) Q empSP.
-  Axiom shift_opent : forall P Q i q,
-      P |-- TInv q i Q ** ltrue ->
-      shift P (i :: nil) nil empSP Q.
-  Axiom shift_closet : forall P Q i q,
-      P |-- TInv q i Q ** ltrue ->
-      shift P nil (i :: nil) Q empSP.
+    Axiom shift_id : forall P,
+        shift P nil nil empSP empSP.
+    Axiom shift_frame : forall P e1 e2 e' Q R S,
+        disjoint e1 e' ->
+        disjoint e2 e' ->
+        shift P e1 e2 Q R ->
+        shift P (e1 ++ e') (e2 ++ e') (Q ** S) (R ** S).
+    Axiom shift_trans : forall P e1 e2 e3 Q R S,
+        subset e2 (e1 ++ e3) ->
+        shift P e1 e2 Q R ->
+        shift P e2 e3 R S ->
+        shift P e1 e3 Q S.
+    Axiom shift_open : forall P Q i,
+        P |-- Inv i Q ** ltrue ->
+        shift P (i :: nil) nil empSP Q.
+    Axiom shift_close : forall P Q i,
+        P |-- Inv i Q ** ltrue ->
+        shift P nil (i :: nil) Q empSP.
+    Axiom shift_opent : forall P Q i,
+        P |-- TInv i Q ** ltrue ->
+        shift P (i :: nil) nil empSP Q.
+    Axiom shift_closet : forall P Q i,
+        P |-- TInv i Q ** ltrue ->
+        shift P nil (i :: nil) Q empSP.
 
-  Axiom shift_Proper :
-    Proper (lentails ++> @Permutation iname ++> @Permutation iname ++> lentails --> lentails ++> Basics.impl)
-           shift.
-  Global Existing Instance shift_Proper.
+    Axiom shift_Proper :
+      Proper (lentails ++> @Permutation iname ++> @Permutation iname ++> lentails --> lentails ++> Basics.impl)
+             shift.
+    Global Existing Instance shift_Proper.
 
+  End shift.
+
+  Module shift'.
+    Variant Inv_type : Set :=
+    | Affine
+    | Tracked (_ : Fp).
+    Parameter shift : list (iname * Inv_type) -> list (iname * Inv_type) -> mpred -> mpred -> mpred.
+
+    Axiom shift_id :
+      empSP |-- shift nil nil empSP empSP.
+    Axiom shift_frame : forall e1 e2 e' Q R S,
+        disjoint (map fst e1) (map fst e') ->
+        disjoint (map fst e2) (map fst e') ->
+        shift e1 e2 Q R |-- shift (e1 ++ e') (e2 ++ e') (Q ** S) (R ** S).
+    Axiom shift_trans : forall e1 e2 e3 Q R S,
+        subset e2 (e1 ++ e3) ->
+        shift e1 e2 Q R ** shift e2 e3 R S |-- shift e1 e3 Q S.
+    Axiom shift_open : forall Q i,
+        Inv i Q |-- shift ((i,Affine) :: nil) nil empSP Q.
+    Axiom shift_close : forall Q i,
+        Inv i Q |-- shift nil ((i,Affine) :: nil) Q empSP.
+    Axiom shift_opent : forall Q i,
+        TInv i Q |-- Forall q, shift ((i,Tracked q) :: nil) nil (OPerm q i) Q.
+    Axiom shift_closet : forall Q i,
+        TInv i Q |-- Forall q, shift nil ((i,Tracked q) :: nil) Q (OPerm q i).
+    Axiom shift_deletet : forall Q i,
+        TInv i Q
+        |-- Forall q, shift nil ((i,Tracked q) :: nil) (OPerm q i -* OPerm Fp_Monoid.(s_top) i ** DPerm i) empSP.
+    (* ^ note(gmm): the `q` permission was opened already, so you get that in
+     * order to establish the final `OPerm 1`
+     *)
+
+    Axiom shift_Proper :
+      Proper (    @Permutation _ ++> @Permutation _ ++> lentails --> lentails ++> lentails)
+             shift.
+    Global Existing Instance shift_Proper.
+
+  End shift'.
+  Import shift'.
 
   Parameter SA_fmap : forall (k : Type) {_ : forall a b : k, Decidable (a = b)} (v : SA), SA.
   Parameter fmap_singleton : forall {k} {dec : forall a b : k, Decidable (a = b)} (v : SA),
@@ -339,10 +397,10 @@ Module Type cclogic.
   (* note(gmm): i can update any ghost location as long as I have exclusive
    * ownership of it.
    *)
-  Axiom shift_ghost_update : forall loc dec prm p v v' P,
-      shift P nil nil
-            (@ghost_ptsto loc dec prm p v)
-            (@ghost_ptsto loc dec prm p v').
+  Axiom shift_ghost_update : forall loc dec prm p v v',
+      |-- shift nil nil
+                (@ghost_ptsto loc dec prm p v)
+                (@ghost_ptsto loc dec prm p v').
 
   (* Definition Frac_PointsTo l q v := *)
   (*   match is_ok q with *)
@@ -389,7 +447,8 @@ Module Type cclogic.
    * note(gmm): in this style, we don't need to explicitly quantify over the
    * final open invariants.
    *)
-  Parameter wp_shift : forall (mask : list iname), (list iname -> mpred) -> mpred.
+  Parameter wp_shift : forall (mask : list (iname * Inv_type)),
+      (list (iname * Inv_type) -> mpred) -> mpred.
 
   Axiom wp_shift_done : forall Q mask,
       Q mask |-- wp_shift mask Q.
@@ -397,33 +456,100 @@ Module Type cclogic.
   (* the rest of these need access to [P] in order to know where
    * to pull invariants from.
    *)
-  Axiom wp_shift_vs : forall P from to Q R Z,
-    shift P from to Q R ->
-    P |-- Q ** (R -* wp_shift to Z) ->
-    P |-- wp_shift from Z.
+  Axiom wp_shift_vs : forall P from to Q,
+    shift from to P Q
+    |-- (* persistent *) Forall Z, ((P ** (Q -* wp_shift from Z)) -* wp_shift to Z).
 
   (* the next 4 axioms should be derivable from [wp_shift_vs] *)
-  Axiom wp_shift_open : forall P Q hide n I,
-      P |-- Inv n I ** ltrue ->
-      ~In n hide ->
-      P |-- I -* wp_shift (n :: hide) Q ->
-      P |-- wp_shift hide Q.
-  Axiom wp_shift_openT : forall q P Q hide n I,
-      P |-- TInv q n I ** ltrue ->
-      ~In n hide ->
-      P |-- I -* wp_shift (n :: hide) Q ->
-      P |-- wp_shift hide Q.
+  Theorem wp_shift_open : forall Q hide n I,
+      ~In n (map fst hide) ->
+      Inv n I ** (I -* wp_shift ((n, Affine) :: hide) Q)
+      |-- wp_shift hide Q.
+  Proof.
+    intros.
+    rewrite shift_open.
+    erewrite shift_frame with (e':=hide) (S:=empSP).
+    2:{ simpl. red. constructor. auto. constructor. }
+    2:{ simpl. constructor. }
+    rewrite wp_shift_vs.
+    simpl.
+    perm_right ltac:(idtac; perm_left ltac:(idtac; eapply use_universal_arrow)).
+    discharge fail fail fail fail eauto.
+    perm_right ltac:(idtac; perm_left ltac:(idtac; eapply wandSP_cancel)).
+    discharge fail fail fail fail eauto.
+  Qed.
+  Theorem wp_shift_openT : forall q Q hide n I,
+      ~In n (List.map fst hide) ->
+      TInv n I ** OPerm q n ** (I -* wp_shift ((n, Tracked q) :: hide) Q)
+      |-- wp_shift hide Q.
+  Proof.
+    intros.
+    rewrite shift_opent.
+    erewrite lforall_specialize.
+    erewrite shift_frame with (e':=hide) (S:=empSP).
+    2:{ simpl. red. constructor. auto. constructor. }
+    2:{ simpl. constructor. }
+    rewrite wp_shift_vs.
+    simpl.
+    perm_right ltac:(idtac; perm_left ltac:(idtac; eapply use_universal_arrow)).
+    discharge fail fail fail fail eauto.
+    perm_right ltac:(idtac; perm_left ltac:(idtac; eapply wandSP_cancel)).
+    discharge fail fail fail fail eauto.
+  Qed.
 
-  Axiom wp_shift_close : forall P Q hide hideL hideR n I,
-      P |-- Inv n I ** ltrue ->
-      hide = hideL ++ n :: hideR ->
-      P |-- I ** wp_shift (hideL ++ hideR) Q ->
-      P |-- wp_shift hide Q.
-  Axiom wp_shift_closeT : forall q P Q hide hideL hideR n I,
-      P |-- TInv q n I ** ltrue ->
-      hide = hideL ++ n :: hideR ->
-      P |-- I ** wp_shift (hideL ++ hideR) Q ->
-      P |-- wp_shift hide Q.
+
+  Theorem wp_shift_close : forall Q hide n I,
+      ~In n (map fst hide) ->
+      Inv n I ** (I ** wp_shift hide Q)
+      |-- wp_shift ((n,Affine) :: hide) Q.
+  Proof.
+    intros.
+    rewrite shift_close.
+    erewrite shift_frame with (e':=hide) (S:=empSP).
+    2:{ simpl. constructor. }
+    2:{ subst. simpl. constructor; [ | constructor ]; auto. }
+    rewrite wp_shift_vs.
+    simpl.
+    perm_right ltac:(idtac; perm_left ltac:(idtac; eapply use_universal_arrow)).
+    discharge fail fail fail fail eauto.
+  Qed.
+  Theorem wp_shift_closeT : forall (q : Fp_Monoid.(s_type)) Q hide n I,
+      ~In n (map fst hide) ->
+      TInv n I ** I ** (OPerm q n -* wp_shift hide Q)
+      |-- wp_shift ((n, Tracked q) :: hide) Q.
+  Proof.
+    intros.
+    rewrite shift_closet.
+    erewrite lforall_specialize.
+    erewrite shift_frame with (e':=hide) (S:=empSP).
+    2:{ simpl. constructor. }
+    2:{ subst. simpl. constructor; [ | constructor ]; auto. }
+    rewrite wp_shift_vs.
+    simpl.
+    perm_right ltac:(idtac; perm_left ltac:(idtac; eapply use_universal_arrow)).
+    discharge fail fail fail fail eauto.
+    perm_right ltac:(idtac; perm_left ltac:(idtac; eapply wandSP_cancel)).
+    discharge fail fail fail fail eauto.
+  Qed.
+  Theorem wp_shift_deleteT : forall (q : Fp_Monoid.(s_type)) Q hide n I,
+      ~In n (map fst hide) ->
+      TInv n I ** (OPerm q n -* OPerm Fp_Monoid.(s_top) n ** DPerm n) ** wp_shift hide Q
+      |-- wp_shift ((n, Tracked q) :: hide) Q.
+  Proof.
+    intros.
+    rewrite shift_deletet.
+    erewrite lforall_specialize.
+    erewrite shift_frame with (e':=hide).
+    2:{ simpl. constructor. }
+    2:{ subst. simpl. constructor; [ | constructor ]; auto. }
+    simpl.
+    rewrite wp_shift_vs.
+    perm_right ltac:(idtac; perm_left ltac:(idtac; eapply use_universal_arrow)).
+    discharge fail fail fail fail eauto.
+    instantiate (1:=empSP).
+    repeat rewrite empSPL.
+    discharge fail fail fail fail eauto.
+  Qed.
 
   (****** Wp Semantics for atomic operations
    * These are given in the style of function call axioms
@@ -443,8 +569,9 @@ Module Type cclogic.
    *)
 
   (*Atomic CAS access permission*)
-  Definition AtomInv (fp : Fp.Fp) {nm : Type} (n : nm) (t : type) (I : val -> mpred) : Rep :=
-    {| repr p := TInv fp n (Exists v, _at (_eq p) (tprim t v) ** I v) |}.
+  Definition AtomInv (fp : Fp.Fp) (n : iname) (t : type) (I : val -> mpred) : Rep :=
+    {| repr p := TInv n (Exists v, _at (_eq p) (tprim t v) ** I v) **
+                 OPerm fp n |}.
   (* ^ note(gmm): i introduced names here so that these can fit into TInv, but another way
    * to do this is to track the used tokens by associating them with the pointers.
    * this would mean that you have a simple atomics library that provides a logical
@@ -452,6 +579,9 @@ Module Type cclogic.
    * drop the [infinite] premise above and state "this token is not used".
    * - alternatively, there is the possibility to allocate 1 large invariant
    *   and use it to mitigate all of the definitions.
+   *)
+  (* ^ note(gmm): i really wanted to put `DPerm n` inside the invariant, but it doesn't
+   * work in the normal Iron++ logic (which most closely resembles what we have)
    *)
 
 (*
@@ -473,18 +603,21 @@ Module Type cclogic.
 *)
 
   (* Atomic CAS access permission is a trackable invariant *)
-  Theorem Persistent_CASPerm : forall (q1 q2 : Fp_Monoid) {nm} (n : nm) ty LocInv,
+  Theorem Persistent_CASPerm : forall (q1 q2 : Fp_Monoid) (n : iname) ty LocInv,
       AtomInv (q1 ⊕ q2) n ty LocInv -|- AtomInv q1 n ty LocInv ** AtomInv q2 n ty LocInv.
   Proof.
     unfold AtomInv.
-    split; simpl; intros; eapply TInv_split.
+    Transparent sepSP. simpl. Opaque sepSP.
+    split; simpl; intros.
+    { rewrite TInv_dup at 1; rewrite OPerm_split. discharge fail fail fail fail eauto. }
+    { rewrite TInv_dup at 3; rewrite OPerm_split. discharge fail fail fail fail eauto. }
   Qed.
 
   (*Generate atomic access token via consuming the memory cell and the invariant *)
-  Theorem Intro_AtomInv : forall x {nm} (t:type) (Inv:val->mpred),
-      infinite nm ->
+  Theorem Intro_AtomInv : forall x pkg (t:type) (Inv:val->mpred),
       Exists v, _at (_eq x) (tprim t v) ** Inv v
-      |-- Exists n : nm, _at (_eq x) (AtomInv Fp_full n t Inv).
+      |-- Exists n : string, let n := namespace pkg n in
+                             _at (_eq x) (AtomInv Fp_full n t Inv) ** DPerm n.
   Proof.
     intros.
     unfold AtomInv.
@@ -545,6 +678,23 @@ Module Type cclogic.
     | _ => False
     end.
 
+  (* atomic compare and exchange n *)
+  Axiom rule_atomic_compare_exchange_n:
+    forall val_p expected_p desired wk succmemord failmemord Q'
+           (ty : type)
+           expected,
+      ([|wk = Vbool false|] ** [|succmemord = _SEQ_CST|] ** [| failmemord = _SEQ_CST |] **
+      (_at (_eq expected_p) (tprim ty expected) ** ltrue) //\\
+      Exists v,
+         (_at (_eq val_p) (tprim ty v) **
+         ([| v = expected |] -*
+          _at (_eq val_p) (tprim ty desired) -* Q' (Vbool true)) //\\
+         ([| v <> expected |] -*
+          _at (_eq val_p) (tprim ty v) -* Q' (Vbool false))))
+       |-- wp_atom AO__atomic_compare_exchange_n
+                   (val_p::succmemord::expected_p::failmemord::desired::wk::nil) (Qmut Tbool) Q'.
+  About rule_atomic_compare_exchange_n.
+
 (*
   (* atomic compare and exchange n *)
   Axiom rule_atomic_compare_exchange_n:
@@ -569,14 +719,14 @@ Module Type cclogic.
               P) -* Q' (Vbool false)))
        |-- wp_atom AO__atomic_compare_exchange_n
                    (val_p::succmemord::expected_p::failmemord::desired::wk::nil) (Qmut Tbool) Q'.
-
+*)
 
 
   (* atomic compare and exchange rule
    *)
   Axiom rule_atomic_compare_exchange:
     forall q P val_p expected_p desired_p wk succmemord failmemord Qp Q' Qlearn (Q:mpred)
-      (ty : type)
+      (ty : type) n
       expected desired
       (preserve:  P ** Qp expected  |-- Qp desired ** Q)
       (learn : forall actual, actual <> expected ->
@@ -584,17 +734,17 @@ Module Type cclogic.
       Fp_readable q ->
          _at (_eq expected_p) (tprim ty expected) **
          _at (_eq desired_p) (tprim ty desired) **
-         _at (_eq val_p) (AtomInv q ty Qp) ** P **
+         _at (_eq val_p) (AtomInv q n ty Qp) ** P **
          [|wk = Vbool false|] ** [|succmemord = _SEQ_CST|] ** [| failmemord = _SEQ_CST |] **
          ((((* success *)
             _at (_eq expected_p) (tprim ty expected) **
             _at (_eq desired_p) (tprim ty desired) **
-            _at (_eq val_p) (AtomInv q ty Qp) ** Q) -* Q' (Vbool true)) //\\
+            _at (_eq val_p) (AtomInv q n ty Qp) ** Q) -* Q' (Vbool true)) //\\
           (((* failure *)
             Exists x, [| x <> expected |] ** Qlearn x **
               _at (_eq expected_p) (tprim ty x) **
               _at (_eq desired_p) (tprim ty desired) **
-              _at (_eq val_p) (AtomInv q ty Qp) **
+              _at (_eq val_p) (AtomInv q n ty Qp) **
               P) -* Q' (Vbool false)))
        |-- wp_atom AO__atomic_compare_exchange
                    (val_p::succmemord::expected_p::failmemord::desired::wk::nil) (Qmut Tbool) Q'.
