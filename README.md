@@ -4,6 +4,19 @@
 
 Tool for converting C++ files into Coq files.
 
+## Running
+
+### As a Plugin
+
+```sh
+-Xclang -load -Xclang ./libcpp2v_plugin.so
+-Xclang -plugin -Xclang cpp2v
+-Xclang -plugin-arg-cpp2v -Xclang -o
+-Xclang -plugin-arg-cpp2v -Xclang foo_cpp.v
+-Xclang -plugin-arg-cpp2v -Xclang -spec
+-Xclang -plugin-arg-cpp2v -Xclang foo_spec_cpp.v
+```
+
 ## Dependencies
 
 ### C++
