@@ -320,16 +320,19 @@ Module Type cclogic.
 
     (* note(gmm): this is like the Iron++ logic. *)
     Parameter OPerm : Fp -> iname -> mpred.
-    Parameter DPerm : iname -> mpred.
+    Parameter DPerm : Fp -> iname -> mpred.
     Axiom OPerm_split : forall (f1 f2 : Fp) n,
         OPerm (f1 ⊕ f2) n -|- OPerm f1 n ** OPerm f2 n.
+    Axiom DPerm_split : forall (f1 f2 : Fp) n,
+        DPerm (f1 ⊕ f2) n -|- DPerm f1 n ** DPerm f2 n.
 
     Axiom TInv_new : forall pkg I,
-        I |-- Exists n : _,
-      let n := namespace pkg n in
-      TInv n I ** OPerm s_top n ** DPerm n.
+      I |-- Exists n : _,
+            let n := namespace pkg n in
+            TInv n I ** OPerm s_top n ** DPerm s_top n.
   End Invariants.
   Import Invariants.
+  Export Invariants.
 
   Definition disjoint {T} (xs ys : list T) : Prop :=
     List.Forall (fun x => ~List.In x ys) xs.
@@ -377,7 +380,7 @@ Module Type cclogic.
         TInv i Q |-- Forall q, shift nil ((i,Tracked q) :: nil) Q (OPerm q i).
     Axiom shift_deletet : forall Q i,
         TInv i Q
-        |-- Forall q, shift nil ((i,Tracked q) :: nil) (OPerm q i -* OPerm s_top i ** DPerm i) empSP.
+        |-- Forall q, shift nil ((i,Tracked q) :: nil) (OPerm q i -* OPerm s_top i ** DPerm s_top i) empSP.
     (* ^ note(gmm): the `q` permission was opened already, so you get that in
      * order to establish the final `OPerm 1`
      *)
@@ -425,6 +428,7 @@ Module Type cclogic.
           (@ghost_ptsto loc dec prm p v)
           (@ghost_ptsto loc dec prm p v').
   End  GhostState.
+  Export GhostState.
 
   (*Similarly one can encode ghost state using SA*)
   (*
@@ -530,7 +534,7 @@ Module Type cclogic.
   Qed.
   Theorem wp_shift_deleteT : forall (q : Fp) Q hide n I,
       ~In n (map fst hide) ->
-      TInv n I ** (OPerm q n -* OPerm s_top n ** DPerm n) ** wp_shift hide Q
+      TInv n I ** (OPerm q n -* OPerm s_top n ** DPerm s_top n) ** wp_shift hide Q
       |-- wp_shift ((n, Tracked q) :: hide) Q.
   Proof.
     intros.
@@ -570,48 +574,6 @@ Module Type cclogic.
    * Relaxed Separation Logic: A program logic for C11 Concurrency -- Vefeiadis et al.
    *)
 
-  (*Atomic CAS access permission*)
-  Definition AtomInv (fp : Fp) (n : iname) (t : type) (I : val -> mpred) : Rep :=
-    {| repr p := TInv n (Exists v, _at (_eq p) (tprim t v) ** I v) **
-                 OPerm fp n |}.
-  (* ^ note(gmm): i introduced names here so that these can fit into TInv, but another way
-   * to do this is to track the used tokens by associating them with the pointers.
-   * this would mean that you have a simple atomics library that provides a logical
-   * way to allocate an [AtomInv]. Doing this seems to *require* a way to
-   * drop the [infinite] premise above and state "this token is not used".
-   * - alternatively, there is the possibility to allocate 1 large invariant
-   *   and use it to mitigate all of the definitions.
-   *)
-  (* ^ note(gmm): i really wanted to put `DPerm n` inside the invariant, but it doesn't
-   * work in the normal Iron++ logic (which most closely resembles what we have)
-   *)
-
-  (* Atomic CAS access permission is a trackable invariant *)
-  Theorem Splittable_AtomInv : forall (q1 q2 : Fp) (n : iname) ty LocInv,
-      AtomInv (q1 ⊕ q2) n ty LocInv -|- AtomInv q1 n ty LocInv ** AtomInv q2 n ty LocInv.
-  Proof.
-    unfold AtomInv.
-    Transparent sepSP. simpl. Opaque sepSP.
-    split; simpl; intros.
-    { rewrite TInv_dup at 1; rewrite OPerm_split. discharge fail fail fail fail eauto. }
-    { rewrite TInv_dup at 3; rewrite OPerm_split. discharge fail fail fail fail eauto. }
-  Qed.
-
-  (*Generate atomic access token via consuming the memory cell and the invariant *)
-  Theorem Intro_AtomInv : forall x pkg (t:type) (Inv:val->mpred),
-      Exists v, _at (_eq x) (tprim t v) ** Inv v
-      |-- Exists n : string, let n := namespace pkg n in
-                             _at (_eq x) (AtomInv s_top n t Inv) ** DPerm n.
-  Proof.
-    intros.
-    unfold AtomInv.
-    etransitivity.
-    eapply TInv_new; eauto.
-    Transparent _at. unfold _at. Opaque _at.
-    simpl.
-    t.
-  Qed.
-
   (*Memory Ordering Patterns: Now we only have _SEQ_CST *)
   Definition _SEQ_CST := Vint 5.
 
@@ -626,36 +588,12 @@ Module Type cclogic.
       (Exists v, (_at (_eq l) (tprim acc_type v) ** ltrue //\\ Q v))
       |-- wp_atom AO__atomic_load_n (l :: memorder :: nil) acc_type Q.
 
-(*
-  Axiom wp_atom_load_cst
-  : forall q memorder (acc_type:type) name (nm : name) l (Inv Qlearn: val -> mpred) P Q
-      (read : forall v, P ** Inv v |-- Inv v ** Qlearn v),
-      _at (_eq l) (AtomInv q nm acc_type Inv) **
-      P **
-      [| memorder = _SEQ_CST |] **
-      (Forall x, (Qlearn x ** _at (_eq l) (AtomInv q nm acc_type Inv)) -* Q x)
-      |-- wp_atom AO__atomic_load_n (l :: memorder :: nil) acc_type Q.
-*)
-
   Axiom wp_atom_store_cst
   : forall memorder (acc_type:type) l Q val,
       [| memorder = _SEQ_CST |] **
       (Exists val, _at (_eq l) (tprim acc_type val)) **
-      (_at (_eq l) (tprim acc_type val) -* Forall void, Q void)
+      (_at (_eq l) (tprim acc_type val) -* Exists void, Q void)
       |-- wp_atom AO__atomic_store_n (l :: memorder :: val :: nil) (Qmut Tvoid) Q.
-
-(*
-  Axiom wp_atom_store_cst
-  : forall q memorder (acc_type:type) {name} (nm : name) l (Inv Qlearn : val -> mpred) P Q
-      val
-      (store : forall v, P ** Inv v |-- Inv val ** Qlearn v),
-      _at (_eq l) (AtomInv q nm acc_type Inv) **
-      P **
-      [| memorder = _SEQ_CST |] **
-      (Forall x, (Qlearn x ** _at (_eq l) (AtomInv q nm acc_type Inv)) -* Q x)
-      |-- wp_atom AO__atomic_store_n (l :: memorder :: val :: nil) (Qmut Tvoid) Q.
-*)
-
 
   (* atomic compare and exchange n *)
   Axiom wp_atom_compare_exchange_n:
@@ -663,42 +601,19 @@ Module Type cclogic.
            (ty : type)
            expected,
       ([|wk = Vbool false|] ** [|succmemord = _SEQ_CST|] ** [| failmemord = _SEQ_CST |] **
-      (_at (_eq expected_p) (tprim ty expected) ** ltrue) //\\
       Exists v,
-         (_at (_eq val_p) (tprim ty v) **
-         ([| v = expected |] -*
+         _at (_eq expected_p) (tprim ty expected) **
+         _at (_eq val_p) (tprim ty v) **
+         (([| v = expected |] -*
+          _at (_eq expected_p) (tprim ty expected) **
           _at (_eq val_p) (tprim ty desired) -* Q' (Vbool true)) //\\
          ([| v <> expected |] -*
+          _at (_eq expected_p) (tprim ty v) **
           _at (_eq val_p) (tprim ty v) -* Q' (Vbool false))))
        |-- wp_atom AO__atomic_compare_exchange_n
                    (val_p::succmemord::expected_p::failmemord::desired::wk::nil) (Qmut Tbool) Q'.
-
-(*
-  (* atomic compare and exchange n *)
-  Axiom wp_atom_compare_exchange_n:
-    forall q P val_p expected_p desired wk succmemord failmemord Qp Q' Qlearn (Q:mpred)
-           (ty : type)
-           expected
-           (preserve:  P ** Qp expected  |-- Qp desired ** Q)
-           (learn : forall actual, actual <> expected ->
-                              P ** Qp actual |-- (Qlearn actual //\\ empSP) ** ltrue),
-      Fp_readable q ->
-         _at (_eq expected_p) (tprim ty expected) **
-         _at (_eq val_p) (AtomInv q ty Qp) **
-         P **
-         [|wk = Vbool false|] ** [|succmemord = _SEQ_CST|] ** [| failmemord = _SEQ_CST |] **
-         ((((* success *)
-            _at (_eq expected_p) (tprim ty expected) **
-            _at (_eq val_p) (AtomInv q ty Qp) ** Q) -* Q' (Vbool true)) //\\
-          (((* failure *)
-            Exists x, [| x <> expected |] ** Qlearn x **
-              _at (_eq expected_p) (tprim ty x) **
-              _at (_eq val_p) (AtomInv q ty Qp) **
-              P) -* Q' (Vbool false)))
-       |-- wp_atom AO__atomic_compare_exchange_n
-                   (val_p::succmemord::expected_p::failmemord::desired::wk::nil) (Qmut Tbool) Q'.
-*)
-
+  (* ^ note(gmm): this states that *both pointers are read atomically*.
+   *)
 
   (* atomic compare and exchange rule
    *)
