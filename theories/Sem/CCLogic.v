@@ -557,6 +557,10 @@ Module Type cclogic.
   Axiom shift_anywhere : forall P,
       wp_shift nil (fun to => [| to = nil |] ** P) |-- P.
 
+  Definition wrap_shift (F : (val -> mpred) -> mpred) (Q : val -> mpred) : mpred :=
+    wp_shift nil (fun to => F (fun result => wp_shift to (fun to => [| to = nil |] ** Q result))).
+
+
   (****** Wp Semantics for atomic operations
    * These are given in the style of function call axioms
    *)
@@ -567,7 +571,7 @@ Module Type cclogic.
    *)
   Axiom wp_rhs_atomic: forall rslv ti r ao es ty Q,
       wps (wpAnys (resolve:=rslv) ti r) es  (fun (vs : list val) (free : FreeTemps) =>
-           wp_shift nil (fun opened => wp_atom ao vs ty (fun v => wp_shift opened (fun to => [| to = nil |] ** (Q v free))))) empSP
+           wrap_shift (wp_atom ao vs ty) (fun v => Q v free)) empSP
       |-- wp_rhs (resolve:=rslv) ti r (Eatomic ao es ty) Q.
 
   (* Ideas adopted from the paper:
