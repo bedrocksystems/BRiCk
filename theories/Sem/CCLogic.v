@@ -37,6 +37,13 @@ Lemma lforall_specialize : forall {T} (x : T) (P : T -> mpred),
     lforall P |-- P x.
 Proof. intros. eapply lforallL. reflexivity. Qed.
 
+Local Ltac t :=
+  let cancel :=
+      idtac; canceler ltac:(idtac; first [ eapply use_universal_arrow
+                                         | eapply wandSP_cancel ]) ltac:(eauto) in
+  discharge fail fail fail cancel eauto.
+
+
 (* todo(gmm): move the above definitions *)
 
 (* semantics of atomic builtins
@@ -272,6 +279,7 @@ Module Type cclogic.
   Axiom TInv_dup : forall (n : iname) I, TInv n I -|- TInv n I ** TInv n I.
   Axiom TInv_drop : forall (n : iname) I, TInv n I |-- empSP.
 
+  (* note(gmm): this is like the Iron++ logic. *)
   Parameter OPerm : Fp -> iname -> mpred.
   Parameter DPerm : iname -> mpred.
   Axiom OPerm_split : forall (f1 f2 : Fp_Monoid) n,
@@ -291,6 +299,7 @@ Module Type cclogic.
    * - this is an entirely different notion of entailment because it enables
    *   updating ghost state.
    *)
+(*
   Module shift.
     Parameter shift : mpred -> list iname -> list iname -> mpred -> mpred -> Prop.
 
@@ -325,15 +334,16 @@ Module Type cclogic.
     Global Existing Instance shift_Proper.
 
   End shift.
+*)
 
-  Module shift'.
+  Module ViewShift.
     Variant Inv_type : Set :=
     | Affine
     | Tracked (_ : Fp).
+
     Parameter shift : list (iname * Inv_type) -> list (iname * Inv_type) -> mpred -> mpred -> mpred.
 
-    Axiom shift_id :
-      empSP |-- shift nil nil empSP empSP.
+    Axiom shift_id : empSP |-- shift nil nil empSP empSP.
     Axiom shift_frame : forall e1 e2 e' Q R S,
         disjoint (map fst e1) (map fst e') ->
         disjoint (map fst e2) (map fst e') ->
@@ -356,13 +366,13 @@ Module Type cclogic.
      * order to establish the final `OPerm 1`
      *)
 
-    Axiom shift_Proper :
-      Proper (    @Permutation _ ++> @Permutation _ ++> lentails --> lentails ++> lentails)
+    Axiom Proper_shift :
+      Proper (@Permutation _ ++> @Permutation _ ++> lentails --> lentails ++> lentails)
              shift.
-    Global Existing Instance shift_Proper.
+    Global Existing Instance Proper_shift.
 
-  End shift'.
-  Import shift'.
+  End ViewShift.
+  Import ViewShift.
 
   Parameter SA_fmap : forall (k : Type) {_ : forall a b : k, Decidable (a = b)} (v : SA), SA.
   Parameter fmap_singleton : forall {k} {dec : forall a b : k, Decidable (a = b)} (v : SA),
@@ -473,10 +483,7 @@ Module Type cclogic.
     2:{ simpl. constructor. }
     rewrite wp_shift_vs.
     simpl.
-    perm_right ltac:(idtac; perm_left ltac:(idtac; eapply use_universal_arrow)).
-    discharge fail fail fail fail eauto.
-    perm_right ltac:(idtac; perm_left ltac:(idtac; eapply wandSP_cancel)).
-    discharge fail fail fail fail eauto.
+    t.
   Qed.
   Theorem wp_shift_openT : forall q Q hide n I,
       ~In n (List.map fst hide) ->
@@ -490,11 +497,7 @@ Module Type cclogic.
     2:{ simpl. red. constructor. auto. constructor. }
     2:{ simpl. constructor. }
     rewrite wp_shift_vs.
-    simpl.
-    perm_right ltac:(idtac; perm_left ltac:(idtac; eapply use_universal_arrow)).
-    discharge fail fail fail fail eauto.
-    perm_right ltac:(idtac; perm_left ltac:(idtac; eapply wandSP_cancel)).
-    discharge fail fail fail fail eauto.
+    t.
   Qed.
 
 
@@ -510,8 +513,7 @@ Module Type cclogic.
     2:{ subst. simpl. constructor; [ | constructor ]; auto. }
     rewrite wp_shift_vs.
     simpl.
-    perm_right ltac:(idtac; perm_left ltac:(idtac; eapply use_universal_arrow)).
-    discharge fail fail fail fail eauto.
+    t.
   Qed.
   Theorem wp_shift_closeT : forall (q : Fp_Monoid.(s_type)) Q hide n I,
       ~In n (map fst hide) ->
@@ -526,10 +528,7 @@ Module Type cclogic.
     2:{ subst. simpl. constructor; [ | constructor ]; auto. }
     rewrite wp_shift_vs.
     simpl.
-    perm_right ltac:(idtac; perm_left ltac:(idtac; eapply use_universal_arrow)).
-    discharge fail fail fail fail eauto.
-    perm_right ltac:(idtac; perm_left ltac:(idtac; eapply wandSP_cancel)).
-    discharge fail fail fail fail eauto.
+    t.
   Qed.
   Theorem wp_shift_deleteT : forall (q : Fp_Monoid.(s_type)) Q hide n I,
       ~In n (map fst hide) ->
@@ -539,17 +538,30 @@ Module Type cclogic.
     intros.
     rewrite shift_deletet.
     erewrite lforall_specialize.
-    erewrite shift_frame with (e':=hide).
+    erewrite shift_frame with (e':=hide) (S:=empSP).
     2:{ simpl. constructor. }
     2:{ subst. simpl. constructor; [ | constructor ]; auto. }
     simpl.
     rewrite wp_shift_vs.
-    perm_right ltac:(idtac; perm_left ltac:(idtac; eapply use_universal_arrow)).
-    discharge fail fail fail fail eauto.
-    instantiate (1:=empSP).
-    repeat rewrite empSPL.
-    discharge fail fail fail fail eauto.
+    t.
   Qed.
+
+
+  (* View shifts are sound as long as invariants are always re-established after
+   * any atomic step. This means that it is sound to open invariants before
+   * (and after) any evaluation provided that all of the invariants are
+   * closed before any computation actually occurs.
+   *)
+  Axiom wp_lhs_shift : forall {resolve} ti r e Q,
+      wp_shift nil (fun to => [| to = nil |] ** wp_lhs (resolve:=resolve) ti r e Q)
+      |-- wp_lhs (resolve:=resolve) ti r e Q.
+  Axiom wp_rhs_shift : forall {resolve} ti r e Q,
+      wp_shift nil (fun to => [| to = nil |] ** wp_rhs (resolve:=resolve) ti r e Q)
+      |-- wp_rhs (resolve:=resolve) ti r e Q.
+  Axiom wp_stmt_shift : forall {resolve} ti r e Q,
+      wp_shift nil (fun to => [| to = nil |] ** wp (resolve:=resolve) ti r e Q)
+      |-- wp (resolve:=resolve) ti r e Q.
+
 
   (****** Wp Semantics for atomic operations
    * These are given in the style of function call axioms
@@ -584,24 +596,6 @@ Module Type cclogic.
    * work in the normal Iron++ logic (which most closely resembles what we have)
    *)
 
-(*
-  (*Atomic READ access permission*)
-  Parameter AtomRDPerm: val -> (val -> mpred) -> mpred.
-
-  (*Atomic WRITE access permission*)
-  Parameter AtomWRTPerm: val -> (val -> mpred) -> mpred.
-*)
-
-(*
-  (* Perm LocInv l * Perm LocInv' l -|- Perm LocInv*LocInv' l
-    Composability of two location invariant maps: val -> mpred on location l
-    todo(isk): Existentials are weak?
-   *)
-  Axiom Splittable_RDPerm: forall (LocInv: val->mpred) (LocInv':val->mpred) l,
-      AtomRDPerm l LocInv **  AtomRDPerm l LocInv'
-      -|- Exists v, (Exists LocInv'', (LocInv'' v -* (LocInv' v ** LocInv v)) //\\ (AtomRDPerm v LocInv'')).
-*)
-
   (* Atomic CAS access permission is a trackable invariant *)
   Theorem Persistent_CASPerm : forall (q1 q2 : Fp_Monoid) (n : iname) ty LocInv,
       AtomInv (q1 ⊕ q2) n ty LocInv -|- AtomInv q1 n ty LocInv ** AtomInv q2 n ty LocInv.
@@ -625,7 +619,7 @@ Module Type cclogic.
     eapply TInv_new; eauto.
     Transparent _at. unfold _at. Opaque _at.
     simpl.
-    discharge fail fail fail fail eauto.
+    t.
   Qed.
 
   (*Memory Ordering Patterns: Now we only have _SEQ_CST *)
