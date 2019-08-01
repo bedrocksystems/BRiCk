@@ -84,6 +84,22 @@ Module Type cclogic.
     s_ord_total : total s_ord
   }.
 
+  Arguments s_bot {_}.
+  Arguments s_top {_}.
+  Arguments s_undef {_}.
+  Arguments s_compose {_} _ _.
+
+  Notation "a ⊕ b" := (s_compose a b) (at level 50, left associativity).
+
+  Definition s_compatible {sa : SA} (a b : sa.(s_type)) : Prop :=
+    a ⊕ b <> s_undef.
+
+  (* frame-preserving update
+   * this is so primitive, that it seems like it should go somewhere else
+   *)
+  Definition FPU {prm} (v v' : prm.(s_type)) : Prop :=
+    forall f, s_compatible v f -> s_compatible v' f.
+
   (** The Fractional Permission Separation Algebra **)
   Module Fp.
     Local Definition ok (q : Qc) : Prop :=
@@ -128,14 +144,14 @@ Module Type cclogic.
       all: destruct x; destruct y; auto.
     Qed.
 
-    Variant Fp : Set :=
+    Variant _Fp : Set :=
     | FPerm (f:Qc) (UNIT: ok f)
     | FPermUndef.
 
-    Definition Fp_zero : Fp :=
+    Definition Fp_zero : _Fp :=
       FPerm 0 ltac:(compute; split; congruence).
 
-    Definition Fp_full : Fp :=
+    Definition Fp_full : _Fp :=
       FPerm 1 ltac:(compute; split; congruence).
 
     Lemma FPerm_Equal: forall f g UNITf UNITg ,
@@ -152,7 +168,7 @@ Module Type cclogic.
 
     (*Composition over fractional permissions*)
     Definition FPerm_Compose f g :=
-      match f, g return Fp with
+      match f, g return _Fp with
       | FPermUndef, _ => FPermUndef
       | _, FPermUndef => FPermUndef
       | FPerm f' _ , FPerm g' _ =>
@@ -176,7 +192,7 @@ Module Type cclogic.
 
     (* Example carrier monoid *)
     Program Definition Fp_Monoid : SA :=
-      {| s_type := Fp;
+      {| s_type := _Fp;
          s_bot := Fp_zero ;
          s_top := Fp_full ;
          s_undef := FPermUndef;
@@ -248,47 +264,62 @@ Module Type cclogic.
     Next Obligation.
     Admitted.
 
+    Definition Fp := Fp_Monoid.(s_type).
+
   End Fp.
   Import Fp.
 
-  Notation "a ⊕ b" := (s_compose _ a b) (at level 50, left associativity).
+  Module fmap.
 
-  (* the names of invariants *)
-  Definition iname : Set := (string * string).
+    Parameter Carrier : forall (k : Type) {_ : forall a b : k, Decidable (a = b)} (v : SA), SA.
+    Parameter singleton : forall {k} {dec : forall a b : k, Decidable (a = b)} (v : SA),
+        k -> v.(s_type) -> (@Carrier k dec v).(s_type).
+  End fmap.
 
-  Definition namespace (pkg s : string) : iname :=
-    (pkg, s)%string.
 
-  (* named invariants *)
-  Parameter Inv : forall (name : iname) (I : mpred), mpred.
-  (* ^ the invariant [I] must be droppable *)
+  Module Invariants.
+    (* notes:
+     * - These can be encoded using ghost state.
+     *)
 
-  Definition infinite (t : Type) : Prop :=
-    exists (for_each : nat -> t),
-      forall n1 n2, n1 <> n2 -> for_each n1 <> for_each n2.
+    (* the names of invariants *)
+    Definition iname : Set := (string * string).
 
-  Axiom Inv_new : forall pkg I,
-      I |-- empSP -> (* droppable *)
-      empSP |-- Exists n : _, Inv (namespace pkg n) I.
-  Axiom Inv_dup : forall (n : iname) I, Inv n I -|- Inv n I ** Inv n I.
-  Axiom Inv_drop : forall (n : iname) I, Inv n I |-- empSP.
+    Definition namespace (pkg s : string) : iname :=
+      (pkg, s)%string.
 
-  (* trackable (named) invariants *)
-  Parameter TInv : forall (_ : iname) (I : mpred), mpred.
-  (* ^ the invariant [I] has no restrictions *)
-  Axiom TInv_dup : forall (n : iname) I, TInv n I -|- TInv n I ** TInv n I.
-  Axiom TInv_drop : forall (n : iname) I, TInv n I |-- empSP.
+    (* named invariants *)
+    Parameter Inv : forall (name : iname) (I : mpred), mpred.
+    (* ^ the invariant [I] must be droppable *)
 
-  (* note(gmm): this is like the Iron++ logic. *)
-  Parameter OPerm : Fp -> iname -> mpred.
-  Parameter DPerm : iname -> mpred.
-  Axiom OPerm_split : forall (f1 f2 : Fp_Monoid) n,
-      OPerm (f1 ⊕ f2) n -|- OPerm f1 n ** OPerm f2 n.
+    Definition infinite (t : Type) : Prop :=
+      exists (for_each : nat -> t),
+        forall n1 n2, n1 <> n2 -> for_each n1 <> for_each n2.
 
-  Axiom TInv_new : forall pkg I,
-      I |-- Exists n : _,
-            let n := namespace pkg n in
-            TInv n I ** OPerm Fp_Monoid.(s_top) n ** DPerm n.
+    Axiom Inv_new : forall pkg I,
+        I |-- empSP -> (* droppable *)
+        empSP |-- Exists n : _, Inv (namespace pkg n) I.
+    Axiom Inv_dup : forall (n : iname) I, Inv n I -|- Inv n I ** Inv n I.
+    Axiom Inv_drop : forall (n : iname) I, Inv n I |-- empSP.
+
+    (* trackable (named) invariants *)
+    Parameter TInv : forall (_ : iname) (I : mpred), mpred.
+    (* ^ the invariant [I] has no restrictions *)
+    Axiom TInv_dup : forall (n : iname) I, TInv n I -|- TInv n I ** TInv n I.
+    Axiom TInv_drop : forall (n : iname) I, TInv n I |-- empSP.
+
+    (* note(gmm): this is like the Iron++ logic. *)
+    Parameter OPerm : Fp -> iname -> mpred.
+    Parameter DPerm : iname -> mpred.
+    Axiom OPerm_split : forall (f1 f2 : Fp) n,
+        OPerm (f1 ⊕ f2) n -|- OPerm f1 n ** OPerm f2 n.
+
+    Axiom TInv_new : forall pkg I,
+        I |-- Exists n : _,
+      let n := namespace pkg n in
+      TInv n I ** OPerm s_top n ** DPerm n.
+  End Invariants.
+  Import Invariants.
 
   Definition disjoint {T} (xs ys : list T) : Prop :=
     List.Forall (fun x => ~List.In x ys) xs.
@@ -299,49 +330,24 @@ Module Type cclogic.
    * - this is an entirely different notion of entailment because it enables
    *   updating ghost state.
    *)
-(*
-  Module shift.
-    Parameter shift : mpred -> list iname -> list iname -> mpred -> mpred -> Prop.
-
-    Axiom shift_id : forall P,
-        shift P nil nil empSP empSP.
-    Axiom shift_frame : forall P e1 e2 e' Q R S,
-        disjoint e1 e' ->
-        disjoint e2 e' ->
-        shift P e1 e2 Q R ->
-        shift P (e1 ++ e') (e2 ++ e') (Q ** S) (R ** S).
-    Axiom shift_trans : forall P e1 e2 e3 Q R S,
-        subset e2 (e1 ++ e3) ->
-        shift P e1 e2 Q R ->
-        shift P e2 e3 R S ->
-        shift P e1 e3 Q S.
-    Axiom shift_open : forall P Q i,
-        P |-- Inv i Q ** ltrue ->
-        shift P (i :: nil) nil empSP Q.
-    Axiom shift_close : forall P Q i,
-        P |-- Inv i Q ** ltrue ->
-        shift P nil (i :: nil) Q empSP.
-    Axiom shift_opent : forall P Q i,
-        P |-- TInv i Q ** ltrue ->
-        shift P (i :: nil) nil empSP Q.
-    Axiom shift_closet : forall P Q i,
-        P |-- TInv i Q ** ltrue ->
-        shift P nil (i :: nil) Q empSP.
-
-    Axiom shift_Proper :
-      Proper (lentails ++> @Permutation iname ++> @Permutation iname ++> lentails --> lentails ++> Basics.impl)
-             shift.
-    Global Existing Instance shift_Proper.
-
-  End shift.
-*)
-
   Module ViewShift.
+    (* notes:
+     * - these are modeled on Iris 1.0. In subsequent versions of Iris, this
+     *   concept was implemented in terms of "fancy update".
+     *   todo(gmm): investigate this as an alternative presentation.
+     *)
+
     Variant Inv_type : Set :=
     | Affine
     | Tracked (_ : Fp).
 
-    Parameter shift : list (iname * Inv_type) -> list (iname * Inv_type) -> mpred -> mpred -> mpred.
+    Parameter shift : list (iname * Inv_type) -> list (iname * Inv_type) ->
+                      mpred -> mpred -> mpred.
+    (* ^ this definition is essentially:
+     *   shift P Q |-- embed (FPU P Q)
+     * except with respect to masks which can only be explained by going
+     * a bit deeper into things.
+     *)
 
     Axiom shift_id : empSP |-- shift nil nil empSP empSP.
     Axiom shift_frame : forall e1 e2 e' Q R S,
@@ -361,7 +367,7 @@ Module Type cclogic.
         TInv i Q |-- Forall q, shift nil ((i,Tracked q) :: nil) Q (OPerm q i).
     Axiom shift_deletet : forall Q i,
         TInv i Q
-        |-- Forall q, shift nil ((i,Tracked q) :: nil) (OPerm q i -* OPerm Fp_Monoid.(s_top) i ** DPerm i) empSP.
+        |-- Forall q, shift nil ((i,Tracked q) :: nil) (OPerm q i -* OPerm s_top i ** DPerm i) empSP.
     (* ^ note(gmm): the `q` permission was opened already, so you get that in
      * order to establish the final `OPerm 1`
      *)
@@ -374,43 +380,41 @@ Module Type cclogic.
   End ViewShift.
   Import ViewShift.
 
-  Parameter SA_fmap : forall (k : Type) {_ : forall a b : k, Decidable (a = b)} (v : SA), SA.
-  Parameter fmap_singleton : forall {k} {dec : forall a b : k, Decidable (a = b)} (v : SA),
-      k -> v.(s_type) -> (@SA_fmap k dec v).(s_type).
+  Module GhostState.
+    (* A note to Gregory, If I were to paramterize mpred (p:Fp_Monoid) ...
+     * THIS WOULD BE A NEAT SOLUTION.
+     * I dont like them to be separate axioms. It is a ad-hoc solution,
+     * but lets keep it as it for now.
+     * ^^ note(gmm): agreed. this would be a fairly simple solution.
+     *    it would require that all of our code is verified with respect to
+     *    arbitrary `Fp_Monoid` that contain some (relevant) monoids.
+     *    an alternative would be to build a universal [Fp_Monoid] (up to
+     *    universe polymorphism) and then provide a way to do allocation.
+     *    this would be analagous to:
+     *      [mpred Universal]
+     *    where [Universal] is:
+     *      Definition Universal@{i j | j < i} : Type@{i} :=
+     *        forall ra : RA@{j}, ra.(s_type).
+     *    which gives me access to any resource algebra of universe less than [i].
+     *    it is important to note that in almost all circumstances, the practical
+     *    separation algebras that we are going to use are those with finite maps,
+     *    so it might be a little bit easier to say.
+     *      Definition Universal@{i j | j < i} : Type@{i} :=
+     *        forall ra : RA@{j}, Fmap nat ra.(s_type),
+     *)
+    Parameter ghost_is : forall (Prm: SA) (value : Prm), mpred.
+    Definition ghost_ptsto {loc : Type} {dec : forall a b : loc, Decidable (a = b)}
+               (Prm : SA) (p : loc) (value : Prm) : mpred :=
+      ghost_is (fmap.Carrier loc Prm) (@fmap.singleton loc _ Prm p value).
 
-  (* A note to Gregory, If I were to paramterize mpred (p:Fp_Monoid) ...
-   * THIS WOULD BE A NEAT SOLUTION.
-   * I dont like them to be separate axioms. It is a ad-hoc solution,
-   * but lets keep it as it for now.
-   * ^^ note(gmm): agreed. this would be a fairly simple solution.
-   *    it would require that all of our code is verified with respect to
-   *    arbitrary `Fp_Monoid` that contain some (relevant) monoids.
-   *    an alternative would be to build a universal [Fp_Monoid] (up to
-   *    universe polymorphism) and then provide a way to do allocation.
-   *    this would be analagous to:
-   *      [mpred Universal]
-   *    where [Universal] is:
-   *      Definition Universal@{i j | j < i} : Type@{i} :=
-   *        forall ra : RA@{j}, ra.(s_type).
-   *    which gives me access to any resource algebra of universe less than [i].
-   *    it is important to note that in almost all circumstances, the practical
-   *    separation algebras that we are going to use are those with finite maps,
-   *    so it might be a little bit easier to say.
-   *      Definition Universal@{i j | j < i} : Type@{i} :=
-   *        forall ra : RA@{j}, Fmap nat ra.(s_type),
-   *)
-  Parameter ghost_is : forall (Prm: SA) (value : Prm), mpred.
-  Definition ghost_ptsto {loc : Type} {dec : forall a b : loc, Decidable (a = b)}
-             (Prm : SA) (p : loc) (value : Prm) : mpred :=
-    ghost_is (SA_fmap loc Prm) (@fmap_singleton loc _ Prm p value).
-
-  (* note(gmm): i can update any ghost location as long as I have exclusive
-   * ownership of it.
-   *)
-  Axiom shift_ghost_update : forall loc dec prm p v v',
-      |-- shift nil nil
-                (@ghost_ptsto loc dec prm p v)
-                (@ghost_ptsto loc dec prm p v').
+    (* note(gmm): i can update any ghost using frame preserving update
+     *)
+    Axiom shift_ghost_update : forall loc dec prm p v v',
+        [| FPU v v' |]
+        |-- shift nil nil
+          (@ghost_ptsto loc dec prm p v)
+          (@ghost_ptsto loc dec prm p v').
+  End  GhostState.
 
   (* Definition Frac_PointsTo l q v := *)
   (*   match is_ok q with *)
@@ -447,11 +451,6 @@ Module Type cclogic.
     ------------
     {P} E {Q * exists l. l:g} //ghost location l carries the ghost resource g
    *)
-
-  (* (*******Atomic Instruction Specification*******) *)
-  (* Axiom rule_ghost_intro: *)
-  (* forall  g P E Qp CMI (guard: In CMI guard_container) (ptriple: P |-- wp_ghst E Qp), *)
-  (*    P |-- wp_ghst E (fun v =>  (Qp v) ** (Exists l, logical_ghost CMI  guard l g)). *)
 
   (* a "weakest pre-condition" for view shifts
    * note(gmm): in this style, we don't need to explicitly quantify over the
@@ -532,7 +531,7 @@ Module Type cclogic.
   Qed.
   Theorem wp_shift_deleteT : forall (q : Fp_Monoid.(s_type)) Q hide n I,
       ~In n (map fst hide) ->
-      TInv n I ** (OPerm q n -* OPerm Fp_Monoid.(s_top) n ** DPerm n) ** wp_shift hide Q
+      TInv n I ** (OPerm q n -* OPerm s_top n ** DPerm n) ** wp_shift hide Q
       |-- wp_shift ((n, Tracked q) :: hide) Q.
   Proof.
     intros.
