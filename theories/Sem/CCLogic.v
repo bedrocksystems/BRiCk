@@ -636,14 +636,14 @@ Module Type cclogic.
    * note(gmm): these look exactly like the standard read and write assertions
    * because all of the invariant reasoning is encapsulated in [wp_shift].
    *)
-  Axiom rule_atomic_load_cst
+  Axiom wp_atom_load_cst
   : forall memorder (acc_type:type) (l : val) (Q : val -> mpred),
       [| memorder = _SEQ_CST |] **
       (Exists v, (_at (_eq l) (tprim acc_type v) ** ltrue //\\ Q v))
       |-- wp_atom AO__atomic_load_n (l :: memorder :: nil) acc_type Q.
 
 (*
-  Axiom rule_atomic_load_cst
+  Axiom wp_atom_load_cst
   : forall q memorder (acc_type:type) name (nm : name) l (Inv Qlearn: val -> mpred) P Q
       (read : forall v, P ** Inv v |-- Inv v ** Qlearn v),
       _at (_eq l) (AtomInv q nm acc_type Inv) **
@@ -653,7 +653,7 @@ Module Type cclogic.
       |-- wp_atom AO__atomic_load_n (l :: memorder :: nil) acc_type Q.
 *)
 
-  Axiom rule_atomic_store_cst
+  Axiom wp_atom_store_cst
   : forall memorder (acc_type:type) l Q val,
       [| memorder = _SEQ_CST |] **
       (Exists val, _at (_eq l) (tprim acc_type val)) **
@@ -661,7 +661,7 @@ Module Type cclogic.
       |-- wp_atom AO__atomic_store_n (l :: memorder :: val :: nil) (Qmut Tvoid) Q.
 
 (*
-  Axiom rule_atomic_store_cst
+  Axiom wp_atom_store_cst
   : forall q memorder (acc_type:type) {name} (nm : name) l (Inv Qlearn : val -> mpred) P Q
       val
       (store : forall v, P ** Inv v |-- Inv val ** Qlearn v),
@@ -679,7 +679,7 @@ Module Type cclogic.
     end.
 
   (* atomic compare and exchange n *)
-  Axiom rule_atomic_compare_exchange_n:
+  Axiom wp_atom_compare_exchange_n:
     forall val_p expected_p desired wk succmemord failmemord Q'
            (ty : type)
            expected,
@@ -693,11 +693,10 @@ Module Type cclogic.
           _at (_eq val_p) (tprim ty v) -* Q' (Vbool false))))
        |-- wp_atom AO__atomic_compare_exchange_n
                    (val_p::succmemord::expected_p::failmemord::desired::wk::nil) (Qmut Tbool) Q'.
-  About rule_atomic_compare_exchange_n.
 
 (*
   (* atomic compare and exchange n *)
-  Axiom rule_atomic_compare_exchange_n:
+  Axiom wp_atom_compare_exchange_n:
     forall q P val_p expected_p desired wk succmemord failmemord Qp Q' Qlearn (Q:mpred)
            (ty : type)
            expected
@@ -724,33 +723,40 @@ Module Type cclogic.
 
   (* atomic compare and exchange rule
    *)
-  Axiom rule_atomic_compare_exchange:
-    forall q P val_p expected_p desired_p wk succmemord failmemord Qp Q' Qlearn (Q:mpred)
-      (ty : type) n
-      expected desired
-      (preserve:  P ** Qp expected  |-- Qp desired ** Q)
-      (learn : forall actual, actual <> expected ->
-                         P ** Qp actual |-- (Qlearn actual //\\ empSP) ** ltrue),
-      Fp_readable q ->
-         _at (_eq expected_p) (tprim ty expected) **
+  Axiom wp_atom_compare_exchange:
+    forall P val_p expected_p desired_p wk succmemord failmemord Q
+      (ty : type)
+      expected desired,
+         (_at (_eq expected_p) (tprim ty expected) **
          _at (_eq desired_p) (tprim ty desired) **
-         _at (_eq val_p) (AtomInv q n ty Qp) ** P **
+         Exists val, _at (_eq val_p) (tprim ty val) **
          [|wk = Vbool false|] ** [|succmemord = _SEQ_CST|] ** [| failmemord = _SEQ_CST |] **
          ((((* success *)
+            [| val = expected |] **
             _at (_eq expected_p) (tprim ty expected) **
             _at (_eq desired_p) (tprim ty desired) **
-            _at (_eq val_p) (AtomInv q n ty Qp) ** Q) -* Q' (Vbool true)) //\\
+            _at (_eq val_p) (tprim ty desired) -* Q (Vbool true))) //\\
           (((* failure *)
-            Exists x, [| x <> expected |] ** Qlearn x **
-              _at (_eq expected_p) (tprim ty x) **
+            [| val <> expected |] **
+              _at (_eq expected_p) (tprim ty val) **
               _at (_eq desired_p) (tprim ty desired) **
-              _at (_eq val_p) (AtomInv q n ty Qp) **
-              P) -* Q' (Vbool false)))
+              _at (_eq val_p) (tprim ty val) **
+              P) -* Q (Vbool false))))
        |-- wp_atom AO__atomic_compare_exchange
-                   (val_p::succmemord::expected_p::failmemord::desired::wk::nil) (Qmut Tbool) Q'.
+                   (val_p::succmemord::expected_p::failmemord::desired::wk::nil) (Qmut Tbool) Q.
 
   (* atomic fetch and xxx rule *)
-  Definition rule_fetch_xxx ao op : Prop :=
+  Definition wp_fetch_xxx ao op : Prop :=
+    forall E pls memorder Q (acc_type : type),
+      [| memorder = _SEQ_CST |] **
+         (Exists v,
+          _at (_eq E) (tprim acc_type v) **
+          Exists v', [| eval_binop op acc_type acc_type acc_type v pls v' |] **
+                     (_at (_eq E) (tprim acc_type v') -* Q v))
+      |-- wp_atom ao (E::pls::memorder::nil) acc_type Q.
+
+(*
+  Definition wp_fetch_xxx ao op : Prop :=
     forall q P E Qp pls memorder Q Q'
          (acc_type : type)
          (split: forall v,  P ** Qp v |--
@@ -761,18 +767,29 @@ Module Type cclogic.
          [| memorder = _SEQ_CST |] ** P **
          (Forall x, (_at (_eq E) (AtomInv q acc_type Qp) ** Q x) -* Q' x)
        |-- wp_atom ao (E::pls::memorder::nil) acc_type Q'.
+*)
 
   Ltac fetch_xxx ao op :=
-    let G := eval unfold rule_fetch_xxx in (rule_fetch_xxx ao op) in exact G.
+    let G := eval unfold wp_fetch_xxx in (wp_fetch_xxx ao op) in exact G.
 
-  Axiom wp_atomic_fetch_add : ltac:(fetch_xxx AO__atomic_fetch_add Badd).
-  Axiom rule_atomic_fetch_sub : ltac:(fetch_xxx AO__atomic_fetch_sub Bsub).
-  Axiom rule_atomic_fetch_and : ltac:(fetch_xxx AO__atomic_fetch_and Band).
-  Axiom rule_atomic_fetch_xor : ltac:(fetch_xxx AO__atomic_fetch_xor Bxor).
-  Axiom rule_atomic_fetch_or : ltac:(fetch_xxx AO__atomic_fetch_or Bor).
+  Axiom wp_atom_fetch_add : ltac:(fetch_xxx AO__atomic_fetch_add Badd).
+  Axiom wp_atom_fetch_sub : ltac:(fetch_xxx AO__atomic_fetch_sub Bsub).
+  Axiom wp_atom_fetch_and : ltac:(fetch_xxx AO__atomic_fetch_and Band).
+  Axiom wp_atom_fetch_xor : ltac:(fetch_xxx AO__atomic_fetch_xor Bxor).
+  Axiom wp_atom_fetch_or  : ltac:(fetch_xxx AO__atomic_fetch_or  Bor).
 
   (* atomic xxx and fetch rule *)
-  Definition rule_xxx_fetch ao op : Prop :=
+  Definition wp_xxx_fetch ao op : Prop :=
+    forall E pls memorder Q (acc_type : type),
+      [| memorder = _SEQ_CST |] **
+         (Exists v,
+          _at (_eq E) (tprim acc_type v) **
+          Exists v', [| eval_binop op acc_type acc_type acc_type v pls v' |] **
+                     (_at (_eq E) (tprim acc_type v') -* Q v'))
+      |-- wp_atom ao (E::pls::memorder::nil) acc_type Q.
+
+(*
+  Definition wp_xxx_fetch ao op : Prop :=
     forall q P E Qp pls memorder Q Q'
          (acc_type : type)
          (split: forall v,  P ** Qp v |--
@@ -783,16 +800,17 @@ Module Type cclogic.
          [| memorder = _SEQ_CST |] **
          (Forall x, (_at (_eq E) (AtomInv q acc_type Qp) ** Q x) -* Q' x)
        |-- wp_atom ao (E::pls::memorder::nil) acc_type Q'.
+*)
 
   Ltac xxx_fetch ao op :=
-    let G := eval unfold rule_xxx_fetch in (rule_xxx_fetch ao op) in exact G.
+    let G := eval unfold wp_xxx_fetch in (wp_xxx_fetch ao op) in exact G.
 
-  Axiom wp_atomic_add_fetch : ltac:(xxx_fetch AO__atomic_add_fetch Badd).
-  Axiom rule_atomic_sub_fetch : ltac:(xxx_fetch AO__atomic_sub_fetch Bsub).
-  Axiom rule_atomic_and_fetch : ltac:(xxx_fetch AO__atomic_and_fetch Band).
-  Axiom rule_atomic_xor_fetch : ltac:(xxx_fetch AO__atomic_xor_fetch Bxor).
-  Axiom rule_atomic_or_fetch : ltac:(xxx_fetch AO__atomic_or_fetch Bor).
-*)
+  Axiom wp_atom_add_fetch : ltac:(xxx_fetch AO__atomic_add_fetch Badd).
+  Axiom wp_atom_sub_fetch : ltac:(xxx_fetch AO__atomic_sub_fetch Bsub).
+  Axiom wp_atom_and_fetch : ltac:(xxx_fetch AO__atomic_and_fetch Band).
+  Axiom wp_atom_xor_fetch : ltac:(xxx_fetch AO__atomic_xor_fetch Bxor).
+  Axiom wp_atom_or_fetch  : ltac:(xxx_fetch AO__atomic_or_fetch  Bor).
+
 End cclogic.
 
 Declare Module CCL : cclogic.
