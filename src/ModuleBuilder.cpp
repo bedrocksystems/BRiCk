@@ -3,12 +3,12 @@
  *
  * SPDX-License-Identifier:AGPL-3.0-or-later
  */
-#include "ModuleBuilder.hpp"
 #include "CommentScanner.hpp"
 #include "DeclVisitorWithArgs.h"
 #include "Filter.hpp"
 #include "Formatter.hpp"
 #include "Logging.hpp"
+#include "ModuleBuilder.hpp"
 #include "SpecCollector.hpp"
 
 using namespace clang;
@@ -110,6 +110,9 @@ public:
             }
         } else if (defn == nullptr && decl->getPreviousDecl() == nullptr) {
             go(decl, false);
+        } else {
+            using namespace logging;
+            log() << "skipping definition\n";
         }
     }
 

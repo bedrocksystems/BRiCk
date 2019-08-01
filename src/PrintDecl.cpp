@@ -294,16 +294,18 @@ public:
         cprint.printGlobalName(decl, print);
         print.output() << fmt::line;
         printFunction(decl, print, cprint);
-        print.output() << fmt::rparen;
+        print.end_ctor();
     }
 
     void VisitCXXMethodDecl(const CXXMethodDecl *decl, CoqPrinter &print,
                             ClangPrinter &cprint) {
         if (decl->isStatic()) {
-            print.ctor("Dfunction")
-                << "\"" << decl->getNameAsString() << "\"" << fmt::line;
+            print.ctor("Dfunction");
+            cprint.printGlobalName(decl, print);
+            print.output() << fmt::line << fmt::indent;
             printFunction(decl, print, cprint);
-            print.output() << fmt::rparen;
+            print.output() << fmt::outdent;
+            print.end_ctor();
         } else {
             if (decl->isVirtual()) {
                 using namespace logging;
@@ -315,7 +317,8 @@ public:
                 cprint.printGlobalName(decl, print);
                 print.output() << fmt::line << fmt::indent;
                 printMethod(decl, print, cprint);
-                print.output() << fmt::outdent << fmt::rparen;
+                print.output() << fmt::outdent;
+                print.end_ctor();
             }
         }
     }
