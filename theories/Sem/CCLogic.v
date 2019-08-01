@@ -55,8 +55,12 @@ Module Type cclogic.
   (****** Logical State ********)
 
   (* the type of (functional) separation algebras
-   * note(gmm): this definition differs from the ChargeCore definition
-   * because it defines `compose` as a function rather than as a relation.
+   * notes:
+   * - like Iris (and unlike ChargeCore), this definition is functional
+   *   rather than relational.
+   * - this definition seems to be missing a way to test whether a value
+   *   is [undef].
+   * todo(gmm): I should replace this definition.
    *)
   Polymorphic Structure SA :=
   { s_type :> Type;
@@ -88,6 +92,7 @@ Module Type cclogic.
   Arguments s_top {_}.
   Arguments s_undef {_}.
   Arguments s_compose {_} _ _.
+  Arguments s_ord {_} _ _.
 
   Notation "a ⊕ b" := (s_compose a b) (at level 50, left associativity).
 
@@ -191,7 +196,7 @@ Module Type cclogic.
       end.
 
     (* Example carrier monoid *)
-    Program Definition Fp_Monoid : SA :=
+    Program Definition t : SA :=
       {| s_type := _Fp;
          s_bot := Fp_zero ;
          s_top := Fp_full ;
@@ -264,18 +269,23 @@ Module Type cclogic.
     Next Obligation.
     Admitted.
 
-    Definition Fp := Fp_Monoid.(s_type).
+    Definition readable (f : t) : Prop :=
+      match f with
+      | FPerm f _ => (0 < f)%Q
+      | _ => False
+      end.
 
   End Fp.
-  Import Fp.
+  Definition Fp := Fp.t.
 
   Module fmap.
 
-    Parameter Carrier : forall (k : Type) {_ : forall a b : k, Decidable (a = b)} (v : SA), SA.
+    Parameter t : forall (k : Type) {_ : forall a b : k, Decidable (a = b)} (v : SA), SA.
     Parameter singleton : forall {k} {dec : forall a b : k, Decidable (a = b)} (v : SA),
-        k -> v.(s_type) -> (@Carrier k dec v).(s_type).
-  End fmap.
+        k -> v.(s_type) -> (@t k dec v).(s_type).
 
+  End fmap.
+  Definition fmap := fmap.t.
 
   Module Invariants.
     (* notes:
@@ -402,10 +412,10 @@ Module Type cclogic.
      *      Definition Universal@{i j | j < i} : Type@{i} :=
      *        forall ra : RA@{j}, Fmap nat ra.(s_type),
      *)
-    Parameter ghost_is : forall (Prm: SA) (value : Prm), mpred.
+    Parameter ghost_is : forall {Prm: SA} (value : Prm), mpred.
     Definition ghost_ptsto {loc : Type} {dec : forall a b : loc, Decidable (a = b)}
                (Prm : SA) (p : loc) (value : Prm) : mpred :=
-      ghost_is (fmap.Carrier loc Prm) (@fmap.singleton loc _ Prm p value).
+      ghost_is (@fmap.singleton loc _ Prm p value).
 
     (* note(gmm): i can update any ghost using frame preserving update
      *)
@@ -415,17 +425,6 @@ Module Type cclogic.
           (@ghost_ptsto loc dec prm p v)
           (@ghost_ptsto loc dec prm p v').
   End  GhostState.
-
-  (* Definition Frac_PointsTo l q v := *)
-  (*   match is_ok q with *)
-  (*   | right _ => lfalse *)
-  (*   | left pf => *)
-  (*     match q ?= 0 with *)
-  (*     | Eq => empSP *)
-  (*     | _ => ghost_ptsto Fp.Fp_Monoid (Fp.FPerm q pf)  l v *)
-  (*     end *)
-  (*   end. *)
-
 
   (*Similarly one can encode ghost state using SA*)
   (*
@@ -514,7 +513,7 @@ Module Type cclogic.
     simpl.
     t.
   Qed.
-  Theorem wp_shift_closeT : forall (q : Fp_Monoid.(s_type)) Q hide n I,
+  Theorem wp_shift_closeT : forall (q : Fp) Q hide n I,
       ~In n (map fst hide) ->
       TInv n I ** I ** (OPerm q n -* wp_shift hide Q)
       |-- wp_shift ((n, Tracked q) :: hide) Q.
@@ -529,7 +528,7 @@ Module Type cclogic.
     simpl.
     t.
   Qed.
-  Theorem wp_shift_deleteT : forall (q : Fp_Monoid.(s_type)) Q hide n I,
+  Theorem wp_shift_deleteT : forall (q : Fp) Q hide n I,
       ~In n (map fst hide) ->
       TInv n I ** (OPerm q n -* OPerm s_top n ** DPerm n) ** wp_shift hide Q
       |-- wp_shift ((n, Tracked q) :: hide) Q.
@@ -545,22 +544,14 @@ Module Type cclogic.
     t.
   Qed.
 
-
   (* View shifts are sound as long as invariants are always re-established after
    * any atomic step. This means that it is sound to open invariants before
    * (and after) any evaluation provided that all of the invariants are
    * closed before any computation actually occurs.
+   * We can express this generically through the following:
    *)
-  Axiom wp_lhs_shift : forall {resolve} ti r e Q,
-      wp_shift nil (fun to => [| to = nil |] ** wp_lhs (resolve:=resolve) ti r e Q)
-      |-- wp_lhs (resolve:=resolve) ti r e Q.
-  Axiom wp_rhs_shift : forall {resolve} ti r e Q,
-      wp_shift nil (fun to => [| to = nil |] ** wp_rhs (resolve:=resolve) ti r e Q)
-      |-- wp_rhs (resolve:=resolve) ti r e Q.
-  Axiom wp_stmt_shift : forall {resolve} ti r e Q,
-      wp_shift nil (fun to => [| to = nil |] ** wp (resolve:=resolve) ti r e Q)
-      |-- wp (resolve:=resolve) ti r e Q.
-
+  Axiom shift_anywhere : forall P,
+      wp_shift nil (fun to => [| to = nil |] ** P) |-- P.
 
   (****** Wp Semantics for atomic operations
    * These are given in the style of function call axioms
@@ -580,7 +571,7 @@ Module Type cclogic.
    *)
 
   (*Atomic CAS access permission*)
-  Definition AtomInv (fp : Fp.Fp) (n : iname) (t : type) (I : val -> mpred) : Rep :=
+  Definition AtomInv (fp : Fp) (n : iname) (t : type) (I : val -> mpred) : Rep :=
     {| repr p := TInv n (Exists v, _at (_eq p) (tprim t v) ** I v) **
                  OPerm fp n |}.
   (* ^ note(gmm): i introduced names here so that these can fit into TInv, but another way
@@ -596,7 +587,7 @@ Module Type cclogic.
    *)
 
   (* Atomic CAS access permission is a trackable invariant *)
-  Theorem Persistent_CASPerm : forall (q1 q2 : Fp_Monoid) (n : iname) ty LocInv,
+  Theorem Splittable_AtomInv : forall (q1 q2 : Fp) (n : iname) ty LocInv,
       AtomInv (q1 ⊕ q2) n ty LocInv -|- AtomInv q1 n ty LocInv ** AtomInv q2 n ty LocInv.
   Proof.
     unfold AtomInv.
@@ -610,7 +601,7 @@ Module Type cclogic.
   Theorem Intro_AtomInv : forall x pkg (t:type) (Inv:val->mpred),
       Exists v, _at (_eq x) (tprim t v) ** Inv v
       |-- Exists n : string, let n := namespace pkg n in
-                             _at (_eq x) (AtomInv Fp_full n t Inv) ** DPerm n.
+                             _at (_eq x) (AtomInv s_top n t Inv) ** DPerm n.
   Proof.
     intros.
     unfold AtomInv.
@@ -665,11 +656,6 @@ Module Type cclogic.
       |-- wp_atom AO__atomic_store_n (l :: memorder :: val :: nil) (Qmut Tvoid) Q.
 *)
 
-  Definition Fp_readable (f : Fp) : Prop :=
-    match f with
-    | FPerm f _ => (0 < f)%Q
-    | _ => False
-    end.
 
   (* atomic compare and exchange n *)
   Axiom wp_atom_compare_exchange_n:
