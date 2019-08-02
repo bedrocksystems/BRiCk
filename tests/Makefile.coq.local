@@ -16,6 +16,7 @@ CFLAGS=
 %_hpp.v: %.hpp $(CPP2V)
 	$(CPP2V) -v -o $@ $< -- $(CFLAGS)
 
+ifdef DEBUG
 %_c_spec.v: %.c $(CPP2V)
 	$(CPP2V) -v -spec $@ $< -- $(CFLAGS)
 	@ echo $@
@@ -32,3 +33,13 @@ CFLAGS=
 	$(CPP2V) -v -spec $@ $< -- $(CFLAGS)
 	@ echo $@
 	@ cat $@
+else
+%_c_spec.v: %.c $(CPP2V)
+	$(CPP2V) -v -spec $@ $< -- $(CFLAGS)
+%_h_spec.v: %.h $(CPP2V)
+	$(CPP2V) -v -spec $@ $< -- $(CFLAGS)
+%_cpp_spec.v: %.cpp $(CPP2V)
+	$(CPP2V) -v -spec $@ $< -- $(CFLAGS)
+%_hpp_spec.v: %.hpp $(CPP2V)
+	$(CPP2V) -v -spec $@ $< -- $(CFLAGS)
+endif
