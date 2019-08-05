@@ -319,23 +319,14 @@ public:
                 cprint.printGlobalName(to, print);
                 print.end_ctor();
             } else {
-                print.output() << "Cbad";
+                print.ctor("CCcast", false);
+                printCastKind(print.output(), expr->getCastKind());
+                print.end_ctor();
             }
         } else if (isa<CXXDynamicCastExpr>(expr)) {
-            auto from = expr->getSubExpr()
-                            ->getType()
-                            .getTypePtr()
-                            ->getPointeeCXXRecordDecl();
-            auto to = expr->getType().getTypePtr()->getPointeeCXXRecordDecl();
-            if (from && to) {
-                print.ctor("Cdynamic", false);
-                cprint.printGlobalName(from, print);
-                print.output() << fmt::nbsp;
-                cprint.printGlobalName(to, print);
-                print.end_ctor();
-            } else {
-                print.output() << "Cbad";
-            }
+            using namespace logging;
+            fatal() << "dynamic casts are not supported\n";
+            die();
         } else {
             using namespace logging;
             fatal() << "unknown named cast" << expr->getCastKindName() << "\n";
