@@ -1,5 +1,4 @@
 Require Import Coq.ZArith.BinInt.
-Require Import Coq.micromega.Lia.
 Require Import Coq.Lists.List.
 Require Import Coq.Strings.String.
 Require Import Coq.Sorting.Permutation.
@@ -62,48 +61,34 @@ Module Type cclogic.
    *   is [undef].
    * todo(gmm): I should replace this definition.
    *)
-  Polymorphic Structure SA :=
-  { s_type :> Type;
-    s_bot: s_type;
-    s_top: s_type;
-    s_undef: s_type;
-    s_compose: s_type -> s_type -> s_type;
-    s_compose_com: forall s1 s2, s_compose s1 s2 = s_compose s2 s1;
-    s_compose_assoc: forall s1 s2 s3,
-        s_compose (s_compose s1 s2) s3 = s_compose s1 (s_compose s2 s3);
-    s_compose_cancel: forall s1 s1' s2,
-        s_compose s1 s2 <> s_undef ->
-        s_compose s1 s2 = s_compose s1' s2 -> s1 = s1';
-    s_compose_bot: forall s1 s2,
-        s_compose s1 s2 = s_bot -> s1 = s_bot /\ s2 = s_bot;
-    s_compose_w_bot: forall s, s_compose s s_bot = s;
-    s_compose_w_undef: forall s, s_compose s s_undef = s_undef;
-    s_compose_complete_top: forall s, s_compose s_top s <> s_undef -> s = s_bot;
-    s_top_not_bot: s_top <> s_bot;
-    s_top_not_undef: s_top <> s_undef;
-    s_ord : rel s_type;
-    s_ord_refl : reflexive s_ord;
-    s_ord_antis : antisymmetric s_ord;
-    s_ord_trans : transitive s_ord;
-    s_ord_total : total s_ord
+  Polymorphic Structure PCM :=
+  { p_type :> Type;
+    p_bot: p_type;
+    p_undef: p_type;
+    p_compose: p_type -> p_type -> p_type;
+    p_compose_com: forall p1 p2, p_compose p1 p2 = p_compose p2 p1;
+    p_compose_assoc: forall p1 p2 p3,
+        p_compose (p_compose p1 p2) p3 = p_compose p1 (p_compose p2 p3);
+    p_compose_bot: forall p1 p2,
+        p_compose p1 p2 = p_bot -> p1 = p_bot /\ p2 = p_bot;
+    p_compose_w_bot: forall p, p_compose p p_bot = p;
+    p_compose_w_undef: forall p, p_compose p p_undef = p_undef;
   }.
 
-  Arguments s_bot {_}.
-  Arguments s_top {_}.
-  Arguments s_undef {_}.
-  Arguments s_compose {_} _ _.
-  Arguments s_ord {_} _ _.
+  Arguments p_bot {_}.
+  Arguments p_undef {_}.
+  Arguments p_compose {_} _ _.
 
-  Notation "a ⊕ b" := (s_compose a b) (at level 50, left associativity).
+  Notation "a ⊕ b" := (p_compose a b) (at level 50, left associativity).
 
-  Definition s_compatible {sa : SA} (a b : sa.(s_type)) : Prop :=
-    a ⊕ b <> s_undef.
+  Definition p_compatible {pcm : PCM} (a b : pcm.(p_type)) : Prop :=
+    a ⊕ b <> p_undef.
 
   (* frame-preserving update
    * this is so primitive, that it seems like it should go somewhere else
    *)
-  Definition FPU {prm} (v v' : prm.(s_type)) : Prop :=
-    forall f, s_compatible v f -> s_compatible v' f.
+  Definition FPU {pcm} (v v' : pcm.(p_type)) : Prop :=
+    forall f, p_compatible v f -> p_compatible v' f.
 
   (** The Fractional Permission Separation Algebra **)
   Module Fp.
@@ -173,106 +158,113 @@ Module Type cclogic.
 
     (*Composition over fractional permissions*)
     Definition FPerm_Compose f g :=
-      match f, g return _Fp with
+      match f, g with
       | FPermUndef, _ => FPermUndef
       | _, FPermUndef => FPermUndef
-      | FPerm f' _ , FPerm g' _ =>
+      | FPerm f' _, FPerm g' _ =>
         match is_ok (f' + g') with
         | left Pred => FPerm (f' + g') Pred
         | right _ => FPermUndef
         end
       end.
 
-    (*Order*)
-    Definition FPerm_Order f g : bool :=
-      match f, g with
-      | FPermUndef, _ => true
-      | FPerm _ _, FPermUndef => false
-      | FPerm f' _, FPerm g' _ =>
-        match Qccompare f' g' with
-        | Lt | Eq => true
-        | _ => false
-        end
-      end.
+    Local Ltac qify :=
+      repeat match goal with
+             | [ q : Qc |- _ ] => destruct q as [q ?]
+             end;
+      cbv [Qcle Qclt Q2Qc Qcanon.this Qcplus] in *;
+      rewrite !Qred_correct in *.
+
+    Lemma Fp_compose_com : forall s1 s2,
+        FPerm_Compose s1 s2 = FPerm_Compose s2 s1.
+    Proof.
+      destruct s1, s2; cbn; auto.
+      now rewrite Qcplus_comm.
+    Qed.
+
+    Lemma Fp_compose_assoc : forall s1 s2 s3,
+        FPerm_Compose (FPerm_Compose s1 s2) s3 = FPerm_Compose s1 (FPerm_Compose s2 s3).
+    Proof.
+      destruct s1, s2, s3; cbn; auto.
+      - unfold FPerm_Compose.
+        repeat match goal with
+               | |- _ => eapply FPerm_Equal
+               | |- FPerm _ _ = FPermUndef => exfalso
+               | |- FPermUndef = FPerm _ _ => exfalso
+               | _ : context [ match ?X with _ => _ end ] |- _ =>
+                 lazymatch X with
+                 | match _ with _ => _ end => fail
+                 | _ => destruct X; simpl
+                 end
+               | |- context [ match ?X with _ => _ end ] =>
+                 lazymatch X with
+                 | match _ with _ => _ end => fail
+                 | _ => destruct X; simpl
+                 end
+               | H : FPerm _ _ = FPerm _ _ |- _ => inversion H; clear H; subst
+               | H : ok _ |- _ => eapply to_prop in H
+               | H : ~ok _ |- False => eapply H; eapply to_prop; qify; lra
+               end; simpl; eauto.
+        ring.
+      - destruct is_ok; auto.
+    Qed.
+
+    Lemma Fp_compose_bot : forall s1 s2,
+        FPerm_Compose s1 s2 = Fp_zero ->
+        s1 = Fp_zero /\ s2 = Fp_zero.
+    Proof.
+      unfold Fp_zero.
+      destruct s1, s2;
+        cbn;
+        try destruct is_ok;
+        try congruence.
+      intros H.
+      Opaque Qplus.
+      inversion H.
+      pose proof (proj1 (to_prop _) UNIT).
+      pose proof (proj1 (to_prop _) UNIT0).
+      assert (f + f0 == 0)%Q by (now rewrite <-H1, Qred_correct).
+      split;
+        f_equal;
+        apply FPerm_Equal;
+        qify;
+        apply Qc_is_canon;
+        cbn;
+        lra.
+    Qed.
+
+    Lemma Fp_compose_w_bot : forall s,
+        FPerm_Compose s Fp_zero = s.
+    Proof.
+      destruct s; cbn; auto.
+      replace (f + 0) with f by ring.
+      destruct is_ok; intuition.
+      now apply FPerm_Equal.
+    Qed.
+
+    Lemma Fp_compose_w_undef : forall s,
+        FPerm_Compose s FPermUndef = FPermUndef.
+    Proof.
+      destruct s; auto.
+    Qed.
 
     (* Example carrier monoid *)
-    Program Definition t : SA :=
-      {| s_type := _Fp;
-         s_bot := Fp_zero ;
-         s_top := Fp_full ;
-         s_undef := FPermUndef;
-         s_compose := FPerm_Compose;
-         s_ord := FPerm_Order
+    Definition t : PCM :=
+      {| p_type := _Fp;
+         p_bot := Fp_zero;
+         p_undef := FPermUndef;
+         p_compose := FPerm_Compose;
+         p_compose_com := Fp_compose_com;
+         p_compose_assoc := Fp_compose_assoc;
+         p_compose_bot := Fp_compose_bot;
+         p_compose_w_bot := Fp_compose_w_bot;
+         p_compose_w_undef := Fp_compose_w_undef;
       |}.
-    Next Obligation.
-      destruct s1; destruct s2; simpl; auto.
-      rewrite Qcplus_comm. reflexivity.
-    Qed.
-    Next Obligation.
-      destruct s1; destruct s2; destruct s3; simpl; auto.
-      unfold FPerm_Compose.
-      repeat match goal with
-             | |- _ => eapply FPerm_Equal
-             | |- FPerm _ _ = FPermUndef => exfalso
-             | |- FPermUndef = FPerm _ _ => exfalso
-             | _ : context [ match ?X with _ => _ end ] |- _ =>
-               lazymatch X with
-               | match _ with _ => _ end => fail
-               | _ => destruct X; simpl
-               end
-             | |- context [ match ?X with _ => _ end ] =>
-               lazymatch X with
-               | match _ with _ => _ end => fail
-               | _ => destruct X; simpl
-               end
-             | H : FPerm _ _ = FPerm _ _ |- _ => inversion H; clear H; subst
-             | H : ok _ |- _ => eapply to_prop in H
-             end; simpl; eauto.
-      - ring.
-      - eapply n. eapply to_prop. rewrite Qcplus_assoc. auto.
-      - eapply n; clear n. eapply to_prop.
-        admit.
-      - admit.
-      - admit.
-      - unfold FPerm_Compose.
-        destruct (is_ok (f + f0)); auto.
-    Admitted.
-    Next Obligation.
-      unfold FPerm_Compose in *.
-      destruct s1; destruct s2; try congruence.
-      destruct s1'; try congruence.
-      destruct (is_ok (f + f0)).
-      { destruct (is_ok (f1 + f0)).
-        { eapply FPerm_Inj in H0.
-          revert UNIT. cutrewrite (f = f1).
-          intros.
-          eapply FPerm_Equal; eauto.
-          admit. }
-        { congruence. } }
-      { congruence. }
-    Admitted.
-    Next Obligation.
-      split.
-    Admitted.
-    Next Obligation.
-    Admitted.
-    Next Obligation.
-    Admitted.
-    Next Obligation.
-    Admitted.
-    Next Obligation.
-    Admitted.
-    Next Obligation.
-    Admitted.
-    Next Obligation.
-    Admitted.
-    Next Obligation.
-    Admitted.
 
     Definition readable (f : t) : Prop :=
       match f with
       | FPerm f _ => (0 < f)%Q
-      | _ => False
+      | FPermUndef => False
       end.
 
   End Fp.
@@ -280,9 +272,9 @@ Module Type cclogic.
 
   Module fmap.
 
-    Parameter t : forall (k : Type) {_ : forall a b : k, Decidable (a = b)} (v : SA), SA.
-    Parameter singleton : forall {k} {dec : forall a b : k, Decidable (a = b)} (v : SA),
-        k -> v.(s_type) -> (@t k dec v).(s_type).
+    Parameter t : forall (k : Type) {_ : forall a b : k, Decidable (a = b)} (v : PCM), PCM.
+    Parameter singleton : forall {k} {dec : forall a b : k, Decidable (a = b)} (v : PCM),
+        k -> v.(p_type) -> (@t k dec v).(p_type).
 
   End fmap.
   Definition fmap := fmap.t.
@@ -329,7 +321,7 @@ Module Type cclogic.
     Axiom TInv_new : forall pkg I,
       I |-- Exists n : _,
             let n := namespace pkg n in
-            TInv n I ** OPerm s_top n ** DPerm s_top n.
+            TInv n I ** OPerm Fp.Fp_full n ** DPerm Fp.Fp_full n.
   End Invariants.
   Import Invariants.
   Export Invariants.
@@ -380,7 +372,7 @@ Module Type cclogic.
         TInv i Q |-- Forall q, shift nil ((i,Tracked q) :: nil) Q (OPerm q i).
     Axiom shift_deletet : forall Q i,
         TInv i Q
-        |-- Forall q, shift nil ((i,Tracked q) :: nil) (OPerm q i -* OPerm s_top i ** DPerm s_top i) empSP.
+        |-- Forall q, shift nil ((i,Tracked q) :: nil) (OPerm q i -* OPerm Fp.Fp_full i ** DPerm Fp.Fp_full i) empSP.
     (* ^ note(gmm): the `q` permission was opened already, so you get that in
      * order to establish the final `OPerm 1`
      *)
@@ -415,9 +407,9 @@ Module Type cclogic.
      *      Definition Universal@{i j | j < i} : Type@{i} :=
      *        forall ra : RA@{j}, Fmap nat ra.(s_type),
      *)
-    Parameter ghost_is : forall {Prm: SA} (value : Prm), mpred.
+    Parameter ghost_is : forall {Prm: PCM} (value : Prm), mpred.
     Definition ghost_ptsto {loc : Type} {dec : forall a b : loc, Decidable (a = b)}
-               (Prm : SA) (p : loc) (value : Prm) : mpred :=
+               (Prm : PCM) (p : loc) (value : Prm) : mpred :=
       ghost_is (@fmap.singleton loc _ Prm p value).
 
     (* note(gmm): i can update any ghost using frame preserving update
@@ -430,7 +422,7 @@ Module Type cclogic.
   End  GhostState.
   Export GhostState.
 
-  (*Similarly one can encode ghost state using SA*)
+  (*Similarly one can encode ghost state using PCM*)
   (*
    This type extends as we introduce new logical assertions such as
    logical_ghost etc.
@@ -443,8 +435,8 @@ Module Type cclogic.
    Specs below assume that we do not refer to any resource encoded via monoids so there exists no guard and monoid container that we defined above. In case we want you can introduce them to the specs below.
    *)
 (*
-  Variable guard_container : list SA.
-  Axiom logical_ghost: forall (ghost : SA) (guard : In ghost guard_container)  (gl : ghost) (gv : val), mpred.
+  Variable guard_container : list PCM.
+  Axiom logical_ghost: forall (ghost : PCM) (guard : In ghost guard_container)  (gl : ghost) (gv : val), mpred.
 *)
 
   (* Parameter wp_ghst : Expr -> (val -> mpred) -> mpred. *)
@@ -534,7 +526,7 @@ Module Type cclogic.
   Qed.
   Theorem wp_shift_deleteT : forall (q : Fp) Q hide n I,
       ~In n (map fst hide) ->
-      TInv n I ** (OPerm q n -* OPerm s_top n ** DPerm s_top n) ** wp_shift hide Q
+      TInv n I ** (OPerm q n -* OPerm Fp.Fp_full n ** DPerm Fp.Fp_full n) ** wp_shift hide Q
       |-- wp_shift ((n, Tracked q) :: hide) Q.
   Proof.
     intros.
