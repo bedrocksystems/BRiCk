@@ -24,6 +24,7 @@
 using namespace clang;
 using namespace clang::tooling;
 using namespace llvm;
+#include "Version.hpp"
 #include "clang/AST/AST.h"
 #include "clang/AST/ASTConsumer.h"
 #include "clang/AST/RecursiveASTVisitor.h"
@@ -71,7 +72,7 @@ protected:
         return true;
     }
     void PrintHelp(llvm::raw_ostream &ros) {
-        ros << "Help for PrintFunctionNames plugin goes here\n";
+        ros << "cpp2v_plugin version " << cpp2v::VERSION << "\n";
     }
 
 private:
