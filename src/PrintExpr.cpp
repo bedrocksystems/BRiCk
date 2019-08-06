@@ -340,7 +340,12 @@ public:
 
     void VisitIntegerLiteral(const IntegerLiteral* lit, CoqPrinter& print,
                              ClangPrinter& cprint) {
-        print.ctor("Eint", false) << lit->getValue();
+        print.ctor("Eint", false);
+        if (lit->getType()->isSignedIntegerOrEnumerationType()) {
+            print.output() << "(" << lit->getValue().toString(10, true) << ")";
+        } else {
+            print.output() << lit->getValue().toString(10, false);
+        }
         done(lit, print, cprint);
     }
 
