@@ -24,6 +24,9 @@ From Cpp.Sem Require Import
 From Cpp.Auto Require Import
      Discharge.
 
+Set Universe Polymorphism.
+Set Printing Universes.
+
 Require Import ExtLib.Data.Member.
 Fixpoint remove {T} {t : T} {ls : list T} (m : member t ls) : list T :=
   match m with
@@ -60,8 +63,8 @@ Module Type cclogic.
    *   is [undef].
    * todo(gmm): I should replace this definition.
    *)
-  Polymorphic Structure PCM :=
-  { p_type :> Type;
+  Structure PCM@{i j} : Type@{j} :=
+  { p_type :> Type@{i};
     p_bot: p_type;
     p_compose: p_type -> p_type -> p_type;
     p_valid : p_type -> Prop;
@@ -77,7 +80,6 @@ Module Type cclogic.
 
   Arguments p_bot {_}.
   Arguments p_valid {_}.
-  (* Arguments p_undef {_}. *)
   Arguments p_compose {_} _ _.
 
   Notation "a ⊕ b" := (p_compose a b) (at level 50, left associativity).
@@ -91,18 +93,19 @@ Module Type cclogic.
   Definition FPU {pcm} (v v' : pcm.(p_type)) : Prop :=
     forall f, p_compatible v f -> p_compatible v' f.
 
+  (* a simple way to define monoids. *)
   Section PCM_option.
     Context {T : Type} (bot : T) (compose : T -> T -> option T)
             (valid : T -> Prop).
     Hypothesis comp_comm : forall a b, compose a b = compose b a.
     Hypothesis comp_assoc : forall t t0 t1,
-                   match compose t t0 with
-                   | Some a => compose a t1
-                   | None => None
-                   end = match compose t0 t1 with
-                         | Some b => compose t b
-                         | None => None
-                         end.
+        match compose t t0 with
+        | Some a => compose a t1
+        | None => None
+        end = match compose t0 t1 with
+              | Some b => compose t b
+              | None => None
+              end.
     Hypothesis valid_bot : valid bot.
     Hypothesis valid_comp : forall a b c, compose a b = Some c ->
                                      valid c -> valid a /\ valid b.
@@ -110,28 +113,28 @@ Module Type cclogic.
     Hypothesis comp_w_bot : forall a, compose a bot = Some a.
 
     Local Definition pcompose := fun a b =>
-                                  match a , b with
-                                  | Some a , Some b => compose a b
-                                  | _ , _ => None
-                                  end.
+                                   match a , b with
+                                   | Some a , Some b => compose a b
+                                   | _ , _ => None
+                                   end.
 
     Local Definition pvalid := fun p =>
-                  match p with
-                  | None => False
-                  | Some p => valid p
-                  end.
+                                 match p with
+                                 | None => False
+                                 | Some p => valid p
+                                 end.
 
     Definition pPCM : PCM.
     Proof.
       refine {| p_type := option T
-              ; p_bot := Some bot
-              ; p_compose  := pcompose
-              ; p_valid := pvalid
+                ; p_bot := Some bot
+                ; p_compose  := pcompose
+                ; p_valid := pvalid
              |}.
       all: unfold pcompose, pvalid.
       { abstract (destruct p1, p2; auto). }
       { abstract (destruct p1; auto; destruct p2; auto; destruct p3; auto;
-        destruct (compose t t0); reflexivity). }
+                  destruct (compose t t0); reflexivity). }
       { abstract (destruct p1, p2; simpl; auto; try discriminate;
                   intros; eapply comp_bot in H; destruct H; subst; auto). }
       { abstract (destruct p; auto). }
@@ -146,77 +149,7 @@ Module Type cclogic.
 
   End PCM_option.
 
-  Module Authoritative.
-
-  Section with_t.
-    Context {T : Type} {pcm : PCM}.
-
-    (* Local Infix "|=" := (models) (at level 80). *)
-
-    Record Carrier :=
-    { a_auth : option (T * (T -> pcm.(p_type) -> Prop))
-    ; a_view : pcm }.
-
-    Local Definition bot : Carrier :=
-      {| a_auth := None ; a_view := p_bot |}.
-    Local Definition compose (l r : Carrier) : option Carrier :=
-      match l.(a_auth) , r.(a_auth) with
-      | Some _ , Some _ => None
-      | None , b => Some {| a_auth := b ; a_view := l.(a_view) ⊕ r.(a_view) |}
-      | a , _ => Some {| a_auth := a ; a_view := l.(a_view) ⊕ r.(a_view) |}
-      end.
-    Local Definition valid (l : Carrier) : Prop :=
-      match l.(a_auth) with
-      | None => True
-      | Some (p,models) => exists ext, models p (l.(a_view) ⊕ ext)
-      end.
-
-    Definition t : PCM.
-    Proof.
-      eapply (@pPCM _ bot compose valid).
-      { destruct a, b; simpl.
-        unfold compose; simpl.
-        rewrite p_compose_com.
-        destruct a_auth0, a_auth1; reflexivity. }
-      { destruct t, t0, t1; unfold compose; simpl.
-        destruct a_auth0, a_auth1, a_auth2; simpl; auto.
-        all: rewrite p_compose_assoc; reflexivity. }
-      { exact I. }
-      { unfold compose.
-        destruct a, b; simpl.
-        destruct a_auth0, a_auth1; try congruence; inversion 1; subst; unfold valid; simpl.
-        { clear. destruct p. destruct 1. split; eauto.
-          exists (a_view1 ⊕ x).
-          rewrite <- p_compose_assoc. assumption. }
-        { clear; destruct p; destruct 1; split; auto.
-          exists (a_view0 ⊕ x).
-          rewrite <- p_compose_assoc. rewrite (p_compose_com _ a_view1). assumption. }
-        { tauto. } }
-      { unfold compose, bot; destruct a, b; simpl.
-        destruct a_auth0, a_auth1; try congruence.
-        inversion 1.
-        eapply p_compose_bot in H1.
-        destruct H1. subst.
-        rewrite p_compose_w_bot. auto. }
-      { unfold compose, bot. destruct a. simpl.
-        destruct a_auth0; eauto.
-        all: rewrite p_compose_w_bot; auto. }
-    Defined.
-
-    Variant auth (a : T) (m : T -> pcm.(p_type) -> Prop) : t.(p_type) -> Prop :=
-    | Aauth : auth a m (Some {| a_auth := Some (a,m) ; a_view := p_bot |}).
-
-    Variant view (v : pcm.(p_type)) : t.(p_type) -> Prop :=
-    | Aview : view v (Some {| a_auth := None ; a_view := v |}).
-
-    Definition Auth := t.(p_type).
-
-  End with_t.
-  Arguments Carrier {_} _.
-
-  End Authoritative.
-
-  (** The Fractional Permission Separation Algebra **)
+  (** The Fractional Permission PCM **)
   Module Fp.
     Local Definition ok (q : Qc) : Prop :=
       match Qccompare 0 q , Qccompare q 1 with
@@ -537,13 +470,13 @@ Module Type cclogic.
                (Prm : PCM) (p : loc) (value : Prm) : mpred :=
       ghost_is (@fmap.singleton loc _ Prm p value).
 
-    (* note(gmm): i can update any ghost using frame preserving update
-     *)
+     (* note(gmm): i can update any ghost using frame preserving update
+      *)
     Axiom shift_ghost_update : forall loc dec prm p v v',
         [| FPU v v' |]
-        |-- shift nil nil
-          (@ghost_ptsto loc dec prm p v)
-          (@ghost_ptsto loc dec prm p v').
+        |-- shift nil nil (@ghost_ptsto loc dec prm p v)
+                          (@ghost_ptsto loc dec prm p v').
+
   End  GhostState.
   Export GhostState.
 
@@ -686,7 +619,7 @@ Module Type cclogic.
   (* note that this rule captures all of the interesting reasoning about atomics
    * through the use of [wp_shift]
    *)
-  Axiom wp_rhs_atomic: forall rslv ti r ao es ty Q,
+  Monomorphic Axiom wp_rhs_atomic: forall rslv ti r ao es ty Q,
       wps (wpAnys (resolve:=rslv) ti r) es  (fun (vs : list val) (free : FreeTemps) =>
            wrap_shift (wp_atom ao vs ty) (fun v => Q v free)) empSP
       |-- wp_rhs (resolve:=rslv) ti r (Eatomic ao es ty) Q.
