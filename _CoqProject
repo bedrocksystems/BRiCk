@@ -42,4 +42,3 @@ theories/Auto/Linking.v
 theories/Auto.v
 
 # Libraries
-theories/Monoids.v

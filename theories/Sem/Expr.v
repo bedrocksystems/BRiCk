@@ -263,9 +263,18 @@ Module Type Expr.
         Exists sz, [| @size_of resolve ty sz |] ** Q (Vint (Z.of_N sz)) empSP
         |-- wp_rhs (Esize_of (inl ty) ty') Q.
 
+    Axiom wp_rhs_sizeof_e : forall ty' e Q,
+        wp_rhs (Esize_of (inl (type_of e)) ty') Q
+        |-- wp_rhs (Esize_of (inr e) ty') Q.
+
+
     Axiom wp_rhs_alignof : forall ty' ty Q,
         Exists sz, [| @align_of resolve ty sz |] ** Q (Vint (Z.of_N sz)) empSP
         |-- wp_rhs (Ealign_of (inl ty) ty') Q.
+
+    Axiom wp_rhs_alignof_e : forall ty' e Q,
+        wp_rhs (Ealign_of (inl (type_of e)) ty') Q
+        |-- wp_rhs (Ealign_of (inr e) ty') Q.
 
     (** constructors *)
     Axiom wp_rhs_constructor

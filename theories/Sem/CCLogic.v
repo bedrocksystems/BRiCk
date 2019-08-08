@@ -24,6 +24,9 @@ From Cpp.Sem Require Import
 From Cpp.Auto Require Import
      Discharge.
 
+Set Universe Polymorphism.
+Set Printing Universes.
+
 Require Import ExtLib.Data.Member.
 Fixpoint remove {T} {t : T} {ls : list T} (m : member t ls) : list T :=
   match m with
@@ -52,7 +55,6 @@ Local Ltac t :=
 Module Type cclogic.
 
   (****** Logical State ********)
-
   (* the type of (functional) separation algebras
    * notes:
    * - like Iris (and unlike ChargeCore), this definition is functional
@@ -61,28 +63,29 @@ Module Type cclogic.
    *   is [undef].
    * todo(gmm): I should replace this definition.
    *)
-  Polymorphic Structure PCM :=
-  { p_type :> Type;
+  Structure PCM@{i j} : Type@{j} :=
+  { p_type :> Type@{i};
     p_bot: p_type;
-    p_undef: p_type;
     p_compose: p_type -> p_type -> p_type;
+    p_valid : p_type -> Prop;
     p_compose_com: forall p1 p2, p_compose p1 p2 = p_compose p2 p1;
     p_compose_assoc: forall p1 p2 p3,
         p_compose (p_compose p1 p2) p3 = p_compose p1 (p_compose p2 p3);
     p_compose_bot: forall p1 p2,
         p_compose p1 p2 = p_bot -> p1 = p_bot /\ p2 = p_bot;
     p_compose_w_bot: forall p, p_compose p p_bot = p;
-    p_compose_w_undef: forall p, p_compose p p_undef = p_undef;
+    p_valid_bot : p_valid p_bot;
+    p_valid_compose : forall p1 p2, p_valid (p_compose p1 p2) -> p_valid p1 /\ p_valid p2
   }.
 
   Arguments p_bot {_}.
-  Arguments p_undef {_}.
+  Arguments p_valid {_}.
   Arguments p_compose {_} _ _.
 
   Notation "a ⊕ b" := (p_compose a b) (at level 50, left associativity).
 
   Definition p_compatible {pcm : PCM} (a b : pcm.(p_type)) : Prop :=
-    a ⊕ b <> p_undef.
+    p_valid (a ⊕ b).
 
   (* frame-preserving update
    * this is so primitive, that it seems like it should go somewhere else
@@ -93,7 +96,63 @@ Module Type cclogic.
   Definition FPU_single {pcm} (v v' : pcm.(p_type)) : Prop :=
     FPU v (eq v').
 
-  (** The Fractional Permission Separation Algebra **)
+  (* a simple way to define monoids. *)
+  Section PCM_option.
+    Context {T : Type} (bot : T) (compose : T -> T -> option T)
+            (valid : T -> Prop).
+    Hypothesis comp_comm : forall a b, compose a b = compose b a.
+    Hypothesis comp_assoc : forall t t0 t1,
+        match compose t t0 with
+        | Some a => compose a t1
+        | None => None
+        end = match compose t0 t1 with
+              | Some b => compose t b
+              | None => None
+              end.
+    Hypothesis valid_bot : valid bot.
+    Hypothesis valid_comp : forall a b c, compose a b = Some c ->
+                                     valid c -> valid a /\ valid b.
+    Hypothesis comp_bot : forall a b, compose a b = Some bot -> a = bot /\ b = bot.
+    Hypothesis comp_w_bot : forall a, compose a bot = Some a.
+
+    Local Definition pcompose := fun a b =>
+                                   match a , b with
+                                   | Some a , Some b => compose a b
+                                   | _ , _ => None
+                                   end.
+
+    Local Definition pvalid := fun p =>
+                                 match p with
+                                 | None => False
+                                 | Some p => valid p
+                                 end.
+
+    Definition pPCM : PCM.
+    Proof.
+      refine {| p_type := option T
+                ; p_bot := Some bot
+                ; p_compose  := pcompose
+                ; p_valid := pvalid
+             |}.
+      all: unfold pcompose, pvalid.
+      { abstract (destruct p1, p2; auto). }
+      { abstract (destruct p1; auto; destruct p2; auto; destruct p3; auto;
+                  destruct (compose t t0); reflexivity). }
+      { abstract (destruct p1, p2; simpl; auto; try discriminate;
+                  intros; eapply comp_bot in H; destruct H; subst; auto). }
+      { abstract (destruct p; auto). }
+      { auto. }
+      { destruct p1, p2; try solve [ intuition ].
+        specialize (valid_comp t t0).
+        destruct (compose t t0); eauto.
+        contradiction. }
+    Defined.
+
+    Opaque pcompose pvalid.
+
+  End PCM_option.
+
+  (** The Fractional Permission PCM **)
   Module Fp.
     Local Definition ok (q : Qc) : Prop :=
       match Qccompare 0 q , Qccompare q 1 with
@@ -138,14 +197,10 @@ Module Type cclogic.
     Qed.
 
     Variant _Fp : Set :=
-    | FPerm (f:Qc) (UNIT: ok f)
-    | FPermUndef.
+    | FPerm (f:Qc) (UNIT: ok f).
 
-    Definition Fp_zero : _Fp :=
+    Definition _Fp_zero : _Fp :=
       FPerm 0 ltac:(compute; split; congruence).
-
-    Definition Fp_full : _Fp :=
-      FPerm 1 ltac:(compute; split; congruence).
 
     Lemma FPerm_Equal: forall f g UNITf UNITg ,
         f = g -> FPerm f UNITf = FPerm g UNITg.
@@ -160,14 +215,12 @@ Module Type cclogic.
     Proof. inversion 1; auto. Qed.
 
     (*Composition over fractional permissions*)
-    Definition FPerm_Compose f g :=
+    Definition FPerm_Compose f g : option _Fp :=
       match f, g with
-      | FPermUndef, _ => FPermUndef
-      | _, FPermUndef => FPermUndef
       | FPerm f' _, FPerm g' _ =>
         match is_ok (f' + g') with
-        | left Pred => FPerm (f' + g') Pred
-        | right _ => FPermUndef
+        | left Pred => Some (FPerm (f' + g') Pred)
+        | right _ => None
         end
       end.
 
@@ -186,14 +239,18 @@ Module Type cclogic.
     Qed.
 
     Lemma Fp_compose_assoc : forall s1 s2 s3,
-        FPerm_Compose (FPerm_Compose s1 s2) s3 = FPerm_Compose s1 (FPerm_Compose s2 s3).
+        match FPerm_Compose s1 s2 with
+        | None => None
+        | Some x => FPerm_Compose x s3
+        end = match FPerm_Compose s2 s3 with
+              | None => None
+              | Some x => FPerm_Compose s1 x
+              end.
     Proof.
       destruct s1, s2, s3; cbn; auto.
       - unfold FPerm_Compose.
         repeat match goal with
                | |- _ => eapply FPerm_Equal
-               | |- FPerm _ _ = FPermUndef => exfalso
-               | |- FPermUndef = FPerm _ _ => exfalso
                | _ : context [ match ?X with _ => _ end ] |- _ =>
                  lazymatch X with
                  | match _ with _ => _ end => fail
@@ -207,16 +264,18 @@ Module Type cclogic.
                | H : FPerm _ _ = FPerm _ _ |- _ => inversion H; clear H; subst
                | H : ok _ |- _ => eapply to_prop in H
                | H : ~ok _ |- False => eapply H; eapply to_prop; qify; lra
+               | |- Some _ = Some _ => f_equal
+               | |- Some _ = None => exfalso
+               | |- None = Some _ => exfalso
                end; simpl; eauto.
         ring.
-      - destruct is_ok; auto.
     Qed.
 
     Lemma Fp_compose_bot : forall s1 s2,
-        FPerm_Compose s1 s2 = Fp_zero ->
-        s1 = Fp_zero /\ s2 = Fp_zero.
+        FPerm_Compose s1 s2 = Some _Fp_zero ->
+        s1 = _Fp_zero /\ s2 = _Fp_zero.
     Proof.
-      unfold Fp_zero.
+      unfold _Fp_zero.
       destruct s1, s2;
         cbn;
         try destruct is_ok;
@@ -237,38 +296,37 @@ Module Type cclogic.
     Qed.
 
     Lemma Fp_compose_w_bot : forall s,
-        FPerm_Compose s Fp_zero = s.
+        FPerm_Compose s _Fp_zero = Some s.
     Proof.
       destruct s; cbn; auto.
       replace (f + 0) with f by ring.
       destruct is_ok; intuition.
-      now apply FPerm_Equal.
-    Qed.
-
-    Lemma Fp_compose_w_undef : forall s,
-        FPerm_Compose s FPermUndef = FPermUndef.
-    Proof.
-      destruct s; auto.
+      f_equal. now apply FPerm_Equal.
     Qed.
 
     (* Example carrier monoid *)
-    Definition t : PCM :=
-      {| p_type := _Fp;
-         p_bot := Fp_zero;
-         p_undef := FPermUndef;
-         p_compose := FPerm_Compose;
-         p_compose_com := Fp_compose_com;
-         p_compose_assoc := Fp_compose_assoc;
-         p_compose_bot := Fp_compose_bot;
-         p_compose_w_bot := Fp_compose_w_bot;
-         p_compose_w_undef := Fp_compose_w_undef;
-      |}.
+    Definition t : PCM.
+    Proof.
+      eapply (@pPCM _ _Fp_zero FPerm_Compose (fun _ => True)).
+      { eapply Fp_compose_com. }
+      { eapply Fp_compose_assoc. }
+      { exact I. }
+      { tauto. }
+      { eapply Fp_compose_bot. }
+      { eapply Fp_compose_w_bot. }
+    Defined.
 
     Definition readable (f : t) : Prop :=
       match f with
-      | FPerm f _ => (0 < f)%Q
-      | FPermUndef => False
+      | Some (FPerm f _) => (0 < f)%Q
+      | _ => False
       end.
+
+    Definition Fp_zero : t :=
+      Some (FPerm 1 ltac:(compute; split; congruence)).
+
+    Definition Fp_full : t :=
+      Some (FPerm 1 ltac:(compute; split; congruence)).
 
   End Fp.
   Definition Fp := Fp.t.
@@ -343,7 +401,7 @@ Module Type cclogic.
      *   todo(gmm): investigate this as an alternative presentation.
      *)
 
-    Variant Inv_type : Set :=
+    Variant Inv_type : Type :=
     | Affine
     | Tracked (_ : Fp).
 
@@ -426,7 +484,7 @@ Module Type cclogic.
       ghost_is (@fmap.singleton loc _ Prm p value).
 
     Axiom shift_ghost_alloc : forall loc dec prm v,
-        [| v <> p_undef |]
+        [| p_valid v |]
         |-- shift nil nil
                   empSP
                   (Exists p, @ghost_ptsto loc dec prm p v).
@@ -601,7 +659,7 @@ Module Type cclogic.
   (* note that this rule captures all of the interesting reasoning about atomics
    * through the use of [wp_shift]
    *)
-  Axiom wp_rhs_atomic: forall rslv ti r ao es ty Q,
+  Monomorphic Axiom wp_rhs_atomic: forall rslv ti r ao es ty Q,
       wps (wpAnys (resolve:=rslv) ti r) es  (fun (vs : list val) (free : FreeTemps) =>
            wrap_shift (wp_atom ao vs ty) (fun v => Q v free)) empSP
       |-- wp_rhs (resolve:=rslv) ti r (Eatomic ao es ty) Q.
@@ -746,3 +804,5 @@ End cclogic.
 Declare Module CCL : cclogic.
 
 Export CCL.
+
+Global Opaque p_compose p_valid p_bot.

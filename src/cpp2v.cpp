@@ -20,6 +20,7 @@
 
 #include "Logging.hpp"
 #include "ToCoq.hpp"
+#include "Version.hpp"
 
 using namespace clang;
 using namespace clang::tooling;
@@ -43,6 +44,9 @@ static cl::opt<std::string> VFileOutput("o",
                                         cl::Optional, cl::cat(Cpp2V));
 
 static cl::opt<bool> Verbose("v", cl::desc("verbose"), cl::Optional,
+                             cl::cat(Cpp2V));
+
+static cl::opt<bool> Version("cpp2v-version", cl::Optional, cl::ValueOptional,
                              cl::cat(Cpp2V));
 
 class ToCoqAction : public clang::ASTFrontendAction {
@@ -74,12 +78,18 @@ public:
 int
 main(int argc, const char **argv) {
     CommonOptionsParser OptionsParser(argc, argv, Cpp2V);
-    ClangTool Tool(OptionsParser.getCompilations(),
-                   OptionsParser.getSourcePathList());
+
+    if (Version) {
+        llvm::errs() << "cpp2v version " << cpp2v::VERSION << "\n";
+        return 0;
+    }
 
     if (Verbose) {
         logging::set_level(logging::VERBOSE);
     }
+
+    ClangTool Tool(OptionsParser.getCompilations(),
+                   OptionsParser.getSourcePathList());
 
     return Tool.run(newFrontendActionFactory<ToCoqAction>().get());
 }
