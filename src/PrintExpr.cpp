@@ -509,9 +509,6 @@ public:
             }
         };
 
-        // todo(gmm): is there any benefit to not just desugaring `sizeof(e)` into
-        // `sizeof(t)` where `t` is the type of `e`?
-        // similarly for `alignof`?
         if (expr->getKind() == UnaryExprOrTypeTrait::UETT_AlignOf) {
             print.ctor("Ealign_of", false);
             do_arg();
