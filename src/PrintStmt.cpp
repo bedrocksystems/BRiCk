@@ -24,9 +24,12 @@ public:
     static PrintStmt printer;
 
     void VisitStmt(const Stmt *stmt, CoqPrinter &print, ClangPrinter &cprint,
-                   ASTContext &) {
+                   ASTContext &ctxt) {
         using namespace logging;
-        fatal() << "unsupported statement " << stmt->getStmtClassName() << "\n";
+        fatal() << "unsupported statement " << stmt->getStmtClassName()
+                << " at "
+                << stmt->getSourceRange().printToString(ctxt.getSourceManager())
+                << "\n";
         die();
     }
 
