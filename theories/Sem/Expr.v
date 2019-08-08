@@ -264,7 +264,7 @@ Module Type Expr.
         |-- wp_rhs (Esize_of (inl ty) ty') Q.
 
     Axiom wp_rhs_sizeof_e : forall ty' e Q,
-        Exists sz, [| @size_of resolve (type_of e) sz |] ** Q (Vint (Z.of_N sz)) empSP
+        wp_rhs (Esize_of (inl (type_of e)) ty') Q
         |-- wp_rhs (Esize_of (inr e) ty') Q.
 
 
@@ -273,7 +273,7 @@ Module Type Expr.
         |-- wp_rhs (Ealign_of (inl ty) ty') Q.
 
     Axiom wp_rhs_alignof_e : forall ty' e Q,
-        Exists sz, [| @align_of resolve (type_of e) sz |] ** Q (Vint (Z.of_N sz)) empSP
+        wp_rhs (Ealign_of (inl (type_of e)) ty') Q
         |-- wp_rhs (Ealign_of (inr e) ty') Q.
 
     (** constructors *)
