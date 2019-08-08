@@ -32,7 +32,8 @@ public:
 
     void VisitDeclStmt(const DeclStmt *stmt, CoqPrinter &print,
                        ClangPrinter &cprint, ASTContext &) {
-        print.ctor("Sdecl") << fmt::lparen;
+        print.ctor("Sdecl");
+        print.begin_list();
         for (auto i : stmt->decls()) {
             if (auto sl = dyn_cast<VarDecl>(i)) {
                 if (sl->isStaticLocal()) {
@@ -40,9 +41,10 @@ public:
                 }
             }
             cprint.printLocalDecl(i, print);
-            print.output() << fmt::nbsp << "::";
+            print.cons();
         }
-        print.output() << fmt::nbsp << "nil" << fmt::rparen << fmt::rparen;
+        print.end_list();
+        print.end_ctor();
     }
 
     void VisitWhileStmt(const WhileStmt *stmt, CoqPrinter &print,
@@ -59,7 +61,7 @@ public:
         cprint.printExpr(stmt->getCond(), print);
         print.output() << fmt::nbsp;
         cprint.printStmt(stmt->getBody(), print);
-        print.output() << fmt::rparen;
+        print.end_ctor();
     }
 
     void VisitForStmt(const ForStmt *stmt, CoqPrinter &print,
@@ -68,7 +70,7 @@ public:
         if (auto v = stmt->getInit()) {
             print.some();
             cprint.printStmt(v, print);
-            print.output() << fmt::rparen;
+            print.end_ctor();
         } else {
             print.none();
         }
@@ -76,7 +78,7 @@ public:
         if (auto v = stmt->getCond()) {
             print.some();
             cprint.printExpr(v, print);
-            print.output() << fmt::rparen;
+            print.end_ctor();
         } else {
             print.none();
         }
@@ -84,13 +86,55 @@ public:
         if (auto v = stmt->getInc()) {
             print.some();
             cprint.printExprAndValCat(v, print);
-            print.output() << fmt::rparen;
+            print.end_ctor();
         } else {
             print.none();
         }
         print.output() << fmt::nbsp;
         cprint.printStmt(stmt->getBody(), print);
-        print.output() << fmt::rparen;
+        print.end_ctor();
+    }
+
+    void VisitCXXForRangeStmt(const CXXForRangeStmt *stmt, CoqPrinter &print,
+                              ClangPrinter &cprint, ASTContext &) {
+        print.ctor("Sseq");
+        print.begin_list();
+        cprint.printStmt(stmt->getRangeStmt(), print);
+        print.cons();
+        cprint.printStmt(stmt->getBeginStmt(), print);
+        print.cons();
+        cprint.printStmt(stmt->getEndStmt(), print);
+        print.cons();
+        print.ctor("Sfor");
+        if (auto v = stmt->getInit()) {
+            print.some();
+            cprint.printStmt(v, print);
+            print.end_ctor();
+        } else {
+            print.none();
+        }
+        print.output() << fmt::nbsp;
+        if (auto v = stmt->getCond()) {
+            print.some();
+            cprint.printExpr(v, print);
+            print.end_ctor();
+        } else {
+            print.none();
+        }
+        print.output() << fmt::nbsp;
+        if (auto v = stmt->getInc()) {
+            print.some();
+            cprint.printExprAndValCat(v, print);
+            print.end_ctor();
+        } else {
+            print.none();
+        }
+        print.output() << fmt::nbsp;
+        cprint.printStmt(stmt->getBody(), print);
+        print.end_ctor();
+        print.cons();
+        print.end_list();
+        print.end_ctor();
     }
 
     void VisitDoStmt(const DoStmt *stmt, CoqPrinter &print,
@@ -99,7 +143,7 @@ public:
         cprint.printStmt(stmt->getBody(), print);
         print.output() << fmt::nbsp;
         cprint.printExpr(stmt->getCond(), print);
-        print.output() << fmt::rparen;
+        print.end_ctor();
     }
 
     void VisitBreakStmt(const BreakStmt *stmt, CoqPrinter &print,
@@ -118,7 +162,7 @@ public:
         if (auto v = stmt->getConditionVariable()) {
             print.some();
             cprint.printLocalDecl(v, print);
-            print.output() << fmt::rparen;
+            print.end_ctor();
         } else {
             print.none();
         }
@@ -132,7 +176,7 @@ public:
         } else {
             print.output() << "Sskip";
         }
-        print.output() << fmt::rparen;
+        print.end_ctor();
     }
 
     void VisitCaseStmt(const CaseStmt *stmt, CoqPrinter &print,
@@ -179,7 +223,7 @@ public:
         cprint.printValCat(expr, print);
         print.output() << fmt::nbsp;
         cprint.printExpr(expr, print);
-        print.output() << fmt::rparen;
+        print.end_ctor();
     }
 
     void VisitReturnStmt(const ReturnStmt *stmt, CoqPrinter &print,
@@ -252,7 +296,7 @@ public:
         }
         print.end_list();
 
-        print.output() << fmt::rparen;
+        print.end_ctor();
     }
 
     void VisitAttributedStmt(const clang::AttributedStmt *stmt,
