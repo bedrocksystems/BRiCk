@@ -53,18 +53,6 @@ Module Type Deinit.
         |-- wpd (resolve:=resolve) ti ρ cls this (path, dn) Q.
 
   End with_resolve.
-
-  Axiom tany_class_bwd
-  : forall cls base m st,
-      find_struct cls m = Some st ->
-      denoteModule m **
-      _at (_eq base)
-                (sepSPs (List.map (fun gn =>
-                                     _offsetR (_super cls gn) (tany (Tref gn))) st.(s_bases) ++
-                         List.map (fun '(n,t,_) =>
-                                     _offsetR (_field {| f_name := n ; f_type := cls |})
-                                              (tany (drop_qualifiers t))) st.(s_fields)))
-      |-- denoteModule m ** _at (_eq base) (tany (Tref cls)).
 End Deinit.
 
 Declare Module D : Deinit.
