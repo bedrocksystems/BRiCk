@@ -69,6 +69,12 @@ Module Type modules.
       end
     end.
 
+  Definition find_struct (nm : globname) (m : compilation_unit) : option Struct :=
+    match CompilationUnit.lookup_global m nm with
+    | Some (Gstruct s) => Some s
+    | _ => None
+    end.
+
   Definition denoteGlobal (gn : globname) (g : GlobDecl) : mpred :=
     match g with
     | Gtypedef _ => empSP

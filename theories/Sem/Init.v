@@ -11,7 +11,7 @@ Local Open Scope string_scope.
 From Cpp Require Import
      Ast.
 From Cpp.Sem Require Import
-     Util Logic PLogic Semantics Wp.
+     Util Logic PLogic Semantics Wp CompilationUnit.
 
 Module Type Init.
 
@@ -90,6 +90,22 @@ Module Type Init.
         |-- @wpi resolve ti ρ cls this_val (path, e) Q.
 
   End with_resolve.
+
+  Axiom uninit_class_fwd
+    : forall cls base m st,
+      find_struct cls m = Some st ->
+      denoteModule m **
+      _at (_eq base) (uninit (Tref cls))
+      |-- denoteModule m **
+          _at (_eq base)
+              (sepSPs (List.map (fun gn =>
+                                   _offsetR (_super cls gn) (uninit (Tref gn))) st.(s_bases) ++
+                       List.map (fun '(n,t,_) =>
+                              (* todo(gmm): there is a problem with references in this code.
+                               *)
+                                   _offsetR
+                                     (_field {| f_name := n ; f_type := cls |})
+                                     (uninit (drop_qualifiers t))) st.(s_fields))).
 
 End Init.
 
