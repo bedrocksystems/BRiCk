@@ -90,8 +90,11 @@ Module Type cclogic.
   (* frame-preserving update
    * this is so primitive, that it seems like it should go somewhere else
    *)
-  Definition FPU {pcm} (v v' : pcm.(p_type)) : Prop :=
-    forall f, p_compatible v f -> p_compatible v' f.
+  Definition FPU {pcm} (v : pcm.(p_type)) (V' : pcm.(p_type) -> Prop) : Prop :=
+    forall f, p_compatible v f -> exists v', V' v' /\ p_compatible v' f.
+
+  Definition FPU_single {pcm} (v v' : pcm.(p_type)) : Prop :=
+    FPU v (eq v').
 
   (* a simple way to define monoids. *)
   Section PCM_option.
@@ -386,8 +389,6 @@ Module Type cclogic.
 
   Definition disjoint {T} (xs ys : list T) : Prop :=
     List.Forall (fun x => ~List.In x ys) xs.
-  Definition subset {T} (xs ys : list T) : Prop :=
-    List.Forall (fun x => List.In x ys) xs.
 
   (* view shifts
    * - this is an entirely different notion of entailment because it enables
@@ -418,7 +419,7 @@ Module Type cclogic.
         disjoint (map fst e2) (map fst e') ->
         shift e1 e2 Q R |-- shift (e1 ++ e') (e2 ++ e') (Q ** S) (R ** S).
     Axiom shift_trans : forall e1 e2 e3 Q R S,
-        subset e2 (e1 ++ e3) ->
+        incl e2 (e1 ++ e3) ->
         shift e1 e2 Q R ** shift e2 e3 R S |-- shift e1 e3 Q S.
     Axiom shift_open : forall Q i,
         Inv i Q |-- shift ((i,Affine) :: nil) nil empSP Q.
@@ -439,6 +440,15 @@ Module Type cclogic.
       Proper (@Permutation _ ++> @Permutation _ ++> lentails --> lentails ++> lentails)
              shift.
     Global Existing Instance Proper_shift.
+
+    Lemma shift_conseq : forall e1 e2 P P' Q Q',
+        P' |-- P ->
+        Q |-- Q' ->
+        shift e1 e2 P Q |-- shift e1 e2 P' Q'.
+    Proof.
+      intros * H1 H2.
+      now rewrite H1, H2.
+    Qed.
 
   End ViewShift.
   Import ViewShift.
@@ -466,17 +476,47 @@ Module Type cclogic.
      *        forall ra : RA@{j}, Fmap nat ra.(s_type),
      *)
     Parameter ghost_is : forall {Prm: PCM} (value : Prm), mpred.
+    Axiom shift_ghost_is_bot : forall {Prm : PCM},
+        |-- shift nil nil empSP (@ghost_is Prm p_bot).
+
     Definition ghost_ptsto {loc : Type} {dec : forall a b : loc, Decidable (a = b)}
                (Prm : PCM) (p : loc) (value : Prm) : mpred :=
       ghost_is (@fmap.singleton loc _ Prm p value).
 
-     (* note(gmm): i can update any ghost using frame preserving update
-      *)
-    Axiom shift_ghost_update : forall loc dec prm p v v',
-        [| FPU v v' |]
-        |-- shift nil nil (@ghost_ptsto loc dec prm p v)
-                          (@ghost_ptsto loc dec prm p v').
+    Axiom shift_ghost_alloc : forall loc dec prm v,
+        [| p_valid v |]
+        |-- shift nil nil
+                  empSP
+                  (Exists p, @ghost_ptsto loc dec prm p v).
 
+    Axiom shift_ghost_compose : forall loc dec prm p v1 v2,
+        @ghost_ptsto loc dec prm p v1 **
+        @ghost_ptsto loc dec prm p v2
+        -|- @ghost_ptsto loc dec prm p (p_compose v1 v2).
+
+    (* note(gmm): i can update any ghost using frame preserving update
+     *)
+    Axiom shift_ghost_update : forall loc dec prm p v V',
+        [| FPU v V' |]
+        |-- shift nil nil
+          (@ghost_ptsto loc dec prm p v)
+          (Exists v', [| V' v' |] ** @ghost_ptsto loc dec prm p v').
+
+    Lemma shift_ghost_update_single : forall loc dec prm p v v',
+        [| FPU_single v v' |]
+        |-- shift nil nil
+                  (@ghost_ptsto loc dec prm p v)
+                  (@ghost_ptsto loc dec prm p v').
+    Proof.
+      intros.
+      t.
+      unfold FPU_single in *.
+      rewrite <-shift_conseq; [ | reflexivity | ].
+      1: rewrite <-shift_ghost_update; t.
+      t.
+      subst.
+      reflexivity.
+    Qed.
   End  GhostState.
   Export GhostState.
 
