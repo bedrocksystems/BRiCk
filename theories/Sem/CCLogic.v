@@ -24,9 +24,6 @@ From Cpp.Sem Require Import
 From Cpp.Auto Require Import
      Discharge.
 
-Set Universe Polymorphism.
-Set Printing Universes.
-
 Require Import ExtLib.Data.Member.
 Fixpoint remove {T} {t : T} {ls : list T} (m : member t ls) : list T :=
   match m with
