@@ -26,6 +26,7 @@ theories/Sem/Func.v
 theories/Sem/CompilationUnit.v
 theories/Sem/Linking.v
 theories/Sem/CCLogic.v
+theories/Sem/Layout.v
 theories/Sem.v
 
 # Automation
