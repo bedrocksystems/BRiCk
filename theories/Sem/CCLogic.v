@@ -556,11 +556,15 @@ Module Type cclogic.
    *)
 
   (* a "weakest pre-condition" for view shifts
+   *
+   * [mask] is the invariants that are *open* now
+   * [to] is the invariants that are *open* afterwards
+   *
    * note(gmm): in this style, we don't need to explicitly quantify over the
    * final open invariants.
    *)
   Parameter wp_shift : forall (mask : list (iname * Inv_type)),
-      (list (iname * Inv_type) -> mpred) -> mpred.
+      (forall to : list (iname * Inv_type), mpred) -> mpred.
 
   Axiom wp_shift_done : forall Q mask,
       Q mask |-- wp_shift mask Q.
