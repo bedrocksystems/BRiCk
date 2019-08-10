@@ -8,7 +8,7 @@ Require Import Coq.Lists.List.
 From Cpp Require Import
      Ast.
 From Cpp.Sem Require Import
-     Util Logic PLogic Semantics Wp CompilationUnit.
+     Util Logic PLogic Semantics Wp.
 
 Module Type Deinit.
 
@@ -53,6 +53,7 @@ Module Type Deinit.
         |-- wpd (resolve:=resolve) ti ρ cls this (path, dn) Q.
 
   End with_resolve.
+
 End Deinit.
 
 Declare Module D : Deinit.

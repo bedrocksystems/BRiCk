@@ -11,7 +11,7 @@ Local Open Scope string_scope.
 From Cpp Require Import
      Ast.
 From Cpp.Sem Require Import
-     Util Logic PLogic Semantics Wp CompilationUnit.
+     Util Logic PLogic Semantics Wp.
 
 Module Type Init.
 
@@ -90,6 +90,7 @@ Module Type Init.
         |-- @wpi resolve ti ρ cls this_val (path, e) Q.
 
   End with_resolve.
+
 End Init.
 
 Declare Module IN : Init.

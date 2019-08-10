@@ -7,8 +7,7 @@ Axiom uninit_class_fwd
   : forall cls base st,
     denoteGlobal cls (Gstruct st) **
     _at (_eq base) (uninit (Tref cls))
-    |-- denoteGlobal cls (Gstruct st) **
-        _at (_eq base)
+    |-- _at (_eq base)
             (sepSPs (List.map (fun gn =>
                                  _offsetR (_super cls gn) (uninit (Tref gn))) st.(s_bases) ++
                      List.map (fun '(n,t,_) =>
@@ -27,4 +26,4 @@ Axiom tany_class_bwd
                        List.map (fun '(n,t,_) =>
                                    _offsetR (_field {| f_name := n ; f_type := cls |})
                                             (tany (drop_qualifiers t))) st.(s_fields)))
-    |-- denoteGlobal cls (Gstruct st) ** _at (_eq base) (tany (Tref cls)).
+    |-- _at (_eq base) (tany (Tref cls)).
