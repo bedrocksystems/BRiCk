@@ -404,6 +404,16 @@ Module Type cclogic.
     Variant Inv_type : Type :=
     | Affine
     | Tracked (_ : Fp).
+    (* to make accurate tracking possible, we need to ensure that a trackable
+     * invariant [ι] can not contain [OPerm 1 ι] because this would mean that
+     * the invariant is invisible to the program.
+     * to solve this problem, we track the fraction that the invariant was opened
+     * with in the mask.
+     * - when you open a trackable invariant, you lose your [OPerm q ι]
+     * - when you close a trackable invariant, you get your [OPerm q ι] back.
+     * - when you delete a trackable invariant, you get to use [OPerm q ι]
+     *   to establish [OPerm 1 ι].
+     *)
 
     Parameter shift : list (iname * Inv_type) -> list (iname * Inv_type) ->
                       mpred -> mpred -> mpred.
@@ -562,7 +572,7 @@ Module Type cclogic.
     shift from to P Q
     |-- (* persistent *) Forall Z, ((P ** (Q -* wp_shift from Z)) -* wp_shift to Z).
 
-  (* the next 4 axioms should be derivable from [wp_shift_vs] *)
+  (* the next 5 theorems give rules for "primitive" view shifts and [wp_shift] *)
   Theorem wp_shift_open : forall Q hide n I,
       ~In n (map fst hide) ->
       Inv n I ** (I -* wp_shift ((n, Affine) :: hide) Q)
