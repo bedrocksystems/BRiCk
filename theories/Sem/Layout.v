@@ -1,3 +1,6 @@
+Require Import Coq.Lists.List.
+Require Import Coq.ZArith.BinInt.
+
 From Cpp Require Import
      Ast.
 From Cpp.Sem Require Import
@@ -27,3 +30,11 @@ Axiom tany_class_bwd
                                    _offsetR (_field {| f_name := n ; f_type := cls |})
                                             (tany (drop_qualifiers t))) st.(s_fields)))
     |-- _at (_eq base) (tany (Tref cls)).
+
+Axiom uninit_array : forall t n,
+    uninit (Tarray t n)
+    -|- sepSPs (map (fun i => _offsetR (_sub t (Z.of_nat i)) (uninit t)) (seq 0 n)).
+
+Axiom tany_array : forall t n,
+    tany (Tarray t n)
+    -|- sepSPs (map (fun i => _offsetR (_sub t (Z.of_nat i)) (tany t)) (seq 0 n)).
