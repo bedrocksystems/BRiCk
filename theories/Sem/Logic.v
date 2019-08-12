@@ -81,7 +81,6 @@ Module Type logic.
     Fixpoint sepSPs (ls : list L) : L :=
       match ls with
       | nil => empSP
-      | l :: nil => l
       | l :: ls => l ** sepSPs ls
       end.
   End with_logic.
