@@ -36,6 +36,7 @@ Lemma lforall_specialize : forall {T} (x : T) (P : T -> mpred),
     lforall P |-- P x.
 Proof. intros. eapply lforallL. reflexivity. Qed.
 
+
 Local Ltac t :=
   let cancel :=
       idtac; canceler ltac:(idtac; first [ eapply use_universal_arrow
@@ -422,6 +423,7 @@ Module Type cclogic.
      * except with respect to masks which can only be explained by going
      * a bit deeper into things.
      *)
+
     Axiom shift_id : empSP |-- shift nil nil empSP empSP.
     Axiom shift_frame : forall e1 e2 e' Q R S,
         disjoint (map fst e1) (map fst e') ->
@@ -458,6 +460,12 @@ Module Type cclogic.
       intros * H1 H2.
       now rewrite H1, H2.
     Qed.
+
+    (* this says that shifts are pure facts *)
+    Axiom shift_pure : forall e1 e2 P Q, shift e1 e2 P Q |-- empSP.
+
+    Axiom shift_lexists : forall e1 e2 T (P : T -> _) Q,
+        shift e1 e2 (lexists P) Q -|- Forall x : T, shift e1 e2 (P x) Q.
 
   End ViewShift.
   Import ViewShift.
@@ -569,9 +577,6 @@ Module Type cclogic.
   Axiom wp_shift_done : forall Q mask,
       Q mask |-- wp_shift mask Q.
 
-  (* the rest of these need access to [P] in order to know where
-   * to pull invariants from.
-   *)
   Axiom wp_shift_vs : forall P from to Q,
     shift from to P Q
     |-- (* persistent *) Forall Z, ((P ** (Q -* wp_shift from Z)) -* wp_shift to Z).
