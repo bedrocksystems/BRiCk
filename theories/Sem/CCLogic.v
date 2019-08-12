@@ -24,9 +24,6 @@ From Cpp.Sem Require Import
 From Cpp.Auto Require Import
      Discharge.
 
-Set Universe Polymorphism.
-Set Printing Universes.
-
 Require Import ExtLib.Data.Member.
 Fixpoint remove {T} {t : T} {ls : list T} (m : member t ls) : list T :=
   match m with
@@ -332,6 +329,9 @@ Module Type cclogic.
   Definition Fp := Fp.t.
 
   Module fmap.
+    (* question(gmm): is it possible to avoid the [Decidable] issue?
+     * in practice, it should be sufficient to use [nat]
+     *)
 
     Parameter t : forall (k : Type) {_ : forall a b : k, Decidable (a = b)} (v : PCM), PCM.
     Parameter singleton : forall {k} {dec : forall a b : k, Decidable (a = b)} (v : PCM),
@@ -404,6 +404,16 @@ Module Type cclogic.
     Variant Inv_type : Type :=
     | Affine
     | Tracked (_ : Fp).
+    (* to make accurate tracking possible, we need to ensure that a trackable
+     * invariant [ι] can not contain [OPerm 1 ι] because this would mean that
+     * the invariant is invisible to the program.
+     * to solve this problem, we track the fraction that the invariant was opened
+     * with in the mask.
+     * - when you open a trackable invariant, you lose your [OPerm q ι]
+     * - when you close a trackable invariant, you get your [OPerm q ι] back.
+     * - when you delete a trackable invariant, you get to use [OPerm q ι]
+     *   to establish [OPerm 1 ι].
+     *)
 
     Parameter shift : list (iname * Inv_type) -> list (iname * Inv_type) ->
                       mpred -> mpred -> mpred.
@@ -412,7 +422,6 @@ Module Type cclogic.
      * except with respect to masks which can only be explained by going
      * a bit deeper into things.
      *)
-
     Axiom shift_id : empSP |-- shift nil nil empSP empSP.
     Axiom shift_frame : forall e1 e2 e' Q R S,
         disjoint (map fst e1) (map fst e') ->
@@ -479,34 +488,35 @@ Module Type cclogic.
     Axiom shift_ghost_is_bot : forall {Prm : PCM},
         |-- shift nil nil empSP (@ghost_is Prm p_bot).
 
-    Definition ghost_ptsto {loc : Type} {dec : forall a b : loc, Decidable (a = b)}
-               (Prm : PCM) (p : loc) (value : Prm) : mpred :=
-      ghost_is (@fmap.singleton loc _ Prm p value).
+    Definition ghost_loc : Type := nat.
 
-    Axiom shift_ghost_alloc : forall loc dec prm v,
+    Definition ghost_ptsto (Prm : PCM) (p : ghost_loc) (value : Prm) : mpred :=
+      ghost_is (fmap.singleton Prm p value).
+
+    Opaque ghost_loc.
+
+    Axiom shift_ghost_alloc : forall prm v,
         [| p_valid v |]
         |-- shift nil nil
                   empSP
-                  (Exists p, @ghost_ptsto loc dec prm p v).
+                  (Exists p : ghost_loc, ghost_ptsto prm p v).
 
-    Axiom shift_ghost_compose : forall loc dec prm p v1 v2,
-        @ghost_ptsto loc dec prm p v1 **
-        @ghost_ptsto loc dec prm p v2
-        -|- @ghost_ptsto loc dec prm p (p_compose v1 v2).
+    Axiom shift_ghost_compose : forall prm (p : ghost_loc) v1 v2,
+        ghost_ptsto prm p v1 ** ghost_ptsto prm p v2
+        -|- ghost_ptsto prm p (p_compose v1 v2).
 
     (* note(gmm): i can update any ghost using frame preserving update
      *)
-    Axiom shift_ghost_update : forall loc dec prm p v V',
+    Axiom shift_ghost_update : forall prm p v V',
         [| FPU v V' |]
-        |-- shift nil nil
-          (@ghost_ptsto loc dec prm p v)
-          (Exists v', [| V' v' |] ** @ghost_ptsto loc dec prm p v').
+        |-- shift nil nil (ghost_ptsto prm p v)
+                          (Exists v', [| V' v' |] ** ghost_ptsto prm p v').
 
-    Lemma shift_ghost_update_single : forall loc dec prm p v v',
+    Lemma shift_ghost_update_single : forall prm p v v',
         [| FPU_single v v' |]
         |-- shift nil nil
-                  (@ghost_ptsto loc dec prm p v)
-                  (@ghost_ptsto loc dec prm p v').
+                  (ghost_ptsto prm p v)
+                  (ghost_ptsto prm p v').
     Proof.
       intros.
       t.
@@ -546,11 +556,15 @@ Module Type cclogic.
    *)
 
   (* a "weakest pre-condition" for view shifts
+   *
+   * [mask] is the invariants that are *open* now
+   * [to] is the invariants that are *open* afterwards
+   *
    * note(gmm): in this style, we don't need to explicitly quantify over the
    * final open invariants.
    *)
   Parameter wp_shift : forall (mask : list (iname * Inv_type)),
-      (list (iname * Inv_type) -> mpred) -> mpred.
+      (forall to : list (iname * Inv_type), mpred) -> mpred.
 
   Axiom wp_shift_done : forall Q mask,
       Q mask |-- wp_shift mask Q.
@@ -562,7 +576,7 @@ Module Type cclogic.
     shift from to P Q
     |-- (* persistent *) Forall Z, ((P ** (Q -* wp_shift from Z)) -* wp_shift to Z).
 
-  (* the next 4 axioms should be derivable from [wp_shift_vs] *)
+  (* the next 5 theorems give rules for "primitive" view shifts and [wp_shift] *)
   Theorem wp_shift_open : forall Q hide n I,
       ~In n (map fst hide) ->
       Inv n I ** (I -* wp_shift ((n, Affine) :: hide) Q)
