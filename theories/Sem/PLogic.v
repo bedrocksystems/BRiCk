@@ -70,6 +70,18 @@ Proof.
   { simpl; intros. split; simpl; intros; eapply empSPR; eauto. }
 Qed.
 
+Instance Proper_repr_lentails : Proper (lentails ==> lentails) repr.
+Proof.
+  intros until 1.
+  cbn in *; subst; auto.
+Qed.
+
+Instance Proper_repr_lequiv : Proper (lequiv ==> lequiv) repr.
+Proof.
+  intros ?? [].
+  split; cbn in *; subst; auto.
+Qed.
+
 Lemma Rep_equiv_ext_equiv : forall P Q : Rep,
     (forall x, P.(repr) x -|- Q.(repr) x) ->
     P -|- Q.
@@ -118,6 +130,17 @@ Proof.
   { simpl; intros. split; simpl; intros; eapply empSPR; eauto. }
 Qed.
 
+Instance Proper_addr_of_lentails : Proper (lentails ==> eq ==> lentails) addr_of.
+Proof.
+  intros until 2.
+  cbn in *; subst; auto.
+Qed.
+
+Instance Proper_addr_of_lequiv : Proper (lequiv ==> eq ==> lequiv) addr_of.
+Proof.
+  intros ?? [] ?? ?.
+  split; cbn in *; subst; auto.
+Qed.
 
 
 Record Offset : Type :=
@@ -168,6 +191,12 @@ Class Dup_Loc (l : Loc) : Prop :=
 Definition _eq (a : val) : Loc :=
   {| addr_of p := [| p = a |] |}.
 
+Lemma _eq_id : forall a,
+    empSP -|- addr_of (_eq a) a.
+Proof.
+  intros. cbn. split; t.
+Qed.
+
 (* note(gmm): this is *not* duplicable *)
 Definition _local (r : region) (x : ident) : Loc :=
   {| addr_of v := Exists p, [| v = Vptr p |] ** local_addr r x p |}.
@@ -201,9 +230,22 @@ Definition _deref (ty : type) : Offset :=
   {| offset from to := tptsto ty from to ** [| has_type from (Tpointer ty) |] |}.
 
 Definition _id : Offset :=
-  {| offset a b := embed (a = b) |}.
+  {| offset a b := [| a = b |] |}.
+
 Definition _dot (o1 o2 : Offset) : Offset :=
   {| offset a c := Exists b, o1.(offset) a b ** o2.(offset) b c |}.
+
+Global Instance Proper__dot : Proper (lequiv ==> lequiv ==> lequiv) _dot.
+Proof.
+  unfold _dot.
+  intros ?? [H1 H2] ?? [H3 H4].
+  split;
+    cbn in *;
+    intros;
+    t;
+    [ rewrite H1, H3 | rewrite H2, H4 ];
+    t.
+Qed.
 
 Definition _offsetL (o : Offset) (l : Loc) : Loc :=
   {| addr_of a := Exists a', o.(offset) a' a ** l.(addr_of) a' |}.
@@ -213,6 +255,24 @@ Proof.
   unfold _offsetL, _dot; simpl.
   constructor; simpl; intros; t.
 Qed.
+Lemma _offsetL_id : forall l,
+    l -|- _offsetL _id l.
+Proof.
+  unfold _offsetL, _id; cbn.
+  constructor; cbn; intros; t.
+  subst; t.
+Qed.
+Global Instance Proper__offsetL : Proper (lequiv ==> lequiv ==> lequiv) _offsetL.
+Proof.
+  unfold _offsetL.
+  intros ?? [H1 H2] ?? [H3 H4].
+  split;
+    cbn in *;
+    intros;
+    t;
+    [ rewrite H1, H3 | rewrite H2, H4 ];
+    t.
+Qed.
 
 Definition _offsetR (o : Offset) (r : Rep) : Rep :=
   {| repr a := Exists a', o.(offset) a a' ** r.(repr) a' |}.
@@ -221,6 +281,35 @@ Lemma _offsetR_dot : forall o1 o2 l,
 Proof.
   unfold _offsetL, _dot; simpl.
   constructor; simpl; intros; t.
+Qed.
+Lemma _offsetR_id : forall r,
+    r -|- _offsetR _id r.
+Proof.
+  unfold _offsetR, _id; cbn.
+  constructor; simpl; intros; t.
+  subst; t.
+Qed.
+Global Instance Proper__offsetR : Proper (lequiv ==> lentails ==> lentails) _offsetR.
+Proof.
+  unfold _offsetR.
+  intros ?? [H1 H2] ?? H3.
+  cbn in *.
+  intros.
+  t.
+  rewrite H1, H3.
+  t.
+Qed.
+
+Global Instance Proper__offsetR_equiv : Proper (lequiv ==> lequiv ==> lequiv) _offsetR.
+Proof.
+  unfold _offsetR.
+  intros ?? [H1 H2] ?? [H3 H4].
+  split;
+    cbn in *;
+    intros;
+    t;
+    [ rewrite H1, H3 | rewrite H2, H4 ];
+    t.
 Qed.
 
 (*
