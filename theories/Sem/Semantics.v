@@ -194,6 +194,12 @@ Axiom size_of_bool : forall {c : genv},
 Parameter pointer_size : N. (* in bytes *)
 Axiom size_of_pointer : forall {c : genv} t,
     @size_of c (Tpointer t) pointer_size.
+Axiom size_of_qualified : forall {c : genv} t sz q,
+    @size_of c t sz ->
+    @size_of c (Tqualified q t) sz.
+Axiom size_of_array : forall {c : genv} t n sz,
+    @size_of c t sz ->
+    @size_of c (Tarray t n) (sz * N.of_nat n).
 
 (** pointer offsets
  *)
