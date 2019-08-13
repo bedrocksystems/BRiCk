@@ -760,7 +760,7 @@ Module Type cclogic.
           _at (_eq E) (tprim acc_type v) **
           Exists v', [| eval_binop op acc_type acc_type acc_type v pls v' |] **
                      (_at (_eq E) (tprim acc_type v') -* Q v))
-      |-- wp_atom ao (E::pls::memorder::nil) acc_type Q.
+      |-- wp_atom ao (E::memorder::pls::nil) acc_type Q.
 
 (*
   Definition wp_fetch_xxx ao op : Prop :=
@@ -793,7 +793,7 @@ Module Type cclogic.
           _at (_eq E) (tprim acc_type v) **
           Exists v', [| eval_binop op acc_type acc_type acc_type v pls v' |] **
                      (_at (_eq E) (tprim acc_type v') -* Q v'))
-      |-- wp_atom ao (E::pls::memorder::nil) acc_type Q.
+      |-- wp_atom ao (E::memorder::pls::nil) acc_type Q.
 
 (*
   Definition wp_xxx_fetch ao op : Prop :=
