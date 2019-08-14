@@ -758,7 +758,7 @@ Module Type cclogic.
       [| memorder = _SEQ_CST |] **
          (Exists v,
           _at (_eq E) (tprim acc_type v) **
-          Exists v', [| eval_binop op acc_type acc_type acc_type v pls v' |] **
+          Exists v', [| eval_binop op (drop_qualifiers acc_type) (drop_qualifiers acc_type) (drop_qualifiers acc_type) v pls v' |] **
                      (_at (_eq E) (tprim acc_type v') -* Q v))
       |-- wp_atom ao (E::memorder::pls::nil) acc_type Q.
 
@@ -791,7 +791,7 @@ Module Type cclogic.
       [| memorder = _SEQ_CST |] **
          (Exists v,
           _at (_eq E) (tprim acc_type v) **
-          Exists v', [| eval_binop op acc_type acc_type acc_type v pls v' |] **
+          Exists v', [| eval_binop op (drop_qualifiers acc_type) (drop_qualifiers acc_type) (drop_qualifiers acc_type) v pls v' |] **
                      (_at (_eq E) (tprim acc_type v') -* Q v'))
       |-- wp_atom ao (E::memorder::pls::nil) acc_type Q.
 
