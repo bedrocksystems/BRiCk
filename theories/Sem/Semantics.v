@@ -206,6 +206,10 @@ Axiom size_of_qualified : forall {c : genv} t sz q,
 Axiom size_of_array : forall {c : genv} t n sz,
     @size_of c t sz ->
     @size_of c (Tarray t n) (sz * N.of_nat n).
+Axiom size_of_unique : forall {c : genv} t sz sz',
+    @size_of c t sz ->
+    @size_of c t sz' ->
+    sz = sz'.
 
 (** pointer offsets
  *)
