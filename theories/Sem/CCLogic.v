@@ -467,6 +467,43 @@ Module Type cclogic.
     Axiom shift_lexists : forall e1 e2 T (P : T -> _) Q,
         shift e1 e2 (lexists P) Q -|- Forall x : T, shift e1 e2 (P x) Q.
 
+    Lemma shift_done : forall e P Q,
+        P |-- Q ->
+        empSP |-- shift e e P Q.
+    Proof.
+      intros.
+      rewrite <- shift_conseq.
+      rewrite <- (shift_frame nil nil e empSP empSP P).
+      eapply shift_id.
+      constructor. constructor.
+      t. t. assumption.
+    Qed.
+
+    (* todo(gmm): generalize this to be more liberal wrt masks. *)
+    Lemma using_shift : forall e P Q P' Q' Z F F',
+        P' |-- P ** Z ->
+        F' |-- shift e e (Q ** Z) Q' ** F ->
+        shift e e P Q ** F' |-- shift e e P' Q' ** F.
+    Proof.
+      intros.
+      rewrite H0; clear H0.
+      t.
+      etransitivity; [ | eapply shift_trans ].
+      rewrite sepSPC.
+      eapply scME.
+      rewrite (@shift_frame _ _ nil _ _ Z).
+      eapply Proper_shift.
+      3: eapply H.
+      3: reflexivity.
+      5: reflexivity.
+      all: simpl; try rewrite app_nil_r.
+      3:{ red. clear; induction (map fst e); constructor; eauto. }
+      3:{ red. clear; induction (map fst e); constructor; eauto. }
+      3:{ red. intros. eapply in_or_app. tauto. }
+      reflexivity.
+      reflexivity.
+    Qed.
+
   End ViewShift.
   Import ViewShift.
 
