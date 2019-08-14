@@ -108,7 +108,7 @@ public:
                 print.output() << "T_int128";
                 break;
             default:
-                print.output() << "(Tint (Some " << sz << ") true)";
+                print.output() << "(Tint (Some " << sz << "%nat) true)";
             }
         } else if (type->isUnsignedIntegerType()) {
             switch (auto sz = cprint.getTypeSize(type)) {
@@ -128,7 +128,7 @@ public:
                 print.output() << "T_uint128";
                 break;
             default:
-                print.output() << "(Tint (Some " << sz << ") false)";
+                print.output() << "(Tint (Some " << sz << "%nat) false)";
             }
         }
     }
@@ -164,16 +164,16 @@ public:
             print.output() << "T_char16";
         } else if (type->getKind() == BuiltinType::Kind::Char_S) {
             print.output() << "(Tchar (Some " << cprint.getTypeSize(type)
-                           << ") true)";
+                           << "%nat) true)";
         } else if (type->getKind() == BuiltinType::Kind::SChar) {
             print.output() << "(Tchar (Some " << cprint.getTypeSize(type)
-                           << ") true)";
+                           << "%nat) true)";
         } else if (type->getKind() == BuiltinType::Kind::UChar) {
             print.output() << "(Tchar (Some " << cprint.getTypeSize(type)
-                           << ") false)";
+                           << "%nat) false)";
         } else if (type->getKind() == BuiltinType::Kind::Char_U) {
             print.output() << "(Tchar (Some " << cprint.getTypeSize(type)
-                           << ") false)";
+                           << "%nat) false)";
         } else if (type->getKind() == BuiltinType::Kind::Char8) {
             print.output() << "T_char8";
         } else if (type->getKind() == BuiltinType::Kind::Char32) {
