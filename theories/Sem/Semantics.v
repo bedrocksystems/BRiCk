@@ -79,6 +79,12 @@ Axiom eval_sub :
   ltac:(let x := eval hnf in (eval_int_op Bsub Z.sub) in refine x).
 Axiom eval_mul :
   ltac:(let x := eval hnf in (eval_int_op Bmul Z.mul) in refine x).
+Axiom eval_or :
+  ltac:(let x := eval hnf in (eval_int_op Bor Z.lor) in refine x).
+Axiom eval_and :
+  ltac:(let x := eval hnf in (eval_int_op Band Z.land) in refine x).
+Axiom eval_xor :
+  ltac:(let x := eval hnf in (eval_int_op Bxor Z.lxor) in refine x).
 Axiom eval_div :
   forall (w : option nat) (s : bool) (a b c : Z),
     b <> 0%Z ->
