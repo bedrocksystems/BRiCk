@@ -249,6 +249,10 @@ Module Type Expr.
       wpe vc e (fun _ free => Q (Vint 0) free)
       |-- wpe vc (Ecast C2void (vc, e) ty) Q.
 
+    Axiom wp_rhs_cast_array2pointer : forall e t Q,
+        wp_lhs e Q
+        |-- wp_rhs (Ecast Carray2pointer (Lvalue, e) t) Q.
+
     (** the ternary operator `_ ? _ : _` *)
     Axiom wp_condition : forall ty m tst th el Q,
         wp_rhs tst (fun v1 free =>
