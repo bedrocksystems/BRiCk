@@ -135,9 +135,6 @@ Proof.
       destruct H0 as [ ? [ ? [ ? ? ] ] ].
       unfold main.args_array.
       rewrite tarray_cell; eauto with size_of.
-      rewrite <- wp_lhs_subscript.
-      simplifying.
-      simpl.
       work.
       simplifying.
       work.

@@ -507,6 +507,15 @@ Module Type cclogic.
   End ViewShift.
   Import ViewShift.
 
+  Module ViewShiftNotations.
+    Notation "P ={ E1 , E2 }=> Q" := (shift E1 E2 P Q)
+      (at level 75, E1 at level 50, E2 at level 50, Q at level 76,
+       format "P  ={ E1 , E2 }=>  Q").
+    Notation "P ={ E }=> Q" := (P ={E,E}=> Q)
+      (at level 75, E at level 50, Q at level 76,
+       format "P  ={ E }=>  Q").
+  End ViewShiftNotations.
+
   Module GhostState.
     (* A note to Gregory, If I were to paramterize mpred (p:Fp_Monoid) ...
      * THIS WOULD BE A NEAT SOLUTION.
@@ -717,7 +726,7 @@ Module Type cclogic.
    *)
   Monomorphic Axiom wp_rhs_atomic: forall rslv ti r ao es ty Q,
       wps (wpAnys (resolve:=rslv) ti r) es  (fun (vs : list val) (free : FreeTemps) =>
-           wrap_shift (wp_atom ao vs ty) (fun v => Q v free)) empSP
+           wrap_shift (wp_atom ao vs (drop_qualifiers ty)) (fun v => Q v free)) empSP
       |-- wp_rhs (resolve:=rslv) ti r (Eatomic ao es ty) Q.
 
   (* Ideas adopted from the paper:

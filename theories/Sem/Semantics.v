@@ -79,6 +79,12 @@ Axiom eval_sub :
   ltac:(let x := eval hnf in (eval_int_op Bsub Z.sub) in refine x).
 Axiom eval_mul :
   ltac:(let x := eval hnf in (eval_int_op Bmul Z.mul) in refine x).
+Axiom eval_or :
+  ltac:(let x := eval hnf in (eval_int_op Bor Z.lor) in refine x).
+Axiom eval_and :
+  ltac:(let x := eval hnf in (eval_int_op Band Z.land) in refine x).
+Axiom eval_xor :
+  ltac:(let x := eval hnf in (eval_int_op Bxor Z.lxor) in refine x).
 Axiom eval_div :
   forall (w : option nat) (s : bool) (a b c : Z),
     b <> 0%Z ->
@@ -194,6 +200,16 @@ Axiom size_of_bool : forall {c : genv},
 Parameter pointer_size : N. (* in bytes *)
 Axiom size_of_pointer : forall {c : genv} t,
     @size_of c (Tpointer t) pointer_size.
+Axiom size_of_qualified : forall {c : genv} t sz q,
+    @size_of c t sz ->
+    @size_of c (Tqualified q t) sz.
+Axiom size_of_array : forall {c : genv} t n sz,
+    @size_of c t sz ->
+    @size_of c (Tarray t n) (sz * N.of_nat n).
+Axiom size_of_unique : forall {c : genv} t sz sz',
+    @size_of c t sz ->
+    @size_of c t sz' ->
+    sz = sz'.
 
 (** pointer offsets
  *)
