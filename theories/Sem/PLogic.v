@@ -191,8 +191,8 @@ Class Dup_Loc (l : Loc) : Prop :=
 Definition _eq (a : val) : Loc :=
   {| addr_of p := [| p = a |] |}.
 
-Lemma _eq_id : forall a,
-    empSP -|- addr_of (_eq a) a.
+Lemma _eq_eq : forall a b,
+    [| a = b |] -|- addr_of (_eq a) b.
 Proof.
   intros. cbn. split; t.
 Qed.
@@ -370,6 +370,15 @@ Proof.
   intros.
   destruct H. simpl in *.
   t. rewrite H. rewrite H0. t.
+Qed.
+
+Global Instance Proper__at_lequiv : Proper (lequiv ==> lequiv ==> lequiv) _at.
+Proof.
+  intros ?? H1 ?? [H2 H3].
+  split;
+    rewrite H1;
+    [ rewrite H2 | rewrite H3 ];
+    reflexivity.
 Qed.
 
 Lemma _at_eq : forall l r,
