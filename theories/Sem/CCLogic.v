@@ -680,7 +680,7 @@ Module Type cclogic.
    *)
   Monomorphic Axiom wp_rhs_atomic: forall rslv ti r ao es ty Q,
       wps (wpAnys (resolve:=rslv) ti r) es  (fun (vs : list val) (free : FreeTemps) =>
-           wrap_shift (wp_atom ao vs ty) (fun v => Q v free)) empSP
+           wrap_shift (wp_atom ao vs (drop_qualifiers ty)) (fun v => Q v free)) empSP
       |-- wp_rhs (resolve:=rslv) ti r (Eatomic ao es ty) Q.
 
   (* Ideas adopted from the paper:
@@ -758,7 +758,7 @@ Module Type cclogic.
       [| memorder = _SEQ_CST |] **
          (Exists v,
           _at (_eq E) (tprim acc_type v) **
-          Exists v', [| eval_binop op (drop_qualifiers acc_type) (drop_qualifiers acc_type) (drop_qualifiers acc_type) v pls v' |] **
+          Exists v', [| eval_binop op acc_type acc_type acc_type v pls v' |] **
                      (_at (_eq E) (tprim acc_type v') -* Q v))
       |-- wp_atom ao (E::memorder::pls::nil) acc_type Q.
 
@@ -791,7 +791,7 @@ Module Type cclogic.
       [| memorder = _SEQ_CST |] **
          (Exists v,
           _at (_eq E) (tprim acc_type v) **
-          Exists v', [| eval_binop op (drop_qualifiers acc_type) (drop_qualifiers acc_type) (drop_qualifiers acc_type) v pls v' |] **
+          Exists v', [| eval_binop op acc_type acc_type acc_type v pls v' |] **
                      (_at (_eq E) (tprim acc_type v') -* Q v'))
       |-- wp_atom ao (E::memorder::pls::nil) acc_type Q.
 
