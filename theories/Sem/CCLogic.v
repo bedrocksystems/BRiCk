@@ -470,6 +470,15 @@ Module Type cclogic.
   End ViewShift.
   Import ViewShift.
 
+  Module ViewShiftNotations.
+    Notation "P ={ E1 , E2 }=> Q" := (shift E1 E2 P Q)
+      (at level 75, E1 at level 50, E2 at level 50, Q at level 76,
+       format "P  ={ E1 , E2 }=>  Q").
+    Notation "P ={ E }=> Q" := (P ={E,E}=> Q)
+      (at level 75, E at level 50, Q at level 76,
+       format "P  ={ E }=>  Q").
+  End ViewShiftNotations.
+
   Module GhostState.
     (* A note to Gregory, If I were to paramterize mpred (p:Fp_Monoid) ...
      * THIS WOULD BE A NEAT SOLUTION.
