@@ -70,15 +70,15 @@ Proof.
   { simpl; intros. split; simpl; intros; eapply empSPR; eauto. }
 Qed.
 
-Instance Proper_repr_lentails : Proper (lentails ==> lentails) repr.
+Instance Proper_repr_lentails : Proper (lentails ==> eq ==> lentails) repr.
 Proof.
-  intros until 1.
+  intros until 2.
   cbn in *; subst; auto.
 Qed.
 
-Instance Proper_repr_lequiv : Proper (lequiv ==> lequiv) repr.
+Instance Proper_repr_lequiv : Proper (lequiv ==> eq ==> lequiv) repr.
 Proof.
-  intros ?? [].
+  intros ?? [] ?? ->.
   split; cbn in *; subst; auto.
 Qed.
 

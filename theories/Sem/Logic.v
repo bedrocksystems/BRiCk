@@ -56,6 +56,14 @@ Module Type logic.
   Parameter with_genv : (genv -> mpred) -> mpred.
   Axiom with_genv_single : forall f g,
       with_genv f //\\ with_genv g -|- with_genv (fun r => f r //\\ g r).
+  Axiom with_genv_single_sep : forall f g,
+      with_genv f ** with_genv g -|- with_genv (fun r => f r ** g r).
+  Axiom with_genv_ignore : forall P,
+      with_genv (fun _ => P) -|- P.
+  Declare Instance Proper_with_genv_lentails :
+    Proper (pointwise_relation _ lentails ==> lentails) with_genv.
+  Declare Instance Proper_with_genv_lequiv :
+    Proper (pointwise_relation _ lequiv ==> lequiv) with_genv.
 
   (* heap points to *)
   (* note(gmm): this needs to support fractional permissions and other features *)
