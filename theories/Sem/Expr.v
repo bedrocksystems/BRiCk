@@ -238,6 +238,9 @@ Module Type Expr.
         wp_rhs e Q
         |-- wp_rhs (Ecast (Cuser Z) (Rvalue, e) ty) Q.
 
+    Axiom wp_rhs_cast_reinterpret : forall q e ty Q,
+        wp_rhs e Q |-- wp_rhs (Ecast (Creinterpret q) (Rvalue, e) ty) Q.
+
     Axiom wp_lhs_static_cast : forall vc from to e ty Q,
       wpe vc e (fun addr free => Exists addr',
                   (_offsetL (_super from to) (_eq addr) &~ addr' //\\ ltrue) **
