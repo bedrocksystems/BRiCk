@@ -215,14 +215,14 @@ Admitted.
 
 Definition _sub (t : type) (i : Z) : Offset :=
   {| offset from to :=
-       Exists sz, with_genv (fun prg => [| size_of (c:=prg) t sz |]) **
+       Exists sz, with_genv (fun prg => [| size_of prg t sz |]) **
                   [| to = offset_ptr from (i * Z.of_N sz) |]
   |}.
 
 (* this represents static_cast *)
 Definition _super (sub super : globname) : Offset :=
   {| offset base addr :=
-       Exists off, with_genv (fun prg => [| parent_offset (c:=prg) sub super off |]) **
+       Exists off, with_genv (fun prg => [| parent_offset prg sub super off |]) **
                    [| addr = offset_ptr base off |]
   |}.
 
@@ -316,7 +316,7 @@ Qed.
 (** pointer offsets *)
 Definition field_addr (f : field) (base : val) : Loc := fun ptr =>
   with_genv (fun g => Exists off : Z,
-      [| offset_of (c:=g) (Tref f.(f_type)) f.(f_name) off |] **
+      [| offset_of (resolve:=g) (Tref f.(f_type)) f.(f_name) off |] **
       [| offset_ptr base off = ptr |]).
 
 (* todo(gmm): i need a way to compute a parent class offset. *)
