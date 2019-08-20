@@ -719,14 +719,14 @@ Module Type cclogic.
   (****** Wp Semantics for atomic operations
    * These are given in the style of function call axioms
    *)
-  Parameter wp_atom : AtomicOp -> list val -> type -> (val -> mpred) -> mpred.
+  Parameter wp_atom : forall {resolve:genv}, AtomicOp -> list val -> type -> (val -> mpred) -> mpred.
 
   (* note that this rule captures all of the interesting reasoning about atomics
    * through the use of [wp_shift]
    *)
   Monomorphic Axiom wp_rhs_atomic: forall rslv ti r ao es ty Q,
       wps (wpAnys (resolve:=rslv) ti r) es  (fun (vs : list val) (free : FreeTemps) =>
-           wrap_shift (wp_atom ao vs (drop_qualifiers ty)) (fun v => Q v free)) empSP
+           wrap_shift (wp_atom (resolve:=rslv) ao vs (drop_qualifiers ty)) (fun v => Q v free)) empSP
       |-- wp_rhs (resolve:=rslv) ti r (Eatomic ao es ty) Q.
 
   (* Ideas adopted from the paper:
@@ -742,21 +742,21 @@ Module Type cclogic.
    * because all of the invariant reasoning is encapsulated in [wp_shift].
    *)
   Axiom wp_atom_load_cst
-  : forall memorder (acc_type:type) (l : val) (Q : val -> mpred),
+  : forall rslv memorder (acc_type:type) (l : val) (Q : val -> mpred),
       [| memorder = _SEQ_CST |] **
       (Exists v, (_at (_eq l) (tprim acc_type v) ** ltrue //\\ Q v))
-      |-- wp_atom AO__atomic_load_n (l :: memorder :: nil) acc_type Q.
+      |-- wp_atom (resolve:=rslv) AO__atomic_load_n (l :: memorder :: nil) acc_type Q.
 
   Axiom wp_atom_store_cst
-  : forall memorder (acc_type:type) l Q val,
+  : forall rslv memorder (acc_type:type) l Q val,
       [| memorder = _SEQ_CST |] **
       (Exists val, _at (_eq l) (tprim acc_type val)) **
       (_at (_eq l) (tprim acc_type val) -* Exists void, Q void)
-      |-- wp_atom AO__atomic_store_n (l :: memorder :: val :: nil) (Qmut Tvoid) Q.
+      |-- wp_atom (resolve:=rslv) AO__atomic_store_n (l :: memorder :: val :: nil) (Qmut Tvoid) Q.
 
   (* atomic compare and exchange n *)
   Axiom wp_atom_compare_exchange_n:
-    forall val_p expected_p desired wk succmemord failmemord Q'
+    forall rslv val_p expected_p desired wk succmemord failmemord Q'
            (ty : type)
            expected,
       ([|wk = Vbool false|] ** [|succmemord = _SEQ_CST|] ** [| failmemord = _SEQ_CST |] **
@@ -769,7 +769,7 @@ Module Type cclogic.
          ([| v <> expected |] -*
           _at (_eq expected_p) (tprim ty v) **
           _at (_eq val_p) (tprim ty v) -* Q' (Vbool false))))
-       |-- wp_atom AO__atomic_compare_exchange_n
+       |-- wp_atom (resolve:=rslv) AO__atomic_compare_exchange_n
                    (val_p::succmemord::expected_p::failmemord::desired::wk::nil) (Qmut Tbool) Q'.
   (* ^ note(gmm): this states that *both pointers are read atomically*.
    *)
@@ -777,7 +777,7 @@ Module Type cclogic.
   (* atomic compare and exchange rule
    *)
   Axiom wp_atom_compare_exchange:
-    forall P val_p expected_p desired_p wk succmemord failmemord Q
+    forall rslv P val_p expected_p desired_p wk succmemord failmemord Q
       (ty : type)
       expected desired,
          (_at (_eq expected_p) (tprim ty expected) **
@@ -795,18 +795,18 @@ Module Type cclogic.
               _at (_eq desired_p) (tprim ty desired) **
               _at (_eq val_p) (tprim ty val) **
               P) -* Q (Vbool false))))
-       |-- wp_atom AO__atomic_compare_exchange
+       |-- wp_atom (resolve:=rslv) AO__atomic_compare_exchange
                    (val_p::succmemord::expected_p::failmemord::desired::wk::nil) (Qmut Tbool) Q.
 
   (* atomic fetch and xxx rule *)
   Definition wp_fetch_xxx ao op : Prop :=
-    forall E pls memorder Q (acc_type : type),
+    forall rslv E pls memorder Q (acc_type : type),
       [| memorder = _SEQ_CST |] **
          (Exists v,
           _at (_eq E) (tprim acc_type v) **
-          Exists v', [| eval_binop op acc_type acc_type acc_type v pls v' |] **
+          Exists v', [| eval_binop (resolve:=rslv) op acc_type acc_type acc_type v pls v' |] **
                      (_at (_eq E) (tprim acc_type v') -* Q v))
-      |-- wp_atom ao (E::memorder::pls::nil) acc_type Q.
+      |-- wp_atom (resolve:=rslv) ao (E::memorder::pls::nil) acc_type Q.
 
 (*
   Definition wp_fetch_xxx ao op : Prop :=
@@ -833,13 +833,13 @@ Module Type cclogic.
 
   (* atomic xxx and fetch rule *)
   Definition wp_xxx_fetch ao op : Prop :=
-    forall E pls memorder Q (acc_type : type),
+    forall rslv E pls memorder Q (acc_type : type),
       [| memorder = _SEQ_CST |] **
          (Exists v,
           _at (_eq E) (tprim acc_type v) **
-          Exists v', [| eval_binop op acc_type acc_type acc_type v pls v' |] **
+          Exists v', [| eval_binop (resolve:=rslv) op acc_type acc_type acc_type v pls v' |] **
                      (_at (_eq E) (tprim acc_type v') -* Q v'))
-      |-- wp_atom ao (E::memorder::pls::nil) acc_type Q.
+      |-- wp_atom (resolve:=rslv) ao (E::memorder::pls::nil) acc_type Q.
 
 (*
   Definition wp_xxx_fetch ao op : Prop :=
