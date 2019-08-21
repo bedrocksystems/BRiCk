@@ -216,7 +216,8 @@ Module Type Expr.
     (** casts *)
     Axiom wp_rhs_cast_l2r : forall ty e Q,
         wp_lhs e (fun a free =>
-          Exists v, (_at (_eq a) (tprim (drop_qualifiers ty) v) ** ltrue) //\\ Q v free)
+          Exists v, (_at (_eq a) (tprim (drop_qualifiers ty) v) **
+                    (_at (_eq a) (tprim (drop_qualifiers ty) v) -* Q v free)))
         |-- wp_rhs (Ecast Cl2r (Lvalue, e) ty) Q.
 
     Axiom wpe_cast_noop : forall ty m e Q,
