@@ -76,6 +76,9 @@ Definition bound (bits : nat) (sgn : bool) (v : Z) : Prop :=
 Axiom has_int_type : forall (sz : nat) (sgn : bool) z,
     bound sz sgn z <-> has_type (Vint z) (Tint (Some sz) sgn).
 
+Axiom has_char_type : forall (sgn : bool) z,
+    bound 8 sgn z <-> has_type (Vint z) (Tchar (Some 8) sgn).
+
 Axiom has_type_qual : forall t q x,
     has_type x (drop_qualifiers t) ->
     has_type x (Tqualified q t).
