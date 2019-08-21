@@ -14,7 +14,7 @@ Require Import Coq.Strings.String.
 From Cpp Require Import
      Ast.
 From Cpp.Sem Require Import
-     Util Logic Semantics PLogic Destroy Wp.
+     Util Logic Semantics PLogic Destroy Wp CompilationUnit.
 
 Require Import Coq.ZArith.BinInt.
 Require Import Coq.micromega.Lia.
@@ -45,6 +45,11 @@ Module Type Expr.
     Local Notation wpAnys := (wpAnys (resolve:=resolve) ti ρ).
 
     Notation "[! P !]" := (embed P).
+
+    (* constants are rvalues *)
+    Axiom wp_rhs_constant : forall ty cnst e Q,
+      denoteGlobal cnst (Gconstant ty e) ** wp_rhs e Q
+      |-- wp_rhs (Econst_ref (Gname cnst) ty) Q.
 
     (* integer literals are rvalues *)
     Axiom wp_rhs_int : forall n ty Q,
