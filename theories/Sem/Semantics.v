@@ -67,7 +67,7 @@ Axiom has_type_pointer : forall v ty, has_type v (Tpointer ty) -> exists p, v = 
 
 Definition bound (bits : size) (sgn : signed) (v : Z) : Prop :=
   if sgn then
-    (-Z.pow 2 (Z.of_N bits - 1) < v < Z.pow 2 (Z.of_N bits - 1) - 1)%Z
+    (-Z.pow 2 (Z.of_N bits - 1) <= v < Z.pow 2 (Z.of_N bits - 1))%Z
   else
     (0 <= v < Z.pow 2 (Z.of_N bits))%Z.
 
