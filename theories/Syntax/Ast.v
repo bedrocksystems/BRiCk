@@ -437,9 +437,17 @@ Definition Sskip := Sseq nil.
  * - cpp2v should probably insert these types.
  *)
 Definition char_bits : nat := 8.
+(**
+https://en.cppreference.com/w/cpp/language/types
+The 4 definitions below use the LP64 data model.
+LLP64 and LP64 agree except for the [long] type: see
+the warning below.
+In future, we may want to parametrize by a data model, or
+the machine word size.
+*)
 Definition short_bits : nat := 16.
 Definition int_bits : nat := 32.
-Definition long_bits : nat := 32.
+Definition long_bits : nat := 64. (** warning: LLP64 model uses 32 *)
 Definition long_long_bits : nat := 64.
 
 Definition T_ushort : type := Tint (Some short_bits) false.
