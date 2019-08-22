@@ -127,8 +127,8 @@ Definition eval_ptr_int_op (bo : BinOp) (o : Z -> Z -> Z) : Prop :=
     size_of resolve t sz ->
     p' = offset_ptr (Vptr p) (o * Z.of_N sz) ->
     eval_binop (resolve:=resolve) bo
-               (Tpointer t) (Tpointer t) (Tint w s)
-               (Vptr p)     (Vint o)     p'.
+               (Tpointer t) (Tint w s) (Tpointer t)
+               (Vptr p)     (Vint o)   p'.
 
 Axiom eval_ptr_int_add :
   ltac:(let x := eval hnf in (eval_ptr_int_op Badd Z.add) in refine x).
