@@ -54,6 +54,20 @@ Definition ap {t u} (f : option (t -> u)) (x : option t) : option u :=
   | _ , _ => None
   end.
 
+Section traverse.
+  Context {t u} (f : t -> option u).
+
+  Fixpoint traverse (ls : list t) : option (list u) :=
+    match ls with
+    | nil => Some nil
+    | l :: ls =>
+      match f l , traverse ls with
+      | Some x , Some xs => Some (x :: xs)
+      | _ , _ => None
+      end
+    end.
+End traverse.
+
 
 Local Notation "x <- c  ;; k" := (bind c (fun x => k))
    (at level 60, c at next level, right associativity).
@@ -73,7 +87,8 @@ Definition function_specs := list (globname * function_spec).
 
 Section refl.
 
-  Variable (resolve : genv) (ti : thread_info) (r : region) (specs : signature).
+  Variable (resolve : genv) (ti : thread_info) (r : region)
+           (specs : signature) (cu : compilation_unit).
 
   Local Notation "[! P !]" := (embed P).
 
@@ -161,26 +176,43 @@ Section refl.
       [| v1 = Vint i1 |] **
       [| v2 = Vint i2 |] ** Q i1 i2.
 
-  Fixpoint size_of (ty : type) : option N :=
-    match ty with
-    | Tbool => Some 1
-    | Tpointer _ => Some pointer_size
-    | Tchar w _
-    | Tint w _ =>
-      (* todo(gmm): restrict to [w] a multiple of 8 *)
-      Some ((w + 7) / 8)%N
-    | Tarray ety n =>
-      match size_of ety with
-      | None => None
-      | Some sz => Some (n * sz)%N
-      end
-    | Treference _
-    | Trv_reference _ => None
-    | Tref cls => None (* todo(gmm): compute the size of the structure, i need fuel for this *)
-    | Tfunction _ _ => None
-    | Tqualified _ t => size_of t
-    | Tvoid => None
-    end%N.
+  Fixpoint size_of' (fuel : nat) : type -> option N :=
+    match fuel with
+    | 0 => fun _ => None
+    | S fuel =>
+      fix size_of_ty (ty : type) : option N :=
+      match ty with
+      | Tbool => Some 1
+      | Tpointer _ => Some pointer_size
+      | Tchar w _
+      | Tint w _ =>
+        (* todo(gmm): restrict to [w] a multiple of 8 *)
+        Some ((w + 7) / 8)%N
+      | Tarray ety n =>
+        match size_of_ty ety with
+        | None => None
+        | Some sz => Some (n * sz)%N
+        end
+      | Treference _
+      | Trv_reference _ => None
+      | Tref cls =>
+        match Lemmas.find_struct cls cu with
+        | None => None
+        | Some str =>
+          match traverse (fun x => size_of' fuel (Tref x)) str.(s_bases)
+              , traverse (fun '(_, x, _) => size_of' fuel x) str.(s_fields)
+          with
+          | Some xs , Some ys => Some (fold_left (fun x y => x + y) (xs ++ ys) 0)
+          | _ , _ => None
+          end
+        end
+      | Tfunction _ _ => None
+      | Tqualified _ t => size_of_ty t
+      | Tvoid => None
+      end%N
+    end.
+
+  Definition size_of := size_of' 100.
 
   Definition simple_int_int_op (ty : type) (w : size) (s : signed)
              (cond : option (Z -> Z -> Prop)) (f : Z -> Z -> Z)
@@ -226,8 +258,7 @@ Section refl.
   Definition simple_int_int_bin_op (f : Z -> Z -> Z)
   : val -> val -> (val -> mpred) -> mpred :=
     (fun v1 v2 Q => get_Zs v1 v2 (fun i1 i2 =>
-       let res := f i1 i2 in
-       Q (Vint res))).
+       Q (Vint (f i1 i2)))).
 
 
   Definition wpbo (o : BinOp) (tyl tyr ty : type)
@@ -235,12 +266,16 @@ Section refl.
   refine
     match o with
     | Badd =>
-      match tyl , tyr , ty with
-      | Tint w s , Tint _ _ , Tint _ _ =>
+      match tyl , tyr with
+      | Tint w s , Tint _ _ =>
         guard (type_eq_dec tyl tyr) ;;
         guard (type_eq_dec tyr ty) ;;
         ret (simple_int_int_op ty w s None (fun a b => a + b))
-      | Tpointer pty , Tint _ _ , Tpointer _ =>
+      | Tchar w s , Tchar _ _ =>
+        guard (type_eq_dec tyl tyr) ;;
+        guard (type_eq_dec tyr ty) ;;
+        ret (simple_int_int_op ty w s None (fun a b => a + b))
+      | Tpointer pty , Tint _ _ =>
         guard (type_eq_dec tyl ty) ;;
         match size_of pty with
         | None =>
@@ -255,7 +290,7 @@ Section refl.
                  [| v2 = Vint i2 |] **
                  Q (offset_ptr v1 (sz * i2)))
         end
-      | Tint _ _ , Tpointer pty , Tpointer _ =>
+      | Tint _ _ , Tpointer pty =>
         guard (type_eq_dec tyr ty) ;;
         match size_of pty with
         | None =>
@@ -270,17 +305,21 @@ Section refl.
                  [| v2 = Vint i2 |] **
                  Q (offset_ptr v1 (sz * i2)))
         end
-      | _ , _ , _ =>
+      | _ , _ =>
         ret (fun _ _ _ => error "not supported")
       end
 
     | Bsub =>
-      match tyl , tyr , ty with
-      | Tint w s , Tint _ _ , Tint _ _ =>
+      match tyl , tyr with
+      | Tint w s , Tint _ _ =>
         guard (type_eq_dec tyl tyr) ;;
         guard (type_eq_dec tyr ty) ;;
         ret (simple_int_int_op ty w s None (fun a b => a - b))
-      | Tpointer pty , Tint _ _ , Tpointer _ =>
+      | Tchar w s , Tchar _ _ =>
+        guard (type_eq_dec tyl tyr) ;;
+        guard (type_eq_dec tyr ty) ;;
+        ret (simple_int_int_op ty w s None (fun a b => a - b))
+      | Tpointer pty , Tint _ _ =>
         guard (type_eq_dec tyl ty) ;;
         match size_of pty with
         | None =>
@@ -295,7 +334,7 @@ Section refl.
                  [| v2 = Vint i2 |] **
                  Q (offset_ptr v1 (sz * -i2)))
         end
-      | Tint _ _ , Tpointer pty , Tpointer _ =>
+      | Tint _ _ , Tpointer pty =>
         guard (type_eq_dec tyr ty) ;;
         match size_of pty with
         | None =>
@@ -310,7 +349,7 @@ Section refl.
                  [| v2 = Vint i2 |] **
                  Q (offset_ptr v1 (sz * -i2)))
         end
-      | Tpointer pty , Tpointer _ , Tpointer _ =>
+      | Tpointer pty , Tpointer _ =>
         guard (type_eq_dec tyl tyr) ;;
         guard (type_eq_dec tyr ty) ;;
         match size_of pty with
@@ -331,40 +370,56 @@ Section refl.
                [| o1 mod sz = 0 |] **
                [| o2 mod sz = 0 |] ** Q (Vint ((o1 - o2) / sz)))
         end
-      | _ , _ , _ =>
+      | _ , _ =>
         ret (fun _ _ _ => error "not supported")
       end
 
     | Bmul =>
-      match tyl , tyr , ty with
-      | Tint w s , Tint _ _ , Tint _ _ =>
+      match tyl with
+      | Tint w s =>
         guard (type_eq_dec tyl tyr) ;;
         guard (type_eq_dec tyr ty) ;;
         ret (simple_int_int_op ty w s None (fun a b => a * b))
-      | _ , _ , _ => ret (fun _ _ _ => error "not supported")
+      | Tchar w s =>
+        guard (type_eq_dec tyl tyr) ;;
+        guard (type_eq_dec tyr ty) ;;
+        ret (simple_int_int_op ty w s None (fun a b => a * b))
+      | _ => ret (fun _ _ _ => error "not supported")
       end
 
     | Bdiv =>
-      match tyl , tyr , ty with
-      | Tint w s , Tint _ _ , Tint _ _ =>
+      match tyl with
+      | Tint w s =>
         guard (type_eq_dec tyl tyr) ;;
         guard (type_eq_dec tyr ty) ;;
         ret (simple_int_int_op ty w s (Some (fun _ b => b <> 0)) (fun a b => a / b))
-      | _ , _ , _ => ret (fun _ _ _ => error "not supported")
+      | Tchar w s =>
+        guard (type_eq_dec tyl tyr) ;;
+        guard (type_eq_dec tyr ty) ;;
+        ret (simple_int_int_op ty w s (Some (fun _ b => b <> 0)) (fun a b => a / b))
+      | _ => ret (fun _ _ _ => error "not supported")
       end
 
     | Bmod =>
-      match tyl , tyr , ty with
-      | Tint w s , Tint _ _ , Tint _ _ =>
+      match tyl with
+      | Tint w s =>
         guard (type_eq_dec tyl tyr) ;;
         guard (type_eq_dec tyr ty) ;;
         ret (simple_int_int_op ty w s (Some (fun _ b => b <> 0)) (fun a b => a mod b))
-      | _ , _ , _ => ret (fun _ _ _ => error "not supported")
+      | Tchar w s =>
+        guard (type_eq_dec tyl tyr) ;;
+        guard (type_eq_dec tyr ty) ;;
+        ret (simple_int_int_op ty w s (Some (fun _ b => b <> 0)) (fun a b => a mod b))
+      | _ => ret (fun _ _ _ => error "not supported")
       end
 
     | Band =>
       match tyl with
       | Tint w s  =>
+        guard (type_eq_dec tyl tyr) ;;
+        guard (type_eq_dec tyr ty) ;;
+        ret (simple_int_int_bin_op Z.land)
+      | Tchar w s  =>
         guard (type_eq_dec tyl tyr) ;;
         guard (type_eq_dec tyr ty) ;;
         ret (simple_int_int_bin_op Z.land)
@@ -377,12 +432,20 @@ Section refl.
         guard (type_eq_dec tyl tyr) ;;
         guard (type_eq_dec tyr ty) ;;
         ret (simple_int_int_bin_op Z.lor)
+      | Tchar w s  =>
+        guard (type_eq_dec tyl tyr) ;;
+        guard (type_eq_dec tyr ty) ;;
+        ret (simple_int_int_bin_op Z.lor)
       | _ => ret (fun _ _ _ => error "not supported")
       end
 
     | Bxor =>
       match tyl with
       | Tint w s =>
+        guard (type_eq_dec tyl tyr) ;;
+        guard (type_eq_dec tyr ty) ;;
+        ret (simple_int_int_bin_op Z.lxor)
+      | Tchar w s =>
         guard (type_eq_dec tyl tyr) ;;
         guard (type_eq_dec tyr ty) ;;
         ret (simple_int_int_bin_op Z.lxor)
@@ -408,14 +471,88 @@ Section refl.
       end
 
     (* todo(gmm): relational operators *)
-  
+    | Beq =>
+      match tyl with
+      | Tint _ _
+      | Tchar _ _
+      | Tbool =>
+        guard (type_eq_dec tyl tyr) ;;
+        guard (type_eq_dec tyr ty) ;;
+        ret (simple_int_int_bin_op (fun a b => if Z.eq_dec a b then 1 else 0))
+        (* todo(gmm): pointers *)
 
+      | _ => ret (fun _ _ _ => error "not supported")
+      end
+
+    | Bneq =>
+      match tyl with
+      | Tint _ _
+      | Tchar _ _
+      | Tbool =>
+        guard (type_eq_dec tyl tyr) ;;
+        guard (type_eq_dec tyr ty) ;;
+        ret (simple_int_int_bin_op (fun a b => if Z.eq_dec a b then 0 else 1))
+        (* todo(gmm): pointers *)
+
+      | _ => ret (fun _ _ _ => error "not supported")
+      end
+
+    | Ble =>
+      match tyl with
+      | Tint _ _
+      | Tchar _ _
+      | Tbool =>
+        guard (type_eq_dec tyl tyr) ;;
+        guard (type_eq_dec tyr ty) ;;
+        ret (simple_int_int_bin_op (fun a b => if ZArith_dec.Z_le_gt_dec a b then 1 else 0))
+        (* todo(gmm): pointers *)
+
+      | _ => ret (fun _ _ _ => error "not supported")
+      end
+
+    | Blt =>
+      match tyl with
+      | Tint _ _
+      | Tchar _ _
+      | Tbool =>
+        guard (type_eq_dec tyl tyr) ;;
+        guard (type_eq_dec tyr ty) ;;
+        ret (simple_int_int_bin_op (fun a b => if ZArith_dec.Z_lt_ge_dec a b then 1 else 0))
+        (* todo(gmm): pointers *)
+
+      | _ => ret (fun _ _ _ => error "not supported")
+      end
+
+    | Bge =>
+      match tyl with
+      | Tint _ _
+      | Tchar _ _
+      | Tbool =>
+        guard (type_eq_dec tyl tyr) ;;
+        guard (type_eq_dec tyr ty) ;;
+        ret (simple_int_int_bin_op (fun a b => if ZArith_dec.Z_ge_lt_dec a b then 1 else 0))
+        (* todo(gmm): pointers *)
+
+      | _ => ret (fun _ _ _ => error "not supported")
+      end
+
+    | Bgt =>
+      match tyl with
+      | Tint _ _
+      | Tchar _ _
+      | Tbool =>
+        guard (type_eq_dec tyl tyr) ;;
+        guard (type_eq_dec tyr ty) ;;
+        ret (simple_int_int_bin_op (fun a b => if ZArith_dec.Z_gt_le_dec a b then 1 else 0))
+        (* todo(gmm): pointers *)
+
+      | _ => ret (fun _ _ _ => error "not supported")
+      end
+
+
+        (* todo(gmm): support for [<=>] *)
     | _ => ret (fun _ _ _ => error "not supported")
     end%Z.
-  (* todo(gmm): arithmetic on characters *)
-
-  Print BinOp.
-
   Defined.
 
 (*
@@ -1100,28 +1237,33 @@ Section refl.
 
 End refl.
 
-Ltac with_specs' c specs k :=
+Definition cu_app (a b : compilation_unit) : compilation_unit :=
+  {| symbols := a.(symbols) ++ b.(symbols) ; globals := a.(globals) ++ b.(globals) |}.
+
+Ltac with_specs' c specs md k :=
   match c with
   | ?l ** ?r =>
-    with_specs' l specs ltac:(fun specs' => with_specs' r specs' k)
-  | @sig _ _ ?spec => k constr:(List.app spec specs)
-  | ti_cglob ?f ?spec => k constr:((f, spec) :: specs)
-  | |> ti_cglob ?f ?spec => k constr:((f, spec) :: specs)
-  | cglob ?f _ ?spec => k constr:((f, spec) :: specs)
-  | |> cglob ?f _ ?spec => k constr:((f, spec) :: specs)
+    with_specs' l specs md ltac:(fun specs' md' => with_specs' r specs' md' k)
+  | @sig _ _ ?spec => k constr:(List.app spec specs) md
+  | ti_cglob ?f ?spec => k constr:((f, spec) :: specs) md
+  | |> ti_cglob ?f ?spec => k constr:((f, spec) :: specs) md
+  | cglob ?f _ ?spec => k constr:((f, spec) :: specs) md
+  | |> cglob ?f _ ?spec => k constr:((f, spec) :: specs) md
+  | denoteModule ?m => k specs constr:(cu_app md m)
   | _ => k specs
   end.
 
-Ltac with_specs k :=
+Ltac with_specs_and_mod k :=
   match goal with
-  | |- ?l |-- _ => with_specs' l constr:(@nil (globname * function_spec)) k
+  | |- ?l |-- _ => with_specs' l constr:(@nil (globname * function_spec))
+                                constr:({| symbols := nil ; globals := nil |}) k
   end.
 
 Ltac simplifying :=
-  progress (with_specs ltac:(fun s =>
-     first [ rewrite <- wp_sound with (specs := s) by (simpl; reflexivity)
-           | rewrite <- wp_ctor_sound with (specs:=s) by (simpl; reflexivity)
-           | rewrite <- wp_dtor_sound with (specs:=s) by (simpl; reflexivity)
-           | rewrite <- wp_lhs_sound with (specs := s) by (simpl; reflexivity)
-           | rewrite <- wp_rhs_sound with (specs := s) by (simpl; reflexivity)
+  progress (with_specs_and_mod ltac:(fun s md =>
+     first [ rewrite <- wp_sound with (cu:=md) (specs:=s) by (simpl; reflexivity)
+           | rewrite <- wp_ctor_sound with (cu:=md) (specs:=s) by (simpl; reflexivity)
+           | rewrite <- wp_dtor_sound with (cu:=md) (specs:=s) by (simpl; reflexivity)
+           | rewrite <- wp_lhs_sound with (cu:=md) (specs:=s) by (simpl; reflexivity)
+           | rewrite <- wp_rhs_sound with (cu:=md) (specs:=s) by (simpl; reflexivity)
            ]); cbn).
