@@ -416,14 +416,14 @@ Definition pureR (P : mpred) : Rep :=
   {| repr _ := P |}.
 Coercion pureR : mpred >-> Rep.
 
-Definition tint (sz : nat) (v : Z) : Rep :=
+Definition tint (sz : size) (v : Z) : Rep :=
   {| repr addr :=
-       tptsto (Tint (Some sz) true) addr (Vint v) **
-       [| has_type (Vint v) (Tint (Some sz) true) |] |}.
-Definition tuint (sz : nat) (v : Z) : Rep :=
+       tptsto (Tint sz Signed) addr (Vint v) **
+       [| has_type (Vint v) (Tint sz Signed) |] |}.
+Definition tuint (sz : size) (v : Z) : Rep :=
   {| repr addr :=
-       tptsto (Tint (Some sz) false) addr (Vint v) **
-       [| has_type (Vint v) (Tint (Some sz) false) |] |}.
+       tptsto (Tint sz Unsigned) addr (Vint v) **
+       [| has_type (Vint v) (Tint sz Unsigned) |] |}.
 Definition tptr (ty : type) (p : ptr) : Rep :=
   {| repr addr := tptsto (Tpointer ty) addr (Vptr p) |}.
 Definition tref (ty : type) (p : val) : Rep :=
@@ -435,10 +435,10 @@ Definition tprim (ty : type) (v : val) : Rep :=
 Definition tprim_proper v v' ty : v = v' -> tprim ty v -|- tprim ty v'.
 Proof. intros []; reflexivity. Qed.
 Lemma tprim_tint : forall sz v,
-    tprim (Tint (Some sz) true) (Vint v) -|- tint sz v.
+    tprim (Tint sz Signed) (Vint v) -|- tint sz v.
 Proof. reflexivity. Qed.
 Lemma tprim_tuint : forall sz v,
-    tprim (Tint (Some sz) false) (Vint v) -|- tuint sz v.
+    tprim (Tint sz Unsigned) (Vint v) -|- tuint sz v.
 Proof. reflexivity. Qed.
 Lemma tprim_tptr : forall ty p,
     tprim (Tpointer ty) (Vptr p) -|- tptr ty p.
@@ -472,12 +472,12 @@ Definition is_null : Rep :=
 Definition is_nonnull : Rep :=
   {| repr addr := Exists p, [| p <> nullptr |] ** [| addr = Vptr p |] |}.
 
-Lemma tint_any : forall sz v, tint sz v |-- tany (Tint (Some sz) true).
+Lemma tint_any : forall sz v, tint sz v |-- tany (Tint sz Signed).
 Proof.
   simpl; intros. t.
   eapply lorR1. t.
 Qed.
-Lemma tuint_any : forall sz v, tuint sz v |-- tany (Tint (Some sz) false).
+Lemma tuint_any : forall sz v, tuint sz v |-- tany (Tint sz Unsigned).
 Proof.
   simpl; intros. t.
   eapply lorR1. t.

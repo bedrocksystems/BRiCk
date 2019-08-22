@@ -17,6 +17,7 @@ From Cpp.Sem Require Import
      Util Logic Semantics PLogic Destroy Wp CompilationUnit.
 
 Require Import Coq.ZArith.BinInt.
+Require Import Coq.NArith.BinNatDef.
 Require Import Coq.micromega.Lia.
 
 (* note: this is used only for testing purposes.
@@ -121,7 +122,7 @@ Module Type Expr.
     (* note(gmm): operators need types! *)
     Fixpoint companion_type (t : type) : option type :=
       match t with
-      | Tpointer _ => Some (Tint (Some int_bits) true)
+      | Tpointer _ => Some (Tint int_bits Signed)
       | Tint _ _ => Some t
       | Tchar _ _ => Some t
       | Tqualified _ t => companion_type t
