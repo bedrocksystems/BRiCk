@@ -4,6 +4,7 @@
  * SPDX-License-Identifier:AGPL-3.0-or-later
  *)
 Require Import Coq.ZArith.BinInt.
+Require Import Coq.micromega.Lia.
 
 From Cpp Require Import
      Ast Sem.
@@ -13,22 +14,22 @@ From Cpp.Auto Require Import
 Local Ltac work :=
   discharge fail idtac fail fail eauto.
 
+Section with_resolve.
+  Context {resolve : genv}.
 
 Definition wp_eval_unop (uo : UnOp) (t t' : type) (a : val) (P : val -> mpred) : mpred :=
-  Exists b : val, embed (eval_unop uo t t' a b) //\\ P b.
+  Exists b : val, embed (eval_unop (resolve:=resolve) uo t t' a b) //\\ P b.
 
 Lemma wp_eval_unop_defn : forall uo t t' a P,
-    wp_eval_unop uo t t' a P -|- Exists b : val, embed (eval_unop uo t t' a b) //\\ P b.
+    wp_eval_unop uo t t' a P -|- Exists b : val, embed (eval_unop (resolve:=resolve) uo t t' a b) //\\ P b.
 Proof. reflexivity. Qed.
 
 Definition wp_eval_binop (bo : BinOp) (t1 t2 t' : type) (a b : val) (P : val -> mpred) : mpred :=
-  Exists c : val, embed (eval_binop bo t1 t2 t' a b c) //\\ P c.
+  Exists c : val, embed (eval_binop (resolve:=resolve) bo t1 t2 t' a b c) //\\ P c.
 
 Lemma wp_eval_binop_defn : forall bo t1 t2 t' a b P,
-    wp_eval_binop bo t1 t2 t' a b P -|- Exists c : val, embed (eval_binop bo t1 t2 t' a b c) //\\ P c.
+    wp_eval_binop bo t1 t2 t' a b P -|- Exists c : val, embed (eval_binop (resolve:=resolve) bo t1 t2 t' a b c) //\\ P c.
 Proof. reflexivity. Qed.
-
-
 
 Definition wp_eval_int_op (bo : BinOp) (o : Z -> Z -> Z) : Prop :=
   forall t1 t2 t3 w s a b av bv Q,
@@ -44,8 +45,34 @@ Definition wp_eval_int_op (bo : BinOp) (o : Z -> Z -> Z) : Prop :=
     a = Vint av ->
     b = Vint bv ->
     has_type (Vint (o av bv)) (Tint w s) ->
-    Q (Vint (o av bv))
+    let res := o av bv in Q (Vint (if s then res else trim w res))
     |-- wp_eval_binop bo t1 t2 t3 a b Q.
+
+Local Lemma has_type_trim :
+  forall (w : size) (res : Z),
+    has_type (Vint (trim w res)) (Tint w Unsigned).
+Proof.
+  intros.
+  eapply has_int_type.
+  simpl in *.
+  eapply Z.mod_pos_bound.
+  eapply Z.pow_pos_nonneg; lia.
+Qed.
+
+
+Local Lemma prove_has_type:
+  forall (w : size) (s : signed) (res : Z),
+    has_type res (Tint w s) ->
+    has_type (Vint (if s then res else (trim w res))) (Tint w s).
+Proof.
+  destruct s; simpl; eauto.
+  intros.
+  eapply has_int_type.
+  eapply has_int_type in H.
+  simpl in *.
+  eapply Z.mod_pos_bound.
+  eapply Z.pow_pos_nonneg; lia.
+Qed.
 
 Local Ltac prove_binop a :=
   intros;
@@ -54,7 +81,7 @@ Local Ltac prove_binop a :=
   eapply embedPropR;
   subst;
   eapply a;
-  eauto.
+  eauto using prove_has_type.
 
 Lemma wp_eval_add : ltac:(let x := eval hnf in (wp_eval_int_op Badd Z.add) in refine x).
 Proof. prove_binop eval_add. Qed.
@@ -73,6 +100,7 @@ Lemma wp_eval_div : forall t1 t2 t3 w s a b av bv Q,
     b = Vint bv ->
     bv <> 0%Z ->
     has_type (Vint (Z.quot av bv)) (Tint w s) ->
+    (* ^ todo(gmm): not necessary if b is typed *)
     Q (Vint (Z.quot av bv))
     |-- wp_eval_binop Bdiv t1 t2 t3 a b Q.
 Proof. prove_binop eval_div. Qed.
@@ -85,33 +113,40 @@ Lemma wp_eval_mod : forall t1 t2 t3 w s a b av bv Q,
     b = Vint bv ->
     bv <> 0%Z ->
     has_type (Vint (Z.rem av bv)) (Tint w s) ->
+    (* ^ todo(gmm): not necessary if bv is typed *)
     Q (Vint (Z.rem av bv))
     |-- wp_eval_binop Bmod t1 t2 t3 a b Q.
 Proof. prove_binop eval_mod. Qed.
 
 Lemma wp_eval_shl : forall t1 t2 t3 w s a b av bv Q,
-    t1 = Tint (Some w) s ->
-    t2 = Tint (Some w) s ->
-    t3 = Tint (Some w) s ->
+    t1 = Tint w s ->
+    t2 = Tint w s ->
+    t3 = Tint w s ->
     a = Vint av ->
     b = Vint bv ->
-    (0 <= bv < Z.of_nat w)%Z ->
-    has_type (Vint (Z.shiftl av bv)) (Tint (Some w) s) ->
-    Q (Vint (Z.shiftl av bv))
+    (0 <= bv < Z.of_N w)%Z ->
+    (if s then has_type (Vint (Z.shiftl av bv)) (Tint w s) else True) ->
+    (let res := Z.shiftl av bv in Q (Vint (if s then res else trim w res)))
     |-- wp_eval_binop Bshl t1 t2 t3 a b Q.
-Proof. prove_binop eval_shl. Qed.
+Proof. prove_binop eval_shl.
+       destruct s; auto.
+       eapply has_type_trim.
+Qed.
 
 Lemma wp_eval_shr : forall t1 t2 t3 w s a b av bv Q,
-    t1 = Tint (Some w) s ->
-    t2 = Tint (Some w) s ->
-    t3 = Tint (Some w) s ->
+    t1 = Tint w s ->
+    t2 = Tint w s ->
+    t3 = Tint w s ->
     a = Vint av ->
     b = Vint bv ->
-    (0 <= bv < Z.of_nat w)%Z ->
-    has_type (Vint (Z.shiftr av bv)) (Tint (Some w) s) ->
-    Q (Vint (Z.shiftr av bv))
+    (0 <= bv < Z.of_N w)%Z ->
+    (if s then has_type (Vint (Z.shiftr av bv)) (Tint w s) else True) ->
+    (let res := Z.shiftr av bv in Q (Vint (if s then res else trim w res)))
     |-- wp_eval_binop Bshr t1 t2 t3 a b Q.
-Proof. prove_binop eval_shr. Qed.
+Proof. prove_binop eval_shr.
+       destruct s; auto.
+       eapply has_type_trim.
+Qed.
 
 Definition wp_eval_int_rel_op (bo : BinOp) {P P' : Z -> Z -> Prop}
            (o : forall a b, {P a b} + {P' a b}) : Prop :=
@@ -223,3 +258,5 @@ Lemma wp_eval_not_bool : forall t1 t2 a av (Q : val -> mpred),
 Proof. prove_unop eval_not_bool. Qed.
 
 Global Opaque wp_eval_unop wp_eval_binop.
+
+End with_resolve.

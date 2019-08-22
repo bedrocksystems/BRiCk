@@ -69,7 +69,7 @@ Proof.
 Admitted.
 
 (* Learning Lemmas *)
-Lemma learn_bounds_at_int_val : forall (s : bool) (w : option nat) p v P Q,
+Lemma learn_bounds_at_int_val : forall (s : signed) (w : size) p v P Q,
     (forall z, Vint z = v -> has_type (Vint z) (Tint w s) -> _at p (tprim (Tint w s) (Vint z)) ** P |-- Q) ->
     _at p (tprim (Tint w s) v) ** P |-- Q.
 Proof.
@@ -83,7 +83,7 @@ Proof.
   Opaque _at tprim.
 Qed.
 
-Lemma learn_bounds_at_int_Vint : forall (s : bool) (w : option nat) p v P Q,
+Lemma learn_bounds_at_int_Vint : forall (s : signed) (w : size) p v P Q,
     (has_type (Vint v) (Tint w s) -> _at p (tprim (Tint w s) (Vint v)) ** P |-- Q) ->
     _at p (tprim (Tint w s) (Vint v)) ** P |-- Q.
 Proof.
@@ -96,7 +96,7 @@ Proof.
 Qed.
 
 Lemma learn_bounds_at_tuint : forall bits p v P Q,
-    (has_type (Vint v) (Tint (Some bits) false) -> _at p (tuint bits v) ** P |-- Q) ->
+    (has_type (Vint v) (Tint bits Unsigned) -> _at p (tuint bits v) ** P |-- Q) ->
     _at p (tuint bits v) ** P |-- Q.
 Proof.
   Local Transparent _at tuint tprim.
@@ -107,7 +107,7 @@ Proof.
   Opaque _at tprim tuint.
 Qed.
 
-Lemma learn_bounds_tlocal_val : forall (s : bool) (w : option nat) v P Q r x,
+Lemma learn_bounds_tlocal_val : forall (s : signed) (w : size) v P Q r x,
     (forall a vv, Vint vv = v -> has_type (Vint vv) (Tint w s) ->
              tlocal_at r x a (tprim (Tint w s) (Vint vv)) ** P |-- Q) ->
     tlocal r x (tprim (Tint w s) v) ** P |-- Q.
@@ -121,7 +121,7 @@ Proof.
   Opaque _at tprim.
 Qed.
 
-Lemma learn_bounds_tlocal_Vint : forall (s : bool) (w : option nat) v P Q r x,
+Lemma learn_bounds_tlocal_Vint : forall (s : signed) (w : size) v P Q r x,
     (forall a, has_type (Vint v) (Tint w s) -> tlocal_at r x a (tprim (Tint w s) (Vint v)) ** P |-- Q) ->
     tlocal r x (tprim (Tint w s) (Vint v)) ** P |-- Q.
 Proof.
@@ -133,7 +133,7 @@ Proof.
   Opaque _at tprim.
 Qed.
 
-Lemma learn_bounds_tlocal_at_val : forall (s : bool) (w : option nat) v P Q r x a,
+Lemma learn_bounds_tlocal_at_val : forall (s : signed) (w : size) v P Q r x a,
     (forall vv, Vint vv = v -> has_type (Vint vv) (Tint w s) -> tlocal_at r x a (tprim (Tint w s) (Vint vv)) ** P |-- Q) ->
     tlocal_at r x a (tprim (Tint w s) v) ** P |-- Q.
 Proof.
@@ -147,7 +147,7 @@ Proof.
   Opaque _at tprim.
 Qed.
 
-Lemma learn_bounds_tlocal_at_Vint : forall (s : bool) (w : option nat) v P Q r x a,
+Lemma learn_bounds_tlocal_at_Vint : forall (s : signed) (w : size) v P Q r x a,
     (has_type (Vint v) (Tint w s) -> tlocal_at r x a (tprim (Tint w s) (Vint v)) ** P |-- Q) ->
     tlocal_at r x a (tprim (Tint w s) (Vint v)) ** P |-- Q.
 Proof.

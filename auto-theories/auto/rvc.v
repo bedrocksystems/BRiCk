@@ -78,15 +78,14 @@ Section refl.
 
   Definition is_const_int (ty : type) (v : Z) : option bool :=
     match drop_qualifiers ty with
-    | Tint (Some n) s =>
-      let n := Z.of_nat n in
+    | Tint n s =>
+      let n := Z.of_N n in
       Some (if s then
              BinIntDef.Z.leb (-2 ^ (n - 1)) v &&
              BinIntDef.Z.ltb v (2 ^ (n - 1))
            else
              BinIntDef.Z.leb 0 v &&
              BinIntDef.Z.ltb v (2 ^ n))
-    | Tint None _ => None
     | _ => Some false
     end%bool.
 
@@ -125,15 +124,15 @@ Section refl.
     | _, _, _ => ret (fun _ _ => error "unrecognized unop")
     end.
 
-  Definition int_arith_ops (o : BinOp) (w : nat) : option ((Z -> Z -> Prop) * (Z -> Z -> Z)) :=
+  Definition int_arith_ops (o : BinOp) (w : N) : option ((Z -> Z -> Prop) * (Z -> Z -> Z)) :=
     match o with
     | Badd => Some (fun _ _ => True, Z.add)
     | Bsub => Some (fun _ _ => True, Z.sub)
     | Bmul => Some (fun _ _ => True, Z.mul)
     | Bdiv => Some (fun _ b => b <> 0, Z.div)
     | Bmod => Some (fun _ b => b <> 0, Z.modulo)
-    | Bshl => Some (fun _ b => 0 <= b < Z.of_nat w, Z.shiftl)
-    | Bshr => Some (fun _ b => 0 <= b < Z.of_nat w, Z.shiftr)
+    | Bshl => Some (fun _ b => 0 <= b < Z.of_N w, Z.shiftl)
+    | Bshr => Some (fun _ b => 0 <= b < Z.of_N w, Z.shiftr)
     | _ => None
     end%Z.
 
@@ -151,7 +150,7 @@ Section refl.
   Definition wpbo (o : BinOp) (tyl tyr ty : type)
   : option (val -> val -> (val -> mpred) -> mpred) :=
     match tyl, ty with
-    | Tint (Some w) _, Tint _ _ =>
+    | Tint w _, Tint _ _ =>
       match int_arith_ops o w with
       | Some (cond, f) =>
         guard (type_eq_dec tyl tyr) ;;
@@ -216,7 +215,7 @@ Section refl.
 
   Lemma wpbo_sound : forall o tyl tyr ty v1 v2 Q K,
       wpbo o tyl tyr ty = Some Q ->
-      Q v1 v2 K |-- Eval.wp_eval_binop o tyl tyr ty v1 v2 K.
+      Q v1 v2 K |-- Eval.wp_eval_binop (resolve:=resolve) o tyl tyr ty v1 v2 K.
   Proof.
     Opaque type_eq_dec.
     destruct tyl, ty; cbn.
@@ -476,7 +475,7 @@ Section refl.
     | Eatomic ao es ty =>
       rvalue cat ;;
       Qes <- wpes (wpAnys' wpe) es ;;
-      ret (fun Q => Qes (fun vs free => wp_atom ao vs ty (fun v => Q v free)) empSP)
+      ret (fun Q => Qes (fun vs free => wp_atom (resolve:=resolve) ao vs ty (fun v => Q v free)) empSP)
     | Eif test thn els ty =>
       Qr <- wpe Rvalue test ;;
       Qthn <- wpe cat thn ;;
