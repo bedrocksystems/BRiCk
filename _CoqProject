@@ -37,6 +37,7 @@ theories/Auto/type.v
 theories/Auto/operator.v
 theories/Auto/vc.v
 theories/Auto/mvcg.v
+theories/Auto/tactics.v
 theories/Auto/Notations.v
 theories/Auto/Linking/Lemmas.v
 theories/Auto/Linking.v
