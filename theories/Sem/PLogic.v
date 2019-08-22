@@ -432,6 +432,8 @@ Definition tref (ty : type) (p : val) : Rep :=
 
 Definition tprim (ty : type) (v : val) : Rep :=
   {| repr addr := tptsto ty addr v ** [| has_type v (drop_qualifiers ty) |] |}.
+Definition tprim_proper v v' ty : v = v' -> tprim ty v -|- tprim ty v'.
+Proof. intros []; reflexivity. Qed.
 Lemma tprim_tint : forall sz v,
     tprim (Tint (Some sz) true) (Vint v) -|- tint sz v.
 Proof. reflexivity. Qed.
