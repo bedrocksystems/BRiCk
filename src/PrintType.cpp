@@ -108,7 +108,7 @@ public:
                 print.output() << "T_int128";
                 break;
             default:
-                print.output() << "(Tint (Some " << sz << "%nat) true)";
+                print.output() << "(Tint " << sz << "%N Signed)";
             }
         } else if (type->isUnsignedIntegerType()) {
             switch (auto sz = cprint.getTypeSize(type)) {
@@ -128,7 +128,7 @@ public:
                 print.output() << "T_uint128";
                 break;
             default:
-                print.output() << "(Tint (Some " << sz << "%nat) false)";
+                print.output() << "(Tint " << sz << "%N) Unsigned)";
             }
         }
     }
@@ -163,17 +163,17 @@ public:
         } else if (type->getKind() == BuiltinType::Kind::Char16) {
             print.output() << "T_char16";
         } else if (type->getKind() == BuiltinType::Kind::Char_S) {
-            print.output() << "(Tchar (Some " << cprint.getTypeSize(type)
-                           << "%nat) true)";
+            print.output() << "(Tchar " << cprint.getTypeSize(type)
+                           << "%N Signed)";
         } else if (type->getKind() == BuiltinType::Kind::SChar) {
-            print.output() << "(Tchar (Some " << cprint.getTypeSize(type)
-                           << "%nat) true)";
+            print.output() << "(Tchar " << cprint.getTypeSize(type)
+                           << "%N Signed)";
         } else if (type->getKind() == BuiltinType::Kind::UChar) {
-            print.output() << "(Tchar (Some " << cprint.getTypeSize(type)
-                           << "%nat) false)";
+            print.output() << "(Tchar " << cprint.getTypeSize(type)
+                           << "%N Unsigned)";
         } else if (type->getKind() == BuiltinType::Kind::Char_U) {
-            print.output() << "(Tchar (Some " << cprint.getTypeSize(type)
-                           << "%nat) false)";
+            print.output() << "(Tchar " << cprint.getTypeSize(type)
+                           << "%N Unsigned)";
         } else if (type->getKind() == BuiltinType::Kind::Char8) {
             print.output() << "T_char8";
         } else if (type->getKind() == BuiltinType::Kind::Char32) {
