@@ -4,6 +4,7 @@
  * SPDX-License-Identifier:AGPL-3.0-or-later
  *)
 From Coq Require Import
+     NArith.BinNat
      ZArith.BinInt
      Strings.String
      Lists.List.
@@ -121,9 +122,17 @@ Section refl.
     | Unot, Tbool, Tbool =>
       ret (fun v Q => Exists b, [| v = Vbool b |] ** Q (Vbool (negb b)))
     | Unot, _, _ => ret (fun _ _ => error "Unot needs a boolean argument and return")
+    | Ubnot, Tint w s, _ =>
+      guard (type_eq_dec tye ty) ;;
+      ret (fun v Q => Exists vv, [| v = Vint vv |] ** Q (Vint (Z.lnot vv)))
+    | Uminus, Tint w s, _ =>
+      guard (type_eq_dec tye ty) ;;
+      ret (fun v Q => Exists vv, [| v = Vint vv |] ** Q (Vint (- vv)))
     | _, _, _ => ret (fun _ _ => error "unrecognized unop")
     end.
 
+
+  (* todo(gmm): i still need to port these *)
   Definition int_arith_ops (o : BinOp) (w : N) : option ((Z -> Z -> Prop) * (Z -> Z -> Z)) :=
     match o with
     | Badd => Some (fun _ _ => True, Z.add)
@@ -147,6 +156,269 @@ Section refl.
     | _ => None
     end%Z.
 
+  Definition get_Zs (v1 v2 : val) (Q : Z -> Z -> mpred) : mpred :=
+    Exists i1, Exists i2,
+      [| v1 = Vint i1 |] **
+      [| v2 = Vint i2 |] ** Q i1 i2.
+
+  Fixpoint size_of (ty : type) : option N :=
+    match ty with
+    | Tbool => Some 1
+    | Tpointer _ => Some pointer_size
+    | Tchar w _
+    | Tint w _ =>
+      (* todo(gmm): restrict to [w] a multiple of 8 *)
+      Some ((w + 7) / 8)%N
+    | Tarray ety n =>
+      match size_of ety with
+      | None => None
+      | Some sz => Some (n * sz)%N
+      end
+    | Treference _
+    | Trv_reference _ => None
+    | Tref cls => None (* todo(gmm): compute the size of the structure, i need fuel for this *)
+    | Tfunction _ _ => None
+    | Tqualified _ t => size_of t
+    | Tvoid => None
+    end%N.
+
+  Definition simple_int_int_op (ty : type) (w : size) (s : signed)
+             (cond : option (Z -> Z -> Prop)) (f : Z -> Z -> Z)
+  : val -> val -> (val -> mpred) -> mpred :=
+    if s then
+      (fun v1 v2 Q => get_Zs v1 v2 (fun i1 i2 =>
+             let res := f i1 i2 in
+             match cond with
+             | None =>
+               [| has_type (Vint res) ty |] **
+               Q (Vint res)
+             | Some c =>
+               [| c i1 i2 |] **
+               [| has_type (Vint res) ty |] **
+               Q (Vint res)
+             end))
+    else
+      (fun v1 v2 Q => get_Zs v1 v2 (fun i1 i2 =>
+             match cond with
+             | None =>
+               Q (Vint (trim w (f i1 i2)))
+             | Some c =>
+               [| c i1 i2 |] **
+               Q (Vint (trim w (f i1 i2)))
+             end)).
+
+  (* <<, >> *)
+  Definition simple_int_int_shift_op (ty : type) (w : size) (s : signed)
+             (f : Z -> Z -> Z)
+  : val -> val -> (val -> mpred) -> mpred :=
+    if s then
+      (fun v1 v2 Q => get_Zs v1 v2 (fun i1 i2 =>
+             let res := f i1 i2 in
+             [| (0 <= i2 < w)%Z |] **
+             [| has_type (Vint res) ty |] **
+             Q (Vint res)))
+    else
+      (fun v1 v2 Q => get_Zs v1 v2 (fun i1 i2 =>
+             [| (0 <= i2 < w)%Z |] **
+             Q (Vint (trim w (f i1 i2))))).
+
+  (* &&, ||, ^ *)
+  Definition simple_int_int_bin_op (f : Z -> Z -> Z)
+  : val -> val -> (val -> mpred) -> mpred :=
+    (fun v1 v2 Q => get_Zs v1 v2 (fun i1 i2 =>
+       let res := f i1 i2 in
+       Q (Vint res))).
+
+
+  Definition wpbo (o : BinOp) (tyl tyr ty : type)
+  : option (val -> val -> (val -> mpred) -> mpred).
+  refine
+    match o with
+    | Badd =>
+      match tyl , tyr , ty with
+      | Tint w s , Tint _ _ , Tint _ _ =>
+        guard (type_eq_dec tyl tyr) ;;
+        guard (type_eq_dec tyr ty) ;;
+        ret (simple_int_int_op ty w s None (fun a b => a + b))
+      | Tpointer pty , Tint _ _ , Tpointer _ =>
+        guard (type_eq_dec tyl ty) ;;
+        match size_of pty with
+        | None =>
+          ret (fun v1 v2 Q =>
+                 Exists sz, Exists i2,
+                 [| Semantics.size_of resolve pty sz |] **
+                 [| v2 = Vint i2 |] **
+                 Q (offset_ptr v1 (sz * i2)))
+        | Some sz =>
+          ret (fun v1 v2 Q =>
+                 Exists i2,
+                 [| v2 = Vint i2 |] **
+                 Q (offset_ptr v1 (sz * i2)))
+        end
+      | Tint _ _ , Tpointer pty , Tpointer _ =>
+        guard (type_eq_dec tyr ty) ;;
+        match size_of pty with
+        | None =>
+          ret (fun v2 v1 Q =>
+                 Exists sz, Exists i2,
+                 [| Semantics.size_of resolve pty sz |] **
+                 [| v2 = Vint i2 |] **
+                 Q (offset_ptr v1 (sz * i2)))
+        | Some sz =>
+          ret (fun v2 v1 Q =>
+                 Exists i2,
+                 [| v2 = Vint i2 |] **
+                 Q (offset_ptr v1 (sz * i2)))
+        end
+      | _ , _ , _ =>
+        ret (fun _ _ _ => error "not supported")
+      end
+
+    | Bsub =>
+      match tyl , tyr , ty with
+      | Tint w s , Tint _ _ , Tint _ _ =>
+        guard (type_eq_dec tyl tyr) ;;
+        guard (type_eq_dec tyr ty) ;;
+        ret (simple_int_int_op ty w s None (fun a b => a - b))
+      | Tpointer pty , Tint _ _ , Tpointer _ =>
+        guard (type_eq_dec tyl ty) ;;
+        match size_of pty with
+        | None =>
+          ret (fun v1 v2 Q =>
+                 Exists sz, Exists i2,
+                 [| Semantics.size_of resolve pty sz |] **
+                 [| v2 = Vint i2 |] **
+                 Q (offset_ptr v1 (sz * -i2)))
+        | Some sz =>
+          ret (fun v1 v2 Q =>
+                 Exists i2,
+                 [| v2 = Vint i2 |] **
+                 Q (offset_ptr v1 (sz * -i2)))
+        end
+      | Tint _ _ , Tpointer pty , Tpointer _ =>
+        guard (type_eq_dec tyr ty) ;;
+        match size_of pty with
+        | None =>
+          ret (fun v2 v1 Q =>
+                 Exists sz, Exists i2,
+                 [| Semantics.size_of resolve pty sz |] **
+                 [| v2 = Vint i2 |] **
+                 Q (offset_ptr v1 (sz * -i2)))
+        | Some sz =>
+          ret (fun v2 v1 Q =>
+                 Exists i2,
+                 [| v2 = Vint i2 |] **
+                 Q (offset_ptr v1 (sz * -i2)))
+        end
+      | Tpointer pty , Tpointer _ , Tpointer _ =>
+        guard (type_eq_dec tyl tyr) ;;
+        guard (type_eq_dec tyr ty) ;;
+        match size_of pty with
+        | None =>
+          ret (fun v1 v2 Q =>
+               Exists sz,
+               Exists base, Exists o1, Exists o2,
+               [| Semantics.size_of resolve pty sz |] **
+               [| v1 = offset_ptr base o1 |] **
+               [| v2 = offset_ptr base o2 |] **
+               [| o1 mod sz = 0 |] **
+               [| o2 mod sz = 0 |] ** Q (Vint ((o1 - o2) / sz)))
+        | Some sz =>
+          ret (fun v1 v2 Q =>
+               Exists base, Exists o1, Exists o2,
+               [| v1 = offset_ptr base o1 |] **
+               [| v2 = offset_ptr base o2 |] **
+               [| o1 mod sz = 0 |] **
+               [| o2 mod sz = 0 |] ** Q (Vint ((o1 - o2) / sz)))
+        end
+      | _ , _ , _ =>
+        ret (fun _ _ _ => error "not supported")
+      end
+
+    | Bmul =>
+      match tyl , tyr , ty with
+      | Tint w s , Tint _ _ , Tint _ _ =>
+        guard (type_eq_dec tyl tyr) ;;
+        guard (type_eq_dec tyr ty) ;;
+        ret (simple_int_int_op ty w s None (fun a b => a * b))
+      | _ , _ , _ => ret (fun _ _ _ => error "not supported")
+      end
+
+    | Bdiv =>
+      match tyl , tyr , ty with
+      | Tint w s , Tint _ _ , Tint _ _ =>
+        guard (type_eq_dec tyl tyr) ;;
+        guard (type_eq_dec tyr ty) ;;
+        ret (simple_int_int_op ty w s (Some (fun _ b => b <> 0)) (fun a b => a / b))
+      | _ , _ , _ => ret (fun _ _ _ => error "not supported")
+      end
+
+    | Bmod =>
+      match tyl , tyr , ty with
+      | Tint w s , Tint _ _ , Tint _ _ =>
+        guard (type_eq_dec tyl tyr) ;;
+        guard (type_eq_dec tyr ty) ;;
+        ret (simple_int_int_op ty w s (Some (fun _ b => b <> 0)) (fun a b => a mod b))
+      | _ , _ , _ => ret (fun _ _ _ => error "not supported")
+      end
+
+    | Band =>
+      match tyl with
+      | Tint w s  =>
+        guard (type_eq_dec tyl tyr) ;;
+        guard (type_eq_dec tyr ty) ;;
+        ret (simple_int_int_bin_op Z.land)
+      | _ => ret (fun _ _ _ => error "not supported")
+      end
+
+    | Bor =>
+      match tyl with
+      | Tint w s  =>
+        guard (type_eq_dec tyl tyr) ;;
+        guard (type_eq_dec tyr ty) ;;
+        ret (simple_int_int_bin_op Z.lor)
+      | _ => ret (fun _ _ _ => error "not supported")
+      end
+
+    | Bxor =>
+      match tyl with
+      | Tint w s =>
+        guard (type_eq_dec tyl tyr) ;;
+        guard (type_eq_dec tyr ty) ;;
+        ret (simple_int_int_bin_op Z.lxor)
+      | _ => ret (fun _ _ _ => error "not supported")
+      end
+
+    | Bshl =>
+      match tyl with
+      | Tint w s =>
+        guard (type_eq_dec tyl tyr) ;;
+        guard (type_eq_dec tyr ty) ;;
+        ret (simple_int_int_shift_op ty w s Z.shiftl)
+      | _ => ret (fun _ _ _ => error "not supported")
+      end
+
+    | Bshr =>
+      match tyl with
+      | Tint w s =>
+        guard (type_eq_dec tyl tyr) ;;
+        guard (type_eq_dec tyr ty) ;;
+        ret (simple_int_int_shift_op ty w s Z.shiftr)
+      | _ => ret (fun _ _ _ => error "not supported")
+      end
+
+    (* todo(gmm): relational operators *)
+  
+
+    | _ => ret (fun _ _ _ => error "not supported")
+    end%Z.
+  (* todo(gmm): arithmetic on characters *)
+
+  Print BinOp.
+
+  Defined.
+
+(*
   Definition wpbo (o : BinOp) (tyl tyr ty : type)
   : option (val -> val -> (val -> mpred) -> mpred) :=
     match tyl, ty with
@@ -206,6 +478,7 @@ Section refl.
       end
     | _, _ => ret (fun _ _ _ => error "unrecognized binop")
     end%Z.
+*)
 
   Local Ltac foo :=
     match goal with
@@ -217,28 +490,29 @@ Section refl.
       wpbo o tyl tyr ty = Some Q ->
       Q v1 v2 K |-- Eval.wp_eval_binop (resolve:=resolve) o tyl tyr ty v1 v2 K.
   Proof.
-    Opaque type_eq_dec.
-    destruct tyl, ty; cbn.
-    all: intros.
-    all: cbv [ret] in H.
-    all: try foo.
-    all: try (rewrite error_defn; apply lfalseL).
-    all: repeat match goal with
-                | H : context[match ?e with | _ => _ end] |- _ => destruct e; cbn in H
-                end.
-    all: try foo.
-    all: try (rewrite error_defn; apply lfalseL).
-    all: repeat (destruct type_eq_dec; subst).
-    all: cbn in *.
-    all: try foo.
-    all: rewrite Eval.wp_eval_binop_defn.
-    all: vc.work.
-    all: subst.
-    all: apply embedPropR.
-    all: try match goal with
-             | H : Tint _ _ = Tint _ _ |- _ => inversion H; clear H; subst
-             end.
-    all: admit.
+    destruct o; simpl.
+    (* Opaque type_eq_dec. *)
+    (* destruct tyl, ty; cbn. *)
+    (* all: intros. *)
+    (* all: cbv [ret] in H. *)
+    (* all: try foo. *)
+    (* all: try (rewrite error_defn; apply lfalseL). *)
+    (* all: repeat match goal with *)
+    (*             | H : context[match ?e with | _ => _ end] |- _ => destruct e; cbn in H *)
+    (*             end. *)
+    (* all: try foo. *)
+    (* all: try (rewrite error_defn; apply lfalseL). *)
+    (* all: repeat (destruct type_eq_dec; subst). *)
+    (* all: cbn in *. *)
+    (* all: try foo. *)
+    (* all: rewrite Eval.wp_eval_binop_defn. *)
+    (* all: vc.work. *)
+    (* all: subst. *)
+    (* all: apply embedPropR. *)
+    (* all: try match goal with *)
+    (*          | H : Tint _ _ = Tint _ _ |- _ => inversion H; clear H; subst *)
+    (*          end. *)
+    (* all: admit. *)
   Admitted.
 
   Definition wpAnys' (wpe' : ValCat -> Expr -> option ((val -> FreeTemps -> mpred) -> mpred)) (ve : ValCat * Expr)
@@ -254,8 +528,6 @@ Section refl.
 
   (* todo(gmm): convert `FreeTemps` into `option mpred` and eliminate redundant
    * `empSP`.
-   * todo(gmm): introduce an environment of specifications for globals to
-   *            support global calls.
    * todo(gmm): should we semi-reflect `mpred`?
    *)
   Fixpoint wpe (cat : ValCat) (e : Expr) {struct e}
