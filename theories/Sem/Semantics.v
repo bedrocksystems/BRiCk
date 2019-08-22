@@ -121,7 +121,8 @@ Axiom size_of_array : forall {c : genv} t n sz,
 (* alignof() *)
 Parameter align_of : forall {resolve : genv} (t : type) (e : N), Prop.
 
-
+(* truncation (used for unsigned operations) *)
+Definition trim (w : N) (v : Z) : Z := v mod (2 ^ Z.of_N w).
 
 (* operator semantics *)
 Parameter eval_unop : forall {resolve : genv}, UnOp -> forall (argT resT : type) (arg res : val), Prop.
@@ -161,16 +162,14 @@ Axiom eval_ptr_ptr_sub :
                p            p'           (Vint (o1 - o2)).
 
 Definition eval_int_op (bo : BinOp) (o : Z -> Z -> Z) : Prop :=
-  forall resolve w s (a b c : Z) bytes,
-    size_of resolve (Tint w s) bytes ->
-    c = (if s then o a b else Z.modulo (o a b) (Z.pow 2 (8 * Z.of_N bytes))) ->
+  forall resolve w (s : signed) (a b c : Z),
+    c = (if s then o a b else trim w (o a b)) ->
     has_type (Vint c) (Tint w s) ->
     eval_binop (resolve:=resolve) bo (Tint w s) (Tint w s) (Tint w s) (Vint a) (Vint b) (Vint c).
 
 Definition eval_int_bin_op (bo : BinOp) (o : Z -> Z -> Z) : Prop :=
-  forall resolve w s (a b c : Z) bytes,
-    size_of resolve (Tint w s) bytes ->
-    c = (if s then o a b else Z.modulo (o a b) (Z.pow 2 (8 * Z.of_N bytes))) ->
+  forall resolve w (s : signed) (a b c : Z),
+    c = (if s then o a b else trim w (o a b)) ->
     eval_binop (resolve:=resolve) bo (Tint w s) (Tint w s) (Tint w s) (Vint a) (Vint b) (Vint c).
 
 (* todo(jmgrosen): allow wrapping in the unsigned case *)
@@ -198,20 +197,21 @@ Axiom eval_mod :
     c = Z.rem a b ->
     has_type (Vint c) (Tint w s) ->
     eval_binop (resolve:=resolve) Bmod (Tint w s) (Tint w s) (Tint w s) (Vint a) (Vint b) (Vint c).
+
+(* note(gmm): the semantics of shifting has changed a lot over the different
+ * c++ standards.
+ *)
 Axiom eval_shl :
-  forall resolve w s (a b c : Z) bytes,
-    size_of resolve (Tint w s) bytes ->
-    (0 <= b < 8 * Z.of_N bytes)%Z ->
-    c = Z.shiftl a b ->
+  forall resolve (w : N) (s : signed) (a b c : Z),
+    (0 <= b < Z.of_N w)%Z ->
+    (c = if s then Z.shiftl a b else trim w (Z.shiftl a b)) ->
     has_type (Vint c) (Tint w s) ->
     eval_binop (resolve:=resolve) Bshl (Tint w s) (Tint w s) (Tint w s) (Vint a) (Vint b) (Vint c).
 Axiom eval_shr :
-  forall resolve w s (a b c : Z) bytes,
-    size_of resolve (Tint w s) bytes ->
-    (0 <= b < 8 * Z.of_N bytes)%Z ->
-    c = Z.shiftr a b ->
+  forall resolve (w : N) (s : signed) (a b c : Z),
+    (0 <= b < Z.of_N w)%Z ->
+    (c = if s then Z.shiftr a b else trim w (Z.shiftr a b)) ->
     has_type (Vint c) (Tint w s) ->
-    (* todo(jmgrosen): what to do for [Tint None s]? *)
     eval_binop (resolve:=resolve) Bshr (Tint w s) (Tint w s) (Tint w s) (Vint a) (Vint b) (Vint c).
 
 Definition eval_int_rel_op (bo : BinOp) {P Q : Z -> Z -> Prop}
@@ -282,9 +282,7 @@ Axiom eval_not_bool : forall resolve a,
 
 Axiom eval_minus_int : forall resolve s a c w bytes,
     size_of resolve (Tint w s) bytes ->
-    c = (if s then (0 - a)
-         else let max := Z.pow 2 (8 * Z.of_N bytes) in
-              Z.rem (max - a) max)%Z ->
+    c = (if s then (0 - a) else trim w (0 - a))%Z ->
     has_type (Vint c) (Tint w s) ->
     eval_unop (resolve:=resolve) Uminus (Tint w s) (Tint w s)
               (Vint a) (Vint c).
