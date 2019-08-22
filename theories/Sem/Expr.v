@@ -119,32 +119,57 @@ Module Type Expr.
         |-- wp_rhs (Eunop o e ty) Q.
 
     (* note(gmm): operators need types! *)
+    Fixpoint companion_type (t : type) : option type :=
+      match t with
+      | Tpointer _ => Some (Tint (Some int_bits) true)
+      | Tint _ _ => Some t
+      | Tchar _ _ => Some t
+      | Tqualified _ t => companion_type t
+      | _ => None
+      end.
+
     Axiom wp_lhs_preinc : forall e ty Q,
-        wp_lhs e (fun a free => Exists v', Exists v'',
+        match companion_type (type_of e) with
+        | Some cty =>
+          wp_lhs e (fun a free => Exists v', Exists v'',
               _at (_eq a) (tprim (drop_qualifiers ty) v') **
-              [| eval_binop (resolve:=resolve) Badd (drop_qualifiers (type_of e)) (Tint (Some int_bits) true) (drop_qualifiers ty) v' (Vint 1) v'' |] **
+              [| eval_binop (resolve:=resolve) Badd (drop_qualifiers (type_of e)) cty (drop_qualifiers ty) v' (Vint 1) v'' |] **
               (_at (_eq a) (tprim (drop_qualifiers ty) v'') -* Q a free))
+        | None => lfalse
+        end
         |-- wp_lhs (Epreinc e ty) Q.
 
     Axiom wp_lhs_predec : forall e ty Q,
-        wp_lhs e (fun a free => Exists v', Exists v'',
+        match companion_type (type_of e) with
+        | Some cty =>
+          wp_lhs e (fun a free => Exists v', Exists v'',
               _at (_eq a) (tprim (drop_qualifiers ty) v') **
-              [| eval_binop (resolve:=resolve) Bsub (drop_qualifiers (type_of e)) (Tint (Some int_bits) true) (drop_qualifiers ty) v' (Vint 1) v'' |] **
+              [| eval_binop (resolve:=resolve) Bsub (drop_qualifiers (type_of e)) cty (drop_qualifiers ty) v' (Vint 1) v'' |] **
               (_at (_eq a) (tprim (drop_qualifiers ty) v'') -* Q a free))
+        | None => lfalse
+        end
         |-- wp_lhs (Epredec e ty) Q.
 
     Axiom wp_rhs_postinc : forall e ty Q,
-        wp_lhs e (fun a free => Exists v', Exists v'',
+        match companion_type (type_of e) with
+        | Some cty =>
+          wp_lhs e (fun a free => Exists v', Exists v'',
               _at (_eq a) (tprim (drop_qualifiers ty) v') **
-              [| eval_binop (resolve:=resolve) Badd (drop_qualifiers (type_of e)) (Tint (Some int_bits) true) (drop_qualifiers ty) v' (Vint 1) v'' |] **
+              [| eval_binop (resolve:=resolve) Badd (drop_qualifiers (type_of e)) cty (drop_qualifiers ty) v' (Vint 1) v'' |] **
               (_at (_eq a) (tprim (drop_qualifiers ty) v'') -* Q v' free))
+        | None => lfalse
+        end
         |-- wp_rhs (Epostinc e ty) Q.
 
     Axiom wp_rhs_postdec : forall e ty Q,
-        wp_lhs e (fun a free => Exists v', Exists v'',
+        match companion_type (type_of e) with
+        | Some cty =>
+          wp_lhs e (fun a free => Exists v', Exists v'',
               _at (_eq a) (tprim (drop_qualifiers ty) v') **
-              [| eval_binop (resolve:=resolve) Bsub (drop_qualifiers (type_of e)) (Tint (Some int_bits) true) (drop_qualifiers ty) v' (Vint 1) v'' |] **
+              [| eval_binop (resolve:=resolve) Bsub (drop_qualifiers (type_of e)) cty (drop_qualifiers ty) v' (Vint 1) v'' |] **
               (_at (_eq a) (tprim (drop_qualifiers ty) v'') -* Q v' free))
+        | None => lfalse
+        end
         |-- wp_rhs (Epostdec e ty) Q.
 
     (** binary operators *)
