@@ -32,3 +32,5 @@ Makefile.coq: _CoqProject
 
 test: coq
 	$(MAKE) -C tests
+
+.PHONEY: test install coq all doc html clean install
