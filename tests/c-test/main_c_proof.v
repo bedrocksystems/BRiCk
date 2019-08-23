@@ -130,8 +130,8 @@ Proof.
       simplifying.
       work.
       { subst. work. }
-      { subst. work. }
-      simplifying.
+      simpl.
+      work.
       cutrewrite (skipn (Z.to_nat i) x = x1 :: skipn (S (Z.to_nat i)) x).
       2:{ simpl. subst.
           rewrite Znat.Nat2Z.id.
