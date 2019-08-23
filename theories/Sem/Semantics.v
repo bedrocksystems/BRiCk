@@ -128,29 +128,29 @@ Definition trim (w : N) (v : Z) : Z := v mod (2 ^ Z.of_N w).
 Parameter eval_unop : forall {resolve : genv}, UnOp -> forall (argT resT : type) (arg res : val), Prop.
 Parameter eval_binop : forall {resolve : genv}, BinOp -> forall (lhsT rhsT resT : type) (lhs rhs res : val), Prop.
 
-Definition eval_ptr_int_op (bo : BinOp) (o : Z -> Z -> Z) : Prop :=
+Definition eval_ptr_int_op (bo : BinOp) (f : Z -> Z) : Prop :=
   forall resolve t w s p o p' sz,
     size_of resolve t sz ->
-    p' = offset_ptr (Vptr p) (o * Z.of_N sz) ->
+    p' = offset_ptr (Vptr p) (f o * Z.of_N sz) ->
     eval_binop (resolve:=resolve) bo
                (Tpointer t) (Tint w s) (Tpointer t)
                (Vptr p)     (Vint o)   p'.
 
 Axiom eval_ptr_int_add :
-  ltac:(let x := eval hnf in (eval_ptr_int_op Badd Z.add) in refine x).
+  ltac:(let x := eval hnf in (eval_ptr_int_op Badd (fun x => x)) in refine x).
 Axiom eval_ptr_int_sub :
-  ltac:(let x := eval hnf in (eval_ptr_int_op Bsub Z.sub) in refine x).
+  ltac:(let x := eval hnf in (eval_ptr_int_op Bsub (fun x => -x)%Z) in refine x).
 
-Definition eval_int_ptr_op (bo : BinOp) (o : Z -> Z -> Z) : Prop :=
+Definition eval_int_ptr_op (bo : BinOp) (f : Z -> Z) : Prop :=
   forall resolve t w s p o p' sz,
     size_of resolve t sz ->
-    p' = offset_ptr (Vptr p) (o * Z.of_N sz) ->
+    p' = offset_ptr (Vptr p) (f o * Z.of_N sz) ->
     eval_binop (resolve:=resolve) bo
                (Tint w s) (Tpointer t) (Tpointer t)
                (Vint o)   (Vptr p)     p'.
 
 Axiom eval_int_ptr_add :
-  ltac:(let x := eval hnf in (eval_int_ptr_op Badd Z.add) in refine x).
+  ltac:(let x := eval hnf in (eval_int_ptr_op Badd (fun x => x)) in refine x).
 
 Axiom eval_ptr_ptr_sub :
   forall resolve t w p o1 o2 p' base sz,
