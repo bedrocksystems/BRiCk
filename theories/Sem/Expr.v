@@ -17,11 +17,7 @@ From Cpp.Sem Require Import
      Util Logic Semantics PLogic Destroy Wp CompilationUnit.
 
 Require Import Coq.ZArith.BinInt.
-Require Import Coq.micromega.Lia.
-
-(* note: this is used only for testing purposes.
- *)
-Require Cpp.Auto.Discharge.
+Require Import Coq.NArith.BinNatDef.
 
 Module Type Expr.
 
@@ -121,7 +117,7 @@ Module Type Expr.
     (* note(gmm): operators need types! *)
     Fixpoint companion_type (t : type) : option type :=
       match t with
-      | Tpointer _ => Some (Tint (Some int_bits) true)
+      | Tpointer _ => Some (Tint int_bits Signed)
       | Tint _ _ => Some t
       | Tchar _ _ => Some t
       | Tqualified _ t => companion_type t
@@ -353,185 +349,6 @@ Module Type Expr.
 
 
   End with_resolve.
-
-  Module examples.
-    Import Cpp.Auto.Discharge.
-
-    Local Open Scope string_scope.
-
-    Ltac simplify_wp :=
-      repeat first [ rewrite <- wp_lhs_assign
-                   | rewrite <- wp_lhs_lvar
-                   | rewrite <- wp_lhs_gvar
-                   | rewrite <- wp_rhs_int
-                   | rewrite <- wp_lhs_deref
-                   | rewrite <- wp_rhs_addrof
-                   | rewrite <- wp_rhs_cast_l2r
-                   ].
-
-    Ltac has_type :=
-      first [ eapply has_int_type ; unfold bound; simpl; lia ].
-
-    Ltac operator :=
-      first [ subst ; eapply eval_add; [ first [ reflexivity | nia ] | has_type ] ].
-
-    Opaque _local.
-
-    Section with_resolve.
-      Context {resolve : genv}.
-      Variable ti : thread_info.
-      Variable ρ : region.
-      Local Open Scope Z_scope.
-
-      Definition wp_ok e Q := wp_lhs (resolve:=resolve) ti ρ e (finish Q).
-
-      Definition is_pointer (t : type) : bool :=
-        match t with
-        | Tpointer _ => true
-        | _ => false
-        end.
-
-      Ltac t :=
-        let fwd :=
-            idtac;
-            lazymatch goal with
-            | |- _at _ (tprim ?X ?V) ** _ |-- _ =>
-              lazymatch eval compute in (is_pointer X) with
-              | true =>
-                lazymatch V with
-                | Vptr _ => fail
-                | _ => eapply refine_tprim_ptr; let H := fresh in intros ? H; destruct H
-                end
-              end
-            end
-        in
-        let bwd := idtac; fail in
-        let ctac :=
-            idtac;
-            first [ simple eapply _at_cancel; [ solve [ reflexivity
-                                                      | eapply tprim_tptr
-                                                      | eapply tprim_tint
-                                                      | eapply tprim_tuint
-                                                      | simple eapply tprim_any
-                                                      | simple eapply tptr_any
-                                                      | simple eapply tint_any
-                                                      | simple eapply tuint_any
-                                                      ] | ] ]
-        in
-        let tac :=
-            idtac;
-            try match goal with
-                | |- @eq val _ _ => try f_equal
-                end ;
-            try solve [ eauto | reflexivity | has_type | operator | lia ] in
-        discharge ltac:(fwd) idtac ltac:(bwd) ltac:(canceler ctac tac) ltac:(tac).
-
-      (* int x ; x = 0 ; *)
-      Goal
-        tlocal ρ "x" (tint 32 3)
-        |-- wp_ok (Eassign (Evar (Lname "x") (Qmut T_int32)) (Eint 0 (Qmut T_int32)) (Qmut T_int32))
-                  (fun xa => tlocal_at ρ "x" xa (tint 32 0)).
-      Proof.
-        unfold wp_ok.
-        unfold tlocal, tlocal_at.
-        repeat (t; simplify_wp; unfold wp_ok, finish).
-      Qed.
-
-      (* note(gmm):
-       * having two layers of logic makes sense.
-       * - layer 1 is static choices  (class layout, glob_addr, code_at, etc)
-       * - layer 2 is dynamic choices (ptsto, etc)
-       *)
-
-      (* int *x ; *x = 0 ; *)
-      Goal forall addr,
-        tlocal ρ "x" (tptr (Qmut T_int) addr) **
-        _at (_eq (Vptr addr)) (tprim T_int 12%Z)
-        |-- wp_ok
-        (Eassign
-           (Ederef
-              (Ecast (CCcast Cl2r)
-                     (Lvalue, Evar
-                        (Lname  "x")
-                        (Qmut
-                           (Tpointer
-                              (Qmut T_int))))
-                     (Qmut
-                        (Tpointer
-                           (Qmut T_int))))
-              (Qmut T_int))
-           (Eint 0
-                 (Qmut T_int))
-           (Qmut T_int))
-                   (fun x => embed (x = Vptr addr) //\\
-                          tlocal ρ "x" (tptr (Qmut T_int) addr) **
-                          _at (_eq x) (tprim T_int 0%Z)).
-      Proof.
-        intros.
-        unfold tlocal, tlocal_at.
-        repeat (t; simplify_wp; unfold wp_ok, finish).
-      Qed.
-
-      (* int *x ; int y ; x = &y ; *)
-      Goal forall p,
-        tlocal ρ "x" (tptr (Qmut T_int) p) **
-        tlocal ρ "y" (tint 32 12)
-        |-- wp_ok
-                   (Eassign (Evar (Lname "x") (Qmut (Tpointer (Qmut T_int))))
-                            (Eaddrof (Evar (Lname "y") (Qmut T_int)) (Qconst (Tpointer (Qmut T_int))))
-                            (Qmut (Tpointer (Qmut T_int))))
-                   (fun xa => Exists ya,
-                           tlocal_at ρ "x" xa (tptr (Qmut T_int) ya) **
-                           tlocal_at ρ "y" (Vptr ya) (tint int_bits 12)).
-      Proof.
-        intros.
-        unfold tlocal, tlocal_at.
-        repeat (t; simplify_wp; unfold wp_ok, finish).
-      Qed.
-
-      (* int *x ; int y ; *(x = &y) = 3; *)
-      Goal forall p,
-        tlocal ρ "x" (tptr (Qmut T_int) p) **
-        tlocal ρ "y" (tint 32 9%Z)
-        |-- wp_ok
-                   (Eassign
-                (Ederef
-                  (Ecast (CCcast Cl2r)
-                    (Lvalue, Eassign
-                      (Evar
-                        (Lname  "x")
-                        (Qmut
-                          (Tpointer
-                            (Qmut T_int))))
-                      (Eaddrof
-                        (Evar
-                          (Lname  "y")
-                          (Qmut T_int))
-                        (Qmut
-                          (Tpointer
-                            (Qmut T_int))))
-                      (Qmut
-                        (Tpointer
-                          (Qmut T_int))))
-                    (Qmut
-                      (Tpointer
-                        (Qmut T_int))))
-                  (Qmut T_int))
-                (Eint 3
-                  (Qmut T_int))
-                (Qmut T_int))
-                   (fun ya => Exists pp, [| ya = Vptr pp |] **
-                            tlocal ρ "x" (tptr (Qmut T_int) pp) **
-                            tlocal_at ρ "y" ya (tint 32 3%Z)).
-      Proof.
-        intros.
-        unfold tlocal, tlocal_at.
-        repeat (t; simplify_wp; unfold wp_ok, finish; simpl).
-      Qed.
-
-    End with_resolve.
-
-  End examples.
 
 End Expr.
 

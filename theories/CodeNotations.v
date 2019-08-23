@@ -49,9 +49,12 @@ Notation "e1 + e2" := (Ebinop Badd e1 e2 _)
                      e1 custom cpp_expr,
                      e2 custom cpp_expr at level 51,
                      left associativity, only printing).
-Notation "% v" := (Evar (Lname v%string) _)
+Notation "v" := (Evar (Lname v%string) _)
                     (in custom cpp_expr at level 1, v constr
-                    ,format "% v", only printing).
+                    ,format "v", only printing).
+Notation ":: v" := (Evar (Gname v%string) _)
+                    (in custom cpp_expr at level 1, v constr
+                    ,format ":: v", only printing).
 
 
 (** Notations for statements *)
@@ -99,6 +102,16 @@ Check E (Ebinop Badd (Ederef (Eaddrof (Evar (Lname "hello") Tvoid) Tvoid) Tvoid)
 Check S (Sseq (Sexpr Lvalue (Evar (Lname "hello") Tvoid) :: Scontinue :: Sbreak :: Sexpr Lvalue (Evar (Lname "world") Tvoid) :: Sif None (Evar (Lname "world") Tvoid) Scontinue Sbreak :: nil)).
 
 
+Notation "'if' ( t i = e ) thn 'else' els" := (Sif (Some (i%string, t, Some e)) _ thn els)
+         (in custom cpp_stmt at level 200,
+          t custom cpp_type at level 100,
+          i constr,
+          e custom cpp_expr at level 200,
+          thn custom cpp_stmt at level 200,
+          els custom cpp_stmt at level 200, only printing,
+          format "'[hv' if ( t i = e )  '/' thn '//' else '//' els ']'").
+
+
 
 Definition e0 :=
   S (Sseq (
@@ -106,7 +119,7 @@ Definition e0 :=
                 (Some ("x", (Qmut T_int), (Some (Eint (0) (Qmut T_int)))))
                 (Ecast (CCcast Cint2bool) (Rvalue,
                     (Ecast (CCcast Cl2r) (Lvalue, (Evar (Lname  "x") (Qmut T_int))) (Qmut T_int))) (Qmut Tbool))
-                Scontinue Scontinue) :: nil)).
+                Scontinue Sbreak) :: nil)).
 
 Definition e1 :=
   S (Sseq (
@@ -139,13 +152,3 @@ Definition e2 :=
                 (Sseq (
                     (Sexpr Rvalue
                       (Epostdec (Evar (Lname  "x") (Qmut T_int)) (Qmut T_int))) :: nil))) :: nil)).
-
-
-Notation "'if' ( t i = e ) thn 'else' els" := (Sif (Some (i%string, t, Some e)) _ thn els)
-         (in custom cpp_stmt at level 200,
-          t custom cpp_type at level 100,
-          i constr,
-          e custom cpp_expr at level 200,
-          thn custom cpp_stmt at level 200,
-          els custom cpp_stmt at level 200, only printing,
-          format "'[hv' if ( t i = e )  '/' thn '//' else '//' els ']'").

@@ -46,4 +46,6 @@ theories/Auto.v
 theories/CodeNotations.v
 theories/ProofNotations.v
 
+theories/Auto/Tests.v
+
 # Libraries

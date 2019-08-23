@@ -33,8 +33,8 @@ Axiom tany_class_bwd
 
 Axiom uninit_array : forall t n,
     uninit (Tarray t n)
-    -|- sepSPs (map (fun i => _offsetR (_sub t (Z.of_nat i)) (uninit t)) (seq 0 n)).
+    -|- sepSPs (map (fun i => _offsetR (_sub t (Z.of_nat i)) (uninit t)) (seq 0 (BinNatDef.N.to_nat n))).
 
 Axiom tany_array : forall t n,
     tany (Tarray t n)
-    -|- sepSPs (map (fun i => _offsetR (_sub t (Z.of_nat i)) (tany t)) (seq 0 n)).
+    -|- sepSPs (map (fun i => _offsetR (_sub t (Z.of_nat i)) (tany t)) (seq 0 (BinNatDef.N.to_nat n))).

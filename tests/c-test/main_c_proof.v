@@ -104,22 +104,13 @@ Proof.
     simplifying.
     work.
     (* this is the loop invariant
-     * todo(gmm): i need to clean this up.
      *)
-    transitivity (
-  ti_cglob (resolve:=resolve) "putstr" putstr_spec **
-  (tlocal_at ρ "argc" a (tprim (Tint (Some int_bits) true) vv) **
-   tlocal_at ρ "argv" a0
-     (tprim (Tpointer (Qmut (Tpointer (Qmut (Tchar (Some 8%nat) true))))) x0)) **
-  (Forall res : val, _at (_eq x0) (main.args_array x) ** @trace PutStr (Ret tt) -* Q res) **
-  _at (_eq x0) (main.args_array x) **
-  Exists i : Z,
-           tlocal_at ρ "i" a1 (tprim (Tint (Some 32%nat) true) i) **
+    assert_sep (fun a1 x =>
+        Exists i : Z,
+           tlocal_at ρ "i" a1 (tprim T_int i) **
            trace (printEach (skipn (Z.to_nat i) x)) **
            [| 0 <= i <= Z.of_nat (Datatypes.length x) |]).
-    { work. }
     eapply wp_for.
-    learn.
     simplifying.
     work.
     simplifying.

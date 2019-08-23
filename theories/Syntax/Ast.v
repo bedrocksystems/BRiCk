@@ -4,6 +4,7 @@
  * SPDX-License-Identifier:AGPL-3.0-or-later
  *)
 Require Import Coq.Classes.DecidableClass.
+Require Import Coq.NArith.BinNatDef.
 From Coq.Strings Require Import
      Ascii String.
 Require Import Coq.ZArith.BinIntDef.
@@ -11,6 +12,9 @@ Require Import Coq.ZArith.BinIntDef.
 Require Import Cpp.Util.
 
 Set Primitive Projections.
+
+Local Open Scope N_scope.
+
 
 (* this represents names that exist in object files. *)
 Definition obj_name : Set := string.
@@ -72,14 +76,20 @@ Definition merge_tq (a b : type_qualifiers) : type_qualifiers :=
    ; q_volatile := a.(q_volatile) || b.(q_volatile)
    |}.
 
+Definition size : Set := N.
+
+Bind Scope N_scope with size.
+
+Variant signed : Set := Signed | Unsigned.
+
 Inductive type : Set :=
 | Tpointer (_ : type)
 | Treference (_ : type)
 | Trv_reference (_ : type)
-| Tint (size : option nat) (signed : bool)
-| Tchar (size : option nat) (signed : bool)
+| Tint (size : size) (signed : signed)
+| Tchar (size : size) (signed : signed)
 | Tvoid
-| Tarray (_ : type) (_ : nat) (* unknown sizes are represented by pointers *)
+| Tarray (_ : type) (_ : N) (* unknown sizes are represented by pointers *)
 | Tref (_ : globname)
 | Tfunction (_ : type) (_ : list type)
 | Tbool
@@ -418,16 +428,16 @@ Definition module : Set :=
 
 (* types with explicit size information
  *)
-Definition T_int8 := Tint (Some 8) true.
-Definition T_uint8 := Tint (Some 8) false.
-Definition T_int16 := Tint (Some 16) true.
-Definition T_uint16 := Tint (Some 16) false.
-Definition T_int32 := Tint (Some 32) true.
-Definition T_uint32 := Tint (Some 32) false.
-Definition T_int64 := Tint (Some 64) true.
-Definition T_uint64 := Tint (Some 64) false.
-Definition T_int128 := Tint (Some 128) true.
-Definition T_uint128 := Tint (Some 128) false.
+Definition T_int8    := Tint 8 Signed.
+Definition T_uint8   := Tint 8 Unsigned.
+Definition T_int16   := Tint 16 Signed.
+Definition T_uint16  := Tint 16 Unsigned.
+Definition T_int32   := Tint 32 Signed.
+Definition T_uint32  := Tint 32 Unsigned.
+Definition T_int64   := Tint 64 Signed.
+Definition T_uint64  := Tint 64 Unsigned.
+Definition T_int128  := Tint 128 Signed.
+Definition T_uint128 := Tint 128 Unsigned.
 
 Definition Sskip := Sseq nil.
 
@@ -436,7 +446,6 @@ Definition Sskip := Sseq nil.
  * describe the semantics correctly.
  * - cpp2v should probably insert these types.
  *)
-Definition char_bits : nat := 8.
 (**
 https://en.cppreference.com/w/cpp/language/types
 The 4 definitions below use the LP64 data model.
@@ -445,21 +454,22 @@ the warning below.
 In future, we may want to parametrize by a data model, or
 the machine word size.
 *)
-Definition short_bits : nat := 16.
-Definition int_bits : nat := 32.
-Definition long_bits : nat := 64. (** warning: LLP64 model uses 32 *)
-Definition long_long_bits : nat := 64.
+Definition char_bits : size := 8.
+Definition short_bits : size := 16.
+Definition int_bits : size := 32.
+Definition long_bits : size := 64. (** warning: LLP64 model uses 32 *)
+Definition long_long_bits : size := 64.
 
-Definition T_ushort : type := Tint (Some short_bits) false.
-Definition T_short : type := Tint (Some short_bits) true.
-Definition T_ulong : type := Tint (Some long_bits) false.
-Definition T_long : type := Tint (Some long_bits) true.
-Definition T_ulonglong : type := Tint (Some long_long_bits) false.
-Definition T_longlong : type := Tint (Some long_long_bits) true.
-Definition T_uint : type := Tint (Some int_bits) false.
-Definition T_int : type := Tint (Some int_bits) true.
+Definition T_ushort : type := Tint short_bits Unsigned.
+Definition T_short : type := Tint short_bits Signed.
+Definition T_ulong : type := Tint long_bits Unsigned.
+Definition T_long : type := Tint long_bits Signed.
+Definition T_ulonglong : type := Tint long_long_bits Unsigned.
+Definition T_longlong : type := Tint long_long_bits Signed.
+Definition T_uint : type := Tint int_bits Unsigned.
+Definition T_int : type := Tint int_bits Signed.
 
-Definition T_schar : type := Tchar (Some char_bits) true.
-Definition T_uchar : type := Tchar (Some char_bits) false.
+Definition T_schar : type := Tchar char_bits Signed.
+Definition T_uchar : type := Tchar char_bits Unsigned.
 
 Coercion CCcast : PrimCast >-> Cast.
