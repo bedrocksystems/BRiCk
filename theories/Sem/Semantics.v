@@ -128,6 +128,19 @@ Definition trim (w : N) (v : Z) : Z := v mod (2 ^ Z.of_N w).
 Parameter eval_unop : forall {resolve : genv}, UnOp -> forall (argT resT : type) (arg res : val), Prop.
 Parameter eval_binop : forall {resolve : genv}, BinOp -> forall (lhsT rhsT resT : type) (lhs rhs res : val), Prop.
 
+Axiom eval_not_bool : forall resolve a,
+    eval_unop (resolve:=resolve) Unot Tbool Tbool (Vbool a) (Vbool (negb a)).
+
+(* The builtin unary minus operator calculates the negative of its
+   promoted operand. For unsigned a, the value of -a is 2^b -a, where b
+   is the number of bits after promotion.  *)
+Axiom eval_minus_int : forall resolve s a c w bytes,
+    size_of resolve (Tint w s) bytes ->
+    c = (if s then (0 - a) else trim w (0 - a))%Z ->
+    has_type (Vint c) (Tint w s) ->
+    eval_unop (resolve:=resolve) Uminus (Tint w s) (Tint w s)
+              (Vint a) (Vint c).
+
 Definition eval_ptr_int_op (bo : BinOp) (f : Z -> Z) : Prop :=
   forall resolve t w s p o p' sz,
     size_of resolve t sz ->
@@ -136,8 +149,15 @@ Definition eval_ptr_int_op (bo : BinOp) (f : Z -> Z) : Prop :=
                (Tpointer t) (Tint w s) (Tpointer t)
                (Vptr p)     (Vint o)   p'.
 
+(* lhs + rhs: one of rhs or lhs is a pointer to completely-defined object type,
+   the other has integral or unscoped enumeration type. In this case,
+   the result type has the type of the pointer. (rhs has a pointer type) *)
 Axiom eval_ptr_int_add :
   ltac:(let x := eval hnf in (eval_ptr_int_op Badd (fun x => x)) in refine x).
+
+(* lhs - rhs: lhs is a pointer to completely-defined object type, rhs
+   has integral or unscoped enumeration type. In this case, the result
+   type has the type of the pointer. *)
 Axiom eval_ptr_int_sub :
   ltac:(let x := eval hnf in (eval_ptr_int_op Bsub (fun x => -x)%Z) in refine x).
 
@@ -149,9 +169,15 @@ Definition eval_int_ptr_op (bo : BinOp) (f : Z -> Z) : Prop :=
                (Tint w s) (Tpointer t) (Tpointer t)
                (Vint o)   (Vptr p)     p'.
 
+(* lhs + rhs: one of rhs or lhs is a pointer to completely-defined object type,
+   the other has integral or unscoped enumeration type. In this case,
+   the result type has the type of the pointer. (lhs has a pointer type) *)
 Axiom eval_int_ptr_add :
   ltac:(let x := eval hnf in (eval_int_ptr_op Badd (fun x => x)) in refine x).
 
+(* lhs - rhs: both lhs and rhs must be pointers to the same
+   completely-defined object types. *)
+(* question(ck): no constraint over size w? *)
 Axiom eval_ptr_ptr_sub :
   forall resolve t w p o1 o2 p' base sz,
     size_of resolve t sz ->
@@ -185,6 +211,11 @@ Axiom eval_and :
   ltac:(let x := eval hnf in (eval_int_op Band Z.land) in refine x).
 Axiom eval_xor :
   ltac:(let x := eval hnf in (eval_int_op Bxor Z.lxor) in refine x).
+(* The binary operator / divides the first operand by the second, after usual
+   arithmetic conversions.
+   The quotient is truncated towards zero (fractional part is discarded),
+   since C++11.
+   If the second operand is zero, the behavior is undefined. *)
 Axiom eval_div :
   forall resolve (w : size) (s : signed) (a b c : Z),
     b <> 0%Z ->
@@ -201,12 +232,27 @@ Axiom eval_mod :
 (* note(gmm): the semantics of shifting has changed a lot over the different
  * c++ standards.
  *)
+
+(* [C++14,C++20): For unsigned a, the value of a << b is the value of
+   a * 2^b, reduced modulo 2^N, where N is the number of bits in the
+   return type.  *)
+(* [C++14,C++20): For signed and non-negative a: if a * 2^b is
+   representable in the unsigned version of the return type, then that
+   value, converted to signed, is the value of a << b; otherwise the
+   behavior is undefined.  *)
+(* In any case, if the value of the right operand is negative or is
+   greater or equal to the number of bits in the promoted left
+   operand, the behavior is undefined.  *)
 Axiom eval_shl :
   forall resolve (w : N) (s : signed) (a b c : Z),
     (0 <= b < Z.of_N w)%Z ->
     (c = if s then Z.shiftl a b else trim w (Z.shiftl a b)) ->
     has_type (Vint c) (Tint w s) ->
     eval_binop (resolve:=resolve) Bshl (Tint w s) (Tint w s) (Tint w s) (Vint a) (Vint b) (Vint c).
+
+(* [C++14,C++20): For unsigned a and for signed and non-negative a,
+   the value of a >> b is the integer part of a/2b .
+   For negative a, the value of a >> b is implementation-defined.  *)
 Axiom eval_shr :
   forall resolve (w : N) (s : signed) (a b c : Z),
     (0 <= b < Z.of_N w)%Z ->
@@ -214,6 +260,12 @@ Axiom eval_shr :
     has_type (Vint c) (Tint w s) ->
     eval_binop (resolve:=resolve) Bshr (Tint w s) (Tint w s) (Tint w s) (Vint a) (Vint b) (Vint c).
 
+(* Arithmetic comparison operators *)
+
+(* If the operands has arithmetic or enumeration type (scoped or
+   unscoped), usual arithmetic conversions are performed on both
+   operands following the rules for arithmetic operators. The values
+   are compared after conversions. *)
 Definition eval_int_rel_op (bo : BinOp) {P Q : Z -> Z -> Prop}
            (o : forall a b : Z, {P a b} + {Q a b}) : Prop :=
   forall resolve w s a b (av bv : Z) (c : Z),
@@ -264,6 +316,8 @@ Axiom eval_le_int :
 Axiom eval_ge_int :
   ltac:(let x := eval hnf in (eval_int_rel_op_int Bge ZArith_dec.Z_ge_lt_dec) in refine x).
 
+(* Pointer comparison operators *)
+
 Axiom eval_ptr_eq :
   forall resolve ty a b av bv c,
     a = Vptr av ->
@@ -276,13 +330,3 @@ Axiom eval_ptr_neq :
     b = Vptr bv ->
     c = (if ptr_eq_dec av bv then 0 else 1)%Z ->
     eval_binop (resolve:=resolve) Bneq (Tpointer ty) (Tpointer ty) Tbool a b (Vint c).
-
-Axiom eval_not_bool : forall resolve a,
-    eval_unop (resolve:=resolve) Unot Tbool Tbool (Vbool a) (Vbool (negb a)).
-
-Axiom eval_minus_int : forall resolve s a c w bytes,
-    size_of resolve (Tint w s) bytes ->
-    c = (if s then (0 - a) else trim w (0 - a))%Z ->
-    has_type (Vint c) (Tint w s) ->
-    eval_unop (resolve:=resolve) Uminus (Tint w s) (Tint w s)
-              (Vint a) (Vint c).
