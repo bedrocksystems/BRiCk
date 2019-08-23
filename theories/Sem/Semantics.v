@@ -56,6 +56,14 @@ Axiom offset_ptr_combine : forall b o o',
 Axiom offset_ptr_0 : forall b,
     offset_ptr b 0 = b.
 
+(* All offsets are valid pointers. todo: This is unsound. *)
+Parameter offset_ptr_ : ptr -> Z -> ptr.
+Axiom offset_ptr_val : forall v o p, Vptr p = v -> Vptr (offset_ptr_ p o) = offset_ptr v o.
+
+Axiom offset_ptr_combine_ : forall b o o',
+    offset_ptr_ (offset_ptr_ b o) o' = offset_ptr_ b (o + o').
+Axiom offset_ptr_0_ : forall b,
+    offset_ptr_ b 0 = b.
 
 (** global environments
  *)
@@ -131,10 +139,10 @@ Parameter eval_binop : forall {resolve : genv}, BinOp -> forall (lhsT rhsT resT 
 Definition eval_ptr_int_op (bo : BinOp) (f : Z -> Z) : Prop :=
   forall resolve t w s p o p' sz,
     size_of resolve t sz ->
-    p' = offset_ptr (Vptr p) (f o * Z.of_N sz) ->
+    p' = offset_ptr_ p (f o * Z.of_N sz) ->
     eval_binop (resolve:=resolve) bo
                (Tpointer t) (Tint w s) (Tpointer t)
-               (Vptr p)     (Vint o)   p'.
+               (Vptr p)     (Vint o)   (Vptr p').
 
 Axiom eval_ptr_int_add :
   ltac:(let x := eval hnf in (eval_ptr_int_op Badd (fun x => x)) in refine x).
@@ -144,10 +152,10 @@ Axiom eval_ptr_int_sub :
 Definition eval_int_ptr_op (bo : BinOp) (f : Z -> Z) : Prop :=
   forall resolve t w s p o p' sz,
     size_of resolve t sz ->
-    p' = offset_ptr (Vptr p) (f o * Z.of_N sz) ->
+    p' = offset_ptr_ p (f o * Z.of_N sz) ->
     eval_binop (resolve:=resolve) bo
                (Tint w s) (Tpointer t) (Tpointer t)
-               (Vint o)   (Vptr p)     p'.
+               (Vint o)   (Vptr p)     (Vptr p').
 
 Axiom eval_int_ptr_add :
   ltac:(let x := eval hnf in (eval_int_ptr_op Badd (fun x => x)) in refine x).
@@ -155,11 +163,11 @@ Axiom eval_int_ptr_add :
 Axiom eval_ptr_ptr_sub :
   forall resolve t w p o1 o2 p' base sz,
     size_of resolve t sz ->
-    p = offset_ptr base (Z.of_N sz * o1) ->
-    p' = offset_ptr base (Z.of_N sz * o2) ->
+    p = offset_ptr_ base (Z.of_N sz * o1) ->
+    p' = offset_ptr_ base (Z.of_N sz * o2) ->
     eval_binop (resolve:=resolve) Bsub
                (Tpointer t) (Tpointer t) (Tint w Signed)
-               p            p'           (Vint (o1 - o2)).
+               (Vptr p)     (Vptr p')    (Vint (o1 - o2)).
 
 Definition eval_int_op (bo : BinOp) (o : Z -> Z -> Z) : Prop :=
   forall resolve w (s : signed) (a b c : Z),
