@@ -198,7 +198,6 @@ Definition eval_int_bin_op (bo : BinOp) (o : Z -> Z -> Z) : Prop :=
     c = (if s then o a b else trim w (o a b)) ->
     eval_binop (resolve:=resolve) bo (Tint w s) (Tint w s) (Tint w s) (Vint a) (Vint b) (Vint c).
 
-(* todo(jmgrosen): allow wrapping in the unsigned case *)
 Axiom eval_add :
   ltac:(let x := eval hnf in (eval_int_op Badd Z.add) in refine x).
 Axiom eval_sub :
