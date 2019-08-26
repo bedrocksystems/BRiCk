@@ -198,18 +198,22 @@ Definition eval_int_bin_op (bo : BinOp) (o : Z -> Z -> Z) : Prop :=
     c = (if s then o a b else trim w (o a b)) ->
     eval_binop (resolve:=resolve) bo (Tint w s) (Tint w s) (Tint w s) (Vint a) (Vint b) (Vint c).
 
+(* arithmetic operators *)
 Axiom eval_add :
   ltac:(let x := eval hnf in (eval_int_op Badd Z.add) in refine x).
 Axiom eval_sub :
   ltac:(let x := eval hnf in (eval_int_op Bsub Z.sub) in refine x).
 Axiom eval_mul :
   ltac:(let x := eval hnf in (eval_int_op Bmul Z.mul) in refine x).
+
+(* bitwise(logical) operators *)
 Axiom eval_or :
   ltac:(let x := eval hnf in (eval_int_op Bor Z.lor) in refine x).
 Axiom eval_and :
   ltac:(let x := eval hnf in (eval_int_op Band Z.land) in refine x).
 Axiom eval_xor :
   ltac:(let x := eval hnf in (eval_int_op Bxor Z.lxor) in refine x).
+
 (* The binary operator / divides the first operand by the second, after usual
    arithmetic conversions.
    The quotient is truncated towards zero (fractional part is discarded),
@@ -228,33 +232,35 @@ Axiom eval_mod :
     has_type (Vint c) (Tint w s) ->
     eval_binop (resolve:=resolve) Bmod (Tint w s) (Tint w s) (Tint w s) (Vint a) (Vint b) (Vint c).
 
-(* note(gmm): the semantics of shifting has changed a lot over the different
- * c++ standards.
- *)
-
-(* [C++14,C++20): For unsigned a, the value of a << b is the value of
-   a * 2^b, reduced modulo 2^N, where N is the number of bits in the
-   return type.  *)
-(* [C++14,C++20): For signed and non-negative a: if a * 2^b is
-   representable in the unsigned version of the return type, then that
-   value, converted to signed, is the value of a << b; otherwise the
-   behavior is undefined.  *)
-(* In any case, if the value of the right operand is negative or is
-   greater or equal to the number of bits in the promoted left
-   operand, the behavior is undefined.  *)
+(* [C++14,C++20) *)
+(* The value of E1 << E2 is E1 left-shifted E2 bit positions; vacated
+   bits are zero-filled. If E1 has an unsigned type, the value of the
+   result is E1 * 2^E2, reduced modulo one more than the maximum value
+   representable in the result type. Otherwise, if E1 has a signed
+   type and non-negative value, and E1 * 2 ^ E2 is representable in
+   the corresponding unsigned type of the result type, then that
+   value, converted to the result type, is the resulting value;
+   otherwise, the behavior is undefined.  *)
+(* The behavior is undefined if the right operand is negative, or
+   greater than or equal to the length in bits of the promoted left
+   operand.  *)
 Axiom eval_shl :
   forall resolve (w : N) (s : signed) (a b c : Z),
     (0 <= b < Z.of_N w)%Z ->
+    (0 <= a)%Z ->
     (c = if s then Z.shiftl a b else trim w (Z.shiftl a b)) ->
     has_type (Vint c) (Tint w s) ->
     eval_binop (resolve:=resolve) Bshl (Tint w s) (Tint w s) (Tint w s) (Vint a) (Vint b) (Vint c).
 
-(* [C++14,C++20): For unsigned a and for signed and non-negative a,
-   the value of a >> b is the integer part of a/2b .
-   For negative a, the value of a >> b is implementation-defined.  *)
+(* [C++14,C++20): The value of E1 >> E2 is E1 right-shifted E2 bit
+   positions. If E1 has an unsigned type or if E1 has a signed type
+   and a non-negative value, the value of the result is the integral
+   part of the quotient of E1/(2^E2). If E1 has a signed type and a
+   negative value, the resulting value is implementation-defined. *)
 Axiom eval_shr :
   forall resolve (w : N) (s : signed) (a b c : Z),
     (0 <= b < Z.of_N w)%Z ->
+    (0 <= a)%Z ->
     (c = if s then Z.shiftr a b else trim w (Z.shiftr a b)) ->
     has_type (Vint c) (Tint w s) ->
     eval_binop (resolve:=resolve) Bshr (Tint w s) (Tint w s) (Tint w s) (Vint a) (Vint b) (Vint c).
