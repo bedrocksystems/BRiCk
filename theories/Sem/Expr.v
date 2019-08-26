@@ -14,7 +14,7 @@ Require Import Coq.Strings.String.
 From Cpp Require Import
      Ast.
 From Cpp.Sem Require Import
-     Util Logic Semantics PLogic Destroy Wp CompilationUnit.
+     Util Logic Semantics Operator PLogic Destroy Wp CompilationUnit.
 
 Require Import Coq.ZArith.BinInt.
 Require Import Coq.NArith.BinNatDef.

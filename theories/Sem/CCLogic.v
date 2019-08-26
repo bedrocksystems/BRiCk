@@ -20,7 +20,7 @@ From ChargeCore.Logics Require Import
 From Cpp Require Import
      Ast.
 From Cpp.Sem Require Import
-     Semantics Logic PLogic Wp Expr.
+     Semantics Logic Operator PLogic Wp Expr.
 From Cpp.Auto Require Import
      Discharge.
 
