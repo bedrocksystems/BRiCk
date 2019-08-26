@@ -177,7 +177,6 @@ Axiom eval_int_ptr_add :
 
 (* lhs - rhs: both lhs and rhs must be pointers to the same
    completely-defined object types. *)
-(* question(ck): no constraint over size w? *)
 Axiom eval_ptr_ptr_sub :
   forall resolve t w p o1 o2 p' base sz,
     size_of resolve t sz ->
