@@ -115,3 +115,8 @@ ClangPrinter::printField(const ValueDecl *decl, CoqPrinter &print) {
         assert(false && "member not pointing to field");
     }
 }
+
+std::string
+ClangPrinter::sourceRange(const SourceRange &&sr) const {
+    return sr.printToString(this->context_->getSourceManager());
+}

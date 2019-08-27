@@ -447,7 +447,12 @@ public:
             print.output() << fmt::nbsp;
             cprint.printQualType(decl->getType(), print);
             print.output() << fmt::nbsp;
-            assert(decl->getInit() && "missing initialization of constexpr");
+            if (decl->getInit() == nullptr) {
+                using namespace logging;
+                fatal() << "missing initailization of constexpr "
+                        << cprint.sourceRange(decl->getSourceRange()) << "\n";
+                die();
+            }
             cprint.printExpr(decl->getInit(), print);
             print.output() << fmt::rparen;
         } else {
@@ -488,11 +493,9 @@ public:
 
     void VisitEnumDecl(const EnumDecl *decl, CoqPrinter &print,
                        ClangPrinter &cprint) {
-        if (decl->getName() == "") {
-            assert(false && "anonymous enumerations are not supported");
-        }
-        print.ctor("Denum")
-            << "\"" << decl->getNameAsString() << "\"" << fmt::nbsp;
+        print.ctor("Denum");
+        cprint.printGlobalName(decl, print);
+        print.output() << fmt::nbsp;
         auto t = decl->getIntegerType();
         if (!t.isNull()) {
             print.ctor("Some", false);
