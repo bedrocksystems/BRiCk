@@ -77,10 +77,11 @@ private:
 public:
     static PrintExpr printer;
 
-    void VisitStmt(const Stmt* stmt, CoqPrinter& print, ClangPrinter&,
+    void VisitStmt(const Stmt* stmt, CoqPrinter& print, ClangPrinter& cprint,
                    const ASTContext&) {
         logging::fatal() << "while printing an expr, got a statement '"
-                         << stmt->getStmtClassName() << "'\n";
+                         << stmt->getStmtClassName() << " at "
+                         << cprint.sourceRange(stmt->getSourceRange()) << "'\n";
         logging::die();
     }
 
@@ -88,8 +89,7 @@ public:
                    const ASTContext& ctxt) {
         using namespace logging;
         fatal() << "unrecognized expression '" << expr->getStmtClassName()
-                << "' at "
-                << expr->getSourceRange().printToString(ctxt.getSourceManager())
+                << "' at " << cprint.sourceRange(expr->getSourceRange())
                 << "\n";
         die();
     }
@@ -689,6 +689,13 @@ public:
                              ClangPrinter& cprint, const ASTContext&) {
         print.ctor("Estring");
         print.str(expr->getFunctionName()->getString());
+        done(expr, print, cprint);
+    }
+
+    void VisitVAArgExpr(const VAArgExpr* expr, CoqPrinter& print,
+                        ClangPrinter& cprint, const ASTContext&) {
+        print.ctor("Eva_arg");
+        cprint.printExpr(expr->getSubExpr(), print);
         done(expr, print, cprint);
     }
 };

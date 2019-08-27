@@ -35,10 +35,10 @@ Axiom eval_minus_int : forall resolve s a c w bytes,
 Definition eval_ptr_int_op (bo : BinOp) (f : Z -> Z) : Prop :=
   forall resolve t w s p o p' sz,
     size_of resolve t sz ->
-    p' = offset_ptr (Vptr p) (f o * Z.of_N sz) ->
+    p' = offset_ptr_ p (f o * Z.of_N sz) ->
     eval_binop (resolve:=resolve) bo
                (Tpointer t) (Tint w s) (Tpointer t)
-               (Vptr p)     (Vint o)   p'.
+               (Vptr p)     (Vint o)   (Vptr p').
 
 (* lhs + rhs: one of rhs or lhs is a pointer to completely-defined object type,
    the other has integral or unscoped enumeration type. In this case,
@@ -55,10 +55,10 @@ Axiom eval_ptr_int_sub :
 Definition eval_int_ptr_op (bo : BinOp) (f : Z -> Z) : Prop :=
   forall resolve t w s p o p' sz,
     size_of resolve t sz ->
-    p' = offset_ptr (Vptr p) (f o * Z.of_N sz) ->
+    p' = offset_ptr_ p (f o * Z.of_N sz) ->
     eval_binop (resolve:=resolve) bo
                (Tint w s) (Tpointer t) (Tpointer t)
-               (Vint o)   (Vptr p)     p'.
+               (Vint o)   (Vptr p)     (Vptr p').
 
 (* lhs + rhs: one of rhs or lhs is a pointer to completely-defined object type,
    the other has integral or unscoped enumeration type. In this case,
@@ -71,11 +71,11 @@ Axiom eval_int_ptr_add :
 Axiom eval_ptr_ptr_sub :
   forall resolve t w p o1 o2 p' base sz,
     size_of resolve t sz ->
-    p = offset_ptr base (Z.of_N sz * o1) ->
-    p' = offset_ptr base (Z.of_N sz * o2) ->
+    p = offset_ptr_ base (Z.of_N sz * o1) ->
+    p' = offset_ptr_ base (Z.of_N sz * o2) ->
     eval_binop (resolve:=resolve) Bsub
                (Tpointer t) (Tpointer t) (Tint w Signed)
-               p            p'           (Vint (o1 - o2)).
+               (Vptr p)     (Vptr p')    (Vint (o1 - o2)).
 
 Definition eval_int_op (bo : BinOp) (o : Z -> Z -> Z) : Prop :=
   forall resolve w (s : signed) (a b c : Z),

@@ -95,12 +95,13 @@ Definition T (t : type) : Prop := True.
 Arguments E (_%cexpr).
 Arguments S (_%cstmt).
 
+(*
 Check E (Ebinop Badd (Ederef (Eaddrof (Evar (Lname "hello") Tvoid) Tvoid) Tvoid)
                 (Eint 3%Z Tvoid) Tvoid).
 
 
 Check S (Sseq (Sexpr Lvalue (Evar (Lname "hello") Tvoid) :: Scontinue :: Sbreak :: Sexpr Lvalue (Evar (Lname "world") Tvoid) :: Sif None (Evar (Lname "world") Tvoid) Scontinue Sbreak :: nil)).
-
+*)
 
 Notation "'if' ( t i = e ) thn 'else' els" := (Sif (Some (i%string, t, Some e)) _ thn els)
          (in custom cpp_stmt at level 200,

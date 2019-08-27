@@ -56,6 +56,14 @@ Axiom offset_ptr_combine : forall b o o',
 Axiom offset_ptr_0 : forall b,
     offset_ptr b 0 = b.
 
+(* All offsets are valid pointers. todo: This is unsound. *)
+Parameter offset_ptr_ : ptr -> Z -> ptr.
+Axiom offset_ptr_val : forall v o p, Vptr p = v -> Vptr (offset_ptr_ p o) = offset_ptr v o.
+
+Axiom offset_ptr_combine_ : forall b o o',
+    offset_ptr_ (offset_ptr_ b o) o' = offset_ptr_ b (o + o').
+Axiom offset_ptr_0_ : forall b,
+    offset_ptr_ b 0 = b.
 
 (** global environments
  *)
@@ -117,6 +125,22 @@ Axiom size_of_qualified : forall {c : genv} t sz q,
 Axiom size_of_array : forall {c : genv} t n sz,
     @size_of c t sz ->
     @size_of c (Tarray t n) (sz * n).
+
+Lemma size_of_Qmut : forall {c} t sz,
+    @size_of c t sz ->
+    @size_of c (Qmut t) sz.
+Proof.
+  intros.
+  now apply size_of_qualified.
+Qed.
+
+Lemma size_of_Qconst : forall {c} t sz,
+    @size_of c t sz ->
+    @size_of c (Qconst t) sz.
+Proof.
+  intros.
+  now apply size_of_qualified.
+Qed.
 
 (* alignof() *)
 Parameter align_of : forall {resolve : genv} (t : type) (e : N), Prop.
