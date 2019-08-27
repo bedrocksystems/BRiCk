@@ -8,6 +8,9 @@ From Coq.Strings Require Import
 
 Require Import Cpp.Util.
 Require Import Cpp.Syntax.Ast.
+Require Import Cpp.Syntax.Expr.
+Require Import Cpp.Syntax.Stmt.
+Require Import Cpp.Syntax.Types.
 
 Definition Expr_eq_dec : forall a b : Expr, {a = b} + {a <> b}.
 Proof.

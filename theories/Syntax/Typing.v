@@ -5,6 +5,8 @@
  *)
 Require Import Coq.Classes.DecidableClass.
 Require Import Cpp.Syntax.Ast.
+Require Import Cpp.Syntax.Expr.
+Require Import Cpp.Syntax.Types.
 
 Fixpoint type_of (e : Expr) : type :=
   match e with
@@ -72,7 +74,7 @@ Fixpoint drop_qualifiers (t : type) : type :=
 Section decidable.
 
   Global Instance Decidable_type (a b : type) : Decidable (a = b).
-  refine 
+  refine
     {| Decidable_witness := if type_eq_dec a b then true else false
      ; Decidable_spec := _ |}.
   destruct (type_eq_dec a b); split; congruence.

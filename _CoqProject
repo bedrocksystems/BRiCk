@@ -4,6 +4,9 @@
 theories/Util.v
 
 # Modules for cpp2v
+theories/Syntax/Types.v
+theories/Syntax/Expr.v
+theories/Syntax/Stmt.v
 theories/Syntax/Ast.v
 theories/Syntax/CompilationUnit.v
 theories/Syntax/Typing.v
