@@ -1,4 +1,4 @@
 Require Export Cpp.Parser.
-Require Export Cpp.Auto.vc Cpp.Auto.mvcg Cpp.Auto.type.
+From Cpp.Auto Require Export mvcg type tactics sep.
 From bedrock.auto Require Export
-     vc_rw work.
+     vc_rw.

@@ -124,6 +124,7 @@ Lemma wp_eval_shl : forall t1 t2 t3 w s a b av bv Q,
     t3 = Tint w s ->
     a = Vint av ->
     b = Vint bv ->
+    (0 <= av)%Z ->
     (0 <= bv < Z.of_N w)%Z ->
     (if s then has_type (Vint (Z.shiftl av bv)) (Tint w s) else True) ->
     (let res := Z.shiftl av bv in Q (Vint (if s then res else trim w res)))
@@ -139,6 +140,7 @@ Lemma wp_eval_shr : forall t1 t2 t3 w s a b av bv Q,
     t3 = Tint w s ->
     a = Vint av ->
     b = Vint bv ->
+    (0 <= av)%Z ->
     (0 <= bv < Z.of_N w)%Z ->
     (if s then has_type (Vint (Z.shiftr av bv)) (Tint w s) else True) ->
     (let res := Z.shiftr av bv in Q (Vint (if s then res else trim w res)))
