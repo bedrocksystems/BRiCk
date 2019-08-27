@@ -20,6 +20,7 @@ class BuiltinType;
 class ASTContext;
 class MangleContext;
 class ValueDecl;
+class SourceRange;
 }
 
 class CoqPrinter;
@@ -57,6 +58,8 @@ public:
     void printField(const clang::ValueDecl*, CoqPrinter&);
 
     unsigned getTypeSize(const clang::BuiltinType* type) const;
+
+    std::string sourceRange(const clang::SourceRange&& sr) const;
 
     ClangPrinter(clang::ASTContext* context);
 
