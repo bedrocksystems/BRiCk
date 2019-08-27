@@ -31,17 +31,17 @@ Ltac simplify_simpl :=
 Ltac simplify_wp_rhs e :=
   lazymatch e with
   | Eatomic _ _ _ => rewrite <- wp_rhs_atomic
-  | Ebinop _ ?e1 _ _ => rewrite <- wp_rhs_binop; try (simplify_simpl; simplify_wp_rhs e1)
-  | Eunop _ ?e _ => rewrite <- wp_rhs_unop; try (simplify_simpl; simplify_wp_rhs e)
+  | Ebinop _ ?e1 _ _ => rewrite <- wp_rhs_binop; continue_rhs e1
+  | Eunop _ ?e _ => rewrite <- wp_rhs_unop; continue_rhs e
   | Ebool _ => rewrite <- wp_rhs_bool
-  | Eseqand ?e1 _ _ => rewrite <- wp_rhs_seqand; try (simplify_simpl; simplify_wp_rhs e1)
-  | Eseqor ?e1 _ _ => rewrite <- wp_rhs_seqor; simplify_wp_rhs e1
+  | Eseqand ?e1 _ _ => rewrite <- wp_rhs_seqand; continue_rhs e1
+  | Eseqor ?e1 _ _ => rewrite <- wp_rhs_seqor; continue_rhs e1
   | Eint _ _ => rewrite <- wp_rhs_int
-  | Eaddrof ?e _ => rewrite <- wp_rhs_addrof; simplify_wp_lhs e
-  | Ecast (CCcast Cl2r) (Lvalue, Emember ?o _ _) _ => rewrite <- Lemmas.wp_rhs_dot; try (simplify_simpl; simplify_wp_lhs o)
+  | Eaddrof ?e _ => rewrite <- wp_rhs_addrof; continue_lhs e
+  | Ecast (CCcast Cl2r) (Lvalue, Emember ?o _ _) _ => rewrite <- Lemmas.wp_rhs_dot; continue_lhs o
   | Ecast (CCcast Cl2r) (Lvalue, Evar (Lname _) _) _ => rewrite <- Lemmas.wp_rhs_local
-  | Ecast (CCcast Cl2r) (Lvalue, ?e) _ => rewrite <- wp_rhs_cast_l2r; try (simplify_simpl; simplify_wp_lhs e)
-  | Ecast (CCcast Carray2pointer) (Lvalue, ?e) _ => rewrite <- wp_rhs_cast_array2pointer; try (simplify_simpl; simplify_wp_lhs e)
+  | Ecast (CCcast Cl2r) (Lvalue, ?e) _ => rewrite <- Lemmas.wp_rhs_cast_l2r; continue_lhs e
+  | Ecast (CCcast Carray2pointer) (Lvalue, ?e) _ => rewrite <- wp_rhs_cast_array2pointer; continue_lhs e
   | Ecast ?c (Rvalue, ?e) _ =>
     lazymatch c with
     | CCcast Cintegral => rewrite <- wp_rhs_cast_integral
@@ -52,7 +52,7 @@ Ltac simplify_wp_rhs e :=
     | CCcast Cbitcast => rewrite <- wp_rhs_cast_bitcast
     | Cuser _ => rewrite <- wp_rhs_cast_user
     | Creinterpret _ => rewrite <- wp_rhs_cast_reinterpret
-    end; simplify_wp_rhs e
+    end; continue_rhs e
   | Enull => rewrite <- wp_null
   | Ethis _ => rewrite <- wp_rhs_this
   | Ealign_of (inl _) _ => rewrite <- wp_rhs_alignof
@@ -61,25 +61,28 @@ Ltac simplify_wp_rhs e :=
   | Esize_of (inr _) _ => rewrite <- wp_rhs_sizeof_e
   | Epostinc _ _ => rewrite <- wp_rhs_postinc; simpl
   | Epostdec _ _ => rewrite <- wp_rhs_postdec; simpl
-  | Eandclean ?e _ => rewrite <- wp_rhs_clean; try (simplify_simpl; simplify_wp_rhs e)
+  | Eandclean ?e _ => rewrite <- wp_rhs_clean; continue_rhs e
   end
 
 with simplify_wp_lhs e :=
   lazymatch e with
-  | Eassign (Emember ?o _ _) _ _ => rewrite <- Lemmas.wp_lhs_assign_member; try (simplify_simpl; simplify_wp_lhs o)
-  | Eassign ?l _ _ => rewrite <- wp_lhs_assign; try (simplify_simpl; simplify_wp_lhs l)
+  | Eassign (Emember ?o _ _) _ _ => rewrite <- Lemmas.wp_lhs_assign_member; continue_lhs o
+  | Eassign ?l _ _ => rewrite <- wp_lhs_assign; continue_lhs l
   | Eassign_op _ _ _ _ => rewrite <- wp_lhs_bop_assign
   | Evar (Lname _) _ => rewrite <- wp_lhs_lvar
   | Evar (Gname _) _ => rewrite <- wp_lhs_gvar
-  | Ederef ?e _ => rewrite <- wp_lhs_deref; simplify_wp_rhs e
-  | Ecast (CCcast Cnoop) (Lvalue, ?e) _ => rewrite <- Lemmas.wp_lhs_cast_noop; try (simplify_simpl; simplify_wp_lhs e)
-  | Emember ?e _ _ => rewrite <- wp_lhs_member; try (simplify_simpl; simplify_wp_lhs e)
+  | Ederef ?e _ => rewrite <- wp_lhs_deref; continue_rhs e
+  | Ecast (CCcast Cnoop) (Lvalue, ?e) _ => rewrite <- Lemmas.wp_lhs_cast_noop; continue_lhs e
+  | Emember ?e _ _ => rewrite <- wp_lhs_member; continue_lhs e
   | Epreinc _ _ => rewrite <- wp_lhs_preinc; simpl
   | Epredec _ _ => rewrite <- wp_lhs_predec; simpl
-  | Eif ?e _ _ _ => rewrite <- Lemmas.wp_lhs_condition; try (simplify_simpl; simplify_wp_rhs e)
-  | Ematerialize_temp ?e _ => rewrite <- wp_lhs_temp; try (simplify_simpl; simplify_wp_rhs e)
-  | Esubscript ?e _ _ => rewrite <- wp_lhs_subscript; try (simplify_simpl; simplify_wp_rhs e)
-  end.
+  | Eif ?e _ _ _ => rewrite <- Lemmas.wp_lhs_condition; continue_rhs e
+  | Ematerialize_temp ?e _ => rewrite <- wp_lhs_temp; continue_rhs e
+  | Esubscript ?e _ _ => rewrite <- wp_lhs_subscript; continue_rhs e
+  end
+with continue_rhs e := try (simplify_simpl; simplify_wp_rhs e)
+with continue_lhs e := try (simplify_simpl; simplify_wp_lhs e)
+.
 
 Ltac simplify_wpe e :=
   lazymatch e with

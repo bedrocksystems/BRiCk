@@ -686,17 +686,16 @@ Section refl.
     | Eint n ty =>
       let ty := drop_qualifiers ty in
       rvalue cat ;;
-      ret (fun Q =>
-             match is_const_int ty n with
-             | None => [! has_type (Vint n) ty !] //\\ Q (Vint n) empSP
-             | Some false => error "is_const_int ty n = Some false"
-             | Some true => Q (Vint n) empSP
-             end)
+      match is_const_int ty n with
+      | None => ret (fun Q => [! has_type (Vint n) ty !] //\\ Q (Vint n) empSP)
+      | Some false => ret (fun _ => error "is_const_int ty n = Some false")
+      | Some true => ret (fun Q => Q (Vint n) empSP)
+      end
     | Ebool b =>
       rvalue cat ;;
-      ret (fun Q => if b
-                 then Q (Vint 1) empSP
-                 else Q (Vint 0) empSP)
+      if b
+      then ret (fun Q => Q (Vint 1) empSP)
+      else ret (fun Q => Q (Vint 0) empSP)
     | Ethis ty =>
       rvalue cat ;;
       ret (fun Q => Exists a, (_this r &~ a ** ltrue) //\\ Q a empSP)
@@ -1250,7 +1249,7 @@ Ltac with_specs' c specs md k :=
   | cglob ?f _ ?spec => k constr:((f, spec) :: specs) md
   | |> cglob ?f _ ?spec => k constr:((f, spec) :: specs) md
   | denoteModule ?m => k specs constr:(cu_app md m)
-  | _ => k specs
+  | _ => k specs md
   end.
 
 Ltac with_specs_and_mod k :=
@@ -1261,9 +1260,9 @@ Ltac with_specs_and_mod k :=
 
 Ltac simplifying :=
   progress (with_specs_and_mod ltac:(fun s md =>
-     first [ rewrite <- wp_sound with (cu:=md) (specs:=s) by (simpl; reflexivity)
-           | rewrite <- wp_ctor_sound with (cu:=md) (specs:=s) by (simpl; reflexivity)
-           | rewrite <- wp_dtor_sound with (cu:=md) (specs:=s) by (simpl; reflexivity)
-           | rewrite <- wp_lhs_sound with (cu:=md) (specs:=s) by (simpl; reflexivity)
-           | rewrite <- wp_rhs_sound with (cu:=md) (specs:=s) by (simpl; reflexivity)
-           ]); cbn).
+     first [ rewrite <- wp_sound with (cu:=md) (specs:=s) by (vm_compute; reflexivity)
+           | rewrite <- wp_ctor_sound with (cu:=md) (specs:=s) by (vm_compute; reflexivity)
+           | rewrite <- wp_dtor_sound with (cu:=md) (specs:=s) by (vm_compute; reflexivity)
+           | rewrite <- wp_lhs_sound with (cu:=md) (specs:=s) by (vm_compute; reflexivity)
+           | rewrite <- wp_rhs_sound with (cu:=md) (specs:=s) by (vm_compute; reflexivity)
+           ])).
