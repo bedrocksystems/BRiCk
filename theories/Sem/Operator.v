@@ -6,6 +6,12 @@
 (**
  * Semantics of arithmetic and pointer operators.
  *)
+
+(* Note, the syntax tree provides explicit nodes for integral promotion so this file
+ * only describes the semantics of operators on uniform types. The one exception is
+ * pointer operations (e.g. ptr + int) because that can not be made uniform.
+ *)
+
 Require Import Coq.NArith.BinNat.
 Require Import Coq.ZArith.BinInt.
 Require Import Coq.Strings.Ascii.
