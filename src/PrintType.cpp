@@ -43,6 +43,24 @@ printQualifier(const QualType& qt, CoqPrinter& print) {
     print.end_record();
 }
 
+const std::string
+bitsize (unsigned n) {
+  switch (n) {
+  case 8:
+    return "size_8bits";
+  case 16:
+    return "size_16bits";
+  case 32:
+    return "size_32bits";
+  case 64:
+    return "size_64bits";
+  case 128:
+    return "size_128bits";
+  default:
+    return "unknown_bit_size";
+  }
+}
+
 class PrintType :
     public TypeVisitor<PrintType, void, CoqPrinter&, ClangPrinter&> {
 private:
@@ -108,7 +126,7 @@ public:
                 print.output() << "T_int128";
                 break;
             default:
-                print.output() << "(Tint " << sz << "%N Signed)";
+                print.output() << "(Tint " << bitsize (sz) << " Signed)";
             }
         } else if (type->isUnsignedIntegerType()) {
             switch (auto sz = cprint.getTypeSize(type)) {
@@ -128,7 +146,7 @@ public:
                 print.output() << "T_uint128";
                 break;
             default:
-                print.output() << "(Tint " << sz << "%N) Unsigned)";
+                print.output() << "(Tint " << bitsize (sz) << ") Unsigned)";
             }
         }
     }
@@ -163,16 +181,16 @@ public:
         } else if (type->getKind() == BuiltinType::Kind::Char16) {
             print.output() << "T_char16";
         } else if (type->getKind() == BuiltinType::Kind::Char_S) {
-            print.output() << "(Tchar " << cprint.getTypeSize(type)
+            print.output() << "(Tchar " << bitsize (cprint.getTypeSize(type))
                            << "%N Signed)";
         } else if (type->getKind() == BuiltinType::Kind::SChar) {
-            print.output() << "(Tchar " << cprint.getTypeSize(type)
+            print.output() << "(Tchar " << bitsize (cprint.getTypeSize(type))
                            << "%N Signed)";
         } else if (type->getKind() == BuiltinType::Kind::UChar) {
-            print.output() << "(Tchar " << cprint.getTypeSize(type)
+            print.output() << "(Tchar " << bitsize (cprint.getTypeSize(type))
                            << "%N Unsigned)";
         } else if (type->getKind() == BuiltinType::Kind::Char_U) {
-            print.output() << "(Tchar " << cprint.getTypeSize(type)
+            print.output() << "(Tchar " << bitsize (cprint.getTypeSize(type))
                            << "%N Unsigned)";
         } else if (type->getKind() == BuiltinType::Kind::Char8) {
             print.output() << "T_char8";
