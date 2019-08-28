@@ -13,6 +13,8 @@ Require Import Cpp.Util.
 Require Import Cpp.Syntax.Ast.
 Require Import Cpp.Syntax.Types.
 
+Set Primitive Projections.
+
 Variant UnOp : Set :=
 | Uminus
 | Unot

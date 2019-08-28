@@ -14,6 +14,8 @@ Require Import Cpp.Syntax.Ast.
 Require Import Cpp.Syntax.Expr.
 Require Import Cpp.Syntax.Types.
 
+Set Primitive Projections.
+
 Variant SwitchBranch : Set :=
 | Exact (_ : Z)
 | Range (_ _ : Z)

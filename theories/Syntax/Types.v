@@ -12,6 +12,8 @@ Require Import Coq.ZArith.BinIntDef.
 Require Import Cpp.Util.
 Require Import Cpp.Syntax.Ast.
 
+Set Primitive Projections.
+
 Variant signed : Set := Signed | Unsigned.
 
 Inductive type : Set :=
