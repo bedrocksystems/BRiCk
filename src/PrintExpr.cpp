@@ -698,6 +698,13 @@ public:
         cprint.printExpr(expr->getSubExpr(), print);
         done(expr, print, cprint);
     }
+
+    void VisitLambdaExpr(const LambdaExpr* expr, CoqPrinter& print,
+                         ClangPrinter& cprint, const ASTContext&) {
+        print.ctor("Eunsupported");
+        print.str("lambda");
+        done(expr, print, cprint);
+    }
 };
 
 PrintExpr PrintExpr::printer;
