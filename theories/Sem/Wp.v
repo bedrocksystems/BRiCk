@@ -15,6 +15,8 @@ From Cpp Require Import
      Ast.
 From Cpp.Sem Require Import
      Util Logic Semantics.
+From Cpp.Syntax Require Import
+     Stmt.
 
 (* this applies `wp` across a list
  *
@@ -232,7 +234,7 @@ Proof.
 Qed.
 
 Parameter wp
-  : forall {resolve : genv}, thread_info -> region -> Ast.Stmt -> Kpreds -> mpred.
+  : forall {resolve : genv}, thread_info -> region -> Stmt -> Kpreds -> mpred.
 
 Axiom Proper_wp : forall resolve ti r e,
     Proper (lentails ==> lentails)

@@ -3,7 +3,7 @@
 Require Import Coq.ZArith.ZArith.
 Require Import Coq.Strings.String.
 Require Import Coq.Lists.List.
-Require Import Cpp.Syntax.Ast.
+Require Import Cpp.Ast.
 
 Local Open Scope Z_scope.
 Local Open Scope string_scope.
