@@ -5,6 +5,8 @@
  *)
 Require Import Coq.Classes.DecidableClass.
 Require Import Cpp.Syntax.Ast.
+Require Import Cpp.Syntax.Expr.
+Require Import Cpp.Syntax.Types.
 
 Fixpoint type_of (e : Expr) : type :=
   match e with
