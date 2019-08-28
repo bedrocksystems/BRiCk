@@ -282,6 +282,9 @@ Inductive Expr : Set :=
 | Ematerialize_temp (_ : Expr) (_ : type)
 
 | Eatomic (_ : AtomicOp) (_ : list (ValCat * Expr)) (_ : type)
+
+| Eva_arg (_ : Expr) (_ : type)
+| Eunsupported (_ : string) (_ : type)
 .
 
 Definition Edefault_init_expr (e : Expr) : Expr := e.

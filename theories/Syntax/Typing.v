@@ -46,6 +46,8 @@ Fixpoint type_of (e : Expr) : type :=
   | Eandclean _ t
   | Ematerialize_temp _ t => t
   | Eatomic _ _ t => t
+  | Eva_arg _ t => t
+  | Eunsupported _ t => t
   end.
 
 Fixpoint erase_qualifiers (t : type) : type :=
@@ -72,7 +74,7 @@ Fixpoint drop_qualifiers (t : type) : type :=
 Section decidable.
 
   Global Instance Decidable_type (a b : type) : Decidable (a = b).
-  refine 
+  refine
     {| Decidable_witness := if type_eq_dec a b then true else false
      ; Decidable_spec := _ |}.
   destruct (type_eq_dec a b); split; congruence.
