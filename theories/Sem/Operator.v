@@ -33,7 +33,7 @@ Axiom eval_not_bool : forall resolve a,
    is the number of bits after promotion.  *)
 Axiom eval_minus_int : forall resolve s a c w bytes,
     size_of resolve (Tint w s) bytes ->
-    c = (if s then (0 - a) else trim w (0 - a))%Z ->
+    c = (if s then (0 - a) else trim (N_of_size w) (0 - a))%Z ->
     has_type (Vint c) (Tint w s) ->
     eval_unop (resolve:=resolve) Uminus (Tint w s) (Tint w s)
               (Vint a) (Vint c).
@@ -85,13 +85,13 @@ Axiom eval_ptr_ptr_sub :
 
 Definition eval_int_op (bo : BinOp) (o : Z -> Z -> Z) : Prop :=
   forall resolve w (s : signed) (a b c : Z),
-    c = (if s then o a b else trim w (o a b)) ->
+    c = (if s then o a b else trim (N_of_size w) (o a b)) ->
     has_type (Vint c) (Tint w s) ->
     eval_binop (resolve:=resolve) bo (Tint w s) (Tint w s) (Tint w s) (Vint a) (Vint b) (Vint c).
 
 Definition eval_int_bin_op (bo : BinOp) (o : Z -> Z -> Z) : Prop :=
   forall resolve w (s : signed) (a b c : Z),
-    c = (if s then o a b else trim w (o a b)) ->
+    c = (if s then o a b else trim (N_of_size w) (o a b)) ->
     eval_binop (resolve:=resolve) bo (Tint w s) (Tint w s) (Tint w s) (Vint a) (Vint b) (Vint c).
 
 (* arithmetic operators *)
@@ -141,10 +141,10 @@ Axiom eval_mod :
    greater than or equal to the length in bits of the promoted left
    operand.  *)
 Axiom eval_shl :
-  forall resolve (w : N) (s : signed) (a b c : Z),
-    (0 <= b < Z.of_N w)%Z ->
+  forall resolve (w : size) (s : signed) (a b c : Z),
+    (0 <= b < Z_of_size w)%Z ->
     (0 <= a)%Z ->
-    (c = if s then Z.shiftl a b else trim w (Z.shiftl a b)) ->
+    (c = if s then Z.shiftl a b else trim (N_of_size w) (Z.shiftl a b)) ->
     has_type (Vint c) (Tint w s) ->
     eval_binop (resolve:=resolve) Bshl (Tint w s) (Tint w s) (Tint w s) (Vint a) (Vint b) (Vint c).
 
@@ -154,10 +154,10 @@ Axiom eval_shl :
    part of the quotient of E1/(2^E2). If E1 has a signed type and a
    negative value, the resulting value is implementation-defined. *)
 Axiom eval_shr :
-  forall resolve (w : N) (s : signed) (a b c : Z),
-    (0 <= b < Z.of_N w)%Z ->
+  forall resolve (w : size) (s : signed) (a b c : Z),
+    (0 <= b < Z_of_size w)%Z ->
     (0 <= a)%Z ->
-    (c = if s then Z.shiftr a b else trim w (Z.shiftr a b)) ->
+    (c = if s then Z.shiftr a b else trim (N_of_size w) (Z.shiftr a b)) ->
     has_type (Vint c) (Tint w s) ->
     eval_binop (resolve:=resolve) Bshr (Tint w s) (Tint w s) (Tint w s) (Vint a) (Vint b) (Vint c).
 

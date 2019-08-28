@@ -92,16 +92,16 @@ Global Instance Decidable_eq_Cast (a b : Cast) : Decidable (a = b) :=
 
 (* types with explicit size information
  *)
-Definition T_int8    := Tint 8 Signed.
-Definition T_uint8   := Tint 8 Unsigned.
-Definition T_int16   := Tint 16 Signed.
-Definition T_uint16  := Tint 16 Unsigned.
-Definition T_int32   := Tint 32 Signed.
-Definition T_uint32  := Tint 32 Unsigned.
-Definition T_int64   := Tint 64 Signed.
-Definition T_uint64  := Tint 64 Unsigned.
-Definition T_int128  := Tint 128 Signed.
-Definition T_uint128 := Tint 128 Unsigned.
+Definition T_int8    := Tint size_8bits Signed.
+Definition T_uint8   := Tint size_8bits Unsigned.
+Definition T_int16   := Tint size_16bits Signed.
+Definition T_uint16  := Tint size_16bits Unsigned.
+Definition T_int32   := Tint size_32bits Signed.
+Definition T_uint32  := Tint size_32bits Unsigned.
+Definition T_int64   := Tint size_64bits Signed.
+Definition T_uint64  := Tint size_64bits Unsigned.
+Definition T_int128  := Tint size_128bits Signed.
+Definition T_uint128 := Tint size_128bits Unsigned.
 
 (* note(gmm): types without explicit size information need to
  * be parameters of the underlying code, otherwise we can't
@@ -116,11 +116,11 @@ the warning below.
 In future, we may want to parametrize by a data model, or
 the machine word size.
 *)
-Definition char_bits : size := 8.
-Definition short_bits : size := 16.
-Definition int_bits : size := 32.
-Definition long_bits : size := 64. (** warning: LLP64 model uses 32 *)
-Definition long_long_bits : size := 64.
+Definition char_bits : size := size_8bits.
+Definition short_bits : size := size_16bits.
+Definition int_bits : size := size_32bits.
+Definition long_bits : size := size_64bits. (** warning: LLP64 model uses 32 *)
+Definition long_long_bits : size := size_64bits.
 
 Definition T_ushort : type := Tint short_bits Unsigned.
 Definition T_short : type := Tint short_bits Signed.
