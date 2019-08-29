@@ -146,7 +146,7 @@ public:
                 print.output() << "T_uint128";
                 break;
             default:
-                print.output() << "(Tint " << bitsize (sz) << ") Unsigned)";
+                print.output() << "(Tint " << bitsize (sz) << " Unsigned)";
             }
         }
     }
