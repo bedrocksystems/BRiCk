@@ -196,7 +196,7 @@ Module Type Stmt.
         wp (Sseq (init :: Sfor None test incr b :: nil)) Q
         |-- wp (Sfor (Some init) test incr b) Q.
 
-    Axiom wp_do : forall t b Q {T : Type} I,
+    Axiom wp_do : forall t b Q I,
         I |-- wp (Sseq (b :: (Sif None t Scontinue Sskip) :: nil)) (Kloop I Q) ->
         I |-- wp (Sdo b t) Q.
 
