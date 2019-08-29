@@ -389,20 +389,27 @@ public:
 
     void VisitMemberExpr(const MemberExpr* expr, CoqPrinter& print,
                          ClangPrinter& cprint, const ASTContext&) {
-        print.ctor("Emember");
-
-        auto base = expr->getBase();
-        if (expr->isArrow()) {
-            print.ctor("Ederef");
-            cprint.printExpr(base, print);
-            done(base, print, cprint);
+        if (auto vd = dyn_cast<VarDecl>(expr->getMemberDecl())) {
+            // this handles the special case of static members
+            print.ctor("Evar");
+            cprint.printName(vd, print);
+            done(expr, print, cprint);
         } else {
-            cprint.printExpr(base, print);
-        }
+            print.ctor("Emember");
 
-        print.output() << fmt::nbsp;
-        cprint.printField(expr->getMemberDecl(), print);
-        done(expr, print, cprint);
+            auto base = expr->getBase();
+            if (expr->isArrow()) {
+                print.ctor("Ederef");
+                cprint.printExpr(base, print);
+                done(base, print, cprint);
+            } else {
+                cprint.printExpr(base, print);
+            }
+
+            print.output() << fmt::nbsp;
+            cprint.printField(expr->getMemberDecl(), print);
+            done(expr, print, cprint);
+        }
     }
 
     void VisitArraySubscriptExpr(const ArraySubscriptExpr* expr,

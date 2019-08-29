@@ -32,7 +32,9 @@ public:
 
     void VisitDecl(const Decl* decl, CoqPrinter& print, ClangPrinter& cprint) {
         using namespace logging;
-        fatal() << "unexpected local declaration while printing parameter";
+        fatal() << "unexpected local declaration while printing parameter "
+                << decl->getDeclKindName() << " (at "
+                << cprint.sourceRange(decl->getSourceRange()) << ")\n";
         die();
     }
 };
