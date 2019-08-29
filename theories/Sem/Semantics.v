@@ -75,9 +75,9 @@ Axiom has_type_pointer : forall v ty, has_type v (Tpointer ty) -> exists p, v = 
 
 Definition bound (bits : size) (sgn : signed) (v : Z) : Prop :=
   if sgn then
-    (-Z.pow 2 (Z.of_N bits - 1) <= v < Z.pow 2 (Z.of_N bits - 1))%Z
+    (-Z.pow 2 (Z_of_size bits - 1) <= v < Z.pow 2 (Z_of_size bits - 1))%Z
   else
-    (0 <= v < Z.pow 2 (Z.of_N bits))%Z.
+    (0 <= v < Z.pow 2 (Z_of_size bits))%Z.
 
 Axiom has_int_type : forall sz (sgn : signed) z,
     bound sz sgn z <-> has_type (Vint z) (Tint sz sgn).
@@ -112,9 +112,9 @@ Axiom size_of_unique : forall {c : genv} t sz sz',
     sz = sz'.
 
 Axiom size_of_int : forall {c : genv} s w,
-    @size_of c (Tint w s) (N.div (w + 7) 8).
+    @size_of c (Tint w s) (N.div (N_of_size w + 7) 8).
 Axiom size_of_char : forall {c : genv} s w,
-    @size_of c (Tchar w s) (N.div (w + 7) 8).
+    @size_of c (Tchar w s) (N.div (N_of_size w + 7) 8).
 Axiom size_of_bool : forall {c : genv},
     @size_of c Tbool 1.
 Axiom size_of_pointer : forall {c : genv} t,

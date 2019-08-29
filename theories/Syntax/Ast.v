@@ -76,7 +76,24 @@ Definition merge_tq (a b : type_qualifiers) : type_qualifiers :=
    ; q_volatile := a.(q_volatile) || b.(q_volatile)
    |}.
 
-Definition size : Set := N.
+Variant size : Set :=
+| W8
+| W16
+| W32
+| W64
+| W128.
+
+Definition N_of_size (s : size) : N :=
+  match s with
+  | W8   => 8
+  | W16  => 16
+  | W32  => 32
+  | W64  => 64
+  | W128 => 128
+  end.
+
+Definition Z_of_size (s : size) : Z :=
+  Z.of_N (N_of_size s).
 
 Bind Scope N_scope with size.
 
