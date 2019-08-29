@@ -47,15 +47,15 @@ const std::string
 bitsize (unsigned n) {
   switch (n) {
   case 8:
-    return "size_8bits";
+    return "W8";
   case 16:
-    return "size_16bits";
+    return "W16";
   case 32:
-    return "size_32bits";
+    return "W32";
   case 64:
-    return "size_64bits";
+    return "W64";
   case 128:
-    return "size_128bits";
+    return "W128";
   default:
     return "unknown_bit_size";
   }

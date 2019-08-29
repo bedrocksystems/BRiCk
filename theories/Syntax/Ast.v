@@ -77,19 +77,19 @@ Definition merge_tq (a b : type_qualifiers) : type_qualifiers :=
    |}.
 
 Variant size : Set :=
-| size_8bits
-| size_16bits
-| size_32bits
-| size_64bits
-| size_128bits.
+| W8
+| W16
+| W32
+| W64
+| W128.
 
 Definition N_of_size (s : size) : N :=
   match s with
-  | size_8bits   => 8
-  | size_16bits  => 16
-  | size_32bits  => 32
-  | size_64bits  => 64
-  | size_128bits => 128
+  | W8   => 8
+  | W16  => 16
+  | W32  => 32
+  | W64  => 64
+  | W128 => 128
   end.
 
 Definition Z_of_size (s : size) : Z :=
