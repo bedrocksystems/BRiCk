@@ -224,6 +224,8 @@ Module Type Stmt.
       | Sreturn _
       | Sexpr _ _
       | Sasm _ _ _ _ _ => true
+      | Slabeled _ s => no_case s
+      | Sgoto _ => true
       end.
 
 

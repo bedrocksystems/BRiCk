@@ -61,6 +61,15 @@ printMethod(const CXXMethodDecl *decl, CoqPrinter &print,
     } else {
         print.output() << "None";
     }
+
+    print.output() << fmt::line << "; m_virtual := " << fmt::nbsp;
+    if (decl->isVirtual()) {
+        using namespace logging;
+        unsupported() << "[ERR] virtual functions not supported: "
+                      << decl->getNameAsString() << "\n";
+    }
+    print.boolean(decl->isVirtual());
+
     print.output() << fmt::outdent << "|}";
 }
 
@@ -76,16 +85,21 @@ printDestructor(const CXXDestructorDecl *decl, CoqPrinter &print,
     auto record = decl->getParent();
     print.output() << "{| d_class :=" << fmt::nbsp;
     cprint.printGlobalName(record, print);
+    print.output() << fmt::line << " ; d_virtual := ";
+    print.boolean(decl->isVirtual());
     print.output() << fmt::line << " ; d_body :=";
+
     if (decl->isDefaulted()) {
         // todo(gmm): I need to generate this.
         print.output() << "Some Defaulted |}";
     } else if (decl->getBody()) {
-        print.output() << "Some" << fmt::nbsp;
-        print.ctor("UserDefined") << fmt::lparen;
+        print.some();
+        print.ctor("UserDefined");
+        print.begin_tuple();
         cprint.printStmt(decl->getBody(), print);
-        print.output() << "," << fmt::nbsp;
+        print.next_tuple();
 
+        print.begin_list();
         // i need to destruct each field, and then each parent class
         // in the REVERSE order of construction
         {
@@ -95,9 +109,12 @@ printDestructor(const CXXDestructorDecl *decl, CoqPrinter &print,
                 const FieldDecl *fd = *i;
                 if (auto rd =
                         fd->getType().getTypePtr()->getAsCXXRecordDecl()) {
-                    print.ctor("Field") << "\"" << fd->getName() << "\"";
+                    print.begin_tuple();
+                    print.output()
+                        << "Field \"" << fd->getName() << "\"," << fmt::nbsp;
                     cprint.printGlobalName(rd->getDestructor(), print);
-                    print.output() << fmt::rparen << fmt::nbsp << "::";
+                    print.end_tuple();
+                    print.cons();
                 }
             }
         }
@@ -125,9 +142,11 @@ printDestructor(const CXXDestructorDecl *decl, CoqPrinter &print,
                 print.output() << "::";
             }
         }
-        print.output() << "nil";
-
-        print.output() << fmt::rparen << fmt::rparen << "|}";
+        print.end_list();
+        print.end_tuple();
+        print.end_ctor();
+        print.end_ctor();
+        print.end_record();
     } else {
         print.none();
     }
@@ -143,7 +162,8 @@ public:
 
     void VisitDecl(const Decl *d, CoqPrinter &print, ClangPrinter &cprint) {
         using namespace logging;
-        fatal() << "visiting declaration..." << d->getDeclKindName() << "\n";
+        fatal() << "visiting declaration..." << d->getDeclKindName() << "(at "
+                << cprint.sourceRange(d->getSourceRange()) << ")\n";
         die();
     }
 
@@ -151,7 +171,8 @@ public:
                        ClangPrinter &cprint) {
         using namespace logging;
         fatal() << "unsupported type declaration `" << type->getDeclKindName()
-                << "`\n";
+                << "(at " << cprint.sourceRange(type->getSourceRange())
+                << ")\n";
         die();
     }
 
@@ -251,7 +272,8 @@ public:
                 cprint.printGlobalName(rec, print);
             } else {
                 using namespace logging;
-                fatal() << "base class is not a RecordType\n";
+                fatal() << "base class is not a RecordType at "
+                        << cprint.sourceRange(decl->getSourceRange()) << "\n";
                 die();
             }
             print.cons();
@@ -307,19 +329,12 @@ public:
             print.output() << fmt::outdent;
             print.end_ctor();
         } else {
-            if (decl->isVirtual()) {
-                using namespace logging;
-                fatal() << "[ERR] virtual functions not supported: "
-                        << decl->getNameAsString() << "\n";
-                die();
-            } else {
-                print.ctor("Dmethod");
-                cprint.printGlobalName(decl, print);
-                print.output() << fmt::line << fmt::indent;
-                printMethod(decl, print, cprint);
-                print.output() << fmt::outdent;
-                print.end_ctor();
-            }
+            print.ctor("Dmethod");
+            cprint.printGlobalName(decl, print);
+            print.output() << fmt::line << fmt::indent;
+            printMethod(decl, print, cprint);
+            print.output() << fmt::outdent;
+            print.end_ctor();
         }
     }
 

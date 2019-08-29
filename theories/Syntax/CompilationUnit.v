@@ -12,58 +12,72 @@ Require Import Cpp.Syntax.Expr.
 Require Import Cpp.Syntax.Stmt.
 Require Import Cpp.Syntax.Types.
 
-Definition Expr_eq_dec : forall a b : Expr, {a = b} + {a <> b}.
-Proof.
-  generalize type_eq_dec.
-  generalize (fun a b => @Decidable_dec _ _ _ (Decidable_eq_VarRef a b)).
-  generalize BinInt.Z.eq_dec.
-  generalize ascii_dec.
-  generalize string_dec.
-  generalize Bool.bool_dec.
-  generalize (fun a b => @Decidable_dec _ _ _ (Decidable_eq_UnOp a b)).
-  generalize (fun a b => @Decidable_dec _ _ _ (Decidable_eq_BinOp a b)).
-  generalize (fun a b => @Decidable_dec _ _ _ (Decidable_eq_ValCat a b)).
-  do 9 intro.
-  refine (fix Expr_dec a b : {a = b} + {a <> b} :=
-             _).
-  decide equality.
-  all: try eapply List.list_eq_dec.
-  all: decide equality.
-  all: decide equality.
-  all: decide equality.
-Defined.
+Record Ctor : Set :=
+{ c_class  : globname
+; c_params : list (ident * type)
+; c_body   : option (OrDefault (list (FieldOrBase * Expr) * Stmt))
+}.
 
-Definition Stmt_eq_dec : forall a b : Stmt, {a = b} + {a <> b}.
-Proof.
-  generalize type_eq_dec.
-  generalize (fun a b => @Decidable_dec _ _ _ (Decidable_eq_VarRef a b)).
-  generalize BinInt.Z.eq_dec.
-  generalize ascii_dec.
-  generalize string_dec.
-  generalize Bool.bool_dec.
-  generalize (fun a b => @Decidable_dec _ _ _ (Decidable_eq_UnOp a b)).
-  generalize (fun a b => @Decidable_dec _ _ _ (Decidable_eq_BinOp a b)).
-  generalize (fun a b => @Decidable_dec _ _ _ (Decidable_eq_ValCat a b)).
-  generalize Expr_eq_dec.
-  do 10 intro.
-  refine (fix Stmt_dec a b : {a = b} + {a <> b} :=
-            _).
-  decide equality.
-  all: try eapply List.list_eq_dec.
-  all: try eassumption.
-  all: decide equality.
-  all: decide equality.
-  all: decide equality.
-Defined.
+Record Dtor : Set :=
+{ d_class  : globname
+; d_body   : option (OrDefault (Stmt * list (FieldOrBase * obj_name)))
+; d_virtual : bool
+}.
 
+Record Func : Set :=
+{ f_return : type
+; f_params : list (ident * type)
+; f_body   : option Stmt
+}.
 
+Record Method : Set :=
+{ m_return  : type
+; m_class   : globname
+; m_this_qual : type_qualifiers
+; m_params  : list (ident * type)
+; m_body    : option Stmt
+; m_virtual : bool
+}.
 
+Record Union : Set :=
+{ u_fields : list (ident * type * option Expr)
+  (* ^ fields (with optional initializers) *)
+}.
 
-Global Instance Decidable_eq_Expr (a b : Expr) : Decidable (a = b) :=
-  dec_Decidable (Expr_eq_dec a b).
+Record Struct : Set :=
+{ s_bases : list globname
+  (* ^ base classes *)
+; s_fields : list (ident * type * option Expr)
+  (* ^ fields (with optional initializers) *)
+}.
 
-Global Instance Decidable_eq_Stmt (a b : Stmt) : Decidable (a = b) :=
-  dec_Decidable (Stmt_eq_dec a b).
+Variant Ctor_type : Set := Ct_Complete | Ct_Base | Ct_Comdat.
+
+(* Definition ctor_name (type : Ctor_type) (cls : globname) : obj_name := *)
+(*   match cls with *)
+(*   | String _ (String _ s) => *)
+(*     "_ZN" ++ s ++ "C" ++ (match type with *)
+(*                           | Ct_Complete => "1" *)
+(*                           | Ct_Base => "2" *)
+(*                           | Ct_Comdat => "5" *)
+(*                           end) ++ "Ev" *)
+(*   | _ => "" *)
+(*   end%string. *)
+
+Variant Dtor_type : Set := Dt_Deleting | Dt_Complete | Dt_Base | Dt_Comdat.
+
+Definition dtor_name (type : Dtor_type) (cls : globname) : obj_name :=
+  match cls with
+  | String _ (String _ s) =>
+    "_ZN" ++ s ++ "D" ++ ("0" (*match type with
+                          | Dt_Deleting => "0"
+                          | Dt_Complete => "1"
+                          | Dt_Base => "2"
+                          | Dt_Comdat => "5"
+                          end *)) ++ "Ev"
+  | _ => ""
+  end%string.
+
 
 Section Decidable_or_default.
   Context {T : Set} (dec : resolve (forall a b : T, Decidable (a = b))).
@@ -115,7 +129,8 @@ Proof.
                 decide (a.(m_class) = b.(m_class)) &&
                 decide (a.(m_this_qual) = b.(m_this_qual)) &&
                 decide (a.(m_params) = b.(m_params)) &&
-                decide (a.(m_body) = b.(m_body))
+                decide (a.(m_body) = b.(m_body)) &&
+                decide (a.(m_virtual) = b.(m_virtual))
     |}.
   repeat rewrite Bool.andb_true_iff.
   repeat rewrite Decidable_spec.
@@ -138,7 +153,8 @@ Proof.
   refine
     {| Decidable_witness :=
          decide (a.(d_class) = b.(d_class)) &&
-                decide (a.(d_body) = b.(d_body))
+         decide (a.(d_body) = b.(d_body)) &&
+         decide (a.(d_virtual) = b.(d_virtual))
     |}.
   repeat rewrite Bool.andb_true_iff.
   repeat rewrite Decidable_spec.

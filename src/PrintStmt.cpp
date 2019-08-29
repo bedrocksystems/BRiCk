@@ -35,19 +35,24 @@ public:
 
     void VisitDeclStmt(const DeclStmt *stmt, CoqPrinter &print,
                        ClangPrinter &cprint, ASTContext &) {
-        print.ctor("Sdecl");
-        print.begin_list();
-        for (auto i : stmt->decls()) {
-            if (auto sl = dyn_cast<VarDecl>(i)) {
-                if (sl->isStaticLocal()) {
-                    continue;
+        if (stmt->isSingleDecl() &&
+            dyn_cast<StaticAssertDecl>(stmt->getSingleDecl())) {
+            print.output() << "Sskip";
+        } else {
+            print.ctor("Sdecl");
+            print.begin_list();
+            for (auto i : stmt->decls()) {
+                if (auto sl = dyn_cast<VarDecl>(i)) {
+                    if (sl->isStaticLocal()) {
+                        continue;
+                    }
                 }
+                cprint.printLocalDecl(i, print);
+                print.cons();
             }
-            cprint.printLocalDecl(i, print);
-            print.cons();
+            print.end_list();
+            print.end_ctor();
         }
-        print.end_list();
-        print.end_ctor();
     }
 
     void VisitWhileStmt(const WhileStmt *stmt, CoqPrinter &print,
@@ -316,6 +321,21 @@ public:
 
         cprint.printStmt(stmt->getSubStmt(), print);
 
+        print.end_ctor();
+    }
+
+    void VisitLabelStmt(const LabelStmt *stmt, CoqPrinter &print,
+                        ClangPrinter &cprint, ASTContext &) {
+        print.ctor("Slabeled");
+        print.str(stmt->getDecl()->getNameAsString()) << fmt::nbsp;
+        cprint.printStmt(stmt->getSubStmt(), print);
+        print.end_ctor();
+    }
+
+    void VisitGotoStmt(const GotoStmt *stmt, CoqPrinter &print,
+                       ClangPrinter &cprint, ASTContext &) {
+        print.ctor("Sgoto");
+        print.str(stmt->getLabel()->getNameAsString());
         print.end_ctor();
     }
 };

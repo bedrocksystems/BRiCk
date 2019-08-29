@@ -5,6 +5,7 @@
  */
 #include <clang/AST/ASTContext.h>
 #include <clang/AST/DeclCXX.h>
+#include <clang/AST/ExprCXX.h>
 #include <clang/AST/Mangle.h>
 
 #include "ClangPrinter.hpp"
@@ -59,6 +60,13 @@ ClangPrinter::printName(const NamedDecl *decl, CoqPrinter &print) {
 
 void
 ClangPrinter::printValCat(const Expr *d, CoqPrinter &print) {
+#ifdef DEBUG
+    d->dump(llvm::errs());
+    llvm::errs().flush();
+#endif
+    // note(gmm): Classify doesn't work on dependent types which occur in templates
+    // that clang can't completely eliminate.
+
     auto Class = d->Classify(*this->context_);
     if (Class.isLValue()) {
         print.output() << "Lvalue";
@@ -108,11 +116,13 @@ ClangPrinter::printField(const ValueDecl *decl, CoqPrinter &print) {
         print.output() << fmt::nbsp << "; f_name := \""
                        << decl->getNameAsString() << "\"";
         print.end_record();
+    } else if (const VarDecl *var = dyn_cast<VarDecl>(decl)) {
+
     } else {
         using namespace logging;
         fatal() << "member not pointing to field " << decl->getDeclKindName()
-                << "\n";
-        assert(false && "member not pointing to field");
+                << " (at " << sourceRange(decl->getSourceRange()) << ")\n";
+        die();
     }
 }
 

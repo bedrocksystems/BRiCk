@@ -146,3 +146,28 @@ Inductive Expr : Set :=
 .
 
 Definition Edefault_init_expr (e : Expr) : Expr := e.
+
+
+Definition Expr_eq_dec : forall a b : Expr, {a = b} + {a <> b}.
+Proof.
+  generalize type_eq_dec.
+  generalize (fun a b => @Decidable_dec _ _ _ (Decidable_eq_VarRef a b)).
+  generalize BinInt.Z.eq_dec.
+  generalize ascii_dec.
+  generalize string_dec.
+  generalize Bool.bool_dec.
+  generalize (fun a b => @Decidable_dec _ _ _ (Decidable_eq_UnOp a b)).
+  generalize (fun a b => @Decidable_dec _ _ _ (Decidable_eq_BinOp a b)).
+  generalize (fun a b => @Decidable_dec _ _ _ (Decidable_eq_ValCat a b)).
+  do 9 intro.
+  refine (fix Expr_dec a b : {a = b} + {a <> b} :=
+             _).
+  decide equality.
+  all: try eapply List.list_eq_dec.
+  all: decide equality.
+  all: decide equality.
+  all: decide equality.
+Defined.
+
+Global Instance Decidable_eq_Expr (a b : Expr) : Decidable (a = b) :=
+  dec_Decidable (Expr_eq_dec a b).

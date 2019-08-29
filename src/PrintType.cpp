@@ -292,15 +292,29 @@ public:
     void VisitTemplateSpecializationType(const TemplateSpecializationType* type,
                                          CoqPrinter& print,
                                          ClangPrinter& cprint) {
-        print.ctor("Tref", false);
-        cprint.printGlobalName(type->getAsCXXRecordDecl(), print);
-        //cprint.mangleContext->mangleCXXName(type->getAsCXXRecordDecl(), cprint.out.nobreak());
-        print.output() << fmt::rparen;
+        if (type->isSugared()) {
+            cprint.printQualType(type->desugar(), print);
+        } else {
+            VisitType(type, print, cprint);
+        }
     }
 
     void VisitDecltypeType(const DecltypeType* type, CoqPrinter& print,
                            ClangPrinter& cprint) {
         cprint.printQualType(type->desugar(), print);
+    }
+
+    void VisitInjectedClassNameType(const InjectedClassNameType* type,
+                                    CoqPrinter& print, ClangPrinter& cprint) {
+        if (type->getDecl()) {
+            print.ctor("Tref");
+            cprint.printGlobalName(type->getDecl(), print);
+            print.end_ctor();
+        } else {
+            logging::log() << "no underlying declaration for \n";
+            type->dump(logging::log());
+            cprint.printQualType(type->getInjectedSpecializationType(), print);
+        }
     }
 };
 
