@@ -88,10 +88,12 @@ public:
     void VisitExpr(const Expr* expr, CoqPrinter& print, ClangPrinter& cprint,
                    const ASTContext& ctxt) {
         using namespace logging;
-        fatal() << "unrecognized expression '" << expr->getStmtClassName()
-                << "' at " << cprint.sourceRange(expr->getSourceRange())
-                << "\n";
-        die();
+        unsupported() << "unrecognized expression '" << expr->getStmtClassName()
+                      << "' at " << cprint.sourceRange(expr->getSourceRange())
+                      << "\n";
+        print.ctor("Eunsupported");
+        print.str(expr->getStmtClassName());
+        done(expr, print, cprint);
     }
 
     void printBinaryOperator(BinaryOperator::Opcode op, StringRef def,
@@ -696,6 +698,13 @@ public:
                         ClangPrinter& cprint, const ASTContext&) {
         print.ctor("Eva_arg");
         cprint.printExpr(expr->getSubExpr(), print);
+        done(expr, print, cprint);
+    }
+
+    void VisitLambdaExpr(const LambdaExpr* expr, CoqPrinter& print,
+                         ClangPrinter& cprint, const ASTContext&) {
+        print.ctor("Eunsupported");
+        print.str("lambda");
         done(expr, print, cprint);
     }
 };

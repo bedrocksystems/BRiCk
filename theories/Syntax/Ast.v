@@ -102,7 +102,6 @@ Bind Scope N_scope with size.
 
 
 
-
 (*
 (* global declarations *)
 Variant Decl : Set :=

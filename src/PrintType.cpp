@@ -77,8 +77,8 @@ public:
         die();
     }
 
-    void VisitAutoType(const AutoType* type, CoqPrinter& print,
-                       ClangPrinter& cprint) {
+    void VisitDeducedType(const DeducedType* type, CoqPrinter& print,
+                          ClangPrinter& cprint) {
         cprint.printQualType(type->getDeducedType(), print);
     }
 

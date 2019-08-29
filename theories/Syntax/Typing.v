@@ -48,6 +48,8 @@ Fixpoint type_of (e : Expr) : type :=
   | Eandclean _ t
   | Ematerialize_temp _ t => t
   | Eatomic _ _ t => t
+  | Eva_arg _ t => t
+  | Eunsupported _ t => t
   end.
 
 Fixpoint erase_qualifiers (t : type) : type :=
