@@ -148,13 +148,13 @@ Hint Rewrite <-
 Require Import Coq.Classes.Morphisms.
 
 (* note(gmm): the following morphisms seem to be necessary *)
-Instance lexists_ok : Proper (pointwise_relation val (Basics.flip lentails) ==> Basics.flip lentails) (@lexists mpred _ _).
+Global Instance lexists_ok : Proper (pointwise_relation val (Basics.flip lentails) ==> Basics.flip lentails) (@lexists mpred _ _).
 Proof.
   red. red. intros. red. 
   eapply lexists_lentails_m.
   eapply H.
 Qed.
-Instance lentails_ok : Proper (lentails ==> Basics.flip lentails ==> Basics.flip Basics.impl) (@lentails mpred _).
+Global Instance lentails_ok : Proper (lentails ==> Basics.flip lentails ==> Basics.flip Basics.impl) (@lentails mpred _).
 Proof.
   red. red. red. intros. red. intros. red.
   intros.
@@ -162,10 +162,14 @@ Proof.
 Qed.
 
 Declare Reduction red_wpe :=
-  cbn beta iota zeta delta [ drop_qualifiers wp_block Qmut Qconst T_int ].
+  cbn beta iota zeta delta [ drop_qualifiers wp_args wp_block Qmut Qconst T_char T_int is_aggregate type_of k_normal k_break k_return k_continue Kloop Kseq Kfree Kat_exit val_return void_return wpe init_path init_type init_init wp_decls wpAny ].
+
+Declare Reduction red_SP :=
+  cbv beta iota zeta delta [ SP ].
 
 Ltac simplifying :=
-  rewrite_strat (topdown (hints wp_all; eval red_wpe)).
+  rewrite_strat (topdown (hints wp_all; eval red_SP; eval red_wpe)).
+
 
 (* 
 Require Import Coq.Strings.String.
