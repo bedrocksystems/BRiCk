@@ -8,7 +8,10 @@ default_target: coq
 COQPATHFILE=$(wildcard _CoqPath)
 COQMAKEFILE=$(COQBIN)coq_makefile
 
-all: coq test
+bin: build/Makefile
+	$(MAKE) -C build
+
+all: coq bin test
 
 coq: Makefile.coq
 	$(MAKE) -f Makefile.coq
@@ -30,7 +33,11 @@ install: Makefile.coq
 Makefile.coq: _CoqProject
 	$(COQMAKEFILE) -f _CoqProject -o Makefile.coq
 
-test: coq
+test: coq bin
 	$(MAKE) -C tests
 
-.PHONEY: test install coq all doc html clean install
+.PHONY: test install coq all doc html clean install
+
+build/Makefile:
+	mkdir -p build
+	(cd build; cmake ..)

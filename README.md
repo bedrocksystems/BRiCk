@@ -73,16 +73,19 @@ $ cmake --build .
 You can build `cpp2v` using the following commands.
 
 ```sh
-$ (cd ..; mkdir cpp2v-bin; cd cpp2v-bin; cmake ../cpp2v; make)
+$ make bin
 ```
 
-You can build the Coq development using:
+You can build the Coq development using (this is the default):
 
 ```sh
-$ ln -s ../cpp2v-bin/cpp2v cpp2v
-$ make
-$ (cd tests; ln -s ../cpp2v cpp2v)
-$ (cd tests; make)
+$ make coq
+```
+
+You can run the tests with
+
+```sh
+$ make test
 ```
 
 ## Examples

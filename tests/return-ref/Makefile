@@ -1,1 +1,1 @@
-include ../Makefile.common
+include ../rules.mk
