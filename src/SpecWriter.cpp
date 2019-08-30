@@ -310,34 +310,56 @@ end_decl(const NamedDecl *, CoqPrinter &print, ClangPrinter &) {
 }
 
 void
+print_path(CoqPrinter &print, const DeclContext *dc) {
+    if (dc == nullptr || isa<TranslationUnitDecl>(dc)) {
+        print.output() << "::";
+    } else {
+        if (auto td = dyn_cast<TagDecl>(dc)) {
+            print_path(print, dc->getParent());
+            if (td->getName() != "") {
+                print.output() << td->getName() << "::";
+            }
+        }
+    }
+}
+
+void
 write_globals(::Module &mod, CoqPrinter &print, ClangPrinter &cprint) {
 
     using namespace logging;
     print.output() << "Module _'." << fmt::indent << fmt::line;
 
+    auto path = [&print](const DeclContext *d) { print_path(print, d); };
+
     // todo(gmm): i would like to generate function names.
     for (auto i : mod.definitions()) {
         auto def = i.second;
-        auto class_name = def->getNameAsString();
         if (const FieldDecl *fd = dyn_cast<FieldDecl>(def)) {
-            print.output() << "Notation \"'" << fd->getNameAsString()
-                           << "'\" :=" << fmt::nbsp;
+            print.output() << "Notation \"'";
+            path(fd->getParent());
+            print.output() << fd->getName() << "'\" :=" << fmt::nbsp;
             cprint.printField(fd, print);
             print.output() << " (in custom cppglobal at level 0)." << fmt::line;
         } else if (const RecordDecl *rd = dyn_cast<RecordDecl>(def)) {
-            print.output() << "Notation \"'" << class_name
-                           << "'\" :=" << fmt::nbsp;
-            cprint.printGlobalName(def, print);
-            print.output() << "%string (in custom cppglobal at level 0)."
-                           << fmt::line;
+            auto class_name = def->getName();
+            if (!rd->isAnonymousStructOrUnion()) {
+                print.output() << "Notation \"'";
+                path(rd->getParent());
+                print.output() << class_name << "'\" :=" << fmt::nbsp;
+                cprint.printGlobalName(def, print);
+                print.output()
+                    << "%string (in custom cppglobal at level 0)." << fmt::line;
+            }
 
             for (auto fd : rd->fields()) {
-                print.output()
-                    << "Notation \"'" << class_name
-                    << "::" << fd->getNameAsString() << "'\" :=" << fmt::nbsp;
-                cprint.printField(fd, print);
-                print.output()
-                    << " (in custom cppglobal at level 0)." << fmt::line;
+                if (fd->getName() != "") {
+                    print.output() << "Notation \"'";
+                    path(rd);
+                    print.output() << fd->getName() << "'\" :=" << fmt::nbsp;
+                    cprint.printField(fd, print);
+                    print.output()
+                        << " (in custom cppglobal at level 0)." << fmt::line;
+                }
             }
         } else {
             log(Level::VERBOSE) << "unknown declaration type "
