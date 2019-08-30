@@ -56,7 +56,7 @@ Proof.
   eapply has_int_type.
   simpl in *.
   eapply Z.mod_pos_bound.
-  eapply Z.pow_pos_nonneg; lia.
+  eauto.
 Qed.
 
 
@@ -71,7 +71,7 @@ Proof.
   eapply has_int_type in H.
   simpl in *.
   eapply Z.mod_pos_bound.
-  eapply Z.pow_pos_nonneg; lia.
+  eauto.
 Qed.
 
 Local Ltac prove_binop a :=
