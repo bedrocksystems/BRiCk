@@ -8,6 +8,7 @@ Require Import Coq.NArith.BinNatDef.
 From Coq.Strings Require Import
      Ascii String.
 Require Import Coq.ZArith.BinIntDef.
+Require Import Coq.ZArith.BinInt.
 
 Require Import Cpp.Util.
 
@@ -96,6 +97,12 @@ Definition Z_of_size (s : size) : Z :=
   Z.of_N (N_of_size s).
 
 Bind Scope N_scope with size.
+
+Coercion N_of_size : size >-> N.
+Lemma of_size_gt_O w :
+  (0 < 2 ^ Z_of_size w)%Z.
+Proof. unfold Z_of_size. unfold BinIntDef.Z.of_N. unfold N_of_size. destruct w; reflexivity. Qed.
+Hint Resolve of_size_gt_O.
 
 
 
