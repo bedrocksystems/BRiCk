@@ -7,7 +7,7 @@ CS=$(wildcard *.c)
 HS=$(wildcard *.h)
 CPPS=$(wildcard *.cpp)
 HPPS=$(wildcard *.hpp)
-CPP2V?=$(abspath $(lastword $(MAKEFILE_LIST)))/../build/cpp2v
+CPP2V?=$(shell dirname $(abspath $(lastword $(MAKEFILE_LIST))))/../build/cpp2v
 
 VS=$(patsubst %.h,%_h.v,$(HS)) $(patsubst %.hpp,%_hpp.v,$(HPPS)) $(patsubst %.c,%_c.v,$(CS)) $(patsubst %.cpp,%_cpp.v,$(CPPS))
 VOS=$(patsubst %.v,%.vo,$(VS))
