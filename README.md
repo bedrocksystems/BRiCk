@@ -1,4 +1,5 @@
-[![Build Status](https://travis-ci.com/bedrocksystems/cpp2v.svg?branch=master)](https://travis-ci.com/bedrocksystems/cpp2v)
+[![pipeline status](https://gitlab.com/bedrocksystems/cpp2v/badges/master/pipeline.svg)](https://gitlab.com/bedrocksystems/cpp2v/commits/master)
+
 
 # cpp2v
 
