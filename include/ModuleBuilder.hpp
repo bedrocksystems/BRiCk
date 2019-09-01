@@ -15,14 +15,20 @@ public:
         if (opaque) {
             add_declaration(d);
         } else {
-            definitions_.insert(
-                std::make_pair(llvm::StringRef(d->getNameAsString()), d));
+            llvm::StringRef name = d->getNameAsString();
+            auto found = definitions_.find(name);
+            if ((found == definitions_.end()) || found->second != d) {
+                definitions_.insert(std::make_pair(name, d));
+            }
         }
     }
 
     void add_declaration(const clang::NamedDecl* d) {
-        imports_.insert(std::make_pair(llvm::StringRef(d->getNameAsString()),
-                                       std::make_pair(d, true)));
+        llvm::StringRef name = d->getNameAsString();
+        auto found = imports_.find(name);
+        if ((found == imports_.end()) || found->second.first != d) {
+            imports_.insert(std::make_pair(name, std::make_pair(d, true)));
+        }
     }
 
     const std::multimap<clang::StringRef,
