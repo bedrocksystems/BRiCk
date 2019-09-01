@@ -340,6 +340,14 @@ print_path(CoqPrinter &print, const DeclContext *dc, bool end = true) {
             if (td->getName() != "") {
                 print.output() << td->getNameAsString() << (end ? "::" : "");
             }
+        } else if (auto ns = dyn_cast<NamespaceDecl>(dc)) {
+            if (!ns->isAnonymousNamespace()) {
+                print.output() << ns->getNameAsString() << (end ? "::" : "");
+            }
+        } else {
+            using namespace logging;
+            logging::log() << "unknown declaration while printing path "
+                           << dc->getDeclKindName() << "\n";
         }
     }
 }
