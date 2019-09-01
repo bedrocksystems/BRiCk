@@ -310,14 +310,35 @@ end_decl(const NamedDecl *, CoqPrinter &print, ClangPrinter &) {
 }
 
 void
-print_path(CoqPrinter &print, const DeclContext *dc) {
+print_path(CoqPrinter &print, const DeclContext *dc, bool end = true) {
     if (dc == nullptr || isa<TranslationUnitDecl>(dc)) {
-        print.output() << "::";
+        if (end)
+            print.output() << "::";
     } else {
-        if (auto td = dyn_cast<TagDecl>(dc)) {
-            print_path(print, dc->getParent());
+        print_path(print, dc->getParent());
+        if (auto ts = dyn_cast<ClassTemplateSpecializationDecl>(dc)) {
+            print.output() << ts->getNameAsString() << "<";
+            bool first = true;
+            for (auto i : ts->getTemplateArgs().asArray()) {
+                if (!first) {
+                    print.output() << ",";
+                    first = false;
+                }
+                switch (i.getKind()) {
+                case TemplateArgument::ArgKind::Integral:
+                    print.output() << i.getAsIntegral();
+                    break;
+                case TemplateArgument::ArgKind::Type:
+                    print.output() << i.getAsType().getAsString();
+                    break;
+                default:
+                    print.output() << "?";
+                }
+            }
+            print.output() << (end ? ">::" : ">");
+        } else if (auto td = dyn_cast<TagDecl>(dc)) {
             if (td->getName() != "") {
-                print.output() << td->getName() << "::";
+                print.output() << td->getNameAsString() << (end ? "::" : "");
             }
         }
     }
@@ -325,27 +346,25 @@ print_path(CoqPrinter &print, const DeclContext *dc) {
 
 void
 write_globals(::Module &mod, CoqPrinter &print, ClangPrinter &cprint) {
-
     using namespace logging;
     print.output() << "Module _'." << fmt::indent << fmt::line;
-
-    auto path = [&print](const DeclContext *d) { print_path(print, d); };
 
     // todo(gmm): i would like to generate function names.
     for (auto i : mod.definitions()) {
         auto def = i.second;
         if (const FieldDecl *fd = dyn_cast<FieldDecl>(def)) {
             print.output() << "Notation \"'";
-            path(fd->getParent());
-            print.output() << fd->getName() << "'\" :=" << fmt::nbsp;
+            print_path(print, fd->getParent(), true);
+            print.output() << fd->getNameAsString() << "'\" :=" << fmt::nbsp;
             cprint.printField(fd, print);
             print.output() << " (in custom cppglobal at level 0)." << fmt::line;
         } else if (const RecordDecl *rd = dyn_cast<RecordDecl>(def)) {
-            auto class_name = def->getName();
-            if (!rd->isAnonymousStructOrUnion()) {
+            if (!rd->isAnonymousStructOrUnion() &&
+                rd->getNameAsString() != "") {
                 print.output() << "Notation \"'";
-                path(rd->getParent());
-                print.output() << class_name << "'\" :=" << fmt::nbsp;
+                print_path(print, rd, false);
+                print.output() << "'\" :=" << fmt::nbsp;
+
                 cprint.printGlobalName(def, print);
                 print.output()
                     << "%string (in custom cppglobal at level 0)." << fmt::line;
@@ -354,8 +373,9 @@ write_globals(::Module &mod, CoqPrinter &print, ClangPrinter &cprint) {
             for (auto fd : rd->fields()) {
                 if (fd->getName() != "") {
                     print.output() << "Notation \"'";
-                    path(rd);
-                    print.output() << fd->getName() << "'\" :=" << fmt::nbsp;
+                    print_path(print, rd, true);
+                    print.output()
+                        << fd->getNameAsString() << "'\" :=" << fmt::nbsp;
                     cprint.printField(fd, print);
                     print.output()
                         << " (in custom cppglobal at level 0)." << fmt::line;

@@ -13,7 +13,7 @@
 
 using namespace clang;
 
-class BuildModule : public ConstDeclVisitorArgs<BuildModule, void> {
+class BuildModule : public ConstDeclVisitorArgs<BuildModule, void, bool> {
 private:
     ::Module &module_;
     Filter &filter_;
@@ -45,33 +45,33 @@ public:
                 SpecCollector &specs)
         : module_(m), filter_(filter), specs_(specs), context_(context) {}
 
-    void VisitDecl(const Decl *d) {
+    void VisitDecl(const Decl *d, bool) {
         logging::log() << "visiting declaration..." << d->getDeclKindName()
                        << "\n";
     }
 
-    void VisitAccessSpecDecl(const AccessSpecDecl *) {
+    void VisitAccessSpecDecl(const AccessSpecDecl *, bool) {
         // ignore
     }
 
-    void VisitTranslationUnitDecl(const TranslationUnitDecl *decl) {
+    void VisitTranslationUnitDecl(const TranslationUnitDecl *decl, bool) {
         for (auto i : decl->decls()) {
-            this->Visit(i);
+            this->Visit(i, false);
         }
     }
 
-    void VisitTypeDecl(const TypeDecl *type) {
+    void VisitTypeDecl(const TypeDecl *type, bool) {
         logging::log() << "unsupported type declaration `"
                        << type->getDeclKindName() << "`\n";
     }
 
-    void VisitEmptyDecl(const EmptyDecl *decl) {}
+    void VisitEmptyDecl(const EmptyDecl *decl, bool) {}
 
-    void VisitTypedefNameDecl(const TypedefNameDecl *type) {
+    void VisitTypedefNameDecl(const TypedefNameDecl *type, bool) {
         go(type);
     }
 
-    void VisitTagDecl(const TagDecl *decl) {
+    void VisitTagDecl(const TagDecl *decl, bool) {
         auto defn = decl->getDefinition();
         if (defn == decl) {
             go(decl, true);
@@ -80,16 +80,19 @@ public:
         }
     }
 
-    void VisitCXXRecordDecl(const CXXRecordDecl *decl) {
+    void VisitCXXRecordDecl(const CXXRecordDecl *decl, bool is_specialization) {
+        if (!is_specialization && isa<ClassTemplateSpecializationDecl>(decl)) {
+            return;
+        }
         // find any static functions or fields
         for (auto i : decl->decls()) {
-            Visit(i);
+            Visit(i, false);
         }
 
-        VisitTagDecl(decl);
+        VisitTagDecl(decl, false);
     }
 
-    void VisitFunctionDecl(const FunctionDecl *decl) {
+    void VisitFunctionDecl(const FunctionDecl *decl, bool) {
         using namespace comment;
         auto defn = decl->getDefinition();
         if (defn == decl) {
@@ -116,37 +119,37 @@ public:
         }
     }
 
-    void VisitEnumConstantDecl(const EnumConstantDecl *decl) {
+    void VisitEnumConstantDecl(const EnumConstantDecl *decl, bool) {
         go(decl);
     }
 
-    void VisitVarDecl(const VarDecl *decl) {
+    void VisitVarDecl(const VarDecl *decl, bool) {
         go(decl);
     }
 
-    void VisitFieldDecl(const FieldDecl *) {
+    void VisitFieldDecl(const FieldDecl *, bool) {
         // ignore
     }
 
-    void VisitUsingDecl(const UsingDecl *) {
+    void VisitUsingDecl(const UsingDecl *, bool) {
         // ignore
     }
 
-    void VisitUsingDirectiveDecl(const UsingDirectiveDecl *) {
+    void VisitUsingDirectiveDecl(const UsingDirectiveDecl *, bool) {
         // ignore
     }
 
-    void VisitIndirectFieldDecl(const IndirectFieldDecl *) {
+    void VisitIndirectFieldDecl(const IndirectFieldDecl *, bool) {
         // ignore
     }
 
-    void VisitNamespaceDecl(const NamespaceDecl *decl) {
+    void VisitNamespaceDecl(const NamespaceDecl *decl, bool) {
         for (auto d : decl->decls()) {
-            this->Visit(d);
+            this->Visit(d, false);
         }
     }
 
-    void VisitEnumDecl(const EnumDecl *decl) {
+    void VisitEnumDecl(const EnumDecl *decl, bool) {
         if (decl->getName() != "") {
             go(decl);
         }
@@ -155,36 +158,36 @@ public:
         }
     }
 
-    void VisitLinkageSpecDecl(const LinkageSpecDecl *decl) {
+    void VisitLinkageSpecDecl(const LinkageSpecDecl *decl, bool) {
         for (auto i : decl->decls()) {
-            this->Visit(i);
+            this->Visit(i, false);
         }
     }
 
-    void VisitCXXConstructorDecl(const CXXConstructorDecl *decl) {
+    void VisitCXXConstructorDecl(const CXXConstructorDecl *decl, bool) {
         if (decl->isDeleted()) {
             return;
         }
-        this->ConstDeclVisitorArgs::VisitCXXConstructorDecl(decl);
+        this->ConstDeclVisitorArgs::VisitCXXConstructorDecl(decl, false);
     }
 
-    void VisitCXXDestructorDecl(const CXXDestructorDecl *decl) {
+    void VisitCXXDestructorDecl(const CXXDestructorDecl *decl, bool) {
         if (decl->isDeleted()) {
             return;
         }
-        this->ConstDeclVisitorArgs::VisitCXXDestructorDecl(decl);
+        this->ConstDeclVisitorArgs::VisitCXXDestructorDecl(decl, false);
     }
 
-    void VisitFunctionTemplateDecl(const FunctionTemplateDecl *decl) {
+    void VisitFunctionTemplateDecl(const FunctionTemplateDecl *decl, bool) {
         // note(gmm): for now, i am just going to return the specializations.
         for (auto i : decl->specializations()) {
-            this->Visit(i);
+            this->Visit(i, true);
         }
     }
 
-    void VisitClassTemplateDecl(const ClassTemplateDecl *decl) {
+    void VisitClassTemplateDecl(const ClassTemplateDecl *decl, bool) {
         for (auto i : decl->specializations()) {
-            this->Visit(i);
+            this->Visit(i, true);
         }
     }
 };
@@ -193,5 +196,5 @@ void
 build_module(const clang::TranslationUnitDecl *tu, ::Module &mod,
              Filter &filter, SpecCollector &specs) {
     auto &ctxt = tu->getASTContext();
-    BuildModule(mod, filter, &ctxt, specs).VisitTranslationUnitDecl(tu);
+    BuildModule(mod, filter, &ctxt, specs).VisitTranslationUnitDecl(tu, false);
 }
