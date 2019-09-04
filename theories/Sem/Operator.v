@@ -140,13 +140,14 @@ Axiom eval_mod :
 (* The behavior is undefined if the right operand is negative, or
    greater than or equal to the length in bits of the promoted left
    operand.  *)
+
 Axiom eval_shl :
-  forall resolve (w : size) (s : signed) (a b c : Z),
+  forall resolve (w : size) w2 (s : signed) (a b c : Z),
     (0 <= b < Z_of_size w)%Z ->
     (0 <= a)%Z ->
     (c = if s then Z.shiftl a b else trim (N_of_size w) (Z.shiftl a b)) ->
     has_type (Vint c) (Tint w s) ->
-    eval_binop (resolve:=resolve) Bshl (Tint w s) (Tint w s) (Tint w s) (Vint a) (Vint b) (Vint c).
+    @eval_binop resolve Bshl (Tint w s) (Tint w2 s) (Tint w s) (Vint a) (Vint b) (Vint c).
 
 (* [C++14,C++20): The value of E1 >> E2 is E1 right-shifted E2 bit
    positions. If E1 has an unsigned type or if E1 has a signed type
@@ -231,3 +232,12 @@ Axiom eval_ptr_neq :
     b = Vptr bv ->
     c = (if ptr_eq_dec av bv then 0 else 1)%Z ->
     eval_binop (resolve:=resolve) Bneq (Tpointer ty) (Tpointer ty) Tbool a b (Vint c).
+
+Definition bitFlipZ (z:Z) (len: N) : Z :=
+  (Z.pow 2 (Z.of_N len)) -1 -z.
+
+Axiom eval_unop_not:
+  forall {genv} (w : size) s (a b : Z),
+    b = bitFlipZ a w ->
+    has_type (Vint b) (Tint w s) ->
+    @eval_unop genv Ubnot (Tint w s) (Tint w s)  (Vint a) (Vint b).
