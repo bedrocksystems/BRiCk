@@ -139,7 +139,13 @@ Axiom eval_mod :
    otherwise, the behavior is undefined.  *)
 (* The behavior is undefined if the right operand is negative, or
    greater than or equal to the length in bits of the promoted left
-   operand.  *)
+   operand.
+In overload resolution against user-defined operators, for every pair of promoted integral types L and R, the following function signatures participate in overload resolution:
+
+L operator<<(L, R)
+L operator>>(L, R)
+
+  *)
 
 Axiom eval_shl :
   forall resolve (w : size) w2 (s : signed) (a b c : Z),
@@ -155,12 +161,12 @@ Axiom eval_shl :
    part of the quotient of E1/(2^E2). If E1 has a signed type and a
    negative value, the resulting value is implementation-defined. *)
 Axiom eval_shr :
-  forall resolve (w : size) (s : signed) (a b c : Z),
+  forall resolve (w : size) w2 (s : signed) (a b c : Z),
     (0 <= b < Z_of_size w)%Z ->
     (0 <= a)%Z ->
     (c = if s then Z.shiftr a b else trim (N_of_size w) (Z.shiftr a b)) ->
     has_type (Vint c) (Tint w s) ->
-    eval_binop (resolve:=resolve) Bshr (Tint w s) (Tint w s) (Tint w s) (Vint a) (Vint b) (Vint c).
+    eval_binop (resolve:=resolve) Bshr (Tint w s) (Tint w2 s) (Tint w s) (Vint a) (Vint b) (Vint c).
 
 (* Arithmetic comparison operators *)
 
