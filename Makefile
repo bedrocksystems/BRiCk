@@ -8,10 +8,13 @@ default_target: coq
 COQPATHFILE=$(wildcard _CoqPath)
 COQMAKEFILE=$(COQBIN)coq_makefile
 
-bin: build/Makefile
-	$(MAKE) -C build
+cpp2v: build/Makefile
+	$(MAKE) -C build cpp2v
 
-all: coq bin test
+cpp2v_plugin: build/Makefile
+	$(MAKE) -C build cpp2v_plugin
+
+all: coq cpp2v test
 
 coq: Makefile.coq
 	$(MAKE) -f Makefile.coq
@@ -33,8 +36,11 @@ install: Makefile.coq
 Makefile.coq: _CoqProject
 	$(COQMAKEFILE) -f _CoqProject -o Makefile.coq
 
-test: coq bin
+test: coq cpp2v
 	$(MAKE) -C tests
+
+test-plugin: coq cpp2v_plugin
+	$(MAKE) -C tests/plugin
 
 .PHONY: test install coq all doc html clean install
 
