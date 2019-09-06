@@ -153,7 +153,7 @@ Axiom eval_shl :
     (0 <= a)%Z ->
     (c = if s then Z.shiftl a b else trim (N_of_size w) (Z.shiftl a b)) ->
     has_type (Vint c) (Tint w s) ->
-    @eval_binop resolve Bshl (Tint w s) (Tint w2 s) (Tint w s) (Vint a) (Vint b) (Vint c).
+    eval_binop (resolve:=resolve) Bshl (Tint w s) (Tint w2 s) (Tint w s) (Vint a) (Vint b) (Vint c).
 
 (* [C++14,C++20): The value of E1 >> E2 is E1 right-shifted E2 bit
    positions. If E1 has an unsigned type or if E1 has a signed type

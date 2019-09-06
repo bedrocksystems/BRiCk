@@ -752,7 +752,7 @@ Module Type cclogic.
       [| memorder = _SEQ_CST |] **
       (Exists val, _at (_eq l) (tprim acc_type val)) **
       (_at (_eq l) (tprim acc_type val) -* Exists void, Q void)
-      |-- wp_atom (resolve:=rslv) AO__atomic_store_n (l :: memorder :: val :: nil) (Qmut Tvoid) Q.
+      |-- wp_atom (resolve:=rslv) AO__atomic_store_n (l :: memorder :: val :: nil) Tvoid Q.
 
   (* atomic compare and exchange n *)
   Axiom wp_atom_compare_exchange_n:
