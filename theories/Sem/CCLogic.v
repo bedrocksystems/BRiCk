@@ -752,7 +752,7 @@ Module Type cclogic.
       [| memorder = _SEQ_CST |] **
       (Exists val, _at (_eq l) (tprim acc_type val)) **
       (_at (_eq l) (tprim acc_type val) -* Exists void, Q void)
-      |-- wp_atom (resolve:=rslv) AO__atomic_store_n (l :: memorder :: val :: nil) (Qmut Tvoid) Q.
+      |-- wp_atom (resolve:=rslv) AO__atomic_store_n (l :: memorder :: val :: nil) Tvoid Q.
 
   (* atomic compare and exchange n *)
   Axiom wp_atom_compare_exchange_n:
@@ -770,7 +770,7 @@ Module Type cclogic.
           _at (_eq expected_p) (tprim ty v) **
           _at (_eq val_p) (tprim ty v) -* Q' (Vbool false))))
        |-- wp_atom (resolve:=rslv) AO__atomic_compare_exchange_n
-                   (val_p::succmemord::expected_p::failmemord::desired::wk::nil) (Qmut Tbool) Q'.
+                   (val_p::succmemord::expected_p::failmemord::desired::wk::nil) Tbool Q'.
   (* ^ note(gmm): this states that *both pointers are read atomically*.
    *)
 
@@ -871,3 +871,4 @@ Declare Module CCL : cclogic.
 Export CCL.
 
 Global Opaque p_compose p_valid p_bot.
+
