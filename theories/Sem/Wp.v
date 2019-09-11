@@ -14,9 +14,15 @@ Require Import Coq.Strings.String.
 From Cpp Require Import
      Ast.
 From Cpp.Sem Require Import
-     Util Logic Semantics.
+     ChargeUtil Logic Semantics.
 From Cpp.Syntax Require Import
      Stmt.
+
+(* expression continuations
+ * - in full C++, this includes exceptions, but our current semantics
+ *   doesn't treat those.
+ *)
+Definition epred := mpred.
 
 (* this applies `wp` across a list
  *
@@ -35,38 +41,93 @@ Section wps.
 End wps.
 
 
-(* Expressions *)
+(** Expressions *)
 Definition FreeTemps := mpred.
 
-(* `finish` denotes the sequence point for an expression *)
-Definition finish (Q : val -> mpred) (v : val) (free : FreeTemps) : mpred :=
+(* [SP] denotes the sequence point for an expression *)
+Definition SP (Q : val -> mpred) (v : val) (free : FreeTemps) : mpred :=
   free ** Q v.
 
-
-Parameter wp_lhs
+(* evaluate an expression as an lvalue *)
+Parameter wp_lval
   : forall {resolve : genv},
     thread_info -> region ->
     Expr ->
-    (val -> FreeTemps -> mpred) -> (* result -> free -> post *)
+    (val -> FreeTemps -> epred) -> (* result -> free -> post *)
     mpred. (* pre-condition *)
 
-Axiom Proper_wp_lhs : forall resolve ti r e,
+Axiom Proper_wp_lval : forall resolve ti r e,
     Proper ((pointwise_relation _ (pointwise_relation _ lentails)) ==> lentails)
-           (@wp_lhs resolve ti r e).
-Global Existing Instance Proper_wp_lhs.
+           (@wp_lval resolve ti r e).
+Global Existing Instance Proper_wp_lval.
 
-
-Parameter wp_rhs
+(* evaluate an expression as an prvalue *)
+Parameter wp_prval
   : forall {resolve : genv},
     thread_info -> region ->
     Expr ->
-    (val -> FreeTemps -> mpred) -> (* result -> free -> post *)
+    (val -> FreeTemps -> epred) -> (* result -> free -> post *)
     mpred. (* pre-condition *)
 
-Axiom Proper_wp_rhs : forall resolve ti r e,
+Axiom Proper_wp_prval : forall resolve ti r e,
     Proper ((pointwise_relation _ (pointwise_relation _ lentails)) ==> lentails)
-           (@wp_rhs resolve ti r e).
-Global Existing Instance Proper_wp_rhs.
+           (@wp_prval resolve ti r e).
+Global Existing Instance Proper_wp_prval.
+
+(* evaluate an initializing expression
+ * - the [val] is the location of the value that is being initialized
+ * - the expression denotes a prvalue with a "result object" (see
+ *    https://en.cppreference.com/w/cpp/language/value_category)
+ *)
+Parameter wp_init
+  : forall {resolve : genv},
+    thread_info -> region ->
+    type -> val -> Expr ->
+    (FreeTemps -> epred) -> (* free -> post *)
+    mpred. (* pre-condition *)
+Axiom Proper_wp_init : forall resolve ti r ty addr e,
+    Proper (pointwise_relation _ lentails ==> lentails)
+           (@wp_init resolve ti r ty addr e).
+Global Existing Instance Proper_wp_init.
+
+
+(* evaluate an expression as an xvalue *)
+Parameter wp_xval
+  : forall {resolve : genv},
+    thread_info -> region ->
+    Expr ->
+    (val -> FreeTemps -> epred) -> (* result -> free -> post *)
+    mpred. (* pre-condition *)
+
+Axiom Proper_wp_xval : forall resolve ti r e,
+    Proper ((pointwise_relation _ (pointwise_relation _ lentails)) ==> lentails)
+           (@wp_xval resolve ti r e).
+Global Existing Instance Proper_wp_xval.
+
+Definition wp_glval {resolve : genv} (ti : thread_info) (r : region) e Q :=
+  wp_lval (resolve:=resolve) ti r e Q \\//
+  wp_xval (resolve:=resolve) ti r e Q.
+Theorem Proper_wp_glval : forall resolve ti r e,
+    Proper ((pointwise_relation _ (pointwise_relation _ lentails)) ==> lentails)
+           (@wp_glval resolve ti r e).
+Proof.
+  unfold wp_glval; simpl. do 2 red. intros.
+  eapply lor_lentails_m; [ eapply Proper_wp_lval | eapply Proper_wp_xval ]; eauto.
+Qed.
+Global Existing Instance Proper_wp_glval.
+
+
+Definition wp_rval {resolve : genv} (ti : thread_info) (r : region) e Q :=
+  wp_prval (resolve:=resolve) ti r e Q \\//
+  wp_xval (resolve:=resolve) ti r e Q.
+Theorem Proper_wp_rval : forall resolve ti r e,
+    Proper ((pointwise_relation _ (pointwise_relation _ lentails)) ==> lentails)
+           (@wp_rval resolve ti r e).
+Proof.
+  unfold wp_rval; simpl. do 2 red. intros.
+  eapply lor_lentails_m; [ eapply Proper_wp_prval | eapply Proper_wp_xval ]; eauto.
+Qed.
+Global Existing Instance Proper_wp_rval.
 
 Section wpe.
   Context {resolve : genv}.
@@ -76,9 +137,9 @@ Section wpe.
   Definition wpe (vc : ValCat)
   : Expr -> (val -> FreeTemps -> mpred) -> mpred :=
     match vc with
-    | Lvalue=> @wp_lhs resolve ti ρ
-    | Rvalue => @wp_rhs resolve ti ρ
-    | Xvalue => @wp_lhs resolve ti ρ
+    | Lvalue => @wp_lval resolve ti ρ
+    | Rvalue => @wp_prval resolve ti ρ
+    | Xvalue => @wp_xval resolve ti ρ
     end.
 
   Definition wpAny (vce : ValCat * Expr)
@@ -90,7 +151,7 @@ Section wpe.
 End wpe.
 
 (** Statements *)
-(** continuations
+(* continuations
  * C++ statements can terminate in 4 ways.
  *
  * note(gmm): technically, they can also raise exceptions; however,
@@ -100,27 +161,27 @@ End wpe.
  *)
 Record Kpreds :=
   { k_normal   : mpred
-  ; k_return   : option val -> mpred
+  ; k_return   : option val -> FreeTemps -> mpred
   ; k_break    : mpred
   ; k_continue : mpred
   }.
 
 Definition void_return (P : mpred) : Kpreds :=
   {| k_normal := P
-   ; k_return := fun r => match r with
-                       | None => P
-                       | Some _ => lfalse
-                       end
+   ; k_return := fun r free => match r with
+                            | None => free ** P
+                            | Some _ => lfalse
+                            end
    ; k_break := lfalse
    ; k_continue := lfalse
    |}.
 
 Definition val_return (P : val -> mpred) : Kpreds :=
   {| k_normal := lfalse
-   ; k_return := fun r => match r with
-                       | None => lfalse
-                       | Some v => P v
-                       end
+   ; k_return := fun r free => match r with
+                            | None => lfalse
+                            | Some v => free ** P v
+                            end
    ; k_break := lfalse
    ; k_continue := lfalse |}.
 
@@ -139,7 +200,7 @@ Definition Kloop (I : mpred) (Q : Kpreds) : Kpreds :=
 
 Definition Kat_exit (Q : mpred -> mpred) (k : Kpreds) : Kpreds :=
   {| k_normal   := Q k.(k_normal)
-   ; k_return v := Q (k.(k_return) v)
+   ; k_return v free := Q (k.(k_return) v free)
    ; k_break    := Q k.(k_break)
    ; k_continue := Q k.(k_continue) |}.
 
@@ -148,12 +209,12 @@ Definition Kfree (a : mpred) : Kpreds -> Kpreds :=
 
 
 
-Global Instance ILogicOps_Rep : ILogicOps Kpreds :=
+Global Instance ILogicOps_Kpreds : ILogicOps Kpreds :=
 { lentails P Q :=
     P.(k_normal) |-- Q.(k_normal) /\
     P.(k_break) |-- Q.(k_break) /\
     P.(k_continue) |-- Q.(k_continue) /\
-    forall x, P.(k_return) x |-- Q.(k_return) x
+    forall x f, P.(k_return) x f |-- Q.(k_return) x f
 ; ltrue :=
     {| k_normal := ltrue
      ; k_break := ltrue
@@ -197,6 +258,7 @@ Global Instance ILogicOps_Rep : ILogicOps Kpreds :=
 }.
 Global Instance ILogic_Kpreds : ILogic Kpreds.
 Proof.
+  Transparent ILInsts.ILFun_Ops.
   constructor; try red; simpl.
   { constructor.
     - red. firstorder.
@@ -204,25 +266,26 @@ Proof.
   all: try solve [ firstorder; eauto using ltrueR, lfalseL, landL1, landL2, landR, lorL , lorR1, lorR2, limplAdj, landAdj, lforallL, lforallR, lexistsL, lexistsR ].
   { firstorder; eapply lforallR; intros; eapply H. }
   { firstorder; eapply lexistsL; intros; eapply H. }
+  Opaque ILInsts.ILFun_Ops.
 Qed.
 Global Instance BILogicOps_Kpreds : BILogicOps Kpreds :=
 { empSP      :=
     {| k_normal   := empSP
      ; k_break    := empSP
      ; k_continue := empSP
-     ; k_return _ := empSP |}
+     ; k_return _ _ := empSP |}
 
 ; sepSP  P Q :=
     {| k_normal   := sepSP P.(k_normal) Q.(k_normal)
      ; k_break    := sepSP P.(k_break) Q.(k_break)
      ; k_continue := sepSP P.(k_continue) Q.(k_continue)
-     ; k_return v := sepSP (P.(k_return) v) (Q.(k_return) v) |}
+     ; k_return v f := sepSP (P.(k_return) v f) (Q.(k_return) v f) |}
 
 ; wandSP P Q :=
     {| k_normal   := wandSP P.(k_normal) Q.(k_normal)
      ; k_break    := wandSP P.(k_break) Q.(k_break)
      ; k_continue := wandSP P.(k_continue) Q.(k_continue)
-     ; k_return v := wandSP (P.(k_return) v) (Q.(k_return) v) |}
+     ; k_return v f := wandSP (P.(k_return) v f) (Q.(k_return) v f) |}
 
 }.
 Global Instance BILogic_Kpreds : BILogic Kpreds.
@@ -233,6 +296,7 @@ Proof.
   { firstorder; eapply empSPR; eauto. }
 Qed.
 
+(* evaluate a statement *)
 Parameter wp
   : forall {resolve : genv}, thread_info -> region -> Stmt -> Kpreds -> mpred.
 
@@ -241,15 +305,34 @@ Axiom Proper_wp : forall resolve ti r e,
            (@wp resolve ti r e).
 Global Existing Instance Proper_wp.
 
+
+(* note: the [list val] here represents the *locations* of the parameters, not
+ * their values.
+ * todo(gmm): this isn't currently true, but it should be true
+ *)
 Parameter func_ok_raw
-  : forall {resolve: genv}, thread_info -> Func -> list val -> thread_info -> (val -> mpred) -> mpred.
+  : forall {resolve: genv}, thread_info -> Func -> list val -> (val -> mpred) -> mpred.
+
+(* todo(gmm): this is because func_ok is implemented using wp. *)
+Axiom func_ok_raw_conseq:
+  forall {resolve} ti f vs (Q Q' : val -> mpred),
+    (forall r : val, Q r |-- Q' r) ->
+    func_ok_raw (resolve:=resolve) ti f vs Q |-- func_ok_raw (resolve:=resolve) ti f vs Q'.
+
 
 Definition fspec {resolve} (n : val) (ls : list val) (ti : thread_info) (Q : val -> mpred) : mpred :=
   Exists f, [| n = Vptr f |] **
-  Exists func, code_at func f ** func_ok_raw (resolve:=resolve) ti func ls ti Q.
+  Exists func, code_at func f ** func_ok_raw (resolve:=resolve) ti func ls Q.
 
-(* todo(gmm): this is because func_ok is implemented using wp. *)
-Axiom fspec_conseq:
+Theorem fspec_ok_conseq:
   forall {resolve} (p : val) (vs : list val) ti (K m : val -> mpred),
     (forall r : val, m r |-- K r) ->
     fspec (resolve:=resolve) p vs ti m |-- fspec (resolve:=resolve) p vs ti K.
+Proof.
+  intros. unfold fspec.
+  eapply lexists_lentails_m. red; intros.
+  eapply scME; [ reflexivity | ].
+  eapply lexists_lentails_m. red; intros.
+  eapply scME; [ reflexivity | ].
+  eapply func_ok_raw_conseq. assumption.
+Qed.

@@ -12,7 +12,7 @@ From Coq Require Import
 
 From Cpp Require Import Ast.
 From Cpp.Sem Require Import
-        Util Semantics Logic PLogic Destroy Wp.
+        ChargeUtil Semantics Logic PLogic Destroy Wp Init Call.
 
 Require Import Coq.ZArith.BinInt.
 Require Import Coq.micromega.Lia.
@@ -29,16 +29,38 @@ Module Type Stmt.
 
     Local Notation wp := (wp (resolve:=resolve)  ti ρ).
     Local Notation wpe := (wpe (resolve:=resolve) ti ρ).
-    Local Notation wp_lhs := (wp_lhs (resolve:=resolve) ti ρ).
-    Local Notation wp_rhs := (wp_rhs (resolve:=resolve) ti ρ).
+    Local Notation wp_lval := (wp_lval (resolve:=resolve) ti ρ).
+    Local Notation wp_prval := (wp_prval (resolve:=resolve) ti ρ).
+    Local Notation wp_xval := (wp_xval (resolve:=resolve) ti ρ).
+    Local Notation wp_glval := (wp_glval (resolve:=resolve) ti ρ).
+    Local Notation wp_rval := (wp_rval (resolve:=resolve) ti ρ).
+    Local Notation wp_init := (wp_init (resolve:=resolve) ti ρ).
     Local Notation wpAny := (wpAny (resolve:=resolve) ti ρ).
     Local Notation wpAnys := (wpAnys (resolve:=resolve) ti ρ).
 
+   (* the semantics of return is like an initialization
+     * expression.
+     *)
     Axiom wp_return_void : forall Q,
-        Q.(k_return) None |-- wp (Sreturn None) Q.
-    (* todo(gmm): it is possible to return left-hand-values, e.g. a reference *)
-    Axiom wp_return_val : forall c e Q,
-        wpe c e (finish (fun res => Q.(k_return) (Some res)))
+        Q.(k_return) None empSP |-- wp (Sreturn None) Q.
+
+    Axiom wp_return : forall c e Q,
+        (if is_aggregate (type_of e) then
+           (* ^ C++ erases the reference information on types for an unknown
+            * reason, see http://eel.is/c++draft/expr.prop#expr.type-1.sentence-1
+            * so we need to re-construct this information from the value
+            * category of the expression.
+            *)
+           match c with
+           | Rvalue =>
+             Exists a, _result ρ &~ a ** ltrue //\\
+             wp_init (type_of e) a e (Q.(k_return) (Some a))
+           | Lvalue
+           | Xvalue =>
+             wpe c e (fun v => Q.(k_return) (Some v))
+           end
+         else
+           wpe c e (fun v => Q.(k_return) (Some v)))
         |-- wp (Sreturn (Some (c, e))) Q.
 
     Axiom wp_break : forall Q,
@@ -47,20 +69,14 @@ Module Type Stmt.
         Q.(k_continue) |-- wp Scontinue Q.
 
     Axiom wp_expr : forall vc e Q,
-        wpAny (vc,e) (finish (fun _ => Q.(k_normal)))
+        wpAny (vc,e) (SP (fun _ => Q.(k_normal)))
         |-- wp (Sexpr vc e) Q.
 
-    (* note(gmm): this definition is crucial to everything going on.
-     * 1. look at the type.
-     *    > reference: if a is the lvalue of the rhs
-     *      local x a
-     *    > primitive: if v is the rvalue of the rhs
-     *      local x v
-     *    > class: allocate, initialize, bind name
-     *      exists a, uninitialized (size_of t) a -*
-     *        addr_of x a ** ctor(a, args...)
+    (* This definition performs allocation of local variables
+     * note that references do not allocate anything in the semantics, they are
+     * just aliases.
      *)
-    Fixpoint wp_decl (x : ident) (ty : type) (init : option Expr)
+    Fixpoint wp_decl (x : ident) (ty : type) (init : option Expr) (dtor : option obj_name)
                (k : Kpreds -> mpred) (Q : Kpreds)
                (* ^ Q is the continuation for after the declaration
                 *   goes out of scope.
@@ -68,6 +84,60 @@ Module Type Stmt.
                 *)
     : mpred :=
       match ty with
+      | Tvoid => lfalse
+
+        (* primitives *)
+      | Tpointer _
+      | Tbool
+      | Tchar _ _
+      | Tint _ _ =>
+        Forall a,
+        let done :=
+            k (Kfree (tlocal_at ρ x a (tany (erase_qualifiers ty))) Q)
+        in
+        match init with
+        | None => _at (_eq a) (uninit (erase_qualifiers ty)) -* done
+        | Some init =>
+          wp_prval init (fun v free => free **
+                              (_local ρ x &~ a ** _at (_eq a) (tprim (erase_qualifiers ty) v)
+                           -* done))
+        end
+
+      | Tref cls =>
+        Forall a, _at (_eq a) (uninit ty) -*
+                  let destroy :=
+                      match dtor with
+                      | None => fun x => x
+                      | Some dtor => destruct_obj (resolve:=resolve) ti dtor cls a
+                      end (_at (_eq a) (tany ty))
+                  in
+                  let continue :=
+                      _local ρ x &~ a -* k (Kfree (_local ρ x &~ a ** destroy) Q)
+                  in
+                  match init with
+                  | None => continue
+                  | Some init =>
+                    wp_init ty a init (fun free => free ** continue)
+                  end
+      | Tarray ty' N =>
+        Forall a, _at (_eq a) (uninit (erase_qualifiers ty)) -*
+                  let destroy :=
+                      match dtor with
+                      | None => fun x => x
+                      | Some dtor => destruct (resolve:=resolve) ti ty a dtor
+                      end (_at (_eq a) (tany (erase_qualifiers ty)))
+                  in
+                  let continue :=
+                      _local ρ x &~ a -*
+                      k (Kfree (_local ρ x &~ a ** _at (_eq a) (tany (erase_qualifiers ty))) Q)
+                  in
+                  match init with
+                  | None => continue
+                  | Some init =>
+                    wp_init ty a init (fun free => free ** continue)
+                  end
+
+        (* references *)
       | Trv_reference t
       | Treference t =>
         match init with
@@ -75,66 +145,25 @@ Module Type Stmt.
           (* ^ references must be initialized *)
         | Some init =>
           (* i should use the type here *)
-          wp_lhs init (fun a free =>
+          wp_lval init (fun a free =>
              _local ρ x &~ a -* (free ** k (Kfree (_local ρ x &~ a) Q)))
         end
-      | Tfunction _ _ =>
-        (* inline functions are not supported *)
-        lfalse
-      | Tvoid => lfalse
-      | Tpointer pty =>
-        match init with
-        | None =>
-          tlocal ρ x (uninit ty) -* k (Kfree (tlocal ρ x (tany ty)) Q)
-        | Some init =>
-          wp_rhs init (fun v free =>
-                 tlocal ρ x (tprim ty v)
-              -* (free ** k (Kfree (tlocal ρ x (tany ty)) Q)))
-        end
 
-      | Tbool
-      | Tchar _ _
-      | Tint _ _ =>
-        match init with
-        | None =>
-          tlocal ρ x (uninit ty) -* k (Kfree (tlocal ρ x (tany ty)) Q)
-        | Some init =>
-          wp_rhs init (fun v free =>
-                 tlocal ρ x (tprim ty v)
-              -* (free ** k (Kfree (tlocal ρ x (tany ty)) Q)))
-        end
-      | Tarray _ _ => lfalse (* todo(gmm): arrays not yet supported *)
-      | Tref gn =>
-        match init with
-        | Some (Econstructor cnd es _) =>
-          (* todo(gmm): constructors and destructors need to be handled through
-           * `cglob`.
-           *)
-          Exists ctor, [| glob_addr resolve cnd ctor |] **
-          (* todo(gmm): is there a better way to get the destructor? *)
-          wps wpAnys es (fun vs free =>
-                 Forall a, _at (_eq a) (uninit (Tref gn))
-              -* |> fspec (resolve:=resolve) (Vptr ctor) (a :: vs) ti (fun _ =>
-                 _local ρ x &~ a -*
-                 (free ** k (Kat_exit (fun Q => _local ρ x &~ a ** |> destroy (resolve:=resolve) ti Dt_Deleting gn a Q) Q)))) empSP
-        | _ => lfalse
-          (* ^ all non-primitive declarations must have initializers *)
-        end
-      | Tqualified _ ty => wp_decl x ty init k Q
+      | Tfunction _ _ => lfalse (* not supported *)
+
+      | Tqualified _ ty => wp_decl x ty init dtor k Q
       end.
 
-    Fixpoint wp_decls (ds : list (ident * type * option Expr))
+    Fixpoint wp_decls (ds : list VarDecl)
              (k : Kpreds -> mpred) : Kpreds -> mpred :=
       match ds with
       | nil => k
-      | (x, ty, init) :: ds =>
-        wp_decl x ty init (wp_decls ds k)
+      | {| vd_name := x ; vd_type := ty ; vd_init := init ; vd_dtor := dtor |} :: ds =>
+        wp_decl x ty init dtor (wp_decls ds k)
       end.
 
-    (* note(gmm): this rule is slightly non-compositional because
+    (* note(gmm): this rule is non-compositional because
      * wp_decls requires the rest of the block computation
-     * - i could fix this in the syntax tree if i split up Sseq
-     *   and made Edecl take the continuation
      *)
     Fixpoint wp_block (ss : list Stmt) (Q : Kpreds) : mpred :=
       match ss with
@@ -150,7 +179,7 @@ Module Type Stmt.
 
 
     Axiom wp_if : forall e thn els Q,
-        wp_rhs e (fun v free =>
+        wp_prval e (fun v free =>
             free ** if is_true v then
                       wp thn Q
                     else
@@ -256,7 +285,7 @@ Module Type Stmt.
        ; k_continue := k.(k_continue) |}.
 
     Axiom wp_switch : forall e b Q,
-        wp_rhs e (fun v free =>
+        wp_prval e (fun v free =>
                     Exists vv : Z, [| v = Vint vv |] **
                     wp_switch_block vv False b (Kswitch Q))
         |-- wp (Sswitch e (Sseq b)) Q.

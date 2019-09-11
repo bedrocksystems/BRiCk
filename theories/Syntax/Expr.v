@@ -128,17 +128,19 @@ Inductive Expr : Set :=
 | Ealign_of (_ : type + Expr) (_ : type)
 | Econstructor (_ : globname) (_ : list (ValCat * Expr)) (_ : type)
 | Eimplicit (_ : Expr) (_ : type)
+| Eimplicit_init (_ : type)
 | Eif       (_ _ _ : Expr) (_ : type)
 
 | Ethis (_ : type)
 | Enull
-| Einitlist (_ : list Expr) (_ : type)
+| Einitlist (_ : list Expr) (_ : option Expr) (_ : type)
 
 | Enew (_ : option globname) (array_size : option Expr) (init : option Expr) (_ : type)
 | Edelete (is_array : bool) (_ : option globname) (_ : Expr) (_ : type)
 
 | Eandclean (_ : Expr) (_ : type)
 | Ematerialize_temp (_ : Expr) (_ : type)
+| Ebind_temp (_ : Expr) (_ : obj_name) (_ : type)
 
 | Eatomic (_ : AtomicOp) (_ : list (ValCat * Expr)) (_ : type)
 | Eva_arg (_ : Expr) (_ : type)

@@ -204,6 +204,9 @@ Definition _local (r : region) (x : ident) : Loc :=
 Definition _this (r : region) : Loc :=
   _local r "#this".
 
+Definition _result (r : region) : Loc :=
+  _local r "#this".
+
 Definition _global (x : obj_name) : Loc :=
   {| addr_of v := Exists p, [| v = Vptr p |] **
                   with_genv (fun env => [| glob_addr env x p |]) |}.

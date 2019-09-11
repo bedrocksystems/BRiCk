@@ -19,7 +19,7 @@ Require Import Cpp.Util.
 From Cpp Require Import
      Ast.
 From Cpp.Sem Require Import
-     Util Logic Semantics PLogic.
+     ChargeUtil Logic Semantics PLogic.
 
 
 Module Type modules.

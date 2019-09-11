@@ -85,7 +85,7 @@ main(int argc, const char **argv) {
     }
 
     if (Verbose) {
-        logging::set_level(logging::VERBOSE);
+        logging::set_level(logging::ALL);
     }
 
     ClangTool Tool(OptionsParser.getCompilations(),

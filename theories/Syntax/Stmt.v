@@ -21,12 +21,20 @@ Variant SwitchBranch : Set :=
 | Range (_ _ : Z)
 .
 
+Record VarDecl : Set :=
+{ vd_name : ident
+; vd_type : type
+; vd_init : option Expr
+; vd_dtor : option obj_name
+}.
+
+
 Inductive Stmt : Set :=
 | Sseq    (_ : list Stmt)
-| Sdecl   (_ : list (ident * type * option Expr))
+| Sdecl   (_ : list VarDecl)
 
-| Sif     (_ : option (ident * type * option Expr)) (_ : Expr) (_ _ : Stmt)
-| Swhile  (_ : option (ident * type * option Expr)) (_ : Expr) (_ : Stmt)
+| Sif     (_ : option VarDecl) (_ : Expr) (_ _ : Stmt)
+| Swhile  (_ : option VarDecl) (_ : Expr) (_ : Stmt)
 | Sfor    (_ : option Stmt) (_ : option Expr) (_ : option (ValCat * Expr)) (_ : Stmt)
 | Sdo     (_ : Stmt) (_ : Expr)
 
@@ -66,7 +74,10 @@ Variant FieldOrBase : Set :=
 | Field (_ : ident)
 | Indirect (anon_path : list (ident * globname)) (_ : ident).
 
-
+Record Initializer :=
+  { init_path : FieldOrBase
+  ; init_type : type
+  ; init_init : Expr }.
 
 Definition Stmt_eq_dec : forall a b : Stmt, {a = b} + {a <> b}.
 Proof.

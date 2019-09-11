@@ -20,7 +20,7 @@ From ChargeCore.Logics Require Import
 From Cpp Require Import
      Ast.
 From Cpp.Sem Require Import
-     Semantics Logic Operator PLogic Wp Expr.
+     Semantics Logic Operator PLogic Wp Call.
 From Cpp.Auto Require Import
      Discharge.
 
@@ -724,10 +724,10 @@ Module Type cclogic.
   (* note that this rule captures all of the interesting reasoning about atomics
    * through the use of [wp_shift]
    *)
-  Monomorphic Axiom wp_rhs_atomic: forall rslv ti r ao es ty Q,
-      wps (wpAnys (resolve:=rslv) ti r) es  (fun (vs : list val) (free : FreeTemps) =>
-           wrap_shift (wp_atom (resolve:=rslv) ao vs (drop_qualifiers ty)) (fun v => Q v free)) empSP
-      |-- wp_rhs (resolve:=rslv) ti r (Eatomic ao es ty) Q.
+  Monomorphic Axiom wp_prval_atomic: forall rslv ti r ao es ty Q,
+      wp_args (resolve:=rslv) ti r es (fun (vs : list val) (free : FreeTemps) =>
+           wrap_shift (wp_atom (resolve:=rslv) ao vs (drop_qualifiers ty)) (fun v => Q v free))
+      |-- wp_prval (resolve:=rslv) ti r (Eatomic ao es ty) Q.
 
   (* Ideas adopted from the paper:
    * Relaxed Separation Logic: A program logic for C11 Concurrency -- Vefeiadis et al.

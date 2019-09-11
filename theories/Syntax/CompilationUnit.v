@@ -15,7 +15,7 @@ Require Import Cpp.Syntax.Types.
 Record Ctor : Set :=
 { c_class  : globname
 ; c_params : list (ident * type)
-; c_body   : option (OrDefault (list (FieldOrBase * Expr) * Stmt))
+; c_body   : option (OrDefault (list Initializer * Stmt))
 }.
 
 Record Dtor : Set :=
@@ -136,6 +136,18 @@ Proof.
   repeat rewrite Decidable_spec.
   destruct a; destruct b; simpl; firstorder; try congruence.
 Defined.
+
+Global Instance Decidable_eq_Initializer (a b : Initializer) : Decidable (a = b).
+refine
+  {| Decidable_witness :=
+       decide (a.(init_path) = b.(init_path)) &&
+       decide (a.(init_type) = b.(init_type)) &&
+       decide (a.(init_init) = b.(init_init)) |}.
+repeat rewrite Bool.andb_true_iff.
+repeat rewrite Decidable_spec.
+destruct a; destruct b; simpl; firstorder; try congruence.
+Defined.
+
 Global Instance Decidable_eq_Ctor (a b : Ctor) : Decidable (a = b).
 refine
   {| Decidable_witness :=

@@ -26,7 +26,7 @@ Proof.
   verifyF_forget A_hpp_spec.A__foo.
   { (* A::foo(int) *)
     start_proof.
-    repeat (simplifying; work).
+    repeat (simplifying; simpl; work).
     done_proof. }
 
   finish_module.

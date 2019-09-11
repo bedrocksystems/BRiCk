@@ -103,38 +103,3 @@ Lemma of_size_gt_O w :
   (0 < 2 ^ Z_of_size w)%Z.
 Proof. unfold Z_of_size. unfold BinIntDef.Z.of_N. unfold N_of_size. destruct w; reflexivity. Qed.
 Hint Resolve of_size_gt_O.
-
-
-
-
-
-
-(*
-(* global declarations *)
-Variant Decl : Set :=
-| Dvar         (name : obj_name) (_ : type) (_ : option Expr)
-
-| Dfunction    (name : obj_name) (_ : Func)
-| Dmethod      (name : obj_name) (_ : Method)
-| Dconstructor (name : obj_name) (_ : Ctor)
-| Ddestructor  (name : obj_name) (_ : Dtor)
-
-| Dunion       (name : globname) (_ : option Union)
-| Dstruct      (name : globname) (_ : option Struct)
-  (* ^ structures & classes *)
-
-| Denum        (name : globname) (_ : option type) (branches : list (ident * option Expr))
-  (* ^ enumerations (the initializers need to be constant expressions) *)
-| Dconstant    (name : globname) (_ : type) (_ : Expr)
-
-| Dtypedef     (name : globname) (_ : type)
-(*
-| Dtemplated   (_ : list (OrType type * ident)) (_ : Decl)
-               (instantiations : list Decl)
-*)
-  (* ^ right now this just expands the template, it should change *)
-.
-
-Definition module : Set :=
-  list Decl.
-*)

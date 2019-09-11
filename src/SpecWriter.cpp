@@ -389,6 +389,14 @@ write_globals(::Module &mod, CoqPrinter &print, ClangPrinter &cprint) {
                         << " (in custom cppglobal at level 0)." << fmt::line;
                 }
             }
+        } else if (const FunctionDecl *fd = dyn_cast<FunctionDecl>(def)) {
+            // todo(gmm): skipping due to function overloading
+        } else if (const TypedefDecl *td = dyn_cast<TypedefDecl>(def)) {
+            print.output() << "Notation \"'";
+            print_path(print, td->getDeclContext(), true);
+            print.output() << td->getNameAsString() << "'\" :=" << fmt::nbsp;
+            cprint.printQualType(td->getUnderlyingType(), print);
+            print.output() << " (in custom cppglobal at level 0)." << fmt::line;
         } else {
             log(Level::VERBOSE) << "unknown declaration type "
                                 << def->getDeclKindName() << "\n";
