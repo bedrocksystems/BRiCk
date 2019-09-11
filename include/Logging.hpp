@@ -28,6 +28,11 @@ unsupported() {
     return log(UNSUPPORTED);
 }
 
+static inline llvm::raw_ostream&
+debug() {
+    return log(VERBOSER);
+}
+
 void set_level(Level level);
 
 [[noreturn]] void die();

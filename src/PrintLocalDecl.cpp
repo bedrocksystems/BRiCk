@@ -12,23 +12,50 @@ class PrintLocalDecl :
 private:
     PrintLocalDecl() {}
 
+    static CXXDestructorDecl* get_dtor(QualType qt) {
+        if (auto rd = qt->getAsCXXRecordDecl()) {
+            return rd->getDestructor();
+        } else if (auto ary = qt->getAsArrayTypeUnsafe()) {
+            return get_dtor(ary->getElementType());
+        } else {
+            return nullptr;
+        }
+    };
+
 public:
     static PrintLocalDecl printer;
 
     void VisitVarDecl(const VarDecl* decl, CoqPrinter& print,
                       ClangPrinter& cprint) {
-        print.output() << fmt::lparen << "\"" << decl->getNameAsString()
-                       << "\"," << fmt::nbsp;
+        print.begin_record();
+        print.record_field("vd_name")
+            << "\"" << decl->getNameAsString() << "\"";
+
+        print.output() << fmt::line << ";";
+        print.record_field("vd_type");
         cprint.printQualType(decl->getType(), print);
-        print.output() << "," << fmt::nbsp;
+
+        print.output() << fmt::line << ";";
+        print.record_field("vd_init");
         if (decl->hasInit()) {
             print.ctor("Some", false);
             cprint.printExpr(decl->getInit(), print);
             print.output() << fmt::rparen;
         } else {
-            print.output() << "None";
+            print.none();
         }
-        print.output() << fmt::rparen;
+
+        print.output() << fmt::line << ";";
+        print.record_field("vd_dtor");
+        if (auto dest = get_dtor(decl->getType())) {
+            print.some();
+            cprint.printGlobalName(dest, print);
+            print.end_ctor();
+        } else {
+            print.none();
+        }
+
+        print.end_record();
     }
 
     void VisitDecl(const Decl* decl, CoqPrinter& print, ClangPrinter& cprint) {

@@ -261,7 +261,11 @@ public:
 
     void VisitCastExpr(const CastExpr* expr, CoqPrinter& print,
                        ClangPrinter& cprint, const ASTContext&) {
-        if (auto cf = expr->getConversionFunction()) {
+        if (expr->getCastKind() == CastKind::CK_ConstructorConversion) {
+            // note: the Clang AST records a "FunctionalCastExpr" with a constructor
+            // but the child node of this is the constructor!
+            cprint.printExpr(expr->getSubExpr(), print);
+        } else if (auto cf = expr->getConversionFunction()) {
             // desugar user casts to function calls
             print.ctor("Ecast");
             print.ctor("Cuser");
@@ -270,6 +274,7 @@ public:
 
             cprint.printExprAndValCat(expr->getSubExpr(), print);
             done(expr, print, cprint);
+
         } else {
             print.ctor("Ecast");
             print.ctor("CCcast", false);
@@ -433,6 +438,7 @@ public:
             print.cons();
         }
         print.end_list();
+        //print.output() << fmt::nbsp << expr->isElidable();
         done(expr, print, cprint);
     }
 
@@ -497,12 +503,22 @@ public:
     void VisitInitListExpr(const InitListExpr* expr, CoqPrinter& print,
                            ClangPrinter& cprint, const ASTContext&) {
         print.ctor("Einitlist");
+
         print.begin_list();
         for (auto i : expr->inits()) {
             cprint.printExpr(i, print);
             print.cons();
         }
-        print.end_list();
+        print.end_list() << fmt::nbsp;
+
+        if (expr->getArrayFiller()) {
+            print.some();
+            cprint.printExpr(expr->getArrayFiller(), print);
+            print.end_ctor();
+        } else {
+            print.none();
+        }
+
         done(expr, print, cprint);
     }
 
@@ -618,13 +634,19 @@ public:
     void VisitExprWithCleanups(const ExprWithCleanups* expr, CoqPrinter& print,
                                ClangPrinter& cprint, const ASTContext&) {
         print.ctor("Eandclean");
+#ifdef DEBUG
+        llvm::errs() << "and_clean objects: " << expr->getNumObjects() << "\n";
+        for (const BlockDecl* i : expr->getObjects()) {
+            llvm::errs() << static_cast<const void*>(i) << "\n";
+        }
+#endif /* DEBUG */
         cprint.printExpr(expr->getSubExpr(), print);
         done(expr, print, cprint);
     }
 
     void VisitMaterializeTemporaryExpr(const MaterializeTemporaryExpr* expr,
                                        CoqPrinter& print, ClangPrinter& cprint,
-                                       const ASTContext&) {
+                                       const ASTContext& ctxt) {
 #if 0
 	  if (expr->getExtendingDecl()) {
 		cprint.printName(expr->getExtendingDecl());
@@ -633,14 +655,42 @@ public:
 	  }
 	  error() << "mangling number = " << expr->getManglingNumber() << "\n";
 #endif
+#if 0
+        logging::debug() << "got a 'MaterializeTemporaryExpr' at "
+                         << expr->getSourceRange().printToString(
+                                ctxt.getSourceManager())
+                         << "\n";
+        logging::die();
+#endif
+        if (expr->getExtendingDecl() != nullptr) {
+            using namespace logging;
+            fatal()
+                << "binding a reference to a temporary is not (yet?) supported "
+                   "(scope extrusion)"
+                << expr->getSourceRange().printToString(ctxt.getSourceManager())
+                << "\n";
+            die();
+        }
+
         print.ctor("Ematerialize_temp");
         cprint.printExpr(expr->GetTemporaryExpr(), print);
+        done(expr, print, cprint);
+    }
+
+    void VisitCXXBindTemporaryExpr(const CXXBindTemporaryExpr* expr,
+                                   CoqPrinter& print, ClangPrinter& cprint,
+                                   const ASTContext&) {
+        print.ctor("Ebind_temp");
+        cprint.printExpr(expr->getSubExpr(), print);
+        print.output() << fmt::nbsp;
+        cprint.printGlobalName(expr->getTemporary()->getDestructor(), print);
         done(expr, print, cprint);
     }
 
     void VisitCXXTemporaryObjectExpr(const CXXTemporaryObjectExpr* expr,
                                      CoqPrinter& print, ClangPrinter& cprint,
                                      const ASTContext&) {
+        // todo(gmm): initialization semantics?
         print.ctor("Econstructor");
         // print.output() << expr->isElidable() << fmt::nbsp;
         cprint.printGlobalName(expr->getConstructor(), print);
@@ -652,6 +702,8 @@ public:
             print.cons();
         }
         print.end_list();
+
+        //print.output() << fmt::nbsp << expr->isElidable();
 
         done(expr, print, cprint);
     }
@@ -712,6 +764,13 @@ public:
                          ClangPrinter& cprint, const ASTContext&) {
         print.ctor("Eunsupported");
         print.str("lambda");
+        done(expr, print, cprint);
+    }
+
+    void VisitImplicitValueInitExpr(const ImplicitValueInitExpr* expr,
+                                    CoqPrinter& print, ClangPrinter& cprint,
+                                    const ASTContext& ctxt) {
+        print.ctor("Eimplicit_init");
         done(expr, print, cprint);
     }
 };

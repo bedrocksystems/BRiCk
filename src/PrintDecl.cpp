@@ -16,7 +16,7 @@ void
 printFunction(const FunctionDecl *decl, CoqPrinter &print,
               ClangPrinter &cprint) {
     print.output() << "{| f_return :=" << fmt::indent;
-    cprint.printQualType(decl->getCallResultType(), print);
+    cprint.printQualType(decl->getReturnType(), print);
     print.output() << fmt::line << "; f_params :=" << fmt::nbsp;
 
     for (auto i : decl->parameters()) {
@@ -382,7 +382,8 @@ public:
             //   i need to make sure that everything ends up in the list, and in the right order
             print.begin_list();
             for (auto init : decl->inits()) {
-                print.begin_tuple();
+                print.begin_record();
+                print.record_field("init_path");
                 if (init->isMemberInitializer()) {
                     print.ctor("Field")
                         << "\"" << init->getMember()->getNameAsString() << "\"";
@@ -428,9 +429,22 @@ public:
                 } else {
                     assert(false && "unknown initializer type");
                 }
-                print.next_tuple();
+                print.output() << ";" << fmt::nbsp;
+                print.record_field("init_type");
+                if (init->getMember()) {
+                    cprint.printQualType(init->getMember()->getType(), print);
+                } else if (init->getIndirectMember()) {
+                    cprint.printQualType(init->getIndirectMember()->getType(),
+                                         print);
+                } else if (init->getBaseClass()) {
+                    cprint.printType(init->getBaseClass(), print);
+                } else {
+                    assert(false && "not member, base class, or indirect");
+                }
+                print.output() << ";" << fmt::nbsp;
+                print.record_field("init_init");
                 cprint.printExpr(init->getInit(), print);
-                print.end_tuple();
+                print.end_record();
                 print.cons();
             }
             print.end_list();

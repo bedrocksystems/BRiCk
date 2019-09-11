@@ -15,7 +15,7 @@ From Cpp Require Import
 Require RetRef.test_cpp.
 
 Definition get_ref_spec : function_spec :=
-  SFunction (Qmut T_int) (Qmut (Tpointer (Qmut T_int)) :: nil)
+  SFunction (Qmut (Treference (Qmut T_int))) (Qmut (Tpointer (Qmut T_int)) :: nil)
       (fun x =>
          \with (m : val)
          \pre  _at (_eq x) (tprim T_int m)

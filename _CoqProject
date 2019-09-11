@@ -15,13 +15,14 @@ theories/Parser.v
 theories/Signature.v
 
 # Semantics
-theories/Sem/Util.v
+theories/Sem/ChargeUtil.v
 theories/Sem/Semantics.v
 theories/Sem/Logic.v
 theories/Sem/Operator.v
 theories/Sem/PLogic.v
 theories/Sem/Destroy.v
 theories/Sem/Wp.v
+theories/Sem/Call.v
 theories/Sem/Expr.v
 theories/Sem/Stmt.v
 theories/Sem/Init.v
@@ -40,6 +41,8 @@ theories/Auto/Lemmas.v
 theories/Auto/type.v
 theories/Auto/operator.v
 theories/Auto/vc.v
+# theories/Auto/vc_rw.v
+theories/Auto/vc_rws.v
 theories/Auto/sep.v
 theories/Auto/mvcg.v
 theories/Auto/tactics.v

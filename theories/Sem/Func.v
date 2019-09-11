@@ -11,7 +11,7 @@ Local Open Scope string_scope.
 From Cpp Require Import
      Ast.
 From Cpp.Sem Require Import
-     Util Logic PLogic Semantics Wp Init Deinit.
+     ChargeUtil Logic PLogic Semantics Wp Init Deinit Call.
 
 Require Import Coq.ZArith.BinInt.
 Require Import Coq.micromega.Lia.
@@ -381,23 +381,23 @@ Module Type Func.
 
   End with_resolve.
 
-    Fixpoint bind_type ρ (t : type) (x : ident) (v : val) : mpred :=
-      match t with
-      | Tqualified _ t => bind_type ρ t x v
-      | Treference ref => _local ρ x &~ v
-      | Tref _         => _local ρ x &~ v
-      | _              => tlocal ρ x (tprim t v)
-      end.
+  Fixpoint bind_type ρ (t : type) (x : ident) (v : val) : mpred :=
+    match t with
+    | Tqualified _ t => bind_type ρ t x v
+    | Treference ref => _local ρ x &~ v
+    | Trv_reference ref => _local ρ x &~ v
+    | Tref _         => _local ρ x &~ v
+    | _              => tlocal ρ x (tprim (erase_qualifiers t) v)
+    end.
 
-    Fixpoint bind_type_free ρ (t : type) (x : ident) (v : val) : mpred :=
-      match t with
-      | Tqualified _ t => bind_type_free ρ t x v
-      | Treference ref => _local ρ x &~ v
-      | Tref cls       => _local ρ x &~ v
-      | _              => tlocal ρ x (tany t)
-      end.
-    (* todo(gmm): c++ guarantees the order of destruction *)
-
+  Fixpoint bind_type_free ρ (t : type) (x : ident) (v : val) : mpred :=
+    match t with
+    | Tqualified _ t => bind_type_free ρ t x v
+    | Treference ref => _local ρ x &~ v
+    | Trv_reference ref => _local ρ x &~ v
+    | Tref cls       => _local ρ x &~ v
+    | _              => tlocal ρ x (tany (erase_qualifiers t))
+    end.
 
     (* the proof obligation for a function
      *)
@@ -422,10 +422,18 @@ Module Type Func.
         if is_void ret
         then
           Forall Q : mpred,
-          (binds ** PQ (fun _ => Q)) -* (wp (resolve:=resolve) ti ρ body (Kfree frees (void_return Q)))
+          (binds ** PQ (fun _ => Q)) -*
+          wp (resolve:=resolve) ti ρ body (Kfree frees (void_return Q))
+        else if is_aggregate ret then
+          Forall Q : val -> mpred,
+          (binds ** _at (_result ρ) (uninit (erase_qualifiers ret)) ** PQ Q) -*
+          wp (resolve:=resolve) ti ρ body (Kfree (frees ** Exists a, _result ρ &~ a) (val_return Q))
         else
           Forall Q : val -> mpred,
-          (binds ** PQ Q) -* (wp (resolve:=resolve) ti ρ body (Kfree frees (val_return Q)))).
+          (binds ** PQ Q) -*
+          wp (resolve:=resolve) ti ρ body (Kfree frees (val_return Q))).
+    (* ^ todo(gmm): the new semantics of function gets an address for a return value
+     * so the semantics for `return` should be that *)
 
 
 
@@ -456,10 +464,14 @@ Module Type Func.
                 sepSPs (zip (fun '(x, t) 'v => bind_type_free ρ t x v) (rev meth.(m_params))
                        (rev rest_vals))
             in
-            if is_void meth.(m_return)
+            let ret_ty := meth.(m_return) in
+            if is_void ret_ty
             then
               Forall Q : mpred,
               (binds ** PQ (fun _ => Q)) -* (wp (resolve:=resolve) ti ρ body (Kfree frees (void_return Q)))
+            else if is_aggregate ret_ty then
+              Forall Q : val -> mpred,
+              (binds ** _at (_result ρ) (uninit (erase_qualifiers ret_ty)) ** PQ Q) -* (wp (resolve:=resolve) ti ρ body (Kfree (frees ** Exists a, _result ρ &~ a) (val_return Q)))
             else
               Forall Q : val -> mpred,
               (binds ** PQ Q) -* (wp (resolve:=resolve) ti ρ body (Kfree frees (val_return Q)))
@@ -468,11 +480,11 @@ Module Type Func.
 
     Definition wp_ctor {resolve : genv} (cls : globname) (ti : thread_info) (ρ : region)
                (this_val : val)
-               (inits : list (FieldOrBase * Expr)) (body : Stmt)
+               (inits : list Initializer) (body : Stmt)
                (Q : Kpreds)
     : mpred :=
       wpis (resolve:=resolve) ti ρ cls this_val inits
-           (wp (resolve:=resolve) ti ρ body Q).
+           (fun free => free ** wp (resolve:=resolve) ti ρ body Q).
 
 
     Definition ctor_ok {resolve} (ctor : Ctor) ti (spec : function_spec)

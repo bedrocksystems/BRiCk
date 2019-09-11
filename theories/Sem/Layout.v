@@ -4,7 +4,7 @@ Require Import Coq.ZArith.BinInt.
 From Cpp Require Import
      Ast.
 From Cpp.Sem Require Import
-     Util Logic PLogic CompilationUnit.
+     ChargeUtil Logic PLogic CompilationUnit.
 
 Axiom uninit_class_fwd
   : forall cls base st,

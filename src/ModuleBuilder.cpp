@@ -96,7 +96,6 @@ public:
         using namespace comment;
         auto defn = decl->getDefinition();
         if (defn == decl) {
-
             if (auto c = context_->getRawCommentForDeclNoCache(decl)) {
                 this->specs_.add_specification(decl, c, *context_);
             }
@@ -113,9 +112,6 @@ public:
             }
         } else if (defn == nullptr && decl->getPreviousDecl() == nullptr) {
             go(decl, false);
-        } else {
-            using namespace logging;
-            log() << "skipping definition\n";
         }
     }
 
@@ -197,4 +193,24 @@ build_module(const clang::TranslationUnitDecl *tu, ::Module &mod,
              Filter &filter, SpecCollector &specs) {
     auto &ctxt = tu->getASTContext();
     BuildModule(mod, filter, &ctxt, specs).VisitTranslationUnitDecl(tu, false);
+}
+
+void ::Module::add_definition(const clang::NamedDecl *d, bool opaque) {
+    if (opaque) {
+        add_declaration(d);
+    } else {
+        std::string name = d->getNameAsString();
+        auto found = definitions_.find(name);
+        if ((found == definitions_.end()) || found->second != d) {
+            definitions_.insert(std::make_pair(name, d));
+        }
+    }
+}
+
+void ::Module::add_declaration(const clang::NamedDecl *d) {
+    std::string name = d->getNameAsString();
+    auto found = imports_.find(name);
+    if ((found == imports_.end()) || found->second.first != d) {
+        imports_.insert(std::make_pair(name, std::make_pair(d, true)));
+    }
 }

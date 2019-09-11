@@ -121,6 +121,9 @@ Proof.
     destruct (ZArith_dec.Z_lt_ge_dec i (Z.of_nat (Datatypes.length x))).
     { simpl.
       simplifying.
+      Hint Resolve wp_prval_cast_noop : wpe.
+      simplifying. simpl.
+      simplifying.
       assert (exists v, exists i', Z.of_nat i' = i /\ nth_error x i' = Some v).
       { eapply can_get_element; eauto. }
       destruct H0 as [ ? [ ? [ ? ? ] ] ].
@@ -141,10 +144,9 @@ Proof.
       work.
       rewrite tarray_cell with (ms :=x); eauto with size_of.
       erewrite skipn_to_nat_of_nat; eauto.
-      work. }
+      work. work. }
     { simpl.
-      simplifying.
-      work.
+      repeat (simplifying; simpl; work).
       rewrite skipn_allZ; eauto.
       work.
       done_proof. } }

@@ -5,17 +5,19 @@
 #
 CPP2V?=$(shell which cpp2v)
 
-CFLAGS=
+CPPFLAGS=-std=c++17
+CFLAGS=-std=c99
 
 %_c.v: %.c $(CPP2V)
 	$(CPP2V) -v -o $@ $< -- $(CFLAGS)
 %_h.v: %.h $(CPP2V)
 	$(CPP2V) -v -o $@ $< -- $(CFLAGS)
 %_cpp.v: %.cpp $(CPP2V)
-	$(CPP2V) -v -o $@ $< -- $(CFLAGS)
+	$(CPP2V) -v -o $@ $< -- $(CPPFLAGS)
 %_hpp.v: %.hpp $(CPP2V)
-	$(CPP2V) -v -o $@ $< -- $(CFLAGS)
+	$(CPP2V) -v -o $@ $< -- $(CPPFLAGS)
 
+ifdef SPECS
 ifdef DEBUG
 %_c_spec.v: %.c $(CPP2V)
 	$(CPP2V) -v -spec $@ $< -- $(CFLAGS)
@@ -26,11 +28,11 @@ ifdef DEBUG
 	@ echo $@
 	@ cat $@
 %_cpp_spec.v: %.cpp $(CPP2V)
-	$(CPP2V) -v -spec $@ $< -- $(CFLAGS)
+	$(CPP2V) -v -spec $@ $< -- $(CPPFLAGS)
 	@ echo $@
 	@ cat $@
 %_hpp_spec.v: %.hpp $(CPP2V)
-	$(CPP2V) -v -spec $@ $< -- $(CFLAGS)
+	$(CPP2V) -v -spec $@ $< -- $(CPPFLAGS)
 	@ echo $@
 	@ cat $@
 else
@@ -39,7 +41,8 @@ else
 %_h_spec.v: %.h $(CPP2V)
 	$(CPP2V) -v -spec $@ $< -- $(CFLAGS)
 %_cpp_spec.v: %.cpp $(CPP2V)
-	$(CPP2V) -v -spec $@ $< -- $(CFLAGS)
+	$(CPP2V) -v -spec $@ $< -- $(CPPFLAGS)
 %_hpp_spec.v: %.hpp $(CPP2V)
-	$(CPP2V) -v -spec $@ $< -- $(CFLAGS)
+	$(CPP2V) -v -spec $@ $< -- $(CPPFLAGS)
+endif
 endif

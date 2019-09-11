@@ -8,7 +8,7 @@ Require Import Coq.Lists.List.
 From Cpp Require Import
      Ast.
 From Cpp.Sem Require Import
-     Util Logic PLogic Semantics Wp.
+     ChargeUtil Logic PLogic Semantics Wp.
 
 Module Type Deinit.
 
@@ -19,8 +19,9 @@ Module Type Deinit.
 
     Local Notation wp := (wp (resolve:=resolve)  ti ρ).
     Local Notation wpe := (wpe (resolve:=resolve) ti ρ).
-    Local Notation wp_lhs := (wp_lhs (resolve:=resolve) ti ρ).
-    Local Notation wp_rhs := (wp_rhs (resolve:=resolve) ti ρ).
+    Local Notation wp_lval := (wp_lval (resolve:=resolve) ti ρ).
+    Local Notation wp_rval := (wp_rval (resolve:=resolve) ti ρ).
+    Local Notation wp_xval := (wp_xval (resolve:=resolve) ti ρ).
     Local Notation wpAny := (wpAny (resolve:=resolve) ti ρ).
     Local Notation wpAnys := (wpAnys (resolve:=resolve) ti ρ).
     Local Notation fspec := (fspec (resolve:=resolve)).

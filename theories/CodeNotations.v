@@ -117,7 +117,10 @@ Notation "'if' ( t i = e ) thn 'else' els" := (Sif (Some (i%string, t, Some e)) 
 Definition e0 :=
   S (Sseq (
               (Sif
-                (Some ("x", (Qmut T_int), (Some (Eint (0) (Qmut T_int)))))
+                (Some {| vd_name := "x"
+                       ; vd_type := Qmut T_int
+                       ; vd_init := Some (Eint (0) (Qmut T_int))
+                       ; vd_dtor := None |})
                 (Ecast (CCcast Cint2bool) (Rvalue,
                     (Ecast (CCcast Cl2r) (Lvalue, (Evar (Lname  "x") (Qmut T_int))) (Qmut T_int))) (Qmut Tbool))
                 Scontinue Sbreak) :: nil)).
@@ -125,7 +128,10 @@ Definition e0 :=
 Definition e1 :=
   S (Sseq (
               (Sif
-                (Some ("x", (Qmut T_int), (Some (Eint (0) (Qmut T_int)))))
+                (Some {| vd_name := "x"
+                       ; vd_type := Qmut T_int
+                       ; vd_init := Some (Eint (0) (Qmut T_int))
+                       ; vd_dtor := None |})
                 (Ecast (CCcast Cint2bool) (Rvalue,
                     (Ecast (CCcast Cl2r) (Lvalue, (Evar (Lname  "x") (Qmut T_int))) (Qmut T_int))) (Qmut Tbool))
                 (Sseq (
@@ -137,7 +143,10 @@ Definition e1 :=
 Definition e2 :=
   S (Sseq (
               (Sif
-                (Some ("x", (Qmut T_int), (Some (Eint (0) (Qmut T_int)))))
+                (Some {| vd_name := "x"
+                       ; vd_type := Qmut T_int
+                       ; vd_init := Some (Eint (0) (Qmut T_int))
+                       ; vd_dtor := None |})
                 (Ecast (CCcast Cint2bool) (Rvalue,
                     (Ecast (CCcast Cl2r) (Lvalue, (Evar (Lname  "x") (Qmut T_int))) (Qmut T_int))) (Qmut Tbool))
                 (Sseq (
@@ -147,7 +156,10 @@ Definition e2 :=
                     (Sexpr Lvalue
                       (Epredec (Evar (Lname  "x") (Qmut T_int)) (Qmut T_int))) :: nil))) ::
               (Swhile
-                (Some ("x", (Qmut T_int), (Some (Eint (5) (Qmut T_int)))))
+                (Some {| vd_name := "x"
+                       ; vd_type := Qmut T_int
+                       ; vd_init := Some (Eint (0) (Qmut T_int))
+                       ; vd_dtor := None |})
                 (Ecast (CCcast Cint2bool) (Rvalue,
                     (Ecast (CCcast Cl2r) (Lvalue, (Evar (Lname  "x") (Qmut T_int))) (Qmut T_int))) (Qmut Tbool))
                 (Sseq (

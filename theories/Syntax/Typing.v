@@ -42,11 +42,13 @@ Fixpoint type_of (e : Expr) : type :=
   | Ethis t => t
   | Enull => Tpointer Tvoid
   (* todo(gmm): c++ seems to have a special nullptr type *)
-  | Einitlist _ t => t
+  | Einitlist _ _ t
+  | Eimplicit_init t
   | Enew _ _ _ t
   | Edelete _ _ _ t
   | Eandclean _ t
   | Ematerialize_temp _ t => t
+  | Ebind_temp _ _ t => t
   | Eatomic _ _ t => t
   | Eva_arg _ t => t
   | Eunsupported _ t => t
