@@ -24,9 +24,24 @@ Definition lvalue (c : ValCat) : option unit :=
   | Lvalue => Some tt
   | _ => None
   end.
-Definition rvalue (c : ValCat) : option unit :=
+Definition glvalue (c : ValCat) : option unit :=
+  match c with
+  | Lvalue | Xvalue => Some tt
+  | _ => None
+  end.
+Definition prvalue (c : ValCat) : option unit :=
   match c with
   | Rvalue => Some tt
+  | _ => None
+  end.
+Definition xvalue (c : ValCat) : option unit :=
+  match c with
+  | Xvalue => Some tt
+  | _ => None
+  end.
+Definition rvalue (c : ValCat) : option unit :=
+  match c with
+  | Xvalue | Rvalue => Some tt
   | _ => None
   end.
 Definition guard {P Q} (b : { P } + { Q }) : option unit :=
@@ -80,7 +95,8 @@ Definition join {t} (a : option (option t)) : option t :=
   | _ => None
   end.
 
-Definition option_eq_dec {t} (H : forall (x y : t), { x = y } + { x <> y }) : forall (x y : option t), { x = y } + { x <> y }.
+Definition option_eq_dec {t} (H : forall (x y : t), { x = y } + { x <> y })
+: forall (x y : option t), { x = y } + { x <> y }.
 Proof. decide equality. Defined.
 
 Definition function_specs := list (globname * function_spec).
@@ -105,10 +121,10 @@ Section refl.
     | _ => Some false
     end%bool.
 
-  Definition unsupported (e : Expr) : mpred := lfalse.
+  Definition unsupported {T} (e : T) : mpred := lfalse.
   Definition error (e : string) : mpred := lfalse.
 
-  Lemma unsupported_defn : forall e,
+  Lemma unsupported_defn : forall t (e : t),
       unsupported e -|- lfalse.
   Proof. reflexivity. Qed.
 
@@ -652,28 +668,57 @@ Section refl.
     (* all: admit. *)
   Admitted.
 
-  Definition wpAnys' (wpe' : ValCat -> Expr -> option ((val -> FreeTemps -> mpred) -> mpred)) (ve : ValCat * Expr)
-    : option ((val -> FreeTemps -> mpred) -> FreeTemps -> mpred) :=
-       Qe <- wpe' (fst ve) (snd ve) ;;
-       ret (fun Q free => Qe (fun v f => Q v (f ** free))).
-
   Definition get_spec (f : obj_name) : option function_spec :=
     match find (fun '(f', _) => if string_dec f f' then true else false) specs with
     | None => None
     | Some (_, x) => Some x
     end.
 
+  Section wp_args.
+    Variables wp_lval wp_prval wp_xval
+      : Expr -> option ((val -> FreeTemps -> mpred) -> mpred).
+    Variable wp_init
+      : Expr -> option (forall (addr : val) (Q : FreeTemps -> mpred), mpred).
+
+    Fixpoint wp_args (es : list (ValCat * Expr)) {struct es}
+      : option ((list val -> FreeTemps -> mpred) -> mpred) :=
+      match es with
+      | nil => ret (fun Q => Q nil empSP)
+      | (v,e) :: es =>
+        Qes <- wp_args es ;;
+        match v with
+        | Lvalue =>
+          Qe <- wp_lval e ;;
+          ret (fun Q => Qe (fun v free => free ** Qes (fun vs free => free ** Q (v :: vs) empSP)))
+        | Xvalue =>
+          Qe <- wp_xval e ;;
+          ret (fun Q => Qe (fun v free => free ** Qes (fun vs free => free ** Q (v :: vs) empSP)))
+        | Rvalue =>
+          let ety := erase_qualifiers (type_of e) in
+          if is_aggregate ety
+          then
+            (Qe <- wp_init e ;;
+             ret (fun Q => Forall addr,
+                        _at (_eq addr) (uninit ety) -*
+                        Qe addr (fun free => free ** Qes (fun vs free => free ** Q (addr :: vs) (_at (_eq addr) (tany ety))))))
+          else 
+            (Qe <- wp_prval e ;;
+             ret (fun Q => Qe (fun v free => free ** Qes (fun vs free => free ** Q (v :: vs) empSP))))
+        end
+      end.
+  End wp_args.
+
   (* todo(gmm): convert `FreeTemps` into `option mpred` and eliminate redundant
    * `empSP`.
    * todo(gmm): should we semi-reflect `mpred`?
    *)
   Fixpoint wpe (cat : ValCat) (e : Expr) {struct e}
-  : option (forall (Q : val -> FreeTemps -> mpred), mpred) :=
+  : option ((val -> FreeTemps -> mpred) -> mpred) :=
     let default :=
       match cat with
-      | Rvalue => ret (wp_rhs (resolve:=resolve) ti r e)
-      | Lvalue => ret (wp_lhs (resolve:=resolve) ti r e)
-      | Xvalue => ret (wp_lhs (resolve:=resolve) ti r e)
+      | Rvalue => ret (Wp.wp_prval (resolve:=resolve) ti r e)
+      | Lvalue => ret (Wp.wp_lval (resolve:=resolve) ti r e)
+      | Xvalue => ret (Wp.wp_xval (resolve:=resolve) ti r e)
       end
     in
     match e with
@@ -684,20 +729,20 @@ Section refl.
       lvalue cat ;;
       ret (fun Q => Exists a, [! glob_addr resolve x a !] //\\ Q (Vptr a) empSP)
     | Eint n ty =>
-      let ty := drop_qualifiers ty in
-      rvalue cat ;;
+      let ty := erase_qualifiers ty in
+      prvalue cat ;;
       match is_const_int ty n with
       | None => ret (fun Q => [! has_type (Vint n) ty !] //\\ Q (Vint n) empSP)
       | Some false => ret (fun _ => error "is_const_int ty n = Some false")
       | Some true => ret (fun Q => Q (Vint n) empSP)
       end
     | Ebool b =>
-      rvalue cat ;;
+      prvalue cat ;;
       if b
       then ret (fun Q => Q (Vint 1) empSP)
       else ret (fun Q => Q (Vint 0) empSP)
     | Ethis ty =>
-      rvalue cat ;;
+      prvalue cat ;;
       ret (fun Q => Exists a, (_this r &~ a ** ltrue) //\\ Q a empSP)
     | Emember e f ty =>
       QT <- wpe Lvalue e ;;
@@ -706,7 +751,7 @@ Section refl.
            (_offsetL (_field f) (_eq base) &~ addr ** ltrue) //\\
            Q addr free))
     | Esubscript e i ty =>
-      let ty := drop_qualifiers ty in
+      let ty := erase_qualifiers ty in
       Qe <- wpe Rvalue e ;;
       Qi <- wpe Rvalue i ;;
       ret (fun Q => Qe (fun base free => Qi (fun idx free' =>
@@ -718,32 +763,32 @@ Section refl.
       lvalue cat ;;
       wpe Rvalue e
     | Eaddrof e ty =>
-      rvalue cat ;;
+      prvalue cat ;;
       wpe Lvalue e
     | Ebinop o lhs rhs ty =>
-      rvalue cat ;; (* all operators (except assignment which isn't an operator) return rvalues *)
+      prvalue cat ;; (* all operators (except assignment which isn't an operator) return rvalues *)
       Ql <- wpe Rvalue lhs ;;
       Qr <- wpe Rvalue rhs ;;
-      let tl := drop_qualifiers (Typing.type_of lhs) in
-      let tr := drop_qualifiers (Typing.type_of rhs) in
-      let ty := drop_qualifiers ty in
+      let tl := erase_qualifiers (Typing.type_of lhs) in
+      let tr := erase_qualifiers (Typing.type_of rhs) in
+      let ty := erase_qualifiers ty in
       Qo <- wpbo o tl tr ty ;;
       ret (fun Q => Ql (fun v1 free1 => Qr (fun v2 free2 =>
             Qo v1 v2 (fun v' => Q v' (free1 ** free2)))))
     | Eunop o e ty =>
-      rvalue cat ;;
+      prvalue cat ;;
       Qe <- wpe Rvalue e ;;
-      let te := drop_qualifiers (Typing.type_of e) in
-      let ty := drop_qualifiers ty in
+      let te := erase_qualifiers (Typing.type_of e) in
+      let ty := erase_qualifiers ty in
       Qo <- wpuo o te ty ;;
       ret (fun Q => Qe (fun v free =>
             Qo v (fun v' => Q v' free)))
     | Ecast c (vc, e) ty =>
-      let ty := drop_qualifiers ty in
+      let ty := erase_qualifiers ty in
       match c with
       | Cl2r =>
         lvalue vc ;;
-        rvalue cat ;;
+        prvalue cat ;;
         match e with
         | Evar (Lname x) _ => (* this is a very common form *)
           ret (fun Q => Exists v, (tlocal r x (tprim ty v) ** ltrue) //\\ Q v empSP)
@@ -754,16 +799,16 @@ Section refl.
         end
       | Cint2bool =>
         rvalue vc ;;
-        rvalue cat ;;
+        prvalue cat ;;
         wpe Rvalue e
       | Cintegral =>
         rvalue vc ;;
-        rvalue cat ;;
+        prvalue cat ;;
         Qe <- wpe Rvalue e ;;
         ret (fun Q => Qe (fun v free => [| has_type v ty |] ** Q v free))
       | Cnull2ptr =>
         rvalue vc ;;
-        rvalue cat ;;
+        prvalue cat ;;
         wpe Rvalue e
       | _ => default
       end
@@ -772,13 +817,13 @@ Section refl.
       Qr <- wpe Rvalue rhs ;;
       match l with
       | Evar (Lname x) ty' =>
-        let ty' := drop_qualifiers ty' in
+        let ty' := erase_qualifiers ty' in
         (* note(gmm): this is a common case that has a simpler rule. *)
         ret (fun Q => Qr (fun rv free => Exists la,
                 tlocal_at r x la (tany ty') **
                (tlocal_at r x la (tprim ty' rv) -* Q la free)))
       | _ =>
-        let ty := drop_qualifiers ty in
+        let ty := erase_qualifiers ty in
         Ql <- wpe Lvalue l ;;
         ret (fun Q => Ql (fun la free1 =>  Qr (fun rv free2 =>
                 _at (_eq la) (tany ty) **
@@ -786,14 +831,14 @@ Section refl.
       end
     | Eassign_op o lhs rhs ty =>
       lvalue cat ;;
-      let tyl := drop_qualifiers (type_of lhs) in
-      let tyr := drop_qualifiers (type_of rhs) in
-      let ty := drop_qualifiers ty in
+      let tyl := erase_qualifiers (type_of lhs) in
+      let tyr := erase_qualifiers (type_of rhs) in
+      let ty := erase_qualifiers ty in
       Qr <- wpe Rvalue rhs ;;
       Qo <- wpbo o tyl tyr ty ;;
       match lhs with
       | Evar (Lname x) ty' =>
-        let ty' := drop_qualifiers ty' in
+        let ty' := erase_qualifiers ty' in
         (* note(gmm): this is a common case that has a simpler rule. *)
         ret (fun Q => Qr (fun rv free => Exists la, Exists lv,
                 tlocal_at r x la (tprim ty' lv) **
@@ -808,9 +853,9 @@ Section refl.
       end
     | Epostinc e' ty
     | Epostdec e' ty =>
-      rvalue cat ;;
-      let ty := drop_qualifiers ty in
-      let tye := drop_qualifiers (type_of e) in
+      prvalue cat ;;
+      let ty := erase_qualifiers ty in
+      let tye := erase_qualifiers (type_of e) in
       let op := match e with
                 | Epostinc _ _ => Badd
                 | _            => Bsub
@@ -832,8 +877,8 @@ Section refl.
     | Epreinc e' ty
     | Epredec e' ty =>
       lvalue cat ;;
-      let ty := drop_qualifiers ty in
-      let tye := drop_qualifiers (type_of e) in
+      let ty := erase_qualifiers ty in
+      let tye := erase_qualifiers (type_of e) in
       let op := match e with
                 | Epostinc _ _ => Badd
                 | _            => Bsub
@@ -852,38 +897,40 @@ Section refl.
               Qo v (Vint 1) (fun v' =>
                 (_at (_eq a) (tprim ty v') -* Q a free))))
       end
-    | Enull => ret (fun Q => Q (Vptr nullptr) empSP)
+    | Enull =>
+      prvalue cat ;;
+      ret (fun Q => Q (Vptr nullptr) empSP)
     | Ecall (Ecast Cfunction2pointer (vc, Evar (Gname f) _) _) es _ =>
       match vc with
       | Lvalue | Rvalue =>
-        rvalue cat ;;
-        Qes <- wpes (wpAnys' wpe) es ;;
+        prvalue cat ;;
+        Qes <- wp_args (wpe Lvalue) (wpe Xvalue) (wpe Rvalue) wp_init es ;;
         match get_spec f with
         | Some fs =>
           ret (fun Q =>
                  Qes (fun vs free =>
                    applyEach (fs_arguments fs) vs (fs_spec fs ti) (fun Qf _ =>
-                     Qf (fun r => Q r free))) empSP)
+                     Qf (fun r => Q r free))))
         | None => default
         end
       | _ => default
       end
     | Emember_call false gn obj es ty =>
-      rvalue cat ;;
+      prvalue cat ;;
       Qo <- wpe Lvalue obj ;;
-      Qes <- wpes (wpAnys' wpe) es ;;
+      Qes <- wp_args (wpe Lvalue) (wpe Xvalue) (wpe Rvalue) wp_init es ;;
       match get_spec gn with
       | Some fs =>
         ret (fun Q =>
-               Qo (fun this => Qes (fun vs free =>
+               Qo (fun this free_f => Qes (fun vs free_args =>
                  applyEach (fs_arguments fs) (this :: vs) (fs_spec fs ti) (fun Qf _ =>
-                   Qf (fun r => Q r free)))))
+                   Qf (fun r => Q r (free_f ** free_args))))))
       | None => default
       end
     | Eatomic ao es ty =>
-      rvalue cat ;;
-      Qes <- wpes (wpAnys' wpe) es ;;
-      ret (fun Q => Qes (fun vs free => wp_atom (resolve:=resolve) ao vs ty (fun v => Q v free)) empSP)
+      prvalue cat ;;
+      Qes <- wp_args (wpe Lvalue) (wpe Xvalue) (wpe Rvalue) wp_init es ;;
+      ret (fun Q => Qes (fun vs free => wp_shift nil (fun to => wp_atom (resolve:=resolve) ao vs ty (fun v => wp_shift to (fun to => [| to = nil |] ** Q v free)))))
     | Eif test thn els ty =>
       Qr <- wpe Rvalue test ;;
       Qthn <- wpe cat thn ;;
@@ -891,6 +938,121 @@ Section refl.
       ret (fun Q => Qr (fun v free =>
              (     ([| is_true v = true |]  -* Qthn (fun v' free' => Q v' (free ** free')))
               //\\ ([| is_true v = false |] -* Qels (fun v' free' => Q v' (free ** free'))))))
+    | Ematerialize_temp e ty =>
+      xvalue cat ;;
+      Qe <- wp_init e ;;
+      let ty := erase_qualifiers ty in
+      ret (fun Q => Forall addr, _at (_eq addr) (uninit ty) -*
+                               Qe addr (fun free => Q addr free))
+          (* ^ or [fun free => free ** Q addr empSP] *)
+    | _ => default
+    end
+
+  with wp_init (e : Expr) {struct e}
+  : option (forall (addr : val) (Q : FreeTemps -> epred), mpred) :=
+    let default :=
+        ret (fun addr => Wp.wp_init (resolve:=resolve) ti r (type_of e) addr e)
+    in
+    match e with
+    | Eandclean e ty => wp_init e
+    | Ecall (Ecast Cfunction2pointer (vc, Evar (Gname f) _) _) es ty =>
+      match vc with
+      | Lvalue | Rvalue =>
+        Qes <- wp_args (wpe Lvalue) (wpe Xvalue) (wpe Rvalue) wp_init es ;;
+        match get_spec f with
+        | Some fs =>
+          ret (fun addr Q =>
+                 Qes (fun vs free =>
+                   applyEach (fs_arguments fs) vs (fs_spec fs ti) (fun Qf _ =>
+                     Qf (fun r => [| r = addr |] -* Q free))))
+        | None => default
+        end
+      | _ => default
+      end
+    | Emember_call false gn obj es ty =>
+      Qo <- wpe Lvalue obj ;;
+      Qes <- wp_args (wpe Lvalue) (wpe Xvalue) (wpe Rvalue) wp_init es ;;
+      match get_spec gn with
+      | Some fs =>
+        ret (fun addr Q =>
+               Qo (fun this free_f => Qes (fun vs free_args =>
+                 applyEach (fs_arguments fs) (this :: vs) (fs_spec fs ti) (fun Qf _ =>
+                   Qf (fun r => [| r = addr |] -* Q (free_f ** free_args))))))
+      | None => None
+      end
+
+    | Econstructor gn es ty =>
+      Qes <- wp_args (wpe Lvalue) (wpe Xvalue) (wpe Rvalue) wp_init es ;;
+      match get_spec gn with
+      | Some fs =>
+        ret (fun this Q => Qes (fun vs free_args =>
+                 applyEach (fs_arguments fs) (this :: vs) (fs_spec fs ti) (fun Qf _ =>
+                   Qf (fun r => [| r = this |] -* Q free_args))))
+      | None => None
+      end
+
+    | Einitlist ls fill ty =>
+      match ty with
+      | Tarray ety sz =>
+        let ety := erase_qualifiers ety in
+        Qinit <- (fix go i es {struct es} : option (val -> (FreeTemps -> epred) -> mpred) :=
+                   match es with
+                   | nil =>
+                     match fill with
+                     | None =>
+                       guard (N.eq_dec (N.of_nat i) sz) ;;
+                       ret (fun _ Q => Q empSP)
+                     | Some fill =>
+                     let range := seq i (N.to_nat sz - i) in
+                     if is_aggregate ety
+                     then
+                       Qe <- wp_init fill ;;
+                       ret (fold_right (fun i Qrest => fun addr Q =>
+                                          let iz := Z.of_nat i in
+                                          Forall loc,
+                                          (_offsetL (_sub ety iz) (_eq addr) &~ loc **
+                                           _at (_eq loc) (uninit ety)) -*
+                                           Qe loc (fun free => free ** Qrest addr Q))
+                                       (fun _ Q => Q empSP) range)
+                     else
+                       Qe <- wpe Rvalue fill ;;
+                       ret (fold_right (fun i Qrest => fun addr Q =>
+                                          let iz := Z.of_nat i in
+                                          Qe (fun v free => free **
+                                                (_at (_offsetL (_sub ety iz) (_eq addr)) (tprim ety v) -*
+                                                Qrest addr Q)))
+                                       (fun _ Q => Q empSP) range)
+                     end
+                   | e :: es =>
+                     guard (ZArith_dec.Z_ge_lt_dec (Z.of_N sz) (Z.of_nat i)) ;;
+                     let iz := Z.of_nat i in
+                     Qes <- go (1 + i) es ;;
+                     if is_aggregate ety
+                     then
+                       Qe <- wp_init e ;;
+                       ret (fun addr Q =>
+                              Forall loc,
+                                (_offsetL (_sub ety iz) (_eq addr) &~ loc **
+                                 _at (_eq loc) (uninit ety)) -*
+                                Qe loc (fun free => free ** Qes addr Q))
+                     else
+                       (Qe <- wpe Rvalue e ;;
+                       ret (fun addr Q => Qe (fun v free =>
+                                             free ** (_at (_offsetL (_sub ety iz) (_eq addr)) (tprim ety v) -* Qes addr Q))))
+                   end) 0 ls ;;
+        ret (fun addr Q =>
+               _at (_eq addr) (uninit (Tarray ety sz)) **
+               Qinit addr Q)
+      | Tref r => default (* TODO *)
+      | _ => None
+      end
+    | Ebind_temp e dtor ty => default
+    | Ecast c (vc,e) ty =>
+      match c , vc with
+      | Cnoop , Rvalue => wp_init e
+      | Cnoop , Xvalue => wp_init e
+      | _ , _ => default
+      end
     | _ => default
     end.
 
@@ -921,7 +1083,7 @@ Section refl.
 
   Corollary wp_lhs_sound : forall e K Q,
       wpe Lvalue e = Some Q ->
-      sig (resolve:=resolve) ti specs ** Q K |-- @Wp.wp_lhs resolve ti r e K.
+      sig (resolve:=resolve) ti specs ** Q K |-- @Wp.wp_lval resolve ti r e K.
   Proof.
     intros.
     pose proof (wpe_sound e Lvalue).
@@ -932,7 +1094,7 @@ Section refl.
 
   Corollary wp_rhs_sound : forall e K Q,
       wpe Rvalue e = Some Q ->
-      sig (resolve:=resolve) ti specs ** Q K |-- @Wp.wp_rhs resolve ti r e K.
+      sig (resolve:=resolve) ti specs ** Q K |-- @Wp.wp_prval resolve ti r e K.
   Proof.
     intros.
     pose proof (wpe_sound e Rvalue).
@@ -946,7 +1108,7 @@ Section refl.
     Qe <- wpe (fst ve) (snd ve) ;;
     ret (fun Q free => Qe (fun v f => Q v (f ** free))).
 
-  (* mostly copied from Cpp.Sem.Func *)
+(*
   Fixpoint wpi_init (ty : type) (init : option Expr)
   : option (val -> mpred -> mpred) :=
     match ty with
@@ -990,29 +1152,62 @@ Section refl.
       end
     | Tqualified _ ty => wpi_init ty init
     end.
+*)
 
-  Definition wpi (cls : globname) (f : FieldOrBase) (i : Expr)
-  : option (val -> mpred -> mpred) :=
-    Qe <- wpi_init (type_of i) (Some i) ;; (* `type_of i` isn't correct *)
-    let p := offset_for cls f in
+  Fixpoint wp_initialize (ty : type) (init : Expr)
+           {struct ty} : option (forall (this : val) (k : FreeTemps -> mpred), mpred) :=
+    let rt := erase_qualifiers ty in
+    match rt with
+    | Tvoid => lfalse
+    | Tpointer _
+    | Tbool
+    | Tchar _ _
+    | Tint _ _ =>
+      Qe <- wpe Rvalue init ;;
+      ret (fun addr k => Qe (fun v free =>
+                _at (_eq addr) (uninit rt) **
+            (   _at (_eq addr) (tprim rt v) -* k free)))
+
+    (* non-primitives are handled via prvalue-initialization semantics *)
+    | Tarray ety sz =>
+      Qe <- wp_init init ;;
+      ret (fun addr k => Qe addr k)
+    | Tref gn =>
+      Qe <- wp_init init ;;
+      ret (fun addr k => Qe addr k)
+
+    | Treference _
+    | Trv_reference _ =>
+      ret (fun _ _ => unsupported "reference fields")%string
+    | Tfunction _ _ =>
+      ret (fun _ _ => unsupported "function fields")%string
+
+    | Tqualified _ ty => None
+    end.
+
+
+  Definition wpi (cls : globname) (f : Initializer)
+  : option (val -> (FreeTemps -> epred) -> mpred) :=
+    Qe <- wp_initialize f.(init_type) f.(init_init) ;;
+    let p := offset_for cls f.(init_path) in
     ret (fun this Q => Exists fl,
                     (_offsetL p (_eq this) &~ fl ** ltrue) //\\
                     Qe fl Q).
 
-  Theorem wpi_sound : forall cls fi Q this K,
-      wpi cls (fst fi) (snd fi) = Some Q ->
+  Theorem wpi_sound : forall cls init Q this (K : FreeTemps -> epred),
+      wpi cls init = Some Q ->
       sig (resolve:=resolve) ti specs ** Q this K
-      |-- IN.wpi (resolve:=resolve) ti r cls this fi K.
+      |-- IN.wpi (resolve:=resolve) ti r cls this init K.
   Proof. Admitted.
 
-  Fixpoint wpis (cls : globname) (f : list (FieldOrBase * Expr))
-  : option (val -> mpred -> mpred) :=
+  Fixpoint wpis (cls : globname) (f : list Initializer)
+  : option (val -> (FreeTemps -> epred) -> mpred) :=
     match f with
-    | nil => ret (fun _ Q => Q)
-    | (f,i) :: is =>
-      Qi <- wpi cls f i ;;
+    | nil => ret (fun _ Q => Q empSP)
+    | fi :: is =>
+      Qi <- wpi cls fi ;;
       Qis <- wpis cls is ;;
-      ret (fun this Q => Qi this (Qis this Q))
+      ret (fun this Q => Qi this (fun free => free ** Qis this Q))
     end.
 
   Theorem wpis_sound : forall cls is Q this K,
@@ -1061,76 +1256,68 @@ Section refl.
   Section block.
     Variable wp : forall (s : Stmt), option (Kpreds -> mpred).
 
+    Print wp_decl.
     (* mostly copied from Cpp.Sem.Stmt *)
-    Fixpoint wp_decl (x : ident) (ty : type) (init : option Expr)
+    Definition wp_decl (vd : VarDecl)
     : option ((Kpreds -> mpred) -> Kpreds -> mpred) :=
                (* ^ Q is the continuation for after the declaration
                 *   goes out of scope.
                 * ^ k is the rest of the declaration
                 *)
+      let x := vd.(vd_name) in
+      let ty := erase_qualifiers vd.(vd_type) in
       match ty with
-      | Trv_reference t
-      | Treference t =>
-        match init with
-        | None => ret (fun _ _ => error "references must be initialized")
-          (* ^ references must be initialized *)
+      | Treference _
+      | Trv_reference _ =>
+        match vd.(vd_init) with
         | Some init =>
-          Qi <- wpe Lvalue init ;;
-          ret (fun k Q =>
-          (* i should use the type here *)
-          Qi (fun a free =>
-             _local r x &~ a -* (free ** k (Kfree (_local r x &~ a) Q))))
+          Qe <- wpe Lvalue init ;;
+          ret (fun k Q => Qe (fun v free => free **
+                 (Forall a, _local r x &~ a -* k (Kfree (_local r x &~ a) Q))))
+        | None => None
         end
-      | Tfunction _ _ =>
-        (* inline functions are not supported *)
-        ret (fun _ _ => error "unsupported: declarations of functions")
-      | Tvoid =>
-        ret (fun _ _ => error "declaration of void")
-      | Tpointer _
-      | Tbool
-      | Tchar _ _
-      | Tint _ _ =>
-        match init with
+      | Tarray _ _
+      | Tref _ =>
+        match vd.(vd_init) with
+        | Some init =>
+          Qe <- wp_init init ;;
+          ret (fun k Q =>
+                 Forall a : val, _at (_eq a) (uninit ty) -*
+                 let destroy :=
+                    match vd.(vd_dtor) with
+                    | Some dtor0 => destruct (resolve:=resolve) ti ty a dtor0
+                    | None => fun x0 : mpred => x0
+                    end (_at (_eq a) (tany (erase_qualifiers ty)))
+                 in
+                 Qe a (fun free => free ** (_local r x &~ a -* k (Kfree (_local r x &~ a ** destroy) Q))))
+        | None => None
+        end
+
+      | Tvoid
+      | Tfunction _ _ => None
+      | Tqualified _ ty0 => None
+      (* should never happen because i match on the erased type *)
+      | _ =>
+        match vd.(vd_init) with
         | None =>
-          ret (fun k Q =>
-                   tlocal r x (uninit ty) -*
-                   k (Kfree (tlocal r x (tany ty)) Q))
+          ret (fun k Q => Forall a, (_local r x &~ a ** _at (_eq a) (uninit ty)) -*
+                                  k (Kfree (tlocal_at r x a (tany ty)) Q))
         | Some init =>
-          Qi <- wpe Rvalue init ;;
-          ret (fun k Q => Qi (fun v free =>
-                 (tlocal r x (tprim ty v)
-              -* (free ** k (Kfree (tlocal r x (tany ty)) Q)))))
-        end
-      | Tarray _ _ => ret (fun _ _ => error "arrays unsupported") (* todo(gmm): arrays not yet supported *)
-      | Tref gn =>
-        match init with
-        | Some (Econstructor cnd es _) =>
-          Qes <- wpes wpAnys es ;;
-          ctor_spec <- get_spec cnd ;;
-          dtor_spec <- get_spec (dtor_name Dt_Deleting gn) ;;
+          Qe <- wpe Rvalue init ;;
           ret (fun k Q =>
-                 Qes (fun vs free =>
-                   Forall a,
-                     _at (_eq a) (uninit (Tref gn)) -*
-                     applyEach _ (a :: vs) (ctor_spec.(fs_spec) ti) (fun Q' _ =>
-                       Q' (fun _ =>
-                         _local r x &~ a -*
-                         (free ** k (Kat_exit (fun Q'' =>
-                           _local r x &~ a **
-                           applyEach _ (a :: nil) (dtor_spec.(fs_spec) ti) (fun Q _ => Q (fun _ => Q''))) Q))))) empSP)
-        | _ => ret (fun _ _ =>
-                     error "all non-primitive declarations must have initializers")
+             Forall a : val, Qe (fun v free => free **
+              (_local r x &~ a ** _at (_eq a) (tprim ty v) -*
+               k (Kfree (tlocal_at r x a (tany (erase_qualifiers ty))) Q))))
         end
-      | Tqualified _ ty => wp_decl x ty init
       end.
 
     (* mostly copied from Cpp.Sem.Stmt *)
-    Fixpoint wp_decls (ds : list (ident * type * option Expr))
+    Fixpoint wp_decls (ds : list VarDecl)
     : option ((Kpreds -> mpred) -> Kpreds -> mpred) :=
       match ds with
       | nil => ret (fun Q => Q)
-      | (x, ty, init) :: ds =>
-        Qd <- wp_decl x ty init ;;
+      | vd :: ds =>
+        Qd <- wp_decl vd ;;
         Qds <- wp_decls ds ;;
         ret (fun Q k => Qd (Qds Q) k)
       end.
@@ -1150,8 +1337,7 @@ Section refl.
       end.
   End block.
 
-  Fixpoint wp (s : Stmt) {struct s} : option (Kpreds -> mpred).
-  refine
+  Fixpoint wp (s : Stmt) {struct s} : option (Kpreds -> mpred) :=
     match s with
     | Sseq ss => wp_block wp ss
     | Sdecl ds =>
@@ -1161,10 +1347,10 @@ Section refl.
     | Sreturn e =>
       match e with
       | None =>
-        ret (fun k => k.(k_return) None)
+        ret (fun k => k.(k_return) None empSP)
       | Some (c, e) =>
         Qe <- wpe c e ;;
-        ret (fun Q => Qe (fun res free => free ** Q.(k_return) (Some res)))
+        ret (fun Q => Qe (fun res free => Q.(k_return) (Some res) free))
       end
     | Sif decl test thn els =>
       match decl with
@@ -1175,8 +1361,8 @@ Section refl.
         ret (fun k => Qr (fun v free =>
             free ** (     ([| is_true v = true |] -* Wthn k)
                      //\\ ([| is_true v = false |] -* Wels k))))
-      | Some (x, ty, init) =>
-        Qd <- wp_decl x ty init ;;
+      | Some vd =>
+        Qd <- wp_decl vd ;;
         Qr <- wpe Rvalue test ;;
         Wthn <- wp thn ;;
         Wels <- wp els ;;
@@ -1193,7 +1379,7 @@ Section refl.
       match decl with
       | None =>
         ret (@Wp.wp resolve ti r s)
-      | Some (x, ty, init) =>
+      | Some vd =>
         (* todo(gmm): i should at least evaluate the declaration *)
         ret (@Wp.wp resolve ti r s)
       end
@@ -1203,7 +1389,6 @@ Section refl.
     | _ =>
       Some (Wp.wp (resolve:=resolve) ti r s)
     end.
-  Defined.
 
   Theorem wp_sound : forall s K Q,
       wp s = Some Q ->
@@ -1211,11 +1396,11 @@ Section refl.
   Proof. Admitted.
 
   Definition wp_ctor (cls : globname)
-             (inits : list (FieldOrBase * Expr)) (body : Stmt)
+             (inits : list Initializer) (body : Stmt)
   : option (val -> Kpreds -> mpred) :=
     Qi <- wpis cls inits ;;
     Qbody <- wp body ;;
-    ret (fun this Q => Qi this (Qbody Q)).
+    ret (fun this Q => Qi this (fun free => free ** Qbody Q)).
 
   Theorem wp_ctor_sound : forall cls is b K Q this,
       wp_ctor cls is b = Some Q ->
