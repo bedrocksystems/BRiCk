@@ -1256,7 +1256,6 @@ Section refl.
   Section block.
     Variable wp : forall (s : Stmt), option (Kpreds -> mpred).
 
-    Print wp_decl.
     (* mostly copied from Cpp.Sem.Stmt *)
     Definition wp_decl (vd : VarDecl)
     : option ((Kpreds -> mpred) -> Kpreds -> mpred) :=
