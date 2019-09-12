@@ -94,7 +94,14 @@ with simplify_wp_lval e :=
   | Esubscript ?e _ _ => rewrite <- wp_lval_subscript; continue_prval e
   end
 with simplify_wp_init e :=
-  (rewrite <- wp_init_wp_init')
+  lazymatch e with
+  | Eandclean e _ => rewrite <- wp_init_clean ; continue_init e
+  | Ebind_temp e _ => rewrite <- wp_init_bind_temp ; continue_init e
+  | Ecast Cnoop ?e _ =>
+    lazymatch e with
+    | (Rvalue, ?e') => rewrite <- wp_init_cast_noop ; continue_init e
+    end
+  end
 
 with continue_prval e := try (simplify_simpl; simplify_wp_prval e)
 with continue_lval e := try (simplify_simpl; simplify_wp_lval e)
