@@ -42,7 +42,7 @@ test: coq cpp2v
 test-plugin: coq cpp2v_plugin
 	$(MAKE) -C tests/plugin
 
-.PHONY: test install coq all doc html clean install
+.PHONY: test install coq all doc html clean install cpp2v cpp2v_plugin
 
 build/Makefile:
 	mkdir -p build

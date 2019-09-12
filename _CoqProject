@@ -49,6 +49,7 @@ theories/Auto/tactics.v
 theories/Auto/Notations.v
 theories/Auto/Linking/Lemmas.v
 theories/Auto/Linking.v
+theories/Auto/Arith.v
 theories/Auto.v
 
 theories/CodeNotations.v
