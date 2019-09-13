@@ -20,7 +20,7 @@ coq: Makefile.coq
 	$(MAKE) -f Makefile.coq
 	mkdir -p build/
 	rm -rf build/Cpp
-	cp -r theories/ build/Cpp
+	ln -s `pwd`/theories build/Cpp
 
 doc: coq
 	$(MAKE) -f Makefile.coq html
