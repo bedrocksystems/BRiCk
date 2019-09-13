@@ -11,12 +11,14 @@ From Coq Require Import
 From Cpp Require Import
      Ast Sem.
 From Cpp.Sem Require Import
-     Util Logic Semantics.
+     ChargeUtil Logic Semantics.
 From Cpp.Auto Require Import
      Definitions Lemmas.
 From Cpp Require Auto.vc.
 From bedrock.auto.Lemmas Require Wp Eval.
 Require Import bedrock.Signatures.
+From Cpp.Syntax Require Import CompilationUnit Expr Stmt Types Typing.
+
 
 (* the option monad *)
 Definition lvalue (c : ValCat) : option unit :=

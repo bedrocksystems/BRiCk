@@ -11,6 +11,7 @@ From Cpp.Auto Require Import
      Definitions Discharge.
 From bedrock.auto.Lemmas Require Import
      Eval PLogic.
+From Cpp.Syntax Require Import CompilationUnit Expr Types Typing.
 
 Local Ltac work :=
   discharge fail idtac fail fail eauto.

@@ -10,6 +10,7 @@ From Cpp Require Import
      Ast Sem.
 From Cpp.Auto Require Import
      Discharge.
+From Cpp.Syntax Require Import Expr Types.
 
 Local Ltac work :=
   discharge fail idtac fail fail eauto.

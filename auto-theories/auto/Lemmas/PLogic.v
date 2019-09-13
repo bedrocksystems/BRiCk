@@ -9,6 +9,7 @@ From Cpp Require Import
      Ast Sem Util.
 From Cpp.Auto Require Import
      Definitions Discharge type.
+From Cpp.Syntax Require Import CompilationUnit Expr Types Typing.
 
 Local Ltac t :=
   discharge fail idtac fail fail eauto.
