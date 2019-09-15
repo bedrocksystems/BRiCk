@@ -12,7 +12,7 @@ From Coq Require Import
 
 From Cpp Require Import Ast.
 From Cpp.Sem Require Import
-        ChargeUtil Semantics Logic PLogic Destroy Wp Init Call.
+        ChargeUtil Semantics Logic PLogic Destroy Wp Init Call Intensional.
 
 Require Import Coq.ZArith.BinInt.
 Require Import Coq.micromega.Lia.
@@ -54,7 +54,7 @@ Module Type Stmt.
            match c with
            | Rvalue =>
              Exists a, _result ρ &~ a ** ltrue //\\
-             wp_init (type_of e) a e (Q.(k_return) (Some a))
+             wp_init (erase_qualifiers (type_of e)) a (not_mine e) (Q.(k_return) (Some a))
            | Lvalue
            | Xvalue =>
              wpe c e (fun v => Q.(k_return) (Some v))
@@ -117,7 +117,7 @@ Module Type Stmt.
                   match init with
                   | None => continue
                   | Some init =>
-                    wp_init ty a init (fun free => free ** continue)
+                    wp_init ty a (not_mine init) (fun free => free ** continue)
                   end
       | Tarray ty' N =>
         Forall a, _at (_eq a) (uninit (erase_qualifiers ty)) -*
@@ -134,7 +134,7 @@ Module Type Stmt.
                   match init with
                   | None => continue
                   | Some init =>
-                    wp_init ty a init (fun free => free ** continue)
+                    wp_init ty a (not_mine init) (fun free => free ** continue)
                   end
 
         (* references *)

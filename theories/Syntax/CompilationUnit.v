@@ -7,10 +7,7 @@ From Coq.Strings Require Import
      Ascii String.
 
 Require Import Cpp.Util.
-Require Import Cpp.Syntax.Ast.
-Require Import Cpp.Syntax.Expr.
-Require Import Cpp.Syntax.Stmt.
-Require Import Cpp.Syntax.Types.
+From Cpp.Syntax Require Import Names Expr Stmt Types.
 
 Record Ctor : Set :=
 { c_class  : globname
