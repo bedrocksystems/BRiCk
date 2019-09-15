@@ -4,11 +4,8 @@
  * SPDX-License-Identifier:AGPL-3.0-or-later
  *)
 Require Import Coq.Classes.DecidableClass.
-Require Import Coq.NArith.BinNatDef.
 From Coq.Strings Require Import
      Ascii String.
-Require Import Coq.ZArith.BinIntDef.
-Require Import Coq.ZArith.BinInt.
 
 Require Import Cpp.Util.
 
@@ -59,47 +56,3 @@ refine
   rewrite Bool.andb_true_iff. repeat rewrite decide_ok.
   destruct a, b; simpl; split; firstorder congruence.
 Defined.
-
-Record type_qualifiers : Set :=
-{ q_const : bool
-; q_volatile : bool }.
-Global Instance Decidable_eq_type_qualifiers (a b : type_qualifiers) : Decidable (a = b).
-Proof.
-refine
-  {| Decidable_witness := decide (a.(q_const) = b.(q_const)) && decide (a.(q_volatile) = b.(q_volatile))
-   |}.
-rewrite Bool.andb_true_iff. repeat rewrite decide_ok.
-destruct a; destruct b; simpl; firstorder; congruence.
-Defined.
-
-Definition merge_tq (a b : type_qualifiers) : type_qualifiers :=
-  {| q_const := a.(q_const) || b.(q_const)
-   ; q_volatile := a.(q_volatile) || b.(q_volatile)
-   |}.
-
-Variant size : Set :=
-| W8
-| W16
-| W32
-| W64
-| W128.
-
-Definition N_of_size (s : size) : N :=
-  match s with
-  | W8   => 8
-  | W16  => 16
-  | W32  => 32
-  | W64  => 64
-  | W128 => 128
-  end.
-
-Definition Z_of_size (s : size) : Z :=
-  Z.of_N (N_of_size s).
-
-Bind Scope N_scope with size.
-
-Coercion N_of_size : size >-> N.
-Lemma of_size_gt_O w :
-  (0 < 2 ^ Z_of_size w)%Z.
-Proof. unfold Z_of_size. unfold BinIntDef.Z.of_N. unfold N_of_size. destruct w; reflexivity. Qed.
-Hint Resolve of_size_gt_O.

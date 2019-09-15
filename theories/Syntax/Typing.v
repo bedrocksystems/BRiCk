@@ -4,9 +4,7 @@
  * SPDX-License-Identifier:AGPL-3.0-or-later
  *)
 Require Import Coq.Classes.DecidableClass.
-Require Import Cpp.Syntax.Ast.
-Require Import Cpp.Syntax.Expr.
-Require Import Cpp.Syntax.Types.
+From Cpp.Syntax Require Import Names Expr Types.
 
 Fixpoint type_of (e : Expr) : type :=
   match e with

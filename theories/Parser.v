@@ -9,7 +9,7 @@ Require Export
         Coq.Lists.List
         Coq.ZArith.BinInt.
 
-From Cpp Require Export Ast.
+Require Export Cpp.Ast.
 
 Definition Nanon (ty : globname) : globname :=
   String "#"%char ty.

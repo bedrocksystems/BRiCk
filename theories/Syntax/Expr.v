@@ -10,8 +10,7 @@ From Coq.Strings Require Import
 Require Import Coq.ZArith.BinIntDef.
 
 Require Import Cpp.Util.
-Require Import Cpp.Syntax.Ast.
-Require Import Cpp.Syntax.Types.
+From Cpp.Syntax Require Import Names Types.
 
 Set Primitive Projections.
 

@@ -14,7 +14,8 @@ Require Import Coq.Strings.String.
 From Cpp Require Import
      Ast.
 From Cpp.Sem Require Import
-     ChargeUtil Logic Semantics Operator PLogic Destroy Wp CompilationUnit Call.
+     ChargeUtil Logic Semantics Operator PLogic Destroy
+     Wp CompilationUnit Call Intensional.
 
 Require Import Coq.ZArith.BinInt.
 Require Import Coq.NArith.BinNatDef.
@@ -450,17 +451,20 @@ Module Type Expr.
     (* [Ematerialize_temp e ty] is an xvalue
      *)
     Axiom wp_xval_temp : forall e ty Q,
-        Forall a, _at (_eq a) (uninit (erase_qualifiers ty)) -*
+        (Forall a, _at (_eq a) (uninit (erase_qualifiers ty)) -*
+                  let '(e,dt) := destructor_for e in
                   wp_init ty a e
-                          (fun free => free ** Q a (_at (_eq a) (tany (erase_qualifiers ty))))
+                          (fun free => Q a (mdestroy (resolve:=resolve) ti ty a dt free)))
         |-- wp_xval (Ematerialize_temp e ty) Q.
 
     (* [Ematerialize_temp e ty] is an xvalue
      *)
     Axiom wp_lval_temp : forall e ty Q,
-        Forall a, _at (_eq a) (uninit (erase_qualifiers ty)) -*
-                  wp_init ty a e
-                          (fun free => free ** Q a (_at (_eq a) (tany (erase_qualifiers ty))))
+        (Forall a,
+           _at (_eq a) (uninit (erase_qualifiers ty)) -*
+           let '(e,dt) := destructor_for e in
+           wp_init ty a e
+                   (fun free => Q a (mdestroy (resolve:=resolve) ti ty a dt free)))
         |-- wp_lval (Ematerialize_temp e ty) Q.
 
     (* temporary materialization only occurs when the resulting value is used.
@@ -470,29 +474,33 @@ Module Type Expr.
      *)
     Axiom wp_prval_implicit_materialize : forall e Q,
         is_aggregate (type_of e) = true ->
-        (Forall a, _at (_eq a) (uninit (erase_qualifiers (type_of e))) -*
-                   wp_init (type_of e) a e (fun free =>
-                                              Q a (_at (_eq a) (tany (type_of e)) ** free)))
+        (let ty := erase_qualifiers (type_of e) in
+         Forall a, _at (_eq a) (uninit ty) -*
+                   let '(e,dt) := destructor_for e in
+                   wp_init ty a e (fun free =>
+                                     Q a (mdestroy (resolve:=resolve) ti ty a dt free)))
         |-- wp_prval e Q.
 
 
     (* [Ebind_temp e dtor ty] is an initialization expression that ensures
      * that the destructor is called.
+     *
+     * this aspect of the AST is non-compositional, so we handle it in another
+     * way
      *)
     Axiom wp_init_bind_temp : forall e ty a dtor Q,
+        lfalse (*
         wp_init ty a e (fun free =>
                      Exists fa, [| glob_addr resolve dtor fa |] **
-                     |> fspec (resolve:=resolve) (Vptr fa) (a :: nil) ti (fun _ => Q free))
+                     |> fspec (resolve:=resolve) (Vptr fa) (a :: nil) ti (fun _ => Q free)) *)
         |-- wp_init ty a (Ebind_temp e dtor ty) Q.
-
 
     Axiom wp_prval_materialize : forall ty e dtor Q,
       Forall a : val,
       _at (_eq a) (uninit (erase_qualifiers ty)) -*
-          wp_init ty a (Ebind_temp e dtor ty)
-          (fun free : FreeTemps => Q a (_at (_eq a) (tany (erase_qualifiers ty)) ** free))
-       |-- wp_prval (Ebind_temp e dtor ty) Q.
-
+          wp_init ty a e (fun free =>
+                            Q a (mdestroy (resolve:=resolve) ti ty a (Some dtor) free))
+      |-- wp_prval (Ebind_temp e dtor ty) Q.
 
   End with_resolve.
 

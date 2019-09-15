@@ -13,7 +13,7 @@ Local Open Scope Z_scope.
 From Cpp Require Import
      Ast.
 From Cpp.Sem Require Import
-     ChargeUtil Logic PLogic Semantics Call Wp.
+     ChargeUtil Logic PLogic Semantics Call Wp Intensional.
 
 Module Type Init.
 
@@ -57,8 +57,9 @@ Module Type Init.
                           -* k free))
 
         (* non-primitives are handled via prvalue-initialization semantics *)
-      | Tarray ety sz => wp_init ty addr init k
-      | Tref gn => wp_init ty addr init k
+      | Tarray _ _
+      | Tref _ => wp_init ty addr (not_mine init) k
+
       | Treference t => lfalse (* reference fields are not supported *)
       | Trv_reference t => lfalse (* reference fields are not supported *)
       | Tfunction _ _ => lfalse (* functions not supported *)
@@ -112,15 +113,6 @@ Module Type Init.
       end
       |-- wp_init (Tarray ety sz) addr (Einitlist ls fill (Tarray ety sz)) Q.
 
-(*
-
-    Axiom wp_init_wp_init' : forall addr ty init k,
-        wp_init' addr ty init k -|- wp_init addr ty init k.
-*)
-
-    Axiom wp_init_bind_temp : forall e ty dtor loc ty' Q,
-        wp_init loc ty e Q
-        |-- wp_init loc ty (Ebind_temp e dtor ty') Q.
     Axiom wp_init_cast_noop : forall e ty loc ty' Q,
         wp_init loc ty e Q
         |-- wp_init loc ty (Ecast Cnoop (Rvalue, e) ty') Q.

@@ -10,6 +10,7 @@ From Cpp.Sem Require Export
      Operator
      PLogic
      Wp
+     Intensional
      Destroy
      Call
      Expr

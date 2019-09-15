@@ -13,7 +13,7 @@ Local Open Scope Z_scope.
 From Cpp Require Import
      Ast.
 From Cpp.Sem Require Import
-     ChargeUtil Logic PLogic Semantics Wp.
+     ChargeUtil Logic PLogic Semantics Wp Destroy Intensional.
 
 Module Type Call.
 
@@ -33,27 +33,21 @@ Module Type Call.
     Local Notation wpAnys := (wpAnys (resolve:=resolve) ti ρ).
     Local Notation fspec := (fspec (resolve:=resolve)).
 
-    Fixpoint is_aggregate (t : type) : bool :=
-      match t with
-      | Tref _
-      | Tarray _ _ => true
-      | Tqualified _ t => is_aggregate t
-      | _ => false
-      end.
-
     Fixpoint wp_args (es : list (ValCat * Expr)) (Q : list val -> FreeTemps -> mpred) : mpred :=
       match es with
       | nil => Q nil empSP
       | (vc,e) :: es =>
         let ty := type_of e in
         match vc with
-        | Lvalue => wp_lval e (fun v free => wp_args es (fun vs frees =>
-                                                       Q (v :: vs) (free ** frees)))
+        | Lvalue =>
+          wp_lval e (fun v free =>
+                       wp_args es (fun vs frees => Q (v :: vs) (free ** frees)))
         | Rvalue =>
           if is_aggregate ty then
             Forall a, _at (_eq a) (uninit (erase_qualifiers ty)) -*
+                      let (e,dt) := destructor_for e in
                       wp_init ty a e (fun free => wp_args es (fun vs frees =>
-                                                             Q (a :: vs) (_at (_eq a) (tany (erase_qualifiers ty)) ** free ** frees)))
+                                                             Q (a :: vs) (mdestroy (resolve:=resolve) ti ty a dt free ** frees)))
           else
             wp_prval e (fun v free => wp_args es (fun vs frees =>
                                                 Q (v :: vs) (free ** frees)))
@@ -61,7 +55,6 @@ Module Type Call.
                                                        Q (v :: vs) (free ** frees)))
         end
       end.
-    (* todo(gmm): check sequence points *)
 
   End with_resolve.
 
