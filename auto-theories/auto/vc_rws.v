@@ -217,7 +217,8 @@ Declare Reduction red_wpe :=
         is_aggregate is_pointer type_of
         k_normal k_break k_return k_continue
         Kloop Kseq Kfree Kat_exit val_return void_return
-        init_path init_type init_init Wp.SP ].
+        init_path init_type init_init Wp.SP
+        not_mine destructor_for ].
 
 Declare Reduction red_wpe_n :=
   cbv beta iota zeta delta [ Wp.SP ].
