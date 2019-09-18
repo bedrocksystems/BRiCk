@@ -38,7 +38,7 @@ Definition extCtor (o: ObjValue) : option Ctor :=
   | _ => None
   end.    
 
-Definition extItem {I} (ext: ObjValue -> option I) (matchName: string-> bool) (c: compilation_unit) (class method: string): (string*I) + string :=
+Definition extItem {I} (ext: ObjValue -> option I) (matchName: string-> bool) (c: compilation_unit): (string*I) + string :=
   match (List.filter (fun '(n, b) =>
                        ssrbool.isSome (ext b) && matchName n)%bool
                      (symbols c)) with
@@ -71,11 +71,11 @@ Definition SCtorSpec (msig: Ctor)
 
 Ltac specItem specFun ext nameMatch module spec :=
   let t := eval hnf in (extItem ext nameMatch module) in
-  let t := eval simpl in t in idtac t. (*
+  let t := eval simpl in t in
       match t with
       | inr ?x => idtac x; exact x
       | inl ?x => exact (specFun (snd x) spec)
-      end.*)
+      end.
 
 Definition has : list string -> string  -> bool := contains 0.
 Ltac specMethod  := specItem SMethodSpec extMethod.
