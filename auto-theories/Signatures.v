@@ -30,6 +30,12 @@ Definition extFunc (o: ObjValue) : option Func :=
   | _ => None
   end.    
 
+Definition extCtor (o: ObjValue) : option Ctor :=
+  match o with
+  | Oconstructor m => Some m
+  | _ => None
+  end.    
+
 Definition extItem {I} (ext: ObjValue -> option I) (c: compilation_unit) (class method: string): (string*I) + string :=
   match (List.filter (fun '(n, b) =>
                        ssrbool.isSome (ext b) && matchName n class method)%bool
@@ -42,18 +48,24 @@ Definition extItem {I} (ext: ObjValue -> option I) (c: compilation_unit) (class 
   | _::_::_ => inr "multiple matches"
   end.
 
-Definition SMethodSig (msig: Method)
+Definition SMethodSpec (msig: Method)
            (PQ : val -> arrowFrom val (map snd (m_params msig)) WithPrePost) :=
   SMethod (m_class msig)
           (m_this_qual msig)
           (m_return msig)
           (map snd (m_params msig)) PQ.
 
-Definition SFunctionSig (msig: Func)
+Definition SFunctionSpec (msig: Func)
            (PQ : arrowFrom val (map snd (f_params msig)) WithPrePost) :=
   SFunction 
           (f_return msig)
           (map snd (f_params msig)) PQ.
+
+Definition SCtorSpec (msig: Ctor)
+           (PQ : val -> arrowFrom val (map snd (c_params msig)) WithPrePost) :=
+  SConstructor
+          (c_class msig)
+          (map snd (c_params msig)) PQ.
 
 Ltac specItem specFun ext class method module spec :=
   let t := eval hnf in (extItem ext module class method) in
@@ -63,5 +75,7 @@ Ltac specItem specFun ext class method module spec :=
       | inl ?x => exact (specFun (snd x) spec)
       end.
 
-Ltac specMethod  := specItem SMethodSig extMethod.
-Ltac specFunc  := specItem SFunctionSig extFunc "".
+Ltac specMethod  := specItem SMethodSpec extMethod.
+(* it is hard to identify constructors by name*)
+Ltac specCtor  := specItem SCtorSpec extCtor.
+Ltac specFunc  := specItem SFunctionSpec extFunc "".
