@@ -10,13 +10,15 @@ Definition signature := list (obj_name * function_spec).
 Definition sig {resolve} (ti : thread_info) (s : signature) : mpred :=
   sepSPs (map (fun '(f, fs) => |> cglob (resolve:=resolve) f ti fs) s).
 
-Definition matchName (fullname: string) (msName lsName: string) :bool :=
-  match index 0 msName fullname with
-  | Some n => ssrbool.isSome (index (n+length msName) lsName fullname)
-  | None => false
+Fixpoint contains (start: nat) (keys: list string) (fullname: string) :bool :=
+  match keys with
+  | kh::ktl =>
+    match index 0 kh fullname with
+    | Some n => contains (n+length kh) ktl fullname
+    | None => false
+    end
+  | [] => true
   end.
-
-Print ObjValue.
 
 Definition extMethod (o: ObjValue) : option Method :=
   match o with
@@ -36,9 +38,9 @@ Definition extCtor (o: ObjValue) : option Ctor :=
   | _ => None
   end.    
 
-Definition extItem {I} (ext: ObjValue -> option I) (c: compilation_unit) (class method: string): (string*I) + string :=
+Definition extItem {I} (ext: ObjValue -> option I) (matchName: string-> bool) (c: compilation_unit) (class method: string): (string*I) + string :=
   match (List.filter (fun '(n, b) =>
-                       ssrbool.isSome (ext b) && matchName n class method)%bool
+                       ssrbool.isSome (ext b) && matchName n)%bool
                      (symbols c)) with
   | [] => inr "not found"
   | h::[] => match ext (snd h) with
@@ -67,15 +69,17 @@ Definition SCtorSpec (msig: Ctor)
           (c_class msig)
           (map snd (c_params msig)) PQ.
 
-Ltac specItem specFun ext class method module spec :=
-  let t := eval hnf in (extItem ext module class method) in
-  let t := eval simpl in t in
+Ltac specItem specFun ext nameMatch module spec :=
+  let t := eval hnf in (extItem ext nameMatch module) in
+  let t := eval simpl in t in idtac t. (*
       match t with
       | inr ?x => idtac x; exact x
       | inl ?x => exact (specFun (snd x) spec)
-      end.
+      end.*)
 
+Definition has : list string -> string  -> bool := contains 0.
 Ltac specMethod  := specItem SMethodSpec extMethod.
 (* it is hard to identify constructors by name*)
 Ltac specCtor  := specItem SCtorSpec extCtor.
-Ltac specFunc  := specItem SFunctionSpec extFunc "".
+Ltac specFunc  := specItem SFunctionSpec extFunc.
+
