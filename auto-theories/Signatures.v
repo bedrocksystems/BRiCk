@@ -1,5 +1,6 @@
+Require Import ExtLib.Programming.Show.
 Require Import Cpp.Auto.
-Require Import String.
+Require Import Coq.Strings.String.
 Open Scope string_scope.
 Import ListNotations.
 (* signatures
@@ -37,7 +38,7 @@ Local Fixpoint namespaces (seen : string) (s : string) : list string :=
 Local Fixpoint contains (start: nat) (keys: list string) (fullname: string) :bool :=
   match keys with
   | kh::ktl =>
-    match index 0 kh fullname with
+    match index start kh fullname with
     | Some n => contains (n+length kh) ktl fullname
     | None => false
     end
@@ -48,8 +49,14 @@ Local Fixpoint contains (start: nat) (keys: list string) (fullname: string) :boo
 Definition has (keys : list string) : Matcher :=
   {| matches := contains 0 keys |}.
 
+Definition nat_to_string (n : nat) : string :=
+  @runShow _ {| show_mon := {| Monoid.monoid_plus := String.append
+                             ; Monoid.monoid_unit := EmptyString |}
+              ; show_inj a := String a EmptyString |}
+           (nat_show n).
+
 Definition name (str : string) : Matcher :=
-  has (namespaces "" str).
+  has (map (fun s => nat_to_string (length s) ++ s) (namespaces "" str)).
 
 Definition exact (s : string) : Matcher :=
   {| matches := String.eqb s |}.
@@ -89,35 +96,43 @@ Definition extItem {I} (ext: ObjValue -> option I) (matchName: Matcher)
   end.
 
 Definition SMethodSpec (msig: Method)
-           (PQ : val -> arrowFrom val (map snd (m_params msig)) WithPrePost) :=
+  : (val -> arrowFrom val (map snd (m_params msig)) WithPrePost) -> _ :=
   SMethod (m_class msig)
           (m_this_qual msig)
           (m_return msig)
-          (map snd (m_params msig)) PQ.
+          (map snd (m_params msig)).
 
 Definition SFunctionSpec (msig: Func)
-           (PQ : arrowFrom val (map snd (f_params msig)) WithPrePost) :=
+  : arrowFrom val (map snd (f_params msig)) WithPrePost -> _ :=
   SFunction
           (f_return msig)
-          (map snd (f_params msig)) PQ.
+          (map snd (f_params msig)).
 
 Definition SCtorSpec (msig: Ctor)
-           (PQ : val -> arrowFrom val (map snd (c_params msig)) WithPrePost) :=
+  : (val -> arrowFrom val (map snd (c_params msig)) WithPrePost) -> _ :=
   SConstructor
           (c_class msig)
-          (map snd (c_params msig)) PQ.
+          (map snd (c_params msig)).
+
+Declare Reduction spec_red :=
+  cbv beta iota zeta delta
+      [ SFunctionSpec SMethodSpec SCtorSpec
+        m_class m_this_qual m_return map snd fst m_params f_return f_params c_class c_params ].
 
 Ltac specItem specFun ext nameMatch module spec :=
   let t := eval hnf in (extItem ext nameMatch module) in
   let t := eval simpl in t in
   lazymatch t with
   | inr ?x => fail 1 x
-  | inl ?x => exact (specFun (snd x) spec)
+  | inl ?x => let x := eval hnf in x in
+              lazymatch x with
+              | (_, ?y) => let X := eval spec_red in (specFun y) in
+                           exact (X spec)
+              end
   end.
 
 
 
 Ltac specMethod  := specItem SMethodSpec extMethod.
-(* it is hard to identify constructors by name*)
 Ltac specCtor  := specItem SCtorSpec extCtor.
 Ltac specFunc  := specItem SFunctionSpec extFunc.
