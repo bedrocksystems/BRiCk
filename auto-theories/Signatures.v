@@ -1,5 +1,6 @@
 Require Import ExtLib.Programming.Show.
 Require Import Cpp.Auto.
+Require Import Cpp.Signature.
 Require Import Coq.Strings.String.
 Open Scope string_scope.
 Import ListNotations.
@@ -61,38 +62,16 @@ Definition name (str : string) : Matcher :=
 Definition exact (s : string) : Matcher :=
   {| matches := String.eqb s |}.
 
-Definition extMethod (o: ObjValue) : option Method :=
-  match o with
-  | Omethod m => Some m
-  | _ => None
-  end.
 
-Definition extFunc (o: ObjValue) : option Func :=
-  match o with
-  | Ofunction m => Some m
-  | _ => None
-  end.
-
-Definition extCtor (o: ObjValue) : option Ctor :=
-  match o with
-  | Oconstructor m => Some m
-  | _ => None
-  end.
-
-Definition extItem {I} (ext: ObjValue -> option I) (matchName: Matcher)
-           (c: compilation_unit): (string*I) + string :=
+Definition find_symbol (matchName: Matcher) (c: compilation_unit)
+: string + (obj_name * ObjValue) :=
   let result :=
-      List.flat_map (fun '(n, b) =>
-                       match ext b with
-                       | None => nil
-                       | Some m => if matchName.(matches) n then (n, m) :: nil else nil
-                       end)
-                    (symbols c)
+      List.filter (fun '(n, _) => matchName.(matches) n) (symbols c)
   in
   match result with
-  | [] => inr "found no matching symbols"
-  | h::[] => inl h
-  | _::_::_ => inr ("Ambiguous match. The following symbols matched: " ++ String.concat ", " (List.map fst result))
+  | [] => inl "found no matching symbols"
+  | h::[] => inr h
+  | _::_::_ => inl ("Ambiguous match. The following symbols matched: " ++ String.concat ", " (List.map fst result))
   end.
 
 Definition SMethodSpec (msig: Method)
@@ -114,25 +93,63 @@ Definition SCtorSpec (msig: Ctor)
           (c_class msig)
           (map snd (c_params msig)).
 
-Declare Reduction spec_red :=
-  cbv beta iota zeta delta
-      [ SFunctionSpec SMethodSpec SCtorSpec
-        m_class m_this_qual m_return map snd fst m_params f_return f_params c_class c_params ].
+Definition spec_type (o : ObjValue) : Type :=
+  match o with
+  | Ovar _ _ => Rep
+  | Odestructor _ => val -> WithPrePost
+  | Ofunction f => arrowFrom val (map snd f.(f_params)) WithPrePost
+  | Omethod m => val -> arrowFrom val (map snd m.(m_params)) WithPrePost
+  | Oconstructor c => val -> arrowFrom val (map snd c.(c_params)) WithPrePost
+  end.
 
-Ltac specItem specFun ext nameMatch module spec :=
-  let t := eval hnf in (extItem ext nameMatch module) in
-  let t := eval simpl in t in
-  lazymatch t with
-  | inr ?x => fail 1 x
-  | inl ?x => let x := eval hnf in x in
-              lazymatch x with
-              | (_, ?y) => let X := eval spec_red in (specFun y) in
-                           exact (X spec)
-              end
+Definition AnySpec (s : string + (obj_name * ObjValue)) :
+  string + (match s return Type with
+            | inl s => Empty_set
+            | inr (_,s) => spec_type s
+            end -> specification) :=
+  match s as s
+        return string + (match s return Type with
+                         | inl s => Empty_set
+                         | inr (_,s) => spec_type s
+                         end -> specification)
+  with
+  | inl err => inl err
+  | inr (nm,s) => inr
+    match s as o return spec_type o -> specification with
+    | Ovar _ _ => fun r =>
+      {| s_name := nm ; s_spec := r |}
+    | Odestructor d => fun r =>
+      {| s_name := nm ; s_spec := ticptr (SDestructor d.(d_class) r) |}
+    | Oconstructor c => fun r =>
+      {| s_name := nm ; s_spec := ticptr (SCtorSpec c r) |}
+    | Omethod m => fun r =>
+      {| s_name := nm ; s_spec := ticptr (SMethodSpec m r) |}
+    | Ofunction m => fun r =>
+      {| s_name := nm ; s_spec := ticptr (SFunctionSpec m r) |}
+    end
   end.
 
 
+Declare Reduction spec_red :=
+  cbv beta iota zeta delta -
+  [ T_uchar T_int T_schar T_longlong T_long T_ulonglong T_uint T_uint64 T_uint32
+    T_ulong T_short T_ushort T_uint128 T_int128 T_int8 T_int16 T_uint16 T_uint8
+    Talias
+    Qmut_volatile Qmut Qconst Qconst_volatile
+    ticptr
+    SFunction TSFunction
+    SMethod TSMethod
+    SConstructor TSConstructor
+    SDestructor TSDestructor ].
 
-Ltac specMethod  := specItem SMethodSpec extMethod.
-Ltac specCtor  := specItem SCtorSpec extCtor.
-Ltac specFunc  := specItem SFunctionSpec extFunc.
+Ltac specify nameMatch module PQ :=
+  let t := eval spec_red in (AnySpec (find_symbol nameMatch module)) in
+  lazymatch t with
+  | inl ?x => fail 1 x
+  | inr ?x => let X := eval cbv beta in (x PQ) in
+              exact X
+  end.
+
+(* I can't figure out why this doesn't work
+Notation "'specify' mtch md k" := (ltac:(specify' constr:(mtch%string) constr:(md)) k) (at level 0, only parsing).
+*)
