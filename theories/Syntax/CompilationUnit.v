@@ -1,4 +1,5 @@
 Require Import Coq.Classes.DecidableClass.
+Require Import Coq.Bool.Bool.
 Require Import ExtLib.Structures.Monad.
 Require Import ExtLib.Data.Monads.OptionMonad.
 Require Import ExtLib.Data.Map.FMapAList.
@@ -226,54 +227,114 @@ Import MonadNotation.
 Definition require (o : bool) : option unit :=
   if o then Some tt else None.
 
+Variant Direction : Set := GT | LT | Either.
 
-Definition ObjValue_merge (a b : ObjValue) : option ObjValue :=
+Definition option_merge {T} (f : Direction -> T -> T -> option T) (d : Direction) (a b : option T) : option T :=
+  match a , b with
+  | None , _ => match d with
+               | LT | Either => b
+               | _ => None
+               end
+  | _ , None => match d with
+               | GT | Either => a
+               | _ => None
+               end
+  | Some a , Some b => f d a b
+  end.
+
+Definition ObjValue_merge (d : Direction) (a b : ObjValue) : option ObjValue :=
   match a , b with
   | Ovar t oe , Ovar t' oe' =>
     require (decide (t = t')) ;;
-    match oe with
-    | None => Some b
-    | Some e => match oe' with
-               | None => Some a
-               | _ => None
-               end
+    match oe , oe' with
+    | None , None => Some a
+    | None , _ =>
+      match d with
+      | LT | Either => Some b
+      | _ => None
+      end
+    | _ , None =>
+      match d with
+      | GT | Either => Some a
+      | _ => None
+      end
+    | Some _ , Some _ => None
     end
   | Ofunction f , Ofunction f' =>
     require (decide (f.(f_return) = f'.(f_return))) ;;
-    require (decide (f.(f_params) = f'.(f_params))) ;;
+    require (decide (List.map snd f.(f_params) = List.map snd f'.(f_params))) ;;
     match f.(f_body) , f'.(f_body) with
+    | None , None => Some a
     | Some b , Some b' =>
+      require (decide (f.(f_params) = f'.(f_params))) ;;
       require (decide (b = b')) ;;
       Some a
-    | None , _ => Some b
-    | _ , None => Some a
+    | None , _ =>
+      match d with
+      | LT | Either => Some b
+      | _ => None
+      end
+    | _ , None =>
+      match d with
+      | GT | Either => Some a
+      | _ => None
+      end
     end
   | Omethod m , Omethod m' =>
     require (decide (m.(m_return) = m'.(m_return))) ;;
     require (decide (m.(m_class) = m'.(m_class))) ;;
     require (decide (m.(m_this_qual) = m'.(m_this_qual))) ;;
-    require (decide (m.(m_params) = m'.(m_params))) ;;
+    require (decide (List.map snd m.(m_params) = List.map snd m'.(m_params))) ;;
     match m.(m_body) , m'.(m_body) with
+    | None , None => Some a
     | Some b , Some b' =>
+      require (decide (m.(m_params) = m'.(m_params))) ;;
       require (decide (b = b')) ;;
       Some a
-    | None , _ => Some b
-    | _ , None => Some a
+    | None , _ =>
+      match d with
+      | LT | Either => Some b
+      | _ => None
+      end
+    | _ , None =>
+      match d with
+      | GT | Either => Some a
+      | _ => None
+      end
     end
   | Oconstructor c , Oconstructor c' =>
     require (decide (c.(c_class) = c'.(c_class))) ;;
-    require (decide (c.(c_params) = c'.(c_params))) ;;
+    require (decide (List.map snd c.(c_params) = List.map snd c'.(c_params))) ;;
     match c.(c_body) , c'.(c_body) with
-    | None , _ => Some b
-    | _ , None => Some a
+    | None , None => Some a
+    | None , _ =>
+      match d with
+      | LT | Either => Some b
+      | _ => None
+      end
+    | _ , None =>
+      match d with
+      | GT | Either => Some a
+      | _ => None
+      end
     | Some x , Some y =>
+      require (decide (c.(c_params) = c'.(c_params))) ;;
       require (decide (x = y)) ;; Some a
     end
-  | Odestructor d , Odestructor d' =>
-    require (decide (d.(d_class) = d'.(d_class))) ;;
-    match d.(d_body) , d'.(d_body) with
-    | None , _ => Some b
-    | _ , None => Some a
+  | Odestructor dd , Odestructor dd' =>
+    require (decide (dd.(d_class) = dd'.(d_class))) ;;
+    match dd.(d_body) , dd'.(d_body) with
+    | None , None => Some a
+    | None , _ =>
+      match d with
+      | LT | Either => Some b
+      | _ => None
+      end
+    | _ , None =>
+      match d with
+      | GT | Either => Some a
+      | _ => None
+      end
     | Some x , Some y =>
       require (decide (x = y)) ;; Some a
     end
@@ -364,7 +425,7 @@ End merge.
 
 Definition link (a b : compilation_unit) : option compilation_unit :=
   (g <- alist_merge _ GlobDecl_merge a.(globals) b.(globals) ;;
-   s <- alist_merge _ ObjValue_merge a.(symbols) b.(symbols) ;;
+   s <- alist_merge _ (ObjValue_merge Either) a.(symbols) b.(symbols) ;;
    ret {| globals := g ; symbols := s |})%monad.
 
 Definition lookup_global (m : compilation_unit) (n : globname) : option GlobDecl :=
@@ -377,7 +438,11 @@ Definition module_le (a b : compilation_unit) : bool :=
   List.forallb (fun x =>
                   List.existsb (fun y => decide (x = y)) b.(globals)) a.(globals) &&
   List.forallb (fun x =>
-                  List.existsb (fun y => decide (x = y)) b.(symbols)) a.(symbols).
+                  List.existsb (fun y => decide (fst x = fst y) &&
+                                       match ObjValue_merge LT (snd x) (snd y) with
+                                      | Some _ => true
+                                      | _ => false
+                                      end) b.(symbols)) a.(symbols).
 
 Definition compilation_unit_eq (a b : compilation_unit) : bool :=
   module_le a b && module_le b a.
