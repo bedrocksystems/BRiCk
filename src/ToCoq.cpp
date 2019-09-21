@@ -102,6 +102,11 @@ ToCoqConsumer::toCoqModule(clang::ASTContext *ctxt,
                 << fmt::nbsp;
 
             print.begin_list();
+            for (auto entry : mod.imports()) {
+                auto decl = entry.second.first;
+                cprint.printDecl(decl, print);
+                print.cons();
+            }
             for (auto entry : mod.definitions()) {
                 auto decl = entry.second;
                 cprint.printDecl(decl, print);
