@@ -51,7 +51,7 @@ Ltac learn :=
       | |- forall x, _ => intro; go k_prog k_noprog
       | |- subst_everything _ => red; subst; go k_prog k_noprog
       | |- @subst_var _ ?X _ => red; subst X; go k_prog k_noprog
-      | |- require_ident _ ?X _ => red; is_var X; go k_prog k_noprog
+      | |- @require_ident _ ?X _ => red; is_var X; go k_prog k_noprog
       | |- _ => k_noprog
       end
   in
