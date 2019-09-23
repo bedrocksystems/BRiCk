@@ -1,6 +1,5 @@
 Require Import ExtLib.Programming.Show.
 Require Import Cpp.Auto.
-Require Import Cpp.Signature.
 Require Import Coq.Strings.String.
 Open Scope string_scope.
 Import ListNotations.
@@ -106,27 +105,24 @@ Definition AnySpec (s : string + (obj_name * ObjValue)) :
   string + (match s return Type with
             | inl s => Empty_set
             | inr (_,s) => spec_type s
-            end -> specification) :=
+            end -> mpred) :=
   match s as s
         return string + (match s return Type with
                          | inl s => Empty_set
                          | inr (_,s) => spec_type s
-                         end -> specification)
+                         end -> mpred)
   with
   | inl err => inl err
-  | inr (nm,s) => inr
-    match s as o return spec_type o -> specification with
-    | Ovar _ _ => fun r =>
-      {| s_name := nm ; s_spec := r |}
-    | Odestructor d => fun r =>
-      {| s_name := nm ; s_spec := ticptr (SDestructor d.(d_class) r) |}
-    | Oconstructor c => fun r =>
-      {| s_name := nm ; s_spec := ticptr (SCtorSpec c r) |}
-    | Omethod m => fun r =>
-      {| s_name := nm ; s_spec := ticptr (SMethodSpec m r) |}
-    | Ofunction m => fun r =>
-      {| s_name := nm ; s_spec := ticptr (SFunctionSpec m r) |}
-    end
+  | inr (nm,s) =>
+    inr (fun sp =>
+           _at (_global nm)
+               (match s as o return spec_type o -> Rep with
+                | Ovar _ _ => fun r => r
+                | Odestructor d => fun r => ticptr (SDestructor d.(d_class) r)
+                | Oconstructor c => fun r => ticptr (SCtorSpec c r)
+                | Omethod m => fun r => ticptr (SMethodSpec m r)
+                | Ofunction m => fun r => ticptr (SFunctionSpec m r)
+                end sp))
   end.
 
 

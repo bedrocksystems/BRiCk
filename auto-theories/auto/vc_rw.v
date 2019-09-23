@@ -5,9 +5,11 @@
  *)
 (* Automation for high-level verification conditions *)
 From Cpp Require Export Parser Sem.
-From Cpp Require Auto.Lemmas Auto.type Auto.vc.
+From Cpp Require Auto.Lemmas Auto.type.
 
 From Cpp.Auto Require Export Discharge Definitions.
+
+Require Import bedrock.auto.find_spec.
 
 Ltac simplify_simpl :=
   try unfold SP;
@@ -187,7 +189,7 @@ Ltac simplify_wp :=
   | [ |- _ |-- ?g ] => simplify_wp' g
   end.
 
-Local Ltac find_spec := vc.find_spec.
+Local Ltac find_spec := find_spec.find_spec.
 
 Ltac simplifying :=
   let with_context := idtac;

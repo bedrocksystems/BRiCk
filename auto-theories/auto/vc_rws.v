@@ -23,54 +23,6 @@ Hint Resolve Lemmas.wp_prval_dot Lemmas.wp_prval_local (* Lemmas.wp_lval_assign_
 Local Ltac t :=
   discharge fail idtac fail fail idtac.
 
-Ltac find_left tac :=
-  let rec perm :=
-      lazymatch goal with
-      | |- (?A ** ?B) ** ?C |-- _ => first
-          [ simple eapply Discharge.focus_ll; perm
-          | simple eapply Discharge.focus_lr; perm ]
-      | |- _ => tac
-      end
-  in
-  lazymatch goal with
-  | |- _ ** _ |-- _ => first
-    [ perm | simple eapply Discharge.focus_lswap; perm ]
-  | |- empSP |-- _ => fail
-  | |- _ |-- _ => simple eapply Discharge.focus_lstart; tac
-  end.
-
-(* this tactic solves goals of the form
- *
- *   F |-- |> cglob' f ti s ** ltrue
- *
- * which arise from various forms of calls.
- *)
-Ltac find_spec :=
-  let try_this_one :=
-      first [ simple eapply Lemmas.cglob_by_cglob_gen;
-              solve [ reflexivity
-                    | eapply (@Lemmas.unify_SFunction _ _ _ _ _ _ eq_refl eq_refl eq_refl) ]
-            | simple eapply Lemmas.cglob_by_ti_cglob_gen;
-              solve [ reflexivity
-                    | eapply (@Lemmas.unify_SFunction _ _ _ _ _ _ eq_refl eq_refl eq_refl) ]
-            | simple eapply Lemmas.cglob_by_later_cglob_gen;
-              solve [ reflexivity
-                    | eapply (@Lemmas.unify_SFunction _ _ _ _ _ _ eq_refl eq_refl eq_refl) ]
-            | simple eapply Lemmas.cglob_by_later_ti_cglob_gen;
-              solve [ reflexivity
-                    | eapply (@Lemmas.unify_SFunction _ _ _ _ _ _ eq_refl eq_refl eq_refl) ]
-            | simple eapply Lemmas.cglob_by_make_signature_ti_gen;
-              [ reflexivity
-              | solve [ reflexivity
-                      | eapply (@Lemmas.unify_SFunction _ _ _ _ _ _ eq_refl eq_refl eq_refl) ] ]
-            | simple eapply Lemmas.cglob_by_later_make_signature_ti_gen;
-              [ reflexivity
-              | solve [ reflexivity
-                      | eapply (@Lemmas.unify_SFunction _ _ _ _ _ _ eq_refl eq_refl eq_refl) ] ]
-            ]
-  in
-  solve [ find_left try_this_one ].
-
 Create HintDb wp_all discriminated.
 
 Hint Rewrite <-

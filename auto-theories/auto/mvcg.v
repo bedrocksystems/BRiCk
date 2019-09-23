@@ -17,6 +17,8 @@ From Cpp Require Import
      Auto.Discharge
      Signature.
 
+Require Import bedrock.auto.drop_to_emp.
+
 Section find_in_module.
   Variable nm : obj_name.
 
@@ -59,48 +61,48 @@ Lemma make_signature_ticptr_cons : forall s x ss,
 Proof. Admitted.
 Hint Rewrite make_signature_ticptr_cons using reflexivity : done_proof.
 
-(* todo(gmm): these are new definitions *)
-Lemma cut_spec' (s : specification) P Q sp :
-  s.(s_spec) = ticptr sp ->
-  P |-- _at (_global s.(s_name)) s.(s_spec) ** ltrue ->
-  P ** make_signature (s :: nil) |-- Q ->
-  P |-- Q.
-Proof. Admitted.
+(* (* todo(gmm): these are new definitions *) *)
+(* Lemma cut_spec' (s : specification) P Q sp : *)
+(*   s.(s_spec) = ticptr sp -> *)
+(*   P |-- _at (_global s.(s_name)) s.(s_spec) ** ltrue -> *)
+(*   P ** make_signature (s :: nil) |-- Q -> *)
+(*   P |-- Q. *)
+(* Proof. Admitted. *)
 
-Lemma verify_ticptr : forall resolve cu nm sp what P,
-    find_code nm cu = Some what ->
-    match what with
-    | CTmethod meth =>
-      forall ti, denoteModule cu ** P |-- @method_ok resolve meth ti sp
-    | CTctor ctor =>
-      forall ti, denoteModule cu ** P |-- @ctor_ok resolve ctor ti sp
-    | CTdtor dtor =>
-      forall ti, denoteModule cu ** P |-- @dtor_ok resolve dtor ti sp
-    | CTfunction func =>
-      match func.(f_body) with
-      | None => False
-      | Some body =>
-        forall ti,
-            denoteModule cu ** P |-- @func_ok resolve func.(f_return) func.(f_params) body ti sp
-      end
-    end ->
-    denoteModule cu ** P |-- _at (_global nm) (ticptr sp) ** ltrue.
-Proof. Admitted.
+(* Lemma verify_ticptr : forall resolve cu nm sp what P, *)
+(*     find_code nm cu = Some what -> *)
+(*     match what with *)
+(*     | CTmethod meth => *)
+(*       forall ti, denoteModule cu ** P |-- @method_ok resolve meth ti sp *)
+(*     | CTctor ctor => *)
+(*       forall ti, denoteModule cu ** P |-- @ctor_ok resolve ctor ti sp *)
+(*     | CTdtor dtor => *)
+(*       forall ti, denoteModule cu ** P |-- @dtor_ok resolve dtor ti sp *)
+(*     | CTfunction func => *)
+(*       match func.(f_body) with *)
+(*       | None => False *)
+(*       | Some body => *)
+(*         forall ti, *)
+(*             denoteModule cu ** P |-- @func_ok resolve func.(f_return) func.(f_params) body ti sp *)
+(*       end *)
+(*     end -> *)
+(*     denoteModule cu ** P |-- _at (_global nm) (ticptr sp) ** ltrue. *)
+(* Proof. Admitted. *)
 
-Ltac cut_spec spec :=
-  lazymatch goal with
-  | resolve : genv |- _ =>
-    perm_left ltac:(idtac; eapply (cut_spec' spec);
-                    [ reflexivity
-                    | eapply (@verify_ticptr resolve); [ reflexivity | simpl; intros ] | ])
-  end.
+(* Ltac cut_spec spec := *)
+(*   lazymatch goal with *)
+(*   | resolve : genv |- _ => *)
+(*     perm_left ltac:(idtac; eapply (cut_spec' spec); *)
+(*                     [ reflexivity *)
+(*                     | eapply (@verify_ticptr resolve); [ reflexivity | simpl; intros ] | ]) *)
+(*   end. *)
 
 
 
 Ltac start_module :=
   repeat eapply wandSPI.
 
-
+(*
 Inductive Subtract {T} (xs : list T) : list T -> list T -> bool -> Prop :=
 | Sub_nil : Subtract xs nil nil false
 | Sub_found {y ys zs b} (_ : In y xs) (_ : Subtract xs ys zs b)
@@ -145,16 +147,79 @@ Ltac solve_subtract :=
         | simple eapply Sub_other; [ solve_subtract ]
         | simple eapply Sub_nil
         ].
+*)
+
+Lemma cut_spec {resolve} (SP : mpred) : forall nm fs,
+    SP = _at (_global nm) (ticptr fs) ->
+    forall cu what, find_code nm cu = Some what ->
+    (* note(gmm): this obligation isn't complete with respect to global
+     * variables, but it should still be sound-ish (modulo persistence)
+     *)
+    forall P,
+    match what with
+    | CTmethod meth =>
+      forall ti, denoteModule cu ** P |-- @method_ok resolve meth ti fs
+    | CTctor ctor =>
+      forall ti, denoteModule cu ** P |-- @ctor_ok resolve ctor ti fs
+    | CTdtor dtor =>
+      forall ti, denoteModule cu ** P |-- @dtor_ok resolve dtor ti fs
+    | CTfunction func =>
+      match func.(f_body) with
+      | None => False
+      | Some body =>
+        forall ti,
+            denoteModule cu ** P |-- @func_ok resolve func.(f_return) func.(f_params) body ti fs
+      end
+    end -> forall Q,
+    denoteModule cu ** SP ** P |-- Q ->
+    denoteModule cu ** P |-- Q.
+Proof.
+Admitted.
+
+Lemma verify_spec {resolve} (SP : mpred) : forall nm fs,
+    SP = _at (_global nm) (ticptr fs) ->
+    forall cu what, find_code nm cu = Some what ->
+    (* note(gmm): this obligation isn't complete with respect to global
+     * variables, but it should still be sound-ish (modulo persistence)
+     *)
+    forall P,
+    match what with
+    | CTmethod meth =>
+      forall ti, denoteModule cu ** P |-- @method_ok resolve meth ti fs
+    | CTctor ctor =>
+      forall ti, denoteModule cu ** P |-- @ctor_ok resolve ctor ti fs
+    | CTdtor dtor =>
+      forall ti, denoteModule cu ** P |-- @dtor_ok resolve dtor ti fs
+    | CTfunction func =>
+      match func.(f_body) with
+      | None => False
+      | Some body =>
+        forall ti,
+            denoteModule cu ** P |-- @func_ok resolve func.(f_return) func.(f_params) body ti fs
+      end
+    end -> forall Q,
+    denoteModule cu ** P |-- Q ->
+    denoteModule cu ** P |-- SP ** Q.
+Proof.
+Admitted.
+
+Ltac verify_spec sp :=
+  lazymatch goal with
+  | resolve : genv |- _ =>
+    perm_right ltac:(idtac; eapply (@verify_spec resolve sp _ _ eq_refl); [ reflexivity | intro; simpl | ])
+  end.
+
+Ltac cut_spec sp :=
+  lazymatch goal with
+  | resolve : genv |- _ =>
+    perm_right ltac:(idtac; eapply (@cut_spec resolve sp _ _ eq_refl); [ reflexivity | intro; simpl | ])
+  end.
+
 
 Ltac finish_module :=
-  repeat perm_right ltac:(idtac; lazymatch goal with
-                                 | |- _ |-- make_signature nil ** _ =>
-                                   eapply signature_nil
-                                 | |- _ |-- make_signature _ ** _ =>
-                                   perm_left ltac:(eapply signature_reduce; [ solve_subtract | ])
-                                 end);
   try lazymatch goal with
       | |- _ |-- empSP =>
+        drop_to_emp ;
         try (autorewrite with done_proof);
         repeat rewrite denoteModule_weaken ;
         repeat rewrite ti_cglob_weaken ;

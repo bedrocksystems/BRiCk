@@ -8,24 +8,28 @@ From Cpp Require Export Parser Sem.
 From Cpp.Auto Require Lemmas type.
 
 From Cpp.Auto Require Export Discharge Definitions.
+Require Cpp.Auto.sep.
+
+Require Import bedrock.auto.drop_to_emp.
 
 Ltac start_proof :=
-  try unfold func_ok'; intros; simpl; work;
+  try unfold func_ok; intros; simpl; sep.work;
   repeat
     lazymatch goal with
     | H : prod _ _ |- _ => destruct H
     | |- ?L |-- _ =>
           match L with
-          | context [ empSP ] => work
+          | context [ empSP ] => sep.work
           end
     end.
 
 Ltac done_proof :=
-  repeat rewrite cglob'_weaken;
-  repeat rewrite ti_cglob'_weaken;
+  (* repeat rewrite Cpp.Auto.Lemmas.cglob'_weaken; *)
+  (* repeat rewrite ti_cglob'_weaken; *)
   try rewrite denoteModule_weaken;
   repeat rewrite later_empSP ;
-  solve [ work ].
+  drop_to_emp ;
+  solve [ sep.work ].
 
 (* used for doing case splits *)
 Ltac vc_split :=
