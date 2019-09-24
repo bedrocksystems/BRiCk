@@ -13,7 +13,7 @@ Require Cpp.Auto.sep.
 Require Import bedrock.auto.drop_to_emp.
 
 Ltac start_proof :=
-  try unfold func_ok, ctor_ok, method_ok; intros; simpl; sep.work;
+  try unfold func_ok, dtor_ok, ctor_ok, method_ok; intros; simpl; sep.work;
   repeat
     lazymatch goal with
     | H : prod _ _ |- _ => destruct H
