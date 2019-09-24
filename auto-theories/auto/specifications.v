@@ -20,7 +20,7 @@ Local Fixpoint string_rev (acc s : string) : string :=
   | String s ss => string_rev (String s acc) ss
   end.
 
-Local Fixpoint namespaces (seen : string) (s : string) : list string :=
+Fixpoint namespaces (seen : string) (s : string) : list string :=
   match s with
   | String ":" (String ":" s) =>
     match seen with
