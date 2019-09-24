@@ -69,20 +69,59 @@ Module Type modules.
       end
     end.
 
+  Definition OffsetOf (f : Offset) (n : Z) : mpred :=
+    Forall l, _offsetL f (_eq l) &~ offset_ptr l n.
+
+  Local Fixpoint ranges_to_list {T} (P : T -> Z * N -> mpred) (ls : list T) (rs : list (Z * N)) : mpred :=
+    match ls with
+    | nil => [| rs = nil |]
+    | l :: ls =>
+      Exists os, P l os **
+      Exists rs', ranges_to_list P ls rs' ** [| rs = os :: rs' |]
+    end.
+
+  Fixpoint disjoint (ls : list (Z * N)) : Prop :=
+    match ls with
+    | nil => True
+    | (o,s) :: ls =>
+      let non_overlapping '(o',s') :=
+          ((o <= o' /\ o + Z.of_N s <= o') \/ (o' <= o /\ o' + Z.of_N s' <= o))%Z
+      in
+      List.Forall non_overlapping ls /\ disjoint ls
+    end.
+
   Definition denoteGlobal (gn : globname) (g : GlobDecl) : mpred :=
     match g with
     | Gtypedef _ => empSP
       (* note(gmm): this is compile time, and shouldn't be a problem.
        *)
-    | Gstruct _ => empSP
+    | Gstruct str =>
+      sepSPs (map (fun '(nm, li) => OffsetOf (_super gn nm) li.(li_offset)) str.(s_bases)) **
+      sepSPs (map (fun '(nm, _, li) => OffsetOf (_field {| f_type := gn ; f_name := nm |}) li.(li_offset)) str.(s_fields)) **
+      Exists os, Exists os',
+      ranges_to_list (fun '(nm,li) '(off,sz) => with_genv (fun prg =>
+                        [| off = li.(li_offset) |] **
+                        [| @size_of prg (Tref nm) sz |])) str.(s_bases) os **
+      ranges_to_list (fun '(_,ty,li) '(off,sz) => with_genv (fun prg =>
+                        [| off = li.(li_offset) |] **
+                        [| @size_of prg ty sz |])) str.(s_fields) os' **
+      [| List.Forall (fun '(off,sz) => 0 <= off /\ off + Z.of_N sz <= Z.of_N str.(s_size))%Z (os ++ os') |] **
+      [| disjoint (os ++ os') |]
       (* ^ this should record size and offset information *)
-    | Gunion _ => empSP
+    | Gunion uni =>
+      sepSPs (map (fun '(nm, _, li) => OffsetOf (_field {| f_type := gn ; f_name := nm |}) li.(li_offset)) uni.(u_fields)) **
+      Exists os,
+      ranges_to_list (fun '(_,ty,li) '(off,sz) => with_genv (fun prg =>
+                        [| off = li.(li_offset) |] **
+                        [| @size_of prg ty sz |])) uni.(u_fields) os **
+      [| List.Forall (fun '(off,sz) => 0 <= off /\ off + Z.of_N sz <= Z.of_N uni.(u_size))%Z os |]
       (* ^ this should record size and offset information *)
     | Genum _ => empSP
       (* ^ this should record enumeration information *)
     | Gconstant val _ => empSP
       (* ^ this should record constant information *)
     | Gtypedec => empSP
+    | Gtype => empSP
     end.
 
   Definition denoteModule (d : compilation_unit) : mpred :=

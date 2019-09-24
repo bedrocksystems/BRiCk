@@ -11,7 +11,7 @@ Axiom uninit_class_fwd
     denoteGlobal cls (Gstruct st) **
     _at (_eq base) (uninit (Tref cls))
     |-- _at (_eq base)
-            (sepSPs (List.map (fun gn =>
+            (sepSPs (List.map (fun '(gn,_) =>
                                  _offsetR (_super cls gn) (uninit (Tref gn))) st.(s_bases) ++
                      List.map (fun '(n,t,_) =>
                             (* todo(gmm): there is a problem with references in this code.
@@ -24,7 +24,7 @@ Axiom tany_class_bwd
 : forall cls base st,
     denoteGlobal cls (Gstruct st) **
     _at (_eq base)
-              (sepSPs (List.map (fun gn =>
+              (sepSPs (List.map (fun '(gn,_) =>
                                    _offsetR (_super cls gn) (tany (Tref gn))) st.(s_bases) ++
                        List.map (fun '(n,t,_) =>
                                    _offsetR (_field {| f_name := n ; f_type := cls |})
