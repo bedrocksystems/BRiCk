@@ -28,6 +28,7 @@ Ltac done_proof :=
   (* repeat rewrite ti_cglob'_weaken; *)
   try rewrite denoteModule_weaken;
   repeat rewrite later_empSP ;
+  sep.work ;
   drop_to_emp ;
   solve [ sep.work ].
 

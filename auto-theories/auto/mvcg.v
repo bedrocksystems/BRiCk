@@ -176,7 +176,7 @@ Lemma cut_spec {resolve} (SP : mpred) : forall nm fs,
 Proof.
 Admitted.
 
-Lemma verify_spec {resolve} (SP : mpred) : forall nm fs,
+Lemma verify_spec (remember : bool) {resolve} (SP : mpred) : forall nm fs,
     SP = _at (_global nm) (ticptr fs) ->
     forall cu what, find_code nm cu = Some what ->
     (* note(gmm): this obligation isn't complete with respect to global
@@ -198,7 +198,7 @@ Lemma verify_spec {resolve} (SP : mpred) : forall nm fs,
             denoteModule cu ** P |-- @func_ok resolve func.(f_return) func.(f_params) body ti fs
       end
     end -> forall Q,
-    denoteModule cu ** P |-- Q ->
+    denoteModule cu ** (if remember then SP ** P else P) |-- Q ->
     denoteModule cu ** P |-- SP ** Q.
 Proof.
 Admitted.
@@ -209,7 +209,17 @@ Ltac verify_spec sp :=
     perm_right ltac:(idtac;
                      lazymatch goal with
                      | |- _ |-- sp ** _ =>
-                       perm_left ltac:(idtac; eapply (@verify_spec resolve sp _ _ eq_refl); [ reflexivity | intro; simpl | ])
+                       perm_left ltac:(idtac; eapply (@verify_spec true resolve sp _ _ eq_refl); [ reflexivity | intro; simpl | ])
+                     end)
+  end.
+
+Ltac verify_forget_spec sp :=
+  lazymatch goal with
+  | resolve : genv |- _ =>
+    perm_right ltac:(idtac;
+                     lazymatch goal with
+                     | |- _ |-- sp ** _ =>
+                       perm_left ltac:(idtac; eapply (@verify_spec false resolve sp _ _ eq_refl); [ reflexivity | intro; simpl | ])
                      end)
   end.
 
