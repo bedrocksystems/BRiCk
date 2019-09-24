@@ -81,6 +81,9 @@ public:
     }
 
     void VisitCXXRecordDecl(const CXXRecordDecl *decl, bool is_specialization) {
+        if (decl->isImplicit()) {
+          return;
+        }
         if (!is_specialization && isa<ClassTemplateSpecializationDecl>(decl)) {
             return;
         }

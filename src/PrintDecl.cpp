@@ -9,6 +9,7 @@
 #include "Formatter.hpp"
 #include "Logging.hpp"
 #include "clang/AST/Decl.h"
+#include "clang/AST/RecordLayout.h"
 
 using namespace clang;
 
@@ -153,14 +154,16 @@ printDestructor(const CXXDestructorDecl *decl, CoqPrinter &print,
 }
 
 class PrintDecl :
-    public ConstDeclVisitorArgs<PrintDecl, void, CoqPrinter &, ClangPrinter &> {
+    public ConstDeclVisitorArgs<PrintDecl, void, CoqPrinter &, ClangPrinter &,
+                                const ASTContext &> {
 private:
     PrintDecl() {}
 
 public:
     static PrintDecl printer;
 
-    void VisitDecl(const Decl *d, CoqPrinter &print, ClangPrinter &cprint) {
+    void VisitDecl(const Decl *d, CoqPrinter &print, ClangPrinter &cprint,
+                   const ASTContext &) {
         using namespace logging;
         fatal() << "visiting declaration..." << d->getDeclKindName() << "(at "
                 << cprint.sourceRange(d->getSourceRange()) << ")\n";
@@ -168,7 +171,7 @@ public:
     }
 
     void VisitTypeDecl(const TypeDecl *type, CoqPrinter &print,
-                       ClangPrinter &cprint) {
+                       ClangPrinter &cprint, const ASTContext &) {
         using namespace logging;
         fatal() << "unsupported type declaration `" << type->getDeclKindName()
                 << "(at " << cprint.sourceRange(type->getSourceRange())
@@ -177,12 +180,12 @@ public:
     }
 
     void VisitEmptyDecl(const EmptyDecl *decl, CoqPrinter &print,
-                        ClangPrinter &cprint) {
+                        ClangPrinter &cprint, const ASTContext &) {
         // ignore
     }
 
     void VisitTypedefNameDecl(const TypedefNameDecl *type, CoqPrinter &print,
-                              ClangPrinter &cprint) {
+                              ClangPrinter &cprint, const ASTContext &) {
         print.ctor("Dtypedef")
             << "\"" << type->getNameAsString() << "\"" << fmt::nbsp;
         cprint.printQualType(type->getUnderlyingType(), print);
@@ -201,30 +204,27 @@ public:
         }
     }
 
-    void printFields(const CXXRecordDecl *decl, CoqPrinter &print,
-                     ClangPrinter &cprint) {
+    void printFields(const CXXRecordDecl *decl, const ASTRecordLayout &layout,
+                     CoqPrinter &print, ClangPrinter &cprint) {
+        auto i = 0;
         for (const FieldDecl *field : decl->fields()) {
             print.output() << "(";
             printMangledFieldName(field, print, cprint);
             print.output() << "," << fmt::nbsp;
             cprint.printQualType(field->getType(), print);
             print.output() << "," << fmt::nbsp;
-            if (const Expr *init = field->getInClassInitializer()) {
-                print.ctor("Some", false);
-                cprint.printExpr(init, print);
-                print.output() << fmt::rparen;
-            } else {
-                print.output() << "None";
-            }
-            print.output() << ")";
+            print.output() << "{| li_offset := " << layout.getFieldOffset(i++)
+                           << fmt::nbsp << "|})";
             print.cons();
         };
         print.output() << "nil";
     }
 
     void VisitUnionDecl(const CXXRecordDecl *decl, CoqPrinter &print,
-                        ClangPrinter &cprint) {
+                        ClangPrinter &cprint, const ASTContext &ctxt) {
         assert(decl->getTagKind() == TagTypeKind::TTK_Union);
+
+        const auto &layout = ctxt.getASTRecordLayout(decl);
         print.ctor("Dunion");
 
         cprint.printGlobalName(decl, print);
@@ -238,16 +238,21 @@ public:
 
         print.begin_record();
         print.record_field("u_fields");
-        printFields(decl, print, cprint);
+        printFields(decl, layout, print, cprint);
+
+        print.output() << fmt::line
+                       << " ; u_size := " << layout.getSize().getQuantity()
+                       << fmt::nbsp;
+
         print.end_record();
         print.output() << fmt::rparen << fmt::rparen;
     }
 
     void VisitStructDecl(const CXXRecordDecl *decl, CoqPrinter &print,
-                         ClangPrinter &cprint) {
+                         ClangPrinter &cprint, const ASTContext &ctxt) {
         assert(decl->getTagKind() == TagTypeKind::TTK_Class ||
                decl->getTagKind() == TagTypeKind::TTK_Struct);
-
+        auto &layout = ctxt.getASTRecordLayout(decl);
         print.ctor("Dstruct");
         cprint.printGlobalName(decl, print);
         print.output() << fmt::nbsp;
@@ -269,7 +274,11 @@ public:
 
             auto rec = base.getType().getTypePtr()->getAsCXXRecordDecl();
             if (rec) {
+                print.output() << "(";
                 cprint.printGlobalName(rec, print);
+                print.output()
+                    << ", {| li_offset :="
+                    << layout.getBaseClassOffset(rec).getQuantity() << "|})";
             } else {
                 using namespace logging;
                 fatal() << "base class is not a RecordType at "
@@ -283,35 +292,55 @@ public:
         // print the fields
         print.output() << fmt::line << " ; s_fields :=" << fmt::indent
                        << fmt::line;
-        printFields(decl, print, cprint);
+        printFields(decl, layout, print, cprint);
+        print.output() << fmt::outdent << fmt::line;
+
+        // print the layout information
+        print.output() << fmt::line << " ; s_layout :=" << fmt::nbsp;
+        if (decl->isPOD()) {
+            print.output() << "POD";
+        } else if (decl->isStandardLayout()) {
+            print.output() << "Standard";
+        } else {
+            print.output() << "Unspecified";
+        }
+
+        print.output() << fmt::line
+                       << " ; s_size := " << layout.getSize().getQuantity();
 
         // todo(gmm): i need to print any implicit declarations.
 
-        print.output() << fmt::outdent << fmt::line << "|}" << fmt::rparen
-                       << fmt::rparen;
+        print.output() << "|}" << fmt::rparen << fmt::rparen;
     }
 
     void VisitCXXRecordDecl(const CXXRecordDecl *decl, CoqPrinter &print,
-                            ClangPrinter &cprint) {
-        switch (decl->getTagKind()) {
-        case TagTypeKind::TTK_Class:
-        case TagTypeKind::TTK_Struct:
-            return VisitStructDecl(decl, print, cprint);
-        case TagTypeKind::TTK_Union:
-            return VisitUnionDecl(decl, print, cprint);
-        case TagTypeKind::TTK_Interface:
-        default:
-            assert(false && "unknown record tag kind");
+                            ClangPrinter &cprint, const ASTContext &ctxt) {
+        if (!decl->isCompleteDefinition()) {
+            print.ctor("Dtype");
+            cprint.printGlobalName(decl, print);
+            print.end_ctor();
+        } else {
+            switch (decl->getTagKind()) {
+            case TagTypeKind::TTK_Class:
+            case TagTypeKind::TTK_Struct:
+                return VisitStructDecl(decl, print, cprint, ctxt);
+            case TagTypeKind::TTK_Union:
+                return VisitUnionDecl(decl, print, cprint, ctxt);
+            case TagTypeKind::TTK_Interface:
+            default:
+                assert(false && "unknown record tag kind");
+            }
         }
     }
 
     void VisitIndirectFieldDecl(const IndirectFieldDecl *decl,
-                                CoqPrinter &print, ClangPrinter &cprint) {
+                                CoqPrinter &print, ClangPrinter &cprint,
+                                const ASTContext &) {
         assert(true);
     }
 
     void VisitFunctionDecl(const FunctionDecl *decl, CoqPrinter &print,
-                           ClangPrinter &cprint) {
+                           ClangPrinter &cprint, const ASTContext &) {
         print.ctor("Dfunction");
         cprint.printGlobalName(decl, print);
         print.output() << fmt::line;
@@ -320,7 +349,7 @@ public:
     }
 
     void VisitCXXMethodDecl(const CXXMethodDecl *decl, CoqPrinter &print,
-                            ClangPrinter &cprint) {
+                            ClangPrinter &cprint, const ASTContext &) {
         if (decl->isStatic()) {
             print.ctor("Dfunction");
             cprint.printGlobalName(decl, print);
@@ -339,7 +368,7 @@ public:
     }
 
     void VisitEnumConstantDecl(const EnumConstantDecl *decl, CoqPrinter &print,
-                               ClangPrinter &cprint) {
+                               ClangPrinter &cprint, const ASTContext &) {
         print.ctor("Dconstant");
         assert((decl != nullptr) && (!decl->getNameAsString().empty()));
         cprint.printGlobalName(decl, print);
@@ -357,7 +386,8 @@ public:
     }
 
     void VisitCXXConstructorDecl(const CXXConstructorDecl *decl,
-                                 CoqPrinter &print, ClangPrinter &cprint) {
+                                 CoqPrinter &print, ClangPrinter &cprint,
+                                 const ASTContext &) {
         print.ctor("Dconstructor");
         cprint.printGlobalName(decl, print);
         print.output() << fmt::line;
@@ -460,7 +490,8 @@ public:
     }
 
     void VisitCXXDestructorDecl(const CXXDestructorDecl *decl,
-                                CoqPrinter &print, ClangPrinter &cprint) {
+                                CoqPrinter &print, ClangPrinter &cprint,
+                                const ASTContext &ctxt) {
         print.ctor("Ddestructor");
         cprint.printGlobalName(decl, print);
         print.output() << fmt::line;
@@ -469,7 +500,7 @@ public:
     }
 
     void VisitVarDecl(const VarDecl *decl, CoqPrinter &print,
-                      ClangPrinter &cprint) {
+                      ClangPrinter &cprint, const ASTContext &) {
         if (decl->isConstexpr()) {
             print.ctor("Dconstant");
             cprint.printGlobalName(decl, print);
@@ -501,13 +532,14 @@ public:
     }
 
     void VisitUsingDecl(const UsingDecl *decl, CoqPrinter &print,
-                        ClangPrinter &cprint) {}
+                        ClangPrinter &cprint, const ASTContext &) {}
 
     void VisitUsingDirectiveDecl(const UsingDirectiveDecl *decl,
-                                 CoqPrinter &print, ClangPrinter &cprint) {}
+                                 CoqPrinter &print, ClangPrinter &cprint,
+                                 const ASTContext &) {}
 
     void VisitNamespaceDecl(const NamespaceDecl *decl, CoqPrinter &print,
-                            ClangPrinter &cprint) {
+                            ClangPrinter &cprint, const ASTContext &) {
         print.ctor(
             "Dnamespace") /* << "\"" << decl->getNameAsString() << "\"" */
             << fmt::line;
@@ -521,7 +553,7 @@ public:
     }
 
     void VisitEnumDecl(const EnumDecl *decl, CoqPrinter &print,
-                       ClangPrinter &cprint) {
+                       ClangPrinter &cprint, const ASTContext &) {
         print.ctor("Denum");
         cprint.printGlobalName(decl, print);
         print.output() << fmt::nbsp;
@@ -548,19 +580,21 @@ public:
     }
 
     void VisitLinkageSpecDecl(const LinkageSpecDecl *decl, CoqPrinter &print,
-                              ClangPrinter &cprint) {
+                              ClangPrinter &cprint, const ASTContext &) {
         // we never print these things.
         assert(false);
     }
 
     void VisitFunctionTemplateDecl(const FunctionTemplateDecl *decl,
-                                   CoqPrinter &print, ClangPrinter &cprint) {
+                                   CoqPrinter &print, ClangPrinter &cprint,
+                                   const ASTContext &) {
         // we only print specializations
         assert(false);
     }
 
     void VisitClassTemplateDecl(const ClassTemplateDecl *decl,
-                                CoqPrinter &print, ClangPrinter &cprint) {
+                                CoqPrinter &print, ClangPrinter &cprint,
+                                const ASTContext &) {
         // we only print specializations
         assert(false);
     }
@@ -570,5 +604,5 @@ PrintDecl PrintDecl::printer;
 
 void
 ClangPrinter::printDecl(const clang::Decl *decl, CoqPrinter &print) {
-    PrintDecl::printer.Visit(decl, print, *this);
+    PrintDecl::printer.Visit(decl, print, *this, *context_);
 }

@@ -1,4 +1,5 @@
 Require Import Coq.Classes.DecidableClass.
+Require Import Coq.ZArith.BinIntDef.
 Require Import Coq.Bool.Bool.
 Require Import ExtLib.Structures.Monad.
 Require Import ExtLib.Data.Monads.OptionMonad.
@@ -9,6 +10,11 @@ From Coq.Strings Require Import
 
 Require Import Cpp.Util.
 From Cpp.Syntax Require Import Names Expr Stmt Types.
+
+Set Primitive Projections.
+
+Record LayoutInfo : Set :=
+{ li_offset : Z }.
 
 Record Ctor : Set :=
 { c_class  : globname
@@ -38,15 +44,23 @@ Record Method : Set :=
 }.
 
 Record Union : Set :=
-{ u_fields : list (ident * type * option Expr)
-  (* ^ fields (with optional initializers) *)
+{ u_fields : list (ident * type * LayoutInfo)
+  (* ^ fields with layout information *)
+; u_size : N
+  (* ^ size of the union (including padding) *)
 }.
 
+Variant LayoutType : Set := POD | Standard | Unspecified.
+
 Record Struct : Set :=
-{ s_bases : list globname
+{ s_bases : list (globname * LayoutInfo)
   (* ^ base classes *)
-; s_fields : list (ident * type * option Expr)
-  (* ^ fields (with optional initializers) *)
+; s_fields : list (ident * type * LayoutInfo)
+  (* ^ fields with layout information *)
+; s_layout : LayoutType
+  (* ^ the type of layout semantics *)
+; s_size : N
+  (* ^ size of the structure (including padding) *)
 }.
 
 Variant Ctor_type : Set := Ct_Complete | Ct_Base | Ct_Comdat.
@@ -75,6 +89,31 @@ Definition dtor_name (type : Dtor_type) (cls : globname) : obj_name :=
                           end *)) ++ "Ev"
   | _ => ""
   end%string.
+
+Global Instance Decidable_eq_N (a b : N) : Decidable (a = b) :=
+  dec_Decidable (BinNat.N.eq_dec a b).
+
+Global Instance Decidable_eq_LayoutType (a b : LayoutType) : Decidable (a = b).
+Proof.
+  refine {| Decidable_witness :=
+              match a , b with
+              | POD , POD => true
+              | Standard , Standard => true
+              | Unspecified , Unspecified => true
+              | _ , _ => false
+              end |}.
+  destruct a; destruct b; try solve [ split; congruence ].
+Defined.
+
+
+Global Instance Decidable_eq_LayoutInfo (a b : LayoutInfo) : Decidable (a = b).
+Proof.
+  refine {| Decidable_witness :=
+              decide (a.(li_offset) = b.(li_offset)) |}.
+  destruct a; destruct b; try solve [ split; congruence ].
+  rewrite decide_ok. simpl. split; intros; subst; eauto.
+  inversion H. reflexivity.
+Defined.
 
 
 Section Decidable_or_default.
@@ -175,23 +214,28 @@ Defined.
 Global Instance Decidable_eq_Union (a b : Union) : Decidable (a = b).
 Proof.
   refine
-    {| Decidable_witness := decide (a.(u_fields) = b.(u_fields))
+    {| Decidable_witness := decide (a.(u_fields) = b.(u_fields)) && decide (a.(u_size) = b.(u_size))
     |}.
-  simpl.
-  rewrite dec_list_ok.
+  rewrite Bool.andb_true_iff.
+  do 2 rewrite decide_ok.
   destruct a; destruct b. simpl.
-  split; congruence.
+  split.
+  { destruct 1. f_equal; auto. }
+  { inversion 1; auto. }
 Defined.
 
 Global Instance Decidable_eq_struct (a b : Struct) : Decidable (a = b).
 Proof.
   refine
-    {| Decidable_witness := decide (a.(s_fields) = b.(s_fields)) && decide (a.(s_bases) = b.(s_bases))
+    {| Decidable_witness :=
+         decide (a.(s_fields) = b.(s_fields)) &&
+         decide (a.(s_bases) = b.(s_bases)) &&
+         decide (a.(s_layout) = b.(s_layout)) &&
+         decide (a.(s_size) = b.(s_size))
     |}.
-  simpl.
-  rewrite Bool.andb_true_iff.
-  do 2 rewrite dec_list_ok.
-  destruct a; destruct b; simpl; firstorder; congruence.
+  repeat rewrite Bool.andb_true_iff.
+  do 4 rewrite decide_ok.
+  destruct a; destruct b; simpl; firstorder; try congruence.
 Defined.
 
 
@@ -342,6 +386,7 @@ Definition ObjValue_merge (d : Direction) (a b : ObjValue) : option ObjValue :=
   end%monad.
 
 Variant GlobDecl : Set :=
+| Gtype
 | Gunion    (_ : Union)
 | Gstruct   (_ : Struct)
 | Genum     (_ : type)
@@ -365,6 +410,10 @@ Global Instance Decidable_eq_GlobDecl (a b : GlobDecl) : Decidable (a = b) :=
 
 Definition GlobDecl_merge (a b : GlobDecl) : option GlobDecl :=
   match a , b with
+  | Gtype , Gunion _
+  | Gtype , Gstruct _ => Some b
+  | Gunion _ , Gtype
+  | Gstruct _ , Gtype => Some a
   | Gunion u , Gunion u' =>
     require (decide (u = u')) ;;
     Some a
@@ -497,6 +546,9 @@ Definition Dconstant    (name : globname) (t : type) (e : Expr) : compilation_un
 Definition Dtypedef     (name : globname) (t : type) : compilation_unit :=
   {| symbols := nil
    ; globals := (name, Gtypedef t) :: nil |}.
+Definition Dtype (name : globname) : compilation_unit :=
+  {| symbols := nil
+   ; globals := (name, Gtype) :: nil |}.
 
 
 Fixpoint decls (ls : list compilation_unit) : compilation_unit :=
@@ -511,4 +563,4 @@ Fixpoint decls (ls : list compilation_unit) : compilation_unit :=
 Declare Reduction reduce_compilation_unit :=
   cbv beta iota zeta delta [ decls List.app symbols globals
                              Dvar Dfunction Dmethod Dconstructor Ddestructor
-                             Dstruct Denum Dunion Dconstant Dtypedef ].
+                             Dstruct Denum Dunion Dconstant Dtypedef Dtype ].
