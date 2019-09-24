@@ -114,19 +114,20 @@ ToCoqConsumer::toCoqModule(clang::ASTContext *ctxt,
             }
             print.end_list();
             print.output() << "." << fmt::outdent << fmt::line;
+            write_spec(&mod, specs, decl, filter, fmt);
         }
     }
 
-    if (spec_file_.hasValue()) {
-        std::error_code ec;
-        llvm::raw_fd_ostream spec_output(*spec_file_, ec);
-        if (ec.value()) {
-            llvm::errs() << "Failed to open specification file: " << *spec_file_
-                         << "\n"
-                         << ec.message() << "\n";
-        } else {
-            fmt::Formatter spec_fmt(spec_output);
-            write_spec(&mod, specs, decl, filter, spec_fmt);
-        }
-    }
+//    if (spec_file_.hasValue()) {
+//        std::error_code ec;
+//        llvm::raw_fd_ostream spec_output(*spec_file_, ec);
+//        if (ec.value()) {
+//            llvm::errs() << "Failed to open specification file: " << *spec_file_
+//                         << "\n"
+//                         << ec.message() << "\n";
+//        } else {
+//            fmt::Formatter spec_fmt(spec_output);
+//            write_spec(&mod, specs, decl, filter, spec_fmt);
+//        }
+//    }
 }
