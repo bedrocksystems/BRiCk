@@ -206,13 +206,17 @@ Admitted.
 Ltac verify_spec sp :=
   lazymatch goal with
   | resolve : genv |- _ =>
-    perm_right ltac:(idtac; eapply (@verify_spec resolve sp _ _ eq_refl); [ reflexivity | intro; simpl | ])
+    perm_right ltac:(idtac;
+                     lazymatch goal with
+                     | |- _ |-- sp ** _ =>
+                       perm_left ltac:(idtac; eapply (@verify_spec resolve sp _ _ eq_refl); [ reflexivity | intro; simpl | ])
+                     end)
   end.
 
 Ltac cut_spec sp :=
   lazymatch goal with
   | resolve : genv |- _ =>
-    perm_right ltac:(idtac; eapply (@cut_spec resolve sp _ _ eq_refl); [ reflexivity | intro; simpl | ])
+    perm_left ltac:(idtac; eapply (@cut_spec resolve sp _ _ eq_refl); [ reflexivity | intro; simpl | ])
   end.
 
 
