@@ -149,3 +149,6 @@ Ltac specify nameMatch module PQ :=
 (* I can't figure out why this doesn't work
 Notation "'specify' mtch md k" := (ltac:(specify' constr:(mtch%string) constr:(md)) k) (at level 0, only parsing).
 *)
+
+Notation "nameMatch @@ module @@ PQ" :=
+  ltac:(specify nameMatch module PQ) (at level 80, module at next level).
