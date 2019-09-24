@@ -114,20 +114,53 @@ ToCoqConsumer::toCoqModule(clang::ASTContext *ctxt,
             }
             print.end_list();
             print.output() << "." << fmt::outdent << fmt::line;
-            write_spec(&mod, specs, decl, filter, fmt);
         }
     }
 
-//    if (spec_file_.hasValue()) {
-//        std::error_code ec;
-//        llvm::raw_fd_ostream spec_output(*spec_file_, ec);
-//        if (ec.value()) {
-//            llvm::errs() << "Failed to open specification file: " << *spec_file_
-//                         << "\n"
-//                         << ec.message() << "\n";
-//        } else {
-//            fmt::Formatter spec_fmt(spec_output);
-//            write_spec(&mod, specs, decl, filter, spec_fmt);
-//        }
-//    }
+    if (notations_file_.hasValue()) {
+        std::error_code ec;
+        llvm::raw_fd_ostream notations_output(*notations_file_, ec);
+        if (ec.value()) {
+            llvm::errs() << "Failed to open specification file: "
+                         << *notations_file_ << "\n"
+                         << ec.message() << "\n";
+        } else {
+            fmt::Formatter spec_fmt(notations_output);
+            auto &ctxt = decl->getASTContext();
+            ClangPrinter cprint(&decl->getASTContext());
+            CoqPrinter print(spec_fmt);
+            // PrintSpec printer(ctxt);
+
+            NoInclude source(ctxt.getSourceManager());
+
+            print.output() << "(*" << fmt::line
+                           << " * Specifications extracted from "
+                           << ctxt.getSourceManager()
+                                  .getFileEntryForID(
+                                      ctxt.getSourceManager().getMainFileID())
+                                  ->getName()
+                           << fmt::line << " *)" << fmt::line << fmt::line
+                           << "Require Import Cpp.Auto." << fmt::line
+                           << "Local Open Scope Z_scope." << fmt::line
+                           << fmt::line;
+
+            // it would be nice to include a top-level comment.
+
+            // generate all of the record fields
+            write_globals(mod, print, cprint);
+        }
+    }
+
+    if (spec_file_.hasValue()) {
+        std::error_code ec;
+        llvm::raw_fd_ostream spec_output(*spec_file_, ec);
+        if (ec.value()) {
+            llvm::errs() << "Failed to open specification file: " << *spec_file_
+                         << "\n"
+                         << ec.message() << "\n";
+        } else {
+            fmt::Formatter spec_fmt(spec_output);
+            write_spec(&mod, specs, decl, filter, spec_fmt);
+        }
+    }
 }
