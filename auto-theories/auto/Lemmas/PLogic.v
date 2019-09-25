@@ -41,7 +41,7 @@ Lemma uninit_class_fwd
     F |-- denoteModule m ** ltrue ->
     find_struct cls m = Some st ->
     _at (_eq base)
-        (sepSPs (List.map (fun gn =>
+        (sepSPs (List.map (fun '(gn,_) =>
                              _offsetR (_super cls gn) (uninit (Tref gn))) st.(s_bases) ++
                  List.map (fun '(n,t,_) =>
                         (* todo(gmm): there is a problem with references in this code.
@@ -59,7 +59,7 @@ Lemma tany_class_bwd
     F |-- denoteModule m ** ltrue ->
     find_struct cls m = Some st ->
     F |-- _at (_eq base)
-              (sepSPs (List.map (fun gn =>
+              (sepSPs (List.map (fun '(gn,_) =>
                                    _offsetR (_super cls gn) (tany (Tref gn))) st.(s_bases) ++
                        List.map (fun '(n,t,_) =>
                                    _offsetR (_field {| f_name := n ; f_type := cls |})
