@@ -35,8 +35,11 @@ public:
 
     void VisitDeclStmt(const DeclStmt *stmt, CoqPrinter &print,
                        ClangPrinter &cprint, ASTContext &) {
+        const clang::Decl *sd;
         if (stmt->isSingleDecl() &&
-            dyn_cast<StaticAssertDecl>(stmt->getSingleDecl())) {
+            (sd = stmt->getSingleDecl(),
+             (isa<StaticAssertDecl>(sd) || isa<UsingDirectiveDecl>(sd) ||
+              isa<UsingDecl>(sd)))) {
             print.output() << "Sskip";
         } else {
             print.ctor("Sdecl");
