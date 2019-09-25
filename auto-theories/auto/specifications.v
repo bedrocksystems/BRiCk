@@ -147,4 +147,4 @@ Ltac specify nameMatch module PQ :=
   end.
 
 Notation "nameMatch @@ module @@ PQ" :=
-  ltac:(specify nameMatch module PQ) (at level 80, module at next level).
+  ltac:(specify nameMatch module PQ) (at level 80, module at next level, only parsing).
