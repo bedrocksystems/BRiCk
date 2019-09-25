@@ -139,7 +139,9 @@ ToCoqConsumer::toCoqModule(clang::ASTContext *ctxt,
                                   .getFileEntryForID(
                                       ctxt.getSourceManager().getMainFileID())
                                   ->getName()
-                           << fmt::line << " *)" << fmt::line << fmt::line;
+                           << fmt::line << " *)" << fmt::line
+                           << "Require Import Cpp.Parser." << fmt::line
+                           << fmt::line;
 
             // generate all of the record fields
             write_globals(mod, print, cprint);

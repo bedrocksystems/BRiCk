@@ -7,6 +7,7 @@
 #include "Logging.hpp"
 #include "ModuleBuilder.hpp"
 #include "SpecCollector.hpp"
+#include <algorithm>
 
 using namespace clang;
 
@@ -322,15 +323,18 @@ print_path(CoqPrinter &print, const DeclContext *dc, bool end = true) {
             for (auto i : ts->getTemplateArgs().asArray()) {
                 if (!first) {
                     print.output() << ",";
-                    first = false;
                 }
+                first = false;
                 switch (i.getKind()) {
                 case TemplateArgument::ArgKind::Integral:
                     print.output() << i.getAsIntegral();
                     break;
-                case TemplateArgument::ArgKind::Type:
-                    print.output() << i.getAsType().getAsString();
+                case TemplateArgument::ArgKind::Type: {
+                    auto s = i.getAsType().getAsString();
+                    replace(s.begin(), s.end(), ' ', '_');
+                    print.output() << s;
                     break;
+                }
                 default:
                     print.output() << "?";
                 }
