@@ -7,6 +7,7 @@
 #include "Logging.hpp"
 #include "ModuleBuilder.hpp"
 #include "SpecCollector.hpp"
+#include <algorithm>
 
 using namespace clang;
 
@@ -322,15 +323,18 @@ print_path(CoqPrinter &print, const DeclContext *dc, bool end = true) {
             for (auto i : ts->getTemplateArgs().asArray()) {
                 if (!first) {
                     print.output() << ",";
-                    first = false;
                 }
+                first = false;
                 switch (i.getKind()) {
                 case TemplateArgument::ArgKind::Integral:
                     print.output() << i.getAsIntegral();
                     break;
-                case TemplateArgument::ArgKind::Type:
-                    print.output() << i.getAsType().getAsString();
+                case TemplateArgument::ArgKind::Type: {
+                    auto s = i.getAsType().getAsString();
+                    replace(s.begin(), s.end(), ' ', '_');
+                    print.output() << s;
                     break;
+                }
                 default:
                     print.output() << "?";
                 }
@@ -354,7 +358,6 @@ print_path(CoqPrinter &print, const DeclContext *dc, bool end = true) {
 
 void
 write_globals(::Module &mod, CoqPrinter &print, ClangPrinter &cprint) {
-    using namespace logging;
     print.output() << "Module _'." << fmt::indent << fmt::line;
 
     // todo(gmm): i would like to generate function names.
@@ -398,6 +401,7 @@ write_globals(::Module &mod, CoqPrinter &print, ClangPrinter &cprint) {
             cprint.printQualType(td->getUnderlyingType(), print);
             print.output() << " (in custom cppglobal at level 0)." << fmt::line;
         } else {
+            using namespace logging;
             log(Level::VERBOSE) << "unknown declaration type "
                                 << def->getDeclKindName() << "\n";
         }

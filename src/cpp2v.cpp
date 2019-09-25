@@ -39,6 +39,10 @@ static cl::opt<std::string>
     SpecFile("spec", cl::desc("path to generate specifications"), cl::Optional,
              cl::cat(Cpp2V));
 
+static cl::opt<std::string> NamesFile("names",
+                                      cl::desc("path to generate names"),
+                                      cl::Optional, cl::cat(Cpp2V));
+
 static cl::opt<std::string> VFileOutput("o",
                                         cl::desc("path to generate the module"),
                                         cl::Optional, cl::cat(Cpp2V));
@@ -61,7 +65,8 @@ public:
 			llvm::errs() << i << "\n";
 		}
 #endif
-        auto result = new ToCoqConsumer(to_opt(VFileOutput), to_opt(SpecFile));
+        auto result = new ToCoqConsumer(to_opt(VFileOutput), to_opt(SpecFile),
+                                        to_opt(NamesFile));
         return std::unique_ptr<clang::ASTConsumer>(result);
     }
 

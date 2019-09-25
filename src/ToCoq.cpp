@@ -117,6 +117,37 @@ ToCoqConsumer::toCoqModule(clang::ASTContext *ctxt,
         }
     }
 
+    if (notations_file_.hasValue()) {
+        std::error_code ec;
+        llvm::raw_fd_ostream notations_output(*notations_file_, ec);
+        if (ec.value()) {
+            llvm::errs() << "Failed to open notations file: "
+                         << *notations_file_ << "\n"
+                         << ec.message() << "\n";
+        } else {
+            fmt::Formatter spec_fmt(notations_output);
+            auto &ctxt = decl->getASTContext();
+            ClangPrinter cprint(&decl->getASTContext());
+            CoqPrinter print(spec_fmt);
+            // PrintSpec printer(ctxt);
+
+            NoInclude source(ctxt.getSourceManager());
+
+            print.output() << "(*" << fmt::line
+                           << " * Notations extracted from "
+                           << ctxt.getSourceManager()
+                                  .getFileEntryForID(
+                                      ctxt.getSourceManager().getMainFileID())
+                                  ->getName()
+                           << fmt::line << " *)" << fmt::line
+                           << "Require Import Cpp.Parser." << fmt::line
+                           << fmt::line;
+
+            // generate all of the record fields
+            write_globals(mod, print, cprint);
+        }
+    }
+
     if (spec_file_.hasValue()) {
         std::error_code ec;
         llvm::raw_fd_ostream spec_output(*spec_file_, ec);

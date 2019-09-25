@@ -18,8 +18,10 @@ using namespace clang;
 class ToCoqConsumer : public clang::ASTConsumer {
 public:
     explicit ToCoqConsumer(const Optional<std::string> output_file,
-                           const Optional<std::string> spec_file)
-        : spec_file_(spec_file), output_file_(output_file) {}
+                           const Optional<std::string> spec_file,
+                           const Optional<std::string> notations_file)
+        : spec_file_(spec_file), output_file_(output_file),
+          notations_file_(notations_file) {}
 
     virtual void HandleTranslationUnit(clang::ASTContext &Context) {
         toCoqModule(&Context, Context.getTranslationUnitDecl());
@@ -32,4 +34,5 @@ private:
 private:
     const Optional<std::string> spec_file_;
     const Optional<std::string> output_file_;
+    const Optional<std::string> notations_file_;
 };

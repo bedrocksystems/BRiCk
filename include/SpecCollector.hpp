@@ -11,6 +11,9 @@
 #include "ModuleBuilder.hpp"
 #include "clang/AST/Decl.h"
 
+class CoqPrinter;
+class ClangPrinter;
+
 class SpecCollector {
 public:
     SpecCollector() {}
@@ -53,3 +56,5 @@ private:
 void write_spec(::Module* mod, const SpecCollector& specs,
                 const clang::TranslationUnitDecl* tu, Filter& filter,
                 fmt::Formatter& output);
+
+void write_globals(::Module& mod, CoqPrinter& print, ClangPrinter& cprint);
