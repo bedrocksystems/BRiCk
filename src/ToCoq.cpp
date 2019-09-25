@@ -121,7 +121,7 @@ ToCoqConsumer::toCoqModule(clang::ASTContext *ctxt,
         std::error_code ec;
         llvm::raw_fd_ostream notations_output(*notations_file_, ec);
         if (ec.value()) {
-            llvm::errs() << "Failed to open specification file: "
+            llvm::errs() << "Failed to open notations file: "
                          << *notations_file_ << "\n"
                          << ec.message() << "\n";
         } else {
@@ -134,17 +134,12 @@ ToCoqConsumer::toCoqModule(clang::ASTContext *ctxt,
             NoInclude source(ctxt.getSourceManager());
 
             print.output() << "(*" << fmt::line
-                           << " * Specifications extracted from "
+                           << " * Notations extracted from "
                            << ctxt.getSourceManager()
                                   .getFileEntryForID(
                                       ctxt.getSourceManager().getMainFileID())
                                   ->getName()
-                           << fmt::line << " *)" << fmt::line << fmt::line
-                           << "Require Import Cpp.Auto." << fmt::line
-                           << "Local Open Scope Z_scope." << fmt::line
-                           << fmt::line;
-
-            // it would be nice to include a top-level comment.
+                           << fmt::line << " *)" << fmt::line << fmt::line;
 
             // generate all of the record fields
             write_globals(mod, print, cprint);

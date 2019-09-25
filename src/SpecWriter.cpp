@@ -354,7 +354,6 @@ print_path(CoqPrinter &print, const DeclContext *dc, bool end = true) {
 
 void
 write_globals(::Module &mod, CoqPrinter &print, ClangPrinter &cprint) {
-    using namespace logging;
     print.output() << "Module _'." << fmt::indent << fmt::line;
 
     // todo(gmm): i would like to generate function names.
@@ -398,6 +397,7 @@ write_globals(::Module &mod, CoqPrinter &print, ClangPrinter &cprint) {
             cprint.printQualType(td->getUnderlyingType(), print);
             print.output() << " (in custom cppglobal at level 0)." << fmt::line;
         } else {
+            using namespace logging;
             log(Level::VERBOSE) << "unknown declaration type "
                                 << def->getDeclKindName() << "\n";
         }
