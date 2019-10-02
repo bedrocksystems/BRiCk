@@ -2,9 +2,20 @@ Require Import Coq.Classes.DecidableClass.
 Require Import Coq.Lists.List.
 Require Import Cpp.Ast Cpp.Sem.
 
-Record specification : Type := { s_name : obj_name ; s_spec : Rep }.
+Record specification Σ : Type := { s_name : obj_name ; s_spec : Rep Σ }.
+Arguments s_name {_} _.
+Arguments s_spec {_} _.
 
-Definition signature : Type := mpred.
+Definition signature Σ : Type := mpred Σ.
+
+Section with_Σ.
+Context {Σ : gFunctors}.
+
+Local Notation mpred := (mpred Σ) (only parsing).
+Local Notation Rep := (Rep Σ) (only parsing).
+Local Notation specification := (specification Σ) (only parsing).
+Local Notation signature := (signature Σ) (only parsing).
+Local Notation empSP := (empSP:mpred) (only parsing).
 
 Definition make_signature (ss : list specification) : signature :=
   sepSPs (List.map (fun s => _at (_global s.(s_name)) s.(s_spec)) ss).
@@ -22,6 +33,8 @@ Fixpoint drop_spec (s : obj_name) (ss : list specification) : list specification
   end.
 
 Lemma make_signature_nil : make_signature nil -|- empSP.
-Proof. reflexivity. Qed.
+Proof. split; eauto. Qed.
 
 Hint Rewrite -> make_signature_nil : done_proof.
+
+End with_Σ.

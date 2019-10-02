@@ -17,32 +17,41 @@ CFLAGS=-std=c99
 %_hpp.v: %.hpp $(CPP2V)
 	$(CPP2V) -v -o $@ $< -- $(CPPFLAGS)
 
-ifdef SPECS
-ifdef DEBUG
-%_c_spec.v: %.c $(CPP2V)
-	$(CPP2V) -v -spec $@ $< -- $(CFLAGS)
-	@ echo $@
-	@ cat $@
-%_h_spec.v: %.h $(CPP2V)
-	$(CPP2V) -v -spec $@ $< -- $(CFLAGS)
-	@ echo $@
-	@ cat $@
-%_cpp_spec.v: %.cpp $(CPP2V)
-	$(CPP2V) -v -spec $@ $< -- $(CPPFLAGS)
-	@ echo $@
-	@ cat $@
-%_hpp_spec.v: %.hpp $(CPP2V)
-	$(CPP2V) -v -spec $@ $< -- $(CPPFLAGS)
-	@ echo $@
-	@ cat $@
-else
-%_c_spec.v: %.c $(CPP2V)
-	$(CPP2V) -v -spec $@ $< -- $(CFLAGS)
-%_h_spec.v: %.h $(CPP2V)
-	$(CPP2V) -v -spec $@ $< -- $(CFLAGS)
-%_cpp_spec.v: %.cpp $(CPP2V)
-	$(CPP2V) -v -spec $@ $< -- $(CPPFLAGS)
-%_hpp_spec.v: %.hpp $(CPP2V)
-	$(CPP2V) -v -spec $@ $< -- $(CPPFLAGS)
-endif
-endif
+%_c_names.v: %.c $(CPP2V)
+	$(CPP2V) -v -names $@ $< -- $(CFLAGS)
+%_h_names.v: %.h $(CPP2V)
+	$(CPP2V) -v -names $@ $< -- $(CFLAGS)
+%_cpp_names.v: %.cpp $(CPP2V)
+	$(CPP2V) -v -names $@ $< -- $(CPPFLAGS)
+%_hpp_names.v: %.hpp $(CPP2V)
+	$(CPP2V) -v -names $@ $< -- $(CPPFLAGS)
+
+# ifeq ($(SPECS),1)
+# ifdef DEBUG
+# %_c_spec.v: %.c $(CPP2V)
+# 	$(CPP2V) -v -spec $@ $< -- $(CFLAGS)
+# 	@ echo $@
+# 	@ cat $@
+# %_h_spec.v: %.h $(CPP2V)
+# 	$(CPP2V) -v -spec $@ $< -- $(CFLAGS)
+# 	@ echo $@
+# 	@ cat $@
+# %_cpp_spec.v: %.cpp $(CPP2V)
+# 	$(CPP2V) -v -spec $@ $< -- $(CPPFLAGS)
+# 	@ echo $@
+# 	@ cat $@
+# %_hpp_spec.v: %.hpp $(CPP2V)
+# 	$(CPP2V) -v -spec $@ $< -- $(CPPFLAGS)
+# 	@ echo $@
+# 	@ cat $@
+# else
+# %_c_spec.v: %.c $(CPP2V)
+# 	$(CPP2V) -v -spec $@ $< -- $(CFLAGS)
+# %_h_spec.v: %.h $(CPP2V)
+# 	$(CPP2V) -v -spec $@ $< -- $(CFLAGS)
+# %_cpp_spec.v: %.cpp $(CPP2V)
+# 	$(CPP2V) -v -spec $@ $< -- $(CPPFLAGS)
+# %_hpp_spec.v: %.hpp $(CPP2V)
+# 	$(CPP2V) -v -spec $@ $< -- $(CPPFLAGS)
+# endif
+# endif

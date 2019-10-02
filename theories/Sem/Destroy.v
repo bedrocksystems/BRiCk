@@ -9,7 +9,10 @@ From Cpp.Sem Require Import
      Semantics Logic Wp PLogic.
 
 Section destroy.
+  Context {Σ:gFunctors}.
   Context {resolve : genv} (ti : thread_info).
+
+  Local Notation mpred := (mpred Σ) (only parsing).
 
   (* remove from the stack *)
   Definition destruct_obj (dtor : obj_name) (cls : globname) (v : val) (Q : mpred) : mpred :=

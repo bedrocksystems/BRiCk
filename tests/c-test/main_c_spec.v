@@ -22,7 +22,10 @@ Require C.main_c.
 Variant PutStr : Type -> Type :=
 | putstr (_ : string) : PutStr unit.
 
+Section with_Σ.
+Context {Σ:gFunctors}.
 
+Local Notation function_spec := (function_spec Σ) (only parsing).
 
 Definition putstr_spec : function_spec :=
   SFunction (Qmut Tvoid) (Qmut (Tpointer (Qmut T_char)) :: nil)
@@ -41,10 +44,12 @@ Fixpoint printEach (ls : list string) : itree PutStr unit :=
 Definition main_spec : function_spec :=
   main.main_spec (fun m =>
                     \pre trace (printEach m)
-                    \post @trace PutStr (Ret tt)).
+                    \post @trace _ PutStr (Ret tt)).
 
 Definition spec (resolve : _) :=
   ti_cglob (resolve:=resolve) "putstr" putstr_spec -*
   ti_cglob (resolve:=resolve) "main" main_spec.
 
 Export lib.array lib.trace.
+
+End with_Σ.

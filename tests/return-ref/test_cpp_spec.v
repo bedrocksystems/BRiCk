@@ -14,6 +14,11 @@ From Cpp Require Import
 
 Require RetRef.test_cpp.
 
+Section with_Σ.
+Context {Σ:gFunctors}.
+
+Local Notation function_spec := (function_spec Σ) (only parsing).
+
 Definition get_ref_spec : function_spec :=
   SFunction (Qmut (Treference (Qmut T_int))) (Qmut (Tpointer (Qmut T_int)) :: nil)
       (fun x =>
@@ -23,3 +28,5 @@ Definition get_ref_spec : function_spec :=
 
 Definition test_cpp_spec (resolve : _) :=
   ti_cglob (resolve:=resolve) "_Z7get_refPi" get_ref_spec.
+
+End with_Σ.

@@ -7,22 +7,21 @@
  * Definitions for the semantics
  *
  *)
-Require Import Coq.Classes.Morphisms.
 Require Import Coq.Lists.List.
 Require Import Coq.Strings.String.
+
+From iris.proofmode Require Import tactics.
 
 From Cpp Require Import
      Ast.
 From Cpp.Sem Require Import
-     ChargeUtil Logic Semantics.
-From Cpp.Syntax Require Import
-     Stmt.
+     Logic Semantics.
 
 (* expression continuations
  * - in full C++, this includes exceptions, but our current semantics
  *   doesn't treat those.
  *)
-Definition epred := mpred.
+Definition epred Σ := mpred Σ.
 
 (* this applies `wp` across a list
  *
@@ -40,9 +39,14 @@ Section wps.
     end.
 End wps.
 
-
+Definition FreeTemps Σ := mpred Σ.
 (** Expressions *)
-Definition FreeTemps := mpred.
+Section with_Σ.
+Context {Σ : gFunctors}.
+
+Notation mpred := (mpred Σ) (only parsing).
+Notation FreeTemps := (FreeTemps Σ) (only parsing).
+Notation epred := (epred Σ) (only parsing).
 
 (* [SP] denotes the sequence point for an expression *)
 Definition SP (Q : val -> mpred) (v : val) (free : FreeTemps) : mpred :=
@@ -112,7 +116,7 @@ Theorem Proper_wp_glval : forall resolve ti r e,
            (@wp_glval resolve ti r e).
 Proof.
   unfold wp_glval; simpl. do 2 red. intros.
-  eapply lor_lentails_m; [ eapply Proper_wp_lval | eapply Proper_wp_xval ]; eauto.
+  rewrite -> H. eauto.
 Qed.
 Global Existing Instance Proper_wp_glval.
 
@@ -125,7 +129,7 @@ Theorem Proper_wp_rval : forall resolve ti r e,
            (@wp_rval resolve ti r e).
 Proof.
   unfold wp_rval; simpl. do 2 red. intros.
-  eapply lor_lentails_m; [ eapply Proper_wp_prval | eapply Proper_wp_xval ]; eauto.
+  rewrite -> H. eauto.
 Qed.
 Global Existing Instance Proper_wp_rval.
 
@@ -149,6 +153,7 @@ Section wpe.
 
   Definition wpAnys := fun ve Q free => wpAny ve (fun v f => Q v (f ** free)).
 End wpe.
+End with_Σ.
 
 (** Statements *)
 (* continuations
@@ -159,12 +164,23 @@ End wpe.
  * exceptions, we should be able to add another case,
  * `k_throw : val -> mpred`.
  *)
-Record Kpreds :=
-  { k_normal   : mpred
-  ; k_return   : option val -> FreeTemps -> mpred
-  ; k_break    : mpred
-  ; k_continue : mpred
+Record Kpreds Σ :=
+  { k_normal   : mpred Σ
+  ; k_return   : option val -> FreeTemps Σ -> mpred Σ
+  ; k_break    : mpred Σ
+  ; k_continue : mpred Σ
   }.
+Arguments k_normal {_}.
+Arguments k_return {_} _ _.
+Arguments k_break {_}.
+Arguments k_continue {_}.
+
+Section with_Σ.
+Context `{Σ : gFunctors}.
+
+Notation mpred := (mpred Σ) (only parsing).
+Notation FreeTemps := (FreeTemps Σ) (only parsing).
+Notation Kpreds := (Kpreds Σ) (only parsing).
 
 Definition void_return (P : mpred) : Kpreds :=
   {| k_normal := P
@@ -207,104 +223,21 @@ Definition Kat_exit (Q : mpred -> mpred) (k : Kpreds) : Kpreds :=
 Definition Kfree (a : mpred) : Kpreds -> Kpreds :=
   Kat_exit (fun P => a ** P).
 
-
-
-Global Instance ILogicOps_Kpreds : ILogicOps Kpreds :=
-{ lentails P Q :=
-    P.(k_normal) |-- Q.(k_normal) /\
-    P.(k_break) |-- Q.(k_break) /\
-    P.(k_continue) |-- Q.(k_continue) /\
-    forall x f, P.(k_return) x f |-- Q.(k_return) x f
-; ltrue :=
-    {| k_normal := ltrue
-     ; k_break := ltrue
-     ; k_continue := ltrue
-     ; k_return _ := ltrue |}
-; lfalse :=
-    {| k_normal := lfalse
-     ; k_break := lfalse
-     ; k_continue := lfalse
-     ; k_return _ := lfalse |}
-
-; land  P Q :=
-    {| k_normal   := land P.(k_normal) Q.(k_normal)
-     ; k_break    := land P.(k_break) Q.(k_break)
-     ; k_continue := land P.(k_continue) Q.(k_continue)
-     ; k_return v := land (P.(k_return) v) (Q.(k_return) v) |}
-
-; lor   P Q :=
-    {| k_normal   := lor P.(k_normal) Q.(k_normal)
-     ; k_break    := lor P.(k_break) Q.(k_break)
-     ; k_continue := lor P.(k_continue) Q.(k_continue)
-     ; k_return v := lor (P.(k_return) v) (Q.(k_return) v) |}
-
-; limpl P Q :=
-    {| k_normal   := limpl P.(k_normal) Q.(k_normal)
-     ; k_break    := limpl P.(k_break) Q.(k_break)
-     ; k_continue := limpl P.(k_continue) Q.(k_continue)
-     ; k_return v := limpl (P.(k_return) v) (Q.(k_return) v) |}
-
-; lforall T P :=
-    {| k_normal   := lforall (fun x : T => (P x).(k_normal))
-     ; k_break    := lforall (fun x : T => (P x).(k_break))
-     ; k_continue := lforall (fun x : T => (P x).(k_continue))
-     ; k_return v := lforall (fun x : T => (P x).(k_return) v) |}
-
-; lexists T P :=
-    {| k_normal   := lexists (fun x : T => (P x).(k_normal))
-     ; k_break    := lexists (fun x : T => (P x).(k_break))
-     ; k_continue := lexists (fun x : T => (P x).(k_continue))
-     ; k_return v := lexists (fun x : T => (P x).(k_return) v) |}
-}.
-Global Instance ILogic_Kpreds : ILogic Kpreds.
-Proof.
-  Transparent ILInsts.ILFun_Ops.
-  constructor; try red; simpl.
-  { constructor.
-    - red. firstorder.
-    - red. firstorder; etransitivity; eauto. }
-  all: try solve [ firstorder; eauto using ltrueR, lfalseL, landL1, landL2, landR, lorL , lorR1, lorR2, limplAdj, landAdj, lforallL, lforallR, lexistsL, lexistsR ].
-  { firstorder; eapply lforallR; intros; eapply H. }
-  { firstorder; eapply lexistsL; intros; eapply H. }
-  Opaque ILInsts.ILFun_Ops.
-Qed.
-Global Instance BILogicOps_Kpreds : BILogicOps Kpreds :=
-{ empSP      :=
-    {| k_normal   := empSP
-     ; k_break    := empSP
-     ; k_continue := empSP
-     ; k_return _ _ := empSP |}
-
-; sepSP  P Q :=
-    {| k_normal   := sepSP P.(k_normal) Q.(k_normal)
-     ; k_break    := sepSP P.(k_break) Q.(k_break)
-     ; k_continue := sepSP P.(k_continue) Q.(k_continue)
-     ; k_return v f := sepSP (P.(k_return) v f) (Q.(k_return) v f) |}
-
-; wandSP P Q :=
-    {| k_normal   := wandSP P.(k_normal) Q.(k_normal)
-     ; k_break    := wandSP P.(k_break) Q.(k_break)
-     ; k_continue := wandSP P.(k_continue) Q.(k_continue)
-     ; k_return v f := wandSP (P.(k_return) v f) (Q.(k_return) v f) |}
-
-}.
-Global Instance BILogic_Kpreds : BILogic Kpreds.
-Proof.
-  constructor; try red; simpl; eauto with typeclass_instances.
-  all: try solve [ firstorder; eauto using sepSPC1, sepSPA1, bilsep, empSPR, wandSepSPAdj ].
-  { firstorder; eapply wandSepSPAdj; eauto. }
-  { firstorder; eapply empSPR; eauto. }
-Qed.
+Instance Kpreds_equiv : Equiv Kpreds :=
+  fun (k1 k2 : Kpreds) =>
+    k1.(k_normal) ≡ k2.(k_normal) ∧
+    (∀ v free, k1.(k_return) v free ≡ k2.(k_return) v free) ∧
+    k1.(k_break) ≡ k2.(k_break) ∧
+    k1.(k_continue) ≡ k2.(k_continue).
 
 (* evaluate a statement *)
 Parameter wp
   : forall {resolve : genv}, thread_info -> region -> Stmt -> Kpreds -> mpred.
 
 Axiom Proper_wp : forall resolve ti r e,
-    Proper (lentails ==> lentails)
+    Proper (equiv ==> lentails)
            (@wp resolve ti r e).
 Global Existing Instance Proper_wp.
-
 
 (* note: the [list val] here represents the *locations* of the parameters, not
  * their values.
@@ -319,7 +252,6 @@ Axiom func_ok_raw_conseq:
     (forall r : val, Q r |-- Q' r) ->
     func_ok_raw (resolve:=resolve) ti f vs Q |-- func_ok_raw (resolve:=resolve) ti f vs Q'.
 
-
 Definition fspec {resolve} (n : val) (ls : list val) (ti : thread_info) (Q : val -> mpred) : mpred :=
   Exists f, [| n = Vptr f |] **
   Exists func, code_at func f ** func_ok_raw (resolve:=resolve) ti func ls Q.
@@ -329,10 +261,12 @@ Theorem fspec_ok_conseq:
     (forall r : val, m r |-- K r) ->
     fspec (resolve:=resolve) p vs ti m |-- fspec (resolve:=resolve) p vs ti K.
 Proof.
-  intros. unfold fspec.
-  eapply lexists_lentails_m. red; intros.
-  eapply scME; [ reflexivity | ].
-  eapply lexists_lentails_m. red; intros.
-  eapply scME; [ reflexivity | ].
-  eapply func_ok_raw_conseq. assumption.
+  intros. unfold fspec. rewrite only_provable_eq.
+  iIntros "H". iDestruct "H" as (f) "[[% _] H]".
+  iExists f. iSplitR; [ iPureIntro; eauto | ].
+  iDestruct "H" as (func) "[Hca Hor]".
+  iExists func. iFrame.
+  rewrite func_ok_raw_conseq; eauto.
 Qed.
+
+End with_Σ.

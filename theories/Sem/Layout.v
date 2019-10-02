@@ -6,10 +6,15 @@ From Cpp Require Import
 From Cpp.Sem Require Import
      ChargeUtil Logic PLogic CompilationUnit.
 
+Section with_Σ.
+  Context {Σ : gFunctors}.
+
+  Local Notation mpred := (mpred Σ) (only parsing).
+
 Axiom uninit_class_fwd
   : forall cls base st,
     denoteGlobal cls (Gstruct st) **
-    _at (_eq base) (uninit (Tref cls))
+    _at (Σ:=Σ) (_eq base) (uninit (Tref cls))
     |-- _at (_eq base)
             (sepSPs (List.map (fun '(gn,_) =>
                                  _offsetR (_super cls gn) (uninit (Tref gn))) st.(s_bases) ++
@@ -29,12 +34,13 @@ Axiom tany_class_bwd
                        List.map (fun '(n,t,_) =>
                                    _offsetR (_field {| f_name := n ; f_type := cls |})
                                             (tany (drop_qualifiers t))) st.(s_fields)))
-    |-- _at (_eq base) (tany (Tref cls)).
+    |-- _at (Σ:=Σ) (_eq base) (tany (Tref cls)).
 
 Axiom uninit_array : forall t n,
-    uninit (Tarray t n)
+    uninit (Σ:=Σ) (Tarray t n)
     -|- sepSPs (map (fun i => _offsetR (_sub t (Z.of_nat i)) (uninit t)) (seq 0 (BinNatDef.N.to_nat n))).
 
 Axiom tany_array : forall t n,
-    tany (Tarray t n)
-    -|- sepSPs (map (fun i => _offsetR (_sub t (Z.of_nat i)) (tany t)) (seq 0 (BinNatDef.N.to_nat n))).
+    tany (Σ:=Σ) (Tarray t n)
+                -|- sepSPs (map (fun i => _offsetR (_sub t (Z.of_nat i)) (tany t)) (seq 0 (BinNatDef.N.to_nat n))).
+End with_Σ.

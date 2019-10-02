@@ -3,18 +3,19 @@
  *
  * SPDX-License-Identifier:AGPL-3.0-or-later
  *)
+From Cpp Require Import
+     Auto.
+
 Require Import Coq.ZArith.BinInt.
 Require Import Coq.Strings.String.
 
 Local Open Scope Z_scope.
 Local Open Scope string_scope.
 
-From Cpp Require Import
-     Auto.
-
 Require C.main_c.
 Require Import C.main_c_spec.
 
+From Cpp.lib Require Import trace.
 
 Lemma can_get_element {T} :
   forall (x3 : list T) (x4 : Z),
@@ -43,12 +44,12 @@ Proof.
   induction ls; simpl; intros.
   { destruct (Z.to_nat x); auto. }
   { destruct (Z.to_nat x) eqn:?.
-    { simpl. exfalso. destruct x; simpl in *; try lia. }
+    { simpl. exfalso. destruct x; simpl in *; try lia; rewrite -> Z2Nat.inj_pos in Heqn; lia. }
     erewrite <- IHls.
     simpl. instantiate (1 := x-1).
     f_equal.
     rewrite (Znat.Z2Nat.inj_sub x 1); simpl.
-    rewrite Heqn. lia. lia. lia. }
+    rewrite Heqn. simpl. lia. lia. lia. }
 Qed.
 
 Lemma skipn_to_nat_of_nat:
@@ -59,7 +60,7 @@ Lemma skipn_to_nat_of_nat:
       match x3 with
       | nil => nil
       | _ :: l0 => skipn (Z.to_nat x4) l0
-      end = skipn (Z.to_nat (Z.of_nat x6 + 1)) x3.
+      end = skipn (Z.to_nat (Z.of_nat x6 + 1%nat)) x3.
 Proof.
   intros x3 x4 l x6 H2.
   generalize (Znat.Nat2Z.inj_add x6 1); simpl; intros.
@@ -86,9 +87,12 @@ Proof.
     eauto. }
 Qed.
 
+Section with_Σ.
+Context {Σ:gFunctors}.
+
 (* soundness of the specification *)
 Theorem main_cpp_sound : forall (resolve : genv),
-    denoteModule main_c.module |-- spec resolve.
+    denoteModule (Σ:=Σ) main_c.module |-- spec resolve.
 Proof.
   intros.
   simpl.
@@ -107,7 +111,7 @@ Proof.
      *)
     assert_sep (fun a1 x =>
         Exists i : Z,
-           tlocal_at ρ "i" a1 (tprim T_int i) **
+           tlocal_at (Σ:=Σ) ρ "i" a1 (tprim T_int i) **
            trace (printEach (skipn (Z.to_nat i) x)) **
            [| 0 <= i <= Z.of_nat (Datatypes.length x) |]).
     eapply wp_for.
@@ -128,7 +132,7 @@ Proof.
       { eapply can_get_element; eauto. }
       destruct H0 as [ ? [ ? [ ? ? ] ] ].
       unfold main.args_array.
-      rewrite tarray_cell; eauto with size_of.
+      rewrite -> tarray_cell; eauto with size_of.
       work.
       simplifying.
       work.
@@ -142,8 +146,8 @@ Proof.
       simpl. work.
       simplifying. simpl.
       work.
-      rewrite tarray_cell with (ms :=x); eauto with size_of.
-      erewrite skipn_to_nat_of_nat; eauto.
+      rewrite -> tarray_cell with (ms :=x); eauto with size_of.
+      erewrite <- skipn_to_nat_of_nat; eauto.
       work. work. }
     { simpl.
       repeat (simplifying; simpl; work).
@@ -153,3 +157,5 @@ Proof.
 
   finish_module.
 Qed.
+
+End with_Σ.

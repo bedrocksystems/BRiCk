@@ -71,13 +71,44 @@ Parameter genv : Type.
 
 Parameter has_type : val -> type -> Prop.
 
+Definition max_val (bits : size) (sgn : signed) : Z :=
+  match bits , sgn with
+  | W8   , Signed   => 2^7 - 1
+  | W8   , Unsigned => 2^8 - 1
+  | W16  , Signed   => 2^15 - 1
+  | W16  , Unsigned => 2^16 - 1
+  | W32  , Signed   => 2^31 - 1
+  | W32  , Unsigned => 2^32 - 1
+  | W64  , Signed   => 2^63 - 1
+  | W64  , Unsigned => 2^64 - 1
+  | W128 , Signed   => 2^127 - 1
+  | W128 , Unsigned => 2^128 - 1
+  end%Z.
+
+Definition min_val (bits : size) (sgn : signed) : Z :=
+  match sgn with
+  | Unsigned => 0
+  | Signed =>
+    match bits with
+    | W8   => -2^7
+    | W16  => -2^15
+    | W32  => -2^31
+    | W64  => -2^63
+    | W128 => -2^127
+    end
+  end%Z.
+
 Axiom has_type_pointer : forall v ty, has_type v (Tpointer ty) -> exists p, v = Vptr p.
 
 Definition bound (bits : size) (sgn : signed) (v : Z) : Prop :=
-  if sgn then
-    (-Z.pow 2 (Z_of_size bits - 1) <= v < Z.pow 2 (Z_of_size bits - 1))%Z
-  else
-    (0 <= v < Z.pow 2 (Z_of_size bits))%Z.
+  (min_val bits sgn <= v <= max_val bits sgn)%Z.
+
+Arguments Z.add _ _ : simpl never.
+Arguments Z.sub _ _ : simpl never.
+Arguments Z.mul _ _ : simpl never.
+Arguments Z.pow _ _ : simpl never.
+Arguments Z.opp _ : simpl never.
+Arguments Z.pow_pos _ _ : simpl never.
 
 Axiom has_int_type : forall sz (sgn : signed) z,
     bound sz sgn z <-> has_type (Vint z) (Tint sz sgn).

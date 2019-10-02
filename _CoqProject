@@ -2,6 +2,7 @@
 
 # Utility modules
 theories/Util.v
+theories/ChargeCompat.v
 
 # Modules for cpp2v
 theories/Syntax/Names.v
@@ -16,6 +17,7 @@ theories/Signature.v
 
 # Semantics
 theories/Sem/ChargeUtil.v
+theories/Sem/IrisBridge.v
 theories/Sem/Semantics.v
 theories/Sem/Logic.v
 theories/Sem/Operator.v
@@ -37,6 +39,9 @@ theories/Sem.v
 
 # Automation
 theories/Auto/Discharge.v
+theories/Auto/Base.v
+theories/Auto/PLogic.v
+theories/Auto/Func.v
 theories/Auto/Definitions.v
 theories/Auto/Lemmas.v
 theories/Auto/type.v

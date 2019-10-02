@@ -1,6 +1,7 @@
 Require Import Coq.ZArith.BinInt.
 Require Import Coq.Lists.List.
 Require Import Coq.Strings.String.
+
 Require Import Coq.Sorting.Permutation.
 From Coq.QArith Require Import QArith Qcanon.
 Require Import Coq.QArith.Qfield.
@@ -9,20 +10,16 @@ From Coq.micromega Require Import
 
 Require Import Coq.ssr.ssrbool.
 
+From iris.proofmode Require Import tactics.
+
 From Coq.Classes Require Import
      RelationClasses Morphisms DecidableClass.
-
-From ChargeCore.SepAlg Require Import SepAlg.
-
-From ChargeCore.Logics Require Import
-     ILogic BILogic ILEmbed Later.
 
 From Cpp Require Import
      Ast.
 From Cpp.Sem Require Import
-     Semantics Logic Operator PLogic Wp Call.
-From Cpp.Auto Require Import
-     Discharge.
+      Semantics Logic Operator PLogic Wp Call.
+From Cpp Require Import ChargeCompat.
 
 Require Import ExtLib.Data.Member.
 Fixpoint remove {T} {t : T} {ls : list T} (m : member t ls) : list T :=
@@ -31,25 +28,13 @@ Fixpoint remove {T} {t : T} {ls : list T} (m : member t ls) : list T :=
   | @MN _ _ l _ m => l :: remove m
   end.
 
-
-Lemma lforall_specialize : forall {T} (x : T) (P : T -> mpred),
-    lforall P |-- P x.
-Proof. intros. eapply lforallL. reflexivity. Qed.
-
-
-Local Ltac t :=
-  let cancel :=
-      idtac; canceler ltac:(idtac; first [ eapply use_universal_arrow
-                                         | eapply wandSP_cancel ]) ltac:(eauto) in
-  discharge fail fail fail cancel eauto.
-
-
 (* todo(gmm): move the above definitions *)
 
 (* semantics of atomic builtins
  * https://gcc.gnu.org/onlinedocs/gcc/_005f_005fatomic-Builtins.html
  *)
 
+(* todo: Port this to Iris *)
 Module Type cclogic.
 
   (****** Logical State ********)
@@ -145,7 +130,6 @@ Module Type cclogic.
         destruct (compose t t0); eauto.
         contradiction. }
     Defined.
-
     Opaque pcompose pvalid.
 
   End PCM_option.
@@ -167,8 +151,7 @@ Module Type cclogic.
       { eapply Qclt_alt in Heqc.
         destruct (q ?= 1) eqn:X;
           [ eapply Qceq_alt in X | eapply Qclt_alt in X | eapply Qcgt_alt in X ].
-        { subst. split; auto.
-          compute; firstorder; congruence. }
+        { subst. split; auto. }
         { split; auto.
           intro. split;
           eapply Qclt_le_weak; eauto. }
@@ -267,7 +250,8 @@ Module Type cclogic.
                | |- None = Some _ => exfalso
                end; simpl; eauto.
         ring.
-    Qed.
+        all: admit.             (* todo: fix Arith *)
+    Admitted.
 
     Lemma Fp_compose_bot : forall s1 s2,
         FPerm_Compose s1 s2 = Some _Fp_zero ->
@@ -283,15 +267,15 @@ Module Type cclogic.
       inversion H.
       pose proof (proj1 (to_prop _) UNIT).
       pose proof (proj1 (to_prop _) UNIT0).
-      assert (f + f0 == 0)%Q by (now rewrite <-H1, Qred_correct).
-      split;
-        f_equal;
-        apply FPerm_Equal;
-        qify;
-        apply Qc_is_canon;
-        cbn;
-        lra.
-    Qed.
+      (* assert (f + f0 == 0)%Q by (now rewrite <-H1, Qred_correct). *)
+      (* split; *)
+      (*   f_equal; *)
+      (*   apply FPerm_Equal; *)
+      (*   qify; *)
+      (*   apply Qc_is_canon; *)
+      (*   cbn; *)
+      (*   lra. *)
+    Admitted.
 
     Lemma Fp_compose_w_bot : forall s,
         FPerm_Compose s _Fp_zero = Some s.
@@ -346,6 +330,11 @@ Module Type cclogic.
      * - These can be encoded using ghost state.
      *)
 
+    Section with_Σ.
+    Context {Σ:gFunctors}.
+
+    Local Notation mpred := (mpred Σ) (only parsing).
+
     (* the names of invariants *)
     Definition iname : Set := (string * string).
 
@@ -384,6 +373,8 @@ Module Type cclogic.
       I |-- Exists n : _,
             let n := namespace pkg n in
             TInv n I ** OPerm Fp.Fp_full n ** DPerm Fp.Fp_full n.
+
+    End with_Σ.
   End Invariants.
   Import Invariants.
   Export Invariants.
@@ -401,6 +392,11 @@ Module Type cclogic.
      *   concept was implemented in terms of "fancy update".
      *   todo(gmm): investigate this as an alternative presentation.
      *)
+
+    Section with_Σ.
+    Context {Σ:gFunctors}.
+
+    Local Notation mpred := (mpred Σ) (only parsing).
 
     Variant Inv_type : Type :=
     | Affine
@@ -458,7 +454,7 @@ Module Type cclogic.
         shift e1 e2 P Q |-- shift e1 e2 P' Q'.
     Proof.
       intros * H1 H2.
-      now rewrite H1, H2.
+      now rewrite -> H2, <- H1.
     Qed.
 
     (* this says that shifts are pure facts *)
@@ -476,7 +472,7 @@ Module Type cclogic.
       rewrite <- (shift_frame nil nil e empSP empSP P).
       eapply shift_id.
       constructor. constructor.
-      t. t. assumption.
+      eauto. rewrite H. iIntros "[_ HQ]". eauto.
     Qed.
 
     (* todo(gmm): generalize this to be more liberal wrt masks. *)
@@ -486,24 +482,16 @@ Module Type cclogic.
         shift e e P Q ** F' |-- shift e e P' Q' ** F.
     Proof.
       intros.
-      rewrite H0; clear H0.
-      t.
+      rewrite -> H0; clear H0.
+      iIntros "(H1 & H2 & $)".
+      iStopProof.
       etransitivity; [ | eapply shift_trans ].
       rewrite sepSPC.
       eapply scME.
-      rewrite (@shift_frame _ _ nil _ _ Z).
+      rewrite -> (@shift_frame _ _ nil _ _ Z).
       eapply Proper_shift.
-      3: eapply H.
-      3: reflexivity.
-      5: reflexivity.
-      all: simpl; try rewrite app_nil_r.
-      3:{ red. clear; induction (map fst e); constructor; eauto. }
-      3:{ red. clear; induction (map fst e); constructor; eauto. }
-      3:{ red. intros. eapply in_or_app. tauto. }
-      reflexivity.
-      reflexivity.
-    Qed.
-
+    Admitted.
+    End with_Σ.
   End ViewShift.
   Import ViewShift.
 
@@ -538,6 +526,11 @@ Module Type cclogic.
      *      Definition Universal@{i j | j < i} : Type@{i} :=
      *        forall ra : RA@{j}, Fmap nat ra.(s_type),
      *)
+    Section with_Σ.
+    Context {Σ:gFunctors}.
+
+    Local Notation mpred := (mpred Σ) (only parsing).
+
     Parameter ghost_is : forall {Prm: PCM} (value : Prm), mpred.
     Axiom shift_ghost_is_bot : forall {Prm : PCM},
         |-- shift nil nil empSP (@ghost_is Prm p_bot).
@@ -572,16 +565,21 @@ Module Type cclogic.
                   (ghost_ptsto prm p v)
                   (ghost_ptsto prm p v').
     Proof.
-      intros.
-      t.
+      intros. rewrite only_provable_eq. unfold only_provable_def.
+      iIntros "[% _]". iStopProof.
       unfold FPU_single in *.
       rewrite <-shift_conseq; [ | reflexivity | ].
-      1: rewrite <-shift_ghost_update; t.
-      t.
-      subst.
-      reflexivity.
+      rewrite <- shift_ghost_update.
+      rewrite only_provable_eq; unfold only_provable_def.
+      eauto.
+      rewrite only_provable_eq; unfold only_provable_def.
+      iIntros "H".
+      iDestruct "H" as (v'') "[[-> _] H]".
+      eauto.
     Qed.
-  End  GhostState.
+
+    End with_Σ.
+  End GhostState.
   Export GhostState.
 
   (*Similarly one can encode ghost state using PCM*)
@@ -617,6 +615,12 @@ Module Type cclogic.
    * note(gmm): in this style, we don't need to explicitly quantify over the
    * final open invariants.
    *)
+  Section with_Σ.
+  Context {Σ:gFunctors}.
+
+  Local Notation mpred := (mpred Σ) (only parsing).
+  Local Notation FreeTemps := (FreeTemps Σ) (only parsing).
+
   Parameter wp_shift : forall (mask : list (iname * Inv_type)),
       (forall to : list (iname * Inv_type), mpred) -> mpred.
 
@@ -634,28 +638,28 @@ Module Type cclogic.
       |-- wp_shift hide Q.
   Proof.
     intros.
-    rewrite shift_open.
+    rewrite -> shift_open.
     erewrite shift_frame with (e':=hide) (S:=empSP).
     2:{ simpl. red. constructor. auto. constructor. }
     2:{ simpl. constructor. }
-    rewrite wp_shift_vs.
+    rewrite -> wp_shift_vs.
     simpl.
-    t.
-  Qed.
+    admit.
+  Admitted.
   Theorem wp_shift_openT : forall q Q hide n I,
       ~In n (List.map fst hide) ->
       TInv n I ** OPerm q n ** (I -* wp_shift ((n, Tracked q) :: hide) Q)
       |-- wp_shift hide Q.
   Proof.
     intros.
-    rewrite shift_opent.
+    rewrite -> shift_opent.
     erewrite lforall_specialize.
     erewrite shift_frame with (e':=hide) (S:=empSP).
     2:{ simpl. red. constructor. auto. constructor. }
     2:{ simpl. constructor. }
-    rewrite wp_shift_vs.
-    t.
-  Qed.
+    rewrite -> wp_shift_vs.
+    admit.
+  Admitted.
 
 
   Theorem wp_shift_close : forall Q hide n I,
@@ -664,44 +668,44 @@ Module Type cclogic.
       |-- wp_shift ((n,Affine) :: hide) Q.
   Proof.
     intros.
-    rewrite shift_close.
+    rewrite -> shift_close.
     erewrite shift_frame with (e':=hide) (S:=empSP).
     2:{ simpl. constructor. }
     2:{ subst. simpl. constructor; [ | constructor ]; auto. }
-    rewrite wp_shift_vs.
+    rewrite -> wp_shift_vs.
     simpl.
-    t.
-  Qed.
+    admit.
+  Admitted.
   Theorem wp_shift_closeT : forall (q : Fp) Q hide n I,
       ~In n (map fst hide) ->
       TInv n I ** I ** (OPerm q n -* wp_shift hide Q)
       |-- wp_shift ((n, Tracked q) :: hide) Q.
   Proof.
     intros.
-    rewrite shift_closet.
+    rewrite -> shift_closet.
     erewrite lforall_specialize.
     erewrite shift_frame with (e':=hide) (S:=empSP).
     2:{ simpl. constructor. }
     2:{ subst. simpl. constructor; [ | constructor ]; auto. }
-    rewrite wp_shift_vs.
+    rewrite -> wp_shift_vs.
     simpl.
-    t.
-  Qed.
+    admit.
+  Admitted.
   Theorem wp_shift_deleteT : forall (q : Fp) Q hide n I,
       ~In n (map fst hide) ->
       TInv n I ** (OPerm q n -* OPerm Fp.Fp_full n ** DPerm Fp.Fp_full n) ** wp_shift hide Q
       |-- wp_shift ((n, Tracked q) :: hide) Q.
   Proof.
     intros.
-    rewrite shift_deletet.
+    rewrite -> shift_deletet.
     erewrite lforall_specialize.
     erewrite shift_frame with (e':=hide) (S:=empSP).
     2:{ simpl. constructor. }
     2:{ subst. simpl. constructor; [ | constructor ]; auto. }
     simpl.
-    rewrite wp_shift_vs.
-    t.
-  Qed.
+    rewrite -> wp_shift_vs.
+    admit.
+  Admitted.
 
   (* View shifts are sound as long as invariants are always re-established after
    * any atomic step. This means that it is sound to open invariants before
@@ -808,20 +812,6 @@ Module Type cclogic.
                      (_at (_eq E) (tprim acc_type v') -* Q v))
       |-- wp_atom (resolve:=rslv) ao (E::memorder::pls::nil) acc_type Q.
 
-(*
-  Definition wp_fetch_xxx ao op : Prop :=
-    forall q P E Qp pls memorder Q Q'
-         (acc_type : type)
-         (split: forall v,  P ** Qp v |--
-                         Exists v', [| eval_binop op acc_type acc_type acc_type v pls v' |] **
-                                    Qp v' ** Q v),
-      Fp_readable q ->
-         _at (_eq E) (AtomInv q acc_type Qp) **
-         [| memorder = _SEQ_CST |] ** P **
-         (Forall x, (_at (_eq E) (AtomInv q acc_type Qp) ** Q x) -* Q' x)
-       |-- wp_atom ao (E::pls::memorder::nil) acc_type Q'.
-*)
-
   Ltac fetch_xxx ao op :=
     let G := eval unfold wp_fetch_xxx in (wp_fetch_xxx ao op) in exact G.
 
@@ -864,6 +854,7 @@ Module Type cclogic.
   Axiom wp_atom_xor_fetch : ltac:(xxx_fetch AO__atomic_xor_fetch Bxor).
   Axiom wp_atom_or_fetch  : ltac:(xxx_fetch AO__atomic_or_fetch  Bor).
 
+  End with_Σ.
 End cclogic.
 
 Declare Module CCL : cclogic.
@@ -871,4 +862,3 @@ Declare Module CCL : cclogic.
 Export CCL.
 
 Global Opaque p_compose p_valid p_bot.
-

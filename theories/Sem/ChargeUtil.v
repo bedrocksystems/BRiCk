@@ -7,11 +7,12 @@ From Coq.Classes Require Import
      RelationClasses Morphisms.
 
 Require Import Coq.Lists.List.
-Require Import Coq.Lists.List.
+From iris Require Import bi.bi.
+From iris.proofmode Require Import tactics.
+From Cpp Require Import IrisBridge.
+Import ChargeNotation.
 
-From ChargeCore.Logics Require Import
-     ILogic BILogic ILEmbed Later.
-
+From Cpp Require Import ChargeCompat.
 
 Fixpoint arrowFrom {t} u (ls : list t) (T : Type)
 : Type :=
@@ -30,15 +31,12 @@ Section zip.
     end.
 End zip.
 
-
 Section withLogic.
-  Context {L : Type}.
-  Context {ILogicOps_L : ILogicOps L}.
-  Existing Instance ILogicOps_L.
+  Context `{!PROP : bi}.
 
   Fixpoint applyEach {t u T} (ls : list t) (vals : list u)
     : forall (v : arrowFrom u ls T)
-        (P : T -> list (t * u) -> L), L :=
+        (P : T -> list (t * u) -> PROP), PROP :=
     match ls , vals with
     | nil , nil => fun v P => P v nil
     | l :: ls , x :: xs => fun v P =>
@@ -48,7 +46,7 @@ Section withLogic.
 
   Fixpoint ForallEach {t u T} (ls : list t)
     : forall (v : arrowFrom u ls T)
-        (P : T -> list (t * u) -> L), L :=
+        (P : T -> list (t * u) -> PROP), PROP :=
     match ls with
     | nil => fun v P => P v nil
     | l :: ls => fun v P => Forall x,
@@ -57,7 +55,7 @@ Section withLogic.
 
   Fixpoint Forall2Each {t u T U} (ls : list t)
     : forall (v : arrowFrom u ls T) (v' : arrowFrom u ls U)
-        (P : T -> U -> list (t * u) -> L), L :=
+        (P : T -> U -> list (t * u) -> PROP), PROP :=
     match ls with
     | nil => fun v v' P => P v v' nil
     | l :: ls => fun v v' P => Forall x,
@@ -66,7 +64,7 @@ Section withLogic.
 
   Fixpoint ExistsEach {t u T} (ls : list t)
     : forall (v : arrowFrom u ls T)
-        (P : T -> list (t * u) -> L), L :=
+        (P : T -> list (t * u) -> PROP), PROP :=
     match ls with
     | nil => fun v P => P v nil
     | l :: ls => fun v P => Exists x,
@@ -74,9 +72,6 @@ Section withLogic.
     end.
 
 End withLogic.
-
-Definition forallEach := @ForallEach Prop _.
-Arguments forallEach {_ _ _}.
 
 Section arrowFrom_map.
   Context {t u : Type}.
@@ -90,6 +85,7 @@ Section arrowFrom_map.
 End arrowFrom_map.
 
 (* telescopes *)
+(* todo: Use the ones from stdpp instead *)
 Inductive tele : Type :=
 | tdone
 | tcons {t : Type} (_ : t -> tele).
@@ -115,3 +111,84 @@ Notation "[ a , .. , b ]" :=
   (at level 0) : tele_scope.
 Bind Scope tele_scope with tele.
 Delimit Scope tele_scope with tele.
+
+From Cpp.Syntax Require Import Types.
+From Cpp.Sem Require Import Semantics.
+Section with_PROP.
+Context {PROP : bi}.
+
+Lemma wandSP_only_provableL : forall (P : Prop) (Q R : PROP),
+    P ->
+    Q |-- R ->
+    [| P |] -* Q |-- R.
+Proof.
+  intros.
+  rewrite only_provable_eq. unfold only_provable_def.
+  rewrite <- H0; clear H0.
+  iIntros "H". iApply "H". eauto.
+Qed.
+
+Lemma wandSP_only_provableR : forall (A : Prop) (B C : PROP),
+    (A -> B |-- C) ->
+    B |-- [| A |] -* C.
+Proof.
+  intros.
+  rewrite only_provable_eq. unfold only_provable_def.
+ iIntros "HB [% _]".
+  iApply H; eauto.
+Qed.
+
+Lemma forallEach_primes :
+  forall (ts : list type)
+    (fs' : arrowFrom val ts ((val -> PROP) -> PROP)) Z,
+    Forall vs : list val,
+  [| Datatypes.length vs = Datatypes.length ts |] -*
+  (Forall Q : val -> PROP,
+     applyEach ts vs fs'
+               (fun (k : (val -> PROP) -> PROP) (_ : list (type * val)) => k Q) -*
+               Z vs Q) -|-
+  ForallEach ts fs'
+  (fun (PQ : (val -> PROP) -> PROP) (args : list (type * val)) =>
+     Forall Q : val -> PROP, PQ Q -* Z (map snd args) Q).
+Proof.
+  induction ts.
+  { simpl. intros.
+    split'.
+    { eapply lforallR; intro Q.
+      eapply (lforallL nil).
+      eapply wandSP_only_provableL; [ reflexivity | ].
+      eapply lforallL. reflexivity. }
+    { eapply lforallR. intros.
+      destruct x.
+      { eapply wandSP_only_provableR. reflexivity. }
+      { eapply wandSP_only_provableR. intros.
+        inversion H. } } }
+  { simpl. intros.
+    split'.
+    { eapply lforallR.
+      intros.
+      specialize (IHts (fs' x) (fun a b => Z (x :: a) b)).
+      rewrite <- IHts.
+      eapply lforallR. intros.
+      eapply (lforallL (x :: x0)).
+      eapply wandSP_only_provableR; intros.
+      eapply wandSP_only_provableL; [ simpl; f_equal; eassumption | ].
+      reflexivity. }
+    { eapply lforallR; intros.
+      eapply wandSP_only_provableR; intros.
+      destruct x.
+      { eapply lforallR; intro.
+        eapply wandSPAdj'.
+        rewrite -> sepSP_falseL.
+        eapply lfalseL. }
+      { eapply (lforallL v).
+        rewrite <- (IHts (fs' v) (fun xs => Z (v :: xs))).
+        eapply (lforallL x).
+        eapply wandSP_only_provableL.
+        simpl in H.
+        inversion H. reflexivity. reflexivity. } } }
+Qed.
+
+End with_PROP.
+
+Arguments ForallEach {_ _ _ _} [_] _ _.

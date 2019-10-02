@@ -10,9 +10,9 @@ From Coq Require Import
      Lists.List
      Strings.String.
 
-From Cpp Require Import Ast.
 From Cpp.Sem Require Import
         ChargeUtil Semantics Logic PLogic Destroy Wp Init Call Intensional.
+From Cpp Require Import Ast.
 
 Require Import Coq.ZArith.BinInt.
 Require Import Coq.micromega.Lia.
@@ -23,20 +23,24 @@ Module Type Stmt.
   (** weakest pre-condition for statements
    *)
   Section with_resolver.
+    Context {Σ:gFunctors}.
     Context {resolve : genv}.
     Variable ti : thread_info.
     Variable ρ : region.
 
-    Local Notation wp := (wp (resolve:=resolve)  ti ρ).
-    Local Notation wpe := (wpe (resolve:=resolve) ti ρ).
-    Local Notation wp_lval := (wp_lval (resolve:=resolve) ti ρ).
-    Local Notation wp_prval := (wp_prval (resolve:=resolve) ti ρ).
-    Local Notation wp_xval := (wp_xval (resolve:=resolve) ti ρ).
-    Local Notation wp_glval := (wp_glval (resolve:=resolve) ti ρ).
-    Local Notation wp_rval := (wp_rval (resolve:=resolve) ti ρ).
-    Local Notation wp_init := (wp_init (resolve:=resolve) ti ρ).
-    Local Notation wpAny := (wpAny (resolve:=resolve) ti ρ).
-    Local Notation wpAnys := (wpAnys (resolve:=resolve) ti ρ).
+    Local Notation wp := (wp (Σ :=Σ) (resolve:=resolve)  ti ρ).
+    Local Notation wpe := (wpe (Σ :=Σ) (resolve:=resolve) ti ρ).
+    Local Notation wp_lval := (wp_lval (Σ :=Σ) (resolve:=resolve) ti ρ).
+    Local Notation wp_prval := (wp_prval (Σ :=Σ) (resolve:=resolve) ti ρ).
+    Local Notation wp_xval := (wp_xval (Σ :=Σ) (resolve:=resolve) ti ρ).
+    Local Notation wp_glval := (wp_glval (Σ :=Σ) (resolve:=resolve) ti ρ).
+    Local Notation wp_rval := (wp_rval (Σ :=Σ) (resolve:=resolve) ti ρ).
+    Local Notation wp_init := (wp_init (Σ :=Σ) (resolve:=resolve) ti ρ).
+    Local Notation wpAny := (wpAny (Σ :=Σ) (resolve:=resolve) ti ρ).
+    Local Notation wpAnys := (wpAnys (Σ :=Σ) (resolve:=resolve) ti ρ).
+
+    Local Notation mpred := (mpred Σ) (only parsing).
+    Local Notation Kpreds := (Kpreds Σ) (only parsing).
 
    (* the semantics of return is like an initialization
      * expression.
@@ -121,7 +125,7 @@ Module Type Stmt.
                   end
       | Tarray ty' N =>
         Forall a, _at (_eq a) (uninit (erase_qualifiers ty)) -*
-                  let destroy :=
+                  let destroy : mpred :=
                       match dtor with
                       | None => fun x => x
                       | Some dtor => destruct (resolve:=resolve) ti ty a dtor

@@ -8,121 +8,16 @@ Require Import Coq.Strings.String.
 
 Local Open Scope string_scope.
 
+From iris.proofmode Require Import tactics.
+From Cpp.Sem Require Import
+     Logic PLogic Semantics Wp Init Deinit Call Intensional.
 From Cpp Require Import
      Ast.
-From Cpp.Sem Require Import
-     ChargeUtil Logic PLogic Semantics Wp Init Deinit Call Intensional.
+From Cpp Require Import
+     ChargeUtil.
 
 Require Import Coq.ZArith.BinInt.
 Require Import Coq.micromega.Lia.
-
-(* note: only used for demonstration purposes. *)
-From Cpp.Auto Require Import Discharge.
-
-Local Ltac t :=
-  discharge fail fail fail ltac:(canceler fail auto) auto.
-
-Fixpoint is_void (t : type) : bool :=
-  match t with
-  | Tqualified _ t => is_void t
-  | Tvoid => true
-  | _ => false
-  end.
-
-Lemma wandSP_only_provableL : forall (P : Prop) Q R,
-    P ->
-    Q |-- R ->
-    [| P |] -* Q |-- R.
-Proof.
-  intros.
-  rewrite <- H0; clear H0.
-  etransitivity.
-  2: eapply sepSPAdj; reflexivity.
-  t.
-Qed.
-
-
-Lemma wandSP_only_provableR : forall (A : Prop) B C,
-    (A -> B |-- C) ->
-    B |-- [| A |] -* C.
-Proof.
-  intros.
-  unfold only_provable.
-  eapply wandSPI.
-  rewrite <- embedPropExists'.
-  specialize (landexistsDL1 (fun _: A => ltrue) (@empSP mpred _)). simpl.
-  intros. rewrite H0.
-  setoid_rewrite landtrueL.
-  rewrite <- bilexistssc.
-  eapply lexistsL.
-  intros.
-  etransitivity; [ | eapply H ]; auto.
-  t.
-Qed.
-
-Lemma forallEach_primes:
-  forall (ts : list type)
-    (fs' : arrowFrom val ts ((val -> mpred) -> mpred)) Z,
-    Forall vs : list val,
-  [| Datatypes.length vs = Datatypes.length ts |] -*
-  (Forall Q : val -> mpred,
-     applyEach ts vs fs'
-               (fun (k : (val -> mpred) -> mpred) (_ : list (type * val)) => k Q) -*
-               Z vs Q) -|-
-  ForallEach ts fs'
-  (fun (PQ : (val -> mpred) -> mpred) (args : list (type * val)) =>
-     Forall Q : val -> mpred, PQ Q -* Z (map snd args) Q).
-Proof.
-  induction ts.
-  { simpl. intros.
-    split.
-    { eapply lforallR; intro Q.
-      eapply (lforallL nil).
-      eapply wandSP_only_provableL; [ reflexivity | ].
-      eapply lforallL. reflexivity. }
-    { eapply lforallR. intros.
-      destruct x.
-      { eapply wandSP_only_provableR. reflexivity. }
-      { eapply wandSP_only_provableR. intros.
-        inversion H. } } }
-  { simpl. intros.
-    split.
-    { eapply lforallR.
-      intros.
-      rewrite <- (IHts (fs' x) (fun a b => Z (x :: a) b)).
-      eapply lforallR. intros.
-      eapply (lforallL (x :: x0)).
-      eapply wandSP_only_provableR; intros.
-      eapply wandSP_only_provableL; [ simpl; f_equal; eassumption | ].
-      reflexivity. }
-    { eapply lforallR; intros.
-      eapply wandSP_only_provableR; intros.
-      destruct x.
-      { eapply lforallR; intro.
-        eapply wandSPAdj'.
-        rewrite sepSP_falseL.
-        eapply lfalseL. }
-      { eapply (lforallL v).
-        destruct (IHts (fs' v) (fun xs => Z (v :: xs))).
-        rewrite H1; clear H0 H1.
-        eapply (lforallL x).
-        eapply wandSP_only_provableL.
-        simpl in H.
-        inversion H. reflexivity. reflexivity. } } }
-Qed.
-
-Arguments ForallEach {_ _ _ _ _} [_] _ _.
-
-Lemma lexists_known : forall t a P,
-    Exists x : t, [| x = a |] ** P x -|- P a.
-Proof.
-  split; intros; t. subst; reflexivity.
-Qed.
-
-
-(* above are candidates for removal *)
-
-
 
 Module Type Func.
 
@@ -131,18 +26,24 @@ Module Type Func.
    * note(gmm): it might be better to make the `list val` into a
    * `vector val (length fs_arguments)`.
    *)
-  Record function_spec' : Type :=
+  Record function_spec' Σ : Type :=
   { fs'_return : type
   ; fs'_arguments : list type
-  ; fs'_spec : thread_info -> list val -> (val -> mpred) -> mpred
+  ; fs'_spec : thread_info -> list val -> (val -> mpred Σ) -> mpred Σ
   }.
+  Arguments fs'_return {_} _.
+  Arguments fs'_arguments {_} _.
+  Arguments fs'_spec {_} _.
 
   (* this is the core definition that everything will be based on. *)
-  Definition cptr' {resolve} ti (fs : function_spec') : Rep :=
-    {| repr p :=
+  Definition cptr'_def {Σ} {resolve} ti (fs : function_spec' Σ) : Rep Σ :=
+    as_Rep (fun p =>
          Forall vs,
          [| List.length vs = List.length fs.(fs'_arguments) |] -*
-         Forall Q, (fs.(fs'_spec) ti) vs Q -* fspec (resolve:=resolve) p vs ti Q |}.
+         Forall Q, (fs.(fs'_spec) ti) vs Q -* fspec (resolve:=resolve) p vs ti Q).
+  Definition cptr'_aux : seal (@cptr'_def). by eexists. Qed.
+  Definition cptr' {Σ} {resolve} := cptr'_aux.(unseal) Σ resolve.
+  Definition cptr'_eq : @cptr' = _ := cptr'_aux.(seal_eq).
 
   (* function specifications written in weakest pre-condition style.
    *
@@ -150,22 +51,39 @@ Module Type Func.
    * repeatedly; however, they are more difficult to prove things about, so
    * it might be better to do this reasoning post-facto.
    *)
-  Record function_spec : Type :=
+  Record function_spec Σ : Type :=
   { fs_return : type
   ; fs_arguments : list type
-  ; fs_spec : thread_info -> arrowFrom val fs_arguments ((val -> mpred) -> mpred)
+  ; fs_spec : thread_info -> arrowFrom val fs_arguments ((val -> mpred Σ) -> mpred Σ)
   }.
+  Arguments fs_return {_} _.
+  Arguments fs_arguments {_} _.
+  Arguments fs_spec {_} _.
 
   (* this is the core definition that everything will be based on. *)
-  Definition cptr {resolve} ti (fs : function_spec) : Rep :=
-    {| repr p :=
+  Definition cptr_def {Σ} {resolve} ti (fs : function_spec Σ) : Rep Σ :=
+   as_Rep (fun p =>
          ForallEach (fs.(fs_spec) ti) (fun PQ args =>
-            Forall Q, PQ Q -* fspec (resolve:=resolve) p (List.map snd args) ti Q) |}.
+            Forall Q, PQ Q -* fspec (resolve:=resolve) p (List.map snd args) ti Q)).
+  Definition cptr_aux : seal (@cptr_def). by eexists. Qed.
+  Definition cptr {Σ} {resolve} := cptr_aux.(unseal) Σ resolve.
+  Definition cptr_eq : @cptr = _ := cptr_aux.(seal_eq).
 
-  Record WithPrePost : Type :=
+  Record WithPrePost Σ : Type :=
     { wpp_with : tele
-    ; wpp_pre : teleF mpred wpp_with
-    ; wpp_post : teleF (val -> mpred) wpp_with }.
+    ; wpp_pre : teleF (mpred Σ) wpp_with
+    ; wpp_post : teleF (val -> mpred Σ) wpp_with }.
+  Arguments wpp_with {_} _.
+  Arguments wpp_pre {_} _.
+  Arguments wpp_post {_} _.
+
+  Section with_Σ.
+  Context {Σ : gFunctors}.
+
+  Local Notation mpred := (mpred Σ) (only parsing).
+  Local Notation Kpreds := (Kpreds Σ) (only parsing).
+  Local Notation WithPrePost := (WithPrePost Σ) (only parsing).
+  Local Notation function_spec := (function_spec Σ) (only parsing).
 
   Fixpoint WppD' {t : tele}
   : forall (P : teleF mpred t) (Q : teleF (val -> mpred) t), (val -> mpred) -> mpred :=
@@ -179,7 +97,7 @@ Module Type Func.
 
   Definition WppD (wpp : WithPrePost) : (val -> mpred) -> mpred :=
     WppD' wpp.(wpp_pre) wpp.(wpp_post).
-  Arguments WppD !_ / .
+  Global Arguments WppD !_ / .
 
   Section with_resolve.
     Context {resolve : genv}.
@@ -260,89 +178,24 @@ Module Type Func.
       (forall Q vs,
           (fs'.(fs'_spec) ti) vs Q -|-
           applyEach fs.(fs_arguments) vs (fs.(fs_spec) ti) (fun k _ => k Q)) ->
-      cptr (resolve:=resolve) ti fs -|- cptr' (resolve:=resolve) ti fs'.
+      cptr (Σ:=Σ) (resolve:=resolve) ti fs -|- cptr' (Σ:=Σ) (resolve:=resolve) ti fs'.
   Proof.
-    unfold cptr'. intros.
+    rewrite cptr'_eq. unfold cptr'_def.
+    rewrite cptr_eq. unfold cptr_def.
+    intros.
     destruct fs, fs'. simpl in *. subst.
     eapply Rep_equiv_ext_equiv. simpl; intros.
     setoid_rewrite H1; clear H1.
-    rewrite <- forallEach_primes with (Z:=fun a b => fspec x a ti b).
+    rewrite <- (forallEach_primes (PROP:=L.mpredI Σ)) with (Z:=fun a b => fspec x a ti b).
     reflexivity.
   Qed.
 
-(*
-  Theorem triple_sound : forall p r ts ti PQ vs,
-      List.length vs = List.length ts ->
-      forall g : (PQ vs).(wpp_with),
-        cptr p ti (ht r ts PQ) ** (PQ vs).(wpp_pre) g
-        |-- fspec p vs ti ((PQ vs).(wpp_post) g).
-  Proof.
-    unfold ht, cptr.
-    intros.
-    eapply sepSPAdj.
-    eapply (lforallL vs).
-    simpl.
-    eapply wandSP_only_provableL. auto.
-    eapply (lforallL (wpp_post (PQ vs) g)).
-    eapply wandSP_lentails_m; try reflexivity.
-    red.
-    t.
-  Qed.
-
-    Theorem triple_apply : forall p r ts F F' vs (PQ : list val -> WithPrePost) K,
-        List.length vs = List.length ts -> (* trivial *)
-        forall g : (PQ vs).(wpp_with), (* existential quantifier *)
-          F |-- (PQ vs).(wpp_pre) g ** F' -> (* pre-condition *)
-          (forall r, (PQ vs).(wpp_post) g r |-- K r) ->
-          cptr p ti (ht r ts PQ) ** F |-- fspec p vs ti K ** F'.
-    Proof.
-      intros.
-      specialize (triple_sound p r ts ti PQ vs H).
-      unfold ht in *.
-      rewrite H0 in *; clear H0.
-      intros.
-      specialize (H0 g).
-      rewrite <- sepSPA.
-      rewrite H0.
-      t.
-      eapply fspec_conseq. assumption.
-    Qed.
-*)
-
-  Theorem triple'_apply
-  : forall ti p r ts F F' vs (PQ : arrowFrom val ts WithPrePost) K,
-      List.length vs = List.length ts ->
-      F |-- applyEach ts vs PQ (fun wpp _ => WppD wpp) K ** F' ->
-      _at (_eq p) (cptr (resolve:=resolve) ti (SFunction r ts PQ)) ** F
-      |-- fspec (resolve:=resolve) p vs ti K ** F'.
-  Proof.
-    intros.
-    rewrite cptr_cptr'.
-    instantiate (1:=
-      {| fs'_return := r
-       ; fs'_arguments := ts
-       ; fs'_spec ti vs0 Q :=
-         applyEach ts vs0 ((SFunction r ts PQ).(fs_spec) ti)
-                   (fun (k : (val -> mpred) -> mpred) _ => k Q) |}).
-    2,3,4: reflexivity.
-    Transparent _at _eq. unfold _at, _eq. simpl. Opaque _at _eq.
-    rewrite lexists_known.
-    eapply sepSPAdj.
-    eapply (lforallL vs).
-    eapply wandSP_only_provableL; eauto.
-    eapply (lforallL K).
-    eapply wandSPAdj.
-    eapply wandSP_cancel.
-    rewrite H0; clear H0.
-    t.
-    clear.
-    revert vs. induction ts; destruct vs; simpl; try reflexivity.
-    { rewrite IHts. t. }
-  Qed.
-
-  Definition cglob (gn : globname) ti (spec : function_spec)
+  Definition cglob_def (gn : globname) ti (spec : function_spec)
   : mpred :=
     _at (_global gn) (cptr (resolve:=resolve) ti spec).
+  Definition cglob_aux : seal (@cglob_def). by eexists. Qed.
+  Definition cglob := cglob_aux.(unseal).
+  Definition cglob_eq : @cglob = _ := cglob_aux.(seal_eq).
 
   Axiom cglob_dup : forall p ti fs,
       cglob p ti fs -|- cglob p ti fs ** cglob p ti fs.
@@ -351,33 +204,6 @@ Module Type Func.
    * i'm not sure how this works with function pointer weakening.
    *)
   Axiom cglob_weaken : forall a b c, cglob a b c |-- empSP.
-
-  (* todo(gmm): this is problematic because if `thread_info` was empty, then
-   * the left hand side would be ltrue, not empSP
-   *)
-  Lemma cglob_weaken_any_ti :
-    forall (a : globname) (c : function_spec),
-      (Forall ti, cglob a ti c) |-- empSP.
-  Proof.
-    intros.
-    etransitivity.
-    eapply lforall_lentails_m.
-    red. intros. instantiate (1:=fun _ => empSP).
-    eapply cglob_weaken.
-    eapply use_forall_unused.
-    admit.
-  Admitted.
-
-  Lemma cglob_weaken_any_ti_later :
-    forall (a : globname) (c : function_spec),
-      (Forall ti, |> cglob a ti c) |-- empSP.
-  Proof.
-    intros.
-    rewrite <- spec_later_forall.
-    rewrite cglob_weaken_any_ti.
-    admit.
-  Admitted.
-
 
   End with_resolve.
 
@@ -455,12 +281,12 @@ Module Type Func.
           | this_val :: rest_vals =>
             (* this is what is created from the parameters *)
             let binds :=
-                _local ρ "#this" &~ this_val **
+                _this ρ &~ this_val **
                 sepSPs (zip (fun '(x, t) 'v => bind_type ρ t x v) meth.(m_params) rest_vals)
             in
             (* this is what is freed on return *)
             let frees :=
-                _local ρ "#this" &~ this_val **
+                _this ρ &~ this_val **
                 sepSPs (zip (fun '(x, t) 'v => bind_type_free ρ t x v) (rev meth.(m_params))
                        (rev rest_vals))
             in
@@ -507,12 +333,12 @@ Module Type Func.
           | this_val :: rest_vals =>
             (* this is what is created from the parameters *)
             let binds :=
-                _local ρ "#this" &~ this_val **
+                _this ρ &~ this_val **
                 sepSPs (zip (fun '(x, t) 'v => bind_type ρ t x v) ctor.(c_params) rest_vals)
             in
             (* this is what is freed on return *)
             let frees :=
-                _local ρ "#this" &~ this_val **
+                _this ρ &~ this_val **
                 sepSPs (zip (fun '(x, t) 'v => bind_type_free ρ t x v) (rev ctor.(c_params)) (rev rest_vals))
             in
             Forall Q : mpred,
@@ -549,14 +375,15 @@ Module Type Func.
           | nil => lfalse
           | this_val :: rest_vals =>
             (* this is what is created from the parameters *)
-            let binds := _local ρ "#this" &~ this_val in
+            let binds := _this ρ &~ this_val in
             (* this is what is freed on return *)
-            let frees := _local ρ "#this" &~ this_val in
+            let frees := _this ρ &~ this_val in
             Forall Q : mpred,
               (binds ** PQ (fun _ => Q)) -*
               (wp_dtor (resolve:=resolve) dtor.(d_class) ti ρ this_val body deinit frees Q)
           end)
       end.
+  End with_Σ.
 
 End Func.
 

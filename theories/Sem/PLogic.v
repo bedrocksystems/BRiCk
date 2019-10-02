@@ -7,88 +7,40 @@ Require Import Coq.Classes.Morphisms.
 Require Import Coq.NArith.BinNat.
 Require Import Coq.ZArith.BinInt.
 Require Import Coq.Strings.String.
-Require Import LtacIter.LtacIter.
 
-From Cpp Require Import Ast.
-
+From Cpp Require Import ChargeCompat.
 From Cpp.Sem Require Import Logic Semantics.
+From iris.bi Require Export monpred.
+From Cpp Require Import Ast.
 
 Local Open Scope string_scope.
 
-Local Ltac t := Discharge.discharge fail fail fail fail eauto.
-
-(* todo(gmm): these can be moved somewhere more generic *)
-Class Duplicable {L : Type} {LL : ILogicOps L} {LS : BILogicOps L} (P : L) : Prop :=
-{ can_dup : P |-- P ** P }.
-Class Affine {L : Type} {LL : ILogicOps L} {LS : BILogicOps L} (P : L) : Prop :=
-{ can_drop : P |-- empSP }.
-
 (* representations are predicates over a location, they should be used to
- * assert propreties of the heap
+ * assert properties of the heap
  *)
 (* todo(gmm): `addr : val` -> `addr : ptr` *)
-Record Rep : Type :=
-  { repr : forall addr : val, mpred }.
+Instance val_inhabited : Inhabited val.
+Proof. constructor. apply (Vint 0). Qed.
 
-Create HintDb logic discriminated.
-Hint Resolve ltrueR lfalseL lexistsL lexistsR landL1 landL2 landR lorL lorR1 lorR2 lforallR lforallL landAdj limplAdj : logic.
-Ltac logic :=
-  simpl; intros;
-  try (first_of [ db:logic ] ltac:(fun x => solve [ eapply x; eauto using lexistsL, lexistsR, landL1, landL2, landR, lorL, lorR1, lorR2, lforallR, lforallL, landAdj, limplAdj with typeclass_instances ]));
-  eauto using ltrueR, lfalseL, lexistsL, lexistsR, landL1, landL2, landR, lorL, lorR1, lorR2, lforallR, lforallL, landAdj, limplAdj.
-
-
-Global Instance ILogicOps_Rep : ILogicOps Rep :=
-{ lentails P Q := forall a, P.(repr) a |-- Q.(repr) a
-; ltrue := {| repr _ := ltrue |}
-; lfalse := {| repr _ := lfalse |}
-; land  P Q := {| repr a := land (P.(repr) a) (Q.(repr) a) |}
-; lor   P Q := {| repr a := lor (P.(repr) a) (Q.(repr) a) |}
-; limpl P Q := {| repr a := limpl (P.(repr) a) (Q.(repr) a) |}
-; lforall T P := {| repr a := lforall (fun v : T => (P v).(repr) a) |}
-; lexists T P := {| repr a := lexists (fun v : T => (P v).(repr) a) |}
-}.
-Global Instance ILogic_Rep : ILogic Rep.
+Instance val_rel : SqSubsetEq val.
 Proof.
-  constructor; try solve [ simpl; logic ].
-  { constructor; simpl; red.
-    - reflexivity.
-    - intros. etransitivity; eauto. }
-Qed.
-Global Instance BILogicOps_Rep : BILogicOps Rep :=
-{ empSP := {| repr _ := empSP |}
-; sepSP P Q := {| repr a := sepSP (P.(repr) a) (Q.(repr) a) |}
-; wandSP P Q := {| repr a := wandSP (P.(repr) a) (Q.(repr) a) |}
-}.
-Global Instance BILogic_Rep : BILogic Rep.
+  unfold SqSubsetEq.
+  unfold relation.
+  apply eq.
+Defined.
+
+Instance val_rel_preorder : PreOrder (⊑@{val}).
 Proof.
-  constructor; eauto with typeclass_instances.
-  { simpl; intros. eapply sepSPC. }
-  { simpl; intros. eapply sepSPA. }
-  { simpl; intros. split; intros; eapply wandSepSPAdj; eauto. }
-  { simpl; intros. eapply bilsep; eauto. }
-  { simpl; intros. split; simpl; intros; eapply empSPR; eauto. }
+  unfold sqsubseteq. unfold val_rel.
+  apply base.PreOrder_instance_0.
 Qed.
 
-Instance Proper_repr_lentails : Proper (lentails ==> eq ==> lentails) repr.
-Proof.
-  intros until 2.
-  cbn in *; subst; auto.
-Qed.
+Canonical Structure val_bi_index : biIndex :=
+  BiIndex val val_inhabited val_rel val_rel_preorder.
 
-Instance Proper_repr_lequiv : Proper (lequiv ==> eq ==> lequiv) repr.
-Proof.
-  intros ?? [] ?? ->.
-  split; cbn in *; subst; auto.
-Qed.
-
-Lemma Rep_equiv_ext_equiv : forall P Q : Rep,
-    (forall x, P.(repr) x -|- Q.(repr) x) ->
-    P -|- Q.
-Proof.
-  split; red; simpl; eapply H.
-Qed.
-
+Definition Rep Σ := (monPred val_bi_index (mpredI Σ)).
+Definition RepI Σ := (monPredI val_bi_index (mpredI Σ)).
+Definition RepSI Σ := (monPredSI val_bi_index (mpredSI Σ)).
 
 (* locations are predicates over a location and are used to do address
  * arithmetic.
@@ -96,484 +48,227 @@ Qed.
  *   they use field and the layout of a non-standard class or when they
  *   mention local variables.
  *)
-Record Loc : Type :=
-  { addr_of : forall addr : val, mpred }.
-Global Instance ILogicOps_Loc : ILogicOps Loc :=
-{ lentails P Q := forall a, P.(addr_of) a |-- Q.(addr_of) a
-; ltrue := {| addr_of _ := ltrue |}
-; lfalse := {| addr_of _ := lfalse |}
-; land  P Q := {| addr_of a := land (P.(addr_of) a) (Q.(addr_of) a) |}
-; lor   P Q := {| addr_of a := lor (P.(addr_of) a) (Q.(addr_of) a) |}
-; limpl P Q := {| addr_of a := limpl (P.(addr_of) a) (Q.(addr_of) a) |}
-; lforall T P := {| addr_of a := lforall (fun v : T => (P v).(addr_of) a) |}
-; lexists T P := {| addr_of a := lexists (fun v : T => (P v).(addr_of) a) |}
-}.
-Global Instance ILogic_Loc : ILogic Loc.
-Proof.
-  constructor; try solve [ simpl; intros; logic ].
-  { constructor; simpl; red.
-    - reflexivity.
-    - intros. etransitivity; eauto. }
-Qed.
-Global Instance BILogicOps_Loc : BILogicOps Loc :=
-{ empSP := {| addr_of _ := empSP |}
-; sepSP P Q := {| addr_of a := sepSP (P.(addr_of) a) (Q.(addr_of) a) |}
-; wandSP P Q := {| addr_of a := wandSP (P.(addr_of) a) (Q.(addr_of) a) |}
-}.
-Global Instance BILogic_Loc : BILogic Loc.
-Proof.
-  constructor; eauto with typeclass_instances.
-  { simpl; intros. eapply sepSPC. }
-  { simpl; intros. eapply sepSPA. }
-  { simpl; intros. split; intros; eapply wandSepSPAdj; eauto. }
-  { simpl; intros. eapply bilsep; eauto. }
-  { simpl; intros. split; simpl; intros; eapply empSPR; eauto. }
-Qed.
+Definition Loc Σ := (monPred val_bi_index (mpredI Σ)).
+Definition LocI Σ := (monPredI val_bi_index (mpredI Σ)).
+Definition LocSI Σ := (monPredSI val_bi_index (mpredSI Σ)).
 
-Instance Proper_addr_of_lentails : Proper (lentails ==> eq ==> lentails) addr_of.
+Definition Offset Σ := (monPred val_bi_index (monPredI val_bi_index (mpredI Σ))).
+Definition OffsetI Σ := (monPredI val_bi_index (monPredI val_bi_index (mpredI Σ))).
+Definition OffsetSI Σ := (monPredSI val_bi_index (monPredSI val_bi_index (mpredSI Σ))).
+
+Section with_Σ.
+Context {Σ : gFunctors}.
+
+Local Notation mpred := (mpred Σ) (only parsing).
+Local Notation Rep := (Rep Σ) (only parsing).
+Local Notation Loc := (Loc Σ) (only parsing).
+Local Notation Offset := (Offset Σ) (only parsing).
+
+Definition as_Rep (P : val -> mpred) : Rep := MonPred P _.
+Definition as_Loc (P : val -> mpred) : Loc := MonPred P _.
+Definition as_Offset (P : val -> val -> mpred) : Offset := MonPred (fun v => MonPred (P v) _) _.
+
+Lemma Rep_equiv_ext_equiv : forall P Q : Rep,
+    (forall x, P x -|- Q x) ->
+    P -|- Q.
 Proof.
-  intros until 2.
-  cbn in *; subst; auto.
+  split; red; simpl; eapply H.
 Qed.
-
-Instance Proper_addr_of_lequiv : Proper (lequiv ==> eq ==> lequiv) addr_of.
-Proof.
-  intros ?? [] ?? ?.
-  split; cbn in *; subst; auto.
-Qed.
-
-
-Record Offset : Type :=
-  { offset : forall base new : val, mpred }.
-
-Global Instance ILogicOps_Offset : ILogicOps Offset :=
-{ lentails P Q := forall a b, P.(offset) a b |-- Q.(offset) a b
-; ltrue := {| offset _ := ltrue |}
-; lfalse := {| offset _ := lfalse |}
-; land  P Q := {| offset a := land (P.(offset) a) (Q.(offset) a) |}
-; lor   P Q := {| offset a := lor (P.(offset) a) (Q.(offset) a) |}
-; limpl P Q := {| offset a := limpl (P.(offset) a) (Q.(offset) a) |}
-; lforall T P := {| offset a := lforall (fun v : T => (P v).(offset) a) |}
-; lexists T P := {| offset a := lexists (fun v : T => (P v).(offset) a) |}
-}.
-Global Instance ILogic_Offset : ILogic Offset.
-Proof.
-  constructor; try solve [ simpl; intros; logic ].
-  { constructor; simpl; red.
-    - reflexivity.
-    - intros. etransitivity; eauto. }
-  { simpl; intros. eapply landAdj. eapply H. }
-  { simpl; intros. eapply limplAdj. eapply H. }
-Qed.
-Global Instance BILogicOps_Offset : BILogicOps Offset :=
-{ empSP := {| offset _ _ := empSP |}
-; sepSP P Q := {| offset a b := sepSP (P.(offset) a b) (Q.(offset) a b) |}
-; wandSP P Q := {| offset a b := wandSP (P.(offset) a b) (Q.(offset) a b) |}
-}.
-Global Instance BILogic_Offset : BILogic Offset.
-Proof.
-  constructor; eauto with typeclass_instances.
-  { simpl; intros. eapply sepSPC. }
-  { simpl; intros. eapply sepSPA. }
-  { simpl; intros. split; intros; eapply wandSepSPAdj; eauto. }
-  { simpl; intros. eapply bilsep; eauto. }
-  { simpl; intros. split; simpl; intros; eapply empSPR; eauto. }
-Qed.
-
 
 Definition LocEq (l1 l2 : Loc) : Prop :=
-  forall x y, l1.(addr_of) x //\\ l2.(addr_of) y |-- [| x = y |].
-
-Class Dup_Loc (l : Loc) : Prop :=
-  { can_dupL : l |-- l ** l }.
+  forall (x y : val), (l1 x) //\\ (l2 y) |-- [| x = y |].
 
 (* absolute locations *)
-Definition _eq (a : val) : Loc :=
-  {| addr_of p := [| p = a |] |}.
-
-Lemma _eq_eq : forall a b,
-    [| a = b |] -|- addr_of (_eq a) b.
-Proof.
-  intros. cbn. split; t.
-Qed.
+Definition _eq_def (a : val) : Loc :=
+  as_Loc (fun p => [| p = a |]).
+Definition _eq_aux : seal (@_eq_def). by eexists. Qed.
+Definition _eq := _eq_aux.(unseal).
+Definition _eq_eq : @_eq = _ := _eq_aux.(seal_eq).
 
 (* note(gmm): this is *not* duplicable *)
-Definition _local (r : region) (x : ident) : Loc :=
-  {| addr_of v := Exists p, [| v = Vptr p |] ** local_addr r x p |}.
+Definition _local_def (r : region) (x : ident) : Loc :=
+  as_Loc (fun v => Exists p, [| v = Vptr p |] ** local_addr r x p).
+Definition _local_aux : seal (@_local_def). by eexists. Qed.
+Definition _local := _local_aux.(unseal).
+Definition _local_eq : @_local = _ := _local_aux.(seal_eq).
 
-Definition _this (r : region) : Loc :=
+Definition _this_def (r : region) : Loc :=
   _local r "#this".
+Definition _this_aux : seal (@_this_def). by eexists. Qed.
+Definition _this := _this_aux.(unseal).
+Definition _this_eq : @_this = _ := _this_aux.(seal_eq).
 
-Definition _result (r : region) : Loc :=
-  _local r "#this".
+Definition _result_def (r : region) : Loc :=
+  _local r "#result".
+Definition _result_aux : seal (@_result_def). by eexists. Qed.
+Definition _result := _result_aux.(unseal).
+Definition _result_eq : @_result = _ := _result_aux.(seal_eq).
 
-Definition _global (x : obj_name) : Loc :=
-  {| addr_of v := Exists p, [| v = Vptr p |] **
-                  with_genv (fun env => [| glob_addr env x p |]) |}.
+Definition _global_def (x : obj_name) : Loc :=
+  as_Loc (fun v => Exists p, [| v = Vptr p |] **
+                    with_genv (fun env => [| glob_addr env x p |])).
+Definition _global_aux : seal (@_global_def). by eexists. Qed.
+Definition _global := _global_aux.(unseal).
+Definition _global_eq : @_global = _ := _global_aux.(seal_eq).
 
 (* offsets *)
-Definition _field (f : field) : Offset.
-  (* this is duplicable for non-reference fields *)
-Admitted.
+Definition _field_def (f : field) : Offset :=
+  as_Offset (fun from to =>
+       with_genv (fun g => Exists off : Z,
+       [| offset_of g (Tref f.(f_type)) f.(f_name) off |] **
+       [| offset_ptr from off = to |])).
+Definition _field_aux : seal (@_field_def). by eexists. Qed.
+Definition _field := _field_aux.(unseal).
+Definition _field_eq : @_field = _ := _field_aux.(seal_eq).
 
-Definition _sub (t : type) (i : Z) : Offset :=
-  {| offset from to :=
-       Exists sz, with_genv (fun prg => [| size_of prg t sz |]) **
-                  [| to = offset_ptr from (i * Z.of_N sz) |]
-  |}.
+Definition _sub_def (t : type) (i : Z) : Offset :=
+  as_Offset (fun from to =>
+    Exists sz, with_genv (fun prg => [| size_of prg t sz |]) **
+                         [| to = offset_ptr from (i * Z.of_N sz) |]).
+Definition _sub_aux : seal (@_sub_def). by eexists. Qed.
+Definition _sub := _sub_aux.(unseal).
+Definition _sub_eq : @_sub = _ := _sub_aux.(seal_eq).
 
 (* this represents static_cast *)
-Definition _super (sub super : globname) : Offset :=
-  {| offset base addr :=
-       Exists off, with_genv (fun prg => [| parent_offset prg sub super off |]) **
-                   [| addr = offset_ptr base off |]
-  |}.
+Definition _super_def (sub super : globname) : Offset :=
+  as_Offset (fun base addr =>
+             Exists off, with_genv (fun prg => [| parent_offset prg sub super off |]) **
+                                   [| addr = offset_ptr base off |]).
+Definition _super_aux : seal (@_super_def). by eexists. Qed.
+Definition _super := _super_aux.(unseal).
+Definition _super_eq : @_super = _ := _super_aux.(seal_eq).
 
-Definition _deref (ty : type) : Offset :=
-  {| offset from to := tptsto ty from to ** [| has_type from (Tpointer ty) |] |}.
+Definition _deref_def (ty : type) : Offset :=
+  as_Offset (fun from to =>
+             tptsto ty from to ** [| has_type from (Tpointer ty) |]).
+Definition _deref_aux : seal (@_deref_def). by eexists. Qed.
+Definition _deref := _deref_aux.(unseal).
+Definition _deref_eq : @_deref = _ := _deref_aux.(seal_eq).
 
-Definition _id : Offset :=
-  {| offset a b := [| a = b |] |}.
+Definition _id_def : Offset :=
+  as_Offset (fun a b => [| a = b |]).
+Definition _id_aux : seal (@_id_def). by eexists. Qed.
+Definition _id := _id_aux.(unseal).
+Definition _id_eq : @_id = _ := _id_aux.(seal_eq).
 
-Definition _dot (o1 o2 : Offset) : Offset :=
-  {| offset a c := Exists b, o1.(offset) a b ** o2.(offset) b c |}.
+Definition _dot_def (o1 o2 : Offset) : Offset :=
+  as_Offset (fun a c => Exists b, o1 a b ** o2 b c).
+Definition _dot_aux : seal (@_dot_def). by eexists. Qed.
+Definition _dot := _dot_aux.(unseal).
+Definition _dot_eq : @_dot = _ := _dot_aux.(seal_eq).
 
-Global Instance Proper__dot : Proper (lequiv ==> lequiv ==> lequiv) _dot.
-Proof.
-  unfold _dot.
-  intros ?? [H1 H2] ?? [H3 H4].
-  split;
-    cbn in *;
-    intros;
-    t;
-    [ rewrite H1, H3 | rewrite H2, H4 ];
-    t.
-Qed.
+Definition _offsetL_def (o : Offset) (l : Loc) : Loc :=
+  as_Loc (fun a => Exists a', o a' a ** l a').
+Definition _offsetL_aux : seal (@_offsetL_def). by eexists. Qed.
+Definition _offsetL := _offsetL_aux.(unseal).
+Definition _offsetL_eq : @_offsetL = _ := _offsetL_aux.(seal_eq).
 
-Definition _offsetL (o : Offset) (l : Loc) : Loc :=
-  {| addr_of a := Exists a', o.(offset) a' a ** l.(addr_of) a' |}.
-Lemma _offsetL_dot : forall o1 o2 l,
-    _offsetL o2 (_offsetL o1 l) -|- _offsetL (_dot o1 o2) l.
-Proof.
-  unfold _offsetL, _dot; simpl.
-  constructor; simpl; intros; t.
-Qed.
-Lemma _offsetL_id : forall l,
-    l -|- _offsetL _id l.
-Proof.
-  unfold _offsetL, _id; cbn.
-  constructor; cbn; intros; t.
-  subst; t.
-Qed.
-Global Instance Proper__offsetL : Proper (lequiv ==> lequiv ==> lequiv) _offsetL.
-Proof.
-  unfold _offsetL.
-  intros ?? [H1 H2] ?? [H3 H4].
-  split;
-    cbn in *;
-    intros;
-    t;
-    [ rewrite H1, H3 | rewrite H2, H4 ];
-    t.
-Qed.
+Definition _offsetR_def (o : Offset) (r : Rep) : Rep :=
+  as_Rep (fun a => Exists a', o a a' ** r a').
+Definition _offsetR_aux : seal (@_offsetR_def). by eexists. Qed.
+Definition _offsetR := _offsetR_aux.(unseal).
+Definition _offsetR_eq : @_offsetR = _ := _offsetR_aux.(seal_eq).
 
-Definition _offsetR (o : Offset) (r : Rep) : Rep :=
-  {| repr a := Exists a', o.(offset) a a' ** r.(repr) a' |}.
-Lemma _offsetR_dot : forall o1 o2 l,
-    _offsetR o1 (_offsetR o2 l) -|- _offsetR (_dot o1 o2) l.
-Proof.
-  unfold _offsetL, _dot; simpl.
-  constructor; simpl; intros; t.
-Qed.
-Lemma _offsetR_id : forall r,
-    r -|- _offsetR _id r.
-Proof.
-  unfold _offsetR, _id; cbn.
-  constructor; simpl; intros; t.
-  subst; t.
-Qed.
-Global Instance Proper__offsetR : Proper (lequiv ==> lentails ==> lentails) _offsetR.
-Proof.
-  unfold _offsetR.
-  intros ?? [H1 H2] ?? H3.
-  cbn in *.
-  intros.
-  t.
-  rewrite H1, H3.
-  t.
-Qed.
+Definition addr_of_def (a : Rep) (b : val) : mpred := a b.
+Definition addr_of_aux : seal (@addr_of_def). by eexists. Qed.
+Definition addr_of := addr_of_aux.(unseal).
+Definition addr_of_eq : @addr_of = _ := addr_of_aux.(seal_eq).
+Arguments addr_of : simpl never.
+Notation "a &~ b" := (addr_of a b) (at level 30, no associativity).
 
-Global Instance Proper__offsetR_equiv : Proper (lequiv ==> lequiv ==> lequiv) _offsetR.
-Proof.
-  unfold _offsetR.
-  intros ?? [H1 H2] ?? [H3 H4].
-  split;
-    cbn in *;
-    intros;
-    t;
-    [ rewrite H1, H3 | rewrite H2, H4 ];
-    t.
-Qed.
-
-(*
-(** pointer offsets *)
-Definition field_addr (f : field) (base : val) : Loc := fun ptr =>
-  with_genv (fun g => Exists off : Z,
-      [| offset_of (resolve:=g) (Tref f.(f_type)) f.(f_name) off |] **
-      [| offset_ptr base off = ptr |]).
-
-(* todo(gmm): i need a way to compute a parent class offset. *)
-Parameter parent_addr : forall (parent derived : globname) (base : val), Loc.
-
-(* address of a local variable *)
-Parameter local_addr : region -> ident -> Loc.
-*)
-
-
-(* there shouldn't be locals because locals need a spatial ownership (over
- * the region)
- * global addresses admit duplication and weakening
- *)
-Inductive path : Type :=
-| p_done
-| p_dot  (_ : field) (_ : path) (* field offset *)
-| p_cast (from to : globname)  (_ : path) (* parent-class offset, i.e. static_cast *)
-| p_sub  (_ : type) (_ : val) (_ : path).
-
-Fixpoint pathD (p : path) : Offset :=
-  match p with
-  | p_done => _id
-  | p_dot f p => _dot (_field f) (pathD p)
-  | p_cast from to p =>
-    _dot (_super from to) (pathD p)
-  | p_sub t v p =>
-    {| offset b a := Exists i : Z,
-         [| Vint i = v |] //\\
-         (_dot (_sub (drop_qualifiers t) i) (pathD p)).(offset) b a |}
-  end.
-
-
-Notation "a &~ b" := (a.(addr_of) b) (at level 30, no associativity).
-
-Class Duplicable_Offset (o : Offset) : Prop :=
-  { dup_offset : o |-- o ** o }.
-Arguments dup_offset {_ _}.
-
-Global Instance Duplicable_offset o {Do : Duplicable_Offset o} a b : Duplicable (offset o a b).
-Proof.
-  constructor. eapply dup_offset.
-Qed.
-
-Definition _at (base : Loc) (P : Rep) : mpred :=
-  Exists a, base.(addr_of) a ** P.(repr) a.
-
-Global Instance Proper__at : Proper (lequiv ==> lentails ==> lentails) _at.
-Proof.
-  unfold _at. red. red. red.
-  intros.
-  destruct H. simpl in *.
-  t. rewrite H. rewrite H0. t.
-Qed.
-
-Global Instance Proper__at_lequiv : Proper (lequiv ==> lequiv ==> lequiv) _at.
-Proof.
-  intros ?? H1 ?? [H2 H3].
-  split;
-    rewrite H1;
-    [ rewrite H2 | rewrite H3 ];
-    reflexivity.
-Qed.
-
-Lemma _at_eq : forall l r,
-    _at l r -|- Exists a, l &~ a ** _at (_eq a) r.
-Proof. unfold _at, _eq. intros.
-       split; t; simpl; t.
-       subst. t.
-Qed.
-
-Lemma _at_sepSP : forall x P Q,
-    _at (_eq x) (P ** Q) -|- _at (_eq x) P ** _at (_eq x) Q.
-Proof.
-  unfold _at; split; simpl; t. subst. t.
-Qed.
-Lemma _at_lexists : forall x T (P : T -> _),
-    _at x (lexists P) -|- Exists v, _at x (P v).
-Proof.
-  unfold _at; split; simpl; t.
-Qed.
-
-Lemma _at_empSP : forall x,
-    _at (_eq x) empSP -|- empSP.
-Proof. unfold _at. simpl. intros. split; t. Qed.
-
-Lemma _at_offsetL_offsetR : forall base o r,
-    _at base (_offsetR o r) -|- _at (_offsetL o base) r.
-Proof.
-  unfold _at, _offsetR, _offsetL. split; simpl; t.
-Qed.
+Definition _at_def (base : Loc) (P : Rep) : mpred :=
+  Exists a, base a ** P a.
+Definition _at_aux : seal (@_at_def). by eexists. Qed.
+Definition _at := _at_aux.(unseal).
+Definition _at_eq : @_at = _ := _at_aux.(seal_eq).
 
 (** Values
  * These `Rep` predicates wrap `ptsto` facts
  *)
+(* Make Opauqe *)
 Definition pureR (P : mpred) : Rep :=
-  {| repr _ := P |}.
-Coercion pureR : mpred >-> Rep.
+  as_Rep (fun _ => P).
 
-Definition tint (sz : size) (v : Z) : Rep :=
-  {| repr addr :=
-       tptsto (Tint sz Signed) addr (Vint v) **
-       [| has_type (Vint v) (Tint sz Signed) |] |}.
-Definition tuint (sz : size) (v : Z) : Rep :=
-  {| repr addr :=
-       tptsto (Tint sz Unsigned) addr (Vint v) **
-       [| has_type (Vint v) (Tint sz Unsigned) |] |}.
-Definition tptr (ty : type) (p : ptr) : Rep :=
-  {| repr addr := tptsto (Tpointer ty) addr (Vptr p) |}.
-Definition tref (ty : type) (p : val) : Rep :=
-  {| repr addr := [| addr = p |] |}.
+Definition tint_def (sz : size) (v : Z) : Rep :=
+  as_Rep (fun addr => tptsto (Tint sz Signed) addr (Vint v) **
+                             [| has_type (Vint v) (Tint sz Signed) |]).
+Definition tint_aux : seal (@tint_def). by eexists. Qed.
+Definition tint := tint_aux.(unseal).
+Definition tint_eq : @tint = _ := tint_aux.(seal_eq).
 
+Definition tuint_def (sz : size) (v : Z) : Rep :=
+  as_Rep (fun addr => tptsto (Tint sz Unsigned) addr (Vint v) **
+       [| has_type (Vint v) (Tint sz Unsigned) |]).
+Definition tuint_aux : seal (@tuint_def). by eexists. Qed.
+Definition tuint := tuint_aux.(unseal).
+Definition tuint_eq : @tuint = _ := tuint_aux.(seal_eq).
 
-Definition tprim (ty : type) (v : val) : Rep :=
-  {| repr addr := tptsto ty addr v ** [| has_type v (drop_qualifiers ty) |] |}.
-Definition tprim_proper v v' ty : v = v' -> tprim ty v -|- tprim ty v'.
-Proof. intros []; reflexivity. Qed.
-Lemma tprim_tint : forall sz v,
-    tprim (Tint sz Signed) (Vint v) -|- tint sz v.
-Proof. reflexivity. Qed.
-Lemma tprim_tuint : forall sz v,
-    tprim (Tint sz Unsigned) (Vint v) -|- tuint sz v.
-Proof. reflexivity. Qed.
-Lemma tprim_tptr : forall ty p,
-    tprim (Tpointer ty) (Vptr p) -|- tptr ty p.
-Proof.
-  unfold tprim, tptr; split; intros; simpl; intros.
-  { t. }
-  { eapply tptsto_has_type. }
-Qed.
+Definition tptr_def (ty : type) (p : ptr) : Rep :=
+  as_Rep (fun addr => tptsto (Tpointer ty) addr (Vptr p)).
+Definition tptr_aux : seal (@tptr_def). by eexists. Qed.
+Definition tptr := tptr_aux.(unseal).
+Definition tptr_eq : @tptr = _ := tptr_aux.(seal_eq).
 
-Definition uninit (ty : type) : Rep :=
-  {| repr addr :=
-       Exists bits,
+Definition tref_def (ty : type) (p : val) : Rep :=
+  as_Rep (fun addr => [| addr = p |]).
+Definition tref_aux : seal (@tref_def). by eexists. Qed.
+Definition tref := tref_aux.(unseal).
+Definition tref_eq : @tref = _ := tref_aux.(seal_eq).
+
+Definition tprim_def (ty : type) (v : val) : Rep :=
+  as_Rep (fun addr => tptsto ty addr v ** [| has_type v (drop_qualifiers ty) |]).
+Definition tprim_aux : seal (@tprim_def). by eexists. Qed.
+Definition tprim := tprim_aux.(unseal).
+Definition tprim_eq : @tprim = _ := tprim_aux.(seal_eq).
+
+Definition uninit_def (ty : type) : Rep :=
+  as_Rep (fun addr => Exists bits,
        (* with_genv (fun env => [| size_of env ty size |]) ** *)
-       (tprim ty bits).(repr) addr |}.
+       (tprim ty bits) addr ).
+Definition uninit_aux : seal (@uninit_def). by eexists. Qed.
+Definition uninit := uninit_aux.(unseal).
+Definition uninit_eq : @uninit = _ := uninit_aux.(seal_eq).
 
 (* this should mean "anything, including uninitialized" *)
-Definition tany (t : type) : Rep :=
-  {| repr addr :=
-       (Exists v, (tprim t v).(repr) addr) \\//
-       (uninit t).(repr) addr |}.
+Definition tany_def (t : type) : Rep :=
+  as_Rep (fun addr => (Exists v, (tprim t v) addr) \\//
+       (uninit t) addr).
+Definition tany_aux : seal (@tany_def). by eexists. Qed.
+Definition tany := tany_aux.(unseal).
+Definition tany_eq : @tany = _ := tany_aux.(seal_eq).
 
 (* this isn't really necessary, we should simply drop it and write
  * predicates in this way to start with
  *)
-Definition tinv {model} (Inv : val -> model -> mpred) (m : model) : Rep :=
-  {| repr addr := Inv addr m |}.
+Definition tinv_def {model} (Inv : val -> model -> mpred) (m : model) : Rep :=
+  as_Rep (fun addr => Inv addr m).
+Definition tinv_aux : seal (@tinv_def). by eexists. Qed.
+Definition tinv := tinv_aux.(unseal).
+Definition tinv_eq : @tinv = _ := tinv_aux.(seal_eq).
 
-Definition is_null : Rep :=
-  {| repr addr := [| addr = Vptr nullptr |] |}.
+Definition is_null_def : Rep :=
+  as_Rep (fun addr => [| addr = Vptr nullptr |]).
+Definition is_null_aux : seal (@is_null_def). by eexists. Qed.
+Definition is_null := is_null_aux.(unseal).
+Definition is_null_eq : @is_null = _ := is_null_aux.(seal_eq).
 
-Definition is_nonnull : Rep :=
-  {| repr addr := Exists p, [| p <> nullptr |] ** [| addr = Vptr p |] |}.
+Definition is_nonnull_def : Rep :=
+  as_Rep (fun addr => Exists p, [| p <> nullptr |] ** [| addr = Vptr p |]).
+Definition is_nonnull_aux : seal (@is_nonnull_def). by eexists. Qed.
+Definition is_nonnull := is_nonnull_aux.(unseal).
+Definition is_nonnull_eq : @is_nonnull = _ := is_nonnull_aux.(seal_eq).
 
-Lemma tint_any : forall sz v, tint sz v |-- tany (Tint sz Signed).
-Proof.
-  simpl; intros. t.
-  eapply lorR1. t.
-Qed.
-Lemma tuint_any : forall sz v, tuint sz v |-- tany (Tint sz Unsigned).
-Proof.
-  simpl; intros. t.
-  eapply lorR1. t.
-Qed.
-Lemma tptr_any : forall ty p, tptr ty p |-- tany (Tpointer ty).
-Proof.
-  simpl; intros. t.
-  eapply lorR1. t.
-Admitted.
-Lemma tprim_any : forall t v, tprim t v |-- tany t.
-Proof.
-  simpl; intros; t.
-  eapply lorR1. t.
-Qed.
-
-Lemma tuninit_any : forall t, uninit t |-- tany t.
-Proof.
-  simpl; intros; t.
-  eapply lorR2. t.
-Qed.
-
-Lemma _at_pureR : forall x P,
-    _at (_eq x) (pureR P) -|- P.
-Proof.
-  unfold _at; split; simpl; t.
-Qed.
-
-Lemma _at_eq_tref : forall x ty v,
-    _at (_eq x) (tref ty v) -|- [| x = v |].
-Proof.
-  unfold _at; split; cbn; t; subst; t.
-Qed.
-
-Lemma _at_eq_is_null : forall x,
-    _at (_eq x) is_null -|- [| x = Vptr nullptr |].
-Proof.
-  unfold _at; split; cbn; t; subst; t.
-Qed.
-
-Lemma _at_eq_is_nonnull : forall x,
-    _at (_eq x) is_nonnull -|- Exists p, [| p <> nullptr |] ** [| x = Vptr p |].
-Proof.
-  unfold _at; split; cbn; t; subst; t.
-Qed.
-
-Lemma refine_tprim_ptr : forall p ty v F Q,
-    (forall pt, Vptr pt = v ->
-           _at p (tptr ty pt) ** F |-- Q) ->
-    _at p (tprim (Tpointer ty) v) ** F |-- Q.
-Proof.
-  unfold _at, tprim.
-  intros; simpl.
-  t.
-  destruct (has_type_pointer _ _ H0).
-  erewrite <- H; eauto. simpl. subst. t.
-Qed.
-
-Definition _at_cancel : forall a (V V' : Rep) P Q,
-    V |-- V' ->
-    P |-- Q ->
-    _at a V ** P |-- _at a V' ** Q.
-Proof.
-  unfold _at. simpl in *. intros. t.
-  eapply scME; eauto.
-Qed.
-
-Definition tlocal_at (r : region) (l : ident) (a : val) (v : Rep) : mpred :=
+Definition tlocal_at_def (r : region) (l : ident) (a : val) (v : Rep) : mpred :=
   _local r l &~ a ** _at (_eq a) v.
+Definition tlocal_at_aux : seal (@tlocal_at_def). by eexists. Qed.
+Definition tlocal_at := tlocal_at_aux.(unseal).
+Definition tlocal_at_eq : @tlocal_at = _ := tlocal_at_aux.(seal_eq).
 
-Definition tlocal (r : region) (x : ident) (v : Rep) : mpred :=
+Definition tlocal_def (r : region) (x : ident) (v : Rep) : mpred :=
   Exists a, tlocal_at r x a v.
-
-Lemma tlocal_at_tlocal : forall r x a v v' F F',
-    v |-- v' ->
-    F |-- F' ->
-    tlocal_at r x a v ** F |-- tlocal r x v' ** F'.
-Proof.
-  clear. unfold tlocal, tlocal_at.
-  intros.
-  rewrite H.
-  t. assumption.
-Qed.
-
-Lemma tlocal_at_tlocal_at : forall r x a v v' F F',
-    v |-- v' ->
-    F |-- F' ->
-    tlocal_at r x a v ** F |-- tlocal_at r x a v' ** F'.
-Proof.
-  clear. unfold tlocal, tlocal_at.
-  intros.
-  rewrite H.
-  t. assumption.
-Qed.
+Definition tlocal_aux : seal (@tlocal_def). by eexists. Qed.
+Definition tlocal := tlocal_aux.(unseal).
+Definition tlocal_eq : @tlocal = _ := tlocal_aux.(seal_eq).
 
 (* this is for `Indirect` field references *)
 Fixpoint path_to_Offset (from : globname) (final : ident)
@@ -593,6 +288,10 @@ Definition offset_for (cls : globname) (f : FieldOrBase) : Offset :=
     path_to_Offset cls final ls
   end.
 
+Global Opaque _local _global _at _sub _field _offsetR _offsetL _dot tprim tint tuint tptr is_null is_nonnull addr_of.
 
-Global Opaque _local _global _at _sub _field _offsetR _offsetL tprim tint tuint tptr is_null is_nonnull.
-Global Opaque lexists sepSP empSP land lor lforall ltrue lfalse.
+End with_Σ.
+
+Arguments addr_of : simpl never.
+Notation "a &~ b" := (addr_of a b) (at level 30, no associativity).
+Coercion pureR : mpred >-> Rep.
