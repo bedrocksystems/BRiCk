@@ -16,9 +16,12 @@ From Cpp.Auto Require Import vc.
 Require RetRef.test_cpp.
 Require Import RetRef.test_cpp_spec.
 
+Section with_Σ.
+Context {Σ:gFunctors}.
+
 (* soundness of the specification *)
 Theorem main_cpp_sound : forall (resolve : genv),
-    denoteModule test_cpp.module |-- test_cpp_spec resolve.
+    denoteModule (Σ:=Σ) test_cpp.module |-- test_cpp_spec resolve.
 Proof.
   intros.
   simpl.
@@ -33,3 +36,5 @@ Proof.
 
   finish_module.
 Qed.
+
+End with_Σ.

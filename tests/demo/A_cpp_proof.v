@@ -15,9 +15,12 @@ Require Import Demo.A_cpp_spec.
 
 Opaque denoteModule.
 
+Section with_Σ.
+Context {Σ:gFunctors}.
+
 (* soundness of the specification *)
 Theorem A_cpp_sound : forall (resolve : genv),
-    denoteModule A_cpp.module |-- A_cpp_spec resolve.
+    denoteModule (Σ:=Σ) A_cpp.module |-- A_cpp_spec resolve.
 Proof.
   intros.
   unfold A_cpp_spec, module.
@@ -31,3 +34,5 @@ Proof.
 
   finish_module.
 Qed.
+
+End with_Σ.

@@ -42,3 +42,10 @@ Fixpoint is_aggregate (t : type) : bool :=
   | Tqualified _ t => is_aggregate t
   | _ => false
   end.
+
+Fixpoint is_void (t : type) : bool :=
+  match t with
+  | Tqualified _ t => is_void t
+  | Tvoid => true
+  | _ => false
+  end.

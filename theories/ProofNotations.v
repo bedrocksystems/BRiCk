@@ -3,21 +3,21 @@
 Require Import Cpp.Sem.Wp.
 Require Import Cpp.Sem.
 
-Notation "'::wpL' ( e )" := (@wp_lval _ _ _ e _)
+Notation "'::wpL' ( e )" := (@wp_lval _ _ _ _ e _)
          (at level 0, only printing).
-Notation "'::wpX' ( e )" := (@wp_xval _ _ _ e _)
+Notation "'::wpX' ( e )" := (@wp_xval _ _ _ _ e _)
          (at level 0, only printing).
-Notation "'::wpPR' ( e )" := (@wp_prval _ _ _ e _)
+Notation "'::wpPR' ( e )" := (@wp_prval _ _ _ _ e _)
          (at level 0, only printing).
-Notation "'::wpPRᵢ' ( e )" := (@wp_init _ _ _ _ _ e _)
+Notation "'::wpPRᵢ' ( e )" := (@wp_init _ _ _ _ _ _ e _)
          (at level 0, only printing).
-Notation "'::wpGL' ( e )" := (@wp_glval _ _ _ e _)
+Notation "'::wpGL' ( e )" := (@wp_glval _ _ _ _ e _)
          (at level 0, only printing).
-Notation "'::wpR' ( e )" := (@wp_rval _ _ _ e _)
+Notation "'::wpR' ( e )" := (@wp_rval _ _ _ _ e _)
          (at level 0, only printing).
-Notation "'::wpS' ( e )" := (@wp _ _ _ e _)
+Notation "'::wpS' ( e )" := (@wp _ _ _ _ e _)
          (at level 0, only printing).
-Notation "'::wpE' ( e )" := (@wpe _ _ _ _ e _)
+Notation "'::wpE' ( e )" := (@wpe _ _ _ _ _ e _)
          (at level 0, only printing).
 Notation "'::wpD' ( t n = e )" := (@wp_decl _ _ _ n t e _ _ _)
          (at level 0, only printing).

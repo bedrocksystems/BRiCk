@@ -3,21 +3,36 @@
  *
  * SPDX-License-Identifier:AGPL-3.0-or-later
  *)
-From ChargeCore.Logics Require Import
-     ILogic BILogic ILEmbed Later.
-
 From Cpp Require Import
      Ast.
 From Cpp.Sem Require Import
      Logic CompilationUnit.
+From iris.proofmode Require Import tactics.
 
-Axiom lob_ind : forall P S,
+Section with_Σ.
+Context {Σ:gFunctors}.
+
+Local Notation mpred := (mpred Σ) (only parsing).
+
+Lemma lob_ind : forall (P S : mpred),
     S //\\ |> P |-- P ->
     S |-- P.
-Axiom illater_wandSP : forall P Q, |> (P -* Q) -|- (|> P) -* (|> Q).
-Axiom illater_sepSP : forall P Q, |> (P ** Q) -|- (|> P) ** (|> Q).
-Axiom later_empSP : |> empSP -|- empSP.
-
+Proof.
+  iIntros (P S HP) "HS". iLöb as "HS'". iApply HP. iSplit; eauto. iNext.
+  iApply "HS'". eauto.
+Qed.
+Lemma illater_wandSP : forall (P Q : mpred), |> (P -* Q) |-- (|> P) -* (|> Q).
+Proof.
+  iIntros (P Q). iIntros "HPQ HP". iNext. by iApply "HPQ".
+Qed.
+Lemma illater_sepSP : forall (P Q : mpred), |> (P ** Q) -|- (|> P) ** (|> Q).
+Proof.
+  iIntros (P Q). iSplit.
+  - iIntros "HPQ". by iApply bi.later_sep_1.
+  - iIntros "HPQ". iNext. eauto.
+Qed. 
+Lemma later_empSP : |> (empSP : mpred) -|- empSP.
+Proof. iSplit; eauto. Qed.
 
 (* note that the meaning of a module must be persistent,
  * if you have non-persistent terms (e.g. ptsto), then you either need
@@ -34,7 +49,7 @@ Theorem use_module_prim
     | None => False
     | Some all' => compilation_unit_eq all all' = true
     end ->
-    denoteModule sub |-- spec ->
+    denoteModule (Σ := Σ) sub |-- spec ->
     denoteModule all |-- denoteModule rem ** spec.
 Proof. Admitted.
 
@@ -81,3 +96,4 @@ Abort.
      * |>B ==> A
      * A //\\ B
      *)
+End with_Σ.

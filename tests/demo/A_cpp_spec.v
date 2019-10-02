@@ -12,7 +12,11 @@ From Cpp Require Import Auto.
 
 From Demo Require Import A_hpp_spec.
 
+Section with_Σ.
+Context {Σ:gFunctors}.
 
 Definition A_cpp_spec (resolve : _) :=
-      module empSP
+      module (Σ:=Σ) empSP
              (ti_cglob (resolve:=resolve) A__foo A__foo_spec).
+
+End with_Σ.

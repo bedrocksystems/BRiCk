@@ -13,18 +13,22 @@ From Cpp.Sem Require Import
 Module Type Deinit.
 
   Section with_resolve.
+    Context {Σ:gFunctors}.
     Context {resolve : genv}.
     Variable ti : thread_info.
     Variable ρ : region.
 
-    Local Notation wp := (wp (resolve:=resolve)  ti ρ).
-    Local Notation wpe := (wpe (resolve:=resolve) ti ρ).
-    Local Notation wp_lval := (wp_lval (resolve:=resolve) ti ρ).
-    Local Notation wp_rval := (wp_rval (resolve:=resolve) ti ρ).
-    Local Notation wp_xval := (wp_xval (resolve:=resolve) ti ρ).
-    Local Notation wpAny := (wpAny (resolve:=resolve) ti ρ).
-    Local Notation wpAnys := (wpAnys (resolve:=resolve) ti ρ).
-    Local Notation fspec := (fspec (resolve:=resolve)).
+    Local Notation wp := (wp (Σ:=Σ) (resolve:=resolve)  ti ρ).
+    Local Notation wpe := (wpe (Σ:=Σ) (resolve:=resolve) ti ρ).
+    Local Notation wp_lval := (wp_lval (Σ:=Σ) (resolve:=resolve) ti ρ).
+    Local Notation wp_rval := (wp_rval (Σ:=Σ) (resolve:=resolve) ti ρ).
+    Local Notation wp_xval := (wp_xval (Σ:=Σ) (resolve:=resolve) ti ρ).
+    Local Notation wpAny := (wpAny (Σ:=Σ) (resolve:=resolve) ti ρ).
+    Local Notation wpAnys := (wpAnys (Σ:=Σ) (resolve:=resolve) ti ρ).
+    Local Notation fspec := (fspec (Σ:=Σ) (resolve:=resolve)).
+
+    Local Notation mpred := (mpred Σ) (only parsing).
+    Local Notation Rep := (Rep Σ) (only parsing).
 
     (** destructor lists
      *

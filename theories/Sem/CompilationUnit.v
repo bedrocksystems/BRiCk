@@ -12,17 +12,22 @@ Require Import Coq.Strings.String.
 Require Import Coq.ZArith.BinInt.
 Require Import Coq.micromega.Lia.
 
-From ChargeCore.Logics Require Import
-     ILogic BILogic ILEmbed Later.
-
 Require Import Cpp.Util.
 From Cpp Require Import
      Ast.
 From Cpp.Sem Require Import
      ChargeUtil Logic Semantics PLogic.
 
+From Cpp Require Import IrisBridge.
+Import ChargeNotation.
 
 Module Type modules.
+
+  Section with_Σ.
+  Context {Σ:gFunctors}.
+
+  Notation mpred := (mpred Σ) (only parsing).
+  Notation Offset := (Offset Σ) (only parsing).
 
   Definition denoteSymbol (n : obj_name) (o : ObjValue) : mpred :=
     match o with
@@ -124,9 +129,12 @@ Module Type modules.
     | Gtype => empSP
     end.
 
-  Definition denoteModule (d : compilation_unit) : mpred :=
+  Definition denoteModule_def (d : compilation_unit) : mpred :=
     sepSPs (List.map (fun '(gn,g) => denoteGlobal gn g) d.(globals)) **
     sepSPs (List.map (fun '(on,o) => denoteSymbol on o) d.(symbols)).
+  Definition denoteModule_aux : seal (@denoteModule_def). by eexists. Qed.
+  Definition denoteModule := denoteModule_aux.(unseal).
+  Definition denoteModule_eq : @denoteModule = _ := denoteModule_aux.(seal_eq).
 
   Axiom denoteModule_weaken : forall m, denoteModule m |-- empSP.
 
@@ -137,6 +145,7 @@ Module Type modules.
       link a b = Some c ->
       denoteModule c -|- denoteModule a ** denoteModule b.
   Proof. Admitted.
+  End with_Σ.
 
 End modules.
 

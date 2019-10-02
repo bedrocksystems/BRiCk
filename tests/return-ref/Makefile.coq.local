@@ -1,1 +1,2 @@
+SPECS=0
 include ../coq.mk

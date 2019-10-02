@@ -15,5 +15,9 @@ RUN opam repo add coq-released https://coq.inria.fr/opam/released
 RUN opam config list
 RUN opam update
 RUN opam repo add coq-released https://coq.inria.fr/opam/released || echo "coq-released registered"
-RUN opam install -j ${NJOBS} -y coq.${COQ_VER} coq-charge-core.1.2.0 coq-ltac-iter
-RUN opam list
+RUN opam install -j ${NJOBS} -y coq.${COQ_VER} coq-ltac-iter coq-ext-lib
+RUN opam repo add coq-released https://coq.inria.fr/opam/released
+RUN opam repo add iris-dev https://gitlab.mpi-sws.org/iris/opam.git
+RUN git clone https://gitlab.mpi-sws.org/iris/iris.git; cd iris; git reset --hard b958d569; eval $(opam config env); make build-dep; make -j3; make install
+RUN git clone https://gitlab.mpi-sws.org/iris/iron.git; cd iron; git reset --hard d7aa1f6e; eval $(opam config env); make -j3; make install
+# RUN opam list

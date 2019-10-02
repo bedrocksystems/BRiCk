@@ -38,6 +38,20 @@ Install the Coq dependencies.
 $ opam install coq coq-charge-core coq-ltac-iter
 ```
 
+To install Iris/Iron:
+
+```sh
+# install Iris
+$ opam repo add iris-dev https://gitlab.mpi-sws.org/iris/opam.git
+$ git clone https://gitlab.mpi-sws.org/iris/iris.git; cd iris; git reset --hard b958d569; make build-dep; make -j3
+$ make install
+
+# install Iron
+$ opam repo add iris-dev https://gitlab.mpi-sws.org/iris/opam.git
+$ git clone https://gitlab.mpi-sws.org/iris/iron.git; cd iron; git reset --hard d7aa1f6e; make -j3
+$ make install
+```
+
 
 ### Coq
 You can get all of the Coq dependencies via `opam` with the following command.
