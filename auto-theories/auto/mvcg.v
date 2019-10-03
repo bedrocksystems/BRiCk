@@ -17,7 +17,7 @@ From Cpp Require Import
      Auto.Discharge
      Signature.
 
-Require Import bedrock.auto.drop_to_emp.
+Require Import Cpp.Auto.drop_to_emp.
 
 Section find_in_module.
   Variable nm : obj_name.
@@ -55,11 +55,127 @@ Section find_in_module.
 
 End find_in_module.
 
-Lemma make_signature_ticptr_cons : forall s x ss,
-    s.(s_spec) = ticptr x ->
-    make_signature (s :: ss) |-- make_signature ss.
-Proof. Admitted.
-Hint Rewrite make_signature_ticptr_cons using reflexivity : done_proof.
+Section with_Σ.
+  Context {Σ : gFunctors}.
+
+  Local Notation mpred := (mpred Σ) (only parsing).
+
+(* Lemma make_signature_ticptr_cons : forall s x ss, *)
+(*     s.(s_spec) = ticptr x -> *)
+(*     make_signature (s :: ss) |-- make_signature ss. *)
+(* Proof. Admitted. *)
+(* Hint Rewrite make_signature_ticptr_cons using reflexivity : done_proof. *)
+
+Lemma cut_spec {resolve} (SP : mpred) : forall nm fs,
+    SP = _at (_global nm) (ticptr fs) ->
+    forall cu what, find_code nm cu = Some what ->
+    (* note(gmm): this obligation isn't complete with respect to global
+     * variables, but it should still be sound-ish (modulo persistence)
+     *)
+    forall P,
+    match what with
+    | CTmethod meth =>
+      forall ti, denoteModule cu ** P |-- @method_ok Σ resolve meth ti fs
+    | CTctor ctor =>
+      forall ti, denoteModule cu ** P |-- @ctor_ok Σ resolve ctor ti fs
+    | CTdtor dtor =>
+      forall ti, denoteModule cu ** P |-- @dtor_ok Σ resolve dtor ti fs
+    | CTfunction func =>
+      match func.(f_body) with
+      | None => False
+      | Some body =>
+        forall ti,
+            denoteModule cu ** P |-- @func_ok Σ resolve func.(f_return) func.(f_params) body ti fs
+      end
+    end -> forall Q,
+    denoteModule cu ** SP ** P |-- Q ->
+    denoteModule cu ** P |-- Q.
+Proof.
+Admitted.
+
+Lemma verify_spec (remember : bool) {resolve} (SP : mpred) : forall nm fs,
+    SP = _at (_global nm) (ticptr fs) ->
+    forall cu what, find_code nm cu = Some what ->
+    (* note(gmm): this obligation isn't complete with respect to global
+     * variables, but it should still be sound-ish (modulo persistence)
+     *)
+    forall P,
+    match what with
+    | CTmethod meth =>
+      forall ti, denoteModule cu ** P |-- @method_ok Σ resolve meth ti fs
+    | CTctor ctor =>
+      forall ti, denoteModule cu ** P |-- @ctor_ok Σ resolve ctor ti fs
+    | CTdtor dtor =>
+      forall ti, denoteModule cu ** P |-- @dtor_ok Σ resolve dtor ti fs
+    | CTfunction func =>
+      match func.(f_body) with
+      | None => False
+      | Some body =>
+        forall ti,
+            denoteModule cu ** P |-- @func_ok Σ resolve func.(f_return) func.(f_params) body ti fs
+      end
+    end -> forall Q,
+    denoteModule cu ** (if remember then SP ** P else P) |-- Q ->
+    denoteModule cu ** P |-- SP ** Q.
+Proof.
+Admitted.
+
+End with_Σ.
+
+(* verification of functions *)
+Ltac verify_spec sp :=
+  lazymatch goal with
+  | resolve : genv |- _ =>
+    perm_right ltac:(idtac;
+                     lazymatch goal with
+                     | |- _ |-- sp ** _ =>
+                       perm_left ltac:(idtac; eapply (@verify_spec true resolve sp _ _ eq_refl); [ reflexivity | intro; simpl | ])
+                     end)
+  end.
+
+Ltac verify_forget_spec sp :=
+  lazymatch goal with
+  | resolve : genv |- _ =>
+    perm_right ltac:(idtac;
+                     lazymatch goal with
+                     | |- _ |-- sp ** _ =>
+                       perm_left ltac:(idtac; eapply (@verify_spec false resolve sp _ _ eq_refl); [ reflexivity | intro; simpl | ])
+                     end)
+  end.
+
+Ltac cut_spec sp :=
+  lazymatch goal with
+  | resolve : genv |- _ =>
+    perm_left ltac:(idtac; eapply (@cut_spec resolve sp _ _ eq_refl); [ reflexivity | intro; simpl | ])
+  end.
+
+(* verification of modules *)
+Ltac start_module :=
+  repeat eapply wandSPI.
+
+Ltac finish_module :=
+  try lazymatch goal with
+      | |- _ |-- empSP =>
+        drop_to_emp.drop_to_emp ;
+        try (autorewrite with done_proof);
+        repeat rewrite denoteModule_weaken ;
+        repeat rewrite ti_cglob_weaken ;
+        repeat rewrite cglob_weaken ;
+        repeat rewrite later_cglob_ti ;
+        repeat rewrite later_empSP ;
+        repeat rewrite empSPR;
+        solve [ discharge fail idtac fail fail idtac
+              | lazymatch goal with
+                | |- ?G => fail "failed to solve " G
+                end ]
+      end.
+
+
+
+Global Opaque make_signature.
+
+
+
 
 (* (* todo(gmm): these are new definitions *) *)
 (* Lemma cut_spec' (s : specification) P Q sp : *)
@@ -98,9 +214,6 @@ Hint Rewrite make_signature_ticptr_cons using reflexivity : done_proof.
 (*   end. *)
 
 
-
-Ltac start_module :=
-  repeat eapply wandSPI.
 
 (*
 Inductive Subtract {T} (xs : list T) : list T -> list T -> bool -> Prop :=
@@ -148,103 +261,3 @@ Ltac solve_subtract :=
         | simple eapply Sub_nil
         ].
 *)
-
-Lemma cut_spec {resolve} (SP : mpred) : forall nm fs,
-    SP = _at (_global nm) (ticptr fs) ->
-    forall cu what, find_code nm cu = Some what ->
-    (* note(gmm): this obligation isn't complete with respect to global
-     * variables, but it should still be sound-ish (modulo persistence)
-     *)
-    forall P,
-    match what with
-    | CTmethod meth =>
-      forall ti, denoteModule cu ** P |-- @method_ok resolve meth ti fs
-    | CTctor ctor =>
-      forall ti, denoteModule cu ** P |-- @ctor_ok resolve ctor ti fs
-    | CTdtor dtor =>
-      forall ti, denoteModule cu ** P |-- @dtor_ok resolve dtor ti fs
-    | CTfunction func =>
-      match func.(f_body) with
-      | None => False
-      | Some body =>
-        forall ti,
-            denoteModule cu ** P |-- @func_ok resolve func.(f_return) func.(f_params) body ti fs
-      end
-    end -> forall Q,
-    denoteModule cu ** SP ** P |-- Q ->
-    denoteModule cu ** P |-- Q.
-Proof.
-Admitted.
-
-Lemma verify_spec (remember : bool) {resolve} (SP : mpred) : forall nm fs,
-    SP = _at (_global nm) (ticptr fs) ->
-    forall cu what, find_code nm cu = Some what ->
-    (* note(gmm): this obligation isn't complete with respect to global
-     * variables, but it should still be sound-ish (modulo persistence)
-     *)
-    forall P,
-    match what with
-    | CTmethod meth =>
-      forall ti, denoteModule cu ** P |-- @method_ok resolve meth ti fs
-    | CTctor ctor =>
-      forall ti, denoteModule cu ** P |-- @ctor_ok resolve ctor ti fs
-    | CTdtor dtor =>
-      forall ti, denoteModule cu ** P |-- @dtor_ok resolve dtor ti fs
-    | CTfunction func =>
-      match func.(f_body) with
-      | None => False
-      | Some body =>
-        forall ti,
-            denoteModule cu ** P |-- @func_ok resolve func.(f_return) func.(f_params) body ti fs
-      end
-    end -> forall Q,
-    denoteModule cu ** (if remember then SP ** P else P) |-- Q ->
-    denoteModule cu ** P |-- SP ** Q.
-Proof.
-Admitted.
-
-Ltac verify_spec sp :=
-  lazymatch goal with
-  | resolve : genv |- _ =>
-    perm_right ltac:(idtac;
-                     lazymatch goal with
-                     | |- _ |-- sp ** _ =>
-                       perm_left ltac:(idtac; eapply (@verify_spec true resolve sp _ _ eq_refl); [ reflexivity | intro; simpl | ])
-                     end)
-  end.
-
-Ltac verify_forget_spec sp :=
-  lazymatch goal with
-  | resolve : genv |- _ =>
-    perm_right ltac:(idtac;
-                     lazymatch goal with
-                     | |- _ |-- sp ** _ =>
-                       perm_left ltac:(idtac; eapply (@verify_spec false resolve sp _ _ eq_refl); [ reflexivity | intro; simpl | ])
-                     end)
-  end.
-
-Ltac cut_spec sp :=
-  lazymatch goal with
-  | resolve : genv |- _ =>
-    perm_left ltac:(idtac; eapply (@cut_spec resolve sp _ _ eq_refl); [ reflexivity | intro; simpl | ])
-  end.
-
-
-Ltac finish_module :=
-  try lazymatch goal with
-      | |- _ |-- empSP =>
-        drop_to_emp ;
-        try (autorewrite with done_proof);
-        repeat rewrite denoteModule_weaken ;
-        repeat rewrite ti_cglob_weaken ;
-        repeat rewrite cglob_weaken ;
-        repeat rewrite later_cglob_ti ;
-        repeat rewrite later_empSP ;
-        repeat rewrite empSPR;
-        solve [ discharge fail idtac fail fail idtac
-              | lazymatch goal with
-                | |- ?G => fail "failed to solve " G
-                end ]
-      end.
-
-Global Opaque make_signature.

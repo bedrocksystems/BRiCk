@@ -25,15 +25,16 @@ Variant PutStr : Type -> Type :=
 Section with_Σ.
 Context {Σ:gFunctors}.
 
+Local Notation trace := (trace (Σ:=Σ)) (only parsing).
 Local Notation function_spec := (function_spec Σ) (only parsing).
 
-Definition putstr_spec : function_spec :=
-  SFunction (Qmut Tvoid) (Qmut (Tpointer (Qmut T_char)) :: nil)
-            (fun p =>
+Definition putstr_spec := ltac:(
+  specify (exact "putstr") main_c.module
+          (fun p =>
                \with (s : string) (k : itree PutStr unit)
                \pre _at (_eq p) (c_string s) **
                     trace (Vis (putstr s) (fun _ => k))
-               \post _at (_eq p) (c_string s) ** trace k).
+               \post _at (_eq p) (c_string s) ** trace k)).
 
 Fixpoint printEach (ls : list string) : itree PutStr unit :=
   match ls with
@@ -44,11 +45,10 @@ Fixpoint printEach (ls : list string) : itree PutStr unit :=
 Definition main_spec : function_spec :=
   main.main_spec (fun m =>
                     \pre trace (printEach m)
-                    \post @trace _ PutStr (Ret tt)).
+                    \post @trace.trace _ PutStr (Ret tt)).
 
-Definition spec (resolve : _) :=
-  ti_cglob (resolve:=resolve) "putstr" putstr_spec -*
-  ti_cglob (resolve:=resolve) "main" main_spec.
+Definition spec :=
+  Linking.module putstr_spec (_at (_global "main") (ticptr main_spec)).
 
 Export lib.array lib.trace.
 

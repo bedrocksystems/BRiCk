@@ -11,7 +11,6 @@ Local Open Scope string_scope.
 
 From Cpp Require Import
      Auto.
-From Cpp.Auto Require Import vc.
 
 Require RetRef.test_cpp.
 Require Import RetRef.test_cpp_spec.
@@ -21,13 +20,13 @@ Context {Σ:gFunctors}.
 
 (* soundness of the specification *)
 Theorem main_cpp_sound : forall (resolve : genv),
-    denoteModule (Σ:=Σ) test_cpp.module |-- test_cpp_spec resolve.
+    denoteModule (Σ:=Σ) test_cpp.module |-- test_cpp_spec.
 Proof.
   intros.
   simpl.
   unfold test_cpp_spec.
 
-  verifyF_forget "_Z7get_refPi".
+  verify_forget_spec @get_ref_spec.
   { (* ::get_ref(int* ) *)
     start_proof.
     simplifying.

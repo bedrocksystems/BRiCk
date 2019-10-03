@@ -17,16 +17,15 @@ Require RetRef.test_cpp.
 Section with_Σ.
 Context {Σ:gFunctors}.
 
-Local Notation function_spec := (function_spec Σ) (only parsing).
+Local Notation mpred := (mpred Σ) (only parsing).
 
-Definition get_ref_spec : function_spec :=
-  SFunction (Qmut (Treference (Qmut T_int))) (Qmut (Tpointer (Qmut T_int)) :: nil)
-      (fun x =>
+Definition get_ref_spec : mpred := ltac:(
+  specify (name "::get_ref") test_cpp.module
+      uconstr:(fun x =>
          \with (m : val)
          \pre  _at (_eq x) (tprim T_int m)
-         \post [ r ] [| r = x |] ** _at (_eq x) (tprim T_int m)).
+         \post [ r ] [| r = x |] ** _at (_eq x) (tprim T_int m))).
 
-Definition test_cpp_spec (resolve : _) :=
-  ti_cglob (resolve:=resolve) "_Z7get_refPi" get_ref_spec.
+Definition test_cpp_spec := get_ref_spec.
 
 End with_Σ.
