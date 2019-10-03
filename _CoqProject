@@ -43,14 +43,25 @@ theories/Auto/Base.v
 theories/Auto/PLogic.v
 theories/Auto/Func.v
 theories/Auto/Definitions.v
+# theories/Auto/Lemmas/Eval.v
+# theories/Auto/Lemmas/Functions.v
+# theories/Auto/Lemmas/PLogic.v
+# theories/Auto/Lemmas/Util.v
+# theories/Auto/Lemmas/Wp.v
 theories/Auto/Lemmas.v
+theories/Auto/learn.v
+theories/Auto/drop_to_emp.v
 theories/Auto/type.v
 theories/Auto/operator.v
-theories/Auto/vc.v
+theories/Auto/find_spec.v
+theories/Auto/vc_simple.v
 theories/Auto/vc_rw.v
 theories/Auto/vc_rws.v
+#theories/Auto/rvc.v
 theories/Auto/sep.v
 theories/Auto/mvcg.v
+theories/Auto/modules.v
+theories/Auto/specifications.v
 theories/Auto/tactics.v
 theories/Auto/Notations.v
 theories/Auto/Linking/Lemmas.v

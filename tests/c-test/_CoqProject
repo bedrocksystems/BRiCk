@@ -3,6 +3,7 @@
 -Q . C
 
 main_c.v
+main_c_names.v
 
 main_c_spec.v
 main_c_proof.v
