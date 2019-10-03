@@ -3,8 +3,9 @@
 -Q . Demo
 
 A_hpp.v
+A_hpp_names.v
 A_cpp.v
-B_cpp.v
+A_cpp_names.v
 
 A_hpp_spec.v
 A_hpp_proof.v

@@ -60,6 +60,8 @@ theories/Auto/vc_rws.v
 #theories/Auto/rvc.v
 theories/Auto/sep.v
 theories/Auto/mvcg.v
+theories/Auto/modules.v
+theories/Auto/specifications.v
 theories/Auto/tactics.v
 theories/Auto/Notations.v
 theories/Auto/Linking/Lemmas.v

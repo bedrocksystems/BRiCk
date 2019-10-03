@@ -21,13 +21,13 @@ Context {Σ:gFunctors}.
 
 (* soundness of the specification *)
 Theorem A_hpp_sound : forall (resolve : genv),
-    denoteModule (Σ:=Σ) A_hpp.module |-- A_hpp_spec resolve.
+    denoteModule (Σ:=Σ) A_hpp.module |-- A_hpp_spec.
 Proof.
   intros.
   unfold A_hpp_spec, module.
   work.
 
-  verifyF_forget A__bar.
+  verify_forget_spec @A__bar_spec.
   { (* A::bar(int) *)
     start_proof.
     repeat (simplifying; simpl; work).

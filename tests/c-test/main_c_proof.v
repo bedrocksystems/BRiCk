@@ -92,21 +92,20 @@ Context {Σ:gFunctors}.
 
 (* soundness of the specification *)
 Theorem main_cpp_sound : forall (resolve : genv),
-    denoteModule (Σ:=Σ) main_c.module |-- spec resolve.
+    denoteModule (Σ:=Σ) main_c.module |-- spec.
 Proof.
   intros.
   simpl.
   unfold spec.
   start_module.
 
-  verifyF_forget "main".
+  verify_forget_spec (_at (Σ:=Σ) (_global "main") (ticptr main_spec)).
   { (* ::main(int argc, char* argv[]) *)
     simpl.
     start_proof.
     rewrite denoteModule_weaken.
     work.
-    simplifying.
-    work.
+    repeat (simplifying; work).
     (* this is the loop invariant
      *)
     assert_sep (fun a1 x =>
@@ -115,14 +114,10 @@ Proof.
            trace (printEach (skipn (Z.to_nat i) x)) **
            [| 0 <= i <= Z.of_nat (Datatypes.length x) |]).
     eapply wp_for.
-    simplifying.
-    work.
-    simplifying.
-    work.
-    simpl.
+    repeat (simplifying; work).
     subst.
     rewrite is_true_int.
-    destruct (ZArith_dec.Z_lt_ge_dec i (Z.of_nat (Datatypes.length x))).
+    destruct (ZArith_dec.Z_lt_ge_dec i (Datatypes.length x)).
     { simpl.
       simplifying.
       Hint Resolve wp_prval_cast_noop : wpe.
