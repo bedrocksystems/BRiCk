@@ -68,6 +68,7 @@ theories/Auto/Linking/Lemmas.v
 theories/Auto/Linking.v
 theories/Auto/Arith.v
 theories/Auto.v
+theories/GFunClass.v
 
 theories/CodeNotations.v
 theories/ProofNotations.v
