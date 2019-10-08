@@ -261,8 +261,8 @@ Theorem fspec_ok_conseq:
     (forall r : val, m r |-- K r) ->
     fspec (resolve:=resolve) p vs ti m |-- fspec (resolve:=resolve) p vs ti K.
 Proof.
-  intros. unfold fspec. rewrite only_provable_eq.
-  iIntros "H". iDestruct "H" as (f) "[[% _] H]".
+  intros. unfold fspec.
+  iIntros "H". iDestruct "H" as (f) "[-> H]".
   iExists f. iSplitR; [ iPureIntro; eauto | ].
   iDestruct "H" as (func) "[Hca Hor]".
   iExists func. iFrame.

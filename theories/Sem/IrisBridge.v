@@ -19,13 +19,7 @@ Global Notation illater := (sbi_later) (only parsing).
 Global Notation embed := (bi_pure) (only parsing).
 Ltac split' := intros; apply (anti_symm (⊢)).
 
-Definition only_provable_def {PROP:bi} (P : Prop) :=
-  ((embed (PROP:=PROP) P) ∧ (empSP%I:PROP))%I.
-Definition only_provable_aux : seal (@only_provable_def). by eexists. Qed.
-Definition only_provable := only_provable_aux.(unseal).
-Definition only_provable_eq : @only_provable = _ := only_provable_aux.(seal_eq).
-
-Arguments only_provable {_} _.
+Global Notation only_provable P := (<affine>(embed P%type))%I (only parsing).
 
 (* Charge notation levels *)
 Module ChargeNotation.
@@ -49,7 +43,6 @@ Module ChargeNotation.
   Notation "'|>' P" := (▷  P)%I (at level 71).
 
   Infix "-|-"  := (⊣⊢)%I (at level 85, no associativity).
-  Global Arguments only_provable : simpl never.
   Notation "'[|'  P  '|]'" := (only_provable P).
 
 End ChargeNotation.

@@ -565,16 +565,14 @@ Module Type cclogic.
                   (ghost_ptsto prm p v)
                   (ghost_ptsto prm p v').
     Proof.
-      intros. rewrite only_provable_eq. unfold only_provable_def.
-      iIntros "[% _]". iStopProof.
+      intros.
+      iIntros "%". iStopProof.
       unfold FPU_single in *.
       rewrite <-shift_conseq; [ | reflexivity | ].
       rewrite <- shift_ghost_update.
-      rewrite only_provable_eq; unfold only_provable_def.
       eauto.
-      rewrite only_provable_eq; unfold only_provable_def.
       iIntros "H".
-      iDestruct "H" as (v'') "[[-> _] H]".
+      iDestruct "H" as (v'') "[-> H]".
       eauto.
     Qed.
 
@@ -770,7 +768,7 @@ Module Type cclogic.
          (([| v = expected |] -*
           _at (_eq expected_p) (tprim ty expected) **
           _at (_eq val_p) (tprim ty desired) -* Q' (Vbool true)) //\\
-         ([| v <> expected |] -*
+         ([| v <>  expected |] -*
           _at (_eq expected_p) (tprim ty v) **
           _at (_eq val_p) (tprim ty v) -* Q' (Vbool false))))
        |-- wp_atom (resolve:=rslv) AO__atomic_compare_exchange_n

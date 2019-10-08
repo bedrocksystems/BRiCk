@@ -173,8 +173,8 @@ Section with_PROP.
   Lemma lexists_known : forall t a (P : t -> PROP),
     Exists x : t, [| x = a |] ** P x -|- P a.
   Proof.
-    intros. rewrite only_provable_eq. iSplit.
-    - iIntros "H". iDestruct "H" as (x) "[[% _] H]". subst; eauto.
+    intros. iSplit.
+    - iIntros "H". iDestruct "H" as (x) "[-> H]". subst; eauto.
     - iIntros "HP". iExists a. eauto.
   Qed.
 
