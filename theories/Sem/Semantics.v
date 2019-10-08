@@ -70,6 +70,7 @@ Axiom offset_ptr_0_ : forall b,
 Parameter genv : Type.
 
 Parameter has_type : val -> type -> Prop.
+Arguments has_type _%Z _.
 
 Definition max_val (bits : size) (sgn : signed) : Z :=
   match bits , sgn with

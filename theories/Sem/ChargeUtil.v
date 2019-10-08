@@ -123,7 +123,6 @@ Lemma wandSP_only_provableL : forall (P : Prop) (Q R : PROP),
     [| P |] -* Q |-- R.
 Proof.
   intros.
-  rewrite only_provable_eq. unfold only_provable_def.
   rewrite <- H0; clear H0.
   iIntros "H". iApply "H". eauto.
 Qed.
@@ -133,8 +132,7 @@ Lemma wandSP_only_provableR : forall (A : Prop) (B C : PROP),
     B |-- [| A |] -* C.
 Proof.
   intros.
-  rewrite only_provable_eq. unfold only_provable_def.
- iIntros "HB [% _]".
+  iIntros "HB %".
   iApply H; eauto.
 Qed.
 
