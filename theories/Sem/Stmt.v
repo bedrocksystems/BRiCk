@@ -99,12 +99,13 @@ Module Type Stmt.
         let done :=
             k (Kfree (tlocal_at ρ x a (tany (erase_qualifiers ty))) Q)
         in
+        let continue := _local ρ x &~ a -* done in
         match init with
-        | None => _at (_eq a) (uninit (erase_qualifiers ty)) -* done
+        | None =>
+          _at (_eq a) (uninit (erase_qualifiers ty)) -* continue
         | Some init =>
           wp_prval init (fun v free => free **
-                              (_local ρ x &~ a ** _at (_eq a) (tprim (erase_qualifiers ty) v)
-                           -* done))
+                              _at (_eq a) (tprim (erase_qualifiers ty) v) -* continue)
         end
 
       | Tref cls =>
