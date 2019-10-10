@@ -132,19 +132,6 @@ Section Decidable_or_default.
   Defined.
 End Decidable_or_default.
 
-Global Instance Decidable_FieldOrBase (a b : FieldOrBase) : Decidable (a = b).
-Proof.
-  refine {| Decidable_witness :=
-              match a , b with
-              | Base a , Base b => decide (a = b)
-              | Field a , Field b => decide (a = b)
-              | Indirect a a' , Indirect b b' => decide (a = b) && decide (a' = b')
-              | _ , _ => false
-              end |}.
-  destruct a; destruct b; repeat rewrite Bool.andb_true_iff; repeat rewrite decide_ok; try solve [ split; congruence ].
-  firstorder; congruence.
-Defined.
-
 Global Instance Decidable_eq_Func (a b : Func) : Decidable (a = b).
 Proof.
   refine
