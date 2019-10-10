@@ -70,7 +70,8 @@ Arguments OrDefault : clear implicits.
 Variant FieldOrBase : Set :=
 | Base (_ : globname)
 | Field (_ : ident)
-| Indirect (anon_path : list (ident * globname)) (_ : ident).
+| Indirect (anon_path : list (ident * globname)) (_ : ident)
+| This.
 
 Record Initializer :=
   { init_path : FieldOrBase
@@ -102,3 +103,17 @@ Defined.
 
 Global Instance Decidable_eq_Stmt (a b : Stmt) : Decidable (a = b) :=
   dec_Decidable (Stmt_eq_dec a b).
+
+Global Instance Decidable_FieldOrBase (a b : FieldOrBase) : Decidable (a = b).
+Proof.
+  refine {| Decidable_witness :=
+              match a , b with
+              | Base a , Base b => decide (a = b)
+              | Field a , Field b => decide (a = b)
+              | Indirect a a' , Indirect b b' => decide (a = b) && decide (a' = b')
+              | This , This => true
+              | _ , _ => false
+              end |}.
+  destruct a; destruct b; repeat rewrite Bool.andb_true_iff; repeat rewrite decide_ok; try solve [ split; congruence ].
+  firstorder; congruence.
+Defined.

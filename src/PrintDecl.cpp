@@ -456,6 +456,8 @@ public:
                     assert(completed && "didn't find a named field");
 
                     print.end_ctor();
+                } else if (init->isDelegatingInitializer()) {
+                    print.output() << "This";
                 } else {
                     assert(false && "unknown initializer type");
                 }
@@ -468,6 +470,8 @@ public:
                                          print);
                 } else if (init->getBaseClass()) {
                     cprint.printType(init->getBaseClass(), print);
+                } else if (init->isDelegatingInitializer()) {
+                    cprint.printQualType(decl->getThisType(), print);
                 } else {
                     assert(false && "not member, base class, or indirect");
                 }

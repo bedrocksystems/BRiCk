@@ -286,6 +286,7 @@ Definition offset_for (cls : globname) (f : FieldOrBase) : Offset :=
   | Field i => _field {| f_type := cls ; f_name := i |}
   | Indirect ls final =>
     path_to_Offset cls final ls
+  | This => _id
   end.
 
 Global Opaque _local _global _at _sub _field _offsetR _offsetL _dot tprim tint tuint tptr is_null is_nonnull addr_of.
