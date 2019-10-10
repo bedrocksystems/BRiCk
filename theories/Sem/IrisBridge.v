@@ -2,7 +2,7 @@ From iris Require Import bi.notation.
 From iris Require Import bi.bi.
 
 Global Notation lentails := (bi_entails) (only parsing).
-Global Notation lequiv := (bi_equiv _) (only parsing).
+Global Notation lequiv := (≡) (only parsing).
 Global Notation ltrue := (bi_pure True) (only parsing).
 Global Notation lfalse := (bi_pure False) (only parsing).
 Global Notation land := (bi_and) (only parsing).
@@ -42,7 +42,7 @@ Module ChargeNotation.
 
   Notation "'|>' P" := (▷  P)%I (at level 71).
 
-  Infix "-|-"  := (⊣⊢)%I (at level 85, no associativity).
+  Infix "-|-"  := (≡)%I (at level 85, no associativity).
   Notation "'[|'  P  '|]'" := (only_provable P).
 
 End ChargeNotation.
