@@ -21,4 +21,5 @@ From Cpp.Sem Require Export
      Layout
      CompilationUnit
      Linking
-     CCLogic.
+     CCLogic
+     Atomic.
