@@ -40,7 +40,8 @@ Module ChargeNotation.
   Notation "P -* Q" := (P -∗ Q)%I (at level 60, right associativity).
   Notation "'sepSPs' ps" := ([∗] ps)%I (at level 20).
 
-  Notation "'|>' P" := (▷  P)%I (at level 71).
+  (* Notation "'|>' P" := (▷  P)%I (at level 71). *)
+  Notation "|> P" := (▷  P)%I (at level 20, right associativity).
 
   Infix "-|-"  := (≡)%I (at level 85, no associativity).
   Notation "'[|'  P  '|]'" := (only_provable P).

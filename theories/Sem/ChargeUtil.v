@@ -14,6 +14,8 @@ Import ChargeNotation.
 
 From Cpp Require Import ChargeCompat.
 
+Local Set Universe Polymorphism.
+
 Fixpoint arrowFrom {t} u (ls : list t) (T : Type)
 : Type :=
   match ls with
