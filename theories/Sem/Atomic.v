@@ -21,7 +21,7 @@ Section with_Σ.
   Local Notation FreeTemps := (FreeTemps Σ) (only parsing).
 
   Definition wrap_shift (F : (val -> mpred) -> mpred) (Q : val -> mpred) : mpred :=
-    (|={⊤,∅}=> F (fun result => |={∅,⊤}=> Q result))%I.
+    Exists mid, (|={⊤,mid}=> F (fun result => |={mid,⊤}=> Q result))%I.
 
   (* semantics of atomic builtins
    * https://gcc.gnu.org/onlinedocs/gcc/_005f_005fatomic-Builtins.html
