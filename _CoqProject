@@ -68,6 +68,7 @@ theories/Auto/Notations.v
 theories/Auto/Linking/Lemmas.v
 theories/Auto/Linking.v
 theories/Auto/Arith.v
+theories/Auto/hide_cont.v
 theories/Auto.v
 theories/GFunClass.v
 
