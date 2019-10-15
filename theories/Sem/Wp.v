@@ -201,8 +201,8 @@ Definition val_return (P : val -> mpred) : Kpreds :=
    ; k_break := lfalse
    ; k_continue := lfalse |}.
 
-Definition Kseq (Q : mpred) (k : Kpreds) : Kpreds :=
-  {| k_normal   := Q
+Definition Kseq (Q : Kpreds -> mpred) (k : Kpreds) : Kpreds :=
+  {| k_normal   := Q k
    ; k_return   := k.(k_return)
    ; k_break    := k.(k_break)
    ; k_continue := k.(k_continue) |}.
@@ -223,12 +223,26 @@ Definition Kat_exit (Q : mpred -> mpred) (k : Kpreds) : Kpreds :=
 Definition Kfree (a : mpred) : Kpreds -> Kpreds :=
   Kat_exit (fun P => a ** P).
 
-Instance Kpreds_equiv : Equiv Kpreds :=
+Global Instance Kpreds_equiv : Equiv Kpreds :=
   fun (k1 k2 : Kpreds) =>
     k1.(k_normal) ≡ k2.(k_normal) ∧
     (∀ v free, k1.(k_return) v free ≡ k2.(k_return) v free) ∧
     k1.(k_break) ≡ k2.(k_break) ∧
     k1.(k_continue) ≡ k2.(k_continue).
+
+Lemma Kfree_Kfree : forall k P Q, Kfree P (Kfree Q k) ≡ Kfree (P ** Q) k.
+Proof.
+  split; [ | split; [ | split ] ]; simpl; intros;
+    eapply bi.equiv_spec; split;
+      try solve [ rewrite bi.sep_assoc; eauto ].
+Qed.
+
+Lemma Kfree_emp : forall k, Kfree empSP k ≡ k.
+Proof.
+  split; [ | split; [ | split ] ]; simpl; intros;
+    eapply bi.equiv_spec; split;
+      try solve [ rewrite bi.emp_sep; eauto ].
+Qed.
 
 (* evaluate a statement *)
 Parameter wp

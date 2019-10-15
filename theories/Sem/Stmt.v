@@ -176,12 +176,11 @@ Module Type Stmt.
       | Sdecl ds :: ss =>
         wp_decls ds (wp_block ss) Q
       | s :: ss =>
-        wp s (Kseq (wp_block ss Q) Q)
+        wp s (Kseq (wp_block ss) Q)
       end.
 
     Axiom wp_seq : forall Q ss,
         wp_block ss Q |-- wp (Sseq ss) Q.
-
 
     Axiom wp_if : forall e thn els Q,
         wp_prval e (fun v free =>
