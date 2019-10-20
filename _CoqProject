@@ -71,6 +71,7 @@ theories/Auto/Linking.v
 theories/Auto/Arith.v
 theories/Auto/hide_cont.v
 theories/Auto.v
+theories/Auto/invariants.v
 theories/GFunClass.v
 
 theories/CodeNotations.v
