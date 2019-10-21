@@ -41,6 +41,7 @@ theories/Sem.v
 # Automation
 theories/Auto/Discharge.v
 theories/Auto/Base.v
+theories/Auto/orient.v
 theories/Auto/PLogic.v
 theories/Auto/Func.v
 theories/Auto/Definitions.v
