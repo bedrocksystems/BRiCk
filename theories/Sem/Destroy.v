@@ -41,6 +41,6 @@ Section destroy.
     match dtor with
     | None => fun x => x
     | Some dtor => destruct ty this dtor
-    end (_at (_eq this) (tany (erase_qualifiers ty)) ** Q).
+    end (_at (_eq this) (tany (erase_qualifiers ty) 1) ** Q).
 
 End destroy.

@@ -54,8 +54,8 @@ Module Type Init.
       | Tchar _ _
       | Tint _ _ =>
         wp_prval init (fun v free =>
-                         _at (_eq addr) (uninit (erase_qualifiers ty)) **
-                         (   _at (_eq addr) (tprim (erase_qualifiers ty) v)
+                         _at (_eq addr) (uninit (erase_qualifiers ty) 1) **
+                         (   _at (_eq addr) (tprim (erase_qualifiers ty) 1 v)
                           -* k free))
 
         (* non-primitives are handled via prvalue-initialization semantics *)
@@ -106,7 +106,7 @@ Module Type Init.
       match build_array ls fill (N.to_nat sz) with
       | None => lfalse
       | Some array_list =>
-        _at (_eq addr) (uninit (erase_qualifiers (Tarray ety sz))) **
+        _at (_eq addr) (uninit (erase_qualifiers (Tarray ety sz)) 1) **
           wps (fun '(i,e) (Q : unit -> mpred -> mpred) f =>
                  Forall a, _offsetL (_sub ety i) (_eq addr) &~ a -*
                  wp_init ety a e (fun f' => Q tt (f ** f')))
