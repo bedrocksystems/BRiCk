@@ -97,24 +97,24 @@ Module Type Stmt.
       | Tint _ _ =>
         Forall a,
         let done :=
-            k (Kfree (tlocal_at ρ x a (tany (erase_qualifiers ty))) Q)
+            k (Kfree (tlocal_at ρ x a (tany (erase_qualifiers ty) 1)) Q)
         in
         let continue := _local ρ x &~ a -* done in
         match init with
         | None =>
-          _at (_eq a) (uninit (erase_qualifiers ty)) -* continue
+          _at (_eq a) (uninit (erase_qualifiers ty) 1) -* continue
         | Some init =>
           wp_prval init (fun v free => free **
-                              _at (_eq a) (tprim (erase_qualifiers ty) v) -* continue)
+                              _at (_eq a) (tprim (erase_qualifiers ty) 1 v) -* continue)
         end
 
       | Tref cls =>
-        Forall a, _at (_eq a) (uninit ty) -*
+        Forall a, _at (_eq a) (uninit (erase_qualifiers ty) 1) -*
                   let destroy :=
                       match dtor with
                       | None => fun x => x
                       | Some dtor => destruct_obj (resolve:=resolve) ti dtor cls a
-                      end (_at (_eq a) (tany ty))
+                      end (_at (_eq a) (tany (erase_qualifiers ty) 1))
                   in
                   let continue :=
                       _local ρ x &~ a -* k (Kfree (_local ρ x &~ a ** destroy) Q)
@@ -125,16 +125,16 @@ Module Type Stmt.
                     wp_init ty a (not_mine init) (fun free => free ** continue)
                   end
       | Tarray ty' N =>
-        Forall a, _at (_eq a) (uninit (erase_qualifiers ty)) -*
+        Forall a, _at (_eq a) (uninit (erase_qualifiers ty) 1) -*
                   let destroy : mpred :=
                       match dtor with
                       | None => fun x => x
                       | Some dtor => destruct (resolve:=resolve) ti ty a dtor
-                      end (_at (_eq a) (tany (erase_qualifiers ty)))
+                      end (_at (_eq a) (tany (erase_qualifiers ty) 1))
                   in
                   let continue :=
                       _local ρ x &~ a -*
-                      k (Kfree (_local ρ x &~ a ** _at (_eq a) (tany (erase_qualifiers ty))) Q)
+                      k (Kfree (_local ρ x &~ a ** _at (_eq a) (tany (erase_qualifiers ty) 1)) Q)
                   in
                   match init with
                   | None => continue

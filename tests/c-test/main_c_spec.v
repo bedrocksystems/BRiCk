@@ -17,8 +17,6 @@ From Cpp.lib Require Import
 
 Require C.main_c.
 
-
-
 Variant PutStr : Type -> Type :=
 | putstr (_ : string) : PutStr unit.
 
@@ -31,10 +29,10 @@ Local Notation function_spec := (function_spec Σ) (only parsing).
 Definition putstr_spec := ltac:(
   specify (exact "putstr") main_c.module
           (fun p =>
-               \with (s : string) (k : itree PutStr unit)
-               \pre _at (_eq p) (c_string s) **
+               \with (s : string) (k : itree PutStr unit) q
+               \pre _at (_eq p) (c_string q s) **
                     trace (Vis (putstr s) (fun _ => k))
-               \post _at (_eq p) (c_string s) ** trace k)).
+               \post _at (_eq p) (c_string q s) ** trace k)).
 
 Fixpoint printEach (ls : list string) : itree PutStr unit :=
   match ls with

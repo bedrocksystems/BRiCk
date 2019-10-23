@@ -110,7 +110,7 @@ Proof.
      *)
     assert_sep (fun a1 x =>
         Exists i : Z,
-           tlocal_at (Σ:=Σ) ρ "i" a1 (tprim T_int i) **
+           tlocal_at (Σ:=Σ) ρ "i" a1 (tprim T_int 1 i) **
            trace (printEach (skipn (Z.to_nat i) x)) **
            [| 0 <= i <= Z.of_nat (Datatypes.length x) |]).
     eapply wp_for.

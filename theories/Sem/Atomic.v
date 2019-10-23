@@ -14,7 +14,7 @@ Import invG.
 
 Section with_Σ.
   Context `{!invG Σ}.
-  
+
   Local Notation mpred := (mpred Σ) (only parsing).
   Local Notation mpredI := (mpredI Σ) (only parsing).
   Local Notation mpredSI := (mpredSI Σ) (only parsing).
@@ -52,16 +52,16 @@ Section with_Σ.
    * because all of the invariant reasoning is encapsulated in [wp_shift].
    *)
   Axiom wp_atom_load_cst
-  : forall rslv memorder (acc_type:type) (l : val) (Q : val -> mpred),
+  : forall rslv q memorder (acc_type:type) (l : val) (Q : val -> mpred),
       [| memorder = _SEQ_CST |] **
-      (Exists v, (|> _at (_eq l) (tprim acc_type v) ** ltrue //\\ Q v))
+      (Exists v, (|> _at (_eq l) (tprim acc_type q v) ** ltrue //\\ Q v))
       |-- wp_atom (resolve:=rslv) AO__atomic_load_n (l :: memorder :: nil) acc_type Q.
 
   Axiom wp_atom_store_cst
   : forall rslv memorder (acc_type:type) l Q val,
       [| memorder = _SEQ_CST |] **
-      (Exists val, |> _at (_eq l) (tprim acc_type val)) **
-      (|>_at (_eq l) (tprim acc_type val) -* Exists void, Q void)
+      (Exists val, |> _at (_eq l) (tprim acc_type 1 val)) **
+      (|>_at (_eq l) (tprim acc_type 1 val) -* Exists void, Q void)
       |-- wp_atom (resolve:=rslv) AO__atomic_store_n (l :: memorder :: val :: nil) Tvoid Q.
 
   (* atomic compare and exchange n *)
@@ -71,14 +71,14 @@ Section with_Σ.
            expected,
       ([|wk = Vbool false|] ** [|succmemord = _SEQ_CST|] ** [| failmemord = _SEQ_CST |] **
       Exists v,
-         |> (_at (_eq expected_p) (tprim ty expected) **
-             _at (_eq val_p) (tprim ty v)) **
+         |> (_at (_eq expected_p) (tprim ty 1 expected) **
+             _at (_eq val_p) (tprim ty 1 v)) **
          (([| v = expected |] -*
-          |> (_at (_eq expected_p) (tprim ty expected) **
-              _at (_eq val_p) (tprim ty desired)) -* Q' (Vbool true)) //\\
+          |> (_at (_eq expected_p) (tprim ty 1 expected) **
+              _at (_eq val_p) (tprim ty 1 desired)) -* Q' (Vbool true)) //\\
          ([| v <> expected |] -*
-          |> (_at (_eq expected_p) (tprim ty v) **
-              _at (_eq val_p) (tprim ty v)) -* Q' (Vbool false))))
+          |> (_at (_eq expected_p) (tprim ty 1 v) **
+              _at (_eq val_p) (tprim ty 1 v)) -* Q' (Vbool false))))
        |-- wp_atom (resolve:=rslv) AO__atomic_compare_exchange_n
                    (val_p::succmemord::expected_p::failmemord::desired::wk::nil) Tbool Q'.
   (* ^ note(gmm): this states that *both pointers are read atomically*.
@@ -87,23 +87,23 @@ Section with_Σ.
   (* atomic compare and exchange rule
    *)
   Axiom wp_atom_compare_exchange:
-    forall rslv val_p expected_p desired_p wk succmemord failmemord Q
+    forall rslv q val_p expected_p desired_p wk succmemord failmemord Q
       (ty : type)
       expected desired,
-         (|> (_at (_eq expected_p) (tprim ty expected) **
-              _at (_eq desired_p) (tprim ty desired)) **
-         Exists val,|> _at (_eq val_p) (tprim ty val) **
+         (|> (_at (_eq expected_p) (tprim ty 1 expected) **
+              _at (_eq desired_p) (tprim ty q desired)) **
+         Exists val,|> _at (_eq val_p) (tprim ty 1 val) **
          [|wk = Vbool false|] ** [|succmemord = _SEQ_CST|] ** [| failmemord = _SEQ_CST |] **
          ((((* success *)
             [| val = expected |] **
-            |> (_at (_eq expected_p) (tprim ty expected) **
-                _at (_eq desired_p) (tprim ty desired) **
-                _at (_eq val_p) (tprim ty desired)) -* Q (Vbool true))) //\\
+            |> (_at (_eq expected_p) (tprim ty 1 expected) **
+                _at (_eq desired_p) (tprim ty q desired) **
+                _at (_eq val_p) (tprim ty 1 desired)) -* Q (Vbool true))) //\\
           (((* failure *)
             [| val <> expected |] **
-              |> (_at (_eq expected_p) (tprim ty val) **
-                  _at (_eq desired_p) (tprim ty desired) **
-                  _at (_eq val_p) (tprim ty val))) -* Q (Vbool false))))
+              |> (_at (_eq expected_p) (tprim ty 1 val) **
+                  _at (_eq desired_p) (tprim ty q desired) **
+                  _at (_eq val_p) (tprim ty 1 val))) -* Q (Vbool false))))
        |-- wp_atom (resolve:=rslv) AO__atomic_compare_exchange
                    (val_p::succmemord::expected_p::failmemord::desired::wk::nil) (Qmut Tbool) Q.
 
@@ -112,9 +112,9 @@ Section with_Σ.
     forall rslv E pls memorder Q (acc_type : type),
       [| memorder = _SEQ_CST |] **
          (Exists v,
-          |> _at (_eq E) (tprim acc_type v) **
+          |> _at (_eq E) (tprim acc_type 1 v) **
           Exists v', [| eval_binop (resolve:=rslv) op acc_type acc_type acc_type v pls v' |] **
-                     |> (_at (_eq E) (tprim acc_type v') -* Q v))
+                     |> (_at (_eq E) (tprim acc_type 1 v') -* Q v))
       |-- wp_atom (resolve:=rslv) ao (E::memorder::pls::nil) acc_type Q.
 
   Ltac fetch_xxx ao op :=
@@ -131,9 +131,9 @@ Section with_Σ.
     forall rslv E pls memorder Q (acc_type : type),
       [| memorder = _SEQ_CST |] **
          (Exists v,
-          |> _at (_eq E) (tprim acc_type v) **
+          |> _at (_eq E) (tprim acc_type 1 v) **
           Exists v', [| eval_binop (resolve:=rslv) op acc_type acc_type acc_type v pls v' |] **
-                     |> (_at (_eq E) (tprim acc_type v') -* Q v'))
+                     |> (_at (_eq E) (tprim acc_type 1 v') -* Q v'))
       |-- wp_atom (resolve:=rslv) ao (E::memorder::pls::nil) acc_type Q.
 
 (*
@@ -158,5 +158,5 @@ Section with_Σ.
   Axiom wp_atom_and_fetch : ltac:(xxx_fetch AO__atomic_and_fetch Band).
   Axiom wp_atom_xor_fetch : ltac:(xxx_fetch AO__atomic_xor_fetch Bxor).
   Axiom wp_atom_or_fetch  : ltac:(xxx_fetch AO__atomic_or_fetch  Bor).
-  
+
 End with_Σ.

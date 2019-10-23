@@ -57,11 +57,19 @@ Module Type logic.
 
     (* heap points to *)
     (* note(gmm): this needs to support fractional permissions and other features *)
-    Parameter tptsto : type -> forall addr value : val, mpred.
+    Parameter tptsto : type -> Qp -> forall addr value : val, mpred.
 
-    Axiom tptsto_has_type : forall t a v,
-        tptsto t a v |-- tptsto t a v ** [| has_type v t |].
+    Axiom tptsto_has_type : forall t q a v,
+        tptsto t q a v |-- tptsto t q a v ** [| has_type v t |].
 
+    Axiom tptsto_split : forall t q1 q2 a v,
+        tptsto t (q1+q2) a v -|- tptsto t q1 a v ** tptsto t q2 a v.
+
+    Axiom tptsto_same_val : forall t q1 q2 a v1 v2,
+        let p :=
+            tptsto t q1 a v1 ** tptsto t q2 a v2 in
+        p |-- p ** [| v1=v2 |] ** ([| ((q1+q2)%Qp ≤ 1)%Qc |]).
+    
     Parameter local_addr : region -> ident -> ptr -> mpred.
 
     (* the pointer contains the code *)

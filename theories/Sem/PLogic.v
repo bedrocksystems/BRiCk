@@ -138,9 +138,9 @@ Definition _super_aux : seal (@_super_def). by eexists. Qed.
 Definition _super := _super_aux.(unseal).
 Definition _super_eq : @_super = _ := _super_aux.(seal_eq).
 
-Definition _deref_def (ty : type) : Offset :=
+Definition _deref_def (ty : type) q : Offset :=
   as_Offset (fun from to =>
-             tptsto ty from to ** [| has_type from (Tpointer ty) |]).
+               tptsto ty q from to ** [| has_type from (Tpointer ty) |]).
 Definition _deref_aux : seal (@_deref_def). by eexists. Qed.
 Definition _deref := _deref_aux.(unseal).
 Definition _deref_eq : @_deref = _ := _deref_aux.(seal_eq).
@@ -189,22 +189,22 @@ Definition _at_eq : @_at = _ := _at_aux.(seal_eq).
 Definition pureR (P : mpred) : Rep :=
   as_Rep (fun _ => P).
 
-Definition tint_def (sz : size) (v : Z) : Rep :=
-  as_Rep (fun addr => tptsto (Tint sz Signed) addr (Vint v) **
+Definition tint_def (sz : size) q (v : Z) : Rep :=
+  as_Rep (fun addr => tptsto (Tint sz Signed) q addr (Vint v) **
                              [| has_type (Vint v) (Tint sz Signed) |]).
 Definition tint_aux : seal (@tint_def). by eexists. Qed.
 Definition tint := tint_aux.(unseal).
 Definition tint_eq : @tint = _ := tint_aux.(seal_eq).
 
-Definition tuint_def (sz : size) (v : Z) : Rep :=
-  as_Rep (fun addr => tptsto (Tint sz Unsigned) addr (Vint v) **
+Definition tuint_def (sz : size) q (v : Z) : Rep :=
+  as_Rep (fun addr => tptsto (Tint sz Unsigned) q addr (Vint v) **
        [| has_type (Vint v) (Tint sz Unsigned) |]).
 Definition tuint_aux : seal (@tuint_def). by eexists. Qed.
 Definition tuint := tuint_aux.(unseal).
 Definition tuint_eq : @tuint = _ := tuint_aux.(seal_eq).
 
-Definition tptr_def (ty : type) (p : ptr) : Rep :=
-  as_Rep (fun addr => tptsto (Tpointer ty) addr (Vptr p)).
+Definition tptr_def (ty : type) q (p : ptr) : Rep :=
+  as_Rep (fun addr => tptsto (Tpointer ty) q addr (Vptr p)).
 Definition tptr_aux : seal (@tptr_def). by eexists. Qed.
 Definition tptr := tptr_aux.(unseal).
 Definition tptr_eq : @tptr = _ := tptr_aux.(seal_eq).
@@ -215,24 +215,24 @@ Definition tref_aux : seal (@tref_def). by eexists. Qed.
 Definition tref := tref_aux.(unseal).
 Definition tref_eq : @tref = _ := tref_aux.(seal_eq).
 
-Definition tprim_def (ty : type) (v : val) : Rep :=
-  as_Rep (fun addr => tptsto ty addr v ** [| has_type v (drop_qualifiers ty) |]).
+Definition tprim_def (ty : type) q (v : val) : Rep :=
+  as_Rep (fun addr => tptsto ty q addr v ** [| has_type v (drop_qualifiers ty) |]).
 Definition tprim_aux : seal (@tprim_def). by eexists. Qed.
 Definition tprim := tprim_aux.(unseal).
 Definition tprim_eq : @tprim = _ := tprim_aux.(seal_eq).
 
-Definition uninit_def (ty : type) : Rep :=
+Definition uninit_def (ty : type) q : Rep :=
   as_Rep (fun addr => Exists bits,
        (* with_genv (fun env => [| size_of env ty size |]) ** *)
-       (tprim ty bits) addr ).
+       (tprim ty q bits) addr ).
 Definition uninit_aux : seal (@uninit_def). by eexists. Qed.
 Definition uninit := uninit_aux.(unseal).
 Definition uninit_eq : @uninit = _ := uninit_aux.(seal_eq).
 
 (* this should mean "anything, including uninitialized" *)
-Definition tany_def (t : type) : Rep :=
-  as_Rep (fun addr => (Exists v, (tprim t v) addr) \\//
-       (uninit t) addr).
+Definition tany_def (t : type) q : Rep :=
+  as_Rep (fun addr => (Exists v, (tprim t q v) addr) \\//
+       (uninit t q) addr).
 Definition tany_aux : seal (@tany_def). by eexists. Qed.
 Definition tany := tany_aux.(unseal).
 Definition tany_eq : @tany = _ := tany_aux.(seal_eq).
@@ -296,3 +296,5 @@ End with_Σ.
 Arguments addr_of : simpl never.
 Notation "a &~ b" := (addr_of a b) (at level 30, no associativity).
 Coercion pureR : mpred >-> Rep.
+
+

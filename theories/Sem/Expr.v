@@ -198,9 +198,9 @@ Module Type Expr.
         match companion_type (type_of e) with
         | Some cty =>
           wp_lval e (fun a free => Exists v', Exists v'',
-              _at (_eq a) (tprim (erase_qualifiers ty) v') **
+              _at (_eq a) (tprim (erase_qualifiers ty) 1 v') **
               [| eval_binop (resolve:=resolve) Badd (erase_qualifiers (type_of e)) cty (erase_qualifiers ty) v' (Vint 1) v'' |] **
-              (_at (_eq a) (tprim (erase_qualifiers ty) v'') -* Q a free))
+              (_at (_eq a) (tprim (erase_qualifiers ty) 1 v'') -* Q a free))
         | None => lfalse
         end
         |-- wp_lval (Epreinc e ty) Q.
@@ -209,9 +209,9 @@ Module Type Expr.
         match companion_type (type_of e) with
         | Some cty =>
           wp_lval e (fun a free => Exists v', Exists v'',
-              _at (_eq a) (tprim (erase_qualifiers ty) v') **
+              _at (_eq a) (tprim (erase_qualifiers ty) 1 v') **
               [| eval_binop (resolve:=resolve) Bsub (erase_qualifiers (type_of e)) cty (erase_qualifiers ty) v' (Vint 1) v'' |] **
-              (_at (_eq a) (tprim (erase_qualifiers ty) v'') -* Q a free))
+              (_at (_eq a) (tprim (erase_qualifiers ty) 1 v'') -* Q a free))
         | None => lfalse
         end
         |-- wp_lval (Epredec e ty) Q.
@@ -220,9 +220,9 @@ Module Type Expr.
         match companion_type (type_of e) with
         | Some cty =>
           wp_lval e (fun a free => Exists v', Exists v'',
-              _at (_eq a) (tprim (erase_qualifiers ty) v') **
+              _at (_eq a) (tprim (erase_qualifiers ty) 1 v') **
               [| eval_binop (resolve:=resolve) Badd (erase_qualifiers (type_of e)) cty (erase_qualifiers ty) v' (Vint 1) v'' |] **
-              (_at (_eq a) (tprim (erase_qualifiers ty) v'') -* Q v' free))
+              (_at (_eq a) (tprim (erase_qualifiers ty) 1 v'') -* Q v' free))
         | None => lfalse
         end
         |-- wp_prval (Epostinc e ty) Q.
@@ -231,9 +231,9 @@ Module Type Expr.
         match companion_type (type_of e) with
         | Some cty =>
           wp_lval e (fun a free => Exists v', Exists v'',
-              _at (_eq a) (tprim (erase_qualifiers ty) v') **
+              _at (_eq a) (tprim (erase_qualifiers ty) 1 v') **
               [| eval_binop (resolve:=resolve) Bsub (erase_qualifiers (type_of e)) cty (erase_qualifiers ty) v' (Vint 1) v'' |] **
-              (_at (_eq a) (tprim (erase_qualifiers ty) v'') -* Q v' free))
+              (_at (_eq a) (tprim (erase_qualifiers ty) 1 v'') -* Q v' free))
         | None => lfalse
         end
         |-- wp_prval (Epostdec e ty) Q.
@@ -246,8 +246,8 @@ Module Type Expr.
 
     Axiom wp_lval_assign : forall ty l r Q,
         wp_lval l (fun la free1 => wp_prval r (fun rv free2 =>
-            _at (_eq la) (tany (erase_qualifiers ty)) **
-           (_at (_eq la) (tprim (erase_qualifiers ty) rv) -* Q la (free1 ** free2))))
+            _at (_eq la) (tany (erase_qualifiers ty) 1) **
+           (_at (_eq la) (tprim (erase_qualifiers ty) 1 rv) -* Q la (free1 ** free2))))
         |-- wp_lval (Eassign l r ty) Q.
 
     Axiom wp_lval_bop_assign : forall ty o l r Q,
@@ -285,14 +285,14 @@ Module Type Expr.
 
     (** casts *)
     Axiom wp_prval_cast_l2r_l : forall ty e Q,
-        wp_lval e (fun a free => (* was wp_lval *)
-          Exists v, (_at (_eq a) (tprim (erase_qualifiers ty) v) ** ltrue) //\\
+        wp_lval e (fun a free => Exists q, Exists v,
+           (_at (_eq a) (tprim (erase_qualifiers ty) q v) ** ltrue) //\\
                     Q v free)
         |-- wp_prval (Ecast Cl2r (Lvalue, e) ty) Q.
 
     Axiom wp_prval_cast_l2r_x : forall ty e Q,
-        wp_xval e (fun a free => (* was wp_lval *)
-          Exists v, (_at (_eq a) (tprim (erase_qualifiers ty) v) ** ltrue) //\\
+        wp_xval e (fun a free => Exists q, Exists v, (* was wp_lval *)
+          (_at (_eq a) (tprim (erase_qualifiers ty) q v) ** ltrue) //\\
                     Q v free)
         |-- wp_prval (Ecast Cl2r (Xvalue, e) ty) Q.
 
@@ -401,7 +401,7 @@ Module Type Expr.
     Axiom wp_prval_call : forall ty f es Q,
         (if is_aggregate ty then
           Forall addr, wp_init ty addr (Ecall f es ty) (fun free =>
-            Q addr (free ** _at (_eq addr) (tany (erase_qualifiers ty))))
+            Q addr (free ** _at (_eq addr) (tany (erase_qualifiers ty) 1)))
         else
           wp_prval f (fun f free => wp_args es (fun vs free' =>
             |> fspec (resolve:=resolve) f vs ti (fun v => Q v (free ** free')))))
@@ -455,7 +455,7 @@ Module Type Expr.
     (* [Ematerialize_temp e ty] is an xvalue
      *)
     Axiom wp_xval_temp : forall e ty Q,
-        (Forall a, _at (_eq a) (uninit (erase_qualifiers ty)) -*
+        (Forall a, _at (_eq a) (uninit (erase_qualifiers ty) 1) -*
                   let '(e,dt) := destructor_for e in
                   wp_init ty a e
                           (fun free => Q a (mdestroy (resolve:=resolve) ti ty a dt free)))
@@ -465,7 +465,7 @@ Module Type Expr.
      *)
     Axiom wp_lval_temp : forall e ty Q,
         (Forall a,
-           _at (_eq a) (uninit (erase_qualifiers ty)) -*
+           _at (_eq a) (uninit (erase_qualifiers ty) 1) -*
            let '(e,dt) := destructor_for e in
            wp_init ty a e
                    (fun free => Q a (mdestroy (resolve:=resolve) ti ty a dt free)))
@@ -479,7 +479,7 @@ Module Type Expr.
     Axiom wp_prval_implicit_materialize : forall e Q,
         is_aggregate (type_of e) = true ->
         (let ty := erase_qualifiers (type_of e) in
-         Forall a, _at (_eq a) (uninit ty) -*
+         Forall a, _at (_eq a) (uninit ty 1) -*
                    let '(e,dt) := destructor_for e in
                    wp_init ty a e (fun free =>
                                      Q a (mdestroy (resolve:=resolve) ti ty a dt free)))
@@ -501,7 +501,7 @@ Module Type Expr.
 
     Axiom wp_prval_materialize : forall ty e dtor Q,
       Forall a : val,
-      _at (_eq a) (uninit (erase_qualifiers ty)) -*
+      _at (_eq a) (uninit (erase_qualifiers ty) 1) -*
           wp_init ty a e (fun free =>
                             Q a (mdestroy (resolve:=resolve) ti ty a (Some dtor) free))
       |-- wp_prval (Ebind_temp e dtor ty) Q.

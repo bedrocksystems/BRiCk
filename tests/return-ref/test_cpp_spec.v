@@ -22,9 +22,9 @@ Local Notation mpred := (mpred Σ) (only parsing).
 Definition get_ref_spec : mpred := ltac:(
   specify (name "::get_ref") test_cpp.module
       uconstr:(fun x =>
-         \with (m : val)
-         \pre  _at (_eq x) (tprim T_int m)
-         \post [ r ] [| r = x |] ** _at (_eq x) (tprim T_int m))).
+         \with (m : val) q
+         \pre  _at (_eq x) (tprim T_int q m)
+         \post [ r ] [| r = x |] ** _at (_eq x) (tprim T_int q m))).
 
 Definition test_cpp_spec := get_ref_spec.
 

@@ -129,7 +129,7 @@ Module Type Func.
               (fun ti this => arrowFrom_map (fun wpp =>
                  {| wpp_with := wpp.(wpp_with)
                   ; wpp_pre :=
-                    teleF_map (fun P => _at (_eq this) (uninit (Tref class)) ** P) wpp.(wpp_pre)
+                    teleF_map (fun P => _at (_eq this) (uninit (Tref class) 1) ** P) wpp.(wpp_pre)
                   ; wpp_post := wpp.(wpp_post)
                   |}) (PQ ti this)).
 
@@ -147,7 +147,7 @@ Module Type Func.
                   let PQ := PQ ti this in
                  {| wpp_with := PQ.(wpp_with)
                   ; wpp_pre := PQ.(wpp_pre)
-                  ; wpp_post := teleF_map (fun Q res => _at (_eq this) (tany (Tref class)) ** Q res) PQ.(wpp_post)
+                  ; wpp_post := teleF_map (fun Q res => _at (_eq this) (tany (Tref class) 1) ** Q res) PQ.(wpp_post)
                   |}).
 
   Definition SDestructor (class : globname) (PQ : val -> WithPrePost)
@@ -213,7 +213,7 @@ Module Type Func.
     | Treference ref => _local ρ x &~ v
     | Trv_reference ref => _local ρ x &~ v
     | Tref _         => _local ρ x &~ v
-    | _              => tlocal ρ x (tprim (erase_qualifiers t) v)
+    | _              => tlocal ρ x (tprim (erase_qualifiers t) 1 v)
     end.
 
   Fixpoint bind_type_free ρ (t : type) (x : ident) (v : val) : mpred :=
@@ -222,7 +222,7 @@ Module Type Func.
     | Treference ref => _local ρ x &~ v
     | Trv_reference ref => _local ρ x &~ v
     | Tref cls       => _local ρ x &~ v
-    | _              => tlocal ρ x (tany (erase_qualifiers t))
+    | _              => tlocal ρ x (tany (erase_qualifiers t) 1)
     end.
 
     (* the proof obligation for a function
@@ -252,7 +252,7 @@ Module Type Func.
           wp (resolve:=resolve) ti ρ body (Kfree frees (void_return Q))
         else if is_aggregate ret then
           Forall Q : val -> mpred,
-          (binds ** _at (_result ρ) (uninit (erase_qualifiers ret)) ** PQ Q) -*
+          (binds ** _at (_result ρ) (uninit (erase_qualifiers ret) 1) ** PQ Q) -*
           wp (resolve:=resolve) ti ρ body (Kfree (frees ** Exists a, _result ρ &~ a) (val_return Q))
         else
           Forall Q : val -> mpred,
@@ -297,7 +297,7 @@ Module Type Func.
               (binds ** PQ (fun _ => Q)) -* (wp (resolve:=resolve) ti ρ body (Kfree frees (void_return Q)))
             else if is_aggregate ret_ty then
               Forall Q : val -> mpred,
-              (binds ** _at (_result ρ) (uninit (erase_qualifiers ret_ty)) ** PQ Q) -* (wp (resolve:=resolve) ti ρ body (Kfree (frees ** Exists a, _result ρ &~ a) (val_return Q)))
+              (binds ** _at (_result ρ) (uninit (erase_qualifiers ret_ty) 1) ** PQ Q) -* (wp (resolve:=resolve) ti ρ body (Kfree (frees ** Exists a, _result ρ &~ a) (val_return Q)))
             else
               Forall Q : val -> mpred,
               (binds ** PQ Q) -* (wp (resolve:=resolve) ti ρ body (Kfree frees (val_return Q)))
