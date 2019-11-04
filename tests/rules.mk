@@ -4,7 +4,7 @@
 # SPDX-License-Identifier:AGPL-3.0-or-later
 #
 coq: Makefile.coq
-	$(MAKE) -f Makefile.coq
+	$(MAKE) -f Makefile.coq TIMED=1
 
 clean:
 	@ $(MAKE) -f Makefile.coq clean

@@ -21,3 +21,4 @@ RUN opam repo add iris-dev https://gitlab.mpi-sws.org/iris/opam.git
 RUN git clone https://gitlab.mpi-sws.org/iris/iris.git; cd iris; git reset --hard b958d569; eval $(opam config env); make build-dep; make -j3; make install
 RUN git clone https://gitlab.mpi-sws.org/iris/iron.git; cd iron; git reset --hard d7aa1f6e; eval $(opam config env); make -j3; make install
 # RUN opam list
+RUN sudo apt-get install time
