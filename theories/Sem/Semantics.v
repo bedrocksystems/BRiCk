@@ -18,6 +18,8 @@ From Cpp Require Import
 (** values *)
 Parameter val : Type.
 
+Axiom val_dec : forall a b : val, a = b \/ a <> b.
+
 Parameter ptr : Type.
 Parameter ptr_eq_dec : forall (x y : ptr), { x = y } + { x <> y }.
 

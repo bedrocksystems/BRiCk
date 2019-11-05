@@ -249,15 +249,15 @@ Module Type Func.
         then
           Forall Q : mpred,
           (binds ** PQ (fun _ => Q)) -*
-          wp (resolve:=resolve) ti ρ body (Kfree frees (void_return Q))
+          wp (resolve:=resolve) ti ρ body (Kfree frees (void_return (|>Q)))
         else if is_aggregate ret then
           Forall Q : val -> mpred,
           (binds ** _at (_result ρ) (uninit (erase_qualifiers ret) 1) ** PQ Q) -*
-          wp (resolve:=resolve) ti ρ body (Kfree (frees ** Exists a, _result ρ &~ a) (val_return Q))
+          wp (resolve:=resolve) ti ρ body (Kfree (frees ** Exists a, _result ρ &~ a) (val_return (fun x => |> Q x)))
         else
           Forall Q : val -> mpred,
           (binds ** PQ Q) -*
-          wp (resolve:=resolve) ti ρ body (Kfree frees (val_return Q))).
+          wp (resolve:=resolve) ti ρ body (Kfree frees (val_return (fun x => |> Q x)))).
     (* ^ todo(gmm): the new semantics of function gets an address for a return value
      * so the semantics for `return` should be that *)
 
@@ -294,13 +294,13 @@ Module Type Func.
             if is_void ret_ty
             then
               Forall Q : mpred,
-              (binds ** PQ (fun _ => Q)) -* (wp (resolve:=resolve) ti ρ body (Kfree frees (void_return Q)))
+              (binds ** PQ (fun _ => Q)) -* (wp (resolve:=resolve) ti ρ body (Kfree frees (void_return (|>Q))))
             else if is_aggregate ret_ty then
               Forall Q : val -> mpred,
-              (binds ** _at (_result ρ) (uninit (erase_qualifiers ret_ty) 1) ** PQ Q) -* (wp (resolve:=resolve) ti ρ body (Kfree (frees ** Exists a, _result ρ &~ a) (val_return Q)))
+              (binds ** _at (_result ρ) (uninit (erase_qualifiers ret_ty) 1) ** PQ Q) -* (wp (resolve:=resolve) ti ρ body (Kfree (frees ** Exists a, _result ρ &~ a) (val_return (fun x => |>Q x))))
             else
               Forall Q : val -> mpred,
-              (binds ** PQ Q) -* (wp (resolve:=resolve) ti ρ body (Kfree frees (val_return Q)))
+              (binds ** PQ Q) -* (wp (resolve:=resolve) ti ρ body (Kfree frees (val_return (fun x => |>Q x))))
           end)
       end.
 
@@ -344,7 +344,7 @@ Module Type Func.
             Forall Q : mpred,
             (binds ** PQ (fun _ => Q)) -*
             (wp_ctor (resolve:=resolve) ctor.(c_class) ti ρ this_val init body
-                     (Kfree frees (void_return Q)))
+                     (Kfree frees (void_return (|>Q))))
           end)
       end.
 
@@ -380,7 +380,7 @@ Module Type Func.
             let frees := _this ρ &~ this_val in
             Forall Q : mpred,
               (binds ** PQ (fun _ => Q)) -*
-              (wp_dtor (resolve:=resolve) dtor.(d_class) ti ρ this_val body deinit frees Q)
+              (wp_dtor (resolve:=resolve) dtor.(d_class) ti ρ this_val body deinit frees (|>Q))
           end)
       end.
   End with_Σ.
