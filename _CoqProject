@@ -48,7 +48,7 @@ theories/Auto/Definitions.v
 theories/Auto/Lemmas/Eval.v
 # theories/Auto/Lemmas/Functions.v
 # theories/Auto/Lemmas/PLogic.v
-# theories/Auto/Lemmas/Util.v
+theories/Auto/Lemmas/Util.v
 theories/Auto/Lemmas/Wp.v
 theories/Auto/Lemmas.v
 theories/Auto/learn.v
@@ -71,6 +71,7 @@ theories/Auto/Linking/Lemmas.v
 theories/Auto/Linking.v
 theories/Auto/Arith.v
 theories/Auto/hide_cont.v
+theories/Auto/later.v
 theories/Auto.v
 theories/Auto/invariants.v
 theories/GFunClass.v

@@ -38,7 +38,7 @@ Module Type cclogic.
     (** Unsound axioms **)
     (* This should only be possible for wp's for a given mask *)
     Axiom add_fupd : forall (P : mpred), (|={ ⊤, ⊤ }=> P)%I |-- P.
-    (* This should not be possible. Laters should instead be stripped by execution *)
+    (* todo(gmm): still need thisThis should not be possible. Laters should instead be stripped by execution *)
     Axiom add_later : forall (P : mpred), (|> P) |-- P.
   End with_Σ.
 

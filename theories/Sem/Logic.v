@@ -59,6 +59,8 @@ Module Type logic.
     (* note(gmm): this needs to support fractional permissions and other features *)
     Parameter tptsto : type -> Qp -> forall addr value : val, mpred.
 
+    Parameter Timeless_tptsto : forall {ty q a v}, Timeless (tptsto ty q a v).
+
     Axiom tptsto_has_type : forall t q a v,
         tptsto t q a v |-- tptsto t q a v ** [| has_type v t |].
 
@@ -85,7 +87,10 @@ Module Type logic.
   Arguments mpredI _ : clear implicits.
   Arguments mpredSI _ : clear implicits.
 
+  Existing Instance Timeless_tptsto.
+
 End logic.
+
 
 Declare Module L : logic.
 
