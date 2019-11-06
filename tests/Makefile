@@ -3,13 +3,13 @@
 #
 # SPDX-License-Identifier:AGPL-3.0-or-later
 #
-all: cpp2v-parser demo local-scope class value-cat return-ref c-test alloc constants lock # list
+all: cpp2v-parser includes local-scope class value-cat io alloc constants lock # list
 
 cpp2v-parser:
 	$(MAKE) -C cpp2v-parser
 
-demo:
-	$(MAKE) -C demo
+includes:
+	$(MAKE) -C includes
 
 local-scope:
 	$(MAKE) -C local-scope
@@ -20,14 +20,11 @@ value-cat:
 class:
 	$(MAKE) -C class
 
-c-test:
-	$(MAKE) -C c-test
+io:
+	$(MAKE) -C io
 
 alloc:
 	$(MAKE) -C alloc
-
-return-ref:
-	$(MAKE) -C return-ref
 
 list:
 	$(MAKE) -C list
@@ -41,18 +38,16 @@ plugin:
 constants:
 	$(MAKE) -C constants
 
-.PHONY: cpp2v-parser demo local-scope class value-cat c-test alloc return-ref list clean lock plugin constants
+.PHONY: cpp2v-parser includes local-scope class value-cat io alloc list clean lock plugin constants
 
 clean:
 	$(MAKE) -C cpp2v-parser clean
-	$(MAKE) -C demo clean
+	$(MAKE) -C includes clean
 	$(MAKE) -C local-scope clean
 	$(MAKE) -C value-cat clean
 	$(MAKE) -C class clean
-	$(MAKE) -C c-test clean
+	$(MAKE) -C io clean
 	$(MAKE) -C alloc clean
-	$(MAKE) -C return-ref clean
-	$(MAKE) -C list clean
 	$(MAKE) -C lock clean
 	$(MAKE) -C plugin clean
 	$(MAKE) -C constants clean

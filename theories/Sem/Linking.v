@@ -3,6 +3,9 @@
  *
  * SPDX-License-Identifier:AGPL-3.0-or-later
  *)
+(* This file captures reasoning principles that are necessary when
+ * separately verifying #includes
+ *)
 From Cpp Require Import
      Ast.
 From Cpp.Sem Require Import
@@ -14,13 +17,6 @@ Context {Σ:gFunctors}.
 
 Local Notation mpred := (mpred Σ) (only parsing).
 
-Lemma lob_ind : forall (P S : mpred),
-    S //\\ |> P |-- P ->
-    S |-- P.
-Proof.
-  iIntros (P S HP) "HS". iLöb as "HS'". iApply HP. iSplit; eauto. iNext.
-  iApply "HS'". eauto.
-Qed.
 Lemma illater_wandSP : forall (P Q : mpred), |> (P -* Q) |-- (|> P) -* (|> Q).
 Proof.
   iIntros (P Q). iIntros "HPQ HP". iNext. by iApply "HPQ".
@@ -30,7 +26,7 @@ Proof.
   iIntros (P Q). iSplit.
   - iIntros "HPQ". by iApply bi.later_sep_1.
   - iIntros "HPQ". iNext. eauto.
-Qed. 
+Qed.
 Lemma later_empSP : |> (empSP : mpred) -|- empSP.
 Proof. iSplit; eauto. Qed.
 
@@ -86,7 +82,7 @@ Proof.
   eapply wandSPAdj.
   eapply wandSPE.
   reflexivity.
-  eapply scME. 
+  eapply scME.
   instantiate (1:=|> ((|> B) -* A) ** ((|> A))).
 *)
 
