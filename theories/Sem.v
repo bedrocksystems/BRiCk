@@ -20,6 +20,6 @@ From Cpp.Sem Require Export
      Func
      Layout
      CompilationUnit
-     Linking
      CCLogic
-     Atomic.
+     Atomic
+     Linking.
