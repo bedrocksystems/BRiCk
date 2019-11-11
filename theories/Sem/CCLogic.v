@@ -200,12 +200,34 @@ Module Type cclogic.
           iDestruct "H" as (γ) "H". eauto.
         Qed.
 
-        (* Lemma variant of Iris lemma "cing_open_strong" that has not been bumped *)
         Lemma cinv_open_stronger E N γ p P :
           ↑N ⊆ E →
           cinv N γ P -* (cinv_own γ p ={E,E∖↑N}=∗
           ((|>P) ** cinv_own γ p ** (Forall (E' : coPset), ((|>(P ∨ cinv_own γ 1)) ={E',↑N ∪ E'}=∗ True)))).
-        Proof. Admitted.
+        Proof.
+          iIntros (?) "Hinv Hown".
+          unfold cinv. iDestruct "Hinv" as (P') "[#HP' Hinv]".
+          iPoseProof (inv_open (↑ N) N _ with "Hinv") as "H"; first done.
+          rewrite difference_diag_L.
+          iPoseProof (fupd_mask_frame_r _ _ (E ∖ ↑ N) with "H") as "H"; first set_solver.
+          rewrite left_id_L -union_difference_L //. iMod "H" as "[[HP | >HP] H]".
+          - iDestruct ("HP'" with "HP") as "HP". iFrame. iModIntro.
+            iIntros (E') "HP".
+            iPoseProof (fupd_mask_frame_r _ _ E' with "(H [HP])") as "H"; first set_solver.
+            { iDestruct "HP" as "[HP | >Hown]".
+              iLeft. by iApply "HP'".
+              eauto.
+            }
+            by rewrite left_id_L.
+          - iDestruct (cinv_own_1_l with "HP Hown") as %[].
+        Qed.
+
+        Lemma Tinv_open_strong E N γ p P :
+          ↑N ⊆ E →
+          cinv N γ P |--
+          (cinv_own γ p ={E,E∖↑N}=∗
+          ((|>P) ** cinv_own γ p ** (Forall (E' : coPset), ((|>(P ∨ cinv_own γ 1)) ={E',↑N ∪ E'}=∗ True))))%I.
+        Proof. iIntros (?) "#Hinv Hown". iApply cinv_open_stronger=>//. Qed.
 
       End with_Σ'.
     End with_Σ.
