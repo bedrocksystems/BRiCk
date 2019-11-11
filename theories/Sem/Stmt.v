@@ -68,12 +68,12 @@ Module Type Stmt.
         |-- wp (Sreturn (Some (c, e))) Q.
 
     Axiom wp_break : forall Q,
-        Q.(k_break) |-- wp Sbreak Q.
+        |> Q.(k_break) |-- wp Sbreak Q.
     Axiom wp_continue : forall Q,
-        Q.(k_continue) |-- wp Scontinue Q.
+        |> Q.(k_continue) |-- wp Scontinue Q.
 
     Axiom wp_expr : forall vc e Q,
-        wpAny (vc,e) (SP (fun _ => Q.(k_normal)))
+        |> wpAny (vc,e) (SP (fun _ => Q.(k_normal)))
         |-- wp (Sexpr vc e) Q.
 
     (* This definition performs allocation of local variables
@@ -160,11 +160,11 @@ Module Type Stmt.
       end.
 
     Fixpoint wp_decls (ds : list VarDecl)
-             (k : Kpreds -> mpred) : Kpreds -> mpred :=
+             (k : Kpreds -> mpred) (Q : Kpreds) : mpred :=
       match ds with
-      | nil => k
+      | nil => k Q
       | {| vd_name := x ; vd_type := ty ; vd_init := init ; vd_dtor := dtor |} :: ds =>
-        wp_decl x ty init dtor (wp_decls ds k)
+        |> wp_decl x ty init dtor (wp_decls ds k) Q
       end.
 
     (* note(gmm): this rule is non-compositional because
@@ -176,14 +176,14 @@ Module Type Stmt.
       | Sdecl ds :: ss =>
         wp_decls ds (wp_block ss) Q
       | s :: ss =>
-        wp s (Kseq (wp_block ss) Q)
+        |> wp s (Kseq (wp_block ss) Q)
       end.
 
     Axiom wp_seq : forall Q ss,
         wp_block ss Q |-- wp (Sseq ss) Q.
 
     Axiom wp_if : forall e thn els Q,
-        wp_prval e (fun v free =>
+        |> wp_prval e (fun v free =>
             free ** if is_true v then
                       wp thn Q
                     else
