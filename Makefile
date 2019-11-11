@@ -17,7 +17,7 @@ cpp2v_plugin: build/Makefile
 all: coq cpp2v test
 
 coq: Makefile.coq
-	$(MAKE) -f Makefile.coq TIMED=1
+	$(MAKE) -f Makefile.coq
 	mkdir -p build/
 	rm -rf build/Cpp
 	ln -s `pwd`/theories build/Cpp
