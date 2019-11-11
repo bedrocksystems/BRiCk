@@ -48,7 +48,7 @@ Section with_Σ.
   (* note that this rule captures all of the interesting reasoning about atomics
    * through the use of [wp_shift]
    *)
-  Monomorphic Axiom wp_prval_atomic: forall rslv ti r ao es ty Q,
+  Axiom wp_prval_atomic: forall rslv ti r ao es ty Q,
       match get_acc_type ao ty (map (fun x => type_of (snd x)) es) with
       | None => lfalse
       | Some acc_type =>
@@ -57,12 +57,13 @@ Section with_Σ.
       end
       |-- wp_prval (resolve:=rslv) ti r (Eatomic ao es ty) Q.
 
-  (* Ideas adopted from the paper:
-   * Relaxed Separation Logic: A program logic for C11 Concurrency -- Vefeiadis et al.
-   *)
-
-  (*Memory Ordering Patterns: Now we only have _SEQ_CST *)
+  (* Memory Ordering Patterns: Now we only have _SEQ_CST *)
   Definition _SEQ_CST := Vint 5.
+
+  (* note: the following axioms have laters earlier than they should be.
+   * it is ok, because these are provable given the timelessness of points
+   * to, but in truth, these should be proven from more primitive axioms.
+   *)
 
   (* note(gmm): these are used for reading and writing values shared between
    * threads.
@@ -72,7 +73,8 @@ Section with_Σ.
   Axiom wp_atom_load_cst
   : forall rslv q memorder (acc_type:type) (l : val) (Q : val -> mpred),
       [| memorder = _SEQ_CST |] **
-      |> (Exists v, (_at (_eq l) (tprim acc_type q v) ** ltrue //\\ Q v))
+      |> (Exists v, (_at (_eq l) (tprim acc_type q v) **
+                     (_at (_eq l) (tprim acc_type q v) -* Q v)))
       |-- wp_atom (resolve:=rslv) AO__atomic_load_n acc_type (l :: memorder :: nil) Q.
 
   Axiom wp_atom_store_cst
@@ -187,7 +189,7 @@ Section with_Σ.
       let acc_type := Tint sz sgn in
       ([| memorder = _SEQ_CST |] **
        |> _at (_eq E) (tprim acc_type 1 v) **
-       (Exists v',
+       |> (Exists v',
          [| eval_binop (resolve:=rslv) op acc_type acc_type acc_type v pls v' |] **
          (_at (_eq E) (tprim acc_type 1 v') -* Q v))
       |-- wp_atom (resolve:=rslv) ao acc_type (E::memorder::pls::nil) Q).
@@ -206,8 +208,8 @@ Section with_Σ.
     forall rslv E pls memorder Q sz sgn,
       let acc_type := Tint sz sgn in
       ([| memorder = _SEQ_CST |] **
-         (Exists v,
-          |> _at (_eq E) (tprim acc_type 1 v) **
+      |> (Exists v,
+          _at (_eq E) (tprim acc_type 1 v) **
           Exists v', [| eval_binop (resolve:=rslv) op acc_type acc_type acc_type v pls v' |] **
                      (_at (_eq E) (tprim acc_type 1 v') -* Q v'))
       |-- wp_atom (resolve:=rslv) ao acc_type (E::memorder::pls::nil) Q).
