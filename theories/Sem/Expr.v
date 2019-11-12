@@ -406,6 +406,15 @@ Module Type Expr.
           wp_prval f (fun f free => wp_args es (fun vs free' =>
             |> fspec (resolve:=resolve) f vs ti (fun v => Q v (free ** free')))))
         |-- wp_prval (Ecall f es ty) Q.
+
+    Axiom wp_lval_call :
+      forall f (es : list (ValCat * Expr))
+        Q addr (ty : type),
+        wp_prval f (fun f free_f => wp_args es (fun vs free_args =>
+             |> fspec (resolve:=resolve) f vs ti (fun res =>
+                      [| res = addr |] -* Q res (free_f ** free_args))))
+        |-- wp_lval (Ecall f es ty) Q.
+
     Axiom wp_xval_call : forall ty f es Q,
         wp_prval f (fun f free => wp_args es (fun vs free' =>
             |> fspec (resolve:=resolve) f vs ti (fun v => Q v (free ** free'))))
