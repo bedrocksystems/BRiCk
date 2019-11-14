@@ -12,6 +12,7 @@ From Coq.Classes Require Import
      RelationClasses Morphisms.
 
 From iris.base_logic.lib Require Export iprop.
+From iris.bi.lib Require Import fractional.
 From Cpp Require Export IrisBridge.
 Export ChargeNotation.
 
@@ -55,17 +56,24 @@ Module Type logic.
     Declare Instance Proper_with_genv_lequiv :
       Proper (pointwise_relation _ lequiv ==> lequiv) with_genv.
 
+    Global Declare Instance with_genv_persistent P :
+      (forall resolve, Persistent (P resolve)) -> Persistent (with_genv P).
+
     (* heap points to *)
     (* note(gmm): this needs to support fractional permissions and other features *)
     Parameter tptsto : type -> Qp -> forall addr value : val, mpred.
 
-    Parameter Timeless_tptsto : forall {ty q a v}, Timeless (tptsto ty q a v).
+    Global Declare Instance tptsto_timeless ty q a v : Timeless (tptsto ty q a v).
+    Global Declare Instance tptsto_fractional ty a v : Fractional (λ q, tptsto ty q a v).
+    Global Declare Instance tptsto_as_fractional ty q a v :
+      AsFractional (tptsto ty q a v) (λ q, tptsto ty q a v)%I q.
 
     Axiom tptsto_has_type : forall t q a v,
         tptsto t q a v |-- tptsto t q a v ** [| has_type v t |].
 
-    Axiom tptsto_split : forall t q1 q2 a v,
+    Lemma tptsto_split t q1 q2 a v :
         tptsto t (q1+q2) a v -|- tptsto t q1 a v ** tptsto t q2 a v.
+    Proof. apply tptsto_fractional. Qed.
 
     Axiom tptsto_same_val : forall t q1 q2 a v1 v2,
         let p :=
@@ -74,11 +82,18 @@ Module Type logic.
     
     Parameter local_addr : region -> ident -> ptr -> mpred.
 
+    Global Declare Instance local_addr_persistent resolve x p :
+      Persistent (local_addr resolve x p).
+
     (* the pointer contains the code *)
     Parameter code_at : Func -> ptr -> mpred.
     (* code_at is freely duplicable *)
-    Axiom code_at_dup : forall p f, code_at p f -|- code_at p f ** code_at p f.
-    Axiom code_at_drop : forall p f, code_at p f |-- empSP.
+    Global Declare Instance code_at_persistent f p : Persistent (code_at f p). 
+    Lemma code_at_dup f p : code_at f p -|- code_at f p ** code_at f p.
+    Proof. apply bi.persistent_sep_dup; apply _. Qed.
+
+    Lemma code_at_drop f p : code_at f p |-- empSP.
+    Proof. auto. Qed.
 
     Parameter ctor_at : ptr -> Ctor -> mpred.
     Parameter dtor_at : ptr -> Dtor -> mpred.
@@ -87,7 +102,7 @@ Module Type logic.
   Arguments mpredI _ : clear implicits.
   Arguments mpredSI _ : clear implicits.
 
-  Existing Instance Timeless_tptsto.
+  Existing Instance tptsto_timeless.
 
 End logic.
 
