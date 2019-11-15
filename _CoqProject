@@ -46,6 +46,7 @@ theories/Auto/PLogic.v
 theories/Auto/Func.v
 theories/Auto/Definitions.v
 theories/Auto/Lemmas/Eval.v
+theories/Auto/Lemmas/type.v
 # theories/Auto/Lemmas/Functions.v
 # theories/Auto/Lemmas/PLogic.v
 theories/Auto/Lemmas/Util.v
@@ -61,6 +62,8 @@ theories/Auto/vc_simple.v
 theories/Auto/vc_rw.v
 theories/Auto/vc_rws.v
 #theories/Auto/rvc.v
+theories/Auto/mod.v
+theories/Auto/pure.v
 theories/Auto/sep.v
 theories/Auto/mvcg.v
 theories/Auto/modules.v
@@ -80,5 +83,6 @@ theories/CodeNotations.v
 theories/ProofNotations.v
 
 theories/Auto/Tests.v
+theories/Auto/tests/mod_tests.v
 
 # Libraries

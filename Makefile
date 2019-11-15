@@ -47,3 +47,9 @@ test-plugin: coq cpp2v_plugin
 build/Makefile:
 	mkdir -p build
 	(cd build; cmake ..)
+
+deps.pdf: _CoqProject
+	coqdep -f _CoqProject -dumpgraph deps.dot > /dev/null
+	dot -Tpdf -o deps.pdf deps.dot
+
+.PHONY: deps.pdf
