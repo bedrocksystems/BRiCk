@@ -9,3 +9,5 @@ Makefile.coq.conf
 .lia.cache
 .nia.cache
 build
+deps.pdf
+deps.dot

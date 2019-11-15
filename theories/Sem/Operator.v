@@ -85,13 +85,18 @@ Axiom eval_ptr_ptr_sub :
 
 Definition eval_int_op (bo : BinOp) (o : Z -> Z -> Z) : Prop :=
   forall resolve w (s : signed) (a b c : Z),
+    has_type (Vint a) (Tint w s) ->
+    has_type (Vint b) (Tint w s) ->
     c = (if s then o a b else trim (N_of_size w) (o a b)) ->
     has_type (Vint c) (Tint w s) ->
     eval_binop (resolve:=resolve) bo (Tint w s) (Tint w s) (Tint w s) (Vint a) (Vint b) (Vint c).
 
-Definition eval_int_bin_op (bo : BinOp) (o : Z -> Z -> Z) : Prop :=
+(* this is bitwise operators *)
+Definition eval_int_bitwise_op (bo : BinOp) (o : Z -> Z -> Z) : Prop :=
   forall resolve w (s : signed) (a b c : Z),
-    c = (if s then o a b else trim (N_of_size w) (o a b)) ->
+    has_type (Vint a) (Tint w s) ->
+    has_type (Vint b) (Tint w s) ->
+    c = o a b -> (* note that bitwise operators respect bounds *)
     eval_binop (resolve:=resolve) bo (Tint w s) (Tint w s) (Tint w s) (Vint a) (Vint b) (Vint c).
 
 (* arithmetic operators *)
@@ -104,11 +109,11 @@ Axiom eval_mul :
 
 (* bitwise(logical) operators *)
 Axiom eval_or :
-  ltac:(let x := eval hnf in (eval_int_op Bor Z.lor) in refine x).
+  ltac:(let x := eval hnf in (eval_int_bitwise_op Bor Z.lor) in refine x).
 Axiom eval_and :
-  ltac:(let x := eval hnf in (eval_int_op Band Z.land) in refine x).
+  ltac:(let x := eval hnf in (eval_int_bitwise_op Band Z.land) in refine x).
 Axiom eval_xor :
-  ltac:(let x := eval hnf in (eval_int_op Bxor Z.lxor) in refine x).
+  ltac:(let x := eval hnf in (eval_int_bitwise_op Bxor Z.lxor) in refine x).
 
 (* The binary operator / divides the first operand by the second, after usual
    arithmetic conversions.
@@ -118,14 +123,16 @@ Axiom eval_xor :
 Axiom eval_div :
   forall resolve (w : size) (s : signed) (a b c : Z),
     b <> 0%Z ->
+    has_type (Vint a) (Tint w s) ->
+    has_type (Vint b) (Tint w s) ->
     c = Z.quot a b ->
-    has_type (Vint c) (Tint w s) ->
     eval_binop (resolve:=resolve) Bdiv (Tint w s) (Tint w s) (Tint w s) (Vint a) (Vint b) (Vint c).
 Axiom eval_mod :
   forall resolve (w : size) (s : signed) (a b c : Z),
     b <> 0%Z ->
+    has_type (Vint a) (Tint w s) ->
+    has_type (Vint b) (Tint w s) ->
     c = Z.rem a b ->
-    has_type (Vint c) (Tint w s) ->
     eval_binop (resolve:=resolve) Bmod (Tint w s) (Tint w s) (Tint w s) (Vint a) (Vint b) (Vint c).
 
 (* [C++14,C++20) *)
@@ -151,6 +158,8 @@ Axiom eval_shl :
   forall resolve (w : size) w2 (s : signed) (a b c : Z),
     (0 <= b < Z_of_size w)%Z ->
     (0 <= a)%Z ->
+    has_type (Vint a) (Tint w s) ->
+    has_type (Vint b) (Tint w s) ->
     (c = if s then Z.shiftl a b else trim (N_of_size w) (Z.shiftl a b)) ->
     has_type (Vint c) (Tint w s) ->
     eval_binop (resolve:=resolve) Bshl (Tint w s) (Tint w2 s) (Tint w s) (Vint a) (Vint b) (Vint c).
@@ -164,8 +173,9 @@ Axiom eval_shr :
   forall resolve (w : size) w2 (s : signed) (a b c : Z),
     (0 <= b < Z_of_size w)%Z ->
     (0 <= a)%Z ->
+    has_type (Vint a) (Tint w s) ->
+    has_type (Vint b) (Tint w s) ->
     (c = if s then Z.shiftr a b else trim (N_of_size w) (Z.shiftr a b)) ->
-    has_type (Vint c) (Tint w s) ->
     eval_binop (resolve:=resolve) Bshr (Tint w s) (Tint w2 s) (Tint w s) (Vint a) (Vint b) (Vint c).
 
 (* Arithmetic comparison operators *)
@@ -179,6 +189,8 @@ Definition eval_int_rel_op (bo : BinOp) {P Q : Z -> Z -> Prop}
   forall resolve w s a b (av bv : Z) (c : Z),
     a = Vint av ->
     b = Vint bv ->
+    has_type a (Tint w s) ->
+    has_type b (Tint w s) ->
     c = (if o av bv then 1 else 0)%Z ->
     eval_binop (resolve:=resolve) bo (Tint w s) (Tint w s) Tbool a b (Vint c).
 
@@ -187,6 +199,8 @@ Definition eval_int_rel_op_int (bo : BinOp) {P Q : Z -> Z -> Prop}
   forall resolve w s a b (av bv : Z) (c : Z),
     a = Vint av ->
     b = Vint bv ->
+    has_type a (Tint w s) ->
+    has_type b (Tint w s) ->
     c = (if o av bv then 1 else 0)%Z ->
     eval_binop (resolve:=resolve) bo (Tint w s) (Tint w s) (T_int) a b (Vint c).
 
@@ -196,6 +210,8 @@ Axiom eval_neq_bool :
   forall resolve ty a b (av bv : Z) (c : Z),
     a = Vint av ->
     b = Vint bv ->
+    has_type a ty ->
+    has_type b ty ->
     c = (if Z.eq_dec av bv then 0 else 1)%Z ->
     eval_binop (resolve:=resolve) Bneq ty ty Tbool a b (Vint c).
 Axiom eval_lt_bool :
