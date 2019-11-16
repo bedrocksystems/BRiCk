@@ -5,6 +5,7 @@
  *)
 Require Import Coq.Lists.List.
 Require Import Coq.Strings.String.
+Require Import stdpp.telescopes.
 
 Local Open Scope string_scope.
 
@@ -18,6 +19,8 @@ From Cpp Require Import
 
 Require Import Coq.ZArith.BinInt.
 Require Import Coq.micromega.Lia.
+
+Local Set Universe Polymorphism.
 
 Module Type Func.
 
@@ -71,8 +74,8 @@ Module Type Func.
 
   Record WithPrePost Σ : Type :=
     { wpp_with : tele
-    ; wpp_pre : teleF (mpred Σ) wpp_with
-    ; wpp_post : teleF (val -> mpred Σ) wpp_with }.
+    ; wpp_pre : tele_fun wpp_with (mpred Σ)
+    ; wpp_post : tele_fun wpp_with (val -> mpred Σ) }.
   Arguments wpp_with {_} _.
   Arguments wpp_pre {_} _.
   Arguments wpp_post {_} _.
@@ -86,13 +89,13 @@ Module Type Func.
   Local Notation function_spec := (function_spec Σ) (only parsing).
 
   Fixpoint WppD' {t : tele}
-  : forall (P : teleF mpred t) (Q : teleF (val -> mpred) t), (val -> mpred) -> mpred :=
+  : forall (P : t -t> mpred) (Q : t -t> val -> mpred), (val -> mpred) -> mpred :=
     match t as t
-          return forall (P : teleF mpred t) (Q : teleF (val -> mpred) t),
+          return forall (P : t -t> mpred) (Q : t -t> val -> mpred),
                  (val -> mpred) -> mpred
     with
-    | tdone => fun P Q Q' => P ** (Forall result, Q result -* Q' result)
-    | tcons ts => fun P Q Q' => Exists x, @WppD' (ts x) (P x) (Q x) Q'
+    | TeleO => fun P Q Q' => P ** (Forall result, Q result -* Q' result)
+    | TeleS ts => fun P Q Q' => Exists x, @WppD' (ts x) (P x) (Q x) Q'
     end.
 
   Definition WppD (wpp : WithPrePost) : (val -> mpred) -> mpred :=
@@ -129,7 +132,7 @@ Module Type Func.
               (fun ti this => arrowFrom_map (fun wpp =>
                  {| wpp_with := wpp.(wpp_with)
                   ; wpp_pre :=
-                    teleF_map (fun P => _at (_eq this) (uninit (Tref class) 1) ** P) wpp.(wpp_pre)
+                    tele_map (fun P => _at (_eq this) (uninit (Tref class) 1) ** P) wpp.(wpp_pre)
                   ; wpp_post := wpp.(wpp_post)
                   |}) (PQ ti this)).
 
@@ -147,7 +150,8 @@ Module Type Func.
                   let PQ := PQ ti this in
                  {| wpp_with := PQ.(wpp_with)
                   ; wpp_pre := PQ.(wpp_pre)
-                  ; wpp_post := teleF_map (fun Q res => _at (_eq this) (tany (Tref class) 1) ** Q res) PQ.(wpp_post)
+                  ; wpp_post :=
+                    tele_map (fun Q res => _at (_eq this) (tany (Tref class) 1) ** Q res) PQ.(wpp_post)
                   |}).
 
   Definition SDestructor (class : globname) (PQ : val -> WithPrePost)
