@@ -86,33 +86,33 @@ Section arrowFrom_map.
     end.
 End arrowFrom_map.
 
-(* telescopes *)
-(* todo: Use the ones from stdpp instead *)
-Inductive tele : Type :=
-| tdone
-| tcons {t : Type} (_ : t -> tele).
+(* (* telescopes *) *)
+(* (* todo: Use the ones from stdpp instead *) *)
+(* Inductive tele : Type := *)
+(* | tdone *)
+(* | tcons {t : Type} (_ : t -> tele). *)
 
-Fixpoint teleF (T : Type) (t : tele) : Type :=
-  match t with
-  | tdone => T
-  | @tcons t ts => forall (x : t), teleF T (ts x)
-  end.
+(* Fixpoint teleF (T : Type) (t : tele) : Type := *)
+(*   match t with *)
+(*   | tdone => T *)
+(*   | @tcons t ts => forall (x : t), teleF T (ts x) *)
+(*   end. *)
 
-Fixpoint teleF_map {T U : Type} (f : T -> U) {t : tele}
-  : teleF T t -> teleF U t :=
-  match t as t return teleF T t -> teleF U t with
-  | tdone => fun x => f x
-  | tcons t => fun g x => @teleF_map T U f (t x) (g x)
-  end.
+(* Fixpoint teleF_map {T U : Type} (f : T -> U) {t : tele} *)
+(*   : teleF T t -> teleF U t := *)
+(*   match t as t return teleF T t -> teleF U t with *)
+(*   | tdone => fun x => f x *)
+(*   | tcons t => fun g x => @teleF_map T U f (t x) (g x) *)
+(*   end. *)
 
-Definition tsingle (t : Type) : tele := tcons (fun _ : t => tdone).
-Coercion tsingle : Sortclass >-> tele.
-Notation "[ ]" := (tdone) : tele_scope.
-Notation "[ a , .. , b ]" :=
-  (@tcons a%type (fun _ => .. (@tcons b%type (fun _ => tdone)) ..))
-  (at level 0) : tele_scope.
-Bind Scope tele_scope with tele.
-Delimit Scope tele_scope with tele.
+(* Definition tsingle (t : Type) : tele := tcons (fun _ : t => tdone). *)
+(* Coercion tsingle : Sortclass >-> tele. *)
+(* Notation "[ ]" := (tdone) : tele_scope. *)
+(* Notation "[ a , .. , b ]" := *)
+(*   (@tcons a%type (fun _ => .. (@tcons b%type (fun _ => tdone)) ..)) *)
+(*   (at level 0) : tele_scope. *)
+(* Bind Scope tele_scope with tele. *)
+(* Delimit Scope tele_scope with tele. *)
 
 From Cpp.Syntax Require Import Types.
 From Cpp.Sem Require Import Semantics.
