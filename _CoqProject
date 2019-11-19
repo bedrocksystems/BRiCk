@@ -79,6 +79,8 @@ theories/Auto.v
 theories/Auto/invariants.v
 theories/GFunClass.v
 
+theories/Auto/z_to_nat.v
+
 theories/CodeNotations.v
 theories/ProofNotations.v
 
