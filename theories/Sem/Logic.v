@@ -49,8 +49,22 @@ Module Type logic.
         with_genv f //\\ with_genv g -|- with_genv (fun r => f r //\\ g r).
     Axiom with_genv_single_sep : forall f g,
         with_genv f ** with_genv g -|- with_genv (fun r => f r ** g r).
-    Axiom with_genv_ignore : forall P,
+
+    Axiom with_genv_ignore_pred : forall P,
+        Forall x, P x |-- with_genv P.
+    Lemma with_genv_ignore_only_provable : forall (P : _ -> Prop),
+        [| forall x, P x |] |-- with_genv (λ x, [| P x |]).
+    Proof. intros. rewrite <- with_genv_ignore_pred. eauto. Qed.
+
+    Axiom with_genv_ignore1 : forall P,
+        with_genv (fun _ => P) |-- P.
+    Lemma with_genv_ignore2 P :
+        P |-- with_genv (fun _ => P).
+    Proof. rewrite <- with_genv_ignore_pred. eauto. Qed.
+    Lemma with_genv_ignore P :
         with_genv (fun _ => P) -|- P.
+    Proof. split'. apply with_genv_ignore1. apply with_genv_ignore2. Qed.
+
     Declare Instance Proper_with_genv_lentails :
       Proper (pointwise_relation _ lentails ==> lentails) with_genv.
     Declare Instance Proper_with_genv_lequiv :
