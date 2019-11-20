@@ -50,6 +50,10 @@ Module Type logic.
     Axiom with_genv_single_sep : forall f g,
         with_genv f ** with_genv g -|- with_genv (fun r => f r ** g r).
 
+    Axiom with_genv_mono : forall (P Q : genv -> mpred),
+        (forall x, P x |-- Q x) ->
+        with_genv P |-- with_genv Q.
+
     Axiom with_genv_ignore_pred : forall P,
         Forall x, P x |-- with_genv P.
     Lemma with_genv_ignore_only_provable : forall (P : _ -> Prop),
@@ -65,10 +69,13 @@ Module Type logic.
         with_genv (fun _ => P) -|- P.
     Proof. split'. apply with_genv_ignore1. apply with_genv_ignore2. Qed.
 
-    Declare Instance Proper_with_genv_lentails :
+    Instance Proper_with_genv_lentails :
       Proper (pointwise_relation _ lentails ==> lentails) with_genv.
-    Declare Instance Proper_with_genv_lequiv :
+    Proof. intros P Q HPQ. by apply with_genv_mono. Qed.
+
+    Instance Proper_with_genv_lequiv :
       Proper (pointwise_relation _ lequiv ==> lequiv) with_genv.
+    Proof. intros P Q HPQ. split'; apply with_genv_mono; intros; by rewrite HPQ. Qed.
 
     Global Declare Instance with_genv_persistent P :
       (forall resolve, Persistent (P resolve)) -> Persistent (with_genv P).
