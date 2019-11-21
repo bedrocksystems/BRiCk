@@ -39,7 +39,11 @@ theories/Sem/Layout.v
 theories/Sem.v
 
 # Automation
+theories/Auto/perm.v
+theories/Auto/perm_simple.v
+theories/Auto/perm_func.v
 theories/Auto/Discharge.v
+
 theories/Auto/Base.v
 theories/Auto/orient.v
 theories/Auto/PLogic.v
