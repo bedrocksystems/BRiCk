@@ -140,26 +140,17 @@ Definition _local_aux : seal (@_local_def). by eexists. Qed.
 Definition _local := _local_aux.(unseal).
 Definition _local_eq : @_local = _ := _local_aux.(seal_eq).
 
-Global Instance _local_persistent : Persistent (_local r x).
-Proof. solve_Loc_persistent _local_eq. Qed.
-
 Definition _this_def (r : region) : Loc :=
   _local r "#this".
 Definition _this_aux : seal (@_this_def). by eexists. Qed.
 Definition _this := _this_aux.(unseal).
 Definition _this_eq : @_this = _ := _this_aux.(seal_eq).
 
-Global Instance _this_persistent : Persistent (_this r).
-Proof. rewrite _this_eq. apply _. Qed.
-
 Definition _result_def (r : region) : Loc :=
   _local r "#result".
 Definition _result_aux : seal (@_result_def). by eexists. Qed.
 Definition _result := _result_aux.(unseal).
 Definition _result_eq : @_result = _ := _result_aux.(seal_eq).
-
-Global Instance _result_persistent : Persistent (_result r).
-Proof. rewrite _result_eq. apply _. Qed.
 
 Definition _global_def (x : obj_name) : Loc :=
   as_Loc (fun v => Exists p, [| v = Vptr p |] **
@@ -353,6 +344,25 @@ Definition tany_eq : @tany = _ := tany_aux.(seal_eq).
 Global Instance tany_timeless ty q : Timeless (tany ty q).
 Proof. solve_Rep_timeless tany_eq. Qed.
 
+Definition tchar_def (q : Qp) (c : Z) : Rep :=
+  as_Rep (fun addr =>
+       tptsto T_uchar q addr (Vint c) **
+       [| has_type (Vint c) T_uchar |] ).
+Definition tchar_aux : seal (@tchar_def). by eexists. Qed.
+Definition tchar := tchar_aux.(unseal).
+Definition tchar_eq : @tchar = _ := tchar_aux.(seal_eq).
+
+Lemma tprim_tchar q (v : Z) :
+  tprim (Tchar W8 Unsigned) q (Vint v) -|- tchar q v.
+Proof. rewrite tprim_eq tchar_eq. reflexivity. Qed.
+Lemma tprim_tchar1 q (v : Z) :
+  tprim (Tchar W8 Unsigned) q (Vint v) |-- tchar q v.
+Proof. by rewrite tprim_tchar. Qed.
+Lemma tprim_tchar2 q (v : Z) :
+  tchar q v |-- tprim (Tchar W8 Unsigned) q (Vint v).
+Proof. by rewrite tprim_tchar. Qed.
+
+
 (* this isn't really necessary, we should simply drop it and write
  * predicates in this way to start with
  *)
@@ -386,19 +396,11 @@ Definition tlocal_at_aux : seal (@tlocal_at_def). by eexists. Qed.
 Definition tlocal_at := tlocal_at_aux.(unseal).
 Definition tlocal_at_eq : @tlocal_at = _ := tlocal_at_aux.(seal_eq).
 
-Global Instance tlocal_at_persistent r l a v :
-  Persistent v -> Persistent (tlocal_at r l a v).
-Proof. rewrite tlocal_at_eq. apply _. Qed.
-
 Definition tlocal_def (r : region) (x : ident) (v : Rep) : mpred :=
   Exists a, tlocal_at r x a v.
 Definition tlocal_aux : seal (@tlocal_def). by eexists. Qed.
 Definition tlocal := tlocal_aux.(unseal).
 Definition tlocal_eq : @tlocal = _ := tlocal_aux.(seal_eq).
-
-Global Instance tlocal_persistent r x v :
-  Persistent v -> Persistent (tlocal r x v).
-Proof. rewrite tlocal_eq. apply _. Qed.
 
 (* this is for `Indirect` field references *)
 Fixpoint path_to_Offset (from : globname) (final : ident)
