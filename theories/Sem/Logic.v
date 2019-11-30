@@ -100,16 +100,15 @@ Module Type logic.
         let p :=
             tptsto t q1 a v1 ** tptsto t q2 a v2 in
         p |-- p ** [| v1=v2 |] ** ([| ((q1+q2)%Qp ≤ 1)%Qc |]).
-    
-    Parameter local_addr : region -> ident -> ptr -> mpred.
 
-    Global Declare Instance local_addr_persistent resolve x p :
-      Persistent (local_addr resolve x p).
+    (* this is like a "points to" where the location is (region * ident).
+     *)
+    Parameter local_addr : region -> ident -> ptr -> mpred.
 
     (* the pointer contains the code *)
     Parameter code_at : Func -> ptr -> mpred.
     (* code_at is freely duplicable *)
-    Global Declare Instance code_at_persistent f p : Persistent (code_at f p). 
+    Global Declare Instance code_at_persistent f p : Persistent (code_at f p).
     Lemma code_at_dup f p : code_at f p -|- code_at f p ** code_at f p.
     Proof. apply bi.persistent_sep_dup; apply _. Qed.
 
