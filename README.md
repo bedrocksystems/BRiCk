@@ -42,7 +42,7 @@ You can get all of the Coq dependencies via `opam` with the following command.
 $ opam install coq coq-charge-core coq-ltac-iter
 ```
 
-See [`opam` installation instructions](http://coq-blog.clarus.me/use-opam-for-coq.html) for help installing opam in Linux.
+See [`opam` installation instructions](http://coq-blog.clarus.me/use-opam-for-coq.html) for help installing `opam` in Linux.
 
 To install Iris/Iron:
 
@@ -50,11 +50,6 @@ To install Iris/Iron:
 # install Iris
 $ opam repo add iris-dev https://gitlab.mpi-sws.org/iris/opam.git
 $ git clone https://gitlab.mpi-sws.org/iris/iris.git; cd iris; git reset --hard b958d569; make build-dep; make -j3
-$ make install
-
-# install Iron
-$ opam repo add iris-dev https://gitlab.mpi-sws.org/iris/opam.git
-$ git clone https://gitlab.mpi-sws.org/iris/iron.git; cd iron; git reset --hard d7aa1f6e; make -j3
 $ make install
 ```
 
