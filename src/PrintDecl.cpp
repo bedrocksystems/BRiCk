@@ -44,15 +44,16 @@ printMethod(const CXXMethodDecl *decl, CoqPrinter &print,
     cprint.printQualType(decl->getCallResultType(), print);
     print.output() << fmt::line << "; m_class :=" << fmt::nbsp;
     cprint.printGlobalName(decl->getParent(), print);
-    print.output() << fmt::line << "; m_this_qual :=" << fmt::indent;
+    print.output() << fmt::line << "; m_this_qual :=" << fmt::nbsp;
     cprint.printQualifier(decl->isConst(), decl->isVolatile(), print);
-    print.output() << "; m_params :=" << fmt::nbsp;
+    print.output() << fmt::line << "; m_params :=" << fmt::nbsp;
 
+    print.begin_list();
     for (auto i : decl->parameters()) {
         cprint.printParam(i, print);
-        print.output() << "::";
+        print.cons();
     }
-    print.output() << "nil";
+    print.end_list();
 
     print.output() << fmt::line << "; m_body :=" << fmt::nbsp;
     if (decl->getBody()) {
