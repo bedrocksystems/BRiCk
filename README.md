@@ -1,4 +1,4 @@
-[![pipeline status](https://gitlab.com/bedrocksystems/cpp2v/badges/master/pipeline.svg)](https://gitlab.com/bedrocksystems/cpp2v/commits/master)
+h[![pipeline status](https://gitlab.com/bedrocksystems/cpp2v/badges/master/pipeline.svg)](https://gitlab.com/bedrocksystems/cpp2v/commits/master)
 
 
 # cpp2v
@@ -20,15 +20,64 @@ clang -Xclang -load -Xclang ./libcpp2v_plugin.so -Xclang -plugin -Xclang cpp2v -
 -Xclang -plugin-arg-cpp2v -Xclang -names -Xclang -plugin-arg-cpp2v -Xclang foo_ames_cpp.v ...standard clang options...
 ```
 
-## Dependencies
+## Build & Dependenies
 
-### C++
-You will need the following packages (they can be installed via `apt` on a Ubuntu distribution).
+### TL;DR Linux (Ubuntu)
+
+The following script should work, but you can customize it based on what you have:
+
+```sh
+sudo apt install llvm-8 llvm-8-dev clang-8 libclang-8-dev cmake opam
+# install opam dependencies
+opam repo add coq-released https://coq.inria.fr/opam/released
+opam repo add iris-dev https://gitlab.mpi-sws.org/iris/opam.git
+opam pin coq 8.9.1
+opam install coq coq-charge-core coq-ltac-iter
+# install iris
+git clone https://gitlab.mpi-sws.org/iris/iris.git
+(cd iris; git reset --hard b958d569; make build-dep; make -j3; make install)
+# install cpp2v
+git clone https://github.com/bedrocksystems/cpp2v.git
+(cd cpp2v; make cpp2v coq)
+```
+
+### TL;DR OSX
+
+```sh
+brew install llvm cmake opam
+export PATH=/usr/local/opt/llvm/bin:${PATH}
+# install opam dependencies
+opam repo add coq-released https://coq.inria.fr/opam/released
+opam repo add iris-dev https://gitlab.mpi-sws.org/iris/opam.git
+opam pin coq 8.9.1
+opam install coq coq-charge-core coq-ltac-iter
+# install iris
+git clone https://gitlab.mpi-sws.org/iris/iris.git
+(cd iris; git reset --hard b958d569; make build-dep; make -j3; make install)
+# install cpp2v
+git clone https://github.com/bedrocksystems/cpp2v.git
+cd cpp2v
+mkdir build && cd build
+cmake -D CMAKE_EXE_LINKER_FLAGS=-L/usr/local/opt/llvm/lib ..
+cmake --build .
+cd ..
+make cpp2v coq
+```
+
+## Long Version
+
+This repository is broken down into two components. The `cpp2v` tool does not require Coq, and the Coq libraries do not require `cpp2v`. However, the two components are coupled because they operate on the same underlying syntax.
+
+### The cpp2v Tool
+
+To install the `cpp2v` tool, you need the following packages (they can be installed via `apt` on a Ubuntu distribution).
 
 1. `llvm-8`, `llvm-8-dev`, `clang-8`, `libclang-8-dev`
 2. `cmake`
 
 #### OSX Instructions
+
+On an OSX system, you run the following commands.
 
 ```sh
 $ brew install llvm cmake
@@ -42,9 +91,11 @@ You can get all of the Coq dependencies via `opam` with the following command.
 $ opam install coq coq-charge-core coq-ltac-iter
 ```
 
-See [`opam` installation instructions](http://coq-blog.clarus.me/use-opam-for-coq.html) for help installing `opam` in Linux.
+See [`opam` installation instructions](http://coq-blog.clarus.me/use-opam-for-coq.html) for help installing opam in Linux.
 
-To install Iris/Iron:
+Note that you probably need to pin Coq to 8.9.1 as that is the currently supported version.
+
+To install Iris:
 
 ```sh
 # install Iris
@@ -73,7 +124,6 @@ $ mkdir build && cd build
 $ cmake -D CMAKE_EXE_LINKER_FLAGS=-L/usr/local/opt/llvm/lib ..
 $ cmake --build .
 ```
-
 
 ## Building
 You can build `cpp2v` using the following commands.
