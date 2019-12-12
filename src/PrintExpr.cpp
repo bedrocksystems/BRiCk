@@ -773,6 +773,16 @@ public:
         print.ctor("Eimplicit_init");
         done(expr, print, cprint);
     }
+
+    void VisitCXXPseudoDestructorExpr(const CXXPseudoDestructorExpr* expr,
+                                      CoqPrinter& print, ClangPrinter& cprint,
+                                      const ASTContext& ctxt) {
+        print.ctor("Epseudo_destructor");
+        cprint.printQualType(expr->getDestroyedType(), print);
+        print.output() << fmt::nbsp;
+        cprint.printExpr(expr->getBase(), print);
+        print.end_ctor();
+    }
 };
 
 PrintExpr PrintExpr::printer;

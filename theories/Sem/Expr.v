@@ -515,6 +515,10 @@ Module Type Expr.
                             Q a (mdestroy (resolve:=resolve) ti ty a (Some dtor) free))
       |-- wp_prval (Ebind_temp e dtor ty) Q.
 
+    Axiom wp_pseudo_destructor : forall e ty Q,
+        wp_prval e Q
+        |-- wp_prval (Epseudo_destructor ty e) Q.
+
   End with_resolve.
 
 End Expr.
