@@ -42,6 +42,8 @@ theories/Sem.v
 theories/Auto/perm.v
 theories/Auto/perm_simple.v
 theories/Auto/perm_func.v
+theories/Auto/perm_func_lazy.v
+theories/Auto/use.v
 theories/Auto/Discharge.v
 
 theories/Auto/Base.v
