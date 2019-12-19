@@ -39,14 +39,15 @@ Module Type Func.
   Arguments fs'_spec {_} _.
 
   (* this is the core definition that everything will be based on. *)
-  Definition cptr'_def {Σ} {resolve} ti (fs : function_spec' Σ) : Rep Σ :=
+  Definition cptr'_def {Σ} ti (fs : function_spec' Σ) : Rep Σ :=
     as_Rep (fun p =>
          Forall vs,
          [| List.length vs = List.length fs.(fs'_arguments) |] -*
-         Forall Q, (fs.(fs'_spec) ti) vs Q -* fspec (resolve:=resolve) p vs ti Q).
+         Forall Q, (fs.(fs'_spec) ti) vs Q -* fspec p vs ti Q).
   Definition cptr'_aux : seal (@cptr'_def). by eexists. Qed.
-  Definition cptr' {Σ} {resolve} := cptr'_aux.(unseal) Σ resolve.
+  Definition cptr' := cptr'_aux.(unseal).
   Definition cptr'_eq : @cptr' = _ := cptr'_aux.(seal_eq).
+  Arguments cptr' {_}.
 
   (* function specifications written in weakest pre-condition style.
    *
@@ -64,13 +65,14 @@ Module Type Func.
   Arguments fs_spec {_} _.
 
   (* this is the core definition that everything will be based on. *)
-  Definition cptr_def {Σ} {resolve} ti (fs : function_spec Σ) : Rep Σ :=
+  Definition cptr_def {Σ} ti (fs : function_spec Σ) : Rep Σ :=
    as_Rep (fun p =>
          ForallEach (fs.(fs_spec) ti) (fun PQ args =>
-            Forall Q, PQ Q -* fspec (resolve:=resolve) p (List.map snd args) ti Q)).
+            Forall Q, PQ Q -* fspec p (List.map snd args) ti Q)).
   Definition cptr_aux : seal (@cptr_def). by eexists. Qed.
-  Definition cptr {Σ} {resolve} := cptr_aux.(unseal) Σ resolve.
+  Definition cptr := cptr_aux.(unseal).
   Definition cptr_eq : @cptr = _ := cptr_aux.(seal_eq).
+  Arguments cptr {_}.
 
   Record WithPrePost Σ : Type :=
     { wpp_with : tele
@@ -101,9 +103,6 @@ Module Type Func.
   Definition WppD (wpp : WithPrePost) : (val -> mpred) -> mpred :=
     WppD' wpp.(wpp_pre) wpp.(wpp_post).
   Global Arguments WppD !_ / .
-
-  Section with_resolve.
-    Context {resolve : genv}.
 
   (* Hoare triple for a function.
    * note(gmm): these should include linkage specifications.
@@ -182,7 +181,7 @@ Module Type Func.
       (forall Q vs,
           (fs'.(fs'_spec) ti) vs Q -|-
           applyEach fs.(fs_arguments) vs (fs.(fs_spec) ti) (fun k _ => k Q)) ->
-      cptr (Σ:=Σ) (resolve:=resolve) ti fs -|- cptr' (Σ:=Σ) (resolve:=resolve) ti fs'.
+      cptr (Σ:=Σ) ti fs -|- cptr' (Σ:=Σ) ti fs'.
   Proof.
     rewrite cptr'_eq. unfold cptr'_def.
     rewrite cptr_eq. unfold cptr_def.
@@ -196,20 +195,34 @@ Module Type Func.
 
   Definition cglob_def (gn : globname) ti (spec : function_spec)
   : mpred :=
-    _at (_global gn) (cptr (resolve:=resolve) ti spec).
+    _at (_global gn) (cptr ti spec).
   Definition cglob_aux : seal (@cglob_def). by eexists. Qed.
   Definition cglob := cglob_aux.(unseal).
   Definition cglob_eq : @cglob = _ := cglob_aux.(seal_eq).
 
-  Axiom cglob_dup : forall p ti fs,
-      cglob p ti fs -|- cglob p ti fs ** cglob p ti fs.
+  Axiom Persistent_cglob : forall p ti fs, Persistent (cglob p ti fs).
 
   (* i was thinking that i could store static variables in invariants.
    * i'm not sure how this works with function pointer weakening.
    *)
-  Axiom cglob_weaken : forall a b c, cglob a b c |-- empSP.
+  Axiom Affine_cglob : forall a b c, Affine (cglob a b c).
 
-  End with_resolve.
+  (* todo(gmm): this is problematic because if `thread_info` was empty, then
+   * the left hand side would be ltrue, not empSP
+   *)
+  Lemma cglob_weaken_any_ti : forall a c, Affine (Forall ti, cglob a ti c).
+  Proof.
+    intros.
+    eapply bi.forall_affine.
+    intros. eapply Affine_cglob.
+    Unshelve.
+  Admitted.
+
+  Lemma cglob_weaken_any_ti_later :
+    forall (a : globname) (c : function_spec),
+      (Forall ti, |> cglob a ti c) |-- empSP.
+  Proof.
+  Admitted.
 
   Fixpoint bind_type ρ (t : type) (x : ident) (v : val) : mpred :=
     match t with
@@ -231,7 +244,7 @@ Module Type Func.
 
     (* the proof obligation for a function
      *)
-    Definition func_ok {resolve:genv} (ret : type) (params : list (ident * type))
+    Definition func_ok (ret : type) (params : list (ident * type))
                (body : Stmt)
                (ti : thread_info) (spec : function_spec)
     : mpred :=
@@ -253,21 +266,21 @@ Module Type Func.
         then
           Forall Q : mpred,
           (binds ** PQ (fun _ => Q)) -*
-          wp (resolve:=resolve) ti ρ body (Kfree frees (void_return (|>Q)))
+          wp ti ρ body (Kfree frees (void_return (|>Q)))
         else if is_aggregate ret then
           Forall Q : val -> mpred,
           (binds ** _at (_result ρ) (uninit (erase_qualifiers ret) 1) ** PQ Q) -*
-          wp (resolve:=resolve) ti ρ body (Kfree (frees ** Exists a, _result ρ &~ a) (val_return (fun x => |> Q x)))
+          wp ti ρ body (Kfree (frees ** Exists a, _result ρ &~ a) (val_return (fun x => |> Q x)))
         else
           Forall Q : val -> mpred,
           (binds ** PQ Q) -*
-          wp (resolve:=resolve) ti ρ body (Kfree frees (val_return (fun x => |> Q x)))).
+          wp ti ρ body (Kfree frees (val_return (fun x => |> Q x)))).
     (* ^ todo(gmm): the new semantics of function gets an address for a return value
      * so the semantics for `return` should be that *)
 
 
 
-    Definition method_ok {resolve} (meth : Method) (ti : thread_info) (spec : function_spec)
+    Definition method_ok (meth : Method) (ti : thread_info) (spec : function_spec)
       : mpred :=
       match meth.(m_body) with
       | None => lfalse
@@ -298,26 +311,26 @@ Module Type Func.
             if is_void ret_ty
             then
               Forall Q : mpred,
-              (binds ** PQ (fun _ => Q)) -* (wp (resolve:=resolve) ti ρ body (Kfree frees (void_return (|>Q))))
+              (binds ** PQ (fun _ => Q)) -* (wp ti ρ body (Kfree frees (void_return (|>Q))))
             else if is_aggregate ret_ty then
               Forall Q : val -> mpred,
-              (binds ** _at (_result ρ) (uninit (erase_qualifiers ret_ty) 1) ** PQ Q) -* (wp (resolve:=resolve) ti ρ body (Kfree (frees ** Exists a, _result ρ &~ a) (val_return (fun x => |>Q x))))
+              (binds ** _at (_result ρ) (uninit (erase_qualifiers ret_ty) 1) ** PQ Q) -* (wp ti ρ body (Kfree (frees ** Exists a, _result ρ &~ a) (val_return (fun x => |>Q x))))
             else
               Forall Q : val -> mpred,
-              (binds ** PQ Q) -* (wp (resolve:=resolve) ti ρ body (Kfree frees (val_return (fun x => |>Q x))))
+              (binds ** PQ Q) -* (wp ti ρ body (Kfree frees (val_return (fun x => |>Q x))))
           end)
       end.
 
-    Definition wp_ctor {resolve : genv} (cls : globname) (ti : thread_info) (ρ : region)
+    Definition wp_ctor (cls : globname) (ti : thread_info) (ρ : region)
                (this_val : val)
                (inits : list Initializer) (body : Stmt)
                (Q : Kpreds)
     : mpred :=
-      wpis (resolve:=resolve) ti ρ cls this_val inits
-           (fun free => free ** wp (resolve:=resolve) ti ρ body Q).
+      wpis ti ρ cls this_val inits
+           (fun free => free ** wp ti ρ body Q).
 
 
-    Definition ctor_ok {resolve} (ctor : Ctor) ti (spec : function_spec)
+    Definition ctor_ok (ctor : Ctor) ti (spec : function_spec)
     : mpred :=
       match ctor.(c_body) with
       | None => lfalse
@@ -347,20 +360,20 @@ Module Type Func.
             in
             Forall Q : mpred,
             (binds ** PQ (fun _ => Q)) -*
-            (wp_ctor (resolve:=resolve) ctor.(c_class) ti ρ this_val init body
+            (wp_ctor ctor.(c_class) ti ρ this_val init body
                      (Kfree frees (void_return (|>Q))))
           end)
       end.
 
-    Definition wp_dtor {resolve : genv} (cls : globname) (ti : thread_info) (ρ : region)
+    Definition wp_dtor (cls : globname) (ti : thread_info) (ρ : region)
                (this_val : val)
                (body : Stmt) (dtors : list (FieldOrBase * globname))
                (frees : mpred) (Q : mpred)
     : mpred :=
-      wp (resolve:=resolve) ti ρ body
-         (Kfree frees (void_return (wpds (resolve:=resolve) ti ρ cls this_val dtors Q))).
+      wp ti ρ body
+         (Kfree frees (void_return (wpds ti ρ cls this_val dtors Q))).
 
-    Definition dtor_ok {resolve: genv}(dtor : Dtor) ti (spec : function_spec)
+    Definition dtor_ok (dtor : Dtor) ti (spec : function_spec)
     : mpred :=
       match dtor.(d_body) with
       | None => lfalse
@@ -384,7 +397,7 @@ Module Type Func.
             let frees := _this ρ &~ this_val in
             Forall Q : mpred,
               (binds ** PQ (fun _ => Q)) -*
-              (wp_dtor (resolve:=resolve) dtor.(d_class) ti ρ this_val body deinit frees (|>Q))
+              (wp_dtor dtor.(d_class) ti ρ this_val body deinit frees (|>Q))
           end)
       end.
   End with_Σ.

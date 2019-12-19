@@ -24,20 +24,19 @@ Module Type Stmt.
    *)
   Section with_resolver.
     Context {Σ:gFunctors}.
-    Context {resolve : genv}.
     Variable ti : thread_info.
     Variable ρ : region.
 
-    Local Notation wp := (wp (Σ :=Σ) (resolve:=resolve)  ti ρ).
-    Local Notation wpe := (wpe (Σ :=Σ) (resolve:=resolve) ti ρ).
-    Local Notation wp_lval := (wp_lval (Σ :=Σ) (resolve:=resolve) ti ρ).
-    Local Notation wp_prval := (wp_prval (Σ :=Σ) (resolve:=resolve) ti ρ).
-    Local Notation wp_xval := (wp_xval (Σ :=Σ) (resolve:=resolve) ti ρ).
-    Local Notation wp_glval := (wp_glval (Σ :=Σ) (resolve:=resolve) ti ρ).
-    Local Notation wp_rval := (wp_rval (Σ :=Σ) (resolve:=resolve) ti ρ).
-    Local Notation wp_init := (wp_init (Σ :=Σ) (resolve:=resolve) ti ρ).
-    Local Notation wpAny := (wpAny (Σ :=Σ) (resolve:=resolve) ti ρ).
-    Local Notation wpAnys := (wpAnys (Σ :=Σ) (resolve:=resolve) ti ρ).
+    Local Notation wp := (wp (Σ :=Σ) ti ρ).
+    Local Notation wpe := (wpe (Σ :=Σ) ti ρ).
+    Local Notation wp_lval := (wp_lval (Σ :=Σ) ti ρ).
+    Local Notation wp_prval := (wp_prval (Σ :=Σ) ti ρ).
+    Local Notation wp_xval := (wp_xval (Σ :=Σ) ti ρ).
+    Local Notation wp_glval := (wp_glval (Σ :=Σ) ti ρ).
+    Local Notation wp_rval := (wp_rval (Σ :=Σ) ti ρ).
+    Local Notation wp_init := (wp_init (Σ :=Σ) ti ρ).
+    Local Notation wpAny := (wpAny (Σ :=Σ) ti ρ).
+    Local Notation wpAnys := (wpAnys (Σ :=Σ) ti ρ).
 
     Local Notation mpred := (mpred Σ) (only parsing).
     Local Notation Kpreds := (Kpreds Σ) (only parsing).
@@ -113,7 +112,7 @@ Module Type Stmt.
                   let destroy :=
                       match dtor with
                       | None => fun x => x
-                      | Some dtor => destruct_obj (resolve:=resolve) ti dtor cls a
+                      | Some dtor => destruct_obj ti dtor cls a
                       end (_at (_eq a) (tany (erase_qualifiers ty) 1))
                   in
                   let continue :=
@@ -129,7 +128,7 @@ Module Type Stmt.
                   let destroy : mpred :=
                       match dtor with
                       | None => fun x => x
-                      | Some dtor => destruct (resolve:=resolve) ti ty a dtor
+                      | Some dtor => destruct ti ty a dtor
                       end (_at (_eq a) (tany (erase_qualifiers ty) 1))
                   in
                   let continue :=

@@ -46,10 +46,17 @@ Lemma monPred_at_persistent_inv {V bi} (P : monPred V bi) :
   (∀ i, Persistent (P i)) → Persistent P.
 Proof. intros HP. constructor=> i. MonPred.unseal. apply HP. Qed.
 
-
 Lemma monPred_at_timeless_inv {V sbi} (P : monPredSI V sbi) :
   (∀ i, Timeless (P i)) → Timeless P.
 Proof. intros HP. constructor=> i. MonPred.unseal. apply HP. Qed.
+
+Lemma Rep_lequiv {Σ} : forall (P Q : Rep Σ),
+    (forall p, P p -|- Q p) ->
+    P -|- Q.
+Proof.
+  intros. split; constructor; apply H.
+Qed.
+
 
 (* locations are predicates over a location and are used to do address
  * arithmetic.

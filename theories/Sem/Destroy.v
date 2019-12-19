@@ -10,14 +10,14 @@ From Cpp.Sem Require Import
 
 Section destroy.
   Context {Σ:gFunctors}.
-  Context {resolve : genv} (ti : thread_info).
+  Context (ti : thread_info).
 
   Local Notation mpred := (mpred Σ) (only parsing).
 
   (* remove from the stack *)
   Definition destruct_obj (dtor : obj_name) (cls : globname) (v : val) (Q : mpred) : mpred :=
     Exists da, _global dtor &~ da **
-               |> fspec (resolve:=resolve) da (v :: nil) ti
+               |> fspec da (v :: nil) ti
                         (fun _ => Q).
 
   Fixpoint destruct (t : type) (this : val) (dtor : obj_name) (Q : mpred)

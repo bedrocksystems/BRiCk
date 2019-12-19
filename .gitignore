@@ -11,3 +11,4 @@ Makefile.coq.conf
 build
 deps.pdf
 deps.dot
+.envrc
