@@ -232,7 +232,7 @@ Module Type cclogic.
   End Invariants.
   Import Invariants.
   Export Invariants.
-  
+
 End cclogic.
 
 Declare Module CCL : cclogic.

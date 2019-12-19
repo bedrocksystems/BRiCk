@@ -19,7 +19,7 @@ Export ChargeNotation.
 From Cpp Require Import
      Ast.
 From Cpp.Sem Require Import
-     Semantics.
+     Semantics Operator.
 
 Module Type logic.
 
@@ -117,6 +117,42 @@ Module Type logic.
 
     Parameter ctor_at : ptr -> Ctor -> mpred.
     Parameter dtor_at : ptr -> Dtor -> mpred.
+
+    Definition eval_unop (u : UnOp) (argT resT : type) (arg res : val)
+      : mpred :=
+      with_genv (fun resolve =>
+                   [| eval_unop (resolve:=resolve) u argT resT arg res |]).
+    Global Instance Persistent_eval_unop : forall u t t' v v', Persistent (eval_unop u t t' v v').
+    Proof. Admitted.
+    Global Instance Affine_eval_unop : forall u t t' v v', Affine (eval_unop u t t' v v').
+    Proof. Admitted.
+
+    Definition eval_binop (b :BinOp) (lhsT rhsT resT : type) (lhs rhs res : val)
+      : mpred :=
+      with_genv (fun resolve =>
+                   [| eval_binop (resolve:=resolve) b lhsT rhsT resT lhs rhs res |]).
+    Global Instance Persistent_eval_binop : forall u t t' t'' v v' v'', Persistent (eval_binop u t t' t'' v v' v'').
+    Proof. Admitted.
+    Global Instance Affine_eval_binop : forall u t t' t'' v v' v'', Affine (eval_binop u t t' t'' v v' v'').
+    Proof. Admitted.
+
+
+    Definition sizeof (t : type) (sz : N) : mpred :=
+      with_genv (fun resolve => [| size_of resolve t sz |]).
+
+    Global Instance Persistent_sizeof : forall t s, Persistent (sizeof t s).
+    Proof. Admitted.
+    Global Instance Affine_sizeof : forall t s, Affine (sizeof t s).
+    Proof. Admitted.
+
+    Definition alignof (t : type) (sz : N) : mpred :=
+      with_genv (fun resolve => [| align_of (resolve:=resolve) t sz |]).
+
+    Global Instance Persistent_alignof : forall t s, Persistent (alignof t s).
+    Proof. Admitted.
+    Global Instance Affine_alignof : forall t s, Affine (alignof t s).
+    Proof. Admitted.
+
   End with_Σ.
   Arguments mpred _ : clear implicits.
   Arguments mpredI _ : clear implicits.

@@ -17,28 +17,27 @@ Module Type Init.
 
   Section with_resolve.
     Context {Σ:gFunctors}.
-    Context {resolve : genv}.
     Variable ti : thread_info.
     Variable ρ : region.
 
-    Local Notation wp := (wp (Σ :=Σ) (resolve:=resolve)  ti ρ).
-    Local Notation wpe := (wpe (Σ :=Σ) (resolve:=resolve) ti ρ).
-    Local Notation wp_lval := (wp_lval (Σ :=Σ) (resolve:=resolve) ti ρ).
-    Local Notation wp_rval := (wp_rval (Σ :=Σ) (resolve:=resolve) ti ρ).
-    Local Notation wp_prval := (wp_prval (Σ :=Σ) (resolve:=resolve) ti ρ).
-    Local Notation wp_xval := (wp_xval (Σ :=Σ) (resolve:=resolve) ti ρ).
-    Local Notation wp_init := (wp_init (Σ :=Σ) (resolve:=resolve) ti ρ).
-    Local Notation wp_args := (wp_args (Σ :=Σ) (resolve:=resolve) ti ρ).
-    Local Notation wpAny := (wpAny (Σ :=Σ) (resolve:=resolve) ti ρ).
-    Local Notation wpAnys := (wpAnys (Σ :=Σ) (resolve:=resolve) ti ρ).
-    Local Notation fspec := (fspec (Σ :=Σ) (resolve:=resolve)).
+    Local Notation wp := (wp (Σ :=Σ)  ti ρ).
+    Local Notation wpe := (wpe (Σ :=Σ) ti ρ).
+    Local Notation wp_lval := (wp_lval (Σ :=Σ) ti ρ).
+    Local Notation wp_rval := (wp_rval (Σ :=Σ) ti ρ).
+    Local Notation wp_prval := (wp_prval (Σ :=Σ) ti ρ).
+    Local Notation wp_xval := (wp_xval (Σ :=Σ) ti ρ).
+    Local Notation wp_init := (wp_init (Σ :=Σ) ti ρ).
+    Local Notation wp_args := (wp_args (Σ :=Σ) ti ρ).
+    Local Notation wpAny := (wpAny (Σ :=Σ) ti ρ).
+    Local Notation wpAnys := (wpAnys (Σ :=Σ) ti ρ).
+    Local Notation fspec := (fspec (Σ :=Σ)).
 
     Local Notation mpred := (mpred Σ) (only parsing).
     Local Notation FreeTemps := (FreeTemps Σ) (only parsing).
 
     (** initialization lists *)
     Parameter wpi
-    : forall {resolve : genv} (ti : thread_info) (ρ : region)
+    : forall (ti : thread_info) (ρ : region)
         (cls : globname) (this : val) (init : Initializer)
         (Q : mpred -> mpred), mpred.
 
@@ -73,20 +72,20 @@ Module Type Init.
         Exists a,
           _offsetL (offset_for cls i.(init_path)) (_eq this_val) &~ a ** ltrue //\\
         wp_initialize (erase_qualifiers i.(init_type)) a i.(init_init) Q
-        |-- @wpi resolve ti ρ cls this_val i Q.
+        |-- @wpi ti ρ cls this_val i Q.
 
     Fixpoint wpis (cls : globname) (this : val)
              (inits : list Initializer)
              (Q : mpred -> mpred) : mpred :=
       match inits with
       | nil => Q empSP
-      | i :: is' => @wpi resolve ti ρ cls this i (fun f => f ** wpis cls this is' Q)
+      | i :: is' => @wpi ti ρ cls this i (fun f => f ** wpis cls this is' Q)
       end.
 
     Axiom wp_init_constructor : forall cls addr cnd es Q ty,
       wp_args es (fun ls free =>
-         Exists ctor, [| glob_addr resolve cnd ctor |] **
-         |> fspec (Vptr ctor) (addr :: ls) ti (fun _ => Q free))
+         Exists ctor, _global cnd &~ ctor **
+         |> fspec ctor (addr :: ls) ti (fun _ => Q free))
       |-- wp_init (Tref cls) addr (Econstructor cnd es ty) Q.
 
     Definition build_array (es : list Expr) (fill : option Expr) (sz : nat)
