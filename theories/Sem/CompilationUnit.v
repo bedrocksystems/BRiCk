@@ -27,29 +27,25 @@ Module Type modules.
   Context {Σ:gFunctors}.
 
   Notation mpred := (mpred Σ) (only parsing).
-  Notation Offset := (Offset Σ) (only parsing).
 
   Definition denoteSymbol (n : obj_name) (o : ObjValue) : mpred :=
     match o with
     | Ovar _ _ =>
-      Exists a, with_genv (fun resolve => [| glob_addr resolve n a |])
+      Exists a, _global n &~ a
     | Ofunction f =>
       match f.(f_body) return mpred with
       | None =>
-        Exists a, with_genv (fun resolve => [| glob_addr resolve n a |])
+        Exists a, with_genv (fun resolve => [| glob_addr resolve n = Some a |])
       | Some body =>
-        Exists a,
-        with_genv (fun resolve => [| glob_addr resolve n a |]) //\\
+        Exists a, _global n &~ (Vptr a) //\\
                   code_at f a
       end
     | Omethod m =>
       match m.(m_body) return mpred with
       | None =>
-        Exists a,
-        with_genv (fun resolve => [| glob_addr resolve n a |])
+        Exists a, _global n &~ a
       | Some body =>
-        Exists a,
-        with_genv (fun resolve => [| glob_addr resolve n a |]) //\\
+        Exists a, _global n &~ Vptr a //\\
                   code_at {| f_return := m.(m_return)
                            ; f_params := ("#this"%string, Tqualified m.(m_this_qual) (Tref m.(m_class))) :: m.(m_params)
                            ; f_body := m.(m_body) |} a
@@ -57,20 +53,16 @@ Module Type modules.
     | Oconstructor c =>
       match c.(c_body) return mpred with
       | None =>
-        Exists a,
-        with_genv (fun resolve => [| glob_addr resolve n a |])
+        Exists a, _global n &~ a
       | Some body =>
-        Exists a,
-        with_genv (fun resolve => [| glob_addr resolve n a |]) //\\ ctor_at a c
+        Exists a, _global n &~ Vptr a //\\ ctor_at a c
       end
     | Odestructor d =>
       match d.(d_body) return mpred with
       | None =>
-        Exists a,
-        with_genv (fun resolve => [| glob_addr resolve n a |])
+        Exists a, _global n &~ a
       | Some body =>
-        Exists a,
-        with_genv (fun resolve => [| glob_addr resolve n a |]) //\\ dtor_at a d
+        Exists a, _global n &~ Vptr a //\\ dtor_at a d
       end
     end.
 
@@ -95,6 +87,7 @@ Module Type modules.
       List.Forall non_overlapping ls /\ disjoint ls
     end.
 
+
   Definition denoteGlobal (gn : globname) (g : GlobDecl) : mpred :=
     match g with
     | Gtypedef _ => empSP
@@ -106,10 +99,10 @@ Module Type modules.
       Exists os, Exists os',
       ranges_to_list (fun '(nm,li) '(off,sz) => with_genv (fun prg =>
                         [| off = li.(li_offset) |] **
-                        [| @size_of prg (Tref nm) sz |])) str.(s_bases) os **
+                        [| @size_of prg (Tref nm) = Some sz |])) str.(s_bases) os **
       ranges_to_list (fun '(_,ty,li) '(off,sz) => with_genv (fun prg =>
                         [| off = li.(li_offset) |] **
-                        [| @size_of prg ty sz |])) str.(s_fields) os' **
+                        [| @size_of prg ty = Some sz |])) str.(s_fields) os' **
       [| List.Forall (fun '(off,sz) => 0 <= off /\ off + Z.of_N sz <= Z.of_N str.(s_size))%Z (os ++ os') |] **
       [| disjoint (os ++ os') |]
       (* ^ this should record size and offset information *)
@@ -118,7 +111,7 @@ Module Type modules.
       Exists os,
       ranges_to_list (fun '(_,ty,li) '(off,sz) => with_genv (fun prg =>
                         [| off = li.(li_offset) |] **
-                        [| @size_of prg ty sz |])) uni.(u_fields) os **
+                        [| @size_of prg ty = Some sz |])) uni.(u_fields) os **
       [| List.Forall (fun '(off,sz) => 0 <= off /\ off + Z.of_N sz <= Z.of_N uni.(u_size))%Z os |]
       (* ^ this should record size and offset information *)
     | Genum _ => empSP

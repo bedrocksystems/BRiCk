@@ -32,7 +32,7 @@ Axiom eval_not_bool : forall resolve a,
    promoted operand. For unsigned a, the value of -a is 2^b -a, where b
    is the number of bits after promotion.  *)
 Axiom eval_minus_int : forall resolve s a c w bytes,
-    size_of resolve (Tint w s) bytes ->
+    size_of resolve (Tint w s) = Some bytes ->
     c = (if s then (0 - a) else trim (N_of_size w) (0 - a))%Z ->
     has_type (Vint c) (Tint w s) ->
     eval_unop (resolve:=resolve) Uminus (Tint w s) (Tint w s)
@@ -40,7 +40,7 @@ Axiom eval_minus_int : forall resolve s a c w bytes,
 
 Definition eval_ptr_int_op (bo : BinOp) (f : Z -> Z) : Prop :=
   forall resolve t w s p o p' sz,
-    size_of resolve t sz ->
+    size_of resolve t = Some sz ->
     p' = offset_ptr_ p (f o * Z.of_N sz) ->
     eval_binop (resolve:=resolve) bo
                (Tpointer t) (Tint w s) (Tpointer t)
@@ -60,7 +60,7 @@ Axiom eval_ptr_int_sub :
 
 Definition eval_int_ptr_op (bo : BinOp) (f : Z -> Z) : Prop :=
   forall resolve t w s p o p' sz,
-    size_of resolve t sz ->
+    size_of resolve t = Some sz ->
     p' = offset_ptr_ p (f o * Z.of_N sz) ->
     eval_binop (resolve:=resolve) bo
                (Tint w s) (Tpointer t) (Tpointer t)
@@ -76,7 +76,7 @@ Axiom eval_int_ptr_add :
    completely-defined object types. *)
 Axiom eval_ptr_ptr_sub :
   forall resolve t w p o1 o2 p' base sz,
-    size_of resolve t sz ->
+    size_of resolve t = Some sz ->
     p = offset_ptr_ base (Z.of_N sz * o1) ->
     p' = offset_ptr_ base (Z.of_N sz * o2) ->
     eval_binop (resolve:=resolve) Bsub

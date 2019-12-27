@@ -227,18 +227,18 @@ Module Type Func.
   Fixpoint bind_type ρ (t : type) (x : ident) (v : val) : mpred :=
     match t with
     | Tqualified _ t => bind_type ρ t x v
-    | Treference ref => _local ρ x &~ v
-    | Trv_reference ref => _local ρ x &~ v
-    | Tref _         => _local ρ x &~ v
+    | Treference ref => local_addr_v ρ x v
+    | Trv_reference ref => local_addr_v ρ x v
+    | Tref _         => local_addr_v ρ x v
     | _              => tlocal ρ x (tprim (erase_qualifiers t) 1 v)
     end.
 
   Fixpoint bind_type_free ρ (t : type) (x : ident) (v : val) : mpred :=
     match t with
     | Tqualified _ t => bind_type_free ρ t x v
-    | Treference ref => _local ρ x &~ v
-    | Trv_reference ref => _local ρ x &~ v
-    | Tref cls       => _local ρ x &~ v
+    | Treference ref => local_addr_v ρ x v
+    | Trv_reference ref => local_addr_v ρ x v
+    | Tref cls       => local_addr_v ρ x v
     | _              => tlocal ρ x (tany (erase_qualifiers t) 1)
     end.
 
@@ -269,8 +269,9 @@ Module Type Func.
           wp ti ρ body (Kfree frees (void_return (|>Q)))
         else if is_aggregate ret then
           Forall Q : val -> mpred,
-          (binds ** _at (_result ρ) (uninit (erase_qualifiers ret) 1) ** PQ Q) -*
-          wp ti ρ body (Kfree (frees ** Exists a, _result ρ &~ a) (val_return (fun x => |> Q x)))
+          Forall ra,
+          (binds ** result_addr ρ ra ** _at (_eq ra) (uninit (erase_qualifiers ret) 1) ** PQ Q) -*
+          wp ti ρ body (Kfree (frees ** result_addr ρ ra) (val_return (fun x => |> Q x)))
         else
           Forall Q : val -> mpred,
           (binds ** PQ Q) -*
@@ -298,12 +299,12 @@ Module Type Func.
           | this_val :: rest_vals =>
             (* this is what is created from the parameters *)
             let binds :=
-                _this ρ &~ this_val **
+                this_addr ρ this_val **
                 sepSPs (zip (fun '(x, t) 'v => bind_type ρ t x v) meth.(m_params) rest_vals)
             in
             (* this is what is freed on return *)
             let frees :=
-                _this ρ &~ this_val **
+                this_addr ρ this_val **
                 sepSPs (zip (fun '(x, t) 'v => bind_type_free ρ t x v) (rev meth.(m_params))
                        (rev rest_vals))
             in
@@ -314,7 +315,8 @@ Module Type Func.
               (binds ** PQ (fun _ => Q)) -* (wp ti ρ body (Kfree frees (void_return (|>Q))))
             else if is_aggregate ret_ty then
               Forall Q : val -> mpred,
-              (binds ** _at (_result ρ) (uninit (erase_qualifiers ret_ty) 1) ** PQ Q) -* (wp ti ρ body (Kfree (frees ** Exists a, _result ρ &~ a) (val_return (fun x => |>Q x))))
+              Forall ra,
+              (binds ** result_addr ρ ra ** _at (_eq ra) (uninit (erase_qualifiers ret_ty) 1) ** PQ Q) -* (wp ti ρ body (Kfree (frees ** result_addr ρ ra) (val_return (fun x => |>Q x))))
             else
               Forall Q : val -> mpred,
               (binds ** PQ Q) -* (wp ti ρ body (Kfree frees (val_return (fun x => |>Q x))))
@@ -350,12 +352,12 @@ Module Type Func.
           | this_val :: rest_vals =>
             (* this is what is created from the parameters *)
             let binds :=
-                _this ρ &~ this_val **
+                this_addr ρ this_val **
                 sepSPs (zip (fun '(x, t) 'v => bind_type ρ t x v) ctor.(c_params) rest_vals)
             in
             (* this is what is freed on return *)
             let frees :=
-                _this ρ &~ this_val **
+                this_addr ρ this_val **
                 sepSPs (zip (fun '(x, t) 'v => bind_type_free ρ t x v) (rev ctor.(c_params)) (rev rest_vals))
             in
             Forall Q : mpred,
@@ -392,9 +394,9 @@ Module Type Func.
           | nil => lfalse
           | this_val :: rest_vals =>
             (* this is what is created from the parameters *)
-            let binds := _this ρ &~ this_val in
+            let binds := this_addr ρ this_val in
             (* this is what is freed on return *)
-            let frees := _this ρ &~ this_val in
+            let frees := this_addr ρ this_val in
             Forall Q : mpred,
               (binds ** PQ (fun _ => Q)) -*
               (wp_dtor dtor.(d_class) ti ρ this_val body deinit frees (|>Q))
