@@ -45,6 +45,7 @@ theories/Auto/perm_func.v
 theories/Auto/perm_func_lazy.v
 theories/Auto/use.v
 theories/Auto/Discharge.v
+theories/Auto/with_genv.v
 
 theories/Auto/Base.v
 theories/Auto/orient.v

@@ -129,55 +129,48 @@ Hint Resolve has_type_qual : has_type.
 
 
 (* address of a global variable *)
-Parameter glob_addr : genv -> obj_name -> ptr -> Prop.
+Parameter glob_addr : genv -> obj_name -> option ptr.
 
 (* todo(gmm): this isn't sound due to reference fields *)
-Parameter offset_of : forall (resolve : genv) (t : type) (f : ident) (e : Z), Prop.
-Parameter parent_offset : forall (resolve : genv) (t : globname) (f : globname) (e : Z), Prop.
+Parameter offset_of : forall (resolve : genv) (t : globname) (f : ident), option Z.
+Parameter parent_offset : forall (resolve : genv) (t : globname) (f : globname), option Z.
 
-Parameter pointer_size : N. (* in bytes *)
+Parameter pointer_size : genv -> N. (* in bytes *)
 
 
 (* sizeof() *)
-Parameter size_of : forall (resolve : genv) (t : type) (e : N), Prop.
-Axiom size_of_unique : forall {c : genv} t sz sz',
-    @size_of c t sz ->
-    @size_of c t sz' ->
-    sz = sz'.
+Parameter size_of : forall (resolve : genv) (t : type), option N.
 
 Axiom size_of_int : forall {c : genv} s w,
-    @size_of c (Tint w s) (N.div (N_of_size w + 7) 8).
+    @size_of c (Tint w s) = Some (N.div (N_of_size w + 7) 8).
 Axiom size_of_char : forall {c : genv} s w,
-    @size_of c (Tchar w s) (N.div (N_of_size w + 7) 8).
+    @size_of c (Tchar w s) = Some (N.div (N_of_size w + 7) 8).
 Axiom size_of_bool : forall {c : genv},
-    @size_of c Tbool 1.
+    @size_of c Tbool = Some 1%N.
 Axiom size_of_pointer : forall {c : genv} t,
-    @size_of c (Tpointer t) pointer_size.
-Axiom size_of_qualified : forall {c : genv} t sz q,
-    @size_of c t sz ->
-    @size_of c (Tqualified q t) sz.
+    @size_of c (Tpointer t) = Some (pointer_size c).
+Axiom size_of_qualified : forall {c : genv} t q,
+    @size_of c t = @size_of c (Tqualified q t).
 Axiom size_of_array : forall {c : genv} t n sz,
-    @size_of c t sz ->
-    @size_of c (Tarray t n) (sz * n).
+    @size_of c t = Some sz ->
+    @size_of c (Tarray t n) = Some (sz * n)%N.
 
-Lemma size_of_Qmut : forall {c} t sz,
-    @size_of c t sz ->
-    @size_of c (Qmut t) sz.
+Lemma size_of_Qmut : forall {c} t,
+    @size_of c t = @size_of c (Qmut t).
 Proof.
   intros.
   now apply size_of_qualified.
 Qed.
 
-Lemma size_of_Qconst : forall {c} t sz,
-    @size_of c t sz ->
-    @size_of c (Qconst t) sz.
+Lemma size_of_Qconst : forall {c} t ,
+    @size_of c t = @size_of c (Qconst t).
 Proof.
   intros.
   now apply size_of_qualified.
 Qed.
 
 (* alignof() *)
-Parameter align_of : forall {resolve : genv} (t : type) (e : N), Prop.
+Parameter align_of : forall {resolve : genv} (t : type), option N.
 
 (* truncation (used for unsigned operations) *)
 Definition trim (w : N) (v : Z) : Z := v mod (2 ^ Z.of_N w).

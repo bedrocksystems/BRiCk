@@ -138,7 +138,7 @@ Module Type logic.
 
 
     Definition sizeof (t : type) (sz : N) : mpred :=
-      with_genv (fun resolve => [| size_of resolve t sz |]).
+      with_genv (fun resolve => [| size_of resolve t = Some sz |]).
 
     Global Instance Persistent_sizeof : forall t s, Persistent (sizeof t s).
     Proof. Admitted.
@@ -146,7 +146,7 @@ Module Type logic.
     Proof. Admitted.
 
     Definition alignof (t : type) (sz : N) : mpred :=
-      with_genv (fun resolve => [| align_of (resolve:=resolve) t sz |]).
+      with_genv (fun resolve => [| align_of (resolve:=resolve) t = Some sz |]).
 
     Global Instance Persistent_alignof : forall t s, Persistent (alignof t s).
     Proof. Admitted.

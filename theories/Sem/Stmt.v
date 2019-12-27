@@ -56,7 +56,7 @@ Module Type Stmt.
             *)
            match c with
            | Rvalue =>
-             Exists a, _result ρ &~ a ** ltrue //\\
+             Exists a, result_addr ρ a ** ltrue //\\
              wp_init (erase_qualifiers (type_of e)) a (not_mine e) (Q.(k_return) (Some a))
            | Lvalue
            | Xvalue =>
@@ -94,11 +94,11 @@ Module Type Stmt.
       | Tbool
       | Tchar _ _
       | Tint _ _ =>
-        Forall a,
+        Forall a : val,
         let done :=
             k (Kfree (tlocal_at ρ x a (tany (erase_qualifiers ty) 1)) Q)
         in
-        let continue := _local ρ x &~ a -* done in
+        let continue := local_addr_v ρ x a -* done in
         match init with
         | None =>
           _at (_eq a) (uninit (erase_qualifiers ty) 1) -* continue
@@ -116,7 +116,7 @@ Module Type Stmt.
                       end (_at (_eq a) (tany (erase_qualifiers ty) 1))
                   in
                   let continue :=
-                      _local ρ x &~ a -* k (Kfree (_local ρ x &~ a ** destroy) Q)
+                      local_addr_v ρ x a -* k (Kfree (local_addr_v ρ x a ** destroy) Q)
                   in
                   match init with
                   | None => continue
@@ -132,8 +132,8 @@ Module Type Stmt.
                       end (_at (_eq a) (tany (erase_qualifiers ty) 1))
                   in
                   let continue :=
-                      _local ρ x &~ a -*
-                      k (Kfree (_local ρ x &~ a ** _at (_eq a) (tany (erase_qualifiers ty) 1)) Q)
+                      local_addr_v ρ x a -*
+                      k (Kfree (local_addr_v ρ x a ** _at (_eq a) (tany (erase_qualifiers ty) 1)) Q)
                   in
                   match init with
                   | None => continue
@@ -150,7 +150,7 @@ Module Type Stmt.
         | Some init =>
           (* i should use the type here *)
           wp_lval init (fun a free =>
-             _local ρ x &~ a -* (free ** k (Kfree (_local ρ x &~ a) Q)))
+             local_addr_v ρ x a -* (free ** k (Kfree (local_addr_v ρ x a) Q)))
         end
 
       | Tfunction _ _ => lfalse (* not supported *)
