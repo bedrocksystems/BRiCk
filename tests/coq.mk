@@ -3,7 +3,8 @@
 #
 # SPDX-License-Identifier:AGPL-3.0-or-later
 #
-CPP2V?=$(shell which cpp2v)
+ROOT_DIR:=$(shell dirname $(realpath $(firstword $(MAKEFILE_LIST))))
+CPP2V ?= $(ROOT_DIR)/../../build/cpp2v
 
 CPPFLAGS=-std=c++17
 CFLAGS=-std=c99

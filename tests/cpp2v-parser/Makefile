@@ -1,5 +1,5 @@
 COQC	?= coqc
-CPP2V	?= $(shell which cpp2v)
+CPP2V	?= cpp2v
 
 ALL	= $(wildcard *.cpp)
 
@@ -9,10 +9,10 @@ all: $(ALL:%.cpp=%_cpp.vo) $(ALL:%.cpp=%_cpp_names.vo)
 	$(CPP2V) -v -names $*_cpp_names.v -o $*_cpp.v $< --
 
 %.vo: %.v
-	$(COQC) -Q ../../theories Cpp $<
+	$(COQC) -Q ../../theories bedrock $<
 
 clean:
-	rm -f *.v *.vo
+	rm -f *.v *.vo *.glob *.aux
 
 .PHONY: clean all
 

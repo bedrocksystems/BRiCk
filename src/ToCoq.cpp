@@ -92,7 +92,7 @@ ToCoqConsumer::toCoqModule(clang::ASTContext *ctxt,
             CoqPrinter print(fmt);
             ClangPrinter cprint(ctxt);
 
-            fmt << "Require Import Cpp.Parser." << fmt::line << fmt::line
+            fmt << "Require Import bedrock.lang.cpp.parser." << fmt::line << fmt::line
                 << "Local Open Scope string_scope." << fmt::line
                 << "Import ListNotations." << fmt::line;
 
@@ -140,7 +140,7 @@ ToCoqConsumer::toCoqModule(clang::ASTContext *ctxt,
                                       ctxt.getSourceManager().getMainFileID())
                                   ->getName()
                            << fmt::line << " *)" << fmt::line
-                           << "Require Import Cpp.Parser." << fmt::line
+                           << "Require Import bedrock.lang.cpp.parser." << fmt::line
                            << fmt::line;
 
             // generate all of the record fields

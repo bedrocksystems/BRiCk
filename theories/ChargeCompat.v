@@ -1,6 +1,11 @@
+(*
+ * Copyright (C) BedRock Systems Inc. 2019 Gregory Malecha
+ *
+ * SPDX-License-Identifier:AGPL-3.0-or-later
+ *)
 From iris Require Import bi.bi.
 From iris.proofmode Require Import tactics.
-From Cpp Require Import IrisBridge.
+Require Import bedrock.IrisBridge.
 Import ChargeNotation.
 
 Section with_PROP.
@@ -97,7 +102,11 @@ Section with_PROP.
   Proof. iIntros "HC HP". iApply HSep. iFrame. Qed.
 
   Lemma sepSP_falseL (P : PROP) : lfalse ** P -|- lfalse.
-  Proof. iSplit. iIntros "[$ HP]". iIntros "Hf". Admitted.
+  Proof.
+    iSplit.
+    { iIntros "[$ HP]". }
+    { iIntros "F". iStopProof. eapply lfalseL. }
+  Qed.
 
   Lemma wandSP_cancel : forall P Q R F : PROP,
       R |-- P ** F ->
