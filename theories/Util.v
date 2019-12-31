@@ -18,23 +18,40 @@ Proof.
   intros. eapply Decidable_spec.
 Qed.
 
+Lemma decide_not_ok : forall P {ok : Decidable P}, decide P = false <-> not P.
+Proof.
+  intros.
+  destruct ok. unfold decide. simpl in *.
+  destruct (Decidable_witness).
+  { split; try tauto; congruence. }
+  { split; try tauto. do 2 intro. apply Decidable_spec in H0. congruence. }
+Qed.
+
+Lemma decide_both : forall P {ok : Decidable P},
+    if decide P then P else not P.
+Proof.
+  intros.
+  generalize (decide_ok P).
+  generalize (decide_not_ok P).
+  destruct (decide P); tauto.
+Qed.
 
 (* note(gmm): this file should be eliminated in favor of definitions defined elsewhere, e.g. in ExtLib *)
 
-Section find_in_list.
-  Context {T U : Type}.
-  Variable f : T -> option U.
+(* Section find_in_list. *)
+(*   Context {T U : Type}. *)
+(*   Variable f : T -> option U. *)
 
-  Fixpoint find_in_list (ls : list T) : option U :=
-    match ls with
-    | nil => None
-    | l :: ls =>
-      match f l with
-      | None => find_in_list ls
-      | x => x
-      end
-    end.
-End find_in_list.
+(*   Fixpoint find_in_list (ls : list T) : option U := *)
+(*     match ls with *)
+(*     | nil => None *)
+(*     | l :: ls => *)
+(*       match f l with *)
+(*       | None => find_in_list ls *)
+(*       | x => x *)
+(*       end *)
+(*     end. *)
+(* End find_in_list. *)
 
 Global Instance Decidable_eq_string (a b : string) : Decidable (a = b) :=
   {| Decidable_witness := String.eqb a b
@@ -43,6 +60,61 @@ Global Instance Decidable_eq_string (a b : string) : Decidable (a = b) :=
 Global Instance Decidable_eq_ascii (a b : Ascii.ascii) : Decidable (a = b) :=
   {| Decidable_witness := Ascii.eqb a b
    ; Decidable_spec := @Ascii.eqb_eq a b |}.
+
+Global Instance Decidable_or (P Q : Prop) {DP : Decidable P} {DQ : Decidable Q}
+: Decidable (P \/ Q).
+Proof.
+refine
+  {| Decidable_witness := decide P || decide Q |}.
+abstract (rewrite Bool.orb_true_iff;
+          do 2 rewrite decide_ok; reflexivity).
+Defined.
+
+Global Instance Decidable_and (P Q : Prop) {DP : Decidable P} {DQ : Decidable Q}
+: Decidable (P /\ Q).
+Proof.
+refine
+  {| Decidable_witness := decide P && decide Q |}.
+abstract (rewrite Bool.andb_true_iff;
+          do 2 rewrite decide_ok; reflexivity).
+Defined.
+
+Global Instance Decidable_not (P : Prop) {DP : Decidable P}
+: Decidable (not P).
+Proof.
+refine
+  {| Decidable_witness := negb (decide P) |}.
+abstract (rewrite Bool.negb_true_iff;
+          generalize (@decide_ok P DP);
+          destruct (decide P); split; intros; try congruence;
+          [ exfalso; tauto | intro; eapply H in H1; congruence ]).
+Defined.
+
+Global Instance Decidable_True : Decidable True.
+Proof.
+refine
+  {| Decidable_witness := true |}.
+abstract (tauto).
+Defined.
+
+Global Instance Decidable_False : Decidable False.
+Proof.
+refine
+  {| Decidable_witness := false |}.
+abstract (split; first [ tauto | congruence ]).
+Defined.
+
+Global Instance Decidable_impl (P Q : Prop) {DP : Decidable P} {DQ : Decidable Q}
+: Decidable (P -> Q).
+Proof.
+refine
+  {| Decidable_witness := decide (not P) || decide Q |}.
+abstract (rewrite Bool.orb_true_iff;
+          do 2 rewrite decide_ok;
+          split;
+          [ intros; destruct H; auto; exfalso; auto
+          | generalize (decide_both P); destruct (decide P); eauto ]).
+Defined.
 
 Section dec_list.
   Context {T : Type} {dec : resolve (forall a b : T, Decidable (a = b))}.

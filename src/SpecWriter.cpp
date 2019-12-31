@@ -428,7 +428,7 @@ write_spec(::Module *mod, const SpecCollector &specs,
                               ctxt.getSourceManager().getMainFileID())
                           ->getName()
                    << fmt::line << " *)" << fmt::line << fmt::line
-                   << "Require Import Cpp.Auto." << fmt::line
+                   << "Require Import bedrock.lang.cpp.parser." << fmt::line
                    << "Local Open Scope Z_scope." << fmt::line << fmt::line;
 
     // it would be nice to include a top-level comment.

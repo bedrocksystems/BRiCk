@@ -19,8 +19,8 @@ all: coq cpp2v test
 coq: Makefile.coq
 	$(MAKE) -f Makefile.coq
 	mkdir -p build/
-	rm -rf build/Cpp
-	ln -s `pwd`/theories build/Cpp
+	rm -rf build/bedrock
+	ln -s `pwd`/theories build/bedrock
 
 doc: coq
 	$(MAKE) -f Makefile.coq html
@@ -37,7 +37,7 @@ Makefile.coq: _CoqProject
 	$(COQMAKEFILE) -f _CoqProject -o Makefile.coq
 
 test: coq cpp2v
-	$(MAKE) -C tests
+	CPP2V=`pwd`/build/cpp2v $(MAKE) -C tests
 
 test-plugin: coq cpp2v_plugin
 	$(MAKE) -C tests/plugin
@@ -49,7 +49,7 @@ build/Makefile:
 	(cd build; cmake ..)
 
 deps.pdf: _CoqProject
-	coqdep -f _CoqProject -dumpgraph deps.dot > /dev/null
+	coqdep -f _CoqProject -dumpgraphbox deps.dot > /dev/null
 	dot -Tpdf -o deps.pdf deps.dot
 
 .PHONY: deps.pdf

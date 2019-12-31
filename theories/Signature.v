@@ -1,6 +1,11 @@
+(*
+ * Copyright (C) BedRock Systems Inc. 2019 Gregory Malecha
+ *
+ * SPDX-License-Identifier:AGPL-3.0-or-later
+ *)
 Require Import Coq.Classes.DecidableClass.
 Require Import Coq.Lists.List.
-Require Import Cpp.Ast Cpp.Sem.
+From bedrock.lang.cpp Require Import ast logic.
 
 Record specification Σ : Type := { s_name : obj_name ; s_spec : Rep Σ }.
 Arguments s_name {_} _.

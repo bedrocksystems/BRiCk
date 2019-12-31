@@ -9,6 +9,7 @@ coq: Makefile.coq
 clean:
 	@ $(MAKE) -f Makefile.coq clean
 	rm -f Makefile.coq
+	rm -f *_names.v *_hpp.v *_cpp.v *_c.v *_h.v
 
 Makefile.coq: $(VS)
 	coq_makefile -f _CoqProject -o Makefile.coq
