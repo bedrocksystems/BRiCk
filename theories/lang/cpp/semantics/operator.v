@@ -152,14 +152,14 @@ L operator>>(L, R)
   *)
 
 Axiom eval_shl :
-  forall resolve (w : size) w2 (s : signed) (a b c : Z),
+  forall resolve (w : size) w2 (s s2 : signed) (a b c : Z),
     (0 <= b < Z_of_size w)%Z ->
     (0 <= a)%Z ->
     has_type (Vint a) (Tint w s) ->
-    has_type (Vint b) (Tint w s) ->
+    has_type (Vint b) (Tint w2 s2) ->
     (c = if s then Z.shiftl a b else trim (N_of_size w) (Z.shiftl a b)) ->
     has_type (Vint c) (Tint w s) ->
-    eval_binop (resolve:=resolve) Bshl (Tint w s) (Tint w2 s) (Tint w s) (Vint a) (Vint b) (Vint c).
+    eval_binop (resolve:=resolve) Bshl (Tint w s) (Tint w2 s2) (Tint w s) (Vint a) (Vint b) (Vint c).
 
 (* [C++14,C++20): The value of E1 >> E2 is E1 right-shifted E2 bit
    positions. If E1 has an unsigned type or if E1 has a signed type
@@ -167,13 +167,13 @@ Axiom eval_shl :
    part of the quotient of E1/(2^E2). If E1 has a signed type and a
    negative value, the resulting value is implementation-defined. *)
 Axiom eval_shr :
-  forall resolve (w : size) w2 (s : signed) (a b c : Z),
+  forall resolve (w : size) w2 (s s2: signed) (a b c : Z),
     (0 <= b < Z_of_size w)%Z ->
     (0 <= a)%Z ->
     has_type (Vint a) (Tint w s) ->
-    has_type (Vint b) (Tint w s) ->
+    has_type (Vint b) (Tint w2 s2) ->
     (c = if s then Z.shiftr a b else trim (N_of_size w) (Z.shiftr a b)) ->
-    eval_binop (resolve:=resolve) Bshr (Tint w s) (Tint w2 s) (Tint w s) (Vint a) (Vint b) (Vint c).
+    eval_binop (resolve:=resolve) Bshr (Tint w s) (Tint w2 s2) (Tint w s) (Vint a) (Vint b) (Vint c).
 
 (* Arithmetic comparison operators *)
 
