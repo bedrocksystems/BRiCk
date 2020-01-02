@@ -138,6 +138,9 @@ Parameter pointer_size : genv -> N. (* in bytes *)
 
 
 (* sizeof() *)
+(* [size_of] requires a well-founded type environment in order to be
+ * implementable as a function.
+ *)
 Parameter size_of : forall (resolve : genv) (t : type), option N.
 
 Axiom size_of_int : forall {c : genv} s w,
