@@ -29,36 +29,10 @@ Module Type Func.
    * note(gmm): it might be better to make the `list val` into a
    * `vector val (length fs_arguments)`.
    *)
-  Record function_spec' Σ : Type :=
-  { fs'_return : type
-  ; fs'_arguments : list type
-  ; fs'_spec : thread_info -> list val -> (val -> mpred Σ) -> mpred Σ
-  }.
-  Arguments fs'_return {_} _.
-  Arguments fs'_arguments {_} _.
-  Arguments fs'_spec {_} _.
-
-  (* this is the core definition that everything will be based on. *)
-  Definition cptr'_def {Σ} ti (fs : function_spec' Σ) : Rep Σ :=
-    as_Rep (fun p =>
-         Forall vs,
-         [| List.length vs = List.length fs.(fs'_arguments) |] -*
-         Forall Q, (fs.(fs'_spec) ti) vs Q -* fspec p vs ti Q).
-  Definition cptr'_aux : seal (@cptr'_def). by eexists. Qed.
-  Definition cptr' := cptr'_aux.(unseal).
-  Definition cptr'_eq : @cptr' = _ := cptr'_aux.(seal_eq).
-  Arguments cptr' {_}.
-
-  (* function specifications written in weakest pre-condition style.
-   *
-   * the motivation for `function_spec` is to avoid having to destruct things
-   * repeatedly; however, they are more difficult to prove things about, so
-   * it might be better to do this reasoning post-facto.
-   *)
   Record function_spec Σ : Type :=
   { fs_return : type
   ; fs_arguments : list type
-  ; fs_spec : thread_info -> arrowFrom val fs_arguments ((val -> mpred Σ) -> mpred Σ)
+  ; fs_spec : thread_info -> list val -> (val -> mpred Σ) -> mpred Σ
   }.
   Arguments fs_return {_} _.
   Arguments fs_arguments {_} _.
@@ -66,18 +40,54 @@ Module Type Func.
 
   (* this is the core definition that everything will be based on. *)
   Definition cptr_def {Σ} ti (fs : function_spec Σ) : Rep Σ :=
-   as_Rep (fun p =>
-         ForallEach _ (fs.(fs_spec) ti) (fun PQ args =>
-            Forall Q, PQ Q -* fspec p (List.map snd args) ti Q)).
+    as_Rep (fun p =>
+         Forall vs,
+         [| List.length vs = List.length fs.(fs_arguments) |] -*
+         Forall Q, (fs.(fs_spec) ti) vs Q -* fspec p vs ti Q).
   Definition cptr_aux : seal (@cptr_def). by eexists. Qed.
   Definition cptr := cptr_aux.(unseal).
   Definition cptr_eq : @cptr = _ := cptr_aux.(seal_eq).
   Arguments cptr {_}.
 
+  (* (* function specifications written in weakest pre-condition style. *)
+  (*  * *)
+  (*  * the motivation for `function_spec` is to avoid having to destruct things *)
+  (*  * repeatedly; however, they are more difficult to prove things about, so *)
+  (*  * it might be better to do this reasoning post-facto. *)
+  (*  *) *)
+  (* Record function_spec Σ : Type := *)
+  (* { fs_return : type *)
+  (* ; fs_arguments : list type *)
+  (* ; fs_spec : thread_info -> arrowFrom val fs_arguments ((val -> mpred Σ) -> mpred Σ) *)
+  (* }. *)
+  (* Arguments fs_return {_} _. *)
+  (* Arguments fs_arguments {_} _. *)
+  (* Arguments fs_spec {_} _. *)
+
+  (* (* this is the core definition that everything will be based on. *) *)
+  (* Definition cptr_def {Σ} ti (fs : function_spec Σ) : Rep Σ := *)
+  (*  as_Rep (fun p => *)
+  (*        ForallEach _ (fs.(fs_spec) ti) (fun PQ args => *)
+  (*           Forall Q, PQ Q -* fspec p (List.map snd args) ti Q)). *)
+  (* Definition cptr_aux : seal (@cptr_def). by eexists. Qed. *)
+  (* Definition cptr := cptr_aux.(unseal). *)
+  (* Definition cptr_eq : @cptr = _ := cptr_aux.(seal_eq). *)
+  (* Arguments cptr {_}. *)
+
+  Record WithEx Σ : Type :=
+    { we_ex   : tele
+    ; we_post : we_ex -t> val * mpred Σ }.
+  Arguments we_ex {_} _.
+  Arguments we_post {_} _.
+
+  Definition WithEx_map {Σ} (f : val -> mpred Σ -> val * mpred Σ) (we : WithEx Σ) : WithEx Σ :=
+    {| we_ex := we.(we_ex)
+     ; we_post := tele_map (fun '(r,Q) => f r Q) we.(we_post) |}.
+
   Record WithPrePost Σ : Type :=
     { wpp_with : tele
-    ; wpp_pre : tele_fun wpp_with (mpred Σ)
-    ; wpp_post : tele_fun wpp_with (val -> mpred Σ) }.
+    ; wpp_pre : wpp_with -t> (list val * mpred Σ)
+    ; wpp_post : wpp_with -t> WithEx Σ }.
   Arguments wpp_with {_} _.
   Arguments wpp_pre {_} _.
   Arguments wpp_post {_} _.
@@ -90,33 +100,42 @@ Module Type Func.
   Local Notation WithPrePost := (WithPrePost Σ) (only parsing).
   Local Notation function_spec := (function_spec Σ) (only parsing).
 
-  Fixpoint WppD' {t : tele}
-  : forall (P : t -t> mpred) (Q : t -t> val -> mpred), (val -> mpred) -> mpred :=
-    match t as t
-          return forall (P : t -t> mpred) (Q : t -t> val -> mpred),
-                 (val -> mpred) -> mpred
-    with
-    | TeleO => fun P Q Q' => P ** (Forall result, Q result -* Q' result)
-    | TeleS ts => fun P Q Q' => Exists x, @WppD' (ts x) (P x) (Q x) Q'
+  Fixpoint tbi_exist {t : tele} : forall (P : t -t> mpred), mpred :=
+    match t as t0 return ((t0 -t> L.mpred Σ) → L.mpred Σ) with
+    | [tele] => fun x : L.mpred Σ => x
+    | @TeleS X binder =>
+      fun P : (∀ x : X, binder x -t> L.mpred Σ) => Exists x : X, tbi_exist (P x)
     end.
 
-  Definition WppD (wpp : WithPrePost) : (val -> mpred) -> mpred :=
-    WppD' wpp.(wpp_pre) wpp.(wpp_post).
+  Fixpoint tbi_forall {t : tele} : forall (P : t -t> mpred), mpred :=
+    match t as t0 return ((t0 -t> L.mpred Σ) → L.mpred Σ) with
+    | [tele] => fun x : L.mpred Σ => x
+    | @TeleS X binder =>
+      fun P : (∀ x : X, binder x -t> L.mpred Σ) => Forall x : X, tbi_forall (P x)
+    end.
+
+  Definition WppD (wpp : WithPrePost) (params : list val) (Q : val -> mpred) : mpred.
+  refine (
+    tbi_exist (tele_bind (fun args =>
+      let P := tele_app wpp.(wpp_pre) args in
+      let Q' := tele_app wpp.(wpp_post) args in
+      [| params = fst P |] ** snd P ** (tbi_forall (tele_map (fun '(result,Q') => Q' -* Q result) Q'.(we_post)))))).
+  Defined.
   Global Arguments WppD !_ / .
 
   (* Hoare triple for a function.
    * note(gmm): these should include linkage specifications.
    *)
   Definition TSFunction (ret : type) (targs : list type)
-             (PQ : thread_info -> arrowFrom val targs WithPrePost)
+             (PQ : thread_info -> WithPrePost)
   : function_spec :=
-    {| fs_return := ret
+    {| fs_return    := ret
      ; fs_arguments := targs
-     ; fs_spec ti := arrowFrom_map WppD (PQ ti) |}.
+     ; fs_spec ti   := WppD (PQ ti) |}.
 
 
   Definition SFunction (ret : type) (targs : list type)
-             (PQ : arrowFrom val targs WithPrePost)
+             (PQ : WithPrePost)
   : function_spec :=
     TSFunction ret targs (fun _ => PQ).
 
@@ -124,33 +143,42 @@ Module Type Func.
    *)
   Definition TSConstructor (class : globname)
              (targs : list type)
-             (PQ : thread_info -> val -> arrowFrom val targs WithPrePost)
+             (PQ : thread_info -> val -> WithPrePost)
   : function_spec :=
+    let map_pre this '(args, P) :=
+        (this :: args,
+         _at (_eq this) (uninit (Tref class) 1) ** P) in
     let this_type := Qmut (Tref class) in
     TSFunction (Qmut Tvoid) (Qconst (Tpointer this_type) :: targs)
-              (fun ti this => arrowFrom_map (fun wpp =>
-                 {| wpp_with := wpp.(wpp_with)
-                  ; wpp_pre :=
-                    tele_map (fun P => _at (_eq this) (uninit (Tref class) 1) ** P) wpp.(wpp_pre)
-                  ; wpp_post := wpp.(wpp_post)
-                  |}) (PQ ti this)).
+               (fun ti =>
+                  {| wpp_with := TeleS (fun this : val => (PQ ti this).(wpp_with))
+                   ; wpp_pre this :=
+                       tele_map (map_pre this) (PQ ti this).(wpp_pre)
+                   ; wpp_post this := (PQ ti this).(wpp_post)
+                   |}).
 
   Definition SConstructor (class : globname) (targs : list type)
-             (PQ : val -> arrowFrom val targs WithPrePost)
+             (PQ : val -> WithPrePost)
   : function_spec := TSConstructor class targs (fun _ => PQ).
 
   (* Hoare triple for a destructor.
    *)
   Definition TSDestructor (class : globname) (PQ : thread_info -> val -> WithPrePost)
   : function_spec :=
+    let map_pre this '(args, P) := (this :: args, P) in
+    let map_post this '({| we_ex := pwiths ; we_post := Q|}) :=
+        {| we_ex := pwiths
+         ; we_post := tele_map (fun '(result, Q) =>
+                                  (result, _at (_eq this) (tany (Tref class) 1) ** Q)) Q |}
+    in
     let this_type := Qmut (Tref class) in
     TSFunction (Qmut Tvoid) (Qconst (Tpointer this_type) :: nil)
-               (fun ti this =>
-                  let PQ := PQ ti this in
-                 {| wpp_with := PQ.(wpp_with)
-                  ; wpp_pre := PQ.(wpp_pre)
-                  ; wpp_post :=
-                    tele_map (fun Q res => _at (_eq this) (tany (Tref class) 1) ** Q res) PQ.(wpp_post)
+               (fun ti =>
+                 {| wpp_with := TeleS (fun this : val => (PQ ti this).(wpp_with))
+                  ; wpp_pre this :=
+                       tele_map (map_pre this) (PQ ti this).(wpp_pre)
+                  ; wpp_post this :=
+                       tele_map (map_post this) (PQ ti this).(wpp_post)
                   |}).
 
   Definition SDestructor (class : globname) (PQ : val -> WithPrePost)
@@ -160,11 +188,18 @@ Module Type Func.
    *)
   Definition TSMethod (class : globname) (qual : type_qualifiers)
              (ret : type) (targs : list type)
-             (PQ : thread_info -> val -> arrowFrom val targs WithPrePost)
+             (PQ : thread_info -> val -> WithPrePost)
   : function_spec :=
+    let map_pre this '(args, P) := (this :: args, P) in
     let class_type := Tref class in
     let this_type := Tqualified qual class_type in
-    TSFunction ret (Qconst (Tpointer this_type) :: targs) PQ.
+    TSFunction ret (Qconst (Tpointer this_type) :: targs)
+               (fun ti =>
+                  {| wpp_with := TeleS (fun this : val => (PQ ti this).(wpp_with))
+                   ; wpp_pre this :=
+                       tele_map (map_pre this) (PQ ti this).(wpp_pre)
+                   ; wpp_post this := (PQ ti this).(wpp_post)
+                   |}).
       (* ^ todo(gmm): this looks wrong. something isn't going
        * to fit together with respect to calling conventions and
        * specifications.
@@ -172,7 +207,7 @@ Module Type Func.
 
   Definition SMethod (class : globname) (qual : type_qualifiers)
              (ret : type) (targs : list type)
-             (PQ : val -> arrowFrom val targs WithPrePost)
+             (PQ : val -> WithPrePost)
   : function_spec := TSMethod class qual ret targs (fun _ => PQ).
 
 Lemma forallEach_primes :
@@ -229,23 +264,23 @@ Qed.
 Arguments ForallEach {_ _ _ _} [_] _ _.
 
 
-  Lemma cptr_cptr' : forall ti fs fs',
-      fs'.(fs'_arguments) = fs.(fs_arguments) ->
-      fs'.(fs'_return) = fs.(fs_return) ->
-      (forall Q vs,
-          (fs'.(fs'_spec) ti) vs Q -|-
-          applyEach fs.(fs_arguments) vs (fs.(fs_spec) ti) (fun k _ => k Q)) ->
-      cptr (Σ:=Σ) ti fs -|- cptr' (Σ:=Σ) ti fs'.
-  Proof.
-    rewrite cptr'_eq. unfold cptr'_def.
-    rewrite cptr_eq. unfold cptr_def.
-    intros.
-    destruct fs, fs'. simpl in *. subst.
-    eapply Rep_equiv_ext_equiv. simpl; intros.
-    setoid_rewrite H1; clear H1.
-    rewrite <- (forallEach_primes) with (Z:=fun a b => fspec x a ti b).
-    reflexivity.
-  Qed.
+  (* Lemma cptr_cptr' : forall ti fs fs', *)
+  (*     fs'.(fs'_arguments) = fs.(fs_arguments) -> *)
+  (*     fs'.(fs'_return) = fs.(fs_return) -> *)
+  (*     (forall Q vs, *)
+  (*         (fs'.(fs'_spec) ti) vs Q -|- *)
+  (*         applyEach fs.(fs_arguments) vs (fs.(fs_spec) ti) (fun k _ => k Q)) -> *)
+  (*     cptr (Σ:=Σ) ti fs -|- cptr' (Σ:=Σ) ti fs'. *)
+  (* Proof. *)
+  (*   rewrite cptr'_eq. unfold cptr'_def. *)
+  (*   rewrite cptr_eq. unfold cptr_def. *)
+  (*   intros. *)
+  (*   destruct fs, fs'. simpl in *. subst. *)
+  (*   eapply Rep_equiv_ext_equiv. simpl; intros. *)
+  (*   setoid_rewrite H1; clear H1. *)
+  (*   rewrite <- (forallEach_primes) with (Z:=fun a b => fspec x a ti b). *)
+  (*   reflexivity. *)
+  (* Qed. *)
 
   Definition cglob_def (gn : globname) ti (spec : function_spec)
   : mpred :=
@@ -296,6 +331,12 @@ Arguments ForallEach {_ _ _ _} [_] _ _.
     | _              => tlocal ρ x (tany (erase_qualifiers t) 1)
     end.
 
+  Fixpoint ForallEaches (ts : list type) : (list (type * val) -> mpred) -> mpred :=
+    match ts with
+    | nil => fun k => k nil
+    | t :: ts => fun k => Forall v : val, ForallEaches ts (fun args => k ((t,v) :: args))
+    end.
+
     (* the proof obligation for a function
      *)
     Definition func_ok (ret : type) (params : list (ident * type))
@@ -304,9 +345,11 @@ Arguments ForallEach {_ _ _ _} [_] _ _.
     : mpred :=
       [| ret = spec.(fs_return) |] **
       [| spec.(fs_arguments) = List.map snd params |] **
-      ForallEach (spec.(fs_spec) ti) (fun PQ args =>
+      (* forall each argument, apply to [fs_spec ti] *)
+      ForallEaches (spec.(fs_arguments)) (fun args =>
         Forall ρ : region,
         let vals := List.map snd args in
+        let PQ := spec.(fs_spec) ti vals in
 
         (* this is what is created from the parameters *)
         let binds :=
@@ -319,7 +362,7 @@ Arguments ForallEach {_ _ _ _} [_] _ _.
         if is_void ret
         then
           Forall Q : mpred,
-          (binds ** PQ (fun _ => Q)) -*
+          (binds ** PQ (fun x => Q)) -*
           wp ti ρ body (Kfree frees (void_return (|>Q)))
         else if is_aggregate ret then
           Forall Q : val -> mpred,
@@ -345,9 +388,10 @@ Arguments ForallEach {_ _ _ _} [_] _ _.
         in
         [| spec.(fs_return) = meth.(m_return) |] **
         [| spec.(fs_arguments) = this_type :: List.map snd meth.(m_params) |] **
-        ForallEach (spec.(fs_spec) ti) (fun PQ args =>
+        ForallEaches spec.(fs_arguments) (fun args =>
           Forall ρ : region,
           let vals := List.map snd args in
+          let PQ := spec.(fs_spec) ti vals in
           match vals with
           | nil => lfalse
           | this_val :: rest_vals =>
@@ -366,7 +410,7 @@ Arguments ForallEach {_ _ _ _} [_] _ _.
             if is_void ret_ty
             then
               Forall Q : mpred,
-              (binds ** PQ (fun _ => Q)) -* (wp ti ρ body (Kfree frees (void_return (|>Q))))
+              (binds ** PQ (fun x => Q)) -* (wp ti ρ body (Kfree frees (void_return (|>Q))))
             else if is_aggregate ret_ty then
               Forall Q : val -> mpred,
               Forall ra,
@@ -398,9 +442,10 @@ Arguments ForallEach {_ _ _ _} [_] _ _.
         in
         [| spec.(fs_return) = Qmut Tvoid |] **
         [| spec.(fs_arguments) = this_type :: List.map snd ctor.(c_params) |] **
-        ForallEach (spec.(fs_spec) ti) (fun PQ args =>
+        ForallEaches spec.(fs_arguments) (fun args =>
           Forall ρ,
           let vals := List.map snd args in
+          let PQ := spec.(fs_spec) ti vals in
           match vals with
           | nil => lfalse
           | this_val :: rest_vals =>
@@ -415,7 +460,7 @@ Arguments ForallEach {_ _ _ _} [_] _ _.
                 sepSPs (zip (fun '(x, t) 'v => bind_type_free ρ t x v) (rev ctor.(c_params)) (rev rest_vals))
             in
             Forall Q : mpred,
-            (binds ** PQ (fun _ => Q)) -*
+            (binds ** PQ (fun x => Q)) -*
             (wp_ctor ctor.(c_class) ti ρ this_val init body
                      (Kfree frees (void_return (|>Q))))
           end)
@@ -441,9 +486,10 @@ Arguments ForallEach {_ _ _ _} [_] _ _.
         in
         [| spec.(fs_return) = Qmut Tvoid |] **
         [| spec.(fs_arguments) = this_type :: nil |] **
-        ForallEach (spec.(fs_spec) ti) (fun PQ args =>
+        ForallEaches spec.(fs_arguments) (fun args =>
           Forall ρ,
           let vals := List.map snd args in
+          let PQ := spec.(fs_spec) ti vals in
           match vals with
           | nil => lfalse
           | this_val :: rest_vals =>
@@ -452,7 +498,7 @@ Arguments ForallEach {_ _ _ _} [_] _ _.
             (* this is what is freed on return *)
             let frees := this_addr ρ this_val in
             Forall Q : mpred,
-              (binds ** PQ (fun _ => Q)) -*
+              (binds ** PQ (fun x => Q)) -*
               (wp_dtor dtor.(d_class) ti ρ this_val body deinit frees (|>Q))
           end)
       end.
