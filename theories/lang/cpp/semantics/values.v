@@ -19,6 +19,8 @@ Parameter val : Type.
 
 Axiom val_dec : forall a b : val, a = b \/ a <> b.
 
+Parameter Vvoid : val.
+
 Parameter ptr : Type.
 Parameter ptr_eq_dec : forall (x y : ptr), { x = y } + { x <> y }.
 
@@ -30,6 +32,10 @@ Definition Vchar (a : Ascii.ascii) : val :=
   Vint (Z.of_N (N_of_ascii a)).
 Definition Vbool (b : bool) : val :=
   Vint (if b then 1 else 0).
+Definition Vnat (b : nat) : val :=
+  Vint (Z.of_nat b).
+Definition Vn (b : N) : val :=
+  Vint (Z.of_N b).
 
 
 Parameter is_true : val -> bool.
