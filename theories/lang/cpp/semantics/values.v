@@ -53,24 +53,24 @@ Parameter thread_info : Type.
 
 (** pointer offsets
  *)
-Parameter offset_ptr : val -> Z -> val.
+Parameter offset_ptr : Z -> val -> val.
 (* note(gmm): this is not defined according to the C semantics because creating
  * a pointer that goes out of bounds of the object is undefined behavior in C,
  * e.g. [(p + a) - a <> p] if [p + a] is out of bounds.
  *)
 Axiom offset_ptr_combine : forall b o o',
-    offset_ptr (offset_ptr b o) o' = offset_ptr b (o + o').
+    offset_ptr o' (offset_ptr o b) = offset_ptr (o + o') b.
 Axiom offset_ptr_0 : forall b,
-    offset_ptr b 0 = b.
+    offset_ptr 0 b = b.
 
 (* All offsets are valid pointers. todo: This is unsound. *)
-Parameter offset_ptr_ : ptr -> Z -> ptr.
-Axiom offset_ptr_val : forall v o p, Vptr p = v -> Vptr (offset_ptr_ p o) = offset_ptr v o.
+Parameter offset_ptr_ : Z -> ptr -> ptr.
+Axiom offset_ptr_val : forall v o p, Vptr p = v -> Vptr (offset_ptr_ o p) = offset_ptr o v.
 
 Axiom offset_ptr_combine_ : forall b o o',
-    offset_ptr_ (offset_ptr_ b o) o' = offset_ptr_ b (o + o').
+    offset_ptr_ o' (offset_ptr_ o b) = offset_ptr_ (o + o') b.
 Axiom offset_ptr_0_ : forall b,
-    offset_ptr_ b 0 = b.
+    offset_ptr_ 0 b = b.
 
 (** global environments
  *)

@@ -65,7 +65,7 @@ Module Type modules.
     end.
 
   Definition OffsetOf (f : Offset) (n : Z) : mpred :=
-    Forall l, _offsetL f (_eq l) &~ offset_ptr l n.
+    Forall l, _offsetL f (_eq l) &~ offset_ptr n l.
 
   Local Fixpoint ranges_to_list {T} (P : T -> Z * N -> mpred) (ls : list T) (rs : list (Z * N)) : mpred :=
     match ls with

@@ -173,7 +173,7 @@ Definition _global_eq : @_global = _ := _global_aux.(seal_eq).
 Definition _field_def (f : field) : Offset :=
   fun resolve =>
     match offset_of resolve f.(f_type) f.(f_name) with
-    | Some o => Some (fun p => offset_ptr p o)
+    | Some o => Some (offset_ptr o)
     | _ => None
     end.
 Definition _field_aux : seal (@_field_def). Proof using. by eexists. Qed.
@@ -183,7 +183,7 @@ Definition _field_eq : @_field = _ := _field_aux.(seal_eq).
 Definition _sub_def (t : type) (i : Z) : Offset :=
   fun resolve =>
     match size_of resolve t with
-    | Some n => Some (fun p => offset_ptr p (i * Z.of_N n))
+    | Some n => Some (offset_ptr (i * Z.of_N n))
     | _ => None
     end.
 Definition _sub_aux : seal (@_sub_def). by eexists. Qed.
@@ -195,7 +195,7 @@ Definition _sub_eq : @_sub = _ := _sub_aux.(seal_eq).
 Definition _super_def (sub super : globname) : Offset :=
   fun resolve =>
     match parent_offset resolve sub super with
-    | Some o => Some (fun p => offset_ptr p o)
+    | Some o => Some (offset_ptr o)
     | _ => None
     end.
 Definition _super_aux : seal (@_super_def). by eexists. Qed.
