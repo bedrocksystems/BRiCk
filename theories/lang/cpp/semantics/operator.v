@@ -38,7 +38,7 @@ Axiom eval_minus_int : forall resolve s a c w bytes,
 Definition eval_ptr_int_op (bo : BinOp) (f : Z -> Z) : Prop :=
   forall resolve t w s p o p' sz,
     size_of resolve t = Some sz ->
-    p' = offset_ptr_ p (f o * Z.of_N sz) ->
+    p' = offset_ptr_ (f o * Z.of_N sz) p ->
     eval_binop (resolve:=resolve) bo
                (Tpointer t) (Tint w s) (Tpointer t)
                (Vptr p)     (Vint o)   (Vptr p').
@@ -58,7 +58,7 @@ Axiom eval_ptr_int_sub :
 Definition eval_int_ptr_op (bo : BinOp) (f : Z -> Z) : Prop :=
   forall resolve t w s p o p' sz,
     size_of resolve t = Some sz ->
-    p' = offset_ptr_ p (f o * Z.of_N sz) ->
+    p' = offset_ptr_ (f o * Z.of_N sz) p ->
     eval_binop (resolve:=resolve) bo
                (Tint w s) (Tpointer t) (Tpointer t)
                (Vint o)   (Vptr p)     (Vptr p').
@@ -74,8 +74,8 @@ Axiom eval_int_ptr_add :
 Axiom eval_ptr_ptr_sub :
   forall resolve t w p o1 o2 p' base sz,
     size_of resolve t = Some sz ->
-    p = offset_ptr_ base (Z.of_N sz * o1) ->
-    p' = offset_ptr_ base (Z.of_N sz * o2) ->
+    p = offset_ptr_ (Z.of_N sz * o1) base ->
+    p' = offset_ptr_ (Z.of_N sz * o2) base ->
     eval_binop (resolve:=resolve) Bsub
                (Tpointer t) (Tpointer t) (Tint w Signed)
                (Vptr p)     (Vptr p')    (Vint (o1 - o2)).

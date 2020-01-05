@@ -9,4 +9,5 @@ Require Export
         bedrock.auto.base
         bedrock.auto.orient
         bedrock.auto.sep
-        bedrock.auto.tactics.
+        bedrock.auto.tactics
+        bedrock.auto.ex_hints.
