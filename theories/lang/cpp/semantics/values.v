@@ -149,6 +149,9 @@ Parameter pointer_size : genv -> N. (* in bytes *)
  *)
 Parameter size_of : forall (resolve : genv) (t : type), option N.
 
+(* it is hard to define [size_of] as a function because it needs
+to recurse through the environment in the case of [Treference]:
+termination will require a proof of well-foundedness of the environment *)
 Axiom size_of_int : forall {c : genv} s w,
     @size_of c (Tint w s) = Some (N.div (N_of_size w + 7) 8).
 Axiom size_of_char : forall {c : genv} s w,

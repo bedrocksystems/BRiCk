@@ -381,6 +381,9 @@ Module Type Expr.
            else wpe m el (fun v free' => free ** Q v free'))
         |-- wpe m (Eif tst th el ty) Q.
 
+    Axiom wp_prval_implicit: forall  e Q ty,
+        wp_prval e Q |-- wp_prval (Eimplicit e ty) Q.
+    
     (** `sizeof` and `alignof` *)
     Axiom wp_prval_sizeof : forall ty' ty Q,
         Exists sz, sizeof ty sz ** Q (Vint (Z.of_N sz)) empSP
