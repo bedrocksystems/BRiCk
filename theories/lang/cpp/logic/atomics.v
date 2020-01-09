@@ -109,7 +109,21 @@ Section with_Σ.
       |-- wp_atom AO__atomic_compare_exchange_n ty
                   (val_p::succmemord::expected_p::failmemord::desired::wk::nil) Q'.
 
-  (* atomic compare and exchange n *)
+  Axiom wp_atom_compare_exchange_n_weak:
+    forall val_p expected_p expected desired wk succmemord failmemord Q' ty v,
+      [| wk = Vbool true |] ** [| succmemord = _SEQ_CST |] **
+      [| failmemord = _SEQ_CST |] **
+      |> (_at (_eq expected_p) (tprim ty 1 expected) **
+          _at (_eq val_p) (tprim ty 1 v) **
+          (((_at (_eq expected_p) (tprim ty 1 expected) **
+             _at (_eq val_p) (tprim ty 1 desired) **
+             [| v = expected |]) -* Q' (Vbool true)) //\\
+           ((_at (_eq expected_p) (tprim ty 1 v) **
+             _at (_eq val_p) (tprim ty 1 v)) -* Q' (Vbool false))))
+      |-- wp_atom AO__atomic_compare_exchange_n ty
+                  (val_p::succmemord::expected_p::failmemord::desired::wk::nil) Q'.
+
+  (* atomic compare and exchange *)
   Axiom wp_atom_compare_exchange_suc :
     forall q val_p expected_p desired_p wk succmemord failmemord Q
       (ty : type)
@@ -121,8 +135,8 @@ Section with_Σ.
          ((_at (_eq expected_p) (tprim ty 1 expected) **
            _at (_eq desired_p) (tprim ty q desired) **
            _at (_eq val_p) (tprim ty 1 desired)) -* Q (Vbool true)))
-       |-- wp_atom AO__atomic_compare_exchange ty
-                   (val_p::succmemord::expected_p::failmemord::desired_p::wk::nil) Q.
+      |-- wp_atom AO__atomic_compare_exchange ty
+                  (val_p::succmemord::expected_p::failmemord::desired_p::wk::nil) Q.
 
   Axiom wp_atom_compare_exchange_fail :
     forall q val_p expected_p desired_p wk succmemord failmemord Q
@@ -136,8 +150,26 @@ Section with_Σ.
           ((_at (_eq expected_p) (tprim ty 1 actual) **
             _at (_eq desired_p) (tprim ty q desired) **
             _at (_eq val_p) (tprim ty 1 actual)) -* Q (Vbool false)))
-       |-- wp_atom AO__atomic_compare_exchange ty
-                   (val_p::succmemord::expected_p::failmemord::desired_p::wk::nil) Q.
+      |-- wp_atom AO__atomic_compare_exchange ty
+                  (val_p::succmemord::expected_p::failmemord::desired_p::wk::nil) Q.
+
+  Axiom wp_atom_compare_exchange_weak :
+    forall q val_p expected_p desired_p wk succmemord failmemord Q
+      (ty : type)
+      actual expected desired,
+      [|wk = Vbool true|] ** [|succmemord = _SEQ_CST|] ** [| failmemord = _SEQ_CST |] **
+      |> ((_at (_eq expected_p) (tprim ty 1 expected) **
+           _at (_eq desired_p) (tprim ty q desired) **
+           _at (_eq val_p) (tprim ty 1 actual)) **
+          (((_at (_eq expected_p) (tprim ty 1 expected) **
+             _at (_eq desired_p) (tprim ty q desired) **
+             _at (_eq val_p) (tprim ty 1 desired)) **
+             [| actual = expected |] -* Q (Vbool true)) //\\
+           ((_at (_eq expected_p) (tprim ty 1 actual) **
+             _at (_eq desired_p) (tprim ty q desired) **
+             _at (_eq val_p) (tprim ty 1 actual)) -* Q (Vbool false))))
+      |-- wp_atom AO__atomic_compare_exchange ty
+                  (val_p::succmemord::expected_p::failmemord::desired_p::wk::nil) Q.
 
   (* atomic fetch and xxx rule *)
   Definition wp_fetch_xxx ao op : Prop :=
