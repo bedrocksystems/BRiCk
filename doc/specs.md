@@ -12,7 +12,9 @@ Specifications are represented as pre- and post-conditions. They can be written 
   should unify with `e`. Currently, `nm` (a string) is used for documentation
   purposes only.
   - This syntax also supports with binders, e.g. `\arg{x} "x" (Vint x)`. Jus
-    like `\with`, variables are quantified over both thr pre- and thr post-condition.
+    like `\with`, variables are quantified over both thr pre- and thr post-condition. 
+    If you want to specify the type of the quantified variable,
+    `\arg{(x:Z) (y:nat)} "x" (Vint x)`
 + `\args es` adds `es` arguments to the current list of arguments (note that `es`
   is a list).
 + `\pre P \post{x .. y}[r] Q` represents a pre-condition of `P` and a
