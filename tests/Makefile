@@ -3,7 +3,7 @@
 #
 # SPDX-License-Identifier:AGPL-3.0-or-later
 #
-all: cpp2v-parser includes local-scope class value-cat io alloc constants lock # list
+all: cpp2v-parser includes local-scope class value-cat io alloc constants lock simple # list
 
 cpp2v-parser:
 	$(MAKE) -C cpp2v-parser
