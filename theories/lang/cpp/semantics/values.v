@@ -36,7 +36,7 @@ Definition Vnat (b : nat) : val :=
   Vint (Z.of_nat b).
 Definition Vn (b : N) : val :=
   Vint (Z.of_N b).
-
+Notation Vz := Vint (only parsing).
 
 Parameter is_true : val -> bool.
 Axiom is_true_int : forall i,
