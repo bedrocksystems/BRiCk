@@ -1,5 +1,5 @@
 COQC	?= coqc
-CPP2V	?= cpp2v
+CPP2V	?= ../../build/cpp2v
 
 ALL	= $(wildcard *.cpp)
 
