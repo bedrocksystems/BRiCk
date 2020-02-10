@@ -74,6 +74,30 @@ private:
         print.end_ctor();
     }
 
+#if CLANG_VERSION_MAJOR >= 9
+    void printOptionalExpr(Optional<const Expr*> expr, CoqPrinter& print,
+			   ClangPrinter& cprint) {
+      if (expr.hasValue()) {
+	print.ctor("Some");
+	cprint.printExpr(expr.getValue(), print);
+	print.end_ctor();
+      } else {
+	print.none();
+      }
+    }
+#else
+    void printOptionalExpr(const Expr* expr, CoqPrinter& print,
+			   ClangPrinter& cprint) {
+      if (expr != nullptr) {
+	print.ctor("Some");
+	cprint.printExpr(expr, print);
+	print.end_ctor();
+      } else {
+	print.none();
+      }
+    }
+#endif
+
 public:
     static PrintExpr printer;
 
@@ -591,13 +615,7 @@ public:
 
         print.output() << fmt::nbsp;
 
-        if (auto v = expr->getArraySize()) {
-            print.ctor("Some");
-            cprint.printExpr(v, print);
-            print.output() << fmt::rparen;
-        } else {
-            print.none();
-        }
+	printOptionalExpr(expr->getArraySize(), print, cprint);
 
         print.output() << fmt::nbsp;
 

@@ -27,7 +27,7 @@ clang -Xclang -load -Xclang ./libcpp2v_plugin.so -Xclang -plugin -Xclang cpp2v -
 The following script should work, but you can customize it based on what you have:
 
 ```sh
-sudo apt install llvm-8 llvm-8-dev clang-8 libclang-8-dev cmake opam
+sudo apt install llvm-9 llvm-9-dev clang-9 libclang-9-dev cmake opam
 # install opam dependencies
 opam repo add coq-released https://coq.inria.fr/opam/released
 opam repo add iris-dev https://gitlab.mpi-sws.org/iris/opam.git
@@ -72,7 +72,7 @@ This repository is broken down into two components. The `cpp2v` tool does not re
 
 To install the `cpp2v` tool, you need the following packages (they can be installed via `apt` on a Ubuntu distribution).
 
-1. `llvm-8`, `llvm-8-dev`, `clang-8`, `libclang-8-dev`
+1. `llvm-9`, `llvm-9-dev`, `clang-9`, `libclang-9-dev`
 2. `cmake`
 
 #### OSX Instructions
