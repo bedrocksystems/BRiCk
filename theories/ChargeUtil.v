@@ -46,32 +46,32 @@ Section withLogic.
     | _ , _ => fun _ _ => lfalse
     end.
 
-  Fixpoint ForallEach {t u T} (ls : list t)
-    : forall (v : arrowFrom u ls T)
-        (P : T -> list (t * u) -> PROP), PROP :=
-    match ls with
-    | nil => fun v P => P v nil
-    | l :: ls => fun v P => Forall x,
-      ForallEach ls (v x) (fun z xs => P z (cons (l, x) xs))
-    end.
+  (* Fixpoint ForallEach {t u T} (ls : list t) *)
+  (*   : forall (v : arrowFrom u ls T) *)
+  (*       (P : T -> list (t * u) -> PROP), PROP := *)
+  (*   match ls with *)
+  (*   | nil => fun v P => P v nil *)
+  (*   | l :: ls => fun v P => Forall x, *)
+  (*     ForallEach ls (v x) (fun z xs => P z (cons (l, x) xs)) *)
+  (*   end. *)
 
-  Fixpoint Forall2Each {t u T U} (ls : list t)
-    : forall (v : arrowFrom u ls T) (v' : arrowFrom u ls U)
-        (P : T -> U -> list (t * u) -> PROP), PROP :=
-    match ls with
-    | nil => fun v v' P => P v v' nil
-    | l :: ls => fun v v' P => Forall x,
-      Forall2Each ls (v x) (v' x) (fun z z' xs => P z z' (cons (l, x) xs))
-    end.
+  (* Fixpoint Forall2Each {t u T U} (ls : list t) *)
+  (*   : forall (v : arrowFrom u ls T) (v' : arrowFrom u ls U) *)
+  (*       (P : T -> U -> list (t * u) -> PROP), PROP := *)
+  (*   match ls with *)
+  (*   | nil => fun v v' P => P v v' nil *)
+  (*   | l :: ls => fun v v' P => Forall x, *)
+  (*     Forall2Each ls (v x) (v' x) (fun z z' xs => P z z' (cons (l, x) xs)) *)
+  (*   end. *)
 
-  Fixpoint ExistsEach {t u T} (ls : list t)
-    : forall (v : arrowFrom u ls T)
-        (P : T -> list (t * u) -> PROP), PROP :=
-    match ls with
-    | nil => fun v P => P v nil
-    | l :: ls => fun v P => Exists x,
-      ExistsEach ls (v x) (fun z xs => P z (cons (l, x) xs))
-    end.
+  (* Fixpoint ExistsEach {t u T} (ls : list t) *)
+  (*   : forall (v : arrowFrom u ls T) *)
+  (*       (P : T -> list (t * u) -> PROP), PROP := *)
+  (*   match ls with *)
+  (*   | nil => fun v P => P v nil *)
+  (*   | l :: ls => fun v P => Exists x, *)
+  (*     ExistsEach ls (v x) (fun z xs => P z (cons (l, x) xs)) *)
+  (*   end. *)
 
 End withLogic.
 

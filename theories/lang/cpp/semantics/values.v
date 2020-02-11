@@ -11,6 +11,8 @@
 Require Import Coq.NArith.BinNat.
 Require Import Coq.ZArith.BinInt.
 Require Import Coq.Strings.Ascii.
+Require Import Coq.Classes.RelationClasses.
+Require Import Coq.Classes.Morphisms.
 
 Require Import bedrock.lang.cpp.ast.
 
@@ -72,10 +74,42 @@ Axiom offset_ptr_combine_ : forall b o o',
 Axiom offset_ptr_0_ : forall b,
     offset_ptr_ 0 b = b.
 
-(** global environments
- *)
-Parameter genv : Type.
+(** global environments *)
 
+(* this contains two things:
+ * - the types declared in the program
+ * - the program's symbol table (mapping of globals to pointers)
+ *   (this is not necessarily the same as a the symbol table in the
+ *    object file because it will contain the addresses of [static]
+ *    variables)
+ *
+ * if we want to do things like word-size agnostic verification, then
+ * information like that would need to be in here as well.
+ *)
+Record genv : Type :=
+{ genv_cu : compilation_unit
+  (* ^ the [compilation_unit] *)
+; glob_addr : obj_name -> option ptr
+  (* ^ the address of global variables & functions *)
+}.
+
+(* [genv_leq a b] states that [b] is an extension of [a] *)
+Parameter genv_leq : genv -> genv -> Prop.
+Global Declare Instance PreOrder_genv_leq : PreOrder genv_leq.
+Definition glob_def (g : genv) (gn : globname) : option GlobDecl :=
+  lookup_global g.(genv_cu) gn.
+
+(* this states that the [genv] is compatible with the given [compilation_unit]
+ * it essentially means that the [genv] records all the types from the
+ * compilation unit and that the [genv] contains addresses for all globals
+ * defined in the [compilation_unit]
+ *)
+Parameter genv_compat : compilation_unit -> genv -> Prop.
+Infix "⊧" := genv_compat (at level 1).
+
+
+
+(* todo(gmm): this should be indexed by [genv] *)
 Parameter has_type : val -> type -> Prop.
 Arguments has_type _%Z _.
 
@@ -130,24 +164,42 @@ Axiom has_type_qual : forall t q x,
 
 Hint Resolve has_type_qual : has_type.
 
-
-
-
-(* address of a global variable *)
-Parameter glob_addr : genv -> obj_name -> option ptr.
+Fixpoint find_field {T} (f : ident) (fs : list (ident * T)) : option T :=
+  match fs with
+  | nil => None
+  | (f',v) :: fs =>
+    if String.eqb f f' then
+      Some v
+    else find_field f fs
+  end%list.
 
 (* todo(gmm): this isn't sound due to reference fields *)
-Parameter offset_of : forall (resolve : genv) (t : globname) (f : ident), option Z.
-Parameter parent_offset : forall (resolve : genv) (t : globname) (f : globname), option Z.
+Definition offset_of (resolve : genv) (t : globname) (f : ident) : option Z :=
+  match glob_def resolve t with
+  | Some (Gstruct s) => find_field f (List.map (fun '(a,_,c) => (a,c.(li_offset) / 8)%Z) s.(s_fields))
+  | Some (Gunion u) => find_field f (List.map (fun '(a,_,c) => (a,c.(li_offset) / 8))%Z u.(u_fields))
+  | _ => None
+  end.
+
+Definition parent_offset (resolve : genv) (t : globname) (f : globname) : option Z :=
+  match glob_def resolve t with
+  | Some (Gstruct s) => find_field f (List.map (fun '(s,l) => (s,l.(li_offset) / 8))%Z s.(s_bases))
+  | _ => None
+  end.
 
 Parameter pointer_size : genv -> N. (* in bytes *)
 
+Variant Roption_leq {T} (R : T -> T -> Prop) : option T -> option T -> Prop :=
+| Rleq_None {x} : Roption_leq R None x
+| Rleq_Some {x y} (_ : R x y) : Roption_leq R (Some x) (Some y).
 
 (* sizeof() *)
 (* [size_of] requires a well-founded type environment in order to be
  * implementable as a function.
  *)
 Parameter size_of : forall (resolve : genv) (t : type), option N.
+Global Declare Instance Proper_size_of
+: Proper (genv_leq ==> eq ==> Roption_leq eq) (@size_of).
 
 (* it is hard to define [size_of] as a function because it needs
 to recurse through the environment in the case of [Treference]:
@@ -182,6 +234,5 @@ Qed.
 
 (* alignof() *)
 Parameter align_of : forall {resolve : genv} (t : type), option N.
-
-(* truncation (used for unsigned operations) *)
-Definition trim (w : N) (v : Z) : Z := v mod (2 ^ Z.of_N w).
+Global Declare Instance Proper_align_of
+: Proper (genv_leq ==> eq ==> Roption_leq eq) (@align_of).
