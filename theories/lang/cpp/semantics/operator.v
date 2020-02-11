@@ -22,6 +22,10 @@ From bedrock.lang.cpp Require Import ast semantics.values.
 Parameter eval_unop : forall {resolve : genv}, UnOp -> forall (argT resT : type) (arg res : val), Prop.
 Parameter eval_binop : forall {resolve : genv}, BinOp -> forall (lhsT rhsT resT : type) (lhs rhs res : val), Prop.
 
+(* truncation (used for unsigned operations) *)
+Definition trim (w : N) (v : Z) : Z := v mod (2 ^ Z.of_N w).
+
+
 Axiom eval_not_bool : forall resolve a,
     eval_unop (resolve:=resolve) Unot Tbool Tbool (Vbool a) (Vbool (negb a)).
 

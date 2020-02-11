@@ -10,16 +10,18 @@ From bedrock.lang.cpp.logic Require Import
      pred wp heap_pred.
 
 Section destroy.
-  Context {Σ:gFunctors}.
+  Context {Σ:gFunctors} {resolve:genv}.
   Context (ti : thread_info).
 
   Local Notation mpred := (mpred Σ) (only parsing).
+  Local Notation _sub := (_sub (resolve:=resolve)) (only parsing).
+  Local Notation tany := (@tany Σ resolve) (only parsing).
+  Local Notation _global := (@_global resolve) (only parsing).
 
   (* remove from the stack *)
   Definition destruct_obj (dtor : obj_name) (cls : globname) (v : val) (Q : mpred) : mpred :=
     Exists da, _global dtor &~ da **
-               |> fspec da (v :: nil) ti
-                        (fun _ => Q).
+               |> fspec da ti (v :: nil) (fun _ => Q).
 
   Fixpoint destruct (t : type) (this : val) (dtor : obj_name) (Q : mpred)
            {struct t}

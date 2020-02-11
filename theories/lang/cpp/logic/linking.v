@@ -37,15 +37,15 @@ Proof. iSplit; eauto. Qed.
 Definition module (imports exports : mpred) : mpred :=
   (|> imports) -* exports.
 
-Theorem use_module_prim
-: forall (all sub rem : compilation_unit) spec,
-    match link sub rem with
-    | None => False
-    | Some all' => compilation_unit_eq all all' = true
-    end ->
-    denoteModule (Σ := Σ) sub |-- spec ->
-    denoteModule all |-- denoteModule rem ** spec.
-Proof. Admitted.
+(* Theorem use_module_prim *)
+(* : forall (all sub rem : compilation_unit) spec, *)
+(*     match link sub rem with *)
+(*     | None => False *)
+(*     | Some all' => compilation_unit_eq all all' = true *)
+(*     end -> *)
+(*     denoteModule (Σ := Σ) sub |-- spec -> *)
+(*     denoteModule all |-- denoteModule rem ** spec. *)
+(* Proof. Admitted. *)
 
 
 (*

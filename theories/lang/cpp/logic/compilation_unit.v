@@ -22,9 +22,16 @@ Import ChargeNotation.
 Module Type modules.
 
   Section with_Σ.
-  Context {Σ:gFunctors}.
+  Context {Σ:gFunctors} {resolve:genv}.
 
   Notation mpred := (mpred Σ) (only parsing).
+  Local Notation _global := (@_global resolve) (only parsing).
+  Local Notation code_at := (@code_at Σ resolve) (only parsing).
+  Local Notation ctor_at := (@ctor_at Σ resolve) (only parsing).
+  Local Notation dtor_at := (@dtor_at Σ resolve) (only parsing).
+  Local Notation _field := (@_field resolve) (only parsing).
+  Local Notation _super := (@_super resolve) (only parsing).
+  Local Notation _sub := (@_sub resolve) (only parsing).
 
   Definition denoteSymbol (n : obj_name) (o : ObjValue) : mpred :=
     match o with
@@ -33,7 +40,7 @@ Module Type modules.
     | Ofunction f =>
       match f.(f_body) return mpred with
       | None =>
-        Exists a, with_genv (fun resolve => [| glob_addr resolve n = Some a |])
+        Exists a, _global n &~ (Vptr a)
       | Some body =>
         Exists a, _global n &~ (Vptr a) //\\
                   code_at f a
@@ -85,44 +92,9 @@ Module Type modules.
       List.Forall non_overlapping ls /\ disjoint ls
     end.
 
-
-  Definition denoteGlobal (gn : globname) (g : GlobDecl) : mpred :=
-    match g with
-    | Gtypedef _ => empSP
-      (* note(gmm): this is compile time, and shouldn't be a problem.
-       *)
-    | Gstruct str =>
-      sepSPs (map (fun '(nm, li) => OffsetOf (_super gn nm) li.(li_offset)) str.(s_bases)) **
-      sepSPs (map (fun '(nm, _, li) => OffsetOf (_field {| f_type := gn ; f_name := nm |}) li.(li_offset)) str.(s_fields)) **
-      Exists os, Exists os',
-      ranges_to_list (fun '(nm,li) '(off,sz) => with_genv (fun prg =>
-                        [| off = li.(li_offset) |] **
-                        [| @size_of prg (Tref nm) = Some sz |])) str.(s_bases) os **
-      ranges_to_list (fun '(_,ty,li) '(off,sz) => with_genv (fun prg =>
-                        [| off = li.(li_offset) |] **
-                        [| @size_of prg ty = Some sz |])) str.(s_fields) os' **
-      [| List.Forall (fun '(off,sz) => 0 <= off /\ off + Z.of_N sz <= Z.of_N str.(s_size))%Z (os ++ os') |] **
-      [| disjoint (os ++ os') |]
-      (* ^ this should record size and offset information *)
-    | Gunion uni =>
-      sepSPs (map (fun '(nm, _, li) => OffsetOf (_field {| f_type := gn ; f_name := nm |}) li.(li_offset)) uni.(u_fields)) **
-      Exists os,
-      ranges_to_list (fun '(_,ty,li) '(off,sz) => with_genv (fun prg =>
-                        [| off = li.(li_offset) |] **
-                        [| @size_of prg ty = Some sz |])) uni.(u_fields) os **
-      [| List.Forall (fun '(off,sz) => 0 <= off /\ off + Z.of_N sz <= Z.of_N uni.(u_size))%Z os |]
-      (* ^ this should record size and offset information *)
-    | Genum _ => empSP
-      (* ^ this should record enumeration information *)
-    | Gconstant val _ => empSP
-      (* ^ this should record constant information *)
-    | Gtypedec => empSP
-    | Gtype => empSP
-    end.
-
   Definition denoteModule_def (d : compilation_unit) : mpred :=
-    sepSPs (List.map (fun '(gn,g) => denoteGlobal gn g) d.(globals)) **
-    sepSPs (List.map (fun '(on,o) => denoteSymbol on o) d.(symbols)).
+    sepSPs (List.map (fun '(on,o) => denoteSymbol on o) d.(symbols)) **
+    [| module_le d resolve.(genv_cu) |].
   Definition denoteModule_aux : seal (@denoteModule_def). by eexists. Qed.
   Definition denoteModule := denoteModule_aux.(unseal).
   Definition denoteModule_eq : @denoteModule = _ := denoteModule_aux.(seal_eq).
@@ -132,10 +104,10 @@ Module Type modules.
   (* Axiom denote_module_dup : forall module, *)
   (*     denoteModule module -|- denoteModule module ** denoteModule module. *)
 
-  Theorem denoteModule_link : forall a b c,
-      link a b = Some c ->
-      denoteModule c -|- denoteModule a ** denoteModule b.
-  Proof. Admitted.
+  (* Theorem denoteModule_link : forall a b c, *)
+  (*     link a b = Some c -> *)
+  (*     denoteModule c -|- denoteModule a ** denoteModule b. *)
+  (* Proof. Admitted. *)
   End with_Σ.
 
 End modules.

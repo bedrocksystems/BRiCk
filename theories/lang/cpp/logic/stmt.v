@@ -22,23 +22,40 @@ Module Type Stmt.
   (** weakest pre-condition for statements
    *)
   Section with_resolver.
-    Context {Σ:gFunctors}.
+    Context {Σ:gFunctors} {resolve:genv}.
     Variable ti : thread_info.
     Variable ρ : region.
 
-    Local Notation wp := (wp (Σ :=Σ) ti ρ).
-    Local Notation wpe := (wpe (Σ :=Σ) ti ρ).
-    Local Notation wp_lval := (wp_lval (Σ :=Σ) ti ρ).
-    Local Notation wp_prval := (wp_prval (Σ :=Σ) ti ρ).
-    Local Notation wp_xval := (wp_xval (Σ :=Σ) ti ρ).
-    Local Notation wp_glval := (wp_glval (Σ :=Σ) ti ρ).
-    Local Notation wp_rval := (wp_rval (Σ :=Σ) ti ρ).
-    Local Notation wp_init := (wp_init (Σ :=Σ) ti ρ).
-    Local Notation wpAny := (wpAny (Σ :=Σ) ti ρ).
-    Local Notation wpAnys := (wpAnys (Σ :=Σ) ti ρ).
+    Local Notation wp := (wp (Σ :=Σ) (resolve:=resolve) ti ρ).
+    Local Notation wpe := (wpe (Σ :=Σ) (resolve:=resolve) ti ρ).
+    Local Notation wp_lval := (wp_lval (Σ :=Σ) (resolve:=resolve) ti ρ).
+    Local Notation wp_prval := (wp_prval (Σ :=Σ) (resolve:=resolve) ti ρ).
+    Local Notation wp_xval := (wp_xval (Σ :=Σ) (resolve:=resolve) ti ρ).
+    Local Notation wp_glval := (wp_glval (Σ :=Σ) (resolve:=resolve) ti ρ).
+    Local Notation wp_rval := (wp_rval (Σ :=Σ) (resolve:=resolve) ti ρ).
+    Local Notation wp_init := (wp_init (Σ :=Σ) (resolve:=resolve) ti ρ).
+    Local Notation wpAny := (wpAny (Σ :=Σ) (resolve:=resolve) ti ρ).
+    Local Notation wpAnys := (wpAnys (Σ :=Σ) (resolve:=resolve) ti ρ).
 
     Local Notation mpred := (mpred Σ) (only parsing).
     Local Notation Kpreds := (Kpreds Σ) (only parsing).
+
+    Local Notation glob_def := (glob_def resolve) (only parsing).
+    Local Notation _global := (_global resolve) (only parsing).
+    Local Notation _field := (@_field resolve) (only parsing).
+    Local Notation _sub := (@_sub resolve) (only parsing).
+    Local Notation _super := (@_super resolve) (only parsing).
+    Local Notation eval_unop := (@eval_unop resolve) (only parsing).
+    Local Notation eval_binop := (@eval_binop resolve) (only parsing).
+    Local Notation size_of := (@size_of resolve) (only parsing).
+    Local Notation align_of := (@align_of resolve) (only parsing).
+    Local Notation mdestroy := (@mdestroy Σ resolve) (only parsing).
+    Local Notation destruct := (@destruct Σ resolve) (only parsing).
+    Local Notation destruct_obj := (@destruct_obj Σ resolve) (only parsing).
+    Local Notation tprim := (@tprim Σ resolve) (only parsing).
+    Local Notation tany := (@tany Σ resolve) (only parsing).
+    Local Notation uninit := (@uninit Σ resolve) (only parsing).
+
 
    (* the semantics of return is like an initialization
      * expression.

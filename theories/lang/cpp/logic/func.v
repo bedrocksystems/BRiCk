@@ -15,7 +15,7 @@ From bedrock Require Import ChargeUtil ChargeCompat.
 
 From bedrock.lang.cpp Require Import ast semantics.
 From bedrock.lang.cpp Require Import
-     pred heap_pred wp initializers destructors call intensional.
+     pred heap_pred wp intensional (* initializers destructors call intensional *).
 
 Local Open Scope string_scope.
 
@@ -38,47 +38,24 @@ Module Type Func.
   Arguments fs_arguments {_} _.
   Arguments fs_spec {_} _.
 
-  (* this is the core definition that everything will be based on. *)
+  (* this is the core definition that everything will be based on.
+   * it is really an assertion about assembly
+   *)
   Definition cptr_def {Σ} ti (fs : function_spec Σ) : Rep Σ :=
     as_Rep (fun p =>
          Forall vs,
          [| List.length vs = List.length fs.(fs_arguments) |] -*
-         Forall Q, (fs.(fs_spec) ti) vs Q -* fspec p vs ti Q).
+         Forall Q, fs.(fs_spec) ti vs Q -* fspec p ti vs Q).
   Definition cptr_aux : seal (@cptr_def). by eexists. Qed.
   Definition cptr := cptr_aux.(unseal).
   Definition cptr_eq : @cptr = _ := cptr_aux.(seal_eq).
-  Arguments cptr {_}.
-
-  (* (* function specifications written in weakest pre-condition style. *)
-  (*  * *)
-  (*  * the motivation for `function_spec` is to avoid having to destruct things *)
-  (*  * repeatedly; however, they are more difficult to prove things about, so *)
-  (*  * it might be better to do this reasoning post-facto. *)
-  (*  *) *)
-  (* Record function_spec Σ : Type := *)
-  (* { fs_return : type *)
-  (* ; fs_arguments : list type *)
-  (* ; fs_spec : thread_info -> arrowFrom val fs_arguments ((val -> mpred Σ) -> mpred Σ) *)
-  (* }. *)
-  (* Arguments fs_return {_} _. *)
-  (* Arguments fs_arguments {_} _. *)
-  (* Arguments fs_spec {_} _. *)
-
-  (* (* this is the core definition that everything will be based on. *) *)
-  (* Definition cptr_def {Σ} ti (fs : function_spec Σ) : Rep Σ := *)
-  (*  as_Rep (fun p => *)
-  (*        ForallEach _ (fs.(fs_spec) ti) (fun PQ args => *)
-  (*           Forall Q, PQ Q -* fspec p (List.map snd args) ti Q)). *)
-  (* Definition cptr_aux : seal (@cptr_def). by eexists. Qed. *)
-  (* Definition cptr := cptr_aux.(unseal). *)
-  (* Definition cptr_eq : @cptr = _ := cptr_aux.(seal_eq). *)
-  (* Arguments cptr {_}. *)
+  Arguments cptr {Σ}.
 
   Record WithEx Σ : Type :=
     { we_ex   : tele
     ; we_post : we_ex -t> val * mpred Σ }.
-  Arguments we_ex {_} _.
-  Arguments we_post {_} _.
+  Arguments we_ex {Σ} _.
+  Arguments we_post {Σ} _.
 
   Definition WithEx_map {Σ} (f : val -> mpred Σ -> val * mpred Σ) (we : WithEx Σ) : WithEx Σ :=
     {| we_ex := we.(we_ex)
@@ -93,7 +70,7 @@ Module Type Func.
   Arguments wpp_post {_} _.
 
   Section with_Σ.
-  Context {Σ : gFunctors}.
+  Context {Σ : gFunctors} {resolve:genv}.
 
   Local Notation mpred := (mpred Σ) (only parsing).
   Local Notation Kpreds := (Kpreds Σ) (only parsing).
@@ -138,6 +115,10 @@ Module Type Func.
              (PQ : WithPrePost)
   : function_spec :=
     TSFunction ret targs (fun _ => PQ).
+
+  Local Notation uninit := (@uninit Σ resolve) (only parsing).
+  Local Notation tany := (@tany Σ resolve) (only parsing).
+  Local Notation tprim := (@tprim Σ resolve) (only parsing).
 
   (* Hoare triple for a constructor.
    *)
@@ -219,9 +200,9 @@ Module Type Func.
     | _              => tlocal ρ x (tprim (erase_qualifiers t) 1 v)
     end.
 
-  Fixpoint bind_type_free ρ (t : type) (x : ident) (v : val) : mpred :=
+  Fixpoint free_type ρ (t : type) (x : ident) (v : val) : mpred :=
     match t with
-    | Tqualified _ t => bind_type_free ρ t x v
+    | Tqualified _ t => free_type ρ t x v
     | Treference ref => local_addr_v ρ x v
     | Trv_reference ref => local_addr_v ρ x v
     | Tref cls       => local_addr_v ρ x v
@@ -236,6 +217,73 @@ Module Type Func.
 
     (* the proof obligation for a function
      *)
+
+  Definition wp_func (f : Func) (ti : thread_info) (args : list val) (Q : val -> epred Σ) : mpred.
+  refine (
+      match f.(f_body) with
+      | None => lfalse
+      | Some body =>
+        let ret := f.(f_return) in
+        Forall ρ : region,
+        (* this is what is created from the parameters *)
+        let binds :=
+            sepSPs (zip (fun '(x, t) 'v => bind_type ρ t x v) f.(f_params) args) in
+        (* this is what is freed on return *)
+        let frees :=
+            sepSPs (zip (fun '(x, t) 'v => free_type ρ t x v) (rev f.(f_params)) (rev args)) in
+        ([| length args = length f.(f_params) |] ** ltrue) //\\
+        if is_void ret
+        then
+          binds -*
+          wp (resolve:=resolve) ti ρ body (Kfree frees (void_return (|> Q Vvoid)))
+        else if is_aggregate ret then
+          Forall ra,
+          (binds ** result_addr ρ ra ** _at (_eq ra) (uninit (erase_qualifiers ret) 1)) -*
+          wp (resolve:=resolve) ti ρ body (Kfree (frees ** result_addr ρ ra) (val_return (fun x => |> Q x)))
+        else
+          binds -*
+          wp (resolve:=resolve) ti ρ body (Kfree frees (val_return (fun x => |> Q x)))
+      end).
+  Defined.
+
+    Definition wp_method (meth : Method) (ti : thread_info) (args : list val) (Q : val -> epred Σ) : mpred.
+    refine
+      match meth.(m_body) with
+      | None => lfalse
+      | Some body =>
+          Forall ρ : region,
+          match args with
+          | nil => lfalse
+          | this_val :: rest_vals =>
+            (* this is what is created from the parameters *)
+            let binds :=
+                this_addr ρ this_val **
+                sepSPs (zip (fun '(x, t) 'v => bind_type ρ t x v) meth.(m_params) rest_vals)
+            in
+            (* this is what is freed on return *)
+            let frees :=
+                this_addr ρ this_val **
+                sepSPs (zip (fun '(x, t) 'v => free_type ρ t x v) (rev meth.(m_params))
+                       (rev rest_vals))
+            in
+            let ret_ty := meth.(m_return) in
+            ([| (length args = 1 + length meth.(m_params))%nat |] ** ltrue) //\\
+            if is_void ret_ty
+            then
+              binds -* (wp (resolve:=resolve) ti ρ body (Kfree frees (void_return (|>Q Vvoid))))
+            else if is_aggregate ret_ty then
+              Forall ra,
+              (binds ** result_addr ρ ra ** _at (_eq ra) (uninit (erase_qualifiers ret_ty) 1)) -* (wp (resolve:=resolve) ti ρ body (Kfree (frees ** result_addr ρ ra) (val_return (fun x => |>Q x))))
+            else
+              binds -* (wp (resolve:=resolve) ti ρ body (Kfree frees (val_return (fun x => |>Q x))))
+          end
+      end.
+    Defined.
+    (* ^ todo(gmm): move the [frees] to the left hand side of the [-*], this
+     * will make the right-hand-side more canonical
+     *)
+
+    (* todo(gmm): i should be able to define this using [wp_func] *)
     Definition func_ok (ret : type) (params : list (ident * type))
                (body : Stmt)
                (ti : thread_info) (spec : function_spec)
@@ -253,23 +301,22 @@ Module Type Func.
             sepSPs (zip (fun '(x, t) 'v => bind_type ρ t x v) params vals) in
         (* this is what is freed on return *)
         let frees :=
-            sepSPs (zip (fun '(x, t) 'v =>
-                           bind_type_free ρ t x v)
+            sepSPs (zip (fun '(x, t) 'v => free_type ρ t x v)
                    (rev params) (rev vals)) in
         if is_void ret
         then
           Forall Q : mpred,
           (binds ** PQ (fun x => Q)) -*
-          wp ti ρ body (Kfree frees (void_return (|>Q)))
+          wp (resolve:=resolve) ti ρ body (Kfree frees (void_return (|>Q)))
         else if is_aggregate ret then
           Forall Q : val -> mpred,
           Forall ra,
           (binds ** result_addr ρ ra ** _at (_eq ra) (uninit (erase_qualifiers ret) 1) ** PQ Q) -*
-          wp ti ρ body (Kfree (frees ** result_addr ρ ra) (val_return (fun x => |> Q x)))
+          wp (resolve:=resolve) ti ρ body (Kfree (frees ** result_addr ρ ra) (val_return (fun x => |> Q x)))
         else
           Forall Q : val -> mpred,
           (binds ** PQ Q) -*
-          wp ti ρ body (Kfree frees (val_return (fun x => |> Q x)))).
+          wp (resolve:=resolve) ti ρ body (Kfree frees (val_return (fun x => |> Q x)))).
     (* ^ todo(gmm): the new semantics of function gets an address for a return value
      * so the semantics for `return` should be that *)
 
@@ -300,23 +347,35 @@ Module Type Func.
             (* this is what is freed on return *)
             let frees :=
                 this_addr ρ this_val **
-                sepSPs (zip (fun '(x, t) 'v => bind_type_free ρ t x v) (rev meth.(m_params))
+                sepSPs (zip (fun '(x, t) 'v => free_type ρ t x v) (rev meth.(m_params))
                        (rev rest_vals))
             in
             let ret_ty := meth.(m_return) in
             if is_void ret_ty
             then
               Forall Q : mpred,
-              (binds ** PQ (fun x => Q)) -* (wp ti ρ body (Kfree frees (void_return (|>Q))))
+              (binds ** PQ (fun x => Q)) -* (wp (resolve:=resolve) ti ρ body (Kfree frees (void_return (|>Q))))
             else if is_aggregate ret_ty then
               Forall Q : val -> mpred,
               Forall ra,
-              (binds ** result_addr ρ ra ** _at (_eq ra) (uninit (erase_qualifiers ret_ty) 1) ** PQ Q) -* (wp ti ρ body (Kfree (frees ** result_addr ρ ra) (val_return (fun x => |>Q x))))
+              (binds ** result_addr ρ ra ** _at (_eq ra) (uninit (erase_qualifiers ret_ty) 1) ** PQ Q) -* (wp (resolve:=resolve) ti ρ body (Kfree (frees ** result_addr ρ ra) (val_return (fun x => |>Q x))))
             else
               Forall Q : val -> mpred,
-              (binds ** PQ Q) -* (wp ti ρ body (Kfree frees (val_return (fun x => |>Q x))))
+              (binds ** PQ Q) -* (wp (resolve:=resolve) ti ρ body (Kfree frees (val_return (fun x => |>Q x))))
           end)
       end.
+    (* ^ todo(gmm): move the [frees] to the left hand side of the [-*], this
+     * will make the right-hand-side more canonical
+     *)
+
+    Fixpoint wpis (ti : thread_info) (ρ : region)  (cls : globname) (this : val)
+             (inits : list Initializer)
+             (Q : mpred -> mpred) : mpred :=
+      match inits with
+      | nil => Q empSP
+      | i :: is' => wpi (resolve:=resolve) ti ρ cls this i (fun f => f ** wpis ti ρ cls this is' Q)
+      end.
+
 
     Definition wp_ctor (cls : globname) (ti : thread_info) (ρ : region)
                (this_val : val)
@@ -324,7 +383,7 @@ Module Type Func.
                (Q : Kpreds)
     : mpred :=
       wpis ti ρ cls this_val inits
-           (fun free => free ** wp ti ρ body Q).
+           (fun free => free ** wp (resolve:=resolve) ti ρ body Q).
 
 
     Definition ctor_ok (ctor : Ctor) ti (spec : function_spec)
@@ -354,7 +413,7 @@ Module Type Func.
             (* this is what is freed on return *)
             let frees :=
                 this_addr ρ this_val **
-                sepSPs (zip (fun '(x, t) 'v => bind_type_free ρ t x v) (rev ctor.(c_params)) (rev rest_vals))
+                sepSPs (zip (fun '(x, t) 'v => free_type ρ t x v) (rev ctor.(c_params)) (rev rest_vals))
             in
             Forall Q : mpred,
             (binds ** PQ (fun x => Q)) -*
@@ -363,12 +422,22 @@ Module Type Func.
           end)
       end.
 
+    Fixpoint wpds ti ρ
+             (cls : globname) (this : val)
+             (dests : list (FieldOrBase * globname))
+             (Q : mpred) : mpred :=
+      match dests with
+      | nil => Q
+      | d :: ds => @wpd Σ resolve ti ρ cls this d (wpds ti ρ cls this ds Q)
+      end.
+
+
     Definition wp_dtor (cls : globname) (ti : thread_info) (ρ : region)
                (this_val : val)
                (body : Stmt) (dtors : list (FieldOrBase * globname))
                (frees : mpred) (Q : mpred)
     : mpred :=
-      wp ti ρ body
+      @wp Σ resolve ti ρ body
          (Kfree frees (void_return (wpds ti ρ cls this_val dtors Q))).
 
     Definition dtor_ok (dtor : Dtor) ti (spec : function_spec)

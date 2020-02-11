@@ -13,12 +13,26 @@ From bedrock.lang.cpp.logic Require Import
 
 
 Section with_Σ.
-  Context `{!invG Σ}.
+  Context `{!invG Σ} {resolve:genv}.
+  Variable (ti : thread_info) (ρ : region).
 
   Local Notation mpred := (mpred Σ) (only parsing).
   Local Notation mpredI := (mpredI Σ) (only parsing).
   Local Notation mpredSI := (mpredSI Σ) (only parsing).
   Local Notation FreeTemps := (FreeTemps Σ) (only parsing).
+
+  Local Notation wp_prval := (wp_prval (Σ:=Σ) (resolve:=resolve) ti ρ).
+  Local Notation wp_args := (wp_args (Σ:=Σ) (resolve:=resolve) ti ρ).
+
+  Local Notation glob_def := (glob_def resolve) (only parsing).
+  Local Notation eval_unop := (@eval_unop resolve) (only parsing).
+  Local Notation eval_binop := (@eval_binop resolve) (only parsing).
+  Local Notation size_of := (@size_of resolve) (only parsing).
+  Local Notation align_of := (@align_of resolve) (only parsing).
+  Local Notation tprim := (@tprim Σ resolve) (only parsing).
+  Local Notation tany := (@tany Σ resolve) (only parsing).
+  Local Notation uninit := (@uninit Σ resolve) (only parsing).
+
 
   Definition wrap_shift (F : (val -> mpred) -> mpred) (Q : val -> mpred) : mpred :=
     Exists mid, (|={⊤,mid}=> F (fun result => |={mid,⊤}=> Q result))%I.
@@ -30,8 +44,11 @@ Section with_Σ.
    * These are given in the style of function call axioms
    *)
   Parameter wp_atom :
-      AtomicOp -> type (* the access type of the atomic operation *) ->
-      list val -> (val -> mpred) -> mpred.
+      forall {resolve:genv}, thread_info ->
+        AtomicOp -> type (* the access type of the atomic operation *) ->
+        list val -> (val -> mpred) -> mpred.
+
+  Local Notation wp_atom' := (@wp_atom resolve ti) (only parsing).
 
   Definition pointee_type (t : type) : option type :=
     match t with
@@ -48,14 +65,14 @@ Section with_Σ.
   (* note that this rule captures all of the interesting reasoning about atomics
    * through the use of [wp_shift]
    *)
-  Axiom wp_prval_atomic: forall ti r ao es ty Q,
+  Axiom wp_prval_atomic: forall ao es ty Q,
       match get_acc_type ao ty (map (fun x => type_of (snd x)) es) with
       | None => lfalse
       | Some acc_type =>
-        wp_args ti r es (fun (vs : list val) (free : FreeTemps) =>
-          wrap_shift (wp_atom ao acc_type vs) (fun v => Q v free))
+        wp_args es (fun (vs : list val) (free : FreeTemps) =>
+          wrap_shift (wp_atom' ao acc_type vs) (fun v => Q v free))
       end
-      |-- wp_prval ti r (Eatomic ao es ty) Q.
+      |-- wp_prval (Eatomic ao es ty) Q.
 
   (* Memory Ordering Patterns: Now we only have _SEQ_CST *)
   Definition _SEQ_CST := Vint 5.
@@ -75,7 +92,7 @@ Section with_Σ.
       [| memorder = _SEQ_CST |] **
       |> (Exists v, (_at (_eq l) (tprim acc_type q v) **
                      (_at (_eq l) (tprim acc_type q v) -* Q v)))
-      |-- wp_atom AO__atomic_load_n acc_type (l :: memorder :: nil) Q.
+      |-- wp_atom' AO__atomic_load_n acc_type (l :: memorder :: nil) Q.
 
   Axiom wp_atom_store_cst
   : forall memorder acc_type l Q v,
@@ -83,7 +100,7 @@ Section with_Σ.
       [| has_type v acc_type |] **
       |> (_at (_eq l) (tany acc_type 1) **
          (_at (_eq l) (tprim acc_type 1 v) -* Exists void, Q void))
-      |-- wp_atom AO__atomic_store_n acc_type (l :: memorder :: v :: nil) Q.
+      |-- wp_atom' AO__atomic_store_n acc_type (l :: memorder :: v :: nil) Q.
 
   (* atomic compare and exchange n *)
   Axiom wp_atom_compare_exchange_n_suc:
@@ -94,7 +111,7 @@ Section with_Σ.
           _at (_eq val_p) (tprim ty 1 v) **
           ((_at (_eq expected_p) (tprim ty 1 v) **
             _at (_eq val_p) (tprim ty 1 desired)) -* Q' (Vbool true)))
-      |-- wp_atom AO__atomic_compare_exchange_n ty
+      |-- wp_atom' AO__atomic_compare_exchange_n ty
                   (val_p::succmemord::expected_p::failmemord::desired::wk::nil) Q'.
 
   Axiom wp_atom_compare_exchange_n_fail:
@@ -106,7 +123,7 @@ Section with_Σ.
           _at (_eq val_p) (tprim ty 1 v) **
           ((_at (_eq expected_p) (tprim ty 1 v) **
             _at (_eq val_p) (tprim ty 1 v)) -* Q' (Vbool false)))
-      |-- wp_atom AO__atomic_compare_exchange_n ty
+      |-- wp_atom' AO__atomic_compare_exchange_n ty
                   (val_p::succmemord::expected_p::failmemord::desired::wk::nil) Q'.
 
   Axiom wp_atom_compare_exchange_n_weak:
@@ -120,7 +137,7 @@ Section with_Σ.
              [| v = expected |]) -* Q' (Vbool true)) //\\
            ((_at (_eq expected_p) (tprim ty 1 v) **
              _at (_eq val_p) (tprim ty 1 v)) -* Q' (Vbool false))))
-      |-- wp_atom AO__atomic_compare_exchange_n ty
+      |-- wp_atom' AO__atomic_compare_exchange_n ty
                   (val_p::succmemord::expected_p::failmemord::desired::wk::nil) Q'.
 
   (* atomic compare and exchange *)
@@ -135,7 +152,7 @@ Section with_Σ.
          ((_at (_eq expected_p) (tprim ty 1 expected) **
            _at (_eq desired_p) (tprim ty q desired) **
            _at (_eq val_p) (tprim ty 1 desired)) -* Q (Vbool true)))
-      |-- wp_atom AO__atomic_compare_exchange ty
+      |-- wp_atom' AO__atomic_compare_exchange ty
                   (val_p::succmemord::expected_p::failmemord::desired_p::wk::nil) Q.
 
   Axiom wp_atom_compare_exchange_fail :
@@ -150,7 +167,7 @@ Section with_Σ.
           ((_at (_eq expected_p) (tprim ty 1 actual) **
             _at (_eq desired_p) (tprim ty q desired) **
             _at (_eq val_p) (tprim ty 1 actual)) -* Q (Vbool false)))
-      |-- wp_atom AO__atomic_compare_exchange ty
+      |-- wp_atom' AO__atomic_compare_exchange ty
                   (val_p::succmemord::expected_p::failmemord::desired_p::wk::nil) Q.
 
   Axiom wp_atom_compare_exchange_weak :
@@ -168,7 +185,7 @@ Section with_Σ.
            ((_at (_eq expected_p) (tprim ty 1 actual) **
              _at (_eq desired_p) (tprim ty q desired) **
              _at (_eq val_p) (tprim ty 1 actual)) -* Q (Vbool false))))
-      |-- wp_atom AO__atomic_compare_exchange ty
+      |-- wp_atom' AO__atomic_compare_exchange ty
                   (val_p::succmemord::expected_p::failmemord::desired_p::wk::nil) Q.
 
   (* atomic fetch and xxx rule *)
@@ -178,9 +195,9 @@ Section with_Σ.
       ([| memorder = _SEQ_CST |] **
        |> _at (_eq E) (tprim acc_type 1 v) **
        |> (Exists v',
-           eval_binop op acc_type acc_type acc_type v pls v' **
+           [| eval_binop op acc_type acc_type acc_type v pls v' |] **
          (_at (_eq E) (tprim acc_type 1 v') -* Q v))
-      |-- wp_atom ao acc_type (E::memorder::pls::nil) Q).
+      |-- wp_atom' ao acc_type (E::memorder::pls::nil) Q).
 
   Ltac fetch_xxx ao op :=
     let G := eval unfold wp_fetch_xxx in (wp_fetch_xxx ao op) in exact G.
@@ -198,9 +215,9 @@ Section with_Σ.
       ([| memorder = _SEQ_CST |] **
       |> (Exists v,
           _at (_eq E) (tprim acc_type 1 v) **
-          Exists v', eval_binop op acc_type acc_type acc_type v pls v' **
+          Exists v', [| eval_binop op acc_type acc_type acc_type v pls v' |] **
                      (_at (_eq E) (tprim acc_type 1 v') -* Q v'))
-      |-- wp_atom ao acc_type (E::memorder::pls::nil) Q).
+      |-- wp_atom' ao acc_type (E::memorder::pls::nil) Q).
 
   Ltac xxx_fetch ao op :=
     let G := eval unfold wp_xxx_fetch in (wp_xxx_fetch ao op) in exact G.
