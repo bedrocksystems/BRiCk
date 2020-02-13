@@ -57,14 +57,14 @@ protected:
                     return false;
                 }
                 VFileOutput = args[i];
-            } else if (args[i] == "-spec") {
+            } else if (args[i] == "-names") {
                 if (++i == e) {
                     unsigned DiagID = D.getCustomDiagID(
-                        DiagnosticsEngine::Error, "-spec is missing parameter");
+                        DiagnosticsEngine::Error, "-names is missing parameter");
                     D.Report(DiagID) << args[i];
                     return false;
                 }
-                SpecFile = args[i];
+                NamesFile = args[i];
             }
         }
         if (!args.empty() && args[0] == "help")
