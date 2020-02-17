@@ -74,7 +74,7 @@ Module Type Init.
     Axiom wpi_initialize : forall this_val i cls Q,
         Exists a,
           _offsetL (offset_for cls i.(init_path)) (_eq this_val) &~ a ** ltrue //\\
-        wp_initialize (erase_qualifiers i.(init_type)) a i.(init_init) Q
+        wp_initialize (erase_qualifiers i.(init_type)) (Vptr a) i.(init_init) Q
         |-- wpi cls this_val i Q.
 
     Fixpoint wpis (cls : globname) (this : val)
@@ -88,7 +88,7 @@ Module Type Init.
     Axiom wp_init_constructor : forall cls addr cnd es Q ty,
       wp_args es (fun ls free =>
          Exists ctor, _global cnd &~ ctor **
-         |> fspec ctor ti (addr :: ls) (fun _ => Q free))
+         |> fspec (Vptr ctor) ti (addr :: ls) (fun _ => Q free))
       |-- wp_init (Tref cls) addr (Econstructor cnd es ty) Q.
 
     Definition build_array (es : list Expr) (fill : option Expr) (sz : nat)
@@ -111,7 +111,7 @@ Module Type Init.
         _at (_eq addr) (uninit (erase_qualifiers (Tarray ety sz)) 1) **
           wps (fun '(i,e) (Q : unit -> mpred -> mpred) f =>
                  Forall a, _offsetL (_sub ety i) (_eq addr) &~ a -*
-                 wp_init ety a e (fun f' => Q tt (f ** f')))
+                 wp_init ety (Vptr a) e (fun f' => Q tt (f ** f')))
               array_list
               (fun _ free => Q free) empSP
       end

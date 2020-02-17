@@ -30,7 +30,7 @@ Section with_resolve.
       Exists dp, Exists fp,
     (@_global resolve dn &~ dp **
      _offsetL (offset_for resolve cls path) (_eq this) &~ fp ** ltrue) //\\
-     |> fspec dp ti (this :: nil) (fun _ => Q)
+     |> fspec (Vptr dp) ti (this :: nil) (fun _ => Q)
     |-- @wpd Σ resolve ti ρ cls this (path, dn) Q.
 
 End with_resolve.

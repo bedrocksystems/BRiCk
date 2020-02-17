@@ -89,7 +89,7 @@ Module Type Expr.
 
     (* `this` is a prvalue *)
     Axiom wp_prval_this : forall ty Q,
-      Exists a, (this_addr ρ a ** ltrue) //\\ Q a empSP
+      Exists a, (this_addr ρ a ** ltrue) //\\ Q (Vptr a) empSP
       |-- wp_prval (Ethis ty) Q.
 
 
@@ -100,7 +100,7 @@ Module Type Expr.
 
     (* what about the type? if it exists *)
     Axiom wp_lval_gvar : forall ty x Q,
-        Exists a, _global x &~ a ** Q a empSP
+        Exists a, _global x &~ a ** Q (Vptr a) empSP
         |-- wp_lval (Evar (Gname x) ty) Q.
 
     (* [Emember e f ty] is an lvalue by default except when
@@ -109,7 +109,7 @@ Module Type Expr.
      *)
     Axiom wp_lval_member : forall ty a m Q,
       wp_lval a (fun base free =>
-                  Exists addr, (_offsetL (_field m) (_eq base) &~ addr ** ltrue) //\\ Q addr free)
+                  Exists addr, (_offsetL (_field m) (_eq base) &~ addr ** ltrue) //\\ Q (Vptr addr) free)
       |-- wp_lval (Emember a m ty) Q.
 
 
@@ -119,7 +119,7 @@ Module Type Expr.
      *)
     Axiom wp_prval_member : forall ty a m Q,
       wp_rval a (fun base free =>
-                  Exists addr, (_offsetL (_field m) (_eq base) &~ addr ** ltrue) //\\ Q addr free)
+                  Exists addr, (_offsetL (_field m) (_eq base) &~ addr ** ltrue) //\\ Q (Vptr addr) free)
       |-- wp_prval (Emember a m ty) Q.
 
     (* [Emember a m ty] is an xvalue if
@@ -127,7 +127,7 @@ Module Type Expr.
      *)
     Axiom wp_xval_member : forall ty a m Q,
       wp_rval a (fun base free =>
-                  Exists addr, (_offsetL (_field m) (_eq base) &~ addr ** ltrue) //\\ Q addr free)
+                  Exists addr, (_offsetL (_field m) (_eq base) &~ addr ** ltrue) //\\ Q (Vptr addr) free)
       |-- wp_xval (Emember a m ty) Q.
 
     Fixpoint is_pointer (ty : type) : bool :=
@@ -150,14 +150,14 @@ Module Type Expr.
           Exists addr,
           (Exists i, [| idx = Vint i |] **
           _offsetL (_sub (erase_qualifiers t) i) (_eq base) &~ addr ** ltrue) //\\
-          Q addr (free' ** free)))
+          Q (Vptr addr) (free' ** free)))
       else
       wp_prval e (fun idx free => (* todo: rval? *)
         wp_prval i (fun base free' =>
           Exists addr,
           (Exists i, [| idx = Vint i |] **
           _offsetL (_sub (erase_qualifiers t) i) (_eq base) &~ addr ** ltrue) //\\
-          Q addr (free' ** free))))
+          Q (Vptr addr) (free' ** free))))
       |-- wp_lval (Esubscript e i t) Q.
 
     (* [Esubscript e i t]
@@ -170,14 +170,14 @@ Module Type Expr.
           Exists addr,
           (Exists i, [| idx = Vint i |] **
           _offsetL (_sub (erase_qualifiers t) i) (_eq base) &~ addr ** ltrue) //\\
-          Q addr (free' ** free)))
+          Q (Vptr addr) (free' ** free)))
       else
       wp_prval e (fun idx free => (* todo: rval? *)
         wp_prval i (fun base free' =>
           Exists addr,
           (Exists i, [| idx = Vint i |] **
           _offsetL (_sub (erase_qualifiers t) i) (_eq base) &~ addr ** ltrue) //\\
-          Q addr (free' ** free))))
+          Q (Vptr addr) (free' ** free))))
       |-- wp_xval (Esubscript e i t) Q.
 
 
@@ -377,7 +377,7 @@ Module Type Expr.
       wpe vc e (fun addr free => Exists addr',
                   (_offsetL (_super from to) (_eq addr) &~ addr' //\\ ltrue) **
                           (* ^ this is a down-cast *)
-                  Q addr' free)
+                  Q (Vptr addr') free)
       |-- wp_lval (Ecast (Cstatic from to) (vc, e) ty) Q.
 
     Axiom wpe_cast_tovoid : forall vc' vc e ty Q,
@@ -398,7 +398,7 @@ Module Type Expr.
 
     Axiom wp_prval_implicit: forall  e Q ty,
         wp_prval e Q |-- wp_prval (Eimplicit e ty) Q.
-    
+
     (** `sizeof` and `alignof` *)
     Axiom wp_prval_sizeof : forall ty' ty Q,
         Exists sz, [| size_of ty = Some sz |]  ** Q (Vint (Z.of_N sz)) empSP
@@ -449,24 +449,19 @@ Module Type Expr.
     Axiom wp_prval_member_call : forall ty f obj es Q,
         Exists fa, _global f &~ fa **
         wp_lval obj (fun this free => wp_args es (fun vs free' =>
-            |> fspec fa ti (this :: vs) (fun v => Q v (free ** free'))))
+            |> fspec (Vptr fa) ti (this :: vs) (fun v => Q v (free ** free'))))
         |-- wp_prval (Emember_call (inl (f, false)) obj es ty) Q.
-    Axiom wp_lval_member_call : forall ty f obj es Q,
-        Exists fa, _global f &~ fa **
-        wp_lval obj (fun this free => wp_args es (fun vs free' =>
-            |> fspec fa ti (this :: vs) (fun v => Q v (free ** free'))))
-        |-- wp_lval (Emember_call (inl (f, false)) obj es ty) Q.
     Axiom wp_xval_member_call : forall ty f obj es Q,
         Exists fa, _global f &~ fa **
         wp_lval obj (fun this free => wp_args es (fun vs free' =>
-            |> fspec fa ti (this :: vs) (fun v => Q v (free ** free'))))
+            |> fspec (Vptr fa) ti (this :: vs) (fun v => Q v (free ** free'))))
         |-- wp_xval (Emember_call (inl (f, false)) obj es ty) Q.
     Axiom wp_init_member_call :
       forall f (es : list (ValCat * Expr))
         (Q : FreeTemps -> mpred) addr (ty : type) obj,
         Exists fa, _global f &~ fa **
         wp_prval obj (fun this free_o => wp_args es (fun vs free_args =>
-             |> fspec fa ti (this :: vs) (fun res =>
+             |> fspec (Vptr fa) ti (this :: vs) (fun res =>
                       [| res = addr |] -* Q (free_o ** free_args))))
         |-- wp_init ty addr (Emember_call (inl (f, false)) obj es ty) Q.
 

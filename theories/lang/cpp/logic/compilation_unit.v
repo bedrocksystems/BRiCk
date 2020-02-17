@@ -40,9 +40,9 @@ Module Type modules.
     | Ofunction f =>
       match f.(f_body) return mpred with
       | None =>
-        Exists a, _global n &~ (Vptr a)
+        Exists a, _global n &~ a
       | Some body =>
-        Exists a, _global n &~ (Vptr a) //\\
+        Exists a, _global n &~ a //\\
                   code_at f a
       end
     | Omethod m =>
@@ -50,7 +50,7 @@ Module Type modules.
       | None =>
         Exists a, _global n &~ a
       | Some body =>
-        Exists a, _global n &~ Vptr a //\\
+        Exists a, _global n &~ a //\\
                   code_at {| f_return := m.(m_return)
                            ; f_params := ("#this"%string, Tqualified m.(m_this_qual) (Tref m.(m_class))) :: m.(m_params)
                            ; f_body := m.(m_body) |} a
@@ -60,19 +60,16 @@ Module Type modules.
       | None =>
         Exists a, _global n &~ a
       | Some body =>
-        Exists a, _global n &~ Vptr a //\\ ctor_at a c
+        Exists a, _global n &~ a //\\ ctor_at a c
       end
     | Odestructor d =>
       match d.(d_body) return mpred with
       | None =>
         Exists a, _global n &~ a
       | Some body =>
-        Exists a, _global n &~ Vptr a //\\ dtor_at a d
+        Exists a, _global n &~ a //\\ dtor_at a d
       end
     end.
-
-  Definition OffsetOf (f : Offset) (n : Z) : mpred :=
-    Forall l, _offsetL f (_eq l) &~ offset_ptr n l.
 
   Local Fixpoint ranges_to_list {T} (P : T -> Z * N -> mpred) (ls : list T) (rs : list (Z * N)) : mpred :=
     match ls with

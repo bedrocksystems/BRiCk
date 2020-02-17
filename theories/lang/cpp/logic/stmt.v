@@ -73,7 +73,7 @@ Module Type Stmt.
            match c with
            | Rvalue =>
              Exists a, result_addr ρ a ** ltrue //\\
-             wp_init (erase_qualifiers (type_of e)) a (not_mine e) (Q.(k_return) (Some a))
+             wp_init (erase_qualifiers (type_of e)) (Vptr a) (not_mine e) (Q.(k_return) (Some (Vptr a)))
            | Lvalue
            | Xvalue =>
              wpe c e (fun v => Q.(k_return) (Some v))
@@ -111,17 +111,17 @@ Module Type Stmt.
       | Tbool
       | Tchar _ _
       | Tint _ _ =>
-        Forall a : val,
+        Forall a : ptr,
         let done :=
             k (Kfree (tlocal_at ρ x a (tany (erase_qualifiers ty) 1)) Q)
         in
-        let continue := local_addr_v ρ x a -* done in
+        let continue := local_addr ρ x a -* done in
         match init with
         | None =>
-          _at (_eq a) (uninit (erase_qualifiers ty) 1) -* continue
+          _at (_eq (Vptr a)) (uninit (erase_qualifiers ty) 1) -* continue
         | Some init =>
           wp_prval init (fun v free => free **
-                              _at (_eq a) (tprim (erase_qualifiers ty) 1 v) -* continue)
+                              _at (_eq (Vptr a)) (tprim (erase_qualifiers ty) 1 v) -* continue)
         end
 
       | Tref cls =>

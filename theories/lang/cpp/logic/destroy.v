@@ -21,7 +21,7 @@ Section destroy.
   (* remove from the stack *)
   Definition destruct_obj (dtor : obj_name) (cls : globname) (v : val) (Q : mpred) : mpred :=
     Exists da, _global dtor &~ da **
-               |> fspec da ti (v :: nil) (fun _ => Q).
+               |> fspec (Vptr da) ti (v :: nil) (fun _ => Q).
 
   Fixpoint destruct (t : type) (this : val) (dtor : obj_name) (Q : mpred)
            {struct t}
@@ -32,7 +32,7 @@ Section destroy.
       destruct_obj dtor cls this Q
     | Tarray t sz =>
       let destruct_at i :=
-          Exists p, _offsetL (_sub t (Z.of_nat i)) (_eq this) &~ p ** destruct t p dtor empSP
+          Exists p, _offsetL (_sub t (Z.of_nat i)) (_eq this) &~ p ** destruct t (Vptr p) dtor empSP
       in
       sepSPs (List.map destruct_at (List.seq 0 (N.to_nat sz - 1)))
     | _ => empSP

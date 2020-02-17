@@ -19,26 +19,28 @@ Local Open Scope string_scope.
  *)
 Global Instance val_inhabited : Inhabited val.
 Proof. constructor. apply (Vint 0). Qed.
+Global Instance ptr_inhabited : Inhabited ptr.
+Proof. constructor. apply nullptr. Qed.
 
-Instance val_rel : SqSubsetEq val.
+Local Instance ptr_rel : SqSubsetEq ptr.
 Proof.
   unfold SqSubsetEq.
   unfold relation.
   apply eq.
 Defined.
 
-Instance val_rel_preorder : PreOrder (⊑@{val}).
+Local Instance ptr_rel_preorder : PreOrder (⊑@{ptr}).
 Proof.
-  unfold sqsubseteq. unfold val_rel.
+  unfold sqsubseteq. unfold ptr_rel.
   apply base.PreOrder_instance_0.
 Qed.
 
-Canonical Structure val_bi_index : biIndex :=
-  BiIndex val val_inhabited val_rel val_rel_preorder.
+Canonical Structure ptr_bi_index : biIndex :=
+  BiIndex ptr ptr_inhabited ptr_rel ptr_rel_preorder.
 
-Definition Rep Σ := (monPred val_bi_index (mpredI Σ)).
-Definition RepI Σ := (monPredI val_bi_index (mpredI Σ)).
-Definition RepSI Σ := (monPredSI val_bi_index (mpredSI Σ)).
+Definition Rep Σ := (monPred ptr_bi_index (mpredI Σ)).
+Definition RepI Σ := (monPredI ptr_bi_index (mpredI Σ)).
+Definition RepSI Σ := (monPredSI ptr_bi_index (mpredSI Σ)).
 
 Lemma monPred_at_persistent_inv {V bi} (P : monPred V bi) :
   (∀ i, Persistent (P i)) → Persistent P.
@@ -59,9 +61,9 @@ Qed.
 (* locations are computations that produce an address.
  * - note(gmm): they are always computable from the program except.
  *)
-Definition Loc : Type := option val.
+Definition Loc : Type := option ptr.
 
-Definition Offset : Type := option (val -> val).
+Definition Offset : Type := option (ptr -> option ptr).
 
 Section with_Σ.
 Context {Σ : gFunctors}.
@@ -103,7 +105,7 @@ Local Ltac solve_Offset_timeless X :=
   constructor; apply monPred_at_timeless_inv;
   apply _.
 
-Definition as_Rep (P : val -> mpred) : Rep := MonPred P _.
+Definition as_Rep (P : ptr -> mpred) : Rep := MonPred P _.
 
 Lemma Rep_equiv_ext_equiv : forall P Q : Rep,
     (forall x, P x -|- Q x) ->
@@ -117,22 +119,25 @@ Definition LocEq (l1 l2 : Loc) : Prop :=
 
 (* absolute locations *)
 Definition _eq_def (a : val) : Loc :=
-  Some a.
+  match a with
+  | Vptr p => Some p
+  | _ => None
+  end.
 Definition _eq_aux : seal (@_eq_def). by eexists. Qed.
 Definition _eq := _eq_aux.(unseal).
 Definition _eq_eq : @_eq = _ := _eq_aux.(seal_eq).
 
 (* this is essentially a hack *)
-Definition local_addr_v r x v : mpred :=
+Definition local_addr_v (r : region) (x : ident) (v : val) : mpred :=
   Exists p, [| v = Vptr p |] ** local_addr r x p.
 
 (* val -> ptr *)
-Definition this_addr (r : region) (v : val) : mpred :=
-  Exists p, [| v = Vptr p |] ** local_addr r "#this" p.
+Definition this_addr (r : region) (p : ptr) : mpred :=
+  local_addr r "#this" p.
 
 (* val -> ptr *)
-Definition result_addr (r : region) (v : val) : mpred :=
-  Exists p, [| v = Vptr p |] ** local_addr r "#result" p.
+Definition result_addr (r : region) (p : ptr) : mpred :=
+  local_addr r "#result" p.
 
 (* ^ these two could be duplicable because regions don't need to be
  * reused. the reason that local variables need to be tracked is that
@@ -160,7 +165,7 @@ Definition result_addr (r : region) (v : val) : mpred :=
 Definition _global_def (resolve : genv) (x : obj_name) : Loc :=
   match glob_addr resolve x with
   | None => None
-  | Some p => Some (Vptr p)
+  | Some p => Some p
   end.
 Definition _global_aux : seal (@_global_def). by eexists. Qed.
 Definition _global := _global_aux.(unseal).
@@ -169,7 +174,7 @@ Definition _global_eq : @_global = _ := _global_aux.(seal_eq).
 (* offsets *)
 Definition _field_def (resolve: genv) (f : field) : Offset :=
   match offset_of resolve f.(f_type) f.(f_name) with
-  | Some o => Some (offset_ptr o)
+  | Some o => Some (fun p => Some (offset_ptr_ o p))
   | _ => None
   end.
 Definition _field_aux : seal (@_field_def). Proof using. by eexists. Qed.
@@ -178,7 +183,7 @@ Definition _field_eq : @_field = _ := _field_aux.(seal_eq).
 
 Definition _sub_def (resolve:genv) (t : type) (i : Z) : Offset :=
   match size_of resolve t with
-  | Some n => Some (offset_ptr (i * Z.of_N n))
+  | Some n => Some (fun p => Some (offset_ptr_ (i * Z.of_N n) p))
   | _ => None
   end.
 Definition _sub_aux : seal (@_sub_def). by eexists. Qed.
@@ -189,21 +194,24 @@ Definition _sub_eq : @_sub = _ := _sub_aux.(seal_eq).
 (* this represents static_cast *)
 Definition _super_def (resolve:genv) (sub super : globname) : Offset :=
   match parent_offset resolve sub super with
-  | Some o => Some (offset_ptr o)
+  | Some o => Some (fun p => Some (offset_ptr_ o p))
   | _ => None
   end.
 Definition _super_aux : seal (@_super_def). by eexists. Qed.
 Definition _super := _super_aux.(unseal).
 Definition _super_eq : @_super = _ := _super_aux.(seal_eq).
 
-Definition _id_def : Offset := Some (fun x => x).
+Definition _id_def : Offset := Some (fun x => Some x).
 Definition _id_aux : seal (@_id_def). by eexists. Qed.
 Definition _id := _id_aux.(unseal).
 Definition _id_eq : @_id = _ := _id_aux.(seal_eq).
 
 Definition _dot_def (o1 o2 : Offset) : Offset :=
   match o1 , o2 with
-  | Some o1 , Some o2 => Some (fun x => o2 (o1 x))
+  | Some o1 , Some o2 => Some (fun x => match o1 x with
+                                    | None => None
+                                    | Some p => o2 p
+                                    end)
   | _ , _ => None
   end.
 Definition _dot_aux : seal (@_dot_def). by eexists. Qed.
@@ -212,7 +220,10 @@ Definition _dot_eq : @_dot = _ := _dot_aux.(seal_eq).
 
 Definition _offsetL_def (o : Offset) (l : Loc) : Loc :=
   match o , l with
-  | Some o , Some l => Some (o l)
+  | Some o , Some l => match o l with
+                      | None => None
+                      | Some p => Some p
+                      end
   | _ , _ => None
   end.
 Definition _offsetL_aux : seal (@_offsetL_def). by eexists. Qed.
@@ -221,7 +232,10 @@ Definition _offsetL_eq : @_offsetL = _ := _offsetL_aux.(seal_eq).
 
 Definition _offsetR_def (o : Offset) (r : Rep) : Rep :=
   as_Rep (fun a => match o with
-                | Some o => r (o a)
+                | Some o => match o a with
+                           | None => lfalse
+                           | Some p => r p
+                           end
                 | None => lfalse
                 end).
 Definition _offsetR_aux : seal (@_offsetR_def). by eexists. Qed.
@@ -232,7 +246,7 @@ Global Instance _offsetR_persistent o r :
   Persistent r -> Persistent (_offsetR o r).
 Proof. solve_Rep_persistent _offsetR_eq. Qed.
 
-Definition addr_of_def (a : Loc) (b : val) : mpred :=
+Definition addr_of_def (a : Loc) (b : ptr) : mpred :=
   [| a = Some b |].
 Definition addr_of_aux : seal (@addr_of_def). by eexists. Qed.
 Definition addr_of := addr_of_aux.(unseal).
@@ -265,7 +279,7 @@ Proof. intros. apply monPred_at_persistent_inv. apply  _. Qed.
 
 (* this is the primitive *)
 Definition tprim_def {resolve:genv} (ty : type) q (v : val) : Rep :=
-  as_Rep (fun addr => @tptsto _ resolve ty q addr v ** [| has_type v (drop_qualifiers ty) |]).
+  as_Rep (fun addr => @tptsto _ resolve ty q (Vptr addr) v ** [| has_type v (drop_qualifiers ty) |]).
 Definition tprim_aux : seal (@tprim_def). by eexists. Qed.
 Definition tprim := tprim_aux.(unseal).
 Definition tprim_eq : @tprim = _ := tprim_aux.(seal_eq).
@@ -297,21 +311,11 @@ Arguments tany {resolve} ty q : rename.
 Global Instance tany_timeless resolve ty q : Timeless (tany (resolve:=resolve) ty q).
 Proof. solve_Rep_timeless tany_eq. Qed.
 
-
-(* (* this isn't really necessary, we should simply drop it and write *)
-(*  * predicates in this way to start with *)
-(*  *) *)
-(* Definition tinv_def {model} (Inv : val -> model -> mpred) (m : model) : Rep := *)
-(*   as_Rep (fun addr => Inv addr m). *)
-(* Definition tinv_aux : seal (@tinv_def). by eexists. Qed. *)
-(* Definition tinv := tinv_aux.(unseal). *)
-(* Definition tinv_eq : @tinv = _ := tinv_aux.(seal_eq). *)
-
 (********************* DERIVED CONCEPTS ****************************)
 
 (* these are library functions! *)
 Definition tint_def {resolve} (sz : size) q (v : Z) : Rep :=
-  as_Rep (fun addr => tptsto (resolve:=resolve) (Tint sz Signed) q addr (Vint v)).
+  as_Rep (fun addr => tptsto (resolve:=resolve) (Tint sz Signed) q (Vptr addr) (Vint v)).
 Definition tint_aux : seal (@tint_def). by eexists. Qed.
 Definition tint := tint_aux.(unseal).
 Definition tint_eq : @tint = _ := tint_aux.(seal_eq).
@@ -321,7 +325,7 @@ Global Instance tint_timeless {resolve} sz q v : Timeless (tint (resolve:=resolv
 Proof. solve_Rep_timeless tint_eq. Qed.
 
 Definition tuint_def {resolve} (sz : size) q (v : Z) : Rep :=
-  as_Rep (fun addr => tptsto (resolve:=resolve) (Tint sz Unsigned) q addr (Vint v)).
+  as_Rep (fun addr => tptsto (resolve:=resolve) (Tint sz Unsigned) q (Vptr addr) (Vint v)).
 Definition tuint_aux : seal (@tuint_def). by eexists. Qed.
 Definition tuint := tuint_aux.(unseal).
 Definition tuint_eq : @tuint = _ := tuint_aux.(seal_eq).
@@ -331,7 +335,7 @@ Global Instance tuint_timeless {resolve} sz q v : Timeless (tuint (resolve:=reso
 Proof. solve_Rep_timeless tuint_eq. Qed.
 
 Definition tptr_def {resolve} (ty : type) q (p : ptr) : Rep :=
-  as_Rep (fun addr => tptsto (resolve:=resolve) (Tpointer ty) q addr (Vptr p)).
+  as_Rep (fun addr => tptsto (resolve:=resolve) (Tpointer ty) q (Vptr addr) (Vptr p)).
 Definition tptr_aux : seal (@tptr_def). by eexists. Qed.
 Definition tptr := tptr_aux.(unseal).
 Definition tptr_eq : @tptr = _ := tptr_aux.(seal_eq).
@@ -341,7 +345,7 @@ Global Instance tptr_timeless {resolve} ty q p : Timeless (tptr (resolve:=resolv
 Proof. solve_Rep_timeless tptr_eq. Qed.
 
 Definition tref_def (ty : type) (p : val) : Rep :=
-  as_Rep (fun addr => [| addr = p |]).
+  as_Rep (fun addr => [| Vptr addr = p |]).
 Definition tref_aux : seal (@tref_def). by eexists. Qed.
 Definition tref := tref_aux.(unseal).
 Definition tref_eq : @tref = _ := tref_aux.(seal_eq).
@@ -373,7 +377,7 @@ Proof. by rewrite tprim_tchar. Qed.
 End with_resolve.
 
 Definition is_null_def : Rep :=
-  as_Rep (fun addr => [| addr = Vptr nullptr |]).
+  as_Rep (fun addr => [| addr = nullptr |]).
 Definition is_null_aux : seal (@is_null_def). by eexists. Qed.
 Definition is_null := is_null_aux.(unseal).
 Definition is_null_eq : @is_null = _ := is_null_aux.(seal_eq).
@@ -382,7 +386,7 @@ Global Instance is_null_persistent : Persistent (is_null).
 Proof. solve_Rep_persistent is_null_eq. Qed.
 
 Definition is_nonnull_def : Rep :=
-  as_Rep (fun addr => Exists p, [| p <> nullptr |] ** [| addr = Vptr p |]).
+  as_Rep (fun addr => [| addr <> nullptr |]).
 Definition is_nonnull_aux : seal (@is_nonnull_def). by eexists. Qed.
 Definition is_nonnull := is_nonnull_aux.(unseal).
 Definition is_nonnull_eq : @is_nonnull = _ := is_nonnull_aux.(seal_eq).
@@ -390,8 +394,8 @@ Definition is_nonnull_eq : @is_nonnull = _ := is_nonnull_aux.(seal_eq).
 Global Instance is_nonnull_persistent : Persistent (is_nonnull).
 Proof. solve_Rep_persistent is_nonnull_eq. Qed.
 
-Definition tlocal_at_def (r : region) (l : ident) (a : val) (v : Rep) : mpred :=
-  Exists p, [| a = Vptr p |] ** local_addr r l p ** _at (_eq a) v.
+Definition tlocal_at_def (r : region) (l : ident) (p : ptr) (v : Rep) : mpred :=
+  local_addr r l p ** _at (_eq (Vptr p)) v.
 Definition tlocal_at_aux : seal (@tlocal_at_def). by eexists. Qed.
 Definition tlocal_at := tlocal_at_aux.(unseal).
 Definition tlocal_at_eq : @tlocal_at = _ := tlocal_at_aux.(seal_eq).
