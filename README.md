@@ -17,10 +17,10 @@ cpp2v -v -names XXX_names.v -o XXX_cpp.v XXX.cpp -- ...clang options...
 
 ```sh
 clang -Xclang -load -Xclang ./libcpp2v_plugin.so -Xclang -plugin -Xclang cpp2v -Xclang -plugin-arg-cpp2v -Xclang -o -Xclang -plugin-arg-cpp2v -Xclang foo_cpp.v
--Xclang -plugin-arg-cpp2v -Xclang -names -Xclang -plugin-arg-cpp2v -Xclang foo_ames_cpp.v ...standard clang options...
+-Xclang -plugin-arg-cpp2v -Xclang -names -Xclang -plugin-arg-cpp2v -Xclang foo_names_cpp.v ...standard clang options...
 ```
 
-## Build & Dependenies
+## Build & Dependencies
 
 ### TL;DR Linux (Ubuntu)
 
@@ -38,7 +38,7 @@ git clone https://gitlab.mpi-sws.org/iris/iris.git
 (cd iris; git reset --hard b958d569; make build-dep; make -j3; make install)
 # install cpp2v
 git clone https://github.com/bedrocksystems/cpp2v.git
-(cd cpp2v; make cpp2v coq)
+(cd cpp2v; make cpp2v cpp2v_plugin coq; make install)
 ```
 
 ### TL;DR OSX
