@@ -127,10 +127,6 @@ Definition _eq_aux : seal (@_eq_def). by eexists. Qed.
 Definition _eq := _eq_aux.(unseal).
 Definition _eq_eq : @_eq = _ := _eq_aux.(seal_eq).
 
-(* this is essentially a hack *)
-Definition local_addr_v (r : region) (x : ident) (v : val) : mpred :=
-  Exists p, [| v = Vptr p |] ** local_addr r x p.
-
 (* val -> ptr *)
 Definition this_addr (r : region) (p : ptr) : mpred :=
   local_addr r "#this" p.
@@ -289,7 +285,7 @@ Global Instance tprim_timeless resolve ty q p : Timeless (tprim (resolve:=resolv
 Proof. solve_Rep_timeless tprim_eq. Qed.
 
 Definition uninit_def {resolve:genv} (ty : type) q : Rep :=
-  as_Rep (fun addr => Exists bits, (tprim (resolve:=resolve) ty q bits) addr ).
+  as_Rep (fun addr => Exists v : val, (tprim (resolve:=resolve) ty q v) addr ).
 (* todo(gmm): this isn't exactly correct, I need a Vundef *)
 Definition uninit_aux : seal (@uninit_def). by eexists. Qed.
 Definition uninit := uninit_aux.(unseal).
@@ -433,7 +429,7 @@ Arguments addr_of : simpl never.
 Notation "a &~ b" := (addr_of a b) (at level 30, no associativity).
 Coercion pureR : mpred >-> Rep.
 
-Global Opaque local_addr_v this_addr result_addr.
+Global Opaque this_addr result_addr.
 
 Arguments tany {Σ resolve} ty q : rename.
 Arguments uninit {Σ resolve} ty q : rename.

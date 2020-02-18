@@ -95,7 +95,7 @@ Module Type Expr.
 
     (* variables are lvalues *)
     Axiom wp_lval_lvar : forall ty x Q,
-        Exists a, (local_addr_v ρ x a ** ltrue) //\\ Q a empSP
+        Exists a, (local_addr ρ x a ** ltrue) //\\ Q (Vptr a) empSP
         |-- wp_lval (Evar (Lname x) ty) Q.
 
     (* what about the type? if it exists *)
@@ -281,9 +281,11 @@ Module Type Expr.
     (** short-circuting operators *)
     Axiom wp_prval_seqand : forall ty e1 e2 Q,
         wp_prval e1 (fun v1 free1 => (* todo: rval? *)
-           if is_true v1
+           Exists c : bool, [| is_true v1 = Some c |] **
+           if c
            then wp_prval e2 (fun v2 free2 => (* todo: rval? *)
-                                     if is_true v2
+                                     Exists c : bool, [| is_true v2 = Some c |] **
+                                     if c
                                      then Q (Vint 1) (free1 ** free2)
                                      else Q (Vint 0) (free1 ** free2))
            else Q (Vint 0) free1)
@@ -291,10 +293,12 @@ Module Type Expr.
 
     Axiom wp_prval_seqor : forall ty e1 e2 Q,
         wp_prval e1 (fun v1 free1 => (* todo: rval? *)
-           if is_true v1
+           Exists c : bool, [| is_true v1 = Some c |] **
+           if c
            then Q (Vint 1) free1
            else wp_prval e2 (fun v2 free2 => (* todo: rval? *)
-                                     if is_true v2
+                                     Exists c : bool, [| is_true v2 = Some c |] **
+                                     if c
                                      then Q (Vint 1) (free1 ** free2)
                                      else Q (Vint 0) (free1 ** free2)))
         |-- wp_prval (Eseqor e1 e2 ty) Q.
@@ -391,7 +395,8 @@ Module Type Expr.
     (** the ternary operator `_ ? _ : _` *)
     Axiom wp_condition : forall ty m tst th el Q,
         wp_prval tst (fun v1 free => (* todo: rval? *)
-           if is_true v1
+           Exists c : bool, [| is_true v1 = Some c |] **
+           if c
            then wpe m th (fun v free' => free ** Q v free')
            else wpe m el (fun v free' => free ** Q v free'))
         |-- wpe m (Eif tst th el ty) Q.

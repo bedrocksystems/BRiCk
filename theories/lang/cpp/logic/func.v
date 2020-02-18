@@ -110,8 +110,6 @@ Module Type Func.
              (PQ : WithPrePost@{X Z Y} Σ)
   : function_spec Σ :=
     TSFunction ret targs (fun _ => PQ).
-  Set Printing Universes.
-
 
   Local Notation uninit := (@uninit Σ resolve) (only parsing).
   Local Notation tany := (@tany Σ resolve) (only parsing).
@@ -188,6 +186,9 @@ Module Type Func.
              (PQ : val -> WithPrePost@{X Z Y} Σ)
   : function_spec Σ := TSMethod class qual ret targs (fun _ => PQ).
 
+  Local Definition local_addr_v (r : region) (x : ident) (v : val) : mpred Σ :=
+    Exists p, [| v = Vptr p |] ** local_addr r x p.
+
   Fixpoint bind_type ρ (t : type) (x : ident) (v : val) : mpred Σ :=
     match t with
     | Tqualified _ t => bind_type ρ t x v
@@ -250,15 +251,16 @@ Module Type Func.
       | Some body =>
           Forall ρ : region,
           match args with
-          | Vptr this_val :: rest_vals =>
+          | this_val :: rest_vals =>
+            Forall thisp, [| this_val = Vptr thisp |] -*
             (* this is what is created from the parameters *)
             let binds :=
-                this_addr ρ this_val **
+                this_addr ρ thisp **
                 sepSPs (zip (fun '(x, t) 'v => bind_type ρ t x v) meth.(m_params) rest_vals)
             in
             (* this is what is freed on return *)
             let frees :=
-                this_addr ρ this_val **
+                this_addr ρ thisp **
                 sepSPs (zip (fun '(x, t) 'v => free_type ρ t x v) (rev meth.(m_params))
                        (rev rest_vals))
             in
@@ -334,15 +336,16 @@ Module Type Func.
           let vals := List.map snd args in
           let PQ := spec.(fs_spec) ti vals in
           match vals with
-          | Vptr this_val :: rest_vals =>
+          | this_val :: rest_vals =>
+            Forall thisp, [| this_val = Vptr thisp |] -*
             (* this is what is created from the parameters *)
             let binds :=
-                this_addr ρ this_val **
+                this_addr ρ thisp **
                 sepSPs (zip (fun '(x, t) 'v => bind_type ρ t x v) meth.(m_params) rest_vals)
             in
             (* this is what is freed on return *)
             let frees :=
-                this_addr ρ this_val **
+                this_addr ρ thisp **
                 sepSPs (zip (fun '(x, t) 'v => free_type ρ t x v) (rev meth.(m_params))
                        (rev rest_vals))
             in
@@ -400,20 +403,21 @@ Module Type Func.
           let vals := List.map snd args in
           let PQ := spec.(fs_spec) ti vals in
           match vals with
-          | Vptr this_val :: rest_vals =>
+          | this_val :: rest_vals =>
+            Forall thisp, [| this_val = Vptr thisp |] -*
             (* this is what is created from the parameters *)
             let binds :=
-                this_addr ρ this_val **
+                this_addr ρ thisp **
                 sepSPs (zip (fun '(x, t) 'v => bind_type ρ t x v) ctor.(c_params) rest_vals)
             in
             (* this is what is freed on return *)
             let frees :=
-                this_addr ρ this_val **
+                this_addr ρ thisp **
                 sepSPs (zip (fun '(x, t) 'v => free_type ρ t x v) (rev ctor.(c_params)) (rev rest_vals))
             in
             Forall Q : mpred Σ,
             (binds ** PQ (fun x => Q)) -*
-            (wp_ctor ctor.(c_class) ti ρ (Vptr this_val) init body
+            (wp_ctor ctor.(c_class) ti ρ (Vptr thisp) init body
                      (Kfree frees (void_return (|>Q))))
           | _ => lfalse
           end)
@@ -454,14 +458,15 @@ Module Type Func.
           let vals := List.map snd args in
           let PQ := spec.(fs_spec) ti vals in
           match vals with
-          | Vptr this_val :: rest_vals =>
+          | this_val :: rest_vals =>
+            Forall thisp, [| this_val = Vptr thisp |] -*
             (* this is what is created from the parameters *)
-            let binds := this_addr ρ this_val in
+            let binds := this_addr ρ thisp in
             (* this is what is freed on return *)
-            let frees := this_addr ρ this_val in
+            let frees := this_addr ρ thisp in
             Forall Q : mpred Σ,
               (binds ** PQ (fun x => Q)) -*
-              (wp_dtor dtor.(d_class) ti ρ (Vptr this_val) body deinit frees (|>Q))
+              (wp_dtor dtor.(d_class) ti ρ (Vptr thisp) body deinit frees (|>Q))
           | _ => lfalse
           end)
       end.
