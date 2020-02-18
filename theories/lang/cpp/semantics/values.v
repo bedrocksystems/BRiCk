@@ -23,7 +23,7 @@ Parameter nullptr : ptr.
 
 
 (** values *)
-Variant val : Type :=
+Variant val : Set :=
 | Vint (_ : Z)
 | Vptr (_ : ptr)
 | Vundef
