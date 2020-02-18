@@ -340,8 +340,8 @@ Arguments tptr {resolve} ty q p : rename.
 Global Instance tptr_timeless {resolve} ty q p : Timeless (tptr (resolve:=resolve) ty q p).
 Proof. solve_Rep_timeless tptr_eq. Qed.
 
-Definition tref_def (ty : type) (p : val) : Rep :=
-  as_Rep (fun addr => [| Vptr addr = p |]).
+Definition tref_def (ty : type) (p : ptr) : Rep :=
+  as_Rep (fun addr => [| addr = p |]).
 Definition tref_aux : seal (@tref_def). by eexists. Qed.
 Definition tref := tref_aux.(unseal).
 Definition tref_eq : @tref = _ := tref_aux.(seal_eq).
