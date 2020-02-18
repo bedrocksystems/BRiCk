@@ -575,8 +575,8 @@ public:
         print.begin_list();
         for (auto i : decl->enumerators()) {
             print.output() << fmt::line << "(\"" << i->getNameAsString()
-                           << "\"," << fmt::nbsp
-                           << i->getInitVal().getExtValue() << "%Z)";
+                           << "\"," << fmt::nbsp << "("
+                           << i->getInitVal().getExtValue() << ")%Z)";
             print.cons();
         }
         print.end_list();
