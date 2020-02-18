@@ -5,7 +5,7 @@ Specifications are represented as pre- and post-conditions. They can be written 
 + `\with (x : T) ... (y : U)` represents universally quantified variables that scope
   over *both* the pre- and the post-condition.
 + `\let x := e` represents a standard `let` expression assigning the value of
-  of the *Gallina* expression `e` to the logical variable `x`.
+  of the *Gallina* expression `e` to the /pattern/ `x`.
 + `\prepost P` adds the separation logic assertion `P` to the pre- *and* the
   post-condition
 + `\arg nm e` adds to the pre-condition that the value of the "current" argument
@@ -32,9 +32,15 @@ Specifications are represented as pre- and post-conditions. They can be written 
 Note that you can have any number of `\pre`, but `\post` must be the last command, i.e.
 you *can not* write `\post P \pre Q`.
 
+### Advanced constructions
+
++ `\withT ts <- tele` represents binding the values of a telescope universally.
+  This is *not* commonly used, but can be useful for higher-order functions.
++ `\exact wpp` includes exactly the pre/post condition `wpp`.
+
 ## Simple Examples
 
-A function to return 0.
+A function to return 0. Note it is legal, but not idiomatic, to drop `\pre empSP`.
 
 ```coq
 \pre empSP
@@ -45,9 +51,8 @@ A function to return its parameter plus 1 (note the pre-condition is necessary
 to ensure that the addition does not overflow).
 
 ```coq
-\with (n : Z)
-\arg "n" n
-\pre [| has_type (n+1) (Tint W32 Signed) |]
+\arg{n} "n" (Vint n)
+\require has_type (n+1) (Tint W32 Signed)
 \post{}[Vint (n + 1)] empSP
 ```
 
@@ -55,9 +60,20 @@ A function to read the (integer) value stored at a pointer (note that this
 function only requires fractional ownership of the underlying pointer).
 
 ```coq
-\with (p : val) (v : Z) (q : Qp)
-\arg "p" p
+\with (v : Z) (q : Qp)
+\arg{p} "p" p
 \prepost _at (_eq p) (tint W32 q v)
 \pre empSP
 \post{}[Vint v] empSP
+```
+
+It is idiomatic to place each pure fact in its own `\require` clause and to quantify variables on `\arg` when they are essentially the values, e.g.
+
+```coq
+\arg{n} "n" (Vint n)
+\arg{m} "m" (Vint m)
+\require n < m
+\require Even n
+\pre empSP
+\post{}[Vint n] empSP
 ```
