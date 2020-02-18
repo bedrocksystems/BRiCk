@@ -197,13 +197,13 @@ public:
 
         if (stmt->getRHS()) {
             print.ctor("Range", false)
-                << stmt->getLHS()->EvaluateKnownConstInt(ctxt) << "%Z"
-                << fmt::nbsp << stmt->getRHS()->EvaluateKnownConstInt(ctxt)
-                << "%Z";
+                << "(" << stmt->getLHS()->EvaluateKnownConstInt(ctxt) << ")%Z"
+                << fmt::nbsp
+                << "(" << stmt->getRHS()->EvaluateKnownConstInt(ctxt) << ")%Z";
             print.end_ctor();
         } else {
             print.ctor("Exact", false)
-                << stmt->getLHS()->EvaluateKnownConstInt(ctxt) << "%Z";
+                << "(" << stmt->getLHS()->EvaluateKnownConstInt(ctxt) << ")%Z";
             print.end_ctor();
         }
 
