@@ -118,14 +118,24 @@ Definition LocEq (l1 l2 : Loc) : Prop :=
   l1 = l2.
 
 (* absolute locations *)
+Definition _eqp_def (p : ptr) : Loc :=
+  Some p.
+Definition _eqp_aux : seal (@_eqp_def). by eexists. Qed.
+Definition _eqp := _eqp_aux.(unseal).
+Definition _eqp_eq : @_eqp = _ := _eqp_aux.(seal_eq).
+
+
 Definition _eq_def (a : val) : Loc :=
   match a with
-  | Vptr p => Some p
+  | Vptr p => _eqp p
   | _ => None
   end.
 Definition _eq_aux : seal (@_eq_def). by eexists. Qed.
 Definition _eq := _eq_aux.(unseal).
 Definition _eq_eq : @_eq = _ := _eq_aux.(seal_eq).
+
+Lemma _eq_eqp : forall p, _eq (Vptr p) = _eqp p.
+Proof. intros. rewrite _eq_eq. reflexivity. Qed.
 
 (* val -> ptr *)
 Definition this_addr (r : region) (p : ptr) : mpred :=
@@ -145,18 +155,6 @@ Definition result_addr (r : region) (p : ptr) : mpred :=
  *   essentially region := list (list (string * ptr)). this essentially makes
  *   _local persistent.
  *)
-
-(* Definition _this_def (r : region) : Loc := *)
-(*   _local r "#this". *)
-(* Definition _this_aux : seal (@_this_def). by eexists. Qed. *)
-(* Definition _this := _this_aux.(unseal). *)
-(* Definition _this_eq : @_this = _ := _this_aux.(seal_eq). *)
-
-(* Definition _result_def (r : region) : Loc := *)
-(*   _local r "#result". *)
-(* Definition _result_aux : seal (@_result_def). by eexists. Qed. *)
-(* Definition _result := _result_aux.(unseal). *)
-(* Definition _result_eq : @_result = _ := _result_aux.(seal_eq). *)
 
 Definition _global_def (resolve : genv) (x : obj_name) : Loc :=
   match glob_addr resolve x with
@@ -265,7 +263,7 @@ Proof. rewrite _at_eq. apply _. Qed.
 (** Values
  * These `Rep` predicates wrap `ptsto` facts
  *)
-(* Make Opauqe *)
+(* todo(gmm): make opaque *)
 Definition pureR (P : mpred) : Rep :=
   as_Rep (fun _ => P).
 
@@ -295,7 +293,7 @@ Arguments uninit {resolve} ty q : rename.
 Global Instance uninit_timeless resolve ty q : Timeless (uninit (resolve:=resolve) ty q).
 Proof. solve_Rep_timeless uninit_eq. Qed.
 
-(* this should mean "anything, including uninitialized" *)
+(* this means "anything, including uninitialized" *)
 Definition tany_def {resolve} (ty : type) q : Rep :=
   as_Rep (fun addr => (Exists v, (tprim (resolve:=resolve) ty q v) addr) \\//
        (uninit (resolve:=resolve) ty q) addr).
@@ -391,7 +389,7 @@ Global Instance is_nonnull_persistent : Persistent (is_nonnull).
 Proof. solve_Rep_persistent is_nonnull_eq. Qed.
 
 Definition tlocal_at_def (r : region) (l : ident) (p : ptr) (v : Rep) : mpred :=
-  local_addr r l p ** _at (_eq (Vptr p)) v.
+  local_addr r l p ** _at (_eqp p) v.
 Definition tlocal_at_aux : seal (@tlocal_at_def). by eexists. Qed.
 Definition tlocal_at := tlocal_at_aux.(unseal).
 Definition tlocal_at_eq : @tlocal_at = _ := tlocal_at_aux.(seal_eq).

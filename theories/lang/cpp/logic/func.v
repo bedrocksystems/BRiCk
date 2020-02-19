@@ -236,7 +236,7 @@ Module Type Func.
           wp (resolve:=resolve) ti ρ body (Kfree frees (void_return (|> Q Vvoid)))
         else if is_aggregate ret then
           Forall ra,
-          (binds ** result_addr ρ ra ** _at (_eq (Vptr ra)) (uninit (erase_qualifiers ret) 1)) -*
+          (binds ** result_addr ρ ra ** _at (_eqp ra) (uninit (erase_qualifiers ret) 1)) -*
           wp (resolve:=resolve) ti ρ body (Kfree (frees ** result_addr ρ ra) (val_return (fun x => |> Q x)))
         else
           binds -*
@@ -271,7 +271,7 @@ Module Type Func.
               binds -* (wp (resolve:=resolve) ti ρ body (Kfree frees (void_return (|>Q Vvoid))))
             else if is_aggregate ret_ty then
               Forall ra,
-              (binds ** result_addr ρ ra ** _at (_eq (Vptr ra)) (uninit (erase_qualifiers ret_ty) 1)) -* (wp (resolve:=resolve) ti ρ body (Kfree (frees ** result_addr ρ ra) (val_return (fun x => |>Q x))))
+              (binds ** result_addr ρ ra ** _at (_eqp ra) (uninit (erase_qualifiers ret_ty) 1)) -* (wp (resolve:=resolve) ti ρ body (Kfree (frees ** result_addr ρ ra) (val_return (fun x => |>Q x))))
             else
               binds -* (wp (resolve:=resolve) ti ρ body (Kfree frees (val_return (fun x => |>Q x))))
           | _ => lfalse
@@ -310,7 +310,7 @@ Module Type Func.
         else if is_aggregate ret then
           Forall Q : val -> mpred Σ,
           Forall ra,
-          (binds ** result_addr ρ ra ** _at (_eq (Vptr ra)) (uninit (erase_qualifiers ret) 1) ** PQ Q) -*
+          (binds ** result_addr ρ ra ** _at (_eqp ra) (uninit (erase_qualifiers ret) 1) ** PQ Q) -*
           wp (resolve:=resolve) ti ρ body (Kfree (frees ** result_addr ρ ra) (val_return (fun x => |> Q x)))
         else
           Forall Q : val -> mpred Σ,
@@ -357,7 +357,7 @@ Module Type Func.
             else if is_aggregate ret_ty then
               Forall Q : val -> mpred Σ,
               Forall ra,
-              (binds ** result_addr ρ ra ** _at (_eq (Vptr ra)) (uninit (erase_qualifiers ret_ty) 1) ** PQ Q) -* (wp (resolve:=resolve) ti ρ body (Kfree (frees ** result_addr ρ ra) (val_return (fun x => |>Q x))))
+              (binds ** result_addr ρ ra ** _at (_eqp ra) (uninit (erase_qualifiers ret_ty) 1) ** PQ Q) -* (wp (resolve:=resolve) ti ρ body (Kfree (frees ** result_addr ρ ra) (val_return (fun x => |>Q x))))
             else
               Forall Q : val -> mpred Σ,
               (binds ** PQ Q) -* (wp (resolve:=resolve) ti ρ body (Kfree frees (val_return (fun x => |>Q x))))
