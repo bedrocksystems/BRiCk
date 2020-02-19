@@ -1,4 +1,4 @@
-h[![pipeline status](https://gitlab.com/bedrocksystems/cpp2v/badges/master/pipeline.svg)](https://gitlab.com/bedrocksystems/cpp2v/commits/master)
+[![pipeline status](https://gitlab.com/bedrocksystems/cpp2v/badges/master/pipeline.svg)](https://gitlab.com/bedrocksystems/cpp2v/commits/master)
 
 
 # cpp2v
@@ -151,6 +151,6 @@ More examples will be added as the feature set evolves.
 ## Repository Layout
 
 - The implementation of the `cpp2v` tool is in `src` and `include`.
-- The definition of the accompanying Coq data types is in `theories/Syntax` directory. The notation in `theories/Parser.v` is used to setup the environment for the generated code.
-- The axiomatic semantics of the abstract syntax tree is defined in the `theories/Sem` directory.
-- Some *basic* automation is included in `theories/Auto/`
+- The definition of the accompanying Coq data types is in `theories/lang/cpp/syntax` directory. The notation in `theories/lang/cpp/parser.v` is used to setup the environment for the generated code.
+- The axiomatic semantics of the abstract syntax tree is defined in the `theories/lang/cpp/logic` directory.
+- Some *basic* automation is included in `theories/auto/`
