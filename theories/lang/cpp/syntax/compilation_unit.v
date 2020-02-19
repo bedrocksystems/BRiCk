@@ -377,7 +377,7 @@ Variant GlobDecl : Set :=
 | Gunion    (_ : Union)
 | Gstruct   (_ : Struct)
 | Genum     (_ : type)
-| Gconstant (_ : type) (_ : Expr)
+| Gconstant (_ : type) (_ : option Expr)
 | Gtypedef  (_ : type)
 | Gtypedec  (* this is a type declaration, but not a definition *)
 .
@@ -388,6 +388,7 @@ Proof.
   generalize type_eq_dec.
   decide equality.
   eapply Decidable_dec; eauto with typeclass_instances.
+  eapply Decidable_dec; eauto with typeclass_instances.  
   eapply Decidable_dec; eauto with typeclass_instances.
 Defined.
 
@@ -410,9 +411,18 @@ Definition GlobDecl_merge (a b : GlobDecl) : option GlobDecl :=
   | Genum e , Genum e' =>
     require (decide (e = e')) ;;
     Some a
-  | Gconstant t e , Gconstant t' e' =>
+  | Gconstant t (Some e) , Gconstant t' (Some e') =>
     require (decide (t = t')) ;;
     require (decide (e = e')) ;;
+    Some a
+  | Gconstant t (Some e) , Gconstant t' None =>
+    require (decide (t = t')) ;;
+    Some a
+  | Gconstant t None , Gconstant t' (Some e') =>
+    require (decide (t = t')) ;;
+    Some b
+  | Gconstant t None , Gconstant t' None =>
+    require (decide (t = t')) ;;
     Some a
   | Gtypedef t , Gtypedef t' =>
     require (decide (t = t')) ;;
@@ -524,12 +534,15 @@ Definition Denum (name : globname) (t : option type) (branches : list (ident * B
        | Some t =>  (name, Genum t) :: nil
        | None => nil
        end ++
-       List.map (fun '(nm, oe) => (nm, Gconstant ty (Eint oe ty))) branches |}.
+       List.map (fun '(nm, oe) => (nm, Gconstant ty (Some (Eint oe ty)))) branches |}.
   (* ^ enumerations (the initializers need to be constant expressions) *)
 
 Definition Dconstant    (name : globname) (t : type) (e : Expr) : compilation_unit :=
   {| symbols := nil
-   ; globals := (name, Gconstant t e) :: nil |}.
+   ; globals := (name, Gconstant t (Some e)) :: nil |}.
+Definition Dconstant_undef  (name : globname) (t : type) : compilation_unit :=
+  {| symbols := nil
+   ; globals := (name, Gconstant t None) :: nil |}.
 Definition Dtypedef     (name : globname) (t : type) : compilation_unit :=
   {| symbols := nil
    ; globals := (name, Gtypedef t) :: nil |}.
