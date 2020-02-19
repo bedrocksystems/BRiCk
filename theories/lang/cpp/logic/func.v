@@ -123,7 +123,7 @@ Module Type Func.
   : function_spec Σ :=
     let map_pre this '(args, P) :=
         (this :: args,
-         _at (_eq this) (uninit (Tref class) 1) ** P) in
+         _at (_eqv this) (uninit (Tref class) 1) ** P) in
     let this_type := Qmut (Tref class) in
     TSFunction (Qmut Tvoid) (Qconst (Tpointer this_type) :: targs)
                (fun ti =>
@@ -145,7 +145,7 @@ Module Type Func.
     let map_post this '({| we_ex := pwiths ; we_post := Q|}) :=
         {| we_ex := pwiths
          ; we_post := tele_map (fun '(result, Q) =>
-                                  (result, _at (_eq this) (tany (Tref class) 1) ** Q)) Q |}
+                                  (result, _at (_eqv this) (tany (Tref class) 1) ** Q)) Q |}
     in
     let this_type := Qmut (Tref class) in
     TSFunction@{X Z Y} (Qmut Tvoid) (Qconst (Tpointer this_type) :: nil)

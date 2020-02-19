@@ -125,17 +125,17 @@ Definition _eqp := _eqp_aux.(unseal).
 Definition _eqp_eq : @_eqp = _ := _eqp_aux.(seal_eq).
 
 
-Definition _eq_def (a : val) : Loc :=
+Definition _eqv_def (a : val) : Loc :=
   match a with
   | Vptr p => _eqp p
   | _ => None
   end.
-Definition _eq_aux : seal (@_eq_def). by eexists. Qed.
-Definition _eq := _eq_aux.(unseal).
-Definition _eq_eq : @_eq = _ := _eq_aux.(seal_eq).
+Definition _eqv_aux : seal (@_eqv_def). by eexists. Qed.
+Definition _eqv := _eqv_aux.(unseal).
+Definition _eqv_eq : @_eqv = _ := _eqv_aux.(seal_eq).
 
-Lemma _eq_eqp : forall p, _eq (Vptr p) = _eqp p.
-Proof. intros. rewrite _eq_eq. reflexivity. Qed.
+Lemma _eqv_eqp : forall p, _eqv (Vptr p) = _eqp p.
+Proof. intros. rewrite _eqv_eq. reflexivity. Qed.
 
 (* val -> ptr *)
 Definition this_addr (r : region) (p : ptr) : mpred :=

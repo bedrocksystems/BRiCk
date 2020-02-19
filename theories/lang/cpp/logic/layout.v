@@ -24,8 +24,8 @@ Section with_Σ.
 Axiom uninit_class_fwd
   : forall cls base st q,
     glob_def resolve cls = Some (Gstruct st) ->
-    _at (Σ:=Σ) (_eq base) (uninit (Tref cls) q)
-    |-- _at (_eq base)
+    _at (Σ:=Σ) (_eqv base) (uninit (Tref cls) q)
+    |-- _at (_eqv base)
             (sepSPs (List.map (fun '(gn,_) =>
                                  _offsetR (_super cls gn)
                                           (uninit (Tref gn) q)) st.(s_bases) ++
@@ -39,13 +39,13 @@ Axiom uninit_class_fwd
 Axiom tany_class_bwd
 : forall cls base st q,
     glob_def resolve cls = Some (Gstruct st) ->
-    _at (_eq base)
+    _at (_eqv base)
         (sepSPs (List.map (fun '(gn,_) =>
                              _offsetR (_super cls gn) (tany (Tref gn) q)) st.(s_bases) ++
                  List.map (fun '(n,t,_) =>
                              _offsetR (_field {| f_name := n ; f_type := cls |})
                                       (tany (erase_qualifiers t) q)) st.(s_fields)))
-    |-- _at (Σ:=Σ) (_eq base) (tany (Tref cls) q).
+    |-- _at (Σ:=Σ) (_eqv base) (tany (Tref cls) q).
 
 Axiom uninit_array : forall t n q,
     uninit (Tarray t n) q

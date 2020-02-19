@@ -29,7 +29,7 @@ Section with_resolve.
   Axiom wpd_deinit : forall resolve cls this path dn Q,
       Exists dp, Exists fp,
     (@_global resolve dn &~ dp **
-     _offsetL (offset_for resolve cls path) (_eq this) &~ fp ** ltrue) //\\
+     _offsetL (offset_for resolve cls path) (_eqv this) &~ fp ** ltrue) //\\
      |> fspec (Vptr dp) ti (this :: nil) (fun _ => Q)
     |-- @wpd Σ resolve ti ρ cls this (path, dn) Q.
 
