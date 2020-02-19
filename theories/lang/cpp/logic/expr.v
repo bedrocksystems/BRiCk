@@ -67,7 +67,7 @@ Module Type Expr.
 
     (* constants are rvalues *)
     Axiom wp_prval_constant : forall ty cnst e Q,
-      glob_def cnst = Some (Gconstant ty e) ->
+      glob_def cnst = Some (Gconstant ty (Some e)) ->
       wp_prval e Q
       |-- wp_prval (Econst_ref (Gname cnst) ty) Q.
 
