@@ -125,17 +125,14 @@ Definition _eqp := _eqp_aux.(unseal).
 Definition _eqp_eq : @_eqp = _ := _eqp_aux.(seal_eq).
 
 
-Definition _eqv_def (a : val) : Loc :=
+Definition _eqv (a : val) : Loc :=
   match a with
   | Vptr p => _eqp p
   | _ => None
   end.
-Definition _eqv_aux : seal (@_eqv_def). by eexists. Qed.
-Definition _eqv := _eqv_aux.(unseal).
-Definition _eqv_eq : @_eqv = _ := _eqv_aux.(seal_eq).
 
 Lemma _eqv_eqp : forall p, _eqv (Vptr p) = _eqp p.
-Proof. intros. rewrite _eqv_eq. reflexivity. Qed.
+Proof. reflexivity. Qed.
 
 (* val -> ptr *)
 Definition this_addr (r : region) (p : ptr) : mpred :=
@@ -224,6 +221,8 @@ Definition _offsetL_aux : seal (@_offsetL_def). by eexists. Qed.
 Definition _offsetL := _offsetL_aux.(unseal).
 Definition _offsetL_eq : @_offsetL = _ := _offsetL_aux.(seal_eq).
 
+
+
 Definition _offsetR_def (o : Offset) (r : Rep) : Rep :=
   as_Rep (fun a => match o with
                 | Some o => match o a with
@@ -239,6 +238,24 @@ Definition _offsetR_eq : @_offsetR = _ := _offsetR_aux.(seal_eq).
 Global Instance _offsetR_persistent o r :
   Persistent r -> Persistent (_offsetR o r).
 Proof. solve_Rep_persistent _offsetR_eq. Qed.
+Global Instance Proper__offsetR_entails
+  : Proper (eq ==> lentails ==> lentails) _offsetR.
+Proof.
+  rewrite _offsetR_eq. unfold _offsetR_def.
+  constructor. simpl. intros.
+  subst. destruct y; auto. destruct (o i); auto. apply H0.
+Qed.
+
+Global Instance Proper__offsetR_equiv
+  : Proper (eq ==> lequiv ==> lequiv) _offsetR.
+Proof.
+  rewrite _offsetR_eq.
+  intros ?? H1 ?? H2.
+  constructor. simpl.
+  intros. subst. split'; destruct y; try rewrite H2; eauto.
+  all: destruct (o i); eauto; rewrite H2; reflexivity.
+Qed.
+
 
 Definition addr_of_def (a : Loc) (b : ptr) : mpred :=
   [| a = Some b |].
@@ -259,6 +276,24 @@ Definition _at_eq : @_at = _ := _at_aux.(seal_eq).
 
 Global Instance _at_persistent : Persistent P -> Persistent (_at base P).
 Proof. rewrite _at_eq. apply _. Qed.
+
+Global Instance Proper__at_entails
+  : Proper (eq ==> lentails ==> lentails) _at.
+Proof.
+  rewrite _at_eq. unfold _at_def. red. red. red.
+  intros. simpl in *. subst. setoid_rewrite H0.
+  reflexivity.
+Qed.
+
+Global Instance Proper__at_lequiv
+  : Proper (eq ==> lequiv ==> lequiv) _at.
+Proof.
+  intros x y H1 ?? H2.
+  rewrite _at_eq /_at_def. subst.
+  setoid_rewrite H2.
+  reflexivity.
+Qed.
+
 
 (** Values
  * These `Rep` predicates wrap `ptsto` facts
@@ -281,6 +316,21 @@ Arguments tprim {resolve} ty q v : rename.
 
 Global Instance tprim_timeless resolve ty q p : Timeless (tprim (resolve:=resolve) ty q p).
 Proof. solve_Rep_timeless tprim_eq. Qed.
+
+Global Instance Proper_tprim_entails
+: Proper (genv_leq ==> (=) ==> (=) ==> (=) ==> lentails) (@tprim).
+Proof.
+  do 5 red; intros; subst.
+  rewrite tprim_eq /tprim_def. constructor; simpl.
+  intros. setoid_rewrite H. reflexivity.
+Qed.
+Global Instance Proper_tprim_equiv
+: Proper (genv_eq ==> (=) ==> (=) ==> (=) ==> lequiv) (@tprim).
+Proof.
+  do 5 red; intros; subst.
+  rewrite tprim_eq /tprim_def. constructor; simpl.
+  intros. setoid_rewrite H. reflexivity.
+Qed.
 
 Definition uninit_def {resolve:genv} (ty : type) q : Rep :=
   as_Rep (fun addr => Exists v : val, (tprim (resolve:=resolve) ty q v) addr ).
