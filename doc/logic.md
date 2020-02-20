@@ -11,10 +11,14 @@
 
 
 # Connectives: Sem/PLogic.v
-- `_eq : val -> Loc`
+- `_eqv : val -> Loc`
   + A location predicate that asserts equivalence over the argument and the value given to the predicate
+- `_eqp : ptr -> Loc`
+  + A location predicate that asserts equivalence over the argument and the poiter given to the predicate
 - `_at : Loc -> Rep -> mpred`
   + The `Loc` is valid and the `Rep` holds on it.
+  + Note the the "validness" of a `Loc` means that it is a pointer, not
+    that it is not null.
 
 # Ownerships: Sem/PLogic.v
 - `tint : size -> Qp -> Z -> Rep`
