@@ -144,6 +144,8 @@ public:
             CASE(Shr, "Bshr")
             CASE(Sub, "Bsub")
             CASE(Xor, "Bxor")
+            CASE(PtrMemD, "Bdotp")
+            CASE(PtrMemI, "Bdotip")
 #undef CASE
         default:
             logging::unsupported() << "defaulting binary operator\n";
@@ -469,18 +471,47 @@ public:
     void VisitCXXMemberCallExpr(const CXXMemberCallExpr* expr,
                                 CoqPrinter& print, ClangPrinter& cprint,
                                 const ASTContext&) {
-        auto method = expr->getMethodDecl();
         print.ctor("Emember_call");
-        print.output() << (method->isVirtual() ? "true" : "false") << fmt::nbsp;
-        cprint.printGlobalName(method, print);
-        print.output() << fmt::nbsp;
-        auto me = dyn_cast<MemberExpr>(expr->getCallee());
-        if (me->isArrow()) {
-            print.ctor("Ederef");
-            cprint.printExpr(expr->getImplicitObjectArgument(), print);
-            done(expr->getImplicitObjectArgument(), print, cprint);
+        auto method = expr->getMethodDecl();
+        if (method) {
+            print.ctor("inl") << fmt::lparen;
+            cprint.printGlobalName(method, print);
+            print.output() << "," << fmt::nbsp;
+            print.output() << (method->isVirtual() ? "true" : "false") << fmt::rparen;
+            print.end_ctor();
+
+            print.output() << fmt::nbsp;
+            auto me = dyn_cast<MemberExpr>(expr->getCallee());
+            assert(me != nullptr && "member call with MethodDecl must be a MemberExpr");
+            if (me->isArrow()) {
+                print.ctor("Ederef");
+                cprint.printExpr(expr->getImplicitObjectArgument(), print);
+                done(expr->getImplicitObjectArgument(), print, cprint);
+            } else {
+                cprint.printExpr(expr->getImplicitObjectArgument(), print);
+            }
         } else {
-            cprint.printExpr(expr->getImplicitObjectArgument(), print);
+            auto me = dyn_cast<ParenExpr>(expr->getCallee());
+            assert(me != nullptr && "expecting a paren");
+            auto bo = dyn_cast<BinaryOperator>(me->getSubExpr());
+            assert(bo != nullptr && "expecting a binary operator");
+            logging::unsupported() << "member pointers are currently not supported in the logic.\n";
+            print.ctor("inr");
+            cprint.printExpr(bo->getRHS(), print);
+            print.end_ctor() << fmt::nbsp;
+
+            switch (bo->getOpcode()) {
+                case BinaryOperatorKind::BO_PtrMemI:
+                    print.ctor("Ederef");
+                    cprint.printExpr(expr->getImplicitObjectArgument(), print);
+                    done(expr->getImplicitObjectArgument(), print, cprint);
+                    break;
+                case BinaryOperatorKind::BO_PtrMemD:
+                    cprint.printExpr(expr->getImplicitObjectArgument(), print);
+                    break;
+                default:
+                    assert(false && "pointer to member function should be a pointer");
+            }
         }
 
         print.output() << fmt::nbsp << fmt::lparen;
@@ -521,6 +552,7 @@ public:
 
     void VisitParenExpr(const ParenExpr* e, CoqPrinter& print,
                         ClangPrinter& cprint, const ASTContext& ctxt) {
+        logging::fatal() << "paren\n";
         this->Visit(e->getSubExpr(), print, cprint, ctxt);
     }
 

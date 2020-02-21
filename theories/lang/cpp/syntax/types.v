@@ -75,6 +75,7 @@ Inductive type : Set :=
 | Tref (_ : globname)
 | Tfunction (_ : type) (_ : list type)
 | Tbool
+| Tmember_pointer (_ : globname) (_ : type)
 | Tqualified (_ : type_qualifiers) (_ : type)
 .
 Definition Talias (underlying : type) (name : globname) : type :=

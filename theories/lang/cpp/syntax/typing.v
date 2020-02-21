@@ -30,7 +30,7 @@ Fixpoint type_of (e : Expr) : type :=
   | Ecall _ _ t
   | Ecast _ _ t
   | Emember _ _ t
-  | Emember_call _ _ _ _ t
+  | Emember_call _ _ _ t
   | Esubscript _ _ t
   | Esize_of _ t
   | Ealign_of _ t
@@ -65,6 +65,7 @@ Fixpoint erase_qualifiers (t : type) : type :=
   | Tref _ => t
   | Tarray t sz => Tarray (erase_qualifiers t) sz
   | Tfunction t ts => Tfunction (erase_qualifiers t) (List.map erase_qualifiers ts)
+  | Tmember_pointer cls t => Tmember_pointer cls (erase_qualifiers t)
   | Tqualified _ t => erase_qualifiers t
   end.
 

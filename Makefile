@@ -39,8 +39,17 @@ Makefile.coq: _CoqProject
 test: coq cpp2v
 	CPP2V=`pwd`/build/cpp2v $(MAKE) -C tests
 
-test-plugin: coq cpp2v_plugin
+test-plugin: build-minimal cpp2v_plugin
 	$(MAKE) -C tests/plugin
+
+test-cpp2v: build-minimal cpp2v
+	$(MAKE) -C tests/cpp2v-parser
+
+build-minimal: Makefile.coq
+	$(MAKE) -f Makefile.coq theories/lang/cpp/parser.vo
+	mkdir -p build/
+	rm -rf build/bedrock
+	ln -s `pwd`/theories build/bedrock
 
 .PHONY: test install coq all doc html clean install cpp2v cpp2v_plugin
 
