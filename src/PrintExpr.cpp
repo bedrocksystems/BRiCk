@@ -552,7 +552,6 @@ public:
 
     void VisitParenExpr(const ParenExpr* e, CoqPrinter& print,
                         ClangPrinter& cprint, const ASTContext& ctxt) {
-        logging::fatal() << "paren\n";
         this->Visit(e->getSubExpr(), print, cprint, ctxt);
     }
 
