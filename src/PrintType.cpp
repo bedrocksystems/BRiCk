@@ -316,6 +316,15 @@ public:
             cprint.printQualType(type->getInjectedSpecializationType(), print);
         }
     }
+
+    void VisitMemberPointerType(const MemberPointerType* type,
+        CoqPrinter& print, ClangPrinter& cprint) {
+        print.ctor("Tmember_pointer");
+        cprint.printGlobalName(type->getClass()->getAsCXXRecordDecl(), print);
+        print.output() << fmt::nbsp;
+        cprint.printQualType(type->getPointeeType(), print);
+        print.end_ctor();
+    }
 };
 
 PrintType PrintType::printer;

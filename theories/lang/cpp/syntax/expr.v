@@ -40,6 +40,8 @@ Variant BinOp : Set :=
 | Bshr
 | Bsub
 | Bxor (* ^ *)
+| Bdotp (* .* *)
+| Bdotip (* ->* *)
 .
 Global Instance Decidable_eq_BinOp (a b : BinOp) : Decidable (a = b) :=
   dec_Decidable (ltac:(decide equality; eapply Decidable_dec; refine _) : {a = b} + {a <> b}).
@@ -120,7 +122,8 @@ Inductive Expr : Set :=
 | Ecast    (_ : Cast) (_ : ValCat * Expr) (_ : type)
 
 | Emember  (obj : Expr) (_ : field) (_ : type)
-| Emember_call (is_virtual : bool) (method : globname) (obj : Expr) (_ : list (ValCat * Expr)) (_ : type)
+| Emember_call (method : (globname * bool) + Expr) (obj : Expr) (_ : list (ValCat * Expr)) (_ : type)
+(* ^ in (globname * bool), Boolean = true when method being called is virtual *)
 
 | Esubscript (_ : Expr) (_ : Expr) (_ : type)
 | Esize_of (_ : type + Expr) (_ : type)

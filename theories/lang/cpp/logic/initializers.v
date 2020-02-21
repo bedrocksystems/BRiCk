@@ -51,6 +51,7 @@ Module Type Init.
       match ty with
       | Tvoid => lfalse
       | Tpointer _
+      | Tmember_pointer _ _
       | Tbool
       | Tchar _ _
       | Tint _ _ =>

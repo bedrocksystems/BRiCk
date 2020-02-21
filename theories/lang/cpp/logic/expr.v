@@ -450,12 +450,17 @@ Module Type Expr.
         Exists fa, _global f &~ fa **
         wp_lval obj (fun this free => wp_args es (fun vs free' =>
             |> fspec fa ti (this :: vs) (fun v => Q v (free ** free'))))
-        |-- wp_prval (Emember_call false f obj es ty) Q.
+        |-- wp_prval (Emember_call (inl (f, false)) obj es ty) Q.
+    Axiom wp_lval_member_call : forall ty f obj es Q,
+        Exists fa, _global f &~ fa **
+        wp_lval obj (fun this free => wp_args es (fun vs free' =>
+            |> fspec fa ti (this :: vs) (fun v => Q v (free ** free'))))
+        |-- wp_lval (Emember_call (inl (f, false)) obj es ty) Q.
     Axiom wp_xval_member_call : forall ty f obj es Q,
         Exists fa, _global f &~ fa **
         wp_lval obj (fun this free => wp_args es (fun vs free' =>
             |> fspec fa ti (this :: vs) (fun v => Q v (free ** free'))))
-        |-- wp_xval (Emember_call false f obj es ty) Q.
+        |-- wp_xval (Emember_call (inl (f, false)) obj es ty) Q.
     Axiom wp_init_member_call :
       forall f (es : list (ValCat * Expr))
         (Q : FreeTemps -> mpred) addr (ty : type) obj,
@@ -463,7 +468,7 @@ Module Type Expr.
         wp_prval obj (fun this free_o => wp_args es (fun vs free_args =>
              |> fspec fa ti (this :: vs) (fun res =>
                       [| res = addr |] -* Q (free_o ** free_args))))
-        |-- wp_init ty addr (Emember_call false f obj es ty) Q.
+        |-- wp_init ty addr (Emember_call (inl (f, false)) obj es ty) Q.
 
     (* null *)
     Axiom wp_null : forall Q,

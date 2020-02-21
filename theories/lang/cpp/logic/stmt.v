@@ -107,6 +107,7 @@ Module Type Stmt.
 
         (* primitives *)
       | Tpointer _
+      | Tmember_pointer _ _
       | Tbool
       | Tchar _ _
       | Tint _ _ =>
