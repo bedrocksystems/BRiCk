@@ -13,7 +13,7 @@
 # Connectives: Sem/PLogic.v
 - `_eqv : val -> Loc`
   + A location predicate that asserts equivalence over the argument and the value given to the predicate
-- `_eqp : ptr -> Loc`
+- `_eq : ptr -> Loc`
   + A location predicate that asserts equivalence over the argument and the poiter given to the predicate
 - `_at : Loc -> Rep -> mpred`
   + The `Loc` is valid and the `Rep` holds on it.

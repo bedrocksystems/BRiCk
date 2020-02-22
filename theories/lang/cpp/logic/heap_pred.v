@@ -118,20 +118,20 @@ Definition LocEq (l1 l2 : Loc) : Prop :=
   l1 = l2.
 
 (* absolute locations *)
-Definition _eqp_def (p : ptr) : Loc :=
+Definition _eq_def (p : ptr) : Loc :=
   Some p.
-Definition _eqp_aux : seal (@_eqp_def). by eexists. Qed.
-Definition _eqp := _eqp_aux.(unseal).
-Definition _eqp_eq : @_eqp = _ := _eqp_aux.(seal_eq).
+Definition _eq_aux : seal (@_eq_def). by eexists. Qed.
+Definition _eq := _eq_aux.(unseal).
+Definition _eq_eq : @_eq = _ := _eq_aux.(seal_eq).
 
 
 Definition _eqv (a : val) : Loc :=
   match a with
-  | Vptr p => _eqp p
+  | Vptr p => _eq p
   | _ => None
   end.
 
-Lemma _eqv_eqp : forall p, _eqv (Vptr p) = _eqp p.
+Lemma _eqv_eq : forall p, _eqv (Vptr p) = _eq p.
 Proof. reflexivity. Qed.
 
 (* val -> ptr *)
@@ -439,7 +439,7 @@ Global Instance is_nonnull_persistent : Persistent (is_nonnull).
 Proof. solve_Rep_persistent is_nonnull_eq. Qed.
 
 Definition tlocal_at_def (r : region) (l : ident) (p : ptr) (v : Rep) : mpred :=
-  local_addr r l p ** _at (_eqp p) v.
+  local_addr r l p ** _at (_eq p) v.
 Definition tlocal_at_aux : seal (@tlocal_at_def). by eexists. Qed.
 Definition tlocal_at := tlocal_at_aux.(unseal).
 Definition tlocal_at_eq : @tlocal_at = _ := tlocal_at_aux.(seal_eq).
