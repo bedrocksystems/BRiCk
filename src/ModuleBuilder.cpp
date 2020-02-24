@@ -82,7 +82,7 @@ public:
 
     void VisitCXXRecordDecl(const CXXRecordDecl *decl, bool is_specialization) {
         if (decl->isImplicit()) {
-          return;
+            return;
         }
         if (!is_specialization && isa<ClassTemplateSpecializationDecl>(decl)) {
             return;
@@ -96,6 +96,8 @@ public:
     }
 
     void VisitFunctionDecl(const FunctionDecl *decl, bool) {
+        if (decl->isDependentContext())
+            return;
         using namespace comment;
         auto defn = decl->getDefinition();
         if (defn == decl) {
