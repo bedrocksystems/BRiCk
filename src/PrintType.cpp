@@ -28,8 +28,15 @@ printQualType(const QualType& qt, CoqPrinter& print, ClangPrinter& cprint) {
             print.ctor("Qmut", false);
         }
     }
-    cprint.printType(qt.getTypePtr(), print);
-    print.output() << fmt::rparen;
+
+    if (auto p = qt.getTypePtrOrNull()) {
+        cprint.printType(p, print);
+	print.output() << fmt::rparen;	
+    } else {
+        using namespace logging;
+        fatal() << "unexpected null type in printQualType\n";
+	die();
+    }
 }
 
 void
