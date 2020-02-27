@@ -311,6 +311,11 @@ public:
         cprint.printQualType(type->desugar(), print);
     }
 
+    void VisitTypeOfExprType(const TypeOfExprType* type, CoqPrinter& print,
+                             ClangPrinter& cprint) {
+        cprint.printQualType(type->desugar(), print);
+    }
+
     void VisitInjectedClassNameType(const InjectedClassNameType* type,
                                     CoqPrinter& print, ClangPrinter& cprint) {
         if (type->getDecl()) {
