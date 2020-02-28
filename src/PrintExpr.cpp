@@ -76,25 +76,25 @@ private:
 
 #if CLANG_VERSION_MAJOR >= 9
     void printOptionalExpr(Optional<const Expr*> expr, CoqPrinter& print,
-			   ClangPrinter& cprint) {
-      if (expr.hasValue()) {
-	print.ctor("Some");
-	cprint.printExpr(expr.getValue(), print);
-	print.end_ctor();
-      } else {
-	print.none();
-      }
+                           ClangPrinter& cprint) {
+        if (expr.hasValue()) {
+            print.ctor("Some");
+            cprint.printExpr(expr.getValue(), print);
+            print.end_ctor();
+        } else {
+            print.none();
+        }
     }
 #else
     void printOptionalExpr(const Expr* expr, CoqPrinter& print,
-			   ClangPrinter& cprint) {
-      if (expr != nullptr) {
-	print.ctor("Some");
-	cprint.printExpr(expr, print);
-	print.end_ctor();
-      } else {
-	print.none();
-      }
+                           ClangPrinter& cprint) {
+        if (expr != nullptr) {
+            print.ctor("Some");
+            cprint.printExpr(expr, print);
+            print.end_ctor();
+        } else {
+            print.none();
+        }
     }
 #endif
 
@@ -404,7 +404,18 @@ public:
 
     void VisitStringLiteral(const StringLiteral* lit, CoqPrinter& print,
                             ClangPrinter& cprint, const ASTContext&) {
-        print.ctor("Estring", false) << "\"" << lit->getBytes() << "\"";
+        print.ctor("Estring", false);
+        for (auto i = lit->getBytes().begin(), end = lit->getBytes().end();
+             i != end; ++i) {
+            char buf[4];
+            sprintf(buf, "%03u", (unsigned)*i);
+            print.output() << "(String \"" << buf << "\" ";
+        }
+        print.output() << "EmptyString";
+        for (auto i = lit->getBytes().begin(), end = lit->getBytes().end();
+             i != end; ++i) {
+            print.output() << ")";
+        }
         done(lit, print, cprint);
     }
 
@@ -477,12 +488,14 @@ public:
             print.ctor("inl") << fmt::lparen;
             cprint.printGlobalName(method, print);
             print.output() << "," << fmt::nbsp;
-            print.output() << (method->isVirtual() ? "true" : "false") << fmt::rparen;
+            print.output() << (method->isVirtual() ? "true" : "false")
+                           << fmt::rparen;
             print.end_ctor();
 
             print.output() << fmt::nbsp;
             auto me = dyn_cast<MemberExpr>(expr->getCallee());
-            assert(me != nullptr && "member call with MethodDecl must be a MemberExpr");
+            assert(me != nullptr &&
+                   "member call with MethodDecl must be a MemberExpr");
             if (me->isArrow()) {
                 print.ctor("Ederef");
                 cprint.printExpr(expr->getImplicitObjectArgument(), print);
@@ -495,22 +508,24 @@ public:
             assert(me != nullptr && "expecting a paren");
             auto bo = dyn_cast<BinaryOperator>(me->getSubExpr());
             assert(bo != nullptr && "expecting a binary operator");
-            logging::unsupported() << "member pointers are currently not supported in the logic.\n";
+            logging::unsupported() << "member pointers are currently not "
+                                      "supported in the logic.\n";
             print.ctor("inr");
             cprint.printExpr(bo->getRHS(), print);
             print.end_ctor() << fmt::nbsp;
 
             switch (bo->getOpcode()) {
-                case BinaryOperatorKind::BO_PtrMemI:
-                    print.ctor("Ederef");
-                    cprint.printExpr(expr->getImplicitObjectArgument(), print);
-                    done(expr->getImplicitObjectArgument(), print, cprint);
-                    break;
-                case BinaryOperatorKind::BO_PtrMemD:
-                    cprint.printExpr(expr->getImplicitObjectArgument(), print);
-                    break;
-                default:
-                    assert(false && "pointer to member function should be a pointer");
+            case BinaryOperatorKind::BO_PtrMemI:
+                print.ctor("Ederef");
+                cprint.printExpr(expr->getImplicitObjectArgument(), print);
+                done(expr->getImplicitObjectArgument(), print, cprint);
+                break;
+            case BinaryOperatorKind::BO_PtrMemD:
+                cprint.printExpr(expr->getImplicitObjectArgument(), print);
+                break;
+            default:
+                assert(false &&
+                       "pointer to member function should be a pointer");
             }
         }
 
@@ -646,7 +661,7 @@ public:
 
         print.output() << fmt::nbsp;
 
-	printOptionalExpr(expr->getArraySize(), print, cprint);
+        printOptionalExpr(expr->getArraySize(), print, cprint);
 
         print.output() << fmt::nbsp;
 
