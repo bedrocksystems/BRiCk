@@ -307,118 +307,65 @@ Global Instance pureR_persistent (P : mpred) :
 Proof. intros. apply monPred_at_persistent_inv. apply  _. Qed.
 
 (* this is the primitive *)
-Definition tprim_def {resolve:genv} (ty : type) q (v : val) : Rep :=
+Definition primR_def {resolve:genv} (ty : type) q (v : val) : Rep :=
   as_Rep (fun addr => @tptsto _ resolve ty q (Vptr addr) v ** [| has_type v (drop_qualifiers ty) |]).
-Definition tprim_aux : seal (@tprim_def). by eexists. Qed.
-Definition tprim := tprim_aux.(unseal).
-Definition tprim_eq : @tprim = _ := tprim_aux.(seal_eq).
-Arguments tprim {resolve} ty q v : rename.
+Definition primR_aux : seal (@primR_def). by eexists. Qed.
+Definition primR := primR_aux.(unseal).
+Definition primR_eq : @primR = _ := primR_aux.(seal_eq).
+Arguments primR {resolve} ty q v : rename.
 
-Global Instance tprim_timeless resolve ty q p : Timeless (tprim (resolve:=resolve) ty q p).
-Proof. solve_Rep_timeless tprim_eq. Qed.
+Global Instance primR_timeless resolve ty q p : Timeless (primR (resolve:=resolve) ty q p).
+Proof. solve_Rep_timeless primR_eq. Qed.
 
-Global Instance Proper_tprim_entails
-: Proper (genv_leq ==> (=) ==> (=) ==> (=) ==> lentails) (@tprim).
+Global Instance Proper_primR_entails
+: Proper (genv_leq ==> (=) ==> (=) ==> (=) ==> lentails) (@primR).
 Proof.
   do 5 red; intros; subst.
-  rewrite tprim_eq /tprim_def. constructor; simpl.
+  rewrite primR_eq /primR_def. constructor; simpl.
   intros. setoid_rewrite H. reflexivity.
 Qed.
-Global Instance Proper_tprim_equiv
-: Proper (genv_eq ==> (=) ==> (=) ==> (=) ==> lequiv) (@tprim).
+Global Instance Proper_primR_equiv
+: Proper (genv_eq ==> (=) ==> (=) ==> (=) ==> lequiv) (@primR).
 Proof.
   do 5 red; intros; subst.
-  rewrite tprim_eq /tprim_def. constructor; simpl.
+  rewrite primR_eq /primR_def. constructor; simpl.
   intros. setoid_rewrite H. reflexivity.
 Qed.
 
 Definition uninit_def {resolve:genv} (ty : type) q : Rep :=
-  as_Rep (fun addr => Exists v : val, (tprim (resolve:=resolve) ty q v) addr ).
+  as_Rep (fun addr => Exists v : val, (primR (resolve:=resolve) ty q v) addr ).
 (* todo(gmm): this isn't exactly correct, I need a Vundef *)
 Definition uninit_aux : seal (@uninit_def). by eexists. Qed.
-Definition uninit := uninit_aux.(unseal).
-Definition uninit_eq : @uninit = _ := uninit_aux.(seal_eq).
-Arguments uninit {resolve} ty q : rename.
+Definition uninitR := uninit_aux.(unseal).
+Definition uninit_eq : @uninitR = _ := uninit_aux.(seal_eq).
+Arguments uninitR {resolve} ty q : rename.
 
-Global Instance uninit_timeless resolve ty q : Timeless (uninit (resolve:=resolve) ty q).
+Global Instance uninit_timeless resolve ty q : Timeless (uninitR (resolve:=resolve) ty q).
 Proof. solve_Rep_timeless uninit_eq. Qed.
 
 (* this means "anything, including uninitialized" *)
-Definition tany_def {resolve} (ty : type) q : Rep :=
-  as_Rep (fun addr => (Exists v, (tprim (resolve:=resolve) ty q v) addr) \\//
-       (uninit (resolve:=resolve) ty q) addr).
-Definition tany_aux : seal (@tany_def). by eexists. Qed.
-Definition tany := tany_aux.(unseal).
-Definition tany_eq : @tany = _ := tany_aux.(seal_eq).
-Arguments tany {resolve} ty q : rename.
+Definition anyR_def {resolve} (ty : type) q : Rep :=
+  as_Rep (fun addr => (Exists v, (primR (resolve:=resolve) ty q v) addr) \\//
+       (uninitR (resolve:=resolve) ty q) addr).
+Definition anyR_aux : seal (@anyR_def). by eexists. Qed.
+Definition anyR := anyR_aux.(unseal).
+Definition anyR_eq : @anyR = _ := anyR_aux.(seal_eq).
+Arguments anyR {resolve} ty q : rename.
 
-Global Instance tany_timeless resolve ty q : Timeless (tany (resolve:=resolve) ty q).
-Proof. solve_Rep_timeless tany_eq. Qed.
-
-(********************* DERIVED CONCEPTS ****************************)
-
-(* these are library functions! *)
-Definition tint_def {resolve} (sz : size) q (v : Z) : Rep :=
-  as_Rep (fun addr => tptsto (resolve:=resolve) (Tint sz Signed) q (Vptr addr) (Vint v)).
-Definition tint_aux : seal (@tint_def). by eexists. Qed.
-Definition tint := tint_aux.(unseal).
-Definition tint_eq : @tint = _ := tint_aux.(seal_eq).
-Arguments tint {resolve} sz q v : rename.
-
-Global Instance tint_timeless {resolve} sz q v : Timeless (tint (resolve:=resolve) sz q v).
-Proof. solve_Rep_timeless tint_eq. Qed.
-
-Definition tuint_def {resolve} (sz : size) q (v : Z) : Rep :=
-  as_Rep (fun addr => tptsto (resolve:=resolve) (Tint sz Unsigned) q (Vptr addr) (Vint v)).
-Definition tuint_aux : seal (@tuint_def). by eexists. Qed.
-Definition tuint := tuint_aux.(unseal).
-Definition tuint_eq : @tuint = _ := tuint_aux.(seal_eq).
-Arguments tuint {resolve} sz q v : rename.
-
-Global Instance tuint_timeless {resolve} sz q v : Timeless (tuint (resolve:=resolve) sz q v).
-Proof. solve_Rep_timeless tuint_eq. Qed.
-
-Definition tptr_def {resolve} (ty : type) q (p : ptr) : Rep :=
-  as_Rep (fun addr => tptsto (resolve:=resolve) (Tpointer ty) q (Vptr addr) (Vptr p)).
-Definition tptr_aux : seal (@tptr_def). by eexists. Qed.
-Definition tptr := tptr_aux.(unseal).
-Definition tptr_eq : @tptr = _ := tptr_aux.(seal_eq).
-Arguments tptr {resolve} ty q p : rename.
-
-Global Instance tptr_timeless {resolve} ty q p : Timeless (tptr (resolve:=resolve) ty q p).
-Proof. solve_Rep_timeless tptr_eq. Qed.
+Global Instance anyR_timeless resolve ty q : Timeless (anyR (resolve:=resolve) ty q).
+Proof. solve_Rep_timeless anyR_eq. Qed.
 
 Definition tref_def (ty : type) (p : ptr) : Rep :=
   as_Rep (fun addr => [| addr = p |]).
 Definition tref_aux : seal (@tref_def). by eexists. Qed.
-Definition tref := tref_aux.(unseal).
-Definition tref_eq : @tref = _ := tref_aux.(seal_eq).
+Definition refR := tref_aux.(unseal).
+Definition tref_eq : @refR = _ := tref_aux.(seal_eq).
 
-Global Instance tref_timeless ty p : Timeless (tref ty p).
+Global Instance tref_timeless ty p : Timeless (refR ty p).
 Proof. solve_Rep_timeless tref_eq. Qed.
 
 
-Definition tchar_def {resolve} (q : Qp) (c : Z) : Rep :=
-  tprim (resolve:=resolve) T_uchar q (Vint c).
-Definition tchar_aux : seal (@tchar_def). by eexists. Qed.
-Definition tchar := tchar_aux.(unseal).
-Definition tchar_eq : @tchar = _ := tchar_aux.(seal_eq).
-Arguments tchar {resolve} q p : rename.
-
-Section with_resolve.
-  Context {resolve:genv}.
-
-Lemma tprim_tchar q (v : Z) :
-  tprim (resolve:=resolve) (Tchar W8 Unsigned) q (Vint v) -|- tchar (resolve:=resolve) q v.
-Proof. by rewrite tchar_eq. Qed.
-Lemma tprim_tchar1 q (v : Z) :
-  tprim (resolve:=resolve) (Tchar W8 Unsigned) q (Vint v) |-- tchar (resolve:=resolve) q v.
-Proof. by rewrite tprim_tchar. Qed.
-Lemma tprim_tchar2 q (v : Z) :
-  tchar (resolve:=resolve) q v |-- tprim (resolve:=resolve) (Tchar W8 Unsigned) q (Vint v).
-Proof. by rewrite tprim_tchar. Qed.
-
-End with_resolve.
+(********************* DERIVED CONCEPTS ****************************)
 
 Definition is_null_def : Rep :=
   as_Rep (fun addr => [| addr = nullptr |]).
@@ -469,7 +416,7 @@ Definition offset_for (resolve:genv) (cls : globname) (f : FieldOrBase) : Offset
   | This => _id
   end.
 
-Global Opaque (* _local _global  *)_at _sub _field _offsetR _offsetL _dot tprim (* tint tuint tptr is_null is_nonnull *) addr_of.
+Global Opaque (* _local _global  *)_at _sub _field _offsetR _offsetL _dot primR (* tint tuint ptrR is_null is_nonnull *) addr_of.
 
 End with_Σ.
 
@@ -479,13 +426,10 @@ Coercion pureR : mpred >-> Rep.
 
 Global Opaque this_addr result_addr.
 
-Arguments tany {Σ resolve} ty q : rename.
-Arguments uninit {Σ resolve} ty q : rename.
-Arguments tprim {Σ resolve} ty q v : rename.
-Arguments tchar {Σ resolve} q v : rename.
-Arguments tint {Σ resolve} sz q v : rename.
-Arguments tuint {Σ resolve} sz q v : rename.
-Arguments tptr {Σ resolve} ty q v : rename.
+Arguments anyR {Σ resolve} ty q : rename.
+Arguments uninitR {Σ resolve} ty q : rename.
+Arguments primR {Σ resolve} ty q v : rename.
+Arguments refR {Σ} ty v : rename.
 Arguments _super {resolve} _ _ : rename.
 Arguments _field {resolve} _ : rename.
 Arguments _sub {resolve} _ : rename.

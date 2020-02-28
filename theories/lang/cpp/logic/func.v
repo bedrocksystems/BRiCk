@@ -111,9 +111,9 @@ Module Type Func.
   : function_spec Σ :=
     TSFunction ret targs (fun _ => PQ).
 
-  Local Notation uninit := (@uninit Σ resolve) (only parsing).
-  Local Notation tany := (@tany Σ resolve) (only parsing).
-  Local Notation tprim := (@tprim Σ resolve) (only parsing).
+  Local Notation uninitR := (@uninitR Σ resolve) (only parsing).
+  Local Notation anyR := (@anyR Σ resolve) (only parsing).
+  Local Notation primR := (@primR Σ resolve) (only parsing).
 
   (* Hoare triple for a constructor.
    *)
@@ -123,7 +123,7 @@ Module Type Func.
   : function_spec Σ :=
     let map_pre this '(args, P) :=
         (this :: args,
-         _at (_eqv this) (uninit (Tref class) 1) ** P) in
+         _at (_eqv this) (uninitR (Tref class) 1) ** P) in
     let this_type := Qmut (Tref class) in
     TSFunction (Qmut Tvoid) (Qconst (Tpointer this_type) :: targs)
                (fun ti =>
@@ -145,7 +145,7 @@ Module Type Func.
     let map_post this '({| we_ex := pwiths ; we_post := Q|}) :=
         {| we_ex := pwiths
          ; we_post := tele_map (fun '(result, Q) =>
-                                  (result, _at (_eqv this) (tany (Tref class) 1) ** Q)) Q |}
+                                  (result, _at (_eqv this) (anyR (Tref class) 1) ** Q)) Q |}
     in
     let this_type := Qmut (Tref class) in
     TSFunction@{X Z Y} (Qmut Tvoid) (Qconst (Tpointer this_type) :: nil)
@@ -195,7 +195,7 @@ Module Type Func.
     | Treference ref => local_addr_v ρ x v
     | Trv_reference ref => local_addr_v ρ x v
     | Tref _         => local_addr_v ρ x v
-    | _              => tlocal ρ x (tprim (erase_qualifiers t) 1 v)
+    | _              => tlocal ρ x (primR (erase_qualifiers t) 1 v)
     end.
 
   Fixpoint free_type ρ (t : type) (x : ident) (v : val) : mpred Σ :=
@@ -204,7 +204,7 @@ Module Type Func.
     | Treference ref => local_addr_v ρ x v
     | Trv_reference ref => local_addr_v ρ x v
     | Tref cls       => local_addr_v ρ x v
-    | _              => tlocal ρ x (tany (erase_qualifiers t) 1)
+    | _              => tlocal ρ x (anyR (erase_qualifiers t) 1)
     end.
 
   Fixpoint ForallEaches (ts : list type) : (list (type * val) -> mpred Σ) -> mpred Σ :=
@@ -236,7 +236,7 @@ Module Type Func.
           wp (resolve:=resolve) ti ρ body (Kfree frees (void_return (|> Q Vvoid)))
         else if is_aggregate ret then
           Forall ra,
-          (binds ** result_addr ρ ra ** _at (_eq ra) (uninit (erase_qualifiers ret) 1)) -*
+          (binds ** result_addr ρ ra ** _at (_eq ra) (uninitR (erase_qualifiers ret) 1)) -*
           wp (resolve:=resolve) ti ρ body (Kfree (frees ** result_addr ρ ra) (val_return (fun x => |> Q x)))
         else
           binds -*
@@ -271,7 +271,7 @@ Module Type Func.
               binds -* (wp (resolve:=resolve) ti ρ body (Kfree frees (void_return (|>Q Vvoid))))
             else if is_aggregate ret_ty then
               Forall ra,
-              (binds ** result_addr ρ ra ** _at (_eq ra) (uninit (erase_qualifiers ret_ty) 1)) -* (wp (resolve:=resolve) ti ρ body (Kfree (frees ** result_addr ρ ra) (val_return (fun x => |>Q x))))
+              (binds ** result_addr ρ ra ** _at (_eq ra) (uninitR (erase_qualifiers ret_ty) 1)) -* (wp (resolve:=resolve) ti ρ body (Kfree (frees ** result_addr ρ ra) (val_return (fun x => |>Q x))))
             else
               binds -* (wp (resolve:=resolve) ti ρ body (Kfree frees (val_return (fun x => |>Q x))))
           | _ => lfalse
@@ -310,7 +310,7 @@ Module Type Func.
         else if is_aggregate ret then
           Forall Q : val -> mpred Σ,
           Forall ra,
-          (binds ** result_addr ρ ra ** _at (_eq ra) (uninit (erase_qualifiers ret) 1) ** PQ Q) -*
+          (binds ** result_addr ρ ra ** _at (_eq ra) (uninitR (erase_qualifiers ret) 1) ** PQ Q) -*
           wp (resolve:=resolve) ti ρ body (Kfree (frees ** result_addr ρ ra) (val_return (fun x => |> Q x)))
         else
           Forall Q : val -> mpred Σ,
@@ -357,7 +357,7 @@ Module Type Func.
             else if is_aggregate ret_ty then
               Forall Q : val -> mpred Σ,
               Forall ra,
-              (binds ** result_addr ρ ra ** _at (_eq ra) (uninit (erase_qualifiers ret_ty) 1) ** PQ Q) -* (wp (resolve:=resolve) ti ρ body (Kfree (frees ** result_addr ρ ra) (val_return (fun x => |>Q x))))
+              (binds ** result_addr ρ ra ** _at (_eq ra) (uninitR (erase_qualifiers ret_ty) 1) ** PQ Q) -* (wp (resolve:=resolve) ti ρ body (Kfree (frees ** result_addr ρ ra) (val_return (fun x => |>Q x))))
             else
               Forall Q : val -> mpred Σ,
               (binds ** PQ Q) -* (wp (resolve:=resolve) ti ρ body (Kfree frees (val_return (fun x => |>Q x))))

@@ -52,9 +52,9 @@ Module Type Stmt.
     Local Notation mdestroy := (@mdestroy Σ resolve) (only parsing).
     Local Notation destruct := (@destruct Σ resolve) (only parsing).
     Local Notation destruct_obj := (@destruct_obj Σ resolve) (only parsing).
-    Local Notation tprim := (@tprim Σ resolve) (only parsing).
-    Local Notation tany := (@tany Σ resolve) (only parsing).
-    Local Notation uninit := (@uninit Σ resolve) (only parsing).
+    Local Notation primR := (@primR Σ resolve) (only parsing).
+    Local Notation anyR := (@anyR Σ resolve) (only parsing).
+    Local Notation uninitR := (@uninitR Σ resolve) (only parsing).
 
 
    (* the semantics of return is like an initialization
@@ -113,24 +113,24 @@ Module Type Stmt.
       | Tint _ _ =>
         Forall a : ptr,
         let done :=
-            k (Kfree (tlocal_at ρ x a (tany (erase_qualifiers ty) 1)) Q)
+            k (Kfree (tlocal_at ρ x a (anyR (erase_qualifiers ty) 1)) Q)
         in
         let continue := local_addr ρ x a -* done in
         match init with
         | None =>
-          _at (_eq a) (uninit (erase_qualifiers ty) 1) -* continue
+          _at (_eq a) (uninitR (erase_qualifiers ty) 1) -* continue
         | Some init =>
           wp_prval init (fun v free => free **
-                              _at (_eq a) (tprim (erase_qualifiers ty) 1 v) -* continue)
+                              _at (_eq a) (primR (erase_qualifiers ty) 1 v) -* continue)
         end
 
       | Tref cls =>
-        Forall a, _at (_eq a) (uninit (erase_qualifiers ty) 1) -*
+        Forall a, _at (_eq a) (uninitR (erase_qualifiers ty) 1) -*
                   let destroy :=
                       match dtor with
                       | None => fun x => x
                       | Some dtor => destruct_obj ti dtor cls (Vptr a)
-                      end (_at (_eq a) (tany (erase_qualifiers ty) 1))
+                      end (_at (_eq a) (anyR (erase_qualifiers ty) 1))
                   in
                   let continue :=
                       local_addr ρ x a -* k (Kfree (local_addr ρ x a ** destroy) Q)
@@ -141,16 +141,16 @@ Module Type Stmt.
                     wp_init ty (Vptr a) (not_mine init) (fun free => free ** continue)
                   end
       | Tarray ty' N =>
-        Forall a, _at (_eq a) (uninit (erase_qualifiers ty) 1) -*
+        Forall a, _at (_eq a) (uninitR (erase_qualifiers ty) 1) -*
                   let destroy : mpred :=
                       match dtor with
                       | None => fun x => x
                       | Some dtor => destruct ti ty (Vptr a) dtor
-                      end (_at (_eq a) (tany (erase_qualifiers ty) 1))
+                      end (_at (_eq a) (anyR (erase_qualifiers ty) 1))
                   in
                   let continue :=
                       local_addr ρ x a -*
-                      k (Kfree (local_addr ρ x a ** _at (_eq a) (tany (erase_qualifiers ty) 1)) Q)
+                      k (Kfree (local_addr ρ x a ** _at (_eq a) (anyR (erase_qualifiers ty) 1)) Q)
                   in
                   match init with
                   | None => continue

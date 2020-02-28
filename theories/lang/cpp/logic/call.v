@@ -42,7 +42,7 @@ Section with_resolve.
                      wp_args es (fun vs frees => Q (v :: vs) (free ** frees)))
       | Rvalue =>
         if is_aggregate ty then
-          Forall a, _at (_eqv a) (uninit (resolve:=resolve) (erase_qualifiers ty) 1) -*
+          Forall a, _at (_eqv a) (uninitR (resolve:=resolve) (erase_qualifiers ty) 1) -*
           let (e,dt) := destructor_for e in
           wp_init ty a e (fun free => wp_args es (fun vs frees =>
                                                  Q (a :: vs) (@mdestroy _ resolve ti ty a dt free ** frees)))
