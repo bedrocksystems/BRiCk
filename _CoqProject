@@ -41,6 +41,8 @@ theories/lang/cpp/logic/layout.v
 theories/lang/cpp/logic.v
 theories/lang/cpp/logic_notations.v
 
+theories/lang/cpp/primitives.v
+
 # Notations for cpp2v
 theories/lang/cpp/parser.v
 

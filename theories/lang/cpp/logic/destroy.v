@@ -15,7 +15,7 @@ Section destroy.
 
   Local Notation mpred := (mpred Σ) (only parsing).
   Local Notation _sub := (_sub (resolve:=resolve)) (only parsing).
-  Local Notation tany := (@tany Σ resolve) (only parsing).
+  Local Notation anyR := (@anyR Σ resolve) (only parsing).
   Local Notation _global := (@_global resolve) (only parsing).
 
   (* remove from the stack *)
@@ -44,6 +44,6 @@ Section destroy.
     match dtor with
     | None => fun x => x
     | Some dtor => destruct ty this dtor
-    end (_at (_eqv this) (tany (erase_qualifiers ty) 1) ** Q).
+    end (_at (_eqv this) (anyR (erase_qualifiers ty) 1) ** Q).
 
 End destroy.

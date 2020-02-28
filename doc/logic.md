@@ -1,4 +1,4 @@
-# Logics: Sem/Logic.v, Sem/PLogic.v
+# Logics: logic/pred.v, logic/heap_pred.v
 - `mpred`
   + The C++ program logic
 - `Rep :~ val -> mpred`
@@ -10,7 +10,7 @@
   + Computes on offset using the current program
 
 
-# Connectives: Sem/PLogic.v
+# Connectives: logic/plogic.v
 - `_eqv : val -> Loc`
   + A location predicate that asserts equivalence over the argument and the value given to the predicate
 - `_eq : ptr -> Loc`
@@ -20,18 +20,24 @@
   + Note the the "validness" of a `Loc` means that it is a pointer, not
     that it is not null.
 
-# Ownerships: Sem/PLogic.v
-- `tint : size -> Qp -> Z -> Rep`
-  + Ownership of a signed integer
-  + size: The bit size of the integer
+# Ownerships: logic/heap_pred.v
+- `primR : type -> Qp -> val -> Rep`
+  + the location holds the given value.
   + Qp: The fractional permission
-  + The value of the integer
-- `tuint : size -> Qp -> Z -> Rep`
-  + same as above but unsigned integers
-- ...
+  + This predicate implies `has_type val ty`
+  + The `type` *must* be a primitive type.
 
+There are also definitions for the different primitive types.
+- `boolR : Qp -> bool -> Rep`
+- `scharR / ucharR / charR : Qp -> Z -> Rep`
+- `sshortR / ushortR / shortR : Qp -> Z -> Rep`
+- `sintR / uintR / intR : Qp -> Z -> Rep`
+- `slongR / ulongR / longR : Qp -> Z -> Rep`
+- `slonglongR / ulonglongR / longlongR : Qp -> Z -> Rep`
+- `uint8 / uint16 / uint32 / uint64 : Qp -> Z -> Rep`
+- `int8 / int16 / int32 / int64 : Qp -> Z -> Rep`
 
-# Sizes: Syntax/Types.v
+# Sizes: syntax/types.v
 
 *(in the future these might be replaced by looking up in the environment)*
 
@@ -48,7 +54,7 @@
 
 There are several ways to construct `Loc`s.
 
-- `_eq : val -> Loc`
+- `_eq : ptr -> Loc`
   + exactly this location.
 - `_offsetL : Offset -> Loc -> Loc`
   + add an offset to a location.
@@ -56,25 +62,26 @@ There are several ways to construct `Loc`s.
   + the offset of a field
 - `_super : forall (base parent : gname), Offset`
   + the offset of a parent class
+- `_sub : type -> Z -> Offset`
 
 
 # Common Use Cases
 The canonical approach to describe ownership of a variable is:
-```
+```coq
 _at (_eq x) R
 ```
 
 This reads that "At the location `x`, the predicate `R` holds".
 
 A common instantiation of `R` is that of 32 bit signed integers:
-```
-tint W32 1 42
+```coq
+intR 1 42
 ```
 
 This is a representation predicate that asserts full ownership (`1`) of the given location,
 while describing that it is 32 bits (`int_bits`), that it has the value `42`.
 
 The full ownership is then:
-```
-_at (_eq x) (tint W32 1 42)
+```coq
+_at (_eq x) (intR 1 42)
 ```

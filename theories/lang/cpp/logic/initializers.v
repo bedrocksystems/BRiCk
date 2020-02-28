@@ -35,9 +35,9 @@ Module Type Init.
     Local Notation _field := (@_field resolve) (only parsing).
     Local Notation _sub := (@_sub resolve) (only parsing).
     Local Notation _super := (@_super resolve) (only parsing).
-    Local Notation tprim := (@tprim Σ resolve) (only parsing).
+    Local Notation primR := (@primR Σ resolve) (only parsing).
     Local Notation offset_for := (@offset_for resolve) (only parsing).
-    Local Notation uninit := (@uninit Σ resolve) (only parsing).
+    Local Notation uninitR := (@uninitR Σ resolve) (only parsing).
 
 
     Local Notation mpred := (mpred Σ) (only parsing).
@@ -56,8 +56,8 @@ Module Type Init.
       | Tchar _ _
       | Tint _ _ =>
         wp_prval init (fun v free =>
-                         _at (_eqv addr) (uninit (erase_qualifiers ty) 1) **
-                         (   _at (_eqv addr) (tprim (erase_qualifiers ty) 1 v)
+                         _at (_eqv addr) (uninitR (erase_qualifiers ty) 1) **
+                         (   _at (_eqv addr) (primR (erase_qualifiers ty) 1 v)
                           -* k free))
 
         (* non-primitives are handled via prvalue-initialization semantics *)
@@ -108,7 +108,7 @@ Module Type Init.
       match build_array ls fill (N.to_nat sz) with
       | None => lfalse
       | Some array_list =>
-        _at (_eqv addr) (uninit (erase_qualifiers (Tarray ety sz)) 1) **
+        _at (_eqv addr) (uninitR (erase_qualifiers (Tarray ety sz)) 1) **
           wps (fun '(i,e) (Q : unit -> mpred -> mpred) f =>
                  Forall a, _offsetL (_sub ety i) (_eqv addr) &~ a -*
                  wp_init ety (Vptr a) e (fun f' => Q tt (f ** f')))
