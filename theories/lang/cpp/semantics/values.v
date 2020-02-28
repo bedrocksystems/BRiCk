@@ -16,19 +16,23 @@ Require Import Coq.Classes.Morphisms.
 
 Require Import bedrock.lang.cpp.ast.
 
-(** values *)
-Parameter val : Type.
-
-Axiom val_dec : forall a b : val, a = b \/ a <> b.
-
-Parameter Vvoid : val.
-
-Parameter ptr : Type.
+(** pointers *)
+Parameter ptr : Set.
 Parameter ptr_eq_dec : forall (x y : ptr), { x = y } + { x <> y }.
-
 Parameter nullptr : ptr.
-Parameter Vptr : ptr -> val.
-Parameter Vint : Z -> val.
+
+
+(** values *)
+Variant val : Set :=
+| Vint (_ : Z)
+| Vptr (_ : ptr)
+| Vundef
+.
+
+Definition val_dec : forall a b : val, {a = b} + {a <> b}.
+Proof.
+  decide equality. eapply Z.eq_dec. apply ptr_eq_dec.
+Defined.
 
 Definition Vchar (a : Ascii.ascii) : val :=
   Vint (Z.of_N (N_of_ascii a)).
@@ -39,13 +43,26 @@ Definition Vnat (b : nat) : val :=
 Definition Vn (b : N) : val :=
   Vint (Z.of_N b).
 Notation Vz := Vint (only parsing).
+Definition Vvoid := Vundef.
 
-Parameter is_true : val -> bool.
-Axiom is_true_int : forall i,
-    is_true (Vint i) = negb (BinIntDef.Z.eqb i 0).
+Definition is_true (v : val) : option bool :=
+  match v with
+  | Vint v => Some (negb (Z.eqb v 0))
+  | Vptr p => Some match ptr_eq_dec p nullptr with
+                  | left _ => false
+                  | right _ => true
+                  end
+  | Vundef => None
+  end.
 
-Axiom Vptr_inj : forall p1 p2, Vptr p1 = Vptr p2 -> p1 = p2.
-Axiom Vint_inj : forall a b, Vint a = Vint b -> a = b.
+Theorem is_true_int : forall i,
+    is_true (Vint i) = Some (negb (BinIntDef.Z.eqb i 0)).
+Proof. reflexivity. Qed.
+
+Theorem Vptr_inj : forall p1 p2, Vptr p1 = Vptr p2 -> p1 = p2.
+Proof. inversion 1; reflexivity. Qed.
+Theorem Vint_inj : forall a b, Vint a = Vint b -> a = b.
+Proof. inversion 1; reflexivity. Qed.
 
 (* this is the stack frame *)
 Parameter region : Type.
@@ -53,8 +70,16 @@ Parameter region : Type.
 Parameter thread_info : Type.
 
 
-(** pointer offsets
- *)
+(** pointer offsets *)
+(* All offsets are valid pointers. todo: This is unsound. *)
+Parameter offset_ptr_ : Z -> ptr -> ptr.
+
+Axiom offset_ptr_combine_ : forall b o o',
+    offset_ptr_ o' (offset_ptr_ o b) = offset_ptr_ (o + o') b.
+Axiom offset_ptr_0_ : forall b,
+    offset_ptr_ 0 b = b.
+
+
 Parameter offset_ptr : Z -> val -> val.
 (* note(gmm): this is not defined according to the C semantics because creating
  * a pointer that goes out of bounds of the object is undefined behavior in C,
@@ -64,15 +89,8 @@ Axiom offset_ptr_combine : forall b o o',
     offset_ptr o' (offset_ptr o b) = offset_ptr (o + o') b.
 Axiom offset_ptr_0 : forall b,
     offset_ptr 0 b = b.
-
-(* All offsets are valid pointers. todo: This is unsound. *)
-Parameter offset_ptr_ : Z -> ptr -> ptr.
 Axiom offset_ptr_val : forall v o p, Vptr p = v -> Vptr (offset_ptr_ o p) = offset_ptr o v.
 
-Axiom offset_ptr_combine_ : forall b o o',
-    offset_ptr_ o' (offset_ptr_ o b) = offset_ptr_ (o + o') b.
-Axiom offset_ptr_0_ : forall b,
-    offset_ptr_ 0 b = b.
 
 (** global environments *)
 

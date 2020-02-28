@@ -29,9 +29,9 @@ Section with_Σ.
   Local Notation eval_binop := (@eval_binop resolve) (only parsing).
   Local Notation size_of := (@size_of resolve) (only parsing).
   Local Notation align_of := (@align_of resolve) (only parsing).
-  Local Notation tprim := (@tprim Σ resolve) (only parsing).
-  Local Notation tany := (@tany Σ resolve) (only parsing).
-  Local Notation uninit := (@uninit Σ resolve) (only parsing).
+  Local Notation primR := (@primR Σ resolve) (only parsing).
+  Local Notation anyR := (@anyR Σ resolve) (only parsing).
+  Local Notation uninitR := (@uninitR Σ resolve) (only parsing).
 
 
   Definition wrap_shift (F : (val -> mpred) -> mpred) (Q : val -> mpred) : mpred :=
@@ -90,16 +90,16 @@ Section with_Σ.
   Axiom wp_atom_load_cst
   : forall q memorder (acc_type:type) (l : val) (Q : val -> mpred),
       [| memorder = _SEQ_CST |] **
-      |> (Exists v, (_at (_eq l) (tprim acc_type q v) **
-                     (_at (_eq l) (tprim acc_type q v) -* Q v)))
+      |> (Exists v, (_at (_eqv l) (primR acc_type q v) **
+                     (_at (_eqv l) (primR acc_type q v) -* Q v)))
       |-- wp_atom' AO__atomic_load_n acc_type (l :: memorder :: nil) Q.
 
   Axiom wp_atom_store_cst
   : forall memorder acc_type l Q v,
       [| memorder = _SEQ_CST |] **
       [| has_type v acc_type |] **
-      |> (_at (_eq l) (tany acc_type 1) **
-         (_at (_eq l) (tprim acc_type 1 v) -* Exists void, Q void))
+      |> (_at (_eqv l) (anyR acc_type 1) **
+         (_at (_eqv l) (primR acc_type 1 v) -* Exists void, Q void))
       |-- wp_atom' AO__atomic_store_n acc_type (l :: memorder :: v :: nil) Q.
 
   (* atomic compare and exchange n *)
@@ -107,10 +107,10 @@ Section with_Σ.
     forall val_p expected_p desired wk succmemord failmemord Q' ty v,
       [| wk = Vbool false |] ** [| succmemord = _SEQ_CST |] **
       [| failmemord = _SEQ_CST |] **
-      |> (_at (_eq expected_p) (tprim ty 1 v) **
-          _at (_eq val_p) (tprim ty 1 v) **
-          ((_at (_eq expected_p) (tprim ty 1 v) **
-            _at (_eq val_p) (tprim ty 1 desired)) -* Q' (Vbool true)))
+      |> (_at (_eqv expected_p) (primR ty 1 v) **
+          _at (_eqv val_p) (primR ty 1 v) **
+          ((_at (_eqv expected_p) (primR ty 1 v) **
+            _at (_eqv val_p) (primR ty 1 desired)) -* Q' (Vbool true)))
       |-- wp_atom' AO__atomic_compare_exchange_n ty
                   (val_p::succmemord::expected_p::failmemord::desired::wk::nil) Q'.
 
@@ -119,10 +119,10 @@ Section with_Σ.
            (ty : type) v expected,
       [|wk = Vbool false|] ** [|succmemord = _SEQ_CST|] ** [| failmemord = _SEQ_CST |] **
       [| v <> expected |] **
-      |> (_at (_eq expected_p) (tprim ty 1 expected) **
-          _at (_eq val_p) (tprim ty 1 v) **
-          ((_at (_eq expected_p) (tprim ty 1 v) **
-            _at (_eq val_p) (tprim ty 1 v)) -* Q' (Vbool false)))
+      |> (_at (_eqv expected_p) (primR ty 1 expected) **
+          _at (_eqv val_p) (primR ty 1 v) **
+          ((_at (_eqv expected_p) (primR ty 1 v) **
+            _at (_eqv val_p) (primR ty 1 v)) -* Q' (Vbool false)))
       |-- wp_atom' AO__atomic_compare_exchange_n ty
                   (val_p::succmemord::expected_p::failmemord::desired::wk::nil) Q'.
 
@@ -130,13 +130,13 @@ Section with_Σ.
     forall val_p expected_p expected desired wk succmemord failmemord Q' ty v,
       [| wk = Vbool true |] ** [| succmemord = _SEQ_CST |] **
       [| failmemord = _SEQ_CST |] **
-      |> (_at (_eq expected_p) (tprim ty 1 expected) **
-          _at (_eq val_p) (tprim ty 1 v) **
-          (((_at (_eq expected_p) (tprim ty 1 expected) **
-             _at (_eq val_p) (tprim ty 1 desired) **
+      |> (_at (_eqv expected_p) (primR ty 1 expected) **
+          _at (_eqv val_p) (primR ty 1 v) **
+          (((_at (_eqv expected_p) (primR ty 1 expected) **
+             _at (_eqv val_p) (primR ty 1 desired) **
              [| v = expected |]) -* Q' (Vbool true)) //\\
-           ((_at (_eq expected_p) (tprim ty 1 v) **
-             _at (_eq val_p) (tprim ty 1 v)) -* Q' (Vbool false))))
+           ((_at (_eqv expected_p) (primR ty 1 v) **
+             _at (_eqv val_p) (primR ty 1 v)) -* Q' (Vbool false))))
       |-- wp_atom' AO__atomic_compare_exchange_n ty
                   (val_p::succmemord::expected_p::failmemord::desired::wk::nil) Q'.
 
@@ -146,12 +146,12 @@ Section with_Σ.
       (ty : type)
       expected desired,
       [|wk = Vbool false|] ** [|succmemord = _SEQ_CST|] ** [| failmemord = _SEQ_CST |] **
-      |> ((_at (_eq expected_p) (tprim ty 1 expected) **
-           _at (_eq desired_p) (tprim ty q desired) **
-           _at (_eq val_p) (tprim ty 1 expected)) **
-         ((_at (_eq expected_p) (tprim ty 1 expected) **
-           _at (_eq desired_p) (tprim ty q desired) **
-           _at (_eq val_p) (tprim ty 1 desired)) -* Q (Vbool true)))
+      |> ((_at (_eqv expected_p) (primR ty 1 expected) **
+           _at (_eqv desired_p) (primR ty q desired) **
+           _at (_eqv val_p) (primR ty 1 expected)) **
+         ((_at (_eqv expected_p) (primR ty 1 expected) **
+           _at (_eqv desired_p) (primR ty q desired) **
+           _at (_eqv val_p) (primR ty 1 desired)) -* Q (Vbool true)))
       |-- wp_atom' AO__atomic_compare_exchange ty
                   (val_p::succmemord::expected_p::failmemord::desired_p::wk::nil) Q.
 
@@ -161,12 +161,12 @@ Section with_Σ.
       actual expected desired,
       expected <> actual ->
       [|wk = Vbool false|] ** [|succmemord = _SEQ_CST|] ** [| failmemord = _SEQ_CST |] **
-      |> ((_at (_eq expected_p) (tprim ty 1 expected) **
-           _at (_eq desired_p) (tprim ty q desired) **
-           _at (_eq val_p) (tprim ty 1 actual)) **
-          ((_at (_eq expected_p) (tprim ty 1 actual) **
-            _at (_eq desired_p) (tprim ty q desired) **
-            _at (_eq val_p) (tprim ty 1 actual)) -* Q (Vbool false)))
+      |> ((_at (_eqv expected_p) (primR ty 1 expected) **
+           _at (_eqv desired_p) (primR ty q desired) **
+           _at (_eqv val_p) (primR ty 1 actual)) **
+          ((_at (_eqv expected_p) (primR ty 1 actual) **
+            _at (_eqv desired_p) (primR ty q desired) **
+            _at (_eqv val_p) (primR ty 1 actual)) -* Q (Vbool false)))
       |-- wp_atom' AO__atomic_compare_exchange ty
                   (val_p::succmemord::expected_p::failmemord::desired_p::wk::nil) Q.
 
@@ -175,16 +175,16 @@ Section with_Σ.
       (ty : type)
       actual expected desired,
       [|wk = Vbool true|] ** [|succmemord = _SEQ_CST|] ** [| failmemord = _SEQ_CST |] **
-      |> ((_at (_eq expected_p) (tprim ty 1 expected) **
-           _at (_eq desired_p) (tprim ty q desired) **
-           _at (_eq val_p) (tprim ty 1 actual)) **
-          (((_at (_eq expected_p) (tprim ty 1 expected) **
-             _at (_eq desired_p) (tprim ty q desired) **
-             _at (_eq val_p) (tprim ty 1 desired)) **
+      |> ((_at (_eqv expected_p) (primR ty 1 expected) **
+           _at (_eqv desired_p) (primR ty q desired) **
+           _at (_eqv val_p) (primR ty 1 actual)) **
+          (((_at (_eqv expected_p) (primR ty 1 expected) **
+             _at (_eqv desired_p) (primR ty q desired) **
+             _at (_eqv val_p) (primR ty 1 desired)) **
              [| actual = expected |] -* Q (Vbool true)) //\\
-           ((_at (_eq expected_p) (tprim ty 1 actual) **
-             _at (_eq desired_p) (tprim ty q desired) **
-             _at (_eq val_p) (tprim ty 1 actual)) -* Q (Vbool false))))
+           ((_at (_eqv expected_p) (primR ty 1 actual) **
+             _at (_eqv desired_p) (primR ty q desired) **
+             _at (_eqv val_p) (primR ty 1 actual)) -* Q (Vbool false))))
       |-- wp_atom' AO__atomic_compare_exchange ty
                   (val_p::succmemord::expected_p::failmemord::desired_p::wk::nil) Q.
 
@@ -193,10 +193,10 @@ Section with_Σ.
     forall E pls memorder Q sz sgn v,
       let acc_type := Tint sz sgn in
       ([| memorder = _SEQ_CST |] **
-       |> _at (_eq E) (tprim acc_type 1 v) **
+       |> _at (_eqv E) (primR acc_type 1 v) **
        |> (Exists v',
            [| eval_binop op acc_type acc_type acc_type v pls v' |] **
-         (_at (_eq E) (tprim acc_type 1 v') -* Q v))
+         (_at (_eqv E) (primR acc_type 1 v') -* Q v))
       |-- wp_atom' ao acc_type (E::memorder::pls::nil) Q).
 
   Ltac fetch_xxx ao op :=
@@ -214,9 +214,9 @@ Section with_Σ.
       let acc_type := Tint sz sgn in
       ([| memorder = _SEQ_CST |] **
       |> (Exists v,
-          _at (_eq E) (tprim acc_type 1 v) **
+          _at (_eqv E) (primR acc_type 1 v) **
           Exists v', [| eval_binop op acc_type acc_type acc_type v pls v' |] **
-                     (_at (_eq E) (tprim acc_type 1 v') -* Q v'))
+                     (_at (_eqv E) (primR acc_type 1 v') -* Q v'))
       |-- wp_atom' ao acc_type (E::memorder::pls::nil) Q).
 
   Ltac xxx_fetch ao op :=

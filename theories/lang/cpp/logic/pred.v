@@ -43,6 +43,10 @@ Module Type logic.
 
     (* heap points to *)
     Parameter tptsto : forall {resolve:genv}, type -> Qp -> forall addr value : val, mpred.
+    Global Declare Instance tptsto_proper_entails :
+      Proper (genv_leq ==> eq ==> eq ==> eq ==> eq ==> lentails) (@tptsto).
+    Global Declare Instance tptsto_proper_equiv :
+      Proper (genv_eq ==> eq ==> eq ==> eq ==> eq ==> lequiv) (@tptsto).
 
     Global Declare Instance tptsto_timeless resolve ty q a v
       : Timeless (@tptsto resolve ty q a v).

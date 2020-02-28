@@ -52,9 +52,9 @@ Module Type Stmt.
     Local Notation mdestroy := (@mdestroy Σ resolve) (only parsing).
     Local Notation destruct := (@destruct Σ resolve) (only parsing).
     Local Notation destruct_obj := (@destruct_obj Σ resolve) (only parsing).
-    Local Notation tprim := (@tprim Σ resolve) (only parsing).
-    Local Notation tany := (@tany Σ resolve) (only parsing).
-    Local Notation uninit := (@uninit Σ resolve) (only parsing).
+    Local Notation primR := (@primR Σ resolve) (only parsing).
+    Local Notation anyR := (@anyR Σ resolve) (only parsing).
+    Local Notation uninitR := (@uninitR Σ resolve) (only parsing).
 
 
    (* the semantics of return is like an initialization
@@ -73,7 +73,7 @@ Module Type Stmt.
            match c with
            | Rvalue =>
              Exists a, result_addr ρ a ** ltrue //\\
-             wp_init (erase_qualifiers (type_of e)) a (not_mine e) (Q.(k_return) (Some a))
+             wp_init (erase_qualifiers (type_of e)) (Vptr a) (not_mine e) (Q.(k_return) (Some (Vptr a)))
            | Lvalue
            | Xvalue =>
              wpe c e (fun v => Q.(k_return) (Some v))
@@ -111,51 +111,51 @@ Module Type Stmt.
       | Tbool
       | Tchar _ _
       | Tint _ _ =>
-        Forall a : val,
+        Forall a : ptr,
         let done :=
-            k (Kfree (tlocal_at ρ x a (tany (erase_qualifiers ty) 1)) Q)
+            k (Kfree (tlocal_at ρ x a (anyR (erase_qualifiers ty) 1)) Q)
         in
-        let continue := local_addr_v ρ x a -* done in
+        let continue := local_addr ρ x a -* done in
         match init with
         | None =>
-          _at (_eq a) (uninit (erase_qualifiers ty) 1) -* continue
+          _at (_eq a) (uninitR (erase_qualifiers ty) 1) -* continue
         | Some init =>
           wp_prval init (fun v free => free **
-                              _at (_eq a) (tprim (erase_qualifiers ty) 1 v) -* continue)
+                              _at (_eq a) (primR (erase_qualifiers ty) 1 v) -* continue)
         end
 
       | Tref cls =>
-        Forall a, _at (_eq a) (uninit (erase_qualifiers ty) 1) -*
+        Forall a, _at (_eq a) (uninitR (erase_qualifiers ty) 1) -*
                   let destroy :=
                       match dtor with
                       | None => fun x => x
-                      | Some dtor => destruct_obj ti dtor cls a
-                      end (_at (_eq a) (tany (erase_qualifiers ty) 1))
+                      | Some dtor => destruct_obj ti dtor cls (Vptr a)
+                      end (_at (_eq a) (anyR (erase_qualifiers ty) 1))
                   in
                   let continue :=
-                      local_addr_v ρ x a -* k (Kfree (local_addr_v ρ x a ** destroy) Q)
+                      local_addr ρ x a -* k (Kfree (local_addr ρ x a ** destroy) Q)
                   in
                   match init with
                   | None => continue
                   | Some init =>
-                    wp_init ty a (not_mine init) (fun free => free ** continue)
+                    wp_init ty (Vptr a) (not_mine init) (fun free => free ** continue)
                   end
       | Tarray ty' N =>
-        Forall a, _at (_eq a) (uninit (erase_qualifiers ty) 1) -*
+        Forall a, _at (_eq a) (uninitR (erase_qualifiers ty) 1) -*
                   let destroy : mpred :=
                       match dtor with
                       | None => fun x => x
-                      | Some dtor => destruct ti ty a dtor
-                      end (_at (_eq a) (tany (erase_qualifiers ty) 1))
+                      | Some dtor => destruct ti ty (Vptr a) dtor
+                      end (_at (_eq a) (anyR (erase_qualifiers ty) 1))
                   in
                   let continue :=
-                      local_addr_v ρ x a -*
-                      k (Kfree (local_addr_v ρ x a ** _at (_eq a) (tany (erase_qualifiers ty) 1)) Q)
+                      local_addr ρ x a -*
+                      k (Kfree (local_addr ρ x a ** _at (_eq a) (anyR (erase_qualifiers ty) 1)) Q)
                   in
                   match init with
                   | None => continue
                   | Some init =>
-                    wp_init ty a (not_mine init) (fun free => free ** continue)
+                    wp_init ty (Vptr a) (not_mine init) (fun free => free ** continue)
                   end
 
         (* references *)
@@ -167,7 +167,8 @@ Module Type Stmt.
         | Some init =>
           (* i should use the type here *)
           wp_lval init (fun a free =>
-             local_addr_v ρ x a -* (free ** k (Kfree (local_addr_v ρ x a) Q)))
+             Exists p, [| a = Vptr p |] **
+             local_addr ρ x p -* (free ** k (Kfree (local_addr ρ x p) Q)))
         end
 
       | Tfunction _ _ => lfalse (* not supported *)
@@ -200,7 +201,8 @@ Module Type Stmt.
 
     Axiom wp_if : forall e thn els Q,
         |> wp_prval e (fun v free =>
-            free ** if is_true v then
+            free ** Exists c : bool, [| is_true v = Some c |] **
+                    if c then
                       wp thn Q
                     else
                       wp els Q)
