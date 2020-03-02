@@ -119,7 +119,7 @@ Module Type Func.
    *)
   Definition TSConstructor@{X Z Y} (class : globname)
              (targs : list type)
-             (PQ : thread_info -> val -> WithPrePost@{X Z Y} Σ)
+             (PQ : thread_info -> ptr -> WithPrePost@{X Z Y} Σ)
   : function_spec Σ :=
     let map_pre this '(args, P) :=
         (this :: args,
@@ -127,53 +127,54 @@ Module Type Func.
     let this_type := Qmut (Tref class) in
     TSFunction (Qmut Tvoid) (Qconst (Tpointer this_type) :: targs)
                (fun ti =>
-                  {| wpp_with := TeleS (fun this : val => (PQ ti this).(wpp_with))
+                  {| wpp_with := TeleS (fun this : ptr => (PQ ti this).(wpp_with))
                    ; wpp_pre this :=
-                       tele_map (map_pre this) (PQ ti this).(wpp_pre)
+                       tele_map (map_pre (Vptr this)) (PQ ti this).(wpp_pre)
                    ; wpp_post this := (PQ ti this).(wpp_post)
                    |}).
 
   Definition SConstructor@{X Z Y} (class : globname) (targs : list type)
-             (PQ : val -> WithPrePost@{X Z Y} Σ)
+             (PQ : ptr -> WithPrePost@{X Z Y} Σ)
   : function_spec Σ := TSConstructor class targs (fun _ => PQ).
 
   (* Hoare triple for a destructor.
    *)
-  Definition TSDestructor@{X Z Y} (class : globname) (PQ : thread_info -> val -> WithPrePost@{X Z Y} Σ)
+  Definition TSDestructor@{X Z Y} (class : globname)
+             (PQ : thread_info -> ptr -> WithPrePost@{X Z Y} Σ)
   : function_spec Σ :=
-    let map_pre this '(args, P) := (this :: args, P) in
+    let map_pre this '(args, P) := (Vptr this :: args, P) in
     let map_post this '({| we_ex := pwiths ; we_post := Q|}) :=
         {| we_ex := pwiths
          ; we_post := tele_map (fun '(result, Q) =>
-                                  (result, _at (_eqv this) (anyR (Tref class) 1) ** Q)) Q |}
+                                  (result, _at (_eq this) (anyR (Tref class) 1) ** Q)) Q |}
     in
     let this_type := Qmut (Tref class) in
     TSFunction@{X Z Y} (Qmut Tvoid) (Qconst (Tpointer this_type) :: nil)
                (fun ti =>
-                 {| wpp_with := TeleS (fun this : val => (PQ ti this).(wpp_with))
+                 {| wpp_with := TeleS (fun this : ptr => (PQ ti this).(wpp_with))
                   ; wpp_pre this :=
                        tele_map (map_pre this) (PQ ti this).(wpp_pre)
                   ; wpp_post this :=
                        tele_map (map_post this) (PQ ti this).(wpp_post)
                   |}).
 
-  Definition SDestructor@{X Z Y} (class : globname) (PQ : val -> WithPrePost@{X Z Y} Σ)
+  Definition SDestructor@{X Z Y} (class : globname) (PQ : ptr -> WithPrePost@{X Z Y} Σ)
   : function_spec Σ := TSDestructor class (fun _ => PQ).
 
   (* Hoare triple for a method.
    *)
   Definition TSMethod@{X Z Y} (class : globname) (qual : type_qualifiers)
              (ret : type) (targs : list type)
-             (PQ : thread_info -> val -> WithPrePost@{X Z Y} Σ)
+             (PQ : thread_info -> ptr -> WithPrePost@{X Z Y} Σ)
   : function_spec Σ :=
     let map_pre this '(args, P) := (this :: args, P) in
     let class_type := Tref class in
     let this_type := Tqualified qual class_type in
     TSFunction ret (Qconst (Tpointer this_type) :: targs)
                (fun ti =>
-                  {| wpp_with := TeleS (fun this : val => (PQ ti this).(wpp_with))
+                  {| wpp_with := TeleS (fun this : ptr => (PQ ti this).(wpp_with))
                    ; wpp_pre this :=
-                       tele_map (map_pre this) (PQ ti this).(wpp_pre)
+                       tele_map (map_pre (Vptr this)) (PQ ti this).(wpp_pre)
                    ; wpp_post this := (PQ ti this).(wpp_post)
                    |}).
       (* ^ todo(gmm): this looks wrong. something isn't going
@@ -183,7 +184,7 @@ Module Type Func.
 
   Definition SMethod@{X Z Y} (class : globname) (qual : type_qualifiers)
              (ret : type) (targs : list type)
-             (PQ : val -> WithPrePost@{X Z Y} Σ)
+             (PQ : ptr -> WithPrePost@{X Z Y} Σ)
   : function_spec Σ := TSMethod class qual ret targs (fun _ => PQ).
 
   Local Definition local_addr_v (r : region) (x : ident) (v : val) : mpred Σ :=
