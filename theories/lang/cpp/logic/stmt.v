@@ -201,12 +201,16 @@ Module Type Stmt.
 
     Axiom wp_if : forall e thn els Q,
         |> wp_prval e (fun v free =>
-            free ** Exists c : bool, [| is_true v = Some c |] **
+             match is_true v with
+             | None => lfalse
+             | Some c =>
+               free **
                     if c then
                       wp thn Q
                     else
-                      wp els Q)
-        |-- wp (Sif None e thn els) Q.
+                      wp els Q
+             end)
+           |-- wp (Sif None e thn els) Q.
 
     Axiom wp_if_decl : forall d e thn els Q,
         wp (Sseq (Sdecl (d :: nil) :: Sif None e thn els :: nil)) Q
