@@ -1,5 +1,5 @@
 # coq-lens
-An implementation of lenses in Coq. This package uses [template-coq](https://github.com/template-coq/template-coq) to generate lenses for records.
+An implementation of lenses in Coq. This package uses [meta-coq](https://github.com/MetaCoq/metacoq) to generate lenses for records.
 
 ## Use
 See `demo.v` in the `test-suite` directory. A simple example is included below.
@@ -32,3 +32,10 @@ Generation of lenses via template-coq is currently only supports `Record`s defin
 - Polymorphic lenses
 - Universe polymorphic definitions
 - Universe polymorphic lenses
+
+### Implementation Note
+Unlike the Haskell implementation, this implementation is significantly more first-order, prefering separate `get` and `set` functions packaged as a record. This has several benefits in Coq.
+
+1. We don't need to depend on a `Functor` class.
+2. We don't require extra universes for the types of the universally quantified functor.
+3. Error messages are simpler and type checking does not rely on typeclass inference which is not as robust as it is in Haskell due to the dependent nature of Gallina.
