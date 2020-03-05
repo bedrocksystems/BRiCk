@@ -15,20 +15,19 @@ Require Import Coq.micromega.Lia.
 From bedrock Require Import IrisBridge.
 Require Import bedrock.lang.cpp.ast.
 From bedrock.lang.cpp Require Import
-     semantics logic.pred logic.heap_pred.
+     semantics logic.pred logic.path_pred logic.heap_pred.
 
 Import ChargeNotation.
 
 Module Type modules.
 
-  Section with_Σ.
-  Context {Σ:gFunctors} {resolve:genv}.
+  Section with_cpp.
+  Context `{Σ : cpp_logic ti} {resolve:genv}.
 
-  Notation mpred := (mpred Σ) (only parsing).
   Local Notation _global := (@_global resolve) (only parsing).
-  Local Notation code_at := (@code_at Σ resolve) (only parsing).
-  Local Notation ctor_at := (@ctor_at Σ resolve) (only parsing).
-  Local Notation dtor_at := (@dtor_at Σ resolve) (only parsing).
+  Local Notation code_at := (@code_at _ Σ resolve) (only parsing).
+  Local Notation ctor_at := (@ctor_at _ Σ resolve) (only parsing).
+  Local Notation dtor_at := (@dtor_at _ Σ resolve) (only parsing).
   Local Notation _field := (@_field resolve) (only parsing).
   Local Notation _super := (@_super resolve) (only parsing).
   Local Notation _sub := (@_sub resolve) (only parsing).
@@ -60,14 +59,14 @@ Module Type modules.
       | None =>
         Exists a, _global n &~ a
       | Some body =>
-        Exists a, _global n &~ a //\\ ctor_at a c
+        Exists a, _global n &~ a //\\ ctor_at c a
       end
     | Odestructor d =>
       match d.(d_body) return mpred with
       | None =>
         Exists a, _global n &~ a
       | Some body =>
-        Exists a, _global n &~ a //\\ dtor_at a d
+        Exists a, _global n &~ a //\\ dtor_at d a
       end
     end.
 
@@ -98,10 +97,6 @@ Module Type modules.
 
   Axiom denoteModule_weaken : forall m, denoteModule m |-- empSP.
 
-  Lemma subModuleModels a b σ: module_le a b = true -> b ⊧ σ -> a ⊧ σ.
-  Proof using.
-  Admitted.
-
   (* Axiom denote_module_dup : forall module, *)
   (*     denoteModule module -|- denoteModule module ** denoteModule module. *)
 
@@ -109,7 +104,7 @@ Module Type modules.
   (*     link a b = Some c -> *)
   (*     denoteModule c -|- denoteModule a ** denoteModule b. *)
   (* Proof. Admitted. *)
-  End with_Σ.
+  End with_cpp.
 
 End modules.
 

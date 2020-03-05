@@ -97,7 +97,6 @@ For examples, see the tests directory.
      use_protect half_half_update; work.
    Qed.
 
-
   (** Now we define the actual class representation using a named (concurrent) invariant.
    For this, we use [TInv] which correspond to "destroyable invariants".
    The last argument to [TInv] is the invariant assertion, i.e. the predicate

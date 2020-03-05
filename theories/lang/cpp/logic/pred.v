@@ -12,89 +12,121 @@ From Coq.Classes Require Import
      RelationClasses Morphisms.
 
 From iris.base_logic.lib Require Export iprop.
+Require Import iris.bi.monpred.
 From iris.bi.lib Require Import fractional.
+Require Import iris.base_logic.lib.fancy_updates.
+Require Import iris.base_logic.lib.own.
+Require Import iris.algebra.lib.frac_auth.
+Require Import iris.algebra.excl.
+Require Import iris.algebra.gmap.
 From bedrock Require Export IrisBridge.
 Export ChargeNotation.
 
 From bedrock.lang.cpp Require Import ast semantics.
 
-Module Type logic.
+(* (* this is the ghost state necessary for C++ *) *)
+(* Instance: EqDecision ptr := ptr_eq_dec. *)
+(* Instance: Countable ptr. *)
+(* Admitted. *)
 
-  Section with_Σ.
-    Context {Σ : gFunctors}.
+(* Print region. *)
+(* Instance: EqDecision region. Admitted. *)
+(* Instance: Countable region. Admitted. *)
 
-    Definition mpred := iProp Σ.
-    Canonical Structure mpredI : bi :=
-      {| bi_car := mpred
-       ; bi_ofe_mixin := (iPropI Σ).(bi_ofe_mixin)
-       ; bi_bi_mixin := (iPropI Σ).(bi_bi_mixin) |}.
-    (* todo: Fix the warning generated from this definition *)
-    Canonical Structure mpredSI : sbi :=
-      {| sbi_car := mpred
-       ; sbi_ofe_mixin := (iPropI Σ).(bi_ofe_mixin)
-       ; sbi_bi_mixin := (iPropI Σ).(bi_bi_mixin)
-       ; sbi_sbi_mixin := (iPropSI Σ).(sbi_sbi_mixin) |}.
+(* Check (leibnizO N). *)
+(* SearchAbout ofeT. *)
 
-    Global Instance later_entails : Proper ((lentails) ==> (lentails)) (@sbi_later mpredSI).
-    Proof.
-      intros H H1 Hent.
-      f_equiv. eauto.
-    Qed.
+(* Definition addr : Set := N. *)
+(* Definition byte : Set := N. *)
+(* Variant runtime_val : Set := *)
+(* | Rundef *)
+(* | Rval (_ : byte). *)
 
-    (* heap points to *)
-    Parameter tptsto : forall {resolve:genv}, type -> Qp -> forall addr value : val, mpred.
-    Global Declare Instance tptsto_proper_entails :
-      Proper (genv_leq ==> eq ==> eq ==> eq ==> eq ==> lentails) (@tptsto).
-    Global Declare Instance tptsto_proper_equiv :
-      Proper (genv_eq ==> eq ==> eq ==> eq ==> eq ==> lequiv) (@tptsto).
+(* Definition fractionalR (o : ofeT) : cmraT := *)
+(*   prodR fracR (optionUR (agreeR (leibnizO N))). *)
 
-    Global Declare Instance tptsto_timeless resolve ty q a v
-      : Timeless (@tptsto resolve ty q a v).
-    Global Declare Instance tptsto_fractional resolve ty a v
-      : Fractional (λ q, @tptsto resolve ty q a v).
-    Global Declare Instance tptsto_as_fractional resolve ty q a v :
-      AsFractional (@tptsto resolve ty q a v) (λ q, @tptsto resolve ty q a v)%I q.
+Class cppG (Σ : gFunctors) : Type :=
+{ (* heapG : inG Σ (gmapR addr (prodR fracR (optionUR (agreeR (leibnizO N))))) *)
+(* ; localG : inG Σ (gmapUR region (gmapUR ident (exclR (leibnizO ptr)))) *)
+(* ; mem_injG : inG Σ (gmapUR ptr (agreeR (leibnizO addr))) *)
+}.
 
-    Axiom tptsto_has_type : forall resolve t q a v,
-        @tptsto resolve t q a v |-- @tptsto resolve t q a v ** [| has_type v t |].
+Class cpp_logic {ti : biIndex} : Type :=
+{ _Σ :> gFunctors
+; has_cppG :> cppG _Σ }.
+Arguments cpp_logic : clear implicits.
+Coercion _Σ : cpp_logic >-> gFunctors.
 
-    Lemma tptsto_split resolve t q1 q2 a v :
-        @tptsto resolve t (q1+q2) a v -|- @tptsto resolve t q1 a v ** @tptsto resolve t q2 a v.
-    Proof. apply tptsto_fractional. Qed.
+Section with_PROP.
+  Context `{Σ : cpp_logic ti}.
 
-    Axiom tptsto_same_val : forall resolve t q1 q2 a v1 v2,
-        let p :=
-            @tptsto resolve t q1 a v1 ** @tptsto resolve t q2 a v2 in
-        p |-- p ** [| v1=v2 |] ** ([| ((q1+q2)%Qp ≤ 1)%Qc |]).
+  Definition mpred := iProp Σ.
+  Canonical Structure mpredI : bi :=
+    {| bi_car := mpred
+     ; bi_ofe_mixin := (iPropI Σ).(bi_ofe_mixin)
+     ; bi_bi_mixin := (iPropI Σ).(bi_bi_mixin) |}.
+  (* todo: Fix the warning generated from this definition *)
+  Canonical Structure mpredSI : sbi :=
+    {| sbi_car := mpred
+     ; sbi_ofe_mixin := (iPropI Σ).(bi_ofe_mixin)
+     ; sbi_bi_mixin := (iPropI Σ).(bi_bi_mixin)
+     ; sbi_sbi_mixin := (iPropSI Σ).(sbi_sbi_mixin) |}.
 
-    (* this is like a "points to" where the location is (region * ident).
-     *)
-    Parameter local_addr : region -> ident -> ptr -> mpred.
+  (* heap points to *)
+  Definition tptsto {σ:genv} (t : type) (q : Qp) (a : ptr) (v : val) : mpred.
+  Proof using Σ. Admitted.
 
-    (* the pointer points to the code
-     * todo(gmm): i need to bottom this out in something "real" in order
-     * to do code-loading.
-     *)
-    Parameter code_at : forall {resolve:genv}, Func -> ptr -> mpred.
-    (* code_at is freely duplicable *)
-    Global Declare Instance code_at_persistent resolve f p
-      : Persistent (@code_at resolve f p).
-    Global Declare Instance code_at_affine resolve f p
-      : Affine (@code_at resolve f p).
+  Global Instance tptsto_proper_entails :
+    Proper (genv_leq ==> eq ==> eq ==> eq ==> eq ==> lentails) (@tptsto).
+  Proof. Admitted.
+  Global Instance tptsto_proper_equiv :
+    Proper (genv_eq ==> eq ==> eq ==> eq ==> eq ==> lequiv) (@tptsto).
+  Proof. Admitted.
 
-    Parameter ctor_at : forall {resolve: genv}, ptr -> Ctor -> mpred.
-    Parameter dtor_at : forall {resolve:genv}, ptr -> Dtor -> mpred.
+  Global Instance tptsto_fractional σ ty a v
+    : Fractional (λ q, @tptsto σ ty q a v).
+  Proof. Admitted.
+  Global Instance tptsto_as_fractional σ ty q a v :
+    AsFractional (@tptsto σ ty q a v) (λ q, @tptsto σ ty q a v)%I q.
+  Proof. Admitted.
 
-  End with_Σ.
-  Arguments mpred _ : clear implicits.
-  Arguments mpredI _ : clear implicits.
-  Arguments mpredSI _ : clear implicits.
+  Global Instance tptsto_timeless σ ty q a v
+    : Timeless (@tptsto σ ty q a v).
+  Proof. Admitted.
 
-  Existing Instance tptsto_timeless.
+  Theorem tptsto_has_type : forall σ t q a v,
+      @tptsto σ t q a v |-- @tptsto σ t q a v ** [| has_type v t |].
+  Proof. Admitted.
 
-End logic.
+  (* Axiom tptsto_same_val : forall σ t q1 q2 a v1 v2, *)
+  (*     let p := @tptsto σ t q1 a v1 ** @tptsto σ t q2 a v2 in *)
+  (*     p |-- p ** [| v1=v2 |] ** ([| ((q1+q2)%Qp ≤ 1)%Qc |]). *)
 
 
-Declare Module L : logic.
+  (* this is like a "points to" where the location is (region * ident).
+   *)
+  Definition local_addr (ρ : region) (i : ident) (p : ptr) : mpred.
+  Proof using Σ.
+    (* refine (own _ {[ ρ := {[ i := Excl p ]} ]}). eapply localG. 2,3: refine _. *)
+  Admitted.
 
-Export L.
+  (* the pointer points to the code
+   * todo(gmm): i need to bottom this out in something "real" in order
+   * to do code-loading.
+   *)
+  Definition code_at : forall {σ:genv}, Func -> ptr -> mpred.
+  Proof using Σ. Admitted.
+  Definition ctor_at : forall {σ: genv}, Ctor -> ptr -> mpred.
+  Proof using Σ. Admitted.
+  Definition dtor_at : forall {σ:genv}, Dtor -> ptr -> mpred.
+  Proof using Σ. Admitted.
+
+  (* code_at is freely duplicable *)
+  Global Instance code_at_persistent σ f p
+    : Persistent (@code_at σ f p).
+  Proof. Admitted.
+  Global Instance code_at_affine σ f p
+    : Affine (@code_at σ f p).
+  Proof. Admitted.
+
+End with_PROP.

@@ -29,7 +29,7 @@ Global Notation only_provable P := (<affine>(embed P%type))%I (only parsing).
 (* Charge notation levels *)
 Module ChargeNotation.
 
-  Infix "|--"  := (⊢)%I (at level 80, no associativity).
+  Notation "P |-- Q"  := (P%I ⊢ Q%I) (at level 80, no associativity).
   Notation "P //\\ Q"   := (P ∧ Q)%I (at level 75, right associativity).
   Notation "P \\// Q"   := (P ∨ Q)%I (at level 76, right associativity).
   Notation "P -->> Q"   := (P → Q)%I (at level 77, right associativity).
@@ -39,7 +39,7 @@ Module ChargeNotation.
   Notation "'Exists' x .. y , p" :=
     (lexists (fun x => .. (lexists (fun y => p)) ..))%I (at level 78, x binder, y binder, right associativity).
 
-  Notation "|--  P" := (bi_pure True |-- P) (at level 85, no associativity).
+  Notation "|--  P" := (⊢ P%I) (at level 85, no associativity).
 
   Notation "P ** Q" := (P ∗ Q)%I (at level 58, right associativity).
   Notation "P -* Q" := (P -∗ Q)%I (at level 60, right associativity).

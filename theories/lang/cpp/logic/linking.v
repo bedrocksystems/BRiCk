@@ -10,23 +10,21 @@ From iris.proofmode Require Import tactics.
 From bedrock.lang.cpp Require Import
      ast logic.pred logic.compilation_unit.
 
-Section with_Σ.
-Context {Σ:gFunctors}.
+Section with_PROP.
+Context {PROP : sbi}.
 
-Local Notation mpred := (mpred Σ) (only parsing).
-
-Lemma illater_wandSP : forall (P Q : mpred), |> (P -* Q) |-- (|> P) -* (|> Q).
+Lemma illater_wandSP : forall (P Q : PROP), |> (P -* Q) |-- (|> P) -* (|> Q).
 Proof.
   iIntros (P Q). iIntros "HPQ HP". iNext. by iApply "HPQ".
 Qed.
-Lemma illater_sepSP : forall (P Q : mpred), |> (P ** Q) -|- (|> P) ** (|> Q).
+Lemma illater_sepSP : forall (P Q : PROP), |> (P ** Q) -|- (|> P) ** (|> Q).
 Proof.
   iIntros (P Q). iSplit.
   - iIntros "HPQ". by iApply bi.later_sep_1.
   - iIntros "HPQ". iNext. eauto.
 Qed.
-Lemma later_empSP : |> (empSP : mpred) -|- empSP.
-Proof. iSplit; eauto. Qed.
+(* Lemma later_empSP : |> (empSP : PROP) -|- empSP. *)
+(* Proof. apply bi.later_emp. SearchAbout sbi_later. Qed. *)
 
 (* note that the meaning of a module must be persistent,
  * if you have non-persistent terms (e.g. ptsto), then you either need
@@ -34,7 +32,7 @@ Proof. iSplit; eauto. Qed.
  * the imports (this would only be a problem if they are initialized via
  * a function call, but I don't think that you can actually do that).
  *)
-Definition module (imports exports : mpred) : mpred :=
+Definition module (imports exports : PROP) : PROP :=
   (|> imports) -* exports.
 
 (* Theorem use_module_prim *)
@@ -49,7 +47,7 @@ Definition module (imports exports : mpred) : mpred :=
 
 
 (*
-Theorem module_self_link (E : mpred) :
+Theorem module_self_link (E : PROP) :
   module E E |-- E.
 Proof.
   eapply lob_ind.
@@ -58,12 +56,12 @@ Proof.
   reflexivity.
 Qed.
 
-Theorem module_link (I1 I2 E1 E2 : mpred) :
+Theorem module_link (I1 I2 E1 E2 : PROP) :
   module (E2 ** I1) E1 ** module (E1 ** I2) E2
   |-- module (I1 ** I2) (E1 ** E2).
 Proof. Abort.
 
-Lemma lob_link : forall A B : mpred,
+Lemma lob_link : forall A B : PROP,
     ((|> A) -->> B) //\\ ((|> B) -->> A) |-- A //\\ B.
 Proof.
   intros. (*
@@ -90,4 +88,4 @@ Abort.
      * |>B ==> A
      * A //\\ B
      *)
-End with_Σ.
+End with_PROP.

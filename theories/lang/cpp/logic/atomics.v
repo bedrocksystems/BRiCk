@@ -9,30 +9,24 @@ Import invG.
 From bedrock Require Import ChargeCompat.
 From bedrock.lang.cpp Require Import ast semantics.
 From bedrock.lang.cpp.logic Require Import
-     pred heap_pred wp call.
+     pred path_pred heap_pred wp call cclogic.
 
 
 Section with_Σ.
-  Context `{!invG Σ} {resolve:genv}.
-  Variable (ti : thread_info) (ρ : region).
+  Context `{Σ : cpp_logic thread_info, !invG Σ} {resolve:genv}.
+  Variables (ti : thread_info) (ρ : region).
 
-  Local Notation mpred := (mpred Σ) (only parsing).
-  Local Notation mpredI := (mpredI Σ) (only parsing).
-  Local Notation mpredSI := (mpredSI Σ) (only parsing).
-  Local Notation FreeTemps := (FreeTemps Σ) (only parsing).
-
-  Local Notation wp_prval := (wp_prval (Σ:=Σ) (resolve:=resolve) ti ρ).
-  Local Notation wp_args := (wp_args (Σ:=Σ) (resolve:=resolve) ti ρ).
+  Local Notation wp_prval := (wp_prval (resolve:=resolve) ti ρ).
+  Local Notation wp_args := (wp_args (σ:=resolve) ti ρ).
 
   Local Notation glob_def := (glob_def resolve) (only parsing).
   Local Notation eval_unop := (@eval_unop resolve) (only parsing).
   Local Notation eval_binop := (@eval_binop resolve) (only parsing).
   Local Notation size_of := (@size_of resolve) (only parsing).
   Local Notation align_of := (@align_of resolve) (only parsing).
-  Local Notation primR := (@primR Σ resolve) (only parsing).
-  Local Notation anyR := (@anyR Σ resolve) (only parsing).
-  Local Notation uninitR := (@uninitR Σ resolve) (only parsing).
-
+  Local Notation primR := (@primR _ _ resolve) (only parsing).
+  Local Notation anyR := (@anyR _ _ resolve) (only parsing).
+  Local Notation uninitR := (@uninitR _ _ resolve) (only parsing).
 
   Definition wrap_shift (F : (val -> mpred) -> mpred) (Q : val -> mpred) : mpred :=
     Exists mid, (|={⊤,mid}=> F (fun result => |={mid,⊤}=> Q result))%I.

@@ -14,7 +14,7 @@ From Coq Require Import
 
 From bedrock.lang.cpp Require Import ast semantics.
 From bedrock.lang.cpp.logic Require Import
-     pred heap_pred destroy wp initializers call intensional.
+     pred path_pred heap_pred destroy wp initializers call intensional.
 
 Module Type Stmt.
   Local Open Scope string_scope.
@@ -22,26 +22,26 @@ Module Type Stmt.
   (** weakest pre-condition for statements
    *)
   Section with_resolver.
-    Context {Σ:gFunctors} {resolve:genv}.
-    Variable ti : thread_info.
-    Variable ρ : region.
+    Context `{Σ : cpp_logic thread_info} {resolve:genv}.
+    Variables (ti : thread_info) (ρ : region).
 
-    Local Notation wp := (wp (Σ :=Σ) (resolve:=resolve) ti ρ).
-    Local Notation wpe := (wpe (Σ :=Σ) (resolve:=resolve) ti ρ).
-    Local Notation wp_lval := (wp_lval (Σ :=Σ) (resolve:=resolve) ti ρ).
-    Local Notation wp_prval := (wp_prval (Σ :=Σ) (resolve:=resolve) ti ρ).
-    Local Notation wp_xval := (wp_xval (Σ :=Σ) (resolve:=resolve) ti ρ).
-    Local Notation wp_glval := (wp_glval (Σ :=Σ) (resolve:=resolve) ti ρ).
-    Local Notation wp_rval := (wp_rval (Σ :=Σ) (resolve:=resolve) ti ρ).
-    Local Notation wp_init := (wp_init (Σ :=Σ) (resolve:=resolve) ti ρ).
-    Local Notation wpAny := (wpAny (Σ :=Σ) (resolve:=resolve) ti ρ).
-    Local Notation wpAnys := (wpAnys (Σ :=Σ) (resolve:=resolve) ti ρ).
-
-    Local Notation mpred := (mpred Σ) (only parsing).
-    Local Notation Kpreds := (Kpreds Σ) (only parsing).
+    Local Notation wp := (wp (resolve:=resolve) ti ρ).
+    Local Notation wpe := (wpe (resolve:=resolve) ti ρ).
+    Local Notation wp_lval := (wp_lval (resolve:=resolve) ti ρ).
+    Local Notation wp_prval := (wp_prval (resolve:=resolve) ti ρ).
+    Local Notation wp_xval := (wp_xval (resolve:=resolve) ti ρ).
+    Local Notation wp_glval := (wp_glval (resolve:=resolve) ti ρ).
+    Local Notation wp_rval := (wp_rval (resolve:=resolve) ti ρ).
+    Local Notation wp_init := (wp_init (resolve:=resolve) ti ρ).
+    Local Notation wpAny := (wpAny (resolve:=resolve) ti ρ).
+    Local Notation wpAnys := (wpAnys (resolve:=resolve) ti ρ).
+    Local Notation fspec := (fspec ti).
+    Local Notation mdestroy := (@mdestroy Σ resolve ti) (only parsing).
+    Local Notation destruct := (destruct (σ:=resolve) ti) (only parsing).
+    Local Notation destruct_obj := (destruct_obj (σ:=resolve) ti) (only parsing).
 
     Local Notation glob_def := (glob_def resolve) (only parsing).
-    Local Notation _global := (_global resolve) (only parsing).
+    Local Notation _global := (@_global resolve) (only parsing).
     Local Notation _field := (@_field resolve) (only parsing).
     Local Notation _sub := (@_sub resolve) (only parsing).
     Local Notation _super := (@_super resolve) (only parsing).
@@ -49,12 +49,9 @@ Module Type Stmt.
     Local Notation eval_binop := (@eval_binop resolve) (only parsing).
     Local Notation size_of := (@size_of resolve) (only parsing).
     Local Notation align_of := (@align_of resolve) (only parsing).
-    Local Notation mdestroy := (@mdestroy Σ resolve) (only parsing).
-    Local Notation destruct := (@destruct Σ resolve) (only parsing).
-    Local Notation destruct_obj := (@destruct_obj Σ resolve) (only parsing).
-    Local Notation primR := (@primR Σ resolve) (only parsing).
-    Local Notation anyR := (@anyR Σ resolve) (only parsing).
-    Local Notation uninitR := (@uninitR Σ resolve) (only parsing).
+    Local Notation primR := (primR (resolve:=resolve)) (only parsing).
+    Local Notation anyR := (anyR (resolve:=resolve)) (only parsing).
+    Local Notation uninitR := (uninitR (resolve:=resolve)) (only parsing).
 
 
    (* the semantics of return is like an initialization
@@ -129,7 +126,7 @@ Module Type Stmt.
                   let destroy :=
                       match dtor with
                       | None => fun x => x
-                      | Some dtor => destruct_obj ti dtor cls (Vptr a)
+                      | Some dtor => destruct_obj dtor cls (Vptr a)
                       end (_at (_eq a) (anyR (erase_qualifiers ty) 1))
                   in
                   let continue :=
@@ -145,7 +142,7 @@ Module Type Stmt.
                   let destroy : mpred :=
                       match dtor with
                       | None => fun x => x
-                      | Some dtor => destruct ti ty (Vptr a) dtor
+                      | Some dtor => destruct ty (Vptr a) dtor
                       end (_at (_eq a) (anyR (erase_qualifiers ty) 1))
                   in
                   let continue :=

@@ -12,9 +12,9 @@ Section with_PROP.
   Context {PROP : bi}.
 
   (* Original charge lemmas. *)
-  Lemma ltrueR: forall (C : PROP), C |-- bi_pure True.
+  Lemma ltrueR: forall (C : PROP), C |-- True.
   Proof. intros. iIntros "C". eauto. Qed.
-  Lemma lfalseL: forall (C : PROP), bi_pure False |-- C.
+  Lemma lfalseL: forall (C : PROP), False |-- C.
   Proof. intros. iIntros "[]". Qed.
   Lemma lexistsL: forall {T : Type} (P: T -> PROP) C, (forall x, P x |-- C) -> Exists y, P y |-- C.
   Proof. intros. iIntros "HP". iDestruct "HP" as (x) "HP". iApply H. eauto. Qed.

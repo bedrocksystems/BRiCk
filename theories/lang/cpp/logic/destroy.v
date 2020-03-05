@@ -7,21 +7,20 @@ Require Import Coq.ZArith.ZArith.
 Require Import bedrock.lang.cpp.ast.
 Require Import bedrock.lang.cpp.semantics.
 From bedrock.lang.cpp.logic Require Import
-     pred wp heap_pred.
+     pred wp path_pred heap_pred.
 
 Section destroy.
-  Context {Σ:gFunctors} {resolve:genv}.
-  Context (ti : thread_info).
+  Context `{Σ : cpp_logic thread_info} {σ:genv}.
+  Variable (ti : thread_info).
 
-  Local Notation mpred := (mpred Σ) (only parsing).
-  Local Notation _sub := (_sub (resolve:=resolve)) (only parsing).
-  Local Notation anyR := (@anyR Σ resolve) (only parsing).
-  Local Notation _global := (@_global resolve) (only parsing).
+  Local Notation _sub := (_sub (resolve:=σ)) (only parsing).
+  Local Notation anyR := (anyR (resolve:=σ)) (only parsing).
+  Local Notation _global := (_global (resolve:=σ)) (only parsing).
 
   (* remove from the stack *)
   Definition destruct_obj (dtor : obj_name) (cls : globname) (v : val) (Q : mpred) : mpred :=
     Exists da, _global dtor &~ da **
-               |> fspec (Vptr da) ti (v :: nil) (fun _ => Q).
+               |> fspec ti (Vptr da) (v :: nil) (fun _ => Q).
 
   Fixpoint destruct (t : type) (this : val) (dtor : obj_name) (Q : mpred)
            {struct t}

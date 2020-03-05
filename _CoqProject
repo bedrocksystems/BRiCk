@@ -26,6 +26,7 @@ theories/lang/cpp/semantics.v
 
 # Program Logic
 theories/lang/cpp/logic/pred.v
+theories/lang/cpp/logic/path_pred.v
 theories/lang/cpp/logic/heap_pred.v
 theories/lang/cpp/logic/intensional.v
 theories/lang/cpp/logic/wp.v

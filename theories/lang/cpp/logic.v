@@ -7,6 +7,7 @@ Require Export bedrock.ChargeUtil.
 Require Export bedrock.lang.cpp.semantics.
 From bedrock.lang.cpp.logic Require Export
      pred
+     path_pred
      heap_pred
      wp
      intensional

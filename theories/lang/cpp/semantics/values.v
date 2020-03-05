@@ -66,9 +66,6 @@ Proof. inversion 1; reflexivity. Qed.
 
 (* this is the stack frame *)
 Parameter region : Type.
-(* this is the thread information *)
-Parameter thread_info : Type.
-
 
 (** pointer offsets *)
 (* All offsets are valid pointers. todo: This is unsound. *)
@@ -128,7 +125,7 @@ Definition genv_eq (l r : genv) : Prop :=
 Parameter genv_compat : compilation_unit -> genv -> Prop.
 Infix "⊧" := genv_compat (at level 1).
 
-
+Parameter subModuleModels : forall a b σ, b ⊧ σ -> module_le a b = true -> a ⊧ σ.
 
 (* todo(gmm): this should be indexed by [genv] *)
 Parameter has_type : val -> type -> Prop.

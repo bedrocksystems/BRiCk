@@ -15,8 +15,8 @@ Require Import Coq.NArith.BinNatDef.
 
 From bedrock.lang.cpp Require Import ast semantics.
 From bedrock.lang.cpp.logic Require Import
-     pred
-     heap_pred destroy
+     pred path_pred heap_pred
+     destroy
      wp call intensional
      compilation_unit.
 
@@ -31,23 +31,21 @@ Module Type Expr.
    *)
 
   Section with_resolve.
-    Context {Σ:gFunctors} {resolve:genv}.
-    Variable ti : thread_info.
-    Variable ρ : region.
+    Context `{Σ : cpp_logic thread_info} {resolve:genv}.
+    Variables (ti : thread_info) (ρ : region).
 
-    Local Notation wp_lval := (wp_lval (Σ:=Σ) (resolve:=resolve) ti ρ).
-    Local Notation wp_prval := (wp_prval (Σ:=Σ) (resolve:=resolve) ti ρ).
-    Local Notation wp_xval := (wp_xval (Σ:=Σ) (resolve:=resolve) ti ρ).
-    Local Notation wp_glval := (wp_glval (Σ:=Σ) (resolve:=resolve) ti ρ).
-    Local Notation wp_rval := (wp_rval (Σ:=Σ) (resolve:=resolve) ti ρ).
-    Local Notation wp_init := (wp_init (Σ:=Σ) (resolve:=resolve) ti ρ).
-    Local Notation wp_args := (wp_args (Σ:=Σ) (resolve:=resolve) ti ρ).
-    Local Notation wpAny := (wpAny (Σ:=Σ) (resolve:=resolve) ti ρ).
-    Local Notation wpe := (wpe (Σ:=Σ) (resolve:=resolve) ti ρ).
-    Local Notation wpAnys := (wpAnys (Σ:=Σ) (resolve:=resolve) ti ρ).
-
-    Local Notation mpred := (mpred Σ) (only parsing).
-    Local Notation FreeTemps := (FreeTemps Σ) (only parsing).
+    Local Notation wp_lval := (wp_lval (resolve:=resolve) ti ρ).
+    Local Notation wp_prval := (wp_prval (resolve:=resolve) ti ρ).
+    Local Notation wp_xval := (wp_xval (resolve:=resolve) ti ρ).
+    Local Notation wp_glval := (wp_glval (resolve:=resolve) ti ρ).
+    Local Notation wp_rval := (wp_rval (resolve:=resolve) ti ρ).
+    Local Notation wp_init := (wp_init (resolve:=resolve) ti ρ).
+    Local Notation wp_args := (wp_args (σ:=resolve) ti ρ).
+    Local Notation wpAny := (wpAny (resolve:=resolve) ti ρ).
+    Local Notation wpe := (wpe (resolve:=resolve) ti ρ).
+    Local Notation wpAnys := (wpAnys (resolve:=resolve) ti ρ).
+    Local Notation fspec := (fspec ti).
+    Local Notation mdestroy := (mdestroy (σ:=resolve) ti) (only parsing).
 
     Local Notation glob_def := (glob_def resolve) (only parsing).
     Local Notation _global := (@_global resolve) (only parsing).
@@ -58,10 +56,9 @@ Module Type Expr.
     Local Notation eval_binop := (@eval_binop resolve) (only parsing).
     Local Notation size_of := (@size_of resolve) (only parsing).
     Local Notation align_of := (@align_of resolve) (only parsing).
-    Local Notation mdestroy := (@mdestroy Σ resolve) (only parsing).
-    Local Notation primR := (@primR Σ resolve) (only parsing).
-    Local Notation anyR := (@anyR Σ resolve) (only parsing).
-    Local Notation uninitR := (@uninitR Σ resolve) (only parsing).
+    Local Notation primR := (primR (resolve:=resolve)) (only parsing).
+    Local Notation anyR := (anyR (resolve:=resolve)) (only parsing).
+    Local Notation uninitR := (uninitR (resolve:=resolve)) (only parsing).
 
     Notation "[! P !]" := (embed P).
 
@@ -455,45 +452,45 @@ Module Type Expr.
             Q addr (free ** _at (_eqv addr) (anyR (erase_qualifiers ty) 1)))
         else
           wp_prval f (fun f free => wp_args es (fun vs free' =>
-            |> fspec f ti vs (fun v => Q v (free ** free')))))
+            |> fspec f vs (fun v => Q v (free ** free')))))
         |-- wp_prval (Ecall f es ty) Q.
 
     Axiom wp_lval_call :
       forall f (es : list (ValCat * Expr))
         Q addr (ty : type),
         wp_prval f (fun f free_f => wp_args es (fun vs free_args =>
-             |> fspec f ti vs (fun res =>
+             |> fspec f vs (fun res =>
                       [| res = addr |] -* Q res (free_f ** free_args))))
         |-- wp_lval (Ecall f es ty) Q.
 
     Axiom wp_xval_call : forall ty f es Q,
         wp_prval f (fun f free => wp_args es (fun vs free' =>
-            |> fspec f ti vs (fun v => Q v (free ** free'))))
+            |> fspec f vs (fun v => Q v (free ** free'))))
         |-- wp_xval (Ecall f es ty) Q.
     Axiom wp_init_call :
       forall f (es : list (ValCat * Expr))
         (Q : FreeTemps -> mpred) addr (ty : type),
         wp_prval f (fun f free_f => wp_args es (fun vs free_args =>
-             |> fspec f ti vs (fun res =>
+             |> fspec f vs (fun res =>
                       [| res = addr |] -* Q (free_f ** free_args))))
         |-- wp_init ty addr (Ecall f es ty) Q.
 
     Axiom wp_prval_member_call : forall ty f obj es Q,
         Exists fa, _global f &~ fa **
         wp_lval obj (fun this free => wp_args es (fun vs free' =>
-            |> fspec (Vptr fa) ti (this :: vs) (fun v => Q v (free ** free'))))
+            |> fspec (Vptr fa) (this :: vs) (fun v => Q v (free ** free'))))
         |-- wp_prval (Emember_call (inl (f, false)) obj es ty) Q.
     Axiom wp_xval_member_call : forall ty f obj es Q,
         Exists fa, _global f &~ fa **
         wp_lval obj (fun this free => wp_args es (fun vs free' =>
-            |> fspec (Vptr fa) ti (this :: vs) (fun v => Q v (free ** free'))))
+            |> fspec (Vptr fa) (this :: vs) (fun v => Q v (free ** free'))))
         |-- wp_xval (Emember_call (inl (f, false)) obj es ty) Q.
     Axiom wp_init_member_call :
       forall f (es : list (ValCat * Expr))
         (Q : FreeTemps -> mpred) addr (ty : type) obj,
         Exists fa, _global f &~ fa **
         wp_prval obj (fun this free_o => wp_args es (fun vs free_args =>
-             |> fspec (Vptr fa) ti (this :: vs) (fun res =>
+             |> fspec (Vptr fa) (this :: vs) (fun res =>
                       [| res = addr |] -* Q (free_o ** free_args))))
         |-- wp_init ty addr (Emember_call (inl (f, false)) obj es ty) Q.
 
@@ -518,7 +515,7 @@ Module Type Expr.
         (Forall a, _at (_eqv a) (uninitR (erase_qualifiers ty) 1) -*
                   let '(e,dt) := destructor_for e in
                   wp_init ty a e
-                          (fun free => Q a (mdestroy ti ty a dt free)))
+                          (fun free => Q a (mdestroy ty a dt free)))
         |-- wp_xval (Ematerialize_temp e ty) Q.
 
     (* [Ematerialize_temp e ty] is an xvalue
@@ -528,7 +525,7 @@ Module Type Expr.
            _at (_eqv a) (uninitR (erase_qualifiers ty) 1) -*
            let '(e,dt) := destructor_for e in
            wp_init ty a e
-                   (fun free => Q a (mdestroy ti ty a dt free)))
+                   (fun free => Q a (mdestroy ty a dt free)))
         |-- wp_lval (Ematerialize_temp e ty) Q.
 
     (* temporary materialization only occurs when the resulting value is used.
@@ -542,7 +539,7 @@ Module Type Expr.
          Forall a, _at (_eqv a) (uninitR ty 1) -*
                    let '(e,dt) := destructor_for e in
                    wp_init ty a e (fun free =>
-                                     Q a (mdestroy ti ty a dt free)))
+                                     Q a (mdestroy ty a dt free)))
         |-- wp_prval e Q.
 
 
@@ -563,7 +560,7 @@ Module Type Expr.
       Forall a : val,
       _at (_eqv a) (uninitR (erase_qualifiers ty) 1) -*
           wp_init ty a e (fun free =>
-                            Q a (mdestroy ti ty a (Some dtor) free))
+                            Q a (mdestroy ty a (Some dtor) free))
       |-- wp_prval (Ebind_temp e dtor ty) Q.
 
     Axiom wp_pseudo_destructor : forall e ty Q,

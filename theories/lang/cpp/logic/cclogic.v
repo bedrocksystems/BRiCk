@@ -25,9 +25,7 @@ From bedrock.lang.cpp Require Import
      logic.pred.
 
 Section with_Σ.
-  Context `{!invG Σ}.
-
-  Local Notation mpred := (mpred Σ) (only parsing).
+  Context `{Σ : cpp_logic, !invG Σ}.
 
   (** Unsound axioms **)
   (* This should only be possible for wp's for a given mask *)
