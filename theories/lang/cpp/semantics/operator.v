@@ -256,11 +256,10 @@ Axiom eval_ptr_neq :
     c = (if ptr_eq_dec av bv then 0 else 1)%Z ->
     eval_binop (resolve:=resolve) Bneq (Tpointer ty) (Tpointer ty) Tbool a b (Vint c).
 
-Definition bitFlipZ (z : Z) : Z := -1 - z.
 Definition to_unsigned (z : Z) (sz : N) : Z := z mod (Z.pow 2 (Z.of_N sz)).
 
 Definition bitFlipZU (z:Z) (len: N) : Z :=
-  to_unsigned (bitFlipZ z) len.
+  to_unsigned (Z.lnot z) len.
 
 Axiom eval_unop_not:
   forall {genv} (w : size) s (a b : Z),
