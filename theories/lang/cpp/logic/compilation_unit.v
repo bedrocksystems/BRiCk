@@ -98,10 +98,7 @@ Module Type modules.
 
   Axiom denoteModule_weaken : forall m, denoteModule m |-- empSP.
 
-  Lemma subModuleModels a b σ:
-  module_le a b = true
-  -> b ⊧ σ
-  -> a ⊧ σ.
+  Lemma subModuleModels a b σ: module_le a b = true -> b ⊧ σ -> a ⊧ σ.
   Proof using.
   Admitted.
 
