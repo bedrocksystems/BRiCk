@@ -1,0 +1,1 @@
+COQDOCEXTRAFLAGS = --no-index

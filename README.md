@@ -148,6 +148,10 @@ $ make test
 See the examples in the `tests` directory.
 More examples will be added as the feature set evolves.
 
+## Documentation
+https://bedrocksystems.gitlab.io/cpp2v/
+Coq sources for the documentation are in `doc/`
+
 ## Repository Layout
 
 - The implementation of the `cpp2v` tool is in `src` and `include`.

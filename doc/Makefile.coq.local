@@ -1,0 +1,1 @@
+COQDOCEXTRAFLAGS = --external https://bedrocksystems.gitlab.io/cpp2v bedrock --no-index

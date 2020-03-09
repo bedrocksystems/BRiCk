@@ -1,5 +1,5 @@
 #
-# Copyright (C) BedRock Systems Inc. 2019 Gregory Malecha
+# Copyright (C) BedRock Systems Inc. 2020 Gregory Malecha
 #
 # SPDX-License-Identifier:AGPL-3.0-or-later
 #
@@ -23,12 +23,21 @@ coq: Makefile.coq
 	ln -s `pwd`/theories build/bedrock
 
 doc: coq
+	rm -rf public
+	rm -rf html
 	$(MAKE) -f Makefile.coq html
+	cd doc/; $(MAKE) html
+	mv doc/html/*.html html/
+	mv html/toc.html html/index.html
+
 html: doc
+public: html
+	mv html public
 
 clean: Makefile.coq
 	$(MAKE) -f Makefile.coq clean
 	rm -f Makefile.coq Makefile.coq.conf
+	$(MAKE) -C doc clean
 
 install: Makefile.coq
 	$(MAKE) -f Makefile.coq install

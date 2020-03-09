@@ -1,6 +1,4 @@
-Require Import bedrock.auto.cpp.
 Require Import iris.base_logic.lib.viewshifts.
-Require Import bedrock.auto.cpp.GFunClass.
 Require Import bedrock.auto.invariants.
 Require Import bedrock.auto.cpp.specs.
 Require Import bedrock.lib.frac.
@@ -80,21 +78,25 @@ For examples, see the tests directory.
     The definitions of [StC_] and [StC] are such that they are disjoint, but coupled.
     Formally, this means that it is always the case that the implementation's view [StC_]
     is the same as (compatible with) the client's view [StC].
-    
-    (this is provable trivially from the implementation)
     *)
-  Axiom StC_compat : forall g t t',
-    StC_ g t ** StC g t' |-- [| t = t' |] ** StC_ g t ** StC g g'.
-    
+  Lemma StC_compat : forall g  t t',
+      StC_ g t ** StC g t' |--  (StC_ g t ** StC g t') ** [| t = t' |].
+  Proof using.
+    intros.
+    apply fgptsto_ag2.
+  Qed.
   
    (**
     Additionally, if you have both [StC_] and [StC], then you can change both
     values logically atomically.
-    
-    (this is also trivially provable)
     *)
-   Axiom StC_update : forall g t t',
-     StC_ g t ** StC g t |-- |=> StC_ g t' ** StC g t'.
+   Lemma StC_update : forall g t t',
+      StC_ g t ** StC g t |-- (|==> StC_ g t' ** StC g t')%I.
+   Proof using.
+     unfold StC, StC_. intros.
+     use_protect half_half_update; work.
+   Qed.
+   
   
   (** Now we define the actual class representation using a named (concurrent) invariant.
    For this, we use [TInv] which correspond to "destroyable invariants".
