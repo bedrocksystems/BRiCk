@@ -90,8 +90,8 @@ then for any assertion [H] separate from [P] and [Q], the [P**H] and [Q**H]
 are also valid pre and post conditions respectively.
 *)
 
-(** *Structured Reps
- *)
+(** * Structured Reps
+*)
 
 (**
 In the examples above (e.g. [ex]), in the [x |-> r] notation, the LHS ([x]) must be an *absolute* location,
@@ -166,8 +166,8 @@ We can now use [PointR] in the precondition of Point::getX() function as: [ this
 *)
 
 
-(** *Magic Wand
- *)
+(** * Magic Wand
+*)
 
 (**
 The following assertion asserts that 
@@ -185,8 +185,8 @@ Lemma wandElim: pl ** (pl -* pr) |-- pr.
 Proof using. work. Qed.
        
 
-(** *Pure Assertions
- *)
+(**  * Pure Assertions
+*)
 
 (**
 Some assertions are pure in the sense that they
