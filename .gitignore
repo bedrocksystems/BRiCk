@@ -12,3 +12,5 @@ build
 deps.pdf
 deps.dot
 .envrc
+public
+doc/html

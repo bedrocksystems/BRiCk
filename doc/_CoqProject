@@ -2,3 +2,4 @@
 -Q . bedrock.lang.cpp.doc
 logic.v
 refinement.v
+notations.v
