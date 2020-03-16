@@ -8,6 +8,14 @@ default_target: coq
 COQPATHFILE=$(wildcard _CoqPath)
 COQMAKEFILE=$(COQBIN)coq_makefile
 
+EXTRA_DIR=coqdocjs/extra
+COQDOCFLAGS:= \
+  --toc --toc-depth 2 --html --interpolate \
+  --index indexpage --no-lib-name --parse-comments \
+  --with-header $(EXTRA_DIR)/header.html --with-footer $(EXTRA_DIR)/footer.html
+export COQDOCFLAGS
+
+
 cpp2v: build/Makefile
 	$(MAKE) -C build cpp2v
 
@@ -26,12 +34,16 @@ doc: coq
 	rm -rf public
 	rm -rf html
 	$(MAKE) -f Makefile.coq html
-	cd doc/; $(MAKE) html
-	mv doc/html/*.html html/
-	mv html/toc.html html/index.html
+	$(MAKE) -C doc html
+	cp -r doc/html/* html/
+	cp -r $(EXTRA_DIR)/resources/* html
+	cp html/toc.html html/index.html
+
+doc_extra:
+	git clone --depth 1 https://github.com/coq-community/coqdocjs.git doc_extra
 
 html: doc
-public: html
+public: html doc_extra
 	mv html public
 
 clean: Makefile.coq
