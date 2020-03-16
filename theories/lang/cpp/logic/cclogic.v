@@ -175,18 +175,20 @@ Section with_Σ.
     (*   iDestruct "H" as (γ) "H". eauto. *)
     (* Qed. *)
 
+
+(*
     Lemma cinv_open_stronger E N γ p P :
       ↑N ⊆ E →
-      cinv N γ P -* (cinv_own γ p ={E,E∖↑N}=∗
-                                           ((|>P) ** cinv_own γ p ** (Forall (E' : coPset), ((|>(P ∨ cinv_own γ 1)) ={E',↑N ∪ E'}=∗ True)))).
+      cinv N γ P ⊢ (cinv_own γ p ={E,E∖↑N}=∗
+                    ((|>P) ** cinv_own γ p ** (Forall (E' : coPset), ((|>(P ∨ cinv_own γ 1)) ={E',↑N ∪ E'}=∗ True)))).
     Proof.
       iIntros (?) "Hinv Hown".
-      unfold cinv. iDestruct "Hinv" as (P') "[#HP' Hinv]".
-      iPoseProof (inv_open (↑ N) N _ with "Hinv") as "H"; first done.
+      unfold cinv. (* iDestruct "Hinv" as (P') "[#HP' Hinv]". *)
+      iPoseProof (inv_acc (↑ N) N _ with "Hinv") as "H"; first done.
       rewrite difference_diag_L.
       iPoseProof (fupd_mask_frame_r _ _ (E ∖ ↑ N) with "H") as "H"; first set_solver.
       rewrite left_id_L -union_difference_L //. iMod "H" as "[[HP | >HP] H]".
-      - iDestruct ("HP'" with "HP") as "HP". iFrame. iModIntro.
+      - iModIntro. iFrame. iDestruct ("HP'" with "HP") as "HP". iFrame. iModIntro.
         iIntros (E') "HP".
         iPoseProof (fupd_mask_frame_r _ _ E' with "(H [HP])") as "H"; first set_solver.
         { iDestruct "HP" as "[HP | >Hown]".
@@ -196,13 +198,14 @@ Section with_Σ.
           by rewrite left_id_L.
       - iDestruct (cinv_own_1_l with "HP Hown") as %[].
     Qed.
+*)
 
     Lemma Tinv_open_strong E N γ p P :
       ↑N ⊆ E →
       cinv N γ P |--
            (cinv_own γ p ={E,E∖↑N}=∗
-                                  ((|>P) ** cinv_own γ p ** (Forall (E' : coPset), ((|>(P ∨ cinv_own γ 1)) ={E',↑N ∪ E'}=∗ True))))%I.
-    Proof. iIntros (?) "#Hinv Hown". iApply cinv_open_stronger=>//. Qed.
+              ((|>P) ** cinv_own γ p ** (Forall (E' : coPset), ((|>P ∨ cinv_own γ 1) ={E',↑N ∪ E'}=∗ True))))%I.
+    Proof. iIntros (?) "#Hinv Hown". iApply cinv_acc_strong =>//. Qed.
 
   End with_Σ'.
 End with_Σ.

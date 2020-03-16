@@ -57,8 +57,8 @@ Bind Scope N_scope with size.
 Coercion N_of_size : size >-> N.
 Lemma of_size_gt_O w :
   (0 < 2 ^ Z_of_size w)%Z.
-Proof. unfold Z_of_size. unfold BinIntDef.Z.of_N. unfold N_of_size. destruct w; reflexivity. Qed.
-Hint Resolve of_size_gt_O.
+Proof. destruct w; reflexivity. Qed.
+(* Hint Resolve of_size_gt_O. *)
 
 (* Signed and Unsigned *)
 Variant signed : Set := Signed | Unsigned.

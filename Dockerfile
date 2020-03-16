@@ -24,24 +24,28 @@
 
 FROM ocaml/opam2:debian-unstable
 
-ENV NJOBS=2
-ENV COMPILER="4.06"
-ENV CAMLP5_VER="7.05"
-ENV FINDLIB_VER="1.8.0"
-ENV COQ_VER="8.9.1"
+ENV NJOBS=3
+ENV COMPILER="4.09"
+# ENV CAMLP5_VER="7.05"
+# ENV FINDLIB_VER="1.8.1"
+ENV COQ_VER="8.11.0"
 ENV LLVM_MAJ_VER="9"
 
 RUN sudo apt-get update -y
 RUN sudo apt-get install -y m4 cmake llvm-${LLVM_MAJ_VER} libllvm${LLVM_MAJ_VER} llvm-${LLVM_MAJ_VER}-dev llvm-${LLVM_MAJ_VER}-runtime clang-${LLVM_MAJ_VER} clang-tools-${LLVM_MAJ_VER} libclang-common-${LLVM_MAJ_VER}-dev libclang-${LLVM_MAJ_VER}-dev libclang1-${LLVM_MAJ_VER}
+RUN opam repo set-url default https://opam.ocaml.org/
 RUN opam init -j ${NJOBS} -n -y --compiler=$COMPILER
 RUN opam switch set ${COMPILER}
 RUN eval $(opam config env)
 RUN opam repo add coq-released https://coq.inria.fr/opam/released
-RUN opam config list
 RUN opam update
-RUN opam repo add coq-released https://coq.inria.fr/opam/released || echo "coq-released registered"
-RUN opam install -j ${NJOBS} -y coq.${COQ_VER} coq-ltac-iter coq-ext-lib
-RUN opam repo add coq-released https://coq.inria.fr/opam/released
+RUN opam config list
+RUN opam repo list
+RUN opam pin add coq ${COQ_VER}
+RUN opam install -j ${NJOBS} -y coq-ext-lib coq-metacoq-template
+
+ENV IRIS_COMMIT="62be0a86890dbbf0dd3e4fc09edaa6d0227baebd"
+
 RUN opam repo add iris-dev https://gitlab.mpi-sws.org/iris/opam.git
-RUN git clone https://gitlab.mpi-sws.org/iris/iris.git; cd iris; git reset --hard b958d569; eval $(opam config env); make build-dep; make -j3; make install
+RUN git clone https://gitlab.mpi-sws.org/iris/iris.git; cd iris; git reset --hard ${IRIS_COMMIT}; eval $(opam config env); make build-dep; make -j3; make install
 RUN sudo apt-get install time

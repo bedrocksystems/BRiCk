@@ -5,6 +5,8 @@ Makefile.coq
 Makefile.coq.conf
 *.glob
 *.vo
+*.vok
+*.vos
 *.aux
 .lia.cache
 .nia.cache

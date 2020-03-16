@@ -19,7 +19,7 @@ all: coq cpp2v test
 coq: Makefile.coq
 	$(MAKE) -f Makefile.coq
 	mkdir -p build/
-	rm -rf build/bedrock
+	rm -f build/bedrock
 	ln -s `pwd`/theories build/bedrock
 
 doc: coq
@@ -57,7 +57,7 @@ test-cpp2v: build-minimal cpp2v
 build-minimal: Makefile.coq
 	$(MAKE) -f Makefile.coq theories/lang/cpp/parser.vo
 	mkdir -p build/
-	rm -rf build/bedrock
+	rm -f build/bedrock
 	ln -s `pwd`/theories build/bedrock
 
 .PHONY: test install coq all doc html clean install cpp2v cpp2v_plugin
@@ -66,8 +66,17 @@ build/Makefile:
 	mkdir -p build
 	(cd build; cmake ..)
 
+touch_deps:
+	touch `find -iname *.vo`  || true
+	touch `find -iname *.vok` || true
+	touch `find -iname *.vos` || true
+	touch `find -iname *.glob` || true
+	touch `find -iname *.aux` || true
+	touch `find tests/cpp2v-parser/ -iname *.v` || true
+	touch `find build` || true
+
 deps.pdf: _CoqProject
 	coqdep -f _CoqProject -dumpgraphbox deps.dot > /dev/null
 	dot -Tpdf -o deps.pdf deps.dot
 
-.PHONY: deps.pdf
+.PHONY: touch_deps

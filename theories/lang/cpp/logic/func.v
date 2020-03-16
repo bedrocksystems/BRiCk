@@ -226,10 +226,10 @@ Module Type Func.
         Forall ρ : region,
         (* this is what is created from the parameters *)
         let binds :=
-            sepSPs (zip (fun '(x, t) 'v => bind_type ρ t x v) f.(f_params) args) in
+            sepSPs (zip_with (fun '(x, t) 'v => bind_type ρ t x v) f.(f_params) args) in
         (* this is what is freed on return *)
         let frees :=
-            sepSPs (zip (fun '(x, t) 'v => free_type ρ t x v) (rev f.(f_params)) (rev args)) in
+            sepSPs (zip_with (fun '(x, t) 'v => free_type ρ t x v) (rev f.(f_params)) (rev args)) in
         ([| length args = length f.(f_params) |] ** ltrue) //\\
         if is_void ret
         then
@@ -257,12 +257,12 @@ Module Type Func.
             (* this is what is created from the parameters *)
             let binds :=
                 this_addr ρ thisp **
-                sepSPs (zip (fun '(x, t) 'v => bind_type ρ t x v) meth.(m_params) rest_vals)
+                sepSPs (zip_with (fun '(x, t) 'v => bind_type ρ t x v) meth.(m_params) rest_vals)
             in
             (* this is what is freed on return *)
             let frees :=
                 this_addr ρ thisp **
-                sepSPs (zip (fun '(x, t) 'v => free_type ρ t x v) (rev meth.(m_params))
+                sepSPs (zip_with (fun '(x, t) 'v => free_type ρ t x v) (rev meth.(m_params))
                        (rev rest_vals))
             in
             let ret_ty := meth.(m_return) in
@@ -298,10 +298,10 @@ Module Type Func.
 
         (* this is what is created from the parameters *)
         let binds :=
-            sepSPs (zip (fun '(x, t) 'v => bind_type ρ t x v) params vals) in
+            sepSPs (zip_with (fun '(x, t) 'v => bind_type ρ t x v) params vals) in
         (* this is what is freed on return *)
         let frees :=
-            sepSPs (zip (fun '(x, t) 'v => free_type ρ t x v)
+            sepSPs (zip_with (fun '(x, t) 'v => free_type ρ t x v)
                    (rev params) (rev vals)) in
         if is_void ret
         then
@@ -342,12 +342,12 @@ Module Type Func.
             (* this is what is created from the parameters *)
             let binds :=
                 this_addr ρ thisp **
-                sepSPs (zip (fun '(x, t) 'v => bind_type ρ t x v) meth.(m_params) rest_vals)
+                sepSPs (zip_with (fun '(x, t) 'v => bind_type ρ t x v) meth.(m_params) rest_vals)
             in
             (* this is what is freed on return *)
             let frees :=
                 this_addr ρ thisp **
-                sepSPs (zip (fun '(x, t) 'v => free_type ρ t x v) (rev meth.(m_params))
+                sepSPs (zip_with (fun '(x, t) 'v => free_type ρ t x v) (rev meth.(m_params))
                        (rev rest_vals))
             in
             let ret_ty := meth.(m_return) in
@@ -409,12 +409,12 @@ Module Type Func.
             (* this is what is created from the parameters *)
             let binds :=
                 this_addr ρ thisp **
-                sepSPs (zip (fun '(x, t) 'v => bind_type ρ t x v) ctor.(c_params) rest_vals)
+                sepSPs (zip_with (fun '(x, t) 'v => bind_type ρ t x v) ctor.(c_params) rest_vals)
             in
             (* this is what is freed on return *)
             let frees :=
                 this_addr ρ thisp **
-                sepSPs (zip (fun '(x, t) 'v => free_type ρ t x v) (rev ctor.(c_params)) (rev rest_vals))
+                sepSPs (zip_with (fun '(x, t) 'v => free_type ρ t x v) (rev ctor.(c_params)) (rev rest_vals))
             in
             Forall Q : mpred Σ,
             (binds ** PQ (fun x => Q)) -*
