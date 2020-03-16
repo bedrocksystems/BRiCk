@@ -26,6 +26,7 @@ Bind Scope string_scope with localname.
 Bind Scope Z_scope with Z.
 
 Declare Custom Entry cppglobal.
+Declare Scope cppfield_scope.
 Delimit Scope cppfield_scope with field.
 Bind Scope cppfield_scope with field.
 

@@ -117,6 +117,9 @@ Global Declare Instance PreOrder_genv_leq : PreOrder genv_leq.
 Definition glob_def (g : genv) (gn : globname) : option GlobDecl :=
   lookup_global g.(genv_cu) gn.
 
+Definition genv_eq (l r : genv) : Prop :=
+  genv_leq l r /\ genv_leq r l.
+
 (* this states that the [genv] is compatible with the given [compilation_unit]
  * it essentially means that the [genv] records all the types from the
  * compilation unit and that the [genv] contains addresses for all globals

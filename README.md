@@ -31,11 +31,11 @@ sudo apt install llvm-9 llvm-9-dev clang-9 libclang-9-dev cmake opam
 # install opam dependencies
 opam repo add coq-released https://coq.inria.fr/opam/released
 opam repo add iris-dev https://gitlab.mpi-sws.org/iris/opam.git
-opam pin coq 8.9.1
-opam install coq coq-charge-core coq-ltac-iter
+opam pin coq 8.11.0
+opam install coq coq-ext-lib
 # install iris
 git clone https://gitlab.mpi-sws.org/iris/iris.git
-(cd iris; git reset --hard b958d569; make build-dep; make -j3; make install)
+(cd iris; git reset --hard 62be0a86890dbbf0dd3e4fc09edaa6d0227baebd; make build-dep; make -j3; make install)
 # install cpp2v
 git clone https://github.com/bedrocksystems/cpp2v.git
 (cd cpp2v; make cpp2v cpp2v_plugin coq; make install)
@@ -49,11 +49,11 @@ export PATH=/usr/local/opt/llvm/bin:${PATH}
 # install opam dependencies
 opam repo add coq-released https://coq.inria.fr/opam/released
 opam repo add iris-dev https://gitlab.mpi-sws.org/iris/opam.git
-opam pin coq 8.9.1
-opam install coq coq-charge-core coq-ltac-iter
+opam pin coq 8.11.0
+opam install coq coq-ext-lib
 # install iris
 git clone https://gitlab.mpi-sws.org/iris/iris.git
-(cd iris; git reset --hard b958d569; make build-dep; make -j3; make install)
+(cd iris; git reset --hard 62be0a86890dbbf0dd3e4fc09edaa6d0227baebd; make build-dep; make -j3; make install)
 # install cpp2v
 git clone https://github.com/bedrocksystems/cpp2v.git
 cd cpp2v
@@ -88,19 +88,19 @@ $ export PATH=/usr/local/opt/llvm/bin:${PATH}
 You can get all of the Coq dependencies via `opam` with the following command.
 
 ```shell
-$ opam install coq coq-charge-core coq-ltac-iter
+$ opam install coq-ext-lib
 ```
 
 See [`opam` installation instructions](http://coq-blog.clarus.me/use-opam-for-coq.html) for help installing opam in Linux.
 
-Note that you probably need to pin Coq to 8.9.1 as that is the currently supported version.
+Note that you probably need to pin Coq to 8.11.0 as that is the currently supported version.
 
 To install Iris:
 
 ```sh
 # install Iris
 $ opam repo add iris-dev https://gitlab.mpi-sws.org/iris/opam.git
-$ git clone https://gitlab.mpi-sws.org/iris/iris.git; cd iris; git reset --hard b958d569; make build-dep; make -j3
+$ git clone https://gitlab.mpi-sws.org/iris/iris.git; cd iris; git reset --hard 62be0a86890dbbf0dd3e4fc09edaa6d0227baebd; make build-dep; make -j3
 $ make install
 ```
 
