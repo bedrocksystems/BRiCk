@@ -4,6 +4,14 @@
 # SPDX-License-Identifier:AGPL-3.0-or-later
 #
 
+EXTRA_DIR=coqdocjs/extra
+COQDOCFLAGS:= \
+  --toc --toc-depth 2 --html --interpolate \
+  --index indexpage --no-lib-name --parse-comments \
+  --external https://bedrocksystems.gitlab.io/cpp2v bedrock \
+  --with-header ../$(EXTRA_DIR)/header.html --with-footer ../$(EXTRA_DIR)/footer.html
+export COQDOCFLAGS
+
 coq: Makefile.coq
 	$(MAKE) -f Makefile.coq
 

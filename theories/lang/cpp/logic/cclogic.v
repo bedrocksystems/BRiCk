@@ -204,7 +204,7 @@ Section with_Σ.
       ↑N ⊆ E →
       cinv N γ P |--
            (cinv_own γ p ={E,E∖↑N}=∗
-              ((|>P) ** cinv_own γ p ** (Forall (E' : coPset), ((|>P ∨ cinv_own γ 1) ={E',↑N ∪ E'}=∗ True))))%I.
+                                  ((|>P) ** cinv_own γ p ** (Forall (E' : coPset), ((|>P ∨ cinv_own γ 1) ={E',↑N ∪ E'}=∗ True))))%I.
     Proof. iIntros (?) "#Hinv Hown". iApply cinv_acc_strong =>//. Qed.
 
   End with_Σ'.
