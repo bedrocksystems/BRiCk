@@ -18,10 +18,10 @@ The main assertion is of the form:
  *)
 Example ex: mpred := x |-> r.
 
-(** 
-As declared above, [x] is a pointer (memory location) 
-and [r] is a memory representation. [ex] asserts that x is a valid location and that location contains 
-the memory representation r. 
+(**
+As declared above, [x] is a pointer (memory location)
+and [r] is a memory representation. [ex] asserts that x is a valid location and that location contains
+the memory representation r.
 
 As an example, [ex2] below asserts that the memory location [x] contains
 the long value 2. [ex2] also asserts ownership fraction q
@@ -29,13 +29,13 @@ the long value 2. [ex2] also asserts ownership fraction q
 *)
 Example ex2 : mpred := x |-> (longR q 2).
 
-(** the right hand side of [_ |-> _] has type [Rep] which stands for 
+(** the right hand side of [_ |-> _] has type [Rep] which stands for
 memory representations. *)
 Definition ex3 : Rep :=  longR 1 2.
 
 (**
 [q] of type [Qp] is a positive rational number.
-In our context, it must be in range (0,1]. 
+In our context, it must be in range (0,1].
 [1] implies full ownership, which can be used to update or delete
 the memory location. lesser ownership can be used to read the location. *)
 
@@ -43,14 +43,14 @@ Example eFrac1 : Qp := 1.
 Example eFrac2 : Qp := 1/2.
 
 Variable z:Z.
-(** 
+(**
 There are similar primitives for other primitive types as well: *)
 Example e4 : Rep := intR q z. (** similarly, [sintR] and [uingR] *)
 Example e6 : Rep := charR q z. (** similarly, [scharR] for signed and [ucharR] for unsigned *)
 Example e5 : Rep := shortR q z. (** similarly, [ushortR] and [sshortR] *)
 Example e7 : Rep := longR q z. (** similarly, [ulongR] and [slongR] *)
 Example e8 : Rep := longlongR q z. (** similarly, [ulonglongR] and [slonglongR] *)
-Example e9 : Rep  := int8 q z. (** similarly, [int16], [int32], [uni64]. Prefix 'u' for the unsigned variants *)
+Example e9 : Rep  := int8R q z. (** similarly, [int16], [int32], [uni64]. Prefix 'u' for the unsigned variants *)
 Variable b: bool.
 Example e11: bool:=true.
 Example e10 : Rep := boolR (1/2) b.
@@ -60,7 +60,7 @@ Example e10 : Rep := boolR (1/2) b.
 Variable pl: mpred.
 Variable pr: mpred.
 
-(** Any two [mpred]s can be combined together using the infix operator [**] 
+(** Any two [mpred]s can be combined together using the infix operator [**]
 to get an [mpred]:
 *)
 Example e12: mpred := pl ** pr.
@@ -81,13 +81,13 @@ Example e14 : mpred := x |-> intR (1/2) 4 ** x |-> intR (1/2) 4.
 Example e15 : mpred := x |-> intR 1 4 ** y |-> intR (1/2) 4.
 
 (** This separateness part of the [**] (instead of vanila conjuction) gives the main modularity properties of separation logic.
-For example, if a thread [t1] has precondition [P1] and postcondition [Q2], 
+For example, if a thread [t1] has precondition [P1] and postcondition [Q2],
 and a thread [t2] has precondition [P2] and postcondition [Q2],
 the thread [t1 || t2] ([t1] and [t2] running in parallel) has precondition
 [P1**P2] and postcondition [Q1**Q2].
-Also, separation logic has the frame property: of we can proof a precondition [P] and postcondition [Q] for a function [f], 
+Also, separation logic has the frame property: if we can prove a precondition [P] and postcondition [Q] for a function [f],
 then for any assertion [H] separate from [P] and [Q], the [P**H] and [Q**H]
-are also valid pre and post conditions respectively.
+are also valid pre- and post- conditions respectively.
 *)
 
 (** * Structured Reps
@@ -121,7 +121,7 @@ Because the notation [_ |-> _] is declared right associative, we can drop the pa
 
 Example e19 : mpred := this |-> struct_field |-> r.
 
-(** 
+(**
 As a concrete example, consider the following struct:
 [[
 class Point {
@@ -158,7 +158,7 @@ Record Model_Point : Type :=
 Definition PointR q m : Rep :=
   (_field `::Point::x`)  |-> (intR q m.(p_x))**
   (_field `::Point::y`)  |-> (intR q m.(p_y)).
-  
+
 (**
 Above, note that notation [**] has also been overloaded to work on [Rep]s, not just [mpred]s. Here,
 it says that the relative locations are disjoint.
@@ -170,20 +170,20 @@ We can now use [PointR] in the precondition of Point::getX() function as: [ this
 *)
 
 (**
-The following assertion asserts that 
+The following assertion asserts that
 you have the resources
 of [pr] "minus" the resources in [pl].
 *)
 
 Example wand1 : mpred := pl -* pr.
 
-(** 
+(**
 The main reasoning rule for this construct is the following, which says that once you separately get the missing piece, you get the whole thing back.:
 *)
 
 Lemma wandElim: pl ** (pl -* pr) |-- pr.
 Proof using. work. Qed.
-       
+
 
 (**  * Pure Assertions
 *)

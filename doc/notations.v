@@ -1,6 +1,4 @@
 Require Import bedrock.auto.cpp.
-Require Import bedrock.auto.cpp.notations.
-Require Import bedrock.auto.cpp.GFunClass.
 
 Section with_env.
 
