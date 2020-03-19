@@ -22,7 +22,7 @@ clang -Xclang -load -Xclang ./libcpp2v_plugin.so -Xclang -plugin -Xclang cpp2v -
 
 ## Build & Dependencies
 
-### TL;DR Linux (Ubuntu)
+### Linux (Ubuntu)
 
 The following script should work, but you can customize it based on what you have:
 
@@ -35,13 +35,13 @@ opam pin coq 8.11.0
 opam install coq coq-ext-lib
 # install iris
 git clone https://gitlab.mpi-sws.org/iris/iris.git
-(cd iris; git reset --hard 62be0a86890dbbf0dd3e4fc09edaa6d0227baebd; make build-dep; make -j3; make install)
+(cd iris && git reset --hard 62be0a86890dbbf0dd3e4fc09edaa6d0227baebd && make build-dep && make -j3 && make install)
 # install cpp2v
-git clone https://github.com/bedrocksystems/cpp2v.git
-(cd cpp2v; make cpp2v cpp2v_plugin coq; make install)
+git clone https://gitlab.com/bedrocksystems/cpp2v.git
+(cd cpp2v && make cpp2v cpp2v_plugin coq && make install)
 ```
 
-### TL;DR OSX
+### OSX
 
 ```sh
 brew install llvm cmake opam
@@ -53,100 +53,26 @@ opam pin coq 8.11.0
 opam install coq coq-ext-lib
 # install iris
 git clone https://gitlab.mpi-sws.org/iris/iris.git
-(cd iris; git reset --hard 62be0a86890dbbf0dd3e4fc09edaa6d0227baebd; make build-dep; make -j3; make install)
+(cd iris && git reset --hard 62be0a86890dbbf0dd3e4fc09edaa6d0227baebd && make build-dep && make -j3 && make install)
 # install cpp2v
-git clone https://github.com/bedrocksystems/cpp2v.git
+git clone https://gitlab.com/bedrocksystems/cpp2v.git
 cd cpp2v
 mkdir build && cd build
 cmake -D CMAKE_EXE_LINKER_FLAGS=-L/usr/local/opt/llvm/lib ..
-cmake --build .
+cmake --build . --target cpp2v
 cd ..
-make cpp2v coq
-```
-
-## Long Version
-
-This repository is broken down into two components. The `cpp2v` tool does not require Coq, and the Coq libraries do not require `cpp2v`. However, the two components are coupled because they operate on the same underlying syntax.
-
-### The cpp2v Tool
-
-To install the `cpp2v` tool, you need the following packages (they can be installed via `apt` on a Ubuntu distribution).
-
-1. `llvm-9`, `llvm-9-dev`, `clang-9`, `libclang-9-dev`
-2. `cmake`
-
-#### OSX Instructions
-
-On an OSX system, you run the following commands.
-
-```sh
-$ brew install llvm cmake
-$ export PATH=/usr/local/opt/llvm/bin:${PATH}
-```
-
-### Coq
-You can get all of the Coq dependencies via `opam` with the following command.
-
-```shell
-$ opam install coq-ext-lib
-```
-
-See [`opam` installation instructions](http://coq-blog.clarus.me/use-opam-for-coq.html) for help installing opam in Linux.
-
-Note that you probably need to pin Coq to 8.11.0 as that is the currently supported version.
-
-To install Iris:
-
-```sh
-# install Iris
-$ opam repo add iris-dev https://gitlab.mpi-sws.org/iris/opam.git
-$ git clone https://gitlab.mpi-sws.org/iris/iris.git; cd iris; git reset --hard 62be0a86890dbbf0dd3e4fc09edaa6d0227baebd; make build-dep; make -j3
-$ make install
-```
-
-#### OSX Instructions
-
-On OSX, `opam` can be installed via `brew`.
-
-```sh
-$ brew install opam
-$ opam repo add coq-released https://coq.inria.fr/opam/released
-```
-
-More detailed code for building.
-
-```sh
-$ brew install llvm cmake
-$ export PATH=/usr/local/opt/llvm/bin:${PATH}
-$ git clone https://github.com/bedrocksystems/cpp2v.git
-$ cd cpp2v
-$ mkdir build && cd build
-$ cmake -D CMAKE_EXE_LINKER_FLAGS=-L/usr/local/opt/llvm/lib ..
-$ cmake --build .
-```
-
-## Building
-You can build `cpp2v` using the following commands.
-
-```sh
-$ make cpp2v cpp2v_plugin
-```
-
-You can build the Coq development using (this is the default):
-
-```sh
-$ make coq
-```
-
-You can run the tests with
-
-```sh
-$ make test
+make coq
 ```
 
 ## Examples
 See the examples in the `tests` directory.
 More examples will be added as the feature set evolves.
+
+You can run the tests with:
+
+```sh
+$ make test
+```
 
 ## Documentation
 https://bedrocksystems.gitlab.io/cpp2v/
