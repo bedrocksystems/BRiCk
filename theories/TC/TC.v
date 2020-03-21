@@ -11,7 +11,7 @@ Require Import Lens.Lens.
 
 Set Primitive Projections.
 
-Record Info : Set :=
+Record Info : Type :=
 { type : ident
 ; ctor : ident
 ; fields : list (ident * term)
@@ -26,7 +26,7 @@ Fixpoint countTo (n : nat) : list nat :=
 Definition lensName (ls : string) (i : ident) : ident :=
   ls ++ i.
 
-Local Quote Definition cBuild_Lens := Build_Lens.
+Quote Definition cBuild_Lens := Build_Lens.
 
 Local Definition mkLens (At : term) (fields : list (ident * term)) (i : nat)
 : option (ident * term) :=
@@ -76,7 +76,7 @@ Local Definition getFields (mi : mutual_inductive_body) (n : nat)
       | nil =>
         let ctor_arity := get_arity ctor_type in
         if decide (ctor_arity > get_arity oib.(ind_type)) then
-          print_nf ("info: the constructor " ++ ctor_name ++ " has no projections but an arity of " ++ (utils.string_of_nat ctor_arity) ++ ". Perhaps you forgot to enable primitive projections.")
+          print_nf ("info: the constructor " ++ ctor_name ++ " has no projections but an arity of " ++ (MCString.string_of_nat ctor_arity) ++ ". Perhaps you forgot to enable primitive projections before the definition of the Inductive")
         else ret tt
       | _ => ret tt
       end ;;
@@ -108,3 +108,31 @@ Definition genLens (T : Type) : TemplateMonad unit :=
       ret tt
   | _ => tmFail "given type is not inductive"
   end.
+
+(* baseName should not contain any paths. For example, if the full name
+is A.B.C#D#E#F, baseName should be F. Also, by import ordering,
+ensure that F resolves to  A.B.C#D#E#F. Use Locate to check this.
+
+If the definition of F refers to any other inductive, they should not
+be in the current section(s).
+ *)
+Definition genLensN (baseName : String.string) : TemplateMonad unit :=
+  let ty :=
+      (Ast.tInd
+         {|
+           inductive_mind := baseName;
+           inductive_ind := 0 (* TODO: fix for mutual records *) |}
+         List.nil) in
+  ind <- tmQuoteInductive baseName ;;
+  info <- getFields ind 0;;
+  let gen i :=
+      match mkLens ty info.(fields) i return TemplateMonad unit with
+      | None => tmFail "failed to build lens"
+      | Some x =>
+        nd <- (tmEval cbv x);;
+           let '(n,d) := nd in
+           tmMkDefinition n d ;;
+                          ret tt
+      end
+  in
+  monad_map gen (countTo (List.length info.(fields)));; ret tt.
