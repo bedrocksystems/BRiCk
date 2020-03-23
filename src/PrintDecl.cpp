@@ -150,7 +150,7 @@ printDestructor(const CXXDestructorDecl *decl, CoqPrinter &print,
         print.end_ctor();
         print.end_record();
     } else {
-        print.none();
+        print.output() << "None |}";
     }
 }
 
