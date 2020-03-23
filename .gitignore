@@ -16,3 +16,4 @@ deps.dot
 .envrc
 public
 doc/html
+.Makefile.coq.d
