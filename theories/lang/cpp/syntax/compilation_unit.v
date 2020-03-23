@@ -376,7 +376,7 @@ Variant GlobDecl : Set :=
 | Gtype
 | Gunion    (_ : Union)
 | Gstruct   (_ : Struct)
-| Genum     (_ : type)
+| Genum     (_ : type) (_ : list string)
 | Gconstant (_ : type) (_ : option Expr)
 | Gtypedef  (_ : type)
 | Gtypedec  (* this is a type declaration, but not a definition *)
@@ -388,7 +388,8 @@ Proof.
   generalize type_eq_dec.
   decide equality.
   eapply Decidable_dec; eauto with typeclass_instances.
-  eapply Decidable_dec; eauto with typeclass_instances.  
+  eapply Decidable_dec; eauto with typeclass_instances.
+  eapply Decidable_dec; eauto with typeclass_instances.
   eapply Decidable_dec; eauto with typeclass_instances.
 Defined.
 
@@ -408,7 +409,7 @@ Definition GlobDecl_merge (a b : GlobDecl) : option GlobDecl :=
   | Gstruct s , Gstruct s' =>
     require (decide (s = s')) ;;
     Some a
-  | Genum e , Genum e' =>
+  | Genum e _ , Genum e' _ =>
     require (decide (e = e')) ;;
     Some a
   | Gconstant t (Some e) , Gconstant t' (Some e') =>
@@ -429,10 +430,10 @@ Definition GlobDecl_merge (a b : GlobDecl) : option GlobDecl :=
     Some a
   | Gtypedec , Gunion _
   | Gtypedec , Gstruct _
-  | Gtypedec , Genum _ => Some b
+  | Gtypedec , Genum _ _ => Some b
   | Gunion _ , Gtypedec
   | Gstruct _ , Gtypedec
-  | Genum _ , Gtypedec
+  | Genum _ _ , Gtypedec
   | Gtypedec , Gtypedec => Some a
   | _ , _ => None
   end%monad.
@@ -525,16 +526,18 @@ Definition Dstruct (name : globname) (o : option Struct) : compilation_unit :=
 Definition Denum (name : globname) (t : option type) (branches : list (ident * BinNums.Z)) : compilation_unit :=
   {| symbols := nil
    ; globals :=
-       let ty := match t with
-                 | None => Tref name
-                 | Some t => Talias t name
-                 end
+       let enum_ty := Tref name in
+       let raw_ty :=
+           match t with
+           | None => enum_ty
+           | Some t => t
+           end
        in
        match t with
-       | Some t =>  (name, Genum t) :: nil
+       | Some t =>  (name, Genum t (List.map fst branches)) :: nil
        | None => nil
        end ++
-       List.map (fun '(nm, oe) => (nm, Gconstant ty (Some (Eint oe ty)))) branches |}.
+       List.map (fun '(nm, oe) => (nm, Gconstant enum_ty (Some (Eint oe raw_ty)))) branches |}.
   (* ^ enumerations (the initializers need to be constant expressions) *)
 
 Definition Dconstant    (name : globname) (t : type) (e : Expr) : compilation_unit :=
