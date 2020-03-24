@@ -6,7 +6,7 @@ Require Import bedrock.lib.frac.
 Section withΣ.
   Context {Σ : gFunctors} {wsg: wsat.invG.invG Σ} {cl: cancelable_invariants.cinvG Σ}.
 
-(**
+  (**
 Suppose we have have a concurrent class `C` with operation `oa` that is *logically atomic*.
 Suppose `oa` takes an integer as an argument.
 For example, `C` could be a counter and `oa` could increment it by a given number.
@@ -18,20 +18,20 @@ We pick a Coq type [T] that captures the state of a `C` object and
 a step function [oa_step] that models the how `oa` changes the
 state of the object. The following is one choice for the counter example:
  [T := Z], [oaStep i a := (i + a, tt)].
- *)
+   *)
 
   Parameter T: Type.
 
   Parameter oa_step: forall (a:Z (* models the argument to `oa` *)) (pre: T), T (* post state *) * Z (* return value *).
 
 
-(**
+  (**
 Then we define the class representation predicate that describes the relationship
 between the C memory representation of objects of class `C` with the Gallina
 type [T].
 This layout is completely implementation dependent.
 For examples, see the tests directory.
-*)
+   *)
   Parameter CR : T -> Rep.
 
   (** `C` is a concurrent class. Many callers are expected to
@@ -124,7 +124,7 @@ For examples, see the tests directory.
 
   (** additional resources necessary to establish the invariant
    *)
-  Parameter fill_in : mpred.
+  Parameter FILL_IN : mpred.
 
   (** the model of the initial object constructed by the constructor *)
   Parameter init_val : T.
@@ -137,7 +137,7 @@ For examples, see the tests directory.
    2. ownership of [StC] representing his handle on the state.
    *)
   Definition constructorSpec (this : ptr) : WithPrePost Σ :=
-    \pre fill_in
+    \pre FILL_IN
     \post Exists (g: Cghost),
        this |-> (CRInv g 1) ** StC g init_val.
 
@@ -164,8 +164,8 @@ For examples, see the tests directory.
   (** predicates describing non-concurent resources that are accessible throughout
       the function, e.g. the buffer of an output parameter
    *)
-  Parameter fill_in_pre : mpred.
-  Parameter fill_in_post : Z -> mpred.
+  Parameter FILL_IN_pre : mpred.
+  Parameter FILL_IN_post : Z -> mpred.
 
   (**
    The [svs] definition describes the logical (model level) code that runs at
@@ -189,12 +189,12 @@ For examples, see the tests directory.
     \with (q: Qp) (Q : Z -> mpred) (g: Cghost)
     \arg{a} "a" (Vint a)
     \prepost this |-> (CRInv g q)
-    \pre fill_in_pre ** (** other resources, e.g. ownership for output buffer, if needed *)
+    \pre FILL_IN_pre ** (** other resources, e.g. ownership for output buffer, if needed *)
          (Forall (pre_t :T),
             let (post_t, r) := oa_step a pre_t in
             svs (⊤∖  ↑ this_name_space) (⊤∖  ↑ this_name_space)
                 (StC_ g pre_t ** oa_return_resources pre_t a)
                 (StC_ g post_t ** oa_call_resources pre_t a ** Q r))
-    \post{r}[Vint r] Q r ** fill_in_post r.
+    \post{r}[Vint r] Q r ** FILL_IN_post r.
 
 End withΣ.
