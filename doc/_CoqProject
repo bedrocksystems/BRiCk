@@ -6,6 +6,7 @@
 
 -Q . bedrock.lang.cpp.doc
 logic.v
-refinement.v
+class_predicates.v
 howto_sequential.v
 notations.v
+refinement.v

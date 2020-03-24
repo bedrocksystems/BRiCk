@@ -1,5 +1,18 @@
+(**
+This tutorial assumes basic understanding of functional programming and logic.
+A good way to revise these concepts is to read the first 5 chapters 
+(Preface,..., Polymorphism and Higher order functions) of the
+#<a href=https://softwarefoundations.cis.upenn.edu/lf-current/deps.html>Software Foundations</a># book
+
+Just like that book, this tutorial is produced from Coq .v files, which can be found in _cpp2v/doc_.
+If you want to play with the Coq code in this tutorial, you may want to open the .v source file 
+in a Coq editor, instead of opening the html output in a web brower.
+In the html, identifiers are hyperlinked to their definition. 
+Your Coq editor may also provide a facility to jump to definition (M-. in emacs (company-coq mode))
+*)
 Require Import bedrock.auto.cpp.specs.
 
+Section with_Σ.
 Context {Σ: gFunctors} {σ:genv}.
 Import primitives.
 Open Scope bi_scope.
@@ -40,7 +53,7 @@ In our context, it must be in range (0,1].
 the memory location. lesser ownership can be used to read the location. *)
 
 Example eFrac1 : Qp := 1.
-Example eFrac2 : Qp := 1/2.
+Example eFrac2 : Qp := 2/4.
 
 Variable z:Z.
 (**
@@ -100,13 +113,18 @@ We have also overloaded the same notation to the case where [x] is *relative* lo
 defined by a field or an array index and type (size of elements) of array.
 *)
 
-Variable struct_field : field.
+Variable struct_field struct_field2 : field.
 
 Example structRep1 : Rep := struct_field |-> r.
 
 (**
 Note that in In this case, the whole term [structRep] has type [Rep] (memory representation) instead of [mpred]. Such [Rep]s typically describe the memory representation of an *absolute* location holding structured data, e.g. structs, arrays, classes:
+
+  note that a [Rep] is like "Even", it isn't meaningful to say "Even is true",
+  it is only meaningful to say "Even n" is true. Similarly, it isn't meaningful
+  to say that a [Rep] holds, until you say what location it holds on.
  *)
+
 
 Variable this:ptr.
 
@@ -122,52 +140,17 @@ Because the notation [_ |-> _] is declared right associative, we can drop the pa
 Example e19 : mpred := this |-> struct_field |-> r.
 
 (**
-As a concrete example, consider the following struct:
-[[
-class Point {
-private:
-    int x, y;
-public:
-    int getX() const { return x; }
-};
-]]
-
-For the above class, cpp2v will generate an AST
-containing mangled names and a Point_hpp_names.v
-file containing the following unmangling helpers,
-which allow you to conveniently refer to fields
-(the notation ([`::Point::x`]) has type [field])
- *)
-
-Notation "`::Point::x`" :={| f_type := "Z4Point" ; f_name := "_Z4Pointx" |} (at level 0).
-
-Notation "`::Point::y`" :={| f_type := "Z4Point" ; f_name := "_Z4Pointy" |} (at level 0).
-
-(**
-Just like [intR] defines the memory representation for the type [int],
-we can define [PointR] to define the memory representation for the class [Point].
-Just like [intR] takes as agument a [z:Z] to denote the mathematical number being
-represented, we define a Gallina record to denote the mathematical model of what is stored:
+Note that the [**] notation is overloaded to work on [Rep]s as well as [mpred]s;
+however, the meaning is intuitively the same. That is, the following [Rep]
+states that the relative locations are disjoint (i.e. for any *single* absolute
+location [l], [l ., struct_field |-> r ** l ., struct_field2 |-> r]).
 *)
 
-Record Model_Point : Type :=
-  { p_x : Z
-  ; p_y : Z
-  }.
-
-Definition PointR q m : Rep :=
-  (_field `::Point::x`)  |-> (intR q m.(p_x))**
-  (_field `::Point::y`)  |-> (intR q m.(p_y)).
-
-(**
-Above, note that notation [**] has also been overloaded to work on [Rep]s, not just [mpred]s. Here,
-it says that the relative locations are disjoint.
-We can now use [PointR] in the precondition of Point::getX() function as: [ this |-> PointR q m ]
-*)
+Example e20 : Rep := struct_field |-> r ** struct_field2 |-> r.
 
 
-(** * Magic Wand
-*)
+
+(** * Magic Wand *)
 
 (**
 The following assertion asserts that
@@ -202,3 +185,19 @@ Example pure2 : Prop := 1=2.
 (** In Coq, pure assertions have type [Prop]. However, in function specs, pre and post conditions have type [mpred]. To convert an [Prop] to an [mpred], we put them inside [| _ |] *)
 
 Definition pureMpred : mpred := [| 1=1 |].
+(*
+ptrR
+
+as_rep
+
+Exists
+
+Forall
+
+Best practices:
+think about finiteness of words
+pattern match on return value
+
+borrow_from
+*)
+End with_Σ.
