@@ -150,7 +150,8 @@ printDestructor(const CXXDestructorDecl *decl, CoqPrinter &print,
         print.end_ctor();
         print.end_record();
     } else {
-        print.output() << "None |}";
+        print.none();
+        print.end_record();
     }
 }
 
@@ -507,20 +508,20 @@ public:
     void VisitVarDecl(const VarDecl *decl, CoqPrinter &print,
                       ClangPrinter &cprint, const ASTContext &) {
         if (decl->isConstexpr()) {
-	  if (decl->hasInit()) {
-            print.ctor("Dconstant");
-            cprint.printGlobalName(decl, print);
-            print.output() << fmt::nbsp;
-            cprint.printQualType(decl->getType(), print);
-            print.output() << fmt::nbsp; 
-	    cprint.printExpr(decl->getInit(), print);
-	  } else { //no initializer
-            print.ctor("Dconstant_undef");
-            cprint.printGlobalName(decl, print);
-            print.output() << fmt::nbsp;
-            cprint.printQualType(decl->getType(), print);
-	  }
-	  print.output() << fmt::rparen;
+            if (decl->hasInit()) {
+                print.ctor("Dconstant");
+                cprint.printGlobalName(decl, print);
+                print.output() << fmt::nbsp;
+                cprint.printQualType(decl->getType(), print);
+                print.output() << fmt::nbsp;
+                cprint.printExpr(decl->getInit(), print);
+            } else { //no initializer
+                print.ctor("Dconstant_undef");
+                cprint.printGlobalName(decl, print);
+                print.output() << fmt::nbsp;
+                cprint.printQualType(decl->getType(), print);
+            }
+            print.output() << fmt::rparen;
         } else {
             print.ctor("Dvar");
             cprint.printGlobalName(decl, print);

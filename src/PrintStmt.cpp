@@ -39,7 +39,9 @@ public:
         if (stmt->isSingleDecl() &&
             (sd = stmt->getSingleDecl(),
              (isa<StaticAssertDecl>(sd) || isa<UsingDirectiveDecl>(sd) ||
-              isa<UsingDecl>(sd)))) {
+              isa<UsingDecl>(sd) || isa<TagDecl>(sd)))) {
+            // these declarations are not relevant to runtime behavior, so
+            // we replace them with Sskip.
             print.output() << "Sskip";
         } else {
             print.ctor("Sdecl");
@@ -198,8 +200,8 @@ public:
         if (stmt->getRHS()) {
             print.ctor("Range", false)
                 << "(" << stmt->getLHS()->EvaluateKnownConstInt(ctxt) << ")%Z"
-                << fmt::nbsp
-                << "(" << stmt->getRHS()->EvaluateKnownConstInt(ctxt) << ")%Z";
+                << fmt::nbsp << "("
+                << stmt->getRHS()->EvaluateKnownConstInt(ctxt) << ")%Z";
             print.end_ctor();
         } else {
             print.ctor("Exact", false)
