@@ -5,7 +5,7 @@ Require Import Lens.TC.TC.
 Record Oops : Set :=
 { oops1 : nat }.
 
-Run TemplateProgram (genLens Oops).
+Fail Run TemplateProgram (genLens Oops).
 
 Set Primitive Projections.
 

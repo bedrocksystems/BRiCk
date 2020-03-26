@@ -11,9 +11,9 @@ Require Import Lens.Lens.
 
 Set Primitive Projections.
 
-Record Info : Type :=
-{ type : ident
-; ctor : ident
+Record Info :=
+{ type   : ident
+; ctor   : ident
 ; fields : list (ident * term)
 }.
 
