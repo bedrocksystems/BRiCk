@@ -76,7 +76,7 @@ Local Definition getFields (mi : mutual_inductive_body) (n : nat)
       | nil =>
         let ctor_arity := get_arity ctor_type in
         if decide (ctor_arity > get_arity oib.(ind_type)) then
-          print_nf ("info: the constructor " ++ ctor_name ++ " has no projections but an arity of " ++ (MCString.string_of_nat ctor_arity) ++ ". Perhaps you forgot to enable primitive projections before the definition of the Inductive")
+          tmFail ("info: the constructor " ++ ctor_name ++ " has no projections but an arity of " ++ (MCString.string_of_nat ctor_arity) ++ ". Perhaps you forgot to enable primitive projections before the definition of the Inductive")
         else ret tt
       | _ => ret tt
       end ;;
