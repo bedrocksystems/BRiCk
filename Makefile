@@ -1,11 +1,14 @@
-all: Makefile.coq
+coq: Makefile.coq
 	$(MAKE) -f Makefile.coq
 
-test: all
+test: coq
 	$(MAKE) -C test-suite
 
 Makefile.coq: _CoqProject
-	coq_makefile -f _CoqProject -o Makefile.coq
+	$(COQBIN)coq_makefile -f _CoqProject -o Makefile.coq
+
+install: coq
+	$(MAKE) -f Makefile.coq install
 
 clean:
 	$(MAKE) -f Makefile.coq clean
