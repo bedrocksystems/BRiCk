@@ -87,14 +87,7 @@ Local Definition getFields (mi : mutual_inductive_body) (n : nat)
     | _ => tmFail "`getFields` got variant type"
     end
   end.
-
-Definition genLens (T : Type) : TemplateMonad unit :=
-  ty <- tmQuote T ;;
-  match ty with
-  | tInd i _ =>
-    let name := i.(inductive_mind) in
-    ind <- tmQuoteInductive name ;;
-    info <- getFields ind i.(inductive_ind) ;;
+Local Definition genLensCore info ty:=
     let gen i :=
           match mkLens ty info.(fields) i return TemplateMonad unit with
           | None => tmFail "failed to build lens"
@@ -105,7 +98,16 @@ Definition genLens (T : Type) : TemplateMonad unit :=
           end
       in
       monad_map gen (countTo (List.length info.(fields))) ;;
-      ret tt
+      ret tt.
+
+Definition genLens (T : Type) : TemplateMonad unit :=
+  ty <- tmQuote T ;;
+  match ty with
+  | tInd i _ =>
+    let name := i.(inductive_mind) in
+    ind <- tmQuoteInductive name ;;
+    info <- getFields ind i.(inductive_ind) ;;
+    genLensCore info ty
   | _ => tmFail "given type is not inductive"
   end.
 
@@ -125,14 +127,4 @@ Definition genLensN (baseName : String.string) : TemplateMonad unit :=
          List.nil) in
   ind <- tmQuoteInductive baseName ;;
   info <- getFields ind 0;;
-  let gen i :=
-      match mkLens ty info.(fields) i return TemplateMonad unit with
-      | None => tmFail "failed to build lens"
-      | Some x =>
-        nd <- (tmEval cbv x);;
-           let '(n,d) := nd in
-           tmMkDefinition n d ;;
-                          ret tt
-      end
-  in
-  monad_map gen (countTo (List.length info.(fields)));; ret tt.
+  genLensCore info ty.
