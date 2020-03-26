@@ -11,9 +11,9 @@ Require Import Lens.Lens.
 
 Set Primitive Projections.
 
-Record Info : Set :=
-{ type : ident
-; ctor : ident
+Record Info :=
+{ type   : ident
+; ctor   : ident
 ; fields : list (ident * term)
 }.
 
@@ -26,7 +26,7 @@ Fixpoint countTo (n : nat) : list nat :=
 Definition lensName (ls : string) (i : ident) : ident :=
   ls ++ i.
 
-Local Quote Definition cBuild_Lens := Build_Lens.
+Quote Definition cBuild_Lens := Build_Lens.
 
 Local Definition mkLens (At : term) (fields : list (ident * term)) (i : nat)
 : option (ident * term) :=
@@ -76,7 +76,7 @@ Local Definition getFields (mi : mutual_inductive_body) (n : nat)
       | nil =>
         let ctor_arity := get_arity ctor_type in
         if decide (ctor_arity > get_arity oib.(ind_type)) then
-          print_nf ("info: the constructor " ++ ctor_name ++ " has no projections but an arity of " ++ (utils.string_of_nat ctor_arity) ++ ". Perhaps you forgot to enable primitive projections.")
+          tmFail ("info: the constructor " ++ ctor_name ++ " has no projections but an arity of " ++ MCString.string_of_nat ctor_arity ++ ". Perhaps you forgot to enable primitive projections.")
         else ret tt
       | _ => ret tt
       end ;;
