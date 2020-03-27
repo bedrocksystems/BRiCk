@@ -379,8 +379,8 @@ Module Type Expr.
 
     Axiom wp_lval_static_cast : forall vc from to e ty Q,
       wpe vc e (fun addr free => Exists addr',
-                  (_offsetL (_super from to) (_eqv addr) &~ addr' //\\ ltrue) **
-                          (* ^ this is a down-cast *)
+                  (_offsetL (_super from to) (_eqv addr) &~ addr' ** ltrue) //\\
+                           (* ^ this is a down-cast *)
                   Q (Vptr addr') free)
       |-- wp_lval (Ecast (Cstatic from to) (vc, e) ty) Q.
 
@@ -391,6 +391,27 @@ Module Type Expr.
     Axiom wp_prval_cast_array2pointer : forall e t Q,
         wp_lval e Q
         |-- wp_prval (Ecast Carray2pointer (Lvalue, e) t) Q.
+
+    Axiom wp_lval_cast_derived2base : forall e ty Q,
+      wp_lval e (fun addr free => Exists addr',
+        match erase_qualifiers (type_of e), erase_qualifiers ty with
+          | Tref from, Tref to => (*<-- is this the only case here?*)
+                  (_offsetL (_super from to) (_eqv addr) &~ addr' ** ltrue) //\\
+                  Q (Vptr addr') free
+          | _, _ => lfalse
+        end)
+        |-- wp_lval (Ecast Cderived2base (Rvalue, e) ty) Q.
+    
+    Axiom wp_prval_cast_derived2base : forall e ty Q,
+      wp_prval e (fun addr free => Exists addr',
+        match erase_qualifiers (type_of e), erase_qualifiers ty with
+          | Tref from, Tref to
+          | Tpointer (Tref from), Tpointer (Tref to) => 
+                  (_offsetL (_super from to) (_eqv addr) &~ addr' ** ltrue) //\\
+                  Q (Vptr addr') free 
+          | _, _ => lfalse 
+        end)
+        |-- wp_prval (Ecast Cderived2base (Rvalue, e) ty) Q.
 
     (** the ternary operator `_ ? _ : _` *)
     Axiom wp_condition : forall ty m tst th el Q,
