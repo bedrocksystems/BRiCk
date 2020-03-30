@@ -1,9 +1,9 @@
 Require Import bedrock.auto.cpp.specs.
 Require Import bedrock.lib.pred_utils.
 
-Section with_Σ.
+Section with_Sigma.
 
-  Context {Σ: gFunctors} {σ:genv}.
+  Context {Sigma: gFunctors} {CU:genv}.
   Import primitives.
   Open Scope bi_scope.
 
@@ -34,18 +34,28 @@ Section with_Σ.
   (**
 Just like [intR] defines the memory representation for the type [int],
 we can define [PointR] to define the memory representation for the class [Point].
+The following says, that the field x contains the integer 1 and field y contains
+the integer value [5] *)
+
+    Example PointR15 (q : Qp) : Rep :=
+    _field `::Point::x`  |-> intR q 1 **
+    _field `::Point::y`  |-> intR q 5.
+
+(**
+The above was too concrete; it stored the specific point (1,5).
 Just like [intR] takes as agument a [z:Z] to denote the mathematical number being
 represented, we define a Gallina record to denote the mathematical model of what is stored:
-   *)
+*)
 
   Record Model_Point : Type :=
     { p_x : Z
     ; p_y : Z
     }.
 
-  Definition PointR (q : Qp) : Rep :=
-    _field `::Point::x`  |-> intR q 1 **
-    _field `::Point::y`  |-> intR q 5.
+  (** Then we can define the general class representation as follows: *)
+    Definition PointR (q : Qp) (m: Model_Point): Rep :=
+    _field `::Point::x`  |-> intR q (p_x m) **
+    _field `::Point::y`  |-> intR q (p_y m).
 
 
   (** * Tagged Unions
@@ -188,4 +198,4 @@ represented, we define a Gallina record to denote the mathematical model of what
       values.
    *)
 
-End with_Σ.
+End with_Sigma.
