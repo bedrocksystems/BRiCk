@@ -1,3 +1,5 @@
+(** remove printing -> *)
+
 (**
 This tutorial assumes basic understanding of functional programming and logic.
 A good way to revise these concepts is to read the first 5 chapters 
@@ -12,8 +14,8 @@ Your Coq editor may also provide a facility to jump to definition (M-. in emacs 
 *)
 Require Import bedrock.auto.cpp.specs.
 
-Section with_Σ.
-Context {Σ: gFunctors} {σ:genv}.
+Section with_Sigma.
+Context {Sigma: gFunctors} {CU:genv}.
 Import primitives.
 Open Scope bi_scope.
 
@@ -68,6 +70,29 @@ Variable b: bool.
 Example e11: bool:=true.
 Example e10 : Rep := boolR (1/2) b.
 
+(** 
+Some locations (e.g. the "next" field of linked list) store pointers.
+[ptrR] can be used to describe the memory representation of pointers.
+ *)
+Variable ctype:type.
+Variable p:ptr.
+Example eptr : Rep := ptrR<ctype> q p.
+
+(**
+[ctype] is the C++ type of the pointer.
+Click at [type] to see the current definition of C++ types.
+For example, below, we are saying that the pointer is of type 
+signed 64 bit (long * ) *)
+Example eptr2 : Rep := ptrR<Tint W64 Signed> q p.
+
+(**
+To refer to (named) struct types, use the [Tref] constructor, 
+which takes as argument the mangled name of the class/struct.
+We can use the notations defined in the names file to write
+unmangled names. More about this in the next chapters.
+*)
+Example eptr3 : Rep := ptrR<Tref "listZ5"> q p.
+
 (** * Separation
 *)
 Variable pl: mpred.
@@ -118,11 +143,12 @@ Variable struct_field struct_field2 : field.
 Example structRep1 : Rep := struct_field |-> r.
 
 (**
-Note that in In this case, the whole term [structRep] has type [Rep] (memory representation) instead of [mpred]. Such [Rep]s typically describe the memory representation of an *absolute* location holding structured data, e.g. structs, arrays, classes:
+Note that in this case, the whole term [structRep] has type [Rep] (memory representation) instead of [mpred]. 
+Such [Rep]s typically describe the memory representation of some (yet to be plugged in) *absolute* location holding structured data, e.g. structs, arrays, classes.
 
-  note that a [Rep] is like "Even", it isn't meaningful to say "Even is true",
-  it is only meaningful to say "Even n" is true. Similarly, it isn't meaningful
-  to say that a [Rep] holds, until you say what location it holds on.
+Note that a [Rep] is like "Even", it isn't meaningful to say "Even is true",
+it is only meaningful to say "Even n" is true. Similarly, it isn't meaningful
+to say that a [Rep] holds, until you say what location it holds on.
  *)
 
 
@@ -146,8 +172,10 @@ states that the relative locations are disjoint (i.e. for any *single* absolute
 location [l], [l ., struct_field |-> r ** l ., struct_field2 |-> r]).
 *)
 
-Example e20 : Rep := struct_field |-> r ** struct_field2 |-> r.
+Example e20 : Rep := (struct_field |-> r) ** (struct_field2 |-> r).
 
+(** More examples in the next two chapters. Parentheses are optional above because
+the precedence between [_ ** _] and [_ |-> _] has been defined appropriately. *)
 
 
 (** * Magic Wand *)
@@ -185,10 +213,9 @@ Example pure2 : Prop := 1=2.
 (** In Coq, pure assertions have type [Prop]. However, in function specs, pre and post conditions have type [mpred]. To convert an [Prop] to an [mpred], we put them inside [| _ |] *)
 
 Definition pureMpred : mpred := [| 1=1 |].
-(*
-ptrR
 
-as_rep
+(*
+TO Add:
 
 Exists
 
@@ -198,6 +225,5 @@ Best practices:
 think about finiteness of words
 pattern match on return value
 
-borrow_from
 *)
-End with_Σ.
+End with_Sigma.

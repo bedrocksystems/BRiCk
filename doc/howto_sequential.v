@@ -17,7 +17,7 @@ Open Scope bi_scope.
 (** * Sequential Specs *)
 
 Section with_Sigma.
-Context {Sigma:gFunctors} `{CU ⊧ sigma}.
+Context {Sigma:gFunctors} {CU: genv}.
 
 (** ** Range
 
@@ -90,45 +90,53 @@ Notation "'::Range::_size'" :=
 Definition _begin := _field `::Range::_begin`.
 Definition _size := _field `::Range::_size`.
 
-(** Here's the first version. It's a [Definition] in Coq that takes two
+(** Here's the first version, which follows the style
+discussed in the first chapter.
+It's a [Definition] in Coq that takes two
 parameters, the fractional permission [q] (which could be 1, indicating
 write permission), and [r : Range], the Coq model of the range.
 *)
 
-Definition RangeR1 (q : Qp) (r : Range) : Rep :=
-  as_Rep (fun this =>
-            this |-> (_begin |-> ulongR q r.(begin)) ** (*mpred star*)
-            this |-> (_begin  |-> ulongR q r.(size))
-         ).
-
-(** We use [as_Rep] to explicitly talk about the [this] pointer at which
-the [RangeR] predicate will be applied.
-
-[[
-this |-> (_begin |-> ulongR q r.(begin))
-]]
-
-means "at the address [this + offset_of(_begin)]", there's an
-unsigned integer r.(begin) held with permission [q].
-*)
+Definition RangeR3 (q : Qp) (r : Range) : Rep :=
+  _begin |-> ulongR q r.(begin) ** (*rep star*)
+  _size  |-> ulongR q r.(size).
 
 (**
-Here's a second definition of [RangeR] that factors out the [this]:
+[RangeR3] is a function (predicate), which when applied to a start address ("this"),
+will assert the memory representation starting at that address.
+This function nature can be made explicit using [as_Rep], which gives
+us explicit access to the this pointer as a function argument.
 *)
-
 Definition RangeR2 (q : Qp) (r : Range) : Rep :=
   as_Rep (fun this =>
             this |-> (_begin |-> ulongR q r.(begin) ** (*rep star*)
                       _size  |-> ulongR q r.(size))
          ).
 
-(** [RangeR2] is the (currently) preferred way to write [RangeR]. *)
-Definition RangeR := RangeR2.
 
-(** [RangeR3] implements [RangeR] without explicitly mentioning [this]. *)
-Definition RangeR3 (q : Qp) (r : Range) : Rep :=
-  _begin |-> RangeR1 q r ** (*rep star*)
-  _size  |-> ulongR q r.(size).
+(** To make thigs even more explicit, we can distribute the
+ [this |->] over the [**]: *)
+Definition RangeR1 (q : Qp) (r : Range) : Rep :=
+  as_Rep (fun this =>
+            this |-> (_begin |-> ulongR q r.(begin)) ** (*mpred star*)
+            this |-> (_begin  |-> ulongR q r.(size))
+         ).
+
+(**
+[[
+this |-> (_begin |-> ulongR q r.(begin))
+]]
+
+means "at the address [this + offset_of(_begin)]", there's an
+unsigned integer r.(begin) held with permission [q].
+
+Access to the "this" pointer is usually not necessary and only adds verbosity.
+However, at some places, e.g. in doubly linked lists, it is necessary:
+for example, the next node of a doubly linked list stores 
+the "this" pointer in its prev field.
+*)
+
+Definition RangeR := RangeR2.
 
 
 (** ** Binary Search Trees
@@ -301,7 +309,11 @@ Definition count_spec (this : ptr) : WithPrePost Sigma :=
   \prepost this |-> treeR (fun q z => uintR q z) q t
   \post{}[Vint (trim 32 (count t))] empSP.
 
-(** We [trim] the count in the postcondition since it might overflow.
+(** 
+For more details the syntax/notations for writing the specifications of functions, 
+please refer to #<a href="https://gitlab.com/bedrocksystems/cpp2v/-/blob/master/doc/specs.md">cpp2v/doc/specs.md</a>#.
+
+We [trim] the count in the postcondition since it might overflow.
 Alternatively, we could impose a bounds condition in the precondition:
 
 [[
