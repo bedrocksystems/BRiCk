@@ -141,30 +141,39 @@ Variant Cast : Set :=
 Global Instance Decidable_eq_Cast (a b : Cast) : Decidable (a = b) :=
   dec_Decidable (ltac:(decide equality; eapply Decidable_dec; refine _) : {a = b} + {a <> b}).
 
+Section qual_norm.
+  Context {A : Type}.
+  Variable f : type_qualifiers -> type -> A.
+
+  Fixpoint qual_norm' q t :=
+    match t with
+    | Tqualified q' t =>
+      qual_norm' (merge_tq q q') t
+    | _ =>
+      f q t
+    end.
+
+  Definition qual_norm := qual_norm' {| q_const := false ; q_volatile := false |}.
+
+End qual_norm.
+
+Definition tqualified (q : type_qualifiers) (t : type) : type :=
+  match q with
+  | {| q_const := false ; q_volatile := false |} => t
+  | _ => Tqualified q t
+  end.
+
 (** normalization of types
     - compresses adjacent [Tqualified] constructors
     - drops (irrelevant) qualifiers on function arguments and return types
  *)
 Fixpoint normalize_type (t : type) : type :=
-  let drop_norm := (* drop all qualifiers *)
-      fix drop t :=
-        match t with
-        | Tqualified _ t => drop t
-        | _ => normalize_type t
-        end
+  let drop_norm :=
+      qual_norm (fun _ t => normalize_type t)
   in
-  let qual_norm := (* merge adjacent qualifiers *)
-      fix qual q t :=
-        match t with
-        | Tqualified q' t =>
-          qual (merge_tq q q') t
-        | _ =>
-          let t := normalize_type t in
-          if negb q.(q_const) && negb q.(q_volatile) then
-            t
-          else
-            Tqualified q t
-        end
+  let qual_norm :=
+      (* merge adjacent qualifiers and then normalize *)
+      qual_norm' (fun q t => tqualified q (normalize_type t))
   in
   match t with
   | Tpointer t => Tpointer (normalize_type t)
@@ -182,6 +191,8 @@ Fixpoint normalize_type (t : type) : type :=
   | Tqualified q t => qual_norm q t
   end.
 
+Definition decompose_type : type -> type_qualifiers * type :=
+  qual_norm (fun q t => (q, t)).
 
 
 (* types with explicit size information
