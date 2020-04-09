@@ -52,7 +52,7 @@ Module Type modules.
       | Some body =>
         Exists a, _global n &~ a //\\
                   code_at {| f_return := m.(m_return)
-                           ; f_params := ("#this"%string, Tqualified m.(m_this_qual) (Tref m.(m_class))) :: m.(m_params)
+                           ; f_params := ("#this"%string, Tqualified m.(m_this_qual) (Tnamed m.(m_class))) :: m.(m_params)
                            ; f_body := m.(m_body) |} a
       end
     | Oconstructor c =>

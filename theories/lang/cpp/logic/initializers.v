@@ -62,7 +62,7 @@ Module Type Init.
 
         (* non-primitives are handled via prvalue-initialization semantics *)
       | Tarray _ _
-      | Tref _ => wp_init ty addr (not_mine init) k
+      | Tnamed _ => wp_init ty addr (not_mine init) k
 
       | Treference t => lfalse (* reference fields are not supported *)
       | Trv_reference t => lfalse (* reference fields are not supported *)
@@ -89,7 +89,7 @@ Module Type Init.
       wp_args es (fun ls free =>
          Exists ctor, _global cnd &~ ctor **
          |> fspec (Vptr ctor) ti (addr :: ls) (fun _ => Q free))
-      |-- wp_init (Tref cls) addr (Econstructor cnd es ty) Q.
+      |-- wp_init (Tnamed cls) addr (Econstructor cnd es ty) Q.
 
     Definition build_array (es : list Expr) (fill : option Expr) (sz : nat)
     : option (list (Z * Expr)) :=

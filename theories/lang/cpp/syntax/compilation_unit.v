@@ -526,7 +526,7 @@ Definition Dstruct (name : globname) (o : option Struct) : compilation_unit :=
 Definition Denum (name : globname) (t : option type) (branches : list (ident * BinNums.Z)) : compilation_unit :=
   {| symbols := nil
    ; globals :=
-       let enum_ty := Tref name in
+       let enum_ty := Tnamed name in
        let raw_ty :=
            match t with
            | None => enum_ty

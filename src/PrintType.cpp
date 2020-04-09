@@ -31,7 +31,7 @@ printQualType(const QualType& qt, CoqPrinter& print, ClangPrinter& cprint) {
 
     if (auto p = qt.getTypePtrOrNull()) {
         cprint.printType(p, print);
-	print.output() << fmt::rparen;	
+	print.output() << fmt::rparen;
     } else {
         using namespace logging;
         fatal() << "unexpected null type in printQualType\n";
@@ -97,13 +97,13 @@ public:
 
     void VisitEnumType(const EnumType* type, CoqPrinter& print,
                        ClangPrinter& cprint) {
-        print.ctor("Tref", false);
+        print.ctor("Tnamed", false);
         cprint.printGlobalName(type->getDecl(), print);
         print.output() << fmt::rparen;
     }
     void VisitRecordType(const RecordType* type, CoqPrinter& print,
                          ClangPrinter& cprint) {
-        print.ctor("Tref", false);
+        print.ctor("Tnamed", false);
         cprint.printGlobalName(type->getDecl(), print);
         print.output() << fmt::rparen;
     }
@@ -319,7 +319,7 @@ public:
     void VisitInjectedClassNameType(const InjectedClassNameType* type,
                                     CoqPrinter& print, ClangPrinter& cprint) {
         if (type->getDecl()) {
-            print.ctor("Tref");
+            print.ctor("Tnamed");
             cprint.printGlobalName(type->getDecl(), print);
             print.end_ctor();
         } else {

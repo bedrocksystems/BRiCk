@@ -3,6 +3,7 @@
  *
  * SPDX-License-Identifier:AGPL-3.0-or-later
  *)
+Require Import Coq.Bool.Bool.
 Require Import Coq.Classes.DecidableClass.
 Require Import Coq.NArith.BinNatDef.
 From Coq.Strings Require Import
@@ -72,7 +73,7 @@ Inductive type : Set :=
 | Tchar (size : size) (signed : signed)
 | Tvoid
 | Tarray (_ : type) (_ : N) (* unknown sizes are represented by pointers *)
-| Tref (_ : globname)
+| Tnamed (_ : globname)
 | Tfunction (_ : type) (_ : list type)
 | Tbool
 | Tmember_pointer (_ : globname) (_ : type)
@@ -96,6 +97,8 @@ Definition Qmut_volatile : type -> type :=
   Tqualified {| q_const := false ; q_volatile := true |}.
 Definition Qmut : type -> type :=
   Tqualified {| q_const := false ; q_volatile := false |}.
+
+Definition Tref : globname -> type := Tnamed.
 
 (*
 Record TypeInfo : Set :=
@@ -137,6 +140,59 @@ Variant Cast : Set :=
 .
 Global Instance Decidable_eq_Cast (a b : Cast) : Decidable (a = b) :=
   dec_Decidable (ltac:(decide equality; eapply Decidable_dec; refine _) : {a = b} + {a <> b}).
+
+Section qual_norm.
+  Context {A : Type}.
+  Variable f : type_qualifiers -> type -> A.
+
+  Fixpoint qual_norm' q t :=
+    match t with
+    | Tqualified q' t =>
+      qual_norm' (merge_tq q q') t
+    | _ =>
+      f q t
+    end.
+
+  Definition qual_norm := qual_norm' {| q_const := false ; q_volatile := false |}.
+
+End qual_norm.
+
+Definition tqualified (q : type_qualifiers) (t : type) : type :=
+  match q with
+  | {| q_const := false ; q_volatile := false |} => t
+  | _ => Tqualified q t
+  end.
+
+(** normalization of types
+    - compresses adjacent [Tqualified] constructors
+    - drops (irrelevant) qualifiers on function arguments and return types
+ *)
+Fixpoint normalize_type (t : type) : type :=
+  let drop_norm :=
+      qual_norm (fun _ t => normalize_type t)
+  in
+  let qual_norm :=
+      (* merge adjacent qualifiers and then normalize *)
+      qual_norm' (fun q t => tqualified q (normalize_type t))
+  in
+  match t with
+  | Tpointer t => Tpointer (normalize_type t)
+  | Treference t => Treference (normalize_type t)
+  | Trv_reference t => Trv_reference (normalize_type t)
+  | Tarray t n => Tarray (normalize_type t) n
+  | Tfunction r args =>
+    Tfunction (drop_norm r) (List.map drop_norm args)
+  | Tmember_pointer gn t => Tmember_pointer gn (normalize_type t)
+  | Tint _ _ => t
+  | Tchar _ _ => t
+  | Tbool => t
+  | Tvoid => t
+  | Tnamed _ => t
+  | Tqualified q t => qual_norm q t
+  end.
+
+Definition decompose_type : type -> type_qualifiers * type :=
+  qual_norm (fun q t => (q, t)).
 
 
 (* types with explicit size information

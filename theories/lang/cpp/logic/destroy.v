@@ -28,7 +28,7 @@ Section destroy.
   : mpred :=
     match t with
     | Tqualified _ t => destruct t this dtor Q
-    | Tref cls =>
+    | Tnamed cls =>
       destruct_obj dtor cls this Q
     | Tarray t sz =>
       let destruct_at i :=
