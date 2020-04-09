@@ -395,21 +395,21 @@ Module Type Expr.
     Axiom wp_lval_cast_derived2base : forall e ty Q,
       wp_lval e (fun addr free => Exists addr',
         match erase_qualifiers (type_of e), erase_qualifiers ty with
-          | Tref from, Tref to => (*<-- is this the only case here?*)
+          | Tnamed from, Tnamed to => (*<-- is this the only case here?*)
                   (_offsetL (_super from to) (_eqv addr) &~ addr' ** ltrue) //\\
                   Q (Vptr addr') free
           | _, _ => lfalse
         end)
         |-- wp_lval (Ecast Cderived2base (Rvalue, e) ty) Q.
-    
+
     Axiom wp_prval_cast_derived2base : forall e ty Q,
       wp_prval e (fun addr free => Exists addr',
         match erase_qualifiers (type_of e), erase_qualifiers ty with
-          | Tref from, Tref to
-          | Tpointer (Tref from), Tpointer (Tref to) => 
+          | Tnamed from, Tnamed to
+          | Tpointer (Tnamed from), Tpointer (Tnamed to) =>
                   (_offsetL (_super from to) (_eqv addr) &~ addr' ** ltrue) //\\
-                  Q (Vptr addr') free 
-          | _, _ => lfalse 
+                  Q (Vptr addr') free
+          | _, _ => lfalse
         end)
         |-- wp_prval (Ecast Cderived2base (Rvalue, e) ty) Q.
 

@@ -468,7 +468,7 @@ Definition lookup_spec (this : ptr) : WithPrePost Sigma :=
   \arg{x} "x" (Vint x)
   \arg{out} "out" (Vptr out)
   \with (q : Qp) (t : tree (Entry Z))
-  \pre out |-> anyR (Tpointer (Tref _Entry)) 1
+  \pre out |-> anyR (Tpointer (Tnamed _Entry)) 1
   \prepost this |-> Entry_bstR q t
   \post{r}[Vbool r]
     (** The postcondition is keyed on the Boolean result [r], with [r=true]
@@ -480,7 +480,7 @@ Definition lookup_spec (this : ptr) : WithPrePost Sigma :=
         Exists p,
           (** A pointer to the looked-up entry is passed in the
            out parameter [out].*)
-          out |-> ptrR<Tref _Entry> q p **
+          out |-> ptrR<Tnamed _Entry> q p **
           (** We also return a "borrow" from the [Entry_bstR q t], the fact
            that at [p] there's an [EntryR q e] with a matching [Range]. *)
           borrow_from (this |-> Entry_bstR q t) (p |-> EntryR q e))

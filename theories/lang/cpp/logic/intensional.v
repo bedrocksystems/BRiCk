@@ -37,7 +37,7 @@ Definition not_mine (e : Expr) : Expr :=
  *)
 Fixpoint is_aggregate (t : type) : bool :=
   match t with
-  | Tref _
+  | Tnamed _
   | Tarray _ _ => true
   | Tqualified _ t => is_aggregate t
   | _ => false

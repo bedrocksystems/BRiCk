@@ -124,7 +124,7 @@ Module Type Stmt.
                               _at (_eq a) (primR (erase_qualifiers ty) 1 v) -* continue)
         end
 
-      | Tref cls =>
+      | Tnamed cls =>
         Forall a, _at (_eq a) (uninitR (erase_qualifiers ty) 1) -*
                   let destroy :=
                       match dtor with

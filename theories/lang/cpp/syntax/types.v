@@ -73,7 +73,7 @@ Inductive type : Set :=
 | Tchar (size : size) (signed : signed)
 | Tvoid
 | Tarray (_ : type) (_ : N) (* unknown sizes are represented by pointers *)
-| Tref (_ : globname)
+| Tnamed (_ : globname)
 | Tfunction (_ : type) (_ : list type)
 | Tbool
 | Tmember_pointer (_ : globname) (_ : type)
@@ -97,6 +97,8 @@ Definition Qmut_volatile : type -> type :=
   Tqualified {| q_const := false ; q_volatile := true |}.
 Definition Qmut : type -> type :=
   Tqualified {| q_const := false ; q_volatile := false |}.
+
+Definition Tref : globname -> type := Tnamed.
 
 (*
 Record TypeInfo : Set :=
@@ -176,7 +178,7 @@ Fixpoint normalize_type (t : type) : type :=
   | Tchar _ _ => t
   | Tbool => t
   | Tvoid => t
-  | Tref _ => t
+  | Tnamed _ => t
   | Tqualified q t => qual_norm q t
   end.
 

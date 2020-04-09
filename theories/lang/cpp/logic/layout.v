@@ -24,11 +24,11 @@ Section with_Σ.
 Axiom uninit_class_fwd
   : forall cls base st q,
     glob_def resolve cls = Some (Gstruct st) ->
-    _at (Σ:=Σ) (_eqv base) (uninitR (Tref cls) q)
+    _at (Σ:=Σ) (_eqv base) (uninitR (Tnamed cls) q)
     |-- _at (_eqv base)
             (sepSPs (List.map (fun '(gn,_) =>
                                  _offsetR (_super cls gn)
-                                          (uninitR (Tref gn) q)) st.(s_bases) ++
+                                          (uninitR (Tnamed gn) q)) st.(s_bases) ++
                      List.map (fun '(n,t,_) =>
                             (* todo(gmm): there is a problem with references in this code.
                              *)
@@ -41,11 +41,11 @@ Axiom anyR_class_bwd
     glob_def resolve cls = Some (Gstruct st) ->
     _at (_eqv base)
         (sepSPs (List.map (fun '(gn,_) =>
-                             _offsetR (_super cls gn) (anyR (Tref gn) q)) st.(s_bases) ++
+                             _offsetR (_super cls gn) (anyR (Tnamed gn) q)) st.(s_bases) ++
                  List.map (fun '(n,t,_) =>
                              _offsetR (_field {| f_name := n ; f_type := cls |})
                                       (anyR (erase_qualifiers t) q)) st.(s_fields)))
-    |-- _at (Σ:=Σ) (_eqv base) (anyR (Tref cls) q).
+    |-- _at (Σ:=Σ) (_eqv base) (anyR (Tnamed cls) q).
 
 Axiom uninit_array : forall t n q,
     uninitR (Tarray t n) q

@@ -126,8 +126,8 @@ Module Type Func.
   : function_spec Σ :=
     let map_pre this '(args, P) :=
         (this :: args,
-         _at (_eqv this) (uninitR (Tref class) 1) ** P) in
-    let this_type := Qmut (Tref class) in
+         _at (_eqv this) (uninitR (Tnamed class) 1) ** P) in
+    let this_type := Qmut (Tnamed class) in
     TSFunction (Qmut Tvoid) (Qconst (Tpointer this_type) :: targs)
                (fun ti =>
                   {| wpp_with := TeleS (fun this : ptr => (PQ ti this).(wpp_with))
@@ -149,9 +149,9 @@ Module Type Func.
     let map_post this '({| we_ex := pwiths ; we_post := Q|}) :=
         {| we_ex := pwiths
          ; we_post := tele_map (fun '(result, Q) =>
-                                  (result, _at (_eq this) (anyR (Tref class) 1) ** Q)) Q |}
+                                  (result, _at (_eq this) (anyR (Tnamed class) 1) ** Q)) Q |}
     in
-    let this_type := Qmut (Tref class) in
+    let this_type := Qmut (Tnamed class) in
     TSFunction@{X Z Y} (Qmut Tvoid) (Qconst (Tpointer this_type) :: nil)
                (fun ti =>
                  {| wpp_with := TeleS (fun this : ptr => (PQ ti this).(wpp_with))
@@ -171,7 +171,7 @@ Module Type Func.
              (PQ : thread_info -> ptr -> WithPrePost@{X Z Y} Σ)
   : function_spec Σ :=
     let map_pre this '(args, P) := (this :: args, P) in
-    let class_type := Tref class in
+    let class_type := Tnamed class in
     let this_type := Tqualified qual class_type in
     TSFunction ret (Qconst (Tpointer this_type) :: targs)
                (fun ti =>
@@ -198,7 +198,7 @@ Module Type Func.
     | Tqualified _ t => bind_type ρ t x v
     | Treference ref => local_addr_v ρ x v
     | Trv_reference ref => local_addr_v ρ x v
-    | Tref _         => local_addr_v ρ x v
+    | Tnamed _         => local_addr_v ρ x v
     | _              => tlocal ρ x (primR (erase_qualifiers t) 1 v)
     end.
 
@@ -207,7 +207,7 @@ Module Type Func.
     | Tqualified _ t => free_type ρ t x v
     | Treference ref => local_addr_v ρ x v
     | Trv_reference ref => local_addr_v ρ x v
-    | Tref cls       => local_addr_v ρ x v
+    | Tnamed cls       => local_addr_v ρ x v
     | _              => tlocal ρ x (anyR (erase_qualifiers t) 1)
     end.
 
@@ -330,7 +330,7 @@ Module Type Func.
       | None => lfalse
       | Some body =>
         let this_type :=
-            Qconst (Tpointer (Tqualified meth.(m_this_qual) (Tref meth.(m_class))))
+            Qconst (Tpointer (Tqualified meth.(m_this_qual) (Tnamed meth.(m_class))))
         in
         [| type_of_spec spec =
            normalize_type (Tfunction meth.(m_return) (this_type :: List.map snd meth.(m_params))) |] **
@@ -397,7 +397,7 @@ Module Type Func.
       (* ^ defaulted constructors are not supported yet *)
       | Some (UserDefined (init, body)) =>
         let this_type :=
-            Qconst (Tpointer (Qmut (Tref ctor.(c_class))))
+            Qconst (Tpointer (Qmut (Tnamed ctor.(c_class))))
         in
         [| type_of_spec spec =
            normalize_type (Tfunction Tvoid (this_type :: List.map snd ctor.(c_params))) |] **
@@ -452,7 +452,7 @@ Module Type Func.
       (* ^ defaulted constructors are not supported yet *)
       | Some (UserDefined (body, deinit)) =>
         let this_type :=
-            Qconst (Tpointer (Qmut (Tref dtor.(d_class))))
+            Qconst (Tpointer (Qmut (Tnamed dtor.(d_class))))
         in
         [| type_of_spec spec = normalize_type (Tfunction Tvoid (this_type :: nil)) |] **
         ForallEaches spec.(fs_arguments) (fun args =>

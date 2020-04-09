@@ -2,14 +2,14 @@
 
 (**
 This tutorial assumes basic understanding of functional programming and logic.
-A good way to revise these concepts is to read the first 5 chapters 
+A good way to revise these concepts is to read the first 5 chapters
 (Preface,..., Polymorphism and Higher order functions) of the
 #<a href=https://softwarefoundations.cis.upenn.edu/lf-current/deps.html>Software Foundations</a># book
 
 Just like that book, this tutorial is produced from Coq .v files, which can be found in _cpp2v/doc_.
-If you want to play with the Coq code in this tutorial, you may want to open the .v source file 
+If you want to play with the Coq code in this tutorial, you may want to open the .v source file
 in a Coq editor, instead of opening the html output in a web brower.
-In the html, identifiers are hyperlinked to their definition. 
+In the html, identifiers are hyperlinked to their definition.
 Your Coq editor may also provide a facility to jump to definition (M-. in emacs (company-coq mode))
 *)
 Require Import bedrock.auto.cpp.specs.
@@ -70,7 +70,7 @@ Variable b: bool.
 Example e11: bool:=true.
 Example e10 : Rep := boolR (1/2) b.
 
-(** 
+(**
 Some locations (e.g. the "next" field of linked list) store pointers.
 [ptrR] can be used to describe the memory representation of pointers.
  *)
@@ -81,17 +81,17 @@ Example eptr : Rep := ptrR<ctype> q p.
 (**
 [ctype] is the C++ type of the pointer.
 Click at [type] to see the current definition of C++ types.
-For example, below, we are saying that the pointer is of type 
+For example, below, we are saying that the pointer is of type
 signed 64 bit (long * ) *)
 Example eptr2 : Rep := ptrR<Tint W64 Signed> q p.
 
 (**
-To refer to (named) struct types, use the [Tref] constructor, 
+To refer to (named) struct types, use the [Tnamed] constructor,
 which takes as argument the mangled name of the class/struct.
 We can use the notations defined in the names file to write
 unmangled names. More about this in the next chapters.
 *)
-Example eptr3 : Rep := ptrR<Tref "listZ5"> q p.
+Example eptr3 : Rep := ptrR<Tnamed "listZ5"> q p.
 
 (** * Separation
 *)
@@ -143,7 +143,7 @@ Variable struct_field struct_field2 : field.
 Example structRep1 : Rep := struct_field |-> r.
 
 (**
-Note that in this case, the whole term [structRep] has type [Rep] (memory representation) instead of [mpred]. 
+Note that in this case, the whole term [structRep] has type [Rep] (memory representation) instead of [mpred].
 Such [Rep]s typically describe the memory representation of some (yet to be plugged in) *absolute* location holding structured data, e.g. structs, arrays, classes.
 
 Note that a [Rep] is like "Even", it isn't meaningful to say "Even is true",
