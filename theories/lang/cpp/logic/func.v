@@ -38,6 +38,9 @@ Module Type Func.
   Arguments fs_arguments {_} _.
   Arguments fs_spec {_} _.
 
+  Definition type_of_spec `(fs : function_spec Σ) : type :=
+    normalize_type (Tfunction fs.(fs_return) fs.(fs_arguments)).
+
   (* this is the core definition that everything will be based on.
    * it is really an assertion about assembly
    *)
@@ -288,8 +291,7 @@ Module Type Func.
                (body : Stmt)
                (ti : thread_info) (spec : function_spec Σ)
     : mpred Σ :=
-      [| ret = spec.(fs_return) |] **
-      [| spec.(fs_arguments) = List.map snd params |] **
+      [| type_of_spec spec = normalize_type (Tfunction ret (List.map snd params)) |] **
       (* forall each argument, apply to [fs_spec ti] *)
       ForallEaches (spec.(fs_arguments)) (fun args =>
         Forall ρ : region,
@@ -330,8 +332,8 @@ Module Type Func.
         let this_type :=
             Qconst (Tpointer (Tqualified meth.(m_this_qual) (Tref meth.(m_class))))
         in
-        [| spec.(fs_return) = meth.(m_return) |] **
-        [| spec.(fs_arguments) = this_type :: List.map snd meth.(m_params) |] **
+        [| type_of_spec spec =
+           normalize_type (Tfunction meth.(m_return) (this_type :: List.map snd meth.(m_params))) |] **
         ForallEaches spec.(fs_arguments) (fun args =>
           Forall ρ : region,
           let vals := List.map snd args in
@@ -397,8 +399,8 @@ Module Type Func.
         let this_type :=
             Qconst (Tpointer (Qmut (Tref ctor.(c_class))))
         in
-        [| spec.(fs_return) = Qmut Tvoid |] **
-        [| spec.(fs_arguments) = this_type :: List.map snd ctor.(c_params) |] **
+        [| type_of_spec spec =
+           normalize_type (Tfunction Tvoid (this_type :: List.map snd ctor.(c_params))) |] **
         ForallEaches spec.(fs_arguments) (fun args =>
           Forall ρ,
           let vals := List.map snd args in
@@ -452,8 +454,7 @@ Module Type Func.
         let this_type :=
             Qconst (Tpointer (Qmut (Tref dtor.(d_class))))
         in
-        [| spec.(fs_return) = Qmut Tvoid |] **
-        [| spec.(fs_arguments) = this_type :: nil |] **
+        [| type_of_spec spec = normalize_type (Tfunction Tvoid (this_type :: nil)) |] **
         ForallEaches spec.(fs_arguments) (fun args =>
           Forall ρ,
           let vals := List.map snd args in

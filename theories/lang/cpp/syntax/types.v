@@ -3,6 +3,7 @@
  *
  * SPDX-License-Identifier:AGPL-3.0-or-later
  *)
+Require Import Coq.Bool.Bool.
 Require Import Coq.Classes.DecidableClass.
 Require Import Coq.NArith.BinNatDef.
 From Coq.Strings Require Import
@@ -137,6 +138,48 @@ Variant Cast : Set :=
 .
 Global Instance Decidable_eq_Cast (a b : Cast) : Decidable (a = b) :=
   dec_Decidable (ltac:(decide equality; eapply Decidable_dec; refine _) : {a = b} + {a <> b}).
+
+(** normalization of types
+    - compresses adjacent [Tqualified] constructors
+    - drops (irrelevant) qualifiers on function arguments and return types
+ *)
+Fixpoint normalize_type (t : type) : type :=
+  let drop_norm := (* drop all qualifiers *)
+      fix drop t :=
+        match t with
+        | Tqualified _ t => drop t
+        | _ => normalize_type t
+        end
+  in
+  let qual_norm := (* merge adjacent qualifiers *)
+      fix qual q t :=
+        match t with
+        | Tqualified q' t =>
+          qual (merge_tq q q') t
+        | _ =>
+          let t := normalize_type t in
+          if negb q.(q_const) && negb q.(q_volatile) then
+            t
+          else
+            Tqualified q t
+        end
+  in
+  match t with
+  | Tpointer t => Tpointer (normalize_type t)
+  | Treference t => Treference (normalize_type t)
+  | Trv_reference t => Trv_reference (normalize_type t)
+  | Tarray t n => Tarray (normalize_type t) n
+  | Tfunction r args =>
+    Tfunction (drop_norm r) (List.map drop_norm args)
+  | Tmember_pointer gn t => Tmember_pointer gn (normalize_type t)
+  | Tint _ _ => t
+  | Tchar _ _ => t
+  | Tbool => t
+  | Tvoid => t
+  | Tref _ => t
+  | Tqualified q t => qual_norm q t
+  end.
+
 
 
 (* types with explicit size information
