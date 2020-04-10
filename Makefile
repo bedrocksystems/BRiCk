@@ -46,6 +46,13 @@ html: doc
 public: html doc_extra
 	mv html public
 
+release: coq cpp2v cpp2v_plugin
+	rm -rf cpp2v
+	mkdir cpp2v
+	cp build/libcpp2v_plugin.so cpp2v
+	cp build/cpp2v cpp2v
+	cp -r theories cpp2v/bedrock
+
 clean: Makefile.coq
 	$(MAKE) -f Makefile.coq clean
 	rm -f Makefile.coq Makefile.coq.conf
