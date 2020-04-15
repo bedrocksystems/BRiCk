@@ -69,6 +69,7 @@ Module Type Init.
       | Tfunction _ _ => lfalse (* functions not supported *)
 
       | Tqualified _ ty => wp_initialize ty addr init k
+      | Tnullptr => lfalse (* nullptr fields are not supported *)
       end.
 
     Axiom wpi_initialize : forall this_val i cls Q,

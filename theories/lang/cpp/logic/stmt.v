@@ -174,6 +174,7 @@ Module Type Stmt.
       | Tfunction _ _ => lfalse (* not supported *)
 
       | Tqualified _ ty => wp_decl x ty init dtor k Q
+      | Tnullptr => lfalse (* not supported *)
       end.
 
     Fixpoint wp_decls (ds : list VarDecl)

@@ -67,6 +67,7 @@ Fixpoint erase_qualifiers (t : type) : type :=
   | Tfunction t ts => Tfunction (erase_qualifiers t) (List.map erase_qualifiers ts)
   | Tmember_pointer cls t => Tmember_pointer cls (erase_qualifiers t)
   | Tqualified _ t => erase_qualifiers t
+  | Tnullptr => Tnullptr
   end.
 
 Fixpoint drop_qualifiers (t : type) : type :=
