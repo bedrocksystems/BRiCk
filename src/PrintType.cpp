@@ -31,11 +31,11 @@ printQualType(const QualType& qt, CoqPrinter& print, ClangPrinter& cprint) {
 
     if (auto p = qt.getTypePtrOrNull()) {
         cprint.printType(p, print);
-	print.output() << fmt::rparen;
+        print.output() << fmt::rparen;
     } else {
         using namespace logging;
         fatal() << "unexpected null type in printQualType\n";
-	die();
+        die();
     }
 }
 
@@ -161,56 +161,81 @@ public:
     void VisitBuiltinType(const BuiltinType* type, CoqPrinter& print,
                           ClangPrinter& cprint) {
         // todo(gmm): record bitwidths from the context when they are defaulted.
-        if (type->getKind() == BuiltinType::Kind::Bool) {
+        switch (type->getKind()) {
+        case BuiltinType::Kind::Bool:
             print.output() << "Tbool";
-        } else if (type->getKind() == BuiltinType::Kind::Int128) {
+            break;
+        case BuiltinType::Kind::Int128:
             print.output() << "T_int128";
-        } else if (type->getKind() == BuiltinType::Kind::UInt128) {
+            break;
+        case BuiltinType::Kind::UInt128:
             print.output() << "T_uint128";
-        } else if (type->getKind() == BuiltinType::Kind::Int) {
+            break;
+        case BuiltinType::Kind::Int:
             print.output() << "T_int";
-        } else if (type->getKind() == BuiltinType::Kind::UInt) {
+            break;
+        case BuiltinType::Kind::UInt:
             print.output() << "T_uint";
-        } else if (type->getKind() == BuiltinType::Kind::ULong) {
+            break;
+        case BuiltinType::Kind::ULong:
             print.output() << "T_ulong";
-        } else if (type->getKind() == BuiltinType::Kind::UShort) {
+            break;
+        case BuiltinType::Kind::UShort:
             print.output() << "T_ushort";
-        } else if (type->getKind() == BuiltinType::Kind::Long) {
+            break;
+        case BuiltinType::Kind::Long:
             print.output() << "T_long";
-        } else if (type->getKind() == BuiltinType::Kind::LongDouble) {
+            break;
+        case BuiltinType::Kind::LongDouble:
             print.output() << "T_long_double";
-        } else if (type->getKind() == BuiltinType::Kind::LongLong) {
+            break;
+        case BuiltinType::Kind::LongLong:
             print.output() << "T_longlong";
-        } else if (type->getKind() == BuiltinType::Kind::ULongLong) {
+            break;
+        case BuiltinType::Kind::ULongLong:
             print.output() << "T_ulonglong";
-        } else if (type->getKind() == BuiltinType::Kind::Short) {
+            break;
+        case BuiltinType::Kind::Short:
             print.output() << "T_short";
-        } else if (type->getKind() == BuiltinType::Kind::Char16) {
+            break;
+        case BuiltinType::Kind::Char16:
             print.output() << "T_char16";
-        } else if (type->getKind() == BuiltinType::Kind::Char_S) {
+            break;
+        case BuiltinType::Kind::WChar_S:
+        case BuiltinType::Kind::Char_S:
+        case BuiltinType::Kind::SChar:
             print.output() << "(Tchar " << bitsize(cprint.getTypeSize(type))
                            << "%N Signed)";
-        } else if (type->getKind() == BuiltinType::Kind::SChar) {
+            break;
+
             print.output() << "(Tchar " << bitsize(cprint.getTypeSize(type))
                            << "%N Signed)";
-        } else if (type->getKind() == BuiltinType::Kind::UChar) {
+            break;
+        case BuiltinType::Kind::UChar:
+        case BuiltinType::Kind::Char_U:
+        case BuiltinType::Kind::WChar_U:
             print.output() << "(Tchar " << bitsize(cprint.getTypeSize(type))
                            << "%N Unsigned)";
-        } else if (type->getKind() == BuiltinType::Kind::Char_U) {
-            print.output() << "(Tchar " << bitsize(cprint.getTypeSize(type))
-                           << "%N Unsigned)";
-        } else if (type->getKind() == BuiltinType::Kind::Char8) {
+            break;
+        case BuiltinType::Kind::Char8:
             print.output() << "T_char8";
-        } else if (type->getKind() == BuiltinType::Kind::Char32) {
+            break;
+        case BuiltinType::Kind::Char32:
             print.output() << "T_char32";
-        } else if (type->getKind() == BuiltinType::Kind::Void) {
+            break;
+        case BuiltinType::Kind::Void:
             print.output() << "Tvoid";
-        } else {
+            break;
+        case BuiltinType::Kind::NullPtr:
+            print.output() << "Tnullptr";
+            break;
+        default: {
             using namespace logging;
             fatal() << "Unsupported type \""
                     << type->getNameAsCString(PrintingPolicy(LangOptions()))
                     << "\"\n";
             die();
+        }
         }
     }
 
@@ -330,7 +355,7 @@ public:
     }
 
     void VisitMemberPointerType(const MemberPointerType* type,
-        CoqPrinter& print, ClangPrinter& cprint) {
+                                CoqPrinter& print, ClangPrinter& cprint) {
         print.ctor("Tmember_pointer");
         cprint.printGlobalName(type->getClass()->getAsCXXRecordDecl(), print);
         print.output() << fmt::nbsp;

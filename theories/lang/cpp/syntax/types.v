@@ -78,6 +78,7 @@ Inductive type : Set :=
 | Tbool
 | Tmember_pointer (_ : globname) (_ : type)
 | Tqualified (_ : type_qualifiers) (_ : type)
+| Tnullptr
 .
 Definition Talias (underlying : type) (name : globname) : type :=
   underlying.
@@ -183,12 +184,13 @@ Fixpoint normalize_type (t : type) : type :=
   | Tfunction r args =>
     Tfunction (drop_norm r) (List.map drop_norm args)
   | Tmember_pointer gn t => Tmember_pointer gn (normalize_type t)
+  | Tqualified q t => qual_norm q t
   | Tint _ _ => t
   | Tchar _ _ => t
   | Tbool => t
   | Tvoid => t
   | Tnamed _ => t
-  | Tqualified q t => qual_norm q t
+  | Tnullptr => t
   end.
 
 Definition decompose_type : type -> type_qualifiers * type :=
