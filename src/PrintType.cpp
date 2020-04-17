@@ -97,7 +97,10 @@ public:
 
     void VisitEnumType(const EnumType* type, CoqPrinter& print,
                        ClangPrinter& cprint) {
-        print.ctor("Tnamed", false);
+        print.ctor("@Talias");
+        cprint.printQualType(
+            //getPromotionType returns the integer type that the enum promotes to
+            type->getDecl()->getCanonicalDecl()->getPromotionType(), print);
         cprint.printGlobalName(type->getDecl(), print);
         print.output() << fmt::rparen;
     }
