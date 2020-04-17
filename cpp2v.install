@@ -1,0 +1,1 @@
+bin: [ "build/cpp2v" { "cpp2v" } ]
