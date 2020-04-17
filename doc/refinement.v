@@ -4,7 +4,7 @@ Require Import bedrock.auto.cpp.specs.
 Require Import bedrock.lib.frac.
 
 Section withSigma.
-  Context {Sigma : gFunctors} {wsg: wsat.invG.invG Sigma} {cl: cancelable_invariants.cinvG Sigma}.
+  Context `{Sigma : cpp_logic} {wsg: wsat.invG.invG Sigma} {cl: cancelable_invariants.cinvG Sigma}.
 
   (**
 Suppose we have have a concurrent class `C` with operation `oa` that is *logically atomic*.
@@ -135,7 +135,7 @@ For examples, see the tests directory.
       the parties that share the resource.
    2. ownership of [StC] representing his handle on the state.
    *)
-  Definition constructorSpec (this : ptr) : WithPrePost Sigma :=
+  Definition constructorSpec (this : ptr) : WithPrePost mpredI :=
     \pre FILL_IN
     \post Exists (g: Cghost),
        this |-> (CRInv g 1) ** StC g init_val.
@@ -184,7 +184,7 @@ For examples, see the tests directory.
       obtain them and give them up (since they can not be put into [Q] since the
       two are separable: [oa_call_resources post_t a ** Q r])
   *)
-  Definition oa_spec (this:ptr) : WithPrePost Sigma :=
+  Definition oa_spec (this:ptr) : WithPrePost mpredI :=
     \with (q: Qp) (Q : Z -> mpred) (g: Cghost)
     \arg{a} "a" (Vint a)
     \prepost this |-> (CRInv g q)
