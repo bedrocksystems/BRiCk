@@ -16,6 +16,7 @@ Require Import iris.bi.monpred.
 From iris.bi.lib Require Import fractional.
 Require Import iris.base_logic.lib.fancy_updates.
 Require Import iris.base_logic.lib.own.
+Require Import iris.base_logic.lib.cancelable_invariants.
 Require Import iris.algebra.lib.frac_auth.
 Require Import iris.algebra.excl.
 Require Import iris.algebra.gmap.
@@ -49,6 +50,8 @@ Class cppG (Σ : gFunctors) : Type :=
 { (* heapG : inG Σ (gmapR addr (prodR fracR (optionUR (agreeR (leibnizO N))))) *)
 (* ; localG : inG Σ (gmapUR region (gmapUR ident (exclR (leibnizO ptr)))) *)
 (* ; mem_injG : inG Σ (gmapUR ptr (agreeR (leibnizO addr))) *)
+  has_inv :> invG Σ
+; has_cinv :> cinvG Σ
 }.
 
 Class cpp_logic {ti : biIndex} : Type :=
