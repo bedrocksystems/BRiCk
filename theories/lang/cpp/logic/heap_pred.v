@@ -9,19 +9,21 @@ Require Import Coq.ZArith.BinInt.
 Require Import Coq.Strings.String.
 
 From iris.bi Require Export monpred.
+Require Import iris.proofmode.tactics.
 
 From bedrock.lang.cpp Require Import
-     semantics logic.pred logic.path_pred ast.
+     semantics logic.pred logic.path_pred ast logic.wp.
+Require Import bedrock.lang.cpp.logic.spec.
 
 Local Open Scope string_scope.
 
 Lemma monPred_at_persistent_inv {V bi} (P : monPred V bi) :
   (∀ i, Persistent (P i)) → Persistent P.
-Proof. intros HP. constructor=> i. MonPred.unseal. apply HP. Qed.
+Proof using . intros HP. constructor=> i. MonPred.unseal. apply HP. Qed.
 
 Lemma monPred_at_timeless_inv {V sbi} (P : monPredSI V sbi) :
   (∀ i, Timeless (P i)) → Timeless P.
-Proof. intros HP. constructor=> i. MonPred.unseal. apply HP. Qed.
+Proof using . intros HP. constructor=> i. MonPred.unseal. apply HP. Qed.
 
 
 Section with_cpp.
@@ -31,9 +33,9 @@ Section with_cpp.
    * assert properties of the heap
    *)
   Global Instance val_inhabited : Inhabited val.
-  Proof. constructor. apply (Vint 0). Qed.
+  Proof using . constructor. apply (Vint 0). Qed.
   Global Instance ptr_inhabited : Inhabited ptr.
-  Proof. constructor. apply nullptr. Qed.
+  Proof using . constructor. apply nullptr. Qed.
 
   Local Instance ptr_rel : SqSubsetEq ptr.
   Proof.
@@ -43,7 +45,7 @@ Section with_cpp.
   Defined.
 
   Local Instance ptr_rel_preorder : PreOrder (⊑@{ptr}).
-  Proof.
+  Proof using .
     unfold sqsubseteq. unfold ptr_rel.
     apply base.PreOrder_instance_0.
   Qed.
@@ -59,7 +61,7 @@ Section with_cpp.
   Lemma Rep_lequiv : forall (P Q : Rep),
       (forall p, P p -|- Q p) ->
       P -|- Q.
-  Proof. intros. split'; constructor; intro; rewrite H; reflexivity. Qed.
+  Proof using . intros. split'; constructor; intro; rewrite H; reflexivity. Qed.
 
   Local Ltac solve_Rep_persistent X :=
     intros;
@@ -78,7 +80,7 @@ Section with_cpp.
   Lemma Rep_equiv_ext_equiv : forall P Q : Rep,
       (forall x, P x -|- Q x) ->
       P -|- Q.
-  Proof.
+  Proof using .
     split; red; simpl; eapply H.
   Qed.
 
@@ -96,10 +98,10 @@ Section with_cpp.
 
   Global Instance _offsetR_persistent o r :
     Persistent r -> Persistent (_offsetR o r).
-  Proof. solve_Rep_persistent _offsetR_eq. Qed.
+  Proof using . solve_Rep_persistent _offsetR_eq. Qed.
   Global Instance Proper__offsetR_entails
     : Proper (eq ==> lentails ==> lentails) _offsetR.
-  Proof.
+  Proof using .
     rewrite _offsetR_eq. unfold _offsetR_def.
     constructor. simpl. intros.
     subst. destruct y; auto. destruct (o i); auto. apply H0.
@@ -107,7 +109,7 @@ Section with_cpp.
 
   Global Instance Proper__offsetR_equiv
     : Proper (eq ==> lequiv ==> lequiv) _offsetR.
-  Proof.
+  Proof using .
     rewrite _offsetR_eq.
     intros ?? H1 ?? H2.
     constructor. simpl.
@@ -122,11 +124,11 @@ Section with_cpp.
   Definition _at_eq : @_at = _ := _at_aux.(seal_eq).
 
   Global Instance _at_persistent : Persistent P -> Persistent (_at base P).
-  Proof. rewrite _at_eq. apply _. Qed.
+  Proof using . rewrite _at_eq. apply _. Qed.
 
   Global Instance Proper__at_entails
     : Proper (eq ==> lentails ==> lentails) _at.
-  Proof.
+  Proof using .
     rewrite _at_eq. unfold _at_def. red. red. red.
     intros. simpl in *. subst. setoid_rewrite H0.
     reflexivity.
@@ -134,7 +136,7 @@ Section with_cpp.
 
   Global Instance Proper__at_lequiv
     : Proper (eq ==> lequiv ==> lequiv) _at.
-  Proof.
+  Proof using .
     intros x y H1 ?? H2.
     rewrite _at_eq /_at_def. subst.
     setoid_rewrite H2.
@@ -150,7 +152,7 @@ Section with_cpp.
 
   Global Instance pureR_persistent (P : mpred) :
     Persistent P -> Persistent (pureR P).
-  Proof. intros. apply monPred_at_persistent_inv. apply  _. Qed.
+  Proof using . intros. apply monPred_at_persistent_inv. apply  _. Qed.
 
   (* this is the primitive *)
   Definition primR_def {resolve:genv} (ty : type) q (v : val) : Rep :=
@@ -161,33 +163,32 @@ Section with_cpp.
   Arguments primR {resolve} ty q v : rename.
 
   Global Instance primR_timeless resolve ty q p : Timeless (primR (resolve:=resolve) ty q p).
-  Proof. solve_Rep_timeless primR_eq. Qed.
+  Proof using . solve_Rep_timeless primR_eq. Qed.
 
   Global Instance Proper_primR_entails
     : Proper (genv_leq ==> (=) ==> (=) ==> (=) ==> lentails) (@primR).
-  Proof.
+  Proof using .
     do 5 red; intros; subst.
     rewrite primR_eq /primR_def. constructor; simpl.
     intros. setoid_rewrite H. reflexivity.
   Qed.
   Global Instance Proper_primR_equiv
     : Proper (genv_eq ==> (=) ==> (=) ==> (=) ==> lequiv) (@primR).
-  Proof.
+  Proof using .
     do 5 red; intros; subst.
     rewrite primR_eq /primR_def. constructor; simpl.
     intros. setoid_rewrite H. reflexivity.
   Qed.
 
   Definition uninit_def {resolve:genv} (ty : type) q : Rep :=
-    as_Rep (fun addr => Exists v : val, (primR (resolve:=resolve) ty q v) addr ).
-  (* todo(gmm): this isn't exactly correct, I need a Vundef *)
+    primR (resolve:=resolve) ty q Vundef.
   Definition uninit_aux : seal (@uninit_def). by eexists. Qed.
   Definition uninitR := uninit_aux.(unseal).
   Definition uninit_eq : @uninitR = _ := uninit_aux.(seal_eq).
   Arguments uninitR {resolve} ty q : rename.
 
   Global Instance uninit_timeless resolve ty q : Timeless (uninitR (resolve:=resolve) ty q).
-  Proof. solve_Rep_timeless uninit_eq. Qed.
+  Proof using . solve_Rep_timeless uninit_eq. Qed.
 
   (* this means "anything, including uninitialized" *)
   Definition anyR_def {resolve} (ty : type) q : Rep :=
@@ -199,7 +200,7 @@ Section with_cpp.
   Arguments anyR {resolve} ty q : rename.
 
   Global Instance anyR_timeless resolve ty q : Timeless (anyR (resolve:=resolve) ty q).
-  Proof. solve_Rep_timeless anyR_eq. Qed.
+  Proof using . solve_Rep_timeless anyR_eq. Qed.
 
   Definition tref_def (ty : type) (p : ptr) : Rep :=
     as_Rep (fun addr => [| addr = p |]).
@@ -208,7 +209,30 @@ Section with_cpp.
   Definition tref_eq : @refR = _ := tref_aux.(seal_eq).
 
   Global Instance tref_timeless ty p : Timeless (refR ty p).
-  Proof. solve_Rep_timeless tref_eq. Qed.
+  Proof using . solve_Rep_timeless tref_eq. Qed.
+
+  (* this is the core definition that everything will be based on.
+     it is really an assertion about assembly
+   *)
+  Definition cptr_def (fs : function_spec) : Rep :=
+    as_Rep (fun p =>
+         Forall (ti : thread_info), □ (Forall vs Q,
+         [| List.length vs = List.length fs.(fs_arguments) |] -*
+         fs.(fs_spec) ti vs Q -* fspec ti (Vptr p) vs Q))%I.
+  Definition cptr_aux : seal (@cptr_def). by eexists. Qed.
+  Definition cptr := cptr_aux.(unseal).
+  Definition cptr_eq : @cptr = _ := cptr_aux.(seal_eq).
+
+  Global Instance cptr_persistent : Persistent (cptr s).
+  Proof using .
+    red. rewrite cptr_eq /cptr_def; intros.
+    constructor; simpl; intros.
+    rewrite monPred_at_persistently /=.
+    rewrite bi.persistently_forall.
+    apply bi.forall_mono'; red; intros.
+    iIntros "#X"; iModIntro; iFrame "#".
+  Qed.
+
 
 
   (********************* DERIVED CONCEPTS ****************************)
@@ -220,7 +244,7 @@ Section with_cpp.
   Definition is_null_eq : @is_null = _ := is_null_aux.(seal_eq).
 
   Global Instance is_null_persistent : Persistent (is_null).
-  Proof. solve_Rep_persistent is_null_eq. Qed.
+  Proof using . solve_Rep_persistent is_null_eq. Qed.
 
   Definition is_nonnull_def : Rep :=
     as_Rep (fun addr => [| addr <> nullptr |]).
@@ -229,7 +253,7 @@ Section with_cpp.
   Definition is_nonnull_eq : @is_nonnull = _ := is_nonnull_aux.(seal_eq).
 
   Global Instance is_nonnull_persistent : Persistent (is_nonnull).
-  Proof. solve_Rep_persistent is_nonnull_eq. Qed.
+  Proof using . solve_Rep_persistent is_nonnull_eq. Qed.
 
   Definition tlocal_at_def (r : region) (l : ident) (p : ptr) (v : Rep) : mpred :=
     local_addr r l p ** _at (_eq p) v.
@@ -245,3 +269,7 @@ Arguments anyR {_ Σ resolve} ty q : rename.
 Arguments uninitR {_ Σ resolve} ty q : rename.
 Arguments primR {_ Σ resolve} ty q v : rename.
 Arguments refR {_ Σ} ty v : rename.
+
+
+Instance Persistent_spec `{Σ:cpp_logic ti} {resolve:genv} nm s :
+  Persistent (_at (Σ:=Σ) (_global (resolve:=resolve) nm) (cptr s)) := _.

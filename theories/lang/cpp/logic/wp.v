@@ -112,7 +112,7 @@ Section with_cpp.
     Proper (genv_leq ==> eq ==> eq ==> eq ==>
             pointwise_relation _ (pointwise_relation _ lentails) ==> lentails)
            (@wp_glval).
-  Proof.
+  Proof using .
     unfold wp_glval; simpl. do 6 red. intros.
     eapply bi.or_elim; [ rewrite <- bi.or_intro_l | rewrite <- bi.or_intro_r ].
     eapply Proper_wp_lval; eauto.
@@ -127,7 +127,7 @@ Section with_cpp.
     Proper (genv_leq ==> eq ==> eq ==> eq ==>
             pointwise_relation _ (pointwise_relation _ lentails) ==> lentails)
            (@wp_rval).
-  Proof.
+  Proof using .
     unfold wp_rval; simpl. do 6 red. intros.
     eapply bi.or_elim; [ rewrite <- bi.or_intro_l | rewrite <- bi.or_intro_r ].
     eapply Proper_wp_prval; eauto.
@@ -238,14 +238,14 @@ Section with_cpp.
       k1.(k_continue) ≡ k2.(k_continue).
 
   Lemma Kfree_Kfree : forall k P Q, Kfree P (Kfree Q k) ≡ Kfree (P ** Q) k.
-  Proof.
+  Proof using .
     split; [ | split; [ | split ] ]; simpl; intros;
       eapply bi.equiv_spec; split;
         try solve [ rewrite bi.sep_assoc; eauto ].
   Qed.
 
   Lemma Kfree_emp : forall k, Kfree empSP k ≡ k.
-  Proof.
+  Proof using .
     split; [ | split; [ | split ] ]; simpl; intros;
       eapply bi.equiv_spec; split;
         try solve [ rewrite bi.emp_sep; eauto ].
@@ -267,8 +267,8 @@ Section with_cpp.
    *)
   Parameter fspec
     : forall (ti : thread_info) (addr : val) (ls : list val) (Q : val -> epred), mpred.
-  (* ^ todo(gmm): is this correct? *)
 
   Axiom Proper_fspec : forall a ls ti,
       Proper (pointwise_relation _ lentails ==> lentails) (@fspec ti a ls).
+
 End with_cpp.

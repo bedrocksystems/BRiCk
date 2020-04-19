@@ -54,14 +54,14 @@ Class cppG (Σ : gFunctors) : Type :=
 ; has_cinv :> cinvG Σ
 }.
 
-Class cpp_logic {ti : biIndex} : Type :=
+Class cpp_logic {thread_info : biIndex} : Type :=
 { _Σ :> gFunctors
 ; has_cppG :> cppG _Σ }.
 Arguments cpp_logic : clear implicits.
 Coercion _Σ : cpp_logic >-> gFunctors.
 
 Section with_PROP.
-  Context `{Σ : cpp_logic ti}.
+  Context `{Σ : cpp_logic}.
 
   Definition mpred := iProp Σ.
   Canonical Structure mpredI : bi :=
@@ -113,23 +113,52 @@ Section with_PROP.
     (* refine (own _ {[ ρ := {[ i := Excl p ]} ]}). eapply localG. 2,3: refine _. *)
   Admitted.
 
-  (* the pointer points to the code
-   * todo(gmm): i need to bottom this out in something "real" in order
-   * to do code-loading.
+  (** the pointer points to the code
+
+      note that in the presence of code-loading, function calls will
+      require an extra side-condition that the code is loaded.
    *)
   Definition code_at : forall {σ:genv}, Func -> ptr -> mpred.
+  Proof using Σ. Admitted.
+  Definition method_at : forall {σ:genv}, Method -> ptr -> mpred.
   Proof using Σ. Admitted.
   Definition ctor_at : forall {σ: genv}, Ctor -> ptr -> mpred.
   Proof using Σ. Admitted.
   Definition dtor_at : forall {σ:genv}, Dtor -> ptr -> mpred.
   Proof using Σ. Admitted.
 
-  (* code_at is freely duplicable *)
-  Global Instance code_at_persistent σ f p
-    : Persistent (@code_at σ f p).
+  Global Instance code_at_persistent σ f p : Persistent (@code_at σ f p).
   Proof. Admitted.
-  Global Instance code_at_affine σ f p
-    : Affine (@code_at σ f p).
+  Global Instance code_at_affine σ f p : Affine (@code_at σ f p).
   Proof. Admitted.
+
+  Global Instance method_at_persistent σ f p : Persistent (@method_at σ f p).
+  Proof. Admitted.
+  Global Instance method_at_affine σ f p : Affine (@method_at σ f p).
+  Proof. Admitted.
+
+  Global Instance ctor_at_persistent σ f p : Persistent (@ctor_at σ f p).
+  Proof. Admitted.
+  Global Instance ctor_at_affine σ f p : Affine (@ctor_at σ f p).
+  Proof. Admitted.
+
+  Global Instance dtor_at_persistent σ f p : Persistent (@dtor_at σ f p).
+  Proof. Admitted.
+  Global Instance dtor_at_affine σ f p : Affine (@dtor_at σ f p).
+  Proof. Admitted.
+
+
+  (* function specifications written in weakest pre-condition style.
+   *)
+  Record function_spec : Type :=
+  { fs_return : type
+  ; fs_arguments : list type
+  ; fs_spec : thread_info -> list val -> (val -> mpred) -> mpred
+  }.
+  Arguments function_spec : clear implicits.
+  Arguments Build_function_spec : clear implicits.
+
+  Definition type_of_spec `(fs : function_spec) : type :=
+    normalize_type (Tfunction fs.(fs_return) fs.(fs_arguments)).
 
 End with_PROP.

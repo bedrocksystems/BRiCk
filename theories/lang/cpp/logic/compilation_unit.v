@@ -3,6 +3,10 @@
  *
  * SPDX-License-Identifier:AGPL-3.0-or-later
  *)
+
+(** this module provides a denotational/axiomatic semantics to c++ compilation
+    units.
+ *)
 From Coq.Classes Require Import
      RelationClasses Morphisms DecidableClass.
 
@@ -16,16 +20,17 @@ From bedrock Require Import IrisBridge.
 Require Import bedrock.lang.cpp.ast.
 From bedrock.lang.cpp Require Import
      semantics logic.pred logic.path_pred logic.heap_pred.
+From bedrock.lang.cpp Require Import logic.wp.
+Require Import iris.proofmode.tactics.
 
 Import ChargeNotation.
 
-Module Type modules.
-
-  Section with_cpp.
+Section with_cpp.
   Context `{Σ : cpp_logic ti} {resolve:genv}.
 
   Local Notation _global := (@_global resolve) (only parsing).
   Local Notation code_at := (@code_at _ Σ resolve) (only parsing).
+  Local Notation method_at := (@method_at _ Σ resolve) (only parsing).
   Local Notation ctor_at := (@ctor_at _ Σ resolve) (only parsing).
   Local Notation dtor_at := (@dtor_at _ Σ resolve) (only parsing).
   Local Notation _field := (@_field resolve) (only parsing).
@@ -33,59 +38,58 @@ Module Type modules.
   Local Notation _sub := (@_sub resolve) (only parsing).
 
   Definition denoteSymbol (n : obj_name) (o : ObjValue) : mpred :=
+    Exists a, _global n &~ a **
     match o with
-    | Ovar _ _ =>
-      Exists a, _global n &~ a
+    | Ovar _ e => empSP
     | Ofunction f =>
       match f.(f_body) return mpred with
-      | None =>
-        Exists a, _global n &~ a
-      | Some body =>
-        Exists a, _global n &~ a //\\
-                  code_at f a
+      | None => empSP
+      | Some body => code_at f a
       end
     | Omethod m =>
       match m.(m_body) return mpred with
-      | None =>
-        Exists a, _global n &~ a
+      | None => emp
       | Some body =>
-        Exists a, _global n &~ a //\\
-                  code_at {| f_return := m.(m_return)
-                           ; f_params := ("#this"%string, Tqualified m.(m_this_qual) (Tnamed m.(m_class))) :: m.(m_params)
-                           ; f_body := m.(m_body) |} a
+        method_at m a
       end
     | Oconstructor c =>
       match c.(c_body) return mpred with
-      | None =>
-        Exists a, _global n &~ a
-      | Some body =>
-        Exists a, _global n &~ a //\\ ctor_at c a
+      | None => empSP
+      | Some body => ctor_at c a
       end
     | Odestructor d =>
       match d.(d_body) return mpred with
-      | None =>
-        Exists a, _global n &~ a
-      | Some body =>
-        Exists a, _global n &~ a //\\ dtor_at d a
+      | None => empSP
+      | Some body => dtor_at d a
       end
     end.
 
-  Local Fixpoint ranges_to_list {T} (P : T -> Z * N -> mpred) (ls : list T) (rs : list (Z * N)) : mpred :=
-    match ls with
-    | nil => [| rs = nil |]
-    | l :: ls =>
-      Exists os, P l os **
-      Exists rs', ranges_to_list P ls rs' ** [| rs = os :: rs' |]
-    end.
+  Global Instance: Persistent (denoteSymbol n o).
+  Proof using .
+    rewrite /denoteSymbol; destruct o; simpl; red.
+    - iIntros "#H"; iModIntro; iFrame "#".
+    - iIntros "#H"; iModIntro; iFrame "#".
+    - iIntros "#H"; iModIntro; iFrame "#".
+    - iIntros "#H"; iModIntro; iFrame "#".
+    - iIntros "#H"; iModIntro; iFrame "#".
+  Qed.
 
-  Fixpoint disjoint (ls : list (Z * N)) : Prop :=
-    match ls with
-    | nil => True
-    | (o,s) :: ls =>
-      let non_overlapping '(o',s') :=
-          ((o <= o' /\ o + Z.of_N s <= o') \/ (o' <= o /\ o' + Z.of_N s' <= o))%Z
-      in
-      List.Forall non_overlapping ls /\ disjoint ls
+  Global Instance: Affine (denoteSymbol n o).
+  Proof using . refine _. Qed.
+
+  Definition initSymbol (n : obj_name) (o : ObjValue) : mpred :=
+    Exists a, _global n &~ a **
+    match o with
+    | Ovar t (Some e) =>
+      ltrue (*
+      Exists Q : FreeTemps -> mpred,
+      □ (_at (_eq a) (uninitR (resolve:=resolve) t 1) -*
+         Forall ρ ti, wp_init (resolve:=resolve) ti ρ t (Vptr a) e Q) ** Q empSP
+*)
+      (* ^^ todo(gmm): static initialization is not yet supported *)
+    | Ovar t None =>
+      _at (_eq a) (uninitR (resolve:=resolve) t 1)
+    | _ => empSP
     end.
 
   Definition denoteModule_def (d : compilation_unit) : mpred :=
@@ -95,21 +99,20 @@ Module Type modules.
   Definition denoteModule := denoteModule_aux.(unseal).
   Definition denoteModule_eq : @denoteModule = _ := denoteModule_aux.(seal_eq).
 
-  Axiom denoteModule_weaken : forall m, denoteModule m |-- empSP.
+  Global Instance: Persistent (denoteModule module).
+  Proof using .
+    red. rewrite denoteModule_eq /denoteModule_def; intros.
+    induction (symbols module); simpl.
+    { iIntros "[_ %]". iFrame "%". }
+    { destruct a.
+      iIntros "[[#W X] Y]"; iFrame.
+      iDestruct (IHl with "[X Y]") as "[#P #Q]"; iFrame.
+      iModIntro; iFrame "#". }
+  Qed.
 
-  (* Axiom denote_module_dup : forall module, *)
-  (*     denoteModule module -|- denoteModule module ** denoteModule module. *)
+  Global Instance: Affine (denoteModule module).
+  Proof using . refine _. Qed.
 
-  (* Theorem denoteModule_link : forall a b c, *)
-  (*     link a b = Some c -> *)
-  (*     denoteModule c -|- denoteModule a ** denoteModule b. *)
-  (* Proof. Admitted. *)
-  End with_cpp.
-
-End modules.
-
-Declare Module M : modules.
-
-Export M.
+End with_cpp.
 
 Arguments denoteModule _ : simpl never.

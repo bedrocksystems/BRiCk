@@ -25,6 +25,7 @@ theories/lang/cpp/semantics/operator.v
 theories/lang/cpp/semantics.v
 
 # Program Logic
+theories/lang/cpp/logic/spec.v
 theories/lang/cpp/logic/pred.v
 theories/lang/cpp/logic/path_pred.v
 theories/lang/cpp/logic/heap_pred.v
@@ -50,6 +51,9 @@ theories/lang/cpp/primitives.v
 
 # Notations for cpp2v
 theories/lang/cpp/parser.v
+
+theories/lang/cpp/compile.v
+
 
 # Language-Agnostic Automation
 # ^^^ will be deprecated
