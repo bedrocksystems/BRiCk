@@ -9,7 +9,7 @@ Require Import Coq.NArith.BinNatDef.
 From Coq.Strings Require Import
      Ascii String.
 Require Import Coq.ZArith.BinInt.
-
+Require Import stdpp.decidable.
 Require Import bedrock.Util.
 Require Import bedrock.lang.cpp.syntax.names.
 
@@ -19,14 +19,8 @@ Set Primitive Projections.
 Record type_qualifiers : Set :=
 { q_const : bool
 ; q_volatile : bool }.
-Global Instance Decidable_eq_type_qualifiers (a b : type_qualifiers) : Decidable (a = b).
-Proof.
-refine
-  {| Decidable_witness := decide (a.(q_const) = b.(q_const)) && decide (a.(q_volatile) = b.(q_volatile))
-   |}.
-rewrite Bool.andb_true_iff. repeat rewrite decide_ok.
-destruct a; destruct b; simpl; firstorder; congruence.
-Defined.
+Global Instance: EqDecision type_qualifiers.
+Proof. solve_decision. Defined.
 
 Definition merge_tq (a b : type_qualifiers) : type_qualifiers :=
   {| q_const := a.(q_const) || b.(q_const)
@@ -40,6 +34,8 @@ Variant size : Set :=
 | W32
 | W64
 | W128.
+Global Instance: EqDecision size.
+Proof. solve_decision. Defined.
 
 Definition N_of_size (s : size) : N :=
   match s with
@@ -63,6 +59,9 @@ Proof. destruct w; reflexivity. Qed.
 
 (* Signed and Unsigned *)
 Variant signed : Set := Signed | Unsigned.
+Global Instance: EqDecision signed.
+Proof. solve_decision. Defined.
+
 
 (* types *)
 Inductive type : Set :=
@@ -89,10 +88,10 @@ Definition Talias (underlying : type) (name : globname) : type :=
 Definition type_eq_dec : forall (ty1 ty2 : type), { ty1 = ty2 } + { ty1 <> ty2 }.
 Proof.
   fix IHty1 1.
-  repeat (decide equality).
+  decide equality; try solve [ eapply decide; refine _ ].
+  eapply list_eq_dec. eapply IHty1.
 Defined.
-Global Instance Decidable_eq_type (a b : type) : Decidable (a = b) :=
-  dec_Decidable (type_eq_dec a b).
+Global Instance: EqDecision type := type_eq_dec.
 
 Definition Qconst_volatile : type -> type :=
   Tqualified {| q_const := true ; q_volatile := true |}.
@@ -130,10 +129,9 @@ Variant PrimCast : Set :=
 | Cnull2ptr
 | Cbuiltin2function
 | Cconstructorconversion
-| C2void
-.
-Global Instance Decidable_eq_PrimCast (a b : PrimCast) : Decidable (a = b) :=
-  dec_Decidable (ltac:(decide equality) : {a = b} + {a <> b}).
+| C2void.
+Instance: EqDecision PrimCast.
+Proof. solve_decision. Defined.
 
 Variant Cast : Set :=
 | CCcast       (_ : PrimCast)
@@ -141,10 +139,9 @@ Variant Cast : Set :=
 | Creinterpret (_ : type)
 | Cstatic      (from to : globname)
 | Cdynamic     (from to : globname)
-| Cconst       (_ : type)
-.
-Global Instance Decidable_eq_Cast (a b : Cast) : Decidable (a = b) :=
-  dec_Decidable (ltac:(decide equality; eapply Decidable_dec; refine _) : {a = b} + {a <> b}).
+| Cconst       (_ : type).
+Instance: EqDecision Cast.
+Proof. solve_decision. Defined.
 
 Section qual_norm.
   Context {A : Type}.

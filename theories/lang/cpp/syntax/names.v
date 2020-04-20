@@ -6,18 +6,19 @@
 Require Import Coq.Classes.DecidableClass.
 From Coq.Strings Require Import
      Ascii String.
-
+Require Import stdpp.strings.
 Require Import bedrock.Util.
 
 Set Primitive Projections.
 
 Local Open Scope N_scope.
 
-
 (* this represents names that exist in object files. *)
 Definition obj_name : Set := string.
+Global Instance obj_name_eq: EqDecision obj_name := _.
 
 Definition ident : Set := string.
+Global Instance ident_eq: EqDecision ident := _.
 
 (* naming in C++ is complex.
  * - everything has a path, e.g. namespaces, classes, etc.
@@ -34,26 +35,15 @@ Definition globname : Set := string.
   (* these are mangled names. for consistency, we're going to
    * mangle everything.
    *)
-Global Instance Decidable_eq_globname : forall a b : globname, Decidable (a = b) :=
-  Decidable_eq_string.
+Global Instance globname_eq: EqDecision globname := _.
 
 (* local names *)
 Definition localname : Set := ident.
-
-Global Instance Decidable_eq_localname : forall a b : localname, Decidable (a = b) :=
-  Decidable_eq_string.
+Global Instance localname_eq: EqDecision localname := _.
 
 Record field : Set :=
 { f_type : globname (* name of struct or class *)
 ; f_name : ident
 }.
-
-Global Instance Decidable_eq_field (a b : field) : Decidable (a = b).
-Proof.
-refine
-  {| Decidable_witness :=
-       decide (a.(f_type) = b.(f_type)) && decide (a.(f_name) = b.(f_name))
-   ; Decidable_spec := _ |}.
-  rewrite Bool.andb_true_iff. repeat rewrite decide_ok.
-  destruct a, b; simpl; split; firstorder congruence.
-Defined.
+Global Instance field_eq: EqDecision field.
+Proof. solve_decision. Defined.

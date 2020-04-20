@@ -28,6 +28,8 @@ Import ChargeNotation.
 Section with_cpp.
   Context `{Σ : cpp_logic ti} {resolve:genv}.
 
+  Set Default Proof Using "Σ resolve".
+
   Local Notation _global := (@_global resolve) (only parsing).
   Local Notation code_at := (@code_at _ Σ resolve) (only parsing).
   Local Notation method_at := (@method_at _ Σ resolve) (only parsing).
@@ -93,21 +95,16 @@ Section with_cpp.
     end.
 
   Definition denoteModule_def (d : compilation_unit) : mpred :=
-    sepSPs (List.map (fun '(on,o) => denoteSymbol on o) d.(symbols)) **
+    ([∗map] on ↦ o ∈ d.(symbols), denoteSymbol on o)%I **
     [| module_le d resolve.(genv_cu) |].
   Definition denoteModule_aux : seal (@denoteModule_def). by eexists. Qed.
   Definition denoteModule := denoteModule_aux.(unseal).
   Definition denoteModule_eq : @denoteModule = _ := denoteModule_aux.(seal_eq).
 
   Global Instance: Persistent (denoteModule module).
-  Proof using .
+  Proof.
     red. rewrite denoteModule_eq /denoteModule_def; intros.
-    induction (symbols module); simpl.
-    { iIntros "[_ %]". iFrame "%". }
-    { destruct a.
-      iIntros "[[#W X] Y]"; iFrame.
-      iDestruct (IHl with "[X Y]") as "[#P #Q]"; iFrame.
-      iModIntro; iFrame "#". }
+    iIntros "[#M #H]"; iFrame "#".
   Qed.
 
   Global Instance: Affine (denoteModule module).

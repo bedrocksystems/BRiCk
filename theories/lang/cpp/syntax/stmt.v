@@ -8,7 +8,8 @@ Require Import Coq.NArith.BinNatDef.
 From Coq.Strings Require Import
      Ascii String.
 Require Import Coq.ZArith.BinIntDef.
-
+Require Import stdpp.decidable.
+Require Import stdpp.numbers.
 Require Import bedrock.Util.
 From bedrock.lang.cpp.syntax Require Import names types expr.
 
@@ -16,8 +17,9 @@ Set Primitive Projections.
 
 Variant SwitchBranch : Set :=
 | Exact (_ : Z)
-| Range (_ _ : Z)
-.
+| Range (_ _ : Z).
+Instance: EqDecision SwitchBranch.
+Proof. solve_decision. Defined.
 
 Record VarDecl : Set :=
 { vd_name : ident
@@ -25,6 +27,8 @@ Record VarDecl : Set :=
 ; vd_init : option Expr
 ; vd_dtor : option obj_name
 }.
+Instance: EqDecision VarDecl.
+Proof. solve_decision. Defined.
 
 
 Inductive Stmt : Set :=
@@ -56,8 +60,16 @@ Inductive Stmt : Set :=
 
 | Slabeled (_ : string) (_ : Stmt)
 | Sgoto (_ : string)
-| Sunsupported (_ : string)
-.
+| Sunsupported (_ : string).
+Instance Stmt_eq_dec : EqDecision Stmt.
+Proof.
+  do 2 red.
+  fix IHS 1.
+  decide equality; try solve_trivial_decision.
+  all: try apply list_eq_dec; try apply IHS.
+  apply decide; eapply option_eq_dec.
+  Unshelve. exact IHS.
+Defined.
 
 Definition Sskip := Sseq nil.
 
@@ -68,53 +80,22 @@ Variant OrDefault {t : Set} : Set :=
 | UserDefined (_ : t).
 Arguments OrDefault : clear implicits.
 
+Instance OrDefault_eq_dec: forall {T: Set}, EqDecision T -> EqDecision (OrDefault T).
+Proof. solve_decision. Defined.
+
+
 Variant FieldOrBase : Set :=
 | Base (_ : globname)
 | Field (_ : ident)
 | Indirect (anon_path : list (ident * globname)) (_ : ident)
 | This.
+Instance: EqDecision FieldOrBase.
+Proof. solve_decision. Defined.
+
 
 Record Initializer :=
   { init_path : FieldOrBase
   ; init_type : type
   ; init_init : Expr }.
-
-Definition Stmt_eq_dec : forall a b : Stmt, {a = b} + {a <> b}.
-Proof.
-  generalize type_eq_dec.
-  generalize (fun a b => @Decidable_dec _ _ _ (Decidable_eq_VarRef a b)).
-  generalize BinInt.Z.eq_dec.
-  generalize ascii_dec.
-  generalize string_dec.
-  generalize Bool.bool_dec.
-  generalize (fun a b => @Decidable_dec _ _ _ (Decidable_eq_UnOp a b)).
-  generalize (fun a b => @Decidable_dec _ _ _ (Decidable_eq_BinOp a b)).
-  generalize (fun a b => @Decidable_dec _ _ _ (Decidable_eq_ValCat a b)).
-  generalize Expr_eq_dec.
-  do 10 intro.
-  refine (fix Stmt_dec a b : {a = b} + {a <> b} :=
-            _).
-  decide equality.
-  all: try eapply List.list_eq_dec.
-  all: try eassumption.
-  all: decide equality.
-  all: decide equality.
-  all: decide equality.
-Defined.
-
-Global Instance Decidable_eq_Stmt (a b : Stmt) : Decidable (a = b) :=
-  dec_Decidable (Stmt_eq_dec a b).
-
-Global Instance Decidable_FieldOrBase (a b : FieldOrBase) : Decidable (a = b).
-Proof.
-  refine {| Decidable_witness :=
-              match a , b with
-              | Base a , Base b => decide (a = b)
-              | Field a , Field b => decide (a = b)
-              | Indirect a a' , Indirect b b' => decide (a = b) && decide (a' = b')
-              | This , This => true
-              | _ , _ => false
-              end |}.
-  destruct a; destruct b; repeat rewrite Bool.andb_true_iff; repeat rewrite decide_ok; try solve [ split; congruence ].
-  firstorder; congruence.
-Defined.
+Instance: EqDecision Initializer.
+Proof. solve_decision. Defined.

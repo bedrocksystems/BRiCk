@@ -13,8 +13,12 @@ Require Import Coq.ZArith.BinInt.
 Require Import Coq.Strings.Ascii.
 Require Import Coq.Classes.RelationClasses.
 Require Import Coq.Classes.Morphisms.
+Require Import stdpp.gmap.
 
 Require Import bedrock.lang.cpp.ast.
+Require Import bedrock.lang.cpp.semantics.sub_module.
+
+Set Default Proof Using "Type".
 
 (** pointers *)
 Parameter ptr : Set.
@@ -112,7 +116,7 @@ Record genv : Type :=
 Parameter genv_leq : genv -> genv -> Prop.
 Global Declare Instance PreOrder_genv_leq : PreOrder genv_leq.
 Definition glob_def (g : genv) (gn : globname) : option GlobDecl :=
-  lookup_global g.(genv_cu) gn.
+  g.(genv_cu) !! gn.
 
 Definition genv_eq (l r : genv) : Prop :=
   genv_leq l r /\ genv_leq r l.

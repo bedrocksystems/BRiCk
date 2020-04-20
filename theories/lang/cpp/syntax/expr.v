@@ -8,7 +8,8 @@ Require Import Coq.NArith.BinNatDef.
 From Coq.Strings Require Import
      Ascii String.
 Require Import Coq.ZArith.BinIntDef.
-
+Require Import stdpp.decidable.
+Require Import stdpp.strings.
 Require Import bedrock.Util.
 From bedrock.lang.cpp.syntax Require Import names types.
 
@@ -19,8 +20,8 @@ Variant UnOp : Set :=
 | Unot
 | Ubnot
 | Uother (_ : string).
-Global Instance Decidable_eq_UnOp (a b : UnOp) : Decidable (a = b) :=
-  dec_Decidable (ltac:(decide equality; eapply Decidable_dec; refine _) : {a = b} + {a <> b}).
+Instance: EqDecision UnOp.
+Proof. solve_decision. Defined.
 
 Variant BinOp : Set :=
 | Badd
@@ -43,20 +44,18 @@ Variant BinOp : Set :=
 | Bdotp (* .* *)
 | Bdotip (* ->* *)
 .
-Global Instance Decidable_eq_BinOp (a b : BinOp) : Decidable (a = b) :=
-  dec_Decidable (ltac:(decide equality; eapply Decidable_dec; refine _) : {a = b} + {a <> b}).
+Instance: EqDecision BinOp.
+Proof. solve_decision. Defined.
 
 Variant VarRef : Set :=
 | Lname (_ : localname)
 | Gname (_ : globname).
-Global Instance Decidable_eq_VarRef (a b : VarRef) : Decidable (a = b) :=
-  dec_Decidable (ltac:(decide equality; eapply Decidable_dec; refine _) : {a = b} + {a <> b}).
-
+Instance: EqDecision VarRef.
+Proof. solve_decision. Defined.
 
 Variant ValCat : Set := Lvalue | Rvalue | Xvalue.
-Global Instance Decidable_eq_ValCat (a b : ValCat) : Decidable (a = b) :=
-  dec_Decidable (ltac:(decide equality; eapply Decidable_dec; refine _) : {a = b} + {a <> b}).
-
+Instance: EqDecision ValCat.
+Proof. solve_decision. Defined.
 
 Variant AtomicOp : Set :=
 | AO__atomic_load
@@ -80,8 +79,8 @@ Variant AtomicOp : Set :=
 | AO__atomic_xor_fetch
 | AO__atomic_nand_fetch
 .
-Global Instance Decidable_eq_AtomicOp (a b : AtomicOp) : Decidable (a = b) :=
-  dec_Decidable (ltac:(decide equality; eapply Decidable_dec; refine _) : {a = b} + {a <> b}).
+Instance: EqDecision AtomicOp.
+Proof. solve_decision. Defined.
 
 Inductive Expr : Set :=
 | Econst_ref (_ : VarRef) (_ : type)
@@ -147,32 +146,20 @@ Inductive Expr : Set :=
 | Eatomic (_ : AtomicOp) (_ : list (ValCat * Expr)) (_ : type)
 | Eva_arg (_ : Expr) (_ : type)
 | Epseudo_destructor (_ : type) (_ : Expr) (* type void *)
-| Eunsupported (_ : string) (_ : type)
-.
-
-Definition Edefault_init_expr (e : Expr) : Expr := e.
-
-
-Definition Expr_eq_dec : forall a b : Expr, {a = b} + {a <> b}.
+| Eunsupported (_ : string) (_ : type).
+Instance: EqDecision Expr.
 Proof.
-  generalize type_eq_dec.
-  generalize (fun a b => @Decidable_dec _ _ _ (Decidable_eq_VarRef a b)).
-  generalize BinInt.Z.eq_dec.
-  generalize ascii_dec.
-  generalize string_dec.
-  generalize Bool.bool_dec.
-  generalize (fun a b => @Decidable_dec _ _ _ (Decidable_eq_UnOp a b)).
-  generalize (fun a b => @Decidable_dec _ _ _ (Decidable_eq_BinOp a b)).
-  generalize (fun a b => @Decidable_dec _ _ _ (Decidable_eq_ValCat a b)).
-  do 9 intro.
-  refine (fix Expr_dec a b : {a = b} + {a <> b} :=
-             _).
-  decide equality.
-  all: try eapply List.list_eq_dec.
-  all: decide equality.
-  all: decide equality.
-  all: decide equality.
+  do 2 red.
+  fix IHe 1.
+  decide equality; try solve_trivial_decision.
+  all: try eapply list_eq_dec; try solve_trivial_decision.
+  all: try eapply prod_eq_dec; try solve_trivial_decision.
+  all: try eapply sum_eq_dec; try solve_trivial_decision.
+  all: try eapply option_eq_dec; try solve_trivial_decision.
+  Unshelve.
+  all: try eapply prod_eq_dec; do 2 red; apply IHe.
+  Unshelve.
+  all: do 2 red; apply IHe.
 Defined.
 
-Global Instance Decidable_eq_Expr (a b : Expr) : Decidable (a = b) :=
-  dec_Decidable (Expr_eq_dec a b).
+Definition Edefault_init_expr (e : Expr) : Expr := e.
