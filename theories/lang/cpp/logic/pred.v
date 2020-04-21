@@ -1,7 +1,15 @@
 (*
- * Copyright (C) BedRock Systems Inc. 2019 Gregory Malecha
+ * Copyright (C) BedRock Systems Inc. 2019-2020 Gregory Malecha
  *
  * SPDX-License-Identifier:AGPL-3.0-or-later
+ *)
+(** this file defines the core logic (called [mpred]) that we use
+    for C++.
+
+    known issues:
+    - currently the logic is sequentially consistent
+    - the memory model is simplified from the standard C++ memory
+      model.
  *)
 Require Import Coq.ZArith.BinInt.
 Require Import Coq.micromega.Lia.
@@ -25,35 +33,19 @@ Export ChargeNotation.
 
 From bedrock.lang.cpp Require Import ast semantics.
 
-(* (* this is the ghost state necessary for C++ *) *)
-(* Instance: EqDecision ptr := ptr_eq_dec. *)
-(* Instance: Countable ptr. *)
-(* Admitted. *)
-
-(* Print region. *)
-(* Instance: EqDecision region. Admitted. *)
-(* Instance: Countable region. Admitted. *)
-
-(* Check (leibnizO N). *)
-(* SearchAbout ofeT. *)
-
-(* Definition addr : Set := N. *)
-(* Definition byte : Set := N. *)
-(* Variant runtime_val : Set := *)
-(* | Rundef *)
-(* | Rval (_ : byte). *)
-
-(* Definition fractionalR (o : ofeT) : cmraT := *)
-(*   prodR fracR (optionUR (agreeR (leibnizO N))). *)
-
+(** this is the ghost state necessary for C++
+ *)
 Class cppG (Σ : gFunctors) : Type :=
-{ (* heapG : inG Σ (gmapR addr (prodR fracR (optionUR (agreeR (leibnizO N))))) *)
-(* ; localG : inG Σ (gmapUR region (gmapUR ident (exclR (leibnizO ptr)))) *)
-(* ; mem_injG : inG Σ (gmapUR ptr (agreeR (leibnizO addr))) *)
-  has_inv :> invG Σ
+{ has_inv :> invG Σ
 ; has_cinv :> cinvG Σ
 }.
 
+(** this class wraps up everything necessary to write specifications
+    about C++ program.
+
+    [thread_info] is the additional information that is associated with
+    each thread.
+ *)
 Class cpp_logic {thread_info : biIndex} : Type :=
 { _Σ :> gFunctors
 ; has_cppG :> cppG _Σ }.
@@ -62,6 +54,9 @@ Coercion _Σ : cpp_logic >-> gFunctors.
 
 Section with_PROP.
   Context `{Σ : cpp_logic}.
+  (* ^ note that implicit argument insertion allows us to write [cpp_logic]
+     and Coq will automatically introduce [thread_info : biIndex]
+   *)
 
   Definition mpred := iProp Σ.
   Canonical Structure mpredI : bi :=
@@ -75,7 +70,9 @@ Section with_PROP.
      ; sbi_bi_mixin := (iPropI Σ).(bi_bi_mixin)
      ; sbi_sbi_mixin := (iPropSI Σ).(sbi_sbi_mixin) |}.
 
-  (* heap points to *)
+  (** typed points to
+      stack and heap pointers are treated uniformly
+   *)
   Definition tptsto {σ:genv} (t : type) (q : Qp) (a : ptr) (v : val) : mpred.
   Proof using Σ. Admitted.
 
@@ -101,12 +98,7 @@ Section with_PROP.
       @tptsto σ t q a v |-- @tptsto σ t q a v ** [| has_type v t |].
   Proof. Admitted.
 
-  (* Axiom tptsto_same_val : forall σ t q1 q2 a v1 v2, *)
-  (*     let p := @tptsto σ t q1 a v1 ** @tptsto σ t q2 a v2 in *)
-  (*     p |-- p ** [| v1=v2 |] ** ([| ((q1+q2)%Qp ≤ 1)%Qc |]). *)
-
-
-  (* this is like a "points to" where the location is (region * ident).
+  (** this is like a "points to" where the location is (region * ident).
    *)
   Definition local_addr (ρ : region) (i : ident) (p : ptr) : mpred.
   Proof using Σ.
@@ -148,7 +140,7 @@ Section with_PROP.
   Proof. Admitted.
 
 
-  (* function specifications written in weakest pre-condition style.
+  (** function specifications written in weakest pre-condition style.
    *)
   Record function_spec : Type :=
   { fs_return : type

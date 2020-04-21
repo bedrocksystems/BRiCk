@@ -9,8 +9,8 @@
  *)
 Require Import Coq.Lists.List.
 Require Import Coq.Strings.String.
-
 Require Import iris.bi.monpred.
+Require Import iris.base_logic.lib.fancy_updates.
 From iris.proofmode Require Import tactics.
 
 From bedrock.lang.cpp Require Import
@@ -34,6 +34,7 @@ Section wps.
     end.
 End wps.
 
+Local Open Scope bi_scope.
 
 Section with_cpp.
   Context `{Σ : cpp_logic thread_info}.
@@ -52,26 +53,34 @@ Section with_cpp.
 
   (* evaluate an expression as an lvalue *)
   Parameter wp_lval
-    : forall {resolve:genv}, thread_info -> region ->
+    : forall {resolve:genv}, coPset -> thread_info -> region ->
         Expr ->
         (val -> FreeTemps -> epred) -> (* result -> free -> post *)
         mpred. (* pre-condition *)
 
+  Axiom wp_lval_shift : forall σ M ti ρ e Q,
+      (|={M}=> wp_lval (resolve:=σ) M ti ρ e (fun v free => |={M}=> Q v free))
+    ⊢ wp_lval (resolve:=σ) M ti ρ e Q.
+
   Axiom Proper_wp_lval :
-    Proper (genv_leq ==> eq ==> eq ==> eq ==>
+    Proper (genv_leq ==> eq ==> eq ==> eq ==> eq ==>
             pointwise_relation _ (pointwise_relation _ lentails) ==> lentails)
            (@wp_lval).
   Global Existing Instance Proper_wp_lval.
 
   (* evaluate an expression as an prvalue *)
   Parameter wp_prval
-    : forall {resolve:genv}, thread_info -> region ->
+    : forall {resolve:genv}, coPset -> thread_info -> region ->
         Expr ->
         (val -> FreeTemps -> epred) -> (* result -> free -> post *)
         mpred. (* pre-condition *)
 
+  Axiom wp_prval_shift : forall σ M ti ρ e Q,
+      (|={M}=> wp_prval (resolve:=σ) M ti ρ e (fun v free => |={M}=> Q v free))
+    ⊢ wp_prval (resolve:=σ) M ti ρ e Q.
+
   Axiom Proper_wp_prval :
-    Proper (genv_leq ==> eq ==> eq ==> eq ==>
+    Proper (genv_leq ==> eq ==> eq ==> eq ==> eq ==>
             pointwise_relation _ (pointwise_relation _ lentails) ==> lentails)
            (@wp_prval).
   Global Existing Instance Proper_wp_prval.
@@ -82,12 +91,17 @@ Section with_cpp.
    *    https://en.cppreference.com/w/cpp/language/value_category)
    *)
   Parameter wp_init
-    : forall {resolve:genv}, thread_info -> region ->
+    : forall {resolve:genv}, coPset -> thread_info -> region ->
                         type -> val -> Expr ->
                         (FreeTemps -> epred) -> (* free -> post *)
                         mpred. (* pre-condition *)
+
+  Axiom wp_init_shift : forall σ M ti ρ ty v e Q,
+      (|={M}=> wp_init (resolve:=σ) M ti ρ ty v e (fun free => |={M}=> Q free))
+    ⊢ wp_init (resolve:=σ) M ti ρ ty v e Q.
+
   Axiom Proper_wp_init :
-    Proper (genv_leq ==> eq ==> eq ==> eq ==> eq ==> eq ==>
+    Proper (genv_leq ==> eq ==> eq ==> eq ==> eq ==> eq ==> eq ==>
             pointwise_relation _ lentails ==> lentails)
            (@wp_init).
   Global Existing Instance Proper_wp_init.
@@ -95,25 +109,34 @@ Section with_cpp.
 
   (* evaluate an expression as an xvalue *)
   Parameter wp_xval
-    : forall {resolve:genv}, thread_info -> region ->
+    : forall {resolve:genv}, coPset -> thread_info -> region ->
                         Expr ->
                         (val -> FreeTemps -> epred) -> (* result -> free -> post *)
                         mpred. (* pre-condition *)
 
+  Axiom wp_xval_shift : forall σ M ti ρ e Q,
+      (|={M}=> wp_xval (resolve:=σ) M ti ρ e (fun v free => |={M}=> Q v free))
+    ⊢ wp_xval (resolve:=σ) M ti ρ e Q.
+
   Axiom Proper_wp_xval :
-    Proper (genv_leq ==> eq ==> eq ==> eq ==>
+    Proper (genv_leq ==> eq ==> eq ==> eq ==> eq ==>
             pointwise_relation _ (pointwise_relation _ lentails) ==> lentails)
            (@wp_xval).
   Global Existing Instance Proper_wp_xval.
 
-  Definition wp_glval {resolve} ti (r : region) e Q :=
-    @wp_lval resolve ti r e Q \\// @wp_xval resolve ti r e Q.
+  Definition wp_glval {resolve} M ti (r : region) e Q :=
+    @wp_lval resolve M ti r e Q \\// @wp_xval resolve M ti r e Q.
+
+  (** note: you can not shift for [wp_glval] because [|==> wp_glval] allows the
+      ghost code to decide which side you are in
+   *)
+
   Theorem Proper_wp_glval :
-    Proper (genv_leq ==> eq ==> eq ==> eq ==>
+    Proper (genv_leq ==> eq ==> eq ==> eq ==> eq ==>
             pointwise_relation _ (pointwise_relation _ lentails) ==> lentails)
            (@wp_glval).
   Proof using .
-    unfold wp_glval; simpl. do 6 red. intros.
+    unfold wp_glval; simpl. do 7 red. intros.
     eapply bi.or_elim; [ rewrite <- bi.or_intro_l | rewrite <- bi.or_intro_r ].
     eapply Proper_wp_lval; eauto.
     eapply Proper_wp_xval; eauto.
@@ -121,14 +144,19 @@ Section with_cpp.
   Global Existing Instance Proper_wp_glval.
 
 
-  Definition wp_rval {resolve} ti (r : region) e Q :=
-    @wp_prval resolve ti r e Q \\// @wp_xval resolve ti r e Q.
+  Definition wp_rval {resolve} M ti (r : region) e Q :=
+    @wp_prval resolve M ti r e Q \\// @wp_xval resolve M ti r e Q.
+
+  (** note: you can not shift for [wp_rval] because [|==> wp_rval] allows the
+      ghost code to decide which side you are in
+   *)
+
   Theorem Proper_wp_rval :
-    Proper (genv_leq ==> eq ==> eq ==> eq ==>
+    Proper (genv_leq ==> eq ==> eq ==> eq ==> eq ==>
             pointwise_relation _ (pointwise_relation _ lentails) ==> lentails)
            (@wp_rval).
   Proof using .
-    unfold wp_rval; simpl. do 6 red. intros.
+    unfold wp_rval; simpl. do 7 red. intros.
     eapply bi.or_elim; [ rewrite <- bi.or_intro_l | rewrite <- bi.or_intro_r ].
     eapply Proper_wp_prval; eauto.
     eapply Proper_wp_xval; eauto.
@@ -137,14 +165,14 @@ Section with_cpp.
 
   Section wpe.
     Context {resolve:genv}.
-    Variable (ti : thread_info) (ρ : region).
+    Variable (M : coPset) (ti : thread_info) (ρ : region).
 
     Definition wpe (vc : ValCat)
       : Expr -> (val -> FreeTemps -> mpred) -> mpred :=
       match vc with
-      | Lvalue => @wp_lval resolve ti ρ
-      | Rvalue => @wp_prval resolve ti ρ
-      | Xvalue => @wp_xval resolve ti ρ
+      | Lvalue => @wp_lval resolve M ti ρ
+      | Rvalue => @wp_prval resolve M ti ρ
+      | Xvalue => @wp_xval resolve M ti ρ
       end.
 
     Definition wpAny (vce : ValCat * Expr)
@@ -157,21 +185,30 @@ Section with_cpp.
 
   (** initializers *)
   Parameter wpi
-    : forall {resolve:genv} (ti : thread_info) (ρ : region)
+    : forall {resolve:genv} (M : coPset) (ti : thread_info) (ρ : region)
         (cls : globname) (this : val) (init : Initializer)
         (Q : mpred -> mpred), mpred.
 
+  Axiom wpi_shift : forall σ M ti ρ cls this e Q,
+      (|={M}=> wpi (resolve:=σ) M ti ρ cls this e (fun k => |={M}=> Q k))
+    ⊢ wpi (resolve:=σ) M ti ρ cls this e Q.
+
   Axiom Proper_wpi :
-    Proper (genv_leq ==> eq ==> eq ==> eq ==> eq ==> eq ==> (lentails ==> lentails) ==> lentails)
+    Proper (genv_leq ==> eq ==> eq ==> eq ==> eq ==> eq ==> eq ==> (lentails ==> lentails) ==> lentails)
            (@wpi).
   Global Existing Instance Proper_wp_prval.
 
   (** destructors *)
   Parameter wpd
-    : forall {resolve:genv} (ti : thread_info) (ρ : region)
+    : forall {resolve:genv} (M : coPset) (ti : thread_info) (ρ : region)
         (cls : globname) (this : val)
         (init : FieldOrBase * obj_name)
         (Q : epred), mpred.
+
+  Axiom wpd_shift : forall σ M ti ρ cls this e Q,
+      (|={M}=> wpd (resolve:=σ) M ti ρ cls this e (|={M}=> Q))
+    ⊢ wpd (resolve:=σ) M ti ρ cls this e Q.
+
 
   (** Statements *)
   (* continuations
@@ -188,6 +225,13 @@ Section with_cpp.
     ; k_break    : mpred
     ; k_continue : mpred
     }.
+
+  Instance: FUpd Kpreds :=
+    fun l r Q =>
+      {| k_normal := |={l,r}=> Q.(k_normal)
+       ; k_return v f := |={l,r}=> Q.(k_return) v f
+       ; k_break := |={l,r}=> Q.(k_break)
+       ; k_continue := |={l,r}=> Q.(k_continue) |}.
 
   Definition void_return (P : mpred) : Kpreds :=
     {| k_normal := P
@@ -230,6 +274,8 @@ Section with_cpp.
   Definition Kfree (a : mpred) : Kpreds -> Kpreds :=
     Kat_exit (fun P => a ** P).
 
+  Close Scope bi_scope.
+
   Global Instance Kpreds_equiv : Equiv Kpreds :=
     fun (k1 k2 : Kpreds) =>
       k1.(k_normal) ≡ k2.(k_normal) ∧
@@ -253,10 +299,14 @@ Section with_cpp.
 
   (* evaluate a statement *)
   Parameter wp
-    : forall {resolve:genv}, thread_info -> region -> Stmt -> Kpreds -> mpred.
+    : forall {resolve:genv}, coPset -> thread_info -> region -> Stmt -> Kpreds -> mpred.
+
+  Axiom wp_shift : forall σ M ti ρ s Q,
+      (|={M}=> wp (resolve:=σ) M ti ρ s (|={M}=> Q))
+    ⊢ wp (resolve:=σ) M ti ρ s Q.
 
   Axiom Proper_wp :
-    Proper (genv_leq ==> eq ==> eq ==> eq ==> equiv ==> lentails)
+    Proper (genv_leq ==> eq ==> eq ==> eq ==> eq ==> equiv ==> lentails)
            (@wp).
   Global Existing Instance Proper_wp.
 
@@ -272,3 +322,5 @@ Section with_cpp.
       Proper (pointwise_relation _ lentails ==> lentails) (@fspec ti a ls).
 
 End with_cpp.
+
+Export stdpp.coPset.

@@ -14,10 +14,10 @@ From bedrock.lang.cpp.logic Require Import
 
 Section with_Σ.
   Context `{Σ : cpp_logic thread_info, !invG Σ} {resolve:genv}.
-  Variables (ti : thread_info) (ρ : region).
+  Variables (M : coPset) (ti : thread_info) (ρ : region).
 
-  Local Notation wp_prval := (wp_prval (resolve:=resolve) ti ρ).
-  Local Notation wp_args := (wp_args (σ:=resolve) ti ρ).
+  Local Notation wp_prval := (wp_prval (resolve:=resolve) M ti ρ).
+  Local Notation wp_args := (wp_args (σ:=resolve) M ti ρ).
 
   Local Notation glob_def := (glob_def resolve) (only parsing).
   Local Notation eval_unop := (@eval_unop resolve) (only parsing).
@@ -29,7 +29,7 @@ Section with_Σ.
   Local Notation uninitR := (@uninitR _ _ resolve) (only parsing).
 
   Definition wrap_shift (F : (val -> mpred) -> mpred) (Q : val -> mpred) : mpred :=
-    Exists mid, (|={⊤,mid}=> F (fun result => |={mid,⊤}=> Q result))%I.
+    Exists mid, (|={M,mid}=> F (fun result => |={mid,M}=> Q result))%I.
 
   (* semantics of atomic builtins
    * https://gcc.gnu.org/onlinedocs/gcc/_005f_005fatomic-Builtins.html
@@ -38,11 +38,11 @@ Section with_Σ.
    * These are given in the style of function call axioms
    *)
   Parameter wp_atom :
-      forall {resolve:genv}, thread_info ->
+      forall {resolve:genv}, coPset -> thread_info ->
         AtomicOp -> type (* the access type of the atomic operation *) ->
         list val -> (val -> mpred) -> mpred.
 
-  Local Notation wp_atom' := (@wp_atom resolve ti) (only parsing).
+  Local Notation wp_atom' := (@wp_atom resolve M ti) (only parsing).
 
   Definition pointee_type (t : type) : option type :=
     match t with

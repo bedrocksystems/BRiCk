@@ -32,18 +32,18 @@ Module Type Expr.
 
   Section with_resolve.
     Context `{Σ : cpp_logic thread_info} {resolve:genv}.
-    Variables (ti : thread_info) (ρ : region).
+    Variables (M : coPset) (ti : thread_info) (ρ : region).
 
-    Local Notation wp_lval := (wp_lval (resolve:=resolve) ti ρ).
-    Local Notation wp_prval := (wp_prval (resolve:=resolve) ti ρ).
-    Local Notation wp_xval := (wp_xval (resolve:=resolve) ti ρ).
-    Local Notation wp_glval := (wp_glval (resolve:=resolve) ti ρ).
-    Local Notation wp_rval := (wp_rval (resolve:=resolve) ti ρ).
-    Local Notation wp_init := (wp_init (resolve:=resolve) ti ρ).
-    Local Notation wp_args := (wp_args (σ:=resolve) ti ρ).
-    Local Notation wpAny := (wpAny (resolve:=resolve) ti ρ).
-    Local Notation wpe := (wpe (resolve:=resolve) ti ρ).
-    Local Notation wpAnys := (wpAnys (resolve:=resolve) ti ρ).
+    Local Notation wp_lval := (wp_lval (resolve:=resolve) M ti ρ).
+    Local Notation wp_prval := (wp_prval (resolve:=resolve) M ti ρ).
+    Local Notation wp_xval := (wp_xval (resolve:=resolve) M ti ρ).
+    Local Notation wp_glval := (wp_glval (resolve:=resolve) M ti ρ).
+    Local Notation wp_rval := (wp_rval (resolve:=resolve) M ti ρ).
+    Local Notation wp_init := (wp_init (resolve:=resolve) M ti ρ).
+    Local Notation wp_args := (wp_args (σ:=resolve) M ti ρ).
+    Local Notation wpAny := (wpAny (resolve:=resolve) M ti ρ).
+    Local Notation wpe := (wpe (resolve:=resolve) M ti ρ).
+    Local Notation wpAnys := (wpAnys (resolve:=resolve) M ti ρ).
     Local Notation fspec := (fspec ti).
     Local Notation mdestroy := (mdestroy (σ:=resolve) ti) (only parsing).
 

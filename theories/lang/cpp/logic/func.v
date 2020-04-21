@@ -146,14 +146,14 @@ Section with_cpp.
         if is_void ret
         then
           binds -*
-          wp (resolve:=resolve) ti ρ body (Kfree frees (void_return (|> Q Vvoid)))
+          wp (resolve:=resolve) ⊤ ti ρ body (Kfree frees (void_return (|> Q Vvoid)))
         else if is_aggregate ret then
           Forall ra,
           (binds ** result_addr ρ ra ** _at (_eq ra) (uninitR (erase_qualifiers ret) 1)) -*
-          wp (resolve:=resolve) ti ρ body (Kfree (frees ** result_addr ρ ra) (val_return (fun x => |> Q x)))
+          wp (resolve:=resolve) ⊤ ti ρ body (Kfree (frees ** result_addr ρ ra) (val_return (fun x => |> Q x)))
         else
           binds -*
-          wp (resolve:=resolve) ti ρ body (Kfree frees (val_return (fun x => |> Q x)))
+          wp (resolve:=resolve) ⊤ ti ρ body (Kfree frees (val_return (fun x => |> Q x)))
       end.
 
   Definition func_ok (f : Func) (ti : thread_info) (spec : function_spec)
@@ -188,12 +188,12 @@ Section with_cpp.
         ([| (length args = 1 + length meth.(m_params))%nat |] ** ltrue) //\\
         if is_void ret_ty
         then
-          binds -* (wp (resolve:=resolve) ti ρ body (Kfree frees (void_return (|>Q Vvoid))))
+          binds -* (wp (resolve:=resolve) ⊤ ti ρ body (Kfree frees (void_return (|>Q Vvoid))))
         else if is_aggregate ret_ty then
           Forall ra,
-          (binds ** result_addr ρ ra ** _at (_eq ra) (uninitR (erase_qualifiers ret_ty) 1)) -* (wp (resolve:=resolve) ti ρ body (Kfree (frees ** result_addr ρ ra) (val_return (fun x => |>Q x))))
+          (binds ** result_addr ρ ra ** _at (_eq ra) (uninitR (erase_qualifiers ret_ty) 1)) -* (wp (resolve:=resolve) ⊤ ti ρ body (Kfree (frees ** result_addr ρ ra) (val_return (fun x => |>Q x))))
         else
-          binds -* (wp (resolve:=resolve) ti ρ body (Kfree frees (val_return (fun x => |>Q x))))
+          binds -* (wp (resolve:=resolve) ⊤ ti ρ body (Kfree frees (val_return (fun x => |>Q x))))
       | _ => lfalse
       end
     end.
@@ -212,7 +212,7 @@ Section with_cpp.
            (Q : mpred -> mpred) : mpred :=
     match inits with
     | nil => Q empSP
-    | i :: is' => wpi (resolve:=resolve) ti ρ cls this i (fun f => f ** wpis ti ρ cls this is' Q)
+    | i :: is' => wpi (resolve:=resolve) ⊤ ti ρ cls this i (fun f => f ** wpis ti ρ cls this is' Q)
     end.
 
   Definition wp_ctor (ctor : Ctor) (ti : thread_info) (args : list val)
@@ -242,8 +242,8 @@ Section with_cpp.
         binds -*
         wpis ti ρ ctor.(c_class) this_val inits
            (fun free => free **
-                      wp (resolve:=resolve) ti ρ body (Kfree frees (void_return (|> Q Vvoid))))
-       | _ => lfalse
+                      wp (resolve:=resolve) ⊤ ti ρ body (Kfree frees (void_return (|> Q Vvoid))))
+      | _ => lfalse
       end
     end.
 
@@ -261,7 +261,7 @@ Section with_cpp.
            (Q : mpred) : mpred :=
     match dests with
     | nil => Q
-    | d :: ds => @wpd _ Σ resolve ti ρ cls this d (wpds ti ρ cls this ds Q)
+    | d :: ds => @wpd _ Σ resolve ⊤ ti ρ cls this d (wpds ti ρ cls this ds Q)
     end.
 
   Definition wp_dtor (dtor : Dtor) (ti : thread_info) (args : list val)
@@ -283,7 +283,7 @@ Section with_cpp.
         (* this is what is freed on return *)
         let frees := this_addr ρ thisp in
           binds -*
-          wp (resolve:=resolve) ti ρ body
+          wp (resolve:=resolve) ⊤ ti ρ body
           (Kfree frees (void_return (wpds ti ρ dtor.(d_class) this_val deinit (|> Q Vvoid))))
       | _ => lfalse
       end

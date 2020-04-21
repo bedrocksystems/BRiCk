@@ -17,12 +17,12 @@ From bedrock.lang.cpp.logic Require Import
 
 Section with_resolve.
   Context `{Σ : cpp_logic thread_info} {σ : genv}.
-  Variables (ti : thread_info) (ρ : region).
+  Variables (M : coPset) (ti : thread_info) (ρ : region).
 
-  Local Notation wp_lval := (wp_lval (resolve:=σ) ti ρ).
-  Local Notation wp_prval := (wp_prval (resolve:=σ) ti ρ).
-  Local Notation wp_xval := (wp_xval (resolve:=σ) ti ρ).
-  Local Notation wp_init := (wp_init (resolve:=σ) ti ρ).
+  Local Notation wp_lval := (wp_lval (resolve:=σ) M ti ρ).
+  Local Notation wp_prval := (wp_prval (resolve:=σ) M ti ρ).
+  Local Notation wp_xval := (wp_xval (resolve:=σ) M ti ρ).
+  Local Notation wp_init := (wp_init (resolve:=σ) M ti ρ).
 
   Fixpoint wp_args (es : list (ValCat * Expr)) (Q : list val -> FreeTemps -> mpred) : mpred :=
     match es with
