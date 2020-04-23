@@ -71,7 +71,12 @@ public:
     switch (T->getTypeClass()) {
 #define ABSTRACT_TYPE(CLASS, PARENT)
 #define TYPE(CLASS, PARENT) case Type::CLASS: DISPATCH(CLASS##Type);
-#include "clang/AST/TypeNodes.def"
+#include "clang/Basic/Version.inc"
+#if CLANG_VERSION_MAJOR >= 10
+  #include "clang/AST/TypeNodes.inc"
+#else
+  #include "clang/AST/TypeNodes.def"
+#endif
     }
     llvm_unreachable("Unknown type class!");
   }
@@ -81,7 +86,12 @@ public:
 #define TYPE(CLASS, PARENT) RetTy Visit##CLASS##Type(const CLASS##Type *T, ParamTys... P) { \
   DISPATCH(PARENT);                                                          \
 }
-#include "clang/AST/TypeNodes.def"
+#include "clang/Basic/Version.inc"
+#if CLANG_VERSION_MAJOR >= 10
+  #include "clang/AST/TypeNodes.inc"
+#else
+  #include "clang/AST/TypeNodes.def"
+#endif
 
   /// \brief Method called if \c ImpClass doesn't provide specific handler
   /// for some type class.

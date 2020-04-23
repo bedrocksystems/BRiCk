@@ -11,6 +11,9 @@
 #include "clang/AST/StmtVisitor.h"
 #include "clang/AST/Type.h"
 #include "clang/Basic/Version.inc"
+#if CLANG_VERSION_MAJOR >= 10
+    #include "clang/AST/Attr.h"
+#endif
 
 using namespace clang;
 

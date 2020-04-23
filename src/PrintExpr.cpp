@@ -737,7 +737,11 @@ public:
         }
 
         print.ctor("Ematerialize_temp");
+#if CLANG_VERSION_MAJOR >= 10
+        cprint.printExpr(expr->getSubExpr(), print);
+#else
         cprint.printExpr(expr->GetTemporaryExpr(), print);
+#endif
         done(expr, print, cprint);
     }
 
