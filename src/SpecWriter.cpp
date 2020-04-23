@@ -7,6 +7,7 @@
 #include "Logging.hpp"
 #include "ModuleBuilder.hpp"
 #include "SpecCollector.hpp"
+#include "clang/Basic/Version.inc"
 #include <algorithm>
 
 using namespace clang;
@@ -440,7 +441,15 @@ write_spec(::Module *mod, const SpecCollector &specs,
     std::list<const NamedDecl *> internal_names;
     // std::list<const NamedDecl*> imported_names;
 
+#if CLANG_VERSION_MAJOR >= 10
+    const auto file = ctxt.getSourceManager().getMainFileID();
+    const auto commentsInFile = ctxt.getRawCommentList().getCommentsInFile(file);
+    if (!commentsInFile) return;
+    for (auto p : *ctxt.getRawCommentList().getCommentsInFile(file)) {
+        const auto& c = p.second;
+#else
     for (auto c : ctxt.getRawCommentList().getComments()) {
+#endif
         if (!source.isIncluded(c->getBeginLoc())) {
             if (c->isAttached()) {
                 // this comment is attached to a declaration
