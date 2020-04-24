@@ -65,23 +65,6 @@ Section with_Σ.
   Definition result_addr (r : region) (p : ptr) : mpred :=
     local_addr r "#result" p.
 
-  (* absolute locations *)
-  Definition _eq_def (p : ptr) : Loc :=
-    Some p.
-  Definition _eq_aux : seal (@_eq_def). by eexists. Qed.
-  Definition _eq := _eq_aux.(unseal).
-  Definition _eq_eq : @_eq = _ := _eq_aux.(seal_eq).
-
-
-  Definition _eqv (a : val) : Loc :=
-    match a with
-    | Vptr p => _eq p
-    | _ => None
-    end.
-
-  Lemma _eqv_eq : forall p, _eqv (Vptr p) = _eq p.
-  Proof. reflexivity. Qed.
-
   (* ^ these two could be duplicable because regions don't need to be
    * reused. the reason that local variables need to be tracked is that
    * they could go out of scope.
@@ -92,6 +75,22 @@ Section with_Σ.
    *   essentially region := list (list (string * ptr)). this essentially makes
    *   _local persistent.
    *)
+
+  (* absolute locations *)
+  Definition _eq_def (p : ptr) : Loc :=
+    Some p.
+  Definition _eq_aux : seal (@_eq_def). by eexists. Qed.
+  Definition _eq := _eq_aux.(unseal).
+  Definition _eq_eq : @_eq = _ := _eq_aux.(seal_eq).
+
+  Definition _eqv (a : val) : Loc :=
+    match a with
+    | Vptr p => _eq p
+    | _ => None
+    end.
+
+  Lemma _eqv_eq : forall p, _eqv (Vptr p) = _eq p.
+  Proof. reflexivity. Qed.
 
   Definition _global_def (resolve : genv) (x : obj_name) : Loc :=
     match glob_addr resolve x with
@@ -121,8 +120,9 @@ Section with_Σ.
   Definition _sub := _sub_aux.(unseal).
   Definition _sub_eq : @_sub = _ := _sub_aux.(seal_eq).
 
-
-  (* this represents static_cast *)
+  (* this represents a derived-to-base cast
+     todo: determine if this needs to handle a chain.
+   *)
   Definition _super_def (resolve:genv) (sub super : globname) : Offset :=
     match parent_offset resolve sub super with
     | Some o => Some (fun p => Some (offset_ptr_ o p))

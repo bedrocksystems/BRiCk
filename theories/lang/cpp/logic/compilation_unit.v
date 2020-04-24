@@ -31,10 +31,10 @@ Section with_cpp.
   Set Default Proof Using "Σ resolve".
 
   Local Notation _global := (@_global resolve) (only parsing).
-  Local Notation code_at := (@code_at _ Σ resolve) (only parsing).
-  Local Notation method_at := (@method_at _ Σ resolve) (only parsing).
-  Local Notation ctor_at := (@ctor_at _ Σ resolve) (only parsing).
-  Local Notation dtor_at := (@dtor_at _ Σ resolve) (only parsing).
+  Local Notation code_at := (@code_at _ Σ) (only parsing).
+  Local Notation method_at := (@method_at _ Σ) (only parsing).
+  Local Notation ctor_at := (@ctor_at _ Σ) (only parsing).
+  Local Notation dtor_at := (@dtor_at _ Σ) (only parsing).
   Local Notation _field := (@_field resolve) (only parsing).
   Local Notation _super := (@_super resolve) (only parsing).
   Local Notation _sub := (@_sub resolve) (only parsing).

@@ -61,6 +61,9 @@ theories/lang/cpp/compile.v
 
 theories/lang/cpp.v
 
+# "soundness" proof
+theories/lang/cpp/logic/simple_pred.v
+
 
 # Language-Agnostic Automation
 # ^^^ will be deprecated

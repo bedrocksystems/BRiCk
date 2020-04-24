@@ -25,132 +25,124 @@ From iris.bi.lib Require Import fractional.
 Require Import iris.base_logic.lib.fancy_updates.
 Require Import iris.base_logic.lib.own.
 Require Import iris.base_logic.lib.cancelable_invariants.
-Require Import iris.algebra.lib.frac_auth.
-Require Import iris.algebra.excl.
-Require Import iris.algebra.gmap.
+
 From bedrock Require Export IrisBridge.
 Export ChargeNotation.
 
 From bedrock.lang.cpp Require Import ast semantics.
 
-(** this is the ghost state necessary for C++
- *)
-Class cppG (Σ : gFunctors) : Type :=
-{ has_inv :> invG Σ
-; has_cinv :> cinvG Σ
-}.
+Module Type CPP_LOGIC.
 
-(** this class wraps up everything necessary to write specifications
-    about C++ program.
+  Parameter cppG : gFunctors -> Type.
+  Parameter has_inv : forall Σ, cppG Σ -> invG Σ.
+  Parameter has_cinv : forall Σ, cppG Σ -> cinvG Σ.
 
-    [thread_info] is the additional information that is associated with
-    each thread.
- *)
-Class cpp_logic {thread_info : biIndex} : Type :=
-{ _Σ :> gFunctors
-; has_cppG :> cppG _Σ }.
-Arguments cpp_logic : clear implicits.
-Coercion _Σ : cpp_logic >-> gFunctors.
+  Parameter _cpp_ghost : Type.
 
-Section with_PROP.
-  Context `{Σ : cpp_logic}.
-  (* ^ note that implicit argument insertion allows us to write [cpp_logic]
-     and Coq will automatically introduce [thread_info : biIndex]
-   *)
+  Class cpp_logic {thread_info : biIndex} : Type :=
+  { _Σ       : gFunctors
+  ; _ghost   : _cpp_ghost
+  ; has_cppG :> cppG _Σ }.
+  Arguments cpp_logic : clear implicits.
+  Coercion _Σ : cpp_logic >-> gFunctors.
 
-  Definition mpred := iProp Σ.
-  Canonical Structure mpredI : bi :=
-    {| bi_car := mpred
-     ; bi_ofe_mixin := (iPropI Σ).(bi_ofe_mixin)
-     ; bi_bi_mixin := (iPropI Σ).(bi_bi_mixin) |}.
-  (* todo: Fix the warning generated from this definition *)
-  Canonical Structure mpredSI : sbi :=
-    {| sbi_car := mpred
-     ; sbi_ofe_mixin := (iPropI Σ).(bi_ofe_mixin)
-     ; sbi_bi_mixin := (iPropI Σ).(bi_bi_mixin)
-     ; sbi_sbi_mixin := (iPropSI Σ).(sbi_sbi_mixin) |}.
+  Section with_cpp.
+    Context `{Σ : cpp_logic}.
 
-  (** typed points to
-      stack and heap pointers are treated uniformly
-   *)
-  Definition tptsto {σ:genv} (t : type) (q : Qp) (a : ptr) (v : val) : mpred.
-  Proof using Σ. Admitted.
+    Definition mpred := iProp Σ.
+    Canonical Structure mpredI : bi :=
+      {| bi_car := mpred
+       ; bi_ofe_mixin := (iPropI Σ).(bi_ofe_mixin)
+       ; bi_bi_mixin := (iPropI Σ).(bi_bi_mixin) |}.
+    (* todo: Fix the warning generated from this definition *)
+    Canonical Structure mpredSI : sbi :=
+      {| sbi_car := mpred
+       ; sbi_ofe_mixin := (iPropI Σ).(bi_ofe_mixin)
+       ; sbi_bi_mixin := (iPropI Σ).(bi_bi_mixin)
+       ; sbi_sbi_mixin := (iPropSI Σ).(sbi_sbi_mixin) |}.
 
-  Global Instance tptsto_proper_entails :
-    Proper (genv_leq ==> eq ==> eq ==> eq ==> eq ==> lentails) (@tptsto).
-  Proof. Admitted.
-  Global Instance tptsto_proper_equiv :
-    Proper (genv_eq ==> eq ==> eq ==> eq ==> eq ==> lequiv) (@tptsto).
-  Proof. Admitted.
+    (* heap points to *)
+    Parameter tptsto : forall {σ:genv} (t : type) (q : Qp) (a : ptr) (v : val), mpred.
 
-  Global Instance tptsto_fractional σ ty a v
-    : Fractional (λ q, @tptsto σ ty q a v).
-  Proof. Admitted.
-  Global Instance tptsto_as_fractional σ ty q a v :
-    AsFractional (@tptsto σ ty q a v) (λ q, @tptsto σ ty q a v)%I q.
-  Proof. Admitted.
+    Axiom tptsto_proper_entails :
+      Proper (genv_leq ==> eq ==> eq ==> eq ==> eq ==> lentails) (@tptsto).
+    Axiom tptsto_proper_equiv :
+      Proper (genv_eq ==> eq ==> eq ==> eq ==> eq ==> lequiv) (@tptsto).
 
-  Global Instance tptsto_timeless σ ty q a v
-    : Timeless (@tptsto σ ty q a v).
-  Proof. Admitted.
+    Axiom tptsto_fractional :
+      forall {σ} ty a v, Fractional (λ q, @tptsto σ ty q a v).
+    Axiom tptsto_as_fractional :
+      forall {σ} ty q a v, AsFractional (@tptsto σ ty q a v) (λ q, @tptsto σ ty q a v)%I q.
 
-  Theorem tptsto_has_type : forall σ t q a v,
-      @tptsto σ t q a v |-- @tptsto σ t q a v ** [| has_type v t |].
-  Proof. Admitted.
+    Axiom tptsto_timeless :
+      forall {σ} ty q a v, Timeless (@tptsto σ ty q a v).
 
-  (** this is like a "points to" where the location is (region * ident).
-   *)
-  Definition local_addr (ρ : region) (i : ident) (p : ptr) : mpred.
-  Proof using Σ.
-    (* refine (own _ {[ ρ := {[ i := Excl p ]} ]}). eapply localG. 2,3: refine _. *)
-  Admitted.
+    Axiom tptsto_has_type : forall σ t q a v,
+        @tptsto σ t q a v |-- @tptsto σ t q a v ** [| has_type v t |].
 
-  (** the pointer points to the code
+    (* this is like a "points to" where the location is (region * ident).
+     *)
+    Parameter local_addr : forall (ρ : region) (i : ident) (p : ptr), mpred.
+
+    (** the pointer points to the code
 
       note that in the presence of code-loading, function calls will
       require an extra side-condition that the code is loaded.
-   *)
-  Definition code_at : forall {σ:genv}, Func -> ptr -> mpred.
-  Proof using Σ. Admitted.
-  Definition method_at : forall {σ:genv}, Method -> ptr -> mpred.
-  Proof using Σ. Admitted.
-  Definition ctor_at : forall {σ: genv}, Ctor -> ptr -> mpred.
-  Proof using Σ. Admitted.
-  Definition dtor_at : forall {σ:genv}, Dtor -> ptr -> mpred.
-  Proof using Σ. Admitted.
+     *)
+    Parameter code_at : Func -> ptr -> mpred.
+    Parameter method_at : Method -> ptr -> mpred.
+    Parameter ctor_at : Ctor -> ptr -> mpred.
+    Parameter dtor_at : Dtor -> ptr -> mpred.
 
-  Global Instance code_at_persistent σ f p : Persistent (@code_at σ f p).
-  Proof. Admitted.
-  Global Instance code_at_affine σ f p : Affine (@code_at σ f p).
-  Proof. Admitted.
+    Axiom code_at_persistent : forall f p, Persistent (@code_at f p).
+    Axiom code_at_affine : forall f p, Affine (@code_at f p).
 
-  Global Instance method_at_persistent σ f p : Persistent (@method_at σ f p).
-  Proof. Admitted.
-  Global Instance method_at_affine σ f p : Affine (@method_at σ f p).
-  Proof. Admitted.
+    Axiom method_at_persistent : forall f p, Persistent (@method_at f p).
+    Axiom method_at_affine : forall f p, Affine (@method_at f p).
 
-  Global Instance ctor_at_persistent σ f p : Persistent (@ctor_at σ f p).
-  Proof. Admitted.
-  Global Instance ctor_at_affine σ f p : Affine (@ctor_at σ f p).
-  Proof. Admitted.
+    Axiom ctor_at_persistent : forall f p, Persistent (@ctor_at f p).
+    Axiom ctor_at_affine : forall f p, Affine (@ctor_at f p).
 
-  Global Instance dtor_at_persistent σ f p : Persistent (@dtor_at σ f p).
-  Proof. Admitted.
-  Global Instance dtor_at_affine σ f p : Affine (@dtor_at σ f p).
-  Proof. Admitted.
+    Axiom dtor_at_persistent : forall f p, Persistent (@dtor_at f p).
+    Axiom dtor_at_affine : forall f p, Affine (@dtor_at f p).
 
+  End with_cpp.
+
+End CPP_LOGIC.
+
+Declare Module L : CPP_LOGIC.
+Export L.
+
+Existing Class L.cppG.
+
+Existing Instances
+         L.code_at_persistent L.code_at_affine
+         L.method_at_persistent L.method_at_affine
+         L.ctor_at_persistent L.ctor_at_affine
+         L.dtor_at_persistent L.dtor_at_affine
+         L.tptsto_proper_entails
+         L.tptsto_proper_equiv
+         L.tptsto_fractional
+         L.tptsto_as_fractional
+         L.tptsto_timeless
+         L.has_inv
+         L.has_cinv
+         L.has_cppG.
+
+Section with_cpp.
+  Context `{Σ : cpp_logic}.
 
   (** function specifications written in weakest pre-condition style.
    *)
   Record function_spec : Type :=
-  { fs_return : type
-  ; fs_arguments : list type
-  ; fs_spec : thread_info -> list val -> (val -> mpred) -> mpred
-  }.
+    { fs_return : type
+    ; fs_arguments : list type
+    ; fs_spec : thread_info -> list val -> (val -> mpred) -> mpred
+    }.
   Arguments function_spec : clear implicits.
   Arguments Build_function_spec : clear implicits.
 
   Definition type_of_spec `(fs : function_spec) : type :=
     normalize_type (Tfunction fs.(fs_return) fs.(fs_arguments)).
 
-End with_PROP.
+End with_cpp.
