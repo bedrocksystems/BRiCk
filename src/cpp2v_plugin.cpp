@@ -41,7 +41,7 @@ class ToCoqAction : public PluginASTAction {
 protected:
     std::unique_ptr<ASTConsumer> CreateASTConsumer(CompilerInstance &CI,
                                                    llvm::StringRef) override {
-        return llvm::make_unique<ToCoqConsumer>(VFileOutput, SpecFile,
+        return std::make_unique<ToCoqConsumer>(VFileOutput, SpecFile,
                                                 NamesFile);
     }
 

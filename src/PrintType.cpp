@@ -232,6 +232,26 @@ public:
         case BuiltinType::Kind::NullPtr:
             print.output() << "Tnullptr";
             break;
+#if CLANG_VERSION_MAJOR >= 10
+        case BuiltinType::Kind::SveInt8:
+        case BuiltinType::Kind::SveInt16:
+        case BuiltinType::Kind::SveInt32:
+        case BuiltinType::Kind::SveInt64:
+        case BuiltinType::Kind::SveUint8:
+        case BuiltinType::Kind::SveUint16:
+        case BuiltinType::Kind::SveUint32:
+        case BuiltinType::Kind::SveUint64:
+        case BuiltinType::Kind::SveFloat16:
+        case BuiltinType::Kind::SveFloat32:
+        case BuiltinType::Kind::SveFloat64:
+        case BuiltinType::Kind::SveBool:
+            print.output() << fmt::lparen
+                           << "Tarch None \""
+                           << type->getNameAsCString(PrintingPolicy(LangOptions()))
+                           << "\""
+                           << fmt::rparen;
+            break;
+#endif
         default: {
             using namespace logging;
             fatal() << "Unsupported type \""

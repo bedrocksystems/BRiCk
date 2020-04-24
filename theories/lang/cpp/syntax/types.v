@@ -79,6 +79,9 @@ Inductive type : Set :=
 | Tmember_pointer (_ : globname) (_ : type)
 | Tqualified (_ : type_qualifiers) (_ : type)
 | Tnullptr
+(* architecture-specific types; currently unused.
+   some Tarch types, like ARM SVE, are "sizeless", hence [option size]. *)
+| Tarch (_ : option size) (name : string)
 .
 Definition Talias (underlying : type) (name : globname) : type :=
   underlying.
@@ -191,6 +194,7 @@ Fixpoint normalize_type (t : type) : type :=
   | Tvoid => t
   | Tnamed _ => t
   | Tnullptr => t
+  | Tarch _ _ => t
   end.
 
 Definition decompose_type : type -> type_qualifiers * type :=
