@@ -68,6 +68,7 @@ Fixpoint erase_qualifiers (t : type) : type :=
   | Tmember_pointer cls t => Tmember_pointer cls (erase_qualifiers t)
   | Tqualified _ t => erase_qualifiers t
   | Tnullptr => Tnullptr
+  | Tarch sz nm => Tarch sz nm
   end.
 
 Fixpoint drop_qualifiers (t : type) : type :=
