@@ -140,7 +140,7 @@ ToCoqConsumer::toCoqModule(clang::ASTContext *ctxt,
                                       ctxt.getSourceManager().getMainFileID())
                                   ->getName()
                            << fmt::line << " *)" << fmt::line
-                           << "Require Import bedrock.lang.cpp.parser." << fmt::line
+                           << "Require Export bedrock.lang.cpp.parser." << fmt::line
                            << fmt::line;
 
             // generate all of the record fields
