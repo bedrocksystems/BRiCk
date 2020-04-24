@@ -1,9 +1,8 @@
-Require Import bedrock.auto.cpp.specs.
-Require Import bedrock.lib.pred_utils.
+Require Import bedrock.lang.cpp.
 
 Section with_Sigma.
 
-  Context {Sigma: gFunctors} {CU:genv}.
+  Context `{Sigma: cpp_logic} {CU:genv}.
   Import primitives.
   Open Scope bi_scope.
 
@@ -127,7 +126,7 @@ represented, we define a Gallina record to denote the mathematical model of what
                can only prove one direction at a time) *)
       destruct m; (* case analysis on the [m] to determine if it is an [AnInt]
                      or an [ABool] *)
-      simpl; work. (* standard entailment checking *)
+      simpl; eauto with iFrame. (* standard entailment checking *)
   Qed.
 
 
@@ -165,7 +164,6 @@ represented, we define a Gallina record to denote the mathematical model of what
    *)
   Parameters word_field high_field low_field : field.
 
-
   Definition OrBytes_wordR (q : Qp) (w : Z) : Rep :=
     word_field |-> intR q w.
 
@@ -180,19 +178,33 @@ represented, we define a Gallina record to denote the mathematical model of what
   Definition OrBytesR (q : Qp) (w : Z) : Rep :=
     OrBytes_wordR q w.
 
-  (** to use the [high_low] presentation, we need to prove two theorems that
-      relate the two representations.
+  (** It is undefined behavior in C++ to read the element of a union that was
+      not most recently written.
+
+      To convert from one representation to another by writing, you can first
+      convert the representation back to [uninitR "OrBytes" 1], and then
+      re-initialize the desired union member.
+   *)
+
+  (**
+     Some compilers implement a language extension which defines this behaivor.
+     If you wish to rely on this behavior, you can write lemmas similar to the
+     following.
+
+     This theorem allows you to view an [OrBytesR] as an [OrBytes_high_lowR]
    *)
   Lemma words_high_low : forall q w,
       OrBytesR q w -|- OrBytes_high_lowR q (Z.shiftr w 16) (Z.land w (2 ^ 16 - 1)).
   Proof. Admitted.
 
+  (** this theorem allows you to go the other way *)
   Lemma high_low_words : forall q l h,
       OrBytes_high_lowR q l h -|- OrBytesR q (Z.lor (Z.shiftl h 16) l).
   Proof. Admitted.
 
-  (** proving these lemmas tends to not be very difficult in most cases, but
-      bare in mind that these sometimes have compiler or architecture specified
+  (** proving these lemmas tends to not be very difficult in most cases,
+      assuming the appropriate axioms about memory layout and alignedness.
+      Bare in mind that these sometimes have compiler or architecture specified
       behavior. For example, the struct above is relying on a particular
       endianness, switching to another architecture might get you the opposite
       values.

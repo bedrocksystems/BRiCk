@@ -4,12 +4,8 @@
  *
  * SPDX-License-Identifier: Apache-2.0
  *)
-
-Require Import bedrock.auto.
-Require Import bedrock.auto.cpp.
-Require Import bedrock.auto.cpp.notations.
-Require Import bedrock.lang.cpp.primitives.
-Require Import bedrock.lib.pred_utils.
+Require Import bedrock.lang.cpp.
+Import heap_notations.
 
 Local Open Scope Z_scope.
 Open Scope bi_scope.
@@ -17,7 +13,7 @@ Open Scope bi_scope.
 (** * Sequential Specs *)
 
 Section with_Sigma.
-Context {Sigma:gFunctors} {CU: genv}.
+Context `{Sigma:cpp_logic} {CU: genv}.
 
 (** ** Range
 
@@ -132,7 +128,7 @@ unsigned integer r.(begin) held with permission [q].
 
 Access to the "this" pointer is usually not necessary and only adds verbosity.
 However, at some places, e.g. in doubly linked lists, it is necessary:
-for example, the next node of a doubly linked list stores 
+for example, the next node of a doubly linked list stores
 the "this" pointer in its prev field.
 *)
 
@@ -304,13 +300,13 @@ number of nodes in a BST:
 unsigned int Tree::count() const;
 ]]
  *)
-Definition count_spec (this : ptr) : WithPrePost Sigma :=
+Definition count_spec (this : ptr) : WithPrePost mpredI :=
   \with (q : Qp) (t : tree Z)
   \prepost this |-> treeR (fun q z => uintR q z) q t
   \post{}[Vint (trim 32 (count t))] empSP.
 
-(** 
-For more details the syntax/notations for writing the specifications of functions, 
+(**
+For more details the syntax/notations for writing the specifications of functions,
 please refer to #<a href="https://gitlab.com/bedrocksystems/cpp2v/-/blob/master/doc/specs.md">cpp2v/doc/specs.md</a>#.
 
 We [trim] the count in the postcondition since it might overflow.
@@ -335,7 +331,7 @@ bool Tree::insert();
 On duplicate keys, [insert] does nothing (we treat the tree as a set rather
 than a multiset).
 *)
-Definition insert_spec (this : ptr) : WithPrePost Sigma :=
+Definition insert_spec (this : ptr) : WithPrePost mpredI :=
   \with (t : tree Z)
   \arg{x} "x" (Vint x)
   \pre this |-> ZbstR 1 t
@@ -355,7 +351,7 @@ Fixpoint insert x (t : tree Z) : tree Z :=
          else t
   end.
 
-Definition insert_spec' (this : ptr) : WithPrePost Sigma :=
+Definition insert_spec' (this : ptr) : WithPrePost mpredI :=
   \with (t : tree Z)
   \arg{x} "x" (Vint x)
   \pre this |-> ZbstR 1 t
@@ -451,20 +447,19 @@ Definition payload_of_address (t : tree (Entry Z)) (x : Z) (p : Z) : Prop :=
 (** [borrow_from all borrow], which is used in [lookup_spec] below, encapsulates
 a pattern for "borrowing" the resources [borrow] from a larger world [all].
 
-[[
-Definition borrow_from (all borrow : mpred) : mpred :=
-  borrow ** (borrow -* all).
-]]
-
-It unfolds to two assertions:
+With [borrow_from] you get access to two disjoint resources:
 
 (1) You have access to [borrow]; and
 
 (2) If you give up [borrow], you get back [all].
-
  *)
+Definition borrow_from (all borrow : mpred) : mpred :=
+  borrow ** (borrow -* all).
 
-Definition lookup_spec (this : ptr) : WithPrePost Sigma :=
+(**
+Using borrow, we can write the specification for [lookup]:
+ *)
+Definition lookup_spec (this : ptr) : WithPrePost mpredI :=
   \arg{x} "x" (Vint x)
   \arg{out} "out" (Vptr out)
   \with (q : Qp) (t : tree (Entry Z))

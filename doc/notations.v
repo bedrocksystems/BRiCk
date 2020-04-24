@@ -1,10 +1,13 @@
-Require Import bedrock.auto.cpp.
+(**
+   Path notations
+ *)
+Require Import bedrock.lang.cpp.
 
 Section with_env.
 
   Local Open Scope bi_scope.
 
-  Context {σ : genv} {Σ : gFunctors}.
+  Context {σ : genv} `{Σ : cpp_logic}.
 
   (** ** State Predicates
       [mpred] is the type of predicates that hold on the (system) state.

@@ -47,14 +47,19 @@ theories/lang/cpp/logic/cclogic.v
 theories/lang/cpp/logic/atomics.v
 theories/lang/cpp/logic/layout.v
 theories/lang/cpp/logic.v
-theories/lang/cpp/logic_notations.v
 
+# Notations
+theories/lang/cpp/logic_notations.v
+theories/lang/cpp/heap_notations.v
+theories/lang/cpp/spec_notations.v
 theories/lang/cpp/primitives.v
 
 # Notations for cpp2v
 theories/lang/cpp/parser.v
 
 theories/lang/cpp/compile.v
+
+theories/lang/cpp.v
 
 
 # Language-Agnostic Automation

@@ -12,10 +12,10 @@ in a Coq editor, instead of opening the html output in a web brower.
 In the html, identifiers are hyperlinked to their definition.
 Your Coq editor may also provide a facility to jump to definition (M-. in emacs (company-coq mode))
 *)
-Require Import bedrock.auto.cpp.specs.
+Require Import bedrock.lang.cpp.
 
 Section with_Sigma.
-Context {Sigma: gFunctors} {CU:genv}.
+Context `{Sigma: cpp_logic} {CU:genv}.
 Import primitives.
 Open Scope bi_scope.
 
@@ -192,8 +192,7 @@ Example wand1 : mpred := pl -* pr.
 The main reasoning rule for this construct is the following, which says that once you separately get the missing piece, you get the whole thing back.:
 *)
 
-Lemma wandElim: pl ** (pl -* pr) |-- pr.
-Proof using. work. Qed.
+Check @bi.wand_elim_r mpredI.
 
 
 (**  * Pure Assertions
