@@ -164,7 +164,7 @@ Notation "'\require' pre X" :=
    format "'[v' '\require'  pre  '//' X ']'").
 
 Notation "'\pre' pre X" :=
-  (@add_pre _ pre X%fspec)
+  (@add_pre _ pre%I X%fspec)
   (at level 10, pre at level 200, X at level 200, left associativity,
    format "'[v' '\pre'  pre  '//' X ']'").
 
@@ -254,6 +254,14 @@ Abort.
 Goal WithPrePost mpredI.
 refine (
     \pre empSP ** Exists y : nat, [| y = 3 |]
+    \post{} [ Vptr nullptr ] empSP).
+(* Show Proof. *)
+Abort.
+
+
+Goal WithPrePost mpredI.
+refine (
+    \pre |==> True ** |={∅,⊤}=> False
     \post{} [ Vptr nullptr ] empSP).
 (* Show Proof. *)
 Abort.
