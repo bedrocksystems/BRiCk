@@ -125,7 +125,8 @@ public:
     }
 
     void VisitVarDecl(const VarDecl *decl, bool) {
-        go(decl);
+        if (not decl->isTemplated())
+            go(decl);
     }
 
     void VisitFieldDecl(const FieldDecl *, bool) {

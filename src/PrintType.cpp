@@ -92,7 +92,8 @@ public:
     void VisitTemplateTypeParmType(const TemplateTypeParmType* type,
                                    CoqPrinter& print, ClangPrinter& cprint) {
         print.ctor("Ttemplate") << "\"" << type->getDecl()->getNameAsString()
-                                << "\"" << fmt::rparen;
+                                << "\"";
+        print.end_ctor();
     }
 
     void VisitEnumType(const EnumType* type, CoqPrinter& print,
@@ -102,13 +103,13 @@ public:
             //getPromotionType returns the integer type that the enum promotes to
             type->getDecl()->getCanonicalDecl()->getPromotionType(), print);
         cprint.printGlobalName(type->getDecl(), print);
-        print.output() << fmt::rparen;
+        print.end_ctor();
     }
     void VisitRecordType(const RecordType* type, CoqPrinter& print,
                          ClangPrinter& cprint) {
         print.ctor("Tnamed", false);
         cprint.printGlobalName(type->getDecl(), print);
-        print.output() << fmt::rparen;
+        print.end_ctor();
     }
 
     void VisitParenType(const ParenType* type, CoqPrinter& print,
@@ -163,68 +164,9 @@ public:
 
     void VisitBuiltinType(const BuiltinType* type, CoqPrinter& print,
                           ClangPrinter& cprint) {
-        // todo(gmm): record bitwidths from the context when they are defaulted.
         switch (type->getKind()) {
         case BuiltinType::Kind::Bool:
             print.output() << "Tbool";
-            break;
-        case BuiltinType::Kind::Int128:
-            print.output() << "T_int128";
-            break;
-        case BuiltinType::Kind::UInt128:
-            print.output() << "T_uint128";
-            break;
-        case BuiltinType::Kind::Int:
-            print.output() << "T_int";
-            break;
-        case BuiltinType::Kind::UInt:
-            print.output() << "T_uint";
-            break;
-        case BuiltinType::Kind::ULong:
-            print.output() << "T_ulong";
-            break;
-        case BuiltinType::Kind::UShort:
-            print.output() << "T_ushort";
-            break;
-        case BuiltinType::Kind::Long:
-            print.output() << "T_long";
-            break;
-        case BuiltinType::Kind::LongDouble:
-            print.output() << "T_long_double";
-            break;
-        case BuiltinType::Kind::LongLong:
-            print.output() << "T_longlong";
-            break;
-        case BuiltinType::Kind::ULongLong:
-            print.output() << "T_ulonglong";
-            break;
-        case BuiltinType::Kind::Short:
-            print.output() << "T_short";
-            break;
-        case BuiltinType::Kind::Char16:
-            print.output() << "T_char16";
-            break;
-        case BuiltinType::Kind::WChar_S:
-        case BuiltinType::Kind::Char_S:
-        case BuiltinType::Kind::SChar:
-            print.output() << "(Tchar " << bitsize(cprint.getTypeSize(type))
-                           << "%N Signed)";
-            break;
-
-            print.output() << "(Tchar " << bitsize(cprint.getTypeSize(type))
-                           << "%N Signed)";
-            break;
-        case BuiltinType::Kind::UChar:
-        case BuiltinType::Kind::Char_U:
-        case BuiltinType::Kind::WChar_U:
-            print.output() << "(Tchar " << bitsize(cprint.getTypeSize(type))
-                           << "%N Unsigned)";
-            break;
-        case BuiltinType::Kind::Char8:
-            print.output() << "T_char8";
-            break;
-        case BuiltinType::Kind::Char32:
-            print.output() << "T_char32";
             break;
         case BuiltinType::Kind::Void:
             print.output() << "Tvoid";
@@ -245,20 +187,31 @@ public:
         case BuiltinType::Kind::SveFloat32:
         case BuiltinType::Kind::SveFloat64:
         case BuiltinType::Kind::SveBool:
-            print.output() << fmt::lparen
-                           << "Tarch None \""
-                           << type->getNameAsCString(PrintingPolicy(LangOptions()))
-                           << "\""
-                           << fmt::rparen;
+            print.output() << fmt::lparen << "Tarch None \""
+                           << type->getNameAsCString(
+                                  PrintingPolicy(LangOptions()))
+                           << "\"" << fmt::rparen;
             break;
 #endif
-        default: {
-            using namespace logging;
-            fatal() << "Unsupported type \""
-                    << type->getNameAsCString(PrintingPolicy(LangOptions()))
-                    << "\"\n";
-            die();
-        }
+        default:
+            if (type->isAnyCharacterType()) {
+                print.output()
+                    << "(Tchar " << bitsize(cprint.getTypeSize(type)) << " "
+                    << (type->isSignedInteger() ? "Signed" : "Unsigned") << ")";
+            } else if (type->isFloatingPoint()) {
+                print.output()
+                    << "(Tfloat " << bitsize(cprint.getTypeSize(type)) << ")";
+            } else if (type->isIntegerType()) {
+                print.output()
+                    << "(Tint " << bitsize(cprint.getTypeSize(type)) << " "
+                    << (type->isSignedInteger() ? "Signed" : "Unsigned") << ")";
+            } else {
+                using namespace logging;
+                fatal() << "Unsupported type \""
+                        << type->getNameAsCString(PrintingPolicy(LangOptions()))
+                        << "\"\n";
+                die();
+            }
         }
     }
 
@@ -266,21 +219,21 @@ public:
                                   CoqPrinter& print, ClangPrinter& cprint) {
         print.ctor("Treference");
         printQualType(type->getPointeeType(), print, cprint);
-        print.output() << fmt::rparen;
+        print.end_ctor();
     }
 
     void VisitRValueReferenceType(const RValueReferenceType* type,
                                   CoqPrinter& print, ClangPrinter& cprint) {
         print.ctor("Trv_reference");
         printQualType(type->getPointeeType(), print, cprint);
-        print.output() << fmt::rparen;
+        print.end_ctor();
     }
 
     void VisitPointerType(const PointerType* type, CoqPrinter& print,
                           ClangPrinter& cprint) {
         print.ctor("Tpointer");
         printQualType(type->getPointeeType(), print, cprint);
-        print.output() << fmt::rparen;
+        print.end_ctor();
     }
 
     void VisitTypedefType(const TypedefType* type, CoqPrinter& print,
@@ -305,7 +258,7 @@ public:
         }
         print.end_list();
 
-        print.output() << fmt::rparen;
+        print.end_ctor();
     }
 
     void VisitElaboratedType(const ElaboratedType* type, CoqPrinter& print,

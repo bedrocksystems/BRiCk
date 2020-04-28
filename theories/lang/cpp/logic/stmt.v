@@ -174,7 +174,20 @@ Module Type Stmt.
       | Tfunction _ _ => lfalse (* not supported *)
 
       | Tqualified _ ty => wp_decl x ty init dtor k Q
-      | Tnullptr => lfalse (* not supported *)
+      | Tnullptr =>
+        Forall a : ptr,
+        let done :=
+            k (Kfree (tlocal_at ρ x a (anyR (erase_qualifiers ty) 1)) Q)
+        in
+        let continue := local_addr ρ x a -* done in
+        match init with
+        | None =>
+          _at (_eq a) (primR Tnullptr 1 (Vptr nullptr)) -* continue
+        | Some init =>
+          wp_prval init (fun v free => free **
+                              _at (_eq a) (primR (erase_qualifiers ty) 1 v) -* continue)
+        end
+      | Tfloat _ => lfalse (* not supportd *)
       | Tarch _ _ => lfalse (* not supported *)
       end.
 
@@ -283,6 +296,7 @@ Module Type Stmt.
       | Sasm _ _ _ _ _ => true
       | Slabeled _ s => no_case s
       | Sgoto _ => true
+      | Sunsupported _ => false
       end.
 
 

@@ -7,7 +7,7 @@
 using namespace clang;
 
 class PrintLocalDecl :
-    public ConstDeclVisitorArgs<PrintLocalDecl, void, CoqPrinter&,
+    public ConstDeclVisitorArgs<PrintLocalDecl, bool, CoqPrinter&,
                                 ClangPrinter&> {
 private:
     PrintLocalDecl() {}
@@ -25,7 +25,7 @@ private:
 public:
     static PrintLocalDecl printer;
 
-    void VisitVarDecl(const VarDecl* decl, CoqPrinter& print,
+    bool VisitVarDecl(const VarDecl* decl, CoqPrinter& print,
                       ClangPrinter& cprint) {
         print.begin_record();
         print.record_field("vd_name")
@@ -56,20 +56,35 @@ public:
         }
 
         print.end_record();
+        return true;
     }
 
-    void VisitDecl(const Decl* decl, CoqPrinter& print, ClangPrinter& cprint) {
+    bool VisitTypeDecl(const TypeDecl* decl, CoqPrinter&,
+                       ClangPrinter& cprint) {
         using namespace logging;
-        fatal() << "unexpected local declaration while printing local decl "
+        debug() << "local type declarations are (currently) not well supported "
                 << decl->getDeclKindName() << " (at "
                 << cprint.sourceRange(decl->getSourceRange()) << ")\n";
-        die();
+        return false;
+    }
+
+    bool VisitStaticAssertDecl(const StaticAssertDecl* decl, CoqPrinter&,
+                               ClangPrinter&) {
+        return false;
+    }
+
+    bool VisitDecl(const Decl* decl, CoqPrinter& print, ClangPrinter& cprint) {
+        using namespace logging;
+        debug() << "unexpected local declaration while printing local decl "
+                << decl->getDeclKindName() << " (at "
+                << cprint.sourceRange(decl->getSourceRange()) << ")\n";
+        return false;
     }
 };
 
 PrintLocalDecl PrintLocalDecl::printer;
 
-void
+bool
 ClangPrinter::printLocalDecl(const clang::Decl* decl, CoqPrinter& print) {
-    PrintLocalDecl::printer.Visit(decl, print, *this);
+    return PrintLocalDecl::printer.Visit(decl, print, *this);
 }

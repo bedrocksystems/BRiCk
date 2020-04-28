@@ -12,7 +12,7 @@
 #include "clang/AST/Type.h"
 #include "clang/Basic/Version.inc"
 #if CLANG_VERSION_MAJOR >= 10
-    #include "clang/AST/Attr.h"
+#include "clang/AST/Attr.h"
 #endif
 
 using namespace clang;
@@ -38,29 +38,14 @@ public:
 
     void VisitDeclStmt(const DeclStmt *stmt, CoqPrinter &print,
                        ClangPrinter &cprint, ASTContext &) {
-        const clang::Decl *sd;
-        if (stmt->isSingleDecl() &&
-            (sd = stmt->getSingleDecl(),
-             (isa<StaticAssertDecl>(sd) || isa<UsingDirectiveDecl>(sd) ||
-              isa<UsingDecl>(sd) || isa<TagDecl>(sd)))) {
-            // these declarations are not relevant to runtime behavior, so
-            // we replace them with Sskip.
-            print.output() << "Sskip";
-        } else {
-            print.ctor("Sdecl");
-            print.begin_list();
-            for (auto i : stmt->decls()) {
-                if (auto sl = dyn_cast<VarDecl>(i)) {
-                    if (sl->isStaticLocal()) {
-                        continue;
-                    }
-                }
-                cprint.printLocalDecl(i, print);
+        print.ctor("Sdecl");
+        print.begin_list();
+        for (auto d : stmt->decls()) {
+            if (cprint.printLocalDecl(d, print))
                 print.cons();
-            }
-            print.end_list();
-            print.end_ctor();
         }
+        print.end_list();
+        print.end_ctor();
     }
 
     void VisitWhileStmt(const WhileStmt *stmt, CoqPrinter &print,
@@ -344,6 +329,13 @@ public:
                        ClangPrinter &cprint, ASTContext &) {
         print.ctor("Sgoto");
         print.str(stmt->getLabel()->getNameAsString());
+        print.end_ctor();
+    }
+
+    void VisitCXXTryStmt(const CXXTryStmt *stmt, CoqPrinter &print,
+                         ClangPrinter &cprint, ASTContext &) {
+        print.ctor("Sunsupported");
+        print.str("try");
         print.end_ctor();
     }
 };

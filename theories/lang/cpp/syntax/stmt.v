@@ -56,6 +56,7 @@ Inductive Stmt : Set :=
 
 | Slabeled (_ : string) (_ : Stmt)
 | Sgoto (_ : string)
+| Sunsupported (_ : string)
 .
 
 Definition Sskip := Sseq nil.
