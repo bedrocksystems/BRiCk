@@ -77,6 +77,7 @@ Inductive type : Set :=
 | Tfunction (_ : type) (_ : list type)
 | Tbool
 | Tmember_pointer (_ : globname) (_ : type)
+| Tfloat (_ : size)
 | Tqualified (_ : type_qualifiers) (_ : type)
 | Tnullptr
 (* architecture-specific types; currently unused.
@@ -194,6 +195,7 @@ Fixpoint normalize_type (t : type) : type :=
   | Tvoid => t
   | Tnamed _ => t
   | Tnullptr => t
+  | Tfloat _ => t
   | Tarch _ _ => t
   end.
 

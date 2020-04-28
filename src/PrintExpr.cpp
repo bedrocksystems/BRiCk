@@ -851,6 +851,30 @@ public:
         cprint.printExpr(expr->getBase(), print);
         print.end_ctor();
     }
+
+    void VisitCXXNoexceptExpr(const CXXNoexceptExpr* expr, CoqPrinter& print,
+                              ClangPrinter& cprint, const ASTContext&) {
+        // note: i should record the fact that this is a noexcept expression
+        print.ctor("Ebool");
+        print.boolean(expr->getValue());
+        print.end_ctor();
+    }
+
+    void VisitTypeTraitExpr(const TypeTraitExpr* expr, CoqPrinter& print,
+                            ClangPrinter& cprint, const ASTContext&) {
+        // note: i should record the fact that this is a noexcept expression
+        print.ctor("Ebool");
+        print.boolean(expr->getValue());
+        print.end_ctor();
+    }
+
+    void VisitCXXScalarValueInitExpr(const CXXScalarValueInitExpr* expr,
+                                     CoqPrinter& print, ClangPrinter& cprint,
+                                     const ASTContext&) {
+        print.ctor("Eimplicit_init");
+        cprint.printQualType(expr->getType(), print);
+        print.end_ctor();
+    }
 };
 
 PrintExpr PrintExpr::printer;

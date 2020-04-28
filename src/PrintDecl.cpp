@@ -156,7 +156,7 @@ printDestructor(const CXXDestructorDecl *decl, CoqPrinter &print,
 }
 
 class PrintDecl :
-    public ConstDeclVisitorArgs<PrintDecl, void, CoqPrinter &, ClangPrinter &,
+    public ConstDeclVisitorArgs<PrintDecl, bool, CoqPrinter &, ClangPrinter &,
                                 const ASTContext &> {
 private:
     PrintDecl() {}
@@ -164,37 +164,41 @@ private:
 public:
     static PrintDecl printer;
 
-    void VisitDecl(const Decl *d, CoqPrinter &print, ClangPrinter &cprint,
+    bool VisitDecl(const Decl *d, CoqPrinter &print, ClangPrinter &cprint,
                    const ASTContext &) {
         using namespace logging;
         fatal() << "visiting declaration..." << d->getDeclKindName() << "(at "
                 << cprint.sourceRange(d->getSourceRange()) << ")\n";
         die();
+        return false;
     }
 
-    void VisitTypeDecl(const TypeDecl *type, CoqPrinter &print,
+    bool VisitTypeDecl(const TypeDecl *type, CoqPrinter &print,
                        ClangPrinter &cprint, const ASTContext &) {
         using namespace logging;
         fatal() << "unsupported type declaration `" << type->getDeclKindName()
                 << "(at " << cprint.sourceRange(type->getSourceRange())
                 << ")\n";
         die();
+        return false;
     }
 
-    void VisitEmptyDecl(const EmptyDecl *decl, CoqPrinter &print,
+    bool VisitEmptyDecl(const EmptyDecl *decl, CoqPrinter &print,
                         ClangPrinter &cprint, const ASTContext &) {
         // ignore
+        return false;
     }
 
-    void VisitTypedefNameDecl(const TypedefNameDecl *type, CoqPrinter &print,
+    bool VisitTypedefNameDecl(const TypedefNameDecl *type, CoqPrinter &print,
                               ClangPrinter &cprint, const ASTContext &) {
         print.ctor("Dtypedef")
             << "\"" << type->getNameAsString() << "\"" << fmt::nbsp;
         cprint.printQualType(type->getUnderlyingType(), print);
-        print.output() << fmt::rparen;
+        print.end_ctor();
+        return true;
     }
 
-    void printMangledFieldName(const FieldDecl *field, CoqPrinter &print,
+    bool printMangledFieldName(const FieldDecl *field, CoqPrinter &print,
                                ClangPrinter &cprint) {
         if (field->isAnonymousStructOrUnion()) {
             print.ctor("Nanon", false);
@@ -204,11 +208,13 @@ public:
         } else {
             print.str(field->getName());
         }
+        return true;
     }
 
-    void printFields(const CXXRecordDecl *decl, const ASTRecordLayout &layout,
+    bool printFields(const CXXRecordDecl *decl, const ASTRecordLayout &layout,
                      CoqPrinter &print, ClangPrinter &cprint) {
         auto i = 0;
+        print.begin_list();
         for (const FieldDecl *field : decl->fields()) {
             print.output() << "(";
             printMangledFieldName(field, print, cprint);
@@ -219,10 +225,11 @@ public:
                            << fmt::nbsp << "|})";
             print.cons();
         };
-        print.output() << "nil";
+        print.end_list();
+        return true;
     }
 
-    void VisitUnionDecl(const CXXRecordDecl *decl, CoqPrinter &print,
+    bool VisitUnionDecl(const CXXRecordDecl *decl, CoqPrinter &print,
                         ClangPrinter &cprint, const ASTContext &ctxt) {
         assert(decl->getTagKind() == TagTypeKind::TTK_Union);
 
@@ -233,7 +240,7 @@ public:
         print.output() << fmt::nbsp;
         if (!decl->isCompleteDefinition()) {
             print.output() << "None" << fmt::rparen;
-            return;
+            return true;
         }
 
         print.ctor("Some", false);
@@ -247,10 +254,12 @@ public:
                        << fmt::nbsp;
 
         print.end_record();
-        print.output() << fmt::rparen << fmt::rparen;
+        print.end_ctor();
+        print.end_ctor();
+        return true;
     }
 
-    void VisitStructDecl(const CXXRecordDecl *decl, CoqPrinter &print,
+    bool VisitStructDecl(const CXXRecordDecl *decl, CoqPrinter &print,
                          ClangPrinter &cprint, const ASTContext &ctxt) {
         assert(decl->getTagKind() == TagTypeKind::TTK_Class ||
                decl->getTagKind() == TagTypeKind::TTK_Struct);
@@ -260,7 +269,7 @@ public:
         print.output() << fmt::nbsp;
         if (!decl->isCompleteDefinition()) {
             print.output() << "None" << fmt::rparen;
-            return;
+            return true;
         }
 
         print.ctor("Some", false);
@@ -313,9 +322,10 @@ public:
         // todo(gmm): i need to print any implicit declarations.
 
         print.output() << "|}" << fmt::rparen << fmt::rparen;
+        return true;
     }
 
-    void VisitCXXRecordDecl(const CXXRecordDecl *decl, CoqPrinter &print,
+    bool VisitCXXRecordDecl(const CXXRecordDecl *decl, CoqPrinter &print,
                             ClangPrinter &cprint, const ASTContext &ctxt) {
         if (!decl->isCompleteDefinition()) {
             print.ctor("Dtype");
@@ -333,24 +343,26 @@ public:
                 assert(false && "unknown record tag kind");
             }
         }
+        return true;
     }
 
-    void VisitIndirectFieldDecl(const IndirectFieldDecl *decl,
+    bool VisitIndirectFieldDecl(const IndirectFieldDecl *decl,
                                 CoqPrinter &print, ClangPrinter &cprint,
                                 const ASTContext &) {
-        assert(true);
+        return false;
     }
 
-    void VisitFunctionDecl(const FunctionDecl *decl, CoqPrinter &print,
+    bool VisitFunctionDecl(const FunctionDecl *decl, CoqPrinter &print,
                            ClangPrinter &cprint, const ASTContext &) {
         print.ctor("Dfunction");
         cprint.printGlobalName(decl, print);
         print.output() << fmt::line;
         printFunction(decl, print, cprint);
         print.end_ctor();
+        return true;
     }
 
-    void VisitCXXMethodDecl(const CXXMethodDecl *decl, CoqPrinter &print,
+    bool VisitCXXMethodDecl(const CXXMethodDecl *decl, CoqPrinter &print,
                             ClangPrinter &cprint, const ASTContext &) {
         if (decl->isStatic()) {
             print.ctor("Dfunction");
@@ -367,9 +379,10 @@ public:
             print.output() << fmt::outdent;
             print.end_ctor();
         }
+        return true;
     }
 
-    void VisitEnumConstantDecl(const EnumConstantDecl *decl, CoqPrinter &print,
+    bool VisitEnumConstantDecl(const EnumConstantDecl *decl, CoqPrinter &print,
                                ClangPrinter &cprint, const ASTContext &) {
         print.ctor("Dconstant");
         assert((decl != nullptr) && (!decl->getNameAsString().empty()));
@@ -384,10 +397,11 @@ public:
             cprint.printQualType(decl->getType(), print);
             print.output() << fmt::rparen;
         }
-        print.output() << fmt::rparen;
+        print.end_ctor();
+        return true;
     }
 
-    void VisitCXXConstructorDecl(const CXXConstructorDecl *decl,
+    bool VisitCXXConstructorDecl(const CXXConstructorDecl *decl,
                                  CoqPrinter &print, ClangPrinter &cprint,
                                  const ASTContext &) {
         print.ctor("Dconstructor");
@@ -492,20 +506,22 @@ public:
             print.none();
         }
         print.output() << "|}";
-        print.output() << fmt::rparen;
+        print.end_ctor();
+        return true;
     }
 
-    void VisitCXXDestructorDecl(const CXXDestructorDecl *decl,
+    bool VisitCXXDestructorDecl(const CXXDestructorDecl *decl,
                                 CoqPrinter &print, ClangPrinter &cprint,
                                 const ASTContext &ctxt) {
         print.ctor("Ddestructor");
         cprint.printGlobalName(decl, print);
         print.output() << fmt::line;
         printDestructor(decl, print, cprint);
-        print.output() << fmt::rparen;
+        print.end_ctor();
+        return true;
     }
 
-    void VisitVarDecl(const VarDecl *decl, CoqPrinter &print,
+    bool VisitVarDecl(const VarDecl *decl, CoqPrinter &print,
                       ClangPrinter &cprint, const ASTContext &) {
         if (decl->isConstexpr()) {
             if (decl->hasInit()) {
@@ -521,9 +537,12 @@ public:
                 print.output() << fmt::nbsp;
                 cprint.printQualType(decl->getType(), print);
             }
-            print.output() << fmt::rparen;
+            print.end_ctor();
+        } else if (decl->isTemplated()) {
+            return false;
         } else {
             print.ctor("Dvar");
+
             cprint.printGlobalName(decl, print);
             print.output() << fmt::nbsp;
             cprint.printQualType(decl->getType(), print);
@@ -534,18 +553,23 @@ public:
             } else {
                 print.none();
             }
-            print.output() << fmt::rparen;
+            print.end_ctor();
         }
+        return true;
     }
 
-    void VisitUsingDecl(const UsingDecl *decl, CoqPrinter &print,
-                        ClangPrinter &cprint, const ASTContext &) {}
+    bool VisitUsingDecl(const UsingDecl *decl, CoqPrinter &print,
+                        ClangPrinter &cprint, const ASTContext &) {
+        return false;
+    }
 
-    void VisitUsingDirectiveDecl(const UsingDirectiveDecl *decl,
+    bool VisitUsingDirectiveDecl(const UsingDirectiveDecl *decl,
                                  CoqPrinter &print, ClangPrinter &cprint,
-                                 const ASTContext &) {}
+                                 const ASTContext &) {
+        return false;
+    }
 
-    void VisitNamespaceDecl(const NamespaceDecl *decl, CoqPrinter &print,
+    bool VisitNamespaceDecl(const NamespaceDecl *decl, CoqPrinter &print,
                             ClangPrinter &cprint, const ASTContext &) {
         print.ctor(
             "Dnamespace") /* << "\"" << decl->getNameAsString() << "\"" */
@@ -557,9 +581,10 @@ public:
         }
         print.end_list();
         print.end_ctor();
+        return false;
     }
 
-    void VisitEnumDecl(const EnumDecl *decl, CoqPrinter &print,
+    bool VisitEnumDecl(const EnumDecl *decl, CoqPrinter &print,
                        ClangPrinter &cprint, const ASTContext &) {
         print.ctor("Denum");
         cprint.printGlobalName(decl, print);
@@ -584,32 +609,46 @@ public:
         print.end_list();
 
         print.end_ctor();
+        return false;
     }
 
-    void VisitLinkageSpecDecl(const LinkageSpecDecl *decl, CoqPrinter &print,
+    bool VisitLinkageSpecDecl(const LinkageSpecDecl *decl, CoqPrinter &print,
                               ClangPrinter &cprint, const ASTContext &) {
         // we never print these things.
         assert(false);
+        return false;
     }
 
-    void VisitFunctionTemplateDecl(const FunctionTemplateDecl *decl,
+    bool VisitFunctionTemplateDecl(const FunctionTemplateDecl *decl,
                                    CoqPrinter &print, ClangPrinter &cprint,
                                    const ASTContext &) {
         // we only print specializations
         assert(false);
+        return false;
     }
 
-    void VisitClassTemplateDecl(const ClassTemplateDecl *decl,
+    bool VisitClassTemplateDecl(const ClassTemplateDecl *decl,
                                 CoqPrinter &print, ClangPrinter &cprint,
                                 const ASTContext &) {
         // we only print specializations
         assert(false);
+        return false;
+    }
+
+    bool VisitFriendDecl(const FriendDecl *, CoqPrinter &, ClangPrinter &,
+                         const ASTContext &) {
+        return false;
+    }
+
+    bool VisitUsingShadowDecl(const UsingShadowDecl *, CoqPrinter &,
+                              ClangPrinter &, const ASTContext &) {
+        return false;
     }
 };
 
 PrintDecl PrintDecl::printer;
 
-void
+bool
 ClangPrinter::printDecl(const clang::Decl *decl, CoqPrinter &print) {
-    PrintDecl::printer.Visit(decl, print, *this, *context_);
+    return PrintDecl::printer.Visit(decl, print, *this, *context_);
 }

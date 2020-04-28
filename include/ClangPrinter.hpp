@@ -27,11 +27,11 @@ class CoqPrinter;
 
 class ClangPrinter {
 public:
-    void printDecl(const clang::Decl* d, CoqPrinter& print);
+    bool printDecl(const clang::Decl* d, CoqPrinter& print);
 
     void printParam(const clang::ParmVarDecl* d, CoqPrinter& print);
 
-    void printLocalDecl(const clang::Decl* d, CoqPrinter& print);
+    bool printLocalDecl(const clang::Decl* d, CoqPrinter& print);
 
     void printStmt(const clang::Stmt* s, CoqPrinter& print);
 

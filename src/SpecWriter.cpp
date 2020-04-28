@@ -351,8 +351,8 @@ print_path(CoqPrinter &print, const DeclContext *dc, bool end = true) {
             }
         } else {
             using namespace logging;
-            logging::log() << "unknown declaration while printing path "
-                           << dc->getDeclKindName() << "\n";
+            //logging::log() << "unknown declaration while printing path "
+            //               << dc->getDeclKindName() << "\n";
         }
     }
 }
@@ -443,10 +443,12 @@ write_spec(::Module *mod, const SpecCollector &specs,
 
 #if CLANG_VERSION_MAJOR >= 10
     const auto file = ctxt.getSourceManager().getMainFileID();
-    const auto commentsInFile = ctxt.getRawCommentList().getCommentsInFile(file);
-    if (!commentsInFile) return;
+    const auto commentsInFile =
+        ctxt.getRawCommentList().getCommentsInFile(file);
+    if (!commentsInFile)
+        return;
     for (auto p : *ctxt.getRawCommentList().getCommentsInFile(file)) {
-        const auto& c = p.second;
+        const auto &c = p.second;
 #else
     for (auto c : ctxt.getRawCommentList().getComments()) {
 #endif

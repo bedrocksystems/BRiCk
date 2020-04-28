@@ -49,6 +49,8 @@ static cl::opt<std::string> VFileOutput("o",
 
 static cl::opt<bool> Verbose("v", cl::desc("verbose"), cl::Optional,
                              cl::cat(Cpp2V));
+static cl::opt<bool> Verboser("vv", cl::desc("verboser"), cl::Optional,
+                              cl::cat(Cpp2V));
 
 static cl::opt<bool> Version("cpp2v-version", cl::Optional, cl::ValueOptional,
                              cl::cat(Cpp2V));
@@ -89,8 +91,12 @@ main(int argc, const char **argv) {
         return 0;
     }
 
-    if (Verbose) {
-        logging::set_level(logging::ALL);
+    if (Verboser) {
+        logging::set_level(logging::VERBOSER);
+    } else if (Verbose) {
+        logging::set_level(logging::VERBOSE);
+    } else {
+        logging::set_level(logging::NONE);
     }
 
     ClangTool Tool(OptionsParser.getCompilations(),

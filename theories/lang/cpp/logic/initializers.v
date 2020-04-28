@@ -71,6 +71,7 @@ Module Type Init.
       | Tqualified _ ty => wp_initialize ty addr init k
       | Tnullptr => lfalse (* nullptr fields are not supported *)
       | Tarch _ _ => lfalse (* vendor-specific types are not supported *)
+      | Tfloat _ => lfalse (* floating point numbers are not supported *)
       end.
 
     Axiom wpi_initialize : forall this_val i cls Q,
