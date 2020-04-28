@@ -333,14 +333,20 @@ Module Type Expr.
         |-- wp_xval (Ecast Cnoop (Lvalue, e) ty) Q.
 
     Axiom wp_prval_cast_int2bool : forall ty e Q,
-        wp_prval e Q
+        wp_prval e (fun v free =>
+                      match is_true v with
+                      | None => lfalse
+                      | Some v => Q (Vbool v) free
+                      end)
         |-- wp_prval (Ecast Cint2bool (Rvalue, e) ty) Q.
-    (* ^ todo(gmm): confirm that this doesn't change the value *)
 
     Axiom wp_prval_cast_ptr2bool : forall ty e Q,
-        wp_prval e Q
+        wp_prval e (fun v free =>
+                      match is_true v with
+                      | None => lfalse
+                      | Some v => Q (Vbool v) free
+                      end)
         |-- wp_prval (Ecast Cptr2bool (Rvalue, e) ty) Q.
-    (* ^ todo(gmm): confirm that this doesn't change the value *)
 
     Axiom wp_prval_cast_function2pointer_c : forall ty ty' g Q,
         wp_lval (Evar (Gname g) ty') Q
