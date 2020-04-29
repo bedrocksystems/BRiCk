@@ -152,7 +152,7 @@ Module SimpleCPP
       let p := Z.modulo v (2 ^ n) in
       Rval <$> List.rev ((fun i : nat => Z.to_N (Z.land 255 (Z.shiftr p (8 * i)))) <$> seq 0 n).
 
-    Definition size_to_bytes (s : types.size) : nat :=
+    Definition size_to_bytes (s : bitsize) : nat :=
       match s with
       | W8 => 1
       | W16 => 2

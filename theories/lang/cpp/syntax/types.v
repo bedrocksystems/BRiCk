@@ -19,7 +19,7 @@ Set Primitive Projections.
 Record type_qualifiers : Set :=
 { q_const : bool
 ; q_volatile : bool }.
-Global Instance: EqDecision type_qualifiers.
+Instance qual_eq: EqDecision type_qualifiers.
 Proof. solve_decision. Defined.
 
 Definition merge_tq (a b : type_qualifiers) : type_qualifiers :=
@@ -28,16 +28,16 @@ Definition merge_tq (a b : type_qualifiers) : type_qualifiers :=
    |}.
 
 (* Bit-widths *)
-Variant size : Set :=
+Variant bitsize : Set :=
 | W8
 | W16
 | W32
 | W64
 | W128.
-Global Instance: EqDecision size.
+Instance bitsize_eq: EqDecision bitsize.
 Proof. solve_decision. Defined.
 
-Definition N_of_size (s : size) : N :=
+Definition bitsN (s : bitsize) : N :=
   match s with
   | W8   => 8
   | W16  => 16
@@ -46,14 +46,29 @@ Definition N_of_size (s : size) : N :=
   | W128 => 128
   end.
 
-Definition Z_of_size (s : size) : Z :=
-  Z.of_N (N_of_size s).
+Definition bitsZ (s : bitsize) : Z :=
+  Z.of_N (bitsN s).
 
-Bind Scope N_scope with size.
+Definition bytesNat (s : bitsize) : nat :=
+  match s with
+  | W8 => 1
+  | W16 => 2
+  | W32 => 4
+  | W64 => 8
+  | W128 => 16
+  end.
 
-Coercion N_of_size : size >-> N.
+Definition bytesN (s : bitsize) : N :=
+  N.of_nat (bytesNat s).
+
+Definition bytesZ (s : bitsize) : Z :=
+  Z.of_N (bytesN s).
+
+Bind Scope N_scope with bitsize.
+
+Coercion bitsN : bitsize >-> N.
 Lemma of_size_gt_O w :
-  (0 < 2 ^ Z_of_size w)%Z.
+  (0 < 2 ^ bitsZ w)%Z.
 Proof. destruct w; reflexivity. Qed.
 (* Hint Resolve of_size_gt_O. *)
 
@@ -68,20 +83,20 @@ Inductive type : Set :=
 | Tpointer (_ : type)
 | Treference (_ : type)
 | Trv_reference (_ : type)
-| Tint (size : size) (signed : signed)
-| Tchar (size : size) (signed : signed)
+| Tint (size : bitsize) (signed : signed)
+| Tchar (size : bitsize) (signed : signed)
 | Tvoid
 | Tarray (_ : type) (_ : N) (* unknown sizes are represented by pointers *)
 | Tnamed (_ : globname)
 | Tfunction (_ : type) (_ : list type)
 | Tbool
 | Tmember_pointer (_ : globname) (_ : type)
-| Tfloat (_ : size)
+| Tfloat (_ : bitsize)
 | Tqualified (_ : type_qualifiers) (_ : type)
 | Tnullptr
 (* architecture-specific types; currently unused.
    some Tarch types, like ARM SVE, are "sizeless", hence [option size]. *)
-| Tarch (_ : option size) (name : string)
+| Tarch (_ : option bitsize) (name : string)
 .
 Definition Talias (underlying : type) (name : globname) : type :=
   underlying.
@@ -91,7 +106,7 @@ Proof.
   decide equality; try solve [ eapply decide; refine _ ].
   eapply list_eq_dec. eapply IHty1.
 Defined.
-Global Instance: EqDecision type := type_eq_dec.
+Global Instance type_eq: EqDecision type := type_eq_dec.
 
 Definition Qconst_volatile : type -> type :=
   Tqualified {| q_const := true ; q_volatile := true |}.
@@ -130,7 +145,7 @@ Variant PrimCast : Set :=
 | Cbuiltin2function
 | Cconstructorconversion
 | C2void.
-Instance: EqDecision PrimCast.
+Instance PrimCast_eq: EqDecision PrimCast.
 Proof. solve_decision. Defined.
 
 Variant Cast : Set :=
@@ -140,7 +155,7 @@ Variant Cast : Set :=
 | Cstatic      (from to : globname)
 | Cdynamic     (from to : globname)
 | Cconst       (_ : type).
-Instance: EqDecision Cast.
+Instance Case_eq: EqDecision Cast.
 Proof. solve_decision. Defined.
 
 Section qual_norm.
@@ -226,11 +241,11 @@ the warning below.
 In future, we may want to parametrize by a data model, or
 the machine word size.
 *)
-Definition char_bits : size := W8.
-Definition short_bits : size := W16.
-Definition int_bits : size := W32.
-Definition long_bits : size := W64. (** warning: LLP64 model uses 32 *)
-Definition long_long_bits : size := W64.
+Definition char_bits : bitsize := W8.
+Definition short_bits : bitsize := W16.
+Definition int_bits : bitsize := W32.
+Definition long_bits : bitsize := W64. (** warning: LLP64 model uses 32 *)
+Definition long_long_bits : bitsize := W64.
 
 Definition T_ushort : type := Tint short_bits Unsigned.
 Definition T_short : type := Tint short_bits Signed.

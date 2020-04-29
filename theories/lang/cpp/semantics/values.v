@@ -187,7 +187,7 @@ Parameter subModuleModels : forall a b σ, b ⊧ σ -> module_le a b = true -> a
 Parameter has_type : val -> type -> Prop.
 Arguments has_type _%Z _.
 
-Definition max_val (bits : size) (sgn : signed) : Z :=
+Definition max_val (bits : bitsize) (sgn : signed) : Z :=
   match bits , sgn with
   | W8   , Signed   => 2^7 - 1
   | W8   , Unsigned => 2^8 - 1
@@ -201,7 +201,7 @@ Definition max_val (bits : size) (sgn : signed) : Z :=
   | W128 , Unsigned => 2^128 - 1
   end.
 
-Definition min_val (bits : size) (sgn : signed) : Z :=
+Definition min_val (bits : bitsize) (sgn : signed) : Z :=
   match sgn with
   | Unsigned => 0
   | Signed =>
@@ -214,7 +214,7 @@ Definition min_val (bits : size) (sgn : signed) : Z :=
     end
   end.
 
-Definition bound (bits : size) (sgn : signed) (v : Z) : Prop :=
+Definition bound (bits : bitsize) (sgn : signed) (v : Z) : Prop :=
   (min_val bits sgn <= v <= max_val bits sgn)%Z.
 
 Axiom has_type_pointer : forall v ty, has_type v (Tpointer ty) -> exists p, v = Vptr p.
@@ -271,8 +271,8 @@ Fixpoint size_of (resolve : genv) (t : type) : option N :=
   | Tpointer _ => Some (@pointer_size resolve)
   | Treference _ => None
   | Trv_reference _ => None
-  | Tint sz _ => Some (N_of_size sz)
-  | Tchar sz _ => Some (N_of_size sz)
+  | Tint sz _ => Some (bitsN sz)
+  | Tchar sz _ => Some (bitsN sz)
   | Tvoid => None
   | Tarray t n => match size_of resolve t with
                  | None => None
@@ -289,10 +289,10 @@ Fixpoint size_of (resolve : genv) (t : type) : option N :=
   | Tmember_pointer _ _ => Some (@pointer_size resolve)
   | Tqualified _ t => size_of resolve t
   | Tnullptr => Some (@pointer_size resolve)
-  | Tfloat sz => Some (N_of_size sz)
+  | Tfloat sz => Some (bitsN sz)
   | Tarch sz _ => match sz with
                  | None => None
-                 | Some sz => Some (N_of_size sz)
+                 | Some sz => Some (bitsN sz)
                  end
   end%N.
 
@@ -321,10 +321,10 @@ Qed.
 to recurse through the environment in the case of [Treference]:
 termination will require a proof of well-foundedness of the environment *)
 Theorem size_of_int : forall {c : genv} s w,
-    @size_of c (Tint w s) = Some (N_of_size w).
+    @size_of c (Tint w s) = Some (bitsN w).
 Proof. reflexivity. Qed.
 Theorem size_of_char : forall {c : genv} s w,
-    @size_of c (Tchar w s) = Some (N_of_size w).
+    @size_of c (Tchar w s) = Some (bitsN w).
 Proof. reflexivity. Qed.
 Theorem size_of_bool : forall {c : genv},
     @size_of c Tbool = Some 1%N.

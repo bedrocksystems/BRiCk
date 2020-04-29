@@ -34,7 +34,7 @@ Axiom eval_not_bool : forall resolve a,
    is the number of bits after promotion.  *)
 Axiom eval_minus_int : forall resolve s a c w bytes,
     size_of resolve (Tint w s) = Some bytes ->
-    c = (if s then (0 - a) else trim (N_of_size w) (0 - a))%Z ->
+    c = (if s then (0 - a) else trim (bitsN w) (0 - a))%Z ->
     has_type (Vint c) (Tint w s) ->
     eval_unop (resolve:=resolve) Uminus (Tint w s) (Tint w s)
               (Vint a) (Vint c).
@@ -88,7 +88,7 @@ Definition eval_int_op (bo : BinOp) (o : Z -> Z -> Z) : Prop :=
   forall resolve w (s : signed) (a b c : Z),
     has_type (Vint a) (Tint w s) ->
     has_type (Vint b) (Tint w s) ->
-    c = (if s then o a b else trim (N_of_size w) (o a b)) ->
+    c = (if s then o a b else trim (bitsN w) (o a b)) ->
     has_type (Vint c) (Tint w s) ->
     eval_binop (resolve:=resolve) bo (Tint w s) (Tint w s) (Tint w s) (Vint a) (Vint b) (Vint c).
 
@@ -122,14 +122,14 @@ Axiom eval_xor :
    since C++11.
    If the second operand is zero, the behavior is undefined. *)
 Axiom eval_div :
-  forall resolve (w : size) (s : signed) (a b c : Z),
+  forall resolve (w : bitsize) (s : signed) (a b c : Z),
     b <> 0%Z ->
     has_type (Vint a) (Tint w s) ->
     has_type (Vint b) (Tint w s) ->
     c = Z.quot a b ->
     eval_binop (resolve:=resolve) Bdiv (Tint w s) (Tint w s) (Tint w s) (Vint a) (Vint b) (Vint c).
 Axiom eval_mod :
-  forall resolve (w : size) (s : signed) (a b c : Z),
+  forall resolve (w : bitsize) (s : signed) (a b c : Z),
     b <> 0%Z ->
     has_type (Vint a) (Tint w s) ->
     has_type (Vint b) (Tint w s) ->
@@ -156,12 +156,12 @@ L operator>>(L, R)
   *)
 
 Axiom eval_shl :
-  forall resolve (w : size) w2 (s s2 : signed) (a b c : Z),
-    (0 <= b < Z_of_size w)%Z ->
+  forall resolve (w : bitsize) w2 (s s2 : signed) (a b c : Z),
+    (0 <= b < bitsZ w)%Z ->
     (0 <= a)%Z ->
     has_type (Vint a) (Tint w s) ->
     has_type (Vint b) (Tint w2 s2) ->
-    (c = if s then Z.shiftl a b else trim (N_of_size w) (Z.shiftl a b)) ->
+    (c = if s then Z.shiftl a b else trim (bitsN w) (Z.shiftl a b)) ->
     has_type (Vint c) (Tint w s) ->
     eval_binop (resolve:=resolve) Bshl (Tint w s) (Tint w2 s2) (Tint w s) (Vint a) (Vint b) (Vint c).
 
@@ -171,12 +171,12 @@ Axiom eval_shl :
    part of the quotient of E1/(2^E2). If E1 has a signed type and a
    negative value, the resulting value is implementation-defined. *)
 Axiom eval_shr :
-  forall resolve (w : size) w2 (s s2: signed) (a b c : Z),
-    (0 <= b < Z_of_size w)%Z ->
+  forall resolve (w : bitsize) w2 (s s2: signed) (a b c : Z),
+    (0 <= b < bitsZ w)%Z ->
     (0 <= a)%Z ->
     has_type (Vint a) (Tint w s) ->
     has_type (Vint b) (Tint w2 s2) ->
-    (c = if s then Z.shiftr a b else trim (N_of_size w) (Z.shiftr a b)) ->
+    (c = if s then Z.shiftr a b else trim (bitsN w) (Z.shiftr a b)) ->
     eval_binop (resolve:=resolve) Bshr (Tint w s) (Tint w2 s2) (Tint w s) (Vint a) (Vint b) (Vint c).
 
 (* Arithmetic comparison operators *)
@@ -262,7 +262,7 @@ Definition bitFlipZU (z:Z) (len: N) : Z :=
   to_unsigned (Z.lnot z) len.
 
 Axiom eval_unop_not:
-  forall {genv} (w : size) s (a b : Z),
+  forall {genv} (w : bitsize) s (a b : Z),
     b = bitFlipZU a w ->
     has_type (Vint b) (Tint w s) ->
     @eval_unop genv Ubnot (Tint w s) (Tint w s)  (Vint a) (Vint b).

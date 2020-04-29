@@ -4,7 +4,7 @@
  * SPDX-License-Identifier:AGPL-3.0-or-later
  *)
 (* This file captures reasoning principles that are necessary when
- * separately verifying #includes
+   separately verifying [#include]s
  *)
 From iris.proofmode Require Import tactics.
 From bedrock.lang.cpp Require Import
