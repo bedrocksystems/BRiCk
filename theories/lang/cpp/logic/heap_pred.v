@@ -17,6 +17,8 @@ Require Import bedrock.lang.cpp.logic.spec.
 
 Local Open Scope string_scope.
 
+Set Default Proof Using "Type".
+
 Lemma monPred_at_persistent_inv {V bi} (P : monPred V bi) :
   (∀ i, Persistent (P i)) → Persistent P.
 Proof using . intros HP. constructor=> i. MonPred.unseal. apply HP. Qed.
@@ -56,7 +58,6 @@ Section with_cpp.
   Definition Rep := monPred ptr_bi_index mpredI.
   Definition RepI := monPredI ptr_bi_index mpredI.
   Definition RepSI := monPredSI ptr_bi_index mpredSI.
-
 
   Lemma Rep_lequiv : forall (P Q : Rep),
       (forall p, P p -|- Q p) ->
@@ -141,6 +142,14 @@ Section with_cpp.
     rewrite _at_eq /_at_def. subst.
     setoid_rewrite H2.
     reflexivity.
+  Qed.
+
+  Instance _at_ne: Proper (dist n ==> dist n) (_at a).
+  Proof.
+    red. red. intros.
+    rewrite _at_eq /_at_def addr_of_eq /addr_of_def.
+    apply: bi.exist_ne => p; apply: bi.sep_ne; [ solve_proper | ].
+    apply H.
   Qed.
 
   (** Values
