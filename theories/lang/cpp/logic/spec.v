@@ -12,8 +12,6 @@ From iris.proofmode Require Import tactics.
 From bedrock.lang.cpp Require Import ast semantics.
 From bedrock.lang.cpp Require Import pred.
 
-Local Open Scope string_scope.
-
 Local Set Universe Polymorphism.
 
 Section with_prop.

@@ -5,6 +5,7 @@
  *)
 Require Export Coq.NArith.BinNatDef.
 Require Export Coq.Strings.String.
+Require Export bedrock.bytestring.
 From bedrock.lang.cpp.syntax Require Export
      names
      expr

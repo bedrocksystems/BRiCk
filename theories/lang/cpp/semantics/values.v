@@ -235,7 +235,7 @@ Fixpoint find_field {T} (f : ident) (fs : list (ident * T)) : option T :=
   match fs with
   | nil => None
   | (f',v) :: fs =>
-    if String.eqb f f' then
+    if decide (f = f') then
       Some v
     else find_field f fs
   end%list.
@@ -305,7 +305,7 @@ Proof.
   - destruct IHy0; try constructor. subst. auto.
   - destruct H as [ [ H _ ] _ ].
     specialize (H g).
-    unfold glob_def, globals, Lookup_instance_0 in *.
+    unfold glob_def, globals in *.
     destruct (globals (genv_cu x) !! g); try constructor.
     destruct (H _ eq_refl) as [ ? [ -> HH ] ]; clear H.
     destruct g0; try constructor;

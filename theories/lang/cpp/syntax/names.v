@@ -3,21 +3,23 @@
  *
  * SPDX-License-Identifier:AGPL-3.0-or-later
  *)
-Require Import Coq.Classes.DecidableClass.
 From Coq.Strings Require Import
      Ascii String.
 Require Import stdpp.strings.
 Require Import bedrock.Util.
+Require Import bedrock.bytestring.
 
 Set Primitive Projections.
 
 Local Open Scope N_scope.
 
+Require Import stdpp.countable.
+
 (* this represents names that exist in object files. *)
-Definition obj_name : Set := string.
+Definition obj_name : Set := bs.
 Global Instance obj_name_eq: EqDecision obj_name := _.
 
-Definition ident : Set := string.
+Definition ident : Set := bs.
 Global Instance ident_eq: EqDecision ident := _.
 
 (* naming in C++ is complex.
@@ -31,7 +33,7 @@ Global Instance ident_eq: EqDecision ident := _.
  *   not present in the object file
  * - there are also "unnamed" functions, e.g. constructors and destructors
  *)
-Definition globname : Set := string.
+Definition globname : Set := ident.
   (* these are mangled names. for consistency, we're going to
    * mangle everything.
    *)
@@ -47,3 +49,10 @@ Record field : Set :=
 }.
 Global Instance field_eq: EqDecision field.
 Proof. solve_decision. Defined.
+
+Bind Scope bs_scope with globname.
+Bind Scope bs_scope with obj_name.
+Bind Scope bs_scope with ident.
+Bind Scope bs_scope with localname.
+
+Export bytestring.

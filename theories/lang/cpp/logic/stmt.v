@@ -17,8 +17,6 @@ From bedrock.lang.cpp.logic Require Import
      pred path_pred heap_pred destroy wp initializers call intensional.
 
 Module Type Stmt.
-  Local Open Scope string_scope.
-
   (** weakest pre-condition for statements
    *)
   Section with_resolver.

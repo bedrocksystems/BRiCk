@@ -12,6 +12,7 @@ Require Import stdpp.decidable.
 Require Import stdpp.numbers.
 Require Import bedrock.Util.
 From bedrock.lang.cpp.syntax Require Import names types expr.
+Require Import bedrock.bytestring.
 
 Set Primitive Projections.
 
@@ -51,15 +52,15 @@ Inductive Stmt : Set :=
 
 | Sexpr   (_ : ValCat) (_ : Expr)
 
-| Sattr (_ : list string) (_ : Stmt)
+| Sattr (_ : list ident) (_ : Stmt)
 
-| Sasm (_ : string) (volatile : bool)
-       (inputs : list (string * Expr))
-       (outputs : list (string * Expr))
-       (clobbers : list string)
+| Sasm (_ : bs) (volatile : bool)
+       (inputs : list (ident * Expr))
+       (outputs : list (ident * Expr))
+       (clobbers : list ident)
 
-| Slabeled (_ : string) (_ : Stmt)
-| Sgoto (_ : string)
+| Slabeled (_ : ident) (_ : Stmt)
+| Sgoto (_ : ident)
 | Sunsupported (_ : string).
 Instance Stmt_eq_dec : EqDecision Stmt.
 Proof.

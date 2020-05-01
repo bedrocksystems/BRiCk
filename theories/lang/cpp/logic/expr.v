@@ -75,8 +75,7 @@ Module Type Expr.
 
     (* note that `char` is actually `byte` *)
     Axiom wp_prval_char : forall c ty Q,
-      let n := Ascii.N_of_ascii c in
-      [! has_type (Vint n) (drop_qualifiers ty) !] //\\ Q (Vint n) empSP
+      [! has_type (Vint c) (drop_qualifiers ty) !] //\\ Q (Vint c) empSP
       |-- wp_prval (Echar c ty) Q.
 
     (* boolean literals are prvalues *)

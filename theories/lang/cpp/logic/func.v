@@ -18,8 +18,6 @@ From bedrock.lang.cpp Require Import
      pred path_pred heap_pred
      wp intensional.
 
-Local Open Scope string_scope.
-
 Local Set Universe Polymorphism.
 
 Section with_cpp.
