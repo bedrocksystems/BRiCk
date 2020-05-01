@@ -271,8 +271,8 @@ Fixpoint size_of (resolve : genv) (t : type) : option N :=
   | Tpointer _ => Some (@pointer_size resolve)
   | Treference _ => None
   | Trv_reference _ => None
-  | Tint sz _ => Some (bitsN sz)
-  | Tchar sz _ => Some (bitsN sz)
+  | Tint sz _ => Some (bytesN sz)
+  | Tchar sz _ => Some (bytesN sz)
   | Tvoid => None
   | Tarray t n => match size_of resolve t with
                  | None => None
@@ -289,10 +289,10 @@ Fixpoint size_of (resolve : genv) (t : type) : option N :=
   | Tmember_pointer _ _ => Some (@pointer_size resolve)
   | Tqualified _ t => size_of resolve t
   | Tnullptr => Some (@pointer_size resolve)
-  | Tfloat sz => Some (bitsN sz)
+  | Tfloat sz => Some (bytesN sz)
   | Tarch sz _ => match sz with
                  | None => None
-                 | Some sz => Some (bitsN sz)
+                 | Some sz => Some (bytesN sz)
                  end
   end%N.
 
@@ -321,10 +321,10 @@ Qed.
 to recurse through the environment in the case of [Treference]:
 termination will require a proof of well-foundedness of the environment *)
 Theorem size_of_int : forall {c : genv} s w,
-    @size_of c (Tint w s) = Some (bitsN w).
+    @size_of c (Tint w s) = Some (bytesN w).
 Proof. reflexivity. Qed.
 Theorem size_of_char : forall {c : genv} s w,
-    @size_of c (Tchar w s) = Some (bitsN w).
+    @size_of c (Tchar w s) = Some (bytesN w).
 Proof. reflexivity. Qed.
 Theorem size_of_bool : forall {c : genv},
     @size_of c Tbool = Some 1%N.

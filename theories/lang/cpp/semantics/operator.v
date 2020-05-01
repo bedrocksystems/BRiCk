@@ -263,6 +263,6 @@ Definition bitFlipZU (z:Z) (len: N) : Z :=
 
 Axiom eval_unop_not:
   forall {genv} (w : bitsize) s (a b : Z),
-    b = bitFlipZU a w ->
+    b = bitFlipZU a (bitsN w) ->
     has_type (Vint b) (Tint w s) ->
     @eval_unop genv Ubnot (Tint w s) (Tint w s)  (Vint a) (Vint b).
