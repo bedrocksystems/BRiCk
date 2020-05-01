@@ -66,7 +66,6 @@ Definition bytesZ (s : bitsize) : Z :=
 
 Bind Scope N_scope with bitsize.
 
-Coercion bitsN : bitsize >-> N.
 Lemma of_size_gt_O w :
   (0 < 2 ^ bitsZ w)%Z.
 Proof. destruct w; reflexivity. Qed.
