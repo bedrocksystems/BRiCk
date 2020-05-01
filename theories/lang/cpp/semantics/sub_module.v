@@ -3,9 +3,9 @@
  *
  * SPDX-License-Identifier:AGPL-3.0-or-later
  *)
-Require Import stdpp.stringmap.
 Require Import stdpp.gmap.
 Require Import bedrock.lang.cpp.ast.
+Require Import ExtLib.Tactics.
 
 Definition require_eq `{EqDecision T} (a b : T) {U} (r : option U) : option U :=
   if decide (a = b) then r else None.
@@ -202,13 +202,13 @@ Proof.
     eapply ObjValue_le_trans; eauto. }
 Qed.
 
-Local Definition empty_map {T} : stringmap T :=
+Local Definition empty_map `{Countable K} {T} : gmap K T :=
   Eval vm_compute in ∅.
-Local Lemma empty_map_is_emptyset : forall T, @empty_map T = ∅.
+Local Lemma empty_map_is_emptyset `{Countable K, EqDecision K} : forall T, @empty_map K _ _ T = ∅.
 Proof. vm_compute. reflexivity. Defined.
 
 Definition compat_le {T}
-           (f : option T -> option T -> bool) (l r : stringmap T)
+           (f : option T -> option T -> bool) (l r : gmap ident T)
   : bool :=
   if decide (merge (fun l r =>
                       match l , r with
@@ -290,7 +290,6 @@ Proof.
     simpl.
     red. split.
     { intros. specialize (H gn).
-      Require Import ExtLib.Tactics.
       change_rewrite_in H1 H.
       clear - H H1.
       match goal with
@@ -315,10 +314,15 @@ Proof.
       destruct H as [_ H].
       forward_reason.
       destruct (symbols a !! x) eqn:Heq; try congruence.
-      specialize (H _ _ Heq).
-      forward_reason.
-      change_rewrite_in H H0.
-      forward. } }
+      { specialize (H _ _ Heq).
+        forward_reason.
+        change_rewrite_in H H0.
+        forward.
+        assert (Some o = Some o0).
+        { rewrite <- Heq. rewrite <- H0. reflexivity. }
+        inversion H4. subst.
+        congruence. }
+      { change_rewrite_in Heq H0. congruence. } } }
   { intros; unfold sub_module; simpl; intros [ Hs _ ].
     destruct H.
     forward.

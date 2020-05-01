@@ -113,7 +113,7 @@ Definition link (a b : compilation_unit) : option compilation_unit :=
                       | None , r => r
                       | l , None => l
                       end) a.(globals) b.(globals)) ≫= fun g =>
-   traverse (T:=stringmap) (fun x : option _ => x)
+   traverse (fun x : option _ => x)
             (merge (fun l r => Some
                       match l , r with
                       | Some l , Some r => ObjValue_linkable l r

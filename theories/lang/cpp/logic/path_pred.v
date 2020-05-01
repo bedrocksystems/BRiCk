@@ -60,10 +60,10 @@ Section with_Σ.
     l1 = l2.
 
   Definition this_addr (r : region) (p : ptr) : mpred :=
-    local_addr r "#this" p.
+    local_addr r "#this"%bs p.
 
   Definition result_addr (r : region) (p : ptr) : mpred :=
-    local_addr r "#result" p.
+    local_addr r "#result"%bs p.
 
   (* ^ these two could be duplicable because regions don't need to be
    * reused. the reason that local variables need to be tracked is that

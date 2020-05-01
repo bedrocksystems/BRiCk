@@ -7,7 +7,6 @@ Require Import Coq.ZArith.ZArith.
 Require Import Coq.Lists.List.
 Require Import Coq.Strings.String.
 
-Local Open Scope string_scope.
 Local Open Scope Z_scope.
 
 Require Import bedrock.lang.cpp.ast.

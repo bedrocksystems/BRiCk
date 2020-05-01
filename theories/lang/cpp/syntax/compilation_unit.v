@@ -6,16 +6,13 @@
 Require Import Coq.Classes.DecidableClass.
 Require Import Coq.ZArith.BinIntDef.
 Require Import Coq.Bool.Bool.
-Require Import stdpp.stringmap.
 Require Import stdpp.gmap.
-Require Import ExtLib.Structures.Monad.
-Require Import ExtLib.Data.Monads.OptionMonad.
-
-From Coq.Strings Require Import
-     Ascii String.
-
+(* Require Import ExtLib.Structures.Monad. *)
+(* Require Import ExtLib.Data.Monads.OptionMonad. *)
+Require Import bedrock.bytestring.
 Require Import bedrock.Util.
 From bedrock.lang.cpp.syntax Require Import names expr stmt types.
+
 
 Set Primitive Projections.
 
@@ -108,15 +105,15 @@ Proof. solve_decision. Defined.
 
 Definition dtor_name (type : Dtor_type) (cls : globname) : obj_name :=
   match cls with
-  | String _ (String _ s) =>
-    "_ZN" ++ s ++ "D" ++ ("0" (*match type with
+  | Bytestring.String _ (Bytestring.String _ s) =>
+    ("_ZN" ++ s ++ "D" ++ ("0" (*match type with
                           | Dt_Deleting => "0"
                           | Dt_Complete => "1"
                           | Dt_Base => "2"
                           | Dt_Comdat => "5"
-                          end *)) ++ "Ev"
+                          end *)) ++ "Ev")
   | _ => ""
-  end%string.
+  end%bs.
 
 (* these can be externed *)
 Variant ObjValue : Set :=
@@ -132,22 +129,31 @@ Variant GlobDecl : Set :=
 | Gtype     (* this is a type declaration, but not a definition *)
 | Gunion    (_ : Union)
 | Gstruct   (_ : Struct)
-| Genum     (_ : type) (_ : list string)
+| Genum     (_ : type) (_ : list ident)
 | Gconstant (_ : type) (_ : option Expr)
 | Gtypedef  (_ : type).
 Instance: EqDecision GlobDecl.
 Proof. solve_decision. Defined.
 
-Record compilation_unit : Set :=
-{ symbols : stringmap (* obj_name *) ObjValue
-; globals : stringmap (* globname *) GlobDecl
+Definition symbol_table :=
+  gmap obj_name ObjValue.
+
+Definition type_table :=
+  gmap globname GlobDecl.
+
+Record compilation_unit : Type :=
+{ symbols : symbol_table
+; globals : type_table
 }.
 
-Definition lookup_global k m :=
-  m.(globals) !! k.
+Instance global_lookup : Lookup globname GlobDecl compilation_unit :=
+  fun k m => m.(globals) !! k.
+Instance symbol_lookup : Lookup obj_name ObjValue compilation_unit :=
+  fun k m => m.(symbols) !! k.
 
-Definition lookup_symbol k m :=
-  m.(symbols) !! k.
-
-Instance: Lookup globname GlobDecl compilation_unit := lookup_global.
-Instance: Lookup obj_name ObjValue compilation_unit := lookup_symbol.
+(*
+Instance Empty_symbol_table : Empty symbol_table := ∅.
+  ltac:(let x := eval vm_compute in (∅ : symbol_table) in exact x).
+Instance Empty_type_table : Empty type_table :=
+  ltac:(let x := eval vm_compute in (∅ : type_table) in exact x).
+*)

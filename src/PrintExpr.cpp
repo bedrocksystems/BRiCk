@@ -388,7 +388,7 @@ public:
                              ClangPrinter& cprint, const ASTContext&) {
         print.ctor("Eint", false);
         if (lit->getType()->isSignedIntegerOrEnumerationType()) {
-            print.output() << "(" << lit->getValue().toString(10, true) << ")";
+            print.output() << lit->getValue().toString(10, true) << "%Z";
         } else {
             print.output() << lit->getValue().toString(10, false);
         }
@@ -397,8 +397,7 @@ public:
 
     void VisitCharacterLiteral(const CharacterLiteral* lit, CoqPrinter& print,
                                ClangPrinter& cprint, const ASTContext&) {
-        print.ctor("Echar", false);
-        print.ascii(lit->getValue());
+        print.ctor("Echar", false) << lit->getValue() << "%Z";
         done(lit, print, cprint);
     }
 
@@ -407,9 +406,9 @@ public:
         print.ctor("Estring", false);
         for (auto i = lit->getBytes().begin(), end = lit->getBytes().end();
              i != end; ++i) {
-            char buf[4];
-            sprintf(buf, "%03u", (unsigned)*i);
-            print.output() << "(String \"" << buf << "\" ";
+            char buf[25];
+            sprintf(buf, "Byte.x%02x", (unsigned)*i);
+            print.output() << "(String " << buf << " ";
         }
         print.output() << "EmptyString";
         for (auto i = lit->getBytes().begin(), end = lit->getBytes().end();
