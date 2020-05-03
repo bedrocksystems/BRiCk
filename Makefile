@@ -64,14 +64,13 @@ install: Makefile.coq
 Makefile.coq: _CoqProject
 	$(COQMAKEFILE) -f _CoqProject -o Makefile.coq
 
-test: coq cpp2v
-	CPP2V=`pwd`/build/cpp2v $(MAKE) -C tests
+test: test-cpp2v
 
 test-plugin: build-minimal cpp2v_plugin
 	$(MAKE) -C tests/plugin
 
 test-cpp2v: build-minimal cpp2v
-	$(MAKE) -C tests/cpp2v-parser
+	CPP2V=`pwd`/build/cpp2v $(MAKE) -C cpp2v-tests
 
 build-minimal: Makefile.coq
 	$(MAKE) -f Makefile.coq theories/lang/cpp/parser.vo
