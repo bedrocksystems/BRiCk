@@ -140,40 +140,34 @@ Module Type Expr.
      *    an array2pointer cast)
      *)
     Axiom wp_lval_subscript : forall e i t Q,
-      (if is_pointer (type_of e) then
-      wp_prval e (fun base free => (* todo: rval? *)
-        wp_prval i (fun idx free' =>
-          Exists addr,
+      (Exists Qbase Qidx,
+       (if is_pointer (type_of e) then
+         wp_prval e Qbase ** wp_prval i Qidx
+       else
+         wp_prval e Qidx ** wp_prval i Qbase) **
+      Forall base free idx free',
+         Qbase base free -* Qidx idx free' -*
+         Exists addr,
           (Exists i, [| idx = Vint i |] **
           _offsetL (_sub (erase_qualifiers t) i) (_eqv base) &~ addr ** ltrue) //\\
-          Q (Vptr addr) (free' ** free)))
-      else
-      wp_prval e (fun idx free => (* todo: rval? *)
-        wp_prval i (fun base free' =>
-          Exists addr,
-          (Exists i, [| idx = Vint i |] **
-          _offsetL (_sub (erase_qualifiers t) i) (_eqv base) &~ addr ** ltrue) //\\
-          Q (Vptr addr) (free' ** free))))
+          Q (Vptr addr) (free' ** free))
       |-- wp_lval (Esubscript e i t) Q.
 
     (* [Esubscript e i t]
      * - where one operand is an array rvalue
      *)
     Axiom wp_xval_subscript : forall e i t Q,
-      (if is_pointer (type_of e) then
-      wp_prval e (fun base free => (* todo: rval? *)
-        wp_prval i (fun idx free' =>
-          Exists addr,
+      (Exists Qbase Qidx,
+       (if is_pointer (type_of e) then
+         wp_prval e Qbase ** wp_prval i Qidx
+       else
+         wp_prval e Qidx ** wp_prval i Qbase) **
+      Forall base free idx free',
+         Qbase base free -* Qidx idx free' -*
+         Exists addr,
           (Exists i, [| idx = Vint i |] **
           _offsetL (_sub (erase_qualifiers t) i) (_eqv base) &~ addr ** ltrue) //\\
-          Q (Vptr addr) (free' ** free)))
-      else
-      wp_prval e (fun idx free => (* todo: rval? *)
-        wp_prval i (fun base free' =>
-          Exists addr,
-          (Exists i, [| idx = Vint i |] **
-          _offsetL (_sub (erase_qualifiers t) i) (_eqv base) &~ addr ** ltrue) //\\
-          Q (Vptr addr) (free' ** free))))
+          Q (Vptr addr) (free' ** free))
       |-- wp_xval (Esubscript e i t) Q.
 
 
@@ -251,15 +245,20 @@ Module Type Expr.
 
     (** binary operators *)
     Axiom wp_prval_binop : forall o e1 e2 ty Q,
-        wp_prval e1 (fun v1 free1 => wp_prval e2 (fun v2 free2 =>
-            Exists v',
-            ([| eval_binop o (erase_qualifiers (type_of e1)) (erase_qualifiers (type_of e2)) (erase_qualifiers ty) v1 v2 v' |] ** Q v' (free1 ** free2))))
+        (Exists Ql Qr,
+        wp_prval e1 Ql ** wp_prval e2 Qr **
+            Forall v1 v2 free1 free2, Ql v1 free1 -* Qr v2 free2 -*
+               Exists v',
+                 [| eval_binop o (erase_qualifiers (type_of e1)) (erase_qualifiers (type_of e2)) (erase_qualifiers ty) v1 v2 v' |] **
+                 Q v' (free1 ** free2))
         |-- wp_prval (Ebinop o e1 e2 ty) Q.
 
     Axiom wp_lval_assign : forall ty l r Q,
-        wp_lval l (fun la free1 => wp_prval r (fun rv free2 =>
+        (Exists Ql Qr,
+         wp_lval l Ql ** wp_prval r Qr **
+         Forall la free1 rv free2, Ql la free1 -* Qr rv free2 -*
             _at (_eqv la) (anyR (erase_qualifiers ty) 1) **
-           (_at (_eqv la) (primR (erase_qualifiers ty) 1 rv) -* Q la (free1 ** free2))))
+           (_at (_eqv la) (primR (erase_qualifiers ty) 1 rv) -* Q la (free1 ** free2)))
         |-- wp_lval (Eassign l r ty) Q.
 
     Axiom wp_lval_bop_assign : forall ty o l r Q,
@@ -450,47 +449,62 @@ Module Type Expr.
           Forall addr, wp_init ty addr (Ecall f es ty) (fun free =>
             Q addr (free ** _at (_eqv addr) (anyR (erase_qualifiers ty) 1)))
         else
-          wp_prval f (fun f free => wp_args es (fun vs free' =>
-            |> fspec f vs (fun v => Q v (free ** free')))))
+          wp_args ((Rvalue, f) :: es) (fun vs free =>
+            match vs with
+            | nil => lfalse
+            | f :: vs => |> fspec f vs (fun v => Q v free)
+            end))
         |-- wp_prval (Ecall f es ty) Q.
 
     Axiom wp_lval_call :
       forall f (es : list (ValCat * Expr))
         Q addr (ty : type),
-        wp_prval f (fun f free_f => wp_args es (fun vs free_args =>
-             |> fspec f vs (fun res =>
-                      [| res = addr |] -* Q res (free_f ** free_args))))
+        wp_args ((Rvalue, f) :: es) (fun vs free =>
+          match vs with
+          | nil => lfalse
+          | f :: vs => |> fspec f vs (fun res => [| res = addr |] -* Q res free)
+          end)
         |-- wp_lval (Ecall f es ty) Q.
 
     Axiom wp_xval_call : forall ty f es Q,
-        wp_prval f (fun f free => wp_args es (fun vs free' =>
-            |> fspec f vs (fun v => Q v (free ** free'))))
+        wp_args ((Rvalue, f)::es) (fun vs free =>
+            match vs with
+            | nil => lfalse
+            | f :: vs => |> fspec f vs (fun v => Q v free)
+            end)
         |-- wp_xval (Ecall f es ty) Q.
-    Axiom wp_init_call :
-      forall f (es : list (ValCat * Expr))
-        (Q : FreeTemps -> mpred) addr (ty : type),
-        wp_prval f (fun f free_f => wp_args es (fun vs free_args =>
-             |> fspec f vs (fun res =>
-                      [| res = addr |] -* Q (free_f ** free_args))))
+    Axiom wp_init_call : forall f es Q addr ty,
+        wp_args ((Rvalue, f) :: es) (fun vs free =>
+           match vs with
+           | nil => lfalse
+           | f :: vs => |> fspec f vs (fun res => [| res = addr |] -* Q free)
+           end)
         |-- wp_init ty addr (Ecall f es ty) Q.
 
     Axiom wp_prval_member_call : forall ty f obj es Q,
         Exists fa, _global f &~ fa **
-        wp_lval obj (fun this free => wp_args es (fun vs free' =>
-            |> fspec (Vptr fa) (this :: vs) (fun v => Q v (free ** free'))))
+        wp_args ((Lvalue, obj)::es) (fun vs free =>
+            match vs with
+            | nil => lfalse
+            | this :: vs => |> fspec (Vptr fa) (this :: vs) (fun v => Q v free)
+            end)
         |-- wp_prval (Emember_call (inl (f, false)) obj es ty) Q.
     Axiom wp_xval_member_call : forall ty f obj es Q,
         Exists fa, _global f &~ fa **
-        wp_lval obj (fun this free => wp_args es (fun vs free' =>
-            |> fspec (Vptr fa) (this :: vs) (fun v => Q v (free ** free'))))
+        wp_args ((Lvalue, obj)::es) (fun vs free =>
+            match vs with
+            | nil => lfalse
+            | this :: vs => |> fspec (Vptr fa) (this :: vs) (fun v => Q v free)
+            end)
         |-- wp_xval (Emember_call (inl (f, false)) obj es ty) Q.
-    Axiom wp_init_member_call :
-      forall f (es : list (ValCat * Expr))
-        (Q : FreeTemps -> mpred) addr (ty : type) obj,
+    Axiom wp_init_member_call : forall f es addr ty obj Q,
         Exists fa, _global f &~ fa **
-        wp_prval obj (fun this free_o => wp_args es (fun vs free_args =>
-             |> fspec (Vptr fa) (this :: vs) (fun res =>
-                      [| res = addr |] -* Q (free_o ** free_args))))
+        wp_args ((Rvalue, obj)::es) (fun vs free =>
+             match vs with
+             | nil => lfalse
+             | this :: vs => |> fspec (Vptr fa) (this :: vs) (fun res =>
+                      [| res = addr |] -* Q free)
+             end)
         |-- wp_init ty addr (Emember_call (inl (f, false)) obj es ty) Q.
 
     (* null *)
@@ -548,12 +562,12 @@ Module Type Expr.
      * this aspect of the AST is non-compositional, so we handle it in another
      * way
      *)
-    Axiom wp_init_bind_temp : forall e ty a dtor Q,
-        lfalse (*
-        wp_init ty a e (fun free =>
-                     Exists fa, [| glob_addr resolve dtor fa |] **
-                     |> fspec (Vptr fa) (a :: nil) ti (fun _ => Q free)) *)
-        |-- wp_init ty a (Ebind_temp e dtor ty) Q.
+    (* Axiom wp_init_bind_temp : forall e ty a dtor Q, *)
+    (*     lfalse (* *)
+    (*     wp_init ty a e (fun free => *)
+    (*                  Exists fa, [| glob_addr resolve dtor fa |] ** *)
+    (*                  |> fspec (Vptr fa) (a :: nil) ti (fun _ => Q free)) *) *)
+    (*     |-- wp_init ty a (Ebind_temp e dtor ty) Q. *)
 
     Axiom wp_prval_materialize : forall ty e dtor Q,
       Forall a : val,

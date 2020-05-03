@@ -18,22 +18,6 @@ From bedrock.lang.cpp Require Import
 
 Set Primitive Projections.
 
-(* this applies `wp` across a list
- *
- * note(gmm): we consistently use this for evaluating arguments, so it should
- * reflect parallel evaluation
- *)
-Section wps.
-  Context {T U V : Type}.
-  Variable wp : T -> (U -> V) -> V.
-
-  Fixpoint wps (es : list T) (Q : list U -> V) : V :=
-    match es with
-    | nil => Q nil
-    | e :: es => wp e (fun v => wps es (fun vs => Q (cons v vs)))
-    end.
-End wps.
-
 Local Open Scope bi_scope.
 
 Section with_cpp.
