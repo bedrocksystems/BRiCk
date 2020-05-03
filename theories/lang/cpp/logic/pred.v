@@ -36,6 +36,7 @@ Module Type CPP_LOGIC.
   Parameter cppG : gFunctors -> Type.
   Parameter has_inv : forall Σ, cppG Σ -> invG Σ.
   Parameter has_cinv : forall Σ, cppG Σ -> cinvG Σ.
+  Existing Class cppG.
 
   Parameter _cpp_ghost : Type.
 
@@ -112,8 +113,6 @@ End CPP_LOGIC.
 
 Declare Module L : CPP_LOGIC.
 Export L.
-
-Existing Class L.cppG.
 
 Existing Instances
          L.code_at_persistent L.code_at_affine
