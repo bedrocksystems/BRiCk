@@ -19,13 +19,15 @@ export COQDOCFLAGS
 cpp2v: build/Makefile
 	$(MAKE) -C build cpp2v
 
-cpp2v_plugin: build/Makefile
+plugin: build/Makefile
 	$(MAKE) -C build cpp2v_plugin
 
 all: coq cpp2v test
 
 coq: Makefile.coq
-	$(MAKE) -f Makefile.coq
+	@ $(MAKE) -f Makefile.coq
+
+link: coq
 	mkdir -p build/
 	rm -f build/bedrock
 	ln -s `pwd`/theories build/bedrock
@@ -64,13 +66,14 @@ install: Makefile.coq
 Makefile.coq: _CoqProject
 	$(COQMAKEFILE) -f _CoqProject -o Makefile.coq
 
-test: test-cpp2v
+test: test-cpp2v test-plugin
 
-test-plugin: build-minimal cpp2v_plugin
-	$(MAKE) -C tests/plugin
+test-plugin: build-minimal plugin
+	@ echo "the plugin setup is platform dependent. this will only work on linux"
+	@ CPP2V_PLUGIN=`pwd`/build/libcpp2v_plugin.so $(MAKE) -C plugin-tests
 
 test-cpp2v: build-minimal cpp2v
-	CPP2V=`pwd`/build/cpp2v $(MAKE) -C cpp2v-tests
+	@ CPP2V=`pwd`/build/cpp2v $(MAKE) -C cpp2v-tests
 
 build-minimal: Makefile.coq
 	$(MAKE) -f Makefile.coq theories/lang/cpp/parser.vo
@@ -78,7 +81,7 @@ build-minimal: Makefile.coq
 	rm -f build/bedrock
 	ln -s `pwd`/theories build/bedrock
 
-.PHONY: test install coq all doc html clean install cpp2v cpp2v_plugin
+.PHONY: test install coq all doc html clean install cpp2v plugin
 
 build/Makefile:
 	mkdir -p build
