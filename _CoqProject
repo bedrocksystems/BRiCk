@@ -64,26 +64,3 @@ theories/lang/cpp.v
 
 # "soundness" proof
 theories/lang/cpp/logic/simple_pred.v
-
-
-# Language-Agnostic Automation
-# ^^^ will be deprecated
-
-
-# Pure Automation
-
-
-
-
-# theories/Signature.v
-
-# C++ Automation
-# ^^^ how are the above two related
-
-
-
-
-
-
-
-# Libraries
