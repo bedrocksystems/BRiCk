@@ -84,6 +84,8 @@ Module SimpleCPP
          (represented as pointers) to physical memory addresses. Locations that
          are not stored in physical memory (e.g. because they are register
          allocated) are mapped to [None] *)
+    ; blocksG : inG Σ (gmapUR ptr (agreeR (leibnizO (Z * Z))))
+      (* ^ this represents the minimum and maximum offset of the block *)
     ; codeG : inG Σ (gmapUR ptr (agreeR (leibnizO (Func + Method + Ctor + Dtor))))
       (* ^ this carries the (compiler-supplied) mapping from C++ locations
          to the code stored at that location *)
@@ -100,6 +102,7 @@ Module SimpleCPP
     { heap_name : gname
     ; ghost_heap_name : gname
     ; mem_inj_name : gname
+    ; blocks_name : gname
     ; code_name : gname
     }.
   Definition _cpp_ghost := cpp_ghost.
@@ -113,6 +116,8 @@ Module SimpleCPP
 
   Section with_cpp.
     Context `{Σ : cpp_logic}.
+
+    Existing Instances memG ghost_memG mem_injG blocksG codeG.
 
     Definition mpred := iProp Σ.
     Definition mpredI : bi :=
@@ -143,6 +148,27 @@ Module SimpleCPP
         destruct (decide (i = lll)).
         + subst. rewrite lookup_insert. rewrite Some_valid. iFrame.
         + rewrite lookup_insert_ne; eauto.
+    Qed.
+
+    (** pointer validity *)
+    Definition valid_ptr (p : ptr) : mpred.
+    refine ([| p = nullptr |] \\//
+            (Exists base l h o,
+                own _ghost.(blocks_name) {[ base := to_agree (l, h) ]} **
+                [| (l <= o < h)%Z |] ** [| p = offset_ptr_ o base |])).
+    unshelve eapply blocksG; apply has_cppG. refine _.
+    Defined.
+
+    Theorem valid_ptr_persistent : forall p, Persistent (valid_ptr p).
+    Proof. intros. red. iIntros "#H". iFrame "#". Qed.
+    Theorem valid_ptr_affine : forall p, Affine (valid_ptr p).
+    Proof. intros. red. iIntros "_". iStopProof. reflexivity. Qed.
+    Existing Instance valid_ptr_persistent.
+    Existing Instance valid_ptr_affine.
+
+    Theorem valid_ptr_nullptr : |-- valid_ptr nullptr.
+    Proof. unfold valid_ptr. iLeft. iModIntro. iStopProof.
+           eapply bi.pure_intro. reflexivity.
     Qed.
 
     Definition Z_to_bytes (n : nat) (v : Z) : list runtime_val :=
