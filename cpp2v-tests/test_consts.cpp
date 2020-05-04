@@ -1,3 +1,9 @@
+/*
+ * Copyright (C) BedRock Systems Inc. 2019
+ *
+ * SPDX-License-Identifier:MIT-0
+ */
+
 void test() {
     unsigned int ui = 0xffffffffu;
     signed int si = 0xffffffff;

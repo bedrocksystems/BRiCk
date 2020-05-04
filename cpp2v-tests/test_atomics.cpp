@@ -1,3 +1,9 @@
+/*
+ * Copyright (C) BedRock Systems Inc. 2019
+ *
+ * SPDX-License-Identifier:MIT-0
+ */
+
 void test() {
     int x = 0;
     __atomic_fetch_or(&x, 0, __ATOMIC_SEQ_CST);

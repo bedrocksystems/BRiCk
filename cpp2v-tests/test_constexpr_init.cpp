@@ -1,3 +1,9 @@
+/*
+ * Copyright (C) BedRock Systems Inc. 2019
+ *
+ * SPDX-License-Identifier:MIT-0
+ */
+
 constexpr int FOO = 0;
 constexpr int BAR = ~0;
 template<typename T>

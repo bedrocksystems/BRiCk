@@ -1,3 +1,8 @@
+#
+# Copyright (C) BedRock Systems Inc. 2019-2020
+#
+# SPDX-License-Identifier:AGPL-3.0-or-later
+#
 COQC	?= coqc
 CPP2V	?= ../../build/cpp2v
 
