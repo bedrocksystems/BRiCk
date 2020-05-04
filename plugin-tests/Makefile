@@ -1,3 +1,8 @@
+#
+# Copyright (C) BedRock Systems Inc. 2019
+#
+# SPDX-License-Identifier:MIT-0
+#
 LOAD_PLUGIN=-Xclang -load -Xclang ${CPP2V_PLUGIN} -Xclang -add-plugin -Xclang cpp2v
 OUT_OPTION=-Xclang -plugin-arg-cpp2v -Xclang -o -Xclang -plugin-arg-cpp2v -Xclang
 NAMES_OPTION=-Xclang -plugin-arg-cpp2v -Xclang -names -Xclang -plugin-arg-cpp2v -Xclang

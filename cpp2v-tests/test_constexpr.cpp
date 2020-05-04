@@ -1,3 +1,9 @@
+/*
+ * Copyright (C) BedRock Systems Inc. 2019
+ *
+ * SPDX-License-Identifier:MIT-0
+ */
+
 template<int X>
 class T {
   //Clang produces different ASTs on this code in C++14 and C++17

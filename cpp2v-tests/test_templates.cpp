@@ -1,4 +1,8 @@
-
+/*
+ * Copyright (C) BedRock Systems Inc. 2019
+ *
+ * SPDX-License-Identifier:MIT-0
+ */
 
 template<typename _Tp, _Tp __v>
     struct integral_constant
