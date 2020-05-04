@@ -44,7 +44,7 @@ git clone https://gitlab.com/bedrocksystems/cpp2v.git
 ### OSX
 
 ```sh
-brew install llvm cmake opam
+brew install llvm cmake opam zlib
 export PATH=/usr/local/opt/llvm/bin:${PATH}
 # install opam dependencies
 opam repo add coq-released https://coq.inria.fr/opam/released
@@ -58,10 +58,10 @@ git clone https://gitlab.mpi-sws.org/iris/iris.git
 git clone https://gitlab.com/bedrocksystems/cpp2v.git
 cd cpp2v
 mkdir build && cd build
-cmake -D CMAKE_EXE_LINKER_FLAGS=-L/usr/local/opt/llvm/lib ..
-cmake --build . --target cpp2v
+cmake -D'CMAKE_SHARED_LINKER_FLAGS=-L/usr/local/opt/llvm/lib -lclangSerialization -lclangASTMatchers -lclangSema -lclangAnalysis -lclangRewriteFrontend -lclangEdit -lclangParse -lclangFrontend -lclangBasic -lclangDriver -lclangAST -lclangLex -lz -lcurses' -DCMAKE_EXE_LINKER_FLAGS=-L/usr/local/opt/llvm/lib ..
+cmake --build .
 cd ..
-make coq
+make coq install
 ```
 
 ## Examples
