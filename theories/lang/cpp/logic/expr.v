@@ -48,7 +48,7 @@ Module Type Expr.
     Local Notation mdestroy := (mdestroy (σ:=resolve) ti) (only parsing).
 
     Local Notation glob_def := (glob_def resolve) (only parsing).
-    Local Notation _global := (@_global resolve) (only parsing).
+    Local Notation _global := (_global (resolve:=resolve)) (only parsing).
     Local Notation _field := (@_field resolve) (only parsing).
     Local Notation _sub := (@_sub resolve) (only parsing).
     Local Notation _super := (@_super resolve) (only parsing).

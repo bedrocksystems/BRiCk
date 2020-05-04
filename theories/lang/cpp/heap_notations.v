@@ -55,7 +55,7 @@ Section with_cpp.
   Arguments DOT_dot {!AT} _ _ : rename.
 
   Canonical Structure DOT_offset_loc : DOT :=
-    {| DOT_dot := @_offsetL |}.
+    {| DOT_dot := _offsetL |}.
   Canonical Structure DOT_field_offset {σ : genv} : DOT :=
     {| DOT_dot o f := path_pred._dot (@_field σ f) o |}.
   Canonical Structure DOT_offset_offset : DOT :=

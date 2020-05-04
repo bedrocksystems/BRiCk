@@ -62,6 +62,16 @@ Module Type CPP_LOGIC.
        ; sbi_bi_mixin := (iPropI Σ).(bi_bi_mixin)
        ; sbi_sbi_mixin := (iPropSI Σ).(sbi_sbi_mixin) |}.
 
+    (* valid pointers allow for accessing one past the end of a structure/array *)
+    Parameter valid_ptr : ptr -> mpred.
+
+    Axiom valid_ptr_persistent : forall p, Persistent (valid_ptr p).
+    Axiom valid_ptr_affine : forall p, Affine (valid_ptr p).
+    Existing Instance valid_ptr_persistent.
+    Existing Instance valid_ptr_affine.
+
+    Axiom valid_ptr_nullptr : |-- valid_ptr nullptr.
+
     (* heap points to *)
     Parameter tptsto : forall {σ:genv} (t : type) (q : Qp) (a : ptr) (v : val), mpred.
 
@@ -79,7 +89,7 @@ Module Type CPP_LOGIC.
       forall {σ} ty q a v, Timeless (@tptsto σ ty q a v).
 
     Axiom tptsto_has_type : forall σ t q a v,
-        @tptsto σ t q a v |-- @tptsto σ t q a v ** [| has_type v t |].
+        @tptsto σ t q a v |-- @tptsto σ t q a v ** [| has_type v t |] ** valid_ptr a.
 
     (** the pointer points to the code
 
@@ -122,7 +132,9 @@ Existing Instances
          L.tptsto_timeless
          L.has_inv
          L.has_cinv
-         L.has_cppG.
+         L.has_cppG
+         L.valid_ptr_affine
+         L.valid_ptr_persistent.
 
 Section with_cpp.
   Context `{Σ : cpp_logic}.
