@@ -48,7 +48,7 @@ html: doc
 public: html doc_extra
 	mv html public
 
-release: coq cpp2v cpp2v_plugin
+release: coq cpp2v plugin
 	rm -rf cpp2v
 	mkdir cpp2v
 	cp build/libcpp2v_plugin.so cpp2v
