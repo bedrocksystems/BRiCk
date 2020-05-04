@@ -1,3 +1,8 @@
+(**
+ * Copyright (C) BedRock Systems Inc. 2019 Gregory Malecha
+ *
+ * SPDX-License-Identifier:AGPL-3.0-or-later
+ *)
 Require Import iris.base_logic.lib.viewshifts.
 Require Import bedrock.auto.invariants.
 Require Import bedrock.auto.cpp.specs.
