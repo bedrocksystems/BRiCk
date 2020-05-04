@@ -275,10 +275,13 @@ Module Type Expr.
 
     (** short-circuting operators *)
     Axiom wp_prval_seqand : forall ty e1 e2 Q,
-        wp_prval e1 (fun v1 free1 => (* todo: rval? *)
+        wp_prval e1 (fun v1 free1 =>
+        (* ^ note: technically an rvalue, but it must be a primitive,
+           otherwise there will be an implicit cast to bool, to it is
+           always an rvalue *)
            Exists c : bool, [| is_true v1 = Some c |] **
            if c
-           then wp_prval e2 (fun v2 free2 => (* todo: rval? *)
+           then wp_prval e2 (fun v2 free2 => (* see comment above *)
                                      Exists c : bool, [| is_true v2 = Some c |] **
                                      if c
                                      then Q (Vint 1) (free1 ** free2)
@@ -287,11 +290,14 @@ Module Type Expr.
         |-- wp_prval (Eseqand e1 e2 ty) Q.
 
     Axiom wp_prval_seqor : forall ty e1 e2 Q,
-        wp_prval e1 (fun v1 free1 => (* todo: rval? *)
+        wp_prval e1 (fun v1 free1 =>
+        (* ^ note: technically an rvalue, but it must be a primitive,
+           otherwise there will be an implicit cast to bool, to it is
+           always an rvalue *)
            Exists c : bool, [| is_true v1 = Some c |] **
            if c
            then Q (Vint 1) free1
-           else wp_prval e2 (fun v2 free2 => (* todo: rval? *)
+           else wp_prval e2 (fun v2 free2 => (* see comment above *)
                                      Exists c : bool, [| is_true v2 = Some c |] **
                                      if c
                                      then Q (Vint 1) (free1 ** free2)
@@ -365,7 +371,6 @@ Module Type Expr.
     Axiom wp_prval_cast_null : forall e t Q,
         wp_prval e Q
         |-- wp_prval (Ecast Cnull2ptr (Rvalue, e) t) Q.
-    (* ^ todo(jmgrosen): confirm that this doesn't change the value *)
 
     (* note(gmm): in the clang AST, the subexpression is the call.
      * in essence, `Ecast (Cuser ..)` is a syntax annotation.
@@ -512,8 +517,8 @@ Module Type Expr.
         Q (Vptr nullptr) empSP
         |-- wp_prval Enull Q.
 
-    (* temporary expressions
-     * note(gmm): these axioms should be reviewed thoroughly
+    (** temporary expressions
+       note(gmm): these axioms should be reviewed thoroughly
      *)
     Axiom wp_lval_clean : forall e ty Q,
         wp_lval e Q |-- wp_lval (Eandclean e ty) Q.
@@ -522,7 +527,7 @@ Module Type Expr.
     Axiom wp_xval_clean : forall e ty Q,
         wp_xval e Q |-- wp_xval (Eandclean e ty) Q.
 
-    (* [Ematerialize_temp e ty] is an xvalue
+    (** [Ematerialize_temp e ty] is an xvalue
      *)
     Axiom wp_xval_temp : forall e ty Q,
         (Forall a, _at (_eqv a) (uninitR (erase_qualifiers ty) 1) -*
@@ -531,20 +536,10 @@ Module Type Expr.
                           (fun free => Q a (mdestroy ty a dt free)))
         |-- wp_xval (Ematerialize_temp e ty) Q.
 
-    (* [Ematerialize_temp e ty] is an xvalue
-     *)
-    Axiom wp_lval_temp : forall e ty Q,
-        (Forall a,
-           _at (_eqv a) (uninitR (erase_qualifiers ty) 1) -*
-           let '(e,dt) := destructor_for e in
-           wp_init ty a e
-                   (fun free => Q a (mdestroy ty a dt free)))
-        |-- wp_lval (Ematerialize_temp e ty) Q.
-
-    (* temporary materialization only occurs when the resulting value is used.
-     * if the value is ignored, e.g. in `go();` (when the result of `go` is an
-     * aggregate) we introduce an implicit materialization and then immediately
-     * free the result.
+    (** temporary materialization only occurs when the resulting value is used.
+        if the value is ignored, e.g. in `go();` (when the result of `go` is an
+        aggregate) we introduce an implicit materialization and then immediately
+        free the result.
      *)
     Axiom wp_prval_implicit_materialize : forall e Q,
         is_aggregate (type_of e) = true ->
@@ -556,18 +551,20 @@ Module Type Expr.
         |-- wp_prval e Q.
 
 
-    (* [Ebind_temp e dtor ty] is an initialization expression that ensures
-     * that the destructor is called.
-     *
-     * this aspect of the AST is non-compositional, so we handle it in another
-     * way
+    (** [Ebind_temp e dtor ty] is an initialization expression that ensures
+       that the destructor is called.
+
+       this aspect of the AST seems to be non-compositional, so we handle it
+       in another way, naively, the rule might look something like the following
+
+       [[
+    Axiom wp_init_bind_temp : forall e ty a dtor Q,
+        wp_init ty a e (fun free =>
+                     Exists fa, [| glob_addr resolve dtor fa |] **
+                     |> fspec (Vptr fa) (a :: nil) ti (fun _ => Q free))
+      |-- wp_init ty a (Ebind_temp e dtor ty) Q.
+       ]]
      *)
-    (* Axiom wp_init_bind_temp : forall e ty a dtor Q, *)
-    (*     lfalse (* *)
-    (*     wp_init ty a e (fun free => *)
-    (*                  Exists fa, [| glob_addr resolve dtor fa |] ** *)
-    (*                  |> fspec (Vptr fa) (a :: nil) ti (fun _ => Q free)) *) *)
-    (*     |-- wp_init ty a (Ebind_temp e dtor ty) Q. *)
 
     Axiom wp_prval_materialize : forall ty e dtor Q,
       Forall a : val,
