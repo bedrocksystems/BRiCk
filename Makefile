@@ -70,10 +70,10 @@ test: test-cpp2v test-plugin
 
 test-plugin: build-minimal plugin
 	@ echo "the plugin setup is platform dependent. this will only work on linux"
-	@ CPP2V_PLUGIN=`pwd`/build/libcpp2v_plugin.so $(MAKE) -C plugin-tests
+	@ $(MAKE) -C plugin-tests CPP2V_PLUGIN=`pwd`/build/libcpp2v_plugin.so
 
 test-cpp2v: build-minimal cpp2v
-	@ CPP2V=`pwd`/build/cpp2v $(MAKE) -C cpp2v-tests
+	@ $(MAKE) -C cpp2v-tests CPP2V=`pwd`/build/cpp2v
 
 build-minimal: Makefile.coq
 	$(MAKE) -f Makefile.coq theories/lang/cpp/parser.vo
