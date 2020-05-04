@@ -49,9 +49,9 @@ Module Type Expr.
 
     Local Notation glob_def := (glob_def resolve) (only parsing).
     Local Notation _global := (_global (resolve:=resolve)) (only parsing).
-    Local Notation _field := (@_field resolve) (only parsing).
-    Local Notation _sub := (@_sub resolve) (only parsing).
-    Local Notation _super := (@_super resolve) (only parsing).
+    Local Notation _field := (_field (resolve:=resolve)) (only parsing).
+    Local Notation _sub := (_sub (resolve:=resolve)) (only parsing).
+    Local Notation _super := (_super (resolve:=resolve)) (only parsing).
     Local Notation eval_unop := (@eval_unop resolve) (only parsing).
     Local Notation eval_binop := (@eval_binop resolve) (only parsing).
     Local Notation size_of := (@size_of resolve) (only parsing).

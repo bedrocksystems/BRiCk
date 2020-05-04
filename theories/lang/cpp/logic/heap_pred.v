@@ -84,13 +84,8 @@ Section with_cpp.
   Qed.
 
   Definition _offsetR_def (o : Offset) (r : Rep) : Rep :=
-    as_Rep (fun a => match o with
-                  | Some o => match o a with
-                             | None => lfalse
-                             | Some p => r p
-                             end
-                  | None => lfalse
-                  end).
+    as_Rep (fun base =>
+              Exists to, _offset o base to ** r to).
   Definition _offsetR_aux : seal (@_offsetR_def). by eexists. Qed.
   Definition _offsetR := _offsetR_aux.(unseal).
   Definition _offsetR_eq : @_offsetR = _ := _offsetR_aux.(seal_eq).
@@ -103,7 +98,7 @@ Section with_cpp.
   Proof using .
     rewrite _offsetR_eq. unfold _offsetR_def.
     constructor. simpl. intros.
-    subst. destruct y; auto. destruct (o i); auto. apply H0.
+    subst. setoid_rewrite H0. reflexivity.
   Qed.
 
   Global Instance Proper__offsetR_equiv
@@ -112,8 +107,7 @@ Section with_cpp.
     rewrite _offsetR_eq.
     intros ?? H1 ?? H2.
     constructor. simpl.
-    intros. subst. split'; destruct y; try rewrite H2; eauto.
-    all: destruct (o i); eauto; rewrite H2; reflexivity.
+    subst. intros. setoid_rewrite H2. reflexivity.
   Qed.
 
   Definition _at_def (base : Loc) (P : Rep) : mpred :=

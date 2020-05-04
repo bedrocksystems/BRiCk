@@ -43,7 +43,7 @@ Section with_cpp.
   }.
   Arguments _to_offset {!TO_OFFSET} _ : rename.
 
-  Canonical Structure TO_OFFSET_field {σ : genv} := {| _to_offset := @_field σ |}.
+  Canonical Structure TO_OFFSET_field {σ : genv} := {| _to_offset := @_field _ Σ σ |}.
   Canonical Structure TO_OFFSET_offset := {| _to_offset := @id Offset |}.
 
   (* paths *)
@@ -57,7 +57,7 @@ Section with_cpp.
   Canonical Structure DOT_offset_loc : DOT :=
     {| DOT_dot := _offsetL |}.
   Canonical Structure DOT_field_offset {σ : genv} : DOT :=
-    {| DOT_dot o f := path_pred._dot (@_field σ f) o |}.
+    {| DOT_dot o f := path_pred._dot (@_field _ Σ σ f) o |}.
   Canonical Structure DOT_offset_offset : DOT :=
     {| DOT_dot := path_pred._dot |}.
   Canonical Structure DOT_ptr_offset : DOT :=
@@ -88,34 +88,31 @@ Notation "l |-> r" := (_at l r)
 Notation "l |-> r" := (_offsetR l r)
   (at level 15, r at level 20, right associativity, only printing).
 
-Notation "p ., o" := (match @DOT_dot _ (@_to_offset _ o) p with
+Notation "p ., o" := (match @DOT_dot _ _ _ (@_to_offset _ _ _ o) p with
                       | ____x => ltac:(simple_refine ____x)
                       end)
   (at level 11, left associativity, only parsing).
 
-Notation "p .[ t ! n ]" := (match @DOT_dot _ (@_sub _ t n%Z) p with
+Notation "p .[ t ! n ]" := (match @DOT_dot _ _ _ (@_sub _ _ _ t n%Z) p with
                             | ____x => ltac:(simple_refine ____x)
                             end)
   (at level 11, left associativity, only parsing).
-Notation ".[ t ! n ]" := ((@_sub _ t n%Z))
+Notation ".[ t ! n ]" := ((@_sub _ _ _ t n%Z))
   (at level 11, only parsing).
 
-Notation "p ., o" := (@_dot o p)
+Notation "p ., o" := (_dot o p)
   (at level 11, left associativity, only printing,
    format "p  .,  o").
-Notation "p ., o" := (@_offsetL o p)
+Notation "p ., o" := (_offsetL o p)
   (at level 11, left associativity, only printing,
    format "p  .,  o").
 
-Notation ".[ t ! n ]" := ((@_sub _ t n))
+Notation ".[ t ! n ]" := ((@_sub _ _ _ t n))
   (at level 11, no associativity, only printing, format ".[  t  !  n  ]").
-Notation "p .[ t ! n ]" := (@_offsetL (@_sub _ t n) p)
+Notation "p .[ t ! n ]" := (_offsetL (@_sub _ _ _ t n) p)
   (at level 11, left associativity, only printing, format "p  .[  t  '!'  n  ]").
 
 Existing Class genv.
-
-Coercion _eq : ptr >-> Loc.
-Coercion _eqv : val >-> Loc.
 
 (* Test suite *)
 Section test_suite.
