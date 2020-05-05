@@ -59,12 +59,6 @@ Section with_Σ.
   Definition LocEq (l1 l2 : Loc) : Prop :=
     l1 = l2.
 
-  Definition this_addr (r : region) (p : ptr) : mpred :=
-    local_addr r "#this"%bs p.
-
-  Definition result_addr (r : region) (p : ptr) : mpred :=
-    local_addr r "#result"%bs p.
-
   (* ^ these two could be duplicable because regions don't need to be
    * reused. the reason that local variables need to be tracked is that
    * they could go out of scope.
@@ -100,6 +94,24 @@ Section with_Σ.
   Definition _global_aux : seal (@_global_def). by eexists. Qed.
   Definition _global := _global_aux.(unseal).
   Definition _global_eq : @_global = _ := _global_aux.(seal_eq).
+
+  Definition _local (ρ : region) (b : ident) : Loc :=
+    match get_location ρ b with
+    | Some p => _eq p
+    | _ => None
+    end.
+
+  Definition _this (ρ : region) : Loc :=
+    match get_this ρ with
+    | Some p => _eq p
+    | _ => None
+    end.
+
+  Definition _result (ρ : region) : Loc :=
+    match get_result ρ with
+    | Some p => _eq p
+    | _ => None
+    end.
 
   (* offsets *)
   Definition _field_def (resolve: genv) (f : field) : Offset :=
@@ -173,7 +185,6 @@ Section with_Σ.
   Global Instance addr_of_persistent : Persistent (addr_of o l).
   Proof. rewrite addr_of_eq. apply _. Qed.
 
-
   (* this is for `Indirect` field references *)
   Fixpoint path_to_Offset (resolve:genv) (from : globname) (final : ident)
            (ls : list (ident * globname))
@@ -199,7 +210,6 @@ Arguments addr_of : simpl never.
 Notation "a &~ b" := (addr_of a b) (at level 30, no associativity).
 
 Global Opaque _sub _field _offsetL _dot addr_of.
-Global Opaque this_addr result_addr.
 
 Arguments _super {resolve} _ _ : rename.
 Arguments _field {resolve} _ : rename.

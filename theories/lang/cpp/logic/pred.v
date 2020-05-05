@@ -81,10 +81,6 @@ Module Type CPP_LOGIC.
     Axiom tptsto_has_type : forall σ t q a v,
         @tptsto σ t q a v |-- @tptsto σ t q a v ** [| has_type v t |].
 
-    (* this is like a "points to" where the location is (region * ident).
-     *)
-    Parameter local_addr : forall (ρ : region) (i : ident) (p : ptr), mpred.
-
     (** the pointer points to the code
 
       note that in the presence of code-loading, function calls will

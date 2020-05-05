@@ -119,14 +119,32 @@ Proof. inversion 1; reflexivity. Qed.
     to model the stack frame in separation logic, we use a notion of regions
     that are threaded through the semantics.
 
-    here, we instantiate [region] as [ptr] which allows us to extend regions
-    at runtime (when new variables are declared).
-
-    an alternative model is to instantiate region as [gmap ident ptr]
-    essentially giving a location to each local variable.
-    todo: change to this model?
+    we instantiate [region] as a stack of finite maps from variables
+    to their addresses.
  *)
-Definition region : Type := ptr.
+Inductive region : Type :=
+| Remp (this : option ptr) (result : option ptr)
+| Rbind (_ : ident) (_ : ptr) (_ : region).
+
+Fixpoint get_location (ρ : region) (b : ident) : option ptr :=
+  match ρ with
+  | Remp _ _ => None
+  | Rbind x p rs =>
+    if decide (b = x) then Some p
+    else get_location rs b
+  end.
+
+Fixpoint get_this (ρ : region) : option ptr :=
+  match ρ with
+  | Remp this _ => this
+  | Rbind _ _ rs => get_this rs
+  end.
+
+Fixpoint get_result (ρ : region) : option ptr :=
+  match ρ with
+  | Remp _ result => result
+  | Rbind _ _ rs => get_result rs
+  end.
 
 (** * global environments *)
 

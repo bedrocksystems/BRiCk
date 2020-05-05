@@ -85,13 +85,13 @@ Module Type Expr.
 
     (* `this` is a prvalue *)
     Axiom wp_prval_this : forall ty Q,
-      Exists a, (this_addr ρ a ** ltrue) //\\ Q (Vptr a) empSP
+      Exists a, (_this ρ &~ a ** ltrue) //\\ Q (Vptr a) empSP
       |-- wp_prval (Ethis ty) Q.
 
 
     (* variables are lvalues *)
     Axiom wp_lval_lvar : forall ty x Q,
-        Exists a, (local_addr ρ x a ** ltrue) //\\ Q (Vptr a) empSP
+        Exists a, (_local ρ x &~ a ** ltrue) //\\ Q (Vptr a) empSP
         |-- wp_lval (Evar (Lname x) ty) Q.
 
     (* what about the type? if it exists *)

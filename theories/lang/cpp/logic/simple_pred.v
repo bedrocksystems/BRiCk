@@ -79,8 +79,6 @@ Module SimpleCPP
       (* ^ this represents the contents of the C++ runtime that might
          not be represented in physical memory, e.g. values stored in
          registers or temporaries on the stack *)
-    ; localG : inG Σ (gmapUR region (gmapUR ident (exclR (leibnizO ptr))))
-      (* ^ this provides locations for local variables *)
     ; mem_injG : inG Σ (gmapUR ptr (agreeR (leibnizO (option addr))))
       (* ^ this carries the (compiler-supplied) mapping from C++ locations
          (represented as pointers) to physical memory addresses. Locations that
@@ -101,7 +99,6 @@ Module SimpleCPP
   Record cpp_ghost : Type :=
     { heap_name : gname
     ; ghost_heap_name : gname
-    ; local_name : gname
     ; mem_inj_name : gname
     ; code_name : gname
     }.
@@ -470,14 +467,6 @@ Module SimpleCPP
       iFrame "#".
       iExists a. iFrame.
     Qed.
-
-    (* this is like a "points to" where the location is (region * ident).
-     *)
-    Definition local_addr (ρ : region) (i : ident) (p : ptr) : mpred.
-      refine (own _ghost.(local_name) {[ ρ := {[ i := Excl p ]} ]}).
-      apply (@localG Σ); apply has_cppG.
-      all: refine _.
-    Defined.
 
     (** the pointer points to the code
 

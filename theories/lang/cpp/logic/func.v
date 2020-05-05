@@ -98,31 +98,35 @@ Section with_cpp.
                ; wpp_post this := (PQ this).(wpp_post)
                |}.
 
-  Let local_addr_v (r : region) (x : ident) (v : val) : mpred :=
-    Exists p, [| v = Vptr p |] ** local_addr r x p.
+  Definition bind_base_this (o : option ptr) (rty : type) (Q : region -> mpred) : mpred :=
+    if is_aggregate rty then
+      Forall ra : ptr, _at (_eq ra) (uninitR (erase_qualifiers rty) 1) -*
+                       Q (Remp o (Some ra))
+    else Q (Remp o None).
 
-  Fixpoint bind_type ρ (t : type) (x : ident) (v : val) : mpred :=
-    match t with
-    | Tqualified _ t => bind_type ρ t x v
-    | Treference ref => local_addr_v ρ x v
-    | Trv_reference ref => local_addr_v ρ x v
-    | Tnamed _       => local_addr_v ρ x v
-    | _              => Exists a, tlocal_at ρ x a (primR (erase_qualifiers t) 1 v)
-    end.
+  Definition Rbind_check (x : ident) (p : ptr) (r : region) : region :=
+    if decide (x = ""%bs)
+    then r
+    else Rbind x p r.
 
-  Fixpoint free_type ρ (t : type) (x : ident) (v : val) : mpred :=
-    match t with
-    | Tqualified _ t => free_type ρ t x v
-    | Treference ref => local_addr_v ρ x v
-    | Trv_reference ref => local_addr_v ρ x v
-    | Tnamed cls     => local_addr_v ρ x v
-    | _              => Exists a, tlocal_at ρ x a (anyR (erase_qualifiers t) 1)
-    end.
-
-  Fixpoint Forall_with_type (ts : list type) : (list (type * val) -> mpred) -> mpred :=
-    match ts with
-    | nil => fun k => k nil
-    | t :: ts => fun k => Forall v : val, Forall_with_type ts (fun args => k ((t,v) :: args))
+  Fixpoint bind_vars (args : list (ident * type)) (vals : list val) (r : region) (Q : region -> FreeTemps -> mpred) : mpred :=
+    match args , vals with
+    | nil , nil => Q r empSP
+    | (x,ty) :: xs , v :: vs  =>
+      match drop_qualifiers ty with
+      | Tqualified _ t => ltrue (* unreachable *)
+      | Treference    _
+      | Trv_reference _
+      | Tnamed _ =>
+        match v with
+        | Vptr p => bind_vars xs vs (Rbind_check x p r) Q
+        | _ => lfalse
+        end
+      | _              =>
+        Forall a, _at (_eq a) (primR (erase_qualifiers ty) 1 v) -*
+        bind_vars xs vs (Rbind_check x a r) (fun r free => Q r (_at (_eq a) (anyR (erase_qualifiers ty) 1) ** free))
+      end
+    | _ , _ => lfalse
     end.
 
   (* the meaning of a function
@@ -132,27 +136,13 @@ Section with_cpp.
     match f.(f_body) with
     | None => lfalse
     | Some body =>
-        let ret := f.(f_return) in
-        Forall ρ : region,
-        (* this is what is created from the parameters *)
-        let binds :=
-            sepSPs (zip_with (fun '(x, t) 'v => bind_type ρ t x v) f.(f_params) args) in
-        (* this is what is freed on return *)
-        let frees :=
-            sepSPs (zip_with (fun '(x, t) 'v => free_type ρ t x v) (rev f.(f_params)) (rev args)) in
-        ([| length args = length f.(f_params) |] ** ltrue) //\\
-        if is_void ret
-        then
-          binds -*
-          wp (resolve:=resolve) ⊤ ti ρ body (Kfree frees (void_return (|> Q Vvoid)))
-        else if is_aggregate ret then
-          Forall ra,
-          (binds ** result_addr ρ ra ** _at (_eq ra) (uninitR (erase_qualifiers ret) 1)) -*
-          wp (resolve:=resolve) ⊤ ti ρ body (Kfree (frees ** result_addr ρ ra) (val_return (fun x => |> Q x)))
-        else
-          binds -*
-          wp (resolve:=resolve) ⊤ ti ρ body (Kfree frees (val_return (fun x => |> Q x)))
-      end.
+      bind_base_this None f.(f_return) (fun ρ =>
+      bind_vars f.(f_params) args ρ (fun ρ frees =>
+      if is_void f.(f_return) then
+        wp (resolve:=resolve) ⊤ ti ρ body (Kfree frees (void_return (|> Q Vvoid)))
+      else
+        wp (resolve:=resolve) ⊤ ti ρ body (Kfree frees (val_return (fun x => |> Q x)))))
+    end.
 
   Definition func_ok (f : Func) (ti : thread_info) (spec : function_spec)
     : mpred :=
@@ -162,36 +152,19 @@ Section with_cpp.
       □ Forall Q : val -> mpred, Forall vals,
         spec.(fs_spec) ti vals Q -* wp_func f ti vals Q.
 
-  Definition wp_method (meth : Method) ti (args : list val)
+  Definition wp_method (m : Method) ti (args : list val)
              (Q : val -> epred) : mpred :=
-    match meth.(m_body) with
+    match m.(m_body) with
     | None => lfalse
     | Some body =>
-      Forall ρ : region,
       match args with
-      | this_val :: rest_vals =>
-        Forall thisp, [| this_val = Vptr thisp |] -*
-        (* this is what is created from the parameters *)
-        let binds :=
-            this_addr ρ thisp **
-            sepSPs (zip_with (fun '(x, t) 'v => bind_type ρ t x v) meth.(m_params) rest_vals)
-        in
-        (* this is what is freed on return *)
-        let frees :=
-            this_addr ρ thisp **
-            sepSPs (zip_with (fun '(x, t) 'v => free_type ρ t x v) (rev meth.(m_params))
-                             (rev rest_vals))
-        in
-        let ret_ty := meth.(m_return) in
-        ([| (length args = 1 + length meth.(m_params))%nat |] ** ltrue) //\\
-        if is_void ret_ty
-        then
-          binds -* (wp (resolve:=resolve) ⊤ ti ρ body (Kfree frees (void_return (|>Q Vvoid))))
-        else if is_aggregate ret_ty then
-          Forall ra,
-          (binds ** result_addr ρ ra ** _at (_eq ra) (uninitR (erase_qualifiers ret_ty) 1)) -* (wp (resolve:=resolve) ⊤ ti ρ body (Kfree (frees ** result_addr ρ ra) (val_return (fun x => |>Q x))))
+      | Vptr thisp :: rest_vals =>
+        bind_base_this (Some thisp) m.(m_return) (fun ρ =>
+        bind_vars m.(m_params) rest_vals ρ (fun ρ frees =>
+        if is_void m.(m_return) then
+          wp (resolve:=resolve) ⊤ ti ρ body (Kfree frees (void_return (|>Q Vvoid)))
         else
-          binds -* (wp (resolve:=resolve) ⊤ ti ρ body (Kfree frees (val_return (fun x => |>Q x))))
+          wp (resolve:=resolve) ⊤ ti ρ body (Kfree frees (val_return (fun x => |>Q x)))))
       | _ => lfalse
       end
     end.
@@ -220,27 +193,13 @@ Section with_cpp.
     | Some Defaulted => lfalse
       (* ^ defaulted constructors are not supported yet *)
     | Some (UserDefined (inits, body)) =>
-      let this_type :=
-          Qconst (Tpointer (Qmut (Tnamed ctor.(c_class))))
-      in
-      Forall ρ,
       match args with
-      | this_val :: rest_vals =>
-        Forall thisp, [| this_val = Vptr thisp |] -*
-        (* this is what is created from the parameters *)
-        let binds :=
-            this_addr ρ thisp **
-            sepSPs (zip_with (fun '(x, t) 'v => bind_type ρ t x v) ctor.(c_params) rest_vals)
-        in
-        (* this is what is freed on return *)
-        let frees :=
-            this_addr ρ thisp **
-            sepSPs (zip_with (fun '(x, t) 'v => free_type ρ t x v) (rev ctor.(c_params)) (rev rest_vals))
-        in
-        binds -*
-        wpis ti ρ ctor.(c_class) this_val inits
+      | Vptr thisp :: rest_vals =>
+        bind_base_this (Some thisp) Tvoid (fun ρ =>
+        bind_vars ctor.(c_params) rest_vals ρ (fun ρ frees =>
+        wpis ti ρ ctor.(c_class) (Vptr thisp) inits
            (fun free => free **
-                      wp (resolve:=resolve) ⊤ ti ρ body (Kfree frees (void_return (|> Q Vvoid))))
+                      wp (resolve:=resolve) ⊤ ti ρ body (Kfree frees (void_return (|> Q Vvoid))))))
       | _ => lfalse
       end
     end.
@@ -269,30 +228,19 @@ Section with_cpp.
     | Some Defaulted => lfalse
       (* ^ defaulted constructors are not supported yet *)
     | Some (UserDefined (body, deinit)) =>
-      let this_type :=
-          Qconst (Tpointer (Qmut (Tnamed dtor.(d_class))))
-      in
-      Forall ρ,
       match args with
-      | this_val :: rest_vals =>
-        Forall thisp, [| this_val = Vptr thisp |] -*
-        (* this is what is created from the parameters *)
-        let binds := this_addr ρ thisp in
-        (* this is what is freed on return *)
-        let frees := this_addr ρ thisp in
-          binds -*
-          wp (resolve:=resolve) ⊤ ti ρ body
-          (Kfree frees (void_return (wpds ti ρ dtor.(d_class) this_val deinit (|> Q Vvoid))))
+      | Vptr thisp :: rest_vals =>
+        bind_base_this (Some thisp) Tvoid (fun ρ =>
+        wp (resolve:=resolve) ⊤ ti ρ body
+           (void_return (wpds ti ρ dtor.(d_class) (Vptr thisp) deinit (|> Q Vvoid))))
       | _ => lfalse
       end
     end.
-
 
   Definition dtor_ok (dtor : Dtor) (ti : thread_info) (spec : function_spec)
     : mpred :=
     [| type_of_spec spec =
        normalize_type (Tfunction Tvoid (Tpointer (Tnamed dtor.(d_class)) :: nil)) |] **
-    (* forall each argument, apply to [fs_spec ti] *)
     □ Forall Q : val -> mpred, Forall vals,
       spec.(fs_spec) ti vals Q -* wp_dtor dtor ti vals Q.
 

@@ -262,12 +262,6 @@ Section with_cpp.
   Global Instance is_nonnull_persistent : Persistent (is_nonnull).
   Proof using . solve_Rep_persistent is_nonnull_eq. Qed.
 
-  Definition tlocal_at_def (r : region) (l : ident) (p : ptr) (v : Rep) : mpred :=
-    local_addr r l p ** _at (_eq p) v.
-  Definition tlocal_at_aux : seal (@tlocal_at_def). by eexists. Qed.
-  Definition tlocal_at := tlocal_at_aux.(unseal).
-  Definition tlocal_at_eq : @tlocal_at = _ := tlocal_at_aux.(seal_eq).
-
 End with_cpp.
 
 Global Opaque _at _offsetR primR.
