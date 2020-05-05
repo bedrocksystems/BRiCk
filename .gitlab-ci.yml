@@ -36,7 +36,6 @@ stages:
   - build
   - test
 #  - pages
-  - release
 
 #This is a template job that's extended below by the real jobs
 # build_cur and build_prev (see, e.g., https://docs.gitlab.com/ee/ci/yaml/#extends).
@@ -44,16 +43,16 @@ stages:
   image: registry.gitlab.com/bedrocksystems/docker-image:cpp2v-llvm${LLVM_MAJ_VER}
   stage: build
   script:
-    - mkdir -p build; cd build; CC=`llvm-config-${LLVM_MAJ_VER} --bindir`/clang CXX=`llvm-config-${LLVM_MAJ_VER} --bindir`/clang++ cmake -DLLVM_CONFIG=`which llvm-config-${LLVM_MAJ_VER}` ../; make -j ${NJOBS} cpp2v cpp2v_plugin; cd ..
+    - mkdir -p build; cd build; CC=`llvm-config-${LLVM_MAJ_VER} --bindir`/clang CXX=`llvm-config-${LLVM_MAJ_VER} --bindir`/clang++ cmake -DLLVM_CONFIG=`which llvm-config-${LLVM_MAJ_VER}` ../; cd ..
+    - make -j ${NJOBS} cpp2v plugin coq
+    - rm -f build/bedrock
+    - cp -r theories build/bedrock
   artifacts:
     name: cpp2v-${LLVM_MAJ_VER}
-    # this adds *all* untracked files to the artifact so that we don't have
-    # to rebuild everything
-    untracked: true
     paths:
-      #We cache build/cpp2v too so that it's not built again by the test stage.
       - build/cpp2v
       - build/libcpp2v_plugin.so
+      - build/bedrock
 
 .test:
   image: registry.gitlab.com/bedrocksystems/docker-image:cpp2v-llvm${LLVM_MAJ_VER}
@@ -62,25 +61,13 @@ stages:
     - coqc -v
     - opam list
     - ./build/cpp2v --cpp2v-version 0 --
-    # this line refreshes the artifact to avoid rebuilding the coq code again
-    # it is only safe because we know that the artifact is up to date.
-    - PATH=`llvm-config-${LLVM_MAJ_VER} --bindir`:$PATH make -j ${NJOBS} TIMED=1 test-cpp2v 2> >(tee timings.log >&2) > >(tee out.log)
-    - PATH=`llvm-config-${LLVM_MAJ_VER} --bindir`:$PATH make -j ${NJOBS} TIMED=1 test-plugin 2> >(tee timings.log >&2) > >(tee out.log)
+    - PATH=`llvm-config-${LLVM_MAJ_VER} --bindir`:`pwd`/build:$PATH make -C cpp2v-tests -j ${NJOBS} TIMED=1 QPATH=`pwd`/build/bedrock
+    - PATH=`llvm-config-${LLVM_MAJ_VER} --bindir`:`pwd`/build:$PATH make -C plugin-tests -j ${NJOBS} TIMED=1 QPATH=`pwd`/build/bedrock
   only:
     - merge_requests
-  artifacts:
-    untracked: true
   except:
     variables:
       - $CI_MERGE_REQUEST_TITLE =~ /^WIP:/
-
-build_coq:
-  image: registry.gitlab.com/bedrocksystems/docker-image:cpp2v-llvm${LLVM_CUR_MAJ_VER}
-  stage: build
-  script:
-    - coqc -v
-    - opam list
-    - make coq
 
 build_latest:
   extends: .build
@@ -88,21 +75,23 @@ build_latest:
     - schedules
     - merge_requests
     - tags
+    - master
   variables:
     LLVM_MAJ_VER: ${LLVM_CUR_MAJ_VER}
 
 build_previous:
   extends: .build
   only:
+    - schedules
     - merge_requests
     - tags
+    - master
   variables:
     LLVM_MAJ_VER: ${LLVM_PREV_MAJ_VER}
 
 test_latest:
   extends: .test
   dependencies:
-    - build_coq
     - build_latest
   variables:
     LLVM_MAJ_VER: ${LLVM_CUR_MAJ_VER}
@@ -110,24 +99,9 @@ test_latest:
 test_previous:
   extends: .test
   dependencies:
-    - build_coq
     - build_previous
   variables:
     LLVM_MAJ_VER: ${LLVM_PREV_MAJ_VER}
-
-release_latest:
-  image: registry.gitlab.com/bedrocksystems/docker-image:cpp2v-llvm${LLVM_CUR_MAJ_VER}
-  stage: release
-  script:
-    - PATH=`llvm-config-${LLVM_MAJ_VER} --bindir`:$PATH make release
-  only:
-    - master
-  dependencies:
-    - build_latest
-  artifacts:
-    name: cpp2v-${LLVM_CUR_MAJ_VER}
-    paths:
-      - cpp2v
 
 # pages:
 #   image: registry.gitlab.com/bedrocksystems/docker-image:cpp2v-llvm${LLVM_CUR_MAJ_VER}
