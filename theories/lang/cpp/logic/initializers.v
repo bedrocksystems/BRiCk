@@ -87,7 +87,7 @@ Module Type Init.
     Axiom wp_init_constructor : forall cls addr cnd es Q ty,
       wp_args es (fun ls free =>
          Exists ctor, _global cnd &~ ctor **
-         |> fspec (Vptr ctor) (addr :: ls) (fun _ => Q free))
+                              |> fspec (Vptr ctor) (addr :: ls) (fun _ => Q free))
       |-- wp_init (Tnamed cls) addr (Econstructor cnd es ty) Q.
 
     Definition build_array (es : list Expr) (fill : option Expr) (sz : nat)
@@ -103,16 +103,23 @@ Module Type Init.
         Some (List.combine (List.map Z.of_nat (seq 0 sz))
                            (firstn sz es)).
 
+    Fixpoint wp_array_init (ety : type) (base : val) (es : list (Z * Expr)) (Q : mpred -> mpred) : mpred :=
+      match es with
+      | nil => Q empSP
+      | (i,e) :: es =>
+        Forall a, _offsetL (_sub ety i) (_eqv base) &~ a -*
+        Exists Qi, wp_init ety (Vptr a) e Qi **
+        wp_array_init ety base es (fun free' =>
+          Forall free, Qi free -* Q (free ** free'))
+      end.
+
+
     Axiom wp_init_initlist_array :forall ls fill ety sz addr Q,
       match build_array ls fill (N.to_nat sz) with
       | None => lfalse
       | Some array_list =>
-        _at (_eqv addr) (uninitR (erase_qualifiers (Tarray ety sz)) 1) **
-          wps (fun '(i,e) (Q : unit -> mpred -> mpred) f =>
-                 Forall a, _offsetL (_sub ety i) (_eqv addr) &~ a -*
-                 wp_init ety (Vptr a) e (fun f' => Q tt (f ** f')))
-              array_list
-              (fun _ free => Q free) empSP
+        (* _at (_eqv addr) (uninitR (erase_qualifiers (Tarray ety sz)) 1) ** *)
+        wp_array_init ety addr array_list (fun free => Q free)
       end
       |-- wp_init (Tarray ety sz) addr (Einitlist ls fill (Tarray ety sz)) Q.
 

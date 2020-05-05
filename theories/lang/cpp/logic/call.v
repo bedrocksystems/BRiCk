@@ -1,14 +1,8 @@
 (*
- * Copyright (C) BedRock Systems Inc. 2019 Gregory Malecha
+ * Copyright (C) BedRock Systems Inc. 2019-2020 Gregory Malecha
  *
  * SPDX-License-Identifier:AGPL-3.0-or-later
  *)
-Require Import Coq.ZArith.ZArith.
-Require Import Coq.Lists.List.
-Require Import Coq.Strings.String.
-
-Local Open Scope Z_scope.
-
 Require Import bedrock.lang.cpp.ast.
 Require Import bedrock.lang.cpp.semantics.
 From bedrock.lang.cpp.logic Require Import
@@ -23,26 +17,37 @@ Section with_resolve.
   Local Notation wp_xval := (wp_xval (resolve:=σ) M ti ρ).
   Local Notation wp_init := (wp_init (resolve:=σ) M ti ρ).
 
-  Fixpoint wp_args (es : list (ValCat * Expr)) (Q : list val -> FreeTemps -> mpred) : mpred :=
+  Fixpoint wp_args (es : list (ValCat * Expr)) (Q : list val -> FreeTemps -> mpred)
+  : mpred :=
     match es with
     | nil => Q nil empSP
     | (vc,e) :: es =>
       let ty := type_of e in
       match vc with
       | Lvalue =>
-        wp_lval e (fun v free =>
-                     wp_args es (fun vs frees => Q (v :: vs) (free ** frees)))
+        Exists Qarg,
+        wp_lval e Qarg **
+          wp_args es (fun vs frees => Forall v free,
+                                   Qarg v free -* Q (v :: vs) (free ** frees))
       | Rvalue =>
         if is_aggregate ty then
           Forall a, _at (_eqv a) (uninitR (resolve:=σ) (erase_qualifiers ty) 1) -*
           let (e,dt) := destructor_for e in
-          wp_init ty a e (fun free => wp_args es (fun vs frees =>
-                                                 Q (a :: vs) (mdestroy (σ:=σ) ti ty a dt free ** frees)))
+          Exists Qarg,
+          wp_init ty a e Qarg **
+            wp_args es (fun vs frees =>
+                          Forall free,
+                          Qarg free -* Q (a :: vs) (mdestroy (σ:=σ) ti ty a dt free ** frees))
         else
-          wp_prval e (fun v free => wp_args es (fun vs frees =>
-                                               Q (v :: vs) (free ** frees)))
-      | Xvalue => wp_xval e (fun v free => wp_args es (fun vs frees =>
-                                                     Q (v :: vs) (free ** frees)))
+          Exists Qarg,
+          wp_prval e Qarg **
+            wp_args es (fun vs frees => Forall v free,
+                                     Qarg v free -* Q (v :: vs) (free ** frees))
+      | Xvalue =>
+        Exists Qarg,
+        wp_xval e Qarg **
+            wp_args es (fun vs frees => Forall v free,
+                                     Qarg v free -* Q (v :: vs) (free ** frees))
       end
     end.
 
