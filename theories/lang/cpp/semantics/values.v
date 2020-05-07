@@ -159,8 +159,8 @@ Fixpoint get_result (ρ : region) : option ptr :=
    information like that would need to be in here as well.
  *)
 Record genv : Type :=
-{ genv_cu : compilation_unit
-  (* ^ the [compilation_unit] *)
+{ genv_tu : translation_unit
+  (* ^ the [translation_unit] *)
 ; glob_addr : obj_name -> option ptr
   (* ^ the address of global variables & functions *)
 ; pointer_size : N
@@ -169,7 +169,7 @@ Record genv : Type :=
 
 (** [genv_leq a b] states that [b] is an extension of [a] *)
 Definition genv_leq (l r : genv) : Prop :=
-  sub_module l.(genv_cu) r.(genv_cu) /\
+  sub_module l.(genv_tu) r.(genv_tu) /\
   (forall a p, l.(glob_addr) a = Some p ->
           r.(glob_addr) a = Some p) /\
   l.(pointer_size) = r.(pointer_size).
@@ -183,17 +183,17 @@ Proof.
     split; [ | split ]; etransitivity; eauto. }
 Qed.
 Definition glob_def (g : genv) (gn : globname) : option GlobDecl :=
-  g.(genv_cu).(globals) !! gn.
+  g.(genv_tu).(globals) !! gn.
 
 Definition genv_eq (l r : genv) : Prop :=
   genv_leq l r /\ genv_leq r l.
 
-(* this states that the [genv] is compatible with the given [compilation_unit]
+(* this states that the [genv] is compatible with the given [translation_unit]
  * it essentially means that the [genv] records all the types from the
  * compilation unit and that the [genv] contains addresses for all globals
- * defined in the [compilation_unit]
+ * defined in the [translation_unit]
  *)
-Parameter genv_compat : compilation_unit -> genv -> Prop.
+Parameter genv_compat : translation_unit -> genv -> Prop.
 Infix "⊧" := genv_compat (at level 1).
 
 Parameter subModuleModels : forall a b σ, b ⊧ σ -> module_le a b = true -> a ⊧ σ.
@@ -324,7 +324,7 @@ Proof.
   - destruct H as [ [ H _ ] _ ].
     specialize (H g).
     unfold glob_def, globals in *.
-    destruct (globals (genv_cu x) !! g); try constructor.
+    destruct (globals (genv_tu x) !! g); try constructor.
     destruct (H _ eq_refl) as [ ? [ -> HH ] ]; clear H.
     destruct g0; try constructor;
     destruct x0; try constructor; simpl in HH ; try congruence.

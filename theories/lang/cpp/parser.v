@@ -38,36 +38,36 @@ Local Definition empty_globals : type_table :=
 Local Instance symbol_table_empty_trans : Empty symbol_table := empty_symbols.
 Local Instance type_table_empty_trans : Empty type_table := empty_globals.
 
-Definition Dvar (name : obj_name) (t : type) (init : option Expr) : compilation_unit :=
+Definition Dvar (name : obj_name) (t : type) (init : option Expr) : translation_unit :=
   {| symbols := {[ name := Ovar t init ]}
    ; globals := ∅ |}.
 
-Definition Dfunction    (name : obj_name) (f : Func) : compilation_unit :=
+Definition Dfunction    (name : obj_name) (f : Func) : translation_unit :=
   {| symbols := {[ name := Ofunction f ]}
    ; globals := ∅ |}.
-Definition Dmethod    (name : obj_name) (f : Method) : compilation_unit :=
+Definition Dmethod    (name : obj_name) (f : Method) : translation_unit :=
   {| symbols := {[ name := Omethod f ]}
    ; globals := ∅ |}.
-Definition Dconstructor    (name : obj_name) (f : Ctor) : compilation_unit :=
+Definition Dconstructor    (name : obj_name) (f : Ctor) : translation_unit :=
   {| symbols := {[ name := Oconstructor f ]}
    ; globals := ∅ |}.
-Definition Ddestructor    (name : obj_name) (f : Dtor) : compilation_unit :=
+Definition Ddestructor    (name : obj_name) (f : Dtor) : translation_unit :=
   {| symbols := {[ name := Odestructor f ]}
    ; globals := ∅ |}.
-Definition Dunion (name : globname) (o : option Union) : compilation_unit :=
+Definition Dunion (name : globname) (o : option Union) : translation_unit :=
   {| symbols := ∅
    ; globals := {[ name := match o with
                            | None => Gtype
                            | Some u => Gunion u
                            end ]} |}.
-Definition Dstruct (name : globname) (o : option Struct) : compilation_unit :=
+Definition Dstruct (name : globname) (o : option Struct) : translation_unit :=
   {| symbols := ∅
    ; globals := {[ name := match o with
                            | None => Gtype
                            | Some u => Gstruct u
                            end ]} |}.
 
-Definition Denum (name : globname) (t : option type) (branches : list (ident * BinNums.Z)) : compilation_unit :=
+Definition Denum (name : globname) (t : option type) (branches : list (ident * BinNums.Z)) : translation_unit :=
   {| symbols := ∅
    ; globals :=
        let enum_ty := Tnamed name in
@@ -84,16 +84,16 @@ Definition Denum (name : globname) (t : option type) (branches : list (ident * B
        list_to_map (List.map (fun '(nm, oe) => (nm, Gconstant enum_ty (Some (Eint oe raw_ty)))) branches) |}.
   (* ^ enumerations (the initializers need to be constant expressions) *)
 
-Definition Dconstant    (name : globname) (t : type) (e : Expr) : compilation_unit :=
+Definition Dconstant    (name : globname) (t : type) (e : Expr) : translation_unit :=
   {| symbols := ∅
    ; globals := {[ name := Gconstant t (Some e) ]} |}.
-Definition Dconstant_undef  (name : globname) (t : type) : compilation_unit :=
+Definition Dconstant_undef  (name : globname) (t : type) : translation_unit :=
   {| symbols := ∅
    ; globals := {[ name := Gconstant t None ]} |}.
-Definition Dtypedef     (name : globname) (t : type) : compilation_unit :=
+Definition Dtypedef     (name : globname) (t : type) : translation_unit :=
   {| symbols := ∅
    ; globals := {[ name := Gtypedef t ]} |}.
-Definition Dtype (name : globname) : compilation_unit :=
+Definition Dtype (name : globname) : translation_unit :=
   {| symbols := ∅
    ; globals := {[ name := Gtype ]}|}.
 
@@ -130,11 +130,11 @@ end eq_refl
 { exists gmap_car. apply Is_true_canon. assumption. }
 Defined.
 
-Definition compilation_union_canon (c : compilation_unit) : compilation_unit :=
+Definition compilation_union_canon (c : translation_unit) : translation_unit :=
   {| symbols := stringmap_canon c.(symbols)
    ; globals := stringmap_canon c.(globals) |}.
 
-Fixpoint decls' (ls : list compilation_unit) : compilation_unit :=
+Fixpoint decls' (ls : list translation_unit) : translation_unit :=
   match ls with
   | nil => {| symbols := ∅ ; globals := ∅ |}
   | m :: ms =>
@@ -143,10 +143,10 @@ Fixpoint decls' (ls : list compilation_unit) : compilation_unit :=
      ; globals := m.(globals) ∪ res.(globals) |}
   end.
 
-Definition decls ls : compilation_unit :=
+Definition decls ls : translation_unit :=
   compilation_union_canon (decls' ls).
 
-Declare Reduction reduce_compilation_unit :=
+Declare Reduction reduce_translation_unit :=
   cbv beta iota zeta delta
       [ decls decls' compilation_union_canon pmap_canon pmap.Pmap_wf andb
         parser.empty_globals parser.empty_symbols

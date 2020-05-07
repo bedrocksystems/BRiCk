@@ -169,7 +169,7 @@ Proof.
   all: repeat rewrite require_eq_refl; eauto; try congruence.
 Qed.
 
-Definition sub_module (a b : compilation_unit) : Prop :=
+Definition sub_module (a b : translation_unit) : Prop :=
   (forall (gn : globname) gv,
       a.(globals) !! gn = Some gv ->
       exists gv', b.(globals) !! gn = Some gv' /\
@@ -252,7 +252,7 @@ Proof.
     { reflexivity. } }
 Qed.
 
-Definition module_le (a b : compilation_unit) : bool :=
+Definition module_le (a b : translation_unit) : bool :=
   compat_le (fun l r => match l , r with
                      | None , _ => true
                      | Some _ , None => false

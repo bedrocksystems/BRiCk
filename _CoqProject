@@ -16,7 +16,7 @@ theories/lang/cpp/syntax/names.v
 theories/lang/cpp/syntax/types.v
 theories/lang/cpp/syntax/expr.v
 theories/lang/cpp/syntax/stmt.v
-theories/lang/cpp/syntax/compilation_unit.v
+theories/lang/cpp/syntax/translation_unit.v
 theories/lang/cpp/syntax/typing.v
 theories/lang/cpp/ast.v
 
@@ -40,7 +40,7 @@ theories/lang/cpp/logic/call.v
 theories/lang/cpp/logic/expr.v
 theories/lang/cpp/logic/stmt.v
 theories/lang/cpp/logic/func.v
-theories/lang/cpp/logic/compilation_unit.v
+theories/lang/cpp/logic/translation_unit.v
 theories/lang/cpp/logic/cclogic.v
 # ^^ This is probably going to be eliminated
 theories/lang/cpp/logic/atomics.v

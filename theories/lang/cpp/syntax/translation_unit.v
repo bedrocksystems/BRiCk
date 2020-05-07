@@ -141,14 +141,14 @@ Definition symbol_table :=
 Definition type_table :=
   gmap globname GlobDecl.
 
-Record compilation_unit : Type :=
+Record translation_unit : Type :=
 { symbols : symbol_table
 ; globals : type_table
 }.
 
-Instance global_lookup : Lookup globname GlobDecl compilation_unit :=
+Instance global_lookup : Lookup globname GlobDecl translation_unit :=
   fun k m => m.(globals) !! k.
-Instance symbol_lookup : Lookup obj_name ObjValue compilation_unit :=
+Instance symbol_lookup : Lookup obj_name ObjValue translation_unit :=
   fun k m => m.(symbols) !! k.
 
 (*

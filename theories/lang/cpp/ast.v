@@ -12,4 +12,4 @@ From bedrock.lang.cpp.syntax Require Export
      stmt
      types
      typing
-     compilation_unit.
+     translation_unit.

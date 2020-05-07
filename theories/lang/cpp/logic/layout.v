@@ -8,7 +8,7 @@ Require Import Coq.ZArith.BinInt.
 
 Require Import bedrock.lang.cpp.ast.
 From bedrock.lang.cpp.logic Require Import
-     pred path_pred heap_pred compilation_unit.
+     pred path_pred heap_pred translation_unit.
 Require Import bedrock.lang.cpp.semantics.
 
 Section with_Σ.

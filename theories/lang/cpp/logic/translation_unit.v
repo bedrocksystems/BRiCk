@@ -94,9 +94,9 @@ Section with_cpp.
     | _ => empSP
     end.
 
-  Definition denoteModule_def (d : compilation_unit) : mpred :=
+  Definition denoteModule_def (d : translation_unit) : mpred :=
     ([∗map] on ↦ o ∈ d.(symbols), denoteSymbol on o)%I **
-    [| module_le d resolve.(genv_cu) |].
+    [| module_le d resolve.(genv_tu) |].
   Definition denoteModule_aux : seal (@denoteModule_def). by eexists. Qed.
   Definition denoteModule := denoteModule_aux.(unseal).
   Definition denoteModule_eq : @denoteModule = _ := denoteModule_aux.(seal_eq).

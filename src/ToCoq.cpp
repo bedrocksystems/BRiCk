@@ -97,8 +97,8 @@ ToCoqConsumer::toCoqModule(clang::ASTContext *ctxt,
                 // << "Import ListNotations." << fmt::line;
 
             fmt << fmt::line
-                << "Definition module : compilation_unit := " << fmt::indent
-                << fmt::line << "Eval reduce_compilation_unit in decls"
+                << "Definition module : translation_unit := " << fmt::indent
+                << fmt::line << "Eval reduce_translation_unit in decls"
                 << fmt::nbsp;
 
             print.begin_list();

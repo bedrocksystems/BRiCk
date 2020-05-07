@@ -18,7 +18,7 @@ From bedrock.lang.cpp.logic Require Import
      pred path_pred heap_pred
      destroy
      wp call intensional
-     compilation_unit.
+     translation_unit.
 
 Module Type Expr.
 

@@ -20,6 +20,6 @@ From bedrock.lang.cpp.logic Require Export
      destructors
      func
      layout
-     compilation_unit
+     translation_unit
      cclogic
      atomics.

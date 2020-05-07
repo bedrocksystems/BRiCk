@@ -11,7 +11,7 @@ The [syntax](syntax) directory contains a deep embeddding of the syntax tree bas
 - [types.v](syntax/types.v) contains the syntax of types
 - [expr.v](syntax/expr.v) contains the syntax of expressions
 - [stmt.v](syntax/stmt.v) contains the syntax of statements
-- [compilation_units.v](syntax/compilation_units.v) contains the syntax of translation units, i.e. a `.cpp` file.
+- [translation_units.v](syntax/translation_units.v) contains the syntax of translation units, i.e. a `.cpp` file.
 - [typing.v](syntax/typing.v) contains definitions related to types.
 
 ## Semantics
