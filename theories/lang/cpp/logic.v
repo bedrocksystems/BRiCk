@@ -22,5 +22,4 @@ From bedrock.lang.cpp.logic Require Export
      layout
      compilation_unit
      cclogic
-     atomics
-     linking.
+     atomics.

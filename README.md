@@ -74,13 +74,8 @@ You can run the tests with:
 $ make test
 ```
 
-## Documentation
-https://bedrocksystems.gitlab.io/cpp2v/
-Coq sources for the documentation are in `doc/`
-
 ## Repository Layout
 
 - The implementation of the `cpp2v` tool is in `src` and `include`.
 - The definition of the accompanying Coq data types is in `theories/lang/cpp/syntax` directory. The notation in `theories/lang/cpp/parser.v` is used to setup the environment for the generated code.
 - The axiomatic semantics of the abstract syntax tree is defined in the `theories/lang/cpp/logic` directory.
-- Some *basic* automation is included in `theories/auto/`

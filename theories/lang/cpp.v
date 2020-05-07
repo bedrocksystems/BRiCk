@@ -11,6 +11,5 @@ Require Export
         bedrock.lang.cpp.parser.
 Require Export
         bedrock.lang.cpp.heap_notations
-        bedrock.lang.cpp.logic_notations
         bedrock.lang.cpp.primitives
         bedrock.lang.cpp.spec_notations.
