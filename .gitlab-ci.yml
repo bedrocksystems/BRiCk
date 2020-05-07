@@ -35,6 +35,7 @@ variables:
 stages:
   - build
   - test
+  - release
 #  - pages
 
 #This is a template job that's extended below by the real jobs
@@ -103,6 +104,37 @@ test_previous:
     - build_previous
   variables:
     LLVM_MAJ_VER: ${LLVM_PREV_MAJ_VER}
+
+.release:
+  stage: release
+  script:
+    - cp -r build cpp2v-core
+  artifacts:
+    name: cpp2v-${LLVM_MAJ_VER}
+    paths:
+      - cpp2v-core/cpp2v
+      - cpp2v-core/libcpp2v_plugin.so
+      - cpp2v-core/bedrock
+  only:
+    - tags
+    - master
+
+release_latest:
+  extends: .release
+  dependencies:
+    - build_latest
+  variables:
+    LLVM_MAJ_VER: ${LLVM_CUR_MAJ_VER}
+
+release_previous:
+  extends: .release
+  dependencies:
+    - build_previous
+  variables:
+    LLVM_MAJ_VER: ${LLVM_PREV_MAJ_VER}
+
+
+
 
 # pages:
 #   image: registry.gitlab.com/bedrocksystems/docker-image:cpp2v-llvm${LLVM_CUR_MAJ_VER}
