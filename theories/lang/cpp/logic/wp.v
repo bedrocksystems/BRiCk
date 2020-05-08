@@ -5,7 +5,6 @@
  *)
 (**
  * Definitions for the semantics
- *
  *)
 Require Import Coq.Lists.List.
 Require Import Coq.Strings.String.
@@ -17,6 +16,7 @@ From bedrock.lang.cpp Require Import
      ast semantics logic.pred.
 
 Set Primitive Projections.
+Set Default Proof Using "Type".
 
 Local Open Scope bi_scope.
 
@@ -46,11 +46,19 @@ Section with_cpp.
       (|={M}=> wp_lval (resolve:=σ) M ti ρ e (fun v free => |={M}=> Q v free))
     ⊢ wp_lval (resolve:=σ) M ti ρ e Q.
 
-  Axiom Proper_wp_lval :
+  Axiom wp_lval_frame :
+    forall σ1 σ2 M ti ρ e k1 k2,
+      genv_leq σ1 σ2 ->
+      Forall v f, k1 v f -* k2 v f |-- @wp_lval σ1 M ti ρ e k1 -* @wp_lval σ2 M ti ρ e k2.
+  Global Instance Proper_wp_lval :
     Proper (genv_leq ==> eq ==> eq ==> eq ==> eq ==>
             pointwise_relation _ (pointwise_relation _ lentails) ==> lentails)
            (@wp_lval).
-  Global Existing Instance Proper_wp_lval.
+  Proof. do 7 red. intros; subst.
+         iIntros "X". iRevert "X".
+         iApply wp_lval_frame; eauto.
+         iIntros (v). iIntros (f). iApply H4.
+  Qed.
 
   (* evaluate an expression as an prvalue *)
   Parameter wp_prval
@@ -63,11 +71,19 @@ Section with_cpp.
       (|={M}=> wp_prval (resolve:=σ) M ti ρ e (fun v free => |={M}=> Q v free))
     ⊢ wp_prval (resolve:=σ) M ti ρ e Q.
 
-  Axiom Proper_wp_prval :
+  Axiom wp_prval_frame :
+    forall σ1 σ2 M ti ρ e k1 k2,
+      genv_leq σ1 σ2 ->
+      Forall v f, k1 v f -* k2 v f |-- @wp_prval σ1 M ti ρ e k1 -* @wp_prval σ2 M ti ρ e k2.
+  Global Instance Proper_wp_prval :
     Proper (genv_leq ==> eq ==> eq ==> eq ==> eq ==>
             pointwise_relation _ (pointwise_relation _ lentails) ==> lentails)
            (@wp_prval).
-  Global Existing Instance Proper_wp_prval.
+  Proof. do 7 red; intros; subst.
+         iIntros "X"; iRevert "X".
+         iApply wp_prval_frame; eauto.
+         iIntros (v); iIntros (f); iApply H4.
+  Qed.
 
   (* evaluate an initializing expression
    * - the [val] is the location of the value that is being initialized
@@ -84,12 +100,20 @@ Section with_cpp.
       (|={M}=> wp_init (resolve:=σ) M ti ρ ty v e (fun free => |={M}=> Q free))
     ⊢ wp_init (resolve:=σ) M ti ρ ty v e Q.
 
-  Axiom Proper_wp_init :
+  Axiom wp_init_frame :
+    forall σ1 σ2 M ti ρ t v e k1 k2,
+      genv_leq σ1 σ2 ->
+      Forall f, k1 f -* k2 f |-- @wp_init σ1 M ti ρ t v e k1 -* @wp_init σ2 M ti ρ t v e k2.
+
+  Global Instance Proper_wp_init :
     Proper (genv_leq ==> eq ==> eq ==> eq ==> eq ==> eq ==> eq ==>
             pointwise_relation _ lentails ==> lentails)
            (@wp_init).
-  Global Existing Instance Proper_wp_init.
-
+  Proof.
+    do 9 red; intros; subst.
+    iIntros "X"; iRevert "X"; iApply wp_init_frame; eauto.
+    iIntros (f); iApply H6.
+  Qed.
 
   (* evaluate an expression as an xvalue *)
   Parameter wp_xval
@@ -102,11 +126,19 @@ Section with_cpp.
       (|={M}=> wp_xval (resolve:=σ) M ti ρ e (fun v free => |={M}=> Q v free))
     ⊢ wp_xval (resolve:=σ) M ti ρ e Q.
 
-  Axiom Proper_wp_xval :
+  Axiom wp_xval_frame :
+    forall σ1 σ2 M ti ρ e k1 k2,
+      genv_leq σ1 σ2 ->
+      Forall v f, k1 v f -* k2 v f |-- @wp_xval σ1 M ti ρ e k1 -* @wp_xval σ2 M ti ρ e k2.
+  Global Instance Proper_wp_xval :
     Proper (genv_leq ==> eq ==> eq ==> eq ==> eq ==>
             pointwise_relation _ (pointwise_relation _ lentails) ==> lentails)
            (@wp_xval).
-  Global Existing Instance Proper_wp_xval.
+  Proof. do 7 red; intros; subst.
+         iIntros "X"; iRevert "X".
+         iApply wp_xval_frame; eauto.
+         iIntros (v); iIntros (f); iApply H4.
+  Qed.
 
   Definition wp_glval {resolve} M ti (r : region) e Q :=
     @wp_lval resolve M ti r e Q \\// @wp_xval resolve M ti r e Q.
@@ -115,7 +147,19 @@ Section with_cpp.
       ghost code to decide which side you are in
    *)
 
-  Theorem Proper_wp_glval :
+  Theorem wp_glval_frame :
+    forall σ1 σ2 M ti ρ e k1 k2,
+      genv_leq σ1 σ2 ->
+      Forall v f, k1 v f -* k2 v f |-- @wp_glval σ1 M ti ρ e k1 -* @wp_glval σ2 M ti ρ e k2.
+  Proof.
+    intros.
+    iIntros "X"; iIntros "W".
+    iDestruct "W" as "[W | W]"; [ iLeft | iRight ].
+    - iRevert "W". iApply wp_lval_frame; eauto with iFrame.
+    - iRevert "W". iApply wp_xval_frame; eauto with iFrame.
+  Qed.
+
+  Global Instance Proper_wp_glval :
     Proper (genv_leq ==> eq ==> eq ==> eq ==> eq ==>
             pointwise_relation _ (pointwise_relation _ lentails) ==> lentails)
            (@wp_glval).
@@ -125,17 +169,28 @@ Section with_cpp.
     eapply Proper_wp_lval; eauto.
     eapply Proper_wp_xval; eauto.
   Qed.
-  Global Existing Instance Proper_wp_glval.
 
 
   Definition wp_rval {resolve} M ti (r : region) e Q :=
     @wp_prval resolve M ti r e Q \\// @wp_xval resolve M ti r e Q.
 
+  Theorem wp_rval_frame :
+    forall σ1 σ2 M ti ρ e k1 k2,
+      genv_leq σ1 σ2 ->
+      Forall v f, k1 v f -* k2 v f |-- @wp_rval σ1 M ti ρ e k1 -* @wp_rval σ2 M ti ρ e k2.
+  Proof.
+    intros.
+    iIntros "X"; iIntros "W".
+    iDestruct "W" as "[W | W]"; [ iLeft | iRight ].
+    - iRevert "W". iApply wp_prval_frame; eauto with iFrame.
+    - iRevert "W". iApply wp_xval_frame; eauto with iFrame.
+  Qed.
+
   (** note: you can not shift for [wp_rval] because [|==> wp_rval] allows the
       ghost code to decide which side you are in
    *)
 
-  Theorem Proper_wp_rval :
+  Global Instance Proper_wp_rval :
     Proper (genv_leq ==> eq ==> eq ==> eq ==> eq ==>
             pointwise_relation _ (pointwise_relation _ lentails) ==> lentails)
            (@wp_rval).
@@ -145,7 +200,6 @@ Section with_cpp.
     eapply Proper_wp_prval; eauto.
     eapply Proper_wp_xval; eauto.
   Qed.
-  Global Existing Instance Proper_wp_rval.
 
   Section wpe.
     Context {resolve:genv}.
@@ -177,10 +231,18 @@ Section with_cpp.
       (|={M}=> wpi (resolve:=σ) M ti ρ cls this e (fun k => |={M}=> Q k))
     ⊢ wpi (resolve:=σ) M ti ρ cls this e Q.
 
-  Axiom Proper_wpi :
+  Axiom wpi_frame :
+    forall σ1 σ2 M ti ρ cls this e k1 k2,
+      genv_leq σ1 σ2 ->
+      Forall f, k1 f -* k2 f |-- @wpi σ1 M ti ρ cls this e k1 -* @wpi σ2 M ti ρ cls this e k2.
+
+  Global Instance Proper_wpi :
     Proper (genv_leq ==> eq ==> eq ==> eq ==> eq ==> eq ==> eq ==> (lentails ==> lentails) ==> lentails)
            (@wpi).
-  Global Existing Instance Proper_wp_prval.
+  Proof. do 9 red; intros; subst.
+         iIntros "X"; iRevert "X"; iApply wpi_frame; eauto.
+         iIntros (f); iApply H6. reflexivity.
+  Qed.
 
   (** destructors *)
   Parameter wpd
@@ -192,6 +254,19 @@ Section with_cpp.
   Axiom wpd_shift : forall σ M ti ρ cls this e Q,
       (|={M}=> wpd (resolve:=σ) M ti ρ cls this e (|={M}=> Q))
     ⊢ wpd (resolve:=σ) M ti ρ cls this e Q.
+
+  Axiom wpd_frame :
+    forall σ1 σ2 M ti ρ cls this e k1 k2,
+      genv_leq σ1 σ2 ->
+      k1 -* k2 |-- @wpd σ1 M ti ρ cls this e k1 -* @wpd σ2 M ti ρ cls this e k2.
+
+  Global Instance Proper_wpd :
+    Proper (genv_leq ==> eq ==> eq ==> eq ==> eq ==> eq ==> eq ==> lentails ==> lentails)
+           (@wpd).
+  Proof. do 9 red; intros; subst.
+         iIntros "X"; iRevert "X"; iApply wpd_frame; eauto.
+         iApply H6.
+  Qed.
 
 
   (** Statements *)
@@ -210,7 +285,7 @@ Section with_cpp.
     ; k_continue : mpred
     }.
 
-  Instance: FUpd Kpreds :=
+  Instance Kpreds_fupd: FUpd Kpreds :=
     fun l r Q =>
       {| k_normal := |={l,r}=> Q.(k_normal)
        ; k_return v f := |={l,r}=> Q.(k_return) v f
@@ -260,6 +335,12 @@ Section with_cpp.
 
   Close Scope bi_scope.
 
+  Definition Kpred_entails (k1 k2 : Kpreds) : Prop :=
+      k1.(k_normal) |-- k2.(k_normal) ∧
+      (∀ v free, k1.(k_return) v free |-- k2.(k_return) v free) ∧
+      k1.(k_break) |-- k2.(k_break) ∧
+      k1.(k_continue) |-- k2.(k_continue).
+
   Global Instance Kpreds_equiv : Equiv Kpreds :=
     fun (k1 k2 : Kpreds) =>
       k1.(k_normal) ≡ k2.(k_normal) ∧
@@ -289,21 +370,42 @@ Section with_cpp.
       (|={M}=> wp (resolve:=σ) M ti ρ s (|={M}=> Q))
     ⊢ wp (resolve:=σ) M ti ρ s Q.
 
-  Axiom Proper_wp :
-    Proper (genv_leq ==> eq ==> eq ==> eq ==> eq ==> equiv ==> lentails)
-           (@wp).
-  Global Existing Instance Proper_wp.
+  Axiom wp_frame :
+    forall σ1 σ2 M ti ρ s k1 k2,
+      genv_leq σ1 σ2 ->
+      (k1.(k_normal) -* k2.(k_normal)) //\\
+      (Forall v f, k1.(k_return) v f -* k2.(k_return) v f) //\\
+      (k1.(k_break) -* k2.(k_break)) //\\
+      (k1.(k_continue) -* k2.(k_continue))
+      |-- @wp σ1 M ti ρ s k1 -* @wp σ2 M ti ρ s k2.
 
-  (* this is the *semantic characterization* of a function
-   * it really says something about the assembly code
+  Global Instance Proper_wp :
+    Proper (genv_leq ==> eq ==> eq ==> eq ==> eq ==> Kpred_entails ==> lentails)
+           (@wp).
+  Proof. do 8 red; intros; subst.
+         iIntros "X"; iRevert "X"; iApply wp_frame; eauto.
+         destruct H4 as [ ? [ ? [ ? ? ] ] ].
+         iSplit; [ iApply H0 | iSplit; [ | iSplit; [ iApply H2 | iApply H3 ] ] ].
+         iIntros. iApply H1; eauto.
+  Qed.
+
+  (* this is the specification of assembly code
    *
    * [addr] represents the address of the entry point of the code.
+   * note: the [list val] will be related to the register set.
    *)
   Parameter fspec
     : forall (ti : thread_info) (addr : val) (ls : list val) (Q : val -> epred), mpred.
 
-  Axiom Proper_fspec : forall a ls ti,
+  Axiom fspec_frame : forall a ls ti Q1 Q2,
+      Forall v, Q1 v -* Q2 v |-- @fspec ti a ls Q1 -* @fspec ti a ls Q2.
+
+  Global Instance Proper_fspec : forall a ls ti,
       Proper (pointwise_relation _ lentails ==> lentails) (@fspec ti a ls).
+  Proof. do 3 red; intros.
+         iIntros "X"; iRevert "X"; iApply fspec_frame.
+         iIntros (v); iApply H.
+  Qed.
 
 End with_cpp.
 
