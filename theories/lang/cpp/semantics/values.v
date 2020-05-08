@@ -198,13 +198,6 @@ Infix "⊧" := genv_compat (at level 1).
 
 Parameter subModuleModels : forall a b σ, b ⊧ σ -> module_le a b = true -> a ⊧ σ.
 
-(** typedness of values
-    note that only primitives fit into this, there is no [val] representation
-    of aggregates.
- *)
-Parameter has_type : val -> type -> Prop.
-Arguments has_type _%Z _.
-
 Definition max_val (bits : bitsize) (sgn : signed) : Z :=
   match bits , sgn with
   | W8   , Signed   => 2^7 - 1
@@ -235,7 +228,31 @@ Definition min_val (bits : bitsize) (sgn : signed) : Z :=
 Definition bound (bits : bitsize) (sgn : signed) (v : Z) : Prop :=
   (min_val bits sgn <= v <= max_val bits sgn)%Z.
 
-Axiom has_type_pointer : forall v ty, has_type v (Tpointer ty) -> exists p, v = Vptr p.
+(** typedness of values
+    note that only primitives fit into this, there is no [val] representation
+    of aggregates.
+ *)
+Parameter has_type : val -> type -> Prop.
+Arguments has_type _%Z _.
+
+Axiom has_type_pointer : forall v ty,
+    has_type v (Tpointer ty) -> exists p, v = Vptr p.
+Axiom has_type_nullptr : forall v,
+    has_type v Tnullptr -> v = Vptr nullptr.
+Axiom has_type_reference : forall v ty,
+    has_type v (Treference ty) -> exists p, v = Vptr p /\ p <> nullptr.
+Axiom has_type_rv_reference : forall v ty,
+    has_type v (Trv_reference ty) -> exists p, v = Vptr p /\ p <> nullptr.
+Axiom has_type_array : forall v ty n,
+    has_type v (Tarray ty n) -> exists p, v = Vptr p /\ p <> nullptr.
+Axiom has_type_function : forall v rty args,
+    has_type v (Tfunction rty args) -> exists p, v = Vptr p /\ p <> nullptr.
+
+Axiom has_type_void : forall v ty n,
+    has_type v (Tarray ty n) -> v = Vundef.
+
+Axiom has_bool_type : forall z,
+    (0 <= z < 2) <-> has_type (Vint z) Tbool.
 
 Axiom has_int_type : forall sz (sgn : signed) z,
     bound sz sgn z <-> has_type (Vint z) (Tint sz sgn).
