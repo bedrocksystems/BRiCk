@@ -39,6 +39,18 @@ Section with_Σ.
 
   Global Existing Instances _loc_persist _loc_affine.
 
+  Global Instance Loc_Equiv : Equiv Loc :=
+    fun l r => forall p, @_location l p -|- @_location r p.
+
+  Global Instance Loc_Equiv_Reflexive : @Reflexive Loc (≡).
+  Proof. do 3 red. intros. reflexivity. Qed.
+
+  Global Instance Loc_Equiv_Symmetric : @Symmetric Loc (≡).
+  Proof. do 3 red. intros. symmetry. eapply H. Qed.
+
+  Global Instance Loc_Equiv_Transitive : @Transitive Loc (≡).
+  Proof. do 3 red. intros. etransitivity. eapply H. eapply H0. Qed.
+
   Local Ltac solve_Loc_persistent X :=
     intros;
     rewrite X;
@@ -141,6 +153,19 @@ Section with_Σ.
   }.
 
   Global Existing Instances _off_persist _off_affine.
+
+  Global Instance Offset_Equiv : Equiv Offset :=
+    fun l r => forall p q, @_offset l p q -|- @_offset r p q.
+
+  Global Instance Offset_Equiv_Reflexive : @Reflexive Offset (≡).
+  Proof. do 3 red. intros. reflexivity. Qed.
+
+  Global Instance Offset_Equiv_Symmetric : @Symmetric Offset (≡).
+  Proof. do 3 red. intros. symmetry. eapply H. Qed.
+
+  Global Instance Offset_Equiv_Transitive : @Transitive Offset (≡).
+  Proof. do 3 red. intros. etransitivity. eapply H. eapply H0. Qed.
+
 
   Local Definition invalidO : Offset.
   refine {| _offset _ _ := lfalse |}.
@@ -250,6 +275,35 @@ Section with_Σ.
   Proof.
     intros. rewrite addr_of_eq /addr_of_def. apply _loc_affine.
   Qed.
+
+  Lemma _offsetL_dot : forall (o1 o2 : Offset) l,
+      _offsetL o2 (_offsetL o1 l) ≡ _offsetL (_dot o1 o2) l.
+  Proof.
+    rewrite /equiv /Loc_Equiv _offsetL_eq _dot_eq. simpl.
+    split'.
+    { iIntros "X". iDestruct "X" as (from) "[X Y]".
+      iDestruct "Y" as (from0) "[Y Z]".
+      iExists from0. iFrame. iExists _. iFrame. }
+    { iIntros "X". iDestruct "X" as (from) "[X Y]".
+      iDestruct "X" as (from0) "[X Z]".
+      iExists _. iFrame. iExists _. iFrame. }
+  Qed.
+
+  Lemma _dot_dot : forall (o1 o2 l: Offset),
+      _dot o2 (_dot o1 l) ≡ _dot (_dot o2 o1) l.
+  Proof.
+    rewrite /equiv /Offset_Equiv _dot_eq. simpl.
+    split'.
+    { iIntros "X". iDestruct "X" as (from) "[X Y]".
+      iDestruct "Y" as (from0) "[Y Z]".
+      iExists from0. iFrame. iExists _. iFrame. }
+    { iIntros "X". iDestruct "X" as (from) "[X Y]".
+      iDestruct "X" as (from0) "[X Z]".
+      iExists _. iFrame. iExists _. iFrame. }
+  Qed.
+
+  Global Instance addr_of_proper : Proper ((≡) ==> eq ==> (≡)) addr_of.
+  Proof. do 3 red. intros; subst. rewrite addr_of_eq /addr_of_def. apply H. Qed.
 
   (* this is for `Indirect` field references *)
   Fixpoint path_to_Offset (resolve:genv) (from : globname) (final : ident)
