@@ -163,8 +163,14 @@ Module SimpleCPP
     Proof. intros. red. iIntros "#H". iFrame "#". Qed.
     Theorem valid_ptr_affine : forall p, Affine (valid_ptr p).
     Proof. intros. red. iIntros "_". iStopProof. reflexivity. Qed.
+    Theorem valid_ptr_timeless : forall p, Timeless (valid_ptr p).
+    Proof.
+      intros. red. unfold valid_ptr.
+      rewrite timeless. reflexivity.
+    Qed.
     Existing Instance valid_ptr_persistent.
     Existing Instance valid_ptr_affine.
+    Existing Instance valid_ptr_timeless.
 
     Theorem valid_ptr_nullptr : |-- valid_ptr nullptr.
     Proof. unfold valid_ptr. iLeft. iModIntro. iStopProof.
@@ -527,21 +533,29 @@ Module SimpleCPP
     Proof. red. intros. iIntros "#X". iFrame "#". Qed.
     Theorem code_at_affine : forall f p, Affine (@code_at f p).
     Proof. red. intros. eauto. Qed.
+    Theorem code_at_timeless : forall f p, Timeless (@code_at f p).
+    Proof. unfold code_at. refine _. Qed.
 
     Theorem method_at_persistent : forall f p, Persistent (@method_at f p).
     Proof. red. intros. iIntros "#X". iFrame "#". Qed.
     Theorem method_at_affine : forall f p, Affine (@method_at f p).
     Proof. red. intros. eauto. Qed.
+    Theorem method_at_timeless : forall f p, Timeless (@method_at f p).
+    Proof. unfold method_at. refine _. Qed.
 
     Theorem ctor_at_persistent : forall f p, Persistent (@ctor_at f p).
     Proof. red. intros. iIntros "#X". iFrame "#". Qed.
     Theorem ctor_at_affine : forall f p, Affine (@ctor_at f p).
     Proof. red. intros. eauto. Qed.
+    Theorem ctor_at_timeless : forall f p, Timeless (@ctor_at f p).
+    Proof. unfold ctor_at. refine _. Qed.
 
     Theorem dtor_at_persistent : forall f p, Persistent (@dtor_at f p).
     Proof. red. intros. iIntros "#X". iFrame "#". Qed.
     Theorem dtor_at_affine : forall f p, Affine (@dtor_at f p).
     Proof. red. intros. eauto. Qed.
+    Theorem dtor_at_timeless : forall f p, Timeless (@dtor_at f p).
+    Proof. unfold dtor_at. refine _. Qed.
 
   End with_cpp.
 
