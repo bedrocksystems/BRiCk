@@ -140,7 +140,8 @@ Existing Instances
          L.has_cinv
          L.has_cppG
          L.valid_ptr_affine
-         L.valid_ptr_persistent.
+         L.valid_ptr_persistent
+         L.valid_ptr_timeless.
 
 Section with_cpp.
   Context `{Σ : cpp_logic}.

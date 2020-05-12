@@ -119,6 +119,12 @@ Section with_cpp.
   Global Instance _at_persistent : Persistent P -> Persistent (_at base P).
   Proof using . rewrite _at_eq. apply _. Qed.
 
+  Global Instance _at_affine : Affine P -> Affine (_at base P).
+  Proof using . rewrite _at_eq. apply _. Qed.
+
+  Global Instance _at_timeless : Timeless P -> Timeless (_at base P).
+  Proof using . rewrite _at_eq. apply _. Qed.
+
   Global Instance Proper__at_entails
     : Proper (eq ==> lentails ==> lentails) _at.
   Proof using .

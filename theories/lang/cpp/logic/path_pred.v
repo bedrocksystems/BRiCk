@@ -35,6 +35,7 @@ Section with_Σ.
     ; _loc_valid : forall p1, _location p1 |-- valid_ptr p1
     ; _loc_persist :> forall p, Persistent (_location p)
     ; _loc_affine :> forall p, Affine (_location p)
+    ; _loc_timeless :> forall p, Timeless (_location p)
     }.
 
   Global Existing Instances _loc_persist _loc_affine.
@@ -150,6 +151,7 @@ Section with_Σ.
   ; _off_valid : forall p1 p2, valid_ptr p1 ** _offset p1 p2 |-- valid_ptr p2
   ; _off_persist :> forall p1 p2, Persistent (_offset p1 p2)
   ; _off_affine :> forall p1 p2, Affine (_offset p1 p2)
+  ; _off_timeless :> forall p1 p2, Timeless (_offset p1 p2)
   }.
 
   Global Existing Instances _off_persist _off_affine.
@@ -234,6 +236,9 @@ Section with_Σ.
     iDestruct "H'" as (m) "[H1 H2]".
     iApply _off_valid. iFrame.
     iApply _off_valid. iFrame. }
+  { intros.
+    eapply bi.exist_timeless; intros; eapply bi.sep_timeless;
+      [ eapply o1 | eapply o2 ]. }
   Defined.
   Definition _dot_aux : seal (@_dot_def). by eexists. Qed.
   Definition _dot := _dot_aux.(unseal).
@@ -253,6 +258,9 @@ Section with_Σ.
     iDestruct "H" as (p) "[O L]".
     iApply _off_valid. iFrame.
     iApply _loc_valid. iFrame. }
+  { intros.
+    eapply bi.exist_timeless; intros; eapply bi.sep_timeless;
+      [ eapply o | eapply l ]. }
   Defined.
   Definition _offsetL_aux : seal (@_offsetL_def). by eexists. Qed.
   Definition _offsetL := _offsetL_aux.(unseal).
@@ -274,6 +282,11 @@ Section with_Σ.
   Global Instance addr_of_affine : Affine (addr_of o l).
   Proof.
     intros. rewrite addr_of_eq /addr_of_def. apply _loc_affine.
+  Qed.
+
+  Global Instance addr_of_timeless : Timeless (addr_of o l).
+  Proof.
+    intros. rewrite addr_of_eq /addr_of_def. apply _loc_timeless.
   Qed.
 
   Lemma _offsetL_dot : forall (o1 o2 : Offset) l,
