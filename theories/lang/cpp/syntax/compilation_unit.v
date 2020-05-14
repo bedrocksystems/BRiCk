@@ -7,8 +7,6 @@ Require Import Coq.Classes.DecidableClass.
 Require Import Coq.ZArith.BinIntDef.
 Require Import Coq.Bool.Bool.
 Require Import stdpp.gmap.
-(* Require Import ExtLib.Structures.Monad. *)
-(* Require Import ExtLib.Data.Monads.OptionMonad. *)
 Require Import bedrock.bytestring.
 Require Import bedrock.Util.
 From bedrock.lang.cpp.syntax Require Import names expr stmt types.
@@ -135,25 +133,25 @@ Variant GlobDecl : Set :=
 Instance: EqDecision GlobDecl.
 Proof. solve_decision. Defined.
 
-Definition symbol_table :=
-  gmap obj_name ObjValue.
+Require Import bedrock.avl.
 
-Definition type_table :=
-  gmap globname GlobDecl.
+
+Definition symbol_table : Type := IM.t ObjValue.
+
+Definition type_table : Type := IM.t GlobDecl.
 
 Record compilation_unit : Type :=
 { symbols : symbol_table
 ; globals : type_table
 }.
 
-Instance global_lookup : Lookup globname GlobDecl compilation_unit :=
+Instance global_lookup_cu : Lookup globname GlobDecl compilation_unit :=
   fun k m => m.(globals) !! k.
-Instance symbol_lookup : Lookup obj_name ObjValue compilation_unit :=
+Instance symbol_lookup_cu : Lookup obj_name ObjValue compilation_unit :=
   fun k m => m.(symbols) !! k.
 
-(*
-Instance Empty_symbol_table : Empty symbol_table := ∅.
-  ltac:(let x := eval vm_compute in (∅ : symbol_table) in exact x).
-Instance Empty_type_table : Empty type_table :=
-  ltac:(let x := eval vm_compute in (∅ : type_table) in exact x).
-*)
+Instance Singleton_twothree {V} : SingletonM bs V (IM.t V) :=
+  fun k v => <[ k := v ]> ∅.
+
+Instance Singleton_symbol_table : SingletonM obj_name ObjValue symbol_table := _.
+Instance Singleton_type_table : SingletonM globname GlobDecl type_table := _.

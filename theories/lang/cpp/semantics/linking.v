@@ -5,17 +5,15 @@
  *)
 Require Import stdpp.stringmap.
 Require Import stdpp.gmap.
+Require Import bedrock.traversable.
 Require Import bedrock.lang.cpp.ast.
 Require Import bedrock.lang.cpp.semantics.sub_module.
 
-Class Traversable (T : Type -> Type) : Type :=
-{ traverse : forall `{MBind M, MRet M} {A B}, (A -> M B) -> T A -> M (T B) }.
-
-Instance gmap_traversable {K} {Eq : EqDecision K} {Cnt : countable.Countable K}
-: Traversable (gmap K) :=
-  {| traverse := fun M _ _ A B f (m : gmap K A) =>
-               mapM (fun '(k,v) => f v ≫= fun v' => mret (k, v'))
-                    (gmap_to_list m) ≫= fun r => mret (list_to_map r) |}.
+(* Instance gmap_traversable {K} {Eq : EqDecision K} {Cnt : countable.Countable K} *)
+(* : Traversable (gmap K) := *)
+(*   {| traverse := fun M _ _ A B f (m : gmap K A) => *)
+(*                mapM (fun '(k,v) => f v ≫= fun v' => mret (k, v')) *)
+(*                     (gmap_to_list m) ≫= fun r => mret (list_to_map r) |}. *)
 
 Definition GlobDecl_merge (a b : GlobDecl) : option GlobDecl :=
   match a , b with

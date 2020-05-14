@@ -26,7 +26,7 @@ Require Import iris.proofmode.tactics.
 Import ChargeNotation.
 
 Section with_cpp.
-  Context `{Σ : cpp_logic ti} {resolve:genv}.
+  Context `{Σ : cpp_logic} {resolve:genv}.
 
   Set Default Proof Using "Σ resolve".
 
@@ -94,8 +94,9 @@ Section with_cpp.
     | _ => empSP
     end.
 
+
   Definition denoteModule_def (d : compilation_unit) : mpred :=
-    ([∗map] on ↦ o ∈ d.(symbols), denoteSymbol on o)%I **
+    ([∗list] sv ∈ map_to_list d.(symbols), denoteSymbol sv.1 sv.2) **
     [| module_le d resolve.(genv_cu) |].
   Definition denoteModule_aux : seal (@denoteModule_def). by eexists. Qed.
   Definition denoteModule := denoteModule_aux.(unseal).
@@ -104,6 +105,7 @@ Section with_cpp.
   Global Instance: Persistent (denoteModule module).
   Proof.
     red. rewrite denoteModule_eq /denoteModule_def; intros.
+    destruct module; simpl.
     iIntros "[#M #H]"; iFrame "#".
   Qed.
 

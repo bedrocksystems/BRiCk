@@ -3,9 +3,13 @@
  *
  * SPDX-License-Identifier:AGPL-3.0-or-later
  *)
-Require Import stdpp.gmap.
+Require Import stdpp.base.
+Require Import bedrock.lang.cpp.syntax.compilation_unit.
 Require Import bedrock.lang.cpp.ast.
+Require Import bedrock.avl.
 Require Import ExtLib.Tactics.
+
+Set Default Proof Using "Type".
 
 Definition require_eq `{EqDecision T} (a b : T) {U} (r : option U) : option U :=
   if decide (a = b) then r else None.
@@ -202,54 +206,42 @@ Proof.
     eapply ObjValue_le_trans; eauto. }
 Qed.
 
-Local Definition empty_map `{Countable K} {T} : gmap K T :=
-  Eval vm_compute in ∅.
-Local Lemma empty_map_is_emptyset `{Countable K, EqDecision K} : forall T, @empty_map K _ _ T = ∅.
-Proof. vm_compute. reflexivity. Defined.
-
 Definition compat_le {T}
-           (f : option T -> option T -> bool) (l r : gmap ident T)
+           (f : option T -> option T -> bool) (l r : IM.t T)
   : bool :=
-  if decide (merge (fun l r =>
-                      match l , r with
-                      | None , _ => None
-                      | _ , _ =>
-                        if f l r then None else Some tt
-                      end) l r = empty_map)
-  then true else false.
+  negb (find_any (fun k v => negb (f (Some v) (r !! k))) l ||
+        find_any (fun k v => negb (f (l !! k) (Some v))) r).
 
 Lemma compat_le_sound : forall {T} (f : option T -> _) l r,
     (forall x, f None x = true) ->
     if compat_le f l r then
-      forall k,
-        f (l !! k) (r !! k) = true
+      forall k : ident, f (l !! k) (r !! k) = true
     else
-      exists k, f (l !! k) (r !! k) = false.
+      exists k : ident, f (l !! k) (r !! k) = false.
 Proof.
   intros.
   unfold compat_le.
-  rewrite empty_map_is_emptyset.
-  destruct (decide
-      (merge
-         (λ l r : option T,
-            match l with
-            | Some _ => if f l r then None else Some ()
-            | None => None
-            end) l r = ∅)).
-  { intros. eapply merge_Some in e.
-    { instantiate (1:=k) in e.
-      rewrite lookup_empty in e.
-      destruct (l !! k).
-      2: rewrite H; auto.
-      destruct (f (Some t) (r !! k)); congruence. }
-    { reflexivity. } }
-  { intros.
-    apply map_choose in n.
-    destruct n as [ ? [ ? ? ] ].
-    rewrite lookup_merge in H0.
-    { exists x. destruct (l !! x); try congruence.
-      destruct (f (Some t) (r !! x)); try congruence. }
-    { reflexivity. } }
+  generalize (find_any_ok (λ (k : bs) (v : T), negb (f (Some v) (r !! k))) l).
+  generalize (find_any_ok (λ (k : bs) (v : T), negb (f (l !! k) (Some v))) r).
+  generalize (find_any (λ (k : bs) (v : T), negb (f (Some v) (r !! k))) l).
+  generalize (find_any (λ (k : bs) (v : T), negb (f (l !! k) (Some v))) r).
+  destruct b0; simpl; intros.
+  - simpl.
+    destruct H1 as [ k [ v [ ? ? ] ] ].
+    exists k. apply negb_true_iff in H2.
+    unfold lookup, IM_lookup.
+    erewrite IM.find_1; eauto.
+  - destruct b.
+    + destruct H0 as [ k [ v [ ? ? ] ] ].
+      exists k. apply negb_true_iff in H2.
+      destruct H2. f_equal. unfold lookup, IM_lookup.
+      erewrite IM.find_1; eauto.
+    + simpl. intros.
+      destruct (l !! k) eqn:?; auto.
+      eapply IM.find_2 in Heqo.
+      apply H1 in Heqo.
+      apply negb_false_iff in Heqo.
+      auto.
 Qed.
 
 Definition module_le (a b : compilation_unit) : bool :=
@@ -332,7 +324,7 @@ Proof.
     forward. }
 Qed.
 
-Instance: RelDecision sub_module :=
+Instance sub_module_dec : RelDecision sub_module :=
   fun l r => match module_le l r as X
                 return (if X then
                           sub_module l r
