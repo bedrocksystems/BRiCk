@@ -25,7 +25,6 @@ Lemma monPred_at_timeless_inv {V sbi} (P : monPredSI V sbi) :
   (∀ i, Timeless (P i)) → Timeless P.
 Proof using . intros HP. constructor=> i. MonPred.unseal. apply HP. Qed.
 
-
 Section with_cpp.
   Context `{Σ : cpp_logic}.
 
@@ -126,19 +125,19 @@ Section with_cpp.
   Proof using . rewrite _at_eq. apply _. Qed.
 
   Global Instance Proper__at_entails
-    : Proper (eq ==> lentails ==> lentails) _at.
+    : Proper (lequiv ==> lentails ==> lentails) _at.
   Proof using .
     rewrite _at_eq. unfold _at_def. red. red. red.
-    intros. simpl in *. subst. setoid_rewrite H0.
+    intros. simpl in *. setoid_rewrite H0. setoid_rewrite H.
     reflexivity.
   Qed.
 
   Global Instance Proper__at_lequiv
-    : Proper (eq ==> lequiv ==> lequiv) _at.
+    : Proper (lequiv ==> lequiv ==> lequiv) _at.
   Proof using .
     intros x y H1 ?? H2.
-    rewrite _at_eq /_at_def. subst.
-    setoid_rewrite H2.
+    rewrite _at_eq /_at_def.
+    setoid_rewrite H2. setoid_rewrite H1.
     reflexivity.
   Qed.
 
@@ -148,6 +147,16 @@ Section with_cpp.
     rewrite _at_eq /_at_def addr_of_eq /addr_of_def.
     apply: bi.exist_ne => p; apply: bi.sep_ne; [ solve_proper | ].
     apply H.
+  Qed.
+
+  Lemma _at_valid_loc : forall (l : Loc) R,
+      _at l R -|- _at l R ** □ valid_loc l.
+  Proof.
+    split'.
+    - rewrite _at_eq /_at_def valid_loc_eq /valid_loc_def addr_of_eq /addr_of_def /=.
+      iIntros "X"; iDestruct "X" as (a) "[#L R]".
+      iSplitL; iExists _; iFrame "#∗".
+    - iIntros "X"; iDestruct "X" as "[A B]"; iFrame.
   Qed.
 
   (** Values

@@ -15,14 +15,6 @@ From bedrock.lang.cpp Require Import semantics logic.pred ast.
 
 Set Default Proof Using "Type".
 
-Lemma monPred_at_persistent_inv {V bi} (P : monPred V bi) :
-  (∀ i, Persistent (P i)) → Persistent P.
-Proof. intros HP. constructor=> i. MonPred.unseal. apply HP. Qed.
-
-Lemma monPred_at_timeless_inv {V sbi} (P : monPredSI V sbi) :
-  (∀ i, Timeless (P i)) → Timeless P.
-Proof. intros HP. constructor=> i. MonPred.unseal. apply HP. Qed.
-
 Section with_Σ.
   Context `{has_cpp : cpp_logic}.
 
@@ -52,29 +44,19 @@ Section with_Σ.
   Global Instance Loc_Equiv_Transitive : @Transitive Loc (≡).
   Proof. do 3 red. intros. etransitivity. eapply H. eapply H0. Qed.
 
-  Local Ltac solve_Loc_persistent X :=
-    intros;
-    rewrite X;
-    constructor; apply monPred_at_persistent_inv;
-    apply _.
-  Local Ltac solve_Offset_persistent X :=
-    intros;
-    rewrite X;
-    constructor; apply monPred_at_persistent_inv;
-    constructor; apply monPred_at_persistent_inv;
-    apply _.
+  Definition valid_loc_def (l : Loc) : mpred := Exists p, l.(_location) p.
+  Definition valid_loc_aux : seal (@valid_loc_def). Proof. by eexists. Qed.
+  Definition valid_loc := valid_loc_aux.(unseal).
+  Definition valid_loc_eq : valid_loc = @valid_loc_def := valid_loc_aux.(seal_eq).
 
-  Local Ltac solve_Loc_timeless X :=
-    intros;
-    rewrite X;
-    constructor; apply monPred_at_timeless_inv;
-    apply _.
-  Local Ltac solve_Offset_timeless X :=
-    intros;
-    rewrite X;
-    constructor; apply monPred_at_timeless_inv;
-    constructor; apply monPred_at_timeless_inv;
-    apply _.
+  Global Instance valid_loc_persistent : Persistent (valid_loc l).
+  Proof. rewrite valid_loc_eq /valid_loc_def; refine _. Qed.
+  Global Instance valid_loc_affine : Affine (valid_loc l).
+  Proof. rewrite valid_loc_eq /valid_loc_def; refine _. Qed.
+  Global Instance valid_loc_timeless : Timeless (valid_loc l).
+  Proof. rewrite valid_loc_eq /valid_loc_def;
+         destruct l; simpl; refine _.
+  Qed.
 
   Definition LocEq (l1 l2 : Loc) : Prop :=
     forall p, l1.(_location) p -|- l2.(_location) p.
