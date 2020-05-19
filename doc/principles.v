@@ -23,7 +23,7 @@ Rule 5. The pre-condition must be satisfiable.
         (there is *some* heap that the assertion holds on)
 Rule 6. If the post-condition is not satisfiable, the function can not return.
 Rule 7. Any function marked "noreturn" should have a post-condition of
-        `[| False |]`
+        `[| False |]` (or `lfalse`)
 Rule 8. All variables must be "declared" / "quantified"
 "Rule". The right hand side of |-> is always a "Rep" (usually ending in R, e.g.
         intR, llistR, ...)
