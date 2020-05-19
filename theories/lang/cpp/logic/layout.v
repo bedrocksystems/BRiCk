@@ -17,7 +17,6 @@ Section with_Σ.
   Local Notation _super := (_super (resolve:=resolve)) (only parsing).
   Local Notation _field := (_field (resolve:=resolve)) (only parsing).
   Local Notation _sub := (_sub (resolve:=resolve)) (only parsing).
-  Local Notation uninitR := (uninitR (resolve:=resolve)) (only parsing).
   Local Notation anyR := (anyR (resolve:=resolve)) (only parsing).
 
   Definition borrow_from {PROP : bi} (part all : PROP) : PROP :=

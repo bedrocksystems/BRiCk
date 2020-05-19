@@ -35,8 +35,8 @@ Module Type Init.
     Local Notation _sub := (_sub (resolve:=σ)) (only parsing).
     Local Notation _super := (_super (resolve:=σ)) (only parsing).
     Local Notation primR := (primR (resolve:=σ)) (only parsing).
+    Local Notation anyR := (anyR (resolve:=σ)) (only parsing).
     Local Notation offset_for := (offset_for σ) (only parsing).
-    Local Notation uninitR := (uninitR (resolve:=σ)) (only parsing).
 
 
     (* this is really about expression evaluation, so it doesn't make sense for
@@ -52,7 +52,7 @@ Module Type Init.
       | Tchar _ _
       | Tint _ _ =>
         wp_prval init (fun v free =>
-                         _at (_eqv addr) (uninitR (erase_qualifiers ty) 1) **
+                         _at (_eqv addr) (anyR (erase_qualifiers ty) 1) **
                          (   _at (_eqv addr) (primR (erase_qualifiers ty) 1 v)
                           -* k free))
 
@@ -118,7 +118,7 @@ Module Type Init.
       match build_array ls fill (N.to_nat sz) with
       | None => lfalse
       | Some array_list =>
-        (* _at (_eqv addr) (uninitR (erase_qualifiers (Tarray ety sz)) 1) ** *)
+        (* _at (_eqv addr) (anyR (erase_qualifiers (Tarray ety sz)) 1) ** *)
         wp_array_init ety addr array_list (fun free => Q free)
       end
       |-- wp_init (Tarray ety sz) addr (Einitlist ls fill (Tarray ety sz)) Q.

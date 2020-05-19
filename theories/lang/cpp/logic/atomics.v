@@ -31,7 +31,6 @@ Section with_Σ.
   Local Notation align_of := (@align_of resolve) (only parsing).
   Local Notation primR := (@primR _ _ resolve) (only parsing).
   Local Notation anyR := (@anyR _ _ resolve) (only parsing).
-  Local Notation uninitR := (@uninitR _ _ resolve) (only parsing).
 
   Definition wrap_shift (F : (val -> mpred) -> mpred) (Q : val -> mpred) : mpred :=
     Exists mid, (|={M,mid}=> F (fun result => |={mid,M}=> Q result))%I.

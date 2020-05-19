@@ -41,7 +41,6 @@ Section with_cpp.
      ; fs_arguments := targs
      ; fs_spec _    := WppD PQ |}.
 
-  Local Notation uninitR := (@uninitR _ Σ resolve) (only parsing).
   Local Notation anyR := (@anyR _ Σ resolve) (only parsing).
   Local Notation primR := (@primR _ Σ resolve) (only parsing).
 
@@ -53,7 +52,7 @@ Section with_cpp.
   : function_spec :=
     let map_pre this '(args, P) :=
         (this :: args,
-         _at (_eqv this) (uninitR (Tnamed class) 1) ** P) in
+         _at (_eqv this) (anyR (Tnamed class) 1) ** P) in
     let this_type := Qmut (Tnamed class) in
     SFunction (Qmut Tvoid) (Qconst (Tpointer this_type) :: targs)
               {| wpp_with := TeleS (fun this : ptr => (PQ this).(wpp_with))
@@ -100,7 +99,7 @@ Section with_cpp.
 
   Definition bind_base_this (o : option ptr) (rty : type) (Q : region -> mpred) : mpred :=
     if is_aggregate rty then
-      Forall ra : ptr, _at (_eq ra) (uninitR (erase_qualifiers rty) 1) -*
+      Forall ra : ptr, _at (_eq ra) (anyR (erase_qualifiers rty) 1) -*
                        Q (Remp o (Some ra))
     else Q (Remp o None).
 
