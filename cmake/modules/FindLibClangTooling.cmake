@@ -7,14 +7,35 @@ message(STATUS "Found LLVM_VERSION_MAJOR ${LLVM_VERSION_MAJOR}")
 # (CLANG_VERSION_MAJOR doesn't appear to be defined)
 set(CLANG_VERSION_MAJOR ${LLVM_VERSION_MAJOR})
 
-# clang version >= 9 exposes all shared libraries in the single libclang-cpp.so.
-# some linux distributions (e.g., arch) have switched to providing just libclang-cpp.so as
-# of clang 10 so we first try to find clang-cpp, and fall back otherwise to the
-# individual libs.
+# --------------------------------------------------------------
+# Find Clang Tooling Libraries
+#
+# On Linux:
+# (1) First try to find libclang-cpp.so (some distributions, like
+#     Arch, make only this library available as of Clang10)
+# (2) If libclang-cpp.so doesn't exist, try to find the individual
+#     tooling libraries.
+#
+# On MacOS:
+# (X) Do (2) directly (method 1 links to a library,
+#     /usr/local/Cellar/llvm/10.0.0_3/lib/libclang-cpp.dylib, that
+#     causes runtime errors related to command-line parsing)
+# --------------------------------------------------------------
+
+# Fail unless host system is Linux or MacOS
+message(STATUS "Found CMAKE_HOST_SYSTEM_NAME ${CMAKE_HOST_SYSTEM_NAME}")
+if (NOT("${CMAKE_HOST_SYSTEM_NAME}" STREQUAL "Linux" OR
+        "${CMAKE_HOST_SYSTEM_NAME}" STREQUAL "Darwin"))
+  message(FATAL_ERROR "Unsupported platform ${CMAKE_HOST_SYSTEM_NAME}")
+endif()
+
+# Method (1): libclang-cpp.so
 find_library(LibClangTooling_clang-cpp_LIBRARY NAMES clang-cpp PATHS ${LLVM_LIB_DIR})
-if (LibClangTooling_clang-cpp_LIBRARY)
+if (LibClangTooling_clang-cpp_LIBRARY AND NOT("${CMAKE_HOST_SYSTEM_NAME}" STREQUAL "Darwin"))
   mark_as_advanced(LibClangTooling_clang-cpp_LIBRARY)
   list(APPEND LibClangTooling_LIBRARIES ${LibClangTooling_clang-cpp_LIBRARY})
+
+# Method (2): individual libraries
 else()
   message(STATUS "clang-cpp not available")
   foreach (lib clangTooling clangFrontend clangSerialization clangDriver clangParse clangSema clangAnalysis clangEdit clangAST clangLex clangBasic)
