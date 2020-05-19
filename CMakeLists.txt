@@ -55,6 +55,10 @@ add_library(tocoq
 )
 set_property(TARGET tocoq PROPERTY POSITION_INDEPENDENT_CODE ON)
 
+IF (APPLE)
+   set(CMAKE_MACOSX_RPATH ON)
+ENDIF (APPLE)
+
 add_executable(cpp2v
   src/cpp2v.cpp
 )
