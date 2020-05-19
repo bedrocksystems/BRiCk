@@ -44,20 +44,6 @@ Section with_Σ.
   Global Instance Loc_Equiv_Transitive : @Transitive Loc (≡).
   Proof. do 3 red. intros. etransitivity. eapply H. eapply H0. Qed.
 
-  Definition valid_loc_def (l : Loc) : mpred := Exists p, l.(_location) p.
-  Definition valid_loc_aux : seal (@valid_loc_def). Proof. by eexists. Qed.
-  Definition valid_loc := valid_loc_aux.(unseal).
-  Definition valid_loc_eq : valid_loc = @valid_loc_def := valid_loc_aux.(seal_eq).
-
-  Global Instance valid_loc_persistent : Persistent (valid_loc l).
-  Proof. rewrite valid_loc_eq /valid_loc_def; refine _. Qed.
-  Global Instance valid_loc_affine : Affine (valid_loc l).
-  Proof. rewrite valid_loc_eq /valid_loc_def; refine _. Qed.
-  Global Instance valid_loc_timeless : Timeless (valid_loc l).
-  Proof. rewrite valid_loc_eq /valid_loc_def;
-         destruct l; simpl; refine _.
-  Qed.
-
   Definition LocEq (l1 l2 : Loc) : Prop :=
     forall p, l1.(_location) p -|- l2.(_location) p.
 
@@ -74,8 +60,7 @@ Section with_Σ.
 
   (* absolute locations *)
   Definition invalid : Loc.
-  refine
-    {| _location _ := lfalse |}.
+  refine {| _location _ := lfalse |}.
   abstract (intros; iIntros "[[] _]").
   abstract (intros; iIntros "[]").
   Defined.
@@ -125,6 +110,48 @@ Section with_Σ.
     | Some p => _eq p
     | _ => invalid
     end.
+
+  (** [addr_of] *)
+  Definition addr_of_def (a : Loc) (b : ptr) : mpred :=
+    a.(_location) b.
+  Definition addr_of_aux : seal (@addr_of_def). by eexists. Qed.
+  Definition addr_of := addr_of_aux.(unseal).
+  Definition addr_of_eq : @addr_of = _ := addr_of_aux.(seal_eq).
+  Arguments addr_of : simpl never.
+  Notation "a &~ b" := (addr_of a b) (at level 30, no associativity).
+
+  Global Instance addr_of_persistent : Persistent (addr_of o l).
+  Proof.
+    intros. rewrite addr_of_eq /addr_of_def. apply _loc_persist.
+  Qed.
+
+  Global Instance addr_of_affine : Affine (addr_of o l).
+  Proof.
+    intros. rewrite addr_of_eq /addr_of_def. apply _loc_affine.
+  Qed.
+
+  Global Instance addr_of_timeless : Timeless (addr_of o l).
+  Proof.
+    intros. rewrite addr_of_eq /addr_of_def. apply _loc_timeless.
+  Qed.
+
+  (** [valid_loc]
+      - same as [addr_of] except that it hides the existential quantifier
+   *)
+  Definition valid_loc_def (l : Loc) : mpred := Exists p, addr_of l p.
+  Definition valid_loc_aux : seal (@valid_loc_def). Proof. by eexists. Qed.
+  Definition valid_loc := valid_loc_aux.(unseal).
+  Definition valid_loc_eq : valid_loc = @valid_loc_def := valid_loc_aux.(seal_eq).
+
+  Global Instance valid_loc_persistent : Persistent (valid_loc l).
+  Proof. rewrite valid_loc_eq /valid_loc_def; refine _. Qed.
+  Global Instance valid_loc_affine : Affine (valid_loc l).
+  Proof. rewrite valid_loc_eq /valid_loc_def; refine _. Qed.
+  Global Instance valid_loc_timeless : Timeless (valid_loc l).
+  Proof. rewrite valid_loc_eq /valid_loc_def;
+         destruct l; simpl; refine _.
+  Qed.
+
 
   (** offsets *)
   Record Offset : Type :=
@@ -247,29 +274,6 @@ Section with_Σ.
   Definition _offsetL_aux : seal (@_offsetL_def). by eexists. Qed.
   Definition _offsetL := _offsetL_aux.(unseal).
   Definition _offsetL_eq : @_offsetL = _ := _offsetL_aux.(seal_eq).
-
-  Definition addr_of_def (a : Loc) (b : ptr) : mpred :=
-    a.(_location) b.
-  Definition addr_of_aux : seal (@addr_of_def). by eexists. Qed.
-  Definition addr_of := addr_of_aux.(unseal).
-  Definition addr_of_eq : @addr_of = _ := addr_of_aux.(seal_eq).
-  Arguments addr_of : simpl never.
-  Notation "a &~ b" := (addr_of a b) (at level 30, no associativity).
-
-  Global Instance addr_of_persistent : Persistent (addr_of o l).
-  Proof.
-    intros. rewrite addr_of_eq /addr_of_def. apply _loc_persist.
-  Qed.
-
-  Global Instance addr_of_affine : Affine (addr_of o l).
-  Proof.
-    intros. rewrite addr_of_eq /addr_of_def. apply _loc_affine.
-  Qed.
-
-  Global Instance addr_of_timeless : Timeless (addr_of o l).
-  Proof.
-    intros. rewrite addr_of_eq /addr_of_def. apply _loc_timeless.
-  Qed.
 
   Lemma _offsetL_dot : forall (o1 o2 : Offset) l,
       _offsetL o2 (_offsetL o1 l) ≡ _offsetL (_dot o1 o2) l.
