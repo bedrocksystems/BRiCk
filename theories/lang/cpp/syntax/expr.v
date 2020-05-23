@@ -3,10 +3,7 @@
  *
  * SPDX-License-Identifier:AGPL-3.0-or-later
  *)
-Require Import Coq.Classes.DecidableClass.
 Require Import Coq.NArith.BinNatDef.
-From Coq.Strings Require Import
-     Ascii String.
 Require Import Coq.ZArith.BinIntDef.
 Require Import stdpp.decidable.
 Require Import stdpp.strings.
@@ -89,7 +86,7 @@ Inductive Expr : Set :=
   (* ^ local variable reference *)
 
 | Echar    (_ : Z) (_ : type)
-| Estring  (_ : bs) (_ : type)
+| Estring  (_ : bytestring.bs) (_ : type)
 | Eint     (_ : Z) (_ : type)
 | Ebool    (_ : bool)
   (* ^ literals *)

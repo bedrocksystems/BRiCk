@@ -3,9 +3,7 @@
  *
  * SPDX-License-Identifier:AGPL-3.0-or-later
  *)
-Require Import Coq.ZArith.BinInt.
 Require Import Coq.Lists.List.
-Require Import Coq.Strings.String.
 
 From iris.base_logic.lib Require Import
      fancy_updates invariants cancelable_invariants wsat.

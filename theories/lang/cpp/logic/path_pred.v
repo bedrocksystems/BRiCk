@@ -4,9 +4,6 @@
  * SPDX-License-Identifier:AGPL-3.0-or-later
  *)
 Require Import Coq.Classes.Morphisms.
-Require Import Coq.NArith.BinNat.
-Require Import Coq.ZArith.BinInt.
-Require Import Coq.Strings.String.
 
 Require Import iris.proofmode.tactics.
 From iris.bi Require Export monpred.

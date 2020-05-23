@@ -11,11 +11,6 @@
     - the memory model is simplified from the standard C++ memory
       model.
  *)
-Require Import Coq.ZArith.BinInt.
-Require Import Coq.micromega.Lia.
-Require Import Coq.Lists.List.
-Require Import Coq.Strings.String.
-
 From Coq.Classes Require Import
      RelationClasses Morphisms.
 

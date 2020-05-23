@@ -5,7 +5,6 @@
  *)
 Require Import Coq.ZArith.BinInt.
 Require Import Coq.Lists.List.
-Require Import Coq.Strings.String.
 
 Require Import Coq.ssr.ssrbool.
 

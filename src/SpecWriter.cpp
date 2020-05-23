@@ -384,7 +384,7 @@ write_globals(::Module &mod, CoqPrinter &print, ClangPrinter &cprint) {
 
                 cprint.printGlobalName(def, print);
                 print.output()
-                    << "%string (in custom cppglobal at level 0)." << fmt::line;
+                    << "%bs (in custom cppglobal at level 0)." << fmt::line;
             }
 
             for (auto fd : rd->fields()) {

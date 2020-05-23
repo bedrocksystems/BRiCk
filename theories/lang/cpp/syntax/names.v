@@ -3,8 +3,6 @@
  *
  * SPDX-License-Identifier:AGPL-3.0-or-later
  *)
-From Coq.Strings Require Import
-     Ascii String.
 Require Import stdpp.strings.
 Require Import bedrock.Util.
 Require Import bedrock.bytestring.

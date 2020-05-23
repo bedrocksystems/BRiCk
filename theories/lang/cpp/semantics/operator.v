@@ -14,7 +14,6 @@
 
 Require Import Coq.NArith.BinNat.
 Require Import Coq.ZArith.BinInt.
-Require Import Coq.Strings.Ascii.
 
 From bedrock.lang.cpp Require Import ast semantics.values.
 

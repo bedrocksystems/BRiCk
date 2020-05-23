@@ -3,8 +3,8 @@
  *
  * SPDX-License-Identifier:AGPL-3.0-or-later
  *)
-Require Import Coq.Strings.String.
 Require Import stdpp.telescopes.
+Require Import bedrock.bytestring.
 Require Import bedrock.lang.cpp.logic.
 
 Declare Scope fspec_scope.
@@ -36,7 +36,7 @@ Section with_Σ.
      ; wpp_post := wpp.(wpp_post)
     |}.
 
-  Definition add_arg (s : string) (v : val) (wpp : WithPrePost) : WithPrePost :=
+  Definition add_arg (s : names.ident) (v : val) (wpp : WithPrePost) : WithPrePost :=
     {| wpp_with := wpp.(wpp_with)
      ; wpp_pre  := tele_map (fun '(args,X) => (v :: args, X)) wpp.(wpp_pre)
      ; wpp_post := wpp.(wpp_post)
@@ -148,13 +148,13 @@ Notation "'\args{' x .. y '}' ls X" :=
    format "'[v' '\args{' x  ..  y '}'  ls  '//' X ']'").
 
 Notation "'\arg' nm v X" :=
-  (@add_arg _ nm%string v X%fspec)
+  (@add_arg _ nm%bs v X%fspec)
   (at level 10, nm at level 0, X at level 200, right associativity,
    format "'[v' '\arg'  nm  v  '//' X ']'").
 
 Notation "'\arg{' x .. y } nm v X" :=
   (@with_arg_fspec _ (@add_with _ (TeleS (fun x => .. (TeleS (fun y => TeleO)) ..))
-                                (fun x => .. (fun y => (@add_arg _ nm%string v X%fspec)) .. )))
+                                (fun x => .. (fun y => (@add_arg _ nm%bs v X%fspec)) .. )))
   (at level 10, nm at level 0, x binder, y binder, X at level 200, right associativity,
    format "'[v' '\arg{' x  ..  y '}'  nm  v  '//' X ']'").
 

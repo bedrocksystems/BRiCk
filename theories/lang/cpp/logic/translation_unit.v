@@ -7,15 +7,6 @@
 (** this module provides a denotational/axiomatic semantics to c++ compilation
     units.
  *)
-From Coq.Classes Require Import
-     RelationClasses Morphisms DecidableClass.
-
-Require Import Coq.Lists.List.
-Require Import Coq.Lists.List.
-Require Import Coq.Strings.String.
-Require Import Coq.ZArith.BinInt.
-Require Import Coq.micromega.Lia.
-
 From bedrock Require Import IrisBridge.
 Require Import bedrock.lang.cpp.ast.
 From bedrock.lang.cpp Require Import

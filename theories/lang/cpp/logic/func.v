@@ -4,9 +4,6 @@
  * SPDX-License-Identifier:AGPL-3.0-or-later
  *)
 Require Import Coq.Lists.List.
-Require Import Coq.Strings.String.
-Require Import Coq.ZArith.BinInt.
-Require Import Coq.micromega.Lia.
 
 Require Import stdpp.telescopes.
 

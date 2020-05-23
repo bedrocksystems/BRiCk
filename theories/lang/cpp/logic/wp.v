@@ -7,7 +7,6 @@
  * Definitions for the semantics
  *)
 Require Import Coq.Lists.List.
-Require Import Coq.Strings.String.
 Require Import iris.bi.monpred.
 Require Import iris.base_logic.lib.fancy_updates.
 From iris.proofmode Require Import tactics.

@@ -95,7 +95,7 @@ Proof. solve_decision. Defined.
 (*                           | Ct_Comdat => "5" *)
 (*                           end) ++ "Ev" *)
 (*   | _ => "" *)
-(*   end%string. *)
+(*   end. *)
 
 Variant Dtor_type : Set := Dt_Deleting | Dt_Complete | Dt_Base | Dt_Comdat.
 Instance: EqDecision Dtor_type.

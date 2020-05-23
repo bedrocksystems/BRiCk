@@ -7,9 +7,7 @@
  * Program logic for expressions
  *
  *)
-Require Import Coq.Classes.Morphisms.
 Require Import Coq.Lists.List.
-Require Import Coq.Strings.String.
 Require Import Coq.ZArith.BinInt.
 Require Import Coq.NArith.BinNatDef.
 

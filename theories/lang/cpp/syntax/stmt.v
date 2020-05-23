@@ -3,10 +3,7 @@
  *
  * SPDX-License-Identifier:AGPL-3.0-or-later
  *)
-Require Import Coq.Classes.DecidableClass.
 Require Import Coq.NArith.BinNatDef.
-From Coq.Strings Require Import
-     Ascii String.
 Require Import Coq.ZArith.BinIntDef.
 Require Import stdpp.decidable.
 Require Import stdpp.numbers.
@@ -61,7 +58,7 @@ Inductive Stmt : Set :=
 
 | Slabeled (_ : ident) (_ : Stmt)
 | Sgoto (_ : ident)
-| Sunsupported (_ : string).
+| Sunsupported (_ : bs).
 Instance Stmt_eq_dec : EqDecision Stmt.
 Proof.
   do 2 red.

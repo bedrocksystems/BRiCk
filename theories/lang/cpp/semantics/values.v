@@ -11,9 +11,7 @@
 Require Import Coq.NArith.BinNat.
 Require Import Coq.ZArith.BinInt.
 Require Import Coq.Strings.Ascii.
-Require Import Coq.Classes.RelationClasses.
-Require Import Coq.Classes.Morphisms.
-Require Import stdpp.gmap.
+Require Import stdpp.base stdpp.countable.
 
 Require Import bedrock.lang.cpp.ast.
 Require Import bedrock.lang.cpp.semantics.sub_module.

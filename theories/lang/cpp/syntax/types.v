@@ -4,10 +4,7 @@
  * SPDX-License-Identifier:AGPL-3.0-or-later
  *)
 Require Import Coq.Bool.Bool.
-Require Import Coq.Classes.DecidableClass.
 Require Import Coq.NArith.BinNatDef.
-From Coq.Strings Require Import
-     Ascii String.
 Require Import Coq.ZArith.BinInt.
 Require Import stdpp.decidable.
 Require Import bedrock.Util.
@@ -95,7 +92,7 @@ Inductive type : Set :=
 | Tnullptr
 (* architecture-specific types; currently unused.
    some Tarch types, like ARM SVE, are "sizeless", hence [option size]. *)
-| Tarch (_ : option bitsize) (name : string)
+| Tarch (_ : option bitsize) (name : bs)
 .
 Definition Talias (underlying : type) (name : globname) : type :=
   underlying.

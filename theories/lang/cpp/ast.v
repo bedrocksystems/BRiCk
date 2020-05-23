@@ -4,8 +4,6 @@
  * SPDX-License-Identifier:AGPL-3.0-or-later
  *)
 Require Export Coq.NArith.BinNatDef.
-Require Export Coq.Strings.String.
-Require Export bedrock.bytestring.
 From bedrock.lang.cpp.syntax Require Export
      names
      expr
@@ -13,3 +11,5 @@ From bedrock.lang.cpp.syntax Require Export
      types
      typing
      translation_unit.
+Require Import Coq.Strings.String.
+Require Import Coq.Lists.List.
