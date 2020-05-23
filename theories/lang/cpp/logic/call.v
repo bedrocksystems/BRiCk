@@ -31,7 +31,7 @@ Section with_resolve.
                                    Qarg v free -* Q (v :: vs) (free ** frees))
       | Rvalue =>
         if is_aggregate ty then
-          Forall a, _at (_eq a) (uninitR (resolve:=σ) (erase_qualifiers ty) 1) -*
+          Forall a, _at (_eq a) (anyR (resolve:=σ) (erase_qualifiers ty) 1) -*
           let (e,dt) := destructor_for e in
           Exists Qarg,
           wp_init ty (Vptr a) e Qarg **
