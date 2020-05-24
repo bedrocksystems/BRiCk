@@ -5,11 +5,12 @@
 -arg -w -arg -ambiguous-paths
 
 # Utility modules
+theories/bytestring.v
+theories/avl.v
 theories/Util.v
 theories/ChargeCompat.v
 theories/ChargeUtil.v
 theories/IrisBridge.v
-theories/bytestring.v
 
 # Syntax
 theories/lang/cpp/syntax/names.v
