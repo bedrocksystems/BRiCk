@@ -380,7 +380,7 @@ Inductive llist : Type :=
 | nil : llist
 | cons : Z -> llist -> llist.
 
-Axiom FILL_IN : forall {T}, T.
+Axiom FILL_IN : forall {T}, T. (* Used to mark exercises in this file *)
 
 Fixpoint llistR (q : Qp) (l : llist) : Rep := FILL_IN.
 
