@@ -246,8 +246,8 @@ Axiom has_type_array : forall v ty n,
 Axiom has_type_function : forall v rty args,
     has_type v (Tfunction rty args) -> exists p, v = Vptr p /\ p <> nullptr.
 
-Axiom has_type_void : forall v ty n,
-    has_type v (Tarray ty n) -> v = Vundef.
+Axiom has_type_void : forall v,
+    has_type v Tvoid -> v = Vundef.
 
 Axiom has_bool_type : forall z,
     (0 <= z < 2) <-> has_type (Vint z) Tbool.

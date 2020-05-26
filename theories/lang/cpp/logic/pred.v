@@ -122,10 +122,10 @@ Declare Module L : CPP_LOGIC.
 Export L.
 
 Existing Instances
-         L.code_at_persistent L.code_at_affine
-         L.method_at_persistent L.method_at_affine
-         L.ctor_at_persistent L.ctor_at_affine
-         L.dtor_at_persistent L.dtor_at_affine
+         L.code_at_persistent L.code_at_affine L.code_at_timeless
+         L.method_at_persistent L.method_at_affine L.method_at_timeless
+         L.ctor_at_persistent L.ctor_at_affine L.ctor_at_timeless
+         L.dtor_at_persistent L.dtor_at_affine L.dtor_at_timeless
          L.tptsto_proper_entails
          L.tptsto_proper_equiv
          L.tptsto_fractional
