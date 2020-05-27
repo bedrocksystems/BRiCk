@@ -194,6 +194,8 @@ Definition genv_eq (l r : genv) : Prop :=
 Parameter genv_compat : translation_unit -> genv -> Prop.
 Infix "⊧" := genv_compat (at level 1).
 
+Axiom genv_compat_submodule : forall m σ, m ⊧ σ -> sub_module m σ.(genv_tu).
+
 Parameter subModuleModels : forall a b σ, b ⊧ σ -> module_le a b = true -> a ⊧ σ.
 
 Definition max_val (bits : bitsize) (sgn : signed) : Z :=
