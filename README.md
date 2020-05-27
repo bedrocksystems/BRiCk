@@ -32,13 +32,12 @@ sudo apt install llvm-9 llvm-9-dev clang-9 libclang-9-dev cmake opam
 opam repo add coq-released https://coq.inria.fr/opam/released
 opam repo add iris-dev https://gitlab.mpi-sws.org/iris/opam.git
 opam pin coq 8.11.0
-opam install coq coq-ext-lib
+opam install coq coq-ext-lib coq-metacoq-template
 # install iris
 git clone https://gitlab.mpi-sws.org/iris/iris.git
 (cd iris && git reset --hard 62be0a86890dbbf0dd3e4fc09edaa6d0227baebd && make build-dep && make -j3 && make install)
-# install cpp2v
-git clone https://gitlab.com/bedrocksystems/cpp2v.git
-(cd cpp2v && make cpp2v cpp2v_plugin coq && make install)
+#install cpp2v-core
+make && make install && make cpp2v
 ```
 
 ### OSX
