@@ -1,8 +1,7 @@
 (*
- * Copyright (C) 2020 BedRock Systems, Inc.
- * All rights reserved.
+ * Copyright (C) BedRock Systems Inc. 2019 Gregory Malecha
  *
- * SPDX-License-Identifier: Apache-2.0
+ * SPDX-License-Identifier:AGPL-3.0-or-later
  *)
 Require Export
         bedrock.lang.cpp.ast
