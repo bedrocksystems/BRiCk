@@ -324,6 +324,13 @@ Proof.
     forward. }
 Qed.
 
+Theorem module_le_spec : forall a b,
+    Bool.reflect (sub_module a b) (module_le a b).
+Proof.
+  intros. generalize (module_le_sound a b).
+  destruct (module_le a b); constructor; eauto.
+Qed.
+
 Instance sub_module_dec : RelDecision sub_module :=
   fun l r => match module_le l r as X
                 return (if X then
