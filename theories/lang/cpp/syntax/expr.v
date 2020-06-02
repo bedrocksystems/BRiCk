@@ -16,7 +16,7 @@ Variant UnOp : Set :=
 | Uminus
 | Unot
 | Ubnot
-| Uother (_ : string).
+| Uother (_ : bs).
 Instance: EqDecision UnOp.
 Proof. solve_decision. Defined.
 
@@ -143,7 +143,7 @@ Inductive Expr : Set :=
 | Eatomic (_ : AtomicOp) (_ : list (ValCat * Expr)) (_ : type)
 | Eva_arg (_ : Expr) (_ : type)
 | Epseudo_destructor (_ : type) (_ : Expr) (* type void *)
-| Eunsupported (_ : string) (_ : type).
+| Eunsupported (_ : bs) (_ : type).
 Instance: EqDecision Expr.
 Proof.
   do 2 red.
