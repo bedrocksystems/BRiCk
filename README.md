@@ -36,8 +36,10 @@ opam install coq coq-ext-lib coq-metacoq-template
 # install iris
 git clone https://gitlab.mpi-sws.org/iris/iris.git
 (cd iris && git reset --hard 62be0a86890dbbf0dd3e4fc09edaa6d0227baebd && make build-dep && make -j3 && make install)
-#install cpp2v-core
-make && make install && make cpp2v
+# install cpp2v-core
+make coq cpp2v && make install
+# to build the cpp2v-core plugin, do:
+make plugin
 ```
 
 ### OSX
