@@ -30,7 +30,6 @@ Proof. solve_decision. Defined.
 Record Dtor : Set :=
 { d_class  : globname
 ; d_body   : option (OrDefault (Stmt * list (FieldOrBase * obj_name)))
-; d_virtual : bool
 }.
 Instance: EqDecision Dtor.
 Proof. solve_decision. Defined.
@@ -49,7 +48,6 @@ Record Method : Set :=
 ; m_this_qual : type_qualifiers
 ; m_params  : list (ident * type)
 ; m_body    : option Stmt
-; m_virtual : bool
 }.
 Instance: EqDecision Method.
 Proof. solve_decision. Defined.

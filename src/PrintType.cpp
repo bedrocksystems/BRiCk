@@ -371,11 +371,17 @@ ClangPrinter::printQualifier(const QualType& qt, CoqPrinter& print) const {
 void
 ClangPrinter::printQualifier(bool is_const, bool is_volatile,
                              CoqPrinter& print) const {
-    print.begin_record();
-    print.record_field("q_const");
-    print.boolean(is_const);
-    print.output() << ";" << fmt::nbsp;
-    print.record_field("q_volatile");
-    print.boolean(is_volatile);
-    print.end_record();
+    if (is_const) {
+        if (is_volatile) {
+            print.output() << "QCV";
+        } else {
+            print.output() << "QC";
+        }
+    } else {
+        if (is_volatile) {
+            print.output() << "QV";
+        } else {
+            print.output() << "QM";
+        }
+    }
 }

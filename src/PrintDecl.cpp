@@ -16,37 +16,9 @@ using namespace clang;
 void
 printFunction(const FunctionDecl *decl, CoqPrinter &print,
               ClangPrinter &cprint) {
-    print.output() << "{| f_return :=" << fmt::indent;
+    print.ctor("Build_Func");
     cprint.printQualType(decl->getReturnType(), print);
-    print.output() << fmt::line << "; f_params :=" << fmt::nbsp;
-
-    for (auto i : decl->parameters()) {
-        cprint.printParam(i, print);
-        print.cons();
-    }
-    print.output() << "nil";
-
-    print.output() << fmt::line << "; f_body :=" << fmt::nbsp;
-    if (decl->getBody()) {
-        print.ctor("Some", false);
-        cprint.printStmt(decl->getBody(), print);
-        print.output() << fmt::rparen;
-    } else {
-        print.output() << "None";
-    }
-    print.output() << fmt::outdent << "|}";
-}
-
-void
-printMethod(const CXXMethodDecl *decl, CoqPrinter &print,
-            ClangPrinter &cprint) {
-    print.output() << "{| m_return :=" << fmt::indent;
-    cprint.printQualType(decl->getCallResultType(), print);
-    print.output() << fmt::line << "; m_class :=" << fmt::nbsp;
-    cprint.printGlobalName(decl->getParent(), print);
-    print.output() << fmt::line << "; m_this_qual :=" << fmt::nbsp;
-    cprint.printQualifier(decl->isConst(), decl->isVolatile(), print);
-    print.output() << fmt::line << "; m_params :=" << fmt::nbsp;
+    print.output() << fmt::nbsp << fmt::line;
 
     print.begin_list();
     for (auto i : decl->parameters()) {
@@ -55,24 +27,43 @@ printMethod(const CXXMethodDecl *decl, CoqPrinter &print,
     }
     print.end_list();
 
-    print.output() << fmt::line << "; m_body :=" << fmt::nbsp;
     if (decl->getBody()) {
-        print.output() << fmt::lparen << "Some" << fmt::nbsp;
+        print.ctor("Some", false);
         cprint.printStmt(decl->getBody(), print);
-        print.output() << fmt::rparen;
+        print.end_ctor();
+    } else {
+        print.output() << "None";
+    }
+    print.end_ctor();
+}
+
+void
+printMethod(const CXXMethodDecl *decl, CoqPrinter &print,
+            ClangPrinter &cprint) {
+    print.ctor("Build_Method");
+    cprint.printQualType(decl->getCallResultType(), print);
+    print.output() << fmt::line;
+    cprint.printGlobalName(decl->getParent(), print);
+    print.output() << fmt::line;
+    cprint.printQualifier(decl->isConst(), decl->isVolatile(), print);
+
+    print.begin_list();
+    for (auto i : decl->parameters()) {
+        cprint.printParam(i, print);
+        print.cons();
+    }
+    print.end_list();
+
+    print.output() << fmt::line;
+    if (decl->getBody()) {
+        print.ctor("Some", false);
+        cprint.printStmt(decl->getBody(), print);
+        print.end_ctor();
     } else {
         print.output() << "None";
     }
 
-    print.output() << fmt::line << "; m_virtual := " << fmt::nbsp;
-    if (decl->isVirtual()) {
-        using namespace logging;
-        unsupported() << "[ERR] virtual functions not supported: "
-                      << decl->getNameAsString() << "\n";
-    }
-    print.boolean(decl->isVirtual());
-
-    print.output() << fmt::outdent << "|}";
+    print.end_ctor();
 }
 
 void
@@ -85,15 +76,13 @@ void
 printDestructor(const CXXDestructorDecl *decl, CoqPrinter &print,
                 ClangPrinter &cprint) {
     auto record = decl->getParent();
-    print.output() << "{| d_class :=" << fmt::nbsp;
+    print.ctor("Build_Dtor");
     cprint.printGlobalName(record, print);
-    print.output() << fmt::line << " ; d_virtual := ";
-    print.boolean(decl->isVirtual());
-    print.output() << fmt::line << " ; d_body :=";
+    print.output() << fmt::line;
 
     if (decl->isDefaulted()) {
         // todo(gmm): I need to generate this.
-        print.output() << "Some Defaulted |}";
+        print.output() << "(Some Defaulted)";
     } else if (decl->getBody()) {
         print.some();
         print.ctor("UserDefined");
@@ -148,11 +137,11 @@ printDestructor(const CXXDestructorDecl *decl, CoqPrinter &print,
         print.end_tuple();
         print.end_ctor();
         print.end_ctor();
-        print.end_record();
     } else {
         print.none();
-        print.end_record();
     }
+
+    print.end_ctor();
 }
 
 class PrintDecl :
@@ -221,8 +210,8 @@ public:
             print.output() << "," << fmt::nbsp;
             cprint.printQualType(field->getType(), print);
             print.output() << "," << fmt::nbsp;
-            print.output() << "{| li_offset := " << layout.getFieldOffset(i++)
-                           << fmt::nbsp << "|})";
+            print.output() << "Build_LayoutInfo "
+                           << layout.getFieldOffset(i++) << ")";
             print.cons();
         };
         print.end_list();
@@ -245,15 +234,14 @@ public:
 
         print.ctor("Some", false);
 
-        print.begin_record();
-        print.record_field("u_fields");
+        print.ctor("Build_Union");
         printFields(decl, layout, print, cprint);
 
         print.output() << fmt::line
-                       << " ; u_size := " << layout.getSize().getQuantity()
+                       << layout.getSize().getQuantity()
                        << fmt::nbsp;
 
-        print.end_record();
+        print.end_ctor();
         print.end_ctor();
         print.end_ctor();
         return true;
@@ -272,10 +260,10 @@ public:
             return true;
         }
 
-        print.ctor("Some", false);
+        print.some();
+        print.ctor("Build_Struct");
 
         // print the base classes
-        print.output() << fmt::line << "{| s_bases :=" << fmt::nbsp;
         print.begin_list();
         for (auto base : decl->bases()) {
             if (base.isVirtual()) {
@@ -288,8 +276,8 @@ public:
                 print.output() << "(";
                 cprint.printGlobalName(rec, print);
                 print.output()
-                    << ", {| li_offset :="
-                    << layout.getBaseClassOffset(rec).getQuantity() << "|})";
+                    << ", Build_LayoutInfo "
+                    << layout.getBaseClassOffset(rec).getQuantity() << ")";
             } else {
                 using namespace logging;
                 fatal() << "base class is not a RecordType at "
@@ -301,13 +289,12 @@ public:
         print.end_list();
 
         // print the fields
-        print.output() << fmt::line << " ; s_fields :=" << fmt::indent
-                       << fmt::line;
+        print.output() << fmt::line;
         printFields(decl, layout, print, cprint);
-        print.output() << fmt::outdent << fmt::line;
+        print.output() << fmt::line;
 
         // print the layout information
-        print.output() << fmt::line << " ; s_layout :=" << fmt::nbsp;
+        print.output() << fmt::line;
         if (decl->isPOD()) {
             print.output() << "POD";
         } else if (decl->isStandardLayout()) {
@@ -316,12 +303,13 @@ public:
             print.output() << "Unspecified";
         }
 
-        print.output() << fmt::line
-                       << " ; s_size := " << layout.getSize().getQuantity();
+        print.output() << fmt::nbsp << layout.getSize().getQuantity();
 
         // todo(gmm): i need to print any implicit declarations.
 
-        print.output() << "|}" << fmt::rparen << fmt::rparen;
+        print.end_ctor();
+        print.end_ctor();
+        print.end_ctor();
         return true;
     }
 
@@ -407,19 +395,20 @@ public:
         print.ctor("Dconstructor");
         cprint.printGlobalName(decl, print);
         print.output() << fmt::line;
-        print.output() << "{| c_class :=" << fmt::nbsp;
+        print.ctor("Build_Ctor");
         cprint.printGlobalName(decl->getParent(), print);
-        print.output() << fmt::line << " ; c_params :=" << fmt::nbsp;
+        print.output() << fmt::line;
 
+        print.begin_list();
         for (auto i : decl->parameters()) {
             cprint.printParam(i, print);
-            print.output() << "::";
+            print.cons();
         }
-        print.output() << "nil";
+        print.end_list();
 
-        print.output() << fmt::line << " ; c_body :=" << fmt::nbsp;
+        print.output() << fmt::line;
         if (decl->getBody()) {
-            print.output() << "Some" << fmt::nbsp;
+            print.some();
             print.ctor("UserDefined");
             print.begin_tuple();
 
@@ -428,8 +417,7 @@ public:
             //   i need to make sure that everything ends up in the list, and in the right order
             print.begin_list();
             for (auto init : decl->inits()) {
-                print.begin_record();
-                print.record_field("init_path");
+                print.ctor("Build_Initializer");
                 if (init->isMemberInitializer()) {
                     print.ctor("Field")
                         << "\"" << init->getMember()->getNameAsString() << "\"";
@@ -477,8 +465,7 @@ public:
                 } else {
                     assert(false && "unknown initializer type");
                 }
-                print.output() << ";" << fmt::nbsp;
-                print.record_field("init_type");
+                print.output() << fmt::line;
                 if (init->getMember()) {
                     cprint.printQualType(init->getMember()->getType(), print);
                 } else if (init->getIndirectMember()) {
@@ -491,10 +478,9 @@ public:
                 } else {
                     assert(false && "not member, base class, or indirect");
                 }
-                print.output() << ";" << fmt::nbsp;
-                print.record_field("init_init");
+                print.output() << fmt::line;
                 cprint.printExpr(init->getInit(), print);
-                print.end_record();
+                print.end_ctor();
                 print.cons();
             }
             print.end_list();
@@ -502,10 +488,11 @@ public:
             cprint.printStmt(decl->getBody(), print);
             print.end_tuple();
             print.end_ctor();
+            print.end_ctor();
         } else {
             print.none();
         }
-        print.output() << "|}";
+        print.end_ctor();
         print.end_ctor();
         return true;
     }

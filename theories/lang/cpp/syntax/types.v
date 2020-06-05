@@ -104,14 +104,19 @@ Proof.
 Defined.
 Global Instance type_eq: EqDecision type := type_eq_dec.
 
+Definition QCV := {| q_const := true ; q_volatile := true |}.
+Definition QC := {| q_const := true ; q_volatile := false |}.
+Definition QV := {| q_const := false ; q_volatile := true |}.
+Definition QM := {| q_const := false ; q_volatile := false |}.
+
 Definition Qconst_volatile : type -> type :=
-  Tqualified {| q_const := true ; q_volatile := true |}.
+  Tqualified QCV.
 Definition Qconst : type -> type :=
-  Tqualified {| q_const := true ; q_volatile := false |}.
+  Tqualified QC.
 Definition Qmut_volatile : type -> type :=
-  Tqualified {| q_const := false ; q_volatile := true |}.
+  Tqualified QV.
 Definition Qmut : type -> type :=
-  Tqualified {| q_const := false ; q_volatile := false |}.
+  Tqualified QM.
 
 Definition Tref : globname -> type := Tnamed.
 

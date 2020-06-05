@@ -94,10 +94,9 @@ ClangPrinter::printExprAndValCat(const Expr *d, CoqPrinter &print) {
 void
 ClangPrinter::printField(const ValueDecl *decl, CoqPrinter &print) {
     if (const FieldDecl *f = dyn_cast<clang::FieldDecl>(decl)) {
-        print.begin_record();
-        print.output() << "f_type :=" << fmt::nbsp;
+        print.ctor("Build_field", false);
         this->printGlobalName(f->getParent(), print);
-        print.output() << fmt::nbsp << "; f_name := ";
+        print.output() << fmt::nbsp;
 
         if (decl->getName() == "") {
             const CXXRecordDecl *rd = f->getType()->getAsCXXRecordDecl();
@@ -108,14 +107,14 @@ ClangPrinter::printField(const ValueDecl *decl, CoqPrinter &print) {
         } else {
             print.str(decl->getName());
         }
-        print.end_record();
+        print.end_ctor();
     } else if (const CXXMethodDecl *meth =
                    dyn_cast<clang::CXXMethodDecl>(decl)) {
-        print.begin_record() << "f_type :=" << fmt::nbsp;
+        print.ctor("Build_field", false);
         this->printGlobalName(meth->getParent(), print);
-        print.output() << fmt::nbsp << "; f_name := \""
+        print.output() << fmt::nbsp << "\""
                        << decl->getNameAsString() << "\"";
-        print.end_record();
+        print.end_ctor();
     } else if (const VarDecl *var = dyn_cast<VarDecl>(decl)) {
 
     } else {
