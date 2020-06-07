@@ -73,6 +73,28 @@ Variant signed : Set := Signed | Unsigned.
 Global Instance: EqDecision signed.
 Proof. solve_decision. Defined.
 
+Variant calling_conv : Set :=
+| CC_C
+| CC_X86StdCall
+| CC_X86FastCall
+| CC_X86ThisCall
+| CC_X86VectorCall
+| CC_X86Pascal
+| CC_Win64
+| CC_X86_64SysV
+| CC_X86RegCall
+| CC_AAPCS
+| CC_AAPCS_VFP
+| CC_IntelOclBicc
+| CC_SpirFunction
+| CC_OpenCLKernel
+| CC_Swift
+| CC_PreserveMost
+| CC_PreserveAll
+| CC_AArch64VectorCall.
+Global Instance: EqDecision calling_conv.
+Proof. solve_decision. Defined.
+
 
 (* types *)
 Inductive type : Set :=
@@ -83,7 +105,7 @@ Inductive type : Set :=
 | Tvoid
 | Tarray (_ : type) (_ : N) (* unknown sizes are represented by pointers *)
 | Tnamed (_ : globname)
-| Tfunction (_ : type) (_ : list type)
+| Tfunction (_ : calling_conv) (_ : type) (_ : list type)
 | Tbool
 | Tmember_pointer (_ : globname) (_ : type)
 | Tfloat (_ : bitsize)
@@ -198,8 +220,8 @@ Fixpoint normalize_type (t : type) : type :=
   | Treference t => Treference (normalize_type t)
   | Trv_reference t => Trv_reference (normalize_type t)
   | Tarray t n => Tarray (normalize_type t) n
-  | Tfunction r args =>
-    Tfunction (drop_norm r) (List.map drop_norm args)
+  | Tfunction cc r args =>
+    Tfunction cc (drop_norm r) (List.map drop_norm args)
   | Tmember_pointer gn t => Tmember_pointer gn (normalize_type t)
   | Tqualified q t => qual_norm q t
   | Tint _ _ => t

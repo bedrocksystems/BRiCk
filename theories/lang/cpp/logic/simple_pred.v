@@ -238,7 +238,7 @@ Module SimpleCPP.
               [| vs = aptr p |]
           | _ => lfalse
           end
-        | Tfunction _ _
+        | Tfunction _ _ _
         | Treference _
         | Trv_reference _ =>
           match v with

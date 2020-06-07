@@ -163,7 +163,7 @@ Module Type Stmt.
              (free ** k (Rbind x p ρ) Q))
         end
 
-      | Tfunction _ _ => lfalse (* not supported *)
+      | Tfunction _ _ _ => lfalse (* not supported *)
 
       | Tqualified _ ty => wp_decl ρ x ty init dtor k Q
       | Tnullptr =>

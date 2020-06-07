@@ -58,7 +58,7 @@ Module Type Init.
 
       | Treference t => lfalse (* reference fields are not supported *)
       | Trv_reference t => lfalse (* reference fields are not supported *)
-      | Tfunction _ _ => lfalse (* functions not supported *)
+      | Tfunction _ _ _ => lfalse (* functions not supported *)
 
       | Tqualified _ ty => wp_initialize ty addr init k
       | Tnullptr => lfalse (* nullptr fields are not supported *)

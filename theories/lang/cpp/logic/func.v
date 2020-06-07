@@ -24,18 +24,20 @@ Section with_cpp.
   (* Hoare triple for a function.
    * note(gmm): these should include linkage specifications.
    *)
-  Definition TSFunction@{X Z Y} (ret : type) (targs : list type)
+  Definition TSFunction@{X Z Y} (cc : calling_conv) (ret : type) (targs : list type)
              (PQ : thread_info -> WithPrePost@{X Z Y} mpredI)
   : function_spec :=
-    {| fs_return    := ret
+    {| fs_cc        := cc
+     ; fs_return    := ret
      ; fs_arguments := targs
      ; fs_spec ti   := WppD (PQ ti) |}.
 
 
-  Definition SFunction@{X Z Y} (ret : type) (targs : list type)
+  Definition SFunction@{X Z Y} (cc : calling_conv) (ret : type) (targs : list type)
              (PQ : WithPrePost@{X Z Y} mpredI)
   : function_spec :=
-    {| fs_return    := ret
+    {| fs_cc        := cc
+     ; fs_return    := ret
      ; fs_arguments := targs
      ; fs_spec _    := WppD PQ |}.
 
@@ -52,7 +54,7 @@ Section with_cpp.
         (this :: args,
          _at (_eqv this) (anyR (Tnamed class) 1) ** P) in
     let this_type := Qmut (Tnamed class) in
-    SFunction (Qmut Tvoid) (Qconst (Tpointer this_type) :: targs)
+    SFunction CC_X86ThisCall (Qmut Tvoid) (Qconst (Tpointer this_type) :: targs)
               {| wpp_with := TeleS (fun this : ptr => (PQ this).(wpp_with))
                ; wpp_pre this :=
                    tele_map (map_pre (Vptr this)) (PQ this).(wpp_pre)
@@ -71,7 +73,7 @@ Section with_cpp.
                                   (result, _at (_eq this) (anyR (Tnamed class) 1) ** Q)) Q |}
     in
     let this_type := Qmut (Tnamed class) in
-    SFunction@{X Z Y} (Qmut Tvoid) (Qconst (Tpointer this_type) :: nil)
+    SFunction@{X Z Y} CC_X86ThisCall (Qmut Tvoid) (Qconst (Tpointer this_type) :: nil)
               {| wpp_with := TeleS (fun this : ptr => (PQ this).(wpp_with))
                ; wpp_pre this :=
                    tele_map (map_pre this) (PQ this).(wpp_pre)
@@ -88,7 +90,7 @@ Section with_cpp.
     let map_pre this '(args, P) := (this :: args, P) in
     let class_type := Tnamed class in
     let this_type := Tqualified qual class_type in
-    SFunction ret (Qconst (Tpointer this_type) :: targs)
+    SFunction CC_X86ThisCall ret (Qconst (Tpointer this_type) :: targs)
               {| wpp_with := TeleS (fun this : ptr => (PQ this).(wpp_with))
                ; wpp_pre this :=
                    tele_map (map_pre (Vptr this)) (PQ this).(wpp_pre)
@@ -142,14 +144,14 @@ Section with_cpp.
         else
           wp (resolve:=resolve) ⊤ ti ρ body (Kfree frees (val_return (fun x => |> Q x)))))
       | Builtin builtin =>
-        wp_builtin ⊤ ti builtin (Tfunction f.(f_return) (List.map snd f.(f_params))) args Q
+        wp_builtin ⊤ ti builtin (Tfunction f.(f_cc) f.(f_return) (List.map snd f.(f_params))) args Q
       end
     end.
 
   Definition func_ok (f : Func) (ti : thread_info) (spec : function_spec)
     : mpred :=
       [| type_of_spec spec =
-         normalize_type (Tfunction f.(f_return) (List.map snd f.(f_params))) |] **
+         normalize_type (Tfunction f.(f_cc) f.(f_return) (List.map snd f.(f_params))) |] **
       (* forall each argument, apply to [fs_spec ti] *)
       □ Forall Q : val -> mpred, Forall vals,
         spec.(fs_spec) ti vals Q -* wp_func f ti vals Q.
@@ -174,7 +176,7 @@ Section with_cpp.
   Definition method_ok (m : Method) (ti : thread_info) (spec : function_spec)
     : mpred :=
     [| type_of_spec spec =
-       normalize_type (Tfunction m.(m_return) (Tpointer (Tqualified m.(m_this_qual) (Tnamed m.(m_class))) :: List.map snd m.(m_params))) |] **
+       normalize_type (Tfunction m.(m_cc) m.(m_return) (Tpointer (Tqualified m.(m_this_qual) (Tnamed m.(m_class))) :: List.map snd m.(m_params))) |] **
     (* forall each argument, apply to [fs_spec ti] *)
     □ Forall Q : val -> mpred, Forall vals,
       spec.(fs_spec) ti vals Q -* wp_method m ti vals Q.
@@ -274,7 +276,7 @@ Section with_cpp.
   Definition ctor_ok (ctor : Ctor) (ti : thread_info) (spec : function_spec)
     : mpred :=
     [| type_of_spec spec =
-       normalize_type (Tfunction Tvoid (Tpointer (Tnamed ctor.(c_class)) :: List.map snd ctor.(c_params))) |] **
+       normalize_type (Tfunction ctor.(c_cc) Tvoid (Tpointer (Tnamed ctor.(c_class)) :: List.map snd ctor.(c_params))) |] **
     (* forall each argument, apply to [fs_spec ti] *)
     □ Forall Q : val -> mpred, Forall vals,
       spec.(fs_spec) ti vals Q -* wp_ctor ctor ti vals Q.
@@ -342,7 +344,7 @@ Section with_cpp.
   Definition dtor_ok (dtor : Dtor) (ti : thread_info) (spec : function_spec)
     : mpred :=
     [| type_of_spec spec =
-       normalize_type (Tfunction Tvoid (Tpointer (Tnamed dtor.(d_class)) :: nil)) |] **
+       normalize_type (Tfunction dtor.(d_cc) Tvoid (Tpointer (Tnamed dtor.(d_class)) :: nil)) |] **
     □ Forall Q : val -> mpred, Forall vals,
       spec.(fs_spec) ti vals Q -* wp_dtor dtor ti vals Q.
 

@@ -22,6 +22,7 @@ Proof. solve_decision. Defined.
 Record Ctor : Set :=
 { c_class  : globname
 ; c_params : list (ident * type)
+; c_cc     : calling_conv
 ; c_body   : option (OrDefault (list Initializer * Stmt))
 }.
 Instance: EqDecision Ctor.
@@ -29,6 +30,7 @@ Proof. solve_decision. Defined.
 
 Record Dtor : Set :=
 { d_class  : globname
+; d_cc     : calling_conv
 ; d_body   : option (OrDefault (Stmt * list (FieldOrBase * obj_name)))
 }.
 Instance: EqDecision Dtor.
@@ -44,6 +46,7 @@ Proof. solve_decision. Defined.
 Record Func : Set :=
 { f_return : type
 ; f_params : list (ident * type)
+; f_cc     : calling_conv
 ; f_body   : option FunctionBody
 }.
 Instance: EqDecision Func.
@@ -54,6 +57,7 @@ Record Method : Set :=
 ; m_class   : globname
 ; m_this_qual : type_qualifiers
 ; m_params  : list (ident * type)
+; m_cc      : calling_conv
 ; m_body    : option Stmt
 }.
 Instance: EqDecision Method.

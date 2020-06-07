@@ -14,6 +14,18 @@
 
 using namespace clang;
 
+CallingConv
+getCallingConv(const FunctionDecl *decl) {
+    if (auto ft =
+            dyn_cast_or_null<FunctionType>(decl->getType().getTypePtr())) {
+        return ft->getCallConv();
+    } else {
+        decl->getType().dump();
+        assert(false && "FunctionDecl type is not FunctionType");
+        LLVM_BUILTIN_UNREACHABLE;
+    }
+}
+
 void
 PrintBuiltin(Builtin::ID id, const ValueDecl *decl, CoqPrinter &print,
              ClangPrinter &cprint) {
@@ -80,6 +92,9 @@ printFunction(const FunctionDecl *decl, CoqPrinter &print,
     }
     print.end_list();
 
+    cprint.printCallingConv(getCallingConv(decl), print);
+    print.output() << fmt::nbsp;
+
     if (decl->getBody()) {
         print.ctor("Some", false);
         print.ctor("Impl", false);
@@ -115,6 +130,9 @@ printMethod(const CXXMethodDecl *decl, CoqPrinter &print,
     }
     print.end_list();
 
+    cprint.printCallingConv(getCallingConv(decl), print);
+    print.output() << fmt::nbsp;
+
     print.output() << fmt::line;
     if (decl->getBody()) {
         print.ctor("Some", false);
@@ -139,6 +157,9 @@ printDestructor(const CXXDestructorDecl *decl, CoqPrinter &print,
     auto record = decl->getParent();
     print.ctor("Build_Dtor");
     cprint.printGlobalName(record, print);
+    print.output() << fmt::nbsp;
+
+    cprint.printCallingConv(getCallingConv(decl), print);
     print.output() << fmt::line;
 
     if (decl->isDefaulted()) {
@@ -508,6 +529,10 @@ public:
         }
         print.end_list();
 
+        cprint.printCallingConv(getCallingConv(decl), print);
+        print.output() << fmt::nbsp;
+
+        print.output() << fmt::line;
         if (decl->getBody()) {
             print.some();
             print.ctor("UserDefined");
