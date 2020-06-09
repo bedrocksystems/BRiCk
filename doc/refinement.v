@@ -99,8 +99,9 @@ For examples, see the tests directory.
       StC_ g t ** StC g t |-- (|==> StC_ g t' ** StC g t')%I.
    Proof using.
      unfold StC, StC_. intros.
-     use_protect half_half_update; work.
-   Qed.
+     Locate tactics.
+     (* tactics.use_protect half_half_update; work. (* these moved to a different repo *) *)
+   Abort.
 
   (** Now we define the actual class representation using a named (concurrent) invariant.
    For this, we use [TInv] which correspond to "destroyable invariants".
