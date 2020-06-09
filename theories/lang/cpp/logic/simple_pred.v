@@ -200,8 +200,7 @@ Module SimpleCPP
     Definition encodes (σ : genv) (t : type) (v : val) (vs : list runtime_val) : mpred.
     refine
       match erase_qualifiers t with
-      | Tint sz sgn
-      | Tchar sz sgn =>
+      | Tint sz sgn =>
         match v with
         | Vint v => [| vs = Z_to_bytes (size_to_bytes sz) v |]
         | _ => lfalse

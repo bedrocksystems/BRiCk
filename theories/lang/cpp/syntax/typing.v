@@ -59,7 +59,6 @@ Fixpoint erase_qualifiers (t : type) : type :=
   | Treference t => Treference (erase_qualifiers t)
   | Trv_reference t => Trv_reference (erase_qualifiers t)
   | Tint _ _
-  | Tchar _ _
   | Tbool
   | Tvoid
   | Tfloat _

@@ -104,7 +104,6 @@ Module Type Stmt.
       | Tpointer _
       | Tmember_pointer _ _
       | Tbool
-      | Tchar _ _
       | Tint _ _ =>
         Forall a : ptr,
         let done :=

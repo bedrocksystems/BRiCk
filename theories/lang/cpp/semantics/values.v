@@ -257,8 +257,9 @@ Axiom has_bool_type : forall z,
 Axiom has_int_type : forall sz (sgn : signed) z,
     bound sz sgn z <-> has_type (Vint z) (Tint sz sgn).
 
-Axiom has_char_type : forall sz (sgn : signed) z,
+Theorem has_char_type : forall sz (sgn : signed) z,
     bound sz sgn z <-> has_type (Vint z) (Tchar sz sgn).
+Proof. apply has_int_type. Qed.
 
 Axiom has_type_qual : forall t q x,
     has_type x (drop_qualifiers t) ->
@@ -307,7 +308,6 @@ Fixpoint size_of (resolve : genv) (t : type) : option N :=
   | Treference _ => None
   | Trv_reference _ => None
   | Tint sz _ => Some (bytesN sz)
-  | Tchar sz _ => Some (bytesN sz)
   | Tvoid => None
   | Tarray t n => match size_of resolve t with
                  | None => None

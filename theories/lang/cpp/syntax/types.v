@@ -80,7 +80,6 @@ Inductive type : Set :=
 | Treference (_ : type)
 | Trv_reference (_ : type)
 | Tint (size : bitsize) (signed : signed)
-| Tchar (size : bitsize) (signed : signed)
 | Tvoid
 | Tarray (_ : type) (_ : N) (* unknown sizes are represented by pointers *)
 | Tnamed (_ : globname)
@@ -96,6 +95,7 @@ Inductive type : Set :=
 .
 Definition Talias (underlying : type) (name : globname) : type :=
   underlying.
+Notation Tchar := Tint (only parsing).
 Definition type_eq_dec : forall (ty1 ty2 : type), { ty1 = ty2 } + { ty1 <> ty2 }.
 Proof.
   fix IHty1 1.
@@ -203,7 +203,6 @@ Fixpoint normalize_type (t : type) : type :=
   | Tmember_pointer gn t => Tmember_pointer gn (normalize_type t)
   | Tqualified q t => qual_norm q t
   | Tint _ _ => t
-  | Tchar _ _ => t
   | Tbool => t
   | Tvoid => t
   | Tnamed _ => t
@@ -257,8 +256,8 @@ Definition T_longlong : type := Tint long_long_bits Signed.
 Definition T_uint : type := Tint int_bits Unsigned.
 Definition T_int : type := Tint int_bits Signed.
 
-Definition T_schar : type := Tchar char_bits Signed.
-Definition T_uchar : type := Tchar char_bits Unsigned.
+Notation T_schar := (Tchar char_bits Signed) (only parsing).
+Notation T_uchar := (Tchar char_bits Unsigned) (only parsing).
 
 
 Coercion CCcast : PrimCast >-> Cast.

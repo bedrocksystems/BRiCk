@@ -187,16 +187,6 @@ Module Type Expr.
           Q v' free)
         |-- wp_prval (Eunop o e ty) Q.
 
-    (* note(gmm): operators need types! *)
-    Fixpoint companion_type (t : type) : option type :=
-      match t with
-      | Tpointer _ => Some (Tint int_bits Signed)
-      | Tint _ _ => Some t
-      | Tchar _ _ => Some t
-      | Tqualified _ t => companion_type t
-      | _ => None
-      end.
-
     Axiom wp_lval_preinc : forall e ty Q,
         match companion_type (type_of e) with
         | Some cty =>

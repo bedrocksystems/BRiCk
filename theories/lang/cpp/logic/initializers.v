@@ -49,7 +49,6 @@ Module Type Init.
       | Tpointer _
       | Tmember_pointer _ _
       | Tbool
-      | Tchar _ _
       | Tint _ _ =>
         wp_prval init (fun v free =>
                          _at (_eqv addr) (anyR (erase_qualifiers ty) 1) **
