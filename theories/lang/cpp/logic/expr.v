@@ -15,8 +15,9 @@ From bedrock.lang.cpp Require Import ast semantics.
 From bedrock.lang.cpp.logic Require Import
      pred path_pred heap_pred
      destroy
-     wp call intensional
-     translation_unit.
+     wp call
+     translation_unit
+     dispatch.
 
 Module Type Expr.
 
@@ -481,7 +482,8 @@ Module Type Expr.
             | nil => lfalse
             | this :: vs => |> fspec (Vptr fa) (this :: vs) (fun v => Q v free)
             end)
-        |-- wp_prval (Emember_call (inl (f, false)) obj es ty) Q.
+        |-- wp_prval (Emember_call (inl (f, Direct)) obj es ty) Q.
+
     Axiom wp_xval_member_call : forall ty f obj es Q,
         Exists fa, _global f &~ fa **
         wp_args ((Lvalue, obj)::es) (fun vs free =>
@@ -489,7 +491,7 @@ Module Type Expr.
             | nil => lfalse
             | this :: vs => |> fspec (Vptr fa) (this :: vs) (fun v => Q v free)
             end)
-        |-- wp_xval (Emember_call (inl (f, false)) obj es ty) Q.
+        |-- wp_xval (Emember_call (inl (f, Direct)) obj es ty) Q.
     Axiom wp_init_member_call : forall f es addr ty obj Q,
         Exists fa, _global f &~ fa **
         wp_args ((Rvalue, obj)::es) (fun vs free =>
@@ -498,12 +500,53 @@ Module Type Expr.
              | this :: vs => |> fspec (Vptr fa) (this :: vs) (fun res =>
                       [| res = addr |] -* Q free)
              end)
-        |-- wp_init ty addr (Emember_call (inl (f, false)) obj es ty) Q.
+        |-- wp_init ty addr (Emember_call (inl (f, Direct)) obj es ty) Q.
+
+    (** virtual functions *)
+    Fixpoint class_type (t : type) : option globname :=
+      match t with
+      | Tnamed gn => Some gn
+      | Tpointer t
+      | Treference t
+      | Trv_reference t => class_type t
+      | Tqualified _ t => class_type t
+      | _ => None
+      end.
+
+    Axiom wp_prval_virtual_call : forall ty f obj es Q,
+      wp_lval obj (fun this free => wp_args es (fun vs free' =>
+          match class_type (type_of obj) with
+          | Some cls =>
+            resolve_virtual (σ:=resolve) (_eqv this) cls f (fun fimpl_addr thisp =>
+              |> fspec (Vptr fimpl_addr) (Vptr thisp :: vs) (fun v => Q v (free ** free')))
+          | _ => lfalse
+          end))
+      |-- wp_prval (Emember_call (inl (f, Virtual)) obj es ty) Q.
+
+    Axiom wp_xval_virtual_call : forall ty f obj es Q,
+      wp_lval obj (fun this free => wp_args es (fun vs free' =>
+          match class_type (type_of obj) with
+          | Some cls =>
+            resolve_virtual (σ:=resolve) (_eqv this) cls f (fun fimpl_addr thisp =>
+              |> fspec (Vptr fimpl_addr) (Vptr thisp :: vs) (fun v => Q v (free ** free')))
+          | _ => lfalse
+          end))
+      |-- wp_xval (Emember_call (inl (f, Virtual)) obj es ty) Q.
+
+    Axiom wp_init_virtual_call : forall ty f obj es Q addr,
+      wp_lval obj (fun this free => wp_args es (fun vs free' =>
+          match class_type (type_of obj) with
+          | Some cls =>
+            resolve_virtual (σ:=resolve) (_eqv this) cls f (fun fimpl_addr thisp =>
+              |> fspec (Vptr fimpl_addr) (Vptr thisp :: vs) (fun res => [| res = addr |] -* Q (free ** free')))
+          | _ => lfalse
+          end))
+      |-- wp_init ty addr (Emember_call (inl (f, Virtual)) obj es ty) Q.
 
     (* null *)
     Axiom wp_null : forall Q,
-        Q (Vptr nullptr) empSP
-        |-- wp_prval Enull Q.
+      Q (Vptr nullptr) empSP
+      |-- wp_prval Enull Q.
 
     (** temporary expressions
        note(gmm): these axioms should be reviewed thoroughly

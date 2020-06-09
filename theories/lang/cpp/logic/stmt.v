@@ -14,7 +14,7 @@ From Coq Require Import
 
 From bedrock.lang.cpp Require Import ast semantics.
 From bedrock.lang.cpp.logic Require Import
-     pred path_pred heap_pred destroy wp initializers call intensional.
+     pred path_pred heap_pred destroy wp initializers call.
 
 Module Type Stmt.
   (** weakest pre-condition for statements

@@ -340,3 +340,17 @@ Instance sub_module_dec : RelDecision sub_module :=
           | true => fun pf => left pf
           | false => fun pf => right pf
           end (module_le_sound l r) .
+
+(* [class_compatible a b c] states that translation units [a] and [b] have
+ * the same definitions for the class [cls] (including all transitive
+ * base classes)
+ *
+ * this is necessary, e.g. when code in translation unit [a] wants to call
+ * via a virtual table that was constructed in translation unit [b]
+ *)
+Inductive class_compatible (a b : translation_unit) (cls : globname) : Prop :=
+| Class_compat {st}
+               (_ : a !! cls = Some (Gstruct st))
+               (_ : b !! cls = Some (Gstruct st))
+               (_ : forall base, In base (map fst st.(s_bases)) ->
+                            class_compatible a b base).

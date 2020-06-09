@@ -35,7 +35,7 @@ Proof.
 Qed.
 Lemma None_valid:
   forall M (A : cmraT) (x : cmra_car A),
-    (@uPred_cmra_valid (iResUR M) (optionR A) None) -|- bi_pure True.
+    (@uPred_cmra_valid (iResUR M) (optionR A) None) -|- True.
 Proof.
   intros M A x.
   rewrite (@uPred_primitive.option_validI (iResUR M) _ None). reflexivity.

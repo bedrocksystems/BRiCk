@@ -6,10 +6,10 @@
 Require Import bedrock.lang.cpp.ast.
 Require Import bedrock.lang.cpp.semantics.
 From bedrock.lang.cpp.logic Require Import
-     pred path_pred heap_pred wp destroy intensional.
+     pred path_pred heap_pred wp destroy.
 
 Section with_resolve.
-  Context `{Σ : cpp_logic thread_info} {σ : genv}.
+  Context `{Σ : cpp_logic} {σ : genv}.
   Variables (M : coPset) (ti : thread_info) (ρ : region).
 
   Local Notation wp_lval := (wp_lval (resolve:=σ) M ti ρ).

@@ -88,6 +88,33 @@ Module Type CPP_LOGIC.
     Axiom tptsto_has_type : forall σ t q a v,
         @tptsto σ t q a v |-- @tptsto σ t q a v ** [| has_type v t |] ** valid_ptr a.
 
+    (** this states that the pointer is a pointer to the given type,
+        this is persistent. this implies,
+        - the address is not null
+        - the address is properly aligned (if it exists in memory)
+     *)
+    Parameter type_ptr: forall {resolve : genv} (c: type), ptr -> mpred.
+
+    (** [identity σ this mdc q p] state that [p] is a pointer to a (live)
+        object of type [this] that is part of an object of type [mdc].
+        - if [mdc = None] then this object identity is not initialized yet,
+          e.g. because its base classes are still being constructed.
+
+        the information is primarily used to dispatch virtual function calls.
+
+        compilers can use the ownership here to represent dynamic dispatch
+        tables.
+     *)
+    Parameter identity : forall {σ : genv}
+        (this : globname) (most_derived : option globname),
+        Qp -> ptr -> mpred.
+
+    (** this allows you to forget an object identity, necessary for doing
+        placement [new] over an existing object.
+     *)
+    Axiom identity_forget : forall σ mdc this p,
+        @identity σ this (Some mdc) 1 p |-- @identity σ this None 1 p.
+
     (** the pointer points to the code
 
       note that in the presence of code-loading, function calls will

@@ -23,33 +23,36 @@ Section with_Σ.
     part ** (part -* all).
 
   Axiom decompose_struct
-  : forall cls st q,
+  : forall cls st,
     glob_def resolve cls = Some (Gstruct st) ->
-    anyR (Tnamed cls) q
-    |-- borrow_from
+        anyR (Tnamed cls) 1
+    -|- borrow_from
           (([∗list] base ∈ st.(s_bases),
               let '(gn,_) := base in
-              _offsetR (_super cls gn) (anyR (Tnamed gn) q)) **
+              _offsetR (_super cls gn) (anyR (Tnamed gn) 1)) **
            ([∗list] fld ∈ st.(s_fields),
               let '(n,ty,_) := fld in
               _offsetR (_field {| f_name := n ; f_type := cls |})
-                       (anyR (erase_qualifiers ty) q)))
-          (anyR (Tnamed cls) q).
+                       (anyR (erase_qualifiers ty) 1)) **
+           (if has_vtable st
+            then _identity resolve cls None 1
+            else empSP))
+          (anyR (Tnamed cls) 1).
 
   Axiom decompose_union
-  : forall (cls : globname) st q,
+  : forall (cls : globname) st,
     glob_def resolve cls = Some (Gunion st) ->
-    anyR (Tnamed cls) q
-    |-- [∧list] it ∈ st.(u_fields),
+        anyR (Tnamed cls) 1
+    -|- [∧list] it ∈ st.(u_fields),
            let '(i, t, _) := it in
            let f := _field {| f_name := i ; f_type := cls |} in
-           borrow_from (_offsetR f (anyR (erase_qualifiers t) q))
-                       (anyR (Tnamed cls) q).
+           borrow_from (_offsetR f (anyR (erase_qualifiers t) 1))
+                       (anyR (Tnamed cls) 1).
 
-  Axiom decompose_array : forall t n q,
-    anyR (Tarray t n) q
-    |-- borrow_from ([∗list] i ∈ seq 0 (BinNatDef.N.to_nat n),
-                       _offsetR (_sub t (Z.of_nat i)) (anyR t q))
-                    (anyR (Tarray t n) q).
+  Axiom decompose_array : forall t n,
+        anyR (Tarray t n) 1
+    -|- borrow_from ([∗list] i ∈ seq 0 (BinNatDef.N.to_nat n),
+                       _offsetR (_sub t (Z.of_nat i)) (anyR t 1))
+                    (anyR (Tarray t n) 1).
 
 End with_Σ.

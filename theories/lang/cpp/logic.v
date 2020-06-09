@@ -11,7 +11,6 @@ From bedrock.lang.cpp.logic Require Export
      heap_pred
      spec
      wp
-     intensional
      destroy
      call
      expr

@@ -246,7 +246,10 @@ Section with_cpp.
     iIntros "#X"; iModIntro; iFrame "#".
   Qed.
 
-
+  (** object identity *)
+  Definition _identity (σ : genv) (cls : globname) (mdc : option globname)
+             (q : Qp) : Rep :=
+    as_Rep (@identity _ _ σ cls mdc q).
 
   (********************* DERIVED CONCEPTS ****************************)
 

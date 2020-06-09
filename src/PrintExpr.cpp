@@ -482,17 +482,22 @@ public:
                                 CoqPrinter& print, ClangPrinter& cprint,
                                 const ASTContext&) {
         print.ctor("Emember_call");
+        auto callee = expr->getCallee()->IgnoreParens();
         auto method = expr->getMethodDecl();
-        if (method) {
+        if (auto me = dyn_cast<MemberExpr>(callee)) {
             print.ctor("inl") << fmt::lparen;
             cprint.printGlobalName(method, print);
             print.output() << "," << fmt::nbsp;
-            print.output() << (method->isVirtual() ? "true" : "false")
-                           << fmt::rparen;
+            if (me->hasQualifier() or not method->isVirtual()) {
+                // not virtual call
+                print.output() << "Direct";
+            } else {
+                print.output() << "Virtual";
+            }
+            print.output() << fmt::rparen;
             print.end_ctor();
 
             print.output() << fmt::nbsp;
-            auto me = dyn_cast<MemberExpr>(expr->getCallee());
             assert(me != nullptr &&
                    "member call with MethodDecl must be a MemberExpr");
             if (me->isArrow()) {
@@ -502,10 +507,7 @@ public:
             } else {
                 cprint.printExpr(expr->getImplicitObjectArgument(), print);
             }
-        } else {
-            auto me = dyn_cast<ParenExpr>(expr->getCallee());
-            assert(me != nullptr && "expecting a paren");
-            auto bo = dyn_cast<BinaryOperator>(me->getSubExpr());
+        } else if (auto bo = dyn_cast<BinaryOperator>(callee)) {
             assert(bo != nullptr && "expecting a binary operator");
             logging::unsupported() << "member pointers are currently not "
                                       "supported in the logic.\n";
@@ -526,6 +528,8 @@ public:
                 assert(false &&
                        "pointer to member function should be a pointer");
             }
+        } else {
+            assert(false && "no method and not a binary operator");
         }
 
         print.output() << fmt::nbsp << fmt::lparen;

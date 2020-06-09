@@ -193,30 +193,7 @@ Section with_Σ.
     | Some o => offsetO o
     end.
 
-  Definition _field_def (resolve: genv) (f : field) : Offset :=
-    offsetO_opt (offset_of resolve f.(f_type) f.(f_name)).
-  Definition _field_aux : seal (@_field_def). Proof using. by eexists. Qed.
-  Definition _field := _field_aux.(unseal).
-  Definition _field_eq : @_field = _ := _field_aux.(seal_eq).
-
-  Definition _sub_def (resolve:genv) (t : type) (i : Z) : Offset :=
-    offsetO_opt (match size_of resolve t with
-                 | Some o => Some (Z.of_N o * i)%Z
-                 | _ => None
-                 end).
-  Definition _sub_aux : seal (@_sub_def). by eexists. Qed.
-  Definition _sub := _sub_aux.(unseal).
-  Definition _sub_eq : @_sub = _ := _sub_aux.(seal_eq).
-
-  (* this represents a derived-to-base cast
-     todo: determine if this needs to handle a chain.
-   *)
-  Definition _super_def (resolve:genv) (sub super : globname) : Offset :=
-    offsetO_opt (parent_offset resolve sub super).
-  Definition _super_aux : seal (@_super_def). by eexists. Qed.
-  Definition _super := _super_aux.(unseal).
-  Definition _super_eq : @_super = _ := _super_aux.(seal_eq).
-
+  (** the identity [Offset] *)
   Definition _id_def : Offset.
    refine {| _offset from to := [| from = to |] |}.
    abstract (intros; iIntros "[-> #H]"; iFrame "#").
@@ -226,6 +203,7 @@ Section with_Σ.
   Definition _id := _id_aux.(unseal).
   Definition _id_eq : @_id = _ := _id_aux.(seal_eq).
 
+  (** path composition *)
   Definition _dot_def (o1 o2 : Offset) : Offset.
   refine {| _offset from to :=
               Exists mid, _offset o1 from mid ** _offset o2 mid to |}.
@@ -250,6 +228,46 @@ Section with_Σ.
   Definition _dot := _dot_aux.(unseal).
   Definition _dot_eq : @_dot = _ := _dot_aux.(seal_eq).
 
+
+  (** access a field *)
+  Definition _field_def (resolve: genv) (f : field) : Offset :=
+    offsetO_opt (offset_of resolve f.(f_type) f.(f_name)).
+  Definition _field_aux : seal (@_field_def). Proof using. by eexists. Qed.
+  Definition _field := _field_aux.(unseal).
+  Definition _field_eq : @_field = _ := _field_aux.(seal_eq).
+
+  (** subscript an array *)
+  Definition _sub_def (resolve:genv) (t : type) (i : Z) : Offset :=
+    offsetO_opt (match size_of resolve t with
+                 | Some o => Some (Z.of_N o * i)%Z
+                 | _ => None
+                 end).
+  Definition _sub_aux : seal (@_sub_def). by eexists. Qed.
+  Definition _sub := _sub_aux.(unseal).
+  Definition _sub_eq : @_sub = _ := _sub_aux.(seal_eq).
+
+  (** [_base derived base] is a cast from derived to base.
+   *)
+  Definition _base_def (resolve:genv) (derived base : globname) : Offset :=
+    offsetO_opt (parent_offset resolve derived base).
+  Definition _base_aux : seal (@_base_def). by eexists. Qed.
+  Definition _base := _base_aux.(unseal).
+  Definition _base_eq : @_base = _ := _base_aux.(seal_eq).
+  Definition _super := _base.
+
+  (** [_derived base derived] is a cast from base to derived
+   *)
+  Definition _derived_def (resolve:genv) (base derived : globname) : Offset :=
+    offsetO_opt match parent_offset resolve derived base with
+                | Some o => Some (0 - o)%Z
+                | None => None
+                end.
+  Definition _derived_aux : seal (@_derived_def). by eexists. Qed.
+  Definition _derived := _derived_aux.(unseal).
+  Definition _derived_eq : @_derived = _ := _derived_aux.(seal_eq).
+
+  (** offset from a location
+   *)
   Definition _offsetL_def (o : Offset) (l : Loc) : Loc.
   refine
     {| _location p := Exists from, _offset o from p ** _location l from |}.

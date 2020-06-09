@@ -11,7 +11,7 @@ Local Open Scope Z_scope.
 Require Import bedrock.lang.cpp.ast.
 Require Import bedrock.lang.cpp.semantics.
 From bedrock.lang.cpp.logic Require Import
-     pred path_pred heap_pred call wp intensional.
+     pred path_pred heap_pred call wp.
 
 Module Type Init.
 

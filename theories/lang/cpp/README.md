@@ -21,6 +21,10 @@ primitive operators.
 - [values.v](semantics/values.v) contains a notion of values, address arithmetic, etc.
 - [sub_module.v](semantics/sub_module.v) contains definitions related to compatibility of compilation units, used for supporting `#include` files
 - [operator.v](semantics/operator.v) contains definitions of primitive operators.
+- [intensional.v](semantics/intensional.v) contains some definitions used for dealing with intensional parts of our AST
+- [subtyping.v](semantics/subtyping.v) defines the sub-typing relation.
+- [dispatch.v](semantics/dispatch.v) defines the semantics of virtual function resolution.
+
 
 ## Logic
 The [logic](logic) directory contains axiomatic semantics for C++.
@@ -31,7 +35,6 @@ The [logic](logic) directory contains axiomatic semantics for C++.
 - [logic/heap_pred.v](logic/heap_pred.v) defines various assertions over the heap for primitive data types
 - [logic/wp.v](logic/wp.v) declares the set of weakest pre-condition assertions
 - [logic/expr.v](logic/expr.v) defines the axiomatic semantics of expressions
-- [logic/intensional.v](logic/intensional.v) defines some definitions used for dealing with intensional parts of our AST
 - [logic/stmt.v](logic/stmt.v) defines the axiomatic semantics of statements
 - [logic/call.v](logic/call.v) defines the rule for argument evaluation
 - [logic/initializers.v](logic/initializers.v) defines the rules of initialization

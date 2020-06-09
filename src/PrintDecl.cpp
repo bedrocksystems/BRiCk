@@ -116,8 +116,8 @@ printDestructor(const CXXDestructorDecl *decl, CoqPrinter &print,
                                               record->bases_end());
             for (auto i = bases.crbegin(), e = bases.crend(); i != e; i++) {
                 if (i->isVirtual()) {
-                    // fatal("virtual base classes are not supported.");
-                    assert(false);
+                    using namespace logging;
+                    fatal() << "virtual base classes are not supported.";
                 }
                 auto rec = i->getType().getTypePtr()->getAsCXXRecordDecl();
                 if (rec) {
@@ -127,7 +127,8 @@ printDestructor(const CXXDestructorDecl *decl, CoqPrinter &print,
                     cprint.printGlobalName(rec->getDestructor(), print);
                     print.output() << fmt::rparen;
                 } else {
-                    //fatal("base class is not a RecordType.");
+                    using namespace logging;
+                    fatal() << "base class is not a RecordType.";
                     assert(false);
                 }
                 print.output() << "::";
@@ -228,11 +229,12 @@ public:
         cprint.printGlobalName(decl, print);
         print.output() << fmt::nbsp;
         if (!decl->isCompleteDefinition()) {
-            print.output() << "None" << fmt::rparen;
+            print.none();
+            print.end_ctor();
             return true;
         }
 
-        print.ctor("Some", false);
+        print.some();
 
         print.ctor("Build_Union");
         printFields(decl, layout, print, cprint);
@@ -256,7 +258,8 @@ public:
         cprint.printGlobalName(decl, print);
         print.output() << fmt::nbsp;
         if (!decl->isCompleteDefinition()) {
-            print.output() << "None" << fmt::rparen;
+            print.none();
+            print.end_ctor();
             return true;
         }
 
@@ -304,6 +307,50 @@ public:
         }
 
         print.output() << fmt::nbsp << layout.getSize().getQuantity();
+
+        // print the virtual function table
+        print.begin_list();
+        for (auto m : decl->methods()) {
+            if (m->isVirtual()) {
+                print.output() << "(";
+                cprint.printGlobalName(m, print);
+                print.output() << "," << fmt::nbsp;
+                if (m->isPure()) {
+                    print.none();
+                } else {
+                    print.some();
+                    cprint.printGlobalName(m, print);
+                    print.end_ctor();
+                }
+                print.output() << ")";
+                print.cons();
+            }
+        }
+        print.end_list();
+
+        // print the virtual function table
+        print.begin_list();
+        for (auto m : decl->methods()) {
+            if (m->isVirtual() and not m->isPure()) {
+                for (auto o : m->overridden_methods()) {
+                    print.output() << "(";
+                    cprint.printGlobalName(o, print);
+                    print.output() << "," << fmt::nbsp;
+                    cprint.printGlobalName(m, print);
+                    print.output() << ")";
+                    print.cons();
+                }
+            }
+        }
+        print.end_list();
+
+        if (decl->getDestructor() && decl->getDestructor()->isVirtual()) {
+            print.some();
+            cprint.printGlobalName(decl->getDestructor(), print);
+            print.end_ctor();
+        } else {
+            print.none();
+        }
 
         // todo(gmm): i need to print any implicit declarations.
 
@@ -355,16 +402,12 @@ public:
         if (decl->isStatic()) {
             print.ctor("Dfunction");
             cprint.printGlobalName(decl, print);
-            print.output() << fmt::line << fmt::indent;
             printFunction(decl, print, cprint);
-            print.output() << fmt::outdent;
             print.end_ctor();
         } else {
             print.ctor("Dmethod");
             cprint.printGlobalName(decl, print);
-            print.output() << fmt::line << fmt::indent;
             printMethod(decl, print, cprint);
-            print.output() << fmt::outdent;
             print.end_ctor();
         }
         return true;
@@ -413,8 +456,8 @@ public:
             print.begin_tuple();
 
             // print the initializer list
-            // todo(gmm): parent constructors are defaulted if they are not listed,
-            //   i need to make sure that everything ends up in the list, and in the right order
+            // note that implicit initialization is represented explicitly in this list
+            // also, the order is corrrect with respect to initalization order
             print.begin_list();
             for (auto init : decl->inits()) {
                 print.ctor("Build_Initializer");

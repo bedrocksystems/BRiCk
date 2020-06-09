@@ -6,6 +6,7 @@
 Require Import Coq.Classes.DecidableClass.
 Require Import Coq.ZArith.BinIntDef.
 Require Import Coq.Bool.Bool.
+Require Import stdpp.decidable.
 Require Import stdpp.gmap.
 Require Import bedrock.bytestring.
 Require Import bedrock.Util.
@@ -75,11 +76,23 @@ Record Struct : Set :=
   (* ^ the type of layout semantics *)
 ; s_size : N
   (* ^ size of the structure (including padding) *)
+; s_virtuals : list (obj_name * option obj_name)
+  (* ^ function_name -> symbol *)
+; s_overrides : list (obj_name * obj_name)
+  (* ^ k |-> v ~ update k with v *)
+; s_virtual_dtor : option obj_name
+  (* ^ the name of the virtual destructor, if it is virtual *)
 }.
 Instance: EqDecision Struct.
 Proof. solve_decision. Defined.
 
-Variant Ctor_type : Set := Ct_Complete | Ct_Base | Ct_Comdat.
+Definition has_vtable (s : Struct) : bool :=
+  match s.(s_virtuals) with
+  | nil => false
+  | _ :: _ => true
+  end.
+
+Variant Ctor_type : Set := Ct_Complete | Ct_Base | Ct_alloc | Ct_Comdat.
 Instance: EqDecision Ctor_type.
 Proof. solve_decision. Defined.
 

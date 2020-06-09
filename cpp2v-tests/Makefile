@@ -18,7 +18,7 @@ all: $(ALL:%.cpp=%_cpp.vo) $(ALL:%.cpp=%_cpp_names.vo)
 	$(COQC) -Q $(QPATH) bedrock $<
 
 clean:
-	rm -f *.v *.vo *.glob *.aux
+	rm -f *.v *.vo *.vok *.vos *.glob *.aux
 
 .PHONY: clean all
 

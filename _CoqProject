@@ -25,6 +25,9 @@ theories/lang/cpp/ast.v
 theories/lang/cpp/semantics/values.v
 theories/lang/cpp/semantics/operator.v
 theories/lang/cpp/semantics/sub_module.v
+theories/lang/cpp/semantics/subtyping.v
+theories/lang/cpp/semantics/dispatch.v
+theories/lang/cpp/semantics/intensional.v
 theories/lang/cpp/semantics.v
 
 # Program Logic
@@ -32,11 +35,11 @@ theories/lang/cpp/logic/spec.v
 theories/lang/cpp/logic/pred.v
 theories/lang/cpp/logic/path_pred.v
 theories/lang/cpp/logic/heap_pred.v
-theories/lang/cpp/logic/intensional.v
 theories/lang/cpp/logic/wp.v
 theories/lang/cpp/logic/destroy.v
 theories/lang/cpp/logic/destructors.v
 theories/lang/cpp/logic/initializers.v
+theories/lang/cpp/logic/dispatch.v
 theories/lang/cpp/logic/call.v
 theories/lang/cpp/logic/expr.v
 theories/lang/cpp/logic/stmt.v

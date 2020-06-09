@@ -79,6 +79,10 @@ Variant AtomicOp : Set :=
 Instance: EqDecision AtomicOp.
 Proof. solve_decision. Defined.
 
+Variant call_type : Set := Virtual | Direct.
+Instance: EqDecision call_type.
+Proof. solve_decision. Defined.
+
 Inductive Expr : Set :=
 | Econst_ref (_ : VarRef) (_ : type)
   (* ^ these are different because they do not have addresses *)
@@ -118,8 +122,8 @@ Inductive Expr : Set :=
 | Ecast    (_ : Cast) (_ : ValCat * Expr) (_ : type)
 
 | Emember  (obj : Expr) (_ : field) (_ : type)
-| Emember_call (method : (globname * bool) + Expr) (obj : Expr) (_ : list (ValCat * Expr)) (_ : type)
-(* ^ in (globname * bool), Boolean = true when method being called is virtual *)
+| Emember_call (method : (obj_name * call_type) + Expr) (obj : Expr) (_ : list (ValCat * Expr)) (_ : type)
+(* ^ in (globname * bool), bool = true when method being called is virtual *)
 
 | Esubscript (_ : Expr) (_ : Expr) (_ : type)
 | Esize_of (_ : type + Expr) (_ : type)
