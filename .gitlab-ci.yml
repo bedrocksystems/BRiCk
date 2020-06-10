@@ -142,7 +142,7 @@ pages:
     - make touch_deps
     - make public
   only:
-    - master
+    - coqdoc
   artifacts:
     paths:
       - public
