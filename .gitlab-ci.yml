@@ -133,7 +133,7 @@ release_previous:
     LLVM_MAJ_VER: ${LLVM_PREV_MAJ_VER}
 
 pages:
-  image: registry.gitlab.com/bedrocksystems/docker-image:cpp2v-llvm${LLVM_MAJ_VER}
+  image: registry.gitlab.com/bedrocksystems/docker-image:cpp2v-llvm${LLVM_CUR_MAJ_VER}
   stage: pages
   dependencies:
     - test_latest
