@@ -56,7 +56,7 @@ release: coq cpp2v plugin
 	cp -r theories cpp2v/bedrock
 
 clean: Makefile.coq
-	$(MAKE) -f Makefile.coq clean
+	$(MAKE) -f Makefile.coq cleanall
 	rm -f Makefile.coq Makefile.coq.conf
 	$(MAKE) -C doc clean
 
