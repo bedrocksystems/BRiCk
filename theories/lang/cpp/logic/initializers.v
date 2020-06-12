@@ -3,10 +3,7 @@
  *
  * SPDX-License-Identifier: LGPL-2.1 WITH BedRock Exception for use over network, see repository root for details.
  *)
-Require Import Coq.ZArith.ZArith.
 Require Import Coq.Lists.List.
-
-Local Open Scope Z_scope.
 
 Require Import bedrock.lang.cpp.ast.
 Require Import bedrock.lang.cpp.semantics.
@@ -121,6 +118,19 @@ Module Type Init.
         wp_array_init ety addr array_list (fun free => Q free)
       end
       |-- wp_init (Tarray ety sz) addr (Einitlist ls fill (Tarray ety sz)) Q.
+
+    Axiom wp_prval_initlist_default : forall t Q,
+          match get_default t with
+          | None => False
+          | Some v => Q v empSP
+          end
+      |-- wp_prval (Einitlist nil None t) Q.
+
+    Axiom wp_prval_initlist_prim : forall t e Q,
+          (if prim_initializable t
+           then wp_prval e Q
+           else False)
+      |-- wp_prval (Einitlist (e :: nil) None t) Q.
 
     Axiom wp_init_cast_noop : forall e ty loc ty' Q,
         wp_init loc ty e Q

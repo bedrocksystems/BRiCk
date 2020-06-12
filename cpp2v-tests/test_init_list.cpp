@@ -14,6 +14,9 @@ struct C : public B {
     int x;
     C():x(0),y(7) {}
     virtual int foo() { return 1; }
+
+    int _other3{3};
+    int _other0{};
 };
 
 int test(C* c) {
