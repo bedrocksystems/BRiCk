@@ -211,8 +211,8 @@ public:
             print.output() << "," << fmt::nbsp;
             cprint.printQualType(field->getType(), print);
             print.output() << "," << fmt::nbsp;
-            print.output() << "Build_LayoutInfo "
-                           << layout.getFieldOffset(i++) << ")";
+            print.output() << "Build_LayoutInfo " << layout.getFieldOffset(i++)
+                           << ")";
             print.cons();
         };
         print.end_list();
@@ -239,8 +239,7 @@ public:
         print.ctor("Build_Union");
         printFields(decl, layout, print, cprint);
 
-        print.output() << fmt::line
-                       << layout.getSize().getQuantity()
+        print.output() << fmt::line << layout.getSize().getQuantity()
                        << fmt::nbsp;
 
         print.end_ctor();
@@ -437,7 +436,6 @@ public:
                                  const ASTContext &) {
         print.ctor("Dconstructor");
         cprint.printGlobalName(decl, print);
-        print.output() << fmt::line;
         print.ctor("Build_Ctor");
         cprint.printGlobalName(decl->getParent(), print);
         print.output() << fmt::line;
@@ -449,7 +447,6 @@ public:
         }
         print.end_list();
 
-        print.output() << fmt::line;
         if (decl->getBody()) {
             print.some();
             print.ctor("UserDefined");
@@ -545,7 +542,6 @@ public:
                                 const ASTContext &ctxt) {
         print.ctor("Ddestructor");
         cprint.printGlobalName(decl, print);
-        print.output() << fmt::line;
         printDestructor(decl, print, cprint);
         print.end_ctor();
         return true;

@@ -15,7 +15,7 @@ Set Default Proof Using "Type".
 Definition Nanon (ty : globname) : globname :=
   ("#" ++ ty)%bs.
 
-Definition Talias (underlying : type) (name : globname) : type :=
+Definition Talias (name : globname) (underlying : type) : type :=
   underlying.
 
 Definition mk_overrides (methods : list (obj_name * obj_name)) : list (obj_name * obj_name) := methods.

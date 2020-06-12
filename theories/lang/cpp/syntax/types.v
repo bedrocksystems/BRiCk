@@ -76,9 +76,9 @@ Proof. solve_decision. Defined.
 
 (* types *)
 Inductive type : Set :=
-| Tpointer (_ : type)
-| Treference (_ : type)
-| Trv_reference (_ : type)
+| Tptr (_ : type)
+| Tref (_ : type)
+| Trref (_ : type)
 | Tint (size : bitsize) (signed : signed)
 | Tvoid
 | Tarray (_ : type) (_ : N) (* unknown sizes are represented by pointers *)
@@ -93,8 +93,6 @@ Inductive type : Set :=
    some Tarch types, like ARM SVE, are "sizeless", hence [option size]. *)
 | Tarch (_ : option bitsize) (name : bs)
 .
-Definition Talias (underlying : type) (name : globname) : type :=
-  underlying.
 Notation Tchar := Tint (only parsing).
 Definition type_eq_dec : forall (ty1 ty2 : type), { ty1 = ty2 } + { ty1 <> ty2 }.
 Proof.
@@ -104,6 +102,10 @@ Proof.
 Defined.
 Global Instance type_eq: EqDecision type := type_eq_dec.
 
+Notation Tpointer := Tptr (only parsing).
+Notation Treference := Tref (only parsing).
+Notation Trv_reference := Trref (only parsing).
+Notation Tfun := Tfunction (only parsing).
 Definition QCV := {| q_const := true ; q_volatile := true |}.
 Definition QC := {| q_const := true ; q_volatile := false |}.
 Definition QV := {| q_const := false ; q_volatile := true |}.
@@ -117,8 +119,6 @@ Definition Qmut_volatile : type -> type :=
   Tqualified QV.
 Definition Qmut : type -> type :=
   Tqualified QM.
-
-Definition Tref : globname -> type := Tnamed.
 
 (*
 Record TypeInfo : Set :=

@@ -96,18 +96,19 @@ public:
 
     void VisitTemplateTypeParmType(const TemplateTypeParmType* type,
                                    CoqPrinter& print, ClangPrinter& cprint) {
-        print.ctor("Ttemplate") << "\"" << type->getDecl()->getNameAsString()
-                                << "\"";
+        print.ctor("Ttemplate")
+            << "\"" << type->getDecl()->getNameAsString() << "\"";
         print.end_ctor();
     }
 
     void VisitEnumType(const EnumType* type, CoqPrinter& print,
                        ClangPrinter& cprint) {
-        print.ctor("@Talias");
+        print.ctor("@Talias", false);
+        cprint.printGlobalName(type->getDecl(), print);
+        print.output() << fmt::nbsp;
         cprint.printQualType(
             //getPromotionType returns the integer type that the enum promotes to
             type->getDecl()->getCanonicalDecl()->getPromotionType(), print);
-        cprint.printGlobalName(type->getDecl(), print);
         print.end_ctor();
     }
     void VisitRecordType(const RecordType* type, CoqPrinter& print,
@@ -222,32 +223,32 @@ public:
 
     void VisitLValueReferenceType(const LValueReferenceType* type,
                                   CoqPrinter& print, ClangPrinter& cprint) {
-        print.ctor("Treference");
+        print.ctor("Tref", false);
         printQualType(type->getPointeeType(), print, cprint);
         print.end_ctor();
     }
 
     void VisitRValueReferenceType(const RValueReferenceType* type,
                                   CoqPrinter& print, ClangPrinter& cprint) {
-        print.ctor("Trv_reference");
+        print.ctor("Trref", false);
         printQualType(type->getPointeeType(), print, cprint);
         print.end_ctor();
     }
 
     void VisitPointerType(const PointerType* type, CoqPrinter& print,
                           ClangPrinter& cprint) {
-        print.ctor("Tpointer");
+        print.ctor("Tptr", false);
         printQualType(type->getPointeeType(), print, cprint);
         print.end_ctor();
     }
 
     void VisitTypedefType(const TypedefType* type, CoqPrinter& print,
                           ClangPrinter& cprint) {
-        print.ctor("@Talias");
+        print.ctor("@Talias", false);
+        cprint.printGlobalName(type->getDecl(), print);
+        print.output() << fmt::nbsp;
         cprint.printQualType(
             type->getDecl()->getCanonicalDecl()->getUnderlyingType(), print);
-        print.output() << fmt::nbsp;
-        cprint.printGlobalName(type->getDecl(), print);
         print.output() << fmt::rparen;
     }
 
@@ -289,7 +290,7 @@ public:
                                   CoqPrinter& print, ClangPrinter& cprint) {
         // note(gmm): i might want to note the sugar.
         print.ctor("Qconst");
-        print.ctor("Tpointer", false);
+        print.ctor("Tptr", false);
         printQualType(type->getElementType(), print, cprint);
         print.output() << fmt::rparen << fmt::rparen;
     }
@@ -297,7 +298,7 @@ public:
     void VisitDecayedType(const DecayedType* type, CoqPrinter& print,
                           ClangPrinter& cprint) {
         print.ctor("Qconst");
-        print.ctor("Tpointer", false);
+        print.ctor("Tptr", false);
         printQualType(type->getPointeeType(), print, cprint);
         print.output() << fmt::rparen << fmt::rparen;
     }
