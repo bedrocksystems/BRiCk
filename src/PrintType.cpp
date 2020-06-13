@@ -230,7 +230,7 @@ public:
 
     void VisitRValueReferenceType(const RValueReferenceType* type,
                                   CoqPrinter& print, ClangPrinter& cprint) {
-        print.ctor("Trref", false);
+        print.ctor("Trv_ref", false);
         printQualType(type->getPointeeType(), print, cprint);
         print.end_ctor();
     }

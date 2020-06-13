@@ -78,7 +78,7 @@ Proof. solve_decision. Defined.
 Inductive type : Set :=
 | Tptr (_ : type)
 | Tref (_ : type)
-| Trref (_ : type)
+| Trv_ref (_ : type)
 | Tint (size : bitsize) (signed : signed)
 | Tvoid
 | Tarray (_ : type) (_ : N) (* unknown sizes are represented by pointers *)
@@ -104,7 +104,7 @@ Global Instance type_eq: EqDecision type := type_eq_dec.
 
 Notation Tpointer := Tptr (only parsing).
 Notation Treference := Tref (only parsing).
-Notation Trv_reference := Trref (only parsing).
+Notation Trv_reference := Trv_ref (only parsing).
 Notation Tfun := Tfunction (only parsing).
 Definition QCV := {| q_const := true ; q_volatile := true |}.
 Definition QC := {| q_const := true ; q_volatile := false |}.
