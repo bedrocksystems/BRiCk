@@ -8,6 +8,7 @@ Require Import Coq.Classes.Morphisms.
 From iris.bi Require Export monpred.
 Require Import iris.proofmode.tactics.
 
+From bedrock Require Import ChargeUtil.
 From bedrock.lang.cpp Require Import
      semantics logic.pred logic.path_pred ast logic.wp.
 Require Import bedrock.lang.cpp.logic.spec.
@@ -73,6 +74,14 @@ Section with_cpp.
     apply _.
 
   Definition as_Rep (P : ptr -> mpred) : Rep := MonPred P _.
+
+  Lemma as_Rep_obs f P :
+    (∀ p, f p |-- f p ** [| P |]) →
+    as_Rep f |-- as_Rep f ** [| P |].
+  Proof.
+    intros Hf. constructor=>p /=. rewrite Hf{Hf}.
+    by rewrite monPred_at_sep monPred_at_only_provable.
+  Qed.
 
   Lemma Rep_equiv_ext_equiv : forall P Q : Rep,
       (forall x, P x -|- Q x) ->
@@ -192,6 +201,23 @@ Section with_cpp.
     Persistent P -> Persistent (pureR P).
   Proof using . intros. apply monPred_at_persistent_inv. apply  _. Qed.
 
+  Global Instance pureR_objective P : Objective (pureR P).
+  Proof. done. Qed.
+
+  Lemma pureR_only_provable P : pureR [| P |] ⊣⊢ [| P |].
+  Proof.
+    split'.
+    - rewrite (objective_objectively (pureR _)).
+      rewrite monPred_objectively_unfold embed_forall.
+      by rewrite (bi.forall_elim inhabitant) embed_only_provable.
+    - constructor=>p. by rewrite monPred_at_only_provable.
+  Qed.
+
+  Lemma pureR_obs P Q :
+    P |-- P ** [| Q |] →
+    pureR P |-- pureR P ** [| Q |].
+  Proof. intros. exact: as_Rep_obs. Qed.
+
   (* this is the primitive *)
   Definition primR_def {resolve:genv} (ty : type) q (v : val) : Rep :=
     as_Rep (fun addr => @tptsto _ _ resolve ty q addr v ** [| has_type v (drop_qualifiers ty) |]).
@@ -216,6 +242,16 @@ Section with_cpp.
     do 5 red; intros; subst.
     rewrite primR_eq /primR_def. constructor; simpl.
     intros. setoid_rewrite H. reflexivity.
+  Qed.
+
+  (** Expose the typing side-condition in a [primR]. *)
+  Lemma primR_has_type {σ} ty q v :
+    primR (resolve:=σ) ty q v |--
+    primR (resolve:=σ) ty q v ** [| has_type v (drop_qualifiers ty) |].
+  Proof.
+    rewrite primR_eq. constructor=>p /=.
+    rewrite monPred_at_sep monPred_at_only_provable/=.
+    by iIntros "[$ %]".
   Qed.
 
   Definition uninit_def {resolve:genv} (ty : type) q : Rep :=
