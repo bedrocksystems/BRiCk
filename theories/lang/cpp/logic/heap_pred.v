@@ -14,9 +14,8 @@ Require Import bedrock.lang.cpp.logic.spec.
 
 Set Default Proof Using "Type".
 
-Lemma monPred_at_persistent_inv {V bi} (P : monPred V bi) :
-  (∀ i, Persistent (P i)) → Persistent P.
-Proof using . intros HP. constructor=> i. MonPred.unseal. apply HP. Qed.
+Definition monPred_at_persistent_inv {V bi} (P : monPred V bi) :
+  (∀ i, Persistent (P i)) → Persistent P := monPred_persistent _.
 
 Lemma monPred_at_timeless_inv {V sbi} (P : monPredSI V sbi) :
   (∀ i, Timeless (P i)) → Timeless P.
