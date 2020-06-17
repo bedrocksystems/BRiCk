@@ -173,9 +173,7 @@ Module SimpleCPP
     Existing Instance valid_ptr_timeless.
 
     Theorem valid_ptr_nullptr : |-- valid_ptr nullptr.
-    Proof. unfold valid_ptr. iLeft. iModIntro. iStopProof.
-           eapply bi.pure_intro. reflexivity.
-    Qed.
+    Proof. by iLeft. Qed.
 
     Definition Z_to_bytes (n : nat) (v : Z) : list runtime_val :=
       let p := Z.modulo v (2 ^ n) in
@@ -479,13 +477,7 @@ Module SimpleCPP
     Theorem tptsto_timeless :
       forall {σ} ty q p v, Timeless (@tptsto σ ty q p v).
     Proof.
-      intros. unfold tptsto. red.
-      iIntros "H".
-      iDestruct "H" as (a) "[#H [X Y]]".
-      iExists a.
-      repeat rewrite timeless.
-      iSplit; iFrame "#".
-      iSplit; iFrame.
+      intros. unfold tptsto. apply _.
     Qed.
 
     Theorem tptsto_has_type : forall σ t q p v,

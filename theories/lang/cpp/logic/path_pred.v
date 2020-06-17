@@ -239,7 +239,7 @@ Section with_Σ.
     iDestruct (_off_functional with "[A B]") as %X. iFrame.
     subst.
     iDestruct ((_off_functional o2) with "[A' B']") as %Y. iFrame.
-    subst. iModIntro. iStopProof. eapply bi.pure_intro. reflexivity. }
+    by iPureIntro. }
   { intros.
     iIntros "[H H']".
     iDestruct "H'" as (m) "[H1 H2]".

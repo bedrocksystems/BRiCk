@@ -7,13 +7,13 @@ From Coq.Classes Require Import
      RelationClasses Morphisms.
 
 Require Import Coq.Lists.List.
-From iris Require Import bi.bi.
-From iris.proofmode Require Import tactics.
+From iris.bi Require Import bi.
 Require Import bedrock.IrisBridge.
 Import ChargeNotation.
 
 (* From Cpp Require Import ChargeCompat. *)
 
+Set Default Proof Using "Type".
 Local Set Universe Polymorphism.
 
 Fixpoint arrowFrom {t} u (ls : list t) (T : Type)
@@ -34,7 +34,7 @@ Section zip.
 End zip.
 
 Section withLogic.
-  Context `{!PROP : bi}.
+  Context {PROP : bi}.
 
   Fixpoint applyEach {t u T} (ls : list t) (vals : list u)
     : forall (v : arrowFrom u ls T)
@@ -85,27 +85,3 @@ Section arrowFrom_map.
     | l :: ls => fun X X0 => arrowFrom_map (X X0)
     end.
 End arrowFrom_map.
-
-Section with_PROP.
-Context {PROP : bi}.
-
-Lemma wandSP_only_provableL : forall (P : Prop) (Q R : PROP),
-    P ->
-    Q |-- R ->
-    [| P |] -* Q |-- R.
-Proof.
-  intros.
-  rewrite <- H0; clear H0.
-  iIntros "H". iApply "H". eauto.
-Qed.
-
-Lemma wandSP_only_provableR : forall (A : Prop) (B C : PROP),
-    (A -> B |-- C) ->
-    B |-- [| A |] -* C.
-Proof.
-  intros.
-  iIntros "HB %".
-  iApply H; eauto.
-Qed.
-
-End with_PROP.
