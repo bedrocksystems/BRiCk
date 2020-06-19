@@ -30,6 +30,9 @@ Global Notation only_provable P := (<affine>(embed P%type))%I (only parsing).
 Module ChargeNotation.
 
   Notation "P |-- Q"  := (P%I ⊢ Q%I) (at level 80, no associativity).
+  Notation "P '|-@{' PROP } Q" := (P%I ⊢@{PROP} Q%I)
+    (at level 80, no associativity, only parsing).
+
   Notation "P //\\ Q"   := (P ∧ Q)%I (at level 75, right associativity).
   Notation "P \\// Q"   := (P ∨ Q)%I (at level 76, right associativity).
   Notation "P -->> Q"   := (P → Q)%I (at level 77, right associativity).
@@ -40,6 +43,8 @@ Module ChargeNotation.
     (lexists (fun x => .. (lexists (fun y => p)) ..))%I (at level 78, x binder, y binder, right associativity).
 
   Notation "|--  P" := (⊢ P%I) (at level 85, no associativity).
+  Notation "'|-@{' PROP } P" := (⊢@{PROP} P%I)
+    (at level 85, no associativity, only parsing).
 
   Notation "P ** Q" := (P ∗ Q)%I (at level 58, right associativity).
   Notation "P -* Q" := (P -∗ Q)%I (at level 60, right associativity).
@@ -49,6 +54,9 @@ Module ChargeNotation.
   Notation "|> P" := (▷  P)%I (at level 20, right associativity).
 
   Notation "P -|- Q"  := (P%I ≡ Q%I) (at level 85, no associativity).
+  Notation "P '-|-@{' PROP } Q"  := (P%I ⊣⊢@{PROP} Q%I)
+    (at level 85, no associativity, only parsing).
+
   Notation "'[|'  P  '|]'" := (only_provable P).
 
 End ChargeNotation.
