@@ -8,9 +8,9 @@
 theories/bytestring.v
 theories/avl.v
 theories/Util.v
+theories/IrisBridge.v
 theories/ChargeCompat.v
 theories/ChargeUtil.v
-theories/IrisBridge.v
 
 # Syntax
 theories/lang/cpp/syntax/names.v
