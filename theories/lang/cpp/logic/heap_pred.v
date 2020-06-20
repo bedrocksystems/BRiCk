@@ -156,6 +156,29 @@ Section with_cpp.
     - iIntros "X"; iDestruct "X" as "[A B]"; iFrame.
   Qed.
 
+  Lemma _at_loc_rw : forall (l1 l2 : Loc) (R : Rep),
+      Loc_impl l1 l2 ** _at l1 R |-- _at l2 R.
+  Proof.
+    intros. rewrite _at_eq /_at_def path_pred.addr_of_eq /addr_of_def.
+    iIntros "[#H L]"; iDestruct "L" as (l) "[L R]".
+    iExists _; iFrame "#∗".
+    iApply "H". iAssumption.
+  Qed.
+
+  Lemma _at_loc_rwe : forall (l1 l2 : Loc) (R : Rep),
+      Loc_equiv l1 l2 |-- (_at l1 R ∗-∗ _at l2 R).
+  Proof.
+    intros. iIntros "#A".
+    iSplit.
+    - iIntros "B". iApply _at_loc_rw. iFrame.
+      unfold Loc_impl. iModIntro. iIntros (l) "H".
+      iApply "A"; iAssumption.
+    - iIntros "B". iApply _at_loc_rw. iFrame.
+      unfold Loc_impl. iModIntro. iIntros (l) "H".
+      iApply "A"; iAssumption.
+  Qed.
+
+
   (** Values
    * These `Rep` predicates wrap `ptsto` facts
    *)

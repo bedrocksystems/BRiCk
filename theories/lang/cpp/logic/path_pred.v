@@ -6,8 +6,6 @@
 Require Import Coq.Classes.Morphisms.
 
 Require Import iris.proofmode.tactics.
-From iris.bi Require Export monpred.
-
 From bedrock.lang.cpp Require Import semantics logic.pred ast.
 
 Set Default Proof Using "Type".
@@ -16,46 +14,57 @@ Section with_Σ.
   Context `{has_cpp : cpp_logic}.
 
   (* locations are computations that produce an address.
-   * - note(gmm): they are always computable from the program except.
    *)
   Record Loc : Type :=
     { _location : ptr -> mpred
     ; _loc_unique : forall p1 p2, _location p1 ** _location p2 |-- [| p1 = p2 |]
     ; _loc_valid : forall p1, _location p1 |-- valid_ptr p1
-    ; _loc_persist :> forall p, Persistent (_location p)
-    ; _loc_affine :> forall p, Affine (_location p)
-    ; _loc_timeless :> forall p, Timeless (_location p)
+    ; _loc_persist : forall p, Persistent (_location p)
+    ; _loc_affine : forall p, Affine (_location p)
+    ; _loc_timeless : forall p, Timeless (_location p)
     }.
 
-  Global Existing Instances _loc_persist _loc_affine.
+  Global Existing Instances _loc_persist _loc_affine _loc_timeless.
 
   Global Instance Loc_Equiv : Equiv Loc :=
     fun l r => forall p, @_location l p -|- @_location r p.
 
-  Global Instance Loc_Equiv_Reflexive : @Reflexive Loc (≡).
-  Proof. do 3 red. intros. reflexivity. Qed.
+  Global Instance Loc_Equivalence : Equivalence (≡@{Loc}).
+  Proof.
+    split.
+    - done.
+    - do 3 red. intros. by symmetry.
+    - do 3 red. intros. etrans; eauto.
+  Qed.
 
-  Global Instance Loc_Equiv_Symmetric : @Symmetric Loc (≡).
-  Proof. do 3 red. intros. symmetry. eapply H. Qed.
+  Global Instance _location_proper : Proper ((≡) ==> eq ==> (≡)) _location.
+  Proof. repeat intro. by subst. Qed.
 
-  Global Instance Loc_Equiv_Transitive : @Transitive Loc (≡).
-  Proof. do 3 red. intros. etransitivity. eapply H. eapply H0. Qed.
+  (* [mpred] implication between [Loc] *)
+  Definition Loc_impl (l1 l2 : Loc) : mpred :=
+    □ (Forall p, l1.(_location) p -* l2.(_location) p).
 
-  Definition LocEq (l1 l2 : Loc) : Prop :=
-    forall p, l1.(_location) p -|- l2.(_location) p.
+  (* [mpred] equivalence of [Loc] *)
+  Definition Loc_equiv (l1 l2 : Loc) : mpred :=
+    □ (Forall l, (l1.(_location) l ∗-∗ l2.(_location) l)).
 
-  (* ^ these two could be duplicable because regions don't need to be
-   * reused. the reason that local variables need to be tracked is that
-   * they could go out of scope.
-   * - an alternative, and (sound) solution is to generate a fresh region
-   *   each time that we create a new scope. To do this, we need to track in
-   *   the AST the debruijn index of the binder.
-   * - yet another alternative is to inline regions explicitly into the WP.
-   *   essentially region := list (list (string * ptr)). this essentially makes
-   *   _local persistent.
-   *)
+  Lemma Loc_equiv_impl l1 l2 :
+    Loc_equiv l1 l2 -|- Loc_impl l1 l2 ** Loc_impl l2 l1.
+  Proof.
+    iSplit.
+    - iIntros "#EQ".
+      iSplit; iIntros "!>"; iIntros (p) "Hp"; iApply ("EQ" with "Hp").
+    - iIntros "#[H1 H2] !>". iIntros (p).
+      iSplit; iIntros "Hp"; [by iApply "H1"|by iApply "H2"].
+  Qed.
 
-  (* absolute locations *)
+  Lemma Loc_equiv_sym l1 l2 : Loc_equiv l1 l2 |-- Loc_equiv l2 l1.
+  Proof.
+    iIntros "#H !>". iIntros (p).
+    iSplit; iIntros "Hp"; iApply ("H" with "Hp").
+  Qed.
+
+  (** absolute locations *)
   Definition invalid : Loc.
   refine {| _location _ := lfalse |}.
   abstract (intros; iIntros "[[] _]").
@@ -132,6 +141,23 @@ Section with_Σ.
     intros. rewrite addr_of_eq /addr_of_def. apply _loc_timeless.
   Qed.
 
+  Lemma addr_of_Loc_eq : forall l p, l &~ p |-- Loc_equiv l (_eq p).
+  Proof.
+    intros. rewrite /Loc_equiv addr_of_eq /addr_of_def _eq_eq /_eq_def /=.
+    iIntros "#L". iIntros (ll). iModIntro.
+    iSplit.
+    - iIntros "#H".
+      iSplit.
+      { iApply _loc_unique; iSplit; iAssumption. }
+      { iApply _loc_valid; iAssumption. }
+    - iIntros "[% #H]".
+      subst. iAssumption.
+  Qed.
+
+  Lemma addr_of_Loc_impl : forall l p, l &~ p |-- Loc_impl l (_eq p).
+  Proof. intros. by rewrite addr_of_Loc_eq Loc_equiv_impl bi.sep_elim_l. Qed.
+
+
   (** [valid_loc]
       - same as [addr_of] except that it hides the existential quantifier
    *)
@@ -165,14 +191,13 @@ Section with_Σ.
   Global Instance Offset_Equiv : Equiv Offset :=
     fun l r => forall p q, @_offset l p q -|- @_offset r p q.
 
-  Global Instance Offset_Equiv_Reflexive : @Reflexive Offset (≡).
-  Proof. do 3 red. intros. reflexivity. Qed.
-
-  Global Instance Offset_Equiv_Symmetric : @Symmetric Offset (≡).
-  Proof. do 3 red. intros. symmetry. eapply H. Qed.
-
-  Global Instance Offset_Equiv_Transitive : @Transitive Offset (≡).
-  Proof. do 3 red. intros. etransitivity. eapply H. eapply H0. Qed.
+  Global Instance Offset_Equivalence : Equivalence (≡@{Offset}).
+  Proof.
+    split.
+    - done.
+    - do 3 red. intros. by symmetry.
+    - do 3 red. intros. etrans; eauto.
+  Qed.
 
 
   Local Definition invalidO : Offset.
@@ -290,8 +315,8 @@ Section with_Σ.
   Definition _offsetL := _offsetL_aux.(unseal).
   Definition _offsetL_eq : @_offsetL = _ := _offsetL_aux.(seal_eq).
 
-  Lemma _offsetL_dot : forall (o1 o2 : Offset) l,
-      _offsetL o2 (_offsetL o1 l) ≡ _offsetL (_dot o1 o2) l.
+  Lemma _offsetL_dot : forall (o1 o2 : Offset) (l : Loc),
+      (_offsetL o2 (_offsetL o1 l) ≡ _offsetL (_dot o1 o2) l)%stdpp.
   Proof.
     rewrite /equiv /Loc_Equiv _offsetL_eq _dot_eq. simpl.
     split'.
@@ -304,7 +329,7 @@ Section with_Σ.
   Qed.
 
   Lemma _dot_dot : forall (o1 o2 l: Offset),
-      _dot o2 (_dot o1 l) ≡ _dot (_dot o2 o1) l.
+      (_dot o2 (_dot o1 l) ≡ _dot (_dot o2 o1) l)%stdpp.
   Proof.
     rewrite /equiv /Offset_Equiv _dot_eq. simpl.
     split'.
@@ -317,7 +342,19 @@ Section with_Σ.
   Qed.
 
   Global Instance addr_of_proper : Proper ((≡) ==> eq ==> (≡)) addr_of.
-  Proof. do 3 red. intros; subst. rewrite addr_of_eq /addr_of_def. apply H. Qed.
+  Proof. rewrite addr_of_eq. solve_proper. Qed.
+
+  Lemma _offsetL_Loc_impl : forall l1 l2 o,
+      Loc_equiv l1 l2 |-- Loc_equiv (_offsetL o l1) (_offsetL o l2).
+  Proof.
+    intros. rewrite /Loc_equiv _offsetL_eq /_offsetL_def /=.
+    iIntros "#A"; iModIntro. iIntros (p); iSplit.
+    - iIntros "X". iDestruct "X" as (p') "[X #Y]".
+      iExists p'. iFrame. iApply "A"; iAssumption.
+    - iIntros "X". iDestruct "X" as (p') "[X #Y]".
+      iExists p'. iFrame. iApply "A"; iAssumption.
+  Qed.
+
 
   (* this is for `Indirect` field references *)
   Fixpoint path_to_Offset (resolve:genv) (from : globname) (final : ident)

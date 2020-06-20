@@ -148,6 +148,12 @@ End CPP_LOGIC.
 Declare Module L : CPP_LOGIC.
 Export L.
 
+Bind Scope bi_scope with mpred.
+Bind Scope bi_scope with mpredI.
+Bind Scope bi_scope with mpredSI.
+Bind Scope bi_scope with bi_car.
+Bind Scope bi_scope with sbi_car.
+
 Existing Instances
          L.code_at_persistent L.code_at_affine L.code_at_timeless
          L.method_at_persistent L.method_at_affine L.method_at_timeless
