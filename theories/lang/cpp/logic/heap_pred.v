@@ -19,7 +19,10 @@ Definition monPred_at_persistent_inv {V bi} (P : monPred V bi) :
 
 Lemma monPred_at_timeless_inv {V sbi} (P : monPredSI V sbi) :
   (∀ i, Timeless (P i)) → Timeless P.
-Proof using . intros HP. constructor=> i. MonPred.unseal. apply HP. Qed.
+Proof.
+  intros HP. constructor=>i.
+  rewrite monPred_at_later monPred_at_except_0. apply HP.
+Qed.
 
 Section with_cpp.
   Context `{Σ : cpp_logic}.
