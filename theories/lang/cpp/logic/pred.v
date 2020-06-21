@@ -85,8 +85,8 @@ Module Type CPP_LOGIC.
     Axiom tptsto_timeless :
       forall {σ} ty q a v, Timeless (@tptsto σ ty q a v).
 
-    Axiom tptsto_has_type : forall σ t q a v,
-        @tptsto σ t q a v |-- @tptsto σ t q a v ** [| has_type v t |] ** valid_ptr a.
+    Axiom tptsto_valid_ptr : forall σ t q a v,
+        @tptsto σ t q a v |-- @tptsto σ t q a v ** valid_ptr a.
 
     (** this states that the pointer is a pointer to the given type,
         this is persistent. this implies,

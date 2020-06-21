@@ -187,6 +187,7 @@ Module SimpleCPP
       | W64 => 8
       | W128 => 16
       end.
+
     Definition POINTER_BYTES : nat := 8.
 
     Definition aptr (p : ptr) : list runtime_val :=
@@ -195,12 +196,13 @@ Module SimpleCPP
     Definition cptr (a : N) : list runtime_val :=
       Z_to_bytes POINTER_BYTES (Z.of_N a).
 
-    Definition encodes (σ : genv) (t : type) (v : val) (vs : list runtime_val) : mpred.
+    Definition encodes (t : type) (v : val) (vs : list runtime_val) : mpred.
     refine
       match erase_qualifiers t with
       | Tint sz sgn =>
         match v with
         | Vint v => [| vs = Z_to_bytes (size_to_bytes sz) v |]
+        | Vundef => [| length vs = size_to_bytes sz |]
         | _ => lfalse
         end
       | Tmember_pointer _ _ =>
@@ -208,6 +210,7 @@ Module SimpleCPP
         | Vint v =>
           (* note: this is really an offset *)
           [| vs = Z_to_bytes POINTER_BYTES v |]
+        | Vundef => [| length vs = POINTER_BYTES |]
         | _ => lfalse
         end
 
@@ -215,6 +218,7 @@ Module SimpleCPP
         match v with
         | Vint 0 => [| vs = Rval 0%N :: nil |]
         | Vint 1 => [| vs = Rval 1%N :: nil |]
+        | Vundef => [| length vs = 1 |]
         | _ => lfalse
         end
       | Tnullptr =>
@@ -233,6 +237,7 @@ Module SimpleCPP
               | None => [| vs = aptr p |]
               | Some l => [| vs = cptr l |]
               end
+        | Vundef => [| length vs = POINTER_BYTES |]
         | _ => lfalse
         end
       | Tfunction _ _
@@ -247,6 +252,7 @@ Module SimpleCPP
             | None => [| vs = aptr p |]
             | Some l => [| vs = cptr l |]
             end
+        | Vundef => [| length vs = POINTER_BYTES |]
         | _ => lfalse
         end
       | Tqualified _ _ => lfalse (* unreachable *)
@@ -258,7 +264,7 @@ Module SimpleCPP
     all: refine _.
     Defined.
 
-    Instance encodes_persistent : forall σ t v vs, Persistent (encodes σ t v vs).
+    Global Instance encodes_persistent : forall t v vs, Persistent (encodes t v vs).
     Proof.
       unfold encodes.
       intros; destruct (erase_qualifiers t); intros;
@@ -266,12 +272,6 @@ Module SimpleCPP
       - destruct (decide (p = nullptr)); refine _.
       - destruct z; refine _.
         destruct p; refine _.
-    Qed.
-
-    Instance encodes_proper :
-      Proper (genv_leq ==> eq ==> eq ==> eq ==> lentails) encodes.
-    Proof.
-      do 6 red. intros; subst. reflexivity.
     Qed.
 
     Local Ltac go_encode X Y :=
@@ -283,34 +283,53 @@ Module SimpleCPP
         rewrite join_singleton_eq singleton_valid_at_norm
                 agree_validI agree_equivI;
         iDestruct X as %[];
-        destruct ll; iDestruct "ZR" as %[]; iFrame.
+        destruct ll; iDestruct "ZL" as "%"; subst; iDestruct "ZR" as %[];
+        iFrame; eauto.
 
-    Theorem encodes_consistent : forall σ t v a b,
-        encodes σ t v a ** encodes σ t v b |-- [| a = b |].
+    Theorem encodes_consistent : forall t v a b,
+        encodes t v a ** encodes t v b |-- [| length a = length b |].
     Proof.
-      unfold encodes.
-      intros; destruct (erase_qualifiers t); intros;
-        destruct v; try refine _.
-      all: try solve [ iIntros "[X Y]"; iDestruct "X" as %[]
-                     | iIntros "[X Y]"; iDestruct "Y" as %[]; iFrame ].
-      - destruct (decide (p = nullptr)).
-        + iIntros "[X Y]"; iDestruct "Y" as %[]; iFrame.
-        + iIntros "[X Y]".
-          go_encode "X" "Y".
-      - iIntros "[[_ X] [_ Y]]"; go_encode "X" "Y".
-      - iIntros "[[_ X] [_ Y]]"; go_encode "X" "Y".
-      - iIntros "[[_ X] [_ Y]]"; go_encode "X" "Y".
-      - destruct z;
-        try (iIntros "[X Y]"; iDestruct "Y" as %[]; iFrame).
-        destruct p; try (iIntros "[X Y]"; iDestruct "Y" as %[]; iFrame).
+      rewrite /encodes; intros.
+      destruct (erase_qualifiers t); simpl.
+      all: try iIntros "[[] _]".
+      all: destruct v; try iIntros "[[] _]".
+      all: try solve [ iIntros "[-> ->]"; eauto ].
+      { destruct (decide (p = nullptr)).
+        - iIntros "[-> ->]"; eauto.
+        - iIntros "[A B]".
+          go_encode "A" "B". }
+      { iIntros "[[% A] [% B]]".
+        go_encode "A" "B". }
+      { iIntros "[[% A] [% B]]".
+        go_encode "A" "B". }
+      { iIntros "[[% A] [% B]]".
+        go_encode "A" "B". }
+      { destruct z; try (iIntros "[-> ->]"; eauto).
+        destruct p; try (iIntros "[-> ->]"; eauto).
+        all: iIntros "[[] _]". }
     Qed.
 
-    Instance encodes_timeless : forall σ t v a, Timeless (encodes σ t v a).
+    Global Instance encodes_timeless : forall t v a, Timeless (encodes t v a).
     Proof.
       intros. unfold encodes. destruct (erase_qualifiers t); destruct v; refine _.
       - destruct (decide (p = nullptr)); refine _.
       - destruct z; refine _.
         destruct p; refine _.
+    Qed.
+
+    Instance Z_to_bytes_proper :
+      Proper (eq ==> eq ==> eq) Z_to_bytes.
+    Proof.
+      unfold Z_to_bytes.
+      do 3 red.
+      intros; subst. reflexivity.
+      
+    Qed.
+
+    Instance encodes_proper :
+      Proper (eq ==> eq ==> eq ==> lentails) encodes.
+    Proof.
+      do 4 red; intros; subst. reflexivity.
     Qed.
 
     Definition val_ (a : ptr) (v : val) (q : Qp) : mpred.
@@ -368,31 +387,59 @@ Module SimpleCPP
     Instance: Timeless (byte_ a rv q).
     Proof. intros; refine _. Qed.
 
+    Lemma frac_valid {o : ofeT} q1 q2 (v1 v2 : o) :
+      ✓ (frac q1 v1 ⋅ frac q2 v2) → ✓ (q1 + q2)%Qp ∧ v1 ≡ v2.
+    Proof. by rewrite pair_valid/= =>-[]? /agree_op_inv/(inj_iff to_agree). Qed.
+
+    Theorem byte_consistent a b b' q q' :
+      byte_ a b q ** byte_ a b' q' |-- byte_ a b (q + q') ** [| b = b' |].
+    Proof.
+      iIntros "[Hb Hb']". iDestruct (own_valid_2 with "Hb Hb'") as %Hv.
+      have {Hv}-> : b = b'.
+      - move: Hv. by rewrite op_singleton singleton_valid=>/frac_valid[].
+      - iFrame. auto.
+     Qed.
+
     Definition bytes (a : addr) (vs : list runtime_val) (q : Qp) : mpred.
     refine (
-      [∗list] ov ∈ zip (seq 0 (List.length vs)) vs,
-        (let '(o,rv) := ov in
-        byte_ (a+N.of_nat o)%N rv) q)%I.
+      [∗list] o ↦ v ∈ vs, (byte_ (a+N.of_nat o)%N v) q)%I.
     Defined.
 
     Instance: Timeless (bytes a rv q).
     Proof. unfold bytes.
            intros; refine _.
-           eapply big_sepL_timeless.
-           intros. destruct x.
-           refine _.
     Qed.
 
     Instance: Fractional (bytes a vs).
     Proof. red. unfold bytes.
            intros.
-           eapply fractional_big_sepL.
-           intros. destruct x. refine _.
+           rewrite (@fractional_big_sepL _ _ vs (fun o v q => byte_ (a + N.of_nat o)%N v q)).
+           reflexivity.
     Qed.
 
     Instance: AsFractional (bytes a vs q) (bytes a vs) q.
     Proof. constructor; refine _. reflexivity. Qed.
 
+    Theorem bytes_consistent : forall q q' b b' a, length b = length b' ->
+        bytes a b q ** bytes a b' q' |-- bytes a b (q + q') ** [| b = b' |].
+    Proof.
+      unfold bytes.
+      induction b; simpl; intros.
+      - destruct b'. simpl.
+        unfold bytes. simpl. eauto.
+        inversion H.
+      - destruct b'. inversion H.
+        inversion H. simpl.
+        simpl in *.
+        enough (forall n, a0 + N.pos (Pos.of_succ_nat n) = (a0 + 1 + N.of_nat n))%N.
+        2: { intros. lia. }
+        iIntros "[[A B] [C D]]".
+        iDestruct ((IHb b' (a0 + 1)%N H1) with "[B D]") as "[Z ->]".
+        setoid_rewrite H0. iFrame.
+        iDestruct (byte_consistent with "[A C]") as "[ZZ ->]". iFrame.
+        setoid_rewrite H0.
+        assert (r :: b' = r :: b') by reflexivity. iFrame "∗%".
+    Qed.
 
     (* heap points to *)
     Definition tptsto {σ:genv} (t : type) (q : Qp) (p : ptr) (v : val) : mpred.
@@ -403,7 +450,7 @@ Module SimpleCPP
               match a with
               | Some a =>
                 Exists vs,
-                encodes σ t v vs ** bytes a vs q
+                encodes t v vs ** bytes a vs q
               | None => val_ p v q
               end).
       1: apply (@mem_injG Σ); apply has_cppG.
@@ -460,11 +507,11 @@ Module SimpleCPP
         destruct a.
         + iDestruct "By1" as (vs) "[#En1 By1]".
           iDestruct "By2" as (vs2) "[#En2 By2]".
-          iDestruct (encodes_consistent with "[En1 En2]") as "Z".
-          { iSplit. iApply "En1". iApply "En2". }
-          iDestruct "Z" as %[].
-          iExists vs; iFrame "#".
-          rewrite fractional. iFrame.
+          iDestruct (encodes_consistent with "[En1 En2]") as "%".
+          iSplit; [ iApply "En1" | iApply "En2" ].
+          iDestruct (bytes_consistent with "[By1 By2]") as "[Z %]"; eauto.
+          iFrame.
+          iExists vs. iFrame "#∗".
         + rewrite fractional. iFrame.
     Qed.
     Theorem tptsto_as_fractional :

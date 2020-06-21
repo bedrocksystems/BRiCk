@@ -218,7 +218,7 @@ Section with_cpp.
     pureR P |-- pureR P ** [| Q |].
   Proof. intros. exact: as_Rep_obs. Qed.
 
-  (* this is the primitive *)
+  (** [primR] *)
   Definition primR_def {resolve:genv} (ty : type) q (v : val) : Rep :=
     as_Rep (fun addr => @tptsto _ _ resolve ty q addr v ** [| has_type v (drop_qualifiers ty) |]).
   Definition primR_aux : seal (@primR_def). by eexists. Qed.
@@ -226,7 +226,8 @@ Section with_cpp.
   Definition primR_eq : @primR = _ := primR_aux.(seal_eq).
   Arguments primR {resolve} ty q v : rename.
 
-  Global Instance primR_timeless resolve ty q p : Timeless (primR (resolve:=resolve) ty q p).
+  Global Instance primR_timeless resolve ty q p
+    : Timeless (primR (resolve:=resolve) ty q p).
   Proof. solve_Rep_timeless primR_eq. Qed.
 
   Global Instance Proper_primR_entails
@@ -254,6 +255,7 @@ Section with_cpp.
     by iIntros "[$ %]".
   Qed.
 
+  (** [uninitR] *)
   Definition uninit_def {resolve:genv} (ty : type) q : Rep :=
     primR (resolve:=resolve) ty q Vundef.
   Definition uninit_aux : seal (@uninit_def). by eexists. Qed.
@@ -261,13 +263,29 @@ Section with_cpp.
   Definition uninit_eq : @uninitR = _ := uninit_aux.(seal_eq).
   Arguments uninitR {resolve} ty q : rename.
 
-  Global Instance uninit_timeless resolve ty q : Timeless (uninitR (resolve:=resolve) ty q).
+  Global Instance uninitR_timeless resolve ty q
+    : Timeless (uninitR (resolve:=resolve) ty q).
   Proof. solve_Rep_timeless uninit_eq. Qed.
 
-  (* this means "anything, including uninitialized" *)
+  Global Instance Proper_uninitR_entails
+    : Proper (genv_leq ==> (=) ==> (=) ==> (=) ==> lentails) (@uninitR).
+  Proof using .
+    do 5 red; intros; subst.
+    rewrite uninit_eq /uninit_def.
+    intros. setoid_rewrite H. reflexivity.
+  Qed.
+  Global Instance Proper_uninitR_equiv
+    : Proper (genv_eq ==> (=) ==> (=) ==> (=) ==> lequiv) (@uninitR).
+  Proof using .
+    do 5 red; intros; subst.
+    rewrite uninit_eq /uninit_def. split'; setoid_rewrite H; reflexivity.
+  Qed.
+
+
+  (** [anyR] this means "anything, including uninitialized" *)
   Definition anyR_def {resolve} (ty : type) q : Rep :=
     as_Rep (fun addr => (Exists v, (primR (resolve:=resolve) ty q v) addr) \\//
-                                                                        (uninitR (resolve:=resolve) ty q) addr).
+                                 (uninitR (resolve:=resolve) ty q) addr).
   Definition anyR_aux : seal (@anyR_def). by eexists. Qed.
   Definition anyR := anyR_aux.(unseal).
   Definition anyR_eq : @anyR = _ := anyR_aux.(seal_eq).
