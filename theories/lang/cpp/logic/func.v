@@ -174,7 +174,7 @@ Section with_cpp.
     □ Forall Q : val -> mpred, Forall vals,
       spec.(fs_spec) ti vals Q -* wp_method m ti vals Q.
 
-  Fixpoint all_identities (f : nat) (mdc : option globname) (cls : globname) : Rep.
+  Fixpoint all_identities' (f : nat) (mdc : option globname) (cls : globname) : Rep.
   refine
     match f with
     | 0 => lfalse
@@ -184,31 +184,33 @@ Section with_cpp.
         _identity resolve cls mdc 1 **
         [∗list] b ∈ st.(s_bases),
            let '(base,_) := b in
-           _base resolve cls base |-> all_identities f mdc base
+           _base resolve cls base |-> all_identities' f mdc base
       | _ => lfalse
       end
     end.
   Defined.
+  Definition all_identities : option globname -> globname -> Rep :=
+    let size := avl.IM.cardinal resolve.(genv_tu).(globals) in
+    (* ^ the number of global entries is an upper bound on the height of the
+       derivation tree.
+     *)
+    all_identities' size.
 
   (* this function creates an [_instance_of] fact for this class *and*,
      transitively, updates all of the [_instance_of] assertions for all base
      classes.
    *)
   Definition init_identity (cls : globname) (Q : mpred) : Rep :=
-    let size := avl.IM.cardinal resolve.(genv_tu).(globals) in
-    (* ^ the number of global entries is an upper bound on the height of the
-       derivation tree.
-     *)
     match resolve.(genv_tu).(globals) !! cls with
     | Some (Gstruct st) =>
       ([∗list] b ∈ st.(s_bases),
          let '(base,_) := b in
-         _base resolve cls base |-> all_identities size (Some base) base) **
+         _base resolve cls base |-> all_identities (Some base) base) **
        _identity resolve cls None 1 **
       (_identity resolve cls (Some cls) 1 -*
        ([∗list] b ∈ st.(s_bases),
           let '(base,_) := b in
-          _base resolve cls base |-> all_identities size (Some cls) base) -* pureR Q)
+          _base resolve cls base |-> all_identities (Some cls) base) -* pureR Q)
     | _ => lfalse
     end.
 
@@ -278,11 +280,11 @@ Section with_cpp.
       _identity resolve cls (Some cls) 1 **
       ([∗list] b ∈ st.(s_bases),
           let '(base,_) := b in
-          _base resolve cls base |-> all_identities 100 (Some cls) base) **
+          _base resolve cls base |-> all_identities (Some cls) base) **
       (_identity resolve cls None 1 -*
        ([∗list] b ∈ st.(s_bases),
          let '(base,_) := b in
-         _base resolve cls base |-> all_identities 100 (Some base) base) -* pureR Q)
+         _base resolve cls base |-> all_identities (Some base) base) -* pureR Q)
     | _ => lfalse
     end.
 
