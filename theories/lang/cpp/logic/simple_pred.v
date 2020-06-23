@@ -629,6 +629,39 @@ Module SimpleCPP
     Theorem dtor_at_timeless : forall f p, Timeless (@dtor_at f p).
     Proof. unfold dtor_at. refine _. Qed.
 
+    (** physical representation of pointers
+     *)
+    Definition pinned_ptr (va : N) (p : ptr) : mpred.
+    refine (([| p = nullptr /\ va = 0%N |] \\//
+            ([| p <> nullptr |] **
+                own _ghost.(mem_inj_name) {[ p := to_agree (Some va) ]}))).
+    unshelve eapply mem_injG; apply has_cppG. refine _.
+    Defined.
+
+    Theorem pinned_ptr_persistent : forall va p, Persistent (pinned_ptr va p).
+    Proof. intros. red. iIntros "#X"; iFrame "#". Qed.
+    Theorem pinned_ptr_affine : forall va p, Affine (pinned_ptr va p).
+    Proof. intros. red. iIntros "#X"; eauto. Qed.
+    Theorem pinned_ptr_timeless : forall va p, Timeless (pinned_ptr va p).
+    Proof. unfold pinned_ptr. refine _. Qed.
+    Theorem pinned_ptr_unique : forall va va' p,
+        pinned_ptr va p ** pinned_ptr va' p |-- bi_pure (va = va').
+    Proof.
+      intros. unfold pinned_ptr.
+      iIntros "[A B]".
+      iDestruct "A" as "[% | [% A]]"; iDestruct "B" as "[% | [% B]]".
+      - destruct H; destruct H0; subst; auto.
+      - destruct H; congruence.
+      - destruct H0; congruence.
+      - iDestruct (own_valid_2 with "A B") as %Hv.
+        have {Hv}-> : va = va'.
+        + move: Hv. rewrite op_singleton singleton_valid.
+          intro X; apply (@agree_op_invL' (leibnizO (option addr))) in X.
+          congruence.
+          refine _.
+        + eauto.
+    Qed.
+
   End with_cpp.
 
 End SimpleCPP.

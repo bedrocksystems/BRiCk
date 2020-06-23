@@ -141,6 +141,16 @@ Module Type CPP_LOGIC.
     Axiom dtor_at_affine : forall f p, Affine (@dtor_at f p).
     Axiom dtor_at_timeless : forall f p, Timeless (@dtor_at f p).
 
+
+    (** physical representation of pointers
+     *)
+    Parameter pinned_ptr : N -> ptr -> mpred.
+    Axiom pinned_ptr_persistent : forall va p, Persistent (pinned_ptr va p).
+    Axiom pinned_ptr_affine : forall va p, Affine (pinned_ptr va p).
+    Axiom pinned_ptr_timeless : forall va p, Timeless (pinned_ptr va p).
+    Axiom pinned_ptr_unique : forall va va' p,
+        pinned_ptr va p ** pinned_ptr va' p |-- bi_pure (va = va').
+
   End with_cpp.
 
 End CPP_LOGIC.
