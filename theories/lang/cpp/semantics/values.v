@@ -240,11 +240,9 @@ Parameter has_type : val -> type -> Prop.
 Arguments has_type _%Z _.
 
 Axiom has_type_pointer : forall v ty,
-    has_type v (Tpointer ty) <-> exists p, v = Vptr p.
+    has_type v (Tpointer ty) -> exists p, v = Vptr p.
 Axiom has_type_nullptr : forall v,
-    has_type v Tnullptr <-> v = Vptr nullptr.
-Axiom has_type_nullptr_pointer : forall v ty,
-    has_type v Tnullptr <-> has_type v (Tpointer ty).
+    has_type v Tnullptr -> v = Vptr nullptr.
 Axiom has_type_reference : forall v ty,
     has_type v (Treference ty) -> exists p, v = Vptr p /\ p <> nullptr.
 Axiom has_type_rv_reference : forall v ty,
@@ -257,14 +255,14 @@ Axiom has_type_function : forall v rty args,
 Axiom has_type_void : forall v,
     has_type v Tvoid -> v = Vundef.
 
+Axiom has_nullptr_type : forall ty,
+    has_type (Vptr nullptr) (Tpointer ty).
+
 Axiom has_type_bool : forall v,
     has_type v Tbool <-> exists b, v = Vbool b.
 
-Lemma has_type_nullptr_any ty : has_type (Vptr nullptr) (Tpointer ty).
-Proof. by apply has_type_nullptr_pointer, has_type_nullptr. Qed.
-
 Lemma has_bool_type : forall z,
-  (0 <= z < 2)%Z <-> has_type (Vint z) Tbool.
+  0 <= z < 2 <-> has_type (Vint z) Tbool.
 Proof.
   intros z. rewrite has_type_bool. split=>Hz.
   - destruct (decide (z = 0)); simplify_eq; first by exists false.
