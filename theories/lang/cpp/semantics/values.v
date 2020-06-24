@@ -230,7 +230,7 @@ Definition min_val (bits : bitsize) (sgn : signed) : Z :=
   end.
 
 Definition bound (bits : bitsize) (sgn : signed) (v : Z) : Prop :=
-  (min_val bits sgn <= v <= max_val bits sgn)%Z.
+  min_val bits sgn <= v <= max_val bits sgn.
 
 (** typedness of values
     note that only primitives fit into this, there is no [val] representation
@@ -301,15 +301,15 @@ Fixpoint find_field {T} (f : ident) (fs : list (ident * T)) : option T :=
 Definition offset_of (resolve : genv) (t : globname) (f : ident) : option Z :=
   match glob_def resolve t with
   | Some (Gstruct s) =>
-    find_field f (List.map (fun '(a,_,c) => (a,c.(li_offset) / 8)%Z) s.(s_fields))
+    find_field f (List.map (fun '(a,_,c) => (a,c.(li_offset) / 8)) s.(s_fields))
   | Some (Gunion u) =>
-    find_field f (List.map (fun '(a,_,c) => (a,c.(li_offset) / 8))%Z u.(u_fields))
+    find_field f (List.map (fun '(a,_,c) => (a,c.(li_offset) / 8)) u.(u_fields))
   | _ => None
   end.
 
 Definition parent_offset (resolve : genv) (t : globname) (f : globname) : option Z :=
   match glob_def resolve t with
-  | Some (Gstruct s) => find_field f (List.map (fun '(s,l) => (s,l.(li_offset) / 8))%Z s.(s_bases))
+  | Some (Gstruct s) => find_field f (List.map (fun '(s,l) => (s,l.(li_offset) / 8)) s.(s_bases))
   | _ => None
   end.
 
