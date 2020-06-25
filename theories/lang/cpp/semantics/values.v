@@ -150,6 +150,8 @@ Fixpoint get_result (ρ : region) : option ptr :=
 
 (** * global environments *)
 
+Variant endian : Set := Little | Big.
+
 (** this contains two things:
    - the types declared in the program
    - the program's symbol table (mapping of globals to pointers)
@@ -167,6 +169,7 @@ Record genv : Type :=
   (* ^ the address of global variables & functions *)
 ; pointer_size : N
   (* ^ the size of a pointer (in bytes) *)
+; byte_order : endian
 }.
 
 (** [genv_leq a b] states that [b] is an extension of [a] *)
@@ -174,21 +177,32 @@ Definition genv_leq (l r : genv) : Prop :=
   sub_module l.(genv_tu) r.(genv_tu) /\
   (forall a p, l.(glob_addr) a = Some p ->
           r.(glob_addr) a = Some p) /\
-  l.(pointer_size) = r.(pointer_size).
+  l.(pointer_size) = r.(pointer_size) /\
+  l.(byte_order) = r.(byte_order).
 
 Instance PreOrder_genv_leq : PreOrder genv_leq.
 Proof.
   constructor.
   { constructor; [ | constructor ]; auto; reflexivity. }
   { red. unfold genv_leq.
-    intros ? ? ? [A [B C]] [A' [B' C']].
-    split; [ | split ]; etransitivity; eauto. }
+    intros ? ? ? [A [B [C D]]] [A' [B' [C' D']]].
+    split; [ | split; [ | split ] ]; etransitivity; eauto. }
 Qed.
 Definition glob_def (g : genv) (gn : globname) : option GlobDecl :=
   g.(genv_tu).(globals) !! gn.
 
 Definition genv_eq (l r : genv) : Prop :=
   genv_leq l r /\ genv_leq r l.
+
+Instance genv_tu_proper : Proper (genv_leq ==> sub_module) genv_tu.
+Proof. do 2 red. destruct 1 as [ ? [ ? [ ? ? ]] ]; auto. Qed.
+
+Instance pointer_size_proper : Proper (genv_leq ==> eq) pointer_size.
+Proof. do 2 red. destruct 1 as [ ? [ ? [ ? ? ]] ]; auto. Qed.
+
+Instance byte_order_proper : Proper (genv_leq ==> eq) byte_order.
+Proof. do 2 red. destruct 1 as [ ? [ ? [ ? ? ]] ]; auto. Qed.
+
 
 (* this states that the [genv] is compatible with the given [translation_unit]
  * it essentially means that the [genv] records all the types from the

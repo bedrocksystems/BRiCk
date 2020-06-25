@@ -11,10 +11,22 @@
 #include "clang/AST/Mangle.h"
 #include "clang/AST/StmtVisitor.h"
 #include "clang/AST/Type.h"
+#include "clang/Basic/Builtins.h"
 #include "clang/Basic/Version.inc"
 
 using namespace clang;
 using namespace fmt;
+
+// todo(gmm): this is duplicated!
+bool
+is_builtin(const Decl* d) {
+    if (const FunctionDecl* fd = dyn_cast_or_null<const FunctionDecl>(d)) {
+        if (Builtin::ID::NotBuiltin != fd->getBuiltinID()) {
+            return true;
+        }
+    }
+    return false;
+}
 
 void
 printCastKind(Formatter& out, const CastKind ck) {
@@ -261,13 +273,14 @@ public:
     }
 
     void VisitDeclRefExpr(const DeclRefExpr* expr, CoqPrinter& print,
-                          ClangPrinter& cprint, const ASTContext&) {
-        if (isa<EnumConstantDecl>(expr->getDecl())) {
+                          ClangPrinter& cprint, const ASTContext& ctxt) {
+        auto d = expr->getDecl();
+        if (isa<EnumConstantDecl>(d)) {
             print.ctor("Econst_ref", false);
         } else {
             print.ctor("Evar", false);
         }
-        cprint.printName(expr->getDecl(), print);
+        cprint.printName(d, print);
         done(expr, print, cprint);
     }
 
@@ -315,11 +328,13 @@ public:
 
     void VisitImplicitCastExpr(const ImplicitCastExpr* expr, CoqPrinter& print,
                                ClangPrinter& cprint, const ASTContext& ctxt) {
-        // todo(gmm): this is a complete hack!
+        // todo(gmm): this is a complete hack because there is no way that i know of
+        // to get the type of a builtin. what this does is get the type of the expression
+        // that contains the builtin.
         if (auto ref = dyn_cast<DeclRefExpr>(expr->getSubExpr())) {
-            if (ref->getDecl()->isImplicit()) {
+            if (is_builtin(ref->getDecl())) {
                 // assume that this is a builtin
-                print.ctor("Evar");
+                print.ctor("Evar", false);
                 print.ctor("Gname", false);
                 cprint.printGlobalName(ref->getDecl(), print);
                 print.end_ctor();

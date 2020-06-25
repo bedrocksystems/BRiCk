@@ -47,6 +47,7 @@ Fixpoint type_of (e : Expr) : type :=
   | Eandclean _ t
   | Ematerialize_temp _ t => t
   | Ebind_temp _ _ t => t
+  | Ebuiltin _ t => t
   | Eatomic _ _ t => t
   | Eva_arg _ t => t
   | Epseudo_destructor _ _ => Tvoid

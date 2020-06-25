@@ -175,10 +175,6 @@ Module SimpleCPP
     Theorem valid_ptr_nullptr : |-- valid_ptr nullptr.
     Proof. by iLeft. Qed.
 
-    Definition Z_to_bytes (n : nat) (v : Z) : list runtime_val :=
-      let p := Z.modulo v (2 ^ n) in
-      Rval <$> List.rev ((fun i : nat => Z.to_N (Z.land 255 (Z.shiftr p (8 * i)))) <$> seq 0 n).
-
     Definition size_to_bytes (s : bitsize) : nat :=
       match s with
       | W8 => 1
@@ -188,70 +184,80 @@ Module SimpleCPP
       | W128 => 16
       end.
 
-    Definition POINTER_BYTES : nat := 8.
+    Section with_genv.
+      Variable σ : genv.
 
-    Definition aptr (p : ptr) : list runtime_val :=
-      List.map (Rpointer_chunk p) (seq 0 POINTER_BYTES).
+      Definition Z_to_bytes (n : nat) (v : Z) : list runtime_val :=
+        let p := Z.modulo v (2 ^ n) in
+        let little := (fun i : nat => Z.to_N (Z.land 255 (Z.shiftr p (8 * i)))) <$> seq 0 n in
+        Rval <$> match σ.(byte_order) with
+                 | Little => little
+                 | Big => List.rev little
+                 end.
 
-    Definition cptr (a : N) : list runtime_val :=
-      Z_to_bytes POINTER_BYTES (Z.of_N a).
+      Let POINTER_BYTES : nat := N.to_nat σ.(pointer_size).
 
-    Definition encodes (t : type) (v : val) (vs : list runtime_val) : mpred.
-    refine
-      match erase_qualifiers t with
-      | Tint sz sgn =>
-        match v with
-        | Vint v => [| vs = Z_to_bytes (size_to_bytes sz) v |]
-        | Vundef => [| length vs = size_to_bytes sz |]
-        | _ => lfalse
-        end
-      | Tmember_pointer _ _ =>
-        match v with
-        | Vint v =>
-          (* note: this is really an offset *)
-          [| vs = Z_to_bytes POINTER_BYTES v |]
-        | Vundef => [| length vs = POINTER_BYTES |]
-        | _ => lfalse
-        end
+      Definition aptr (p : ptr) : list runtime_val :=
+        List.map (Rpointer_chunk p) (seq 0 POINTER_BYTES).
 
-      | Tbool =>
-        match v with
-        | Vint 0 => [| vs = Rval 0%N :: nil |]
-        | Vint 1 => [| vs = Rval 1%N :: nil |]
-        | Vundef => [| length vs = 1 |]
-        | _ => lfalse
-        end
-      | Tnullptr =>
-        [| vs = cptr 0 |]
-      | Tfloat _ => lfalse
-      | Tarch _ _ => lfalse
-      | Tpointer _ =>
-        match v with
-        | Vptr p =>
-          if decide (p = nullptr) then
-            [| vs = cptr 0 |]
-          else
+      Definition cptr (a : N) : list runtime_val :=
+        Z_to_bytes POINTER_BYTES (Z.of_N a).
+
+      Definition encodes (t : type) (v : val) (vs : list runtime_val) : mpred.
+      refine
+        match erase_qualifiers t with
+        | Tint sz sgn =>
+          match v with
+          | Vint v => [| vs = Z_to_bytes (size_to_bytes sz) v |]
+          | Vundef => [| length vs = size_to_bytes sz |]
+          | _ => lfalse
+          end
+        | Tmember_pointer _ _ =>
+          match v with
+          | Vint v =>
+            (* note: this is really an offset *)
+            [| vs = Z_to_bytes POINTER_BYTES v |]
+          | Vundef => [| length vs = POINTER_BYTES |]
+          | _ => lfalse
+          end
+
+        | Tbool =>
+          match v with
+          | Vint 0 => [| vs = Rval 0%N :: nil |]
+          | Vint 1 => [| vs = Rval 1%N :: nil |]
+          | Vundef => [| length vs = 1 |]
+          | _ => lfalse
+          end
+        | Tnullptr =>
+          [| vs = cptr 0 |]
+        | Tfloat _ => lfalse
+        | Tarch _ _ => lfalse
+        | Tpointer _ =>
+          match v with
+          | Vptr p =>
+            if decide (p = nullptr) then
+              [| vs = cptr 0 |]
+            else
+              Exists (l : option addr),
+                own _ghost.(mem_inj_name) {[ p := to_agree l ]} **
+                match l with
+                | None => [| vs = aptr p |]
+                | Some l => [| vs = cptr l |]
+                end
+          | _ => lfalse
+          end
+        | Tfunction _ _
+        | Treference _
+        | Trv_reference _ =>
+          match v with
+          | Vptr p =>
+            [| p <> nullptr |] **
             Exists (l : option addr),
               own _ghost.(mem_inj_name) {[ p := to_agree l ]} **
               match l with
               | None => [| vs = aptr p |]
               | Some l => [| vs = cptr l |]
               end
-        | Vundef => [| length vs = POINTER_BYTES |]
-        | _ => lfalse
-        end
-      | Tfunction _ _
-      | Treference _
-      | Trv_reference _ =>
-        match v with
-        | Vptr p =>
-          [| p <> nullptr |] **
-          Exists (l : option addr),
-            own _ghost.(mem_inj_name) {[ p := to_agree l ]} **
-            match l with
-            | None => [| vs = aptr p |]
-            | Some l => [| vs = cptr l |]
-            end
         | Vundef => [| length vs = POINTER_BYTES |]
         | _ => lfalse
         end
@@ -264,14 +270,33 @@ Module SimpleCPP
     all: refine _.
     Defined.
 
-    Global Instance encodes_persistent : forall t v vs, Persistent (encodes t v vs).
+
+      Global Instance encodes_persistent : forall t v vs, Persistent (encodes t v vs).
+      Proof.
+        unfold encodes.
+        intros; destruct (erase_qualifiers t); intros;
+          destruct v; try refine _.
+        - destruct (decide (p = nullptr)); refine _.
+        - destruct z; refine _.
+          destruct p; refine _.
+      Qed.
+
+      Global Instance encodes_timeless : forall t v a, Timeless (encodes t v a).
+      Proof.
+        intros. unfold encodes. destruct (erase_qualifiers t); destruct v; refine _.
+        - destruct (decide (p = nullptr)); refine _.
+        - destruct z; refine _.
+          destruct p; refine _.
+      Qed.
+
+    End with_genv.
+
+    Instance Z_to_bytes_proper :
+      Proper (genv_leq ==> eq ==> eq ==> eq) Z_to_bytes.
     Proof.
-      unfold encodes.
-      intros; destruct (erase_qualifiers t); intros;
-        destruct v; try refine _.
-      - destruct (decide (p = nullptr)); refine _.
-      - destruct z; refine _.
-        destruct p; refine _.
+      do 4 red; intros; subst.
+      unfold Z_to_bytes.
+      setoid_rewrite H. reflexivity.
     Qed.
 
     Local Ltac go_encode X Y :=
@@ -286,8 +311,8 @@ Module SimpleCPP
         destruct ll; iDestruct "ZL" as "%"; subst; iDestruct "ZR" as %[];
         iFrame; eauto.
 
-    Theorem encodes_consistent : forall t v a b,
-        encodes t v a ** encodes t v b |-- [| length a = length b |].
+    Theorem encodes_consistent : forall σ t v a b,
+        encodes σ t v a ** encodes σ t v b |-- [| length a = length b |].
     Proof.
       rewrite /encodes; intros.
       destruct (erase_qualifiers t); simpl.
@@ -309,27 +334,40 @@ Module SimpleCPP
         all: iIntros "[[] _]". }
     Qed.
 
-    Global Instance encodes_timeless : forall t v a, Timeless (encodes t v a).
+    Instance cptr_proper :
+      Proper (genv_leq ==> eq ==> eq) cptr.
     Proof.
-      intros. unfold encodes. destruct (erase_qualifiers t); destruct v; refine _.
-      - destruct (decide (p = nullptr)); refine _.
-      - destruct z; refine _.
-        destruct p; refine _.
+      do 3 red; intros; subst.
+      unfold cptr. setoid_rewrite H. reflexivity.
     Qed.
 
-    Instance Z_to_bytes_proper :
-      Proper (eq ==> eq ==> eq) Z_to_bytes.
+    Instance aptr_proper :
+      Proper (genv_leq ==> eq ==> eq) aptr.
     Proof.
-      unfold Z_to_bytes.
-      do 3 red.
-      intros; subst. reflexivity.
-      
+      do 3 red; intros; subst.
+      unfold aptr. setoid_rewrite H. reflexivity.
     Qed.
 
     Instance encodes_proper :
-      Proper (eq ==> eq ==> eq ==> lentails) encodes.
+      Proper (genv_leq ==> eq ==> eq ==> eq ==> lentails) encodes.
     Proof.
-      do 4 red; intros; subst. reflexivity.
+      do 5 red. intros; subst.
+      unfold encodes.
+      destruct (erase_qualifiers y0); eauto.
+      all: destruct y1; auto.
+      all: try (setoid_rewrite H; reflexivity).
+      { destruct (decide (p = nullptr)); try setoid_rewrite H; eauto.
+        apply bi.exist_mono; intro.
+        destruct a; try setoid_rewrite H; eauto. }
+      { apply bi.sep_mono; eauto.
+        apply bi.exist_mono; intro.
+        destruct a; setoid_rewrite H; eauto. }
+      { apply bi.sep_mono; eauto.
+        apply bi.exist_mono; intro.
+        destruct a; setoid_rewrite H; eauto. }
+      { apply bi.sep_mono; eauto.
+        apply bi.exist_mono; intro.
+        destruct a; setoid_rewrite H; eauto. }
     Qed.
 
     Definition val_ (a : ptr) (v : val) (q : Qp) : mpred.
@@ -400,15 +438,11 @@ Module SimpleCPP
       - iFrame. auto.
      Qed.
 
-    Definition bytes (a : addr) (vs : list runtime_val) (q : Qp) : mpred.
-    refine (
-      [∗list] o ↦ v ∈ vs, (byte_ (a+N.of_nat o)%N v) q)%I.
-    Defined.
+    Definition bytes (a : addr) (vs : list runtime_val) (q : Qp) : mpred :=
+      ([∗list] o ↦ v ∈ vs, (byte_ (a+N.of_nat o)%N v) q)%I.
 
     Instance: Timeless (bytes a rv q).
-    Proof. unfold bytes.
-           intros; refine _.
-    Qed.
+    Proof. unfold bytes. intros; refine _. Qed.
 
     Instance: Fractional (bytes a vs).
     Proof. red. unfold bytes.
@@ -450,7 +484,7 @@ Module SimpleCPP
               match a with
               | Some a =>
                 Exists vs,
-                encodes t v vs ** bytes a vs q
+                encodes σ t v vs ** bytes a vs q
               | None => val_ p v q
               end).
       1: apply (@mem_injG Σ); apply has_cppG.
@@ -466,7 +500,7 @@ Module SimpleCPP
       iDestruct "H" as (a) "[#De [#Mi Lo]]".
       iExists (a).
       iFrame "#".
-      iFrame.
+      destruct a; try setoid_rewrite H; iFrame.
     Qed.
     Theorem tptsto_proper_equiv :
       Proper (genv_eq ==> eq ==> eq ==> eq ==> eq ==> lequiv) (@tptsto).

@@ -10,8 +10,61 @@
 #include "Logging.hpp"
 #include "clang/AST/Decl.h"
 #include "clang/AST/RecordLayout.h"
+#include "clang/Basic/Builtins.h"
 
 using namespace clang;
+
+void
+PrintBuiltin(Builtin::ID id, const ValueDecl *decl, CoqPrinter &print,
+             ClangPrinter &cprint) {
+    switch (id) {
+#define CASEB(x)                                                               \
+    case Builtin::BI__builtin_##x:                                             \
+        print.output() << "Bin_" #x;                                           \
+        break;
+        CASEB(alloca)
+        CASEB(alloca_with_align)
+        // control flow
+        CASEB(expect)
+        CASEB(unreachable)
+        CASEB(trap)
+        // bitwise operations
+        CASEB(bswap16)
+        CASEB(bswap32)
+        CASEB(bswap64)
+        CASEB(ffs)
+        CASEB(ffsl)
+        CASEB(ffsll)
+        CASEB(clz)
+        CASEB(clzl)
+        CASEB(clzll)
+        CASEB(ctz)
+        CASEB(ctzl)
+        CASEB(ctzll)
+        CASEB(popcount)
+        CASEB(popcountl)
+        // memory operations
+        CASEB(memset)
+        CASEB(memcmp)
+        CASEB(bzero)
+#undef CASEB
+    default:
+        print.output() << "(Bin_unknown ";
+        print.str(decl->getNameAsString());
+        print.output() << ")";
+        break;
+    }
+}
+
+static inline Builtin::ID
+builtin_id(const Decl *d) {
+    if (const FunctionDecl *fd = dyn_cast_or_null<const FunctionDecl>(d)) {
+        if (Builtin::ID::NotBuiltin != fd->getBuiltinID()) {
+            return Builtin::ID(fd->getBuiltinID());
+        }
+    }
+    return Builtin::ID::NotBuiltin;
+}
 
 void
 printFunction(const FunctionDecl *decl, CoqPrinter &print,
@@ -27,9 +80,17 @@ printFunction(const FunctionDecl *decl, CoqPrinter &print,
     }
     print.end_list();
 
-    if (decl->getBody()) {
+    if (auto builtin = builtin_id(decl)) {
         print.ctor("Some", false);
+        print.ctor("Builtin", false);
+        PrintBuiltin(builtin, decl, print, cprint);
+        print.end_ctor();
+        print.end_ctor();
+    } else if (decl->getBody()) {
+        print.ctor("Some", false);
+        print.ctor("Impl", false);
         cprint.printStmt(decl->getBody(), print);
+        print.end_ctor();
         print.end_ctor();
     } else {
         print.output() << "None";

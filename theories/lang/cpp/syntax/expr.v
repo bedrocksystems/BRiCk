@@ -79,6 +79,33 @@ Variant AtomicOp : Set :=
 Instance: EqDecision AtomicOp.
 Proof. solve_decision. Defined.
 
+Variant BuiltinFn : Set :=
+| Bin_alloca
+| Bin_alloca_with_align
+| Bin_expect
+| Bin_unreachable
+| Bin_trap
+| Bin_bswap16
+| Bin_bswap32
+| Bin_bswap64
+| Bin_bswap128
+| Bin_bzero
+| Bin_ffs
+| Bin_ffsl
+| Bin_ffsll
+| Bin_clz
+| Bin_clzl
+| Bin_clzll
+| Bin_ctz
+| Bin_ctzl
+| Bin_ctzll
+| Bin_popcount
+| Bin_popcountl
+| Bin_unknown (_ : bs)
+.
+Instance: EqDecision BuiltinFn.
+Proof. solve_decision. Defined.
+
 Variant call_type : Set := Virtual | Direct.
 Instance: EqDecision call_type.
 Proof. solve_decision. Defined.
@@ -144,6 +171,7 @@ Inductive Expr : Set :=
 | Ematerialize_temp (_ : Expr) (_ : type)
 | Ebind_temp (_ : Expr) (_ : obj_name) (_ : type)
 
+| Ebuiltin (_ : BuiltinFn) (_ : type)
 | Eatomic (_ : AtomicOp) (_ : list (ValCat * Expr)) (_ : type)
 | Eva_arg (_ : Expr) (_ : type)
 | Epseudo_destructor (_ : type) (_ : Expr) (* type void *)

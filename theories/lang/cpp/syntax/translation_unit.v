@@ -35,10 +35,17 @@ Record Dtor : Set :=
 Instance: EqDecision Dtor.
 Proof. solve_decision. Defined.
 
+Variant FunctionBody : Set :=
+| Impl (_ : Stmt)
+| Builtin (_ : BuiltinFn)
+.
+Instance: EqDecision FunctionBody.
+Proof. solve_decision. Defined.
+
 Record Func : Set :=
 { f_return : type
 ; f_params : list (ident * type)
-; f_body   : option Stmt
+; f_body   : option FunctionBody
 }.
 Instance: EqDecision Func.
 Proof. solve_decision. Defined.

@@ -24,6 +24,7 @@ theories/lang/cpp/ast.v
 # Semantics
 theories/lang/cpp/semantics/values.v
 theories/lang/cpp/semantics/operator.v
+theories/lang/cpp/semantics/builtins.v
 theories/lang/cpp/semantics/sub_module.v
 theories/lang/cpp/semantics/subtyping.v
 theories/lang/cpp/semantics/dispatch.v
@@ -48,6 +49,7 @@ theories/lang/cpp/logic/translation_unit.v
 theories/lang/cpp/logic/cclogic.v
 # ^^ This is probably going to be eliminated
 theories/lang/cpp/logic/atomics.v
+theories/lang/cpp/logic/builtins.v
 theories/lang/cpp/logic/layout.v
 theories/lang/cpp/logic.v
 
