@@ -80,16 +80,16 @@ printFunction(const FunctionDecl *decl, CoqPrinter &print,
     }
     print.end_list();
 
-    if (auto builtin = builtin_id(decl)) {
-        print.ctor("Some", false);
-        print.ctor("Builtin", false);
-        PrintBuiltin(builtin, decl, print, cprint);
-        print.end_ctor();
-        print.end_ctor();
-    } else if (decl->getBody()) {
+    if (decl->getBody()) {
         print.ctor("Some", false);
         print.ctor("Impl", false);
         cprint.printStmt(decl->getBody(), print);
+        print.end_ctor();
+        print.end_ctor();
+    } else if (auto builtin = builtin_id(decl)) {
+        print.ctor("Some", false);
+        print.ctor("Builtin", false);
+        PrintBuiltin(builtin, decl, print, cprint);
         print.end_ctor();
         print.end_ctor();
     } else {
