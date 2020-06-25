@@ -34,8 +34,7 @@ Module Type Stmt.
     Local Notation wpAny := (wpAny (resolve:=resolve) M ti).
     Local Notation wpAnys := (wpAnys (resolve:=resolve) M ti).
     Local Notation fspec := (fspec ti).
-    Local Notation mdestroy := (@mdestroy Σ resolve ti) (only parsing).
-    Local Notation destruct := (destruct (σ:=resolve) ti) (only parsing).
+    Local Notation destruct_val := (destruct_val (σ:=resolve) ti) (only parsing).
     Local Notation destruct_obj := (destruct_obj (σ:=resolve) ti) (only parsing).
 
     Local Notation glob_def := (glob_def resolve) (only parsing).
@@ -106,10 +105,10 @@ Module Type Stmt.
       | Tbool
       | Tint _ _ =>
         Forall a : ptr,
-        let done :=
-            k (Rbind x a ρ) (Kfree (_at (_eq a) (anyR (erase_qualifiers ty) 1)) Q)
+        let continue :=
+            k (Rbind x a ρ)
+              (Kfree (_at (_eq a) (anyR (erase_qualifiers ty) 1)) Q)
         in
-        let continue := done in
         match init with
         | None =>
           _at (_eq a) (uninitR (erase_qualifiers ty) 1) -* continue
@@ -136,14 +135,14 @@ Module Type Stmt.
                   end
       | Tarray ty' N =>
         Forall a, _at (_eq a) (uninitR (erase_qualifiers ty) 1) -*
-                  let destroy : mpred :=
+                  let destroy :=
                       match dtor with
                       | None => fun x => x
-                      | Some dtor => destruct ty (Vptr a) dtor
+                      | Some dtor => destruct_val ty (Vptr a) dtor
                       end (_at (_eq a) (anyR (erase_qualifiers ty) 1))
                   in
                   let continue :=
-                      k (Rbind x a ρ) (Kfree (_at (_eq a) (anyR (erase_qualifiers ty) 1)) Q)
+                      k (Rbind x a ρ) (Kfree destroy Q)
                   in
                   match init with
                   | None => continue
@@ -169,10 +168,10 @@ Module Type Stmt.
       | Tqualified _ ty => wp_decl ρ x ty init dtor k Q
       | Tnullptr =>
         Forall a : ptr,
-        let done :=
-            k (Rbind x a ρ) (Kfree (_at (_eq a) (anyR (erase_qualifiers ty) 1)) Q)
+        let continue :=
+            k (Rbind x a ρ)
+              (Kfree (_at (_eq a) (anyR (erase_qualifiers ty) 1)) Q)
         in
-        let continue := done in
         match init with
         | None =>
           _at (_eq a) (primR Tnullptr 1 (Vptr nullptr)) -* continue

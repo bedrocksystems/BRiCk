@@ -34,8 +34,8 @@ Local Open Scope Z_scope.
 Parameter ptr : Set.
 Parameter ptr_eq_dec : forall (x y : ptr), { x = y } + { x <> y }.
 Instance: EqDecision ptr := ptr_eq_dec.
-Instance: Countable ptr.
-Proof. Admitted.
+Parameter ptr_countable : Countable ptr.
+Existing Instance ptr_countable.
 
 (** C++ provides a distinguished pointer [nullptr] that is *never
     dereferenable*

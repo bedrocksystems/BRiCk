@@ -18,7 +18,9 @@ Section destroy.
   Local Notation anyR := (anyR (resolve:=σ)) (only parsing).
   Local Notation _global := (_global (resolve:=σ)) (only parsing).
 
-  (* this destroys an object by invoking its (possibly virtual) destructor *)
+  (* this destructs an object by invoking its destructor
+     note: it does *not* free the underlying memory.
+   *)
   Definition destruct_obj (dtor : obj_name) (cls : globname) (v : val) (Q : mpred) : mpred :=
     match σ.(genv_tu) !! cls with
     | Some (Gstruct s) =>
@@ -33,18 +35,21 @@ Section destroy.
     | _ => lfalse
     end.
 
-  Fixpoint destruct (t : type) (this : val) (dtor : obj_name) (Q : mpred)
+  (* [destruct_val t this dtor Q] invokes the destructor ([dtor]) on [this]
+     with the type of [this] is [t].
+
+     note: it does *not* free the underlying memory.
+   *)
+  Fixpoint destruct_val (t : type) (this : val) (dtor : obj_name) (Q : mpred)
            {struct t}
   : mpred :=
     match t with
-    | Tqualified _ t => destruct t this dtor Q
+    | Tqualified _ t => destruct_val t this dtor Q
     | Tnamed cls =>
       destruct_obj dtor cls this Q
     | Tarray t sz =>
-      let destruct_at i :=
-          Exists p, _offsetL (_sub t (Z.of_nat i)) (_eqv this) &~ p ** destruct t (Vptr p) dtor empSP
-      in
-      sepSPs (List.map destruct_at (List.seq 0 (N.to_nat sz - 1)))
+      fold_right (fun i Q =>
+         Exists p, _offsetL (_sub t (Z.of_nat i)) (_eqv this) &~ p ** destruct_val t (Vptr p) dtor Q) Q (List.rev (seq 0 (N.to_nat sz)))
     | _ => empSP
     end.
 
@@ -53,7 +58,7 @@ Section destroy.
   : mpred :=
     match dtor with
     | None => fun x => x
-    | Some dtor => destruct ty this dtor
+    | Some dtor => destruct_val ty this dtor
     end (_at (_eqv this) (anyR (erase_qualifiers ty) 1) ** Q).
 
 End destroy.
