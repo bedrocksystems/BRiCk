@@ -22,6 +22,8 @@ Section with_Σ.
   Definition borrow_from {PROP : bi} (part all : PROP) : PROP :=
     part ** (part -* all).
 
+  (** decompose a struct into its constituent fields and base classes.
+   *)
   Axiom decompose_struct
   : forall cls st,
     glob_def resolve cls = Some (Gstruct st) ->
@@ -39,6 +41,8 @@ Section with_Σ.
             else empSP))
           (anyR (Tnamed cls) 1).
 
+  (** decompose a union into the classical conjunction of the alternatives
+   *)
   Axiom decompose_union
   : forall (cls : globname) st,
     glob_def resolve cls = Some (Gunion st) ->
@@ -49,10 +53,15 @@ Section with_Σ.
            borrow_from (_offsetR f (anyR (erase_qualifiers t) 1))
                        (anyR (Tnamed cls) 1).
 
+  (** decompose an array into individual components
+      note that one past the end of an array is a valid location, but
+      it doesn't store anything.
+   *)
   Axiom decompose_array : forall t n,
         anyR (Tarray t n) 1
-    -|- borrow_from ([∗list] i ∈ seq 0 (BinNatDef.N.to_nat n),
-                       _offsetR (_sub t (Z.of_nat i)) (anyR t 1))
-                    (anyR (Tarray t n) 1).
+    -|- _offsetR (_sub t (Z.of_N n)) empSP **
+        (* ^ note: this is equivalent to [valid_loc (this .[ t ! n ])] *)
+        [∗list] i ↦ _ ∈ repeat () (BinNatDef.N.to_nat n),
+        _offsetR (_sub t (Z.of_nat i)) (anyR t 1).
 
 End with_Σ.
