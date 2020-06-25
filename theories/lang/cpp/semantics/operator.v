@@ -31,8 +31,7 @@ Axiom eval_not_bool : forall resolve a,
 (* The builtin unary minus operator calculates the negative of its
    promoted operand. For unsigned a, the value of -a is 2^b -a, where b
    is the number of bits after promotion.  *)
-Axiom eval_minus_int : forall resolve s a c w bytes,
-    size_of resolve (Tint w s) = Some bytes ->
+Axiom eval_minus_int : forall resolve (s : signed) a c w,
     c = (if s then (0 - a) else trim (bitsN w) (0 - a))%Z ->
     has_type (Vint c) (Tint w s) ->
     eval_unop (resolve:=resolve) Uminus (Tint w s) (Tint w s)
