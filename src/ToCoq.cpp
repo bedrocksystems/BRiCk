@@ -92,9 +92,9 @@ ToCoqConsumer::toCoqModule(clang::ASTContext *ctxt,
             CoqPrinter print(fmt);
             ClangPrinter cprint(ctxt);
 
-            fmt << "Require Import bedrock.lang.cpp.parser." << fmt::line << fmt::line
-                << "Local Open Scope bs_scope." << fmt::line;
-                // << "Import ListNotations." << fmt::line;
+            fmt << "Require Import bedrock.lang.cpp.parser." << fmt::line
+                << fmt::line << "Local Open Scope bs_scope." << fmt::line;
+            // << "Import ListNotations." << fmt::line;
 
             fmt << fmt::line
                 << "Definition module : translation_unit := " << fmt::indent
@@ -113,6 +113,13 @@ ToCoqConsumer::toCoqModule(clang::ASTContext *ctxt,
                 print.cons();
             }
             print.end_list();
+            print.output() << fmt::nbsp;
+            if (ctxt->getTargetInfo().isBigEndian()) {
+                print.output() << "Big";
+            } else {
+                assert(ctxt->getTargetInfo().isLittleEndian());
+                print.output() << "Little";
+            }
             print.output() << "." << fmt::outdent << fmt::line;
         }
     }
@@ -140,8 +147,8 @@ ToCoqConsumer::toCoqModule(clang::ASTContext *ctxt,
                                       ctxt.getSourceManager().getMainFileID())
                                   ->getName()
                            << fmt::line << " *)" << fmt::line
-                           << "Require Export bedrock.lang.cpp.parser." << fmt::line
-                           << fmt::line;
+                           << "Require Export bedrock.lang.cpp.parser."
+                           << fmt::line << fmt::line;
 
             // generate all of the record fields
             write_globals(mod, print, cprint);

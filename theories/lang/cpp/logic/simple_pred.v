@@ -190,7 +190,7 @@ Module SimpleCPP
       Definition Z_to_bytes (n : nat) (v : Z) : list runtime_val :=
         let p := Z.modulo v (2 ^ n) in
         let little := (fun i : nat => Z.to_N (Z.land 255 (Z.shiftr p (8 * i)))) <$> seq 0 n in
-        Rval <$> match σ.(byte_order) with
+        Rval <$> match byte_order σ with
                  | Little => little
                  | Big => List.rev little
                  end.
@@ -258,17 +258,17 @@ Module SimpleCPP
               | None => [| vs = aptr p |]
               | Some l => [| vs = cptr l |]
               end
-        | Vundef => [| length vs = POINTER_BYTES |]
-        | _ => lfalse
-        end
-      | Tqualified _ _ => lfalse (* unreachable *)
-      | Tvoid
-      | Tarray _ _
-      | Tnamed _ => lfalse (* not directly encoded in memory *)
-      end.
-    all: try (unshelve eapply mem_injG; apply has_cppG).
-    all: refine _.
-    Defined.
+          | Vundef => [| length vs = POINTER_BYTES |]
+          | _ => lfalse
+          end
+        | Tqualified _ _ => lfalse (* unreachable *)
+        | Tvoid
+        | Tarray _ _
+        | Tnamed _ => lfalse (* not directly encoded in memory *)
+        end.
+      all: try (unshelve eapply mem_injG; apply has_cppG).
+      all: refine _.
+      Defined.
 
 
       Global Instance encodes_persistent : forall t v vs, Persistent (encodes t v vs).

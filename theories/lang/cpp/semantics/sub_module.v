@@ -4,6 +4,7 @@
  * SPDX-License-Identifier: LGPL-2.1 WITH BedRock Exception for use over network, see repository root for details.
  *)
 Require Import stdpp.base.
+Require Import stdpp.decidable.
 Require Import bedrock.lang.cpp.syntax.translation_unit.
 Require Import bedrock.lang.cpp.ast.
 Require Import bedrock.avl.
@@ -173,15 +174,17 @@ Proof.
   all: repeat rewrite require_eq_refl; eauto; try congruence.
 Qed.
 
-Definition sub_module (a b : translation_unit) : Prop :=
-  (forall (gn : globname) gv,
+Record sub_module (a b : translation_unit) : Prop :=
+{ types_compat : forall (gn : globname) gv,
       a.(globals) !! gn = Some gv ->
       exists gv', b.(globals) !! gn = Some gv' /\
-             GlobDecl_le gv gv' = Some tt) /\
-  (forall (on : obj_name) v,
+             GlobDecl_le gv gv' = Some tt
+; syms_compat :
+  forall (on : obj_name) v,
       a.(symbols) !! on = Some v ->
       exists v', b.(symbols) !! on = Some v' /\
-            ObjValue_le v v' = Some tt).
+            ObjValue_le v v' = Some tt
+; byte_order_compat : a.(byte_order) = b.(byte_order) }.
 
 Instance: Reflexive sub_module.
 Proof.
@@ -194,16 +197,13 @@ Instance: Transitive sub_module.
 Proof.
   red. destruct 1; destruct 1.
   split; intros.
-  { apply H in H3. destruct H3 as [? [H3 ?]].
-    apply H1 in H3. destruct H3 as [? [H3 ?]].
-    eexists; split; eauto.
-    clear - H4 H5.
-    eapply GlobDecl_le_trans; eauto. }
-  { apply H0 in H3. destruct H3 as [? [H3 ?]].
-    apply H2 in H3. destruct H3 as [? [H3 ?]].
-    eexists; split; eauto.
-    clear - H4 H5.
-    eapply ObjValue_le_trans; eauto. }
+  { apply types_compat0 in H. destruct H as [? [H ?]].
+    apply types_compat1 in H. destruct H as [? [H ?]].
+    eexists; split; eauto using GlobDecl_le_trans. }
+  { apply syms_compat0 in H. destruct H as [? [H ?]].
+    apply syms_compat1 in H. destruct H as [? [H ?]].
+    eexists; split; eauto using ObjValue_le_trans. }
+  { etransitivity; eauto. }
 Qed.
 
 Definition compat_le {T}
@@ -245,6 +245,7 @@ Proof.
 Qed.
 
 Definition module_le (a b : translation_unit) : bool :=
+  bool_decide (a.(byte_order) = b.(byte_order)) &&
   compat_le (fun l r => match l , r with
                      | None , _ => true
                      | Some _ , None => false
@@ -270,6 +271,8 @@ Theorem module_le_sound : forall a b, if module_le a b then
                                    ~sub_module a b.
 Proof.
   unfold module_le; intros.
+  destruct (bool_decide_reflect (byte_order a = byte_order b)); simpl.
+  2:{ red. destruct 1. congruence. }
   match goal with
   | |- context [ compat_le ?f ?l ?r && _ ] =>
     generalize (@compat_le_sound _ f l r (fun _ => eq_refl)); destruct (@compat_le _ f l r)
@@ -280,7 +283,7 @@ Proof.
       generalize (@compat_le_sound _ f l r (fun _ => eq_refl)); destruct (@compat_le _ f l r)
     end; intros.
     simpl.
-    red. split.
+    constructor; auto.
     { intros. specialize (H gn).
       change_rewrite_in H1 H.
       clear - H H1.
@@ -315,7 +318,7 @@ Proof.
         inversion H4. subst.
         congruence. }
       { change_rewrite_in Heq H0. congruence. } } }
-  { intros; unfold sub_module; simpl; intros [ Hs _ ].
+  { intros; simpl; intros [ Hs _ ].
     destruct H.
     forward.
     specialize (Hs _ _ H).
