@@ -1,5 +1,5 @@
 (*
- * Copyright (C) BedRock Systems Inc. 2019 Gregory Malecha
+ * Copyright (C) BedRock Systems Inc. 2019-2020 Gregory Malecha
  *
  * SPDX-License-Identifier: LGPL-2.1 WITH BedRock Exception for use over network, see repository root for details.
  *)
@@ -150,8 +150,6 @@ Fixpoint get_result (ρ : region) : option ptr :=
 
 (** * global environments *)
 
-Variant endian : Set := Little | Big.
-
 (** this contains two things:
    - the types declared in the program
    - the program's symbol table (mapping of globals to pointers)
@@ -169,24 +167,23 @@ Record genv : Type :=
   (* ^ the address of global variables & functions *)
 ; pointer_size : N
   (* ^ the size of a pointer (in bytes) *)
-; byte_order : endian
 }.
 
+Definition byte_order (g : genv) : endian :=
+  g.(genv_tu).(byte_order).
+
 (** [genv_leq a b] states that [b] is an extension of [a] *)
-Definition genv_leq (l r : genv) : Prop :=
-  sub_module l.(genv_tu) r.(genv_tu) /\
-  (forall a p, l.(glob_addr) a = Some p ->
-          r.(glob_addr) a = Some p) /\
-  l.(pointer_size) = r.(pointer_size) /\
-  l.(byte_order) = r.(byte_order).
+Record genv_leq {l r : genv} : Prop :=
+{ tu_le : sub_module l.(genv_tu) r.(genv_tu)
+; addr_le : forall a p, l.(glob_addr) a = Some p -> r.(glob_addr) a = Some p
+; pointer_size_le : l.(pointer_size) = r.(pointer_size) }.
+Arguments genv_leq _ _ : clear implicits.
 
 Instance PreOrder_genv_leq : PreOrder genv_leq.
 Proof.
   constructor.
-  { constructor; [ | constructor ]; auto; reflexivity. }
-  { red. unfold genv_leq.
-    intros ? ? ? [A [B [C D]]] [A' [B' [C' D']]].
-    split; [ | split; [ | split ] ]; etransitivity; eauto. }
+  { constructor; auto; reflexivity. }
+  { red. destruct 1; destruct 1; constructor; try etransitivity; eauto. }
 Qed.
 Definition glob_def (g : genv) (gn : globname) : option GlobDecl :=
   g.(genv_tu).(globals) !! gn.
@@ -195,13 +192,13 @@ Definition genv_eq (l r : genv) : Prop :=
   genv_leq l r /\ genv_leq r l.
 
 Instance genv_tu_proper : Proper (genv_leq ==> sub_module) genv_tu.
-Proof. do 2 red. destruct 1 as [ ? [ ? [ ? ? ]] ]; auto. Qed.
+Proof. do 2 red. destruct 1; auto. Qed.
 
 Instance pointer_size_proper : Proper (genv_leq ==> eq) pointer_size.
-Proof. do 2 red. destruct 1 as [ ? [ ? [ ? ? ]] ]; auto. Qed.
+Proof. do 2 red. destruct 1; auto. Qed.
 
 Instance byte_order_proper : Proper (genv_leq ==> eq) byte_order.
-Proof. do 2 red. destruct 1 as [ ? [ ? [ ? ? ]] ]; auto. Qed.
+Proof. do 2 red. destruct 1.  destruct tu_le0; eauto. Qed.
 
 
 (* this states that the [genv] is compatible with the given [translation_unit]
@@ -209,12 +206,31 @@ Proof. do 2 red. destruct 1 as [ ? [ ? [ ? ? ]] ]; auto. Qed.
  * compilation unit and that the [genv] contains addresses for all globals
  * defined in the [translation_unit]
  *)
-Parameter genv_compat : translation_unit -> genv -> Prop.
+Record genv_compat {tu : translation_unit} {g : genv} : Prop :=
+{ tu_compat : sub_module tu g.(genv_tu) }.
+Arguments genv_compat _ _ : clear implicits.
 Infix "⊧" := genv_compat (at level 1).
 
-Axiom genv_compat_submodule : forall m σ, m ⊧ σ -> sub_module m σ.(genv_tu).
+Theorem genv_byte_order_tu : forall tu g,
+    tu ⊧ g ->
+    byte_order g = translation_unit.byte_order tu.
+Proof. destruct 1. erewrite byte_order_compat; eauto. Qed.
 
-Parameter subModuleModels : forall a b σ, b ⊧ σ -> module_le a b = true -> a ⊧ σ.
+Theorem genv_compat_submodule : forall m σ, m ⊧ σ -> sub_module m σ.(genv_tu).
+Proof. destruct 1; auto. Qed.
+
+Instance models_proper
+  : Proper (sub_module --> genv_leq ==> Basics.impl) genv_compat.
+Proof.
+  do 4 red. destruct 2. destruct 1. constructor; eauto.
+  etransitivity; eauto.
+  etransitivity; eauto.
+Qed.
+
+Theorem subModuleModels : forall a b σ, b ⊧ σ -> sub_module a b -> a ⊧ σ.
+Proof.
+  destruct 1; constructor; eauto. etransitivity; eauto.
+Qed.
 
 Definition max_val (bits : bitsize) (sgn : signed) : Z :=
   match bits , sgn with
@@ -419,6 +435,11 @@ Proof. reflexivity. Qed.
 Parameter align_of : forall {resolve : genv} (t : type), option N.
 Global Declare Instance Proper_align_of
 : Proper (genv_leq ==> eq ==> Roption_leq eq) (@align_of).
+Axiom align_of_size_of : forall {σ : genv} (t : type) sz,
+    size_of σ t = Some sz ->
+    exists al, align_of (resolve:=σ) t = Some al /\
+          (* alignmend is a multiple of the size *)
+          (al mod sz = 0)%N.
 
 Arguments Z.add _ _ : simpl never.
 Arguments Z.sub _ _ : simpl never.

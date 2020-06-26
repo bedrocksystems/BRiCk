@@ -89,9 +89,9 @@ Definition Dtypedef     (name : globname) (t : type) : translation_unitK :=
   fun syms tys k => k syms (<[ name := Gtypedef t ]> tys).
 Definition Dtype (name : globname) : translation_unitK :=
   fun syms tys k => k syms (<[ name := Gtype ]> tys).
-Definition translation_unit_canon (c : translation_unit) : translation_unit :=
-  {| symbols := avl.map_canon c.(symbols)
-   ; globals := avl.map_canon c.(globals) |}.
+(* Definition translation_unit_canon (c : translation_unit) : translation_unit := *)
+(*   {| symbols := avl.map_canon c.(symbols) *)
+(*    ; globals := avl.map_canon c.(globals) |}. *)
 
 Fixpoint decls' (ls : list translation_unitK) : translation_unitK :=
   match ls with
@@ -99,9 +99,10 @@ Fixpoint decls' (ls : list translation_unitK) : translation_unitK :=
   | m :: ms => fun syms tys k => m syms tys (fun s t => decls' ms s t k)
   end.
 
-Definition decls ls : translation_unit :=
+Definition decls ls (e : endian) : translation_unit :=
   decls' ls ∅ ∅ (fun a b => {| symbols := avl.map_canon a
-                           ; globals := avl.map_canon b |}).
+                           ; globals := avl.map_canon b
+                           ; byte_order := e |}).
 
 Declare Reduction reduce_translation_unit := vm_compute.
 

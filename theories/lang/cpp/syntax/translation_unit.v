@@ -12,7 +12,6 @@ Require Import bedrock.bytestring.
 Require Import bedrock.Util.
 From bedrock.lang.cpp.syntax Require Import names expr stmt types.
 
-
 Set Primitive Projections.
 
 Record LayoutInfo : Set :=
@@ -158,9 +157,15 @@ Definition symbol_table : Type := IM.t ObjValue.
 
 Definition type_table : Type := IM.t GlobDecl.
 
+Variant endian : Set := Little | Big.
+
+Instance endian_dec : EqDecision endian.
+Proof. solve_decision. Defined.
+
 Record translation_unit : Type :=
-{ symbols : symbol_table
-; globals : type_table
+{ symbols    : symbol_table
+; globals    : type_table
+; byte_order : endian
 }.
 
 Instance global_lookup : Lookup globname GlobDecl translation_unit :=
