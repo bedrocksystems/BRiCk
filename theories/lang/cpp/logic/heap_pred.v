@@ -7,6 +7,7 @@ Require Import Coq.Classes.Morphisms.
 
 From iris.bi Require Export monpred.
 Require Import iris.proofmode.tactics.
+Require Import iris.bi.lib.fractional.
 
 From bedrock Require Import ChargeUtil.
 From bedrock.lang.cpp Require Import
@@ -89,6 +90,16 @@ Section with_cpp.
   Proof.
     split; red; simpl; eapply H.
   Qed.
+
+  Global Instance as_Rep_fractional `{Hp : ∀ p, Fractional (λ q, P q p)} :
+    Fractional (λ q, as_Rep (P q)).
+  Proof.
+    intros q1 q2. constructor=>p. by rewrite monPred_at_sep /= (Hp p).
+  Qed.
+  Global Instance as_Rep_as_fractional q
+      `{Hp : ∀ p, AsFractional (P q p) (λ q, P q p) q} :
+    AsFractional (as_Rep (P q)) (λ q, as_Rep (P q)) q.
+  Proof. constructor. done. apply _. Qed.
 
   Definition _offsetR_def (o : Offset) (r : Rep) : Rep :=
     as_Rep (fun base =>
@@ -189,6 +200,152 @@ Section with_cpp.
       iApply "A"; iAssumption.
   Qed.
 
+  Lemma _at_loc_materialize : forall (l : Loc) (r : Rep),
+      _at l r -|- Exists a, □ (l &~ a) ** r a.
+  Proof.
+    intros.
+    rewrite _at_eq /_at_def path_pred.addr_of_eq /addr_of_def.
+    split'; simpl.
+    { eapply bi.exist_mono; intro.
+      iIntros "A"; iDestruct "A" as "[#L R]".
+      iFrame "#∗". }
+    { eapply bi.exist_mono; intro.
+      iIntros "[#X Y]"; iFrame "#∗". }
+  Qed.
+
+  Lemma addr_of_valid_loc : forall l a,
+      l &~ a |-- valid_loc l.
+  Proof.
+    intros. rewrite valid_loc_eq /valid_loc_def.
+    iIntros "X"; iExists _; eauto.
+  Qed.
+
+  Lemma valid_loc_equiv : forall l, valid_loc l -|- Exists p, l &~ p.
+  Proof.
+    intros.
+    rewrite valid_loc_eq /valid_loc_def. reflexivity.
+  Qed.
+
+  Lemma _at_emp : forall l, _at l emp -|- valid_loc l.
+  Proof.
+    intros. rewrite _at_loc_materialize.
+    setoid_rewrite -> monPred_at_emp; eauto.
+    split'; eauto with iFrame.
+    - iIntros "X"; iDestruct "X" as (a) "[#A _]".
+      iApply addr_of_valid_loc; eauto.
+    - rewrite valid_loc_equiv.
+      iIntros "X"; iDestruct "X" as (a) "#X"; iExists a; iFrame "#".
+  Qed.
+
+  Lemma _at_exists : forall (l : Loc) T (P : T -> Rep),
+      _at l (Exists v : T, P v) -|- Exists v, _at l (P v).
+  Proof.
+    intros.
+    rewrite _at_eq /_at_def.
+    split'.
+    - iIntros "H". iDestruct "H" as (a) "H".
+      rewrite monPred_at_exist.
+      iDestruct "H" as "[? H]"; iFrame "#∗".
+      iDestruct "H" as (xx) "H".
+      do 2 iExists _; iFrame "#∗".
+    - iIntros "A"; iDestruct "A" as (v a) "[#L P]".
+      iExists _; iFrame "#∗".
+      rewrite monPred_at_exist. iExists _; iFrame.
+  Qed.
+
+  Lemma _at_only_provable : forall (l : Loc) (P : Prop),
+      _at l [| P |] -|- [| P |] ** valid_loc l.
+  Proof.
+    intros. rewrite _at_loc_materialize valid_loc_equiv.
+    setoid_rewrite monPred_at_only_provable.
+    split'.
+    { iIntros "X"; iDestruct "X" as (a) "[#L R]"; iFrame; iExists a; iFrame "#". }
+    { iIntros "[L #R]"; iDestruct "R" as (p) "R"; iExists p; iFrame "#∗". }
+  Qed.
+
+  Lemma _at_pure : forall (l : Loc) (P : Prop),
+      _at l (bi_pure P) -|- bi_pure P ** valid_loc l.
+  Proof.
+    intros. rewrite _at_loc_materialize valid_loc_equiv.
+    setoid_rewrite monPred_at_pure.
+    split'.
+    { iIntros "X"; iDestruct "X" as (a) "[#L R]"; iFrame; iExists a; iFrame "#". }
+    { iIntros "[L #R]"; iDestruct "R" as (p) "R"; iExists p; iFrame "#∗". }
+  Qed.
+
+  Lemma _at_sep (l : Loc) (P Q : Rep) :
+      _at l (P ** Q) -|- _at l P ** _at l Q.
+  Proof.
+    rewrite !_at_loc_materialize.
+    setoid_rewrite monPred_at_sep.
+    split'.
+    { iIntros "A"; iDestruct "A" as (p) "[#X [L R]]".
+      iSplitL "L"; iExists _; iFrame "#∗". }
+    { iIntros "[A B]"; iDestruct "A" as (p) "[#LA A]"; iDestruct "B" as (p') "[#LB B]".
+      iExists _; iFrame "#∗".
+      iDestruct (addr_of_precise with "[LA LB]") as %H;
+        [ iSplit; [ iApply "LA" | iApply "LB" ] | ].
+      subst; eauto. }
+  Qed.
+
+  Lemma _at_wand (l : Loc) (P Q : Rep) :
+      _at l (P -* Q) |-- (_at l P -* _at l Q) ** valid_loc l.
+  Proof.
+    rewrite !_at_loc_materialize.
+    iIntros "X"; iDestruct "X" as (a) "[#L X]".
+    rewrite monPred_wand_force.
+    iSplitR "L"; [ | iApply addr_of_valid_loc; iAssumption ].
+    iIntros "Y".
+    iDestruct "Y" as (aa) "[#L' P]".
+    iExists _.
+    iSplitR.
+    2:{ iApply "X".
+        rewrite path_pred.addr_of_eq /addr_of_def.
+        iDestruct (_loc_unique with "[L L']") as "%".
+        iSplitL; [ iApply "L" | iApply "L'" ].
+        subst. iAssumption. }
+    iAssumption.
+  Qed.
+
+  Lemma _at_offsetL_offsetR (l : Loc) (o : Offset) (r : Rep) :
+      _at l (_offsetR o r) -|- _at (_offsetL o l) r.
+  Proof.
+    rewrite !_at_loc_materialize.
+    rewrite _offsetR_eq _offsetL_eq path_pred.addr_of_eq
+            /addr_of_def /_offsetR_def /_offsetL_def;
+    split'; simpl.
+    { iIntros "H"; iDestruct "H" as (a) "[#L X]"; iDestruct "X" as (to) "[O R]".
+      iExists _. iFrame. iExists _. iFrame "#∗". }
+    { iIntros "H"; iDestruct "H" as (a) "[X R]"; iDestruct "X" as (from) "[#O L]".
+      iExists _; iFrame; iExists _; iFrame "#∗". }
+  Qed.
+
+  Global Instance _at_fractional (r : Qp → Rep) (l : Loc) `{!Fractional r} :
+    Fractional (λ q, _at l (r q)).
+  Proof.
+    intros q1 q2.
+    rewrite fractional _at_sep. reflexivity.
+  Qed.
+  Global Instance _at_as_fractional (r : Qp → Rep) q (l : Loc)
+      `{!AsFractional (r q) r q} :
+    AsFractional (_at l (r q)) (λ q, _at l (r q)) q.
+  Proof. constructor. done. apply _. Qed.
+
+  (** Lift observations on [Rep]'s in [RepI] to observations on [_at]
+  in [mpredI].
+
+  PDS: We could prove a variant using fancy update rather than
+  entailment. *)
+  Lemma _at_obs (l : Loc) (r : Rep) P :
+    r |-- r ** [| P |] →
+    _at l r |-- _at l r ** [| P |].
+  Proof.
+    move=>/monPred_in_entails Hobs. rewrite _at_eq/_at_def.
+    iDestruct 1 as (p) "[Hl Hp]". iDestruct (Hobs with "Hp") as "Hp".
+    rewrite monPred_at_sep monPred_at_only_provable.
+    iDestruct "Hp" as "[Hp $]". auto.
+  Qed.
+
 
   (** Values
    * These `Rep` predicates wrap `ptsto` facts
@@ -218,6 +375,31 @@ Section with_cpp.
     pureR P |-- pureR P ** [| Q |].
   Proof. intros. exact: as_Rep_obs. Qed.
 
+  (** Local because we favor [only_provable] to [bi_pure], notable
+  exceptions being [True] and [False]. *)
+  Lemma pureR_pure P : pureR ⌜P⌝ ⊣⊢ ⌜P⌝.
+  Proof.
+    split'.
+    - rewrite (objective_objectively (pureR _)).
+      rewrite monPred_objectively_unfold embed_forall.
+      by rewrite (bi.forall_elim inhabitant) embed_pure.
+    - constructor=>p. by rewrite monPred_at_pure.
+  Qed.
+  Definition pureR_True : pureR True ⊣⊢ True := pureR_pure _.
+  Definition pureR_False : pureR False ⊣⊢ False := pureR_pure _.
+
+  Lemma _at_pureR : forall x (P : mpred),
+      _at x (pureR P) -|- P ** valid_loc x.
+  Proof.
+    intros. rewrite _at_loc_materialize; simpl.
+    split'; simpl.
+    - iIntros "X"; iDestruct "X" as (a) "[#L P]"; iFrame.
+      iApply addr_of_valid_loc; iApply "L".
+    - rewrite valid_loc_equiv.
+      iIntros "[P H]"; iDestruct "H" as (a) "#H"; iExists _; iFrame "#∗".
+  Qed.
+
+
   (** [primR] *)
   Definition primR_def {resolve:genv} (ty : type) q (v : val) : Rep :=
     as_Rep (fun addr => @tptsto _ _ resolve ty q addr v ** [| has_type v (drop_qualifiers ty) |]).
@@ -229,6 +411,21 @@ Section with_cpp.
   Global Instance primR_timeless resolve ty q p
     : Timeless (primR (resolve:=resolve) ty q p).
   Proof. solve_Rep_timeless primR_eq. Qed.
+
+  Local Existing Instance tptsto_fractional.
+  Global Instance primR_fractional ty v : Fractional (λ q, primR (resolve:=resolve) ty q v).
+  Proof.
+    intros q1 q2. rewrite primR_eq/primR_def.
+    constructor; intros; rewrite !monPred_at_sep /=.
+    rewrite tptsto_fractional.
+    split'.
+    - iIntros "[[A B] %]"; iFrame "∗%".
+    - iIntros "[[A %] [B _]]"; iFrame "∗%".
+  Qed.
+  Global Instance primR_as_fractional ty q v :
+    AsFractional (primR (resolve:=resolve) ty q v) (λ q, primR (resolve:=resolve) ty q v) q.
+  Proof. constructor. done. apply _. Qed.
+
 
   Global Instance Proper_primR_entails
     : Proper (genv_leq ==> (=) ==> (=) ==> (=) ==> lentails) (@primR).
