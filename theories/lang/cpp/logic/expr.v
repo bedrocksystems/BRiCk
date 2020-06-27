@@ -354,7 +354,8 @@ Module Type Expr.
         |-- wp_prval (Ecast Cbitcast (Rvalue, e) t) Q.
 
     Axiom wp_prval_cast_integral : forall e t Q,
-        wp_prval e (fun v free => [| has_type v t |] ** Q v free)
+        wp_prval e (fun v free =>
+           Exists v', [| conv_int (type_of e) t v v' |] ** Q v' free)
         |-- wp_prval (Ecast Cintegral (Rvalue, e) t) Q.
 
     Axiom wp_prval_cast_null : forall e t Q,
