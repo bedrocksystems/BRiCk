@@ -17,6 +17,8 @@ Require Import Coq.ZArith.BinInt.
 
 From bedrock.lang.cpp Require Import ast semantics.values.
 
+Local Open Scope Z_scope.
+
 (* operator semantics *)
 Parameter eval_unop : forall {resolve : genv}, UnOp -> forall (argT resT : type) (arg res : val), Prop.
 Parameter eval_binop : forall {resolve : genv}, BinOp -> forall (lhsT rhsT resT : type) (lhs rhs res : val), Prop.
@@ -259,11 +261,12 @@ Definition to_unsigned (z : Z) (sz : N) : Z := z mod (Z.pow 2 (Z.of_N sz)).
 Definition bitFlipZU (z:Z) (len: N) : Z :=
   to_unsigned (Z.lnot z) len.
 
+(* note [Z.lnot a = -1 - a] *)
 Axiom eval_unop_not:
-  forall {genv} (w : bitsize) s (a b : Z),
-    b = bitFlipZU a (bitsN w) ->
-    has_type (Vint b) (Tint w s) ->
-    @eval_unop genv Ubnot (Tint w s) (Tint w s)  (Vint a) (Vint b).
+  forall {genv} (w : bitsize) (sgn : signed) (a b : Z),
+    b = (if sgn then -1 - a else bitFlipZU a (bitsN w)) ->
+    has_type (Vint b) (Tint w sgn) ->
+    @eval_unop genv Ubnot (Tint w sgn) (Tint w sgn)  (Vint a) (Vint b).
 
 (** for pre- and post- increment/decrement, this function determines the type
     of the [1] that is added or subtracted
@@ -274,4 +277,30 @@ Fixpoint companion_type (t : type) : option type :=
   | Tint _ _ => Some t
   | Tqualified _ t => companion_type t
   | _ => None
+  end.
+
+
+(** Integral conversions *)
+Definition conv_int (from to : type) (v v' : val) : Prop :=
+  match drop_qualifiers from , drop_qualifiers to with
+  | Tbool , Tint _ _ =>
+    match is_true v with
+    | Some v => v' = Vbool v
+    | _ => False
+    end
+  | Tint _ _ , Tbool =>
+    match v with
+    | Vint v =>
+      v' = Vbool (if Z.eqb 0 v then false else true)
+    | _ => False
+    end
+  | Tint _ _ , Tint sz Unsigned =>
+    match v with
+    | Vint v =>
+      v' = Vint (to_unsigned v (bitsN sz))
+    | _ => False
+    end
+  | Tint _ _ , Tint sz Signed =>
+    has_type v (Tint sz Signed) /\ v' = v
+  | _ , _ => False
   end.
