@@ -39,8 +39,7 @@ Definition trim (w : N) (v : Z) : Z :=
     "the unique value congruent to [z] modulo [2^sz]
      where [sz] is the number of bits in the return type"
  *)
-Definition to_unsigned (sz : N) (z : Z) : Z :=
-  trim sz z.
+Notation to_unsigned := trim (only parsing).
 
 Lemma to_unsigned_id : forall z (sz : N),
     (0 <= z < 2^Z.of_N sz)%Z ->
