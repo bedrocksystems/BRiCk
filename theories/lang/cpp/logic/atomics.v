@@ -193,8 +193,8 @@ Section with_Σ.
        Exists v,
        |> _at (_eqv E) (primR acc_type 1 (Vint v)) **
        |> let v' :=
-              let v' := op (to_unsigned (bitsN sz) v) pls in
-              if sgn then to_signed sz v' else to_unsigned (bitsN sz) v'
+              let v' := op (to_unsigned sz v) pls in
+              if sgn then to_signed sz v' else to_unsigned sz v'
           in
           _at (_eqv E) (primR acc_type 1 (Vint v')) -* Q (Vint v))
       |-- wp_atom' ao acc_type (E::memorder::Vint pls::nil) Q.
@@ -219,8 +219,8 @@ Section with_Σ.
        Exists v,
        |> _at (_eqv E) (primR acc_type 1 (Vint v)) **
        |> let v' :=
-              let v' := op (to_unsigned (bitsN sz) v) pls in
-              if sgn then to_signed sz v' else to_unsigned (bitsN sz) v'
+              let v' := op (to_unsigned sz v) pls in
+              if sgn then to_signed sz v' else to_unsigned sz v'
           in
           _at (_eqv E) (primR acc_type 1 (Vint v')) -* Q (Vint v'))
       |-- wp_atom' ao acc_type (E::memorder::Vint pls::nil) Q.
