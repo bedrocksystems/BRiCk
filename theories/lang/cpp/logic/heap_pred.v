@@ -375,8 +375,6 @@ Section with_cpp.
     pureR P |-- pureR P ** [| Q |].
   Proof. intros. exact: as_Rep_obs. Qed.
 
-  (** Local because we favor [only_provable] to [bi_pure], notable
-  exceptions being [True] and [False]. *)
   Lemma pureR_pure P : pureR ⌜P⌝ ⊣⊢ ⌜P⌝.
   Proof.
     split'.
