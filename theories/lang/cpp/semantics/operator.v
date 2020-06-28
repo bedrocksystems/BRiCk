@@ -42,16 +42,15 @@ Definition trim (w : N) (v : Z) : Z :=
 Notation to_unsigned := trim (only parsing).
 
 Lemma to_unsigned_id : forall z (sz : N),
-    (0 <= z < 2^Z.of_N sz)%Z ->
+    0 <= z < 2^Z.of_N sz ->
     to_unsigned sz z = z.
 Proof.
   rewrite /to_unsigned /trim.
   intros. rewrite Z.mod_small; auto.
 Qed.
 
-Lemma to_unsigned_neg : forall z (sz : N),
-    0 < z ->
-    to_unsigned sz z = z mod 2^Z.of_N sz.
+Lemma to_unsigned_eq : forall z (sz : N),
+    to_unsigned sz z = trim sz z.
 Proof. reflexivity. Qed.
 
 (** [to_signed sz z] is used when C++ converts unsigned values to signed values.
@@ -72,9 +71,9 @@ Definition to_signed (sz : bitsize) (z : Z) : Z :=
     norm.
 
 Local Transparent bitsZ bitsN.
-Arguments bitsZ !_.
-Arguments Z.of_N !_.
-Arguments bitsN !_.
+Arguments bitsZ !_/.
+Arguments Z.of_N !_/.
+Arguments bitsN !_/.
 
 (* lemmas for [to_signed] and [to_unsigned] *)
 Lemma to_signed_id : forall (z : Z) (n : bitsize),
