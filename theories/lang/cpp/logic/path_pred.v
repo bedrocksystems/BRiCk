@@ -17,7 +17,7 @@ Section with_Σ.
    *)
   Record Loc : Type :=
     { _location : ptr -> mpred
-    ; _loc_unique : forall p1 p2, _location p1 ** _location p2 |-- [| p1 = p2 |]
+    ; _loc_unique : forall p1 p2, _location p1 ** _location p2 |-- bi_pure (p1 = p2)
     ; _loc_valid : forall p1, _location p1 |-- valid_ptr p1
     ; _loc_persist : forall p, Persistent (_location p)
     ; _loc_affine : forall p, Affine (_location p)
@@ -74,7 +74,7 @@ Section with_Σ.
   Definition _eq_def (p : ptr) : Loc.
   refine
     {| _location p' := [| p = p' |] ** valid_ptr p' |}.
-  abstract (intros; iIntros "[[-> _] [#H _]]"; iFrame "#").
+  abstract (intros; iIntros "[[-> _] [% _]]"; iFrame "#"; eauto).
   abstract (intros; iIntros "[-> #H]"; iFrame "#").
   Defined.
   Definition _eq_aux : seal (@_eq_def). by eexists. Qed.
@@ -148,7 +148,7 @@ Section with_Σ.
     iSplit.
     - iIntros "#H".
       iSplit.
-      { iApply _loc_unique; iSplit; iAssumption. }
+      { iDestruct (_loc_unique with "[L H]") as %H; [ | eauto ]; iSplit; iAssumption. }
       { iApply _loc_valid; iAssumption. }
     - iIntros "[% #H]".
       subst. iAssumption.
@@ -156,6 +156,17 @@ Section with_Σ.
 
   Lemma addr_of_Loc_impl : forall l p, l &~ p |-- Loc_impl l (_eq p).
   Proof. intros. by rewrite addr_of_Loc_eq Loc_equiv_impl bi.sep_elim_l. Qed.
+
+  Lemma addr_of_precise : forall a b c,
+      addr_of a b ** addr_of a c |-- [| b = c |].
+  Proof.
+    intros.
+    rewrite addr_of_eq /addr_of_def.
+    iIntros "[#A #B]".
+    iFrame "#".
+    iDestruct (_loc_unique with "[A B]") as %H; [ | eauto ]; eauto.
+  Qed.
+
 
 
   (** [valid_loc]
@@ -299,9 +310,8 @@ Section with_Σ.
   { intros. iIntros "[L R]".
     iDestruct "L" as (pl) "[Lo Ll]".
     iDestruct "R" as (pr) "[Ro Rl]".
-    iDestruct ((@_loc_unique l pl pr) with "[Ll Rl]") as %H; [ iFrame | ].
-    subst.
-    iApply _off_functional. iFrame. }
+    iDestruct ((@_loc_unique l pl pr) with "[Ll Rl]") as %H; [ iFrame | subst ].
+    iDestruct (_off_functional with "[Lo Ro]") as %H'; [ | eauto ]. eauto. }
   { intros.
     iIntros "H".
     iDestruct "H" as (p) "[O L]".
