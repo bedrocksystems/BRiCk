@@ -7,25 +7,123 @@
  * Semantics of arithmetic and pointer operators.
  *)
 
-(* Note, the syntax tree provides explicit nodes for integral promotion so this file
- * only describes the semantics of operators on uniform types. The one exception is
- * pointer operations (e.g. ptr + int) because that can not be made uniform.
+(* Note, the syntax tree provides explicit nodes for integral promotion so
+ * we only describes the semantics of operators on uniform types. The one
+ * exception is pointer operations (e.g. ptr + int) because that can not be
+ * made uniform.
  *)
 
 Require Import Coq.NArith.BinNat.
 Require Import Coq.ZArith.BinInt.
-
+Require Import Coq.micromega.Lia.
+Require Import Coq.ssr.ssreflect.
+Require Import stdpp.decidable.
 From bedrock.lang.cpp Require Import ast semantics.values.
 
 Local Open Scope Z_scope.
+Local Open Scope general_if_scope.
 
-(* operator semantics *)
+Set Default Proof Using "Type".
+
+Local Ltac smash __N :=
+  generalize dependent __N; intro __N; destruct __N; rewrite /bitsZ /=; try lia.
+
+
+(** truncation (used for unsigned operations) *)
+Definition trim (w : N) (v : Z) : Z :=
+  v mod (2 ^ Z.of_N w).
+
+(** [to_unsigned sz z] is used when C++ converts signed values to unsigned
+    values.
+
+    "the unique value congruent to [z] modulo [2^sz]
+     where [sz] is the number of bits in the return type"
+ *)
+Notation to_unsigned a b := (trim (bitsN a) b) (only parsing).
+
+Lemma to_unsigned_id : forall z (sz : bitsize),
+    0 <= z < 2^bitsZ sz ->
+    to_unsigned sz z = z.
+Proof.
+  rewrite /trim.
+  intros. rewrite Z.mod_small; auto.
+Qed.
+
+Lemma to_unsigned_eq : forall z (sz : bitsize),
+    to_unsigned sz z = trim (bitsN sz) z.
+Proof. reflexivity. Qed.
+
+(** [to_signed sz z] is used when C++ converts unsigned values to signed values.
+
+    the standard describes it as:
+
+    "the value does not change if the source integer can be represented in the
+     destination type. Otherwise the result is,
+     - implementation-defined (until C++20)
+     - the unique value of the destination type equal to the source value modulo [2^sz]
+       where [sz] is the number of bits used to represent the destination type."
+ *)
+Definition to_signed (sz : bitsize) (z : Z) : Z :=
+  let norm := Z.modulo z (2 ^ bitsZ sz) in
+  if bool_decide (norm >= 2 ^ (bitsZ sz - 1)) then
+    norm - 2 ^ bitsZ sz
+  else
+    norm.
+
+Local Transparent bitsZ bitsN.
+Arguments bitsZ !_/.
+Arguments Z.of_N !_/.
+Arguments bitsN !_/.
+
+(* lemmas for [to_signed] and [to_unsigned] *)
+Lemma to_signed_id : forall (z : Z) (n : bitsize),
+  0 <= z < 2^(bitsZ n - 1) -> to_signed n z = z.
+Proof.
+  intros; rewrite /to_signed Z.mod_small. smash n.
+  rewrite bool_decide_eq_false_2; smash n.
+Qed.
+
+
+Lemma to_signed_neg : forall x (n : bitsize),
+    2^(bitsZ n - 1) - 1 < x < 2^bitsZ n ->
+    to_signed n x = trim (bitsN n) (x - 2^(bitsZ n - 1)) + - 2^(bitsZ n - 1).
+Proof.
+  clear; intros x n.
+  rewrite /to_signed /trim. intros.
+  rewrite Z.mod_small. smash n.
+  rewrite bool_decide_eq_true_2; [ smash n | ].
+  rewrite Z.mod_small; smash n.
+Qed.
+
+(** Integral conversions *)
+Definition conv_int (from to : type) (v v' : val) : Prop :=
+  match drop_qualifiers from , drop_qualifiers to with
+  | Tbool , Tint _ _ =>
+    match is_true v with
+    | Some v => v' = Vbool v
+    | _ => False
+    end
+  | Tint _ _ , Tbool =>
+    match v with
+    | Vint v =>
+      v' = Vbool (if Z.eqb 0 v then false else true)
+    | _ => False
+    end
+  | Tint _ _ , Tint sz Unsigned =>
+    match v with
+    | Vint v =>
+      v' = Vint (to_unsigned sz v)
+    | _ => False
+    end
+  | Tint _ _ , Tint sz Signed =>
+    has_type v (Tint sz Signed) /\ v' = v
+  | _ , _ => False
+  end.
+
+
+(** operator semantics *)
 Parameter eval_unop : forall {resolve : genv}, UnOp -> forall (argT resT : type) (arg res : val), Prop.
 Parameter eval_binop : forall {resolve : genv}, BinOp -> forall (lhsT rhsT resT : type) (lhs rhs res : val), Prop.
-
-(* truncation (used for unsigned operations) *)
-Definition trim (w : N) (v : Z) : Z := v mod (2 ^ Z.of_N w).
-
 
 Axiom eval_not_bool : forall resolve a,
     eval_unop (resolve:=resolve) Unot Tbool Tbool (Vbool a) (Vbool (negb a)).
@@ -34,7 +132,10 @@ Axiom eval_not_bool : forall resolve a,
    promoted operand. For unsigned a, the value of -a is 2^b -a, where b
    is the number of bits after promotion.  *)
 Axiom eval_minus_int : forall resolve (s : signed) a c w,
-    c = (if s then (0 - a) else trim (bitsN w) (0 - a))%Z ->
+    c = match s with
+        | Signed => 0 - a
+        | Unsigned => trim (bitsN w) (0 - a)
+        end ->
     has_type (Vint c) (Tint w s) ->
     eval_unop (resolve:=resolve) Uminus (Tint w s) (Tint w s)
               (Vint a) (Vint c).
@@ -88,7 +189,10 @@ Definition eval_int_op (bo : BinOp) (o : Z -> Z -> Z) : Prop :=
   forall resolve w (s : signed) (a b c : Z),
     has_type (Vint a) (Tint w s) ->
     has_type (Vint b) (Tint w s) ->
-    c = (if s then o a b else trim (bitsN w) (o a b)) ->
+    c = match s with
+        | Signed => o a b
+        | Unsigned => trim (bitsN w) (o a b)
+        end ->
     has_type (Vint c) (Tint w s) ->
     eval_binop (resolve:=resolve) bo (Tint w s) (Tint w s) (Tint w s) (Vint a) (Vint b) (Vint c).
 
@@ -161,7 +265,10 @@ Axiom eval_shl :
     (0 <= a)%Z ->
     has_type (Vint a) (Tint w s) ->
     has_type (Vint b) (Tint w2 s2) ->
-    (c = if s then Z.shiftl a b else trim (bitsN w) (Z.shiftl a b)) ->
+    c = match s with
+        | Signed => Z.shiftl a b
+        | Unsigned => trim (bitsN w) (Z.shiftl a b)
+        end ->
     has_type (Vint c) (Tint w s) ->
     eval_binop (resolve:=resolve) Bshl (Tint w s) (Tint w2 s2) (Tint w s) (Vint a) (Vint b) (Vint c).
 
@@ -176,7 +283,7 @@ Axiom eval_shr :
     (0 <= a)%Z ->
     has_type (Vint a) (Tint w s) ->
     has_type (Vint b) (Tint w2 s2) ->
-    (c = if s then Z.shiftr a b else trim (bitsN w) (Z.shiftr a b)) ->
+    c = match s with Signed => Z.shiftr a b | Unsigned => trim (bitsN w) (Z.shiftr a b) end ->
     eval_binop (resolve:=resolve) Bshr (Tint w s) (Tint w2 s2) (Tint w s) (Vint a) (Vint b) (Vint c).
 
 (* Arithmetic comparison operators *)
@@ -256,15 +363,13 @@ Axiom eval_ptr_neq :
     c = (if ptr_eq_dec av bv then 0 else 1)%Z ->
     eval_binop (resolve:=resolve) Bneq (Tpointer ty) (Tpointer ty) Tbool a b (Vint c).
 
-Definition to_unsigned (z : Z) (sz : N) : Z := z mod (Z.pow 2 (Z.of_N sz)).
-
-Definition bitFlipZU (z:Z) (len: N) : Z :=
-  to_unsigned (Z.lnot z) len.
+Definition bitFlipZU (len: bitsize) (z:Z) : Z :=
+  to_unsigned len (Z.lnot z).
 
 (* note [Z.lnot a = -1 - a] *)
 Axiom eval_unop_not:
   forall {genv} (w : bitsize) (sgn : signed) (a b : Z),
-    b = (if sgn then -1 - a else bitFlipZU a (bitsN w)) ->
+    b = match sgn with Signed => -1 - a | Unsigned => bitFlipZU w a end ->
     has_type (Vint b) (Tint w sgn) ->
     @eval_unop genv Ubnot (Tint w sgn) (Tint w sgn)  (Vint a) (Vint b).
 
@@ -277,30 +382,4 @@ Fixpoint companion_type (t : type) : option type :=
   | Tint _ _ => Some t
   | Tqualified _ t => companion_type t
   | _ => None
-  end.
-
-
-(** Integral conversions *)
-Definition conv_int (from to : type) (v v' : val) : Prop :=
-  match drop_qualifiers from , drop_qualifiers to with
-  | Tbool , Tint _ _ =>
-    match is_true v with
-    | Some v => v' = Vbool v
-    | _ => False
-    end
-  | Tint _ _ , Tbool =>
-    match v with
-    | Vint v =>
-      v' = Vbool (if Z.eqb 0 v then false else true)
-    | _ => False
-    end
-  | Tint _ _ , Tint sz Unsigned =>
-    match v with
-    | Vint v =>
-      v' = Vint (to_unsigned v (bitsN sz))
-    | _ => False
-    end
-  | Tint _ _ , Tint sz Signed =>
-    has_type v (Tint sz Signed) /\ v' = v
-  | _ , _ => False
   end.
