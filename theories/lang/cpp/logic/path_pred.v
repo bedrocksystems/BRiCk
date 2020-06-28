@@ -158,7 +158,7 @@ Section with_Σ.
   Proof. intros. by rewrite addr_of_Loc_eq Loc_equiv_impl bi.sep_elim_l. Qed.
 
   Lemma addr_of_precise : forall a b c,
-      addr_of a b ** addr_of a c |-- bi_pure (b = c).
+      addr_of a b ** addr_of a c |-- [| b = c |].
   Proof.
     intros.
     rewrite addr_of_eq /addr_of_def.

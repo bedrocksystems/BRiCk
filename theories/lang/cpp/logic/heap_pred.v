@@ -91,7 +91,7 @@ Section with_cpp.
     split; red; simpl; eapply H.
   Qed.
 
-  Global Instance as_Rep_fractional `{Hp : ∀ p, Fractional (λ q, P q p)} :
+  Local Instance as_Rep_fractional `{Hp : ∀ p, Fractional (λ q, P q p)} :
     Fractional (λ q, as_Rep (P q)).
   Proof.
     intros q1 q2. constructor=>p. by rewrite monPred_at_sep /= (Hp p).
