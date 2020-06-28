@@ -39,18 +39,18 @@ Definition trim (w : N) (v : Z) : Z :=
     "the unique value congruent to [z] modulo [2^sz]
      where [sz] is the number of bits in the return type"
  *)
-Notation to_unsigned := trim (only parsing).
+Notation to_unsigned a b := (trim (bitsN a) b) (only parsing).
 
-Lemma to_unsigned_id : forall z (sz : N),
-    0 <= z < 2^Z.of_N sz ->
+Lemma to_unsigned_id : forall z (sz : bitsize),
+    0 <= z < 2^bitsZ sz ->
     to_unsigned sz z = z.
 Proof.
-  rewrite /to_unsigned /trim.
+  rewrite /trim.
   intros. rewrite Z.mod_small; auto.
 Qed.
 
-Lemma to_unsigned_eq : forall z (sz : N),
-    to_unsigned sz z = trim sz z.
+Lemma to_unsigned_eq : forall z (sz : bitsize),
+    to_unsigned sz z = trim (bitsN sz) z.
 Proof. reflexivity. Qed.
 
 (** [to_signed sz z] is used when C++ converts unsigned values to signed values.
@@ -112,7 +112,7 @@ Definition conv_int (from to : type) (v v' : val) : Prop :=
   | Tint _ _ , Tint sz Unsigned =>
     match v with
     | Vint v =>
-      v' = Vint (to_unsigned (bitsN sz) v)
+      v' = Vint (to_unsigned sz v)
     | _ => False
     end
   | Tint _ _ , Tint sz Signed =>
@@ -364,7 +364,7 @@ Axiom eval_ptr_neq :
     eval_binop (resolve:=resolve) Bneq (Tpointer ty) (Tpointer ty) Tbool a b (Vint c).
 
 Definition bitFlipZU (len: bitsize) (z:Z) : Z :=
-  to_unsigned (bitsN len) (Z.lnot z).
+  to_unsigned len (Z.lnot z).
 
 (* note [Z.lnot a = -1 - a] *)
 Axiom eval_unop_not:
