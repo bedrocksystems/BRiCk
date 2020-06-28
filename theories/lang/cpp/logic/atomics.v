@@ -96,7 +96,7 @@ Section with_Σ.
       [| memorder = _SEQ_CST |] **
       [| has_type v acc_type |] **
       |> (_at (_eqv l) (anyR acc_type 1) **
-         (_at (_eqv l) (primR acc_type 1 v) -* Exists void, Q void))
+         (_at (_eqv l) (primR acc_type 1 v) -* Q Vundef))
       |-- wp_atom' AO__atomic_store_n acc_type (l :: memorder :: v :: nil) Q.
 
   (* atomic compare and exchange n *)
@@ -194,7 +194,7 @@ Section with_Σ.
        |> _at (_eqv E) (primR acc_type 1 (Vint v)) **
        |> let v' :=
               let v' := op (to_unsigned (bitsN sz) v) pls in
-              if sgn then to_signed sz v' else v'
+              if sgn then to_signed sz v' else to_unsigned (bitsN sz) v'
           in
           _at (_eqv E) (primR acc_type 1 (Vint v')) -* Q (Vint v))
       |-- wp_atom' ao acc_type (E::memorder::Vint pls::nil) Q.
@@ -220,7 +220,7 @@ Section with_Σ.
        |> _at (_eqv E) (primR acc_type 1 (Vint v)) **
        |> let v' :=
               let v' := op (to_unsigned (bitsN sz) v) pls in
-              if sgn then to_signed sz v' else v'
+              if sgn then to_signed sz v' else to_unsigned (bitsN sz) v'
           in
           _at (_eqv E) (primR acc_type 1 (Vint v')) -* Q (Vint v'))
       |-- wp_atom' ao acc_type (E::memorder::Vint pls::nil) Q.
