@@ -132,22 +132,14 @@ Module SimpleCPP
        ; sbi_sbi_mixin := (iPropSI Σ).(sbi_sbi_mixin) |}.
 
     Lemma singleton_valid_at_norm :
-      ∀ (K : Type) (EqDecision0 : EqDecision K) (H : Countable K) (A : cmraT) (i : K) (x : A),
+      ∀ `{Countable K} (A : cmraT) (i : K) (x : A),
         ✓ ({[i := x]} : gmap K A) ⊣⊢@{mpredI} ✓ x.
     Proof.
-      intros. simpl. rewrite gmap_validI.
-      split'.
-      - iIntros "X".
-        iDestruct ("X" $! i) as "X".
-        rewrite lookup_insert.
-        iStopProof.
-        clear.
-        rewrite Some_valid.
-        reflexivity.
-      - iIntros "X" (lll).
-        destruct (decide (i = lll)).
-        + subst. rewrite lookup_insert. rewrite Some_valid. iFrame.
-        + rewrite lookup_insert_ne; eauto.
+      intros. rewrite gmap_validI. split'; iIntros "Hv".
+      - iSpecialize ("Hv" $! i). by rewrite lookup_singleton Some_valid.
+      - iIntros (i'). destruct (decide (i = i')) as [->|?].
+        + by rewrite lookup_singleton Some_valid.
+        + by rewrite lookup_singleton_ne.
     Qed.
 
     (** pointer validity *)
@@ -160,14 +152,11 @@ Module SimpleCPP
     Defined.
 
     Theorem valid_ptr_persistent : forall p, Persistent (valid_ptr p).
-    Proof. intros. red. iIntros "#H". iFrame "#". Qed.
+    Proof. apply _. Qed.
     Theorem valid_ptr_affine : forall p, Affine (valid_ptr p).
-    Proof. intros. red. iIntros "_". iStopProof. reflexivity. Qed.
+    Proof. apply _. Qed.
     Theorem valid_ptr_timeless : forall p, Timeless (valid_ptr p).
-    Proof.
-      intros. red. unfold valid_ptr.
-      rewrite timeless. reflexivity.
-    Qed.
+    Proof. apply _. Qed.
     Existing Instance valid_ptr_persistent.
     Existing Instance valid_ptr_affine.
     Existing Instance valid_ptr_timeless.
@@ -294,9 +283,8 @@ Module SimpleCPP
     Instance Z_to_bytes_proper :
       Proper (genv_leq ==> eq ==> eq ==> eq) Z_to_bytes.
     Proof.
-      do 4 red; intros; subst.
-      unfold Z_to_bytes.
-      setoid_rewrite H. reflexivity.
+      intros ?? Hσ. repeat intro. subst. unfold Z_to_bytes.
+      by setoid_rewrite Hσ.
     Qed.
 
     Local Ltac go_encode X Y :=
@@ -628,6 +616,30 @@ Module SimpleCPP
     Proof. red. intros. eauto. Qed.
     Theorem dtor_at_timeless : forall f p, Timeless (@dtor_at f p).
     Proof. unfold dtor_at. refine _. Qed.
+
+    (** physical representation of pointers
+     *)
+    Definition pinned_ptr (va : N) (p : ptr) : mpred.
+    refine (([| p = nullptr /\ va = 0%N |] \\//
+            ([| p <> nullptr |] **
+                own _ghost.(mem_inj_name) {[ p := to_agree (Some va) ]}))).
+    unshelve eapply mem_injG; apply has_cppG. refine _.
+    Defined.
+
+    Theorem pinned_ptr_persistent : forall va p, Persistent (pinned_ptr va p).
+    Proof. apply _. Qed.
+    Theorem pinned_ptr_affine : forall va p, Affine (pinned_ptr va p).
+    Proof. apply _. Qed.
+    Theorem pinned_ptr_timeless : forall va p, Timeless (pinned_ptr va p).
+    Proof. apply _. Qed.
+    Theorem pinned_ptr_unique : forall va va' p,
+        pinned_ptr va p ** pinned_ptr va' p |-- bi_pure (va = va').
+    Proof.
+      intros. iIntros "[A B]".
+      iDestruct "A" as "[[->->] | [% A]]"; iDestruct "B" as "[[%->] | [% B]]"; auto.
+      iDestruct (own_valid_2 with "A B") as %Hp. iPureIntro.
+      move: Hp. rewrite op_singleton singleton_valid=>/agree_op_invL'. by case.
+    Qed.
 
   End with_cpp.
 
