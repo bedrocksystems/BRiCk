@@ -132,22 +132,14 @@ Module SimpleCPP
        ; sbi_sbi_mixin := (iPropSI Σ).(sbi_sbi_mixin) |}.
 
     Lemma singleton_valid_at_norm :
-      ∀ (K : Type) (EqDecision0 : EqDecision K) (H : Countable K) (A : cmraT) (i : K) (x : A),
+      ∀ `{Countable K} (A : cmraT) (i : K) (x : A),
         ✓ ({[i := x]} : gmap K A) ⊣⊢@{mpredI} ✓ x.
     Proof.
-      intros. simpl. rewrite gmap_validI.
-      split'.
-      - iIntros "X".
-        iDestruct ("X" $! i) as "X".
-        rewrite lookup_insert.
-        iStopProof.
-        clear.
-        rewrite Some_valid.
-        reflexivity.
-      - iIntros "X" (lll).
-        destruct (decide (i = lll)).
-        + subst. rewrite lookup_insert. rewrite Some_valid. iFrame.
-        + rewrite lookup_insert_ne; eauto.
+      intros. rewrite gmap_validI. split'; iIntros "Hv".
+      - iSpecialize ("Hv" $! i). by rewrite lookup_singleton Some_valid.
+      - iIntros (i'). destruct (decide (i = i')) as [->|?].
+        + by rewrite lookup_singleton Some_valid.
+        + by rewrite lookup_singleton_ne.
     Qed.
 
     (** pointer validity *)
@@ -160,14 +152,11 @@ Module SimpleCPP
     Defined.
 
     Theorem valid_ptr_persistent : forall p, Persistent (valid_ptr p).
-    Proof. intros. red. iIntros "#H". iFrame "#". Qed.
+    Proof. apply _. Qed.
     Theorem valid_ptr_affine : forall p, Affine (valid_ptr p).
-    Proof. intros. red. iIntros "_". iStopProof. reflexivity. Qed.
+    Proof. apply _. Qed.
     Theorem valid_ptr_timeless : forall p, Timeless (valid_ptr p).
-    Proof.
-      intros. red. unfold valid_ptr.
-      rewrite timeless. reflexivity.
-    Qed.
+    Proof. apply _. Qed.
     Existing Instance valid_ptr_persistent.
     Existing Instance valid_ptr_affine.
     Existing Instance valid_ptr_timeless.
@@ -294,9 +283,8 @@ Module SimpleCPP
     Instance Z_to_bytes_proper :
       Proper (genv_leq ==> eq ==> eq ==> eq) Z_to_bytes.
     Proof.
-      do 4 red; intros; subst.
-      unfold Z_to_bytes.
-      setoid_rewrite H. reflexivity.
+      intros ?? Hσ. repeat intro. subst. unfold Z_to_bytes.
+      by setoid_rewrite Hσ.
     Qed.
 
     Local Ltac go_encode X Y :=
