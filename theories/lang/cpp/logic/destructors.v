@@ -45,7 +45,7 @@ Section with_resolve.
       (_offsetL (offset_for σ cls path) (_eqv this) &~ fp ** ltrue) //\\
       (match get_type_of_path cls path with
        | Some target_type =>
-         destruct_val (σ:=σ) ti target_type (Vptr fp) dn Q
+         destruct_val (σ:=σ) ti target_type (Vptr fp) (Some dn) Q
        | _ => lfalse
        end)
     |-- wpd (resolve:=σ) M ti ρ cls this (path, dn) Q.

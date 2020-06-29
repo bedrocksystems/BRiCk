@@ -1,5 +1,5 @@
 /*
- * Copyright (C) BedRock Systems Inc. 2019 Gregory Malecha
+ * Copyright (C) BedRock Systems Inc. 2019-2020 Gregory Malecha
  *
  * SPDX-License-Identifier: LGPL-2.1 WITH BedRock Exception for use over network, see repository root for details.
  */
@@ -729,12 +729,23 @@ public:
                          ClangPrinter& cprint, const ASTContext&) {
         print.ctor("Enew");
         if (expr->getOperatorNew()) {
-            print.ctor("Some", false);
+            print.some();
             cprint.printGlobalName(expr->getOperatorNew(), print);
-            print.output() << fmt::rparen;
+            print.end_ctor();
         } else {
-            print.output() << "None";
+            print.none();
         }
+
+        print.begin_list();
+        for (auto arg : expr->placement_arguments()) {
+            cprint.printExprAndValCat(arg, print);
+            print.cons();
+        }
+        print.end_list();
+
+        print.output() << fmt::nbsp;
+
+        cprint.printQualType(expr->getAllocatedType(), print);
 
         print.output() << fmt::nbsp;
 
@@ -742,10 +753,10 @@ public:
 
         print.output() << fmt::nbsp;
 
-        if (auto v = expr->getConstructExpr()) {
-            print.ctor("Some");
+        if (auto v = expr->getInitializer()) {
+            print.some();
             cprint.printExpr(v, print);
-            print.output() << fmt::rparen;
+            print.end_ctor();
         } else {
             print.none();
         }
@@ -753,21 +764,46 @@ public:
         done(expr, print, cprint);
     }
 
+    // todo(gmm): duplicated
+    static CXXDestructorDecl* get_dtor(QualType qt) {
+        if (auto rd = qt->getAsCXXRecordDecl()) {
+            return rd->getDestructor();
+        } else if (auto ary = qt->getAsArrayTypeUnsafe()) {
+            return get_dtor(ary->getElementType());
+        } else {
+            return nullptr;
+        }
+    };
+
     void VisitCXXDeleteExpr(const CXXDeleteExpr* expr, CoqPrinter& print,
                             ClangPrinter& cprint, const ASTContext&) {
         print.ctor("Edelete");
         print.output() << (expr->isArrayForm() ? "true" : "false") << fmt::nbsp;
 
         if (expr->getOperatorDelete()) {
-            print.ctor("Some", false);
+            print.some();
             cprint.printGlobalName(expr->getOperatorDelete(), print);
-            print.output() << fmt::rparen;
+            print.end_ctor();
         } else {
-            print.output() << "None";
+            print.none();
         }
         print.output() << fmt::nbsp;
 
         cprint.printExpr(expr->getArgument(), print);
+
+        print.output() << fmt::nbsp;
+
+        cprint.printQualType(expr->getDestroyedType(), print);
+
+        print.output() << fmt::nbsp;
+
+        if (auto dt = get_dtor(expr->getDestroyedType())) {
+            print.some();
+            cprint.printGlobalName(dt, print);
+            print.end_ctor();
+        } else {
+            print.none();
+        }
 
         done(expr, print, cprint);
     }

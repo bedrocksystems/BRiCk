@@ -34,6 +34,7 @@ Module Type Stmt.
     Local Notation wpAny := (wpAny (resolve:=resolve) M ti).
     Local Notation wpAnys := (wpAnys (resolve:=resolve) M ti).
     Local Notation fspec := (fspec ti).
+    Local Notation mdestroy := (mdestroy (σ:=resolve) ti) (only parsing).
     Local Notation destruct_val := (destruct_val (σ:=resolve) ti) (only parsing).
     Local Notation destruct_obj := (destruct_obj (σ:=resolve) ti) (only parsing).
 
@@ -114,19 +115,13 @@ Module Type Stmt.
           _at (_eq a) (uninitR (erase_qualifiers ty) 1) -* continue
         | Some init =>
           wp_prval ρ init (fun v free => free **
-                              _at (_eq a) (primR (erase_qualifiers ty) 1 v) -* continue)
+              _at (_eq a) (primR (erase_qualifiers ty) 1 v) -* continue)
         end
 
       | Tnamed cls =>
         Forall a, _at (_eq a) (uninitR (erase_qualifiers ty) 1) -*
-                  let destroy :=
-                      match dtor with
-                      | None => fun x => x
-                      | Some dtor => destruct_obj dtor cls (Vptr a)
-                      end (_at (_eq a) (anyR (erase_qualifiers ty) 1))
-                  in
                   let continue :=
-                      k (Rbind x a ρ) (Kfree destroy Q)
+                      k (Rbind x a ρ) (Kfree (mdestroy ty (Vptr a) dtor emp) Q)
                   in
                   match init with
                   | None => continue
@@ -135,14 +130,8 @@ Module Type Stmt.
                   end
       | Tarray ty' N =>
         Forall a, _at (_eq a) (uninitR (erase_qualifiers ty) 1) -*
-                  let destroy :=
-                      match dtor with
-                      | None => fun x => x
-                      | Some dtor => destruct_val ty (Vptr a) dtor
-                      end (_at (_eq a) (anyR (erase_qualifiers ty) 1))
-                  in
                   let continue :=
-                      k (Rbind x a ρ) (Kfree destroy Q)
+                      k (Rbind x a ρ) (Kfree (mdestroy ty (Vptr a) dtor emp) Q)
                   in
                   match init with
                   | None => continue
@@ -177,7 +166,7 @@ Module Type Stmt.
           _at (_eq a) (primR Tnullptr 1 (Vptr nullptr)) -* continue
         | Some init =>
           wp_prval ρ init (fun v free => free **
-                              _at (_eq a) (primR (erase_qualifiers ty) 1 v) -* continue)
+                  _at (_eq a) (primR (erase_qualifiers ty) 1 v) -* continue)
         end
       | Tfloat _ => lfalse (* not supportd *)
       | Tarch _ _ => lfalse (* not supported *)

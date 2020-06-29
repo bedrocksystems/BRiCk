@@ -1,5 +1,5 @@
 (*
- * Copyright (C) BedRock Systems Inc. 2019 Gregory Malecha
+ * Copyright (C) BedRock Systems Inc. 2019-2020 Gregory Malecha
  *
  * SPDX-License-Identifier: LGPL-2.1 WITH BedRock Exception for use over network, see repository root for details.
  *)
@@ -45,6 +45,7 @@ Module Type Expr.
     Local Notation wpAnys := (wpAnys (resolve:=resolve) M ti ρ).
     Local Notation fspec := (fspec resolve.(genv_tu).(globals)).
     Local Notation mdestroy := (mdestroy (σ:=resolve) ti) (only parsing).
+    Local Notation destruct_val := (destruct_val (σ:=resolve) ti) (only parsing).
 
     Local Notation glob_def := (glob_def resolve) (only parsing).
     Local Notation _global := (_global (resolve:=resolve)) (only parsing).
@@ -563,6 +564,28 @@ Module Type Expr.
     Axiom wp_null : forall Q,
       Q (Vptr nullptr) empSP
       |-- wp_prval Enull Q.
+
+    (* new *)
+    Axiom wp_new : forall new_fn new_args init aty ty Q,
+        Exists fa, _global new_fn &~ fa **
+        wp_args new_args (fun vs free =>
+          Exists sz, [| size_of ty = Some sz |] **
+          |> fspec (Vptr fa) (Vn sz :: vs) (fun res => [| res <> Vptr nullptr |] **
+             Exists xfer : Rep, _at (_eqv res) xfer **
+            (Forall newp : ptr, [| newp <> nullptr |] ** _at (_eq newp) xfer -*
+              wp_init (type_of init) (Vptr newp) init (fun free' =>
+                 Q (Vptr newp) (free ** free')))))
+      |-- wp_prval (Enew (Some new_fn) new_args aty None (Some init) ty) Q.
+
+    (* delete *)
+    Axiom wp_delete : forall delete_fn e ty dtor destroyed_type Q,
+        (* call the destructor on the object, and then call delete_fn *)
+        wp_prval e (fun vp free =>
+          destruct_val destroyed_type vp dtor
+              (Exists da, _global delete_fn &~ da **
+               fspec (Vptr da) (vp :: nil) (fun v => Q v free)))
+        |-- wp_prval (Edelete false (Some delete_fn) e destroyed_type dtor ty) Q.
+
 
     (** temporary expressions
        note(gmm): these axioms should be reviewed thoroughly
