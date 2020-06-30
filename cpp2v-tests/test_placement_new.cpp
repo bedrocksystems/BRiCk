@@ -1,4 +1,11 @@
-#include <new>
+void* operator new(unsigned long) {
+    static char buf[10];
+    return buf;
+}
+void* operator new(unsigned long, void* p) {
+    return p;
+}
+
 struct C {
     int x;
     C():x{0} {}
