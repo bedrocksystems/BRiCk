@@ -99,6 +99,23 @@ Section with_Σ.
          (_at (_eqv l) (primR acc_type 1 v) -* Q Vundef))
       |-- wp_atom' AO__atomic_store_n acc_type (l :: memorder :: v :: nil) Q.
 
+  (* atomic exchange *)
+  Axiom wp_atom_exchange_n_cst
+  : forall memorder acc_type l Q w v,
+      [| memorder = _SEQ_CST |] **
+      [| has_type v acc_type |] **
+      |> (_at (_eqv l) (primR acc_type 1 w) **
+         (_at (_eqv l) (primR acc_type 1 v) -* Q w))
+      |-- wp_atom' AO__atomic_exchange_n acc_type (l :: memorder :: v :: nil) Q.
+
+  Axiom wp_atom_exchange_cst
+  : forall memorder acc_type l Q w vp q ret w',
+      [| memorder = _SEQ_CST |] **
+      |> (_at (_eqv l) (primR acc_type 1 w) ** _at (_eqv vp) (primR acc_type q w') ** _at (_eqv ret) (anyR acc_type 1) **
+         (_at (_eqv l) (primR acc_type 1 w') -* _at (_eqv vp) (primR acc_type q w') -*
+          _at (_eqv ret) (primR acc_type 1 w) -* Q w))
+      |-- wp_atom' AO__atomic_exchange acc_type (l :: memorder :: vp :: ret :: nil) Q.
+
   (* atomic compare and exchange n *)
   Axiom wp_atom_compare_exchange_n_suc:
     forall val_p expected_p desired wk succmemord failmemord Q' ty v,
