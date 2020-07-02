@@ -525,6 +525,18 @@ Section with_cpp.
              (q : Qp) : Rep :=
     as_Rep (@identity _ _ σ cls mdc q).
 
+  Definition _type_ptr (σ : genv) (ty : type) :=
+    as_Rep (@type_ptr _ _ σ ty).
+  Lemma Persistent_type_ptr : forall σ ty,
+    Persistent (_type_ptr σ ty).
+  Proof.
+    move => σ ty; generalize (Persistent_type_ptr σ).
+    rewrite /_type_ptr/as_Rep /Persistent /bi_persistently => H /=.
+    apply: Build_monPred_entails => p /=.
+    move: (H p ty) => ->.
+    rewrite !monPred_at_persistently. auto.
+  Qed.
+
   (********************* DERIVED CONCEPTS ****************************)
 
   Definition is_null_def : Rep :=

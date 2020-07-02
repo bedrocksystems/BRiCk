@@ -55,6 +55,16 @@ Lemma frac_op {A : ofeT} (l : A)  (p q : Qp) :
   frac p l ⋅ frac q l ≡ frac (p + q) l.
 Proof. by rewrite -pair_op agree_idemp. Qed.
 
+Definition _Z_to_bytes_le {σ:genv} (n : nat) (v : Z) : list N :=
+  let p := Z.modulo v (2 ^ Z.of_nat n) in
+  map (fun i : nat => Z.to_N (Z.land 255 (Z.shiftr p (8 * i)))) $ seq 0 n.
+
+Definition _Z_to_bytes {σ:genv} (n : nat) (v : Z) : list N :=
+  let little := _Z_to_bytes_le (σ:=σ) n v in
+  match byte_order σ with
+  | Little => little
+  | Big => List.rev little
+  end.
 
 (** soundness proof *)
 
@@ -71,6 +81,9 @@ Module SimpleCPP
   | Rpointer_chunk (_ : ptr) (index : nat).
     (* ^ you need the same pointer and consecutive integers to "have" a pointer.
      *)
+
+  Definition Z_to_bytes {σ:genv} n v :=
+    Rval <$> _Z_to_bytes (σ:=σ) n v.
 
   Class cppG' (Σ : gFunctors) : Type :=
     { memG : inG Σ (gmapR addr (fractionalR (leibnizO runtime_val)))
@@ -176,18 +189,12 @@ Module SimpleCPP
     Section with_genv.
       Variable σ : genv.
 
-      Definition Z_to_bytes (n : nat) (v : Z) : list runtime_val :=
-        let p := Z.modulo v (2 ^ n) in
-        let little := (fun i : nat => Z.to_N (Z.land 255 (Z.shiftr p (8 * i)))) <$> seq 0 n in
-        Rval <$> match byte_order σ with
-                 | Little => little
-                 | Big => List.rev little
-                 end.
-
       Let POINTER_BYTES : nat := N.to_nat σ.(pointer_size).
 
       Definition aptr (p : ptr) : list runtime_val :=
         List.map (Rpointer_chunk p) (seq 0 POINTER_BYTES).
+
+      Notation Z_to_bytes := (Z_to_bytes (σ:=σ)).
 
       Definition cptr (a : N) : list runtime_val :=
         Z_to_bytes POINTER_BYTES (Z.of_N a).
@@ -281,9 +288,9 @@ Module SimpleCPP
     End with_genv.
 
     Instance Z_to_bytes_proper :
-      Proper (genv_leq ==> eq ==> eq ==> eq) Z_to_bytes.
+      Proper (genv_leq ==> eq ==> eq ==> eq) (@Z_to_bytes).
     Proof.
-      intros ?? Hσ. repeat intro. subst. unfold Z_to_bytes.
+      intros ?? Hσ. repeat intro. subst. unfold Z_to_bytes, _Z_to_bytes.
       by setoid_rewrite Hσ.
     Qed.
 
