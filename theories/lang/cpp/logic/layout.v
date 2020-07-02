@@ -10,6 +10,21 @@ Require Import bedrock.lang.cpp.ast.
 From bedrock.lang.cpp.logic Require Import
      pred path_pred heap_pred translation_unit.
 Require Import bedrock.lang.cpp.semantics.
+Require Import bedrock.lang.cpp.logic.simple_pred.
+
+Section array.
+  Context `{Σ : cpp_logic} {resolve:genv}.
+  Context {T : Type}.
+  Variable sz : Z.
+  Variable (P : T -> Rep).
+
+  Fixpoint array' (ls : list T) (p : ptr) : mpred :=
+    match ls with
+    | nil => valid_ptr p
+    | l :: ls =>
+      _at (_eq p) (P l) ** array' ls (offset_ptr_ sz p)
+    end.
+End array.
 
 Section with_Σ.
   Context `{Σ : cpp_logic} {resolve:genv}.
@@ -62,6 +77,22 @@ Section with_Σ.
     -|- _offsetR (_sub t (Z.of_N n)) empSP **
         (* ^ note: this is equivalent to [valid_loc (this .[ t ! n ])] *)
         [∗list] i ↦ _ ∈ repeat () (BinNatDef.N.to_nat n),
-        _offsetR (_sub t (Z.of_nat i)) (anyR t 1).
+                _offsetR (_sub t (Z.of_nat i)) (anyR t 1).
 
+  Definition decodes_uint (l : list N) (z : Z) :=
+    _Z_to_bytes (σ:=resolve) (List.length l) z = l.
+
+  Axiom decode_uint_primR : forall q sz (x : Z),
+    primR (resolve:=resolve) (Tint sz Unsigned) q (Vint x) -|-
+    Exists l : list N,
+      as_Rep (array' 1 (fun c => primR (resolve:=resolve) (Tint W8 Unsigned) q (Vint c))
+             (Z.of_N <$> l)) **
+      _type_ptr resolve (Tint sz Unsigned) **
+      [| decodes_uint l x |].
+
+  Axiom decode_uint_anyR : forall q sz,
+    anyR (Tint sz Unsigned) q -|-
+         anyR (Tarray T_uchar (bytesN sz)) q **
+         _type_ptr resolve (Tint sz Unsigned).
 End with_Σ.
+Existing Instance Persistent_type_ptr.

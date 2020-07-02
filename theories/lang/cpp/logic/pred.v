@@ -94,6 +94,8 @@ Module Type CPP_LOGIC.
         - the address is properly aligned (if it exists in memory)
      *)
     Parameter type_ptr: forall {resolve : genv} (c: type), ptr -> mpred.
+    Axiom Persistent_type_ptr : forall σ p ty,
+      Persistent (type_ptr (resolve:=σ) ty p).
 
     (** [identity σ this mdc q p] state that [p] is a pointer to a (live)
         object of type [this] that is part of an object of type [mdc].
