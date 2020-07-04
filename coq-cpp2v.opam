@@ -1,0 +1,21 @@
+opam-version: "2.0"
+name: "coq-cpp2v"
+synopsis: "Frontend and program logic for C++"
+maintainer: ["Gregory Malecha <gregory@bedrocksystems.com>"
+             "Abhishek Anand <abhishek@bedrocksystems.com>"
+             "Gordon Stewart <gordon@bedrocksystems.com>"]
+authors: ["Gregory Malecha <gregory@bedrocksystems.com>"
+          "Abhishek Anand <abhishek@bedrocksystems.com>"
+          "Gordon Stewart <gordon@bedrocksystems.com>"]
+homepage: "https://github.com/bedrocksystems/cpp2v"
+bug-reports: "https://github.com/bedrocksystems/cpp2v/issues"
+
+depends: [
+  "coq" { >= "8.11" & < "8.12~" }
+  "coq-ext-lib" { >= "0.11.0" }
+  "coq-lens" { = "1.0.0" }
+  "coq-iris" { = "dev.2020-03-16.0.62be0a86" }
+]
+
+build: [ make "-j%{jobs}%" "coq" ]
+install: [ make "install" ]
