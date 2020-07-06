@@ -20,7 +20,7 @@ Global Notation lexists := (bi_exist) (only parsing).
 Global Notation empSP := (bi_emp) (only parsing).
 Global Notation sepSP := (bi_sep) (only parsing).
 Global Notation wandSP := (bi_wand) (only parsing).
-Global Notation illater := (sbi_later) (only parsing).
+Global Notation illater := (bi_later) (only parsing).
 
 Global Notation embed := (bi_pure) (only parsing).
 Ltac split' := intros; apply (anti_symm (⊢)).
@@ -152,8 +152,8 @@ Section bi.
 End bi.
 Hint Resolve only_provable_intro : core.
 
-Section sbi.
-  Context {PROP : sbi}.
+Section bi.
+  Context {PROP : bi}.
 
   Global Instance only_provable_timeless `{BiAffine PROP} P :
     Timeless (PROP:=PROP) [| P |].
@@ -161,7 +161,7 @@ Section sbi.
   Global Instance only_provable_plain `{BiPlainly PROP} P :
     Plain (PROP:=PROP) [| P |].
   Proof. apply _. Qed.
-End sbi.
+End bi.
 
 Section monpred.
   Context {I : biIndex} {PROP : bi}.

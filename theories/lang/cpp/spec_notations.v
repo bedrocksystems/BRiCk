@@ -20,7 +20,7 @@ Fixpoint tele_append (t : tele) {struct t}: (t -t> tele) -> tele :=
   end.
 
 Section with_Σ.
-  Context `{PROP : sbi}.
+  Context `{PROP : bi}.
 
   Local Notation WithPrePost := (WithPrePost PROP) (only parsing).
 
