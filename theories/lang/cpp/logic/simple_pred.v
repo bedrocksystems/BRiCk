@@ -68,8 +68,10 @@ Definition _Z_to_bytes {σ:genv} (n : nat) (v : Z) : list N :=
 
 (** soundness proof *)
 
-Module SimpleCPP
-(*  : CPP_LOGIC. (* Coq takes a long time checking this with the type ascription *) *).
+Module SimpleCPP_BASE <: CPP_CLASS.
+(* Module SimpleCPP. *)
+(* : CPP_LOGIC. *)
+ (* Coq takes a long time checking this with the type ascription *)
 
   Definition addr : Set := N.
   Definition byte : Set := N.
@@ -120,12 +122,11 @@ Module SimpleCPP
     }.
   Definition _cpp_ghost := cpp_ghost.
 
-  Class cpp_logic {thread_info : biIndex} : Type :=
-  { _Σ : gFunctors
-  ; _ghost : _cpp_ghost
-  ; has_cppG :> cppG _Σ }.
-  Arguments cpp_logic : clear implicits.
-  Coercion _Σ : cpp_logic >-> gFunctors.
+  Include CPP_CLASS_MIXIN.
+End SimpleCPP_BASE.
+
+Module SimpleCPP.
+  Include SimpleCPP_BASE.
 
   Section with_cpp.
     Context `{Σ : cpp_logic}.
@@ -648,6 +649,27 @@ Module SimpleCPP
       move: Hp. rewrite op_singleton singleton_valid=>/agree_op_invL'. by case.
     Qed.
 
+    Axiom tptsto_valid_ptr : forall σ t q a v,
+        @tptsto σ t q a v |-- @tptsto σ t q a v ** valid_ptr a.
+
+    Parameter type_ptr: forall {resolve : genv} (c: type), ptr -> mpred.
+
+    Axiom Persistent_type_ptr : forall σ p ty,
+      Persistent (type_ptr (resolve:=σ) ty p).
+
+    Parameter identity : forall {σ : genv}
+        (this : globname) (most_derived : option globname),
+        Qp -> ptr -> mpred.
+
+    (** this allows you to forget an object identity, necessary for doing
+        placement [new] over an existing object.
+     *)
+    Axiom identity_forget : forall σ mdc this p,
+        @identity σ this (Some mdc) 1 p |-- @identity σ this None 1 p.
+
   End with_cpp.
 
 End SimpleCPP.
+
+Module Type SimpleCPP_INTF := SimpleCPP_BASE <+ CPP_LOGIC.
+Module L : SimpleCPP_INTF := SimpleCPP.
