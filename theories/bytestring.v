@@ -10,12 +10,13 @@ Set Primitive Projections.
 Set Default Proof Using "Type".
 
 (** bytes *)
+Instance byte_inhabited : Inhabited Byte.byte := populate Byte.x00.
 Instance byte_dec : EqDecision Byte.byte := Byte.byte_eq_dec.
 
 Instance byte_countable : Countable Byte.byte.
-refine {| encode x := encode (Byte.to_N x)
-        ; decode x := Byte.of_N (Pos.pred_N x) |}.
-abstract (intros; destruct x; reflexivity).
+Proof.
+  apply (inj_countable Byte.to_N Byte.of_N).
+  abstract (by intros []).
 Defined.
 
 
@@ -64,17 +65,11 @@ Bind Scope bs_scope with bs.
 
 String Notation Bytestring.t Bytestring.parse Bytestring.print : bs_scope.
 
+Instance bytestring_inhabited : Inhabited bs := populate ""%bs.
 Instance bytestring_countable : Countable bs.
-refine {| encode x := encode (Bytestring.print x)
-        ; decode x := match decode x with
-                      | None => None
-                      | Some y => Some (Bytestring.parse y)
-                      end |}.
-{ induction x; simpl.
-  - reflexivity.
-  - rewrite decode_encode in *. simpl in *.
-    injection IHx; intro; subst.
-    rewrite Bytestring.print_parse_inv. reflexivity. }
+Proof.
+  apply (inj_countable' Bytestring.print Bytestring.parse),
+    Bytestring.print_parse_inv.
 Defined.
 
 Import Bytestring.
@@ -223,18 +218,18 @@ Module OT_byte <: OrderedType.OrderedType with Definition t := Byte.byte.
     | Gt => fun pf => OrderedType.GT _
     end (Logic.eq_refl)).
     unfold lt, byte_cmp.
-    rewrite N.compare_antisym.
-    apply CompOpp_iff. apply pf.
+    abstract (rewrite N.compare_antisym; apply CompOpp_iff, pf).
   Defined.
 
   Definition eq_dec : ∀ x y : t, {eq x y} + {¬ eq x y}.
+  Proof.
+  unfold eq.
   refine (fun x y =>
       match byte_cmp x y as Z return byte_cmp x y = Z -> _ with
       | Eq => fun pf => left pf
       | _ => fun _ => right _
-      end Logic.eq_refl).
-  unfold eq. congruence.
-  unfold eq. congruence.
+      end Logic.eq_refl);
+  abstract congruence.
   Defined.
 
 End OT_byte.
@@ -252,10 +247,7 @@ Fixpoint bs_cmp (xs ys : bs) : comparison :=
   end%bs.
 
 Lemma byte_cmp_refl : forall a, byte_cmp a a = Eq.
-Proof.
-  intros. unfold byte_cmp.
-  eapply N.compare_refl.
-Defined.
+Proof. intros. apply N.compare_refl. Qed.
 
 Theorem byte_cmp_spec : forall x y, CompareSpec (x = y) (OT_byte.lt x y) (OT_byte.lt y x) (byte_cmp x y).
 Proof.
@@ -288,14 +280,14 @@ Module OT_bs <: OrderedType.OrderedType with Definition t := bs.
   Qed.
 
   Definition compare (x y : t) : OrderedType.Compare lt eq x y.
+  Proof.
     refine  (
     match bs_cmp x y as X return bs_cmp x y = X -> OrderedType.Compare lt eq x y  with
     | Eq => fun pf => OrderedType.EQ _
     | Lt => fun pf => OrderedType.LT pf
     | Gt => fun pf => OrderedType.GT _
-    end (Logic.eq_refl)).
-    generalize (lm x y). rewrite pf. inversion 1; auto.
-    generalize (lm x y). rewrite pf. inversion 1; auto.
+    end (Logic.eq_refl));
+    abstract (generalize (lm x y); rewrite pf; inversion 1; auto).
   Defined.
 
   Theorem eq_refl : ∀ x : t, eq x x.
@@ -342,12 +334,11 @@ Module OT_bs <: OrderedType.OrderedType with Definition t := bs.
   refine (fun x y =>
       match bs_cmp x y as Z return CompareSpec _ _ _ Z -> _ with
       | Eq => fun pf => left _
-      | _ => fun _ => right _
+      | _ => fun pf => right _
       end (lm x y)).
-  - inversion pf. apply H.
-  - apply lt_not_eq. inversion c. auto.
-  - inversion c. apply lt_not_eq in H.
-    unfold eq in *. congruence.
+  - abstract (inversion pf; auto).
+  - abstract (apply lt_not_eq; inversion pf; auto).
+  - abstract (inversion_clear pf as [ | |?%lt_not_eq]; naive_solver).
   Defined.
 
 End OT_bs.
