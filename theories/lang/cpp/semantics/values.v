@@ -51,7 +51,7 @@ Module Type PTR_API.
   Global Existing Instance ptr_countable.
 
   (** C++ provides a distinguished pointer [nullptr] that is *never
-      dereferenable*
+      dereferenceable*
   *)
   Parameter nullptr : ptr.
 
@@ -365,7 +365,7 @@ Fixpoint find_field {T} (f : ident) (fs : list (ident * T)) : option T :=
   end%list.
 
 (* note: we expose the fact that reference fields are compiled to pointers,
-   so the [offset_of] a referene field is the offset of the pointer.
+   so the [offset_of] a reference field is the offset of the pointer.
  *)
 Definition offset_of (resolve : genv) (t : globname) (f : ident) : option Z :=
   match glob_def resolve t with
