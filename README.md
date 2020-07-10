@@ -22,20 +22,31 @@ clang -Xclang -load -Xclang ./libcpp2v_plugin.so -Xclang -plugin -Xclang cpp2v -
 
 ## Build & Dependencies
 
-### Linux (Ubuntu)
+The following scripts should work, but you can customize them based on your
+needs.
+They must be run inside a clone of this repository.
 
-The following script should work, but you can customize it based on what you have:
+Our instructions are for Linux (Ubuntu) and OSX.
 
+### Coq dependencies
+
+Install [opam 2](https://opam.ocaml.org/), for instance with `sudo apt install
+opam` or `brew install opam`.
+
+Then:
 ```sh
-sudo apt install llvm-9 llvm-9-dev clang-9 libclang-9-dev cmake opam
 # install opam dependencies
+eval $(opam env)
 opam repo add coq-released https://coq.inria.fr/opam/released
 opam repo add iris-dev https://gitlab.mpi-sws.org/iris/opam.git
-opam pin coq 8.11.0
-opam install coq coq-ext-lib coq-metacoq-template
-# install iris
-git clone https://gitlab.mpi-sws.org/iris/iris.git
-(cd iris && git reset --hard 62be0a86890dbbf0dd3e4fc09edaa6d0227baebd && make build-dep && make -j3 && make install)
+opam pin -n coq 8.11.0
+opam install -j3 coq coq-ext-lib coq-lens coq-iris.dev.2020-03-16.0.62be0a86
+```
+
+### Linux (Ubuntu)
+
+```sh
+sudo apt install llvm-9 llvm-9-dev clang-9 libclang-9-dev cmake
 # install cpp2v-core
 make coq cpp2v && make install
 # to build the cpp2v-core plugin, do:
@@ -47,18 +58,8 @@ make plugin
 ```sh
 brew install llvm cmake opam zlib
 export PATH=/usr/local/opt/llvm/bin:${PATH}
-# install opam dependencies
-opam repo add coq-released https://coq.inria.fr/opam/released
-opam repo add iris-dev https://gitlab.mpi-sws.org/iris/opam.git
-opam pin coq 8.11.0
-opam install coq coq-ext-lib
-# install iris
-git clone https://gitlab.mpi-sws.org/iris/iris.git
-(cd iris && git reset --hard 62be0a86890dbbf0dd3e4fc09edaa6d0227baebd && make build-dep && make -j3 && make install)
 # install cpp2v
-git clone https://gitlab.com/bedrocksystems/cpp2v.git
-cd cpp2v
-mkdir build && cd build
+mkdir -p build && cd build
 cmake -D'CMAKE_SHARED_LINKER_FLAGS=-L/usr/local/opt/llvm/lib -lclangSerialization -lclangASTMatchers -lclangSema -lclangAnalysis -lclangRewriteFrontend -lclangEdit -lclangParse -lclangFrontend -lclangBasic -lclangDriver -lclangAST -lclangLex -lz -lcurses' -DCMAKE_EXE_LINKER_FLAGS=-L/usr/local/opt/llvm/lib ..
 cmake --build .
 cd ..
