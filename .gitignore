@@ -17,3 +17,4 @@ deps.dot
 public
 doc/html
 .Makefile.coq.d
+_build
