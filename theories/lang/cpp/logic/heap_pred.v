@@ -169,13 +169,10 @@ Section with_cpp.
   Qed.
 
   Lemma _at_valid_loc : forall (l : Loc) R,
-      _at l R -|- _at l R ** □ valid_loc l.
+      _at l R |-- _at l R ** valid_loc l.
   Proof.
-    split'.
-    - rewrite _at_eq /_at_def valid_loc_eq /valid_loc_def addr_of_eq /addr_of_def /=.
-      iIntros "X"; iDestruct "X" as (a) "[#L R]".
-      iSplitL; iExists _; iFrame "#∗".
-    - iIntros "X"; iDestruct "X" as "[A B]"; iFrame.
+    rewrite _at_eq /_at_def valid_loc_eq /valid_loc_def addr_of_eq /addr_of_def /=.
+    iDestruct 1 as (a) "[#L R]". auto.
   Qed.
 
   Lemma _at_loc_rw : forall (l1 l2 : Loc) (R : Rep),
@@ -201,16 +198,9 @@ Section with_cpp.
   Qed.
 
   Lemma _at_loc_materialize : forall (l : Loc) (r : Rep),
-      _at l r -|- Exists a, □ (l &~ a) ** r a.
+      _at l r -|- Exists a, l &~ a ** r a.
   Proof.
-    intros.
-    rewrite _at_eq /_at_def path_pred.addr_of_eq /addr_of_def.
-    split'; simpl.
-    { eapply bi.exist_mono; intro.
-      iIntros "A"; iDestruct "A" as "[#L R]".
-      iFrame "#∗". }
-    { eapply bi.exist_mono; intro.
-      iIntros "[#X Y]"; iFrame "#∗". }
+    intros. by rewrite _at_eq /_at_def path_pred.addr_of_eq /addr_of_def.
   Qed.
 
   Lemma addr_of_valid_loc : forall l a,
