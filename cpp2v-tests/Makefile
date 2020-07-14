@@ -5,21 +5,25 @@
 #
 COQC	?= coqc
 QPATH   ?= ../theories
+WARN    ?= -w -notation-overridden
 CPP2V	?= ../build/cpp2v
 
 ALL	= $(wildcard *.cpp)
 
 all: $(ALL:%.cpp=%_cpp.vo) $(ALL:%.cpp=%_cpp_names.vo)
+.PHONY: all
+
+ast: $(ALL:%.cpp=%_cpp.v) $(ALL:%.cpp=%_cpp_names.v)
+.PHONY: ast
+
+clean:
+	rm -f *.v *.vo *.vok *.vos *.glob *.aux .*.aux
+.PHONY: clean
 
 %_cpp.v %_cpp_names.v: %.cpp $(CPP2V)
 	$(CPP2V) -v -names $*_cpp_names.v -o $*_cpp.v $< --
 
 %.vo: %.v
-	$(COQC) -Q $(QPATH) bedrock $<
-
-clean:
-	rm -f *.v *.vo *.vok *.vos *.glob *.aux
-
-.PHONY: clean all
+	$(COQC) $(WARN) -Q $(QPATH) bedrock $<
 
 .PRECIOUS: %_cpp.v
