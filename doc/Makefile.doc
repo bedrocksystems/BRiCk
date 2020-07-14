@@ -1,0 +1,15 @@
+#
+# Copyright (C) BedRock Systems Inc. 2019-2020
+#
+# SPDX-License-Identifier: LGPL-2.1 WITH BedRock Exception for use over network, see repository root for details.
+#
+
+# Coqdoc settings.
+# Presupposes $(ROOT) points to the repository root.
+
+EXTRA_DIR=$(ROOT)/coqdocjs/extra
+COQDOCFLAGS:= \
+  --toc --toc-depth 2 --html --interpolate \
+  --index indexpage --no-lib-name --parse-comments \
+  --with-header $(EXTRA_DIR)/header.html --with-footer $(EXTRA_DIR)/footer.html
+export COQDOCFLAGS
