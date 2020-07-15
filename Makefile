@@ -60,12 +60,12 @@ Makefile.coq Makefile.coq.conf: _CoqProject Makefile
 	+$(COQMAKEFILE) -f _CoqProject -o Makefile.coq
 
 coq: Makefile.coq
-	$(COQMK)
+	+$(COQMK)
 .PHONY: coq
 
 # Pass a few useful targets on to the Coq makefile
 %.vo %.required_vo: Makefile.coq
-	@$(COQMK) $@
+	+@$(COQMK) $@
 
 
 
