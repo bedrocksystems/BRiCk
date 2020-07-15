@@ -169,8 +169,9 @@ Section with_cpp.
   Qed.
 
   Lemma _at_valid_loc : forall (l : Loc) R,
-      _at l R |-- _at l R ** valid_loc l.
+      _at l R -|- _at l R ** valid_loc l.
   Proof.
+    split'; last by iIntros "[$ _]".
     rewrite _at_eq /_at_def valid_loc_eq /valid_loc_def addr_of_eq /addr_of_def /=.
     iDestruct 1 as (a) "[#L R]". auto.
   Qed.
