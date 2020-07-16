@@ -41,7 +41,7 @@ stages:
 #This is a template job that's extended below by the real jobs
 # build_cur and build_prev (see, e.g., https://docs.gitlab.com/ee/ci/yaml/#extends).
 .build:
-  image: registry.gitlab.com/bedrocksystems/docker-image:cpp2v-llvm${LLVM_MAJ_VER}
+  image: registry.gitlab.com/bedrocksystems/docker-image:cpp2v-llvm${LLVM_MAJ_VER}-coqdep
   stage: build
   script:
     - mkdir -p build; cd build; CC=`llvm-config-${LLVM_MAJ_VER} --bindir`/clang CXX=`llvm-config-${LLVM_MAJ_VER} --bindir`/clang++ cmake -DLLVM_CONFIG=`which llvm-config-${LLVM_MAJ_VER}` ../; cd ..
@@ -57,7 +57,7 @@ stages:
       - build/bedrock
 
 .test:
-  image: registry.gitlab.com/bedrocksystems/docker-image:cpp2v-llvm${LLVM_MAJ_VER}
+  image: registry.gitlab.com/bedrocksystems/docker-image:cpp2v-llvm${LLVM_MAJ_VER}-coqdep
   stage: test
   script:
     - coqc -v
