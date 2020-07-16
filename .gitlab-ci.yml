@@ -80,15 +80,15 @@ build_latest:
   variables:
     LLVM_MAJ_VER: ${LLVM_CUR_MAJ_VER}
 
-build_previous:
-  extends: .build
-  only:
-    - schedules
-    - merge_requests
-    - tags
-    - master
-  variables:
-    LLVM_MAJ_VER: ${LLVM_PREV_MAJ_VER}
+# build_previous:
+#   extends: .build
+#   only:
+#     - schedules
+#     - merge_requests
+#     - tags
+#     - master
+#   variables:
+#     LLVM_MAJ_VER: ${LLVM_PREV_MAJ_VER}
 
 test_latest:
   extends: .test
@@ -97,12 +97,12 @@ test_latest:
   variables:
     LLVM_MAJ_VER: ${LLVM_CUR_MAJ_VER}
 
-test_previous:
-  extends: .test
-  dependencies:
-    - build_previous
-  variables:
-    LLVM_MAJ_VER: ${LLVM_PREV_MAJ_VER}
+# test_previous:
+#   extends: .test
+#   dependencies:
+#     - build_previous
+#   variables:
+#     LLVM_MAJ_VER: ${LLVM_PREV_MAJ_VER}
 
 .release:
   stage: release
