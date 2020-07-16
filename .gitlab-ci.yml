@@ -125,12 +125,12 @@ release_latest:
   variables:
     LLVM_MAJ_VER: ${LLVM_CUR_MAJ_VER}
 
-release_previous:
-  extends: .release
-  dependencies:
-    - build_previous
-  variables:
-    LLVM_MAJ_VER: ${LLVM_PREV_MAJ_VER}
+# release_previous:
+#   extends: .release
+#   dependencies:
+#     - build_previous
+#   variables:
+#     LLVM_MAJ_VER: ${LLVM_PREV_MAJ_VER}
 
 pages:
   image: registry.gitlab.com/bedrocksystems/docker-image:cpp2v-llvm${LLVM_CUR_MAJ_VER}
