@@ -4,26 +4,30 @@
 # SPDX-License-Identifier: LGPL-2.1 WITH BedRock Exception for use over network, see repository root for details.
 #
 
-EXTRA_DIR=coqdocjs/extra
-COQDOCFLAGS:= \
-  --toc --toc-depth 2 --html --interpolate \
-  --index indexpage --no-lib-name --parse-comments \
-  --external https://bedrocksystems.gitlab.io/cpp2v bedrock \
-  --with-header ../$(EXTRA_DIR)/header.html --with-footer ../$(EXTRA_DIR)/footer.html
+COQMAKEFILE=$(COQBIN)coq_makefile
+
+COQMK := $(MAKE) -f Makefile.coq
+
+ROOT=$(shell (cd .. &&pwd))
+include ./Makefile.doc
+COQDOCFLAGS += --external https://bedrocksystems.gitlab.io/cpp2v bedrock
 export COQDOCFLAGS
 
 coq: Makefile.coq
-	$(MAKE) -f Makefile.coq
+	+@$(COQMK)
+.PHONY: coq
 
 doc: coq
-	$(MAKE) -f Makefile.coq html
+	+@$(COQMK) html
+.PHONY: doc
+
 html: doc
+.PHONY: html
 
-clean: Makefile.coq
-	$(MAKE) -f Makefile.coq clean
+clean:
+	+@if test -f Makefile.coq; then $(COQMK) cleanall; fi
 	rm -f Makefile.coq Makefile.coq.conf
+.PHONY: clean
 
-Makefile.coq: _CoqProject
-	coq_makefile -f _CoqProject -o Makefile.coq
-
-.PHONY: test install coq all doc html clean install cpp2v cpp2v_plugin
+Makefile.coq Makefile.coq.conf: _CoqProject Makefile
+	+$(COQMAKEFILE) -f _CoqProject -o Makefile.coq

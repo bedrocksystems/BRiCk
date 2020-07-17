@@ -16,7 +16,8 @@ cpp2v -v -names XXX_names.v -o XXX_cpp.v XXX.cpp -- ...clang options...
 ### As a plugin
 
 ```sh
-clang -Xclang -load -Xclang ./libcpp2v_plugin.so -Xclang -plugin -Xclang cpp2v -Xclang -plugin-arg-cpp2v -Xclang -o -Xclang -plugin-arg-cpp2v -Xclang foo_cpp.v
+CPP2V_PLUGIN=./libcpp2v_plugin.so	# .dylib on OSX
+clang -Xclang -load -Xclang $CPP2V_PLUGIN -Xclang -plugin -Xclang cpp2v -Xclang -plugin-arg-cpp2v -Xclang -o -Xclang -plugin-arg-cpp2v -Xclang foo_cpp.v
 -Xclang -plugin-arg-cpp2v -Xclang -names -Xclang -plugin-arg-cpp2v -Xclang foo_names_cpp.v ...standard clang options...
 ```
 
@@ -58,12 +59,10 @@ make plugin
 ```sh
 brew install llvm cmake opam zlib
 export PATH=/usr/local/opt/llvm/bin:${PATH}
-# install cpp2v
-mkdir -p build && cd build
-cmake -D'CMAKE_SHARED_LINKER_FLAGS=-L/usr/local/opt/llvm/lib -lclangSerialization -lclangASTMatchers -lclangSema -lclangAnalysis -lclangRewriteFrontend -lclangEdit -lclangParse -lclangFrontend -lclangBasic -lclangDriver -lclangAST -lclangLex -lz -lcurses' -DCMAKE_EXE_LINKER_FLAGS=-L/usr/local/opt/llvm/lib ..
-cmake --build .
-cd ..
-make coq install
+# install cpp2v-core
+make coq cpp2v && make install
+# to build the cpp2v-core plugin, do:
+make plugin
 ```
 
 ## Examples
