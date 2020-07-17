@@ -38,7 +38,6 @@ stages:
   - release
   - pages
 
-
 #This is a template job that's extended below by the real jobs
 # build_cur and build_prev (see, e.g., https://docs.gitlab.com/ee/ci/yaml/#extends).
 .build:
