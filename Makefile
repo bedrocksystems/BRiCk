@@ -40,14 +40,18 @@ ifeq ($(SYS),Darwin)
 endif
 
 build/Makefile: Makefile CMakeLists.txt
-	$(CMAKE) -B build $(BUILDARG)
+	+$(CMAKE) -B build $(BUILDARG)
 
-cpp2v: build/Makefile
-	$(CPPMK) cpp2v
+tocoq: build/Makefile
+	+$(CPPMK) tocoq
+.PHONY: tocoq
+
+cpp2v: tocoq
+	+$(CPPMK) cpp2v
 .PHONY: cpp2v
 
-plugin: build/Makefile
-	$(CPPMK) cpp2v_plugin
+plugin: tocoq
+	+$(CPPMK) cpp2v_plugin
 .PHONY: plugin
 
 
