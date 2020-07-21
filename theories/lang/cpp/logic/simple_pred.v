@@ -68,10 +68,7 @@ Definition _Z_to_bytes {σ:genv} (n : nat) (v : Z) : list N :=
 
 (** soundness proof *)
 
-Module SimpleCPP_BASE <: CPP_CLASS.
-(* Module SimpleCPP. *)
-(* : CPP_LOGIC. *)
- (* Coq takes a long time checking this with the type ascription *)
+Module SimpleCPP_BASE <: CPP_LOGIC_CLASS.
 
   Definition addr : Set := N.
   Definition byte : Set := N.
@@ -122,7 +119,7 @@ Module SimpleCPP_BASE <: CPP_CLASS.
     }.
   Definition _cpp_ghost := cpp_ghost.
 
-  Include CPP_CLASS_MIXIN.
+  Include CPP_LOGIC_CLASS_MIXIN.
 End SimpleCPP_BASE.
 
 Module SimpleCPP.

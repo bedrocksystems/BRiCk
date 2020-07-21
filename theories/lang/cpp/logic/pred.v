@@ -26,7 +26,7 @@ Export ChargeNotation.
 
 From bedrock.lang.cpp Require Import ast semantics.
 
-Module Type CPP_CLASS_BASE.
+Module Type CPP_LOGIC_CLASS_BASE.
   Parameter cppG : gFunctors -> Type.
   Parameter has_inv : forall Σ, cppG Σ -> invG Σ.
   Parameter has_cinv : forall Σ, cppG Σ -> cinvG Σ.
@@ -34,9 +34,9 @@ Module Type CPP_CLASS_BASE.
   Existing Class cppG.
 
   Parameter _cpp_ghost : Type.
-End CPP_CLASS_BASE.
+End CPP_LOGIC_CLASS_BASE.
 
-Module Type CPP_CLASS_MIXIN (Import CC : CPP_CLASS_BASE).
+Module Type CPP_LOGIC_CLASS_MIXIN (Import CC : CPP_LOGIC_CLASS_BASE).
 
   Class cpp_logic {thread_info : biIndex} : Type :=
   { _Σ       : gFunctors
@@ -45,11 +45,11 @@ Module Type CPP_CLASS_MIXIN (Import CC : CPP_CLASS_BASE).
   Arguments cpp_logic : clear implicits.
   Coercion _Σ : cpp_logic >-> gFunctors.
 
-End CPP_CLASS_MIXIN.
+End CPP_LOGIC_CLASS_MIXIN.
 
-Module Type CPP_CLASS := CPP_CLASS_BASE <+ CPP_CLASS_MIXIN.
+Module Type CPP_LOGIC_CLASS := CPP_LOGIC_CLASS_BASE <+ CPP_LOGIC_CLASS_MIXIN.
 
-Module Type CPP_LOGIC (Import CC : CPP_CLASS).
+Module Type CPP_LOGIC (Import CC : CPP_LOGIC_CLASS).
 
   Section with_cpp.
     Context `{Σ : cpp_logic}.
@@ -168,7 +168,7 @@ Module Type CPP_LOGIC (Import CC : CPP_CLASS).
 
 End CPP_LOGIC.
 
-Declare Module LC : CPP_CLASS.
+Declare Module LC : CPP_LOGIC_CLASS.
 Declare Module L : CPP_LOGIC LC.
 Export LC L.
 

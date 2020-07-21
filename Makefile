@@ -40,7 +40,7 @@ ifeq ($(SYS),Darwin)
 endif
 
 build/Makefile: Makefile CMakeLists.txt
-	+$(CMAKE) -B build $(BUILDARG)
+	$(CMAKE) -B build $(BUILDARG)
 
 tocoq: build/Makefile
 	+$(CPPMK) tocoq
