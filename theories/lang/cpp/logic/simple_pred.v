@@ -68,8 +68,7 @@ Definition _Z_to_bytes {σ:genv} (n : nat) (v : Z) : list N :=
 
 (** soundness proof *)
 
-Module SimpleCPP
-(*  : CPP_LOGIC. (* Coq takes a long time checking this with the type ascription *) *).
+Module SimpleCPP_BASE <: CPP_LOGIC_CLASS.
 
   Definition addr : Set := N.
   Definition byte : Set := N.
@@ -120,12 +119,11 @@ Module SimpleCPP
     }.
   Definition _cpp_ghost := cpp_ghost.
 
-  Class cpp_logic {thread_info : biIndex} : Type :=
-  { _Σ : gFunctors
-  ; _ghost : _cpp_ghost
-  ; has_cppG :> cppG _Σ }.
-  Arguments cpp_logic : clear implicits.
-  Coercion _Σ : cpp_logic >-> gFunctors.
+  Include CPP_LOGIC_CLASS_MIXIN.
+End SimpleCPP_BASE.
+
+Module SimpleCPP.
+  Include SimpleCPP_BASE.
 
   Section with_cpp.
     Context `{Σ : cpp_logic}.
@@ -160,7 +158,7 @@ Module SimpleCPP
     refine ([| p = nullptr |] \\//
             (Exists base l h o,
                 own _ghost.(blocks_name) {[ base := to_agree (l, h) ]} **
-                [| (l <= o < h)%Z |] ** [| p = offset_ptr_ o base |])).
+                [| (l <= o <= h)%Z |] ** [| p = offset_ptr_ o base |])).
     unshelve eapply blocksG; apply has_cppG. refine _.
     Defined.
 
@@ -648,6 +646,36 @@ Module SimpleCPP
       move: Hp. rewrite op_singleton singleton_valid=>/agree_op_invL'. by case.
     Qed.
 
+    Definition type_ptr {resolve : genv} (c: type) (p : ptr) : mpred.
+    Proof.
+      refine (Exists (o : option addr) n,
+               [| @align_of resolve c = Some n |] ** own _ghost.(mem_inj_name) {[ p := to_agree o ]} **
+               match o with
+               | None => ltrue
+               | Some addr => [| N.modulo addr n = 0%N |]
+               end).
+      1: unshelve eapply mem_injG; apply has_cppG. refine _.
+    Defined.
+
+    Theorem Persistent_type_ptr : forall σ p ty,
+        Persistent (type_ptr (resolve:=σ) ty p).
+    Proof. refine _. Qed.
+
+    (* todo(gmm): this isn't accurate, but it is sufficient to show that the axioms are
+    instantiatable. *)
+    Definition identity {σ : genv} (this : globname) (most_derived : option globname)
+               (q : Qp) (p : ptr) : mpred := ltrue.
+
+    (** this allows you to forget an object identity, necessary for doing
+        placement [new] over an existing object.
+     *)
+    Theorem identity_forget : forall σ mdc this p,
+        @identity σ this (Some mdc) 1 p |-- @identity σ this None 1 p.
+    Proof. rewrite /identity. eauto. Qed.
+
   End with_cpp.
 
 End SimpleCPP.
+
+Module Type SimpleCPP_INTF := SimpleCPP_BASE <+ CPP_LOGIC.
+Module L : SimpleCPP_INTF := SimpleCPP.
