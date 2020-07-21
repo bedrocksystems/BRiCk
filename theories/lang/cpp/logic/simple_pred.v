@@ -161,7 +161,7 @@ Module SimpleCPP.
     refine ([| p = nullptr |] \\//
             (Exists base l h o,
                 own _ghost.(blocks_name) {[ base := to_agree (l, h) ]} **
-                [| (l <= o < h)%Z |] ** [| p = offset_ptr_ o base |])).
+                [| (l <= o <= h)%Z |] ** [| p = offset_ptr_ o base |])).
     unshelve eapply blocksG; apply has_cppG. refine _.
     Defined.
 
@@ -649,23 +649,32 @@ Module SimpleCPP.
       move: Hp. rewrite op_singleton singleton_valid=>/agree_op_invL'. by case.
     Qed.
 
-    Axiom tptsto_valid_ptr : forall σ t q a v,
-        @tptsto σ t q a v |-- @tptsto σ t q a v ** valid_ptr a.
+    Definition type_ptr {resolve : genv} (c: type) (p : ptr) : mpred.
+    Proof.
+      refine (Exists (o : option addr) n,
+               [| @align_of resolve c = Some n |] ** own _ghost.(mem_inj_name) {[ p := to_agree o ]} **
+               match o with
+               | None => ltrue
+               | Some addr => [| N.modulo addr n = 0%N |]
+               end).
+      1: unshelve eapply mem_injG; apply has_cppG. refine _.
+    Defined.
 
-    Parameter type_ptr: forall {resolve : genv} (c: type), ptr -> mpred.
+    Theorem Persistent_type_ptr : forall σ p ty,
+        Persistent (type_ptr (resolve:=σ) ty p).
+    Proof. refine _. Qed.
 
-    Axiom Persistent_type_ptr : forall σ p ty,
-      Persistent (type_ptr (resolve:=σ) ty p).
-
-    Parameter identity : forall {σ : genv}
-        (this : globname) (most_derived : option globname),
-        Qp -> ptr -> mpred.
+    (* todo(gmm): this isn't accurate, but it is sufficient to show that the axioms are
+    instantiatable. *)
+    Definition identity {σ : genv} (this : globname) (most_derived : option globname)
+               (q : Qp) (p : ptr) : mpred := ltrue.
 
     (** this allows you to forget an object identity, necessary for doing
         placement [new] over an existing object.
      *)
-    Axiom identity_forget : forall σ mdc this p,
+    Theorem identity_forget : forall σ mdc this p,
         @identity σ this (Some mdc) 1 p |-- @identity σ this None 1 p.
+    Proof. rewrite /identity. eauto. Qed.
 
   End with_cpp.
 
