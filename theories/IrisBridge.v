@@ -64,31 +64,6 @@ Module ChargeNotation.
 
 End ChargeNotation.
 
-(* IPM notation levels *)
-Module IPMNotation.
-  Notation "P |-- Q" := (P ⊢ Q)%I (at level 99, Q at level 200, right associativity).
-  Notation "P //\\ Q" := (P ∧ Q)%I (at level 99, Q at level 80, right associativity).
-  Notation "P \\// Q" := (P ∨ Q)%I (at level 99, Q at level 85, right associativity).
-  Notation "P -->> Q" := (P → Q)%I (at level 99, Q at level 200, right associativity).
-
-  Notation "'Forall' x .. y , p" :=
-    (lforall (fun x => .. (lforall (fun y => p)) ..))%I (at level 78, x binder, y binder, right associativity).
-  Notation "'Exists' x .. y , p" :=
-    (lexists (fun x => .. (lexists (fun y => p)) ..))%I (at level 78, x binder, y binder, right associativity).
-
-  Infix "-|-"  := (⊣⊢)%I (at level 95, no associativity).
-  Notation "|--  P" := (True |-- P)%I (at level 85, no associativity).
-
-  Notation "P ** Q" := (P ∗ Q)%I (at level 80, right associativity).
-  Notation "P -* Q" := (P -∗ Q)%I (at level 99, Q at level 200, right associativity,
-                                   format "'[' P  '/' -*  Q ']'").
-  Notation "[| P |]" := (⌜ P ⌝%I) (at level 1, P at level 200).
-  Notation "[|| P ||]" := (⎡ P ⎤%I) (at level 1, P at level 200).
-  Notation "'sepSPs' ps" := ([∗] ps)%I (at level 20).
-
-  Notation "|> P" := (▷  P)%I (at level 20, right associativity).
-End IPMNotation.
-
 (** * Properties of [only_provable]. *)
 Section with_notation.
 Import ChargeNotation.
