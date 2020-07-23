@@ -46,7 +46,7 @@ Section with_cpp.
 
   (* Hoare triple for a constructor.
    *)
-  Definition SConstructor@{X Z Y} (class : globname)
+  Definition SConstructor@{X Z Y} (cc : calling_conv) (class : globname)
              (targs : list type)
              (PQ : ptr -> WithPrePost@{X Z Y} mpredI)
   : function_spec :=
@@ -54,7 +54,7 @@ Section with_cpp.
         (this :: args,
          _at (_eqv this) (anyR (Tnamed class) 1) ** P) in
     let this_type := Qmut (Tnamed class) in
-    SFunction CC_X86ThisCall (Qmut Tvoid) (Qconst (Tpointer this_type) :: targs)
+    SFunction cc (Qmut Tvoid) (Qconst (Tpointer this_type) :: targs)
               {| wpp_with := TeleS (fun this : ptr => (PQ this).(wpp_with))
                ; wpp_pre this :=
                    tele_map (map_pre (Vptr this)) (PQ this).(wpp_pre)
@@ -63,7 +63,7 @@ Section with_cpp.
 
   (* Hoare triple for a destructor.
    *)
-  Definition SDestructor@{X Z Y} (class : globname)
+  Definition SDestructor@{X Z Y} (cc : calling_conv) (class : globname)
              (PQ : ptr -> WithPrePost@{X Z Y} mpredI)
   : function_spec :=
     let map_pre this '(args, P) := (Vptr this :: args, P) in
@@ -73,7 +73,7 @@ Section with_cpp.
                                   (result, _at (_eq this) (anyR (Tnamed class) 1) ** Q)) Q |}
     in
     let this_type := Qmut (Tnamed class) in
-    SFunction@{X Z Y} CC_X86ThisCall (Qmut Tvoid) (Qconst (Tpointer this_type) :: nil)
+    SFunction@{X Z Y} cc (Qmut Tvoid) (Qconst (Tpointer this_type) :: nil)
               {| wpp_with := TeleS (fun this : ptr => (PQ this).(wpp_with))
                ; wpp_pre this :=
                    tele_map (map_pre this) (PQ this).(wpp_pre)
@@ -83,14 +83,15 @@ Section with_cpp.
 
   (* Hoare triple for a method.
    *)
-  Definition SMethod@{X Z Y} (class : globname) (qual : type_qualifiers)
+  Definition SMethod@{X Z Y} (cc  : calling_conv)
+             (class : globname) (qual : type_qualifiers)
              (ret : type) (targs : list type)
              (PQ : ptr -> WithPrePost@{X Z Y} mpredI)
   : function_spec :=
     let map_pre this '(args, P) := (this :: args, P) in
     let class_type := Tnamed class in
     let this_type := Tqualified qual class_type in
-    SFunction CC_X86ThisCall ret (Qconst (Tpointer this_type) :: targs)
+    SFunction cc ret (Qconst (Tpointer this_type) :: targs)
               {| wpp_with := TeleS (fun this : ptr => (PQ this).(wpp_with))
                ; wpp_pre this :=
                    tele_map (map_pre (Vptr this)) (PQ this).(wpp_pre)
