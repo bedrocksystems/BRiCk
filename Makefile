@@ -4,7 +4,7 @@
 # SPDX-License-Identifier: LGPL-2.1 WITH BedRock Exception for use over network, see repository root for details.
 #
 
-default_target: coq
+default_target: coq cpp2v
 .PHONY: default_target
 
 CMAKE=$$(which cmake)
@@ -16,6 +16,10 @@ DOCMK := $(MAKE) -C doc
 
 ROOT := $(shell pwd)
 include doc/Makefile.doc
+
+SWITCH := $(shell opam switch show)
+DESTDIR := $(HOME)/.opam/$(SWITCH)
+BINDIR = $(DESTDIR)/bin
 
 
 
@@ -121,12 +125,18 @@ public: html doc_extra
 
 
 
-# Install --- Coq binaries only
+# Install targets (coq, cpp2v, or both)
 
-install: Makefile.coq
+install-coq: coq
 	+$(COQMK) install
-.PHONY: install
+.PHONY: install-coq
 
+install-cpp2v: cpp2v
+	install -m 0755 build/cpp2v "$(BINDIR)"
+.PHONY: install-cpp2v
+
+install: install-coq install-cpp2v
+.PHONY: install
 
 
 
