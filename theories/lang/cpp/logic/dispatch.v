@@ -1,7 +1,7 @@
 (*
  * Copyright (C) BedRock Systems Inc. 2020 Gregory Malecha
  *
- * SPDX-License-Identifier:AGPL-3.0-or-later
+ * SSPDX-License-Identifier: LGPL-2.1 WITH BedRock Exception for use over network, see repository root for details.
  *)
 (**
  * reflecting virtual function dispatch in the logic.
