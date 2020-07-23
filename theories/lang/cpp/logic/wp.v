@@ -709,13 +709,14 @@ Section with_cpp.
    * note: the [list val] will be related to the register set.
    *)
   Parameter fspec
-    : forall (ti : thread_info) (addr : val) (ls : list val) (Q : val -> epred), mpred.
+    : forall (tt : type_table) (fun_type : type) (ti : thread_info) (addr : val) (ls : list val) (Q : val -> epred), mpred.
 
-  Axiom fspec_frame : forall a ls ti Q1 Q2,
-      Forall v, Q1 v -* Q2 v |-- @fspec ti a ls Q1 -* @fspec ti a ls Q2.
+  (* note(gmm): this admits weakening of [tt] *)
+  Axiom fspec_frame : forall tt ft a ls ti Q1 Q2,
+      Forall v, Q1 v -* Q2 v |-- @fspec tt ft ti a ls Q1 -* @fspec tt ft ti a ls Q2.
 
-  Global Instance Proper_fspec : forall a ls ti,
-      Proper (pointwise_relation _ lentails ==> lentails) (@fspec ti a ls).
+  Global Instance Proper_fspec : forall tt ft a ls ti,
+      Proper (pointwise_relation _ lentails ==> lentails) (@fspec tt ft ti a ls).
   Proof. do 3 red; intros.
          iIntros "X"; iRevert "X"; iApply fspec_frame.
          iIntros (v); iApply H.

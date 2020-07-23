@@ -27,21 +27,21 @@ Section with_Σ.
   Axiom code_at_ok : forall (f : Func) p,
       code_at f p
       |-- Forall ti ls Q, wp_func (resolve:=σ) f ti ls Q -*
-                          fspec ti (Vptr p) ls Q.
+                          fspec (Σ:=Σ) σ.(genv_tu).(globals) (type_of_value (Ofunction f)) ti (Vptr p) ls Q.
 
   Axiom method_at_ok : forall (m : Method) p,
       method_at m p
       |-- Forall ti ls Q, wp_method (resolve:=σ) m ti ls Q -*
-                          fspec ti (Vptr p) ls Q.
+                          fspec (Σ:=Σ) σ.(genv_tu).(globals) (type_of_value (Omethod m)) ti (Vptr p) ls Q.
 
   Axiom ctor_at_ok : forall (c : Ctor) p,
       ctor_at c p
       |-- Forall ti ls Q, wp_ctor (resolve:=σ) c ti ls Q -*
-                          fspec ti (Vptr p) ls Q.
+                          fspec σ.(genv_tu).(globals) (type_of_value (Oconstructor c)) ti (Vptr p) ls Q.
 
   Axiom dtor_at_ok : forall (d : Dtor) p,
       dtor_at d p
       |-- Forall ti ls Q, wp_dtor (resolve:=σ) d ti ls Q -*
-                          fspec ti (Vptr p) ls Q.
+                          fspec σ.(genv_tu).(globals) (type_of_value (Odestructor d)) ti (Vptr p) ls Q.
 
 End with_Σ.

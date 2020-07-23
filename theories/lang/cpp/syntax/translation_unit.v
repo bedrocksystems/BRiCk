@@ -144,6 +144,18 @@ Variant ObjValue : Set :=
 Instance: EqDecision ObjValue.
 Proof. solve_decision. Defined.
 
+(** [type_of_value o] returns the type of the given [ObjValue] *)
+Definition type_of_value (o : ObjValue) : type :=
+  match o with
+  | Ovar t _ => t
+  | Ofunction f => Tfunction f.(f_cc) f.(f_return) $ snd <$> f.(f_params)
+  | Omethod m => Tfunction m.(m_cc) m.(m_return) $ Tptr (Tqualified m.(m_this_qual) (Tnamed m.(m_class))) :: (snd <$> m.(m_params))
+  | Oconstructor c =>
+    Tfunction c.(c_cc) Tvoid $ Tptr (Tnamed c.(c_class)) :: (snd <$> c.(c_params))
+  | Odestructor d =>
+    Tfunction d.(d_cc) Tvoid $ Tptr (Tnamed d.(d_class)) :: nil
+  end.
+
 Variant GlobDecl : Set :=
 | Gtype     (* this is a type declaration, but not a definition *)
 | Gunion    (_ : Union)

@@ -84,8 +84,10 @@ public:
 
     void VisitType(const Type* type, CoqPrinter& print, ClangPrinter& cprint) {
         using namespace logging;
-        fatal() << "[ERR] unsupported type: ";
+        fatal() << "[ERR] unsupported type (" << type->getTypeClassName()
+                << "):";
         type->dump(fatal());
+
         fatal() << "\n";
         die();
     }
@@ -214,7 +216,8 @@ public:
                     << (type->isSignedInteger() ? "Signed" : "Unsigned") << ")";
             } else {
                 using namespace logging;
-                fatal() << "Unsupported type \""
+                fatal() << "[ERR] Unsupported builtin type (" << type->getKind()
+                        << "): \""
                         << type->getNameAsCString(PrintingPolicy(LangOptions()))
                         << "\"\n";
                 die();
