@@ -17,9 +17,8 @@ DOCMK := $(MAKE) -C doc
 ROOT := $(shell pwd)
 include doc/Makefile.doc
 
-SWITCH := $(shell opam switch show)
-DESTDIR := $(HOME)/.opam/$(SWITCH)
-BINDIR = $(DESTDIR)/bin
+OPAM_PREFIX := $(shell opam config var prefix)
+BINDIR = $(OPAM_PREFIX)/bin
 
 
 
