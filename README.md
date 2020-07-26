@@ -41,7 +41,7 @@ eval $(opam env)
 opam repo add coq-released https://coq.inria.fr/opam/released
 opam repo add iris-dev https://gitlab.mpi-sws.org/iris/opam.git
 opam pin -n coq 8.11.0
-opam install -j3 coq coq-ext-lib coq-lens coq-iris.dev.2020-03-16.0.62be0a86
+opam install -j3 coq coq-ext-lib coq-lens coq-iris.dev.2020-07-04.0.e2639ac1
 ```
 
 ### Linux (Ubuntu)

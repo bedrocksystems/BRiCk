@@ -57,14 +57,16 @@ Module Type CPP_LOGIC (Import CC : CPP_LOGIC_CLASS).
     Definition mpred := iProp Σ.
     Canonical Structure mpredI : bi :=
       {| bi_car := mpred
+       ; bi_later := bi_later
        ; bi_ofe_mixin := (iPropI Σ).(bi_ofe_mixin)
-       ; bi_bi_mixin := (iPropI Σ).(bi_bi_mixin) |}.
+       ; bi_bi_mixin := (iPropI Σ).(bi_bi_mixin)
+       ; bi_bi_later_mixin := (iPropI Σ).(bi_bi_later_mixin)
+       |}.
     (* todo: Fix the warning generated from this definition *)
-    Canonical Structure mpredSI : sbi :=
-      {| sbi_car := mpred
-       ; sbi_ofe_mixin := (iPropI Σ).(bi_ofe_mixin)
-       ; sbi_bi_mixin := (iPropI Σ).(bi_bi_mixin)
-       ; sbi_sbi_mixin := (iPropSI Σ).(sbi_sbi_mixin) |}.
+
+    (* Typeclasses Opaque mpred.
+    Global Instance mpred_later_contractive : BiLaterContractive mpredI.
+    Proof. apply _. Qed. *)
 
     (* valid pointers allow for accessing one past the end of a structure/array *)
     Parameter valid_ptr : ptr -> mpred.
@@ -174,9 +176,7 @@ Export LC L.
 
 Bind Scope bi_scope with mpred.
 Bind Scope bi_scope with mpredI.
-Bind Scope bi_scope with mpredSI.
 Bind Scope bi_scope with bi_car.
-Bind Scope bi_scope with sbi_car.
 
 Existing Instances
          L.code_at_persistent L.code_at_affine L.code_at_timeless

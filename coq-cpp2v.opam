@@ -14,7 +14,7 @@ depends: [
   "coq" { >= "8.11" & < "8.12~" }
   "coq-ext-lib" { >= "0.11.0" }
   "coq-lens" { = "1.0.0" }
-  "coq-iris" { = "dev.2020-03-16.0.62be0a86" }
+  "coq-iris" { = "3.3.0" }
 ]
 
 build: [ make "-j%{jobs}%" "coq" ]

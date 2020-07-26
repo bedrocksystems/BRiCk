@@ -213,7 +213,7 @@ Section with_PROP.
 End with_PROP.
 
 Section with_SPROP.
-  Context {SPROP:sbi}.
+  Context {SPROP: bi}.
   Lemma spec_later_weaken (P : SPROP) : P |-- illater P.
   Proof. eauto. Qed.
 

@@ -133,14 +133,13 @@ Module SimpleCPP.
     Definition mpred := iProp Σ.
     Definition mpredI : bi :=
       {| bi_car := mpred
+       ; bi_later := bi_later
        ; bi_ofe_mixin := (iPropI Σ).(bi_ofe_mixin)
-       ; bi_bi_mixin := (iPropI Σ).(bi_bi_mixin) |}.
+       ; bi_bi_mixin := (iPropI Σ).(bi_bi_mixin)
+       ; bi_bi_later_mixin := (iPropI Σ).(bi_bi_later_mixin)
+       |}.
     (* todo: Fix the warning generated from this definition *)
-    Definition mpredSI : sbi :=
-      {| sbi_car := mpred
-       ; sbi_ofe_mixin := (iPropI Σ).(bi_ofe_mixin)
-       ; sbi_bi_mixin := (iPropI Σ).(bi_bi_mixin)
-       ; sbi_sbi_mixin := (iPropSI Σ).(sbi_sbi_mixin) |}.
+
 
     Lemma singleton_valid_at_norm :
       ∀ `{Countable K} (A : cmraT) (i : K) (x : A),
@@ -376,7 +375,7 @@ Module SimpleCPP.
       intros.
       etransitivity; [ | eapply own_op ].
       eapply own_proper.
-      by rewrite op_singleton frac_op.
+      by rewrite singleton_op frac_op.
     Qed.
 
     Instance: AsFractional (val_ a rv q) (fun q => val_ a rv q) q.
@@ -427,7 +426,7 @@ Module SimpleCPP.
     Proof.
       iIntros "[Hb Hb']". iDestruct (own_valid_2 with "Hb Hb'") as %Hv.
       have {Hv}-> : b = b'.
-      - move: Hv. by rewrite op_singleton singleton_valid=>/frac_valid[].
+      - move: Hv. by rewrite singleton_op singleton_valid=>/frac_valid[].
       - iFrame. auto.
      Qed.
 
@@ -643,7 +642,7 @@ Module SimpleCPP.
       intros. iIntros "[A B]".
       iDestruct "A" as "[[->->] | [% A]]"; iDestruct "B" as "[[%->] | [% B]]"; auto.
       iDestruct (own_valid_2 with "A B") as %Hp. iPureIntro.
-      move: Hp. rewrite op_singleton singleton_valid=>/agree_op_invL'. by case.
+      move: Hp. rewrite singleton_op singleton_valid=>/agree_op_invL'. by case.
     Qed.
 
     Definition type_ptr {resolve : genv} (c: type) (p : ptr) : mpred.

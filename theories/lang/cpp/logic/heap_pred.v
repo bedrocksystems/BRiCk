@@ -19,7 +19,7 @@ Set Default Proof Using "Type".
 Definition monPred_at_persistent_inv {V bi} (P : monPred V bi) :
   (∀ i, Persistent (P i)) → Persistent P := monPred_persistent _.
 
-Lemma monPred_at_timeless_inv {V sbi} (P : monPredSI V sbi) :
+Lemma monPred_at_timeless_inv {V bi} (P : monPredI V bi) :
   (∀ i, Timeless (P i)) → Timeless P.
 Proof.
   intros HP. constructor=>i.
@@ -55,7 +55,6 @@ Section with_cpp.
 
   Definition Rep := monPred ptr_bi_index mpredI.
   Definition RepI := monPredI ptr_bi_index mpredI.
-  Definition RepSI := monPredSI ptr_bi_index mpredSI.
 
   Lemma Rep_lequiv : forall (P Q : Rep),
       (forall p, P p -|- Q p) ->
