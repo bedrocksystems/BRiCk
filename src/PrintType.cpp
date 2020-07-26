@@ -20,28 +20,29 @@ using namespace fmt;
 
 void
 printQualType(const QualType& qt, CoqPrinter& print, ClangPrinter& cprint) {
+  if (auto p = qt.getTypePtrOrNull()) {
     if (qt.isLocalConstQualified()) {
-        if (qt.isVolatileQualified()) {
-            print.ctor("Qconst_volatile", false);
-        } else {
-            print.ctor("Qconst", false);
-        }
+      if (qt.isVolatileQualified()) {
+        print.ctor("Qconst_volatile", false);
+      } else {
+        print.ctor("Qconst", false);
+      }
+      cprint.printType(p, print);
+      print.end_ctor();
     } else {
-        if (qt.isLocalVolatileQualified()) {
-            print.ctor("Qmut_volatile", false);
-        } else {
-            print.ctor("Qmut", false);
-        }
-    }
-
-    if (auto p = qt.getTypePtrOrNull()) {
+      if (qt.isLocalVolatileQualified()) {
+        print.ctor("Qmut_volatile", false);
         cprint.printType(p, print);
-        print.output() << fmt::rparen;
-    } else {
-        using namespace logging;
-        fatal() << "unexpected null type in printQualType\n";
-        die();
+        print.end_ctor();
+      } else {
+        cprint.printType(p, print);
+      }
     }
+  } else {
+    using namespace logging;
+    fatal() << "unexpected null type in printQualType\n";
+    die();
+  }
 }
 
 void
