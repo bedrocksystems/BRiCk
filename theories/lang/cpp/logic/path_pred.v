@@ -191,12 +191,12 @@ Section with_Σ.
   { _offset : ptr -> ptr -> mpred
   ; _off_functional : forall p p1 p2, _offset p p1 ** _offset p p2 |-- [| p1 = p2 |]
   ; _off_valid : forall p1 p2, valid_ptr p1 ** _offset p1 p2 |-- valid_ptr p2
-  ; _off_persist :> forall p1 p2, Persistent (_offset p1 p2)
-  ; _off_affine :> forall p1 p2, Affine (_offset p1 p2)
-  ; _off_timeless :> forall p1 p2, Timeless (_offset p1 p2)
+  ; _off_persist : forall p1 p2, Persistent (_offset p1 p2)
+  ; _off_affine : forall p1 p2, Affine (_offset p1 p2)
+  ; _off_timeless : forall p1 p2, Timeless (_offset p1 p2)
   }.
 
-  Global Existing Instances _off_persist _off_affine.
+  Global Existing Instances _off_persist _off_affine _off_timeless.
 
   Global Instance Offset_Equiv : Equiv Offset :=
     fun l r => forall p q, @_offset l p q -|- @_offset r p q.
@@ -255,9 +255,6 @@ Section with_Σ.
     iDestruct "H'" as (m) "[H1 H2]".
     iApply _off_valid. iFrame.
     iApply _off_valid. iFrame. }
-  { intros.
-    eapply bi.exist_timeless; intros; eapply bi.sep_timeless;
-      [ eapply o1 | eapply o2 ]. }
   Defined.
   Definition _dot_aux : seal (@_dot_def). by eexists. Qed.
   Definition _dot := _dot_aux.(unseal).
@@ -317,9 +314,6 @@ Section with_Σ.
     iDestruct "H" as (p) "[O L]".
     iApply _off_valid. iFrame.
     iApply _loc_valid. iFrame. }
-  { intros.
-    eapply bi.exist_timeless; intros; eapply bi.sep_timeless;
-      [ eapply o | eapply l ]. }
   Defined.
   Definition _offsetL_aux : seal (@_offsetL_def). by eexists. Qed.
   Definition _offsetL := _offsetL_aux.(unseal).
