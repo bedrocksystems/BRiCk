@@ -415,7 +415,7 @@ write_globals(::Module &mod, CoqPrinter &print, ClangPrinter &cprint) {
     }
 
     print.output() << fmt::outdent << "End _'." << fmt::line;
-    print.output() << "Import _'." << fmt::line << fmt::line;
+    print.output() << "Export _'." << fmt::line << fmt::line;
 }
 
 void
