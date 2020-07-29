@@ -26,6 +26,8 @@ Export ChargeNotation.
 
 From bedrock.lang.cpp Require Import ast semantics.
 
+Set Default Proof Using "Type".
+
 Module Type CPP_LOGIC_CLASS_BASE.
   Parameter cppG : gFunctors -> Type.
   Parameter has_inv : forall Σ, cppG Σ -> invG Σ.
@@ -83,18 +85,18 @@ Module Type CPP_LOGIC (Import CC : CPP_LOGIC_CLASS).
     (* heap points to *)
     Parameter tptsto : forall {σ:genv} (t : type) (q : Qp) (a : ptr) (v : val), mpred.
 
-    Axiom tptsto_proper_entails :
-      Proper (genv_leq ==> eq ==> eq ==> eq ==> eq ==> lentails) (@tptsto).
-    Axiom tptsto_proper_equiv :
-      Proper (genv_eq ==> eq ==> eq ==> eq ==> eq ==> lequiv) (@tptsto).
+    Axiom tptsto_proper :
+      Proper (genv_eq ==> eq ==> eq ==> eq ==> eq ==> (≡)) (@tptsto).
+    Axiom tptsto_mono :
+      Proper (genv_leq ==> eq ==> eq ==> eq ==> eq ==> (⊢)) (@tptsto).
 
+    Axiom tptsto_timeless :
+      forall {σ} ty q a v, Timeless (@tptsto σ ty q a v).
     Axiom tptsto_fractional :
       forall {σ} ty a v, Fractional (λ q, @tptsto σ ty q a v).
     Axiom tptsto_as_fractional :
       forall {σ} ty q a v, AsFractional (@tptsto σ ty q a v) (λ q, @tptsto σ ty q a v)%I q.
 
-    Axiom tptsto_timeless :
-      forall {σ} ty q a v, Timeless (@tptsto σ ty q a v).
 
 (* not currently necessary
     Axiom tptsto_valid_ptr : forall σ t q a v,
@@ -107,7 +109,7 @@ Module Type CPP_LOGIC (Import CC : CPP_LOGIC_CLASS).
         - the address is properly aligned (if it exists in memory)
      *)
     Parameter type_ptr: forall {resolve : genv} (c: type), ptr -> mpred.
-    Axiom Persistent_type_ptr : forall σ p ty,
+    Axiom type_ptr_persistent : forall σ p ty,
       Persistent (type_ptr (resolve:=σ) ty p).
 
     (** [identity σ this mdc q p] state that [p] is a pointer to a (live)
@@ -123,6 +125,7 @@ Module Type CPP_LOGIC (Import CC : CPP_LOGIC_CLASS).
     Parameter identity : forall {σ : genv}
         (this : globname) (most_derived : option globname),
         Qp -> ptr -> mpred.
+    (** PDS: [Fractional], [AsFractional], [Timeless]? *)
 
     (** this allows you to forget an object identity, necessary for doing
         placement [new] over an existing object.
@@ -178,25 +181,47 @@ Bind Scope bi_scope with mpred.
 Bind Scope bi_scope with mpredI.
 Bind Scope bi_scope with bi_car.
 
+(** Instances from [LC] *)
+Existing Instances LC.has_inv LC.has_cinv LC.has_cppG.
+
+(** Instances from [L] *)
 Existing Instances
-         L.code_at_persistent L.code_at_affine L.code_at_timeless
-         L.method_at_persistent L.method_at_affine L.method_at_timeless
-         L.ctor_at_persistent L.ctor_at_affine L.ctor_at_timeless
-         L.dtor_at_persistent L.dtor_at_affine L.dtor_at_timeless
-         L.tptsto_proper_entails
-         L.tptsto_proper_equiv
-         L.tptsto_fractional
-         L.tptsto_as_fractional
-         L.tptsto_timeless
-         LC.has_inv
-         LC.has_cinv
-         LC.has_cppG
-         L.valid_ptr_affine
-         L.valid_ptr_persistent
-         L.valid_ptr_timeless.
+  (** [valid_ptr] *)
+  L.valid_ptr_persistent L.valid_ptr_affine L.valid_ptr_timeless
+
+  (** [tptsto] *)
+  L.tptsto_proper L.tptsto_mono
+  L.tptsto_timeless
+  L.tptsto_fractional L.tptsto_as_fractional
+
+  (** [type_ptr] *)
+  L.type_ptr_persistent
+
+  (** [identity] *)
+  (** PDS: [Fractional], [AsFractional], [Timeless]? *)
+
+  (** [code_at] *)
+  L.code_at_persistent L.code_at_affine L.code_at_timeless
+
+  (** [method_at *)
+  L.method_at_persistent L.method_at_affine L.method_at_timeless
+
+  (** [ctor_at] *)
+  L.ctor_at_persistent L.ctor_at_affine L.ctor_at_timeless
+
+  (** [dtor_at] *)
+  L.dtor_at_persistent L.dtor_at_affine L.dtor_at_timeless
+
+  (** [pinned_ptr] *)
+  L.pinned_ptr_persistent L.pinned_ptr_affine L.pinned_ptr_timeless.
 
 Section with_cpp.
   Context `{Σ : cpp_logic}.
+
+  Global Instance tptsto_flip_mono :
+    Proper (flip genv_leq ==> eq ==> eq ==> eq ==> eq ==> flip (⊢))
+      (@tptsto _ Σ).
+  Proof. repeat intro. exact: tptsto_mono. Qed.
 
   (** function specifications written in weakest pre-condition style.
    *)

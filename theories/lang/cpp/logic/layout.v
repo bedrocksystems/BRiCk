@@ -95,4 +95,3 @@ Section with_Σ.
          anyR (Tarray T_uchar (bytesN sz)) q **
          _type_ptr resolve (Tint sz Unsigned).
 End with_Σ.
-Existing Instance Persistent_type_ptr.
