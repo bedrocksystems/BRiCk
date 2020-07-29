@@ -483,23 +483,17 @@ Module SimpleCPP.
       refine _.
     Defined.
 
-    Theorem tptsto_proper_entails :
-      Proper (genv_leq ==> eq ==> eq ==> eq ==> eq ==> lentails) (@tptsto).
+    Theorem tptsto_mono :
+      Proper (genv_leq ==> eq ==> eq ==> eq ==> eq ==> (⊢)) (@tptsto).
+    Proof. solve_proper. Qed.
+
+    Theorem tptsto_proper :
+      Proper (genv_eq ==> eq ==> eq ==> eq ==> eq ==> (≡)) (@tptsto).
     Proof.
-      do 6 red; intros; subst.
-      unfold tptsto.
-      iIntros "H".
-      iDestruct "H" as (a) "[#De [#Mi Lo]]".
-      iExists (a).
-      iFrame "#".
-      destruct a; try setoid_rewrite H; iFrame.
+      intros σ1 σ2 Hσ ??-> ??-> ??-> ??->.
+      split'; eapply tptsto_mono; eauto; apply Hσ.
     Qed.
-    Theorem tptsto_proper_equiv :
-      Proper (genv_eq ==> eq ==> eq ==> eq ==> eq ==> lequiv) (@tptsto).
-    Proof.
-      do 6 red; intros. split';
-       eapply tptsto_proper_entails; eauto; apply H.
-    Qed.
+
 
     Theorem tptsto_fractional :
       forall {σ} ty p v, Fractional (λ q, @tptsto σ ty q p v).
@@ -656,7 +650,7 @@ Module SimpleCPP.
       1: unshelve eapply mem_injG; apply has_cppG. refine _.
     Defined.
 
-    Theorem Persistent_type_ptr : forall σ p ty,
+    Theorem type_ptr_persistent : forall σ p ty,
         Persistent (type_ptr (resolve:=σ) ty p).
     Proof. refine _. Qed.
 
