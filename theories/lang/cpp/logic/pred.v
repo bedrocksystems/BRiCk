@@ -97,6 +97,10 @@ Module Type CPP_LOGIC (Import CC : CPP_LOGIC_CLASS).
     Axiom tptsto_as_fractional :
       forall {σ} ty q a v, AsFractional (@tptsto σ ty q a v) (λ q, @tptsto σ ty q a v)%I q.
 
+(* not currently sound wrt [simple_pred]
+    Axiom tptsto_agree : forall {σ} ty q1 q2 a v1 v2,
+      @tptsto σ ty q1 a v1 ** @tptsto σ ty q2 a v2 |-- [| v1 = v2 |].
+*)
 
 (* not currently necessary
     Axiom tptsto_valid_ptr : forall σ t q a v,
