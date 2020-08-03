@@ -1,5 +1,4 @@
 find_program (LLVM_CONFIG
-  llvm-config
   NAMES llvm-config-10 llvm-config-9 llvm-config
   DOC "llvm-config program. if this fails, check that you have the -dev dependencies installed")
 
