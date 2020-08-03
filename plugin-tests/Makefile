@@ -12,11 +12,12 @@ NAMES_OPTION=-Xclang -plugin-arg-cpp2v -Xclang -names -Xclang -plugin-arg-cpp2v 
 
 QPATH ?= ../theories
 COQARGS=-Q $(QPATH) bedrock
+CLANGCPP ?= clang++
 
 all: demo_cpp.v demo_cpp.vo demo_cpp_names.vo
 
 demo_cpp.v demo.o demo_cpp_names.v: demo.cpp $(CPP2V_PLUGIN)
-	clang++ $(LOAD_PLUGIN) $(OUT_OPTION) demo_cpp.v $(NAMES_OPTION) demo_cpp_names.v $< -c
+	$(CLANGCPP) $(LOAD_PLUGIN) $(OUT_OPTION) demo_cpp.v $(NAMES_OPTION) demo_cpp_names.v $< -c
 
 demo_cpp.vo: demo_cpp.v
 	coqc $(COQARGS) demo_cpp.v
