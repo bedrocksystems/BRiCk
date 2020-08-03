@@ -8,6 +8,10 @@ set(CMAKE_MODULE_PATH
   "${CMAKE_SOURCE_DIR}/cmake/modules"
 )
 
+# Picks the newest version of clang, see https://github.com/CastXML/CastXML/issues/148
+set(CMAKE_FIND_PACKAGE_SORT_ORDER NATURAL)
+set(CMAKE_FIND_PACKAGE_SORT_DIRECTION DEC)
+
 find_package(LibClangTooling REQUIRED)
 find_package(ClangPlugin REQUIRED)
 
