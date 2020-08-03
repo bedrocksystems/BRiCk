@@ -55,7 +55,7 @@ Proof. by rewrite -pair_op agree_idemp. Qed.
 
 Definition _Z_to_bytes_le {σ:genv} (n : nat) (v : Z) : list N :=
   let p := Z.modulo v (2 ^ Z.of_nat n) in
-  map (fun i : nat => Z.to_N (Z.land 255 (Z.shiftr p (8 * i)))) $ seq 0 n.
+  map (fun i : nat => Z.to_N (Z.land 255 (Z.shiftr p (8 * i)))) $ @seq 0 n.
 
 Definition _Z_to_bytes {σ:genv} (n : nat) (v : Z) : list N :=
   let little := _Z_to_bytes_le (σ:=σ) n v in
