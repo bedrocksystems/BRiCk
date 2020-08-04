@@ -50,18 +50,21 @@ export PATH=/usr/local/opt/llvm/bin:${PATH}
 
 ### Build
 
-Then:
+The script below uses 4 cores, customize as needed.
 ```sh
 # install opam dependencies
 eval $(opam env)
 opam repo add coq-released https://coq.inria.fr/opam/released
 opam repo add iris-dev https://gitlab.mpi-sws.org/iris/opam.git
 opam pin -n coq 8.11.2
-opam install -j3 coq coq-ext-lib coq-lens coq-iris.3.3.0 coq-iris-string-ident.0.1.0
+opam install -j4 coq coq-ext-lib coq-lens coq-iris.3.3.0 coq-iris-string-ident.0.1.0
 # install cpp2v-core
-make coq cpp2v && make install
-# to build the cpp2v-core plugin, do:
-make plugin
+make -j4 coq cpp2v && make install
+```
+
+If you want to build the cpp2v-core plugin, do:
+```
+make -j4 plugin
 ```
 
 ## Examples
