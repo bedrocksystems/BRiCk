@@ -9,6 +9,7 @@ authors: ["Gregory Malecha <gregory@bedrocksystems.com>"
           "Gordon Stewart <gordon@bedrocksystems.com>"]
 homepage: "https://github.com/bedrocksystems/cpp2v"
 bug-reports: "https://github.com/bedrocksystems/cpp2v/issues"
+dev-repo: "git+https://github.com/bedrocksystems/cpp2v.git"
 
 depends: [
   "coq" { >= "8.11.2" & < "8.11.3" }
