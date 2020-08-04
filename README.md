@@ -29,10 +29,26 @@ They must be run inside a clone of this repository.
 
 Our instructions are for Linux (Ubuntu) and OSX.
 
-### Coq dependencies
+- LLVM 10
+- cmake
+- [opam 2](https://opam.ocaml.org/)
 
-Install [opam 2](https://opam.ocaml.org/), for instance with `sudo apt install
-opam` or `brew install opam`.
+### Native dependencies: Linux (Ubuntu)
+
+```sh
+sudo apt install llvm-10-dev clang-tools-10 libclang-10-dev cmake
+sudo apt install opam
+```
+
+### Native dependencies: OSX
+
+
+```sh
+brew install llvm cmake opam zlib
+export PATH=/usr/local/opt/llvm/bin:${PATH}
+```
+
+### Build
 
 Then:
 ```sh
@@ -42,23 +58,6 @@ opam repo add coq-released https://coq.inria.fr/opam/released
 opam repo add iris-dev https://gitlab.mpi-sws.org/iris/opam.git
 opam pin -n coq 8.11.2
 opam install -j3 coq coq-ext-lib coq-lens coq-iris.3.3.0 coq-iris-string-ident.0.1.0
-```
-
-### Linux (Ubuntu)
-
-```sh
-sudo apt install llvm-9 llvm-9-dev clang-9 libclang-9-dev cmake
-# install cpp2v-core
-make coq cpp2v && make install
-# to build the cpp2v-core plugin, do:
-make plugin
-```
-
-### OSX
-
-```sh
-brew install llvm cmake opam zlib
-export PATH=/usr/local/opt/llvm/bin:${PATH}
 # install cpp2v-core
 make coq cpp2v && make install
 # to build the cpp2v-core plugin, do:
