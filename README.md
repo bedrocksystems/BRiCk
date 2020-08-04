@@ -44,7 +44,7 @@ sudo apt install opam
 
 
 ```sh
-brew install llvm cmake opam zlib
+brew install llvm cmake opam
 export PATH=/usr/local/opt/llvm/bin:${PATH}
 ```
 
