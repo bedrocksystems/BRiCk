@@ -56,10 +56,12 @@ The script below uses 4 cores, customize as needed.
 eval $(opam env)
 opam repo add coq-released https://coq.inria.fr/opam/released
 opam repo add iris-dev https://gitlab.mpi-sws.org/iris/opam.git
+# install cpp2v Coq library and Coq dependencies
 opam pin -n coq 8.11.2
 opam install -j4 coq coq-ext-lib coq-lens coq-iris.3.3.0 coq-iris-string-ident.0.1.0
-# install cpp2v-core
-make -j4 coq cpp2v && make install
+make -j4 coq && make install-coq
+# install cpp2v binary
+make -j4 cpp2v && make install-cpp2v
 ```
 
 If you want to build the cpp2v-core plugin, do:
