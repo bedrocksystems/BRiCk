@@ -40,8 +40,8 @@ Then:
 eval $(opam env)
 opam repo add coq-released https://coq.inria.fr/opam/released
 opam repo add iris-dev https://gitlab.mpi-sws.org/iris/opam.git
-opam pin -n coq 8.11.0
-opam install -j3 coq coq-ext-lib coq-lens coq-iris.3.3.0
+opam pin -n coq 8.11.2
+opam install -j3 coq coq-ext-lib coq-lens coq-iris.3.3.0 coq-iris-string-ident.0.1.0
 ```
 
 ### Linux (Ubuntu)
