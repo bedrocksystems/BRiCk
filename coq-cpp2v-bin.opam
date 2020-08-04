@@ -1,0 +1,21 @@
+opam-version: "2.0"
+name: "cpp2v-bin"
+synopsis: "Binary packages for cpp2v"
+maintainer: ["Gregory Malecha <gregory@bedrocksystems.com>"
+             "Abhishek Anand <abhishek@bedrocksystems.com>"
+             "Gordon Stewart <gordon@bedrocksystems.com>"]
+authors: ["Gregory Malecha <gregory@bedrocksystems.com>"
+          "Abhishek Anand <abhishek@bedrocksystems.com>"
+          "Gordon Stewart <gordon@bedrocksystems.com>"]
+homepage: "https://github.com/bedrocksystems/cpp2v"
+bug-reports: "https://github.com/bedrocksystems/cpp2v/issues"
+dev-repo: "git+https://github.com/bedrocksystems/cpp2v.git"
+
+depends: [
+  "conf-clang"
+]
+
+build: [
+  [make "cpp2v"]
+  [make "plugin"]
+]
