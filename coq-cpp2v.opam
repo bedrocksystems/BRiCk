@@ -11,10 +11,11 @@ homepage: "https://github.com/bedrocksystems/cpp2v"
 bug-reports: "https://github.com/bedrocksystems/cpp2v/issues"
 
 depends: [
-  "coq" { >= "8.11" & < "8.12~" }
-  "coq-ext-lib" { >= "0.11.0" }
+  "coq" { >= "8.11.2" & < "8.11.3" }
+  "coq-ext-lib" { = "0.11.1" }
   "coq-lens" { = "1.0.0" }
   "coq-iris" { = "3.3.0" }
+  "coq-iris-string-ident" { = "0.1.0" }
 ]
 
 build: [ make "-j%{jobs}%" "coq" ]
