@@ -16,6 +16,5 @@ depends: [
 ]
 
 build: [
-  [make "-j%{jobs}%" "cpp2v"]
-  [make "-j%{jobs}%" "plugin"]
+  [make "-j%{jobs}%" "cpp2v" "plugin"]
 ]
