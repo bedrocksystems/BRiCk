@@ -79,7 +79,7 @@ Module Type Expr.
 
     (* boolean literals are prvalues *)
     Axiom wp_prval_bool : forall (b : bool) Q,
-      Q (Vint (if b then 1 else 0)) empSP
+      Q (Vbool b) empSP
       |-- wp_prval (Ebool b) Q.
 
     (* `this` is a prvalue *)
