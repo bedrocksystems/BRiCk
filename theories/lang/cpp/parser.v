@@ -27,11 +27,22 @@ Definition NStop : list ident := nil.
 Bind Scope Z_scope with Z.
 
 Declare Custom Entry cppglobal.
+
 Declare Scope cppfield_scope.
 Delimit Scope cppfield_scope with field.
 Bind Scope cppfield_scope with field.
-
 Notation "` e `" := e (e custom cppglobal at level 200, at level 0) : cppfield_scope.
+
+(** Importing [cpp_notation] makes cpp2v-generated names generally
+available as, e.g., [``::MyClass``]. *)
+Module cpp_notation.
+  Declare Scope cpp_scope.
+  Delimit Scope cpp_scope with cpp.
+  Notation "'``' e '``'" := e
+    (at level 0, e custom cppglobal at level 200,
+     format "`` e ``") : cpp_scope.
+  Open Scope cpp_scope.
+End cpp_notation.
 
 
 (** this is the compatibility layer, cpp2v generates these definitions
