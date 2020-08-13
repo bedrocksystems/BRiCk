@@ -9,7 +9,7 @@
 Require Import Coq.Lists.List.
 Require Import iris.bi.monpred.
 Require Import iris.base_logic.lib.fancy_updates.
-From iris.proofmode Require Import tactics.
+From iris.proofmode Require Import tactics classes.
 
 From bedrock.lang.cpp Require Import
      ast semantics logic.pred.
@@ -59,6 +59,41 @@ Section with_cpp.
          iIntros (v). iIntros (f). iApply H4.
   Qed.
 
+  Section wp_lval.
+    Local Close Scope bi_scope.
+    Context {σ : genv} (M : coPset) (ti : thread_info) (ρ : region) (e : Expr).
+    Local Notation WP := (wp_lval (resolve:=σ) M ti ρ e) (only parsing).
+    Implicit Types P : mpred.
+    Implicit Types Q : val → FreeTemps → epred.
+
+    Lemma wp_lval_wand Q1 Q2 : WP Q1 |-- (∀ v f, Q1 v f -* Q2 v f) -* WP Q2.
+    Proof. iIntros "Hwp HK". by iApply (wp_lval_frame with "HK Hwp"). Qed.
+    Lemma fupd_wp_lval Q : (|={M}=> WP Q) |-- WP Q.
+    Proof.
+      rewrite -{2}wp_lval_shift. apply fupd_elim. rewrite -fupd_intro.
+      iIntros "Hwp". iApply (wp_lval_wand with "Hwp"). auto.
+    Qed.
+    Lemma wp_lval_fupd Q : WP (λ v f, |={M}=> Q v f) |-- WP Q.
+    Proof. iIntros "Hwp". by iApply (wp_lval_shift with "[$Hwp]"). Qed.
+
+    (* proof mode *)
+    Global Instance elim_modal_fupd_wp_lval p P Q :
+      ElimModal True p false (|={M}=> P) P (WP Q) (WP Q).
+    Proof.
+      rewrite /ElimModal. rewrite bi.intuitionistically_if_elim/=.
+      by rewrite fupd_frame_r bi.wand_elim_r fupd_wp_lval.
+    Qed.
+    Global Instance elim_modal_bupd_wp_lval p P Q :
+      ElimModal True p false (|==> P) P (WP Q) (WP Q).
+    Proof.
+      rewrite /ElimModal (bupd_fupd M). exact: elim_modal_fupd_wp_lval.
+    Qed.
+    Global Instance add_modal_fupd_wp_lval P Q : AddModal (|={M}=> P) P (WP Q).
+    Proof.
+      rewrite/AddModal. by rewrite fupd_frame_r bi.wand_elim_r fupd_wp_lval.
+    Qed.
+  End wp_lval.
+
   (* evaluate an expression as an prvalue *)
   Parameter wp_prval
     : forall {resolve:genv}, coPset -> thread_info -> region ->
@@ -83,6 +118,41 @@ Section with_cpp.
          iApply wp_prval_frame; eauto.
          iIntros (v); iIntros (f); iApply H4.
   Qed.
+
+  Section wp_prval.
+    Local Close Scope bi_scope.
+    Context {σ : genv} (M : coPset) (ti : thread_info) (ρ : region) (e : Expr).
+    Local Notation WP := (wp_prval (resolve:=σ) M ti ρ e) (only parsing).
+    Implicit Types P : mpred.
+    Implicit Types Q : val → FreeTemps → epred.
+
+    Lemma wp_prval_wand Q1 Q2 : WP Q1 |-- (∀ v f, Q1 v f -* Q2 v f) -* WP Q2.
+    Proof. iIntros "Hwp HK". by iApply (wp_prval_frame with "HK Hwp"). Qed.
+    Lemma fupd_wp_prval Q : (|={M}=> WP Q) |-- WP Q.
+    Proof.
+      rewrite -{2}wp_prval_shift. apply fupd_elim. rewrite -fupd_intro.
+      iIntros "Hwp". iApply (wp_prval_wand with "Hwp"). auto.
+    Qed.
+    Lemma wp_prval_fupd Q : WP (λ v f, |={M}=> Q v f) |-- WP Q.
+    Proof. iIntros "Hwp". by iApply (wp_prval_shift with "[$Hwp]"). Qed.
+
+    (* proof mode *)
+    Global Instance elim_modal_fupd_wp_prval p P Q :
+      ElimModal True p false (|={M}=> P) P (WP Q) (WP Q).
+    Proof.
+      rewrite /ElimModal. rewrite bi.intuitionistically_if_elim/=.
+      by rewrite fupd_frame_r bi.wand_elim_r fupd_wp_prval.
+    Qed.
+    Global Instance elim_modal_bupd_wp_prval p P Q :
+      ElimModal True p false (|==> P) P (WP Q) (WP Q).
+    Proof.
+      rewrite /ElimModal (bupd_fupd M). exact: elim_modal_fupd_wp_prval.
+    Qed.
+    Global Instance add_modal_fupd_wp_prval P Q : AddModal (|={M}=> P) P (WP Q).
+    Proof.
+      rewrite/AddModal. by rewrite fupd_frame_r bi.wand_elim_r fupd_wp_prval.
+    Qed.
+  End wp_prval.
 
   (* evaluate an initializing expression
    * - the [val] is the location of the value that is being initialized
@@ -114,6 +184,42 @@ Section with_cpp.
     iIntros (f); iApply H6.
   Qed.
 
+  Section wp_init.
+    Local Close Scope bi_scope.
+    Context {σ : genv} (M : coPset) (ti : thread_info) (ρ : region)
+      (t : type) (v : val) (e : Expr).
+    Local Notation WP := (wp_init (resolve:=σ) M ti ρ t v e) (only parsing).
+    Implicit Types P : mpred.
+    Implicit Types Q : FreeTemps → epred.
+
+    Lemma wp_init_wand Q1 Q2 : WP Q1 |-- (∀ f, Q1 f -* Q2 f) -* WP Q2.
+    Proof. iIntros "Hwp HK". by iApply (wp_init_frame with "HK Hwp"). Qed.
+    Lemma fupd_wp_init Q : (|={M}=> WP Q) |-- WP Q.
+    Proof.
+      rewrite -{2}wp_init_shift. apply fupd_elim. rewrite -fupd_intro.
+      iIntros "Hwp". iApply (wp_init_wand with "Hwp"). auto.
+    Qed.
+    Lemma wp_init_fupd Q : WP (λ f, |={M}=> Q f) |-- WP Q.
+    Proof. iIntros "Hwp". by iApply (wp_init_shift with "[$Hwp]"). Qed.
+
+    (* proof mode *)
+    Global Instance elim_modal_fupd_wp_init p P Q :
+      ElimModal True p false (|={M}=> P) P (WP Q) (WP Q).
+    Proof.
+      rewrite /ElimModal. rewrite bi.intuitionistically_if_elim/=.
+      by rewrite fupd_frame_r bi.wand_elim_r fupd_wp_init.
+    Qed.
+    Global Instance elim_modal_bupd_wp_init p P Q :
+      ElimModal True p false (|==> P) P (WP Q) (WP Q).
+    Proof.
+      rewrite /ElimModal (bupd_fupd M). exact: elim_modal_fupd_wp_init.
+    Qed.
+    Global Instance add_modal_fupd_wp_init P Q : AddModal (|={M}=> P) P (WP Q).
+    Proof.
+      rewrite/AddModal. by rewrite fupd_frame_r bi.wand_elim_r fupd_wp_init.
+    Qed.
+  End wp_init.
+
   (* evaluate an expression as an xvalue *)
   Parameter wp_xval
     : forall {resolve:genv}, coPset -> thread_info -> region ->
@@ -138,6 +244,43 @@ Section with_cpp.
          iApply wp_xval_frame; eauto.
          iIntros (v); iIntros (f); iApply H4.
   Qed.
+
+  Section wp_xval.
+    Local Close Scope bi_scope.
+    Context {σ : genv} (M : coPset) (ti : thread_info) (ρ : region) (e : Expr).
+    Local Notation WP := (wp_xval (resolve:=σ) M ti ρ e) (only parsing).
+    Implicit Types P : mpred.
+    Implicit Types Q : val → FreeTemps → epred.
+
+    Lemma wp_xval_wand Q1 Q2 : WP Q1 |-- (∀ v f, Q1 v f -* Q2 v f) -* WP Q2.
+    Proof. iIntros "Hwp HK". by iApply (wp_xval_frame with "HK Hwp"). Qed.
+    Lemma fupd_wp_xval Q : (|={M}=> WP Q) |-- WP Q.
+    Proof.
+      rewrite -{2}wp_xval_shift. apply fupd_elim. rewrite -fupd_intro.
+      iIntros "Hwp". iApply (wp_xval_wand with "Hwp"). auto.
+    Qed.
+    Lemma wp_xval_fupd Q : WP (λ v f, |={M}=> Q v f) |-- WP Q.
+    Proof. iIntros "Hwp". by iApply (wp_xval_shift with "[$Hwp]"). Qed.
+
+    (* proof mode *)
+    Global Instance elim_modal_fupd_wp_xval p P Q :
+      ElimModal True p false (|={M}=> P) P (WP Q) (WP Q).
+    Proof.
+      rewrite /ElimModal. rewrite bi.intuitionistically_if_elim/=.
+      by rewrite fupd_frame_r bi.wand_elim_r fupd_wp_xval.
+    Qed.
+    Global Instance elim_modal_bupd_wp_xval p P Q :
+      ElimModal True p false (|==> P) P (WP Q) (WP Q).
+    Proof.
+      rewrite /ElimModal (bupd_fupd M). exact: elim_modal_fupd_wp_xval.
+    Qed.
+    Global Instance add_modal_fupd_wp_xval P Q : AddModal (|={M}=> P) P (WP Q).
+    Proof.
+      rewrite/AddModal. by rewrite fupd_frame_r bi.wand_elim_r fupd_wp_xval.
+    Qed.
+  End wp_xval.
+
+  (* evaluate an expression as a generalized lvalue *)
 
   Definition wp_glval {resolve} M ti (r : region) e Q :=
     @wp_lval resolve M ti r e Q \\// @wp_xval resolve M ti r e Q.
@@ -169,6 +312,21 @@ Section with_cpp.
     eapply Proper_wp_xval; eauto.
   Qed.
 
+  Section wp_glval.
+    Context {σ : genv} (M : coPset) (ti : thread_info) (ρ : region) (e : Expr).
+    Local Notation WP := (wp_glval (resolve:=σ) M ti ρ e) (only parsing).
+    Implicit Types Q : val → FreeTemps → epred.
+
+    Lemma wp_glval_wand Q1 Q2 : WP Q1 |-- (∀ v f, Q1 v f -* Q2 v f) -* WP Q2.
+    Proof. iIntros "Hwp HK". by iApply (wp_glval_frame with "HK Hwp"). Qed.
+    Lemma wp_glval_fupd Q : WP (λ v f, |={M}=> Q v f) |-- WP Q.
+    Proof.
+      iIntros "[?|?]".
+      by iLeft; iApply wp_lval_fupd. by iRight; iApply wp_xval_fupd.
+    Qed.
+  End wp_glval.
+
+  (* evaluate an expression as an rvalue *)
 
   Definition wp_rval {resolve} M ti (r : region) e Q :=
     @wp_prval resolve M ti r e Q \\// @wp_xval resolve M ti r e Q.
@@ -199,6 +357,20 @@ Section with_cpp.
     eapply Proper_wp_prval; eauto.
     eapply Proper_wp_xval; eauto.
   Qed.
+
+  Section wp_rval.
+    Context {σ : genv} (M : coPset) (ti : thread_info) (ρ : region) (e : Expr).
+    Local Notation WP := (wp_rval (resolve:=σ) M ti ρ e) (only parsing).
+    Implicit Types Q : val → FreeTemps → epred.
+
+    Lemma wp_rval_wand Q1 Q2 : WP Q1 |-- (∀ v f, Q1 v f -* Q2 v f) -* WP Q2.
+    Proof. iIntros "Hwp HK". by iApply (wp_rval_frame with "HK Hwp"). Qed.
+    Lemma wp_rval_fupd Q : WP (λ v f, |={M}=> Q v f) |-- WP Q.
+    Proof.
+      iIntros "[?|?]".
+      by iLeft; iApply wp_prval_fupd. by iRight; iApply wp_xval_fupd.
+    Qed.
+  End wp_rval.
 
   Section wpe.
     Context {resolve:genv}.
@@ -243,6 +415,42 @@ Section with_cpp.
          iIntros (f); iApply H6. reflexivity.
   Qed.
 
+  Section wpi.
+    Local Close Scope bi_scope.
+    Context {σ : genv} (M : coPset) (ti : thread_info) (ρ : region)
+      (cls : globname) (this : val) (init : Initializer).
+    Local Notation WP := (wpi (resolve:=σ) M ti ρ cls this init) (only parsing).
+    Implicit Types P : mpred.
+    Implicit Types k : mpred → mpred.
+
+    Lemma wpi_wand k1 k2 : WP k1 |-- (∀ Q, k1 Q -* k2 Q) -* WP k2.
+    Proof. iIntros "Hwp HK". by iApply (wpi_frame with "HK Hwp"). Qed.
+    Lemma fupd_wpi k : (|={M}=> WP k) |-- WP k.
+    Proof.
+      rewrite -{2}wpi_shift. apply fupd_elim. rewrite -fupd_intro.
+      iIntros "Hwp". iApply (wpi_wand with "Hwp"). auto.
+    Qed.
+    Lemma wpi_fupd k : WP (λ Q, |={M}=> k Q) |-- WP k.
+    Proof. iIntros "Hwp". by iApply (wpi_shift with "[$Hwp]"). Qed.
+
+    (* proof mode *)
+    Global Instance elim_modal_fupd_wpi p P k :
+      ElimModal True p false (|={M}=> P) P (WP k) (WP k).
+    Proof.
+      rewrite /ElimModal. rewrite bi.intuitionistically_if_elim/=.
+      by rewrite fupd_frame_r bi.wand_elim_r fupd_wpi.
+    Qed.
+    Global Instance elim_modal_bupd_wpi p P k :
+      ElimModal True p false (|==> P) P (WP k) (WP k).
+    Proof.
+      rewrite /ElimModal (bupd_fupd M). exact: elim_modal_fupd_wpi.
+    Qed.
+    Global Instance add_modal_fupd_wpi P k : AddModal (|={M}=> P) P (WP k).
+    Proof.
+      rewrite/AddModal. by rewrite fupd_frame_r bi.wand_elim_r fupd_wpi.
+    Qed.
+  End wpi.
+
   (** destructors *)
   Parameter wpd
     : forall {resolve:genv} (M : coPset) (ti : thread_info) (ρ : region)
@@ -267,6 +475,41 @@ Section with_cpp.
          iApply H6.
   Qed.
 
+  Section wpd.
+    Local Close Scope bi_scope.
+    Context {σ : genv} (M : coPset) (ti : thread_info) (ρ : region)
+      (cls : globname) (this : val) (init : FieldOrBase * obj_name).
+    Local Notation WP := (wpd (resolve:=σ) M ti ρ cls this init) (only parsing).
+    Implicit Types P : mpred.
+    Implicit Types k : mpred.
+
+    Lemma wpd_wand k1 k2 : WP k1 |-- (k1 -* k2) -* WP k2.
+    Proof. iIntros "Hwp HK". by iApply (wpd_frame with "HK Hwp"). Qed.
+    Lemma fupd_wpd k : (|={M}=> WP k) |-- WP k.
+    Proof.
+      rewrite -{2}wpd_shift. apply fupd_elim. rewrite -fupd_intro.
+      iIntros "Hwp". iApply (wpd_wand with "Hwp"). auto.
+    Qed.
+    Lemma wpd_fupd k : WP (|={M}=> k) |-- WP k.
+    Proof. iIntros "Hwp". by iApply (wpd_shift with "[$Hwp]"). Qed.
+
+    (* proof mode *)
+    Global Instance elim_modal_fupd_wpd p P k :
+      ElimModal True p false (|={M}=> P) P (WP k) (WP k).
+    Proof.
+      rewrite /ElimModal. rewrite bi.intuitionistically_if_elim/=.
+      by rewrite fupd_frame_r bi.wand_elim_r fupd_wpd.
+    Qed.
+    Global Instance elim_modal_bupd_wpd p P k :
+      ElimModal True p false (|==> P) P (WP k) (WP k).
+    Proof.
+      rewrite /ElimModal (bupd_fupd M). exact: elim_modal_fupd_wpd.
+    Qed.
+    Global Instance add_modal_fupd_wpd P k : AddModal (|={M}=> P) P (WP k).
+    Proof.
+      rewrite/AddModal. by rewrite fupd_frame_r bi.wand_elim_r fupd_wpd.
+    Qed.
+  End wpd.
 
   (** Statements *)
   (* continuations
@@ -388,6 +631,50 @@ Section with_cpp.
          iIntros. iApply H1; eauto.
   Qed.
 
+  Section wp.
+    Context {σ : genv} (M : coPset) (ti : thread_info) (ρ : region) (s : Stmt).
+    Local Notation WP := (wp (resolve:=σ) M ti ρ s) (only parsing).
+    Implicit Types P : mpred.
+    Implicit Types Q : Kpreds.
+
+    Lemma wp_wand k1 k2 :
+      WP k1 |--
+      (* PDS: This conjunction shows up in several places and may
+      deserve a definition and some supporting lemmas. *)
+      ((k_normal k1 -* k_normal k2) ∧
+      (∀ mv f, k_return k1 mv f -* k_return k2 mv f) ∧
+      (k_break k1 -* k_break k2) ∧
+      (k_continue k1 -* k_continue k2)) -*
+      WP k2.
+    Proof.
+      iIntros "Hwp Hk". by iApply (wp_frame σ _ _ _ _ _ k1 with "[$Hk] Hwp").
+    Qed.
+    Lemma fupd_wp k : (|={M}=> WP k) |-- WP k.
+    Proof.
+      rewrite -{2}wp_shift. apply fupd_elim. rewrite -fupd_intro.
+      iIntros "Hwp". iApply (wp_wand with "Hwp"). auto.
+    Qed.
+    Lemma wp_fupd k : WP (|={M}=> k) |-- WP k.
+    Proof. iIntros "Hwp". by iApply (wp_shift with "[$Hwp]"). Qed.
+
+    (* proof mode *)
+    Global Instance elim_modal_fupd_wp p P k :
+      ElimModal True p false (|={M}=> P) P (WP k) (WP k).
+    Proof.
+      rewrite /ElimModal. rewrite bi.intuitionistically_if_elim/=.
+      by rewrite fupd_frame_r bi.wand_elim_r fupd_wp.
+    Qed.
+    Global Instance elim_modal_bupd_wp p P k :
+      ElimModal True p false (|==> P) P (WP k) (WP k).
+    Proof.
+      rewrite /ElimModal (bupd_fupd M). exact: elim_modal_fupd_wp.
+    Qed.
+    Global Instance add_modal_fupd_wp P k : AddModal (|={M}=> P) P (WP k).
+    Proof.
+      rewrite/AddModal. by rewrite fupd_frame_r bi.wand_elim_r fupd_wp.
+    Qed.
+  End wp.
+
   (* this is the specification of assembly code
    *
    * [addr] represents the address of the entry point of the code.
@@ -405,6 +692,15 @@ Section with_cpp.
          iIntros "X"; iRevert "X"; iApply fspec_frame.
          iIntros (v); iApply H.
   Qed.
+
+  Section fspec.
+    Context (ti : thread_info) (addr : val) (ls : list val).
+    Local Notation WP := (fspec ti addr ls) (only parsing).
+    Implicit Types Q : val → epred.
+
+    Lemma fspec_wand Q1 Q2 : WP Q1 |-- (∀ v, Q1 v -* Q2 v) -* WP Q2.
+    Proof. iIntros "Hwp HK". by iApply (fspec_frame with "HK Hwp"). Qed.
+  End fspec.
 
 End with_cpp.
 
