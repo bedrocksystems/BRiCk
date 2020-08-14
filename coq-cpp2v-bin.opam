@@ -14,6 +14,7 @@ dev-repo: "git+https://github.com/bedrocksystems/cpp2v.git"
 depends: [
   "conf-clang"
 ]
+version: "dev"
 
 build: [
   [make "-j%{jobs}%" "cpp2v"]
