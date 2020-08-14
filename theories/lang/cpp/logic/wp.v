@@ -392,6 +392,34 @@ Section with_cpp.
     Definition wpAnys := fun ve Q free => wpAny ve (fun v f => Q v (f ** free)).
   End wpe.
 
+  Lemma wpe_frame σ1 σ2 M ti ρ vc e k1 k2:
+    genv_leq σ1 σ2 ->
+    Forall v f, k1 v f -* k2 v f |-- wpe (resolve := σ1) M ti ρ vc e k1 -* wpe (resolve:=σ2) M ti ρ vc e k2.
+  Proof. destruct vc => /=; by [apply wp_lval_frame| apply wp_prval_frame | apply wp_xval_frame ]. Qed.
+
+  Global Instance Proper_wpe :
+    Proper (genv_leq ==> eq ==> eq ==> eq ==> eq ==> eq ==> (eq ==> lentails ==> lentails) ==> lentails)
+           (@wpe).
+  Proof.
+    do 9 red; intros; subst.
+    iIntros "X"; iRevert "X"; iApply wpe_frame; eauto.
+    iIntros (v f); iApply H5; reflexivity.
+  Qed.
+
+  Lemma wpAny_frame σ1 σ2 M ti ρ e k1 k2:
+    genv_leq σ1 σ2 ->
+    Forall v f, k1 v f -* k2 v f |-- wpAny (resolve := σ1) M ti ρ e k1 -* wpAny (resolve:=σ2) M ti ρ e k2.
+  Proof. destruct e; apply: wpe_frame. Qed.
+
+  Global Instance Proper_wpAny :
+    Proper (genv_leq ==> eq ==> eq ==> eq ==> eq ==> (eq ==> lentails ==> lentails) ==> lentails)
+           (@wpAny).
+  Proof.
+    do 9 red; intros; subst.
+    iIntros "X"; iRevert "X"; iApply wpAny_frame; eauto.
+    iIntros (v f); iApply H4; reflexivity.
+  Qed.
+
   (** initializers *)
   Parameter wpi
     : forall {resolve:genv} (M : coPset) (ti : thread_info) (ρ : region)
