@@ -202,54 +202,64 @@ Section with_Σ.
       |-- wp_atom' AO__atomic_compare_exchange ty
                   (val_p::succmemord::expected_p::failmemord::desired_p::wk::nil) Q.
 
+  (** Atomic operations use two's complement arithmetic. This
+  definition presupposes that the [n_i] satisfy [n_i = n_i `mod` 2 ^
+  bitsZ sz], which the following axioms ensure via typing
+  side-conditions. *)
+  Definition atomic_eval (sz : bitsize) (sgn : signed)
+      (op : Z -> Z -> Z) (n1 n2 : Z) : Z :=
+    let r := op n1 n2 in
+    if sgn is Signed then to_signed sz r else to_unsigned sz r.
+
+  Local Notation Unfold x tm :=
+    ltac:(let H := eval unfold x in tm in exact H) (only parsing).
+  Local Notation at_eval sz sgn op n1 n2 :=
+    (Unfold atomic_eval (atomic_eval sz sgn op n1 n2)) (only parsing).
+
   (* atomic fetch and xxx rule *)
-  Definition wp_fetch_xxx ao (op : Z -> Z -> Z) : Prop :=
-    forall E pls memorder Q sz sgn,
+  Definition wp_fetch_xxx (ao : AtomicOp) (op : Z -> Z -> Z) : Prop :=
+    forall val_p arg memorder Q sz sgn,
       let acc_type := Tint sz sgn in
       ([| memorder = _SEQ_CST |] **
-       Exists v,
-       |> _at (_eqv E) (primR acc_type 1 (Vint v)) **
-       |> let v' :=
-              let v' := op (to_unsigned sz v) pls in
-              if sgn then to_signed sz v' else to_unsigned sz v'
-          in
-          _at (_eqv E) (primR acc_type 1 (Vint v')) -* Q (Vint v))
-      |-- wp_atom' ao acc_type (E::memorder::Vint pls::nil) Q.
+       [| has_type (Vint arg) acc_type |] **
+       Exists n,
+       |> _at (_eqv val_p) (primR acc_type 1 (Vint n)) **
+       |> let n' := at_eval sz sgn op n arg in
+          _at (_eqv val_p) (primR acc_type 1 (Vint n')) -* Q (Vint n))
+      |-- wp_atom' ao acc_type (val_p::memorder::Vint arg::nil) Q.
 
-  Ltac fetch_xxx ao op :=
-    let G := eval unfold wp_fetch_xxx in (wp_fetch_xxx ao op) in exact G.
+  Local Notation fetch_xxx ao op :=
+    (Unfold wp_fetch_xxx (wp_fetch_xxx ao op)) (only parsing).
 
   Let nand (a b : Z) : Z := Z.lnot (Z.land a b).
 
-  Axiom wp_atom_fetch_add  : ltac:(fetch_xxx AO__atomic_fetch_add Z.add).
-  Axiom wp_atom_fetch_sub  : ltac:(fetch_xxx AO__atomic_fetch_sub Z.sub).
-  Axiom wp_atom_fetch_and  : ltac:(fetch_xxx AO__atomic_fetch_and Z.land).
-  Axiom wp_atom_fetch_xor  : ltac:(fetch_xxx AO__atomic_fetch_xor Z.lxor).
-  Axiom wp_atom_fetch_or   : ltac:(fetch_xxx AO__atomic_fetch_or  Z.lor).
-  Axiom wp_atom_fetch_nand : ltac:(fetch_xxx AO__atomic_fetch_or  nand).
+  Axiom wp_atom_fetch_add  : fetch_xxx AO__atomic_fetch_add  Z.add.
+  Axiom wp_atom_fetch_sub  : fetch_xxx AO__atomic_fetch_sub  Z.sub.
+  Axiom wp_atom_fetch_and  : fetch_xxx AO__atomic_fetch_and  Z.land.
+  Axiom wp_atom_fetch_xor  : fetch_xxx AO__atomic_fetch_xor  Z.lxor.
+  Axiom wp_atom_fetch_or   : fetch_xxx AO__atomic_fetch_or   Z.lor.
+  Axiom wp_atom_fetch_nand : fetch_xxx AO__atomic_fetch_nand nand.
 
   (* atomic xxx and fetch rule *)
-  Definition wp_xxx_fetch ao (op : Z -> Z -> Z) : Prop :=
-    forall E pls memorder Q sz sgn,
+  Definition wp_xxx_fetch (ao : AtomicOp) (op : Z -> Z -> Z) : Prop :=
+    forall val_p arg memorder Q sz sgn,
       let acc_type := Tint sz sgn in
       ([| memorder = _SEQ_CST |] **
-       Exists v,
-       |> _at (_eqv E) (primR acc_type 1 (Vint v)) **
-       |> let v' :=
-              let v' := op (to_unsigned sz v) pls in
-              if sgn then to_signed sz v' else to_unsigned sz v'
-          in
-          _at (_eqv E) (primR acc_type 1 (Vint v')) -* Q (Vint v'))
-      |-- wp_atom' ao acc_type (E::memorder::Vint pls::nil) Q.
+       [| has_type (Vint arg) acc_type |] **
+       Exists n,
+       |> _at (_eqv val_p) (primR acc_type 1 (Vint n)) **
+       |> let n' := at_eval sz sgn op n arg in
+          _at (_eqv val_p) (primR acc_type 1 (Vint n')) -* Q (Vint n'))
+      |-- wp_atom' ao acc_type (val_p::memorder::Vint arg::nil) Q.
 
-  Ltac xxx_fetch ao op :=
-    let G := eval unfold wp_xxx_fetch in (wp_xxx_fetch ao op) in exact G.
+  Local Notation xxx_fetch ao op :=
+    (Unfold wp_xxx_fetch (wp_xxx_fetch ao op)) (only parsing).
 
-  Axiom wp_atom_add_fetch : ltac:(xxx_fetch AO__atomic_add_fetch Z.add).
-  Axiom wp_atom_sub_fetch : ltac:(xxx_fetch AO__atomic_sub_fetch Z.sub).
-  Axiom wp_atom_and_fetch : ltac:(xxx_fetch AO__atomic_and_fetch Z.land).
-  Axiom wp_atom_xor_fetch : ltac:(xxx_fetch AO__atomic_xor_fetch Z.lxor).
-  Axiom wp_atom_or_fetch  : ltac:(xxx_fetch AO__atomic_or_fetch  Z.lor).
-  Axiom wp_atom_nand_fetch : ltac:(fetch_xxx AO__atomic_fetch_or nand).
+  Axiom wp_atom_add_fetch  : xxx_fetch AO__atomic_add_fetch  Z.add.
+  Axiom wp_atom_sub_fetch  : xxx_fetch AO__atomic_sub_fetch  Z.sub.
+  Axiom wp_atom_and_fetch  : xxx_fetch AO__atomic_and_fetch  Z.land.
+  Axiom wp_atom_xor_fetch  : xxx_fetch AO__atomic_xor_fetch  Z.lxor.
+  Axiom wp_atom_or_fetch   : xxx_fetch AO__atomic_or_fetch   Z.lor.
+  Axiom wp_atom_nand_fetch : xxx_fetch AO__atomic_nand_fetch nand.
 
 End with_Σ.
