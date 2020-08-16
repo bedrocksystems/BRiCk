@@ -21,9 +21,7 @@ Local Set Universe Polymorphism.
 Section with_cpp.
   Context `{Σ : cpp_logic thread_info} {resolve:genv}.
 
-  (* Hoare triple for a function.
-   * note(gmm): these should include linkage specifications.
-   *)
+  (* Hoare triple for a function. *)
   Definition TSFunction@{X Z Y} (cc : calling_conv) (ret : type) (targs : list type)
              (PQ : thread_info -> WithPrePost@{X Z Y} mpredI)
   : function_spec :=

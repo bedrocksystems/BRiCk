@@ -712,19 +712,20 @@ Section with_cpp.
     : forall (tt : type_table) (fun_type : type) (ti : thread_info) (addr : val) (ls : list val) (Q : val -> epred), mpred.
 
   (* note(gmm): this admits weakening of [tt] *)
-  Axiom fspec_frame : forall tt ft a ls ti Q1 Q2,
-      Forall v, Q1 v -* Q2 v |-- @fspec tt ft ti a ls Q1 -* @fspec tt ft ti a ls Q2.
+  Axiom fspec_frame : forall tt1 tt2 ft a ls ti Q1 Q2,
+      tt1 = tt2 ->
+      Forall v, Q1 v -* Q2 v |-- @fspec tt1 ft ti a ls Q1 -* @fspec tt2 ft ti a ls Q2.
 
   Global Instance Proper_fspec : forall tt ft a ls ti,
       Proper (pointwise_relation _ lentails ==> lentails) (@fspec tt ft ti a ls).
   Proof. do 3 red; intros.
-         iIntros "X"; iRevert "X"; iApply fspec_frame.
+         iIntros "X"; iRevert "X"; iApply fspec_frame; auto.
          iIntros (v); iApply H.
   Qed.
 
   Section fspec.
-    Context (ti : thread_info) (addr : val) (ls : list val).
-    Local Notation WP := (fspec ti addr ls) (only parsing).
+    Context {tt : type_table} {tf : type} (ti : thread_info) (addr : val) (ls : list val).
+    Local Notation WP := (fspec tt tf ti addr ls) (only parsing).
     Implicit Types Q : val → epred.
 
     Lemma fspec_wand Q1 Q2 : WP Q1 |-- (∀ v, Q1 v -* Q2 v) -* WP Q2.

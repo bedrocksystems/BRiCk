@@ -113,7 +113,7 @@ Module Type CPP_LOGIC (Import CC : CPP_LOGIC_CLASS).
       @tptsto σ ty q1 a v1 ** @tptsto σ ty q2 a v2 |-- [| v1 = v2 |].
 *)
 
-(* not currently necessary
+(* this isn't actually needed
     Axiom tptsto_valid_ptr : forall σ t q a v,
         @tptsto σ t q a v |-- @tptsto σ t q a v ** valid_ptr a.
 *)
