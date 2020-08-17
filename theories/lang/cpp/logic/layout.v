@@ -80,7 +80,7 @@ Section with_Σ.
                 _offsetR (_sub t (Z.of_nat i)) (anyR t 1).
 
   Definition decodes_uint (l : list N) (z : Z) :=
-    _Z_to_bytes (σ:=resolve) (List.length l) Unsigned z = l.
+    _Z_to_bytes (σ:=resolve) (List.length l) z = l.
 
   Axiom decode_uint_primR : forall q sz (x : Z),
     primR (resolve:=resolve) (Tint sz Unsigned) q (Vint x) -|-
