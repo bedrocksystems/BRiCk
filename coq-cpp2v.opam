@@ -18,7 +18,7 @@ depends: [
   "coq-iris" { = "3.3.0" }
   "coq-iris-string-ident" { = "0.1.0" }
 ]
-version: "dev"
+version: "vdev"
 
 build: [ make "-j%{jobs}%" "coq" ]
 install: [ make "install" ]
