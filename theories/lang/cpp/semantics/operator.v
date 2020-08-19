@@ -63,6 +63,9 @@ Lemma to_unsigned_eq : forall z (sz : bitsize),
     to_unsigned sz z = trim (bitsN sz) z.
 Proof. reflexivity. Qed.
 
+Local Notation Unfold x tm :=
+  ltac:(let H := eval unfold x in tm in exact H) (only parsing).
+
 (** [to_signed sz z] is used when C++ converts unsigned values to signed values.
 
     the standard describes it as:
@@ -78,7 +81,7 @@ Definition to_signed_bits (bits: N) (z: Z): Z :=
   if bool_decide (norm >= 2 ^ ((Z.of_N bits) - 1))
   then norm - 2 ^ (Z.of_N bits) else norm.
 Definition to_signed (sz: bitsize) (z: Z): Z :=
-  to_signed_bits (bitsN sz) z.
+  Unfold to_signed_bits (to_signed_bits (bitsN sz) z).
 
 Local Transparent bitsZ bitsN.
 Arguments bitsZ !_/.
