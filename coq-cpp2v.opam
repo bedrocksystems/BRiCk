@@ -21,4 +21,4 @@ depends: [
 version: "vdev"
 
 build: [ make "-j%{jobs}%" "coq" ]
-install: [ make "install" ]
+install: [ make "install-coq" ]
