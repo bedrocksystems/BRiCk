@@ -207,6 +207,11 @@ public:
     void VisitDefaultStmt(const DefaultStmt *stmt, CoqPrinter &print,
                           ClangPrinter &cprint, ASTContext &) {
         print.output() << "Sdefault";
+
+        if (stmt->getSubStmt()) {
+            print.cons();
+            cprint.printStmt(stmt->getSubStmt(), print);
+        }
     }
 
     void VisitSwitchStmt(const SwitchStmt *stmt, CoqPrinter &print,
