@@ -263,7 +263,7 @@ Module Type Stmt.
         I |-- wp ρ (Sdo b t) Q.
 
     (* compute the [Prop] that is known if this switch branch is taken *)
-    Definition wp_switch_branch (v : Z) (s : SwitchBranch) : Prop :=
+    Definition wp_switch_branch (s : SwitchBranch) (v : Z) : Prop :=
       match s with
       | Exact i => v = i
       | Range low high => low <= v <= high
@@ -291,26 +291,57 @@ Module Type Stmt.
       | Sunsupported _ => false
       end.
 
-
-    (* apply the [wp] calculation to the body of a switch *)
-    Fixpoint wp_switch_block (ρ : region) (e : Z) (L : Prop) (ls : list Stmt) (Q : Kpreds) : mpred :=
+    Fixpoint gather_cases (ls : list Stmt) : Z -> Prop :=
       match ls with
       | Scase sb :: ls =>
-        let here := wp_switch_branch e sb in
-        ([| here |] -* wp ρ (Sseq ls) Q) //\\
-        wp_switch_block ρ e (L \/ here) ls Q
-      | Sdefault :: ls =>
-        [| ~L |] -* wp_switch_block ρ e L ls Q
-      | s :: ls =>
-        if no_case s then
-          wp_switch_block ρ e L ls Q
-        else
-          lfalse
-      | nil => lfalse
+        fun n' => wp_switch_branch sb n' \/ gather_cases ls n'
+      | _ :: ls => gather_cases ls
+      | nil => fun _ => False
       end.
-    (* ^ note(gmm): this could be optimized to avoid re-proving lines of code in the
-     * case of fall-throughs
+
+    Fixpoint has_default (ls : list Stmt) : bool :=
+      match ls with
+      | Sdefault :: _ => true
+      | _ :: ls => has_default ls
+      | nil => false
+      end.
+
+    Definition or_case (P : option (Z -> Prop)) (Q : Z -> Prop) : option (Z -> Prop) :=
+      match P with
+      | None => Some Q
+      | Some P =>  Some (fun x => P x /\ Q x)
+      end.
+
+    (** apply the [wp] calculation to the body of a switch
+        the [t] argument tells you if you just processed a [case] or [default] statement.
      *)
+    Section wp_switch_branch.
+      Variable has_def : bool.
+      Variable ρ : region.
+      Variable e : Z.
+      Variable Ldef : Z -> Prop.
+
+      Fixpoint wp_switch_block (Lcur : option (Z -> Prop)) (ls : list Stmt) (Q : Kpreds) : mpred :=
+        match ls with
+        | Scase sb :: ls =>
+          wp_switch_block (or_case Lcur (wp_switch_branch sb)) ls Q
+        | Sdefault :: ls =>
+          wp_switch_block (or_case Lcur Ldef) ls Q
+        | s :: ls =>
+          if no_case s then
+            match Lcur with
+            | None =>
+              wp_switch_block None ls Q
+            | Some Lcur =>
+              ([| Lcur e |] -* wp ρ (Sseq (s :: ls)) Q) //\\
+                                                       (wp_switch_block None ls Q)
+            end
+          else
+            lfalse
+        | nil =>
+          if has_def then ltrue else ([| Ldef e |] -* Q.(k_normal))
+        end.
+    End wp_switch_branch.
 
     Definition Kswitch (k : Kpreds) : Kpreds :=
       {| k_normal := k.(k_normal)
@@ -321,7 +352,7 @@ Module Type Stmt.
     Axiom wp_switch : forall ρ e b Q,
         wp_prval ρ e (fun v free =>
                     Exists vv : Z, [| v = Vint vv |] **
-                    wp_switch_block ρ vv False b (Kswitch Q))
+                    wp_switch_block (has_default b) ρ vv (fun x => ~gather_cases b x) None b (Kswitch Q))
         |-- wp ρ (Sswitch e (Sseq b)) Q.
 
     (* note: case and default statements are only meaningful inside of [switch].
