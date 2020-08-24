@@ -12,7 +12,7 @@ Import invG.
 From bedrock Require Import ChargeCompat.
 From bedrock.lang.cpp Require Import ast semantics.
 From bedrock.lang.cpp.logic Require Import
-     pred path_pred heap_pred wp call cclogic.
+     pred path_pred heap_pred wp call.
 
 Local Open Scope Z_scope.
 

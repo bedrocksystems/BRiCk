@@ -11,6 +11,7 @@ Require Import Coq.ssr.ssrbool.
 From Coq.Classes Require Import
      RelationClasses Morphisms DecidableClass.
 
+From iris.bi Require Import lib.fractional.
 From iris.base_logic.lib Require Import
       fancy_updates invariants cancelable_invariants own wsat.
 Import invG.
@@ -77,12 +78,10 @@ Section with_Σ.
     Proof using . intros. by apply inv_alloc. Qed.
 
     Global Instance: Persistent (Inv n P).
-    Proof using .
-      intros. red. iIntros "#HI". eauto.
-    Qed.
+    Proof using . apply _. Qed.
 
     Global Instance: Affine (Inv n P).
-    Proof using . red. eauto. Qed.
+    Proof using . apply _. Qed.
   End with_invG.
 
   Section with_cinvG.
@@ -96,16 +95,19 @@ Section with_Σ.
       - pick the ghost name γ to be outside of a set G (γ ∉ G)
       - delay picking the invariant I until γ is allocated, so that I can
         depend on γ. Notably, one can put the invariant token TInv_own γ q
-        inside the invariant I.
-
-      Even stronger rules exist, see cinv_alloc_strong and
-      cinv_alloc_strong_open, in which
-      - stronger constraints on γ can be picked
-      - the invariant can be allocated but establishing its content can be delayed. *)
+        inside the invariant I. *)
     Lemma TInv_alloc_cofinite : forall (G: gset gname) M N,
       |-- (|={M}=> Exists γ, ⌜ γ ∉ G ⌝ ** TInv_own γ 1%Qp **
                             ∀ I, ▷ I ={M}=∗ TInv N γ I)%I.
     Proof. by apply cinv_alloc_cofinite. Qed.
+
+    (* Even stronger: stronger constraints on γ can be picked
+      Also see cinv_alloc_strong_open, the invariant can be allocated but
+      establishing its content can be delayed. It can be added when needed. *)
+    Lemma TInv_alloc_strong : forall (F : gname → Prop) M N,
+      pred_infinite F →
+      |-- |={M}=> ∃ γ, ⌜ F γ ⌝ ∗ TInv_own γ 1 ∗ ∀ I, ▷ I ={M}=∗ TInv N γ I.
+    Proof. apply cinv_alloc_strong. Qed.
 
     Corollary TInv_alloc_ghost_named_inv : forall M N I,
       (∀ γ : gname, I γ) |--
@@ -122,16 +124,26 @@ Section with_Σ.
       |>I |-- (|={M}=> Exists γ, TInv N γ I ** TInv_own γ 1%Qp)%I.
     Proof using . intros. apply cinv_alloc. Qed.
 
-    Global Instance: Persistent (TInv Ns γ P).
-    Proof using . red. intros; iIntros "#HI". eauto. Qed.
-    Global Instance: Affine (TInv Ns γ P).
-    Proof using . red. eauto. Qed.
+    Global Instance TInv_persistent : Persistent (TInv Ns γ P).
+    Proof using . apply _. Qed.
+    Global Instance TInv_affine : Affine (TInv Ns γ P).
+    Proof using . apply _. Qed.
+    Global Instance TInv_own_fractional γ : Fractional (TInv_own γ).
+    Proof. apply _. Qed.
+    Global Instance TInv_own_as_fractional γ q :
+      AsFractional (TInv_own γ q) (TInv_own γ) q.
+    Proof. apply _. Qed.
 
     Lemma TInv_cancel M N γ I :
       ↑N ⊆ M ->
-      TInv N γ I ** TInv_own γ 1%Qp |-- (|={M}=> |>I)%I.
-    Proof using . intros. iIntros "[#Hinv Hq]". iApply cinv_cancel; eauto. Qed.
+      TInv N γ I |-- TInv_own γ 1%Qp -* (|={M}=> |>I)%I.
+    Proof using . apply cinv_cancel. Qed.
 
+    #[deprecated(since="20200824", note="Use TInv_cancel instead")]
+    Lemma TInv_delete M N γ I :
+      ↑N ⊆ M ->
+      TInv N γ I ** TInv_own γ 1%Qp |-- (|={M}=> |>I)%I.
+    Proof. intros. iIntros "[#? ?]". iApply TInv_cancel; eauto. Qed.
 (*
     Lemma cinv_open_stronger E N γ p P :
       ↑N ⊆ E →
@@ -156,12 +168,13 @@ Section with_Σ.
     Qed.
 *)
 
-    Lemma TInv_open_strong E N γ p P :
+    Lemma TInv_acc_strong E N γ p P :
       ↑N ⊆ E →
-      cinv N γ P |--
-           (cinv_own γ p ={E,E∖↑N}=∗
-                                  ((|>P) ** cinv_own γ p ** (Forall (E' : coPset), ((|>P ∨ cinv_own γ 1) ={E',↑N ∪ E'}=∗ True))))%I.
-    Proof using . iIntros (?) "#Hinv Hown". iApply cinv_acc_strong =>//. Qed.
+      TInv N γ P |-- (TInv_own γ p ={E,E∖↑N}=∗
+                            ((|>P) ** TInv_own γ p **
+                            (Forall (E' : coPset),
+                              ((|>P ∨ TInv_own γ 1) ={E',↑N ∪ E'}=∗ True))))%I.
+    Proof using . apply cinv_acc_strong. Qed.
 
   End with_cinvG.
 End with_Σ.
@@ -172,8 +185,5 @@ Notation Inv_new := Inv_alloc (only parsing).
 #[deprecated(since="20200824", note="Use TInv_alloc instead")]
 Notation TInv_new := TInv_alloc (only parsing).
 
-#[deprecated(since="20200824", note="Use TInv_cancel instead")]
-Notation TInv_delete := TInv_cancel (only parsing).
-
-#[deprecated(since="20200824", note="Use TInv_open_strong instead")]
-Notation Tinv_open_strong := TInv_open_strong (only parsing).
+#[deprecated(since="20200824", note="Use TInv_acc_strong instead")]
+Notation Tinv_open_strong := TInv_acc_strong (only parsing).
