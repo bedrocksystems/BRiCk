@@ -60,45 +60,66 @@ Section with_Σ.
     iApply "HP".
   Qed.
 
-  Context `{!invG Σ}.
+  Section with_invG.
+    Context `{!invG Σ}.
 
-  (* the names of invariants *)
-  Definition iname : Set := namespace.
+    (* the names of invariants *)
+    Definition iname : Set := namespace.
 
-  Bind Scope string_scope with iname.
+    Bind Scope string_scope with iname.
 
-  (* named invariants *)
-  Definition Inv := inv.
+    (* named invariants *)
+    Definition Inv := inv.
 
-  Lemma Inv_new : forall n I,
+    Lemma Inv_new : forall n I,
       |>I |-- (|={⊤}=> Inv n I)%I.
-  Proof using .
-    intros. iIntros "HI".
-    iApply (inv_alloc with "HI").
-  Qed.
+    Proof using . intros. by apply inv_alloc. Qed.
 
-  Global Instance: Persistent (Inv n P).
-  Proof using .
-    intros. red. iIntros "#HI". eauto.
-  Qed.
+    Global Instance: Persistent (Inv n P).
+    Proof using .
+      intros. red. iIntros "#HI". eauto.
+    Qed.
 
-  Global Instance: Affine (Inv n P).
-  Proof using . red. eauto. Qed.
+    Global Instance: Affine (Inv n P).
+    Proof using . red. eauto. Qed.
+  End with_invG.
 
-  Section with_Σ'.
+  Section with_cinvG.
     Context `{!cinvG Σ}.
 
     Definition TInv N γ (I : mpred) : mpred := cinv N γ I.
 
     Definition TInv_own γ q : mpred := cinv_own γ q.
 
-    Lemma TInv_new : forall M N I,
-        |>I |-- (|={M}=> Exists γ, TInv N γ I ** TInv_own γ 1%Qp)%I.
-    Proof using .
-      intros. iIntros "HI".
-      unfold TInv. unfold TInv_own.
-        by iApply (cinv_alloc with "[HI]").
+    (* a stronger invariant allocation lemma. This allows one to:
+      - pick the ghost name γ to be outside of a set G (γ ∉ G)
+      - delay picking the invariant I until γ is allocated, so that I can
+        depend on γ. Notably, one can put the invariant token TInv_own γ q
+        inside the invariant I.
+
+      Even stronger rules exist, see cinv_alloc_strong and
+      cinv_alloc_strong_open, in which
+      - stronger constraints on γ can be picked
+      - the invariant can be allocated but establishing its content can be delayed. *)
+    Lemma TInv_new_cofinite : forall (G: gset gname) M N,
+      |-- (|={M}=> Exists γ, ⌜ γ ∉ G ⌝ ** TInv_own γ 1%Qp **
+                            ∀ I, ▷ I ={M}=∗ TInv N γ I)%I.
+    Proof. by apply cinv_alloc_cofinite. Qed.
+
+    Corollary TInv_new_ghost_named_inv : forall M N I,
+      (∀ γ : gname, I γ) |--
+      (|={M}=> Exists γ, TInv N γ (I γ) ** TInv_own γ 1%Qp )%I.
+    Proof.
+      intros. iIntros "I".
+      iMod (TInv_new_cofinite empty M N) as (γ ?) "[HO HI]".
+      iSpecialize ("I" $! γ).
+      iMod ("HI" $! (I γ) with "[$I]") as "HI".
+      iIntros "!>". eauto with iFrame.
     Qed.
+
+    Lemma TInv_new : forall M N I,
+      |>I |-- (|={M}=> Exists γ, TInv N γ I ** TInv_own γ 1%Qp)%I.
+    Proof using . intros. apply cinv_alloc. Qed.
 
     Global Instance: Persistent (TInv Ns γ P).
     Proof using . red. intros; iIntros "#HI". eauto. Qed.
@@ -108,13 +129,7 @@ Section with_Σ.
     Lemma TInv_delete M N γ I :
       ↑N ⊆ M ->
       TInv N γ I ** TInv_own γ 1%Qp |-- (|={M}=> |>I)%I.
-    Proof using .
-      intros.
-      iIntros "[#Hinv Hq]".
-      unfold TInv.
-      iApply cinv_cancel; eauto.
-    Qed.
-
+    Proof using . intros. iIntros "[#Hinv Hq]". iApply cinv_cancel; eauto. Qed.
 
 (*
     Lemma cinv_open_stronger E N γ p P :
@@ -147,5 +162,5 @@ Section with_Σ.
                                   ((|>P) ** cinv_own γ p ** (Forall (E' : coPset), ((|>P ∨ cinv_own γ 1) ={E',↑N ∪ E'}=∗ True))))%I.
     Proof using . iIntros (?) "#Hinv Hown". iApply cinv_acc_strong =>//. Qed.
 
-  End with_Σ'.
+  End with_cinvG.
 End with_Σ.
