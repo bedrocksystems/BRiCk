@@ -79,8 +79,16 @@ Section with_Σ.
         [∗list] i ↦ _ ∈ repeat () (BinNatDef.N.to_nat n),
                 _offsetR (_sub t (Z.of_nat i)) (anyR t 1).
 
+  Local Notation Unfold x tm :=
+    ltac:(let H := eval unfold x in tm in exact H) (only parsing).
+
+  Definition decodes (sgn: signed) (l: list N) (z: Z) :=
+    _Z_from_bytes (σ:=resolve) sgn l = z.
+
   Definition decodes_uint (l : list N) (z : Z) :=
-    _Z_to_bytes (σ:=resolve) (List.length l) Unsigned z = l.
+    Unfold decodes (decodes Unsigned l z).
+
+  (* JH: TODO: Determine what new axioms we should add here. *)
 
   Axiom decode_uint_primR : forall q sz (x : Z),
     primR (resolve:=resolve) (Tint sz Unsigned) q (Vint x) -|-
