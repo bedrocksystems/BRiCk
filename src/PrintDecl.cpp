@@ -633,6 +633,7 @@ public:
             cprint.printGlobalName(decl, print);
             print.output() << fmt::nbsp;
             cprint.printQualType(decl->getType(), print);
+            print.output() << fmt::nbsp;
             if (decl->hasInit()) {
                 print.some();
                 cprint.printExpr(decl->getInit(), print);
