@@ -33,14 +33,24 @@ Local Ltac smash __N :=
 Definition trim (w : N) (v : Z) : Z :=
   v mod (2 ^ Z.of_N w).
 
+Lemma trim_0_l:
+  forall (v: Z),
+    trim 0 v = 0.
+Proof. move=> v; by rewrite /trim Z.pow_0_r Z.mod_1_r. Qed.
+
+Lemma trim_0_r:
+  forall (w: N),
+    trim w 0 = 0.
+Proof. move=> w; rewrite /trim Z.mod_0_l; [apply Z.pow_nonzero | ]; lia. Qed.
+
 (** [to_unsigned sz z] is used when C++ converts signed values to unsigned
     values.
 
     "the unique value congruent to [z] modulo [2^sz]
      where [sz] is the number of bits in the return type"
  *)
-Notation to_unsigned_bits a b := (trim a b) (only parsing).
-Notation to_unsigned      a b := (to_unsigned_bits (bitsN a) b) (only parsing).
+Notation to_unsigned_bits := (trim) (only parsing).
+Notation to_unsigned a    := (to_unsigned_bits (bitsN a)) (only parsing).
 
 Lemma to_unsigned_bits_id : forall z (bits : N),
     0 <= z < 2 ^ (Z.of_N bits) ->
@@ -63,9 +73,6 @@ Lemma to_unsigned_eq : forall z (sz : bitsize),
     to_unsigned sz z = trim (bitsN sz) z.
 Proof. reflexivity. Qed.
 
-Local Notation Unfold x tm :=
-  ltac:(let H := eval unfold x in tm in exact H) (only parsing).
-
 (** [to_signed sz z] is used when C++ converts unsigned values to signed values.
 
     the standard describes it as:
@@ -76,10 +83,15 @@ Local Notation Unfold x tm :=
      - the unique value of the destination type equal to the source value modulo [2^sz]
        where [sz] is the number of bits used to represent the destination type."
  *)
+Local Notation Unfold x tm :=
+  ltac:(let H := eval unfold x in tm in exact H) (only parsing).
+
 Definition to_signed_bits (bits: N) (z: Z): Z :=
-  let norm := Z.modulo z (2 ^ (Z.of_N bits)) in
-  if bool_decide (norm >= 2 ^ ((Z.of_N bits) - 1))
-  then norm - 2 ^ (Z.of_N bits) else norm.
+  if bool_decide (bits = 0%N)
+  then 0
+  else let norm := Z.modulo z (2 ^ (Z.of_N bits)) in
+       if bool_decide (norm >= 2 ^ ((Z.of_N bits) - 1))
+       then norm - 2 ^ (Z.of_N bits) else norm.
 Definition to_signed (sz: bitsize) (z: Z): Z :=
   Unfold to_signed_bits (to_signed_bits (bitsN sz) z).
 
@@ -95,8 +107,11 @@ Proof.
   intros ? ? [Hlower Hupper]; rewrite /to_signed_bits Z.mod_small.
   - intuition; eapply Z.lt_trans; eauto;
       apply Z.pow_lt_mono_r; lia.
-  - rewrite bool_decide_eq_false_2;
-      [intro; contradiction | reflexivity].
+  - assert (bits = 0 \/ 0 < bits)%N as [Hbits | Hbits] by lia; subst.
+    + rewrite Z.pow_neg_r in Hupper; lia.
+    + rewrite bool_decide_eq_false_2; [by lia | ].
+      rewrite bool_decide_eq_false_2;
+        [intro; contradiction | reflexivity].
 Qed.
 
 Lemma to_signed_id : forall (z : Z) (n : bitsize),
@@ -104,44 +119,41 @@ Lemma to_signed_id : forall (z : Z) (n : bitsize),
 Proof. destruct n; apply to_signed_bits_id. Qed.
 
 Lemma to_signed_bits_neg: forall (z: Z) (bits: N),
-    (0 < bits)%N ->
     2^((Z.of_N bits) - 1) - 1 < z < 2^(Z.of_N bits) ->
     to_signed_bits bits z = trim bits (z - 2^((Z.of_N bits) - 1)) + - 2^((Z.of_N bits) - 1).
 Proof.
-  intros ? ? Hpos [Hlower Hupper]; rewrite /to_signed_bits /trim Z.mod_small.
-  - induction bits.
-    + replace (Z.of_N 0 - 1) with (-1) in Hlower by lia.
-      rewrite Z.pow_neg_r in Hlower; lia.
-    + split; simpl in *; try lia.
-      assert (Z.pos p - 1 < 0 \/ Z.pos p - 1 = 0 \/ Z.pos p - 1 > 0)
-        as [Hexp | [Hexp | Hexp]] by lia.
-      * rewrite Z.pow_neg_r in Hlower; lia.
-      * rewrite Hexp in Hlower; lia.
-      * pose proof (Z.pow_pos_nonneg 2 (Z.pos p - 1) ltac:(lia) ltac:(lia)); lia.
-  - induction bits; rewrite bool_decide_eq_true_2; try lia; simpl in *.
-    rewrite Z.mod_small; intuition.
-    + eapply Z.lt_trans; eauto.
-      assert (Z.pos p - 1 < 0 \/ Z.pos p - 1 = 0 \/ Z.pos p - 1 > 0)
-        as [Hexp | [Hexp | Hexp]] by lia.
-      * rewrite Z.pow_neg_r; lia.
-      * rewrite Hexp; rewrite Z.pow_0_r; lia.
-      * pose proof (Z.pow_pos_nonneg 2 (Z.pos p - 1) ltac:(lia) ltac:(lia)); lia.
-    + replace (z - 2 ^ (Z.pos p - 1) + - 2 ^ (Z.pos p - 1))
-        with (z - (2 ^ (Z.pos p - 1) + 2 ^ (Z.pos p - 1)))
-        by lia; f_equal.
-      replace (Z.pos p)
-        with (Z.succ (Z.pos p - 1))
-        at 1 by lia.
+  intros ? ? [Hlower Hupper]; rewrite /to_signed_bits /trim Z.mod_small.
+  - split; [ | by lia].
+    assert (Z.of_N bits - 1 < 0 \/ Z.of_N bits - 1 = 0 \/ 0 < Z.of_N bits - 1)%Z
+      as [Hexp | [Hexp | Hexp]] by lia.
+    + rewrite Z.pow_neg_r in Hlower; lia.
+    + rewrite Hexp in Hlower; lia.
+    + pose proof (Z.pow_pos_nonneg 2 (Z.of_N bits - 1) ltac:(lia) ltac:(lia)); lia.
+  - assert (bits = 0 \/ 0 < bits)%N as [Hbits | Hbits] by lia; subst.
+    + rewrite bool_decide_eq_true_2; try lia; simpl in *.
+      rewrite Z.mod_small; intuition.
+    + rewrite bool_decide_eq_false_2; [by lia | ].
+      rewrite bool_decide_eq_true_2; try lia; simpl in *.
+      rewrite Z.mod_small; intuition.
+      * eapply Z.lt_trans; eauto.
+        assert (Z.of_N bits - 1 < 0 \/ Z.of_N bits - 1 = 0 \/ Z.of_N bits - 1 > 0)
+          as [Hexp | [Hexp | Hexp]] by lia.
+        -- rewrite Z.pow_neg_r; lia.
+        -- rewrite Hexp; rewrite Z.pow_0_r; lia.
+        -- pose proof (Z.pow_pos_nonneg 2 (Z.of_N bits - 1) ltac:(lia) ltac:(lia)); lia.
+      * replace (z - 2 ^ (Z.of_N bits - 1) + - 2 ^ (Z.of_N bits - 1))
+          with (z - (2 ^ (Z.of_N bits - 1) + 2 ^ (Z.of_N bits - 1)))
+          by lia; f_equal.
+        replace (Z.of_N bits)
+          with (Z.succ (Z.of_N bits - 1))
+          at 1 by lia.
       rewrite Z.pow_succ_r; lia.
 Qed.
 
 Lemma to_signed_neg : forall x (n : bitsize),
     2^(bitsZ n - 1) - 1 < x < 2^bitsZ n ->
     to_signed n x = trim (bitsN n) (x - 2^(bitsZ n - 1)) + - 2^(bitsZ n - 1).
-Proof.
-  intros; pose proof (@to_signed_bits_neg x (bitsN n)) as H';
-    destruct n; now specialize (H' ltac:(simpl; lia) H).
-Qed.
+Proof. move=> x n H; now pose proof (@to_signed_bits_neg x (bitsN n) H) as H'. Qed.
 
 Lemma Z_opp1_mul_lt_ge:
   forall (n m: Z),
@@ -162,16 +174,18 @@ Proof. lia. Qed.
 
 Lemma to_signed_unsigned_bits_roundtrip:
   forall (bits: N) (v: Z),
-    (0 < bits)%N ->
     (-2^(Z.of_N bits - 1) <= v)%Z ->
     (v <= 2^(Z.of_N bits - 1) - 1)%Z ->
     to_signed_bits bits (to_unsigned_bits bits v) = v.
 Proof.
-  intros bits v Hbits Hlower Hupper.
+  intros bits v Hlower Hupper.
   assert (v < 0 \/ 0 = v \/ 0 < v)%Z as [Hv | [Hv | Hv]] by lia;
     [clear Hupper | subst; clear Hlower Hupper | clear Hlower].
-  - rewrite /trim /to_signed_bits.
-    rewrite Zdiv.Zmod_mod;
+  - rewrite /trim /to_signed_bits Zdiv.Zmod_mod.
+    assert (bits = 0 \/ 0 < bits)%N as [Hbits | Hbits] by lia; subst.
+    { rewrite bool_decide_eq_true_2; [by reflexivity | ];
+        rewrite Z.pow_neg_r in Hlower; lia. }
+    rewrite bool_decide_eq_false_2; [by lia | ];
       match goal with
       | |- context[bool_decide ?P] =>
         destruct (bool_decide P) eqn:Heqb
@@ -219,16 +233,14 @@ Proof.
           at 3 by lia; rewrite Z.pow_add_r; lia.
       }
       now apply Zorder.Zplus_le_compat_r.
-  - rewrite /trim /to_signed_bits Zdiv.Zmod_0_l;
-      match goal with
-      | |- context[bool_decide ?P] =>
-        destruct (bool_decide P) eqn:Heqb
-      end=> //.
-    apply bool_decide_eq_true in Heqb;
-      exfalso; apply (Zge_not_lt _ _ Heqb);
-        apply Z.pow_pos_nonneg; lia.
-  - rewrite /trim /to_signed_bits.
-    rewrite Zdiv.Zmod_mod;
+  - assert (bits = 0 \/ 0 < bits)%N as [Hbits | Hbits] by lia; subst.
+    + rewrite trim_0_r /to_signed_bits bool_decide_eq_true_2; lia.
+    + rewrite trim_0_r to_signed_bits_id; intuition; lia.
+  - rewrite /trim /to_signed_bits Zdiv.Zmod_mod.
+    assert (bits = 0 \/ 0 < bits)%N as [Hbits | Hbits] by lia; subst.
+    { rewrite bool_decide_eq_true_2; [by reflexivity | ];
+        rewrite Z.pow_neg_r in Hupper; lia. }
+    rewrite bool_decide_eq_false_2; [by lia | ];
       match goal with
       | |- context[bool_decide ?P] =>
         destruct (bool_decide P) eqn:Heqb
@@ -254,8 +266,67 @@ Lemma to_signed_unsigned_roundtrip:
     (v <= 2^(Z.of_N (bitsN bits) - 1) - 1)%Z ->
     to_signed bits (to_unsigned bits v) = v.
 Proof.
-  intros; apply (to_signed_unsigned_bits_roundtrip (bitsN bits)).
-  destruct bits; simpl. all: lia.
+  intros; apply (to_signed_unsigned_bits_roundtrip (bitsN bits));
+    destruct bits; simpl in *; lia.
+Qed.
+
+Lemma trim_to_signed_bits_agree: forall x n,
+    trim n (to_signed_bits n x) = trim n x.
+Proof.
+  move=> x n.
+  assert (n = 0 \/ 0 < n)%N as [Hn | Hn] by lia; subst.
+  - now rewrite /trim /to_signed_bits /= Z.pow_0_r !Z.mod_1_r.
+  - rewrite /trim /to_signed_bits bool_decide_eq_false_2; [by lia | ].
+    case_decide; simpl; try (now rewrite Z.mod_mod).
+    match goal with
+    | |- context[(?x mod 2 ^ ?BITS)%Z] =>
+      assert (x mod 2 ^ BITS = 0 \/ x mod 2 ^ BITS > 0)%Z
+        as [? | ?] by (pose proof (Zdiv.Z_mod_lt x (2^BITS)
+                                                 ltac:(apply Z.gt_lt_iff;
+                                                       apply Z.pow_pos_nonneg; lia))
+                        as [? ?]; lia);
+        try (by (rewrite Z.mod_mod; try apply Z.pow_nonzero; lia))
+    end.
+    rewrite -Z.mod_opp_r_nz; try lia;
+      [ by (apply Z.pow_nonzero; lia)
+      | by (apply Z.compare_ge_iff in H;
+            assert (1 <= 2^(Z.of_N n - 1))
+              by (replace 1%Z with (2^0)%Z by lia;
+                  apply Z.pow_le_mono_r; lia);
+            lia)
+      | ].
+    replace x with (- (- x))%Z by apply Z.opp_involutive.
+    rewrite Z.mod_opp_opp; [by (apply Z.pow_nonzero; lia) | ].
+    replace (- (- x))%Z with x by (symmetry; apply Z.opp_involutive).
+    remember ((-x) mod 2^(Z.of_N n))%Z;
+      rewrite Zdiv.Z_mod_nz_opp_full; subst.
+    { rewrite Z.mod_mod.
+      - apply Z.pow_nonzero; lia.
+      - rewrite Zdiv.Z_mod_nz_opp_full.
+        + apply Z.compare_ge_iff in H;
+            assert (1 <= 2^(Z.of_N n - 1))
+            by (replace 1%Z with (2^0)%Z by lia;
+                apply Z.pow_le_mono_r; lia); lia.
+        + pose proof (Zdiv.Z_mod_lt x (2^(Z.of_N n))
+                                    ltac:(apply Z.gt_lt_iff;
+                                          apply Z.pow_pos_nonneg; lia))
+            as [? ?]; lia.
+    }
+    rewrite Z.mod_mod; [by (apply Z.pow_nonzero; lia) | ].
+    rewrite Zdiv.Z_mod_nz_opp_full.
+    + apply Z.compare_ge_iff in H;
+        assert (1 <= 2^(Z.of_N n - 1))
+        by (replace 1%Z with (2^0)%Z by lia;
+            apply Z.pow_le_mono_r; lia); lia.
+    + lia.
+Qed.
+
+Lemma trim_to_signed_agree: forall x sz n,
+    bitsN sz = n ->
+    trim n (to_signed sz x) = trim n x.
+Proof.
+  move=> x sz n Hsz; pose proof (trim_to_signed_bits_agree x (bitsN sz)) as H;
+    subst; rewrite -H; now rewrite /to_signed.
 Qed.
 
 (** Integral conversions *)

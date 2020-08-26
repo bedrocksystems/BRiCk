@@ -145,6 +145,14 @@ Section FromToBytes.
       now rewrite IHcnt.
     Qed.
 
+    Lemma rev_repeat:
+      forall (A: Type) (a: A) (cnt: nat),
+        rev (repeat a cnt) = repeat a cnt.
+    Proof.
+      induction cnt => //=.
+      now rewrite IHcnt repeat_cons_app.
+    Qed.
+
     Lemma Z_shiftr_small:
       forall v e,
         (0 <= e)%Z ->
@@ -279,7 +287,7 @@ Section FromToBytes.
 
   End ExtraFacts.
 
-  Section ToBytes.
+  Section ToBytes_internal.
 
     Definition _Z_to_bytes_unsigned_le' (idx: nat) (cnt: nat) (v: Z): list N :=
       map (Z.to_N ∘ _Z_get_byte v) $ seq idx cnt.
@@ -294,16 +302,17 @@ Section FromToBytes.
              | Unsigned => v
              end).
 
-    Definition _Z_to_bytes {σ:genv} (cnt : nat) (sgn: signed) (v : Z) : list N :=
+    (* NOTE: This will be sealed once we finish the proofs for this section. *)
+    Definition _Z_to_bytes_def {σ: genv} (cnt: nat) (sgn: signed) (v: Z): list N :=
       let little := _Z_to_bytes_le cnt sgn v in
       match byte_order σ with
       | Little => little
       | Big => List.rev little
       end.
 
-  End ToBytes.
+  End ToBytes_internal.
 
-  Section ToBytesFacts.
+  Section ToBytesFacts_internal.
 
     Lemma _Z_to_bytes_unsigned_le'_length:
       forall idx cnt v,
@@ -329,11 +338,11 @@ Section FromToBytes.
         now apply _Z_to_bytes_unsigned_le_length.
     Qed.
 
-    Lemma _Z_to_bytes_length:
+    Lemma _Z_to_bytes_def_length:
       forall σ cnt sgn v,
-        length (@_Z_to_bytes σ cnt sgn v) = cnt.
+        length (@_Z_to_bytes_def σ cnt sgn v) = cnt.
     Proof.
-      rewrite /_Z_to_bytes => σ cnt sgn v //=;
+      rewrite /_Z_to_bytes_def => σ cnt sgn v //=;
         destruct (byte_order σ);
         try rewrite rev_length;
         now apply _Z_to_bytes_le_length.
@@ -349,6 +358,25 @@ Section FromToBytes.
         _Z_to_bytes_unsigned_le 0 v = [].
     Proof. apply (_Z_to_bytes_unsigned_le'_0_bytes 0). Qed.
 
+    Lemma _Z_to_bytes_le_0_bytes:
+      forall sgn (v: Z),
+        _Z_to_bytes_le 0 sgn v = [].
+    Proof.
+      move=> [ | ] v; rewrite /_Z_to_bytes_le;
+        [rewrite N.mul_0_r trim_0_l | ];
+        apply _Z_to_bytes_unsigned_le_0_bytes.
+    Qed.
+
+    Lemma _Z_to_bytes_def_0_bytes:
+      forall σ sgn (v: Z),
+        _Z_to_bytes_def (σ:=σ) 0 sgn v = [].
+    Proof.
+      move=> σ [ | ] v;
+        rewrite /_Z_to_bytes_def
+                _Z_to_bytes_le_0_bytes;
+        by case_match.
+    Qed.
+
     Lemma _Z_to_bytes_unsigned_le'_0_value:
       forall (idx cnt: nat),
         _Z_to_bytes_unsigned_le' idx cnt 0 = repeat 0%N cnt.
@@ -363,6 +391,26 @@ Section FromToBytes.
       forall (cnt: nat),
         _Z_to_bytes_unsigned_le cnt 0 = repeat 0%N cnt.
     Proof. apply _Z_to_bytes_unsigned_le'_0_value. Qed.
+
+    Lemma _Z_to_bytes_le_0_value:
+      forall (cnt: nat) sgn,
+        _Z_to_bytes_le cnt sgn 0 = repeat 0%N cnt.
+    Proof.
+      move=> cnt [ | ]; rewrite /_Z_to_bytes_le;
+        [rewrite trim_0_r | ];
+        apply _Z_to_bytes_unsigned_le_0_value.
+    Qed.
+
+    Lemma _Z_to_bytes_def_0_value:
+      forall σ (cnt: nat) sgn,
+        _Z_to_bytes_def (σ:=σ) cnt sgn 0 = repeat 0%N cnt.
+    Proof.
+      move=> σ cnt [ | ];
+        rewrite /_Z_to_bytes_def
+                _Z_to_bytes_le_0_value
+                rev_repeat;
+        by case_match.
+    Qed.
 
     Lemma _Z_to_bytes_unsigned_le'_S_cnt:
       forall (idx cnt: nat) (v: Z),
@@ -389,18 +437,18 @@ Section FromToBytes.
         (0 <= v)%Z ->
         (v < 2^(8*idx))%Z ->
         _Z_to_bytes_unsigned_le' idx cnt v =
-         repeat 0%N cnt.
-      Proof.
-        intros; generalize dependent idx;
-          induction cnt ; intros=> //=.
-        rewrite _Z_to_bytes_unsigned_le'_S_cnt
-                /_Z_to_bytes_unsigned_le'
-                repeat_cons_app //=; f_equal.
-        - erewrite <- IHcnt; eauto.
-        - rewrite /_Z_get_byte Z_shiftr_small; try lia;
-            [ rewrite Z.land_0_l
-            | apply Z_pow2_trans_nat_r]=> //=.
-      Qed.
+        repeat 0%N cnt.
+    Proof.
+      intros; generalize dependent idx;
+        induction cnt ; intros=> //=.
+      rewrite _Z_to_bytes_unsigned_le'_S_cnt
+              /_Z_to_bytes_unsigned_le'
+              repeat_cons_app //=; f_equal.
+      - erewrite <- IHcnt; eauto.
+      - rewrite /_Z_get_byte Z_shiftr_small; try lia;
+          [ rewrite Z.land_0_l
+          | apply Z_pow2_trans_nat_r]=> //=.
+    Qed.
 
     Lemma _Z_to_bytes_unsigned_le'_shrink_cnt:
       forall (idx cnt cnt': nat) (v: Z),
@@ -460,9 +508,9 @@ Section FromToBytes.
           * apply IHl.
     Qed.
 
-  End ToBytesFacts.
+  End ToBytesFacts_internal.
 
-  Section FromBytes.
+  Section FromBytes_internal.
 
     Definition _Z_from_bytes_unsigned_le' (idx: nat) (bytes: list N): Z :=
       foldr (fun '(idx, byte) acc => Z.lor (_Z_set_byte (Z.of_N byte) idx) acc)
@@ -478,16 +526,17 @@ Section FromToBytes.
       | Unsigned => unsigned
       end.
 
-    Definition _Z_from_bytes {σ: genv} (sgn: signed) (bytes: list N): Z :=
+    (* NOTE: This will be sealed once we finish the proofs for this section. *)
+    Definition _Z_from_bytes_def {σ: genv} (sgn: signed) (bytes: list N): Z :=
       _Z_from_bytes_le
         sgn match byte_order σ with
             | Little => bytes
             | Big    => List.rev bytes
             end.
 
-  End FromBytes.
+  End FromBytes_internal.
 
-  Section FromBytesFacts.
+  Section FromBytesFacts_internal.
 
     Lemma _Z_from_bytes_unsigned_le'_nil:
       forall (idx: nat),
@@ -497,6 +546,24 @@ Section FromToBytes.
     Lemma _Z_from_bytes_unsigned_le_nil:
       _Z_from_bytes_unsigned_le [] = 0%Z.
     Proof. apply _Z_from_bytes_unsigned_le'_nil. Qed.
+
+    Lemma _Z_from_bytes_le_nil:
+      forall sgn,
+      _Z_from_bytes_le sgn [] = 0%Z.
+    Proof.
+      move=> [ | ];
+        rewrite /_Z_from_bytes_le
+                _Z_from_bytes_unsigned_le_nil //=.
+    Qed.
+
+    Lemma _Z_from_bytes_def_nil:
+      forall σ sgn,
+        _Z_from_bytes_def (σ:=σ) sgn [] = 0%Z.
+    Proof.
+      move=> σ [ | ];
+        rewrite /_Z_from_bytes_def /rev;
+        case_match; now rewrite _Z_from_bytes_le_nil.
+    Qed.
 
     Lemma _Z_from_bytes_unsigned_le'_cons:
       forall (idx: nat) (byte: N) (bytes: list N),
@@ -562,6 +629,27 @@ Section FromToBytes.
         _Z_from_bytes_unsigned_le (repeat 0%N cnt) = 0%Z.
     Proof. apply _Z_from_bytes_unsigned_le'_0s. Qed.
 
+    Lemma _Z_from_bytes_le_0s:
+      forall sgn (cnt: nat),
+        _Z_from_bytes_le sgn (repeat 0%N cnt) = 0%Z.
+    Proof.
+      move=> [ | ] cnt; rewrite /_Z_from_bytes_le.
+      - rewrite repeat_length _Z_from_bytes_unsigned_le_0s.
+        assert (8 * N.of_nat cnt = 0 \/ 0 < 8 * N.of_nat cnt)%N as [Hcnt | Hcnt] by lia.
+        + rewrite /to_signed_bits bool_decide_eq_true_2; by lia.
+        + rewrite to_signed_bits_id; intuition; [by reflexivity | ].
+          apply Z.pow_pos_nonneg; lia.
+      - apply _Z_from_bytes_unsigned_le_0s.
+    Qed.
+
+    Lemma _Z_from_bytes_def_0s:
+      forall σ sgn (cnt: nat),
+        _Z_from_bytes_def (σ:=σ) sgn (repeat 0%N cnt) = 0%Z.
+    Proof.
+      move=> σ [ | ] cnt; rewrite /_Z_from_bytes_def rev_repeat;
+        case_match; apply _Z_from_bytes_le_0s.
+    Qed.
+
     Lemma _Z_from_bytes_unsigned_le'_S_idx:
       forall (idx: nat) (bytes: list N),
         (_Z_from_bytes_unsigned_le' (S idx) (bytes) =
@@ -576,9 +664,9 @@ Section FromToBytes.
       now rewrite IHbytes _Z_set_byte_S_idx.
     Qed.
 
-  End FromBytesFacts.
+  End FromBytesFacts_internal.
 
-  Section FromToFacts.
+  Section FromToFacts_internal.
 
     Lemma _Z_from_to_bytes_unsigned_le'_overflow:
       forall (idx cnt: nat) (v: Z),
@@ -695,7 +783,7 @@ Section FromToBytes.
     Lemma _Z_from_to_bytes_le_roundtrip:
       forall (cnt: nat) (sgn: signed) (v: Z),
         match sgn with
-        | Signed   => 0 < cnt /\ -2^((8*cnt)-1) <= v /\ v <= 2^((8*cnt)-1) - 1
+        | Signed   => -2^((8*cnt)-1) <= v /\ v <= 2^((8*cnt)-1) - 1
         | Unsigned => 0 <= v /\ v < 2^(8*cnt)
         end%Z ->
         _Z_from_bytes_le sgn (_Z_to_bytes_le cnt sgn v) = v.
@@ -734,21 +822,167 @@ Section FromToBytes.
           apply Z.sub_lt_le_mono; try apply Z.pow_lt_mono_r; lia.
     Qed.
 
-    Lemma _Z_from_to_bytes_roundtrip:
+    Lemma _Z_from_unsigned_to_signed_bytes_le:
+      forall (cnt: nat) (v: Z),
+        (-2^((8*cnt)-1) <= v)%Z ->
+        (v <= 2^((8*cnt)-1) - 1)%Z ->
+        _Z_from_bytes_le Unsigned (_Z_to_bytes_le cnt Signed v) =
+        to_unsigned_bits (8*N.of_nat cnt) v.
+    Proof.
+      move=> cnt v Hlower Hupper.
+      rewrite /trim /_Z_from_bytes_le /_Z_to_bytes_le.
+      rewrite _Z_from_to_bytes_unsigned_le_roundtrip /trim //.
+      - apply Z_mod_lt; rewrite Z.gt_lt_iff;
+          apply Z.pow_pos_nonneg; lia.
+      - replace (Z.of_N (8 * N.of_nat cnt)) with (8 * cnt)%Z by lia;
+          apply Z_mod_lt; rewrite Z.gt_lt_iff;
+          apply Z.pow_pos_nonneg; lia.
+    Qed.
+
+    Lemma _Z_from_signed_to_unsigned_bytes_le:
+      forall (cnt: nat) (v: Z),
+        (0 <= v)%Z ->
+        (v < 2^(8*cnt))%Z ->
+        _Z_from_bytes_le Signed (_Z_to_bytes_le cnt Unsigned v) =
+        to_signed_bits (8*N.of_nat cnt) v.
+    Proof.
+      move=> cnt v Hlower Hupper.
+      rewrite /_Z_from_bytes_le /_Z_to_bytes_le
+              _Z_to_bytes_unsigned_le_length
+              _Z_from_to_bytes_unsigned_le_roundtrip //.
+    Qed.
+
+    Lemma _Z_from_to_bytes_def_roundtrip:
       forall (σ: genv) (cnt: nat) (sgn: signed) (v: Z),
         match sgn with
-        | Signed   => 0 < cnt /\ -2^((8*cnt)-1) <= v /\ v <= 2^((8*cnt)-1) - 1
+        | Signed   => -2^((8*cnt)-1) <= v /\ v <= 2^((8*cnt)-1) - 1
         | Unsigned => 0 <= v /\ v < 2^(8*cnt)
         end%Z ->
-        _Z_from_bytes (σ:=σ) sgn (_Z_to_bytes (σ:=σ) cnt sgn v) = v.
+        _Z_from_bytes_def (σ:=σ) sgn (_Z_to_bytes_def (σ:=σ) cnt sgn v) = v.
     Proof.
-      rewrite /_Z_from_bytes /_Z_to_bytes;
+      rewrite /_Z_from_bytes_def /_Z_to_bytes_def;
         intros σ cnt sgn v H; destruct (byte_order σ);
         try rewrite rev_involutive;
         now apply _Z_from_to_bytes_le_roundtrip.
     Qed.
 
-  End FromToFacts.
+    Lemma _Z_from_unsigned_to_signed_bytes_def:
+      forall (σ: genv) (cnt: nat) (v: Z),
+        (-2^((8*cnt)-1) <= v)%Z ->
+        (v <= 2^((8*cnt)-1) - 1)%Z ->
+        _Z_from_bytes_def (σ:=σ) Unsigned (_Z_to_bytes_def (σ:=σ) cnt Signed v) =
+        to_unsigned_bits (8*N.of_nat cnt) v.
+    Proof.
+      rewrite /_Z_from_bytes_def /_Z_to_bytes_def;
+        intros σ cnt v Hlower Hupper; destruct (byte_order σ);
+        try rewrite rev_involutive;
+        now apply _Z_from_unsigned_to_signed_bytes_le.
+    Qed.
+
+    Lemma _Z_from_signed_to_unsigned_bytes_def:
+      forall (σ: genv) (cnt: nat) (v: Z),
+        (0 <= v)%Z ->
+        (v < 2^(8*cnt))%Z ->
+        _Z_from_bytes_def (σ:=σ) Signed (_Z_to_bytes_def (σ:=σ) cnt Unsigned v) =
+        to_signed_bits (8*N.of_nat cnt) v.
+    Proof.
+      rewrite /_Z_from_bytes_def /_Z_to_bytes_def;
+        intros σ cnt v Hlower Hupper; destruct (byte_order σ);
+        try rewrite rev_involutive;
+        now apply _Z_from_signed_to_unsigned_bytes_le.
+    Qed.
+
+  End FromToFacts_internal.
+
+  Section ToBytes_external.
+
+    Definition _Z_to_bytes_aux {σ: genv} : seal (@_Z_to_bytes_def σ). by eexists. Qed.
+    Definition _Z_to_bytes {σ: genv} := (_Z_to_bytes_aux (σ:=σ)).(unseal).
+    Definition _Z_to_bytes_eq {σ: genv}: @_Z_to_bytes σ = _ :=
+      (_Z_to_bytes_aux (σ:=σ)).(seal_eq).
+
+  End ToBytes_external.
+
+  Section ToBytesFacts_external.
+
+    Lemma _Z_to_bytes_length:
+      forall σ (cnt: nat) sgn v,
+        length (_Z_to_bytes (σ:=σ) cnt sgn v) = cnt.
+    Proof. move=> *; rewrite _Z_to_bytes_eq; apply _Z_to_bytes_def_length. Qed.
+
+    Lemma _Z_to_bytes_0_bytes:
+      forall σ sgn v,
+        _Z_to_bytes (σ:=σ) 0 sgn v = [].
+    Proof. move=> *; rewrite _Z_to_bytes_eq; apply _Z_to_bytes_def_0_bytes. Qed.
+
+    Lemma _Z_to_bytes_0_value:
+      forall σ (cnt: nat) sgn,
+        _Z_to_bytes (σ:=σ) cnt sgn 0%Z = repeat 0%N cnt.
+    Proof. move=> *; rewrite _Z_to_bytes_eq; apply _Z_to_bytes_def_0_value. Qed.
+
+  End ToBytesFacts_external.
+
+  Section FromBytes_external.
+
+    Definition _Z_from_bytes_aux {σ: genv} : seal (@_Z_from_bytes_def σ). by eexists. Qed.
+    Definition _Z_from_bytes {σ: genv} := (_Z_from_bytes_aux (σ:=σ)).(unseal).
+    Definition _Z_from_bytes_eq {σ: genv} : @_Z_from_bytes σ = _ :=
+      (_Z_from_bytes_aux (σ:=σ)).(seal_eq).
+
+  End FromBytes_external.
+
+  Section FromBytesFacts_external.
+
+    Lemma _Z_from_bytes_nil:
+      forall σ sgn,
+        _Z_from_bytes (σ:=σ) sgn [] = 0%Z.
+    Proof. move=> *; rewrite _Z_from_bytes_eq; apply _Z_from_bytes_def_nil. Qed.
+
+    Lemma _Z_from_bytes_0s:
+      forall σ sgn (cnt: nat),
+        _Z_from_bytes (σ:=σ) sgn (repeat 0%N cnt) = 0%Z.
+    Proof. move=> *; rewrite _Z_from_bytes_eq; apply _Z_from_bytes_def_0s. Qed.
+
+  End FromBytesFacts_external.
+
+  Section FromToFacts_external.
+
+    Lemma _Z_from_to_bytes_roundtrip:
+      forall (σ: genv) (cnt: nat) (sgn: signed) (v: Z),
+        match sgn with
+        | Signed   => -2^((8*cnt)-1) <= v /\ v <= 2^((8*cnt)-1) - 1
+        | Unsigned => 0 <= v /\ v < 2^(8*cnt)
+        end%Z ->
+        _Z_from_bytes (σ:=σ) sgn (_Z_to_bytes (σ:=σ) cnt sgn v) = v.
+    Proof.
+      move=> *; rewrite _Z_from_bytes_eq _Z_to_bytes_eq;
+        now apply _Z_from_to_bytes_def_roundtrip.
+    Qed.
+
+    Lemma _Z_from_unsigned_to_signed_bytes:
+      forall (σ: genv) (cnt: nat) (v: Z),
+        (-2^((8*cnt)-1) <= v)%Z ->
+        (v <= 2^((8*cnt)-1) - 1)%Z ->
+        _Z_from_bytes (σ:=σ) Unsigned (_Z_to_bytes (σ:=σ) cnt Signed v) =
+        to_unsigned_bits (8*N.of_nat cnt) v.
+    Proof.
+      move=> *; rewrite _Z_from_bytes_eq _Z_to_bytes_eq;
+        now apply _Z_from_unsigned_to_signed_bytes_def.
+    Qed.
+
+    Lemma _Z_from_signed_to_unsigned_bytes:
+      forall (σ: genv) (cnt: nat) (v: Z),
+        (0 <= v)%Z ->
+        (v < 2^(8*cnt))%Z ->
+        _Z_from_bytes (σ:=σ) Signed (_Z_to_bytes (σ:=σ) cnt Unsigned v) =
+        to_signed_bits (8*N.of_nat cnt) v.
+    Proof.
+      move=> *; rewrite _Z_from_bytes_eq _Z_to_bytes_eq;
+        now apply _Z_from_signed_to_unsigned_bytes_def.
+    Qed.
+
+  End FromToFacts_external.
+
 End FromToBytes.
 
 Local Lemma length__Z_to_bytes_le n sgn v :
@@ -1019,6 +1253,8 @@ Module SimpleCPP.
       Proper (genv_leq ==> eq ==> eq ==> eq ==> eq) (@Z_to_bytes).
     Proof.
       intros ?? Hσ. repeat intro. subst. unfold Z_to_bytes, _Z_to_bytes.
+      f_equal.
+      rewrite !seal_eq /_Z_to_bytes_def.
       by setoid_rewrite Hσ.
     Qed.
 
