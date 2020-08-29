@@ -153,27 +153,34 @@ Module Type CPP_LOGIC (Import CC : CPP_LOGIC_CLASS).
       note that in the presence of code-loading, function calls will
       require an extra side-condition that the code is loaded.
      *)
-    Parameter code_at : Func -> ptr -> mpred.
-    Parameter method_at : Method -> ptr -> mpred.
-    Parameter ctor_at : Ctor -> ptr -> mpred.
-    Parameter dtor_at : Dtor -> ptr -> mpred.
+    Parameter code_at : genv -> Func -> ptr -> mpred.
+    Parameter method_at : genv -> Method -> ptr -> mpred.
+    Parameter ctor_at : genv -> Ctor -> ptr -> mpred.
+    Parameter dtor_at : genv -> Dtor -> ptr -> mpred.
 
-    Axiom code_at_persistent : forall f p, Persistent (@code_at f p).
-    Axiom code_at_affine : forall f p, Affine (@code_at f p).
-    Axiom code_at_timeless : forall f p, Timeless (@code_at f p).
+    Section with_genv.
+      Context {σ : genv}.
+      Local Notation code_at := (code_at σ) (only parsing).
+      Local Notation method_at := (method_at σ) (only parsing).
+      Local Notation ctor_at := (ctor_at σ) (only parsing).
+      Local Notation dtor_at := (dtor_at σ) (only parsing).
 
-    Axiom method_at_persistent : forall f p, Persistent (@method_at f p).
-    Axiom method_at_affine : forall f p, Affine (@method_at f p).
-    Axiom method_at_timeless : forall f p, Timeless (@method_at f p).
+      Axiom code_at_persistent : forall f p, Persistent (code_at f p).
+      Axiom code_at_affine : forall f p, Affine (code_at f p).
+      Axiom code_at_timeless : forall f p, Timeless (code_at f p).
 
-    Axiom ctor_at_persistent : forall f p, Persistent (@ctor_at f p).
-    Axiom ctor_at_affine : forall f p, Affine (@ctor_at f p).
-    Axiom ctor_at_timeless : forall f p, Timeless (@ctor_at f p).
+      Axiom method_at_persistent : forall f p, Persistent (method_at f p).
+      Axiom method_at_affine : forall f p, Affine (method_at f p).
+      Axiom method_at_timeless : forall f p, Timeless (method_at f p).
 
-    Axiom dtor_at_persistent : forall f p, Persistent (@dtor_at f p).
-    Axiom dtor_at_affine : forall f p, Affine (@dtor_at f p).
-    Axiom dtor_at_timeless : forall f p, Timeless (@dtor_at f p).
+      Axiom ctor_at_persistent : forall f p, Persistent (ctor_at f p).
+      Axiom ctor_at_affine : forall f p, Affine (ctor_at f p).
+      Axiom ctor_at_timeless : forall f p, Timeless (ctor_at f p).
 
+      Axiom dtor_at_persistent : forall f p, Persistent (dtor_at f p).
+      Axiom dtor_at_affine : forall f p, Affine (dtor_at f p).
+      Axiom dtor_at_timeless : forall f p, Timeless (dtor_at f p).
+    End with_genv.
 
     (** Physical representation of pointers. *)
     (** [pinned_ptr va p] states that dereferencing abstract pointer [p]

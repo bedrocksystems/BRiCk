@@ -711,16 +711,79 @@ Section with_cpp.
   Parameter fspec
     : forall (tt : type_table) (fun_type : type) (ti : thread_info) (addr : val) (ls : list val) (Q : val -> epred), mpred.
 
-  (* note(gmm): this admits weakening of [tt] *)
+  (* [type_compatible a b t1 t2] states that the type [t1] (interpreted by type environment [a]) is at least as defined as
+     the type [t2] (interepreted by type environment [b]).
+
+     "At least as defined as" means that they are essentially equal except that type environment [t2] might not have a body
+     for one type that type environment [t1] has. For example, take the following:
+
+     // x.hpp
+     class F;
+     class T { F* x; };
+
+     // x.cpp
+     #include "x.hpp"
+     class F { int x; };
+
+     // y.cpp
+     #include "x.hpp"
+     class F { bool x; };
+
+     Here:
+     - [type_compatible <x.cpp> <x.hpp> (Tnamed "T") (Tnamed "T")] is provable
+     - [type_compatible <x.hpp> <y.cpp> (Tnamed "T") (Tnamed "T")] is *not* provable
+   *)
+  Inductive type_compatible (a b : type_table) : type -> type -> Prop :=
+  | compat_Tptr {t t'} (_ : type_compatible a b t t') : type_compatible a b (Tptr t) (Tptr t')
+  | compat_Tref {t t'} (_ : type_compatible a b t t') : type_compatible a b (Tref t) (Tref t')
+  | compat_Trf_ref {t t'} (_ : type_compatible a b t t') : type_compatible a b (Trv_ref t) (Trv_ref t')
+  | compat_Tint {sz sgn} : type_compatible a b (Tint sz sgn) (Tint sz sgn)
+  | compat_Tvoid : type_compatible a b Tvoid Tvoid
+  | compat_Tarray {n t' t} (_ : type_compatible a b t t') : type_compatible a b (Tarray t n) (Tarray t' n)
+  | compat_Tnamed {n s1 s2} (_ : a !! n = Some s1) (_ : b !! n = Some s2)
+                  (_ : decl_compatible a b s1 s2) : type_compatible a b (Tnamed n) (Tnamed n)
+  | compat_Tfunction {cc t t' args args'} (_ : type_compatible a b t t') (_ : List.Forall2 (type_compatible a b) args args')
+    : type_compatible a b (Tfunction cc t args) (Tfunction cc t' args')
+  | compat_Tbool : type_compatible a b Tbool Tbool
+  | compat_Tmember_pointer {n t t'} (_ : type_compatible a b (Tnamed n) (Tnamed n)) (_ : type_compatible a b t t') : type_compatible a b (Tmember_pointer n t) (Tmember_pointer n t')
+  | compat_Tfloat {sz} : type_compatible a b (Tfloat sz) (Tfloat sz)
+  | compat_Tqualified {q t t'} (_ : type_compatible a b t t') : type_compatible a b (Tqualified q t) (Tqualified q t')
+  | compat_Tnullptr : type_compatible a b Tnullptr Tnullptr
+  | compat_Tarch {sz n} : type_compatible a b (Tarch sz n) (Tarch sz n)
+
+  with decl_compatible (a b : type_table) : GlobDecl -> GlobDecl -> Prop :=
+  | compat_Gtype : decl_compatible a b Gtype Gtype
+  | compat_Gstruct_Gtype {st} : decl_compatible a b (Gstruct st) Gtype
+  | compat_Gunion_Gtype {u} : decl_compatible a b (Gunion u) Gtype
+  | compat_GtypedefL {t t'} (_ : type_compatible a b t t') : decl_compatible a b (Gtypedef t) (Gtypedef t')
+  | compat_Gstruct {st}
+                   (_ : forall gn li, In (gn, li) st.(s_bases) -> type_compatible a b (Tnamed gn) (Tnamed gn))
+                   (_ : forall x t li, In (x, t, li) st.(s_fields) -> type_compatible a b t t)
+    : decl_compatible a b (Gstruct st) (Gstruct st)
+  | compat_Gunion {u}
+                  (_ : forall x t li, In (x, t, li) u.(u_fields) -> type_compatible a b t t)
+    : decl_compatible a b (Gunion u) (Gunion u)
+  .
+
+  Inductive wf_type' (a : type_table) : bool -> type -> Prop := .
+
+  Definition wf_type tt t := wf_type' tt false t.
+
+  Axiom wf_type_type_compatible : forall te t, wf_type te t -> type_compatible te te t t.
+  Axiom fspec_wf_type : forall te ft ti a ls Q,
+      fspec te ft ti a ls Q |-- fspec te ft ti a ls Q ** [| wf_type te ft /\ exists cc tret targs, ft = Tfunction cc tret targs |].
+
   Axiom fspec_frame : forall tt1 tt2 ft a ls ti Q1 Q2,
-      tt1 = tt2 ->
+      type_compatible tt1 tt2 ft ft ->
       Forall v, Q1 v -* Q2 v |-- @fspec tt1 ft ti a ls Q1 -* @fspec tt2 ft ti a ls Q2.
 
   Global Instance Proper_fspec : forall tt ft a ls ti,
       Proper (pointwise_relation _ lentails ==> lentails) (@fspec tt ft ti a ls).
   Proof. do 3 red; intros.
-         iIntros "X"; iRevert "X"; iApply fspec_frame; auto.
-         iIntros (v); iApply H.
+         rewrite fspec_wf_type.
+         iIntros "[X %]"; iRevert "X"; iApply fspec_frame; auto.
+         2: iIntros (v); iApply H.
+         apply wf_type_type_compatible. tauto.
   Qed.
 
   Section fspec.
@@ -729,7 +792,11 @@ Section with_cpp.
     Implicit Types Q : val → epred.
 
     Lemma fspec_wand Q1 Q2 : WP Q1 |-- (∀ v, Q1 v -* Q2 v) -* WP Q2.
-    Proof. iIntros "Hwp HK". by iApply (fspec_frame with "HK Hwp"). Qed.
+    Proof. iIntros "Hwp HK".
+           iDestruct (fspec_wf_type with "Hwp") as "[Hwp %]".
+           iApply (fspec_frame with "HK Hwp").
+           eapply wf_type_type_compatible; tauto.
+    Qed.
   End fspec.
 
 End with_cpp.

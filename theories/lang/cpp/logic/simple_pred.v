@@ -584,6 +584,8 @@ Module SimpleCPP.
       iDestruct (bytes_agree with "Hb1 Hb2") as %->; auto. iClear "Hb1 Hb2".
       (* PDS: I see no way to proceed. The preceding lemma
       [encodes_agree] seems unsound wrt the present ghost state. *)
+      (* GMM: this seems provable as long as neither v1 nor v2 is Vundef.
+       *)
     Abort.
 
     (** the pointer points to the code
@@ -591,56 +593,56 @@ Module SimpleCPP.
       note that in the presence of code-loading, function calls will
       require an extra side-condition that the code is loaded.
      *)
-    Definition code_at (f : Func) (p : ptr) : mpred.
+    Definition code_at (_ : genv) (f : Func) (p : ptr) : mpred.
     refine (own _ghost.(code_name) {[ p := to_agree (inl (inl (inl f))) ]}).
     apply (@codeG Σ); apply has_cppG.
     all: refine _.
     Defined.
 
-    Definition method_at (m : Method) (p : ptr) : mpred.
+    Definition method_at (_ : genv) (m : Method) (p : ptr) : mpred.
     refine (own _ghost.(code_name) {[ p := to_agree (inl (inl (inr m))) ]}).
     apply (@codeG Σ); apply has_cppG.
     all: refine _.
     Defined.
 
-    Definition ctor_at (c : Ctor) (p : ptr) : mpred.
+    Definition ctor_at (_ : genv) (c : Ctor) (p : ptr) : mpred.
     refine (own _ghost.(code_name) {[ p := to_agree (inl (inr c)) ]}).
     apply (@codeG Σ); apply has_cppG.
     all: refine _.
     Defined.
 
-    Definition dtor_at (d : Dtor) (p : ptr) : mpred.
+    Definition dtor_at (_ : genv) (d : Dtor) (p : ptr) : mpred.
     refine (own _ghost.(code_name) {[ p := to_agree (inr d) ]}).
     apply (@codeG Σ); apply has_cppG.
     all: refine _.
     Defined.
 
-    Theorem code_at_persistent : forall f p, Persistent (@code_at f p).
+    Theorem code_at_persistent : forall s f p, Persistent (@code_at s f p).
     Proof. red. intros. iIntros "#X". iFrame "#". Qed.
-    Theorem code_at_affine : forall f p, Affine (@code_at f p).
+    Theorem code_at_affine : forall s f p, Affine (@code_at s f p).
     Proof. red. intros. eauto. Qed.
-    Theorem code_at_timeless : forall f p, Timeless (@code_at f p).
+    Theorem code_at_timeless : forall s f p, Timeless (@code_at s f p).
     Proof. unfold code_at. refine _. Qed.
 
-    Theorem method_at_persistent : forall f p, Persistent (@method_at f p).
+    Theorem method_at_persistent : forall s f p, Persistent (@method_at s f p).
     Proof. red. intros. iIntros "#X". iFrame "#". Qed.
-    Theorem method_at_affine : forall f p, Affine (@method_at f p).
+    Theorem method_at_affine : forall s f p, Affine (@method_at s f p).
     Proof. red. intros. eauto. Qed.
-    Theorem method_at_timeless : forall f p, Timeless (@method_at f p).
+    Theorem method_at_timeless : forall s f p, Timeless (@method_at s f p).
     Proof. unfold method_at. refine _. Qed.
 
-    Theorem ctor_at_persistent : forall f p, Persistent (@ctor_at f p).
+    Theorem ctor_at_persistent : forall s f p, Persistent (@ctor_at s f p).
     Proof. red. intros. iIntros "#X". iFrame "#". Qed.
-    Theorem ctor_at_affine : forall f p, Affine (@ctor_at f p).
+    Theorem ctor_at_affine : forall s f p, Affine (@ctor_at s f p).
     Proof. red. intros. eauto. Qed.
-    Theorem ctor_at_timeless : forall f p, Timeless (@ctor_at f p).
+    Theorem ctor_at_timeless : forall s f p, Timeless (@ctor_at s f p).
     Proof. unfold ctor_at. refine _. Qed.
 
-    Theorem dtor_at_persistent : forall f p, Persistent (@dtor_at f p).
+    Theorem dtor_at_persistent : forall s f p, Persistent (@dtor_at s f p).
     Proof. red. intros. iIntros "#X". iFrame "#". Qed.
-    Theorem dtor_at_affine : forall f p, Affine (@dtor_at f p).
+    Theorem dtor_at_affine : forall s f p, Affine (@dtor_at s f p).
     Proof. red. intros. eauto. Qed.
-    Theorem dtor_at_timeless : forall f p, Timeless (@dtor_at f p).
+    Theorem dtor_at_timeless : forall s f p, Timeless (@dtor_at s f p).
     Proof. unfold dtor_at. refine _. Qed.
 
     (** physical representation of pointers
