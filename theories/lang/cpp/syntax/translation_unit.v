@@ -146,6 +146,7 @@ Proof. solve_decision. Defined.
 
 (** [type_of_value o] returns the type of the given [ObjValue] *)
 Definition type_of_value (o : ObjValue) : type :=
+  normalize_type
   match o with
   | Ovar t _ => t
   | Ofunction f => Tfunction f.(f_cc) f.(f_return) $ snd <$> f.(f_params)
