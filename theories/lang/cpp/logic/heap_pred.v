@@ -613,10 +613,10 @@ Arguments anyR {_ Σ resolve} ty q : rename.
 Arguments uninitR {_ Σ resolve} ty q : rename.
 Arguments primR {_ Σ resolve} ty q v : rename.
 Arguments refR {_ Σ} ty v : rename.
-
+Arguments cptr {_ Σ resolve} _ : rename.
 
 Instance Persistent_spec `{Σ:cpp_logic ti} {resolve:genv} nm s :
-  Persistent (_at (Σ:=Σ) (_global (resolve:=resolve) nm) (cptr resolve s)) := _.
+  Persistent (_at (Σ:=Σ) (_global (resolve:=resolve) nm) (cptr (resolve:=resolve) s)) := _.
 
 #[deprecated(since="20200728", note="Use the constructor tactic instead")]
 Notation Rep_lequiv := Rep_ext (only parsing).
