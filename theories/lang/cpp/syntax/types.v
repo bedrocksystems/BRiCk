@@ -94,7 +94,8 @@ Variant calling_conv : Set :=
 | CC_AArch64VectorCall.
 Global Instance: EqDecision calling_conv.
 Proof. solve_decision. Defined.
-
+Existing Class calling_conv.
+Existing Instance CC_C.
 
 (* types *)
 Inductive type : Set :=
@@ -105,7 +106,7 @@ Inductive type : Set :=
 | Tvoid
 | Tarray (_ : type) (_ : N) (* unknown sizes are represented by pointers *)
 | Tnamed (_ : globname)
-| Tfunction (_ : calling_conv) (_ : type) (_ : list type)
+| Tfunction {cc : calling_conv} (_ : type) (_ : list type)
 | Tbool
 | Tmember_pointer (_ : globname) (_ : type)
 | Tfloat (_ : bitsize)
@@ -220,8 +221,8 @@ Fixpoint normalize_type (t : type) : type :=
   | Treference t => Treference (normalize_type t)
   | Trv_reference t => Trv_reference (normalize_type t)
   | Tarray t n => Tarray (normalize_type t) n
-  | Tfunction cc r args =>
-    Tfunction cc (drop_norm r) (List.map drop_norm args)
+  | @Tfunction cc r args =>
+    Tfunction (cc:=cc) (drop_norm r) (List.map drop_norm args)
   | Tmember_pointer gn t => Tmember_pointer gn (normalize_type t)
   | Tqualified q t => qual_norm q t
   | Tint _ _ => t

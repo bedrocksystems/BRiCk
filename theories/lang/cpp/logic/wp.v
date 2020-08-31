@@ -752,7 +752,7 @@ Section with_cpp.
     : type_compatible a b (Tnamed n) (Tnamed n)
   | compat_Tfunction {cc t t' args args'} (_ : type_compatible a b t t')
                      (_ : List.Forall2 (type_compatible a b) args args')
-    : type_compatible a b (Tfunction cc t args) (Tfunction cc t' args')
+    : type_compatible a b (Tfunction (cc:=cc) t args) (Tfunction (cc:=cc) t' args')
   | compat_Tbool : type_compatible a b Tbool Tbool
   | compat_Tmember_pointer {n t t'}
                            (_ : type_compatible a b (Tnamed n) (Tnamed n))
@@ -802,7 +802,7 @@ Section with_cpp.
   Axiom fspec_wf_type : forall te ft ti a ls Q,
       fspec te ft ti a ls Q
       |-- fspec te ft ti a ls Q **
-          [| wf_type te ft /\ exists cc tret targs, ft = Tfunction cc tret targs |].
+          [| wf_type te ft /\ exists cc tret targs, ft = Tfunction (cc:=cc) tret targs |].
 
   Axiom fspec_frame : forall tt1 tt2 ft a ls ti Q1 Q2,
       type_compatible tt1 tt2 ft ft ->

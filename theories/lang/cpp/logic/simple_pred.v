@@ -238,7 +238,7 @@ Module SimpleCPP.
               [| vs = aptr p |]
           | _ => lfalse
           end
-        | Tfunction _ _ _
+        | Tfunction _ _
         | Treference _
         | Trv_reference _ =>
           match v with
@@ -287,7 +287,7 @@ Module SimpleCPP.
           | Tint sz _ => size_to_bytes sz
 
           | Tmember_pointer _ _ | Tnullptr | Tpointer _
-          | Tfunction _ _ _ | Treference _ | Trv_reference _ =>
+          | Tfunction _ _ | Treference _ | Trv_reference _ =>
             POINTER_BYTES
 
           | _ => 0	(* dummy *)

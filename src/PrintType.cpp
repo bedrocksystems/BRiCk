@@ -258,7 +258,7 @@ public:
 
     void VisitFunctionProtoType(const FunctionProtoType* type,
                                 CoqPrinter& print, ClangPrinter& cprint) {
-        print.ctor("Tfunction");
+        print.ctor("@Tfunction");
         cprint.printCallingConv(type->getCallConv(), print);
         print.output() << fmt::nbsp;
         printQualType(type->getReturnType(), print, cprint);

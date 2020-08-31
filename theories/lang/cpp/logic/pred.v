@@ -260,6 +260,6 @@ Section with_cpp.
   Arguments Build_function_spec : clear implicits.
 
   Definition type_of_spec `(fs : function_spec) : type :=
-    normalize_type (Tfunction fs.(fs_cc) fs.(fs_return) fs.(fs_arguments)).
+    normalize_type (Tfunction (cc:=fs.(fs_cc)) fs.(fs_return) fs.(fs_arguments)).
 
 End with_cpp.

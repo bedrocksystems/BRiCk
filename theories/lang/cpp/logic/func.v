@@ -22,7 +22,7 @@ Section with_cpp.
   Context `{Σ : cpp_logic thread_info} {resolve:genv}.
 
   (* Hoare triple for a function. *)
-  Definition TSFunction@{X Z Y} (cc : calling_conv) (ret : type) (targs : list type)
+  Definition TSFunction@{X Z Y} {cc : calling_conv} (ret : type) (targs : list type)
              (PQ : thread_info -> WithPrePost@{X Z Y} mpredI)
   : function_spec :=
     {| fs_cc        := cc
@@ -31,7 +31,7 @@ Section with_cpp.
      ; fs_spec ti   := WppD (PQ ti) |}.
 
 
-  Definition SFunction@{X Z Y} (cc : calling_conv) (ret : type) (targs : list type)
+  Definition SFunction@{X Z Y} {cc : calling_conv} (ret : type) (targs : list type)
              (PQ : WithPrePost@{X Z Y} mpredI)
   : function_spec :=
     {| fs_cc        := cc
@@ -44,7 +44,7 @@ Section with_cpp.
 
   (* Hoare triple for a constructor.
    *)
-  Definition SConstructor@{X Z Y} (cc : calling_conv) (class : globname)
+  Definition SConstructor@{X Z Y} {cc : calling_conv} (class : globname)
              (targs : list type)
              (PQ : ptr -> WithPrePost@{X Z Y} mpredI)
   : function_spec :=
@@ -52,7 +52,7 @@ Section with_cpp.
         (this :: args,
          _at (_eqv this) (anyR (Tnamed class) 1) ** P) in
     let this_type := Qmut (Tnamed class) in
-    SFunction cc (Qmut Tvoid) (Qconst (Tpointer this_type) :: targs)
+    SFunction (cc:=cc) (Qmut Tvoid) (Qconst (Tpointer this_type) :: targs)
               {| wpp_with := TeleS (fun this : ptr => (PQ this).(wpp_with))
                ; wpp_pre this :=
                    tele_map (map_pre (Vptr this)) (PQ this).(wpp_pre)
@@ -61,7 +61,7 @@ Section with_cpp.
 
   (* Hoare triple for a destructor.
    *)
-  Definition SDestructor@{X Z Y} (cc : calling_conv) (class : globname)
+  Definition SDestructor@{X Z Y} {cc : calling_conv} (class : globname)
              (PQ : ptr -> WithPrePost@{X Z Y} mpredI)
   : function_spec :=
     let map_pre this '(args, P) := (Vptr this :: args, P) in
@@ -71,7 +71,7 @@ Section with_cpp.
                                   (result, _at (_eq this) (anyR (Tnamed class) 1) ** Q)) Q |}
     in
     let this_type := Qmut (Tnamed class) in
-    SFunction@{X Z Y} cc (Qmut Tvoid) (Qconst (Tpointer this_type) :: nil)
+    SFunction@{X Z Y} (cc:=cc) (Qmut Tvoid) (Qconst (Tpointer this_type) :: nil)
               {| wpp_with := TeleS (fun this : ptr => (PQ this).(wpp_with))
                ; wpp_pre this :=
                    tele_map (map_pre this) (PQ this).(wpp_pre)
@@ -81,7 +81,7 @@ Section with_cpp.
 
   (* Hoare triple for a method.
    *)
-  Definition SMethod@{X Z Y} (cc  : calling_conv)
+  Definition SMethod@{X Z Y} {cc : calling_conv}
              (class : globname) (qual : type_qualifiers)
              (ret : type) (targs : list type)
              (PQ : ptr -> WithPrePost@{X Z Y} mpredI)
@@ -89,7 +89,7 @@ Section with_cpp.
     let map_pre this '(args, P) := (this :: args, P) in
     let class_type := Tnamed class in
     let this_type := Tqualified qual class_type in
-    SFunction cc ret (Qconst (Tpointer this_type) :: targs)
+    SFunction (cc:=cc) ret (Qconst (Tpointer this_type) :: targs)
               {| wpp_with := TeleS (fun this : ptr => (PQ this).(wpp_with))
                ; wpp_pre this :=
                    tele_map (map_pre (Vptr this)) (PQ this).(wpp_pre)
@@ -143,14 +143,13 @@ Section with_cpp.
         else
           wp (resolve:=resolve) ⊤ ti ρ body (Kfree frees (val_return (fun x => |> Q x)))))
       | Builtin builtin =>
-        wp_builtin ⊤ ti builtin (Tfunction f.(f_cc) f.(f_return) (List.map snd f.(f_params))) args Q
+        wp_builtin ⊤ ti builtin (Tfunction (cc:=f.(f_cc)) f.(f_return) (List.map snd f.(f_params))) args Q
       end
     end.
 
   Definition func_ok (f : Func) (ti : thread_info) (spec : function_spec)
     : mpred :=
-      [| type_of_spec spec =
-         normalize_type (Tfunction f.(f_cc) f.(f_return) (List.map snd f.(f_params))) |] **
+      [| type_of_spec spec = type_of_value (Ofunction f) |] **
       (* forall each argument, apply to [fs_spec ti] *)
       □ Forall Q : val -> mpred, Forall vals,
         spec.(fs_spec) ti vals Q -* wp_func f ti vals Q.
@@ -174,8 +173,7 @@ Section with_cpp.
 
   Definition method_ok (m : Method) (ti : thread_info) (spec : function_spec)
     : mpred :=
-    [| type_of_spec spec =
-       normalize_type (Tfunction m.(m_cc) m.(m_return) (Tpointer (Tqualified m.(m_this_qual) (Tnamed m.(m_class))) :: List.map snd m.(m_params))) |] **
+    [| type_of_spec spec = type_of_value (Omethod m) |] **
     (* forall each argument, apply to [fs_spec ti] *)
     □ Forall Q : val -> mpred, Forall vals,
       spec.(fs_spec) ti vals Q -* wp_method m ti vals Q.
@@ -274,8 +272,7 @@ Section with_cpp.
 
   Definition ctor_ok (ctor : Ctor) (ti : thread_info) (spec : function_spec)
     : mpred :=
-    [| type_of_spec spec =
-       normalize_type (Tfunction ctor.(c_cc) Tvoid (Tpointer (Tnamed ctor.(c_class)) :: List.map snd ctor.(c_params))) |] **
+    [| type_of_spec spec = type_of_value (Oconstructor ctor) |] **
     (* forall each argument, apply to [fs_spec ti] *)
     □ Forall Q : val -> mpred, Forall vals,
       spec.(fs_spec) ti vals Q -* wp_ctor ctor ti vals Q.
@@ -342,8 +339,7 @@ Section with_cpp.
 
   Definition dtor_ok (dtor : Dtor) (ti : thread_info) (spec : function_spec)
     : mpred :=
-    [| type_of_spec spec =
-       normalize_type (Tfunction dtor.(d_cc) Tvoid (Tpointer (Tnamed dtor.(d_class)) :: nil)) |] **
+    [| type_of_spec spec = type_of_value (Odestructor dtor) |] **
     □ Forall Q : val -> mpred, Forall vals,
       spec.(fs_spec) ti vals Q -* wp_dtor dtor ti vals Q.
 

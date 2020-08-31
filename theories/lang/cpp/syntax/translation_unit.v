@@ -149,12 +149,12 @@ Definition type_of_value (o : ObjValue) : type :=
   normalize_type
   match o with
   | Ovar t _ => t
-  | Ofunction f => Tfunction f.(f_cc) f.(f_return) $ snd <$> f.(f_params)
-  | Omethod m => Tfunction m.(m_cc) m.(m_return) $ Tptr (Tqualified m.(m_this_qual) (Tnamed m.(m_class))) :: (snd <$> m.(m_params))
+  | Ofunction f => Tfunction (cc:=f.(f_cc)) f.(f_return) $ snd <$> f.(f_params)
+  | Omethod m => Tfunction (cc:=m.(m_cc)) m.(m_return) $ Tptr (Tqualified m.(m_this_qual) (Tnamed m.(m_class))) :: (snd <$> m.(m_params))
   | Oconstructor c =>
-    Tfunction c.(c_cc) Tvoid $ Tptr (Tnamed c.(c_class)) :: (snd <$> c.(c_params))
+    Tfunction (cc:=c.(c_cc)) Tvoid $ Tptr (Tnamed c.(c_class)) :: (snd <$> c.(c_params))
   | Odestructor d =>
-    Tfunction d.(d_cc) Tvoid $ Tptr (Tnamed d.(d_class)) :: nil
+    Tfunction (cc:=d.(d_cc)) Tvoid $ Tptr (Tnamed d.(d_class)) :: nil
   end.
 
 Variant GlobDecl : Set :=

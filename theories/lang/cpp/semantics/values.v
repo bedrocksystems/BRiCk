@@ -285,7 +285,7 @@ Axiom has_type_rv_reference : forall v ty,
 Axiom has_type_array : forall v ty n,
     has_type v (Tarray ty n) -> exists p, v = Vptr p /\ p <> nullptr.
 Axiom has_type_function : forall v cc rty args,
-    has_type v (Tfunction cc rty args) -> exists p, v = Vptr p /\ p <> nullptr.
+    has_type v (Tfunction (cc:=cc) rty args) -> exists p, v = Vptr p /\ p <> nullptr.
 
 Axiom has_type_void : forall v,
     has_type v Tvoid -> v = Vundef.
@@ -371,7 +371,7 @@ Fixpoint size_of (resolve : genv) (t : type) : option N :=
     | Some (Gunion u) => Some u.(u_size)
     | _ => None
     end
-  | Tfunction _ _ _ => None
+  | Tfunction _ _ => None
   | Tbool => Some 1
   | Tmember_pointer _ _ => Some (@pointer_size resolve)
   | Tqualified _ t => size_of resolve t
