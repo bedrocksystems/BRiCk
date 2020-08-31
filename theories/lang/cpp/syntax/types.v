@@ -70,7 +70,7 @@ Proof. destruct w; reflexivity. Qed.
 
 (* Signed and Unsigned *)
 Variant signed : Set := Signed | Unsigned.
-Global Instance: EqDecision signed.
+#[global] Instance signed_eq_dec: EqDecision signed.
 Proof. solve_decision. Defined.
 
 (* Calling conventions are a little bit beyond what is formally blessed by
@@ -88,24 +88,9 @@ Proof. solve_decision. Defined.
  *)
 Variant calling_conv : Set :=
 | CC_C
-| CC_X86StdCall
-| CC_X86FastCall
-| CC_X86ThisCall
-| CC_X86VectorCall
-| CC_X86Pascal
-| CC_Win64
-| CC_X86_64SysV
-| CC_X86RegCall
-| CC_AAPCS
-| CC_AAPCS_VFP
-| CC_IntelOclBicc
-| CC_SpirFunction
-| CC_OpenCLKernel
-| CC_Swift
-| CC_PreserveMost
-| CC_PreserveAll
-| CC_AArch64VectorCall.
-Global Instance: EqDecision calling_conv.
+| CC_MsAbi
+| CC_RegCall.
+#[global] Instance calling_conv_eq_dec: EqDecision calling_conv.
 Proof. solve_decision. Defined.
 
 (* in almost all contexts, we are going to use [CC_C], so we're going to make
