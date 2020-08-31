@@ -1,6 +1,6 @@
 opam-version: "2.0"
-name: "coq-cpp2v"
-synopsis: "Frontend and program logic for C++"
+name: "cpp2v-bin"
+synopsis: "Binary packages for cpp2v"
 maintainer: ["Gregory Malecha <gregory@bedrocksystems.com>"
              "Abhishek Anand <abhishek@bedrocksystems.com>"
              "Gordon Stewart <gordon@bedrocksystems.com>"]
@@ -12,13 +12,10 @@ bug-reports: "https://github.com/bedrocksystems/cpp2v/issues"
 dev-repo: "git+https://github.com/bedrocksystems/cpp2v.git"
 
 depends: [
-  "coq" { >= "8.11.2" & < "8.11.3" }
-  "coq-ext-lib" { = "0.11.1" }
-  "coq-lens" { = "1.0.0" }
-  "coq-iris" { = "3.3.0" }
-  "coq-iris-string-ident" { = "0.1.0" }
+  "conf-clang"
 ]
 version: "vdev"
 
-build: [ make "-j%{jobs}%" "coq" ]
-install: [ make "install-coq" ]
+build: [
+  [make "-j%{jobs}%" "cpp2v"]
+]
