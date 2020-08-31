@@ -73,6 +73,19 @@ Variant signed : Set := Signed | Unsigned.
 Global Instance: EqDecision signed.
 Proof. solve_decision. Defined.
 
+(* Calling conventions are a little bit beyond what is formally blessed by
+   C++, but the are necessary for low level code that links with other
+   languages.
+
+   From the C++ standard point of view, we view these as opaque symbols with
+   no particular meaning. All that matters is that when you call a function,
+   that this calling convention matches between the caller and the callee.
+   This is what ensures, for example, that when you call a function implemented
+   in another language, that you have the appropriate annotations in place.
+   For example, if you were calling an OpenCL kernel, then the function would
+   have type [Tfunction (cc:=CC_OpenCLKernel) ..], and you would require that
+   annotation in your program.
+ *)
 Variant calling_conv : Set :=
 | CC_C
 | CC_X86StdCall
@@ -94,6 +107,12 @@ Variant calling_conv : Set :=
 | CC_AArch64VectorCall.
 Global Instance: EqDecision calling_conv.
 Proof. solve_decision. Defined.
+
+(* in almost all contexts, we are going to use [CC_C], so we're going to make
+   that the default. Clients interested in specifying another calling convention
+   should write, e.g., [Tfunction (cc:=CC_PreserveAll) ..] to specify the
+   calling convention explicitly.
+ *)
 Existing Class calling_conv.
 Existing Instance CC_C.
 
@@ -143,6 +162,30 @@ Definition Qmut_volatile : type -> type :=
 Definition Qmut : type -> type :=
   Tqualified QM.
 
+Section qual_norm.
+  Context {A : Type}.
+  Variable f : type_qualifiers -> type -> A.
+
+  Fixpoint qual_norm' (q : type_qualifiers) (t : type) : A :=
+    match t with
+    | Tqualified q' t =>
+      qual_norm' (merge_tq q q') t
+    | _ =>
+      f q t
+    end.
+
+  Definition qual_norm : type -> A :=
+    qual_norm' {| q_const := false ; q_volatile := false |}.
+
+End qual_norm.
+
+Definition tqualified (q : type_qualifiers) (t : type) : type :=
+  match q with
+  | {| q_const := false ; q_volatile := false |} => t
+  | _ => Tqualified q t
+  end.
+
+
 (*
 Record TypeInfo : Set :=
 { alignment : nat
@@ -182,27 +225,6 @@ Variant Cast : Set :=
 Instance Case_eq: EqDecision Cast.
 Proof. solve_decision. Defined.
 
-Section qual_norm.
-  Context {A : Type}.
-  Variable f : type_qualifiers -> type -> A.
-
-  Fixpoint qual_norm' q t :=
-    match t with
-    | Tqualified q' t =>
-      qual_norm' (merge_tq q q') t
-    | _ =>
-      f q t
-    end.
-
-  Definition qual_norm := qual_norm' {| q_const := false ; q_volatile := false |}.
-
-End qual_norm.
-
-Definition tqualified (q : type_qualifiers) (t : type) : type :=
-  match q with
-  | {| q_const := false ; q_volatile := false |} => t
-  | _ => Tqualified q t
-  end.
 
 (** normalization of types
     - compresses adjacent [Tqualified] constructors

@@ -15,15 +15,21 @@
 using namespace clang;
 
 CallingConv
-getCallingConv(const FunctionDecl *decl) {
-    if (auto ft =
-            dyn_cast_or_null<FunctionType>(decl->getType().getTypePtr())) {
+getCallingConv(const Type *type) {
+    if (auto ft = dyn_cast_or_null<FunctionType>(type)) {
         return ft->getCallConv();
+    } else if (auto at = dyn_cast_or_null<AttributedType>(type)) {
+        return getCallingConv(at->getModifiedType().getTypePtr());
     } else {
-        decl->getType().dump();
+        type->dump();
         assert(false && "FunctionDecl type is not FunctionType");
         LLVM_BUILTIN_UNREACHABLE;
     }
+}
+
+CallingConv
+getCallingConv(const FunctionDecl *decl) {
+    return getCallingConv(decl->getType().getTypePtr());
 }
 
 void

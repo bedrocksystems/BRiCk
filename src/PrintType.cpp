@@ -20,29 +20,29 @@ using namespace fmt;
 
 void
 printQualType(const QualType& qt, CoqPrinter& print, ClangPrinter& cprint) {
-  if (auto p = qt.getTypePtrOrNull()) {
-    if (qt.isLocalConstQualified()) {
-      if (qt.isVolatileQualified()) {
-        print.ctor("Qconst_volatile", false);
-      } else {
-        print.ctor("Qconst", false);
-      }
-      cprint.printType(p, print);
-      print.end_ctor();
+    if (auto p = qt.getTypePtrOrNull()) {
+        if (qt.isLocalConstQualified()) {
+            if (qt.isVolatileQualified()) {
+                print.ctor("Qconst_volatile", false);
+            } else {
+                print.ctor("Qconst", false);
+            }
+            cprint.printType(p, print);
+            print.end_ctor();
+        } else {
+            if (qt.isLocalVolatileQualified()) {
+                print.ctor("Qmut_volatile", false);
+                cprint.printType(p, print);
+                print.end_ctor();
+            } else {
+                cprint.printType(p, print);
+            }
+        }
     } else {
-      if (qt.isLocalVolatileQualified()) {
-        print.ctor("Qmut_volatile", false);
-        cprint.printType(p, print);
-        print.end_ctor();
-      } else {
-        cprint.printType(p, print);
-      }
+        using namespace logging;
+        fatal() << "unexpected null type in printQualType\n";
+        die();
     }
-  } else {
-    using namespace logging;
-    fatal() << "unexpected null type in printQualType\n";
-    die();
-  }
 }
 
 void
@@ -90,6 +90,11 @@ public:
 
         fatal() << "\n";
         die();
+    }
+
+    void VisitAttributedType(const AttributedType* type, CoqPrinter& print,
+                             ClangPrinter& cprint) {
+        cprint.printQualType(type->getModifiedType(), print);
     }
 
     void VisitDeducedType(const DeducedType* type, CoqPrinter& print,
