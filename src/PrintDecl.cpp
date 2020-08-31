@@ -97,6 +97,7 @@ printFunction(const FunctionDecl *decl, CoqPrinter &print,
         print.cons();
     }
     print.end_list();
+    print.output() << fmt::nbsp;
 
     cprint.printCallingConv(getCallingConv(decl), print);
     print.output() << fmt::nbsp;
@@ -478,7 +479,6 @@ public:
                            ClangPrinter &cprint, const ASTContext &) {
         print.ctor("Dfunction");
         cprint.printGlobalName(decl, print);
-        print.output() << fmt::line;
         printFunction(decl, print, cprint);
         print.end_ctor();
         return true;
@@ -536,7 +536,6 @@ public:
         print.end_list();
 
         cprint.printCallingConv(getCallingConv(decl), print);
-        print.output() << fmt::nbsp;
 
         print.output() << fmt::line;
         if (decl->getBody()) {
