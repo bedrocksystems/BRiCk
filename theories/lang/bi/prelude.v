@@ -22,8 +22,8 @@ Notation "'funI' x .. y => t" := (fun x => .. (fun y => t%I) ..)
 
 Global Notation lentails := (bi_entails) (only parsing).
 Global Notation lequiv := (≡) (only parsing).
-Global Notation ltrue := (bi_pure True) (only parsing).
-Global Notation lfalse := (bi_pure False) (only parsing).
+Global Notation ltrue := (True%I) (only parsing).
+Global Notation lfalse := (False%I) (only parsing).
 Global Notation land := (bi_and) (only parsing).
 Global Notation lor := (bi_or) (only parsing).
 Global Notation limpl := (bi_impl) (only parsing).
