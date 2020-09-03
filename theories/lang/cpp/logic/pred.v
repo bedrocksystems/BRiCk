@@ -176,9 +176,10 @@ Module Type CPP_LOGIC (Import CC : CPP_LOGIC_CLASS).
 
 
     (** Physical representation of pointers. *)
-    (** [pinned_ptr va p] states that dereferencing abstract pointer [p] concretely means
-    dereferencing address [va]. Not all pointers are associated to addresses,
-    but only pointers to memory. *)
+    (** [pinned_ptr va p] states that dereferencing abstract pointer [p]
+    implies dereferencing address [va].
+    [pinned_ptr] will only hold on pointers that are associated to addresses,
+    but other pointers exist. *)
     Parameter pinned_ptr : N -> ptr -> mpred.
     Axiom pinned_ptr_persistent : forall va p, Persistent (pinned_ptr va p).
     Axiom pinned_ptr_affine : forall va p, Affine (pinned_ptr va p).
