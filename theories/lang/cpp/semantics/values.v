@@ -266,6 +266,8 @@ Definition bound (bits : bitsize) (sgn : signed) (v : Z) : Prop :=
     note that only primitives fit into this, there is no [val] representation
     of aggregates.
  *)
+(** [has_type v t] means that [v] is an initialized value of type [t].
+For all types [t] except [Tvoid], this means that [v] is not [Vundef]. *)
 Parameter has_type : val -> type -> Prop.
 Arguments has_type _%Z _.
 

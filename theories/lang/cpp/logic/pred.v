@@ -82,7 +82,11 @@ Module Type CPP_LOGIC (Import CC : CPP_LOGIC_CLASS).
 
     Axiom valid_ptr_nullptr : |-- valid_ptr nullptr.
 
-    (* heap points to *)
+    (* typed heap points to:
+    Pointer [a] is pointer to C++ type [t], which points to a (possibly
+    initialized) value [v].
+    Does not imply [has_type t v].
+     *)
     Parameter tptsto : forall {σ:genv} (t : type) (q : Qp) (a : ptr) (v : val), mpred.
 
     Axiom tptsto_proper :
