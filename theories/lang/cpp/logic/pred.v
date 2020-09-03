@@ -83,9 +83,17 @@ Module Type CPP_LOGIC (Import CC : CPP_LOGIC_CLASS).
     Axiom valid_ptr_nullptr : |-- valid_ptr nullptr.
 
     (**
-    Typed (heap) points to predicate:
-    Pointer [a] is a pointer to C++ type [t], and [a] points to a value [v].
-    That need not be initialized; hence, it might not satisfy [has_type t v]. *)
+    Typed points-to predicate. Fact [tptsto t q p v] asserts the following things:
+    1. Pointer [p] points to value [v].
+    2. We have fractional ownership [q] (in the separation logic sense).
+    3. Pointer [p] points to C++ type [t].
+    However:
+    1. Value [v] need not be initialized.
+    2. Hence, [v] might not satisfy [has_type t v].
+
+    We use this predicate both for pointers to actual memory and for pointers to
+    C++ locations that are not stored in memory (as an optimization).
+    *)
     Parameter tptsto : forall {σ:genv} (t : type) (q : Qp) (a : ptr) (v : val), mpred.
 
     Axiom tptsto_proper :
@@ -167,8 +175,10 @@ Module Type CPP_LOGIC (Import CC : CPP_LOGIC_CLASS).
     Axiom dtor_at_timeless : forall f p, Timeless (@dtor_at f p).
 
 
-    (** physical representation of pointers
-     *)
+    (** Physical representation of pointers. *)
+    (** [pinned_ptr va p] states that dereferencing abstract pointer [p] concretely means
+    dereferencing address [va]. Not all pointers are associated to addresses,
+    but only pointers to memory. *)
     Parameter pinned_ptr : N -> ptr -> mpred.
     Axiom pinned_ptr_persistent : forall va p, Persistent (pinned_ptr va p).
     Axiom pinned_ptr_affine : forall va p, Affine (pinned_ptr va p).
