@@ -484,7 +484,7 @@ Section with_cpp.
 
   (** [uninitR] *)
   Definition uninit_def {resolve:genv} (ty : type) q : Rep :=
-    primR (resolve:=resolve) ty q Vundef.
+    as_Rep (fun addr => @tptsto _ _ resolve ty q addr Vundef).
   Definition uninit_aux : seal (@uninit_def). by eexists. Qed.
   Definition uninitR := uninit_aux.(unseal).
   Definition uninit_eq : @uninitR = _ := uninit_aux.(seal_eq).
