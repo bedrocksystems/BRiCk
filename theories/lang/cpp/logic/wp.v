@@ -712,12 +712,42 @@ Section with_cpp.
     : forall (tt : type_table) (fun_type : type) (ti : thread_info)
              (addr : val) (ls : list val) (Q : val -> epred), mpred.
 
-  (* [type_compatible a b t1 t2] states that the type [t1] (interpreted by type
+  Section sub_decl.
+    Variable Rtype : type -> type -> Prop.
+
+    (* [decl_compatible a b g1 g2] states the type declaration [g1] (interpreted
+       by the type environment [a]) is at least as defined as the declaration [g2]
+       (interpreted by the type environment [b]).
+
+       TODO(gmm): this definition doesn't work for cyclic types, e.g.
+       [struct T { T* n; };] is not compatible with itself because the
+       derivation is infinite.
+     *)
+    Variant decl_compatible : GlobDecl -> GlobDecl -> Prop :=
+    | compat_Gtype : decl_compatible Gtype Gtype
+    | compat_Gstruct_Gtype {st} : decl_compatible (Gstruct st) Gtype
+    | compat_Gunion_Gtype {u} : decl_compatible (Gunion u) Gtype
+    | compat_GtypedefL {t t'} (_ : Rtype t t')
+      : decl_compatible (Gtypedef t) (Gtypedef t')
+    | compat_Gstruct {st}
+                     (_ : forall gn li, In (gn, li) st.(s_bases) -> Rtype (Tnamed gn) (Tnamed gn))
+                     (_ : forall x t li, In (x, t, li) st.(s_fields) -> Rtype t t)
+      : decl_compatible (Gstruct st) (Gstruct st)
+    | compat_Gunion {u}
+                    (_ : forall x t li, In (x, t, li) u.(u_fields) -> Rtype t t)
+      : decl_compatible (Gunion u) (Gunion u)
+    .
+  End sub_decl.
+
+  Section type_compatible.
+    Variables a b : type_table.
+
+    (* [type_compatible a b t1 t2] states that the type [t1] (interpreted by type
      environment [a]) is at least as defined as the type [t2] (interepreted by
      type environment [b]).
 
      "At least as defined as" means that they are essentially equal except that
-     type environment [t2] might not have a body for one type that type
+     type environment [t2] might not have a body for a type that type
      environment [t1] has. For example, take the following:
 
      // x.hpp
@@ -735,58 +765,44 @@ Section with_cpp.
      Here:
      - [type_compatible <x.cpp> <x.hpp> (Tnamed "T") (Tnamed "T")] is provable
      - [type_compatible <x.hpp> <y.cpp> (Tnamed "T") (Tnamed "T")] is *not* provable
-   *)
-  Inductive type_compatible (a b : type_table) : type -> type -> Prop :=
-  | compat_Tptr {t t'} (_ : type_compatible a b t t')
-    : type_compatible a b (Tptr t) (Tptr t')
-  | compat_Tref {t t'} (_ : type_compatible a b t t')
-    : type_compatible a b (Tref t) (Tref t')
-  | compat_Trf_ref {t t'} (_ : type_compatible a b t t')
-    : type_compatible a b (Trv_ref t) (Trv_ref t')
-  | compat_Tint {sz sgn} : type_compatible a b (Tint sz sgn) (Tint sz sgn)
-  | compat_Tvoid : type_compatible a b Tvoid Tvoid
-  | compat_Tarray {n t' t} (_ : type_compatible a b t t')
-    : type_compatible a b (Tarray t n) (Tarray t' n)
-  | compat_Tnamed {n s1 s2} (_ : a !! n = Some s1) (_ : b !! n = Some s2)
-                  (_ : decl_compatible a b s1 s2)
-    : type_compatible a b (Tnamed n) (Tnamed n)
-  | compat_Tfunction {cc t t' args args'} (_ : type_compatible a b t t')
-                     (_ : List.Forall2 (type_compatible a b) args args')
-    : type_compatible a b (Tfunction (cc:=cc) t args) (Tfunction (cc:=cc) t' args')
-  | compat_Tbool : type_compatible a b Tbool Tbool
-  | compat_Tmember_pointer {n t t'}
-                           (_ : type_compatible a b (Tnamed n) (Tnamed n))
-                           (_ : type_compatible a b t t')
-    : type_compatible a b (Tmember_pointer n t) (Tmember_pointer n t')
-  | compat_Tfloat {sz} : type_compatible a b (Tfloat sz) (Tfloat sz)
-  | compat_Tqualified {q t t'} (_ : type_compatible a b t t')
-    : type_compatible a b (Tqualified q t) (Tqualified q t')
-  | compat_Tnullptr : type_compatible a b Tnullptr Tnullptr
-  | compat_Tarch {sz n} : type_compatible a b (Tarch sz n) (Tarch sz n)
 
-  (* [decl_compatible a b g1 g2] states the type declaration [g1] (interpreted
-     by the type environment [a]) is at least as defined as the declaration [g2]
-     (interpreted by the type environment [b]).
+     NOTE: this does not check that types are well-formed.
+     *)
+    Inductive type_compatible' (g : list globname) : type -> type -> Prop :=
+    | compat_Tptr {t t'} (_ : type_compatible' g t t')
+      : type_compatible' g (Tptr t) (Tptr t')
+    | compat_Tref {t t'} (_ : type_compatible' g t t')
+      : type_compatible' g (Tref t) (Tref t')
+    | compat_Trf_ref {t t'} (_ : type_compatible' g t t')
+      : type_compatible' g (Trv_ref t) (Trv_ref t')
+    | compat_Tint {sz sgn} : type_compatible' g (Tint sz sgn) (Tint sz sgn)
+    | compat_Tvoid : type_compatible' g Tvoid Tvoid
+    | compat_Tarray {n t' t} (_ : type_compatible' g t t')
+      : type_compatible' g (Tarray t n) (Tarray t' n)
+    | compat_Tnamed_guard {n} (_ : In n g)
+      : type_compatible' g (Tnamed n) (Tnamed n)
+    | compat_Tnamed {n s1 s2} (_ : a !! n = Some s1) (_ : b !! n = Some s2)
+                    (_ : decl_compatible (type_compatible' (n :: g)) s1 s2)
+      : type_compatible' g (Tnamed n) (Tnamed n)
+    | compat_Tfunction {cc t t' args args'} (_ : type_compatible' g t t')
+                       (_ : List.Forall2 (type_compatible' g) args args')
+      : type_compatible' g (Tfunction (cc:=cc) t args) (Tfunction (cc:=cc) t' args')
+    | compat_Tbool : type_compatible' g Tbool Tbool
+    | compat_Tmember_pointer {n t t'}
+                             (_ : type_compatible' g (Tnamed n) (Tnamed n))
+                             (_ : type_compatible' g t t')
+      : type_compatible' g (Tmember_pointer n t) (Tmember_pointer n t')
+    | compat_Tfloat {sz} : type_compatible' g (Tfloat sz) (Tfloat sz)
+    | compat_Tqualified {q t t'} (_ : type_compatible' g t t')
+      : type_compatible' g (Tqualified q t) (Tqualified q t')
+    | compat_Tnullptr : type_compatible' g Tnullptr Tnullptr
+    | compat_Tarch {sz n} : type_compatible' g (Tarch sz n) (Tarch sz n)
+    .
+  End type_compatible.
 
-     TODO(gmm): this definition doesn't work for cyclic types, e.g.
-     [struct T { T* n; };] is not compatible with itself because the
-     derivation is infinite.
-   *)
-  with decl_compatible (a b : type_table) : GlobDecl -> GlobDecl -> Prop :=
-  | compat_Gtype : decl_compatible a b Gtype Gtype
-  | compat_Gstruct_Gtype {st} : decl_compatible a b (Gstruct st) Gtype
-  | compat_Gunion_Gtype {u} : decl_compatible a b (Gunion u) Gtype
-  | compat_GtypedefL {t t'} (_ : type_compatible a b t t')
-    : decl_compatible a b (Gtypedef t) (Gtypedef t')
-  | compat_Gstruct {st}
-                   (_ : forall gn li, In (gn, li) st.(s_bases) -> type_compatible a b (Tnamed gn) (Tnamed gn))
-                   (_ : forall x t li, In (x, t, li) st.(s_fields) -> type_compatible a b t t)
-    : decl_compatible a b (Gstruct st) (Gstruct st)
-  | compat_Gunion {u}
-                  (_ : forall x t li, In (x, t, li) u.(u_fields) -> type_compatible a b t t)
-    : decl_compatible a b (Gunion u) (Gunion u)
-  .
+  Definition type_compatible a b := type_compatible' a b nil.
 
+  (*
   (* [wf_type' te guarded t] states that the type [t] is defined in the type
      environment [te]. [guarded] is used to track whether or not we are in a
      guarded context
@@ -797,24 +813,46 @@ Section with_cpp.
   Inductive wf_type' (a : type_table) : bool -> type -> Prop := .
 
   Definition wf_type tt t := wf_type' tt false t.
+  *)
 
-  Axiom wf_type_type_compatible : forall te t, wf_type te t -> type_compatible te te t t.
   Axiom fspec_wf_type : forall te ft ti a ls Q,
       fspec te ft ti a ls Q
       |-- fspec te ft ti a ls Q **
-          [| wf_type te ft /\ exists cc tret targs, ft = Tfunction (cc:=cc) tret targs |].
+          [| exists cc tret targs, ft = Tfunction (cc:=cc) tret targs |].
 
-  Axiom fspec_frame : forall tt1 tt2 ft a ls ti Q1 Q2,
+  (* this axiom states that the type environment for an [fspec] can be
+     narrowed as long as the new type environment [small] is consistent
+     with the old type environment ([big]) on all of the types mentioned
+     in the type.
+
+     NOTE: This is informally justified by the fact that (in the absence
+     of ODR) the implementation of the function is encapsulated and only
+     the public interface (the type) is need to know how to call the function.
+
+     TODO one additional restriction that should be added here is that [ft]
+     is a *complete type* in [tt2]. We will revist this when we define complete
+     type, but for now, note that if we use this axiom to construct an [fspec tt ft]
+     where [ft] is not complete in [tt], then we will not be able to use it in
+     any module generated by cpp2v because cpp2v only generates code that
+     is well-typed according to C++ which requires that [ft] is complete in the
+     type environment of the translation unit.
+   *)
+  Axiom fspec_strengthen : forall tt1 tt2 ft ti a ls Q,
       type_compatible tt1 tt2 ft ft ->
-      Forall v, Q1 v -* Q2 v |-- @fspec tt1 ft ti a ls Q1 -* @fspec tt2 ft ti a ls Q2.
+      fspec tt1 ft ti a ls Q |-- fspec tt2 ft ti a ls Q.
+
+  (* this axiom is the standard rule of consequence for weakest
+     pre-condition.
+   *)
+  Axiom fspec_frame : forall tt ft a ls ti Q1 Q2,
+      Forall v, Q1 v -* Q2 v |-- @fspec tt ft ti a ls Q1 -* @fspec tt ft ti a ls Q2.
 
   Global Instance Proper_fspec : forall tt ft a ls ti,
       Proper (pointwise_relation _ lentails ==> lentails) (@fspec tt ft ti a ls).
   Proof. do 3 red; intros.
          rewrite fspec_wf_type.
          iIntros "[X %]"; iRevert "X"; iApply fspec_frame; auto.
-         2: iIntros (v); iApply H.
-         apply wf_type_type_compatible. tauto.
+         iIntros (v); iApply H.
   Qed.
 
   Section fspec.
@@ -826,7 +864,6 @@ Section with_cpp.
     Proof. iIntros "Hwp HK".
            iDestruct (fspec_wf_type with "Hwp") as "[Hwp %]".
            iApply (fspec_frame with "HK Hwp").
-           eapply wf_type_type_compatible; tauto.
     Qed.
   End fspec.
 
