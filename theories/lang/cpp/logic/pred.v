@@ -86,7 +86,7 @@ Module Type CPP_LOGIC (Import CC : CPP_LOGIC_CLASS).
     Typed points-to predicate. Fact [tptsto t q p v] asserts the following things:
     1. Pointer [p] points to value [v].
     2. We have fractional ownership [q] (in the separation logic sense).
-    3. Pointer [p] points to C++ type [t].
+    3. Pointer [p] points to a memory location with C++ type [t].
     However:
     1. Value [v] need not be initialized.
     2. Hence, [v] might not satisfy [has_type t v].
