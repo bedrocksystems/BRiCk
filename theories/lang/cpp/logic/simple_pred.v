@@ -1426,7 +1426,6 @@ Module SimpleCPP.
     Definition tptsto {σ:genv} (t : type) (q : Qp) (p : ptr) (v : val) : mpred.
     Proof.
       refine (Exists (a : option addr),
-              [| has_type v t |] **
               own _ghost.(mem_inj_name) {[ p := to_agree a ]} **
               match a with
               | Some a =>
@@ -1455,7 +1454,7 @@ Module SimpleCPP.
       red. intros. unfold tptsto.
       iSplit.
       - iIntros "H".
-        iDestruct "H" as (a) "[#De [#Mi By]]".
+        iDestruct "H" as (a) "[#Mi By]".
         destruct a.
         + iDestruct "By" as (vs) "[#En By]".
           rewrite fractional.
@@ -1469,8 +1468,8 @@ Module SimpleCPP.
           * iExists None; iFrame; iFrame "#".
           * iExists None; iFrame; iFrame "#".
       - iIntros "[H1 H2]".
-        iDestruct "H1" as (a) "[#De1 [#Mi1 By1]]".
-        iDestruct "H2" as (a2) "[#De2 [#Mi2 By2]]".
+        iDestruct "H1" as (a) "[#Mi1 By1]".
+        iDestruct "H2" as (a2) "[#Mi2 By2]".
         iExists a; iFrame "#".
         iDestruct (own_valid_2 with "Mi1 Mi2") as "X".
         rewrite join_singleton_eq.
@@ -1505,8 +1504,8 @@ Module SimpleCPP.
         @tptsto σ t q1 p v1 ** @tptsto σ t q2 p v2 |-- [| v1 = v2 |].
     Proof.
       iDestruct 1 as "[H1 H2]".
-      iDestruct "H1" as (ma1) "(%Ht1 & Hp1 & Hv1)".
-      iDestruct "H2" as (ma2) "(%Ht2 & Hp2 & Hv2)".
+      iDestruct "H1" as (ma1) "(Hp1 & Hv1)".
+      iDestruct "H2" as (ma2) "(Hp2 & Hv2)".
       iDestruct (own_valid_2 with "Hp1 Hp2") as "%Hv". iClear "Hp1 Hp2".
       move: Hv. rewrite singleton_op singleton_valid=>/agree_op_invL' ->.
       case: ma2=>[a| ]; last by iDestruct (val_agree with "Hv1 Hv2") as %->.
@@ -1517,17 +1516,6 @@ Module SimpleCPP.
       (* PDS: I see no way to proceed. The preceding lemma
       [encodes_agree] seems unsound wrt the present ghost state. *)
     Abort.
-
-    Theorem tptsto_has_type : forall σ t q p v,
-        @tptsto σ t q p v |-- @tptsto σ t q p v ** [| has_type v t |].
-    Proof.
-      unfold tptsto.
-      intros.
-      iIntros "H".
-      iDestruct "H" as (a) "[#H X]".
-      iFrame "#".
-      iExists a. iFrame.
-    Qed.
 
     (** the pointer points to the code
 

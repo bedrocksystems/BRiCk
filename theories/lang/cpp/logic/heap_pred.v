@@ -436,7 +436,7 @@ Section with_cpp.
   Qed.
 
 
-  (** [primR] *)
+  (** [primR]: the argument pointer points to an initialized value [v] of C++ type [ty]. *)
   Definition primR_def {resolve:genv} (ty : type) q (v : val) : Rep :=
     as_Rep (fun addr => @tptsto _ _ resolve ty q addr v ** [| has_type v (drop_qualifiers ty) |]).
   Definition primR_aux : seal (@primR_def). by eexists. Qed.
@@ -482,9 +482,11 @@ Section with_cpp.
     by iIntros "[$ %]".
   Qed.
 
-  (** [uninitR] *)
+  (**
+  [uninitR]: the argument pointer points to an uninitialized value [Vundef] of C++ type [ty].
+  Unlike [primR], does not imply [has_type]. *)
   Definition uninit_def {resolve:genv} (ty : type) q : Rep :=
-    primR (resolve:=resolve) ty q Vundef.
+    as_Rep (fun addr => @tptsto _ _ resolve ty q addr Vundef).
   Definition uninit_aux : seal (@uninit_def). by eexists. Qed.
   Definition uninitR := uninit_aux.(unseal).
   Definition uninit_eq : @uninitR = _ := uninit_aux.(seal_eq).
@@ -517,7 +519,8 @@ Section with_cpp.
     AsFractional (uninitR (resolve:=resolve) ty q) (uninitR (resolve:=resolve) ty) q.
   Proof. constructor. done. apply _. Qed.
 
-  (** [anyR] this means "anything, including uninitialized" *)
+  (** [anyR] The argument pointers points to a value of C++ type [ty] that might be
+  uninitialized. *)
   Definition anyR_def {resolve} (ty : type) q : Rep :=
     as_Rep (fun addr => (Exists v, (primR (resolve:=resolve) ty q v) addr) \\//
                                  (uninitR (resolve:=resolve) ty q) addr).

@@ -22,14 +22,17 @@ Local Close Scope nat_scope.
 Local Open Scope general_if_scope.
 Local Open Scope Z_scope.
 
-(** * pointers
-    this is the abstract model of pointers in C++.
+(** * Pointers.
+
+    This is the abstract model of pointers in C++.
     - A simple model is [block * offset] which is representing a collection
       of isolated blocks. There is no address arithmetic that can get you
       from one block to another.
     - A more complex model allows for nested blocks and more accurately
       models the C/C++ (object) memory model. See
-      https://robbertkrebbers.nl/thesis.html
+      https://robbertkrebbers.nl/thesis.html.
+    Not all of our pointers have physical addresses; for discussion, see
+    documentation of [tptsto] and [pinned_ptr].
  *)
 Parameter ptr : Set.
 Parameter ptr_eq_dec : forall (x y : ptr), { x = y } + { x <> y }.
@@ -266,6 +269,8 @@ Definition bound (bits : bitsize) (sgn : signed) (v : Z) : Prop :=
     note that only primitives fit into this, there is no [val] representation
     of aggregates.
  *)
+(** [has_type v t] means that [v] is an initialized value of type [t].
+For all types [t] except [Tvoid], this means that [v] is not [Vundef]. *)
 Parameter has_type : val -> type -> Prop.
 Arguments has_type _%Z _.
 
