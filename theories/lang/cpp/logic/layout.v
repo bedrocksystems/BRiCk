@@ -10,7 +10,7 @@ Require Import bedrock.lang.cpp.ast.
 From bedrock.lang.cpp.logic Require Import
      pred path_pred heap_pred translation_unit.
 Require Import bedrock.lang.cpp.semantics.
-Require Import bedrock.lang.cpp.logic.simple_pred.
+Require Import bedrock.lang.cpp.logic.z_to_bytes.
 
 Section array.
   Context `{Σ : cpp_logic} {resolve:genv}.
