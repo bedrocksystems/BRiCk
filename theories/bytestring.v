@@ -29,7 +29,13 @@ String Notation Byte.byte byte_parse byte_print : byte_scope.
 Bind Scope byte_scope with Byte.byte.
 
 (** bytestrings *)
-Module Bytestring.
+(** Many functions on byte strings are meant to be always used
+qualified, as they conflict with similar functions from [List] or [String].
+
+All such functions are collected in a module [Bytestring], which is not meant
+to be imported, as it defines names like [t].
+*)
+Module Import Bytestring.
   Inductive t : Set :=
   | EmptyString
   | String (_ : Byte.byte) (_ : t).
@@ -55,32 +61,35 @@ Module Bytestring.
 
   Instance t_dec : EqDecision t.
   Proof. solve_decision. Defined.
-End Bytestring.
 
-Definition bs := Bytestring.t.
+  (** Module [Bytestring_notations] is meant to be safely exported. *)
+  Module Import Bytestring_notations.
 
-Declare Scope bs_scope.
-Delimit Scope bs_scope with bs.
-Bind Scope bs_scope with bs.
+  Definition bs := Bytestring.t.
 
-String Notation Bytestring.t Bytestring.parse Bytestring.print : bs_scope.
+  Declare Scope bs_scope.
+  Delimit Scope bs_scope with bs.
+  Bind Scope bs_scope with bs.
 
-Instance bytestring_inhabited : Inhabited bs := populate ""%bs.
-Instance bytestring_countable : Countable bs.
-Proof.
-  apply (inj_countable' Bytestring.print Bytestring.parse),
-    Bytestring.print_parse_inv.
-Defined.
+  Local Fixpoint append (x y : bs) : bs :=
+    match x with
+    | Bytestring.EmptyString => y
+    | Bytestring.String x xs => Bytestring.String x (append xs y)
+    end.
 
-Import Bytestring.
+  Notation "x ++ y" := (append x y) : bs_scope.
 
-Fixpoint append (x y : bs) : bs :=
-  match x with
-  | Bytestring.EmptyString => y
-  | Bytestring.String x xs => Bytestring.String x (append xs y)
-  end.
+  String Notation Bytestring.t Bytestring.parse Bytestring.print : bs_scope.
 
-Notation "x ++ y" := (append x y) : bs_scope.
+  Instance bytestring_inhabited : Inhabited bs := populate ""%bs.
+  Instance bytestring_countable : Countable bs.
+  Proof.
+    apply (inj_countable' Bytestring.print Bytestring.parse),
+      Bytestring.print_parse_inv.
+  Defined.
+
+  End Bytestring_notations.
+  Notation append := Bytestring_notations.append.
 
 Fixpoint to_string (b : bs) : string :=
   match b with
@@ -144,7 +153,7 @@ Fixpoint length (l : bs) : nat :=
   | String _ l => S (length l)
   end.
 
-Local Fixpoint contains (start: nat) (keys: list bs) (fullname: bs) :bool :=
+Fixpoint contains (start: nat) (keys: list bs) (fullname: bs) :bool :=
   match keys with
   | kh::ktl =>
     match index start kh fullname with
@@ -160,10 +169,6 @@ Definition eqb (a b : bs) : bool :=
 Definition byte_cmp (a b : Byte.byte) : comparison :=
   N.compare (Byte.to_N a) (Byte.to_N b).
 
-
-(** comparison *)
-Require Import Coq.Structures.OrderedType.
-
 Lemma to_N_inj : forall x y, Byte.to_N x = Byte.to_N y <-> x = y.
 Proof.
   split.
@@ -174,6 +179,11 @@ Proof.
     destruct H. reflexivity. }
   injection H0. auto.
 Qed.
+End Bytestring.
+Export Bytestring_notations.
+
+(** comparison *)
+Require Import Coq.Structures.OrderedType.
 
 Module OT_byte <: OrderedType.OrderedType with Definition t := Byte.byte.
   Definition t := Byte.byte.

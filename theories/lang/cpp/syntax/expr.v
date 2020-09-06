@@ -117,7 +117,7 @@ Inductive Expr : Set :=
   (* ^ local variable reference *)
 
 | Echar    (_ : Z) (_ : type)
-| Estring  (_ : bytestring.bs) (_ : type)
+| Estring  (_ : bs) (_ : type)
 | Eint     (_ : Z) (_ : type)
 | Ebool    (_ : bool)
   (* ^ literals *)

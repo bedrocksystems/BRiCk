@@ -84,7 +84,7 @@ Definition Denum (name : globname) (t : option type) (branches : list (ident * B
         | Some t => t
         end
     in
-    k syms (List.fold_left (fun acc '(nm, oe) => <[ nm := Gconstant enum_ty (Some (Eint oe raw_ty)) ]> acc) 
+    k syms (List.fold_left (fun acc '(nm, oe) => <[ nm := Gconstant enum_ty (Some (Eint oe raw_ty)) ]> acc)
                            branches
                            match t with
                            | Some t => <[ name := Genum t (List.map fst branches) ]> tys
@@ -116,5 +116,3 @@ Definition decls ls (e : endian) : translation_unit :=
                            ; byte_order := e |}).
 
 Declare Reduction reduce_translation_unit := vm_compute.
-
-Export Bytestring.
