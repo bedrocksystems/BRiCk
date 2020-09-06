@@ -16,6 +16,7 @@ From bedrock.lang.cpp Require Import ast semantics.
 From bedrock.lang.cpp.logic Require Import pred.
 
 Set Default Proof Using "Type".
+Set Suggest Proof Using.
 
 (* todo: does this not exist as a library somewhere? *)
 Definition fractionalR (o : ofeT) : cmraT :=
@@ -896,7 +897,7 @@ Section FromToBytes.
 
   Section ToBytes_external.
 
-    Definition _Z_to_bytes_aux {σ: genv} : seal (@_Z_to_bytes_def σ). by eexists. Qed.
+    Definition _Z_to_bytes_aux {σ: genv} : seal (@_Z_to_bytes_def σ). Proof. by eexists. Qed.
     Definition _Z_to_bytes {σ: genv} := (_Z_to_bytes_aux (σ:=σ)).(unseal).
     Definition _Z_to_bytes_eq {σ: genv}: @_Z_to_bytes σ = _ :=
       (_Z_to_bytes_aux (σ:=σ)).(seal_eq).
@@ -924,7 +925,7 @@ Section FromToBytes.
 
   Section FromBytes_external.
 
-    Definition _Z_from_bytes_aux {σ: genv} : seal (@_Z_from_bytes_def σ). by eexists. Qed.
+    Definition _Z_from_bytes_aux {σ: genv} : seal (@_Z_from_bytes_def σ). Proof. by eexists. Qed.
     Definition _Z_from_bytes {σ: genv} := (_Z_from_bytes_aux (σ:=σ)).(unseal).
     Definition _Z_from_bytes_eq {σ: genv} : @_Z_from_bytes σ = _ :=
       (_Z_from_bytes_aux (σ:=σ)).(seal_eq).
