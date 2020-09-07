@@ -120,7 +120,7 @@ Proof. solve_decision. Defined.
 
 Definition dtor_name (type : Dtor_type) (cls : globname) : obj_name :=
   match cls with
-  | Bytestring.String _ (Bytestring.String _ s) =>
+  | BS.String _ (BS.String _ s) =>
     ("_ZN" ++ s ++ "D" ++ ("0" (*match type with
                           | Dt_Deleting => "0"
                           | Dt_Complete => "1"

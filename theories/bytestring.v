@@ -32,10 +32,10 @@ Bind Scope byte_scope with Byte.byte.
 (** Many functions on byte strings are meant to be always used
 qualified, as they conflict with similar functions from [List] or [String].
 
-All such functions are collected in a module [Bytestring], which is not meant
+All such functions are collected in a module [BS], which is not meant
 to be imported, as it defines names like [t].
 *)
-Module Import Bytestring.
+Module Import BS.
   Inductive t : Set :=
   | EmptyString
   | String (_ : Byte.byte) (_ : t).
@@ -53,7 +53,7 @@ Module Import Bytestring.
     end.
 
   Lemma print_parse_inv:
-    ∀ x : Bytestring.t, Bytestring.parse (Bytestring.print x) = x.
+    ∀ x : BS.t, BS.parse (BS.print x) = x.
   Proof.
     induction x; simpl; intros; auto.
     f_equal; auto.
@@ -65,7 +65,7 @@ Module Import Bytestring.
   (** Module [Bytestring_notations] is exported below, and contains
   definitions that can be safely exported. *)
   Module Import Bytestring_notations.
-    Definition bs := Bytestring.t.
+    Definition bs := BS.t.
 
     Declare Scope bs_scope.
     Delimit Scope bs_scope with bs.
@@ -73,19 +73,19 @@ Module Import Bytestring.
 
     Local Fixpoint append (x y : bs) : bs :=
       match x with
-      | Bytestring.EmptyString => y
-      | Bytestring.String x xs => Bytestring.String x (append xs y)
+      | BS.EmptyString => y
+      | BS.String x xs => BS.String x (append xs y)
       end.
 
     Notation "x ++ y" := (append x y) : bs_scope.
 
-    String Notation Bytestring.t Bytestring.parse Bytestring.print : bs_scope.
+    String Notation BS.t BS.parse BS.print : bs_scope.
 
     Instance bytestring_inhabited : Inhabited bs := populate ""%bs.
     Instance bytestring_countable : Countable bs.
     Proof.
-      apply (inj_countable' Bytestring.print Bytestring.parse),
-        Bytestring.print_parse_inv.
+      apply (inj_countable' BS.print BS.parse),
+        BS.print_parse_inv.
     Defined.
   End Bytestring_notations.
   Notation append := Bytestring_notations.append.
@@ -178,7 +178,7 @@ Module Import Bytestring.
       destruct H. reflexivity. }
     injection H0. auto.
   Qed.
-End Bytestring.
+End BS.
 Export Bytestring_notations.
 
 (** comparison *)
@@ -245,10 +245,10 @@ End OT_byte.
 
 Fixpoint bs_cmp (xs ys : bs) : comparison :=
   match xs , ys with
-  | Bytestring.EmptyString , Bytestring.EmptyString => Eq
-  | Bytestring.EmptyString , _ => Lt
-  | _ , Bytestring.EmptyString => Gt
-  | Bytestring.String x xs , Bytestring.String y ys =>
+  | BS.EmptyString , BS.EmptyString => Eq
+  | BS.EmptyString , _ => Lt
+  | _ , BS.EmptyString => Gt
+  | BS.String x xs , BS.String y ys =>
     match byte_cmp x y with
     | Eq => bs_cmp xs ys
     | x => x
