@@ -831,7 +831,10 @@ Section with_cpp.
       sub_module tt2 tt1 ->
       fspec tt1.(globals) ft ti a ls Q |-- fspec tt2.(globals) ft ti a ls Q.
 
-  (* Extending the environment is more obviously sound. *)
+  (* Extending the environment is more obviously sound.
+  TODO: However, we should check that the extended environment respects the
+  One-Definition Rule (ODR).
+  *)
   Axiom fspec_weaken : forall tt1 tt2 ft ti a ls Q,
       sub_module tt1 tt2 ->
       fspec tt1.(globals) ft ti a ls Q |-- fspec tt2.(globals) ft ti a ls Q.
