@@ -93,7 +93,7 @@ Section with_cpp.
     intros HP. constructor=>p.
     rewrite monPred_at_later monPred_at_except_0. apply HP.
   Qed.
-  Instance as_Rep_fractional P :
+  Global Instance as_Rep_fractional P :
     (∀ p, Fractional (λ q, P q p)) → Fractional (λ q, as_Rep (P q)).
   Proof.
     intros HP q1 q2. constructor=>p. by rewrite monPred_at_sep /= HP.
