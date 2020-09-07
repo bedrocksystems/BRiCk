@@ -767,14 +767,16 @@ Section with_cpp.
      - [type_compatible <x.hpp> <y.cpp> (Tnamed "T") (Tnamed "T")] is *not* provable
 
      NOTE: this does not check that types are well-formed.
+     Implementation note: as the goal is only to check if types are complete,
+     we need not check the contents of pointers and references.
      *)
     Inductive type_compatible' (g : list globname) : type -> type -> Prop :=
-    | compat_Tptr {t t'} (_ : type_compatible' g t t')
-      : type_compatible' g (Tptr t) (Tptr t')
-    | compat_Tref {t t'} (_ : type_compatible' g t t')
-      : type_compatible' g (Tref t) (Tref t')
-    | compat_Trf_ref {t t'} (_ : type_compatible' g t t')
-      : type_compatible' g (Trv_ref t) (Trv_ref t')
+    | compat_Tptr {t}
+      : type_compatible' g (Tptr t) (Tptr t)
+    | compat_Tref {t}
+      : type_compatible' g (Tref t) (Tref t)
+    | compat_Trf_ref {t}
+      : type_compatible' g (Trv_ref t) (Trv_ref t)
     | compat_Tint {sz sgn} : type_compatible' g (Tint sz sgn) (Tint sz sgn)
     | compat_Tvoid : type_compatible' g Tvoid Tvoid
     | compat_Tarray {n t' t} (_ : type_compatible' g t t')
