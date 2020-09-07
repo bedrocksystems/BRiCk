@@ -754,20 +754,30 @@ Section with_cpp.
       | wf_ref {t} : wf_pt_type t -> wf_basic_type (Tref t)
       | wf_rv_ref {t} : wf_pt_type t -> wf_basic_type (Trv_ref t)
 
-    (* [wf_pt_type t] says that a pointer/reference to [t] is well-formed.
+    (* [wf_pt_type t] says that a pointer/reference to [t] is well-formed,
+    that is, complete.
     *)
     with wf_pt_type : type -> Prop :=
       | wf_pt_basic t :
         wf_basic_type t ->
         wf_pt_type t
-      (* Pointers to array are only legal if the array is complete. *)
+      (*
+        Pointers to array are only legal if the array is complete, at least
+        in C, since they cannot actually be indexed or created.
+        This rejects the invalid C:
+
+        [struct T; int foo(struct T x[][10]);]
+
+        However, C++ compilers appear to accept this code.
+        TODO: decide behavior.
+        *)
       | wf_pt_array t n
-        (_ : (n <> 0)%N) (* Needed? from Krebbers*)
+        (_ : (n <> 0)%N) (* From Krebbers. Probably needed to reject [T[][]]. *)
         (_ : wf_type t) :
         wf_pt_type (Tarray t n)
       | wf_pt_named n :
         wf_pt_type (Tnamed n)
-    (* [wf_type t] says that a pointer to [t] is well-formed, that is, complete. *)
+    (* [wf_type t] says that type [t] is well-formed, that is, complete. *)
     with wf_type : type -> Prop :=
       | wf_basic t :
         wf_basic_type t ->
