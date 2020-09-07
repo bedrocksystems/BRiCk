@@ -712,6 +712,97 @@ Section with_cpp.
     : forall (tt : type_table) (fun_type : type) (ti : thread_info)
              (addr : val) (ls : list val) (Q : val -> epred), mpred.
 
+  (** TODO this should move to semantics/translation_unit.v *)
+  Fixpoint ref_type (t : type) : Prop :=
+    match t with
+    | Tref _
+    | Trv_ref _ => False
+    | Tqualified _ t => ref_type t
+    | _ => True
+    end.
+
+  Section with_type_table.
+    Variable te : type_table.
+
+    (* Check that [g : GlobDecl] is complete in environment [te]. *)
+    Section with_wf_type.
+      Variable wf_type : type -> Prop.
+      Variant wf_decl : GlobDecl -> Prop :=
+      | wf_Struct {st}
+                  (_ : forall b li, In (b, li) st.(s_bases) -> wf_type (Tnamed b))
+                  (_ : forall x t li, In (x, t, li) st.(s_fields) -> wf_type t)
+        : wf_decl (Gstruct st)
+      | wf_Union {u}
+                 (_ : forall x t li, In (x, t, li) u.(u_fields) -> wf_type t)
+        : wf_decl (Gunion u)
+      | wf_Type : wf_decl Gtype
+      | wf_enum {t consts} (_ : wf_type t)
+        : wf_decl (Genum t consts)
+      .
+    End with_wf_type.
+
+    (* Adapted from Krebbers'15, Definition 3.3.5 *)
+    (* Basic types. *)
+    Inductive wf_basic_type : type -> Prop :=
+      | wf_float sz : wf_basic_type (Tfloat sz)
+      | wf_int sgn sz : wf_basic_type (Tint sgn sz)
+      | wf_bool : wf_basic_type Tbool
+      | wf_void : wf_basic_type Tvoid
+      | wf_nullptr : wf_basic_type Tnullptr
+      (* Pointer/reference types. *)
+      | wf_ptr {t} : wf_pt_type t -> wf_basic_type (Tptr t)
+      | wf_ref {t} : wf_pt_type t -> wf_basic_type (Tref t)
+      | wf_rv_ref {t} : wf_pt_type t -> wf_basic_type (Trv_ref t)
+
+    (* [wf_pt_type t] says that a pointer/reference to [t] is well-formed.
+    *)
+    with wf_pt_type : type -> Prop :=
+      | wf_pt_basic t :
+        wf_basic_type t ->
+        wf_pt_type t
+      (* Pointers to array are only legal if the array is complete. *)
+      | wf_pt_array t n
+        (_ : (n <> 0)%N) (* Needed? from Krebbers*)
+        (_ : wf_type t) :
+        wf_pt_type (Tarray t n)
+      | wf_pt_named n :
+        wf_pt_type (Tnamed n)
+    (* [wf_type t] says that a pointer to [t] is well-formed, that is, complete. *)
+    with wf_type : type -> Prop :=
+      | wf_basic t :
+        wf_basic_type t ->
+        wf_type t
+      (*
+      A reference to a struct/union named [n] is well-formed if its definition is.
+      TODO: instead of checking that [n] points to a well-formed definition
+      _at each occurrence_, check it once, when adding it to our
+      analogue of a type environment, that is [type_table].
+      However, that might require replacing [type_table] by a _sequence_ of
+      declarations, instead of an unordered dictionary.
+      *)
+      | wf_named_struct {n st} (_ : te !! n = Some st)
+                        (_ : wf_decl wf_type st) :
+        wf_type (Tnamed n)
+      | wf_array {t n}
+        (_ : (n <> 0)%N) (* Needed? from Krebbers*)
+        (_ : wf_type t) :
+        wf_type (Tarray t n)
+      | wf_member_pointer {n t} (_ : ref_type t)
+          (_ : wf_pt_type (Tnamed n))
+          (_ : wf_pt_type t)
+        : wf_type (Tmember_pointer n t)
+      (* Beware:
+      Since [Tfunction] represents a function pointer, argument types need
+      not be complete. *)
+      | wf_function {cc ret args}
+          (_ : wf_pt_type ret)
+          (_ : List.Forall wf_pt_type args)
+        : wf_type (Tfunction (cc:=cc) ret args)
+      | wf_qualified {q t} (_ : wf_type t)
+        : wf_type (Tqualified q t).
+  End with_type_table.
+
+
   Section sub_decl.
     Variable Rtype : type -> type -> Prop.
 
@@ -801,19 +892,6 @@ Section with_cpp.
   End type_compatible.
 
   Definition type_compatible a b := type_compatible' a b nil.
-
-  (*
-  (* [wf_type' te guarded t] states that the type [t] is defined in the type
-     environment [te]. [guarded] is used to track whether or not we are in a
-     guarded context
-
-     TODO(gmm): [guarded] doesn't seem sufficient to get around the type
-     circularity.
-   *)
-  Inductive wf_type' (a : type_table) : bool -> type -> Prop := .
-
-  Definition wf_type tt t := wf_type' tt false t.
-  *)
 
   Axiom fspec_wf_type : forall te ft ti a ls Q,
       fspec te ft ti a ls Q
