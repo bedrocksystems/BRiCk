@@ -781,8 +781,6 @@ Section with_cpp.
     | compat_Tvoid : type_compatible' g Tvoid Tvoid
     | compat_Tarray {n t' t} (_ : type_compatible' g t t')
       : type_compatible' g (Tarray t n) (Tarray t' n)
-    | compat_Tnamed_guard {n} (_ : In n g)
-      : type_compatible' g (Tnamed n) (Tnamed n)
     | compat_Tnamed {n s1 s2} (_ : a !! n = Some s1) (_ : b !! n = Some s2)
                     (_ : decl_compatible (type_compatible' (n :: g)) s1 s2)
       : type_compatible' g (Tnamed n) (Tnamed n)
