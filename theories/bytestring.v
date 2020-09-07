@@ -62,7 +62,8 @@ Module Import Bytestring.
   Instance t_dec : EqDecision t.
   Proof. solve_decision. Defined.
 
-  (** Module [Bytestring_notations] is meant to be safely exported. *)
+  (** Module [Bytestring_notations] is exported below, and contains
+  definitions that can be safely exported. *)
   Module Import Bytestring_notations.
 
   Definition bs := Bytestring.t.
