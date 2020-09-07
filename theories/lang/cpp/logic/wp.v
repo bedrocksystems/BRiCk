@@ -719,7 +719,7 @@ Section with_cpp.
        by the type environment [a]) is at least as defined as the declaration [g2]
        (interpreted by the type environment [b]).
 
-       TODO(gmm): this definition doesn't work for cyclic types, e.g.
+       TODO(gmm): it is unclear if this definition works for cyclic types, e.g.
        [struct T { T* n; };] is not compatible with itself because the
        derivation is infinite.
      *)
@@ -766,7 +766,7 @@ Section with_cpp.
      - [type_compatible <x.cpp> <x.hpp> (Tnamed "T") (Tnamed "T")] is provable
      - [type_compatible <x.hpp> <y.cpp> (Tnamed "T") (Tnamed "T")] is *not* provable
 
-     NOTE: this does not check that types are well-formed.
+     NOTE: this might not ensure that types are well-formed.
      Implementation note: as the goal is only to check if types are complete,
      we need not check the contents of pointers and references.
      *)
