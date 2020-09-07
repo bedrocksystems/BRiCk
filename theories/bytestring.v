@@ -65,30 +65,28 @@ Module Import Bytestring.
   (** Module [Bytestring_notations] is exported below, and contains
   definitions that can be safely exported. *)
   Module Import Bytestring_notations.
+    Definition bs := Bytestring.t.
 
-  Definition bs := Bytestring.t.
+    Declare Scope bs_scope.
+    Delimit Scope bs_scope with bs.
+    Bind Scope bs_scope with bs.
 
-  Declare Scope bs_scope.
-  Delimit Scope bs_scope with bs.
-  Bind Scope bs_scope with bs.
+    Local Fixpoint append (x y : bs) : bs :=
+      match x with
+      | Bytestring.EmptyString => y
+      | Bytestring.String x xs => Bytestring.String x (append xs y)
+      end.
 
-  Local Fixpoint append (x y : bs) : bs :=
-    match x with
-    | Bytestring.EmptyString => y
-    | Bytestring.String x xs => Bytestring.String x (append xs y)
-    end.
+    Notation "x ++ y" := (append x y) : bs_scope.
 
-  Notation "x ++ y" := (append x y) : bs_scope.
+    String Notation Bytestring.t Bytestring.parse Bytestring.print : bs_scope.
 
-  String Notation Bytestring.t Bytestring.parse Bytestring.print : bs_scope.
-
-  Instance bytestring_inhabited : Inhabited bs := populate ""%bs.
-  Instance bytestring_countable : Countable bs.
-  Proof.
-    apply (inj_countable' Bytestring.print Bytestring.parse),
-      Bytestring.print_parse_inv.
-  Defined.
-
+    Instance bytestring_inhabited : Inhabited bs := populate ""%bs.
+    Instance bytestring_countable : Countable bs.
+    Proof.
+      apply (inj_countable' Bytestring.print Bytestring.parse),
+        Bytestring.print_parse_inv.
+    Defined.
   End Bytestring_notations.
   Notation append := Bytestring_notations.append.
 
