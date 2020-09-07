@@ -92,94 +92,94 @@ Module Import Bytestring.
   End Bytestring_notations.
   Notation append := Bytestring_notations.append.
 
-Fixpoint to_string (b : bs) : string :=
-  match b with
-  | EmptyString => String.EmptyString
-  | String x xs => String.String (Ascii.ascii_of_byte x) (to_string xs)
-  end.
+  Fixpoint to_string (b : bs) : string :=
+    match b with
+    | EmptyString => String.EmptyString
+    | String x xs => String.String (Ascii.ascii_of_byte x) (to_string xs)
+    end.
 
-Fixpoint of_string (b : string) : bs :=
-  match b with
-  | String.EmptyString => ""
-  | String.String x xs => String (Ascii.byte_of_ascii x) (of_string xs)
-  end%bs.
+  Fixpoint of_string (b : string) : bs :=
+    match b with
+    | String.EmptyString => ""
+    | String.String x xs => String (Ascii.byte_of_ascii x) (of_string xs)
+    end%bs.
 
-Fixpoint rev (acc s : bs) : bs :=
-  match s with
-  | EmptyString => acc
-  | String s ss => rev (String s acc) ss
-  end.
+  Fixpoint rev (acc s : bs) : bs :=
+    match s with
+    | EmptyString => acc
+    | String s ss => rev (String s acc) ss
+    end.
 
-Fixpoint prefix (s1 s2 : bs) {struct s1} : bool :=
-  match s1 with
-  | EmptyString => true
-  | String x xs =>
-    match s2 with
-    | EmptyString => false
-    | String y ys =>
-      if decide (x = y) then prefix xs ys
-      else false
-    end
-  end%bs.
-
-Fixpoint index (n : nat) (s1 s2 : bs) {struct s2} : option nat :=
-  match s2 with
-  | EmptyString =>
-      match n with
-      | 0 => match s1 with
-             | "" => Some 0
-             | String _ _ => None
-             end
-      | S _ => None
+  Fixpoint prefix (s1 s2 : bs) {struct s1} : bool :=
+    match s1 with
+    | EmptyString => true
+    | String x xs =>
+      match s2 with
+      | EmptyString => false
+      | String y ys =>
+        if decide (x = y) then prefix xs ys
+        else false
       end
-  | String _ s2' =>
-      match n with
-      | 0 =>
-          if prefix s1 s2
-          then Some 0
-          else match index 0 s1 s2' with
-               | Some n0 => Some (S n0)
-               | None => None
-               end
-      | S n' => match index n' s1 s2' with
+    end%bs.
+
+  Fixpoint index (n : nat) (s1 s2 : bs) {struct s2} : option nat :=
+    match s2 with
+    | EmptyString =>
+        match n with
+        | 0 => match s1 with
+              | "" => Some 0
+              | String _ _ => None
+              end
+        | S _ => None
+        end
+    | String _ s2' =>
+        match n with
+        | 0 =>
+            if prefix s1 s2
+            then Some 0
+            else match index 0 s1 s2' with
                 | Some n0 => Some (S n0)
                 | None => None
                 end
+        | S n' => match index n' s1 s2' with
+                  | Some n0 => Some (S n0)
+                  | None => None
+                  end
+        end
+    end%bs.
+
+  Fixpoint length (l : bs) : nat :=
+    match l with
+    | EmptyString => 0
+    | String _ l => S (length l)
+    end.
+
+  Fixpoint contains (start: nat) (keys: list bs) (fullname: bs) :bool :=
+    match keys with
+    | kh::ktl =>
+      match index start kh fullname with
+      | Some n => contains (n + length kh) ktl fullname
+      | None => false
       end
-  end%bs.
+    | [] => true
+    end.
 
-Fixpoint length (l : bs) : nat :=
-  match l with
-  | EmptyString => 0
-  | String _ l => S (length l)
-  end.
+  Definition eqb (a b : bs) : bool :=
+    if decide (a = b) then true else false.
 
-Fixpoint contains (start: nat) (keys: list bs) (fullname: bs) :bool :=
-  match keys with
-  | kh::ktl =>
-    match index start kh fullname with
-    | Some n => contains (n + length kh) ktl fullname
-    | None => false
-    end
-  | [] => true
-  end.
+  Definition byte_cmp (a b : Byte.byte) : comparison :=
+    N.compare (Byte.to_N a) (Byte.to_N b).
 
-Definition eqb (a b : bs) : bool :=
-  if decide (a = b) then true else false.
-
-Definition byte_cmp (a b : Byte.byte) : comparison :=
-  N.compare (Byte.to_N a) (Byte.to_N b).
-
-Lemma to_N_inj : forall x y, Byte.to_N x = Byte.to_N y <-> x = y.
-Proof.
-  split.
-  2: destruct 1; reflexivity.
-  intros.
-  assert (Some x = Some y).
-  { do 2 rewrite <- Byte.of_to_N.
-    destruct H. reflexivity. }
-  injection H0. auto.
-Qed.
+  Lemma to_N_inj : forall x y, Byte.to_N x = Byte.to_N y <-> x = y.
+  Proof.
+    split.
+    2: destruct 1; reflexivity.
+    intros.
+    assert (Some x = Some y).
+    { do 2 rewrite <- Byte.of_to_N.
+      destruct H. reflexivity. }
+    injection H0. auto.
+  Qed.
 End Bytestring.
 Export Bytestring_notations.
 
