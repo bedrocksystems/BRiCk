@@ -13,7 +13,7 @@ Set Default Proof Using "Type".
 Section with_Σ.
   Context `{has_cpp : cpp_logic}.
 
-  (* locations are computations that produce an address.
+  (* locations represent C++ computations that produce an address.
    *)
   Record Loc : Type :=
     { _location : ptr -> mpred
@@ -148,7 +148,7 @@ Section with_Σ.
     | _ => invalid
     end.
 
-  (** [addr_of] *)
+  (** [addr_of]: [addr_of l p] says that pointer [p] "matches" location [l]. *)
   Definition addr_of_def (a : Loc) (b : ptr) : mpred :=
     a.(_location) b.
   Definition addr_of_aux : seal (@addr_of_def). Proof. by eexists. Qed.
