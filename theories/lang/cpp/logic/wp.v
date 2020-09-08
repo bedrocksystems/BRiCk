@@ -735,7 +735,6 @@ Section with_cpp.
       | wf_Union {u}
                  (_ : forall x t li, In (x, t, li) u.(u_fields) -> wf_type t)
         : wf_decl (Gunion u)
-      | wf_Type : wf_decl Gtype
       | wf_enum {t consts} (_ : wf_type t)
         : wf_decl (Genum t consts)
       .
