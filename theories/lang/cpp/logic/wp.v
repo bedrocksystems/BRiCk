@@ -812,6 +812,102 @@ Section with_cpp.
         : wf_type (Tqualified q t).
   End with_type_table.
 
+  Scheme wf_decl_mut_ind := Minimality for wf_decl Sort Prop
+  with wf_basic_type_mut_ind := Minimality for wf_basic_type Sort Prop
+  with wf_type_mut_ind := Minimality for wf_type Sort Prop
+  with wf_pt_type_mut_ind := Minimality for wf_pt_type Sort Prop
+  with wf_pt_types_mut_ind := Minimality for wf_pt_types Sort Prop.
+
+  Combined Scheme wf_mut_ind from wf_decl_mut_ind, wf_basic_type_mut_ind,
+    wf_pt_type_mut_ind, wf_pt_types_mut_ind, wf_type_mut_ind.
+
+  Local Hint Constructors wf_decl wf_basic_type wf_type wf_pt_type wf_pt_types : core.
+
+  Lemma wf_decl_respects_GlobDecl_le {te g1 g2} :
+    GlobDecl_le g1 g2 = Some () ->
+    wf_decl te g1 ->
+    wf_decl te g2.
+  Proof.
+    intros Hle Hwf; inversion Hwf; simplify_eq; destruct g2 => //;
+      rewrite /= /require_eq in Hle;
+      case_decide => //; subst; auto.
+  Qed.
+
+  (* XXX generic Ltac1 utilities. *)
+  Inductive usedLemma {T : Type} (x : T) : Prop := UsedLemma.
+
+  Ltac markUsed H := assert (usedLemma H) by constructor.
+
+  (** After a round of application with the above, we will have a lot of junk [usedLemma] markers to clean up; hence this tactic. *)
+  Ltac un_usedLemma := repeat
+    match goal with
+      | [ H : usedLemma _ |- _ ] => clear H
+    end.
+
+  Ltac try_once lm :=
+      match goal with
+      | H : usedLemma lm |- _ => fail 1
+      | _ => markUsed lm; eapply lm
+      end.
+
+  Tactic Notation "try_once_tac" constr(T) tactic(tac) :=
+    match goal with
+    | H : usedLemma T |- _ => fail 1
+    | _ => markUsed T; tac
+    end.
+
+  Ltac red_hyps_once :=
+    repeat_on_hyps (fun H => try_once_tac H (red in H)); un_usedLemma.
+
+  (* XXX Taken from sub_module. *)
+  Definition type_table_le (te1 te2 : type_table) : Prop :=
+    forall (gn : globname) gv,
+      te1 !! gn = Some gv ->
+      exists gv', te2 !! gn = Some gv' /\
+             GlobDecl_le gv gv' = Some tt.
+
+  Definition wf_decl_respects te2 g := ∀ te1,
+    type_table_le te2 te1 ->
+    wf_decl te1 g.
+  Definition wf_basic_type_respects te2 t := ∀ te1,
+    type_table_le te2 te1 ->
+    wf_basic_type te1 t.
+  Definition wf_pt_type_respects te2 t := ∀ te1,
+    type_table_le te2 te1 ->
+    wf_pt_type te1 t.
+  Definition wf_pt_types_respects te2 ts := ∀ te1,
+    type_table_le te2 te1 ->
+    wf_pt_types te1 ts.
+  Definition wf_type_respects te2 t := ∀ te1,
+    type_table_le te2 te1 ->
+    wf_type te1 t.
+
+  (* Actual mutual induction. *)
+  Lemma wf_respects_sub_table_mut te2 :
+    (∀ g : GlobDecl, wf_decl te2 g → wf_decl_respects te2 g) ∧
+    (∀ t : type, wf_basic_type te2 t → wf_basic_type_respects te2 t) ∧
+    (∀ t : type, wf_pt_type te2 t → wf_pt_type_respects te2 t) ∧
+    (∀ l : list type, wf_pt_types te2 l → wf_pt_types_respects te2 l) ∧
+    (∀ t : type, wf_type te2 t → wf_type_respects te2 t).
+  Proof.
+    apply wf_mut_ind; try solve [intros; red; intros; red_hyps_once; eauto].
+    intros * Hlook Hwf IH ? Hsub.
+    destruct (Hsub _ _ Hlook) as (st1 & Hlook1 & Hle).
+    apply (wf_named_struct _ Hlook1).
+    apply (wf_decl_respects_GlobDecl_le Hle), IH, Hsub.
+  Qed.
+
+  Lemma wf_type_respects_sub_table te1 te2 t :
+    type_table_le te2 te1 ->
+    wf_type te2 t → wf_type te1 t.
+  Proof. intros. by eapply wf_respects_sub_table_mut. Qed.
+
+  Lemma wf_type_respects_sub_module tt1 tt2 t :
+    sub_module tt2 tt1 ->
+    wf_type tt2.(globals) t -> wf_type tt1.(globals) t.
+  Proof. move=> /types_compat Hsub Hwf. exact: wf_type_respects_sub_table. Qed.
+
+
   Axiom fspec_wf_type : forall te ft ti a ls Q,
       fspec te ft ti a ls Q
       |-- fspec te ft ti a ls Q **
