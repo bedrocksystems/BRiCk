@@ -723,26 +723,21 @@ Section with_cpp.
 
   Section with_type_table.
     Variable te : type_table.
+    (* Adapted from Krebbers'15, Definition 3.3.5 *)
 
     (* Check that [g : GlobDecl] is complete in environment [te]. *)
-    Section with_wf_type.
-      Variable wf_type : type -> Prop.
-      Variant wf_decl : GlobDecl -> Prop :=
-      | wf_Struct {st}
-                  (_ : forall b li, In (b, li) st.(s_bases) -> wf_type (Tnamed b))
-                  (_ : forall x t li, In (x, t, li) st.(s_fields) -> wf_type t)
-        : wf_decl (Gstruct st)
-      | wf_Union {u}
-                 (_ : forall x t li, In (x, t, li) u.(u_fields) -> wf_type t)
-        : wf_decl (Gunion u)
-      | wf_enum {t consts} (_ : wf_type t)
-        : wf_decl (Genum t consts)
-      .
-    End with_wf_type.
-
-    (* Adapted from Krebbers'15, Definition 3.3.5 *)
+    Inductive wf_decl : GlobDecl -> Prop :=
+    | wf_Struct {st}
+                (_ : forall b li, In (b, li) st.(s_bases) -> wf_type (Tnamed b))
+                (_ : forall x t li, In (x, t, li) st.(s_fields) -> wf_type t)
+      : wf_decl (Gstruct st)
+    | wf_Union {u}
+                (_ : forall x t li, In (x, t, li) u.(u_fields) -> wf_type t)
+      : wf_decl (Gunion u)
+    | wf_enum {t consts} (_ : wf_type t)
+      : wf_decl (Genum t consts)
     (* Basic types. *)
-    Inductive wf_basic_type : type -> Prop :=
+    with wf_basic_type : type -> Prop :=
       | wf_float sz : wf_basic_type (Tfloat sz)
       | wf_int sgn sz : wf_basic_type (Tint sgn sz)
       | wf_bool : wf_basic_type Tbool
@@ -776,6 +771,12 @@ Section with_cpp.
         wf_pt_type (Tarray t n)
       | wf_pt_named n :
         wf_pt_type (Tnamed n)
+    with wf_pt_types : list type -> Prop :=
+    | wf_pt_nil : wf_pt_types []
+    | wf_pt_cons t ts :
+      wf_pt_type t ->
+      wf_pt_types ts ->
+      wf_pt_types (t :: ts)
     (* [wf_type t] says that type [t] is well-formed, that is, complete. *)
     with wf_type : type -> Prop :=
       | wf_basic t :
@@ -790,7 +791,7 @@ Section with_cpp.
       declarations, instead of an unordered dictionary.
       *)
       | wf_named_struct {n st} (_ : te !! n = Some st)
-                        (_ : wf_decl wf_type st) :
+                        (_ : wf_decl st) :
         wf_type (Tnamed n)
       | wf_array {t n}
         (_ : (n <> 0)%N) (* Needed? from Krebbers*)
@@ -805,7 +806,7 @@ Section with_cpp.
       not be complete. *)
       | wf_function {cc ret args}
           (_ : wf_pt_type ret)
-          (_ : List.Forall wf_pt_type args)
+          (_ : wf_pt_types args)
         : wf_type (Tfunction (cc:=cc) ret args)
       | wf_qualified {q t} (_ : wf_type t)
         : wf_type (Tqualified q t).
