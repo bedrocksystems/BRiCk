@@ -833,32 +833,6 @@ Section with_cpp.
       case_decide => //; subst; auto.
   Qed.
 
-  (* XXX generic Ltac1 utilities. *)
-  Inductive usedLemma {T : Type} (x : T) : Prop := UsedLemma.
-
-  Ltac markUsed H := assert (usedLemma H) by constructor.
-
-  (** After a round of application with the above, we will have a lot of junk [usedLemma] markers to clean up; hence this tactic. *)
-  Ltac un_usedLemma := repeat
-    match goal with
-      | [ H : usedLemma _ |- _ ] => clear H
-    end.
-
-  Ltac try_once lm :=
-      match goal with
-      | H : usedLemma lm |- _ => fail 1
-      | _ => markUsed lm; eapply lm
-      end.
-
-  Tactic Notation "try_once_tac" constr(T) tactic(tac) :=
-    match goal with
-    | H : usedLemma T |- _ => fail 1
-    | _ => markUsed T; tac
-    end.
-
-  Ltac red_hyps_once :=
-    repeat_on_hyps (fun H => try_once_tac H (red in H)); un_usedLemma.
-
   (* XXX Taken from sub_module. *)
   Definition type_table_le (te1 te2 : type_table) : Prop :=
     forall (gn : globname) gv,
@@ -890,7 +864,7 @@ Section with_cpp.
     (∀ l : list type, wf_pt_types te2 l → wf_pt_types_respects te2 l) ∧
     (∀ t : type, wf_type te2 t → wf_type_respects te2 t).
   Proof.
-    apply wf_mut_ind; try solve [intros; red; intros; red_hyps_once; eauto].
+    apply wf_mut_ind; try solve [intros; red; repeat_on_hyps (fun H => red in H); eauto].
     intros * Hlook Hwf IH ? Hsub.
     destruct (Hsub _ _ Hlook) as (st1 & Hlook1 & Hle).
     apply (wf_named_struct _ Hlook1).
