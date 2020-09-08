@@ -5,7 +5,7 @@
  *)
 Require Import stdpp.strings.
 Require Import bedrock.Util.
-Require Import bedrock.bytestring.
+Require Export bedrock.bytestring.
 
 Set Primitive Projections.
 
@@ -52,5 +52,3 @@ Bind Scope bs_scope with globname.
 Bind Scope bs_scope with obj_name.
 Bind Scope bs_scope with ident.
 Bind Scope bs_scope with localname.
-
-Export bytestring.

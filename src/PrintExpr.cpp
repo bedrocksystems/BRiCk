@@ -423,9 +423,9 @@ public:
              i != end; ++i) {
             char buf[25];
             sprintf(buf, "Byte.x%02x", (unsigned)*i);
-            print.output() << "(String " << buf << " ";
+            print.output() << "(BS.String " << buf << " ";
         }
-        print.output() << "EmptyString";
+        print.output() << "BS.EmptyString";
         for (auto i = lit->getBytes().begin(), end = lit->getBytes().end();
              i != end; ++i) {
             print.output() << ")";
