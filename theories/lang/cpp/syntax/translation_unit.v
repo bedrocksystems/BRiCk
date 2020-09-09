@@ -255,7 +255,7 @@ Section with_type_table.
   [Tfunction] represents a function type; somewhat counterintuitively,
   a pointer to a function type is complete even if the argument/return types
   are not complete, you're just forbidden from actually invoking the pointer. *)
-  | wf_function {cc ret args}
+  | wf_pt_function {cc ret args}
       (_ : wf_pt_type ret)
       (_ : wf_pt_types args)
     : wf_pt_type (Tfunction (cc:=cc) ret args)
