@@ -230,9 +230,7 @@ Section with_type_table.
   (* Pointer/reference types. *)
   | wf_ptr {t} : wf_pt_type t -> wf_basic_type (Tptr t)
 
-  (* [wf_pt_type t] says that a pointer/reference to [t] is well-formed,
-  that is, complete.
-  *)
+  (* [wf_pt_type t] says that a pointer/reference to [t] is complete. *)
   with wf_pt_type : type -> Prop :=
   | wf_pt_basic t :
     wf_basic_type t ->
