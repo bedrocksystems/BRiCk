@@ -728,6 +728,9 @@ Section with_cpp.
    *)
   Axiom fspec_strengthen : forall tt1 tt2 ft ti a ls Q,
       complete_type tt2.(globals) ft ->
+      (* TODO(PG): even if [ft] is complete, the argument/return types might not be
+      complete. That would make a call impossible, but does might not be
+      enough to justify [fspec_strengthen] locally (tho I expect it suffices globally). *)
       sub_module tt2 tt1 ->
       fspec tt1.(globals) ft ti a ls Q |-- fspec tt2.(globals) ft ti a ls Q.
 
