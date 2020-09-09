@@ -6,6 +6,9 @@
 Require Import Coq.Classes.DecidableClass.
 Require Import Coq.ZArith.BinIntDef.
 Require Import Coq.Bool.Bool.
+
+Require Import Coq.ssr.ssreflect.
+Local Open Scope general_if_scope.
 Require Import stdpp.decidable.
 Require Import stdpp.gmap.
 Require Import bedrock.bytestring.
@@ -197,14 +200,16 @@ Instance Singleton_twothree {V} : SingletonM bs V (IM.t V) :=
 Instance Singleton_symbol_table : SingletonM obj_name ObjValue symbol_table := _.
 Instance Singleton_type_table : SingletonM globname GlobDecl type_table := _.
 
-(* Not a reference type *)
-Fixpoint not_ref_type (t : type) : Prop :=
+Fixpoint ref_to_type (t : type) : option type :=
   match t with
-  | Tref _
-  | Trv_ref _ => False
-  | Tqualified _ t => not_ref_type t
-  | _ => True
+  | Tref t
+  | Trv_ref t => Some t
+  | Tqualified _ t => ref_to_type t
+  | _ => None
   end.
+
+(* Not a reference type *)
+Notation not_ref_type t := (ref_to_type t = None).
 
 Section with_type_table.
   Variable te : type_table.
@@ -221,17 +226,18 @@ Section with_type_table.
     : complete_decl (Gunion u)
   | complete_enum {t consts} (_ : complete_type t)
     : complete_decl (Genum t consts)
-  (* Basic types. *)
+  (* Basic types. This excludes references (see [complete_basic_type_not_ref]). *)
   with complete_basic_type : type -> Prop :=
   | complete_float sz : complete_basic_type (Tfloat sz)
   | complete_int sgn sz : complete_basic_type (Tint sgn sz)
   | complete_bool : complete_basic_type Tbool
   | complete_void : complete_basic_type Tvoid
   | complete_nullptr : complete_basic_type Tnullptr
-  (* Pointer/reference types. *)
+  (* t can in turn be a pointer type *)
   | complete_ptr {t} : complete_pointee_type t -> complete_basic_type (Tptr t)
 
-  (* [complete_pointee_type t] says that a pointer/reference to [t] is complete. *)
+  (* [complete_pointee_type t] says that a pointer/reference to [t] is complete.
+     This excludes references (see [complete_pointee_type_not_ref]). *)
   with complete_pointee_type : type -> Prop :=
   | complete_pt_basic t :
     complete_basic_type t ->
@@ -271,6 +277,7 @@ Section with_type_table.
   | complete_basic t :
     complete_basic_type t ->
     complete_type t
+  (* Reference types. This setup forbids references to references. *)
   | complete_ref {t} : complete_pointee_type t -> complete_type (Tref t)
   | complete_rv_ref {t} : complete_pointee_type t -> complete_type (Trv_ref t)
   (*
@@ -309,3 +316,15 @@ with complete_pointee_types_mut_ind := Minimality for complete_pointee_types Sor
 
 Combined Scheme complete_mut_ind from complete_decl_mut_ind, complete_basic_type_mut_ind,
   complete_pointee_type_mut_ind, complete_pointee_types_mut_ind, complete_type_mut_ind.
+
+Lemma complete_basic_type_not_ref te t : complete_basic_type te t → not_ref_type t.
+Proof. by inversion 1. Qed.
+Lemma complete_pointee_type_not_ref te t : complete_pointee_type te t → not_ref_type t.
+Proof. inversion 1; by [eapply complete_basic_type_not_ref | ]. Qed.
+
+Lemma complete_type_not_ref_ref te t1 t2 : complete_type te t1 → ref_to_type t1 = Some t2 → not_ref_type t2.
+Proof.
+  induction 1 => Hsome; simplify_eq/=; generalize dependent te => te;
+    try by [exact: complete_pointee_type_not_ref| tauto].
+  move => /complete_basic_type_not_ref; naive_solver.
+Qed.
