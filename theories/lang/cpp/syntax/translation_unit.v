@@ -228,8 +228,6 @@ Section with_type_table.
     | wf_nullptr : wf_basic_type Tnullptr
     (* Pointer/reference types. *)
     | wf_ptr {t} : wf_pt_type t -> wf_basic_type (Tptr t)
-    | wf_ref {t} : wf_pt_type t -> wf_basic_type (Tref t)
-    | wf_rv_ref {t} : wf_pt_type t -> wf_basic_type (Trv_ref t)
 
   (* [wf_pt_type t] says that a pointer/reference to [t] is well-formed,
   that is, complete.
@@ -273,6 +271,8 @@ Section with_type_table.
     | wf_basic t :
       wf_basic_type t ->
       wf_type t
+    | wf_ref {t} : wf_pt_type t -> wf_type (Tref t)
+    | wf_rv_ref {t} : wf_pt_type t -> wf_type (Trv_ref t)
     (*
     A reference to a struct/union named [n] is well-formed if its definition is.
     TODO: instead of checking that [n] points to a well-formed definition
