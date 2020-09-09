@@ -14,6 +14,7 @@ From bedrock.lang.cpp.syntax Require Import names expr stmt types.
 
 Set Primitive Projections.
 
+(** Record an offset in _bits_. *)
 Record LayoutInfo : Set :=
 { li_offset : Z }.
 Instance: EqDecision LayoutInfo.
