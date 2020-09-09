@@ -222,45 +222,45 @@ Section with_type_table.
     : wf_decl (Genum t consts)
   (* Basic types. *)
   with wf_basic_type : type -> Prop :=
-    | wf_float sz : wf_basic_type (Tfloat sz)
-    | wf_int sgn sz : wf_basic_type (Tint sgn sz)
-    | wf_bool : wf_basic_type Tbool
-    | wf_void : wf_basic_type Tvoid
-    | wf_nullptr : wf_basic_type Tnullptr
-    (* Pointer/reference types. *)
-    | wf_ptr {t} : wf_pt_type t -> wf_basic_type (Tptr t)
+  | wf_float sz : wf_basic_type (Tfloat sz)
+  | wf_int sgn sz : wf_basic_type (Tint sgn sz)
+  | wf_bool : wf_basic_type Tbool
+  | wf_void : wf_basic_type Tvoid
+  | wf_nullptr : wf_basic_type Tnullptr
+  (* Pointer/reference types. *)
+  | wf_ptr {t} : wf_pt_type t -> wf_basic_type (Tptr t)
 
   (* [wf_pt_type t] says that a pointer/reference to [t] is well-formed,
   that is, complete.
   *)
   with wf_pt_type : type -> Prop :=
-    | wf_pt_basic t :
-      wf_basic_type t ->
-      wf_pt_type t
-    (*
-      Pointers to array are only legal if the array is complete, at least
-      in C, since they cannot actually be indexed or created.
-      This rejects the invalid C:
+  | wf_pt_basic t :
+    wf_basic_type t ->
+    wf_pt_type t
+  (*
+    Pointers to array are only legal if the array is complete, at least
+    in C, since they cannot actually be indexed or created.
+    This rejects the invalid C:
 
-      [struct T; int foo(struct T x[][10]);]
+    [struct T; int foo(struct T x[][10]);]
 
-      However, C++ compilers appear to accept this code.
-      TODO: decide behavior.
-      *)
-    | wf_pt_array t n
-      (_ : (n <> 0)%N) (* From Krebbers. Probably needed to reject [T[][]]. *)
-      (_ : wf_type t) :
-      wf_pt_type (Tarray t n)
-    | wf_pt_named n :
-      wf_pt_type (Tnamed n)
-    (* Beware:
-    [Tfunction] represents a function type; somewhat counterintuitively,
-    a pointer to a function type is complete even if the argument/return types
-    are not complete, you're just forbidden from actually invoking the pointer. *)
-    | wf_function {cc ret args}
-        (_ : wf_pt_type ret)
-        (_ : wf_pt_types args)
-      : wf_pt_type (Tfunction (cc:=cc) ret args)
+    However, C++ compilers appear to accept this code.
+    TODO: decide behavior.
+    *)
+  | wf_pt_array t n
+    (_ : (n <> 0)%N) (* From Krebbers. Probably needed to reject [T[][]]. *)
+    (_ : wf_type t) :
+    wf_pt_type (Tarray t n)
+  | wf_pt_named n :
+    wf_pt_type (Tnamed n)
+  (* Beware:
+  [Tfunction] represents a function type; somewhat counterintuitively,
+  a pointer to a function type is complete even if the argument/return types
+  are not complete, you're just forbidden from actually invoking the pointer. *)
+  | wf_function {cc ret args}
+      (_ : wf_pt_type ret)
+      (_ : wf_pt_types args)
+    : wf_pt_type (Tfunction (cc:=cc) ret args)
   with wf_pt_types : list type -> Prop :=
   | wf_pt_nil : wf_pt_types []
   | wf_pt_cons t ts :
@@ -269,37 +269,37 @@ Section with_type_table.
     wf_pt_types (t :: ts)
   (* [wf_type t] says that type [t] is well-formed, that is, complete. *)
   with wf_type : type -> Prop :=
-    | wf_basic t :
-      wf_basic_type t ->
-      wf_type t
-    | wf_ref {t} : wf_pt_type t -> wf_type (Tref t)
-    | wf_rv_ref {t} : wf_pt_type t -> wf_type (Trv_ref t)
-    (*
-    A reference to a struct/union named [n] is well-formed if its definition is.
-    TODO: instead of checking that [n] points to a well-formed definition
-    _at each occurrence_, check it once, when adding it to our
-    analogue of a type environment, that is [type_table].
-    However, that might require replacing [type_table] by a _sequence_ of
-    declarations, instead of an unordered dictionary.
-    *)
-    | wf_named_struct {n st} (_ : te !! n = Some st)
-                      (_ : wf_decl st) :
-      wf_type (Tnamed n)
-    | wf_array {t n}
-      (_ : (n <> 0)%N) (* Needed? from Krebbers*)
-      (_ : wf_type t) :
-      wf_type (Tarray t n)
-    | wf_member_pointer {n t} (_ : ref_type t)
-        (_ : wf_pt_type (Tnamed n))
-        (_ : wf_pt_type t)
-      : wf_type (Tmember_pointer n t)
-    (* Beware: Argument/return types need not be complete. *)
-    | wf_function {cc ret args}
-        (_ : wf_pt_type ret)
-        (_ : wf_pt_types args)
-      : wf_type (Tfunction (cc:=cc) ret args)
-    | wf_qualified {q t} (_ : wf_type t)
-      : wf_type (Tqualified q t).
+  | wf_basic t :
+    wf_basic_type t ->
+    wf_type t
+  | wf_ref {t} : wf_pt_type t -> wf_type (Tref t)
+  | wf_rv_ref {t} : wf_pt_type t -> wf_type (Trv_ref t)
+  (*
+  A reference to a struct/union named [n] is well-formed if its definition is.
+  TODO: instead of checking that [n] points to a well-formed definition
+  _at each occurrence_, check it once, when adding it to our
+  analogue of a type environment, that is [type_table].
+  However, that might require replacing [type_table] by a _sequence_ of
+  declarations, instead of an unordered dictionary.
+  *)
+  | wf_named_struct {n st} (_ : te !! n = Some st)
+                    (_ : wf_decl st) :
+    wf_type (Tnamed n)
+  | wf_array {t n}
+    (_ : (n <> 0)%N) (* Needed? from Krebbers*)
+    (_ : wf_type t) :
+    wf_type (Tarray t n)
+  | wf_member_pointer {n t} (_ : ref_type t)
+      (_ : wf_pt_type (Tnamed n))
+      (_ : wf_pt_type t)
+    : wf_type (Tmember_pointer n t)
+  (* Beware: Argument/return types need not be complete. *)
+  | wf_function {cc ret args}
+      (_ : wf_pt_type ret)
+      (_ : wf_pt_types args)
+    : wf_type (Tfunction (cc:=cc) ret args)
+  | wf_qualified {q t} (_ : wf_type t)
+    : wf_type (Tqualified q t).
 End with_type_table.
 
 Scheme wf_decl_mut_ind := Minimality for wf_decl Sort Prop
