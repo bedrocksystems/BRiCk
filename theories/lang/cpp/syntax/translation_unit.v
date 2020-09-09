@@ -254,6 +254,14 @@ Section with_type_table.
       wf_pt_type (Tarray t n)
     | wf_pt_named n :
       wf_pt_type (Tnamed n)
+    (* Beware:
+    [Tfunction] represents a function type; somewhat counterintuitively,
+    a pointer to a function type is complete even if the argument/return types
+    are not complete, you're just forbidden from actually invoking the pointer. *)
+    | wf_function {cc ret args}
+        (_ : wf_pt_type ret)
+        (_ : wf_pt_types args)
+      : wf_pt_type (Tfunction (cc:=cc) ret args)
   with wf_pt_types : list type -> Prop :=
   | wf_pt_nil : wf_pt_types []
   | wf_pt_cons t ts :
@@ -284,9 +292,7 @@ Section with_type_table.
         (_ : wf_pt_type (Tnamed n))
         (_ : wf_pt_type t)
       : wf_type (Tmember_pointer n t)
-    (* Beware:
-    Since [Tfunction] represents a function pointer, argument types need
-    not be complete. *)
+    (* Beware: Argument/return types need not be complete. *)
     | wf_function {cc ret args}
         (_ : wf_pt_type ret)
         (_ : wf_pt_types args)
