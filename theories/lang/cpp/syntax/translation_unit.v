@@ -197,11 +197,12 @@ Instance Singleton_twothree {V} : SingletonM bs V (IM.t V) :=
 Instance Singleton_symbol_table : SingletonM obj_name ObjValue symbol_table := _.
 Instance Singleton_type_table : SingletonM globname GlobDecl type_table := _.
 
-Fixpoint ref_type (t : type) : Prop :=
+(* Not a reference type *)
+Fixpoint not_ref_type (t : type) : Prop :=
   match t with
   | Tref _
   | Trv_ref _ => False
-  | Tqualified _ t => ref_type t
+  | Tqualified _ t => not_ref_type t
   | _ => True
   end.
 
@@ -287,7 +288,7 @@ Section with_type_table.
     (_ : (n <> 0)%N) (* Needed? from Krebbers*)
     (_ : complete_type t) :
     complete_type (Tarray t n)
-  | complete_member_pointer {n t} (_ : ref_type t)
+  | complete_member_pointer {n t} (_ : not_ref_type t)
       (_ : complete_pointee_type (Tnamed n))
       (_ : complete_pointee_type t)
     : complete_type (Tmember_pointer n t)
