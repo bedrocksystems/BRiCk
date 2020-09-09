@@ -210,31 +210,31 @@ Section with_type_table.
   (* Adapted from Krebbers'15, Definition 3.3.5 *)
 
   (* Check that [g : GlobDecl] is complete in environment [te]. *)
-  Inductive wf_decl : GlobDecl -> Prop :=
-  | wf_Struct {st}
-              (_ : forall b li, In (b, li) st.(s_bases) -> wf_type (Tnamed b))
-              (_ : forall x t li, In (x, t, li) st.(s_fields) -> wf_type t)
-    : wf_decl (Gstruct st)
-  | wf_Union {u}
-              (_ : forall x t li, In (x, t, li) u.(u_fields) -> wf_type t)
-    : wf_decl (Gunion u)
-  | wf_enum {t consts} (_ : wf_type t)
-    : wf_decl (Genum t consts)
+  Inductive complete_decl : GlobDecl -> Prop :=
+  | complete_Struct {st}
+              (_ : forall b li, In (b, li) st.(s_bases) -> complete_type (Tnamed b))
+              (_ : forall x t li, In (x, t, li) st.(s_fields) -> complete_type t)
+    : complete_decl (Gstruct st)
+  | complete_Union {u}
+              (_ : forall x t li, In (x, t, li) u.(u_fields) -> complete_type t)
+    : complete_decl (Gunion u)
+  | complete_enum {t consts} (_ : complete_type t)
+    : complete_decl (Genum t consts)
   (* Basic types. *)
-  with wf_basic_type : type -> Prop :=
-  | wf_float sz : wf_basic_type (Tfloat sz)
-  | wf_int sgn sz : wf_basic_type (Tint sgn sz)
-  | wf_bool : wf_basic_type Tbool
-  | wf_void : wf_basic_type Tvoid
-  | wf_nullptr : wf_basic_type Tnullptr
+  with complete_basic_type : type -> Prop :=
+  | complete_float sz : complete_basic_type (Tfloat sz)
+  | complete_int sgn sz : complete_basic_type (Tint sgn sz)
+  | complete_bool : complete_basic_type Tbool
+  | complete_void : complete_basic_type Tvoid
+  | complete_nullptr : complete_basic_type Tnullptr
   (* Pointer/reference types. *)
-  | wf_ptr {t} : wf_pt_type t -> wf_basic_type (Tptr t)
+  | complete_ptr {t} : complete_pointee_type t -> complete_basic_type (Tptr t)
 
-  (* [wf_pt_type t] says that a pointer/reference to [t] is complete. *)
-  with wf_pt_type : type -> Prop :=
-  | wf_pt_basic t :
-    wf_basic_type t ->
-    wf_pt_type t
+  (* [complete_pointee_type t] says that a pointer/reference to [t] is complete. *)
+  with complete_pointee_type : type -> Prop :=
+  | complete_pt_basic t :
+    complete_basic_type t ->
+    complete_pointee_type t
   (*
     Pointers to array are only legal if the array is complete, at least
     in C, since they cannot actually be indexed or created.
@@ -245,33 +245,33 @@ Section with_type_table.
     However, C++ compilers appear to accept this code.
     TODO: decide behavior.
     *)
-  | wf_pt_array t n
+  | complete_pt_array t n
     (_ : (n <> 0)%N) (* From Krebbers. Probably needed to reject [T[][]]. *)
-    (_ : wf_type t) :
-    wf_pt_type (Tarray t n)
-  | wf_pt_named n :
-    wf_pt_type (Tnamed n)
+    (_ : complete_type t) :
+    complete_pointee_type (Tarray t n)
+  | complete_pt_named n :
+    complete_pointee_type (Tnamed n)
   (* Beware:
   [Tfunction] represents a function type; somewhat counterintuitively,
   a pointer to a function type is complete even if the argument/return types
   are not complete, you're just forbidden from actually invoking the pointer. *)
-  | wf_pt_function {cc ret args}
-      (_ : wf_pt_type ret)
-      (_ : wf_pt_types args)
-    : wf_pt_type (Tfunction (cc:=cc) ret args)
-  with wf_pt_types : list type -> Prop :=
-  | wf_pt_nil : wf_pt_types []
-  | wf_pt_cons t ts :
-    wf_pt_type t ->
-    wf_pt_types ts ->
-    wf_pt_types (t :: ts)
-  (* [wf_type t] says that type [t] is well-formed, that is, complete. *)
-  with wf_type : type -> Prop :=
-  | wf_basic t :
-    wf_basic_type t ->
-    wf_type t
-  | wf_ref {t} : wf_pt_type t -> wf_type (Tref t)
-  | wf_rv_ref {t} : wf_pt_type t -> wf_type (Trv_ref t)
+  | complete_pt_function {cc ret args}
+      (_ : complete_pointee_type ret)
+      (_ : complete_pointee_types args)
+    : complete_pointee_type (Tfunction (cc:=cc) ret args)
+  with complete_pointee_types : list type -> Prop :=
+  | complete_pt_nil : complete_pointee_types []
+  | complete_pt_cons t ts :
+    complete_pointee_type t ->
+    complete_pointee_types ts ->
+    complete_pointee_types (t :: ts)
+  (* [complete_type t] says that type [t] is well-formed, that is, complete. *)
+  with complete_type : type -> Prop :=
+  | complete_basic t :
+    complete_basic_type t ->
+    complete_type t
+  | complete_ref {t} : complete_pointee_type t -> complete_type (Tref t)
+  | complete_rv_ref {t} : complete_pointee_type t -> complete_type (Trv_ref t)
   (*
   A reference to a struct/union named [n] is well-formed if its definition is.
   TODO: instead of checking that [n] points to a well-formed definition
@@ -280,31 +280,31 @@ Section with_type_table.
   However, that might require replacing [type_table] by a _sequence_ of
   declarations, instead of an unordered dictionary.
   *)
-  | wf_named_struct {n st} (_ : te !! n = Some st)
-                    (_ : wf_decl st) :
-    wf_type (Tnamed n)
-  | wf_array {t n}
+  | complete_named_struct {n st} (_ : te !! n = Some st)
+                    (_ : complete_decl st) :
+    complete_type (Tnamed n)
+  | complete_array {t n}
     (_ : (n <> 0)%N) (* Needed? from Krebbers*)
-    (_ : wf_type t) :
-    wf_type (Tarray t n)
-  | wf_member_pointer {n t} (_ : ref_type t)
-      (_ : wf_pt_type (Tnamed n))
-      (_ : wf_pt_type t)
-    : wf_type (Tmember_pointer n t)
+    (_ : complete_type t) :
+    complete_type (Tarray t n)
+  | complete_member_pointer {n t} (_ : ref_type t)
+      (_ : complete_pointee_type (Tnamed n))
+      (_ : complete_pointee_type t)
+    : complete_type (Tmember_pointer n t)
   (* Beware: Argument/return types need not be complete. *)
-  | wf_function {cc ret args}
-      (_ : wf_pt_type ret)
-      (_ : wf_pt_types args)
-    : wf_type (Tfunction (cc:=cc) ret args)
-  | wf_qualified {q t} (_ : wf_type t)
-    : wf_type (Tqualified q t).
+  | complete_function {cc ret args}
+      (_ : complete_pointee_type ret)
+      (_ : complete_pointee_types args)
+    : complete_type (Tfunction (cc:=cc) ret args)
+  | complete_qualified {q t} (_ : complete_type t)
+    : complete_type (Tqualified q t).
 End with_type_table.
 
-Scheme wf_decl_mut_ind := Minimality for wf_decl Sort Prop
-with wf_basic_type_mut_ind := Minimality for wf_basic_type Sort Prop
-with wf_type_mut_ind := Minimality for wf_type Sort Prop
-with wf_pt_type_mut_ind := Minimality for wf_pt_type Sort Prop
-with wf_pt_types_mut_ind := Minimality for wf_pt_types Sort Prop.
+Scheme complete_decl_mut_ind := Minimality for complete_decl Sort Prop
+with complete_basic_type_mut_ind := Minimality for complete_basic_type Sort Prop
+with complete_type_mut_ind := Minimality for complete_type Sort Prop
+with complete_pointee_type_mut_ind := Minimality for complete_pointee_type Sort Prop
+with complete_pointee_types_mut_ind := Minimality for complete_pointee_types Sort Prop.
 
-Combined Scheme wf_mut_ind from wf_decl_mut_ind, wf_basic_type_mut_ind,
-  wf_pt_type_mut_ind, wf_pt_types_mut_ind, wf_type_mut_ind.
+Combined Scheme complete_mut_ind from complete_decl_mut_ind, complete_basic_type_mut_ind,
+  complete_pointee_type_mut_ind, complete_pointee_types_mut_ind, complete_type_mut_ind.

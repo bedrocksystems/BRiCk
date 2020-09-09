@@ -712,7 +712,7 @@ Section with_cpp.
     : forall (tt : type_table) (fun_type : type) (ti : thread_info)
              (addr : val) (ls : list val) (Q : val -> epred), mpred.
 
-  Axiom fspec_wf_type : forall te ft ti a ls Q,
+  Axiom fspec_complete_type : forall te ft ti a ls Q,
       fspec te ft ti a ls Q
       |-- fspec te ft ti a ls Q **
           [| exists cc tret targs, ft = Tfunction (cc:=cc) tret targs |].
@@ -727,7 +727,7 @@ Section with_cpp.
      the public interface (the type) is need to know how to call the function.
    *)
   Axiom fspec_strengthen : forall tt1 tt2 ft ti a ls Q,
-      wf_type tt2.(globals) ft ->
+      complete_type tt2.(globals) ft ->
       sub_module tt2 tt1 ->
       fspec tt1.(globals) ft ti a ls Q |-- fspec tt2.(globals) ft ti a ls Q.
 
@@ -740,7 +740,7 @@ Section with_cpp.
   Global Instance Proper_fspec : forall tt ft a ls ti,
       Proper (pointwise_relation _ lentails ==> lentails) (@fspec tt ft ti a ls).
   Proof. do 3 red; intros.
-         rewrite fspec_wf_type.
+         rewrite fspec_complete_type.
          iIntros "[X %]"; iRevert "X"; iApply fspec_frame; auto.
          iIntros (v); iApply H.
   Qed.
@@ -752,7 +752,7 @@ Section with_cpp.
 
     Lemma fspec_wand Q1 Q2 : WP Q1 |-- (∀ v, Q1 v -* Q2 v) -* WP Q2.
     Proof. iIntros "Hwp HK".
-           iDestruct (fspec_wf_type with "Hwp") as "[Hwp %]".
+           iDestruct (fspec_complete_type with "Hwp") as "[Hwp %]".
            iApply (fspec_frame with "HK Hwp").
     Qed.
   End fspec.

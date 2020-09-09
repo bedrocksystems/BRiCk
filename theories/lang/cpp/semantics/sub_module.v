@@ -183,53 +183,53 @@ Definition type_table_le (te1 te2 : type_table) : Prop :=
     exists gv', te2 !! gn = Some gv' /\
             GlobDecl_le gv gv' = Some tt.
 
-Local Hint Constructors wf_decl wf_basic_type wf_type wf_pt_type wf_pt_types : core.
+Local Hint Constructors complete_decl complete_basic_type complete_type complete_pointee_type complete_pointee_types : core.
 
-Lemma wf_decl_respects_GlobDecl_le {te g1 g2} :
+Lemma complete_decl_respects_GlobDecl_le {te g1 g2} :
   GlobDecl_le g1 g2 = Some () ->
-  wf_decl te g1 ->
-  wf_decl te g2.
+  complete_decl te g1 ->
+  complete_decl te g2.
 Proof.
-  intros Hle Hwf; inversion Hwf; simplify_eq; destruct g2 => //=;
+  intros Hle Hct; inversion Hct; simplify_eq; destruct g2 => //=;
     apply require_eq_success in Hle;
     destruct_and!; simplify_eq; auto.
 Qed.
 
-Local Definition wf_decl_respects te2 g := ∀ te1,
+Local Definition complete_decl_respects te2 g := ∀ te1,
   type_table_le te2 te1 ->
-  wf_decl te1 g.
-Local Definition wf_basic_type_respects te2 t := ∀ te1,
+  complete_decl te1 g.
+Local Definition complete_basic_type_respects te2 t := ∀ te1,
   type_table_le te2 te1 ->
-  wf_basic_type te1 t.
-Local Definition wf_pt_type_respects te2 t := ∀ te1,
+  complete_basic_type te1 t.
+Local Definition complete_pointee_type_respects te2 t := ∀ te1,
   type_table_le te2 te1 ->
-  wf_pt_type te1 t.
-Local Definition wf_pt_types_respects te2 ts := ∀ te1,
+  complete_pointee_type te1 t.
+Local Definition complete_pointee_types_respects te2 ts := ∀ te1,
   type_table_le te2 te1 ->
-  wf_pt_types te1 ts.
-Local Definition wf_type_respects te2 t := ∀ te1,
+  complete_pointee_types te1 ts.
+Local Definition complete_type_respects te2 t := ∀ te1,
   type_table_le te2 te1 ->
-  wf_type te1 t.
+  complete_type te1 t.
 
 (* Actual mutual induction. *)
-Lemma wf_respects_sub_table_mut te2 :
-  (∀ g : GlobDecl, wf_decl te2 g → wf_decl_respects te2 g) ∧
-  (∀ t : type, wf_basic_type te2 t → wf_basic_type_respects te2 t) ∧
-  (∀ t : type, wf_pt_type te2 t → wf_pt_type_respects te2 t) ∧
-  (∀ l : list type, wf_pt_types te2 l → wf_pt_types_respects te2 l) ∧
-  (∀ t : type, wf_type te2 t → wf_type_respects te2 t).
+Lemma complete_respects_sub_table_mut te2 :
+  (∀ g : GlobDecl, complete_decl te2 g → complete_decl_respects te2 g) ∧
+  (∀ t : type, complete_basic_type te2 t → complete_basic_type_respects te2 t) ∧
+  (∀ t : type, complete_pointee_type te2 t → complete_pointee_type_respects te2 t) ∧
+  (∀ l : list type, complete_pointee_types te2 l → complete_pointee_types_respects te2 l) ∧
+  (∀ t : type, complete_type te2 t → complete_type_respects te2 t).
 Proof.
-  apply wf_mut_ind; try solve [intros; red; repeat_on_hyps (fun H => red in H); eauto].
-  intros * Hlook Hwf IH ? Hsub.
+  apply complete_mut_ind; try solve [intros; red; repeat_on_hyps (fun H => red in H); eauto].
+  intros * Hlook Hct IH ? Hsub.
   destruct (Hsub _ _ Hlook) as (st1 & Hlook1 & Hle).
-  apply (wf_named_struct _ Hlook1).
-  apply (wf_decl_respects_GlobDecl_le Hle), IH, Hsub.
+  apply (complete_named_struct _ Hlook1).
+  apply (complete_decl_respects_GlobDecl_le Hle), IH, Hsub.
 Qed.
 
-Lemma wf_type_respects_sub_table te1 te2 t :
+Lemma complete_type_respects_sub_table te1 te2 t :
   type_table_le te2 te1 ->
-  wf_type te2 t → wf_type te1 t.
-Proof. intros. by eapply wf_respects_sub_table_mut. Qed.
+  complete_type te2 t → complete_type te1 t.
+Proof. intros. by eapply complete_respects_sub_table_mut. Qed.
 
 (* TODO: reuse [type_table_le] for types_compat. *)
 Record sub_module (a b : translation_unit) : Prop :=
@@ -302,10 +302,10 @@ Proof.
       auto.
 Qed.
 
-Lemma wf_type_respects_sub_module tt1 tt2 t :
+Lemma complete_type_respects_sub_module tt1 tt2 t :
   sub_module tt2 tt1 ->
-  wf_type tt2.(globals) t -> wf_type tt1.(globals) t.
-Proof. move=> /types_compat Hsub Hwf. exact: wf_type_respects_sub_table. Qed.
+  complete_type tt2.(globals) t -> complete_type tt1.(globals) t.
+Proof. move=> /types_compat Hsub Hct. exact: complete_type_respects_sub_table. Qed.
 
 Definition module_le (a b : translation_unit) : bool :=
   bool_decide (a.(byte_order) = b.(byte_order)) &&
