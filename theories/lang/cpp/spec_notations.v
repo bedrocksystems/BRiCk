@@ -102,6 +102,10 @@ Section with_Σ.
 
   Definition with_arg_fspec (X : WithPrePost) : WithPrePost := X.
 
+  Definition with_pre_fspec (X : WithPrePost) : WithPrePost := X.
+
+  Definition with_prepost_fspec (X : WithPrePost) : WithPrePost := X.
+
   Definition with_tele (t : telescopes.tele) (f : telescopes.tele_arg t -> WithPrePost)
   : WithPrePost :=
     @add_with (telescopes.TeleS (fun x : telescopes.tele_arg t => telescopes.TeleO)) f.
@@ -130,6 +134,12 @@ Notation "'\prepost' pp X" :=
   (@add_prepost _ pp%I X%fspec)
   (at level 10, pp at level 100, X at level 200, right associativity,
    format "'[v' '\prepost'  '[hv' pp ']' '//' X ']'").
+
+Notation "'\prepost{' x .. y '}' pp X" :=
+  (with_prepost_fspec ((@add_with _ (TeleS (fun x => .. (TeleS (fun y => TeleO)) .. ))
+                                (fun x => .. (fun y => @add_prepost _ pp%I X%fspec) .. ))))
+  (at level 10, x binder, y binder, pp at level 100, X at level 200, right associativity,
+   format "'[v' '\prepost{' x .. y '}'  '[hv' pp ']' '//' X ']'").
 
 Notation "'\let' x ':=' e X" :=
   (let_fspec (let x := e in X%fspec))
@@ -167,6 +177,12 @@ Notation "'\pre' pre X" :=
   (@add_pre _ pre%I X%fspec)
   (at level 10, pre at level 200, X at level 200, left associativity,
    format "'[v' '\pre'  pre  '//' X ']'").
+
+Notation "'\pre{' x .. y '}' pp X" :=
+  (with_pre_fspec ((@add_with _ (TeleS (fun x => .. (TeleS (fun y => TeleO)) .. ))
+                                (fun x => .. (fun y => @add_pre _ pp%I X%fspec) .. ))))
+  (at level 10, x binder, y binder, pp at level 100, X at level 200, right associativity,
+   format "'[v' '\pre{' x .. y '}'  '[hv' pp ']' '//' X ']'").
 
 Notation "'\post' { x .. y } [ r ] post" :=
   (@post_ret _ (TeleS (fun x => .. (TeleS (fun y => TeleO)) ..))
@@ -210,13 +226,15 @@ Abort.
 
 Goal WithPrePost mpredI.
 refine (
-   \with (I J : mpred)
+   \with (I J : mpred) (p : ptr) (R : Qp -> Qp -> nat -> Rep)
    \prepost empSP
    \require True
    \arg{n (nn: nat)} "foo" (Vint n)
    \args{a} [Vint (Z.of_nat a)]
    \with (z : nat)
    \prepost empSP
+   \prepost{q1 q2} _at (_eq p) (R q1 q2 0)
+   \pre{q3 q4} _at (_eq p) (R q3 q4 0)
    \pre empSP ** Exists y : nat, [| a = 7 |] ** [| y = 3 |] ** I ** J
    \post {x} [ Vint x ] empSP).
 (* Show Proof. *)
