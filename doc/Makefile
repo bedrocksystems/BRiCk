@@ -72,6 +72,8 @@ redoc: clean doc
 
 old-doc:
 	$(MAKE) -C old doc
+	mkdir -p $(SPHINXBUILDDIR)/html/coqdoc
+	cp old/html/* $(SPHINXBUILDDIR)/html/coqdoc
 .PHONY: doc
 
 html: old-doc doc
