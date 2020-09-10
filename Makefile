@@ -105,12 +105,9 @@ html doc: coq
 	rm -rf public
 	rm -rf html
 	$(COQMK) html
-	mkdir html-coqdoc
-	mv html/* html-coqdoc
-	mv html-coqdoc html/coqdoc
-	$(DOCMK) html
-	cp -r doc/old/html/* html/coqdoc
-	cp -r $(EXTRA_DIR)/resources/* html/coqdoc
+	$(DOCMK) html # generates html files in `doc/old/html`
+	mv html/* doc/old/html && rmdir html
+	cp -r $(EXTRA_DIR)/resources/* doc/old/html
 .PHONY: html doc
 
 doc_extra:
