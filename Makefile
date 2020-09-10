@@ -115,7 +115,6 @@ html doc: coq
 
 doc_extra:
 	git clone --depth 1 https://github.com/coq-community/coqdocjs.git doc_extra
-.PHONY: doc_extra
 
 public: html doc_extra
 	mv html public
