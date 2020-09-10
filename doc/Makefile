@@ -4,30 +4,15 @@
 # SPDX-License-Identifier: LGPL-2.1 WITH BedRock Exception for use over network, see repository root for details.
 #
 
-COQMAKEFILE=$(COQBIN)coq_makefile
-
-COQMK := $(MAKE) -f Makefile.coq
-
 ROOT=$(shell (cd .. &&pwd))
-include ./Makefile.doc
-COQDOCFLAGS += --external https://bedrocksystems.gitlab.io/cpp2v bedrock
-export COQDOCFLAGS
 
-coq: Makefile.coq
-	+@$(COQMK)
-.PHONY: coq
-
-doc: coq
-	+@$(COQMK) html
+doc:
+	$(MAKE) -C old doc
 .PHONY: doc
 
 html: doc
 .PHONY: html
 
 clean:
-	+@if test -f Makefile.coq; then $(COQMK) cleanall; fi
-	rm -f Makefile.coq Makefile.coq.conf
+	$(MAKE) -C old clean
 .PHONY: clean
-
-Makefile.coq Makefile.coq.conf: _CoqProject Makefile
-	+$(COQMAKEFILE) -f _CoqProject -o Makefile.coq

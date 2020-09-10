@@ -15,7 +15,7 @@ COQMK := $(MAKE) -f Makefile.coq
 DOCMK := $(MAKE) -C doc
 
 ROOT := $(shell pwd)
-include doc/Makefile.doc
+include doc/old/Makefile.doc
 
 OPAM_PREFIX := $(shell opam config var prefix)
 BINDIR = $(OPAM_PREFIX)/bin
@@ -105,10 +105,12 @@ html doc: coq
 	rm -rf public
 	rm -rf html
 	$(COQMK) html
+	mkdir html-coqdoc
+	mv html/* html-coqdoc
+	mv html-coqdoc html/coqdoc
 	$(DOCMK) html
-	cp -r doc/html/* html/
-	cp -r $(EXTRA_DIR)/resources/* html
-	cp html/toc.html html/index.html
+	cp -r doc/old/html/* html/coqdoc
+	cp -r $(EXTRA_DIR)/resources/* html/coqdoc
 .PHONY: html doc
 
 doc_extra:
