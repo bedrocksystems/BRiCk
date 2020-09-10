@@ -26,7 +26,7 @@ else
 SPHINXOPTS=
 endif
 
-SPHINXDIR ?= $(ROOT_DIR)/doc/sphinx
+SPHINXDIR ?= $(ROOT_DIR)/sphinx
 SPHINXTANGLEDIR = $(SPHINXDIR)/tangles
 export SPHINXTANGLEDIR
 

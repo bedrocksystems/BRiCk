@@ -18,5 +18,6 @@ public
 html
 doc_extra
 doc/old/html
+doc/sphinx/cache
 .Makefile.coq.d
 _build
