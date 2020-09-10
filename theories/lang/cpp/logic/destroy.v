@@ -24,15 +24,20 @@ Section destroy.
   Definition destruct_obj (dtor : obj_name) (cls : globname) (v : val) (Q : mpred) : mpred :=
     match σ.(genv_tu) !! cls with
     | Some (Gstruct s) =>
-      match s.(s_virtual_dtor) with
-      | Some dtor =>
-        resolve_virtual (σ:=σ) (_eqv v) cls dtor (fun da p =>
-                   |> fspec ti (Vptr da) (Vptr p :: nil) (fun _ => Q))
-      | None =>
-        Exists da, _global dtor &~ da **
-                   |> fspec ti (Vptr da) (v :: nil) (fun _ => Q)
+      match σ.(genv_tu) !! dtor with
+      | Some ov =>
+        let ty := type_of_value ov in
+        match s.(s_virtual_dtor) with
+        | Some dtor =>
+          resolve_virtual (σ:=σ) (_eqv v) cls dtor (fun da p =>
+             |> fspec σ.(genv_tu).(globals) ty ti (Vptr da) (Vptr p :: nil) (fun _ => Q))
+        | None =>
+          Exists da, _global dtor &~ da **
+             |> fspec σ.(genv_tu).(globals) ty ti (Vptr da) (v :: nil) (fun _ => Q)
+        end
+      | _ => False
       end
-    | _ => lfalse
+    | _ => False
     end.
 
   (* [destruct_val t this dtor Q] invokes the destructor ([dtor]) on [this]
@@ -50,7 +55,7 @@ Section destroy.
     | Tarray t sz =>
       fold_right (fun i Q =>
          Exists p, _offsetL (_sub t (Z.of_nat i)) (_eqv this) &~ p ** destruct_val t (Vptr p) dtor Q) Q (List.rev (seq 0 (N.to_nat sz)))
-    | _ => empSP
+    | _ => emp
     end.
 
   (* call the destructor (if available) and delete the memory *)

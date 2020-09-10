@@ -57,6 +57,8 @@ public:
 
     void printField(const clang::ValueDecl*, CoqPrinter&);
 
+    void printCallingConv(clang::CallingConv, CoqPrinter&);
+
     unsigned getTypeSize(const clang::BuiltinType* type) const;
 
     std::string sourceRange(const clang::SourceRange&& sr) const;

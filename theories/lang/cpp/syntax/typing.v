@@ -65,7 +65,7 @@ Fixpoint erase_qualifiers (t : type) : type :=
   | Tfloat _
   | Tnamed _ => t
   | Tarray t sz => Tarray (erase_qualifiers t) sz
-  | Tfunction t ts => Tfunction (erase_qualifiers t) (List.map erase_qualifiers ts)
+  | @Tfunction cc t ts => Tfunction (cc:=cc) (erase_qualifiers t) (List.map erase_qualifiers ts)
   | Tmember_pointer cls t => Tmember_pointer cls (erase_qualifiers t)
   | Tqualified _ t => erase_qualifiers t
   | Tnullptr => Tnullptr

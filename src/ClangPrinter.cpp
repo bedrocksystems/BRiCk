@@ -112,8 +112,7 @@ ClangPrinter::printField(const ValueDecl *decl, CoqPrinter &print) {
                    dyn_cast<clang::CXXMethodDecl>(decl)) {
         print.ctor("Build_field", false);
         this->printGlobalName(meth->getParent(), print);
-        print.output() << fmt::nbsp << "\""
-                       << decl->getNameAsString() << "\"";
+        print.output() << fmt::nbsp << "\"" << decl->getNameAsString() << "\"";
         print.end_ctor();
     } else if (const VarDecl *var = dyn_cast<VarDecl>(decl)) {
 
@@ -128,4 +127,42 @@ ClangPrinter::printField(const ValueDecl *decl, CoqPrinter &print) {
 std::string
 ClangPrinter::sourceRange(const SourceRange &&sr) const {
     return sr.printToString(this->context_->getSourceManager());
+}
+
+void
+ClangPrinter::printCallingConv(clang::CallingConv cc, CoqPrinter &print) {
+#define PRINT(x)                                                               \
+    case CallingConv::x:                                                       \
+        print.output() << #x;                                                  \
+        break;
+#define OVERRIDE(x, y)                                                         \
+    case CallingConv::x:                                                       \
+        print.output() << #y;                                                  \
+        break;
+    switch (cc) {
+        PRINT(CC_C);
+        OVERRIDE(CC_X86RegCall, CC_RegCall);
+        OVERRIDE(CC_Win64, CC_MsAbi);
+#if 0
+        PRINT(CC_X86StdCall);
+        PRINT(CC_X86FastCall);
+        PRINT(CC_X86ThisCall);
+        PRINT(CC_X86VectorCall);
+        PRINT(CC_X86Pascal);
+        PRINT(CC_X86_64SysV);
+        PRINT(CC_AAPCS);
+        PRINT(CC_AAPCS_VFP);
+        PRINT(CC_IntelOclBicc);
+        PRINT(CC_SpirFunction);
+        PRINT(CC_OpenCLKernel);
+        PRINT(CC_Swift);
+        PRINT(CC_PreserveMost);
+        PRINT(CC_PreserveAll);
+        PRINT(CC_AArch64VectorCall);
+#endif
+    default:
+        using namespace logging;
+        logging::fatal() << "unsupported calling convention\n";
+        logging::die();
+    }
 }

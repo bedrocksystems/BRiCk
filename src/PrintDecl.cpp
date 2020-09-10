@@ -14,6 +14,24 @@
 
 using namespace clang;
 
+CallingConv
+getCallingConv(const Type *type) {
+    if (auto ft = dyn_cast_or_null<FunctionType>(type)) {
+        return ft->getCallConv();
+    } else if (auto at = dyn_cast_or_null<AttributedType>(type)) {
+        return getCallingConv(at->getModifiedType().getTypePtr());
+    } else {
+        type->dump();
+        assert(false && "FunctionDecl type is not FunctionType");
+        LLVM_BUILTIN_UNREACHABLE;
+    }
+}
+
+CallingConv
+getCallingConv(const FunctionDecl *decl) {
+    return getCallingConv(decl->getType().getTypePtr());
+}
+
 void
 PrintBuiltin(Builtin::ID id, const ValueDecl *decl, CoqPrinter &print,
              ClangPrinter &cprint) {
@@ -79,6 +97,10 @@ printFunction(const FunctionDecl *decl, CoqPrinter &print,
         print.cons();
     }
     print.end_list();
+    print.output() << fmt::nbsp;
+
+    cprint.printCallingConv(getCallingConv(decl), print);
+    print.output() << fmt::nbsp;
 
     if (decl->getBody()) {
         print.ctor("Some", false);
@@ -115,6 +137,9 @@ printMethod(const CXXMethodDecl *decl, CoqPrinter &print,
     }
     print.end_list();
 
+    cprint.printCallingConv(getCallingConv(decl), print);
+    print.output() << fmt::nbsp;
+
     print.output() << fmt::line;
     if (decl->getBody()) {
         print.ctor("Some", false);
@@ -139,6 +164,9 @@ printDestructor(const CXXDestructorDecl *decl, CoqPrinter &print,
     auto record = decl->getParent();
     print.ctor("Build_Dtor");
     cprint.printGlobalName(record, print);
+    print.output() << fmt::nbsp;
+
+    cprint.printCallingConv(getCallingConv(decl), print);
     print.output() << fmt::line;
 
     if (decl->isDefaulted()) {
@@ -451,7 +479,6 @@ public:
                            ClangPrinter &cprint, const ASTContext &) {
         print.ctor("Dfunction");
         cprint.printGlobalName(decl, print);
-        print.output() << fmt::line;
         printFunction(decl, print, cprint);
         print.end_ctor();
         return true;
@@ -508,6 +535,9 @@ public:
         }
         print.end_list();
 
+        cprint.printCallingConv(getCallingConv(decl), print);
+
+        print.output() << fmt::line;
         if (decl->getBody()) {
             print.some();
             print.ctor("UserDefined");

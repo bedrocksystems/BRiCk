@@ -709,25 +709,55 @@ Section with_cpp.
    * note: the [list val] will be related to the register set.
    *)
   Parameter fspec
-    : forall (ti : thread_info) (addr : val) (ls : list val) (Q : val -> epred), mpred.
+    : forall (tt : type_table) (fun_type : type) (ti : thread_info)
+             (addr : val) (ls : list val) (Q : val -> epred), mpred.
 
-  Axiom fspec_frame : forall a ls ti Q1 Q2,
-      Forall v, Q1 v -* Q2 v |-- @fspec ti a ls Q1 -* @fspec ti a ls Q2.
+  Axiom fspec_complete_type : forall te ft ti a ls Q,
+      fspec te ft ti a ls Q
+      |-- fspec te ft ti a ls Q **
+          [| exists cc tret targs, ft = Tfunction (cc:=cc) tret targs |].
 
-  Global Instance Proper_fspec : forall a ls ti,
-      Proper (pointwise_relation _ lentails ==> lentails) (@fspec ti a ls).
+  (* this axiom states that the type environment for an [fspec] can be
+     narrowed as long as the new type environment [small]/[tt2] is smaller than
+     the old type environment ([big]/[tt1]), and [ft]
+     is still a *complete type* in the new type environment [small]/[tt2].
+
+     NOTE: This is informally justified by the fact that (in the absence
+     of ODR) the implementation of the function is encapsulated and only
+     the public interface (the type) is need to know how to call the function.
+   *)
+  Axiom fspec_strengthen : forall tt1 tt2 ft ti a ls Q,
+      complete_type tt2.(globals) ft ->
+      (* TODO(PG): even if [ft] is complete, the argument/return types might not be
+      complete. That would make a call impossible, but does might not be
+      enough to justify [fspec_strengthen] locally (tho I expect it suffices globally). *)
+      sub_module tt2 tt1 ->
+      fspec tt1.(globals) ft ti a ls Q |-- fspec tt2.(globals) ft ti a ls Q.
+
+  (* this axiom is the standard rule of consequence for weakest
+     pre-condition.
+   *)
+  Axiom fspec_frame : forall tt ft a ls ti Q1 Q2,
+      Forall v, Q1 v -* Q2 v |-- @fspec tt ft ti a ls Q1 -* @fspec tt ft ti a ls Q2.
+
+  Global Instance Proper_fspec : forall tt ft a ls ti,
+      Proper (pointwise_relation _ lentails ==> lentails) (@fspec tt ft ti a ls).
   Proof. do 3 red; intros.
-         iIntros "X"; iRevert "X"; iApply fspec_frame.
+         rewrite fspec_complete_type.
+         iIntros "[X %]"; iRevert "X"; iApply fspec_frame; auto.
          iIntros (v); iApply H.
   Qed.
 
   Section fspec.
-    Context (ti : thread_info) (addr : val) (ls : list val).
-    Local Notation WP := (fspec ti addr ls) (only parsing).
+    Context {tt : type_table} {tf : type} (ti : thread_info) (addr : val) (ls : list val).
+    Local Notation WP := (fspec tt tf ti addr ls) (only parsing).
     Implicit Types Q : val → epred.
 
     Lemma fspec_wand Q1 Q2 : WP Q1 |-- (∀ v, Q1 v -* Q2 v) -* WP Q2.
-    Proof. iIntros "Hwp HK". by iApply (fspec_frame with "HK Hwp"). Qed.
+    Proof. iIntros "Hwp HK".
+           iDestruct (fspec_complete_type with "Hwp") as "[Hwp %]".
+           iApply (fspec_frame with "HK Hwp").
+    Qed.
   End fspec.
 
 End with_cpp.

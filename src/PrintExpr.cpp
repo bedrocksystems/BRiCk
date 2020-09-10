@@ -509,6 +509,8 @@ public:
             } else {
                 print.output() << "Virtual";
             }
+            print.output() << "," << fmt::nbsp;
+            cprint.printQualType(me->getMemberDecl()->getType(), print);
             print.output() << fmt::rparen;
             print.end_ctor();
 

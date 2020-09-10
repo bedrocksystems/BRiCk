@@ -3,6 +3,9 @@
  *
  * SPDX-License-Identifier: LGPL-2.1 WITH BedRock Exception for use over network, see repository root for details.
  *)
+Require Import Coq.ssr.ssreflect.
+Local Open Scope general_if_scope.
+Require Import stdpp.tactics.
 Require Import stdpp.base.
 Require Import stdpp.decidable.
 Require Import bedrock.lang.cpp.syntax.translation_unit.
@@ -124,7 +127,7 @@ Proof.
   reflexivity.
 Qed.
 
-Lemma require_eq_success `{EqDecision T} {U} : forall (a b : T) c (d : U),
+Lemma require_eq_success `{EqDecision T} {U} {a b : T} {c} {d : U}:
     require_eq a b c = Some d ->
     a = b /\ c = Some d.
 Proof.
@@ -174,6 +177,61 @@ Proof.
   all: repeat rewrite require_eq_refl; eauto; try congruence.
 Qed.
 
+Definition type_table_le (te1 te2 : type_table) : Prop :=
+  forall (gn : globname) gv,
+    te1 !! gn = Some gv ->
+    exists gv', te2 !! gn = Some gv' /\
+            GlobDecl_le gv gv' = Some tt.
+
+Local Hint Constructors complete_decl complete_basic_type complete_type complete_pointee_type complete_pointee_types : core.
+
+Lemma complete_decl_respects_GlobDecl_le {te g1 g2} :
+  GlobDecl_le g1 g2 = Some () ->
+  complete_decl te g1 ->
+  complete_decl te g2.
+Proof.
+  intros Hle Hct; inversion Hct; simplify_eq; destruct g2 => //=;
+    apply require_eq_success in Hle;
+    destruct_and!; simplify_eq; auto.
+Qed.
+
+Local Definition complete_decl_respects te2 g := ∀ te1,
+  type_table_le te2 te1 ->
+  complete_decl te1 g.
+Local Definition complete_basic_type_respects te2 t := ∀ te1,
+  type_table_le te2 te1 ->
+  complete_basic_type te1 t.
+Local Definition complete_pointee_type_respects te2 t := ∀ te1,
+  type_table_le te2 te1 ->
+  complete_pointee_type te1 t.
+Local Definition complete_pointee_types_respects te2 ts := ∀ te1,
+  type_table_le te2 te1 ->
+  complete_pointee_types te1 ts.
+Local Definition complete_type_respects te2 t := ∀ te1,
+  type_table_le te2 te1 ->
+  complete_type te1 t.
+
+(* Actual mutual induction. *)
+Lemma complete_respects_sub_table_mut te2 :
+  (∀ g : GlobDecl, complete_decl te2 g → complete_decl_respects te2 g) ∧
+  (∀ t : type, complete_basic_type te2 t → complete_basic_type_respects te2 t) ∧
+  (∀ t : type, complete_pointee_type te2 t → complete_pointee_type_respects te2 t) ∧
+  (∀ l : list type, complete_pointee_types te2 l → complete_pointee_types_respects te2 l) ∧
+  (∀ t : type, complete_type te2 t → complete_type_respects te2 t).
+Proof.
+  apply complete_mut_ind; try solve [intros; red; repeat_on_hyps (fun H => red in H); eauto].
+  intros * Hlook Hct IH ? Hsub.
+  destruct (Hsub _ _ Hlook) as (st1 & Hlook1 & Hle).
+  apply (complete_named_struct _ Hlook1).
+  apply (complete_decl_respects_GlobDecl_le Hle), IH, Hsub.
+Qed.
+
+Lemma complete_type_respects_sub_table te1 te2 t :
+  type_table_le te2 te1 ->
+  complete_type te2 t → complete_type te1 t.
+Proof. intros. by eapply complete_respects_sub_table_mut. Qed.
+
+(* TODO: reuse [type_table_le] for types_compat. *)
 Record sub_module (a b : translation_unit) : Prop :=
 { types_compat : forall (gn : globname) gv,
       a.(globals) !! gn = Some gv ->
@@ -243,6 +301,11 @@ Proof.
       apply negb_false_iff in Heqo.
       auto.
 Qed.
+
+Lemma complete_type_respects_sub_module tt1 tt2 t :
+  sub_module tt2 tt1 ->
+  complete_type tt2.(globals) t -> complete_type tt1.(globals) t.
+Proof. move=> /types_compat Hsub Hct. exact: complete_type_respects_sub_table. Qed.
 
 Definition module_le (a b : translation_unit) : bool :=
   bool_decide (a.(byte_order) = b.(byte_order)) &&

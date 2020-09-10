@@ -550,16 +550,17 @@ Section with_cpp.
   (* this is the core definition that everything will be based on.
      it is really an assertion about assembly
    *)
-  Definition cptr_def (fs : function_spec) : Rep :=
+  Definition cptr_def {resolve : genv} (fs : function_spec) : Rep :=
     as_Rep (fun p =>
          Forall (ti : thread_info), □ (Forall vs Q,
          [| List.length vs = List.length fs.(fs_arguments) |] -*
-         fs.(fs_spec) ti vs Q -* fspec ti (Vptr p) vs Q))%I.
+         fs.(fs_spec) ti vs Q -*
+         fspec resolve.(genv_tu).(globals) (type_of_spec fs) ti (Vptr p) vs Q))%I.
   Definition cptr_aux : seal (@cptr_def). by eexists. Qed.
   Definition cptr := cptr_aux.(unseal).
   Definition cptr_eq : @cptr = _ := cptr_aux.(seal_eq).
 
-  Global Instance cptr_persistent : Persistent (cptr s).
+  Global Instance cptr_persistent {resolve} : Persistent (cptr resolve s).
   Proof. rewrite cptr_eq. apply _. Qed.
 
   (** object identity *)
@@ -612,10 +613,10 @@ Arguments anyR {_ Σ resolve} ty q : rename.
 Arguments uninitR {_ Σ resolve} ty q : rename.
 Arguments primR {_ Σ resolve} ty q v : rename.
 Arguments refR {_ Σ} ty v : rename.
-
+Arguments cptr {_ Σ resolve} _ : rename.
 
 Instance Persistent_spec `{Σ:cpp_logic ti} {resolve:genv} nm s :
-  Persistent (_at (Σ:=Σ) (_global (resolve:=resolve) nm) (cptr s)) := _.
+  Persistent (_at (Σ:=Σ) (_global (resolve:=resolve) nm) (cptr (resolve:=resolve) s)) := _.
 
 #[deprecated(since="20200728", note="Use the constructor tactic instead")]
 Notation Rep_lequiv := Rep_ext (only parsing).

@@ -20,29 +20,29 @@ using namespace fmt;
 
 void
 printQualType(const QualType& qt, CoqPrinter& print, ClangPrinter& cprint) {
-  if (auto p = qt.getTypePtrOrNull()) {
-    if (qt.isLocalConstQualified()) {
-      if (qt.isVolatileQualified()) {
-        print.ctor("Qconst_volatile", false);
-      } else {
-        print.ctor("Qconst", false);
-      }
-      cprint.printType(p, print);
-      print.end_ctor();
+    if (auto p = qt.getTypePtrOrNull()) {
+        if (qt.isLocalConstQualified()) {
+            if (qt.isVolatileQualified()) {
+                print.ctor("Qconst_volatile", false);
+            } else {
+                print.ctor("Qconst", false);
+            }
+            cprint.printType(p, print);
+            print.end_ctor();
+        } else {
+            if (qt.isLocalVolatileQualified()) {
+                print.ctor("Qmut_volatile", false);
+                cprint.printType(p, print);
+                print.end_ctor();
+            } else {
+                cprint.printType(p, print);
+            }
+        }
     } else {
-      if (qt.isLocalVolatileQualified()) {
-        print.ctor("Qmut_volatile", false);
-        cprint.printType(p, print);
-        print.end_ctor();
-      } else {
-        cprint.printType(p, print);
-      }
+        using namespace logging;
+        fatal() << "unexpected null type in printQualType\n";
+        die();
     }
-  } else {
-    using namespace logging;
-    fatal() << "unexpected null type in printQualType\n";
-    die();
-  }
 }
 
 void
@@ -84,10 +84,17 @@ public:
 
     void VisitType(const Type* type, CoqPrinter& print, ClangPrinter& cprint) {
         using namespace logging;
-        fatal() << "[ERR] unsupported type: ";
+        fatal() << "[ERR] unsupported type (" << type->getTypeClassName()
+                << "):";
         type->dump(fatal());
+
         fatal() << "\n";
         die();
+    }
+
+    void VisitAttributedType(const AttributedType* type, CoqPrinter& print,
+                             ClangPrinter& cprint) {
+        cprint.printQualType(type->getModifiedType(), print);
     }
 
     void VisitDeducedType(const DeducedType* type, CoqPrinter& print,
@@ -214,7 +221,8 @@ public:
                     << (type->isSignedInteger() ? "Signed" : "Unsigned") << ")";
             } else {
                 using namespace logging;
-                fatal() << "Unsupported type \""
+                fatal() << "[ERR] Unsupported builtin type (" << type->getKind()
+                        << "): \""
                         << type->getNameAsCString(PrintingPolicy(LangOptions()))
                         << "\"\n";
                 die();
@@ -255,7 +263,9 @@ public:
 
     void VisitFunctionProtoType(const FunctionProtoType* type,
                                 CoqPrinter& print, ClangPrinter& cprint) {
-        print.ctor("Tfunction");
+        print.ctor("@Tfunction");
+        cprint.printCallingConv(type->getCallConv(), print);
+        print.output() << fmt::nbsp;
         printQualType(type->getReturnType(), print, cprint);
         print.output() << fmt::nbsp;
         print.begin_list();

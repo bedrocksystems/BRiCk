@@ -43,7 +43,7 @@ Module Type Expr.
     Local Notation wpAny := (wpAny (resolve:=resolve) M ti ρ).
     Local Notation wpe := (wpe (resolve:=resolve) M ti ρ).
     Local Notation wpAnys := (wpAnys (resolve:=resolve) M ti ρ).
-    Local Notation fspec := (fspec ti).
+    Local Notation fspec := (fspec resolve.(genv_tu).(globals)).
     Local Notation mdestroy := (mdestroy (σ:=resolve) ti) (only parsing).
 
     Local Notation glob_def := (glob_def resolve) (only parsing).
@@ -438,70 +438,92 @@ Module Type Expr.
         wp_prval (Ealign_of (inl (type_of e)) ty') Q
         |-- wp_prval (Ealign_of (inr e) ty') Q.
 
+    Definition unptr (t : type) : option type :=
+      match drop_qualifiers t with
+      | Tptr p => Some (drop_qualifiers p)
+      | _ => None
+      end.
+
     (** function calls *)
     Axiom wp_prval_call : forall ty f es Q,
         (if is_aggregate ty then
-          Forall addr, wp_init ty addr (Ecall f es ty) (fun free =>
-            Q addr (free ** _at (_eqv addr) (anyR (erase_qualifiers ty) 1)))
-        else
-          wp_args ((Rvalue, f) :: es) (fun vs free =>
-            match vs with
-            | nil => lfalse
-            | f :: vs => |> fspec f vs (fun v => Q v free)
-            end))
+             Forall addr, wp_init ty addr (Ecall f es ty) (fun free =>
+               Q addr (free ** _at (_eqv addr) (anyR (erase_qualifiers ty) 1)))
+         else
+           match unptr (type_of f) with
+           | Some fty =>
+             wp_args ((Rvalue, f) :: es) (fun vs free =>
+                                           match vs with
+                                           | nil => lfalse
+                                           | f :: vs => |> fspec fty ti f vs (fun v => Q v free)
+                                           end)
+           | _ => False
+         end)
         |-- wp_prval (Ecall f es ty) Q.
 
     Axiom wp_lval_call :
       forall f (es : list (ValCat * Expr))
         Q addr (ty : type),
-        wp_args ((Rvalue, f) :: es) (fun vs free =>
-          match vs with
-          | nil => lfalse
-          | f :: vs => |> fspec f vs (fun res => [| res = addr |] -* Q res free)
-          end)
+        match unptr (type_of f) with
+        | Some fty =>
+          wp_args ((Rvalue, f) :: es) (fun vs free =>
+            match vs with
+            | nil => lfalse
+            | f :: vs => |> fspec fty ti f vs (fun res => [| res = addr |] -* Q res free)
+            end)
+        | _ => False
+        end
         |-- wp_lval (Ecall f es ty) Q.
 
     Axiom wp_xval_call : forall ty f es Q,
-        wp_args ((Rvalue, f)::es) (fun vs free =>
-            match vs with
-            | nil => lfalse
-            | f :: vs => |> fspec f vs (fun v => Q v free)
-            end)
+        match unptr (type_of f) with
+        | Some fty =>
+          wp_args ((Rvalue, f)::es) (fun vs free =>
+              match vs with
+              | nil => lfalse
+              | f :: vs => |> fspec fty ti f vs (fun v => Q v free)
+              end)
+        | _ => False
+        end
         |-- wp_xval (Ecall f es ty) Q.
     Axiom wp_init_call : forall f es Q addr ty,
+        match unptr (type_of f) with
+        | Some fty =>
         wp_args ((Rvalue, f) :: es) (fun vs free =>
            match vs with
            | nil => lfalse
-           | f :: vs => |> fspec f vs (fun res => [| res = addr |] -* Q free)
+           | f :: vs => |> fspec fty ti f vs (fun res => [| res = addr |] -* Q free)
            end)
+        | _ => False
+        end
         |-- wp_init ty addr (Ecall f es ty) Q.
 
-    Axiom wp_prval_member_call : forall ty f obj es Q,
-        Exists fa, _global f &~ fa **
-        wp_args ((Lvalue, obj)::es) (fun vs free =>
-            match vs with
-            | nil => lfalse
-            | this :: vs => |> fspec (Vptr fa) (this :: vs) (fun v => Q v free)
-            end)
-        |-- wp_prval (Emember_call (inl (f, Direct)) obj es ty) Q.
+    Axiom wp_prval_member_call : forall ty fty f obj es Q,
+          Exists fa, _global f &~ fa **
+          wp_args ((Lvalue, obj)::es) (fun vs free =>
+              match vs with
+              | nil => lfalse
+              | this :: vs => |> fspec fty ti (Vptr fa) (this :: vs) (fun v => Q v free)
+              end)
+        |-- wp_prval (Emember_call (inl (f, Direct, fty)) obj es ty) Q.
 
-    Axiom wp_xval_member_call : forall ty f obj es Q,
+    Axiom wp_xval_member_call : forall ty fty f obj es Q,
         Exists fa, _global f &~ fa **
         wp_args ((Lvalue, obj)::es) (fun vs free =>
             match vs with
             | nil => lfalse
-            | this :: vs => |> fspec (Vptr fa) (this :: vs) (fun v => Q v free)
+            | this :: vs => |> fspec fty ti (Vptr fa) (this :: vs) (fun v => Q v free)
             end)
-        |-- wp_xval (Emember_call (inl (f, Direct)) obj es ty) Q.
-    Axiom wp_init_member_call : forall f es addr ty obj Q,
+        |-- wp_xval (Emember_call (inl (f, Direct, fty)) obj es ty) Q.
+    Axiom wp_init_member_call : forall f fty es addr ty obj Q,
         Exists fa, _global f &~ fa **
         wp_args ((Rvalue, obj)::es) (fun vs free =>
              match vs with
              | nil => lfalse
-             | this :: vs => |> fspec (Vptr fa) (this :: vs) (fun res =>
+             | this :: vs => |> fspec fty ti (Vptr fa) (this :: vs) (fun res =>
                       [| res = addr |] -* Q free)
              end)
-        |-- wp_init ty addr (Emember_call (inl (f, Direct)) obj es ty) Q.
+        |-- wp_init ty addr (Emember_call (inl (f, Direct, fty)) obj es ty) Q.
 
     (** virtual functions *)
     Fixpoint class_type (t : type) : option globname :=
@@ -514,35 +536,35 @@ Module Type Expr.
       | _ => None
       end.
 
-    Axiom wp_prval_virtual_call : forall ty f obj es Q,
+    Axiom wp_prval_virtual_call : forall ty fty f obj es Q,
       wp_lval obj (fun this free => wp_args es (fun vs free' =>
           match class_type (type_of obj) with
           | Some cls =>
             resolve_virtual (σ:=resolve) (_eqv this) cls f (fun fimpl_addr thisp =>
-              |> fspec (Vptr fimpl_addr) (Vptr thisp :: vs) (fun v => Q v (free ** free')))
+              |> fspec fty ti (Vptr fimpl_addr) (Vptr thisp :: vs) (fun v => Q v (free ** free')))
           | _ => lfalse
           end))
-      |-- wp_prval (Emember_call (inl (f, Virtual)) obj es ty) Q.
+      |-- wp_prval (Emember_call (inl (f, Virtual, fty)) obj es ty) Q.
 
-    Axiom wp_xval_virtual_call : forall ty f obj es Q,
+    Axiom wp_xval_virtual_call : forall ty fty f obj es Q,
       wp_lval obj (fun this free => wp_args es (fun vs free' =>
           match class_type (type_of obj) with
           | Some cls =>
             resolve_virtual (σ:=resolve) (_eqv this) cls f (fun fimpl_addr thisp =>
-              |> fspec (Vptr fimpl_addr) (Vptr thisp :: vs) (fun v => Q v (free ** free')))
+              |> fspec fty ti (Vptr fimpl_addr) (Vptr thisp :: vs) (fun v => Q v (free ** free')))
           | _ => lfalse
           end))
-      |-- wp_xval (Emember_call (inl (f, Virtual)) obj es ty) Q.
+      |-- wp_xval (Emember_call (inl (f, Virtual, fty)) obj es ty) Q.
 
-    Axiom wp_init_virtual_call : forall ty f obj es Q addr,
+    Axiom wp_init_virtual_call : forall ty fty f obj es Q addr,
       wp_lval obj (fun this free => wp_args es (fun vs free' =>
           match class_type (type_of obj) with
           | Some cls =>
             resolve_virtual (σ:=resolve) (_eqv this) cls f (fun fimpl_addr thisp =>
-              |> fspec (Vptr fimpl_addr) (Vptr thisp :: vs) (fun res => [| res = addr |] -* Q (free ** free')))
+              |> fspec fty ti (Vptr fimpl_addr) (Vptr thisp :: vs) (fun res => [| res = addr |] -* Q (free ** free')))
           | _ => lfalse
           end))
-      |-- wp_init ty addr (Emember_call (inl (f, Virtual)) obj es ty) Q.
+      |-- wp_init ty addr (Emember_call (inl (f, Virtual, fty)) obj es ty) Q.
 
     (* null *)
     Axiom wp_null : forall Q,

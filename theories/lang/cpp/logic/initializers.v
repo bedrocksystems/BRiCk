@@ -25,7 +25,7 @@ Module Type Init.
     Local Notation wp_xval := (wp_xval (resolve:=σ) M ti ρ).
     Local Notation wp_init := (wp_init (resolve:=σ) M ti ρ).
     Local Notation wp_args := (wp_args (σ:=σ) M ti ρ).
-    Local Notation fspec := (fspec ti).
+    Local Notation fspec := (@fspec _ Σ σ.(genv_tu).(globals)).
 
     Local Notation _global := (_global (resolve:=σ)) (only parsing).
     Local Notation _field := (_field (resolve:=σ)) (only parsing).
@@ -83,7 +83,11 @@ Module Type Init.
     Axiom wp_init_constructor : forall cls addr cnd es Q ty,
       wp_args es (fun ls free =>
          Exists ctor, _global cnd &~ ctor **
-                              |> fspec (Vptr ctor) (addr :: ls) (fun _ => Q free))
+           match σ.(genv_tu) !! cnd with
+           | Some cv =>
+             |> fspec (type_of_value cv) ti (Vptr ctor) (addr :: ls) (fun _ => Q free)
+           | _ => False
+           end)
       |-- wp_init (Tnamed cls) addr (Econstructor cnd es ty) Q.
 
     Definition build_array (es : list Expr) (fill : option Expr) (sz : nat)

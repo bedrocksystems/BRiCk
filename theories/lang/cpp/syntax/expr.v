@@ -149,8 +149,7 @@ Inductive Expr : Set :=
 | Ecast    (_ : Cast) (_ : ValCat * Expr) (_ : type)
 
 | Emember  (obj : Expr) (_ : field) (_ : type)
-| Emember_call (method : (obj_name * call_type) + Expr) (obj : Expr) (_ : list (ValCat * Expr)) (_ : type)
-(* ^ in (globname * bool), bool = true when method being called is virtual *)
+| Emember_call (method : (obj_name * call_type * type) + Expr) (obj : Expr) (_ : list (ValCat * Expr)) (_ : type)
 
 | Esubscript (_ : Expr) (_ : Expr) (_ : type)
 | Esize_of (_ : type + Expr) (_ : type)

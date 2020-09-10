@@ -37,23 +37,23 @@ Section with_cpp.
     | Ofunction f =>
       match f.(f_body) return mpred with
       | None => empSP
-      | Some body => code_at f a
+      | Some body => code_at resolve f a
       end
     | Omethod m =>
       match m.(m_body) return mpred with
       | None => emp
       | Some body =>
-        method_at m a
+        method_at resolve m a
       end
     | Oconstructor c =>
       match c.(c_body) return mpred with
       | None => empSP
-      | Some body => ctor_at c a
+      | Some body => ctor_at resolve c a
       end
     | Odestructor d =>
       match d.(d_body) return mpred with
       | None => empSP
-      | Some body => dtor_at d a
+      | Some body => dtor_at resolve d a
       end
     end.
 
