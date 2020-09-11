@@ -138,6 +138,8 @@ pages:
   dependencies:
     - test_latest
   script:
+    # JH: TODO: Remove this after we add `zip` to the main `cpp2v-core` docker image
+    - sudo apt-get install zip -y --no-install-recommends
     # this line refreshes the artifact to avoid rebuilding the coq code
     - make touch_deps
     - make public
