@@ -12,7 +12,7 @@ You can view the old cpp2v-core tutorials at the following links:
 
 - `Sequential Specs/Proofs <./coqdoc/bedrock.lang.cpp.doc.howto_sequential.html>`__
 
-- `Classes <.coqdoc/bedrock.lang.cpp.doc.class_representations.html>`__
+- `Classes <./coqdoc/bedrock.lang.cpp.doc.class_representations.html>`__
 
 .. toctree::
    :maxdepth: 2
