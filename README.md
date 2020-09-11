@@ -69,12 +69,6 @@ If you want to build the cpp2v-core plugin, do:
 make -j4 plugin
 ```
 
-If you want to build the documentation locally, do:
-```
-git submodule init
-git submodule update
-```
-
 ## Examples
 See the examples in the `tests` directory.
 More examples will be added as the feature set evolves.
