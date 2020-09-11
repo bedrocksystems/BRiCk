@@ -145,6 +145,7 @@ pages:
     - make public
   only:
     - master
+    - merge_requests
   artifacts:
     paths:
       - public
