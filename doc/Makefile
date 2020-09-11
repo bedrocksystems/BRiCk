@@ -54,18 +54,13 @@ $(SPHINXTANGLEDIR)/%.rst: $(TANGLE_DIR)/%.v
 
 tangle: $(TANGLE_OUTPUTS)
 
-# NOTE: We will want to re-enable this once we have a src/ subdirectory
-# NOTE: this will fail if you don't have coq/cpp2v installed and in your path
-#src:
-#	$(MAKE) -C src all
-#tangle-src:
-#	$(MAKE) -C src tangle-all
+src:
+	$(MAKE) -C src all
+tangle-src:
+	$(MAKE) -C src tangle-all
 
-# NOTE: We will want to re-enable this when we have a src/ subdirectory
-#doc-public: tangle-src tangle refman-public
-#doc-private: tangle-src tangle refman-private
-doc-public: tangle refman-public
-doc-private: tangle refman-private
+doc-public: tangle-src tangle refman-public
+doc-private: tangle-src tangle refman-private
 
 doc: doc-private
 redoc: clean doc
@@ -93,21 +88,16 @@ refman-private-%:
 		-t private \
 		$(ALLSPHINXOPTS) sphinx $(SPHINXBUILDDIR)/$*
 
-# NOTE: We will likely want these rules when we include a src/ directory here
-#refman-public: | tangle-src tangle
-#	+$(MAKE) refman-public-html
-#
-#refman-private: | tangle-src tangle
-#	+$(MAKE) refman-private-html
-
-refman-public: | tangle
+refman-public: | tangle-src tangle
 	+$(MAKE) refman-public-html
-refman-private: | tangle
+
+refman-private: | tangle-src tangle
 	+$(MAKE) refman-private-html
+
 
 clean:
 	$(MAKE) -C old clean
-#	+$(MAKE) -C src clean
+	+$(MAKE) -C src clean
 	rm -rf $(SPHINXBUILDDIR)
 	rm -rf $(SPHINXDIR)/tangles
 .PHONY: clean
