@@ -116,7 +116,7 @@ doc_extra:
 .PHONY: doc_extra
 
 public: html doc_extra
-	mv html public
+	mv doc/sphinx/_build/html public
 .PHONY: public
 
 
