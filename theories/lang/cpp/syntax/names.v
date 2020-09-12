@@ -3,15 +3,13 @@
  *
  * SPDX-License-Identifier: LGPL-2.1 WITH BedRock Exception for use over network, see repository root for details.
  *)
-Require Import stdpp.strings.
+From stdpp Require Import countable strings.
 Require Import bedrock.Util.
 Require Export bedrock.bytestring.
 
 Set Primitive Projections.
 
 Local Open Scope N_scope.
-
-Require Import stdpp.countable.
 
 (* this represents names that exist in object files. *)
 Definition obj_name : Set := bs.
