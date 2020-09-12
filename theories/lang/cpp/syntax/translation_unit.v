@@ -5,12 +5,12 @@
  *)
 Require Import Coq.Classes.DecidableClass.
 Require Import Coq.ZArith.BinIntDef.
+From Coq Require Import NArith.
 Require Import Coq.Bool.Bool.
 
 Require Import Coq.ssr.ssreflect.
 Local Open Scope general_if_scope.
-Require Import stdpp.decidable.
-Require Import stdpp.gmap.
+From stdpp Require Import decidable tactics.
 Require Import bedrock.bytestring.
 Require Import bedrock.Util.
 From bedrock.lang.cpp.syntax Require Import names expr stmt types.

@@ -7,7 +7,7 @@ Require Export
         Coq.Lists.List
         Coq.ZArith.BinInt.
 
-Require Import stdpp.gmap.
+Require Import stdpp.base.
 Require Export bedrock.lang.cpp.ast.
 
 Set Default Proof Using "Type".
