@@ -326,8 +326,8 @@ Lemma trim_to_signed_agree: forall x sz n,
     bitsN sz = n ->
     trim n (to_signed sz x) = trim n x.
 Proof.
-  move=> x sz n Hsz; pose proof (trim_to_signed_bits_agree x (bitsN sz)) as H;
-    subst; rewrite -H; by rewrite /to_signed.
+  move=> x sz n Hsz; subst.
+  by rewrite -(trim_to_signed_bits_agree x (bitsN sz)).
 Qed.
 
 (** Integral conversions *)
