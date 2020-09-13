@@ -17,7 +17,7 @@ Require Import Coq.NArith.BinNat.
 Require Import Coq.ZArith.BinInt.
 Require Import Coq.micromega.Lia.
 Require Import Coq.ssr.ssreflect.
-Require Import stdpp.decidable.
+Require Import stdpp.tactics.
 From bedrock.lang.cpp Require Import ast semantics.values.
 
 Local Open Scope Z_scope.
@@ -131,10 +131,10 @@ Proof.
     + pose proof (Z.pow_pos_nonneg 2 (Z.of_N bits - 1) ltac:(lia) ltac:(lia)); lia.
   - assert (bits = 0 \/ 0 < bits)%N as [Hbits | Hbits] by lia; subst.
     + rewrite bool_decide_eq_true_2; try lia; simpl in *.
-      rewrite Z.mod_small; intuition.
+      rewrite Z.mod_small; intuition lia.
     + rewrite bool_decide_eq_false_2; [by lia | ].
       rewrite bool_decide_eq_true_2; try lia; simpl in *.
-      rewrite Z.mod_small; intuition.
+      rewrite Z.mod_small; intuition auto with lia.
       * eapply Z.lt_trans; eauto.
         assert (Z.of_N bits - 1 < 0 \/ Z.of_N bits - 1 = 0 \/ Z.of_N bits - 1 > 0)
           as [Hexp | [Hexp | Hexp]] by lia.
@@ -235,7 +235,8 @@ Proof.
       now apply Zorder.Zplus_le_compat_r.
   - assert (bits = 0 \/ 0 < bits)%N as [Hbits | Hbits] by lia; subst.
     + rewrite trim_0_r /to_signed_bits bool_decide_eq_true_2; lia.
-    + rewrite trim_0_r to_signed_bits_id; intuition; lia.
+    + rewrite trim_0_r to_signed_bits_id; intuition eauto with lia.
+      apply Z.pow_pos_nonneg; lia.
   - rewrite /trim /to_signed_bits Zdiv.Zmod_mod.
     assert (bits = 0 \/ 0 < bits)%N as [Hbits | Hbits] by lia; subst.
     { rewrite bool_decide_eq_true_2; [by reflexivity | ];
