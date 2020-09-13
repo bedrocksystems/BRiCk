@@ -153,7 +153,7 @@ Qed.
 Lemma to_signed_neg : forall x (n : bitsize),
     2^(bitsZ n - 1) - 1 < x < 2^bitsZ n ->
     to_signed n x = trim (bitsN n) (x - 2^(bitsZ n - 1)) + - 2^(bitsZ n - 1).
-Proof. move=> x n H; now pose proof (@to_signed_bits_neg x (bitsN n) H) as H'. Qed.
+Proof. move=> x n H; by pose proof (@to_signed_bits_neg x (bitsN n) H) as H'. Qed.
 
 Lemma Z_opp1_mul_lt_ge:
   forall (n m: Z),
@@ -232,7 +232,7 @@ Proof.
         replace (Z.of_N bits)%Z with ((Z.of_N bits - 1) + 1)%Z
           at 3 by lia; rewrite Z.pow_add_r; lia.
       }
-      now apply Zorder.Zplus_le_compat_r.
+      by apply Zorder.Zplus_le_compat_r.
   - assert (bits = 0 \/ 0 < bits)%N as [Hbits | Hbits] by lia; subst.
     + rewrite trim_0_r /to_signed_bits bool_decide_eq_true_2; lia.
     + rewrite trim_0_r to_signed_bits_id; intuition eauto with lia.
@@ -276,9 +276,9 @@ Lemma trim_to_signed_bits_agree: forall x n,
 Proof.
   move=> x n.
   assert (n = 0 \/ 0 < n)%N as [Hn | Hn] by lia; subst.
-  - now rewrite /trim /to_signed_bits /= Z.pow_0_r !Z.mod_1_r.
+  - by rewrite /trim /to_signed_bits /= Z.pow_0_r !Z.mod_1_r.
   - rewrite /trim /to_signed_bits bool_decide_eq_false_2; [by lia | ].
-    case_decide; simpl; try (now rewrite Z.mod_mod).
+    case_decide; simpl; try (by rewrite Z.mod_mod).
     match goal with
     | |- context[(?x mod 2 ^ ?BITS)%Z] =>
       assert (x mod 2 ^ BITS = 0 \/ x mod 2 ^ BITS > 0)%Z
@@ -327,7 +327,7 @@ Lemma trim_to_signed_agree: forall x sz n,
     trim n (to_signed sz x) = trim n x.
 Proof.
   move=> x sz n Hsz; pose proof (trim_to_signed_bits_agree x (bitsN sz)) as H;
-    subst; rewrite -H; now rewrite /to_signed.
+    subst; rewrite -H; by rewrite /to_signed.
 Qed.
 
 (** Integral conversions *)
