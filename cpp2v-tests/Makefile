@@ -10,7 +10,7 @@ CPP2V	?= ../build/cpp2v
 
 ALL	= $(wildcard *.cpp)
 
-all: $(ALL:%.cpp=%_cpp.vo) $(ALL:%.cpp=%_cpp_names.vo)
+all: $(ALL:%.cpp=%_cpp.vo) $(ALL:%.cpp=%_cpp_names.vo) reject
 .PHONY: all
 
 ast: $(ALL:%.cpp=%_cpp.v) $(ALL:%.cpp=%_cpp_names.v)
@@ -18,6 +18,7 @@ ast: $(ALL:%.cpp=%_cpp.v) $(ALL:%.cpp=%_cpp_names.v)
 
 clean:
 	rm -f *.v *.vo *.vok *.vos *.glob *.aux .*.aux
+	$(MAKE) -C reject clean
 .PHONY: clean
 
 %_cpp.v %_cpp_names.v: %.cpp $(CPP2V)
@@ -27,3 +28,7 @@ clean:
 	$(COQC) $(WARN) -Q $(QPATH) bedrock $<
 
 .PRECIOUS: %_cpp.v
+
+reject:
+	+$(MAKE) -C reject
+.PHONY: reject

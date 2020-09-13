@@ -295,6 +295,12 @@ public:
         auto i = 0;
         print.begin_list();
         for (const FieldDecl *field : decl->fields()) {
+            if (field->isBitField()) {
+                logging::fatal()
+                    << "bit fields are not supported "
+                    << cprint.sourceRange(field->getSourceRange()) << "\n";
+                logging::die();
+            }
             print.output() << "(";
             printMangledFieldName(field, print, cprint);
             print.output() << "," << fmt::nbsp;
