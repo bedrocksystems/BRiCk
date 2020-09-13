@@ -238,7 +238,8 @@ Section FromToBytes.
       assert (8 * (idx+S cnt)%nat <= n)%Z by lia.
       eapply Z.lt_le_trans; eauto.
       apply Z.log2_lt_pow2; try lia.
-      now replace (8 * (idx+S cnt)%nat)%Z
+      (* XXX No more needed since Coq 8.12. *)
+      all: now replace (8 * (idx+S cnt)%nat)%Z
         with (8 * (idx+S cnt))%Z by lia.
     Qed.
 
@@ -699,8 +700,9 @@ Section FromToBytes.
                   _Z_to_bytes_unsigned_le'_length
                   IHcnt; try lia.
           rewrite _Z_to_bytes_unsigned_le'_small; try lia.
-          2: replace (8 * (idx + cnt)%nat)%Z with (8 * (idx + cnt))%Z; lia.
-          now rewrite _Z_from_bytes_unsigned_le'_0s Z.lor_0_r.
+          1: now rewrite _Z_from_bytes_unsigned_le'_0s Z.lor_0_r.
+          (* XXX no more needed in 8.12. *)
+          all: replace (8 * (idx + cnt)%nat)%Z with (8 * (idx + cnt))%Z; lia.
         + clear IHcnt.
           rewrite Zmod_eq_full.
           2: pose proof (Z.pow_pos_nonneg
