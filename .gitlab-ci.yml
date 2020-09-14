@@ -36,6 +36,7 @@ stages:
   - build
   - test
   - release
+  - prepare_pages
   - pages
 
 #This is a template job that's extended below by the real jobs
@@ -132,9 +133,9 @@ release_latest:
 #   variables:
 #     LLVM_MAJ_VER: ${LLVM_PREV_MAJ_VER}
 
-build_pages:
+prepare_pages:
   image: registry.gitlab.com/bedrocksystems/docker-image:fm-docs
-  stage: pages
+  stage: prepare_pages
   dependencies:
     - test_latest
   script:
@@ -152,7 +153,7 @@ pages:
   image: registry.gitlab.com/bedrocksystems/docker-image:fm-docs
   stage: pages
   dependencies:
-    - build_pages
+    - prepare_pages
   script:
     - make public
   only:
