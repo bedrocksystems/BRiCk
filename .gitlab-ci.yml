@@ -154,7 +154,7 @@ pages:
   dependencies:
     - build_pages
   script:
-    - #make public
+    - make public
   only:
     - master
   artifacts:
