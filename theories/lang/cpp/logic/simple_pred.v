@@ -24,32 +24,6 @@ Definition fractionalR (o : ofeT) : cmraT :=
 Definition frac {o: ofeT} (q : Qp) (v : o) : fractionalR o :=
   (q, to_agree v).
 
-Lemma Some_valid:
-  forall M (A : cmraT) (x : cmra_car A),
-    (@uPred_cmra_valid (iResUR M) (optionR A) (@Some (cmra_car A) x)) -|-
-    (@uPred_cmra_valid (iResUR M) A x).
-Proof.
-  intros M A x.
-  rewrite (@uPred_primitive.option_validI (iResUR M) _ (Some x)). reflexivity.
-Qed.
-Lemma None_valid:
-  forall M (A : cmraT) (x : cmra_car A),
-    (@uPred_cmra_valid (iResUR M) (optionR A) None) -|- True.
-Proof.
-  intros M A x.
-  rewrite (@uPred_primitive.option_validI (iResUR M) _ None). reflexivity.
-Qed.
-
-Lemma join_singleton_eq : forall `{Countable K, EqDecision K} {V : cmraT} (k : K) (v1 v2 : V),
-    {[ k := v1 ]} ⋅ {[ k := v2 ]} =@{gmap K V} {[ k := v1 ⋅ v2 ]}.
-Proof. intros. by apply (merge_singleton _ _ _ v1 v2). Qed.
-
-Lemma singleton_valid_norm :
-  ltac:(match type of @singleton_valid with
-        | ?T => let X := eval simpl in T in exact X
-        end).
-Proof. exact @singleton_valid. Defined.
-
 Lemma frac_op {A : ofeT} (l : A)  (p q : Qp) :
   frac p l ⋅ frac q l ≡ frac (p + q) l.
 Proof. by rewrite -pair_op agree_idemp. Qed.
@@ -139,17 +113,6 @@ Module SimpleCPP.
        |}.
     (* todo: Fix the warning generated from this definition *)
 
-
-    Lemma singleton_valid_at_norm :
-      ∀ `{Countable K} (A : cmraT) (i : K) (x : A),
-        ✓ ({[i := x]} : gmap K A) ⊣⊢@{mpredI} ✓ x.
-    Proof.
-      intros. rewrite gmap_validI. split'; iIntros "Hv".
-      - iSpecialize ("Hv" $! i). by rewrite lookup_singleton Some_valid.
-      - iIntros (i'). destruct (decide (i = i')) as [->|?].
-        + by rewrite lookup_singleton Some_valid.
-        + by rewrite lookup_singleton_ne.
-    Qed.
 
     (** pointer validity *)
     (** Pointers past the end of an object/array can be valid; see
@@ -378,19 +341,18 @@ Module SimpleCPP.
     Instance: Fractional (val_ a rv).
     Proof.
       unfold val_. red.
-      intros.
-      etransitivity; [ | eapply own_op ].
-      eapply own_proper.
-      by rewrite singleton_op frac_op.
+      intros. by rewrite -own_op singleton_op frac_op.
     Qed.
 
     Instance: AsFractional (val_ a rv q) (fun q => val_ a rv q) q.
     Proof. constructor. reflexivity. refine _. Qed.
 
     Instance: Timeless (val_ a rv q).
-    Proof. intros; refine _. Qed.
+    Proof. apply _. Qed.
 
 
+    (* Note: the current definition doesn't take weak memory into accoutn. In
+      particular, it doesn't rely on the thread-local info for the value rv. *)
     Definition byte_ (a : addr) (rv : runtime_val) (q : Qp) : mpred.
     refine (
       own _ghost.(heap_name) {[ a := frac (o:=leibnizO _) q rv ]}).
@@ -410,27 +372,14 @@ Module SimpleCPP.
     Instance: Fractional (byte_ a rv).
     Proof.
       unfold byte_. red.
-      intros.
-      match goal with
-      | |- _ -|- @own ?S ?O ?Z ?G ?L ** own _ ?R =>
-        rewrite <- (@own_op S O Z G L R)
-      end.
-      eapply own_proper.
-      red. red. red. simpl. red. intros.
-      destruct (decide (a = i)); subst.
-      { rewrite lookup_op.
-        repeat rewrite lookup_insert.
-        rewrite -Some_op.
-        rewrite frac_op. reflexivity. }
-      { rewrite lookup_op.
-        repeat rewrite lookup_singleton_ne; eauto. }
+      intros. by rewrite -own_op singleton_op frac_op.
     Qed.
 
     Instance: AsFractional (byte_ a rv q) (fun q => byte_ a rv q) q.
     Proof. constructor. reflexivity. refine _. Qed.
 
     Instance: Timeless (byte_ a rv q).
-    Proof. intros; refine _. Qed.
+    Proof. apply _. Qed.
 
     Lemma frac_valid {o : ofeT} q1 q2 (v1 v2 : o) :
       ✓ (frac q1 v1 ⋅ frac q2 v2) → ✓ (q1 + q2)%Qp ∧ v1 ≡ v2.
@@ -471,7 +420,7 @@ Module SimpleCPP.
     Qed.
 
     Instance: Timeless (bytes a rv q).
-    Proof. unfold bytes. intros; refine _. Qed.
+    Proof. apply _. Qed.
 
     Instance: Fractional (bytes a vs).
     Proof. red. unfold bytes.
@@ -522,39 +471,26 @@ Module SimpleCPP.
     Proof.
       red. intros. unfold tptsto.
       iSplit.
-      - iIntros "H".
-        iDestruct "H" as (a) "[#Mi By]".
-        destruct a.
-        + iDestruct "By" as (vs) "[#En By]".
-          rewrite fractional.
-          iDestruct "By" as "[L R]".
-          iSplitL "L".
-          * iExists (Some a); iFrame; iFrame "#". iExists vs. iFrame "#". eauto.
-          * iExists (Some a); iFrame; iFrame "#". iExists vs. iFrame "#". eauto.
-        + rewrite fractional.
-          iDestruct "By" as "[L R]".
-          iSplitL "L".
-          * iExists None; iFrame; iFrame "#".
-          * iExists None; iFrame; iFrame "#".
+      - iDestruct 1 as ([]) "[#Mi By]".
+        + iDestruct "By" as (vs) "(#En & L & R)".
+          iSplitL "L"; iExists (Some a); eauto with iFrame.
+        + iDestruct "By" as "[L R]".
+          iSplitL "L"; iExists None; eauto with iFrame.
       - iIntros "[H1 H2]".
         iDestruct "H1" as (a) "[#Mi1 By1]".
         iDestruct "H2" as (a2) "[#Mi2 By2]".
         iExists a; iFrame "#".
-        iDestruct (own_valid_2 with "Mi1 Mi2") as "X".
-        rewrite join_singleton_eq.
-        rewrite singleton_valid_at_norm.
-        rewrite agree_validI.
-        rewrite agree_equivI.
-        iDestruct "X" as %[].
+        iDestruct (own_valid_2 with "Mi1 Mi2") as %X.
+        revert X.
+        rewrite singleton_op singleton_valid => /agree_op_invL' ?. subst a2.
         destruct a.
         + iDestruct "By1" as (vs) "[#En1 By1]".
           iDestruct "By2" as (vs2) "[#En2 By2]".
           iDestruct (encodes_consistent with "[En1 En2]") as "%".
           iSplit; [ iApply "En1" | iApply "En2" ].
-          iDestruct (bytes_consistent with "[By1 By2]") as "[Z %]"; eauto.
-          iFrame.
-          iExists vs. iFrame "#∗".
-        + rewrite fractional. iFrame.
+          iDestruct (bytes_consistent with "[By1 By2]") as "[Z %]";
+            eauto with iFrame.
+        + iFrame.
     Qed.
     Theorem tptsto_as_fractional :
       forall {σ} ty q p v, AsFractional (@tptsto σ ty q p v) (λ q, @tptsto σ ty q p v)%I q.
@@ -565,9 +501,7 @@ Module SimpleCPP.
 
     Theorem tptsto_timeless :
       forall {σ} ty q p v, Timeless (@tptsto σ ty q p v).
-    Proof.
-      intros. unfold tptsto. apply _.
-    Qed.
+    Proof. apply _. Qed.
 
     Theorem tptsto_agree : forall σ t q1 q2 p v1 v2,
         @tptsto σ t q1 p v1 ** @tptsto σ t q2 p v2 |-- [| v1 = v2 |].
@@ -593,57 +527,49 @@ Module SimpleCPP.
       note that in the presence of code-loading, function calls will
       require an extra side-condition that the code is loaded.
      *)
-    Definition code_at (_ : genv) (f : Func) (p : ptr) : mpred.
-    refine (own _ghost.(code_name) {[ p := to_agree (inl (inl (inl f))) ]}).
+    Local Definition code_ghost_at
+      (f : (Func + Method + Ctor + Dtor)) (p : ptr) : mpred.
+    refine (own _ghost.(code_name) {[ p := to_agree f ]}).
     apply (@codeG Σ); apply has_cppG.
     all: refine _.
     Defined.
 
-    Definition method_at (_ : genv) (m : Method) (p : ptr) : mpred.
-    refine (own _ghost.(code_name) {[ p := to_agree (inl (inl (inr m))) ]}).
-    apply (@codeG Σ); apply has_cppG.
-    all: refine _.
-    Defined.
-
-    Definition ctor_at (_ : genv) (c : Ctor) (p : ptr) : mpred.
-    refine (own _ghost.(code_name) {[ p := to_agree (inl (inr c)) ]}).
-    apply (@codeG Σ); apply has_cppG.
-    all: refine _.
-    Defined.
-
-    Definition dtor_at (_ : genv) (d : Dtor) (p : ptr) : mpred.
-    refine (own _ghost.(code_name) {[ p := to_agree (inr d) ]}).
-    apply (@codeG Σ); apply has_cppG.
-    all: refine _.
-    Defined.
+    Definition code_at (_ : genv) (f : Func) (p : ptr) : mpred :=
+      code_ghost_at (inl (inl (inl f))) p.
+    Definition method_at (_ : genv) (m : Method) (p : ptr) : mpred :=
+      code_ghost_at (inl (inl (inr m))) p.
+    Definition ctor_at (_ : genv) (c : Ctor) (p : ptr) : mpred :=
+      code_ghost_at (inl (inr c)) p.
+    Definition dtor_at (_ : genv) (d : Dtor) (p : ptr) : mpred :=
+      code_ghost_at (inr d) p.
 
     Theorem code_at_persistent : forall s f p, Persistent (@code_at s f p).
-    Proof. red. intros. iIntros "#X". iFrame "#". Qed.
+    Proof. apply _. Qed.
     Theorem code_at_affine : forall s f p, Affine (@code_at s f p).
-    Proof. red. intros. eauto. Qed.
+    Proof. apply _. Qed.
     Theorem code_at_timeless : forall s f p, Timeless (@code_at s f p).
-    Proof. unfold code_at. refine _. Qed.
+    Proof. apply _. Qed.
 
     Theorem method_at_persistent : forall s f p, Persistent (@method_at s f p).
-    Proof. red. intros. iIntros "#X". iFrame "#". Qed.
+    Proof. apply _. Qed.
     Theorem method_at_affine : forall s f p, Affine (@method_at s f p).
-    Proof. red. intros. eauto. Qed.
+    Proof. apply _. Qed.
     Theorem method_at_timeless : forall s f p, Timeless (@method_at s f p).
-    Proof. unfold method_at. refine _. Qed.
+    Proof. apply _. Qed.
 
     Theorem ctor_at_persistent : forall s f p, Persistent (@ctor_at s f p).
-    Proof. red. intros. iIntros "#X". iFrame "#". Qed.
+    Proof. apply _. Qed.
     Theorem ctor_at_affine : forall s f p, Affine (@ctor_at s f p).
-    Proof. red. intros. eauto. Qed.
+    Proof. apply _. Qed.
     Theorem ctor_at_timeless : forall s f p, Timeless (@ctor_at s f p).
-    Proof. unfold ctor_at. refine _. Qed.
+    Proof. apply _. Qed.
 
     Theorem dtor_at_persistent : forall s f p, Persistent (@dtor_at s f p).
-    Proof. red. intros. iIntros "#X". iFrame "#". Qed.
+    Proof. apply _. Qed.
     Theorem dtor_at_affine : forall s f p, Affine (@dtor_at s f p).
-    Proof. red. intros. eauto. Qed.
+    Proof. apply _. Qed.
     Theorem dtor_at_timeless : forall s f p, Timeless (@dtor_at s f p).
-    Proof. unfold dtor_at. refine _. Qed.
+    Proof. apply _. Qed.
 
     (** physical representation of pointers
      *)
