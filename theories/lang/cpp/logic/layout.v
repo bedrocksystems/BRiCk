@@ -128,7 +128,7 @@ Section with_Σ.
     ltac:(let H := eval unfold x in tm in exact H) (only parsing).
 
   Definition decodes (sgn: signed) (l: list N) (z: Z) :=
-    _Z_from_bytes (σ:=resolve) sgn l = z.
+    _Z_from_bytes (values.byte_order resolve) sgn l = z.
 
   Definition decodes_uint (l : list N) (z : Z) :=
     Unfold decodes (decodes Unsigned l z).

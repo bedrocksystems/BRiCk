@@ -261,9 +261,9 @@ Section FromToBytes.
              end).
 
     (* NOTE: This will be sealed once we finish the proofs for this section. *)
-    Definition _Z_to_bytes_def {σ: genv} (cnt: nat) (sgn: signed) (v: Z): list N :=
+    Definition _Z_to_bytes_def (cnt: nat) (endianness: endian) (sgn: signed) (v: Z): list N :=
       let little := _Z_to_bytes_le cnt sgn v in
-      match byte_order σ with
+      match endianness with
       | Little => little
       | Big => List.rev little
       end.
@@ -297,11 +297,10 @@ Section FromToBytes.
     Qed.
 
     Lemma _Z_to_bytes_def_length:
-      forall σ cnt sgn v,
-        length (@_Z_to_bytes_def σ cnt sgn v) = cnt.
+      forall cnt endianness sgn v,
+        length (_Z_to_bytes_def cnt endianness sgn v) = cnt.
     Proof.
-      rewrite /_Z_to_bytes_def => σ cnt sgn v //=;
-        destruct (byte_order σ);
+      rewrite /_Z_to_bytes_def => cnt [ | ] sgn v //=;
         try rewrite rev_length;
         by apply _Z_to_bytes_le_length.
     Qed.
@@ -326,13 +325,11 @@ Section FromToBytes.
     Qed.
 
     Lemma _Z_to_bytes_def_0_bytes:
-      forall σ sgn (v: Z),
-        _Z_to_bytes_def (σ:=σ) 0 sgn v = [].
+      forall endianness sgn (v: Z),
+        _Z_to_bytes_def 0 endianness sgn v = [].
     Proof.
-      move=> σ [ | ] v;
-        rewrite /_Z_to_bytes_def
-                _Z_to_bytes_le_0_bytes;
-        by case_match.
+      move=> [ | ] sgn v;
+        now rewrite /_Z_to_bytes_def _Z_to_bytes_le_0_bytes //=.
     Qed.
 
     Lemma _Z_to_bytes_unsigned_le'_0_value:
@@ -360,14 +357,13 @@ Section FromToBytes.
     Qed.
 
     Lemma _Z_to_bytes_def_0_value:
-      forall σ (cnt: nat) sgn,
-        _Z_to_bytes_def (σ:=σ) cnt sgn 0 = repeat 0%N cnt.
+      forall sgn endianness (cnt: nat),
+        _Z_to_bytes_def cnt endianness sgn 0 = repeat 0%N cnt.
     Proof.
-      move=> σ cnt [ | ];
+      move=> sgn [ | ] cnt;
         rewrite /_Z_to_bytes_def
-                _Z_to_bytes_le_0_value
-                rev_repeat;
-        by case_match.
+                _Z_to_bytes_le_0_value //=;
+        now rewrite rev_repeat.
     Qed.
 
     Lemma _Z_to_bytes_unsigned_le'_S_cnt:
@@ -485,9 +481,9 @@ Section FromToBytes.
       end.
 
     (* NOTE: This will be sealed once we finish the proofs for this section. *)
-    Definition _Z_from_bytes_def {σ: genv} (sgn: signed) (bytes: list N): Z :=
+    Definition _Z_from_bytes_def (endianness: endian) (sgn: signed) (bytes: list N): Z :=
       _Z_from_bytes_le
-        sgn match byte_order σ with
+        sgn match endianness with
             | Little => bytes
             | Big    => List.rev bytes
             end.
@@ -515,12 +511,12 @@ Section FromToBytes.
     Qed.
 
     Lemma _Z_from_bytes_def_nil:
-      forall σ sgn,
-        _Z_from_bytes_def (σ:=σ) sgn [] = 0%Z.
+      forall endianness sgn,
+        _Z_from_bytes_def endianness sgn [] = 0%Z.
     Proof.
-      move=> σ [ | ];
-        rewrite /_Z_from_bytes_def /rev;
-        case_match; by rewrite _Z_from_bytes_le_nil.
+      move=> [ | ] sgn;
+        by rewrite /_Z_from_bytes_def /rev
+                   _Z_from_bytes_le_nil.
     Qed.
 
     Lemma _Z_from_bytes_unsigned_le'_cons:
@@ -601,11 +597,11 @@ Section FromToBytes.
     Qed.
 
     Lemma _Z_from_bytes_def_0s:
-      forall σ sgn (cnt: nat),
-        _Z_from_bytes_def (σ:=σ) sgn (repeat 0%N cnt) = 0%Z.
+      forall endianness sgn (cnt: nat),
+        _Z_from_bytes_def endianness sgn (repeat 0%N cnt) = 0%Z.
     Proof.
-      move=> σ [ | ] cnt; rewrite /_Z_from_bytes_def rev_repeat;
-        case_match; apply _Z_from_bytes_le_0s.
+      move=> [ | ] sgn cnt; rewrite /_Z_from_bytes_def ?rev_repeat;
+        apply _Z_from_bytes_le_0s.
     Qed.
 
     Lemma _Z_from_bytes_unsigned_le'_S_idx:
@@ -812,41 +808,41 @@ Section FromToBytes.
     Qed.
 
     Lemma _Z_from_to_bytes_def_roundtrip:
-      forall (σ: genv) (cnt: nat) (sgn: signed) (v: Z),
+      forall (cnt: nat) (endianness: endian) (sgn: signed) (v: Z),
         match sgn with
         | Signed   => -2^((8*cnt)-1) <= v /\ v <= 2^((8*cnt)-1) - 1
         | Unsigned => 0 <= v /\ v < 2^(8*cnt)
         end%Z ->
-        _Z_from_bytes_def (σ:=σ) sgn (_Z_to_bytes_def (σ:=σ) cnt sgn v) = v.
+        _Z_from_bytes_def endianness sgn (_Z_to_bytes_def cnt endianness sgn v) = v.
     Proof.
       rewrite /_Z_from_bytes_def /_Z_to_bytes_def;
-        intros σ cnt sgn v H; destruct (byte_order σ);
+        intros cnt [ | ] sgn v H;
         try rewrite rev_involutive;
         by apply _Z_from_to_bytes_le_roundtrip.
     Qed.
 
     Lemma _Z_from_unsigned_to_signed_bytes_def:
-      forall (σ: genv) (cnt: nat) (v: Z),
+      forall (cnt: nat) (endianness: endian) (v: Z),
         (-2^((8*cnt)-1) <= v)%Z ->
         (v <= 2^((8*cnt)-1) - 1)%Z ->
-        _Z_from_bytes_def (σ:=σ) Unsigned (_Z_to_bytes_def (σ:=σ) cnt Signed v) =
+        _Z_from_bytes_def endianness Unsigned (_Z_to_bytes_def cnt endianness Signed v) =
         to_unsigned_bits (8*N.of_nat cnt) v.
     Proof.
       rewrite /_Z_from_bytes_def /_Z_to_bytes_def;
-        intros σ cnt v Hlower Hupper; destruct (byte_order σ);
+        intros cnt [ | ] v Hlower Hupper;
         try rewrite rev_involutive;
         by apply _Z_from_unsigned_to_signed_bytes_le.
     Qed.
 
     Lemma _Z_from_signed_to_unsigned_bytes_def:
-      forall (σ: genv) (cnt: nat) (v: Z),
+      forall (cnt: nat) (endianness: endian) (v: Z),
         (0 <= v)%Z ->
         (v < 2^(8*cnt))%Z ->
-        _Z_from_bytes_def (σ:=σ) Signed (_Z_to_bytes_def (σ:=σ) cnt Unsigned v) =
+        _Z_from_bytes_def endianness Signed (_Z_to_bytes_def cnt endianness Unsigned v) =
         to_signed_bits (8*N.of_nat cnt) v.
     Proof.
       rewrite /_Z_from_bytes_def /_Z_to_bytes_def;
-        intros σ cnt v Hlower Hupper; destruct (byte_order σ);
+        intros cnt [ | ] v Hlower Hupper;
         try rewrite rev_involutive;
         by apply _Z_from_signed_to_unsigned_bytes_le.
     Qed.
@@ -855,51 +851,49 @@ Section FromToBytes.
 
   Section ToBytes_external.
 
-    Definition _Z_to_bytes_aux {σ: genv} : seal (@_Z_to_bytes_def σ). Proof. by eexists. Qed.
-    Definition _Z_to_bytes {σ: genv} := (_Z_to_bytes_aux (σ:=σ)).(unseal).
-    Definition _Z_to_bytes_eq {σ: genv}: @_Z_to_bytes σ = _ :=
-      (_Z_to_bytes_aux (σ:=σ)).(seal_eq).
+    Definition _Z_to_bytes_aux : seal (_Z_to_bytes_def). Proof. by eexists. Qed.
+    Definition _Z_to_bytes := _Z_to_bytes_aux.(unseal).
+    Definition _Z_to_bytes_eq: _Z_to_bytes = _ := _Z_to_bytes_aux.(seal_eq).
 
   End ToBytes_external.
 
   Section ToBytesFacts_external.
 
     Lemma _Z_to_bytes_length:
-      forall σ (cnt: nat) sgn v,
-        length (_Z_to_bytes (σ:=σ) cnt sgn v) = cnt.
+      forall (cnt: nat) endianness sgn v,
+        length (_Z_to_bytes cnt endianness sgn v) = cnt.
     Proof. move=> *; rewrite _Z_to_bytes_eq; apply _Z_to_bytes_def_length. Qed.
 
     Lemma _Z_to_bytes_0_bytes:
-      forall σ sgn v,
-        _Z_to_bytes (σ:=σ) 0 sgn v = [].
+      forall sgn endianness v,
+        _Z_to_bytes 0 endianness sgn v = [].
     Proof. move=> *; rewrite _Z_to_bytes_eq; apply _Z_to_bytes_def_0_bytes. Qed.
 
     Lemma _Z_to_bytes_0_value:
-      forall σ (cnt: nat) sgn,
-        _Z_to_bytes (σ:=σ) cnt sgn 0%Z = repeat 0%N cnt.
+      forall (cnt: nat) endianness sgn,
+        _Z_to_bytes cnt endianness sgn 0%Z = repeat 0%N cnt.
     Proof. move=> *; rewrite _Z_to_bytes_eq; apply _Z_to_bytes_def_0_value. Qed.
 
   End ToBytesFacts_external.
 
   Section FromBytes_external.
 
-    Definition _Z_from_bytes_aux {σ: genv} : seal (@_Z_from_bytes_def σ). Proof. by eexists. Qed.
-    Definition _Z_from_bytes {σ: genv} := (_Z_from_bytes_aux (σ:=σ)).(unseal).
-    Definition _Z_from_bytes_eq {σ: genv} : @_Z_from_bytes σ = _ :=
-      (_Z_from_bytes_aux (σ:=σ)).(seal_eq).
+    Definition _Z_from_bytes_aux: seal _Z_from_bytes_def. Proof. by eexists. Qed.
+    Definition _Z_from_bytes := _Z_from_bytes_aux.(unseal).
+    Definition _Z_from_bytes_eq: @_Z_from_bytes = _ := _Z_from_bytes_aux.(seal_eq).
 
   End FromBytes_external.
 
   Section FromBytesFacts_external.
 
     Lemma _Z_from_bytes_nil:
-      forall σ sgn,
-        _Z_from_bytes (σ:=σ) sgn [] = 0%Z.
+      forall endianness sgn,
+        _Z_from_bytes endianness sgn [] = 0%Z.
     Proof. move=> *; rewrite _Z_from_bytes_eq; apply _Z_from_bytes_def_nil. Qed.
 
     Lemma _Z_from_bytes_0s:
-      forall σ sgn (cnt: nat),
-        _Z_from_bytes (σ:=σ) sgn (repeat 0%N cnt) = 0%Z.
+      forall endianness sgn (cnt: nat),
+        _Z_from_bytes endianness sgn (repeat 0%N cnt) = 0%Z.
     Proof. move=> *; rewrite _Z_from_bytes_eq; apply _Z_from_bytes_def_0s. Qed.
 
   End FromBytesFacts_external.
@@ -907,22 +901,22 @@ Section FromToBytes.
   Section FromToFacts_external.
 
     Lemma _Z_from_to_bytes_roundtrip:
-      forall (σ: genv) (cnt: nat) (sgn: signed) (v: Z),
+      forall (cnt: nat) (endianness: endian) (sgn: signed) (v: Z),
         match sgn with
         | Signed   => -2^((8*cnt)-1) <= v /\ v <= 2^((8*cnt)-1) - 1
         | Unsigned => 0 <= v /\ v < 2^(8*cnt)
         end%Z ->
-        _Z_from_bytes (σ:=σ) sgn (_Z_to_bytes (σ:=σ) cnt sgn v) = v.
+        _Z_from_bytes endianness sgn (_Z_to_bytes cnt endianness sgn v) = v.
     Proof.
       move=> *; rewrite _Z_from_bytes_eq _Z_to_bytes_eq;
         by apply _Z_from_to_bytes_def_roundtrip.
     Qed.
 
     Lemma _Z_from_unsigned_to_signed_bytes:
-      forall (σ: genv) (cnt: nat) (v: Z),
+      forall (cnt: nat) (endianness: endian) (v: Z),
         (-2^((8*cnt)-1) <= v)%Z ->
         (v <= 2^((8*cnt)-1) - 1)%Z ->
-        _Z_from_bytes (σ:=σ) Unsigned (_Z_to_bytes (σ:=σ) cnt Signed v) =
+        _Z_from_bytes endianness Unsigned (_Z_to_bytes cnt endianness Signed v) =
         to_unsigned_bits (8*N.of_nat cnt) v.
     Proof.
       move=> *; rewrite _Z_from_bytes_eq _Z_to_bytes_eq;
@@ -930,10 +924,10 @@ Section FromToBytes.
     Qed.
 
     Lemma _Z_from_signed_to_unsigned_bytes:
-      forall (σ: genv) (cnt: nat) (v: Z),
+      forall (cnt: nat) (endianness: endian) (v: Z),
         (0 <= v)%Z ->
         (v < 2^(8*cnt))%Z ->
-        _Z_from_bytes (σ:=σ) Signed (_Z_to_bytes (σ:=σ) cnt Unsigned v) =
+        _Z_from_bytes endianness Signed (_Z_to_bytes cnt endianness Unsigned v) =
         to_signed_bits (8*N.of_nat cnt) v.
     Proof.
       move=> *; rewrite _Z_from_bytes_eq _Z_to_bytes_eq;
