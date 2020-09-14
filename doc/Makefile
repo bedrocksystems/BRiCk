@@ -4,30 +4,100 @@
 # SPDX-License-Identifier: LGPL-2.1 WITH BedRock Exception for use over network, see repository root for details.
 #
 
-COQMAKEFILE=$(COQBIN)coq_makefile
+ROOT_DIR:=$(shell dirname $(realpath $(firstword $(MAKEFILE_LIST))))
+ALECTRYON = $(ROOT_DIR)/alectryon/alectryon.py
+export ALECTRYON
 
-COQMK := $(MAKE) -f Makefile.coq
+COQBIN       = $(shell dirname $(shell which coqc))
+COQLIB       = $(shell coqc -where)
+# NOTE: We will likely want to re-enable this when we have a src/ subdirectory
+#COQPATHEXTRA = $(ROOT_DIR)/src
 
-ROOT=$(shell (cd .. &&pwd))
-include ./Makefile.doc
-COQDOCFLAGS += --external https://bedrocksystems.gitlab.io/cpp2v bedrock
-export COQDOCFLAGS
+######################################################################
+### Variables
+######################################################################
 
-coq: Makefile.coq
-	+@$(COQMK)
-.PHONY: coq
+# Sphinx-related variables
+SPHINXENV:=COQBIN="$(COQBIN)" COQLIB="$(COQLIB)" COQPATH=$(COQPATH):$(COQPATHEXTRA)
+SPHINXWARNERROR ?= 1
+ifeq ($(SPHINXWARNERROR),1)
+SPHINXOPTS= -W
+else
+SPHINXOPTS=
+endif
 
-doc: coq
-	+@$(COQMK) html
+SPHINXDIR ?= $(ROOT_DIR)/sphinx
+SPHINXTANGLEDIR = $(SPHINXDIR)/tangles
+export SPHINXTANGLEDIR
+
+SPHINXBUILD= $(shell which sphinx-build)
+SPHINXBUILDDIR = $(SPHINXDIR)/_build
+
+ALLSPHINXOPTS= -d $(SPHINXBUILDDIR)/doctrees $(SPHINXOPTS)
+
+######################################################################
+### General rules
+######################################################################
+
+all: html
+
+.PHONY: old-doc doc doc-public doc-private redoc src tangle-src tangle
+
+TANGLE_DIR     = $(SPHINXDIR)/orphans
+TANGLE_INPUTS  = $(wildcard $(TANGLE_DIR)/*.v)
+TANGLE_OUTPUTS = $(patsubst $(TANGLE_DIR)/%.v,$(SPHINXTANGLEDIR)/%.rst,$(TANGLE_INPUTS))
+
+# This is responsible for building .rst files from .v files with Alectryon comments
+$(SPHINXTANGLEDIR)/%.rst: $(TANGLE_DIR)/%.v
+	@mkdir -p $(SPHINXDIR)/tangles
+	python3 $(ALECTRYON) --frontend coq+rst --backend rst $< -o $@
+
+tangle: $(TANGLE_OUTPUTS)
+
+src:
+	$(MAKE) -C src all
+tangle-src:
+	$(MAKE) -C src tangle-all
+
+doc-public: tangle-src tangle refman-public
+doc-private: tangle-src tangle refman-private
+
+doc: doc-private
+redoc: clean doc
+
+old-doc:
+	$(MAKE) -C old doc
+	mkdir -p $(SPHINXBUILDDIR)/html/coqdoc
+	cp old/html/* $(SPHINXBUILDDIR)/html/coqdoc
 .PHONY: doc
 
-html: doc
+html: old-doc doc
 .PHONY: html
 
-clean:
-	+@if test -f Makefile.coq; then $(COQMK) cleanall; fi
-	rm -f Makefile.coq Makefile.coq.conf
-.PHONY: clean
+refman-public-%:
+	@echo $(COQBIN) $(COQLIB)
+	@echo 'SPHINXBUILD sphinx ($*)'
+	$(HIDE)$(SPHINXENV) $(SPHINXBUILD) -b $* \
+		$(ALLSPHINXOPTS) sphinx $(SPHINXBUILDDIR)/$*
 
-Makefile.coq Makefile.coq.conf: _CoqProject Makefile
-	+$(COQMAKEFILE) -f _CoqProject -o Makefile.coq
+# NOTE: in sphinx/conf.py, the `private` tag is used to conditionally allow the sphinx/private directory
+refman-private-%:
+	@echo 'SPHINXBUILD sphinx ($*)'
+	@echo 'ROOT DIR: $(ROOT_DIR)'
+	$(HIDE)$(SPHINXENV) $(SPHINXBUILD) -b $* \
+		-t private \
+		$(ALLSPHINXOPTS) sphinx $(SPHINXBUILDDIR)/$*
+
+refman-public: | tangle-src tangle
+	+$(MAKE) refman-public-html
+
+refman-private: | tangle-src tangle
+	+$(MAKE) refman-private-html
+
+
+clean:
+	$(MAKE) -C old clean
+	+$(MAKE) -C src clean
+	rm -rf $(SPHINXBUILDDIR)
+	rm -rf $(SPHINXDIR)/tangles
+.PHONY: clean

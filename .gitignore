@@ -15,6 +15,10 @@ deps.pdf
 deps.dot
 .envrc
 public
-doc/html
+html
+doc_extra
+doc/old/html
+doc/src/_downloads
+doc/sphinx/cache
 .Makefile.coq.d
 _build
