@@ -107,14 +107,14 @@ html doc: coq doc_extra
 	$(COQMK) html
 	mkdir -p doc/old/html
 	mv html/* doc/old/html && rmdir html
-	cp -r doc_extra/resources/* doc/old/html
+	cp -r doc_extra/extra/resources/* doc/old/html
 	$(DOCMK) html # generates html files in `doc/old/html`
 .PHONY: html doc
 
 doc_extra:
 	git clone --depth 1 https://github.com/coq-community/coqdocjs.git doc_extra
 
-public: html doc_extra
+public: html
 	mv doc/sphinx/_build/html public
 .PHONY: public
 
