@@ -17,8 +17,8 @@ Section with_resolve.
     match σ.(genv_tu) !! cls with
     | None => None
     | Some (Gstruct st) =>
-      match List.find (fun '(x,_,_) => bool_decide (f = x)) st.(s_fields) with
-      | Some (_, ty, _) => Some ty
+      match List.find (fun '(x,_,_,_) => bool_decide (f = x)) st.(s_fields) with
+      | Some (_, ty, _, _) => Some ty
       | _ => None
       end
     | _ => None

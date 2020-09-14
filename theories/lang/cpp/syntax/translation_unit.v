@@ -68,8 +68,8 @@ Instance: EqDecision Method.
 Proof. solve_decision. Defined.
 
 Record Union : Set :=
-{ u_fields : list (ident * type * LayoutInfo)
-  (* ^ fields with layout information *)
+{ u_fields : list (ident * type * option Expr * LayoutInfo)
+  (* ^ fields with type, initializer, and layout information *)
 ; u_size : N
   (* ^ size of the union (including padding) *)
 }.
@@ -84,8 +84,8 @@ Proof. solve_decision. Defined.
 Record Struct : Set :=
 { s_bases : list (globname * LayoutInfo)
   (* ^ base classes *)
-; s_fields : list (ident * type * LayoutInfo)
-  (* ^ fields with layout information *)
+; s_fields : list (ident * type * option Expr * LayoutInfo)
+  (* ^ fields with type, initializer, and layout information *)
 ; s_layout : LayoutType
   (* ^ the type of layout semantics *)
 ; s_size : N
@@ -219,10 +219,10 @@ Section with_type_table.
   Inductive complete_decl : GlobDecl -> Prop :=
   | complete_Struct {st}
               (_ : forall b li, In (b, li) st.(s_bases) -> complete_type (Tnamed b))
-              (_ : forall x t li, In (x, t, li) st.(s_fields) -> complete_type t)
+              (_ : forall x t e li, In (x, t, e, li) st.(s_fields) -> complete_type t)
     : complete_decl (Gstruct st)
   | complete_Union {u}
-              (_ : forall x t li, In (x, t, li) u.(u_fields) -> complete_type t)
+              (_ : forall x t e li, In (x, t, e, li) u.(u_fields) -> complete_type t)
     : complete_decl (Gunion u)
   | complete_enum {t consts} (_ : complete_type t)
     : complete_decl (Genum t consts)
