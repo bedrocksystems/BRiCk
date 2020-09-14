@@ -101,13 +101,13 @@ test-plugin: build-minimal plugin
 
 # Build Coq docs
 
-html doc: coq
+html doc: coq doc_extra
 	rm -rf public
 	rm -rf html
 	$(COQMK) html
 	mkdir -p doc/old/html
 	mv html/* doc/old/html && rmdir html
-	cp -r $(EXTRA_DIR)/resources/* doc/old/html
+	cp -r doc_extra/resources/* doc/old/html
 	$(DOCMK) html # generates html files in `doc/old/html`
 .PHONY: html doc
 
