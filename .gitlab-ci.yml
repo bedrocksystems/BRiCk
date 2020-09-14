@@ -132,7 +132,7 @@ release_latest:
 #   variables:
 #     LLVM_MAJ_VER: ${LLVM_PREV_MAJ_VER}
 
-pages:
+build_pages:
   image: registry.gitlab.com/bedrocksystems/docker-image:fm-docs
   stage: pages
   dependencies:
@@ -144,6 +144,18 @@ pages:
   only:
     - master
     - merge_requests
+  artifacts:
+    paths:
+      - public
+
+pages:
+  image: registry.gitlab.com/bedrocksystems/docker-image:fm-docs
+  stage: pages
+  dependencies:
+    - build_pages
+  script:
+  only:
+    - master
   artifacts:
     paths:
       - public
