@@ -48,7 +48,7 @@ Section with_Σ.
               let '(gn,_) := base in
               _offsetR (_super cls gn) (anyR (Tnamed gn) 1)) **
            ([∗list] fld ∈ st.(s_fields),
-              let '(n,ty,_) := fld in
+              let '(n,ty,_,_) := fld in
               _offsetR (_field {| f_name := n ; f_type := cls |})
                        (anyR (erase_qualifiers ty) 1)) **
            (if has_vtable st
@@ -63,7 +63,7 @@ Section with_Σ.
     glob_def resolve cls = Some (Gunion st) ->
         anyR (Tnamed cls) 1
     -|- [∧list] it ∈ st.(u_fields),
-           let '(i, t, _) := it in
+           let '(i, t, _, _) := it in
            let f := _field {| f_name := i ; f_type := cls |} in
            borrow_from (_offsetR f (anyR (erase_qualifiers t) 1))
                        (anyR (Tnamed cls) 1).
