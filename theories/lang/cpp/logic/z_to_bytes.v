@@ -168,7 +168,7 @@ Section FromToBytes.
         (v < 2^(8*Z.succ offset))%Z ->
         Z.ldiff v (Z.ones (8 * offset)) = Z.land (255 ≪ (8 * offset)) v.
     Proof.
-    (* Intuition: since `v < 2^(8*(idx+S cnt))`, we kby
+    (* Intuition: since `v < 2^(8*(idx+S cnt))`, we know
          that there aren't going to be any bits
          beyond the `255 ≪ (8 * (idx+cnt))` mask
          which will be introduced by the change to ldiff.
