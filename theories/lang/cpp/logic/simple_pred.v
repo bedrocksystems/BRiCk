@@ -57,6 +57,15 @@ Module SimpleCPP_BASE <: CPP_LOGIC_CLASS.
   Lemma length_Z_to_bytes {σ} n sgn v : length (Z_to_bytes (σ:=σ) n sgn v) = n.
   Proof. by rewrite/Z_to_bytes fmap_length length__Z_to_bytes. Qed.
 
+  Record cpp_ghost : Type :=
+    { heap_name : gname
+    ; ghost_mem_name : gname
+    ; mem_inj_name : gname
+    ; blocks_name : gname
+    ; code_name : gname
+    }.
+  Definition _cpp_ghost := cpp_ghost.
+
   Class cppG' (Σ : gFunctors) : Type :=
     { heapG : inG Σ (gmapR addr (fractionalR runtime_val))
       (* ^ this represents the contents of physical memory *)
@@ -84,16 +93,33 @@ Module SimpleCPP_BASE <: CPP_LOGIC_CLASS.
   Instance cppG_cppG' Σ : cppG Σ -> cppG' Σ := id.
   Typeclasses Opaque cppG. (* Prevent turning instances of cppG' into cppG and risking loops. *)
 
-  Record cpp_ghost : Type :=
-    { heap_name : gname
-    ; ghost_heap_name : gname
-    ; mem_inj_name : gname
-    ; blocks_name : gname
-    ; code_name : gname
-    }.
-  Definition _cpp_ghost := cpp_ghost.
-
   Include CPP_LOGIC_CLASS_MIXIN.
+
+  Section with_cpp.
+    Context `{Σ : cpp_logic}.
+    Definition heap_own (a : addr) (q : Qp) (r : runtime_val) :=
+      own (A := gmapR addr (fractionalR runtime_val))
+      _ghost.(heap_name) {[ a := frac q r ]}.
+    Definition ghost_mem_own (p : ptr) (q : Qp) (v : val) :=
+      own (A := gmapR ptr (fractionalR (leibnizO val)))
+        _ghost.(ghost_mem_name) {[ p := frac q v ]}.
+    Definition mem_inj_own (p : ptr) (va : option N) : mpred :=
+      own (A := gmapUR ptr (agreeR (leibnizO (option addr))))
+        _ghost.(mem_inj_name) {[ p := to_agree va ]}.
+    Definition blocks_own (p : ptr) (l h : Z) :=
+      own (A := gmapUR ptr (agreeR (leibnizO (Z * Z))))
+        _ghost.(blocks_name) {[ p := to_agree (l, h) ]}.
+
+    (** the pointer points to the code
+
+      note that in the presence of code-loading, function calls will
+      require an extra side-condition that the code is loaded.
+     *)
+    Definition code_own (p : ptr) (f : Func + Method + Ctor + Dtor) : mpred :=
+      own _ghost.(code_name)
+        (A := gmapUR ptr (agreeR (leibnizO (Func + Method + Ctor + Dtor))))
+        {[ p := to_agree f ]}.
+  End with_cpp.
 End SimpleCPP_BASE.
 
 Module SimpleCPP.
@@ -108,8 +134,7 @@ Module SimpleCPP.
     Definition valid_ptr (p : ptr) : mpred :=
       [| p = nullptr |] \\//
             Exists base l h o,
-                own _ghost.(blocks_name) (A := (gmapUR ptr (agreeR (leibnizO (Z * Z)))))
-                {[ base := to_agree (l, h) ]} **
+                blocks_own base l h **
                 [| (l <= o <= h)%Z |] ** [| p = offset_ptr_ o base |].
 
     Theorem valid_ptr_persistent : forall p, Persistent (valid_ptr p).
@@ -306,9 +331,7 @@ Module SimpleCPP.
     Qed.
 
     Definition val_ (a : ptr) (v : val) (q : Qp) : mpred :=
-      own _ghost.(ghost_heap_name)
-      (A := gmapR ptr (fractionalR (leibnizO val)))
-      {[ a := frac (o:=leibnizO val) q v ]}.
+      ghost_mem_own a q v.
 
     Lemma val_agree a v1 v2 q1 q2 :
       val_ a v1 q1 |-- val_ a v2 q2 -* ⌜v1 = v2⌝.
@@ -335,8 +358,7 @@ Module SimpleCPP.
     (* Note: the current definition doesn't take weak memory into accoutn. In
       particular, it doesn't rely on the thread-local info for the value rv. *)
     Definition byte_ (a : addr) (rv : runtime_val) (q : Qp) : mpred :=
-      own _ghost.(heap_name) (A := (gmapR addr (fractionalR (leibnizO runtime_val))))
-      {[ a := frac (o:=leibnizO _) q rv ]}.
+      heap_own a q rv.
 
     Lemma byte_agree a rv1 rv2 q1 q2 :
       byte_ a rv1 q1 |-- byte_ a rv2 q2 -* ⌜rv1 = rv2⌝.
@@ -413,9 +435,6 @@ Module SimpleCPP.
       iDestruct (bytes_agree with "Hb Hb'") as %->; auto.
       by iFrame "Hb Hb' %".
     Qed.
-    Definition mem_inj_own (p : ptr) (va : option N) : mpred :=
-      own _ghost.(mem_inj_name) (A := gmapUR ptr (agreeR (leibnizO (option addr))))
-        {[ p := to_agree va ]}.
 
     (* heap points to *)
     Definition tptsto {σ:genv} (t : type) (q : Qp) (p : ptr) (v : val) : mpred :=
@@ -489,25 +508,14 @@ Module SimpleCPP.
        *)
     Abort.
 
-    (** the pointer points to the code
-
-      note that in the presence of code-loading, function calls will
-      require an extra side-condition that the code is loaded.
-     *)
-    Local Definition code_ghost_at
-      (f : (Func + Method + Ctor + Dtor)) (p : ptr) : mpred :=
-      own _ghost.(code_name)
-        (A := (gmapUR ptr (agreeR (leibnizO (Func + Method + Ctor + Dtor)))))
-        {[ p := to_agree f ]}.
-
     Definition code_at (_ : genv) (f : Func) (p : ptr) : mpred :=
-      code_ghost_at (inl (inl (inl f))) p.
+      code_own p (inl (inl (inl f))).
     Definition method_at (_ : genv) (m : Method) (p : ptr) : mpred :=
-      code_ghost_at (inl (inl (inr m))) p.
+      code_own p (inl (inl (inr m))).
     Definition ctor_at (_ : genv) (c : Ctor) (p : ptr) : mpred :=
-      code_ghost_at (inl (inr c)) p.
+      code_own p (inl (inr c)).
     Definition dtor_at (_ : genv) (d : Dtor) (p : ptr) : mpred :=
-      code_ghost_at (inr d) p.
+      code_own p (inr d).
 
     Theorem code_at_persistent : forall s f p, Persistent (@code_at s f p).
     Proof. apply _. Qed.
