@@ -77,11 +77,14 @@ Module SimpleCPP_BASE <: CPP_LOGIC_CLASS.
     ; has_inv' :> invG Σ
     ; has_cinv' :> cinvG Σ
     }.
+  Existing Instances memG ghost_memG mem_injG blocksG codeG.
 
   Definition cppG : gFunctors -> Type := cppG'.
   Definition has_inv : forall Σ, cppG Σ -> invG Σ := @has_inv'.
   Definition has_cinv : forall Σ, cppG Σ -> cinvG Σ := @has_cinv'.
   Existing Class cppG.
+  Instance cppG_cppG' Σ : cppG Σ -> cppG' Σ := id.
+  Typeclasses Opaque cppG. (* Prevent turning instances of cppG' into cppG and risking loops. *)
 
   Record cpp_ghost : Type :=
     { heap_name : gname
@@ -101,9 +104,8 @@ Module SimpleCPP.
   Section with_cpp.
     Context `{Σ : cpp_logic}.
 
-    Existing Instances memG ghost_memG mem_injG blocksG codeG.
-
     Definition mpred := iProp Σ.
+    Bind Scope bi_scope with mpred.
     Definition mpredI : bi :=
       {| bi_car := mpred
        ; bi_later := bi_later
@@ -117,13 +119,12 @@ Module SimpleCPP.
     (** pointer validity *)
     (** Pointers past the end of an object/array can be valid; see
     https://eel.is/c++draft/expr.add#4 *)
-    Definition valid_ptr (p : ptr) : mpred.
-    refine ([| p = nullptr |] \\//
-            (Exists base l h o,
-                own _ghost.(blocks_name) {[ base := to_agree (l, h) ]} **
-                [| (l <= o <= h)%Z |] ** [| p = offset_ptr_ o base |])).
-    unshelve eapply blocksG; apply has_cppG. refine _.
-    Defined.
+    Definition valid_ptr (p : ptr) : mpred :=
+      [| p = nullptr |] \\//
+            Exists base l h o,
+                own _ghost.(blocks_name) (A := (gmapUR ptr (agreeR (leibnizO (Z * Z)))))
+                {[ base := to_agree (l, h) ]} **
+                [| (l <= o <= h)%Z |] ** [| p = offset_ptr_ o base |].
 
     Theorem valid_ptr_persistent : forall p, Persistent (valid_ptr p).
     Proof. apply _. Qed.
@@ -166,8 +167,7 @@ Module SimpleCPP.
       Proof. by rewrite /cptr length_Z_to_bytes. Qed.
 
       (** WRT pointer equality, see https://eel.is/c++draft/expr.eq#3 *)
-      Definition encodes (t : type) (v : val) (vs : list runtime_val) : mpred.
-      refine
+      Definition encodes (t : type) (v : val) (vs : list runtime_val) : mpred :=
         match erase_qualifiers t with
         | Tint sz sgn =>
           match v with
@@ -216,9 +216,6 @@ Module SimpleCPP.
         | Tarray _ _
         | Tnamed _ => lfalse (* not directly encoded in memory *)
         end.
-      all: try (unshelve eapply mem_injG; apply has_cppG).
-      all: refine _.
-      Defined.
 
       Global Instance encodes_persistent : forall t v vs, Persistent (encodes t v vs).
       Proof.
@@ -322,12 +319,10 @@ Module SimpleCPP.
       { destruct (decide (p = nullptr)); try setoid_rewrite H; auto. }
     Qed.
 
-    Definition val_ (a : ptr) (v : val) (q : Qp) : mpred.
-    refine (
-      own _ghost.(ghost_heap_name) {[ a := frac (o:=leibnizO val) q v ]}).
-    apply (@ghost_memG Σ); apply has_cppG.
-    refine _.
-    Defined.
+    Definition val_ (a : ptr) (v : val) (q : Qp) : mpred :=
+      own _ghost.(ghost_heap_name)
+      (A := gmapR ptr (fractionalR (leibnizO val)))
+      {[ a := frac (o:=leibnizO val) q v ]}.
 
     Lemma val_agree a v1 v2 q1 q2 :
       val_ a v1 q1 |-- val_ a v2 q2 -* ⌜v1 = v2⌝.
@@ -353,12 +348,9 @@ Module SimpleCPP.
 
     (* Note: the current definition doesn't take weak memory into accoutn. In
       particular, it doesn't rely on the thread-local info for the value rv. *)
-    Definition byte_ (a : addr) (rv : runtime_val) (q : Qp) : mpred.
-    refine (
-      own _ghost.(heap_name) {[ a := frac (o:=leibnizO _) q rv ]}).
-    apply (@memG Σ); apply has_cppG.
-    refine _.
-    Defined.
+    Definition byte_ (a : addr) (rv : runtime_val) (q : Qp) : mpred :=
+      own _ghost.(heap_name) (A := (gmapR addr (fractionalR (leibnizO runtime_val))))
+      {[ a := frac (o:=leibnizO _) q rv ]}.
 
     Lemma byte_agree a rv1 rv2 q1 q2 :
       byte_ a rv1 q1 |-- byte_ a rv2 q2 -* ⌜rv1 = rv2⌝.
@@ -439,21 +431,20 @@ Module SimpleCPP.
       iDestruct (bytes_agree with "Hb Hb'") as %->; auto.
       by iFrame "Hb Hb' %".
     Qed.
+    Definition mem_inj_own (p : ptr) (va : option N) : mpred :=
+      own _ghost.(mem_inj_name) (A := gmapUR ptr (agreeR (leibnizO (option addr))))
+        {[ p := to_agree va ]}.
 
     (* heap points to *)
-    Definition tptsto {σ:genv} (t : type) (q : Qp) (p : ptr) (v : val) : mpred.
-    Proof.
-      refine (Exists (a : option addr),
-              own _ghost.(mem_inj_name) {[ p := to_agree a ]} **
+    Definition tptsto {σ:genv} (t : type) (q : Qp) (p : ptr) (v : val) : mpred :=
+      Exists (a : option addr),
+              mem_inj_own p a **
               match a with
               | Some a =>
                 Exists vs,
                 encodes σ t v vs ** bytes a vs q
               | None => val_ p v q
-              end).
-      1: apply (@mem_injG Σ); apply has_cppG.
-      refine _.
-    Defined.
+              end.
 
     Theorem tptsto_mono :
       Proper (genv_leq ==> eq ==> eq ==> eq ==> eq ==> (⊢)) (@tptsto).
@@ -522,11 +513,10 @@ Module SimpleCPP.
       require an extra side-condition that the code is loaded.
      *)
     Local Definition code_ghost_at
-      (f : (Func + Method + Ctor + Dtor)) (p : ptr) : mpred.
-    refine (own _ghost.(code_name) {[ p := to_agree f ]}).
-    apply (@codeG Σ); apply has_cppG.
-    all: refine _.
-    Defined.
+      (f : (Func + Method + Ctor + Dtor)) (p : ptr) : mpred :=
+      own _ghost.(code_name)
+        (A := (gmapUR ptr (agreeR (leibnizO (Func + Method + Ctor + Dtor)))))
+        {[ p := to_agree f ]}.
 
     Definition code_at (_ : genv) (f : Func) (p : ptr) : mpred :=
       code_ghost_at (inl (inl (inl f))) p.
@@ -567,12 +557,9 @@ Module SimpleCPP.
 
     (** physical representation of pointers
      *)
-    Definition pinned_ptr (va : N) (p : ptr) : mpred.
-    refine (([| p = nullptr /\ va = 0%N |] \\//
-            ([| p <> nullptr |] **
-                own _ghost.(mem_inj_name) {[ p := to_agree (Some va) ]}))).
-    unshelve eapply mem_injG; apply has_cppG. refine _.
-    Defined.
+    Definition pinned_ptr (va : N) (p : ptr) : mpred :=
+      [| p = nullptr /\ va = 0%N |] \\//
+      ([| p <> nullptr |] ** mem_inj_own p (Some va)).
 
     Theorem pinned_ptr_persistent : forall va p, Persistent (pinned_ptr va p).
     Proof. apply _. Qed.
@@ -589,16 +576,13 @@ Module SimpleCPP.
       move: Hp. rewrite singleton_op singleton_valid=>/agree_op_invL'. by case.
     Qed.
 
-    Definition type_ptr {resolve : genv} (c: type) (p : ptr) : mpred.
-    Proof.
-      refine (Exists (o : option addr) n,
-               [| @align_of resolve c = Some n |] ** own _ghost.(mem_inj_name) {[ p := to_agree o ]} **
+    Definition type_ptr {resolve : genv} (c: type) (p : ptr) : mpred :=
+      Exists (o : option addr) n,
+               [| @align_of resolve c = Some n |] ** mem_inj_own p o **
                match o with
                | None => ltrue
                | Some addr => [| N.modulo addr n = 0%N |]
-               end).
-      1: unshelve eapply mem_injG; apply has_cppG. refine _.
-    Defined.
+               end.
 
     Theorem type_ptr_persistent : forall σ p ty,
         Persistent (type_ptr (resolve:=σ) ty p).
