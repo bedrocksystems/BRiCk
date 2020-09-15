@@ -19,12 +19,12 @@ Set Default Proof Using "Type".
 Set Suggest Proof Using.
 
 (* todo: does this not exist as a library somewhere? *)
-Definition fractionalR (o : ofeT) : cmraT :=
-  prodR fracR (agreeR o).
-Definition frac {o: ofeT} (q : Qp) (v : o) : fractionalR o :=
+Definition fractionalR (V : Type) : cmraT :=
+  prodR fracR (agreeR (leibnizO V)).
+Definition frac {V : Type} (q : Qp) (v : V) : fractionalR V :=
   (q, to_agree v).
 
-Lemma frac_op {A : ofeT} (l : A)  (p q : Qp) :
+Lemma frac_op {V} (l : V)  (p q : Qp) :
   frac p l ⋅ frac q l ≡ frac (p + q) l.
 Proof. by rewrite -pair_op agree_idemp. Qed.
 
@@ -58,9 +58,9 @@ Module SimpleCPP_BASE <: CPP_LOGIC_CLASS.
   Proof. by rewrite/Z_to_bytes fmap_length length__Z_to_bytes. Qed.
 
   Class cppG' (Σ : gFunctors) : Type :=
-    { memG : inG Σ (gmapR addr (fractionalR (leibnizO runtime_val)))
+    { heapG : inG Σ (gmapR addr (fractionalR runtime_val))
       (* ^ this represents the contents of physical memory *)
-    ; ghost_memG : inG Σ (gmapR ptr (fractionalR (leibnizO val)))
+    ; ghost_memG : inG Σ (gmapR ptr (fractionalR val))
       (* ^ this represents the contents of the C++ runtime that might
          not be represented in physical memory, e.g. values stored in
          registers or temporaries on the stack *)
@@ -77,7 +77,7 @@ Module SimpleCPP_BASE <: CPP_LOGIC_CLASS.
     ; has_inv : invG Σ
     ; has_cinv : cinvG Σ
     }.
-  Existing Instances memG ghost_memG mem_injG blocksG codeG has_inv has_cinv.
+  Existing Instances heapG ghost_memG mem_injG blocksG codeG has_inv has_cinv.
 
   Definition cppG : gFunctors -> Type := cppG'.
   Existing Class cppG.
@@ -359,9 +359,9 @@ Module SimpleCPP.
     Instance: Timeless (byte_ a rv q).
     Proof. apply _. Qed.
 
-    Lemma frac_valid {o : ofeT} q1 q2 (v1 v2 : o) :
-      ✓ (frac q1 v1 ⋅ frac q2 v2) → ✓ (q1 + q2)%Qp ∧ v1 ≡ v2.
-    Proof. by rewrite pair_valid/= =>-[]? /agree_op_inv/(inj_iff to_agree). Qed.
+    Lemma frac_valid {A : Type} q1 q2 (v1 v2 : A) :
+      ✓ (frac q1 v1 ⋅ frac q2 v2) → ✓ (q1 + q2)%Qp ∧ v1 = v2.
+    Proof. by rewrite pair_valid/= =>-[]? /agree_op_invL'. Qed.
 
     Theorem byte_consistent a b b' q q' :
       byte_ a b q ** byte_ a b' q' |-- byte_ a b (q + q') ** [| b = b' |].
@@ -401,11 +401,7 @@ Module SimpleCPP.
     Proof. apply _. Qed.
 
     Instance: Fractional (bytes a vs).
-    Proof. red. unfold bytes.
-           intros.
-           rewrite (@fractional_big_sepL _ _ vs (fun o v q => byte_ (a + N.of_nat o)%N v q)).
-           reflexivity.
-    Qed.
+    Proof. apply _. Qed.
 
     Instance: AsFractional (bytes a vs q) (bytes a vs) q.
     Proof. constructor; refine _. reflexivity. Qed.
