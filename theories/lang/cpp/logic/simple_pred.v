@@ -74,14 +74,12 @@ Module SimpleCPP_BASE <: CPP_LOGIC_CLASS.
     ; codeG : inG Σ (gmapUR ptr (agreeR (leibnizO (Func + Method + Ctor + Dtor))))
       (* ^ this carries the (compiler-supplied) mapping from C++ locations
          to the code stored at that location *)
-    ; has_inv' :> invG Σ
-    ; has_cinv' :> cinvG Σ
+    ; has_inv : invG Σ
+    ; has_cinv : cinvG Σ
     }.
-  Existing Instances memG ghost_memG mem_injG blocksG codeG.
+  Existing Instances memG ghost_memG mem_injG blocksG codeG has_inv has_cinv.
 
   Definition cppG : gFunctors -> Type := cppG'.
-  Definition has_inv : forall Σ, cppG Σ -> invG Σ := @has_inv'.
-  Definition has_cinv : forall Σ, cppG Σ -> cinvG Σ := @has_cinv'.
   Existing Class cppG.
   Instance cppG_cppG' Σ : cppG Σ -> cppG' Σ := id.
   Typeclasses Opaque cppG. (* Prevent turning instances of cppG' into cppG and risking loops. *)
