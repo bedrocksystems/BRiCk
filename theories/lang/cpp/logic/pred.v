@@ -50,6 +50,23 @@ Module Type CPP_LOGIC_CLASS_MIXIN (Import CC : CPP_LOGIC_CLASS_BASE).
   Coercion _Σ : cpp_logic >-> gFunctors.
   Existing Instance has_cppG.
 
+  Section with_cpp.
+    Context `{Σ : cpp_logic}.
+
+    Definition mpred := iProp Σ.
+
+    Canonical Structure mpredI : bi :=
+      {| bi_car := mpred
+       ; bi_later := bi_later
+       ; bi_ofe_mixin := (iPropI Σ).(bi_ofe_mixin)
+       ; bi_bi_mixin := (iPropI Σ).(bi_bi_mixin)
+       ; bi_bi_later_mixin := (iPropI Σ).(bi_bi_later_mixin)
+       |}.
+  End with_cpp.
+
+  Bind Scope bi_scope with bi_car.
+  Bind Scope bi_scope with mpred.
+  Bind Scope bi_scope with mpredI.
 End CPP_LOGIC_CLASS_MIXIN.
 
 Module Type CPP_LOGIC_CLASS := CPP_LOGIC_CLASS_BASE <+ CPP_LOGIC_CLASS_MIXIN.
@@ -58,15 +75,6 @@ Module Type CPP_LOGIC (Import CC : CPP_LOGIC_CLASS).
 
   Section with_cpp.
     Context `{Σ : cpp_logic}.
-
-    Definition mpred := iProp Σ.
-    Canonical Structure mpredI : bi :=
-      {| bi_car := mpred
-       ; bi_later := bi_later
-       ; bi_ofe_mixin := (iPropI Σ).(bi_ofe_mixin)
-       ; bi_bi_mixin := (iPropI Σ).(bi_bi_mixin)
-       ; bi_bi_later_mixin := (iPropI Σ).(bi_bi_later_mixin)
-       |}.
     (* todo: Fix the warning generated from this definition *)
 
     (* Typeclasses Opaque mpred.
@@ -211,10 +219,6 @@ End CPP_LOGIC.
 Declare Module LC : CPP_LOGIC_CLASS.
 Declare Module L : CPP_LOGIC LC.
 Export LC L.
-
-Bind Scope bi_scope with mpred.
-Bind Scope bi_scope with mpredI.
-Bind Scope bi_scope with bi_car.
 
 Section with_cpp.
   Context `{Σ : cpp_logic}.

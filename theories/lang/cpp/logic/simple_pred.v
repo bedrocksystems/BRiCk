@@ -102,18 +102,6 @@ Module SimpleCPP.
   Section with_cpp.
     Context `{Σ : cpp_logic}.
 
-    Definition mpred := iProp Σ.
-    Bind Scope bi_scope with mpred.
-    Definition mpredI : bi :=
-      {| bi_car := mpred
-       ; bi_later := bi_later
-       ; bi_ofe_mixin := (iPropI Σ).(bi_ofe_mixin)
-       ; bi_bi_mixin := (iPropI Σ).(bi_bi_mixin)
-       ; bi_bi_later_mixin := (iPropI Σ).(bi_bi_later_mixin)
-       |}.
-    (* todo: Fix the warning generated from this definition *)
-
-
     (** pointer validity *)
     (** Pointers past the end of an object/array can be valid; see
     https://eel.is/c++draft/expr.add#4 *)
