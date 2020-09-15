@@ -393,7 +393,7 @@ Module SimpleCPP.
     Qed.
 
     Definition bytes (a : addr) (vs : list runtime_val) (q : Qp) : mpred :=
-      ([∗list] o ↦ v ∈ vs, (byte_ (a+N.of_nat o)%N v) q)%I.
+      [∗list] o ↦ v ∈ vs, (byte_ (a+N.of_nat o)%N v) q.
 
     Lemma bytes_nil a q : bytes a [] q -|- emp.
     Proof. done. Qed.
