@@ -37,8 +37,10 @@ Module Type PTR_API.
   *)
 
   Parameter ptr : Set.
-  Declare Instance ptr_eq_dec : EqDecision ptr.
-  Declare Instance ptr_countable : Countable ptr.
+  Axiom ptr_eq_dec : EqDecision ptr.
+  Global Existing Instance ptr_eq_dec.
+  Axiom ptr_countable : Countable ptr.
+  Global Existing Instance ptr_countable.
 
   (** C++ provides a distinguished pointer [nullptr] that is *never
       dereferenable*
