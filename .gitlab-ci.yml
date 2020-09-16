@@ -157,6 +157,10 @@ pages:
   dependencies:
     - prepare_pages
   script:
+    # Clone the Alectryon submodule, but only in the pages jobs
+    - git submodule update --init
+    # this line refreshes the artifact to avoid rebuilding the coq code
+    - make touch_deps
     - make public
   only:
     - master
