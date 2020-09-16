@@ -18,6 +18,7 @@ You can view the old cpp2v-core tutorials at the following links:
    :maxdepth: 2
    :caption: Table of Contents
 
+   object_layout
 
 Indices and tables
 ==================
