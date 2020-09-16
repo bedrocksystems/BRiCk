@@ -105,8 +105,6 @@ Module Type CPP_LOGIC (Import CC : CPP_LOGIC_CLASS).
       forall {σ} ty q a v, Timeless (@tptsto σ ty q a v).
     Axiom tptsto_fractional :
       forall {σ} ty a v, Fractional (λ q, @tptsto σ ty q a v).
-    Axiom tptsto_as_fractional :
-      forall {σ} ty q a v, AsFractional (@tptsto σ ty q a v) (λ q, @tptsto σ ty q a v)%I q.
 
 (* not currently sound wrt [simple_pred]
     Axiom tptsto_agree : forall {σ} ty q1 q2 a v1 v2,
@@ -247,6 +245,10 @@ Section with_cpp.
     Proper (flip genv_leq ==> eq ==> eq ==> eq ==> eq ==> flip (⊢))
       (@tptsto _ Σ).
   Proof. repeat intro. exact: tptsto_mono. Qed.
+
+  Global Instance tptsto_as_fractional {σ} ty q a v :
+    AsFractional (tptsto (σ := σ) ty q a v) (λ q, tptsto (σ := σ) ty q a v) q.
+  Proof. split. done. apply _. Qed.
 
   (** function specifications written in weakest pre-condition style.
    *)

@@ -492,12 +492,6 @@ Module SimpleCPP.
             eauto with iFrame.
         + iFrame.
     Qed.
-    Theorem tptsto_as_fractional :
-      forall {σ} ty q p v, AsFractional (@tptsto σ ty q p v) (λ q, @tptsto σ ty q p v)%I q.
-    Proof.
-      intros. constructor. reflexivity.
-      apply tptsto_fractional.
-    Qed.
 
     Theorem tptsto_timeless :
       forall {σ} ty q p v, Timeless (@tptsto σ ty q p v).
