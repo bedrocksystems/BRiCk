@@ -1,0 +1,3 @@
+[submodule "alectryon"]
+        path = alectryon
+        url = https://github.com/cpitclaudel/alectryon

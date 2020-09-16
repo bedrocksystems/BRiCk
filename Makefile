@@ -15,7 +15,7 @@ COQMK := $(MAKE) -f Makefile.coq
 DOCMK := $(MAKE) -C doc
 
 ROOT := $(shell pwd)
-include doc/Makefile.doc
+include doc/old/Makefile.doc
 
 OPAM_PREFIX := $(shell opam config var prefix)
 BINDIR = $(OPAM_PREFIX)/bin
@@ -101,22 +101,21 @@ test-plugin: build-minimal plugin
 
 # Build Coq docs
 
-html doc: coq
+html doc: coq doc_extra
 	rm -rf public
 	rm -rf html
 	$(COQMK) html
-	$(DOCMK) html
-	cp -r doc/html/* html/
-	cp -r $(EXTRA_DIR)/resources/* html
-	cp html/toc.html html/index.html
+	mkdir -p doc/old/html
+	mv html/* doc/old/html && rmdir html
+	cp -r doc_extra/extra/resources/* doc/old/html
+	$(DOCMK) html # generates html files in `doc/old/html`
 .PHONY: html doc
 
 doc_extra:
 	git clone --depth 1 https://github.com/coq-community/coqdocjs.git doc_extra
-.PHONY: doc_extra
 
-public: html doc_extra
-	mv html public
+public: html
+	mv doc/sphinx/_build/html public
 .PHONY: public
 
 
