@@ -8,7 +8,7 @@ Require Import Coq.Lists.List.
 Require Import stdpp.telescopes.
 
 From iris.proofmode Require Import tactics.
-From bedrock Require Import ChargeCompat.
+Require Import bedrock.lang.bi.ChargeCompat.
 
 From bedrock.lang.cpp Require Import ast semantics spec.
 From bedrock.lang.cpp.logic Require Import

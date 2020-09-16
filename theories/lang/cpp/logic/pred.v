@@ -21,7 +21,7 @@ Require Import iris.base_logic.lib.fancy_updates.
 Require Import iris.base_logic.lib.own.
 Require Import iris.base_logic.lib.cancelable_invariants.
 
-From bedrock Require Export IrisBridge.
+Require Export bedrock.lang.bi.prelude.
 Export ChargeNotation.
 
 From bedrock.lang.cpp Require Import ast semantics.
