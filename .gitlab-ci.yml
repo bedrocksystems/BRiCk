@@ -36,6 +36,7 @@ stages:
   - build
   - test
   - release
+  - prepare_pages
   - pages
 
 #This is a template job that's extended below by the real jobs
@@ -132,16 +133,28 @@ release_latest:
 #   variables:
 #     LLVM_MAJ_VER: ${LLVM_PREV_MAJ_VER}
 
-pages:
-  image: registry.gitlab.com/bedrocksystems/docker-image:cpp2v-llvm${LLVM_CUR_MAJ_VER}
-  stage: pages
+prepare_pages:
+  image: registry.gitlab.com/bedrocksystems/docker-image:fm-docs
+  stage: prepare_pages
   dependencies:
     - test_latest
   script:
-    # JH: TODO: Remove this after we add `zip` to the main `cpp2v-core` docker image
-    - sudo apt-get install zip -y --no-install-recommends
     # this line refreshes the artifact to avoid rebuilding the coq code
     - make touch_deps
+    - make public
+  only:
+    - master
+    - merge_requests
+  artifacts:
+    paths:
+      - public
+
+pages:
+  image: registry.gitlab.com/bedrocksystems/docker-image:fm-docs
+  stage: pages
+  dependencies:
+    - prepare_pages
+  script:
     - make public
   only:
     - master
