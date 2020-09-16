@@ -438,8 +438,8 @@ Proof. reflexivity. Qed.
 (** * alignof() *)
 (* todo: we should embed alignment information in our types *)
 Parameter align_of : forall {resolve : genv} (t : type), option N.
-Global Declare Instance Proper_align_of
-: Proper (genv_leq ==> eq ==> Roption_leq eq) (@align_of).
+Axiom Proper_align_of : Proper (genv_leq ==> eq ==> Roption_leq eq) (@align_of).
+Global Existing Instance Proper_align_of.
 Axiom align_of_size_of : forall {σ : genv} (t : type) sz,
     size_of σ t = Some sz ->
     exists al, align_of (resolve:=σ) t = Some al /\
