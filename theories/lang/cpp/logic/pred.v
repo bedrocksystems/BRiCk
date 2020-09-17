@@ -48,7 +48,7 @@ Module Type CPP_LOGIC_CLASS_MIXIN (Import CC : CPP_LOGIC_CLASS_BASE).
   ; has_cppG : cppG _Σ }.
   Arguments cpp_logic : clear implicits.
   Coercion _Σ : cpp_logic >-> gFunctors.
-  Existing Instance has_cppG.
+  Global Existing Instance has_cppG.
 
   Section with_cpp.
     Context `{Σ : cpp_logic}.
