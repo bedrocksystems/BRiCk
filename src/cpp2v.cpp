@@ -67,7 +67,8 @@ public:
 			llvm::errs() << i << "\n";
 		}
 #endif
-        auto result = new ToCoqConsumer(to_opt(VFileOutput), to_opt(SpecFile),
+        auto result = new ToCoqConsumer(&Compiler,
+                                        to_opt(VFileOutput), to_opt(SpecFile),
                                         to_opt(NamesFile));
         return std::unique_ptr<clang::ASTConsumer>(result);
     }

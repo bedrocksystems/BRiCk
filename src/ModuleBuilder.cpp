@@ -14,7 +14,7 @@
 
 using namespace clang;
 
-class BuildModule : public ConstDeclVisitorArgs<BuildModule, void, bool> {
+class BuildModule : public DeclVisitorArgs<BuildModule, void, bool> {
 private:
     ::Module &module_;
     Filter &filter_;
@@ -22,7 +22,7 @@ private:
     clang::ASTContext *const context_;
 
 private:
-    Filter::What go(const NamedDecl *decl, bool definition = true) {
+    Filter::What go(NamedDecl *decl, bool definition = true) {
         auto what = filter_.shouldInclude(decl);
         switch (what) {
         case Filter::What::DEFINITION:
@@ -66,13 +66,13 @@ public:
                        << type->getDeclKindName() << "`\n";
     }
 
-    void VisitEmptyDecl(const EmptyDecl *decl, bool) {}
+    void VisitEmptyDecl(EmptyDecl *decl, bool) {}
 
-    void VisitTypedefNameDecl(const TypedefNameDecl *type, bool) {
+    void VisitTypedefNameDecl(TypedefNameDecl *type, bool) {
         go(type);
     }
 
-    void VisitTagDecl(const TagDecl *decl, bool) {
+    void VisitTagDecl(TagDecl *decl, bool) {
         auto defn = decl->getDefinition();
         if (defn == decl) {
             go(decl, true);
@@ -81,7 +81,7 @@ public:
         }
     }
 
-    void VisitCXXRecordDecl(const CXXRecordDecl *decl, bool is_specialization) {
+    void VisitCXXRecordDecl(CXXRecordDecl *decl, bool is_specialization) {
         if (decl->isImplicit()) {
             return;
         }
@@ -96,7 +96,7 @@ public:
         VisitTagDecl(decl, false);
     }
 
-    void VisitFunctionDecl(const FunctionDecl *decl, bool) {
+    void VisitFunctionDecl(FunctionDecl *decl, bool) {
         if (decl->isDependentContext())
             return;
 
@@ -122,11 +122,11 @@ public:
         }
     }
 
-    void VisitEnumConstantDecl(const EnumConstantDecl *decl, bool) {
+    void VisitEnumConstantDecl(EnumConstantDecl *decl, bool) {
         go(decl);
     }
 
-    void VisitVarDecl(const VarDecl *decl, bool) {
+    void VisitVarDecl(VarDecl *decl, bool) {
         if (not decl->isTemplated())
             go(decl);
     }
@@ -153,7 +153,7 @@ public:
         }
     }
 
-    void VisitEnumDecl(const EnumDecl *decl, bool) {
+    void VisitEnumDecl(EnumDecl *decl, bool) {
         if (decl->getName() != "") {
             go(decl);
         }
@@ -168,18 +168,18 @@ public:
         }
     }
 
-    void VisitCXXConstructorDecl(const CXXConstructorDecl *decl, bool) {
+    void VisitCXXConstructorDecl(CXXConstructorDecl *decl, bool) {
         if (decl->isDeleted()) {
             return;
         }
-        this->ConstDeclVisitorArgs::VisitCXXConstructorDecl(decl, false);
+        this->DeclVisitorArgs::VisitCXXConstructorDecl(decl, false);
     }
 
-    void VisitCXXDestructorDecl(const CXXDestructorDecl *decl, bool) {
+    void VisitCXXDestructorDecl(CXXDestructorDecl *decl, bool) {
         if (decl->isDeleted()) {
             return;
         }
-        this->ConstDeclVisitorArgs::VisitCXXDestructorDecl(decl, false);
+        this->DeclVisitorArgs::VisitCXXDestructorDecl(decl, false);
     }
 
     void VisitFunctionTemplateDecl(const FunctionTemplateDecl *decl, bool) {
@@ -209,7 +209,7 @@ build_module(const clang::TranslationUnitDecl *tu, ::Module &mod,
     BuildModule(mod, filter, &ctxt, specs).VisitTranslationUnitDecl(tu, false);
 }
 
-void ::Module::add_definition(const clang::NamedDecl *d, bool opaque) {
+void ::Module::add_definition(clang::NamedDecl *d, bool opaque) {
     if (opaque) {
         add_declaration(d);
     } else {
@@ -221,7 +221,7 @@ void ::Module::add_definition(const clang::NamedDecl *d, bool opaque) {
     }
 }
 
-void ::Module::add_declaration(const clang::NamedDecl *d) {
+void ::Module::add_declaration(clang::NamedDecl *d) {
     std::string name = d->getNameAsString();
     auto found = imports_.find(name);
     if ((found == imports_.end()) || found->second.first != d) {

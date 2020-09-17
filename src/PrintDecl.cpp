@@ -11,6 +11,8 @@
 #include "clang/AST/Decl.h"
 #include "clang/AST/RecordLayout.h"
 #include "clang/Basic/Builtins.h"
+#include "clang/Frontend/CompilerInstance.h"
+#include "clang/Sema/Sema.h"
 
 using namespace clang;
 
@@ -233,7 +235,7 @@ printDestructor(const CXXDestructorDecl *decl, CoqPrinter &print,
 }
 
 class PrintDecl :
-    public ConstDeclVisitorArgs<PrintDecl, bool, CoqPrinter &, ClangPrinter &,
+    public DeclVisitorArgs<PrintDecl, bool, CoqPrinter &, ClangPrinter &,
                                 const ASTContext &> {
 private:
     PrintDecl() {}
@@ -355,10 +357,11 @@ public:
         return true;
     }
 
-    bool VisitStructDecl(const CXXRecordDecl *decl, CoqPrinter &print,
+    bool VisitStructDecl(CXXRecordDecl *decl, CoqPrinter &print,
                          ClangPrinter &cprint, const ASTContext &ctxt) {
         assert(decl->getTagKind() == TagTypeKind::TTK_Class ||
                decl->getTagKind() == TagTypeKind::TTK_Struct);
+        cprint.getSema().ForceDeclarationOfImplicitMembers(decl);
         auto &layout = ctxt.getASTRecordLayout(decl);
         print.ctor("Dstruct");
         cprint.printGlobalName(decl, print);
@@ -465,7 +468,7 @@ public:
         return true;
     }
 
-    bool VisitCXXRecordDecl(const CXXRecordDecl *decl, CoqPrinter &print,
+    bool VisitCXXRecordDecl(CXXRecordDecl *decl, CoqPrinter &print,
                             ClangPrinter &cprint, const ASTContext &ctxt) {
         if (!decl->isCompleteDefinition()) {
             print.ctor("Dtype");
@@ -782,6 +785,6 @@ public:
 PrintDecl PrintDecl::printer;
 
 bool
-ClangPrinter::printDecl(const clang::Decl *decl, CoqPrinter &print) {
+ClangPrinter::printDecl(clang::Decl *decl, CoqPrinter &print) {
     return PrintDecl::printer.Visit(decl, print, *this, *context_);
 }

@@ -13,14 +13,20 @@ class TranslationUnitDecl;
 
 class CoqPrinter;
 
+namespace clang {
+class CompilerInstance;
+}
+
 using namespace clang;
 
 class ToCoqConsumer : public clang::ASTConsumer {
 public:
-    explicit ToCoqConsumer(const Optional<std::string> output_file,
+    explicit ToCoqConsumer(clang::CompilerInstance* compiler,
+                           const Optional<std::string> output_file,
                            const Optional<std::string> spec_file,
                            const Optional<std::string> notations_file)
-        : spec_file_(spec_file), output_file_(output_file),
+        : compiler_(compiler),
+          spec_file_(spec_file), output_file_(output_file),
           notations_file_(notations_file) {}
 
     virtual void HandleTranslationUnit(clang::ASTContext &Context) {
@@ -29,9 +35,10 @@ public:
 
 private:
     void toCoqModule(clang::ASTContext *ctxt,
-                     const clang::TranslationUnitDecl *decl);
+                     clang::TranslationUnitDecl *decl);
 
 private:
+    clang::CompilerInstance*    compiler_;
     const Optional<std::string> spec_file_;
     const Optional<std::string> output_file_;
     const Optional<std::string> notations_file_;

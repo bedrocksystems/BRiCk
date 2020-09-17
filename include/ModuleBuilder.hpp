@@ -11,16 +11,16 @@
 
 class Module {
 public:
-    void add_definition(const clang::NamedDecl* d, bool opaque = false);
+    void add_definition(clang::NamedDecl* d, bool opaque = false);
 
-    void add_declaration(const clang::NamedDecl* d);
+    void add_declaration(clang::NamedDecl* d);
 
-    const std::multimap<std::string, std::pair<const clang::NamedDecl*, bool>>&
+    const std::multimap<std::string, std::pair<clang::NamedDecl*, bool>>&
     imports() const {
         return imports_;
     }
 
-    const std::multimap<std::string, const clang::NamedDecl*>&
+    const std::multimap<std::string, clang::NamedDecl*>&
     definitions() const {
         return definitions_;
     }
@@ -28,9 +28,9 @@ public:
     Module() : imports_(), definitions_() {}
 
 private:
-    std::multimap<std::string, std::pair<const clang::NamedDecl*, bool>>
+    std::multimap<std::string, std::pair<clang::NamedDecl*, bool>>
         imports_;
-    std::multimap<std::string, const clang::NamedDecl*> definitions_;
+    std::multimap<std::string, clang::NamedDecl*> definitions_;
 };
 
 class Filter;

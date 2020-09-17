@@ -419,11 +419,12 @@ write_globals(::Module &mod, CoqPrinter &print, ClangPrinter &cprint) {
 }
 
 void
-write_spec(::Module *mod, const SpecCollector &specs,
+write_spec(clang::CompilerInstance *compiler,
+           ::Module *mod, const SpecCollector &specs,
            const clang::TranslationUnitDecl *tu, Filter &filter,
            fmt::Formatter &output) {
     auto &ctxt = tu->getASTContext();
-    ClangPrinter cprint(&tu->getASTContext());
+    ClangPrinter cprint(compiler, &tu->getASTContext());
     CoqPrinter print(output);
     PrintSpec printer(ctxt);
 
