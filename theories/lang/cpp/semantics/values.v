@@ -22,38 +22,51 @@ Local Close Scope nat_scope.
 Local Open Scope general_if_scope.
 Local Open Scope Z_scope.
 
-(** * Pointers.
+Module Type PTR_API.
+  (** * Pointers.
 
-    This is the abstract model of pointers in C++.
-    - A simple model is [block * offset] which is representing a collection
-      of isolated blocks. There is no address arithmetic that can get you
-      from one block to another.
-    - A more complex model allows for nested blocks and more accurately
-      models the C/C++ (object) memory model. See
-      https://robbertkrebbers.nl/thesis.html.
-    Not all of our pointers have physical addresses; for discussion, see
-    documentation of [tptsto] and [pinned_ptr].
- *)
-Parameter ptr : Set.
-Parameter ptr_eq_dec : forall (x y : ptr), { x = y } + { x <> y }.
-Instance: EqDecision ptr := ptr_eq_dec.
-Parameter ptr_countable : Countable ptr.
-Existing Instance ptr_countable.
+      This is the abstract model of pointers in C++.
+      - A simple model is [block * offset] which is representing a collection
+        of isolated blocks. There is no address arithmetic that can get you
+        from one block to another.
+      - A more complex model allows for nested blocks and more accurately
+        models the C/C++ (object) memory model. See
+        https://robbertkrebbers.nl/thesis.html.
+      Not all of our pointers have physical addresses; for discussion, see
+      documentation of [tptsto] and [pinned_ptr].
+  *)
 
-(** C++ provides a distinguished pointer [nullptr] that is *never
-    dereferenable*
- *)
-Parameter nullptr : ptr.
+  Parameter ptr : Set.
+  Axiom ptr_eq_dec : forall (x y : ptr), { x = y } + { x <> y }.
+  Global Instance ptr_eq_dec' : EqDecision ptr := ptr_eq_dec.
+  (* TODO AUTO: replace [ptr_eq_dec'] with:
 
+    Axiom ptr_eq_dec : EqDecision ptr.
+    Global Existing Instance ptr_eq_dec.
 
-(** ** pointer offsets *)
-(** the offset of a pointer. *)
-Parameter offset_ptr_ : Z -> ptr -> ptr.
+  However, removing [ptr_eq_dec'] breaks some clients, especially for
+  automation. *)
 
-Axiom offset_ptr_combine_ : forall b o o',
-    offset_ptr_ o' (offset_ptr_ o b) = offset_ptr_ (o + o') b.
-Axiom offset_ptr_0_ : forall b,
-    offset_ptr_ 0 b = b.
+  Axiom ptr_countable : Countable ptr.
+  Global Existing Instance ptr_countable.
+
+  (** C++ provides a distinguished pointer [nullptr] that is *never
+      dereferenable*
+  *)
+  Parameter nullptr : ptr.
+
+  (** ** pointer offsets *)
+  (** the offset of a pointer. *)
+  Parameter offset_ptr_ : Z -> ptr -> ptr.
+
+  Axiom offset_ptr_combine_ : forall b o o',
+      offset_ptr_ o' (offset_ptr_ o b) = offset_ptr_ (o + o') b.
+  Axiom offset_ptr_0_ : forall b,
+      offset_ptr_ 0 b = b.
+End PTR_API.
+
+Declare Module PTR : PTR_API.
+Export PTR.
 
 
 (** * values
@@ -438,8 +451,8 @@ Proof. reflexivity. Qed.
 (** * alignof() *)
 (* todo: we should embed alignment information in our types *)
 Parameter align_of : forall {resolve : genv} (t : type), option N.
-Global Declare Instance Proper_align_of
-: Proper (genv_leq ==> eq ==> Roption_leq eq) (@align_of).
+Axiom Proper_align_of : Proper (genv_leq ==> eq ==> Roption_leq eq) (@align_of).
+Global Existing Instance Proper_align_of.
 Axiom align_of_size_of : forall {σ : genv} (t : type) sz,
     size_of σ t = Some sz ->
     exists al, align_of (resolve:=σ) t = Some al /\
