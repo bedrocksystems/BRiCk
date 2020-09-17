@@ -37,11 +37,15 @@ Module Type PTR_API.
   *)
 
   Parameter ptr : Set.
-  Axiom ptr_eq_dec : EqDecision ptr.
+  Axiom ptr_eq_dec : forall (x y : ptr), { x = y } + { x <> y }.
   Global Instance ptr_eq_dec' : EqDecision ptr := ptr_eq_dec.
-  (* TODO AUTO: replace [ptr_eq_dec'] with *)
-  (* Global Existing Instance ptr_eq_dec. *)
-  (* However, the two are not equivalent, especially for automation. *)
+  (* TODO AUTO: replace [ptr_eq_dec'] with:
+
+    Axiom ptr_eq_dec : EqDecision ptr.
+    Global Existing Instance ptr_eq_dec.
+
+  However, removing [ptr_eq_dec'] breaks some clients, especially for
+  automation. *)
 
   Axiom ptr_countable : Countable ptr.
   Global Existing Instance ptr_countable.
