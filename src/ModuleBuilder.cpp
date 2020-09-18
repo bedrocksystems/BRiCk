@@ -11,6 +11,8 @@
 #include "Logging.hpp"
 #include "SpecCollector.hpp"
 #include "clang/Basic/Builtins.h"
+#include "clang/Frontend/CompilerInstance.h"
+#include "clang/Sema/Sema.h"
 
 using namespace clang;
 
@@ -20,6 +22,8 @@ private:
     Filter &filter_;
     SpecCollector &specs_;
     clang::ASTContext *const context_;
+    clang::CompilerInstance *const ci_;
+    bool elaborate_;
 
 private:
     Filter::What go(NamedDecl *decl, bool definition = true) {
@@ -43,8 +47,10 @@ private:
 
 public:
     BuildModule(::Module &m, Filter &filter, clang::ASTContext *context,
-                SpecCollector &specs)
-        : module_(m), filter_(filter), specs_(specs), context_(context) {}
+                SpecCollector &specs, clang::CompilerInstance *ci,
+                bool elab = true)
+        : module_(m), filter_(filter), specs_(specs), context_(context),
+          ci_(ci), elaborate_(elab) {}
 
     void VisitDecl(const Decl *d, bool) {
         logging::log() << "visiting declaration..." << d->getDeclKindName()
@@ -88,12 +94,40 @@ public:
         if (!is_specialization && isa<ClassTemplateSpecializationDecl>(decl)) {
             return;
         }
+
+        if (elaborate_) {
+            if (not(decl->isImplicit() or decl->isAnonymousStructOrUnion())) {
+                ci_->getSema().ForceDeclarationOfImplicitMembers(decl);
+            }
+        }
+
         // find any static functions or fields
         for (auto i : decl->decls()) {
             Visit(i, false);
         }
 
         VisitTagDecl(decl, false);
+    }
+    void VisitCXXMethodDecl(CXXMethodDecl *decl, bool) {
+        if (decl->isDeleted())
+            return;
+
+        if (elaborate_) {
+            if (not decl->getBody() && decl->isDefaulted()) {
+                if (decl->isMoveAssignmentOperator()) {
+                    ci_->getSema().DefineImplicitMoveAssignment(
+                        decl->getLocation(), decl);
+
+                } else if (decl->isCopyAssignmentOperator()) {
+                    ci_->getSema().DefineImplicitCopyAssignment(
+                        decl->getLocation(), decl);
+                } else {
+                    logging::log()
+                        << "Didn't generate body for defaulted method\n";
+                }
+            }
+        }
+        go(decl);
     }
 
     void VisitFunctionDecl(FunctionDecl *decl, bool) {
@@ -172,13 +206,35 @@ public:
         if (decl->isDeleted()) {
             return;
         }
+        if (elaborate_) {
+            if (not decl->getBody() && decl->isDefaulted()) {
+                if (decl->isDefaultConstructor()) {
+                    ci_->getSema().DefineImplicitDefaultConstructor(
+                        decl->getLocation(), decl);
+                } else if (decl->isCopyConstructor()) {
+                    ci_->getSema().DefineImplicitCopyConstructor(
+                        decl->getLocation(), decl);
+                } else if (decl->isMoveConstructor()) {
+                    ci_->getSema().DefineImplicitMoveConstructor(
+                        decl->getLocation(), decl);
+                }
+            }
+        }
+
         this->DeclVisitorArgs::VisitCXXConstructorDecl(decl, false);
     }
 
     void VisitCXXDestructorDecl(CXXDestructorDecl *decl, bool) {
-        if (decl->isDeleted()) {
+        if (decl->isDeleted())
             return;
+
+        if (elaborate_) {
+            if (not decl->hasBody() && decl->isDefaulted()) {
+                ci_->getSema().DefineImplicitDestructor(decl->getLocation(),
+                                                        decl);
+            }
         }
+
         this->DeclVisitorArgs::VisitCXXDestructorDecl(decl, false);
     }
 
@@ -203,10 +259,14 @@ public:
 };
 
 void
-build_module(const clang::TranslationUnitDecl *tu, ::Module &mod,
-             Filter &filter, SpecCollector &specs) {
+build_module(clang::TranslationUnitDecl *tu, ::Module &mod, Filter &filter,
+             SpecCollector &specs, clang::CompilerInstance *ci,
+             bool elaborate) {
     auto &ctxt = tu->getASTContext();
-    BuildModule(mod, filter, &ctxt, specs).VisitTranslationUnitDecl(tu, false);
+
+    BuildModule(mod, filter, &ctxt, specs, ci, elaborate)
+        .VisitTranslationUnitDecl(tu, false);
+    ci->getSema().ActOnEndOfTranslationUnit();
 }
 
 void ::Module::add_definition(clang::NamedDecl *d, bool opaque) {

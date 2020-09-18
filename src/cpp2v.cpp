@@ -81,6 +81,11 @@ public:
             return Optional<T>(val.getValue());
         }
     }
+
+    virtual bool BeginSourceFileAction(CompilerInstance& CI) override {
+        CI.getPreprocessor().enableIncrementalProcessing();
+        return this->clang::ASTFrontendAction::BeginSourceFileAction(CI);
+    }
 };
 
 int

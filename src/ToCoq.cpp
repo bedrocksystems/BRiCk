@@ -78,7 +78,7 @@ ToCoqConsumer::toCoqModule(clang::ASTContext *ctxt,
 
     ::Module mod;
 
-    build_module(decl, mod, filter, specs);
+    build_module(decl, mod, filter, specs, compiler_);
 
     if (output_file_.hasValue()) {
         std::error_code ec;

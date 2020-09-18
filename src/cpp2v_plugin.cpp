@@ -41,8 +41,8 @@ class ToCoqAction : public PluginASTAction {
 protected:
     std::unique_ptr<ASTConsumer> CreateASTConsumer(CompilerInstance &CI,
                                                    llvm::StringRef) override {
-        return std::make_unique<ToCoqConsumer>(VFileOutput, SpecFile,
-                                                NamesFile);
+        return std::make_unique<ToCoqConsumer>(&CI, VFileOutput, SpecFile,
+                                               NamesFile);
     }
 
     bool ParseArgs(const CompilerInstance &CI,
@@ -59,8 +59,9 @@ protected:
                 VFileOutput = args[i];
             } else if (args[i] == "-names") {
                 if (++i == e) {
-                    unsigned DiagID = D.getCustomDiagID(
-                        DiagnosticsEngine::Error, "-names is missing parameter");
+                    unsigned DiagID =
+                        D.getCustomDiagID(DiagnosticsEngine::Error,
+                                          "-names is missing parameter");
                     D.Report(DiagID) << args[i];
                     return false;
                 }

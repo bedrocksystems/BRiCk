@@ -144,13 +144,14 @@ printMethod(const CXXMethodDecl *decl, CoqPrinter &print,
     }) << fmt::nbsp;
 
     cprint.printCallingConv(getCallingConv(decl), print);
-    print.output() << fmt::nbsp;
 
     print.output() << fmt::line;
     if (decl->getBody()) {
         print.ctor("Some", false);
         cprint.printStmt(decl->getBody(), print);
         print.end_ctor();
+    } else if (decl->isDefaulted()) {
+        print.output() << "(Some Defaulted)";
     } else {
         print.output() << "None";
     }
@@ -167,12 +168,8 @@ printDestructor(const CXXDestructorDecl *decl, CoqPrinter &print,
     print.output() << fmt::nbsp;
 
     cprint.printCallingConv(getCallingConv(decl), print);
-    print.output() << fmt::line;
 
-    if (decl->isDefaulted()) {
-        // todo(gmm): I need to generate this.
-        print.output() << "(Some Defaulted)";
-    } else if (decl->getBody()) {
+    if (decl->getBody()) {
         print.some();
         print.ctor("UserDefined");
         print.begin_tuple();
@@ -227,7 +224,10 @@ printDestructor(const CXXDestructorDecl *decl, CoqPrinter &print,
         print.end_tuple();
         print.end_ctor();
         print.end_ctor();
+    } else if (decl->isDefaulted()) {
+        print.output() << "(Some Defaulted)";
     } else {
+        print.output() << fmt::nbsp;
         print.none();
     }
 
@@ -236,7 +236,7 @@ printDestructor(const CXXDestructorDecl *decl, CoqPrinter &print,
 
 class PrintDecl :
     public DeclVisitorArgs<PrintDecl, bool, CoqPrinter &, ClangPrinter &,
-                                const ASTContext &> {
+                           const ASTContext &> {
 private:
     PrintDecl() {}
 
@@ -357,11 +357,10 @@ public:
         return true;
     }
 
-    bool VisitStructDecl(CXXRecordDecl *decl, CoqPrinter &print,
+    bool VisitStructDecl(const CXXRecordDecl *decl, CoqPrinter &print,
                          ClangPrinter &cprint, const ASTContext &ctxt) {
         assert(decl->getTagKind() == TagTypeKind::TTK_Class ||
                decl->getTagKind() == TagTypeKind::TTK_Struct);
-        cprint.getSema().ForceDeclarationOfImplicitMembers(decl);
         auto &layout = ctxt.getASTRecordLayout(decl);
         print.ctor("Dstruct");
         cprint.printGlobalName(decl, print);
@@ -387,9 +386,13 @@ public:
             if (rec) {
                 print.output() << "(";
                 cprint.printGlobalName(rec, print);
-                print.output()
-                    << ", Build_LayoutInfo "
-                    << layout.getBaseClassOffset(rec).getQuantity() << ")";
+                if (not base.isVirtual()) {
+                    print.output()
+                        << ", Build_LayoutInfo "
+                        << layout.getBaseClassOffset(rec).getQuantity() << ")";
+                } else {
+                    print.output() << ", Build_LayoutInfo 0)";
+                }
             } else {
                 using namespace logging;
                 fatal() << "base class is not a RecordType at "
@@ -468,7 +471,7 @@ public:
         return true;
     }
 
-    bool VisitCXXRecordDecl(CXXRecordDecl *decl, CoqPrinter &print,
+    bool VisitCXXRecordDecl(const CXXRecordDecl *decl, CoqPrinter &print,
                             ClangPrinter &cprint, const ASTContext &ctxt) {
         if (!decl->isCompleteDefinition()) {
             print.ctor("Dtype");
@@ -646,9 +649,8 @@ public:
         return true;
     }
 
-    bool VisitCXXDestructorDecl(const CXXDestructorDecl *decl,
-                                CoqPrinter &print, ClangPrinter &cprint,
-                                const ASTContext &ctxt) {
+    bool VisitCXXDestructorDecl(CXXDestructorDecl *decl, CoqPrinter &print,
+                                ClangPrinter &cprint, const ASTContext &ctxt) {
         print.ctor("Ddestructor");
         cprint.printGlobalName(decl, print);
         printDestructor(decl, print, cprint);
@@ -707,8 +709,8 @@ public:
 
     bool VisitNamespaceDecl(const NamespaceDecl *decl, CoqPrinter &print,
                             ClangPrinter &cprint, const ASTContext &) {
-        print.ctor(
-            "Dnamespace") /* << "\"" << decl->getNameAsString() << "\"" */
+        print.ctor("Dnamespace")
+            /* << "\"" << decl->getNameAsString() << "\"" */
             << fmt::line;
         print.begin_list();
         for (auto d : decl->decls()) {
