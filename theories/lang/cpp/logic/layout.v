@@ -130,13 +130,23 @@ Section with_Σ.
   Definition decodes (endianness: endian) (sgn: signed) (l: list N) (z: Z) :=
     _Z_from_bytes endianness sgn l = z.
 
+  (* JH: This is probably not the right thing to do, but it's a bandage until
+       the treatment of endianness in cpp2v-core improves. In particular,
+       a single `endian` is stored in each `genv` and (seemingly) used for
+       everything, but this means that you can't easily model values which
+       are encoded in a pre-determined endianness. Depending on whether
+       the endianness with which something is encoded matches the
+       endianness of the system, the result that clients see will differ.
+   *)
   Axiom decode_uint_primR_endian: forall q endianness sz (x: Z),
     primR (Tint sz Unsigned) q (Vint x) -|-
     Exists l : list N,
       as_Rep (array' 1 (fun c => primR (Tint W8 Unsigned) q (Vint c))
                      (Z.of_N <$> l)) **
       _type_ptr resolve (Tint sz Unsigned) **
-      [| decodes endianness Unsigned l x |].
+      [| decodes endianness Unsigned (if decide (endianness = values.byte_order resolve)
+                                      then l
+                                      else rev l) x |].
 
   (* JH: TODO: Deprecate the following stuff *)
   Definition decodes_uint (l : list N) (z : Z) :=
