@@ -32,7 +32,7 @@ Section with_Σ.
   Global Instance Loc_Equivalence : Equivalence (≡@{Loc}).
   Proof.
     split.
-    - done.
+    - intros ??. done.
     - do 3 red. intros. by symmetry.
     - do 3 red. intros. etrans; eauto.
   Qed.
@@ -239,7 +239,7 @@ Section with_Σ.
   Global Instance Offset_Equivalence : Equivalence (≡@{Offset}).
   Proof.
     split.
-    - done.
+    - intros ??. done.
     - do 3 red. intros. by symmetry.
     - do 3 red. intros. etrans; eauto.
   Qed.
