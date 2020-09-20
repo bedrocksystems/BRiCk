@@ -29,8 +29,8 @@ Fixpoint type_of (e : Expr) : type :=
   | Ecomma _ _ _ t
   | Ecall _ _ t
   | Ecast _ _ t
-  | Emember _ _ t
-  | Emember_call _ _ _ t
+  | Emember _ _ _ t
+  | Emember_call _ _ _ _ t
   | Esubscript _ _ t
   | Esize_of _ t
   | Ealign_of _ t

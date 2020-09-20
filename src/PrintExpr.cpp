@@ -455,10 +455,13 @@ public:
 
             auto base = expr->getBase();
             if (expr->isArrow()) {
+                print.output() << "Lvalue" << fmt::nbsp;
                 print.ctor("Ederef");
                 cprint.printExpr(base, print);
                 done(base, print, cprint);
             } else {
+                cprint.printValCat(base, print);
+                print.output() << fmt::nbsp;
                 cprint.printExpr(base, print);
             }
 
@@ -518,10 +521,14 @@ public:
             assert(me != nullptr &&
                    "member call with MethodDecl must be a MemberExpr");
             if (me->isArrow()) {
+                // NOTE: the C++ standard states that a `*` is always an `lvalue`.
+                print.output() << fmt::nbsp << "Lvalue";
                 print.ctor("Ederef");
                 cprint.printExpr(expr->getImplicitObjectArgument(), print);
                 done(expr->getImplicitObjectArgument(), print, cprint);
             } else {
+                cprint.printValCat(expr->getImplicitObjectArgument(), print);
+                print.output() << fmt::nbsp;
                 cprint.printExpr(expr->getImplicitObjectArgument(), print);
             }
         } else if (auto bo = dyn_cast<BinaryOperator>(callee)) {
@@ -534,11 +541,14 @@ public:
 
             switch (bo->getOpcode()) {
             case BinaryOperatorKind::BO_PtrMemI:
+                print.output() << "Lvalue";
                 print.ctor("Ederef");
                 cprint.printExpr(expr->getImplicitObjectArgument(), print);
                 done(expr->getImplicitObjectArgument(), print, cprint);
                 break;
             case BinaryOperatorKind::BO_PtrMemD:
+                cprint.printValCat(expr->getImplicitObjectArgument(), print);
+                print.output() << fmt::nbsp;
                 cprint.printExpr(expr->getImplicitObjectArgument(), print);
                 break;
             default:
