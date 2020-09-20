@@ -153,12 +153,6 @@ printMethod(const CXXMethodDecl *decl, CoqPrinter &print,
 }
 
 void
-printConstructor(const CXXConstructorDecl *decl, CoqPrinter &print,
-                 ClangPrinter &cprint) {
-    // ignore
-}
-
-void
 printDestructor(const CXXDestructorDecl *decl, CoqPrinter &print,
                 ClangPrinter &cprint) {
     auto record = decl->getParent();
@@ -292,14 +286,14 @@ public:
 
     void printFieldInitializer(const FieldDecl *field, CoqPrinter &print,
                                ClangPrinter &cprint) {
-    	Expr *expr = field->getInClassInitializer();
-    	if (expr != nullptr) {
+        Expr *expr = field->getInClassInitializer();
+        if (expr != nullptr) {
             print.ctor("Some");
             cprint.printExpr(expr, print);
             print.end_ctor();
-    	} else {
+        } else {
             print.none();
-    	}
+        }
     }
 
     bool printFields(const CXXRecordDecl *decl, const ASTRecordLayout &layout,
@@ -402,7 +396,6 @@ public:
         // print the fields
         print.output() << fmt::line;
         printFields(decl, layout, print, cprint);
-        print.output() << fmt::line;
 
         // print the layout information
         print.output() << fmt::line;
@@ -553,11 +546,10 @@ public:
             cprint.printParam(i, print);
             print.cons();
         }
-        print.end_list();
+        print.end_list() << fmt::nbsp;
 
         cprint.printCallingConv(getCallingConv(decl), print);
 
-        print.output() << fmt::line;
         if (decl->getBody()) {
             print.some();
             print.ctor("UserDefined");
@@ -641,6 +633,7 @@ public:
             print.end_ctor();
             print.end_ctor();
         } else {
+            print.output() << fmt::nbsp;
             print.none();
         }
         print.end_ctor();

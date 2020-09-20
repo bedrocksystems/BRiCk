@@ -46,11 +46,39 @@ ClangPrinter::printGlobalName(const NamedDecl *decl, CoqPrinter &print,
     }
 }
 
+Optional<int>
+ClangPrinter::getParameterNumber(const ParmVarDecl *decl) {
+    assert(decl->getDeclContext()->isFunctionOrMethod() &&
+           "function or method");
+    if (auto fd = dyn_cast_or_null<FunctionDecl>(decl->getDeclContext())) {
+        int i = 0;
+        for (auto p : fd->parameters()) {
+            if (p == decl)
+                return Optional<int>(i);
+            ++i;
+        }
+        llvm::errs() << "failed to find parameter\n";
+    }
+    return Optional<int>();
+}
+
 void
 ClangPrinter::printName(const NamedDecl *decl, CoqPrinter &print) {
     if (decl->getDeclContext()->isFunctionOrMethod()) {
         print.ctor("Lname", false);
-        print.output() << fmt::nbsp << "\"" << decl->getNameAsString() << "\"";
+        auto name = decl->getNameAsString();
+        if (isa<ParmVarDecl>(decl) and name == "") {
+            auto d = dyn_cast<ParmVarDecl>(decl);
+            auto i = getParameterNumber(d);
+            if (i.hasValue()) {
+                print.output() << fmt::nbsp << "\"#" << i << "\"";
+            } else {
+                print.output() << fmt::nbsp << "\"\"";
+            }
+        } else {
+            print.output() << fmt::nbsp << "\"" << decl->getNameAsString()
+                           << "\"";
+        }
     } else {
         print.ctor("Gname", false);
         printGlobalName(decl, print);

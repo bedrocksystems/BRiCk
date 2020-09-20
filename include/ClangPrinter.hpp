@@ -5,6 +5,7 @@
  */
 #pragma once
 #include <clang/Basic/Diagnostic.h>
+#include <llvm/ADT/Optional.h>
 
 namespace clang {
 class Decl;
@@ -21,6 +22,7 @@ class ASTContext;
 class MangleContext;
 class ValueDecl;
 class SourceRange;
+class ParmVarDecl;
 }
 
 class CoqPrinter;
@@ -62,6 +64,8 @@ public:
     unsigned getTypeSize(const clang::BuiltinType* type) const;
 
     std::string sourceRange(const clang::SourceRange&& sr) const;
+
+    llvm::Optional<int> getParameterNumber(const clang::ParmVarDecl* decl);
 
     ClangPrinter(clang::ASTContext* context);
 

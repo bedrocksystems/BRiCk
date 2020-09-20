@@ -24,8 +24,17 @@ public:
 
     void VisitParmVarDecl(const ParmVarDecl* decl, CoqPrinter& print,
                           ClangPrinter& cprint) {
-        print.output() << fmt::lparen << "\"" << decl->getNameAsString()
-                       << "\"," << fmt::nbsp;
+        print.output() << fmt::lparen << "\"";
+        auto name = decl->getNameAsString();
+        if (name != "") {
+            print.output() << name;
+        } else {
+            auto i = cprint.getParameterNumber(decl);
+            if (i.hasValue())
+                print.output() << "#" << i.getValue();
+        }
+        print.output() << "\"," << fmt::nbsp;
+
         cprint.printQualType(decl->getType(), print);
         print.output() << fmt::rparen;
     }
