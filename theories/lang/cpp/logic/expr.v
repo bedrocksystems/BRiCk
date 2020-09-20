@@ -447,6 +447,16 @@ Module Type Expr.
       end.
 
     (** function calls *)
+    (** 
+    The next few axioms rely on the evaluation order specified
+    since C++17 (implemented in Clang >= 4):
+    to evaluate [f(args)], [f] is evaluated before [args].
+
+    Summary of the change: https://stackoverflow.com/a/38798487/53974.
+    Official references (from http://clang.llvm.org/cxx_status.html):
+    http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2016/p0400r0.html
+    http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2016/p0145r3.pdf
+    *)
     Axiom wp_prval_call : forall ty f es Q,
         (if is_aggregate ty then
              Forall addr, wp_init ty addr (Ecall f es ty) (fun free =>
