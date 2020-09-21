@@ -31,7 +31,7 @@ class ClangPrinter {
 public:
     bool printDecl(const clang::Decl* d, CoqPrinter& print);
 
-    void printParam(const clang::ParmVarDecl* d, CoqPrinter& print);
+    void printParamName(const clang::ParmVarDecl* d, CoqPrinter& print);
 
     bool printLocalDecl(const clang::Decl* d, CoqPrinter& print);
 

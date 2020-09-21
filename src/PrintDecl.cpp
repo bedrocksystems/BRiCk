@@ -85,19 +85,24 @@ builtin_id(const Decl *d) {
 }
 
 void
+parameter(const ParmVarDecl *decl, CoqPrinter &print, ClangPrinter &cprint) {
+    print.output() << fmt::lparen;
+    cprint.printParamName(decl, print);
+    print.output() << "," << fmt::nbsp;
+    cprint.printQualType(decl->getType(), print);
+    print.output() << fmt::rparen;
+}
+
+void
 printFunction(const FunctionDecl *decl, CoqPrinter &print,
               ClangPrinter &cprint) {
     print.ctor("Build_Func");
     cprint.printQualType(decl->getReturnType(), print);
     print.output() << fmt::nbsp << fmt::line;
 
-    print.begin_list();
-    for (auto i : decl->parameters()) {
-        cprint.printParam(i, print);
-        print.cons();
-    }
-    print.end_list();
-    print.output() << fmt::nbsp;
+    print.list(decl->parameters(), [&cprint](auto print, auto *i) {
+        parameter(i, print, cprint);
+    }) << fmt::nbsp;
 
     cprint.printCallingConv(getCallingConv(decl), print);
     print.output() << fmt::nbsp;
@@ -129,13 +134,11 @@ printMethod(const CXXMethodDecl *decl, CoqPrinter &print,
     cprint.printGlobalName(decl->getParent(), print);
     print.output() << fmt::line;
     cprint.printQualifier(decl->isConst(), decl->isVolatile(), print);
+    print.output() << fmt::nbsp;
 
-    print.begin_list();
-    for (auto i : decl->parameters()) {
-        cprint.printParam(i, print);
-        print.cons();
-    }
-    print.end_list();
+    print.list(decl->parameters(), [&cprint](auto print, auto i) {
+        parameter(i, print, cprint);
+    }) << fmt::nbsp;
 
     cprint.printCallingConv(getCallingConv(decl), print);
     print.output() << fmt::nbsp;
@@ -541,12 +544,10 @@ public:
         cprint.printGlobalName(decl->getParent(), print);
         print.output() << fmt::line;
 
-        print.begin_list();
-        for (auto i : decl->parameters()) {
-            cprint.printParam(i, print);
-            print.cons();
-        }
-        print.end_list() << fmt::nbsp;
+        print.list(decl->parameters(), [&cprint](auto print, auto i) {
+            parameter(i, print, cprint);
+        });
+        print.output() << fmt::nbsp;
 
         cprint.printCallingConv(getCallingConv(decl), print);
 

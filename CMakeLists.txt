@@ -46,7 +46,6 @@ add_library(tocoq
   src/PrintExpr.cpp
   src/PrintStmt.cpp
   src/PrintType.cpp
-  src/PrintParam.cpp
   src/PrintDecl.cpp
   src/PrintLocalDecl.cpp
   src/ModuleBuilder.cpp
