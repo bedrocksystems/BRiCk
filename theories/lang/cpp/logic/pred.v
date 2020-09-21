@@ -52,7 +52,7 @@ Module Type CPP_LOGIC_CLASS_MIXIN (Import CC : CPP_LOGIC_CLASS_BASE).
   Arguments cpp_logic : clear implicits.
   Coercion _Σ : cpp_logic >-> gFunctors.
 
-  Global Existing Instances has_cppG.
+  Global Existing Instance has_cppG.
 
   Bind Scope bi_scope with bi_car.
   Bind Scope bi_scope with mpred.
@@ -65,11 +65,6 @@ Module Type CPP_LOGIC (Import CC : CPP_LOGIC_CLASS).
 
   Section with_cpp.
     Context `{Σ : cpp_logic}.
-    (* todo: Fix the warning generated from this definition *)
-
-    (* Typeclasses Opaque mpred.
-    Global Instance mpred_later_contractive : BiLaterContractive mpredI.
-    Proof. apply _. Qed. *)
 
     (* valid pointers allow for accessing one past the end of a structure/array *)
     Parameter valid_ptr : ptr -> mpred.

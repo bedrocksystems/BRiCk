@@ -355,8 +355,6 @@ Module SimpleCPP.
     Proof. apply _. Qed.
 
 
-    (* Note: the current definition doesn't take weak memory into accoutn. In
-      particular, it doesn't rely on the thread-local info for the value rv. *)
     Definition byte_ (a : addr) (rv : runtime_val) (q : Qp) : mpred :=
       heap_own a q rv.
 
