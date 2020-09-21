@@ -42,8 +42,10 @@ ifeq ($(SYS),Darwin)
 	SO = .dylib
 endif
 
+BUILD_TYPE ?= Release
+
 build/Makefile: Makefile CMakeLists.txt
-	$(CMAKE) -B build $(BUILDARG)
+	$(CMAKE) -B build $(BUILDARG) -DCMAKE_BUILD_TYPE=$(BUILD_TYPE)
 
 tocoq: build/Makefile
 	+$(CPPMK) tocoq
