@@ -54,9 +54,11 @@ The script below uses 4 cores, customize as needed.
 ```sh
 # install opam dependencies
 eval $(opam env)
+# The first time, run:
 opam repo add coq-released https://coq.inria.fr/opam/released
 opam repo add iris-dev https://gitlab.mpi-sws.org/iris/opam.git
 # install cpp2v Coq library and Coq dependencies
+opam update
 opam pin -n coq 8.11.2
 opam pin -n coq-cpp2v .
 opam install coq coq-cpp2v
