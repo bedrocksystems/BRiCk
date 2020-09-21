@@ -16,17 +16,6 @@ Require Import bedrock.lang.cpp.logic.spec.
 
 Set Default Proof Using "Type".
 
-<<<<<<< HEAD
-(* TODO: move upstream *)
-Lemma monPred_at_timeless_inv {V bi} (P : monPredI V bi) :
-  (∀ i, Timeless (P i)) → Timeless P.
-Proof.
-  intros HP. constructor=>i.
-  rewrite monPred_at_later monPred_at_except_0. apply HP.
-Qed.
-
-=======
->>>>>>> master
 Section with_cpp.
   Context `{Σ : cpp_logic}.
 

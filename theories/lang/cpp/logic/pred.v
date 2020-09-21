@@ -46,19 +46,13 @@ Module Type CPP_LOGIC_CLASS_MIXIN (Import CC : CPP_LOGIC_CLASS_BASE).
   { _Σ       : gFunctors
   ; _ghost   : _cpp_ghost
   ; has_cppG : cppG _Σ
-  ; mpredI   : bi
+  ; mpredI : bi := iPropI _Σ
   ; mpred    := bi_car mpredI
-  ; own      :  ∀ {A: cmraT} {IG: inG _Σ A}, gname → A → mpred
-  ; has_bupd : BiBUpd mpredI
-  ; has_fupd : BiFUpd mpredI
-  ; has_bupdfupd : BiBUpdFUpd mpredI
-  ; has_löb  : BiLöb mpredI
-  ; is_affine : BiAffine mpredI
   }.
   Arguments cpp_logic : clear implicits.
   Coercion _Σ : cpp_logic >-> gFunctors.
 
-  Global Existing Instances has_cppG has_bupd has_fupd has_bupdfupd has_löb is_affine.
+  Global Existing Instances has_cppG.
 
   Bind Scope bi_scope with bi_car.
   Bind Scope bi_scope with mpred.
