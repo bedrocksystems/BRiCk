@@ -142,9 +142,9 @@ Proof. inversion 1; reflexivity. Qed.
  *)
 Inductive region : Type :=
 | Remp (this : option ptr) (result : option ptr)
-| Rbind (_ : ident) (_ : ptr) (_ : region).
+| Rbind (_ : localname) (_ : ptr) (_ : region).
 
-Fixpoint get_location (ρ : region) (b : ident) : option ptr :=
+Fixpoint get_location (ρ : region) (b : localname) : option ptr :=
   match ρ with
   | Remp _ _ => None
   | Rbind x p rs =>

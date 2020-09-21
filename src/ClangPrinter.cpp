@@ -46,11 +46,48 @@ ClangPrinter::printGlobalName(const NamedDecl *decl, CoqPrinter &print,
     }
 }
 
+Optional<int>
+ClangPrinter::getParameterNumber(const ParmVarDecl *decl) {
+    assert(decl->getDeclContext()->isFunctionOrMethod() &&
+           "function or method");
+    if (auto fd = dyn_cast_or_null<FunctionDecl>(decl->getDeclContext())) {
+        int i = 0;
+        for (auto p : fd->parameters()) {
+            if (p == decl)
+                return Optional<int>(i);
+            ++i;
+        }
+        llvm::errs() << "failed to find parameter\n";
+    }
+    return Optional<int>();
+}
+
+void
+ClangPrinter::printParamName(const ParmVarDecl *decl, CoqPrinter &print) {
+    const auto &name = decl->getNameAsString();
+    print.output() << "\"";
+    if (name == "") {
+        auto d = dyn_cast<ParmVarDecl>(decl);
+        auto i = getParameterNumber(d);
+        if (i.hasValue()) {
+            print.output() << "#" << i;
+        }
+    } else {
+        print.output() << name;
+    }
+    print.output() << "\"";
+}
+
 void
 ClangPrinter::printName(const NamedDecl *decl, CoqPrinter &print) {
     if (decl->getDeclContext()->isFunctionOrMethod()) {
-        print.ctor("Lname", false);
-        print.output() << fmt::nbsp << "\"" << decl->getNameAsString() << "\"";
+        print.ctor("Lname", false) << fmt::nbsp;
+        auto name = decl->getNameAsString();
+        if (auto pd = dyn_cast_or_null<ParmVarDecl>(decl)) {
+            printParamName(pd, print);
+        } else {
+            print.output() << "\"" << decl->getNameAsString() << "\"";
+        }
     } else {
         print.ctor("Gname", false);
         printGlobalName(decl, print);

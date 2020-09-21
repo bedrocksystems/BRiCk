@@ -69,6 +69,27 @@ public:
         return this->output_ << (b ? "true" : "false");
     }
 
+    // List-printing functions
+    template<typename I, typename CLOSURE>
+    fmt::Formatter& list_range(I begin, I end, CLOSURE fn) {
+        if (begin == end) {
+            return this->output_ << "nil";
+        }
+        begin_list();
+        while (begin != end) {
+            fn(*this, *begin);
+            cons();
+            ++begin;
+        }
+        return end_list();
+    }
+
+    template<typename C, typename CLOSURE>
+    fmt::Formatter& list(const C list, CLOSURE fn) {
+        return list_range(list.begin(), list.end(), fn);
+    }
+
+    // low-level list-printing API
     fmt::Formatter& begin_list() {
         return this->output_ << fmt::lparen;
     }
