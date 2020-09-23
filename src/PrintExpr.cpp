@@ -446,31 +446,62 @@ public:
     void VisitMemberExpr(const MemberExpr* expr, CoqPrinter& print,
                          ClangPrinter& cprint, const ASTContext&) {
         if (auto vd = dyn_cast<VarDecl>(expr->getMemberDecl())) {
-            // this handles the special case of static members
-            print.ctor("Evar");
-            cprint.printName(vd, print);
-            done(expr, print, cprint);
-        } else {
-            print.ctor("Emember");
-
-            auto base = expr->getBase();
-            if (expr->isArrow()) {
-                print.output() << "Lvalue" << fmt::nbsp;
-                print.ctor("Ederef");
-                cprint.printExpr(base, print);
+            if (vd->isStaticDataMember()) {
+                print.ctor("Ecomma");
+                cprint.printValCat(expr->getBase(), print);
                 print.output() << fmt::nbsp;
-                cprint.printQualType(base->getType()->getPointeeType(), print);
+                cprint.printExpr(expr->getBase(), print);
+                print.output() << fmt::nbsp;
+                print.ctor("Evar", false);
+                cprint.printName(vd, print);
+                print.output() << fmt::nbsp;
+                cprint.printQualType(vd->getType(), print);
                 print.end_ctor();
-            } else {
-                cprint.printValCat(base, print);
-                print.output() << fmt::nbsp;
-                cprint.printExpr(base, print);
-            }
+                done(expr, print, cprint);
 
-            print.output() << fmt::nbsp;
-            cprint.printField(expr->getMemberDecl(), print);
-            done(expr, print, cprint);
+#if 0
+                // this handles the special case of static members
+                print.ctor("Evar");
+                cprint.printName(vd, print);
+                done(expr, print, cprint);
+#endif
+                return;
+            }
+        } else if (auto md = dyn_cast<CXXMethodDecl>(expr->getMemberDecl())) {
+            if (md->isStatic()) {
+                print.ctor("Ecomma");
+                cprint.printValCat(expr->getBase(), print);
+                print.output() << fmt::nbsp;
+                cprint.printExpr(expr->getBase(), print);
+                print.output() << fmt::nbsp;
+                print.ctor("Evar", false);
+                cprint.printName(md, print);
+                print.output() << fmt::nbsp;
+                cprint.printQualType(md->getType(), print);
+                print.end_ctor();
+                done(expr, print, cprint);
+                return;
+            }
         }
+        print.ctor("Emember");
+
+        auto base = expr->getBase();
+        if (expr->isArrow()) {
+            print.output() << "Lvalue" << fmt::nbsp;
+            print.ctor("Ederef");
+            cprint.printExpr(base, print);
+            print.output() << fmt::nbsp;
+            cprint.printQualType(base->getType()->getPointeeType(), print);
+            print.end_ctor();
+        } else {
+            cprint.printValCat(base, print);
+            print.output() << fmt::nbsp;
+            cprint.printExpr(base, print);
+        }
+
+        print.output() << fmt::nbsp;
+        cprint.printField(expr->getMemberDecl(), print);
+        done(expr, print, cprint);
     }
 
     void VisitArraySubscriptExpr(const ArraySubscriptExpr* expr,
