@@ -121,8 +121,34 @@ Module SimpleCPP_BASE <: CPP_LOGIC_CLASS.
   End with_cpp.
 End SimpleCPP_BASE.
 
-Module SimpleCPP.
+Module SimpleCPP_VIRTUAL.
   Include SimpleCPP_BASE.
+
+  Section with_cpp.
+    Context `{Σ : cpp_logic}.
+    Parameter vbyte : forall (va : addr) (rv : runtime_val') (q : Qp), mpred.
+
+    Axiom vbyte_fractional : forall va rv, Fractional (vbyte va rv).
+    Axiom vbyte_timeless : forall va rv q, Timeless (vbyte va rv q).
+    Global Existing Instances vbyte_fractional vbyte_timeless.
+
+    Definition vbytes (a : addr) (rv : list runtime_val') (q : Qp) : mpred :=
+      [∗list] o ↦ v ∈ rv, (vbyte (a+N.of_nat o)%N v) q.
+
+    Global Instance: Fractional (vbytes va rv).
+    Proof. intros. apply fractional_big_sepL. intros. apply vbyte_fractional. Qed.
+
+    Global Instance: AsFractional (vbytes va rv q) (vbytes va rv) q.
+    Proof. constructor; refine _. reflexivity. Qed.
+
+    Global Instance: Timeless (vbytes va rv q).
+    Proof. apply _. Qed.
+  End with_cpp.
+
+End SimpleCPP_VIRTUAL.
+
+Module SimpleCPP.
+  Include SimpleCPP_VIRTUAL.
 
   Definition runtime_val := runtime_val'.
 
@@ -462,24 +488,6 @@ Module SimpleCPP.
         done. lia. done. lia.
     Qed.
 
-    Parameter vbyte : forall (va : addr) (rv : runtime_val) (q : Qp), mpred.
-
-    Axiom vbyte_fractional : forall va rv, Fractional (vbyte va rv).
-    Axiom vbyte_timeless : forall va rv q, Timeless (vbyte va rv q).
-    Global Existing Instances vbyte_fractional vbyte_timeless.
-
-    Definition vbytes (a : addr) (rv : list runtime_val) (q : Qp) : mpred :=
-      [∗list] o ↦ v ∈ rv, (vbyte (a+N.of_nat o)%N v) q.
-
-    Instance: Fractional (vbytes va rv).
-    Proof. intros. apply fractional_big_sepL. intros. apply vbyte_fractional. Qed.
-
-    Instance: AsFractional (vbytes va rv q) (vbytes va rv) q.
-    Proof. constructor; refine _. reflexivity. Qed.
-
-    Instance: Timeless (vbytes va rv q).
-    Proof. apply _. Qed.
-
     Lemma mem_inj_own_agree p ma1 ma2 :
       mem_inj_own p ma1 |-- mem_inj_own p ma2 -* [| ma1 = ma2 |].
     Proof.
@@ -663,5 +671,5 @@ Module SimpleCPP.
 
 End SimpleCPP.
 
-Module Type SimpleCPP_INTF := SimpleCPP_BASE <+ CPP_LOGIC.
-Module L : SimpleCPP_INTF := SimpleCPP.
+Module Type SimpleCPP_INTF :=  SimpleCPP_BASE <+ CPP_LOGIC.
+Module L: SimpleCPP_INTF := SimpleCPP.
