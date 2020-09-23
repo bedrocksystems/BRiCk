@@ -68,25 +68,38 @@ End PTR_API.
 Declare Module PTR : PTR_API.
 Export PTR.
 
+(** * Raw bytes
+    Raw bytes represent the low-level view of data.
+    [raw_byte] abstracts over the internal structure of this low-level view of data.
+    E.g. in the [simple_pred] model, [raw_byte] would be instantiated with [runtime_val].
+
+    [raw_int_byte] is a raw byte that is a concrete integer values (i.e. not a pointer fragment or poison).
+ *)
+Parameter raw_byte : Set.
+Parameter raw_byte_eq_dec : EqDecision raw_byte.
+Existing Instance raw_byte_eq_dec.
+
+Axiom raw_int_byte : N -> raw_byte.
 
 (** * values
-    abstract C++ runtime values come in two flavors.
+    Abstract C++ runtime values come in two flavors.
     - integers
     - pointers
-    there is also a distinguished undefined element [Vundef] that
+    There is also a distinguished undefined element [Vundef] that
     models uninitialized values. Operations on [Vundef] are all
     undefined behavior.
+    [Vraw] (a raw byte) represents the low-level bytewise view of data.
+    See [logic/layout.v] for more axioms about it.
  *)
 Variant val : Set :=
 | Vint (_ : Z)
 | Vptr (_ : ptr)
+| Vraw (_ : raw_byte)
 | Vundef
 .
 
 Definition val_dec : forall a b : val, {a = b} + {a <> b}.
-Proof.
-  decide equality. eapply Z.eq_dec. apply ptr_eq_dec.
-Defined.
+Proof. solve_decision. Defined.
 Instance: EqDecision val := val_dec.
 
 (** wrappers for constructing certain values *)
@@ -121,7 +134,7 @@ Definition is_true (v : val) : option bool :=
                   | left _ => false
                   | right _ => true
                   end
-  | Vundef => None
+  | Vundef | Vraw _ => None
   end.
 
 Theorem is_true_int : forall i,
@@ -142,9 +155,9 @@ Proof. inversion 1; reflexivity. Qed.
  *)
 Inductive region : Type :=
 | Remp (this : option ptr) (result : option ptr)
-| Rbind (_ : ident) (_ : ptr) (_ : region).
+| Rbind (_ : localname) (_ : ptr) (_ : region).
 
-Fixpoint get_location (ρ : region) (b : ident) : option ptr :=
+Fixpoint get_location (ρ : region) (b : localname) : option ptr :=
   match ρ with
   | Remp _ _ => None
   | Rbind x p rs =>
@@ -319,8 +332,14 @@ Proof.
     destruct b; simplify_eq; lia.
 Qed.
 
-Axiom has_int_type : forall sz (sgn : signed) z,
+(** Note that from [has_type v (Tint sz sgn)] does not follow
+  [v = Vint _] since [v] might also be [Vraw _] (for [T_uchar]). *)
+Axiom has_int_type' : forall sz sgn v,
+    has_type v (Tint sz sgn) <-> (exists z, v = Vint z /\ bound sz sgn z) \/ (exists r, v = Vraw r /\ Tint sz sgn = T_uchar).
+
+Lemma has_int_type : forall sz (sgn : signed) z,
     bound sz sgn z <-> has_type (Vint z) (Tint sz sgn).
+Proof. move => *. rewrite has_int_type'. naive_solver. Qed.
 
 Theorem has_char_type : forall sz (sgn : signed) z,
     bound sz sgn z <-> has_type (Vint z) (Tchar sz sgn).
