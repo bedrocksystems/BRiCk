@@ -462,13 +462,13 @@ Module SimpleCPP.
         done. lia. done. lia.
     Qed.
 
-    Parameter vbyte : forall (va : addr) (rv : runtime_val) (q: Qp), mpred.
+    Parameter vbyte : forall (va : addr) (rv : runtime_val) (q : Qp), mpred.
 
     Axiom vbyte_fractional : forall va rv, Fractional (vbyte va rv).
     Axiom vbyte_timeless : forall va rv q, Timeless (vbyte va rv q).
     Global Existing Instances vbyte_fractional vbyte_timeless.
 
-    Definition vbytes (a : addr) (rv : list runtime_val) (q: Qp) : mpred :=
+    Definition vbytes (a : addr) (rv : list runtime_val) (q : Qp) : mpred :=
       [∗list] o ↦ v ∈ rv, (vbyte (a+N.of_nat o)%N v) q.
 
     Instance: Fractional (vbytes va rv).
@@ -621,7 +621,7 @@ Module SimpleCPP.
       @tptsto σ ty 1 p v ** pinned_ptr va p ** [| p <> nullptr |] |--
       Exists vs, @encodes σ ty v vs ** vbytes va vs 1 **
           (Forall v' vs', @encodes  σ ty v' vs' -* vbytes va vs' 1 -*
-                          |==> @tptsto σ ty 1 p v').
+                          |={∅}=> @tptsto σ ty 1 p v').
     Proof.
       intros. iIntros "(TP & PI & %)".
       iDestruct "PI" as "[[% %]|[% MJ]]"; [done| ].
