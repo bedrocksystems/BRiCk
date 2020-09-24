@@ -257,6 +257,13 @@ Section with_cpp.
     AsFractional (tptsto (σ := σ) ty q a v) (λ q, tptsto (σ := σ) ty q a v) q.
   Proof. split. done. apply _. Qed.
 
+  Theorem tptsto_nonnull_alt {σ} ty q p a :
+    tptsto (σ := σ) ty q p a |-- tptsto (σ := σ) ty q p a ** [| p <> nullptr |].
+  Proof.
+    destruct (ptr_eq_dec p nullptr); subst; last by eauto.
+    rewrite {1}tptsto_nonnull. exact: bi.False_elim.
+  Qed.
+
   (** function specifications written in weakest pre-condition style.
    *)
   Record function_spec : Type :=
