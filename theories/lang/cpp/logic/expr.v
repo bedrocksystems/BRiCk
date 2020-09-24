@@ -565,15 +565,26 @@ Module Type Expr.
       Q (Vptr nullptr) empSP
       |-- wp_prval Enull Q.
 
-    (* new *)
+    (** [new (...) C(...)] invokes the constructor C over the memory returned by the
+        allocation operation. Note that while the physical memory that backs both objcts
+        is the same, the C++ abstract machine (potentially?) uses a different pointer to
+        the new value. This explains the fact that the old pointer can not be used to access
+        the new object.
+     *)
     Axiom wp_new : forall new_fn new_args init aty ty Q,
         Exists fa, _global new_fn.1 &~ fa **
         wp_args new_args (fun vs free =>
-          Exists sz, [| size_of ty = Some sz |] **
+          Exists sz, [| size_of aty = Some sz |] **
           |> fspec new_fn.2 ti (Vptr fa) (Vn sz :: vs) (fun res => [| res <> Vptr nullptr |] **
-             Exists xfer : Rep, _at (_eqv res) xfer **
-            (Forall newp : ptr, [| newp <> nullptr |] ** _at (_eq newp) xfer -*
-              wp_init (type_of init) (Vptr newp) init (fun free' =>
+               (* TODO: the pointer needs to satisfy alignment constraints *)
+               let xfer := [∗list] i ∈ seq 0 (N.to_nat sz), _offsetR (_sub T_uint8 (Z.of_nat i)) (anyR T_uint8 1)in
+               _at (_eqv res) xfer **
+            (Forall newp : ptr, [| newp <> nullptr |] ** _at (_eq newp) (anyR aty 1) -*
+               (* todo: we currently expose [anyR] after the [new] but that isn't correct
+                  if [anyR] implies something about the effective types of pointers since the lifetime
+                  of the object is only established by the constructor call.
+                *)
+               wp_init (type_of init) (Vptr newp) init (fun free' =>
                  Q (Vptr newp) (free ** free')))))
       |-- wp_prval (Enew (Some new_fn) new_args aty None (Some init) ty) Q.
 
