@@ -193,9 +193,14 @@ Module Type CPP_LOGIC (Import CC : CPP_LOGIC_CLASS).
     (** [vbyte va rv q] exposes the access to the underlying byte value, but
       still with the current address space where the address mapping is
       implicity within mpred.
-      The logic of mpred will be developed orthogonally to have modalities that
-      allow access to the address mapping, in order to support transferring
-      ownership of physical bytes across address spaces. *)
+      [vbyte] is an abstraction for the physical machine where the aspect of
+      thread-local state is hidden. For example, the abstraction will model
+      virtual-physical address translation, as well as weak memory behaviors of
+      physical memory.
+      The logic of [mpred] will be enriched orthogonally to have modalities and
+      axioms to support lower-level interactions with such feature. For example,
+      there will be a theory to support transferring ownership of physical bytes
+      across address spaces. *)
     Parameter vbyte : forall (va : vaddr) (rv : runtime_val) (q : Qp), mpred.
 
     Axiom vbyte_fractional : forall va rv, Fractional (vbyte va rv).
@@ -219,11 +224,11 @@ Module Type CPP_LOGIC (Import CC : CPP_LOGIC_CLASS).
 
     (* A pinned ptr allows access to the underlying bytes. The fupd is needed to
       update the C++ abstraction's ghost state. *)
-    Axiom pinned_ptr_borrow : forall {σ} ty p v va,
+    Axiom pinned_ptr_borrow : forall {σ} ty p v va (M: coPset),
       @tptsto σ ty 1 p v ** pinned_ptr va p ** [| p <> nullptr |] |--
-        Exists vs, @encodes σ ty v vs ** vbytes va vs 1 **
-          (Forall v' vs', @encodes  σ ty v' vs' -* vbytes va vs' 1 -*
-                          |={∅}=> @tptsto σ ty 1 p v').
+        |={M}=> Exists vs, @encodes σ ty v vs ** vbytes va vs 1 **
+                (Forall v' vs', @encodes  σ ty v' vs' -* vbytes va vs' 1 -*
+                                |={M}=> @tptsto σ ty 1 p v').
 
     Global Existing Instances
       pinned_ptr_persistent pinned_ptr_affine pinned_ptr_timeless.

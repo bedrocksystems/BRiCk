@@ -121,6 +121,7 @@ Module SimpleCPP_BASE <: CPP_LOGIC_CLASS.
   End with_cpp.
 End SimpleCPP_BASE.
 
+(* TODO: make this a [Module Type] and provide an instance for it. *)
 Module SimpleCPP_VIRTUAL.
   Include SimpleCPP_BASE.
 
@@ -144,7 +145,6 @@ Module SimpleCPP_VIRTUAL.
     Global Instance: Timeless (vbytes va rv q).
     Proof. apply _. Qed.
   End with_cpp.
-
 End SimpleCPP_VIRTUAL.
 
 Module SimpleCPP.
@@ -625,17 +625,18 @@ Module SimpleCPP.
       iDestruct (mem_inj_own_agree with "A B") as %Hp. by inversion Hp.
     Qed.
 
-    Theorem pinned_ptr_borrow : forall {σ} ty p v va,
+    Theorem pinned_ptr_borrow : forall {σ} ty p v va M,
       @tptsto σ ty 1 p v ** pinned_ptr va p ** [| p <> nullptr |] |--
-      Exists vs, @encodes σ ty v vs ** vbytes va vs 1 **
-          (Forall v' vs', @encodes  σ ty v' vs' -* vbytes va vs' 1 -*
-                          |={∅}=> @tptsto σ ty 1 p v').
+      |={M}=> Exists vs, @encodes σ ty v vs ** vbytes va vs 1 **
+              (Forall v' vs', @encodes  σ ty v' vs' -* vbytes va vs' 1 -*
+                              |={M}=> @tptsto σ ty 1 p v').
     Proof.
       intros. iIntros "(TP & PI & %)".
       iDestruct "PI" as "[[% %]|[% MJ]]"; [done| ].
       iDestruct "TP" as (ma) "[MJ' TP]".
       iDestruct (mem_inj_own_agree with "MJ MJ'") as %?. subst ma.
       iDestruct "TP" as (vs) "(#EN & Bys & VBys)".
+      iIntros "!>".
       iExists vs. iFrame "EN VBys".
       iIntros (v' vs') "#EN' VBys". iExists (Some va). iFrame "MJ".
       iDestruct (encodes_consistent _ _ _ _ vs vs' with "[$EN $EN']") as %EQL.
@@ -672,4 +673,4 @@ Module SimpleCPP.
 End SimpleCPP.
 
 Module Type SimpleCPP_INTF :=  SimpleCPP_BASE <+ CPP_LOGIC.
-Module L: SimpleCPP_INTF := SimpleCPP.
+Module L : SimpleCPP_INTF := SimpleCPP.
