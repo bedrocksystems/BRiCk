@@ -730,7 +730,11 @@ public:
         print.ctor("Enew");
         if (expr->getOperatorNew()) {
             print.some();
+            print.begin_tuple();
             cprint.printGlobalName(expr->getOperatorNew(), print);
+            print.next_tuple();
+            cprint.printQualType(expr->getOperatorNew()->getType(), print);
+            print.end_tuple();
             print.end_ctor();
         } else {
             print.none();
@@ -782,7 +786,11 @@ public:
 
         if (expr->getOperatorDelete()) {
             print.some();
+            print.begin_tuple();
             cprint.printGlobalName(expr->getOperatorDelete(), print);
+            print.next_tuple();
+            cprint.printQualType(expr->getOperatorDelete()->getType(), print);
+            print.end_tuple();
             print.end_ctor();
         } else {
             print.none();

@@ -163,10 +163,10 @@ Inductive Expr : Set :=
 | Enull
 | Einitlist (_ : list Expr) (_ : option Expr) (_ : type)
 
-| Enew (new_fn : option obj_name) (new_args : list (ValCat * Expr))
+| Enew (new_fn : option (obj_name * type)) (new_args : list (ValCat * Expr))
        (alloc_ty : type)
        (array_size : option Expr) (init : option Expr) (_ : type)
-| Edelete (is_array : bool) (delete_fn : option obj_name) (arg : Expr)
+| Edelete (is_array : bool) (delete_fn : option (obj_name * type)) (arg : Expr)
           (deleted_type : type) (dtor : option obj_name) (_ : type)
 
 | Eandclean (_ : Expr) (_ : type)

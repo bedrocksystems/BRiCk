@@ -567,10 +567,10 @@ Module Type Expr.
 
     (* new *)
     Axiom wp_new : forall new_fn new_args init aty ty Q,
-        Exists fa, _global new_fn &~ fa **
+        Exists fa, _global new_fn.1 &~ fa **
         wp_args new_args (fun vs free =>
           Exists sz, [| size_of ty = Some sz |] **
-          |> fspec (Vptr fa) (Vn sz :: vs) (fun res => [| res <> Vptr nullptr |] **
+          |> fspec new_fn.2 ti (Vptr fa) (Vn sz :: vs) (fun res => [| res <> Vptr nullptr |] **
              Exists xfer : Rep, _at (_eqv res) xfer **
             (Forall newp : ptr, [| newp <> nullptr |] ** _at (_eq newp) xfer -*
               wp_init (type_of init) (Vptr newp) init (fun free' =>
@@ -582,8 +582,8 @@ Module Type Expr.
         (* call the destructor on the object, and then call delete_fn *)
         wp_prval e (fun vp free =>
           destruct_val destroyed_type vp dtor
-              (Exists da, _global delete_fn &~ da **
-               fspec (Vptr da) (vp :: nil) (fun v => Q v free)))
+              (Exists da, _global delete_fn.1 &~ da **
+               fspec delete_fn.2 ti (Vptr da) (vp :: nil) (fun v => Q v free)))
         |-- wp_prval (Edelete false (Some delete_fn) e destroyed_type dtor ty) Q.
 
 
