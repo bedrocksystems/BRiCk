@@ -445,6 +445,10 @@ public:
 
     void VisitMemberExpr(const MemberExpr* expr, CoqPrinter& print,
                          ClangPrinter& cprint, const ASTContext&) {
+        /* TCB: semantics of accesses to static members.
+        When `m` is a static member of `T` and `e : T`,
+        we desugar `e->member` to `e, T::member`.
+        */
         if (auto vd = dyn_cast<VarDecl>(expr->getMemberDecl())) {
             if (vd->isStaticDataMember()) {
                 print.ctor("Ecomma");
