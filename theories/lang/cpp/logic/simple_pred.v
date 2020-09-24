@@ -134,15 +134,16 @@ Module SimpleCPP_VIRTUAL.
     Global Existing Instances vbyte_fractional vbyte_timeless.
 
     Definition vbytes (a : addr) (rv : list runtime_val') (q : Qp) : mpred :=
-      [∗list] o ↦ v ∈ rv, (vbyte (a+N.of_nat o)%N v) q.
+      [∗list] o ↦ v ∈ rv, (vbyte (a+N.of_nat o)%N v q).
 
-    Global Instance: Fractional (vbytes va rv).
-    Proof. intros. apply fractional_big_sepL. intros. apply vbyte_fractional. Qed.
+    Global Instance: forall va rv, Fractional (vbytes va rv).
+    Proof. intros; apply fractional_big_sepL. intros; apply vbyte_fractional. Qed.
 
-    Global Instance: AsFractional (vbytes va rv q) (vbytes va rv) q.
+    Global Instance: forall va rv q,
+      AsFractional (vbytes va rv q) (vbytes va rv) q.
     Proof. constructor; refine _. reflexivity. Qed.
 
-    Global Instance: Timeless (vbytes va rv q).
+    Global Instance: forall va rv q, Timeless (vbytes va rv q).
     Proof. apply _. Qed.
   End with_cpp.
 End SimpleCPP_VIRTUAL.

@@ -208,7 +208,7 @@ Module Type CPP_LOGIC (Import CC : CPP_LOGIC_CLASS).
     Global Existing Instances vbyte_fractional vbyte_timeless.
 
     Definition vbytes (a : vaddr) (vs : list runtime_val) (q : Qp) : mpred :=
-      [∗list] o ↦ v ∈ vs, (vbyte (a+N.of_nat o)%N v) q.
+      [∗list] o ↦ v ∈ vs, (vbyte (a+N.of_nat o)%N v q).
 
     (** Physical representation of pointers. *)
     (** [pinned_ptr va p] states that the abstract pointer [p] is tied to a
