@@ -63,6 +63,8 @@ Module Type CPP_LOGIC_CLASS := CPP_LOGIC_CLASS_BASE <+ CPP_LOGIC_CLASS_MIXIN.
 
 Module Type CPP_LOGIC (Import CC : CPP_LOGIC_CLASS).
 
+  (* TODO: unify with [raw_byte]. This should just be machine bytes. See also
+    cpp2v-core#135. *)
   Parameter runtime_val : Type.
 
   Section with_cpp.
