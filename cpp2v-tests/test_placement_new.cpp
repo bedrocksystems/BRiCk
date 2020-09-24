@@ -14,17 +14,17 @@ struct C {
 
 
 C* test(C* p) {
-    auto z = new int();  // None (Some (Eimplicit_init ..)) None
-    auto y = new int{};  // None (Some (Einit_list ..)) None
-    auto zz = new int[15]; // (Some 15) None None
-    auto zzz = new int[15](); // (Some 15) (Some (Eimplicit_init ..)) None
-    auto zzzz = new int[15]{1,2,3}; // (Some 15) (Some (Einitlist ..)) None
-    auto zzzzz = new C[2] {C(1), C(2)};
+    auto z = new int();  // None None (Some (Eimplicit_init ..))
+    auto y = new int{};  // None None (Some (Einit_list ..))
+    auto zz = new int[15]; // None (Some 15) None
+    auto zzz = new int[15](); // None (Some 15) (Some (Eimplicit_init ..))
+    auto zzzz = new int[15]{1,2,3}; // None (Some 15) (Some (Einitlist ..))
+    auto zzzzz = new C[2] {C(1), C(2)}; // None (Some 2) ...
     delete z;
     delete[] zz;
-    p = new (p) C(3); // None (Some ctor) (Some ctor)
-    C* x = new C[10]; // None (Some ctor) (Some ctor)
+    p = new (p) C(3); // (Some placement_new) None (Some ctor)
+    C* x = new C[10]; // None (Some 10) (Some ctor)
     delete[] x;
     delete p;
-    return new C(5);  // None (Some ctor) (Some ctor)
+    return new C(5);  // None None (Some ctor)
 }
