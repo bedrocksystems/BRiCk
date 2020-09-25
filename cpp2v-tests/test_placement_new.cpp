@@ -12,6 +12,11 @@ struct C {
     C(int y):x(y) {}
 };
 
+struct X {
+  void* operator new(unsigned long) noexcept {
+    return nullptr;
+  }
+};
 
 C* test(C* p) {
     auto z = new int();  // None None (Some (Eimplicit_init ..))
@@ -26,5 +31,8 @@ C* test(C* p) {
     C* x = new C[10]; // None (Some 10) (Some ctor)
     delete[] x;
     delete p;
+    new X();
     return new C(5);  // None None (Some ctor)
 }
+
+
