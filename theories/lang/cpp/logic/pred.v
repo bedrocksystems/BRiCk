@@ -45,24 +45,14 @@ Module Type CPP_LOGIC_CLASS_MIXIN (Import CC : CPP_LOGIC_CLASS_BASE).
   Class cpp_logic {thread_info : biIndex} : Type :=
   { _Σ       : gFunctors
   ; _ghost   : _cpp_ghost
-  ; has_cppG : cppG _Σ }.
+  ; has_cppG : cppG _Σ
+  ; mpredI : bi := iPropI _Σ
+  ; mpred    := bi_car mpredI
+  }.
   Arguments cpp_logic : clear implicits.
   Coercion _Σ : cpp_logic >-> gFunctors.
+
   Global Existing Instance has_cppG.
-
-  Section with_cpp.
-    Context `{Σ : cpp_logic}.
-
-    Definition mpred := iProp Σ.
-
-    Canonical Structure mpredI : bi :=
-      {| bi_car := mpred
-       ; bi_later := bi_later
-       ; bi_ofe_mixin := (iPropI Σ).(bi_ofe_mixin)
-       ; bi_bi_mixin := (iPropI Σ).(bi_bi_mixin)
-       ; bi_bi_later_mixin := (iPropI Σ).(bi_bi_later_mixin)
-       |}.
-  End with_cpp.
 
   Bind Scope bi_scope with bi_car.
   Bind Scope bi_scope with mpred.
@@ -73,13 +63,12 @@ Module Type CPP_LOGIC_CLASS := CPP_LOGIC_CLASS_BASE <+ CPP_LOGIC_CLASS_MIXIN.
 
 Module Type CPP_LOGIC (Import CC : CPP_LOGIC_CLASS).
 
+  (* TODO: unify with [raw_byte]. This should just be machine bytes. See also
+    cpp2v-core#135. *)
+  Parameter runtime_val : Type.
+
   Section with_cpp.
     Context `{Σ : cpp_logic}.
-    (* todo: Fix the warning generated from this definition *)
-
-    (* Typeclasses Opaque mpred.
-    Global Instance mpred_later_contractive : BiLaterContractive mpredI.
-    Proof. apply _. Qed. *)
 
     (* valid pointers allow for accessing one past the end of a structure/array *)
     Parameter valid_ptr : ptr -> mpred.
@@ -198,17 +187,50 @@ Module Type CPP_LOGIC (Import CC : CPP_LOGIC_CLASS).
         dtor_at_persistent dtor_at_affine dtor_at_timeless.
     End with_genv.
 
+    Parameter encodes : forall {σ:genv} (t : type) (v : val) (vs : list runtime_val), mpred.
+
+    Notation vaddr := N.
+
+    (** Virtual points-to. *)
+    (** [vbyte va rv q] exposes the access to the underlying byte value, but
+      still with the current address space where the address mapping is
+      implicity within mpred.
+      [vbyte] is an abstraction for the physical machine where the aspect of
+      thread-local state is hidden. For example, the abstraction will model
+      virtual-physical address translation, as well as weak memory behaviors of
+      physical memory.
+      The logic of [mpred] will be enriched orthogonally to have modalities and
+      axioms to support lower-level interactions with such feature. For example,
+      there will be a theory to support transferring ownership of physical bytes
+      across address spaces. *)
+    Parameter vbyte : forall (va : vaddr) (rv : runtime_val) (q : Qp), mpred.
+
+    Axiom vbyte_fractional : forall va rv, Fractional (vbyte va rv).
+    Axiom vbyte_timeless : forall va rv q, Timeless (vbyte va rv q).
+    Global Existing Instances vbyte_fractional vbyte_timeless.
+
+    Definition vbytes (a : vaddr) (vs : list runtime_val) (q : Qp) : mpred :=
+      [∗list] o ↦ v ∈ vs, (vbyte (a+N.of_nat o)%N v q).
+
     (** Physical representation of pointers. *)
-    (** [pinned_ptr va p] states that dereferencing abstract pointer [p]
-    implies dereferencing address [va].
-    [pinned_ptr] will only hold on pointers that are associated to addresses,
-    but other pointers exist. *)
-    Parameter pinned_ptr : N -> ptr -> mpred.
+    (** [pinned_ptr va p] states that the abstract pointer [p] is tied to a
+      virtual address [va].
+      [pinned_ptr] will only hold on pointers that are associated to addresses,
+      but other pointers exist. *)
+    Parameter pinned_ptr : vaddr -> ptr -> mpred.
     Axiom pinned_ptr_persistent : forall va p, Persistent (pinned_ptr va p).
     Axiom pinned_ptr_affine : forall va p, Affine (pinned_ptr va p).
     Axiom pinned_ptr_timeless : forall va p, Timeless (pinned_ptr va p).
     Axiom pinned_ptr_unique : forall va va' p,
         pinned_ptr va p ** pinned_ptr va' p |-- bi_pure (va = va').
+
+    (* A pinned ptr allows access to the underlying bytes. The fupd is needed to
+      update the C++ abstraction's ghost state. *)
+    Axiom pinned_ptr_borrow : forall {σ} ty p v va (M: coPset),
+      @tptsto σ ty 1 p v ** pinned_ptr va p ** [| p <> nullptr |] |--
+        |={M}=> Exists vs, @encodes σ ty v vs ** vbytes va vs 1 **
+                (Forall v' vs', @encodes  σ ty v' vs' -* vbytes va vs' 1 -*
+                                |={M}=> @tptsto σ ty 1 p v').
 
     Global Existing Instances
       pinned_ptr_persistent pinned_ptr_affine pinned_ptr_timeless.

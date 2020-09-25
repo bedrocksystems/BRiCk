@@ -42,7 +42,7 @@ Module SimpleCPP_BASE <: CPP_LOGIC_CLASS.
 
   Definition addr : Set := N.
   Definition byte : Set := N.
-  Variant runtime_val : Set :=
+  Variant runtime_val' : Set :=
   | Rundef
     (* ^ undefined value, semantically, it means "any value" *)
   | Rval (_ : byte)
@@ -50,8 +50,7 @@ Module SimpleCPP_BASE <: CPP_LOGIC_CLASS.
   | Rpointer_chunk (_ : ptr) (index : nat).
     (* ^ you need the same pointer and consecutive integers to "have" a pointer.
      *)
-
-  Definition Z_to_bytes {σ:genv} (n : nat) (sgn: signed) (v : Z) : list runtime_val :=
+  Definition Z_to_bytes {σ:genv} (n : nat) (sgn: signed) (v : Z) : list runtime_val' :=
     Rval <$> _Z_to_bytes (σ:=σ) n sgn v.
 
   Lemma length_Z_to_bytes {σ} n sgn v : length (Z_to_bytes (σ:=σ) n sgn v) = n.
@@ -67,7 +66,7 @@ Module SimpleCPP_BASE <: CPP_LOGIC_CLASS.
   Definition _cpp_ghost := cpp_ghost.
 
   Class cppG' (Σ : gFunctors) : Type :=
-    { heapG : inG Σ (gmapR addr (fractionalR runtime_val))
+    { heapG : inG Σ (gmapR addr (fractionalR runtime_val'))
       (* ^ this represents the contents of physical memory *)
     ; ghost_memG : inG Σ (gmapR ptr (fractionalR val))
       (* ^ this represents the contents of the C++ runtime that might
@@ -97,16 +96,16 @@ Module SimpleCPP_BASE <: CPP_LOGIC_CLASS.
 
   Section with_cpp.
     Context `{Σ : cpp_logic}.
-    Definition heap_own (a : addr) (q : Qp) (r : runtime_val) :=
-      own (A := gmapR addr (fractionalR runtime_val))
+    Definition heap_own (a : addr) (q : Qp) (r : runtime_val') : mpred :=
+      own (A := gmapR addr (fractionalR runtime_val'))
       _ghost.(heap_name) {[ a := frac q r ]}.
-    Definition ghost_mem_own (p : ptr) (q : Qp) (v : val) :=
+    Definition ghost_mem_own (p : ptr) (q : Qp) (v : val) : mpred :=
       own (A := gmapR ptr (fractionalR (leibnizO val)))
         _ghost.(ghost_mem_name) {[ p := frac q v ]}.
     Definition mem_inj_own (p : ptr) (va : option N) : mpred :=
       own (A := gmapUR ptr (agreeR (leibnizO (option addr))))
         _ghost.(mem_inj_name) {[ p := to_agree va ]}.
-    Definition blocks_own (p : ptr) (l h : Z) :=
+    Definition blocks_own (p : ptr) (l h : Z) : mpred :=
       own (A := gmapUR ptr (agreeR (leibnizO (Z * Z))))
         _ghost.(blocks_name) {[ p := to_agree (l, h) ]}.
 
@@ -122,8 +121,37 @@ Module SimpleCPP_BASE <: CPP_LOGIC_CLASS.
   End with_cpp.
 End SimpleCPP_BASE.
 
-Module SimpleCPP.
+(* TODO: make this a [Module Type] and provide an instance for it. *)
+Module SimpleCPP_VIRTUAL.
   Include SimpleCPP_BASE.
+
+  Section with_cpp.
+    Context `{Σ : cpp_logic}.
+    Parameter vbyte : forall (va : addr) (rv : runtime_val') (q : Qp), mpred.
+
+    Axiom vbyte_fractional : forall va rv, Fractional (vbyte va rv).
+    Axiom vbyte_timeless : forall va rv q, Timeless (vbyte va rv q).
+    Global Existing Instances vbyte_fractional vbyte_timeless.
+
+    Definition vbytes (a : addr) (rv : list runtime_val') (q : Qp) : mpred :=
+      [∗list] o ↦ v ∈ rv, (vbyte (a+N.of_nat o)%N v q).
+
+    Global Instance: forall va rv, Fractional (vbytes va rv).
+    Proof. intros; apply fractional_big_sepL. intros; apply vbyte_fractional. Qed.
+
+    Global Instance: forall va rv q,
+      AsFractional (vbytes va rv q) (vbytes va rv) q.
+    Proof. constructor; refine _. reflexivity. Qed.
+
+    Global Instance: forall va rv q, Timeless (vbytes va rv q).
+    Proof. apply _. Qed.
+  End with_cpp.
+End SimpleCPP_VIRTUAL.
+
+Module SimpleCPP.
+  Include SimpleCPP_VIRTUAL.
+
+  Definition runtime_val := runtime_val'.
 
   Section with_cpp.
     Context `{Σ : cpp_logic}.
@@ -158,6 +186,7 @@ Module SimpleCPP.
       | W64 => 8
       | W128 => 16
       end.
+
 
     Section with_genv.
       Variable σ : genv.
@@ -355,8 +384,6 @@ Module SimpleCPP.
     Proof. apply _. Qed.
 
 
-    (* Note: the current definition doesn't take weak memory into accoutn. In
-      particular, it doesn't rely on the thread-local info for the value rv. *)
     Definition byte_ (a : addr) (rv : runtime_val) (q : Qp) : mpred :=
       heap_own a q rv.
 
@@ -391,6 +418,10 @@ Module SimpleCPP.
       iIntros "[Hb Hb']".
       iDestruct (byte_agree with "Hb Hb'") as %->. by iFrame.
     Qed.
+
+    Lemma byte_update (a : addr) (rv rv' : runtime_val) :
+      byte_ a rv 1 |-- |==> byte_ a rv' 1.
+    Proof. by apply own_update, singleton_update, cmra_update_exclusive. Qed.
 
     Definition bytes (a : addr) (vs : list runtime_val) (q : Qp) : mpred :=
       [∗list] o ↦ v ∈ vs, (byte_ (a+N.of_nat o)%N v) q.
@@ -436,6 +467,37 @@ Module SimpleCPP.
       by iFrame "Hb Hb' %".
     Qed.
 
+    Lemma bytes_update (a : addr) vs vs' :
+      length vs = length vs' →
+      bytes a vs 1 |-- |==> bytes a vs' 1.
+    Proof.
+      rewrite /bytes -big_sepL_bupd.
+      revert a vs'.
+      induction vs as [ | v vs IH]; intros a vs' EqL.
+      { simplify_list_eq. symmetry in EqL. apply length_zero_iff_nil in EqL.
+        by subst vs'. }
+      destruct vs' as [ |v' vs'].
+      { exfalso. done. }
+      rewrite 2!big_sepL_cons. apply bi.sep_mono'.
+      { by apply byte_update. }
+      iPoseProof (IH (a + 1)%N vs') as "HL".
+      { simpl in EqL. lia. }
+      iIntros "By".
+      iDestruct ("HL" with "[By]") as "By";
+        iApply (big_sepL_mono with "By"); intros; simpl;
+        rewrite (_: a + N.of_nat (S k) = a + 1 + N.of_nat k)%N.
+        done. lia. done. lia.
+    Qed.
+
+    Lemma mem_inj_own_agree p ma1 ma2 :
+      mem_inj_own p ma1 |-- mem_inj_own p ma2 -* [| ma1 = ma2 |].
+    Proof.
+      iIntros "o1 o2".
+      iDestruct (own_valid_2 with "o1 o2") as %X.
+      revert X.
+      rewrite singleton_op singleton_valid => /agree_op_invL' ?. by subst ma2.
+    Qed.
+
     (* heap points to *)
     Definition tptsto {σ:genv} (t : type) (q : Qp) (p : ptr) (v : val) : mpred :=
       Exists (a : option addr),
@@ -443,7 +505,7 @@ Module SimpleCPP.
               match a with
               | Some a =>
                 Exists vs,
-                encodes σ t v vs ** bytes a vs q
+                encodes σ t v vs ** bytes a vs q ** vbytes a vs q
               | None => val_ p v q
               end.
 
@@ -464,24 +526,23 @@ Module SimpleCPP.
       red. intros. unfold tptsto.
       iSplit.
       - iDestruct 1 as ([]) "[#Mi By]".
-        + iDestruct "By" as (vs) "(#En & L & R)".
-          iSplitL "L"; iExists (Some a); eauto with iFrame.
+        + iDestruct "By" as (vs) "(#En & [L1 R1] & [L2 R2])".
+          iSplitL "L1 L2"; iExists (Some a); eauto with iFrame.
         + iDestruct "By" as "[L R]".
           iSplitL "L"; iExists None; eauto with iFrame.
       - iIntros "[H1 H2]".
         iDestruct "H1" as (a) "[#Mi1 By1]".
         iDestruct "H2" as (a2) "[#Mi2 By2]".
         iExists a; iFrame "#".
-        iDestruct (own_valid_2 with "Mi1 Mi2") as %X.
-        revert X.
-        rewrite singleton_op singleton_valid => /agree_op_invL' ?. subst a2.
+        iDestruct (mem_inj_own_agree with "Mi1 Mi2") as %?. subst a2.
         destruct a.
-        + iDestruct "By1" as (vs) "[#En1 By1]".
-          iDestruct "By2" as (vs2) "[#En2 By2]".
+        + iDestruct "By1" as (vs) "[#En1 [By1 VBy1]]".
+          iDestruct "By2" as (vs2) "[#En2 [By2 VBy2]]".
           iDestruct (encodes_consistent with "[En1 En2]") as "%".
           iSplit; [ iApply "En1" | iApply "En2" ].
           iDestruct (bytes_consistent with "[By1 By2]") as "[Z %]";
             eauto with iFrame.
+          subst vs2. eauto with iFrame.
         + iFrame.
     Qed.
 
@@ -495,11 +556,11 @@ Module SimpleCPP.
       iDestruct 1 as "[H1 H2]".
       iDestruct "H1" as (ma1) "(Hp1 & Hv1)".
       iDestruct "H2" as (ma2) "(Hp2 & Hv2)".
-      iDestruct (own_valid_2 with "Hp1 Hp2") as "%Hv". iClear "Hp1 Hp2".
-      move: Hv. rewrite singleton_op singleton_valid=>/agree_op_invL' ->.
+      iDestruct (mem_inj_own_agree with "Hp1 Hp2") as %?. subst ma1.
+      iClear "Hp1 Hp2".
       case: ma2=>[a| ]; last by iDestruct (val_agree with "Hv1 Hv2") as %->.
-      iDestruct "Hv1" as (vs1) "[He1 Hb1]".
-      iDestruct "Hv2" as (vs2) "[He2 Hb2]".
+      iDestruct "Hv1" as (vs1) "[He1 [Hb1 Vb1]]".
+      iDestruct "Hv2" as (vs2) "[He2 [Hb2 Vb2]]".
       iDestruct (encodes_consistent _ _ _ _ vs1 vs2 with "[He1 He2]") as %?; auto.
       iDestruct (bytes_agree with "Hb1 Hb2") as %->; auto. iClear "Hb1 Hb2".
       (* PDS: I see no way to proceed. The preceding lemma
@@ -562,8 +623,26 @@ Module SimpleCPP.
     Proof.
       intros. iIntros "[A B]".
       iDestruct "A" as "[[->->] | [% A]]"; iDestruct "B" as "[[%->] | [% B]]"; auto.
-      iDestruct (own_valid_2 with "A B") as %Hp. iPureIntro.
-      move: Hp. rewrite singleton_op singleton_valid=>/agree_op_invL'. by case.
+      iDestruct (mem_inj_own_agree with "A B") as %Hp. by inversion Hp.
+    Qed.
+
+    Theorem pinned_ptr_borrow : forall {σ} ty p v va M,
+      @tptsto σ ty 1 p v ** pinned_ptr va p ** [| p <> nullptr |] |--
+      |={M}=> Exists vs, @encodes σ ty v vs ** vbytes va vs 1 **
+              (Forall v' vs', @encodes  σ ty v' vs' -* vbytes va vs' 1 -*
+                              |={M}=> @tptsto σ ty 1 p v').
+    Proof.
+      intros. iIntros "(TP & PI & %)".
+      iDestruct "PI" as "[[% %]|[% MJ]]"; [done| ].
+      iDestruct "TP" as (ma) "[MJ' TP]".
+      iDestruct (mem_inj_own_agree with "MJ MJ'") as %?. subst ma.
+      iDestruct "TP" as (vs) "(#EN & Bys & VBys)".
+      iIntros "!>".
+      iExists vs. iFrame "EN VBys".
+      iIntros (v' vs') "#EN' VBys". iExists (Some va). iFrame "MJ".
+      iDestruct (encodes_consistent _ _ _ _ vs vs' with "[$EN $EN']") as %EQL.
+      iMod (bytes_update _ _ vs' with "Bys") as "Bys'"; first done.
+      iModIntro. iExists vs'. eauto with iFrame.
     Qed.
 
     Definition type_ptr {resolve : genv} (c: type) (p : ptr) : mpred :=
@@ -594,5 +673,5 @@ Module SimpleCPP.
 
 End SimpleCPP.
 
-Module Type SimpleCPP_INTF := SimpleCPP_BASE <+ CPP_LOGIC.
+Module Type SimpleCPP_INTF :=  SimpleCPP_BASE <+ CPP_LOGIC.
 Module L : SimpleCPP_INTF := SimpleCPP.

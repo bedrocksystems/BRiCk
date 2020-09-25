@@ -53,7 +53,7 @@ Section with_cpp.
     Proper (genv_leq ==> eq ==> eq ==> eq ==> eq ==>
             pointwise_relation _ (pointwise_relation _ lentails) ==> lentails)
            (@wp_lval).
-  Proof. do 7 red. intros; subst.
+  Proof. repeat red. intros; subst.
          iIntros "X". iRevert "X".
          iApply wp_lval_frame; eauto.
          iIntros (v). iIntros (f). iApply H4.
@@ -113,7 +113,7 @@ Section with_cpp.
     Proper (genv_leq ==> eq ==> eq ==> eq ==> eq ==>
             pointwise_relation _ (pointwise_relation _ lentails) ==> lentails)
            (@wp_prval).
-  Proof. do 7 red; intros; subst.
+  Proof. repeat red; intros; subst.
          iIntros "X"; iRevert "X".
          iApply wp_prval_frame; eauto.
          iIntros (v); iIntros (f); iApply H4.
@@ -179,7 +179,7 @@ Section with_cpp.
             pointwise_relation _ lentails ==> lentails)
            (@wp_init).
   Proof.
-    do 9 red; intros; subst.
+    repeat red; intros; subst.
     iIntros "X"; iRevert "X"; iApply wp_init_frame; eauto.
     iIntros (f); iApply H6.
   Qed.
@@ -239,7 +239,7 @@ Section with_cpp.
     Proper (genv_leq ==> eq ==> eq ==> eq ==> eq ==>
             pointwise_relation _ (pointwise_relation _ lentails) ==> lentails)
            (@wp_xval).
-  Proof. do 7 red; intros; subst.
+  Proof. repeat red; intros; subst.
          iIntros "X"; iRevert "X".
          iApply wp_xval_frame; eauto.
          iIntros (v); iIntros (f); iApply H4.
@@ -306,7 +306,7 @@ Section with_cpp.
             pointwise_relation _ (pointwise_relation _ lentails) ==> lentails)
            (@wp_glval).
   Proof using .
-    unfold wp_glval; simpl. do 7 red. intros.
+    unfold wp_glval; simpl. repeat red. intros.
     eapply bi.or_elim; [ rewrite <- bi.or_intro_l | rewrite <- bi.or_intro_r ].
     eapply Proper_wp_lval; eauto.
     eapply Proper_wp_xval; eauto.
@@ -352,7 +352,7 @@ Section with_cpp.
             pointwise_relation _ (pointwise_relation _ lentails) ==> lentails)
            (@wp_rval).
   Proof using .
-    unfold wp_rval; simpl. do 7 red. intros.
+    unfold wp_rval; simpl. repeat red. intros.
     eapply bi.or_elim; [ rewrite <- bi.or_intro_l | rewrite <- bi.or_intro_r ].
     eapply Proper_wp_prval; eauto.
     eapply Proper_wp_xval; eauto.
@@ -401,7 +401,7 @@ Section with_cpp.
     Proper (genv_leq ==> eq ==> eq ==> eq ==> eq ==> eq ==> (eq ==> lentails ==> lentails) ==> lentails)
            (@wpe).
   Proof.
-    do 9 red; intros; subst.
+    repeat red; intros; subst.
     iIntros "X"; iRevert "X"; iApply wpe_frame; eauto.
     iIntros (v f); iApply H5; reflexivity.
   Qed.
@@ -410,7 +410,7 @@ Section with_cpp.
     Proper (genv_leq ==> eq ==> eq ==> eq ==> eq ==> eq ==> (pointwise_relation _ (pointwise_relation _ lentails)) ==> lentails)
            (@wpe).
   Proof.
-    do 9 red; intros; subst.
+    repeat red; intros; subst.
     iIntros "X"; iRevert "X"; iApply wpe_frame; eauto.
     iIntros (v f); iApply H5; reflexivity.
   Qed.
@@ -424,7 +424,7 @@ Section with_cpp.
     Proper (genv_leq ==> eq ==> eq ==> eq ==> eq ==> (eq ==> lentails ==> lentails) ==> lentails)
            (@wpAny).
   Proof.
-    do 9 red; intros; subst.
+    repeat red; intros; subst.
     iIntros "X"; iRevert "X"; iApply wpAny_frame; eauto.
     iIntros (v f); iApply H4; reflexivity.
   Qed.
@@ -433,7 +433,7 @@ Section with_cpp.
     Proper (genv_leq ==> eq ==> eq ==> eq ==> eq ==> (pointwise_relation _ (pointwise_relation _ lentails)) ==> lentails)
            (@wpAny).
   Proof.
-    do 9 red; intros; subst.
+    repeat red; intros; subst.
     iIntros "X"; iRevert "X"; iApply wpAny_frame; eauto.
     iIntros (v f); iApply H4; reflexivity.
   Qed.
@@ -456,7 +456,7 @@ Section with_cpp.
   Global Instance Proper_wpi :
     Proper (genv_leq ==> eq ==> eq ==> eq ==> eq ==> eq ==> eq ==> (lentails ==> lentails) ==> lentails)
            (@wpi).
-  Proof. do 9 red; intros; subst.
+  Proof. repeat red; intros; subst.
          iIntros "X"; iRevert "X"; iApply wpi_frame; eauto.
          iIntros (f); iApply H6. reflexivity.
   Qed.
@@ -516,7 +516,7 @@ Section with_cpp.
   Global Instance Proper_wpd :
     Proper (genv_leq ==> eq ==> eq ==> eq ==> eq ==> eq ==> eq ==> lentails ==> lentails)
            (@wpd).
-  Proof. do 9 red; intros; subst.
+  Proof. repeat red; intros; subst.
          iIntros "X"; iRevert "X"; iApply wpd_frame; eauto.
          iApply H6.
   Qed.
@@ -670,7 +670,7 @@ Section with_cpp.
   Global Instance Proper_wp :
     Proper (genv_leq ==> eq ==> eq ==> eq ==> eq ==> Kpred_entails ==> lentails)
            (@wp).
-  Proof. do 8 red; intros; subst.
+  Proof. repeat red; intros; subst.
          iIntros "X"; iRevert "X"; iApply wp_frame; eauto.
          destruct H4 as [ ? [ ? [ ? ? ] ] ].
          iSplit; [ iApply H0 | iSplit; [ | iSplit; [ iApply H2 | iApply H3 ] ] ].
@@ -760,7 +760,7 @@ Section with_cpp.
 
   Global Instance Proper_fspec : forall tt ft a ls ti,
       Proper (pointwise_relation _ lentails ==> lentails) (@fspec tt ft ti a ls).
-  Proof. do 3 red; intros.
+  Proof. repeat red; intros.
          rewrite fspec_complete_type.
          iIntros "[X %]"; iRevert "X"; iApply fspec_frame; auto.
          iIntros (v); iApply H.
