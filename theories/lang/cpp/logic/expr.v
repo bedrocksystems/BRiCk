@@ -575,7 +575,7 @@ Module Type Expr.
 
         https://eel.is/c++draft/expr.new
      *)
-    Axiom wp_new : forall new_fn new_args init aty ty Q,
+    Axiom wp_prval_new : forall new_fn new_args init aty ty Q,
         Exists fa, _global new_fn.1 &~ fa **
         wp_args new_args (fun vs free =>
           Exists sz, [| size_of aty = Some sz |] **
@@ -600,7 +600,7 @@ Module Type Expr.
 
        https://eel.is/c++draft/expr.delete
      *)
-    Axiom wp_delete : forall delete_fn e ty dtor destroyed_type Q,
+    Axiom wp_prval_delete : forall delete_fn e ty dtor destroyed_type Q,
         (* call the destructor on the object, and then call delete_fn *)
         wp_prval e (fun vp free =>
           destruct_val destroyed_type vp dtor
