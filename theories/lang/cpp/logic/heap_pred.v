@@ -18,6 +18,7 @@ Set Default Proof Using "Type".
 
 Section with_cpp.
   Context `{Σ : cpp_logic}.
+  #[local] Open Scope bi_scope.
 
   (* representations are predicates over a location, they should be used to
    * assert properties of the heap
@@ -540,6 +541,11 @@ Section with_cpp.
   Proof. rewrite is_nonnull_eq. apply _. Qed.
   Global Instance is_nonnull_timeless : Timeless is_nonnull.
   Proof. rewrite is_nonnull_eq. apply _. Qed.
+
+  (** [blockR sz] is mean to be a contiguous chunk of [sz] bytes *)
+  Definition blockR {σ} (sz : _) : Rep :=
+    [∗list] i ∈ seq 0 (N.to_nat sz),
+      _offsetR (_sub (resolve:=σ) T_uint8 (Z.of_nat i)) (anyR (resolve:=σ) T_uint8 1).
 
 End with_cpp.
 

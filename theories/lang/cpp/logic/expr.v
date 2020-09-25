@@ -565,6 +565,8 @@ Module Type Expr.
       Q (Vptr nullptr) empSP
       |-- wp_prval Enull Q.
 
+    #[local] Open Scope bi_scope.
+
     (** [new (...) C(...)] invokes the constructor C over the memory returned by the
         allocation operation. Note that while the physical memory that backs both objcts
         is the same, the C++ abstract machine (potentially?) uses a different pointer to
@@ -577,17 +579,21 @@ Module Type Expr.
         Exists fa, _global new_fn.1 &~ fa **
         wp_args new_args (fun vs free =>
           Exists sz, [| size_of aty = Some sz |] **
-          |> fspec new_fn.2 ti (Vptr fa) (Vn sz :: vs) (fun res => [| res <> Vptr nullptr |] **
-               (* TODO: the pointer needs to satisfy alignment constraints *)
-               let xfer := [∗list] i ∈ seq 0 (N.to_nat sz), _offsetR (_sub T_uint8 (Z.of_nat i)) (anyR T_uint8 1)in
-               _at (_eqv res) xfer **
-            (Forall newp : ptr, [| newp <> nullptr |] ** _at (_eq newp) (anyR aty 1) -*
-               (* todo: we currently expose [anyR] after the [new] but that isn't correct
-                  if [anyR] implies something about the effective types of pointers since the lifetime
-                  of the object is only established by the constructor call.
-                *)
-               wp_init (type_of init) (Vptr newp) init (fun free' =>
-                 Q (Vptr newp) (free ** free')))))
+            |> fspec new_fn.2 ti (Vptr fa) (Vn sz :: vs) (fun res => Exists resp : ptr,
+                    [| res = Vptr resp |] **
+                    if bool_decide (resp = nullptr) then
+                      Q res free
+                    else
+                      (_at (_eqv res) (blockR (σ:=resolve) sz) **
+                           (Forall newp : ptr,
+                                   [| newp <> nullptr |] ** _at (_eq newp) (anyR aty 1) **
+                                   (Forall va, pinned_ptr va resp -* pinned_ptr va newp) -*
+                                   (* todo: we currently expose [anyR] after the [new] but that isn't correct
+                                      if [anyR] implies something about the effective types of pointers since the lifetime
+                                      of the object is only established by the constructor call.
+                                    *)
+                                   wp_init (type_of init) (Vptr newp) init (fun free' =>
+                                                                              Q (Vptr newp) (free ** free'))))))
       |-- wp_prval (Enew (Some new_fn) new_args aty None (Some init) ty) Q.
 
     (* delete
