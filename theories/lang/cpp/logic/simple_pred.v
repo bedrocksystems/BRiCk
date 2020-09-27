@@ -500,6 +500,7 @@ Module SimpleCPP.
 
     (* heap points to *)
     Definition tptsto {σ:genv} (t : type) (q : Qp) (p : ptr) (v : val) : mpred :=
+      [| p <> nullptr |] **
       Exists (a : option addr),
               mem_inj_own p a **
               match a with
@@ -508,6 +509,10 @@ Module SimpleCPP.
                 encodes σ t v vs ** bytes a vs q ** vbytes a vs q
               | None => val_ p v q
               end.
+
+    Theorem tptsto_nonnull {σ} ty q a :
+      @tptsto σ ty q nullptr a |-- False.
+    Proof. iDestruct 1 as (Hne) "_". naive_solver. Qed.
 
     Theorem tptsto_mono :
       Proper (genv_leq ==> eq ==> eq ==> eq ==> eq ==> (⊢)) (@tptsto).
@@ -520,10 +525,11 @@ Module SimpleCPP.
       split'; eapply tptsto_mono; eauto; apply Hσ.
     Qed.
 
-    Theorem tptsto_fractional :
-      forall {σ} ty p v, Fractional (λ q, @tptsto σ ty q p v).
+    Theorem tptsto_fractional {σ} ty p v :
+      Fractional (λ q, @tptsto σ ty q p v).
     Proof.
-      red. intros. unfold tptsto.
+      rewrite /tptsto; apply fractional_sep; first by apply _.
+      rewrite /Fractional; intros q1 q2.
       iSplit.
       - iDestruct 1 as ([]) "[#Mi By]".
         + iDestruct "By" as (vs) "(#En & [L1 R1] & [L2 R2])".
@@ -531,19 +537,17 @@ Module SimpleCPP.
         + iDestruct "By" as "[L R]".
           iSplitL "L"; iExists None; eauto with iFrame.
       - iIntros "[H1 H2]".
-        iDestruct "H1" as (a) "[#Mi1 By1]".
+        iDestruct "H1" as (a1) "[#Mi1 By1]".
         iDestruct "H2" as (a2) "[#Mi2 By2]".
-        iExists a; iFrame "#".
+        iExists a1; iFrame "#".
         iDestruct (mem_inj_own_agree with "Mi1 Mi2") as %?. subst a2.
-        destruct a.
-        + iDestruct "By1" as (vs) "[#En1 [By1 VBy1]]".
-          iDestruct "By2" as (vs2) "[#En2 [By2 VBy2]]".
-          iDestruct (encodes_consistent with "[En1 En2]") as "%".
-          iSplit; [ iApply "En1" | iApply "En2" ].
-          iDestruct (bytes_consistent with "[By1 By2]") as "[Z %]";
-            eauto with iFrame.
-          subst vs2. eauto with iFrame.
-        + iFrame.
+        destruct a1; last by iFrame.
+        iDestruct "By1" as (vs) "[#En1 [By1 VBy1]]".
+        iDestruct "By2" as (vs2) "[#En2 [By2 VBy2]]".
+        iDestruct (encodes_consistent with "[En1 En2]") as "%".
+        iSplit; [ iApply "En1" | iApply "En2" ].
+        iDestruct (bytes_consistent with "[By1 By2]") as "[Z ->]";
+          eauto with iFrame.
     Qed.
 
     Theorem tptsto_timeless :
@@ -554,8 +558,8 @@ Module SimpleCPP.
         @tptsto σ t q1 p v1 ** @tptsto σ t q2 p v2 |-- [| v1 = v2 |].
     Proof.
       iDestruct 1 as "[H1 H2]".
-      iDestruct "H1" as (ma1) "(Hp1 & Hv1)".
-      iDestruct "H2" as (ma2) "(Hp2 & Hv2)".
+      iDestruct "H1" as (Hnn1 ma1) "(Hp1 & Hv1)".
+      iDestruct "H2" as (Hnn2 ma2) "(Hp2 & Hv2)".
       iDestruct (mem_inj_own_agree with "Hp1 Hp2") as %?. subst ma1.
       iClear "Hp1 Hp2".
       case: ma2=>[a| ]; last by iDestruct (val_agree with "Hv1 Hv2") as %->.
@@ -634,15 +638,17 @@ Module SimpleCPP.
     Proof.
       intros. iIntros "(TP & PI & %)".
       iDestruct "PI" as "[[% %]|[% MJ]]"; [done| ].
-      iDestruct "TP" as (ma) "[MJ' TP]".
+      iDestruct "TP" as (_ ma) "[MJ' TP]".
       iDestruct (mem_inj_own_agree with "MJ MJ'") as %?. subst ma.
       iDestruct "TP" as (vs) "(#EN & Bys & VBys)".
       iIntros "!>".
       iExists vs. iFrame "EN VBys".
-      iIntros (v' vs') "#EN' VBys". iExists (Some va). iFrame "MJ".
+      iIntros (v' vs') "#EN' VBys".
       iDestruct (encodes_consistent _ _ _ _ vs vs' with "[$EN $EN']") as %EQL.
       iMod (bytes_update _ _ vs' with "Bys") as "Bys'"; first done.
-      iModIntro. iExists vs'. eauto with iFrame.
+      iModIntro.
+      iSplit; first done. iExists (Some va). iFrame "MJ".
+      iExists vs'. eauto with iFrame.
     Qed.
 
     Definition type_ptr {resolve : genv} (c: type) (p : ptr) : mpred :=

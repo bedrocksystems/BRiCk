@@ -94,6 +94,9 @@ Module Type CPP_LOGIC (Import CC : CPP_LOGIC_CLASS).
     *)
     Parameter tptsto : forall {σ:genv} (t : type) (q : Qp) (a : ptr) (v : val), mpred.
 
+    Axiom tptsto_nonnull : forall {σ} ty q a,
+      @tptsto σ ty q nullptr a |-- False.
+
     Axiom tptsto_proper :
       Proper (genv_eq ==> eq ==> eq ==> eq ==> eq ==> (≡)) (@tptsto).
     Axiom tptsto_mono :
@@ -253,6 +256,13 @@ Section with_cpp.
   Global Instance tptsto_as_fractional {σ} ty q a v :
     AsFractional (tptsto (σ := σ) ty q a v) (λ q, tptsto (σ := σ) ty q a v) q.
   Proof. split. done. apply _. Qed.
+
+  Theorem tptsto_nonnull_alt {σ} ty q p a :
+    tptsto (σ := σ) ty q p a |-- tptsto (σ := σ) ty q p a ** [| p <> nullptr |].
+  Proof.
+    destruct (ptr_eq_dec p nullptr); subst; last by eauto.
+    rewrite {1}tptsto_nonnull. exact: bi.False_elim.
+  Qed.
 
   (** function specifications written in weakest pre-condition style.
    *)
