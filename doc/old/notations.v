@@ -10,8 +10,6 @@ Require Import bedrock.lang.cpp.
 
 Section with_env.
 
-  Local Open Scope bi_scope.
-
   Context {σ : genv} `{Σ : cpp_logic}.
 
   (** ** State Predicates

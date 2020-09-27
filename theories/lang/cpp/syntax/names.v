@@ -3,7 +3,7 @@
  *
  * SPDX-License-Identifier: LGPL-2.1 WITH BedRock Exception for use over network, see repository root for details.
  *)
-Require Import stdpp.strings.
+From stdpp Require Import countable strings.
 Require Import bedrock.Util.
 Require Export bedrock.bytestring.
 
@@ -11,13 +11,13 @@ Set Primitive Projections.
 
 Local Open Scope N_scope.
 
-Require Import stdpp.countable.
-
 (* this represents names that exist in object files. *)
 Definition obj_name : Set := bs.
+Bind Scope bs_scope with obj_name.
 Global Instance obj_name_eq: EqDecision obj_name := _.
 
 Definition ident : Set := bs.
+Bind Scope bs_scope with ident.
 Global Instance ident_eq: EqDecision ident := _.
 
 (* naming in C++ is complex.
@@ -32,6 +32,7 @@ Global Instance ident_eq: EqDecision ident := _.
  * - there are also "unnamed" functions, e.g. constructors and destructors
  *)
 Definition globname : Set := ident.
+Bind Scope bs_scope with globname.
   (* these are mangled names. for consistency, we're going to
    * mangle everything.
    *)
@@ -39,6 +40,7 @@ Global Instance globname_eq: EqDecision globname := _.
 
 (* local names *)
 Definition localname : Set := ident.
+Bind Scope bs_scope with localname.
 Global Instance localname_eq: EqDecision localname := _.
 
 Record field : Set :=
@@ -47,8 +49,3 @@ Record field : Set :=
 }.
 Global Instance field_eq: EqDecision field.
 Proof. solve_decision. Defined.
-
-Bind Scope bs_scope with globname.
-Bind Scope bs_scope with obj_name.
-Bind Scope bs_scope with ident.
-Bind Scope bs_scope with localname.

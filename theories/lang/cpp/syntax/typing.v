@@ -6,7 +6,7 @@
 Require Import Coq.Classes.DecidableClass.
 From bedrock.lang.cpp.syntax Require Import names expr types.
 
-Fixpoint type_of (e : Expr) : type :=
+Definition type_of (e : Expr) : type :=
   match e with
   | Econst_ref _ t
   | Evar _ t

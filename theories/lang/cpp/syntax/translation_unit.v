@@ -4,13 +4,10 @@
  * SPDX-License-Identifier: LGPL-2.1 WITH BedRock Exception for use over network, see repository root for details.
  *)
 Require Import Coq.Classes.DecidableClass.
-Require Import Coq.ZArith.BinIntDef.
-Require Import Coq.Bool.Bool.
-
-Require Import Coq.ssr.ssreflect.
+From Coq Require Import NArith ZArith ssr.ssreflect.
 Local Open Scope general_if_scope.
-Require Import stdpp.decidable.
-Require Import stdpp.gmap.
+From stdpp Require Import decidable tactics.
+
 Require Import bedrock.bytestring.
 Require Import bedrock.Util.
 From bedrock.lang.cpp.syntax Require Import names expr stmt types.
