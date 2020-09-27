@@ -94,6 +94,9 @@ Module Type CPP_LOGIC (Import CC : CPP_LOGIC_CLASS).
     *)
     Parameter tptsto : forall {σ:genv} (t : type) (q : Qp) (a : ptr) (v : val), mpred.
 
+    Axiom tptsto_nonnull : forall {σ} ty q a,
+      @tptsto σ ty q nullptr a |-- False.
+
     Axiom tptsto_proper :
       Proper (genv_eq ==> eq ==> eq ==> eq ==> eq ==> (≡)) (@tptsto).
     Axiom tptsto_mono :
