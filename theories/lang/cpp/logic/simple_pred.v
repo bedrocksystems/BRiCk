@@ -520,10 +520,11 @@ Module SimpleCPP.
       split'; eapply tptsto_mono; eauto; apply Hσ.
     Qed.
 
-    Theorem tptsto_fractional :
-      forall {σ} ty p v, Fractional (λ q, @tptsto σ ty q p v).
+    Theorem tptsto_fractional {σ} ty p v :
+      Fractional (λ q, @tptsto σ ty q p v).
     Proof.
-      red. intros. unfold tptsto.
+      rewrite /tptsto.
+      rewrite /Fractional; intros q1 q2.
       iSplit.
       - iDestruct 1 as ([]) "[#Mi By]".
         + iDestruct "By" as (vs) "(#En & [L1 R1] & [L2 R2])".
@@ -531,19 +532,17 @@ Module SimpleCPP.
         + iDestruct "By" as "[L R]".
           iSplitL "L"; iExists None; eauto with iFrame.
       - iIntros "[H1 H2]".
-        iDestruct "H1" as (a) "[#Mi1 By1]".
+        iDestruct "H1" as (a1) "[#Mi1 By1]".
         iDestruct "H2" as (a2) "[#Mi2 By2]".
-        iExists a; iFrame "#".
+        iExists a1; iFrame "#".
         iDestruct (mem_inj_own_agree with "Mi1 Mi2") as %?. subst a2.
-        destruct a.
-        + iDestruct "By1" as (vs) "[#En1 [By1 VBy1]]".
-          iDestruct "By2" as (vs2) "[#En2 [By2 VBy2]]".
-          iDestruct (encodes_consistent with "[En1 En2]") as "%".
-          iSplit; [ iApply "En1" | iApply "En2" ].
-          iDestruct (bytes_consistent with "[By1 By2]") as "[Z %]";
-            eauto with iFrame.
-          subst vs2. eauto with iFrame.
-        + iFrame.
+        destruct a1; last by iFrame.
+        iDestruct "By1" as (vs) "[#En1 [By1 VBy1]]".
+        iDestruct "By2" as (vs2) "[#En2 [By2 VBy2]]".
+        iDestruct (encodes_consistent with "[En1 En2]") as "%".
+        iSplit; [ iApply "En1" | iApply "En2" ].
+        iDestruct (bytes_consistent with "[By1 By2]") as "[Z ->]";
+          eauto with iFrame.
     Qed.
 
     Theorem tptsto_timeless :
