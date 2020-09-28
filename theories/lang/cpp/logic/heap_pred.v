@@ -6,7 +6,7 @@
 Require Import Coq.Classes.Morphisms.
 
 From iris.bi Require Export monpred.
-Require Import iris.proofmode.tactics.
+From iris.proofmode Require Import tactics monpred.
 Require Import iris.bi.lib.fractional.
 
 From bedrock Require Import ChargeUtil.
@@ -22,26 +22,11 @@ Section with_cpp.
   (* representations are predicates over a location, they should be used to
    * assert properties of the heap
    *)
-  Global Instance val_inhabited : Inhabited val.
-  Proof. constructor. apply (Vint 0). Qed.
-  Global Instance ptr_inhabited : Inhabited ptr.
-  Proof. constructor. apply nullptr. Qed.
-
-  Local Instance ptr_rel : SqSubsetEq ptr.
-  Proof.
-    unfold SqSubsetEq.
-    unfold relation.
-    apply eq.
-  Defined.
-
-  Local Instance ptr_rel_preorder : PreOrder (⊑@{ptr}).
-  Proof.
-    unfold sqsubseteq. unfold ptr_rel.
-    apply base.PreOrder_instance_0.
-  Qed.
+  Global Instance val_inhabited : Inhabited val := populate (Vint 0).
+  Global Instance ptr_inhabited : Inhabited ptr := populate nullptr.
 
   Canonical Structure ptr_bi_index : biIndex :=
-    BiIndex ptr ptr_inhabited ptr_rel ptr_rel_preorder.
+    BiIndex ptr _ eq _.
 
   Definition Rep := monPred ptr_bi_index mpredI.
   Definition RepI := monPredI ptr_bi_index mpredI.
@@ -70,18 +55,15 @@ Section with_cpp.
   Global Instance as_Rep_persistent P :
     (∀ p, Persistent (P p)) → Persistent (as_Rep P).
   Proof.
-    intros HP. constructor=>p. rewrite monPred_at_persistently/=. apply HP.
+    intros HP. constructor=>p. by rewrite monPred_at_persistently -HP.
   Qed.
   Global Instance as_Rep_affine P :
-    (∀ p, Affine (P p)) → Affine (as_Rep P).
-  Proof.
-    intros HP. constructor=>p. rewrite monPred_at_emp. apply HP.
-  Qed.
+    (∀ p, Affine (P p)) → Affine (as_Rep P) := _.
   Global Instance as_Rep_timeless P :
     (∀ p, Timeless (P p)) → Timeless (as_Rep P).
   Proof.
     intros HP. constructor=>p.
-    rewrite monPred_at_later monPred_at_except_0. apply HP.
+    by rewrite monPred_at_later monPred_at_except_0 HP.
   Qed.
   Global Instance as_Rep_fractional P :
     (∀ p, Fractional (λ q, P q p)) → Fractional (λ q, as_Rep (P q)).
@@ -100,8 +82,8 @@ Section with_cpp.
     (∀ p, f p |-- f p ** [| P |]) →
     as_Rep f |-- as_Rep f ** [| P |].
   Proof.
-    intros Hf. constructor=>p /=. rewrite {}Hf.
-    by rewrite monPred_at_sep monPred_at_only_provable.
+    intros Hf. constructor=>p /=.
+    by rewrite Hf monPred_at_sep monPred_at_only_provable.
   Qed.
 
   Definition _offsetR_def (o : Offset) (r : Rep) : Rep :=
@@ -135,12 +117,12 @@ Section with_cpp.
   Proof.
     rewrite _offsetR_eq /_offsetR_def. rewrite -as_Rep_sep. f_equiv=>p.
     apply (anti_symm _).
-    - iDestruct 1 as (to) "[#O R]". rewrite monPred_at_sep.
-      iDestruct "R" as "[R1 R2]". iSplitL "R1"; iExists to; by iFrame "O".
+    - iDestruct 1 as (to) "[#O [R1 R2]]".
+      iSplitL "R1"; iExists to; by iFrame "O".
     - iDestruct 1 as "[R1 R2]".
       iDestruct "R1" as (to1) "[#O1 R1]". iDestruct "R2" as (to2) "[#O2 R2]".
       iDestruct (_off_functional _ _ to1 to2 with "[$]") as %->.
-      iExists to2. rewrite monPred_at_sep. iFrame "O1 R1 R2".
+      iExists to2. iFrame "O1 R1 R2".
   Qed.
 
   Global Instance _offsetR_fractional o (r : Qp → Rep) :
@@ -197,20 +179,16 @@ Section with_cpp.
     intros. rewrite _at_eq /_at_def path_pred.addr_of_eq /addr_of_def.
     iIntros "[#H L]"; iDestruct "L" as (l) "[L R]".
     iExists _; iFrame "#∗".
-    iApply "H". iAssumption.
+    by iApply "H".
   Qed.
 
   Lemma _at_loc_rwe : forall (l1 l2 : Loc) (R : Rep),
       Loc_equiv l1 l2 |-- (_at l1 R ∗-∗ _at l2 R).
   Proof.
     intros. iIntros "#A".
-    iSplit.
-    - iIntros "B". iApply _at_loc_rw. iFrame.
-      unfold Loc_impl. iModIntro. iIntros (l) "H".
-      iApply "A"; iAssumption.
-    - iIntros "B". iApply _at_loc_rw. iFrame.
-      unfold Loc_impl. iModIntro. iIntros (l) "H".
-      iApply "A"; iAssumption.
+    iSplit; iIntros "B";
+      iApply _at_loc_rw; iFrame;
+      iIntros "!>" (l) "H"; by iApply "A".
   Qed.
 
   Lemma _at_loc_materialize : forall (l : Loc) (r : Rep),
@@ -221,26 +199,16 @@ Section with_cpp.
 
   Lemma addr_of_valid_loc : forall l a,
       l &~ a |-- valid_loc l.
-  Proof.
-    intros. rewrite valid_loc_eq /valid_loc_def.
-    iIntros "X"; iExists _; eauto.
-  Qed.
+  Proof. intros. rewrite valid_loc_eq /valid_loc_def. eauto. Qed.
 
   Lemma valid_loc_equiv : forall l, valid_loc l -|- Exists p, l &~ p.
-  Proof.
-    intros.
-    rewrite valid_loc_eq /valid_loc_def. reflexivity.
-  Qed.
+  Proof. by rewrite valid_loc_eq. Qed.
 
   Lemma _at_emp : forall l, _at l emp -|- valid_loc l.
   Proof.
-    intros. rewrite _at_loc_materialize.
-    setoid_rewrite -> monPred_at_emp; eauto.
-    split'; eauto with iFrame.
-    - iIntros "X"; iDestruct "X" as (a) "[#A _]".
-      iApply addr_of_valid_loc; eauto.
-    - rewrite valid_loc_equiv.
-      iIntros "X"; iDestruct "X" as (a) "#X"; iExists a; iFrame "#".
+    intros. rewrite _at_loc_materialize valid_loc_equiv.
+    setoid_rewrite monPred_at_emp.
+    by setoid_rewrite bi.sep_emp.
   Qed.
 
   Lemma _at_exists : forall (l : Loc) T (P : T -> Rep),
@@ -249,34 +217,26 @@ Section with_cpp.
     intros.
     rewrite _at_eq /_at_def.
     split'.
-    - iIntros "H". iDestruct "H" as (a) "H".
-      rewrite monPred_at_exist.
-      iDestruct "H" as "[? H]"; iFrame "#∗".
-      iDestruct "H" as (xx) "H".
-      do 2 iExists _; iFrame "#∗".
-    - iIntros "A"; iDestruct "A" as (v a) "[#L P]".
-      iExists _; iFrame "#∗".
-      rewrite monPred_at_exist. iExists _; iFrame.
+    - iDestruct 1 as (a) "[? H]".
+      iDestruct "H" as (xx) "H". eauto.
+    - iDestruct 1 as (v a) "[#L P]".
+      iExists _; iFrame "#∗". iExists _; iFrame.
   Qed.
 
   Lemma _at_only_provable : forall (l : Loc) (P : Prop),
       _at l [| P |] -|- [| P |] ** valid_loc l.
   Proof.
-    intros. rewrite _at_loc_materialize valid_loc_equiv.
+    intros. rewrite _at_loc_materialize valid_loc_equiv bi.sep_exist_l.
     setoid_rewrite monPred_at_only_provable.
-    split'.
-    { iIntros "X"; iDestruct "X" as (a) "[#L R]"; iFrame; iExists a; iFrame "#". }
-    { iIntros "[L #R]"; iDestruct "R" as (p) "R"; iExists p; iFrame "#∗". }
+    by setoid_rewrite bi.sep_comm at 1.
   Qed.
 
   Lemma _at_pure : forall (l : Loc) (P : Prop),
       _at l (bi_pure P) -|- bi_pure P ** valid_loc l.
   Proof.
-    intros. rewrite _at_loc_materialize valid_loc_equiv.
+    intros. rewrite _at_loc_materialize valid_loc_equiv bi.sep_exist_l.
     setoid_rewrite monPred_at_pure.
-    split'.
-    { iIntros "X"; iDestruct "X" as (a) "[#L R]"; iFrame; iExists a; iFrame "#". }
-    { iIntros "[L #R]"; iDestruct "R" as (p) "R"; iExists p; iFrame "#∗". }
+    by setoid_rewrite bi.sep_comm at 1.
   Qed.
 
   Lemma _at_sep (l : Loc) (P Q : Rep) :
@@ -285,8 +245,7 @@ Section with_cpp.
     rewrite !_at_loc_materialize.
     setoid_rewrite monPred_at_sep.
     split'.
-    { iIntros "A"; iDestruct "A" as (p) "[#X [L R]]".
-      iSplitL "L"; iExists _; iFrame "#∗". }
+    { iDestruct 1 as (p) "[#X [L R]]". iSplitL "L"; eauto. }
     { iIntros "[A B]"; iDestruct "A" as (p) "[#LA A]"; iDestruct "B" as (p') "[#LB B]".
       iExists _; iFrame "#∗".
       iDestruct (addr_of_precise with "[LA LB]") as %H;
@@ -298,18 +257,15 @@ Section with_cpp.
       _at l (P -* Q) |-- (_at l P -* _at l Q) ** valid_loc l.
   Proof.
     rewrite !_at_loc_materialize.
-    iIntros "X"; iDestruct "X" as (a) "[#L X]".
+    iDestruct 1 as (a) "[#L X]".
     rewrite monPred_wand_force.
-    iSplitR "L"; [ | iApply addr_of_valid_loc; iAssumption ].
-    iIntros "Y".
-    iDestruct "Y" as (aa) "[#L' P]".
+    iSplitR "L"; [ | by iApply addr_of_valid_loc ].
+    iDestruct 1 as (aa) "[#L' P]".
     iExists _.
     iSplitR.
     2:{ iApply "X".
-        rewrite path_pred.addr_of_eq /addr_of_def.
-        iDestruct (_loc_unique with "[L L']") as "%".
-        iSplitL; [ iApply "L" | iApply "L'" ].
-        subst. iAssumption. }
+        rewrite path_pred.addr_of_eq.
+        by iDestruct (_loc_unique _ _ aa with "[$L $L']") as %->. }
     iAssumption.
   Qed.
 
@@ -320,10 +276,8 @@ Section with_cpp.
     rewrite _offsetR_eq _offsetL_eq path_pred.addr_of_eq
             /addr_of_def /_offsetR_def /_offsetL_def;
     split'; simpl.
-    { iIntros "H"; iDestruct "H" as (a) "[#L X]"; iDestruct "X" as (to) "[O R]".
-      iExists _. iFrame. iExists _. iFrame "#∗". }
-    { iIntros "H"; iDestruct "H" as (a) "[X R]"; iDestruct "X" as (from) "[#O L]".
-      iExists _; iFrame; iExists _; iFrame "#∗". }
+    { iDestruct 1 as (a) "[#L X]"; iDestruct "X" as (to) "[O R]". eauto. }
+    { iDestruct 1 as (a) "[X R]"; iDestruct "X" as (from) "[#O L]". eauto. }
   Qed.
 
   Global Instance _at_fractional (r : Qp → Rep) (l : Loc) `{!Fractional r} :
@@ -417,12 +371,8 @@ Section with_cpp.
   Lemma _at_pureR : forall x (P : mpred),
       _at x (pureR P) -|- P ** valid_loc x.
   Proof.
-    intros. rewrite _at_loc_materialize; simpl.
-    split'; simpl.
-    - iIntros "X"; iDestruct "X" as (a) "[#L P]"; iFrame.
-      iApply addr_of_valid_loc; iApply "L".
-    - rewrite valid_loc_equiv.
-      iIntros "[P H]"; iDestruct "H" as (a) "#H"; iExists _; iFrame "#∗".
+    intros. rewrite _at_loc_materialize/= valid_loc_equiv bi.sep_exist_l.
+    by setoid_rewrite bi.sep_comm at 1.
   Qed.
 
 
