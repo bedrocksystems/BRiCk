@@ -17,8 +17,6 @@ From bedrock.lang.cpp Require Import
 Set Primitive Projections.
 Set Default Proof Using "Type".
 
-Local Open Scope bi_scope.
-
 Section with_cpp.
   Context `{Σ : cpp_logic thread_info}.
 
@@ -578,26 +576,26 @@ Section with_cpp.
       {| k_normal := |={l,r}=> Q.(k_normal)
        ; k_return v f := |={l,r}=> Q.(k_return) v f
        ; k_break := |={l,r}=> Q.(k_break)
-       ; k_continue := |={l,r}=> Q.(k_continue) |}.
+       ; k_continue := |={l,r}=> Q.(k_continue) |}%I.
 
   Definition void_return (P : mpred) : Kpreds :=
     {| k_normal := P
      ; k_return := fun r free => match r with
                               | None => free ** P
-                              | Some _ => lfalse
+                              | Some _ => False
                               end
-     ; k_break := lfalse
-     ; k_continue := lfalse
-    |}.
+     ; k_break := False
+     ; k_continue := False
+    |}%I.
 
   Definition val_return (P : val -> mpred) : Kpreds :=
-    {| k_normal := lfalse
+    {| k_normal := False
      ; k_return := fun r free => match r with
-                              | None => lfalse
+                              | None => False
                               | Some v => free ** P v
                               end
-     ; k_break := lfalse
-     ; k_continue := lfalse |}.
+     ; k_break := False
+     ; k_continue := False |}%I.
 
   Definition Kseq (Q : Kpreds -> mpred) (k : Kpreds) : Kpreds :=
     {| k_normal   := Q k

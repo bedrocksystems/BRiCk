@@ -565,8 +565,6 @@ Module Type Expr.
       Q (Vptr nullptr) empSP
       |-- wp_prval Enull Q.
 
-    #[local] Open Scope bi_scope.
-
     (** [new (...) C(...)] invokes the constructor C over the memory returned by the
         allocation operation. Note that while the physical memory that backs both objcts
         is the same, the C++ abstract machine (potentially?) uses a different pointer to

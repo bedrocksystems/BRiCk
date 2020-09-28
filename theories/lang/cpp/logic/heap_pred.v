@@ -18,7 +18,6 @@ Set Default Proof Using "Type".
 
 Section with_cpp.
   Context `{Σ : cpp_logic}.
-  #[local] Open Scope bi_scope.
 
   (* representations are predicates over a location, they should be used to
    * assert properties of the heap
@@ -31,6 +30,9 @@ Section with_cpp.
 
   Definition Rep := monPred ptr_bi_index mpredI.
   Definition RepI := monPredI ptr_bi_index mpredI.
+
+  Bind Scope bi_scope with Rep.
+  Bind Scope bi_scope with RepI.
 
   Lemma Rep_ext (P Q : Rep) :
       (forall p : ptr, P p -|- Q p) ->
