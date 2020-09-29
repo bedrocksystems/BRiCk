@@ -34,7 +34,6 @@ Module Type Stmt.
     Local Notation wpAny := (wpAny (resolve:=resolve) M ti).
     Local Notation wpAnys := (wpAnys (resolve:=resolve) M ti).
     Local Notation fspec := (fspec ti).
-    Local Notation mdestroy := (mdestroy (σ:=resolve) ti) (only parsing).
     Local Notation destruct_val := (destruct_val (σ:=resolve) ti) (only parsing).
     Local Notation destruct_obj := (destruct_obj (σ:=resolve) ti) (only parsing).
 
@@ -119,9 +118,9 @@ Module Type Stmt.
         end
 
       | Tnamed cls =>
-        Forall a, _at (_eq a) (uninitR (erase_qualifiers ty) 1) -*
+        Forall a, _at (_eq a) (uninitR ty 1) -*
                   let continue :=
-                      k (Rbind x a ρ) (Kfree (mdestroy ty (Vptr a) dtor emp) Q)
+                      k (Rbind x a ρ) (Kfree (destruct_val ty (Vptr a) dtor (_at (_eq a) (anyR ty 1))) Q)
                   in
                   match init with
                   | None => continue
@@ -131,7 +130,7 @@ Module Type Stmt.
       | Tarray ty' N =>
         Forall a, _at (_eq a) (uninitR (erase_qualifiers ty) 1) -*
                   let continue :=
-                      k (Rbind x a ρ) (Kfree (mdestroy ty (Vptr a) dtor emp) Q)
+                      k (Rbind x a ρ) (Kfree (destruct_val ty (Vptr a) dtor (_at (_eq a) (anyR ty 1))) Q)
                   in
                   match init with
                   | None => continue

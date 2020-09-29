@@ -61,10 +61,4 @@ Section destroy.
     | _ => emp
     end.
 
-  (* call the destructor (if available) and delete the memory *)
-  Definition mdestroy (ty : type) (this : val) (dtor : option obj_name) (Q : mpred)
-  : mpred :=
-    destruct_val ty this dtor
-                 (_at (_eqv this) (anyR (erase_qualifiers ty) 1) ** Q).
-
 End destroy.

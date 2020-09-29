@@ -44,7 +44,6 @@ Module Type Expr.
     Local Notation wpe := (wpe (resolve:=resolve) M ti ρ).
     Local Notation wpAnys := (wpAnys (resolve:=resolve) M ti ρ).
     Local Notation fspec := (fspec resolve.(genv_tu).(globals)).
-    Local Notation mdestroy := (mdestroy (σ:=resolve) ti) (only parsing).
     Local Notation destruct_val := (destruct_val (σ:=resolve) ti) (only parsing).
 
     Local Notation glob_def := (glob_def resolve) (only parsing).
@@ -620,10 +619,11 @@ Module Type Expr.
     (** [Ematerialize_temp e ty] is an xvalue
      *)
     Axiom wp_xval_temp : forall e ty Q,
-        (Forall a, _at (_eqv a) (uninitR (erase_qualifiers ty) 1) -*
+        (let raw_type := erase_qualifiers ty in
+         Forall a, _at (_eqv a) (uninitR raw_type 1) -*
                   let '(e,dt) := destructor_for e in
                   wp_init ty a e
-                          (fun free => Q a (mdestroy ty a dt free)))
+                          (fun free => Q a (destruct_val ty a dt (_at (_eqv a) (anyR raw_type 1) ** free))))
         |-- wp_xval (Ematerialize_temp e ty) Q.
 
     (** temporary materialization only occurs when the resulting value is used.
@@ -633,11 +633,12 @@ Module Type Expr.
      *)
     Axiom wp_prval_implicit_materialize : forall e Q,
         is_aggregate (type_of e) = true ->
-        (let ty := erase_qualifiers (type_of e) in
-         Forall a, _at (_eqv a) (uninitR ty 1) -*
+        (let ty := type_of e in
+         let raw_type := erase_qualifiers ty in
+         Forall a, _at (_eqv a) (uninitR raw_type 1) -*
                    let '(e,dt) := destructor_for e in
                    wp_init ty a e (fun free =>
-                                     Q a (mdestroy ty a dt free)))
+                     Q a (destruct_val ty a dt (_at (_eqv a) (anyR raw_type 1) ** free))))
         |-- wp_prval e Q.
 
 
@@ -657,10 +658,11 @@ Module Type Expr.
      *)
 
     Axiom wp_prval_materialize : forall ty e dtor Q,
-      Forall a : val,
-      _at (_eqv a) (uninitR (erase_qualifiers ty) 1) -*
+      (Forall a : val,
+      let raw_type := erase_qualifiers ty in
+      _at (_eqv a) (uninitR raw_type 1) -*
           wp_init ty a e (fun free =>
-                            Q a (mdestroy ty a (Some dtor) free))
+                            Q a (destruct_val ty a (Some dtor) (_at (_eqv a) (anyR raw_type 1) ** free))))
       |-- wp_prval (Ebind_temp e dtor ty) Q.
 
     Axiom wp_pseudo_destructor : forall e ty Q,
