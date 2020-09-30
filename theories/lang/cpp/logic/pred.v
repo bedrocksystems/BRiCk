@@ -46,13 +46,48 @@ Module Type CPP_LOGIC_CLASS_MIXIN (Import CC : CPP_LOGIC_CLASS_BASE).
   { _Σ       : gFunctors
   ; _ghost   : _cpp_ghost
   ; has_cppG : cppG _Σ
-  ; mpredI : bi := iPropI _Σ
-  ; mpred    := bi_car mpredI
   }.
   Arguments cpp_logic : clear implicits.
   Coercion _Σ : cpp_logic >-> gFunctors.
 
   Global Existing Instance has_cppG.
+
+  Section with_cpp.
+    Context `{cpp_logic}.
+
+    Definition mpred := iProp _Σ.
+    Canonical Structure mpredO : ofeT
+      := OfeT mpred (ofe_mixin (iPropO _Σ)).
+    Canonical Structure mpredI : bi :=
+    {|
+      bi_car := mpred ;
+      bi_ofe_mixin := bi_ofe_mixin (iPropI _Σ);
+      bi_bi_mixin := bi_bi_mixin (iPropI _Σ);
+      bi_bi_later_mixin := bi_bi_later_mixin (iPropI _Σ);
+    |}.
+
+    Definition mPrePredO : ofeT := iPrePropO _Σ.
+
+    Definition mpred_unfold : mpredO -n> mPrePredO := iProp_unfold.
+    Definition mpred_fold : mPrePredO -n> mpredO := iProp_fold.
+
+    Definition mpred_fold_unfold :
+      ∀ (P : mpred), mpred_fold (mpred_unfold P) ≡ P := iProp_fold_unfold.
+    Definition mpred_unfold_fold :
+      ∀ (P : mPrePredO), mpred_unfold (mpred_fold P) ≡ P := iProp_unfold_fold.
+
+    (* TODO: generalize to a telescope version of -d> *)
+    (* With something like -td> below:
+      Definition laterPred `{cpp_logic} {T: tele} (Q : T -t> mpred) :
+        laterO (T -td> mPrePredO) :=
+        Next (λ args, mpred_unfold (tele_app Q args)). *)
+    Definition mPrePredO_to_laterO (P : mpred) : laterO mPrePredO :=
+      Next (mpred_unfold P).
+
+    Definition mPrePredO_to_laterO_1 {A: ofeT}
+      (P : ofe_car A -> mpred) : laterO (A -d> mPrePredO) :=
+      Next (fun a => mpred_unfold (P a)).
+  End with_cpp.
 
   Bind Scope bi_scope with bi_car.
   Bind Scope bi_scope with mpred.
