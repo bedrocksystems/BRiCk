@@ -333,7 +333,7 @@ Section FromToBytes.
         _Z_to_bytes_def 0 endianness sgn v = [].
     Proof.
       move=> [ | ] sgn v;
-        now rewrite /_Z_to_bytes_def _Z_to_bytes_le_0_bytes //=.
+        by rewrite /_Z_to_bytes_def _Z_to_bytes_le_0_bytes //=.
     Qed.
 
     Lemma _Z_to_bytes_unsigned_le'_0_value:
@@ -367,7 +367,7 @@ Section FromToBytes.
       move=> sgn [ | ] cnt;
         rewrite /_Z_to_bytes_def
                 _Z_to_bytes_le_0_value //=;
-        now rewrite rev_repeat.
+        by rewrite rev_repeat.
     Qed.
 
     Lemma _Z_to_bytes_unsigned_le'_S_cnt:
@@ -648,7 +648,7 @@ Section FromToBytes.
                         ?Z.shiftl_spec; try lia).
         rewrite !Z.testbit_ones; try lia.
         churn_bits.
-        now replace (n + 8 - 8)%Z with n by lia.
+        by replace (n + 8 - 8)%Z with n by lia.
     Qed.
 
     Lemma bswap32_set_byte_reverse:
@@ -662,7 +662,6 @@ Section FromToBytes.
          (Z.lor (_Z_set_byte x2 2)
           (Z.lor (_Z_set_byte x1 3) 0))).
     Proof.
-(*
       move=> x1 x2 x3 x4.
       rewrite /builtins.bswap32.
       replace (builtins.bswap16
@@ -689,7 +688,7 @@ Section FromToBytes.
         rewrite -!_Z_set_byte_S_idx.
         rewrite {1}Z.lor_comm.
         rewrite -!Z.lor_assoc.
-        now rewrite Z.lor_0_l.
+        by rewrite Z.lor_0_l.
       - f_equal.
         apply Z.bits_inj'=> n ?.
         rewrite /_Z_set_byte.
@@ -697,7 +696,6 @@ Section FromToBytes.
         rewrite !Z.testbit_ones; try lia.
         churn_bits.
       - admit.
-*)
     Admitted.
 
     Lemma bswap64_set_byte_reverse:
@@ -768,13 +766,13 @@ Section FromToBytes.
         simpl in *; subst.
       - f_equal; do 2 destruct bytes=> //=.
       - do 3 destruct bytes=> //=.
-        now rewrite bswap16_set_byte_reverse.
+        by rewrite bswap16_set_byte_reverse.
       - do 5 destruct bytes=> //=.
-        now rewrite bswap32_set_byte_reverse.
+        by rewrite bswap32_set_byte_reverse.
       - do 9 destruct bytes=> //=.
-        now rewrite bswap64_set_byte_reverse.
+        by rewrite bswap64_set_byte_reverse.
       - do 17 destruct bytes=> //=.
-        now rewrite bswap128_set_byte_reverse.
+        by rewrite bswap128_set_byte_reverse.
     Qed.
 
   End FromBytesFacts_internal.
