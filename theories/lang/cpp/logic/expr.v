@@ -1,5 +1,5 @@
 (*
- * Copyright (C) BedRock Systems Inc. 2019 Gregory Malecha
+ * Copyright (C) BedRock Systems Inc. 2019-2020 Gregory Malecha
  *
  * SPDX-License-Identifier: LGPL-2.1 WITH BedRock Exception for use over network, see repository root for details.
  *)
@@ -44,7 +44,7 @@ Module Type Expr.
     Local Notation wpe := (wpe (resolve:=resolve) M ti ρ).
     Local Notation wpAnys := (wpAnys (resolve:=resolve) M ti ρ).
     Local Notation fspec := (fspec resolve.(genv_tu).(globals)).
-    Local Notation mdestroy := (mdestroy (σ:=resolve) ti) (only parsing).
+    Local Notation destruct_val := (destruct_val (σ:=resolve) ti) (only parsing).
 
     Local Notation glob_def := (glob_def resolve) (only parsing).
     Local Notation _global := (_global (resolve:=resolve)) (only parsing).
@@ -447,7 +447,7 @@ Module Type Expr.
       end.
 
     (** function calls *)
-    (** 
+    (**
     The next few axioms rely on the evaluation order specified
     since C++17 (implemented in Clang >= 4):
     to evaluate [f(args)], [f] is evaluated before [args].
@@ -564,6 +564,53 @@ Module Type Expr.
       Q (Vptr nullptr) empSP
       |-- wp_prval Enull Q.
 
+    (** [new (...) C(...)] invokes the constructor C over the memory returned by the
+        allocation operation. Note that while the physical memory that backs both objcts
+        is the same, the C++ abstract machine (potentially?) uses a different pointer to
+        the new value. This explains the fact that the old pointer can not be used to access
+        the new object.
+
+        https://eel.is/c++draft/expr.new
+     *)
+    Axiom wp_prval_new : forall new_fn new_args init aty ty Q,
+        Exists fa, _global new_fn.1 &~ fa **
+        wp_args new_args (fun vs free =>
+          Exists sz, [| size_of aty = Some sz |] **
+            |> fspec new_fn.2 ti (Vptr fa) (Vn sz :: vs) (fun res => Exists resp : ptr,
+                    [| res = Vptr resp |] **
+                    if bool_decide (resp = nullptr) then
+                      Q res free
+                    else
+                      (_at (_eqv res) (blockR (σ:=resolve) sz) **
+                       (* todo: ^ This misses an condition that [res] is suitably aligned. (issue #149) *)
+                           (Forall newp : ptr,
+                                   [| newp <> nullptr |] ** _at (_eq newp) (anyR aty 1) **
+                                   (* todo: This is missing the information that [res] provides
+                                      storage for [newp] and, in particular, that one gets ownership
+                                      of the bytes back at [res] when the lifetime of the object
+                                      allocated here ends. (issue #148) *)
+                                   (Forall va, pinned_ptr va resp -* pinned_ptr va newp) -*
+                                   (* todo: we currently expose [anyR] after the [new] but that isn't correct
+                                      if [anyR] implies something about the effective types of pointers since the lifetime
+                                      of the object is only established by the constructor call.
+                                    *)
+                                   wp_init (type_of init) (Vptr newp) init (fun free' =>
+                                                                              Q (Vptr newp) (free ** free'))))))
+      |-- wp_prval (Enew (Some new_fn) new_args aty None (Some init) ty) Q.
+
+    (* delete
+
+       https://eel.is/c++draft/expr.delete
+     *)
+    Axiom wp_prval_delete : forall delete_fn e ty dtor destroyed_type Q,
+        (* call the destructor on the object, and then call delete_fn *)
+        wp_prval e (fun vp free =>
+          destruct_val destroyed_type vp dtor
+              (Exists da, _global delete_fn.1 &~ da **
+               fspec delete_fn.2 ti (Vptr da) (vp :: nil) (fun v => Q v free)))
+        |-- wp_prval (Edelete false (Some delete_fn) e destroyed_type dtor ty) Q.
+
+
     (** temporary expressions
        note(gmm): these axioms should be reviewed thoroughly
      *)
@@ -577,10 +624,11 @@ Module Type Expr.
     (** [Ematerialize_temp e ty] is an xvalue
      *)
     Axiom wp_xval_temp : forall e ty Q,
-        (Forall a, _at (_eqv a) (uninitR (erase_qualifiers ty) 1) -*
+        (let raw_type := erase_qualifiers ty in
+         Forall a, _at (_eqv a) (uninitR raw_type 1) -*
                   let '(e,dt) := destructor_for e in
                   wp_init ty a e
-                          (fun free => Q a (mdestroy ty a dt free)))
+                          (fun free => Q a (destruct_val ty a dt (_at (_eqv a) (anyR raw_type 1) ** free))))
         |-- wp_xval (Ematerialize_temp e ty) Q.
 
     (** temporary materialization only occurs when the resulting value is used.
@@ -590,11 +638,12 @@ Module Type Expr.
      *)
     Axiom wp_prval_implicit_materialize : forall e Q,
         is_aggregate (type_of e) = true ->
-        (let ty := erase_qualifiers (type_of e) in
-         Forall a, _at (_eqv a) (uninitR ty 1) -*
+        (let ty := type_of e in
+         let raw_type := erase_qualifiers ty in
+         Forall a, _at (_eqv a) (uninitR raw_type 1) -*
                    let '(e,dt) := destructor_for e in
                    wp_init ty a e (fun free =>
-                                     Q a (mdestroy ty a dt free)))
+                     Q a (destruct_val ty a dt (_at (_eqv a) (anyR raw_type 1) ** free))))
         |-- wp_prval e Q.
 
 
@@ -614,10 +663,11 @@ Module Type Expr.
      *)
 
     Axiom wp_prval_materialize : forall ty e dtor Q,
-      Forall a : val,
-      _at (_eqv a) (uninitR (erase_qualifiers ty) 1) -*
+      (Forall a : val,
+      let raw_type := erase_qualifiers ty in
+      _at (_eqv a) (uninitR raw_type 1) -*
           wp_init ty a e (fun free =>
-                            Q a (mdestroy ty a (Some dtor) free))
+                            Q a (destruct_val ty a (Some dtor) (_at (_eqv a) (anyR raw_type 1) ** free))))
       |-- wp_prval (Ebind_temp e dtor ty) Q.
 
     Axiom wp_pseudo_destructor : forall e ty Q,

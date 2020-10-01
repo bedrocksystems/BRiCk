@@ -154,7 +154,7 @@ Inductive Expr : Set :=
 | Esubscript (_ : Expr) (_ : Expr) (_ : type)
 | Esize_of (_ : type + Expr) (_ : type)
 | Ealign_of (_ : type + Expr) (_ : type)
-| Econstructor (_ : globname) (_ : list (ValCat * Expr)) (_ : type)
+| Econstructor (_ : obj_name) (_ : list (ValCat * Expr)) (_ : type)
 | Eimplicit (_ : Expr) (_ : type)
 | Eimplicit_init (_ : type)
 | Eif       (_ _ _ : Expr) (_ : type)
@@ -163,8 +163,11 @@ Inductive Expr : Set :=
 | Enull
 | Einitlist (_ : list Expr) (_ : option Expr) (_ : type)
 
-| Enew (_ : option globname) (array_size : option Expr) (init : option Expr) (_ : type)
-| Edelete (is_array : bool) (_ : option globname) (_ : Expr) (_ : type)
+| Enew (new_fn : option (obj_name * type)) (new_args : list (ValCat * Expr))
+       (alloc_ty : type)
+       (array_size : option Expr) (init : option Expr) (_ : type)
+| Edelete (is_array : bool) (delete_fn : option (obj_name * type)) (arg : Expr)
+          (deleted_type : type) (dtor : option obj_name) (_ : type)
 
 | Eandclean (_ : Expr) (_ : type)
 | Ematerialize_temp (_ : Expr) (_ : type)

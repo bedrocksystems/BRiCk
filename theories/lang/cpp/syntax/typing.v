@@ -42,8 +42,8 @@ Definition type_of (e : Expr) : type :=
   (* todo(gmm): c++ seems to have a special nullptr type *)
   | Einitlist _ _ t
   | Eimplicit_init t
-  | Enew _ _ _ t
-  | Edelete _ _ _ t
+  | Enew _ _ _ _ _ t
+  | Edelete _ _ _ _ _ t
   | Eandclean _ t
   | Ematerialize_temp _ t => t
   | Ebind_temp _ _ t => t

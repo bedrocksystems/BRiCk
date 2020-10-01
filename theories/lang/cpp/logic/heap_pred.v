@@ -31,6 +31,9 @@ Section with_cpp.
   Definition Rep := monPred ptr_bi_index mpredI.
   Definition RepI := monPredI ptr_bi_index mpredI.
 
+  Bind Scope bi_scope with Rep.
+  Bind Scope bi_scope with RepI.
+
   Lemma Rep_ext (P Q : Rep) :
       (forall p : ptr, P p -|- Q p) ->
       P -|- Q.
@@ -540,6 +543,11 @@ Section with_cpp.
   Proof. rewrite is_nonnull_eq. apply _. Qed.
   Global Instance is_nonnull_timeless : Timeless is_nonnull.
   Proof. rewrite is_nonnull_eq. apply _. Qed.
+
+  (** [blockR sz] is mean to be a contiguous chunk of [sz] bytes *)
+  Definition blockR {σ} (sz : _) : Rep :=
+    [∗list] i ∈ seq 0 (N.to_nat sz),
+      _offsetR (_sub (resolve:=σ) T_uint8 (Z.of_nat i)) (anyR (resolve:=σ) T_uint8 1).
 
 End with_cpp.
 

@@ -45,25 +45,20 @@ Section destroy.
 
      note: it does *not* free the underlying memory.
    *)
-  Fixpoint destruct_val (t : type) (this : val) (dtor : obj_name) (Q : mpred)
+  Fixpoint destruct_val (t : type) (this : val) (dtor : option obj_name) (Q : mpred)
            {struct t}
   : mpred :=
     match t with
     | Tqualified _ t => destruct_val t this dtor Q
     | Tnamed cls =>
-      destruct_obj dtor cls this Q
+      match dtor with
+      | None => Q
+      | Some dtor => destruct_obj dtor cls this Q
+      end
     | Tarray t sz =>
       fold_right (fun i Q =>
          Exists p, _offsetL (_sub t (Z.of_nat i)) (_eqv this) &~ p ** destruct_val t (Vptr p) dtor Q) Q (List.rev (seq 0 (N.to_nat sz)))
     | _ => emp
     end.
-
-  (* call the destructor (if available) and delete the memory *)
-  Definition mdestroy (ty : type) (this : val) (dtor : option obj_name) (Q : mpred)
-  : mpred :=
-    match dtor with
-    | None => fun x => x
-    | Some dtor => destruct_val ty this dtor
-    end (_at (_eqv this) (anyR (erase_qualifiers ty) 1) ** Q).
 
 End destroy.

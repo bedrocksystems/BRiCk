@@ -119,7 +119,7 @@ Section test_suite.
 
   Context {σ : genv} `{Σ : cpp_logic ti} (R : Rep) (f g : field) (o : Offset) (l : Loc) (p : ptr) (v : val).
 
-  Open Scope bi_scope.
+  #[local] Open Scope bi_scope. (* testing only *)
 
   Example _0 := |> l |-> R.
 
