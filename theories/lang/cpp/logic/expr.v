@@ -447,7 +447,7 @@ Module Type Expr.
       end.
 
     (** function calls *)
-    (** 
+    (**
     The next few axioms rely on the evaluation order specified
     since C++17 (implemented in Clang >= 4):
     to evaluate [f(args)], [f] is evaluated before [args].
@@ -582,8 +582,13 @@ Module Type Expr.
                       Q res free
                     else
                       (_at (_eqv res) (blockR (σ:=resolve) sz) **
+                       (* todo: ^ This misses an condition that [res] is suitably aligned. (issue #149) *)
                            (Forall newp : ptr,
                                    [| newp <> nullptr |] ** _at (_eq newp) (anyR aty 1) **
+                                   (* todo: This is missing the information that [res] provides
+                                      storage for [newp] and, in particular, that one gets ownership
+                                      of the bytes back at [res] when the lifetime of the object
+                                      allocated here ends. (issue #148) *)
                                    (Forall va, pinned_ptr va resp -* pinned_ptr va newp) -*
                                    (* todo: we currently expose [anyR] after the [new] but that isn't correct
                                       if [anyR] implies something about the effective types of pointers since the lifetime
