@@ -130,14 +130,6 @@ Section with_Σ.
   Definition decodes (endianness: endian) (sgn: signed) (l: list N) (z: Z) :=
     _Z_from_bytes endianness sgn l = z.
 
-  Axiom decode_uint_primR_endian: forall q endianness sz (x: Z),
-    primR (Tint sz Unsigned) q (Vint x) -|-
-    Exists l : list N,
-      as_Rep (array' 1 (fun c => primR (Tint W8 Unsigned) q (Vint c))
-                     (Z.of_N <$> l)) **
-      _type_ptr resolve (Tint sz Unsigned) **
-      [| decodes endianness Unsigned l x |].
-
   (* JH: TODO: Deprecate the following stuff *)
   Definition decodes_uint (l : list N) (z : Z) :=
     Unfold decodes (decodes (values.byte_order resolve) Unsigned l z).
