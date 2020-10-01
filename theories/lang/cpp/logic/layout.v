@@ -127,11 +127,12 @@ Section with_Σ.
   Local Notation Unfold x tm :=
     ltac:(let H := eval unfold x in tm in exact H) (only parsing).
 
-  Definition decodes (sgn: signed) (l: list N) (z: Z) :=
-    _Z_from_bytes (σ:=resolve) sgn l = z.
+  Definition decodes (endianness: endian) (sgn: signed) (l: list N) (z: Z) :=
+    _Z_from_bytes endianness sgn l = z.
 
+  (* JH: TODO: Deprecate the following stuff *)
   Definition decodes_uint (l : list N) (z : Z) :=
-    Unfold decodes (decodes Unsigned l z).
+    Unfold decodes (decodes (values.byte_order resolve) Unsigned l z).
 
   (* JH: TODO: Determine what new axioms we should add here. *)
   Axiom raw_byte_of_int_eq : forall sz x rs,

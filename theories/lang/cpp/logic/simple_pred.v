@@ -28,12 +28,8 @@ Lemma frac_op {V} (l : V)  (p q : Qp) :
   frac p l ⋅ frac q l ≡ frac (p + q) l.
 Proof. by rewrite -pair_op agree_idemp. Qed.
 
-Local Lemma length__Z_to_bytes_le n sgn v :
-  length (_Z_to_bytes_le n sgn v) = n.
-Proof. apply _Z_to_bytes_le_length. Qed.
-
 Local Lemma length__Z_to_bytes {σ} n sgn v :
-  length (_Z_to_bytes (σ:=σ) n sgn v) = n.
+  length (_Z_to_bytes n (values.byte_order σ) sgn v) = n.
 Proof. apply _Z_to_bytes_length. Qed.
 
 (** soundness proof *)
@@ -50,8 +46,9 @@ Module SimpleCPP_BASE <: CPP_LOGIC_CLASS.
   | Rpointer_chunk (_ : ptr) (index : nat).
     (* ^ you need the same pointer and consecutive integers to "have" a pointer.
      *)
+
   Definition Z_to_bytes {σ:genv} (n : nat) (sgn: signed) (v : Z) : list runtime_val' :=
-    Rval <$> _Z_to_bytes (σ:=σ) n sgn v.
+    Rval <$> _Z_to_bytes n (values.byte_order σ) sgn v.
 
   Lemma length_Z_to_bytes {σ} n sgn v : length (Z_to_bytes (σ:=σ) n sgn v) = n.
   Proof. by rewrite/Z_to_bytes fmap_length length__Z_to_bytes. Qed.
