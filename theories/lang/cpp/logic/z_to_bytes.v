@@ -13,6 +13,7 @@ From bedrock.lang.cpp.semantics Require builtins.
 
 Section FromToBytes.
 
+  (* TODO: using bool_decide would simplify this reasoning. *)
   Local Ltac churn_bits :=
     repeat match goal with
     | |- context[(?l <=? ?r)%Z] =>
@@ -48,15 +49,15 @@ Section FromToBytes.
         _Z_set_byte 0 idx = 0.
     Proof. intros; by rewrite /_Z_set_byte Z.shiftl_0_l. Qed.
 
+    Lemma Z_mul_of_nat_S (z : Z) (n : nat) : (z * S n)%Z = (z + z * n)%Z.
+    Proof. lia. Qed.
+
     Lemma _Z_get_byte_S_idx:
       forall (v: Z) (idx: nat),
         _Z_get_byte v (S idx) = _Z_get_byte (v ≫ 8) idx.
     Proof.
       intros; rewrite /_Z_get_byte.
-      rewrite Z.shiftr_shiftr; try lia.
-      by replace (8 + 8 * idx)%Z
-        with (8 * S idx)%Z
-        by lia.
+      by rewrite Z.shiftr_shiftr ?Z_mul_of_nat_S; lia.
     Qed.
 
     Lemma _Z_set_byte_S_idx:
@@ -64,10 +65,7 @@ Section FromToBytes.
         _Z_set_byte v (S idx) = ((_Z_set_byte v idx) ≪ 8)%Z.
     Proof.
       intros; rewrite /_Z_set_byte.
-      rewrite Z.shiftl_shiftl; try lia.
-      by replace (8 * idx + 8)%Z
-        with (8 * S idx)%Z
-        by lia.
+      by rewrite Z.shiftl_shiftl ?Z_mul_of_nat_S ?(Z.add_comm 8); lia.
     Qed.
 
     Lemma _Z_set_byte_shiftl_idx:
@@ -78,19 +76,16 @@ Section FromToBytes.
     Proof.
       induction idx; move=> idx' shift v Hidx Hshift.
       - assert (idx' = 0) by lia; subst.
-        replace (8 * Z.of_nat 0)%Z with 0%Z by lia.
-        replace (0 - 0) with 0 by lia.
         by rewrite Z.shiftr_0_r.
       - rewrite _Z_set_byte_S_idx; subst.
         specialize (IHidx (idx' - 1) (8 * Z.of_nat (idx' - 1))%Z v ltac:(lia) eq_refl).
         destruct idx'.
-        + replace (8 * Z.of_nat 0)%Z with 0%Z by lia.
-          by rewrite -minus_n_O Z.shiftr_0_r _Z_set_byte_S_idx.
-        + replace (S idx - S idx') with (idx - (S idx' - 1)) by lia.
-          rewrite -IHidx.
-          rewrite Z.shiftr_shiftl_r; try lia.
-          replace (8 * (S idx' - 1)%nat)%Z with (8 * Z.of_nat idx')%Z by lia.
-          by replace (8 * Z.of_nat (S idx') - 8)%Z with (8 * Z.of_nat idx')%Z by lia.
+        + by rewrite -minus_n_O Z.shiftr_0_r _Z_set_byte_S_idx.
+        + rewrite Z.shiftr_shiftl_r; try lia.
+          rewrite Nat.sub_succ Nat.sub_0_r in IHidx.
+          rewrite Nat.sub_succ -IHidx.
+          repeat f_equal.
+          lia.
     Qed.
 
     Lemma _Z_get_byte_nonneg:
@@ -99,7 +94,7 @@ Section FromToBytes.
     Proof.
       intros; rewrite /_Z_get_byte /Z.ones.
       apply Z.land_nonneg.
-      replace (Z.pred (1 ≪ 8)) with (255)%Z by reflexivity; lia.
+      by right.
     Qed.
 
     Lemma _Z_set_byte_nonneg:
@@ -108,7 +103,7 @@ Section FromToBytes.
     Proof.
       intros; rewrite /_Z_set_byte /Z.ones Z.shiftl_nonneg.
       apply Z.land_nonneg.
-      replace (Z.pred (1 ≪ 8)) with (255)%Z by reflexivity; lia.
+      by left.
     Qed.
 
     Lemma _Z_get_set_byte_roundtrip:
@@ -217,10 +212,9 @@ Section FromToBytes.
         replace (8 - 8)%Z with 0%Z by lia.
         rewrite Z.shiftl_0_r.
         rewrite Z.land_lor_distr_l.
-        rewrite (_Z_set_byte_land_no_overlap idx 0);
+        rewrite (_Z_set_byte_land_no_overlap idx 0) //;
           [
-          | by lia
-          | by (replace (8 * Z.of_nat 0)%Z with 0%Z by lia)].
+          | by lia ].
         by rewrite Z.lor_0_r.
       Qed.
 
@@ -238,7 +232,6 @@ Section FromToBytes.
           rewrite !_Z_set_byte_S_idx Z.shiftr_lor
                   Z.shiftl_shiftl; try lia.
           rewrite Z.shiftr_shiftl_l; try lia.
-          replace (8 + 8 - 16)%Z with 0%Z by lia.
           rewrite Z.shiftl_0_r.
           rewrite bswap16_useless_lor; lia.
       Qed.
@@ -257,7 +250,6 @@ Section FromToBytes.
           rewrite !_Z_set_byte_S_idx Z.shiftr_lor.
           do 3 (rewrite Z.shiftl_shiftl; try lia).
           rewrite Z.shiftr_shiftl_l; try lia.
-          replace (8 + (8 + (8 + 8)) - 32)%Z with 0%Z by lia.
           rewrite Z.shiftl_0_r.
           rewrite bswap32_useless_lor; lia.
       Qed.
@@ -279,18 +271,16 @@ Section FromToBytes.
           rewrite Z.shiftl_0_r.
           rewrite (_Z_set_byte_shiftr_big 0 1) ?Z.land_0_l ?Z.lor_0_l; try lia.
           apply _Z_set_byte_land_useless.
-          replace (8 * Z.of_nat 0)%Z with 0%Z by lia.
           by rewrite Z.shiftl_0_r.
         - rewrite Z.land_lor_distr_l.
           rewrite (_Z_set_byte_land_no_overlap 1 0);
             [
             | by lia
-            | by (replace (8 * Z.of_nat 0)%Z with 0%Z by lia;
-                  rewrite Z.shiftl_0_r; reflexivity)];
+            | by rewrite Z.shiftl_0_r];
             rewrite Z.lor_0_r.
           rewrite _Z_set_byte_land_useless;
             [
-            | replace (8 * Z.of_nat 0)%Z with 0%Z by lia; by rewrite Z.shiftl_0_r].
+            | by rewrite Z.shiftl_0_r].
           by rewrite -_Z_set_byte_S_idx.
       Qed.
 
@@ -330,7 +320,6 @@ Section FromToBytes.
                   (Z.lor (_Z_set_byte x3 2)
                    (Z.lor (_Z_set_byte x4 3) 0) ≫ 16)). 2: {
           rewrite !Z.lor_0_r !Z.shiftr_lor.
-          replace 16%Z with (8 * 2)%Z by lia.
           rewrite (_Z_set_byte_shiftr_big 0 2 x1); try lia.
           rewrite (_Z_set_byte_shiftr_big 1 2 x2); try lia.
           by rewrite !Z.lor_0_l.
@@ -338,9 +327,9 @@ Section FromToBytes.
 
         rewrite !Z.shiftr_lor.
         rewrite (_Z_set_byte_shiftl_idx 2 2 16 _ ltac:(lia) ltac:(lia));
-          replace (2 - 2) with 0%nat by lia.
+          change (2 - 2) with 0%nat.
         rewrite (_Z_set_byte_shiftl_idx 3 2 16 _ ltac:(lia) ltac:(lia));
-          replace (3 - 2) with 1%nat by lia.
+          change (3 - 2) with 1%nat.
         rewrite !bswap16_set_byte_reverse.
         rewrite !Z.lor_0_r !Z.shiftl_lor.
         replace 16%Z with (8 + 8)%Z by lia.
@@ -550,26 +539,20 @@ Section FromToBytes.
         }
 
         rewrite !Z.shiftr_lor.
-        rewrite (_Z_set_byte_shiftl_idx 8 8 64 _ ltac:(lia) ltac:(lia));
-          replace (8 - 8) with 0%nat by lia.
-        rewrite (_Z_set_byte_shiftl_idx 9 8 64 _ ltac:(lia) ltac:(lia));
-          replace (9 - 8) with 1%nat by lia.
-        rewrite (_Z_set_byte_shiftl_idx 10 8 64 _ ltac:(lia) ltac:(lia));
-          replace (10 - 8) with 2%nat by lia.
-        rewrite (_Z_set_byte_shiftl_idx 11 8 64 _ ltac:(lia) ltac:(lia));
-          replace (11 - 8) with 3%nat by lia.
-        rewrite (_Z_set_byte_shiftl_idx 12 8 64 _ ltac:(lia) ltac:(lia));
-          replace (12 - 8) with 4%nat by lia.
-        rewrite (_Z_set_byte_shiftl_idx 13 8 64 _ ltac:(lia) ltac:(lia));
-          replace (13 - 8) with 5%nat by lia.
-        rewrite (_Z_set_byte_shiftl_idx 14 8 64 _ ltac:(lia) ltac:(lia));
-          replace (14 - 8) with 6%nat by lia.
-        rewrite (_Z_set_byte_shiftl_idx 15 8 64 _ ltac:(lia) ltac:(lia));
-          replace (15 - 8) with 7%nat by lia.
+        rewrite (_Z_set_byte_shiftl_idx 8 8 64 _ ltac:(lia) ltac:(lia)).
+        rewrite (_Z_set_byte_shiftl_idx 9 8 64 _ ltac:(lia) ltac:(lia)).
+        rewrite (_Z_set_byte_shiftl_idx 10 8 64 _ ltac:(lia) ltac:(lia)).
+        rewrite (_Z_set_byte_shiftl_idx 11 8 64 _ ltac:(lia) ltac:(lia)).
+        rewrite (_Z_set_byte_shiftl_idx 12 8 64 _ ltac:(lia) ltac:(lia)).
+        rewrite (_Z_set_byte_shiftl_idx 13 8 64 _ ltac:(lia) ltac:(lia)).
+        rewrite (_Z_set_byte_shiftl_idx 14 8 64 _ ltac:(lia) ltac:(lia)).
+        rewrite (_Z_set_byte_shiftl_idx 15 8 64 _ ltac:(lia) ltac:(lia)).
+        cbv [minus].
         rewrite !bswap64_set_byte_reverse.
         rewrite !Z.lor_0_r !Z.shiftl_lor.
-        replace 64%Z with (8 + (8 + (8 + (8 + (8 + (8 + (8 + 8)))))))%Z by lia.
-        rewrite -!Z.shiftl_shiftl; try lia.
+        change 64%Z with (8 + (8 + (8 + (8 + (8 + (8 + (8 + 8)))))))%Z.
+        have ?: (0 <= 8)%Z by lia.
+        rewrite -!Z.shiftl_shiftl; try assumption.
         rewrite -!_Z_set_byte_S_idx.
         rewrite Z.lor_comm.
         by rewrite !Z.lor_assoc.
@@ -623,7 +606,7 @@ Section FromToBytes.
         (v < 2 ^ (8 * (a + b)%nat))%Z.
     Proof.
       intros; destruct b.
-      - by replace (8 * (a + 0)%nat)%Z with (8 * a)%Z by lia.
+      - by rewrite -plus_n_O.
       - eapply Z.lt_trans; eauto; apply Z.pow_lt_mono_r; lia.
     Qed.
 
@@ -644,7 +627,7 @@ Section FromToBytes.
       rewrite !Z.land_spec Z.ldiff_spec Z.shiftl_spec // Z.testbit_ones_nonneg; try lia.
       destruct (n <? offset)%Z eqn:Hn => /=; rewrite ?andb_true_r //.
       move: Hn => /Z.ltb_lt?.
-      rewrite !andb_false_r Z.testbit_neg_r //.  lia.
+      rewrite !andb_false_r Z.testbit_neg_r //. lia.
     Qed.
 
     Lemma Z_land_ldiff_upper_byte:
@@ -666,7 +649,7 @@ Section FromToBytes.
       - apply Z.ltb_lt in Hn; rewrite Z.testbit_neg_r ?andb_false_l //=; lia.
       - apply Z.ltb_ge in Hn.
         replace (8 * Z.succ offset)%Z with (8 + (8 * offset))%Z in H1 by lia.
-        replace (255)%Z with (Z.ones 8) by reflexivity.
+        change (255)%Z with (Z.ones 8).
         destruct (8 + (8 * offset) <? n)%Z eqn:Hn' => //=.
         + rewrite Z.bits_above_log2 ?andb_false_r //.
           * apply Z.le_trans with (m := (2^(8*offset))%Z); try apply Z.pow_nonneg; lia.
@@ -1022,9 +1005,7 @@ Section FromToBytes.
       - rewrite _Z_from_bytes_unsigned_le'_cons.
         rewrite (_Z_from_bytes_unsigned_le'_cons idx a bs1).
         rewrite IHbs1.
-        replace (S idx + length bs1)
-          with (idx + S (length bs1))
-          by lia.
+        rewrite plus_Snm_nSm.
         by rewrite Z.lor_assoc.
     Qed.
 
@@ -1125,7 +1106,6 @@ Section FromToBytes.
       - rewrite /Z.ones Z.mul_0_r Z.shiftl_0_r
                 _Z_to_bytes_unsigned_le'_0_bytes
                 _Z_from_bytes_unsigned_le'_nil.
-        replace (Z.pred 1) with 0%Z by lia.
         by rewrite Z.shiftl_0_l Z.land_0_l.
       - rewrite _Z_to_bytes_unsigned_le'_S_cnt
                 _Z_from_bytes_unsigned_le'_app
@@ -1136,7 +1116,7 @@ Section FromToBytes.
         rewrite Z2N.id; [ | apply _Z_get_byte_nonneg].
         rewrite _Z_get_set_byte_roundtrip.
         assert (2^(8*(idx+cnt)) <= v)%Z as Hlower'. {
-          eapply Z.le_trans; eauto;
+          etrans; last eapply Hlower;
             apply Z.pow_le_mono_r; lia.
         }
         specialize (IHcnt v idx Hlower'); rewrite IHcnt //=.
@@ -1157,9 +1137,7 @@ Section FromToBytes.
         generalize dependent idx;
         generalize dependent v;
         induction cnt; intros=> //=.
-      - replace (8 * (idx+0%nat))%Z
-          with (8*idx)%Z
-          in Hupper by lia.
+      - rewrite Z.add_0_r in Hupper.
         rewrite _Z_to_bytes_unsigned_le'_0_bytes
                 _Z_from_bytes_unsigned_le'_nil.
         rewrite Zmod_small; try intuition; lia.
