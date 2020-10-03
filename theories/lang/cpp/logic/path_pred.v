@@ -298,7 +298,7 @@ Section with_Σ.
   (** access a field *)
   Definition _field_def (resolve: genv) (f : field) : Offset :=
     offsetO_opt (offset_of resolve f.(f_type) f.(f_name)).
-  Definition _field_aux : seal (@_field_def). Proof using. by eexists. Qed.
+  Definition _field_aux : seal (@_field_def). Proof. by eexists. Qed.
   Definition _field := _field_aux.(unseal).
   Definition _field_eq : @_field = _ := _field_aux.(seal_eq).
 
