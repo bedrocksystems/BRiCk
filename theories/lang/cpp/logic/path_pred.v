@@ -108,7 +108,7 @@ Section with_Σ.
   abstract (intros; iIntros "[[-> _] [#H _]]"; iFrame "#").
   abstract (intros; iIntros "[-> #H]"; iFrame "#").
   Defined.
-  Definition _eq_aux : seal (@_eq_def). by eexists. Qed.
+  Definition _eq_aux : seal (@_eq_def). Proof. by eexists. Qed.
   Definition _eq := _eq_aux.(unseal).
   Definition _eq_eq : @_eq = _ := _eq_aux.(seal_eq).
 
@@ -126,7 +126,7 @@ Section with_Σ.
     | Some p => _eq p
     | _ => invalid
     end.
-  Definition _global_aux : seal (@_global_def). by eexists. Qed.
+  Definition _global_aux : seal (@_global_def). Proof. by eexists. Qed.
   Definition _global := _global_aux.(unseal).
   Definition _global_eq : @_global = _ := _global_aux.(seal_eq).
 
@@ -151,7 +151,7 @@ Section with_Σ.
   (** [addr_of] *)
   Definition addr_of_def (a : Loc) (b : ptr) : mpred :=
     a.(_location) b.
-  Definition addr_of_aux : seal (@addr_of_def). by eexists. Qed.
+  Definition addr_of_aux : seal (@addr_of_def). Proof. by eexists. Qed.
   Definition addr_of := addr_of_aux.(unseal).
   Definition addr_of_eq : @addr_of = _ := addr_of_aux.(seal_eq).
   Arguments addr_of : simpl never.
@@ -268,7 +268,7 @@ Section with_Σ.
    abstract (intros; iIntros "[-> #H]"; iFrame "#").
    abstract (intros; iIntros "[H <-]"; iFrame).
   Defined.
-  Definition _id_aux : seal (@_id_def). by eexists. Qed.
+  Definition _id_aux : seal (@_id_def). Proof. by eexists. Qed.
   Definition _id := _id_aux.(unseal).
   Definition _id_eq : @_id = _ := _id_aux.(seal_eq).
 
@@ -290,7 +290,7 @@ Section with_Σ.
     iApply _off_valid. iFrame.
     iApply _off_valid. iFrame. }
   Defined.
-  Definition _dot_aux : seal (@_dot_def). by eexists. Qed.
+  Definition _dot_aux : seal (@_dot_def). Proof. by eexists. Qed.
   Definition _dot := _dot_aux.(unseal).
   Definition _dot_eq : @_dot = _ := _dot_aux.(seal_eq).
 
@@ -308,7 +308,7 @@ Section with_Σ.
                  | Some o => Some (Z.of_N o * i)%Z
                  | _ => None
                  end).
-  Definition _sub_aux : seal (@_sub_def). by eexists. Qed.
+  Definition _sub_aux : seal (@_sub_def). Proof. by eexists. Qed.
   Definition _sub := _sub_aux.(unseal).
   Definition _sub_eq : @_sub = _ := _sub_aux.(seal_eq).
 
@@ -316,7 +316,7 @@ Section with_Σ.
    *)
   Definition _base_def (resolve:genv) (derived base : globname) : Offset :=
     offsetO_opt (parent_offset resolve derived base).
-  Definition _base_aux : seal (@_base_def). by eexists. Qed.
+  Definition _base_aux : seal (@_base_def). Proof. by eexists. Qed.
   Definition _base := _base_aux.(unseal).
   Definition _base_eq : @_base = _ := _base_aux.(seal_eq).
   Definition _super := _base.
@@ -328,7 +328,7 @@ Section with_Σ.
                 | Some o => Some (0 - o)%Z
                 | None => None
                 end.
-  Definition _derived_aux : seal (@_derived_def). by eexists. Qed.
+  Definition _derived_aux : seal (@_derived_def). Proof. by eexists. Qed.
   Definition _derived := _derived_aux.(unseal).
   Definition _derived_eq : @_derived = _ := _derived_aux.(seal_eq).
 
@@ -347,7 +347,7 @@ Section with_Σ.
     simpl. iIntros (o l p1) "H". iDestruct "H" as (p) "[O L]".
     iApply _off_valid. iFrame. iApply _loc_valid. iFrame.
   Qed.
-  Definition _offsetL_aux : seal (@_offsetL_def). by eexists. Qed.
+  Definition _offsetL_aux : seal (@_offsetL_def). Proof. by eexists. Qed.
   Definition _offsetL := _offsetL_aux.(unseal).
   Definition _offsetL_eq : @_offsetL = _ := _offsetL_aux.(seal_eq).
 

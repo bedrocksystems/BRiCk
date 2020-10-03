@@ -92,7 +92,7 @@ Section with_cpp.
   Definition _offsetR_def (o : Offset) (r : Rep) : Rep :=
     as_Rep (fun base =>
               Exists to, _offset o base to ** r to).
-  Definition _offsetR_aux : seal (@_offsetR_def). by eexists. Qed.
+  Definition _offsetR_aux : seal (@_offsetR_def). Proof. by eexists. Qed.
   Definition _offsetR := _offsetR_aux.(unseal).
   Definition _offsetR_eq : @_offsetR = _ := _offsetR_aux.(seal_eq).
 
@@ -146,7 +146,7 @@ Section with_cpp.
 
   Definition _at_def (base : Loc) (P : Rep) : mpred :=
     Exists a, base &~ a ** P a.
-  Definition _at_aux : seal (@_at_def). by eexists. Qed.
+  Definition _at_aux : seal (@_at_def). Proof. by eexists. Qed.
   Definition _at := _at_aux.(unseal).
   Definition _at_eq : @_at = _ := _at_aux.(seal_eq).
 
@@ -382,7 +382,7 @@ Section with_cpp.
   (** [primR]: the argument pointer points to an initialized value [v] of C++ type [ty]. *)
   Definition primR_def {resolve:genv} (ty : type) q (v : val) : Rep :=
     as_Rep (fun addr => @tptsto _ _ resolve ty q addr v ** [| has_type v (drop_qualifiers ty) |]).
-  Definition primR_aux : seal (@primR_def). by eexists. Qed.
+  Definition primR_aux : seal (@primR_def). Proof. by eexists. Qed.
   Definition primR := primR_aux.(unseal).
   Definition primR_eq : @primR = _ := primR_aux.(seal_eq).
   Arguments primR {resolve} ty q v : rename.
@@ -430,7 +430,7 @@ Section with_cpp.
   Unlike [primR], does not imply [has_type]. *)
   Definition uninit_def {resolve:genv} (ty : type) q : Rep :=
     as_Rep (fun addr => @tptsto _ _ resolve ty q addr Vundef).
-  Definition uninit_aux : seal (@uninit_def). by eexists. Qed.
+  Definition uninit_aux : seal (@uninit_def). Proof. by eexists. Qed.
   Definition uninitR := uninit_aux.(unseal).
   Definition uninit_eq : @uninitR = _ := uninit_aux.(seal_eq).
   Arguments uninitR {resolve} ty q : rename.
@@ -467,7 +467,7 @@ Section with_cpp.
   Definition anyR_def {resolve} (ty : type) q : Rep :=
     as_Rep (fun addr => (Exists v, (primR (resolve:=resolve) ty q v) addr) \\//
                                  (uninitR (resolve:=resolve) ty q) addr).
-  Definition anyR_aux : seal (@anyR_def). by eexists. Qed.
+  Definition anyR_aux : seal (@anyR_def). Proof. by eexists. Qed.
   Definition anyR := anyR_aux.(unseal).
   Definition anyR_eq : @anyR = _ := anyR_aux.(seal_eq).
   Arguments anyR {resolve} ty q : rename.
@@ -479,7 +479,7 @@ Section with_cpp.
 
   Definition refR_def (ty : type) (p : ptr) : Rep :=
     as_Rep (fun addr => [| addr = p |]).
-  Definition refR_aux : seal (@refR_def). by eexists. Qed.
+  Definition refR_aux : seal (@refR_def). Proof. by eexists. Qed.
   Definition refR := refR_aux.(unseal).
   Definition refR_eq : @refR = _ := refR_aux.(seal_eq).
 
@@ -499,7 +499,7 @@ Section with_cpp.
          [| List.length vs = List.length fs.(fs_arguments) |] -*
          fs.(fs_spec) ti vs Q -*
          fspec resolve.(genv_tu).(globals) (type_of_spec fs) ti (Vptr p) vs Q))%I.
-  Definition cptr_aux : seal (@cptr_def). by eexists. Qed.
+  Definition cptr_aux : seal (@cptr_def). Proof. by eexists. Qed.
   Definition cptr := cptr_aux.(unseal).
   Definition cptr_eq : @cptr = _ := cptr_aux.(seal_eq).
 
@@ -520,7 +520,7 @@ Section with_cpp.
 
   Definition is_null_def : Rep :=
     as_Rep (fun addr => [| addr = nullptr |]).
-  Definition is_null_aux : seal (@is_null_def). by eexists. Qed.
+  Definition is_null_aux : seal (@is_null_def). Proof. by eexists. Qed.
   Definition is_null := is_null_aux.(unseal).
   Definition is_null_eq : @is_null = _ := is_null_aux.(seal_eq).
 
@@ -533,7 +533,7 @@ Section with_cpp.
 
   Definition is_nonnull_def : Rep :=
     as_Rep (fun addr => [| addr <> nullptr |]).
-  Definition is_nonnull_aux : seal (@is_nonnull_def). by eexists. Qed.
+  Definition is_nonnull_aux : seal (@is_nonnull_def). Proof. by eexists. Qed.
   Definition is_nonnull := is_nonnull_aux.(unseal).
   Definition is_nonnull_eq : @is_nonnull = _ := is_nonnull_aux.(seal_eq).
 
