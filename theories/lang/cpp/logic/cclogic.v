@@ -22,7 +22,7 @@ Require Import bedrock.lang.cpp.ast.
 From bedrock.lang.cpp Require Import
      logic.pred.
 
-Bind Scope string_scope with namespace.
+Bind Scope bs_scope with namespace.
 
 Section with_Σ.
   Context `{Σ : cpp_logic, !invG Σ}.
