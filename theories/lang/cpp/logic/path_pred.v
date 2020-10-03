@@ -358,7 +358,7 @@ Section with_Σ.
   Qed.
 
   Lemma _offsetL_dot : forall (o1 o2 : Offset) (l : Loc),
-      (_offsetL o2 (_offsetL o1 l) ≡ _offsetL (_dot o1 o2) l)%stdpp.
+      _offsetL o2 (_offsetL o1 l) -|- _offsetL (_dot o1 o2) l.
   Proof.
     rewrite /equiv /Loc_Equiv _offsetL_eq _dot_eq. simpl.
     split'.
@@ -371,7 +371,7 @@ Section with_Σ.
   Qed.
 
   Lemma _dot_dot : forall (o1 o2 l: Offset),
-      (_dot o2 (_dot o1 l) ≡ _dot (_dot o2 o1) l)%stdpp.
+      _dot o2 (_dot o1 l) -|- _dot (_dot o2 o1) l.
   Proof.
     rewrite /equiv /Offset_Equiv _dot_eq. simpl.
     split'.
