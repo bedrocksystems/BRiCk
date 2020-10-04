@@ -278,23 +278,17 @@ Lemma trim_to_signed_bits_agree x n :
 Proof.
   assert (n = 0 \/ 0 < n)%N as [-> | Hn] by lia.
   - by rewrite /trim /to_signed_bits /= Z.pow_0_r !Z.mod_1_r.
-  - have Hge : (2 ^ Z.of_N n ≠ 0) by [apply Z.pow_nonzero; lia].
-    have Hgt := pow2Nm1gt1 Hn.
+  - have Hgt : 2 ^ Z.of_N n > 0 by apply Z.gt_lt_iff, Z.pow_pos_nonneg; lia.
+    have Hge : 2 ^ Z.of_N n ≠ 0 by lia.
+    have Hgt' := pow2Nm1gt1 Hn.
+    have Hrng := Zdiv.Z_mod_lt x (2^Z.of_N n) Hgt.
     rewrite /trim /to_signed_bits bool_decide_eq_false_2; last by lia.
     case_bool_decide as Hdec; simpl; last by [rewrite Z.mod_mod].
     rewrite -Z.mod_opp_r_nz; try lia.
     rewrite -{1}(Z.opp_involutive x).
     rewrite Z.mod_opp_opp //.
-    remember ((-x) mod 2^(Z.of_N n))%Z as z.
-      rewrite (Zdiv.Z_mod_nz_opp_full z); subst; first last.
-    { rewrite Z.mod_mod //.
-      - rewrite Zdiv.Z_mod_nz_opp_full; try lia.
-        destruct (Zdiv.Z_mod_lt x (2^(Z.of_N n))
-                                  ltac:(apply Z.gt_lt_iff;
-                                        apply Z.pow_pos_nonneg; lia)); lia.
-    }
-    rewrite Z.mod_mod //.
-    rewrite Zdiv.Z_mod_nz_opp_full; lia.
+    rewrite (Zdiv.Z_mod_nz_opp_full (_ mod _)) Z.mod_mod //
+      Zdiv.Z_mod_nz_opp_full; lia.
 Qed.
 
 Lemma trim_to_signed_agree: forall x sz n,
