@@ -6,8 +6,6 @@
 Require Import Coq.ZArith.BinInt.
 Require Import Coq.Lists.List.
 
-Require Import Coq.ssr.ssrbool.
-
 From Coq.Classes Require Import
      RelationClasses Morphisms DecidableClass.
 
