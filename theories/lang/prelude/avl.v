@@ -7,8 +7,6 @@ From stdpp Require Import fin_maps.
 Require Import bedrock.lang.prelude.base.
 Require Import Coq.FSets.FMapAVL.
 
-Set Default Proof Using "Type".
-
 Module IM := FMapAVL.Make OT_bs.
 
 Instance IMR_lookup {V} : Lookup bs V (IM.Raw.t V) :=

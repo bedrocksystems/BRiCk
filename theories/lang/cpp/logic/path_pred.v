@@ -8,8 +8,6 @@ Require Import bedrock.lang.prelude.base.
 Require Import iris.proofmode.tactics.
 From bedrock.lang.cpp Require Import semantics logic.pred ast.
 
-Set Default Proof Using "Type".
-
 Section with_Σ.
   Context `{has_cpp : cpp_logic}.
 

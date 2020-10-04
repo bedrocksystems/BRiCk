@@ -6,8 +6,6 @@
 Require Export bedrock.lang.prelude.base.
 Require Export bedrock.lang.cpp.ast.
 
-Set Default Proof Using "Type".
-
 Definition Nanon (ty : globname) : globname :=
   ("#" ++ ty)%bs.
 

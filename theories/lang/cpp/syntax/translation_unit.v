@@ -3,16 +3,10 @@
  *
  * SPDX-License-Identifier: LGPL-2.1 WITH BedRock Exception for use over network, see repository root for details.
  *)
-From Coq Require Import NArith ZArith ssr.ssreflect.
-Local Open Scope general_if_scope.
-From stdpp Require Import decidable tactics.
-
-Require Import bedrock.lang.prelude.bytestring.
-Require Import bedrock.lang.prelude.avl.
+From bedrock.lang.prelude Require Import base avl.
 From bedrock.lang.cpp.syntax Require Import names expr stmt types.
 
 Set Primitive Projections.
-Set Default Proof Using "Type".
 
 (** Record an offset in _bits_. *)
 Record LayoutInfo : Set :=

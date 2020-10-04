@@ -16,9 +16,6 @@ From iris_string_ident Require Import ltac2_string_ident.
 From bedrock.lang.cpp Require Import ast semantics.
 From bedrock.lang.cpp.logic Require Import pred z_to_bytes.
 
-Set Default Proof Using "Type".
-Set Suggest Proof Using.
-
 (* todo: does this not exist as a library somewhere? *)
 Definition fractionalR (V : Type) : cmraT :=
   prodR fracR (agreeR (leibnizO V)).

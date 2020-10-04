@@ -11,8 +11,6 @@ Require Import bedrock.lang.cpp.semantics.builtins.
 From bedrock.lang.cpp.logic Require Import
      pred path_pred heap_pred wp.
 
-Set Default Proof Using "Type".
-
 Section with_Σ.
   Context `{Σ : cpp_logic thread_info} {resolve:genv}.
   Variables (M : coPset) (ti : thread_info).

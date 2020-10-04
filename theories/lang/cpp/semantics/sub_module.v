@@ -3,17 +3,10 @@
  *
  * SPDX-License-Identifier: LGPL-2.1 WITH BedRock Exception for use over network, see repository root for details.
  *)
-Require Import Coq.ssr.ssreflect.
-Local Open Scope general_if_scope.
-Require Import stdpp.tactics.
-Require Import stdpp.base.
-Require Import stdpp.decidable.
+From bedrock.lang.prelude Require Import base avl.
 Require Import bedrock.lang.cpp.syntax.translation_unit.
 Require Import bedrock.lang.cpp.ast.
-Require Import bedrock.lang.prelude.avl.
 Require Import ExtLib.Tactics.
-
-Set Default Proof Using "Type".
 
 Definition require_eq `{EqDecision T} (a b : T) {U} (r : option U) : option U :=
   if decide (a = b) then r else None.

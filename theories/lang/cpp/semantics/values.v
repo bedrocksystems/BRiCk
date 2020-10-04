@@ -8,18 +8,13 @@
  *
  * The definitions in this file are based (loosely) on CompCert.
  *)
-Require Import Coq.NArith.BinNat.
-Require Import Coq.ZArith.BinInt.
-Require Import Coq.Strings.Ascii.
-From Coq Require Import ssreflect.
-Require Import stdpp.base stdpp.countable.
+From Coq Require Import Strings.Ascii.
+Require Import bedrock.lang.prelude.base.
 
 Require Import bedrock.lang.cpp.ast.
 Require Import bedrock.lang.cpp.semantics.sub_module.
 
-Set Default Proof Using "Type".
 Local Close Scope nat_scope.
-Local Open Scope general_if_scope.
 Local Open Scope Z_scope.
 
 Module Type PTR_API.

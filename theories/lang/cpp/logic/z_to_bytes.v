@@ -4,10 +4,7 @@
  * SPDX-License-Identifier: LGPL-2.1 WITH BedRock Exception for use over network, see repository root for details.
  *)
 
-Set Default Proof Using "Type".
-Set Suggest Proof Using.
-
-From bedrock.lang Require Export prelude.base.
+Require Export bedrock.lang.prelude.base.
 From bedrock.lang.cpp Require Import ast operator values.
 From bedrock.lang.cpp.semantics Require builtins.
 

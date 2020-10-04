@@ -25,8 +25,6 @@ Export ChargeNotation.
 
 From bedrock.lang.cpp Require Import ast semantics.
 
-Set Default Proof Using "Type".
-
 Module Type CPP_LOGIC_CLASS_BASE.
   Parameter cppG : gFunctors -> Type.
   Axiom has_inv : forall Σ, cppG Σ -> invG Σ.

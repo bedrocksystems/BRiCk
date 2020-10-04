@@ -14,3 +14,4 @@ Remove Hints Bool.trans_eq_bool : core.
 From bedrock Require Export bytestring.
 
 Global Set Suggest Proof Using. (* also warns about forgotten [Proof.] *)
+Global Set Default Proof Using "Type".

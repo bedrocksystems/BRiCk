@@ -13,7 +13,6 @@ From bedrock.lang.cpp.logic Require Import
 Require Import bedrock.lang.cpp.semantics.
 Require Import bedrock.lang.cpp.logic.z_to_bytes.
 
-Set Default Proof Using "Type".
 Section array.
   Context `{Σ : cpp_logic} {resolve:genv}.
   Context {T : Type}.
