@@ -22,6 +22,7 @@ From bedrock.lang.cpp Require Import ast semantics.values.
 
 Local Open Scope Z_scope.
 Local Open Scope general_if_scope.
+Local Unset SsrOldRewriteGoalsOrder. (* See Coq issue #5706 *)
 
 Set Default Proof Using "Type".
 
