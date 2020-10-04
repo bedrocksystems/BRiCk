@@ -7,7 +7,6 @@ Require Import Coq.NArith.BinNatDef.
 Require Import Coq.ZArith.BinIntDef.
 Require Import stdpp.decidable.
 Require Import stdpp.strings.
-Require Import bedrock.Util.
 From bedrock.lang.cpp.syntax Require Import names types.
 
 Set Primitive Projections.
