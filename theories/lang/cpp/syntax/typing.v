@@ -3,7 +3,6 @@
  *
  * SPDX-License-Identifier: LGPL-2.1 WITH BedRock Exception for use over network, see repository root for details.
  *)
-Require Import Coq.Classes.DecidableClass.
 From bedrock.lang.cpp.syntax Require Import names expr types.
 
 Definition type_of (e : Expr) : type :=
@@ -77,14 +76,3 @@ Fixpoint drop_qualifiers (t : type) : type :=
   | Tqualified _ t => drop_qualifiers t
   | _ => t
   end.
-
-Section decidable.
-
-  Global Instance Decidable_type (a b : type) : Decidable (a = b).
-  refine
-    {| Decidable_witness := if type_eq_dec a b then true else false
-     ; Decidable_spec := _ |}.
-  destruct (type_eq_dec a b); split; congruence.
-  Defined.
-
-End decidable.
