@@ -3,6 +3,7 @@
  *
  * SPDX-License-Identifier: LGPL-2.1 WITH BedRock Exception for use over network, see repository root for details.
  *)
+Require Import bedrock.lang.prelude.base.
 From iris.bi Require Import bi monpred embedding.
 From iris.proofmode Require Import tactics.
 Set Default Proof Using "Type".

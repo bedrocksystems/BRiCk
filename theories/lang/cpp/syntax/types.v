@@ -3,10 +3,7 @@
  *
  * SPDX-License-Identifier: LGPL-2.1 WITH BedRock Exception for use over network, see repository root for details.
  *)
-Require Import Coq.Bool.Bool.
-Require Import Coq.NArith.BinNatDef.
-Require Import Coq.ZArith.BinInt.
-Require Import stdpp.decidable.
+Require Import bedrock.lang.prelude.base.
 Require Import bedrock.lang.cpp.syntax.names.
 
 Set Primitive Projections.
@@ -121,11 +118,13 @@ Inductive type : Set :=
 | Tarch (_ : option bitsize) (name : bs)
 .
 Notation Tchar := Tint (only parsing).
+(* XXX merge type_eq_dec into type_eq. *)
 Definition type_eq_dec : forall (ty1 ty2 : type), { ty1 = ty2 } + { ty1 <> ty2 }.
 Proof.
+  (* rewrite /RelDecision /Decision. *)
   fix IHty1 1.
-  decide equality; try solve [ eapply decide; refine _ ].
-  eapply list_eq_dec. eapply IHty1.
+  rewrite -{1}/(EqDecision type) in IHty1.
+  decide equality; try solve_trivial_decision.
 Defined.
 Global Instance type_eq: EqDecision type := type_eq_dec.
 

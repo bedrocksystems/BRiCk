@@ -3,8 +3,7 @@
  *
  * SPDX-License-Identifier: LGPL-2.1 WITH BedRock Exception for use over network, see repository root for details.
  *)
-Require Import Coq.Strings.String.
-Require Import stdpp.countable.
+From stdpp Require Import countable strings.
 
 Set Primitive Projections.
 Set Default Proof Using "Type".
