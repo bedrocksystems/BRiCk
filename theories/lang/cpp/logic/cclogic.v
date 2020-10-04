@@ -22,6 +22,8 @@ Require Import bedrock.lang.cpp.ast.
 From bedrock.lang.cpp Require Import
      logic.pred.
 
+Set Default Proof Using "Type".
+
 Section with_Σ.
   Context `{Σ : cpp_logic, !invG Σ}.
 

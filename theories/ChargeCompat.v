@@ -7,6 +7,7 @@ From iris Require Import bi.bi.
 From iris.proofmode Require Import tactics.
 Require Import bedrock.IrisBridge.
 Import ChargeNotation.
+Set Default Proof Using "Type".
 
 Section with_PROP.
   Context {PROP : bi}.

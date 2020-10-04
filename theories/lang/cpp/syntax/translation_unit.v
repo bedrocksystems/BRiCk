@@ -11,6 +11,7 @@ Require Import bedrock.bytestring.
 From bedrock.lang.cpp.syntax Require Import names expr stmt types.
 
 Set Primitive Projections.
+Set Default Proof Using "Type".
 
 (** Record an offset in _bits_. *)
 Record LayoutInfo : Set :=

@@ -10,6 +10,7 @@ Require Import stdpp.decidable.
 Require Import bedrock.lang.cpp.syntax.names.
 
 Set Primitive Projections.
+Set Default Proof Using "Type".
 
 (* Type qualifiers *)
 Record type_qualifiers : Set :=
