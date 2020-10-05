@@ -22,8 +22,11 @@ Set Default Proof Using "Type".
  *   doesn't treat those.
  *)
 Definition epred `{Σ : cpp_logic thread_info} := mpred.
+Global Bind Scope bi_scope with epred.
 
 Definition FreeTemps `{Σ : cpp_logic thread_info} := mpred.
+Global Bind Scope bi_scope with FreeTemps.
+
 (** Statements *)
 (* continuations
   * C++ statements can terminate in 4 ways.
@@ -39,6 +42,8 @@ Record Kpreds `{Σ : cpp_logic thread_info} :=
   ; k_break    : mpred
   ; k_continue : mpred
   }.
+Global Bind Scope bi_scope with Kpreds.
+
 Section with_cpp.
   Context `{Σ : cpp_logic thread_info}.
 
