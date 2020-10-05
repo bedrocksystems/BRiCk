@@ -17,16 +17,30 @@ From bedrock.lang.cpp Require Import
 Set Primitive Projections.
 Set Default Proof Using "Type".
 
+(* expression continuations
+ * - in full C++, this includes exceptions, but our current semantics
+ *   doesn't treat those.
+ *)
+Definition epred `{Σ : cpp_logic thread_info} := mpred.
+
+Definition FreeTemps `{Σ : cpp_logic thread_info} := mpred.
+(** Statements *)
+(* continuations
+  * C++ statements can terminate in 4 ways.
+  *
+  * note(gmm): technically, they can also raise exceptions; however,
+  * our current semantics doesn't capture this. if we want to support
+  * exceptions, we should be able to add another case,
+  * `k_throw : val -> mpred`.
+  *)
+Record Kpreds `{Σ : cpp_logic thread_info} :=
+  { k_normal   : mpred
+  ; k_return   : option val -> FreeTemps -> mpred
+  ; k_break    : mpred
+  ; k_continue : mpred
+  }.
 Section with_cpp.
   Context `{Σ : cpp_logic thread_info}.
-
-  (* expression continuations
-   * - in full C++, this includes exceptions, but our current semantics
-   *   doesn't treat those.
-   *)
-  Definition epred := mpred.
-
-  Definition FreeTemps := mpred.
 
   (* [SP] denotes the sequence point for an expression *)
   Definition SP (Q : val -> mpred) (v : val) (free : FreeTemps) : mpred :=
@@ -556,20 +570,6 @@ Section with_cpp.
   End wpd.
 
   (** Statements *)
-  (* continuations
-   * C++ statements can terminate in 4 ways.
-   *
-   * note(gmm): technically, they can also raise exceptions; however,
-   * our current semantics doesn't capture this. if we want to support
-   * exceptions, we should be able to add another case,
-   * `k_throw : val -> mpred`.
-   *)
-  Record Kpreds :=
-    { k_normal   : mpred
-    ; k_return   : option val -> FreeTemps -> mpred
-    ; k_break    : mpred
-    ; k_continue : mpred
-    }.
 
   Instance Kpreds_fupd: FUpd Kpreds :=
     fun l r Q =>
