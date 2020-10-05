@@ -32,7 +32,7 @@ Section with_Σ.
   Local Notation anyR := (@anyR _ _ resolve) (only parsing).
 
   Definition wrap_shift (F : (val -> mpred) -> mpred) (Q : val -> mpred) : mpred :=
-    Exists mid, (|={M,mid}=> F (fun result => |={mid,M}=> Q result))%I.
+    Exists mid, (|={M,mid}=> F (fun result => |={mid,M}=> Q result)).
 
   (* Builtins for Atomic operations. We follow those provided by GCC.
    * https://gcc.gnu.org/onlinedocs/gcc/_005f_005fatomic-Builtins.html

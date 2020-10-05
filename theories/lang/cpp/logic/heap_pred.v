@@ -498,7 +498,7 @@ Section with_cpp.
          Forall (ti : thread_info), □ (Forall vs Q,
          [| List.length vs = List.length fs.(fs_arguments) |] -*
          fs.(fs_spec) ti vs Q -*
-         fspec resolve.(genv_tu).(globals) (type_of_spec fs) ti (Vptr p) vs Q))%I.
+         fspec resolve.(genv_tu).(globals) (type_of_spec fs) ti (Vptr p) vs Q)).
   Definition cptr_aux : seal (@cptr_def). Proof. by eexists. Qed.
   Definition cptr := cptr_aux.(unseal).
   Definition cptr_eq : @cptr = _ := cptr_aux.(seal_eq).
