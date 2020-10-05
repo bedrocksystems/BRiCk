@@ -22,9 +22,6 @@ Section with_cpp.
   (* representations are predicates over a location, they should be used to
    * assert properties of the heap
    *)
-  Global Instance val_inhabited : Inhabited val := populate (Vint 0).
-  Global Instance ptr_inhabited : Inhabited ptr := populate nullptr.
-
   Canonical Structure ptr_bi_index : biIndex :=
     BiIndex ptr _ eq _.
 
