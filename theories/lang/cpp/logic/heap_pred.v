@@ -16,20 +16,20 @@ Require Import bedrock.lang.cpp.logic.spec.
 
 Set Default Proof Using "Type".
 
+(** representations are predicates over a location, they should be used to
+  * assert properties of the heap
+  *)
+Canonical Structure ptr_bi_index : biIndex :=
+  BiIndex ptr _ eq _.
+
+Definition Rep `{Σ : cpp_logic} := monPred ptr_bi_index mpredI.
+Definition RepI `{Σ : cpp_logic} := monPredI ptr_bi_index mpredI.
+
+Bind Scope bi_scope with Rep.
+Bind Scope bi_scope with RepI.
+
 Section with_cpp.
   Context `{Σ : cpp_logic}.
-
-  (* representations are predicates over a location, they should be used to
-   * assert properties of the heap
-   *)
-  Canonical Structure ptr_bi_index : biIndex :=
-    BiIndex ptr _ eq _.
-
-  Definition Rep := monPred ptr_bi_index mpredI.
-  Definition RepI := monPredI ptr_bi_index mpredI.
-
-  Bind Scope bi_scope with Rep.
-  Bind Scope bi_scope with RepI.
 
   Lemma Rep_ext (P Q : Rep) :
       (forall p : ptr, P p -|- Q p) ->
