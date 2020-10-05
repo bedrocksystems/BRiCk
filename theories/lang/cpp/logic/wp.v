@@ -571,30 +571,30 @@ Section with_cpp.
   (** Statements *)
 
   Instance Kpreds_fupd: FUpd Kpreds :=
-    fun l r Q =>
+    funI l r Q =>
       {| k_normal := |={l,r}=> Q.(k_normal)
        ; k_return v f := |={l,r}=> Q.(k_return) v f
        ; k_break := |={l,r}=> Q.(k_break)
-       ; k_continue := |={l,r}=> Q.(k_continue) |}%I.
+       ; k_continue := |={l,r}=> Q.(k_continue) |}.
 
   Definition void_return (P : mpred) : Kpreds :=
     {| k_normal := P
-     ; k_return := fun r free => match r with
+     ; k_return := funI r free => match r with
                               | None => free ** P
                               | Some _ => False
                               end
      ; k_break := False
      ; k_continue := False
-    |}%I.
+    |}.
 
   Definition val_return (P : val -> mpred) : Kpreds :=
     {| k_normal := False
-     ; k_return := fun r free => match r with
+     ; k_return := funI r free => match r with
                               | None => False
                               | Some v => free ** P v
                               end
      ; k_break := False
-     ; k_continue := False |}%I.
+     ; k_continue := False |}.
 
   Definition Kseq (Q : Kpreds -> mpred) (k : Kpreds) : Kpreds :=
     {| k_normal   := Q k
