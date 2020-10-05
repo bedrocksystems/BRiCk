@@ -72,7 +72,6 @@ Section with_cpp.
   Qed.
 
   Section wp_lval.
-    Local Close Scope bi_scope.
     Context {σ : genv} (M : coPset) (ti : thread_info) (ρ : region) (e : Expr).
     Local Notation WP := (wp_lval (resolve:=σ) M ti ρ e) (only parsing).
     Implicit Types P : mpred.
@@ -132,7 +131,6 @@ Section with_cpp.
   Qed.
 
   Section wp_prval.
-    Local Close Scope bi_scope.
     Context {σ : genv} (M : coPset) (ti : thread_info) (ρ : region) (e : Expr).
     Local Notation WP := (wp_prval (resolve:=σ) M ti ρ e) (only parsing).
     Implicit Types P : mpred.
@@ -197,7 +195,6 @@ Section with_cpp.
   Qed.
 
   Section wp_init.
-    Local Close Scope bi_scope.
     Context {σ : genv} (M : coPset) (ti : thread_info) (ρ : region)
       (t : type) (v : val) (e : Expr).
     Local Notation WP := (wp_init (resolve:=σ) M ti ρ t v e) (only parsing).
@@ -258,7 +255,6 @@ Section with_cpp.
   Qed.
 
   Section wp_xval.
-    Local Close Scope bi_scope.
     Context {σ : genv} (M : coPset) (ti : thread_info) (ρ : region) (e : Expr).
     Local Notation WP := (wp_xval (resolve:=σ) M ti ρ e) (only parsing).
     Implicit Types P : mpred.
@@ -474,7 +470,6 @@ Section with_cpp.
   Qed.
 
   Section wpi.
-    Local Close Scope bi_scope.
     Context {σ : genv} (M : coPset) (ti : thread_info) (ρ : region)
       (cls : globname) (this : val) (init : Initializer).
     Local Notation WP := (wpi (resolve:=σ) M ti ρ cls this init) (only parsing).
@@ -534,7 +529,6 @@ Section with_cpp.
   Qed.
 
   Section wpd.
-    Local Close Scope bi_scope.
     Context {σ : genv} (M : coPset) (ti : thread_info) (ρ : region)
       (cls : globname) (this : val) (init : FieldOrBase * obj_name).
     Local Notation WP := (wpd (resolve:=σ) M ti ρ cls this init) (only parsing).
@@ -618,8 +612,6 @@ Section with_cpp.
 
   Definition Kfree (a : mpred) : Kpreds -> Kpreds :=
     Kat_exit (fun P => a ** P).
-
-  Close Scope bi_scope.
 
   Definition Kpred_entails (k1 k2 : Kpreds) : Prop :=
       k1.(k_normal) |-- k2.(k_normal) ∧
