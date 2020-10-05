@@ -22,7 +22,6 @@ Require Import bedrock.lang.cpp.
 Section with_Sigma.
 Context `{Sigma: cpp_logic} {CU:genv}.
 Import primitives.
-Open Scope bi_scope.
 
 Variable x:ptr.
 Variable y:ptr.
