@@ -119,8 +119,11 @@ Module Type Stmt.
 
       | Tnamed cls =>
         Forall a, _at (_eq a) (uninitR ty 1) -*
+                  let destroy P :=
+                      destruct_val ty (Vptr a) dtor (_at (_eq a) (anyR ty 1) ** P)
+                  in
                   let continue :=
-                      k (Rbind x a ρ) (Kfree (destruct_val ty (Vptr a) dtor (_at (_eq a) (anyR ty 1))) Q)
+                      k (Rbind x a ρ) (Kat_exit destroy Q)
                   in
                   match init with
                   | None => continue
@@ -128,9 +131,12 @@ Module Type Stmt.
                     wp_init ρ ty (Vptr a) (not_mine init) (fun free => free ** continue)
                   end
       | Tarray ty' N =>
-        Forall a, _at (_eq a) (uninitR (erase_qualifiers ty) 1) -*
+        Forall a, _at (_eq a) (uninitR ty 1) -*
+                  let destroy P :=
+                      destruct_val ty (Vptr a) dtor (_at (_eq a) (anyR ty 1) ** P)
+                  in
                   let continue :=
-                      k (Rbind x a ρ) (Kfree (destruct_val ty (Vptr a) dtor (_at (_eq a) (anyR ty 1))) Q)
+                      k (Rbind x a ρ) (Kat_exit destroy Q)
                   in
                   match init with
                   | None => continue
@@ -151,7 +157,7 @@ Module Type Stmt.
              (free ** k (Rbind x p ρ) Q))
         end
 
-      | Tfunction _ _ => lfalse (* not supported *)
+      | Tfunction _ _ => False (* not supported *)
 
       | Tqualified _ ty => wp_decl ρ x ty init dtor k Q
       | Tnullptr =>
@@ -167,8 +173,8 @@ Module Type Stmt.
           wp_prval ρ init (fun v free => free **
                   _at (_eq a) (primR (erase_qualifiers ty) 1 v) -* continue)
         end
-      | Tfloat _ => lfalse (* not supportd *)
-      | Tarch _ _ => lfalse (* not supported *)
+      | Tfloat _ => False (* not supportd *)
+      | Tarch _ _ => False (* not supported *)
       end.
 
     Fixpoint wp_decls (ρ : region) (ds : list VarDecl)
