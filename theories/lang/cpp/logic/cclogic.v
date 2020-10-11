@@ -3,24 +3,11 @@
  *
  * SPDX-License-Identifier: LGPL-2.1 WITH BedRock Exception for use over network, see repository root for details.
  *)
-Require Import Coq.ZArith.BinInt.
-Require Import Coq.Lists.List.
-
-From Coq.Classes Require Import
-     RelationClasses Morphisms DecidableClass.
-
 From iris.bi Require Import lib.fractional.
-From iris.base_logic.lib Require Import
-      fancy_updates invariants cancelable_invariants own wsat.
-Import invG.
-From iris.algebra Require Import excl auth.
-
+From iris.base_logic.lib Require Import invariants cancelable_invariants.
 From iris.proofmode Require Import tactics.
 
-Require Import bedrock.ChargeCompat.
-Require Import bedrock.lang.cpp.ast.
-From bedrock.lang.cpp Require Import
-     logic.pred.
+From bedrock.lang.cpp Require Import logic.pred.
 
 Set Default Proof Using "Type".
 
