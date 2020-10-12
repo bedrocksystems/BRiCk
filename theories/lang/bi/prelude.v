@@ -38,6 +38,7 @@ Global Notation illater := (bi_later) (only parsing).
 Global Notation embed := (bi_pure) (only parsing).
 Ltac split' := intros; apply (anti_symm (⊢)).
 
+Infix "==" := equiv (at level 70, no associativity) : stdpp_scope.
 (* Charge notation levels *)
 Module ChargeNotation.
 
