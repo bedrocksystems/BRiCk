@@ -68,7 +68,7 @@ Module ChargeNotation.
   (* Notation "'|>' P" := (▷  P)%I (at level 71). *)
   Notation "|> P" := (▷  P)%I (at level 20, right associativity).
 
-  Notation "P -|- Q"  := (P%I ≡ Q%I) (at level 85, no associativity).
+  Notation "P -|- Q"  := (P ⊣⊢ Q) (at level 85, no associativity).
   Notation "P '-|-@{' PROP } Q"  := (P%I ⊣⊢@{PROP} Q%I)
     (at level 85, no associativity, only parsing).
 
