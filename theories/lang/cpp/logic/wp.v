@@ -17,16 +17,35 @@ From bedrock.lang.cpp Require Import
 Set Primitive Projections.
 Set Default Proof Using "Type".
 
+(* expression continuations
+ * - in full C++, this includes exceptions, but our current semantics
+ *   doesn't treat those.
+ *)
+Definition epred `{Σ : cpp_logic thread_info} := mpred.
+Global Bind Scope bi_scope with epred.
+
+Definition FreeTemps `{Σ : cpp_logic thread_info} := mpred.
+Global Bind Scope bi_scope with FreeTemps.
+
+(** Statements *)
+(* continuations
+  * C++ statements can terminate in 4 ways.
+  *
+  * note(gmm): technically, they can also raise exceptions; however,
+  * our current semantics doesn't capture this. if we want to support
+  * exceptions, we should be able to add another case,
+  * `k_throw : val -> mpred`.
+  *)
+Record Kpreds `{Σ : cpp_logic thread_info} :=
+  { k_normal   : mpred
+  ; k_return   : option val -> FreeTemps -> mpred
+  ; k_break    : mpred
+  ; k_continue : mpred
+  }.
+Global Bind Scope bi_scope with Kpreds.
+
 Section with_cpp.
   Context `{Σ : cpp_logic thread_info}.
-
-  (* expression continuations
-   * - in full C++, this includes exceptions, but our current semantics
-   *   doesn't treat those.
-   *)
-  Definition epred := mpred.
-
-  Definition FreeTemps := mpred.
 
   (* [SP] denotes the sequence point for an expression *)
   Definition SP (Q : val -> mpred) (v : val) (free : FreeTemps) : mpred :=
@@ -58,7 +77,6 @@ Section with_cpp.
   Qed.
 
   Section wp_lval.
-    Local Close Scope bi_scope.
     Context {σ : genv} (M : coPset) (ti : thread_info) (ρ : region) (e : Expr).
     Local Notation WP := (wp_lval (resolve:=σ) M ti ρ e) (only parsing).
     Implicit Types P : mpred.
@@ -118,7 +136,6 @@ Section with_cpp.
   Qed.
 
   Section wp_prval.
-    Local Close Scope bi_scope.
     Context {σ : genv} (M : coPset) (ti : thread_info) (ρ : region) (e : Expr).
     Local Notation WP := (wp_prval (resolve:=σ) M ti ρ e) (only parsing).
     Implicit Types P : mpred.
@@ -183,7 +200,6 @@ Section with_cpp.
   Qed.
 
   Section wp_init.
-    Local Close Scope bi_scope.
     Context {σ : genv} (M : coPset) (ti : thread_info) (ρ : region)
       (t : type) (v : val) (e : Expr).
     Local Notation WP := (wp_init (resolve:=σ) M ti ρ t v e) (only parsing).
@@ -244,7 +260,6 @@ Section with_cpp.
   Qed.
 
   Section wp_xval.
-    Local Close Scope bi_scope.
     Context {σ : genv} (M : coPset) (ti : thread_info) (ρ : region) (e : Expr).
     Local Notation WP := (wp_xval (resolve:=σ) M ti ρ e) (only parsing).
     Implicit Types P : mpred.
@@ -460,7 +475,6 @@ Section with_cpp.
   Qed.
 
   Section wpi.
-    Local Close Scope bi_scope.
     Context {σ : genv} (M : coPset) (ti : thread_info) (ρ : region)
       (cls : globname) (this : val) (init : Initializer).
     Local Notation WP := (wpi (resolve:=σ) M ti ρ cls this init) (only parsing).
@@ -520,7 +534,6 @@ Section with_cpp.
   Qed.
 
   Section wpd.
-    Local Close Scope bi_scope.
     Context {σ : genv} (M : coPset) (ti : thread_info) (ρ : region)
       (cls : globname) (this : val) (init : FieldOrBase * obj_name).
     Local Notation WP := (wpd (resolve:=σ) M ti ρ cls this init) (only parsing).
@@ -556,46 +569,32 @@ Section with_cpp.
   End wpd.
 
   (** Statements *)
-  (* continuations
-   * C++ statements can terminate in 4 ways.
-   *
-   * note(gmm): technically, they can also raise exceptions; however,
-   * our current semantics doesn't capture this. if we want to support
-   * exceptions, we should be able to add another case,
-   * `k_throw : val -> mpred`.
-   *)
-  Record Kpreds :=
-    { k_normal   : mpred
-    ; k_return   : option val -> FreeTemps -> mpred
-    ; k_break    : mpred
-    ; k_continue : mpred
-    }.
 
   Instance Kpreds_fupd: FUpd Kpreds :=
-    fun l r Q =>
+    funI l r Q =>
       {| k_normal := |={l,r}=> Q.(k_normal)
        ; k_return v f := |={l,r}=> Q.(k_return) v f
        ; k_break := |={l,r}=> Q.(k_break)
-       ; k_continue := |={l,r}=> Q.(k_continue) |}%I.
+       ; k_continue := |={l,r}=> Q.(k_continue) |}.
 
   Definition void_return (P : mpred) : Kpreds :=
     {| k_normal := P
-     ; k_return := fun r free => match r with
+     ; k_return := funI r free => match r with
                               | None => free ** P
                               | Some _ => False
                               end
      ; k_break := False
      ; k_continue := False
-    |}%I.
+    |}.
 
   Definition val_return (P : val -> mpred) : Kpreds :=
     {| k_normal := False
-     ; k_return := fun r free => match r with
+     ; k_return := funI r free => match r with
                               | None => False
                               | Some v => free ** P v
                               end
      ; k_break := False
-     ; k_continue := False |}%I.
+     ; k_continue := False |}.
 
   Definition Kseq (Q : Kpreds -> mpred) (k : Kpreds) : Kpreds :=
     {| k_normal   := Q k
@@ -618,8 +617,6 @@ Section with_cpp.
 
   Definition Kfree (a : mpred) : Kpreds -> Kpreds :=
     Kat_exit (fun P => a ** P).
-
-  Close Scope bi_scope.
 
   Definition Kpred_entails (k1 k2 : Kpreds) : Prop :=
       k1.(k_normal) |-- k2.(k_normal) ∧

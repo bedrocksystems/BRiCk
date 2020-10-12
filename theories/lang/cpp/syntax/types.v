@@ -7,10 +7,10 @@ Require Import Coq.Bool.Bool.
 Require Import Coq.NArith.BinNatDef.
 Require Import Coq.ZArith.BinInt.
 Require Import stdpp.decidable.
-Require Import bedrock.Util.
 Require Import bedrock.lang.cpp.syntax.names.
 
 Set Primitive Projections.
+Set Default Proof Using "Type".
 
 (* Type qualifiers *)
 Record type_qualifiers : Set :=

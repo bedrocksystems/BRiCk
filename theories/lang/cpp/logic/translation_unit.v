@@ -88,7 +88,7 @@ Section with_cpp.
   Definition denoteModule_def (d : translation_unit) : mpred :=
     ([∗list] sv ∈ map_to_list d.(symbols), denoteSymbol sv.1 sv.2) **
     [| module_le d resolve.(genv_tu) |].
-  Definition denoteModule_aux : seal (@denoteModule_def). by eexists. Qed.
+  Definition denoteModule_aux : seal (@denoteModule_def). Proof. by eexists. Qed.
   Definition denoteModule := denoteModule_aux.(unseal).
   Definition denoteModule_eq : @denoteModule = _ := denoteModule_aux.(seal_eq).
 

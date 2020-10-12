@@ -8,7 +8,6 @@ Require Import bedrock.lang.cpp.
 Import heap_notations.
 
 Local Open Scope Z_scope.
-Open Scope bi_scope.
 
 (** * Sequential Specs *)
 

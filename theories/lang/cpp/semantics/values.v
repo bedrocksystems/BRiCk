@@ -68,6 +68,7 @@ End PTR_API.
 Declare Module PTR : PTR_API.
 Export PTR.
 
+Instance ptr_inhabited : Inhabited ptr := populate nullptr.
 (** * Raw bytes
     Raw bytes represent the low-level view of data.
     [raw_byte] abstracts over the internal structure of this low-level view of data.
@@ -101,6 +102,8 @@ Variant val : Set :=
 Definition val_dec : forall a b : val, {a = b} + {a <> b}.
 Proof. solve_decision. Defined.
 Instance: EqDecision val := val_dec.
+
+Instance val_inhabited : Inhabited val := populate (Vint 0).
 
 (** wrappers for constructing certain values *)
 Definition Vchar (a : Ascii.ascii) : val :=

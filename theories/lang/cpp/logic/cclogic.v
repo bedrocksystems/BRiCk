@@ -3,28 +3,13 @@
  *
  * SPDX-License-Identifier: LGPL-2.1 WITH BedRock Exception for use over network, see repository root for details.
  *)
-Require Import Coq.ZArith.BinInt.
-Require Import Coq.Lists.List.
-
-Require Import Coq.ssr.ssrbool.
-
-From Coq.Classes Require Import
-     RelationClasses Morphisms DecidableClass.
-
 From iris.bi Require Import lib.fractional.
-From iris.base_logic.lib Require Import
-      fancy_updates invariants cancelable_invariants own wsat.
-Import invG.
-From iris.algebra Require Import excl auth.
-
+From iris.base_logic.lib Require Import invariants cancelable_invariants.
 From iris.proofmode Require Import tactics.
 
-Require Import bedrock.ChargeCompat.
-Require Import bedrock.lang.cpp.ast.
-From bedrock.lang.cpp Require Import
-     logic.pred.
+From bedrock.lang.cpp Require Import logic.pred.
 
-Bind Scope string_scope with namespace.
+Set Default Proof Using "Type".
 
 Section with_Σ.
   Context `{Σ : cpp_logic, !invG Σ}.
@@ -49,7 +34,7 @@ Section with_Σ.
   End with_Σ'.
 
   Example viewshift_example (P Q : mpred) (N : namespace) :
-    (P -* |={ ⊤ ∖ ↑N, ⊤  }=> Q) ** (|={⊤, ⊤ ∖ ↑N}=> P)%I |-- |={⊤}=> Q.
+    (P -* |={ ⊤ ∖ ↑N, ⊤  }=> Q) ** (|={⊤, ⊤ ∖ ↑N}=> P) |-- |={⊤}=> Q.
   Proof using .
     (* Introduce hypotheses into context by destructing separation conjunct *)
     iIntros "[HPQ HP]".
@@ -74,7 +59,7 @@ Section with_Σ.
     Definition Inv : namespace → mpred → mpred := inv.
 
     Lemma Inv_alloc : forall n I,
-      |>I |-- (|={⊤}=> Inv n I)%I.
+      |>I |-- |={⊤}=> Inv n I.
     Proof using . intros. by apply inv_alloc. Qed.
 
     Global Instance: Persistent (Inv n P).
@@ -97,8 +82,8 @@ Section with_Σ.
         depend on γ. Notably, one can put the invariant token TInv_own γ q
         inside the invariant I. *)
     Lemma TInv_alloc_cofinite : forall (G: gset gname) M N,
-      |-- (|={M}=> Exists γ, ⌜ γ ∉ G ⌝ ** TInv_own γ 1%Qp **
-                            ∀ I, ▷ I ={M}=∗ TInv N γ I)%I.
+      |-- |={M}=> Exists γ, ⌜ γ ∉ G ⌝ ** TInv_own γ 1%Qp **
+                            ∀ I, ▷ I ={M}=∗ TInv N γ I.
     Proof. by apply cinv_alloc_cofinite. Qed.
 
     (* Even stronger: stronger constraints on γ can be picked
@@ -111,7 +96,7 @@ Section with_Σ.
 
     Corollary TInv_alloc_ghost_named_inv : forall M N I,
       (∀ γ : gname, I γ) |--
-      (|={M}=> Exists γ, TInv N γ (I γ) ** TInv_own γ 1%Qp )%I.
+      |={M}=> Exists γ, TInv N γ (I γ) ** TInv_own γ 1%Qp.
     Proof.
       intros. iIntros "I".
       iMod (TInv_alloc_cofinite empty M N) as (γ ?) "[HO HI]".
@@ -121,7 +106,7 @@ Section with_Σ.
     Qed.
 
     Lemma TInv_alloc : forall M N I,
-      |>I |-- (|={M}=> Exists γ, TInv N γ I ** TInv_own γ 1%Qp)%I.
+      |>I |-- |={M}=> Exists γ, TInv N γ I ** TInv_own γ 1%Qp.
     Proof using . intros. apply cinv_alloc. Qed.
 
     Global Instance TInv_persistent : Persistent (TInv Ns γ P).
@@ -136,13 +121,13 @@ Section with_Σ.
 
     Lemma TInv_cancel M N γ I :
       ↑N ⊆ M ->
-      TInv N γ I |-- TInv_own γ 1%Qp -* (|={M}=> |>I)%I.
+      TInv N γ I |-- TInv_own γ 1%Qp -* |={M}=> |>I.
     Proof using . apply cinv_cancel. Qed.
 
     #[deprecated(since="20200824", note="Use TInv_cancel instead")]
     Lemma TInv_delete M N γ I :
       ↑N ⊆ M ->
-      TInv N γ I ** TInv_own γ 1%Qp |-- (|={M}=> |>I)%I.
+      TInv N γ I ** TInv_own γ 1%Qp |-- |={M}=> |>I.
     Proof. intros. iIntros "[#? ?]". iApply TInv_cancel; eauto. Qed.
 (*
     Lemma cinv_open_stronger E N γ p P :
@@ -173,7 +158,7 @@ Section with_Σ.
       TInv N γ P |-- (TInv_own γ p ={E,E∖↑N}=∗
                             ((|>P) ** TInv_own γ p **
                             (Forall (E' : coPset),
-                              ((|>P ∨ TInv_own γ 1) ={E',↑N ∪ E'}=∗ True))))%I.
+                              ((|>P ∨ TInv_own γ 1) ={E',↑N ∪ E'}=∗ True)))).
     Proof using . apply cinv_acc_strong. Qed.
 
   End with_cinvG.
