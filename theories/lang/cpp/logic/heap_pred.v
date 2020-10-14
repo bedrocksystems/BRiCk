@@ -9,7 +9,6 @@ From iris.bi Require Export monpred.
 From iris.proofmode Require Import tactics monpred.
 Require Import iris.bi.lib.fractional.
 
-From bedrock Require Import ChargeUtil.
 From bedrock.lang.cpp Require Import
      semantics logic.pred logic.path_pred ast logic.wp.
 Require Import bedrock.lang.cpp.logic.spec.
