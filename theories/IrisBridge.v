@@ -136,8 +136,17 @@ Section bi.
   Proof. by rewrite -bi.affinely_or -bi.pure_or. Qed.
   Lemma only_provable_impl P Q : [|P → Q|] ⊢ ([| P |] → [| Q |]).
   Proof. auto. Qed.
-  Lemma only_provable_forall {A} (φ : A → Prop) : [|∀ x, φ x|] ⊢ ∀ x, [|φ x|].
+  Lemma only_provable_forall_1 {A} (φ : A → Prop) : [|∀ x, φ x|] ⊢ ∀ x, [|φ x|].
   Proof. auto. Qed.
+  Lemma only_provable_forall_2 `{Inhabited A} (φ : A → Prop) :
+    (∀ x, [|φ x|]) ⊢ [|∀ x, φ x|].
+  Proof.
+    rewrite/only_provable/bi_affinely. iIntros "Hφ". iSplit; first done.
+    rewrite bi.pure_forall. iIntros (x). iDestruct ("Hφ" $! x) as "[_ $]".
+  Qed.
+  Lemma only_provable_forall `{Inhabited A} (φ : A → Prop) :
+    [|∀ x, φ x|] ⊣⊢ ∀ x, [|φ x|].
+  Proof. split'. apply only_provable_forall_1. apply only_provable_forall_2. Qed.
   Lemma only_provable_exist {A} (φ : A → Prop) : [|∃ x, φ x|] ⊣⊢ ∃ x, [|φ x|].
   Proof. rewrite/only_provable. by rewrite bi.pure_exist bi.affinely_exist. Qed.
   Lemma only_provable_impl_forall P q : ([| P |] → q) ⊢ (∀ _ : P, emp → q).
@@ -237,9 +246,12 @@ Section proofmode.
   Global Instance into_exist_only_provable {A} (P : A → Prop) :
     @IntoExist PROP A [| ∃ x, P x |] (λ a, [| P a |]).
   Proof. by rewrite/IntoExist only_provable_exist. Qed.
+  Global Instance from_forall_only_provable `{Inhabited A} (P : A → Prop) :
+    @FromForall PROP A [| ∀ x, P x |] (λ a, [| P a |]).
+  Proof. by rewrite/FromForall only_provable_forall_2. Qed.
   Global Instance into_forall_only_provable {A} (P : A → Prop) :
     @IntoForall PROP A [| ∀ x, P x |] (λ a, [| P a |]).
-  Proof. by rewrite/IntoForall only_provable_forall. Qed.
+  Proof. by rewrite/IntoForall only_provable_forall_1. Qed.
 End proofmode.
 Typeclasses Opaque only_provable.
 Global Opaque only_provable.	(** Less important *)
