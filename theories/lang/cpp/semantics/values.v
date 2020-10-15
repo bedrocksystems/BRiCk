@@ -242,6 +242,7 @@ Record genv_compat {tu : translation_unit} {g : genv} : Prop :=
 { tu_compat : sub_module tu g.(genv_tu) }.
 Arguments genv_compat _ _ : clear implicits.
 Infix "⊧" := genv_compat (at level 1).
+Existing Class genv_compat.
 
 Theorem genv_byte_order_tu : forall tu g,
     tu ⊧ g ->
