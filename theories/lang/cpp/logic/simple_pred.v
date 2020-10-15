@@ -256,20 +256,14 @@ Module SimpleCPP.
 
       Global Instance encodes_persistent : forall t v vs, Persistent (encodes t v vs).
       Proof.
-        unfold encodes.
-        intros; destruct (erase_qualifiers t); intros;
-          destruct v; try refine _.
-        - case_decide; refine _.
-        - destruct z; refine _.
-          destruct p; refine _.
+        unfold encodes; intros.
+        repeat case_match; apply _.
       Qed.
 
       Global Instance encodes_timeless : forall t v a, Timeless (encodes t v a).
       Proof.
-        intros. unfold encodes. destruct (erase_qualifiers t); destruct v; refine _.
-        - case_decide; refine _.
-        - destruct z; refine _.
-          destruct p; refine _.
+        unfold encodes; intros.
+        repeat case_match; apply _.
       Qed.
 
       Local Hint Resolve bi.False_elim : core.
