@@ -3,12 +3,12 @@
  *
  * SPDX-License-Identifier: LGPL-2.1 WITH BedRock Exception for use over network, see repository root for details.
  */
+#include "ModuleBuilder.hpp"
 #include "CommentScanner.hpp"
 #include "DeclVisitorWithArgs.h"
 #include "Filter.hpp"
 #include "Formatter.hpp"
 #include "Logging.hpp"
-#include "ModuleBuilder.hpp"
 #include "SpecCollector.hpp"
 #include "clang/Basic/Builtins.h"
 
@@ -192,6 +192,12 @@ public:
     void VisitClassTemplateDecl(const ClassTemplateDecl *decl, bool) {
         for (auto i : decl->specializations()) {
             this->Visit(i, true);
+        }
+    }
+
+    void VisitFriendDecl(const FriendDecl *decl, bool) {
+        if (decl->getFriendDecl()) {
+            this->Visit(decl->getFriendDecl(), true);
         }
     }
 };
