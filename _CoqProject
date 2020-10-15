@@ -10,6 +10,7 @@
 # Utility modules
 theories/lang/prelude/bytestring.v
 theories/lang/prelude/avl.v
+theories/lang/bi/only_provable.v
 theories/lang/bi/prelude.v
 theories/lang/bi/ChargeCompat.v
 
