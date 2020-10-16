@@ -7,7 +7,7 @@
 Set Default Proof Using "Type".
 Set Suggest Proof Using.
 
-From iris.algebra Require Export base.
+From bedrock.lang Require Export prelude.base.
 From bedrock.lang.cpp Require Import ast operator values.
 From bedrock.lang.cpp.semantics Require builtins.
 

@@ -7,6 +7,7 @@
 (** this module provides a denotational/axiomatic semantics to c++ compilation
     units.
  *)
+Require Import bedrock.lang.prelude.base.
 Require Import bedrock.lang.cpp.ast.
 From bedrock.lang.cpp Require Import
      semantics logic.pred logic.path_pred logic.heap_pred.

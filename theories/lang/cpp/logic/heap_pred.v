@@ -3,7 +3,7 @@
  *
  * SPDX-License-Identifier: LGPL-2.1 WITH BedRock Exception for use over network, see repository root for details.
  *)
-Require Import Coq.Classes.Morphisms.
+Require Import bedrock.lang.prelude.base.
 
 From iris.bi Require Export monpred.
 From iris.proofmode Require Import tactics monpred.

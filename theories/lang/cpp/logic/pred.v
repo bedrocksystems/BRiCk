@@ -11,8 +11,7 @@
     - the memory model is simplified from the standard C++ memory
       model.
  *)
-From Coq.Classes Require Import
-     RelationClasses Morphisms.
+Require Import bedrock.lang.prelude.base.
 
 From iris.base_logic.lib Require Export iprop.
 Require Import iris.bi.monpred.

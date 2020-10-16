@@ -3,12 +3,9 @@
  *
  * SPDX-License-Identifier: LGPL-2.1 WITH BedRock Exception for use over network, see repository root for details.
  *)
-Require Import Coq.Lists.List.
-Require Import Coq.ZArith.ZArith.
+Require Import bedrock.lang.prelude.base.
 Require Import bedrock.lang.cpp.ast.
 Require Import bedrock.lang.cpp.semantics.operator.
-
-(* Set Default Proof Using "Type". *)
 
 Local Open Scope Z_scope.
 (* see
