@@ -5,7 +5,7 @@
  *)
 From iris Require Import bi.bi.
 From iris.proofmode Require Import tactics.
-Require Import bedrock.IrisBridge.
+Require Import bedrock.lang.bi.prelude.
 Import ChargeNotation.
 Set Default Proof Using "Type".
 

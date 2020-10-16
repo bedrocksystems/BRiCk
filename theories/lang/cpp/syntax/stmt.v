@@ -8,7 +8,7 @@ Require Import Coq.ZArith.BinIntDef.
 Require Import stdpp.decidable.
 Require Import stdpp.numbers.
 From bedrock.lang.cpp.syntax Require Import names types expr.
-Require Import bedrock.bytestring.
+Require Import bedrock.lang.prelude.bytestring.
 
 Set Primitive Projections.
 
