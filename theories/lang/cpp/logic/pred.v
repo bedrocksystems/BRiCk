@@ -112,6 +112,10 @@ Module Type CPP_LOGIC (Import CC : CPP_LOGIC_CLASS).
 
     Axiom valid_ptr_nullptr : |-- valid_ptr nullptr.
 
+    (** Formalizes the notion of "provides storage",
+    http://eel.is/c++draft/intro.object#def:provides_storage *)
+    Parameter provides_storage : ptr -> ptr -> type -> mpred.
+
     (**
     Typed points-to predicate. Fact [tptsto t q p v] asserts the following things:
     1. Pointer [p] points to value [v].
@@ -266,6 +270,9 @@ Module Type CPP_LOGIC (Import CC : CPP_LOGIC_CLASS).
         |={M}=> Exists vs, @encodes σ ty v vs ** vbytes va vs 1 **
                 (Forall v' vs', @encodes  σ ty v' vs' -* vbytes va vs' 1 -*
                                 |={M}=> @tptsto σ ty 1 p v').
+
+    Axiom provides_storage_pinned_ptr : forall res newp aty va,
+       provides_storage res newp aty ** pinned_ptr va res |-- pinned_ptr va newp.
 
     Global Existing Instances
       pinned_ptr_persistent pinned_ptr_affine pinned_ptr_timeless.
