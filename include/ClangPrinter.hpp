@@ -30,7 +30,7 @@ class CoqPrinter;
 
 class ClangPrinter {
 public:
-    bool printDecl(clang::Decl* d, CoqPrinter& print);
+    bool printDecl(const clang::Decl* d, CoqPrinter& print);
 
     void printParamName(const clang::ParmVarDecl* d, CoqPrinter& print);
 

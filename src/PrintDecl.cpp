@@ -235,7 +235,7 @@ printDestructor(const CXXDestructorDecl *decl, CoqPrinter &print,
 }
 
 class PrintDecl :
-    public DeclVisitorArgs<PrintDecl, bool, CoqPrinter &, ClangPrinter &,
+    public ConstDeclVisitorArgs<PrintDecl, bool, CoqPrinter &, ClangPrinter &,
                            const ASTContext &> {
 private:
     PrintDecl() {}
@@ -649,7 +649,7 @@ public:
         return true;
     }
 
-    bool VisitCXXDestructorDecl(CXXDestructorDecl *decl, CoqPrinter &print,
+    bool VisitCXXDestructorDecl(const CXXDestructorDecl *decl, CoqPrinter &print,
                                 ClangPrinter &cprint, const ASTContext &ctxt) {
         print.ctor("Ddestructor");
         cprint.printGlobalName(decl, print);
@@ -787,6 +787,6 @@ public:
 PrintDecl PrintDecl::printer;
 
 bool
-ClangPrinter::printDecl(clang::Decl *decl, CoqPrinter &print) {
+ClangPrinter::printDecl(const clang::Decl *decl, CoqPrinter &print) {
     return PrintDecl::printer.Visit(decl, print, *this, *context_);
 }
