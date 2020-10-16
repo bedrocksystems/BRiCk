@@ -109,7 +109,7 @@ public:
         VisitTagDecl(decl, false);
     }
     void VisitCXXMethodDecl(CXXMethodDecl *decl, bool) {
-        if (decl->isDeleted())
+        if (decl->isDeleted() or decl->isDependentContext())
             return;
 
         if (elaborate_) {
