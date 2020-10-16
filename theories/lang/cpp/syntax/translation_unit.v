@@ -7,7 +7,8 @@ From Coq Require Import NArith ZArith ssr.ssreflect.
 Local Open Scope general_if_scope.
 From stdpp Require Import decidable tactics.
 
-Require Import bedrock.bytestring.
+Require Import bedrock.lang.prelude.bytestring.
+Require Import bedrock.lang.prelude.avl.
 From bedrock.lang.cpp.syntax Require Import names expr stmt types.
 
 Set Primitive Projections.
@@ -167,7 +168,6 @@ Variant GlobDecl : Set :=
 Instance: EqDecision GlobDecl.
 Proof. solve_decision. Defined.
 
-Require Import bedrock.avl.
 
 
 Definition symbol_table : Type := IM.t ObjValue.

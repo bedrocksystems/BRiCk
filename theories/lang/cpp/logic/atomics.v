@@ -9,7 +9,7 @@ From iris.base_logic.lib Require Import
      fancy_updates invariants cancelable_invariants wsat.
 Import invG.
 
-From bedrock Require Import ChargeCompat.
+Require Import bedrock.lang.bi.ChargeCompat.
 From bedrock.lang.cpp Require Import ast semantics.
 From bedrock.lang.cpp.logic Require Import
      pred path_pred heap_pred wp call.

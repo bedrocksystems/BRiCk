@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: LGPL-2.1 WITH BedRock Exception for use over network, see repository root for details.
  *)
 From stdpp Require Import countable strings.
-Require Export bedrock.bytestring.
+Require Export bedrock.lang.prelude.bytestring.
 
 Set Primitive Projections.
 

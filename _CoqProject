@@ -8,11 +8,12 @@
 -Q theories bedrock
 
 # Utility modules
-theories/bytestring.v
-theories/avl.v
-theories/IrisBridge.v
-theories/ChargeCompat.v
-theories/ChargeUtil.v
+theories/lang/prelude/bytestring.v
+theories/lang/prelude/avl.v
+theories/lang/bi/only_provable.v
+theories/lang/bi/prelude.v
+theories/lang/bi/IrisBridge.v
+theories/lang/bi/ChargeCompat.v
 
 # Syntax
 theories/lang/cpp/syntax/names.v

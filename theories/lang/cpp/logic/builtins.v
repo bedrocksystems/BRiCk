@@ -5,7 +5,7 @@
  *)
 Require Import Coq.Lists.List.
 Require Import iris.proofmode.tactics.
-From bedrock Require Import ChargeCompat.
+Require Import bedrock.lang.bi.ChargeCompat.
 From bedrock.lang.cpp Require Import ast semantics.
 Require Import bedrock.lang.cpp.semantics.builtins.
 From bedrock.lang.cpp.logic Require Import
