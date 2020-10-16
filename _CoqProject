@@ -71,3 +71,6 @@ theories/lang/cpp.v
 
 # "soundness" proof
 theories/lang/cpp/logic/simple_pred.v
+
+# misc
+theories/lang/bi/bytes_at.v
