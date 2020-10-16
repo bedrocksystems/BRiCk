@@ -27,6 +27,16 @@ Definition RepI `{Σ : cpp_logic} := monPredI ptr_bi_index mpredI.
 Bind Scope bi_scope with Rep.
 Bind Scope bi_scope with RepI.
 
+(* MOVE to Iris *)
+Lemma exist_comm {PROP : bi} {A B} (Φ : A → B → PROP) :
+  (∃ a b, Φ a b) -|- (∃ b a, Φ a b).
+Proof. iSplit; iDestruct 1 as (??) "H"; eauto. Qed.
+
+Lemma exist_forall_comm {PROP : bi} {A B} (Φ : A → B → PROP) :
+  (∃ a, ∀ b, Φ a b) |-- (∀ b, ∃ a, Φ a b).
+Proof. iDestruct 1 as (a) "H". iIntros (b). iExists a. by iApply "H". Qed.
+(* END MOVE *)
+
 Section with_cpp.
   Context `{Σ : cpp_logic}.
 
@@ -213,13 +223,17 @@ Section with_cpp.
   Lemma _at_exists : forall (l : Loc) T (P : T -> Rep),
       _at l (Exists v : T, P v) -|- Exists v, _at l (P v).
   Proof.
-    intros.
-    rewrite _at_eq /_at_def.
-    split'.
-    - iDestruct 1 as (a) "[? H]".
-      iDestruct "H" as (xx) "H". eauto.
-    - iDestruct 1 as (v a) "[#L P]".
-      iExists _; iFrame "#∗". iExists _; iFrame.
+    intros. rewrite _at_eq /_at_def /=.
+    setoid_rewrite monPred_at_exist. setoid_rewrite bi.sep_exist_l.
+    by rewrite exist_comm.
+  Qed.
+
+  Lemma _at_forall : forall (l : Loc) T (P : T -> Rep),
+    _at l (Forall x, P x) |-- Forall x, _at l (P x).
+  Proof.
+    intros. rewrite _at_eq /_at_def /=.
+    setoid_rewrite monPred_at_forall. setoid_rewrite bi.sep_forall_l.
+    by rewrite exist_forall_comm.
   Qed.
 
   Lemma _at_only_provable : forall (l : Loc) (P : Prop),
