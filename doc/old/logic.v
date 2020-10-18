@@ -122,7 +122,7 @@ Example e14 : mpred := x |-> intR (1/2) 4 ** x |-> intR (1/2) 4.
 (** if [x] and [y] are different locations, the following is also fine *)
 Example e15 : mpred := x |-> intR 1 4 ** y |-> intR (1/2) 4.
 
-(** This separateness part of the [**] (instead of vanila conjuction) gives the main modularity properties of separation logic.
+(** This separateness part of the [**] (instead of vanilla conjunction) gives the main modularity properties of separation logic.
 For example, if a thread [t1] has precondition [P1] and postcondition [Q2],
 and a thread [t2] has precondition [P2] and postcondition [Q2],
 the thread [t1 || t2] ([t1] and [t2] running in parallel) has precondition
