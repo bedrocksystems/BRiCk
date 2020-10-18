@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: LGPL-2.1 WITH BedRock Exception for use over network, see repository root for details.
  *)
 
-Require Export bedrock.lang.prelude.base.
+Require Import bedrock.lang.prelude.base.
 From bedrock.lang.cpp Require Import ast operator values.
 From bedrock.lang.cpp.semantics Require builtins.
 
