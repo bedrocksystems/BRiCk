@@ -6,7 +6,7 @@
 (**
  * Definitions for the semantics
  *)
-Require Import Coq.Lists.List.
+Require Import bedrock.lang.prelude.base.
 Require Import iris.bi.monpred.
 Require Import iris.base_logic.lib.fancy_updates.
 From iris.proofmode Require Import tactics classes.
@@ -15,7 +15,6 @@ From bedrock.lang.cpp Require Import
      ast semantics logic.pred.
 
 Set Primitive Projections.
-Set Default Proof Using "Type".
 
 (* expression continuations
  * - in full C++, this includes exceptions, but our current semantics

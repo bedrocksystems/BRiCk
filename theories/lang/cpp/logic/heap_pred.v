@@ -3,7 +3,7 @@
  *
  * SPDX-License-Identifier: LGPL-2.1 WITH BedRock Exception for use over network, see repository root for details.
  *)
-Require Import Coq.Classes.Morphisms.
+Require Import bedrock.lang.prelude.base.
 
 From iris.bi Require Export monpred.
 From iris.proofmode Require Import tactics monpred.
@@ -12,8 +12,6 @@ Require Import iris.bi.lib.fractional.
 From bedrock.lang.cpp Require Import
      semantics logic.pred logic.path_pred ast logic.wp.
 Require Import bedrock.lang.cpp.logic.spec.
-
-Set Default Proof Using "Type".
 
 (** representations are predicates over a location, they should be used to
   * assert properties of the heap

@@ -13,18 +13,10 @@
  * made uniform.
  *)
 
-Require Import Coq.NArith.BinNat.
-Require Import Coq.ZArith.BinInt.
-Require Import Coq.micromega.Lia.
-Require Import Coq.ssr.ssreflect.
-Require Import stdpp.tactics.
+Require Import bedrock.lang.prelude.base.
 From bedrock.lang.cpp Require Import ast semantics.values.
 
 Local Open Scope Z_scope.
-Local Open Scope general_if_scope.
-Local Set SsrOldRewriteGoalsOrder. (* See Coq issue #5706 *)
-
-Set Default Proof Using "Type".
 
 Local Ltac smash __N :=
   generalize dependent __N; intro __N; destruct __N; rewrite /bitsZ /=; try lia.

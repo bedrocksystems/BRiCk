@@ -3,10 +3,7 @@
  *
  * SPDX-License-Identifier: LGPL-2.1 WITH BedRock Exception for use over network, see repository root for details.
  *)
-Require Import Coq.NArith.BinNatDef.
-Require Import Coq.ZArith.BinIntDef.
-Require Import stdpp.decidable.
-Require Import stdpp.numbers.
+Require Import bedrock.lang.prelude.base.
 From bedrock.lang.cpp.syntax Require Import names types expr.
 Require Import bedrock.lang.prelude.bytestring.
 
@@ -60,12 +57,10 @@ Inductive Stmt : Set :=
 | Sunsupported (_ : bs).
 Instance Stmt_eq_dec : EqDecision Stmt.
 Proof.
-  do 2 red.
-  fix IHS 1.
+  rewrite /RelDecision /Decision.
+  fix IHs 1.
+  rewrite -{1}/(EqDecision Stmt) in IHs.
   decide equality; try solve_trivial_decision.
-  all: try apply list_eq_dec; try apply IHS.
-  apply decide; eapply option_eq_dec.
-  Unshelve. exact IHS.
 Defined.
 
 Definition Sskip := Sseq nil.

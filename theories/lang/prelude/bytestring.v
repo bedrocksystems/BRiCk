@@ -3,8 +3,7 @@
  *
  * SPDX-License-Identifier: LGPL-2.1 WITH BedRock Exception for use over network, see repository root for details.
  *)
-Require Import Coq.Strings.String.
-Require Import stdpp.countable.
+From stdpp Require Import countable strings.
 
 Set Primitive Projections.
 Set Default Proof Using "Type".
@@ -207,15 +206,15 @@ Module OT_byte <: OrderedType.OrderedType with Definition t := Byte.byte.
   Proof.
     unfold lt, byte_cmp.
     intros.
-    rewrite N.compare_lt_iff in H.
-    rewrite N.compare_lt_iff in H0.
+    rewrite ->N.compare_lt_iff in H.
+    rewrite ->N.compare_lt_iff in H0.
     rewrite N.compare_lt_iff.
     lia.
   Qed.
   Theorem lt_not_eq : ∀ x y : t, lt x y → ¬ eq x y.
   Proof.
     unfold lt, eq, byte_cmp; intros.
-    rewrite N.compare_lt_iff in H.
+    rewrite ->N.compare_lt_iff in H.
     rewrite N.compare_eq_iff.
     lia.
   Qed.
@@ -336,7 +335,7 @@ Module OT_bs <: OrderedType.OrderedType with Definition t := bs.
     unfold lt, eq.
     intros. intro. subst.
     induction y; simpl in *; try congruence.
-    rewrite byte_cmp_refl in *. auto.
+    rewrite ->byte_cmp_refl in *. auto.
   Qed.
 
   Definition eq_dec : ∀ x y : t, {eq x y} + {¬ eq x y}.

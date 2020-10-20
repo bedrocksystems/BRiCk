@@ -3,12 +3,9 @@
  *
  * SPDX-License-Identifier: LGPL-2.1 WITH BedRock Exception for use over network, see repository root for details.
  *)
-Require Import bedrock.lang.prelude.bytestring.
-From stdpp Require Import base fin_maps.
-
+From stdpp Require Import fin_maps strings.
+From bedrock.lang.prelude Require Import base bytestring.
 Require Import Coq.FSets.FMapAVL.
-
-Set Default Proof Using "Type".
 
 Module IM := FMapAVL.Make OT_bs.
 

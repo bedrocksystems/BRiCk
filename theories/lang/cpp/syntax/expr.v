@@ -3,10 +3,7 @@
  *
  * SPDX-License-Identifier: LGPL-2.1 WITH BedRock Exception for use over network, see repository root for details.
  *)
-Require Import Coq.NArith.BinNatDef.
-Require Import Coq.ZArith.BinIntDef.
-Require Import stdpp.decidable.
-Require Import stdpp.strings.
+Require Import bedrock.lang.prelude.base.
 From bedrock.lang.cpp.syntax Require Import names types.
 
 Set Primitive Projections.
@@ -177,19 +174,12 @@ Inductive Expr : Set :=
 | Eva_arg (_ : Expr) (_ : type)
 | Epseudo_destructor (_ : type) (_ : Expr) (* type void *)
 | Eunsupported (_ : bs) (_ : type).
-Instance: EqDecision Expr.
+Instance Expr_eq_dec : EqDecision Expr.
 Proof.
-  do 2 red.
+  rewrite /RelDecision /Decision.
   fix IHe 1.
+  rewrite -{1}/(EqDecision Expr) in IHe.
   decide equality; try solve_trivial_decision.
-  all: try eapply list_eq_dec; try solve_trivial_decision.
-  all: try eapply prod_eq_dec; try solve_trivial_decision.
-  all: try eapply sum_eq_dec; try solve_trivial_decision.
-  all: try eapply option_eq_dec; try solve_trivial_decision.
-  Unshelve.
-  all: try eapply prod_eq_dec; do 2 red; apply IHe.
-  Unshelve.
-  all: do 2 red; apply IHe.
 Defined.
 
 Definition Edefault_init_expr (e : Expr) : Expr := e.

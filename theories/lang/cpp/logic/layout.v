@@ -3,8 +3,7 @@
  *
  * SPDX-License-Identifier: LGPL-2.1 WITH BedRock Exception for use over network, see repository root for details.
  *)
-Require Import Coq.Lists.List.
-Require Import Coq.ZArith.BinInt.
+Require Import bedrock.lang.prelude.base.
 Require Import iris.proofmode.tactics.
 From iris.bi.lib Require Import fractional.
 
@@ -14,7 +13,6 @@ From bedrock.lang.cpp.logic Require Import
 Require Import bedrock.lang.cpp.semantics.
 Require Import bedrock.lang.cpp.logic.z_to_bytes.
 
-Set Default Proof Using "Type".
 Section array.
   Context `{Σ : cpp_logic} {resolve:genv}.
   Context {T : Type}.

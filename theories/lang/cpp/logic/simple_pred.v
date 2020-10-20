@@ -3,6 +3,7 @@
  *
  * SPDX-License-Identifier: LGPL-2.1 WITH BedRock Exception for use over network, see repository root for details.
  *)
+Require Import bedrock.lang.prelude.base.
 From iris.algebra Require Import excl gmap.
 From iris.algebra.lib Require Import frac_auth.
 From iris.bi Require Import monpred.
@@ -14,9 +15,6 @@ From iris.proofmode Require Import tactics.
 From iris_string_ident Require Import ltac2_string_ident.
 From bedrock.lang.cpp Require Import ast semantics.
 From bedrock.lang.cpp.logic Require Import pred z_to_bytes.
-
-Set Default Proof Using "Type".
-Set Suggest Proof Using.
 
 (* todo: does this not exist as a library somewhere? *)
 Definition fractionalR (V : Type) : cmraT :=

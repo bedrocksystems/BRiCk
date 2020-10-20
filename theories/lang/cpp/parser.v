@@ -3,14 +3,8 @@
  *
  * SPDX-License-Identifier: LGPL-2.1 WITH BedRock Exception for use over network, see repository root for details.
  *)
-Require Export
-        Coq.Lists.List
-        Coq.ZArith.BinInt.
-
-Require Import stdpp.base.
+Require Export bedrock.lang.prelude.base.
 Require Export bedrock.lang.cpp.ast.
-
-Set Default Proof Using "Type".
 
 Definition Nanon (ty : globname) : globname :=
   ("#" ++ ty)%bs.

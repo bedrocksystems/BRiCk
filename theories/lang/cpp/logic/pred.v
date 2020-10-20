@@ -11,8 +11,7 @@
     - the memory model is simplified from the standard C++ memory
       model.
  *)
-From Coq.Classes Require Import
-     RelationClasses Morphisms.
+Require Import bedrock.lang.prelude.base.
 
 From iris.base_logic.lib Require Export iprop.
 Require Import iris.bi.monpred.
@@ -25,8 +24,6 @@ Require Export bedrock.lang.bi.prelude.
 Export ChargeNotation.
 
 From bedrock.lang.cpp Require Import ast semantics.
-
-Set Default Proof Using "Type".
 
 Module Type CPP_LOGIC_CLASS_BASE.
   Parameter cppG : gFunctors -> Type.
