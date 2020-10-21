@@ -173,6 +173,10 @@ Module SimpleCPP.
     Theorem valid_ptr_nullptr : |-- valid_ptr nullptr.
     Proof. by iLeft. Qed.
 
+    (** This is a very simplistic definition of [provides_storage].
+    A more useful definition should probably not be persistent. *)
+    Definition provides_storage (base newp : ptr) (_ : type) : mpred := [| base = newp |].
+
     Definition size_to_bytes (s : bitsize) : nat :=
       match s with
       | W8 => 1
@@ -639,6 +643,10 @@ Module SimpleCPP.
       iSplit; first done. iExists (Some va). iFrame "MJ".
       iExists vs'. eauto with iFrame.
     Qed.
+
+    Theorem provides_storage_pinned_ptr : forall res newp aty va,
+       provides_storage res newp aty ** pinned_ptr va res |-- pinned_ptr va newp.
+    Proof. iIntros (????) "[-> $]". Qed.
 
     Definition type_ptr {resolve : genv} (c: type) (p : ptr) : mpred :=
       Exists (o : option addr) n,

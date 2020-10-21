@@ -78,6 +78,7 @@ Proof. solve_decision. Defined.
 Variant BuiltinFn : Set :=
 | Bin_alloca
 | Bin_alloca_with_align
+| Bin_launder
 | Bin_expect
 | Bin_unreachable
 | Bin_trap

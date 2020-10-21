@@ -58,6 +58,7 @@ Module Type Expr.
     Local Notation primR := (primR (resolve:=resolve)) (only parsing).
     Local Notation anyR := (anyR (resolve:=resolve)) (only parsing).
     Local Notation uninitR := (uninitR (resolve:=resolve)) (only parsing).
+    Local Notation blockR := (blockR (σ:=resolve)) (only parsing).
 
     Notation "[! P !]" := (embed P).
 
@@ -581,15 +582,11 @@ Module Type Expr.
                     if bool_decide (resp = nullptr) then
                       Q res free
                     else
-                      (_at (_eqv res) (blockR (σ:=resolve) sz) **
+                      (_at (_eqv res) (blockR sz) **
                        (* todo: ^ This misses an condition that [res] is suitably aligned. (issue #149) *)
                            (Forall newp : ptr,
                                    [| newp <> nullptr |] ** _at (_eq newp) (anyR aty 1) **
-                                   (* todo: This is missing the information that [res] provides
-                                      storage for [newp] and, in particular, that one gets ownership
-                                      of the bytes back at [res] when the lifetime of the object
-                                      allocated here ends. (issue #148) *)
-                                   (Forall va, pinned_ptr va resp -* pinned_ptr va newp) -*
+                                   provides_storage resp newp aty -*
                                    (* todo: we currently expose [anyR] after the [new] but that isn't correct
                                       if [anyR] implies something about the effective types of pointers since the lifetime
                                       of the object is only established by the constructor call.
@@ -597,6 +594,19 @@ Module Type Expr.
                                    wp_init (type_of init) (Vptr newp) init (fun free' =>
                                                                               Q (Vptr newp) (free ** free'))))))
       |-- wp_prval (Enew (Some new_fn) new_args aty None (Some init) ty) Q.
+
+    (** The lifetime of an object can be ended at an arbitrary point
+        without calling the destructor
+        (http://eel.is/c++draft/basic.life#5). According to
+        http://eel.is/c++draft/basic.life#5, a program has UB if it
+        depends on the side effects of the destructor if it is not
+        explicitly called before the storage is reused. This is
+        reflected here by not doing the ownership manipulation that
+        the destructor would potentially do. *)
+    Axiom end_provides_storage : forall res newp aty sz,
+       size_of aty = Some sz ->
+       provides_storage res newp aty ** _at (_eq newp) (anyR aty 1)
+         ={⊤}=∗ (_at (_eq res) (blockR sz)).
 
     (* delete
 

@@ -42,6 +42,7 @@ PrintBuiltin(Builtin::ID id, const ValueDecl *decl, CoqPrinter &print,
         break;
         CASEB(alloca)
         CASEB(alloca_with_align)
+        CASEB(launder)
         // control flow
         CASEB(expect)
         CASEB(unreachable)

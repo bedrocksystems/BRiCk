@@ -116,4 +116,11 @@ Section with_Σ.
       |-- BUILTIN Bin_bswap128 (Tfunction (Tint W128 Unsigned) (Tint W128 Unsigned :: nil))
           (Vint x :: nil) Q.
 
+
+  (** std::launder (http://eel.is/c++draft/ptr.launder) *)
+  Axiom wp_launder : forall ty res newp Q,
+      provides_storage res newp ty ** (provides_storage res newp ty -* Q (Vptr newp))
+      |-- BUILTIN Bin_launder (Tfunction (Tptr Tvoid) (Tptr Tvoid :: nil))
+          (Vptr res :: nil) Q.
+
 End with_Σ.
