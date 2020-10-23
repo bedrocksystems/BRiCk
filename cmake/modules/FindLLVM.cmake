@@ -28,10 +28,16 @@ execute_process(
 
 execute_process(
   COMMAND ${LLVM_CONFIG} --libs
+  # Hack to convert to a cmake semicolon-separated list!
+  COMMAND tr " " ";"
   OUTPUT_VARIABLE LLVM_LIBS
   OUTPUT_STRIP_TRAILING_WHITESPACE)
 
 set(LLVM_LIBRARIES ${LLVM_LIBS} ${LLVM_SYSTEM_LIBS})
+list(FILTER LLVM_LIBRARIES EXCLUDE REGEX "-lLLVMTableGen")
+# list(FILTER LLVM_LIBRARIES EXCLUDE REGEX "-lLLVM-10")
+# Debugging
+# message(STATUS "Found LLVM_LIBRARIES ${LLVM_LIBRARIES}")
 set(LLVM_INCLUDE_DIRS ${LLVM_INCLUDE_DIR})
 set(LLVM_DEFINITIONS ${LLVM_DEFINITIONS} "-fno-rtti")
 
