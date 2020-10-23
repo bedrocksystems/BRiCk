@@ -217,6 +217,8 @@ public:
                 } else if (decl->isMoveConstructor()) {
                     ci_->getSema().DefineImplicitMoveConstructor(
                         decl->getLocation(), decl);
+                } else {
+                    logging::debug() << "Unknown defaulted constructor.\n";
                 }
             }
         }
@@ -266,6 +268,8 @@ build_module(clang::TranslationUnitDecl *tu, ::Module &mod, Filter &filter,
 
     BuildModule(mod, filter, &ctxt, specs, ci, elaborate)
         .VisitTranslationUnitDecl(tu, false);
+    // Once we are done visiting the AST, we run all the actions that
+    // are pending in the translation unit.
     ci->getSema().ActOnEndOfTranslationUnit();
 }
 

@@ -67,9 +67,8 @@ public:
 			llvm::errs() << i << "\n";
 		}
 #endif
-        auto result = new ToCoqConsumer(&Compiler,
-                                        to_opt(VFileOutput), to_opt(SpecFile),
-                                        to_opt(NamesFile));
+        auto result = new ToCoqConsumer(&Compiler, to_opt(VFileOutput),
+                                        to_opt(SpecFile), to_opt(NamesFile));
         return std::unique_ptr<clang::ASTConsumer>(result);
     }
 
@@ -82,7 +81,9 @@ public:
         }
     }
 
-    virtual bool BeginSourceFileAction(CompilerInstance& CI) override {
+    virtual bool BeginSourceFileAction(CompilerInstance &CI) override {
+        // Because we enable incremental processing, we must call [ActOnEndOfTranslationUnit]
+        // explicitly.
         CI.getPreprocessor().enableIncrementalProcessing();
         return this->clang::ASTFrontendAction::BeginSourceFileAction(CI);
     }
