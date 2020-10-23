@@ -64,7 +64,7 @@ using namespace clang;
 
 void
 ToCoqConsumer::toCoqModule(clang::ASTContext *ctxt,
-                           const clang::TranslationUnitDecl *decl) {
+                           clang::TranslationUnitDecl *decl) {
 #if 0
 	NoInclude noInclude(ctxt->getSourceManager());
 	FromComment fromComment(ctxt);
@@ -78,7 +78,7 @@ ToCoqConsumer::toCoqModule(clang::ASTContext *ctxt,
 
     ::Module mod;
 
-    build_module(decl, mod, filter, specs);
+    build_module(decl, mod, filter, specs, compiler_);
 
     if (output_file_.hasValue()) {
         std::error_code ec;
@@ -90,7 +90,7 @@ ToCoqConsumer::toCoqModule(clang::ASTContext *ctxt,
         } else {
             Formatter fmt(code_output);
             CoqPrinter print(fmt);
-            ClangPrinter cprint(ctxt);
+            ClangPrinter cprint(compiler_, ctxt);
 
             fmt << "Require Import bedrock.lang.cpp.parser." << fmt::line
                 << fmt::line << "Local Open Scope bs_scope." << fmt::line;
@@ -134,7 +134,7 @@ ToCoqConsumer::toCoqModule(clang::ASTContext *ctxt,
         } else {
             fmt::Formatter spec_fmt(notations_output);
             auto &ctxt = decl->getASTContext();
-            ClangPrinter cprint(&decl->getASTContext());
+            ClangPrinter cprint(compiler_, &decl->getASTContext());
             CoqPrinter print(spec_fmt);
             // PrintSpec printer(ctxt);
 
@@ -164,7 +164,7 @@ ToCoqConsumer::toCoqModule(clang::ASTContext *ctxt,
                          << ec.message() << "\n";
         } else {
             fmt::Formatter spec_fmt(spec_output);
-            write_spec(&mod, specs, decl, filter, spec_fmt);
+            write_spec(compiler_, &mod, specs, decl, filter, spec_fmt);
         }
     }
 }

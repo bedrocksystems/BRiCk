@@ -11,18 +11,22 @@
 #include "Logging.hpp"
 #include "SpecCollector.hpp"
 #include "clang/Basic/Builtins.h"
+#include "clang/Frontend/CompilerInstance.h"
+#include "clang/Sema/Sema.h"
 
 using namespace clang;
 
-class BuildModule : public ConstDeclVisitorArgs<BuildModule, void, bool> {
+class BuildModule : public DeclVisitorArgs<BuildModule, void, bool> {
 private:
     ::Module &module_;
     Filter &filter_;
     SpecCollector &specs_;
     clang::ASTContext *const context_;
+    clang::CompilerInstance *const ci_;
+    bool elaborate_;
 
 private:
-    Filter::What go(const NamedDecl *decl, bool definition = true) {
+    Filter::What go(NamedDecl *decl, bool definition = true) {
         auto what = filter_.shouldInclude(decl);
         switch (what) {
         case Filter::What::DEFINITION:
@@ -43,8 +47,10 @@ private:
 
 public:
     BuildModule(::Module &m, Filter &filter, clang::ASTContext *context,
-                SpecCollector &specs)
-        : module_(m), filter_(filter), specs_(specs), context_(context) {}
+                SpecCollector &specs, clang::CompilerInstance *ci,
+                bool elab = true)
+        : module_(m), filter_(filter), specs_(specs), context_(context),
+          ci_(ci), elaborate_(elab) {}
 
     void VisitDecl(const Decl *d, bool) {
         logging::log() << "visiting declaration..." << d->getDeclKindName()
@@ -66,13 +72,13 @@ public:
                        << type->getDeclKindName() << "`\n";
     }
 
-    void VisitEmptyDecl(const EmptyDecl *decl, bool) {}
+    void VisitEmptyDecl(EmptyDecl *decl, bool) {}
 
-    void VisitTypedefNameDecl(const TypedefNameDecl *type, bool) {
+    void VisitTypedefNameDecl(TypedefNameDecl *type, bool) {
         go(type);
     }
 
-    void VisitTagDecl(const TagDecl *decl, bool) {
+    void VisitTagDecl(TagDecl *decl, bool) {
         auto defn = decl->getDefinition();
         if (defn == decl) {
             go(decl, true);
@@ -81,13 +87,20 @@ public:
         }
     }
 
-    void VisitCXXRecordDecl(const CXXRecordDecl *decl, bool is_specialization) {
+    void VisitCXXRecordDecl(CXXRecordDecl *decl, bool is_specialization) {
         if (decl->isImplicit()) {
             return;
         }
         if (!is_specialization && isa<ClassTemplateSpecializationDecl>(decl)) {
             return;
         }
+
+        if (elaborate_) {
+            if (not(decl->isImplicit() or decl->isAnonymousStructOrUnion())) {
+                ci_->getSema().ForceDeclarationOfImplicitMembers(decl);
+            }
+        }
+
         // find any static functions or fields
         for (auto i : decl->decls()) {
             Visit(i, false);
@@ -95,8 +108,29 @@ public:
 
         VisitTagDecl(decl, false);
     }
+    void VisitCXXMethodDecl(CXXMethodDecl *decl, bool) {
+        if (decl->isDeleted() or decl->isDependentContext())
+            return;
 
-    void VisitFunctionDecl(const FunctionDecl *decl, bool) {
+        if (elaborate_) {
+            if (not decl->getBody() && decl->isDefaulted()) {
+                if (decl->isMoveAssignmentOperator()) {
+                    ci_->getSema().DefineImplicitMoveAssignment(
+                        decl->getLocation(), decl);
+
+                } else if (decl->isCopyAssignmentOperator()) {
+                    ci_->getSema().DefineImplicitCopyAssignment(
+                        decl->getLocation(), decl);
+                } else {
+                    logging::log()
+                        << "Didn't generate body for defaulted method\n";
+                }
+            }
+        }
+        go(decl);
+    }
+
+    void VisitFunctionDecl(FunctionDecl *decl, bool) {
         if (decl->isDependentContext())
             return;
 
@@ -122,11 +156,11 @@ public:
         }
     }
 
-    void VisitEnumConstantDecl(const EnumConstantDecl *decl, bool) {
+    void VisitEnumConstantDecl(EnumConstantDecl *decl, bool) {
         go(decl);
     }
 
-    void VisitVarDecl(const VarDecl *decl, bool) {
+    void VisitVarDecl(VarDecl *decl, bool) {
         if (not decl->isTemplated())
             go(decl);
     }
@@ -153,7 +187,7 @@ public:
         }
     }
 
-    void VisitEnumDecl(const EnumDecl *decl, bool) {
+    void VisitEnumDecl(EnumDecl *decl, bool) {
         if (decl->getName() != "") {
             go(decl);
         }
@@ -168,18 +202,42 @@ public:
         }
     }
 
-    void VisitCXXConstructorDecl(const CXXConstructorDecl *decl, bool) {
+    void VisitCXXConstructorDecl(CXXConstructorDecl *decl, bool) {
         if (decl->isDeleted()) {
             return;
         }
-        this->ConstDeclVisitorArgs::VisitCXXConstructorDecl(decl, false);
+        if (elaborate_) {
+            if (not decl->getBody() && decl->isDefaulted()) {
+                if (decl->isDefaultConstructor()) {
+                    ci_->getSema().DefineImplicitDefaultConstructor(
+                        decl->getLocation(), decl);
+                } else if (decl->isCopyConstructor()) {
+                    ci_->getSema().DefineImplicitCopyConstructor(
+                        decl->getLocation(), decl);
+                } else if (decl->isMoveConstructor()) {
+                    ci_->getSema().DefineImplicitMoveConstructor(
+                        decl->getLocation(), decl);
+                } else {
+                    logging::debug() << "Unknown defaulted constructor.\n";
+                }
+            }
+        }
+
+        this->DeclVisitorArgs::VisitCXXConstructorDecl(decl, false);
     }
 
-    void VisitCXXDestructorDecl(const CXXDestructorDecl *decl, bool) {
-        if (decl->isDeleted()) {
+    void VisitCXXDestructorDecl(CXXDestructorDecl *decl, bool) {
+        if (decl->isDeleted())
             return;
+
+        if (elaborate_) {
+            if (not decl->hasBody() && decl->isDefaulted()) {
+                ci_->getSema().DefineImplicitDestructor(decl->getLocation(),
+                                                        decl);
+            }
         }
-        this->ConstDeclVisitorArgs::VisitCXXDestructorDecl(decl, false);
+
+        this->DeclVisitorArgs::VisitCXXDestructorDecl(decl, false);
     }
 
     void VisitFunctionTemplateDecl(const FunctionTemplateDecl *decl, bool) {
@@ -203,13 +261,19 @@ public:
 };
 
 void
-build_module(const clang::TranslationUnitDecl *tu, ::Module &mod,
-             Filter &filter, SpecCollector &specs) {
+build_module(clang::TranslationUnitDecl *tu, ::Module &mod, Filter &filter,
+             SpecCollector &specs, clang::CompilerInstance *ci,
+             bool elaborate) {
     auto &ctxt = tu->getASTContext();
-    BuildModule(mod, filter, &ctxt, specs).VisitTranslationUnitDecl(tu, false);
+
+    BuildModule(mod, filter, &ctxt, specs, ci, elaborate)
+        .VisitTranslationUnitDecl(tu, false);
+    // Once we are done visiting the AST, we run all the actions that
+    // are pending in the translation unit.
+    ci->getSema().ActOnEndOfTranslationUnit();
 }
 
-void ::Module::add_definition(const clang::NamedDecl *d, bool opaque) {
+void ::Module::add_definition(clang::NamedDecl *d, bool opaque) {
     if (opaque) {
         add_declaration(d);
     } else {
@@ -221,7 +285,7 @@ void ::Module::add_definition(const clang::NamedDecl *d, bool opaque) {
     }
 }
 
-void ::Module::add_declaration(const clang::NamedDecl *d) {
+void ::Module::add_declaration(clang::NamedDecl *d) {
     std::string name = d->getNameAsString();
     auto found = imports_.find(name);
     if ((found == imports_.end()) || found->second.first != d) {

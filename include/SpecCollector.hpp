@@ -11,6 +11,10 @@
 #include "ModuleBuilder.hpp"
 #include "clang/AST/Decl.h"
 
+namespace clang {
+class CompilerInstance;
+}
+
 class CoqPrinter;
 class ClangPrinter;
 
@@ -53,7 +57,8 @@ private:
     std::map<RawComment*, const NamedDecl*> comment_decl_;
 };
 
-void write_spec(::Module* mod, const SpecCollector& specs,
+void write_spec(clang::CompilerInstance* compiler,
+                ::Module* mod, const SpecCollector& specs,
                 const clang::TranslationUnitDecl* tu, Filter& filter,
                 fmt::Formatter& output);
 

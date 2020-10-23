@@ -22,7 +22,8 @@ class ASTContext;
 class MangleContext;
 class ValueDecl;
 class SourceRange;
-class ParmVarDecl;
+class CompilerInstance;
+class Sema;
 }
 
 class CoqPrinter;
@@ -67,9 +68,12 @@ public:
 
     llvm::Optional<int> getParameterNumber(const clang::ParmVarDecl* decl);
 
-    ClangPrinter(clang::ASTContext* context);
+    ClangPrinter(clang::CompilerInstance* compiler, clang::ASTContext* context);
+
+    clang::Sema& getSema() const;
 
 private:
+    clang::CompilerInstance* compiler_;
     clang::ASTContext* context_;
     clang::MangleContext* mangleContext_;
     clang::DiagnosticsEngine engine_;

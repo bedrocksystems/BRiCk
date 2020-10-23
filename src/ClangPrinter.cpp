@@ -7,6 +7,7 @@
 #include <clang/AST/DeclCXX.h>
 #include <clang/AST/ExprCXX.h>
 #include <clang/AST/Mangle.h>
+#include <clang/Frontend/CompilerInstance.h>
 
 #include "ClangPrinter.hpp"
 #include "CoqPrinter.hpp"
@@ -15,10 +16,16 @@
 
 using namespace clang;
 
-ClangPrinter::ClangPrinter(clang::ASTContext *context)
-    : context_(context), engine_(IntrusiveRefCntPtr<DiagnosticIDs>(),
+ClangPrinter::ClangPrinter(clang::CompilerInstance *compiler, clang::ASTContext *context)
+    : compiler_(compiler),
+      context_(context), engine_(IntrusiveRefCntPtr<DiagnosticIDs>(),
                                  IntrusiveRefCntPtr<DiagnosticOptions>()) {
     mangleContext_ = ItaniumMangleContext::create(*context, engine_);
+}
+
+clang::Sema&
+ClangPrinter::getSema() const {
+    return this->compiler_->getSema();
 }
 
 unsigned
