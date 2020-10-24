@@ -188,6 +188,5 @@ Section proofmode.
     @IntoForall PROP A [| ∀ x, P x |] (λ a, [| P a |]).
   Proof. by rewrite/IntoForall only_provable_forall_1. Qed.
 End proofmode.
-(* TODO enable this and fix the breakage. *)
-(* Typeclasses Opaque only_provable. *)
+Typeclasses Opaque only_provable.
 Global Opaque only_provable.	(** Less important *)
