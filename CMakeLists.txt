@@ -13,7 +13,6 @@ set(CMAKE_FIND_PACKAGE_SORT_ORDER NATURAL)
 set(CMAKE_FIND_PACKAGE_SORT_DIRECTION DEC)
 
 find_package(LibClangTooling REQUIRED)
-find_package(ClangPlugin REQUIRED)
 
 add_definitions(${LibClangTooling_DEFINITIONS})
 
@@ -66,15 +65,7 @@ add_executable(cpp2v
   src/cpp2v.cpp
 )
 
-add_clang_plugin(cpp2v_plugin
-  src/cpp2v_plugin.cpp
-)
-
 target_link_libraries(cpp2v
   ${LibClangTooling_LIBRARIES}
-  tocoq
-)
-
-target_link_libraries(cpp2v_plugin
   tocoq
 )

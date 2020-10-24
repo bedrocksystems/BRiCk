@@ -35,11 +35,9 @@ all: coq cpp2v test
 # On Darwin, customize the cmake build system to use homebrew's llvm.
 SYS := $(shell uname)
 
-SO=.so
 BUILDARG=
 ifeq ($(SYS),Darwin)
 	BUILDARG +=-D'CMAKE_SHARED_LINKER_FLAGS=-L/usr/local/opt/llvm/lib -lclangSerialization -lclangASTMatchers -lclangSema -lclangAnalysis -lclangRewriteFrontend -lclangEdit -lclangParse -lclangFrontend -lclangBasic -lclangDriver -lclangAST -lclangLex -lz -lcurses' -DCMAKE_EXE_LINKER_FLAGS=-L/usr/local/opt/llvm/lib
-	SO = .dylib
 endif
 
 BUILD_TYPE ?= Release
@@ -54,12 +52,6 @@ tocoq: build/Makefile
 cpp2v: tocoq
 	+$(CPPMK) cpp2v
 .PHONY: cpp2v
-
-plugin: tocoq
-	+$(CPPMK) cpp2v_plugin
-.PHONY: plugin
-
-
 
 
 
@@ -81,7 +73,7 @@ coq: Makefile.coq
 
 # Tests for `cpp2v`
 
-test: test-cpp2v test-plugin
+test: test-cpp2v
 .PHONY: test
 
 build-minimal: Makefile.coq
@@ -94,12 +86,6 @@ build-minimal: Makefile.coq
 test-cpp2v: build-minimal cpp2v
 	+@$(MAKE) -C cpp2v-tests CPP2V=$(ROOT)/build/cpp2v
 .PHONY: test-cpp2v
-
-test-plugin: build-minimal plugin
-	+@$(MAKE) -C plugin-tests CPP2V_PLUGIN=$(ROOT)/build/libcpp2v_plugin$(SO)
-.PHONY: test-plugin
-
-
 
 # Build Coq docs
 
@@ -146,7 +132,6 @@ install: install-coq install-cpp2v
 clean:
 	rm -rf build
 	+@$(DOCMK) $@
-	+@$(MAKE) -C plugin-tests clean
 	+@$(MAKE) -C cpp2v-tests clean
 	+@if test -f Makefile.coq; then $(COQMK) cleanall; fi
 	rm -f Makefile.coq Makefile.coq.conf
@@ -168,10 +153,9 @@ link: coq
 
 
 
-release: coq cpp2v plugin
+release: coq cpp2v
 	rm -rf cpp2v
 	mkdir cpp2v
-	cp -p build/libcpp2v_plugin.so cpp2v
 	cp -p build/cpp2v cpp2v
 	cp -pr theories cpp2v/bedrock
 .PHONY: release
