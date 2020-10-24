@@ -177,16 +177,6 @@ Module SimpleCPP.
     A more useful definition should probably not be persistent. *)
     Definition provides_storage (base newp : ptr) (_ : type) : mpred := [| base = newp |].
 
-    Definition size_to_bytes (s : bitsize) : nat :=
-      match s with
-      | W8 => 1
-      | W16 => 2
-      | W32 => 4
-      | W64 => 8
-      | W128 => 16
-      end.
-
-
     Section with_genv.
       Variable σ : genv.
 
@@ -210,8 +200,8 @@ Module SimpleCPP.
         match erase_qualifiers t with
         | Tint sz sgn =>
           match v with
-          | Vint v => [| vs = Z_to_bytes (size_to_bytes sz) sgn v |]
-          | Vundef => [| length vs = size_to_bytes sz |]
+          | Vint v => [| vs = Z_to_bytes (bytesNat sz) sgn v |]
+          | Vundef => [| length vs = bytesNat sz |]
           | _ => lfalse
           end
         | Tmember_pointer _ _ =>
@@ -277,7 +267,7 @@ Module SimpleCPP.
         encodes t v vs |-- [|
           length vs = match erase_qualifiers t with
           | Tbool => 1
-          | Tint sz _ => size_to_bytes sz
+          | Tint sz _ => bytesNat sz
 
           | Tmember_pointer _ _ | Tnullptr | Tpointer _
           | Tfunction _ _ | Treference _ | Trv_reference _ =>
