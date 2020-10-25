@@ -332,7 +332,7 @@ Module SimpleCPP.
       Local Hint Resolve length_pure_encodes_undef : core.
 
       Lemma length_encodes t v vs :
-        encodes t v vs |-- [|
+        pure_encodes t v vs ->
           length vs = match erase_qualifiers t with
           | Tbool => 1
           | Tint sz _ => bytesNat sz
@@ -342,11 +342,9 @@ Module SimpleCPP.
             POINTER_BYTES
 
           | _ => 0	(* dummy *)
-          end
-        |].
+          end.
       Proof.
-        rewrite/encodes/pure_encodes.
-        iIntros "%H !%".
+        rewrite /pure_encodes => H.
         destruct (erase_qualifiers _) => //;
           destruct v => //; destruct_and? => //;
           repeat case_decide => //;
@@ -398,11 +396,8 @@ Module SimpleCPP.
     Qed.
 
     Theorem encodes_consistent σ t v1 v2 vs1 vs2 :
-        encodes σ t v1 vs1 ** encodes σ t v2 vs2 |-- [| length vs1 = length vs2 |].
-    Proof.
-      rewrite !length_encodes.
-      iDestruct 1 as "[%Ha %Hb]". iPureIntro. by rewrite Ha Hb.
-    Qed.
+      encodes σ t v1 vs1 |-- encodes σ t v2 vs2 -* [| length vs1 = length vs2 |].
+    Proof. iIntros "!%". by move=>/length_encodes -> /length_encodes ->. Qed.
 
     Instance cptr_proper :
       Proper (genv_leq ==> eq ==> eq) cptr.
@@ -537,7 +532,7 @@ Module SimpleCPP.
     Instance: AsFractional (bytes a vs q) (bytes a vs) q.
     Proof. constructor; refine _. reflexivity. Qed.
 
-    Theorem bytes_consistent : forall q q' b b' a, length b = length b' ->
+    Theorem bytes_consistent {q q' b b' a} : length b = length b' ->
         bytes a b q ** bytes a b' q' |-- bytes a b (q + q') ** [| b = b' |].
     Proof.
       intros. iIntros "[Hb Hb']".
@@ -622,9 +617,8 @@ Module SimpleCPP.
         destruct a1; last by iFrame.
         iDestruct "By1" as (vs) "[#En1 [By1 VBy1]]".
         iDestruct "By2" as (vs2) "[#En2 [By2 VBy2]]".
-        iDestruct (encodes_consistent with "[En1 En2]") as "%".
-        iSplit; [ iApply "En1" | iApply "En2" ].
-        iDestruct (bytes_consistent with "[By1 By2]") as "[Z ->]";
+        iDestruct (encodes_consistent with "En1 En2") as %Heq.
+        iDestruct (bytes_consistent Heq with "[By1 By2]") as "[Z ->]";
           eauto with iFrame.
     Qed.
 
