@@ -119,9 +119,9 @@ Arguments GlobDecl_ler !_ _ /.
 
 Instance GlobDecl_le_refl : Reflexive GlobDecl_ler.
 Proof.
-  intros []; simpl; repeat rewrite require_eq_refl; eauto.
-  destruct o; eauto.
-  by repeat rewrite require_eq_refl.
+  intros []; rewrite /= ?require_eq_refl; eauto.
+  destruct o => //.
+  by rewrite !require_eq_refl.
 Qed.
 
 Lemma require_eq_success `{EqDecision T} {U} {a b : T} {c} {d : U}:
@@ -148,16 +148,15 @@ Instance: PreOrder GlobDecl_ler := {}.
 
 Instance ObjValue_le_refl : Reflexive ObjValue_ler.
 Proof.
-  intros a.
-  destruct a; rewrite /= ?require_eq_refl;
+  intros []; rewrite /= ?require_eq_refl;
     case_match; rewrite ?require_eq_refl //.
 Qed.
 
 Instance ObjValue_le_trans : Transitive ObjValue_ler.
 Proof.
   intros a b c.
-  destruct a, b; simpl => //;
-    destruct c; simpl; intros => //;
+  destruct a, b => //=;
+    destruct c => //=; intros;
       repeat (match goal with
              | H : require_eq _ _ _ = _ |- _ =>
                eapply require_eq_success in H; destruct H; subst
@@ -189,25 +188,11 @@ Definition syms_table_le (a b : symbol_table) :=
       exists v', b !! on = Some v' /\
             ObjValue_ler v v'.
 
+(* XXX belongs to stdpp. *)
 Lemma iff_forall T P Q :
   (forall i: T, P i <-> Q i) ->
   (forall i: T, P i) <-> (forall i: T, Q i).
 Proof. naive_solver. Qed.
-Lemma type_table_le_equiv te1 te2 : type_table_le te1 te2 <-> type_table_le_alt te1 te2.
-Proof.
-  apply iff_forall => i; unfold option_relation.
-  (* XXX bug workaround *)
-  unfold globname, ident, type_table.
-  repeat case_match; naive_solver.
-Qed.
-
-Lemma syms_table_le_equiv te1 te2 : syms_table_le te1 te2 <-> syms_table_le_alt te1 te2.
-Proof.
-  apply iff_forall => i; unfold option_relation.
-  (* XXX bug workaround *)
-  unfold obj_name, symbol_table.
-  repeat case_match; naive_solver.
-Qed.
 
 Instance reflexive_proper A :
   Proper (pointwise_relation A (pointwise_relation A iff) ==> iff) Reflexive.
@@ -228,6 +213,24 @@ Qed.
 Instance preorder_proper A :
   Proper (pointwise_relation A (pointwise_relation A iff) ==> iff) PreOrder.
 Proof. by intros r1 r2 Heq; split => -[]; [rewrite Heq|rewrite -Heq]. Qed.
+(* stdpp end. *)
+
+
+Lemma type_table_le_equiv te1 te2 : type_table_le te1 te2 <-> type_table_le_alt te1 te2.
+Proof.
+  apply iff_forall => i; unfold option_relation.
+  (* XXX TC inference produces different results here. Hacky fix. *)
+  unfold globname, ident, type_table.
+  repeat case_match; naive_solver.
+Qed.
+
+Lemma syms_table_le_equiv te1 te2 : syms_table_le te1 te2 <-> syms_table_le_alt te1 te2.
+Proof.
+  apply iff_forall => i; unfold option_relation.
+  (* XXX bug workaround *)
+  unfold obj_name, symbol_table.
+  repeat case_match; naive_solver.
+Qed.
 
 Instance: PreOrder type_table_le.
 Proof.
@@ -391,8 +394,7 @@ Proof.
     match goal with
     | |- context [ compat_le ?f ?l ?r ] =>
       generalize (@compat_le_sound _ f l r (fun _ => eq_refl)); destruct (@compat_le _ f l r)
-    end; intros.
-    simpl.
+    end; intros; simpl.
     constructor; auto.
     { unfold type_table_le. intros. specialize (H gn).
       change_rewrite_in H1 H.
@@ -400,8 +402,8 @@ Proof.
       match goal with
       | H : context [ match ?X with _ => _ end ] |- context [ ?A ] =>
         change X with A in H ; destruct A
-      end; try congruence.
-      exists g. split; auto.
+      end => //.
+      eexists; split; auto.
       unfold GlobDecl_ler.
       by destruct (GlobDecl_le _ _) as [[]|]. }
     { unfold syms_table_le. intros. specialize (H0 on).
@@ -410,7 +412,7 @@ Proof.
       match goal with
       | H : context [ match ?X with _ => _ end ] |- context [ ?A ] =>
         change X with A in H ; destruct A
-      end; try congruence.
+      end => //.
       eexists; split; eauto.
       unfold ObjValue_ler.
       by destruct (ObjValue_le _ _) as [[]|]. }
