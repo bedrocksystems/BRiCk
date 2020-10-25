@@ -180,7 +180,7 @@ Module SimpleCPP.
     Section with_genv.
       Variable σ : genv.
 
-      Let POINTER_BYTES : nat := N.to_nat σ.(pointer_size).
+      Let POINTER_BYTES : nat := N.to_nat (pointer_size σ).
 
       Definition aptr (p : ptr) : list runtime_val :=
         List.map (Rpointer_chunk p) (seq 0 POINTER_BYTES).

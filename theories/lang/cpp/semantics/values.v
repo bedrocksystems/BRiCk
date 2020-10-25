@@ -192,18 +192,19 @@ Record genv : Type :=
   (* ^ the [translation_unit] *)
 ; glob_addr : obj_name -> option ptr
   (* ^ the address of global variables & functions *)
-; pointer_size : N
-  (* ^ the size of a pointer (in bytes) *)
+; pointer_size_bitsize : bitsize
+  (* ^ the size of a pointer *)
 }.
 
 Definition byte_order (g : genv) : endian :=
   g.(genv_tu).(byte_order).
+Definition pointer_size (g : genv) := bytesN (pointer_size_bitsize g).
 
 (** [genv_leq a b] states that [b] is an extension of [a] *)
 Record genv_leq {l r : genv} : Prop :=
 { tu_le : sub_module l.(genv_tu) r.(genv_tu)
 ; addr_le : forall a p, l.(glob_addr) a = Some p -> r.(glob_addr) a = Some p
-; pointer_size_le : l.(pointer_size) = r.(pointer_size) }.
+; pointer_size_le : l.(pointer_size_bitsize) = r.(pointer_size_bitsize) }.
 Arguments genv_leq _ _ : clear implicits.
 
 Instance PreOrder_genv_leq : PreOrder genv_leq.
@@ -226,8 +227,12 @@ Instance genv_tu_flip_proper : Proper (flip genv_leq ==> flip sub_module) genv_t
 Proof. solve_proper. Qed.
 
 (* Sadly, neither instance is picked up by [f_equiv]. *)
-Instance pointer_size_proper : Proper (genv_leq ==> eq) pointer_size.
+Instance pointer_size_bitsize_proper : Proper (genv_leq ==> eq) pointer_size_bitsize.
 Proof. solve_proper. Qed.
+Instance pointer_size_bitsize_flip_proper : Proper (flip genv_leq ==> eq) pointer_size_bitsize.
+Proof. by intros ?? <-. Qed.
+Instance pointer_size_proper : Proper (genv_leq ==> eq) pointer_size.
+Proof. unfold pointer_size; intros ???. f_equiv. exact: pointer_size_bitsize_proper. Qed.
 Instance pointer_size_flip_proper : Proper (flip genv_leq ==> eq) pointer_size.
 Proof. by intros ?? <-. Qed.
 
