@@ -257,6 +257,7 @@ Proof.
   { etransitivity; eauto. }
 Qed.
 
+Instance: RewriteRelation sub_module := {}.
 Definition compat_le {T}
            (f : option T -> option T -> bool) (l r : IM.t T)
   : bool :=

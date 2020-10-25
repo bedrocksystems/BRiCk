@@ -212,6 +212,8 @@ Proof.
   { constructor; auto; reflexivity. }
   { red. destruct 1; destruct 1; constructor; try etransitivity; eauto. }
 Qed.
+Instance: RewriteRelation genv_leq := {}.
+
 Definition glob_def (g : genv) (gn : globname) : option GlobDecl :=
   g.(genv_tu).(globals) !! gn.
 
