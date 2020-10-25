@@ -221,46 +221,49 @@ Definition genv_eq (l r : genv) : Prop :=
   genv_leq l r /\ genv_leq r l.
 
 Instance genv_tu_proper : Proper (genv_leq ==> sub_module) genv_tu.
-Proof. do 2 red. destruct 1; auto. Qed.
+Proof. solve_proper. Qed.
+Instance genv_tu_flip_proper : Proper (flip genv_leq ==> flip sub_module) genv_tu.
+Proof. solve_proper. Qed.
 
+(* Sadly, neither instance is picked up by [f_equiv]. *)
 Instance pointer_size_proper : Proper (genv_leq ==> eq) pointer_size.
-Proof. do 2 red. destruct 1; auto. Qed.
+Proof. solve_proper. Qed.
+Instance pointer_size_flip_proper : Proper (flip genv_leq ==> eq) pointer_size.
+Proof. by intros ?? <-. Qed.
 
 Instance byte_order_proper : Proper (genv_leq ==> eq) byte_order.
-Proof. do 2 red. destruct 1.  destruct tu_le0; eauto. Qed.
-
+Proof. intros ???. apply sub_module.byte_order_proper. solve_proper. Qed.
+Instance byte_order_flip_proper : Proper (flip genv_leq ==> eq) byte_order.
+Proof. by intros ?? <-. Qed.
 
 (* this states that the [genv] is compatible with the given [translation_unit]
  * it essentially means that the [genv] records all the types from the
  * compilation unit and that the [genv] contains addresses for all globals
  * defined in the [translation_unit]
  *)
-Record genv_compat {tu : translation_unit} {g : genv} : Prop :=
+Class genv_compat {tu : translation_unit} {g : genv} : Prop :=
 { tu_compat : sub_module tu g.(genv_tu) }.
 Arguments genv_compat _ _ : clear implicits.
 Infix "⊧" := genv_compat (at level 1).
-Existing Class genv_compat.
 
-Theorem genv_byte_order_tu : forall tu g,
+Theorem genv_byte_order_tu tu g :
     tu ⊧ g ->
     byte_order g = translation_unit.byte_order tu.
-Proof. destruct 1. erewrite byte_order_compat; eauto. Qed.
+Proof. intros. apply sub_module.byte_order_flip_proper, tu_compat. Qed.
 
 Theorem genv_compat_submodule : forall m σ, m ⊧ σ -> sub_module m σ.(genv_tu).
-Proof. destruct 1; auto. Qed.
+Proof. by destruct 1. Qed.
 
-Instance models_proper
-  : Proper (sub_module --> genv_leq ==> Basics.impl) genv_compat.
+Instance models_proper : Proper (flip sub_module ==> genv_leq ==> impl) genv_compat.
 Proof.
-  do 4 red. destruct 2. destruct 1. constructor; eauto.
-  etransitivity; eauto.
-  etransitivity; eauto.
+  intros ?? Heq1 ?? [Heq2 _ _] [Heq3]; constructor.
+  by rewrite Heq1 Heq3.
 Qed.
+Instance models_flip_proper : Proper (sub_module ==> flip genv_leq ==> flip impl) genv_compat.
+Proof. solve_proper. Qed.
 
-Theorem subModuleModels : forall a b σ, b ⊧ σ -> sub_module a b -> a ⊧ σ.
-Proof.
-  destruct 1; constructor; eauto. etransitivity; eauto.
-Qed.
+Theorem subModuleModels a b σ : b ⊧ σ -> sub_module a b -> a ⊧ σ.
+Proof. by intros [->] ->. Qed.
 
 Definition max_val (bits : bitsize) (sgn : signed) : Z :=
   match bits , sgn with

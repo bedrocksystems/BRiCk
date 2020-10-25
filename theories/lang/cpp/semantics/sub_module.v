@@ -257,7 +257,14 @@ Proof.
   { etransitivity; eauto. }
 Qed.
 
+Instance: PreOrder sub_module := {}.
 Instance: RewriteRelation sub_module := {}.
+
+Instance byte_order_proper : Proper (sub_module ==> eq) byte_order.
+Proof. by destruct 1. Qed.
+Instance byte_order_flip_proper : Proper (flip sub_module ==> eq) byte_order.
+Proof. by destruct 1. Qed.
+
 Definition compat_le {T}
            (f : option T -> option T -> bool) (l r : IM.t T)
   : bool :=
@@ -341,7 +348,7 @@ Proof.
     end; intros.
     simpl.
     constructor; auto.
-    { intros. specialize (H gn).
+    { unfold type_table_le. intros. specialize (H gn).
       change_rewrite_in H1 H.
       clear - H H1.
       match goal with
