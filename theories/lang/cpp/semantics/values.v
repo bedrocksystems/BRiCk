@@ -389,54 +389,50 @@ Variant Roption_leq {T} (R : T -> T -> Prop) : option T -> option T -> Prop :=
 (** this is a partial implementation of [size_of], it doesn't indirect through
     typedefs, but the cpp2v generator flattens these for us anyways.
  *)
+Definition GlobDecl_size_of (g : GlobDecl) : option N :=
+  match g with
+  | Gstruct s => Some s.(s_size)
+  | Gunion u => Some u.(u_size)
+  | _ => None
+  end.
+Instance proper_named_size_of: Proper (GlobDecl_ler ==> Roption_leq eq) GlobDecl_size_of.
+Proof.
+  rewrite /GlobDecl_size_of => x y Heq.
+  repeat (case_match; try constructor);
+    simplify_eq/= => //;
+    apply require_eq_success in Heq; naive_solver.
+Qed.
+
 Fixpoint size_of (resolve : genv) (t : type) : option N :=
   match t with
-  | Tpointer _ => Some (@pointer_size resolve)
+  | Tpointer _ => Some (pointer_size resolve)
   | Treference _ => None
   | Trv_reference _ => None
   | Tint sz _ => Some (bytesN sz)
   | Tvoid => None
-  | Tarray t n => match size_of resolve t with
-                 | None => None
-                 | Some s => Some (n * s)
-                 end
-  | Tnamed nm =>
-    match glob_def resolve nm with
-    | Some (Gstruct s) => Some s.(s_size)
-    | Some (Gunion u) => Some u.(u_size)
-    | _ => None
-    end
+  | Tarray t n => N.mul n <$> size_of resolve t
+  | Tnamed nm => glob_def resolve nm ≫= GlobDecl_size_of
   | Tfunction _ _ => None
   | Tbool => Some 1
-  | Tmember_pointer _ _ => Some (@pointer_size resolve)
+  | Tmember_pointer _ _ => Some (pointer_size resolve)
   | Tqualified _ t => size_of resolve t
-  | Tnullptr => Some (@pointer_size resolve)
+  | Tnullptr => Some (pointer_size resolve)
   | Tfloat sz => Some (bytesN sz)
-  | Tarch sz _ => match sz with
-                 | None => None
-                 | Some sz => Some (bytesN sz)
-                 end
+  | Tarch sz _ => bytesN <$> sz
   end%N.
 
 Global Instance Proper_size_of
 : Proper (genv_leq ==> eq ==> Roption_leq eq) (@size_of).
 Proof.
-  red. red. red. intros; subst.
-  induction y0; simpl; try constructor; eauto.
-  - apply H.
-  - destruct IHy0; try constructor. subst. auto.
-  - destruct H as [ [ H _ ] _ ].
-    specialize (H g).
+  intros ?? Hle ? t ->; induction t; simpl; (try constructor) => //.
+  all: try exact: pointer_size_proper.
+  - by destruct IHt; constructor; subst.
+  - move: Hle => [[ /(_ g) Hle _ _] _ _].
     unfold glob_def, globals in *.
-    destruct (globals (genv_tu x) !! g); try constructor.
-    destruct (H _ eq_refl) as [ ? [ -> HH ] ]; clear H.
-    destruct g0; try constructor;
-    destruct x0; try constructor; simpl in HH ; try congruence.
-    + apply require_eq_success in HH. destruct HH. congruence.
-    + apply require_eq_success in HH. destruct HH. congruence.
-  - apply H.
-  - apply H.
-  - destruct o; repeat constructor.
+    destruct (globals (genv_tu x) !! g) as [g1| ]; last constructor.
+    move: Hle => /(_ _ eq_refl) [g2 [-> HH]] /=.
+    exact: proper_named_size_of.
+  - by destruct o; constructor.
 Qed.
 
 (* it is hard to define [size_of] as a function because it needs
