@@ -45,11 +45,11 @@ Module SimpleCPP_BASE <: CPP_LOGIC_CLASS.
     (* ^ you need the same pointer and consecutive integers to "have" a pointer.
      *)
 
-  Definition Z_to_bytes {σ:genv} (n : nat) (sgn: signed) (v : Z) : list runtime_val' :=
-    Rval <$> _Z_to_bytes n (values.byte_order σ) sgn v.
+  Definition Z_to_bytes {σ:genv} (n : bitsize) (sgn: signed) (v : Z) : list runtime_val' :=
+    Rval <$> _Z_to_bytes (bytesNat n) (values.byte_order σ) sgn v.
 
-  Lemma length_Z_to_bytes {σ} n sgn v : length (Z_to_bytes (σ:=σ) n sgn v) = n.
-  Proof. by rewrite/Z_to_bytes fmap_length length__Z_to_bytes. Qed.
+  Lemma length_Z_to_bytes {σ} n sgn v : length (Z_to_bytes (σ:=σ) n sgn v) = bytesNat n.
+  Proof. by rewrite /Z_to_bytes fmap_length length__Z_to_bytes. Qed.
 
   Record cpp_ghost : Type :=
     { heap_name : gname
@@ -180,88 +180,156 @@ Module SimpleCPP.
     Section with_genv.
       Variable σ : genv.
 
-      Let POINTER_BYTES : nat := N.to_nat (pointer_size σ).
+      Let POINTER_BITSZ : bitsize := pointer_size_bitsize σ.
+      Notation POINTER_BYTES := (bytesNat POINTER_BITSZ).
 
       Definition aptr (p : ptr) : list runtime_val :=
-        List.map (Rpointer_chunk p) (seq 0 POINTER_BYTES).
+        Rpointer_chunk p <$> (seq 0 POINTER_BYTES).
 
       Notation Z_to_bytes := (Z_to_bytes (σ:=σ)).
 
       Definition cptr (a : N) : list runtime_val :=
-        Z_to_bytes POINTER_BYTES Unsigned (Z.of_N a).
+        Z_to_bytes POINTER_BITSZ Unsigned (Z.of_N a).
 
       Lemma length_aptr p : length (aptr p) = POINTER_BYTES.
       Proof. by rewrite/aptr fmap_length seq_length. Qed.
       Lemma length_cptr a : length (cptr a) = POINTER_BYTES.
       Proof. by rewrite /cptr length_Z_to_bytes. Qed.
 
+      Lemma bytesNat_nnonnull b : bytesNat b <> 0.
+      Proof. by destruct b. Qed.
+      Local Hint Resolve bytesNat_nnonnull : core.
+
+      Lemma bytesNat_nnonnull' b : bytesNat b = S (pred (bytesNat b)).
+      Proof. by rewrite (Nat.succ_pred _ (bytesNat_nnonnull _)). Qed.
+
+      Lemma list_not_nil_cons {T} (xs : list T) : xs <> nil -> ∃ h t, xs = h :: t.
+      Proof. case: xs => //= x xs. eauto. Qed.
+
+      Lemma _Z_to_bytes_cons n x y z : n <> 0 -> ∃ a b, _Z_to_bytes n x y z = a :: b.
+      Proof.
+        intros Hne.
+        apply list_not_nil_cons.
+        rewrite -(Nat.succ_pred n Hne) {Hne} _Z_to_bytes_eq /_Z_to_bytes_def /=.
+        case: x => //= Heq.
+        eapply app_cons_not_nil, symmetry, Heq.
+      Qed.
+      Lemma Z_to_bytes_cons bs x y : ∃ a b, Z_to_bytes bs x y = Rval a :: b.
+      Proof.
+        unfold Z_to_bytes.
+        edestruct _Z_to_bytes_cons as (? & ? & ->) => //; eauto.
+      Qed.
+
+      Lemma cptr_ne_aptr p n : cptr p <> aptr n.
+      Proof.
+        rewrite /cptr /aptr bytesNat_nnonnull'.
+        by edestruct Z_to_bytes_cons as (? & ? & ->).
+      Qed.
+
       (** WRT pointer equality, see https://eel.is/c++draft/expr.eq#3 *)
-      Definition encodes (t : type) (v : val) (vs : list runtime_val) : mpred :=
+      Definition pure_encodes_undef (n : bitsize) (vs : list runtime_val) : Prop :=
+        vs = repeat Rundef (bytesNat n).
+      Lemma length_pure_encodes_undef n vs :
+        pure_encodes_undef n vs ->
+        length vs = bytesNat n.
+      Proof. rewrite /pure_encodes_undef => ->. exact: repeat_length. Qed.
+
+      Definition in_Z_to_bytes_bounds (cnt' : bitsize) sgn z :=
+        let cnt := bytesNat cnt' in
+        match sgn with
+        | Signed => (- 2 ^ (8 * cnt - 1) ≤ z)%Z ∧ (z ≤ 2 ^ (8 * cnt - 1) - 1)%Z
+        | Unsigned => (0 ≤ z)%Z ∧ (z < 2 ^ (8 * cnt))%Z
+        end.
+
+      Lemma _Z_to_bytes_inj_1 cnt endianness sgn z :
+        in_Z_to_bytes_bounds cnt sgn z ->
+        _Z_from_bytes endianness sgn (_Z_to_bytes (bytesNat cnt) endianness sgn z) = z.
+      Proof. apply _Z_from_to_bytes_roundtrip. Qed.
+
+      Lemma _Z_to_bytes_inj_2 cnt endianness sgn z1 z2 :
+        in_Z_to_bytes_bounds cnt sgn z1 ->
+        in_Z_to_bytes_bounds cnt sgn z2 ->
+        _Z_to_bytes (bytesNat cnt) endianness sgn z1 = _Z_to_bytes (bytesNat cnt) endianness sgn z2 ->
+        z1 = z2.
+      Proof.
+        intros Hb1 Hb2 Heq%(f_equal (_Z_from_bytes endianness sgn)).
+        move: Heq. by rewrite !_Z_to_bytes_inj_1.
+      Qed.
+      Instance: Inj eq eq Rval.
+      Proof. by injection 1. Qed.
+
+      Lemma Z_to_bytes_inj cnt sgn z1 z2 :
+        in_Z_to_bytes_bounds cnt sgn z1 ->
+        in_Z_to_bytes_bounds cnt sgn z2 ->
+        Z_to_bytes cnt sgn z1 = Z_to_bytes cnt sgn z2 ->
+        z1 = z2.
+      Proof.
+        rewrite /Z_to_bytes; intros Hb1 Hb2 Heq%(inj (fmap Rval)).
+        exact: _Z_to_bytes_inj_2.
+      Qed.
+
+      Definition pure_encodes (t : type) (v : val) (vs : list runtime_val) : Prop :=
         match erase_qualifiers t with
         | Tint sz sgn =>
           match v with
-          | Vint v => [| vs = Z_to_bytes (bytesNat sz) sgn v |]
-          | Vundef => [| length vs = bytesNat sz |]
-          | _ => lfalse
+          | Vint v =>
+            in_Z_to_bytes_bounds sz sgn v /\
+            vs = Z_to_bytes sz sgn v
+          | Vundef => pure_encodes_undef sz vs
+          | _ => False
           end
         | Tmember_pointer _ _ =>
           match v with
           | Vint v =>
             (* note: this is really an offset *)
-            [| vs = Z_to_bytes POINTER_BYTES Unsigned v |]
-          | Vundef => [| length vs = POINTER_BYTES |]
-          | _ => lfalse
+            in_Z_to_bytes_bounds POINTER_BITSZ Unsigned v /\
+            vs = Z_to_bytes POINTER_BITSZ Unsigned v
+          | Vundef => pure_encodes_undef POINTER_BITSZ vs
+          | _ => False
           end
-
         | Tbool =>
-          if decide (v = Vint 0) then [| vs = [Rval 0%N] |]
-          else if decide (v = Vint 1) then [| vs = [Rval 1%N] |]
-          else lfalse
+          if decide (v = Vint 0) then vs = [Rval 0%N]
+          else if decide (v = Vint 1) then vs = [Rval 1%N]
+          else False
         | Tnullptr =>
-          [| vs = cptr 0 |]
-        | Tfloat _ => lfalse
-        | Tarch _ _ => lfalse
+          vs = cptr 0 /\ v = Vptr nullptr
+        | Tfloat _ => False
+        | Tarch _ _ => False
         | Tpointer _ =>
           match v with
           | Vptr p =>
             if decide (p = nullptr) then
-              [| vs = cptr 0 |]
+              vs = cptr 0
             else
-              [| vs = aptr p |]
-          | _ => lfalse
+              vs = aptr p
+          | _ => False
           end
         | Tfunction _ _
         | Treference _
         | Trv_reference _ =>
           match v with
           | Vptr p =>
-            [| p <> nullptr |] **
-            [| vs = aptr p |]
-          | Vundef => [| length vs = POINTER_BYTES |]
-          | _ => lfalse
+            p <> nullptr /\
+            vs = aptr p
+          | Vundef => pure_encodes_undef POINTER_BITSZ vs
+          | _ => False
           end
-        | Tqualified _ _ => lfalse (* unreachable *)
+        | Tqualified _ _ => False (* unreachable *)
         | Tvoid
         | Tarray _ _
-        | Tnamed _ => lfalse (* not directly encoded in memory *)
+        | Tnamed _ => False (* not directly encoded in memory *)
         end.
+      Definition encodes (t : type) (v : val) (vs : list runtime_val) : mpred :=
+        [| pure_encodes t v vs |].
 
-      Global Instance encodes_persistent : forall t v vs, Persistent (encodes t v vs).
-      Proof.
-        unfold encodes; intros.
-        repeat case_match; apply _.
-      Qed.
+      Global Instance encodes_persistent : forall t v vs, Persistent (encodes t v vs) := _.
 
-      Global Instance encodes_timeless : forall t v a, Timeless (encodes t v a).
-      Proof.
-        unfold encodes; intros.
-        repeat case_match; apply _.
-      Qed.
+      Global Instance encodes_timeless : forall t v a, Timeless (encodes t v a) := _.
 
-      Local Hint Resolve bi.False_elim : core.
       Local Hint Resolve length_Z_to_bytes : core.
       Local Hint Resolve length_aptr : core.
       Local Hint Resolve length_cptr : core.
+      Local Hint Resolve length_pure_encodes_undef : core.
 
       Lemma length_encodes t v vs :
         encodes t v vs |-- [|
@@ -277,37 +345,56 @@ Module SimpleCPP.
           end
         |].
       Proof.
-        rewrite/encodes. destruct (erase_qualifiers _), v; try done; intros;
-        repeat match goal with
-        | |- [| _ = _ |] |-- [| _ |] => f_equiv=>->
-        | |- [| _ ≠ _ |] ** [| _ = _ |] |-- [| _ |] => rewrite bi.sep_elim_r
-        | |- context [@decide _ _] => case_decide
-        end;
-        auto.
+        rewrite/encodes/pure_encodes.
+        iIntros "%H !%".
+        destruct (erase_qualifiers _) => //;
+          destruct v => //; destruct_and? => //;
+          repeat case_decide => //;
+           simplify_eq; eauto.
+      Qed.
+      Global Instance Inj_aptr: Inj eq eq aptr.
+      Proof.
+        rewrite /aptr => p1 p2.
+        by rewrite bytesNat_nnonnull'; csimpl => -[? _].
       Qed.
 
-      Local Hint Extern 1 =>
-        match goal with
-        | |- (False ∗ _ ⊢ _)%I => rewrite bi.sep_elim_l; apply bi.False_elim
-        | |- (_ ∗ False ⊢ _)%I => rewrite bi.sep_elim_r; apply bi.False_elim
-        end : core.
+      Lemma pure_encodes_undef_aptr bitsz p :
+        pure_encodes_undef bitsz (aptr p) -> False.
+      Proof.
+        rewrite /pure_encodes_undef /aptr.
+        by rewrite (bytesNat_nnonnull' POINTER_BITSZ) (bytesNat_nnonnull' bitsz).
+      Qed.
+
+      Lemma pure_encodes_undef_Z_to_bytes bitsz sgn z :
+        pure_encodes_undef bitsz (Z_to_bytes bitsz sgn z) ->
+        False.
+      Proof.
+        rewrite /pure_encodes_undef /= bytesNat_nnonnull'.
+        by edestruct Z_to_bytes_cons as (? & ? & ->).
+      Qed.
+
+      Local Hint Resolve pure_encodes_undef_aptr pure_encodes_undef_Z_to_bytes : core.
+
       Lemma encodes_agree t v1 v2 vs :
         encodes t v1 vs |-- encodes t v2 vs -* [| v1 = v2 |].
       Proof.
-        apply bi.wand_intro_r.
-        rewrite/encodes. case: (erase_qualifiers t)=>//=.
-        - move=>_. case: v1; auto=>p1. case: v2; auto=>p2.
-          (* PDS: I see no way to proceed when p1 null, p2 nonnull *)
-      Abort.
+        rewrite/encodes/pure_encodes.
+        iIntros "%H1 %H2 !%".
+        destruct (erase_qualifiers t) eqn:? =>//=; intros;
+          repeat (try (case_decide || case_match); destruct_and?; simplify_eq => //).
+        all: by [
+          edestruct cptr_ne_aptr | edestruct pure_encodes_undef_aptr |
+          edestruct pure_encodes_undef_Z_to_bytes |
+          f_equiv; exact: Z_to_bytes_inj ].
+      Qed.
     End with_genv.
 
     Instance Z_to_bytes_proper :
       Proper (genv_leq ==> eq ==> eq ==> eq ==> eq) (@Z_to_bytes).
     Proof.
-      intros ?? Hσ. repeat intro. subst. unfold Z_to_bytes, _Z_to_bytes.
+      intros ?? Hσ. repeat intro. subst. rewrite /Z_to_bytes /_Z_to_bytes_eq /_Z_to_bytes_def.
       f_equal.
-      rewrite !seal_eq /_Z_to_bytes_def.
-      by setoid_rewrite Hσ.
+      by rewrite ->Hσ.
     Qed.
 
     Theorem encodes_consistent σ t v1 v2 vs1 vs2 :
@@ -330,16 +417,24 @@ Module SimpleCPP.
       do 3 red; intros; subst.
       unfold aptr. setoid_rewrite H. reflexivity.
     Qed.
+    Instance: RewriteRelation genv_leq := {}.
+
+    Local Lemma pure_encodes_undef_pointer_size x y xs :
+      genv_leq x y ->
+      pure_encodes_undef (pointer_size_bitsize x) xs ->
+      pure_encodes_undef (pointer_size_bitsize y) xs.
+    Proof. by intros ->. Qed.
 
     Instance encodes_proper :
       Proper (genv_leq ==> eq ==> eq ==> eq ==> lentails) encodes.
     Proof.
-      do 5 red. intros; subst.
-      unfold encodes.
+      intros ?? Heq; solve_proper_prepare; f_equiv.
+      unfold pure_encodes, impl.
       destruct (erase_qualifiers y0); auto.
       all: destruct y1; auto.
-      all: try (setoid_rewrite H; reflexivity).
-      { destruct (decide (p = nullptr)); try setoid_rewrite H; auto. }
+      all: try by intuition eauto using pure_encodes_undef_pointer_size.
+      all: try by [destruct (decide (p = nullptr)); rewrite Heq; intuition auto].
+      all: try by rewrite Heq.
     Qed.
 
     Definition val_ (a : ptr) (v : val) (q : Qp) : mpred :=
@@ -550,11 +645,8 @@ Module SimpleCPP.
       iDestruct "Hv2" as (vs2) "[He2 [Hb2 Vb2]]".
       iDestruct (encodes_consistent _ _ _ _ vs1 vs2 with "[He1 He2]") as %?; auto.
       iDestruct (bytes_agree with "Hb1 Hb2") as %->; auto. iClear "Hb1 Hb2".
-      (* PDS: I see no way to proceed. The preceding lemma
-      [encodes_agree] seems unsound wrt the present ghost state. *)
-      (* GMM: this seems provable as long as neither v1 nor v2 is Vundef.
-       *)
-    Abort.
+      iApply (encodes_agree with "He1 He2").
+    Qed.
 
     Definition code_at (_ : genv) (f : Func) (p : ptr) : mpred :=
       code_own p (inl (inl (inl f))).
