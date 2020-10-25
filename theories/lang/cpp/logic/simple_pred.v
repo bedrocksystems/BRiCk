@@ -61,26 +61,25 @@ Module SimpleCPP_BASE <: CPP_LOGIC_CLASS.
   Definition _cpp_ghost := cpp_ghost.
 
   Class cppG' (Σ : gFunctors) : Type :=
-    { heapG : inG Σ (gmapR addr (fractionalR runtime_val'))
+    { heapG :> inG Σ (gmapR addr (fractionalR runtime_val'))
       (* ^ this represents the contents of physical memory *)
-    ; ghost_memG : inG Σ (gmapR ptr (fractionalR val))
+    ; ghost_memG :> inG Σ (gmapR ptr (fractionalR val))
       (* ^ this represents the contents of the C++ runtime that might
          not be represented in physical memory, e.g. values stored in
          registers or temporaries on the stack *)
-    ; mem_injG : inG Σ (gmapUR ptr (agreeR (leibnizO (option addr))))
+    ; mem_injG :> inG Σ (gmapUR ptr (agreeR (leibnizO (option addr))))
       (* ^ this carries the (compiler-supplied) mapping from C++ locations
          (represented as pointers) to physical memory addresses. Locations that
          are not stored in physical memory (e.g. because they are register
          allocated) are mapped to [None] *)
-    ; blocksG : inG Σ (gmapUR ptr (agreeR (leibnizO (Z * Z))))
+    ; blocksG :> inG Σ (gmapUR ptr (agreeR (leibnizO (Z * Z))))
       (* ^ this represents the minimum and maximum offset of the block *)
-    ; codeG : inG Σ (gmapUR ptr (agreeR (leibnizO (Func + Method + Ctor + Dtor))))
+    ; codeG :> inG Σ (gmapUR ptr (agreeR (leibnizO (Func + Method + Ctor + Dtor))))
       (* ^ this carries the (compiler-supplied) mapping from C++ locations
          to the code stored at that location *)
-    ; has_inv : invG Σ
-    ; has_cinv : cinvG Σ
+    ; has_inv :> invG Σ
+    ; has_cinv :> cinvG Σ
     }.
-  Existing Instances heapG ghost_memG mem_injG blocksG codeG has_inv has_cinv.
 
   Definition cppG : gFunctors -> Type := cppG'.
   Existing Class cppG.
@@ -131,15 +130,14 @@ Module SimpleCPP_VIRTUAL.
     Definition vbytes (a : addr) (rv : list runtime_val') (q : Qp) : mpred :=
       [∗list] o ↦ v ∈ rv, (vbyte (a+N.of_nat o)%N v q).
 
-    Global Instance: forall va rv, Fractional (vbytes va rv).
-    Proof. intros; apply fractional_big_sepL. intros; apply vbyte_fractional. Qed.
+    Global Instance vbytes_fractional va rv : Fractional (vbytes va rv).
+    Proof. apply fractional_big_sepL; intros. apply vbyte_fractional. Qed.
 
-    Global Instance: forall va rv q,
+    Global Instance vbytes_as_fractional va rv q :
       AsFractional (vbytes va rv q) (vbytes va rv) q.
-    Proof. constructor; refine _. reflexivity. Qed.
+    Proof. exact: Build_AsFractional. Qed.
 
-    Global Instance: forall va rv q, Timeless (vbytes va rv q).
-    Proof. apply _. Qed.
+    Global Instance vbytes_timeless va rv q : Timeless (vbytes va rv q) := _.
   End with_cpp.
 End SimpleCPP_VIRTUAL.
 
@@ -160,15 +158,9 @@ Module SimpleCPP.
                 blocks_own base l h **
                 [| (l <= o <= h)%Z |] ** [| p = offset_ptr_ o base |].
 
-    Theorem valid_ptr_persistent : forall p, Persistent (valid_ptr p).
-    Proof. apply _. Qed.
-    Theorem valid_ptr_affine : forall p, Affine (valid_ptr p).
-    Proof. apply _. Qed.
-    Theorem valid_ptr_timeless : forall p, Timeless (valid_ptr p).
-    Proof. apply _. Qed.
-    Existing Instance valid_ptr_persistent.
-    Existing Instance valid_ptr_affine.
-    Existing Instance valid_ptr_timeless.
+    Instance valid_ptr_persistent : forall p, Persistent (valid_ptr p) := _.
+    Instance valid_ptr_affine : forall p, Affine (valid_ptr p) := _.
+    Instance valid_ptr_timeless : forall p, Timeless (valid_ptr p) := _.
 
     Theorem valid_ptr_nullptr : |-- valid_ptr nullptr.
     Proof. by iLeft. Qed.
@@ -192,7 +184,7 @@ Module SimpleCPP.
         Z_to_bytes POINTER_BITSZ Unsigned (Z.of_N a).
 
       Lemma length_aptr p : length (aptr p) = POINTER_BYTES.
-      Proof. by rewrite/aptr fmap_length seq_length. Qed.
+      Proof. by rewrite /aptr fmap_length seq_length. Qed.
       Lemma length_cptr a : length (cptr a) = POINTER_BYTES.
       Proof. by rewrite /cptr length_Z_to_bytes. Qed.
 
@@ -444,17 +436,17 @@ Module SimpleCPP.
       by f_equiv=>/pair_valid [] _ /= /agree_op_invL'.
     Qed.
 
-    Instance: Fractional (val_ a rv).
+    Instance val_fractional a rv : Fractional (val_ a rv).
     Proof.
       unfold val_. red.
       intros. by rewrite -own_op singleton_op frac_op.
     Qed.
 
-    Instance: AsFractional (val_ a rv q) (fun q => val_ a rv q) q.
-    Proof. constructor. reflexivity. refine _. Qed.
+    Instance val_as_fractional a rv q :
+      AsFractional (val_ a rv q) (val_ a rv) q.
+    Proof. exact: Build_AsFractional. Qed.
 
-    Instance: Timeless (val_ a rv q).
-    Proof. apply _. Qed.
+    Instance val_timeless a rv q : Timeless (val_ a rv q) := _.
 
 
     Definition byte_ (a : addr) (rv : runtime_val) (q : Qp) : mpred :=
@@ -475,11 +467,10 @@ Module SimpleCPP.
       intros. by rewrite -own_op singleton_op frac_op.
     Qed.
 
-    Instance: AsFractional (byte_ a rv q) (fun q => byte_ a rv q) q.
-    Proof. constructor. reflexivity. refine _. Qed.
+    Instance byte_as_fractional a rv q : AsFractional (byte_ a rv q) (fun q => byte_ a rv q) q.
+    Proof. exact: Build_AsFractional. Qed.
 
-    Instance: Timeless (byte_ a rv q).
-    Proof. apply _. Qed.
+    Instance: Timeless (byte_ a rv q) := _.
 
     Lemma frac_valid {A : Type} q1 q2 (v1 v2 : A) :
       ✓ (frac q1 v1 ⋅ frac q2 v2) → ✓ (q1 + q2)%Qp ∧ v1 = v2.
@@ -510,7 +501,7 @@ Module SimpleCPP.
       - move=>o v'. f_equiv. lia.
     Qed.
 
-    Lemma bytes_agree a vs1 vs2 q1 q2 :
+    Lemma bytes_agree {a vs1 vs2 q1 q2} :
       length vs1 = length vs2 →
       bytes a vs1 q1 ⊢ bytes a vs2 q2 -∗ ⌜vs1 = vs2⌝.
     Proof.
@@ -523,24 +514,21 @@ Module SimpleCPP.
       by iDestruct (IH _ _ Hlen with "Hvs1 Hvs2") as %->.
     Qed.
 
-    Instance: Timeless (bytes a rv q).
-    Proof. apply _. Qed.
+    Instance bytes_timeless a rv q : Timeless (bytes a rv q) := _.
+    Instance bytes_fractional a vs : Fractional (bytes a vs) := _.
+    Instance bytes_as_fractional a vs q :
+      AsFractional (bytes a vs q) (bytes a vs) q.
+    Proof. exact: Build_AsFractional. Qed.
 
-    Instance: Fractional (bytes a vs).
-    Proof. apply _. Qed.
-
-    Instance: AsFractional (bytes a vs q) (bytes a vs) q.
-    Proof. constructor; refine _. reflexivity. Qed.
-
-    Theorem bytes_consistent {q q' b b' a} : length b = length b' ->
-        bytes a b q ** bytes a b' q' |-- bytes a b (q + q') ** [| b = b' |].
+    Theorem bytes_consistent {q q' b b' a} (Hlen : length b = length b') :
+        bytes a b q |-- bytes a b' q' -* [| b = b' |] ** bytes a b (q + q').
     Proof.
-      intros. iIntros "[Hb Hb']".
-      iDestruct (bytes_agree with "Hb Hb'") as %->; auto.
-      by iFrame "Hb Hb' %".
+      iIntros "Hb Hb'".
+      iDestruct (bytes_agree Hlen with "Hb Hb'") as %->.
+      by iFrame.
     Qed.
 
-    Lemma bytes_update (a : addr) vs vs' :
+    Lemma bytes_update {a : addr} {vs} vs' :
       length vs = length vs' →
       bytes a vs 1 |-- |==> bytes a vs' 1.
     Proof.
@@ -558,8 +546,7 @@ Module SimpleCPP.
       iIntros "By".
       iDestruct ("HL" with "[By]") as "By";
         iApply (big_sepL_mono with "By"); intros; simpl;
-        rewrite (_: a + N.of_nat (S k) = a + 1 + N.of_nat k)%N.
-        done. lia. done. lia.
+        rewrite (_: a + N.of_nat (S k) = a + 1 + N.of_nat k)%N //; lia.
     Qed.
 
     Lemma mem_inj_own_agree p ma1 ma2 :
@@ -587,18 +574,18 @@ Module SimpleCPP.
       @tptsto σ ty q nullptr a |-- False.
     Proof. iDestruct 1 as (Hne) "_". naive_solver. Qed.
 
-    Theorem tptsto_mono :
+    Instance tptsto_mono :
       Proper (genv_leq ==> eq ==> eq ==> eq ==> eq ==> (⊢)) (@tptsto).
     Proof. solve_proper. Qed.
 
-    Theorem tptsto_proper :
+    Instance tptsto_proper :
       Proper (genv_eq ==> eq ==> eq ==> eq ==> eq ==> (≡)) (@tptsto).
     Proof.
-      intros σ1 σ2 Hσ ??-> ??-> ??-> ??->.
-      split'; eapply tptsto_mono; eauto; apply Hσ.
+      intros σ1 σ2 [Hσ1 Hσ2] ??-> ??-> ??-> ??->.
+      by split'; apply tptsto_mono.
     Qed.
 
-    Theorem tptsto_fractional {σ} ty p v :
+    Instance tptsto_fractional {σ} ty p v :
       Fractional (λ q, @tptsto σ ty q p v).
     Proof.
       rewrite /tptsto; apply fractional_sep; first by apply _.
@@ -608,23 +595,21 @@ Module SimpleCPP.
         + iDestruct "By" as (vs) "(#En & [L1 R1] & [L2 R2])".
           iSplitL "L1 L2"; iExists (Some a); eauto with iFrame.
         + iDestruct "By" as "[L R]".
-          iSplitL "L"; iExists None; eauto with iFrame.
+          iSplitL "L"; iExists None; iFrame "#∗".
       - iIntros "[H1 H2]".
         iDestruct "H1" as (a1) "[#Mi1 By1]".
         iDestruct "H2" as (a2) "[#Mi2 By2]".
         iExists a1; iFrame "#".
-        iDestruct (mem_inj_own_agree with "Mi1 Mi2") as %?. subst a2.
-        destruct a1; last by iFrame.
+        iDestruct (mem_inj_own_agree with "Mi1 Mi2") as %->.
+        destruct a2; last by iFrame.
         iDestruct "By1" as (vs) "[#En1 [By1 VBy1]]".
         iDestruct "By2" as (vs2) "[#En2 [By2 VBy2]]".
         iDestruct (encodes_consistent with "En1 En2") as %Heq.
-        iDestruct (bytes_consistent Heq with "[By1 By2]") as "[Z ->]";
-          eauto with iFrame.
+        iDestruct (bytes_consistent Heq with "By1 By2") as "[-> Z]".
+        iExists _; by iFrame.
     Qed.
 
-    Theorem tptsto_timeless :
-      forall {σ} ty q p v, Timeless (@tptsto σ ty q p v).
-    Proof. apply _. Qed.
+    Instance tptsto_timeless {σ} ty q p v : Timeless (@tptsto σ ty q p v) := _.
 
     Theorem tptsto_agree : forall σ t q1 q2 p v1 v2,
         @tptsto σ t q1 p v1 ** @tptsto σ t q2 p v2 |-- [| v1 = v2 |].
@@ -632,13 +617,12 @@ Module SimpleCPP.
       iDestruct 1 as "[H1 H2]".
       iDestruct "H1" as (Hnn1 ma1) "(Hp1 & Hv1)".
       iDestruct "H2" as (Hnn2 ma2) "(Hp2 & Hv2)".
-      iDestruct (mem_inj_own_agree with "Hp1 Hp2") as %?. subst ma1.
-      iClear "Hp1 Hp2".
+      iDestruct (mem_inj_own_agree with "Hp1 Hp2") as "->".
       case: ma2=>[a| ]; last by iDestruct (val_agree with "Hv1 Hv2") as %->.
       iDestruct "Hv1" as (vs1) "[He1 [Hb1 Vb1]]".
       iDestruct "Hv2" as (vs2) "[He2 [Hb2 Vb2]]".
-      iDestruct (encodes_consistent _ _ _ _ vs1 vs2 with "[He1 He2]") as %?; auto.
-      iDestruct (bytes_agree with "Hb1 Hb2") as %->; auto. iClear "Hb1 Hb2".
+      iDestruct (encodes_consistent with "He1 He2") as %Heq.
+      iDestruct (bytes_agree Heq with "Hb1 Hb2") as "->".
       iApply (encodes_agree with "He1 He2").
     Qed.
 
@@ -651,33 +635,21 @@ Module SimpleCPP.
     Definition dtor_at (_ : genv) (d : Dtor) (p : ptr) : mpred :=
       code_own p (inr d).
 
-    Theorem code_at_persistent : forall s f p, Persistent (@code_at s f p).
-    Proof. apply _. Qed.
-    Theorem code_at_affine : forall s f p, Affine (@code_at s f p).
-    Proof. apply _. Qed.
-    Theorem code_at_timeless : forall s f p, Timeless (@code_at s f p).
-    Proof. apply _. Qed.
+    Instance code_at_persistent : forall s f p, Persistent (@code_at s f p) := _.
+    Instance code_at_affine : forall s f p, Affine (@code_at s f p) := _.
+    Instance code_at_timeless : forall s f p, Timeless (@code_at s f p) := _.
 
-    Theorem method_at_persistent : forall s f p, Persistent (@method_at s f p).
-    Proof. apply _. Qed.
-    Theorem method_at_affine : forall s f p, Affine (@method_at s f p).
-    Proof. apply _. Qed.
-    Theorem method_at_timeless : forall s f p, Timeless (@method_at s f p).
-    Proof. apply _. Qed.
+    Instance method_at_persistent : forall s f p, Persistent (@method_at s f p) := _.
+    Instance method_at_affine : forall s f p, Affine (@method_at s f p) := _.
+    Instance method_at_timeless : forall s f p, Timeless (@method_at s f p) := _.
 
-    Theorem ctor_at_persistent : forall s f p, Persistent (@ctor_at s f p).
-    Proof. apply _. Qed.
-    Theorem ctor_at_affine : forall s f p, Affine (@ctor_at s f p).
-    Proof. apply _. Qed.
-    Theorem ctor_at_timeless : forall s f p, Timeless (@ctor_at s f p).
-    Proof. apply _. Qed.
+    Instance ctor_at_persistent : forall s f p, Persistent (@ctor_at s f p) := _.
+    Instance ctor_at_affine : forall s f p, Affine (@ctor_at s f p) := _.
+    Instance ctor_at_timeless : forall s f p, Timeless (@ctor_at s f p) := _.
 
-    Theorem dtor_at_persistent : forall s f p, Persistent (@dtor_at s f p).
-    Proof. apply _. Qed.
-    Theorem dtor_at_affine : forall s f p, Affine (@dtor_at s f p).
-    Proof. apply _. Qed.
-    Theorem dtor_at_timeless : forall s f p, Timeless (@dtor_at s f p).
-    Proof. apply _. Qed.
+    Instance dtor_at_persistent : forall s f p, Persistent (@dtor_at s f p) := _.
+    Instance dtor_at_affine : forall s f p, Affine (@dtor_at s f p) := _.
+    Instance dtor_at_timeless : forall s f p, Timeless (@dtor_at s f p) := _.
 
     (** physical representation of pointers
      *)
@@ -685,16 +657,13 @@ Module SimpleCPP.
       [| p = nullptr /\ va = 0%N |] \\//
       ([| p <> nullptr |] ** mem_inj_own p (Some va)).
 
-    Theorem pinned_ptr_persistent : forall va p, Persistent (pinned_ptr va p).
-    Proof. apply _. Qed.
-    Theorem pinned_ptr_affine : forall va p, Affine (pinned_ptr va p).
-    Proof. apply _. Qed.
-    Theorem pinned_ptr_timeless : forall va p, Timeless (pinned_ptr va p).
-    Proof. apply _. Qed.
-    Theorem pinned_ptr_unique : forall va va' p,
-        pinned_ptr va p ** pinned_ptr va' p |-- bi_pure (va = va').
+    Instance pinned_ptr_persistent va p : Persistent (pinned_ptr va p) := _.
+    Instance pinned_ptr_affine va p : Affine (pinned_ptr va p) := _.
+    Instance pinned_ptr_timeless va p : Timeless (pinned_ptr va p) := _.
+    Theorem pinned_ptr_unique va va' p :
+      pinned_ptr va p ** pinned_ptr va' p |-- bi_pure (va = va').
     Proof.
-      intros. iIntros "[A B]".
+      iIntros "[A B]".
       iDestruct "A" as "[[->->] | [% A]]"; iDestruct "B" as "[[%->] | [% B]]"; auto.
       iDestruct (mem_inj_own_agree with "A B") as %Hp. by inversion Hp.
     Qed.
@@ -713,11 +682,11 @@ Module SimpleCPP.
       iIntros "!>".
       iExists vs. iFrame "EN VBys".
       iIntros (v' vs') "#EN' VBys".
-      iDestruct (encodes_consistent _ _ _ _ vs vs' with "[$EN $EN']") as %EQL.
-      iMod (bytes_update _ _ vs' with "Bys") as "Bys'"; first done.
+      iDestruct (encodes_consistent with "EN EN'") as %Heq.
+      iMod (bytes_update vs' Heq with "Bys") as "Bys'".
       iModIntro.
       iSplit; first done. iExists (Some va). iFrame "MJ".
-      iExists vs'. eauto with iFrame.
+      iExists vs'. by iFrame.
     Qed.
 
     Theorem provides_storage_pinned_ptr : forall res newp aty va,
@@ -732,9 +701,8 @@ Module SimpleCPP.
                | Some addr => [| N.modulo addr n = 0%N |]
                end.
 
-    Theorem type_ptr_persistent : forall σ p ty,
-        Persistent (type_ptr (resolve:=σ) ty p).
-    Proof. refine _. Qed.
+    Instance type_ptr_persistent σ p ty :
+      Persistent (type_ptr (resolve:=σ) ty p) := _.
 
     (* todo(gmm): this isn't accurate, but it is sufficient to show that the axioms are
     instantiatable. *)
