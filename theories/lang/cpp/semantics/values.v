@@ -297,7 +297,6 @@ Definition bound (bits : bitsize) (sgn : signed) (v : Z) : Prop :=
 (** [has_type v t] means that [v] is an initialized value of type [t].
 For all types [t] except [Tvoid], this means that [v] is not [Vundef]. *)
 Parameter has_type : val -> type -> Prop.
-Arguments has_type _%Z _.
 
 Axiom has_type_pointer : forall v ty,
     has_type v (Tpointer ty) -> exists p, v = Vptr p.
