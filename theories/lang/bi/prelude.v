@@ -70,23 +70,3 @@ Module ChargeNotation.
     (at level 85, no associativity, only parsing).
 
 End ChargeNotation.
-
-Section with_PROP.
-Context {PROP : bi}.
-
-Import ChargeNotation.
-Lemma wandSP_only_provableL : forall (P : Prop) (Q R : PROP),
-    P ->
-    Q |-- R ->
-    [| P |] -* Q |-- R.
-Proof.
-  iIntros (???? HQR) "HPQ". iApply HQR. by iApply "HPQ".
-Qed.
-
-Lemma wandSP_only_provableR : forall (A : Prop) (B C : PROP),
-    (A -> B |-- C) ->
-    B |-- [| A |] -* C.
-Proof.
-  iIntros (??? HC) "HB %". by iApply (HC with "HB").
-Qed.
-End with_PROP.
