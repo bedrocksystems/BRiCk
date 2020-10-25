@@ -528,6 +528,17 @@ Module SimpleCPP.
       by iFrame.
     Qed.
 
+    Lemma encodes_bytes_agree σ t v1 v2 a vs1 vs2 q1 q2 :
+      encodes σ t v1 vs1 ** bytes a vs1 q1 |--
+      encodes σ t v2 vs2 ** bytes a vs2 q2 -*
+      ⌜ vs1 = vs2 ∧ v1 = v2 ⌝.
+    Proof.
+      iIntros "[En1 By1] [En2 By2]".
+      iDestruct (encodes_consistent with "En1 En2") as %Heq.
+      iDestruct (bytes_agree Heq with "By1 By2") as %->.
+      by iDestruct (encodes_agree with "En1 En2") as %->.
+    Qed.
+
     Lemma bytes_update {a : addr} {vs} vs' :
       length vs = length vs' →
       bytes a vs 1 |-- |==> bytes a vs' 1.
@@ -590,28 +601,22 @@ Module SimpleCPP.
     Proof.
       rewrite /tptsto; apply fractional_sep; first by apply _.
       rewrite /Fractional; intros q1 q2.
-      iSplit.
-      - iDestruct 1 as ([]) "[#Mi By]".
-        + iDestruct "By" as (vs) "(#En & [L1 R1] & [L2 R2])".
-          iSplitL "L1 L2"; iExists (Some a); eauto with iFrame.
-        + iDestruct "By" as "[L R]".
-          iSplitL "L"; iExists None; iFrame "#∗".
-      - iIntros "[H1 H2]".
-        iDestruct "H1" as (a1) "[#Mi1 By1]".
-        iDestruct "H2" as (a2) "[#Mi2 By2]".
-        iExists a1; iFrame "#".
-        iDestruct (mem_inj_own_agree with "Mi1 Mi2") as %->.
-        destruct a2; last by iFrame.
-        iDestruct "By1" as (vs) "[#En1 [By1 VBy1]]".
-        iDestruct "By2" as (vs2) "[#En2 [By2 VBy2]]".
-        iDestruct (encodes_consistent with "En1 En2") as %Heq.
-        iDestruct (bytes_consistent Heq with "By1 By2") as "[-> Z]".
-        iExists _; by iFrame.
+      apply sep_unique_exist_only_provable => [oa1 oa2|oa]. {
+        iIntros "[A1 _] [A2 _]"; iApply (mem_inj_own_agree with "A1 A2").
+      }
+      rewrite -sep_persistent_dist; f_equiv.
+      destruct oa; last by rewrite fractional.
+      apply sep_unique_exist => [vs1 vs2|vs]. {
+        iIntros "[En1 [By1 _]] [En2 [By2 _]]".
+        iDestruct (encodes_bytes_agree with "[$En1 $By1] [$En2 $By2]") as "[$ _]".
+      }
+      rewrite -sep_persistent_dist !fractional.
+      iSplit; iIntros "[$ [[$$] [$$]]]".
     Qed.
 
     Instance tptsto_timeless {σ} ty q p v : Timeless (@tptsto σ ty q p v) := _.
 
-    Theorem tptsto_agree : forall σ t q1 q2 p v1 v2,
+    Theorem tptsto_agree σ t q1 q2 p v1 v2 :
         @tptsto σ t q1 p v1 ** @tptsto σ t q2 p v2 |-- [| v1 = v2 |].
     Proof.
       iDestruct 1 as "[H1 H2]".
@@ -619,11 +624,9 @@ Module SimpleCPP.
       iDestruct "H2" as (Hnn2 ma2) "(Hp2 & Hv2)".
       iDestruct (mem_inj_own_agree with "Hp1 Hp2") as "->".
       case: ma2=>[a| ]; last by iDestruct (val_agree with "Hv1 Hv2") as %->.
-      iDestruct "Hv1" as (vs1) "[He1 [Hb1 Vb1]]".
-      iDestruct "Hv2" as (vs2) "[He2 [Hb2 Vb2]]".
-      iDestruct (encodes_consistent with "He1 He2") as %Heq.
-      iDestruct (bytes_agree Heq with "Hb1 Hb2") as "->".
-      iApply (encodes_agree with "He1 He2").
+      iDestruct "Hv1" as (vs1) "[He1 [Hb1 _]]".
+      iDestruct "Hv2" as (vs2) "[He2 [Hb2 _]]".
+      by iDestruct (encodes_bytes_agree with "[$He1 $Hb1] [$He2 $Hb2]") as %[_ ->].
     Qed.
 
     Definition code_at (_ : genv) (f : Func) (p : ptr) : mpred :=
