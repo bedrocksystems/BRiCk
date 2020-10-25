@@ -25,16 +25,6 @@ Definition RepI `{Σ : cpp_logic} := monPredI ptr_bi_index mpredI.
 Bind Scope bi_scope with Rep.
 Bind Scope bi_scope with RepI.
 
-(* MOVE to Iris *)
-Lemma exist_comm {PROP : bi} {A B} (Φ : A → B → PROP) :
-  (∃ a b, Φ a b) -|- (∃ b a, Φ a b).
-Proof. iSplit; iDestruct 1 as (??) "H"; eauto. Qed.
-
-Lemma exist_forall_comm {PROP : bi} {A B} (Φ : A → B → PROP) :
-  (∃ a, ∀ b, Φ a b) |-- (∀ b, ∃ a, Φ a b).
-Proof. iDestruct 1 as (a) "H". iIntros (b). iExists a. by iApply "H". Qed.
-(* END MOVE *)
-
 Section with_cpp.
   Context `{Σ : cpp_logic}.
 

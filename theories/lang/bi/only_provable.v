@@ -143,7 +143,7 @@ Section proofmode.
    *
    * - [@IntoAbsorbingly PROP ⌜P⌝ [| P |]]
    *
-   * as they would interact proorly with, e.g., [iSplit], changing
+   * as they would interact poorly with, e.g., [iSplit], changing
    * goals like [[| P |] ** Q] into subgoals involving [bi_pure]
    * rather than [only_provable].
    *)

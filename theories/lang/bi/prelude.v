@@ -5,7 +5,7 @@
  *)
 From iris.bi Require Import bi.
 From iris.proofmode Require Import tactics.
-Require Export bedrock.lang.bi.only_provable.
+From bedrock.lang.bi Require Export only_provable derived_laws.
 
 Set Default Proof Using "Type".
 
