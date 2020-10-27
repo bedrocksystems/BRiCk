@@ -54,6 +54,7 @@ theories/lang/cpp/logic/z_to_bytes.v
 theories/lang/cpp/logic/cclogic.v
 # ^^ This is probably going to be eliminated
 theories/lang/cpp/logic/atomics.v
+theories/lang/cpp/logic/atomics_derived.v
 theories/lang/cpp/logic/builtins.v
 theories/lang/cpp/logic/layout.v
 theories/lang/cpp/logic.v
