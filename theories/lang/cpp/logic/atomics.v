@@ -13,6 +13,7 @@ Require Import bedrock.lang.bi.ChargeCompat.
 From bedrock.lang.cpp Require Import ast semantics.
 From bedrock.lang.cpp.logic Require Import
      pred path_pred heap_pred wp call.
+Require Import bedrock.lang.cpp.heap_notations.
 
 Local Open Scope Z_scope.
 
@@ -137,8 +138,8 @@ Section with_Σ.
   Axiom wp_atom_load_cst :
     forall q memorder (acc_type:type) (p : val) (Q : val -> mpred),
       [| memorder = _SEQ_CST |] **
-      |> (Exists v,  _at (_eqv p) (primR acc_type q v) **
-                    (_at (_eqv p) (primR acc_type q v) -* Q v))
+      |> (Exists v,  _eqv p |-> primR acc_type q v **
+                    (_eqv p |-> primR acc_type q v -* Q v))
       |-- wp_atom' AO__atomic_load_n acc_type (p :: memorder :: nil) Q.
 
   (* An SC store writes the latest value, unless there are racing (no hb)
@@ -148,8 +149,8 @@ Section with_Σ.
     forall memorder acc_type p Q v,
       [| memorder = _SEQ_CST |] **
       [| has_type v acc_type |] **
-      |> ( _at (_eqv p) (anyR acc_type 1) **
-          (_at (_eqv p) (primR acc_type 1 v) -* Q Vundef))
+      |> ( _eqv p |-> anyR acc_type 1 **
+          (_eqv p |-> primR acc_type 1 v -* Q Vundef))
       |-- wp_atom' AO__atomic_store_n acc_type (p :: memorder :: v :: nil) Q.
 
   (* The following rule holds for SC-only locations, or no-racing-store
@@ -164,8 +165,8 @@ Section with_Σ.
     forall memorder acc_type p Q w v,
       [| memorder = _SEQ_CST |] **
       [| has_type v acc_type |] **
-      |> ( _at (_eqv p) (primR acc_type 1 w) **
-          (_at (_eqv p) (primR acc_type 1 v) -* Q w))
+      |> ( _eqv p |-> primR acc_type 1 w **
+          (_eqv p |-> primR acc_type 1 v -* Q w))
       |-- wp_atom' AO__atomic_exchange_n acc_type (p :: memorder :: v :: nil) Q.
 
   (* Again, all of the RMWs rules only read and write latest values if the
@@ -174,16 +175,17 @@ Section with_Σ.
     forall memorder acc_type p Q v new_p q ret new_v,
       [| memorder = _SEQ_CST |] **
       |> ((* latest value of p is v *)
-          _at (_eqv p) (primR acc_type 1 v) **
+          _eqv p |-> primR acc_type 1 v **
           (* new value new_v for p *)
-          _at (_eqv new_p) (primR acc_type q new_v) **
+          _eqv new_p |-> primR acc_type q new_v **
           (* placeholder for the original value of p *)
-          _at (_eqv ret) (anyR acc_type 1) **
+          _eqv ret |-> anyR acc_type 1 **
+         (* post cond *)
          ((* latest value updated to new_v *)
-          _at (_eqv p) (primR acc_type 1 new_v) **
-          _at (_eqv new_v) (primR acc_type q new_v) **
+          _eqv p |-> primR acc_type 1 new_v **
+          _eqv new_v |-> primR acc_type q new_v **
           (* ret stores the previous latest value v *)
-          _at (_eqv ret) (primR acc_type 1 v) -* Q v))
+          _eqv ret |-> primR acc_type 1 v -* Q v))
       |-- wp_atom' AO__atomic_exchange acc_type (p :: memorder :: new_p :: ret :: nil) Q.
 
   (* A successful SC compare and exchange n *)
@@ -195,12 +197,13 @@ Section with_Σ.
       [| weak = Vbool b |] **
       [| succmemord = _SEQ_CST |] ** [| failmemord = _SEQ_CST |] **
       |> ((* placeholder for the expected value, which is v *)
-          _at (_eqv expected_p) (primR ty 1 v) **
+          _eqv expected_p |-> primR ty 1 v **
           (* latest value of p, which is also v, because this is successful *)
-          _at (_eqv p) (primR ty 1 v) **
-          ((_at (_eqv expected_p) (primR ty 1 v) **
+          _eqv p |-> primR ty 1 v **
+          (* post cond *)
+          (_eqv expected_p |-> primR ty 1 v **
           (* afterwards, val_p has value desired *)
-            _at (_eqv p) (primR ty 1 desired)) -* Q (Vbool true)))
+            _eqv p |-> primR ty 1 desired -* Q (Vbool true)))
       |-- wp_atom' AO__atomic_compare_exchange_n ty
                   (* TODO(hai): I don't see why the order of arguments is like this *)
                   (p::succmemord::expected_p::failmemord::desired::weak::nil) Q.
@@ -215,12 +218,13 @@ Section with_Σ.
       (* we know that the values are different *)
       [| v <> expected_v |] **
       |> ((* before, val_p stores the value expected_v to be compared *)
-          _at (_eqv val_p) (primR ty 1 expected_v) **
-          _at (_eqv p) (primR ty 1 v) **
+          _eqv val_p |-> primR ty 1 expected_v **
+          _eqv p |-> primR ty 1 v **
+          (* post cond *)
           (* afterwards, val_p stores the value read v, which is the latest one
               due to failmemord being SC *)
-          ((_at (_eqv val_p) (primR ty 1 v) **
-            _at (_eqv p) (primR ty 1 v)) -* Q (Vbool false)))
+          (_eqv val_p |-> primR ty 1 v **
+           _eqv p |-> primR ty 1 v -* Q (Vbool false)))
       |-- wp_atom' AO__atomic_compare_exchange_n ty
                   (p::succmemord::val_p::failmemord::desired::weak::nil) Q.
 
@@ -231,15 +235,15 @@ Section with_Σ.
     forall p expected_p expected_v desired weak succmemord failmemord Q ty v,
       [| weak = Vbool true |] **
       [| succmemord = _SEQ_CST |] ** [| failmemord = _SEQ_CST |] **
-      |> (_at (_eqv expected_p) (primR ty 1 expected_v) **
-          _at (_eqv p) (primR ty 1 v) **
+      |> (_eqv expected_p |-> primR ty 1 expected_v **
+          _eqv p |-> primR ty 1 v **
           (* postcond for success case *)
-          (((_at (_eqv expected_p) (primR ty 1 expected_v) **
-             _at (_eqv p) (primR ty 1 desired) **
-             [| v = expected_v |]) -* Q (Vbool true)) //\\
+          ((_eqv expected_p |-> primR ty 1 expected_v **
+             _eqv p |-> primR ty 1 desired **
+             [| v = expected_v |] -* Q (Vbool true)) //\\
           (* postcond for failure case *)
-           ((_at (_eqv expected_p) (primR ty 1 v) **
-             _at (_eqv p) (primR ty 1 v)) -* Q (Vbool false))))
+           (_eqv expected_p |-> primR ty 1 v **
+            _eqv p |-> primR ty 1 v -* Q (Vbool false))))
       |-- wp_atom' AO__atomic_compare_exchange_n ty
                   (p::succmemord::expected_p::failmemord::desired::weak::nil) Q.
 
@@ -251,13 +255,13 @@ Section with_Σ.
       [| weak = Vbool b |] **
       [| succmemord = _SEQ_CST |] ** [| failmemord = _SEQ_CST |] **
       |> ((* before, we know that p and expected_p have the same value *)
-          (_at (_eqv expected_p) (primR ty 1 expected) **
-           _at (_eqv desired_p) (primR ty q desired) **
-           _at (_eqv p) (primR ty 1 expected)) **
+          (_eqv expected_p |-> primR ty 1 expected **
+           _eqv desired_p |-> primR ty q desired **
+           _eqv p |-> primR ty 1 expected) **
           (* afterwards, p is updated to desired *)
-         ((_at (_eqv expected_p) (primR ty 1 expected) **
-           _at (_eqv desired_p) (primR ty q desired) **
-           _at (_eqv p) (primR ty 1 desired)) -* Q (Vbool true)))
+         (_eqv expected_p |-> primR ty 1 expected **
+          _eqv desired_p |-> primR ty q desired **
+          _eqv p |-> primR ty 1 desired -* Q (Vbool true)))
       |-- wp_atom' AO__atomic_compare_exchange ty
                   (p::succmemord::expected_p::failmemord::desired_p::weak::nil) Q.
 
@@ -268,12 +272,12 @@ Section with_Σ.
       expected <> actual ->
       [| weak = Vbool false |] **
       [| succmemord = _SEQ_CST |] ** [| failmemord = _SEQ_CST |] **
-      |> ((_at (_eqv expected_p) (primR ty 1 expected) **
-           _at (_eqv desired_p) (primR ty q desired) **
-           _at (_eqv p) (primR ty 1 actual)) **
-          ((_at (_eqv expected_p) (primR ty 1 actual) **
-            _at (_eqv desired_p) (primR ty q desired) **
-            _at (_eqv p) (primR ty 1 actual)) -* Q (Vbool false)))
+      |> ((_eqv expected_p |-> primR ty 1 expected **
+           _eqv desired_p |-> primR ty q desired **
+           _eqv p |-> primR ty 1 actual) **
+          (_eqv expected_p |-> primR ty 1 actual **
+           _eqv desired_p |-> primR ty q desired **
+           _eqv p |-> primR ty 1 actual -* Q (Vbool false)))
       |-- wp_atom' AO__atomic_compare_exchange ty
                   (p::succmemord::expected_p::failmemord::desired_p::weak::nil) Q.
 
@@ -283,16 +287,16 @@ Section with_Σ.
       actual expected desired,
       [| weak = Vbool true |] **
       [| succmemord = _SEQ_CST |] ** [| failmemord = _SEQ_CST |] **
-      |> ((_at (_eqv expected_p) (primR ty 1 expected) **
-           _at (_eqv desired_p) (primR ty q desired) **
-           _at (_eqv p) (primR ty 1 actual)) **
-          (((_at (_eqv expected_p) (primR ty 1 expected) **
-             _at (_eqv desired_p) (primR ty q desired) **
-             _at (_eqv p) (primR ty 1 desired)) **
-             [| actual = expected |] -* Q (Vbool true)) //\\
-           ((_at (_eqv expected_p) (primR ty 1 actual) **
-             _at (_eqv desired_p) (primR ty q desired) **
-             _at (_eqv p) (primR ty 1 actual)) -* Q (Vbool false))))
+      |> ((_eqv expected_p |-> primR ty 1 expected **
+           _eqv desired_p |-> primR ty q desired **
+           _eqv p |-> primR ty 1 actual) **
+          ((_eqv expected_p |-> primR ty 1 expected **
+            _eqv desired_p |-> primR ty q desired **
+            _eqv p |-> primR ty 1 desired) **
+            [| actual = expected |] -* Q (Vbool true)) //\\
+           (_eqv expected_p |-> primR ty 1 actual **
+            _eqv desired_p |-> primR ty q desired **
+            _eqv p |-> primR ty 1 actual -* Q (Vbool false)))
       |-- wp_atom' AO__atomic_compare_exchange ty
                   (p::succmemord::expected_p::failmemord::desired_p::weak::nil) Q.
 
@@ -317,9 +321,9 @@ Section with_Σ.
       [| memorder = _SEQ_CST |] **
       [| has_type (Vint arg) acc_type |] **
       |>  (Exists n,
-            _at (_eqv p) (primR acc_type 1 (Vint n)) **
-            let n' := at_eval sz sgn op n arg in
-            _at (_eqv p) (primR acc_type 1 (Vint n')) -* Q (Vint n))
+            _eqv p |-> primR acc_type 1 (Vint n) **
+            (let n' := at_eval sz sgn op n arg in
+              _eqv p |-> primR acc_type 1 (Vint n') -* Q (Vint n)))
       |-- wp_atom' ao acc_type (p::memorder::Vint arg::nil) Q.
 
   Local Notation fetch_xxx ao op :=
@@ -341,9 +345,9 @@ Section with_Σ.
       [| memorder = _SEQ_CST |] **
       [| has_type (Vint arg) acc_type |] **
       |> (Exists n,
-          _at (_eqv p) (primR acc_type 1 (Vint n)) **
-          let n' := at_eval sz sgn op n arg in
-          _at (_eqv p) (primR acc_type 1 (Vint n')) -* Q (Vint n'))
+          _eqv p |-> primR acc_type 1 (Vint n) **
+          (let n' := at_eval sz sgn op n arg in
+            _eqv p |-> primR acc_type 1 (Vint n') -* Q (Vint n')))
       |-- wp_atom' ao acc_type (p::memorder::Vint arg::nil) Q.
 
   Local Notation xxx_fetch ao op :=
