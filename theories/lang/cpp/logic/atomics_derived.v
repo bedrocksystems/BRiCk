@@ -20,8 +20,8 @@ Section cmpxchg_derived.
   Variables (M : coPset) (ti : thread_info) (ρ : region).
 
   Local Notation primR := (@primR _ _ resolve) (only parsing).
-
   Local Notation wp_atom' := (@wp_atom _ Σ resolve M ti) (only parsing).
+
   (* A successful SC compare and exchange n *)
   (* It succeeds because the location p has the expected value v, which is
     stored in expected. *)
@@ -29,19 +29,19 @@ Section cmpxchg_derived.
     forall p expected_p desired weak succmemord failmemord Q ty v,
       [| weak = Vbool false |] **
       [| succmemord = _SEQ_CST |] ** [| failmemord = _SEQ_CST |] **
-      |> ((* placeholder for the expected value, which is v *)
-          _eqv expected_p |-> primR ty 1 v **
+      |> ((* pre cond *)
+          ((* placeholder for the expected value, which is v *)
+           _eqv expected_p |-> primR ty 1 v **
           (* latest value of p, which is also v, because this is successful *)
-          _eqv p |-> primR ty 1 v **
+           _eqv p |-> primR ty 1 v) **
           (* post cond *)
           (_eqv expected_p |-> primR ty 1 v **
-          (* afterwards, val_p has value desired *)
+          (* afterwards, val_pp has value desired *)
             _eqv p |-> primR ty 1 desired -* Q (Vbool true)))
       |-- wp_atom' AO__atomic_compare_exchange_n ty
-                  (* TODO(hai): I don't see why the order of arguments is like this *)
                   (p::succmemord::expected_p::failmemord::desired::weak::nil) Q.
   Proof.
-    intros. iIntros "(F1 & F2 & F3 & Pre1 & Pre2 & Post)".
+    intros. iIntros "(F1 & F2 & F3 & [Pre1 Pre2] & Post)".
     iApply wp_atom_compare_exchange_n_cst. iFrame.
     iNext. iSplit.
     - iIntros "(P1 & P2 & ?)". iApply "Post". iFrame.
@@ -57,9 +57,10 @@ Section cmpxchg_derived.
       [| succmemord = _SEQ_CST |] ** [| failmemord = _SEQ_CST |] **
       (* we know that the values are different *)
       [| v <> expected_v |] **
-      |> ((* before, val_p stores the value expected_v to be compared *)
-          _eqv val_p |-> primR ty 1 expected_v **
-          _eqv p |-> primR ty 1 v **
+      |> ((* precond *)
+          ((* before, val_p stores the value expected_v to be compared *)
+           _eqv val_p |-> primR ty 1 expected_v **
+           _eqv p |-> primR ty 1 v) **
           (* post cond *)
           (* afterwards, val_p stores the value read v, which is the latest one
               due to failmemord being SC *)
@@ -68,7 +69,7 @@ Section cmpxchg_derived.
       |-- wp_atom' AO__atomic_compare_exchange_n ty
                   (p::succmemord::val_p::failmemord::desired::weak::nil) Q.
   Proof.
-    intros. iIntros "(F1 & F2 & F3 & % & Pre2 & Pre3 & Post)".
+    intros. iIntros "(F1 & F2 & F3 & % & [Pre1 Pre2] & Post)".
     iApply wp_atom_compare_exchange_n_cst. iFrame.
     iNext. iSplit.
     - iIntros "(_ & _ & %)". by subst.
@@ -82,7 +83,8 @@ Section cmpxchg_derived.
       expected desired,
       [| weak = Vbool false |] **
       [| succmemord = _SEQ_CST |] ** [| failmemord = _SEQ_CST |] **
-      |> ((* before, we know that p and expected_p have the same value *)
+      |> ((* pre post *)
+          (* before, we know that p and expected_p have the same value *)
           (_eqv expected_p |-> primR ty 1 expected **
            _eqv desired_p |-> primR ty q desired **
            _eqv p |-> primR ty 1 expected) **

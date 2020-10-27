@@ -195,10 +195,11 @@ Section with_Σ.
     forall p expected_p expected_v desired weak succmemord failmemord Q ty v,
       [| weak = Vbool false |] **
       [| succmemord = _SEQ_CST |] ** [| failmemord = _SEQ_CST |] **
-      |> ((* placeholder for the expected value *)
-          _eqv expected_p |-> primR ty 1 expected_v **
-          (* latest value of p, which is also v, because this is successful *)
-          _eqv p |-> primR ty 1 v **
+      |> ((* pre cond *)
+          ((* placeholder for the expected value *)
+           _eqv expected_p |-> primR ty 1 expected_v **
+           (* latest value of p, which is also v, because this is successful *)
+           _eqv p |-> primR ty 1 v) **
             (* post cond for success case *)
           ((_eqv expected_p |-> primR ty 1 expected_v **
             (* afterwards, p has value desired *)
@@ -221,8 +222,9 @@ Section with_Σ.
     forall p expected_p expected_v desired weak succmemord failmemord Q ty v,
       [| weak = Vbool true |] **
       [| succmemord = _SEQ_CST |] ** [| failmemord = _SEQ_CST |] **
-      |> (_eqv expected_p |-> primR ty 1 expected_v **
-          _eqv p |-> primR ty 1 v **
+      |> ( (* pre cond *)
+           (_eqv expected_p |-> primR ty 1 expected_v **
+           _eqv p |-> primR ty 1 v) **
           (* postcond for success case *)
           ((_eqv expected_p |-> primR ty 1 expected_v **
             _eqv p |-> primR ty 1 desired **
@@ -267,9 +269,9 @@ Section with_Σ.
       |> ((_eqv expected_p |-> primR ty 1 expected **
            _eqv desired_p |-> primR ty q desired **
            _eqv p |-> primR ty 1 actual) **
-          ((_eqv expected_p |-> primR ty 1 expected **
+          ( _eqv expected_p |-> primR ty 1 expected **
             _eqv desired_p |-> primR ty q desired **
-            _eqv p |-> primR ty 1 desired) **
+            _eqv p |-> primR ty 1 desired **
             [| actual = expected |] -* Q (Vbool true)) //\\
            (_eqv expected_p |-> primR ty 1 actual **
             _eqv desired_p |-> primR ty q desired **
