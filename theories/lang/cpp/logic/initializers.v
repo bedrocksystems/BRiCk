@@ -137,11 +137,12 @@ Module Type Init.
       |-- wp_prval (Einitlist (e :: nil) None t) Q.
 
     Axiom wp_init_cast_integral : forall e ty addr Q,
-        wp_prval (Ecast Cintegral (Rvalue, e) ty)
-                 (fun v free =>
-                    _at (_eqv addr) (anyR (erase_qualifiers ty) 1) **
-                    (   _at (_eqv addr) (primR (erase_qualifiers ty) 1 v)
-                     -* Q free))
+        wp_prval e (fun v free =>
+                      Exists v',
+                        [| conv_int (type_of e) ty v v' |] **
+                        _at (_eqv addr) (anyR (erase_qualifiers ty) 1) **
+                        (   _at (_eqv addr) (primR (erase_qualifiers ty) 1 v')
+                         -* Q free))
         |-- wp_init ty addr (Ecast Cintegral (Rvalue, e) ty) Q.
 
     Axiom wp_init_cast_noop : forall e ty addr ty' Q,
