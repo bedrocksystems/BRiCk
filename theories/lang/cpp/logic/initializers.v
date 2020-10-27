@@ -136,9 +136,17 @@ Module Type Init.
            else False)
       |-- wp_prval (Einitlist (e :: nil) None t) Q.
 
-    Axiom wp_init_cast_noop : forall e ty loc ty' Q,
-        wp_init loc ty e Q
-        |-- wp_init loc ty (Ecast Cnoop (Rvalue, e) ty') Q.
+    Axiom wp_init_cast_integral : forall e ty addr Q,
+        wp_prval (Ecast Cintegral (Rvalue, e) ty)
+                 (fun v free =>
+                    _at (_eqv addr) (anyR (erase_qualifiers ty) 1) **
+                    (   _at (_eqv addr) (primR (erase_qualifiers ty) 1 v)
+                     -* Q free))
+        |-- wp_init ty addr (Ecast Cintegral (Rvalue, e) ty) Q.
+
+    Axiom wp_init_cast_noop : forall e ty addr ty' Q,
+        wp_init ty addr e Q
+        |-- wp_init ty addr (Ecast Cnoop (Rvalue, e) ty') Q.
 
     Axiom wp_init_clean : forall e ty ty' addr Q,
         wp_init ty' addr e Q
