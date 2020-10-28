@@ -315,6 +315,7 @@ Definition conv_int (from to : type) (v v' : val) : Prop :=
     has_type v (Tint sz Signed) /\ v' = v
   | _ , _ => False
   end.
+Arguments conv_int !_ !_ _ _ /.
 
 
 (** operator semantics *)
