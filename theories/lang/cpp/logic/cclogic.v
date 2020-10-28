@@ -47,6 +47,8 @@ Section with_Σ.
     iApply "HP".
   Qed.
 
+  Definition iname : Set := namespace.
+
   Section with_cinvG.
     Context `{!cinvG Σ}.
 
