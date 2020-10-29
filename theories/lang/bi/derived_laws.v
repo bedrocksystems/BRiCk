@@ -16,16 +16,20 @@ When upstreaming, add a comment (with the upstream name if different).
 When bumping Iris, drop lemmas that are now upstream.
 *)
 
+Module bi.
+Export iris.bi.bi.bi.
+
 Section derived_laws.
   Context {PROP : bi}.
 
   (* Upstream as [exist_exist], https://gitlab.mpi-sws.org/iris/iris/-/merge_requests/552 *)
-  Lemma exist_comm {A B} (Φ : A → B → PROP) :
+  Lemma exist_exist {A B} (Φ : A → B → PROP) :
     (∃ a b, Φ a b) ⊣⊢ (∃ b a, Φ a b).
   Proof. iSplit; iDestruct 1 as (??) "H"; eauto. Qed.
 
   (* Upstream as [exist_forall], ditto. *)
-  Lemma exist_forall_comm {A B} (Φ : A → B → PROP) :
+  Lemma exist_forall {A B} (Φ : A → B → PROP) :
     (∃ a, ∀ b, Φ a b) ⊢ (∀ b, ∃ a, Φ a b).
   Proof. iDestruct 1 as (a) "H". iIntros (b). iExists a. by iApply "H". Qed.
 End derived_laws.
+End bi.

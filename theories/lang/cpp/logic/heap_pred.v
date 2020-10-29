@@ -213,7 +213,7 @@ Section with_cpp.
   Proof.
     intros. rewrite _at_eq /_at_def /=.
     setoid_rewrite monPred_at_exist. setoid_rewrite bi.sep_exist_l.
-    by rewrite exist_comm.
+    by rewrite bi.exist_exist.
   Qed.
 
   Lemma _at_forall : forall (l : Loc) T (P : T -> Rep),
@@ -221,7 +221,7 @@ Section with_cpp.
   Proof.
     intros. rewrite _at_eq /_at_def /=.
     setoid_rewrite monPred_at_forall. setoid_rewrite bi.sep_forall_l.
-    by rewrite exist_forall_comm.
+    by rewrite bi.exist_forall.
   Qed.
 
   Lemma _at_only_provable : forall (l : Loc) (P : Prop),
