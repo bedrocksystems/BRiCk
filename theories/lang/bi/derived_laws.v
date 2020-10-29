@@ -70,6 +70,17 @@ Section derived_laws.
     rewrite {1}(intuitionistic_sep_dup P).
     iSplit; iIntros "[[$$] [$$]]".
   Qed.
+
+  Lemma sep_and_distr {P Q1 Q2} `{!Persistent P} `{!Affine P} :
+    P ∗ (Q1 ∧ Q2) ⊣⊢@{PROP}
+    (P ∗ Q1) ∧ (P ∗ Q2).
+  Proof.
+    iSplit. by iIntros "[$ $]".
+    iIntros "H"; iSplit. by iDestruct "H" as "[[$ _] _]".
+    iSplit.
+    iDestruct "H" as "[[_ $]_]".
+    iDestruct "H" as "[_ [_ $]]".
+  Qed.
 End derived_laws.
 
 Section only_provable_derived_laws.
