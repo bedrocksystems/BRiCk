@@ -384,7 +384,7 @@ Module SimpleCPP.
     Proof.
       intros ?? Hσ. repeat intro. subst. rewrite /Z_to_bytes /_Z_to_bytes_eq /_Z_to_bytes_def.
       f_equal.
-      by rewrite ->Hσ.
+      by rewrite Hσ.
     Qed.
 
     Theorem encodes_consistent σ t v1 v2 vs1 vs2 :
