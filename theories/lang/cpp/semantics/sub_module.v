@@ -194,34 +194,6 @@ Definition syms_table_le (a b : symbol_table) :=
       exists v', b !! on = Some v' /\
             ObjValue_ler v v'.
 
-(* XXX belongs to stdpp. *)
-Lemma iff_forall T P Q :
-  (forall i: T, P i <-> Q i) ->
-  (forall i: T, P i) <-> (forall i: T, Q i).
-Proof. naive_solver. Qed.
-
-Instance reflexive_proper A :
-  Proper (pointwise_relation A (pointwise_relation A iff) ==> iff) Reflexive.
-Proof.
-  unfold Reflexive=> r1 r2 Heq.
-  apply iff_forall => i. by rewrite Heq.
-Qed.
-
-Instance transitive_proper A :
-  Proper (pointwise_relation A (pointwise_relation A iff) ==> iff) Transitive.
-Proof.
-  unfold Reflexive=> r1 r2 Heq.
-  apply iff_forall => i.
-  apply iff_forall => j.
-  apply iff_forall => k.
-  by rewrite Heq.
-Qed.
-Instance preorder_proper A :
-  Proper (pointwise_relation A (pointwise_relation A iff) ==> iff) PreOrder.
-Proof. by intros r1 r2 Heq; split => -[]; [rewrite Heq|rewrite -Heq]. Qed.
-(* stdpp end. *)
-
-
 Lemma type_table_le_equiv te1 te2 : type_table_le te1 te2 <-> type_table_le_alt te1 te2.
 Proof.
   apply iff_forall => i; unfold option_relation.
