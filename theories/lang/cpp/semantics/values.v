@@ -259,12 +259,12 @@ Proof. intros. apply sub_module.byte_order_flip_proper, tu_compat. Qed.
 Theorem genv_compat_submodule : forall m σ, m ⊧ σ -> sub_module m σ.(genv_tu).
 Proof. by destruct 1. Qed.
 
-Instance models_proper : Proper (flip sub_module ==> genv_leq ==> impl) genv_compat.
+Instance genv_compat_proper : Proper (flip sub_module ==> genv_leq ==> impl) genv_compat.
 Proof.
   intros ?? Heq1 ?? [Heq2 _ _] [Heq3]; constructor.
   by rewrite Heq1 Heq3.
 Qed.
-Instance models_flip_proper : Proper (sub_module ==> flip genv_leq ==> flip impl) genv_compat.
+Instance genv_compat_flip_proper : Proper (sub_module ==> flip genv_leq ==> flip impl) genv_compat.
 Proof. solve_proper. Qed.
 
 Theorem subModuleModels a b σ : b ⊧ σ -> sub_module a b -> a ⊧ σ.
