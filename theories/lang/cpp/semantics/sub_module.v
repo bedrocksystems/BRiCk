@@ -19,6 +19,11 @@ Proof.
   exfalso; auto.
 Qed.
 
+Lemma require_eq_success `{EqDecision T} {U} {a b : T} {c} {d : U}:
+    require_eq a b c = Some d ->
+    a = b /\ c = Some d.
+Proof. unfold require_eq. by case_decide. Qed.
+
 Definition ObjValue_le (a b : ObjValue) : option unit :=
   match a , b with
   | Ovar t oe , Ovar t' oe' =>
@@ -117,55 +122,56 @@ Definition GlobDecl_le (a b : GlobDecl) : option unit :=
 Definition GlobDecl_ler : relation GlobDecl := λ g1 g2, GlobDecl_le g1 g2 = Some ().
 Arguments GlobDecl_ler !_ _ /.
 
-Instance GlobDecl_le_refl : Reflexive GlobDecl_ler.
-Proof.
-  intros []; rewrite /= ?require_eq_refl; eauto.
-  destruct o => //.
-  by rewrite !require_eq_refl.
-Qed.
+Section GlobDecl_ler.
+  Local Instance GlobDecl_le_refl : Reflexive GlobDecl_ler.
+  Proof.
+    intros []; rewrite /= ?require_eq_refl; eauto.
+    destruct o => //.
+    by rewrite !require_eq_refl.
+  Qed.
 
-Lemma require_eq_success `{EqDecision T} {U} {a b : T} {c} {d : U}:
-    require_eq a b c = Some d ->
-    a = b /\ c = Some d.
-Proof. unfold require_eq. by case_decide. Qed.
-
-Instance GlobDecl_le_trans : Transitive GlobDecl_ler.
-Proof.
-  intros a b c.
-  destruct a, b; simpl => //; destruct c; simpl => //; intros;
-    repeat (match goal with
-             | H : require_eq _ _ _ = _ |- _ =>
-                eapply require_eq_success in H; destruct H; subst
-             | H : context [ match ?X with _ => _ end ] |- _ =>
-               lazymatch X with
-               | context [ match _ with _ => _ end ] => fail
-               | _ =>
-                 destruct X eqn:? => //
-               end
-             end || rewrite ?require_eq_refl //).
-Qed.
-Instance: PreOrder GlobDecl_ler := {}.
-
-Instance ObjValue_le_refl : Reflexive ObjValue_ler.
-Proof.
-  intros []; rewrite /= ?require_eq_refl;
-    case_match; rewrite ?require_eq_refl //.
-Qed.
-
-Instance ObjValue_le_trans : Transitive ObjValue_ler.
-Proof.
-  intros a b c.
-  destruct a, b => //=;
-    destruct c => //=; intros;
+  Local Instance GlobDecl_le_trans : Transitive GlobDecl_ler.
+  Proof.
+    intros a b c.
+    destruct a, b; simpl => //; destruct c; simpl => //; intros;
       repeat (match goal with
-             | H : require_eq _ _ _ = _ |- _ =>
-               eapply require_eq_success in H; destruct H; subst
-             | H : context [ match ?X with _ => _ end ] |- _ =>
-               destruct X => //
-             | H : _ = _ |- _ => rewrite H
-             end || rewrite ?require_eq_refl //).
-Qed.
-Instance: PreOrder ObjValue_ler := {}.
+              | H : require_eq _ _ _ = _ |- _ =>
+                  eapply require_eq_success in H; destruct H; subst
+              | H : context [ match ?X with _ => _ end ] |- _ =>
+                lazymatch X with
+                | context [ match _ with _ => _ end ] => fail
+                | _ =>
+                  destruct X eqn:? => //
+                end
+              end || rewrite ?require_eq_refl //).
+  Qed.
+
+  Global Instance: PreOrder GlobDecl_ler := {}.
+End GlobDecl_ler.
+
+Section ObjValue_ler.
+  Local Instance ObjValue_le_refl : Reflexive ObjValue_ler.
+  Proof.
+    intros []; rewrite /= ?require_eq_refl;
+      case_match; rewrite ?require_eq_refl //.
+  Qed.
+
+  Local Instance ObjValue_le_trans : Transitive ObjValue_ler.
+  Proof.
+    intros a b c.
+    destruct a, b => //=;
+      destruct c => //=; intros;
+        repeat (match goal with
+              | H : require_eq _ _ _ = _ |- _ =>
+                eapply require_eq_success in H; destruct H; subst
+              | H : context [ match ?X with _ => _ end ] |- _ =>
+                destruct X => //
+              | H : _ = _ |- _ => rewrite H
+              end || rewrite ?require_eq_refl //).
+  Qed.
+
+  Global Instance: PreOrder ObjValue_ler := {}.
+End ObjValue_ler.
 
 (* TODO: consider replacing [type_table_le]'s definition with [type_table_le_alt] *)
 Definition type_table_le_alt : type_table -> type_table -> Prop :=
@@ -300,13 +306,15 @@ Record sub_module (a b : translation_unit) : Prop :=
 ; syms_compat : syms_table_le a.(symbols) b.(symbols)
 ; byte_order_compat : a.(byte_order) = b.(byte_order) }.
 
-Instance: Reflexive sub_module.
-Proof. done. Qed.
+Section sub_module.
+  Local Instance: Reflexive sub_module.
+  Proof. done. Qed.
 
-Instance: Transitive sub_module.
-Proof. intros ??? [] []; split; by etrans. Qed.
+  Local Instance: Transitive sub_module.
+  Proof. intros ??? [] []; split; by etrans. Qed.
 
-Instance: PreOrder sub_module := {}.
+  Global Instance: PreOrder sub_module := {}.
+End sub_module.
 Instance: RewriteRelation sub_module := {}.
 
 Instance byte_order_proper : Proper (sub_module ==> eq) byte_order.
