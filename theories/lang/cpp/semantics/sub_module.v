@@ -205,7 +205,7 @@ Qed.
 Lemma syms_table_le_equiv te1 te2 : syms_table_le te1 te2 <-> syms_table_le_alt te1 te2.
 Proof.
   apply iff_forall => i; unfold option_relation.
-  (* XXX bug workaround *)
+  (* XXX TC inference produces different results here. Hacky fix, as above. *)
   unfold obj_name, symbol_table.
   repeat case_match; naive_solver.
 Qed.
