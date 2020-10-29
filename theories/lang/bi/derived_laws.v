@@ -107,13 +107,21 @@ Section only_provable_derived_laws.
   Import only_provable.
   Context {PROP : bi}.
 
-  Lemma sep_unique_exist_only_provable {A} (P Q R : A → PROP) :
-    (∀ a1 a2, Q a1 ⊢ R a2 -∗ [| a1 = a2 |]) →
+  Lemma exist_sep_only_provable {A} (Φ Ψ : A → PROP)
+    (Hag : ∀ a1 a2, Φ a1 ⊢ Ψ a2 -∗[| a1 = a2 |]) :
+    (∃ a, Φ a ∗ Ψ a) ⊣⊢ (∃ a, Φ a) ∗ (∃ a, Ψ a).
+  Proof.
+    apply exist_sep.
+    iIntros (??) "Q R". by iDestruct (Hag with "Q R") as %->.
+  Qed.
+
+  Lemma sep_unique_exist_only_provable {A} (P Q R : A → PROP)
+    (Hag : ∀ a1 a2, Q a1 ⊢ R a2 -∗ [| a1 = a2 |]) :
     (∀ a, P a ⊣⊢ Q a ∗ R a) →
     (∃ a, P a) ⊣⊢ (∃ a, Q a) ∗ (∃ a, R a).
   Proof.
-    intros HPQ. apply sep_unique_exist.
-    iIntros (??) "Q R". by iDestruct (HPQ with "Q R") as %->.
+    apply sep_unique_exist.
+    iIntros (??) "Q R". by iDestruct (Hag with "Q R") as %->.
   Qed.
 End only_provable_derived_laws.
 End bi.
