@@ -456,7 +456,7 @@ Module SimpleCPP.
       byte_ a rv1 q1 |-- byte_ a rv2 q2 -* ⌜rv1 = rv2⌝.
     Proof.
       apply bi.wand_intro_r.
-      rewrite/byte_ -own_op own_valid singleton_op.
+      rewrite /byte_ -own_op own_valid singleton_op.
       rewrite uPred.discrete_valid singleton_valid.
       by f_equiv=>/pair_valid [] _ /= /agree_op_invL'.
     Qed.
@@ -505,7 +505,7 @@ Module SimpleCPP.
       length vs1 = length vs2 →
       bytes a vs1 q1 ⊢ bytes a vs2 q2 -∗ ⌜vs1 = vs2⌝.
     Proof.
-      revert a vs2. induction vs1 as [ |v vs1 IH]=>a vs2.
+      revert a vs2. induction vs1 as [ |v vs1 IH]=> a vs2.
       { intros ->%symmetry%nil_length_inv. auto. }
       destruct vs2 as [ |v' vs2]; first done. intros [= Hlen].
       rewrite !bytes_cons.
