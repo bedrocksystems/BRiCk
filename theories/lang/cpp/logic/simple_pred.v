@@ -617,11 +617,10 @@ Module SimpleCPP.
     Instance tptsto_timeless {σ} ty q p v : Timeless (@tptsto σ ty q p v) := _.
 
     Theorem tptsto_agree σ t q1 q2 p v1 v2 :
-        @tptsto σ t q1 p v1 ** @tptsto σ t q2 p v2 |-- [| v1 = v2 |].
+        @tptsto σ t q1 p v1 |-- @tptsto σ t q2 p v2 -* [| v1 = v2 |].
     Proof.
-      iDestruct 1 as "[H1 H2]".
-      iDestruct "H1" as (Hnn1 ma1) "(Hp1 & Hv1)".
-      iDestruct "H2" as (Hnn2 ma2) "(Hp2 & Hv2)".
+      iDestruct 1 as (Hnn1 ma1) "(Hp1 & Hv1)".
+      iDestruct 1 as (Hnn2 ma2) "(Hp2 & Hv2)".
       iDestruct (mem_inj_own_agree with "Hp1 Hp2") as "->".
       case: ma2=>[a| ]; last by iDestruct (val_agree with "Hv1 Hv2") as %->.
       iDestruct "Hv1" as (vs1) "[He1 [Hb1 _]]".

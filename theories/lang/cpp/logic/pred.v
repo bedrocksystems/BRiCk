@@ -145,10 +145,8 @@ Module Type CPP_LOGIC (Import CC : CPP_LOGIC_CLASS).
       forall {σ} ty a v, Fractional (λ q, @tptsto σ ty q a v).
     Global Existing Instances tptsto_timeless tptsto_fractional.
 
-(* not currently sound wrt [simple_pred]
-    Axiom tptsto_agree : forall {σ} ty q1 q2 a v1 v2,
-      @tptsto σ ty q1 a v1 ** @tptsto σ ty q2 a v2 |-- [| v1 = v2 |].
-*)
+    Axiom tptsto_agree : forall {σ} t q1 q2 p v1 v2,
+      @tptsto σ t q1 p v1 |-- @tptsto σ t q2 p v2 -* [| v1 = v2 |].
 
 (* this isn't actually needed
     Axiom tptsto_valid_ptr : forall σ t q a v,
