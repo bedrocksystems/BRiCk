@@ -56,14 +56,39 @@ Section derived_laws.
     (∃ a, Φ a ∗ Ψ a) ⊣⊢ (∃ a, Φ a) ∗ (∃ a, Ψ a).
   Proof. apply (anti_symm (⊢)); eauto using exist_sep_1, exist_sep_2. Qed.
 
-  Lemma sep_unique_exist {A} (P Q R : A → PROP) :
-    (∀ a1 a2, Q a1 ⊢ R a2 -∗ ⌜ a1 = a2 ⌝) →
-    (∀ a, P a ⊣⊢ Q a ∗ R a) →
-    (∃ a, P a) ⊣⊢ (∃ a, Q a) ∗ (∃ a, R a).
+  Lemma exist_and_1 {A} (Φ Ψ : A → PROP) : (∃ a, Φ a ∧ Ψ a) ⊢ (∃ a, Φ a) ∧ (∃ a, Ψ a).
   Proof.
-    intros Hag HPQ; setoid_rewrite HPQ.
-    apply exist_sep, Hag.
+    rewrite bi.and_exist_r. f_equiv=>a. f_equiv.
+    apply bi.exist_intro.
   Qed.
+
+  Lemma exist_and_2 {A} (Φ Ψ : A → PROP)
+    (Hag : ∀ a1 a2, Φ a1 ∧ Ψ a2 -∗ ⌜a1 = a2⌝) :
+    (∃ a, Φ a) ∧ (∃ a, Ψ a) ⊢ (∃ a, Φ a ∧ Ψ a).
+  Proof.
+    rewrite bi.and_exist_l. f_equiv=> a1.
+    rewrite bi.and_exist_r.
+    iDestruct 1 as (a2) "H".
+    iSplit; last by iDestruct "H" as "[_ $]".
+    iDestruct (Hag with "H") as %-> => //. by iDestruct "H" as "[$ _]".
+  Qed.
+
+  Lemma exist_and {A} (Φ Ψ : A → PROP)
+    (Hag : ∀ a1 a2, Φ a1 ∧ Ψ a2 ⊢ ⌜a1 = a2⌝) :
+    (∃ a, Φ a ∧ Ψ a) ⊣⊢ (∃ a, Φ a) ∧ (∃ a, Ψ a).
+  Proof. apply (anti_symm (⊢)); eauto using exist_and_1, exist_and_2. Qed.
+
+  Lemma sep_unique_exist {A} (P Q R : A → PROP)
+    (Hag : ∀ a1 a2, Q a1 ⊢ R a2 -∗ ⌜ a1 = a2 ⌝)
+    (HPQ : ∀ a, P a ⊣⊢ Q a ∗ R a) :
+    (∃ a, P a) ⊣⊢ (∃ a, Q a) ∗ (∃ a, R a).
+  Proof. setoid_rewrite HPQ. apply exist_sep, Hag. Qed.
+
+  Lemma and_unique_exist {A} (P Q R : A → PROP)
+    (Hag : ∀ a1 a2, Q a1 ∧ R a2 ⊢ ⌜ a1 = a2 ⌝)
+    (HPQ : ∀ a, P a ⊣⊢ Q a ∧ R a) :
+    (∃ a, P a) ⊣⊢ (∃ a, Q a) ∧ (∃ a, R a).
+  Proof. setoid_rewrite HPQ. apply exist_and, Hag. Qed.
 
   (* See https://gitlab.mpi-sws.org/iris/iris/-/merge_requests/556 *)
   Lemma intuitionistic_sep_dup (P : PROP) `{!Persistent P, !Affine P} :
@@ -108,11 +133,19 @@ Section only_provable_derived_laws.
   Context {PROP : bi}.
 
   Lemma exist_sep_only_provable {A} (Φ Ψ : A → PROP)
-    (Hag : ∀ a1 a2, Φ a1 ⊢ Ψ a2 -∗[| a1 = a2 |]) :
+    (Hag : ∀ a1 a2, Φ a1 ⊢ Ψ a2 -∗ [| a1 = a2 |]) :
     (∃ a, Φ a ∗ Ψ a) ⊣⊢ (∃ a, Φ a) ∗ (∃ a, Ψ a).
   Proof.
     apply exist_sep.
     iIntros (??) "Q R". by iDestruct (Hag with "Q R") as %->.
+  Qed.
+
+  Lemma exist_and_only_provable {A} (Φ Ψ : A → PROP)
+    (Hag : ∀ a1 a2, Φ a1 ∧ Ψ a2 ⊢ [| a1 = a2 |]) :
+    (∃ a, Φ a ∧ Ψ a) ⊣⊢ (∃ a, Φ a) ∧ (∃ a, Ψ a).
+  Proof.
+    apply exist_and.
+    iIntros (??) "Q". by iDestruct (Hag with "Q") as %->.
   Qed.
 
   Lemma sep_unique_exist_only_provable {A} (P Q R : A → PROP)
@@ -122,6 +155,29 @@ Section only_provable_derived_laws.
   Proof.
     apply sep_unique_exist.
     iIntros (??) "Q R". by iDestruct (Hag with "Q R") as %->.
+  Qed.
+
+  Lemma and_unique_exist_only_provable {A} (P Q R : A → PROP)
+    (Hag : ∀ a1 a2, Q a1 ∧ R a2 ⊢ [| a1 = a2 |]) :
+    (∀ a, P a ⊣⊢ Q a ∧ R a) →
+    (∃ a, P a) ⊣⊢ (∃ a, Q a) ∧ (∃ a, R a).
+  Proof.
+    apply and_unique_exist.
+    iIntros (??) "Q". by iDestruct (Hag with "Q") as %->.
+  Qed.
+
+  Lemma and_exist_agree {A : Type} (Θ Φ Ψ : A → PROP)
+      `{∀ a, Affine (Θ a), ∀ a, Persistent (Θ a)} :
+    (∀ a1 a2, Θ a1 ∗ Θ a2 ⊢ [| a1 = a2 |]) →
+    (∃ a, Θ a ∗ Φ a) ∧ (∃ a, Θ a ∗ Ψ a) ⊣⊢ ∃ a, Θ a ∗ (Φ a ∧ Ψ a).
+  Proof.
+    intros Hagree. apply (anti_symm _).
+    - rewrite bi.and_exist_l. iDestruct 1 as (a) "H". iExists a.
+      iAssert (Θ a) as "#Ha"; first by iDestruct "H" as "[_ [$ _]]".
+      iFrame "Ha". iSplit; last by iDestruct "H" as "[_ [_ $]]".
+      iDestruct "H" as "[H _]". iDestruct "H" as (a') "[Hx' ?]".
+      by iDestruct (Hagree a a' with "[$]") as %->.
+    - rewrite -exist_and_1. f_equiv=>a. iDestruct 1 as "[$ $]".
   Qed.
 End only_provable_derived_laws.
 End bi.
