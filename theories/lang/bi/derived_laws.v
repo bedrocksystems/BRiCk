@@ -53,11 +53,21 @@ Section derived_laws.
     rewrite Hag; iFrame.
   Qed.
 
-  Lemma sep_persistent_dist {P Q R : PROP} `{!Persistent P} `{!Absorbing P} :
+  (* See https://gitlab.mpi-sws.org/iris/iris/-/merge_requests/556 *)
+  Lemma intuitionistic_sep_dup (P : PROP) `{!Persistent P} `{!Affine P} :
+    P ⊣⊢ P ∗ P.
+  Proof.
+    apply (anti_symm (⊢)).
+    by rewrite -{1}(bi.intuitionistic_intuitionistically P)
+      bi.intuitionistically_sep_dup bi.intuitionistically_elim.
+    by rewrite {1}(affine P) left_id.
+  Qed.
+
+  Lemma sep_persistent_dist {P Q R : PROP} `{!Persistent P} `{!Affine P} :
     P ∗ Q ∗ R ⊣⊢
     (P ∗ Q) ∗ (P ∗ R).
   Proof.
-    rewrite {1}(bi.persistent_sep_dup P).
+    rewrite {1}(intuitionistic_sep_dup P).
     iSplit; iIntros "[[$$] [$$]]".
   Qed.
 End derived_laws.
