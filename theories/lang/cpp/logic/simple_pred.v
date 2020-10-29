@@ -638,16 +638,16 @@ Module SimpleCPP.
     Proof.
       rewrite /tptsto; apply fractional_sep; first by apply _.
       rewrite /Fractional; intros q1 q2.
-      apply sep_unique_exist_only_provable => [oa1 oa2|oa]. {
+      apply bi.sep_unique_exist_only_provable => [oa1 oa2|oa]. {
         iIntros "[A1 _] [A2 _]"; iApply (mem_inj_own_agree with "A1 A2").
       }
-      rewrite -persistent_sep_distr_l; f_equiv.
+      rewrite -bi.persistent_sep_distr_l; f_equiv.
       destruct oa; last by rewrite fractional.
-      apply sep_unique_exist => [vs1 vs2|vs]. {
+      apply bi.sep_unique_exist => [vs1 vs2|vs]. {
         iIntros "[En1 [By1 _]] [En2 [By2 _]]".
         iDestruct (encodes_bytes_agree with "[$En1 $By1] [$En2 $By2]") as "[$ _]".
       }
-      rewrite -persistent_sep_distr_l !fractional.
+      rewrite -bi.persistent_sep_distr_l !fractional.
       iSplit; iIntros "[$ [[$$] [$$]]]".
     Qed.
 
