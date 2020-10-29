@@ -188,8 +188,11 @@ Module SimpleCPP.
       Lemma length_cptr a : length (cptr a) = POINTER_BYTES.
       Proof. by rewrite /cptr length_Z_to_bytes. Qed.
 
+      Lemma bytesNat_pos b : bytesNat b > 0.
+      Proof. by case: b =>/=; lia. Qed.
+
       Lemma bytesNat_nnonnull b : bytesNat b <> 0.
-      Proof. by destruct b. Qed.
+      Proof. have := bytesNat_pos b. lia. Qed.
       Local Hint Resolve bytesNat_nnonnull : core.
 
       Lemma bytesNat_nnonnull' b : bytesNat b = S (pred (bytesNat b)).
@@ -333,7 +336,7 @@ Module SimpleCPP.
           | Tfunction _ _ | Treference _ | Trv_reference _ =>
             POINTER_BYTES
 
-          | _ => 0	(* dummy *)
+          | _ => 1	(* dummy for absurd case, but useful for length_encodes_pos. *)
           end.
       Proof.
         rewrite /pure_encodes => H.
@@ -342,6 +345,15 @@ Module SimpleCPP.
           repeat case_decide => //;
            simplify_eq; eauto.
       Qed.
+
+      Lemma length_encodes_pos t v vs :
+        pure_encodes t v vs ->
+        length vs > 0.
+      Proof.
+        move=> /length_encodes ->. have ?: 1 > 0 by exact: le_n.
+        repeat case_match; by [ | exact: bytesNat_pos].
+      Qed.
+
       Global Instance Inj_aptr: Inj eq eq aptr.
       Proof.
         rewrite /aptr => p1 p2.
@@ -436,6 +448,14 @@ Module SimpleCPP.
       by f_equiv=>/pair_valid [] _ /= /agree_op_invL'.
     Qed.
 
+    Lemma val_frac_valid a v q :
+      val_ a v q |-- ✓ q.
+    Proof. (* XXX same as byte_frac_valid. *)
+      rewrite /val_ /ghost_mem_own.
+      rewrite own_valid !uPred.discrete_valid singleton_valid.
+      by f_equiv=>/pair_valid [? _].
+    Qed.
+
     Instance val_fractional a rv : Fractional (val_ a rv).
     Proof.
       unfold val_. red.
@@ -459,6 +479,14 @@ Module SimpleCPP.
       rewrite /byte_ -own_op own_valid singleton_op.
       rewrite uPred.discrete_valid singleton_valid.
       by f_equiv=>/pair_valid [] _ /= /agree_op_invL'.
+    Qed.
+
+    Lemma byte_frac_valid a rv q :
+      byte_ a rv q |-- ✓ q.
+    Proof.
+      rewrite /byte_ /heap_own.
+      rewrite own_valid !uPred.discrete_valid singleton_valid.
+      by f_equiv=>/pair_valid [? _].
     Qed.
 
     Instance: Fractional (byte_ a rv).
@@ -512,6 +540,15 @@ Module SimpleCPP.
       iIntros "[Hv Hvs1] [Hv' Hvs2] /=".
       iDestruct (byte_agree with "Hv Hv'") as %->.
       by iDestruct (IH _ _ Hlen with "Hvs1 Hvs2") as %->.
+    Qed.
+
+    Lemma bytes_frac_valid a vs q :
+      length vs > 0 ->
+      bytes a vs q |-- ✓ q.
+    Proof.
+      rewrite /bytes. case: vs => [ |v vs _] /=; first by lia.
+      rewrite byte_frac_valid.
+      apply: bi.sep_elim_l.
     Qed.
 
     Instance bytes_timeless a rv q : Timeless (bytes a rv q) := _.
@@ -615,6 +652,14 @@ Module SimpleCPP.
     Qed.
 
     Instance tptsto_timeless {σ} ty q p v : Timeless (@tptsto σ ty q p v) := _.
+
+    Theorem tptsto_frac_valid {σ} ty q p v : @tptsto σ ty q p v |-- ✓ q.
+    Proof.
+      iDestruct 1 as "[_ T]".
+      iDestruct "T" as ([a| ]) "[_ T]"; last by iApply val_frac_valid.
+      iDestruct "T" as (vs Hen%length_encodes_pos) "[B _]".
+      by iApply (bytes_frac_valid with "B").
+    Qed.
 
     Theorem tptsto_agree σ t q1 q2 p v1 v2 :
         @tptsto σ t q1 p v1 |-- @tptsto σ t q2 p v2 -* [| v1 = v2 |].
