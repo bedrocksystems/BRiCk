@@ -267,8 +267,9 @@ Qed.
 Instance genv_compat_flip_proper : Proper (sub_module ==> flip genv_leq ==> flip impl) genv_compat.
 Proof. solve_proper. Qed.
 
+(* XXX rename/deprecate? *)
 Theorem subModuleModels a b σ : b ⊧ σ -> sub_module a b -> a ⊧ σ.
-Proof. by intros [->] ->. Qed.
+Proof. by intros ? ->. Qed.
 
 Definition max_val (bits : bitsize) (sgn : signed) : Z :=
   match bits , sgn with
