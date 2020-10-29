@@ -77,6 +77,36 @@ Section own_properties.
     iMod (own_alloc a) as (γ) "H"; first done.
     iModIntro. iApply HQ. by iFrame.
   Qed.
+
+  Lemma own_op γ a1 a2 : own γ (a1 ⋅ a2) -|- own γ a1 ** own γ a2.
+  Proof. by apply own.own_op. Qed.
+  Lemma own_mono γ a1 a2 : a2 ≼ a1 → own γ a1 |-- own γ a2.
+  Proof. by apply own.own_mono. Qed.
+
+  #[global] Instance own_mono' γ : Proper (flip (≼) ==> (⊢)) (@own _ Σ A _ γ) := _.
+  #[global] Instance own_timeless γ a : Discrete a → Timeless (own γ a) := _.
+  #[global] Instance own_core_persistent γ a : CoreId a → Persistent (own γ a) := _.
+
+  Lemma own_valid γ a : own γ a |-- ✓ a.
+  Proof. by apply own.own_valid. Qed.
+  Lemma own_valid_2 γ a1 a2 : own γ a1 -∗ own γ a2 -* ✓ (a1 ⋅ a2).
+  Proof. by apply own.own_valid_2. Qed.
+  Lemma own_valid_3 γ a1 a2 a3 :
+    own γ a1 -∗ own γ a2 -∗ own γ a3 -* ✓ (a1 ⋅ a2 ⋅ a3).
+  Proof. by apply own.own_valid_3. Qed.
+  Lemma own_valid_r γ a : own γ a |-- own γ a ** ✓ a.
+  Proof. by apply own.own_valid_r. Qed.
+  Lemma own_valid_l γ a : own γ a |-- ✓ a ** own γ a.
+  Proof. by apply own.own_valid_l. Qed.
+
+  Lemma own_update γ a a' : a ~~> a' → own γ a |-- |==> own γ a'.
+  Proof. by apply own.own_update. Qed.
+  Lemma own_update_2 γ a1 a2 a' :
+    a1 ⋅ a2 ~~> a' → own γ a1 |-- own γ a2 -* |==> own γ a'.
+  Proof. by apply own.own_update_2. Qed.
+  Lemma own_update_3 γ a1 a2 a3 a' :
+    a1 ⋅ a2 ⋅ a3 ~~> a' → own γ a1 |-- own γ a2 -* own γ a3 -* |==> own γ a'.
+  Proof. by apply own.own_update_3. Qed.
 End own_properties.
 
 (* TODO: more to be ported *)
@@ -173,5 +203,5 @@ Section cinv_properties.
                           (|> P ** cinv_own γ p **
                           (Forall (E' : coPset),
                             ((|> P \\// cinv_own γ 1) ={E',↑N ∪ E'}=∗ True)))).
-  Proof. apply cinv_acc_strong. Qed.
+  Proof. apply cancelable_invariants.cinv_acc_strong. Qed.
 End cinv_properties.
