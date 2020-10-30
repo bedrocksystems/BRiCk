@@ -174,7 +174,7 @@ Section only_provable_derived_laws.
     intros Hag.
     apply and_unique_exist => [a1 a2 | a];
       last by rewrite persistent_sep_and_distr_l.
-    iIntros "H". iApply Hag. iApply persistent_and_sep_1; iSplit.
+    iIntros "H". iApply Hag. iApply bi.persistent_and_sep_1; iSplit.
     - by iDestruct "H" as "[[$ _] _]".
     - by iDestruct "H" as "[_ [$ _]]".
   Qed.
