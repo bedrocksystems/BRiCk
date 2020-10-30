@@ -576,15 +576,3 @@ Arguments cptr {_ Σ resolve} _ : rename.
 
 Instance Persistent_spec `{Σ:cpp_logic ti} {resolve:genv} nm s :
   Persistent (_at (Σ:=Σ) (_global (resolve:=resolve) nm) (cptr (resolve:=resolve) s)) := _.
-
-#[deprecated(since="20200728", note="Use the constructor tactic instead")]
-Notation Rep_lequiv := Rep_ext (only parsing).
-
-#[deprecated(since="20200728", note="Use _offsetR_mono or the f_equiv tactic instead")]
-Notation Proper__offsetR_entails := _offsetR_mono_old (only parsing).
-
-#[deprecated(since="20200728", note="Use primR_mono or the f_equiv tactic instead")]
-Notation Proper_primR_entails := primR_mono (only parsing).
-
-#[deprecated(since="20200728", note="Use refR_eq instead")]
-Notation tref_eq := refR_eq (only parsing).
