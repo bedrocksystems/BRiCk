@@ -63,19 +63,18 @@ Section derived_laws.
   Qed.
 
   Lemma exist_and_2 {A} (Φ Ψ : A → PROP)
-    (Hag : ∀ a1 a2, <absorb> Φ a1 ∧ <absorb> Ψ a2 -∗ ⌜a1 = a2⌝) :
+    (Hag : ∀ a1 a2, Φ a1 ∧ Ψ a2 ⊢ ⌜a1 = a2⌝) :
     (∃ a, Φ a) ∧ (∃ a, Ψ a) ⊢ (∃ a, Φ a ∧ Ψ a).
   Proof.
     rewrite bi.and_exist_l. f_equiv=> a1.
     rewrite bi.and_exist_r.
     iDestruct 1 as (a2) "H".
     iSplit; last by iDestruct "H" as "[_ $]".
-    iDestruct (Hag with "[H]") as %->; last by iDestruct "H" as "[$ _]".
-    iSplit; iModIntro; [ by iDestruct "H" as "[$ _]" | by iDestruct "H" as "[_ $]" ].
+    by iDestruct (Hag with "[H]") as %->; last iDestruct "H" as "[$ _]".
   Qed.
 
   Lemma exist_and {A} (Φ Ψ : A → PROP)
-    (Hag : ∀ a1 a2, <absorb> Φ a1 ∧ <absorb> Ψ a2 -∗ ⌜a1 = a2⌝) :
+    (Hag : ∀ a1 a2, Φ a1 ∧ Ψ a2 ⊢ ⌜a1 = a2⌝) :
     (∃ a, Φ a ∧ Ψ a) ⊣⊢ (∃ a, Φ a) ∧ (∃ a, Ψ a).
   Proof. apply (anti_symm (⊢)); eauto using exist_and_1, exist_and_2. Qed.
 
@@ -86,7 +85,7 @@ Section derived_laws.
   Proof. setoid_rewrite HPQ. apply exist_sep, Hag. Qed.
 
   Lemma and_unique_exist {A} (P Q R : A → PROP)
-    (Hag : ∀ a1 a2, <absorb> Q a1 ∧ <absorb> R a2 -∗ ⌜ a1 = a2 ⌝)
+    (Hag : ∀ a1 a2, Q a1 ∧ R a2 ⊢ ⌜ a1 = a2 ⌝)
     (HPQ : ∀ a, P a ⊣⊢ Q a ∧ R a) :
     (∃ a, P a) ⊣⊢ (∃ a, Q a) ∧ (∃ a, R a).
   Proof. setoid_rewrite HPQ. apply exist_and, Hag. Qed.
@@ -142,7 +141,7 @@ Section only_provable_derived_laws.
   Qed.
 
   Lemma exist_and_only_provable {A} (Φ Ψ : A → PROP)
-    (Hag : ∀ a1 a2, <absorb> Φ a1 ∧ <absorb> Ψ a2 ⊢ [| a1 = a2 |]) :
+    (Hag : ∀ a1 a2, Φ a1 ∧ Ψ a2 ⊢ [| a1 = a2 |]) :
     (∃ a, Φ a ∧ Ψ a) ⊣⊢ (∃ a, Φ a) ∧ (∃ a, Ψ a).
   Proof.
     apply exist_and.
@@ -159,7 +158,7 @@ Section only_provable_derived_laws.
   Qed.
 
   Lemma and_unique_exist_only_provable {A} (P Q R : A → PROP)
-    (Hag : ∀ a1 a2, <absorb> Q a1 ∧ <absorb> R a2 ⊢ [| a1 = a2 |]) :
+    (Hag : ∀ a1 a2, Q a1 ∧ R a2 ⊢ [| a1 = a2 |]) :
     (∀ a, P a ⊣⊢ Q a ∧ R a) →
     (∃ a, P a) ⊣⊢ (∃ a, Q a) ∧ (∃ a, R a).
   Proof.
@@ -167,32 +166,31 @@ Section only_provable_derived_laws.
     iIntros (??) "Q". by iDestruct (Hag with "Q") as %->.
   Qed.
 
-  Lemma and_exist_absorb_agree {A : Type} (Θ Φ Ψ : A → PROP)
+  Lemma exist_and_absorb_agree {A : Type} (Θ Φ Ψ : A → PROP)
       `{∀ a, Affine (Θ a), ∀ a, Persistent (Θ a)} :
     (∀ a1 a2, <absorb> Θ a1 ∗ <absorb> Θ a2 ⊢ [| a1 = a2 |]) →
-    (∃ a, Θ a ∗ Φ a) ∧ (∃ a, Θ a ∗ Ψ a) ⊣⊢ ∃ a, Θ a ∗ (Φ a ∧ Ψ a).
+    (∃ a, Θ a ∗ (Φ a ∧ Ψ a)) ⊣⊢ (∃ a, Θ a ∗ Φ a) ∧ (∃ a, Θ a ∗ Ψ a).
   Proof.
     intros Hag.
-    symmetry.
     apply and_unique_exist_only_provable => [a1 a2 | a];
       last by rewrite persistent_sep_and_distr_l.
     iIntros "H". iApply Hag. iApply persistent_and_sep_1; iSplit.
-    - by iDestruct "H" as "[>[$ _] _]".
-    - by iDestruct "H" as "[_ >[$ _]]".
+    - by iDestruct "H" as "[[$ _] _]".
+    - by iDestruct "H" as "[_ [$ _]]".
   Qed.
 
-  Lemma and_exist_agree {A : Type} (Θ Φ Ψ : A → PROP)
-      `{∀ a, Affine (Θ a), ∀ a, Persistent (Θ a)} :
-    (∀ a1 a2, Θ a1 ∗ Θ a2 ⊢ [| a1 = a2 |]) →
-    (∃ a, Θ a ∗ Φ a) ∧ (∃ a, Θ a ∗ Ψ a) ⊣⊢ ∃ a, Θ a ∗ (Φ a ∧ Ψ a).
+  Lemma exist_and_agree {A : Type} (Θ Φ Ψ : A → PROP)
+      `{∀ a, Affine (Θ a), ∀ a, Persistent (Θ a)}
+    (Hagree : ∀ a1 a2, Θ a1 ∗ Θ a2 ⊢ [| a1 = a2 |]) :
+    (∃ a, Θ a ∗ (Φ a ∧ Ψ a)) ⊣⊢ (∃ a, Θ a ∗ Φ a) ∧ (∃ a, Θ a ∗ Ψ a).
   Proof.
-    intros Hagree. apply (anti_symm _).
-    - rewrite bi.and_exist_l. iDestruct 1 as (a) "H". iExists a.
-      iAssert (Θ a) as "#Ha"; first by iDestruct "H" as "[_ [$ _]]".
-      iFrame "Ha". iSplit; last by iDestruct "H" as "[_ [_ $]]".
-      iDestruct "H" as "[H _]". iDestruct "H" as (a') "[Hx' ?]".
-      by iDestruct (Hagree a a' with "[$]") as %->.
+    apply (anti_symm _).
     - rewrite -exist_and_1. f_equiv=>a. iDestruct 1 as "[$ $]".
+    - rewrite and_exist_l. f_equiv=> a2. iIntros "H".
+      iAssert (Θ a2) as "#Ha"; first by iDestruct "H" as "[_ [$ _]]".
+      iFrame "Ha". iSplit; last by iDestruct "H" as "[_ [_ $]]".
+      rewrite and_exist_r. iDestruct "H" as (a1) "[[Ha2 R] _]".
+      by iDestruct (Hagree a1 a2 with "[$Ha2]") as "->".
   Qed.
 End only_provable_derived_laws.
 End bi.
