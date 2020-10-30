@@ -9,6 +9,7 @@
 
 # Utility modules
 theories/lang/prelude/base.v
+theories/lang/prelude/notations.v
 theories/lang/prelude/bytestring.v
 theories/lang/prelude/avl.v
 theories/lang/bi/only_provable.v
