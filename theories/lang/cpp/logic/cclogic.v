@@ -58,8 +58,6 @@ Instance: Params (@cinv) 6 := {}.
 (* the names of invariants *)
 Definition iname : Set := namespace.
 
-Bind Scope string_scope with iname.
-
 (* TODO: more to be ported *)
 Section own_properties.
   Context `{Σ : cpp_logic, !inG Σ A}.
