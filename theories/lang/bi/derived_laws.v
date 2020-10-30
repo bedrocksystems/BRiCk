@@ -168,11 +168,11 @@ Section only_provable_derived_laws.
 
   Lemma exist_and_absorb_agree {A : Type} (Θ Φ Ψ : A → PROP)
       `{∀ a, Affine (Θ a), ∀ a, Persistent (Θ a)} :
-    (∀ a1 a2, <absorb> Θ a1 ∗ <absorb> Θ a2 ⊢ [| a1 = a2 |]) →
+    (∀ a1 a2, <absorb> Θ a1 ∗ <absorb> Θ a2 ⊢ ⌜ a1 = a2 ⌝) →
     (∃ a, Θ a ∗ (Φ a ∧ Ψ a)) ⊣⊢ (∃ a, Θ a ∗ Φ a) ∧ (∃ a, Θ a ∗ Ψ a).
   Proof.
     intros Hag.
-    apply and_unique_exist_only_provable => [a1 a2 | a];
+    apply and_unique_exist => [a1 a2 | a];
       last by rewrite persistent_sep_and_distr_l.
     iIntros "H". iApply Hag. iApply persistent_and_sep_1; iSplit.
     - by iDestruct "H" as "[[$ _] _]".
