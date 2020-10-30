@@ -56,6 +56,12 @@ Section derived_laws.
     (∃ a, Φ a ∗ Ψ a) ⊣⊢ (∃ a, Φ a) ∗ (∃ a, Ψ a).
   Proof. apply (anti_symm (⊢)); eauto using exist_sep_1, exist_sep_2. Qed.
 
+  Lemma sep_unique_exist {A} (P Q R : A → PROP)
+    (Hag : ∀ a1 a2, Q a1 ⊢ R a2 -∗ ⌜ a1 = a2 ⌝)
+    (HPQ : ∀ a, P a ⊣⊢ Q a ∗ R a) :
+    (∃ a, P a) ⊣⊢ (∃ a, Q a) ∗ (∃ a, R a).
+  Proof. setoid_rewrite HPQ. apply exist_sep, Hag. Qed.
+
   Lemma exist_and_1 {A} (Φ Ψ : A → PROP) : (∃ a, Φ a ∧ Ψ a) ⊢ (∃ a, Φ a) ∧ (∃ a, Ψ a).
   Proof.
     rewrite bi.and_exist_r. f_equiv=>a. f_equiv.
@@ -77,12 +83,6 @@ Section derived_laws.
     (Hag : ∀ a1 a2, Φ a1 ∧ Ψ a2 ⊢ ⌜a1 = a2⌝) :
     (∃ a, Φ a ∧ Ψ a) ⊣⊢ (∃ a, Φ a) ∧ (∃ a, Ψ a).
   Proof. apply (anti_symm (⊢)); eauto using exist_and_1, exist_and_2. Qed.
-
-  Lemma sep_unique_exist {A} (P Q R : A → PROP)
-    (Hag : ∀ a1 a2, Q a1 ⊢ R a2 -∗ ⌜ a1 = a2 ⌝)
-    (HPQ : ∀ a, P a ⊣⊢ Q a ∗ R a) :
-    (∃ a, P a) ⊣⊢ (∃ a, Q a) ∗ (∃ a, R a).
-  Proof. setoid_rewrite HPQ. apply exist_sep, Hag. Qed.
 
   Lemma and_unique_exist {A} (P Q R : A → PROP)
     (Hag : ∀ a1 a2, Q a1 ∧ R a2 ⊢ ⌜ a1 = a2 ⌝)
@@ -140,14 +140,6 @@ Section only_provable_derived_laws.
     iIntros (??) "Q R". by iDestruct (Hag with "Q R") as %->.
   Qed.
 
-  Lemma exist_and_only_provable {A} (Φ Ψ : A → PROP)
-    (Hag : ∀ a1 a2, Φ a1 ∧ Ψ a2 ⊢ [| a1 = a2 |]) :
-    (∃ a, Φ a ∧ Ψ a) ⊣⊢ (∃ a, Φ a) ∧ (∃ a, Ψ a).
-  Proof.
-    apply exist_and.
-    iIntros (??) "Q". by iDestruct (Hag with "Q") as %->.
-  Qed.
-
   Lemma sep_unique_exist_only_provable {A} (P Q R : A → PROP)
     (Hag : ∀ a1 a2, Q a1 ⊢ R a2 -∗ [| a1 = a2 |]) :
     (∀ a, P a ⊣⊢ Q a ∗ R a) →
@@ -155,6 +147,14 @@ Section only_provable_derived_laws.
   Proof.
     apply sep_unique_exist.
     iIntros (??) "Q R". by iDestruct (Hag with "Q R") as %->.
+  Qed.
+
+  Lemma exist_and_only_provable {A} (Φ Ψ : A → PROP)
+    (Hag : ∀ a1 a2, Φ a1 ∧ Ψ a2 ⊢ [| a1 = a2 |]) :
+    (∃ a, Φ a ∧ Ψ a) ⊣⊢ (∃ a, Φ a) ∧ (∃ a, Ψ a).
+  Proof.
+    apply exist_and.
+    iIntros (??) "Q". by iDestruct (Hag with "Q") as %->.
   Qed.
 
   Lemma and_unique_exist_only_provable {A} (P Q R : A → PROP)
