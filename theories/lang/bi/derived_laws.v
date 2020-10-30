@@ -23,15 +23,32 @@ Export iris.bi.bi.bi.
 Section derived_laws.
   Context {PROP : bi}.
 
+  Lemma exist_pure_eq_sep {A P} v:
+    P v ⊢@{PROP} ∃ x : A, ⌜ x = v ⌝ ∗ P x.
+  Proof. iIntros. iExists v; eauto. Qed.
+
   (* Upstream as [exist_exist], https://gitlab.mpi-sws.org/iris/iris/-/merge_requests/552 *)
   Lemma exist_exist {A B} (Φ : A → B → PROP) :
     (∃ a b, Φ a b) ⊣⊢ (∃ b a, Φ a b).
   Proof. iSplit; iDestruct 1 as (??) "H"; eauto. Qed.
 
+  Lemma exist_and_exist {A B P Q} :
+    (∃ (a : A), P a ∧ ∃ (b : B), Q a b) ⊣⊢@{PROP} ∃ b a, P a ∧ Q a b.
+  Proof. rewrite exist_exist; f_equiv => a. apply bi.and_exist_l. Qed.
+
   (* Upstream as [exist_forall], ditto. *)
   Lemma exist_forall {A B} (Φ : A → B → PROP) :
     (∃ a, ∀ b, Φ a b) ⊢ (∀ b, ∃ a, Φ a b).
   Proof. iDestruct 1 as (a) "H". iIntros (b). iExists a. by iApply "H". Qed.
+
+  (* Provided just for uniformity with [and_exist_and_r]. *)
+  Lemma and_exist_and_l {A P Q R} :
+     P ∧ (∃ a : A, Q a ∧ R a) ⊣⊢@{PROP} (∃ a : A, P ∧ Q a ∧ R a).
+  Proof. apply bi.and_exist_l. Qed.
+
+  Lemma and_exist_and_r {A P Q R} :
+    (∃ a : A, P a ∧ Q a) ∧ R ⊣⊢@{PROP} (∃ a : A, P a ∧ Q a ∧ R).
+  Proof. rewrite bi.and_exist_r; f_equiv=> a. by rewrite -assoc. Qed.
 
   (** Useful when proving Fractional instances involving existentials. *)
   Lemma exist_sep_1 {A} (Φ Ψ : A → PROP) : (∃ a, Φ a ∗ Ψ a) ⊢ (∃ a, Φ a) ∗ (∃ a, Ψ a).
@@ -131,6 +148,10 @@ End derived_laws.
 Section only_provable_derived_laws.
   Import only_provable.
   Context {PROP : bi}.
+
+  Lemma exist_only_provable_eq_sep {A P} v:
+    P v ⊢@{PROP} ∃ x : A, [| x = v |] ∗ P x.
+  Proof. iIntros. iExists v; eauto. Qed.
 
   Lemma exist_sep_only_provable {A} (Φ Ψ : A → PROP)
     (Hag : ∀ a1 a2, Φ a1 ⊢ Ψ a2 -∗ [| a1 = a2 |]) :
