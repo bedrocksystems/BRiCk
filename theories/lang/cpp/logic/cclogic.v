@@ -11,15 +11,15 @@ From iris.proofmode Require Import tactics.
 
 From bedrock.lang.cpp Require Import logic.pred.
 
-(** This file export the mpred version of own, inv and cinv. *)
+(** This file exports the mpred version of own, inv and cinv. *)
 (* Right now, they simply shadow Iris' own, inv and cinv, because mpred is still
-  iProp. In the future, this will change, and mpred can be come abstract, with
-  own/inv/cinv should be features of the logic, not specifically tied to iProp.
-  *)
+  iProp. In the future, this will change, and mpred can become abstract, with
+  own/inv/cinv as features of the logic, not specifically tied to iProp.
+  TODO: this should be upstreamed in Iris---see cpp2v-core#185. *)
 
 (* own *)
 Definition own `{Σ : cpp_logic} `{!inG Σ A} : gname → A → mpred := own.own.
-(* TODO: I'll leave sealing for later *)
+(* TODO: I'll leave sealing for later MRs. *)
 (* Local Definition own_def `{Σ : cpp_logic} `{!inG Σ A}
   : gname → A → mpred := own.own.
 Local Definition own_aux : seal (@own_def). Proof. by eexists. Qed.
@@ -154,7 +154,7 @@ Section cinv_properties.
                           ∀ P, |> P ={E}=∗ cinv N γ P.
   Proof. by apply cancelable_invariants.cinv_alloc_cofinite. Qed.
 
-  (* Even stronger: stronger constraints on γ can be picked
+  (* Stronger allocation rule: stronger constraints on γ can be picked.
     Also see cinv_alloc_strong_open, the invariant can be allocated but
     establishing its content can be delayed. It can be added when needed. *)
   Lemma cinv_alloc_strong (I : gname → Prop) E N :
@@ -172,30 +172,6 @@ Section cinv_properties.
     iMod ("HI" $! (I γ) with "[$I]") as "HI".
     iIntros "!>". eauto with iFrame.
   Qed.
-
-(*
-  Lemma cinv_open_stronger E N γ p P :
-    ↑N ⊆ E →
-    cinv N γ P ⊢ (cinv_own γ p ={E,E∖↑N}=∗
-                  ((|>P) ** cinv_own γ p ** (Forall (E' : coPset), ((|>(P ∨ cinv_own γ 1)) ={E',↑N ∪ E'}=∗ True)))).
-  Proof.
-    iIntros (?) "Hinv Hown".
-    unfold cinv. (* iDestruct "Hinv" as (P') "[#HP' Hinv]". *)
-    iPoseProof (inv_acc (↑ N) N _ with "Hinv") as "H"; first done.
-    rewrite difference_diag_L.
-    iPoseProof (fupd_mask_frame_r _ _ (E ∖ ↑ N) with "H") as "H"; first set_solver.
-    rewrite left_id_L -union_difference_L //. iMod "H" as "[[HP | >HP] H]".
-    - iModIntro. iFrame. iDestruct ("HP'" with "HP") as "HP". iFrame. iModIntro.
-      iIntros (E') "HP".
-      iPoseProof (fupd_mask_frame_r _ _ E' with "(H [HP])") as "H"; first set_solver.
-      { iDestruct "HP" as "[HP | >Hown]".
-        iLeft. by iApply "HP'".
-        eauto.
-      }
-        by rewrite left_id_L.
-    - iDestruct (cinv_own_1_l with "HP Hown") as %[].
-  Qed.
-*)
 
   Lemma cinv_acc_strong E N γ p P :
     ↑N ⊆ E →
