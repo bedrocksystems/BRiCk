@@ -192,18 +192,19 @@ Record genv : Type :=
   (* ^ the [translation_unit] *)
 ; glob_addr : obj_name -> option ptr
   (* ^ the address of global variables & functions *)
-; pointer_size : N
-  (* ^ the size of a pointer (in bytes) *)
+; pointer_size_bitsize : bitsize
+  (* ^ the size of a pointer *)
 }.
 
 Definition byte_order (g : genv) : endian :=
   g.(genv_tu).(byte_order).
+Definition pointer_size (g : genv) := bytesN (pointer_size_bitsize g).
 
 (** [genv_leq a b] states that [b] is an extension of [a] *)
 Record genv_leq {l r : genv} : Prop :=
 { tu_le : sub_module l.(genv_tu) r.(genv_tu)
 ; addr_le : forall a p, l.(glob_addr) a = Some p -> r.(glob_addr) a = Some p
-; pointer_size_le : l.(pointer_size) = r.(pointer_size) }.
+; pointer_size_le : l.(pointer_size_bitsize) = r.(pointer_size_bitsize) }.
 Arguments genv_leq _ _ : clear implicits.
 
 Instance PreOrder_genv_leq : PreOrder genv_leq.
@@ -212,6 +213,8 @@ Proof.
   { constructor; auto; reflexivity. }
   { red. destruct 1; destruct 1; constructor; try etransitivity; eauto. }
 Qed.
+Instance: RewriteRelation genv_leq := {}.
+
 Definition glob_def (g : genv) (gn : globname) : option GlobDecl :=
   g.(genv_tu).(globals) !! gn.
 
@@ -219,46 +222,54 @@ Definition genv_eq (l r : genv) : Prop :=
   genv_leq l r /\ genv_leq r l.
 
 Instance genv_tu_proper : Proper (genv_leq ==> sub_module) genv_tu.
-Proof. do 2 red. destruct 1; auto. Qed.
+Proof. solve_proper. Qed.
+Instance genv_tu_flip_proper : Proper (flip genv_leq ==> flip sub_module) genv_tu.
+Proof. solve_proper. Qed.
 
+(* Sadly, neither instance is picked up by [f_equiv]. *)
+Instance pointer_size_bitsize_proper : Proper (genv_leq ==> eq) pointer_size_bitsize.
+Proof. solve_proper. Qed.
+Instance pointer_size_bitsize_flip_proper : Proper (flip genv_leq ==> eq) pointer_size_bitsize.
+Proof. by intros ?? <-. Qed.
 Instance pointer_size_proper : Proper (genv_leq ==> eq) pointer_size.
-Proof. do 2 red. destruct 1; auto. Qed.
+Proof. unfold pointer_size; intros ???. f_equiv. exact: pointer_size_bitsize_proper. Qed.
+Instance pointer_size_flip_proper : Proper (flip genv_leq ==> eq) pointer_size.
+Proof. by intros ?? <-. Qed.
 
 Instance byte_order_proper : Proper (genv_leq ==> eq) byte_order.
-Proof. do 2 red. destruct 1.  destruct tu_le0; eauto. Qed.
-
+Proof. intros ???. apply sub_module.byte_order_proper. solve_proper. Qed.
+Instance byte_order_flip_proper : Proper (flip genv_leq ==> eq) byte_order.
+Proof. by intros ?? <-. Qed.
 
 (* this states that the [genv] is compatible with the given [translation_unit]
  * it essentially means that the [genv] records all the types from the
  * compilation unit and that the [genv] contains addresses for all globals
  * defined in the [translation_unit]
  *)
-Record genv_compat {tu : translation_unit} {g : genv} : Prop :=
+Class genv_compat {tu : translation_unit} {g : genv} : Prop :=
 { tu_compat : sub_module tu g.(genv_tu) }.
 Arguments genv_compat _ _ : clear implicits.
 Infix "⊧" := genv_compat (at level 1).
-Existing Class genv_compat.
 
-Theorem genv_byte_order_tu : forall tu g,
+Theorem genv_byte_order_tu tu g :
     tu ⊧ g ->
     byte_order g = translation_unit.byte_order tu.
-Proof. destruct 1. erewrite byte_order_compat; eauto. Qed.
+Proof. intros. apply sub_module.byte_order_flip_proper, tu_compat. Qed.
 
 Theorem genv_compat_submodule : forall m σ, m ⊧ σ -> sub_module m σ.(genv_tu).
-Proof. destruct 1; auto. Qed.
+Proof. by destruct 1. Qed.
 
-Instance models_proper
-  : Proper (sub_module --> genv_leq ==> Basics.impl) genv_compat.
+Instance genv_compat_proper : Proper (flip sub_module ==> genv_leq ==> impl) genv_compat.
 Proof.
-  do 4 red. destruct 2. destruct 1. constructor; eauto.
-  etransitivity; eauto.
-  etransitivity; eauto.
+  intros ?? Heq1 ?? [Heq2 _ _] [Heq3]; constructor.
+  by rewrite Heq1 Heq3.
 Qed.
+Instance genv_compat_flip_proper : Proper (sub_module ==> flip genv_leq ==> flip impl) genv_compat.
+Proof. solve_proper. Qed.
 
-Theorem subModuleModels : forall a b σ, b ⊧ σ -> sub_module a b -> a ⊧ σ.
-Proof.
-  destruct 1; constructor; eauto. etransitivity; eauto.
-Qed.
+(* XXX rename/deprecate? *)
+Theorem subModuleModels a b σ : b ⊧ σ -> sub_module a b -> a ⊧ σ.
+Proof. by intros ? ->. Qed.
 
 Definition max_val (bits : bitsize) (sgn : signed) : Z :=
   match bits , sgn with
@@ -297,7 +308,6 @@ Definition bound (bits : bitsize) (sgn : signed) (v : Z) : Prop :=
 (** [has_type v t] means that [v] is an initialized value of type [t].
 For all types [t] except [Tvoid], this means that [v] is not [Vundef]. *)
 Parameter has_type : val -> type -> Prop.
-Arguments has_type _%Z _.
 
 Axiom has_type_pointer : forall v ty,
     has_type v (Tpointer ty) -> exists p, v = Vptr p.
@@ -385,54 +395,50 @@ Variant Roption_leq {T} (R : T -> T -> Prop) : option T -> option T -> Prop :=
 (** this is a partial implementation of [size_of], it doesn't indirect through
     typedefs, but the cpp2v generator flattens these for us anyways.
  *)
+Definition GlobDecl_size_of (g : GlobDecl) : option N :=
+  match g with
+  | Gstruct s => Some s.(s_size)
+  | Gunion u => Some u.(u_size)
+  | _ => None
+  end.
+Instance proper_named_size_of: Proper (GlobDecl_ler ==> Roption_leq eq) GlobDecl_size_of.
+Proof.
+  rewrite /GlobDecl_size_of => x y Heq.
+  repeat (case_match; try constructor);
+    simplify_eq/= => //;
+    apply require_eq_success in Heq; naive_solver.
+Qed.
+
 Fixpoint size_of (resolve : genv) (t : type) : option N :=
   match t with
-  | Tpointer _ => Some (@pointer_size resolve)
+  | Tpointer _ => Some (pointer_size resolve)
   | Treference _ => None
   | Trv_reference _ => None
   | Tint sz _ => Some (bytesN sz)
   | Tvoid => None
-  | Tarray t n => match size_of resolve t with
-                 | None => None
-                 | Some s => Some (n * s)
-                 end
-  | Tnamed nm =>
-    match glob_def resolve nm with
-    | Some (Gstruct s) => Some s.(s_size)
-    | Some (Gunion u) => Some u.(u_size)
-    | _ => None
-    end
+  | Tarray t n => N.mul n <$> size_of resolve t
+  | Tnamed nm => glob_def resolve nm ≫= GlobDecl_size_of
   | Tfunction _ _ => None
   | Tbool => Some 1
-  | Tmember_pointer _ _ => Some (@pointer_size resolve)
+  | Tmember_pointer _ _ => Some (pointer_size resolve)
   | Tqualified _ t => size_of resolve t
-  | Tnullptr => Some (@pointer_size resolve)
+  | Tnullptr => Some (pointer_size resolve)
   | Tfloat sz => Some (bytesN sz)
-  | Tarch sz _ => match sz with
-                 | None => None
-                 | Some sz => Some (bytesN sz)
-                 end
+  | Tarch sz _ => bytesN <$> sz
   end%N.
 
 Global Instance Proper_size_of
 : Proper (genv_leq ==> eq ==> Roption_leq eq) (@size_of).
 Proof.
-  red. red. red. intros; subst.
-  induction y0; simpl; try constructor; eauto.
-  - apply H.
-  - destruct IHy0; try constructor. subst. auto.
-  - destruct H as [ [ H _ ] _ ].
-    specialize (H g).
+  intros ?? Hle ? t ->; induction t; simpl; (try constructor) => //.
+  all: try exact: pointer_size_proper.
+  - by destruct IHt; constructor; subst.
+  - move: Hle => [[ /(_ g) Hle _ _] _ _].
     unfold glob_def, globals in *.
-    destruct (globals (genv_tu x) !! g); try constructor.
-    destruct (H _ eq_refl) as [ ? [ -> HH ] ]; clear H.
-    destruct g0; try constructor;
-    destruct x0; try constructor; simpl in HH ; try congruence.
-    + apply require_eq_success in HH. destruct HH. congruence.
-    + apply require_eq_success in HH. destruct HH. congruence.
-  - apply H.
-  - apply H.
-  - destruct o; repeat constructor.
+    destruct (globals (genv_tu x) !! g) as [g1| ]; last constructor.
+    move: Hle => /(_ _ eq_refl) [g2 [-> HH]] /=.
+    exact: proper_named_size_of.
+  - by destruct o; constructor.
 Qed.
 
 (* it is hard to define [size_of] as a function because it needs

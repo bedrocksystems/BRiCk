@@ -3,6 +3,7 @@
  *
  * SPDX-License-Identifier: LGPL-2.1 WITH BedRock Exception for use over network, see repository root for details.
  *)
+Require Import stdpp.fin_maps.
 From bedrock.lang.prelude Require Import base avl.
 Require Import bedrock.lang.cpp.syntax.translation_unit.
 Require Import bedrock.lang.cpp.ast.
@@ -17,6 +18,11 @@ Proof.
   destruct (decide (a = a)); auto.
   exfalso; auto.
 Qed.
+
+Lemma require_eq_success `{EqDecision T} {U} {a b : T} {c} {d : U}:
+    require_eq a b c = Some d ->
+    a = b /\ c = Some d.
+Proof. unfold require_eq. by case_decide. Qed.
 
 Definition ObjValue_le (a b : ObjValue) : option unit :=
   match a , b with
@@ -78,6 +84,8 @@ Definition ObjValue_le (a b : ObjValue) : option unit :=
     end
   | _ , _ => None
   end.
+Definition ObjValue_ler : relation ObjValue := λ g1 g2, ObjValue_le g1 g2 = Some ().
+Arguments ObjValue_ler !_ _ /.
 
 Definition GlobDecl_le (a b : GlobDecl) : option unit :=
   match a , b with
@@ -111,75 +119,115 @@ Definition GlobDecl_le (a b : GlobDecl) : option unit :=
     Some tt
   | _ , _ => None
   end.
+Definition GlobDecl_ler : relation GlobDecl := λ g1 g2, GlobDecl_le g1 g2 = Some ().
+Arguments GlobDecl_ler !_ _ /.
 
-Theorem GlobDecl_le_refl : forall a, GlobDecl_le a a = Some tt.
-Proof.
-  destruct a; simpl; repeat rewrite require_eq_refl; eauto.
-  destruct o; eauto.
-  repeat rewrite require_eq_refl.
-  reflexivity.
-Qed.
+Section GlobDecl_ler.
+  Local Instance GlobDecl_le_refl : Reflexive GlobDecl_ler.
+  Proof.
+    intros []; rewrite /= ?require_eq_refl; eauto.
+    destruct o => //.
+    by rewrite !require_eq_refl.
+  Qed.
 
-Lemma require_eq_success `{EqDecision T} {U} {a b : T} {c} {d : U}:
-    require_eq a b c = Some d ->
-    a = b /\ c = Some d.
-Proof.
-  unfold require_eq; intros.
-  destruct (decide (a = b)); try congruence; eauto.
-Qed.
+  Local Instance GlobDecl_le_trans : Transitive GlobDecl_ler.
+  Proof.
+    intros a b c.
+    destruct a, b; simpl => //; destruct c; simpl => //; intros;
+      repeat (match goal with
+              | H : require_eq _ _ _ = _ |- _ =>
+                  eapply require_eq_success in H; destruct H; subst
+              | H : context [ match ?X with _ => _ end ] |- _ =>
+                lazymatch X with
+                | context [ match _ with _ => _ end ] => fail
+                | _ =>
+                  destruct X eqn:? => //
+                end
+              end || rewrite ?require_eq_refl //).
+  Qed.
 
-Theorem GlobDecl_le_trans : forall a b c,
-    GlobDecl_le a b = Some tt ->
-    GlobDecl_le b c = Some tt ->
-    GlobDecl_le a c = Some tt.
-Proof.
-  destruct a; destruct b; simpl; intros; try congruence;
-    destruct c; simpl in *; try congruence;
-  repeat match goal with
-             | H : require_eq _ _ _ = _ |- _ =>
-               eapply require_eq_success in H; destruct H
-             | H : context [ match ?X with _ => _ end ] |- _ =>
-               lazymatch X with
-               | context [ match _ with _ => _ end ] => fail
-               | _ =>
-                 destruct X eqn:?; try congruence
-               end
-             end; subst.
-  all: repeat rewrite require_eq_refl; eauto; try congruence.
-Qed.
+  Global Instance: PreOrder GlobDecl_ler := {}.
+End GlobDecl_ler.
 
-Theorem ObjValue_le_refl : forall a, ObjValue_le a a = Some tt.
-Proof.
-  destruct a; simpl; repeat rewrite require_eq_refl; eauto.
-  all: match goal with
-       | |- context [ match ?X with _ => _ end ] => destruct X
-       end; repeat rewrite require_eq_refl; eauto.
-Qed.
+Section ObjValue_ler.
+  Local Instance ObjValue_le_refl : Reflexive ObjValue_ler.
+  Proof.
+    intros []; rewrite /= ?require_eq_refl;
+      case_match; rewrite ?require_eq_refl //.
+  Qed.
 
-Theorem ObjValue_le_trans : forall a b c, ObjValue_le a b = Some tt -> ObjValue_le b c = Some tt -> ObjValue_le a c = Some tt.
-Proof.
-  destruct a; destruct b; simpl; intros; try congruence;
-    destruct c; simpl in *; try congruence;
-      repeat match goal with
-             | H : require_eq _ _ _ = _ |- _ =>
-               eapply require_eq_success in H; destruct H
-             | H : context [ match ?X with _ => _ end ] |- _ =>
-               destruct X; try congruence
-             | H : _ = _ |- _ => rewrite H
-             end; subst.
-  all: repeat rewrite require_eq_refl; eauto; try congruence.
-Qed.
+  Local Instance ObjValue_le_trans : Transitive ObjValue_ler.
+  Proof.
+    intros a b c.
+    destruct a, b => //=;
+      destruct c => //=; intros;
+        repeat (match goal with
+              | H : require_eq _ _ _ = _ |- _ =>
+                eapply require_eq_success in H; destruct H; subst
+              | H : context [ match ?X with _ => _ end ] |- _ =>
+                destruct X => //
+              | H : _ = _ |- _ => rewrite H
+              end || rewrite ?require_eq_refl //).
+  Qed.
+
+  Global Instance: PreOrder ObjValue_ler := {}.
+End ObjValue_ler.
+
+(* TODO: consider replacing [type_table_le]'s definition with [type_table_le_alt] *)
+Definition type_table_le_alt : type_table -> type_table -> Prop :=
+  map_included GlobDecl_ler.
+Instance: PreOrder type_table_le_alt := _.
 
 Definition type_table_le (te1 te2 : type_table) : Prop :=
   forall (gn : globname) gv,
     te1 !! gn = Some gv ->
-    exists gv', te2 !! gn = Some gv' /\
-            GlobDecl_le gv gv' = Some tt.
+    exists gv', te2 !! gn = Some gv' /\ GlobDecl_ler gv gv'.
+
+(* Ditto. *)
+Definition syms_table_le_alt : symbol_table -> symbol_table -> Prop :=
+  map_included ObjValue_ler.
+Instance: PreOrder syms_table_le_alt := _.
+
+Definition syms_table_le (a b : symbol_table) :=
+  forall (on : obj_name) v,
+      a !! on = Some v ->
+      exists v', b !! on = Some v' /\
+            ObjValue_ler v v'.
+
+Lemma type_table_le_equiv te1 te2 : type_table_le te1 te2 <-> type_table_le_alt te1 te2.
+Proof.
+  apply iff_forall => i; unfold option_relation.
+  (* XXX TC inference produces different results here. Hacky fix. *)
+  unfold globname, ident, type_table.
+  repeat case_match; naive_solver.
+Qed.
+
+Lemma syms_table_le_equiv te1 te2 : syms_table_le te1 te2 <-> syms_table_le_alt te1 te2.
+Proof.
+  apply iff_forall => i; unfold option_relation.
+  (* XXX TC inference produces different results here. Hacky fix, as above. *)
+  unfold obj_name, symbol_table.
+  repeat case_match; naive_solver.
+Qed.
+
+Instance: PreOrder type_table_le.
+Proof.
+  eapply preorder_proper.
+  apply: type_table_le_equiv.
+  apply _.
+Qed.
+
+Instance: PreOrder syms_table_le.
+Proof.
+  eapply preorder_proper.
+  apply: syms_table_le_equiv.
+  apply _.
+Qed.
 
 Local Hint Constructors complete_decl complete_basic_type complete_type complete_pointee_type complete_pointee_types : core.
 
 Lemma complete_decl_respects_GlobDecl_le {te g1 g2} :
-  GlobDecl_le g1 g2 = Some () ->
+  GlobDecl_ler g1 g2 ->
   complete_decl te g1 ->
   complete_decl te g2.
 Proof.
@@ -226,36 +274,25 @@ Proof. intros. by eapply complete_respects_sub_table_mut. Qed.
 
 (* TODO: reuse [type_table_le] for types_compat. *)
 Record sub_module (a b : translation_unit) : Prop :=
-{ types_compat : forall (gn : globname) gv,
-      a.(globals) !! gn = Some gv ->
-      exists gv', b.(globals) !! gn = Some gv' /\
-             GlobDecl_le gv gv' = Some tt
-; syms_compat :
-  forall (on : obj_name) v,
-      a.(symbols) !! on = Some v ->
-      exists v', b.(symbols) !! on = Some v' /\
-            ObjValue_le v v' = Some tt
+{ types_compat : type_table_le a.(globals) b.(globals)
+; syms_compat : syms_table_le a.(symbols) b.(symbols)
 ; byte_order_compat : a.(byte_order) = b.(byte_order) }.
 
-Instance: Reflexive sub_module.
-Proof.
-  split; intros; eauto; eexists; split; eauto.
-  rewrite GlobDecl_le_refl. reflexivity.
-  rewrite ObjValue_le_refl. reflexivity.
-Qed.
+Section sub_module.
+  Local Instance: Reflexive sub_module.
+  Proof. done. Qed.
 
-Instance: Transitive sub_module.
-Proof.
-  red. destruct 1; destruct 1.
-  split; intros.
-  { apply types_compat0 in H. destruct H as [? [H ?]].
-    apply types_compat1 in H. destruct H as [? [H ?]].
-    eexists; split; eauto using GlobDecl_le_trans. }
-  { apply syms_compat0 in H. destruct H as [? [H ?]].
-    apply syms_compat1 in H. destruct H as [? [H ?]].
-    eexists; split; eauto using ObjValue_le_trans. }
-  { etransitivity; eauto. }
-Qed.
+  Local Instance: Transitive sub_module.
+  Proof. intros ??? [] []; split; by etrans. Qed.
+
+  Global Instance: PreOrder sub_module := {}.
+End sub_module.
+Instance: RewriteRelation sub_module := {}.
+
+Instance byte_order_proper : Proper (sub_module ==> eq) byte_order.
+Proof. by destruct 1. Qed.
+Instance byte_order_flip_proper : Proper (flip sub_module ==> eq) byte_order.
+Proof. by destruct 1. Qed.
 
 Definition compat_le {T}
            (f : option T -> option T -> bool) (l r : IM.t T)
@@ -337,30 +374,28 @@ Proof.
     match goal with
     | |- context [ compat_le ?f ?l ?r ] =>
       generalize (@compat_le_sound _ f l r (fun _ => eq_refl)); destruct (@compat_le _ f l r)
-    end; intros.
-    simpl.
+    end; intros; simpl.
     constructor; auto.
-    { intros. specialize (H gn).
+    { unfold type_table_le. intros. specialize (H gn).
       change_rewrite_in H1 H.
       clear - H H1.
       match goal with
       | H : context [ match ?X with _ => _ end ] |- context [ ?A ] =>
         change X with A in H ; destruct A
-      end; try congruence.
-      exists g. split; auto.
-      destruct (GlobDecl_le gv g); try congruence.
-      destruct u; reflexivity. }
-    { intros.
-      intros. specialize (H0 on).
+      end => //.
+      eexists; split; auto.
+      unfold GlobDecl_ler.
+      by destruct (GlobDecl_le _ _) as [[]|]. }
+    { unfold syms_table_le. intros. specialize (H0 on).
       change_rewrite_in H1 H0.
       clear - H0 H1.
       match goal with
       | H : context [ match ?X with _ => _ end ] |- context [ ?A ] =>
         change X with A in H ; destruct A
-      end; try congruence.
+      end => //.
       eexists; split; eauto.
-      destruct (ObjValue_le v o); try congruence.
-      destruct u; reflexivity. }
+      unfold ObjValue_ler.
+      by destruct (ObjValue_le _ _) as [[]|]. }
     { simpl. clear H. intro.
       destruct H as [_ H].
       forward_reason.
@@ -369,11 +404,9 @@ Proof.
         forward_reason.
         change_rewrite_in H H0.
         forward.
-        assert (Some o = Some o0).
-        { rewrite <- Heq. rewrite <- H0. reflexivity. }
-        inversion H4. subst.
+        assert (Some o = Some o0) as [= ->] by by etrans.
         congruence. }
-      { change_rewrite_in Heq H0. congruence. } } }
+      { by change_rewrite_in Heq H0. } } }
   { intros; simpl; intros [ Hs _ ].
     destruct H.
     forward.
