@@ -7,6 +7,7 @@
 
 From stdpp Require Export prelude countable.
 From iris.algebra Require Export base.
+From bedrock.lang.prelude Require Export notations.
 
 (** Workaround https://github.com/coq/coq/issues/4230. Taken from Software Foundations. *)
 Remove Hints Bool.trans_eq_bool : core.
