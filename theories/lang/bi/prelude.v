@@ -35,7 +35,8 @@ Global Notation sepSP := (bi_sep) (only parsing).
 Global Notation wandSP := (bi_wand) (only parsing).
 Global Notation illater := (bi_later) (only parsing).
 
-Global Notation embed := (bi_pure) (only parsing).
+Global Notation "[! P !]" := (bi_pure P).
+
 Ltac split' := intros; apply (anti_symm (⊢)).
 
 (* Charge notation levels *)

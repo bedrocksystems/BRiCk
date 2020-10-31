@@ -707,7 +707,7 @@ Module SimpleCPP.
     Instance pinned_ptr_affine va p : Affine (pinned_ptr va p) := _.
     Instance pinned_ptr_timeless va p : Timeless (pinned_ptr va p) := _.
     Theorem pinned_ptr_unique va va' p :
-      pinned_ptr va p ** pinned_ptr va' p |-- bi_pure (va = va').
+        pinned_ptr va p ** pinned_ptr va' p |-- [! va = va' !].
     Proof.
       iIntros "[A B]".
       iDestruct "A" as "[[->->] | [% A]]"; iDestruct "B" as "[[%->] | [% B]]"; auto.

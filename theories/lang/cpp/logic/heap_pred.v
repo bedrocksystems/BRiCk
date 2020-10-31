@@ -233,7 +233,7 @@ Section with_cpp.
   Qed.
 
   Lemma _at_pure : forall (l : Loc) (P : Prop),
-      _at l (bi_pure P) -|- bi_pure P ** valid_loc l.
+      _at l ([! P !]) -|- [! P !] ** valid_loc l.
   Proof.
     intros. rewrite _at_loc_materialize valid_loc_equiv bi.sep_exist_l.
     setoid_rewrite monPred_at_pure.

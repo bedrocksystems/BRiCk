@@ -60,8 +60,6 @@ Module Type Expr.
     Local Notation uninitR := (uninitR (resolve:=resolve)) (only parsing).
     Local Notation blockR := (blockR (σ:=resolve)) (only parsing).
 
-    Notation "[! P !]" := (embed P).
-
     (* constants are rvalues *)
     Axiom wp_prval_constant : forall ty cnst e Q,
       glob_def cnst = Some (Gconstant ty (Some e)) ->
