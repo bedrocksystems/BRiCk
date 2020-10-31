@@ -130,7 +130,7 @@ Section monpred.
 End monpred.
 
 Lemma embed_only_provable `{BiEmbedEmp PROP1 PROP2} (P : Prop) :
-  embedding.embed [| P |] ⊣⊢@{PROP2} [| P |].
+  embed [| P |] ⊣⊢@{PROP2} [| P |].
 Proof. by rewrite embed_affinely embed_pure. Qed.
 
 Section proofmode.

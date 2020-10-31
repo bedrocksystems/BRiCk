@@ -49,7 +49,7 @@ Section with_PROP.
   Qed.
 
   (* Charge derivations *)
-  Lemma embedPropR (p : Prop) (P : PROP) (H : p) : P |-- bi_pure p.
+  Lemma embedPropR (p : Prop) (P : PROP) (H : p) : P |-- [! p !].
   Proof. eauto. Qed.
 
   Lemma wandSPI (P Q R : PROP) (HQ : P ** Q |-- R) : (P |-- Q -* R).
@@ -65,13 +65,13 @@ Section with_PROP.
   Lemma sepSPAdj (P Q C : PROP) (HWand: C |-- P -* Q) : C ** P |-- Q.
   Proof. iIntros "[HC HP]". rewrite HWand. iApply "HC". eauto. Qed.
 
-  Lemma embedPropExists (p : Prop) : (embed p : PROP) |-- Exists x : p, ltrue.
+  Lemma embedPropExists (p : Prop) : ([! p !] : PROP) |-- Exists x : p, ltrue.
   Proof. eauto. Qed.
-  Lemma embedPropExistsL (p : Prop) (P : PROP) : Exists x : p, P |-- embed p.
+  Lemma embedPropExistsL (p : Prop) (P : PROP) : Exists x : p, P |-- [! p !].
   Proof. iIntros "H". iDestruct "H" as (Hp) "H". iPureIntro. eauto. Qed.
 
   (* TODO rename embedPropExists to embedPropExistsR *)
-  Lemma embedPropExists' (p : Prop) : Exists x : p, (ltrue : PROP) -|- embed p.
+  Lemma embedPropExists' (p : Prop) : Exists x : p, (ltrue : PROP) -|- [! p !].
   Proof. simpl. split'; [ apply embedPropExistsL | iApply embedPropExists ]. Qed.
 
   Lemma landexistsDL1 {T} (f : T -> PROP) (P : PROP) :

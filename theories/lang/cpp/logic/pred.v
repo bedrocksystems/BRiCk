@@ -262,7 +262,7 @@ Module Type CPP_LOGIC (Import CC : CPP_LOGIC_CLASS).
     Axiom pinned_ptr_affine : forall va p, Affine (pinned_ptr va p).
     Axiom pinned_ptr_timeless : forall va p, Timeless (pinned_ptr va p).
     Axiom pinned_ptr_unique : forall va va' p,
-        pinned_ptr va p ** pinned_ptr va' p |-- bi_pure (va = va').
+        pinned_ptr va p ** pinned_ptr va' p |-- [! va = va' !].
 
     (* A pinned ptr allows access to the underlying bytes. The fupd is needed to
       update the C++ abstraction's ghost state. *)

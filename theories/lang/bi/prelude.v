@@ -22,8 +22,8 @@ Notation "'funI' x .. y => t" := (fun x => .. (fun y => t%I) ..)
 
 Global Notation lentails := (bi_entails) (only parsing).
 Global Notation lequiv := (≡) (only parsing).
-Global Notation ltrue := (bi_pure True) (only parsing).
-Global Notation lfalse := (bi_pure False) (only parsing).
+Global Notation ltrue := (True%I) (only parsing).
+Global Notation lfalse := (False%I) (only parsing).
 Global Notation land := (bi_and) (only parsing).
 Global Notation lor := (bi_or) (only parsing).
 Global Notation limpl := (bi_impl) (only parsing).
@@ -35,7 +35,8 @@ Global Notation sepSP := (bi_sep) (only parsing).
 Global Notation wandSP := (bi_wand) (only parsing).
 Global Notation illater := (bi_later) (only parsing).
 
-Global Notation embed := (bi_pure) (only parsing).
+Global Notation "[! P !]" := (bi_pure P).
+
 Ltac split' := intros; apply (anti_symm (⊢)).
 
 (* Charge notation levels *)
