@@ -12,6 +12,7 @@
       model.
  *)
 Require Import bedrock.lang.prelude.base.
+Require Export bedrock.lang.prelude.addr.
 
 From iris.base_logic.lib Require Export iprop.
 Require Import iris.bi.monpred.
@@ -228,8 +229,6 @@ Module Type CPP_LOGIC (Import CC : CPP_LOGIC_CLASS).
     End with_genv.
 
     Parameter encodes : forall {σ:genv} (t : type) (v : val) (vs : list runtime_val), mpred.
-
-    Notation vaddr := N.
 
     (** Virtual points-to. *)
     (** [vbyte va rv q] exposes the access to the underlying byte value, but

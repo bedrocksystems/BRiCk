@@ -1,10 +1,10 @@
 From iris Require Import bi.bi.
 From bedrock Require Import IrisBridge.
+Require Import bedrock.lang.prelude.addr.
 Import ChargeNotation.
 Local Open Scope N_scope.
 Section lift.
   Context {PROP: bi}.
-  Notation paddr := N.
   Variable byte_at : forall (hpa:paddr) (hpaFrac : Qp) (value : N), PROP.
 
   Local Fixpoint lift_aux n (pa : paddr) (q:Qp) (v : N) :=
