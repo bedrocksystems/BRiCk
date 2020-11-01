@@ -80,12 +80,23 @@ Section with_cpp.
   Lemma as_Rep_sep P Q : as_Rep (λ p, P p ** Q p) -|- as_Rep P ** as_Rep Q.
   Proof. constructor=>p. by rewrite monPred_at_sep. Qed.
 
+  Global Instance as_Rep_observe Q (P : ptr → mpred) :
+    (∀ p, Observe [| Q |] (P p)) → Observe [| Q |] (as_Rep P).
+  Proof.
+    intros. apply monPred_observe=>p. by rewrite monPred_at_only_provable.
+  Qed.
+  Global Instance as_Rep_observe_2 Q (P1 P2 : ptr → mpred) :
+    (∀ p, Observe2 [| Q |] (P1 p) (P2 p)) →
+    Observe2 [| Q |] (as_Rep P1) (as_Rep P2).
+  Proof.
+    intros. apply monPred_observe_2=>p. by rewrite monPred_at_only_provable.
+  Qed.
+
   Lemma as_Rep_obs f P :
     (∀ p, f p |-- f p ** [| P |]) →
     as_Rep f |-- as_Rep f ** [| P |].
   Proof.
-    intros Hf. constructor=>p /=.
-    by rewrite Hf monPred_at_sep monPred_at_only_provable.
+    intros. apply observe_elim, as_Rep_observe=>p. exact: observe_intro.
   Qed.
 
   Definition _offsetR_def (o : Offset) (r : Rep) : Rep :=
@@ -134,13 +145,21 @@ Section with_cpp.
     Fractional r → AsFractional (_offsetR o (r q)) (λ q, _offsetR o (r q)) q.
   Proof. constructor. done. apply _. Qed.
 
+  Global Instance _offsetR_observe Q o (R : Rep) :
+    Observe [| Q |] R → Observe [| Q |] (_offsetR o R).
+  Proof. intros. rewrite _offsetR_eq. apply _. Qed.
+  Global Instance _offsetR_observe_2 Q o (R1 R2 : Rep) :
+    Observe2 [| Q |] R1 R2 → Observe2 [| Q |] (_offsetR o R1) (_offsetR o R2).
+  Proof.
+    intros Hobs. apply observe_uncurry. rewrite -_offsetR_sep.
+    apply _offsetR_observe, observe_curry, Hobs.
+  Qed.
+
   Lemma _offsetR_obs o r P :
     r |-- r ** [| P |] →
     _offsetR o r |-- _offsetR o r ** [| P |].
   Proof.
-    intros [Hr]. rewrite _offsetR_eq/_offsetR_def. apply as_Rep_obs=>p.
-    apply bi.exist_elim=>to. rewrite -(bi.exist_intro to) -assoc. f_equiv.
-    by rewrite {1}(Hr to) monPred_at_sep monPred_at_only_provable.
+    intros. apply observe_elim, _offsetR_observe. exact: observe_intro.
   Qed.
 
   Definition _at_def (base : Loc) (P : Rep) : mpred :=
@@ -174,6 +193,8 @@ Section with_cpp.
     rewrite _at_eq /_at_def valid_loc_eq /valid_loc_def addr_of_eq /addr_of_def /=.
     iDestruct 1 as (a) "[#L R]". auto.
   Qed.
+  Global Instance _at_valid_loc_observe l R : Observe (valid_loc l) (_at l R).
+  Proof. apply: observe_intro. by rewrite -_at_valid_loc. Qed.
 
   Lemma _at_loc_rw : forall (l1 l2 : Loc) (R : Rep),
       Loc_impl l1 l2 ** _at l1 R |-- _at l2 R.
@@ -202,6 +223,10 @@ Section with_cpp.
   Lemma addr_of_valid_loc : forall l a,
       l &~ a |-- valid_loc l.
   Proof. intros. rewrite valid_loc_eq /valid_loc_def. eauto. Qed.
+
+  Global Instance addr_of_observe_valid_loc l p :
+    Observe (valid_loc l) (l &~ p).
+  Proof. apply: observe_intro_persistent. apply addr_of_valid_loc. Qed.
 
   Lemma valid_loc_equiv : forall l, valid_loc l -|- Exists p, l &~ p.
   Proof. by rewrite valid_loc_eq. Qed.
@@ -297,20 +322,20 @@ Section with_cpp.
     AsFractional (_at l (r q)) (λ q, _at l (r q)) q.
   Proof. constructor. done. apply _. Qed.
 
-  (** Lift observations on [Rep]'s in [RepI] to observations on [_at]
-  in [mpredI].
+  Global Instance _at_observe Q l (R : Rep) :
+    Observe [| Q |] R → Observe [| Q |] (_at l R).
+  Proof. rewrite _at_eq. apply _. Qed.
+  Global Instance _at_observe_2 Q l (R1 R2 : Rep) :
+    Observe2 [| Q |] R1 R2 → Observe2 [| Q |] (_at l R1) (_at l R2).
+  Proof.
+    intros Hobs. apply observe_uncurry. rewrite -_at_sep.
+    apply _at_observe, observe_curry, Hobs.
+  Qed.
 
-  PDS: We could prove a variant using fancy update rather than
-  entailment. *)
   Lemma _at_obs (l : Loc) (r : Rep) P :
     r |-- r ** [| P |] →
     _at l r |-- _at l r ** [| P |].
-  Proof.
-    move=>/monPred_in_entails Hobs. rewrite _at_eq/_at_def.
-    iDestruct 1 as (p) "[Hl Hp]". iDestruct (Hobs with "Hp") as "Hp".
-    rewrite monPred_at_sep monPred_at_only_provable.
-    iDestruct "Hp" as "[Hp $]". auto.
-  Qed.
+  Proof. intros. apply observe_elim, _at_observe. exact: observe_intro. Qed.
 
 
   (** Values
@@ -358,10 +383,20 @@ Section with_cpp.
     - constructor=>p. by rewrite monPred_at_only_provable.
   Qed.
 
+  Lemma pureR_sep (P Q : mpred) : pureR (P ** Q) -|- pureR P ** pureR Q.
+  Proof. exact: as_Rep_sep. Qed.
+
+  Global Instance pureR_observe Q (P : mpred) :
+    Observe [| Q |] P → Observe [| Q |] (pureR P).
+  Proof. apply _. Qed.
+  Global Instance pureR_observe_2 Q (P1 P2 : mpred) :
+    Observe2 [| Q |] P1 P2 → Observe2 [| Q |] (pureR P1) (pureR P2).
+  Proof. apply _. Qed.
+
   Lemma pureR_obs P Q :
     P |-- P ** [| Q |] →
     pureR P |-- pureR P ** [| Q |].
-  Proof. intros. exact: as_Rep_obs. Qed.
+  Proof. intros. apply observe_elim, pureR_observe. exact: observe_intro. Qed.
 
   Lemma pureR_pure P : pureR ⌜P⌝ ⊣⊢ ⌜P⌝.
   Proof.
@@ -383,7 +418,7 @@ Section with_cpp.
 
 
   (** [primR]: the argument pointer points to an initialized value [v] of C++ type [ty]. *)
-  Definition primR_def {resolve:genv} (ty : type) q (v : val) : Rep :=
+  Definition primR_def {resolve:genv} (ty : type) (q : Qp) (v : val) : Rep :=
     as_Rep (fun addr => @tptsto _ _ resolve ty q addr v ** [| has_type v (drop_qualifiers ty) |]).
   Definition primR_aux : seal (@primR_def). Proof. by eexists. Qed.
   Definition primR := primR_aux.(unseal).
@@ -417,21 +452,29 @@ Section with_cpp.
     AsFractional (primR (resolve:=resolve) ty q v) (λ q, primR (resolve:=resolve) ty q v) q.
   Proof. constructor. done. apply _. Qed.
 
+  Global Instance primR_observe_frac_valid resolve ty (q : Qp) v :
+    Observe [| q ≤ 1 |]%Qc (primR (resolve:=resolve) ty q v).
+  Proof. rewrite primR_eq. apply _. Qed.
 
-  (** Expose the typing side-condition in a [primR]. *)
+  Global Instance primR_observe_agree resolve ty q1 q2 v1 v2 :
+    Observe2 [| v1 = v2 |]
+      (primR (resolve:=resolve) ty q1 v1)
+      (primR (resolve:=resolve) ty q2 v2).
+  Proof. rewrite primR_eq. apply _. Qed.
+
+  Global Instance primR_observe_has_type resolve ty q v :
+    Observe [| has_type v (drop_qualifiers ty) |] (primR (resolve:=resolve) ty q v).
+  Proof. rewrite primR_eq. apply _. Qed.
+
   Lemma primR_has_type {σ} ty q v :
     primR (resolve:=σ) ty q v |--
     primR (resolve:=σ) ty q v ** [| has_type v (drop_qualifiers ty) |].
-  Proof.
-    rewrite primR_eq. constructor=>p /=.
-    rewrite monPred_at_sep monPred_at_only_provable/=.
-    by iIntros "[$ %]".
-  Qed.
+  Proof. apply: observe_elim. Qed.
 
   (**
   [uninitR]: the argument pointer points to an uninitialized value [Vundef] of C++ type [ty].
   Unlike [primR], does not imply [has_type]. *)
-  Definition uninit_def {resolve:genv} (ty : type) q : Rep :=
+  Definition uninit_def {resolve:genv} (ty : type) (q : Qp) : Rep :=
     as_Rep (fun addr => @tptsto _ _ resolve ty q addr Vundef).
   Definition uninit_aux : seal (@uninit_def). Proof. by eexists. Qed.
   Definition uninitR := uninit_aux.(unseal).
@@ -465,9 +508,24 @@ Section with_cpp.
     AsFractional (uninitR (resolve:=resolve) ty q) (uninitR (resolve:=resolve) ty) q.
   Proof. constructor. done. apply _. Qed.
 
+  Global Instance uninitR_observe_frac_valid resolve ty (q : Qp) :
+    Observe [| q ≤ 1 |]%Qc (uninitR (resolve:=resolve) ty q).
+  Proof. rewrite uninit_eq. apply _. Qed.
+
+  (** This seems odd, but it's relevant to proof that [anyR] is fractional. *)
+  Lemma primR_uninitR {resolve} ty q1 q2 v :
+    primR (resolve:=resolve) ty q1 v |--
+    uninitR (resolve:=resolve) ty q2 -*
+    primR (resolve:=resolve) ty (q1 + q2) Vundef.
+  Proof.
+    rewrite primR_eq/primR_def uninit_eq/uninit_def. constructor=>p /=.
+    rewrite monPred_at_wand. iIntros "[T1 %]" (? <-%ptr_rel_elim) "/= T2".
+    iDestruct (observe_2 [|v = Vundef|] with "T1 T2") as %->. iFrame "T1 T2 %".
+  Qed.
+
   (** [anyR] The argument pointers points to a value of C++ type [ty] that might be
   uninitialized. *)
-  Definition anyR_def {resolve} (ty : type) q : Rep :=
+  Definition anyR_def {resolve} (ty : type) (q : Qp) : Rep :=
     as_Rep (fun addr => (Exists v, (primR (resolve:=resolve) ty q v) addr) \\//
                                  (uninitR (resolve:=resolve) ty q) addr).
   Definition anyR_aux : seal (@anyR_def). Proof. by eexists. Qed.
@@ -478,6 +536,35 @@ Section with_cpp.
   Global Instance anyR_affine resolve ty q : Affine (anyR (resolve:=resolve) ty q).
   Proof. rewrite anyR_eq. apply _. Qed.
   Global Instance anyR_timeless resolve ty q : Timeless (anyR (resolve:=resolve) ty q).
+  Proof. rewrite anyR_eq. apply _. Qed.
+  Global Instance anyR_fractional resolve ty :
+    Fractional (anyR (resolve:=resolve) ty).
+  Proof.
+    rewrite anyR_eq /anyR_def. intros q1 q2.
+    rewrite -as_Rep_sep. f_equiv=>p. split'.
+    { iDestruct 1 as "[V|U]".
+      - iDestruct "V" as (v) "[V1 V2]".
+        iSplitL "V1"; iLeft; iExists v; [iFrame "V1"|iFrame "V2"].
+      - iDestruct "U" as "[U1 U2]".
+        iSplitL "U1"; iRight; [iFrame "U1"|iFrame "U2"]. }
+    iDestruct 1 as "[[V1|U1] [V2|U2]]".
+    - iDestruct "V1" as (v1) "V1". iDestruct "V2" as (v2) "V2".
+      iDestruct (observe_2 [| v1 = v2 |] with "V1 V2") as %->.
+      iLeft. iExists v2. rewrite primR_fractional monPred_at_sep. iFrame "V1 V2".
+    - iDestruct "V1" as (v) "V1".
+      iDestruct (primR_uninitR with "V1 U2") as "V".
+      iLeft. iExists _. iFrame "V".
+    - iDestruct "V2" as (v) "V2".
+      iDestruct (primR_uninitR with "V2 U1") as "V".
+      iLeft. iExists _. rewrite comm_L. iFrame "V".
+    - iRight. rewrite uninitR_fractional monPred_at_sep. iFrame "U1 U2".
+  Qed.
+  Global Instance anyR_as_fractional resolve ty q :
+    AsFractional (anyR (resolve:=resolve) ty q) (anyR (resolve:=resolve) ty) q.
+  Proof. exact: Build_AsFractional. Qed.
+
+  Global Instance anyR_observe_frac_valid resolve ty (q : Qp) :
+    Observe [| q ≤ 1 |]%Qc (anyR (resolve:=resolve) ty q).
   Proof. rewrite anyR_eq. apply _. Qed.
 
   Definition refR_def (ty : type) (p : ptr) : Rep :=
@@ -513,6 +600,8 @@ Section with_cpp.
   Definition _identity (σ : genv) (cls : globname) (mdc : option globname)
              (q : Qp) : Rep :=
     as_Rep (@identity _ _ σ cls mdc q).
+  (** cpp2v-core#194: [Fractional], [AsFractional], [Timeless]? *)
+  (** cpp2v-core#194: The fraction is valid? Agreement? *)
 
   Definition _type_ptr (σ : genv) (ty : type) :=
     as_Rep (@type_ptr _ _ σ ty).
@@ -560,6 +649,7 @@ End with_cpp.
 Global Opaque _at _offsetR primR.
 
 Typeclasses Opaque pureR.
+Typeclasses Opaque as_Rep.
 Typeclasses Opaque _identity.
 Typeclasses Opaque _type_ptr.
 
