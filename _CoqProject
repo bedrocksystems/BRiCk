@@ -13,6 +13,7 @@ theories/lang/prelude/addr.v
 theories/lang/prelude/notations.v
 theories/lang/prelude/bytestring.v
 theories/lang/prelude/avl.v
+theories/lang/bi/observe.v
 theories/lang/bi/only_provable.v
 theories/lang/bi/derived_laws.v
 theories/lang/bi/prelude.v
