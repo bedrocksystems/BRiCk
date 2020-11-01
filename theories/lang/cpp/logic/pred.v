@@ -184,6 +184,7 @@ Module Type CPP_LOGIC (Import CC : CPP_LOGIC_CLASS).
         (this : globname) (most_derived : option globname),
         Qp -> ptr -> mpred.
     (** PDS: [Fractional], [AsFractional], [Timeless]? *)
+    (** PDS: The fraction is valid? Agreement? *)
 
     (** this allows you to forget an object identity, necessary for doing
         placement [new] over an existing object.
@@ -250,6 +251,7 @@ Module Type CPP_LOGIC (Import CC : CPP_LOGIC_CLASS).
     Axiom vbyte_fractional : forall va rv, Fractional (vbyte va rv).
     Axiom vbyte_timeless : forall va rv q, Timeless (vbyte va rv q).
     Global Existing Instances vbyte_fractional vbyte_timeless.
+    (** PDS: The fraction is valid, agreement? *)
 
     Definition vbytes (a : vaddr) (vs : list runtime_val) (q : Qp) : mpred :=
       [∗list] o ↦ v ∈ vs, (vbyte (a+N.of_nat o)%N v q).
