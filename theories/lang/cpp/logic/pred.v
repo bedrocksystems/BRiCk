@@ -22,6 +22,7 @@ Require Import iris.base_logic.lib.own.
 Require Import iris.base_logic.lib.cancelable_invariants.
 
 Require Export bedrock.lang.bi.prelude.
+Require Export bedrock.lang.bi.observe.
 Export ChargeNotation.
 
 From bedrock.lang.cpp Require Import ast semantics.
@@ -146,11 +147,13 @@ Module Type CPP_LOGIC (Import CC : CPP_LOGIC_CLASS).
       forall {σ} ty a v, Fractional (λ q, @tptsto σ ty q a v).
     Global Existing Instances tptsto_timeless tptsto_fractional.
 
-    Axiom tptsto_frac_valid : forall {σ} t q p v,
-      @tptsto σ t q p v |-- ✓ q.
+    Axiom tptsto_frac_valid : forall {σ} t (q : Qp) p v,
+      Observe [| q ≤ 1 |]%Qc (@tptsto σ t q p v).
+    Global Existing Instance tptsto_frac_valid.
 
     Axiom tptsto_agree : forall {σ} t q1 q2 p v1 v2,
-      @tptsto σ t q1 p v1 |-- @tptsto σ t q2 p v2 -* [| v1 = v2 |].
+      Observe2 [| v1 = v2 |] (@tptsto σ t q1 p v1) (@tptsto σ t q2 p v2).
+    Global Existing Instance tptsto_agree.
 
 (* this isn't actually needed
     Axiom tptsto_valid_ptr : forall σ t q a v,
@@ -261,7 +264,8 @@ Module Type CPP_LOGIC (Import CC : CPP_LOGIC_CLASS).
     Axiom pinned_ptr_affine : forall va p, Affine (pinned_ptr va p).
     Axiom pinned_ptr_timeless : forall va p, Timeless (pinned_ptr va p).
     Axiom pinned_ptr_unique : forall va va' p,
-        pinned_ptr va p ** pinned_ptr va' p |-- [! va = va' !].
+        Observe2 [| va = va' |] (pinned_ptr va p) (pinned_ptr va' p).
+    Global Existing Instance pinned_ptr_unique.
 
     (* A pinned ptr allows access to the underlying bytes. The fupd is needed to
       update the C++ abstraction's ghost state. *)
@@ -296,12 +300,24 @@ Section with_cpp.
     AsFractional (tptsto (σ := σ) ty q a v) (λ q, tptsto (σ := σ) ty q a v) q.
   Proof. split. done. apply _. Qed.
 
-  Theorem tptsto_nonnull_alt {σ} ty q p a :
-    tptsto (σ := σ) ty q p a |-- tptsto (σ := σ) ty q p a ** [| p <> nullptr |].
+  Global Instance tptsto_observe_nonnull {σ} t q p v :
+    Observe [| p <> nullptr |] (tptsto (σ := σ) t q p v).
   Proof.
+    apply: observe_intro.
     destruct (ptr_eq_dec p nullptr); subst; last by eauto.
     rewrite {1}tptsto_nonnull. exact: bi.False_elim.
   Qed.
+
+  Global Instance vbyte_as_fractional a v q :
+    AsFractional (vbyte a v q) (vbyte a v) q.
+  Proof. exact: Build_AsFractional. Qed.
+
+  Global Instance vbytes_fractional a vs : Fractional (vbytes a vs).
+  Proof. apply fractional_big_sepL=>o v. apply vbyte_fractional. Qed.
+  Global Instance vbytes_as_fractional a vs q :
+    AsFractional (vbytes a vs q) (vbytes a vs) q.
+  Proof. exact: Build_AsFractional. Qed.
+  (** PDS: The fraction is valid, agreement? *)
 
   (** function specifications written in weakest pre-condition style.
    *)

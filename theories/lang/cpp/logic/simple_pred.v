@@ -448,12 +448,12 @@ Module SimpleCPP.
       by f_equiv=>/pair_valid [] _ /= /agree_op_invL'.
     Qed.
 
-    Lemma val_frac_valid a v q :
-      val_ a v q |-- ✓ q.
+    Lemma val_frac_valid a v (q : Qp) :
+      val_ a v q |-- [| q ≤ 1 |]%Qc.
     Proof. (* XXX same as byte_frac_valid. *)
       rewrite /val_ /ghost_mem_own.
       rewrite own_valid !uPred.discrete_valid singleton_valid.
-      by f_equiv=>/pair_valid [? _].
+      by iIntros ([? _]%pair_valid).
     Qed.
 
     Instance val_fractional a rv : Fractional (val_ a rv).
@@ -481,12 +481,12 @@ Module SimpleCPP.
       by f_equiv=>/pair_valid [] _ /= /agree_op_invL'.
     Qed.
 
-    Lemma byte_frac_valid a rv q :
-      byte_ a rv q |-- ✓ q.
+    Lemma byte_frac_valid a rv (q : Qp) :
+      byte_ a rv q |-- [| q ≤ 1 |]%Qc.
     Proof.
       rewrite /byte_ /heap_own.
       rewrite own_valid !uPred.discrete_valid singleton_valid.
-      by f_equiv=>/pair_valid [? _].
+      by iIntros ([? _]%pair_valid).
     Qed.
 
     Instance: Fractional (byte_ a rv).
@@ -542,9 +542,9 @@ Module SimpleCPP.
       by iDestruct (IH _ _ Hlen with "Hvs1 Hvs2") as %->.
     Qed.
 
-    Lemma bytes_frac_valid a vs q :
+    Lemma bytes_frac_valid a vs (q : Qp) :
       length vs > 0 ->
-      bytes a vs q |-- ✓ q.
+      bytes a vs q |-- [| q ≤ 1 |]%Qc.
     Proof.
       rewrite /bytes. case: vs => [ |v vs _] /=; first by lia.
       rewrite byte_frac_valid.
@@ -652,8 +652,10 @@ Module SimpleCPP.
 
     Instance tptsto_timeless {σ} ty q p v : Timeless (@tptsto σ ty q p v) := _.
 
-    Theorem tptsto_frac_valid {σ} ty q p v : @tptsto σ ty q p v |-- ✓ q.
+    Theorem tptsto_frac_valid {σ} ty (q : Qp) p v :
+      Observe [| q ≤ 1 |]%Qc (@tptsto σ ty q p v).
     Proof.
+      apply: observe_intro_persistent.
       iDestruct 1 as "[_ T]".
       iDestruct "T" as ([a| ]) "[_ T]"; last by iApply val_frac_valid.
       iDestruct "T" as (vs Hen%length_encodes_pos) "[B _]".
@@ -661,8 +663,9 @@ Module SimpleCPP.
     Qed.
 
     Theorem tptsto_agree σ t q1 q2 p v1 v2 :
-        @tptsto σ t q1 p v1 |-- @tptsto σ t q2 p v2 -* [| v1 = v2 |].
+      Observe2 [| v1 = v2 |] (@tptsto σ t q1 p v1) (@tptsto σ t q2 p v2).
     Proof.
+      apply: observe_2_intro_persistent.
       iDestruct 1 as (Hnn1 ma1) "(Hp1 & Hv1)".
       iDestruct 1 as (Hnn2 ma2) "(Hp2 & Hv2)".
       iDestruct (mem_inj_own_agree with "Hp1 Hp2") as "->".
@@ -707,9 +710,10 @@ Module SimpleCPP.
     Instance pinned_ptr_affine va p : Affine (pinned_ptr va p) := _.
     Instance pinned_ptr_timeless va p : Timeless (pinned_ptr va p) := _.
     Theorem pinned_ptr_unique va va' p :
-        pinned_ptr va p ** pinned_ptr va' p |-- [! va = va' !].
+      Observe2 [| va = va' |] (pinned_ptr va p) (pinned_ptr va' p).
     Proof.
-      iIntros "[A B]".
+      apply: observe_2_intro_persistent.
+      iIntros "A B".
       iDestruct "A" as "[[->->] | [% A]]"; iDestruct "B" as "[[%->] | [% B]]"; auto.
       iDestruct (mem_inj_own_agree with "A B") as %Hp. by inversion Hp.
     Qed.
