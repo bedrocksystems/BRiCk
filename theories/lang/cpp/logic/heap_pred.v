@@ -106,6 +106,8 @@ Section with_cpp.
   Definition _offsetR := _offsetR_aux.(unseal).
   Definition _offsetR_eq : @_offsetR = _ := _offsetR_aux.(seal_eq).
 
+  Global Instance _offsetR_ne o n : Proper (dist n ==> dist n) (_offsetR o).
+  Proof. rewrite _offsetR_eq. solve_proper. Qed.
   Global Instance _offsetR_proper o : Proper ((≡) ==> (≡)) (_offsetR o).
   Proof. rewrite _offsetR_eq. solve_proper. Qed.
   Global Instance _offsetR_mono o : Proper ((⊢) ==> (⊢)) (_offsetR o).
@@ -622,6 +624,10 @@ Section with_cpp.
   Proof. rewrite is_null_eq. apply _. Qed.
   Global Instance is_null_timeless : Timeless is_null.
   Proof. rewrite is_null_eq. apply _. Qed.
+  Global Instance is_null_fractional : Fractional (λ _, is_null).
+  Proof. apply _. Qed.
+  Global Instance is_null_as_fractional q : AsFractional is_null (λ _, is_null) q.
+  Proof. exact: Build_AsFractional. Qed.
 
   Definition is_nonnull_def : Rep :=
     as_Rep (fun addr => [| addr <> nullptr |]).
@@ -636,6 +642,13 @@ Section with_cpp.
   Global Instance is_nonnull_timeless : Timeless is_nonnull.
   Proof. rewrite is_nonnull_eq. apply _. Qed.
 
+  Lemma null_nonnull (R : Rep) : is_null |-- is_nonnull -* R.
+  Proof.
+    rewrite is_null_eq /is_null_def is_nonnull_eq /is_nonnull_def.
+    constructor=>p /=. rewrite monPred_at_wand/=.
+    by iIntros "->" (? <-%ptr_rel_elim) "%".
+  Qed.
+
   (** [blockR sz] is mean to be a contiguous chunk of [sz] bytes *)
   Definition blockR {σ} (sz : _) : Rep :=
     _offsetR (_sub (resolve:=σ) T_uint8 (Z.of_N sz)) (emp) **
@@ -645,6 +658,9 @@ Section with_cpp.
       _offsetR (_sub (resolve:=σ) T_uint8 (Z.of_nat i)) (anyR (resolve:=σ) T_uint8 1).
 
 End with_cpp.
+Instance: Params (@as_Rep) 2 := {}.
+Instance: Params (@_offsetR) 3 := {}.
+Instance: Params (@pureR) 2 := {}.
 
 Global Opaque _at _offsetR primR.
 
