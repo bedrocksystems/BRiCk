@@ -19,6 +19,11 @@ Require Import bedrock.lang.cpp.logic.spec.
 Canonical Structure ptr_bi_index : biIndex :=
   BiIndex ptr _ eq _.
 
+(** The tactic [intros ->%ptr_rel_elim] is much faster than [intros
+    ->] when introducing [p1 ⊑ p2] (when the latter works at all). *)
+Lemma ptr_rel_elim (p1 p2 : ptr) : p1 ⊑ p2 → p1 = p2.
+Proof. done. Qed.
+
 Definition Rep `{Σ : cpp_logic} := monPred ptr_bi_index mpredI.
 Definition RepI `{Σ : cpp_logic} := monPredI ptr_bi_index mpredI.
 
