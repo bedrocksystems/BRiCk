@@ -183,8 +183,8 @@ Module Type CPP_LOGIC (Import CC : CPP_LOGIC_CLASS).
     Parameter identity : forall {σ : genv}
         (this : globname) (most_derived : option globname),
         Qp -> ptr -> mpred.
-    (** PDS: [Fractional], [AsFractional], [Timeless]? *)
-    (** PDS: The fraction is valid? Agreement? *)
+    (** cpp2v-core#194: [Fractional], [AsFractional], [Timeless]? *)
+    (** cpp2v-core#194: The fraction is valid? Agreement? *)
 
     (** this allows you to forget an object identity, necessary for doing
         placement [new] over an existing object.
@@ -251,7 +251,7 @@ Module Type CPP_LOGIC (Import CC : CPP_LOGIC_CLASS).
     Axiom vbyte_fractional : forall va rv, Fractional (vbyte va rv).
     Axiom vbyte_timeless : forall va rv q, Timeless (vbyte va rv q).
     Global Existing Instances vbyte_fractional vbyte_timeless.
-    (** PDS: The fraction is valid, agreement? *)
+    (** cpp2v-core#194: The fraction is valid, agreement? *)
 
     Definition vbytes (a : vaddr) (vs : list runtime_val) (q : Qp) : mpred :=
       [∗list] o ↦ v ∈ vs, (vbyte (a+N.of_nat o)%N v q).
@@ -319,7 +319,7 @@ Section with_cpp.
   Global Instance vbytes_as_fractional a vs q :
     AsFractional (vbytes a vs q) (vbytes a vs) q.
   Proof. exact: Build_AsFractional. Qed.
-  (** PDS: The fraction is valid, agreement? *)
+  (** cpp2v-core#194: The fraction is valid, agreement? *)
 
   (** function specifications written in weakest pre-condition style.
    *)
