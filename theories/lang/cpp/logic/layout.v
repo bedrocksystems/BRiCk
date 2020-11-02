@@ -44,12 +44,16 @@ Section with_Σ.
   Axiom union_padding_fractional : forall cls idx, Fractional (fun q => union_padding resolve q cls idx).
   Axiom union_padding_timeless : forall q cls idx, Timeless (union_padding resolve q cls idx).
 
+  Global Existing Instances
+    struct_padding_fractional struct_padding_timeless
+    union_padding_fractional union_padding_timeless.
+
   Global Instance struct_padding_as_fractional q cls :
     AsFractional (struct_padding resolve q cls) (λ q, struct_padding resolve q cls) q.
-  Proof. constructor. done. apply struct_padding_fractional. Qed.
+  Proof. exact: Build_AsFractional. Qed.
   Global Instance union_padding_as_fractional q cls idx :
     AsFractional (union_padding resolve q cls idx) (λ q, union_padding resolve q cls idx) q.
-  Proof. constructor. done. apply union_padding_fractional. Qed.
+  Proof. exact: Build_AsFractional. Qed.
 
   (** [raw_values_of_val σ ty v rs] states that the value [v] of type
   [ty] is represented by the raw bytes in [rs]. WHat this means
@@ -167,8 +171,3 @@ Section with_Σ.
          anyR (Tarray T_uchar (bytesN sz)) q **
          _type_ptr resolve (Tint sz Unsigned).
 End with_Σ.
-
-Existing Instances
-  struct_padding_fractional struct_padding_timeless
-  union_padding_fractional union_padding_timeless
-.
