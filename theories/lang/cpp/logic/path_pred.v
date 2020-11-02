@@ -219,6 +219,18 @@ Section with_Σ.
   Global Instance valid_loc_timeless : Timeless (valid_loc l).
   Proof. rewrite valid_loc_eq. apply _. Qed.
 
+  Lemma valid_loc_rew l l' : Loc_equiv l l' |-- valid_loc l -* valid_loc l'.
+  Proof.
+    rewrite valid_loc_eq /valid_loc_def addr_of_eq /addr_of_def /Loc_equiv.
+    iIntros "#A". iDestruct 1 as (p) "L"; iExists p. by iApply "A".
+  Qed.
+
+  Lemma addr_of_loc_rew l1 l2 p : Loc_equiv l1 l2 |-- l1 &~ p -* l2 &~ p.
+  Proof.
+    rewrite addr_of_eq /addr_of_def.
+    iIntros "A B". by iApply "A".
+  Qed.
+
   (** offsets *)
   Record Offset : Type :=
   { _offset : ptr -> ptr -> mpred
