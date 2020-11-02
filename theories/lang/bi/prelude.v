@@ -5,9 +5,8 @@
  *)
 From iris.bi Require Import bi.
 From iris.proofmode Require Import tactics.
+From bedrock.lang.prelude Require Export base.
 From bedrock.lang.bi Require Export only_provable derived_laws.
-
-Set Default Proof Using "Type".
 
 (** * Notation for functions in the Iris scope. To upstream,
 per https://gitlab.mpi-sws.org/iris/iris/-/issues/320. *)
