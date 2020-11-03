@@ -34,9 +34,11 @@ Section bi.
   Proof. apply _. Qed.
   Global Instance only_provable_affine P : Affine (PROP:=PROP) [| P |].
   Proof. apply _. Qed.
-  Global Instance only_provable_absorbing `{BiAffine PROP} P :
+
+  (* This is provable, but only usable under `BiAffine`, hence misleading. *)
+  (* Global Instance only_provable_absorbing `{BiAffine PROP} P :
     Absorbing (PROP:=PROP) [| P |].
-  Proof. apply _. Qed.
+  Proof. apply _. Qed. *)
 
   Implicit Types P Q : Prop.
   Implicit Types p q r : PROP.
