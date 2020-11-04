@@ -29,9 +29,24 @@ Module Type PTRS.
         https://robbertkrebbers.nl/thesis.html.
       Not all of our pointers have physical addresses; for discussion, see
       documentation of [tptsto] and [pinned_ptr].
+
+      This API allows constructing "invalid" pointers; pointer validity is
+      defined by [valid_ptr : genv -> ptr -> mpred] elsewhere.
   *)
 
   Parameter ptr : Set.
+  Declare Scope ptr_scope.
+  Bind Scope ptr_scope with ptr.
+  Delimit Scope ptr_scope with ptr.
+
+  (** * Offsets.
+      Offsets represent paths between locations
+   *)
+  Parameter offset : Set.
+  Declare Scope offset_scope.
+  Bind Scope offset_scope with offset.
+  Delimit Scope offset_scope with offset.
+
   Axiom ptr_eq_dec : forall (x y : ptr), { x = y } + { x <> y }.
   Global Instance ptr_eq_dec' : EqDecision ptr := ptr_eq_dec.
   (* TODO AUTO: replace [ptr_eq_dec'] with:
@@ -45,19 +60,113 @@ Module Type PTRS.
   Axiom ptr_countable : Countable ptr.
   Global Existing Instance ptr_countable.
 
+  Axiom offset_eq_dec : EqDecision offset.
+  Global Existing Instance offset_eq_dec.
+  Axiom offset_countable : Countable offset.
+  Global Existing Instance offset_countable.
+
+  (* Question to resolve: can we commit to Leibniz equality or should we
+  expose a setoid with the associated pain? I expect the former. *)
+
+  Parameter ptr_equiv : Equiv ptr.
+  Parameter offset_equiv : Equiv offset.
+  Global Existing Instances ptr_equiv offset_equiv.
+  Axiom ptr_equivalence : Equivalence (==@{ptr}).
+  Axiom offset_equivalence : Equivalence (==@{offset}).
+  Global Existing Instances ptr_equivalence offset_equivalence.
+  Axiom ptr_equiv_dec : RelDecision (==@{ptr}).
+  Axiom offset_equiv_dec : RelDecision (==@{offset}).
+  Global Existing Instances ptr_equiv_dec offset_equiv_dec.
+
+  (* offsets form a monoid; maybe just use the free monoid [list offset]? *)
+  (* identity - probably not strictly necessary*)
+  Parameter o_id : offset.
+  Parameter o_dot : offset -> offset -> offset.
+
+  Axiom id_dot : LeftId (=) o_id o_dot.
+  Axiom dot_id : RightId (=) o_id o_dot.
+  Axiom dot_assoc : Assoc (≡) o_dot.
+  Axiom dot_proper : Proper ((≡) ==> (≡) ==> (≡)) o_dot.
+
+  Global Existing Instances id_dot dot_id dot_assoc dot_proper.
+
+  (** combine an offset and a pointer to get a new pointer;
+    this is a right monoid action.
+   *)
+  Parameter _offset_ptr : ptr -> offset -> ptr.
+  Reserved Notation "p ., o" (at level 11, left associativity).
+  Notation "p ., o" := (_offset_ptr p o) : ptr_scope.
+  Notation "o1 ., o2" := (o_dot o1 o2) : offset_scope.
+  (* TODO: use an operational typeclass, and add stdpp-style Haskell-style
+  variants of the operator. *)
+
+  Axiom offset_ptr_proper : Proper ((≡) ==> (≡) ==> (≡)) _offset_ptr.
+  Axiom offset_ptr_dot : forall p o1 o2,
+    (p ., (o1 ., o2) ≡ p ., o1 ., o2)%ptr.
+  Global Existing Instances offset_ptr_proper.
+
   (** C++ provides a distinguished pointer [nullptr] that is *never
       dereferenceable*
   *)
   Parameter nullptr : ptr.
 
-  (** ** pointer offsets *)
-  (** the offset of a pointer. *)
-  Parameter offset_ptr_ : Z -> ptr -> ptr.
+  (** An invalid pointer, included as a sentinel value. *)
+  Parameter invalid_ptr : ptr.
 
-  Axiom offset_ptr_combine_ : forall b o o',
-      offset_ptr_ o' (offset_ptr_ o b) = offset_ptr_ (o + o') b.
-  Axiom offset_ptr_0_ : forall b,
+  (** TODO: To drop [genv], we add _some_ constructors for root pointers. *)
+  (* Pointer to a C++ "complete object" with external or internal linkage. *)
+  Parameter global_ptr :
+    obj_name -> (* translation_unit_id ->  *) ptr.
+    (* Dynamic loading might require adding some abstract [translation_unit_id]
+    *)
+    (* Might need deferring, as it needs designing a [translation_unit_id];
+     since loading the same translation unit twice can give different
+     addresses. *)
+
+  (* Pointer to "functions"; in C/C++ standards, those are distinct from
+  pointers to objects. *)
+  Parameter fun_ptr :
+    obj_name -> (* translation_unit_id ->  *) ptr.
+
+  (* Other constructors exist, but are currently only used internally to the
+  operational semantics (?):
+  - pointers to local variables (objects with automatic linkage/storage duration)
+  - pointers to [this]
+  *)
+
+  (** ** pointer offsets *)
+
+  (* [o_field cls n] represents [x.n] for [x : cls] *)
+  Parameter o_field : field -> offset.
+  (* [o_sub ty n] represents [x + n] for [x : cls*] *)
+  Parameter o_sub : type -> Z -> offset.
+
+  Axiom o_sub_sub : forall ty n1 n2,
+      o_dot (o_sub ty n1) (o_sub ty n2) ≡ o_sub ty (n1 + n2).
+
+  (** going up and down the class heirarchy *)
+  Parameter o_base : forall (derived base : globname), offset.
+  Parameter o_derived : forall (base derived : globname), offset.
+
+  (* True without virtual inheritance? *)
+  Axiom o_base_derived : forall base derived,
+    (o_base derived base ., o_derived base derived = o_id)%offset.
+
+  (** * Deprecated APIs *)
+  (** Offset a pointer by a certain number of bytes. *)
+  Parameter offset_ptr__ : Z -> ptr -> ptr.
+  #[deprecated(since="X", note="XXX")]
+  Notation offset_ptr_ := offset_ptr__.
+
+  Axiom offset_ptr_0__ : forall b,
       offset_ptr_ 0 b = b.
+  #[deprecated(since="X", note="XXX")]
+  Notation offset_ptr_0_ := offset_ptr_0__.
+
+  Axiom offset_ptr_combine__ : forall b o o',
+      offset_ptr_ o' (offset_ptr_ o b) = offset_ptr_ (o + o') b.
+  #[deprecated(since="X", note="XXX")]
+  Notation offset_ptr_combine_ := offset_ptr_combine__.
 End PTRS.
 
 Module Type RAW_BYTES.
@@ -496,3 +605,27 @@ Arguments Z.mul _ _ : simpl never.
 Arguments Z.pow _ _ : simpl never.
 Arguments Z.opp _ : simpl never.
 Arguments Z.pow_pos _ _ : simpl never.
+
+
+(* Clients are not SUPPOSED to look at these APIs, and ideally we can drop them. *)
+Module ptr_internal.
+  Parameter eval_offset : genv -> offset -> option Z.
+
+  (* NOTE this API is especially non-sensical, since pointers and offsets
+  contain no translation unit, but eval_offset does *)
+  Axiom offset_ptr_eq : forall tu p o,
+    Some (p ., o)%ptr = flip offset_ptr_ p <$> eval_offset tu o.
+
+  (* NOTE: the multiplication is flipped from path_pred. *)
+  Axiom eval_o_sub : forall resolve ty (i : Z),
+    eval_offset resolve (o_sub ty i) =
+      (fun n => i * Z.of_N n) <$> size_of resolve ty.
+
+  Lemma o_sub_collapse p i n ty resolve
+    (Hsz : size_of resolve ty = Some n) :
+    (p ., o_sub ty i)%ptr = offset_ptr_ (i * Z.of_N n) p.
+  Proof.
+    apply (inj Some).
+    by rewrite (offset_ptr_eq resolve) eval_o_sub Hsz.
+  Qed.
+End ptr_internal.
