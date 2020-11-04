@@ -24,6 +24,15 @@ Section with_Σ.
 
   Global Existing Instances _loc_persist _loc_affine _loc_timeless.
 
+  Global Instance _location_unique loc p1 p2 :
+    Observe2 [| p1 = p2 |] (_location loc p1) (_location loc p2).
+  Proof.
+    apply: observe_2_intro_persistent. apply bi.wand_intro_r, _loc_unique.
+  Qed.
+  Global Instance _location_valid loc p :
+    Observe (valid_ptr p) (_location loc p).
+  Proof. apply: observe_intro_persistent. apply _loc_valid. Qed.
+
   Global Instance Loc_Equiv : Equiv Loc :=
     fun l r => forall p, @_location l p -|- @_location r p.
 
@@ -169,31 +178,37 @@ Section with_Σ.
   Global Instance addr_of_timeless : Timeless (addr_of o l).
   Proof. rewrite addr_of_eq. apply _. Qed.
 
+  Global Instance addr_of_observe_precise loc a1 a2 :
+    Observe2 [| a1 = a2 |] (addr_of loc a1) (addr_of loc a2).
+  Proof. rewrite addr_of_eq. apply _. Qed.
+
   Lemma addr_of_precise : forall a b c,
       addr_of a b ** addr_of a c |-- [| b = c |].
+  Proof. intros. iIntros "[A B]". iApply (observe_2 with "A B"). Qed.
+
+  Global Instance addr_of_observe_Loc_eq loc p :
+    Observe (Loc_equiv loc (_eq p)) (loc &~ p).
   Proof.
-    intros.
-    rewrite addr_of_eq /addr_of_def.
-    iIntros "[#A #B]".
-    iFrame "#".
-    iDestruct (_loc_unique with "[A B]") as %H; [ | eauto ]; eauto.
+    rewrite/Observe.
+    rewrite /Loc_equiv addr_of_eq /addr_of_def _eq_eq /_eq_def /=.
+    iIntros "#L !> !>" (p'). iSplit.
+    - iIntros "#L'". iSplit.
+      + iApply (observe_2 with "L L'").
+      + iApply (observe with "L'").
+    - iIntros "[<- _]". iFrame "L".
   Qed.
 
   Lemma addr_of_Loc_eq : forall l p, l &~ p |-- Loc_equiv l (_eq p).
+  Proof. intros. iIntros "L". iApply (observe with "L"). Qed.
+
+  Global Instance addr_of_observe_Loc_impl loc p :
+    Observe (Loc_impl loc (_eq p)) (loc &~ p).
   Proof.
-    intros. rewrite /Loc_equiv addr_of_eq /addr_of_def _eq_eq /_eq_def /=.
-    iIntros "#L". iIntros (ll). iModIntro.
-    iSplit.
-    - iIntros "#H".
-      iSplit.
-      { iApply _loc_unique; iSplit; iAssumption. }
-      { iApply _loc_valid; iAssumption. }
-    - iIntros "[% #H]".
-      subst. iAssumption.
+    rewrite/Observe. rewrite addr_of_Loc_eq Loc_equiv_impl bi.sep_elim_l. auto.
   Qed.
 
   Lemma addr_of_Loc_impl : forall l p, l &~ p |-- Loc_impl l (_eq p).
-  Proof. intros. by rewrite addr_of_Loc_eq Loc_equiv_impl bi.sep_elim_l. Qed.
+  Proof. intros. iIntros "L". iApply (observe with "L"). Qed.
 
   (** [valid_loc]
       - same as [addr_of] except that it hides the existential quantifier
