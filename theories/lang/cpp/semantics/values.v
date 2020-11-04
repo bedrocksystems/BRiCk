@@ -17,7 +17,7 @@ Require Import bedrock.lang.cpp.semantics.sub_module.
 Local Close Scope nat_scope.
 Local Open Scope Z_scope.
 
-Module Type PTR_API.
+Module Type PTRS.
   (** * Pointers.
 
       This is the abstract model of pointers in C++.
@@ -58,12 +58,13 @@ Module Type PTR_API.
       offset_ptr_ o' (offset_ptr_ o b) = offset_ptr_ (o + o') b.
   Axiom offset_ptr_0_ : forall b,
       offset_ptr_ 0 b = b.
-End PTR_API.
+End PTRS.
 
-Declare Module PTR : PTR_API.
-Export PTR.
+Declare Module PTRS_AXIOMS : PTRS.
+Export PTRS_AXIOMS.
 
 Instance ptr_inhabited : Inhabited ptr := populate nullptr.
+
 (** * Raw bytes
     Raw bytes represent the low-level view of data.
     [raw_byte] abstracts over the internal structure of this low-level view of data.
