@@ -60,11 +60,7 @@ Module Type PTRS.
       offset_ptr_ 0 b = b.
 End PTRS.
 
-Declare Module PTRS_AXIOMS : PTRS.
-Export PTRS_AXIOMS.
-
-Instance ptr_inhabited : Inhabited ptr := populate nullptr.
-
+Module Type RAW_BYTES.
 (** * Raw bytes
     Raw bytes represent the low-level view of data.
     [raw_byte] abstracts over the internal structure of this low-level view of data.
@@ -77,6 +73,10 @@ Parameter raw_byte_eq_dec : EqDecision raw_byte.
 Existing Instance raw_byte_eq_dec.
 
 Axiom raw_int_byte : N -> raw_byte.
+
+End RAW_BYTES.
+
+Module Type VAL_MIXIN (Import L : PTRS) (Import R : RAW_BYTES).
 
 (** * values
     Abstract C++ runtime values come in two flavors.
@@ -97,9 +97,16 @@ Variant val : Set :=
 
 Definition val_dec : forall a b : val, {a = b} + {a <> b}.
 Proof. solve_decision. Defined.
-Instance: EqDecision val := val_dec.
-
+Instance val_eq_dec : EqDecision val := val_dec.
 Instance val_inhabited : Inhabited val := populate (Vint 0).
+
+End VAL_MIXIN.
+
+Module Type PTRS_FULL := PTRS <+ RAW_BYTES <+ VAL_MIXIN.
+Declare Module PTRS_FULL_AXIOM : PTRS_FULL.
+Export PTRS_FULL_AXIOM.
+
+Instance ptr_inhabited : Inhabited ptr := populate nullptr.
 
 (** wrappers for constructing certain values *)
 Definition Vchar (a : Ascii.ascii) : val :=

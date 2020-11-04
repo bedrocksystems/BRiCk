@@ -63,6 +63,12 @@ End fractional.
 
 (** soundness proof *)
 
+(* Stand-in for an actual model of PTRS_FULL.
+Ensures that everything needed is properly functorized. *)
+Declare Module PTRS_IMPL : PTRS.
+Declare Module RAW_BYTES_IMPL : RAW_BYTES.
+Module Import PTRS_FULL_IMPL : PTRS_FULL := PTRS_IMPL <+ RAW_BYTES_IMPL <+ VAL_MIXIN.
+
 Module SimpleCPP_BASE <: CPP_LOGIC_CLASS.
 
   Definition addr : Set := N.
@@ -174,6 +180,7 @@ End SimpleCPP_VIRTUAL.
 
 Module SimpleCPP.
   Include SimpleCPP_VIRTUAL.
+  Include PTRS_FULL_IMPL.
 
   Definition runtime_val := runtime_val'.
 
@@ -762,5 +769,5 @@ Module SimpleCPP.
 
 End SimpleCPP.
 
-Module Type SimpleCPP_INTF :=  SimpleCPP_BASE <+ CPP_LOGIC.
+Module Type SimpleCPP_INTF :=  SimpleCPP_BASE <+ PTRS_FULL <+ CPP_LOGIC.
 Module L : SimpleCPP_INTF := SimpleCPP.
