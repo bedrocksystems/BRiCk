@@ -665,10 +665,10 @@ Module SimpleCPP.
     Qed.
 
     Theorem tptsto_valid_ptr {σ} t q p v :
-      @tptsto σ t q p v |-- @tptsto σ t q p v ** valid_ptr p.
+      Observe (valid_ptr p) (@tptsto σ t q p v).
     Proof.
-      iIntros "H"; iSplit; first done.
-      iDestruct "H" as "(_ & T)".
+      apply: observe_intro_persistent.
+      iDestruct 1 as "(_ & T)".
       iDestruct "T" as (oa) "(_ & $ & _)".
     Qed.
 
