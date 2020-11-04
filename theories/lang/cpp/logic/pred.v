@@ -155,10 +155,8 @@ Module Type CPP_LOGIC (Import CC : CPP_LOGIC_CLASS).
       Observe2 [| v1 = v2 |] (@tptsto σ t q1 p v1) (@tptsto σ t q2 p v2).
     Global Existing Instance tptsto_agree.
 
-(* this isn't actually needed
-    Axiom tptsto_valid_ptr : forall σ t q a v,
-        @tptsto σ t q a v |-- @tptsto σ t q a v ** valid_ptr a.
-*)
+    Axiom tptsto_valid_ptr : forall σ t q p v,
+      @tptsto σ t q p v |-- @tptsto σ t q p v ** valid_ptr p.
 
     (** this states that the pointer is a pointer to the given type,
         this is persistent. this implies,

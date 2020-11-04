@@ -611,6 +611,7 @@ Module SimpleCPP.
       [| p <> nullptr |] **
       Exists (a : option addr),
               mem_inj_own p a **
+              valid_ptr p **
               match a with
               | Some a =>
                 Exists vs,
@@ -641,6 +642,7 @@ Module SimpleCPP.
       rewrite -bi.exist_sep_only_provable; first last => [oa1 oa2| ].
         by iIntros "[A1 _] [A2 _]"; iApply (mem_inj_own_agree with "A1 A2").
       f_equiv=>oa. rewrite -bi.persistent_sep_distr_l; f_equiv.
+      rewrite -bi.persistent_sep_distr_l; f_equiv.
       destruct oa; last by rewrite fractional.
       rewrite -bi.exist_sep; first last => [vs1 vs2| ]. {
         iIntros "[En1 [By1 _]] [En2 [By2 _]]".
@@ -656,18 +658,26 @@ Module SimpleCPP.
       Observe [| q ≤ 1 |]%Qc (@tptsto σ ty q p v).
     Proof.
       apply: observe_intro_persistent.
-      iDestruct 1 as "[_ T]".
-      iDestruct "T" as ([a| ]) "[_ T]"; last by iApply val_frac_valid.
+      iDestruct 1 as "(_ & T)".
+      iDestruct "T" as ([a| ]) "(_ & _ & T)"; last by iApply val_frac_valid.
       iDestruct "T" as (vs Hen%length_encodes_pos) "[B _]".
       by iApply (bytes_frac_valid with "B").
+    Qed.
+
+    Theorem tptsto_valid_ptr {σ} t q p v :
+      @tptsto σ t q p v |-- @tptsto σ t q p v ** valid_ptr p.
+    Proof.
+      iIntros "H"; iSplit; first done.
+      iDestruct "H" as "(_ & T)".
+      iDestruct "T" as (oa) "(_ & $ & _)".
     Qed.
 
     Theorem tptsto_agree σ t q1 q2 p v1 v2 :
       Observe2 [| v1 = v2 |] (@tptsto σ t q1 p v1) (@tptsto σ t q2 p v2).
     Proof.
       apply: observe_2_intro_persistent.
-      iDestruct 1 as (Hnn1 ma1) "(Hp1 & Hv1)".
-      iDestruct 1 as (Hnn2 ma2) "(Hp2 & Hv2)".
+      iDestruct 1 as (Hnn1 ma1) "(Hp1 & _ & Hv1)".
+      iDestruct 1 as (Hnn2 ma2) "(Hp2 & _ & Hv2)".
       iDestruct (mem_inj_own_agree with "Hp1 Hp2") as "->".
       case: ma2=>[a| ]; last by iDestruct (val_agree with "Hv1 Hv2") as %->.
       iDestruct "Hv1" as (vs1) "[He1 [Hb1 _]]".
@@ -726,7 +736,7 @@ Module SimpleCPP.
     Proof.
       intros. iIntros "(TP & PI & %)".
       iDestruct "PI" as "[[% %]|[% MJ]]"; [done| ].
-      iDestruct "TP" as (_ ma) "[MJ' TP]".
+      iDestruct "TP" as (_ ma) "[MJ' [VP TP]]".
       iDestruct (mem_inj_own_agree with "MJ MJ'") as %?. subst ma.
       iDestruct "TP" as (vs) "(#EN & Bys & VBys)".
       iIntros "!>".
@@ -735,7 +745,7 @@ Module SimpleCPP.
       iDestruct (encodes_consistent with "EN EN'") as %Heq.
       iMod (bytes_update vs' Heq with "Bys") as "Bys'".
       iModIntro.
-      iSplit; first done. iExists (Some va). iFrame "MJ".
+      iSplit; first done. iExists (Some va). iFrame "MJ VP".
       iExists vs'. by iFrame.
     Qed.
 
