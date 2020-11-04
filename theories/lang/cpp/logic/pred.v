@@ -101,6 +101,10 @@ Module Type CPP_LOGIC (Import CC : CPP_LOGIC_CLASS) (Import PTR : PTRS_FULL).
     cpp2v-core#135. *)
   Parameter runtime_val : Type.
 
+  (* XXX why does this not work in the module type. *)
+  Bind Scope ptr_scope with ptr.
+  Bind Scope offset_scope with offset.
+
   Section with_cpp.
     Context `{Σ : cpp_logic}.
 
@@ -292,6 +296,31 @@ End CPP_LOGIC.
 Declare Module LC : CPP_LOGIC_CLASS.
 Declare Module L : CPP_LOGIC LC PTRS_FULL_AXIOM.
 Export LC L.
+
+(* Pointer axioms. XXX Not modeled for now. *)
+Module Type VALID_PTR_AXIOMS.
+  Section with_cpp.
+    Context `{cpp_logic}.
+
+    (*
+    TODO: pointer validity now assumes a [genv] / [binary] (=
+    [translation_unit]) in ghost state.
+    *)
+
+    Axiom invalid_ptr_invalid :
+      valid_ptr invalid_ptr |-- False.
+
+    Axiom valid_ptr_field : ∀ p f,
+      valid_ptr (p ., o_field f) |-- valid_ptr p.
+    Axiom valid_ptr_sub : ∀ p ty i,
+      0 <= i -> valid_ptr (p ., o_sub ty i) |-- valid_ptr p.
+    Axiom valid_ptr_base : ∀ p base derived,
+      valid_ptr (p ., o_base derived base) |-- valid_ptr p.
+    Axiom valid_ptr_derived : ∀ p base derived,
+      valid_ptr (p ., o_derived base derived) |-- valid_ptr p.
+  End with_cpp.
+End VALID_PTR_AXIOMS.
+Declare Module Import VALID_PTR : VALID_PTR_AXIOMS.
 
 Section with_cpp.
   Context `{Σ : cpp_logic}.
