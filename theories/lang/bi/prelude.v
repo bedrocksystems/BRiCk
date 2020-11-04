@@ -20,6 +20,10 @@ Notation "'funI' x .. y => t" := (fun x => .. (fun y => t%I) ..)
   (at level 200, x binder, y binder, right associativity,
   only parsing) : function_scope.
 
+(* ASCII alias for [bi_pure] notation [⌜P⌝]. *)
+Global Notation "[! P !]" := (bi_pure P%type%stdpp) (only parsing) : bi_scope.
+
+(* Old, pre-Iris notations *)
 Global Notation lentails := (bi_entails) (only parsing).
 Global Notation lequiv := (≡) (only parsing).
 Global Notation ltrue := (True%I) (only parsing).
@@ -34,8 +38,6 @@ Global Notation empSP := (bi_emp) (only parsing).
 Global Notation sepSP := (bi_sep) (only parsing).
 Global Notation wandSP := (bi_wand) (only parsing).
 Global Notation illater := (bi_later) (only parsing).
-
-Global Notation "[! P !]" := (bi_pure P).
 
 Ltac split' := intros; apply (anti_symm (⊢)).
 
