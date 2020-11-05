@@ -157,6 +157,7 @@ Module Type CPP_LOGIC (Import CC : CPP_LOGIC_CLASS).
 
     Axiom tptsto_valid_ptr : forall σ t q p v,
       Observe (valid_ptr p) (@tptsto σ t q p v).
+    Global Existing Instance tptsto_valid_ptr.
 
     (** this states that the pointer is a pointer to the given type,
         this is persistent. this implies,
