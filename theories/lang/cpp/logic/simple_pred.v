@@ -326,6 +326,10 @@ Module SimpleCPP.
       Local Hint Resolve length_cptr : core.
       Local Hint Resolve length_pure_encodes_undef : core.
 
+      Global Instance encodes_nonvoid t v vs :
+        Observe [| t <> Tvoid |] (encodes t v vs).
+      Proof. apply: observe_intro_persistent; iIntros "!%". by destruct t. Qed.
+
       Lemma length_encodes t v vs :
         pure_encodes t v vs ->
           length vs = match erase_qualifiers t with
@@ -439,18 +443,20 @@ Module SimpleCPP.
     Definition val_ (a : ptr) (v : val) (q : Qp) : mpred :=
       ghost_mem_own a q v.
 
-    Lemma val_agree a v1 v2 q1 q2 :
-      val_ a v1 q1 |-- val_ a v2 q2 -* ⌜v1 = v2⌝.
+    Global Instance val_agree a v1 v2 q1 q2 :
+      Observe2 [|v1 = v2|] (val_ a v1 q1) (val_ a v2 q2).
     Proof.
+      apply: observe_2_intro_persistent.
       apply bi.wand_intro_r.
-      rewrite/val_ -own_op own_valid singleton_op.
+      rewrite /val_ -own_op own_valid singleton_op.
       rewrite uPred.discrete_valid singleton_valid.
-      by f_equiv=>/pair_valid [] _ /= /agree_op_invL'.
+      by iIntros "!%" =>/pair_valid [] _ /= /agree_op_invL'.
     Qed.
 
-    Lemma val_frac_valid a v (q : Qp) :
-      val_ a v q |-- [| q ≤ 1 |]%Qc.
+    Global Instance val_frac_valid a v (q : Qp) :
+      Observe ([| q ≤ 1 |])%Qc (val_ a v q).
     Proof. (* XXX same as byte_frac_valid. *)
+      apply: observe_intro_persistent.
       rewrite /val_ /ghost_mem_own.
       rewrite own_valid !uPred.discrete_valid singleton_valid.
       by iIntros ([? _]%pair_valid).
@@ -616,7 +622,7 @@ Module SimpleCPP.
               | Some a =>
                 Exists vs,
                 encodes σ t v vs ** bytes a vs q ** vbytes a vs q
-              | None => val_ p v q
+              | None => [| t <> Tvoid |] ** val_ p v q
               end.
 
     Theorem tptsto_nonnull {σ} ty q a :
@@ -643,7 +649,7 @@ Module SimpleCPP.
         by iIntros "[A1 _] [A2 _]"; iApply (mem_inj_own_agree with "A1 A2").
       f_equiv=>oa. rewrite -bi.persistent_sep_distr_l; f_equiv.
       rewrite -bi.persistent_sep_distr_l; f_equiv.
-      destruct oa; last by rewrite fractional.
+      destruct oa; last by apply: fractional_sep.
       rewrite -bi.exist_sep; first last => [vs1 vs2| ]. {
         iIntros "[En1 [By1 _]] [En2 [By2 _]]".
         iDestruct (encodes_bytes_agree with "[$En1 $By1] [$En2 $By2]") as "[$ _]".
@@ -654,32 +660,38 @@ Module SimpleCPP.
 
     Instance tptsto_timeless {σ} ty q p v : Timeless (@tptsto σ ty q p v) := _.
 
-    Theorem tptsto_frac_valid {σ} ty (q : Qp) p v :
+    Global Instance tptsto_nonvoid {σ} ty (q : Qp) p v :
+      Observe [| ty <> Tvoid |] (@tptsto σ ty q p v).
+    Proof.
+      rewrite /tptsto.
+      apply observe_sep_r, observe_exist => -[a | ]; apply _.
+    Qed.
+
+    Global Instance tptsto_frac_valid {σ} ty (q : Qp) p v :
       Observe [| q ≤ 1 |]%Qc (@tptsto σ ty q p v).
     Proof.
+      rewrite /tptsto.
+      apply observe_sep_r, observe_exist => -[a | ]; refine _.
+      apply observe_sep_r, observe_sep_r, observe_exist => vs.
       apply: observe_intro_persistent.
-      iDestruct 1 as "(_ & T)".
-      iDestruct "T" as ([a| ]) "(_ & _ & T)"; last by iApply val_frac_valid.
-      iDestruct "T" as (vs Hen%length_encodes_pos) "[B _]".
+      (* Could make the above inferrrable, by lifting this out. *)
+      iDestruct 1 as (Hen%length_encodes_pos) "(B & _)".
       by iApply (bytes_frac_valid with "B").
     Qed.
 
-    Theorem tptsto_valid_ptr {σ} t q p v :
+    Global Instance tptsto_valid_ptr {σ} t q p v :
       Observe (valid_ptr p) (@tptsto σ t q p v).
-    Proof.
-      apply: observe_intro_persistent.
-      iDestruct 1 as "(_ & T)".
-      iDestruct "T" as (oa) "(_ & $ & _)".
-    Qed.
+    Proof. apply _. Qed.
 
     Theorem tptsto_agree σ t q1 q2 p v1 v2 :
       Observe2 [| v1 = v2 |] (@tptsto σ t q1 p v1) (@tptsto σ t q2 p v2).
     Proof.
+      rewrite /tptsto.
       apply: observe_2_intro_persistent.
-      iDestruct 1 as (Hnn1 ma1) "(Hp1 & _ & Hv1)".
-      iDestruct 1 as (Hnn2 ma2) "(Hp2 & _ & Hv2)".
+      iDestruct 1 as (Hnn1 oa1) "(Hp1 & _ & Hv1)".
+      iDestruct 1 as (Hnn2 oa2) "(Hp2 & _ & Hv2)".
       iDestruct (mem_inj_own_agree with "Hp1 Hp2") as "->".
-      case: ma2=>[a| ]; last by iDestruct (val_agree with "Hv1 Hv2") as %->.
+      case: oa2=>[a| ]; last by iApply (observe_2 with "Hv1 Hv2").
       iDestruct "Hv1" as (vs1) "[He1 [Hb1 _]]".
       iDestruct "Hv2" as (vs2) "[He2 [Hb2 _]]".
       by iDestruct (encodes_bytes_agree with "[$He1 $Hb1] [$He2 $Hb2]") as %[_ ->].
