@@ -318,6 +318,14 @@ Module Type VALID_PTR_AXIOMS.
       valid_ptr (p ., o_base derived base) |-- valid_ptr p.
     Axiom valid_ptr_derived : ∀ p base derived,
       valid_ptr (p ., o_derived base derived) |-- valid_ptr p.
+    Axiom o_sub_sub : forall p ty n1 n2,
+      valid_ptr (p ., o_sub ty n1) |--
+      [! p ., o_sub ty n1 ., o_sub ty n2 = p ., o_sub ty (n1 + n2) !]%ptr.
+
+    (* True without virtual inheritance? *)
+    Axiom o_base_derived : forall p base derived,
+      valid_ptr (p ., o_base derived base) |--
+      [! p ., o_base derived base ., o_derived base derived = p !]%ptr.
   End with_cpp.
 End VALID_PTR_AXIOMS.
 Declare Module Import VALID_PTR : VALID_PTR_AXIOMS.

@@ -141,16 +141,9 @@ Module Type PTRS.
   (* [o_sub ty n] represents [x + n] for [x : cls*] *)
   Parameter o_sub : type -> Z -> offset.
 
-  Axiom o_sub_sub : forall ty n1 n2,
-      o_dot (o_sub ty n1) (o_sub ty n2) ≡ o_sub ty (n1 + n2).
-
   (** going up and down the class heirarchy *)
   Parameter o_base : forall (derived base : globname), offset.
   Parameter o_derived : forall (base derived : globname), offset.
-
-  (* True without virtual inheritance? *)
-  Axiom o_base_derived : forall base derived,
-    (o_base derived base ., o_derived base derived = o_id)%offset.
 
   (** * Deprecated APIs *)
   (** Offset a pointer by a certain number of bytes. *)
