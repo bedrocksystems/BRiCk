@@ -189,7 +189,6 @@ Section with_Σ.
   Global Instance addr_of_observe_Loc_eq loc p :
     Observe (Loc_equiv loc (_eq p)) (loc &~ p).
   Proof.
-    rewrite/Observe.
     rewrite /Loc_equiv addr_of_eq /addr_of_def _eq_eq /_eq_def /=.
     iIntros "#L !> !>" (p'). iSplit.
     - iIntros "#L'". iSplit.
