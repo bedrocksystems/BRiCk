@@ -61,6 +61,9 @@ Section observe.
   Proof. intros Hobs. rewrite /Observe2. apply bi.wand_intro_r, Hobs. Qed.
 
   (** Alternatives for eliminating observations *)
+  (** We favor declaring observations with [only_provable] over [bi_pure]. *)
+  Lemma observe_elim_pure (Q : Prop) P `{!Observe [| Q |] P} : P ⊢ ⌜Q⌝.
+  Proof. rewrite (observe [| _ |] P). by iIntros "#%". Qed.
   Lemma observe_elim_strong Q P `{!Observe Q P} : P ⊢ P ∗ □ Q.
   Proof.
     rewrite -{1}(idemp bi_and P) {2}(observe Q P).
@@ -71,6 +74,9 @@ Section observe.
     by rewrite {1}(observe_elim_strong Q P) bi.intuitionistically_elim.
   Qed.
 
+  Lemma observe_2_elim_pure (Q : Prop) P1 P2 `{!Observe2 [| Q |] P1 P2} :
+    P1 ⊢ P2 -∗ ⌜Q⌝.
+  Proof. rewrite (observe_2 [| _ |] P1 P2). f_equiv. by iIntros "#%". Qed.
   Lemma observe_2_elim_strong Q P1 P2 `{!Observe2 Q P1 P2} :
     P1 ⊢ P2 -∗ P1 ∗ P2 ∗ □ Q.
   Proof.
@@ -100,10 +106,52 @@ Section observe.
   Qed.
 
 End observe.
+Arguments observe_elim_pure {_} _%type _%I {_} : assert.
 Arguments observe_elim_strong {_} (_ _)%I {_} : assert.
 Arguments observe_elim {_} (_ _)%I {_} : assert.
+Arguments observe_2_elim_pure {_} _%type (_ _)%I {_} : assert.
 Arguments observe_2_elim_strong {_} (_ _ _)%I {_} : assert.
 Arguments observe_2_elim {_} (_ _ _)%I {_} : assert.
+
+Section proof_mode.
+  Context {PROP : bi}.
+  Implicit Types P Q : PROP.
+
+  (** Enable things like [iIntros] and [iDestruct] when the goal is
+      [Observe Q P], as well as [iApply lem] when [lem] is an
+      observation instance. *)
+  Lemma test_before Q P : Observe Q P.
+  Proof. Fail iIntros "P". Abort.
+  Lemma test_before `{Hobs : !Observe Q P} : P ⊢ <pers> Q.
+  Proof. Fail iApply Hobs. Abort.
+  Global Instance observe_as_emp_valid Q P :
+    AsEmpValid (Observe Q P) (P -∗ <pers> Q).
+  Proof.
+    rewrite/AsEmpValid/Observe. split.
+    - move=>->. by auto.
+    - move/bi.wand_elim_r'. by rewrite right_id.
+  Qed.
+  Lemma test_after `{Hobs : !Observe Q P} : P ⊢ <pers> Q.
+  Proof. iApply Hobs. Abort.
+  Lemma test_after Q P : Observe Q P.
+  Proof. iIntros "P". Abort.
+
+  Lemma test_before Q P1 P2 : Observe2 Q P1 P2.
+  Proof. Fail iIntros "P1 P2". Abort.
+  Lemma test_before `{Hobs : !Observe2 Q P1 P2} : P1 ⊢ P2 -∗ <pers> Q.
+  Proof. Fail iApply Hobs. Abort.
+  Global Instance observe_2_as_emp_valid Q P1 P2 :
+    AsEmpValid (Observe2 Q P1 P2) (P1 -∗ P2 -∗ <pers> Q).
+  Proof.
+    rewrite/AsEmpValid/Observe2. split.
+    - move=>->. apply bi.wand_intro_r, bi.emp_sep_2.
+    - move/bi.wand_elim_r'. by rewrite right_id.
+  Qed.
+  Lemma test_after Q P1 P2 : Observe2 Q P1 P2.
+  Proof. iIntros "P1 P2". Abort.
+  Lemma test_after `{Hobs : !Observe2 Q P1 P2} : P1 ⊢ P2 -∗ <pers> Q.
+  Proof. iApply Hobs. Abort.
+End proof_mode.
 
 (** Instances *)
 Section bi.
@@ -116,41 +164,34 @@ Section bi.
   Global Instance observe_exist {A} Q (P : A → PROP) :
     (∀ x, Observe Q (P x)) → Observe Q (∃ x, P x).
   Proof.
-    intros. rewrite/Observe. iDestruct 1 as (x) "P".
-    iApply (observe with "P").
+    intros. iDestruct 1 as (x) "P". iApply (observe with "P").
   Qed.
   Global Instance observe_2_exist {A} Q (P1 P2 : A → PROP) :
     (∀ x y, Observe2 Q (P1 x) (P2 y)) → Observe2 Q (∃ x, P1 x) (∃ y, P2 y).
   Proof.
-    intros. rewrite/Observe2. iDestruct 1 as (x) "P1". iDestruct 1 as (y) "P2".
+    intros. iDestruct 1 as (x) "P1". iDestruct 1 as (y) "P2".
     iApply (observe_2 with "P1 P2").
   Qed.
 
   Global Instance observe_sep_l Q P R : Observe Q P → Observe Q (P ∗ R).
-  Proof.
-    intros. rewrite/Observe. iIntros "[P _]". iApply (observe with "P").
-  Qed.
+  Proof. intros. iIntros "[P _]". iApply (observe with "P"). Qed.
   Global Instance observe_sep_r Q P R : Observe Q P → Observe Q (R ∗ P).
-  Proof.
-    intros. rewrite/Observe. iIntros "[_ P]". iApply (observe with "P").
-  Qed.
+  Proof. intros. iIntros "[_ P]". iApply (observe with "P"). Qed.
   Global Instance observe_2_sep_l Q P1 P2 R1 R2 :
     Observe2 Q P1 P2 → Observe2 Q (P1 ∗ R1) (P2 ∗ R2).
   Proof.
-    intros. rewrite/Observe2. iIntros "[P1 _] [P2 _]".
-    iApply (observe_2 with "P1 P2").
+    intros. iIntros "[P1 _] [P2 _]". iApply (observe_2 with "P1 P2").
   Qed.
   Global Instance observe_2_sep_r Q P1 P2 R1 R2 :
     Observe2 Q P1 P2 → Observe2 Q (R1 ∗ P1) (R2 ∗ P2).
   Proof.
-    intros. rewrite/Observe2. iIntros "[_ P1] [_ P2]".
-    iApply (observe_2 with "P1 P2").
+    intros. iIntros "[_ P1] [_ P2]". iApply (observe_2 with "P1 P2").
   Qed.
 
   Global Instance observe_or Q P R :
     Observe Q P → Observe Q R → Observe Q (P ∨ R).
   Proof.
-    intros. rewrite/Observe. iIntros "[P|R]".
+    intros. iIntros "[P|R]".
     by iApply (observe with "P"). by iApply (observe with "R").
   Qed.
   Global Instance observe_2_or Q P1 P2 R1 R2 :
@@ -158,7 +199,7 @@ Section bi.
     Observe2 Q R1 P2 → Observe2 Q R1 R2 →
     Observe2 Q (P1 ∨ R1) (P2 ∨ R2).
   Proof.
-    intros. rewrite/Observe2. iIntros "[P1|R1] [P2|R2]".
+    intros. iIntros "[P1|R1] [P2|R2]".
     - iApply (observe_2 with "P1 P2").
     - iApply (observe_2 with "P1 R2").
     - iApply (observe_2 with "R1 P2").
