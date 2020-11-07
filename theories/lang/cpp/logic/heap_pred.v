@@ -320,6 +320,15 @@ Section with_cpp.
       by iSplitL "b".
   Qed.
 
+  Lemma _at_fupd (l : Loc) R E1 E2 : _at l (|={E1,E2}=> R) |-- |={E1,E2}=> _at l R.
+  Proof.
+    rewrite _at_eq/_at_def.
+    setoid_rewrite monPred_at_fupd.
+    iIntros "a".
+    iDestruct "a" as (a) "[? >c]".
+    iModIntro; iExists a; iFrame.
+  Qed.
+
   Lemma _at_offsetL_offsetR (l : Loc) (o : Offset) (r : Rep) :
       _at l (_offsetR o r) -|- _at (_offsetL o l) r.
   Proof.
