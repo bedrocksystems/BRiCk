@@ -25,7 +25,7 @@ Definition only_provable {PROP : bi} (P : Prop) : PROP := (<affine> ⌜P⌝)%I.
 Arguments only_provable {_} _%type_scope : simpl never, rename.
 Instance: Params (@only_provable) 1 := {}.
 
-Notation "'[|'  P  '|]'" := (only_provable P).
+Notation "[ | P | ]" := (only_provable P) (format "[ |  P  | ]").
 
 (** * Properties of [only_provable]. *)
 Section bi.
