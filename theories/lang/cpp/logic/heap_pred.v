@@ -342,12 +342,6 @@ Section with_cpp.
     apply _at_observe_only_provable, observe_curry, Hobs.
   Qed.
 
-  #[global] Instance _at_observe_at {A B} (o : Observe A B) (l : Loc) : Observe (_at l A) (_at l B).
-  Proof. red. rewrite o _at_pers. eauto. Qed.
-
-  #[global] Instance _at_observe_2_at {A B C} (o : Observe2 A B C) (l : Loc) : Observe2 (_at l A) (_at l B) (_at l C).
-  Proof. red. rewrite o _at_wand _at_pers; iIntros "[a #?]"; eauto. Qed.
-
   Lemma _at_obs (l : Loc) (r : Rep) P :
     r |-- r ** [| P |] →
     _at l r |-- _at l r ** [| P |].
