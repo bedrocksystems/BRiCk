@@ -17,6 +17,11 @@ Notation "'[|'  P  '|]'" := (only_provable P).
 Section bi.
   Context {PROP : bi}.
 
+  Implicit Types P Q : Prop.
+  Implicit Types p q r : PROP.
+  Local Notation "p ⊢ q" := (p ⊢@{PROP} q) (only parsing).
+  Local Notation "p ⊣⊢ q" := (p ⊣⊢@{PROP} q) (only parsing).
+
   Global Instance only_provable_ne n :
     Proper (iff ==> dist n) (@only_provable PROP).
   Proof. solve_proper. Qed.
@@ -39,11 +44,6 @@ Section bi.
   Lemma only_provable_absorbing `{BiAffine PROP} P :
     Absorbing (PROP:=PROP) [| P |].
   Proof. apply _. Qed.
-
-  Implicit Types P Q : Prop.
-  Implicit Types p q r : PROP.
-  Local Notation "p ⊢ q" := (p ⊢@{PROP} q) (only parsing).
-  Local Notation "p ⊣⊢ q" := (p ⊣⊢@{PROP} q) (only parsing).
 
   Lemma only_provable_mono P Q : (P → Q) → [| P |] ⊢ [| Q |].
   Proof. apply only_provable_mono'. Qed.
