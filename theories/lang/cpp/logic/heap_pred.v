@@ -99,6 +99,11 @@ Section with_cpp.
     intros. apply observe_elim, as_Rep_observe=>p. exact: observe_intro.
   Qed.
 
+  Lemma Rep_wand_force (R1 R2 : Rep) p : (R1 -* R2) p -|- R1 p -* R2 p.
+  Proof.
+    split'. apply monPred_wand_force. by iIntros "a" (? <-%ptr_rel_elim).
+  Qed.
+
   Definition _offsetR_def (o : Offset) (r : Rep) : Rep :=
     as_Rep (fun base =>
               Exists to, _offset o base to ** r to).
@@ -302,6 +307,23 @@ Section with_cpp.
     iAssumption.
   Qed.
 
+  Lemma _at_pers (l : Loc) R : _at l (<pers> R) |-- <pers> _at l R.
+  Proof.
+    rewrite !_at_loc_materialize.
+    iIntros "z"; iDestruct "z" as (a) "[#b c]"; iExists a; iFrame.
+    rewrite monPred_at_persistently.
+      by iSplitL "b".
+  Qed.
+
+  Lemma _at_fupd (l : Loc) R E1 E2 : _at l (|={E1,E2}=> R) |-- |={E1,E2}=> _at l R.
+  Proof.
+    rewrite _at_eq/_at_def.
+    setoid_rewrite monPred_at_fupd.
+    iIntros "a".
+    iDestruct "a" as (a) "[? >c]".
+    iModIntro; iExists a; iFrame.
+  Qed.
+
   Lemma _at_offsetL_offsetR (l : Loc) (o : Offset) (r : Rep) :
       _at l (_offsetR o r) -|- _at (_offsetL o l) r.
   Proof.
@@ -324,21 +346,20 @@ Section with_cpp.
     AsFractional (_at l (r q)) (λ q, _at l (r q)) q.
   Proof. constructor. done. apply _. Qed.
 
-  Global Instance _at_observe Q l (R : Rep) :
+  Global Instance _at_observe_only_provable Q l (R : Rep) :
     Observe [| Q |] R → Observe [| Q |] (_at l R).
   Proof. rewrite _at_eq. apply _. Qed.
-  Global Instance _at_observe_2 Q l (R1 R2 : Rep) :
+  Global Instance _at_observe_2_only_provable Q l (R1 R2 : Rep) :
     Observe2 [| Q |] R1 R2 → Observe2 [| Q |] (_at l R1) (_at l R2).
   Proof.
     intros Hobs. apply observe_uncurry. rewrite -_at_sep.
-    apply _at_observe, observe_curry, Hobs.
+    apply _at_observe_only_provable, observe_curry, Hobs.
   Qed.
 
   Lemma _at_obs (l : Loc) (r : Rep) P :
     r |-- r ** [| P |] →
     _at l r |-- _at l r ** [| P |].
-  Proof. intros. apply observe_elim, _at_observe. exact: observe_intro. Qed.
-
+  Proof. intros. apply observe_elim, _at_observe_only_provable. exact: observe_intro. Qed.
 
   (** Values
    * These `Rep` predicates wrap `ptsto` facts
@@ -417,7 +438,6 @@ Section with_cpp.
     intros. rewrite _at_loc_materialize/= valid_loc_equiv bi.sep_exist_l.
     by setoid_rewrite bi.sep_comm at 1.
   Qed.
-
 
   (** [primR]: the argument pointer points to an initialized value [v] of C++ type [ty]. *)
   Definition primR_def {resolve:genv} (ty : type) (q : Qp) (v : val) : Rep :=
