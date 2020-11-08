@@ -94,7 +94,7 @@ Module SimpleCPP_BASE <: CPP_LOGIC_CLASS.
       own (A := gmapR addr (fractionalR runtime_val'))
       _ghost.(heap_name) {[ a := frac q r ]}.
     Definition ghost_mem_own (p : ptr) (q : Qp) (v : val) : mpred :=
-      own (A := gmapR ptr (fractionalR (leibnizO val)))
+      own (A := gmapR ptr (fractionalR val))
         _ghost.(ghost_mem_name) {[ p := frac q v ]}.
     Definition mem_inj_own (p : ptr) (va : option N) : mpred :=
       own (A := gmapUR ptr (agreeR (leibnizO (option addr))))
