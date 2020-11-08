@@ -6,6 +6,7 @@
 Require Import bedrock.lang.bi.prelude.
 Require Import iris.bi.bi iris.bi.monpred.
 Require Import iris.proofmode.tactics.
+From iris.bi.lib Require Import fractional.
 
 (** * Observations *)
 (** We define type classes for making observations and a few instances
@@ -279,3 +280,13 @@ Section embed.
     by apply embed_observe, observe_curry.
   Qed.
 End embed.
+
+Global Instance fractional_exist {PROP : bi} {A} (P : A → Qp → PROP)
+  (Hfrac : ∀ oa, Fractional (P oa))
+  (Hobs : ∀ a1 a2 q1 q2, Observe2 [| a1 = a2 |] (P a1 q1) (P a2 q2)) :
+  Fractional (λ q, ∃ a : A, P a q)%I.
+Proof.
+  intros q1 q2.
+  rewrite -bi.exist_sep; last by intros; exact: observe_2_elim_pure.
+  f_equiv=>oa. apply: fractional.
+Qed.
