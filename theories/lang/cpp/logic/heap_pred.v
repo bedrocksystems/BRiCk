@@ -99,14 +99,9 @@ Section with_cpp.
     intros. apply observe_elim, as_Rep_observe=>p. exact: observe_intro.
   Qed.
 
-  Lemma Rep_wand_at (R1 R2 : Rep) p : (R1 -* R2) p -|- R1 p -* R2 p.
+  Lemma Rep_wand_force (R1 R2 : Rep) p : (R1 -* R2) p -|- R1 p -* R2 p.
   Proof.
-    rewrite monPred_at_wand.
-    iSplit.
-    - iIntros "a b". iApply "a"; eauto.
-    - iIntros "a" (b) "c".
-      iDestruct "c" as %c.
-        by inversion c.
+    split'. apply monPred_wand_force. by iIntros "a" (? <-%ptr_rel_elim).
   Qed.
 
   Definition _offsetR_def (o : Offset) (r : Rep) : Rep :=
