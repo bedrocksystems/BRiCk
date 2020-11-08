@@ -623,6 +623,16 @@ Module SimpleCPP.
     Local Instance addr_encodes_fractional {σ} ty a v vs :
       Fractional (λ q, addr_encodes σ ty q a v vs) := _.
 
+    Local Instance addr_encodes_agree_obs σ t a v vs1 vs2 q1 q2 :
+      Observe2 [| vs1 = vs2 |]
+        (addr_encodes σ t q1 a v vs1)
+        (addr_encodes σ t q2 a v vs2).
+    Proof.
+      apply: observe_2_intro_persistent.
+      iIntros "[En1 [By1 _]] [En2 [By2 _]]".
+      iDestruct (encodes_bytes_agree with "[$En1 $By1] [$En2 $By2]") as "[$ _]".
+    Qed.
+
     Local Definition oaddr_encodes
         (σ : genv) (t : type) (q : Qp) (oa : option addr) p (v : val) :=
         match oa with
@@ -634,15 +644,7 @@ Module SimpleCPP.
 
     Local Instance oaddr_encodes_fractional {σ} t oa p v :
       Fractional (λ q, oaddr_encodes σ t q oa p v).
-    Proof.
-      rewrite /Fractional/oaddr_encodes; intros q1 q2.
-      destruct oa; last by apply: fractional_sep.
-      rewrite -bi.exist_sep; first last => [vs1 vs2| ]. {
-        iIntros "[En1 [By1 _]] [En2 [By2 _]]".
-        iDestruct (encodes_bytes_agree with "[$En1 $By1] [$En2 $By2]") as "[$ _]".
-      }
-      f_equiv=>vs. apply: fractional.
-    Qed.
+    Proof. rewrite /oaddr_encodes; destruct oa; apply _. Qed.
 
     Definition tptsto {σ:genv} (t : type) (q : Qp) (p : ptr) (v : val) : mpred :=
       [| p <> nullptr |] **
@@ -666,19 +668,11 @@ Module SimpleCPP.
       by split'; apply tptsto_mono.
     Qed.
 
-    Instance tptsto_fractional {σ} ty p v :
-      Fractional (λ q, @tptsto σ ty q p v).
-    Proof.
-      rewrite /tptsto; apply fractional_sep; first by apply _.
-      rewrite /Fractional; intros q1 q2.
-      rewrite -bi.exist_sep_only_provable; first last => [oa1 oa2| ].
-        by iIntros "[A1 _] [A2 _]"; iApply (mem_inj_own_agree with "A1 A2").
-      f_equiv=>oa.
-      rewrite -bi.persistent_sep_distr_l; f_equiv.
-      rewrite -bi.persistent_sep_distr_l; f_equiv.
-      apply: fractional.
-    Qed.
+    Instance mem_inj_own_agree_obs p (oa1 oa2 : option N) :
+      Observe2 [| oa1 = oa2 |] (mem_inj_own p oa1) (mem_inj_own p oa2).
+    Proof. exact /observe_2_intro_persistent /mem_inj_own_agree. Qed.
 
+    Instance tptsto_fractional {σ} ty p v : Fractional (λ q, @tptsto σ ty q p v) := _.
     Instance tptsto_timeless {σ} ty q p v : Timeless (@tptsto σ ty q p v) := _.
 
     Global Instance oaddr_encodes_nonvoid {σ} ty q oa p v :
