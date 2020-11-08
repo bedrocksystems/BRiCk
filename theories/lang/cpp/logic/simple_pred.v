@@ -26,18 +26,39 @@ Lemma frac_op {V} (l : V) (p q : Qp) :
   frac p l ⋅ frac q l ≡ frac (p + q) l.
 Proof. by rewrite -pair_op agree_idemp. Qed.
 
+Lemma frac_valid {A : Type} {q1 q2} {v1 v2 : A} :
+  ✓ (frac q1 v1 ⋅ frac q2 v2) → ✓ (q1 + q2)%Qp ∧ v1 = v2.
+Proof. by move /pair_valid => /= []? /agree_op_invL'. Qed.
+
 Section fractional.
   Context {K V : Type} `{Countable K} `{inG Σ (gmapR K (fractionalR V))}.
 
+  Let gmap_own γ q k v :=
+    own (A := gmapR K (fractionalR V)) γ {[ k := frac q v ]}.
   Global Instance fractional_own_frac γ k v :
-    Fractional (λ q, own (A := gmapR K (fractionalR V)) γ {[ k := frac q v ]}).
+    Fractional (λ q, gmap_own γ q k v).
   Proof. intros q1 q2. by rewrite -own_op singleton_op frac_op. Qed.
 
   Global Instance fractional_own_frac_as_fractional γ k v q :
-    AsFractional
-        (own (A := gmapR K (fractionalR V)) γ {[ k := frac q v ]})
-        (λ q, own (A := gmapR K (fractionalR V)) γ {[ k := frac q v ]}) q.
+    AsFractional (gmap_own γ q k v) (λ q, gmap_own γ q k v) q.
   Proof. exact: Build_AsFractional. Qed.
+
+  Global Instance gmap_own_agree :
+    Observe2 [| v1 = v2 |] (gmap_own γ q1 k v1) (gmap_own γ q2 k v2).
+  Proof.
+    intros. apply: observe_2_intro_persistent.
+    apply bi.wand_intro_r; rewrite /gmap_own -own_op singleton_op.
+    rewrite own_valid uPred.discrete_valid singleton_valid.
+    by iIntros "!%" => /frac_valid [].
+  Qed.
+
+  Global Instance gmap_own_frac_valid γ (q : Qp) k v :
+    Observe [| q ≤ 1 |]%Qc (gmap_own γ q k v).
+  Proof.
+    apply: observe_intro_persistent.
+    rewrite /gmap_own own_valid !uPred.discrete_valid singleton_valid.
+    by iIntros "!%" => /pair_valid [? _].
+  Qed.
 End fractional.
 
 Local Lemma length__Z_to_bytes {σ} n sgn v :
@@ -438,23 +459,10 @@ Module SimpleCPP.
       ghost_mem_own a q v.
 
     Global Instance val_agree a v1 v2 q1 q2 :
-      Observe2 [|v1 = v2|] (val_ a v1 q1) (val_ a v2 q2).
-    Proof.
-      apply: observe_2_intro_persistent.
-      apply bi.wand_intro_r.
-      rewrite /val_ -own_op own_valid singleton_op.
-      rewrite uPred.discrete_valid singleton_valid.
-      by iIntros "!%" =>/pair_valid [] _ /= /agree_op_invL'.
-    Qed.
+      Observe2 [|v1 = v2|] (val_ a v1 q1) (val_ a v2 q2) := _.
 
     Global Instance val_frac_valid a v (q : Qp) :
-      Observe ([| q ≤ 1 |])%Qc (val_ a v q).
-    Proof. (* XXX same as byte_frac_valid. *)
-      apply: observe_intro_persistent.
-      rewrite /val_ /ghost_mem_own.
-      rewrite own_valid !uPred.discrete_valid singleton_valid.
-      by iIntros ([? _]%pair_valid).
-    Qed.
+      Observe ([| q ≤ 1 |])%Qc (val_ a v q) := _.
 
     Instance val_fractional a rv : Fractional (val_ a rv) := _.
     Instance val_as_fractional a rv q :
@@ -465,31 +473,15 @@ Module SimpleCPP.
     Definition byte_ (a : addr) (rv : runtime_val) (q : Qp) : mpred :=
       heap_own a q rv.
 
-    Lemma byte_agree a rv1 rv2 q1 q2 :
-      byte_ a rv1 q1 |-- byte_ a rv2 q2 -* ⌜rv1 = rv2⌝.
-    Proof.
-      apply bi.wand_intro_r.
-      rewrite /byte_ -own_op own_valid singleton_op.
-      rewrite uPred.discrete_valid singleton_valid.
-      by f_equiv=>/pair_valid [] _ /= /agree_op_invL'.
-    Qed.
-
-    Lemma byte_frac_valid a rv (q : Qp) :
-      byte_ a rv q |-- [| q ≤ 1 |]%Qc.
-    Proof.
-      rewrite /byte_ /heap_own.
-      rewrite own_valid !uPred.discrete_valid singleton_valid.
-      by iIntros ([? _]%pair_valid).
-    Qed.
+    Global Instance byte_agree a v1 v2 q1 q2 :
+      Observe2 [|v1 = v2|] (byte_ a v1 q1) (byte_ a v2 q2) := _.
+    Global Instance byte_frac_valid a rv (q : Qp) :
+      Observe ([| q ≤ 1 |])%Qc (byte_ a rv q) := _.
 
     Instance byte_fractional : Fractional (byte_ a rv) := _.
     Instance byte_as_fractional a rv q :
       AsFractional (byte_ a rv q) (fun q => byte_ a rv q) q := _.
     Instance: Timeless (byte_ a rv q) := _.
-
-    Lemma frac_valid {A : Type} q1 q2 (v1 v2 : A) :
-      ✓ (frac q1 v1 ⋅ frac q2 v2) → ✓ (q1 + q2)%Qp ∧ v1 = v2.
-    Proof. by rewrite pair_valid/= =>-[]? /agree_op_invL'. Qed.
 
     Theorem byte_consistent a b b' q q' :
       byte_ a b q ** byte_ a b' q' |-- byte_ a b (q + q') ** [| b = b' |].
