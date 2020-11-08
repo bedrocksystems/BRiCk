@@ -230,13 +230,13 @@ Section monpred.
   Lemma observe_monPred_at Q P i : Observe Q P → Observe (Q i) (P i).
   Proof.
     intros [Hobs]. rewrite/Observe (Hobs i).
-    by rewrite monPred_at_persistently. 
+    by rewrite monPred_at_persistently.
   Qed.
   Lemma observe_2_monPred_at Q P1 P2 i :
     Observe2 Q P1 P2 → Observe2 (Q i) (P1 i) (P2 i).
   Proof.
     intros [Hobs]. rewrite/Observe2 (Hobs i).
-    by rewrite monPred_wand_force monPred_at_persistently. 
+    by rewrite monPred_wand_force monPred_at_persistently.
   Qed.
 
   Global Instance observe_pure_monPred_at (Q : Prop) P i :
