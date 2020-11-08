@@ -416,27 +416,27 @@ Module SimpleCPP.
 
       Local Hint Resolve pure_encodes_undef_aptr pure_encodes_undef_Z_to_bytes : core.
 
-      Lemma encodes_agree t v1 v2 vs :
-        encodes t v1 vs |-- encodes t v2 vs -* [| v1 = v2 |].
+      Global Instance encodes_agree t v1 v2 vs :
+        Observe2 [| v1 = v2 |] (encodes t v1 vs) (encodes t v2 vs).
       Proof.
-        rewrite/encodes/pure_encodes.
-        iIntros "%H1 %H2 !%".
+        apply: observe_2_intro_persistent; rewrite /encodes /pure_encodes;
+          iIntros (H1 H2) "!%".
         destruct (erase_qualifiers t) eqn:? =>//=; intros;
-          repeat (try (case_decide || case_match); destruct_and?; simplify_eq => //).
-        all: by [
+          repeat (try (case_decide || case_match); destruct_and?; simplify_eq => //);
+        by [
           edestruct cptr_ne_aptr | edestruct pure_encodes_undef_aptr |
           edestruct pure_encodes_undef_Z_to_bytes |
           f_equiv; exact: Z_to_bytes_inj ].
       Qed.
+
+      Global Instance encodes_consistent t v1 v2 vs1 vs2 :
+        Observe2 [| length vs1 = length vs2 |] (encodes t v1 vs1) (encodes t v2 vs2).
+      Proof. iIntros "!%". by move=> /length_encodes -> /length_encodes ->. Qed.
     End with_genv.
 
     Instance Z_to_bytes_proper :
       Proper (genv_leq ==> eq ==> eq ==> eq ==> eq) (@Z_to_bytes).
     Proof. intros ?? Hσ%byte_order_proper. solve_proper. Qed.
-
-    Theorem encodes_consistent σ t v1 v2 vs1 vs2 :
-      encodes σ t v1 vs1 |-- encodes σ t v2 vs2 -* [| length vs1 = length vs2 |].
-    Proof. iIntros "!%". by move=>/length_encodes -> /length_encodes ->. Qed.
 
     Instance cptr_proper :
       Proper (genv_leq ==> eq ==> eq) cptr.
@@ -525,9 +525,8 @@ Module SimpleCPP.
       length vs > 0 ->
       bytes a vs q |-- [| q ≤ 1 |]%Qc.
     Proof.
-      rewrite /bytes. case: vs => [ |v vs _] /=; first by lia.
-      rewrite byte_frac_valid.
-      apply: bi.sep_elim_l.
+      rewrite /bytes; case: vs => [ |v vs _] /=; first by lia.
+      rewrite byte_frac_valid. by iIntros "[% _]".
     Qed.
 
     Instance bytes_timeless a rv q : Timeless (bytes a rv q) := _.
@@ -535,25 +534,6 @@ Module SimpleCPP.
     Instance bytes_as_fractional a vs q :
       AsFractional (bytes a vs q) (bytes a vs) q.
     Proof. exact: Build_AsFractional. Qed.
-
-    Theorem bytes_consistent {q q' b b' a} (Hlen : length b = length b') :
-        bytes a b q |-- bytes a b' q' -* [| b = b' |] ** bytes a b (q + q').
-    Proof.
-      iIntros "Hb Hb'".
-      iDestruct (bytes_agree Hlen with "Hb Hb'") as %->.
-      by iFrame.
-    Qed.
-
-    Lemma encodes_bytes_agree σ t v1 v2 a vs1 vs2 q1 q2 :
-      encodes σ t v1 vs1 ** bytes a vs1 q1 |--
-      encodes σ t v2 vs2 ** bytes a vs2 q2 -*
-      ⌜ vs1 = vs2 ∧ v1 = v2 ⌝.
-    Proof.
-      iIntros "[En1 By1] [En2 By2]".
-      iDestruct (encodes_consistent with "En1 En2") as %Heq.
-      iDestruct (bytes_agree Heq with "By1 By2") as %->.
-      by iDestruct (encodes_agree with "En1 En2") as %->.
-    Qed.
 
     Lemma bytes_update {a : addr} {vs} vs' :
       length vs = length vs' →
@@ -596,14 +576,26 @@ Module SimpleCPP.
     Local Instance addr_encodes_fractional {σ} ty a v vs :
       Fractional (λ q, addr_encodes σ ty q a v vs) := _.
 
-    Local Instance addr_encodes_agree_obs σ t a v vs1 vs2 q1 q2 :
+    Local Instance addr_encodes_agree_dst σ t a v1 v2 vs1 vs2 q1 q2 :
       Observe2 [| vs1 = vs2 |]
-        (addr_encodes σ t q1 a v vs1)
-        (addr_encodes σ t q2 a v vs2).
+        (addr_encodes σ t q1 a v1 vs1)
+        (addr_encodes σ t q2 a v2 vs2).
     Proof.
       apply: observe_2_intro_persistent.
       iIntros "[En1 [By1 _]] [En2 [By2 _]]".
-      iDestruct (encodes_bytes_agree with "[$En1 $By1] [$En2 $By2]") as "[$ _]".
+      iDestruct (encodes_consistent with "En1 En2") as %Heq.
+      by iDestruct (bytes_agree Heq with "By1 By2") as %->.
+    Qed.
+
+    Local Instance addr_encodes_agree_src σ t v1 v2 a vs1 vs2 q1 q2 :
+      Observe2 [| v1 = v2 |]
+        (addr_encodes σ t q1 a v1 vs1)
+        (addr_encodes σ t q2 a v2 vs2).
+    Proof.
+      iIntros "H1 H2".
+      iDestruct (addr_encodes_agree_dst with "H1 H2") as %->.
+      (* Using encodes_agree *)
+      iApply (observe_2 with "H1 H2").
     Qed.
 
     Local Definition oaddr_encodes
@@ -672,7 +664,7 @@ Module SimpleCPP.
     Global Instance tptsto_valid_ptr {σ} t q p v :
       Observe (valid_ptr p) (@tptsto σ t q p v) := _.
 
-    Theorem tptsto_agree σ t q1 q2 p v1 v2 :
+    Global Instance tptsto_agree σ t q1 q2 p v1 v2 :
       Observe2 [| v1 = v2 |] (@tptsto σ t q1 p v1) (@tptsto σ t q2 p v2).
     Proof.
       rewrite /tptsto.
@@ -680,10 +672,7 @@ Module SimpleCPP.
       iDestruct 1 as (Hnn1 oa1) "(Hp1 & _ & Hv1)".
       iDestruct 1 as (Hnn2 oa2) "(Hp2 & _ & Hv2)".
       iDestruct (mem_inj_own_agree with "Hp1 Hp2") as "->".
-      case: oa2=>[a| ]; last by iApply (observe_2 with "Hv1 Hv2").
-      iDestruct "Hv1" as (vs1) "[He1 [Hb1 _]]".
-      iDestruct "Hv2" as (vs2) "[He2 [Hb2 _]]".
-      by iDestruct (encodes_bytes_agree with "[$He1 $Hb1] [$He2 $Hb2]") as %[_ ->].
+      destruct oa2; iApply (observe_2 with "Hv1 Hv2").
     Qed.
 
     Definition code_at (_ : genv) (f : Func) (p : ptr) : mpred :=
