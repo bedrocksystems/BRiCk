@@ -411,11 +411,7 @@ Module SimpleCPP.
 
     Instance Z_to_bytes_proper :
       Proper (genv_leq ==> eq ==> eq ==> eq ==> eq) (@Z_to_bytes).
-    Proof.
-      intros ?? Hσ. repeat intro. subst. rewrite /Z_to_bytes /_Z_to_bytes_eq /_Z_to_bytes_def.
-      f_equal.
-      by rewrite Hσ.
-    Qed.
+    Proof. intros ?? Hσ%byte_order_proper. solve_proper. Qed.
 
     Theorem encodes_consistent σ t v1 v2 vs1 vs2 :
       encodes σ t v1 vs1 |-- encodes σ t v2 vs2 -* [| length vs1 = length vs2 |].
@@ -423,35 +419,19 @@ Module SimpleCPP.
 
     Instance cptr_proper :
       Proper (genv_leq ==> eq ==> eq) cptr.
-    Proof.
-      do 3 red; intros; subst.
-      unfold cptr. setoid_rewrite H. reflexivity.
-    Qed.
+    Proof. rewrite /cptr => σ1 σ2 Heq ?? ->. by rewrite Heq. Qed.
 
     Instance aptr_proper :
       Proper (genv_leq ==> eq ==> eq) aptr.
-    Proof.
-      do 3 red; intros; subst.
-      unfold aptr. setoid_rewrite H. reflexivity.
-    Qed.
-    Instance: RewriteRelation genv_leq := {}.
-
-    Local Lemma pure_encodes_undef_pointer_size x y xs :
-      genv_leq x y ->
-      pure_encodes_undef (pointer_size_bitsize x) xs ->
-      pure_encodes_undef (pointer_size_bitsize y) xs.
-    Proof. by intros ->. Qed.
+    Proof. rewrite /aptr => σ1 σ2 Heq ?? ->. by rewrite Heq. Qed.
 
     Instance encodes_proper :
       Proper (genv_leq ==> eq ==> eq ==> eq ==> lentails) encodes.
     Proof.
-      intros ?? Heq; solve_proper_prepare; f_equiv.
-      unfold pure_encodes, impl.
-      destruct (erase_qualifiers y0); auto.
-      all: destruct y1; auto.
-      all: try by intuition eauto using pure_encodes_undef_pointer_size.
-      all: try by [destruct (decide (p = nullptr)); rewrite Heq; intuition auto].
-      all: try by rewrite Heq.
+      unfold encodes; intros σ1 σ2 Heq t1 t2 -> v1 v2 -> vs1 vs2 ->.
+      f_equiv; unfold pure_encodes, impl;
+        destruct (erase_qualifiers t2) => //; destruct v2 => //;
+        try case_decide; rewrite ?Heq //.
     Qed.
 
     Definition val_ (a : ptr) (v : val) (q : Qp) : mpred :=
