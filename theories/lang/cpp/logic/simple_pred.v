@@ -612,18 +612,44 @@ Module SimpleCPP.
       rewrite singleton_op singleton_valid => /agree_op_invL' ?. by subst ma2.
     Qed.
 
-    (* heap points to *)
+    (** heap points to *)
+    (* Auxiliary definitions.
+      They're not exported, so we don't give them a complete theory;
+      however, some of their proofs *)
+    Local Definition addr_encodes
+        (σ : genv) (t : type) (q : Qp) (a : addr) (v : val) (vs : list runtime_val) :=
+      encodes σ t v vs ** bytes a vs q ** vbytes a vs q.
+
+    Local Instance addr_encodes_fractional {σ} ty a v vs :
+      Fractional (λ q, addr_encodes σ ty q a v vs) := _.
+
+    Local Definition oaddr_encodes
+        (σ : genv) (t : type) (q : Qp) (oa : option addr) p (v : val) :=
+        match oa with
+        | Some a =>
+          Exists vs,
+          addr_encodes σ t q a v vs
+        | None => [| t <> Tvoid |] ** val_ p v q
+        end.
+
+    Local Instance oaddr_encodes_fractional {σ} t oa p v :
+      Fractional (λ q, oaddr_encodes σ t q oa p v).
+    Proof.
+      rewrite /Fractional/oaddr_encodes; intros q1 q2.
+      destruct oa; last by apply: fractional_sep.
+      rewrite -bi.exist_sep; first last => [vs1 vs2| ]. {
+        iIntros "[En1 [By1 _]] [En2 [By2 _]]".
+        iDestruct (encodes_bytes_agree with "[$En1 $By1] [$En2 $By2]") as "[$ _]".
+      }
+      f_equiv=>vs. apply: fractional.
+    Qed.
+
     Definition tptsto {σ:genv} (t : type) (q : Qp) (p : ptr) (v : val) : mpred :=
       [| p <> nullptr |] **
-      Exists (a : option addr),
-              mem_inj_own p a **
+      Exists (oa : option addr),
+              mem_inj_own p oa **
               valid_ptr p **
-              match a with
-              | Some a =>
-                Exists vs,
-                encodes σ t v vs ** bytes a vs q ** vbytes a vs q
-              | None => [| t <> Tvoid |] ** val_ p v q
-              end.
+              oaddr_encodes σ t q oa p v.
 
     Theorem tptsto_nonnull {σ} ty q a :
       @tptsto σ ty q nullptr a |-- False.
@@ -631,7 +657,7 @@ Module SimpleCPP.
 
     Instance tptsto_mono :
       Proper (genv_leq ==> eq ==> eq ==> eq ==> eq ==> (⊢)) (@tptsto).
-    Proof. solve_proper. Qed.
+    Proof. rewrite /tptsto /oaddr_encodes /addr_encodes. solve_proper. Qed.
 
     Instance tptsto_proper :
       Proper (genv_eq ==> eq ==> eq ==> eq ==> eq ==> (≡)) (@tptsto).
@@ -647,41 +673,37 @@ Module SimpleCPP.
       rewrite /Fractional; intros q1 q2.
       rewrite -bi.exist_sep_only_provable; first last => [oa1 oa2| ].
         by iIntros "[A1 _] [A2 _]"; iApply (mem_inj_own_agree with "A1 A2").
-      f_equiv=>oa. rewrite -bi.persistent_sep_distr_l; f_equiv.
+      f_equiv=>oa.
       rewrite -bi.persistent_sep_distr_l; f_equiv.
-      destruct oa; last by apply: fractional_sep.
-      rewrite -bi.exist_sep; first last => [vs1 vs2| ]. {
-        iIntros "[En1 [By1 _]] [En2 [By2 _]]".
-        iDestruct (encodes_bytes_agree with "[$En1 $By1] [$En2 $By2]") as "[$ _]".
-      }
-      f_equiv=>vs. rewrite -bi.persistent_sep_distr_l !fractional.
-      iSplit; iIntros "[$ [[$$] [$$]]]".
+      rewrite -bi.persistent_sep_distr_l; f_equiv.
+      apply: fractional.
     Qed.
 
     Instance tptsto_timeless {σ} ty q p v : Timeless (@tptsto σ ty q p v) := _.
 
-    Global Instance tptsto_nonvoid {σ} ty (q : Qp) p v :
-      Observe [| ty <> Tvoid |] (@tptsto σ ty q p v).
-    Proof.
-      rewrite /tptsto.
-      apply observe_sep_r, observe_exist => -[a | ]; apply _.
-    Qed.
+    Global Instance oaddr_encodes_nonvoid {σ} ty q oa p v :
+      Observe [| ty <> Tvoid |] (oaddr_encodes σ ty q oa p v).
+    Proof. destruct oa; apply _. Qed.
 
-    Global Instance tptsto_frac_valid {σ} ty (q : Qp) p v :
-      Observe [| q ≤ 1 |]%Qc (@tptsto σ ty q p v).
+    Global Instance tptsto_nonvoid {σ} ty (q : Qp) p v :
+      Observe [| ty <> Tvoid |] (@tptsto σ ty q p v) := _.
+
+    Global Instance addr_encodes_frac_valid {σ} ty (q : Qp) a v vs :
+      Observe [| q ≤ 1 |]%Qc (addr_encodes σ ty q a v vs).
     Proof.
-      rewrite /tptsto.
-      apply observe_sep_r, observe_exist => -[a | ]; refine _.
-      apply observe_sep_r, observe_sep_r, observe_exist => vs.
       apply: observe_intro_persistent.
-      (* Could make the above inferrrable, by lifting this out. *)
-      iDestruct 1 as (Hen%length_encodes_pos) "(B & _)".
+      iDestruct 1 as (Hen%length_encodes_pos) "[B _]".
       by iApply (bytes_frac_valid with "B").
     Qed.
+    Local Instance oaddr_encodes_frac_valid {σ} t (q : Qp) oa p v :
+      Observe [| q ≤ 1 |]%Qc (oaddr_encodes σ t q oa p v).
+    Proof. destruct oa; apply _. Qed.
+
+    Global Instance tptsto_frac_valid {σ} ty (q : Qp) p v :
+      Observe [| q ≤ 1 |]%Qc (@tptsto σ ty q p v) := _.
 
     Global Instance tptsto_valid_ptr {σ} t q p v :
-      Observe (valid_ptr p) (@tptsto σ t q p v).
-    Proof. apply _. Qed.
+      Observe (valid_ptr p) (@tptsto σ t q p v) := _.
 
     Theorem tptsto_agree σ t q1 q2 p v1 v2 :
       Observe2 [| v1 = v2 |] (@tptsto σ t q1 p v1) (@tptsto σ t q2 p v2).
