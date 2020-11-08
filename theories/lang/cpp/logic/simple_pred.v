@@ -22,9 +22,23 @@ Definition fractionalR (V : Type) : cmraT :=
 Definition frac {V : Type} (q : Qp) (v : V) : fractionalR V :=
   (q, to_agree v).
 
-Lemma frac_op {V} (l : V)  (p q : Qp) :
+Lemma frac_op {V} (l : V) (p q : Qp) :
   frac p l ⋅ frac q l ≡ frac (p + q) l.
 Proof. by rewrite -pair_op agree_idemp. Qed.
+
+Section fractional.
+  Context {K V : Type} `{Countable K} `{inG Σ (gmapR K (fractionalR V))}.
+
+  Global Instance fractional_own_frac γ k v :
+    Fractional (λ q, own (A := gmapR K (fractionalR V)) γ {[ k := frac q v ]}).
+  Proof. intros q1 q2. by rewrite -own_op singleton_op frac_op. Qed.
+
+  Global Instance fractional_own_frac_as_fractional γ k v q :
+    AsFractional
+        (own (A := gmapR K (fractionalR V)) γ {[ k := frac q v ]})
+        (λ q, own (A := gmapR K (fractionalR V)) γ {[ k := frac q v ]}) q.
+  Proof. exact: Build_AsFractional. Qed.
+End fractional.
 
 Local Lemma length__Z_to_bytes {σ} n sgn v :
   length (_Z_to_bytes n (values.byte_order σ) sgn v) = n.
@@ -462,16 +476,9 @@ Module SimpleCPP.
       by iIntros ([? _]%pair_valid).
     Qed.
 
-    Instance val_fractional a rv : Fractional (val_ a rv).
-    Proof.
-      unfold val_. red.
-      intros. by rewrite -own_op singleton_op frac_op.
-    Qed.
-
+    Instance val_fractional a rv : Fractional (val_ a rv) := _.
     Instance val_as_fractional a rv q :
-      AsFractional (val_ a rv q) (val_ a rv) q.
-    Proof. exact: Build_AsFractional. Qed.
-
+      AsFractional (val_ a rv q) (val_ a rv) q := _.
     Instance val_timeless a rv q : Timeless (val_ a rv q) := _.
 
 
@@ -495,15 +502,9 @@ Module SimpleCPP.
       by iIntros ([? _]%pair_valid).
     Qed.
 
-    Instance: Fractional (byte_ a rv).
-    Proof.
-      unfold byte_. red.
-      intros. by rewrite -own_op singleton_op frac_op.
-    Qed.
-
-    Instance byte_as_fractional a rv q : AsFractional (byte_ a rv q) (fun q => byte_ a rv q) q.
-    Proof. exact: Build_AsFractional. Qed.
-
+    Instance byte_fractional : Fractional (byte_ a rv) := _.
+    Instance byte_as_fractional a rv q :
+      AsFractional (byte_ a rv q) (fun q => byte_ a rv q) q := _.
     Instance: Timeless (byte_ a rv q) := _.
 
     Lemma frac_valid {A : Type} q1 q2 (v1 v2 : A) :
