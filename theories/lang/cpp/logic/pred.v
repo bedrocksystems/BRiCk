@@ -330,6 +330,13 @@ Module Type VALID_PTR_AXIOMS.
     Axiom o_base_derived : forall p base derived,
       valid_ptr (p ., o_base derived base) |--
       [! p ., o_base derived base ., o_derived base derived = p !]%ptr.
+
+    (* Without the premise to the cancellation axiom [o_base_derived],
+       we could incorrectly deduce that
+      [valid_ptr p] entails [valid_ptr (p ., o_base derived base ., o_derived
+      base derived)] which entails [valid_ptr (p ., o_base derived base)].
+    *)
+
     (* Also the opposite maybe? *)
   End with_cpp.
 End VALID_PTR_AXIOMS.
