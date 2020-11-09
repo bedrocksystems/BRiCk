@@ -92,16 +92,22 @@ Module Type Init.
 
     Definition build_array (es : list Expr) (fill : option Expr) (sz : nat)
     : option (list (Z * Expr)) :=
-      if Nat.ltb (List.length es) sz then
-        match fill with
-        | None => None
-        | Some f =>
-          Some (List.combine (List.map Z.of_nat (seq 0 sz))
-                             (List.app es (map (fun _ => f) (seq (List.length es) (sz - 1)))))
-        end
-      else
-        Some (List.combine (List.map Z.of_nat (seq 0 sz))
-                           (firstn sz es)).
+      let len := List.length es in
+      let idxs := List.map Z.of_nat (seq 0 sz) in
+      match Nat.compare sz len with
+      (* <http://eel.is/c++draft/dcl.init.general#16.5>
+
+         Programs which contain more initializer expressions than
+         array-members are ill-formed.
+       *)
+      | Lt => None
+      | Eq => Some (List.combine idxs es)
+      | Gt => match fill with
+             | None => None
+             | Some f =>
+               Some (List.combine idxs (List.app es (map (fun _ => f) (seq 0 (sz - len)))))
+             end
+      end.
 
     Fixpoint wp_array_init (ety : type) (base : val) (es : list (Z * Expr)) (Q : mpred -> mpred) : mpred :=
       match es with
