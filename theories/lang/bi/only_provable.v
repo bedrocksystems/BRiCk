@@ -7,15 +7,39 @@ Require Import bedrock.lang.prelude.base.
 From iris.bi Require Import bi monpred embedding.
 From iris.proofmode Require Import tactics.
 
+(**
+[only_provable P], written [ [| P |] ], is a variant of [⌜ P ⌝] that, in a
+linear logic, cannot "absorb" any resources.
+
+Hence, if [A ⊢ B ∗ [| P |] ], all resources owned by [A] are owned by [B],
+and none are owned by [ [| P |] ].
+
+See also [only_provable_equiv].
+
+For an academic reference on the [<affine>] derived modality and the concept
+of "absorbing" propositions, see
+"MoSeL: A general, extensible modal framework for interactive proofs in separation logic"
+(http://doi.acm.org/10.1145/3236772).
+*)
 Definition only_provable {PROP : bi} (P : Prop) : PROP := (<affine> ⌜P⌝)%I.
 Arguments only_provable {_} _%type_scope : simpl never, rename.
 Instance: Params (@only_provable) 1 := {}.
 
-Notation "'[|'  P  '|]'" := (only_provable P).
+Notation "[ | P | ]" := (only_provable P) (format "[ |  P  | ]").
 
 (** * Properties of [only_provable]. *)
 Section bi.
   Context {PROP : bi}.
+
+  Implicit Types P Q : Prop.
+  Implicit Types p q r : PROP.
+  Local Notation "p ⊢ q" := (p ⊢@{PROP} q) (only parsing).
+  Local Notation "p ⊣⊢ q" := (p ⊣⊢@{PROP} q) (only parsing).
+
+  (** [ [| P |] ] indeed holds no resources.
+  This doubles as an unfolding lemma, but that is not meant be used in proofs. *)
+  Local Lemma only_provable_equiv P : [| P |] ⊣⊢ emp ∧ ⌜ P ⌝.
+  Proof. done. Qed.
 
   Global Instance only_provable_ne n :
     Proper (iff ==> dist n) (@only_provable PROP).
@@ -34,14 +58,11 @@ Section bi.
   Proof. apply _. Qed.
   Global Instance only_provable_affine P : Affine (PROP:=PROP) [| P |].
   Proof. apply _. Qed.
-  Global Instance only_provable_absorbing `{BiAffine PROP} P :
+
+  (* This is provable, but only usable under `BiAffine`, hence misleading. *)
+  Lemma only_provable_absorbing `{BiAffine PROP} P :
     Absorbing (PROP:=PROP) [| P |].
   Proof. apply _. Qed.
-
-  Implicit Types P Q : Prop.
-  Implicit Types p q r : PROP.
-  Local Notation "p ⊢ q" := (p ⊢@{PROP} q) (only parsing).
-  Local Notation "p ⊣⊢ q" := (p ⊣⊢@{PROP} q) (only parsing).
 
   Lemma only_provable_mono P Q : (P → Q) → [| P |] ⊢ [| Q |].
   Proof. apply only_provable_mono'. Qed.

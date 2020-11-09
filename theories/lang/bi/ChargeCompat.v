@@ -3,7 +3,6 @@
  *
  * SPDX-License-Identifier: LGPL-2.1 WITH BedRock Exception for use over network, see repository root for details.
  *)
-Require Import bedrock.lang.prelude.base.
 From iris Require Import bi.bi.
 From iris.proofmode Require Import tactics.
 Require Import bedrock.lang.bi.prelude.

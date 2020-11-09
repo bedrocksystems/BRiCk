@@ -5,9 +5,8 @@
  *)
 From iris.bi Require Import bi.
 From iris.proofmode Require Import tactics.
+From bedrock.lang.prelude Require Export base.
 From bedrock.lang.bi Require Export only_provable derived_laws.
-
-Set Default Proof Using "Type".
 
 (** * Notation for functions in the Iris scope. To upstream,
 per https://gitlab.mpi-sws.org/iris/iris/-/issues/320. *)
@@ -68,7 +67,7 @@ Module ChargeNotation.
   (* Notation "'|>' P" := (▷  P)%I (at level 71). *)
   Notation "|> P" := (▷  P)%I (at level 20, right associativity).
 
-  Notation "P -|- Q"  := (P%I ≡ Q%I) (at level 85, no associativity).
+  Notation "P -|- Q"  := (P ⊣⊢ Q) (at level 85, no associativity).
   Notation "P '-|-@{' PROP } Q"  := (P%I ⊣⊢@{PROP} Q%I)
     (at level 85, no associativity, only parsing).
 
