@@ -564,6 +564,9 @@ Module SimpleCPP.
       revert X.
       rewrite singleton_op singleton_valid => /agree_op_invL' ?. by subst ma2.
     Qed.
+    Instance mem_inj_own_agree_obs p (oa1 oa2 : option N) :
+      Observe2 [| oa1 = oa2 |] (mem_inj_own p oa1) (mem_inj_own p oa2).
+    Proof. exact /observe_2_intro_persistent /mem_inj_own_agree. Qed.
 
     (** heap points to *)
     (* Auxiliary definitions.
@@ -598,6 +601,14 @@ Module SimpleCPP.
       iApply (observe_2 with "H1 H2").
     Qed.
 
+    Global Instance addr_encodes_frac_valid {σ} ty (q : Qp) a v vs :
+      Observe [| q ≤ 1 |]%Qc (addr_encodes σ ty q a v vs).
+    Proof.
+      apply: observe_intro_persistent.
+      iDestruct 1 as (Hen%length_encodes_pos) "[B _]".
+      by iApply (bytes_frac_valid with "B").
+    Qed.
+
     Local Definition oaddr_encodes
         (σ : genv) (t : type) (q : Qp) (oa : option addr) p (v : val) :=
         match oa with
@@ -610,6 +621,14 @@ Module SimpleCPP.
     Local Instance oaddr_encodes_fractional {σ} t oa p v :
       Fractional (λ q, oaddr_encodes σ t q oa p v).
     Proof. rewrite /oaddr_encodes; destruct oa; apply _. Qed.
+
+    Local Instance oaddr_encodes_nonvoid {σ} ty q oa p v :
+      Observe [| ty <> Tvoid |] (oaddr_encodes σ ty q oa p v).
+    Proof. destruct oa; apply _. Qed.
+    Local Instance oaddr_encodes_frac_valid {σ} t (q : Qp) oa p v :
+      Observe [| q ≤ 1 |]%Qc (oaddr_encodes σ t q oa p v).
+    Proof. destruct oa; apply _. Qed.
+
 
     Definition tptsto {σ:genv} (t : type) (q : Qp) (p : ptr) (v : val) : mpred :=
       [| p <> nullptr |] **
@@ -633,30 +652,11 @@ Module SimpleCPP.
       by split'; apply tptsto_mono.
     Qed.
 
-    Instance mem_inj_own_agree_obs p (oa1 oa2 : option N) :
-      Observe2 [| oa1 = oa2 |] (mem_inj_own p oa1) (mem_inj_own p oa2).
-    Proof. exact /observe_2_intro_persistent /mem_inj_own_agree. Qed.
-
     Instance tptsto_fractional {σ} ty p v : Fractional (λ q, @tptsto σ ty q p v) := _.
     Instance tptsto_timeless {σ} ty q p v : Timeless (@tptsto σ ty q p v) := _.
 
-    Global Instance oaddr_encodes_nonvoid {σ} ty q oa p v :
-      Observe [| ty <> Tvoid |] (oaddr_encodes σ ty q oa p v).
-    Proof. destruct oa; apply _. Qed.
-
     Global Instance tptsto_nonvoid {σ} ty (q : Qp) p v :
       Observe [| ty <> Tvoid |] (@tptsto σ ty q p v) := _.
-
-    Global Instance addr_encodes_frac_valid {σ} ty (q : Qp) a v vs :
-      Observe [| q ≤ 1 |]%Qc (addr_encodes σ ty q a v vs).
-    Proof.
-      apply: observe_intro_persistent.
-      iDestruct 1 as (Hen%length_encodes_pos) "[B _]".
-      by iApply (bytes_frac_valid with "B").
-    Qed.
-    Local Instance oaddr_encodes_frac_valid {σ} t (q : Qp) oa p v :
-      Observe [| q ≤ 1 |]%Qc (oaddr_encodes σ t q oa p v).
-    Proof. destruct oa; apply _. Qed.
 
     Global Instance tptsto_frac_valid {σ} ty (q : Qp) p v :
       Observe [| q ≤ 1 |]%Qc (@tptsto σ ty q p v) := _.
