@@ -556,16 +556,14 @@ Module SimpleCPP.
         rewrite (_: a + N.of_nat (S k) = a + 1 + N.of_nat k)%N //; lia.
     Qed.
 
-    Lemma mem_inj_own_agree p ma1 ma2 :
-      mem_inj_own p ma1 |-- mem_inj_own p ma2 -* [| ma1 = ma2 |].
+    Instance mem_inj_own_agree p (oa1 oa2 : option N) :
+      Observe2 [| oa1 = oa2 |] (mem_inj_own p oa1) (mem_inj_own p oa2).
     Proof.
-      apply bi.wand_intro_r; rewrite -own_op singleton_op.
+      apply /observe_2_intro_persistent /bi.wand_intro_r.
+      rewrite -own_op singleton_op.
       rewrite own_valid uPred.discrete_valid singleton_valid.
       by iIntros "!%" => /= /agree_op_invL'.
     Qed.
-    Instance mem_inj_own_agree_obs p (oa1 oa2 : option N) :
-      Observe2 [| oa1 = oa2 |] (mem_inj_own p oa1) (mem_inj_own p oa2).
-    Proof. exact /observe_2_intro_persistent /mem_inj_own_agree. Qed.
 
     (** heap points to *)
     (* Auxiliary definitions.
@@ -666,12 +664,11 @@ Module SimpleCPP.
     Global Instance tptsto_agree σ t q1 q2 p v1 v2 :
       Observe2 [| v1 = v2 |] (@tptsto σ t q1 p v1) (@tptsto σ t q2 p v2).
     Proof.
-      rewrite /tptsto.
       apply: observe_2_intro_persistent.
-      iDestruct 1 as (Hnn1 oa1) "(Hp1 & _ & Hv1)".
-      iDestruct 1 as (Hnn2 oa2) "(Hp2 & _ & Hv2)".
-      iDestruct (mem_inj_own_agree with "Hp1 Hp2") as "->".
-      destruct oa2; iApply (observe_2 with "Hv1 Hv2").
+      iDestruct 1 as (Hnn1 oa1) "H1".
+      iDestruct 1 as (Hnn2 oa2) "H2".
+      iDestruct (observe_2_elim_pure (oa1 = oa2) with "H1 H2") as %->.
+      destruct oa2; iApply (observe_2 with "H1 H2").
     Qed.
 
     Definition code_at (_ : genv) (f : Func) (p : ptr) : mpred :=
@@ -708,13 +705,13 @@ Module SimpleCPP.
     Instance pinned_ptr_persistent va p : Persistent (pinned_ptr va p) := _.
     Instance pinned_ptr_affine va p : Affine (pinned_ptr va p) := _.
     Instance pinned_ptr_timeless va p : Timeless (pinned_ptr va p) := _.
-    Theorem pinned_ptr_unique va va' p :
+    Instance pinned_ptr_unique va va' p :
       Observe2 [| va = va' |] (pinned_ptr va p) (pinned_ptr va' p).
     Proof.
       apply: observe_2_intro_persistent.
       iIntros "A B".
-      iDestruct "A" as "[[->->] | [% A]]"; iDestruct "B" as "[[%->] | [% B]]"; auto.
-      iDestruct (mem_inj_own_agree with "A B") as %Hp. by inversion Hp.
+      iDestruct "A" as "[[->->] | [% A]]"; iDestruct "B" as "[[%->] | [% B]]" => //.
+      by iDestruct (observe_2_elim_pure (Some va = Some va') with "A B") as %[= ->].
     Qed.
 
     Theorem pinned_ptr_borrow : forall {σ} ty p v va M,
@@ -726,7 +723,7 @@ Module SimpleCPP.
       intros. iIntros "(TP & PI & %)".
       iDestruct "PI" as "[[% %]|[% MJ]]"; [done| ].
       iDestruct "TP" as (_ ma) "[MJ' [VP TP]]".
-      iDestruct (mem_inj_own_agree with "MJ MJ'") as %?. subst ma.
+      iDestruct (mem_inj_own_agree with "MJ MJ'") as %<-.
       iDestruct "TP" as (vs) "(#EN & Bys & VBys)".
       iIntros "!>".
       iExists vs. iFrame "EN VBys".
