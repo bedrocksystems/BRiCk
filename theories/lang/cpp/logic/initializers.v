@@ -108,11 +108,10 @@ Module Type Init.
       | nil => Q empSP
       | (i,e) :: es =>
         Forall a, _offsetL (_sub ety i) (_eqv base) &~ a -*
-        Exists Qi, wp_init ety (Vptr a) e Qi **
+        Exists Qi, wp_initialize ety (Vptr a) e Qi **
         wp_array_init ety base es (fun free' =>
           Forall free, Qi free -* Q (free ** free'))
       end.
-
 
     Axiom wp_init_initlist_array :forall ls fill ety sz addr Q,
       match build_array ls fill (N.to_nat sz) with
@@ -135,14 +134,6 @@ Module Type Init.
            then wp_prval e Q
            else False)
       |-- wp_prval (Einitlist (e :: nil) None t) Q.
-
-    Axiom wp_init_cast_integral : forall e ty addr Q,
-        wp_prval e (fun v free =>
-          Exists v',
-            [| conv_int (type_of e) ty v v' |] **
-            _at (_eqv addr) (anyR (erase_qualifiers ty) 1) **
-            (_at (_eqv addr) (primR (erase_qualifiers ty) 1 v') -* Q free))
-        |-- wp_init ty addr (Ecast Cintegral (Rvalue, e) ty) Q.
 
     Axiom wp_init_cast_noop : forall e ty addr ty' Q,
         wp_init ty addr e Q
