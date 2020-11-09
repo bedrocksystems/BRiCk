@@ -559,10 +559,9 @@ Module SimpleCPP.
     Lemma mem_inj_own_agree p ma1 ma2 :
       mem_inj_own p ma1 |-- mem_inj_own p ma2 -* [| ma1 = ma2 |].
     Proof.
-      iIntros "o1 o2".
-      iDestruct (own_valid_2 with "o1 o2") as %X.
-      revert X.
-      rewrite singleton_op singleton_valid => /agree_op_invL' ?. by subst ma2.
+      apply bi.wand_intro_r; rewrite -own_op singleton_op.
+      rewrite own_valid uPred.discrete_valid singleton_valid.
+      by iIntros "!%" => /= /agree_op_invL'.
     Qed.
     Instance mem_inj_own_agree_obs p (oa1 oa2 : option N) :
       Observe2 [| oa1 = oa2 |] (mem_inj_own p oa1) (mem_inj_own p oa2).
