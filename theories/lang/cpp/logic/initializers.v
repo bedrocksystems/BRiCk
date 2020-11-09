@@ -113,10 +113,15 @@ Module Type Init.
       match es with
       | nil => Q empSP
       | (i,e) :: es =>
-        Forall a, _offsetL (_sub ety i) (_eqv base) &~ a -*
-        Exists Qi, wp_initialize ety (Vptr a) e Qi **
-        wp_array_init ety base es (fun free' =>
-          Forall free, Qi free -* Q (free ** free'))
+        Forall a,
+          _offsetL (_sub ety i) (_eqv base) &~ a -*
+          (* NOTE: We nest the recursive calls to `wp_array_init` within
+               the continuation of the `wp_initialize` statement to
+               reflect the fact that the C++ Standard introduces
+               sequence-points between all of the elements of an
+               initializer list (c.f. http://eel.is/c++draft/dcl.init.list#4)
+           *)
+          wp_initialize ety (Vptr a) e (fun free => free ** wp_array_init ety base es Q)
       end.
 
     Axiom wp_init_initlist_array :forall ls fill ety sz addr Q,
