@@ -123,6 +123,9 @@ Module Type Expr.
      *)
     Axiom wp_xval_member : forall ty vc a m Q,
       wpe vc a (fun base free =>
+                  (* TODO: here and elsewhere, consider avoiding locations and switching to
+                   * [valid_ptr (base ., _field m) ** True //\\ Q (Vptr (base ., _field m) free].
+                   *)
                   Exists addr, (_offsetL (_field m) (_eqv base) &~ addr ** ltrue) //\\ Q (Vptr addr) free)
       |-- wp_xval (Emember vc a m ty) Q.
 
@@ -164,12 +167,17 @@ Module Type Expr.
          wp_prval e Qidx ** wp_prval i Qbase) **
       Forall base free idx free',
          Qbase base free -* Qidx idx free' -*
+          (* TODO: here and elsewhere, consider avoiding locations and switching to *)
+          (* (Exists i basep, [| idx = Vint i /\ base = Vptr basep |] **
+            ((valid_ptr (basep .., o_sub resolve (erase_qualifiers t) i) ** True) //\\
+            Q (Vptr (basep .., o_sub resolve (erase_qualifiers t) i)) (free' ** free)))) *)
          Exists addr,
           (Exists i, [| idx = Vint i |] **
           _offsetL (_sub (erase_qualifiers t) i) (_eqv base) &~ addr ** ltrue) //\\
           Q (Vptr addr) (free' ** free))
       |-- wp_xval (Esubscript e i t) Q.
 
+          (* valid_ptr base *)
 
     (* the `*` operator is an lvalue *)
     Axiom wp_lval_deref : forall ty e Q,
