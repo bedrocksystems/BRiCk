@@ -79,6 +79,7 @@ theories/lang/cpp/compile.v
 theories/lang/cpp.v
 
 # "consistency" proofs
+theories/lang/cpp/logic/simple_pointers.v
 theories/lang/cpp/logic/simple_pred.v
 
 # misc
