@@ -39,14 +39,6 @@ Module Type PTRS.
   Bind Scope ptr_scope with ptr.
   Delimit Scope ptr_scope with ptr.
 
-  (** * Offsets.
-      Offsets represent paths between locations
-   *)
-  Parameter offset : Set.
-  Declare Scope offset_scope.
-  Bind Scope offset_scope with offset.
-  Delimit Scope offset_scope with offset.
-
   Axiom ptr_eq_dec : forall (x y : ptr), { x = y } + { x <> y }.
   Global Instance ptr_eq_dec' : EqDecision ptr := ptr_eq_dec.
   (* TODO AUTO: replace [ptr_eq_dec'] with:
@@ -60,23 +52,35 @@ Module Type PTRS.
   Axiom ptr_countable : Countable ptr.
   Global Existing Instance ptr_countable.
 
+  (* Question to resolve: can we commit to Leibniz equality or should we
+  expose a setoid with the associated pain? I expect the former. *)
+
+  Parameter ptr_equiv : Equiv ptr.
+  Global Existing Instances ptr_equiv.
+  Axiom ptr_equivalence : Equivalence (==@{ptr}).
+  Global Existing Instances ptr_equivalence.
+  Axiom ptr_equiv_dec : RelDecision (==@{ptr}).
+  Global Existing Instances ptr_equiv_dec.
+
+  (** * Offsets.
+      Offsets represent paths between locations
+   *)
+  Parameter offset : Set.
+  Declare Scope offset_scope.
+  Bind Scope offset_scope with offset.
+  Delimit Scope offset_scope with offset.
+
   Axiom offset_eq_dec : EqDecision offset.
   Global Existing Instance offset_eq_dec.
   Axiom offset_countable : Countable offset.
   Global Existing Instance offset_countable.
 
-  (* Question to resolve: can we commit to Leibniz equality or should we
-  expose a setoid with the associated pain? I expect the former. *)
-
-  Parameter ptr_equiv : Equiv ptr.
   Parameter offset_equiv : Equiv offset.
-  Global Existing Instances ptr_equiv offset_equiv.
-  Axiom ptr_equivalence : Equivalence (==@{ptr}).
+  Global Existing Instances offset_equiv.
   Axiom offset_equivalence : Equivalence (==@{offset}).
-  Global Existing Instances ptr_equivalence offset_equivalence.
-  Axiom ptr_equiv_dec : RelDecision (==@{ptr}).
+  Global Existing Instances offset_equivalence.
   Axiom offset_equiv_dec : RelDecision (==@{offset}).
-  Global Existing Instances ptr_equiv_dec offset_equiv_dec.
+  Global Existing Instances offset_equiv_dec.
 
   (* offsets form a monoid; maybe just use the free monoid [list offset]? *)
   (* identity - probably not strictly necessary*)
