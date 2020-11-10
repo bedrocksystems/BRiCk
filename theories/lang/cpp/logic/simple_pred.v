@@ -61,10 +61,6 @@ Section fractional.
   Qed.
 End fractional.
 
-Local Lemma length__Z_to_bytes {σ} n sgn v :
-  length (_Z_to_bytes n (values.byte_order σ) sgn v) = n.
-Proof. apply _Z_to_bytes_length. Qed.
-
 (** soundness proof *)
 
 Module SimpleCPP_BASE <: CPP_LOGIC_CLASS.
@@ -84,7 +80,7 @@ Module SimpleCPP_BASE <: CPP_LOGIC_CLASS.
     Rval <$> _Z_to_bytes (bytesNat n) (values.byte_order σ) sgn v.
 
   Lemma length_Z_to_bytes {σ} n sgn v : length (Z_to_bytes (σ:=σ) n sgn v) = bytesNat n.
-  Proof. by rewrite /Z_to_bytes fmap_length length__Z_to_bytes. Qed.
+  Proof. by rewrite /Z_to_bytes fmap_length _Z_to_bytes_length. Qed.
 
   Record cpp_ghost : Type :=
     { heap_name : gname
