@@ -83,7 +83,7 @@ Module SimpleCPP_BASE <: CPP_LOGIC_CLASS.
      *)
 
   Definition Z_to_bytes {σ:genv} (n : bitsize) (sgn: signed) (v : Z) : list runtime_val' :=
-    Rval <$> _Z_to_bytes (bytesNat n) (values.byte_order σ) sgn v.
+    Rval <$> _Z_to_bytes (bytesNat n) (genv_byte_order σ) sgn v.
 
   Lemma length_Z_to_bytes {σ} n sgn v : length (Z_to_bytes (σ:=σ) n sgn v) = bytesNat n.
   Proof. by rewrite /Z_to_bytes fmap_length _Z_to_bytes_length. Qed.
@@ -439,7 +439,7 @@ Module SimpleCPP.
 
     Instance Z_to_bytes_proper :
       Proper (genv_leq ==> eq ==> eq ==> eq ==> eq) (@Z_to_bytes).
-    Proof. intros ?? Hσ%byte_order_proper. solve_proper. Qed.
+    Proof. intros ?? Hσ%genv_byte_order_proper. solve_proper. Qed.
 
     Instance cptr_proper :
       Proper (genv_leq ==> eq ==> eq) cptr.
