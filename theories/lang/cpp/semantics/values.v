@@ -98,15 +98,15 @@ Module Type PTRS.
     this is a right monoid action.
    *)
   Parameter _offset_ptr : ptr -> offset -> ptr.
-  Reserved Notation "p ., o" (at level 11, left associativity).
-  Notation "p ., o" := (_offset_ptr p o) : ptr_scope.
-  Notation "o1 ., o2" := (o_dot o1 o2) : offset_scope.
+  Reserved Notation "p .., o" (at level 11, left associativity).
+  Notation "p .., o" := (_offset_ptr p o) : ptr_scope.
+  Notation "o1 .., o2" := (o_dot o1 o2) : offset_scope.
   (* TODO: use an operational typeclass, and add stdpp-style Haskell-style
   variants of the operator. *)
 
   Axiom offset_ptr_proper : Proper ((≡) ==> (≡) ==> (≡)) _offset_ptr.
   Axiom offset_ptr_dot : forall p o1 o2,
-    (p ., (o1 ., o2) ≡ p ., o1 ., o2)%ptr.
+    (p .., (o1 .., o2) ≡ p .., o1 .., o2)%ptr.
   Global Existing Instances offset_ptr_proper.
 
   (** C++ provides a distinguished pointer [nullptr] that is *never
@@ -611,7 +611,7 @@ Module ptr_internal.
   (* NOTE this API is especially non-sensical, since pointers and offsets
   contain no translation unit, but eval_offset does *)
   Axiom offset_ptr_eq : forall tu p o,
-    Some (p ., o)%ptr = flip offset_ptr_ p <$> eval_offset tu o.
+    Some (p .., o)%ptr = flip offset_ptr_ p <$> eval_offset tu o.
 
   (* NOTE: the multiplication is flipped from path_pred. *)
   Axiom eval_o_sub : forall resolve ty (i : Z),
@@ -620,7 +620,7 @@ Module ptr_internal.
 
   Lemma o_sub_collapse p i n ty resolve
     (Hsz : size_of resolve ty = Some n) :
-    (p ., o_sub ty i)%ptr = offset_ptr_ (i * Z.of_N n) p.
+    (p .., o_sub ty i)%ptr = offset_ptr_ (i * Z.of_N n) p.
   Proof.
     apply (inj Some).
     by rewrite (offset_ptr_eq resolve) eval_o_sub Hsz.
