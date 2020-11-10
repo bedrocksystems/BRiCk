@@ -142,13 +142,13 @@ Module Type PTRS.
   (** ** pointer offsets *)
 
   (* [o_field cls n] represents [x.n] for [x : cls] *)
-  Parameter o_field : field -> offset.
+  Parameter o_field : genv -> field -> offset.
   (* [o_sub ty n] represents [x + n] for [x : cls*] *)
-  Parameter o_sub : type -> Z -> offset.
+  Parameter o_sub : genv -> type -> Z -> offset.
 
   (** going up and down the class heirarchy *)
-  Parameter o_base : forall (derived base : globname), offset.
-  Parameter o_derived : forall (base derived : globname), offset.
+  Parameter o_base : genv -> forall (derived base : globname), offset.
+  Parameter o_derived : genv -> forall (base derived : globname), offset.
 
   (** * Deprecated APIs *)
   (** Offset a pointer by a certain number of bytes. *)
@@ -519,7 +519,7 @@ Definition glob_addr (σ : genv) (o : obj_name) : option ptr :=
 
 
 (* Clients are not SUPPOSED to look at these APIs, and ideally we can drop them. *)
-Module ptr_internal.
+Module Type ptr_internal (Import P : PTRS).
   Parameter eval_offset : genv -> offset -> option Z.
 
   (* NOTE this API is especially non-sensical, since pointers and offsets
@@ -529,12 +529,12 @@ Module ptr_internal.
 
   (* NOTE: the multiplication is flipped from path_pred. *)
   Axiom eval_o_sub : forall resolve ty (i : Z),
-    eval_offset resolve (o_sub ty i) =
+    eval_offset resolve (o_sub resolve ty i) =
       (fun n => i * Z.of_N n) <$> size_of resolve ty.
 
   Lemma o_sub_collapse p i n ty resolve
     (Hsz : size_of resolve ty = Some n) :
-    (p .., o_sub ty i)%ptr = offset_ptr_ (i * Z.of_N n) p.
+    (p .., o_sub resolve ty i)%ptr = offset_ptr_ (i * Z.of_N n) p.
   Proof.
     apply (inj Some).
     by rewrite (offset_ptr_eq resolve) eval_o_sub Hsz.
