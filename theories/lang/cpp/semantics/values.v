@@ -120,10 +120,10 @@ Module Type PTRS.
 
   (** TODO: To drop [genv], we add _some_ constructors for root pointers. *)
   (* Pointer to a C++ "complete object" with external or internal linkage. *)
+  (* ^ the address of global variables & functions *)
   Parameter global_ptr :
-    obj_name -> (* translation_unit_id ->  *) ptr.
-    (* Dynamic loading might require adding some abstract [translation_unit_id]
-    *)
+    translation_unit -> obj_name -> ptr.
+    (* Dynamic loading might require adding some abstract [translation_unit_id]. *)
     (* Might need deferring, as it needs designing a [translation_unit_id];
      since loading the same translation unit twice can give different
      addresses. *)
@@ -131,7 +131,7 @@ Module Type PTRS.
   (* Pointer to "functions"; in C/C++ standards, those are distinct from
   pointers to objects. *)
   Parameter fun_ptr :
-    obj_name -> (* translation_unit_id ->  *) ptr.
+    translation_unit -> obj_name -> (* translation_unit_id ->  *) ptr.
 
   (* Other constructors exist, but are currently only used internally to the
   operational semantics (?):
@@ -305,8 +305,6 @@ Fixpoint get_result (ρ : region) : option ptr :=
 Record genv : Type :=
 { genv_tu : translation_unit
   (* ^ the [translation_unit] *)
-; glob_addr : obj_name -> option ptr
-  (* ^ the address of global variables & functions *)
 ; pointer_size_bitsize : bitsize
   (* ^ the size of a pointer *)
 }.
@@ -603,6 +601,14 @@ Arguments Z.mul _ _ : simpl never.
 Arguments Z.pow _ _ : simpl never.
 Arguments Z.opp _ : simpl never.
 Arguments Z.pow_pos _ _ : simpl never.
+
+(* XXX adapter. *)
+Definition glob_addr (σ : genv) (o : obj_name) : option ptr :=
+  let p := global_ptr σ.(genv_tu) o in
+  match (bool_decide (p = invalid_ptr)) with
+  | true => None
+  | false => Some p
+  end.
 
 
 (* Clients are not SUPPOSED to look at these APIs, and ideally we can drop them. *)
