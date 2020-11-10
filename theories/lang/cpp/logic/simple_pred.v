@@ -22,9 +22,44 @@ Definition fractionalR (V : Type) : cmraT :=
 Definition frac {V : Type} (q : Qp) (v : V) : fractionalR V :=
   (q, to_agree v).
 
-Lemma frac_op {V} (l : V)  (p q : Qp) :
+Lemma frac_op {V} (l : V) (p q : Qp) :
   frac p l ⋅ frac q l ≡ frac (p + q) l.
 Proof. by rewrite -pair_op agree_idemp. Qed.
+
+Lemma frac_valid {A : Type} {q1 q2} {v1 v2 : A} :
+  ✓ (frac q1 v1 ⋅ frac q2 v2) → ✓ (q1 + q2)%Qp ∧ v1 = v2.
+Proof. by move /pair_valid => /= []? /agree_op_invL'. Qed.
+
+Section fractional.
+  Context {K V : Type} `{Countable K} `{inG Σ (gmapR K (fractionalR V))}.
+
+  Let gmap_own γ q k v :=
+    own (A := gmapR K (fractionalR V)) γ {[ k := frac q v ]}.
+  Global Instance fractional_own_frac γ k v :
+    Fractional (λ q, gmap_own γ q k v).
+  Proof. intros q1 q2. by rewrite -own_op singleton_op frac_op. Qed.
+
+  Global Instance fractional_own_frac_as_fractional γ k v q :
+    AsFractional (gmap_own γ q k v) (λ q, gmap_own γ q k v) q.
+  Proof. exact: Build_AsFractional. Qed.
+
+  Global Instance gmap_own_agree :
+    Observe2 [| v1 = v2 |] (gmap_own γ q1 k v1) (gmap_own γ q2 k v2).
+  Proof.
+    intros. apply: observe_2_intro_persistent.
+    apply bi.wand_intro_r; rewrite /gmap_own -own_op singleton_op.
+    rewrite own_valid uPred.discrete_valid singleton_valid.
+    by iIntros "!%" => /frac_valid [].
+  Qed.
+
+  Global Instance gmap_own_frac_valid γ (q : Qp) k v :
+    Observe [| q ≤ 1 |]%Qc (gmap_own γ q k v).
+  Proof.
+    apply: observe_intro_persistent.
+    rewrite /gmap_own own_valid !uPred.discrete_valid singleton_valid.
+    by iIntros "!%" => /pair_valid [? _].
+  Qed.
+End fractional.
 
 Local Lemma length__Z_to_bytes {σ} n sgn v :
   length (_Z_to_bytes n (values.byte_order σ) sgn v) = n.
@@ -94,7 +129,7 @@ Module SimpleCPP_BASE <: CPP_LOGIC_CLASS.
       own (A := gmapR addr (fractionalR runtime_val'))
       _ghost.(heap_name) {[ a := frac q r ]}.
     Definition ghost_mem_own (p : ptr) (q : Qp) (v : val) : mpred :=
-      own (A := gmapR ptr (fractionalR (leibnizO val)))
+      own (A := gmapR ptr (fractionalR val))
         _ghost.(ghost_mem_name) {[ p := frac q v ]}.
     Definition mem_inj_own (p : ptr) (va : option N) : mpred :=
       own (A := gmapUR ptr (agreeR (leibnizO (option addr))))
@@ -326,6 +361,10 @@ Module SimpleCPP.
       Local Hint Resolve length_cptr : core.
       Local Hint Resolve length_pure_encodes_undef : core.
 
+      Global Instance encodes_nonvoid t v vs :
+        Observe [| t <> Tvoid |] (encodes t v vs).
+      Proof. apply: observe_intro_persistent; iIntros "!%". by destruct t. Qed.
+
       Lemma length_encodes t v vs :
         pure_encodes t v vs ->
           length vs = match erase_qualifiers t with
@@ -377,132 +416,72 @@ Module SimpleCPP.
 
       Local Hint Resolve pure_encodes_undef_aptr pure_encodes_undef_Z_to_bytes : core.
 
-      Lemma encodes_agree t v1 v2 vs :
-        encodes t v1 vs |-- encodes t v2 vs -* [| v1 = v2 |].
+      Global Instance encodes_agree t v1 v2 vs :
+        Observe2 [| v1 = v2 |] (encodes t v1 vs) (encodes t v2 vs).
       Proof.
-        rewrite/encodes/pure_encodes.
-        iIntros "%H1 %H2 !%".
+        apply: observe_2_intro_persistent; rewrite /encodes /pure_encodes;
+          iIntros (H1 H2) "!%".
         destruct (erase_qualifiers t) eqn:? =>//=; intros;
-          repeat (try (case_decide || case_match); destruct_and?; simplify_eq => //).
-        all: by [
+          repeat (try (case_decide || case_match); destruct_and?; simplify_eq => //);
+        by [
           edestruct cptr_ne_aptr | edestruct pure_encodes_undef_aptr |
           edestruct pure_encodes_undef_Z_to_bytes |
           f_equiv; exact: Z_to_bytes_inj ].
       Qed.
+
+      Global Instance encodes_consistent t v1 v2 vs1 vs2 :
+        Observe2 [| length vs1 = length vs2 |] (encodes t v1 vs1) (encodes t v2 vs2).
+      Proof. iIntros "!%". by move=> /length_encodes -> /length_encodes ->. Qed.
     End with_genv.
 
     Instance Z_to_bytes_proper :
       Proper (genv_leq ==> eq ==> eq ==> eq ==> eq) (@Z_to_bytes).
-    Proof.
-      intros ?? Hσ. repeat intro. subst. rewrite /Z_to_bytes /_Z_to_bytes_eq /_Z_to_bytes_def.
-      f_equal.
-      by rewrite Hσ.
-    Qed.
-
-    Theorem encodes_consistent σ t v1 v2 vs1 vs2 :
-      encodes σ t v1 vs1 |-- encodes σ t v2 vs2 -* [| length vs1 = length vs2 |].
-    Proof. iIntros "!%". by move=>/length_encodes -> /length_encodes ->. Qed.
+    Proof. intros ?? Hσ%byte_order_proper. solve_proper. Qed.
 
     Instance cptr_proper :
       Proper (genv_leq ==> eq ==> eq) cptr.
-    Proof.
-      do 3 red; intros; subst.
-      unfold cptr. setoid_rewrite H. reflexivity.
-    Qed.
+    Proof. rewrite /cptr => σ1 σ2 Heq ?? ->. by rewrite Heq. Qed.
 
     Instance aptr_proper :
       Proper (genv_leq ==> eq ==> eq) aptr.
-    Proof.
-      do 3 red; intros; subst.
-      unfold aptr. setoid_rewrite H. reflexivity.
-    Qed.
-    Instance: RewriteRelation genv_leq := {}.
-
-    Local Lemma pure_encodes_undef_pointer_size x y xs :
-      genv_leq x y ->
-      pure_encodes_undef (pointer_size_bitsize x) xs ->
-      pure_encodes_undef (pointer_size_bitsize y) xs.
-    Proof. by intros ->. Qed.
+    Proof. rewrite /aptr => σ1 σ2 Heq ?? ->. by rewrite Heq. Qed.
 
     Instance encodes_proper :
       Proper (genv_leq ==> eq ==> eq ==> eq ==> lentails) encodes.
     Proof.
-      intros ?? Heq; solve_proper_prepare; f_equiv.
-      unfold pure_encodes, impl.
-      destruct (erase_qualifiers y0); auto.
-      all: destruct y1; auto.
-      all: try by intuition eauto using pure_encodes_undef_pointer_size.
-      all: try by [destruct (decide (p = nullptr)); rewrite Heq; intuition auto].
-      all: try by rewrite Heq.
+      unfold encodes; intros σ1 σ2 Heq t1 t2 -> v1 v2 -> vs1 vs2 ->.
+      f_equiv; unfold pure_encodes, impl;
+        destruct (erase_qualifiers t2) => //; destruct v2 => //;
+        try case_decide; rewrite ?Heq //.
     Qed.
 
     Definition val_ (a : ptr) (v : val) (q : Qp) : mpred :=
       ghost_mem_own a q v.
 
-    Lemma val_agree a v1 v2 q1 q2 :
-      val_ a v1 q1 |-- val_ a v2 q2 -* ⌜v1 = v2⌝.
-    Proof.
-      apply bi.wand_intro_r.
-      rewrite/val_ -own_op own_valid singleton_op.
-      rewrite uPred.discrete_valid singleton_valid.
-      by f_equiv=>/pair_valid [] _ /= /agree_op_invL'.
-    Qed.
+    Global Instance val_agree a v1 v2 q1 q2 :
+      Observe2 [|v1 = v2|] (val_ a v1 q1) (val_ a v2 q2) := _.
 
-    Lemma val_frac_valid a v (q : Qp) :
-      val_ a v q |-- [| q ≤ 1 |]%Qc.
-    Proof. (* XXX same as byte_frac_valid. *)
-      rewrite /val_ /ghost_mem_own.
-      rewrite own_valid !uPred.discrete_valid singleton_valid.
-      by iIntros ([? _]%pair_valid).
-    Qed.
+    Global Instance val_frac_valid a v (q : Qp) :
+      Observe ([| q ≤ 1 |])%Qc (val_ a v q) := _.
 
-    Instance val_fractional a rv : Fractional (val_ a rv).
-    Proof.
-      unfold val_. red.
-      intros. by rewrite -own_op singleton_op frac_op.
-    Qed.
-
+    Instance val_fractional a rv : Fractional (val_ a rv) := _.
     Instance val_as_fractional a rv q :
-      AsFractional (val_ a rv q) (val_ a rv) q.
-    Proof. exact: Build_AsFractional. Qed.
-
+      AsFractional (val_ a rv q) (val_ a rv) q := _.
     Instance val_timeless a rv q : Timeless (val_ a rv q) := _.
 
 
     Definition byte_ (a : addr) (rv : runtime_val) (q : Qp) : mpred :=
       heap_own a q rv.
 
-    Lemma byte_agree a rv1 rv2 q1 q2 :
-      byte_ a rv1 q1 |-- byte_ a rv2 q2 -* ⌜rv1 = rv2⌝.
-    Proof.
-      apply bi.wand_intro_r.
-      rewrite /byte_ -own_op own_valid singleton_op.
-      rewrite uPred.discrete_valid singleton_valid.
-      by f_equiv=>/pair_valid [] _ /= /agree_op_invL'.
-    Qed.
+    Global Instance byte_agree a v1 v2 q1 q2 :
+      Observe2 [|v1 = v2|] (byte_ a v1 q1) (byte_ a v2 q2) := _.
+    Global Instance byte_frac_valid a rv (q : Qp) :
+      Observe ([| q ≤ 1 |])%Qc (byte_ a rv q) := _.
 
-    Lemma byte_frac_valid a rv (q : Qp) :
-      byte_ a rv q |-- [| q ≤ 1 |]%Qc.
-    Proof.
-      rewrite /byte_ /heap_own.
-      rewrite own_valid !uPred.discrete_valid singleton_valid.
-      by iIntros ([? _]%pair_valid).
-    Qed.
-
-    Instance: Fractional (byte_ a rv).
-    Proof.
-      unfold byte_. red.
-      intros. by rewrite -own_op singleton_op frac_op.
-    Qed.
-
-    Instance byte_as_fractional a rv q : AsFractional (byte_ a rv q) (fun q => byte_ a rv q) q.
-    Proof. exact: Build_AsFractional. Qed.
-
+    Instance byte_fractional : Fractional (byte_ a rv) := _.
+    Instance byte_as_fractional a rv q :
+      AsFractional (byte_ a rv q) (fun q => byte_ a rv q) q := _.
     Instance: Timeless (byte_ a rv q) := _.
-
-    Lemma frac_valid {A : Type} q1 q2 (v1 v2 : A) :
-      ✓ (frac q1 v1 ⋅ frac q2 v2) → ✓ (q1 + q2)%Qp ∧ v1 = v2.
-    Proof. by rewrite pair_valid/= =>-[]? /agree_op_invL'. Qed.
 
     Theorem byte_consistent a b b' q q' :
       byte_ a b q ** byte_ a b' q' |-- byte_ a b (q + q') ** [| b = b' |].
@@ -546,9 +525,8 @@ Module SimpleCPP.
       length vs > 0 ->
       bytes a vs q |-- [| q ≤ 1 |]%Qc.
     Proof.
-      rewrite /bytes. case: vs => [ |v vs _] /=; first by lia.
-      rewrite byte_frac_valid.
-      apply: bi.sep_elim_l.
+      rewrite /bytes; case: vs => [ |v vs _] /=; first by lia.
+      rewrite byte_frac_valid. by iIntros "[% _]".
     Qed.
 
     Instance bytes_timeless a rv q : Timeless (bytes a rv q) := _.
@@ -556,25 +534,6 @@ Module SimpleCPP.
     Instance bytes_as_fractional a vs q :
       AsFractional (bytes a vs q) (bytes a vs) q.
     Proof. exact: Build_AsFractional. Qed.
-
-    Theorem bytes_consistent {q q' b b' a} (Hlen : length b = length b') :
-        bytes a b q |-- bytes a b' q' -* [| b = b' |] ** bytes a b (q + q').
-    Proof.
-      iIntros "Hb Hb'".
-      iDestruct (bytes_agree Hlen with "Hb Hb'") as %->.
-      by iFrame.
-    Qed.
-
-    Lemma encodes_bytes_agree σ t v1 v2 a vs1 vs2 q1 q2 :
-      encodes σ t v1 vs1 ** bytes a vs1 q1 |--
-      encodes σ t v2 vs2 ** bytes a vs2 q2 -*
-      ⌜ vs1 = vs2 ∧ v1 = v2 ⌝.
-    Proof.
-      iIntros "[En1 By1] [En2 By2]".
-      iDestruct (encodes_consistent with "En1 En2") as %Heq.
-      iDestruct (bytes_agree Heq with "By1 By2") as %->.
-      by iDestruct (encodes_agree with "En1 En2") as %->.
-    Qed.
 
     Lemma bytes_update {a : addr} {vs} vs' :
       length vs = length vs' →
@@ -597,27 +556,83 @@ Module SimpleCPP.
         rewrite (_: a + N.of_nat (S k) = a + 1 + N.of_nat k)%N //; lia.
     Qed.
 
-    Lemma mem_inj_own_agree p ma1 ma2 :
-      mem_inj_own p ma1 |-- mem_inj_own p ma2 -* [| ma1 = ma2 |].
+    Instance mem_inj_own_agree p (oa1 oa2 : option N) :
+      Observe2 [| oa1 = oa2 |] (mem_inj_own p oa1) (mem_inj_own p oa2).
     Proof.
-      iIntros "o1 o2".
-      iDestruct (own_valid_2 with "o1 o2") as %X.
-      revert X.
-      rewrite singleton_op singleton_valid => /agree_op_invL' ?. by subst ma2.
+      apply /observe_2_intro_persistent /bi.wand_intro_r.
+      rewrite -own_op singleton_op.
+      rewrite own_valid uPred.discrete_valid singleton_valid.
+      by iIntros "!%" => /= /agree_op_invL'.
     Qed.
 
-    (* heap points to *)
+    (** heap points to *)
+    (* Auxiliary definitions.
+      They're not exported, so we don't give them a complete theory;
+      however, some of their proofs *)
+    Local Definition addr_encodes
+        (σ : genv) (t : type) (q : Qp) (a : addr) (v : val) (vs : list runtime_val) :=
+      encodes σ t v vs ** bytes a vs q ** vbytes a vs q.
+
+    Local Instance addr_encodes_fractional {σ} ty a v vs :
+      Fractional (λ q, addr_encodes σ ty q a v vs) := _.
+
+    Local Instance addr_encodes_agree_dst σ t a v1 v2 vs1 vs2 q1 q2 :
+      Observe2 [| vs1 = vs2 |]
+        (addr_encodes σ t q1 a v1 vs1)
+        (addr_encodes σ t q2 a v2 vs2).
+    Proof.
+      apply: observe_2_intro_persistent.
+      iIntros "[En1 [By1 _]] [En2 [By2 _]]".
+      iDestruct (encodes_consistent with "En1 En2") as %Heq.
+      by iDestruct (bytes_agree Heq with "By1 By2") as %->.
+    Qed.
+
+    Local Instance addr_encodes_agree_src σ t v1 v2 a vs1 vs2 q1 q2 :
+      Observe2 [| v1 = v2 |]
+        (addr_encodes σ t q1 a v1 vs1)
+        (addr_encodes σ t q2 a v2 vs2).
+    Proof.
+      iIntros "H1 H2".
+      iDestruct (addr_encodes_agree_dst with "H1 H2") as %->.
+      (* Using encodes_agree *)
+      iApply (observe_2 with "H1 H2").
+    Qed.
+
+    Global Instance addr_encodes_frac_valid {σ} ty (q : Qp) a v vs :
+      Observe [| q ≤ 1 |]%Qc (addr_encodes σ ty q a v vs).
+    Proof.
+      apply: observe_intro_persistent.
+      iDestruct 1 as (Hen%length_encodes_pos) "[B _]".
+      by iApply (bytes_frac_valid with "B").
+    Qed.
+
+    Local Definition oaddr_encodes
+        (σ : genv) (t : type) (q : Qp) (oa : option addr) p (v : val) :=
+        match oa with
+        | Some a =>
+          Exists vs,
+          addr_encodes σ t q a v vs
+        | None => [| t <> Tvoid |] ** val_ p v q
+        end.
+
+    Local Instance oaddr_encodes_fractional {σ} t oa p v :
+      Fractional (λ q, oaddr_encodes σ t q oa p v).
+    Proof. rewrite /oaddr_encodes; destruct oa; apply _. Qed.
+
+    Local Instance oaddr_encodes_nonvoid {σ} ty q oa p v :
+      Observe [| ty <> Tvoid |] (oaddr_encodes σ ty q oa p v).
+    Proof. destruct oa; apply _. Qed.
+    Local Instance oaddr_encodes_frac_valid {σ} t (q : Qp) oa p v :
+      Observe [| q ≤ 1 |]%Qc (oaddr_encodes σ t q oa p v).
+    Proof. destruct oa; apply _. Qed.
+
+
     Definition tptsto {σ:genv} (t : type) (q : Qp) (p : ptr) (v : val) : mpred :=
       [| p <> nullptr |] **
-      Exists (a : option addr),
-              mem_inj_own p a **
+      Exists (oa : option addr),
+              mem_inj_own p oa **
               valid_ptr p **
-              match a with
-              | Some a =>
-                Exists vs,
-                encodes σ t v vs ** bytes a vs q ** vbytes a vs q
-              | None => val_ p v q
-              end.
+              oaddr_encodes σ t q oa p v.
 
     Theorem tptsto_nonnull {σ} ty q a :
       @tptsto σ ty q nullptr a |-- False.
@@ -625,7 +640,7 @@ Module SimpleCPP.
 
     Instance tptsto_mono :
       Proper (genv_leq ==> eq ==> eq ==> eq ==> eq ==> (⊢)) (@tptsto).
-    Proof. solve_proper. Qed.
+    Proof. rewrite /tptsto /oaddr_encodes /addr_encodes. solve_proper. Qed.
 
     Instance tptsto_proper :
       Proper (genv_eq ==> eq ==> eq ==> eq ==> eq ==> (≡)) (@tptsto).
@@ -634,55 +649,26 @@ Module SimpleCPP.
       by split'; apply tptsto_mono.
     Qed.
 
-    Instance tptsto_fractional {σ} ty p v :
-      Fractional (λ q, @tptsto σ ty q p v).
-    Proof.
-      rewrite /tptsto; apply fractional_sep; first by apply _.
-      rewrite /Fractional; intros q1 q2.
-      rewrite -bi.exist_sep_only_provable; first last => [oa1 oa2| ].
-        by iIntros "[A1 _] [A2 _]"; iApply (mem_inj_own_agree with "A1 A2").
-      f_equiv=>oa. rewrite -bi.persistent_sep_distr_l; f_equiv.
-      rewrite -bi.persistent_sep_distr_l; f_equiv.
-      destruct oa; last by rewrite fractional.
-      rewrite -bi.exist_sep; first last => [vs1 vs2| ]. {
-        iIntros "[En1 [By1 _]] [En2 [By2 _]]".
-        iDestruct (encodes_bytes_agree with "[$En1 $By1] [$En2 $By2]") as "[$ _]".
-      }
-      f_equiv=>vs. rewrite -bi.persistent_sep_distr_l !fractional.
-      iSplit; iIntros "[$ [[$$] [$$]]]".
-    Qed.
-
+    Instance tptsto_fractional {σ} ty p v : Fractional (λ q, @tptsto σ ty q p v) := _.
     Instance tptsto_timeless {σ} ty q p v : Timeless (@tptsto σ ty q p v) := _.
 
-    Theorem tptsto_frac_valid {σ} ty (q : Qp) p v :
-      Observe [| q ≤ 1 |]%Qc (@tptsto σ ty q p v).
-    Proof.
-      apply: observe_intro_persistent.
-      iDestruct 1 as "(_ & T)".
-      iDestruct "T" as ([a| ]) "(_ & _ & T)"; last by iApply val_frac_valid.
-      iDestruct "T" as (vs Hen%length_encodes_pos) "[B _]".
-      by iApply (bytes_frac_valid with "B").
-    Qed.
+    Global Instance tptsto_nonvoid {σ} ty (q : Qp) p v :
+      Observe [| ty <> Tvoid |] (@tptsto σ ty q p v) := _.
 
-    Theorem tptsto_valid_ptr {σ} t q p v :
-      Observe (valid_ptr p) (@tptsto σ t q p v).
-    Proof.
-      apply: observe_intro_persistent.
-      iDestruct 1 as "(_ & T)".
-      iDestruct "T" as (oa) "(_ & $ & _)".
-    Qed.
+    Global Instance tptsto_frac_valid {σ} ty (q : Qp) p v :
+      Observe [| q ≤ 1 |]%Qc (@tptsto σ ty q p v) := _.
 
-    Theorem tptsto_agree σ t q1 q2 p v1 v2 :
+    Global Instance tptsto_valid_ptr {σ} t q p v :
+      Observe (valid_ptr p) (@tptsto σ t q p v) := _.
+
+    Global Instance tptsto_agree σ t q1 q2 p v1 v2 :
       Observe2 [| v1 = v2 |] (@tptsto σ t q1 p v1) (@tptsto σ t q2 p v2).
     Proof.
       apply: observe_2_intro_persistent.
-      iDestruct 1 as (Hnn1 ma1) "(Hp1 & _ & Hv1)".
-      iDestruct 1 as (Hnn2 ma2) "(Hp2 & _ & Hv2)".
-      iDestruct (mem_inj_own_agree with "Hp1 Hp2") as "->".
-      case: ma2=>[a| ]; last by iDestruct (val_agree with "Hv1 Hv2") as %->.
-      iDestruct "Hv1" as (vs1) "[He1 [Hb1 _]]".
-      iDestruct "Hv2" as (vs2) "[He2 [Hb2 _]]".
-      by iDestruct (encodes_bytes_agree with "[$He1 $Hb1] [$He2 $Hb2]") as %[_ ->].
+      iDestruct 1 as (Hnn1 oa1) "H1".
+      iDestruct 1 as (Hnn2 oa2) "H2".
+      iDestruct (observe_2_elim_pure (oa1 = oa2) with "H1 H2") as %->.
+      destruct oa2; iApply (observe_2 with "H1 H2").
     Qed.
 
     Definition code_at (_ : genv) (f : Func) (p : ptr) : mpred :=
@@ -719,13 +705,13 @@ Module SimpleCPP.
     Instance pinned_ptr_persistent va p : Persistent (pinned_ptr va p) := _.
     Instance pinned_ptr_affine va p : Affine (pinned_ptr va p) := _.
     Instance pinned_ptr_timeless va p : Timeless (pinned_ptr va p) := _.
-    Theorem pinned_ptr_unique va va' p :
+    Instance pinned_ptr_unique va va' p :
       Observe2 [| va = va' |] (pinned_ptr va p) (pinned_ptr va' p).
     Proof.
       apply: observe_2_intro_persistent.
       iIntros "A B".
-      iDestruct "A" as "[[->->] | [% A]]"; iDestruct "B" as "[[%->] | [% B]]"; auto.
-      iDestruct (mem_inj_own_agree with "A B") as %Hp. by inversion Hp.
+      iDestruct "A" as "[[->->] | [% A]]"; iDestruct "B" as "[[%->] | [% B]]" => //.
+      by iDestruct (observe_2_elim_pure (Some va = Some va') with "A B") as %[= ->].
     Qed.
 
     Theorem pinned_ptr_borrow : forall {σ} ty p v va M,
@@ -737,7 +723,7 @@ Module SimpleCPP.
       intros. iIntros "(TP & PI & %)".
       iDestruct "PI" as "[[% %]|[% MJ]]"; [done| ].
       iDestruct "TP" as (_ ma) "[MJ' [VP TP]]".
-      iDestruct (mem_inj_own_agree with "MJ MJ'") as %?. subst ma.
+      iDestruct (mem_inj_own_agree with "MJ MJ'") as %<-.
       iDestruct "TP" as (vs) "(#EN & Bys & VBys)".
       iIntros "!>".
       iExists vs. iFrame "EN VBys".
