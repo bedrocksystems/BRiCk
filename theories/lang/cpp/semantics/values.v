@@ -203,7 +203,6 @@ Definition pointer_size (g : genv) := bytesN (pointer_size_bitsize g).
 (** [genv_leq a b] states that [b] is an extension of [a] *)
 Record genv_leq {l r : genv} : Prop :=
 { tu_le : sub_module l.(genv_tu) r.(genv_tu)
-; addr_le : forall a p, l.(glob_addr) a = Some p -> r.(glob_addr) a = Some p
 ; pointer_size_le : l.(pointer_size_bitsize) = r.(pointer_size_bitsize) }.
 Arguments genv_leq _ _ : clear implicits.
 
@@ -261,7 +260,7 @@ Proof. by destruct 1. Qed.
 
 Instance genv_compat_proper : Proper (flip sub_module ==> genv_leq ==> impl) genv_compat.
 Proof.
-  intros ?? Heq1 ?? [Heq2 _ _] [Heq3]; constructor.
+  intros ?? Heq1 ?? [Heq2 _] [Heq3]; constructor.
   by rewrite Heq1 Heq3.
 Qed.
 Instance genv_compat_flip_proper : Proper (sub_module ==> flip genv_leq ==> flip impl) genv_compat.
@@ -433,7 +432,7 @@ Proof.
   intros ?? Hle ? t ->; induction t; simpl; (try constructor) => //.
   all: try exact: pointer_size_proper.
   - by destruct IHt; constructor; subst.
-  - move: Hle => [[ /(_ g) Hle _ _] _ _].
+  - move: Hle => [[ /(_ g) Hle _] _ _].
     unfold glob_def, globals in *.
     destruct (globals (genv_tu x) !! g) as [g1| ]; last constructor.
     move: Hle => /(_ _ eq_refl) [g2 [-> HH]] /=.
