@@ -11,7 +11,7 @@
  (flags (
    ; We sometimes want to locally override notation (e.g. in proofmode/base.v, bi/embedding.v), and there
    ; is no good way to do that with scopes.
-   ; -w -notation-overridden
+   -w -notation-overridden
    ; non-canonical projections (https://github.com/coq/coq/pull/10076) do not exist yet in 8.9.
    ; -w -redundant-canonical-projection
    ; change_no_check does not exist yet in 8.9.
