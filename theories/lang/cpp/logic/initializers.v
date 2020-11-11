@@ -92,27 +92,37 @@ Module Type Init.
 
     Definition build_array (es : list Expr) (fill : option Expr) (sz : nat)
     : option (list (Z * Expr)) :=
-      if Nat.ltb (List.length es) sz then
-        match fill with
-        | None => None
-        | Some f =>
-          Some (List.combine (List.map Z.of_nat (seq 0 sz))
-                             (List.app es (map (fun _ => f) (seq (List.length es) (sz - 1)))))
-        end
-      else
-        Some (List.combine (List.map Z.of_nat (seq 0 sz))
-                           (firstn sz es)).
+      let len := List.length es in
+      let idxs := List.map Z.of_nat (seq 0 sz) in
+      match Nat.compare sz len with
+      (* <http://eel.is/c++draft/dcl.init.general#16.5>
+
+         Programs which contain more initializer expressions than
+         array-members are ill-formed.
+       *)
+      | Lt => None
+      | Eq => Some (List.combine idxs es)
+      | Gt => match fill with
+             | None => None
+             | Some f =>
+               Some (List.combine idxs (List.app es (map (fun _ => f) (seq 0 (sz - len)))))
+             end
+      end.
 
     Fixpoint wp_array_init (ety : type) (base : val) (es : list (Z * Expr)) (Q : mpred -> mpred) : mpred :=
       match es with
       | nil => Q empSP
       | (i,e) :: es =>
-        Forall a, _offsetL (_sub ety i) (_eqv base) &~ a -*
-        Exists Qi, wp_init ety (Vptr a) e Qi **
-        wp_array_init ety base es (fun free' =>
-          Forall free, Qi free -* Q (free ** free'))
+        Forall a,
+          _offsetL (_sub ety i) (_eqv base) &~ a -*
+          (* NOTE: We nest the recursive calls to `wp_array_init` within
+               the continuation of the `wp_initialize` statement to
+               reflect the fact that the C++ Standard introduces
+               sequence-points between all of the elements of an
+               initializer list (c.f. http://eel.is/c++draft/dcl.init.list#4)
+           *)
+          wp_initialize ety (Vptr a) e (fun free => free ** wp_array_init ety base es Q)
       end.
-
 
     Axiom wp_init_initlist_array :forall ls fill ety sz addr Q,
       match build_array ls fill (N.to_nat sz) with
@@ -135,14 +145,6 @@ Module Type Init.
            then wp_prval e Q
            else False)
       |-- wp_prval (Einitlist (e :: nil) None t) Q.
-
-    Axiom wp_init_cast_integral : forall e ty addr Q,
-        wp_prval e (fun v free =>
-          Exists v',
-            [| conv_int (type_of e) ty v v' |] **
-            _at (_eqv addr) (anyR (erase_qualifiers ty) 1) **
-            (_at (_eqv addr) (primR (erase_qualifiers ty) 1 v') -* Q free))
-        |-- wp_init ty addr (Ecast Cintegral (Rvalue, e) ty) Q.
 
     Axiom wp_init_cast_noop : forall e ty addr ty' Q,
         wp_init ty addr e Q
