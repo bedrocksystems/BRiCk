@@ -153,17 +153,17 @@ Module Type PTRS.
   (** * Deprecated APIs *)
   (** Offset a pointer by a certain number of bytes. *)
   Parameter offset_ptr__ : Z -> ptr -> ptr.
-  #[deprecated(since="X", note="XXX")]
+  (* #[deprecated(since="X", note="XXX")] *)
   Notation offset_ptr_ := offset_ptr__.
 
   Axiom offset_ptr_0__ : forall b,
       offset_ptr_ 0 b = b.
-  #[deprecated(since="X", note="XXX")]
+  (* #[deprecated(since="X", note="XXX")] *)
   Notation offset_ptr_0_ := offset_ptr_0__.
 
   Axiom offset_ptr_combine__ : forall b o o',
       offset_ptr_ o' (offset_ptr_ o b) = offset_ptr_ (o + o') b.
-  #[deprecated(since="X", note="XXX")]
+  (* #[deprecated(since="X", note="XXX")] *)
   Notation offset_ptr_combine_ := offset_ptr_combine__.
 End PTRS.
 
