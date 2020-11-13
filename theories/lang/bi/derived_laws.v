@@ -8,6 +8,7 @@
 From iris.bi Require Import bi.
 From iris.proofmode Require Import tactics.
 From bedrock.lang.bi Require only_provable.
+From iris.bi.lib Require Import fractional.
 
 (**
 Derived BI laws, similarly to iris.bi.derived_laws.
@@ -171,4 +172,13 @@ Section only_provable_derived_laws.
       by iDestruct (Hagree a1 a2 with "[$Ha2]") as "->".
   Qed.
 End only_provable_derived_laws.
+
+Section embed_derived_laws.
+  Context `{BiEmbed PROP1 PROP2}.
+  Local Notation embed := (embed (A:=PROP1) (B:=PROP2)).
+
+  Global Instance embed_fractional (P : Qp → PROP1) :
+    Fractional P → Fractional (λ q, embed (P q)).
+  Proof. intros ???. by rewrite -embed_sep fractional. Qed.
+End embed_derived_laws.
 End bi.
