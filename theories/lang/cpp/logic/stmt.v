@@ -303,7 +303,7 @@ Module Type Stmt.
     Definition or_case (P : option (Z -> Prop)) (Q : Z -> Prop) : option (Z -> Prop) :=
       match P with
       | None => Some Q
-      | Some P =>  Some (fun x => P x /\ Q x)
+      | Some P =>  Some (fun x => P x \/ Q x)
       end.
 
     (** apply the [wp] calculation to the body of a switch
