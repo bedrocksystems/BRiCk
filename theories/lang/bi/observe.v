@@ -279,6 +279,11 @@ Section embed.
     intros Hobs. apply observe_uncurry. rewrite -embed_sep.
     by apply embed_observe, observe_curry.
   Qed.
+
+  (* TODO: this doesn't belong here. To upstream. *)
+  Global Instance embed_fractional (P : Qp → PROP1) :
+    Fractional P → Fractional (λ q, embed (P q)).
+  Proof. intros ???. by rewrite -embed_sep fractional. Qed.
 End embed.
 
 Global Instance fractional_exist {PROP : bi} {A} (P : A → Qp → PROP)
