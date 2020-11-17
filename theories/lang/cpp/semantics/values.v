@@ -412,3 +412,6 @@ Module Type PTR_INTERNAL (Import P : PTRS).
   Qed.
 End PTR_INTERNAL.
 Declare Module PTR_INTERNAL_AXIOM : PTR_INTERNAL PTRS_FULL_AXIOM.
+
+#[deprecated(since="2020-11-17", note="Use types.size_of.")]
+Notation size_of := types.size_of.
