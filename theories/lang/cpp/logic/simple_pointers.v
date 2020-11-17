@@ -247,6 +247,11 @@ Module SIMPLE_PTRS_IMPL : PTRS.
   *)
 
   Definition fun_ptr := global_ptr.
+  Lemma o_sub_0 σ ty n :
+    size_of σ ty = Some n ->
+    o_sub σ ty 0 = o_id.
+  Proof. rewrite /o_sub /opt_to_off => -> //=. rewrite Z.mul_0_l. Admitted.
+
 End SIMPLE_PTRS_IMPL.
 
 (** Another consistency proof for [PTRS] *)
@@ -655,4 +660,10 @@ Module PTRS_IMPL : PTRS.
     - destruct p => //=; admit.
     - destruct p => //=.
   Admitted.
+
+  (* XXX False. *)
+  Lemma o_sub_0 σ ty n :
+    size_of σ ty = Some n ->
+    o_sub σ ty 0 = o_id.
+  Proof. rewrite /o_sub/o_id/=. Admitted.
 End PTRS_IMPL.
