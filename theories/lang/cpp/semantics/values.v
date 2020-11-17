@@ -52,9 +52,6 @@ Module Type PTRS.
   Axiom ptr_countable : Countable ptr.
   Global Existing Instance ptr_countable.
 
-  (* Question to resolve: can we commit to Leibniz equality or should we
-  expose a setoid with the associated pain? I expect the former. *)
-
   (** * Offsets.
       Offsets represent paths between locations
    *)
@@ -68,8 +65,7 @@ Module Type PTRS.
   Axiom offset_countable : Countable offset.
   Global Existing Instance offset_countable.
 
-  (* offsets form a monoid; maybe just use the free monoid [list offset]? *)
-  (* identity - probably not strictly necessary*)
+  (** Offsets form a monoid *)
   Parameter o_id : offset.
   Parameter o_dot : offset -> offset -> offset.
 
@@ -86,8 +82,6 @@ Module Type PTRS.
   Reserved Notation "p .., o" (at level 11, left associativity).
   Notation "p .., o" := (_offset_ptr p o) : ptr_scope.
   Notation "o1 .., o2" := (o_dot o1 o2) : offset_scope.
-  (* TODO: use an operational typeclass, and add stdpp-style Haskell-style
-  variants of the operator. *)
 
   (* Axiom offset_ptr_proper : Proper ((≡) ==> (≡) ==> (≡)) _offset_ptr. *)
   (* Global Existing Instances offset_ptr_proper. *)
@@ -102,7 +96,6 @@ Module Type PTRS.
   (** An invalid pointer, included as a sentinel value. *)
   Parameter invalid_ptr : ptr.
 
-  (** TODO: To drop [genv], we add _some_ constructors for root pointers. *)
   (* Pointer to a C++ "complete object" with external or internal linkage. *)
   (* ^ the address of global variables & functions *)
   Parameter global_ptr :
@@ -112,8 +105,11 @@ Module Type PTRS.
      since loading the same translation unit twice can give different
      addresses. *)
 
-  (* Pointer to "functions"; in C/C++ standards, those are distinct from
-  pointers to objects. *)
+  (* Pointer to "functions"; in C/C++ standards, functions are not objects,
+  (e.g. https://eel.is/c++draft/basic.pre#:object
+  https://eel.is/c++draft/basic.compound#3.1),
+  and function pointers cannot be offset.
+  *)
   Parameter fun_ptr :
     translation_unit -> obj_name -> (* translation_unit_id ->  *) ptr.
 
@@ -130,14 +126,17 @@ Module Type PTRS.
   (* [o_sub ty n] represents [x + n] for [x : cls*] *)
   Parameter o_sub : genv -> type -> Z -> offset.
 
-  (** going up and down the class heirarchy *)
+  Axiom o_sub_0 : ∀ σ ty,
+    o_sub σ ty 0 = o_id.
+
+  (** going up and down the class hierarchy, one step at a time. *)
   Parameter o_base : genv -> forall (derived base : globname), offset.
   Parameter o_derived : genv -> forall (base derived : globname), offset.
 
   (** * Deprecated APIs *)
   (** Offset a pointer by a certain number of bytes. *)
   Parameter offset_ptr__ : Z -> ptr -> ptr.
-  (* #[deprecated(since="X", note="XXX")] *)
+  (* #[deprecated(since="2020-11-17", note="Use structured offsets instead.")] *)
   Notation offset_ptr_ := offset_ptr__.
 
   Axiom offset_ptr_0__ : forall b,
@@ -512,7 +511,7 @@ Arguments Z.pow_pos _ _ : simpl never.
 (* XXX adapter. *)
 Definition glob_addr (σ : genv) (o : obj_name) : option ptr :=
   let p := global_ptr σ.(genv_tu) o in
-  match (bool_decide (p = invalid_ptr)) with
+  match bool_decide (p = invalid_ptr) with
   | true => None
   | false => Some p
   end.

@@ -302,11 +302,6 @@ Module Type VALID_PTR_AXIOMS.
   Section with_cpp.
     Context `{cpp_logic} {σ : genv}.
 
-    (*
-    TODO: pointer validity now assumes a [genv] / [binary] (=
-    [translation_unit]) in ghost state.
-    *)
-
     Axiom invalid_ptr_invalid :
       valid_ptr invalid_ptr |-- False.
 
@@ -318,9 +313,6 @@ Module Type VALID_PTR_AXIOMS.
       valid_ptr (p .., o_base σ derived base) |-- valid_ptr p.
     Axiom valid_ptr_derived : ∀ p base derived,
       valid_ptr (p .., o_derived σ base derived) |-- valid_ptr p.
-
-    Axiom o_sub_0 : ∀ ty,
-      (o_sub σ ty 0 = o_id).
 
     Axiom o_sub_sub : ∀ p ty n1 n2,
       valid_ptr (p .., o_sub σ ty n1) |--
