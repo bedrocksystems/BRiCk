@@ -318,18 +318,21 @@ Module Type VALID_PTR_AXIOMS.
       valid_ptr (p .., o_sub σ ty n1) |--
       [! p .., o_sub σ ty n1 .., o_sub σ ty n2 = p .., o_sub σ ty (n1 + n2) !]%ptr.
 
-    (* True without virtual inheritance? *)
+    (* We're ignoring virtual inheritance here, since we have no plans to
+    support it for now, but this might hold there too. *)
     Axiom o_base_derived : forall p base derived,
       valid_ptr (p .., o_base σ derived base) |--
       [! p .., o_base σ derived base .., o_derived σ base derived = p !]%ptr.
 
-    (* Without the premise to the cancellation axiom [o_base_derived],
-       we could incorrectly deduce that
+    Axiom o_derived_base : forall p base derived,
+      valid_ptr (p .., o_derived σ base derived) |--
+      [! p .., o_derived σ base derived .., o_base σ derived base = p !]%ptr.
+
+    (* Without the validity premise to the cancellation axioms ([o_sub_sub],
+      [o_base_derived], [o_derived_base]) we could incorrectly deduce that
       [valid_ptr p] entails [valid_ptr (p ., o_base derived base ., o_derived
       base derived)] which entails [valid_ptr (p ., o_base derived base)].
     *)
-
-    (* Also the opposite maybe? *)
   End with_cpp.
 End VALID_PTR_AXIOMS.
 Declare Module Import VALID_PTR : VALID_PTR_AXIOMS.
