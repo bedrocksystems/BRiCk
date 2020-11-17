@@ -339,7 +339,7 @@ Module Type VALID_PTR_AXIOMS.
     *)
   End with_cpp.
 End VALID_PTR_AXIOMS.
-Declare Module Import VALID_PTR : VALID_PTR_AXIOMS.
+Declare Module Export VALID_PTR : VALID_PTR_AXIOMS.
 
 Section with_cpp.
   Context `{Σ : cpp_logic}.
