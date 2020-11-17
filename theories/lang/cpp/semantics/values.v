@@ -161,11 +161,13 @@ Module Type PTRS.
   (* #[deprecated(since="X", note="XXX")] *)
   Notation offset_ptr_0_ := offset_ptr_0__.
 
-  Axiom offset_ptr_combine__ : forall p o o',
+  (* This axiom should be deprecated. *)
+  Axiom offset_ptr_combine : forall p o o',
+    (* TODO: this premise is necessary, but breaks clients. *)
     offset_ptr_ o p <> invalid_ptr ->
     offset_ptr_ o' (offset_ptr_ o p) = offset_ptr_ (o + o') p.
   (* #[deprecated(since="X", note="XXX")] *)
-  Notation offset_ptr_combine_ := offset_ptr_combine__.
+  (* Notation offset_ptr_combine_ := offset_ptr_combine__. *)
 End PTRS.
 
 Module Type RAW_BYTES.
@@ -214,9 +216,19 @@ Module Type PTRS_FULL := PTRS <+ RAW_BYTES <+ VAL_MIXIN.
 Declare Module PTRS_FULL_AXIOM : PTRS_FULL.
 Export PTRS_FULL_AXIOM.
 
-(* Unsound? *)
+(* Unsound! TODO: this axiom is unsound; if [o + o' = 0],
+but [offset_ptr_ o p] overflows into an invalid pointer, then
+[offset_ptr_ o' (offset_ptr_ o p)] is invalid as well.
+The fixed version is [offset_ptr_combine] above.
+
+But since [offset_ptr_ ] should be deprecated anyway, we defer removing it,
+to update clients only once.
+*)
 Axiom offset_ptr_combine__ : forall p o o',
-    offset_ptr_ o' (offset_ptr_ o p) = offset_ptr_ (o + o') p.
+  offset_ptr_ o' (offset_ptr_ o p) = offset_ptr_ (o + o') p.
+(* #[deprecated(since="X", note="XXX")] *)
+Notation offset_ptr_combine_ := offset_ptr_combine__.
+
 Instance ptr_inhabited : Inhabited ptr := populate nullptr.
 
 (** wrappers for constructing certain values *)
