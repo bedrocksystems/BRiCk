@@ -533,6 +533,8 @@ Definition glob_addr (σ : genv) (o : obj_name) : option ptr :=
   | false => Some p
   end.
 
+#[deprecated(since="2020-11-17", note="Use genv_byte_order.")]
+Notation byte_order := genv_byte_order.
 
 (* Clients are not SUPPOSED to look at these APIs, and ideally we can drop them. *)
 Module Type ptr_internal (Import P : PTRS).
