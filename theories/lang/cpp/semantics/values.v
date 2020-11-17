@@ -55,13 +55,6 @@ Module Type PTRS.
   (* Question to resolve: can we commit to Leibniz equality or should we
   expose a setoid with the associated pain? I expect the former. *)
 
-  (* Parameter ptr_equiv : Equiv ptr.
-  Global Existing Instances ptr_equiv.
-  Axiom ptr_equivalence : Equivalence (==@{ptr}).
-  Global Existing Instances ptr_equivalence.
-  Axiom ptr_equiv_dec : RelDecision (==@{ptr}).
-  Global Existing Instances ptr_equiv_dec. *)
-
   (** * Offsets.
       Offsets represent paths between locations
    *)
@@ -75,13 +68,6 @@ Module Type PTRS.
   Axiom offset_countable : Countable offset.
   Global Existing Instance offset_countable.
 
-  (* Parameter offset_equiv : Equiv offset.
-  Global Existing Instances offset_equiv.
-  Axiom offset_equivalence : Equivalence (==@{offset}).
-  Global Existing Instances offset_equivalence.
-  Axiom offset_equiv_dec : RelDecision (==@{offset}).
-  Global Existing Instances offset_equiv_dec. *)
-
   (* offsets form a monoid; maybe just use the free monoid [list offset]? *)
   (* identity - probably not strictly necessary*)
   Parameter o_id : offset.
@@ -90,10 +76,8 @@ Module Type PTRS.
   Axiom id_dot : LeftId (=) o_id o_dot.
   Axiom dot_id : RightId (=) o_id o_dot.
   Axiom dot_assoc : Assoc (=) o_dot.
-  (* Axiom dot_proper : Proper ((≡) ==> (≡) ==> (≡)) o_dot. *)
 
   Global Existing Instances id_dot dot_id dot_assoc.
-  (* Global Existing Instances dot_proper. *)
 
   (** combine an offset and a pointer to get a new pointer;
     this is a right monoid action.
