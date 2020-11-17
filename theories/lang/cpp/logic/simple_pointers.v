@@ -228,7 +228,11 @@ Module SIMPLE_PTRS_IMPL : PTRS.
    global_ptr tu2 "staticR" |-> anyR T 1%Qp  ...] holds at startup.
   *)
   Definition global_ptr (tu : translation_unit) (o : obj_name) : ptr :=
-    let p := Npos (encode o) in (mkptr p p).
+    let obj : option ObjValue := tu !! o in
+    match obj with
+    | Some _ => let p := Npos (encode o) in mkptr p p
+    | None => invalid_ptr
+    end.
 
   (*
   A slightly better model might be something like the following, but we don't
