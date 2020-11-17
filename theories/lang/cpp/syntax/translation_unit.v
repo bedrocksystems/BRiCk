@@ -129,7 +129,7 @@ Definition dtor_name (type : Dtor_type) (cls : globname) : obj_name :=
   | _ => ""
   end%bs.
 
-(* these can be externed *)
+(* Values in Object files. These can be externed. *)
 Variant ObjValue : Set :=
 | Ovar         (_ : type) (_ : option Expr)
 | Ofunction    (_ : Func)
@@ -318,3 +318,24 @@ Proof.
     try by [exact: complete_pointee_type_not_ref| tauto].
   move => /complete_basic_type_not_ref; naive_solver.
 Qed.
+
+Unset Primitive Projections.
+(** this contains two things:
+   - the types declared in the program
+   - the program's symbol table (mapping of globals to pointers)
+     (this is not necessarily the same as a the symbol table in the
+      object file because it will contain the addresses of [static]
+      variables)
+
+   if we want to do things like word-size agnostic verification, then
+   information like that would need to be in here as well.
+ *)
+Record genv : Type :=
+{ genv_tu : translation_unit
+  (* ^ the [translation_unit] *)
+; pointer_size_bitsize : bitsize
+  (* ^ the size of a pointer *)
+}.
+Definition genv_byte_order (g : genv) : endian :=
+  g.(genv_tu).(byte_order).
+Definition pointer_size (g : genv) := bytesN (pointer_size_bitsize g).

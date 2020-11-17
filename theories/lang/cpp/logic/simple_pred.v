@@ -61,12 +61,13 @@ Section fractional.
   Qed.
 End fractional.
 
-Local Lemma length__Z_to_bytes {σ} n sgn v :
-  length (_Z_to_bytes n (values.byte_order σ) sgn v) = n.
-Proof. apply _Z_to_bytes_length. Qed.
+(* Stand-in for an actual model of PTRS_FULL.
+Ensures that everything needed is properly functorized. *)
+Declare Module PTRS_IMPL : PTRS.
+Declare Module RAW_BYTES_IMPL : RAW_BYTES.
+Module Import PTRS_FULL_IMPL : PTRS_FULL := PTRS_IMPL <+ RAW_BYTES_IMPL <+ VAL_MIXIN.
 
-(** soundness proof *)
-
+(** A consistency proof for [CPP_LOGIC_CLASS] *)
 Module SimpleCPP_BASE <: CPP_LOGIC_CLASS.
 
   Definition addr : Set := N.
@@ -81,10 +82,10 @@ Module SimpleCPP_BASE <: CPP_LOGIC_CLASS.
      *)
 
   Definition Z_to_bytes {σ:genv} (n : bitsize) (sgn: signed) (v : Z) : list runtime_val' :=
-    Rval <$> _Z_to_bytes (bytesNat n) (values.byte_order σ) sgn v.
+    Rval <$> _Z_to_bytes (bytesNat n) (genv_byte_order σ) sgn v.
 
   Lemma length_Z_to_bytes {σ} n sgn v : length (Z_to_bytes (σ:=σ) n sgn v) = bytesNat n.
-  Proof. by rewrite /Z_to_bytes fmap_length length__Z_to_bytes. Qed.
+  Proof. by rewrite /Z_to_bytes fmap_length _Z_to_bytes_length. Qed.
 
   Record cpp_ghost : Type :=
     { heap_name : gname
@@ -178,6 +179,7 @@ End SimpleCPP_VIRTUAL.
 
 Module SimpleCPP.
   Include SimpleCPP_VIRTUAL.
+  Include PTRS_FULL_IMPL.
 
   Definition runtime_val := runtime_val'.
 
@@ -436,7 +438,7 @@ Module SimpleCPP.
 
     Instance Z_to_bytes_proper :
       Proper (genv_leq ==> eq ==> eq ==> eq ==> eq) (@Z_to_bytes).
-    Proof. intros ?? Hσ%byte_order_proper. solve_proper. Qed.
+    Proof. intros ?? Hσ%genv_byte_order_proper. solve_proper. Qed.
 
     Instance cptr_proper :
       Proper (genv_leq ==> eq ==> eq) cptr.
@@ -766,5 +768,5 @@ Module SimpleCPP.
 
 End SimpleCPP.
 
-Module Type SimpleCPP_INTF :=  SimpleCPP_BASE <+ CPP_LOGIC.
+Module Type SimpleCPP_INTF :=  SimpleCPP_BASE <+ PTRS_FULL <+ CPP_LOGIC.
 Module L : SimpleCPP_INTF := SimpleCPP.

@@ -607,8 +607,7 @@ Section FromToBytes.
       - eapply Z.lt_trans; eauto; apply Z.pow_lt_mono_r; lia.
     Qed.
 
-    Lemma Z_land_ldiff_no_overlap:
-      forall (mask offset v: Z),
+    Lemma Z_land_ldiff_no_overlap (mask offset v: Z) :
         (0 < mask)%Z ->
         (0 <= offset)%Z ->
         (0 <= v)%Z ->
@@ -627,8 +626,7 @@ Section FromToBytes.
       rewrite !andb_false_r Z.testbit_neg_r //. lia.
     Qed.
 
-    Lemma Z_land_ldiff_upper_byte:
-      forall (offset v: Z),
+    Lemma Z_land_ldiff_upper_byte (offset v: Z) :
         (0 <= offset)%Z ->
         (2^(8*offset) <= v)%Z ->
         (v < 2^(8*Z.succ offset))%Z ->

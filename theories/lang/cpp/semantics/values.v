@@ -12,12 +12,12 @@ From Coq Require Import Strings.Ascii.
 Require Import bedrock.lang.prelude.base.
 
 Require Import bedrock.lang.cpp.ast.
-Require Import bedrock.lang.cpp.semantics.sub_module.
+Require Export bedrock.lang.cpp.semantics.sub_module.
 
 Local Close Scope nat_scope.
 Local Open Scope Z_scope.
 
-Module Type PTR_API.
+Module Type PTRS.
   (** * Pointers.
 
       This is the abstract model of pointers in C++.
@@ -29,9 +29,16 @@ Module Type PTR_API.
         https://robbertkrebbers.nl/thesis.html.
       Not all of our pointers have physical addresses; for discussion, see
       documentation of [tptsto] and [pinned_ptr].
+
+      This API allows constructing "invalid" pointers; pointer validity is
+      defined by [valid_ptr : genv -> ptr -> mpred] elsewhere.
   *)
 
   Parameter ptr : Set.
+  Declare Scope ptr_scope.
+  Bind Scope ptr_scope with ptr.
+  Delimit Scope ptr_scope with ptr.
+
   Axiom ptr_eq_dec : forall (x y : ptr), { x = y } + { x <> y }.
   Global Instance ptr_eq_dec' : EqDecision ptr := ptr_eq_dec.
   (* TODO AUTO: replace [ptr_eq_dec'] with:
@@ -45,25 +52,105 @@ Module Type PTR_API.
   Axiom ptr_countable : Countable ptr.
   Global Existing Instance ptr_countable.
 
+  (** * Offsets.
+      Offsets represent paths between locations
+   *)
+  Parameter offset : Set.
+  Declare Scope offset_scope.
+  Bind Scope offset_scope with offset.
+  Delimit Scope offset_scope with offset.
+
+  Axiom offset_eq_dec : EqDecision offset.
+  Global Existing Instance offset_eq_dec.
+  Axiom offset_countable : Countable offset.
+  Global Existing Instance offset_countable.
+
+  (** Offsets form a monoid *)
+  Parameter o_id : offset.
+  Parameter o_dot : offset -> offset -> offset.
+
+  Axiom id_dot : LeftId (=) o_id o_dot.
+  Axiom dot_id : RightId (=) o_id o_dot.
+  Axiom dot_assoc : Assoc (=) o_dot.
+
+  Global Existing Instances id_dot dot_id dot_assoc.
+
+  (** combine an offset and a pointer to get a new pointer;
+    this is a right monoid action.
+   *)
+  Parameter _offset_ptr : ptr -> offset -> ptr.
+  Reserved Notation "p .., o" (at level 11, left associativity).
+  Notation "p .., o" := (_offset_ptr p o) : ptr_scope.
+  Notation "o1 .., o2" := (o_dot o1 o2) : offset_scope.
+
+  (* Axiom offset_ptr_proper : Proper ((≡) ==> (≡) ==> (≡)) _offset_ptr. *)
+  (* Global Existing Instances offset_ptr_proper. *)
+  Axiom offset_ptr_dot : forall p o1 o2,
+    (p .., (o1 .., o2) = p .., o1 .., o2)%ptr.
+
   (** C++ provides a distinguished pointer [nullptr] that is *never
       dereferenceable*
   *)
   Parameter nullptr : ptr.
 
+  (** An invalid pointer, included as a sentinel value. *)
+  Parameter invalid_ptr : ptr.
+
+  (* Pointer to a C++ "complete object" with external or internal linkage, or
+  to "functions"; even if they are distinct in C/C++ standards (e.g.
+  https://eel.is/c++draft/basic.pre#:object
+  https://eel.is/c++draft/basic.compound#3.1), we represent them in the same
+  way.
+
+  Since function pointers cannot be offset, offsetting function pointers
+  produces [invalid_ptr], but we haven't needed to expose this.
+  *)
+  (* ^ the address of global variables & functions *)
+  Parameter global_ptr :
+    translation_unit -> obj_name -> ptr.
+    (* Dynamic loading might require adding some abstract [translation_unit_id]. *)
+    (* Might need deferring, as it needs designing a [translation_unit_id];
+     since loading the same translation unit twice can give different
+     addresses. *)
+
+  (* Other constructors exist, but are currently only used internally to the
+  operational semantics (?):
+  - pointers to local variables (objects with automatic linkage/storage duration)
+  - pointers to [this]
+  *)
+
   (** ** pointer offsets *)
-  (** the offset of a pointer. *)
-  Parameter offset_ptr_ : Z -> ptr -> ptr.
 
-  Axiom offset_ptr_combine_ : forall b o o',
-      offset_ptr_ o' (offset_ptr_ o b) = offset_ptr_ (o + o') b.
-  Axiom offset_ptr_0_ : forall b,
-      offset_ptr_ 0 b = b.
-End PTR_API.
+  (* [o_field cls n] represents [x.n] for [x : cls] *)
+  Parameter o_field : genv -> field -> offset.
+  (* [o_sub ty n] represents [x + n] for [x : cls*] *)
+  Parameter o_sub : genv -> type -> Z -> offset.
 
-Declare Module PTR : PTR_API.
-Export PTR.
+  (** going up and down the class hierarchy, one step at a time. *)
+  Parameter o_base : genv -> forall (derived base : globname), offset.
+  Parameter o_derived : genv -> forall (base derived : globname), offset.
 
-Instance ptr_inhabited : Inhabited ptr := populate nullptr.
+  (** * Deprecated APIs *)
+  (** Offset a pointer by a certain number of bytes. *)
+  Parameter offset_ptr__ : Z -> ptr -> ptr.
+  (* #[deprecated(since="2020-11-17", note="Use structured offsets instead.")] *)
+  Notation offset_ptr_ := offset_ptr__.
+
+  Axiom offset_ptr_0__ : forall b,
+    offset_ptr_ 0 b = b.
+  (* #[deprecated(since="X", note="XXX")] *)
+  Notation offset_ptr_0_ := offset_ptr_0__.
+
+  (* This axiom should be deprecated. *)
+  Axiom offset_ptr_combine : forall p o o',
+    (* TODO: this premise is necessary, but breaks clients. *)
+    offset_ptr_ o p <> invalid_ptr ->
+    offset_ptr_ o' (offset_ptr_ o p) = offset_ptr_ (o + o') p.
+  (* #[deprecated(since="X", note="XXX")] *)
+  (* Notation offset_ptr_combine_ := offset_ptr_combine__. *)
+End PTRS.
+
+Module Type RAW_BYTES.
 (** * Raw bytes
     Raw bytes represent the low-level view of data.
     [raw_byte] abstracts over the internal structure of this low-level view of data.
@@ -76,6 +163,10 @@ Parameter raw_byte_eq_dec : EqDecision raw_byte.
 Existing Instance raw_byte_eq_dec.
 
 Axiom raw_int_byte : N -> raw_byte.
+
+End RAW_BYTES.
+
+Module Type VAL_MIXIN (Import L : PTRS) (Import R : RAW_BYTES).
 
 (** * values
     Abstract C++ runtime values come in two flavors.
@@ -96,9 +187,29 @@ Variant val : Set :=
 
 Definition val_dec : forall a b : val, {a = b} + {a <> b}.
 Proof. solve_decision. Defined.
-Instance: EqDecision val := val_dec.
-
+Instance val_eq_dec : EqDecision val := val_dec.
 Instance val_inhabited : Inhabited val := populate (Vint 0).
+
+End VAL_MIXIN.
+
+Module Type PTRS_FULL := PTRS <+ RAW_BYTES <+ VAL_MIXIN.
+Declare Module PTRS_FULL_AXIOM : PTRS_FULL.
+Export PTRS_FULL_AXIOM.
+
+(* Unsound! TODO: this axiom is unsound; if [o + o' = 0],
+but [offset_ptr_ o p] overflows into an invalid pointer, then
+[offset_ptr_ o' (offset_ptr_ o p)] is invalid as well.
+The fixed version is [offset_ptr_combine] above.
+
+But since [offset_ptr_ ] should be deprecated anyway, we defer removing it,
+to update clients only once.
+*)
+Axiom offset_ptr_combine__ : forall p o o',
+  offset_ptr_ o' (offset_ptr_ o p) = offset_ptr_ (o + o') p.
+(* #[deprecated(since="X", note="XXX")] *)
+Notation offset_ptr_combine_ := offset_ptr_combine__.
+
+Instance ptr_inhabited : Inhabited ptr := populate nullptr.
 
 (** wrappers for constructing certain values *)
 Definition Vchar (a : Ascii.ascii) : val :=
@@ -174,102 +285,6 @@ Fixpoint get_result (ρ : region) : option ptr :=
   | Remp _ result => result
   | Rbind _ _ rs => get_result rs
   end.
-
-(** * global environments *)
-
-(** this contains two things:
-   - the types declared in the program
-   - the program's symbol table (mapping of globals to pointers)
-     (this is not necessarily the same as a the symbol table in the
-      object file because it will contain the addresses of [static]
-      variables)
-
-   if we want to do things like word-size agnostic verification, then
-   information like that would need to be in here as well.
- *)
-Record genv : Type :=
-{ genv_tu : translation_unit
-  (* ^ the [translation_unit] *)
-; glob_addr : obj_name -> option ptr
-  (* ^ the address of global variables & functions *)
-; pointer_size_bitsize : bitsize
-  (* ^ the size of a pointer *)
-}.
-
-Definition byte_order (g : genv) : endian :=
-  g.(genv_tu).(byte_order).
-Definition pointer_size (g : genv) := bytesN (pointer_size_bitsize g).
-
-(** [genv_leq a b] states that [b] is an extension of [a] *)
-Record genv_leq {l r : genv} : Prop :=
-{ tu_le : sub_module l.(genv_tu) r.(genv_tu)
-; addr_le : forall a p, l.(glob_addr) a = Some p -> r.(glob_addr) a = Some p
-; pointer_size_le : l.(pointer_size_bitsize) = r.(pointer_size_bitsize) }.
-Arguments genv_leq _ _ : clear implicits.
-
-Instance PreOrder_genv_leq : PreOrder genv_leq.
-Proof.
-  constructor.
-  { constructor; auto; reflexivity. }
-  { red. destruct 1; destruct 1; constructor; try etransitivity; eauto. }
-Qed.
-Instance: RewriteRelation genv_leq := {}.
-
-Definition glob_def (g : genv) (gn : globname) : option GlobDecl :=
-  g.(genv_tu).(globals) !! gn.
-
-Definition genv_eq (l r : genv) : Prop :=
-  genv_leq l r /\ genv_leq r l.
-
-Instance genv_tu_proper : Proper (genv_leq ==> sub_module) genv_tu.
-Proof. solve_proper. Qed.
-Instance genv_tu_flip_proper : Proper (flip genv_leq ==> flip sub_module) genv_tu.
-Proof. solve_proper. Qed.
-
-(* Sadly, neither instance is picked up by [f_equiv]. *)
-Instance pointer_size_bitsize_proper : Proper (genv_leq ==> eq) pointer_size_bitsize.
-Proof. solve_proper. Qed.
-Instance pointer_size_bitsize_flip_proper : Proper (flip genv_leq ==> eq) pointer_size_bitsize.
-Proof. by intros ?? <-. Qed.
-Instance pointer_size_proper : Proper (genv_leq ==> eq) pointer_size.
-Proof. unfold pointer_size; intros ???. f_equiv. exact: pointer_size_bitsize_proper. Qed.
-Instance pointer_size_flip_proper : Proper (flip genv_leq ==> eq) pointer_size.
-Proof. by intros ?? <-. Qed.
-
-Instance byte_order_proper : Proper (genv_leq ==> eq) byte_order.
-Proof. intros ???. apply sub_module.byte_order_proper. solve_proper. Qed.
-Instance byte_order_flip_proper : Proper (flip genv_leq ==> eq) byte_order.
-Proof. by intros ?? <-. Qed.
-
-(* this states that the [genv] is compatible with the given [translation_unit]
- * it essentially means that the [genv] records all the types from the
- * compilation unit and that the [genv] contains addresses for all globals
- * defined in the [translation_unit]
- *)
-Class genv_compat {tu : translation_unit} {g : genv} : Prop :=
-{ tu_compat : sub_module tu g.(genv_tu) }.
-Arguments genv_compat _ _ : clear implicits.
-Infix "⊧" := genv_compat (at level 1).
-
-Theorem genv_byte_order_tu tu g :
-    tu ⊧ g ->
-    byte_order g = translation_unit.byte_order tu.
-Proof. intros. apply sub_module.byte_order_flip_proper, tu_compat. Qed.
-
-Theorem genv_compat_submodule : forall m σ, m ⊧ σ -> sub_module m σ.(genv_tu).
-Proof. by destruct 1. Qed.
-
-Instance genv_compat_proper : Proper (flip sub_module ==> genv_leq ==> impl) genv_compat.
-Proof.
-  intros ?? Heq1 ?? [Heq2 _ _] [Heq3]; constructor.
-  by rewrite Heq1 Heq3.
-Qed.
-Instance genv_compat_flip_proper : Proper (sub_module ==> flip genv_leq ==> flip impl) genv_compat.
-Proof. solve_proper. Qed.
-
-(* XXX rename/deprecate? *)
-Theorem subModuleModels a b σ : b ⊧ σ -> sub_module a b -> a ⊧ σ.
-Proof. by intros ? ->. Qed.
 
 Definition max_val (bits : bitsize) (sgn : signed) : Z :=
   match bits , sgn with
@@ -433,7 +448,7 @@ Proof.
   intros ?? Hle ? t ->; induction t; simpl; (try constructor) => //.
   all: try exact: pointer_size_proper.
   - by destruct IHt; constructor; subst.
-  - move: Hle => [[ /(_ g) Hle _ _] _ _].
+  - move: Hle => [[ /(_ g) Hle _] _ _].
     unfold glob_def, globals in *.
     destruct (globals (genv_tu x) !! g) as [g1| ]; last constructor.
     move: Hle => /(_ _ eq_refl) [g2 [-> HH]] /=.
@@ -489,3 +504,33 @@ Arguments Z.mul _ _ : simpl never.
 Arguments Z.pow _ _ : simpl never.
 Arguments Z.opp _ : simpl never.
 Arguments Z.pow_pos _ _ : simpl never.
+
+(* XXX adapter. *)
+Definition glob_addr (σ : genv) (o : obj_name) : option ptr :=
+  (fun _ => global_ptr σ.(genv_tu) o) <$> σ.(genv_tu) !! o.
+
+#[deprecated(since="2020-11-17", note="Use genv_byte_order.")]
+Notation byte_order := genv_byte_order.
+
+(* Clients are not SUPPOSED to look at these APIs, and ideally we can drop them. *)
+Module Type ptr_internal (Import P : PTRS).
+  Parameter eval_offset : genv -> offset -> option Z.
+
+  (* NOTE this API is especially non-sensical, since pointers and offsets
+  contain no translation unit, but eval_offset does *)
+  Axiom offset_ptr_eq : forall tu p o,
+    Some (p .., o)%ptr = flip offset_ptr_ p <$> eval_offset tu o.
+
+  (* NOTE: the multiplication is flipped from path_pred. *)
+  Axiom eval_o_sub : forall resolve ty (i : Z),
+    eval_offset resolve (o_sub resolve ty i) =
+      (fun n => i * Z.of_N n) <$> size_of resolve ty.
+
+  Lemma o_sub_collapse p i n ty resolve
+    (Hsz : size_of resolve ty = Some n) :
+    (p .., o_sub resolve ty i)%ptr = offset_ptr_ (i * Z.of_N n) p.
+  Proof.
+    apply (inj Some).
+    by rewrite (offset_ptr_eq resolve) eval_o_sub Hsz.
+  Qed.
+End ptr_internal.

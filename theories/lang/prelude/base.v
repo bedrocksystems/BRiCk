@@ -40,3 +40,18 @@ Qed.
 Instance preorder_proper A :
   Proper (pointwise_relation A (pointwise_relation A iff) ==> iff) PreOrder.
 Proof. by intros r1 r2 Heq; split => -[]; [rewrite Heq|rewrite -Heq]. Qed.
+
+(** Not an instance, because of the risk of loops. *)
+Lemma flip_assoc {A} {R : relation A} `{!Symmetric R} `{!Assoc R f}: Assoc R (flip f).
+Proof. intros ???. symmetry. apply: (assoc f). Qed.
+
+Section flip_app.
+  Context {A : Type}.
+
+  Global Instance flip_app_left_id : LeftId (=) (@nil A) (flip app).
+  Proof. apply: right_id. Qed.
+  Global Instance flip_app_right_id : RightId (=) (@nil A) (flip app).
+  Proof. apply: left_id. Qed.
+  Global Instance flip_app_assoc : Assoc (=) (flip (@app A)).
+  Proof. apply: flip_assoc. Qed.
+End flip_app.

@@ -137,7 +137,7 @@ Section with_Σ.
 
   (* JH: TODO: Deprecate the following stuff *)
   Definition decodes_uint (l : list N) (z : Z) :=
-    Unfold decodes (decodes (values.byte_order resolve) Unsigned l z).
+    Unfold decodes (decodes (genv_byte_order resolve) Unsigned l z).
 
   (* JH: TODO: Determine what new axioms we should add here. *)
   Axiom raw_byte_of_int_eq : forall sz x rs,

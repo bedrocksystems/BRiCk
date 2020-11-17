@@ -95,11 +95,15 @@ End CPP_LOGIC_CLASS_MIXIN.
 
 Module Type CPP_LOGIC_CLASS := CPP_LOGIC_CLASS_BASE <+ CPP_LOGIC_CLASS_MIXIN.
 
-Module Type CPP_LOGIC (Import CC : CPP_LOGIC_CLASS).
+Module Type CPP_LOGIC (Import CC : CPP_LOGIC_CLASS) (Import PTR : PTRS_FULL).
 
   (* TODO: unify with [raw_byte]. This should just be machine bytes. See also
     cpp2v-core#135. *)
   Parameter runtime_val : Type.
+
+  (* XXX why does this not work in the module type. *)
+  Bind Scope ptr_scope with ptr.
+  Bind Scope offset_scope with offset.
 
   Section with_cpp.
     Context `{Σ : cpp_logic}.
@@ -290,8 +294,52 @@ Module Type CPP_LOGIC (Import CC : CPP_LOGIC_CLASS).
 End CPP_LOGIC.
 
 Declare Module LC : CPP_LOGIC_CLASS.
-Declare Module L : CPP_LOGIC LC.
+Declare Module L : CPP_LOGIC LC PTRS_FULL_AXIOM.
 Export LC L.
+
+(* Pointer axioms. XXX Not modeled for now. *)
+Module Type VALID_PTR_AXIOMS.
+  Section with_cpp.
+    Context `{cpp_logic} {σ : genv}.
+
+    Axiom invalid_ptr_invalid :
+      valid_ptr invalid_ptr |-- False.
+
+    Axiom valid_ptr_field : ∀ p f,
+      valid_ptr (p .., o_field σ f) |-- valid_ptr p.
+    Axiom valid_ptr_sub : ∀ p ty i,
+      0 <= i -> valid_ptr (p .., o_sub σ ty i) |-- valid_ptr p.
+    Axiom valid_ptr_base : ∀ p base derived,
+      valid_ptr (p .., o_base σ derived base) |-- valid_ptr p.
+    Axiom valid_ptr_derived : ∀ p base derived,
+      valid_ptr (p .., o_derived σ base derived) |-- valid_ptr p.
+
+    Axiom o_sub_0 : ∀ σ ty n,
+      size_of σ ty = Some n ->
+      o_sub σ ty 0 = o_id.
+
+    Axiom o_sub_sub : ∀ p ty n1 n2,
+      valid_ptr (p .., o_sub σ ty n1) |--
+      [! p .., o_sub σ ty n1 .., o_sub σ ty n2 = p .., o_sub σ ty (n1 + n2) !]%ptr.
+
+    (* We're ignoring virtual inheritance here, since we have no plans to
+    support it for now, but this might hold there too. *)
+    Axiom o_base_derived : forall p base derived,
+      valid_ptr (p .., o_base σ derived base) |--
+      [! p .., o_base σ derived base .., o_derived σ base derived = p !]%ptr.
+
+    Axiom o_derived_base : forall p base derived,
+      valid_ptr (p .., o_derived σ base derived) |--
+      [! p .., o_derived σ base derived .., o_base σ derived base = p !]%ptr.
+
+    (* Without the validity premise to the cancellation axioms ([o_sub_sub],
+      [o_base_derived], [o_derived_base]) we could incorrectly deduce that
+      [valid_ptr p] entails [valid_ptr (p ., o_base derived base ., o_derived
+      base derived)] which entails [valid_ptr (p ., o_base derived base)].
+    *)
+  End with_cpp.
+End VALID_PTR_AXIOMS.
+Declare Module Export VALID_PTR : VALID_PTR_AXIOMS.
 
 Section with_cpp.
   Context `{Σ : cpp_logic}.
