@@ -127,6 +127,7 @@ Module Type PTRS.
   Parameter o_sub : genv -> type -> Z -> offset.
 
   Axiom o_sub_0 : ∀ σ ty,
+    size_of σ ty = Some n ->
     o_sub σ ty 0 = o_id.
 
   (** going up and down the class hierarchy, one step at a time. *)
