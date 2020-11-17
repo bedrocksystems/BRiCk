@@ -157,12 +157,13 @@ Module Type PTRS.
   Notation offset_ptr_ := offset_ptr__.
 
   Axiom offset_ptr_0__ : forall b,
-      offset_ptr_ 0 b = b.
+    offset_ptr_ 0 b = b.
   (* #[deprecated(since="X", note="XXX")] *)
   Notation offset_ptr_0_ := offset_ptr_0__.
 
-  Axiom offset_ptr_combine__ : forall b o o',
-      offset_ptr_ o' (offset_ptr_ o b) = offset_ptr_ (o + o') b.
+  Axiom offset_ptr_combine__ : forall p o o',
+    offset_ptr_ o p <> invalid_ptr ->
+    offset_ptr_ o' (offset_ptr_ o p) = offset_ptr_ (o + o') p.
   (* #[deprecated(since="X", note="XXX")] *)
   Notation offset_ptr_combine_ := offset_ptr_combine__.
 End PTRS.
@@ -213,6 +214,9 @@ Module Type PTRS_FULL := PTRS <+ RAW_BYTES <+ VAL_MIXIN.
 Declare Module PTRS_FULL_AXIOM : PTRS_FULL.
 Export PTRS_FULL_AXIOM.
 
+(* Unsound? *)
+Axiom offset_ptr_combine__ : forall p o o',
+    offset_ptr_ o' (offset_ptr_ o p) = offset_ptr_ (o + o') p.
 Instance ptr_inhabited : Inhabited ptr := populate nullptr.
 
 (** wrappers for constructing certain values *)
