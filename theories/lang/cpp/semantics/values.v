@@ -108,6 +108,7 @@ Module Type PTRS.
   (* Pointer to "functions"; in C/C++ standards, functions are not objects,
   (e.g. https://eel.is/c++draft/basic.pre#:object
   https://eel.is/c++draft/basic.compound#3.1),
+  and offsetting function pointers produces [invalid_ptr],
   and function pointers cannot be offset.
   *)
   Parameter fun_ptr :

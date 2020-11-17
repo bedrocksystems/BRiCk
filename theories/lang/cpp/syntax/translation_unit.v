@@ -129,7 +129,7 @@ Definition dtor_name (type : Dtor_type) (cls : globname) : obj_name :=
   | _ => ""
   end%bs.
 
-(* these can be externed *)
+(* Values in Object files. These can be externed. *)
 Variant ObjValue : Set :=
 | Ovar         (_ : type) (_ : option Expr)
 | Ofunction    (_ : Func)
