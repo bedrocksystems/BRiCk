@@ -61,14 +61,13 @@ Section fractional.
   Qed.
 End fractional.
 
-(** soundness proof *)
-
 (* Stand-in for an actual model of PTRS_FULL.
 Ensures that everything needed is properly functorized. *)
 Declare Module PTRS_IMPL : PTRS.
 Declare Module RAW_BYTES_IMPL : RAW_BYTES.
 Module Import PTRS_FULL_IMPL : PTRS_FULL := PTRS_IMPL <+ RAW_BYTES_IMPL <+ VAL_MIXIN.
 
+(** A consistency proof for [CPP_LOGIC_CLASS] *)
 Module SimpleCPP_BASE <: CPP_LOGIC_CLASS.
 
   Definition addr : Set := N.

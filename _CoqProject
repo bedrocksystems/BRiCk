@@ -76,7 +76,7 @@ theories/lang/cpp/compile.v
 
 theories/lang/cpp.v
 
-# "soundness" proof
+# "consistency" proofs
 theories/lang/cpp/logic/simple_pred.v
 
 # misc
