@@ -96,7 +96,15 @@ Module Type PTRS.
   (** An invalid pointer, included as a sentinel value. *)
   Parameter invalid_ptr : ptr.
 
-  (* Pointer to a C++ "complete object" with external or internal linkage. *)
+  (* Pointer to a C++ "complete object" with external or internal linkage, or
+  to "functions"; even if they are distinct in C/C++ standards (e.g.
+  https://eel.is/c++draft/basic.pre#:object
+  https://eel.is/c++draft/basic.compound#3.1), we represent them in the same
+  way.
+
+  Since function pointers cannot be offset, offsetting function pointers
+  produces [invalid_ptr], but we haven't needed to expose this.
+  *)
   (* ^ the address of global variables & functions *)
   Parameter global_ptr :
     translation_unit -> obj_name -> ptr.
@@ -104,15 +112,6 @@ Module Type PTRS.
     (* Might need deferring, as it needs designing a [translation_unit_id];
      since loading the same translation unit twice can give different
      addresses. *)
-
-  (* Pointer to "functions"; in C/C++ standards, functions are not objects,
-  (e.g. https://eel.is/c++draft/basic.pre#:object
-  https://eel.is/c++draft/basic.compound#3.1),
-  and offsetting function pointers produces [invalid_ptr],
-  and function pointers cannot be offset.
-  *)
-  Parameter fun_ptr :
-    translation_unit -> obj_name -> (* translation_unit_id ->  *) ptr.
 
   (* Other constructors exist, but are currently only used internally to the
   operational semantics (?):
@@ -512,11 +511,7 @@ Arguments Z.pow_pos _ _ : simpl never.
 
 (* XXX adapter. *)
 Definition glob_addr (σ : genv) (o : obj_name) : option ptr :=
-  let p := global_ptr σ.(genv_tu) o in
-  match bool_decide (p = invalid_ptr) with
-  | true => None
-  | false => Some p
-  end.
+  (fun _ => global_ptr σ.(genv_tu) o) <$> σ.(genv_tu) !! o.
 
 #[deprecated(since="2020-11-17", note="Use genv_byte_order.")]
 Notation byte_order := genv_byte_order.
