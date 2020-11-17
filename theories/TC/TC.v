@@ -26,7 +26,7 @@ Fixpoint countTo (n : nat) : list nat :=
 Definition lensName (ls : string) (i : ident) : ident :=
   ls ++ i.
 
-Quote Definition cBuild_Lens := Build_Lens.
+MetaCoq Quote Definition cBuild_Lens := Build_Lens.
 
 Local Definition mkLens (At : term) (fields : list (ident * term)) (i : nat)
 : option (ident * term) :=
@@ -111,14 +111,14 @@ Definition genLens (T : Type) : TemplateMonad unit :=
   | _ => tmFail "given type is not inductive"
   end.
 
-(* baseName should not contain any paths. For example, if the full name
-is A.B.C#D#E#F, baseName should be F. Also, by import ordering,
-ensure that F resolves to  A.B.C#D#E#F. Use Locate to check this.
+(*
+for an inductive X in file A.B.C,
+basename:kername := (MPfile ["C"; "B"; "A"], "X")%string.
 
 If the definition of F refers to any other inductive, they should not
 be in the current section(s).
  *)
-Definition genLensN (baseName : String.string) : TemplateMonad unit :=
+Definition genLensK (baseName : kername) : TemplateMonad unit :=
   let ty :=
       (Ast.tInd
          {|
