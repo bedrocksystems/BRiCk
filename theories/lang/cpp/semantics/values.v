@@ -12,7 +12,7 @@ From Coq Require Import Strings.Ascii.
 Require Import bedrock.lang.prelude.base.
 
 Require Import bedrock.lang.cpp.ast.
-Require Export bedrock.lang.cpp.semantics.sub_module.
+From bedrock.lang.cpp.semantics Require Export types sub_module genv.
 
 Local Close Scope nat_scope.
 Local Open Scope Z_scope.
@@ -375,129 +375,6 @@ Axiom has_type_qual : forall t q x,
 
 Hint Resolve has_type_qual : has_type.
 
-Fixpoint find_field {T} (f : ident) (fs : list (ident * T)) : option T :=
-  match fs with
-  | nil => None
-  | (f',v) :: fs =>
-    if decide (f = f') then
-      Some v
-    else find_field f fs
-  end%list.
-
-(* note: we expose the fact that reference fields are compiled to pointers,
-   so the [offset_of] a reference field is the offset of the pointer.
- *)
-Definition offset_of (resolve : genv) (t : globname) (f : ident) : option Z :=
-  match glob_def resolve t with
-  | Some (Gstruct s) =>
-    find_field f (List.map (fun '(a,_,_,c) => (a,c.(li_offset) / 8)) s.(s_fields))
-  | Some (Gunion u) =>
-    find_field f (List.map (fun '(a,_,_,c) => (a,c.(li_offset) / 8)) u.(u_fields))
-  | _ => None
-  end.
-
-Definition parent_offset (resolve : genv) (t : globname) (f : globname) : option Z :=
-  match glob_def resolve t with
-  | Some (Gstruct s) => find_field f (List.map (fun '(s,l) => (s,l.(li_offset) / 8)) s.(s_bases))
-  | _ => None
-  end.
-
-Variant Roption_leq {T} (R : T -> T -> Prop) : option T -> option T -> Prop :=
-| Rleq_None {x} : Roption_leq R None x
-| Rleq_Some {x y} (_ : R x y) : Roption_leq R (Some x) (Some y).
-
-(** * sizeof() *)
-(** this is a partial implementation of [size_of], it doesn't indirect through
-    typedefs, but the cpp2v generator flattens these for us anyways.
- *)
-Definition GlobDecl_size_of (g : GlobDecl) : option N :=
-  match g with
-  | Gstruct s => Some s.(s_size)
-  | Gunion u => Some u.(u_size)
-  | _ => None
-  end.
-Instance proper_named_size_of: Proper (GlobDecl_ler ==> Roption_leq eq) GlobDecl_size_of.
-Proof.
-  rewrite /GlobDecl_size_of => x y Heq.
-  repeat (case_match; try constructor);
-    simplify_eq/= => //;
-    apply require_eq_success in Heq; naive_solver.
-Qed.
-
-Fixpoint size_of (resolve : genv) (t : type) : option N :=
-  match t with
-  | Tpointer _ => Some (pointer_size resolve)
-  | Treference _ => None
-  | Trv_reference _ => None
-  | Tint sz _ => Some (bytesN sz)
-  | Tvoid => None
-  | Tarray t n => N.mul n <$> size_of resolve t
-  | Tnamed nm => glob_def resolve nm ≫= GlobDecl_size_of
-  | Tfunction _ _ => None
-  | Tbool => Some 1
-  | Tmember_pointer _ _ => Some (pointer_size resolve)
-  | Tqualified _ t => size_of resolve t
-  | Tnullptr => Some (pointer_size resolve)
-  | Tfloat sz => Some (bytesN sz)
-  | Tarch sz _ => bytesN <$> sz
-  end%N.
-
-Global Instance Proper_size_of
-: Proper (genv_leq ==> eq ==> Roption_leq eq) (@size_of).
-Proof.
-  intros ?? Hle ? t ->; induction t; simpl; (try constructor) => //.
-  all: try exact: pointer_size_proper.
-  - by destruct IHt; constructor; subst.
-  - move: Hle => [[ /(_ g) Hle _] _ _].
-    unfold glob_def, globals in *.
-    destruct (globals (genv_tu x) !! g) as [g1| ]; last constructor.
-    move: Hle => /(_ _ eq_refl) [g2 [-> HH]] /=.
-    exact: proper_named_size_of.
-  - by destruct o; constructor.
-Qed.
-
-(* it is hard to define [size_of] as a function because it needs
-to recurse through the environment in the case of [Treference]:
-termination will require a proof of well-foundedness of the environment *)
-Theorem size_of_int : forall {c : genv} s w,
-    @size_of c (Tint w s) = Some (bytesN w).
-Proof. reflexivity. Qed.
-Theorem size_of_char : forall {c : genv} s w,
-    @size_of c (Tchar w s) = Some (bytesN w).
-Proof. reflexivity. Qed.
-Theorem size_of_bool : forall {c : genv},
-    @size_of c Tbool = Some 1%N.
-Proof. reflexivity. Qed.
-Theorem size_of_pointer : forall {c : genv} t,
-    @size_of c (Tpointer t) = Some (pointer_size c).
-Proof. reflexivity. Qed.
-Theorem size_of_qualified : forall {c : genv} t q,
-    @size_of c t = @size_of c (Tqualified q t).
-Proof. reflexivity. Qed.
-Theorem size_of_array : forall {c : genv} t n sz,
-    @size_of c t = Some sz ->
-    @size_of c (Tarray t n) = Some (n * sz)%N.
-Proof. simpl; intros. rewrite H. reflexivity. Qed.
-
-Lemma size_of_Qmut : forall {c} t,
-    @size_of c t = @size_of c (Qmut t).
-Proof. reflexivity. Qed.
-
-Lemma size_of_Qconst : forall {c} t ,
-    @size_of c t = @size_of c (Qconst t).
-Proof. reflexivity. Qed.
-
-(** * alignof() *)
-(* todo: we should embed alignment information in our types *)
-Parameter align_of : forall {resolve : genv} (t : type), option N.
-Axiom Proper_align_of : Proper (genv_leq ==> eq ==> Roption_leq eq) (@align_of).
-Global Existing Instance Proper_align_of.
-Axiom align_of_size_of : forall {σ : genv} (t : type) sz,
-    size_of σ t = Some sz ->
-    exists al, align_of (resolve:=σ) t = Some al /\
-          (* alignmend is a multiple of the size *)
-          (al mod sz = 0)%N.
-
 Arguments Z.add _ _ : simpl never.
 Arguments Z.sub _ _ : simpl never.
 Arguments Z.mul _ _ : simpl never.
@@ -513,7 +390,7 @@ Definition glob_addr (σ : genv) (o : obj_name) : option ptr :=
 Notation byte_order := genv_byte_order.
 
 (* Clients are not SUPPOSED to look at these APIs, and ideally we can drop them. *)
-Module Type ptr_internal (Import P : PTRS).
+Module Type PTR_INTERNAL (Import P : PTRS).
   Parameter eval_offset : genv -> offset -> option Z.
 
   (* NOTE this API is especially non-sensical, since pointers and offsets
@@ -533,4 +410,5 @@ Module Type ptr_internal (Import P : PTRS).
     apply (inj Some).
     by rewrite (offset_ptr_eq resolve) eval_o_sub Hsz.
   Qed.
-End ptr_internal.
+End PTR_INTERNAL.
+Declare Module PTR_INTERNAL_AXIOM : PTR_INTERNAL PTRS_FULL_AXIOM.
