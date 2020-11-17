@@ -125,6 +125,9 @@ Module Type PTRS.
   Parameter o_field : genv -> field -> offset.
   (* [o_sub ty n] represents [x + n] for [x : cls*] *)
   Parameter o_sub : genv -> type -> Z -> offset.
+  Axiom o_sub_0 : ∀ σ ty n,
+    size_of σ ty = Some n ->
+    o_sub σ ty 0 = o_id.
 
   (** going up and down the class hierarchy, one step at a time. *)
   Parameter o_base : genv -> forall (derived base : globname), offset.
