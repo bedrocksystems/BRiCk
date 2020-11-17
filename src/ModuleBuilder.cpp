@@ -13,6 +13,7 @@
 #include "clang/Basic/Builtins.h"
 #include "clang/Frontend/CompilerInstance.h"
 #include "clang/Sema/Sema.h"
+#include <set>
 
 using namespace clang;
 
@@ -24,6 +25,7 @@ private:
     clang::ASTContext *const context_;
     clang::CompilerInstance *const ci_;
     bool elaborate_;
+    std::set<const clang::Decl *> visited_;
 
 private:
     Filter::What go(NamedDecl *decl, bool definition = true) {
@@ -51,6 +53,13 @@ public:
                 bool elab = true)
         : module_(m), filter_(filter), specs_(specs), context_(context),
           ci_(ci), elaborate_(elab) {}
+
+    void Visit(Decl *d, bool s) {
+        if (visited_.find(d) == visited_.end()) {
+            visited_.insert(d);
+            DeclVisitorArgs<BuildModule, void, bool>::Visit(d, s);
+        }
+    }
 
     void VisitDecl(const Decl *d, bool) {
         logging::log() << "visiting declaration..." << d->getDeclKindName()
