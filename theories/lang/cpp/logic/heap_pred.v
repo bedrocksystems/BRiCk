@@ -100,9 +100,9 @@ Section with_cpp.
   Qed.
 
   Lemma Rep_wand_force (R1 R2 : Rep) p : (R1 -* R2) p -|- R1 p -* R2 p.
-  Proof.
-    split'. apply monPred_wand_force. by iIntros "a" (? <-%ptr_rel_elim).
-  Qed.
+  Proof. split'. apply monPred_wand_force. by iIntros "a" (? <-%ptr_rel_elim). Qed.
+  Lemma Rep_impl_force (R1 R2 : Rep) p : (R1 -->> R2) p -|- R1 p -->> R2 p.
+  Proof. split'. apply monPred_impl_force. by iIntros "a" (? <-%ptr_rel_elim). Qed.
 
   Definition _offsetR_def (o : Offset) (r : Rep) : Rep :=
     as_Rep (fun base =>
