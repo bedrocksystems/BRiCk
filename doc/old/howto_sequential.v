@@ -162,8 +162,8 @@ Following our recipe, we first define a Coq model of (unsorted) trees: *)
 Inductive tree (A : Type) : Type :=
 | leaf
 | node (data : A) (left : tree A) (right : tree A).
-Arguments leaf [_].
-Arguments node [_] _ _ _.
+Arguments leaf {_}.
+Arguments node {_} _ _ _.
 
 (** [leaf] is the empty tree. [node d l r] is the tree node containing
 data [d], left subtree [l] and right subtree [r]. [tree] is polymorphic;
