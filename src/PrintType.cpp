@@ -1,5 +1,5 @@
 /*
- * Copyright (C) BedRock Systems Inc. 2019 Gregory Malecha
+ * Copyright (C) BedRock Systems Inc. 2019-2020 Gregory Malecha
  *
  * SPDX-License-Identifier: LGPL-2.1 WITH BedRock Exception for use over network, see repository root for details.
  */
@@ -7,6 +7,7 @@
 #include "CoqPrinter.hpp"
 #include "Logging.hpp"
 #include "TypeVisitorWithArgs.h"
+#include "clang/AST/ASTContext.h"
 #include "clang/AST/Decl.h"
 #include "clang/AST/DeclCXX.h"
 #include "clang/AST/DeclTemplate.h"
@@ -86,7 +87,11 @@ public:
         using namespace logging;
         fatal() << "[ERR] unsupported type (" << type->getTypeClassName()
                 << "):";
+#if CLANG_VERSION_MAJOR >= 11
+        type->dump(fatal(), cprint.getContext());
+#else
         type->dump(fatal());
+#endif
 
         fatal() << "\n";
         die();
@@ -203,7 +208,7 @@ public:
         case BuiltinType::Kind::SveBool:
             print.output() << fmt::lparen << "Tarch None \""
                            << type->getNameAsCString(
-                                  PrintingPolicy(LangOptions()))
+                                  cprint.getContext().getPrintingPolicy())
                            << "\"" << fmt::rparen;
             break;
 #endif
@@ -223,7 +228,8 @@ public:
                 using namespace logging;
                 fatal() << "[ERR] Unsupported builtin type (" << type->getKind()
                         << "): \""
-                        << type->getNameAsCString(PrintingPolicy(LangOptions()))
+                        << type->getNameAsCString(
+                               cprint.getContext().getPrintingPolicy())
                         << "\"\n";
                 die();
             }
@@ -342,7 +348,12 @@ public:
             print.end_ctor();
         } else {
             logging::log() << "no underlying declaration for \n";
+#if CLANG_VERSION_MAJOR >= 11
+            type->dump(logging::log(), cprint.getContext());
+#else
             type->dump(logging::log());
+#endif
+
             cprint.printQualType(type->getInjectedSpecializationType(), print);
         }
     }
