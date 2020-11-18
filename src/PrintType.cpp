@@ -193,25 +193,6 @@ public:
         case BuiltinType::Kind::NullPtr:
             print.output() << "Tnullptr";
             break;
-#if CLANG_VERSION_MAJOR >= 10
-        case BuiltinType::Kind::SveInt8:
-        case BuiltinType::Kind::SveInt16:
-        case BuiltinType::Kind::SveInt32:
-        case BuiltinType::Kind::SveInt64:
-        case BuiltinType::Kind::SveUint8:
-        case BuiltinType::Kind::SveUint16:
-        case BuiltinType::Kind::SveUint32:
-        case BuiltinType::Kind::SveUint64:
-        case BuiltinType::Kind::SveFloat16:
-        case BuiltinType::Kind::SveFloat32:
-        case BuiltinType::Kind::SveFloat64:
-        case BuiltinType::Kind::SveBool:
-            print.output() << fmt::lparen << "Tarch None \""
-                           << type->getNameAsCString(
-                                  cprint.getContext().getPrintingPolicy())
-                           << "\"" << fmt::rparen;
-            break;
-#endif
         default:
             if (type->isAnyCharacterType()) {
                 print.output()
@@ -224,6 +205,12 @@ public:
                 print.output()
                     << "(Tint " << bitsize(cprint.getTypeSize(type)) << " "
                     << (type->isSignedInteger() ? "Signed" : "Unsigned") << ")";
+            } else if (type->isVectorType()) {
+                print.output() << fmt::lparen << "Tarch None \""
+                               << type->getNameAsCString(
+                                      cprint.getContext().getPrintingPolicy())
+                               << "\"" << fmt::rparen;
+                break;
             } else {
                 using namespace logging;
                 fatal() << "[ERR] Unsupported builtin type (" << type->getKind()
