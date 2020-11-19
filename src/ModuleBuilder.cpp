@@ -25,7 +25,7 @@ private:
     clang::ASTContext *const context_;
     clang::CompilerInstance *const ci_;
     bool elaborate_;
-    std::set<const clang::Decl *> visited_;
+    std::set<int64_t> visited_;
 
 private:
     Filter::What go(NamedDecl *decl, bool definition = true) {
@@ -55,8 +55,8 @@ public:
           ci_(ci), elaborate_(elab) {}
 
     void Visit(Decl *d, bool s) {
-        if (visited_.find(d) == visited_.end()) {
-            visited_.insert(d);
+        if (visited_.find(d->getID()) == visited_.end()) {
+            visited_.insert(d->getID());
             DeclVisitorArgs<BuildModule, void, bool>::Visit(d, s);
         }
     }
