@@ -205,7 +205,7 @@ public:
                 print.output()
                     << "(Tint " << bitsize(cprint.getTypeSize(type)) << " "
                     << (type->isSignedInteger() ? "Signed" : "Unsigned") << ")";
-            } else if (type->isVectorType()) {
+            } else if (type->isSizelessBuiltinType()) {
                 print.output() << fmt::lparen << "Tarch None \""
                                << type->getNameAsCString(
                                       cprint.getContext().getPrintingPolicy())
