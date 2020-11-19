@@ -1,5 +1,5 @@
 /*
- * Copyright (C) BedRock Systems Inc. 2019 Gregory Malecha
+ * Copyright (C) BedRock Systems Inc. 2019-2020 Gregory Malecha
  *
  * SPDX-License-Identifier: LGPL-2.1 WITH BedRock Exception for use over network, see repository root for details.
  */
@@ -12,6 +12,8 @@
 #include "Logging.hpp"
 #include "ModuleBuilder.hpp"
 #include "SpecCollector.hpp"
+#include "clang/Basic/FileManager.h"
+#include "clang/Basic/SourceManager.h"
 #include "clang/Basic/Version.inc"
 #include <algorithm>
 
@@ -406,7 +408,8 @@ write_globals(::Module &mod, CoqPrinter &print, ClangPrinter &cprint) {
             print.output() << td->getNameAsString() << "'\" :=" << fmt::nbsp;
             cprint.printQualType(td->getUnderlyingType(), print);
             print.output() << " (in custom cppglobal at level 0)." << fmt::line;
-        } else if (isa<VarDecl>(def) || isa<EnumDecl>(def) || isa<EnumConstantDecl>(def)) {
+        } else if (isa<VarDecl>(def) || isa<EnumDecl>(def) ||
+                   isa<EnumConstantDecl>(def)) {
         } else {
             using namespace logging;
             log(Level::VERBOSE) << "unknown declaration type "
@@ -419,10 +422,9 @@ write_globals(::Module &mod, CoqPrinter &print, ClangPrinter &cprint) {
 }
 
 void
-write_spec(clang::CompilerInstance *compiler,
-           ::Module *mod, const SpecCollector &specs,
-           const clang::TranslationUnitDecl *tu, Filter &filter,
-           fmt::Formatter &output) {
+write_spec(clang::CompilerInstance *compiler, ::Module *mod,
+           const SpecCollector &specs, const clang::TranslationUnitDecl *tu,
+           Filter &filter, fmt::Formatter &output) {
     auto &ctxt = tu->getASTContext();
     ClangPrinter cprint(compiler, &tu->getASTContext());
     CoqPrinter print(output);
@@ -450,11 +452,15 @@ write_spec(clang::CompilerInstance *compiler,
 
 #if CLANG_VERSION_MAJOR >= 10
     const auto file = ctxt.getSourceManager().getMainFileID();
-    const auto commentsInFile =
-        ctxt.getRawCommentList().getCommentsInFile(file);
+#if CLANG_VERSION_MAJOR >= 11
+    const auto &comment_list = ctxt.Comments;
+#else
+    const auto &comment_list = ctxt.getRawCommentList();
+#endif
+    const auto commentsInFile = comment_list.getCommentsInFile(file);
     if (!commentsInFile)
         return;
-    for (auto p : *ctxt.getRawCommentList().getCommentsInFile(file)) {
+    for (auto p : *comment_list.getCommentsInFile(file)) {
         const auto &c = p.second;
 #else
     for (auto c : ctxt.getRawCommentList().getComments()) {

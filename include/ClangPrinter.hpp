@@ -72,6 +72,10 @@ public:
 
     clang::Sema& getSema() const;
 
+    const clang::ASTContext& getContext() const {
+        return *context_;
+    }
+
 private:
     clang::CompilerInstance* compiler_;
     clang::ASTContext* context_;
