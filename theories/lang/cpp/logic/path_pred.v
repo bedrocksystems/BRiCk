@@ -274,11 +274,15 @@ Section with_Σ.
   abstract (intros; iIntros "[_ []]").
   Defined.
 
-  Definition offsetO (o : Z) : Offset.
-  refine {| _offset from to := [| to = offset_ptr_ o from |] ** valid_ptr to |}.
-  abstract (intros; iIntros "[[#H _] [-> _]]"; iFrame "#").
-  abstract (intros; iIntros "[A [B C]]"; iFrame).
-  Defined.
+  Program Definition offset2Offset (o : offset) : Offset :=
+    {| _offset from to := [| to = from .., o |]%ptr ** □ (valid_ptr from -∗ valid_ptr to) |}.
+  Next Obligation. by iIntros (????) "[[#H _] [-> _]]". Qed.
+  Next Obligation. iIntros (???) "[A [-> #C]]". by iApply "C". Qed.
+
+  Program Definition offsetO (o : Z) : Offset :=
+    {| _offset from to := [| to = offset_ptr_ o from |] ** valid_ptr to |}.
+  Next Obligation. by iIntros (????) "[[#H _] [-> _]]". Qed.
+  Next Obligation. iIntros (???) "[_ [_ $]]". Qed.
 
   Definition offsetO_opt (o : option Z) : Offset :=
     match o with
@@ -286,6 +290,7 @@ Section with_Σ.
     | Some o => offsetO o
     end.
 
+  (* TODO easy to switch next? *)
   (** the identity [Offset] *)
   Definition _id_def : Offset.
    refine {| _offset from to := [| from = to |] |}.
@@ -321,7 +326,7 @@ Section with_Σ.
 
   (** access a field *)
   Definition _field_def (resolve: genv) (f : field) : Offset :=
-    offsetO_opt (offset_of resolve f.(f_type) f.(f_name)).
+    offset2Offset (o_field resolve f).
   Definition _field_aux : seal (@_field_def). Proof. by eexists. Qed.
   Definition _field := _field_aux.(unseal).
   Definition _field_eq : @_field = _ := _field_aux.(seal_eq).
@@ -339,7 +344,7 @@ Section with_Σ.
   (** [_base derived base] is a cast from derived to base.
    *)
   Definition _base_def (resolve:genv) (derived base : globname) : Offset :=
-    offsetO_opt (parent_offset resolve derived base).
+    offset2Offset (o_base resolve derived base).
   Definition _base_aux : seal (@_base_def). Proof. by eexists. Qed.
   Definition _base := _base_aux.(unseal).
   Definition _base_eq : @_base = _ := _base_aux.(seal_eq).
@@ -348,10 +353,7 @@ Section with_Σ.
   (** [_derived base derived] is a cast from base to derived
    *)
   Definition _derived_def (resolve:genv) (base derived : globname) : Offset :=
-    offsetO_opt match parent_offset resolve derived base with
-                | Some o => Some (0 - o)%Z
-                | None => None
-                end.
+    offset2Offset (o_derived resolve derived base).
   Definition _derived_aux : seal (@_derived_def). Proof. by eexists. Qed.
   Definition _derived := _derived_aux.(unseal).
   Definition _derived_eq : @_derived = _ := _derived_aux.(seal_eq).
