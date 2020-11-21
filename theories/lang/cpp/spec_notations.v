@@ -133,29 +133,29 @@ Notation "'\withT' ts <- t X" := (@with_tele _ t (fun ts => X))
 Notation "'\prepost' pp X" :=
   (@add_prepost _ pp%I X%fspec)
   (at level 10, pp at level 100, X at level 200, right associativity,
-   format "'[v' '\prepost'  '[hv' pp ']' '//' X ']'").
+   format "'[v' '[hv  ' '\prepost'  '/' pp ']' '//' X ']'").
 
 Notation "'\prepost{' x .. y '}' pp X" :=
   (with_prepost_fspec ((@add_with _ (TeleS (fun x => .. (TeleS (fun y => TeleO)) .. ))
                                 (fun x => .. (fun y => @add_prepost _ pp%I X%fspec) .. ))))
   (at level 10, x binder, y binder, pp at level 100, X at level 200, right associativity,
-   format "'[v' '\prepost{' x .. y '}'  '[hv' pp ']' '//' X ']'").
+   format "'[v' '[hv  ' '\prepost{' x  ..  y '}'  '/' pp ']' '//' X ']'").
 
 Notation "'\let' x ':=' e X" :=
   (let_fspec (let x := e in X%fspec))
   (at level 10, x pattern, e at level 150, X at level 200, right associativity,
-   format "'[v' '\let'      x  ':='  '[hv' e ']' '//' X ']'").
+   format "'[v' '[hv  ' '\let'      x  ':='  '/' e ']' '//' X ']'").
 
 Notation "'\args' ls X" :=
   (@add_args _ ls%list X%fspec)
   (at level 10, X at level 200, right associativity,
-   format "'[v' '\args'     ls  '//' X ']'").
+   format "'[v' '[hv  ' '\args'     '/' ls  ']' '//' X ']'").
 
 Notation "'\args{' x .. y '}' ls X" :=
   (@with_arg_fspec _ (@add_with _ (TeleS (fun x => .. (TeleS (fun y => TeleO)) .. ))
                                 (fun x => .. (fun y => (@add_args _ ls%list X%fspec)) .. )))
   (at level 10, x binder, y binder, X at level 200, right associativity,
-   format "'[v' '\args{' x  ..  y '}'  ls  '//' X ']'").
+   format "'[v' '[hv  ' '\args{' x  ..  y '}'  '/' ls  ']' '//' X ']'").
 
 Notation "'\arg' nm v X" :=
   (@add_arg _ nm%bs v X%fspec)
@@ -176,13 +176,13 @@ Notation "'\require' pre X" :=
 Notation "'\pre' pre X" :=
   (@add_pre _ pre%I X%fspec)
   (at level 10, pre at level 200, X at level 200, left associativity,
-   format "'[v' '\pre'  pre  '//' X ']'").
+   format "'[v' '[  ' '\pre'  '/' pre  ']' '//' X ']'").
 
 Notation "'\pre{' x .. y '}' pp X" :=
   (with_pre_fspec ((@add_with _ (TeleS (fun x => .. (TeleS (fun y => TeleO)) .. ))
                                 (fun x => .. (fun y => @add_pre _ pp%I X%fspec) .. ))))
   (at level 10, x binder, y binder, pp at level 100, X at level 200, right associativity,
-   format "'[v' '\pre{' x .. y '}'  '[hv' pp ']' '//' X ']'").
+   format "'[v' '[hv  ' '\pre{' x  ..  y '}'  '/' pp ']' '//' X ']'").
 
 Notation "'\post' { x .. y } [ r ] post" :=
   (@post_ret _ (TeleS (fun x => .. (TeleS (fun y => TeleO)) ..))
