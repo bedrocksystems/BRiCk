@@ -314,10 +314,6 @@ Module Type VALID_PTR_AXIOMS.
     Axiom valid_ptr_derived : ∀ p base derived,
       valid_ptr (p .., o_derived σ base derived) |-- valid_ptr p.
 
-    Axiom o_sub_0 : ∀ σ ty n,
-      size_of σ ty = Some n ->
-      o_sub σ ty 0 = o_id.
-
     Axiom o_sub_sub : ∀ p ty n1 n2,
       valid_ptr (p .., o_sub σ ty n1) |--
       [! p .., o_sub σ ty n1 .., o_sub σ ty n2 = p .., o_sub σ ty (n1 + n2) !]%ptr.
