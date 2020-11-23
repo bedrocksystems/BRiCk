@@ -7,16 +7,17 @@ From bedrock.lang.prelude Require Import base.
 From bedrock.lang.cpp.syntax Require Export types translation_unit.
 From bedrock.lang.cpp.semantics Require Export sub_module.
 
-(** this contains two things:
-   - the types declared in the program
-   - the program's symbol table (mapping of globals to pointers)
-     (this is not necessarily the same as a the symbol table in the
-      object file because it will contain the addresses of [static]
-      variables)
+(**
+A [genv] describes the dynamic semantics of one (TODO: or more?) translation
+units.
+It contains the represented translation units, plus any additional
+information supplied by compiler/linker/loader/...
 
-   if we want to do things like word-size agnostic verification, then
-   information like that would need to be in here as well.
- *)
+If we want to do things like word-size agnostic verification, then
+information about sizes etc. would need to move in here as well.
+
+TODO: seal this?
+*)
 Record genv : Type :=
 { genv_tu : translation_unit
   (* ^ the [translation_unit] *)

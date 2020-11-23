@@ -173,6 +173,12 @@ Variant endian : Set := Little | Big.
 Instance endian_dec : EqDecision endian.
 Proof. solve_decision. Defined.
 
+(**
+A [translation_unit] value represents all the statically known information
+about a C++ translation unit, that is, a source file.
+TOOD: add support for symbols with _internal_ linkage.
+TODO: does linking induce a (non-commutative) monoid on object files? Is then
+a translation unit a "singleton" value in this monoid? *)
 Record translation_unit : Type :=
 { symbols    : symbol_table
 ; globals    : type_table

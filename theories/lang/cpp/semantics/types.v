@@ -10,10 +10,6 @@ From bedrock.lang.cpp.semantics Require Import genv.
 Definition glob_def (g : genv) (gn : globname) : option GlobDecl :=
   g.(genv_tu).(globals) !! gn.
 
-(** * sizeof() *)
-(** this is a partial implementation of [size_of], it doesn't indirect through
-    typedefs, but the cpp2v generator flattens these for us anyways.
- *)
 Definition GlobDecl_size_of (g : GlobDecl) : option N :=
   match g with
   | Gstruct s => Some s.(s_size)
@@ -33,6 +29,10 @@ Proof.
     apply require_eq_success in Heq; naive_solver.
 Qed.
 
+(** * sizeof() *)
+(** this is a partial implementation of [size_of], it doesn't indirect through
+    typedefs, but the cpp2v generator flattens these for us anyways.
+ *)
 Fixpoint size_of (resolve : genv) (t : type) : option N :=
   match t with
   | Tpointer _ => Some (pointer_size resolve)
@@ -66,9 +66,6 @@ Proof.
 Qed.
 
 
-(* it is hard to define [size_of] as a function because it needs
-to recurse through the environment in the case of [Treference]:
-termination will require a proof of well-foundedness of the environment *)
 Theorem size_of_int : forall {c : genv} s w,
     @size_of c (Tint w s) = Some (bytesN w).
 Proof. reflexivity. Qed.
