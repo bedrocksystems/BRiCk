@@ -278,17 +278,18 @@ Section with_Σ.
     {| _offset from to := [| to = from .., o |]%ptr ** □ (valid_ptr from -∗ valid_ptr to) |}.
   Next Obligation. by iIntros (????) "[[#H _] [-> _]]". Qed.
   Next Obligation. iIntros (???) "[A [-> #C]]". by iApply "C". Qed.
+End with_Σ.
 
-  Program Definition offsetO (o : Z) : Offset :=
-    {| _offset from to := [| to = offset_ptr_ o from |] ** valid_ptr to |}.
-  Next Obligation. by iIntros (????) "[[#H _] [-> _]]". Qed.
-  Next Obligation. iIntros (???) "[_ [_ $]]". Qed.
+Program Definition _offsetO `{has_cpp : cpp_logic} (o : Z) : Offset :=
+  {| _offset from to := [| to = offset_ptr_ o from |] ** valid_ptr to |}.
+Next Obligation. intros. by iIntros "[[#H _] [-> _]]". Qed.
+Next Obligation. intros. by iIntros "[_ [_ $]]". Qed.
 
-  Definition offsetO_opt (o : option Z) : Offset :=
-    match o with
-    | None => invalidO
-    | Some o => offsetO o
-    end.
+#[deprecated(since="2020-11-17",
+note="Use higher-level APIs, or _sub on arrays of unsigned char.")]
+Notation offsetO := _offsetO.
+Section with_Σ.
+  Context `{has_cpp : cpp_logic}.
 
   (* TODO easy to switch next? *)
   (** the identity [Offset] *)
@@ -333,10 +334,11 @@ Section with_Σ.
 
   (** subscript an array *)
   Definition _sub_def (resolve:genv) (t : type) (i : Z) : Offset :=
-    offsetO_opt (match size_of resolve t with
-                 | Some o => Some (Z.of_N o * i)%Z
-                 | _ => None
-                 end).
+    match size_of resolve t with
+    | Some o => offsetO (Z.of_N o * i)%Z
+    | _ => invalidO
+    end.
+
   Definition _sub_aux : seal (@_sub_def). Proof. by eexists. Qed.
   Definition _sub := _sub_aux.(unseal).
   Definition _sub_eq : @_sub = _ := _sub_aux.(seal_eq).
