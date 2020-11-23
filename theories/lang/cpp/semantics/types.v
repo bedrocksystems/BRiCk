@@ -25,7 +25,7 @@ Variant Roption_leq {T} (R : T -> T -> Prop) : option T -> option T -> Prop :=
 | Rleq_Some {x y} (_ : R x y) : Roption_leq R (Some x) (Some y).
 
 
-Instance proper_named_size_of: Proper (GlobDecl_ler ==> Roption_leq eq) GlobDecl_size_of.
+Instance proper_GlobDecl_size_of: Proper (GlobDecl_ler ==> Roption_leq eq) GlobDecl_size_of.
 Proof.
   rewrite /GlobDecl_size_of => x y Heq.
   repeat (case_match; try constructor);
@@ -61,7 +61,7 @@ Proof.
     unfold glob_def, globals in *.
     destruct (globals (genv_tu x) !! g) as [g1| ]; last constructor.
     move: Hle => /(_ _ eq_refl) [g2 [-> HH]] /=.
-    exact: proper_named_size_of.
+    exact: proper_GlobDecl_size_of.
   - by destruct o; constructor.
 Qed.
 
