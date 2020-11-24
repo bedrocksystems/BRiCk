@@ -12,6 +12,7 @@ From bedrock.lang.cpp.logic Require Export
      wp
      destroy
      call
+     operator
      expr
      stmt
      initializers
