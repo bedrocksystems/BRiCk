@@ -25,10 +25,12 @@ Lemma ptr_rel_elim (p1 p2 : ptr) : p1 ⊑ p2 → p1 = p2.
 Proof. done. Qed.
 
 Definition Rep `{Σ : cpp_logic} := monPred ptr_bi_index mpredI.
-Definition RepI `{Σ : cpp_logic} := monPredI ptr_bi_index mpredI.
+Canonical Structure RepI `{Σ : cpp_logic} := monPredI ptr_bi_index mpredI.
+Canonical Structure RepO `{Σ : cpp_logic} := monPredO ptr_bi_index mpredI.
 
 Bind Scope bi_scope with Rep.
 Bind Scope bi_scope with RepI.
+Bind Scope bi_scope with RepO.
 
 Section with_cpp.
   Context `{Σ : cpp_logic}.
