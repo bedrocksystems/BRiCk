@@ -42,8 +42,6 @@ Module Type Stmt.
     Local Notation _field := (@_field resolve) (only parsing).
     Local Notation _sub := (@_sub resolve) (only parsing).
     Local Notation _super := (@_super resolve) (only parsing).
-    Local Notation eval_unop := (@eval_unop resolve) (only parsing).
-    Local Notation eval_binop_pure := (@eval_binop_pure resolve) (only parsing).
     Local Notation size_of := (@size_of resolve) (only parsing).
     Local Notation align_of := (@align_of resolve) (only parsing).
     Local Notation primR := (primR (resolve:=resolve)) (only parsing).
