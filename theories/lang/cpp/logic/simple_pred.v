@@ -741,18 +741,58 @@ Module SimpleCPP.
        provides_storage res newp aty ** pinned_ptr va res |-- pinned_ptr va newp.
     Proof. iIntros (????) "[-> $]". Qed.
 
-    Definition type_ptr {resolve : genv} (c: type) (p : ptr) : mpred :=
-      Exists (o : option addr) n,
-               [| @align_of resolve c = Some n |] ** mem_inj_own p o **
+    Definition aligned_ptr (n : N) (p : ptr) : mpred :=
+      [| p = nullptr |] \\//
+      Exists (o : option addr), mem_inj_own p o **
                match o with
+               | Some va => [| (n | va)%N |]
+               (* This clause comes from [type_ptr]; here, it means that
+               non-pinned pointers are indefinitely aligned.
+               However, the whole theory of [aligned_ptr] demands [pinned_ptr], so this is not a real problem. *)
                | None => ltrue
-               | Some addr => [| N.modulo addr n = 0%N |]
                end.
+    Instance aligned_ptr_persistent n p : Persistent (aligned_ptr n p) := _.
+    Instance aligned_ptr_affine n p : Affine (aligned_ptr n p) := _.
+    Instance aligned_ptr_timeless n p : Timeless (aligned_ptr n p) := _.
 
-    Instance type_ptr_persistent σ p ty :
-      Persistent (type_ptr (resolve:=σ) ty p) := _.
-    Instance type_ptr_affine σ p ty :
-      Affine (type_ptr (resolve:=σ) ty p) := _.
+    Lemma pinned_ptr_aligned_divide va n p :
+      pinned_ptr va p ⊢
+      aligned_ptr n p ∗-∗ [| (n | va)%N |].
+    Proof.
+      rewrite /pinned_ptr /aligned_ptr /=.
+      iDestruct 1 as "[[-> ->]|[% MO1]]". {
+        iSplit; last by iIntros; iLeft.
+        by iIntros "_ !%"; exact: N.divide_0_r.
+      }
+      iSplit; last by iIntros; iRight; eauto.
+      iDestruct 1 as "[->|H]"; first done; iDestruct "H" as (o) "[MO2 Ha]".
+      by iDestruct (mem_inj_own_agree with "MO1 MO2") as "<-".
+    Qed.
+
+    Definition type_ptr {resolve : genv} (ty : type) (p : ptr) : mpred :=
+      [| p <> nullptr |] **
+      Exists align, [| @align_of resolve ty = Some align |] ** aligned_ptr align p.
+    Instance type_ptr_persistent σ p ty : Persistent (type_ptr (resolve:=σ) ty p) := _.
+    Instance type_ptr_affine σ p ty : Affine (type_ptr (resolve:=σ) ty p) := _.
+    Instance type_ptr_timeless σ p ty : Timeless (type_ptr (resolve:=σ) ty p) := _.
+
+    Lemma type_ptr_aligned σ ty p :
+      type_ptr (resolve := σ) ty p |--
+      [| p <> nullptr |] **
+      Exists align, [| @align_of σ ty = Some align |] ** aligned_ptr align p.
+    Proof. done. Qed.
+
+    (* This lemma is unused; it confirms we can lift the other half of
+    [pinned_ptr_aligned_divide], but we don't expose this. *)
+    Local Lemma pinned_ptr_type_divide_2 va n σ p ty
+      (Hal : align_of (resolve := σ) ty = Some n) (Hnn : p <> nullptr) :
+      pinned_ptr va p ⊢
+      [| (n | va)%N |] -∗ type_ptr (resolve := σ) ty p.
+    Proof.
+      rewrite /type_ptr Hal /=. iIntros "P %HvaAl"; iFrame (Hnn).
+      iExists _; iSplit; first done.
+      by iApply (pinned_ptr_aligned_divide with "P").
+    Qed.
 
     (* todo(gmm): this isn't accurate, but it is sufficient to show that the axioms are
     instantiatable. *)

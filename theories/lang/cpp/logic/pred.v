@@ -17,6 +17,7 @@ Require Export bedrock.lang.prelude.addr.
 From iris.base_logic.lib Require Export iprop.
 Require Import iris.bi.monpred.
 From iris.bi.lib Require Import fractional.
+From iris.proofmode Require Import tactics.
 Require Import iris.base_logic.lib.fancy_updates.
 Require Import iris.base_logic.lib.own.
 Require Import iris.base_logic.lib.cancelable_invariants.
@@ -280,6 +281,19 @@ Module Type CPP_LOGIC (Import CC : CPP_LOGIC_CLASS) (Import PTR : PTRS_FULL).
     Global Existing Instances
       pinned_ptr_persistent pinned_ptr_affine pinned_ptr_timeless.
 
+    (** [aligned_ptr] states that the pointer has the given alignment.
+        This is persistent.
+     *)
+    Parameter aligned_ptr : forall (n : N) (p : ptr), mpred.
+    Axiom aligned_ptr_persistent : forall n p, Persistent (aligned_ptr n p).
+    Axiom aligned_ptr_affine : forall n p, Affine (aligned_ptr n p).
+    Axiom aligned_ptr_timeless : forall n p, Timeless (aligned_ptr n p).
+    Global Existing Instances aligned_ptr_persistent aligned_ptr_affine aligned_ptr_timeless.
+
+    Axiom pinned_ptr_aligned_divide : forall va n p,
+      pinned_ptr va p ⊢
+      aligned_ptr n p ∗-∗ [| (n | va)%N |].
+
     (** this states that the pointer is a pointer to the given type,
         this is persistent. this implies,
         - the address is not null
@@ -290,7 +304,14 @@ Module Type CPP_LOGIC (Import CC : CPP_LOGIC_CLASS) (Import PTR : PTRS_FULL).
       Persistent (type_ptr (resolve:=σ) ty p).
     Axiom type_ptr_affine : forall σ p ty,
       Affine (type_ptr (resolve:=σ) ty p).
-    Global Existing Instances type_ptr_persistent type_ptr_affine.
+    Axiom type_ptr_timeless : forall σ p ty,
+      Timeless (type_ptr (resolve:=σ) ty p).
+    Global Existing Instances type_ptr_persistent type_ptr_affine type_ptr_timeless.
+
+    Axiom type_ptr_aligned : forall σ ty p,
+      type_ptr (resolve := σ) ty p |--
+      [| p <> nullptr |] **
+      Exists align, [| @align_of σ ty = Some align |] ** aligned_ptr align p.
   End with_cpp.
 
 End CPP_LOGIC.
@@ -384,4 +405,13 @@ Section with_cpp.
   Definition type_of_spec `(fs : function_spec) : type :=
     normalize_type (Tfunction (cc:=fs.(fs_cc)) fs.(fs_return) fs.(fs_arguments)).
 
+  (* Not an instance because of the [align_of] side condition. *)
+  Lemma pinned_ptr_type_divide_1 va n σ p ty
+    (Hal : align_of (resolve := σ) ty = Some n) :
+    Observe2 [| (n | va)%N |] (pinned_ptr va p) (type_ptr (resolve := σ) ty p).
+  Proof.
+    apply: observe_2_intro_persistent.
+    rewrite type_ptr_aligned Hal /=. iIntros "P"; iDestruct 1 as (? ? [= <-]) "A".
+    iApply (pinned_ptr_aligned_divide with "P A").
+  Qed.
 End with_cpp.
