@@ -175,7 +175,9 @@ Module Type CPP_LOGIC (Import CC : CPP_LOGIC_CLASS) (Import PTR : PTRS_FULL).
     Parameter type_ptr: forall {resolve : genv} (c: type), ptr -> mpred.
     Axiom type_ptr_persistent : forall σ p ty,
       Persistent (type_ptr (resolve:=σ) ty p).
-    Global Existing Instance type_ptr_persistent.
+    Axiom type_ptr_affine : forall σ p ty,
+      Affine (type_ptr (resolve:=σ) ty p).
+    Global Existing Instances type_ptr_persistent type_ptr_affine.
 
     (** [identity σ this mdc q p] state that [p] is a pointer to a (live)
         object of type [this] that is part of an object of type [mdc].

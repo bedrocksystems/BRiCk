@@ -751,6 +751,8 @@ Module SimpleCPP.
 
     Instance type_ptr_persistent σ p ty :
       Persistent (type_ptr (resolve:=σ) ty p) := _.
+    Instance type_ptr_affine σ p ty :
+      Affine (type_ptr (resolve:=σ) ty p) := _.
 
     (* todo(gmm): this isn't accurate, but it is sufficient to show that the axioms are
     instantiatable. *)
