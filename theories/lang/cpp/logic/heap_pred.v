@@ -399,6 +399,9 @@ Section with_cpp.
   Global Instance pureR_objective P : Objective (pureR P).
   Proof. done. Qed.
 
+  Lemma pureR_persistently P : pureR (<pers> P) -|- <pers> pureR P.
+  Proof. constructor=>p /=. by rewrite monPred_at_persistently. Qed.
+
   Lemma pureR_only_provable P : pureR [| P |] ⊣⊢ [| P |].
   Proof.
     split'.
@@ -439,6 +442,18 @@ Section with_cpp.
   Proof.
     intros. rewrite _at_loc_materialize/= valid_loc_equiv bi.sep_exist_l.
     by setoid_rewrite bi.sep_comm at 1.
+  Qed.
+
+  (** As this isn't syntax-directed, we conservatively avoid
+      registering it as an instance (which could slow down
+      observations). It's handy under [Local Existing Instance
+      _at_observe_pureR] to project a [pureR Q] conjunct out of
+      representation predicates. *)
+  Lemma _at_observe_pureR Q (l : Loc) (R : Rep) :
+    Observe (pureR Q) R → Observe Q (_at l R).
+  Proof.
+    rewrite /Observe=>->. rewrite -pureR_persistently _at_pureR.
+    exact: bi.sep_elim_l.
   Qed.
 
   (** [primR]: the argument pointer points to an initialized value [v] of C++ type [ty]. *)
