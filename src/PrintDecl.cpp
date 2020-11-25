@@ -132,7 +132,7 @@ void
 printMethod(const CXXMethodDecl *decl, CoqPrinter &print,
             ClangPrinter &cprint) {
     print.ctor("Build_Method");
-    cprint.printQualType(decl->getCallResultType(), print);
+    cprint.printQualType(decl->getReturnType(), print);
     print.output() << fmt::line;
     cprint.printGlobalName(decl->getParent(), print);
     print.output() << fmt::line;
@@ -236,7 +236,7 @@ printDestructor(const CXXDestructorDecl *decl, CoqPrinter &print,
 
 class PrintDecl :
     public ConstDeclVisitorArgs<PrintDecl, bool, CoqPrinter &, ClangPrinter &,
-                           const ASTContext &> {
+                                const ASTContext &> {
 private:
     PrintDecl() {}
 
@@ -649,8 +649,9 @@ public:
         return true;
     }
 
-    bool VisitCXXDestructorDecl(const CXXDestructorDecl *decl, CoqPrinter &print,
-                                ClangPrinter &cprint, const ASTContext &ctxt) {
+    bool VisitCXXDestructorDecl(const CXXDestructorDecl *decl,
+                                CoqPrinter &print, ClangPrinter &cprint,
+                                const ASTContext &ctxt) {
         print.ctor("Ddestructor");
         cprint.printGlobalName(decl, print);
         printDestructor(decl, print, cprint);
