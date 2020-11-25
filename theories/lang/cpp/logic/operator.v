@@ -8,10 +8,16 @@ Require Import bedrock.lang.prelude.base.
 From bedrock.lang.cpp Require Import ast semantics.values semantics.operator.
 From bedrock.lang.cpp Require Import logic.pred.
 
-(* Pointer comparison operators *)
+Parameter eval_binop_impure : forall `{has_cpp : cpp_logic} {resolve : genv}, BinOp -> forall (lhsT rhsT resT : type) (lhs rhs res : val), mpred.
 Section with_Σ.
   Context `{has_cpp : cpp_logic} {resolve : genv}.
   Notation eval_binop_pure := (eval_binop_pure (resolve := resolve)).
+  Notation eval_binop_impure := (eval_binop_impure (resolve := resolve)).
+
+  Definition eval_binop (b : BinOp) (lhsT rhsT resT : type) (lhs rhs res : val) : mpred :=
+    [| eval_binop_pure b lhsT rhsT resT lhs rhs res |] ∨ eval_binop_impure b lhsT rhsT resT lhs rhs res.
+
+(** * Pointer comparison operators *)
 
 Axiom eval_ptr_eq :
   forall ty a b av bv c,
