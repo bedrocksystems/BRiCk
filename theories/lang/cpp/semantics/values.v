@@ -209,7 +209,8 @@ to update clients only once.
 *)
 Axiom offset_ptr_combine__ : forall p o o',
   offset_ptr_ o' (offset_ptr_ o p) = offset_ptr_ (o + o') p.
-(* #[deprecated(since="X", note="XXX")] *)
+#[deprecated(since="2020-11-25",
+note="Use higher-level APIs or o_sub_sub.")]
 Notation offset_ptr_combine_ := offset_ptr_combine__.
 
 Instance ptr_inhabited : Inhabited ptr := populate nullptr.
