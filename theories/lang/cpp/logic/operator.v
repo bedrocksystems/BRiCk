@@ -9,25 +9,28 @@ From bedrock.lang.cpp Require Import ast semantics.values semantics.operator.
 From bedrock.lang.cpp Require Import logic.pred.
 
 (* Pointer comparison operators *)
+Section with_Σ.
+  Context `{has_cpp : cpp_logic} {resolve : genv}.
+  Notation eval_binop_pure := (eval_binop_pure (resolve := resolve)).
 
 Axiom eval_ptr_eq :
-  forall resolve ty a b av bv c,
+  forall ty a b av bv c,
     a = Vptr av ->
     b = Vptr bv ->
     c = (if ptr_eq_dec av bv then 1 else 0)%Z ->
-    eval_binop_pure (resolve:=resolve) Beq (Tpointer ty) (Tpointer ty) Tbool a b (Vint c).
+    eval_binop_pure Beq (Tpointer ty) (Tpointer ty) Tbool a b (Vint c).
 Axiom eval_ptr_neq :
-  forall resolve ty a b av bv c,
+  forall ty a b av bv c,
     a = Vptr av ->
     b = Vptr bv ->
     c = (if ptr_eq_dec av bv then 0 else 1)%Z ->
-    eval_binop_pure (resolve:=resolve) Bneq (Tpointer ty) (Tpointer ty) Tbool a b (Vint c).
+    eval_binop_pure Bneq (Tpointer ty) (Tpointer ty) Tbool a b (Vint c).
 
 Definition eval_ptr_int_op (bo : BinOp) (f : Z -> Z) : Prop :=
   forall resolve t w s p o p' sz,
     size_of resolve t = Some sz ->
     p' = offset_ptr_ (f o * Z.of_N sz) p ->
-    eval_binop_pure (resolve:=resolve) bo
+    eval_binop_pure bo
                (Tpointer t) (Tint w s) (Tpointer t)
                (Vptr p)     (Vint o)   (Vptr p').
 
@@ -47,7 +50,7 @@ Definition eval_int_ptr_op (bo : BinOp) (f : Z -> Z) : Prop :=
   forall resolve t w s p o p' sz,
     size_of resolve t = Some sz ->
     p' = offset_ptr_ (f o * Z.of_N sz) p ->
-    eval_binop_pure (resolve:=resolve) bo
+    eval_binop_pure bo
                (Tint w s) (Tpointer t) (Tpointer t)
                (Vint o)   (Vptr p)     (Vptr p').
 
@@ -64,6 +67,8 @@ Axiom eval_ptr_ptr_sub :
     size_of resolve t = Some sz ->
     p = offset_ptr_ (Z.of_N sz * o1) base ->
     p' = offset_ptr_ (Z.of_N sz * o2) base ->
-    eval_binop_pure (resolve:=resolve) Bsub
+    eval_binop_pure Bsub
                (Tpointer t) (Tpointer t) (Tint w Signed)
                (Vptr p)     (Vptr p')    (Vint (o1 - o2)).
+
+End with_Σ.
