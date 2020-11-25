@@ -389,9 +389,6 @@ Arguments Z.pow_pos _ _ : simpl never.
 Definition glob_addr (σ : genv) (o : obj_name) : option ptr :=
   (fun _ => global_ptr σ.(genv_tu) o) <$> σ.(genv_tu) !! o.
 
-#[deprecated(since="2020-11-17", note="Use genv_byte_order.")]
-Notation byte_order := genv_byte_order.
-
 (* Clients are not SUPPOSED to look at these APIs, and ideally we can drop them. *)
 Module Type PTR_INTERNAL (Import P : PTRS).
   Parameter eval_offset : genv -> offset -> option Z.
@@ -415,6 +412,3 @@ Module Type PTR_INTERNAL (Import P : PTRS).
   Qed.
 End PTR_INTERNAL.
 Declare Module PTR_INTERNAL_AXIOM : PTR_INTERNAL PTRS_FULL_AXIOM.
-
-#[deprecated(since="2020-11-17", note="Use types.size_of.")]
-Notation size_of := types.size_of.
