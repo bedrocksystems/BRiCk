@@ -167,18 +167,6 @@ Module Type CPP_LOGIC (Import CC : CPP_LOGIC_CLASS) (Import PTR : PTRS_FULL).
       Observe [| ty <> Tvoid |] (@tptsto σ ty q p v).
     Global Existing Instance tptsto_nonvoid.
 
-    (** this states that the pointer is a pointer to the given type,
-        this is persistent. this implies,
-        - the address is not null
-        - the address is properly aligned (if it exists in memory)
-     *)
-    Parameter type_ptr: forall {resolve : genv} (c: type), ptr -> mpred.
-    Axiom type_ptr_persistent : forall σ p ty,
-      Persistent (type_ptr (resolve:=σ) ty p).
-    Axiom type_ptr_affine : forall σ p ty,
-      Affine (type_ptr (resolve:=σ) ty p).
-    Global Existing Instances type_ptr_persistent type_ptr_affine.
-
     (** [identity σ this mdc q p] state that [p] is a pointer to a (live)
         object of type [this] that is part of an object of type [mdc].
         - if [mdc = None] then this object identity is not initialized yet,
@@ -291,6 +279,18 @@ Module Type CPP_LOGIC (Import CC : CPP_LOGIC_CLASS) (Import PTR : PTRS_FULL).
 
     Global Existing Instances
       pinned_ptr_persistent pinned_ptr_affine pinned_ptr_timeless.
+
+    (** this states that the pointer is a pointer to the given type,
+        this is persistent. this implies,
+        - the address is not null
+        - the address is properly aligned (if it exists in memory)
+     *)
+    Parameter type_ptr: forall {resolve : genv} (c: type), ptr -> mpred.
+    Axiom type_ptr_persistent : forall σ p ty,
+      Persistent (type_ptr (resolve:=σ) ty p).
+    Axiom type_ptr_affine : forall σ p ty,
+      Affine (type_ptr (resolve:=σ) ty p).
+    Global Existing Instances type_ptr_persistent type_ptr_affine.
   End with_cpp.
 
 End CPP_LOGIC.
