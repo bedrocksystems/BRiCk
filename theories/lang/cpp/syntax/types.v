@@ -189,6 +189,7 @@ Variant PrimCast : Set :=
 | Cpointer2int
 | Cptr2bool
 | Cderived2base
+| Cbase2derived
 | Cintegral
 | Cint2bool
 | Cnull2ptr
