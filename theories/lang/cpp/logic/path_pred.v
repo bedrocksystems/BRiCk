@@ -355,7 +355,7 @@ Section with_Σ.
   (** [_derived base derived] is a cast from base to derived
    *)
   Definition _derived_def (resolve:genv) (base derived : globname) : Offset :=
-    offset2Offset (o_derived resolve derived base).
+    offset2Offset (o_derived resolve base derived).
   Definition _derived_aux : seal (@_derived_def). Proof. by eexists. Qed.
   Definition _derived := _derived_aux.(unseal).
   Definition _derived_eq : @_derived = _ := _derived_aux.(seal_eq).
