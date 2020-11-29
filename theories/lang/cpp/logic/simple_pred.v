@@ -701,8 +701,9 @@ Module SimpleCPP.
     (** physical representation of pointers
      *)
     Definition pinned_ptr (va : N) (p : ptr) : mpred :=
-      [| p = nullptr /\ va = 0%N |] \\//
-      ([| p <> nullptr |] ** mem_inj_own p (Some va)).
+      valid_ptr p **
+      ([| p = nullptr /\ va = 0%N |] \\//
+      ([| p <> nullptr |] ** mem_inj_own p (Some va))).
 
     Instance pinned_ptr_persistent va p : Persistent (pinned_ptr va p) := _.
     Instance pinned_ptr_affine va p : Affine (pinned_ptr va p) := _.
@@ -712,9 +713,13 @@ Module SimpleCPP.
     Proof.
       apply: observe_2_intro_persistent.
       iIntros "A B".
-      iDestruct "A" as "[[->->] | [% A]]"; iDestruct "B" as "[[%->] | [% B]]" => //.
+      iDestruct "A" as "[_ [[->->] | [% A]]]"; iDestruct "B" as "[_ [[%->] | [% B]]]" => //.
       by iDestruct (observe_2_elim_pure (Some va = Some va') with "A B") as %[= ->].
     Qed.
+
+    Instance pinned_ptr_valid va p :
+      Observe (valid_ptr p) (pinned_ptr va p).
+    Proof. apply: observe_intro_persistent. iDestruct 1 as "[$ _]". Qed.
 
     Theorem pinned_ptr_borrow : forall {σ} ty p v va M,
       @tptsto σ ty 1 p v ** pinned_ptr va p ** [| p <> nullptr |] |--
@@ -723,7 +728,7 @@ Module SimpleCPP.
                               |={M}=> @tptsto σ ty 1 p v').
     Proof.
       intros. iIntros "(TP & PI & %)".
-      iDestruct "PI" as "[[% %]|[% MJ]]"; [done| ].
+      iDestruct "PI" as "[_ [[% %]|[% MJ]]]"; [done| ].
       iDestruct "TP" as (_ ma) "[MJ' [VP TP]]".
       iDestruct (mem_inj_own_agree with "MJ MJ'") as %<-.
       iDestruct "TP" as (vs) "(#EN & Bys & VBys)".
@@ -760,7 +765,7 @@ Module SimpleCPP.
       aligned_ptr n p ∗-∗ [| (n | va)%N |].
     Proof.
       rewrite /pinned_ptr /aligned_ptr /=.
-      iDestruct 1 as "[[-> ->]|[% MO1]]". {
+      iDestruct 1 as "[_ [[-> ->]|[% MO1]]]". {
         iSplit; last by iIntros; iLeft.
         by iIntros "_ !%"; exact: N.divide_0_r.
       }
@@ -786,6 +791,19 @@ Module SimpleCPP.
       type_ptr (resolve := σ) ty p |--
       Exists align, [| @align_of σ ty = Some align |] ** aligned_ptr align p.
     Proof. by iDestruct 1 as "(_ & $ & _)". Qed.
+
+    (* This lemma is unused; it confirms we can lift the other half of
+    [pinned_ptr_aligned_divide], but we don't expose this. *)
+    Local Lemma pinned_ptr_type_divide_2 va n σ p ty
+      (Hal : align_of (resolve := σ) ty = Some n) (Hnn : p <> nullptr) :
+      pinned_ptr va p ⊢
+      [| (n | va)%N |] -∗ type_ptr (resolve := σ) ty p.
+    Proof.
+      rewrite /type_ptr Hal /=. iIntros "P %HvaAl"; iFrame (Hnn).
+      iDestruct (pinned_ptr_valid with "P") as "#$".
+      iExists _; iSplit; first done.
+      by iApply (pinned_ptr_aligned_divide with "P").
+    Qed.
 
     (* todo(gmm): this isn't accurate, but it is sufficient to show that the axioms are
     instantiatable. *)
