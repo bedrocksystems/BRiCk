@@ -281,8 +281,8 @@ Module Type CPP_LOGIC (Import CC : CPP_LOGIC_CLASS) (Import PTR : PTRS_FULL).
     Global Existing Instances
       pinned_ptr_persistent pinned_ptr_affine pinned_ptr_timeless.
 
-    (** [aligned_ptr] states that the pointer has the given alignment.
-        This is persistent.
+    (** [aligned_ptr] states that the pointer (if it exists in memory) has
+    the given alignment. This is persistent.
      *)
     Parameter aligned_ptr : forall (n : N) (p : ptr), mpred.
     Axiom aligned_ptr_persistent : forall n p, Persistent (aligned_ptr n p).
@@ -296,10 +296,11 @@ Module Type CPP_LOGIC (Import CC : CPP_LOGIC_CLASS) (Import PTR : PTRS_FULL).
 
     (** this states that the pointer is a pointer to the given type,
         this is persistent. this implies,
-        - the address is not null
-        - the address is properly aligned (if it exists in memory)
+        - the pointer is valid [type_ptr_valid]
+        - the pointer is not null
+        - the pointer is properly aligned [type_ptr_aligned]
      *)
-    Parameter type_ptr: forall {resolve : genv} (c: type), ptr -> mpred.
+    Parameter type_ptr : forall {resolve : genv} (c: type), ptr -> mpred.
     Axiom type_ptr_persistent : forall σ p ty,
       Persistent (type_ptr (resolve:=σ) ty p).
     Axiom type_ptr_affine : forall σ p ty,
@@ -311,6 +312,9 @@ Module Type CPP_LOGIC (Import CC : CPP_LOGIC_CLASS) (Import PTR : PTRS_FULL).
     Axiom type_ptr_aligned : forall σ ty p,
       type_ptr (resolve := σ) ty p |--
       Exists align, [| @align_of σ ty = Some align |] ** aligned_ptr align p.
+
+    Axiom type_ptr_valid : forall resolve ty p,
+      type_ptr (resolve := resolve) ty p |-- valid_ptr p.
   End with_cpp.
 
 End CPP_LOGIC.

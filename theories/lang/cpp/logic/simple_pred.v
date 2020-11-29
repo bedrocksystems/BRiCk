@@ -772,27 +772,20 @@ Module SimpleCPP.
     Definition type_ptr {resolve : genv} (ty : type) (p : ptr) : mpred :=
       (* To decide: do we want the "p nonnull" clause? *)
       [| p <> nullptr |] **
-      Exists align, [| @align_of resolve ty = Some align |] ** aligned_ptr align p.
+      (Exists align, [| @align_of resolve ty = Some align |] ** aligned_ptr align p) **
+      valid_ptr p.
     Instance type_ptr_persistent σ p ty : Persistent (type_ptr (resolve:=σ) ty p) := _.
     Instance type_ptr_affine σ p ty : Affine (type_ptr (resolve:=σ) ty p) := _.
     Instance type_ptr_timeless σ p ty : Timeless (type_ptr (resolve:=σ) ty p) := _.
 
+    Lemma type_ptr_valid resolve ty p :
+      type_ptr (resolve := resolve) ty p |-- valid_ptr p.
+    Proof. iDestruct 1 as "(_ & _ & $)". Qed.
+
     Lemma type_ptr_aligned σ ty p :
       type_ptr (resolve := σ) ty p |--
       Exists align, [| @align_of σ ty = Some align |] ** aligned_ptr align p.
-    Proof. by iDestruct 1 as "[_ $]". Qed.
-
-    (* This lemma is unused; it confirms we can lift the other half of
-    [pinned_ptr_aligned_divide], but we don't expose this. *)
-    Local Lemma pinned_ptr_type_divide_2 va n σ p ty
-      (Hal : align_of (resolve := σ) ty = Some n) (Hnn : p <> nullptr) :
-      pinned_ptr va p ⊢
-      [| (n | va)%N |] -∗ type_ptr (resolve := σ) ty p.
-    Proof.
-      rewrite /type_ptr Hal /=. iIntros "P %HvaAl"; iFrame (Hnn).
-      iExists _; iSplit; first done.
-      by iApply (pinned_ptr_aligned_divide with "P").
-    Qed.
+    Proof. by iDestruct 1 as "(_ & $ & _)". Qed.
 
     (* todo(gmm): this isn't accurate, but it is sufficient to show that the axioms are
     instantiatable. *)
