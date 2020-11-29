@@ -809,7 +809,7 @@ Module SimpleCPP.
 
     (* This lemma is unused; it confirms we can lift the other half of
     [pinned_ptr_aligned_divide], but we don't expose this. *)
-    Local Lemma pinned_ptr_type_divide_2 va n σ p ty
+    Local Lemma pinned_ptr_type_divide_2 {va n σ p ty}
       (Hal : align_of (resolve := σ) ty = Some n) (Hnn : p <> nullptr) :
       pinned_ptr va p ⊢
       [| (n | va)%N |] -∗ type_ptr (resolve := σ) ty p.
@@ -820,6 +820,19 @@ Module SimpleCPP.
       by iApply (pinned_ptr_aligned_divide with "P").
     Qed.
 
+    (* XXX move *)
+    Axiom align_of_uchar : forall resolve, @align_of resolve T_uchar = Some 1%N.
+
+    (* Requirememnt is too strong, we'd want just [valid_ptr p]; see comment
+    above on [aligned_ptr] and [mem_inj_own]. *)
+    Lemma valid_type_uchar resolve p (Hnn : p <> nullptr) va :
+      pinned_ptr va p |-- type_ptr (resolve := resolve) T_uchar p.
+    Proof.
+      iIntros "#P".
+      iApply (pinned_ptr_type_divide_2 (n := 1)) => //. {
+        exact: align_of_uchar. }
+      iIntros "!%". exact: N.divide_1_l.
+    Qed.
     (* todo(gmm): this isn't accurate, but it is sufficient to show that the axioms are
     instantiatable. *)
     Definition identity {σ : genv} (this : globname) (most_derived : option globname)
