@@ -789,14 +789,20 @@ Module SimpleCPP.
       (* To decide: do we want the "p nonnull" clause? *)
       [| p <> nullptr |] **
       (Exists align, [| @align_of resolve ty = Some align |] ** aligned_ptr align p) **
-      valid_ptr p.
+      valid_ptr p ** valid_ptr (p .., o_sub resolve ty 1).
     Instance type_ptr_persistent σ p ty : Persistent (type_ptr (resolve:=σ) ty p) := _.
     Instance type_ptr_affine σ p ty : Affine (type_ptr (resolve:=σ) ty p) := _.
     Instance type_ptr_timeless σ p ty : Timeless (type_ptr (resolve:=σ) ty p) := _.
 
     Lemma type_ptr_valid resolve ty p :
       type_ptr (resolve := resolve) ty p |-- valid_ptr p.
-    Proof. iDestruct 1 as "(_ & _ & $)". Qed.
+    Proof. iDestruct 1 as "(_ & _ & $ & _)". Qed.
+
+    Lemma type_ptr_valid_plus_one resolve ty p :
+      (* size_of resolve ty = Some sz -> *)
+      type_ptr (resolve := resolve) ty p |--
+      valid_ptr (p .., o_sub resolve ty 1).
+    Proof. iDestruct 1 as "(_ & _ & _ & $)". Qed.
 
     Lemma type_ptr_nonnull resolve ty p :
       type_ptr (resolve := resolve) ty p |-- [| p <> nullptr |].
@@ -811,10 +817,10 @@ Module SimpleCPP.
     [pinned_ptr_aligned_divide], but we don't expose this. *)
     Local Lemma pinned_ptr_type_divide_2 {va n σ p ty}
       (Hal : align_of (resolve := σ) ty = Some n) (Hnn : p <> nullptr) :
-      pinned_ptr va p ⊢
+      pinned_ptr va p ⊢ valid_ptr (p .., o_sub σ ty 1) -∗
       [| (n | va)%N |] -∗ type_ptr (resolve := σ) ty p.
     Proof.
-      rewrite /type_ptr Hal /=. iIntros "P %HvaAl"; iFrame (Hnn).
+      rewrite /type_ptr Hal /=. iIntros "P $ %HvaAl"; iFrame (Hnn).
       iDestruct (pinned_ptr_valid with "P") as "#$".
       iExists _; iSplit; first done.
       by iApply (pinned_ptr_aligned_divide with "P").
@@ -823,12 +829,16 @@ Module SimpleCPP.
     (* XXX move *)
     Axiom align_of_uchar : forall resolve, @align_of resolve T_uchar = Some 1%N.
 
-    (* Requirememnt is too strong, we'd want just [valid_ptr p]; see comment
-    above on [aligned_ptr] and [mem_inj_own]. *)
+    (* Requirememnt is too strong, we'd want just [(strict_)valid_ptr p]; see comment
+    above on [aligned_ptr] and [mem_inj_own].
+    XXX: this assumes that casting to uchar preserves the pointer.
+    *)
     Lemma valid_type_uchar resolve p (Hnn : p <> nullptr) va :
-      pinned_ptr va p |-- type_ptr (resolve := resolve) T_uchar p.
+      pinned_ptr va p ⊢
+      valid_ptr (p .., o_sub resolve T_uchar 1) -∗
+      type_ptr (resolve := resolve) T_uchar p.
     Proof.
-      iIntros "#P".
+      iIntros "#P #V".
       iApply (pinned_ptr_type_divide_2 (n := 1)) => //. {
         exact: align_of_uchar. }
       iIntros "!%". exact: N.divide_1_l.

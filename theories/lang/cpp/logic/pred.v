@@ -300,9 +300,10 @@ Module Type CPP_LOGIC (Import CC : CPP_LOGIC_CLASS)
       pinned_ptr va p ⊢
       aligned_ptr n p ∗-∗ [| (n | va)%N |].
 
-    (** this states that the pointer is a pointer to the given type,
-        this is persistent. this implies,
-        - the pointer is valid [type_ptr_valid]
+    (** this states that the pointer [p] is a pointer to the given type,
+        this is persistent. This implies,
+        - the pointer is valid [type_ptr_valid] (and strictly so), and
+          "p + 1" is also valid (while possibly past-the-end) [type_ptr_valid_plus_one].
         - the pointer is not null [type_ptr_nonnull]
         - the pointer is properly aligned [type_ptr_aligned]
      *)
@@ -321,6 +322,8 @@ Module Type CPP_LOGIC (Import CC : CPP_LOGIC_CLASS)
 
     Axiom type_ptr_valid : forall resolve ty p,
       type_ptr (resolve := resolve) ty p |-- valid_ptr p.
+    Axiom type_ptr_valid_plus_one : forall resolve ty p,
+      type_ptr (resolve := resolve) ty p |-- valid_ptr (p .., o_sub resolve ty 1).
     Axiom type_ptr_nonnull : forall resolve ty p,
       type_ptr (resolve := resolve) ty p |-- [| p <> nullptr |].
   End with_cpp.
