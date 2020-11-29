@@ -297,7 +297,7 @@ Module Type CPP_LOGIC (Import CC : CPP_LOGIC_CLASS) (Import PTR : PTRS_FULL).
     (** this states that the pointer is a pointer to the given type,
         this is persistent. this implies,
         - the pointer is valid [type_ptr_valid]
-        - the pointer is not null
+        - the pointer is not null [type_ptr_nonnull]
         - the pointer is properly aligned [type_ptr_aligned]
      *)
     Parameter type_ptr : forall {resolve : genv} (c: type), ptr -> mpred.
@@ -315,6 +315,8 @@ Module Type CPP_LOGIC (Import CC : CPP_LOGIC_CLASS) (Import PTR : PTRS_FULL).
 
     Axiom type_ptr_valid : forall resolve ty p,
       type_ptr (resolve := resolve) ty p |-- valid_ptr p.
+    Axiom type_ptr_nonnull : forall resolve ty p,
+      type_ptr (resolve := resolve) ty p |-- [| p <> nullptr |].
   End with_cpp.
 
 End CPP_LOGIC.
