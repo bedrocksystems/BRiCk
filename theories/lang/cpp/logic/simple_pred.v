@@ -833,6 +833,20 @@ Module SimpleCPP.
         exact: align_of_uchar. }
       iIntros "!%". exact: N.divide_1_l.
     Qed.
+
+(*
+    Instance tptsto_type_ptr resolve ty q p v align
+      (Hal : align_of (resolve := resolve) ty = Some align) :
+      Observe (type_ptr (resolve := resolve) ty p)
+        (tptsto (σ := resolve) ty q p v).
+    Proof.
+      apply: observe_intro_persistent.
+      rewrite /tptsto /type_ptr.
+      f_equiv.
+      iDestruct 1 as (oa) "(? & #$ & ?)".
+      iExists align. iFrame (Hal).
+    Abort. *)
+
     (* todo(gmm): this isn't accurate, but it is sufficient to show that the axioms are
     instantiatable. *)
     Definition identity {σ : genv} (this : globname) (most_derived : option globname)
