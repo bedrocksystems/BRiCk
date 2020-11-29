@@ -573,7 +573,7 @@ Module SimpleCPP.
     (** heap points to *)
     (* Auxiliary definitions.
       They're not exported, so we don't give them a complete theory;
-      however, some of their proofs *)
+      however, some of their proofs can be done via TC inference *)
     Local Definition addr_encodes
         (σ : genv) (t : type) (q : Qp) (a : addr) (v : val) (vs : list runtime_val) :=
       encodes σ t v vs ** bytes a vs q ** vbytes a vs q.
@@ -755,6 +755,8 @@ Module SimpleCPP.
        provides_storage res newp aty ** pinned_ptr va res |-- pinned_ptr va newp.
     Proof. iIntros (????) "[-> $]". Qed.
 
+    (* XXX: with this definition, we cannot prove all pointers have alignment 1. Again, fix by replacing
+    mem_inj_own with a pure function of pointers (returning [option vaddr]). *)
     Definition aligned_ptr (n : N) (p : ptr) : mpred :=
       [| p = nullptr |] \\//
       Exists (o : option addr), mem_inj_own p o **
