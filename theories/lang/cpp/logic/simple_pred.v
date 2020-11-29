@@ -770,6 +770,7 @@ Module SimpleCPP.
     Qed.
 
     Definition type_ptr {resolve : genv} (ty : type) (p : ptr) : mpred :=
+      (* To decide: do we want the "p nonnull" clause? *)
       [| p <> nullptr |] **
       Exists align, [| @align_of resolve ty = Some align |] ** aligned_ptr align p.
     Instance type_ptr_persistent σ p ty : Persistent (type_ptr (resolve:=σ) ty p) := _.
@@ -778,9 +779,8 @@ Module SimpleCPP.
 
     Lemma type_ptr_aligned σ ty p :
       type_ptr (resolve := σ) ty p |--
-      [| p <> nullptr |] **
       Exists align, [| @align_of σ ty = Some align |] ** aligned_ptr align p.
-    Proof. done. Qed.
+    Proof. by iDestruct 1 as "[_ $]". Qed.
 
     (* This lemma is unused; it confirms we can lift the other half of
     [pinned_ptr_aligned_divide], but we don't expose this. *)

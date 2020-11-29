@@ -310,7 +310,6 @@ Module Type CPP_LOGIC (Import CC : CPP_LOGIC_CLASS) (Import PTR : PTRS_FULL).
 
     Axiom type_ptr_aligned : forall σ ty p,
       type_ptr (resolve := σ) ty p |--
-      [| p <> nullptr |] **
       Exists align, [| @align_of σ ty = Some align |] ** aligned_ptr align p.
   End with_cpp.
 
@@ -411,7 +410,7 @@ Section with_cpp.
     Observe2 [| (n | va)%N |] (pinned_ptr va p) (type_ptr (resolve := σ) ty p).
   Proof.
     apply: observe_2_intro_persistent.
-    rewrite type_ptr_aligned Hal /=. iIntros "P"; iDestruct 1 as (? ? [= <-]) "A".
+    rewrite type_ptr_aligned Hal /=. iIntros "P"; iDestruct 1 as (? [= <-]) "A".
     iApply (pinned_ptr_aligned_divide with "P A").
   Qed.
 End with_cpp.
