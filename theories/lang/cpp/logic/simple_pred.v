@@ -720,6 +720,12 @@ Module SimpleCPP.
       by iDestruct (observe_2_elim_pure (Some va = Some va') with "A B") as %[= ->].
     Qed.
 
+    (* Not true in the current model, requires making pinned_ptr part of pointers. *)
+    Axiom offset_pinned_ptr : forall resolve o n va p,
+      eval_offset resolve o = Some n ->
+      valid_ptr (p .., o) |--
+      pinned_ptr va p -* pinned_ptr (Z.to_N (Z.of_N va + n)) (p .., o).
+
     Instance pinned_ptr_valid va p :
       Observe (valid_ptr p) (pinned_ptr va p).
     Proof. apply: observe_intro_persistent. iDestruct 1 as "[$ _]". Qed.

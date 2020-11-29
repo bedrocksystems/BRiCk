@@ -276,6 +276,11 @@ Module Type CPP_LOGIC (Import CC : CPP_LOGIC_CLASS)
                 (Forall v' vs', @encodes  σ ty v' vs' -* vbytes va vs' 1 -*
                                 |={M}=> @tptsto σ ty 1 p v').
 
+    Axiom offset_pinned_ptr : forall resolve o n va p,
+      PTRI.eval_offset resolve o = Some n ->
+      valid_ptr (p .., o) |--
+      pinned_ptr va p -* pinned_ptr (Z.to_N (Z.of_N va + n)) (p .., o).
+
     Axiom provides_storage_pinned_ptr : forall res newp aty va,
        provides_storage res newp aty ** pinned_ptr va res |-- pinned_ptr va newp.
 
