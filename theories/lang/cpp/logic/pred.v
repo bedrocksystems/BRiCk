@@ -325,12 +325,19 @@ Module Type CPP_LOGIC (Import CC : CPP_LOGIC_CLASS)
       pinned_ptr va p ⊢
       aligned_ptr n p ∗-∗ [| (n | va)%N |].
 
-    (** this states that the pointer [p] is a pointer to the given type,
-        this is persistent. This implies,
-        - the pointer is valid [type_ptr_valid] (and strictly so), and
-          "p + 1" is also valid (while possibly past-the-end) [type_ptr_valid_plus_one].
-        - the pointer is not null [type_ptr_nonnull]
-        - the pointer is properly aligned [type_ptr_aligned]
+    (**
+      [type_ptr {resolve := resolve} ty p] asserts that [p] points to
+      a (possibly dead) object of type [ty] (in environment [resolve]),
+      as defined by https://eel.is/c++draft/basic.compound#3.1.
+
+      This implies:
+      - the pointer is valid [type_ptr_valid] (and strictly so), and
+        "p + 1" is also valid (while possibly past-the-end) [type_ptr_valid_plus_one].
+      - the pointer is not null [type_ptr_nonnull]
+      - the pointer is properly aligned [type_ptr_aligned]
+
+      [type_ptr] is persistent and survives deallocation of the pointed-to
+      object, like [valid_ptr].
      *)
     Parameter type_ptr : forall {resolve : genv} (c: type), ptr -> mpred.
     Axiom type_ptr_persistent : forall σ p ty,
