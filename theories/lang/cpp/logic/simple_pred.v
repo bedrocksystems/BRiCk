@@ -636,7 +636,7 @@ Module SimpleCPP.
       [| p <> nullptr |] **
       Exists (oa : option addr),
               mem_inj_own p oa **
-              valid_ptr p **
+              valid_ptr p ** (* assert validity of the range! *)
               oaddr_encodes σ t q oa p v.
 
     Theorem tptsto_nonnull {σ} ty q a :
@@ -789,7 +789,13 @@ Module SimpleCPP.
       (* To decide: do we want the "p nonnull" clause? *)
       [| p <> nullptr |] **
       (Exists align, [| @align_of resolve ty = Some align |] ** aligned_ptr align p) **
+
       valid_ptr p ** valid_ptr (p .., o_sub resolve ty 1).
+      (* TODO: inline valid_ptr, and assert validity of the range, like we should do in tptsto!
+      For 0-byte objects, should we assert ownership of one byte, to get character pointers? *)
+      (* alloc_own (alloc_id p) (l, h) **
+      [| l <= ptr_addr p <= ptr_addr (p .., o_sub resolve ty 1) <= h  *)
+
     Instance type_ptr_persistent σ p ty : Persistent (type_ptr (resolve:=σ) ty p) := _.
     Instance type_ptr_affine σ p ty : Affine (type_ptr (resolve:=σ) ty p) := _.
     Instance type_ptr_timeless σ p ty : Timeless (type_ptr (resolve:=σ) ty p) := _.
@@ -833,7 +839,7 @@ Module SimpleCPP.
     above on [aligned_ptr] and [mem_inj_own].
     XXX: this assumes that casting to uchar preserves the pointer.
     *)
-    Lemma valid_type_uchar resolve p (Hnn : p <> nullptr) va :
+    Local Lemma valid_type_uchar resolve p (Hnn : p <> nullptr) va :
       pinned_ptr va p ⊢
       valid_ptr (p .., o_sub resolve T_uchar 1) -∗
       type_ptr (resolve := resolve) T_uchar p.
@@ -854,7 +860,9 @@ Module SimpleCPP.
       rewrite /tptsto /type_ptr.
       f_equiv.
       iDestruct 1 as (oa) "(? & #$ & ?)".
+      iSplit; last admit. (* validity of range. *)
       iExists align. iFrame (Hal).
+      (* alignment of pointer. *)
     Abort. *)
 
     (* todo(gmm): this isn't accurate, but it is sufficient to show that the axioms are
