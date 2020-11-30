@@ -338,6 +338,12 @@ Module Type CPP_LOGIC (Import CC : CPP_LOGIC_CLASS)
 
       [type_ptr] is persistent and survives deallocation of the pointed-to
       object, like [valid_ptr].
+
+      TODO: before a complete object is fully initialized,
+      what [type_ptr] facts are available?
+      Consider http://eel.is/c++draft/basic.memobj#basic.life, especially
+      from http://eel.is/c++draft/basic.memobj#basic.life-1 to
+      http://eel.is/c++draft/basic.memobj#basic.life-4.
      *)
     Parameter type_ptr : forall {resolve : genv} (c: type), ptr -> mpred.
     Axiom type_ptr_persistent : forall σ p ty,
