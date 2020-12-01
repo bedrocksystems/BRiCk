@@ -116,30 +116,30 @@ Module SIMPLE_PTRS_IMPL : PTRS.
   Instance ptr_countable : Countable ptr := _.
   Definition ptr_eq_dec' := ptr_eq_dec.
 
-  Definition offset_paddr : Z -> paddr -> option paddr := λ z pa,
+  Definition offset_vaddr : Z -> vaddr -> option vaddr := λ z pa,
     let sum : Z := (Z.of_N pa + z)%Z in
     guard (0 ≤ sum)%Z; Some (Z.to_N sum).
 
-  Lemma offset_paddr_eq z pa :
+  Lemma offset_vaddr_eq z pa :
     let sum := (Z.of_N pa + z)%Z in
     (0 ≤ sum)%Z ->
-    offset_paddr z pa = Some (Z.to_N sum).
-  Proof. rewrite /offset_paddr/= => /= Hle. rewrite option_guard_True //. Qed.
+    offset_vaddr z pa = Some (Z.to_N sum).
+  Proof. rewrite /offset_vaddr/= => /= Hle. rewrite option_guard_True //. Qed.
 
-  Lemma offset_paddr_eq' {z pa} :
-    offset_paddr z pa <> None ->
-    offset_paddr z pa = Some (Z.to_N (Z.of_N pa + z)).
-  Proof. rewrite /offset_paddr/= => /=. case_option_guard; naive_solver. Qed.
+  Lemma offset_vaddr_eq' {z pa} :
+    offset_vaddr z pa <> None ->
+    offset_vaddr z pa = Some (Z.to_N (Z.of_N pa + z)).
+  Proof. rewrite /offset_vaddr/= => /=. case_option_guard; naive_solver. Qed.
 
-  Lemma offset_paddr_0 pa :
-    offset_paddr 0 pa = Some pa.
-  Proof. rewrite offset_paddr_eq Z.add_0_r ?N2Z.id //. lia. Qed.
+  Lemma offset_vaddr_0 pa :
+    offset_vaddr 0 pa = Some pa.
+  Proof. rewrite offset_vaddr_eq Z.add_0_r ?N2Z.id //. lia. Qed.
 
-  Lemma offset_paddr_combine {pa o o'} :
-    offset_paddr o pa <> None ->
-    offset_paddr o pa ≫= offset_paddr o' = offset_paddr (o + o') pa.
+  Lemma offset_vaddr_combine {pa o o'} :
+    offset_vaddr o pa <> None ->
+    offset_vaddr o pa ≫= offset_vaddr o' = offset_vaddr (o + o') pa.
   Proof.
-    rewrite /offset_paddr => Hval.
+    rewrite /offset_vaddr => Hval.
     by case_option_guard; rewrite /= Z.add_assoc ?Z2N.id.
   Qed.
 
@@ -148,7 +148,7 @@ Module SIMPLE_PTRS_IMPL : PTRS.
     λ z p,
     (* This use of projections in intentional, to get better reduction behavior *)
     let aid := fst p in let pa := snd p in
-    pair aid <$> offset_paddr z pa.
+    pair aid <$> offset_vaddr z pa.
   Arguments offset_ptr' _ !_ /.
 
   Lemma offset_ptr_combine' p o o' :
@@ -157,7 +157,7 @@ Module SIMPLE_PTRS_IMPL : PTRS.
   Proof.
     case: p => [a p] /=.
     rewrite /offset_ptr' /= fmap_None /= option_fmap_bind /compose /= => Hval.
-    rewrite -(offset_paddr_combine Hval) (offset_paddr_eq' Hval) //.
+    rewrite -(offset_vaddr_combine Hval) (offset_vaddr_eq' Hval) //.
   Qed.
 
   Definition offset_ptr__ : Z -> ptr -> ptr :=
@@ -165,7 +165,7 @@ Module SIMPLE_PTRS_IMPL : PTRS.
   Notation offset_ptr_ := offset_ptr__.
 
   Lemma offset_ptr_0__ p : offset_ptr_ 0 p = p.
-  Proof. case: p => [[a p]|//] /=. by rewrite offset_paddr_0. Qed.
+  Proof. case: p => [[a p]|//] /=. by rewrite offset_vaddr_0. Qed.
 
   Lemma offset_ptr_combine {p o o'} :
     offset_ptr_ o p <> invalid_ptr ->
