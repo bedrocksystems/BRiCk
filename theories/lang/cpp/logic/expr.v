@@ -393,9 +393,9 @@ Module Type Expr.
       wp_lval e (fun addr free => Exists addr',
         match erase_qualifiers (type_of e), erase_qualifiers ty with
           | Tnamed from, Tnamed to => (*<-- is this the only case here?*)
-                  (_offsetL (_super from to) (_eqv addr) &~ addr' ** ltrue) //\\
+                  (_offsetL (_super from to) (_eqv addr) &~ addr' ** True) //\\
                   Q (Vptr addr') free
-          | _, _ => lfalse
+          | _, _ => False
         end)
         |-- wp_lval (Ecast Cderived2base (Rvalue, e) ty) Q.
 
@@ -404,9 +404,9 @@ Module Type Expr.
         match erase_qualifiers (type_of e), erase_qualifiers ty with
           | Tnamed from, Tnamed to
           | Tpointer (Tnamed from), Tpointer (Tnamed to) =>
-                  (_offsetL (_super from to) (_eqv addr) &~ addr' ** ltrue) //\\
+                  (_offsetL (_super from to) (_eqv addr) &~ addr' ** True) //\\
                   Q (Vptr addr') free
-          | _, _ => lfalse
+          | _, _ => False
         end)
         |-- wp_prval (Ecast Cderived2base (Rvalue, e) ty) Q.
 
@@ -419,9 +419,9 @@ Module Type Expr.
         match erase_qualifiers (type_of e), erase_qualifiers ty with
           | Tnamed from, Tnamed to => (*<-- is this the only case here?*)
                   (_offsetL (_derived resolve from to) (_eqv addr) &~ addr'
-                            ** ltrue) //\\
+                            ** True) //\\
                   Q (Vptr addr') free
-          | _, _ => lfalse
+          | _, _ => False
         end)
         |-- wp_lval (Ecast Cbase2derived (Rvalue, e) ty) Q.
 
@@ -431,9 +431,9 @@ Module Type Expr.
           | Tnamed from, Tnamed to
           | Tpointer (Tnamed from), Tpointer (Tnamed to) =>
                   (_offsetL (_derived resolve from to) (_eqv addr) &~ addr'
-                            ** ltrue) //\\
+                            ** True) //\\
                   Q (Vptr addr') free
-          | _, _ => lfalse
+          | _, _ => False
         end)
         |-- wp_prval (Ecast Cbase2derived (Rvalue, e) ty) Q.
 
