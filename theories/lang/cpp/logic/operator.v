@@ -40,17 +40,19 @@ Definition eval_ptr_int_op (bo : BinOp) (f : Z -> Z) : Prop :=
                (Tpointer t) (Tint w s) (Tpointer t)
                (Vptr p)     (Vint o)   (Vptr p').
 
+Local Notation Unfold x tm :=
+  ltac:(let H := eval unfold x in tm in exact H) (only parsing).
 (* lhs + rhs: one of rhs or lhs is a pointer to completely-defined object type,
    the other has integral or unscoped enumeration type. In this case,
    the result type has the type of the pointer. (rhs has a pointer type) *)
 Axiom eval_ptr_int_add :
-  ltac:(let x := eval hnf in (eval_ptr_int_op Badd (fun x => x)) in refine x).
+  Unfold eval_ptr_int_op (eval_ptr_int_op Badd (fun x => x)).
 
 (* lhs - rhs: lhs is a pointer to completely-defined object type, rhs
    has integral or unscoped enumeration type. In this case, the result
    type has the type of the pointer. *)
 Axiom eval_ptr_int_sub :
-  ltac:(let x := eval hnf in (eval_ptr_int_op Bsub (fun x => -x)%Z) in refine x).
+  Unfold eval_ptr_int_op (eval_ptr_int_op Bsub (fun x => -x)%Z).
 
 Definition eval_int_ptr_op (bo : BinOp) (f : Z -> Z) : Prop :=
   forall resolve t w s p o p' sz,
@@ -64,7 +66,7 @@ Definition eval_int_ptr_op (bo : BinOp) (f : Z -> Z) : Prop :=
    the other has integral or unscoped enumeration type. In this case,
    the result type has the type of the pointer. (lhs has a pointer type) *)
 Axiom eval_int_ptr_add :
-  ltac:(let x := eval hnf in (eval_int_ptr_op Badd (fun x => x)) in refine x).
+  Unfold eval_int_ptr_op (eval_int_ptr_op Badd (fun x => x)).
 
 (* lhs - rhs: both lhs and rhs must be pointers to the same
    completely-defined object types. *)
