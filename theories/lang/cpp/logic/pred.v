@@ -457,13 +457,11 @@ Section with_cpp.
   Definition type_of_spec `(fs : function_spec) : type :=
     normalize_type (Tfunction (cc:=fs.(fs_cc)) fs.(fs_return) fs.(fs_arguments)).
 
-  (* Not an instance because of the [align_of] side condition. *)
   Lemma pinned_ptr_type_divide_1 va n σ p ty
     (Hal : align_of (resolve := σ) ty = Some n) :
-    Observe2 [| (n | va)%N |] (pinned_ptr va p) (type_ptr (resolve := σ) ty p).
+    type_ptr (resolve := σ) ty p ⊢ pinned_ptr va p -∗ [| (n | va)%N |].
   Proof.
-    apply: observe_2_intro_persistent.
-    rewrite type_ptr_aligned Hal /=. iIntros "P"; iDestruct 1 as (? [= <-]) "A".
+    rewrite type_ptr_aligned Hal /=. iDestruct 1 as (? [= <-]) "A". iIntros "P".
     iApply (pinned_ptr_aligned_divide with "P A").
   Qed.
 End with_cpp.
