@@ -54,7 +54,13 @@ Module canonical_tu.
     let (tu, sz) := σ in Build_genv_canon (tu_to_canon tu) sz.
 End canonical_tu.
 
-(** A consistency proof for [PTRS] *)
+(**
+A simple consistency proof for [PTRS]; this one is inspired by Cerberus's
+model of pointer provenance, and resembles CompCert's model.
+
+Compared to our "real" consistency proof [PTRS_IMPL], this proof is easier to
+extend, but it's unclear how to extend it to support [VALID_PTR_AXIOMS].
+*)
 Module SIMPLE_PTRS_IMPL : PTRS.
   Definition alloc_id := N.
   Instance alloc_id_eq_dec : EqDecision alloc_id := _.
@@ -160,9 +166,6 @@ Module SIMPLE_PTRS_IMPL : PTRS.
   Lemma offset_ptr_dot p o1 o2 :
     (p .., (o1 .., o2) = p .., o1 .., o2)%ptr.
   Proof. apply foldr_app. Qed.
-    (* case: p o1 o2 => [p|] [o1|] [o2|] //=.
-    rewrite _ffset_ptr_combine_ //.
-  Admitted. *)
 
   Definition opt_to_off oo : offset := [oo].
   Definition o_field σ f : offset := opt_to_off (offset_of σ f.(f_type) f.(f_name)).
@@ -216,16 +219,10 @@ Module SIMPLE_PTRS_IMPL : PTRS.
 
   (* Caveat: This model of [global_ptr] isn't correct, beyond proving
   [global_ptr]'s isn't contradictory.
-   satisfies the
-  axioms shown here.
-  isn't ideal
-  fails if [o] can be repeated across different units,
-  say with internal linkage, but
-
-  This model would fail proving that [global_ptr] is injective, or
-  that
+  This model would fail proving that [global_ptr] is injective, that objects
+  are disjoint, or that
   [global_ptr tu1 "staticR" |-> anyR T 1%Qp  ... ∗
-   global_ptr tu2 "staticR" |-> anyR T 1%Qp  ...] holds at startup.
+   global_ptr tu2 "staticR" |-> anyR T 1%Qp  ...] actually holds at startup.
   *)
   Definition global_ptr (tu : translation_unit) (o : obj_name) : ptr :=
     let obj : option ObjValue := tu !! o in
@@ -254,7 +251,11 @@ Module SIMPLE_PTRS_IMPL : PTRS.
 
 End SIMPLE_PTRS_IMPL.
 
-(** Another consistency proof for [PTRS] *)
+(**
+Another (incomplete) consistency proof for [PTRS], based on Krebbers' PhD thesis, and
+other formal models of C++ using structured pointers.
+This is more complex than [SIMPLE_PTRS_IMPL], but will be necessary to justify [VALID_PTR_AXIOMS].
+*)
 Module PTRS_IMPL : PTRS.
   Import canonical_tu.
 
