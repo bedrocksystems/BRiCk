@@ -24,19 +24,19 @@ Axiom eval_ptr_eq :
     a = Vptr av ->
     b = Vptr bv ->
     c = (if ptr_eq_dec av bv then 1 else 0)%Z ->
-    eval_binop_pure Beq (Tpointer ty) (Tpointer ty) Tbool a b (Vint c).
+    |-- eval_binop Beq (Tpointer ty) (Tpointer ty) Tbool a b (Vint c).
 Axiom eval_ptr_neq :
   forall ty a b av bv c,
     a = Vptr av ->
     b = Vptr bv ->
     c = (if ptr_eq_dec av bv then 0 else 1)%Z ->
-    eval_binop_pure Bneq (Tpointer ty) (Tpointer ty) Tbool a b (Vint c).
+    |-- eval_binop Bneq (Tpointer ty) (Tpointer ty) Tbool a b (Vint c).
 
 Definition eval_ptr_int_op (bo : BinOp) (f : Z -> Z) : Prop :=
   forall resolve t w s p o p' sz,
     size_of resolve t = Some sz ->
     p' = offset_ptr_ (f o * Z.of_N sz) p ->
-    eval_binop_pure bo
+    |-- eval_binop bo
                (Tpointer t) (Tint w s) (Tpointer t)
                (Vptr p)     (Vint o)   (Vptr p').
 
@@ -58,7 +58,7 @@ Definition eval_int_ptr_op (bo : BinOp) (f : Z -> Z) : Prop :=
   forall resolve t w s p o p' sz,
     size_of resolve t = Some sz ->
     p' = offset_ptr_ (f o * Z.of_N sz) p ->
-    eval_binop_pure bo
+    |-- eval_binop bo
                (Tint w s) (Tpointer t) (Tpointer t)
                (Vint o)   (Vptr p)     (Vptr p').
 
@@ -75,7 +75,7 @@ Axiom eval_ptr_ptr_sub :
     size_of resolve t = Some sz ->
     p = offset_ptr_ (Z.of_N sz * o1) base ->
     p' = offset_ptr_ (Z.of_N sz * o2) base ->
-    eval_binop_pure Bsub
+    |-- eval_binop Bsub
                (Tpointer t) (Tpointer t) (Tint w Signed)
                (Vptr p)     (Vptr p')    (Vint (o1 - o2)).
 
