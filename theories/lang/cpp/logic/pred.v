@@ -111,6 +111,31 @@ Module Type CPP_LOGIC (Import CC : CPP_LOGIC_CLASS)
     Context `{Σ : cpp_logic}.
 
     (* valid pointers allow for accessing one past the end of a structure/array *)
+    (**
+      [valid_ptr p] is a persistent assertion that [p] is a valid pointer, that is:
+      - [p] can be [nullptr]
+      - [p] can point to a function or a (possibly dead) object [o]
+      - [p] can be past-the-end of a (possibly dead) object [o].
+      In particular, [valid_ptr p] prevents producing [p] by incrementing
+      past-the-end pointers into overflow territory.
+
+      We say that pointers to an object [o] or past-the-end of an object [o]
+      become _dangling_ when [o] is deallocated; non-dangling pointers are live.
+
+      Our definition is based upon the C++ standard
+      (https://eel.is/c++draft/basic.compound#3.1), but we treat dangling
+      pointers differently. In the standard, dangling pointers become invalid
+      pointer values [note 1]; it's implementation-defined whether invalid pointer
+      values are (non-copyable) trap representations. Instead, we:
+      - restrict to implementations where dangling pointers are not trap
+        representations (which is allowed, since this choice is implementation-defined).
+      - allow dangling pointers to be valid, as we track liveness of [o]
+        through separate, non-persistent predicates.
+
+      [Note 1]. See https://eel.is/c++draft/basic.memobj#basic.stc.general-4 for C++,
+      and http://www.open-std.org/jtc1/sc22/wg14/www/docs/n2369.pdf for
+      discussion in the context of the C standard.
+    *)
     Parameter valid_ptr : ptr -> mpred.
 
     Axiom valid_ptr_persistent : forall p, Persistent (valid_ptr p).
