@@ -63,9 +63,12 @@ End fractional.
 
 (* Stand-in for an actual model of PTRS_FULL.
 Ensures that everything needed is properly functorized. *)
-Declare Module PTRS_IMPL : PTRS.
+Module Type PTRS_I := PTRS <+ PTR_INTERNAL.
+Declare Module PTRS_IMPL : PTRS_I.
 Declare Module RAW_BYTES_IMPL : RAW_BYTES.
-Module Import PTRS_FULL_IMPL : PTRS_FULL := PTRS_IMPL <+ RAW_BYTES_IMPL <+ VAL_MIXIN.
+Module Type PTRS_FULL_I := PTRS_FULL <+ PTR_INTERNAL.
+Module Import PTRS_FULL_IMPL : PTRS_FULL_I :=
+  PTRS_IMPL <+ RAW_BYTES_IMPL <+ VAL_MIXIN.
 
 (** A consistency proof for [CPP_LOGIC_CLASS] *)
 Module SimpleCPP_BASE <: CPP_LOGIC_CLASS.
@@ -570,7 +573,7 @@ Module SimpleCPP.
     (** heap points to *)
     (* Auxiliary definitions.
       They're not exported, so we don't give them a complete theory;
-      however, some of their proofs *)
+      however, some of their proofs can be done via TC inference *)
     Local Definition addr_encodes
         (σ : genv) (t : type) (q : Qp) (a : addr) (v : val) (vs : list runtime_val) :=
       encodes σ t v vs ** bytes a vs q ** vbytes a vs q.
@@ -633,7 +636,7 @@ Module SimpleCPP.
       [| p <> nullptr |] **
       Exists (oa : option addr),
               mem_inj_own p oa **
-              valid_ptr p **
+              valid_ptr p ** (* assert validity of the range! *)
               oaddr_encodes σ t q oa p v.
 
     Theorem tptsto_nonnull {σ} ty q a :
@@ -701,8 +704,9 @@ Module SimpleCPP.
     (** physical representation of pointers
      *)
     Definition pinned_ptr (va : N) (p : ptr) : mpred :=
-      [| p = nullptr /\ va = 0%N |] \\//
-      ([| p <> nullptr |] ** mem_inj_own p (Some va)).
+      valid_ptr p **
+      ([| p = nullptr /\ va = 0%N |] \\//
+      ([| p <> nullptr |] ** mem_inj_own p (Some va))).
 
     Instance pinned_ptr_persistent va p : Persistent (pinned_ptr va p) := _.
     Instance pinned_ptr_affine va p : Affine (pinned_ptr va p) := _.
@@ -712,9 +716,19 @@ Module SimpleCPP.
     Proof.
       apply: observe_2_intro_persistent.
       iIntros "A B".
-      iDestruct "A" as "[[->->] | [% A]]"; iDestruct "B" as "[[%->] | [% B]]" => //.
+      iDestruct "A" as "[_ [[->->] | [% A]]]"; iDestruct "B" as "[_ [[%->] | [% B]]]" => //.
       by iDestruct (observe_2_elim_pure (Some va = Some va') with "A B") as %[= ->].
     Qed.
+
+    (* Not true in the current model, requires making pinned_ptr part of pointers. *)
+    Axiom offset_pinned_ptr : forall resolve o n va p,
+      eval_offset resolve o = Some n ->
+      valid_ptr (p .., o) |--
+      pinned_ptr va p -* pinned_ptr (Z.to_N (Z.of_N va + n)) (p .., o).
+
+    Instance pinned_ptr_valid va p :
+      Observe (valid_ptr p) (pinned_ptr va p).
+    Proof. apply: observe_intro_persistent. iDestruct 1 as "[$ _]". Qed.
 
     Theorem pinned_ptr_borrow : forall {σ} ty p v va M,
       @tptsto σ ty 1 p v ** pinned_ptr va p ** [| p <> nullptr |] |--
@@ -723,7 +737,7 @@ Module SimpleCPP.
                               |={M}=> @tptsto σ ty 1 p v').
     Proof.
       intros. iIntros "(TP & PI & %)".
-      iDestruct "PI" as "[[% %]|[% MJ]]"; [done| ].
+      iDestruct "PI" as "[_ [[% %]|[% MJ]]]"; [done| ].
       iDestruct "TP" as (_ ma) "[MJ' [VP TP]]".
       iDestruct (mem_inj_own_agree with "MJ MJ'") as %<-.
       iDestruct "TP" as (vs) "(#EN & Bys & VBys)".
@@ -741,16 +755,115 @@ Module SimpleCPP.
        provides_storage res newp aty ** pinned_ptr va res |-- pinned_ptr va newp.
     Proof. iIntros (????) "[-> $]". Qed.
 
-    Definition type_ptr {resolve : genv} (c: type) (p : ptr) : mpred :=
-      Exists (o : option addr) n,
-               [| @align_of resolve c = Some n |] ** mem_inj_own p o **
+    (* XXX: with this definition, we cannot prove all pointers have alignment 1. Again, fix by replacing
+    mem_inj_own with a pure function of pointers (returning [option vaddr]). *)
+    Definition aligned_ptr (n : N) (p : ptr) : mpred :=
+      [| p = nullptr |] \\//
+      Exists (o : option addr), mem_inj_own p o **
                match o with
+               | Some va => [| (n | va)%N |]
+               (* This clause comes from [type_ptr]; here, it means that
+               non-pinned pointers are indefinitely aligned.
+               However, the whole theory of [aligned_ptr] demands [pinned_ptr], so this is not a real problem. *)
                | None => ltrue
-               | Some addr => [| N.modulo addr n = 0%N |]
                end.
+    Instance aligned_ptr_persistent n p : Persistent (aligned_ptr n p) := _.
+    Instance aligned_ptr_affine n p : Affine (aligned_ptr n p) := _.
+    Instance aligned_ptr_timeless n p : Timeless (aligned_ptr n p) := _.
 
-    Instance type_ptr_persistent σ p ty :
-      Persistent (type_ptr (resolve:=σ) ty p) := _.
+    Lemma pinned_ptr_aligned_divide va n p :
+      pinned_ptr va p ⊢
+      aligned_ptr n p ∗-∗ [| (n | va)%N |].
+    Proof.
+      rewrite /pinned_ptr /aligned_ptr /=.
+      iDestruct 1 as "[_ [[-> ->]|[% MO1]]]". {
+        iSplit; last by iIntros; iLeft.
+        by iIntros "_ !%"; exact: N.divide_0_r.
+      }
+      iSplit; last by iIntros; iRight; eauto.
+      iDestruct 1 as "[->|H]"; first done; iDestruct "H" as (o) "[MO2 Ha]".
+      by iDestruct (mem_inj_own_agree with "MO1 MO2") as "<-".
+    Qed.
+
+    Definition type_ptr {resolve : genv} (ty : type) (p : ptr) : mpred :=
+      (* To decide: do we want the "p nonnull" clause? *)
+      [| p <> nullptr |] **
+      (Exists align, [| @align_of resolve ty = Some align |] ** aligned_ptr align p) **
+
+      valid_ptr p ** valid_ptr (p .., o_sub resolve ty 1).
+      (* TODO: inline valid_ptr, and assert validity of the range, like we should do in tptsto!
+      For 0-byte objects, should we assert ownership of one byte, to get character pointers? *)
+      (* alloc_own (alloc_id p) (l, h) **
+      [| l <= ptr_addr p <= ptr_addr (p .., o_sub resolve ty 1) <= h  *)
+
+    Instance type_ptr_persistent σ p ty : Persistent (type_ptr (resolve:=σ) ty p) := _.
+    Instance type_ptr_affine σ p ty : Affine (type_ptr (resolve:=σ) ty p) := _.
+    Instance type_ptr_timeless σ p ty : Timeless (type_ptr (resolve:=σ) ty p) := _.
+
+    Lemma type_ptr_valid resolve ty p :
+      type_ptr (resolve := resolve) ty p |-- valid_ptr p.
+    Proof. iDestruct 1 as "(_ & _ & $ & _)". Qed.
+
+    Lemma type_ptr_valid_plus_one resolve ty p :
+      (* size_of resolve ty = Some sz -> *)
+      type_ptr (resolve := resolve) ty p |--
+      valid_ptr (p .., o_sub resolve ty 1).
+    Proof. iDestruct 1 as "(_ & _ & _ & $)". Qed.
+
+    Lemma type_ptr_nonnull resolve ty p :
+      type_ptr (resolve := resolve) ty p |-- [| p <> nullptr |].
+    Proof. iDestruct 1 as "($ & _ & _)". Qed.
+
+    Lemma type_ptr_aligned σ ty p :
+      type_ptr (resolve := σ) ty p |--
+      Exists align, [| @align_of σ ty = Some align |] ** aligned_ptr align p.
+    Proof. by iDestruct 1 as "(_ & $ & _)". Qed.
+
+    (* This lemma is unused; it confirms we can lift the other half of
+    [pinned_ptr_aligned_divide], but we don't expose this. *)
+    Local Lemma pinned_ptr_type_divide_2 {va n σ p ty}
+      (Hal : align_of (resolve := σ) ty = Some n) (Hnn : p <> nullptr) :
+      pinned_ptr va p ⊢ valid_ptr (p .., o_sub σ ty 1) -∗
+      [| (n | va)%N |] -∗ type_ptr (resolve := σ) ty p.
+    Proof.
+      rewrite /type_ptr Hal /=. iIntros "P $ %HvaAl"; iFrame (Hnn).
+      iDestruct (pinned_ptr_valid with "P") as "#$".
+      iExists _; iSplit; first done.
+      by iApply (pinned_ptr_aligned_divide with "P").
+    Qed.
+
+    (* XXX move *)
+    Axiom align_of_uchar : forall resolve, @align_of resolve T_uchar = Some 1%N.
+
+    (* Requirememnt is too strong, we'd want just [(strict_)valid_ptr p]; see comment
+    above on [aligned_ptr] and [mem_inj_own].
+    XXX: this assumes that casting to uchar preserves the pointer.
+    *)
+    Local Lemma valid_type_uchar resolve p (Hnn : p <> nullptr) va :
+      pinned_ptr va p ⊢
+      valid_ptr (p .., o_sub resolve T_uchar 1) -∗
+      type_ptr (resolve := resolve) T_uchar p.
+    Proof.
+      iIntros "#P #V".
+      iApply (pinned_ptr_type_divide_2 (n := 1)) => //. {
+        exact: align_of_uchar. }
+      iIntros "!%". exact: N.divide_1_l.
+    Qed.
+
+(*
+    Instance tptsto_type_ptr resolve ty q p v align
+      (Hal : align_of (resolve := resolve) ty = Some align) :
+      Observe (type_ptr (resolve := resolve) ty p)
+        (tptsto (σ := resolve) ty q p v).
+    Proof.
+      apply: observe_intro_persistent.
+      rewrite /tptsto /type_ptr.
+      f_equiv.
+      iDestruct 1 as (oa) "(? & #$ & ?)".
+      iSplit; last admit. (* validity of range. *)
+      iExists align. iFrame (Hal).
+      (* alignment of pointer. *)
+    Abort. *)
 
     (* todo(gmm): this isn't accurate, but it is sufficient to show that the axioms are
     instantiatable. *)
@@ -768,5 +881,5 @@ Module SimpleCPP.
 
 End SimpleCPP.
 
-Module Type SimpleCPP_INTF :=  SimpleCPP_BASE <+ PTRS_FULL <+ CPP_LOGIC.
+Module Type SimpleCPP_INTF := SimpleCPP_BASE <+ PTRS_FULL_I <+ CPP_LOGIC.
 Module L : SimpleCPP_INTF := SimpleCPP.

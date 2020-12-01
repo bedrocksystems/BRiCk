@@ -394,9 +394,7 @@ Definition glob_addr (σ : genv) (o : obj_name) : option ptr :=
 Module Type PTR_INTERNAL (Import P : PTRS).
   Parameter eval_offset : genv -> offset -> option Z.
 
-  (* NOTE this API is especially non-sensical, since pointers and offsets
-  contain no translation unit, but eval_offset does *)
-  Axiom offset_ptr_eq : forall tu p o,
+  Axiom _offset_ptr_eq : forall tu p o,
     Some (p .., o)%ptr = flip offset_ptr_ p <$> eval_offset tu o.
 
   (* NOTE: the multiplication is flipped from path_pred. *)
@@ -404,12 +402,19 @@ Module Type PTR_INTERNAL (Import P : PTRS).
     eval_offset resolve (o_sub resolve ty i) =
       (fun n => i * Z.of_N n) <$> size_of resolve ty.
 
-  Lemma o_sub_collapse p i n ty resolve
+  Lemma _o_sub_collapse p i n ty resolve
     (Hsz : size_of resolve ty = Some n) :
     (p .., o_sub resolve ty i)%ptr = offset_ptr_ (i * Z.of_N n) p.
   Proof.
     apply (inj Some).
-    by rewrite (offset_ptr_eq resolve) eval_o_sub Hsz.
+    by rewrite (_offset_ptr_eq resolve) eval_o_sub Hsz.
   Qed.
+
+  #[deprecated(since="2020-11-29", note="Use higher-level APIs and avoid
+  offset_ptr_; this is only migration band-aid.")]
+  Notation offset_ptr_eq := _offset_ptr_eq.
+  #[deprecated(since="2020-11-29", note="Use higher-level APIs and avoid
+  offset_ptr_; this is only migration band-aid.")]
+  Notation o_sub_collapse := _o_sub_collapse.
 End PTR_INTERNAL.
 Declare Module PTR_INTERNAL_AXIOM : PTR_INTERNAL PTRS_FULL_AXIOM.

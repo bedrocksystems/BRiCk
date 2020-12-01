@@ -17,6 +17,7 @@ Require Export bedrock.lang.prelude.addr.
 From iris.base_logic.lib Require Export iprop.
 Require Import iris.bi.monpred.
 From iris.bi.lib Require Import fractional.
+From iris.proofmode Require Import tactics.
 Require Import iris.base_logic.lib.fancy_updates.
 Require Import iris.base_logic.lib.own.
 Require Import iris.base_logic.lib.cancelable_invariants.
@@ -95,7 +96,8 @@ End CPP_LOGIC_CLASS_MIXIN.
 
 Module Type CPP_LOGIC_CLASS := CPP_LOGIC_CLASS_BASE <+ CPP_LOGIC_CLASS_MIXIN.
 
-Module Type CPP_LOGIC (Import CC : CPP_LOGIC_CLASS) (Import PTR : PTRS_FULL).
+Module Type CPP_LOGIC (Import CC : CPP_LOGIC_CLASS)
+  (Import PTR : PTRS_FULL) (PTRI : PTR_INTERNAL PTR).
 
   (* TODO: unify with [raw_byte]. This should just be machine bytes. See also
     cpp2v-core#135. *)
@@ -109,6 +111,31 @@ Module Type CPP_LOGIC (Import CC : CPP_LOGIC_CLASS) (Import PTR : PTRS_FULL).
     Context `{Σ : cpp_logic}.
 
     (* valid pointers allow for accessing one past the end of a structure/array *)
+    (**
+      [valid_ptr p] is a persistent assertion that [p] is a valid pointer, that is:
+      - [p] can be [nullptr]
+      - [p] can point to a function or a (possibly dead) object [o]
+      - [p] can be past-the-end of a (possibly dead) object [o].
+      In particular, [valid_ptr p] prevents producing [p] by incrementing
+      past-the-end pointers into overflow territory.
+
+      We say that pointers to an object [o] or past-the-end of an object [o]
+      become _dangling_ when [o] is deallocated; non-dangling pointers are live.
+
+      Our definition is based upon the C++ standard
+      (https://eel.is/c++draft/basic.compound#3.1), but we treat dangling
+      pointers differently. In the standard, dangling pointers become invalid
+      pointer values [note 1]; it's implementation-defined whether invalid pointer
+      values are (non-copyable) trap representations. Instead, we:
+      - restrict to implementations where dangling pointers are not trap
+        representations (which is allowed, since this choice is implementation-defined).
+      - allow dangling pointers to be valid, as we track liveness of [o]
+        through separate, non-persistent predicates.
+
+      [Note 1]. See https://eel.is/c++draft/basic.memobj#basic.stc.general-4 for C++,
+      and http://www.open-std.org/jtc1/sc22/wg14/www/docs/n2369.pdf for
+      discussion in the context of the C standard.
+    *)
     Parameter valid_ptr : ptr -> mpred.
 
     Axiom valid_ptr_persistent : forall p, Persistent (valid_ptr p).
@@ -166,16 +193,6 @@ Module Type CPP_LOGIC (Import CC : CPP_LOGIC_CLASS) (Import PTR : PTRS_FULL).
     Axiom tptsto_nonvoid : forall {σ} ty (q : Qp) p v,
       Observe [| ty <> Tvoid |] (@tptsto σ ty q p v).
     Global Existing Instance tptsto_nonvoid.
-
-    (** this states that the pointer is a pointer to the given type,
-        this is persistent. this implies,
-        - the address is not null
-        - the address is properly aligned (if it exists in memory)
-     *)
-    Parameter type_ptr: forall {resolve : genv} (c: type), ptr -> mpred.
-    Axiom type_ptr_persistent : forall σ p ty,
-      Persistent (type_ptr (resolve:=σ) ty p).
-    Global Existing Instance type_ptr_persistent.
 
     (** [identity σ this mdc q p] state that [p] is a pointer to a (live)
         object of type [this] that is part of an object of type [mdc].
@@ -284,17 +301,75 @@ Module Type CPP_LOGIC (Import CC : CPP_LOGIC_CLASS) (Import PTR : PTRS_FULL).
                 (Forall v' vs', @encodes  σ ty v' vs' -* vbytes va vs' 1 -*
                                 |={M}=> @tptsto σ ty 1 p v').
 
+    Axiom offset_pinned_ptr : forall resolve o n va p,
+      PTRI.eval_offset resolve o = Some n ->
+      valid_ptr (p .., o) |--
+      pinned_ptr va p -* pinned_ptr (Z.to_N (Z.of_N va + n)) (p .., o).
+
     Axiom provides_storage_pinned_ptr : forall res newp aty va,
        provides_storage res newp aty ** pinned_ptr va res |-- pinned_ptr va newp.
 
     Global Existing Instances
       pinned_ptr_persistent pinned_ptr_affine pinned_ptr_timeless.
+
+    (** [aligned_ptr] states that the pointer (if it exists in memory) has
+    the given alignment. This is persistent.
+     *)
+    Parameter aligned_ptr : forall (n : N) (p : ptr), mpred.
+    Axiom aligned_ptr_persistent : forall n p, Persistent (aligned_ptr n p).
+    Axiom aligned_ptr_affine : forall n p, Affine (aligned_ptr n p).
+    Axiom aligned_ptr_timeless : forall n p, Timeless (aligned_ptr n p).
+    Global Existing Instances aligned_ptr_persistent aligned_ptr_affine aligned_ptr_timeless.
+
+    Axiom pinned_ptr_aligned_divide : forall va n p,
+      pinned_ptr va p ⊢
+      aligned_ptr n p ∗-∗ [| (n | va)%N |].
+
+    (**
+      [type_ptr {resolve := resolve} ty p] asserts that [p] points to
+      a (possibly dead) object of type [ty] (in environment [resolve]),
+      as defined by https://eel.is/c++draft/basic.compound#3.1.
+
+      This implies:
+      - the pointer is valid [type_ptr_valid] (and strictly so), and
+        "p + 1" is also valid (while possibly past-the-end) [type_ptr_valid_plus_one].
+      - the pointer is not null [type_ptr_nonnull]
+      - the pointer is properly aligned [type_ptr_aligned]
+
+      [type_ptr] is persistent and survives deallocation of the pointed-to
+      object, like [valid_ptr].
+
+      TODO: before a complete object is fully initialized,
+      what [type_ptr] facts are available?
+      Consider http://eel.is/c++draft/basic.memobj#basic.life, especially
+      from http://eel.is/c++draft/basic.memobj#basic.life-1 to
+      http://eel.is/c++draft/basic.memobj#basic.life-4.
+     *)
+    Parameter type_ptr : forall {resolve : genv} (c: type), ptr -> mpred.
+    Axiom type_ptr_persistent : forall σ p ty,
+      Persistent (type_ptr (resolve:=σ) ty p).
+    Axiom type_ptr_affine : forall σ p ty,
+      Affine (type_ptr (resolve:=σ) ty p).
+    Axiom type_ptr_timeless : forall σ p ty,
+      Timeless (type_ptr (resolve:=σ) ty p).
+    Global Existing Instances type_ptr_persistent type_ptr_affine type_ptr_timeless.
+
+    Axiom type_ptr_aligned : forall σ ty p,
+      type_ptr (resolve := σ) ty p |--
+      Exists align, [| @align_of σ ty = Some align |] ** aligned_ptr align p.
+
+    Axiom type_ptr_valid : forall resolve ty p,
+      type_ptr (resolve := resolve) ty p |-- valid_ptr p.
+    Axiom type_ptr_valid_plus_one : forall resolve ty p,
+      type_ptr (resolve := resolve) ty p |-- valid_ptr (p .., o_sub resolve ty 1).
+    Axiom type_ptr_nonnull : forall resolve ty p,
+      type_ptr (resolve := resolve) ty p |-- [| p <> nullptr |].
   End with_cpp.
 
 End CPP_LOGIC.
 
 Declare Module LC : CPP_LOGIC_CLASS.
-Declare Module L : CPP_LOGIC LC PTRS_FULL_AXIOM.
+Declare Module L : CPP_LOGIC LC PTRS_FULL_AXIOM PTR_INTERNAL_AXIOM.
 Export LC L.
 
 (* Pointer axioms. XXX Not modeled for now. *)
@@ -382,4 +457,11 @@ Section with_cpp.
   Definition type_of_spec `(fs : function_spec) : type :=
     normalize_type (Tfunction (cc:=fs.(fs_cc)) fs.(fs_return) fs.(fs_arguments)).
 
+  Lemma pinned_ptr_type_divide_1 va n σ p ty
+    (Hal : align_of (resolve := σ) ty = Some n) :
+    type_ptr (resolve := σ) ty p ⊢ pinned_ptr va p -∗ [| (n | va)%N |].
+  Proof.
+    rewrite type_ptr_aligned Hal /=. iDestruct 1 as (? [= <-]) "A". iIntros "P".
+    iApply (pinned_ptr_aligned_divide with "P A").
+  Qed.
 End with_cpp.
