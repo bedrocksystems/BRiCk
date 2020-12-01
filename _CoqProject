@@ -79,7 +79,8 @@ theories/lang/cpp/compile.v
 theories/lang/cpp.v
 
 # "consistency" proofs
-theories/lang/cpp/logic/simple_pred.v
+theories/lang/cpp/model/simple_pointers.v
+theories/lang/cpp/model/simple_pred.v
 
 # misc
 theories/lang/bi/bytes_at.v
