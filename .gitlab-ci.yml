@@ -36,6 +36,7 @@ stages:
   - build
   - test
   - release
+  - trigger-cpp2v-build
   - prepare_pages
   - pages
 
@@ -132,6 +133,18 @@ release_latest:
 #     - build_previous
 #   variables:
 #     LLVM_MAJ_VER: ${LLVM_PREV_MAJ_VER}
+
+# This provides new changes in cpp2v-core:master to the consumers of
+# cpp2v-$(LLVM_MAJ_VER).zip.
+trigger-cpp2v-build:
+  stage: trigger-cpp2v-build
+  needs:
+    - build_latest
+  trigger:
+    project: bedrocksystems/cpp2v
+    branch: master
+  only:
+    - master
 
 prepare_pages:
   image: registry.gitlab.com/bedrocksystems/docker-image:fm-docs
