@@ -39,6 +39,9 @@ Module canonical_tu.
   Instance translation_unit_canon_eq_dec : EqDecision translation_unit_canon.
   Proof. solve_decision. Qed.
 
+  Instance symbol_canon_lookup : Lookup obj_name ObjValue translation_unit_canon :=
+    fun k m => m.(symbols) !! k.
+
   Record genv_canon : Set := Build_genv_canon
   { genv_tu : translation_unit_canon
     (* ^ the [translation_unit] *)
@@ -54,6 +57,39 @@ Module canonical_tu.
     let (tu, sz) := σ in Build_genv_canon (tu_to_canon tu) sz.
 End canonical_tu.
 
+Definition null_alloc_id : alloc_id := MkAllocId 0.
+Definition invalid_alloc_id : alloc_id := MkAllocId 1.
+
+(*
+Utility function, used to emulate [global_ptr] without a linker.
+This is a really bad model and it'd fail a bunch of sanity checks.
+
+Caveat: a model this to model [global_ptr] isn't correct, beyond proving
+[global_ptr]'s isn't contradictory.
+This model would fail proving that [global_ptr] is injective, that objects
+are disjoint, or that
+[global_ptr tu1 "staticR" |-> anyR T 1%Qp  ... ∗
+  global_ptr tu2 "staticR" |-> anyR T 1%Qp  ...] actually holds at startup.
+*)
+Local Definition global_ptr_encode_ov (o : obj_name) (obj : option ObjValue) :
+    option (alloc_id * vaddr) :=
+  match obj with
+  | Some _ => let p := Npos (encode o) in Some (MkAllocId p, p)
+  | None => None
+  end.
+
+(*
+A slightly better model might be something like the following, but we don't
+bother defining this [Countable] instance. And this is not a great model
+anyway. *)
+
+(*
+Declare Instance ObjValue_countable: Countable ObjValue.
+Definition global_ptr (tu : translation_unit) (o : obj_name) : ptr :=
+  let obj : option ObjValue := tu !! o in
+  let p := Npos (encode obj) in (mkptr p p).
+*)
+
 (**
 A simple consistency proof for [PTRS]; this one is inspired by Cerberus's
 model of pointer provenance, and resembles CompCert's model.
@@ -62,15 +98,16 @@ Compared to our "real" consistency proof [PTRS_IMPL], this proof is easier to
 extend, but it's unclear how to extend it to support [VALID_PTR_AXIOMS].
 *)
 Module SIMPLE_PTRS_IMPL : PTRS.
-  Definition alloc_id := N.
-  Instance alloc_id_eq_dec : EqDecision alloc_id := _.
-  Instance : Countable alloc_id := _.
-
-  Definition null_alloc_id : N := 0.
-  (* Definition invalid_alloc_id : N := 1. *)
-
-  Definition ptr' : Set := alloc_id * paddr.
+  Definition ptr' : Set := alloc_id * vaddr.
   Definition ptr : Set := option ptr'.
+
+  Declare Scope ptr_scope.
+  Bind Scope ptr_scope with ptr.
+  Delimit Scope ptr_scope with ptr.
+
+  Definition ptr_alloc_id : ptr -> option alloc_id := fmap fst.
+  Definition ptr_vaddr : ptr -> option vaddr := fmap snd.
+
   Definition invalid_ptr : ptr := None.
   Definition mkptr a n : ptr := Some (a, n).
   Definition nullptr : ptr := mkptr null_alloc_id 0.
@@ -137,31 +174,27 @@ Module SIMPLE_PTRS_IMPL : PTRS.
   The list of offsets in [[p; o_1; ...; o_n]] is represented as [[o_n; ... o_1]].
   This way, we can cons new offsets to the head, and consume them at the tail. *)
   Definition offset := list (option Z).
+  Declare Scope offset_scope.
+  Bind Scope offset_scope with offset.
+  Delimit Scope offset_scope with offset.
+
   Local Instance offset_eq_dec : EqDecision offset := _.
   Instance offset_countable : Countable offset := _.
 
   Definition mkOffset : Z -> offset := λ z, [Some z].
   Definition o_id : offset := [].
   Definition o_dot : offset → offset → offset := flip (++).
+  Notation "o1 .., o2" := (o_dot o1 o2) : offset_scope.
 
   Definition _offset_ptr_single : option Z -> ptr -> ptr :=
     λ oz p, z ← oz; offset_ptr__ z p.
   Definition _offset_ptr : ptr -> offset -> ptr :=
     foldr (_offset_ptr_single).
+  Notation "p .., o" := (_offset_ptr p o) : ptr_scope.
 
   Instance dot_id : RightId (=) o_id o_dot := _.
   Instance id_dot : LeftId (=) o_id o_dot := _.
   Instance dot_assoc : Assoc (=) o_dot := _.
-
-  Declare Scope ptr_scope.
-  Bind Scope ptr_scope with ptr.
-  Delimit Scope ptr_scope with ptr.
-
-  Declare Scope offset_scope.
-  Bind Scope offset_scope with offset.
-  Delimit Scope offset_scope with offset.
-  Notation "o1 .., o2" := (o_dot o1 o2) : offset_scope.
-  Notation "p .., o" := (_offset_ptr p o) : ptr_scope.
 
   Lemma offset_ptr_dot p o1 o2 :
     (p .., (o1 .., o2) = p .., o1 .., o2)%ptr.
@@ -225,23 +258,7 @@ Module SIMPLE_PTRS_IMPL : PTRS.
    global_ptr tu2 "staticR" |-> anyR T 1%Qp  ...] actually holds at startup.
   *)
   Definition global_ptr (tu : translation_unit) (o : obj_name) : ptr :=
-    let obj : option ObjValue := tu !! o in
-    match obj with
-    | Some _ => let p := Npos (encode o) in mkptr p p
-    | None => invalid_ptr
-    end.
-
-  (*
-  A slightly better model might be something like the following, but we don't
-  bother defining this [Countable] instance. And this is not a great model
-  anyway. *)
-
-  (*
-  Declare Instance ObjValue_countable: Countable ObjValue.
-  Definition global_ptr (tu : translation_unit) (o : obj_name) : ptr :=
-    let obj : option ObjValue := tu !! o in
-    let p := Npos (encode obj) in (mkptr p p).
-  *)
+    global_ptr_encode_ov o (tu !! o).
 
   Definition fun_ptr := global_ptr.
   Lemma o_sub_0 σ ty n :
@@ -261,14 +278,6 @@ Module PTRS_IMPL : PTRS.
 
   Implicit Types (σ : genv).
 
-  Definition alloc_id := N.
-  Global Instance alloc_id_eq_dec : EqDecision alloc_id := _.
-  Global Instance : Countable alloc_id := _.
-
-  Definition object_id := N.
-  Global Instance object_id_eq_dec : EqDecision object_id := _.
-  Global Instance : Countable object_id := _.
-
   Inductive offset_seg :=
   | o_field_ (* type-name: *) (f : field)
   | o_sub_ (ty : type) (z : Z)
@@ -278,11 +287,15 @@ Module PTRS_IMPL : PTRS.
   | o_num_ (z : Z).
   Local Instance offset_seg_eq_dec : EqDecision offset_seg.
   Proof. solve_decision. Qed.
+  Declare Instance offset_seg_countable : Countable offset_seg.
 
   (* This list is reversed.
   The list of offsets in [[p; o_1; ...; o_n]] is represented as [[o_n; ... o_1]].
   This way, we can cons new offsets to the head, and consume them at the tail. *)
   Definition raw_offset := list offset_seg.
+  Local Instance raw_offset_eq_dec : EqDecision offset := _.
+  Local Instance raw_offset_countable : Countable raw_offset := _.
+
   Definition offset_seg_merge (os1 os2 : offset_seg) : raw_offset :=
     match os1, os2 with
     | o_sub_ ty1 n1, o_sub_ ty2 n2 =>
@@ -522,17 +535,29 @@ Module PTRS_IMPL : PTRS.
   Admitted. *)
 
   Definition raw_offset_wf (ro : raw_offset) : Prop :=
-    bool_decide (raw_offset_collapse ro = ro).
+    raw_offset_collapse ro = ro.
   Instance raw_offset_wf_pi ro : ProofIrrel (raw_offset_wf ro) := _.
   Lemma singleton_raw_offset_wf {os} : raw_offset_wf [os].
-  Proof. by rewrite /raw_offset_wf bool_decide_true. Qed.
+  Proof. done. Qed.
 
   Definition raw_offset_merge (o1 o2 : raw_offset) : raw_offset :=
     raw_offset_collapse (o1 ++ o2).
   Arguments raw_offset_merge !_ _ /.
 
   Definition offset := {ro : raw_offset | raw_offset_wf ro}.
+  Instance offset_eq_dec : EqDecision offset := _.
 
+  Local Definition raw_offset_to_offset (ro : raw_offset) : option offset :=
+    match decide (raw_offset_wf ro) with
+    | left Hwf => Some (exist _ ro Hwf)
+    | right _ => None
+    end.
+  Instance offset_countable : Countable offset.
+  Proof.
+    apply (inj_countable proj1_sig raw_offset_to_offset) => -[ro Hwf] /=.
+    rewrite /raw_offset_to_offset; case_match => //.
+    by rewrite (proof_irrel Hwf).
+  Qed.
 
   Program Definition o_id : offset := [] ↾ _.
   Next Obligation. done. Qed.
@@ -550,27 +575,46 @@ Module PTRS_IMPL : PTRS.
   Program Definition o_dot : offset → offset → offset :=
     λ o1 o2, (raw_offset_merge (proj1_sig o1) (proj1_sig o2)) ↾ _.
   Next Obligation.
-    move=> o1 o2 /=. rewrite /raw_offset_wf bool_decide_true //.
+    move=> o1 o2 /=.
     exact: raw_offset_collapse_involutive.
   Qed.
   Inductive root_ptr : Set :=
   | nullptr_
   | global_ptr_ (tu : translation_unit_canon) (o : obj_name)
-  | alloc_ptr_ (a : alloc_id) (oid : object_id).
+  | alloc_ptr_ (a : alloc_id) (va : vaddr).
+
   Local Instance root_ptr_eq_dec : EqDecision root_ptr.
   Proof. solve_decision. Qed.
+  Declare Instance root_ptr_countable : Countable root_ptr.
 
-  (* Inductive rptr :=
-  | null_rptr
-  | invalid_rptr. *)
+  Local Definition global_ptr_encode_canon
+    (tu : translation_unit_canon) (o : obj_name) : option (alloc_id * vaddr) :=
+    global_ptr_encode_ov o (tu !! o).
+
+  Definition root_ptr_alloc_id (rp : root_ptr) : option alloc_id :=
+    match rp with
+    | nullptr_ => Some null_alloc_id
+    | global_ptr_ tu o => fst <$> global_ptr_encode_canon tu o
+    | alloc_ptr_ aid _ => Some aid
+    end.
 
   Inductive ptr_ : Set :=
   | invalid_ptr_
   | fun_ptr_ (tu : translation_unit_canon) (o : obj_name)
   | offset_ptr (p : root_ptr) (o : offset).
-  (* Add offsets from Loc. *)
-
   Definition ptr := ptr_.
+  Local Instance ptr_eq_dec : EqDecision ptr.
+  Proof. solve_decision. Qed.
+  Declare Instance ptr_countable : Countable ptr.
+
+  Definition ptr_alloc_id (p : ptr) : option alloc_id :=
+    match p with
+    | invalid_ptr_ => None
+    | fun_ptr_ tu o => fst <$> global_ptr_encode_canon tu o
+    | offset_ptr p o => root_ptr_alloc_id p
+    end.
+  Parameter ptr_vaddr : ptr -> option vaddr.
+
   Definition lift_root_ptr (rp : root_ptr) : ptr := offset_ptr rp o_id.
   Definition invalid_ptr := invalid_ptr_.
   Definition fun_ptr tu o := fun_ptr_ (canonical_tu.tu_to_canon tu) o.
@@ -581,36 +625,26 @@ Module PTRS_IMPL : PTRS.
   Definition alloc_ptr a oid := lift_root_ptr (alloc_ptr_ a oid).
 
   Instance id_dot : LeftId (=) o_id o_dot.
-  Proof.
-    intros o. apply /sig_eq_pi.
-    by case: o => [ro /= /bool_decide_unpack].
-  Qed.
+  Proof. intros o. apply /sig_eq_pi. by case: o. Qed.
   Instance dot_id : RightId (=) o_id o_dot.
   Proof.
     intros o. apply /sig_eq_pi.
-    case: o => [ro /= /bool_decide_unpack].
-    by rewrite /raw_offset_merge (right_id []).
+    rewrite /= /raw_offset_merge (right_id []).
+    by case: o.
   Qed.
   Local Instance dot_assoc : Assoc (=) o_dot.
   Proof.
     intros o1 o2 o3. apply /sig_eq_pi.
-    move: o1 o2 o3 => [ro1 /= /bool_decide_unpack wf1]
-      [ro2 /= /bool_decide_unpack wf2] [ro3 /= /bool_decide_unpack wf3].
+    move: o1 o2 o3 => [ro1 /= wf1]
+      [ro2 /= wf2] [ro3 /= wf3].
       rewrite /raw_offset_merge.
       rewrite -{1}wf1 -{2}wf3.
       rewrite -!invol_app; f_equiv.
       apply: assoc.
   Qed.
 
-  Local Instance ptr_eq_dec : EqDecision ptr.
-  Proof. solve_decision. Qed.
-  Local Instance offset_eq_dec : EqDecision offset.
-  Proof. solve_decision. Qed.
-
   Local Instance ptr_eq_dec' : EqDecision ptr := ptr_eq_dec.
 
-  Declare Instance ptr_countable : Countable ptr.
-  Declare Instance offset_countable : Countable offset.
   (* Instance ptr_equiv : Equiv ptr := (=).
   Instance offset_equiv : Equiv offset := (=).
   Instance ptr_equivalence : Equivalence (≡@{ptr}) := _.

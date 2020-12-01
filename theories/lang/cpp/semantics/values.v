@@ -9,13 +9,20 @@
  * The definitions in this file are based (loosely) on CompCert.
  *)
 From Coq Require Import Strings.Ascii.
-Require Import bedrock.lang.prelude.base.
+From bedrock.lang.prelude Require Import base addr.
 
 Require Import bedrock.lang.cpp.ast.
 From bedrock.lang.cpp.semantics Require Export types sub_module genv.
 
 Local Close Scope nat_scope.
 Local Open Scope Z_scope.
+
+Record alloc_id := MkAllocId { alloc_id_car : N }.
+
+Global Instance alloc_id_eq_dec : EqDecision alloc_id.
+Proof. solve_decision. Qed.
+Global Instance alloc_id_countable : Countable alloc_id.
+Proof. by apply: (inj_countable' alloc_id_car MkAllocId) => -[?]. Qed.
 
 Module Type PTRS.
   (** * Pointers.
@@ -38,6 +45,9 @@ Module Type PTRS.
   Declare Scope ptr_scope.
   Bind Scope ptr_scope with ptr.
   Delimit Scope ptr_scope with ptr.
+
+  Parameter ptr_alloc_id : ptr -> option alloc_id.
+  Parameter ptr_vaddr : ptr -> option vaddr.
 
   Axiom ptr_eq_dec : forall (x y : ptr), { x = y } + { x <> y }.
   Global Instance ptr_eq_dec' : EqDecision ptr := ptr_eq_dec.
