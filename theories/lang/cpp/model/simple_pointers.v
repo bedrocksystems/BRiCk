@@ -20,6 +20,7 @@ From bedrock.lang.cpp Require Import ast.
 From bedrock.lang.cpp.semantics Require Import values sub_module.
 From bedrock.lang.cpp.logic Require Import pred.
 
+Implicit Types (σ : genv).
 Module canonical_tu.
   Definition im_to_gmap {V} (m : IM.t V) : gmap BS.t V :=
     list_to_map (map_to_list m).
@@ -60,6 +61,15 @@ End canonical_tu.
 Definition null_alloc_id : alloc_id := MkAllocId 0.
 Definition invalid_alloc_id : alloc_id := MkAllocId 1.
 
+(** Compute the actual raw offsets in Z. *)
+Section eval_offset_seg.
+  Context (σ : genv).
+  Definition o_field_off (f : field) : option Z := offset_of σ f.(f_type) f.(f_name).
+  Definition o_sub_off ty z : option Z := Z.mul z <$> (Z.of_N <$> size_of σ ty).
+  Definition o_base_off derived base : option Z := parent_offset σ derived base.
+  Definition o_derived_off base derived : option Z := Z.opp <$> parent_offset σ derived base.
+End eval_offset_seg.
+
 (*
 Utility function, used to emulate [global_ptr] without a linker.
 This is a really bad model and it'd fail a bunch of sanity checks.
@@ -78,44 +88,7 @@ Local Definition global_ptr_encode_ov (o : obj_name) (obj : option ObjValue) :
   | None => None
   end.
 
-(*
-A slightly better model might be something like the following, but we don't
-bother defining this [Countable] instance. And this is not a great model
-anyway. *)
-
-(*
-Declare Instance ObjValue_countable: Countable ObjValue.
-Definition global_ptr (tu : translation_unit) (o : obj_name) : ptr :=
-  let obj : option ObjValue := tu !! o in
-  let p := Npos (encode obj) in (mkptr p p).
-*)
-
-(**
-A simple consistency proof for [PTRS]; this one is inspired by Cerberus's
-model of pointer provenance, and resembles CompCert's model.
-
-Compared to our "real" consistency proof [PTRS_IMPL], this proof is easier to
-extend, but it's unclear how to extend it to support [VALID_PTR_AXIOMS].
-*)
-Module SIMPLE_PTRS_IMPL : PTRS.
-  Definition ptr' : Set := alloc_id * vaddr.
-  Definition ptr : Set := option ptr'.
-
-  Declare Scope ptr_scope.
-  Bind Scope ptr_scope with ptr.
-  Delimit Scope ptr_scope with ptr.
-
-  Definition ptr_alloc_id : ptr -> option alloc_id := fmap fst.
-  Definition ptr_vaddr : ptr -> option vaddr := fmap snd.
-
-  Definition invalid_ptr : ptr := None.
-  Definition mkptr a n : ptr := Some (a, n).
-  Definition nullptr : ptr := mkptr null_alloc_id 0.
-
-  Instance ptr_eq_dec : EqDecision ptr := _.
-  Instance ptr_countable : Countable ptr := _.
-  Definition ptr_eq_dec' := ptr_eq_dec.
-
+Module Import address_sums.
   Definition offset_vaddr : Z -> vaddr -> option vaddr := λ z pa,
     let sum : Z := (Z.of_N pa + z)%Z in
     guard (0 ≤ sum)%Z; Some (Z.to_N sum).
@@ -142,6 +115,48 @@ Module SIMPLE_PTRS_IMPL : PTRS.
     rewrite /offset_vaddr => Hval.
     by case_option_guard; rewrite /= Z.add_assoc ?Z2N.id.
   Qed.
+End address_sums.
+
+
+(*
+A slightly better model might be something like the following, but we don't
+bother defining this [Countable] instance. And this is not a great model
+anyway. *)
+
+(*
+Declare Instance ObjValue_countable: Countable ObjValue.
+Definition global_ptr (tu : translation_unit) (o : obj_name) : ptr :=
+  let obj : option ObjValue := tu !! o in
+  let p := Npos (encode obj) in (mkptr p p).
+*)
+
+(**
+A simple consistency proof for [PTRS]; this one is inspired by Cerberus's
+model of pointer provenance, and resembles CompCert's model.
+
+Compared to our "real" consistency proof [PTRS_IMPL], this proof is easier to
+extend, but it's unclear how to extend it to support [VALID_PTR_AXIOMS].
+*)
+Module SIMPLE_PTRS_IMPL : PTRS.
+  Import address_sums.
+
+  Definition ptr' : Set := alloc_id * vaddr.
+  Definition ptr : Set := option ptr'.
+
+  Declare Scope ptr_scope.
+  Bind Scope ptr_scope with ptr.
+  Delimit Scope ptr_scope with ptr.
+
+  Definition ptr_alloc_id : ptr -> option alloc_id := fmap fst.
+  Definition ptr_vaddr : ptr -> option vaddr := fmap snd.
+
+  Definition invalid_ptr : ptr := None.
+  Definition mkptr a n : ptr := Some (a, n).
+  Definition nullptr : ptr := mkptr null_alloc_id 0.
+
+  Instance ptr_eq_dec : EqDecision ptr := _.
+  Instance ptr_countable : Countable ptr := _.
+  Definition ptr_eq_dec' := ptr_eq_dec.
 
   (* lift [offset_vaddr] over the [alloc_id * _] monad. *)
   Definition offset_ptr' : Z -> ptr' -> ptr :=
@@ -203,10 +218,10 @@ Module SIMPLE_PTRS_IMPL : PTRS.
   Proof. apply foldr_app. Qed.
 
   Definition opt_to_off oo : offset := [oo].
-  Definition o_field σ f : offset := opt_to_off (offset_of σ f.(f_type) f.(f_name)).
-  Definition o_sub σ ty z : offset := opt_to_off (Z.mul z <$> (Z.of_N <$> size_of σ ty)).
-  Definition o_base σ derived base := opt_to_off (parent_offset σ derived base).
-  Definition o_derived σ base derived := opt_to_off (Z.opp <$> parent_offset σ derived base)%Z.
+  Definition o_field σ f : offset := opt_to_off (o_field_off σ f).
+  Definition o_sub σ ty z : offset := opt_to_off (o_sub_off σ ty z).
+  Definition o_base σ derived base := opt_to_off (o_base_off σ derived base).
+  Definition o_derived σ base derived := opt_to_off (o_derived_off σ base derived).
 
   Lemma offset_ptr_cancel {p} {o1 o2 : Z} o3
     (Hval : offset_ptr_ o1 p ≠ None) (Hsum : (o1 + o2 = o3)%Z) :
@@ -232,7 +247,8 @@ Module SIMPLE_PTRS_IMPL : PTRS.
     (p .., o_base σ derived base)%ptr <> invalid_ptr ->
     (p .., o_base σ derived base .., o_derived σ base derived = p)%ptr.
   Proof.
-    rewrite /o_base /=. case: parent_offset => [o|] //= Hval.
+    rewrite /o_base /= /o_base_off /o_derived_off.
+    case: parent_offset => [o|] //= Hval.
     apply: offset_ptr_cancel0; by [|lia].
   Qed.
 
@@ -240,7 +256,8 @@ Module SIMPLE_PTRS_IMPL : PTRS.
     (p .., o_derived σ base derived)%ptr <> invalid_ptr ->
     (p .., o_derived σ base derived .., o_base σ derived base = p)%ptr.
   Proof.
-    rewrite /o_base /=. case: parent_offset => [o|] //= Hval.
+    rewrite /o_base /= /o_base_off /o_derived_off.
+    case: parent_offset => [o|] //= Hval.
     apply: offset_ptr_cancel0; by [|lia].
   Qed.
 
@@ -248,7 +265,8 @@ Module SIMPLE_PTRS_IMPL : PTRS.
     (p .., o_sub σ ty n1 <> None)%ptr ->
     (p .., o_sub σ ty n1 .., o_sub σ ty n2 = p .., o_sub σ ty (n1 + n2))%ptr.
   Proof.
-    rewrite /o_sub /=. case: size_of => [o|] //= Hval.
+    rewrite /o_sub /= /o_sub_off.
+    case: size_of => [o|] //= Hval.
     apply: offset_ptr_cancel; by [|lia].
   Qed.
 
@@ -266,7 +284,7 @@ Module SIMPLE_PTRS_IMPL : PTRS.
   Lemma o_sub_0 σ ty n :
     size_of σ ty = Some n ->
     o_sub σ ty 0 = o_id.
-  Proof. rewrite /o_sub /opt_to_off => -> //=. rewrite Z.mul_0_l. Admitted.
+  Proof. rewrite /o_sub /o_sub_off /opt_to_off => -> //=. rewrite Z.mul_0_l. Admitted.
 
 End SIMPLE_PTRS_IMPL.
 
@@ -277,8 +295,6 @@ This is more complex than [SIMPLE_PTRS_IMPL], but will be necessary to justify [
 *)
 Module PTRS_IMPL : PTRS.
   Import canonical_tu.
-
-  Implicit Types (σ : genv).
 
   Inductive offset_seg :=
   | o_field_ (* type-name: *) (f : field)
