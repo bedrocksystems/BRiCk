@@ -296,6 +296,35 @@ Module SIMPLE_PTRS_IMPL : PTRS.
 
 End SIMPLE_PTRS_IMPL.
 
+Module Import merge_elems.
+Section merge_elem.
+  Context {X} (f : X -> X -> list X).
+  Definition merge_elem (x0 : X) (xs : list X) : list X :=
+    match xs with
+    | x1 :: xs' => f x0 x1 ++ xs'
+    | [] => [x0]
+    end.
+  Lemma merge_elem_nil x0 : merge_elem x0 [] = [x0].
+  Proof. done. Qed.
+  Lemma merge_elem_cons x0 x1 xs : merge_elem x0 (x1 :: xs) = f x0 x1 ++ xs.
+  Proof. done. Qed.
+
+  Definition merge_elems_aux : list X -> list X -> list X := foldr merge_elem.
+  Local Arguments merge_elems_aux _ !_ /.
+  Definition merge_elems : list X -> list X := merge_elems_aux [].
+  Local Arguments merge_elems !_ /.
+  Lemma merge_elems_cons x xs :
+    merge_elems (x :: xs) = merge_elem x (merge_elems xs).
+  Proof. done. Qed.
+  Lemma merge_elems_aux_app ys xs1 xs2 :
+    merge_elems_aux ys (xs1 ++ xs2) = merge_elems_aux (merge_elems_aux ys xs2) xs1.
+  Proof. apply foldr_app. Qed.
+  Lemma merge_elems_app xs1 xs2 :
+    merge_elems (xs1 ++ xs2) = merge_elems_aux (merge_elems xs2) xs1.
+  Proof. apply merge_elems_aux_app. Qed.
+End merge_elem.
+End merge_elems.
+
 (**
 Another (incomplete) consistency proof for [PTRS], based on Krebbers' PhD thesis, and
 other formal models of C++ using structured pointers.
@@ -345,6 +374,64 @@ Module PTRS_IMPL : PTRS.
       [o_num_ (z2 + z1)]
     | _, _ => [os2; os1]
     end.
+
+  Definition raw_offset_collapse : raw_offset -> raw_offset :=
+    merge_elems (flip offset_seg_merge).
+  Arguments raw_offset_collapse !_ /.
+  Definition raw_offset_wf (ro : raw_offset) : Prop :=
+    raw_offset_collapse ro = ro.
+  Instance raw_offset_wf_pi ro : ProofIrrel (raw_offset_wf ro) := _.
+  Lemma singleton_raw_offset_wf {os} : raw_offset_wf [os].
+  Proof. done. Qed.
+
+  Definition raw_offset_merge (o1 o2 : raw_offset) : raw_offset :=
+    raw_offset_collapse (o1 ++ o2).
+  Arguments raw_offset_merge !_ _ /.
+
+  Definition offset := {ro : raw_offset | raw_offset_wf ro}.
+  Instance offset_eq_dec : EqDecision offset := _.
+
+  Local Definition raw_offset_to_offset (ro : raw_offset) : option offset :=
+    match decide (raw_offset_wf ro) with
+    | left Hwf => Some (exist _ ro Hwf)
+    | right _ => None
+    end.
+  Instance offset_countable : Countable offset.
+  Proof.
+    apply (inj_countable proj1_sig raw_offset_to_offset) => -[ro Hwf] /=.
+    rewrite /raw_offset_to_offset; case_match => //.
+    by rewrite (proof_irrel Hwf).
+  Qed.
+
+  Program Definition o_id : offset := [] ↾ _.
+  Next Obligation. done. Qed.
+  Definition o_field σ f : offset :=
+    [o_field_ f] ↾ singleton_raw_offset_wf.
+  Definition o_sub σ ty z : offset :=
+    [o_sub_ ty z] ↾ singleton_raw_offset_wf.
+  Definition o_base σ derived base : offset :=
+    [o_base_ derived base] ↾ singleton_raw_offset_wf.
+  Definition o_derived σ base derived : offset :=
+    [o_derived_ base derived] ↾ singleton_raw_offset_wf.
+  Definition o_num z : offset :=
+    [o_num_ z] ↾ singleton_raw_offset_wf.
+(*
+  Definition offset_seg_merge (os1 os2 : offset_seg) : raw_offset :=
+
+    match os1, os2 with
+    | o_sub_ ty1 n1, o_sub_ ty2 n2 =>
+      if decide (ty1 = ty2)
+      then [o_sub_ ty1 (n2 + n1)]
+      else [os2; os1]
+    | o_base_ der1 base1, o_derived_ base2 der2 =>
+      if decide (der1 = der2 ∧ base1 = base2)
+      then []
+      else [os2; os1]
+    | o_num_ z1, o_num_ z2 =>
+      [o_num_ (z2 + z1)]
+    | _, _ => [os2; os1]
+    end. *)
+
   Lemma last_last_equiv {X} d {xs : list X} : default d (stdpp.list.last xs) = List.last xs d.
   Proof. elim: xs => // x1 xs /= <-. by case_match. Qed.
 
@@ -356,31 +443,7 @@ Module PTRS_IMPL : PTRS.
 
   Section merge_elem.
     Context {X} (f : X -> X -> list X).
-    Definition merge_elem (x0 : X) (xs : list X) : list X :=
-      match xs with
-      | x1 :: xs' => f x0 x1 ++ xs'
-      | [] => [x0]
-      end.
-    Lemma merge_elem_nil x0 : merge_elem x0 [] = [x0].
-    Proof. done. Qed.
-    Lemma merge_elem_cons x0 x1 xs : merge_elem x0 (x1 :: xs) = f x0 x1 ++ xs.
-    Proof. done. Qed.
-
-    Definition merge_elems_aux : list X -> list X -> list X := foldr merge_elem.
-    Local Arguments merge_elems_aux _ !_ /.
-    Definition merge_elems : list X -> list X := merge_elems_aux [].
-    Local Arguments merge_elems !_ /.
-    Lemma merge_elems_cons x xs :
-      merge_elems (x :: xs) = merge_elem x (merge_elems xs).
-    Proof. done. Qed.
-    Lemma merge_elems_aux_app ys xs1 xs2 :
-      merge_elems_aux ys (xs1 ++ xs2) = merge_elems_aux (merge_elems_aux ys xs2) xs1.
-    Proof. apply foldr_app. Qed.
-    Lemma merge_elems_app xs1 xs2 :
-      merge_elems (xs1 ++ xs2) = merge_elems_aux (merge_elems xs2) xs1.
-    Proof. apply merge_elems_aux_app. Qed.
-
-    Context (Hinv : ∀ x1 x2, merge_elems (f x1 x2) = f x1 x2).
+    Context (Hinv : ∀ x1 x2, merge_elems f (f x1 x2) = f x1 x2).
 
 (*
     Lemma foo xs ys :
@@ -408,13 +471,13 @@ Module PTRS_IMPL : PTRS.
       *)
 
 
-    Global Instance: Involutive merge_elems.
+    Global Instance: Involutive (merge_elems f).
     Proof.
       unfold Involutive.
       intros xs. induction xs using rev_ind => //.
       rewrite merge_elems_app.
       (* elim => [//|x xs IHxs /=]. *)
-      case E: (merge_elems xs) => [//|y ys /=].
+      case E: (merge_elems f xs) => [//|y ys /=].
       (* case => [//|x xs /=].
       (* elim E: (merge_elems xs) => [//|y ys IHys /=]. *)
       move E: (merge_elems xs) => ys.
@@ -423,7 +486,7 @@ Module PTRS_IMPL : PTRS.
 
 
     Lemma foo x xs :
-      merge_elems (merge_elems (x :: xs)) = merge_elem x (merge_elems xs).
+      merge_elems f (merge_elems f (x :: xs)) = merge_elem f x (merge_elems f xs).
     Proof.
       case: xs => //= x' xs.
       rewrite /merge_elem.
@@ -437,13 +500,13 @@ Module PTRS_IMPL : PTRS.
     Abort.
     (* Lemma involutive_merge_elems : Involutive merge_elems
     with invol_app_merge_elems : InvolApp merge_elems. *)
-    Lemma involutive_merge_elems xs : merge_elems (merge_elems xs) = merge_elems xs
+    Lemma involutive_merge_elems xs : merge_elems f (merge_elems f xs) = merge_elems f xs
     with invol_app_merge_elems xs1 xs2 :
-      merge_elems (xs1 ++ xs2) = merge_elems (merge_elems xs1 ++ merge_elems xs2).
+      merge_elems f (xs1 ++ xs2) = merge_elems f (merge_elems f xs1 ++ merge_elems f xs2).
     Proof.
       - elim: xs => [//|x xs IHxs /=].
         rewrite -{2}IHxs.
-        case E: (merge_elems xs) => [//|y ys /=].
+        case E: (merge_elems f xs) => [//|y ys /=].
         (* Guarded. *)
         rewrite invol_app_merge_elems.
         (* Fail Guarded. *)
@@ -455,21 +518,21 @@ Module PTRS_IMPL : PTRS.
     Admitted.
 
 
-    Global Instance: Involutive merge_elems.
+    Global Instance: Involutive (merge_elems f).
     Proof.
       elim => [//|x xs IHxs /=].
-      case E: (merge_elems xs) => [//|y ys /=].
+      case E: (merge_elems f xs) => [//|y ys /=].
       (* case => [//|x xs /=].
       (* elim E: (merge_elems xs) => [//|y ys IHys /=]. *)
       move E: (merge_elems xs) => ys.
       elim: ys xs E => [//|y ys IHys xs E /=]. *)
     Admitted.
-    Global Instance: InvolApp merge_elems.
+    Global Instance: InvolApp (merge_elems f).
     Proof.
       elim => [|x1 xs1 IHxs1] xs2 /=.
       - by rewrite invol.
       -
-      case E: (merge_elems xs1) IHxs1 => [//|x' xs' //=] IHxs1.
+      case E: (merge_elems f xs1) IHxs1 => [//|x' xs' //=] IHxs1.
       by rewrite IHxs1.
       rewrite IHxs1 -app_assoc. rewrite -merge_elem_cons //.
       rewrite /merge_elems /=.
@@ -483,9 +546,6 @@ Module PTRS_IMPL : PTRS.
   Definition offset_seg_append : offset_seg -> raw_offset -> raw_offset :=
     merge_elem (flip offset_seg_merge).
 
-  Definition raw_offset_collapse : raw_offset -> raw_offset :=
-    merge_elems (flip offset_seg_merge).
-  Arguments raw_offset_collapse !_ /.
   Lemma offset_seg_merge_inv :
     let f := (flip offset_seg_merge) in
     ∀ x1 x2, raw_offset_collapse (f x1 x2) = f x1 x2.
@@ -569,43 +629,6 @@ Module PTRS_IMPL : PTRS.
     (* elim: os. *)
   Admitted. *)
 
-  Definition raw_offset_wf (ro : raw_offset) : Prop :=
-    raw_offset_collapse ro = ro.
-  Instance raw_offset_wf_pi ro : ProofIrrel (raw_offset_wf ro) := _.
-  Lemma singleton_raw_offset_wf {os} : raw_offset_wf [os].
-  Proof. done. Qed.
-
-  Definition raw_offset_merge (o1 o2 : raw_offset) : raw_offset :=
-    raw_offset_collapse (o1 ++ o2).
-  Arguments raw_offset_merge !_ _ /.
-
-  Definition offset := {ro : raw_offset | raw_offset_wf ro}.
-  Instance offset_eq_dec : EqDecision offset := _.
-
-  Local Definition raw_offset_to_offset (ro : raw_offset) : option offset :=
-    match decide (raw_offset_wf ro) with
-    | left Hwf => Some (exist _ ro Hwf)
-    | right _ => None
-    end.
-  Instance offset_countable : Countable offset.
-  Proof.
-    apply (inj_countable proj1_sig raw_offset_to_offset) => -[ro Hwf] /=.
-    rewrite /raw_offset_to_offset; case_match => //.
-    by rewrite (proof_irrel Hwf).
-  Qed.
-
-  Program Definition o_id : offset := [] ↾ _.
-  Next Obligation. done. Qed.
-  Definition o_field σ f : offset :=
-    [o_field_ f] ↾ singleton_raw_offset_wf.
-  Definition o_sub σ ty z : offset :=
-    [o_sub_ ty z] ↾ singleton_raw_offset_wf.
-  Definition o_base σ derived base : offset :=
-    [o_base_ derived base] ↾ singleton_raw_offset_wf.
-  Definition o_derived σ base derived : offset :=
-    [o_derived_ base derived] ↾ singleton_raw_offset_wf.
-  Definition o_num z : offset :=
-    [o_num_ z] ↾ singleton_raw_offset_wf.
 
   (* This is probably sound, since it allows temporary underflows. *)
   (* Section eval_offset.
