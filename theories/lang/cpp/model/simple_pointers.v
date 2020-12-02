@@ -307,6 +307,15 @@ Module PTRS_IMPL : PTRS.
   Proof. solve_decision. Qed.
   Declare Instance offset_seg_countable : Countable offset_seg.
 
+  Definition eval_offset_seg (σ : genv) (o : offset_seg) : option Z :=
+    match o with
+    | o_num_ z => Some z
+    | o_field_ f => o_field_off σ f
+    | o_sub_ ty z => o_sub_off σ ty z
+    | o_base_ derived base => o_base_off σ derived base
+    | o_derived_ base derived => o_derived_off σ base derived
+    end.
+
   (* This list is reversed.
   The list of offsets in [[p; o_1; ...; o_n]] is represented as [[o_n; ... o_1]].
   This way, we can cons new offsets to the head, and consume them at the tail. *)
