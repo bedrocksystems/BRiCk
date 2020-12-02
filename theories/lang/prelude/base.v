@@ -14,6 +14,10 @@ Remove Hints Bool.trans_eq_bool : core.
 
 Global Set Suggest Proof Using. (* also warns about forgotten [Proof.] *)
 Global Set Default Proof Using "Type".
+(** Disable [Program]'s compiler for pattern matches.
+It's more expressive, but it mangles definitions and can cause a quadratic size
+explosion. *)
+Global Unset Program Cases.
 
 Lemma iff_forall T P Q :
   (forall i: T, P i <-> Q i) ->
@@ -55,3 +59,6 @@ Section flip_app.
   Global Instance flip_app_assoc : Assoc (=) (flip (@app A)).
   Proof. apply: flip_assoc. Qed.
 End flip_app.
+
+Notation Unfold x tm :=
+  ltac:(let H := eval unfold x in tm in exact H) (only parsing).
