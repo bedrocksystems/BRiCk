@@ -17,6 +17,23 @@ From bedrock.lang.cpp.semantics Require Export types sub_module genv.
 Local Close Scope nat_scope.
 Local Open Scope Z_scope.
 
+(** ** Define a partial equivalence relation from an observation *)
+Definition same_property `(obs : A → option B) (a1 a2 : A) :=
+  ∃ (b : B), obs a1 = Some b ∧ obs a2 = Some b.
+Section same_property.
+  Context `{obs : A → option B}.
+
+  Lemma same_property_reflexive_equiv a :
+    (∃ b, obs a = Some b) ↔ same_property obs a a.
+  Proof. rewrite /same_property. naive_solver. Qed.
+  Lemma same_property_partial_reflexive a b :
+    obs a = Some b → same_property obs a a.
+  Proof. rewrite -same_property_reflexive_equiv. naive_solver. Qed.
+  Global Instance same_property_per : RelationClasses.PER (same_property obs).
+  Proof. rewrite /same_property; split; hnf; naive_solver. Qed.
+  Global Instance: RewriteRelation (same_property obs) := {}.
+End same_property.
+
 Record alloc_id := MkAllocId { alloc_id_car : N }.
 
 Global Instance alloc_id_eq_dec : EqDecision alloc_id.
@@ -179,6 +196,20 @@ Axiom raw_int_byte : N -> raw_byte.
 
 End RAW_BYTES.
 
+Module Type PTRS_MIXIN (Import L : PTRS).
+  Definition same_alloc : ptr -> ptr -> Prop := same_property ptr_alloc_id.
+  Definition same_address : ptr -> ptr -> Prop := same_property ptr_vaddr.
+  Definition pinned_ptr_pure (va : vaddr) (p : ptr) := ptr_vaddr p = Some va.
+
+  Lemma same_address_pinned p1 p2 :
+    same_address p1 p2 <-> ∃ va, pinned_ptr_pure va p1 ∧ pinned_ptr_pure va p2.
+  Proof. done. Qed.
+  Global Instance pinned_ptr_pure_proper va :
+    Proper (same_address ==> iff) (pinned_ptr_pure va).
+  Proof. by rewrite /pinned_ptr_pure => p1 p2 [va' [-> ->]]. Qed.
+  Global Instance: Params pinned_ptr_pure 1 := {}.
+End PTRS_MIXIN.
+
 Module Type VAL_MIXIN (Import L : PTRS) (Import R : RAW_BYTES).
 
 (** * values
@@ -205,7 +236,7 @@ Instance val_inhabited : Inhabited val := populate (Vint 0).
 
 End VAL_MIXIN.
 
-Module Type PTRS_FULL := PTRS <+ RAW_BYTES <+ VAL_MIXIN.
+Module Type PTRS_FULL := PTRS <+ RAW_BYTES <+ VAL_MIXIN <+ PTRS_MIXIN.
 Declare Module PTRS_FULL_AXIOM : PTRS_FULL.
 Export PTRS_FULL_AXIOM.
 
@@ -404,6 +435,7 @@ Definition glob_addr (σ : genv) (o : obj_name) : option ptr :=
 Module Type PTR_INTERNAL (Import P : PTRS).
   Parameter eval_offset : genv -> offset -> option Z.
 
+  (* Presumably false? *)
   Axiom _offset_ptr_eq : forall tu p o,
     Some (p .., o)%ptr = flip offset_ptr_ p <$> eval_offset tu o.
 

@@ -68,7 +68,7 @@ Declare Module PTRS_IMPL : PTRS_I.
 Declare Module RAW_BYTES_IMPL : RAW_BYTES.
 Module Type PTRS_FULL_I := PTRS_FULL <+ PTR_INTERNAL.
 Module Import PTRS_FULL_IMPL : PTRS_FULL_I :=
-  PTRS_IMPL <+ RAW_BYTES_IMPL <+ VAL_MIXIN.
+  PTRS_IMPL <+ RAW_BYTES_IMPL <+ VAL_MIXIN <+ PTRS_MIXIN.
 
 (** A consistency proof for [CPP_LOGIC_CLASS] *)
 Module SimpleCPP_BASE <: CPP_LOGIC_CLASS.
