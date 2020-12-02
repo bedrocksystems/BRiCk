@@ -194,6 +194,11 @@ Module Type CPP_LOGIC (Import CC : CPP_LOGIC_CLASS)
       Observe [| ty <> Tvoid |] (@tptsto σ ty q p v).
     Global Existing Instance tptsto_nonvoid.
 
+    (** Neither persistent nor fractional. *)
+    Parameter alloc_id_live : alloc_id -> mpred.
+    Axiom alloc_id_live_timeless : forall aid, Timeless (alloc_id_live aid).
+    Global Existing Instance alloc_id_live_timeless.
+
     (** [identity σ this mdc q p] state that [p] is a pointer to a (live)
         object of type [this] that is part of an object of type [mdc].
         - if [mdc = None] then this object identity is not initialized yet,
@@ -540,4 +545,7 @@ Section with_cpp.
     rewrite type_ptr_aligned Hal /=. iDestruct 1 as (? [= <-]) "A". iIntros "P".
     iApply (pinned_ptr_aligned_divide with "P A").
   Qed.
+
+  Definition ptr_live (p : ptr) :=
+    default False%I (alloc_id_live <$> ptr_alloc_id p).
 End with_cpp.

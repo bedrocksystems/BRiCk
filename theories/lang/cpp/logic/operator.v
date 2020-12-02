@@ -17,20 +17,44 @@ Section with_Σ.
   Definition eval_binop (b : BinOp) (lhsT rhsT resT : type) (lhs rhs res : val) : mpred :=
     [| eval_binop_pure b lhsT rhsT resT lhs rhs res |] ∨ eval_binop_impure b lhsT rhsT resT lhs rhs res.
 
-(** * Pointer comparison operators *)
+(* TODO move *)
+Parameter strict_valid_ptr : ptr -> mpred.
+Axiom strict_valid_ptr_persistent : forall p,
+  Persistent (strict_valid_ptr p).
+Axiom strict_valid_ptr_affine : forall p,
+  Affine (strict_valid_ptr p).
+Axiom strict_valid_ptr_timeless : forall p,
+  Timeless (strict_valid_ptr p).
+Global Existing Instances
+  strict_valid_ptr_persistent strict_valid_ptr_affine strict_valid_ptr_timeless.
 
+(* TODO make linear. *)
+Definition ptr_eq_cmpable p : mpred :=
+  (<absorb> [| p = nullptr |]) ∨ (ptr_live p ∧ strict_valid_ptr p).
+
+(* TODO make linear. *)
+(* TODO: need both ptr_live p1 and ptr_live p2? *)
+Definition ptr_subtraction_possible σ ty p1 p2 : mpred :=
+  [| ∃ p n1 n2, p1 = p .., o_sub σ ty n1 /\ p2 = p .., o_sub σ ty n2 |]%ptr ∧
+  valid_ptr p1 ∧ valid_ptr p2 ∧ ptr_live p1 ∧ ptr_live p2.
+
+(* TODO make linear. *)
+(** * Pointer comparison operators *)
 Axiom eval_ptr_eq :
-  forall ty a b av bv c,
+  forall σ ty a b av bv c,
     a = Vptr av ->
     b = Vptr bv ->
-    c = (if ptr_eq_dec av bv then 1 else 0)%Z ->
-    |-- eval_binop Beq (Tpointer ty) (Tpointer ty) Tbool a b (Vint c).
+    c = (if decide (same_address av bv) then 1 else 0)%Z ->
+    (ptr_eq_cmpable av ∧ ptr_eq_cmpable bv) ∨ ptr_subtraction_possible σ ty av bv ⊢
+    eval_binop Beq (Tpointer ty) (Tpointer ty) Tbool a b (Vint c).
+
 Axiom eval_ptr_neq :
-  forall ty a b av bv c,
+  forall σ ty a b av bv c,
     a = Vptr av ->
     b = Vptr bv ->
-    c = (if ptr_eq_dec av bv then 0 else 1)%Z ->
-    |-- eval_binop Bneq (Tpointer ty) (Tpointer ty) Tbool a b (Vint c).
+    c = (if decide (same_address av bv) then 0 else 1)%Z ->
+    (ptr_eq_cmpable av ∧ ptr_eq_cmpable bv) ∨ ptr_subtraction_possible σ ty av bv ⊢
+    eval_binop Bneq (Tpointer ty) (Tpointer ty) Tbool a b (Vint c).
 
 Definition eval_ptr_int_op (bo : BinOp) (f : Z -> Z) : Prop :=
   forall resolve t w s p o p' sz,

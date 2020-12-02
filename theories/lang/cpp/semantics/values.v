@@ -32,14 +32,24 @@ Section same_property.
   Global Instance same_property_per : RelationClasses.PER (same_property obs).
   Proof. rewrite /same_property; split; hnf; naive_solver. Qed.
   Global Instance: RewriteRelation (same_property obs) := {}.
+
+  Global Instance same_address_decision `{EqDecision B}: RelDecision (same_property obs).
+  Proof.
+    rewrite /same_property /RelDecision /Decision => a1 a2.
+    destruct (obs a1) as [b1|], (obs a2) as [b2|];
+      try destruct_decide (decide (b1 = b2)) as H; subst; eauto.
+      all: right; naive_solver.
+  Qed.
 End same_property.
 
+(** ** Allocation IDs *)
 Record alloc_id := MkAllocId { alloc_id_car : N }.
 
 Global Instance alloc_id_eq_dec : EqDecision alloc_id.
 Proof. solve_decision. Qed.
 Global Instance alloc_id_countable : Countable alloc_id.
 Proof. by apply: (inj_countable' alloc_id_car MkAllocId) => -[?]. Qed.
+
 
 Module Type PTRS.
   (** * Pointers.
@@ -62,9 +72,6 @@ Module Type PTRS.
   Declare Scope ptr_scope.
   Bind Scope ptr_scope with ptr.
   Delimit Scope ptr_scope with ptr.
-
-  Parameter ptr_alloc_id : ptr -> option alloc_id.
-  Parameter ptr_vaddr : ptr -> option vaddr.
 
   Axiom ptr_eq_dec : forall (x y : ptr), { x = y } + { x <> y }.
   Global Instance ptr_eq_dec' : EqDecision ptr := ptr_eq_dec.
@@ -178,6 +185,13 @@ Module Type PTRS.
     offset_ptr_ o' (offset_ptr_ o p) = offset_ptr_ (o + o') p.
   (* #[deprecated(since="X", note="XXX")] *)
   (* Notation offset_ptr_combine_ := offset_ptr_combine__. *)
+
+  Parameter ptr_alloc_id : ptr -> option alloc_id.
+  Parameter ptr_vaddr : ptr -> option vaddr.
+
+  Axiom ptr_alloc_id_offset : forall {p o},
+    is_Some (ptr_alloc_id (p .., o)) ->
+    ptr_alloc_id (p .., o) = ptr_alloc_id p.
 End PTRS.
 
 Module Type RAW_BYTES.
@@ -198,7 +212,9 @@ End RAW_BYTES.
 
 Module Type PTRS_MIXIN (Import L : PTRS).
   Definition same_alloc : ptr -> ptr -> Prop := same_property ptr_alloc_id.
+  Global Instance same_alloc_dec : RelDecision same_alloc := _.
   Definition same_address : ptr -> ptr -> Prop := same_property ptr_vaddr.
+  Global Instance same_address_dec : RelDecision same_address := _.
   Definition pinned_ptr_pure (va : vaddr) (p : ptr) := ptr_vaddr p = Some va.
 
   Lemma same_address_pinned p1 p2 :
@@ -208,7 +224,17 @@ Module Type PTRS_MIXIN (Import L : PTRS).
     Proper (same_address ==> iff) (pinned_ptr_pure va).
   Proof. by rewrite /pinned_ptr_pure => p1 p2 [va' [-> ->]]. Qed.
   Global Instance: Params pinned_ptr_pure 1 := {}.
+
+  Lemma same_alloc_offset p o
+    (Hs : is_Some (ptr_alloc_id (p .., o))) :
+    same_alloc p (p .., o).
+  Proof. case: (Hs) => ??. eexists. rewrite -(ptr_alloc_id_offset Hs) //. Qed.
 End PTRS_MIXIN.
+
+(* XXX drop *)
+(* Module Type PTRS_ALLOC_AXIOMS (Import P : PTRS) (Import PM : PTRS_MIXIN P).
+
+End PTRS_ALLOC_AXIOMS. *)
 
 Module Type VAL_MIXIN (Import L : PTRS) (Import R : RAW_BYTES).
 

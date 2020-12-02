@@ -189,6 +189,10 @@ Module SimpleCPP.
   Section with_cpp.
     Context `{Σ : cpp_logic}.
 
+    Parameter alloc_id_live : alloc_id -> mpred.
+    Axiom alloc_id_live_timeless : forall aid, Timeless (alloc_id_live aid).
+    Global Existing Instance alloc_id_live_timeless.
+
     (** pointer validity *)
     (** Pointers past the end of an object/array can be valid; see
     https://eel.is/c++draft/expr.add#4 *)

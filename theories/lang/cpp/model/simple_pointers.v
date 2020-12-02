@@ -212,7 +212,7 @@ Module SIMPLE_PTRS_IMPL : PTRS.
   Notation "o1 .., o2" := (o_dot o1 o2) : offset_scope.
 
   Definition _offset_ptr_single : option Z -> ptr -> ptr :=
-    λ oz p, z ← oz; offset_ptr__ z p.
+    λ oz p, z ← oz; offset_ptr_ z p.
   Definition _offset_ptr : ptr -> offset -> ptr :=
     foldr _offset_ptr_single.
   Notation "p .., o" := (_offset_ptr p o) : ptr_scope.
@@ -224,6 +224,27 @@ Module SIMPLE_PTRS_IMPL : PTRS.
   Lemma offset_ptr_dot p o1 o2 :
     (p .., (o1 .., o2) = p .., o1 .., o2)%ptr.
   Proof. apply foldr_app. Qed.
+
+  Local Lemma ptr_alloc_id_offset_single {p oz} :
+    let p' := _offset_ptr_single oz p in
+    is_Some (ptr_alloc_id p') -> ptr_alloc_id p' = ptr_alloc_id p.
+  Proof.
+    rewrite /_offset_ptr_single /offset_ptr_ /offset_ptr'.
+    (* XXX messy? good enough? *)
+    have ? := @is_Some_None alloc_id.
+    case: oz p => [z|//] [[aid' va]|] Hsome //=; simplify_option_eq.
+    destruct fmap eqn:? => //; simplify_option_eq.
+    naive_solver.
+  Qed.
+
+  Lemma ptr_alloc_id_offset {p o} :
+    let p' := (p .., o)%ptr in
+    is_Some (ptr_alloc_id p') -> ptr_alloc_id p' = ptr_alloc_id p.
+  Proof.
+    elim: o p => /= [//|o os IHo] p Hs.
+    rewrite -(IHo p) //. { exact: ptr_alloc_id_offset_single. }
+    by rewrite -(ptr_alloc_id_offset_single (oz := o)).
+  Qed.
 
   Definition opt_to_off oo : offset := [oo].
   Definition o_field σ f : offset := opt_to_off (o_field_off σ f).
@@ -785,4 +806,9 @@ Module PTRS_IMPL : PTRS.
     size_of σ ty = Some n ->
     o_sub σ ty 0 = o_id.
   Proof. rewrite /o_sub/o_id/=. Admitted.
+
+  Lemma ptr_alloc_id_offset {p o} :
+    let p' := (p .., o)%ptr in
+    is_Some (ptr_alloc_id p') -> ptr_alloc_id p' = ptr_alloc_id p.
+  Admitted.
 End PTRS_IMPL.
