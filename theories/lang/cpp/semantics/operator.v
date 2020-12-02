@@ -320,7 +320,7 @@ Arguments conv_int !_ !_ _ _ /.
 
 (** operator semantics *)
 Parameter eval_unop : forall {resolve : genv}, UnOp -> forall (argT resT : type) (arg res : val), Prop.
-Parameter eval_binop : forall {resolve : genv}, BinOp -> forall (lhsT rhsT resT : type) (lhs rhs res : val), Prop.
+Parameter eval_binop_pure : forall {resolve : genv}, BinOp -> forall (lhsT rhsT resT : type) (lhs rhs res : val), Prop.
 
 Axiom eval_not_bool : forall resolve a,
     eval_unop (resolve:=resolve) Unot Tbool Tbool (Vbool a) (Vbool (negb a)).
@@ -337,51 +337,6 @@ Axiom eval_minus_int : forall resolve (s : signed) a c w,
     eval_unop (resolve:=resolve) Uminus (Tint w s) (Tint w s)
               (Vint a) (Vint c).
 
-Definition eval_ptr_int_op (bo : BinOp) (f : Z -> Z) : Prop :=
-  forall resolve t w s p o p' sz,
-    size_of resolve t = Some sz ->
-    p' = offset_ptr_ (f o * Z.of_N sz) p ->
-    eval_binop (resolve:=resolve) bo
-               (Tpointer t) (Tint w s) (Tpointer t)
-               (Vptr p)     (Vint o)   (Vptr p').
-
-(* lhs + rhs: one of rhs or lhs is a pointer to completely-defined object type,
-   the other has integral or unscoped enumeration type. In this case,
-   the result type has the type of the pointer. (rhs has a pointer type) *)
-Axiom eval_ptr_int_add :
-  ltac:(let x := eval hnf in (eval_ptr_int_op Badd (fun x => x)) in refine x).
-
-(* lhs - rhs: lhs is a pointer to completely-defined object type, rhs
-   has integral or unscoped enumeration type. In this case, the result
-   type has the type of the pointer. *)
-Axiom eval_ptr_int_sub :
-  ltac:(let x := eval hnf in (eval_ptr_int_op Bsub (fun x => -x)%Z) in refine x).
-
-Definition eval_int_ptr_op (bo : BinOp) (f : Z -> Z) : Prop :=
-  forall resolve t w s p o p' sz,
-    size_of resolve t = Some sz ->
-    p' = offset_ptr_ (f o * Z.of_N sz) p ->
-    eval_binop (resolve:=resolve) bo
-               (Tint w s) (Tpointer t) (Tpointer t)
-               (Vint o)   (Vptr p)     (Vptr p').
-
-(* lhs + rhs: one of rhs or lhs is a pointer to completely-defined object type,
-   the other has integral or unscoped enumeration type. In this case,
-   the result type has the type of the pointer. (lhs has a pointer type) *)
-Axiom eval_int_ptr_add :
-  ltac:(let x := eval hnf in (eval_int_ptr_op Badd (fun x => x)) in refine x).
-
-(* lhs - rhs: both lhs and rhs must be pointers to the same
-   completely-defined object types. *)
-Axiom eval_ptr_ptr_sub :
-  forall resolve t w p o1 o2 p' base sz,
-    size_of resolve t = Some sz ->
-    p = offset_ptr_ (Z.of_N sz * o1) base ->
-    p' = offset_ptr_ (Z.of_N sz * o2) base ->
-    eval_binop (resolve:=resolve) Bsub
-               (Tpointer t) (Tpointer t) (Tint w Signed)
-               (Vptr p)     (Vptr p')    (Vint (o1 - o2)).
-
 Definition eval_int_op (bo : BinOp) (o : Z -> Z -> Z) : Prop :=
   forall resolve w (s : signed) (a b c : Z),
     has_type (Vint a) (Tint w s) ->
@@ -391,7 +346,7 @@ Definition eval_int_op (bo : BinOp) (o : Z -> Z -> Z) : Prop :=
         | Unsigned => trim (bitsN w) (o a b)
         end ->
     has_type (Vint c) (Tint w s) ->
-    eval_binop (resolve:=resolve) bo (Tint w s) (Tint w s) (Tint w s) (Vint a) (Vint b) (Vint c).
+    eval_binop_pure (resolve:=resolve) bo (Tint w s) (Tint w s) (Tint w s) (Vint a) (Vint b) (Vint c).
 
 (* this is bitwise operators *)
 Definition eval_int_bitwise_op (bo : BinOp) (o : Z -> Z -> Z) : Prop :=
@@ -399,7 +354,7 @@ Definition eval_int_bitwise_op (bo : BinOp) (o : Z -> Z -> Z) : Prop :=
     has_type (Vint a) (Tint w s) ->
     has_type (Vint b) (Tint w s) ->
     c = o a b -> (* note that bitwise operators respect bounds *)
-    eval_binop (resolve:=resolve) bo (Tint w s) (Tint w s) (Tint w s) (Vint a) (Vint b) (Vint c).
+    eval_binop_pure (resolve:=resolve) bo (Tint w s) (Tint w s) (Tint w s) (Vint a) (Vint b) (Vint c).
 
 (* arithmetic operators *)
 Axiom eval_add :
@@ -428,14 +383,14 @@ Axiom eval_div :
     has_type (Vint a) (Tint w s) ->
     has_type (Vint b) (Tint w s) ->
     c = Z.quot a b ->
-    eval_binop (resolve:=resolve) Bdiv (Tint w s) (Tint w s) (Tint w s) (Vint a) (Vint b) (Vint c).
+    eval_binop_pure (resolve:=resolve) Bdiv (Tint w s) (Tint w s) (Tint w s) (Vint a) (Vint b) (Vint c).
 Axiom eval_mod :
   forall resolve (w : bitsize) (s : signed) (a b c : Z),
     b <> 0%Z ->
     has_type (Vint a) (Tint w s) ->
     has_type (Vint b) (Tint w s) ->
     c = Z.rem a b ->
-    eval_binop (resolve:=resolve) Bmod (Tint w s) (Tint w s) (Tint w s) (Vint a) (Vint b) (Vint c).
+    eval_binop_pure (resolve:=resolve) Bmod (Tint w s) (Tint w s) (Tint w s) (Vint a) (Vint b) (Vint c).
 
 (* [C++14,C++20) *)
 (* The value of E1 << E2 is E1 left-shifted E2 bit positions; vacated
@@ -467,7 +422,7 @@ Axiom eval_shl :
         | Unsigned => trim (bitsN w) (Z.shiftl a b)
         end ->
     has_type (Vint c) (Tint w s) ->
-    eval_binop (resolve:=resolve) Bshl (Tint w s) (Tint w2 s2) (Tint w s) (Vint a) (Vint b) (Vint c).
+    eval_binop_pure (resolve:=resolve) Bshl (Tint w s) (Tint w2 s2) (Tint w s) (Vint a) (Vint b) (Vint c).
 
 (* [C++14,C++20): The value of E1 >> E2 is E1 right-shifted E2 bit
    positions. If E1 has an unsigned type or if E1 has a signed type
@@ -481,7 +436,7 @@ Axiom eval_shr :
     has_type (Vint a) (Tint w s) ->
     has_type (Vint b) (Tint w2 s2) ->
     c = match s with Signed => Z.shiftr a b | Unsigned => trim (bitsN w) (Z.shiftr a b) end ->
-    eval_binop (resolve:=resolve) Bshr (Tint w s) (Tint w2 s2) (Tint w s) (Vint a) (Vint b) (Vint c).
+    eval_binop_pure (resolve:=resolve) Bshr (Tint w s) (Tint w2 s2) (Tint w s) (Vint a) (Vint b) (Vint c).
 
 (* Arithmetic comparison operators *)
 
@@ -497,7 +452,7 @@ Definition eval_int_rel_op (bo : BinOp) {P Q : Z -> Z -> Prop}
     has_type a (Tint w s) ->
     has_type b (Tint w s) ->
     c = (if o av bv then 1 else 0)%Z ->
-    eval_binop (resolve:=resolve) bo (Tint w s) (Tint w s) Tbool a b (Vint c).
+    eval_binop_pure (resolve:=resolve) bo (Tint w s) (Tint w s) Tbool a b (Vint c).
 
 Definition eval_int_rel_op_int (bo : BinOp) {P Q : Z -> Z -> Prop}
            (o : forall a b : Z, {P a b} + {Q a b}) : Prop :=
@@ -507,7 +462,7 @@ Definition eval_int_rel_op_int (bo : BinOp) {P Q : Z -> Z -> Prop}
     has_type a (Tint w s) ->
     has_type b (Tint w s) ->
     c = (if o av bv then 1 else 0)%Z ->
-    eval_binop (resolve:=resolve) bo (Tint w s) (Tint w s) (T_int) a b (Vint c).
+    eval_binop_pure (resolve:=resolve) bo (Tint w s) (Tint w s) (T_int) a b (Vint c).
 
 Axiom eval_eq_bool :
   ltac:(let x := eval hnf in (eval_int_rel_op Beq Z.eq_dec) in refine x).
@@ -518,7 +473,7 @@ Axiom eval_neq_bool :
     has_type a ty ->
     has_type b ty ->
     c = (if Z.eq_dec av bv then 0 else 1)%Z ->
-    eval_binop (resolve:=resolve) Bneq ty ty Tbool a b (Vint c).
+    eval_binop_pure (resolve:=resolve) Bneq ty ty Tbool a b (Vint c).
 Axiom eval_lt_bool :
   ltac:(let x := eval hnf in (eval_int_rel_op Blt ZArith_dec.Z_lt_ge_dec) in refine x).
 Axiom eval_gt_bool :
@@ -535,7 +490,7 @@ Axiom eval_neq_int :
     a = Vint av ->
     b = Vint bv ->
     c = (if Z.eq_dec av bv then 0 else 1)%Z ->
-    eval_binop (resolve:=resolve) Bneq ty ty T_int a b (Vint c).
+    eval_binop_pure (resolve:=resolve) Bneq ty ty T_int a b (Vint c).
 Axiom eval_lt_int :
   ltac:(let x := eval hnf in (eval_int_rel_op_int Blt ZArith_dec.Z_lt_ge_dec) in refine x).
 Axiom eval_gt_int :
@@ -544,21 +499,6 @@ Axiom eval_le_int :
   ltac:(let x := eval hnf in (eval_int_rel_op_int Ble ZArith_dec.Z_le_gt_dec) in refine x).
 Axiom eval_ge_int :
   ltac:(let x := eval hnf in (eval_int_rel_op_int Bge ZArith_dec.Z_ge_lt_dec) in refine x).
-
-(* Pointer comparison operators *)
-
-Axiom eval_ptr_eq :
-  forall resolve ty a b av bv c,
-    a = Vptr av ->
-    b = Vptr bv ->
-    c = (if ptr_eq_dec av bv then 1 else 0)%Z ->
-    eval_binop (resolve:=resolve) Beq (Tpointer ty) (Tpointer ty) Tbool a b (Vint c).
-Axiom eval_ptr_neq :
-  forall resolve ty a b av bv c,
-    a = Vptr av ->
-    b = Vptr bv ->
-    c = (if ptr_eq_dec av bv then 0 else 1)%Z ->
-    eval_binop (resolve:=resolve) Bneq (Tpointer ty) (Tpointer ty) Tbool a b (Vint c).
 
 Definition bitFlipZU (len: bitsize) (z:Z) : Z :=
   to_unsigned len (Z.lnot z).

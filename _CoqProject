@@ -46,6 +46,7 @@ theories/lang/cpp/semantics.v
 theories/lang/cpp/logic/spec.v
 theories/lang/cpp/logic/pred.v
 theories/lang/cpp/logic/path_pred.v
+theories/lang/cpp/logic/operator.v
 theories/lang/cpp/logic/heap_pred.v
 theories/lang/cpp/logic/wp.v
 theories/lang/cpp/logic/destroy.v

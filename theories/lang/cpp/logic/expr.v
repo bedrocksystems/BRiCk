@@ -14,6 +14,7 @@ Require Import Coq.NArith.BinNatDef.
 From bedrock.lang.cpp Require Import ast semantics.
 From bedrock.lang.cpp.logic Require Import
      pred path_pred heap_pred
+     operator
      destroy
      wp call
      translation_unit
@@ -52,7 +53,7 @@ Module Type Expr.
     Local Notation _sub := (_sub (resolve:=resolve)) (only parsing).
     Local Notation _super := (_super (resolve:=resolve)) (only parsing).
     Local Notation eval_unop := (@eval_unop resolve) (only parsing).
-    Local Notation eval_binop := (@eval_binop resolve) (only parsing).
+    Local Notation eval_binop := (eval_binop (resolve := resolve)) (only parsing).
     Local Notation size_of := (@size_of resolve) (only parsing).
     Local Notation align_of := (@align_of resolve) (only parsing).
     Local Notation primR := (primR (resolve:=resolve)) (only parsing).
@@ -202,7 +203,7 @@ Module Type Expr.
         | Some cty =>
           wp_lval e (fun a free => Exists v', Exists v'',
               _at (_eqv a) (primR (erase_qualifiers ty) 1 v') **
-              ( [| eval_binop Badd (erase_qualifiers (type_of e)) cty (erase_qualifiers ty) v' (Vint 1) v'' |] **
+              ( eval_binop Badd (erase_qualifiers (type_of e)) cty (erase_qualifiers ty) v' (Vint 1) v'' **
                (_at (_eqv a) (primR (erase_qualifiers ty) 1 v'') -* Q a free)))
         | None => lfalse
         end
@@ -213,7 +214,7 @@ Module Type Expr.
         | Some cty =>
           wp_lval e (fun a free => Exists v', Exists v'',
               _at (_eqv a) (primR (erase_qualifiers ty) 1 v') **
-              ([| eval_binop Bsub (erase_qualifiers (type_of e)) cty (erase_qualifiers ty) v' (Vint 1) v'' |] **
+              (eval_binop Bsub (erase_qualifiers (type_of e)) cty (erase_qualifiers ty) v' (Vint 1) v'' **
                (_at (_eqv a) (primR (erase_qualifiers ty) 1 v'') -* Q a free)))
         | None => lfalse
         end
@@ -224,7 +225,7 @@ Module Type Expr.
         | Some cty =>
           wp_lval e (fun a free => Exists v', Exists v'',
               _at (_eqv a) (primR (erase_qualifiers ty) 1 v') **
-              ([| eval_binop Badd (erase_qualifiers (type_of e)) cty (erase_qualifiers ty) v' (Vint 1) v'' |] **
+              (eval_binop Badd (erase_qualifiers (type_of e)) cty (erase_qualifiers ty) v' (Vint 1) v'' **
               (_at (_eqv a) (primR (erase_qualifiers ty) 1 v'') -* Q v' free)))
         | None => lfalse
         end
@@ -235,7 +236,7 @@ Module Type Expr.
         | Some cty =>
           wp_lval e (fun a free => Exists v', Exists v'',
               _at (_eqv a) (primR (erase_qualifiers ty) 1 v') **
-              ([| eval_binop Bsub (erase_qualifiers (type_of e)) cty (erase_qualifiers ty) v' (Vint 1) v'' |] **
+              (eval_binop Bsub (erase_qualifiers (type_of e)) cty (erase_qualifiers ty) v' (Vint 1) v'' **
                (_at (_eqv a) (primR (erase_qualifiers ty) 1 v'') -* Q v' free)))
         | None => lfalse
         end
@@ -247,7 +248,7 @@ Module Type Expr.
         wp_prval e1 Ql ** wp_prval e2 Qr **
             Forall v1 v2 free1 free2, Ql v1 free1 -* Qr v2 free2 -*
                Exists v',
-                 [| eval_binop o (erase_qualifiers (type_of e1)) (erase_qualifiers (type_of e2)) (erase_qualifiers ty) v1 v2 v' |] **
+                 eval_binop o (erase_qualifiers (type_of e1)) (erase_qualifiers (type_of e2)) (erase_qualifiers ty) v1 v2 v' **
                  Q v' (free1 ** free2))
         |-- wp_prval (Ebinop o e1 e2 ty) Q.
 
