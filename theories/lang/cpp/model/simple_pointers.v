@@ -143,8 +143,10 @@ Module SIMPLE_PTRS_IMPL : PTRS.
     by case_option_guard; rewrite /= Z.add_assoc ?Z2N.id.
   Qed.
 
+  (* lift [offset_vaddr] over the [alloc_id * _] monad. *)
   Definition offset_ptr' : Z -> ptr' -> ptr :=
     λ z p,
+    (* This use of projections in intentional, to get better reduction behavior *)
     let aid := fst p in let pa := snd p in
     pair aid <$> offset_paddr z pa.
   Arguments offset_ptr' _ !_ /.
@@ -189,7 +191,7 @@ Module SIMPLE_PTRS_IMPL : PTRS.
   Definition _offset_ptr_single : option Z -> ptr -> ptr :=
     λ oz p, z ← oz; offset_ptr__ z p.
   Definition _offset_ptr : ptr -> offset -> ptr :=
-    foldr (_offset_ptr_single).
+    foldr _offset_ptr_single.
   Notation "p .., o" := (_offset_ptr p o) : ptr_scope.
 
   Instance dot_id : RightId (=) o_id o_dot := _.
