@@ -632,8 +632,61 @@ Section with_cpp.
   Definition cptr := cptr_aux.(unseal).
   Definition cptr_eq : @cptr = _ := cptr_aux.(seal_eq).
 
-  Global Instance cptr_persistent {resolve} : Persistent (cptr resolve s).
+  #[global] Instance cptr_persistent {resolve} : Persistent (cptr resolve s).
   Proof. rewrite cptr_eq. apply _. Qed.
+
+  #[global] Instance cptr_proper {resolve} : Proper (flip fs_entails ==> (⊢)) (@cptr resolve).
+  Proof.
+    intros ? ? H. rewrite cptr_eq/cptr_def. constructor => p /=.
+    iIntros "X" (ti).
+    iSpecialize ("X" $! ti).
+    iDestruct "X" as "#X".
+    iModIntro. iIntros (vs Q) "% B".
+    iSpecialize ("X" $! vs Q).
+    iDestruct H as "(% & H)".
+    rewrite H0. iApply "X".
+    { rewrite a.
+      destruct x, y; simpl in *.
+      rewrite /type_of_spec/= in H0.
+      inversion H0.
+      iClear "X H".
+      erewrite <-map_length. erewrite H4. rewrite map_length. eauto. }
+    iApply "H". iFrame.
+  Qed.
+
+  #[global] Instance cptr_proper_equiv {resolve} : Proper ((≡) ==> (⊣⊢)) (@cptr resolve).
+  Proof.
+    intros ? ? H. rewrite cptr_eq/cptr_def. constructor => p /=.
+    iSplit.
+    { iIntros "X" (ti).
+      iSpecialize ("X" $! ti).
+      iDestruct "X" as "#X".
+      iModIntro. iIntros (vs Q) "% B".
+      iSpecialize ("X" $! vs Q).
+      iDestruct H as "(% & H)".
+      rewrite H0. iApply "X".
+      { rewrite a.
+        destruct x, y; simpl in *.
+        rewrite /type_of_spec/= in H0.
+        inversion H0.
+        iClear "X H".
+        erewrite <-map_length. erewrite <-H4. rewrite map_length. eauto. }
+      iApply "H". iFrame. }
+    { iIntros "X" (ti).
+      iSpecialize ("X" $! ti).
+      iDestruct "X" as "#X".
+      iModIntro. iIntros (vs Q) "% B".
+      iSpecialize ("X" $! vs Q).
+      iDestruct H as "(% & H)".
+      rewrite H0. iApply "X".
+      { rewrite a.
+        destruct x, y; simpl in *.
+        rewrite /type_of_spec/= in H0.
+        inversion H0.
+        iClear "X H".
+        erewrite <-map_length. erewrite H4. rewrite map_length. eauto. }
+      iApply "H". iFrame. }
+  Qed.
 
   (** object identity *)
   Definition _identity (σ : genv) (cls : globname) (mdc : option globname)

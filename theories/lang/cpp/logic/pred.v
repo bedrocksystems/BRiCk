@@ -457,6 +457,55 @@ Section with_cpp.
   Definition type_of_spec `(fs : function_spec) : type :=
     normalize_type (Tfunction (cc:=fs.(fs_cc)) fs.(fs_return) fs.(fs_arguments)).
 
+  (* [mpred] implication on [function_spec] *)
+  Definition fs_impl (P Q : function_spec) : mpred :=
+    [| type_of_spec P = type_of_spec Q |] **
+    □ (Forall ti vs K, P.(fs_spec) ti vs K -* Q.(fs_spec) ti vs K).
+
+  Definition fs_entails (P Q : function_spec) : Prop := |-- fs_impl P Q.
+
+  #[global] Instance fs_entails_refl : Reflexive fs_entails.
+  Proof. rewrite /fs_entails/fs_impl; intro x; iSplit; eauto. Qed.
+  #[global] Instance fs_entails_trans : Transitive fs_entails.
+  Proof.
+    rewrite /fs_entails/fs_impl; intros ? ? ? H1 H2.
+    iDestruct H1 as "(-> & #H1)".
+    iDestruct H2 as "(% & #H2)".
+    iSplit; eauto.
+    iModIntro. iIntros (ti vs K) "Y".
+    iApply "H2". iApply "H1". iFrame.
+  Qed.
+
+  (* [mpred] bi-impliciation on [function_spec] *)
+  Definition fs_equiv (P Q : function_spec) : mpred :=
+    [| type_of_spec P = type_of_spec Q |] **
+    □ (Forall ti vs K, (P.(fs_spec) ti vs K ∗-∗ Q.(fs_spec) ti vs K)).
+
+  (* Equivalence relation on [function_spec] *)
+  #[global] Instance function_spec_equiv : Equiv function_spec :=
+    fun P Q => |-- fs_equiv P Q.
+
+  #[global] Instance fs_equiv_equiv : Equivalence (≡@{function_spec}).
+  Proof.
+    constructor.
+    - do 3 red. rewrite /fs_equiv.
+      intros; iSplit; eauto.
+      iModIntro. iIntros (ti vs K); iSplit; iIntros; iFrame.
+    - do 3 red. intros ? ? H. rewrite /fs_equiv.
+      iDestruct H as "(-> & #H)".
+      iSplit; eauto.
+      iModIntro.
+      iIntros (ti vs K); iSplit; iIntros "X"; iApply "H"; iAssumption.
+    - intros ? ? ? H1 H2. rewrite /equiv/function_spec_equiv/fs_equiv.
+      iDestruct H1 as "(-> & #H1)".
+      iDestruct H2 as "(% & #H2)".
+      iFrame "%". iModIntro.
+      iIntros (ti vs K).
+      iSplit; iIntros "x".
+      + iApply "H2"; iApply "H1"; done.
+      + iApply "H1"; iApply "H2"; done.
+  Qed.
+
   Lemma pinned_ptr_type_divide_1 va n σ p ty
     (Hal : align_of (resolve := σ) ty = Some n) :
     type_ptr (resolve := σ) ty p ⊢ pinned_ptr va p -∗ [| (n | va)%N |].
