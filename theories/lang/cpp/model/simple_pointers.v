@@ -333,24 +333,34 @@ This is more complex than [SIMPLE_PTRS_IMPL], but will be necessary to justify [
 Module PTRS_IMPL : PTRS.
   Import canonical_tu.
 
-  Inductive offset_seg :=
+  Inductive raw_offset_seg : Set :=
   | o_field_ (* type-name: *) (f : field)
   | o_sub_ (ty : type) (z : Z)
   | o_base_ (derived base : globname)
   | o_derived_ (base derived : globname)
   (* deprecated *)
-  | o_num_ (z : Z).
-  Local Instance offset_seg_eq_dec : EqDecision offset_seg.
+  | o_num_ (z : Z)
+  | o_invalid.
+  Local Instance raw_offset_seg_eq_dec : EqDecision raw_offset_seg.
   Proof. solve_decision. Qed.
-  Declare Instance offset_seg_countable : Countable offset_seg.
+  Declare Instance raw_offset_seg_countable : Countable raw_offset_seg.
+  Definition offset_seg : Set := raw_offset_seg * Z.
+  Local Instance offset_seg_eq_dec : EqDecision offset_seg := _.
+  Local Instance offset_seg_countable : Countable offset_seg := _.
 
-  Definition eval_offset_seg (σ : genv) (o : offset_seg) : option Z :=
-    match o with
+  Definition eval_raw_offset_seg σ (ro : raw_offset_seg) : option Z :=
+    match ro with
     | o_num_ z => Some z
     | o_field_ f => o_field_off σ f
     | o_sub_ ty z => o_sub_off σ ty z
     | o_base_ derived base => o_base_off σ derived base
     | o_derived_ base derived => o_derived_off σ base derived
+    | o_invalid => None
+    end.
+  Definition mk_offset_seg σ (ro : raw_offset_seg) : offset_seg :=
+    match eval_raw_offset_seg σ ro with
+    | None => (o_invalid, 0%Z)
+    | Some off => (ro, off)
     end.
 
   (* This list is reversed.
@@ -360,18 +370,18 @@ Module PTRS_IMPL : PTRS.
   Local Instance raw_offset_eq_dec : EqDecision offset := _.
   Local Instance raw_offset_countable : Countable raw_offset := _.
 
-  Definition offset_seg_merge (os1 os2 : offset_seg) : raw_offset :=
+  Definition offset_seg_merge (os1 os2 : offset_seg) : list offset_seg :=
     match os1, os2 with
-    | o_sub_ ty1 n1, o_sub_ ty2 n2 =>
+    | (o_sub_ ty1 n1, off1), (o_sub_ ty2 n2, off2) =>
       if decide (ty1 = ty2)
-      then [o_sub_ ty1 (n2 + n1)]
+      then [(o_sub_ ty1 (n2 + n1), (off1 + off2)%Z)]
       else [os2; os1]
-    | o_base_ der1 base1, o_derived_ base2 der2 =>
+    | (o_base_ der1 base1, off1), (o_derived_ base2 der2, off2) =>
       if decide (der1 = der2 ∧ base1 = base2)
       then []
       else [os2; os1]
-    | o_num_ z1, o_num_ z2 =>
-      [o_num_ (z2 + z1)]
+    | (o_num_ z1, off1), (o_num_ z2, off2) =>
+      [(o_num_ (z2 + z1), (off1 + off2)%Z)]
     | _, _ => [os2; os1]
     end.
 
@@ -405,32 +415,18 @@ Module PTRS_IMPL : PTRS.
 
   Program Definition o_id : offset := [] ↾ _.
   Next Obligation. done. Qed.
+  Program Definition mkOffset σ (ro : raw_offset_seg) : offset :=
+    [mk_offset_seg σ ro] ↾ singleton_raw_offset_wf.
   Definition o_field σ f : offset :=
-    [o_field_ f] ↾ singleton_raw_offset_wf.
+    mkOffset σ (o_field_ f).
   Definition o_sub σ ty z : offset :=
-    [o_sub_ ty z] ↾ singleton_raw_offset_wf.
+    mkOffset σ (o_sub_ ty z).
   Definition o_base σ derived base : offset :=
-    [o_base_ derived base] ↾ singleton_raw_offset_wf.
+    mkOffset σ (o_base_ derived base).
   Definition o_derived σ base derived : offset :=
-    [o_derived_ base derived] ↾ singleton_raw_offset_wf.
+    mkOffset σ (o_derived_ base derived).
   Definition o_num z : offset :=
-    [o_num_ z] ↾ singleton_raw_offset_wf.
-(*
-  Definition offset_seg_merge (os1 os2 : offset_seg) : raw_offset :=
-
-    match os1, os2 with
-    | o_sub_ ty1 n1, o_sub_ ty2 n2 =>
-      if decide (ty1 = ty2)
-      then [o_sub_ ty1 (n2 + n1)]
-      else [os2; os1]
-    | o_base_ der1 base1, o_derived_ base2 der2 =>
-      if decide (der1 = der2 ∧ base1 = base2)
-      then []
-      else [os2; os1]
-    | o_num_ z1, o_num_ z2 =>
-      [o_num_ (z2 + z1)]
-    | _, _ => [os2; os1]
-    end. *)
+    [(o_num_ z, z)] ↾ singleton_raw_offset_wf.
 
   Lemma last_last_equiv {X} d {xs : list X} : default d (stdpp.list.last xs) = List.last xs d.
   Proof. elim: xs => // x1 xs /= <-. by case_match. Qed.
@@ -549,7 +545,10 @@ Module PTRS_IMPL : PTRS.
   Lemma offset_seg_merge_inv :
     let f := (flip offset_seg_merge) in
     ∀ x1 x2, raw_offset_collapse (f x1 x2) = f x1 x2.
-  Proof. move=> /= o1 o2. destruct o1, o2 => //=; by repeat (case_decide; simpl). Qed.
+  Proof.
+    move=> /= [o1 off1] [o2 off2].
+    destruct o1, o2 => //=; by repeat (case_decide; simpl).
+  Qed.
   Lemma foo2 x1 x2 :
     raw_offset_collapse (raw_offset_collapse [x1; x2]) = raw_offset_collapse [x1; x2].
   Proof.
@@ -560,7 +559,8 @@ Module PTRS_IMPL : PTRS.
     raw_offset_collapse (raw_offset_collapse [x1; x2; x3]) = raw_offset_collapse [x1; x2; x3].
   Proof.
     rewrite /= app_nil_r /= /flip.
-    destruct x1, x2, x3 => //=.
+    move: x1 x2 x3 => [o1 ?] [o2 ?] [o3 ?].
+    destruct o1, o2, o3 => //=.
     all: by repeat (case_decide; simpl).
   Qed.
   Instance: Involutive raw_offset_collapse.
@@ -576,7 +576,8 @@ Module PTRS_IMPL : PTRS.
     rewrite /= /raw_offset_collapse /merge_elems /merge_elem /=. etrans. apply: offset_seg_merge_inv. *)
   Abort.
 
-  Local Definition test xs := raw_offset_collapse (raw_offset_collapse xs) = raw_offset_collapse xs.
+  Local Definition test xs :=
+    raw_offset_collapse (raw_offset_collapse xs) = raw_offset_collapse xs.
 
   Section tests.
     Ltac start := intros; red; simpl.
@@ -586,20 +587,20 @@ Module PTRS_IMPL : PTRS.
     Ltac res_false := start; repeat step_false.
 
     Goal test []. Proof. res_true. Qed.
-    Goal `{test [o_sub_ ty n1] }. Proof. done. Qed.
-    Goal `{test [o_sub_ ty n1; o_sub_ ty n2] }.
+    Goal `{test [(o_sub_ ty n1, o1)] }. Proof. done. Qed.
+    Goal `{test [(o_sub_ ty n1, o1); (o_sub_ ty n2, o2)] }.
     Proof. res_true. Qed.
 
-    Goal `{test [o_sub_ ty n1; o_sub_ ty n2; o_field_ f] }.
+    Goal `{test [(o_sub_ ty n1, o1); (o_sub_ ty n2, o2); (o_field_ f, o3)] }.
     Proof. res_true. Qed.
 
-    Goal `{test [o_field_ f; o_sub_ ty n1; o_sub_ ty n2] }.
+    Goal `{test [(o_field_ f, o1); (o_sub_ ty n1, o2); (o_sub_ ty n2, o3)] }.
     Proof. res_true. Qed.
 
-    Goal `{ty1 ≠ ty2 → test [o_sub_ ty1 n1; o_sub_ ty2 n2; o_field_ f] }.
+    Goal `{ty1 ≠ ty2 → test [(o_sub_ ty1 n1, o1); (o_sub_ ty2 n2, o2); (o_field_ f, o3)] }.
     Proof. res_false. Qed.
 
-    Goal `{ty1 ≠ ty2 → test [o_sub_ ty1 n1; o_sub_ ty1 n2; o_sub_ ty2 n3; o_field_ f] }.
+    Goal `{ty1 ≠ ty2 → test [(o_sub_ ty1 n1, o1); (o_sub_ ty1 n2, o2); (o_sub_ ty2 n3, o3); (o_field_ f, o4)] }.
     Proof. start. step_false. step_true. step_false. Qed.
   End tests.
 
@@ -687,18 +688,16 @@ Module PTRS_IMPL : PTRS.
     | offset_ptr p o => root_ptr_alloc_id p
     end.
 
-  (* XXX *)
-  Definition ptr_vaddr' σ (p : ptr) : option vaddr :=
+  Definition ptr_vaddr (p : ptr) : option vaddr :=
     match p with
     | invalid_ptr_ => None
     | fun_ptr_ tu o => snd <$> global_ptr_encode_canon tu o
     | offset_ptr p o =>
       foldr
-        (bindM2 offset_vaddr)
+        (λ off ova, ova ≫= offset_vaddr off)
         (root_ptr_vaddr p)
-        (eval_offset_seg σ <$> `o)
+        (snd <$> `o)
     end.
-  Parameter ptr_vaddr : ptr -> option vaddr.
 
   Definition lift_root_ptr (rp : root_ptr) : ptr := offset_ptr rp o_id.
   Definition invalid_ptr := invalid_ptr_.
