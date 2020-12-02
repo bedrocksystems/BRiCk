@@ -117,6 +117,14 @@ Module Import address_sums.
   Qed.
 End address_sums.
 
+(* Very incomplete set of monadic liftings, currently unexported. *)
+Definition liftA2 `{MRet M, MBind M} `(f : A → B → C) : M A → M B → M C :=
+  λ mx my,
+    x ← mx; y ← my; mret (f x y).
+
+Definition bindM2 `{MBind M} `(f : A → B → M C) : M A → M B → M C :=
+  λ mx my,
+    x ← mx; y ← my; f x y.
 
 (*
 A slightly better model might be something like the following, but we don't
@@ -599,6 +607,14 @@ Module PTRS_IMPL : PTRS.
   Definition o_num z : offset :=
     [o_num_ z] ↾ singleton_raw_offset_wf.
 
+  (* This is probably sound, since it allows temporary underflows. *)
+  (* Section eval_offset.
+    (* From PTR_INTERNAL *)
+    Definition eval_raw_offset (σ : genv) (o : raw_offset) : option Z :=
+      foldr (liftA2 Z.add) (Some 0%Z) (eval_offset_seg σ <$> o).
+    Definition eval_offset (σ : genv) (o : offset) : option Z := eval_raw_offset σ (`o).
+  End eval_offset. *)
+
   Program Definition o_dot : offset → offset → offset :=
     λ o1 o2, (raw_offset_merge (proj1_sig o1) (proj1_sig o2)) ↾ _.
   Next Obligation.
@@ -625,6 +641,13 @@ Module PTRS_IMPL : PTRS.
     | alloc_ptr_ aid _ => Some aid
     end.
 
+  Definition root_ptr_vaddr (rp : root_ptr) : option vaddr :=
+    match rp with
+    | nullptr_ => Some 0%N
+    | global_ptr_ tu o => snd <$> global_ptr_encode_canon tu o
+    | alloc_ptr_ aid va => Some va
+    end.
+
   Inductive ptr_ : Set :=
   | invalid_ptr_
   | fun_ptr_ (tu : translation_unit_canon) (o : obj_name)
@@ -639,6 +662,18 @@ Module PTRS_IMPL : PTRS.
     | invalid_ptr_ => None
     | fun_ptr_ tu o => fst <$> global_ptr_encode_canon tu o
     | offset_ptr p o => root_ptr_alloc_id p
+    end.
+
+  (* XXX *)
+  Definition ptr_vaddr' σ (p : ptr) : option vaddr :=
+    match p with
+    | invalid_ptr_ => None
+    | fun_ptr_ tu o => snd <$> global_ptr_encode_canon tu o
+    | offset_ptr p o =>
+      foldr
+        (bindM2 offset_vaddr)
+        (root_ptr_vaddr p)
+        (eval_offset_seg σ <$> `o)
     end.
   Parameter ptr_vaddr : ptr -> option vaddr.
 
