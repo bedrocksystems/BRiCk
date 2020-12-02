@@ -143,6 +143,7 @@ trigger-cpp2v-build:
   trigger:
     project: bedrocksystems/cpp2v
     branch: master
+    strategy: depend
   only:
     - master
 
