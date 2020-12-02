@@ -40,8 +40,6 @@ Definition eval_ptr_int_op (bo : BinOp) (f : Z -> Z) : Prop :=
                (Tpointer t) (Tint w s) (Tpointer t)
                (Vptr p)     (Vint o)   (Vptr p').
 
-Local Notation Unfold x tm :=
-  ltac:(let H := eval unfold x in tm in exact H) (only parsing).
 (* lhs + rhs: one of rhs or lhs is a pointer to completely-defined object type,
    the other has integral or unscoped enumeration type. In this case,
    the result type has the type of the pointer. (rhs has a pointer type) *)

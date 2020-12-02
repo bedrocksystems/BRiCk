@@ -129,9 +129,6 @@ Section with_Σ.
         [∗list] i ↦ _ ∈ repeat () (BinNatDef.N.to_nat n),
                 _offsetR (_sub t (Z.of_nat i)) (anyR t 1).
 
-  Local Notation Unfold x tm :=
-    ltac:(let H := eval unfold x in tm in exact H) (only parsing).
-
   Definition decodes (endianness: endian) (sgn: signed) (l: list N) (z: Z) :=
     _Z_from_bytes endianness sgn l = z.
 

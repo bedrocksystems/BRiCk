@@ -288,8 +288,6 @@ Section with_Σ.
     let r := op n1 n2 in
     if sgn is Signed then to_signed sz r else to_unsigned sz r.
 
-  Local Notation Unfold x tm :=
-    ltac:(let H := eval unfold x in tm in exact H) (only parsing).
   Local Notation at_eval sz sgn op n1 n2 :=
     (Unfold atomic_eval (atomic_eval sz sgn op n1 n2)) (only parsing).
 

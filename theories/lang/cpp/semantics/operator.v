@@ -76,9 +76,6 @@ Proof. reflexivity. Qed.
      - the unique value of the destination type equal to the source value modulo [2^sz]
        where [sz] is the number of bits used to represent the destination type."
  *)
-Local Notation Unfold x tm :=
-  ltac:(let H := eval unfold x in tm in exact H) (only parsing).
-
 Definition to_signed_bits (bits: N) (z: Z): Z :=
   if bool_decide (bits = 0%N)
   then 0

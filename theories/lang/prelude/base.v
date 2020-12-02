@@ -59,3 +59,6 @@ Section flip_app.
   Global Instance flip_app_assoc : Assoc (=) (flip (@app A)).
   Proof. apply: flip_assoc. Qed.
 End flip_app.
+
+Notation Unfold x tm :=
+  ltac:(let H := eval unfold x in tm in exact H) (only parsing).
