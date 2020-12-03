@@ -63,7 +63,7 @@ Module Type Stmt.
             * category of the expression.
             *)
            match c with
-           | Rvalue =>
+           | Prvalue =>
              Exists a, _result ρ &~ a ** ltrue //\\
              wp_init ρ (erase_qualifiers (type_of e)) (Vptr a) (not_mine e) (Q.(k_return) (Some (Vptr a)))
            | Lvalue

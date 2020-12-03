@@ -29,7 +29,7 @@ Section with_resolve.
         wp_lval e Qarg **
           wp_args es (fun vs frees => Forall v free,
                                    Qarg v free -* Q (v :: vs) (free ** frees))
-      | Rvalue =>
+      | Prvalue =>
         if is_aggregate ty then
           Forall a, _at (_eq a) (anyR (resolve:=σ) (erase_qualifiers ty) 1) -*
           let (e,dt) := destructor_for e in

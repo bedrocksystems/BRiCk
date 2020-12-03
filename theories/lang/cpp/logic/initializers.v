@@ -148,7 +148,7 @@ Module Type Init.
 
     Axiom wp_init_cast_noop : forall e ty addr ty' Q,
         wp_init ty addr e Q
-        |-- wp_init ty addr (Ecast Cnoop (Rvalue, e) ty') Q.
+        |-- wp_init ty addr (Ecast Cnoop (Prvalue, e) ty') Q.
 
     Axiom wp_init_clean : forall e ty ty' addr Q,
         wp_init ty' addr e Q

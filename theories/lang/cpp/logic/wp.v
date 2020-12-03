@@ -392,7 +392,7 @@ Section with_cpp.
       : Expr -> (val -> FreeTemps -> mpred) -> mpred :=
       match vc with
       | Lvalue => @wp_lval resolve M ti ρ
-      | Rvalue => @wp_prval resolve M ti ρ
+      | Prvalue => @wp_prval resolve M ti ρ
       | Xvalue => @wp_xval resolve M ti ρ
       end.
 
