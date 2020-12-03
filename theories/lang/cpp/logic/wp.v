@@ -50,11 +50,35 @@ Section with_cpp.
   Definition SP (Q : val -> mpred) (v : val) (free : FreeTemps) : mpred :=
     free ** Q v.
 
-  (* evaluate an expression as an lvalue *)
+  (* The expressions in the C++ language are categorized into five
+   * "value categories" as defined in:
+   *    http://eel.is/c++draft/expr.prop#basic.lval-1
+   *
+   * - "A glvalue is an expression whose evaluation determines the identity of
+   *    an object or function."
+   *   http://eel.is/c++draft/expr.prop#basic.lval-1.1
+   * - "A prvalue is an expression whose evaluation initializes an object or
+   *    computes the value of an operand of an operator, as specified by the
+   *    context in which it appears, or an expression that has type cv void."
+   *   http://eel.is/c++draft/expr.prop#basic.lval-1.2
+   * - "An xvalue is a glvalue that denotes an object whose resources can be
+   *    reused (usually because it is near the end of its lifetime)."
+   *   http://eel.is/c++draft/expr.prop#basic.lval-1.3
+   * - "An lvalue is a glvalue that is not an xvalue."
+   *   http://eel.is/c++draft/expr.prop#basic.lval-1.4
+   * - "An rvalue is a prvalue or an xvalue."
+   *   http://eel.is/c++draft/expr.prop#basic.lval-1.5
+   *)
+
+  (** lvalues *)
+  (* [wp_lval σ E ti ρ e Q] evaluates the expression [e] in region [ρ]
+   * against thread id [ti] with mask [E] and continutation [Q].
+   *)
   Parameter wp_lval
     : forall {resolve:genv}, coPset -> thread_info -> region ->
         Expr ->
         (val -> FreeTemps -> epred) -> (* result -> free -> post *)
+        (* ^^ TODO [val] above should probably be [ptr] *)
         mpred. (* pre-condition *)
 
   Axiom wp_lval_shift : forall σ M ti ρ e Q,
@@ -69,10 +93,11 @@ Section with_cpp.
     Proper (genv_leq ==> eq ==> eq ==> eq ==> eq ==>
             pointwise_relation _ (pointwise_relation _ lentails) ==> lentails)
            (@wp_lval).
-  Proof. repeat red. intros; subst.
-         iIntros "X". iRevert "X".
-         iApply wp_lval_frame; eauto.
-         iIntros (v). iIntros (f). iApply H4.
+  Proof.
+    repeat red. intros; subst.
+    iIntros "X". iRevert "X".
+    iApply wp_lval_frame; eauto.
+    iIntros (v). iIntros (f). iApply H4.
   Qed.
 
   Section wp_lval.
@@ -109,7 +134,81 @@ Section with_cpp.
     Qed.
   End wp_lval.
 
-  (* evaluate an expression as an prvalue *)
+  (** prvalue *)
+  (*
+   * there are two distinct weakest pre-conditions for this corresponding to the
+   * stndard text:
+   * "A prvalue is an expression whose evaluation...
+   * 1. initializes an object, or
+   * 2. computes the value of an operand of an operator,
+   * as specified by the context in which it appears,..."
+   *)
+
+  (* evaluate a prvalue that "initializes an object"
+   *)
+  Parameter wp_init
+    : forall {resolve:genv}, coPset -> thread_info -> region ->
+                        type -> val -> Expr ->
+                        (* [val] should be [ptr] *)
+                        (FreeTemps -> epred) -> (* free -> post *)
+                        mpred. (* pre-condition *)
+
+  Axiom wp_init_shift : forall σ M ti ρ ty v e Q,
+      (|={M}=> wp_init (resolve:=σ) M ti ρ ty v e (fun free => |={M}=> Q free))
+    ⊢ wp_init (resolve:=σ) M ti ρ ty v e Q.
+
+  Axiom wp_init_frame :
+    forall σ1 σ2 M ti ρ t v e k1 k2,
+      genv_leq σ1 σ2 ->
+      Forall f, k1 f -* k2 f |-- @wp_init σ1 M ti ρ t v e k1 -* @wp_init σ2 M ti ρ t v e k2.
+
+  Global Instance Proper_wp_init :
+    Proper (genv_leq ==> eq ==> eq ==> eq ==> eq ==> eq ==> eq ==>
+            pointwise_relation _ lentails ==> lentails)
+           (@wp_init).
+  Proof.
+    repeat red; intros; subst.
+    iIntros "X"; iRevert "X"; iApply wp_init_frame; eauto.
+    iIntros (f); iApply H6.
+  Qed.
+
+  Section wp_init.
+    Context {σ : genv} (M : coPset) (ti : thread_info) (ρ : region)
+      (t : type) (v : val) (e : Expr).
+    Local Notation WP := (wp_init (resolve:=σ) M ti ρ t v e) (only parsing).
+    Implicit Types P : mpred.
+    Implicit Types Q : FreeTemps → epred.
+
+    Lemma wp_init_wand Q1 Q2 : WP Q1 |-- (∀ f, Q1 f -* Q2 f) -* WP Q2.
+    Proof. iIntros "Hwp HK". by iApply (wp_init_frame with "HK Hwp"). Qed.
+    Lemma fupd_wp_init Q : (|={M}=> WP Q) |-- WP Q.
+    Proof.
+      rewrite -{2}wp_init_shift. apply fupd_elim. rewrite -fupd_intro.
+      iIntros "Hwp". iApply (wp_init_wand with "Hwp"). auto.
+    Qed.
+    Lemma wp_init_fupd Q : WP (λ f, |={M}=> Q f) |-- WP Q.
+    Proof. iIntros "Hwp". by iApply (wp_init_shift with "[$Hwp]"). Qed.
+
+    (* proof mode *)
+    Global Instance elim_modal_fupd_wp_init p P Q :
+      ElimModal True p false (|={M}=> P) P (WP Q) (WP Q).
+    Proof.
+      rewrite /ElimModal. rewrite bi.intuitionistically_if_elim/=.
+      by rewrite fupd_frame_r bi.wand_elim_r fupd_wp_init.
+    Qed.
+    Global Instance elim_modal_bupd_wp_init p P Q :
+      ElimModal True p false (|==> P) P (WP Q) (WP Q).
+    Proof.
+      rewrite /ElimModal (bupd_fupd M). exact: elim_modal_fupd_wp_init.
+    Qed.
+    Global Instance add_modal_fupd_wp_init P Q : AddModal (|={M}=> P) P (WP Q).
+    Proof.
+      rewrite/AddModal. by rewrite fupd_frame_r bi.wand_elim_r fupd_wp_init.
+    Qed.
+  End wp_init.
+
+  (* evaluate a prvalue that "computes the value of an operand of an operator"
+   *)
   Parameter wp_prval
     : forall {resolve:genv}, coPset -> thread_info -> region ->
         Expr ->
@@ -168,76 +267,14 @@ Section with_cpp.
     Qed.
   End wp_prval.
 
-  (* evaluate an initializing expression
-   * - the [val] is the location of the value that is being initialized
-   * - the expression denotes a prvalue with a "result object" (see
-   *    https://en.cppreference.com/w/cpp/language/value_category)
-   *)
-  Parameter wp_init
-    : forall {resolve:genv}, coPset -> thread_info -> region ->
-                        type -> val -> Expr ->
-                        (FreeTemps -> epred) -> (* free -> post *)
-                        mpred. (* pre-condition *)
-
-  Axiom wp_init_shift : forall σ M ti ρ ty v e Q,
-      (|={M}=> wp_init (resolve:=σ) M ti ρ ty v e (fun free => |={M}=> Q free))
-    ⊢ wp_init (resolve:=σ) M ti ρ ty v e Q.
-
-  Axiom wp_init_frame :
-    forall σ1 σ2 M ti ρ t v e k1 k2,
-      genv_leq σ1 σ2 ->
-      Forall f, k1 f -* k2 f |-- @wp_init σ1 M ti ρ t v e k1 -* @wp_init σ2 M ti ρ t v e k2.
-
-  Global Instance Proper_wp_init :
-    Proper (genv_leq ==> eq ==> eq ==> eq ==> eq ==> eq ==> eq ==>
-            pointwise_relation _ lentails ==> lentails)
-           (@wp_init).
-  Proof.
-    repeat red; intros; subst.
-    iIntros "X"; iRevert "X"; iApply wp_init_frame; eauto.
-    iIntros (f); iApply H6.
-  Qed.
-
-  Section wp_init.
-    Context {σ : genv} (M : coPset) (ti : thread_info) (ρ : region)
-      (t : type) (v : val) (e : Expr).
-    Local Notation WP := (wp_init (resolve:=σ) M ti ρ t v e) (only parsing).
-    Implicit Types P : mpred.
-    Implicit Types Q : FreeTemps → epred.
-
-    Lemma wp_init_wand Q1 Q2 : WP Q1 |-- (∀ f, Q1 f -* Q2 f) -* WP Q2.
-    Proof. iIntros "Hwp HK". by iApply (wp_init_frame with "HK Hwp"). Qed.
-    Lemma fupd_wp_init Q : (|={M}=> WP Q) |-- WP Q.
-    Proof.
-      rewrite -{2}wp_init_shift. apply fupd_elim. rewrite -fupd_intro.
-      iIntros "Hwp". iApply (wp_init_wand with "Hwp"). auto.
-    Qed.
-    Lemma wp_init_fupd Q : WP (λ f, |={M}=> Q f) |-- WP Q.
-    Proof. iIntros "Hwp". by iApply (wp_init_shift with "[$Hwp]"). Qed.
-
-    (* proof mode *)
-    Global Instance elim_modal_fupd_wp_init p P Q :
-      ElimModal True p false (|={M}=> P) P (WP Q) (WP Q).
-    Proof.
-      rewrite /ElimModal. rewrite bi.intuitionistically_if_elim/=.
-      by rewrite fupd_frame_r bi.wand_elim_r fupd_wp_init.
-    Qed.
-    Global Instance elim_modal_bupd_wp_init p P Q :
-      ElimModal True p false (|==> P) P (WP Q) (WP Q).
-    Proof.
-      rewrite /ElimModal (bupd_fupd M). exact: elim_modal_fupd_wp_init.
-    Qed.
-    Global Instance add_modal_fupd_wp_init P Q : AddModal (|={M}=> P) P (WP Q).
-    Proof.
-      rewrite/AddModal. by rewrite fupd_frame_r bi.wand_elim_r fupd_wp_init.
-    Qed.
-  End wp_init.
+  (** xvalues *)
 
   (* evaluate an expression as an xvalue *)
   Parameter wp_xval
     : forall {resolve:genv}, coPset -> thread_info -> region ->
                         Expr ->
                         (val -> FreeTemps -> epred) -> (* result -> free -> post *)
+                        (* ^^ TODO [val] should be [ptr] *)
                         mpred. (* pre-condition *)
 
   Axiom wp_xval_shift : forall σ M ti ρ e Q,
@@ -338,8 +375,10 @@ Section with_cpp.
     Qed.
   End wp_glval.
 
-  (* evaluate an expression as an rvalue *)
-
+  (** rvalues *)
+  (* evaluate an expression as an rvalue
+   * TODO this doesn't capture initializing prvalues
+   *)
   Definition wp_rval {resolve} M ti (r : region) e Q :=
     @wp_prval resolve M ti r e Q \\// @wp_xval resolve M ti r e Q.
 
@@ -384,6 +423,10 @@ Section with_cpp.
     Qed.
   End wp_rval.
 
+  (* sometimes we we bundle expresions with their value categories, so
+   * we provide a uniform interface
+   * TODO it probably makes sense to remove this.
+   *)
   Section wpe.
     Context {resolve:genv}.
     Variable (M : coPset) (ti : thread_info) (ρ : region).
