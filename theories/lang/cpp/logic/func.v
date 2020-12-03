@@ -228,8 +228,8 @@ Section with_cpp.
     | i :: is' =>
       match i.(init_path) with
       | This
-      | Base _ => lfalse
-      | _ => wpi (resolve:=resolve) ⊤ ti ρ cls (Vptr this) i (fun f => f ** wpi_members ti ρ cls this is' Q)
+      | Base _ => False
+      | _ => wpi (resolve:=resolve) ⊤ ti ρ cls this i (fun f => f ** wpi_members ti ρ cls this is' Q)
       end
     end.
 
@@ -244,7 +244,7 @@ Section with_cpp.
       | Field _
       | Indirect _ _ =>
         this |-> init_identity cls (wpi_members ti ρ cls this inits Q)
-      | _ => wpi (resolve:=resolve) ⊤ ti ρ cls (Vptr this) i (fun f => f ** wpi_bases ti ρ cls this is' Q)
+      | _ => wpi (resolve:=resolve) ⊤ ti ρ cls this i (fun f => f ** wpi_bases ti ρ cls this is' Q)
       end
     end.
 
@@ -255,18 +255,23 @@ Section with_cpp.
              (ti : thread_info) (args : list val)
              (Q : val -> epred) : mpred :=
     match ctor.(c_body) with
-    | None => lfalse
-    | Some Defaulted => lfalse
+    | None => False
+    | Some Defaulted => False
       (* ^ defaulted constructors are not supported yet *)
     | Some (UserDefined (inits, body)) =>
       match args with
       | Vptr thisp :: rest_vals =>
-        bind_base_this (Some thisp) Tvoid (fun ρ =>
-        bind_vars ctor.(c_params) rest_vals ρ (fun ρ frees =>
-          (wpi_bases ti ρ ctor.(c_class) thisp inits
-             (fun free => free **
-                        wp (resolve:=resolve) ⊤ ti ρ body (Kfree frees (void_return (|> Q Vvoid)))))))
-      | _ => lfalse
+        match size_of _ (Tnamed ctor.(c_class)) with
+        | Some sz =>
+          thisp |-> blockR sz **
+          bind_base_this (Some thisp) Tvoid (fun ρ =>
+          bind_vars ctor.(c_params) rest_vals ρ (fun ρ frees =>
+            (wpi_bases ti ρ ctor.(c_class) thisp inits
+               (fun free => free **
+                              wp (resolve:=resolve) ⊤ ti ρ body (Kfree frees (void_return (|> Q Vvoid)))))))
+        | None => False
+        end
+      | _ => False
       end
     end.
 
@@ -301,7 +306,7 @@ Section with_cpp.
       match d.1 with
       | Field _
       | Indirect _ _ => lfalse
-      | _ => wpd (resolve:=resolve) ⊤ ti ρ cls (Vptr this) d
+      | _ => wpd (resolve:=resolve) ⊤ ti ρ cls this d
                 (wpd_bases ti ρ cls this is' Q)
       end
     end.
@@ -317,7 +322,7 @@ Section with_cpp.
       | This
       | Base _ =>
         this |-> revert_identity cls (wpd_bases ti ρ cls this dests Q)
-      | _ => wpd (resolve:=resolve) ⊤ ti ρ cls (Vptr this) d (wpd_members ti ρ cls this is' Q)
+      | _ => wpd (resolve:=resolve) ⊤ ti ρ cls this d (wpd_members ti ρ cls this is' Q)
       end
     end.
 

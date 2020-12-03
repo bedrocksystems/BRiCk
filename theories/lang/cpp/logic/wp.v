@@ -77,7 +77,7 @@ Section with_cpp.
   Parameter wp_lval
     : forall {resolve:genv}, coPset -> thread_info -> region ->
         Expr ->
-        (val -> FreeTemps -> epred) -> (* result -> free -> post *)
+        (ptr -> FreeTemps -> epred) -> (* result -> free -> post *)
         (* ^^ TODO [val] above should probably be [ptr] *)
         mpred. (* pre-condition *)
 
@@ -104,7 +104,7 @@ Section with_cpp.
     Context {σ : genv} (M : coPset) (ti : thread_info) (ρ : region) (e : Expr).
     Local Notation WP := (wp_lval (resolve:=σ) M ti ρ e) (only parsing).
     Implicit Types P : mpred.
-    Implicit Types Q : val → FreeTemps → epred.
+    Implicit Types Q : ptr → FreeTemps → epred.
 
     Lemma wp_lval_wand Q1 Q2 : WP Q1 |-- (∀ v f, Q1 v f -* Q2 v f) -* WP Q2.
     Proof. iIntros "Hwp HK". by iApply (wp_lval_frame with "HK Hwp"). Qed.
@@ -148,7 +148,7 @@ Section with_cpp.
    *)
   Parameter wp_init
     : forall {resolve:genv}, coPset -> thread_info -> region ->
-                        type -> val -> Expr ->
+                        type -> ptr -> Expr ->
                         (* [val] should be [ptr] *)
                         (FreeTemps -> epred) -> (* free -> post *)
                         mpred. (* pre-condition *)
@@ -174,8 +174,8 @@ Section with_cpp.
 
   Section wp_init.
     Context {σ : genv} (M : coPset) (ti : thread_info) (ρ : region)
-      (t : type) (v : val) (e : Expr).
-    Local Notation WP := (wp_init (resolve:=σ) M ti ρ t v e) (only parsing).
+      (t : type) (p : ptr) (e : Expr).
+    Local Notation WP := (wp_init (resolve:=σ) M ti ρ t p e) (only parsing).
     Implicit Types P : mpred.
     Implicit Types Q : FreeTemps → epred.
 
@@ -190,14 +190,14 @@ Section with_cpp.
     Proof. iIntros "Hwp". by iApply (wp_init_shift with "[$Hwp]"). Qed.
 
     (* proof mode *)
-    Global Instance elim_modal_fupd_wp_init p P Q :
-      ElimModal True p false (|={M}=> P) P (WP Q) (WP Q).
+    Global Instance elim_modal_fupd_wp_init q P Q :
+      ElimModal True q false (|={M}=> P) P (WP Q) (WP Q).
     Proof.
       rewrite /ElimModal. rewrite bi.intuitionistically_if_elim/=.
       by rewrite fupd_frame_r bi.wand_elim_r fupd_wp_init.
     Qed.
-    Global Instance elim_modal_bupd_wp_init p P Q :
-      ElimModal True p false (|==> P) P (WP Q) (WP Q).
+    Global Instance elim_modal_bupd_wp_init q P Q :
+      ElimModal True q false (|==> P) P (WP Q) (WP Q).
     Proof.
       rewrite /ElimModal (bupd_fupd M). exact: elim_modal_fupd_wp_init.
     Qed.
@@ -273,7 +273,7 @@ Section with_cpp.
   Parameter wp_xval
     : forall {resolve:genv}, coPset -> thread_info -> region ->
                         Expr ->
-                        (val -> FreeTemps -> epred) -> (* result -> free -> post *)
+                        (ptr -> FreeTemps -> epred) -> (* result -> free -> post *)
                         (* ^^ TODO [val] should be [ptr] *)
                         mpred. (* pre-condition *)
 
@@ -299,7 +299,7 @@ Section with_cpp.
     Context {σ : genv} (M : coPset) (ti : thread_info) (ρ : region) (e : Expr).
     Local Notation WP := (wp_xval (resolve:=σ) M ti ρ e) (only parsing).
     Implicit Types P : mpred.
-    Implicit Types Q : val → FreeTemps → epred.
+    Implicit Types Q : ptr → FreeTemps → epred.
 
     Lemma wp_xval_wand Q1 Q2 : WP Q1 |-- (∀ v f, Q1 v f -* Q2 v f) -* WP Q2.
     Proof. iIntros "Hwp HK". by iApply (wp_xval_frame with "HK Hwp"). Qed.
@@ -364,7 +364,7 @@ Section with_cpp.
   Section wp_glval.
     Context {σ : genv} (M : coPset) (ti : thread_info) (ρ : region) (e : Expr).
     Local Notation WP := (wp_glval (resolve:=σ) M ti ρ e) (only parsing).
-    Implicit Types Q : val → FreeTemps → epred.
+    Implicit Types Q : ptr → FreeTemps → epred.
 
     Lemma wp_glval_wand Q1 Q2 : WP Q1 |-- (∀ v f, Q1 v f -* Q2 v f) -* WP Q2.
     Proof. iIntros "Hwp HK". by iApply (wp_glval_frame with "HK Hwp"). Qed.
@@ -379,8 +379,8 @@ Section with_cpp.
   (* evaluate an expression as an rvalue
    * TODO this doesn't capture initializing prvalues
    *)
-  Definition wp_rval {resolve} M ti (r : region) e Q :=
-    @wp_prval resolve M ti r e Q \\// @wp_xval resolve M ti r e Q.
+  Definition wp_rval {resolve} M ti (r : region) e (Q : ptr + val -> FreeTemps -> mpred) :=
+    @wp_prval resolve M ti r e (fun v => Q (inr v)) \\// @wp_xval resolve M ti r e (fun p => Q (inl p)).
 
   Theorem wp_rval_frame :
     forall σ1 σ2 M ti ρ e k1 k2,
@@ -391,7 +391,9 @@ Section with_cpp.
     iIntros "X"; iIntros "W".
     iDestruct "W" as "[W | W]"; [ iLeft | iRight ].
     - iRevert "W". iApply wp_prval_frame; eauto with iFrame.
+      iIntros (v f) "Y"; iApply "X"; iFrame.
     - iRevert "W". iApply wp_xval_frame; eauto with iFrame.
+      iIntros (v f) "Y"; iApply "X"; iFrame.
   Qed.
 
   (** note: you can not shift for [wp_rval] because [|==> wp_rval] allows the
@@ -405,14 +407,16 @@ Section with_cpp.
   Proof using .
     unfold wp_rval; simpl. repeat red. intros.
     eapply bi.or_elim; [ rewrite <- bi.or_intro_l | rewrite <- bi.or_intro_r ].
-    eapply Proper_wp_prval; eauto.
-    eapply Proper_wp_xval; eauto.
+    - eapply Proper_wp_prval; eauto.
+      do 2 intro. apply H4.
+    - eapply Proper_wp_xval; eauto.
+      do 2 intro; apply H4.
   Qed.
 
   Section wp_rval.
     Context {σ : genv} (M : coPset) (ti : thread_info) (ρ : region) (e : Expr).
     Local Notation WP := (wp_rval (resolve:=σ) M ti ρ e) (only parsing).
-    Implicit Types Q : val → FreeTemps → epred.
+    Implicit Types Q : ptr + val → FreeTemps → epred.
 
     Lemma wp_rval_wand Q1 Q2 : WP Q1 |-- (∀ v f, Q1 v f -* Q2 v f) -* WP Q2.
     Proof. iIntros "Hwp HK". by iApply (wp_rval_frame with "HK Hwp"). Qed.
@@ -423,6 +427,7 @@ Section with_cpp.
     Qed.
   End wp_rval.
 
+  (*
   (* sometimes we we bundle expresions with their value categories, so
    * we provide a uniform interface
    * TODO it probably makes sense to remove this.
@@ -492,11 +497,12 @@ Section with_cpp.
     iIntros "X"; iRevert "X"; iApply wpAny_frame; eauto.
     iIntros (v f); iApply H4; reflexivity.
   Qed.
+*)
 
   (** initializers *)
   Parameter wpi
     : forall {resolve:genv} (M : coPset) (ti : thread_info) (ρ : region)
-        (cls : globname) (this : val) (init : Initializer)
+        (cls : globname) (this : ptr) (init : Initializer)
         (Q : mpred -> mpred), mpred.
 
   Axiom wpi_shift : forall σ M ti ρ cls this e Q,
@@ -518,7 +524,7 @@ Section with_cpp.
 
   Section wpi.
     Context {σ : genv} (M : coPset) (ti : thread_info) (ρ : region)
-      (cls : globname) (this : val) (init : Initializer).
+      (cls : globname) (this : ptr) (init : Initializer).
     Local Notation WP := (wpi (resolve:=σ) M ti ρ cls this init) (only parsing).
     Implicit Types P : mpred.
     Implicit Types k : mpred → mpred.
@@ -554,7 +560,7 @@ Section with_cpp.
   (** destructors *)
   Parameter wpd
     : forall {resolve:genv} (M : coPset) (ti : thread_info) (ρ : region)
-        (cls : globname) (this : val)
+        (cls : globname) (this : ptr)
         (init : FieldOrBase * obj_name)
         (Q : epred), mpred.
 
@@ -577,7 +583,7 @@ Section with_cpp.
 
   Section wpd.
     Context {σ : genv} (M : coPset) (ti : thread_info) (ρ : region)
-      (cls : globname) (this : val) (init : FieldOrBase * obj_name).
+      (cls : globname) (this : ptr) (init : FieldOrBase * obj_name).
     Local Notation WP := (wpd (resolve:=σ) M ti ρ cls this init) (only parsing).
     Implicit Types P : mpred.
     Implicit Types k : mpred.

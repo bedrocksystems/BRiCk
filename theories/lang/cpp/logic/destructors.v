@@ -40,9 +40,9 @@ Section with_resolve.
          end) from ls
     end.
 
-  Axiom wpd_deinit : forall (cls : globname) (this : val) path dn (Q : epred),
+  Axiom wpd_deinit : forall (cls : globname) (this : ptr) path dn (Q : epred),
     Exists fp,
-      (_offsetL (offset_for σ cls path) (_eqv this) &~ fp ** ltrue) //\\
+      (_offsetL (offset_for σ cls path) (_eq this) &~ fp ** ltrue) //\\
       (match get_type_of_path cls path with
        | Some target_type =>
          destruct_val (σ:=σ) ti target_type (Vptr fp) (Some dn) Q
