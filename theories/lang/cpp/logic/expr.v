@@ -50,8 +50,9 @@ Module Type Expr.
     Local Notation glob_def := (glob_def resolve) (only parsing).
     Local Notation _global := (_global (resolve:=resolve)) (only parsing).
     Local Notation _field := (_field (resolve:=resolve)) (only parsing).
+    Local Notation _base := (_base (resolve:=resolve)) (only parsing).
+    Local Notation _derived := (_derived (resolve:=resolve)) (only parsing).
     Local Notation _sub := (_sub (resolve:=resolve)) (only parsing).
-    Local Notation _super := (_super (resolve:=resolve)) (only parsing).
     Local Notation eval_unop := (@eval_unop resolve) (only parsing).
     Local Notation eval_binop := (eval_binop (resolve := resolve)) (only parsing).
     Local Notation size_of := (@size_of resolve) (only parsing).
@@ -385,7 +386,7 @@ Module Type Expr.
 
     Axiom wp_lval_static_cast : forall vc from to e ty Q,
       wpe vc e (fun addr free => Exists addr',
-                  (_offsetL (_super from to) (_eqv addr) &~ addr' ** ltrue) //\\
+                  (_offsetL (_base from to) (_eqv addr) &~ addr' ** ltrue) //\\
                            (* ^ this is a down-cast *)
                   Q (Vptr addr') free)
       |-- wp_lval (Ecast (Cstatic from to) (vc, e) ty) Q.
@@ -402,7 +403,7 @@ Module Type Expr.
       wp_lval e (fun addr free => Exists addr',
         match erase_qualifiers (type_of e), erase_qualifiers ty with
           | Tnamed from, Tnamed to => (*<-- is this the only case here?*)
-                  (_offsetL (_super from to) (_eqv addr) &~ addr' ** True) //\\
+                  (_offsetL (_base from to) (_eqv addr) &~ addr' ** True) //\\
                   Q (Vptr addr') free
           | _, _ => False
         end)
@@ -427,7 +428,7 @@ Module Type Expr.
       wp_lval e (fun addr free => Exists addr',
         match erase_qualifiers (type_of e), erase_qualifiers ty with
           | Tnamed from, Tnamed to => (*<-- is this the only case here?*)
-                  (_offsetL (_derived resolve from to) (_eqv addr) &~ addr'
+                  (_offsetL (_derived from to) (_eqv addr) &~ addr'
                             ** True) //\\
                   Q (Vptr addr') free
           | _, _ => False
@@ -439,7 +440,7 @@ Module Type Expr.
         match erase_qualifiers (type_of e), erase_qualifiers ty with
           | Tnamed from, Tnamed to
           | Tpointer (Tnamed from), Tpointer (Tnamed to) =>
-                  (_offsetL (_derived resolve from to) (_eqv addr) &~ addr'
+                  (_offsetL (_derived from to) (_eqv addr) &~ addr'
                             ** True) //\\
                   Q (Vptr addr') free
           | _, _ => False
