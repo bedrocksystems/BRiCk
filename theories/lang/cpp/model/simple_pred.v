@@ -665,9 +665,12 @@ Module SimpleCPP.
       @tptsto σ ty q p v |--
       ptr_live p ** (ptr_live p -* @tptsto σ ty q p v).
 
+    Instance tptsto_nonnull_obs {σ} ty q a :
+      Observe False (@tptsto σ ty q nullptr a).
+    Proof. iDestruct 1 as (Hne) "_". naive_solver. Qed.
     Theorem tptsto_nonnull {σ} ty q a :
       @tptsto σ ty q nullptr a |-- False.
-    Proof. iDestruct 1 as (Hne) "_". naive_solver. Qed.
+    Proof. rewrite tptsto_nonnull_obs. iDestruct 1 as "[]". Qed.
 
     Instance tptsto_mono :
       Proper (genv_leq ==> eq ==> eq ==> eq ==> eq ==> (⊢)) (@tptsto).
