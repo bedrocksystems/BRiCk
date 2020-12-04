@@ -626,7 +626,7 @@ Module Type Expr.
                       (_at (_eqv res) (blockR sz) **
                        (* todo: ^ This misses an condition that [res] is suitably aligned. (issue #149) *)
                            (Forall newp : ptr,
-                                   [| newp <> nullptr |] ** _at (_eq newp) (anyR aty 1) **
+                                   _at (_eq newp) (anyR aty 1) **
                                    provides_storage resp newp aty -*
                                    (* todo: we currently expose [anyR] after the [new] but that isn't correct
                                       if [anyR] implies something about the effective types of pointers since the lifetime

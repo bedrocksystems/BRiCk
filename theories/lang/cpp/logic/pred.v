@@ -322,7 +322,7 @@ Module Type CPP_LOGIC (Import CC : CPP_LOGIC_CLASS)
     (* A pinned ptr allows access to the underlying bytes. The fupd is needed to
       update the C++ abstraction's ghost state. *)
     Axiom pinned_ptr_borrow : forall {σ} ty p v va (M: coPset),
-      @tptsto σ ty 1 p v ** pinned_ptr va p ** [| p <> nullptr |] |--
+      @tptsto σ ty 1 p v ** pinned_ptr va p |--
         |={M}=> Exists vs, @encodes σ ty v vs ** vbytes va vs 1 **
                 (Forall v' vs', @encodes  σ ty v' vs' -* vbytes va vs' 1 -*
                                 |={M}=> @tptsto σ ty 1 p v').

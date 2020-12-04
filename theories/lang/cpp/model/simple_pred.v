@@ -759,13 +759,13 @@ Module SimpleCPP.
       Observe (_valid_ptr false p) (pinned_ptr va p) := _.
 
     Theorem pinned_ptr_borrow : forall {σ} ty p v va M,
-      @tptsto σ ty 1 p v ** pinned_ptr va p ** [| p <> nullptr |] |--
+      @tptsto σ ty 1 p v ** pinned_ptr va p |--
       |={M}=> Exists vs, @encodes σ ty v vs ** vbytes va vs 1 **
               (Forall v' vs', @encodes  σ ty v' vs' -* vbytes va vs' 1 -*
                               |={M}=> @tptsto σ ty 1 p v').
     Proof.
-      intros. iIntros "(TP & PI & %)".
-      iDestruct "PI" as "[_ [[% %]|[% MJ]]]"; [done| ].
+      intros. iIntros "(TP & PI)".
+      iDestruct "PI" as "[_ [[-> %]|[% MJ]]]"; first by rewrite tptsto_nonnull.
       iDestruct "TP" as (_ ma) "[MJ' [VP TP]]".
       iDestruct (mem_inj_own_agree with "MJ MJ'") as %<-.
       iDestruct "TP" as (vs) "(#EN & Bys & VBys)".
