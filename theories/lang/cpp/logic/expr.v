@@ -382,6 +382,7 @@ Module Type Expr.
                     Q v free)
         |-- wp_prval (Ecast Cl2r (Xvalue, e) ty) Q.
 
+    (** [Cnoop] casts are no-op casts. *)
     Axiom wp_prval_cast_noop : forall ty e Q,
         wp_prval e Q
         |-- wp_prval (Ecast Cnoop (Prvalue, e) ty) Q.
@@ -391,6 +392,10 @@ Module Type Expr.
     Axiom wp_xval_cast_noop : forall ty e Q,
         wp_xval e Q
         |-- wp_xval (Ecast Cnoop (Xvalue, e) ty) Q.
+
+    (* note: this is the cast that occurs for the implementation of
+     * [std::move]
+     *)
     Axiom wp_lval_xval_cast_noop : forall ty e Q,
         wp_xval e Q
         |-- wp_lval (Ecast Cnoop (Xvalue, e) ty) Q.
@@ -414,17 +419,21 @@ Module Type Expr.
                       end)
         |-- wp_prval (Ecast Cptr2bool (Prvalue, e) ty) Q.
 
+    (* [Cfunction2pointer] is a cast from a function to a pointer.
+     *
+     * note that C and C++ classify function names differently, so we
+     * end up with two cases
+     * - in C, function names are Rvalues, and
+     * - in C++, function names are Lvalues
+     *)
     Axiom wp_prval_cast_function2pointer_c : forall ty ty' g Q,
         wp_lval (Evar (Gname g) ty') (fun v => Q (Vptr v))
         |-- wp_prval (Ecast Cfunction2pointer (Prvalue, Evar (Gname g) ty') ty) Q.
     Axiom wp_prval_cast_function2pointer_cpp : forall ty ty' g Q,
         wp_lval (Evar (Gname g) ty') (fun v => Q (Vptr v))
         |-- wp_prval (Ecast Cfunction2pointer (Lvalue, Evar (Gname g) ty') ty) Q.
-    (* ^ note(gmm): C and C++ classify function names differently
-     * - in C, function names are Prvalues, and
-     * - in C++, function names are Lvalues
-     *)
 
+    (** **)
     Axiom wp_prval_cast_bitcast : forall e t Q,
         wp_prval e Q
         |-- wp_prval (Ecast Cbitcast (Prvalue, e) t) Q.
@@ -439,97 +448,150 @@ Module Type Expr.
         |-- wp_prval (Ecast Cnull2ptr (Prvalue, e) t) Q.
 
     (* note(gmm): in the clang AST, the subexpression is the call.
-     * in essence, `Ecast (Cuser ..)` is a syntax annotation.
+     * in essence, [Ecast (Cuser ..)] is a syntax annotation.
      *)
     Axiom wp_prval_cast_user : forall e ty Z Q,
         wp_prval e Q
         |-- wp_prval (Ecast (Cuser Z) (Prvalue, e) ty) Q.
 
+
+    (** TODO there is a lot of subtlety around [reinterpret_cast]
+     *)
     Axiom wp_prval_cast_reinterpret : forall q e ty Q,
         wp_prval e Q
         |-- wp_prval (Ecast (Creinterpret q) (Prvalue, e) ty) Q.
 
-    (* XXX todo 
+    (* [Cstatic from to] represents a static cast from [from] to
+     * [to].
+     *
+     * TODO this rule needs to be cleaned up a lot
+     *)
+    (*
     Axiom wp_lval_static_cast : forall vc from to e ty Q,
       wpe vc e (fun addr free => Exists addr',
                   (_offsetL (_base from to) (_eqv addr) &~ addr' ** ltrue) //\\
                            (* ^ this is a down-cast *)
                   Q (Vptr addr') free)
       |-- wp_lval (Ecast (Cstatic from to) (vc, e) ty) Q.
-
-    Axiom wpe_cast_tovoid : forall vc' vc e ty Q,
-      wpe vc e (fun _ free => Q (Vint 0) free)
-      |-- wpe vc' (Ecast C2void (vc, e) ty) Q.
      *)
+
+    (** You can cast anything to void, but an expression of type
+     * [void] can only be a pr_value *)
+    Axiom wpe_cast_tovoid : forall vc e Q,
+        wpAny_ignore vc e (fun free => Q (Vint 0) free)
+      |-- wp_prval (Ecast C2void (vc, e) Tvoid) Q.
 
     Axiom wp_prval_cast_array2pointer : forall e t Q,
         wp_lval e (fun p => Q (Vptr p))
-        |-- wp_prval (Ecast Carray2pointer (Lvalue, e) t) Q.
+      |-- wp_prval (Ecast Carray2pointer (Lvalue, e) t) Q.
 
+    (** [Cderived2base] casts from a derived class to a base
+     * class. Casting is only permitted on pointers and references
+     * - references occur with lvalues and xvalues
+     * - pointers occur with prvalues
+     *
+     * TODO [_base] only supports casting up a single level of the
+     * heirarchy at a time, so we need to construct a full path.
+     *)
     Axiom wp_lval_cast_derived2base : forall e ty Q,
       wp_lval e (fun addr free => Exists addr',
-        match erase_qualifiers (type_of e), erase_qualifiers ty with
-          | Tnamed from, Tnamed to => (*<-- is this the only case here?*)
-                  (_offsetL (_base from to) (_eq addr) &~ addr' ** True) //\\
-                  Q addr' free
-          | _, _ => False
+        match drop_qualifiers (type_of e), drop_qualifiers ty with
+        | Tnamed from, Tnamed to => (*<-- is this the only case here?*)
+          (_offsetL (_base from to) (_eq addr) &~ addr' ** True) //\\
+          Q addr' free
+        | _, _ => False
         end)
-        |-- wp_lval (Ecast Cderived2base (Prvalue, e) ty) Q.
+      |-- wp_lval (Ecast Cderived2base (Lvalue, e) ty) Q.
+
+    Axiom wp_xval_cast_derived2base : forall e ty Q,
+      wp_xval e (fun addr free => Exists addr',
+        match drop_qualifiers (type_of e), drop_qualifiers ty with
+        | Tnamed from, Tnamed to => (*<-- is this the only case here?*)
+          (_offsetL (_base from to) (_eq addr) &~ addr' ** True) //\\
+          Q addr' free
+        | _, _ => False
+        end)
+      |-- wp_xval (Ecast Cderived2base (Xvalue, e) ty) Q.
 
     Axiom wp_prval_cast_derived2base : forall e ty Q,
       wp_prval e (fun addr free => Exists addr',
         match erase_qualifiers (type_of e), erase_qualifiers ty with
-          | Tnamed from, Tnamed to
-          | Tpointer (Tnamed from), Tpointer (Tnamed to) =>
-                  (_offsetL (_base from to) (_eqv addr) &~ addr' ** True) //\\
-                  Q (Vptr addr') free
-          | _, _ => False
+        | Tpointer (Tnamed from), Tpointer (Tnamed to) =>
+          (_offsetL (_base from to) (_eqv addr) &~ addr' ** True) //\\
+          Q (Vptr addr') free
+        | _, _ => False
         end)
-        |-- wp_prval (Ecast Cderived2base (Prvalue, e) ty) Q.
+      |-- wp_prval (Ecast Cderived2base (Prvalue, e) ty) Q.
 
-    (* The axioms for [Cbase2derived] are copied from those for
-     * [Cderived2base]. The only change is that [_base] is replaced
-     * with [_derived]. *)
-
+    (* [Cbase2derived] casts from a base class to a derived class.
+     *)
     Axiom wp_lval_cast_base2derived : forall e ty Q,
       wp_lval e (fun addr free => Exists addr',
         match erase_qualifiers (type_of e), erase_qualifiers ty with
-          | Tnamed from, Tnamed to => (*<-- is this the only case here?*)
-                  (_offsetL (_derived from to) (_eq addr) &~ addr' ** True) //\\
-                  Q addr' free
-          | _, _ => False
+        | Tnamed from, Tnamed to => (*<-- is this the only case here?*)
+          (_offsetL (_derived from to) (_eq addr) &~ addr' ** True) //\\
+          Q addr' free
+        | _, _ => False
         end)
-        |-- wp_lval (Ecast Cbase2derived (Prvalue, e) ty) Q.
+      |-- wp_lval (Ecast Cbase2derived (Lvalue, e) ty) Q.
+
+    Axiom wp_xval_cast_base2derived : forall e ty Q,
+      wp_xval e (fun addr free => Exists addr',
+        match erase_qualifiers (type_of e), erase_qualifiers ty with
+        | Tnamed from, Tnamed to => (*<-- is this the only case here?*)
+          (_offsetL (_derived from to) (_eq addr) &~ addr' ** True) //\\
+          Q addr' free
+        | _, _ => False
+        end)
+      |-- wp_xval (Ecast Cbase2derived (Xvalue, e) ty) Q.
 
     Axiom wp_prval_cast_base2derived : forall e ty Q,
       wp_prval e (fun addr free => Exists addr',
         match erase_qualifiers (type_of e), erase_qualifiers ty with
-          | Tnamed from, Tnamed to
-          | Tpointer (Tnamed from), Tpointer (Tnamed to) =>
-                  (_offsetL (_derived from to) (_eqv addr) &~ addr'
-                            ** True) //\\
-                  Q (Vptr addr') free
-          | _, _ => False
+        | Tpointer (Tnamed from), Tpointer (Tnamed to) =>
+          (_offsetL (_derived from to) (_eqv addr) &~ addr' ** True) //\\
+          Q (Vptr addr') free
+        | _, _ => False
         end)
-        |-- wp_prval (Ecast Cbase2derived (Prvalue, e) ty) Q.
+      |-- wp_prval (Ecast Cbase2derived (Prvalue, e) ty) Q.
 
-    (** the ternary operator `_ ? _ : _` *)
-    (* XXX
-    Axiom wp_condition : forall ty m tst th el Q,
-        wp_prval tst (fun v1 free => (* todo: rval? *)
+    (** the ternary operator [_ ? _ : _] has the value category
+     * of the "then" and "else" expressions (which must be the same).
+     * We express this with 4 rules, one for each of [wp_lval],
+     * [wp_prval], [wp_xval], and [wp_init].
+     *)
+    Definition wp_cond {T} wp : Prop :=
+      forall ty tst th el (Q : T -> FreeTemps -> mpred),
+        wp_prval tst (fun v1 free =>
            Exists c : bool, [| is_true v1 = Some c |] **
            if c
-           then wpe m th (fun v free' => free ** Q v free')
-           else wpe m el (fun v free' => free ** Q v free'))
-        |-- wpe m (Eif tst th el ty) Q.
-     *)
+           then wp th (fun v free' => free ** Q v free')
+           else wp el (fun v free' => free ** Q v free'))
+        |-- wp (Eif tst th el ty) Q.
+
+    Axiom wp_lval_condition :
+      ltac:(let v := eval unfold wp_cond in (wp_cond wp_lval) in
+                exact v).
+    Axiom wp_xval_condition :
+      ltac:(let v := eval unfold wp_cond in (wp_cond wp_xval) in
+            exact v).
+    Axiom wp_prval_condition :
+      ltac:(let v := eval unfold wp_cond in (wp_cond wp_prval) in
+                exact v).
+    Axiom wp_init_condition : forall ty ty' addr tst th el Q,
+        wp_prval tst (fun v1 free =>
+           Exists c : bool, [| is_true v1 = Some c |] **
+           if c
+           then wp_init ty addr th (fun free' => free ** Q free')
+           else wp_init ty addr el (fun free' => free ** Q free'))
+        |-- wp_init ty addr (Eif tst th el ty') Q.
 
     Axiom wp_prval_implicit: forall  e Q ty,
         wp_prval e Q |-- wp_prval (Eimplicit e ty) Q.
 
-    (** `sizeof` and `alignof` *)
+    (** [sizeof] and [alignof] do not evaluate their arguments *)
     Axiom wp_prval_sizeof : forall ty' ty Q,
-        Exists sz, [| size_of ty = Some sz |]  ** Q (Vint (Z.of_N sz)) empSP
+        Exists sz, [| size_of ty = Some sz |]  ** Q (Vint (Z.of_N sz)) emp
         |-- wp_prval (Esize_of (inl ty) ty') Q.
 
     Axiom wp_prval_sizeof_e : forall ty' e Q,
