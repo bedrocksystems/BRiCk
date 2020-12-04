@@ -96,7 +96,7 @@ Module Type Expr.
 
     (* what about the type? if it exists *)
     Axiom wp_lval_gvar : forall ty x Q,
-        Exists a, (_global x &~ a ** True) //\\ Q a empSP
+        Exists a, (_global x &~ a ** True) //\\ Q a emp
         |-- wp_lval (Evar (Gname x) ty) Q.
 
     (* [Emember a f ty] is an lvalue by default except when
@@ -111,9 +111,10 @@ Module Type Expr.
         | Lvalue =>
           wp_lval a (fun base free =>
                        Exists addr, (_offsetL (_field m) (_eq base) &~ addr ** True) //\\ Q addr free)
-        | Xvalue =>
-          wp_xval a (fun base free =>
-                       Exists addr, (_offsetL (_field m) (_eq base) &~ addr ** True) //\\ Q addr free)
+        | Xvalue => False
+          (* NOTE If the object is a temporary, then the field access will also be a
+             temporary. Being conservative is sensible in our semantic style.
+          *)
         end
       |-- wp_lval (Emember vc a m ty) Q.
 
@@ -127,12 +128,10 @@ Module Type Expr.
      *)
     Axiom wp_prval_member : forall ty vc a m Q,
         match vc with
-        | Prvalue =>
-          (* XXX this could be an initializing expression, except in a term like [a.b.c] that doesn't
-             really make sense.
+        | Prvalue => False
+          (* As above, this doesn't seem to exist because our AST explicitly contains
+             [Cl2r] casts.
            *)
-          wp_prval a (fun base free =>
-                        Exists addr, (_offsetL (_field m) (_eqv base) &~ addr ** True) //\\ Q (Vptr addr) free)
         | _ => False
         end
       |-- wp_prval (Emember vc a m ty) Q.
@@ -142,21 +141,12 @@ Module Type Expr.
      *)
     Axiom wp_xval_member : forall ty vc a m Q,
         match vc with
-        | Prvalue =>
-          (* note that this needs to be a prvalue that returns an aggregate.
-             XXX same problem as above.
-             TODO(gmm): write a program that produces something like this and determine what the AST looks like
+        | Prvalue => False
+          (* As above, this doesn't exist because our AST explicitly contains [Cl2r] casts.
            *)
-          False (*
-          wp_prval a (fun base free =>
-                  (* todo: here and elsewhere, consider avoiding locations and switching to
-                   * [valid_ptr (base ., _field m) ** true //\\ q (vptr (base ., _field m) free].
-                   *)
-                        Exists addr, (_offsetL (_field m) (_eqv base) &~ addr ** True) //\\ Q (Vptr addr) free) *)
         | Xvalue =>
-          (* note that this needs to be a pr value that returns an aggregate. *)
           wp_xval a (fun base free =>
-                        Exists addr, (_offsetL (_field m) (_eq base) &~ addr ** True) //\\ Q addr free)
+            Exists addr, (_offsetL (_field m) (_eq base) &~ addr ** True) //\\ Q addr free)
         | _ => False
         end%I
       |-- wp_xval (Emember vc a m ty) Q.
