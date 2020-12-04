@@ -48,10 +48,10 @@ Section with_cpp.
              (targs : list type)
              (PQ : ptr -> WithPrePost@{X Z Y} mpredI)
   : function_spec :=
+    let this_type := Qmut (Tnamed class) in
     let map_pre this '(args, P) :=
         (this :: args,
-         _at (_eqv this) (anyR (Tnamed class) 1) ** P) in
-    let this_type := Qmut (Tnamed class) in
+         _at (_eqv this) (tblockR this_type) ** P) in
     SFunction (cc:=cc) (Qmut Tvoid) (Qconst (Tpointer this_type) :: targs)
               {| wpp_with := TeleS (fun this : ptr => (PQ this).(wpp_with))
                ; wpp_pre this :=
@@ -64,13 +64,13 @@ Section with_cpp.
   Definition SDestructor@{X Z Y} {cc : calling_conv} (class : globname)
              (PQ : ptr -> WithPrePost@{X Z Y} mpredI)
   : function_spec :=
+    let this_type := Qmut (Tnamed class) in
     let map_pre this '(args, P) := (Vptr this :: args, P) in
     let map_post this '{| we_ex := pwiths ; we_post := Q|} :=
         {| we_ex := pwiths
          ; we_post := tele_map (fun '(result, Q) =>
-                                  (result, _at (_eq this) (anyR (Tnamed class) 1) ** Q)) Q |}
+                                  (result, _at (_eq this) (tblockR this_type) ** Q)) Q |}
     in
-    let this_type := Qmut (Tnamed class) in
     SFunction@{X Z Y} (cc:=cc) (Qmut Tvoid) (Qconst (Tpointer this_type) :: nil)
               {| wpp_with := TeleS (fun this : ptr => (PQ this).(wpp_with))
                ; wpp_pre this :=
@@ -229,7 +229,9 @@ Section with_cpp.
       match i.(init_path) with
       | This
       | Base _ => False
-      | _ => wpi (resolve:=resolve) ⊤ ti ρ cls this i (fun f => f ** wpi_members ti ρ cls this is' Q)
+      | _ =>
+        _offsetL (offset_for _ cls i.(init_path)) (_eq this) |-> tblockR i.(init_type) -*
+        wpi (resolve:=resolve) ⊤ ti ρ cls this i (fun f => f ** wpi_members ti ρ cls this is' Q)
       end
     end.
 
@@ -244,7 +246,13 @@ Section with_cpp.
       | Field _
       | Indirect _ _ =>
         this |-> init_identity cls (wpi_members ti ρ cls this inits Q)
-      | _ => wpi (resolve:=resolve) ⊤ ti ρ cls this i (fun f => f ** wpi_bases ti ρ cls this is' Q)
+      | This =>
+        (* this is a delegating constructor *)
+        [| is' = nil |] **
+        (_eq this |-> tblockR i.(init_type) -* wpi (resolve:=resolve) ⊤ ti ρ cls this i Q)
+      | _ =>
+        _offsetL (offset_for _ cls i.(init_path)) (_eq this) |-> tblockR i.(init_type) -*
+        wpi (resolve:=resolve) ⊤ ti ρ cls this i (fun f => f ** wpi_bases ti ρ cls this is' Q)
       end
     end.
 
@@ -261,16 +269,13 @@ Section with_cpp.
     | Some (UserDefined (inits, body)) =>
       match args with
       | Vptr thisp :: rest_vals =>
-        match size_of _ (Tnamed ctor.(c_class)) with
-        | Some sz =>
-          thisp |-> blockR sz **
-          bind_base_this (Some thisp) Tvoid (fun ρ =>
-          bind_vars ctor.(c_params) rest_vals ρ (fun ρ frees =>
-            (wpi_bases ti ρ ctor.(c_class) thisp inits
-               (fun free => free **
-                              wp (resolve:=resolve) ⊤ ti ρ body (Kfree frees (void_return (|> Q Vvoid)))))))
-        | None => False
-        end
+        let ty := Tnamed ctor.(c_class) in
+        thisp |-> tblockR ty **
+        bind_base_this (Some thisp) Tvoid (fun ρ =>
+        bind_vars ctor.(c_params) rest_vals ρ (fun ρ frees =>
+          (wpi_bases ti ρ ctor.(c_class) thisp inits
+              (fun free => free **
+                             (type_ptr ty thisp -* wp (resolve:=resolve) ⊤ ti ρ body (Kfree frees (void_return (|> Q Vvoid))))))))
       | _ => False
       end
     end.
@@ -296,7 +301,6 @@ Section with_cpp.
     | _ => lfalse
     end.
 
-
   Fixpoint wpd_bases (ti : thread_info) (ρ : region) (cls : globname) (this : ptr)
            (dests : list (FieldOrBase * globname))
            (Q : mpred) : mpred :=
@@ -305,9 +309,10 @@ Section with_cpp.
     | d :: is' =>
       match d.1 with
       | Field _
-      | Indirect _ _ => lfalse
-      | _ => wpd (resolve:=resolve) ⊤ ti ρ cls this d
-                (wpd_bases ti ρ cls this is' Q)
+      | Indirect _ _
+      | This => False
+      | Base b => wpd (resolve:=resolve) ⊤ ti ρ cls this d
+                (_offsetL (offset_for _ cls d.1) (_eq this) |-> tblockR (Tnamed b) ** wpd_bases ti ρ cls this is' Q)
       end
     end.
 
@@ -319,7 +324,7 @@ Section with_cpp.
     | nil => this |-> revert_identity cls Q
     | d :: is' =>
       match d.1 with
-      | This
+      | This => False
       | Base _ =>
         this |-> revert_identity cls (wpd_bases ti ρ cls this dests Q)
       | _ => wpd (resolve:=resolve) ⊤ ti ρ cls this d (wpd_members ti ρ cls this is' Q)
@@ -329,8 +334,8 @@ Section with_cpp.
   Definition wp_dtor (dtor : Dtor) (ti : thread_info) (args : list val)
              (Q : val -> epred) : mpred :=
     match dtor.(d_body) with
-    | None => lfalse
-    | Some Defaulted => lfalse
+    | None => False
+    | Some Defaulted => False
       (* ^ defaulted constructors are not supported yet *)
     | Some (UserDefined (body, deinit)) =>
       match args with
@@ -338,7 +343,7 @@ Section with_cpp.
         bind_base_this (Some thisp) Tvoid (fun ρ =>
         wp (resolve:=resolve) ⊤ ti ρ body
            (void_return (wpd_members ti ρ dtor.(d_class) thisp deinit (|> Q Vvoid))))
-      | _ => lfalse
+      | _ => False
       end
     end.
 

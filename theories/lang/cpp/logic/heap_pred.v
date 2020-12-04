@@ -728,13 +728,23 @@ Section with_cpp.
     by iIntros "->" (? <-%ptr_rel_elim) "%".
   Qed.
 
-  (** [blockR sz] is mean to be a contiguous chunk of [sz] bytes *)
+  (** [blockR sz] represents a contiguous chunk of [sz] bytes *)
   Definition blockR {σ} (sz : _) : Rep :=
-    _offsetR (_sub (resolve:=σ) T_uint8 (Z.of_N sz)) (emp) **
+    _offsetR (_sub (resolve:=σ) T_uint8 (Z.of_N sz)) emp **
     (* ^ Encodes valid_loc (this .[ T_uint8 ! sz]). This is
     necessary to get [l |-> blockR n -|- l |-> blockR n ** l .[ T_uint8 ! m] |-> blockR 0]. *)
     [∗list] i ∈ seq 0 (N.to_nat sz),
       _offsetR (_sub (resolve:=σ) T_uint8 (Z.of_nat i)) (anyR (resolve:=σ) T_uint8 1).
+
+  (* [tblockR ty] is a [blockR] that is the size of [ty].
+   * it is a convenient short-hand since it happens frequently, but there is nothing
+   * special about it.
+   *)
+  Definition tblockR {σ} (ty : type) : Rep :=
+    match size_of σ ty with
+    | Some sz => blockR (σ:=σ) sz
+    | None => False
+    end.
 
 End with_cpp.
 

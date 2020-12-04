@@ -24,15 +24,12 @@ Module Type Stmt.
     Variables (M : coPset) (ti : thread_info).
 
     Local Notation wp := (wp (resolve:=resolve) M ti).
-    Local Notation wpe := (wpe (resolve:=resolve) M ti).
     Local Notation wp_lval := (wp_lval (resolve:=resolve) M ti).
     Local Notation wp_prval := (wp_prval (resolve:=resolve) M ti).
     Local Notation wp_xval := (wp_xval (resolve:=resolve) M ti).
     Local Notation wp_glval := (wp_glval (resolve:=resolve) M ti).
     Local Notation wp_rval := (wp_rval (resolve:=resolve) M ti).
     Local Notation wp_init := (wp_init (resolve:=resolve) M ti).
-    Local Notation wpAny := (wpAny (resolve:=resolve) M ti).
-    Local Notation wpAnys := (wpAnys (resolve:=resolve) M ti).
     Local Notation fspec := (fspec ti).
     Local Notation destruct_val := (destruct_val (σ:=resolve) ti) (only parsing).
     Local Notation destruct_obj := (destruct_obj (σ:=resolve) ti) (only parsing).
@@ -56,22 +53,23 @@ Module Type Stmt.
         Q.(k_return) None empSP |-- wp ρ (Sreturn None) Q.
 
     Axiom wp_return : forall ρ c e Q,
-        (if is_aggregate (type_of e) then
-           (* ^ C++ erases the reference information on types for an unknown
-            * reason, see http://eel.is/c++draft/expr.prop#expr.type-1.sentence-1
-            * so we need to re-construct this information from the value
-            * category of the expression.
-            *)
            match c with
            | Prvalue =>
-             Exists a, _result ρ &~ a ** ltrue //\\
-             wp_init ρ (erase_qualifiers (type_of e)) (Vptr a) (not_mine e) (Q.(k_return) (Some (Vptr a)))
-           | Lvalue
+             if is_aggregate (type_of e) then
+               (* ^ C++ erases the reference information on types for an unknown
+                * reason, see http://eel.is/c++draft/expr.prop#expr.type-1.sentence-1
+                * so we need to re-construct this information from the value
+                * category of the expression.
+                *)
+               Exists a, _result ρ &~ a ** True //\\
+               wp_init ρ (erase_qualifiers (type_of e)) a (not_mine e) (Q.(k_return) (Some (Vptr a)))
+             else
+               wp_lval ρ e (fun v => Q.(k_return) (Some (Vptr v)))
+           | Lvalue =>
+             wp_lval ρ e (fun v => Q.(k_return) (Some (Vptr v)))
            | Xvalue =>
-             wpe ρ c e (fun v => Q.(k_return) (Some v))
+             wp_xval ρ e (fun v => Q.(k_return) (Some (Vptr v)))
            end
-         else
-           wpe ρ c e (fun v => Q.(k_return) (Some v)))
         |-- wp ρ (Sreturn (Some (c, e))) Q.
 
     Axiom wp_break : forall ρ Q,
@@ -79,8 +77,15 @@ Module Type Stmt.
     Axiom wp_continue : forall ρ Q,
         |> Q.(k_continue) |-- wp ρ Scontinue Q.
 
+    Definition wpAny_ignore (ρ : region) (vc : ValCat) (e : Expr) (Q : FreeTemps -> mpred) : mpred :=
+      match vc with
+      | Rvalue => wp_prval ρ e (fun _ => Q)
+      | Lvalue => wp_lval ρ e (fun _ => Q)
+      | Xvalue => wp_xval ρ e (fun _ => Q)
+      end.
+
     Axiom wp_expr : forall ρ vc e Q,
-        |> wpAny ρ (vc,e) (SP (fun _ => Q.(k_normal)))
+        |> wpAny_ignore ρ vc e (fun free => free ** Q.(k_normal))
         |-- wp ρ (Sexpr vc e) Q.
 
     (* This definition performs allocation of local variables
@@ -126,7 +131,7 @@ Module Type Stmt.
                   match init with
                   | None => continue
                   | Some init =>
-                    wp_init ρ ty (Vptr a) (not_mine init) (fun free => free ** continue)
+                    wp_init ρ ty a (not_mine init) (fun free => free ** continue)
                   end
       | Tarray ty' N =>
         Forall a, _at (_eq a) (uninitR ty 1) -*
@@ -139,19 +144,18 @@ Module Type Stmt.
                   match init with
                   | None => continue
                   | Some init =>
-                    wp_init ρ ty (Vptr a) (not_mine init) (fun free => free ** continue)
+                    wp_init ρ ty a (not_mine init) (fun free => free ** continue)
                   end
 
         (* references *)
       | Trv_reference t
       | Treference t =>
         match init with
-        | None => lfalse
+        | None => False
           (* ^ references must be initialized *)
         | Some init =>
           (* i should use the type here *)
-          wp_lval ρ init (fun a free =>
-             Exists p, [| a = Vptr p |] **
+          wp_lval ρ init (fun p free =>
              (free ** k (Rbind x p ρ) Q))
         end
 
@@ -235,13 +239,13 @@ Module Type Stmt.
           Inv |-- wp ρ (Sseq (b :: Scontinue :: nil))
               (Kloop match incr with
                      | None => Inv
-                     | Some incr => wpAny ρ incr (fun _ _ => Inv)
+                     | Some (vc,incr) => wpAny_ignore ρ vc incr (fun free => free ** Inv)
                      end Q)
         | Some test =>
           Inv |-- wp ρ (Sif None test (Sseq (b :: Scontinue :: nil)) Sskip)
               (Kloop match incr with
                      | None => Inv
-                     | Some incr => wpAny ρ incr (fun _ _ => Inv)
+                     | Some (vc,incr) => wpAny_ignore ρ vc incr (fun free => free ** Inv)
                      end Q)
         end ->
         Inv |-- wp ρ (Sfor None test incr b) Q.
@@ -261,6 +265,10 @@ Module Type Stmt.
       | Range low high => low <= v <= high
       end%Z.
 
+    (* This performs a syntactic check on [s] to ensure that there are no [case] or [default]
+       statements. This is used to avoid missing one of these statements which would compromise
+       the soundness of [wp_switch_block]
+     *)
     Fixpoint no_case (s : Stmt) : bool :=
       match s with
       | Sseq ls => forallb no_case ls
@@ -326,7 +334,7 @@ Module Type Stmt.
               wp_switch_block None ls Q
             | Some Lcur =>
               ([| Lcur e |] -* wp ρ (Sseq (s :: ls)) Q) //\\
-                                                       (wp_switch_block None ls Q)
+              wp_switch_block None ls Q
             end
           else
             lfalse

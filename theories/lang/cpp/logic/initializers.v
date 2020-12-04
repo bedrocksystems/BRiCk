@@ -35,13 +35,13 @@ Module Type Init.
     Local Notation anyR := (anyR (resolve:=σ)) (only parsing).
     Local Notation offset_for := (offset_for σ) (only parsing).
 
-
-    (* this is really about expression evaluation, so it doesn't make sense for
-     * it to be recursive on a type.
+    (* [wp_initialize] provides "constructor" semantics for types.
+     * For aggregates, simply delegates to [wp_init], but for primitives,
+     * the semantics is to evaluate the primitive and initialize the location
+     * with the value.
      *)
-    Fixpoint wp_initialize (ty : type) (addr : ptr) (init : Expr) (k : FreeTemps -> mpred)
-    {struct ty} : mpred :=
-      match ty with
+    Definition wp_initialize (ty : type) (addr : ptr) (init : Expr) (k : FreeTemps -> mpred) : mpred :=
+      match drop_qualifiers ty with
       | Tvoid => False
       | Tpointer _
       | Tmember_pointer _ _
@@ -60,7 +60,7 @@ Module Type Init.
       | Trv_reference t => False (* reference fields are not supported *)
       | Tfunction _ _ => False (* functions not supported *)
 
-      | Tqualified _ ty => wp_initialize ty addr init k
+      | Tqualified _ ty => False (* unreachable *)
       | Tnullptr => False (* nullptr fields are not supported *)
       | Tarch _ _ => False (* vendor-specific types are not supported *)
       | Tfloat _ => False (* floating point numbers are not supported *)
@@ -68,11 +68,11 @@ Module Type Init.
 
     Axiom wpi_initialize : forall this_val i cls Q,
         Exists a,
-          _offsetL (offset_for cls i.(init_path)) (_eqv this_val) &~ a ** ltrue //\\
-        wp_initialize (erase_qualifiers i.(init_type)) (Vptr a) i.(init_init) Q
+         (_offsetL (offset_for cls i.(init_path)) (_eq this_val) &~ a ** True) //\\
+        wp_initialize (erase_qualifiers i.(init_type)) a i.(init_init) Q
         |-- wpi cls this_val i Q.
 
-    Fixpoint wpis (cls : globname) (this : val)
+    Fixpoint wpis (cls : globname) (this : ptr)
              (inits : list Initializer)
              (Q : mpred -> mpred) : mpred :=
       match inits with
@@ -85,7 +85,7 @@ Module Type Init.
          Exists ctor, _global cnd &~ ctor **
            match σ.(genv_tu) !! cnd with
            | Some cv =>
-             |> fspec (type_of_value cv) ti (Vptr ctor) (addr :: ls) (fun _ => Q free)
+             |> fspec (type_of_value cv) ti (Vptr ctor) (Vptr addr :: ls) (fun _ => Q free)
            | _ => False
            end)
       |-- wp_init (Tnamed cls) addr (Econstructor cnd es ty) Q.
@@ -109,19 +109,19 @@ Module Type Init.
              end
       end.
 
-    Fixpoint wp_array_init (ety : type) (base : val) (es : list (Z * Expr)) (Q : mpred -> mpred) : mpred :=
+    Fixpoint wp_array_init (ety : type) (base : ptr) (es : list (Z * Expr)) (Q : mpred -> mpred) : mpred :=
       match es with
       | nil => Q empSP
       | (i,e) :: es =>
         Forall a,
-          _offsetL (_sub ety i) (_eqv base) &~ a -*
+          _offsetL (_sub ety i) (_eq base) &~ a -*
           (* NOTE: We nest the recursive calls to `wp_array_init` within
                the continuation of the `wp_initialize` statement to
                reflect the fact that the C++ Standard introduces
                sequence-points between all of the elements of an
                initializer list (c.f. http://eel.is/c++draft/dcl.init.list#4)
            *)
-          wp_initialize ety (Vptr a) e (fun free => free ** wp_array_init ety base es Q)
+          wp_initialize ety a e (fun free => free ** wp_array_init ety base es Q)
       end.
 
     Axiom wp_init_initlist_array :forall ls fill ety sz addr Q,
