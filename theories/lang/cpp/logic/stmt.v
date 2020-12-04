@@ -80,7 +80,7 @@ Module Type Stmt.
     (* evaluate an expression but ignore the result *)
     Definition wpAny_ignore (ρ : region) (vc : ValCat) (e : Expr) (Q : FreeTemps -> mpred) : mpred :=
       match vc with
-      | Rvalue => wp_prval ρ e (fun _ => Q)
+      | Prvalue => wp_prval ρ e (fun _ => Q)
       | Lvalue => wp_lval ρ e (fun _ => Q)
       | Xvalue => wp_xval ρ e (fun _ => Q)
       end.
