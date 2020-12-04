@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: LGPL-2.1 WITH BedRock Exception for use over network, see repository root for details.
  *)
 From bedrock.lang.prelude Require Import base.
-From bedrock.lang.cpp.syntax Require Export types translation_unit.
+From bedrock.lang.cpp.syntax Require Export names types stmt translation_unit.
 From bedrock.lang.cpp.semantics Require Export sub_module.
 
 (**
@@ -96,3 +96,41 @@ Proof. solve_proper. Qed.
 (* XXX rename/deprecate? *)
 Theorem subModuleModels a b σ : b ⊧ σ -> sub_module a b -> a ⊧ σ.
 Proof. by intros ? ->. Qed.
+
+(** compute the type of a [class] or [union] field *)
+Section type_of_field.
+  Context {σ: genv}.
+
+  Definition type_of_field (cls : globname) (f : ident) : option type :=
+    match σ.(genv_tu) !! cls with
+    | None => None
+    | Some (Gstruct st) =>
+      match List.find (fun '(x,_,_,_) => bool_decide (f = x)) st.(s_fields) with
+      | Some (_, ty, _, _) => Some ty
+      | _ => None
+      end
+    | Some (Gunion u) =>
+      match List.find (fun '(x,_,_,_) => bool_decide (f = x)) u.(u_fields) with
+      | Some (_, ty, _, _) => Some ty
+      | _ => None
+      end
+    | _ => None
+    end.
+
+  Definition type_of_path (from : globname) (p : FieldOrBase) : option type :=
+    match p with
+    | This => Some (Tnamed from)
+    | Field fn => type_of_field from fn
+    | Base gn => Some (Tnamed gn)
+    | Indirect ls i =>
+      (* this is a little bit awkward because we assume the correctness of
+         the type annotations in the path
+       *)
+      (fix go (from : globname) (ls : _) : option type :=
+         match ls with
+         | nil => type_of_field from i
+         | (_, gn) :: ls => go gn ls
+         end) from ls
+    end.
+
+End type_of_field.

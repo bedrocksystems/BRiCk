@@ -339,13 +339,18 @@ Section with_cpp.
     | nil => this |-> revert_identity cls Q
     | d :: is' =>
       match d.1 with
-      | This => False
+      | This
+      | Indirect _ _ => False
       | Base _ =>
         this |-> revert_identity cls (wpd_bases ti ρ cls this dests Q)
       | _ =>
-        wpd (resolve:=resolve) ⊤ ti ρ cls this d (fun free =>
-          _offsetL (offset_for _ cls d.1) (_eq this) |-> tblockR _ (* type of field *) **
-          wpd_members ti ρ cls this is' (fun free' => Q (free ** free'))
+        match type_of_path cls d.1 with
+        | Some ty =>
+          wpd (resolve:=resolve) ⊤ ti ρ cls this d (
+            _offsetL (offset_for _ cls d.1) (_eq this) |-> tblockR ty **
+                     wpd_members ti ρ cls this is' Q)
+        | None => False
+        end
       end
     end.
 
@@ -361,7 +366,7 @@ Section with_cpp.
         bind_base_this (Some thisp) Tvoid (fun ρ =>
         wp (resolve:=resolve) ⊤ ti ρ body
            (void_return (wpd_members ti ρ dtor.(d_class) thisp deinit
-                |> (_at (_eq thisp) (tblockR (Tnamed dtor.(d_class))) -* Q Vvoid))))
+                (|> (_at (_eq thisp) (tblockR (Tnamed dtor.(d_class))) -* Q Vvoid)))))
       | _ => False
       end
     end.

@@ -32,6 +32,7 @@ Module Type Init.
     Local Notation _sub := (_sub (resolve:=σ)) (only parsing).
     Local Notation _base := (_base (resolve:=σ)) (only parsing).
     Local Notation primR := (primR (resolve:=σ)) (only parsing).
+    Local Notation tblockR := (tblockR (σ:=σ)) (only parsing).
     Local Notation anyR := (anyR (resolve:=σ)) (only parsing).
     Local Notation offset_for := (offset_for σ) (only parsing).
 
