@@ -193,22 +193,40 @@ Module SimpleCPP.
     Axiom alloc_id_live_timeless : forall aid, Timeless (alloc_id_live aid).
     Global Existing Instance alloc_id_live_timeless.
 
+    Definition ptr_live (p : ptr) :=
+      default False%I (alloc_id_live <$> ptr_alloc_id p).
+
     (** pointer validity *)
     (** Pointers past the end of an object/array can be valid; see
     https://eel.is/c++draft/expr.add#4 *)
-    Definition valid_ptr (p : ptr) : mpred :=
+    Definition in_range (strict : bool) (l o h : Z) : mpred :=
+      [| (l <= o < h)%Z \/ negb strict /\ o = h |].
+
+    Lemma in_range_weaken l o h :
+      in_range true l o h |-- in_range false l o h.
+    Proof. rewrite /in_range/=. f_equiv. rewrite/impl. tauto. Qed.
+
+    Definition _valid_ptr (strict : bool) (p : ptr) : mpred :=
       [| p = nullptr |] \\//
             Exists base l h o,
                 blocks_own base l h **
-                [| (l <= o <= h)%Z |] ** [| p = offset_ptr_ o base |].
+                in_range strict l o h ** [| p = offset_ptr_ o base |].
+    Definition valid_ptr := _valid_ptr false.
+    Definition strict_valid_ptr := _valid_ptr true.
 
-    Instance valid_ptr_persistent : forall p, Persistent (valid_ptr p) := _.
-    Instance valid_ptr_affine : forall p, Affine (valid_ptr p) := _.
-    Instance valid_ptr_timeless : forall p, Timeless (valid_ptr p) := _.
+    Instance _valid_ptr_persistent : forall b p, Persistent (_valid_ptr b p) := _.
+    Instance _valid_ptr_affine : forall b p, Affine (_valid_ptr b p) := _.
+    Instance _valid_ptr_timeless : forall b p, Timeless (_valid_ptr b p) := _.
 
-    Theorem valid_ptr_nullptr : |-- valid_ptr nullptr.
+    Theorem _valid_ptr_nullptr b : |-- _valid_ptr b nullptr.
     Proof. by iLeft. Qed.
 
+    Lemma strict_valid_valid p :
+      _valid_ptr true p |-- _valid_ptr false p.
+    Proof. rewrite /_valid_ptr/=. by setoid_rewrite in_range_weaken. Qed.
+
+    Axiom valid_ptr_alloc_id : forall p,
+      valid_ptr p |-- [| is_Some (ptr_alloc_id p) |].
     (** This is a very simplistic definition of [provides_storage].
     A more useful definition should probably not be persistent. *)
     Definition provides_storage (base newp : ptr) (_ : type) : mpred := [| base = newp |].
@@ -640,8 +658,12 @@ Module SimpleCPP.
       [| p <> nullptr |] **
       Exists (oa : option addr),
               mem_inj_own p oa **
-              valid_ptr p ** (* assert validity of the range! *)
+              _valid_ptr true p ** (* assert validity of the range! *)
               oaddr_encodes σ t q oa p v.
+
+    Axiom tptsto_live : forall {σ} ty (q : Qp) p v,
+      @tptsto σ ty q p v |--
+      ptr_live p ** (ptr_live p -* @tptsto σ ty q p v).
 
     Theorem tptsto_nonnull {σ} ty q a :
       @tptsto σ ty q nullptr a |-- False.
@@ -668,7 +690,7 @@ Module SimpleCPP.
       Observe [| q ≤ 1 |]%Qc (@tptsto σ ty q p v) := _.
 
     Global Instance tptsto_valid_ptr {σ} t q p v :
-      Observe (valid_ptr p) (@tptsto σ t q p v) := _.
+      Observe (_valid_ptr true p) (@tptsto σ t q p v) := _.
 
     Global Instance tptsto_agree σ t q1 q2 p v1 v2 :
       Observe2 [| v1 = v2 |] (@tptsto σ t q1 p v1) (@tptsto σ t q2 p v2).
@@ -708,7 +730,7 @@ Module SimpleCPP.
     (** physical representation of pointers
      *)
     Definition pinned_ptr (va : N) (p : ptr) : mpred :=
-      valid_ptr p **
+      _valid_ptr false p **
       ([| p = nullptr /\ va = 0%N |] \\//
       ([| p <> nullptr |] ** mem_inj_own p (Some va))).
 
@@ -727,12 +749,11 @@ Module SimpleCPP.
     (* Not true in the current model, requires making pinned_ptr part of pointers. *)
     Axiom offset_pinned_ptr : forall resolve o n va p,
       eval_offset resolve o = Some n ->
-      valid_ptr (p .., o) |--
+      _valid_ptr false (p .., o) |--
       pinned_ptr va p -* pinned_ptr (Z.to_N (Z.of_N va + n)) (p .., o).
 
     Instance pinned_ptr_valid va p :
-      Observe (valid_ptr p) (pinned_ptr va p).
-    Proof. apply: observe_intro_persistent. iDestruct 1 as "[$ _]". Qed.
+      Observe (_valid_ptr false p) (pinned_ptr va p) := _.
 
     Theorem pinned_ptr_borrow : forall {σ} ty p v va M,
       @tptsto σ ty 1 p v ** pinned_ptr va p ** [| p <> nullptr |] |--
@@ -794,7 +815,7 @@ Module SimpleCPP.
       [| p <> nullptr |] **
       (Exists align, [| @align_of resolve ty = Some align |] ** aligned_ptr align p) **
 
-      valid_ptr p ** valid_ptr (p .., o_sub resolve ty 1).
+      _valid_ptr true p ** _valid_ptr false (p .., o_sub resolve ty 1).
       (* TODO: inline valid_ptr, and assert validity of the range, like we should do in tptsto!
       For 0-byte objects, should we assert ownership of one byte, to get character pointers? *)
       (* alloc_own (alloc_id p) (l, h) **
@@ -804,14 +825,14 @@ Module SimpleCPP.
     Instance type_ptr_affine σ p ty : Affine (type_ptr (resolve:=σ) ty p) := _.
     Instance type_ptr_timeless σ p ty : Timeless (type_ptr (resolve:=σ) ty p) := _.
 
-    Lemma type_ptr_valid resolve ty p :
-      type_ptr (resolve := resolve) ty p |-- valid_ptr p.
+    Lemma type_ptr_strict_valid resolve ty p :
+      type_ptr (resolve := resolve) ty p |-- strict_valid_ptr p.
     Proof. iDestruct 1 as "(_ & _ & $ & _)". Qed.
 
     Lemma type_ptr_valid_plus_one resolve ty p :
       (* size_of resolve ty = Some sz -> *)
       type_ptr (resolve := resolve) ty p |--
-      valid_ptr (p .., o_sub resolve ty 1).
+      _valid_ptr false (p .., o_sub resolve ty 1).
     Proof. iDestruct 1 as "(_ & _ & _ & $)". Qed.
 
     Lemma type_ptr_nonnull resolve ty p :
@@ -827,14 +848,15 @@ Module SimpleCPP.
     [pinned_ptr_aligned_divide], but we don't expose this. *)
     Local Lemma pinned_ptr_type_divide_2 {va n σ p ty}
       (Hal : align_of (resolve := σ) ty = Some n) (Hnn : p <> nullptr) :
-      pinned_ptr va p ⊢ valid_ptr (p .., o_sub σ ty 1) -∗
+      pinned_ptr va p ⊢ _valid_ptr false (p .., o_sub σ ty 1) -∗
       [| (n | va)%N |] -∗ type_ptr (resolve := σ) ty p.
     Proof.
-      rewrite /type_ptr Hal /=. iIntros "P $ %HvaAl"; iFrame (Hnn).
-      iDestruct (pinned_ptr_valid with "P") as "#$".
+      rewrite /type_ptr Hal /=. iIntros "P #$ %HvaAl"; iFrame (Hnn).
+      (* iDestruct (pinned_ptr_valid with "P") as "#$". *)
+      iSplit; last admit.
       iExists _; iSplit; first done.
       by iApply (pinned_ptr_aligned_divide with "P").
-    Qed.
+    Admitted.
 
     (* XXX move *)
     Axiom align_of_uchar : forall resolve, @align_of resolve T_uchar = Some 1%N.
@@ -845,7 +867,7 @@ Module SimpleCPP.
     *)
     Local Lemma valid_type_uchar resolve p (Hnn : p <> nullptr) va :
       pinned_ptr va p ⊢
-      valid_ptr (p .., o_sub resolve T_uchar 1) -∗
+      _valid_ptr false (p .., o_sub resolve T_uchar 1) -∗
       type_ptr (resolve := resolve) T_uchar p.
     Proof.
       iIntros "#P #V".

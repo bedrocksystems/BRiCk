@@ -17,17 +17,6 @@ Section with_Σ.
   Definition eval_binop (b : BinOp) (lhsT rhsT resT : type) (lhs rhs res : val) : mpred :=
     [| eval_binop_pure b lhsT rhsT resT lhs rhs res |] ∨ eval_binop_impure b lhsT rhsT resT lhs rhs res.
 
-(* TODO move *)
-Parameter strict_valid_ptr : ptr -> mpred.
-Axiom strict_valid_ptr_persistent : forall p,
-  Persistent (strict_valid_ptr p).
-Axiom strict_valid_ptr_affine : forall p,
-  Affine (strict_valid_ptr p).
-Axiom strict_valid_ptr_timeless : forall p,
-  Timeless (strict_valid_ptr p).
-Global Existing Instances
-  strict_valid_ptr_persistent strict_valid_ptr_affine strict_valid_ptr_timeless.
-
 (* TODO make linear. *)
 Definition ptr_eq_cmpable p : mpred :=
   (<absorb> [| p = nullptr |]) ∨ (ptr_live p ∧ strict_valid_ptr p).
