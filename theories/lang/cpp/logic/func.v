@@ -342,7 +342,8 @@ Section with_cpp.
       | Vptr thisp :: rest_vals =>
         bind_base_this (Some thisp) Tvoid (fun ρ =>
         wp (resolve:=resolve) ⊤ ti ρ body
-           (void_return (wpd_members ti ρ dtor.(d_class) thisp deinit (|> Q Vvoid))))
+           (void_return (wpd_members ti ρ dtor.(d_class) thisp deinit
+                (|> _at (_eq thisp) (tblockR (Tnamed dtor.(d_class))) -* Q Vvoid))))
       | _ => False
       end
     end.

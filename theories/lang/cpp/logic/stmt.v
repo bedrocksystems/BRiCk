@@ -77,6 +77,7 @@ Module Type Stmt.
     Axiom wp_continue : forall ρ Q,
         |> Q.(k_continue) |-- wp ρ Scontinue Q.
 
+    (* evaluate an expression but ignore the result *)
     Definition wpAny_ignore (ρ : region) (vc : ValCat) (e : Expr) (Q : FreeTemps -> mpred) : mpred :=
       match vc with
       | Rvalue => wp_prval ρ e (fun _ => Q)
@@ -121,9 +122,9 @@ Module Type Stmt.
         end
 
       | Tnamed cls =>
-        Forall a, _at (_eq a) (uninitR ty 1) -*
+        Forall a, _at (_eq a) (tblockR (σ:=resolve) ty) -*
                   let destroy P :=
-                      destruct_val ty (Vptr a) dtor (_at (_eq a) (anyR ty 1) ** P)
+                      destruct_val ty a dtor (_at (_eq a) (anyR ty 1) ** P)
                   in
                   let continue :=
                       k (Rbind x a ρ) (Kat_exit destroy Q)
@@ -134,9 +135,9 @@ Module Type Stmt.
                     wp_init ρ ty a (not_mine init) (fun free => free ** continue)
                   end
       | Tarray ty' N =>
-        Forall a, _at (_eq a) (uninitR ty 1) -*
+        Forall a, _at (_eq a) (tblockR (σ:=resolve) ty) -*
                   let destroy P :=
-                      destruct_val ty (Vptr a) dtor (_at (_eq a) (anyR ty 1) ** P)
+                      destruct_val ty a dtor (_at (_eq a) (tblockR (σ:=resolve) ty) ** P)
                   in
                   let continue :=
                       k (Rbind x a ρ) (Kat_exit destroy Q)
@@ -166,7 +167,7 @@ Module Type Stmt.
         Forall a : ptr,
         let continue :=
             k (Rbind x a ρ)
-              (Kfree (_at (_eq a) (anyR (erase_qualifiers ty) 1)) Q)
+              (Kfree (_at (_eq a) (anyR Tnullptr 1)) Q)
         in
         match init with
         | None =>
