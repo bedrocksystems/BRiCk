@@ -457,7 +457,10 @@ Section with_cpp.
     exact: bi.sep_elim_l.
   Qed.
 
-  (** [primR]: the argument pointer points to an initialized value [v] of C++ type [ty]. *)
+  (** [primR ty q v]: the argument pointer points to an initialized value [v] of C++ type [ty].
+   *
+   * NOTE [ty] *must* be a primitive type.
+   *)
   Definition primR_def {resolve:genv} (ty : type) (q : Qp) (v : val) : Rep :=
     as_Rep (fun addr => @tptsto _ _ resolve ty q addr v ** [| has_type v (drop_qualifiers ty) |]).
   Definition primR_aux : seal (@primR_def). Proof. by eexists. Qed.
@@ -512,8 +515,11 @@ Section with_cpp.
   Proof. apply: observe_elim. Qed.
 
   (**
-  [uninitR]: the argument pointer points to an uninitialized value [Vundef] of C++ type [ty].
-  Unlike [primR], does not imply [has_type]. *)
+     [uninitR ty q]: the argument pointer points to an uninitialized value [Vundef] of C++ type [ty].
+     Unlike [primR], does not imply [has_type].
+
+     NOTE the [ty] argument *must* be a primitive type.
+   *)
   Definition uninitR_def {resolve:genv} (ty : type) (q : Qp) : Rep :=
     as_Rep (fun addr => @tptsto _ _ resolve ty q addr Vundef).
   Definition uninitR_aux : seal (@uninitR_def). Proof. by eexists. Qed.

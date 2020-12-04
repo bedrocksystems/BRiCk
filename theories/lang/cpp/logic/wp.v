@@ -1,5 +1,5 @@
 (*
- * Copyright (C) BedRock Systems Inc. 2019 Gregory Malecha
+ * Copyright (C) BedRock Systems Inc. 2019-2020
  *
  * SPDX-License-Identifier: LGPL-2.1 WITH BedRock Exception for use over network, see repository root for details.
  *)
@@ -78,7 +78,6 @@ Section with_cpp.
     : forall {resolve:genv}, coPset -> thread_info -> region ->
         Expr ->
         (ptr -> FreeTemps -> epred) -> (* result -> free -> post *)
-        (* ^^ TODO [val] above should probably be [ptr] *)
         mpred. (* pre-condition *)
 
   Axiom wp_lval_shift : forall σ M ti ρ e Q,
@@ -149,7 +148,6 @@ Section with_cpp.
   Parameter wp_init
     : forall {resolve:genv}, coPset -> thread_info -> region ->
                         type -> ptr -> Expr ->
-                        (* [val] should be [ptr] *)
                         (FreeTemps -> epred) -> (* free -> post *)
                         mpred. (* pre-condition *)
 
@@ -213,6 +211,8 @@ Section with_cpp.
     : forall {resolve:genv}, coPset -> thread_info -> region ->
         Expr ->
         (val -> FreeTemps -> epred) -> (* result -> free -> post *)
+        (* ^^ TODO the biggest question is what does this [val] represent
+         *)
         mpred. (* pre-condition *)
 
   Axiom wp_prval_shift : forall σ M ti ρ e Q,
@@ -274,7 +274,6 @@ Section with_cpp.
     : forall {resolve:genv}, coPset -> thread_info -> region ->
                         Expr ->
                         (ptr -> FreeTemps -> epred) -> (* result -> free -> post *)
-                        (* ^^ TODO [val] should be [ptr] *)
                         mpred. (* pre-condition *)
 
   Axiom wp_xval_shift : forall σ M ti ρ e Q,
@@ -500,6 +499,7 @@ Section with_cpp.
 *)
 
   (** initializers *)
+  (* TODO this seems unnecessary *)
   Parameter wpi
     : forall {resolve:genv} (M : coPset) (ti : thread_info) (ρ : region)
         (cls : globname) (this : ptr) (init : Initializer)

@@ -48,7 +48,7 @@ Module Type Init.
       | Tbool
       | Tint _ _ =>
         wp_prval init (fun v free =>
-                         _at (_eq addr) (anyR (erase_qualifiers ty) 1) **
+                         _at (_eq addr) (tblockR (erase_qualifiers ty)) **
                          (   _at (_eq addr) (primR (erase_qualifiers ty) 1 v)
                           -* k free))
 

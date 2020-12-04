@@ -50,12 +50,12 @@ Section with_cpp.
   : function_spec :=
     let this_type := Qmut (Tnamed class) in
     let map_pre this '(args, P) :=
-        (this :: args,
-         _at (_eqv this) (tblockR this_type) ** P) in
+        (Vptr this :: args,
+         _at (_eq this) (tblockR this_type) ** P) in
     SFunction (cc:=cc) (Qmut Tvoid) (Qconst (Tpointer this_type) :: targs)
               {| wpp_with := TeleS (fun this : ptr => (PQ this).(wpp_with))
                ; wpp_pre this :=
-                   tele_map (map_pre (Vptr this)) (PQ this).(wpp_pre)
+                   tele_map (map_pre this) (PQ this).(wpp_pre)
                ; wpp_post this := (PQ this).(wpp_post)
                |}.
 
@@ -71,6 +71,9 @@ Section with_cpp.
          ; we_post := tele_map (fun '(result, Q) =>
                                   (result, _at (_eq this) (tblockR this_type) ** Q)) Q |}
     in
+    (** ^ NOTE the size of an object might be different in the presence of virtual base
+        classes.
+     *)
     SFunction@{X Z Y} (cc:=cc) (Qmut Tvoid) (Qconst (Tpointer this_type) :: nil)
               {| wpp_with := TeleS (fun this : ptr => (PQ this).(wpp_with))
                ; wpp_pre this :=
@@ -249,8 +252,12 @@ Section with_cpp.
       | This =>
         (* this is a delegating constructor *)
         [| is' = nil |] **
+        [| drop_qualifiers i.(init_type) = Tnamed cls |] **
         (_eq this |-> tblockR i.(init_type) -* wpi (resolve:=resolve) ⊤ ti ρ cls this i Q)
-      | _ =>
+        (* the constructor that we are delegating to will already initialize the object
+         * identity, so we don't have to do that here.
+         *)
+      | Base _ =>
         _offsetL (offset_for _ cls i.(init_path)) (_eq this) |-> tblockR i.(init_type) -*
         wpi (resolve:=resolve) ⊤ ti ρ cls this i (fun f => f ** wpi_bases ti ρ cls this is' Q)
       end
@@ -258,6 +265,11 @@ Section with_cpp.
 
   (* note(gmm): supporting virtual inheritence will require us to add
    * constructor kinds here
+   *
+   * NOTE that the constructor semantics consumes the entire [blockR] of the object
+   * that is being constructed and the C++ abstract machine breaks this block down
+   * and provides each sub-block immediately before the initialization of the field
+   * or base.
    *)
   Definition wp_ctor (ctor : Ctor)
              (ti : thread_info) (args : list val)
@@ -271,6 +283,9 @@ Section with_cpp.
       | Vptr thisp :: rest_vals =>
         let ty := Tnamed ctor.(c_class) in
         thisp |-> tblockR ty **
+        (* ^ this requires that you give up the *entire* block of memory that the object
+           will use.
+         *)
         bind_base_this (Some thisp) Tvoid (fun ρ =>
         bind_vars ctor.(c_params) rest_vals ρ (fun ρ frees =>
           (wpi_bases ti ρ ctor.(c_class) thisp inits
@@ -327,7 +342,10 @@ Section with_cpp.
       | This => False
       | Base _ =>
         this |-> revert_identity cls (wpd_bases ti ρ cls this dests Q)
-      | _ => wpd (resolve:=resolve) ⊤ ti ρ cls this d (wpd_members ti ρ cls this is' Q)
+      | _ =>
+        wpd (resolve:=resolve) ⊤ ti ρ cls this d (fun free =>
+          _offsetL (offset_for _ cls d.1) (_eq this) |-> tblockR _ (* type of field *) **
+          wpd_members ti ρ cls this is' (fun free' => Q (free ** free'))
       end
     end.
 
@@ -336,14 +354,14 @@ Section with_cpp.
     match dtor.(d_body) with
     | None => False
     | Some Defaulted => False
-      (* ^ defaulted constructors are not supported yet *)
+      (* ^ defaulted constructors are not supported *)
     | Some (UserDefined (body, deinit)) =>
       match args with
       | Vptr thisp :: rest_vals =>
         bind_base_this (Some thisp) Tvoid (fun ρ =>
         wp (resolve:=resolve) ⊤ ti ρ body
            (void_return (wpd_members ti ρ dtor.(d_class) thisp deinit
-                (|> _at (_eq thisp) (tblockR (Tnamed dtor.(d_class))) -* Q Vvoid))))
+                |> (_at (_eq thisp) (tblockR (Tnamed dtor.(d_class))) -* Q Vvoid))))
       | _ => False
       end
     end.
