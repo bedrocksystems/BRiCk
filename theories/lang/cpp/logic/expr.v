@@ -319,15 +319,24 @@ Module Type Expr.
 
 
 
-    (* note: the comma operator can be both an lvalue and a prvalue
+    (* The comma operator can be both an lvalue and a prvalue
      * depending on what the second expression is.
-     * todo(gmm): the first expression can be any value category.
      *)
-    (*
-    Axiom wpe_comma : forall {m vc} ty e1 e2 Q,
-        wpAny_ignore vc e1 (fun free1 => wpe m e2 (fun val free2 => Q val (free1 ** free2)))
-        |-- wpe m (Ecomma vc e1 e2 ty) Q.
-     *)
+    Axiom wp_lval_comma : forall {vc} ty e1 e2 Q,
+        wpAny_ignore vc e1 (fun free1 => wp_lval e2 (fun val free2 => Q val (free1 ** free2)))
+        |-- wp_lval (Ecomma vc e1 e2 ty) Q.
+
+    Axiom wp_xval_comma : forall {vc} ty e1 e2 Q,
+        wpAny_ignore vc e1 (fun free1 => wp_xval e2 (fun val free2 => Q val (free1 ** free2)))
+        |-- wp_xval (Ecomma vc e1 e2 ty) Q.
+
+    Axiom wp_prval_comma : forall {vc} ty e1 e2 Q,
+        wpAny_ignore vc e1 (fun free1 => wp_prval e2 (fun val free2 => Q val (free1 ** free2)))
+        |-- wp_prval (Ecomma vc e1 e2 ty) Q.
+
+    Axiom wp_init_comma : forall {vc} ty' ty p e1 e2 Q,
+        wpAny_ignore vc e1 (fun free1 => wp_init ty' p e2 (fun free2 => Q (free1 ** free2)))
+        |-- wp_init ty' p (Ecomma vc e1 e2 ty) Q.
 
     (** short-circuting operators *)
     Axiom wp_prval_seqand : forall ty e1 e2 Q,
