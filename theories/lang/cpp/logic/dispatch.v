@@ -19,7 +19,7 @@ Section with_cpp.
     match d with
     | Derives_here st _ => _id
     | Derives_base base st _ _ _ _ d =>
-      _dot (base_to_derived d) (_derived σ base derived)
+      _dot (base_to_derived d) (_derived (resolve:=σ) base derived)
     end.
 
   (* the [Offset] to cast a [derived] to a [base] *)
@@ -27,7 +27,7 @@ Section with_cpp.
     match d with
     | Derives_here st _ => _id
     | Derives_base base st _ _ _ _ d =>
-      _dot (_base σ derived base) (derived_to_base d)
+      _dot (_base (resolve:=σ) derived base) (derived_to_base d)
     end.
 
   Definition get_impl `(r : class_derives σ mdc tcls) (f : obj_name)

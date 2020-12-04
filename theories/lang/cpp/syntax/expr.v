@@ -46,7 +46,7 @@ Variant VarRef : Set :=
 Instance: EqDecision VarRef.
 Proof. solve_decision. Defined.
 
-Variant ValCat : Set := Lvalue | Rvalue | Xvalue.
+Variant ValCat : Set := Lvalue | Prvalue | Xvalue.
 Instance: EqDecision ValCat.
 Proof. solve_decision. Defined.
 

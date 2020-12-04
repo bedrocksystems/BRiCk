@@ -188,7 +188,7 @@ Section with_cpp.
         _identity resolve cls mdc 1 **
         [∗list] b ∈ st.(s_bases),
            let '(base,_) := b in
-           _base resolve cls base |-> all_identities' f mdc base
+           _base cls base |-> all_identities' f mdc base
       | _ => lfalse
       end
     end.
@@ -209,12 +209,12 @@ Section with_cpp.
     | Some (Gstruct st) =>
       ([∗list] b ∈ st.(s_bases),
          let '(base,_) := b in
-         _base resolve cls base |-> all_identities (Some base) base) **
+         _base cls base |-> all_identities (Some base) base) **
        _identity resolve cls None 1 **
       (_identity resolve cls (Some cls) 1 -*
        ([∗list] b ∈ st.(s_bases),
           let '(base,_) := b in
-          _base resolve cls base |-> all_identities (Some cls) base) -* pureR Q)
+          _base cls base |-> all_identities (Some cls) base) -* pureR Q)
     | _ => lfalse
     end.
 
@@ -283,11 +283,11 @@ Section with_cpp.
       _identity resolve cls (Some cls) 1 **
       ([∗list] b ∈ st.(s_bases),
           let '(base,_) := b in
-          _base resolve cls base |-> all_identities (Some cls) base) **
+          _base cls base |-> all_identities (Some cls) base) **
       (_identity resolve cls None 1 -*
        ([∗list] b ∈ st.(s_bases),
          let '(base,_) := b in
-         _base resolve cls base |-> all_identities (Some base) base) -* pureR Q)
+         _base cls base |-> all_identities (Some base) base) -* pureR Q)
     | _ => lfalse
     end.
 

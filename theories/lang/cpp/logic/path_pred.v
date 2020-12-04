@@ -345,12 +345,11 @@ Section with_Σ.
 
   (** [_base derived base] is a cast from derived to base.
    *)
-  Definition _base_def (resolve:genv) (derived base : globname) : Offset :=
+  Definition _base_def {resolve:genv} (derived base : globname) : Offset :=
     offset2Offset (o_base resolve derived base).
   Definition _base_aux : seal (@_base_def). Proof. by eexists. Qed.
   Definition _base := _base_aux.(unseal).
   Definition _base_eq : @_base = _ := _base_aux.(seal_eq).
-  Definition _super := _base.
 
   (** [_derived base derived] is a cast from base to derived
    *)
@@ -435,7 +434,7 @@ Section with_Σ.
 
   Definition offset_for (resolve:genv) (cls : globname) (f : FieldOrBase) : Offset :=
     match f with
-    | Base parent => _super resolve cls parent
+    | Base parent => _base resolve cls parent
     | Field i => _field resolve {| f_type := cls ; f_name := i |}
     | Indirect ls final =>
       path_to_Offset resolve cls final ls
@@ -449,7 +448,12 @@ Notation "a &~ b" := (addr_of a b) (at level 30, no associativity).
 
 Global Opaque _sub _field _offsetL _dot addr_of.
 
-Arguments _super {_ Σ} {resolve} _ _ : rename.
+Arguments _base {_ Σ} {resolve} _ _ : rename.
+Arguments _derived {_ Σ} {resolve} _ _ : rename.
 Arguments _field {_ Σ} {resolve} _ : rename.
 Arguments _sub {_ Σ} {resolve} _ : rename.
 Arguments _global {_ Σ} {resolve} _ : rename.
+
+#[deprecated(since="2020-12-03",note="use _base instead")]
+Notation _super := _base (only parsing).
+
