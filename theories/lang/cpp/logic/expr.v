@@ -41,9 +41,6 @@ Module Type Expr.
     Local Notation wp_rval := (wp_rval (resolve:=resolve) M ti ρ).
     Local Notation wp_init := (wp_init (resolve:=resolve) M ti ρ).
     Local Notation wp_args := (wp_args (σ:=resolve) M ti ρ).
-(*    Local Notation wpAny := (wpAny (resolve:=resolve) M ti ρ).
-    Local Notation wpe := (wpe (resolve:=resolve) M ti ρ).
-    Local Notation wpAnys := (wpAnys (resolve:=resolve) M ti ρ). *)
     Local Notation fspec := (fspec resolve.(genv_tu).(globals)).
     Local Notation destruct_val := (destruct_val (σ:=resolve) ti) (only parsing).
 
@@ -59,6 +56,7 @@ Module Type Expr.
     Local Notation align_of := (@align_of resolve) (only parsing).
     Local Notation primR := (primR (resolve:=resolve)) (only parsing).
     Local Notation anyR := (anyR (resolve:=resolve)) (only parsing).
+    Local Notation tblockR := (tblockR (σ:=resolve)) (only parsing).
     Local Notation uninitR := (uninitR (resolve:=resolve)) (only parsing).
     Local Notation blockR := (blockR (σ:=resolve)) (only parsing).
 
@@ -317,8 +315,6 @@ Module Type Expr.
       | Xvalue => wp_xval e (fun _ => Q)
       end.
 
-
-
     (* The comma operator can be both an lvalue and a prvalue
      * depending on what the second expression is.
      *)
@@ -494,7 +490,7 @@ Module Type Expr.
                         (Forall va, pinned_ptr va p -* Q (Vint va) free))
         | _ => False
         end
-        |-- wp_prval (Ecast Cint2pointer (Rvalue, e) ty) Q.
+        |-- wp_prval (Ecast Cint2pointer (Prvalue, e) ty) Q.
 
     (** [Cpointer2int] uses "angelic non-determinism" to allow the developer to
         pick any pointer that was previously exposed as the given integer.
@@ -506,7 +502,7 @@ Module Type Expr.
         wp_prval e (fun v free => Exists va : N, [| v = Vint (Z.of_N va) |] **
            (([| (va > 0)%N |] ** Exists p, pinned_ptr va p ** Q (Vptr p) free) \\//
             ([| va = 0%N |] ** Q (Vptr nullptr) free)))
-        |-- wp_prval (Ecast Cpointer2int (Rvalue, e) ty) Q.
+        |-- wp_prval (Ecast Cpointer2int (Prvalue, e) ty) Q.
 
     (** [Cderived2base] casts from a derived class to a base
      * class. Casting is only permitted on pointers and references
@@ -648,10 +644,11 @@ Module Type Expr.
     *)
     Axiom wp_prval_call : forall ty f es Q,
         (if is_aggregate ty then
-             Forall addr, wp_init ty addr (Ecall f es ty) (fun free =>
-                Q (Vptr addr) (free ** _at (_eq addr) (anyR (erase_qualifiers ty) 1)))
-             (* XXX this use of [Vptr] represents an aggregate
-                XXX this use of [anyR] is incorrect
+           Forall addr, wp_init ty addr (Ecall f es ty) (fun free =>
+                Q (Vptr addr) (free ** destruct_val (erase_qualifiers ty) addr None (_at (_eq addr) (tblockR ty))))
+             (* XXX This use of [Vptr] represents an aggregate.
+                XXX The destruction of the value isn't quite correct because we explicitly
+                    generate the destructors.
               *)
          else
            match unptr (type_of f) with
@@ -662,12 +659,11 @@ Module Type Expr.
            end)
         |-- wp_prval (Ecall f es ty) Q.
 
-    Axiom wp_lval_call :
-      forall f (es : list (ValCat * Expr)) Q (ty : type),
+    Axiom wp_lval_call : forall f (es : list (ValCat * Expr)) Q (ty : type),
         match unptr (type_of f) with
         | Some fty =>
           wp_prval f (fun f free_f => wp_args es (fun vs free =>
-                        |> fspec fty ti f vs (fun res => Exists p, [| res = Vptr p |] ** Q p (free_f ** free))))
+                        |> fspec fty ti f vs (fun res => Exists p, [| res = Vptr p |] ** Q p (free ** free_f))))
         | _ => False
         end
         |-- wp_lval (Ecall f es ty) Q.
@@ -676,7 +672,7 @@ Module Type Expr.
         match unptr (type_of f) with
         | Some fty =>
           wp_prval f (fun f free_f => wp_args es (fun vs free =>
-                           |> fspec fty ti f vs (fun v => Exists p, [| v = Vptr p |] ** Q p (free_f ** free))))
+                           |> fspec fty ti f vs (fun v => Exists p, [| v = Vptr p |] ** Q p (free ** free_f))))
         | _ => False
         end
       |-- wp_xval (Ecall f es ty) Q.
@@ -802,7 +798,7 @@ Module Type Expr.
                       (_at (_eqv res) (blockR sz) **
                        (* todo: ^ This misses an condition that [res] is suitably aligned. (issue #149) *)
                            (Forall newp : ptr,
-                              _at (_eq newp) (tblockR (σ:=resolve) aty) -*
+                              _at (_eq newp) (tblockR aty) -*
                               provides_storage resp newp aty -*
                               wp_init (type_of init) newp init (fun free' =>
                                                               Q (Vptr newp) (free ** free'))))))
@@ -859,7 +855,7 @@ Module Type Expr.
          Forall a, _at (_eq a) (uninitR raw_type 1) -*
                   let '(e,dt) := destructor_for e in
                   wp_init ty a e
-                          (fun free => Q a (destruct_val ty a dt (_at (_eq a) (tblockR (σ:=resolve) raw_type) ** free))))
+                          (fun free => Q a (destruct_val ty a dt (_at (_eq a) (tblockR raw_type) ** free))))
         |-- wp_xval (Ematerialize_temp e ty) Q.
 
     (** temporary materialization only occurs when the resulting value is used.
@@ -876,7 +872,7 @@ Module Type Expr.
          Forall a, _at (_eq a) (uninitR raw_type 1) -*
                    let '(e,dt) := destructor_for e in
                    wp_init ty a e (fun free =>
-                     Q (Vptr a) (destruct_val ty a dt (_at (_eq a) (tblockR (σ:=resolve) raw_type) ** free))))
+                                     Q (Vptr a) (destruct_val ty a dt (_at (_eq a) (tblockR raw_type) ** free))))
         |-- wp_prval e Q.
 
 
@@ -901,7 +897,7 @@ Module Type Expr.
       let raw_type := erase_qualifiers ty in
       _at (_eq a) (uninitR raw_type 1) -*
           wp_init ty a e (fun free =>
-                            Q (Vptr a) (destruct_val ty a (Some dtor) (_at (_eq a) (tblockR (σ:=resolve) raw_type) ** free))))
+                            Q (Vptr a) (destruct_val ty a (Some dtor) (_at (_eq a) (tblockR raw_type) ** free))))
       |-- wp_prval (Ebind_temp e dtor ty) Q.
 
     (** Pseudo destructors arise from calling the destructor on
@@ -920,7 +916,7 @@ Module Type Expr.
            \post this |-> tblockR ty
      *)
     Axiom wp_pseudo_destructor : forall e ty Q,
-        wp_prval e (fun v free => _at (_eqv v) (anyR ty 1) ** (_at (_eqv v) (tblockR (σ:=resolve) ty) -* Q Vundef free))
+        wp_prval e (fun v free => _at (_eqv v) (anyR ty 1) ** (_at (_eqv v) (tblockR ty) -* Q Vundef free))
         |-- wp_prval (Epseudo_destructor ty e) Q.
 
     (* Implicit initialization initializes the variables with
