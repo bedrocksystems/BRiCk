@@ -688,26 +688,43 @@ Module Type Expr.
         end
         |-- wp_init ty addr (Ecall f es ty) Q.
 
-    (* TODO
-    Axiom wp_prval_member_call : forall ty fty f vc obj es Q,
-          Exists fa, _global f &~ fa **
-          wpe vc obj (fun this free_t => wp_args es (fun vs free =>
-              |> fspec fty ti (Vptr fa) (this :: vs) (fun v => Q v (free_t ** free))))
-        |-- wp_prval (Emember_call (inl (f, Direct, fty)) vc obj es ty) Q.
+    Definition wp_specific_glval (vc : ValCat) (e : Expr) : (ptr -> FreeTemps -> mpred) -> mpred :=
+      match vc with
+      | Lvalue => wp_lval e
+      | Xvalue => wp_xval e
+      | _ => fun _ => False
+      end%I.
+
+    (** member call *)
+    Axiom wp_lval_member_call : forall ty fty f vc obj es Q,
+        Exists fa, _global f &~ fa **
+        wp_specific_glval vc obj (fun this free_t => wp_args es (fun vs free =>
+           |> fspec fty ti (Vptr fa) (Vptr this :: vs) (fun v =>
+                    Exists p, [| v = Vptr p |] ** Q p (free_t ** free))))
+        |-- wp_lval (Emember_call (inl (f, Direct, fty)) vc obj es ty) Q.
 
     Axiom wp_xval_member_call : forall ty fty f vc obj es Q,
         Exists fa, _global f &~ fa **
-        wpe vc obj (fun this free_t => wp_args es (fun vs free =>
-            |> fspec fty ti (Vptr fa) (this :: vs) (fun v => Q v (free_t ** free))))
+        wp_specific_glval vc obj (fun this free_t => wp_args es (fun vs free =>
+           |> fspec fty ti (Vptr fa) (Vptr this :: vs) (fun v =>
+                    Exists p, [| v = Vptr p |] ** Q p (free_t ** free))))
         |-- wp_xval (Emember_call (inl (f, Direct, fty)) vc obj es ty) Q.
+
+    Axiom wp_prval_member_call : forall ty fty f vc obj es Q,
+          Exists fa, _global f &~ fa **
+          wp_specific_glval vc obj (fun this free_t => wp_args es (fun vs free =>
+              |> fspec fty ti (Vptr fa) (Vptr this :: vs) (fun v => Q v (free_t ** free))))
+        |-- wp_prval (Emember_call (inl (f, Direct, fty)) vc obj es ty) Q.
 
     Axiom wp_init_member_call : forall f fty es addr ty vc obj Q,
         Exists fa, _global f &~ fa **
-        wpe vc obj (fun this free_t => wp_args es (fun vs free =>
-             |> fspec fty ti (Vptr fa) (this :: vs) (fun res =>
-                      [| res = addr |] -* Q (free_t ** free))))
+        wp_specific_glval vc obj (fun this free_t => wp_args es (fun vs free =>
+             |> fspec fty ti (Vptr fa) (Vptr this :: vs) (fun res =>
+                      [| res = Vptr addr |] -* Q (free_t ** free))))
+        (* NOTE as with regular function calls, we use an assumed equation to unify the address
+           of the returned object with the location that we are initializing.
+         *)
         |-- wp_init ty addr (Emember_call (inl (f, Direct, fty)) vc obj es ty) Q.
-     *)
 
     (** virtual functions *)
     Fixpoint class_type (t : type) : option globname :=
