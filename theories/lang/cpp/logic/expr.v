@@ -923,14 +923,17 @@ Module Type Expr.
         wp_prval e (fun v free => _at (_eqv v) (anyR ty 1) ** (_at (_eqv v) (tblockR (σ:=resolve) ty) -* Q Vundef free))
         |-- wp_prval (Epseudo_destructor ty e) Q.
 
+    (* Implicit initialization initializes the variables with
+       indeterminate values.
+     *)
     Axiom wp_prval_implicit_init_int : forall ty sz sgn Q,
         drop_qualifiers ty = Tint sz sgn ->
-          Q (Vint 0) emp
+          Q Vundef emp
       |-- wp_prval (Eimplicit_init ty) Q.
 
     Axiom wp_prval_implicit_init_bool : forall ty Q,
         drop_qualifiers ty = Tbool ->
-          Q (Vbool false) emp
+          Q Vundef emp
       |-- wp_prval (Eimplicit_init ty) Q.
 
   End with_resolve.
