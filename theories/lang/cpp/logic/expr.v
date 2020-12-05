@@ -859,7 +859,7 @@ Module Type Expr.
          Forall a, _at (_eq a) (uninitR raw_type 1) -*
                   let '(e,dt) := destructor_for e in
                   wp_init ty a e
-                          (fun free => Q a (destruct_val ty a dt (_at (_eq a) (anyR raw_type 1) ** free))))
+                          (fun free => Q a (destruct_val ty a dt (_at (_eq a) (tblockR (σ:=resolve) raw_type) ** free))))
         |-- wp_xval (Ematerialize_temp e ty) Q.
 
     (** temporary materialization only occurs when the resulting value is used.
@@ -876,7 +876,7 @@ Module Type Expr.
          Forall a, _at (_eq a) (uninitR raw_type 1) -*
                    let '(e,dt) := destructor_for e in
                    wp_init ty a e (fun free =>
-                     Q (Vptr a) (destruct_val ty a dt (_at (_eq a) (anyR raw_type 1) ** free))))
+                     Q (Vptr a) (destruct_val ty a dt (_at (_eq a) (tblockR (σ:=resolve) raw_type) ** free))))
         |-- wp_prval e Q.
 
 
@@ -901,7 +901,7 @@ Module Type Expr.
       let raw_type := erase_qualifiers ty in
       _at (_eq a) (uninitR raw_type 1) -*
           wp_init ty a e (fun free =>
-                            Q (Vptr a) (destruct_val ty a (Some dtor) (_at (_eq a) (anyR raw_type 1) ** free))))
+                            Q (Vptr a) (destruct_val ty a (Some dtor) (_at (_eq a) (tblockR (σ:=resolve) raw_type) ** free))))
       |-- wp_prval (Ebind_temp e dtor ty) Q.
 
     (** Pseudo destructors arise from calling the destructor on
