@@ -832,7 +832,7 @@ Module Type Expr.
                     if bool_decide (resp = nullptr) then
                       Q res free
                     else
-                      (_at (_eqv res) (blockR sz) **
+                      (_at (_eqv res) (blockR sz) ** (* [blockR sz -|- tblockR aty] *)
                        (* todo: ^ This misses an condition that [res] is suitably aligned. (issue #149) *)
                            (Forall newp : ptr,
                               _at (_eq newp) (tblockR aty) -*
@@ -889,7 +889,7 @@ Module Type Expr.
      *)
     Axiom wp_xval_temp : forall e ty Q,
         (let raw_type := erase_qualifiers ty in
-         Forall a, _at (_eq a) (uninitR raw_type 1) -*
+         Forall a, _at (_eq a) (tblockR raw_type) -*
                   let '(e,dt) := destructor_for e in
                   wp_init ty a e
                           (fun free => Q a (destruct_val ty a dt (_at (_eq a) (tblockR raw_type) ** free))))
@@ -906,7 +906,7 @@ Module Type Expr.
         is_aggregate (type_of e) = true ->
         (let ty := type_of e in
          let raw_type := erase_qualifiers ty in
-         Forall a, _at (_eq a) (uninitR raw_type 1) -*
+         Forall a, _at (_eq a) (tblockR raw_type) -*
                    let '(e,dt) := destructor_for e in
                    wp_init ty a e (fun free =>
                                      Q (Vptr a) (destruct_val ty a dt (_at (_eq a) (tblockR raw_type) ** free))))
@@ -932,7 +932,7 @@ Module Type Expr.
     Axiom wp_prval_materialize : forall ty e dtor Q,
       (Forall a : ptr,
       let raw_type := erase_qualifiers ty in
-      _at (_eq a) (uninitR raw_type 1) -*
+      _at (_eq a) (tblcokR raw_type) -*
           wp_init ty a e (fun free =>
                             Q (Vptr a) (destruct_val ty a (Some dtor) (_at (_eq a) (tblockR raw_type) ** free))))
       |-- wp_prval (Ebind_temp e dtor ty) Q.
