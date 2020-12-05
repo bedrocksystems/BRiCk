@@ -30,6 +30,7 @@ Module Type Stmt.
     Local Notation wp_glval := (wp_glval (resolve:=resolve) M ti).
     Local Notation wp_rval := (wp_rval (resolve:=resolve) M ti).
     Local Notation wp_init := (wp_init (resolve:=resolve) M ti).
+    Local Notation wpe := (wpe (resolve:=resolve) M ti).
     Local Notation fspec := (fspec ti).
     Local Notation destruct_val := (destruct_val (σ:=resolve) ti) (only parsing).
     Local Notation destruct_obj := (destruct_obj (σ:=resolve) ti) (only parsing).
@@ -77,16 +78,8 @@ Module Type Stmt.
     Axiom wp_continue : forall ρ Q,
         |> Q.(k_continue) |-- wp ρ Scontinue Q.
 
-    (* evaluate an expression but ignore the result *)
-    Definition wpAny_ignore (ρ : region) (vc : ValCat) (e : Expr) (Q : FreeTemps -> mpred) : mpred :=
-      match vc with
-      | Prvalue => wp_prval ρ e (fun _ => Q)
-      | Lvalue => wp_lval ρ e (fun _ => Q)
-      | Xvalue => wp_xval ρ e (fun _ => Q)
-      end.
-
     Axiom wp_expr : forall ρ vc e Q,
-        |> wpAny_ignore ρ vc e (fun free => free ** Q.(k_normal))
+        |> wpe ρ vc e (fun _ free => free ** Q.(k_normal))
         |-- wp ρ (Sexpr vc e) Q.
 
     (* This definition performs allocation of local variables
@@ -206,7 +199,7 @@ Module Type Stmt.
     Axiom wp_if : forall ρ e thn els Q,
         |> wp_prval ρ e (fun v free =>
              match is_true v with
-             | None => lfalse
+             | None => False
              | Some c =>
                free **
                if c then
@@ -240,13 +233,13 @@ Module Type Stmt.
           Inv |-- wp ρ (Sseq (b :: Scontinue :: nil))
               (Kloop match incr with
                      | None => Inv
-                     | Some (vc,incr) => wpAny_ignore ρ vc incr (fun free => free ** Inv)
+                     | Some (vc,incr) => wpe ρ vc incr (fun _ free => free ** Inv)
                      end Q)
         | Some test =>
           Inv |-- wp ρ (Sif None test (Sseq (b :: Scontinue :: nil)) Sskip)
               (Kloop match incr with
                      | None => Inv
-                     | Some (vc,incr) => wpAny_ignore ρ vc incr (fun free => free ** Inv)
+                     | Some (vc,incr) => wpe ρ vc incr (fun _ free => free ** Inv)
                      end Q)
         end ->
         Inv |-- wp ρ (Sfor None test incr b) Q.

@@ -374,6 +374,17 @@ Section with_cpp.
     Qed.
   End wp_glval.
 
+  (* in some cases we need to evaluate a glvalue but we know the
+     the underlying primitive value category. This makes some weakest
+     pre-condition axioms a bit shorter
+   *)
+  Definition wp_specific_glval {resolve} M ti r (vc : ValCat) (e : Expr) : (ptr -> FreeTemps -> mpred) -> mpred :=
+      match vc with
+      | Lvalue => wp_lval (resolve:=resolve) M ti r e
+      | Xvalue => wp_xval (resolve:=resolve) M ti r e
+      | _ => fun _ => False
+      end%I.
+
   (** rvalues *)
   (* evaluate an expression as an rvalue
    * TODO this doesn't capture initializing prvalues
@@ -426,21 +437,18 @@ Section with_cpp.
     Qed.
   End wp_rval.
 
-  (*
-  (* sometimes we we bundle expresions with their value categories, so
-   * we provide a uniform interface
-   * TODO it probably makes sense to remove this.
+  (** Bundled evaluation, this enables us slightly more concisely
+      represent some weakest-precondition rules.
    *)
   Section wpe.
     Context {resolve:genv}.
     Variable (M : coPset) (ti : thread_info) (ρ : region).
 
-    Definition wpe (vc : ValCat)
-      : Expr -> (val -> FreeTemps -> mpred) -> mpred :=
+    Definition wpe (vc : ValCat) (e : Expr) (Q :val -> FreeTemps -> mpred) : mpred :=
       match vc with
-      | Lvalue => @wp_lval resolve M ti ρ
-      | Prvalue => @wp_prval resolve M ti ρ
-      | Xvalue => @wp_xval resolve M ti ρ
+      | Lvalue => @wp_lval resolve M ti ρ e (fun p => Q (Vptr p))
+      | Prvalue => @wp_prval resolve M ti ρ e Q
+      | Xvalue => @wp_xval resolve M ti ρ e (fun p => Q (Vptr p))
       end.
 
     Definition wpAny (vce : ValCat * Expr)
@@ -454,7 +462,13 @@ Section with_cpp.
   Lemma wpe_frame σ1 σ2 M ti ρ vc e k1 k2:
     genv_leq σ1 σ2 ->
     Forall v f, k1 v f -* k2 v f |-- wpe (resolve := σ1) M ti ρ vc e k1 -* wpe (resolve:=σ2) M ti ρ vc e k2.
-  Proof. destruct vc => /=; by [apply wp_lval_frame| apply wp_prval_frame | apply wp_xval_frame ]. Qed.
+  Proof.
+    destruct vc => /=; [ | apply wp_prval_frame | ].
+    - intros. rewrite -wp_lval_frame; eauto.
+      iIntros "h" (v f) "x"; iApply "h"; iFrame.
+    - intros. rewrite -wp_xval_frame; eauto.
+      iIntros "h" (v f) "x"; iApply "h"; iFrame.
+  Qed.
 
   Global Instance Proper_wpe :
     Proper (genv_leq ==> eq ==> eq ==> eq ==> eq ==> eq ==> (eq ==> lentails ==> lentails) ==> lentails)
@@ -496,7 +510,6 @@ Section with_cpp.
     iIntros "X"; iRevert "X"; iApply wpAny_frame; eauto.
     iIntros (v f); iApply H4; reflexivity.
   Qed.
-*)
 
   (** initializers *)
   (* TODO this seems unnecessary *)

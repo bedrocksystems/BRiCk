@@ -40,6 +40,8 @@ Module Type Expr.
     Local Notation wp_glval := (wp_glval (resolve:=resolve) M ti ρ).
     Local Notation wp_rval := (wp_rval (resolve:=resolve) M ti ρ).
     Local Notation wp_init := (wp_init (resolve:=resolve) M ti ρ).
+    Local Notation wpe := (wpe (resolve:=resolve) M ti ρ).
+    Local Notation wp_specific_glval := (wp_specific_glval (resolve:=resolve) M ti ρ).
     Local Notation wp_args := (wp_args (σ:=resolve) M ti ρ).
     Local Notation fspec := (fspec resolve.(genv_tu).(globals)).
     Local Notation destruct_val := (destruct_val (σ:=resolve) ti) (only parsing).
@@ -304,34 +306,23 @@ Module Type Expr.
                  (_at (_eq la) (primR (erase_qualifiers ty) 1 v') -* Q la (free1 ** free2)))))
         |-- wp_lval (Eassign_op o l r ty) Q.
 
-    (* evaluate an expression but ignore the result
-
-    XXX this is duplicated from stmt.v
-     *)
-    Definition wpAny_ignore (vc : ValCat) (e : Expr) (Q : FreeTemps -> mpred) : mpred :=
-      match vc with
-      | Prvalue => wp_prval e (fun _ => Q)
-      | Lvalue => wp_lval e (fun _ => Q)
-      | Xvalue => wp_xval e (fun _ => Q)
-      end.
-
     (* The comma operator can be both an lvalue and a prvalue
      * depending on what the second expression is.
      *)
     Axiom wp_lval_comma : forall {vc} ty e1 e2 Q,
-        wpAny_ignore vc e1 (fun free1 => wp_lval e2 (fun val free2 => Q val (free1 ** free2)))
+        wpe vc e1 (fun _ free1 => wp_lval e2 (fun val free2 => Q val (free1 ** free2)))
         |-- wp_lval (Ecomma vc e1 e2 ty) Q.
 
     Axiom wp_xval_comma : forall {vc} ty e1 e2 Q,
-        wpAny_ignore vc e1 (fun free1 => wp_xval e2 (fun val free2 => Q val (free1 ** free2)))
+        wpe vc e1 (fun _ free1 => wp_xval e2 (fun val free2 => Q val (free1 ** free2)))
         |-- wp_xval (Ecomma vc e1 e2 ty) Q.
 
     Axiom wp_prval_comma : forall {vc} ty e1 e2 Q,
-        wpAny_ignore vc e1 (fun free1 => wp_prval e2 (fun val free2 => Q val (free1 ** free2)))
+        wpe vc e1 (fun _ free1 => wp_prval e2 (fun val free2 => Q val (free1 ** free2)))
         |-- wp_prval (Ecomma vc e1 e2 ty) Q.
 
     Axiom wp_init_comma : forall {vc} ty' ty p e1 e2 Q,
-        wpAny_ignore vc e1 (fun free1 => wp_init ty' p e2 (fun free2 => Q (free1 ** free2)))
+        wpe vc e1 (fun _ free1 => wp_init ty' p e2 (fun free2 => Q (free1 ** free2)))
         |-- wp_init ty' p (Ecomma vc e1 e2 ty) Q.
 
     (** short-circuting operators *)
@@ -473,8 +464,8 @@ Module Type Expr.
 
     (** You can cast anything to void, but an expression of type
      * [void] can only be a pr_value *)
-    Axiom wpe_cast_tovoid : forall vc e Q,
-        wpAny_ignore vc e (fun free => Q (Vint 0) free)
+    Axiom wp_prval_cast_tovoid : forall vc e Q,
+        wpe vc e (fun _ free => Q (Vint 0) free)
       |-- wp_prval (Ecast C2void (vc, e) Tvoid) Q.
 
     Axiom wp_prval_cast_array2pointer : forall e t Q,
@@ -685,12 +676,6 @@ Module Type Expr.
         end
         |-- wp_init ty addr (Ecall f es ty) Q.
 
-    Definition wp_specific_glval (vc : ValCat) (e : Expr) : (ptr -> FreeTemps -> mpred) -> mpred :=
-      match vc with
-      | Lvalue => wp_lval e
-      | Xvalue => wp_xval e
-      | _ => fun _ => False
-      end%I.
 
     (** member call *)
     Axiom wp_lval_member_call : forall ty fty f vc obj es Q,
@@ -929,7 +914,7 @@ Module Type Expr.
     Axiom wp_prval_materialize : forall ty e dtor Q,
       (Forall a : ptr,
       let raw_type := erase_qualifiers ty in
-      _at (_eq a) (tblcokR raw_type) -*
+      _at (_eq a) (tblockR raw_type) -*
           wp_init ty a e (fun free =>
                             Q (Vptr a) (destruct_val ty a (Some dtor) (_at (_eq a) (tblockR raw_type) ** free))))
       |-- wp_prval (Ebind_temp e dtor ty) Q.
