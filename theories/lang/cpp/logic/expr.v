@@ -483,14 +483,17 @@ Module Type Expr.
 
     (** [Cint2pointer] exposes the pointer, which is expressed with [pinned_ptr]
      *)
-    Axiom wp_prval_int2pointer : forall e ty Q,
-        match drop_qualifiers ty with
-        | Tptr _ =>
+    Axiom wp_prval_pointer2int : forall e ty Q,
+        match drop_qualifiers (type_of e) , ty with
+        | Tptr _ , Tint sz sgn =>
           wp_prval e (fun v free => Exists p, [| v = Vptr p |] **
-                        (Forall va, pinned_ptr va p -* Q (Vint va) free))
-        | _ => False
+            (Forall va, pinned_ptr va p -* Q (Vint (match sgn with
+                                                    | Signed => to_signed sz
+                                                    | Unsigned => trim (bitsN sz)
+                                                    end (Z.of_N va))) free))
+        | _ , _ => False
         end
-        |-- wp_prval (Ecast Cint2pointer (Prvalue, e) ty) Q.
+        |-- wp_prval (Ecast Cpointer2int (Prvalue, e) ty) Q.
 
     (** [Cpointer2int] uses "angelic non-determinism" to allow the developer to
         pick any pointer that was previously exposed as the given integer.
@@ -498,11 +501,11 @@ Module Type Expr.
         TODO the pointer that is picked *must* have the correct type, but this is
         currently not stated in the rule below.
      *)
-    Axiom wp_prval_pointer2int : forall e ty Q,
+    Axiom wp_prval_int2pointer : forall e ty Q,
         wp_prval e (fun v free => Exists va : N, [| v = Vint (Z.of_N va) |] **
            (([| (va > 0)%N |] ** Exists p, pinned_ptr va p ** Q (Vptr p) free) \\//
             ([| va = 0%N |] ** Q (Vptr nullptr) free)))
-        |-- wp_prval (Ecast Cpointer2int (Prvalue, e) ty) Q.
+        |-- wp_prval (Ecast Cint2pointer (Prvalue, e) ty) Q.
 
     (** [Cderived2base] casts from a derived class to a base
      * class. Casting is only permitted on pointers and references
