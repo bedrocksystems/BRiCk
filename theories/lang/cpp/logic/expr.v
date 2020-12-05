@@ -791,7 +791,7 @@ Module Type Expr.
 
     (* null *)
     Axiom wp_null : forall Q,
-      Q (Vptr nullptr) empSP
+      Q (Vptr nullptr) emp
       |-- wp_prval Enull Q.
 
     (** [new (...) C(...)]
