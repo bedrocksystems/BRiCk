@@ -904,8 +904,23 @@ Module Type Expr.
                             Q (Vptr a) (destruct_val ty a (Some dtor) (_at (_eq a) (anyR raw_type 1) ** free))))
       |-- wp_prval (Ebind_temp e dtor ty) Q.
 
+    (** Pseudo destructors arise from calling the destructor on
+        an object of templated type when the type is instantiated
+        with a primitive. For example,
+
+          template<typename T> void destroy_it(T* t) { t->~T(); }
+
+        with [T = int].
+
+        To maintain similarity with the rest of the system, we
+        the C++ abstract machine "implments" these destructors as
+        (essentially) a function with the specification:
+
+           \pre this |-> anyR ty 1
+           \post this |-> tblockR ty
+     *)
     Axiom wp_pseudo_destructor : forall e ty Q,
-        wp_prval e Q
+        wp_prval e (fun v free => _at (_eqv v) (anyR ty 1) ** (_at (_eqv v) (tblockR (σ:=resolve) ty) -* Q Vundef free))
         |-- wp_prval (Epseudo_destructor ty e) Q.
 
     Axiom wp_prval_implicit_init_int : forall ty sz sgn Q,
