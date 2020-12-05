@@ -726,7 +726,7 @@ Module Type Expr.
          *)
         |-- wp_init ty addr (Emember_call (inl (f, Direct, fty)) vc obj es ty) Q.
 
-    (** virtual functions *)
+    (** TODO move this *)
     Fixpoint class_type (t : type) : option globname :=
       match t with
       | Tnamed gn => Some gn
@@ -737,37 +737,57 @@ Module Type Expr.
       | _ => None
       end.
 
-    (* TODO
-    Axiom wp_prval_virtual_call : forall ty fty f vc obj es Q,
-      wpe vc obj (fun this free => wp_args es (fun vs free' =>
-          match class_type (type_of obj) with
-          | Some cls =>
-            resolve_virtual (σ:=resolve) (_eqv this) cls f (fun fimpl_addr thisp =>
-              |> fspec fty ti (Vptr fimpl_addr) (Vptr thisp :: vs) (fun v => Q v (free ** free')))
-          | _ => lfalse
-          end))
-      |-- wp_prval (Emember_call (inl (f, Virtual, fty)) vc obj es ty) Q.
+    (** virtual functions
+        these are slightly more complex because we need to compute the address of the function
+        using the most-derived-class of the [this] object. This is done using [resolve_virtual].
 
-    Axiom wp_xval_virtual_call : forall ty fty f vc obj es Q,
-      wpe vc obj (fun this free => wp_args es (fun vs free' =>
+        NOTE The [resolve_virtual] below means that caller justifies the cast to the dynamic type.
+             This is necessary because the function is expecting the correct [this] pointer.
+     *)
+    Axiom wp_xval_virtual_call : forall ty fty f vc obj es Q, 
+      wp_specific_glval vc obj (fun this free => wp_args es (fun vs free' =>
           match class_type (type_of obj) with
           | Some cls =>
-            resolve_virtual (σ:=resolve) (_eqv this) cls f (fun fimpl_addr thisp =>
-              |> fspec fty ti (Vptr fimpl_addr) (Vptr thisp :: vs) (fun v => Q v (free ** free')))
-          | _ => lfalse
+            resolve_virtual (σ:=resolve) (_eq this) cls f (fun fimpl_addr thisp =>
+              |> fspec fty ti (Vptr fimpl_addr) (Vptr thisp :: vs) (fun v =>
+                       Exists p, [| v = Vptr p |] ** Q p (free ** free')))
+          | _ => False
           end))
       |-- wp_xval (Emember_call (inl (f, Virtual, fty)) vc obj es ty) Q.
 
-    Axiom wp_init_virtual_call : forall ty fty f vc obj es Q addr,
-      wpe vc obj (fun this free => wp_args es (fun vs free' =>
+    Axiom wp_lval_virtual_call : forall ty fty f vc obj es Q,
+      wp_specific_glval vc obj (fun this free => wp_args es (fun vs free' =>
           match class_type (type_of obj) with
           | Some cls =>
-            resolve_virtual (σ:=resolve) (_eqv this) cls f (fun fimpl_addr thisp =>
-              |> fspec fty ti (Vptr fimpl_addr) (Vptr thisp :: vs) (fun res => [| res = addr |] -* Q (free ** free')))
-          | _ => lfalse
+            resolve_virtual (σ:=resolve) (_eq this) cls f (fun fimpl_addr thisp =>
+              |> fspec fty ti (Vptr fimpl_addr) (Vptr thisp :: vs) (fun v =>
+                       Exists p, [| v = Vptr p |] ** Q p (free ** free')))
+          | _ => False
+          end))
+      |-- wp_lval (Emember_call (inl (f, Virtual, fty)) vc obj es ty) Q.
+
+    Axiom wp_prval_virtual_call : forall ty fty f vc obj es Q,
+      wp_specific_glval vc obj (fun this free => wp_args es (fun vs free' =>
+          match class_type (type_of obj) with
+          | Some cls =>
+            resolve_virtual (σ:=resolve) (_eq this) cls f (fun fimpl_addr thisp =>
+              |> fspec fty ti (Vptr fimpl_addr) (Vptr thisp :: vs) (fun v => Q v (free ** free')))
+         | _ => False
+          end))
+      |-- wp_prval (Emember_call (inl (f, Virtual, fty)) vc obj es ty) Q.
+
+    Axiom wp_init_virtual_call : forall ty fty f vc obj es Q addr,
+      wp_specific_glval vc obj (fun this free => wp_args es (fun vs free' =>
+          match class_type (type_of obj) with
+          | Some cls =>
+            resolve_virtual (σ:=resolve) (_eq this) cls f (fun fimpl_addr thisp =>
+              |> fspec fty ti (Vptr fimpl_addr) (Vptr thisp :: vs) (fun res => [| res = Vptr addr |] -* Q (free ** free')))
+            (* NOTE as with other function calls, we are assuming an equation on the address in order
+               to express the fact the the object is constructed in-place.
+             *)
+          | _ => False
           end))
       |-- wp_init ty addr (Emember_call (inl (f, Virtual, fty)) vc obj es ty) Q.
-     *)
 
     (* null *)
     Axiom wp_null : forall Q,
