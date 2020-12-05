@@ -22,9 +22,9 @@ From bedrock.lang.cpp.logic Require Import
 
 Module Type Expr.
 
+  (* TODO these should be removed *)
   Coercion Vint : Z >-> val.
   Coercion Z.of_N : N >-> Z.
-  Definition El2r := Ecast Cl2r.
 
   (**
    * Weakest pre-condition for expressions
@@ -627,12 +627,6 @@ Module Type Expr.
     Axiom wp_prval_alignof_e : forall ty' e Q,
         wp_prval (Ealign_of (inl (type_of e)) ty') Q
         |-- wp_prval (Ealign_of (inr e) ty') Q.
-
-    Definition unptr (t : type) : option type :=
-      match drop_qualifiers t with
-      | Tptr p => Some (drop_qualifiers p)
-      | _ => None
-      end.
 
     (** function calls *)
     (**
