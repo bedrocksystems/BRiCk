@@ -221,8 +221,7 @@ Module Type CPP_LOGIC (Import CC : CPP_LOGIC_CLASS)
     Axiom nullptr_live : |-- ptr_live nullptr.
 
     Axiom tptsto_live : forall {σ} ty (q : Qp) p v,
-      @tptsto σ ty q p v |--
-      ptr_live p ** (ptr_live p -* @tptsto σ ty q p v).
+      @tptsto σ ty q p v |-- ptr_live p ** True.
 
     (** [identity σ this mdc q p] state that [p] is a pointer to a (live)
         object of type [this] that is part of an object of type [mdc].

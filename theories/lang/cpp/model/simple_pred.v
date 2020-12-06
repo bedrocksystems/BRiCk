@@ -663,8 +663,7 @@ Module SimpleCPP.
               oaddr_encodes σ t q oa p v.
 
     Axiom tptsto_live : forall {σ} ty (q : Qp) p v,
-      @tptsto σ ty q p v |--
-      ptr_live p ** (ptr_live p -* @tptsto σ ty q p v).
+      @tptsto σ ty q p v |-- ptr_live p ** True.
 
     Instance tptsto_nonnull_obs {σ} ty q a :
       Observe False (@tptsto σ ty q nullptr a).
