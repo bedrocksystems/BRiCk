@@ -171,16 +171,15 @@ Module SIMPLE_PTRS_IMPL : PTRS.
     λ z p,
     (* This use of projections in intentional, to get better reduction behavior *)
     let aid := fst p in let pa := snd p in
-    pair aid <$> offset_vaddr z pa.
+    Some (aid, pa ≫= offset_vaddr z).
   Arguments offset_ptr' _ !_ /.
 
   Lemma offset_ptr_combine' p o o' :
-    offset_ptr' o p <> invalid_ptr ->
+    ptr_vaddr (offset_ptr' o p) <> None ->
     offset_ptr' o p ≫= offset_ptr' o' = offset_ptr' (o + o') p.
   Proof.
-    case: p => [a p] /=.
-    rewrite /offset_ptr' /= fmap_None /= option_fmap_bind /compose /= => Hval.
-    rewrite -(offset_vaddr_combine Hval) (offset_vaddr_eq' Hval) //.
+    case: p => [a [p|]] //= Hval.
+    by rewrite (offset_vaddr_combine Hval).
   Qed.
 
   Definition offset_ptr__ : Z -> ptr -> ptr :=
@@ -188,7 +187,7 @@ Module SIMPLE_PTRS_IMPL : PTRS.
   Notation offset_ptr_ := offset_ptr__.
 
   Lemma offset_ptr_0__ p : offset_ptr_ 0 p = p.
-  Proof. case: p => [[a p]|//] /=. by rewrite offset_vaddr_0. Qed.
+  Proof. case: p => [[a [p|//]]|//] /=. by rewrite offset_vaddr_0. Qed.
 
   Lemma offset_ptr_combine {p o o'} :
     offset_ptr_ o p <> invalid_ptr ->
