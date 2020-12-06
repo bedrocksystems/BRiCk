@@ -148,7 +148,7 @@ extend, but it's unclear how to extend it to support [VALID_PTR_AXIOMS].
 Module SIMPLE_PTRS_IMPL : PTRS.
   Import address_sums.
 
-  Definition ptr' : Set := alloc_id * vaddr.
+  Definition ptr' : Set := alloc_id * option vaddr.
   Definition ptr : Set := option ptr'.
 
   Declare Scope ptr_scope.
@@ -156,10 +156,10 @@ Module SIMPLE_PTRS_IMPL : PTRS.
   Delimit Scope ptr_scope with ptr.
 
   Definition ptr_alloc_id : ptr -> option alloc_id := fmap fst.
-  Definition ptr_vaddr : ptr -> option vaddr := fmap snd.
+  Definition ptr_vaddr : ptr -> option vaddr := mbind snd.
 
   Definition invalid_ptr : ptr := None.
-  Definition mkptr a n : ptr := Some (a, n).
+  Definition mkptr a n : ptr := Some (a, Some n).
   Definition nullptr : ptr := mkptr null_alloc_id 0.
 
   Instance ptr_eq_dec : EqDecision ptr := _.
