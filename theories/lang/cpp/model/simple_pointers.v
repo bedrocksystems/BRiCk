@@ -350,6 +350,9 @@ End merge_elems.
 Another (incomplete) consistency proof for [PTRS], based on Krebbers' PhD thesis, and
 other formal models of C++ using structured pointers.
 This is more complex than [SIMPLE_PTRS_IMPL], but will be necessary to justify [VALID_PTR_AXIOMS].
+
+In both of our models, all valid pointers are pinned, but this is not meant
+to be guaranteed.
 *)
 Module PTRS_IMPL : PTRS.
   Import canonical_tu.
