@@ -195,6 +195,7 @@ Module SimpleCPP.
 
     Definition ptr_live (p : ptr) :=
       default False%I (alloc_id_live <$> ptr_alloc_id p).
+    Axiom nullptr_live : |-- ptr_live nullptr.
 
     (** pointer validity *)
     (** Pointers past the end of an object/array can be valid; see

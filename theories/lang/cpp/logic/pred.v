@@ -216,6 +216,10 @@ Module Type CPP_LOGIC (Import CC : CPP_LOGIC_CLASS)
     Definition ptr_live (p : ptr) :=
       default False%I (alloc_id_live <$> ptr_alloc_id p).
 
+    (** We consider [nullptr] as live, following Krebbers, as a way to
+    simplify stating rules for pointer comparison. *)
+    Axiom nullptr_live : |-- ptr_live nullptr.
+
     Axiom tptsto_live : forall {σ} ty (q : Qp) p v,
       @tptsto σ ty q p v |--
       ptr_live p ** (ptr_live p -* @tptsto σ ty q p v).
