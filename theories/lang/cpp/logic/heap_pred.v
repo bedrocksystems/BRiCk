@@ -513,43 +513,43 @@ Section with_cpp.
   (**
   [uninitR]: the argument pointer points to an uninitialized value [Vundef] of C++ type [ty].
   Unlike [primR], does not imply [has_type]. *)
-  Definition uninit_def {resolve:genv} (ty : type) (q : Qp) : Rep :=
+  Definition uninitR_def {resolve:genv} (ty : type) (q : Qp) : Rep :=
     as_Rep (fun addr => @tptsto _ _ resolve ty q addr Vundef).
-  Definition uninit_aux : seal (@uninit_def). Proof. by eexists. Qed.
-  Definition uninitR := uninit_aux.(unseal).
-  Definition uninit_eq : @uninitR = _ := uninit_aux.(seal_eq).
+  Definition uninitR_aux : seal (@uninitR_def). Proof. by eexists. Qed.
+  Definition uninitR := uninitR_aux.(unseal).
+  Definition uninitR_eq : @uninitR = _ := uninitR_aux.(seal_eq).
   Arguments uninitR {resolve} ty q : rename.
 
   Global Instance uninitR_proper
     : Proper (genv_eq ==> (=) ==> (=) ==> (=) ==> lequiv) (@uninitR).
   Proof.
     intros σ1 σ2 Hσ ??-> ??-> ??->.
-    rewrite uninit_eq/uninit_def. by setoid_rewrite Hσ.
+    rewrite uninitR_eq/uninitR_def. by setoid_rewrite Hσ.
   Qed.
   Global Instance uninitR_mono
     : Proper (genv_leq ==> (=) ==> (=) ==> (=) ==> lentails) (@uninitR).
   Proof.
     intros σ1 σ2 Hσ ??-> ??-> ??->.
-    rewrite uninit_eq/uninit_def. by setoid_rewrite Hσ.
+    rewrite uninitR_eq/uninitR_def. by setoid_rewrite Hσ.
   Qed.
 
   Global Instance uninitR_affine resolve ty q
     : Affine (uninitR (resolve:=resolve) ty q).
-  Proof. rewrite uninit_eq. apply _. Qed.
+  Proof. rewrite uninitR_eq. apply _. Qed.
   Global Instance uninitR_timeless resolve ty q
     : Timeless (uninitR (resolve:=resolve) ty q).
-  Proof. rewrite uninit_eq. apply _. Qed.
+  Proof. rewrite uninitR_eq. apply _. Qed.
 
   Global Instance uninitR_fractional resolve ty :
     Fractional (uninitR (resolve:=resolve) ty).
-  Proof. rewrite uninit_eq. apply _. Qed.
+  Proof. rewrite uninitR_eq. apply _. Qed.
   Global Instance unintR_as_fractional resolve ty q :
     AsFractional (uninitR (resolve:=resolve) ty q) (uninitR (resolve:=resolve) ty) q.
   Proof. constructor. done. apply _. Qed.
 
   Global Instance uninitR_observe_frac_valid resolve ty (q : Qp) :
     Observe [| q ≤ 1 |]%Qc (uninitR (resolve:=resolve) ty q).
-  Proof. rewrite uninit_eq. apply _. Qed.
+  Proof. rewrite uninitR_eq. apply _. Qed.
 
   (** This seems odd, but it's relevant to proof that [anyR] is fractional. *)
   Lemma primR_uninitR {resolve} ty q1 q2 v :
@@ -557,7 +557,7 @@ Section with_cpp.
     uninitR (resolve:=resolve) ty q2 -*
     primR (resolve:=resolve) ty (q1 + q2) Vundef.
   Proof.
-    rewrite primR_eq/primR_def uninit_eq/uninit_def. constructor=>p /=.
+    rewrite primR_eq/primR_def uninitR_eq/uninitR_def. constructor=>p /=.
     rewrite monPred_at_wand. iIntros "[T1 %]" (? <-%ptr_rel_elim) "/= T2".
     iDestruct (observe_2 [|v = Vundef|] with "T1 T2") as %->. iFrame "T1 T2 %".
   Qed.
