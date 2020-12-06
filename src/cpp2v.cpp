@@ -59,7 +59,7 @@ class ToCoqAction : public clang::ASTFrontendAction {
 public:
     virtual std::unique_ptr<clang::ASTConsumer>
     CreateASTConsumer(clang::CompilerInstance &Compiler,
-                      llvm::StringRef InFile) {
+                      llvm::StringRef InFile) override {
 #if 0
 		Compiler.getInvocation().getLangOpts()->CommentOpts.BlockCommandNames.push_back("with");
 		Compiler.getInvocation().getLangOpts()->CommentOpts.BlockCommandNames.push_back("internal");
