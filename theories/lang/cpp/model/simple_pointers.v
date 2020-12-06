@@ -144,6 +144,8 @@ model of pointer provenance, and resembles CompCert's model.
 
 Compared to our "real" consistency proof [PTRS_IMPL], this proof is easier to
 extend, but it's unclear how to extend it to support [VALID_PTR_AXIOMS].
+
+In this models, not all valid pointers are pinned to some address.
 *)
 Module SIMPLE_PTRS_IMPL : PTRS.
   Import address_sums.
@@ -156,6 +158,8 @@ Module SIMPLE_PTRS_IMPL : PTRS.
   Delimit Scope ptr_scope with ptr.
 
   Definition ptr_alloc_id : ptr -> option alloc_id := fmap fst.
+  (* Addresses are optional, and absent from unpinned pointers, but necessary
+  for offsetting. *)
   Definition ptr_vaddr : ptr -> option vaddr := mbind snd.
 
   Definition invalid_ptr : ptr := None.
@@ -167,11 +171,16 @@ Module SIMPLE_PTRS_IMPL : PTRS.
   Definition ptr_eq_dec' := ptr_eq_dec.
 
   (* lift [offset_vaddr] over the [alloc_id * _] monad. *)
-  Definition offset_ptr' : Z -> ptr' -> ptr :=
+  Program Definition offset_ptr' : Z -> ptr' -> ptr :=
     λ z p,
     (* This use of projections in intentional, to get better reduction behavior *)
-    let aid := fst p in let pa := snd p in
-    pair aid <$> offset_vaddr z pa.
+    let aid := fst p in
+    if (decide (z = 0)%Z) then
+      Some (aid, snd p)
+    else
+      pa ← snd p;
+      pa' ← offset_vaddr z pa;
+      Some (aid, Some pa').
   Arguments offset_ptr' _ !_ /.
 
   Lemma offset_ptr_combine' p o o' :
@@ -179,8 +188,17 @@ Module SIMPLE_PTRS_IMPL : PTRS.
     offset_ptr' o p ≫= offset_ptr' o' = offset_ptr' (o + o') p.
   Proof.
     case: p => [a p] /=.
-    rewrite /offset_ptr' /= fmap_None /= option_fmap_bind /compose /= => Hval.
-    rewrite -(offset_vaddr_combine Hval) (offset_vaddr_eq' Hval) //.
+      destruct (decide (o' = 0)%Z) as [->|Ho'];
+      [rewrite Z.add_0_r|];
+      destruct (decide (o = 0)%Z) as [->|Ho] => //=; case: p => [p|] //=;
+      rewrite /offset_ptr' /= fmap_None /= option_fmap_bind /compose /= => Hval //.
+    rewrite -(offset_vaddr_combine Hval) (offset_vaddr_eq' Hval) //=.
+    case_decide => //=; subst.
+    case_decide => //=; subst.
+    rewrite offset_vaddr_eq' //=;
+    rewrite /offset_vaddr /= in Hval *;
+      repeat case_option_guard => //;
+      [do 3 f_equiv|]; lia.
   Qed.
 
   Definition offset_ptr__ : Z -> ptr -> ptr :=
@@ -188,7 +206,7 @@ Module SIMPLE_PTRS_IMPL : PTRS.
   Notation offset_ptr_ := offset_ptr__.
 
   Lemma offset_ptr_0__ p : offset_ptr_ 0 p = p.
-  Proof. case: p => [[a p]|//] /=. by rewrite offset_vaddr_0. Qed.
+  Proof. by case: p => [[a p]|]. Qed.
 
   Lemma offset_ptr_combine {p o o'} :
     offset_ptr_ o p <> invalid_ptr ->
@@ -232,9 +250,8 @@ Module SIMPLE_PTRS_IMPL : PTRS.
     rewrite /_offset_ptr_single /offset_ptr_ /offset_ptr'.
     (* XXX messy? good enough? *)
     have ? := @is_Some_None alloc_id.
-    case: oz p => [z|//] [[aid' va]|] Hsome //=; simplify_option_eq.
-    destruct fmap eqn:? => //; simplify_option_eq.
-    naive_solver.
+    case: oz p => [z|//] [[aid' va]|] Hsome //=; simplify_option_eq => //.
+    by destruct mbind eqn:? => //; simplify_option_eq; naive_solver.
   Qed.
 
   Lemma ptr_alloc_id_offset {p o} :
@@ -307,7 +324,8 @@ Module SIMPLE_PTRS_IMPL : PTRS.
    global_ptr tu2 "staticR" |-> anyR T 1%Qp  ...] actually holds at startup.
   *)
   Definition global_ptr (tu : translation_unit) (o : obj_name) : ptr :=
-    global_ptr_encode_ov o (tu !! o).
+    '(aid, va) ← global_ptr_encode_ov o (tu !! o);
+    Some (aid, Some va).
 
   Definition fun_ptr := global_ptr.
   Lemma o_sub_0 σ ty n :
@@ -351,8 +369,8 @@ Another (incomplete) consistency proof for [PTRS], based on Krebbers' PhD thesis
 other formal models of C++ using structured pointers.
 This is more complex than [SIMPLE_PTRS_IMPL], but will be necessary to justify [VALID_PTR_AXIOMS].
 
-In both of our models, all valid pointers are pinned, but this is not meant
-to be guaranteed.
+In this model, all valid pointers are pinned, but this is not meant
+to be guaranteed, and is indeed not guaranteed by the other model.
 *)
 Module PTRS_IMPL : PTRS.
   Import canonical_tu.
