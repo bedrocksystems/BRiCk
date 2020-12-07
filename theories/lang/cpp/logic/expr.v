@@ -28,6 +28,13 @@ Module Type Expr.
 
   (**
    * Weakest pre-condition for expressions
+   *
+   * NOTE It is important that these rules are sound, but less important that
+   * they are complete. When in doubt, we err on the side of caution and under-specify
+   * the behavior of various constructs.
+   *
+   * If you run into code that requires addditional semantic specification, please file
+   * an issue.
    *)
 
   Section with_resolve.
@@ -422,11 +429,18 @@ Module Type Expr.
         wp_lval (Evar (Gname g) ty') (fun v => Q (Vptr v))
         |-- wp_prval (Ecast Cfunction2pointer (Lvalue, Evar (Gname g) ty') ty) Q.
 
-    (** **)
+    (** Known places that bitcasts occur
+        - casting between [void*] and [T*] for some [T].
+     *)
     Axiom wp_prval_cast_bitcast : forall e t Q,
         wp_prval e Q
         |-- wp_prval (Ecast Cbitcast (Prvalue, e) t) Q.
 
+    (** [Cintegral] casts represent casts between integral types, e.g.
+        - [int] -> [short]
+        - [short] -> [long]
+        - [int] -> [unsigned int]
+     *)
     Axiom wp_prval_cast_integral : forall e t Q,
         wp_prval e (fun v free =>
            Exists v', [| conv_int (type_of e) t v v' |] ** Q v' free)
@@ -453,21 +467,24 @@ Module Type Expr.
     (* [Cstatic from to] represents a static cast from [from] to
      * [to].
      *
-     * TODO this rule needs to be cleaned up a lot
+     * NOTE Our AST (based on Clang's AST) *seems to* generate this only when
+     *      [from] is a (transitive) base class of [to]. In other instances
+     *      an implicit cast, e.g. [Cderived2base], [Cintegral], etc, are
+     *      inserted. This (essentially) desugars most uses of [static_cast]
+     *      to simpler casts that are captured by other rules.
      *)
-    (*
-    Axiom wp_lval_static_cast : forall vc from to e ty Q,
-      wpe vc e (fun addr free => Exists addr',
-                  (_offsetL (_base from to) (_eqv addr) &~ addr' ** ltrue) //\\
+    Axiom wp_prval_static_cast : forall from to e ty Q,
+      wp_prval e (fun addr free => Exists addr',
+                    (Exists path : @class_derives resolve to from,
+                       _offsetL (base_to_derived path) (_eqv addr) &~ addr' ** True) //\\
                            (* ^ this is a down-cast *)
                   Q (Vptr addr') free)
-      |-- wp_lval (Ecast (Cstatic from to) (vc, e) ty) Q.
-     *)
+      |-- wp_prval (Ecast (Cstatic from to) (Prvalue, e) ty) Q.
 
     (** You can cast anything to void, but an expression of type
      * [void] can only be a pr_value *)
     Axiom wp_prval_cast_tovoid : forall vc e Q,
-        wpe vc e (fun _ free => Q (Vint 0) free)
+          wpe vc e (fun _ free => Q (Vint 0) free)
       |-- wp_prval (Ecast C2void (vc, e) Tvoid) Q.
 
     Axiom wp_prval_cast_array2pointer : forall e t Q,
