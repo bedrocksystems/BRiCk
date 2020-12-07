@@ -117,15 +117,6 @@ Module Import address_sums.
   Qed.
 End address_sums.
 
-(* Very incomplete set of monadic liftings, currently unexported. *)
-Definition liftA2 `{MRet M, MBind M} `(f : A → B → C) : M A → M B → M C :=
-  λ mx my,
-    x ← mx; y ← my; mret (f x y).
-
-Definition bindM2 `{MBind M} `(f : A → B → M C) : M A → M B → M C :=
-  λ mx my,
-    x ← mx; y ← my; f x y.
-
 (*
 A slightly better model might be something like the following, but we don't
 bother defining this [Countable] instance. And this is not a great model
@@ -677,7 +668,7 @@ Module PTRS_IMPL : PTRS.
   (* Section eval_offset.
     (* From PTR_INTERNAL *)
     Definition eval_raw_offset (σ : genv) (o : raw_offset) : option Z :=
-      foldr (liftA2 Z.add) (Some 0%Z) (eval_offset_seg σ <$> o).
+      foldr (liftM2 Z.add) (Some 0%Z) (eval_offset_seg σ <$> o).
     Definition eval_offset (σ : genv) (o : offset) : option Z := eval_raw_offset σ (`o).
   End eval_offset. *)
 

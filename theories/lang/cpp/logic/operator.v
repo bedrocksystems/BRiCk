@@ -49,16 +49,12 @@ Section with_Σ.
   Axiom eval_ptr_neq :
     Unfold eval_ptr_eq_cmp_op (eval_ptr_eq_cmp_op Bneq 0 1).
 
-  Definition liftA2 `{MRet M, MBind M} `(f : A → B → C) : M A → M B → M C :=
-    λ mx my,
-      x ← mx; y ← my; mret (f x y).
-
   (** Skeleton for [Ble, Blt, Bge, Bgt] axioms on pointers. *)
   Let eval_ptr_ord_cmp_op (bo : BinOp) (f : vaddr -> vaddr -> bool) : Prop :=
     forall ty p1 p2 aid res,
       ptr_alloc_id p1 = Some aid ->
       ptr_alloc_id p2 = Some aid ->
-      liftA2 f (ptr_vaddr p1) (ptr_vaddr p2) = Some res ->
+      liftM2 f (ptr_vaddr p1) (ptr_vaddr p2) = Some res ->
       (* we could ask [ptr_live p1] or [ptr_live p2], but those are
       equivalent, so we make the statement obviously symmetric. *)
       alloc_id_live aid ⊢
