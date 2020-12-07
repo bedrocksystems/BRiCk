@@ -3,11 +3,12 @@
  *
  * SPDX-License-Identifier: LGPL-2.1 WITH BedRock Exception for use over network, see repository root for details.
  *)
-Require Import bedrock.lang.prelude.base.
-
 From iris.bi Require Export monpred.
 From iris.proofmode Require Import tactics monpred.
 Require Import iris.bi.lib.fractional.
+From iris_string_ident Require Import ltac2_string_ident.
+
+Require Import bedrock.lang.prelude.base.
 
 From bedrock.lang.cpp Require Import
      semantics logic.pred logic.path_pred ast logic.wp.
@@ -632,9 +633,50 @@ Section with_cpp.
   Definition cptr := cptr_aux.(unseal).
   Definition cptr_eq : @cptr = _ := cptr_aux.(seal_eq).
 
-  Global Instance cptr_persistent {resolve} : Persistent (cptr resolve s).
+  #[global] Instance cptr_persistent {resolve} : Persistent (cptr resolve s).
   Proof. rewrite cptr_eq. apply _. Qed.
 
+  (* TODO: Proper wrt [genv_leq]. *)
+  #[global] Instance cptr_mono {resolve} : Proper (flip fs_entails ==> (⊢)) (@cptr resolve).
+  Proof.
+    intros ??; rewrite /flip /fs_entails /fs_impl cptr_eq/cptr_def; intros Heq.
+    constructor => p /=.
+    f_equiv=>ti; f_equiv; f_equiv => vs; f_equiv => Q.
+    iIntros "Hcptr -> Hy".
+    iDestruct Heq as "(%Hspec & #Hyx)"; rewrite Hspec.
+    iApply ("Hcptr" with "[%] (Hyx Hy)").
+    exact: length_type_of_spec.
+  Qed.
+
+  #[global] Instance cptr_flip_mono {resolve} : Proper (fs_entails ==> flip (⊢)) (@cptr resolve).
+  Proof. by intros ?? <-. Qed.
+
+  #[global] Instance cptr_proper {resolve} : Proper ((≡) ==> (⊣⊢)) (@cptr resolve).
+  Proof.
+    intros ? ? [H1 H2]%function_spec_equiv_split; iSplit; iIntros.
+    - by rewrite -H2.
+    - by rewrite -H1.
+  Qed.
+End with_cpp.
+Global Instance: Params (@cptr) 3 := {}.
+
+Instance: Params (@as_Rep) 2 := {}.
+Instance: Params (@_offsetR) 3 := {}.
+Instance: Params (@pureR) 2 := {}.
+
+Global Opaque _at _offsetR primR.
+
+Typeclasses Opaque pureR.
+Typeclasses Opaque as_Rep.
+
+Arguments anyR {_ Σ resolve} ty q : rename.
+Arguments uninitR {_ Σ resolve} ty q : rename.
+Arguments primR {_ Σ resolve} ty q v : rename.
+Arguments refR {_ Σ} ty v : rename.
+Arguments cptr {_ Σ resolve} _ : rename.
+
+Section with_cpp.
+  Context `{Σ : cpp_logic}.
   (** object identity *)
   Definition _identity (σ : genv) (cls : globname) (mdc : option globname)
              (q : Qp) : Rep :=
@@ -695,22 +737,9 @@ Section with_cpp.
       _offsetR (_sub (resolve:=σ) T_uint8 (Z.of_nat i)) (anyR (resolve:=σ) T_uint8 1).
 
 End with_cpp.
-Instance: Params (@as_Rep) 2 := {}.
-Instance: Params (@_offsetR) 3 := {}.
-Instance: Params (@pureR) 2 := {}.
 
-Global Opaque _at _offsetR primR.
-
-Typeclasses Opaque pureR.
-Typeclasses Opaque as_Rep.
 Typeclasses Opaque _identity.
 Typeclasses Opaque _type_ptr.
-
-Arguments anyR {_ Σ resolve} ty q : rename.
-Arguments uninitR {_ Σ resolve} ty q : rename.
-Arguments primR {_ Σ resolve} ty q v : rename.
-Arguments refR {_ Σ} ty v : rename.
-Arguments cptr {_ Σ resolve} _ : rename.
 
 Instance Persistent_spec `{Σ:cpp_logic ti} {resolve:genv} nm s :
   Persistent (_at (Σ:=Σ) (_global (resolve:=resolve) nm) (cptr (resolve:=resolve) s)) := _.
