@@ -203,8 +203,8 @@ Module Type Expr.
         match companion_type (type_of e) with
         | Some cty =>
           wp_lval e (fun a free => Exists v', Exists v'',
-              eval_binop Badd (erase_qualifiers (type_of e)) cty
-                (erase_qualifiers ty) v' (Vint 1) v'' //\\
+              (eval_binop Badd (erase_qualifiers (type_of e)) cty
+                (erase_qualifiers ty) v' (Vint 1) v'' ** True) //\\
               (_at (_eqv a) (primR (erase_qualifiers ty) 1 v') **
                 (_at (_eqv a) (primR (erase_qualifiers ty) 1 v'') -* Q a free)))
         | None => lfalse
@@ -215,8 +215,8 @@ Module Type Expr.
         match companion_type (type_of e) with
         | Some cty =>
           wp_lval e (fun a free => Exists v', Exists v'',
-              eval_binop Bsub (erase_qualifiers (type_of e)) cty
-                (erase_qualifiers ty) v' (Vint 1) v'' //\\
+              (eval_binop Bsub (erase_qualifiers (type_of e)) cty
+                (erase_qualifiers ty) v' (Vint 1) v'' ** True) //\\
               (_at (_eqv a) (primR (erase_qualifiers ty) 1 v') **
                 (_at (_eqv a) (primR (erase_qualifiers ty) 1 v'') -* Q a free)))
         | None => lfalse
@@ -227,8 +227,8 @@ Module Type Expr.
         match companion_type (type_of e) with
         | Some cty =>
           wp_lval e (fun a free => Exists v', Exists v'',
-              eval_binop Badd (erase_qualifiers (type_of e)) cty
-                (erase_qualifiers ty) v' (Vint 1) v'' //\\
+              (eval_binop Badd (erase_qualifiers (type_of e)) cty
+                (erase_qualifiers ty) v' (Vint 1) v'' ** True) //\\
               (_at (_eqv a) (primR (erase_qualifiers ty) 1 v') **
                 (_at (_eqv a) (primR (erase_qualifiers ty) 1 v'') -* Q v' free)))
         | None => lfalse
@@ -239,8 +239,8 @@ Module Type Expr.
         match companion_type (type_of e) with
         | Some cty =>
           wp_lval e (fun a free => Exists v', Exists v'',
-              eval_binop Bsub (erase_qualifiers (type_of e)) cty
-                (erase_qualifiers ty) v' (Vint 1) v'' //\\
+              (eval_binop Bsub (erase_qualifiers (type_of e)) cty
+                (erase_qualifiers ty) v' (Vint 1) v'' ** True) //\\
               (_at (_eqv a) (primR (erase_qualifiers ty) 1 v') **
                 (_at (_eqv a) (primR (erase_qualifiers ty) 1 v'') -* Q v' free)))
         | None => lfalse
@@ -253,9 +253,9 @@ Module Type Expr.
         wp_prval e1 Ql ** wp_prval e2 Qr **
             Forall v1 v2 free1 free2, Ql v1 free1 -* Qr v2 free2 -*
                Exists v',
-                  eval_binop o
+                  (eval_binop o
                     (erase_qualifiers (type_of e1)) (erase_qualifiers (type_of e2))
-                    (erase_qualifiers ty) v1 v2 v' //\\
+                    (erase_qualifiers ty) v1 v2 v' ** True) //\\
                   Q v' (free1 ** free2))
         |-- wp_prval (Ebinop o e1 e2 ty) Q.
 
