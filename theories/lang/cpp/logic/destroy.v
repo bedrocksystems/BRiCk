@@ -10,11 +10,13 @@ From bedrock.lang.cpp.logic Require Import
      pred wp path_pred heap_pred.
 Require Import bedrock.lang.cpp.logic.dispatch.
 
+Require Import bedrock.lang.cpp.heap_notations.
+
 Section destroy.
   Context `{Σ : cpp_logic thread_info} {σ:genv}.
   Variable (ti : thread_info).
 
-  Local Notation _sub := (_sub (resolve:=σ)) (only parsing).
+  Local Notation _sub := (o_sub σ) (only parsing).
   Local Notation anyR := (anyR (resolve:=σ)) (only parsing).
   Local Notation _global := (_global (resolve:=σ)) (only parsing).
 
@@ -29,11 +31,10 @@ Section destroy.
         let ty := type_of_value ov in
         match s.(s_virtual_dtor) with
         | Some dtor =>
-          resolve_virtual (σ:=σ) (_eq v) cls dtor (fun da p =>
+          resolve_virtual (σ:=σ) v cls dtor (fun da p =>
              |> fspec σ.(genv_tu).(globals) ty ti (Vptr da) (Vptr p :: nil) (fun _ => Q))
         | None =>
-          Exists da, _global dtor &~ da **
-             |> fspec σ.(genv_tu).(globals) ty ti (Vptr da) (Vptr v :: nil) (fun _ => Q)
+             |> fspec σ.(genv_tu).(globals) ty ti (Vptr $ _global dtor) (Vptr v :: nil) (fun _ => Q)
         end
       | _ => False
       end
@@ -57,7 +58,7 @@ Section destroy.
       end
     | Tarray t sz =>
       fold_right (fun i Q =>
-         Exists p, _offsetL (_sub t (Z.of_nat i)) (_eq this) &~ p ** destruct_val t p dtor Q) Q (List.rev (seq 0 (N.to_nat sz)))
+         destruct_val t (this .[ t ! Z.of_nat i ]) dtor Q) Q (List.rev (seq 0 (N.to_nat sz)))
     | _ => emp
     end.
 

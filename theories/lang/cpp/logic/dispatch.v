@@ -15,23 +15,23 @@ Section with_cpp.
   Context `{Σ : cpp_logic}.
 
   (* the [Offset] to cast a [base] to a [derived] *)
-  Fixpoint base_to_derived  `(d : class_derives σ derived base) : Offset :=
+  Fixpoint base_to_derived  `(d : class_derives σ derived base) : offset :=
     match d with
-    | Derives_here st _ => _id
+    | Derives_here st _ => o_id
     | Derives_base base st _ _ _ _ d =>
-      _dot (base_to_derived d) (_derived (resolve:=σ) base derived)
+      o_dot (base_to_derived d) (o_derived σ base derived)
     end.
 
   (* the [Offset] to cast a [derived] to a [base] *)
-  Fixpoint derived_to_base `(d : class_derives σ derived base) : Offset :=
+  Fixpoint derived_to_base `(d : class_derives σ derived base) : offset :=
     match d with
-    | Derives_here st _ => _id
+    | Derives_here st _ => o_id
     | Derives_base base st _ _ _ _ d =>
-      _dot (_base (resolve:=σ) derived base) (derived_to_base d)
+      o_dot (o_base σ derived base) (derived_to_base d)
     end.
 
   Definition get_impl `(r : class_derives σ mdc tcls) (f : obj_name)
-    : option (ptr * Offset) :=
+    : option (ptr * offset) :=
     let override := (dispatch σ r f).1 in
     match override.(vimpl) with
     | None => None
@@ -46,7 +46,7 @@ Section with_cpp.
    * passing [this'] as the "this" argument.
    *)
   Definition resolve_virtual {σ : genv}
-             (this : Loc) (cls : globname) (f : obj_name)
+             (this : ptr) (cls : globname) (f : obj_name)
              (Q : forall (faddr this_addr : ptr), mpred) : mpred :=
     Exists σ' mdc (pf : class_derives σ' mdc cls),
         (* ^ we quantify over another program environment because class
@@ -62,10 +62,9 @@ Section with_cpp.
                    different) translation units.
                *)
       match get_impl pf f with
-      | Some (fa, off) =>
-        Exists p, _offsetL off this &~ p ** Q fa p
+      | Some (fa, off) => Q fa (_offset_ptr this off)
       | None => (* the function wasn't found or the implemenation was pure virtual *)
-        lfalse
+        False
       end.
 
 End with_cpp.

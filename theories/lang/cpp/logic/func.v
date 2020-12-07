@@ -21,6 +21,9 @@ Local Set Universe Polymorphism.
 Section with_cpp.
   Context `{Σ : cpp_logic thread_info} {resolve:genv}.
 
+  Local Notation _base := (o_base resolve).
+  Local Notation _derived := (o_derived resolve).
+
   (* Hoare triple for a function. *)
   Definition TSFunction@{X Z Y} {cc : calling_conv} (ret : type) (targs : list type)
              (PQ : thread_info -> WithPrePost@{X Z Y} mpredI)
@@ -51,7 +54,7 @@ Section with_cpp.
     let this_type := Qmut (Tnamed class) in
     let map_pre this '(args, P) :=
         (Vptr this :: args,
-         _at (_eq this) (tblockR this_type) ** P) in
+         this |-> tblockR this_type ** P) in
     SFunction (cc:=cc) (Qmut Tvoid) (Qconst (Tpointer this_type) :: targs)
               {| wpp_with := TeleS (fun this : ptr => (PQ this).(wpp_with))
                ; wpp_pre this :=
@@ -66,10 +69,10 @@ Section with_cpp.
   : function_spec :=
     let this_type := Qmut (Tnamed class) in
     let map_pre this '(args, P) := (Vptr this :: args, P) in
-    let map_post this '{| we_ex := pwiths ; we_post := Q|} :=
+    let map_post (this : ptr) '{| we_ex := pwiths ; we_post := Q|} :=
         {| we_ex := pwiths
          ; we_post := tele_map (fun '(result, Q) =>
-                                  (result, _at (_eq this) (tblockR this_type) ** Q)) Q |}
+                                  (result, this |-> tblockR this_type ** Q)) Q |}
     in
     (** ^ NOTE the size of an object might be different in the presence of virtual base
         classes.
@@ -101,7 +104,7 @@ Section with_cpp.
 
   Definition bind_base_this (o : option ptr) (rty : type) (Q : region -> mpred) : mpred :=
     if is_aggregate rty then
-      Forall ra : ptr, _at (_eq ra) (anyR (erase_qualifiers rty) 1) -*
+      Forall ra : ptr, ra |-> tblockR (erase_qualifiers rty) -*
                        Q (Remp o (Some ra))
     else Q (Remp o None).
 
@@ -124,8 +127,8 @@ Section with_cpp.
         | _ => lfalse
         end
       | _              =>
-        Forall a, _at (_eq a) (primR (erase_qualifiers ty) 1 v) -*
-        bind_vars xs vs (Rbind_check x a r) (fun r free => Q r (_at (_eq a) (anyR (erase_qualifiers ty) 1) ** free))
+        Forall a : ptr, a |-> primR (erase_qualifiers ty) 1 v -*
+        bind_vars xs vs (Rbind_check x a r) (fun r free => Q r (a |-> anyR (erase_qualifiers ty) 1 ** free))
       end
     | _ , _ => lfalse
     end.
@@ -233,7 +236,7 @@ Section with_cpp.
       | This
       | Base _ => False
       | _ =>
-        _offsetL (offset_for _ cls i.(init_path)) (_eq this) |-> tblockR i.(init_type) -*
+        this ., offset_for _ cls i.(init_path) |-> tblockR i.(init_type) -*
         wpi (resolve:=resolve) ⊤ ti ρ cls this i (fun f => f ** wpi_members ti ρ cls this is' Q)
       end
     end.
@@ -253,12 +256,12 @@ Section with_cpp.
         (* this is a delegating constructor *)
         [| is' = nil |] **
         [| drop_qualifiers i.(init_type) = Tnamed cls |] **
-        (_eq this |-> tblockR i.(init_type) -* wpi (resolve:=resolve) ⊤ ti ρ cls this i Q)
+        (this |-> tblockR i.(init_type) -* wpi (resolve:=resolve) ⊤ ti ρ cls this i Q)
         (* the constructor that we are delegating to will already initialize the object
          * identity, so we don't have to do that here.
          *)
       | Base _ =>
-        _offsetL (offset_for _ cls i.(init_path)) (_eq this) |-> tblockR i.(init_type) -*
+        this ., offset_for _ cls i.(init_path) |-> tblockR i.(init_type) -*
         wpi (resolve:=resolve) ⊤ ti ρ cls this i (fun f => f ** wpi_bases ti ρ cls this is' Q)
       end
     end.
@@ -327,7 +330,7 @@ Section with_cpp.
       | Indirect _ _
       | This => False
       | Base b => wpd (resolve:=resolve) ⊤ ti ρ cls this d
-                (_offsetL (offset_for _ cls d.1) (_eq this) |-> tblockR (Tnamed b) ** wpd_bases ti ρ cls this is' Q)
+                (this ., offset_for _ cls d.1 |-> tblockR (Tnamed b) ** wpd_bases ti ρ cls this is' Q)
       end
     end.
 
@@ -347,7 +350,7 @@ Section with_cpp.
         match type_of_path cls d.1 with
         | Some ty =>
           wpd (resolve:=resolve) ⊤ ti ρ cls this d (
-            _offsetL (offset_for _ cls d.1) (_eq this) |-> tblockR ty **
+            this ., offset_for _ cls d.1 |-> tblockR ty **
                      wpd_members ti ρ cls this is' Q)
         | None => False
         end
@@ -366,7 +369,7 @@ Section with_cpp.
         bind_base_this (Some thisp) Tvoid (fun ρ =>
         wp (resolve:=resolve) ⊤ ti ρ body
            (void_return (wpd_members ti ρ dtor.(d_class) thisp deinit
-                (|> (_at (_eq thisp) (tblockR (Tnamed dtor.(d_class))) -* Q Vvoid)))))
+                (|> (thisp |-> tblockR (Tnamed dtor.(d_class)) -* Q Vvoid)))))
       | _ => False
       end
     end.

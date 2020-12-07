@@ -20,6 +20,8 @@ From bedrock.lang.cpp.logic Require Import
      translation_unit
      dispatch.
 
+Require Import bedrock.lang.cpp.heap_notations.
+
 Module Type Expr.
 
   (* TODO these should be removed *)
@@ -55,10 +57,10 @@ Module Type Expr.
 
     Local Notation glob_def := (glob_def resolve) (only parsing).
     Local Notation _global := (_global (resolve:=resolve)) (only parsing).
-    Local Notation _field := (_field (resolve:=resolve)) (only parsing).
-    Local Notation _base := (_base (resolve:=resolve)) (only parsing).
-    Local Notation _derived := (_derived (resolve:=resolve)) (only parsing).
-    Local Notation _sub := (_sub (resolve:=resolve)) (only parsing).
+    Local Notation _field := (o_field resolve) (only parsing).
+    Local Notation _base := (o_base resolve) (only parsing).
+    Local Notation _derived := (o_derived resolve) (only parsing).
+    Local Notation _sub := (o_sub resolve) (only parsing).
     Local Notation eval_unop := (@eval_unop resolve) (only parsing).
     Local Notation eval_binop := (eval_binop (resolve := resolve)) (only parsing).
     Local Notation size_of := (@size_of resolve) (only parsing).
@@ -90,20 +92,23 @@ Module Type Expr.
       Q (Vbool b) emp
       |-- wp_prval (Ebool b) Q.
 
+    Parameter _this : region -> ptr.
+    Parameter _local : region -> ident -> ptr.
+
     (* `this` is a prvalue *)
     Axiom wp_prval_this : forall ty Q,
-      Exists a, (_this ρ &~ a ** True) //\\ Q (Vptr a) emp
+      (valid_ptr (_this ρ) ** True) //\\ Q (Vptr $ _this ρ) emp
       |-- wp_prval (Ethis ty) Q.
 
 
     (* variables are lvalues *)
     Axiom wp_lval_lvar : forall ty x Q,
-        Exists a, (_local ρ x &~ a ** True) //\\ Q a emp
+        valid_ptr (_local ρ x) ** Q (_local ρ x) emp
         |-- wp_lval (Evar (Lname x) ty) Q.
 
     (* what about the type? if it exists *)
     Axiom wp_lval_gvar : forall ty x Q,
-        Exists a, (_global x &~ a ** True) //\\ Q a emp
+            valid_ptr (_global x) ** Q (_global x) emp
         |-- wp_lval (Evar (Gname x) ty) Q.
 
     (* [Emember a f ty] is an lvalue by default except when
@@ -117,7 +122,8 @@ Module Type Expr.
         | Prvalue => False
         | Lvalue =>
           wp_lval a (fun base free =>
-                       Exists addr, (_offsetL (_field m) (_eq base) &~ addr ** True) //\\ Q addr free)
+                       let addr := (base ., _field m) in
+                       valid_ptr addr ** Q addr free)
         | Xvalue => False
           (* NOTE If the object is a temporary, then the field access will also be a
              temporary. Being conservative is sensible in our semantic style.
@@ -153,7 +159,8 @@ Module Type Expr.
            *)
         | Xvalue =>
           wp_xval a (fun base free =>
-            Exists addr, (_offsetL (_field m) (_eq base) &~ addr ** True) //\\ Q addr free)
+                       let addr := base ., _field m in
+                       valid_ptr addr ** Q addr free)
         | _ => False
         end%I
       |-- wp_xval (Emember vc a m ty) Q.
@@ -179,10 +186,9 @@ Module Type Expr.
          wp_prval e Qidx ** wp_prval i Qbase) **
       Forall base free idx free',
          Qbase base free -* Qidx idx free' -*
-         Exists addr,
-          (Exists i, [| idx = Vint i |] **
-          _offsetL (_sub (erase_qualifiers t) i) (_eqv base) &~ addr ** ltrue) //\\
-          Q addr (free' ** free))
+         (Exists i, [| idx = Vint i |] **
+          let addr := base .[ erase_qualifiers t ! i ] in
+          valid_ptr addr ** Q addr (free' ** free)))
       |-- wp_lval (Esubscript e i t) Q.
 
     (* [Esubscript e i t]
@@ -200,13 +206,10 @@ Module Type Expr.
           (* (Exists i basep, [| idx = Vint i /\ base = Vptr basep |] **
             ((valid_ptr (basep .., o_sub resolve (erase_qualifiers t) i) ** True) //\\
             Q (Vptr (basep .., o_sub resolve (erase_qualifiers t) i)) (free' ** free)))) *)
-         Exists addr,
           (Exists i, [| idx = Vint i |] **
-          _offsetL (_sub (erase_qualifiers t) i) (_eqv base) &~ addr ** ltrue) //\\
-          Q addr (free' ** free))
+           let addr := _eqv base .[ erase_qualifiers t ! i ] in
+           valid_ptr addr ** Q addr (free' ** free)))
       |-- wp_xval (Esubscript e i t) Q.
-
-          (* valid_ptr base *)
 
     (* the `*` operator is an lvalue *)
     Axiom wp_lval_deref : forall ty e Q,
@@ -238,8 +241,8 @@ Module Type Expr.
           wp_lval e (fun a free => Exists v', Exists v'',
               (eval_binop Badd (erase_qualifiers (type_of e)) cty
                 (erase_qualifiers ty) v' (Vint 1) v'' ** True) //\\
-              (_at (_eq a) (primR (erase_qualifiers ty) 1 v') **
-                (_at (_eq a) (primR (erase_qualifiers ty) 1 v'') -* Q a free)))
+              (a |-> primR (erase_qualifiers ty) 1 v' **
+                (a |-> primR (erase_qualifiers ty) 1 v'' -* Q a free)))
         | None => False
         end
         |-- wp_lval (Epreinc e ty) Q.
@@ -250,8 +253,8 @@ Module Type Expr.
           wp_lval e (fun a free => Exists v', Exists v'',
               (eval_binop Bsub (erase_qualifiers (type_of e)) cty
                 (erase_qualifiers ty) v' (Vint 1) v'' ** True) //\\
-              (_at (_eq a) (primR (erase_qualifiers ty) 1 v') **
-                (_at (_eq a) (primR (erase_qualifiers ty) 1 v'') -* Q a free)))
+              (a |-> primR (erase_qualifiers ty) 1 v' **
+                (a |-> primR (erase_qualifiers ty) 1 v'' -* Q a free)))
         | None => False
         end
         |-- wp_lval (Epredec e ty) Q.
@@ -262,8 +265,8 @@ Module Type Expr.
           wp_lval e (fun a free => Exists v', Exists v'',
               (eval_binop Badd (erase_qualifiers (type_of e)) cty
                 (erase_qualifiers ty) v' (Vint 1) v'' ** True) //\\
-              (_at (_eq a) (primR (erase_qualifiers ty) 1 v') **
-                (_at (_eq a) (primR (erase_qualifiers ty) 1 v'') -* Q v' free)))
+              (a |-> primR (erase_qualifiers ty) 1 v' **
+                (a |-> primR (erase_qualifiers ty) 1 v'' -* Q v' free)))
         | None => False
         end
         |-- wp_prval (Epostinc e ty) Q.
@@ -274,8 +277,8 @@ Module Type Expr.
           wp_lval e (fun a free => Exists v', Exists v'',
               (eval_binop Bsub (erase_qualifiers (type_of e)) cty
                 (erase_qualifiers ty) v' (Vint 1) v'' ** True) //\\
-              (_at (_eq a) (primR (erase_qualifiers ty) 1 v') **
-                (_at (_eq a) (primR (erase_qualifiers ty) 1 v'') -* Q v' free)))
+              (a |-> primR (erase_qualifiers ty) 1 v' **
+                (a |-> primR (erase_qualifiers ty) 1 v'' -* Q v' free)))
         | None => False
         end
         |-- wp_prval (Epostdec e ty) Q.
@@ -300,8 +303,8 @@ Module Type Expr.
         (Exists Ql Qr,
          wp_lval l Ql ** wp_prval r Qr **
          Forall la free1 rv free2, Ql la free1 -* Qr rv free2 -*
-            _at (_eq la) (anyR (erase_qualifiers ty) 1) **
-           (_at (_eq la) (primR (erase_qualifiers ty) 1 rv) -* Q la (free1 ** free2)))
+            la |-> anyR (erase_qualifiers ty) 1 **
+           (la |-> primR (erase_qualifiers ty) 1 rv -* Q la (free1 ** free2)))
         |-- wp_lval (Eassign l r ty) Q.
 
     (* Assignemnt operators are *almost* like regular assignments except that they guarantee to evalute the
@@ -311,9 +314,9 @@ Module Type Expr.
         (Exists Ql Qr,
         wp_lval l Ql ** wp_prval r Qr **
         Forall la free1 rv free2, Ql la free1 -* Qr rv free2 -*
-             (Exists v v', _at (_eq la) (primR (erase_qualifiers ty) 1 v) **
+             (Exists v v', la |-> primR (erase_qualifiers ty) 1 v **
                  ((eval_binop o (erase_qualifiers (type_of l)) (erase_qualifiers (type_of r)) (erase_qualifiers (type_of l)) v rv v' ** True) //\\
-                 (_at (_eq la) (primR (erase_qualifiers ty) 1 v') -* Q la (free1 ** free2)))))
+                 (la |-> primR (erase_qualifiers ty) 1 v' -* Q la (free1 ** free2)))))
         |-- wp_lval (Eassign_op o l r ty) Q.
 
     (* The comma operator can be both an lvalue and a prvalue
@@ -374,14 +377,12 @@ Module Type Expr.
     (** [Cl2r] represents reads of locations. *)
     Axiom wp_prval_cast_l2r_l : forall ty e Q,
         wp_lval e (fun a free => Exists q, Exists v,
-           (_at (_eq a) (primR (erase_qualifiers ty) q v) ** True) //\\
-                    Q v free)
+           (a |-> primR (erase_qualifiers ty) q v ** True) //\\ Q v free)
         |-- wp_prval (Ecast Cl2r (Lvalue, e) ty) Q.
 
     Axiom wp_prval_cast_l2r_x : forall ty e Q,
         wp_xval e (fun a free => Exists q, Exists v, (* was wp_lval *)
-          (_at (_eq a) (primR (erase_qualifiers ty) q v) ** True) //\\
-                    Q v free)
+          (a |-> primR (erase_qualifiers ty) q v ** True) //\\ Q v free)
         |-- wp_prval (Ecast Cl2r (Xvalue, e) ty) Q.
 
     (** [Cnoop] casts are no-op casts. *)
@@ -480,11 +481,10 @@ Module Type Expr.
      *      to simpler casts that are captured by other rules.
      *)
     Axiom wp_prval_static_cast : forall from to e ty Q,
-      wp_prval e (fun addr free => Exists addr',
+      wp_prval e (fun addr free =>
                     (Exists path : @class_derives resolve to from,
-                       _offsetL (base_to_derived path) (_eqv addr) &~ addr' ** True) //\\
-                           (* ^ this is a down-cast *)
-                  Q (Vptr addr') free)
+                     let addr' := _eqv addr ., base_to_derived path in
+                     valid_ptr addr' ** Q (Vptr addr') free))
       |-- wp_prval (Ecast (Cstatic from to) (Prvalue, e) ty) Q.
 
     (** You can cast anything to void, but an expression of type
@@ -533,31 +533,34 @@ Module Type Expr.
      * heirarchy at a time, so we need to construct a full path.
      *)
     Axiom wp_lval_cast_derived2base : forall e ty Q,
-      wp_lval e (fun addr free => Exists addr',
+      wp_lval e (fun addr free =>
         match drop_qualifiers (type_of e), drop_qualifiers ty with
         | Tnamed derived , Tnamed base => (*<-- is this the only case here?*)
-          (Exists path : @class_derives resolve derived base, _offsetL (derived_to_base path) (_eq addr) &~ addr' ** True) //\\
-          Q addr' free
+          Exists path : @class_derives resolve derived base,
+          let addr' := addr ., derived_to_base path in
+          valid_ptr addr' ** Q addr' free
         | _, _ => False
         end)
       |-- wp_lval (Ecast Cderived2base (Lvalue, e) ty) Q.
 
     Axiom wp_xval_cast_derived2base : forall e ty Q,
-      wp_xval e (fun addr free => Exists addr',
+      wp_xval e (fun addr free =>
         match drop_qualifiers (type_of e), drop_qualifiers ty with
         | Tnamed derived , Tnamed base => (*<-- is this the only case here?*)
-          (Exists path : @class_derives resolve derived base, _offsetL (derived_to_base path) (_eq addr) &~ addr' ** True) //\\
-          Q addr' free
+          Exists path : @class_derives resolve derived base,
+          let addr' := addr ., derived_to_base path in
+          valid_ptr addr' ** Q addr' free
         | _, _ => False
         end)
       |-- wp_xval (Ecast Cderived2base (Xvalue, e) ty) Q.
 
     Axiom wp_prval_cast_derived2base : forall e ty Q,
-      wp_prval e (fun addr free => Exists addr',
+      wp_prval e (fun addr free =>
         match erase_qualifiers (type_of e), erase_qualifiers ty with
         | Tpointer (Tnamed derived), Tpointer (Tnamed base) =>
-          (Exists path : @class_derives resolve derived base, _offsetL (derived_to_base path) (_eqv addr) &~ addr' ** True) //\\
-          Q (Vptr addr') free
+          Exists path : @class_derives resolve derived base,
+          let addr' := _eqv addr ., derived_to_base path in
+          valid_ptr addr' ** Q (Vptr addr') free
         | _, _ => False
         end)
       |-- wp_prval (Ecast Cderived2base (Prvalue, e) ty) Q.
@@ -565,31 +568,34 @@ Module Type Expr.
     (* [Cbase2derived] casts from a base class to a derived class.
      *)
     Axiom wp_lval_cast_base2derived : forall e ty Q,
-      wp_lval e (fun addr free => Exists addr',
+      wp_lval e (fun addr free =>
         match erase_qualifiers (type_of e), erase_qualifiers ty with
         | Tnamed base, Tnamed derived => (*<-- is this the only case here?*)
-          (Exists path : @class_derives resolve derived base, _offsetL (base_to_derived path) (_eq addr) &~ addr' ** True) //\\
-          Q addr' free
+          Exists path : @class_derives resolve derived base,
+          let addr' := addr ., base_to_derived path in
+          valid_ptr addr' ** Q addr' free
         | _, _ => False
         end)
       |-- wp_lval (Ecast Cbase2derived (Lvalue, e) ty) Q.
 
     Axiom wp_xval_cast_base2derived : forall e ty Q,
-      wp_xval e (fun addr free => Exists addr',
+      wp_xval e (fun addr free =>
         match erase_qualifiers (type_of e), erase_qualifiers ty with
         | Tnamed base, Tnamed derived => (*<-- is this the only case here?*)
-          (Exists path : @class_derives resolve derived base, _offsetL (base_to_derived path) (_eq addr) &~ addr' ** True) //\\
-          Q addr' free
+          Exists path : @class_derives resolve derived base,
+          let addr' := addr ., base_to_derived path in
+          valid_ptr addr' ** Q addr' free
         | _, _ => False
         end)
       |-- wp_xval (Ecast Cbase2derived (Xvalue, e) ty) Q.
 
     Axiom wp_prval_cast_base2derived : forall e ty Q,
-      wp_prval e (fun addr free => Exists addr',
+      wp_prval e (fun addr free =>
         match erase_qualifiers (type_of e), erase_qualifiers ty with
         | Tpointer (Tnamed base), Tpointer (Tnamed derived) =>
-          (Exists path : @class_derives resolve derived base, _offsetL (base_to_derived path) (_eqv addr) &~ addr' ** True) //\\
-          Q (Vptr addr') free
+          Exists path : @class_derives resolve derived base,
+          let addr' := _eqv addr ., base_to_derived path in
+          valid_ptr addr' ** Q (Vptr addr') free
         | _, _ => False
         end)
       |-- wp_prval (Ecast Cbase2derived (Prvalue, e) ty) Q.
@@ -658,8 +664,8 @@ Module Type Expr.
     *)
     Axiom wp_prval_call : forall ty f es Q,
         (if is_aggregate ty then
-           Forall addr, wp_init ty addr (Ecall f es ty) (fun free =>
-                Q (Vptr addr) (free ** destruct_val (erase_qualifiers ty) addr None (_at (_eq addr) (tblockR ty))))
+           Forall addr : ptr, wp_init ty addr (Ecall f es ty) (fun free =>
+                Q (Vptr addr) (free ** destruct_val (erase_qualifiers ty) addr None (addr |-> tblockR ty)))
              (* XXX This use of [Vptr] represents an aggregate.
                 XXX The destruction of the value isn't quite correct because we explicitly
                     generate the destructors.
@@ -705,29 +711,25 @@ Module Type Expr.
 
     (** member call *)
     Axiom wp_lval_member_call : forall ty fty f vc obj es Q,
-        Exists fa, _global f &~ fa **
         wp_specific_glval vc obj (fun this free_t => wp_args es (fun vs free =>
-           |> fspec fty ti (Vptr fa) (Vptr this :: vs) (fun v =>
+           |> fspec fty ti (Vptr $ _global f) (Vptr this :: vs) (fun v =>
                     Exists p, [| v = Vptr p |] ** Q p (free_t ** free))))
         |-- wp_lval (Emember_call (inl (f, Direct, fty)) vc obj es ty) Q.
 
     Axiom wp_xval_member_call : forall ty fty f vc obj es Q,
-        Exists fa, _global f &~ fa **
         wp_specific_glval vc obj (fun this free_t => wp_args es (fun vs free =>
-           |> fspec fty ti (Vptr fa) (Vptr this :: vs) (fun v =>
+           |> fspec fty ti (Vptr $ _global f) (Vptr this :: vs) (fun v =>
                     Exists p, [| v = Vptr p |] ** Q p (free_t ** free))))
         |-- wp_xval (Emember_call (inl (f, Direct, fty)) vc obj es ty) Q.
 
     Axiom wp_prval_member_call : forall ty fty f vc obj es Q,
-          Exists fa, _global f &~ fa **
           wp_specific_glval vc obj (fun this free_t => wp_args es (fun vs free =>
-              |> fspec fty ti (Vptr fa) (Vptr this :: vs) (fun v => Q v (free_t ** free))))
+              |> fspec fty ti (Vptr $ _global f) (Vptr this :: vs) (fun v => Q v (free_t ** free))))
         |-- wp_prval (Emember_call (inl (f, Direct, fty)) vc obj es ty) Q.
 
     Axiom wp_init_member_call : forall f fty es addr ty vc obj Q,
-        Exists fa, _global f &~ fa **
         wp_specific_glval vc obj (fun this free_t => wp_args es (fun vs free =>
-             |> fspec fty ti (Vptr fa) (Vptr this :: vs) (fun res =>
+             |> fspec fty ti (Vptr $ _global f) (Vptr this :: vs) (fun res =>
                       [| res = Vptr addr |] -* Q (free_t ** free))))
         (* NOTE as with regular function calls, we use an assumed equation to unify the address
            of the returned object with the location that we are initializing.
@@ -745,7 +747,7 @@ Module Type Expr.
       wp_specific_glval vc obj (fun this free => wp_args es (fun vs free' =>
           match class_type (type_of obj) with
           | Some cls =>
-            resolve_virtual (σ:=resolve) (_eq this) cls f (fun fimpl_addr thisp =>
+            resolve_virtual (σ:=resolve) this cls f (fun fimpl_addr thisp =>
               |> fspec fty ti (Vptr fimpl_addr) (Vptr thisp :: vs) (fun v =>
                        Exists p, [| v = Vptr p |] ** Q p (free ** free')))
           | _ => False
@@ -756,7 +758,7 @@ Module Type Expr.
       wp_specific_glval vc obj (fun this free => wp_args es (fun vs free' =>
           match class_type (type_of obj) with
           | Some cls =>
-            resolve_virtual (σ:=resolve) (_eq this) cls f (fun fimpl_addr thisp =>
+            resolve_virtual (σ:=resolve) this cls f (fun fimpl_addr thisp =>
               |> fspec fty ti (Vptr fimpl_addr) (Vptr thisp :: vs) (fun v =>
                        Exists p, [| v = Vptr p |] ** Q p (free ** free')))
           | _ => False
@@ -767,7 +769,7 @@ Module Type Expr.
       wp_specific_glval vc obj (fun this free => wp_args es (fun vs free' =>
           match class_type (type_of obj) with
           | Some cls =>
-            resolve_virtual (σ:=resolve) (_eq this) cls f (fun fimpl_addr thisp =>
+            resolve_virtual (σ:=resolve) this cls f (fun fimpl_addr thisp =>
               |> fspec fty ti (Vptr fimpl_addr) (Vptr thisp :: vs) (fun v => Q v (free ** free')))
          | _ => False
           end))
@@ -777,7 +779,7 @@ Module Type Expr.
       wp_specific_glval vc obj (fun this free => wp_args es (fun vs free' =>
           match class_type (type_of obj) with
           | Some cls =>
-            resolve_virtual (σ:=resolve) (_eq this) cls f (fun fimpl_addr thisp =>
+            resolve_virtual (σ:=resolve) this cls f (fun fimpl_addr thisp =>
               |> fspec fty ti (Vptr fimpl_addr) (Vptr thisp :: vs) (fun res => [| res = Vptr addr |] -* Q (free ** free')))
             (* NOTE as with other function calls, we are assuming an equation on the address in order
                to express the fact the the object is constructed in-place.
@@ -821,18 +823,17 @@ Module Type Expr.
           (https://eel.is/c++draft/expr.new#14).
      *)
     Axiom wp_prval_new : forall new_fn new_args init aty ty Q,
-        Exists fa, _global new_fn.1 &~ fa **
         wp_args new_args (fun vs free =>
           Exists sz, [| size_of aty = Some sz |] **
-            |> fspec new_fn.2 ti (Vptr fa) (Vn sz :: vs) (fun res => Exists resp : ptr,
+            |> fspec new_fn.2 ti (Vptr $ _global new_fn.1) (Vn sz :: vs) (fun res => Exists resp : ptr,
                     [| res = Vptr resp |] **
                     if bool_decide (resp = nullptr) then
                       Q res free
                     else
-                      (_at (_eqv res) (blockR sz) ** (* [blockR sz -|- tblockR aty] *)
+                      (resp |-> blockR sz ** (* [blockR sz -|- tblockR aty] *)
                        (* todo: ^ This misses an condition that [res] is suitably aligned. (issue #149) *)
                            (Forall newp : ptr,
-                              _at (_eq newp) (tblockR aty) -*
+                              newp |-> tblockR aty -*
                               provides_storage resp newp aty -*
                               wp_init (type_of init) newp init (fun free' =>
                                                               Q (Vptr newp) (free ** free'))))))
@@ -848,8 +849,8 @@ Module Type Expr.
         the destructor would potentially do. *)
     Axiom end_provides_storage : forall res newp aty sz,
        size_of aty = Some sz ->
-       provides_storage res newp aty ** _at (_eq newp) (anyR aty 1)
-         ={⊤}=∗ (_at (_eq res) (blockR sz)).
+       provides_storage res newp aty ** newp |-> anyR aty 1
+         ={⊤}=∗ (res |-> blockR sz).
 
     (* delete
 
@@ -862,8 +863,7 @@ Module Type Expr.
         wp_prval e (fun v free =>
                       Exists vp, [| v = Vptr vp |] **
           destruct_val destroyed_type vp dtor
-              (Exists da, _global delete_fn.1 &~ da **
-               fspec delete_fn.2 ti (Vptr da) (Vptr vp :: nil) (fun v => Q v free)))
+              (fspec delete_fn.2 ti (Vptr $ _global delete_fn.1) (Vptr vp :: nil) (fun v => Q v free)))
         |-- wp_prval (Edelete false (Some delete_fn) e destroyed_type dtor ty) Q.
 
     (** temporary expressions
@@ -881,10 +881,10 @@ Module Type Expr.
      *)
     Axiom wp_xval_temp : forall e ty Q,
         (let raw_type := erase_qualifiers ty in
-         Forall a, _at (_eq a) (tblockR raw_type) -*
+         Forall a : ptr, a |-> tblockR raw_type -*
                   let '(e,dt) := destructor_for e in
                   wp_init ty a e
-                          (fun free => Q a (destruct_val ty a dt (_at (_eq a) (tblockR raw_type) ** free))))
+                          (fun free => Q a (destruct_val ty a dt (a |-> tblockR raw_type ** free))))
         |-- wp_xval (Ematerialize_temp e ty) Q.
 
     (** temporary materialization only occurs when the resulting value is used.
@@ -898,10 +898,10 @@ Module Type Expr.
         is_aggregate (type_of e) = true ->
         (let ty := type_of e in
          let raw_type := erase_qualifiers ty in
-         Forall a, _at (_eq a) (tblockR raw_type) -*
+         Forall a : ptr, a |-> tblockR raw_type -*
                    let '(e,dt) := destructor_for e in
                    wp_init ty a e (fun free =>
-                                     Q (Vptr a) (destruct_val ty a dt (_at (_eq a) (tblockR raw_type) ** free))))
+                                     Q (Vptr a) (destruct_val ty a dt (a |-> tblockR raw_type ** free))))
         |-- wp_prval e Q.
 
 
@@ -924,9 +924,9 @@ Module Type Expr.
     Axiom wp_prval_materialize : forall ty e dtor Q,
       (Forall a : ptr,
       let raw_type := erase_qualifiers ty in
-      _at (_eq a) (tblockR raw_type) -*
+      a |-> tblockR raw_type -*
           wp_init ty a e (fun free =>
-                            Q (Vptr a) (destruct_val ty a (Some dtor) (_at (_eq a) (tblockR raw_type) ** free))))
+                            Q (Vptr a) (destruct_val ty a (Some dtor) (a |-> tblockR raw_type ** free))))
       |-- wp_prval (Ebind_temp e dtor ty) Q.
 
     (** Pseudo destructors arise from calling the destructor on

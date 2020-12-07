@@ -9,6 +9,7 @@ Require Import bedrock.lang.cpp.ast.
 Require Import bedrock.lang.cpp.semantics.
 From bedrock.lang.cpp.logic Require Import
      pred path_pred heap_pred call wp.
+Require Import bedrock.lang.cpp.heap_notations.
 
 Module Type Init.
 
@@ -28,9 +29,9 @@ Module Type Init.
     Local Notation fspec := (@fspec _ Σ σ.(genv_tu).(globals)).
 
     Local Notation _global := (_global (resolve:=σ)) (only parsing).
-    Local Notation _field := (_field (resolve:=σ)) (only parsing).
-    Local Notation _sub := (_sub (resolve:=σ)) (only parsing).
-    Local Notation _base := (_base (resolve:=σ)) (only parsing).
+    Local Notation _field := (@o_field σ) (only parsing).
+    Local Notation _sub := (@o_sub σ) (only parsing).
+    Local Notation _base := (@o_base σ) (only parsing).
     Local Notation primR := (primR (resolve:=σ)) (only parsing).
     Local Notation tblockR := (tblockR (σ:=σ)) (only parsing).
     Local Notation anyR := (anyR (resolve:=σ)) (only parsing).
@@ -49,8 +50,8 @@ Module Type Init.
       | Tbool
       | Tint _ _ =>
         wp_prval init (fun v free =>
-                         _at (_eq addr) (tblockR (erase_qualifiers ty)) **
-                         (   _at (_eq addr) (primR (erase_qualifiers ty) 1 v)
+                         addr |-> tblockR (erase_qualifiers ty) **
+                         (   addr |-> primR (erase_qualifiers ty) 1 v
                           -* k free))
 
         (* non-primitives are handled via prvalue-initialization semantics *)
@@ -67,11 +68,10 @@ Module Type Init.
       | Tfloat _ => False (* floating point numbers are not supported *)
       end.
 
-    Axiom wpi_initialize : forall this_val i cls Q,
-        Exists a,
-         (_offsetL (offset_for cls i.(init_path)) (_eq this_val) &~ a ** True) //\\
-        wp_initialize (erase_qualifiers i.(init_type)) a i.(init_init) Q
-        |-- wpi cls this_val i Q.
+    Axiom wpi_initialize : forall (thisp : ptr) i cls Q,
+        let p' := thisp ., offset_for cls i.(init_path) in
+          wp_initialize (erase_qualifiers i.(init_type)) p' i.(init_init) Q
+      |-- wpi cls thisp i Q.
 
     Fixpoint wpis (cls : globname) (this : ptr)
              (inits : list Initializer)
@@ -83,10 +83,9 @@ Module Type Init.
 
     Axiom wp_init_constructor : forall cls addr cnd es Q ty,
       wp_args es (fun ls free =>
-         Exists ctor, _global cnd &~ ctor **
            match σ.(genv_tu) !! cnd with
            | Some cv =>
-             |> fspec (type_of_value cv) ti (Vptr ctor) (Vptr addr :: ls) (fun _ => Q free)
+             |> fspec (type_of_value cv) ti (Vptr $ _global cnd) (Vptr addr :: ls) (fun _ => Q free)
            | _ => False
            end)
       |-- wp_init (Tnamed cls) addr (Econstructor cnd es ty) Q.
@@ -114,15 +113,13 @@ Module Type Init.
       match es with
       | nil => Q empSP
       | (i,e) :: es =>
-        Forall a,
-          _offsetL (_sub ety i) (_eq base) &~ a -*
           (* NOTE: We nest the recursive calls to `wp_array_init` within
                the continuation of the `wp_initialize` statement to
                reflect the fact that the C++ Standard introduces
                sequence-points between all of the elements of an
                initializer list (c.f. http://eel.is/c++draft/dcl.init.list#4)
            *)
-          wp_initialize ety a e (fun free => free ** wp_array_init ety base es Q)
+          wp_initialize ety (base .[ ety ! i ]) e (fun free => free ** wp_array_init ety base es Q)
       end.
 
     Axiom wp_init_initlist_array :forall ls fill ety sz addr Q,

@@ -13,6 +13,9 @@ From bedrock.lang.cpp.logic Require Import
 Require Import bedrock.lang.cpp.semantics.
 Require Import bedrock.lang.cpp.logic.z_to_bytes.
 
+Require Import bedrock.lang.cpp.heap_notations.
+
+(* TODO this should be removed *) 
 Section array.
   Context `{Σ : cpp_logic} {resolve:genv}.
   Context {T : Type}.
@@ -23,16 +26,16 @@ Section array.
     match ls with
     | nil => valid_ptr p
     | l :: ls =>
-      _at (_eq p) (P l) ** array' ls (offset_ptr_ sz p)
+      p |-> P l ** array' ls (offset_ptr_ sz p)
     end.
 End array.
 
 Section with_Σ.
   Context `{Σ : cpp_logic} {resolve:genv}.
 
-  Local Notation _base := (_base (resolve:=resolve)) (only parsing).
-  Local Notation _field := (_field (resolve:=resolve)) (only parsing).
-  Local Notation _sub := (_sub (resolve:=resolve)) (only parsing).
+  Local Notation _base := (o_base resolve) (only parsing).
+  Local Notation _field := (o_field resolve) (only parsing).
+  Local Notation _sub := (o_sub resolve) (only parsing).
   Local Notation anyR := (anyR (resolve:=resolve)) (only parsing).
   Local Notation primR := (primR (resolve:=resolve)) (only parsing).
 

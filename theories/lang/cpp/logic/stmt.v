@@ -15,6 +15,7 @@ From Coq Require Import
 From bedrock.lang.cpp Require Import ast semantics.
 From bedrock.lang.cpp.logic Require Import
      pred path_pred heap_pred destroy wp initializers call.
+Require Import bedrock.lang.cpp.heap_notations.
 
 Module Type Stmt.
   (** weakest pre-condition for statements
@@ -37,15 +38,15 @@ Module Type Stmt.
 
     Local Notation glob_def := (glob_def resolve) (only parsing).
     Local Notation _global := (@_global resolve) (only parsing).
-    Local Notation _field := (@_field resolve) (only parsing).
-    Local Notation _sub := (@_sub resolve) (only parsing).
-    Local Notation _base := (@_base resolve) (only parsing).
+    Local Notation _field := (@o_field resolve) (only parsing).
+    Local Notation _sub := (@o_sub resolve) (only parsing).
     Local Notation size_of := (@size_of resolve) (only parsing).
     Local Notation align_of := (@align_of resolve) (only parsing).
     Local Notation primR := (primR (resolve:=resolve)) (only parsing).
     Local Notation anyR := (anyR (resolve:=resolve)) (only parsing).
     Local Notation uninitR := (uninitR (resolve:=resolve)) (only parsing).
 
+    Parameter _result : region -> ptr.
 
    (* the semantics of return is like an initialization
      * expression.
@@ -62,8 +63,7 @@ Module Type Stmt.
                 * so we need to re-construct this information from the value
                 * category of the expression.
                 *)
-               Exists a, _result ρ &~ a ** True //\\
-               wp_init ρ (erase_qualifiers (type_of e)) a (not_mine e) (Q.(k_return) (Some (Vptr a)))
+               wp_init ρ (erase_qualifiers (type_of e)) (_result ρ) (not_mine e) (Q.(k_return) (Some (Vptr $ _result ρ)))
              else
                wp_lval ρ e (fun v => Q.(k_return) (Some (Vptr v)))
            | Lvalue =>
@@ -104,20 +104,20 @@ Module Type Stmt.
         Forall a : ptr,
         let continue :=
             k (Rbind x a ρ)
-              (Kfree (_at (_eq a) (anyR (erase_qualifiers ty) 1)) Q)
+              (Kfree (a |-> anyR (erase_qualifiers ty) 1) Q)
         in
         match init with
         | None =>
-          _at (_eq a) (uninitR (erase_qualifiers ty) 1) -* continue
+          a |-> uninitR (erase_qualifiers ty) 1 -* continue
         | Some init =>
           wp_prval ρ init (fun v free => free **
-              _at (_eq a) (primR (erase_qualifiers ty) 1 v) -* continue)
+              (a |-> primR (erase_qualifiers ty) 1 v -* continue))
         end
 
       | Tnamed cls =>
-        Forall a, _at (_eq a) (tblockR (σ:=resolve) ty) -*
+        Forall a : ptr, a |-> tblockR (σ:=resolve) ty -*
                   let destroy P :=
-                      destruct_val ty a dtor (_at (_eq a) (anyR ty 1) ** P)
+                      destruct_val ty a dtor (a |-> tblockR ty ** P)
                   in
                   let continue :=
                       k (Rbind x a ρ) (Kat_exit destroy Q)
@@ -128,9 +128,9 @@ Module Type Stmt.
                     wp_init ρ ty a (not_mine init) (fun free => free ** continue)
                   end
       | Tarray ty' N =>
-        Forall a, _at (_eq a) (tblockR (σ:=resolve) ty) -*
+        Forall a : ptr, a |-> tblockR (σ:=resolve) ty -*
                   let destroy P :=
-                      destruct_val ty a dtor (_at (_eq a) (tblockR (σ:=resolve) ty) ** P)
+                      destruct_val ty a dtor (a |-> tblockR (σ:=resolve) ty ** P)
                   in
                   let continue :=
                       k (Rbind x a ρ) (Kat_exit destroy Q)
@@ -160,14 +160,14 @@ Module Type Stmt.
         Forall a : ptr,
         let continue :=
             k (Rbind x a ρ)
-              (Kfree (_at (_eq a) (anyR Tnullptr 1)) Q)
+              (Kfree (a |-> anyR Tnullptr 1) Q)
         in
         match init with
         | None =>
-          _at (_eq a) (primR Tnullptr 1 (Vptr nullptr)) -* continue
+          a |-> primR Tnullptr 1 (Vptr nullptr) -* continue
         | Some init =>
           wp_prval ρ init (fun v free => free **
-                  _at (_eq a) (primR (erase_qualifiers ty) 1 v) -* continue)
+             (a |-> primR (erase_qualifiers ty) 1 v -* continue))
         end
       | Tfloat _ => False (* not supportd *)
       | Tarch _ _ => False (* not supported *)

@@ -6,6 +6,7 @@
 Require Import stdpp.telescopes.
 Require Import bedrock.lang.prelude.bytestring.
 Require Import bedrock.lang.cpp.logic.
+Require bedrock.lang.cpp.heap_notations.
 
 Declare Scope fspec_scope.
 Delimit Scope fspec_scope with fspec.
@@ -216,6 +217,8 @@ Notation "'\exact' wpp" := (exactWpp wpp)
 Section with_Σ.
   Context `{Σ : cpp_logic ti}.
 
+  Import heap_notations.
+
 Goal WithPrePost mpredI.
 refine (
   \pre emp
@@ -233,8 +236,8 @@ refine (
    \args{a} [Vint (Z.of_nat a)]
    \with (z : nat)
    \prepost emp
-   \prepost{q1 q2} _at (_eq p) (R q1 q2 0)
-   \pre{q3 q4} _at (_eq p) (R q3 q4 0)
+   \prepost{q1 q2} p |-> R q1 q2 0
+   \pre{q3 q4} p |-> R q3 q4 0
    \pre emp ** Exists y : nat, [| a = 7 |] ** [| y = 3 |] ** I ** J
    \post {x} [ Vint x ] emp).
 (* Show Proof. *)
