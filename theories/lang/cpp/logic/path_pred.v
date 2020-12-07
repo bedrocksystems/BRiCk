@@ -507,3 +507,6 @@ Definition offset_for (resolve:genv) (cls : globname) (f : FieldOrBase) : offset
     path_to_Offset resolve cls final ls
   | This => o_id
   end.
+
+#[deprecated(since="2020-12-07",note="no longer needed")]
+Notation _eq := id (only parsing).
