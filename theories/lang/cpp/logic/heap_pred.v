@@ -658,6 +658,7 @@ Section with_cpp.
     - by rewrite -H1.
   Qed.
 End with_cpp.
+Global Instance: Params (@cptr) 3 := {}.
 
 Instance: Params (@as_Rep) 2 := {}.
 Instance: Params (@_offsetR) 3 := {}.
