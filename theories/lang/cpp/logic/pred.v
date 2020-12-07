@@ -459,8 +459,8 @@ Section with_cpp.
 
   (* [mpred] implication on [function_spec] *)
   Definition fs_impl (P Q : function_spec) : mpred :=
-    [| type_of_spec P = type_of_spec Q |] **
-    □ (Forall ti vs K, P.(fs_spec) ti vs K -* Q.(fs_spec) ti vs K).
+    [| type_of_spec P = type_of_spec Q |] ∗
+    □ ∀ ti vs K, P.(fs_spec) ti vs K -∗ Q.(fs_spec) ti vs K.
   Lemma fs_impl_reflexive P : |-- fs_impl P P.
   Proof. iSplit; auto. Qed.
   Lemma fs_impl_transitive P Q R : fs_impl P Q |-- fs_impl Q R -* fs_impl P R.
@@ -483,8 +483,8 @@ Section with_cpp.
 
   (* [mpred] bi-impliciation on [function_spec] *)
   Definition fs_equiv (P Q : function_spec) : mpred :=
-    [| type_of_spec P = type_of_spec Q |] **
-    □ (Forall ti vs K, (P.(fs_spec) ti vs K ∗-∗ Q.(fs_spec) ti vs K)).
+    [| type_of_spec P = type_of_spec Q |] ∗
+    □ ∀ ti vs K, P.(fs_spec) ti vs K ∗-∗ Q.(fs_spec) ti vs K.
   Lemma fs_equiv_split P Q : fs_equiv P Q -|- fs_impl P Q ** fs_impl Q P.
   Proof.
     rewrite /fs_equiv /fs_impl; iSplit.
