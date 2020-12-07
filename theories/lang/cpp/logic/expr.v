@@ -876,13 +876,8 @@ Module Type Expr.
     Axiom wp_xval_clean : forall e ty Q,
         wp_xval e Q |-- wp_xval (Eandclean e ty) Q.
 
-    (** [Ematerialize_temp e ty] is an xvalue
-
-        XXX currently there are different ways to represent
-            uninitialized memory for aggregates (using [tblockR])
-            and for primitves (using [uninitR] or [anyR]).
-            Because of this, the this probably needs to do a case
-            split on the type of the value that we are materializing.
+    (** [Ematerialize_temp e ty] is an xvalue that gets memory (with automatic
+        storage duration) and initializes it using the expression.
      *)
     Axiom wp_xval_temp : forall e ty Q,
         (let raw_type := erase_qualifiers ty in
@@ -897,7 +892,7 @@ Module Type Expr.
         aggregate) we introduce an implicit materialization and then immediately
         free the result.
 
-        XXXX this needs a thorough review.
+        XXX this needs a thorough review.
      *)
     Axiom wp_prval_implicit_materialize : forall e Q,
         is_aggregate (type_of e) = true ->
