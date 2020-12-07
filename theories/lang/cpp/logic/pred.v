@@ -454,8 +454,17 @@ Section with_cpp.
   Arguments function_spec : clear implicits.
   Arguments Build_function_spec : clear implicits.
 
-  Definition type_of_spec `(fs : function_spec) : type :=
+  Definition type_of_spec (fs : function_spec) : type :=
     normalize_type (Tfunction (cc:=fs.(fs_cc)) fs.(fs_return) fs.(fs_arguments)).
+
+  Lemma length_type_of_spec fs1 fs2 :
+    type_of_spec fs1 = type_of_spec fs2 →
+    length (fs_arguments fs1) = length (fs_arguments fs2).
+  Proof.
+    destruct fs1, fs2; rewrite /type_of_spec/=; intros [= _ _ Hmap].
+    erewrite <-map_length, Hmap.
+    by rewrite map_length.
+  Qed.
 
   (* [mpred] implication on [function_spec] *)
   Definition fs_impl (P Q : function_spec) : mpred :=
@@ -508,6 +517,13 @@ Section with_cpp.
   (* Equivalence relation on [function_spec] *)
   #[global] Instance function_spec_equiv : Equiv function_spec :=
     fun P Q => |-- fs_equiv P Q.
+
+  Lemma function_spec_equiv_split P Q : P ≡ Q ↔ fs_entails P Q /\ fs_entails Q P.
+  Proof.
+    rewrite /fs_entails /equiv /function_spec_equiv fs_equiv_split; split.
+    { by intros H; split; iDestruct H as "[??]". }
+    { intros [H1 H2]. iDestruct H1 as "$". iDestruct H2 as "$". }
+  Qed.
 
   #[global] Instance function_spec_equivalence : Equivalence (≡@{function_spec}).
   Proof.

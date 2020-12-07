@@ -3,11 +3,12 @@
  *
  * SPDX-License-Identifier: LGPL-2.1 WITH BedRock Exception for use over network, see repository root for details.
  *)
-Require Import bedrock.lang.prelude.base.
-
 From iris.bi Require Export monpred.
 From iris.proofmode Require Import tactics monpred.
 Require Import iris.bi.lib.fractional.
+From iris_string_ident Require Import ltac2_string_ident.
+
+Require Import bedrock.lang.prelude.base.
 
 From bedrock.lang.cpp Require Import
      semantics logic.pred logic.path_pred ast logic.wp.
@@ -635,57 +636,26 @@ Section with_cpp.
   #[global] Instance cptr_persistent {resolve} : Persistent (cptr resolve s).
   Proof. rewrite cptr_eq. apply _. Qed.
 
-  #[global] Instance cptr_proper {resolve} : Proper (flip fs_entails ==> (⊢)) (@cptr resolve).
+  (* TODO: Proper wrt [genv_leq]. *)
+  #[global] Instance cptr_mono {resolve} : Proper (flip fs_entails ==> (⊢)) (@cptr resolve).
   Proof.
-    intros ? ? H. rewrite cptr_eq/cptr_def. constructor => p /=.
-    iIntros "X" (ti).
-    iSpecialize ("X" $! ti).
-    iDestruct "X" as "#X".
-    iModIntro. iIntros (vs Q) "% B".
-    iSpecialize ("X" $! vs Q).
-    iDestruct H as "(% & H)".
-    rewrite H0. iApply "X".
-    { rewrite a.
-      destruct x, y; simpl in *.
-      rewrite /type_of_spec/= in H0.
-      inversion H0.
-      iClear "X H".
-      erewrite <-map_length. erewrite H4. rewrite map_length. eauto. }
-    iApply "H". iFrame.
+    intros ??; rewrite /flip /fs_entails /fs_impl cptr_eq/cptr_def; intros Heq.
+    constructor => p /=.
+    f_equiv=>ti; f_equiv; f_equiv => vs; f_equiv => Q.
+    iIntros "Hcptr -> Hy".
+    iDestruct Heq as "(%Hspec & #Hyx)"; rewrite Hspec.
+    iApply ("Hcptr" with "[%] (Hyx Hy)").
+    exact: length_type_of_spec.
   Qed.
 
-  #[global] Instance cptr_proper_equiv {resolve} : Proper ((≡) ==> (⊣⊢)) (@cptr resolve).
+  #[global] Instance cptr_flip_mono {resolve} : Proper (fs_entails ==> flip (⊢)) (@cptr resolve).
+  Proof. by intros ?? <-. Qed.
+
+  #[global] Instance cptr_proper {resolve} : Proper ((≡) ==> (⊣⊢)) (@cptr resolve).
   Proof.
-    intros ? ? H. rewrite cptr_eq/cptr_def. constructor => p /=.
-    iSplit.
-    { iIntros "X" (ti).
-      iSpecialize ("X" $! ti).
-      iDestruct "X" as "#X".
-      iModIntro. iIntros (vs Q) "% B".
-      iSpecialize ("X" $! vs Q).
-      iDestruct H as "(% & H)".
-      rewrite H0. iApply "X".
-      { rewrite a.
-        destruct x, y; simpl in *.
-        rewrite /type_of_spec/= in H0.
-        inversion H0.
-        iClear "X H".
-        erewrite <-map_length. erewrite <-H4. rewrite map_length. eauto. }
-      iApply "H". iFrame. }
-    { iIntros "X" (ti).
-      iSpecialize ("X" $! ti).
-      iDestruct "X" as "#X".
-      iModIntro. iIntros (vs Q) "% B".
-      iSpecialize ("X" $! vs Q).
-      iDestruct H as "(% & H)".
-      rewrite H0. iApply "X".
-      { rewrite a.
-        destruct x, y; simpl in *.
-        rewrite /type_of_spec/= in H0.
-        inversion H0.
-        iClear "X H".
-        erewrite <-map_length. erewrite H4. rewrite map_length. eauto. }
-      iApply "H". iFrame. }
+    intros ? ? [H1 H2]%function_spec_equiv_split; iSplit; iIntros.
+    - by rewrite -H2.
+    - by rewrite -H1.
   Qed.
 
   (** object identity *)
