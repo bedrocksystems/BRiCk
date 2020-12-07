@@ -657,7 +657,25 @@ Section with_cpp.
     - by rewrite -H2.
     - by rewrite -H1.
   Qed.
+End with_cpp.
 
+Instance: Params (@as_Rep) 2 := {}.
+Instance: Params (@_offsetR) 3 := {}.
+Instance: Params (@pureR) 2 := {}.
+
+Global Opaque _at _offsetR primR.
+
+Typeclasses Opaque pureR.
+Typeclasses Opaque as_Rep.
+
+Arguments anyR {_ Σ resolve} ty q : rename.
+Arguments uninitR {_ Σ resolve} ty q : rename.
+Arguments primR {_ Σ resolve} ty q v : rename.
+Arguments refR {_ Σ} ty v : rename.
+Arguments cptr {_ Σ resolve} _ : rename.
+
+Section with_cpp.
+  Context `{Σ : cpp_logic}.
   (** object identity *)
   Definition _identity (σ : genv) (cls : globname) (mdc : option globname)
              (q : Qp) : Rep :=
@@ -718,22 +736,9 @@ Section with_cpp.
       _offsetR (_sub (resolve:=σ) T_uint8 (Z.of_nat i)) (anyR (resolve:=σ) T_uint8 1).
 
 End with_cpp.
-Instance: Params (@as_Rep) 2 := {}.
-Instance: Params (@_offsetR) 3 := {}.
-Instance: Params (@pureR) 2 := {}.
 
-Global Opaque _at _offsetR primR.
-
-Typeclasses Opaque pureR.
-Typeclasses Opaque as_Rep.
 Typeclasses Opaque _identity.
 Typeclasses Opaque _type_ptr.
-
-Arguments anyR {_ Σ resolve} ty q : rename.
-Arguments uninitR {_ Σ resolve} ty q : rename.
-Arguments primR {_ Σ resolve} ty q v : rename.
-Arguments refR {_ Σ} ty v : rename.
-Arguments cptr {_ Σ resolve} _ : rename.
 
 Instance Persistent_spec `{Σ:cpp_logic ti} {resolve:genv} nm s :
   Persistent (_at (Σ:=Σ) (_global (resolve:=resolve) nm) (cptr (resolve:=resolve) s)) := _.
