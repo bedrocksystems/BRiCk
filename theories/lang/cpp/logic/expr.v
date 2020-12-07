@@ -296,7 +296,9 @@ Module Type Expr.
            (_at (_eq la) (primR (erase_qualifiers ty) 1 rv) -* Q la (free1 ** free2)))
         |-- wp_lval (Eassign l r ty) Q.
 
-    (* TODO this is wrong *)
+    (* Assignemnt operators are *almost* like regular assignments except that they guarantee to evalute the
+       left hand side *exactly* once (rather than twice which is what would come from the standard desugaring)
+     *)
     Axiom wp_lval_bop_assign : forall ty o l r Q,
         (Exists Ql Qr,
         wp_lval l Ql ** wp_prval r Qr **
@@ -472,7 +474,7 @@ Module Type Expr.
         wp_lval e (fun p => Q (Vptr p))
         |-- wp_prval (Ecast Carray2pointer (Lvalue, e) t) Q.
 
-    (** [Cint2pointer] exposes the pointer, which is expressed with [pinned_ptr]
+    (** [Cpointer2int] exposes the pointer, which is expressed with [pinned_ptr]
      *)
     Axiom wp_prval_pointer2int : forall e ty Q,
         match drop_qualifiers (type_of e) , ty with
@@ -486,16 +488,17 @@ Module Type Expr.
         end
         |-- wp_prval (Ecast Cpointer2int (Prvalue, e) ty) Q.
 
-    (** [Cpointer2int] uses "angelic non-determinism" to allow the developer to
+    (** [Cint2pointer] uses "angelic non-determinism" to allow the developer to
         pick any pointer that was previously exposed as the given integer.
-
-        TODO the pointer that is picked *must* have the correct type, but this is
-        currently not stated in the rule below.
      *)
     Axiom wp_prval_int2pointer : forall e ty Q,
-        wp_prval e (fun v free => Exists va : N, [| v = Vint (Z.of_N va) |] **
-           (([| (va > 0)%N |] ** Exists p, pinned_ptr va p ** Q (Vptr p) free) \\//
-            ([| va = 0%N |] ** Q (Vptr nullptr) free)))
+        match unptr ty with
+        | Some ptype =>
+          wp_prval e (fun v free => Exists va : N, [| v = Vint (Z.of_N va) |] **
+             (([| (va > 0)%N |] ** Exists p, pinned_ptr va p ** type_ptr (resolve:=resolve) ptype p ** Q (Vptr p) free) \\//
+              ([| va = 0%N |] ** Q (Vptr nullptr) free)))
+        | _ => False
+        end
         |-- wp_prval (Ecast Cint2pointer (Prvalue, e) ty) Q.
 
     (** [Cderived2base] casts from a derived class to a base
