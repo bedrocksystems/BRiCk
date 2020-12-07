@@ -135,23 +135,7 @@ Section with_Σ.
   Definition _global := _global_aux.(unseal).
   Definition _global_eq : @_global = _ := _global_aux.(seal_eq).
 
-  Definition _local (ρ : region) (b : ident) : Loc :=
-    match get_location ρ b with
-    | Some p => p
-    | _ => invalid
-    end.
-
-  Definition _this (ρ : region) : Loc :=
-    match get_this ρ with
-    | Some p => p
-    | _ => invalid
-    end.
-
-  Definition _result (ρ : region) : Loc :=
-    match get_result ρ with
-    | Some p => p
-    | _ => invalid
-    end.
+  
 
   (** [addr_of]: [addr_of l p] says that pointer [p] "matches" location [l]. *)
   Definition addr_of_def (a : Loc) (b : ptr) : mpred :=
@@ -469,7 +453,36 @@ Arguments _global {_ Σ} {resolve} _ : rename.
 #[deprecated(since="2020-12-03",note="use _base instead")]
 Notation _super := _base (only parsing).
 
-*)
+ *)
+
+(** [_local ρ b] returns the [ptr] that stores the local variable [b].
+ *)
+Definition _local (ρ : region) (b : ident) : ptr :=
+  match get_location ρ b with
+  | Some p => p
+  | _ => invalid_ptr
+  end.
+
+(** [_this ρ] returns the [ptr] that [this] is bound to.
+
+    NOTE because [this] is [const], we actually store the value directly
+    rather than indirectly representing it in memory.
+ *)
+Definition _this (ρ : region) : ptr :=
+  match get_this ρ with
+  | Some p => p
+  | _ => invalid_ptr
+  end.
+
+(** [_result ρ] is the location that the return value should be returned.
+    This is currently only used for aggregates.
+ *)
+Definition _result (ρ : region) : ptr :=
+  match get_result ρ with
+  | Some p => p
+  | _ => invalid_ptr
+  end.
+
 
 (* this is for `Indirect` field references *)
 Fixpoint path_to_Offset (resolve:genv) (from : globname) (final : ident)
@@ -481,6 +494,11 @@ Fixpoint path_to_Offset (resolve:genv) (from : globname) (final : ident)
     o_dot (o_field resolve {| f_type := from ; f_name := i |}) (path_to_Offset resolve c final ls)
   end.
 
+(** [offset_for cls f] returns the [offset] of [f] where the base is [this] and has type
+    [Tnamed cls].
+
+    NOTE this function assumes that [f] is well-typed.
+ *)
 Definition offset_for (resolve:genv) (cls : globname) (f : FieldOrBase) : offset :=
   match f with
   | Base parent => o_base resolve cls parent
@@ -489,4 +507,3 @@ Definition offset_for (resolve:genv) (cls : globname) (f : FieldOrBase) : offset
     path_to_Offset resolve cls final ls
   | This => o_id
   end.
-

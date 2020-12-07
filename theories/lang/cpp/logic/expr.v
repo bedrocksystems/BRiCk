@@ -92,9 +92,6 @@ Module Type Expr.
       Q (Vbool b) emp
       |-- wp_prval (Ebool b) Q.
 
-    Parameter _this : region -> ptr.
-    Parameter _local : region -> ident -> ptr.
-
     (* `this` is a prvalue *)
     Axiom wp_prval_this : forall ty Q,
       (valid_ptr (_this ρ) ** True) //\\ Q (Vptr $ _this ρ) emp

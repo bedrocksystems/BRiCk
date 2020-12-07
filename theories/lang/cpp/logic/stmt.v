@@ -46,8 +46,6 @@ Module Type Stmt.
     Local Notation anyR := (anyR (resolve:=resolve)) (only parsing).
     Local Notation uninitR := (uninitR (resolve:=resolve)) (only parsing).
 
-    Parameter _result : region -> ptr.
-
    (* the semantics of return is like an initialization
      * expression.
      *)
