@@ -461,49 +461,60 @@ Section with_cpp.
   Definition fs_impl (P Q : function_spec) : mpred :=
     [| type_of_spec P = type_of_spec Q |] **
     □ (Forall ti vs K, P.(fs_spec) ti vs K -* Q.(fs_spec) ti vs K).
+  Lemma fs_impl_reflexive P : |-- fs_impl P P.
+  Proof. iSplit; auto. Qed.
+  Lemma fs_impl_transitive P Q R : fs_impl P Q |-- fs_impl Q R -* fs_impl P R.
+  Proof.
+    rewrite /fs_impl; iIntros "(-> & #H1) (-> & #H2)".
+    iSplit; first done.
+    iIntros "!>" (ti vs K) "Y".
+    iApply ("H2" with "(H1 Y)").
+  Qed.
 
   Definition fs_entails (P Q : function_spec) : Prop := |-- fs_impl P Q.
 
-  #[global] Instance fs_entails_refl : Reflexive fs_entails.
-  Proof. rewrite /fs_entails/fs_impl; intro x; iSplit; eauto. Qed.
-  #[global] Instance fs_entails_trans : Transitive fs_entails.
+  #[global] Instance fs_entails_preorder : PreOrder fs_entails.
   Proof.
-    rewrite /fs_entails/fs_impl; intros ? ? ? H1 H2.
-    iDestruct H1 as "(-> & #H1)".
-    iDestruct H2 as "(% & #H2)".
-    iSplit; eauto.
-    iModIntro. iIntros (ti vs K) "Y".
-    iApply "H2". iApply "H1". iFrame.
+    split; rewrite /fs_entails.
+    - intro x. exact: fs_impl_reflexive.
+    - intros ? ? ? H1 H2. by iApply (fs_impl_transitive).
   Qed.
+  #[global] Instance : RewriteRelation fs_entails := {}.
 
   (* [mpred] bi-impliciation on [function_spec] *)
   Definition fs_equiv (P Q : function_spec) : mpred :=
     [| type_of_spec P = type_of_spec Q |] **
     □ (Forall ti vs K, (P.(fs_spec) ti vs K ∗-∗ Q.(fs_spec) ti vs K)).
+  Lemma fs_equiv_split P Q : fs_equiv P Q -|- fs_impl P Q ** fs_impl Q P.
+  Proof.
+    rewrite /fs_equiv /fs_impl; iSplit.
+    - iIntros "(-> & #W)"; repeat iSplit => //;
+      iIntros "!>" (???) "A"; iApply ("W" with "A").
+    - iIntros "((-> & #W1) & (_ & #W2))".
+      iSplit => //; iIntros "!>" (???); iSplit;
+        [by iApply "W1" | by iApply "W2"].
+  Qed.
+
+  Lemma fs_equiv_reflexive P : |-- fs_equiv P P.
+  Proof. rewrite fs_equiv_split -fs_impl_reflexive; by iSplit. Qed.
+  Lemma fs_equiv_symmetric P Q : fs_equiv Q P |-- fs_equiv P Q.
+  Proof. rewrite !fs_equiv_split. iDestruct 1 as "($ & $)". Qed.
+  Lemma fs_equiv_transitive P Q R : fs_equiv P Q |-- fs_equiv Q R -* fs_equiv P R.
+  Proof.
+    rewrite !fs_equiv_split; iIntros "#(PQ & QP) #(QR & RQ)".
+    by iSplit; iApply fs_impl_transitive.
+  Qed.
 
   (* Equivalence relation on [function_spec] *)
   #[global] Instance function_spec_equiv : Equiv function_spec :=
     fun P Q => |-- fs_equiv P Q.
 
-  #[global] Instance fs_equiv_equiv : Equivalence (≡@{function_spec}).
+  #[global] Instance function_spec_equivalence : Equivalence (≡@{function_spec}).
   Proof.
-    constructor.
-    - do 3 red. rewrite /fs_equiv.
-      intros; iSplit; eauto.
-      iModIntro. iIntros (ti vs K); iSplit; iIntros; iFrame.
-    - do 3 red. intros ? ? H. rewrite /fs_equiv.
-      iDestruct H as "(-> & #H)".
-      iSplit; eauto.
-      iModIntro.
-      iIntros (ti vs K); iSplit; iIntros "X"; iApply "H"; iAssumption.
-    - intros ? ? ? H1 H2. rewrite /equiv/function_spec_equiv/fs_equiv.
-      iDestruct H1 as "(-> & #H1)".
-      iDestruct H2 as "(% & #H2)".
-      iFrame "%". iModIntro.
-      iIntros (ti vs K).
-      iSplit; iIntros "x".
-      + iApply "H2"; iApply "H1"; done.
-      + iApply "H1"; iApply "H2"; done.
+    unfold equiv, function_spec_equiv. constructor; red; intros.
+    - by iApply fs_equiv_reflexive.
+    - by iApply fs_equiv_symmetric.
+    - by iApply fs_equiv_transitive.
   Qed.
 
   Lemma pinned_ptr_type_divide_1 va n σ p ty
