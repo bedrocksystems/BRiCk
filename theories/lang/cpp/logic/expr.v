@@ -110,7 +110,7 @@ Module Type Expr.
      * - where [m] is a member enumerator or a non-static member function, or
      * - where [a] is an rvalue and [m] is a non-static data member of non-reference type
      *
-     * note: we need [vc] in order to distinguish the two forms of [rvalue], [xvalue] and [prvalue]
+     * NOTE We need [vc] in order to distinguish the two forms of [rvalue], [xvalue] and [prvalue]
      *)
     Axiom wp_lval_member : forall ty vc a m Q,
         match vc with
@@ -222,8 +222,9 @@ Module Type Expr.
         wp_lval e (fun p free => Q (Vptr p) free)
         |-- wp_prval (Eaddrof e ty) Q.
 
-    (* unary operators *)
-    (* NOTE the following axioms assume that [eval_unop] is deterministic when it is defined *)
+    (** * Unary Operators
+        NOTE the following axioms assume that [eval_unop] is deterministic when it is defined
+     *)
     Axiom wp_prval_unop : forall o e ty Q,
         wp_prval e (fun v free => (* todo: rval? *)
           Exists v',
@@ -279,7 +280,7 @@ Module Type Expr.
         end
         |-- wp_prval (Epostdec e ty) Q.
 
-    (** binary operators *)
+    (** * Binary Operators *)
     (* NOTE the following axioms assume that [eval_binop] is deterministic *)
     Axiom wp_prval_binop : forall o e1 e2 ty Q,
         (Exists Ql Qr,
@@ -365,7 +366,12 @@ Module Type Expr.
                                      else Q (Vint 0) (free1 ** free2)))
         |-- wp_prval (Eseqor e1 e2 ty) Q.
 
-    (** casts *)
+    (** * Casts
+        Casts apply exclusively to primitive types, all other casts in C++
+        are represented as overloaded functions.
+     *)
+
+    (** [Cl2r] represents reads of locations. *)
     Axiom wp_prval_cast_l2r_l : forall ty e Q,
         wp_lval e (fun a free => Exists q, Exists v,
            (_at (_eq a) (primR (erase_qualifiers ty) q v) ** True) //\\
