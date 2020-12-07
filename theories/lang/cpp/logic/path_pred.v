@@ -455,6 +455,17 @@ Notation _super := _base (only parsing).
 
  *)
 
+(** [_eqv v] represents the pointer of a [val]. The resulting pointer
+    is invalid if [v] is not a [ptr].
+
+    NOTE this does *not* do things like converting integers to pointers.
+ *)
+Definition _eqv (v : val) : ptr :=
+  match v with
+  | Vptr p => p
+  | _ => invalid_ptr
+  end.
+
 (** [_local ρ b] returns the [ptr] that stores the local variable [b].
  *)
 Definition _local (ρ : region) (b : ident) : ptr :=

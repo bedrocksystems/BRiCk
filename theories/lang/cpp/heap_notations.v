@@ -27,12 +27,6 @@ Section with_cpp.
   Canonical Structure Rep_AT : AT :=
     {| AT_at := heap_pred._offsetR (Σ:=Σ) |}.
 
-  Definition _eqv (v : val) : ptr :=
-    match v with
-    | Vptr p => p
-    | _ => invalid_ptr
-    end.
-
   Canonical Structure mpred_val_AT : AT :=
     {| AT_at v := heap_pred._at (Σ:=Σ) (_eqv v) |}.
 
