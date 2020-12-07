@@ -30,7 +30,7 @@ Module Type Init.
     Local Notation _global := (_global (resolve:=σ)) (only parsing).
     Local Notation _field := (_field (resolve:=σ)) (only parsing).
     Local Notation _sub := (_sub (resolve:=σ)) (only parsing).
-    Local Notation _super := (_super (resolve:=σ)) (only parsing).
+    Local Notation _base := (_base (resolve:=σ)) (only parsing).
     Local Notation primR := (primR (resolve:=σ)) (only parsing).
     Local Notation anyR := (anyR (resolve:=σ)) (only parsing).
     Local Notation offset_for := (offset_for σ) (only parsing).

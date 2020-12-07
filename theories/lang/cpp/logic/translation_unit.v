@@ -27,7 +27,7 @@ Section with_cpp.
   Local Notation ctor_at := (@ctor_at _ Σ) (only parsing).
   Local Notation dtor_at := (@dtor_at _ Σ) (only parsing).
   Local Notation _field := (@_field resolve) (only parsing).
-  Local Notation _super := (@_super resolve) (only parsing).
+  Local Notation _base := (@_base resolve) (only parsing).
   Local Notation _sub := (@_sub resolve) (only parsing).
 
   Definition denoteSymbol (n : obj_name) (o : ObjValue) : mpred :=
