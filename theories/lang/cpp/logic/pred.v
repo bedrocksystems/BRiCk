@@ -283,6 +283,11 @@ Module Type CPP_LOGIC (Import CC : CPP_LOGIC_CLASS)
         method_at_persistent method_at_affine method_at_timeless
         ctor_at_persistent ctor_at_affine ctor_at_timeless
         dtor_at_persistent dtor_at_affine dtor_at_timeless.
+
+      Axiom code_at_live   : forall f p,   code_at f p |-- ptr_live p.
+      Axiom method_at_live : forall f p, method_at f p |-- ptr_live p.
+      Axiom ctor_at_live   : forall f p,   ctor_at f p |-- ptr_live p.
+      Axiom dtor_at_live   : forall f p,   dtor_at f p |-- ptr_live p.
     End with_genv.
 
     Parameter encodes : forall {σ:genv} (t : type) (v : val) (vs : list runtime_val), mpred.

@@ -730,6 +730,10 @@ Module SimpleCPP.
     Instance dtor_at_affine : forall s f p, Affine (@dtor_at s f p) := _.
     Instance dtor_at_timeless : forall s f p, Timeless (@dtor_at s f p) := _.
 
+    Axiom code_at_live   : forall s f p,   @code_at s f p |-- ptr_live p.
+    Axiom method_at_live : forall s f p, @method_at s f p |-- ptr_live p.
+    Axiom ctor_at_live   : forall s f p,   @ctor_at s f p |-- ptr_live p.
+    Axiom dtor_at_live   : forall s f p,   @dtor_at s f p |-- ptr_live p.
     (** physical representation of pointers
      *)
     Definition pinned_ptr (va : N) (p : ptr) : mpred :=
