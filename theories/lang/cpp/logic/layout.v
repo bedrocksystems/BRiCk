@@ -30,7 +30,7 @@ End array.
 Section with_Σ.
   Context `{Σ : cpp_logic} {resolve:genv}.
 
-  Local Notation _super := (_super (resolve:=resolve)) (only parsing).
+  Local Notation _base := (_base (resolve:=resolve)) (only parsing).
   Local Notation _field := (_field (resolve:=resolve)) (only parsing).
   Local Notation _sub := (_sub (resolve:=resolve)) (only parsing).
   Local Notation anyR := (anyR (resolve:=resolve)) (only parsing).
@@ -96,7 +96,7 @@ Section with_Σ.
         anyR (Tnamed cls) 1
     -|- ([∗list] base ∈ st.(s_bases),
               let '(gn,_) := base in
-              _offsetR (_super cls gn) (anyR (Tnamed gn) 1)) **
+              _offsetR (_base cls gn) (anyR (Tnamed gn) 1)) **
            ([∗list] fld ∈ st.(s_fields),
               let '(n,ty,_,_) := fld in
               _offsetR (_field {| f_name := n ; f_type := cls |})
