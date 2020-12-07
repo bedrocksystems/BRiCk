@@ -19,7 +19,22 @@ Section with_Σ.
 
   (** * Pointer comparison operators *)
 
-  (* Need both ptr_live p1 and ptr_live p2 in general; they coincide for pointers into the same object. *)
+  (* Need both ptr_live p1 and ptr_live p2 in general; they coincide for pointers into the same object.
+   * This specification follows the C++ standard
+   * (https://eel.is/c++draft/expr.eq#3), Cerberus's pointer provenance
+   * semantics for C, and Krebbers's thesis.
+   *
+   * Crucially, all those semantics _allow_ (but do not _require_) compilers to
+   * assume that pointers to different objects compare different, even when
+   * they have the same address. Hence, comparing a past-the-end pointer to an
+   * object with a pointer to a different object gives unspecified results[1];
+   * we choose not to support this case.
+
+   * [1] https://eel.is/c++draft/expr.eq#3.1
+   > If one pointer represents the address of a complete object, and another
+     pointer represents the address one past the last element of a different
+     complete object, the result of the comparison is unspecified.
+   *)
   Definition eval_ptr_eq_cmp_op (bo : BinOp) (t f : Z) : Prop :=
     forall ty p1 p2 strict,
       strict = true \/ ptr_alloc_id p1 = ptr_alloc_id p2 ->
@@ -59,7 +74,11 @@ Section with_Σ.
     Unfold eval_ptr_ord_cmp_op (eval_ptr_ord_cmp_op Bgt (fun x y => y <? x)%N).
 
   (* For operations that aren't comparisons, we don't require liveness, unlike Krebbers.
-  We require validity of the result to prevent over/underflow. *)
+  We require validity of the result to prevent over/underflow.
+  (This is because we don't do pointer zapping, following Cerberus <insert citation>).
+  Supporting pointer zapping would require adding [ptr_live] preconditions to
+  these operators.
+  *)
 
   (* lhs + rhs: one of rhs or lhs is a pointer to completely-defined object type,
     the other has integral or unscoped enumeration type. In this case,
