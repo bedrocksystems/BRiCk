@@ -96,3 +96,15 @@ Definition unptr (t : type) : option type :=
   | _ => None
   end.
 
+(** [class_type t] returns the name of the class that this type refers to
+ *)
+Definition class_type (t : type) : option globname :=
+  match drop_qualifiers t with
+  | Tnamed gn => Some gn
+(*  | Tpointer t
+  | Treference t
+  | Trv_reference t => class_type t
+*)
+  | _ => None
+  end.
+

@@ -711,17 +711,6 @@ Module Type Expr.
          *)
         |-- wp_init ty addr (Emember_call (inl (f, Direct, fty)) vc obj es ty) Q.
 
-    (** TODO move this *)
-    Fixpoint class_type (t : type) : option globname :=
-      match t with
-      | Tnamed gn => Some gn
-      | Tpointer t
-      | Treference t
-      | Trv_reference t => class_type t
-      | Tqualified _ t => class_type t
-      | _ => None
-      end.
-
     (** virtual functions
         these are slightly more complex because we need to compute the address of the function
         using the most-derived-class of the [this] object. This is done using [resolve_virtual].
