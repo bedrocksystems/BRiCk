@@ -19,7 +19,8 @@ Section with_Σ.
 
   (** * Pointer comparison operators *)
 
-  (* Need both ptr_live p1 and ptr_live p2 in general; they coincide for pointers into the same object.
+  (** Skeleton for [Beq] and [Bneq] axioms on pointers.
+   * Need both ptr_live p1 and ptr_live p2 in general; they coincide for pointers into the same object.
    * This specification follows the C++ standard
    * (https://eel.is/c++draft/expr.eq#3), Cerberus's pointer provenance
    * semantics for C, and Krebbers's thesis.
@@ -35,7 +36,7 @@ Section with_Σ.
      pointer represents the address one past the last element of a different
      complete object, the result of the comparison is unspecified.
    *)
-  Definition eval_ptr_eq_cmp_op (bo : BinOp) (t f : Z) : Prop :=
+  Let eval_ptr_eq_cmp_op (bo : BinOp) (t f : Z) : Prop :=
     forall ty p1 p2 strict,
       strict = true \/ ptr_alloc_id p1 = ptr_alloc_id p2 ->
       ptr_live p1 ∧ ptr_live p2 ∧ _valid_ptr strict p1 ∧ _valid_ptr strict p2 ⊢
@@ -52,7 +53,8 @@ Section with_Σ.
     λ mx my,
       x ← mx; y ← my; mret (f x y).
 
-  Definition eval_ptr_ord_cmp_op (bo : BinOp) (f : vaddr -> vaddr -> bool) : Prop :=
+  (** Skeleton for [Ble, Blt, Bge, Bgt] axioms on pointers. *)
+  Let eval_ptr_ord_cmp_op (bo : BinOp) (f : vaddr -> vaddr -> bool) : Prop :=
     forall ty p1 p2 aid res,
       ptr_alloc_id p1 = Some aid ->
       ptr_alloc_id p2 = Some aid ->
@@ -80,20 +82,18 @@ Section with_Σ.
   these operators.
   *)
 
-  (* lhs + rhs: one of rhs or lhs is a pointer to completely-defined object type,
-    the other has integral or unscoped enumeration type. In this case,
-    the result type has the type of the pointer. (lhs has a pointer type) *)
+  (** Skeletons for ptr/int operators. *)
 
-  Definition eval_ptr_int_op (bo : BinOp) (f : Z -> Z) : Prop :=
+  Let eval_ptr_int_op (bo : BinOp) (f : Z -> Z) : Prop :=
     forall resolve t w s p1 p2 o ty,
       is_Some (size_of resolve t) ->
       (p2 = p1 .., o_sub resolve ty (f o))%ptr ->
       valid_ptr p1 ∧ valid_ptr p2 ⊢
       eval_binop bo
                 (Tpointer t) (Tint w s) (Tpointer t)
-                (Vptr p1)     (Vint o)  (Vptr p2).
+                (Vptr p1)    (Vint o)  (Vptr p2).
 
-  Definition eval_int_ptr_op (bo : BinOp) (f : Z -> Z) : Prop :=
+  Let eval_int_ptr_op (bo : BinOp) (f : Z -> Z) : Prop :=
     forall resolve t w s p1 p2 o ty,
       is_Some (size_of resolve t) ->
       (p2 = p1 .., o_sub resolve ty (f o))%ptr ->
