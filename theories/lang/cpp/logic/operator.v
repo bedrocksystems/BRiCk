@@ -24,10 +24,9 @@ Section with_Σ.
     forall ty p1 p2 strict,
       strict = true \/ ptr_alloc_id p1 = ptr_alloc_id p2 ->
       ptr_live p1 ∧ ptr_live p2 ∧ _valid_ptr strict p1 ∧ _valid_ptr strict p2 ⊢
-      (ptr_live p1 ∧ ptr_live p2) ∗
       eval_binop bo
         (Tpointer ty) (Tpointer ty) Tbool
-        (Vptr p1) (Vptr p2) (Vint (if decide (same_address p1 p2) then t else f)) .
+        (Vptr p1) (Vptr p2) (Vint (if decide (same_address p1 p2) then t else f)) ∗ True.
 
   Axiom eval_ptr_eq :
     Unfold eval_ptr_eq_cmp_op (eval_ptr_eq_cmp_op Beq 1 0).
@@ -46,10 +45,9 @@ Section with_Σ.
       (* we could ask [ptr_live p1] or [ptr_live p2], but those are
       equivalent, so we make the statement obviously symmetric. *)
       alloc_id_live aid ⊢
-      alloc_id_live aid ∗
       eval_binop bo
         (Tpointer ty) (Tpointer ty) Tbool
-        (Vptr p1) (Vptr p2) (Vbool res).
+        (Vptr p1) (Vptr p2) (Vbool res) ∗ True.
 
   Axiom eval_ptr_le :
     Unfold eval_ptr_ord_cmp_op (eval_ptr_ord_cmp_op Ble N.leb).
