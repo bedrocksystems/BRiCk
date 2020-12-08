@@ -36,10 +36,14 @@ Section with_Σ.
      pointer represents the address one past the last element of a different
      complete object, the result of the comparison is unspecified.
    *)
+  Definition non_beginning_ptr p' : mpred :=
+    ∃ p o, [| p' = p .., o /\ ~same_address p p' |]%ptr ∧ valid_ptr p.
+
+  Let comparable strict1 p2 : mpred := [| strict1 = true \/ p2 = nullptr |] ∨ non_beginning_ptr p2.
   Let eval_ptr_eq_cmp_op (bo : BinOp) (t f : Z) : Prop :=
-    forall ty p1 p2 strict,
-      strict = true \/ ptr_alloc_id p1 = ptr_alloc_id p2 ->
-      ptr_live p1 ∧ ptr_live p2 ∧ _valid_ptr strict p1 ∧ _valid_ptr strict p2 ⊢
+    forall ty p1 p2 strict1 strict2,
+      ([| same_alloc p1 p2 |] ∨ comparable strict1 p2 ∧ comparable strict2 p1) ∧
+      _valid_ptr strict1 p1 ∧ _valid_ptr strict2 p2 ∧ ptr_live p1 ∧ ptr_live p2 ⊢
       eval_binop bo
         (Tpointer ty) (Tpointer ty) Tbool
         (Vptr p1) (Vptr p2) (Vint (if decide (same_address p1 p2) then t else f)) ∗ True.
