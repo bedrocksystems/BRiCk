@@ -216,6 +216,11 @@ Module Type PTRS_MIXIN (Import L : PTRS).
   Definition same_address : ptr -> ptr -> Prop := same_property ptr_vaddr.
   Global Instance same_address_dec : RelDecision same_address := _.
   Definition pinned_ptr_pure (va : vaddr) (p : ptr) := ptr_vaddr p = Some va.
+  Lemma pinned_ptr_pure_unique va1 va2 p :
+    pinned_ptr_pure va1 p -> pinned_ptr_pure va2 p -> va1 = va2.
+  Proof.
+    rewrite /pinned_ptr_pure => H1 H2. apply (inj Some). by rewrite -H1 -H2.
+  Qed.
 
   Lemma same_address_pinned p1 p2 :
     same_address p1 p2 <-> ∃ va, pinned_ptr_pure va p1 ∧ pinned_ptr_pure va p2.

@@ -230,7 +230,11 @@ Module SimpleCPP.
       valid_ptr p |-- [| is_Some (ptr_alloc_id p) |].
     (** This is a very simplistic definition of [provides_storage].
     A more useful definition should probably not be persistent. *)
-    Definition provides_storage (base newp : ptr) (_ : type) : mpred := [| base = newp |].
+    Definition provides_storage (base newp : ptr) (_ : type) : mpred :=
+      [| same_address base newp |].
+    Lemma provides_storage_same_address base newp ty :
+      provides_storage base newp ty |-- [| same_address base newp |].
+    Proof. done. Qed.
 
     Section with_genv.
       Variable σ : genv.
@@ -737,19 +741,22 @@ Module SimpleCPP.
     (** physical representation of pointers
      *)
     Definition pinned_ptr (va : N) (p : ptr) : mpred :=
-      _valid_ptr false p **
+      valid_ptr p **
       ([| p = nullptr /\ va = 0%N |] \\//
-      ([| p <> nullptr |] ** mem_inj_own p (Some va))).
+      ([| p <> nullptr /\ ptr_vaddr p = Some va |] ** mem_inj_own p (Some va))).
 
     Instance pinned_ptr_persistent va p : Persistent (pinned_ptr va p) := _.
     Instance pinned_ptr_affine va p : Affine (pinned_ptr va p) := _.
     Instance pinned_ptr_timeless va p : Timeless (pinned_ptr va p) := _.
+    (* Currently false, while we fix the model. *)
+    Axiom pinned_ptr_eq : forall va p,
+      pinned_ptr va p -|- [| pinned_ptr_pure va p |] ** valid_ptr p.
     Instance pinned_ptr_unique va va' p :
       Observe2 [| va = va' |] (pinned_ptr va p) (pinned_ptr va' p).
     Proof.
       apply: observe_2_intro_persistent.
       iIntros "A B".
-      iDestruct "A" as "[_ [[->->] | [% A]]]"; iDestruct "B" as "[_ [[%->] | [% B]]]" => //.
+      iDestruct "A" as "[_ [[->->] | [[%%] A]]]"; iDestruct "B" as "[_ [[%->] | [[%%] B]]]" => //.
       by iDestruct (observe_2_elim_pure (Some va = Some va') with "A B") as %[= ->].
     Qed.
 
@@ -769,7 +776,8 @@ Module SimpleCPP.
                               |={M}=> @tptsto σ ty 1 p v').
     Proof.
       intros. iIntros "(TP & PI)".
-      iDestruct "PI" as "[_ [[-> %]|[% MJ]]]"; first by rewrite tptsto_nonnull.
+      iDestruct "PI" as "[_ [[-> %]|[[%%] MJ]]]"; first by rewrite tptsto_nonnull.
+      rewrite /tptsto.
       iDestruct "TP" as (_ ma) "[MJ' [VP TP]]".
       iDestruct (mem_inj_own_agree with "MJ MJ'") as %<-.
       iDestruct "TP" as (vs) "(#EN & Bys & VBys)".
@@ -785,7 +793,10 @@ Module SimpleCPP.
 
     Theorem provides_storage_pinned_ptr : forall res newp aty va,
        provides_storage res newp aty ** pinned_ptr va res |-- pinned_ptr va newp.
-    Proof. iIntros (????) "[-> $]". Qed.
+    Proof.
+      rewrite /provides_storage /pinned_ptr.
+      iIntros (????) "[%Hsame ?]".
+    Admitted.
 
     (* XXX: with this definition, we cannot prove all pointers have alignment 1. Again, fix by replacing
     mem_inj_own with a pure function of pointers (returning [option vaddr]). *)
@@ -808,7 +819,7 @@ Module SimpleCPP.
       aligned_ptr n p ∗-∗ [| (n | va)%N |].
     Proof.
       rewrite /pinned_ptr /aligned_ptr /=.
-      iDestruct 1 as "[_ [[-> ->]|[% MO1]]]". {
+      iDestruct 1 as "[_ [[-> ->]|[[%%] MO1]]]". {
         iSplit; last by iIntros; iLeft.
         by iIntros "_ !%"; exact: N.divide_0_r.
       }

@@ -323,6 +323,8 @@ Module Type CPP_LOGIC (Import CC : CPP_LOGIC_CLASS)
     Axiom pinned_ptr_persistent : forall va p, Persistent (pinned_ptr va p).
     Axiom pinned_ptr_affine : forall va p, Affine (pinned_ptr va p).
     Axiom pinned_ptr_timeless : forall va p, Timeless (pinned_ptr va p).
+    Axiom pinned_ptr_eq : forall va p,
+      pinned_ptr va p -|- [| pinned_ptr_pure va p |] ** valid_ptr p.
     Axiom pinned_ptr_unique : forall va va' p,
         Observe2 [| va = va' |] (pinned_ptr va p) (pinned_ptr va' p).
     Global Existing Instance pinned_ptr_unique.
@@ -332,7 +334,7 @@ Module Type CPP_LOGIC (Import CC : CPP_LOGIC_CLASS)
     Axiom pinned_ptr_borrow : forall {σ} ty p v va (M: coPset),
       @tptsto σ ty 1 p v ** pinned_ptr va p |--
         |={M}=> Exists vs, @encodes σ ty v vs ** vbytes va vs 1 **
-                (Forall v' vs', @encodes  σ ty v' vs' -* vbytes va vs' 1 -*
+                (Forall v' vs', @encodes σ ty v' vs' -* vbytes va vs' 1 -*
                                 |={M}=> @tptsto σ ty 1 p v').
 
     Axiom offset_pinned_ptr : forall resolve o n va p,
@@ -340,6 +342,8 @@ Module Type CPP_LOGIC (Import CC : CPP_LOGIC_CLASS)
       valid_ptr (p .., o) |--
       pinned_ptr va p -* pinned_ptr (Z.to_N (Z.of_N va + n)) (p .., o).
 
+    Axiom provides_storage_same_address : forall base newp ty,
+      provides_storage base newp ty |-- [| same_address base newp |].
     Axiom provides_storage_pinned_ptr : forall res newp aty va,
        provides_storage res newp aty ** pinned_ptr va res |-- pinned_ptr va newp.
 
