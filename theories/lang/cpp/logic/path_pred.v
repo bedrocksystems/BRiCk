@@ -411,8 +411,9 @@ Arguments _base {_ Σ} {resolve} _ _ : rename.
 Arguments _derived {_ Σ} {resolve} _ _ : rename.
 Arguments _field {_ Σ} {resolve} _ : rename.
 Arguments _sub {_ Σ} {resolve} _ : rename.
-Arguments _global {_ Σ} {resolve} _ : rename.
- *)
+*)
+Arguments _global {resolve} _ : rename.
+
 
 #[deprecated(since="2020-12-03",note="use _base instead")]
 Notation _super := _base (only parsing).
