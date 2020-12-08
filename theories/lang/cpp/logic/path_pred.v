@@ -8,12 +8,12 @@ Require Import bedrock.lang.prelude.base.
 Require Import iris.proofmode.tactics.
 From bedrock.lang.cpp Require Import semantics logic.pred ast.
 
-(*
 Notation Loc := ptr (only parsing).
 
 Section with_Σ.
   Context `{has_cpp : cpp_logic}.
 
+  (*
   (* locations represent C++ computations that produce an address.
    *)
   Definition Loc : Type := ptr.
@@ -38,6 +38,7 @@ Section with_Σ.
     Observe (valid_ptr p) (_location loc p).
   Proof. apply: observe_intro_persistent. apply _loc_valid. Qed.
  *)
+ *)
 
   Global Instance Loc_Equiv : Equiv Loc := @eq ptr.
 
@@ -51,10 +52,9 @@ Section with_Σ.
   Proof. intros l1 l2 HL p1 p2 ->. by rewrite HL. Qed.
   Global Instance _location_flip_mono : Proper ((≡) ==> eq ==> flip (⊢)) _location.
   Proof. intros l1 l2 HL p1 p2 ->. by rewrite -HL. Qed.
-
+   *)
   (* [mpred] implication between [Loc] *)
-  Definition Loc_impl (l1 l2 : Loc) : mpred :=
-    □ (Forall p, l1.(_location) p -* l2.(_location) p).
+  Definition Loc_impl (l1 l2 : Loc) : mpred := [! l1 = l2 !].
 
   Global Instance Loc_impl_proper : Proper ((≡) ==> (≡) ==> (≡)) Loc_impl.
   Proof. solve_proper. Qed.
@@ -66,8 +66,7 @@ Section with_Σ.
   Proof. apply _. Qed.
 
   (* [mpred] equivalence of [Loc] *)
-  Definition Loc_equiv (l1 l2 : Loc) : mpred :=
-    □ (Forall l, (l1.(_location) l ∗-∗ l2.(_location) l)).
+  Definition Loc_equiv (l1 l2 : Loc) : mpred := [! l1 = l2 !].
 
   Global Instance Loc_equiv_proper : Proper ((≡) ==> (≡) ==> (≡)) Loc_equiv.
   Proof. solve_proper. Qed.
@@ -82,30 +81,25 @@ Section with_Σ.
     Loc_equiv l1 l2 -|- Loc_impl l1 l2 ** Loc_impl l2 l1.
   Proof.
     iSplit.
-    - iIntros "#EQ".
-      iSplit; iIntros "!>"; iIntros (p) "Hp"; iApply ("EQ" with "Hp").
-    - iIntros "#[H1 H2] !>". iIntros (p).
-      iSplit; iIntros "Hp"; [by iApply "H1"|by iApply "H2"].
+    - iIntros "%". subst. by iSplit.
+    - iIntros "[% _]"; eauto.
   Qed.
 
   Lemma Loc_equiv_refl l : |-- Loc_equiv l l.
-  Proof. iIntros "!>" (p). by iApply bi.wand_iff_refl. Qed.
+  Proof. by eauto. Qed.
   Lemma Loc_equiv_sym l1 l2 : Loc_equiv l1 l2 |-- Loc_equiv l2 l1.
-  Proof.
-    iIntros "#H !>". iIntros (p).
-    iSplit; iIntros "Hp"; iApply ("H" with "Hp").
-  Qed.
+  Proof. by eauto. Qed.
   Lemma Loc_equiv_trans l1 l2 l3 :
     Loc_equiv l1 l2 |-- Loc_equiv l2 l3 -* Loc_equiv l1 l3.
   Proof.
-    iIntros "#H1 #H2 !>" (p). iSplit.
-    - iIntros "L1". iApply "H2". by iApply "H1".
-    - iIntros "L3". iApply "H1". by iApply "H2".
+    rewrite Loc_equiv_impl; iIntros "[% %] %". subst; eauto.
   Qed.
- *)
 
   (** absolute locations *)
   #[local] Notation invalid := invalid_ptr.
+
+  #[deprecated(since="2020-12-07",note="no longer needed")]
+  Notation _eq := (@id ptr) (only parsing).
   (*
   Definition _eq_def (p : ptr) : Loc.
   refine
@@ -118,6 +112,11 @@ Section with_Σ.
   Definition _eq_eq : @_eq = _ := _eq_aux.(seal_eq).
    *)
 
+  (** [_eqv v] represents the pointer of a [val]. The resulting pointer
+      is invalid if [v] is not a [ptr].
+
+      NOTE this does *not* do things like converting integers to pointers.
+   *)
   Definition _eqv (a : val) : Loc :=
     match a with
     | Vptr p => p
@@ -127,19 +126,15 @@ Section with_Σ.
   Lemma _eqv_eq : forall p, _eqv (Vptr p) = p.
   Proof. reflexivity. Qed.
 
-  Search ptr.
-
   Definition _global_def (resolve : genv) (x : obj_name) : Loc :=
     global_ptr resolve.(genv_tu) x.
   Definition _global_aux : seal (@_global_def). Proof. by eexists. Qed.
   Definition _global := _global_aux.(unseal).
   Definition _global_eq : @_global = _ := _global_aux.(seal_eq).
 
-  
 
   (** [addr_of]: [addr_of l p] says that pointer [p] "matches" location [l]. *)
-  Definition addr_of_def (a : Loc) (b : ptr) : mpred :=
-    [| a = b |].
+  Definition addr_of_def (a : Loc) (b : ptr) : mpred := [| a = b |].
   Definition addr_of_aux : seal (@addr_of_def). Proof. by eexists. Qed.
   Definition addr_of := addr_of_aux.(unseal).
   Definition addr_of_eq : @addr_of = _ := addr_of_aux.(seal_eq).
@@ -162,22 +157,17 @@ Section with_Σ.
 
   Global Instance addr_of_observe_precise loc a1 a2 :
     Observe2 [| a1 = a2 |] (addr_of loc a1) (addr_of loc a2).
-  Proof. rewrite !addr_of_eq/addr_of_def. red. iIntros "-> %"; iModIntro. iFrame "%". Qed.
+  Proof. rewrite !addr_of_eq/addr_of_def. iIntros "-> %"; iModIntro; iFrame "%". Qed.
 
   Lemma addr_of_precise : forall a b c,
       addr_of a b ** addr_of a c |-- [| b = c |].
   Proof. intros. iIntros "[A B]". iApply (observe_2 with "A B"). Qed.
 
-  (*
   Global Instance addr_of_observe_Loc_eq loc p :
     Observe (Loc_equiv loc (_eq p)) (loc &~ p).
   Proof.
-    rewrite /Loc_equiv addr_of_eq /addr_of_def _eq_eq /_eq_def /=.
-    iIntros "#L !> !>" (p'). iSplit.
-    - iIntros "#L'". iSplit.
-      + iApply (observe_2 with "L L'").
-      + iApply (observe with "L'").
-    - iIntros "[<- _]". iFrame "L".
+    rewrite /Loc_equiv addr_of_eq /addr_of_def.
+    iIntros "%"; eauto.
   Qed.
 
   Lemma addr_of_Loc_eq : forall l p, l &~ p |-- Loc_equiv l (_eq p).
@@ -191,7 +181,6 @@ Section with_Σ.
 
   Lemma addr_of_Loc_impl : forall l p, l &~ p |-- Loc_impl l (_eq p).
   Proof. intros. iIntros "L". iApply (observe with "L"). Qed.
-   *)
 
   (** [valid_loc]
       - same as [addr_of] except that it hides the existential quantifier
@@ -204,35 +193,33 @@ Section with_Σ.
   Definition valid_loc_eq : valid_loc = @valid_loc_def := valid_loc_aux.(seal_eq).
    *)
 
-  (*
   Global Instance valid_loc_proper : Proper ((≡) ==> (≡)) valid_loc.
-  Proof. rewrite valid_loc_eq. solve_proper. Qed.
+  Proof. solve_proper. Qed.
   Global Instance valid_loc_mono : Proper ((≡) ==> (⊢)) valid_loc.
-  Proof. rewrite valid_loc_eq. solve_proper. Qed.
+  Proof. solve_proper. Qed.
   Global Instance valid_loc_flip_mono : Proper ((≡) ==> flip (⊢)) valid_loc.
-  Proof.
-    rewrite valid_loc_eq /valid_loc_def=>l1 l2 HL/=. by setoid_rewrite HL.
-  Qed.
+  Proof. move =>l1 l2 HL/=. by destruct HL. Qed.
 
   Global Instance valid_loc_persistent : Persistent (valid_loc l).
-  Proof. rewrite valid_loc_eq. apply _. Qed.
+  Proof. apply _. Qed.
   Global Instance valid_loc_affine : Affine (valid_loc l).
-  Proof. rewrite valid_loc_eq. apply _. Qed.
+  Proof. apply _. Qed.
   Global Instance valid_loc_timeless : Timeless (valid_loc l).
-  Proof. rewrite valid_loc_eq. apply _. Qed.
+  Proof. apply _. Qed.
 
+  (*
   Lemma valid_loc_rew l l' : l ≡ l' |-- valid_loc l -* valid_loc l'.
   Proof.
     rewrite valid_loc_eq /valid_loc_def addr_of_eq /addr_of_def /Loc_equiv.
     iIntros "#A". iDestruct 1 as (p) "L"; iExists p. by iApply "A".
   Qed.
-
-  Lemma addr_of_loc_rew l1 l2 p : Loc_equiv l1 l2 |-- l1 &~ p -* l2 &~ p.
+  *)
+ Lemma addr_of_loc_rew l1 l2 p : Loc_equiv l1 l2 |-- l1 &~ p -* l2 &~ p.
   Proof.
     rewrite addr_of_eq /addr_of_def.
-    iIntros "A B". by iApply "A".
+    iIntros "-> $".
   Qed.
-   *)
+
 
   (** offsets *)
   Notation Offset := offset (only parsing).
@@ -268,6 +255,14 @@ Section with_Σ.
 *)
 End with_Σ.
 
+#[deprecated(since="2020-12-08",note="use 'offset'")]
+Notation Offset := offset (only parsing).
+#[deprecated(since="2020-12-07",note="no longer needed")]
+ Notation _eq := (@id ptr) (only parsing).
+#[deprecated(since="2020-12-07",note="no longer needed, use equality on ptr")]
+Notation "a &~ b" := (addr_of a b) (at level 30, no associativity).
+
+ 
 (*
 Program Definition _offsetO `{has_cpp : cpp_logic} (o : Z) : Offset :=
   {| _offset from to := [| to = offset_ptr_ o from |] ** valid_ptr to |}.
@@ -279,9 +274,19 @@ note="Use higher-level APIs, or _sub on arrays of unsigned char.")]
 Notation offsetO := _offsetO.
  *)
 
+Notation _id := o_id (only parsing).
+Notation _dot := (o_dot) (only parsing).
+Notation _field := (@o_field _) (only parsing).
+Notation _sub := (@o_sub _) (only parsing).
+Notation _base := (@o_base _) (only parsing).
+Notation _derived := (@o_derived _) (only parsing).
+#[deprecated(since="2020-12-08",note="use heap notations")]
+Notation _offsetL := (flip _offset_ptr) (only parsing).
+
 Section with_Σ.
   Context `{has_cpp : cpp_logic}.
 
+(*
   (* TODO easy to switch next? *)
   (** the identity [Offset] *)
   Notation _id := o_id (only parsing).
@@ -371,100 +376,46 @@ Section with_Σ.
   Definition _offsetL_aux : seal (@_offsetL_def). Proof. by eexists. Qed.
   Definition _offsetL := _offsetL_aux.(unseal).
   Definition _offsetL_eq : @_offsetL = _ := _offsetL_aux.(seal_eq).
+ *)
 
   Global Instance _offsetL_proper : Proper ((≡) ==> (≡) ==> (≡)) _offsetL.
   Proof. refine _. Qed.
 
   Lemma _offsetL_dot : forall (o1 o2 : offset) (l : Loc),
       _offsetL o2 (_offsetL o1 l) == _offsetL (_dot o1 o2) l.
-  Proof. (*
-    rewrite /equiv /Loc_Equiv _offsetL_eq _dot_eq. simpl.
-    split'.
-    { iIntros "X". iDestruct "X" as (from) "[X Y]".
-      iDestruct "Y" as (from0) "[Y Z]".
-      iExists from0. iFrame. iExists _. iFrame. }
-    { iIntros "X". iDestruct "X" as (from) "[X Y]".
-      iDestruct "X" as (from0) "[X Z]".
-      iExists _. iFrame. iExists _. iFrame. }
+  Proof.
+    intros; by rewrite /flip offset_ptr_dot.
   Qed.
-          *)
-  Admitted.
 
+  #[deprecated(since="2020-12-08",note="use 'assoc'")]
   Lemma _dot_dot : forall (o1 o2 l: offset),
       _dot o2 (_dot o1 l) == _dot (_dot o2 o1) l.
   Proof.
-(*
-    rewrite /equiv /Offset_Equiv _dot_eq. simpl.
-    split'.
-    { iIntros "X". iDestruct "X" as (from) "[X Y]".
-      iDestruct "Y" as (from0) "[Y Z]".
-      iExists from0. iFrame. iExists _. iFrame. }
-    { iIntros "X". iDestruct "X" as (from) "[X Y]".
-      iDestruct "X" as (from0) "[X Z]".
-      iExists _. iFrame. iExists _. iFrame. }
+    intros; by rewrite assoc.
   Qed.
- *)
-  Admitted.
 
   Lemma _offsetL_Loc_impl : forall l1 l2 o,
       Loc_equiv l1 l2 |-- Loc_equiv (_offsetL o l1) (_offsetL o l2).
   Proof.
-    intros. rewrite /Loc_equiv _offsetL_eq /_offsetL_def /=.
-    iIntros "#A"; iModIntro. iIntros (p); iSplit.
-    - iIntros "X". iDestruct "X" as (p') "[X #Y]".
-      iExists p'. iFrame. iApply "A"; iAssumption.
-    - iIntros "X". iDestruct "X" as (p') "[X #Y]".
-      iExists p'. iFrame. iApply "A"; iAssumption.
+    intros. rewrite /Loc_equiv /=.
+    iIntros "->"; eauto.
   Qed.
-
-
-  (* this is for `Indirect` field references *)
-  Fixpoint path_to_Offset (resolve:genv) (from : globname) (final : ident)
-           (ls : list (ident * globname))
-    : Offset :=
-    match ls with
-    | nil => @_field resolve {| f_type := from ; f_name := final |}
-    | cons (i,c) ls =>
-      _dot (@_field resolve {| f_type := from ; f_name := i |}) (path_to_Offset resolve c final ls)
-    end.
-
-  Definition offset_for (resolve:genv) (cls : globname) (f : FieldOrBase) : Offset :=
-    match f with
-    | Base parent => _base resolve cls parent
-    | Field i => _field resolve {| f_type := cls ; f_name := i |}
-    | Indirect ls final =>
-      path_to_Offset resolve cls final ls
-    | This => _id
-    end.
 
 End with_Σ.
 
 Arguments addr_of : simpl never.
 Notation "a &~ b" := (addr_of a b) (at level 30, no associativity).
 
-Global Opaque _sub _field _offsetL _dot addr_of.
-
+(*
 Arguments _base {_ Σ} {resolve} _ _ : rename.
 Arguments _derived {_ Σ} {resolve} _ _ : rename.
 Arguments _field {_ Σ} {resolve} _ : rename.
 Arguments _sub {_ Σ} {resolve} _ : rename.
 Arguments _global {_ Σ} {resolve} _ : rename.
+ *)
 
 #[deprecated(since="2020-12-03",note="use _base instead")]
 Notation _super := _base (only parsing).
-
- *)
-
-(** [_eqv v] represents the pointer of a [val]. The resulting pointer
-    is invalid if [v] is not a [ptr].
-
-    NOTE this does *not* do things like converting integers to pointers.
- *)
-Definition _eqv (v : val) : ptr :=
-  match v with
-  | Vptr p => p
-  | _ => invalid_ptr
-  end.
 
 (** [_local ρ b] returns the [ptr] that stores the local variable [b].
  *)
@@ -519,5 +470,5 @@ Definition offset_for (resolve:genv) (cls : globname) (f : FieldOrBase) : offset
   | This => o_id
   end.
 
-#[deprecated(since="2020-12-07",note="no longer needed")]
-Notation _eq := id (only parsing).
+#[deprecated(since="2020-12-07",note="use 'valid_ptr' instead")]
+Notation valid_loc := valid_ptr (only parsing).
