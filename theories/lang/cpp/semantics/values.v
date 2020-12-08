@@ -117,8 +117,6 @@ Module Type PTRS.
   Notation "p .., o" := (_offset_ptr p o) : ptr_scope.
   Notation "o1 .., o2" := (o_dot o1 o2) : offset_scope.
 
-  (* Axiom offset_ptr_proper : Proper ((≡) ==> (≡) ==> (≡)) _offset_ptr. *)
-  (* Global Existing Instances offset_ptr_proper. *)
   Axiom offset_ptr_dot : forall p o1 o2,
     (p .., (o1 .., o2) = p .., o1 .., o2)%ptr.
 
@@ -170,21 +168,13 @@ Module Type PTRS.
   (** * Deprecated APIs *)
   (** Offset a pointer by a certain number of bytes. *)
   Parameter offset_ptr__ : Z -> ptr -> ptr.
-  (* #[deprecated(since="2020-11-17", note="Use structured offsets instead.")] *)
+  #[deprecated(since="2020-12-08", note="Use structured offsets instead.")]
   Notation offset_ptr_ := offset_ptr__.
 
   Axiom offset_ptr_0__ : forall b,
     offset_ptr_ 0 b = b.
-  (* #[deprecated(since="X", note="XXX")] *)
+  #[deprecated(since="2020-12-08", note="Use structured offsets instead.")]
   Notation offset_ptr_0_ := offset_ptr_0__.
-
-  (* This axiom should be deprecated. *)
-  Axiom offset_ptr_combine : forall p o o',
-    (* TODO: this premise is necessary, but breaks clients. *)
-    offset_ptr_ o p <> invalid_ptr ->
-    offset_ptr_ o' (offset_ptr_ o p) = offset_ptr_ (o + o') p.
-  (* #[deprecated(since="X", note="XXX")] *)
-  (* Notation offset_ptr_combine_ := offset_ptr_combine__. *)
 
   Parameter ptr_alloc_id : ptr -> option alloc_id.
   Parameter ptr_vaddr : ptr -> option vaddr.
@@ -236,11 +226,6 @@ Module Type PTRS_MIXIN (Import L : PTRS).
   Proof. case: (Hs) => ??. eexists. rewrite -(ptr_alloc_id_offset Hs) //. Qed.
 End PTRS_MIXIN.
 
-(* XXX drop *)
-(* Module Type PTRS_ALLOC_AXIOMS (Import P : PTRS) (Import PM : PTRS_MIXIN P).
-
-End PTRS_ALLOC_AXIOMS. *)
-
 Module Type VAL_MIXIN (Import L : PTRS) (Import R : RAW_BYTES).
 
 (** * values
@@ -274,12 +259,13 @@ Export PTRS_FULL_AXIOM.
 (* Unsound! TODO: this axiom is unsound; if [o + o' = 0],
 but [offset_ptr_ o p] overflows into an invalid pointer, then
 [offset_ptr_ o' (offset_ptr_ o p)] is invalid as well.
-The fixed version is [offset_ptr_combine] above.
 
 But since [offset_ptr_ ] should be deprecated anyway, we defer removing it,
 to update clients only once.
 *)
 Axiom offset_ptr_combine__ : forall p o o',
+  (* TODO: this premise is necessary, but breaks clients. *)
+  (* offset_ptr_ o p <> invalid_ptr -> *)
   offset_ptr_ o' (offset_ptr_ o p) = offset_ptr_ (o + o') p.
 #[deprecated(since="2020-11-25",
 note="Use higher-level APIs or o_sub_sub.")]
