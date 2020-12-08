@@ -544,12 +544,14 @@ Arguments Z.pow_pos _ _ : simpl never.
 Definition glob_addr (σ : genv) (o : obj_name) : option ptr :=
   (fun _ => global_ptr σ.(genv_tu) o) <$> σ.(genv_tu) !! o.
 
-(* Clients are not SUPPOSED to look at these APIs, and ideally we can drop them. *)
 Module Type PTR_INTERNAL (Import P : PTRS).
+  (* Useful *)
   Parameter eval_offset : genv -> offset -> option Z.
 
-  (* Presumably false? *)
+  (* Clients are not SUPPOSED to look at these APIs; they're only meant for
+  transition, and ideally we can drop them. *)
   Axiom _offset_ptr_eq : forall tu p o,
+    is_Some (eval_offset tu o) ->
     Some (p .., o)%ptr = flip offset_ptr_ p <$> eval_offset tu o.
 
   (* NOTE: the multiplication is flipped from path_pred. *)
@@ -562,7 +564,7 @@ Module Type PTR_INTERNAL (Import P : PTRS).
     (p .., o_sub resolve ty i)%ptr = offset_ptr_ (i * Z.of_N n) p.
   Proof.
     apply (inj Some).
-    by rewrite (_offset_ptr_eq resolve) eval_o_sub Hsz.
+    by rewrite (_offset_ptr_eq resolve) eval_o_sub Hsz; eauto.
   Qed.
 
   #[deprecated(since="2020-11-29", note="Use higher-level APIs and avoid
