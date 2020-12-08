@@ -71,6 +71,8 @@ Section with_Σ.
       ptr_alloc_id p1 = Some aid ->
       ptr_alloc_id p2 = Some aid ->
       liftM2 f (ptr_vaddr p1) (ptr_vaddr p2) = Some res ->
+
+      valid_ptr p1 ∧ valid_ptr p2 ∧
       (* we could ask [live_ptr p1] or [live_ptr p2], but those are
       equivalent, so we make the statement obviously symmetric. *)
       live_alloc_id aid ⊢
