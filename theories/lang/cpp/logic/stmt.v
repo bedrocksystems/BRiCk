@@ -63,7 +63,7 @@ Module Type Stmt.
                 *)
                wp_init ρ (erase_qualifiers (type_of e)) (_result ρ) (not_mine e) (Q.(k_return) (Some (Vptr $ _result ρ)))
              else
-               wp_lval ρ e (fun v => Q.(k_return) (Some (Vptr v)))
+               wp_prval ρ e (fun v => Q.(k_return) (Some v))
            | Lvalue =>
              wp_lval ρ e (fun v => Q.(k_return) (Some (Vptr v)))
            | Xvalue =>
