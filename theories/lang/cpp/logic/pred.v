@@ -229,6 +229,9 @@ Module Type CPP_LOGIC (Import CC : CPP_LOGIC_CLASS)
     Axiom valid_ptr_alloc_id : forall p,
       valid_ptr p |-- [| is_Some (ptr_alloc_id p) |].
 
+    (** This pointer is from a live allocation; this does not imply
+    [_valid_ptr], because even overflowing offsets preserve the allocation ID.
+    *)
     Definition live_ptr (p : ptr) :=
       default False%I (live_alloc_id <$> ptr_alloc_id p).
 
@@ -473,6 +476,15 @@ Declare Module Export VALID_PTR : VALID_PTR_AXIOMS.
 
 Section with_cpp.
   Context `{Σ : cpp_logic}.
+
+  (** [p] is live and valid in our sense; just a convenience wrapper.
+  In particular, [p] is a valid pointer value in the sense of the standard,
+  even when accounting for pointer zapping.
+  *)
+  Definition _valid_live_ptr (strict : bool) (p : ptr) : mpred :=
+    _valid_ptr strict p ∗ live_ptr p.
+  Definition valid_live_ptr p : mpred := _valid_ptr false p.
+  Definition strict_valid_live_ptr p : mpred := _valid_ptr true p.
 
   Global Instance tptsto_flip_mono :
     Proper (flip genv_leq ==> eq ==> eq ==> eq ==> eq ==> flip (⊢))
