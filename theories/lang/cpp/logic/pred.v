@@ -110,7 +110,6 @@ Module Type CPP_LOGIC (Import CC : CPP_LOGIC_CLASS)
   Section with_cpp.
     Context `{Σ : cpp_logic}.
 
-    (* valid pointers allow for accessing one past the end of a structure/array *)
     (**
       [_valid_ptr strict p] is a persistent assertion that [p] is a _valid pointer_, that is:
       - [p] can be [nullptr]
@@ -128,19 +127,21 @@ Module Type CPP_LOGIC (Import CC : CPP_LOGIC_CLASS)
 
       When the duration of a region of storage ends [note 1], contained objects [o] go
       from live to dead, and pointers to such objects become _dangling_, or
-      _invalid pointer values_ (https://eel.is/c++draft/basic.compound#3.1).
+      _invalid pointer values_ (https://eel.is/c++draft/basic.compound#3.1);
+      this is called _pointer zapping_ [note 1].
       In our semantics, that only consumes the non-persistent predicate
       [live_ptr p], not the persistent predicate [_valid_ptr strict p].
 
-      Following Cerberus, we assume liveness can be tracked per allocation
-      ID, via [live_alloc_id], and derive [live_ptr] from it.
-      Hence, a pointer [p] past-the-end of [o] also becomes dangling when [o]
-      is deallocated.
+      Following Cerberus, [live_alloc_id] tracks liveness per allocation
+      ID (see comments for [ptr]), and [live_ptr] is derived from it. Hence,
+      a pointer [p] past-the-end of [o] also becomes dangling when [o] is
+      deallocated.
 
       It's implementation-defined whether invalid pointer values are
       (non-copyable) trap representations. Instead, we restrict to
       implementations where dangling pointers are not trap representations
-      (which is allowed, since this choice is implementation-defined).
+      (which is allowed, since this choice is implementation-defined) and
+      pointer zapping does not actually clear pointers.
 
       [Note 1]. See https://eel.is/c++draft/basic.stc.general#4 and
       https://eel.is/c++draft/basic.compound#3.1 for C++, and
@@ -216,7 +217,10 @@ Module Type CPP_LOGIC (Import CC : CPP_LOGIC_CLASS)
       Observe [| ty <> Tvoid |] (@tptsto σ ty q p v).
     Global Existing Instance tptsto_nonvoid.
 
-    (** Neither persistent nor fractional. *)
+    (** The allocation is alive. Neither persistent nor fractional.
+      See https://eel.is/c++draft/basic.stc.general#4 and
+      https://eel.is/c++draft/basic.compound#3.1.
+    *)
     Parameter live_alloc_id : alloc_id -> mpred.
     Axiom live_alloc_id_timeless : forall aid, Timeless (live_alloc_id aid).
     Global Existing Instance live_alloc_id_timeless.
@@ -376,8 +380,8 @@ Module Type CPP_LOGIC (Import CC : CPP_LOGIC_CLASS)
 
     (**
       [type_ptr {resolve := resolve} ty p] asserts that [p] points to
-      a (possibly dead) object of type [ty] (in environment [resolve]),
-      as defined by https://eel.is/c++draft/basic.compound#3.1.
+      a (possibly dead) object of type [ty] (in environment
+      [resolve]), as defined by https://eel.is/c++draft/basic.compound#3.1.
 
       This implies:
       - the pointer is strictly valid [type_ptr_strict_valid], and
@@ -389,7 +393,8 @@ Module Type CPP_LOGIC (Import CC : CPP_LOGIC_CLASS)
       object, like [valid_ptr].
 
       TODO: before a complete object is fully initialized,
-      what [type_ptr] facts are available?
+      what [type_ptr] facts are available? For now, we only use [type_ptr]
+      for fully initialized objects.
       Consider http://eel.is/c++draft/basic.memobj#basic.life, especially
       from http://eel.is/c++draft/basic.memobj#basic.life-1 to
       http://eel.is/c++draft/basic.memobj#basic.life-4.

@@ -114,6 +114,9 @@ Module Type Expr.
     (* [Emember a m ty] is a prvalue if
      * - [a] is a member enumerator or non-static member function, or
      * - [a] is an rvalue and [m] is non-static data of non-reference type
+     TODO: consider requiring (1) [type_ptr] (2) [valid_live_ptr], here and
+     elsewhere; most operations in the standard are described in terms of
+     objects, which restricts them to _live_ objects.
      *)
     Axiom wp_prval_member : forall ty vc a m Q,
       wpe vc a (fun base free =>
