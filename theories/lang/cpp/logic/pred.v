@@ -112,28 +112,39 @@ Module Type CPP_LOGIC (Import CC : CPP_LOGIC_CLASS)
 
     (* valid pointers allow for accessing one past the end of a structure/array *)
     (**
-      [valid_ptr p] is a persistent assertion that [p] is a valid pointer, that is:
+      [_valid_ptr strict p] is a persistent assertion that [p] is a _valid pointer_, that is:
       - [p] can be [nullptr]
       - [p] can point to a function or a (possibly dead) object [o]
-      - [p] can be past-the-end of a (possibly dead) object [o].
-      In particular, [valid_ptr p] prevents producing [p] by incrementing
+      - if [strict = false], [p] can be past-the-end of a (possibly dead) object [o].
+      In particular, [_valid_ptr strict p] prevents producing [p] by incrementing
       past-the-end pointers into overflow territory.
 
-      We say that pointers to an object [o] or past-the-end of an object [o]
-      become _dangling_ when [o] is deallocated; non-dangling pointers are live.
+      Our definition of validity includes all cases in which a pointer is not
+      an _invalid pointer value_
+      (https://eel.is/c++draft/basic.compound#3.1), except that our concept
+      of validity survives deallocation; a pointer is only valid according to the standard
+      if it satisfies _both_ [_valid_ptr strict p] and [ptr_live p]; we
+      require both where needed (e.g. [eval_ptr_eq]).
 
-      Our definition is based upon the C++ standard
-      (https://eel.is/c++draft/basic.compound#3.1), but we treat dangling
-      pointers differently. In the standard, dangling pointers become invalid
-      pointer values [note 1]; it's implementation-defined whether invalid pointer
-      values are (non-copyable) trap representations. Instead, we:
-      - restrict to implementations where dangling pointers are not trap
-        representations (which is allowed, since this choice is implementation-defined).
-      - allow dangling pointers to be valid, as we track liveness of [o]
-        through separate, non-persistent predicates.
+      When the duration of a region of storage ends [note 1], contained objects [o] go
+      from live to dead, and pointers to such objects become _dangling_, or
+      _invalid pointer values_ (https://eel.is/c++draft/basic.compound#3.1).
+      In our semantics, that only consumes the non-persistent predicate
+      [ptr_live p], not the persistent predicate [_valid_ptr strict p].
 
-      [Note 1]. See https://eel.is/c++draft/basic.memobj#basic.stc.general-4 for C++,
-      and http://www.open-std.org/jtc1/sc22/wg14/www/docs/n2369.pdf for
+      Following Cerberus, we assume liveness can be tracked per allocation
+      ID, via [alloc_id_live], and derive [ptr_live] from it.
+      Hence, a pointer [p] past-the-end of [o] also becomes dangling when [o]
+      is deallocated.
+
+      It's implementation-defined whether invalid pointer values are
+      (non-copyable) trap representations. Instead, we restrict to
+      implementations where dangling pointers are not trap representations
+      (which is allowed, since this choice is implementation-defined).
+
+      [Note 1]. See https://eel.is/c++draft/basic.stc.general#4 and
+      https://eel.is/c++draft/basic.compound#3.1 for C++, and
+      http://www.open-std.org/jtc1/sc22/wg14/www/docs/n2369.pdf for
       discussion in the context of the C standard.
     *)
     Parameter _valid_ptr : forall (strict : bool), ptr -> mpred.

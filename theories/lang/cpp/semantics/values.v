@@ -1,12 +1,48 @@
 (*
- * Copyright (C) BedRock Systems Inc. 2019-2020 Gregory Malecha
+ * Copyright (C) BedRock Systems Inc. 2019-2020 Gregory Malecha et al.
  *
  * SPDX-License-Identifier: LGPL-2.1 WITH BedRock Exception for use over network, see repository root for details.
  *)
+
 (**
- * The "operational" style definitions about C++.
- *
- * The definitions in this file are based (loosely) on CompCert.
+ The "operational" style definitions about C++, especially pointers and
+ values.
+
+ C++ pointers are subtle to model.
+ The definitions in this file are based on the C and C++ standards, and
+ formalizations of their memory object models.
+ - the CompCert memory model
+ - Robbert Krebbers's model of C (Krebbers 2015, PhD thesis,
+   https://robbertkrebbers.nl/research/thesis.pdf).
+ - The formal model of pointer provenance for C given by Cerberus
+   (https://www.cl.cam.ac.uk/~pes20/cerberus/, POPL'19 https://doi.org/10.1145/3290380,
+ - A Provenance-aware Memory Object Model for C.
+   Working paper N2577 of the C standards committee (ISO TC1/SC22/WG14),
+   September 30, 2020
+   (http://www.open-std.org/jtc1/sc22/wg14/www/docs/n2577.pdf).
+ - Work by Ramananandro et al. (e.g. POPL'12 https://doi.org/10.1145/2103656.2103718).
+ - LLVM's twin semantics, that is,
+ "Reconciling high-level optimizations and low-level code in LLVM", OOPSLA'18
+   (https://doi.org/10.1145/3276495).
+
+ For a crash course on formal models of pointers, consider
+ https://www.ralfj.de/blog/2018/07/24/pointers-and-bytes.html; the summary is
+ that two pointers might differ despite representing the same address
+ (https://eel.is/c++draft/basic.compound#def:represents_the_address),
+ depending on how they're constructed, and C/C++ optimizers are allowed to
+ treat them differently.
+
+ As our goal is verifying low-level systems software, we make
+ assumptions on our compilers, here and elsewhere:
+ - We assume compilers do not zap pointers to deallocated objects, but might
+   restrict operations on them (in particular equality comparisons). See
+   http://www.open-std.org/jtc1/sc22/wg14/www/docs/n2369.pdf,
+   https://www.cl.cam.ac.uk/~pes20/cerberus/notes30.pdf
+ - We assume useful semantics for integer-to-pointer casts, in particular,
+   the PNVI-ae-udi model by the Cerberus project (as in the N2577 draft).
+   Our semantics is built with them in mind but does not provide them yet.
+ - Support for effective types is also incomplete; similarly to Cerberus,
+   we still assume users use options such as [-fno-strict-aliasing] GCC/Clang's.
  *)
 From Coq Require Import Strings.Ascii.
 From bedrock.lang.prelude Require Import base addr.
@@ -42,7 +78,8 @@ Section same_property.
   Qed.
 End same_property.
 
-(** ** Allocation IDs *)
+(** ** Allocation IDs. We use them to model pointer provenance, following
+Cerberus. *)
 Record alloc_id := MkAllocId { alloc_id_car : N }.
 
 Global Instance alloc_id_eq_dec : EqDecision alloc_id.
@@ -52,21 +89,53 @@ Proof. by apply: (inj_countable' alloc_id_car MkAllocId) => -[?]. Qed.
 
 
 Module Type PTRS.
-  (** * Pointers.
+(** * Pointers.
 
-      This is the abstract model of pointers in C++.
-      - A simple model is [block * offset] which is representing a collection
-        of isolated blocks. There is no address arithmetic that can get you
-        from one block to another.
-      - A more complex model allows for nested blocks and more accurately
-        models the C/C++ (object) memory model. See
-        https://robbertkrebbers.nl/thesis.html.
-      Not all of our pointers have physical addresses; for discussion, see
-      documentation of [tptsto] and [pinned_ptr].
+This is the abstract model of pointers in C++. Pointers describe paths
+that might identify objects, which might be alive. Hence they must be
+understood relative to the C++ object model
+(https://eel.is/c++draft/intro.object).
 
-      This API allows constructing "invalid" pointers; pointer validity is
-      defined by [valid_ptr : genv -> ptr -> mpred] elsewhere.
-  *)
+- Not all of our pointers have concrete addresses.
+  In C++, pointers to some objects are never created, and typical compilers
+  might choose to not store such objects in memory; nevertheless, for
+  uniformity our semantics identifies such objects via pointers, but
+  our pointers need not represent an address
+  (https://eel.is/c++draft/basic.compound#def:represents_the_address).
+  Function [ptr_vaddr] maps a pointer to the address it represents, if any.
+  See also documentation of [tptsto] and [pinned_ptr].
+
+Pointers also have an _allocation ID_; the concept does not exist in
+the standard but is used to model provenance in many models of C
+pointers (CompCert, Krebbers, Cerberus, LLVM's twin semantics), sometimes
+under the name of "object ID". Allocation ID of deallocated regions are never
+reused for new regions.
+- C++ objects form a forest of _complete objects_, and subobjects contained
+  within (https://eel.is/c++draft/intro.object#2).
+  All subobjects of the same complete object share the same allocation
+  ID.
+- Character array objects can _provide storage_ to other objects.
+  (http://eel.is/c++draft/intro.object#def:provides_storage)
+  In particular, when memory allocators allocates an object [o] out of a
+  character array [arr], then [arr] provides storage to [o].
+  Following Cerberus, a pointer to [arr] and a pointer to [o] are
+  considered as having distinct provenance.
+
+  In Cerberus, pointers with fresh provenances are created by a
+  magic [malloc] primitive, which cannot be implemented in C (at least
+  because of effective types, as Krebbers explains); in our semantics,
+  pointers with fresh provenance are created by [new] operations (see
+  [wp_prval_new] axiom).
+
+From a pointer to an object, one can use offsets to constructs pointers
+to subojects.
+
+Our API allows tracking nested objects accurately, matching the C (object)
+memory model (as rendered by Krebbers) and the model mandated by the C++
+standard.
+
+A simple model is [alloc ID * option address] [SIMPLE_PTRS_IMPL].
+*)
 
   Parameter ptr : Set.
   Declare Scope ptr_scope.
@@ -86,9 +155,16 @@ Module Type PTRS.
   Axiom ptr_countable : Countable ptr.
   Global Existing Instance ptr_countable.
 
-  (** * Offsets.
-      Offsets represent paths between locations
-   *)
+  (**
+    * Pointer offsets.
+      Offsets represent paths between objects and subobjects.
+
+      If [p] points to an object and [o] is an offset to a subobject,
+      [p .., o] is a pointer to that subobject. If no such object exist,
+      [valid_ptr (p .., o)] will not hold.
+
+      For instance
+      *)
   Parameter offset : Set.
   Declare Scope offset_scope.
   Bind Scope offset_scope with offset.
@@ -145,18 +221,32 @@ Module Type PTRS.
      since loading the same translation unit twice can give different
      addresses. *)
 
-  (* Other constructors exist, but are currently only used internally to the
-  operational semantics (?):
-  - pointers to local variables (objects with automatic linkage/storage duration)
-  - pointers to [this]
+  (* Other constructors exist, but they are internal to C++ model.
+  They include
+  pointers to local variables (objects with automatic linkage/storage
+  duration, https://eel.is/c++draft/basic.memobj#basic.stc.auto).
+
+  Pointers to this (https://eel.is/c++draft/expr.prim.this) are just normal
+  pointers naming the receiver of a method invocation.
   *)
 
-  (** ** pointer offsets *)
+  (** ** Concrete pointer offsets.
+  They correspond to the kind of aggregate objects described in e.g.
+  https://eel.is/c++draft/basic.compound. *)
 
-  (* [o_field cls n] represents [x.n] for [x : cls] *)
+  (* If [p : cls*] points to an object with type [cls] and field [f],
+    then [p .., o_field cls f] points to [p -> f]. *)
   Parameter o_field : genv -> field -> offset.
-  (* [o_sub ty n] represents [x + n] for [x : cls*] *)
+  (*
+  If [p : cls*] points to an array object with [n] elements and [i ≤ n],
+  [p .., o_sub ty i] represents [p + i] (which might be a past-the-end pointer).
+  *)
   Parameter o_sub : genv -> type -> Z -> offset.
+
+  (*
+  [o_sub_0] axiom is required because any object is a 1-object array
+  (https://eel.is/c++draft/expr.add#footnote-80).
+  *)
   Axiom o_sub_0 : ∀ σ ty n,
     size_of σ ty = Some n ->
     o_sub σ ty 0 = o_id.
@@ -176,7 +266,13 @@ Module Type PTRS.
   #[deprecated(since="2020-12-08", note="Use structured offsets instead.")]
   Notation offset_ptr_0_ := offset_ptr_0__.
 
+  (** Map pointers to allocation IDs; total on valid pointers thanks to
+  [valid_ptr_alloc_id]. *)
   Parameter ptr_alloc_id : ptr -> option alloc_id.
+  (**
+  Map pointers to the address they represent,
+  (https://eel.is/c++draft/basic.compound#def:represents_the_address), as
+  also discussed above. Only total on pinned pointers, not on all pointers. *)
   Parameter ptr_vaddr : ptr -> option vaddr.
 
   Axiom ptr_alloc_id_offset : forall {p o},

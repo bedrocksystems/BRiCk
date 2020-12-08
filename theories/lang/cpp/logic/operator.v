@@ -20,18 +20,30 @@ Section with_Σ.
   (** * Pointer comparison operators *)
 
   (** Skeleton for [Beq] and [Bneq] axioms on pointers.
-   * Need both ptr_live p1 and ptr_live p2 in general; they coincide for pointers into the same object.
-   * This specification follows the C++ standard
-   * (https://eel.is/c++draft/expr.eq#3), Cerberus's pointer provenance
-   * semantics for C, and Krebbers's thesis.
-   *
-   * Crucially, all those semantics _allow_ (but do not _require_) compilers to
-   * assume that pointers to different objects compare different, even when
-   * they have the same address. Hence, comparing a past-the-end pointer to an
-   * object with a pointer to a different object gives unspecified results[1];
-   * we choose not to support this case.
 
-   * [1] https://eel.is/c++draft/expr.eq#3.1
+   This specification follows the C++ standard
+   (https://eel.is/c++draft/expr.eq#3), and is inspired by Cerberus's pointer
+   provenance semantics for C, and Krebbers's thesis. We forbid cases where
+   comparisons have undefined or unspecified behavior.
+
+   Crucially, all those semantics _allow_ (but do not _require_) compilers to
+   assume that pointers to different objects compare different, even when
+   they have the same address. Hence, comparing a past-the-end pointer to an
+   object with a pointer to a different object gives unspecified results [1];
+   we choose not to support this case.
+
+   - We forbid comparing invalid pointer values; hence, we require
+     [p1] and [p2] to satisfy both [_valid_ptr] and [ptr_live].
+   - Past-the-end pointers cannot be compared with pointers to the "beginning" of a different object [1].
+     Hence, they can be compared:
+     - like Krebbers, with pointers to the same array; more in general, with
+       any pointers with the same allocation ID ([same_alloc]).
+     - unlike Krebbers, with [nullptr],
+       and any pointer [p] not to the beginning of a complete object, per [non_beginning_ptr].
+   - In particular, non-past-the-end pointers (including past-the-end
+     pointers) can be compared with arbitrary other non-past-the-end pointers.
+
+   [1] From https://eel.is/c++draft/expr.eq#3.1:
    > If one pointer represents the address of a complete object, and another
      pointer represents the address one past the last element of a different
      complete object, the result of the comparison is unspecified.
@@ -75,12 +87,12 @@ Section with_Σ.
   Axiom eval_ptr_gt :
     Unfold eval_ptr_ord_cmp_op (eval_ptr_ord_cmp_op Bgt (fun x y => y <? x)%N).
 
-  (* For operations that aren't comparisons, we don't require liveness, unlike Krebbers.
+  (** For non-comparison operations, we do not require liveness, unlike Krebbers.
   We require validity of the result to prevent over/underflow.
-  (This is because we don't do pointer zapping, following Cerberus <insert citation>).
+  (This is because we don't do pointer zapping, following Cerberus).
   Supporting pointer zapping would require adding [ptr_live] preconditions to
   these operators.
-  *)
+  https://eel.is/c++draft/basic.compound#3.1 *)
 
   (** Skeletons for ptr/int operators. *)
 
@@ -102,28 +114,49 @@ Section with_Σ.
                 (Tint w s) (Tpointer t) (Tpointer t)
                 (Vint o)   (Vptr p1)    (Vptr p2).
 
-  (* lhs + rhs: one of rhs or lhs is a pointer to completely-defined object type,
-    the other has integral or unscoped enumeration type. In this case,
-    the result type has the type of the pointer. (rhs has a pointer type) *)
+  (**
+  lhs + rhs (https://eel.is/c++draft/expr.add#1): one of rhs or lhs is a
+  pointer to a completely-defined object type
+  (https://eel.is/c++draft/basic.types#general-5), the other has integral or
+  unscoped enumeration type. In this case, the result type has the type of
+  the pointer.
+
+  Liveness note: when adding int [i] to pointer [p], the standard demands
+  that [p] points to an array (https://eel.is/c++draft/expr.add#4.2),
+  With https://eel.is/c++draft/basic.compound#3.1 and
+  https://eel.is/c++draft/basic.memobj#basic.stc.general-4, that implies that
+  [p] has not been deallocated.
+   *)
   Axiom eval_ptr_int_add :
     Unfold eval_ptr_int_op (eval_ptr_int_op Badd (fun x => x)).
 
   Axiom eval_int_ptr_add :
     Unfold eval_int_ptr_op (eval_int_ptr_op Badd (fun x => x)).
 
-  (* lhs - rhs: lhs is a pointer to completely-defined object type, rhs
-    has integral or unscoped enumeration type. In this case, the result
-    type has the type of the pointer. *)
+  (**
+  lhs - rhs (https://eel.is/c++draft/expr.add#2.3): lhs is a pointer to
+  completely-defined object type
+  (https://eel.is/c++draft/basic.types#general-5), rhs has integral or
+  unscoped enumeration type. In this case, the result type has the type of
+  the pointer.
+  Liveness note: as above (https://eel.is/c++draft/expr.add#4).
+  *)
   Axiom eval_ptr_int_sub :
     Unfold eval_ptr_int_op (eval_ptr_int_op Bsub Z.opp).
 
-  (* lhs - rhs: both lhs and rhs must be pointers to the same
-    completely-defined object types. *)
+  (**
+  lhs - rhs (https://eel.is/c++draft/expr.add#2.2): both lhs and rhs must be
+  pointers to the same completely-defined object types
+  (https://eel.is/c++draft/basic.types#general-5).
+  Liveness note: as above (https://eel.is/c++draft/expr.add#5.2).
+  *)
   Axiom eval_ptr_ptr_sub :
     forall resolve t w p1 p2 o1 o2 base ty,
       is_Some (size_of resolve t) ->
       (p1 = base .., o_sub resolve ty o1)%ptr ->
       (p2 = base .., o_sub resolve ty o2)%ptr ->
+      (* Side condition to prevent overflow; needed per https://eel.is/c++draft/expr.add#note-1 *)
+      has_type (Vint (o1 - o2)) (Tint w Signed) ->
       valid_ptr p1 ∧ valid_ptr p2 ⊢
       eval_binop Bsub
                 (Tpointer t) (Tpointer t) (Tint w Signed)
