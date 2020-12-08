@@ -189,13 +189,13 @@ Module SimpleCPP.
   Section with_cpp.
     Context `{Σ : cpp_logic}.
 
-    Parameter alloc_id_live : alloc_id -> mpred.
-    Axiom alloc_id_live_timeless : forall aid, Timeless (alloc_id_live aid).
-    Global Existing Instance alloc_id_live_timeless.
+    Parameter live_alloc_id : alloc_id -> mpred.
+    Axiom live_alloc_id_timeless : forall aid, Timeless (live_alloc_id aid).
+    Global Existing Instance live_alloc_id_timeless.
 
-    Definition ptr_live (p : ptr) :=
-      default False%I (alloc_id_live <$> ptr_alloc_id p).
-    Axiom nullptr_live : |-- ptr_live nullptr.
+    Definition live_ptr (p : ptr) :=
+      default False%I (live_alloc_id <$> ptr_alloc_id p).
+    Axiom nullptr_live : |-- live_ptr nullptr.
 
     (** pointer validity *)
     (** Pointers past the end of an object/array can be valid; see
@@ -667,7 +667,7 @@ Module SimpleCPP.
               oaddr_encodes σ t q oa p v.
 
     Axiom tptsto_live : forall {σ} ty (q : Qp) p v,
-      @tptsto σ ty q p v |-- ptr_live p ** True.
+      @tptsto σ ty q p v |-- live_ptr p ** True.
 
     Instance tptsto_nonnull_obs {σ} ty q a :
       Observe False (@tptsto σ ty q nullptr a).
@@ -734,10 +734,10 @@ Module SimpleCPP.
     Instance dtor_at_affine : forall s f p, Affine (@dtor_at s f p) := _.
     Instance dtor_at_timeless : forall s f p, Timeless (@dtor_at s f p) := _.
 
-    Axiom code_at_live   : forall s f p,   @code_at s f p |-- ptr_live p.
-    Axiom method_at_live : forall s f p, @method_at s f p |-- ptr_live p.
-    Axiom ctor_at_live   : forall s f p,   @ctor_at s f p |-- ptr_live p.
-    Axiom dtor_at_live   : forall s f p,   @dtor_at s f p |-- ptr_live p.
+    Axiom code_at_live   : forall s f p,   @code_at s f p |-- live_ptr p.
+    Axiom method_at_live : forall s f p, @method_at s f p |-- live_ptr p.
+    Axiom ctor_at_live   : forall s f p,   @ctor_at s f p |-- live_ptr p.
+    Axiom dtor_at_live   : forall s f p,   @dtor_at s f p |-- live_ptr p.
     (** physical representation of pointers
      *)
     Definition pinned_ptr (va : N) (p : ptr) : mpred :=

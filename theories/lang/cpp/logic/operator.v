@@ -33,8 +33,8 @@ Section with_Σ.
    we choose not to support this case.
 
    - We forbid comparing invalid pointer values; hence, we require
-     [p1] and [p2] to satisfy both [_valid_ptr] and [ptr_live].
-   - Past-the-end pointers cannot be compared with pointers to the "beginning" of a different object [1].
+     [p1] and [p2] to satisfy both [_valid_ptr] and [live_ptr].
+   - Past-the-end pointers cannot be compared with pointers to the "beginning" of a different object.
      Hence, they can be compared:
      - like Krebbers, with pointers to the same array; more in general, with
        any pointers with the same allocation ID ([same_alloc]).
@@ -54,8 +54,8 @@ Section with_Σ.
   Let comparable strict1 p2 : mpred := [| strict1 = true \/ p2 = nullptr |] ∨ non_beginning_ptr p2.
   Let eval_ptr_eq_cmp_op (bo : BinOp) (t f : Z) : Prop :=
     forall ty p1 p2 strict1 strict2,
-      ([| same_alloc p1 p2 |] ∨ comparable strict1 p2 ∧ comparable strict2 p1) ∧
-      _valid_ptr strict1 p1 ∧ _valid_ptr strict2 p2 ∧ ptr_live p1 ∧ ptr_live p2 ⊢
+      ([| same_alloc p1 p2 |] ∨ (comparable strict1 p2 ∧ comparable strict2 p1)) ∧
+      _valid_ptr strict1 p1 ∧ _valid_ptr strict2 p2 ∧ live_ptr p1 ∧ live_ptr p2 ⊢
       eval_binop bo
         (Tpointer ty) (Tpointer ty) Tbool
         (Vptr p1) (Vptr p2) (Vint (if decide (same_address p1 p2) then t else f)) ∗ True.
@@ -71,9 +71,9 @@ Section with_Σ.
       ptr_alloc_id p1 = Some aid ->
       ptr_alloc_id p2 = Some aid ->
       liftM2 f (ptr_vaddr p1) (ptr_vaddr p2) = Some res ->
-      (* we could ask [ptr_live p1] or [ptr_live p2], but those are
+      (* we could ask [live_ptr p1] or [live_ptr p2], but those are
       equivalent, so we make the statement obviously symmetric. *)
-      alloc_id_live aid ⊢
+      live_alloc_id aid ⊢
       eval_binop bo
         (Tpointer ty) (Tpointer ty) Tbool
         (Vptr p1) (Vptr p2) (Vbool res) ∗ True.
@@ -90,7 +90,7 @@ Section with_Σ.
   (** For non-comparison operations, we do not require liveness, unlike Krebbers.
   We require validity of the result to prevent over/underflow.
   (This is because we don't do pointer zapping, following Cerberus).
-  Supporting pointer zapping would require adding [ptr_live] preconditions to
+  Supporting pointer zapping would require adding [live_ptr] preconditions to
   these operators.
   https://eel.is/c++draft/basic.compound#3.1 *)
 

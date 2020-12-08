@@ -123,17 +123,17 @@ Module Type CPP_LOGIC (Import CC : CPP_LOGIC_CLASS)
       an _invalid pointer value_
       (https://eel.is/c++draft/basic.compound#3.1), except that our concept
       of validity survives deallocation; a pointer is only valid according to the standard
-      if it satisfies _both_ [_valid_ptr strict p] and [ptr_live p]; we
+      if it satisfies _both_ [_valid_ptr strict p] and [live_ptr p]; we
       require both where needed (e.g. [eval_ptr_eq]).
 
       When the duration of a region of storage ends [note 1], contained objects [o] go
       from live to dead, and pointers to such objects become _dangling_, or
       _invalid pointer values_ (https://eel.is/c++draft/basic.compound#3.1).
       In our semantics, that only consumes the non-persistent predicate
-      [ptr_live p], not the persistent predicate [_valid_ptr strict p].
+      [live_ptr p], not the persistent predicate [_valid_ptr strict p].
 
       Following Cerberus, we assume liveness can be tracked per allocation
-      ID, via [alloc_id_live], and derive [ptr_live] from it.
+      ID, via [live_alloc_id], and derive [live_ptr] from it.
       Hence, a pointer [p] past-the-end of [o] also becomes dangling when [o]
       is deallocated.
 
@@ -217,22 +217,22 @@ Module Type CPP_LOGIC (Import CC : CPP_LOGIC_CLASS)
     Global Existing Instance tptsto_nonvoid.
 
     (** Neither persistent nor fractional. *)
-    Parameter alloc_id_live : alloc_id -> mpred.
-    Axiom alloc_id_live_timeless : forall aid, Timeless (alloc_id_live aid).
-    Global Existing Instance alloc_id_live_timeless.
+    Parameter live_alloc_id : alloc_id -> mpred.
+    Axiom live_alloc_id_timeless : forall aid, Timeless (live_alloc_id aid).
+    Global Existing Instance live_alloc_id_timeless.
 
     Axiom valid_ptr_alloc_id : forall p,
       valid_ptr p |-- [| is_Some (ptr_alloc_id p) |].
 
-    Definition ptr_live (p : ptr) :=
-      default False%I (alloc_id_live <$> ptr_alloc_id p).
+    Definition live_ptr (p : ptr) :=
+      default False%I (live_alloc_id <$> ptr_alloc_id p).
 
     (** We consider [nullptr] as live, following Krebbers, as a way to
     simplify stating rules for pointer comparison. *)
-    Axiom nullptr_live : |-- ptr_live nullptr.
+    Axiom nullptr_live : |-- live_ptr nullptr.
 
     Axiom tptsto_live : forall {σ} ty (q : Qp) p v,
-      @tptsto σ ty q p v |-- ptr_live p ** True.
+      @tptsto σ ty q p v |-- live_ptr p ** True.
 
     (** [identity σ this mdc q p] state that [p] is a pointer to a (live)
         object of type [this] that is part of an object of type [mdc].
@@ -295,10 +295,10 @@ Module Type CPP_LOGIC (Import CC : CPP_LOGIC_CLASS)
         ctor_at_persistent ctor_at_affine ctor_at_timeless
         dtor_at_persistent dtor_at_affine dtor_at_timeless.
 
-      Axiom code_at_live   : forall f p,   code_at f p |-- ptr_live p.
-      Axiom method_at_live : forall f p, method_at f p |-- ptr_live p.
-      Axiom ctor_at_live   : forall f p,   ctor_at f p |-- ptr_live p.
-      Axiom dtor_at_live   : forall f p,   dtor_at f p |-- ptr_live p.
+      Axiom code_at_live   : forall f p,   code_at f p |-- live_ptr p.
+      Axiom method_at_live : forall f p, method_at f p |-- live_ptr p.
+      Axiom ctor_at_live   : forall f p,   ctor_at f p |-- live_ptr p.
+      Axiom dtor_at_live   : forall f p,   dtor_at f p |-- live_ptr p.
     End with_genv.
 
     Parameter encodes : forall {σ:genv} (t : type) (v : val) (vs : list runtime_val), mpred.
