@@ -155,12 +155,13 @@ Module Type CPP_LOGIC (Import CC : CPP_LOGIC_CLASS)
     Axiom _valid_ptr_timeless : forall b p, Timeless (_valid_ptr b p).
     Global Existing Instances _valid_ptr_persistent _valid_ptr_affine _valid_ptr_timeless.
 
-    Axiom strict_valid_valid : forall p,
-      _valid_ptr true p |-- _valid_ptr false p.
     Axiom _valid_ptr_nullptr : forall b, |-- _valid_ptr b nullptr.
-
-    Definition valid_ptr := _valid_ptr false.
+    (* strict validity (not past-the-end) *)
     Definition strict_valid_ptr := _valid_ptr true.
+    (* validity (past-the-end allowed) *)
+    Definition valid_ptr := _valid_ptr false.
+    Axiom strict_valid_valid : forall p,
+      strict_valid_ptr p |-- valid_ptr p.
 
     (* Parameters valid_ptr strict_valid_ptr : ptr -> mpred. *)
     (* Axiom valid_ptr_eq : forall p,
