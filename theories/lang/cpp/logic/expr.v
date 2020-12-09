@@ -235,7 +235,7 @@ Module Type Expr.
     Axiom wp_lval_preinc : forall e ty Q,
         match companion_type (type_of e) with
         | Some cty =>
-          wp_lval e (fun a free => Exists v', Exists v'',
+          wp_lval e (fun a free => Exists v' v'',
               (eval_binop Badd (erase_qualifiers (type_of e)) cty
                 (erase_qualifiers ty) v' (Vint 1) v'' ** True) //\\
               (a |-> primR (erase_qualifiers ty) 1 v' **
@@ -247,7 +247,7 @@ Module Type Expr.
     Axiom wp_lval_predec : forall e ty Q,
         match companion_type (type_of e) with
         | Some cty =>
-          wp_lval e (fun a free => Exists v', Exists v'',
+          wp_lval e (fun a free => Exists v' v'',
               (eval_binop Bsub (erase_qualifiers (type_of e)) cty
                 (erase_qualifiers ty) v' (Vint 1) v'' ** True) //\\
               (a |-> primR (erase_qualifiers ty) 1 v' **
@@ -304,8 +304,9 @@ Module Type Expr.
            (la |-> primR (erase_qualifiers ty) 1 rv -* Q la (free1 ** free2)))
         |-- wp_lval (Eassign l r ty) Q.
 
-    (* Assignemnt operators are *almost* like regular assignments except that they guarantee to evalute the
-       left hand side *exactly* once (rather than twice which is what would come from the standard desugaring)
+    (* Assignemnt operators are *almost* like regular assignments except that they
+       guarantee to evalute the left hand side *exactly* once (rather than twice
+       which is what would come from the standard desugaring)
      *)
     Axiom wp_lval_bop_assign : forall ty o l r Q,
         (Exists Ql Qr,
