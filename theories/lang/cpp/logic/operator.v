@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: LGPL-2.1 WITH BedRock Exception for use over network, see repository root for details.
  *)
 Require Import iris.proofmode.tactics.
-Require Import bedrock.lang.prelude.base.
+From bedrock.lang.prelude Require Import base option.
 From bedrock.lang.cpp Require Import ast semantics.values semantics.operator.
 From bedrock.lang.cpp Require Import logic.pred.
 
@@ -49,7 +49,9 @@ Section with_Σ.
      complete object, the result of the comparison is unspecified.
    *)
   Definition non_beginning_ptr p' : mpred :=
-    ∃ p o, [| p' = p .., o /\ ~same_address p p' |]%ptr ∧ valid_ptr p.
+    ∃ p o, [| p' = p .., o /\
+      (* ensure that o is > 0 *)
+      some_Forall2 N.gt (ptr_vaddr p') (ptr_vaddr p) |]%ptr ∧ valid_ptr p.
 
   Let comparable vt1 p2 : mpred :=
     [| vt1 = Strict \/ p2 = nullptr |] ∨ non_beginning_ptr p2.
