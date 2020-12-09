@@ -10,6 +10,7 @@
 
 # Utility modules
 theories/lang/prelude/base.v
+theories/lang/prelude/option.v
 theories/lang/prelude/addr.v
 theories/lang/prelude/notations.v
 theories/lang/prelude/bytestring.v

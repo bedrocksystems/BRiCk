@@ -45,38 +45,13 @@
    we still assume users use options such as [-fno-strict-aliasing] GCC/Clang's.
  *)
 From Coq Require Import Strings.Ascii.
-From bedrock.lang.prelude Require Import base addr.
+From bedrock.lang.prelude Require Import base addr option.
 
 Require Import bedrock.lang.cpp.ast.
 From bedrock.lang.cpp.semantics Require Export types sub_module genv.
 
 Local Close Scope nat_scope.
 Local Open Scope Z_scope.
-
-(** ** Define a partial equivalence relation from an observation *)
-Definition same_property `(obs : A → option B) (a1 a2 : A) :=
-  ∃ (b : B), obs a1 = Some b ∧ obs a2 = Some b.
-Section same_property.
-  Context `{obs : A → option B}.
-
-  Lemma same_property_reflexive_equiv a :
-    (∃ b, obs a = Some b) ↔ same_property obs a a.
-  Proof. rewrite /same_property. naive_solver. Qed.
-  Lemma same_property_partial_reflexive a b :
-    obs a = Some b → same_property obs a a.
-  Proof. rewrite -same_property_reflexive_equiv. naive_solver. Qed.
-  Global Instance same_property_per : RelationClasses.PER (same_property obs).
-  Proof. rewrite /same_property; split; hnf; naive_solver. Qed.
-  Global Instance: RewriteRelation (same_property obs) := {}.
-
-  Global Instance same_address_decision `{EqDecision B}: RelDecision (same_property obs).
-  Proof.
-    rewrite /same_property /RelDecision /Decision => a1 a2.
-    destruct (obs a1) as [b1|], (obs a2) as [b2|];
-      try destruct_decide (decide (b1 = b2)) as H; subst; eauto.
-      all: right; naive_solver.
-  Qed.
-End same_property.
 
 (** ** Allocation IDs. We use them to model pointer provenance, following
 Cerberus. *)
@@ -311,16 +286,23 @@ Module Type PTRS_MIXIN (Import L : PTRS).
 
   Lemma same_address_pinned p1 p2 :
     same_address p1 p2 <-> ∃ va, pinned_ptr_pure va p1 ∧ pinned_ptr_pure va p2.
-  Proof. done. Qed.
+  Proof. exact: same_property_iff. Qed.
   Global Instance pinned_ptr_pure_proper va :
     Proper (same_address ==> iff) (pinned_ptr_pure va).
-  Proof. by rewrite /pinned_ptr_pure => p1 p2 [va' [-> ->]]. Qed.
+  Proof.
+    move=> p1 p2.
+    by rewrite same_address_pinned /pinned_ptr_pure => -[va' [-> ->]].
+  Qed.
   Global Instance: Params pinned_ptr_pure 1 := {}.
 
   Lemma same_alloc_offset p o
     (Hs : is_Some (ptr_alloc_id (p .., o))) :
     same_alloc p (p .., o).
-  Proof. case: (Hs) => ??. eexists. rewrite -(ptr_alloc_id_offset Hs) //. Qed.
+  Proof.
+    case: (Hs) => aid Eq.
+    rewrite /same_alloc same_property_iff.
+    exists aid. rewrite -(ptr_alloc_id_offset Hs) //.
+  Qed.
 End PTRS_MIXIN.
 
 Module Type VAL_MIXIN (Import L : PTRS) (Import R : RAW_BYTES).
