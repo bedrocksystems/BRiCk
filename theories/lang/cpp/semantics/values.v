@@ -364,7 +364,7 @@ Axiom offset_ptr_combine__ : forall p o o',
   (* offset_ptr_ o p <> invalid_ptr -> *)
   offset_ptr_ o' (offset_ptr_ o p) = offset_ptr_ (o + o') p.
 #[deprecated(since="2020-11-25",
-note="Use higher-level APIs or o_sub_sub.")]
+note="This is UNSOUND. Use higher-level APIs or o_sub_sub.")]
 Notation offset_ptr_combine_ := offset_ptr_combine__.
 
 Instance ptr_inhabited : Inhabited ptr := populate nullptr.
