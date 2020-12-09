@@ -193,6 +193,7 @@ A simple model is [alloc ID * option address] [SIMPLE_PTRS_IMPL].
   Notation "p .., o" := (_offset_ptr p o) : ptr_scope.
   Notation "o1 .., o2" := (o_dot o1 o2) : offset_scope.
 
+  Axiom offset_ptr_id : forall p, (p .., o_id = p)%ptr.
   Axiom offset_ptr_dot : forall p o1 o2,
     (p .., (o1 .., o2) = p .., o1 .., o2)%ptr.
 
@@ -247,8 +248,8 @@ A simple model is [alloc ID * option address] [SIMPLE_PTRS_IMPL].
   [o_sub_0] axiom is required because any object is a 1-object array
   (https://eel.is/c++draft/expr.add#footnote-80).
   *)
-  Axiom o_sub_0 : ∀ σ ty n,
-    size_of σ ty = Some n ->
+  Axiom o_sub_0 : ∀ σ ty,
+    is_Some (size_of σ ty)->
     o_sub σ ty 0 = o_id.
 
   (** going up and down the class hierarchy, one step at a time. *)

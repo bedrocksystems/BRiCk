@@ -230,6 +230,9 @@ Module SIMPLE_PTRS_IMPL : PTRS.
   Instance id_dot : LeftId (=) o_id o_dot := _.
   Instance dot_assoc : Assoc (=) o_dot := _.
 
+  Lemma offset_ptr_id p : (p .., o_id = p)%ptr.
+  Proof. done. Qed.
+
   Lemma offset_ptr_dot p o1 o2 :
     (p .., (o1 .., o2) = p .., o1 .., o2)%ptr.
   Proof. apply foldr_app. Qed.
@@ -319,10 +322,10 @@ Module SIMPLE_PTRS_IMPL : PTRS.
     Some (aid, Some va).
 
   Definition fun_ptr := global_ptr.
-  Lemma o_sub_0 σ ty n :
-    size_of σ ty = Some n ->
+  Lemma o_sub_0 σ ty :
+    is_Some (size_of σ ty) ->
     o_sub σ ty 0 = o_id.
-  Proof. rewrite /o_sub /o_sub_off /opt_to_off => -> //=. rewrite Z.mul_0_l. Admitted.
+  Proof. rewrite /o_sub /o_sub_off /opt_to_off => -[? ->] //=. rewrite Z.mul_0_l. Admitted.
 
 End SIMPLE_PTRS_IMPL.
 
@@ -782,18 +785,30 @@ Module PTRS_IMPL : PTRS.
   Delimit Scope offset_scope with offset.
   Notation "o1 .., o2" := (o_dot o1 o2) : offset_scope.
 
-  Definition _offset_ptr p o :=
+  Definition _offset_ptr (p : ptr) (o : offset) : ptr :=
     match p with
     | offset_ptr p' o' => offset_ptr p' (o' .., o)
     | invalid_ptr_ => invalid_ptr_
-    | fun_ptr_ _ _ => invalid_ptr_
+    | fun_ptr_ _ _ =>
+      match `o with
+      | [] => p
+      | _ => invalid_ptr_
+      end
     end.
   (* Instance offset_ptr_proper : Proper ((≡) ==> (≡) ==> (≡)) _offset_ptr := _. *)
   Notation "p .., o" := (_offset_ptr p o) : ptr_scope.
 
+  Lemma offset_ptr_id p : (p .., o_id = p)%ptr.
+  Proof. case: p => // p o. by rewrite /_offset_ptr (right_id o_id o_dot). Qed.
+
   Lemma offset_ptr_dot p o1 o2 :
     (p .., (o1 .., o2) = p .., o1 .., o2)%ptr.
-  Proof. by destruct p; rewrite //= assoc. Qed.
+  Proof.
+    destruct p; rewrite //= ?assoc //=.
+    move: o1 o2 => [o1 /= +] [o2 /= +]; rewrite /raw_offset_wf => WF1 WF2.
+    repeat (case_match; simplify_eq/= => //).
+    by rewrite Heqr in WF2.
+  Admitted.
 
   Definition offset_ptr__ (z : Z) (p : ptr) : ptr :=
     (* _offset_ptr p [o_num_ z] *)
@@ -814,8 +829,8 @@ Module PTRS_IMPL : PTRS.
   Admitted.
 
   (* XXX False. *)
-  Lemma o_sub_0 σ ty n :
-    size_of σ ty = Some n ->
+  Lemma o_sub_0 σ ty :
+    is_Some (size_of σ ty) ->
     o_sub σ ty 0 = o_id.
   Proof. rewrite /o_sub/o_id/=. Admitted.
 
