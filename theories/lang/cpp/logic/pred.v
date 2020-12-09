@@ -493,7 +493,7 @@ Section with_cpp.
 
   Global Instance tptsto_as_fractional {σ} ty q a v :
     AsFractional (tptsto (σ := σ) ty q a v) (λ q, tptsto (σ := σ) ty q a v) q.
-  Proof. split. done. apply _. Qed.
+  Proof. exact: Build_AsFractional. Qed.
 
   Global Instance tptsto_observe_nonnull {σ} t q p v :
     Observe [| p <> nullptr |] (tptsto (σ := σ) t q p v).
