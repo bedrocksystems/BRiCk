@@ -443,30 +443,43 @@ Module Type VALID_PTR_AXIOMS.
   Section with_cpp.
     Context `{cpp_logic} {σ : genv}.
 
-    Axiom invalid_ptr_invalid :
-      valid_ptr invalid_ptr |-- False.
+    Axiom invalid_ptr_invalid : forall vt,
+      _valid_ptr vt invalid_ptr |-- False.
 
-    Axiom valid_ptr_field : ∀ p f,
-      valid_ptr (p .., o_field σ f) |-- valid_ptr p.
-    Axiom valid_ptr_sub : ∀ p ty i,
-      0 <= i -> valid_ptr (p .., o_sub σ ty i) |-- valid_ptr p.
-    Axiom valid_ptr_base : ∀ p base derived,
-      valid_ptr (p .., o_base σ derived base) |-- valid_ptr p.
-    Axiom valid_ptr_derived : ∀ p base derived,
-      valid_ptr (p .., o_derived σ base derived) |-- valid_ptr p.
+    (* These axioms are named after the predicate in the conclusion. *)
+    Axiom strict_valid_ptr_sub : ∀ p ty i vt,
+      0 < i -> _valid_ptr vt (p .., o_sub σ ty i) |-- strict_valid_ptr p.
+    (* TODO: can we deduce that [p] is strictly valid? *)
+    Axiom _valid_ptr_base : ∀ p base derived vt,
+      _valid_ptr vt (p .., o_base σ derived base) |-- _valid_ptr vt p.
+    (* TODO: can we deduce that [p] is strictly valid? *)
+    Axiom _valid_ptr_derived : ∀ p base derived vt,
+      _valid_ptr vt (p .., o_derived σ base derived) |-- _valid_ptr vt p.
+    (* TODO: can we deduce that [p] is strictly valid? *)
+    Axiom _valid_ptr_field : ∀ p f vt,
+      _valid_ptr vt (p .., o_field σ f) |-- _valid_ptr vt p.
+    (* TODO: Pointers to fields can't be past-the-end, right?
+    Except 0-size arrays. *)
+    (* Axiom strict_valid_ptr_field : ∀ p f,
+      valid_ptr (p .., o_field σ f) |--
+      strict_valid_ptr (p .., o_field σ f). *)
+    (* TODO: if we add [strict_valid_ptr_field], we can derive
+    [_valid_ptr_field] from just [strict_valid_ptr_field] *)
+    (* Axiom strict_valid_ptr_field : ∀ p f,
+      strict_valid_ptr (p .., o_field σ f) |-- strict_valid_ptr p. *)
 
-    Axiom o_sub_sub : ∀ p ty n1 n2,
-      valid_ptr (p .., o_sub σ ty n1) |--
+    Axiom o_sub_sub : ∀ p ty n1 n2 vt,
+      _valid_ptr vt (p .., o_sub σ ty n1) |--
       [! p .., o_sub σ ty n1 .., o_sub σ ty n2 = p .., o_sub σ ty (n1 + n2) !]%ptr.
 
     (* We're ignoring virtual inheritance here, since we have no plans to
     support it for now, but this might hold there too. *)
     Axiom o_base_derived : forall p base derived,
-      valid_ptr (p .., o_base σ derived base) |--
+      strict_valid_ptr (p .., o_base σ derived base) |--
       [! p .., o_base σ derived base .., o_derived σ base derived = p !]%ptr.
 
     Axiom o_derived_base : forall p base derived,
-      valid_ptr (p .., o_derived σ base derived) |--
+      strict_valid_ptr (p .., o_derived σ base derived) |--
       [! p .., o_derived σ base derived .., o_base σ derived base = p !]%ptr.
 
     (* Without the validity premise to the cancellation axioms ([o_sub_sub],
@@ -474,12 +487,26 @@ Module Type VALID_PTR_AXIOMS.
       [valid_ptr p] entails [valid_ptr (p ., o_base derived base ., o_derived
       base derived)] which entails [valid_ptr (p ., o_base derived base)].
     *)
+
+    (* TODO: maybe add a validity of offsets to allow stating this more generally. *)
+    Axiom valid_o_sub_size : forall p ty i vt,
+      _valid_ptr vt (p .., o_sub σ ty i) |-- [| is_Some (size_of σ ty) |].
   End with_cpp.
 End VALID_PTR_AXIOMS.
 Declare Module Export VALID_PTR : VALID_PTR_AXIOMS.
 
 Section with_cpp.
   Context `{Σ : cpp_logic}.
+
+  Lemma valid_ptr_sub {σ : genv} p ty i vt :
+    0 <= i -> _valid_ptr vt (p .., o_sub σ ty i) |-- _valid_ptr vt p.
+  Proof.
+    case: i => [|i] Hle; iIntros "V".
+    - iDestruct (valid_o_sub_size with "V") as %?.
+      by rewrite o_sub_0 // offset_ptr_id.
+    - rewrite strict_valid_ptr_sub; last by lia.
+      case: vt => //. by rewrite strict_valid_relaxed.
+  Qed.
 
   (** [p] is live and valid in our sense; just a convenience wrapper.
   In particular, [p] is a valid pointer value in the sense of the standard,
