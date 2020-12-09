@@ -51,11 +51,12 @@ Section with_Σ.
   Definition non_beginning_ptr p' : mpred :=
     ∃ p o, [| p' = p .., o /\ ~same_address p p' |]%ptr ∧ valid_ptr p.
 
-  Let comparable strict1 p2 : mpred := [| strict1 = true \/ p2 = nullptr |] ∨ non_beginning_ptr p2.
+  Let comparable vt1 p2 : mpred :=
+    [| vt1 = Strict \/ p2 = nullptr |] ∨ non_beginning_ptr p2.
   Let eval_ptr_eq_cmp_op (bo : BinOp) (t f : Z) : Prop :=
-    forall ty p1 p2 strict1 strict2,
-      ([| same_alloc p1 p2 |] ∨ (comparable strict1 p2 ∧ comparable strict2 p1)) ∧
-      _valid_ptr strict1 p1 ∧ _valid_ptr strict2 p2 ∧ live_ptr p1 ∧ live_ptr p2 ⊢
+    forall ty p1 p2 vt1 vt2,
+      ([| same_alloc p1 p2 |] ∨ (comparable vt1 p2 ∧ comparable vt2 p1)) ∧
+      _valid_ptr vt1 p1 ∧ _valid_ptr vt2 p2 ∧ live_ptr p1 ∧ live_ptr p2 ⊢
       eval_binop bo
         (Tpointer ty) (Tpointer ty) Tbool
         (Vptr p1) (Vptr p2) (Vint (if decide (same_address p1 p2) then t else f)) ∗ True.
@@ -72,7 +73,7 @@ Section with_Σ.
       ptr_alloc_id p2 = Some aid ->
       liftM2 f (ptr_vaddr p1) (ptr_vaddr p2) = Some res ->
 
-      valid_ptr p1 ∧ valid_ptr p2 ∧
+      relaxed_valid_ptr p1 ∧ relaxed_valid_ptr p2 ∧
       (* we could ask [live_ptr p1] or [live_ptr p2], but those are
       equivalent, so we make the statement obviously symmetric. *)
       live_alloc_id aid ⊢

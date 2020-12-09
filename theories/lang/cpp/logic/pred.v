@@ -28,6 +28,8 @@ Export ChargeNotation.
 
 From bedrock.lang.cpp Require Import ast semantics.
 
+Variant validity_type : Set := Strict | Relaxed.
+
 Module Type CPP_LOGIC_CLASS_BASE.
   Parameter cppG : gFunctors -> Type.
   Axiom has_inv : forall Σ, cppG Σ -> invG Σ.
@@ -148,7 +150,11 @@ Module Type CPP_LOGIC (Import CC : CPP_LOGIC_CLASS)
       http://www.open-std.org/jtc1/sc22/wg14/www/docs/n2369.pdf for
       discussion in the context of the C standard.
     *)
-    Parameter _valid_ptr : forall (strict : bool), ptr -> mpred.
+    Parameter _valid_ptr : forall (vt : validity_type), ptr -> mpred.
+    (* strict validity (not past-the-end) *)
+    Notation strict_valid_ptr := (_valid_ptr Strict).
+    (* validity (past-the-end allowed) *)
+    Notation relaxed_valid_ptr := (_valid_ptr Relaxed).
 
     Axiom _valid_ptr_persistent : forall b p, Persistent (_valid_ptr b p).
     Axiom _valid_ptr_affine : forall b p, Affine (_valid_ptr b p).
@@ -156,18 +162,8 @@ Module Type CPP_LOGIC (Import CC : CPP_LOGIC_CLASS)
     Global Existing Instances _valid_ptr_persistent _valid_ptr_affine _valid_ptr_timeless.
 
     Axiom _valid_ptr_nullptr : forall b, |-- _valid_ptr b nullptr.
-    (* strict validity (not past-the-end) *)
-    Definition strict_valid_ptr := _valid_ptr true.
-    (* validity (past-the-end allowed) *)
-    Definition valid_ptr := _valid_ptr false.
-    Axiom strict_valid_valid : forall p,
-      strict_valid_ptr p |-- valid_ptr p.
-
-    (* Parameters valid_ptr strict_valid_ptr : ptr -> mpred. *)
-    (* Axiom valid_ptr_eq : forall p,
-      valid_ptr p -|- _valid_ptr false p.
-    Axiom strict_valid_ptr_eq : forall p,
-      strict_valid_ptr p -|- _valid_ptr true p. *)
+    Axiom strict_valid_relaxed : forall p,
+      strict_valid_ptr p |-- relaxed_valid_ptr p.
 
     (** Formalizes the notion of "provides storage",
     http://eel.is/c++draft/intro.object#def:provides_storage *)
@@ -226,8 +222,8 @@ Module Type CPP_LOGIC (Import CC : CPP_LOGIC_CLASS)
     Axiom live_alloc_id_timeless : forall aid, Timeless (live_alloc_id aid).
     Global Existing Instance live_alloc_id_timeless.
 
-    Axiom valid_ptr_alloc_id : forall p,
-      valid_ptr p |-- [| is_Some (ptr_alloc_id p) |].
+    Axiom relaxed_valid_ptr_alloc_id : forall p,
+      relaxed_valid_ptr p |-- [| is_Some (ptr_alloc_id p) |].
 
     (** This pointer is from a live allocation; this does not imply
     [_valid_ptr], because even overflowing offsets preserve the allocation ID.
@@ -343,7 +339,7 @@ Module Type CPP_LOGIC (Import CC : CPP_LOGIC_CLASS)
     Axiom pinned_ptr_affine : forall va p, Affine (pinned_ptr va p).
     Axiom pinned_ptr_timeless : forall va p, Timeless (pinned_ptr va p).
     Axiom pinned_ptr_eq : forall va p,
-      pinned_ptr va p -|- [| pinned_ptr_pure va p |] ** valid_ptr p.
+      pinned_ptr va p -|- [| pinned_ptr_pure va p |] ** relaxed_valid_ptr p.
     Axiom pinned_ptr_unique : forall va va' p,
         Observe2 [| va = va' |] (pinned_ptr va p) (pinned_ptr va' p).
     Global Existing Instance pinned_ptr_unique.
@@ -358,7 +354,7 @@ Module Type CPP_LOGIC (Import CC : CPP_LOGIC_CLASS)
 
     Axiom offset_pinned_ptr : forall resolve o n va p,
       PTRI.eval_offset resolve o = Some n ->
-      valid_ptr (p .., o) |--
+      relaxed_valid_ptr (p .., o) |--
       pinned_ptr va p -* pinned_ptr (Z.to_N (Z.of_N va + n)) (p .., o).
 
     Axiom provides_storage_same_address : forall base newp ty,
@@ -394,7 +390,7 @@ Module Type CPP_LOGIC (Import CC : CPP_LOGIC_CLASS)
       - the pointer is properly aligned [type_ptr_aligned]
 
       [type_ptr] is persistent and survives deallocation of the pointed-to
-      object, like [valid_ptr].
+      object, like [_valid_ptr].
 
       TODO: before a complete object is fully initialized,
       what [type_ptr] facts are available? For now, we only use [type_ptr]
@@ -423,7 +419,7 @@ Module Type CPP_LOGIC (Import CC : CPP_LOGIC_CLASS)
       type_ptr (resolve := resolve) ty p |-- strict_valid_ptr p.
     (** Hence they can be incremented into (possibly past-the-end) valid pointers. *)
     Axiom type_ptr_valid_plus_one : forall resolve ty p,
-      type_ptr (resolve := resolve) ty p |-- valid_ptr (p .., o_sub resolve ty 1).
+      type_ptr (resolve := resolve) ty p |-- relaxed_valid_ptr (p .., o_sub resolve ty 1).
     Axiom type_ptr_nonnull : forall resolve ty p,
       type_ptr (resolve := resolve) ty p |-- [| p <> nullptr |].
   End with_cpp.
@@ -433,6 +429,14 @@ End CPP_LOGIC.
 Declare Module LC : CPP_LOGIC_CLASS.
 Declare Module L : CPP_LOGIC LC PTRS_FULL_AXIOM PTR_INTERNAL_AXIOM.
 Export LC L.
+
+(* strict validity (not past-the-end) *)
+Notation strict_valid_ptr := (_valid_ptr Strict).
+(* validity (past-the-end allowed) *)
+Notation relaxed_valid_ptr := (_valid_ptr Relaxed).
+(* #[deprecated(since="2020-12-09", note="Use relaxed_valid_ptr.")] *)
+Notation valid_ptr := relaxed_valid_ptr (only parsing).
+
 
 (* Pointer axioms. XXX Not modeled for now. *)
 Module Type VALID_PTR_AXIOMS.
@@ -481,10 +485,10 @@ Section with_cpp.
   In particular, [p] is a valid pointer value in the sense of the standard,
   even when accounting for pointer zapping.
   *)
-  Definition _valid_live_ptr (strict : bool) (p : ptr) : mpred :=
-    _valid_ptr strict p ∗ live_ptr p.
-  Definition valid_live_ptr p : mpred := _valid_ptr false p.
-  Definition strict_valid_live_ptr p : mpred := _valid_ptr true p.
+  Definition _valid_live_ptr vt (p : ptr) : mpred :=
+    _valid_ptr vt p ∗ live_ptr p.
+  Definition valid_live_ptr p : mpred := _valid_ptr Strict p.
+  Definition strict_valid_live_ptr p : mpred := _valid_ptr Relaxed p.
 
   Global Instance tptsto_flip_mono :
     Proper (flip genv_leq ==> eq ==> eq ==> eq ==> eq ==> flip (⊢))
@@ -611,14 +615,6 @@ Section with_cpp.
     rewrite type_ptr_aligned Hal /=. iDestruct 1 as (? [= <-]) "A". iIntros "P".
     iApply (pinned_ptr_aligned_divide with "P A").
   Qed.
-
-  Global Instance valid_ptr_persistent p : Persistent (valid_ptr p) := _.
-  Global Instance valid_ptr_affine p : Affine (valid_ptr p) := _.
-  Global Instance valid_ptr_timeless p : Timeless (valid_ptr p) := _.
-
-  Global Instance strict_valid_ptr_persistent p : Persistent (strict_valid_ptr p) := _.
-  Global Instance strict_valid_ptr_affine p : Affine (strict_valid_ptr p) := _.
-  Global Instance strict_valid_ptr_timeless p : Timeless (strict_valid_ptr p) := _.
 
   Lemma valid_ptr_nullptr : |-- valid_ptr nullptr.
   Proof. exact: _valid_ptr_nullptr. Qed.

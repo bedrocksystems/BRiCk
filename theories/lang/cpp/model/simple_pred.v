@@ -201,20 +201,23 @@ Module SimpleCPP.
     (** pointer validity *)
     (** Pointers past the end of an object/array can be valid; see
     https://eel.is/c++draft/expr.add#4 *)
-    Definition in_range (strict : bool) (l o h : Z) : mpred :=
-      [| (l <= o < h)%Z \/ negb strict /\ o = h |].
+    Definition in_range (vt : validity_type) (l o h : Z) : mpred :=
+      [| (l <= o < h)%Z \/ (vt = Relaxed /\ o = h) |].
 
     Lemma in_range_weaken l o h :
-      in_range true l o h |-- in_range false l o h.
+      in_range Strict l o h |-- in_range Relaxed l o h.
     Proof. rewrite /in_range/=. f_equiv. rewrite/impl. tauto. Qed.
 
-    Definition _valid_ptr (strict : bool) (p : ptr) : mpred :=
+    Definition _valid_ptr vt (p : ptr) : mpred :=
       [| p = nullptr |] \\//
             Exists base l h o,
                 blocks_own base l h **
-                in_range strict l o h ** [| p = offset_ptr_ o base |].
-    Definition valid_ptr := _valid_ptr false.
-    Definition strict_valid_ptr := _valid_ptr true.
+                in_range vt l o h ** [| p = offset_ptr_ o base |].
+    (* strict validity (not past-the-end) *)
+    Notation strict_valid_ptr := (_valid_ptr Strict).
+    (* validity (past-the-end allowed) *)
+    Notation relaxed_valid_ptr := (_valid_ptr Relaxed).
+    Notation valid_ptr := relaxed_valid_ptr (only parsing).
 
     Instance _valid_ptr_persistent : forall b p, Persistent (_valid_ptr b p) := _.
     Instance _valid_ptr_affine : forall b p, Affine (_valid_ptr b p) := _.
@@ -223,12 +226,12 @@ Module SimpleCPP.
     Theorem _valid_ptr_nullptr b : |-- _valid_ptr b nullptr.
     Proof. by iLeft. Qed.
 
-    Lemma strict_valid_valid p :
-      _valid_ptr true p |-- _valid_ptr false p.
+    Lemma strict_valid_relaxed p :
+      strict_valid_ptr p |-- relaxed_valid_ptr p.
     Proof. rewrite /_valid_ptr/=. by setoid_rewrite in_range_weaken. Qed.
 
-    Axiom valid_ptr_alloc_id : forall p,
-      valid_ptr p |-- [| is_Some (ptr_alloc_id p) |].
+    Axiom relaxed_valid_ptr_alloc_id : forall p,
+      relaxed_valid_ptr p |-- [| is_Some (ptr_alloc_id p) |].
     (** This is a very simplistic definition of [provides_storage].
     A more useful definition should probably not be persistent. *)
     Definition provides_storage (base newp : ptr) (_ : type) : mpred :=
@@ -713,11 +716,11 @@ Module SimpleCPP.
     (* Not true in the current model, requires making pinned_ptr part of pointers. *)
     Axiom offset_pinned_ptr : forall resolve o n va p,
       eval_offset resolve o = Some n ->
-      _valid_ptr false (p .., o) |--
+      relaxed_valid_ptr (p .., o) |--
       pinned_ptr va p -* pinned_ptr (Z.to_N (Z.of_N va + n)) (p .., o).
 
     Instance pinned_ptr_valid va p :
-      Observe (_valid_ptr false p) (pinned_ptr va p) := _.
+      Observe (relaxed_valid_ptr p) (pinned_ptr va p) := _.
 
     Theorem provides_storage_pinned_ptr : forall res newp aty va,
        provides_storage res newp aty ** pinned_ptr va res |-- pinned_ptr va newp.
@@ -761,7 +764,7 @@ Module SimpleCPP.
       [| p <> nullptr |] **
       (Exists align, [| @align_of resolve ty = Some align |] ** aligned_ptr align p) **
 
-      _valid_ptr true p ** _valid_ptr false (p .., o_sub resolve ty 1).
+      strict_valid_ptr p ** relaxed_valid_ptr (p .., o_sub resolve ty 1).
       (* TODO: inline valid_ptr, and assert validity of the range, like we should do in tptsto!
       For 0-byte objects, should we assert ownership of one byte, to get character pointers? *)
       (* alloc_own (alloc_id p) (l, h) **
@@ -778,7 +781,7 @@ Module SimpleCPP.
     Lemma type_ptr_valid_plus_one resolve ty p :
       (* size_of resolve ty = Some sz -> *)
       type_ptr (resolve := resolve) ty p |--
-      _valid_ptr false (p .., o_sub resolve ty 1).
+      relaxed_valid_ptr (p .., o_sub resolve ty 1).
     Proof. iDestruct 1 as "(_ & _ & _ & $)". Qed.
 
     Lemma type_ptr_nonnull resolve ty p :
@@ -794,7 +797,7 @@ Module SimpleCPP.
     [pinned_ptr_aligned_divide], but we don't expose this. *)
     Local Lemma pinned_ptr_type_divide_2 {va n σ p ty}
       (Hal : align_of (resolve := σ) ty = Some n) (Hnn : p <> nullptr) :
-      pinned_ptr va p ⊢ _valid_ptr false (p .., o_sub σ ty 1) -∗
+      pinned_ptr va p ⊢ relaxed_valid_ptr (p .., o_sub σ ty 1) -∗
       [| (n | va)%N |] -∗ type_ptr (resolve := σ) ty p.
     Proof.
       rewrite /type_ptr Hal /=. iIntros "P #$ %HvaAl"; iFrame (Hnn).
@@ -813,7 +816,7 @@ Module SimpleCPP.
     *)
     Local Lemma valid_type_uchar resolve p (Hnn : p <> nullptr) va :
       pinned_ptr va p ⊢
-      _valid_ptr false (p .., o_sub resolve T_uchar 1) -∗
+      relaxed_valid_ptr (p .., o_sub resolve T_uchar 1) -∗
       type_ptr (resolve := resolve) T_uchar p.
     Proof.
       iIntros "#P #V".
@@ -853,7 +856,7 @@ Module SimpleCPP.
       [| p <> nullptr |] **
       Exists (oa : option addr),
               mem_inj_own p oa **
-              _valid_ptr true p ** (* assert validity of the range! *)
+              strict_valid_ptr p ** (* assert validity of the range! *)
               oaddr_encodes σ t q oa p v.
 
     Axiom tptsto_live : forall {σ} ty (q : Qp) p v,
@@ -887,7 +890,7 @@ Module SimpleCPP.
       Observe [| q ≤ 1 |]%Qc (@tptsto σ ty q p v) := _.
 
     Global Instance tptsto_valid_ptr {σ} t q p v :
-      Observe (_valid_ptr true p) (@tptsto σ t q p v) := _.
+      Observe (strict_valid_ptr p) (@tptsto σ t q p v) := _.
 
     Global Instance tptsto_agree σ t q1 q2 p v1 v2 :
       Observe2 [| v1 = v2 |] (@tptsto σ t q1 p v1) (@tptsto σ t q2 p v2).
