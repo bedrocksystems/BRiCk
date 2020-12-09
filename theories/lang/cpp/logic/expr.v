@@ -749,6 +749,43 @@ Module Type Expr.
         wp_prval e Q
         |-- wp_prval (Epseudo_destructor ty e) Q.
 
+    (* TODO: Fix this (and incorporate de bruijn indices to support nested
+         `ArrayLoopInitExprs` *)
+    Axiom wp_lval_arrayloop_index : forall ty Q,
+        wp_lval (Evar (Lname "!loop_index") ty) Q
+        |-- wp_lval (Earrayloop_index ty) Q.
+
+    Fixpoint _arrayloop_init
+             (sz : nat) (idx : nat) (targetp : ptr)
+             (init : Expr) (ty : type)
+             (Q : FreeTemps -> epred)
+             {struct sz}
+      : epred :=
+      match sz with
+      | O => Q True%I
+      | S sz' =>
+        (* TODO: Fix this representation of the loop index as a local *)
+        _at (_local ρ "!loop_index")%bs (primR (Tint W64 Unsigned) (1/2) idx) -*
+        wp_init ty (targetp .., o_sub resolve ty idx) init
+                (fun free =>
+                   _at (_local ρ "!loop_index")%bs (primR (Tint W64 Unsigned) (1/2) idx) **
+                   _arrayloop_init sz' (S idx) targetp init ty (fun free' => Q (free ** free')))
+      end.
+
+    Axiom wp_prval_arrayloop_init : forall sz target init ty Q,
+          wp_lval target
+                  (fun p free =>
+                     _arrayloop_init (N.to_nat sz) 0 p init ty
+                                     (* Since the `Q` for `wp_prval` takes a `val`
+                                        we need to supply one in the continuation;
+                                        I used `Vvoid`, but I'm not sure if this
+                                        is right.*)
+                                     (fun free' => Q Vvoid (free ** free')))
+      |-- wp_prval (Earrayloop_init sz target init (Tarray ty sz)) Q.
+
+    (* Implicit initialization initializes the variables with
+       indeterminate values.
+     *)
     Axiom wp_prval_implicit_init_int : forall ty sz sgn Q,
         drop_qualifiers ty = Tint sz sgn ->
           Q (Vint 0) empSP
