@@ -793,6 +793,23 @@ Module SimpleCPP.
       Exists align, [| @align_of σ ty = Some align |] ** aligned_ptr align p.
     Proof. by iDestruct 1 as "(_ & $ & _)". Qed.
 
+    (* TODO: is o_sub Proper? *)
+    Instance o_sub_mono :
+      Proper (genv_leq ==> eq ==> eq ==> eq) (@o_sub).
+    Admitted.
+
+    Instance type_ptr_mono :
+      Proper (genv_leq ==> eq ==> eq ==> (⊢)) (@type_ptr).
+    Proof.
+      rewrite /type_ptr => σ1 σ2 Heq.
+      solve_proper_prepare. do 3 f_equiv.
+      - intros ?. (do 2 f_equiv) => Hal1.
+        move: Heq => /Proper_align_of /(_ y y eq_refl).
+        inversion 1; congruence.
+      - f_equiv. by rewrite Heq.
+    Qed.
+
+
     (* This lemma is unused; it confirms we can lift the other half of
     [pinned_ptr_aligned_divide], but we don't expose this. *)
     Local Lemma pinned_ptr_type_divide_2 {va n σ p ty}
@@ -825,21 +842,6 @@ Module SimpleCPP.
       iIntros "!%". exact: N.divide_1_l.
     Qed.
 
-(*
-    Instance tptsto_type_ptr resolve ty q p v align
-      (Hal : align_of (resolve := resolve) ty = Some align) :
-      Observe (type_ptr (resolve := resolve) ty p)
-        (tptsto (σ := resolve) ty q p v).
-    Proof.
-      apply: observe_intro_persistent.
-      rewrite /tptsto /type_ptr.
-      f_equiv.
-      iDestruct 1 as (oa) "(? & #$ & ?)".
-      iSplit; last admit. (* validity of range. *)
-      iExists align. iFrame (Hal).
-      (* alignment of pointer. *)
-    Abort. *)
-
     (* todo(gmm): this isn't accurate, but it is sufficient to show that the axioms are
     instantiatable. *)
     Definition identity {σ : genv} (this : globname) (most_derived : option globname)
@@ -855,9 +857,29 @@ Module SimpleCPP.
     Definition tptsto {σ:genv} (t : type) (q : Qp) (p : ptr) (v : val) : mpred :=
       [| p <> nullptr |] **
       Exists (oa : option addr),
+              type_ptr t p ** (* use the appropriate ghost state instead *)
               mem_inj_own p oa **
-              strict_valid_ptr p ** (* assert validity of the range! *)
               oaddr_encodes σ t q oa p v.
+    (* TODO: [tptsto] should not include [type_ptr] wholesale, but its
+    pieces in the new model, replacing [mem_inj_own], and [tptsto_type_ptr]
+    should be proved properly. *)
+    Global Instance tptsto_type_ptr : forall (σ : genv) ty q p v,
+      Observe (type_ptr ty p) (tptsto ty q p v) := _.
+(*
+    Instance tptsto_type_ptr resolve ty q p v align
+      (Hal : align_of (resolve := resolve) ty = Some align) :
+      Observe (type_ptr (resolve := resolve) ty p)
+        (tptsto (σ := resolve) ty q p v).
+    Proof.
+      apply: observe_intro_persistent.
+      rewrite /tptsto /type_ptr.
+      f_equiv.
+      iDestruct 1 as (oa) "(? & #$ & ?)".
+      iSplit; last admit. (* validity of range. *)
+      iExists align. iFrame (Hal).
+      (* alignment of pointer. *)
+    Abort. *)
+
 
     Axiom tptsto_live : forall {σ} ty (q : Qp) p v,
       @tptsto σ ty q p v |-- live_ptr p ** True.
@@ -889,9 +911,6 @@ Module SimpleCPP.
     Global Instance tptsto_frac_valid {σ} ty (q : Qp) p v :
       Observe [| q ≤ 1 |]%Qc (@tptsto σ ty q p v) := _.
 
-    Global Instance tptsto_valid_ptr {σ} t q p v :
-      Observe (strict_valid_ptr p) (@tptsto σ t q p v) := _.
-
     Global Instance tptsto_agree σ t q1 q2 p v1 v2 :
       Observe2 [| v1 = v2 |] (@tptsto σ t q1 p v1) (@tptsto σ t q2 p v2).
     Proof.
@@ -911,16 +930,16 @@ Module SimpleCPP.
       intros. iIntros "(TP & PI)".
       iDestruct "PI" as "[_ [[-> %]|[[%%] MJ]]]"; first by rewrite tptsto_nonnull.
       rewrite /tptsto.
-      iDestruct "TP" as (_ ma) "[MJ' [VP TP]]".
+      iDestruct "TP" as (_ ma) "[TP [MJ' OA]]".
       iDestruct (mem_inj_own_agree with "MJ MJ'") as %<-.
-      iDestruct "TP" as (vs) "(#EN & Bys & VBys)".
+      iDestruct "OA" as (vs) "(#EN & Bys & VBys)".
       iIntros "!>".
       iExists vs. iFrame "EN VBys".
       iIntros (v' vs') "#EN' VBys".
       iDestruct (encodes_consistent with "EN EN'") as %Heq.
       iMod (bytes_update vs' Heq with "Bys") as "Bys'".
       iModIntro.
-      iSplit; first done. iExists (Some va). iFrame "MJ VP".
+      iSplit; first done. iExists (Some va). iFrame "TP MJ".
       iExists vs'. by iFrame.
     Qed.
 
