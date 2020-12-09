@@ -112,8 +112,6 @@ Notation ".[ t ! n ]" := ((@_sub _ _ _ t n))
 Notation "p .[ t ! n ]" := (_offsetL (@_sub _ _ _ t n) p)
   (at level 11, left associativity, only printing, format "p  .[  t  '!'  n  ]").
 
-Existing Class genv.
-
 (* Test suite *)
 Section test_suite.
 
