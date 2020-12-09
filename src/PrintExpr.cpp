@@ -996,6 +996,29 @@ public:
         cprint.printQualType(expr->getType(), print);
         print.end_ctor();
     }
+
+    void VisitArrayInitLoopExpr(const ArrayInitLoopExpr* expr,
+                                CoqPrinter& print, ClangPrinter& cprint,
+                                const ASTContext&) {
+        print.ctor("Earrayloop_init");
+
+        print.output() << expr->getArraySize() << fmt::nbsp;
+
+        // this is the source array which we are initializing
+        cprint.printExpr(expr->getCommonExpr(), print);
+        // this is the expression that is evaluated
+        cprint.printExpr(expr->getSubExpr(), print);
+
+        done(expr, print, cprint);
+    }
+
+    void VisitArrayInitIndexExpr(const ArrayInitIndexExpr* expr,
+                                 CoqPrinter& print, ClangPrinter& cprint,
+                                 const ASTContext&) {
+        print.ctor("Earrayloop_index");
+        done(expr, print, cprint);
+    }
+>>>>>>> 0c34955... Add the (common) array expression to the Earrayinit_loop AST node.
 };
 
 PrintExpr PrintExpr::printer;

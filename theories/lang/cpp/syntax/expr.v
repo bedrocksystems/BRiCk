@@ -174,6 +174,10 @@ Inductive Expr : Set :=
 | Eatomic (_ : AtomicOp) (_ : list (ValCat * Expr)) (_ : type)
 | Eva_arg (_ : Expr) (_ : type)
 | Epseudo_destructor (_ : type) (_ : Expr) (* type void *)
+
+| Earrayloop_init (_ : N) (target : Expr) (init : Expr) (_ : type)
+| Earrayloop_index (_ : type)
+
 | Eunsupported (_ : bs) (_ : type).
 Instance Expr_eq_dec : EqDecision Expr.
 Proof.
