@@ -154,7 +154,7 @@ Module Type CPP_LOGIC (Import CC : CPP_LOGIC_CLASS)
     (* strict validity (not past-the-end) *)
     Notation strict_valid_ptr := (_valid_ptr Strict).
     (* validity (past-the-end allowed) *)
-    Notation relaxed_valid_ptr := (_valid_ptr Relaxed).
+    Notation valid_ptr := (_valid_ptr Relaxed).
 
     Axiom _valid_ptr_persistent : forall b p, Persistent (_valid_ptr b p).
     Axiom _valid_ptr_affine : forall b p, Affine (_valid_ptr b p).
@@ -163,7 +163,7 @@ Module Type CPP_LOGIC (Import CC : CPP_LOGIC_CLASS)
 
     Axiom _valid_ptr_nullptr : forall b, |-- _valid_ptr b nullptr.
     Axiom strict_valid_relaxed : forall p,
-      strict_valid_ptr p |-- relaxed_valid_ptr p.
+      strict_valid_ptr p |-- valid_ptr p.
 
     (** Formalizes the notion of "provides storage",
     http://eel.is/c++draft/intro.object#def:provides_storage *)
@@ -218,8 +218,8 @@ Module Type CPP_LOGIC (Import CC : CPP_LOGIC_CLASS)
     Axiom live_alloc_id_timeless : forall aid, Timeless (live_alloc_id aid).
     Global Existing Instance live_alloc_id_timeless.
 
-    Axiom relaxed_valid_ptr_alloc_id : forall p,
-      relaxed_valid_ptr p |-- [| is_Some (ptr_alloc_id p) |].
+    Axiom valid_ptr_alloc_id : forall p,
+      valid_ptr p |-- [| is_Some (ptr_alloc_id p) |].
 
     (** This pointer is from a live allocation; this does not imply
     [_valid_ptr], because even overflowing offsets preserve the allocation ID.
@@ -335,7 +335,7 @@ Module Type CPP_LOGIC (Import CC : CPP_LOGIC_CLASS)
     Axiom pinned_ptr_affine : forall va p, Affine (pinned_ptr va p).
     Axiom pinned_ptr_timeless : forall va p, Timeless (pinned_ptr va p).
     Axiom pinned_ptr_eq : forall va p,
-      pinned_ptr va p -|- [| pinned_ptr_pure va p |] ** relaxed_valid_ptr p.
+      pinned_ptr va p -|- [| pinned_ptr_pure va p |] ** valid_ptr p.
     Axiom pinned_ptr_unique : forall va va' p,
         Observe2 [| va = va' |] (pinned_ptr va p) (pinned_ptr va' p).
     Global Existing Instance pinned_ptr_unique.
@@ -350,7 +350,7 @@ Module Type CPP_LOGIC (Import CC : CPP_LOGIC_CLASS)
 
     Axiom offset_pinned_ptr : forall resolve o n va p,
       PTRI.eval_offset resolve o = Some n ->
-      relaxed_valid_ptr (p .., o) |--
+      valid_ptr (p .., o) |--
       pinned_ptr va p -* pinned_ptr (Z.to_N (Z.of_N va + n)) (p .., o).
 
     Axiom provides_storage_same_address : forall base newp ty,
@@ -420,7 +420,7 @@ Module Type CPP_LOGIC (Import CC : CPP_LOGIC_CLASS)
       type_ptr (resolve := resolve) ty p |-- strict_valid_ptr p.
     (** Hence they can be incremented into (possibly past-the-end) valid pointers. *)
     Axiom type_ptr_valid_plus_one : forall resolve ty p,
-      type_ptr (resolve := resolve) ty p |-- relaxed_valid_ptr (p .., o_sub resolve ty 1).
+      type_ptr (resolve := resolve) ty p |-- valid_ptr (p .., o_sub resolve ty 1).
     Axiom type_ptr_nonnull : forall resolve ty p,
       type_ptr (resolve := resolve) ty p |-- [| p <> nullptr |].
   End with_cpp.
@@ -434,9 +434,7 @@ Export LC L.
 (* strict validity (not past-the-end) *)
 Notation strict_valid_ptr := (_valid_ptr Strict).
 (* validity (past-the-end allowed) *)
-Notation relaxed_valid_ptr := (_valid_ptr Relaxed).
-(* #[deprecated(since="2020-12-09", note="Use relaxed_valid_ptr.")] *)
-Notation valid_ptr := relaxed_valid_ptr (only parsing).
+Notation valid_ptr := (_valid_ptr Relaxed).
 
 
 (* Pointer axioms. XXX Not modeled for now. *)
@@ -498,7 +496,7 @@ Declare Module Export VALID_PTR : VALID_PTR_AXIOMS.
 
 Class ObserveStrictValid `{Σ : cpp_logic} P p := {
   obs_strict_valid :> Observe (strict_valid_ptr p) P;
-  obs_rel_valid :> Observe (relaxed_valid_ptr p) P
+  obs_rel_valid :> Observe (valid_ptr p) P
 }.
 Hint Mode ObserveStrictValid ! ! ! - : typeclass_instances.
 
