@@ -9,6 +9,23 @@ From bedrock.lang.cpp Require Import ast semantics.values semantics.operator.
 From bedrock.lang.cpp Require Import logic.pred.
 
 Parameter eval_binop_impure : forall `{has_cpp : cpp_logic} {resolve : genv}, BinOp -> forall (lhsT rhsT resT : type) (lhs rhs res : val), mpred.
+
+(** Pointer [p'] is not at the beginning of a block. *)
+Definition non_beginning_ptr `{has_cpp : cpp_logic} p' : mpred :=
+  ∃ p o, [| p' = p .., o /\
+    (* ensure that o is > 0 *)
+    some_Forall2 N.gt (ptr_vaddr p') (ptr_vaddr p) |]%ptr ∧ valid_ptr p.
+
+Section non_beginning_ptr.
+  Context `{has_cpp : cpp_logic}.
+
+  Global Instance non_beginning_ptr_persistent p : Persistent (non_beginning_ptr p) := _.
+  Global Instance non_beginning_ptr_affine p : Affine (non_beginning_ptr p) := _.
+  Global Instance non_beginning_ptr_timeless p : Timeless (non_beginning_ptr p) := _.
+End non_beginning_ptr.
+
+Typeclasses Opaque non_beginning_ptr.
+
 Section with_Σ.
   Context `{has_cpp : cpp_logic} {resolve : genv}.
   Notation eval_binop_pure := (eval_binop_pure (resolve := resolve)).
@@ -48,11 +65,6 @@ Section with_Σ.
      pointer represents the address one past the last element of a different
      complete object, the result of the comparison is unspecified.
    *)
-  Definition non_beginning_ptr p' : mpred :=
-    ∃ p o, [| p' = p .., o /\
-      (* ensure that o is > 0 *)
-      some_Forall2 N.gt (ptr_vaddr p') (ptr_vaddr p) |]%ptr ∧ valid_ptr p.
-
   Let comparable vt1 p2 : mpred :=
     [| vt1 = Strict \/ p2 = nullptr |] ∨ non_beginning_ptr p2.
   Let eval_ptr_eq_cmp_op (bo : BinOp) (t f : Z) : Prop :=
