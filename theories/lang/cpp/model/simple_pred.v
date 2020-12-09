@@ -154,9 +154,9 @@ Module SimpleCPP_BASE <: CPP_LOGIC_CLASS.
   End with_cpp.
 End SimpleCPP_BASE.
 
-(* TODO: make this a [Module Type] and provide an instance for it. *)
-Module SimpleCPP_VIRTUAL.
-  Include SimpleCPP_BASE.
+(* TODO: provide an instance for this. *)
+Module Type SimpleCPP_VIRTUAL.
+  Import SimpleCPP_BASE.
 
   Section with_cpp.
     Context `{Σ : cpp_logic}.
@@ -181,6 +181,7 @@ Module SimpleCPP_VIRTUAL.
 End SimpleCPP_VIRTUAL.
 
 Module SimpleCPP.
+  Include SimpleCPP_BASE.
   Include SimpleCPP_VIRTUAL.
   Include PTRS_FULL_IMPL.
 
