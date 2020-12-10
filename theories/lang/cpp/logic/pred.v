@@ -30,6 +30,9 @@ From bedrock.lang.cpp Require Import ast semantics.
 
 Variant validity_type : Set := Strict | Relaxed.
 
+(* Namespace for the invariants of the C++ abstraction's ghost state. *)
+Definition pred_ns : namespace := (nroot .@ "bedrock" .@ "lang" .@ "cpp_logic")%bs.
+
 Module Type CPP_LOGIC_CLASS_BASE.
   Parameter cppG : gFunctors -> Type.
   Axiom has_inv : forall Σ, cppG Σ -> invG Σ.
@@ -255,7 +258,7 @@ Module Type CPP_LOGIC (Import CC : CPP_LOGIC_CLASS)
         placement [new] over an existing object.
      *)
     Axiom identity_forget : forall σ mdc this p,
-        @identity σ this (Some mdc) 1 p |-- @identity σ this None 1 p.
+        @identity σ this (Some mdc) 1 p |-- |={↑pred_ns}=> @identity σ this None 1 p.
 
     (** the pointer points to the code
 
@@ -343,11 +346,11 @@ Module Type CPP_LOGIC (Import CC : CPP_LOGIC_CLASS)
 
     (* A pinned ptr allows access to the underlying bytes. The fupd is needed to
       update the C++ abstraction's ghost state. *)
-    Axiom pinned_ptr_borrow : forall {σ} ty p v va (M: coPset),
+    Axiom pinned_ptr_borrow : forall {σ} ty p v va,
       @tptsto σ ty 1 p v ** pinned_ptr va p |--
-        |={M}=> Exists vs, @encodes σ ty v vs ** vbytes va vs 1 **
+        |={↑pred_ns}=> Exists vs, @encodes σ ty v vs ** vbytes va vs 1 **
                 (Forall v' vs', @encodes σ ty v' vs' -* vbytes va vs' 1 -*
-                                |={M}=> @tptsto σ ty 1 p v').
+                                |={↑pred_ns}=> @tptsto σ ty 1 p v').
 
     Axiom offset_pinned_ptr : forall resolve o n va p,
       PTRI.eval_offset resolve o = Some n ->

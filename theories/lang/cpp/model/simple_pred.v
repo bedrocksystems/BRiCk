@@ -850,7 +850,7 @@ Module SimpleCPP.
         placement [new] over an existing object.
      *)
     Theorem identity_forget : forall σ mdc this p,
-        @identity σ this (Some mdc) 1 p |-- @identity σ this None 1 p.
+        @identity σ this (Some mdc) 1 p |-- |={↑pred_ns}=> @identity σ this None 1 p.
     Proof. rewrite /identity. eauto. Qed.
 
     Definition tptsto {σ:genv} (t : type) (q : Qp) (p : ptr) (v : val) : mpred :=
@@ -920,13 +920,13 @@ Module SimpleCPP.
       destruct oa2; iApply (observe_2 with "H1 H2").
     Qed.
 
-    Theorem pinned_ptr_borrow : forall {σ} ty p v va M,
+    Theorem pinned_ptr_borrow {σ} ty p v va :
       @tptsto σ ty 1 p v ** pinned_ptr va p |--
-      |={M}=> Exists vs, @encodes σ ty v vs ** vbytes va vs 1 **
-              (Forall v' vs', @encodes  σ ty v' vs' -* vbytes va vs' 1 -*
-                              |={M}=> @tptsto σ ty 1 p v').
+        |={↑pred_ns}=> Exists vs, @encodes σ ty v vs ** vbytes va vs 1 **
+                (Forall v' vs', @encodes σ ty v' vs' -* vbytes va vs' 1 -*
+                                |={↑pred_ns}=> @tptsto σ ty 1 p v').
     Proof.
-      intros. iIntros "(TP & PI)".
+      iIntros "(TP & PI)".
       iDestruct "PI" as "[_ [[-> %]|[[%%] MJ]]]"; first by rewrite tptsto_nonnull.
       rewrite /tptsto.
       iDestruct "TP" as (_ ma) "[TP [MJ' OA]]".
