@@ -13,8 +13,7 @@ From iris.base_logic.lib Require Import cancelable_invariants.
 From iris.proofmode Require Import tactics.
 From iris_string_ident Require Import ltac2_string_ident.
 
-From bedrock.lang.prelude Require Import base avl bytestring.
-Require Import bedrock.lang.prelude.base.
+From bedrock.lang.prelude Require Import base avl bytestring option.
 
 From bedrock.lang.cpp Require Import ast.
 From bedrock.lang.cpp.semantics Require Import values sub_module.
@@ -128,6 +127,16 @@ Definition global_ptr (tu : translation_unit) (o : obj_name) : ptr :=
   let obj : option ObjValue := tu !! o in
   let p := Npos (encode obj) in (mkptr p p).
 *)
+
+Module Type PTRS_DERIVED_MIXIN (Import P : PTRS).
+  Definition same_alloc : ptr -> ptr -> Prop := same_property ptr_alloc_id.
+  Lemma same_alloc_eq : same_alloc = same_property ptr_alloc_id.
+  Proof. done. Qed.
+
+  Definition same_address : ptr -> ptr -> Prop := same_property ptr_vaddr.
+  Lemma same_address_eq : same_address = same_property ptr_vaddr.
+  Proof. done. Qed.
+End PTRS_DERIVED_MIXIN.
 
 (**
 A simple consistency proof for [PTRS]; this one is inspired by Cerberus's
@@ -327,6 +336,7 @@ Module SIMPLE_PTRS_IMPL : PTRS.
     o_sub σ ty 0 = o_id.
   Proof. rewrite /o_sub /o_sub_off /opt_to_off => -[? ->] //=. rewrite Z.mul_0_l. Admitted.
 
+  Include PTRS_DERIVED_MIXIN.
 End SIMPLE_PTRS_IMPL.
 
 Module Import merge_elems.
@@ -838,4 +848,6 @@ Module PTRS_IMPL : PTRS.
     let p' := (p .., o)%ptr in
     is_Some (ptr_alloc_id p') -> ptr_alloc_id p' = ptr_alloc_id p.
   Admitted.
+
+  Include PTRS_DERIVED_MIXIN.
 End PTRS_IMPL.

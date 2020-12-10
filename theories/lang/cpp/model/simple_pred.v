@@ -63,7 +63,7 @@ End fractional.
 
 (* Stand-in for an actual model of PTRS_FULL.
 Ensures that everything needed is properly functorized. *)
-Module Type PTRS_I := PTRS <+ PTR_INTERNAL.
+Module Type PTRS_I := PTRS <+ PTRS_DERIVED <+ PTR_INTERNAL.
 Declare Module PTRS_IMPL : PTRS_I.
 Declare Module RAW_BYTES_IMPL : RAW_BYTES.
 Module Type PTRS_FULL_I := PTRS_FULL <+ PTR_INTERNAL.

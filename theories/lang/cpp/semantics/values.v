@@ -280,6 +280,18 @@ one is [PTRS_IMPL].
     ptr_alloc_id (p .., o) = ptr_alloc_id p.
 End PTRS.
 
+Module Type PTRS_DERIVED (Import L : PTRS).
+  Parameter same_alloc : ptr -> ptr -> Prop.
+  Axiom same_alloc_eq : same_alloc = same_property ptr_alloc_id.
+
+  Parameter same_address : ptr -> ptr -> Prop.
+  Axiom same_address_eq : same_address = same_property ptr_vaddr.
+
+  (** Define when [p]'s address is pinned to [va], as defined via [ptr_vaddr]. *)
+  Parameter pinned_ptr_pure : forall (va : vaddr) (p : ptr), Prop.
+  Axiom pinned_ptr_pure_eq : pinned_ptr_pure = fun (va : vaddr) (p : ptr) => ptr_vaddr p = Some va.
+End PTRS_DERIVED.
+
 Module Type RAW_BYTES.
 (** * Raw bytes
     Raw bytes represent the low-level view of data.
@@ -296,28 +308,31 @@ Axiom raw_int_byte : N -> raw_byte.
 
 End RAW_BYTES.
 
-Module Type PTRS_MIXIN (Import L : PTRS).
-  Definition same_alloc : ptr -> ptr -> Prop := same_property ptr_alloc_id.
-  Global Instance same_alloc_dec : RelDecision same_alloc := _.
-  Definition same_address : ptr -> ptr -> Prop := same_property ptr_vaddr.
-  Global Instance same_address_dec : RelDecision same_address := _.
+Module Type PTRS_MIXIN (Import P : PTRS) (Import PD : PTRS_DERIVED P).
+  Global Instance same_alloc_dec : RelDecision same_alloc.
+  Proof. rewrite same_alloc_eq. apply _. Qed.
+  Global Instance same_address_dec : RelDecision same_address.
+  Proof. rewrite same_address_eq. apply _. Qed.
 
-  (** Define when [p]'s address is pinned to [va], as defined via [ptr_vaddr]. *)
-  Definition pinned_ptr_pure (va : vaddr) (p : ptr) := ptr_vaddr p = Some va.
   Lemma pinned_ptr_pure_unique va1 va2 p :
     pinned_ptr_pure va1 p -> pinned_ptr_pure va2 p -> va1 = va2.
   Proof.
-    rewrite /pinned_ptr_pure => H1 H2. apply (inj Some). by rewrite -H1 -H2.
+    rewrite pinned_ptr_pure_eq => H1 H2. apply (inj Some). by rewrite -H1 -H2.
   Qed.
 
   Lemma same_address_pinned p1 p2 :
     same_address p1 p2 <-> ∃ va, pinned_ptr_pure va p1 ∧ pinned_ptr_pure va p2.
-  Proof. exact: same_property_iff. Qed.
+  Proof. by rewrite same_address_eq pinned_ptr_pure_eq same_property_iff. Qed.
+
+  Lemma same_alloc_iff p1 p2 :
+    same_alloc p1 p2 <-> ∃ aid, ptr_alloc_id p1 = Some aid ∧ ptr_alloc_id p2 = Some aid.
+  Proof. by rewrite same_alloc_eq same_property_iff. Qed.
+
   Global Instance pinned_ptr_pure_proper va :
     Proper (same_address ==> iff) (pinned_ptr_pure va).
   Proof.
     move=> p1 p2.
-    by rewrite same_address_pinned /pinned_ptr_pure => -[va' [-> ->]].
+    by rewrite same_address_pinned pinned_ptr_pure_eq => -[va' [-> ->]].
   Qed.
   Global Instance: Params pinned_ptr_pure 1 := {}.
 
@@ -325,9 +340,8 @@ Module Type PTRS_MIXIN (Import L : PTRS).
     (Hs : is_Some (ptr_alloc_id (p .., o))) :
     same_alloc p (p .., o).
   Proof.
-    case: (Hs) => aid Eq.
-    rewrite /same_alloc same_property_iff.
-    exists aid. rewrite -(ptr_alloc_id_offset Hs) //.
+    case: (Hs) => aid Eq. rewrite same_alloc_iff.
+    exists aid. by rewrite -(ptr_alloc_id_offset Hs).
   Qed.
 End PTRS_MIXIN.
 
@@ -360,7 +374,7 @@ Instance val_inhabited : Inhabited val := populate (Vint 0).
 
 End VAL_MIXIN.
 
-Module Type PTRS_FULL := PTRS <+ RAW_BYTES <+ VAL_MIXIN <+ PTRS_MIXIN.
+Module Type PTRS_FULL := PTRS <+ PTRS_DERIVED <+ RAW_BYTES <+ VAL_MIXIN <+ PTRS_MIXIN.
 Declare Module PTRS_FULL_AXIOM : PTRS_FULL.
 Export PTRS_FULL_AXIOM.
 
