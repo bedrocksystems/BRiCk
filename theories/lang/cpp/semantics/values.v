@@ -66,10 +66,12 @@ Proof. by apply: (inj_countable' alloc_id_car MkAllocId) => -[?]. Qed.
 Module Type PTRS.
 (** * Pointers.
 
-This is the abstract model of pointers in C++. Pointers describe paths
-that might identify objects, which might be alive. Hence they must be
-understood relative to the C++ object model
-(https://eel.is/c++draft/intro.object).
+This is the abstract model of pointers in C++ — more precisely, of their
+values. Pointers describe paths that might identify objects, which might be
+alive. Hence they must be understood relative to the C++ object model
+(https://eel.is/c++draft/intro.object). We also use pointers to represent the
+values of references, even if those are restricted to point to objects or
+functions (https://eel.is/c++draft/dcl.ref#5).
 
 - Not all of our pointers have concrete addresses.
   In C++, pointers to some objects are never created, and typical compilers
@@ -79,6 +81,21 @@ understood relative to the C++ object model
   (https://eel.is/c++draft/basic.compound#def:represents_the_address).
   Function [ptr_vaddr] maps a pointer to the address it represents, if any.
   See also documentation of [tptsto] and [pinned_ptr].
+  (Compilers might temporarily store objects elsewhere, but only as a
+  semantics-preserving optimization, which we ignore in our model of the C++
+  abstract machine).
+  That objects (of non-zero size) have constant addresses follows:
+  - for C11 (draft N1570), from 6.2.4.2:
+    > An object exists, has a constant address^33
+    > [33]: The term ‘‘constant address’’ means that two pointers to the object
+    constructed at possibly different times will compare equal.
+  - for C++, from https://eel.is/c++draft/intro.object#8:
+
+    > an object with nonzero size shall occupy one or more bytes of storage
+
+    and https://eel.is/c++draft/intro.memory#1:
+
+    > every byte has a unique address.
 
 Pointers also have an _allocation ID_; the concept does not exist in
 the standard but is used to model provenance in many models of C
@@ -109,7 +126,8 @@ Our API allows tracking nested objects accurately, matching the C (object)
 memory model (as rendered by Krebbers) and the model mandated by the C++
 standard.
 
-A simple model is [alloc ID * option address] [SIMPLE_PTRS_IMPL].
+A simple model is [alloc ID * option address] [SIMPLE_PTRS_IMPL]; a richer
+one is [PTRS_IMPL].
 *)
 
   Parameter ptr : Set.
@@ -138,7 +156,8 @@ A simple model is [alloc ID * option address] [SIMPLE_PTRS_IMPL].
       [p .., o] is a pointer to that subobject. If no such object exist,
       [valid_ptr (p .., o)] will not hold.
 
-      For instance
+      For instance, if [p->x] is a C++ object but [p->y] isn't, in Coq pointer
+      [p ., o_field "x"] will be valid but [p ., o_field "y"] will not,
       *)
   Parameter offset : Set.
   Declare Scope offset_scope.
@@ -174,10 +193,12 @@ A simple model is [alloc ID * option address] [SIMPLE_PTRS_IMPL].
 
   (** C++ provides a distinguished pointer [nullptr] that is *never
       dereferenceable*
+      (https://eel.is/c++draft/basic.compound#3)
   *)
   Parameter nullptr : ptr.
 
-  (** An invalid pointer, included as a sentinel value. *)
+  (** An invalid pointer, included as a sentinel value. Other pointers might
+  be invalid as well; see [_valid_ptr]. *)
   Parameter invalid_ptr : ptr.
 
   (* Pointer to a C++ "complete object" with external or internal linkage, or
@@ -247,8 +268,11 @@ A simple model is [alloc ID * option address] [SIMPLE_PTRS_IMPL].
   Parameter ptr_alloc_id : ptr -> option alloc_id.
   (**
   Map pointers to the address they represent,
-  (https://eel.is/c++draft/basic.compound#def:represents_the_address), as
-  also discussed above. Only total on pinned pointers, not on all pointers. *)
+  (https://eel.is/c++draft/basic.compound#def:represents_the_address).
+  Not defined on all valid pointers; defined on pointers existing in C++ (
+  https://eel.is/c++draft/basic.compound#3).
+  See discussion above.
+  *)
   Parameter ptr_vaddr : ptr -> option vaddr.
 
   Axiom ptr_alloc_id_offset : forall {p o},
@@ -277,6 +301,8 @@ Module Type PTRS_MIXIN (Import L : PTRS).
   Global Instance same_alloc_dec : RelDecision same_alloc := _.
   Definition same_address : ptr -> ptr -> Prop := same_property ptr_vaddr.
   Global Instance same_address_dec : RelDecision same_address := _.
+
+  (** Define when [p]'s address is pinned to [va], as defined via [ptr_vaddr]. *)
   Definition pinned_ptr_pure (va : vaddr) (p : ptr) := ptr_vaddr p = Some va.
   Lemma pinned_ptr_pure_unique va1 va2 p :
     pinned_ptr_pure va1 p -> pinned_ptr_pure va2 p -> va1 = va2.
@@ -307,13 +333,16 @@ End PTRS_MIXIN.
 
 Module Type VAL_MIXIN (Import L : PTRS) (Import R : RAW_BYTES).
 
-(** * values
-    Abstract C++ runtime values come in two flavors.
-    - integers
-    - pointers
+(** * Values
+    Primitive abstract C++ runtime values come in two flavors.
+    - pointers (also used for references)
+    - integers (used for everything else)
+    Aggregates are not represented directly, but only by talking about
+    primitive subobjects.
+
     There is also a distinguished undefined element [Vundef] that
-    models uninitialized values. Operations on [Vundef] are all
-    undefined behavior.
+    models uninitialized values (https://eel.is/c++draft/basic.indet).
+    Operations on [Vundef] are all undefined behavior.
     [Vraw] (a raw byte) represents the low-level bytewise view of data.
     See [logic/layout.v] for more axioms about it.
  *)

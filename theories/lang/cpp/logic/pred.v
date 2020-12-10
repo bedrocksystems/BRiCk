@@ -121,11 +121,12 @@ Module Type CPP_LOGIC (Import CC : CPP_LOGIC_CLASS)
       past-the-end pointers into overflow territory.
 
       Our definition of validity includes all cases in which a pointer is not
-      an _invalid pointer value_
+      an _invalid pointer value_ in the sense of the standard
       (https://eel.is/c++draft/basic.compound#3.1), except that our concept
-      of validity survives deallocation; a pointer is only valid according to the standard
-      if it satisfies _both_ [_valid_ptr strict p] and [live_ptr p]; we
-      require both where needed (e.g. [eval_ptr_eq]).
+      of validity survives deallocation; a pointer is only valid according to
+      the standard (or "standard-valid") if it is _both_ valid ([_valid_ptr
+      strict p]) and live ([live_ptr p]); we require both where needed (e.g.
+      [eval_ptr_eq]).
 
       When the duration of a region of storage ends [note 1], contained objects [o] go
       from live to dead, and pointers to such objects become _dangling_, or
@@ -507,9 +508,12 @@ Section with_cpp.
       case: vt => //. by rewrite strict_valid_relaxed.
   Qed.
 
-  (** [p] is live and valid in our sense; just a convenience wrapper.
-  In particular, [p] is a valid pointer value in the sense of the standard,
-  even when accounting for pointer zapping.
+  (** [p] is valid pointer value in the sense of the standard, or
+  "standard-valid" (https://eel.is/c++draft/basic.compound#3.1), that is both
+  valid (in our sense) and live.
+
+  In particular, [p] is a valid pointer value even when accounting for
+  pointer zapping.
   *)
   Definition _valid_live_ptr vt (p : ptr) : mpred :=
     _valid_ptr vt p ∗ live_ptr p.
