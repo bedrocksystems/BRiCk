@@ -8,15 +8,22 @@ From bedrock.lang.prelude Require Import base.
 
 Definition on {A B C} (R : B -> B -> C) (f : A -> B) (x y : A) : C :=
   R (f x) (f y).
+
+(** Preorder properties lift through [on].
+These instances can lead to divergence of setoid rewriting, so they're only
+available when importing [on_props]. *)
+Module on_props.
 Section on_props.
   Context `{R : relation B} `{f : A -> B}.
 
-  Global Instance on_reflexive `{!Reflexive R}: Reflexive (on R f).
+  Local Instance on_reflexive `{!Reflexive R}: Reflexive (on R f).
   Proof. rewrite /on. by intros ?. Qed.
-  Global Instance on_symmetric `{!Symmetric R}: Symmetric (on R f).
+  Local Instance on_symmetric `{!Symmetric R}: Symmetric (on R f).
   Proof. rewrite /on. by intros ?. Qed.
-  Global Instance on_transitive `{!Transitive R}: Transitive (on R f).
+  Local Instance on_transitive `{!Transitive R}: Transitive (on R f).
   Proof. rewrite /on. by intros ???; etrans. Qed.
+End on_props.
+#[export] Hint Resolve on_reflexive on_symmetric on_transitive : typeclass_instances.
 End on_props.
 
 Definition some_Forall2 `(R : relation A) (oa1 oa2 : option A) :=
@@ -56,6 +63,7 @@ Definition same_property `(obs : A → option B) :=
   on (some_Forall2 eq) obs.
 Section same_property.
   Context `{obs : A → option B}.
+  Import on_props.
 
   Global Instance same_property_per : RelationClasses.PER (same_property obs).
   Proof. rewrite /same_property. split; apply _. Qed.
