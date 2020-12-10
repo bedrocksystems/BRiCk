@@ -3,7 +3,6 @@
  *
  * SPDX-License-Identifier: LGPL-2.1 WITH BedRock Exception for use over network, see repository root for details.
  *)
-Require Import bedrock.lang.prelude.base.
 From iris.algebra Require Import excl gmap.
 From iris.algebra.lib Require Import frac_auth.
 From iris.bi Require Import monpred.
@@ -13,6 +12,8 @@ From iris.base_logic.lib Require Import fancy_updates own.
 From iris.base_logic.lib Require Import cancelable_invariants.
 From iris.proofmode Require Import tactics.
 From iris_string_ident Require Import ltac2_string_ident.
+
+From bedrock.lang.prelude Require Import base option.
 From bedrock.lang.cpp Require Import ast semantics.
 From bedrock.lang.cpp.logic Require Import pred z_to_bytes.
 
@@ -216,7 +217,8 @@ Module SimpleCPP.
       [| p = nullptr |] \\//
             Exists base l h o,
                 blocks_own base l h **
-                in_range vt l o h ** [| p = offset_ptr_ o base |].
+                in_range vt l o h ** [| p = offset_ptr_ o base |] **
+                [| ptr_vaddr p <> Some 0%N |].
     (* strict validity (not past-the-end) *)
     Notation strict_valid_ptr := (_valid_ptr Strict).
     (* relaxed validity (past-the-end allowed) *)
@@ -225,6 +227,20 @@ Module SimpleCPP.
     Instance _valid_ptr_persistent : forall b p, Persistent (_valid_ptr b p) := _.
     Instance _valid_ptr_affine : forall b p, Affine (_valid_ptr b p) := _.
     Instance _valid_ptr_timeless : forall b p, Timeless (_valid_ptr b p) := _.
+
+    (* Needs validity to exclude non-null pointers with 0 addresses but
+    non-null provenance (which can be created by pointer arithmetic!) as
+    invalid. *)
+    Lemma same_address_eq_null p tv :
+      _valid_ptr tv p |--
+      [| same_address p nullptr <-> p = nullptr |].
+    Proof.
+      rewrite /_valid_ptr same_address_eq; iIntros "[->|H]";
+        [ |iDestruct "H" as (????) "(_ & _ & _ & %Hne)"]; iIntros "!%".
+      by rewrite same_property_iff ptr_vaddr_nullptr; naive_solver.
+      rewrite same_property_iff; split; last intros ->;
+        rewrite ptr_vaddr_nullptr; naive_solver.
+    Qed.
 
     Theorem _valid_ptr_nullptr b : |-- _valid_ptr b nullptr.
     Proof. by iLeft. Qed.
@@ -948,6 +964,15 @@ Module SimpleCPP.
       iSplit; first done. iExists (Some va). iFrame "TP MJ".
       iExists vs'. by iFrame.
     Qed.
+
+    Axiom same_address_eq_type_ptr : forall resolve ty p1 p2 n,
+      same_address p1 p2 ->
+      size_of resolve ty = Some n ->
+      (* if [ty = T_uchar], one of these pointer could provide storage for the other. *)
+      ty <> T_uchar ->
+      (n > 0)%N ->
+      type_ptr ty p1 ∧ type_ptr ty p2 ∧ live_ptr p1 ∧ live_ptr p2 ⊢
+        |={↑pred_ns}=> [| p1 = p2 |].
 
   End with_cpp.
 
