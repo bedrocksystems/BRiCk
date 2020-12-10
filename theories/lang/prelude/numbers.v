@@ -33,6 +33,7 @@ Instance Nat_mul_left_id : LeftId (=) 1%nat Nat.mul := Nat.mul_1_l.
 Instance Nat_mul_right_id : RightId (=) 1%nat Nat.mul := Nat.mul_1_r.
 Instance Nat_mul_left_absorb : LeftAbsorb (=) 0%nat Nat.mul := Nat.mul_0_l.
 Instance Nat_mul_right_absorb : RightAbsorb (=) 0%nat Nat.mul := Nat.mul_0_r.
+Instance Nat_trychotomyT : TrichotomyT Nat.lt := nat_lexico_trichotomy.
 
 (** * Natural numbers [N] *)
 
@@ -53,6 +54,7 @@ Instance N_mul_left_id : LeftId (=) 1%N N.mul := N.mul_1_l.
 Instance N_mul_right_id : RightId (=) 1%N N.mul := N.mul_1_r.
 Instance N_mul_left_absorb : LeftAbsorb (=) 0%N N.mul := N.mul_0_l.
 Instance N_mul_right_absorb : RightAbsorb (=) 0%N N.mul := N.mul_0_r.
+Instance N_trychotomyT : TrichotomyT N.lt := N_lexico_trichotomy.
 
 Instance N_succ_inj : Inj (=) (=) N.succ.
 Proof. intros n1 n2. lia. Qed.
@@ -91,6 +93,7 @@ Instance Z_mul_left_id : LeftId (=) 1%Z Z.mul := Z.mul_1_l.
 Instance Z_mul_right_id : RightId (=) 1%Z Z.mul := Z.mul_1_r.
 Instance Z_mul_left_absorb : LeftAbsorb (=) 0%Z Z.mul := Z.mul_0_l.
 Instance Z_mul_right_absorb : RightAbsorb (=) 0%Z Z.mul := Z.mul_0_r.
+Instance Z_trychotomyT : TrichotomyT Z.lt := Z_lexico_trichotomy.
 
 Instance Z_succ_inj : Inj (=) (=) Z.succ.
 Proof. intros n1 n2. lia. Qed.
