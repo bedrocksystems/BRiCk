@@ -52,6 +52,7 @@ From bedrock.lang.cpp.semantics Require Export types sub_module genv.
 
 Local Close Scope nat_scope.
 Local Open Scope Z_scope.
+Implicit Types (σ : genv).
 
 (** ** Allocation IDs. We use them to model pointer provenance, following
 Cerberus. *)
@@ -278,6 +279,13 @@ one is [PTRS_IMPL].
   Axiom ptr_alloc_id_offset : forall {p o},
     is_Some (ptr_alloc_id (p .., o)) ->
     ptr_alloc_id (p .., o) = ptr_alloc_id p.
+
+  (** Pointers into the same array with the same address have the same index.
+  Wrapped by [same_address_o_sub_eq]. *)
+  Axiom ptr_vaddr_o_sub_eq : forall p σ ty n1 n2 sz,
+    size_of σ ty = Some sz -> (sz > 0)%N ->
+    (same_property ptr_vaddr (p .., o_sub _ ty n1) (p .., o_sub _ ty n2) ->
+    n1 = n2)%ptr.
 End PTRS.
 
 Module Type PTRS_DERIVED (Import L : PTRS).
@@ -343,6 +351,13 @@ Module Type PTRS_MIXIN (Import P : PTRS) (Import PD : PTRS_DERIVED P).
     case: (Hs) => aid Eq. rewrite same_alloc_iff.
     exists aid. by rewrite -(ptr_alloc_id_offset Hs).
   Qed.
+
+  (** Pointers into the same array with the same address have the same index.
+  Wrapper by [ptr_vaddr_o_sub_eq]. *)
+  Lemma same_address_o_sub_eq p σ ty n1 n2 sz :
+    size_of σ ty = Some sz -> (sz > 0)%N ->
+    same_address (p .., o_sub _ ty n1) (p .., o_sub _ ty n2) -> n1 = n2.
+  Proof. rewrite same_address_eq. exact: ptr_vaddr_o_sub_eq. Qed.
 End PTRS_MIXIN.
 
 Module Type VAL_MIXIN (Import L : PTRS) (Import R : RAW_BYTES).

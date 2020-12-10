@@ -336,6 +336,22 @@ Module SIMPLE_PTRS_IMPL : PTRS.
     o_sub σ ty 0 = o_id.
   Proof. rewrite /o_sub /o_sub_off /opt_to_off => -[? ->] //=. rewrite Z.mul_0_l. Admitted.
 
+  Lemma ptr_vaddr_o_sub_eq p σ ty n1 n2 sz
+    (Hsz : size_of σ ty = Some sz) (Hsz0 : (sz > 0)%N) :
+    (same_property ptr_vaddr (p .., o_sub σ ty n1) (p .., o_sub σ ty n2) ->
+    n1 = n2)%ptr.
+  Proof.
+    rewrite same_property_iff /ptr_vaddr/= /_offset_ptr_single /o_sub_off => -[addr []].
+    rewrite Hsz /offset_ptr_ /offset_ptr' /=.
+    case: p => [[aid [p|]]|] /=; try by simplify_option_eq.
+    case: (decide (n1 = 0)) => [->|?]; case: (decide (n2 = 0))=> [->|?];
+      rewrite ?Z.mul_0_l //; repeat case_decide; try lia;
+      [by rewrite /offset_vaddr; intros; simplify_option_eq; lia..|].
+    rewrite /offset_vaddr/=; repeat case_option_guard => //; simplify_option_eq.
+    move=> [<-] []. intros Hne%symmetry%Z2N.inj => //.
+    eapply Z.mul_cancel_r, Z.add_cancel_l, Hne; lia.
+  Qed.
+
   Include PTRS_DERIVED_MIXIN.
 End SIMPLE_PTRS_IMPL.
 
@@ -848,6 +864,11 @@ Module PTRS_IMPL : PTRS.
     let p' := (p .., o)%ptr in
     is_Some (ptr_alloc_id p') -> ptr_alloc_id p' = ptr_alloc_id p.
   Admitted.
+
+  Axiom ptr_vaddr_o_sub_eq : forall p σ ty n1 n2 sz,
+    size_of σ ty = Some sz -> (sz > 0)%N ->
+    (same_property ptr_vaddr (p .., o_sub _ ty n1) (p .., o_sub _ ty n2) ->
+    n1 = n2)%ptr.
 
   Include PTRS_DERIVED_MIXIN.
 End PTRS_IMPL.
