@@ -494,46 +494,8 @@ Module Type VALID_PTR_AXIOMS.
 End VALID_PTR_AXIOMS.
 Declare Module Export VALID_PTR : VALID_PTR_AXIOMS.
 
-Class ObserveStrictValid `{Σ : cpp_logic} P p := {
-  obs_strict_valid :> Observe (strict_valid_ptr p) P;
-  obs_rel_valid :> Observe (valid_ptr p) P
-}.
-Hint Mode ObserveStrictValid ! ! ! - : typeclass_instances.
-
-Class ObserveTypePtr `{Σ : cpp_logic} P p (σ : genv) ty := {
-  type_ptr__strict_valid :> ObserveStrictValid P p;
-  obs_type_ptr :> Observe (type_ptr ty p) P;
-}.
-Hint Mode ObserveTypePtr ! ! ! - - - : typeclass_instances.
-
 Section with_cpp.
   Context `{Σ : cpp_logic}.
-
-  Lemma observe_strict_valid_intro
-    `{Hobs : !Observe (strict_valid_ptr p) P} :
-    ObserveStrictValid P p.
-  Proof.
-    split => //.
-    by rewrite /Observe Hobs strict_valid_relaxed.
-  Qed.
-
-  Lemma observe_type_ptr_intro (σ : genv)
-    `{Hobs : !Observe (type_ptr ty p) P} :
-    ObserveTypePtr P p σ ty.
-  Proof.
-    split => //.
-    apply: observe_strict_valid_intro.
-    by rewrite /Observe Hobs type_ptr_strict_valid.
-  Qed.
-
-  Global Instance tptsto_observe_type_ptr (σ : genv) ty q p v :
-    ObserveTypePtr (tptsto ty q p v) p σ ty.
-  Proof. apply observe_type_ptr_intro, tptsto_type_ptr. Qed.
-
-  Local Instance tptsto_strict_valid_ptr (σ : genv) ty q p v :
-    Observe (strict_valid_ptr p) (tptsto ty q p v) := _.
-  Local Instance tptsto_valid_ptr : forall σ t q p v,
-    Observe (valid_ptr p) (tptsto (σ := σ) t q p v) := _.
 
   Lemma valid_ptr_sub {σ : genv} p ty i vt :
     0 <= i -> _valid_ptr vt (p .., o_sub σ ty i) |-- _valid_ptr vt p.
