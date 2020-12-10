@@ -130,9 +130,9 @@ Local Open Scope Z_scope.
 Definition offset_of (resolve : genv) (t : globname) (f : ident) : option Z :=
   match glob_def resolve t with
   | Some (Gstruct s) =>
-    find_field f (List.map (fun '(a,_,_,c) => (a,c.(li_offset) / 8)) s.(s_fields))
+    find_field f (List.map (fun m => (m.(mem_name),m.(mem_layout).(li_offset) / 8)) s.(s_fields))
   | Some (Gunion u) =>
-    find_field f (List.map (fun '(a,_,_,c) => (a,c.(li_offset) / 8)) u.(u_fields))
+    find_field f (List.map (fun m => (m.(mem_name),m.(mem_layout).(li_offset) / 8)) u.(u_fields))
   | _ => None
   end.
 

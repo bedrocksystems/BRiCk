@@ -187,8 +187,8 @@ printDestructor(const CXXDestructorDecl *decl, CoqPrinter &print,
                 if (auto rd =
                         fd->getType().getTypePtr()->getAsCXXRecordDecl()) {
                     print.begin_tuple();
-                    print.output()
-                        << "Field \"" << fd->getName() << "\"," << fmt::nbsp;
+                    print.output() << "InitField \"" << fd->getName() << "\","
+                                   << fmt::nbsp;
                     cprint.printGlobalName(rd->getDestructor(), print);
                     print.end_tuple();
                     print.cons();
@@ -207,7 +207,7 @@ printDestructor(const CXXDestructorDecl *decl, CoqPrinter &print,
                 }
                 auto rec = i->getType().getTypePtr()->getAsCXXRecordDecl();
                 if (rec) {
-                    print.ctor("Base");
+                    print.ctor("InitBase");
                     cprint.printGlobalName(rec, print);
                     print.output() << "," << fmt::nbsp;
                     cprint.printGlobalName(rec->getDestructor(), print);
@@ -313,15 +313,15 @@ public:
                     << cprint.sourceRange(field->getSourceRange()) << "\n";
                 logging::die();
             }
-            print.output() << "(";
+            print.ctor("mkMember") << fmt::nbsp;
             printMangledFieldName(field, print, cprint);
-            print.output() << "," << fmt::nbsp;
+            print.output() << fmt::nbsp;
             cprint.printQualType(field->getType(), print);
-            print.output() << "," << fmt::nbsp;
+            print.output() << fmt::nbsp;
             printFieldInitializer(field, print, cprint);
-            print.output() << "," << fmt::nbsp;
-            print.output() << "Build_LayoutInfo " << layout.getFieldOffset(i++)
-                           << ")";
+            print.output() << fmt::nbsp;
+            print.ctor("Build_LayoutInfo", false)
+                << layout.getFieldOffset(i++) << fmt::rparen << fmt::rparen;
             print.cons();
         };
         print.end_list();
@@ -569,20 +569,21 @@ public:
             // note that implicit initialization is represented explicitly in this list
             // also, the order is corrrect with respect to initalization order
             print.begin_list();
+            // note that not all fields are listed.
             for (auto init : decl->inits()) {
                 print.ctor("Build_Initializer");
                 if (init->isMemberInitializer()) {
-                    print.ctor("Field")
+                    print.ctor("InitField")
                         << "\"" << init->getMember()->getNameAsString() << "\"";
                     print.end_ctor();
                 } else if (init->isBaseInitializer()) {
-                    print.ctor("Base");
+                    print.ctor("InitBase");
                     cprint.printGlobalName(
                         init->getBaseClass()->getAsCXXRecordDecl(), print);
                     print.end_ctor();
                 } else if (init->isIndirectMemberInitializer()) {
                     auto im = init->getIndirectMember();
-                    print.ctor("Indirect");
+                    print.ctor("InitIndirect");
 
                     bool completed = false;
                     print.begin_list();
@@ -614,7 +615,7 @@ public:
 
                     print.end_ctor();
                 } else if (init->isDelegatingInitializer()) {
-                    print.output() << "This";
+                    print.output() << "InitThis";
                 } else {
                     assert(false && "unknown initializer type");
                 }

@@ -114,24 +114,24 @@ Section type_of_field.
     match σ.(genv_tu) !! cls with
     | None => None
     | Some (Gstruct st) =>
-      match List.find (fun '(x,_,_,_) => bool_decide (f = x)) st.(s_fields) with
-      | Some (_, ty, _, _) => Some ty
+      match List.find (fun m => bool_decide (f = m.(mem_name))) st.(s_fields) with
+      | Some m => Some m.(mem_type)
       | _ => None
       end
     | Some (Gunion u) =>
-      match List.find (fun '(x,_,_,_) => bool_decide (f = x)) u.(u_fields) with
-      | Some (_, ty, _, _) => Some ty
+      match List.find (fun m => bool_decide (f = m.(mem_name))) u.(u_fields) with
+      | Some m => Some m.(mem_type)
       | _ => None
       end
     | _ => None
     end.
 
-  Definition type_of_path (from : globname) (p : FieldOrBase) : option type :=
+  Definition type_of_path (from : globname) (p : InitPath) : option type :=
     match p with
-    | This => Some (Tnamed from)
-    | Field fn => type_of_field from fn
-    | Base gn => Some (Tnamed gn)
-    | Indirect ls i =>
+    | InitThis => Some (Tnamed from)
+    | InitField fn => type_of_field from fn
+    | InitBase gn => Some (Tnamed gn)
+    | InitIndirect ls i =>
       (* this is a little bit awkward because we assume the correctness of
          the type annotations in the path
        *)

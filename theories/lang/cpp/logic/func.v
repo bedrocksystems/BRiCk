@@ -224,42 +224,96 @@ Section with_cpp.
   (* initialization of members in the initializer list *)
   Fixpoint wpi_members
            (ti : thread_info) (ρ : region) (cls : globname) (this : ptr)
-           (inits : list Initializer)
-           (Q : mpred -> mpred) : mpred :=
-    match inits with
-    | nil => Q emp
-    | i :: is' =>
-      match i.(init_path) with
-      | This
-      | Base _ => False
-      | _ =>
-        (* TODO backwards compat [this ., offset_for _ cls i.(init_path) |-> tblockR i.(init_type) -*] *)
-        wpi (resolve:=resolve) ⊤ ti ρ cls this i (fun f => f ** wpi_members ti ρ cls this is' Q)
+           (members : list Member) (inits : list Initializer)
+           (Q : mpred) : mpred :=
+    match members with
+    | nil => Q
+    | m :: members =>
+      match List.filter (fun i =>
+                           match i.(init_path) with
+                           | InitField x
+                           | InitIndirect ((x,_) :: _) _ => bool_decide (m.(mem_name) = x)
+                           | _ => false
+                           end) inits with
+      | nil =>
+        (* there is no initializer for this member, so we "default initialize" it
+           (see https://eel.is/c++draft/dcl.init#general-7 )
+         *)
+        False
+      | i :: is' =>
+        match i.(init_path) with
+        | InitField _ (* = m.(mem_name) *) =>
+          match is' with
+          | nil =>
+            (* there is a *unique* initializer for this field *)
+            this ., offset_for _ cls i.(init_path) |-> tblockR i.(init_type) -*
+            wpi (resolve:=resolve) ⊤ ti ρ cls this i (fun f => f ** wpi_members ti ρ cls this members inits Q)
+          | _ =>
+            (* there are multiple initializers for this field *)
+            False
+          end
+        | InitIndirect _ _ =>
+          (* this is initializaing an object via sub-objets using indirect initialization.
+             TODO currently not supported
+           *)
+          False
+        | _ => False (* unreachable due to the filter *)
+        end
       end
     end%I.
 
   (* initialization of bases in the initializer list *)
   Fixpoint wpi_bases (ti : thread_info) (ρ : region) (cls : globname) (this : ptr)
-           (inits : list Initializer)
-           (Q : mpred -> mpred) : mpred :=
-    match inits with
-    | nil => this |-> init_identity cls (Q emp)
-    | i :: is' =>
-      match i.(init_path) with
-      | Field _
-      | Indirect _ _ =>
-        this |-> init_identity cls (wpi_members ti ρ cls this inits Q)
-      | This =>
-        (* this is a delegating constructor *)
-        [| is' = nil |] **
-        [| drop_qualifiers i.(init_type) = Tnamed cls |] **
-        ((* TODO backwards compat [this |-> tblockR i.(init_type) -*] *) wpi (resolve:=resolve) ⊤ ti ρ cls this i Q)
-        (* the constructor that we are delegating to will already initialize the object
-         * identity, so we don't have to do that here.
+           (bases : list globname) (inits : list Initializer)
+           (Q : mpred) : mpred :=
+    match bases with
+    | nil => Q
+    | b :: bases =>
+      match List.filter (fun i => bool_decide (i.(init_path) = InitBase b)) inits with
+      | nil =>
+        (* there is no initializer for this base class, so we use the default constructor *)
+        False
+      | i :: nil =>
+        (* there is an initializer for this class *)
+        this ., offset_for _ cls i.(init_path) |-> tblockR i.(init_type) -*
+        wpi (resolve:=resolve) ⊤ ti ρ cls this i (fun f => f ** wpi_bases ti ρ cls this bases inits Q)
+      | _ :: _ :: _ =>
+        (* there are multiple initializers for this, so we fail *)
+        False
+      end
+    end%I.
+
+  Definition wp_initializer_list  (ti : thread_info) (ρ : region) (cls : globname) (this : ptr)
+             (inits : list Initializer) (Q : mpred) : mpred :=
+    match List.find (fun i => bool_decide (i.(init_path) = InitThis)) inits with
+    | Some {| init_type := ty ; init_init := e |} =>
+      match inits with
+      | _ :: nil =>
+        if bool_decide (drop_qualifiers ty = Tnamed cls) then
+          (* this is a delegating constructor, simply delegate *)
+          (this |-> tblockR ty -* wp_init ⊤ ti ρ (Tnamed cls) this e (fun free => free ** Q))
+        else
+          (* the type names do not match, this should never happen *)
+          False
+      | _ =>
+        (* delegating constructors are not allowed to have any other initializers
          *)
-      | Base _ =>
-        (* TODO backwards compat [this ., offset_for _ cls i.(init_path) |-> tblockR i.(init_type) -*] *)
-        wpi (resolve:=resolve) ⊤ ti ρ cls this i (fun f => f ** wpi_bases ti ρ cls this is' Q)
+        False
+      end
+    | None =>
+      match resolve.(genv_tu).(globals) !! cls with
+      | Some (Gstruct s) =>
+        let bases := wpi_bases ti ρ cls this (List.map fst s.(s_bases)) inits in
+        let members := wpi_members ti ρ cls this s.(s_fields) inits in
+        let ident Q := this |-> init_identity cls Q in
+        (** initialize the bases, then the identity, then the members *)
+        bases (ident (members (type_ptr (Tnamed cls) this -* Q)))
+        (* TODO here we are constructing the [type_ptr] after the members have been initialized
+           TODO we should also get [_padding] and anything else here.
+         *)
+      | _ =>
+        (* We only support initializer lists for struct/class. *)
+        False
       end
     end%I.
 
@@ -288,8 +342,11 @@ Section with_cpp.
          *)
         let ρ := Remp (Some thisp) Tvoid in
         bind_vars ctor.(c_params) rest_vals ρ (fun ρ frees =>
-          |> wpi_bases ti ρ ctor.(c_class) thisp inits (fun free => free **
-               (type_ptr ty thisp -* wp (resolve:=resolve) ⊤ ti ρ body (Kfree frees (void_return (|> Q Vvoid))))))
+          wp_initializer_list ti ρ ctor.(c_class) thisp inits
+              (type_ptr ty thisp -* wp (resolve:=resolve) ⊤ ti ρ body (Kfree frees (void_return (|> Q Vvoid)))))
+              (* TODO shoudl we get [type_ptr] here instead of above? if so, then construction (might not be) compositional in the
+                 way that we want it to be
+               *)
       | _ => False
       end
     end.
@@ -312,35 +369,36 @@ Section with_cpp.
        ([∗list] b ∈ st.(s_bases),
          let '(base,_) := b in
          _base cls base |-> all_identities (Some base) base) -* pureR Q)
-    | _ => lfalse
+    | _ => False
     end.
 
+  (** TODO i should still make a pass through destruction *)
   Fixpoint wpd_bases (ti : thread_info) (ρ : region) (cls : globname) (this : ptr)
-           (dests : list (FieldOrBase * globname))
+           (dests : list (InitPath * globname))
            (Q : mpred) : mpred :=
     match dests with
     | nil => Q
     | d :: is' =>
       match d.1 with
-      | Field _
-      | Indirect _ _
-      | This => False
-      | Base b => wpd (resolve:=resolve) ⊤ ti ρ cls this d
-                ((* TODO backwards compat [this ., offset_for _ cls d.1 |-> tblockR (Tnamed b) **] *) wpd_bases ti ρ cls this is' Q)
+      | InitField _
+      | InitIndirect _ _
+      | InitThis => False
+      | InitBase b => wpd (resolve:=resolve) ⊤ ti ρ cls this d
+                (this ., offset_for _ cls d.1 |-> tblockR (Tnamed b) ** wpd_bases ti ρ cls this is' Q)
       end
     end.
 
   Fixpoint wpd_members
            (ti : thread_info) (ρ : region) (cls : globname) (this : ptr)
-           (dests : list (FieldOrBase * globname))
+           (dests : list (InitPath * globname))
            (Q : mpred) : mpred :=
     match dests with
     | nil => this |-> revert_identity cls Q
     | d :: is' =>
       match d.1 with
-      | This
-      | Indirect _ _ => False
-      | Base _ =>
+      | InitThis
+      | InitIndirect _ _ => False
+      | InitBase _ =>
         this |-> revert_identity cls (wpd_bases ti ρ cls this dests Q)
       | _ =>
         wpd (resolve:=resolve) ⊤ ti ρ cls this d (

@@ -52,12 +52,12 @@ Section with_Σ.
   Proof. rewrite -svalidR_validR. apply _. Qed.
 
   (* TODO: Do we need type_ptrR here? *)
-  Axiom struct_to_raw : forall cls st rss q,
+  Axiom struct_to_raw : forall cls st rss (q : Qp),
     glob_def resolve cls = Some (Gstruct st) ->
     st.(s_layout) = POD ->
-    ([∗ list] fld ∈ st.(s_fields), let '(n,ty,_,_) := fld in
-       Exists rs, [| rss !! n = Some rs |] **
-       _offsetR (_field {| f_name := n ; f_type := cls |}) (rawsR q rs))
+    ([∗ list] fld ∈ st.(s_fields),
+       Exists rs, [| rss !! fld.(mem_name) = Some rs |] **
+       _offsetR (_field {| f_name := fld.(mem_name) ; f_type := cls |}) (rawsR q rs))
       ** struct_padding resolve q cls -|-
       Exists rs, rawsR q rs ** [| raw_bytes_of_struct resolve cls rss rs |].
 
@@ -71,9 +71,8 @@ Section with_Σ.
               let '(gn,_) := base in
               _offsetR (_base cls gn) (anyR (Tnamed gn) 1)) **
            ([∗list] fld ∈ st.(s_fields),
-              let '(n,ty,_,_) := fld in
-              _offsetR (_field {| f_name := n ; f_type := cls |})
-                       (anyR (erase_qualifiers ty) 1)) **
+              _offsetR (_field {| f_name := fld.(mem_name) ; f_type := cls |})
+                       (anyR (erase_qualifiers fld.(mem_type)) 1)) **
            (if has_vtable st
             then identityR cls None 1
             else emp)
@@ -86,9 +85,8 @@ Section with_Σ.
     glob_def resolve cls = Some (Gunion st) ->
         anyR (Tnamed cls) 1
     -|- [∧list] idx↦it ∈ st.(u_fields),
-           let '(i, t, _, _) := it in
-           let f := _field {| f_name := i ; f_type := cls |} in
-           _offsetR f (anyR (erase_qualifiers t) 1) **
+           let f := _field {| f_name := it.(mem_name) ; f_type := cls |} in
+           _offsetR f (anyR (erase_qualifiers it.(mem_type)) 1) **
            union_padding resolve 1 cls idx.
 
   (** decompose an array into individual components

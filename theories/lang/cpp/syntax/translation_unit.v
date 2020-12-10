@@ -14,6 +14,21 @@ Record LayoutInfo : Set :=
 Instance: EqDecision LayoutInfo.
 Proof. solve_decision. Defined.
 
+Variant InitPath : Set :=
+| InitBase (_ : globname)
+| InitField (_ : ident)
+| InitIndirect (anon_path : list (ident * globname)) (_ : ident)
+| InitThis.
+Instance: EqDecision InitPath.
+Proof. solve_decision. Defined.
+
+Record Initializer :=
+  { init_path : InitPath
+  ; init_type : type
+  ; init_init : Expr }.
+Instance: EqDecision Initializer.
+Proof. solve_decision. Defined.
+
 Record Ctor : Set :=
 { c_class  : globname
 ; c_params : list (ident * type)
@@ -26,7 +41,8 @@ Proof. solve_decision. Defined.
 Record Dtor : Set :=
 { d_class  : globname
 ; d_cc     : calling_conv
-; d_body   : option (OrDefault (Stmt * list (FieldOrBase * obj_name)))
+; d_body   : option (OrDefault (Stmt * list (InitPath * obj_name)))
+  (* ^ TODO it is reasonable to eliminate the destructor *)
 }.
 Instance: EqDecision Dtor.
 Proof. solve_decision. Defined.
@@ -58,8 +74,17 @@ Record Method : Set :=
 Instance: EqDecision Method.
 Proof. solve_decision. Defined.
 
+Record Member : Set := mkMember
+{ mem_name : ident
+; mem_type : type
+; mem_init : option Expr
+; mem_layout : LayoutInfo }.
+Instance: EqDecision Member.
+Proof. solve_decision. Defined.
+
+
 Record Union : Set :=
-{ u_fields : list (ident * type * option Expr * LayoutInfo)
+{ u_fields : list Member
   (* ^ fields with type, initializer, and layout information *)
 ; u_size : N
   (* ^ size of the union (including padding) *)
@@ -74,10 +99,11 @@ Variant LayoutType : Set := POD | Standard | Unspecified.
 Instance: EqDecision LayoutType.
 Proof. solve_decision. Defined.
 
+
 Record Struct : Set :=
 { s_bases : list (globname * LayoutInfo)
   (* ^ base classes *)
-; s_fields : list (ident * type * option Expr * LayoutInfo)
+; s_fields : list Member
   (* ^ fields with type, initializer, and layout information *)
 ; s_layout : LayoutType
   (* ^ the type of layout semantics *)
@@ -234,10 +260,10 @@ Section with_type_table.
   Inductive complete_decl : GlobDecl -> Prop :=
   | complete_Struct {st}
               (_ : forall b li, In (b, li) st.(s_bases) -> complete_type (Tnamed b))
-              (_ : forall x t e li, In (x, t, e, li) st.(s_fields) -> complete_type t)
+              (_ : forall x t e li, In (mkMember x t e li) st.(s_fields) -> complete_type t)
     : complete_decl (Gstruct st)
   | complete_Union {u}
-              (_ : forall x t e li, In (x, t, e, li) u.(u_fields) -> complete_type t)
+              (_ : forall x t e li, In (mkMember x t e li) u.(u_fields) -> complete_type t)
     : complete_decl (Gunion u)
   | complete_enum {t consts} (_ : complete_type t)
     : complete_decl (Genum t consts)
