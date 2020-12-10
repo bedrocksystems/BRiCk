@@ -45,5 +45,6 @@ Notation "'int32R' q v" := (intR q v) (at level 10, q at level 1, v at level 1).
 Notation "'int64R' q v" := (longlongR q v) (at level 10, q at level 1, v at level 1).
 
 
-Notation "'ptrR<' ty '>' q p" := (@primR _ _ _ (Tpointer ty) q%Qp (Vptr p)) (at level 1, ty at level 20, q at level 1, p at level 1, format "'ptrR<' ty '>'  q  p").
-Notation "'refR<' ty '>' p" := (@refR _ _ ty (Vptr p)) (at level 1, ty at level 20, p at level 1, format "'refR<' ty '>'  p").
+Notation "'ptrR<' ty '>' q p" := (@primR _ _ _ (Tpointer ty) q%Qp (Vptr p)) (at level 10, ty at level 20, q at level 1, p at level 1, format "'ptrR<' ty '>'  q  p").
+
+Notation "'refR<' ty '>' p" := (@refR _ _ ty (Vptr p)) (at level 10, ty at level 20, p at level 1, format "'refR<' ty '>'  p").
