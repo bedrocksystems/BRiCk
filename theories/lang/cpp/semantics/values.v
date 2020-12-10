@@ -276,6 +276,13 @@ one is [PTRS_IMPL].
   *)
   Parameter ptr_vaddr : ptr -> option vaddr.
 
+  (**
+    [ptr_vaddr_nullptr] is not mandated by the standard, but valid across
+    compilers we are interested in.
+    The closest hint is in https://eel.is/c++draft/conv.ptr
+   *)
+  Axiom ptr_vaddr_nullptr : ptr_vaddr nullptr = Some 0%N.
+
   Axiom ptr_alloc_id_offset : forall {p o},
     is_Some (ptr_alloc_id (p .., o)) ->
     ptr_alloc_id (p .., o) = ptr_alloc_id p.

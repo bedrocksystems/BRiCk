@@ -170,6 +170,9 @@ Module SIMPLE_PTRS_IMPL : PTRS.
   Instance ptr_countable : Countable ptr := _.
   Definition ptr_eq_dec' := ptr_eq_dec.
 
+  Lemma ptr_vaddr_nullptr : ptr_vaddr nullptr = Some 0%N.
+  Proof. done. Qed.
+
   (* lift [offset_vaddr] over the [alloc_id * _] monad. *)
   Program Definition offset_ptr' : Z -> ptr' -> ptr :=
     λ z p,
@@ -769,6 +772,9 @@ Module PTRS_IMPL : PTRS.
   Definition global_ptr (tu : translation_unit) o :=
     lift_root_ptr (global_ptr_ (canonical_tu.tu_to_canon tu) o).
   Definition alloc_ptr a oid := lift_root_ptr (alloc_ptr_ a oid).
+
+  Lemma ptr_vaddr_nullptr : ptr_vaddr nullptr = Some 0%N.
+  Proof. done. Qed.
 
   Instance id_dot : LeftId (=) o_id o_dot.
   Proof. intros o. apply /sig_eq_pi. by case: o. Qed.

@@ -712,6 +712,9 @@ Module SimpleCPP.
       by iDestruct (observe_2_elim_pure (Some va = Some va') with "A B") as %[= ->].
     Qed.
 
+    Lemma pinned_ptr_null : |-- pinned_ptr 0 nullptr.
+    Proof. iSplit; by [iApply _valid_ptr_nullptr | iLeft]. Qed.
+
     (* Not true in the current model, requires making pinned_ptr part of pointers. *)
     Axiom offset_pinned_ptr : forall resolve o n va p,
       eval_offset resolve o = Some n ->

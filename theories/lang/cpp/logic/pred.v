@@ -343,6 +343,7 @@ Module Type CPP_LOGIC (Import CC : CPP_LOGIC_CLASS)
     Axiom pinned_ptr_unique : forall va va' p,
         Observe2 [| va = va' |] (pinned_ptr va p) (pinned_ptr va' p).
     Global Existing Instance pinned_ptr_unique.
+    Axiom pinned_ptr_null : |-- pinned_ptr 0 nullptr.
 
     (* A pinned ptr allows access to the underlying bytes. The fupd is needed to
       update the C++ abstraction's ghost state. *)
