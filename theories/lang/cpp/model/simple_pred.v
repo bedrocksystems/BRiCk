@@ -16,6 +16,8 @@ From iris_string_ident Require Import ltac2_string_ident.
 From bedrock.lang.cpp Require Import ast semantics.
 From bedrock.lang.cpp.logic Require Import pred z_to_bytes.
 
+Implicit Types (vt : validity_type) (σ resolve : genv).
+
 (* todo: does this not exist as a library somewhere? *)
 Definition fractionalR (V : Type) : cmraT :=
   prodR fracR (agreeR (leibnizO V)).
@@ -69,6 +71,8 @@ Declare Module RAW_BYTES_IMPL : RAW_BYTES.
 Module Type PTRS_FULL_I := PTRS_FULL <+ PTR_INTERNAL.
 Module Import PTRS_FULL_IMPL : PTRS_FULL_I :=
   PTRS_IMPL <+ RAW_BYTES_IMPL <+ VAL_MIXIN <+ PTRS_MIXIN.
+
+Implicit Types (p : ptr).
 
 (** A consistency proof for [CPP_LOGIC_CLASS] *)
 Module SimpleCPP_BASE <: CPP_LOGIC_CLASS.
@@ -285,7 +289,7 @@ Module SimpleCPP.
         edestruct _Z_to_bytes_cons as (? & ? & ->) => //; eauto.
       Qed.
 
-      Lemma cptr_ne_aptr p n : cptr p <> aptr n.
+      Lemma cptr_ne_aptr p n : cptr n <> aptr p.
       Proof.
         rewrite /cptr /aptr bytesNat_nnonnull'.
         by edestruct Z_to_bytes_cons as (? & ? & ->).

@@ -30,6 +30,8 @@ From bedrock.lang.cpp Require Import ast semantics.
 
 Variant validity_type : Set := Strict | Relaxed.
 
+Implicit Types (vt : validity_type) (σ resolve : genv).
+
 (* Namespace for the invariants of the C++ abstraction's ghost state. *)
 Definition pred_ns : namespace := (nroot .@ "bedrock" .@ "lang" .@ "cpp_logic")%bs.
 
@@ -103,6 +105,8 @@ Module Type CPP_LOGIC_CLASS := CPP_LOGIC_CLASS_BASE <+ CPP_LOGIC_CLASS_MIXIN.
 
 Module Type CPP_LOGIC (Import CC : CPP_LOGIC_CLASS)
   (Import PTR : PTRS_FULL) (PTRI : PTR_INTERNAL PTR).
+
+  Implicit Types (p : ptr).
 
   (* TODO: unify with [raw_byte]. This should just be machine bytes. See also
     cpp2v-core#135. *)
