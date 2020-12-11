@@ -721,6 +721,17 @@ Section with_cpp.
   Global Instance is_nonnull_timeless : Timeless is_nonnull.
   Proof. rewrite is_nonnull_eq. apply _. Qed.
 
+  Global Instance primR_nonnull {σ} ty q v :
+    Observe is_nonnull (primR (resolve:=σ) ty q v).
+  Proof.
+    rewrite is_nonnull_eq primR_eq. apply monPred_observe=>p /=. apply _.
+  Qed.
+  Global Instance uninitR_nonnull {σ} ty q :
+    Observe is_nonnull (uninitR (resolve:=σ) ty q).
+  Proof.
+    rewrite is_nonnull_eq uninitR_eq. apply monPred_observe=>p /=. apply _.
+  Qed.
+
   Lemma null_nonnull (R : Rep) : is_null |-- is_nonnull -* R.
   Proof.
     rewrite is_null_eq /is_null_def is_nonnull_eq /is_nonnull_def.
