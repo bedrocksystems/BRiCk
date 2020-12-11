@@ -749,44 +749,6 @@ Module Type Expr.
         wp_prval e Q
         |-- wp_prval (Epseudo_destructor ty e) Q.
 
-    (* TODO: Fix this (and incorporate de bruijn indices to support nested
-         `ArrayLoopInitExprs` *)
-    Axiom wp_lval_arrayloop_index : forall ty Q,
-        wp_lval (Evar (Lname "!loop_index") ty) Q
-        |-- wp_lval (Earrayloop_index ty) Q.
-
-    Fixpoint _arrayloop_init
-             (sz : nat) (idx : nat) (targetp : ptr)
-             (init : Expr) (ty : type)
-             (Q : FreeTemps -> epred)
-             {struct sz}
-      : epred :=
-      match sz with
-      | O => Q emp
-      | S sz' =>
-        (* TODO: Fix this representation of the loop index as a local *)
-        _at (_local ρ "!loop_index")%bs (primR (Tint W64 Unsigned) (1/2) idx) -*
-        wp_init ty (Vptr $ _offset_ptr targetp $ o_sub resolve ty idx) init
-                (fun free =>
-                   _at (_local ρ "!loop_index")%bs (primR (Tint W64 Unsigned) (1/2) idx) **
-                   _arrayloop_init sz' (S idx) targetp init ty (fun free' => Q (free ** free')))
-      end%I.
-
-    Axiom wp_prval_arrayloop_init : forall sz target init ty Q,
-          wp_lval target
-                  (fun p free =>
-                     match p with
-                     | Vptr p =>
-                       _arrayloop_init (N.to_nat sz) 0 p init ty
-                                       (* Since the `Q` for `wp_prval` takes a `val`
-                                          we need to supply one in the continuation;
-                                          I used `Vvoid`, but I'm not sure if this
-                                          is right.*)
-                                       (fun free' => Q Vvoid (free ** free'))
-                     | _ => lfalse
-                     end)
-      |-- wp_prval (Earrayloop_init sz target init (Tarray ty sz)) Q.
-
     Axiom wp_prval_implicit_init_int : forall ty sz sgn Q,
         drop_qualifiers ty = Tint sz sgn ->
           Q (Vint 0) empSP
@@ -799,6 +761,85 @@ Module Type Expr.
 
   End with_resolve.
 
+  (* In order to properly model the `Earrayloop_index` expression,
+       we need to be able to grow our `region`; we create a new section
+       in order to avoid being constrained to the `ρ` which was
+       declared as a `Variable` at the beginning of the `with_resolve`
+       section above.
+   *)
+  Section with_resolve__arrayloop.
+    Context `{Σ : cpp_logic thread_info} {resolve:genv}.
+    Variables (M : coPset) (ti : thread_info).
+
+    (* These are the only ones that we need here. *)
+    Local Notation wp_lval := (wp_lval (resolve:=resolve) M ti).
+    Local Notation wp_prval := (wp_prval (resolve:=resolve) M ti).
+    Local Notation wp_init := (wp_init (resolve:=resolve) M ti).
+    Local Notation primR := (primR (resolve:=resolve)) (only parsing).
+
+    (* `Earrayloop_init` and `Earrayloop_index` correspond, respectively,
+       to the `ArrayInitLoopExpr`[1] and `ArrayInitIndexExpr`[2] expressions
+       from clang. While these expressions are not a part of the C++ standard,
+       we can still ascribe a useful semantics.
+
+       **NOTE**: for the time being, we choose note to support nested occurrences
+         of this construct in order to simplify the semantics of `Earrayloop_index`.
+
+       [1] https://clang.llvm.org/doxygen/classclang_1_1ArrayInitLoopExpr.html#details
+       [2] https://clang.llvm.org/doxygen/classclang_1_1ArrayInitIndexExpr.html#details
+     *)
+
+    (* TODO: Write this; it should return `True` iff `Earrayloop_init` or
+         `Earrayloop_index` appears as a (sub)expression of `e`. *)
+    Fixpoint has_arrayloop_subexpr (e : Expr) : Prop. Admitted.
+
+    Axiom wp_lval_arrayloop_index : forall ρ ty Q,
+        wp_lval ρ (Evar (Lname "!loop_index") ty) Q
+        |-- wp_lval ρ (Earrayloop_index ty) Q.
+
+    Definition _arrayloop_init
+      : N ->                    (* sz *)
+        region ->               (* ρ *)
+        N ->                    (* idx *)
+        ptr ->                  (* targetp *)
+        Expr ->                 (* init *)
+        type ->                 (* ty *)
+        (FreeTemps -> epred) -> (* Q *)
+        epred :=
+      N.peano_rect (fun _ : N => region -> N -> ptr -> Expr -> type -> (FreeTemps -> epred) -> epred)
+                   (fun _ _ _ _ _ Q => Q emp)%I
+                   (fun sz' _arrayloop_init_rec ρ idx targetp init ty Q =>
+                      let loop_index := _local ρ "!loop_index"%bs in
+                      _at loop_index (primR (Tint W64 Unsigned) (1/2) idx) -*
+                      wp_init ρ ty (Vptr $ _offset_ptr targetp $ o_sub resolve ty idx) init
+                              (fun free => free **
+                                 _at loop_index (primR (Tint W64 Unsigned) (1/2) idx) **
+                                 _arrayloop_init_rec ρ (N.succ idx) targetp init ty Q)).
+
+    Axiom wp_prval_arrayloop_init : forall sz ρ target init ty Q,
+          (* Do we need to worry about nested `Earrayloop_init` expressions in `target`? *)
+          [| not (has_arrayloop_subexpr init) |] **
+          (* I was expecting that we would need to use `wp_decl` (or manually
+             inline a `wp_decl ρ "!loop_index" (Tint W64 Unsigned) (Some (Eint 0)) None ? ?`),
+             but it isn't clear to me how `Kpreds` play into expression semantics.
+
+             Should this actually end up living in `logic/stmt.v` instead? *)
+          wp_lval ρ target
+                  (fun p free =>
+                     match p with
+                     | Vptr p =>
+                       Exists idxp,
+                         _arrayloop_init sz (Rbind "!loop_index" idxp ρ) 0 p init ty
+                                         (* Since the `Q` for `wp_prval` takes a `val`
+                                            we need to supply one in the continuation;
+                                            I used `Vvoid`, but I'm not sure if this
+                                            is right.*)
+                                         (fun free' => Q (Vptr p) (free ** free'))
+                     | _ => lfalse
+                     end)
+      |-- wp_prval ρ (Earrayloop_init sz target init (Tarray ty sz)) Q.
+
+  End with_resolve__arrayloop.
 End Expr.
 
 Declare Module E : Expr.
