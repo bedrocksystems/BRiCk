@@ -761,12 +761,7 @@ Module Type Expr.
 
   End with_resolve.
 
-  (* In order to properly model the `Earrayloop_index` expression,
-       we need to be able to grow our `region`; we create a new section
-       in order to avoid being constrained to the `ρ` which was
-       declared as a `Variable` at the beginning of the `with_resolve`
-       section above.
-   *)
+  (* `Earrayloop_init` needs to extend the region, so we need to start a new section. *)
   Section with_resolve__arrayloop.
     Context `{Σ : cpp_logic thread_info} {resolve:genv}.
     Variables (M : coPset) (ti : thread_info).
@@ -782,6 +777,27 @@ Module Type Expr.
        from clang. While these expressions are not a part of the C++ standard,
        we can still ascribe a useful semantics.
 
+       In particular, this is a restricted loop so we ascribe the semantics by
+       unrolling. On each iteration, the C++ Abstract Machine binds a distinguished
+       variable ("!loop_index", which is not a valid identifier in C++) so that
+       `Earrayloop_index` can read the value. We semantically treat this variable
+       as a constant, so we only give `1/2` fraction to it and demand it back at the
+       end of each iteration, preferring to do the incrementing in the logic rather
+       than using the program syntax.
+
+       For example, the following `Earrayloop_init` expression has the same
+       semantics as the C++ loop which follows it /except/ that the array
+       we are initializing is only evaluated once (c.f. [1]):
+       ```
+       (* Coq *)
+       Earrayloop_init 16 target init (Tarray ``::uint8`` 16)
+
+       (* C++ *)
+       for (int "!loop_index" = 0; "!loop_index" < 16; "!loop_index"++) {
+           target[SOME_UNIQUE_NAME] = init;
+       }
+       ```
+
        **NOTE**: for the time being, we choose note to support nested occurrences
          of this construct in order to simplify the semantics of `Earrayloop_index`.
 
@@ -789,12 +805,11 @@ Module Type Expr.
        [2] https://clang.llvm.org/doxygen/classclang_1_1ArrayInitIndexExpr.html#details
      *)
 
-    (* TODO: Write this; it should return `True` iff `Earrayloop_init` or
-         `Earrayloop_index` appears as a (sub)expression of `e`. *)
-    Search "Forall".
-    Fixpoint has_arrayloop_subexpr (e : Expr) : Prop :=
+    (* This function returns `True` iff `Earrayloop_init`  appears as a
+       (sub)expression of `e`. *)
+    Fixpoint has_arrayloop_subexpr (e : Expr) : bool :=
       match e with
-      | Earrayloop_init _ _ _ _ | Earrayloop_index _ => True
+      | Earrayloop_init _ _ _ _ => true
 
       | Eunop _ e _ | Ederef e _ | Eaddrof e _ | Epreinc e _ | Epostinc e _
       | Epredec e _ | Epostdec e _ | Ecast _ (pair _ e) _ | Emember _ e _ _
@@ -806,19 +821,46 @@ Module Type Expr.
       | Ebinop _ e1 e2 _ | Eassign e1 e2 _ | Eassign_op _ e1 e2 _
       | Eseqand e1 e2 _ | Eseqor e1 e2 _ | Ecomma _ e1 e2 _
       | Esubscript e1 e2 _
-      => has_arrayloop_subexpr e1 /\ has_arrayloop_subexpr e2
+      => andb (has_arrayloop_subexpr e1) (has_arrayloop_subexpr e2)
 
       (* TODO: Support the remaining expression cases.
       | Ecall e es _ => has_arrayloop_subexpr e /\
        *)
 
-      | _ => False
+      | _ => false
       end.
 
     Axiom wp_lval_arrayloop_index : forall ρ ty Q,
         wp_lval ρ (Evar (Lname "!loop_index") ty) Q
         |-- wp_lval ρ (Earrayloop_index ty) Q.
 
+    (* TODO: Make this definition nicer.
+
+       Before, we used `nat` for `sz` and `idx`, and thus we could easily do structural
+       recursion of `sz`:
+       ```
+       Fixpoint _arrayloop_init
+                (sz : nat) (idx : nat) (targetp : ptr)
+                (init : Expr) (ty : type)
+                (Q : FreeTemps -> epred)
+                {struct sz}
+         : epred :=
+         match sz with
+         | O => Q emp
+         | S sz' =>
+           (* TODO: Fix this representation of the loop index as a local *)
+           _at (_local ρ "!loop_index")%bs (primR (Tint W64 Unsigned) (1/2) idx) -*
+           wp_init ty (Vptr $ _offset_ptr targetp $ o_sub resolve ty idx) init
+                   (fun free =>
+                      _at (_local ρ "!loop_index")%bs (primR (Tint W64 Unsigned) (1/2) idx) **
+                      _arrayloop_init sz' (S idx) targetp init ty (fun free' => Q (free ** free')))
+         end%I.
+       ```
+
+       We wanted to avoid using `nat` so we switched to `N`, but
+       induction on `N` isn't very useful for this type of `Fixpoint`, so I ended
+       up using a different recursion principle for N called `N.peano_rect`.
+     *)
     Definition _arrayloop_init
       : N ->                    (* sz *)
         region ->               (* ρ *)
@@ -843,7 +885,7 @@ Module Type Expr.
 
     Axiom wp_prval_arrayloop_init : forall sz ρ target init ty Q,
           (* Do we need to worry about nested `Earrayloop_init` expressions in `target`? *)
-          [| not (has_arrayloop_subexpr init) |] **
+          has_arrayloop_subexpr init = false ->
           (* I was expecting that we would need to use `wp_decl` (or manually
              inline a `wp_decl ρ "!loop_index" (Tint W64 Unsigned) (Some (Eint 0)) None ? ?`),
              but it isn't clear to me how `Kpreds` play into expression semantics.
@@ -855,12 +897,8 @@ Module Type Expr.
                      | Vptr p =>
                        Exists idxp,
                          _arrayloop_init sz (Rbind "!loop_index" idxp ρ) 0 p init ty
-                                         (* Since the `Q` for `wp_prval` takes a `val`
-                                            we need to supply one in the continuation;
-                                            I used `Vvoid`, but I'm not sure if this
-                                            is right.*)
                                          (fun free' => Q (Vptr p) (free ** free'))
-                     | _ => lfalse
+                     | _ => False
                      end)
       |-- wp_prval ρ (Earrayloop_init sz target init (Tarray ty sz)) Q.
 
