@@ -292,6 +292,12 @@ Section with_cpp.
       iDestruct (addr_of_precise with "[LA LB]") as %H;
         [ iSplit; [ iApply "LA" | iApply "LB" ] | ].
       subst; eauto. }
+
+  Lemma _at_or (l : Loc) (P Q : Rep) : _at l (P \\// Q) -|- _at l P \\// _at l Q.
+  Proof.
+    rewrite _at_eq /_at_def /=.
+    rewrite -bi.or_exist; f_equiv=> p.
+    by rewrite monPred_at_or -bi.sep_or_l.
   Qed.
 
   Lemma _at_wand (l : Loc) (P Q : Rep) :
