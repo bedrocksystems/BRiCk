@@ -45,13 +45,13 @@ Module Type Init.
     Definition wp_initialize (ty : type) (addr : ptr) (init : Expr) (k : FreeTemps -> mpred) : mpred :=
       match drop_qualifiers ty with
       | Tvoid => False
-      | Tpointer _
-      | Tmember_pointer _ _
-      | Tbool
-      | Tint _ _ =>
+      | Tpointer _ as ty
+      | Tmember_pointer _ _ as ty
+      | Tbool as ty
+      | Tint _ _ as ty =>
         wp_prval init (fun v free =>
-                         addr |-> tblockR (erase_qualifiers ty) **
-                         (   addr |-> primR (erase_qualifiers ty) 1 v
+                         addr |-> anyR ty 1 (* TODO backwards compat [tblockR ty 1] *) **
+                         (   addr |-> primR ty 1 v
                           -* k free))
 
         (* non-primitives are handled via prvalue-initialization semantics *)

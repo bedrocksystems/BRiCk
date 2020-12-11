@@ -54,7 +54,7 @@ Section with_cpp.
     let this_type := Qmut (Tnamed class) in
     let map_pre this '(args, P) :=
         (Vptr this :: args,
-         this |-> tblockR this_type ** P) in
+         this |-> anyR (Tnamed class) 1 (* TODO backwards compat [tblockR (Tnamed class)] *) ** P) in
     SFunction (cc:=cc) (Qmut Tvoid) (Qconst (Tpointer this_type) :: targs)
               {| wpp_with := TeleS (fun this : ptr => (PQ this).(wpp_with))
                ; wpp_pre this :=
@@ -72,7 +72,7 @@ Section with_cpp.
     let map_post (this : ptr) '{| we_ex := pwiths ; we_post := Q|} :=
         {| we_ex := pwiths
          ; we_post := tele_map (fun '(result, Q) =>
-                                  (result, this |-> tblockR this_type ** Q)) Q |}
+                                  (result, this |-> anyR (Tnamed class) 1 (* TODO backwards compat [tblockR this_type] *) ** Q)) Q |}
     in
     (** ^ NOTE the size of an object might be different in the presence of virtual base
         classes.
@@ -236,7 +236,7 @@ Section with_cpp.
       | This
       | Base _ => False
       | _ =>
-        this ., offset_for _ cls i.(init_path) |-> tblockR i.(init_type) -*
+        (* TODO backwards compat [this ., offset_for _ cls i.(init_path) |-> tblockR i.(init_type) -*] *)
         wpi (resolve:=resolve) ⊤ ti ρ cls this i (fun f => f ** wpi_members ti ρ cls this is' Q)
       end
     end.
@@ -256,12 +256,12 @@ Section with_cpp.
         (* this is a delegating constructor *)
         [| is' = nil |] **
         [| drop_qualifiers i.(init_type) = Tnamed cls |] **
-        (this |-> tblockR i.(init_type) -* wpi (resolve:=resolve) ⊤ ti ρ cls this i Q)
+        ((* TODO backwards compat [this |-> tblockR i.(init_type) -*] *) wpi (resolve:=resolve) ⊤ ti ρ cls this i Q)
         (* the constructor that we are delegating to will already initialize the object
          * identity, so we don't have to do that here.
          *)
       | Base _ =>
-        this ., offset_for _ cls i.(init_path) |-> tblockR i.(init_type) -*
+        (* TODO backwards compat [this ., offset_for _ cls i.(init_path) |-> tblockR i.(init_type) -*] *)
         wpi (resolve:=resolve) ⊤ ti ρ cls this i (fun f => f ** wpi_bases ti ρ cls this is' Q)
       end
     end.
@@ -285,7 +285,7 @@ Section with_cpp.
       match args with
       | Vptr thisp :: rest_vals =>
         let ty := Tnamed ctor.(c_class) in
-        thisp |-> tblockR ty **
+        (* TODO backwards compat [thisp |-> tblockR ty **] *)
         (* ^ this requires that you give up the *entire* block of memory that the object
            will use.
          *)
@@ -293,7 +293,7 @@ Section with_cpp.
         bind_vars ctor.(c_params) rest_vals ρ (fun ρ frees =>
           (wpi_bases ti ρ ctor.(c_class) thisp inits
               (fun free => free **
-                             (type_ptr ty thisp -* wp (resolve:=resolve) ⊤ ti ρ body (Kfree frees (void_return (|> Q Vvoid))))))))
+                             ((* TODO backwards compat [type_ptr ty thisp -*] *) wp (resolve:=resolve) ⊤ ti ρ body (Kfree frees (void_return (|> Q Vvoid))))))))
       | _ => False
       end
     end.
@@ -330,7 +330,7 @@ Section with_cpp.
       | Indirect _ _
       | This => False
       | Base b => wpd (resolve:=resolve) ⊤ ti ρ cls this d
-                (this ., offset_for _ cls d.1 |-> tblockR (Tnamed b) ** wpd_bases ti ρ cls this is' Q)
+                ((* TODO backwards compat [this ., offset_for _ cls d.1 |-> tblockR (Tnamed b) **] *) wpd_bases ti ρ cls this is' Q)
       end
     end.
 
@@ -350,7 +350,7 @@ Section with_cpp.
         match type_of_path cls d.1 with
         | Some ty =>
           wpd (resolve:=resolve) ⊤ ti ρ cls this d (
-            this ., offset_for _ cls d.1 |-> tblockR ty **
+            (* TODO backwards compat [this ., offset_for _ cls d.1 |-> tblockR ty **] *)
                      wpd_members ti ρ cls this is' Q)
         | None => False
         end
@@ -369,7 +369,7 @@ Section with_cpp.
         bind_base_this (Some thisp) Tvoid (fun ρ =>
         wp (resolve:=resolve) ⊤ ti ρ body
            (void_return (wpd_members ti ρ dtor.(d_class) thisp deinit
-                (|> (thisp |-> tblockR (Tnamed dtor.(d_class)) -* Q Vvoid)))))
+                (|> ((* TODO backwards compat [thisp |-> tblockR (Tnamed dtor.(d_class)) -*] *) Q Vvoid)))))
       | _ => False
       end
     end.
