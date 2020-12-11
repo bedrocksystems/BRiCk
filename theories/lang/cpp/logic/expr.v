@@ -762,25 +762,29 @@ Module Type Expr.
              {struct sz}
       : epred :=
       match sz with
-      | O => Q True%I
+      | O => Q emp
       | S sz' =>
         (* TODO: Fix this representation of the loop index as a local *)
         _at (_local ρ "!loop_index")%bs (primR (Tint W64 Unsigned) (1/2) idx) -*
-        wp_init ty (targetp .., o_sub resolve ty idx) init
+        wp_init ty (Vptr $ _offset_ptr targetp $ o_sub resolve ty idx) init
                 (fun free =>
                    _at (_local ρ "!loop_index")%bs (primR (Tint W64 Unsigned) (1/2) idx) **
                    _arrayloop_init sz' (S idx) targetp init ty (fun free' => Q (free ** free')))
-      end.
+      end%I.
 
     Axiom wp_prval_arrayloop_init : forall sz target init ty Q,
           wp_lval target
                   (fun p free =>
-                     _arrayloop_init (N.to_nat sz) 0 p init ty
-                                     (* Since the `Q` for `wp_prval` takes a `val`
-                                        we need to supply one in the continuation;
-                                        I used `Vvoid`, but I'm not sure if this
-                                        is right.*)
-                                     (fun free' => Q Vvoid (free ** free')))
+                     match p with
+                     | Vptr p =>
+                       _arrayloop_init (N.to_nat sz) 0 p init ty
+                                       (* Since the `Q` for `wp_prval` takes a `val`
+                                          we need to supply one in the continuation;
+                                          I used `Vvoid`, but I'm not sure if this
+                                          is right.*)
+                                       (fun free' => Q Vvoid (free ** free'))
+                     | _ => lfalse
+                     end)
       |-- wp_prval (Earrayloop_init sz target init (Tarray ty sz)) Q.
 
     Axiom wp_prval_implicit_init_int : forall ty sz sgn Q,
