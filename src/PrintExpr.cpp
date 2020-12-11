@@ -1018,7 +1018,6 @@ public:
         print.ctor("Earrayloop_index");
         done(expr, print, cprint);
     }
->>>>>>> 0c34955... Add the (common) array expression to the Earrayinit_loop AST node.
 };
 
 PrintExpr PrintExpr::printer;
