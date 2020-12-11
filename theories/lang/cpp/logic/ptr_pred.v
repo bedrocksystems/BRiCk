@@ -13,25 +13,6 @@ From bedrock.lang.cpp Require Import pred.
 write a bunch of observations at once.
 *)
 
-Section with_cpp.
-  Context `{Σ : cpp_logic} (σ : genv).
-
-  Lemma observe_strict_valid_valid
-    `(Hobs : !Observe (strict_valid_ptr p) P) :
-    Observe (valid_ptr p) P.
-  Proof. by rewrite /Observe Hobs strict_valid_relaxed. Qed.
-
-  Lemma observe_type_ptr_strict_valid
-    `(Hobs : !Observe (type_ptr ty p) P) :
-    Observe (strict_valid_ptr p) P.
-  Proof. by rewrite /Observe Hobs type_ptr_strict_valid. Qed.
-
-  Lemma observe_type_ptr_valid_plus_one
-    `(Hobs : !Observe (type_ptr ty p) P) :
-    Observe (valid_ptr (p .., o_sub σ ty 1)) P.
-  Proof. by rewrite /Observe Hobs type_ptr_valid_plus_one. Qed.
-End with_cpp.
-
 (* Only import when defining representation predicates and associated instances. *)
 Module ptr_pred_helpers.
   (* Fail #[export] Existing Instances observe_strict_valid_valid. *)
