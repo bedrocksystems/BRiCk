@@ -791,7 +791,29 @@ Module Type Expr.
 
     (* TODO: Write this; it should return `True` iff `Earrayloop_init` or
          `Earrayloop_index` appears as a (sub)expression of `e`. *)
-    Fixpoint has_arrayloop_subexpr (e : Expr) : Prop. Admitted.
+    Search "Forall".
+    Fixpoint has_arrayloop_subexpr (e : Expr) : Prop :=
+      match e with
+      | Earrayloop_init _ _ _ _ | Earrayloop_index _ => True
+
+      | Eunop _ e _ | Ederef e _ | Eaddrof e _ | Epreinc e _ | Epostinc e _
+      | Epredec e _ | Epostdec e _ | Ecast _ (pair _ e) _ | Emember _ e _ _
+      | Esize_of (inr e) _ | Ealign_of (inr e) _ | Eimplicit e _
+      | Edelete _ _ e _ _ _ | Eandclean e _ | Ematerialize_temp e _
+      | Ebind_temp e _ _ | Eva_arg e _ | Epseudo_destructor _ e
+      => has_arrayloop_subexpr e
+
+      | Ebinop _ e1 e2 _ | Eassign e1 e2 _ | Eassign_op _ e1 e2 _
+      | Eseqand e1 e2 _ | Eseqor e1 e2 _ | Ecomma _ e1 e2 _
+      | Esubscript e1 e2 _
+      => has_arrayloop_subexpr e1 /\ has_arrayloop_subexpr e2
+
+      (* TODO: Support the remaining expression cases.
+      | Ecall e es _ => has_arrayloop_subexpr e /\
+       *)
+
+      | _ => False
+      end.
 
     Axiom wp_lval_arrayloop_index : forall ρ ty Q,
         wp_lval ρ (Evar (Lname "!loop_index") ty) Q
