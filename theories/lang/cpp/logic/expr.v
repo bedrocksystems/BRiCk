@@ -810,6 +810,9 @@ Module Type Expr.
                    (fun _ _ _ _ _ Q => Q emp)%I
                    (fun sz' _arrayloop_init_rec ρ idx targetp init ty Q =>
                       let loop_index := _local ρ "!loop_index"%bs in
+                      (* NOTE: We split ownership because this variable is read-only for
+                           programs (i.e. the C++ Abstract Machine handles incrementing
+                           it between iterations). *)
                       _at loop_index (primR (Tint W64 Unsigned) (1/2) idx) -*
                       wp_init ρ ty (Vptr $ _offset_ptr targetp $ o_sub resolve ty idx) init
                               (fun free => free **
