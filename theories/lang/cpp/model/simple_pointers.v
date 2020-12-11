@@ -13,13 +13,13 @@ From iris.base_logic.lib Require Import cancelable_invariants.
 From iris.proofmode Require Import tactics.
 From iris_string_ident Require Import ltac2_string_ident.
 
-From bedrock.lang.prelude Require Import base avl bytestring.
-Require Import bedrock.lang.prelude.base.
+From bedrock.lang.prelude Require Import base avl bytestring option.
 
 From bedrock.lang.cpp Require Import ast.
 From bedrock.lang.cpp.semantics Require Import values sub_module.
 From bedrock.lang.cpp.logic Require Import pred.
 
+Implicit Types (σ : genv).
 Module canonical_tu.
   Definition im_to_gmap {V} (m : IM.t V) : gmap BS.t V :=
     list_to_map (map_to_list m).
@@ -39,6 +39,9 @@ Module canonical_tu.
   Instance translation_unit_canon_eq_dec : EqDecision translation_unit_canon.
   Proof. solve_decision. Qed.
 
+  Instance symbol_canon_lookup : Lookup obj_name ObjValue translation_unit_canon :=
+    fun k m => m.(symbols) !! k.
+
   Record genv_canon : Set := Build_genv_canon
   { genv_tu : translation_unit_canon
     (* ^ the [translation_unit] *)
@@ -54,62 +57,133 @@ Module canonical_tu.
     let (tu, sz) := σ in Build_genv_canon (tu_to_canon tu) sz.
 End canonical_tu.
 
+Definition null_alloc_id : alloc_id := MkAllocId 0.
+Definition invalid_alloc_id : alloc_id := MkAllocId 1.
+
+(** Compute the actual raw offsets in Z. *)
+Section eval_offset_seg.
+  Context (σ : genv).
+  Definition o_field_off (f : field) : option Z := offset_of σ f.(f_type) f.(f_name).
+  Definition o_sub_off ty z : option Z := Z.mul z <$> (Z.of_N <$> size_of σ ty).
+  Definition o_base_off derived base : option Z := parent_offset σ derived base.
+  Definition o_derived_off base derived : option Z := Z.opp <$> parent_offset σ derived base.
+End eval_offset_seg.
+
+(*
+Utility function, used to emulate [global_ptr] without a linker.
+This is a really bad model and it'd fail a bunch of sanity checks.
+
+Caveat: a model this to model [global_ptr] isn't correct, beyond proving
+[global_ptr]'s isn't contradictory.
+This model would fail proving that [global_ptr] is injective, that objects
+are disjoint, or that
+[global_ptr tu1 "staticR" |-> anyR T 1%Qp  ... ∗
+  global_ptr tu2 "staticR" |-> anyR T 1%Qp  ...] actually holds at startup.
+*)
+Local Definition global_ptr_encode_ov (o : obj_name) (obj : option ObjValue) :
+    option (alloc_id * vaddr) :=
+  match obj with
+  | Some _ => let p := Npos (encode o) in Some (MkAllocId p, p)
+  | None => None
+  end.
+
+Module Import address_sums.
+  Definition offset_vaddr : Z -> vaddr -> option vaddr := λ z pa,
+    let sum : Z := (Z.of_N pa + z)%Z in
+    guard (0 ≤ sum)%Z; Some (Z.to_N sum).
+
+  Lemma offset_vaddr_eq z pa :
+    let sum := (Z.of_N pa + z)%Z in
+    (0 ≤ sum)%Z ->
+    offset_vaddr z pa = Some (Z.to_N sum).
+  Proof. rewrite /offset_vaddr/= => /= Hle. rewrite option_guard_True //. Qed.
+
+  Lemma offset_vaddr_eq' {z pa} :
+    offset_vaddr z pa <> None ->
+    offset_vaddr z pa = Some (Z.to_N (Z.of_N pa + z)).
+  Proof. rewrite /offset_vaddr/= => /=. case_option_guard; naive_solver. Qed.
+
+  Lemma offset_vaddr_0 pa :
+    offset_vaddr 0 pa = Some pa.
+  Proof. rewrite offset_vaddr_eq Z.add_0_r ?N2Z.id //. lia. Qed.
+
+  Lemma offset_vaddr_combine {pa o o'} :
+    offset_vaddr o pa <> None ->
+    offset_vaddr o pa ≫= offset_vaddr o' = offset_vaddr (o + o') pa.
+  Proof.
+    rewrite /offset_vaddr => Hval.
+    by case_option_guard; rewrite /= Z.add_assoc ?Z2N.id.
+  Qed.
+End address_sums.
+
+(*
+A slightly better model might be something like the following, but we don't
+bother defining this [Countable] instance. And this is not a great model
+anyway. *)
+
+(*
+Declare Instance ObjValue_countable: Countable ObjValue.
+Definition global_ptr (tu : translation_unit) (o : obj_name) : ptr :=
+  let obj : option ObjValue := tu !! o in
+  let p := Npos (encode obj) in (mkptr p p).
+*)
+
+Module Type PTRS_DERIVED_MIXIN (Import P : PTRS).
+  Definition same_alloc : ptr -> ptr -> Prop := same_property ptr_alloc_id.
+  Lemma same_alloc_eq : same_alloc = same_property ptr_alloc_id.
+  Proof. done. Qed.
+
+  Definition same_address : ptr -> ptr -> Prop := same_property ptr_vaddr.
+  Lemma same_address_eq : same_address = same_property ptr_vaddr.
+  Proof. done. Qed.
+End PTRS_DERIVED_MIXIN.
+
 (**
 A simple consistency proof for [PTRS]; this one is inspired by Cerberus's
 model of pointer provenance, and resembles CompCert's model.
 
 Compared to our "real" consistency proof [PTRS_IMPL], this proof is easier to
 extend, but it's unclear how to extend it to support [VALID_PTR_AXIOMS].
+
+In this models, not all valid pointers are pinned to some address.
 *)
 Module SIMPLE_PTRS_IMPL : PTRS.
-  Definition alloc_id := N.
-  Instance alloc_id_eq_dec : EqDecision alloc_id := _.
-  Instance : Countable alloc_id := _.
+  Import address_sums.
 
-  Definition null_alloc_id : N := 0.
-  (* Definition invalid_alloc_id : N := 1. *)
-
-  Definition ptr' : Set := alloc_id * paddr.
+  Definition ptr' : Set := alloc_id * option vaddr.
   Definition ptr : Set := option ptr'.
+
+  Declare Scope ptr_scope.
+  Bind Scope ptr_scope with ptr.
+  Delimit Scope ptr_scope with ptr.
+
+  Definition ptr_alloc_id : ptr -> option alloc_id := fmap fst.
+  (* Addresses are optional, and absent from unpinned pointers, but necessary
+  for offsetting. *)
+  Definition ptr_vaddr : ptr -> option vaddr := mbind snd.
+
   Definition invalid_ptr : ptr := None.
-  Definition mkptr a n : ptr := Some (a, n).
+  Definition mkptr a n : ptr := Some (a, Some n).
   Definition nullptr : ptr := mkptr null_alloc_id 0.
 
   Instance ptr_eq_dec : EqDecision ptr := _.
   Instance ptr_countable : Countable ptr := _.
   Definition ptr_eq_dec' := ptr_eq_dec.
 
-  Definition offset_paddr : Z -> paddr -> option paddr := λ z pa,
-    let sum : Z := (Z.of_N pa + z)%Z in
-    guard (0 ≤ sum)%Z; Some (Z.to_N sum).
+  Lemma ptr_vaddr_nullptr : ptr_vaddr nullptr = Some 0%N.
+  Proof. done. Qed.
 
-  Lemma offset_paddr_eq z pa :
-    let sum := (Z.of_N pa + z)%Z in
-    (0 ≤ sum)%Z ->
-    offset_paddr z pa = Some (Z.to_N sum).
-  Proof. rewrite /offset_paddr/= => /= Hle. rewrite option_guard_True //. Qed.
-
-  Lemma offset_paddr_eq' {z pa} :
-    offset_paddr z pa <> None ->
-    offset_paddr z pa = Some (Z.to_N (Z.of_N pa + z)).
-  Proof. rewrite /offset_paddr/= => /=. case_option_guard; naive_solver. Qed.
-
-  Lemma offset_paddr_0 pa :
-    offset_paddr 0 pa = Some pa.
-  Proof. rewrite offset_paddr_eq Z.add_0_r ?N2Z.id //. lia. Qed.
-
-  Lemma offset_paddr_combine {pa o o'} :
-    offset_paddr o pa <> None ->
-    offset_paddr o pa ≫= offset_paddr o' = offset_paddr (o + o') pa.
-  Proof.
-    rewrite /offset_paddr => Hval.
-    by case_option_guard; rewrite /= Z.add_assoc ?Z2N.id.
-  Qed.
-
-  Definition offset_ptr' : Z -> ptr' -> ptr :=
+  (* lift [offset_vaddr] over the [alloc_id * _] monad. *)
+  Program Definition offset_ptr' : Z -> ptr' -> ptr :=
     λ z p,
-    let aid := fst p in let pa := snd p in
-    pair aid <$> offset_paddr z pa.
+    (* This use of projections in intentional, to get better reduction behavior *)
+    let aid := fst p in
+    if (decide (z = 0)%Z) then
+      Some (aid, snd p)
+    else
+      pa ← snd p;
+      pa' ← offset_vaddr z pa;
+      Some (aid, Some pa').
   Arguments offset_ptr' _ !_ /.
 
   Lemma offset_ptr_combine' p o o' :
@@ -117,8 +191,17 @@ Module SIMPLE_PTRS_IMPL : PTRS.
     offset_ptr' o p ≫= offset_ptr' o' = offset_ptr' (o + o') p.
   Proof.
     case: p => [a p] /=.
-    rewrite /offset_ptr' /= fmap_None /= option_fmap_bind /compose /= => Hval.
-    rewrite -(offset_paddr_combine Hval) (offset_paddr_eq' Hval) //.
+      destruct (decide (o' = 0)%Z) as [->|Ho'];
+      [rewrite Z.add_0_r|];
+      destruct (decide (o = 0)%Z) as [->|Ho] => //=; case: p => [p|] //=;
+      rewrite /offset_ptr' /= fmap_None /= option_fmap_bind /compose /= => Hval //.
+    rewrite -(offset_vaddr_combine Hval) (offset_vaddr_eq' Hval) //=.
+    case_decide => //=; subst.
+    case_decide => //=; subst.
+    rewrite offset_vaddr_eq' //=;
+    rewrite /offset_vaddr /= in Hval *;
+      repeat case_option_guard => //;
+      [do 3 f_equiv|]; lia.
   Qed.
 
   Definition offset_ptr__ : Z -> ptr -> ptr :=
@@ -126,7 +209,7 @@ Module SIMPLE_PTRS_IMPL : PTRS.
   Notation offset_ptr_ := offset_ptr__.
 
   Lemma offset_ptr_0__ p : offset_ptr_ 0 p = p.
-  Proof. case: p => [[a p]|//] /=. by rewrite offset_paddr_0. Qed.
+  Proof. by case: p => [[a p]|]. Qed.
 
   Lemma offset_ptr_combine {p o o'} :
     offset_ptr_ o p <> invalid_ptr ->
@@ -137,41 +220,60 @@ Module SIMPLE_PTRS_IMPL : PTRS.
   The list of offsets in [[p; o_1; ...; o_n]] is represented as [[o_n; ... o_1]].
   This way, we can cons new offsets to the head, and consume them at the tail. *)
   Definition offset := list (option Z).
+  Declare Scope offset_scope.
+  Bind Scope offset_scope with offset.
+  Delimit Scope offset_scope with offset.
+
   Local Instance offset_eq_dec : EqDecision offset := _.
   Instance offset_countable : Countable offset := _.
 
   Definition mkOffset : Z -> offset := λ z, [Some z].
   Definition o_id : offset := [].
   Definition o_dot : offset → offset → offset := flip (++).
+  Notation "o1 .., o2" := (o_dot o1 o2) : offset_scope.
 
   Definition _offset_ptr_single : option Z -> ptr -> ptr :=
-    λ oz p, z ← oz; offset_ptr__ z p.
+    λ oz p, z ← oz; offset_ptr_ z p.
   Definition _offset_ptr : ptr -> offset -> ptr :=
-    foldr (_offset_ptr_single).
+    foldr _offset_ptr_single.
+  Notation "p .., o" := (_offset_ptr p o) : ptr_scope.
 
   Instance dot_id : RightId (=) o_id o_dot := _.
   Instance id_dot : LeftId (=) o_id o_dot := _.
   Instance dot_assoc : Assoc (=) o_dot := _.
 
-  Declare Scope ptr_scope.
-  Bind Scope ptr_scope with ptr.
-  Delimit Scope ptr_scope with ptr.
-
-  Declare Scope offset_scope.
-  Bind Scope offset_scope with offset.
-  Delimit Scope offset_scope with offset.
-  Notation "o1 .., o2" := (o_dot o1 o2) : offset_scope.
-  Notation "p .., o" := (_offset_ptr p o) : ptr_scope.
+  Lemma offset_ptr_id p : (p .., o_id = p)%ptr.
+  Proof. done. Qed.
 
   Lemma offset_ptr_dot p o1 o2 :
     (p .., (o1 .., o2) = p .., o1 .., o2)%ptr.
   Proof. apply foldr_app. Qed.
 
+  Local Lemma ptr_alloc_id_offset_single {p oz} :
+    let p' := _offset_ptr_single oz p in
+    is_Some (ptr_alloc_id p') -> ptr_alloc_id p' = ptr_alloc_id p.
+  Proof.
+    rewrite /_offset_ptr_single /offset_ptr_ /offset_ptr'.
+    (* XXX messy? good enough? *)
+    have ? := @is_Some_None alloc_id.
+    case: oz p => [z|//] [[aid' va]|] Hsome //=; simplify_option_eq => //.
+    by destruct mbind eqn:? => //; simplify_option_eq; naive_solver.
+  Qed.
+
+  Lemma ptr_alloc_id_offset {p o} :
+    let p' := (p .., o)%ptr in
+    is_Some (ptr_alloc_id p') -> ptr_alloc_id p' = ptr_alloc_id p.
+  Proof.
+    elim: o p => /= [//|o os IHo] p Hs.
+    rewrite -(IHo p) //. { exact: ptr_alloc_id_offset_single. }
+    by rewrite -(ptr_alloc_id_offset_single (oz := o)).
+  Qed.
+
   Definition opt_to_off oo : offset := [oo].
-  Definition o_field σ f : offset := opt_to_off (offset_of σ f.(f_type) f.(f_name)).
-  Definition o_sub σ ty z : offset := opt_to_off (Z.mul z <$> (Z.of_N <$> size_of σ ty)).
-  Definition o_base σ derived base := opt_to_off (parent_offset σ derived base).
-  Definition o_derived σ base derived := opt_to_off (Z.opp <$> parent_offset σ derived base)%Z.
+  Definition o_field σ f : offset := opt_to_off (o_field_off σ f).
+  Definition o_sub σ ty z : offset := opt_to_off (o_sub_off σ ty z).
+  Definition o_base σ derived base := opt_to_off (o_base_off σ derived base).
+  Definition o_derived σ base derived := opt_to_off (o_derived_off σ base derived).
 
   Lemma offset_ptr_cancel {p} {o1 o2 : Z} o3
     (Hval : offset_ptr_ o1 p ≠ None) (Hsum : (o1 + o2 = o3)%Z) :
@@ -197,7 +299,8 @@ Module SIMPLE_PTRS_IMPL : PTRS.
     (p .., o_base σ derived base)%ptr <> invalid_ptr ->
     (p .., o_base σ derived base .., o_derived σ base derived = p)%ptr.
   Proof.
-    rewrite /o_base /=. case: parent_offset => [o|] //= Hval.
+    rewrite /o_base /= /o_base_off /o_derived_off.
+    case: parent_offset => [o|] //= Hval.
     apply: offset_ptr_cancel0; by [|lia].
   Qed.
 
@@ -205,7 +308,8 @@ Module SIMPLE_PTRS_IMPL : PTRS.
     (p .., o_derived σ base derived)%ptr <> invalid_ptr ->
     (p .., o_derived σ base derived .., o_base σ derived base = p)%ptr.
   Proof.
-    rewrite /o_base /=. case: parent_offset => [o|] //= Hval.
+    rewrite /o_base /= /o_base_off /o_derived_off.
+    case: parent_offset => [o|] //= Hval.
     apply: offset_ptr_cancel0; by [|lia].
   Qed.
 
@@ -213,7 +317,8 @@ Module SIMPLE_PTRS_IMPL : PTRS.
     (p .., o_sub σ ty n1 <> None)%ptr ->
     (p .., o_sub σ ty n1 .., o_sub σ ty n2 = p .., o_sub σ ty (n1 + n2))%ptr.
   Proof.
-    rewrite /o_sub /=. case: size_of => [o|] //= Hval.
+    rewrite /o_sub /= /o_sub_off.
+    case: size_of => [o|] //= Hval.
     apply: offset_ptr_cancel; by [|lia].
   Qed.
 
@@ -225,78 +330,169 @@ Module SIMPLE_PTRS_IMPL : PTRS.
    global_ptr tu2 "staticR" |-> anyR T 1%Qp  ...] actually holds at startup.
   *)
   Definition global_ptr (tu : translation_unit) (o : obj_name) : ptr :=
-    let obj : option ObjValue := tu !! o in
-    match obj with
-    | Some _ => let p := Npos (encode o) in mkptr p p
-    | None => invalid_ptr
-    end.
-
-  (*
-  A slightly better model might be something like the following, but we don't
-  bother defining this [Countable] instance. And this is not a great model
-  anyway. *)
-
-  (*
-  Declare Instance ObjValue_countable: Countable ObjValue.
-  Definition global_ptr (tu : translation_unit) (o : obj_name) : ptr :=
-    let obj : option ObjValue := tu !! o in
-    let p := Npos (encode obj) in (mkptr p p).
-  *)
+    '(aid, va) ← global_ptr_encode_ov o (tu !! o);
+    Some (aid, Some va).
 
   Definition fun_ptr := global_ptr.
-  Lemma o_sub_0 σ ty n :
-    size_of σ ty = Some n ->
+  Lemma o_sub_0 σ ty :
+    is_Some (size_of σ ty) ->
     o_sub σ ty 0 = o_id.
-  Proof. rewrite /o_sub /opt_to_off => -> //=. rewrite Z.mul_0_l. Admitted.
+  Proof. rewrite /o_sub /o_sub_off /opt_to_off => -[? ->] //=. rewrite Z.mul_0_l. Admitted.
 
+  Lemma ptr_vaddr_o_sub_eq p σ ty n1 n2 sz
+    (Hsz : size_of σ ty = Some sz) (Hsz0 : (sz > 0)%N) :
+    (same_property ptr_vaddr (p .., o_sub σ ty n1) (p .., o_sub σ ty n2) ->
+    n1 = n2)%ptr.
+  Proof.
+    rewrite same_property_iff /ptr_vaddr/= /_offset_ptr_single /o_sub_off => -[addr []].
+    rewrite Hsz /offset_ptr_ /offset_ptr' /=.
+    case: p => [[aid [p|]]|] /=; try by simplify_option_eq.
+    case: (decide (n1 = 0)) => [->|?]; case: (decide (n2 = 0))=> [->|?];
+      rewrite ?Z.mul_0_l //; repeat case_decide; try lia;
+      [by rewrite /offset_vaddr; intros; simplify_option_eq; lia..|].
+    rewrite /offset_vaddr/=; repeat case_option_guard => //; simplify_option_eq.
+    move=> [<-] []. intros Hne%symmetry%Z2N.inj => //.
+    eapply Z.mul_cancel_r, Z.add_cancel_l, Hne; lia.
+  Qed.
+
+  Include PTRS_DERIVED_MIXIN.
 End SIMPLE_PTRS_IMPL.
+
+Module Import merge_elems.
+Section merge_elem.
+  Context {X} (f : X -> X -> list X).
+  Definition merge_elem (x0 : X) (xs : list X) : list X :=
+    match xs with
+    | x1 :: xs' => f x0 x1 ++ xs'
+    | [] => [x0]
+    end.
+  Lemma merge_elem_nil x0 : merge_elem x0 [] = [x0].
+  Proof. done. Qed.
+  Lemma merge_elem_cons x0 x1 xs : merge_elem x0 (x1 :: xs) = f x0 x1 ++ xs.
+  Proof. done. Qed.
+
+  Definition merge_elems_aux : list X -> list X -> list X := foldr merge_elem.
+  Local Arguments merge_elems_aux _ !_ /.
+  Definition merge_elems : list X -> list X := merge_elems_aux [].
+  Local Arguments merge_elems !_ /.
+  Lemma merge_elems_cons x xs :
+    merge_elems (x :: xs) = merge_elem x (merge_elems xs).
+  Proof. done. Qed.
+  Lemma merge_elems_aux_app ys xs1 xs2 :
+    merge_elems_aux ys (xs1 ++ xs2) = merge_elems_aux (merge_elems_aux ys xs2) xs1.
+  Proof. apply foldr_app. Qed.
+  Lemma merge_elems_app xs1 xs2 :
+    merge_elems (xs1 ++ xs2) = merge_elems_aux (merge_elems xs2) xs1.
+  Proof. apply merge_elems_aux_app. Qed.
+End merge_elem.
+End merge_elems.
 
 (**
 Another (incomplete) consistency proof for [PTRS], based on Krebbers' PhD thesis, and
 other formal models of C++ using structured pointers.
 This is more complex than [SIMPLE_PTRS_IMPL], but will be necessary to justify [VALID_PTR_AXIOMS].
+
+In this model, all valid pointers are pinned, but this is not meant
+to be guaranteed, and is indeed not guaranteed by the other model.
 *)
 Module PTRS_IMPL : PTRS.
   Import canonical_tu.
 
-  Implicit Types (σ : genv).
-
-  Definition alloc_id := N.
-  Global Instance alloc_id_eq_dec : EqDecision alloc_id := _.
-  Global Instance : Countable alloc_id := _.
-
-  Definition object_id := N.
-  Global Instance object_id_eq_dec : EqDecision object_id := _.
-  Global Instance : Countable object_id := _.
-
-  Inductive offset_seg :=
+  Inductive raw_offset_seg : Set :=
   | o_field_ (* type-name: *) (f : field)
   | o_sub_ (ty : type) (z : Z)
   | o_base_ (derived base : globname)
   | o_derived_ (base derived : globname)
   (* deprecated *)
-  | o_num_ (z : Z).
-  Local Instance offset_seg_eq_dec : EqDecision offset_seg.
+  | o_num_ (z : Z)
+  | o_invalid.
+  Local Instance raw_offset_seg_eq_dec : EqDecision raw_offset_seg.
   Proof. solve_decision. Qed.
+  Declare Instance raw_offset_seg_countable : Countable raw_offset_seg.
+  Definition offset_seg : Set := raw_offset_seg * Z.
+  Local Instance offset_seg_eq_dec : EqDecision offset_seg := _.
+  Local Instance offset_seg_countable : Countable offset_seg := _.
+
+  Definition eval_raw_offset_seg σ (ro : raw_offset_seg) : option Z :=
+    match ro with
+    | o_num_ z => Some z
+    | o_field_ f => o_field_off σ f
+    | o_sub_ ty z => o_sub_off σ ty z
+    | o_base_ derived base => o_base_off σ derived base
+    | o_derived_ base derived => o_derived_off σ base derived
+    | o_invalid => None
+    end.
+  Definition mk_offset_seg σ (ro : raw_offset_seg) : offset_seg :=
+    match eval_raw_offset_seg σ ro with
+    | None => (o_invalid, 0%Z)
+    | Some off => (ro, off)
+    end.
 
   (* This list is reversed.
   The list of offsets in [[p; o_1; ...; o_n]] is represented as [[o_n; ... o_1]].
   This way, we can cons new offsets to the head, and consume them at the tail. *)
   Definition raw_offset := list offset_seg.
-  Definition offset_seg_merge (os1 os2 : offset_seg) : raw_offset :=
+  Local Instance raw_offset_eq_dec : EqDecision offset := _.
+  Local Instance raw_offset_countable : Countable raw_offset := _.
+
+  Definition offset_seg_merge (os1 os2 : offset_seg) : list offset_seg :=
     match os1, os2 with
-    | o_sub_ ty1 n1, o_sub_ ty2 n2 =>
+    | (o_sub_ ty1 n1, off1), (o_sub_ ty2 n2, off2) =>
       if decide (ty1 = ty2)
-      then [o_sub_ ty1 (n2 + n1)]
+      then [(o_sub_ ty1 (n2 + n1), (off1 + off2)%Z)]
       else [os2; os1]
-    | o_base_ der1 base1, o_derived_ base2 der2 =>
+    | (o_base_ der1 base1, off1), (o_derived_ base2 der2, off2) =>
       if decide (der1 = der2 ∧ base1 = base2)
       then []
       else [os2; os1]
-    | o_num_ z1, o_num_ z2 =>
-      [o_num_ (z2 + z1)]
+    | (o_num_ z1, off1), (o_num_ z2, off2) =>
+      [(o_num_ (z2 + z1), (off1 + off2)%Z)]
     | _, _ => [os2; os1]
     end.
+
+  Definition raw_offset_collapse : raw_offset -> raw_offset :=
+    merge_elems (flip offset_seg_merge).
+  Arguments raw_offset_collapse !_ /.
+  Definition raw_offset_wf (ro : raw_offset) : Prop :=
+    raw_offset_collapse ro = ro.
+  Instance raw_offset_wf_pi ro : ProofIrrel (raw_offset_wf ro) := _.
+  Lemma singleton_raw_offset_wf {os} : raw_offset_wf [os].
+  Proof. done. Qed.
+
+  Definition raw_offset_merge (o1 o2 : raw_offset) : raw_offset :=
+    raw_offset_collapse (o1 ++ o2).
+  Arguments raw_offset_merge !_ _ /.
+
+  Definition offset := {ro : raw_offset | raw_offset_wf ro}.
+  Instance offset_eq_dec : EqDecision offset := _.
+
+  Local Definition raw_offset_to_offset (ro : raw_offset) : option offset :=
+    match decide (raw_offset_wf ro) with
+    | left Hwf => Some (exist _ ro Hwf)
+    | right _ => None
+    end.
+  Instance offset_countable : Countable offset.
+  Proof.
+    apply (inj_countable proj1_sig raw_offset_to_offset) => -[ro Hwf] /=.
+    rewrite /raw_offset_to_offset; case_match => //.
+    by rewrite (proof_irrel Hwf).
+  Qed.
+
+  Program Definition o_id : offset := [] ↾ _.
+  Next Obligation. done. Qed.
+  Program Definition mkOffset σ (ro : raw_offset_seg) : offset :=
+    [mk_offset_seg σ ro] ↾ singleton_raw_offset_wf.
+  Definition o_field σ f : offset :=
+    mkOffset σ (o_field_ f).
+  Definition o_sub σ ty z : offset :=
+    mkOffset σ (o_sub_ ty z).
+  Definition o_base σ derived base : offset :=
+    mkOffset σ (o_base_ derived base).
+  Definition o_derived σ base derived : offset :=
+    mkOffset σ (o_derived_ base derived).
+  Definition o_num z : offset :=
+    [(o_num_ z, z)] ↾ singleton_raw_offset_wf.
+
   Lemma last_last_equiv {X} d {xs : list X} : default d (stdpp.list.last xs) = List.last xs d.
   Proof. elim: xs => // x1 xs /= <-. by case_match. Qed.
 
@@ -308,31 +504,7 @@ Module PTRS_IMPL : PTRS.
 
   Section merge_elem.
     Context {X} (f : X -> X -> list X).
-    Definition merge_elem (x0 : X) (xs : list X) : list X :=
-      match xs with
-      | x1 :: xs' => f x0 x1 ++ xs'
-      | [] => [x0]
-      end.
-    Lemma merge_elem_nil x0 : merge_elem x0 [] = [x0].
-    Proof. done. Qed.
-    Lemma merge_elem_cons x0 x1 xs : merge_elem x0 (x1 :: xs) = f x0 x1 ++ xs.
-    Proof. done. Qed.
-
-    Definition merge_elems_aux : list X -> list X -> list X := foldr merge_elem.
-    Local Arguments merge_elems_aux _ !_ /.
-    Definition merge_elems : list X -> list X := merge_elems_aux [].
-    Local Arguments merge_elems !_ /.
-    Lemma merge_elems_cons x xs :
-      merge_elems (x :: xs) = merge_elem x (merge_elems xs).
-    Proof. done. Qed.
-    Lemma merge_elems_aux_app ys xs1 xs2 :
-      merge_elems_aux ys (xs1 ++ xs2) = merge_elems_aux (merge_elems_aux ys xs2) xs1.
-    Proof. apply foldr_app. Qed.
-    Lemma merge_elems_app xs1 xs2 :
-      merge_elems (xs1 ++ xs2) = merge_elems_aux (merge_elems xs2) xs1.
-    Proof. apply merge_elems_aux_app. Qed.
-
-    Context (Hinv : ∀ x1 x2, merge_elems (f x1 x2) = f x1 x2).
+    Context (Hinv : ∀ x1 x2, merge_elems f (f x1 x2) = f x1 x2).
 
 (*
     Lemma foo xs ys :
@@ -360,13 +532,13 @@ Module PTRS_IMPL : PTRS.
       *)
 
 
-    Global Instance: Involutive merge_elems.
+    Global Instance: Involutive (merge_elems f).
     Proof.
       unfold Involutive.
       intros xs. induction xs using rev_ind => //.
       rewrite merge_elems_app.
       (* elim => [//|x xs IHxs /=]. *)
-      case E: (merge_elems xs) => [//|y ys /=].
+      case E: (merge_elems f xs) => [//|y ys /=].
       (* case => [//|x xs /=].
       (* elim E: (merge_elems xs) => [//|y ys IHys /=]. *)
       move E: (merge_elems xs) => ys.
@@ -375,7 +547,7 @@ Module PTRS_IMPL : PTRS.
 
 
     Lemma foo x xs :
-      merge_elems (merge_elems (x :: xs)) = merge_elem x (merge_elems xs).
+      merge_elems f (merge_elems f (x :: xs)) = merge_elem f x (merge_elems f xs).
     Proof.
       case: xs => //= x' xs.
       rewrite /merge_elem.
@@ -389,13 +561,13 @@ Module PTRS_IMPL : PTRS.
     Abort.
     (* Lemma involutive_merge_elems : Involutive merge_elems
     with invol_app_merge_elems : InvolApp merge_elems. *)
-    Lemma involutive_merge_elems xs : merge_elems (merge_elems xs) = merge_elems xs
+    Lemma involutive_merge_elems xs : merge_elems f (merge_elems f xs) = merge_elems f xs
     with invol_app_merge_elems xs1 xs2 :
-      merge_elems (xs1 ++ xs2) = merge_elems (merge_elems xs1 ++ merge_elems xs2).
+      merge_elems f (xs1 ++ xs2) = merge_elems f (merge_elems f xs1 ++ merge_elems f xs2).
     Proof.
       - elim: xs => [//|x xs IHxs /=].
         rewrite -{2}IHxs.
-        case E: (merge_elems xs) => [//|y ys /=].
+        case E: (merge_elems f xs) => [//|y ys /=].
         (* Guarded. *)
         rewrite invol_app_merge_elems.
         (* Fail Guarded. *)
@@ -407,21 +579,21 @@ Module PTRS_IMPL : PTRS.
     Admitted.
 
 
-    Global Instance: Involutive merge_elems.
+    Global Instance: Involutive (merge_elems f).
     Proof.
       elim => [//|x xs IHxs /=].
-      case E: (merge_elems xs) => [//|y ys /=].
+      case E: (merge_elems f xs) => [//|y ys /=].
       (* case => [//|x xs /=].
       (* elim E: (merge_elems xs) => [//|y ys IHys /=]. *)
       move E: (merge_elems xs) => ys.
       elim: ys xs E => [//|y ys IHys xs E /=]. *)
     Admitted.
-    Global Instance: InvolApp merge_elems.
+    Global Instance: InvolApp (merge_elems f).
     Proof.
       elim => [|x1 xs1 IHxs1] xs2 /=.
       - by rewrite invol.
       -
-      case E: (merge_elems xs1) IHxs1 => [//|x' xs' //=] IHxs1.
+      case E: (merge_elems f xs1) IHxs1 => [//|x' xs' //=] IHxs1.
       by rewrite IHxs1.
       rewrite IHxs1 -app_assoc. rewrite -merge_elem_cons //.
       rewrite /merge_elems /=.
@@ -435,13 +607,13 @@ Module PTRS_IMPL : PTRS.
   Definition offset_seg_append : offset_seg -> raw_offset -> raw_offset :=
     merge_elem (flip offset_seg_merge).
 
-  Definition raw_offset_collapse : raw_offset -> raw_offset :=
-    merge_elems (flip offset_seg_merge).
-  Arguments raw_offset_collapse !_ /.
   Lemma offset_seg_merge_inv :
     let f := (flip offset_seg_merge) in
     ∀ x1 x2, raw_offset_collapse (f x1 x2) = f x1 x2.
-  Proof. move=> /= o1 o2. destruct o1, o2 => //=; by repeat (case_decide; simpl). Qed.
+  Proof.
+    move=> /= [o1 off1] [o2 off2].
+    destruct o1, o2 => //=; by repeat (case_decide; simpl).
+  Qed.
   Lemma foo2 x1 x2 :
     raw_offset_collapse (raw_offset_collapse [x1; x2]) = raw_offset_collapse [x1; x2].
   Proof.
@@ -452,7 +624,8 @@ Module PTRS_IMPL : PTRS.
     raw_offset_collapse (raw_offset_collapse [x1; x2; x3]) = raw_offset_collapse [x1; x2; x3].
   Proof.
     rewrite /= app_nil_r /= /flip.
-    destruct x1, x2, x3 => //=.
+    move: x1 x2 x3 => [o1 ?] [o2 ?] [o3 ?].
+    destruct o1, o2, o3 => //=.
     all: by repeat (case_decide; simpl).
   Qed.
   Instance: Involutive raw_offset_collapse.
@@ -468,7 +641,8 @@ Module PTRS_IMPL : PTRS.
     rewrite /= /raw_offset_collapse /merge_elems /merge_elem /=. etrans. apply: offset_seg_merge_inv. *)
   Abort.
 
-  Local Definition test xs := raw_offset_collapse (raw_offset_collapse xs) = raw_offset_collapse xs.
+  Local Definition test xs :=
+    raw_offset_collapse (raw_offset_collapse xs) = raw_offset_collapse xs.
 
   Section tests.
     Ltac start := intros; red; simpl.
@@ -478,20 +652,20 @@ Module PTRS_IMPL : PTRS.
     Ltac res_false := start; repeat step_false.
 
     Goal test []. Proof. res_true. Qed.
-    Goal `{test [o_sub_ ty n1] }. Proof. done. Qed.
-    Goal `{test [o_sub_ ty n1; o_sub_ ty n2] }.
+    Goal `{test [(o_sub_ ty n1, o1)] }. Proof. done. Qed.
+    Goal `{test [(o_sub_ ty n1, o1); (o_sub_ ty n2, o2)] }.
     Proof. res_true. Qed.
 
-    Goal `{test [o_sub_ ty n1; o_sub_ ty n2; o_field_ f] }.
+    Goal `{test [(o_sub_ ty n1, o1); (o_sub_ ty n2, o2); (o_field_ f, o3)] }.
     Proof. res_true. Qed.
 
-    Goal `{test [o_field_ f; o_sub_ ty n1; o_sub_ ty n2] }.
+    Goal `{test [(o_field_ f, o1); (o_sub_ ty n1, o2); (o_sub_ ty n2, o3)] }.
     Proof. res_true. Qed.
 
-    Goal `{ty1 ≠ ty2 → test [o_sub_ ty1 n1; o_sub_ ty2 n2; o_field_ f] }.
+    Goal `{ty1 ≠ ty2 → test [(o_sub_ ty1 n1, o1); (o_sub_ ty2 n2, o2); (o_field_ f, o3)] }.
     Proof. res_false. Qed.
 
-    Goal `{ty1 ≠ ty2 → test [o_sub_ ty1 n1; o_sub_ ty1 n2; o_sub_ ty2 n3; o_field_ f] }.
+    Goal `{ty1 ≠ ty2 → test [(o_sub_ ty1 n1, o1); (o_sub_ ty1 n2, o2); (o_sub_ ty2 n3, o3); (o_field_ f, o4)] }.
     Proof. start. step_false. step_true. step_false. Qed.
   End tests.
 
@@ -521,56 +695,75 @@ Module PTRS_IMPL : PTRS.
     (* elim: os. *)
   Admitted. *)
 
-  Definition raw_offset_wf (ro : raw_offset) : Prop :=
-    bool_decide (raw_offset_collapse ro = ro).
-  Instance raw_offset_wf_pi ro : ProofIrrel (raw_offset_wf ro) := _.
-  Lemma singleton_raw_offset_wf {os} : raw_offset_wf [os].
-  Proof. by rewrite /raw_offset_wf bool_decide_true. Qed.
 
-  Definition raw_offset_merge (o1 o2 : raw_offset) : raw_offset :=
-    raw_offset_collapse (o1 ++ o2).
-  Arguments raw_offset_merge !_ _ /.
-
-  Definition offset := {ro : raw_offset | raw_offset_wf ro}.
-
-
-  Program Definition o_id : offset := [] ↾ _.
-  Next Obligation. done. Qed.
-  Definition o_field σ f : offset :=
-    [o_field_ f] ↾ singleton_raw_offset_wf.
-  Definition o_sub σ ty z : offset :=
-    [o_sub_ ty z] ↾ singleton_raw_offset_wf.
-  Definition o_base σ derived base : offset :=
-    [o_base_ derived base] ↾ singleton_raw_offset_wf.
-  Definition o_derived σ base derived : offset :=
-    [o_derived_ base derived] ↾ singleton_raw_offset_wf.
-  Definition o_num z : offset :=
-    [o_num_ z] ↾ singleton_raw_offset_wf.
+  (* This is probably sound, since it allows temporary underflows. *)
+  (* Section eval_offset.
+    (* From PTR_INTERNAL *)
+    Definition eval_raw_offset (σ : genv) (o : raw_offset) : option Z :=
+      foldr (liftM2 Z.add) (Some 0%Z) (eval_offset_seg σ <$> o).
+    Definition eval_offset (σ : genv) (o : offset) : option Z := eval_raw_offset σ (`o).
+  End eval_offset. *)
 
   Program Definition o_dot : offset → offset → offset :=
     λ o1 o2, (raw_offset_merge (proj1_sig o1) (proj1_sig o2)) ↾ _.
   Next Obligation.
-    move=> o1 o2 /=. rewrite /raw_offset_wf bool_decide_true //.
+    move=> o1 o2 /=.
     exact: raw_offset_collapse_involutive.
   Qed.
   Inductive root_ptr : Set :=
   | nullptr_
   | global_ptr_ (tu : translation_unit_canon) (o : obj_name)
-  | alloc_ptr_ (a : alloc_id) (oid : object_id).
+  | alloc_ptr_ (a : alloc_id) (va : vaddr).
+
   Local Instance root_ptr_eq_dec : EqDecision root_ptr.
   Proof. solve_decision. Qed.
+  Declare Instance root_ptr_countable : Countable root_ptr.
 
-  (* Inductive rptr :=
-  | null_rptr
-  | invalid_rptr. *)
+  Local Definition global_ptr_encode_canon
+    (tu : translation_unit_canon) (o : obj_name) : option (alloc_id * vaddr) :=
+    global_ptr_encode_ov o (tu !! o).
+
+  Definition root_ptr_alloc_id (rp : root_ptr) : option alloc_id :=
+    match rp with
+    | nullptr_ => Some null_alloc_id
+    | global_ptr_ tu o => fst <$> global_ptr_encode_canon tu o
+    | alloc_ptr_ aid _ => Some aid
+    end.
+
+  Definition root_ptr_vaddr (rp : root_ptr) : option vaddr :=
+    match rp with
+    | nullptr_ => Some 0%N
+    | global_ptr_ tu o => snd <$> global_ptr_encode_canon tu o
+    | alloc_ptr_ aid va => Some va
+    end.
 
   Inductive ptr_ : Set :=
   | invalid_ptr_
   | fun_ptr_ (tu : translation_unit_canon) (o : obj_name)
   | offset_ptr (p : root_ptr) (o : offset).
-  (* Add offsets from Loc. *)
-
   Definition ptr := ptr_.
+  Local Instance ptr_eq_dec : EqDecision ptr.
+  Proof. solve_decision. Qed.
+  Declare Instance ptr_countable : Countable ptr.
+
+  Definition ptr_alloc_id (p : ptr) : option alloc_id :=
+    match p with
+    | invalid_ptr_ => None
+    | fun_ptr_ tu o => fst <$> global_ptr_encode_canon tu o
+    | offset_ptr p o => root_ptr_alloc_id p
+    end.
+
+  Definition ptr_vaddr (p : ptr) : option vaddr :=
+    match p with
+    | invalid_ptr_ => None
+    | fun_ptr_ tu o => snd <$> global_ptr_encode_canon tu o
+    | offset_ptr p o =>
+      foldr
+        (λ off ova, ova ≫= offset_vaddr off)
+        (root_ptr_vaddr p)
+        (snd <$> `o)
+    end.
+
   Definition lift_root_ptr (rp : root_ptr) : ptr := offset_ptr rp o_id.
   Definition invalid_ptr := invalid_ptr_.
   Definition fun_ptr tu o := fun_ptr_ (canonical_tu.tu_to_canon tu) o.
@@ -580,37 +773,30 @@ Module PTRS_IMPL : PTRS.
     lift_root_ptr (global_ptr_ (canonical_tu.tu_to_canon tu) o).
   Definition alloc_ptr a oid := lift_root_ptr (alloc_ptr_ a oid).
 
+  Lemma ptr_vaddr_nullptr : ptr_vaddr nullptr = Some 0%N.
+  Proof. done. Qed.
+
   Instance id_dot : LeftId (=) o_id o_dot.
-  Proof.
-    intros o. apply /sig_eq_pi.
-    by case: o => [ro /= /bool_decide_unpack].
-  Qed.
+  Proof. intros o. apply /sig_eq_pi. by case: o. Qed.
   Instance dot_id : RightId (=) o_id o_dot.
   Proof.
     intros o. apply /sig_eq_pi.
-    case: o => [ro /= /bool_decide_unpack].
-    by rewrite /raw_offset_merge (right_id []).
+    rewrite /= /raw_offset_merge (right_id []).
+    by case: o.
   Qed.
   Local Instance dot_assoc : Assoc (=) o_dot.
   Proof.
     intros o1 o2 o3. apply /sig_eq_pi.
-    move: o1 o2 o3 => [ro1 /= /bool_decide_unpack wf1]
-      [ro2 /= /bool_decide_unpack wf2] [ro3 /= /bool_decide_unpack wf3].
+    move: o1 o2 o3 => [ro1 /= wf1]
+      [ro2 /= wf2] [ro3 /= wf3].
       rewrite /raw_offset_merge.
       rewrite -{1}wf1 -{2}wf3.
       rewrite -!invol_app; f_equiv.
       apply: assoc.
   Qed.
 
-  Local Instance ptr_eq_dec : EqDecision ptr.
-  Proof. solve_decision. Qed.
-  Local Instance offset_eq_dec : EqDecision offset.
-  Proof. solve_decision. Qed.
-
   Local Instance ptr_eq_dec' : EqDecision ptr := ptr_eq_dec.
 
-  Declare Instance ptr_countable : Countable ptr.
-  Declare Instance offset_countable : Countable offset.
   (* Instance ptr_equiv : Equiv ptr := (=).
   Instance offset_equiv : Equiv offset := (=).
   Instance ptr_equivalence : Equivalence (≡@{ptr}) := _.
@@ -631,18 +817,30 @@ Module PTRS_IMPL : PTRS.
   Delimit Scope offset_scope with offset.
   Notation "o1 .., o2" := (o_dot o1 o2) : offset_scope.
 
-  Definition _offset_ptr p o :=
+  Definition _offset_ptr (p : ptr) (o : offset) : ptr :=
     match p with
     | offset_ptr p' o' => offset_ptr p' (o' .., o)
     | invalid_ptr_ => invalid_ptr_
-    | fun_ptr_ _ _ => invalid_ptr_
+    | fun_ptr_ _ _ =>
+      match `o with
+      | [] => p
+      | _ => invalid_ptr_
+      end
     end.
   (* Instance offset_ptr_proper : Proper ((≡) ==> (≡) ==> (≡)) _offset_ptr := _. *)
   Notation "p .., o" := (_offset_ptr p o) : ptr_scope.
 
+  Lemma offset_ptr_id p : (p .., o_id = p)%ptr.
+  Proof. case: p => // p o. by rewrite /_offset_ptr (right_id o_id o_dot). Qed.
+
   Lemma offset_ptr_dot p o1 o2 :
     (p .., (o1 .., o2) = p .., o1 .., o2)%ptr.
-  Proof. by destruct p; rewrite //= assoc. Qed.
+  Proof.
+    destruct p; rewrite //= ?assoc //=.
+    move: o1 o2 => [o1 /= +] [o2 /= +]; rewrite /raw_offset_wf => WF1 WF2.
+    repeat (case_match; simplify_eq/= => //).
+    by rewrite Heqr in WF2.
+  Admitted.
 
   Definition offset_ptr__ (z : Z) (p : ptr) : ptr :=
     (* _offset_ptr p [o_num_ z] *)
@@ -663,8 +861,20 @@ Module PTRS_IMPL : PTRS.
   Admitted.
 
   (* XXX False. *)
-  Lemma o_sub_0 σ ty n :
-    size_of σ ty = Some n ->
+  Lemma o_sub_0 σ ty :
+    is_Some (size_of σ ty) ->
     o_sub σ ty 0 = o_id.
   Proof. rewrite /o_sub/o_id/=. Admitted.
+
+  Lemma ptr_alloc_id_offset {p o} :
+    let p' := (p .., o)%ptr in
+    is_Some (ptr_alloc_id p') -> ptr_alloc_id p' = ptr_alloc_id p.
+  Admitted.
+
+  Axiom ptr_vaddr_o_sub_eq : forall p σ ty n1 n2 sz,
+    size_of σ ty = Some sz -> (sz > 0)%N ->
+    (same_property ptr_vaddr (p .., o_sub _ ty n1) (p .., o_sub _ ty n2) ->
+    n1 = n2)%ptr.
+
+  Include PTRS_DERIVED_MIXIN.
 End PTRS_IMPL.

@@ -114,6 +114,9 @@ Module Type Expr.
     (* [Emember a m ty] is a prvalue if
      * - [a] is a member enumerator or non-static member function, or
      * - [a] is an rvalue and [m] is non-static data of non-reference type
+     TODO: consider requiring (1) [type_ptr] (2) [valid_live_ptr], here and
+     elsewhere; most operations in the standard are described in terms of
+     objects, which restricts them to _live_ objects.
      *)
     Axiom wp_prval_member : forall ty vc a m Q,
       wpe vc a (fun base free =>
@@ -606,13 +609,34 @@ Module Type Expr.
       Q (Vptr nullptr) empSP
       |-- wp_prval Enull Q.
 
-    (** [new (...) C(...)] invokes the constructor C over the memory returned by the
-        allocation operation. Note that while the physical memory that backs both objcts
-        is the same, the C++ abstract machine (potentially?) uses a different pointer to
-        the new value. This explains the fact that the old pointer can not be used to access
-        the new object.
-
+    (** [new (...) C(...)]
+        - invokes a C++ new operator [new_fn], which returns a pointer [resp];
+          [new_fn] _might_ allocate memory
+          (https://eel.is/c++draft/expr.new#10), or return an argument
+          address for some forms of placement new;
+        - constructs a pointer [newp], which shares the address of [resp];
+        - invokes the constructor C over [newp].
         https://eel.is/c++draft/expr.new
+
+        - This axiom assumes that [resp] points to a character array that will
+          _provide storage_ for a new _complete object_ [o]
+          (http://eel.is/c++draft/intro.object#def:provides_storage).
+
+          In that case, the C++ abstract machine can choose to make [newp <>
+          resp], so that the old pointer [resp] cannot be used to access
+          the new object. Following Cerberus, we model this by giving [newp] a
+          different allocation ID.
+
+        - The created object might be a subobject of an existing object
+          (pointed to by some pointer [p])
+          (https://eel.is/c++draft/basic.memobj#intro.object-2).
+          It is unclear whether that requires [resp = p] or just
+          [provides_storage resp p].
+          In that case, we plan to allow proving that [newp] = [p ., o]; we
+          offer no such support at present; we account for this case by not specifying that
+          [ptr_alloc_id newp <> ptr_alloc_id resp].
+        - Currently, we do not model coalescing of multiple allocations
+          (https://eel.is/c++draft/expr.new#14).
      *)
     Axiom wp_prval_new : forall new_fn new_args init aty ty Q,
         Exists fa, _global new_fn.1 &~ fa **
@@ -626,7 +650,7 @@ Module Type Expr.
                       (_at (_eqv res) (blockR sz) **
                        (* todo: ^ This misses an condition that [res] is suitably aligned. (issue #149) *)
                            (Forall newp : ptr,
-                                   [| newp <> nullptr |] ** _at (_eq newp) (anyR aty 1) **
+                                   _at (_eq newp) (anyR aty 1) **
                                    provides_storage resp newp aty -*
                                    (* todo: we currently expose [anyR] after the [new] but that isn't correct
                                       if [anyR] implies something about the effective types of pointers since the lifetime

@@ -3,7 +3,6 @@
  *
  * SPDX-License-Identifier: LGPL-2.1 WITH BedRock Exception for use over network, see repository root for details.
  *)
-Require Import bedrock.lang.prelude.base.
 From iris.algebra Require Import excl gmap.
 From iris.algebra.lib Require Import frac_auth.
 From iris.bi Require Import monpred.
@@ -13,8 +12,12 @@ From iris.base_logic.lib Require Import fancy_updates own.
 From iris.base_logic.lib Require Import cancelable_invariants.
 From iris.proofmode Require Import tactics.
 From iris_string_ident Require Import ltac2_string_ident.
+
+From bedrock.lang.prelude Require Import base option.
 From bedrock.lang.cpp Require Import ast semantics.
 From bedrock.lang.cpp.logic Require Import pred z_to_bytes.
+
+Implicit Types (vt : validity_type) (σ resolve : genv).
 
 (* todo: does this not exist as a library somewhere? *)
 Definition fractionalR (V : Type) : cmraT :=
@@ -63,12 +66,14 @@ End fractional.
 
 (* Stand-in for an actual model of PTRS_FULL.
 Ensures that everything needed is properly functorized. *)
-Module Type PTRS_I := PTRS <+ PTR_INTERNAL.
+Module Type PTRS_I := PTRS <+ PTRS_DERIVED <+ PTR_INTERNAL.
 Declare Module PTRS_IMPL : PTRS_I.
 Declare Module RAW_BYTES_IMPL : RAW_BYTES.
 Module Type PTRS_FULL_I := PTRS_FULL <+ PTR_INTERNAL.
 Module Import PTRS_FULL_IMPL : PTRS_FULL_I :=
-  PTRS_IMPL <+ RAW_BYTES_IMPL <+ VAL_MIXIN.
+  PTRS_IMPL <+ RAW_BYTES_IMPL <+ VAL_MIXIN <+ PTRS_MIXIN.
+
+Implicit Types (p : ptr).
 
 (** A consistency proof for [CPP_LOGIC_CLASS] *)
 Module SimpleCPP_BASE <: CPP_LOGIC_CLASS.
@@ -154,9 +159,9 @@ Module SimpleCPP_BASE <: CPP_LOGIC_CLASS.
   End with_cpp.
 End SimpleCPP_BASE.
 
-(* TODO: make this a [Module Type] and provide an instance for it. *)
-Module SimpleCPP_VIRTUAL.
-  Include SimpleCPP_BASE.
+(* TODO: provide an instance for this. *)
+Module Type SimpleCPP_VIRTUAL.
+  Import SimpleCPP_BASE.
 
   Section with_cpp.
     Context `{Σ : cpp_logic}.
@@ -181,6 +186,7 @@ Module SimpleCPP_VIRTUAL.
 End SimpleCPP_VIRTUAL.
 
 Module SimpleCPP.
+  Include SimpleCPP_BASE.
   Include SimpleCPP_VIRTUAL.
   Include PTRS_FULL_IMPL.
 
@@ -189,25 +195,69 @@ Module SimpleCPP.
   Section with_cpp.
     Context `{Σ : cpp_logic}.
 
+    Parameter live_alloc_id : alloc_id -> mpred.
+    Axiom live_alloc_id_timeless : forall aid, Timeless (live_alloc_id aid).
+    Global Existing Instance live_alloc_id_timeless.
+
+    Definition live_ptr (p : ptr) :=
+      default False%I (live_alloc_id <$> ptr_alloc_id p).
+    Axiom nullptr_live : |-- live_ptr nullptr.
+
     (** pointer validity *)
     (** Pointers past the end of an object/array can be valid; see
     https://eel.is/c++draft/expr.add#4 *)
-    Definition valid_ptr (p : ptr) : mpred :=
+    Definition in_range (vt : validity_type) (l o h : Z) : mpred :=
+      [| (l <= o < h)%Z \/ (vt = Relaxed /\ o = h) |].
+
+    Lemma in_range_weaken l o h :
+      in_range Strict l o h |-- in_range Relaxed l o h.
+    Proof. rewrite /in_range/=. f_equiv. rewrite/impl. tauto. Qed.
+
+    Definition _valid_ptr vt (p : ptr) : mpred :=
       [| p = nullptr |] \\//
             Exists base l h o,
                 blocks_own base l h **
-                [| (l <= o <= h)%Z |] ** [| p = offset_ptr_ o base |].
+                in_range vt l o h ** [| p = offset_ptr_ o base |] **
+                [| ptr_vaddr p <> Some 0%N |].
+    (* strict validity (not past-the-end) *)
+    Notation strict_valid_ptr := (_valid_ptr Strict).
+    (* relaxed validity (past-the-end allowed) *)
+    Notation valid_ptr := (_valid_ptr Relaxed).
 
-    Instance valid_ptr_persistent : forall p, Persistent (valid_ptr p) := _.
-    Instance valid_ptr_affine : forall p, Affine (valid_ptr p) := _.
-    Instance valid_ptr_timeless : forall p, Timeless (valid_ptr p) := _.
+    Instance _valid_ptr_persistent : forall b p, Persistent (_valid_ptr b p) := _.
+    Instance _valid_ptr_affine : forall b p, Affine (_valid_ptr b p) := _.
+    Instance _valid_ptr_timeless : forall b p, Timeless (_valid_ptr b p) := _.
 
-    Theorem valid_ptr_nullptr : |-- valid_ptr nullptr.
+    (* Needs validity to exclude non-null pointers with 0 addresses but
+    non-null provenance (which can be created by pointer arithmetic!) as
+    invalid. *)
+    Lemma same_address_eq_null p tv :
+      _valid_ptr tv p |--
+      [| same_address p nullptr <-> p = nullptr |].
+    Proof.
+      rewrite /_valid_ptr same_address_eq; iIntros "[->|H]";
+        [ |iDestruct "H" as (????) "(_ & _ & _ & %Hne)"]; iIntros "!%".
+      by rewrite same_property_iff ptr_vaddr_nullptr; naive_solver.
+      rewrite same_property_iff; split; last intros ->;
+        rewrite ptr_vaddr_nullptr; naive_solver.
+    Qed.
+
+    Theorem _valid_ptr_nullptr b : |-- _valid_ptr b nullptr.
     Proof. by iLeft. Qed.
 
+    Lemma strict_valid_relaxed p :
+      strict_valid_ptr p |-- valid_ptr p.
+    Proof. rewrite /_valid_ptr/=. by setoid_rewrite in_range_weaken. Qed.
+
+    Axiom valid_ptr_alloc_id : forall p,
+      valid_ptr p |-- [| is_Some (ptr_alloc_id p) |].
     (** This is a very simplistic definition of [provides_storage].
     A more useful definition should probably not be persistent. *)
-    Definition provides_storage (base newp : ptr) (_ : type) : mpred := [| base = newp |].
+    Definition provides_storage (base newp : ptr) (_ : type) : mpred :=
+      [| same_address base newp |].
+    Lemma provides_storage_same_address base newp ty :
+      provides_storage base newp ty |-- [| same_address base newp |].
+    Proof. done. Qed.
 
     Section with_genv.
       Variable σ : genv.
@@ -255,7 +305,7 @@ Module SimpleCPP.
         edestruct _Z_to_bytes_cons as (? & ? & ->) => //; eauto.
       Qed.
 
-      Lemma cptr_ne_aptr p n : cptr p <> aptr n.
+      Lemma cptr_ne_aptr p n : cptr n <> aptr p.
       Proof.
         rewrite /cptr /aptr bytesNat_nnonnull'.
         by edestruct Z_to_bytes_cons as (? & ? & ->).
@@ -631,51 +681,6 @@ Module SimpleCPP.
       Observe [| q ≤ 1 |]%Qc (oaddr_encodes σ t q oa p v).
     Proof. destruct oa; apply _. Qed.
 
-
-    Definition tptsto {σ:genv} (t : type) (q : Qp) (p : ptr) (v : val) : mpred :=
-      [| p <> nullptr |] **
-      Exists (oa : option addr),
-              mem_inj_own p oa **
-              valid_ptr p ** (* assert validity of the range! *)
-              oaddr_encodes σ t q oa p v.
-
-    Theorem tptsto_nonnull {σ} ty q a :
-      @tptsto σ ty q nullptr a |-- False.
-    Proof. iDestruct 1 as (Hne) "_". naive_solver. Qed.
-
-    Instance tptsto_mono :
-      Proper (genv_leq ==> eq ==> eq ==> eq ==> eq ==> (⊢)) (@tptsto).
-    Proof. rewrite /tptsto /oaddr_encodes /addr_encodes. solve_proper. Qed.
-
-    Instance tptsto_proper :
-      Proper (genv_eq ==> eq ==> eq ==> eq ==> eq ==> (≡)) (@tptsto).
-    Proof.
-      intros σ1 σ2 [Hσ1 Hσ2] ??-> ??-> ??-> ??->.
-      by split'; apply tptsto_mono.
-    Qed.
-
-    Instance tptsto_fractional {σ} ty p v : Fractional (λ q, @tptsto σ ty q p v) := _.
-    Instance tptsto_timeless {σ} ty q p v : Timeless (@tptsto σ ty q p v) := _.
-
-    Global Instance tptsto_nonvoid {σ} ty (q : Qp) p v :
-      Observe [| ty <> Tvoid |] (@tptsto σ ty q p v) := _.
-
-    Global Instance tptsto_frac_valid {σ} ty (q : Qp) p v :
-      Observe [| q ≤ 1 |]%Qc (@tptsto σ ty q p v) := _.
-
-    Global Instance tptsto_valid_ptr {σ} t q p v :
-      Observe (valid_ptr p) (@tptsto σ t q p v) := _.
-
-    Global Instance tptsto_agree σ t q1 q2 p v1 v2 :
-      Observe2 [| v1 = v2 |] (@tptsto σ t q1 p v1) (@tptsto σ t q2 p v2).
-    Proof.
-      apply: observe_2_intro_persistent.
-      iDestruct 1 as (Hnn1 oa1) "H1".
-      iDestruct 1 as (Hnn2 oa2) "H2".
-      iDestruct (observe_2_elim_pure (oa1 = oa2) with "H1 H2") as %->.
-      destruct oa2; iApply (observe_2 with "H1 H2").
-    Qed.
-
     Definition code_at (_ : genv) (f : Func) (p : ptr) : mpred :=
       code_own p (inl (inl (inl f))).
     Definition method_at (_ : genv) (m : Method) (p : ptr) : mpred :=
@@ -701,24 +706,34 @@ Module SimpleCPP.
     Instance dtor_at_affine : forall s f p, Affine (@dtor_at s f p) := _.
     Instance dtor_at_timeless : forall s f p, Timeless (@dtor_at s f p) := _.
 
+    Axiom code_at_live   : forall s f p,   @code_at s f p |-- live_ptr p.
+    Axiom method_at_live : forall s f p, @method_at s f p |-- live_ptr p.
+    Axiom ctor_at_live   : forall s f p,   @ctor_at s f p |-- live_ptr p.
+    Axiom dtor_at_live   : forall s f p,   @dtor_at s f p |-- live_ptr p.
     (** physical representation of pointers
      *)
     Definition pinned_ptr (va : N) (p : ptr) : mpred :=
       valid_ptr p **
       ([| p = nullptr /\ va = 0%N |] \\//
-      ([| p <> nullptr |] ** mem_inj_own p (Some va))).
+      ([| p <> nullptr /\ ptr_vaddr p = Some va |] ** mem_inj_own p (Some va))).
 
     Instance pinned_ptr_persistent va p : Persistent (pinned_ptr va p) := _.
     Instance pinned_ptr_affine va p : Affine (pinned_ptr va p) := _.
     Instance pinned_ptr_timeless va p : Timeless (pinned_ptr va p) := _.
+    (* Currently false, while we fix the model. *)
+    Axiom pinned_ptr_eq : forall va p,
+      pinned_ptr va p -|- [| pinned_ptr_pure va p |] ** valid_ptr p.
     Instance pinned_ptr_unique va va' p :
       Observe2 [| va = va' |] (pinned_ptr va p) (pinned_ptr va' p).
     Proof.
       apply: observe_2_intro_persistent.
       iIntros "A B".
-      iDestruct "A" as "[_ [[->->] | [% A]]]"; iDestruct "B" as "[_ [[%->] | [% B]]]" => //.
+      iDestruct "A" as "[_ [[->->] | [[%%] A]]]"; iDestruct "B" as "[_ [[%->] | [[%%] B]]]" => //.
       by iDestruct (observe_2_elim_pure (Some va = Some va') with "A B") as %[= ->].
     Qed.
+
+    Lemma pinned_ptr_null : |-- pinned_ptr 0 nullptr.
+    Proof. iSplit; by [iApply _valid_ptr_nullptr | iLeft]. Qed.
 
     (* Not true in the current model, requires making pinned_ptr part of pointers. *)
     Axiom offset_pinned_ptr : forall resolve o n va p,
@@ -727,33 +742,14 @@ Module SimpleCPP.
       pinned_ptr va p -* pinned_ptr (Z.to_N (Z.of_N va + n)) (p .., o).
 
     Instance pinned_ptr_valid va p :
-      Observe (valid_ptr p) (pinned_ptr va p).
-    Proof. apply: observe_intro_persistent. iDestruct 1 as "[$ _]". Qed.
-
-    Theorem pinned_ptr_borrow : forall {σ} ty p v va M,
-      @tptsto σ ty 1 p v ** pinned_ptr va p ** [| p <> nullptr |] |--
-      |={M}=> Exists vs, @encodes σ ty v vs ** vbytes va vs 1 **
-              (Forall v' vs', @encodes  σ ty v' vs' -* vbytes va vs' 1 -*
-                              |={M}=> @tptsto σ ty 1 p v').
-    Proof.
-      intros. iIntros "(TP & PI & %)".
-      iDestruct "PI" as "[_ [[% %]|[% MJ]]]"; [done| ].
-      iDestruct "TP" as (_ ma) "[MJ' [VP TP]]".
-      iDestruct (mem_inj_own_agree with "MJ MJ'") as %<-.
-      iDestruct "TP" as (vs) "(#EN & Bys & VBys)".
-      iIntros "!>".
-      iExists vs. iFrame "EN VBys".
-      iIntros (v' vs') "#EN' VBys".
-      iDestruct (encodes_consistent with "EN EN'") as %Heq.
-      iMod (bytes_update vs' Heq with "Bys") as "Bys'".
-      iModIntro.
-      iSplit; first done. iExists (Some va). iFrame "MJ VP".
-      iExists vs'. by iFrame.
-    Qed.
+      Observe (valid_ptr p) (pinned_ptr va p) := _.
 
     Theorem provides_storage_pinned_ptr : forall res newp aty va,
        provides_storage res newp aty ** pinned_ptr va res |-- pinned_ptr va newp.
-    Proof. iIntros (????) "[-> $]". Qed.
+    Proof.
+      rewrite /provides_storage /pinned_ptr.
+      iIntros (????) "[%Hsame ?]".
+    Admitted.
 
     (* XXX: with this definition, we cannot prove all pointers have alignment 1. Again, fix by replacing
     mem_inj_own with a pure function of pointers (returning [option vaddr]). *)
@@ -776,7 +772,7 @@ Module SimpleCPP.
       aligned_ptr n p ∗-∗ [| (n | va)%N |].
     Proof.
       rewrite /pinned_ptr /aligned_ptr /=.
-      iDestruct 1 as "[_ [[-> ->]|[% MO1]]]". {
+      iDestruct 1 as "[_ [[-> ->]|[[%%] MO1]]]". {
         iSplit; last by iIntros; iLeft.
         by iIntros "_ !%"; exact: N.divide_0_r.
       }
@@ -790,7 +786,7 @@ Module SimpleCPP.
       [| p <> nullptr |] **
       (Exists align, [| @align_of resolve ty = Some align |] ** aligned_ptr align p) **
 
-      valid_ptr p ** valid_ptr (p .., o_sub resolve ty 1).
+      strict_valid_ptr p ** valid_ptr (p .., o_sub resolve ty 1).
       (* TODO: inline valid_ptr, and assert validity of the range, like we should do in tptsto!
       For 0-byte objects, should we assert ownership of one byte, to get character pointers? *)
       (* alloc_own (alloc_id p) (l, h) **
@@ -800,8 +796,8 @@ Module SimpleCPP.
     Instance type_ptr_affine σ p ty : Affine (type_ptr (resolve:=σ) ty p) := _.
     Instance type_ptr_timeless σ p ty : Timeless (type_ptr (resolve:=σ) ty p) := _.
 
-    Lemma type_ptr_valid resolve ty p :
-      type_ptr (resolve := resolve) ty p |-- valid_ptr p.
+    Lemma type_ptr_strict_valid resolve ty p :
+      type_ptr (resolve := resolve) ty p |-- strict_valid_ptr p.
     Proof. iDestruct 1 as "(_ & _ & $ & _)". Qed.
 
     Lemma type_ptr_valid_plus_one resolve ty p :
@@ -819,6 +815,23 @@ Module SimpleCPP.
       Exists align, [| @align_of σ ty = Some align |] ** aligned_ptr align p.
     Proof. by iDestruct 1 as "(_ & $ & _)". Qed.
 
+    (* TODO: is o_sub Proper? *)
+    Instance o_sub_mono :
+      Proper (genv_leq ==> eq ==> eq ==> eq) (@o_sub).
+    Admitted.
+
+    Instance type_ptr_mono :
+      Proper (genv_leq ==> eq ==> eq ==> (⊢)) (@type_ptr).
+    Proof.
+      rewrite /type_ptr => σ1 σ2 Heq.
+      solve_proper_prepare. do 3 f_equiv.
+      - intros ?. (do 2 f_equiv) => Hal1.
+        move: Heq => /Proper_align_of /(_ y y eq_refl).
+        inversion 1; congruence.
+      - f_equiv. by rewrite Heq.
+    Qed.
+
+
     (* This lemma is unused; it confirms we can lift the other half of
     [pinned_ptr_aligned_divide], but we don't expose this. *)
     Local Lemma pinned_ptr_type_divide_2 {va n σ p ty}
@@ -826,11 +839,12 @@ Module SimpleCPP.
       pinned_ptr va p ⊢ valid_ptr (p .., o_sub σ ty 1) -∗
       [| (n | va)%N |] -∗ type_ptr (resolve := σ) ty p.
     Proof.
-      rewrite /type_ptr Hal /=. iIntros "P $ %HvaAl"; iFrame (Hnn).
-      iDestruct (pinned_ptr_valid with "P") as "#$".
+      rewrite /type_ptr Hal /=. iIntros "P #$ %HvaAl"; iFrame (Hnn).
+      (* iDestruct (pinned_ptr_valid with "P") as "#$". *)
+      iSplit; last admit.
       iExists _; iSplit; first done.
       by iApply (pinned_ptr_aligned_divide with "P").
-    Qed.
+    Admitted.
 
     (* XXX move *)
     Axiom align_of_uchar : forall resolve, @align_of resolve T_uchar = Some 1%N.
@@ -850,6 +864,29 @@ Module SimpleCPP.
       iIntros "!%". exact: N.divide_1_l.
     Qed.
 
+    (* todo(gmm): this isn't accurate, but it is sufficient to show that the axioms are
+    instantiatable. *)
+    Definition identity {σ : genv} (this : globname) (most_derived : option globname)
+               (q : Qp) (p : ptr) : mpred := ltrue.
+
+    (** this allows you to forget an object identity, necessary for doing
+        placement [new] over an existing object.
+     *)
+    Theorem identity_forget : forall σ mdc this p,
+        @identity σ this (Some mdc) 1 p |-- |={↑pred_ns}=> @identity σ this None 1 p.
+    Proof. rewrite /identity. eauto. Qed.
+
+    Definition tptsto {σ:genv} (t : type) (q : Qp) (p : ptr) (v : val) : mpred :=
+      [| p <> nullptr |] **
+      Exists (oa : option addr),
+              type_ptr t p ** (* use the appropriate ghost state instead *)
+              mem_inj_own p oa **
+              oaddr_encodes σ t q oa p v.
+    (* TODO: [tptsto] should not include [type_ptr] wholesale, but its
+    pieces in the new model, replacing [mem_inj_own], and [tptsto_type_ptr]
+    should be proved properly. *)
+    Global Instance tptsto_type_ptr : forall (σ : genv) ty q p v,
+      Observe (type_ptr ty p) (tptsto ty q p v) := _.
 (*
     Instance tptsto_type_ptr resolve ty q p v align
       (Hal : align_of (resolve := resolve) ty = Some align) :
@@ -865,17 +902,77 @@ Module SimpleCPP.
       (* alignment of pointer. *)
     Abort. *)
 
-    (* todo(gmm): this isn't accurate, but it is sufficient to show that the axioms are
-    instantiatable. *)
-    Definition identity {σ : genv} (this : globname) (most_derived : option globname)
-               (q : Qp) (p : ptr) : mpred := ltrue.
 
-    (** this allows you to forget an object identity, necessary for doing
-        placement [new] over an existing object.
-     *)
-    Theorem identity_forget : forall σ mdc this p,
-        @identity σ this (Some mdc) 1 p |-- @identity σ this None 1 p.
-    Proof. rewrite /identity. eauto. Qed.
+    Axiom tptsto_live : forall {σ} ty (q : Qp) p v,
+      @tptsto σ ty q p v |-- live_ptr p ** True.
+
+    Instance tptsto_nonnull_obs {σ} ty q a :
+      Observe False (@tptsto σ ty q nullptr a).
+    Proof. iDestruct 1 as (Hne) "_". naive_solver. Qed.
+    Theorem tptsto_nonnull {σ} ty q a :
+      @tptsto σ ty q nullptr a |-- False.
+    Proof. rewrite tptsto_nonnull_obs. iDestruct 1 as "[]". Qed.
+
+    Instance tptsto_mono :
+      Proper (genv_leq ==> eq ==> eq ==> eq ==> eq ==> (⊢)) (@tptsto).
+    Proof. rewrite /tptsto /oaddr_encodes /addr_encodes. solve_proper. Qed.
+
+    Instance tptsto_proper :
+      Proper (genv_eq ==> eq ==> eq ==> eq ==> eq ==> (≡)) (@tptsto).
+    Proof.
+      intros σ1 σ2 [Hσ1 Hσ2] ??-> ??-> ??-> ??->.
+      by split'; apply tptsto_mono.
+    Qed.
+
+    Instance tptsto_fractional {σ} ty p v : Fractional (λ q, @tptsto σ ty q p v) := _.
+    Instance tptsto_timeless {σ} ty q p v : Timeless (@tptsto σ ty q p v) := _.
+
+    Global Instance tptsto_nonvoid {σ} ty (q : Qp) p v :
+      Observe [| ty <> Tvoid |] (@tptsto σ ty q p v) := _.
+
+    Global Instance tptsto_frac_valid {σ} ty (q : Qp) p v :
+      Observe [| q ≤ 1 |]%Qc (@tptsto σ ty q p v) := _.
+
+    Global Instance tptsto_agree σ t q1 q2 p v1 v2 :
+      Observe2 [| v1 = v2 |] (@tptsto σ t q1 p v1) (@tptsto σ t q2 p v2).
+    Proof.
+      apply: observe_2_intro_persistent.
+      iDestruct 1 as (Hnn1 oa1) "H1".
+      iDestruct 1 as (Hnn2 oa2) "H2".
+      iDestruct (observe_2_elim_pure (oa1 = oa2) with "H1 H2") as %->.
+      destruct oa2; iApply (observe_2 with "H1 H2").
+    Qed.
+
+    Theorem pinned_ptr_borrow {σ} ty p v va :
+      @tptsto σ ty 1 p v ** pinned_ptr va p |--
+        |={↑pred_ns}=> Exists vs, @encodes σ ty v vs ** vbytes va vs 1 **
+                (Forall v' vs', @encodes σ ty v' vs' -* vbytes va vs' 1 -*
+                                |={↑pred_ns}=> @tptsto σ ty 1 p v').
+    Proof.
+      iIntros "(TP & PI)".
+      iDestruct "PI" as "[_ [[-> %]|[[%%] MJ]]]"; first by rewrite tptsto_nonnull.
+      rewrite /tptsto.
+      iDestruct "TP" as (_ ma) "[TP [MJ' OA]]".
+      iDestruct (mem_inj_own_agree with "MJ MJ'") as %<-.
+      iDestruct "OA" as (vs) "(#EN & Bys & VBys)".
+      iIntros "!>".
+      iExists vs. iFrame "EN VBys".
+      iIntros (v' vs') "#EN' VBys".
+      iDestruct (encodes_consistent with "EN EN'") as %Heq.
+      iMod (bytes_update vs' Heq with "Bys") as "Bys'".
+      iModIntro.
+      iSplit; first done. iExists (Some va). iFrame "TP MJ".
+      iExists vs'. by iFrame.
+    Qed.
+
+    Axiom same_address_eq_type_ptr : forall resolve ty p1 p2 n,
+      same_address p1 p2 ->
+      size_of resolve ty = Some n ->
+      (* if [ty = T_uchar], one of these pointer could provide storage for the other. *)
+      ty <> T_uchar ->
+      (n > 0)%N ->
+      type_ptr ty p1 ∧ type_ptr ty p2 ∧ live_ptr p1 ∧ live_ptr p2 ⊢
+        |={↑pred_ns}=> [| p1 = p2 |].
 
   End with_cpp.
 

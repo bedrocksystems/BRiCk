@@ -24,6 +24,7 @@ Record genv : Type :=
 ; pointer_size_bitsize : bitsize
   (* ^ the size of a pointer *)
 }.
+Existing Class genv.
 Definition genv_byte_order (g : genv) : endian :=
   g.(genv_tu).(byte_order).
 Definition pointer_size (g : genv) := bytesN (pointer_size_bitsize g).

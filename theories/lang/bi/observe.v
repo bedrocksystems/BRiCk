@@ -29,8 +29,21 @@ Arguments observe_2 {_} (_ _ _)%I {_} : assert.
 Arguments Observe2 {_} (_ _ _)%I : simpl never, assert.
 Hint Mode Observe2 + ! ! ! : typeclass_instances.
 
+Instance Observe_mono {PROP : bi} :
+  Proper ((⊢) ==> flip (⊢) ==> impl) (@Observe PROP).
+Proof. solve_proper. Qed.
+Instance Observe_flip_mono {PROP : bi} :
+  Proper (flip (⊢) ==> (⊢) ==> flip impl) (@Observe PROP).
+Proof. solve_proper. Qed.
 Instance Observe_proper {PROP : bi} :
   Proper ((≡) ==> (≡) ==> (↔)) (@Observe PROP).
+Proof. solve_proper. Qed.
+
+Instance Observe2_mono {PROP : bi} :
+  Proper ((⊢) ==> flip (⊢) ==> flip (⊢) ==> impl) (@Observe2 PROP).
+Proof. solve_proper. Qed.
+Instance Observe2_flip_mono {PROP : bi} :
+  Proper (flip (⊢) ==> (⊢) ==> (⊢) ==> flip impl) (@Observe2 PROP).
 Proof. solve_proper. Qed.
 Instance Observe2_proper {PROP : bi} :
   Proper ((≡) ==> (≡) ==> (≡) ==> (↔)) (@Observe2 PROP).
