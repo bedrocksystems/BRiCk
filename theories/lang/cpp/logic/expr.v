@@ -783,9 +783,6 @@ Module Type Expr.
                                      (fun free' => Q Vvoid (free ** free')))
       |-- wp_prval (Earrayloop_init sz target init (Tarray ty sz)) Q.
 
-    (* Implicit initialization initializes the variables with
-       indeterminate values.
-     *)
     Axiom wp_prval_implicit_init_int : forall ty sz sgn Q,
         drop_qualifiers ty = Tint sz sgn ->
           Q (Vint 0) empSP
