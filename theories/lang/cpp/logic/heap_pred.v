@@ -227,7 +227,7 @@ Section with_cpp.
   Lemma _at_loc_materialize : forall (l : Loc) (r : Rep),
       _at l r -|- Exists a, l &~ a ** r a.
   Proof.
-    intros. by rewrite _at_eq /_at_def path_pred.addr_of_eq /addr_of_def.
+    intros. by rewrite _at_eq /_at_def.
   Qed.
 
   Lemma addr_of_valid_loc : forall l a,
@@ -280,18 +280,20 @@ Section with_cpp.
     by setoid_rewrite bi.sep_comm at 1.
   Qed.
 
+  Lemma _at_and l (R1 R2 : Rep) : _at l (R1 //\\ R2) ⊣⊢ _at l R1 //\\ _at l R2.
+  Proof.
+    rewrite _at_eq/_at_def -bi.exist_and_agree.
+    { f_equiv=> p. by rewrite monPred_at_and. }
+    apply path_pred.addr_of_precise.
+  Qed.
+
   Lemma _at_sep (l : Loc) (P Q : Rep) :
       _at l (P ** Q) -|- _at l P ** _at l Q.
   Proof.
-    rewrite !_at_loc_materialize.
-    setoid_rewrite monPred_at_sep.
-    split'.
-    { iDestruct 1 as (p) "[#X [L R]]". iSplitL "L"; eauto. }
-    { iIntros "[A B]"; iDestruct "A" as (p) "[#LA A]"; iDestruct "B" as (p') "[#LB B]".
-      iExists _; iFrame "#∗".
-      iDestruct (addr_of_precise with "[LA LB]") as %H;
-        [ iSplit; [ iApply "LA" | iApply "LB" ] | ].
-      subst; eauto. }
+    rewrite _at_eq/_at_def -bi.exist_sep_agree.
+    { f_equiv=> p. by rewrite monPred_at_sep. }
+    apply path_pred.addr_of_precise.
+  Qed.
 
   Lemma _at_or (l : Loc) (P Q : Rep) : _at l (P \\// Q) -|- _at l P \\// _at l Q.
   Proof.

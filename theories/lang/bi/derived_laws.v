@@ -171,6 +171,17 @@ Section only_provable_derived_laws.
       rewrite and_exist_r. iDestruct "H" as (a1) "[[Ha2 R] _]".
       by iDestruct (Hagree a1 a2 with "[$Ha2]") as "->".
   Qed.
+
+  Lemma exist_sep_agree {A : Type} (Θ Φ Ψ : A → PROP)
+      `{∀ a, Affine (Θ a), ∀ a, Persistent (Θ a)}
+    (Hagree : ∀ a1 a2, Θ a1 ∗ Θ a2 ⊢ [| a1 = a2 |]) :
+    (∃ a, Θ a ∗ (Φ a ∗ Ψ a)) ⊣⊢ (∃ a, Θ a ∗ Φ a) ∗ (∃ a, Θ a ∗ Ψ a).
+  Proof.
+    rewrite -exist_sep //.
+    - f_equiv => a. exact: persistent_sep_distr_l.
+    - iIntros (??) "[A _] [B _]".
+      by iDestruct (Hagree with "[$A $B]") as %->.
+  Qed.
 End only_provable_derived_laws.
 
 Section embed_derived_laws.
