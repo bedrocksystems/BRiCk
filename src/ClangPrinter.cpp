@@ -137,6 +137,18 @@ ClangPrinter::printExprAndValCat(const Expr *d, CoqPrinter &print) {
 }
 
 void
+ClangPrinter::printExprAndValCat(const Expr *d, CoqPrinter &print,
+                                 OpaqueNames &li) {
+    auto depth = print.output().get_depth();
+    print.output() << fmt::lparen;
+    printValCat(d, print);
+    print.output() << "," << fmt::nbsp;
+    printExpr(d, print, li);
+    print.output() << fmt::rparen;
+    assert(depth == print.output().get_depth());
+}
+
+void
 ClangPrinter::printField(const ValueDecl *decl, CoqPrinter &print) {
     if (const FieldDecl *f = dyn_cast<clang::FieldDecl>(decl)) {
         print.ctor("Build_field", false);

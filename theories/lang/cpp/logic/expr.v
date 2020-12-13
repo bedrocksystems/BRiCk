@@ -798,41 +798,29 @@ Module Type Expr.
        }
        ```
 
-       **NOTE**: for the time being, we choose note to support nested occurrences
-         of this construct in order to simplify the semantics of `Earrayloop_index`.
-
        [1] https://clang.llvm.org/doxygen/classclang_1_1ArrayInitLoopExpr.html#details
        [2] https://clang.llvm.org/doxygen/classclang_1_1ArrayInitIndexExpr.html#details
      *)
 
-    (* This function returns `True` iff `Earrayloop_init`  appears as a
-       (sub)expression of `e`. *)
-    Fixpoint has_arrayloop_subexpr (e : Expr) : bool :=
-      match e with
-      | Earrayloop_init _ _ _ _ => true
+    (* A very simple mangling of numbers to strings. Soundness only requires this to be
+       injective and we don't expect the [N] to be very large in practice so we pick
+       a very naive encoding.
+     *)
+    Definition N_to_bs (n : N) : bs :=
+      N.peano_rect (fun _ => bs)
+                   BS.EmptyString
+                   (fun _ x => BS.String "1" x) n.
 
-      | Eunop _ e _ | Ederef e _ | Eaddrof e _ | Epreinc e _ | Epostinc e _
-      | Epredec e _ | Epostdec e _ | Ecast _ (pair _ e) _ | Emember _ e _ _
-      | Esize_of (inr e) _ | Ealign_of (inr e) _ | Eimplicit e _
-      | Edelete _ _ e _ _ _ | Eandclean e _ | Ematerialize_temp e _
-      | Ebind_temp e _ _ | Eva_arg e _ | Epseudo_destructor _ e
-      => has_arrayloop_subexpr e
+    Let loop_index (n : N) : bs := "!loop_index" ++ N_to_bs n.
+    Let opaque_val (n : N) : bs := "%opaque" ++ N_to_bs n.
 
-      | Ebinop _ e1 e2 _ | Eassign e1 e2 _ | Eassign_op _ e1 e2 _
-      | Eseqand e1 e2 _ | Eseqor e1 e2 _ | Ecomma _ e1 e2 _
-      | Esubscript e1 e2 _
-      => andb (has_arrayloop_subexpr e1) (has_arrayloop_subexpr e2)
+    Axiom wp_lval_opaque_ref : forall n ρ ty Q,
+          Exists a, (_local ρ (opaque_val n) &~ a ** ltrue) //\\ Q (Vptr a) empSP
+      |-- wp_lval ρ (Eopaque_ref n ty) Q.
 
-      (* TODO: Support the remaining expression cases.
-      | Ecall e es _ => has_arrayloop_subexpr e /\
-       *)
-
-      | _ => false
-      end.
-
-    Axiom wp_lval_arrayloop_index : forall ρ ty Q,
-        wp_lval ρ (Evar (Lname "!loop_index") ty) Q
-        |-- wp_lval ρ (Earrayloop_index ty) Q.
+    Axiom wp_lval_arrayloop_index : forall ρ level ty Q,
+        wp_lval ρ (Evar (Lname (loop_index level)) ty) Q
+        |-- wp_lval ρ (Earrayloop_index level ty) Q.
 
     (* TODO: Make this definition nicer.
 
@@ -861,19 +849,12 @@ Module Type Expr.
        induction on `N` isn't very useful for this type of `Fixpoint`, so I ended
        up using a different recursion principle for N called `N.peano_rect`.
      *)
-    Definition _arrayloop_init
-      : N ->                    (* sz *)
-        region ->               (* ρ *)
-        N ->                    (* idx *)
-        ptr ->                  (* targetp *)
-        Expr ->                 (* init *)
-        type ->                 (* ty *)
-        (FreeTemps -> epred) -> (* Q *)
-        epred :=
-      N.peano_rect (fun _ : N => region -> N -> ptr -> Expr -> type -> (FreeTemps -> epred) -> epred)
-                   (fun _ _ _ _ _ Q => Q emp)%I
-                   (fun sz' _arrayloop_init_rec ρ idx targetp init ty Q =>
-                      let loop_index := _local ρ "!loop_index"%bs in
+    Definition _arrayloop_init (level : N) (sz : N) (ρ : region) (idx : N) (targetp : ptr) (init : Expr) (ty : type)
+               (Q : FreeTemps -> epred) : mpred :=
+      let loop_index := _local ρ (loop_index level) in
+      N.peano_rect (fun _ : N => N -> (FreeTemps -> epred) -> mpred)
+                   (fun _ Q => Q emp)%I
+                   (fun _ rest idx Q =>
                       (* NOTE: We split ownership because this variable is read-only for
                            programs (i.e. the C++ Abstract Machine handles incrementing
                            it between iterations). *)
@@ -881,26 +862,24 @@ Module Type Expr.
                       wp_init ρ ty (Vptr $ _offset_ptr targetp $ o_sub resolve ty idx) init
                               (fun free => free **
                                  _at loop_index (primR (Tint W64 Unsigned) (1/2) idx) **
-                                 _arrayloop_init_rec ρ (N.succ idx) targetp init ty Q)).
+                                 rest (N.succ idx) Q)) sz idx Q.
 
-    Axiom wp_prval_arrayloop_init : forall sz ρ target init ty Q,
-          (* Do we need to worry about nested `Earrayloop_init` expressions in `target`? *)
-          has_arrayloop_subexpr init = false ->
+    Axiom wp_prval_arrayloop_init : forall oname level sz ρ trg src init ty Q,
           (* I was expecting that we would need to use `wp_decl` (or manually
              inline a `wp_decl ρ "!loop_index" (Tint W64 Unsigned) (Some (Eint 0)) None ? ?`),
              but it isn't clear to me how `Kpreds` play into expression semantics.
 
              Should this actually end up living in `logic/stmt.v` instead? *)
-          wp_lval ρ target
+          wp_lval ρ src
                   (fun p free =>
                      match p with
                      | Vptr p =>
-                       Exists idxp,
-                         _arrayloop_init sz (Rbind "!loop_index" idxp ρ) 0 p init ty
-                                         (fun free' => Q (Vptr p) (free ** free'))
+                       Forall idxp,
+                         _arrayloop_init level sz (Rbind (opaque_val oname) p (Rbind (loop_index level) idxp ρ)) 0 trg init ty
+                                         (fun free' => Q (free ** free'))
                      | _ => False
                      end)
-      |-- wp_prval ρ (Earrayloop_init sz target init (Tarray ty sz)) Q.
+      |-- wp_init ρ ty (Vptr trg) (Earrayloop_init oname level sz src init (Tarray ty sz)) Q.
 
   End with_resolve__arrayloop.
 End Expr.
