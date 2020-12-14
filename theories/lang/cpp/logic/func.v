@@ -191,7 +191,7 @@ Section with_cpp.
     | S f =>
       match resolve.(genv_tu).(globals) !! cls with
       | Some (Gstruct st) =>
-        _identity resolve cls mdc 1 **
+        identityR resolve cls mdc 1 **
         [∗list] b ∈ st.(s_bases),
            let '(base,_) := b in
            _base cls base |-> all_identities' f mdc base
@@ -216,8 +216,8 @@ Section with_cpp.
       ([∗list] b ∈ st.(s_bases),
          let '(base,_) := b in
          _base cls base |-> all_identities (Some base) base) **
-       _identity resolve cls None 1 **
-      (_identity resolve cls (Some cls) 1 -*
+       identityR resolve cls None 1 **
+      (identityR resolve cls (Some cls) 1 -*
        ([∗list] b ∈ st.(s_bases),
           let '(base,_) := b in
           _base cls base |-> all_identities (Some cls) base) -* pureR Q)
@@ -308,11 +308,11 @@ Section with_cpp.
   Definition revert_identity (cls : globname) (Q : mpred) : Rep :=
     match resolve.(genv_tu).(globals) !! cls with
     | Some (Gstruct st) =>
-      _identity resolve cls (Some cls) 1 **
+      identityR resolve cls (Some cls) 1 **
       ([∗list] b ∈ st.(s_bases),
           let '(base,_) := b in
           _base cls base |-> all_identities (Some cls) base) **
-      (_identity resolve cls None 1 -*
+      (identityR resolve cls None 1 -*
        ([∗list] b ∈ st.(s_bases),
          let '(base,_) := b in
          _base cls base |-> all_identities (Some base) base) -* pureR Q)

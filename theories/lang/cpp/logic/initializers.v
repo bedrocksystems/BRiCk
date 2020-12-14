@@ -41,9 +41,12 @@ Module Type Init.
      * For aggregates, simply delegates to [wp_init], but for primitives,
      * the semantics is to evaluate the primitive and initialize the location
      * with the value.
+     *
+     * NOTE this is written as a recursive function rather than by using [decompose_type] because
+     * we want simplification to reduce it.
      *)
-    Definition wp_initialize (ty : type) (addr : ptr) (init : Expr) (k : FreeTemps -> mpred) : mpred :=
-      match drop_qualifiers ty with
+    Fixpoint wp_initialize (ty : type) (addr : ptr) (init : Expr) (k : FreeTemps -> mpred) : mpred :=
+      match ty with
       | Tvoid => False
       | Tpointer _ as ty
       | Tmember_pointer _ _ as ty
@@ -62,7 +65,7 @@ Module Type Init.
       | Trv_reference t => False (* reference fields are not supported *)
       | Tfunction _ _ => False (* functions not supported *)
 
-      | Tqualified _ ty => False (* unreachable *)
+      | Tqualified _ ty => wp_initialize ty addr init k
       | Tnullptr => False (* nullptr fields are not supported *)
       | Tarch _ _ => False (* vendor-specific types are not supported *)
       | Tfloat _ => False (* floating point numbers are not supported *)

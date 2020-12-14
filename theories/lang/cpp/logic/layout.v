@@ -79,9 +79,9 @@ Section with_Σ.
     as_Rep (array' 1 (fun r => primR T_uchar q (Vraw r)) rs).
 
   Axiom primR_to_rawR: forall ty q v,
-    primR ty q v -|- Exists rs, rawR rs q ** [| raw_bytes_of_val resolve ty v rs |] ** _type_ptr resolve ty.
+    primR ty q v -|- Exists rs, rawR rs q ** [| raw_bytes_of_val resolve ty v rs |] ** type_ptrR ty.
 
-  (* TODO: Do we need _type_ptr here? *)
+  (* TODO: Do we need type_ptrR here? *)
   Axiom struct_to_raw : forall cls st rss q,
     glob_def resolve cls = Some (Gstruct st) ->
     st.(s_layout) = POD ->
@@ -105,7 +105,7 @@ Section with_Σ.
               _offsetR (_field {| f_name := n ; f_type := cls |})
                        (anyR (erase_qualifiers ty) 1)) **
            (if has_vtable st
-            then _identity resolve cls None 1
+            then identityR resolve cls None 1
             else empSP)
            ** struct_padding resolve 1 cls.
 
@@ -127,8 +127,7 @@ Section with_Σ.
    *)
   Axiom decompose_array : forall t n,
         anyR (Tarray t n) 1
-    -|- _offsetR (_sub t (Z.of_N n)) empSP **
-        (* ^ note: this is equivalent to [valid_loc (this .[ t ! n ])] *)
+    -|- _offsetR (_sub t (Z.of_N n)) validR **
         [∗list] i ↦ _ ∈ repeat () (BinNatDef.N.to_nat n),
                 _offsetR (_sub t (Z.of_nat i)) (anyR t 1).
 
@@ -151,7 +150,7 @@ Section with_Σ.
     Exists l : list N,
       as_Rep (array' 1 (fun c => primR (Tint W8 Unsigned) q (Vint c))
              (Z.of_N <$> l)) **
-      _type_ptr resolve (Tint sz Unsigned) **
+      type_ptrR (Tint sz Unsigned) **
       [| decodes_uint l x |].
   Proof.
     move => q sz x.
@@ -171,5 +170,5 @@ Section with_Σ.
   Axiom decode_uint_anyR : forall q sz,
     anyR (Tint sz Unsigned) q -|-
          anyR (Tarray T_uchar (bytesN sz)) q **
-         _type_ptr resolve (Tint sz Unsigned).
+         type_ptrR (Tint sz Unsigned).
 End with_Σ.

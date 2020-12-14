@@ -625,6 +625,7 @@ Instance: Params (@as_Rep) 2 := {}.
 Instance: Params (@_offsetR) 3 := {}.
 Instance: Params (@pureR) 2 := {}.
 
+Typeclasses Opaque _at _offsetR primR.
 Global Opaque _at _offsetR primR.
 
 Typeclasses Opaque pureR.
@@ -636,19 +637,23 @@ Arguments primR {_ Σ resolve} ty q v : rename.
 Arguments refR {_ Σ} ty v : rename.
 Arguments cptr {_ Σ resolve} _ : rename.
 
+Notation cptrR := cptr (only parsing).
+
 Section with_cpp.
   Context `{Σ : cpp_logic}.
   (** object identity *)
-  Definition _identity (σ : genv) (cls : globname) (mdc : option globname)
+  Definition identityR (σ : genv) (cls : globname) (mdc : option globname)
              (q : Qp) : Rep :=
     as_Rep (@identity _ _ σ cls mdc q).
   (** cpp2v-core#194: [Fractional], [AsFractional], [Timeless]? *)
   (** cpp2v-core#194: The fraction is valid? Agreement? *)
 
-  Definition _type_ptr (σ : genv) (ty : type) :=
-    as_Rep (@type_ptr _ _ σ ty).
-  Global Instance _type_ptr_persistent σ ty : Persistent (_type_ptr σ ty).
-  Proof. apply _. Qed.
+  Definition type_ptrR_def σ (t : type) : Rep := as_Rep (@type_ptr _ _ σ t).
+  Definition type_ptrR_aux : seal (@type_ptrR_def). Proof. by eexists. Qed.
+  Definition type_ptrR := type_ptrR_aux.(unseal).
+  Definition type_ptrR_eq : @type_ptrR = _ := type_ptrR_aux.(seal_eq).
+  #[global] Instance type_ptrR_persistent σ t : Persistent (type_ptrR σ t).
+  Proof. Admitted.
 
   (********************* DERIVED CONCEPTS ****************************)
 
@@ -667,7 +672,7 @@ Section with_cpp.
   Proof. Admitted.
   #[global] Instance svalidR_validR_observe : Observe validR svalidR.
   Proof. Admitted.
-  #[global] Instance _type_ptr_svalidR_observe σ t : Observe svalidR (_type_ptr σ t).
+  #[global] Instance _type_ptr_svalidR_observe σ t : Observe svalidR (type_ptrR σ t).
   Proof. Admitted.
 
   Definition is_null_def : Rep :=
@@ -727,9 +732,9 @@ Section with_cpp.
 
 End with_cpp.
 
-Typeclasses Opaque _identity.
-Typeclasses Opaque _type_ptr.
-Typeclasses Opaque validR svalidR.
+Typeclasses Opaque identityR.
+Typeclasses Opaque type_ptrR validR svalidR.
+Arguments type_ptrR {_ Σ σ} _%bs.
 
 Instance Persistent_spec `{Σ:cpp_logic ti} {resolve:genv} nm s :
-  Persistent (_at (Σ:=Σ) (_global (resolve:=resolve) nm) (cptr (resolve:=resolve) s)) := _.
+  Persistent (_at (Σ:=Σ) (_global (resolve:=resolve) nm) (cptrR (resolve:=resolve) s)) := _.

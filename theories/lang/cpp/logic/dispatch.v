@@ -10,6 +10,7 @@ Require Import bedrock.lang.cpp.ast.
 Require Import bedrock.lang.cpp.semantics.
 From bedrock.lang.cpp.logic Require Import pred heap_pred path_pred.
 Require Import bedrock.lang.cpp.logic.wp.
+Require Import bedrock.lang.cpp.heap_notations.
 
 Section with_cpp.
   Context `{Σ : cpp_logic}.
@@ -55,7 +56,7 @@ Section with_cpp.
            - the [class_derives] fact *must* be in [σ'] because [mdc] might
              not exist in [σ].
          *)
-      (Exists q, _at this (_identity σ' cls (Some mdc) q) **
+      (Exists q, this |-> identityR σ' cls (Some mdc) q  **
                  [| class_compatible σ.(genv_tu) σ'.(genv_tu) cls |] ** ltrue) //\\
               (* ^ the [class_compatible σ' mdc cls] ensures that the virtual
                    tables the [cls] class are compatible between the (possibly
