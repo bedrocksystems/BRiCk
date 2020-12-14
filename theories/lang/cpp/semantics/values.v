@@ -460,6 +460,8 @@ Theorem Vptr_inj : forall p1 p2, Vptr p1 = Vptr p2 -> p1 = p2.
 Proof. inversion 1; reflexivity. Qed.
 Theorem Vint_inj : forall a b, Vint a = Vint b -> a = b.
 Proof. inversion 1; reflexivity. Qed.
+Theorem Vbool_inj : forall a b, Vbool a = Vbool b -> a = b.
+Proof. by move=>[] [] /Vint_inj. Qed.
 
 (** * regions
     to model the stack frame in separation logic, we use a notion of regions
