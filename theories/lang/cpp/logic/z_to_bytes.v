@@ -5,8 +5,8 @@
  *)
 
 Require Import bedrock.lang.prelude.base.
-From bedrock.lang.cpp Require Import ast operator values.
-From bedrock.lang.cpp.semantics Require builtins.
+From bedrock.lang.cpp.semantics Require Import builtins operator values.
+From bedrock.lang.cpp Require Import ast.
 
 Section FromToBytes.
 
