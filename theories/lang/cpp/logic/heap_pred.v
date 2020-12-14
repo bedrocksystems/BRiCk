@@ -656,6 +656,19 @@ Section with_cpp.
   Definition validR_aux : seal (@validR_def). Proof. by eexists. Qed.
   Definition validR := validR_aux.(unseal).
   Definition validR_eq : @validR = _ := validR_aux.(seal_eq).
+  #[global] Instance validR_persistent : Persistent validR.
+  Proof. Admitted.
+
+  Definition svalidR_def : Rep := as_Rep strict_valid_ptr.
+  Definition svalidR_aux : seal (@svalidR_def). Proof. by eexists. Qed.
+  Definition svalidR := svalidR_aux.(unseal).
+  Definition svalidR_eq : @svalidR = _ := svalidR_aux.(seal_eq).
+  #[global] Instance svalidR_persistent : Persistent svalidR.
+  Proof. Admitted.
+  #[global] Instance svalidR_validR_observe : Observe validR svalidR.
+  Proof. Admitted.
+  #[global] Instance _type_ptr_svalidR_observe σ t : Observe svalidR (_type_ptr σ t).
+  Proof. Admitted.
 
   Definition is_null_def : Rep :=
     as_Rep (fun addr => [| addr = nullptr |]).
@@ -716,6 +729,7 @@ End with_cpp.
 
 Typeclasses Opaque _identity.
 Typeclasses Opaque _type_ptr.
+Typeclasses Opaque validR svalidR.
 
 Instance Persistent_spec `{Σ:cpp_logic ti} {resolve:genv} nm s :
   Persistent (_at (Σ:=Σ) (_global (resolve:=resolve) nm) (cptr (resolve:=resolve) s)) := _.
