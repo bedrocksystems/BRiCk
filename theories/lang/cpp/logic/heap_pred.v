@@ -735,6 +735,7 @@ End with_cpp.
 Typeclasses Opaque identityR.
 Typeclasses Opaque type_ptrR validR svalidR.
 Arguments type_ptrR {_ Σ σ} _%bs.
+Arguments identityR {_ Σ σ} _%bs _%bs _%Qp.
 
 Instance Persistent_spec `{Σ:cpp_logic ti} {resolve:genv} nm s :
   Persistent (_at (Σ:=Σ) (_global (resolve:=resolve) nm) (cptrR (resolve:=resolve) s)) := _.

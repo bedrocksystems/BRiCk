@@ -56,7 +56,7 @@ Section with_cpp.
            - the [class_derives] fact *must* be in [σ'] because [mdc] might
              not exist in [σ].
          *)
-      (Exists q, this |-> identityR σ' cls (Some mdc) q  **
+    (Exists q, this |-> identityR (σ:=σ') cls (Some mdc) q  **
                  [| class_compatible σ.(genv_tu) σ'.(genv_tu) cls |] ** ltrue) //\\
               (* ^ the [class_compatible σ' mdc cls] ensures that the virtual
                    tables the [cls] class are compatible between the (possibly

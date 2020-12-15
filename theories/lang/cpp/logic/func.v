@@ -184,21 +184,20 @@ Section with_cpp.
     □ Forall Q : val -> mpred, Forall vals,
       spec.(fs_spec) ti vals Q -* wp_method m ti vals Q.
 
-  Fixpoint all_identities' (f : nat) (mdc : option globname) (cls : globname) : Rep.
-  refine
+  Fixpoint all_identities' (f : nat) (mdc : option globname) (cls : globname) : Rep :=
     match f with
-    | 0 => lfalse
+    | 0 => False
     | S f =>
       match resolve.(genv_tu).(globals) !! cls with
       | Some (Gstruct st) =>
-        identityR resolve cls mdc 1 **
+        identityR cls mdc 1 **
         [∗list] b ∈ st.(s_bases),
            let '(base,_) := b in
            _base cls base |-> all_identities' f mdc base
-      | _ => lfalse
+      | _ => False
       end
     end.
-  Defined.
+
   Definition all_identities : option globname -> globname -> Rep :=
     let size := avl.IM.cardinal resolve.(genv_tu).(globals) in
     (* ^ the number of global entries is an upper bound on the height of the
@@ -216,8 +215,8 @@ Section with_cpp.
       ([∗list] b ∈ st.(s_bases),
          let '(base,_) := b in
          _base cls base |-> all_identities (Some base) base) **
-       identityR resolve cls None 1 **
-      (identityR resolve cls (Some cls) 1 -*
+       identityR cls None 1 **
+      (identityR cls (Some cls) 1 -*
        ([∗list] b ∈ st.(s_bases),
           let '(base,_) := b in
           _base cls base |-> all_identities (Some cls) base) -* pureR Q)
@@ -308,11 +307,11 @@ Section with_cpp.
   Definition revert_identity (cls : globname) (Q : mpred) : Rep :=
     match resolve.(genv_tu).(globals) !! cls with
     | Some (Gstruct st) =>
-      identityR resolve cls (Some cls) 1 **
+      identityR cls (Some cls) 1 **
       ([∗list] b ∈ st.(s_bases),
           let '(base,_) := b in
           _base cls base |-> all_identities (Some cls) base) **
-      (identityR resolve cls None 1 -*
+      (identityR cls None 1 -*
        ([∗list] b ∈ st.(s_bases),
          let '(base,_) := b in
          _base cls base |-> all_identities (Some base) base) -* pureR Q)

@@ -105,7 +105,7 @@ Section with_Σ.
               _offsetR (_field {| f_name := n ; f_type := cls |})
                        (anyR (erase_qualifiers ty) 1)) **
            (if has_vtable st
-            then identityR resolve cls None 1
+            then identityR cls None 1
             else empSP)
            ** struct_padding resolve 1 cls.
 
