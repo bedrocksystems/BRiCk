@@ -823,9 +823,11 @@ Module Type Expr.
       |-- wp_lval ρ (Eopaque_ref n ty) Q.
 
     (* Maybe do something similar to what was suggested for `wp_lval_opaque_ref` above. *)
-    Axiom wp_lval_arrayloop_index : forall ρ level ty Q,
-          wp_lval ρ (Evar (Lname (loop_index level)) ty) Q
-      |-- wp_lval ρ (Earrayloop_index level ty) Q.
+    Axiom wp_prval_arrayloop_index : forall ρ level ty Q,
+          Exists v,
+            ((Exists q, _at (_local ρ (loop_index level)) (primR (erase_qualifiers ty) q v)) **
+              True) //\\ Q v emp
+      |-- wp_prval ρ (Earrayloop_index level ty) Q.
 
     (* Before, we used `nat` for `sz` and `idx`, and thus we could easily do structural
        recursion of `sz`:
