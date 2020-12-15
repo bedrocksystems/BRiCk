@@ -14,7 +14,7 @@ Parameter eval_binop_impure : forall `{has_cpp : cpp_logic} {resolve : genv}, Bi
 Definition non_beginning_ptr `{has_cpp : cpp_logic} p' : mpred :=
   ∃ p o, [| p' = p .., o /\
     (* ensure that o is > 0 *)
-    some_Forall2 N.gt (ptr_vaddr p') (ptr_vaddr p) |]%ptr ∧ valid_ptr p.
+    some_Forall2 N.lt (ptr_vaddr p) (ptr_vaddr p') |]%ptr ∧ valid_ptr p.
 
 Section non_beginning_ptr.
   Context `{has_cpp : cpp_logic}.
@@ -66,19 +66,43 @@ Section with_Σ.
      complete object, the result of the comparison is unspecified.
    *)
   Let comparable vt1 p2 : mpred :=
-    [| vt1 = Strict \/ p2 = nullptr |] ∨ non_beginning_ptr p2.
-  Let eval_ptr_eq_cmp_op (bo : BinOp) (t f : Z) : Prop :=
-    forall ty p1 p2 vt1 vt2,
-      ([| same_alloc p1 p2 |] ∨ (comparable vt1 p2 ∧ comparable vt2 p1)) ∧
-      _valid_ptr vt1 p1 ∧ _valid_ptr vt2 p2 ∧ live_ptr p1 ∧ live_ptr p2 ⊢
-      eval_binop bo
-        (Tpointer ty) (Tpointer ty) Tbool
-        (Vptr p1) (Vptr p2) (Vint (if decide (same_address p1 p2) then t else f)) ∗ True.
+    [| vt1 = Strict |] ∨ [| p2 = nullptr |] ∨ non_beginning_ptr p2.
 
-  Axiom eval_ptr_eq :
-    Unfold eval_ptr_eq_cmp_op (eval_ptr_eq_cmp_op Beq 1 0).
-  Axiom eval_ptr_neq :
-    Unfold eval_ptr_eq_cmp_op (eval_ptr_eq_cmp_op Bneq 0 1).
+  Definition ptr_comparable p1 p2 vt1 vt2 : mpred :=
+    Unfold comparable (
+      ([| same_alloc p1 p2 |] ∨ (comparable vt1 p2 ∧ comparable vt2 p1)) ∧
+      (_valid_ptr vt1 p1 ∧ _valid_ptr vt2 p2) ∧ (live_ptr p1 ∧ live_ptr p2))%I.
+
+  Lemma ptr_comparable_symm p1 p2 vt1 vt2 :
+    ptr_comparable p1 p2 vt1 vt2 ⊢ ptr_comparable p2 p1 vt2 vt1.
+  Proof.
+    rewrite /ptr_comparable.
+    rewrite (comm same_alloc); f_equiv. by rewrite (comm bi_and).
+    by rewrite (comm bi_and (live_ptr p2)) (comm bi_and (_valid_ptr _ p2)).
+  Qed.
+
+  Lemma nullptr_comparable p :
+    valid_ptr p ∧ live_ptr p ⊢
+    ptr_comparable nullptr p Strict Relaxed.
+  Proof.
+    iIntros "[$ $]".
+    rewrite -nullptr_live -strict_valid_ptr_nullptr !(right_id _ bi_and).
+    iRight; iSplit; iLeft; iIntros "!%"; eauto.
+  Qed.
+
+  Let eval_ptr_eq_cmp_op (bo : BinOp) (f : ptr -> ptr -> bool) ty p1 p2 : mpred :=
+    eval_binop bo
+      (Tpointer ty) (Tpointer ty) Tbool
+      (Vptr p1) (Vptr p2) (Vbool (f p1 p2)) ∗ True.
+
+  Axiom eval_ptr_eq : forall ty p1 p2 vt1 vt2,
+      ptr_comparable p1 p2 vt1 vt2
+    ⊢ Unfold eval_ptr_eq_cmp_op (eval_ptr_eq_cmp_op Beq same_address_bool ty p1 p2).
+
+  Axiom eval_ptr_neq : forall ty p1 p2,
+    Unfold eval_ptr_eq_cmp_op
+      (eval_ptr_eq_cmp_op Beq same_address_bool     ty p1 p2
+    ⊢ eval_ptr_eq_cmp_op Bneq (λ p1 p2, negb (same_address_bool p1 p2)) ty p1 p2).
 
   (** Skeleton for [Ble, Blt, Bge, Bgt] axioms on pointers. *)
   Let eval_ptr_ord_cmp_op (bo : BinOp) (f : vaddr -> vaddr -> bool) : Prop :=
@@ -179,5 +203,19 @@ Section with_Σ.
                 (Tpointer t) (Tpointer t) (Tint w Signed)
                 (Vptr p1)    (Vptr p2)    (Vint (o1 - o2)).
 
-
+  Lemma eval_ptr_nullptr_eq ty ap bp vp :
+    (ap = nullptr /\ bp = vp \/ ap = vp /\ bp = nullptr) ->
+    valid_ptr vp |--
+    (* Bug in axiom? *)
+    live_ptr vp -*
+    Unfold eval_ptr_eq_cmp_op
+    (eval_ptr_eq_cmp_op Beq (λ _ _, bool_decide (vp = nullptr)) ty ap bp).
+  Proof.
+    iIntros (Hdisj) "#V L".
+    iDestruct (same_address_bool_null with "V") as %<-.
+    destruct Hdisj as [[-> ->]|[-> ->]];
+      [rewrite (comm same_address_bool) -(eval_ptr_eq _ _ _ Strict Relaxed) |
+      rewrite -(eval_ptr_eq _ _ _ Relaxed Strict) -ptr_comparable_symm].
+    all: iApply nullptr_comparable; eauto.
+  Qed.
 End with_Σ.
