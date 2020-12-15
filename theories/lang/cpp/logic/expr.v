@@ -794,7 +794,7 @@ Module Type Expr.
 
        (* C++ *)
        for (int "!loop_index" = 0; "!loop_index" < 16; "!loop_index"++) {
-           target[SOME_UNIQUE_NAME] = init;
+           target["!loop_index"] = init;
        }
        ```
 
@@ -815,33 +815,32 @@ Module Type Expr.
     Let opaque_val (n : N) : bs := "%opaque" ++ N_to_bs n.
 
     Axiom wp_lval_opaque_ref : forall n ρ ty Q,
-          Exists a, (_local ρ (opaque_val n) &~ a ** ltrue) //\\ Q (Vptr a) empSP
+          wp_lval ρ (Evar (Lname (opaque_val n)) ty) Q
       |-- wp_lval ρ (Eopaque_ref n ty) Q.
 
     Axiom wp_lval_arrayloop_index : forall ρ level ty Q,
-        wp_lval ρ (Evar (Lname (loop_index level)) ty) Q
-        |-- wp_lval ρ (Earrayloop_index level ty) Q.
+          wp_lval ρ (Evar (Lname (loop_index level)) ty) Q
+      |-- wp_lval ρ (Earrayloop_index level ty) Q.
 
-    (* TODO: Make this definition nicer.
-
-       Before, we used `nat` for `sz` and `idx`, and thus we could easily do structural
+    (* Before, we used `nat` for `sz` and `idx`, and thus we could easily do structural
        recursion of `sz`:
        ```
        Fixpoint _arrayloop_init
-                (sz : nat) (idx : nat) (targetp : ptr)
-                (init : Expr) (ty : type)
-                (Q : FreeTemps -> epred)
+                (ρ : region) (level : N)
+                (targetp : ptr) (init : Expr)
+                (ty : type) (Q : FreeTemps -> epred)
+                (sz : nat) (idx : N)
                 {struct sz}
-         : epred :=
+         : mpred :=
+         let loop_index := _local ρ (loop_index level) in
          match sz with
          | O => Q emp
          | S sz' =>
-           (* TODO: Fix this representation of the loop index as a local *)
-           _at (_local ρ "!loop_index")%bs (primR (Tint W64 Unsigned) (1/2) idx) -*
-           wp_init ty (Vptr $ _offset_ptr targetp $ o_sub resolve ty idx) init
-                   (fun free =>
-                      _at (_local ρ "!loop_index")%bs (primR (Tint W64 Unsigned) (1/2) idx) **
-                      _arrayloop_init sz' (S idx) targetp init ty (fun free' => Q (free ** free')))
+           _at loop_index (primR (Tint W64 Unsigned) (1/2) idx) -*
+           wp_init ρ ty (Vptr $ _offset_ptr targetp $ o_sub resolve ty idx) init
+                   (fun free => free **
+                      _at loop_index (primR (Tint W64 Unsigned) (1/2) idx) **
+                      _arrayloop_init level sz' ρ (S idx) targetp init ty Q)
          end%I.
        ```
 
@@ -849,12 +848,16 @@ Module Type Expr.
        induction on `N` isn't very useful for this type of `Fixpoint`, so I ended
        up using a different recursion principle for N called `N.peano_rect`.
      *)
-    Definition _arrayloop_init (level : N) (sz : N) (ρ : region) (idx : N) (targetp : ptr) (init : Expr) (ty : type)
-               (Q : FreeTemps -> epred) : mpred :=
+    Definition _arrayloop_init
+               (ρ : region) (level : N)             (* These are constant *)
+               (targetp : ptr) (init : Expr)        (* throughout the *)
+               (ty : type) (Q : FreeTemps -> epred) (* recursion. *)
+               (sz : N) (idx : N)
+      : mpred :=
       let loop_index := _local ρ (loop_index level) in
-      N.peano_rect (fun _ : N => N -> (FreeTemps -> epred) -> mpred)
-                   (fun _ Q => Q emp)%I
-                   (fun _ rest idx Q =>
+      N.peano_rect (fun _ : N => N -> mpred)
+                   (fun _ => Q emp)%I
+                   (fun _ rest idx =>
                       (* NOTE: We split ownership because this variable is read-only for
                            programs (i.e. the C++ Abstract Machine handles incrementing
                            it between iterations). *)
@@ -862,24 +865,24 @@ Module Type Expr.
                       wp_init ρ ty (Vptr $ _offset_ptr targetp $ o_sub resolve ty idx) init
                               (fun free => free **
                                  _at loop_index (primR (Tint W64 Unsigned) (1/2) idx) **
-                                 rest (N.succ idx) Q)) sz idx Q.
+                                 rest (N.succ idx))) sz idx.
 
-    Axiom wp_prval_arrayloop_init : forall oname level sz ρ trg src init ty Q,
-          (* I was expecting that we would need to use `wp_decl` (or manually
-             inline a `wp_decl ρ "!loop_index" (Tint W64 Unsigned) (Some (Eint 0)) None ? ?`),
-             but it isn't clear to me how `Kpreds` play into expression semantics.
-
-             Should this actually end up living in `logic/stmt.v` instead? *)
+    Axiom wp_init_arrayloop_init : forall oname level sz ρ trg src init ty Q,
           wp_lval ρ src
                   (fun p free =>
+                     (* TODO: Change this once !238 (Loc:=ptr) gets merged *)
                      match p with
                      | Vptr p =>
                        Forall idxp,
-                         _arrayloop_init level sz (Rbind (opaque_val oname) p (Rbind (loop_index level) idxp ρ)) 0 trg init ty
+                         _arrayloop_init (Rbind (opaque_val oname) p
+                                                (Rbind (loop_index level) idxp ρ))
+                                         level trg init ty
                                          (fun free' => Q (free ** free'))
+                                         sz 0
                      | _ => False
                      end)
-      |-- wp_init ρ ty (Vptr trg) (Earrayloop_init oname level sz src init (Tarray ty sz)) Q.
+      |-- wp_init ρ (Tarray ty sz) (Vptr trg)
+                    (Earrayloop_init oname level sz src init (Tarray ty sz)) Q.
 
   End with_resolve__arrayloop.
 End Expr.
