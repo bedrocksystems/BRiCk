@@ -829,7 +829,7 @@ Module Type Expr.
               True) //\\ Q v emp
       |-- wp_prval ρ (Earrayloop_index level ty) Q.
 
-    (* Before, we used `nat` for `sz` and `idx`, and thus we could easily do structural
+    (* The following loop is essentially the following:
        recursion of `sz`:
        ```
        Fixpoint _arrayloop_init
@@ -851,9 +851,7 @@ Module Type Expr.
          end%I.
        ```
 
-       We wanted to avoid using `nat` so we switched to `N`, but
-       induction on `N` isn't very useful for this type of `Fixpoint`, so I ended
-       up using a different recursion principle for N called `N.peano_rect`.
+       We use `N.peano_rect` to avoid potentially building a large natural number.
      *)
     Definition _arrayloop_init
                (ρ : region) (level : N)             (* These are constant *)
