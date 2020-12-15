@@ -854,9 +854,13 @@ Module Type Expr.
        We use `N.peano_rect` to avoid potentially building a large natural number.
      *)
     Definition _arrayloop_init
-               (ρ : region) (level : N)             (* These are constant *)
-               (targetp : ptr) (init : Expr)        (* throughout the *)
-               (ty : type) (Q : FreeTemps -> epred) (* recursion. *)
+               (ρ : region) (level : N)
+               (targetp : ptr) (init : Expr)
+               (ty : type) (Q : FreeTemps -> epred)
+               (* The arguments above this comment are constant throughout the recursion.
+
+                  The arguments below this line will change during the recursion.
+                *)
                (sz : N) (idx : N)
       : mpred :=
       let loop_index := _local ρ (loop_index level) in
