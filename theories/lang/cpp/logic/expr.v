@@ -873,7 +873,7 @@ Module Type Expr.
                                  rest (N.succ idx))) sz idx.
 
     Axiom wp_init_arrayloop_init : forall oname level sz ρ trg src init ty Q,
-          has_type (Tint W64 Unsigned) (Vn sz) ->
+          has_type (Vn sz) (Tint W64 Unsigned) ->
           wp_lval ρ src
                   (fun p free =>
                      (* TODO: Change this once !238 (Loc:=ptr) gets merged *)
