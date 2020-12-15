@@ -83,12 +83,19 @@ Section with_cpp.
   Lemma as_Rep_sep P Q : as_Rep (λ p, P p ** Q p) -|- as_Rep P ** as_Rep Q.
   Proof. constructor=>p. by rewrite monPred_at_sep. Qed.
 
-  Global Instance as_Rep_observe Q (P : ptr → mpred) :
+  (* NOTE this is not exposed as a hint *)
+  Lemma as_Rep_observe P Q (o : forall p, Observe (P p) (Q p)) : Observe (as_Rep P) (as_Rep Q).
+  Proof. apply monPred_observe =>p; apply o. Qed.
+  Lemma as_Rep_observe_2 P Q R (o : forall p, Observe2 (P p) (Q p) (R p)) :
+    Observe2 (as_Rep P) (as_Rep Q) (as_Rep R).
+  Proof. apply monPred_observe_2=>p. apply o. Qed.
+
+  #[global] Instance as_Rep_only_provable_observe Q (P : ptr → mpred) :
     (∀ p, Observe [| Q |] (P p)) → Observe [| Q |] (as_Rep P).
   Proof.
     intros. apply monPred_observe=>p. by rewrite monPred_at_only_provable.
   Qed.
-  Global Instance as_Rep_observe_2 Q (P1 P2 : ptr → mpred) :
+  #[global] Instance as_Rep_only_provable_observe_2 Q (P1 P2 : ptr → mpred) :
     (∀ p, Observe2 [| Q |] (P1 p) (P2 p)) →
     Observe2 [| Q |] (as_Rep P1) (as_Rep P2).
   Proof.
@@ -99,7 +106,7 @@ Section with_cpp.
     (∀ p, f p |-- f p ** [| P |]) →
     as_Rep f |-- as_Rep f ** [| P |].
   Proof.
-    intros. apply observe_elim, as_Rep_observe=>p. exact: observe_intro.
+    intros. apply observe_elim, as_Rep_only_provable_observe =>p. exact: observe_intro.
   Qed.
 
   Lemma Rep_wand_force (R1 R2 : Rep) p : (R1 -* R2) p -|- R1 p -* R2 p.
@@ -138,16 +145,8 @@ Section with_cpp.
     _offsetR o (r1 ** r2) -|- _offsetR o r1 ** _offsetR o r2.
   Proof.
     rewrite _offsetR_eq /_offsetR_def. rewrite -as_Rep_sep. f_equiv=>p.
-(*
-    apply (anti_symm _).
-    - iDestruct 1 as (to) "[#O [R1 R2]]".
-      iSplitL "R1"; iExists to; by iFrame "O".
-    - iDestruct 1 as "[R1 R2]".
-      iDestruct "R1" as (to1) "[#O1 R1]". iDestruct "R2" as (to2) "[#O2 R2]".
-      iDestruct (_off_functional _ _ to1 to2 with "[$]") as %->.
-      iExists to2. iFrame "O1 R1 R2".
-  Qed. *)
-  Admitted.
+      by rewrite monPred_at_sep.
+  Qed.
 
   Global Instance _offsetR_fractional o (r : Qp → Rep) :
     Fractional r → Fractional (λ q, _offsetR o (r q)).
@@ -653,7 +652,9 @@ Section with_cpp.
   Definition type_ptrR := type_ptrR_aux.(unseal).
   Definition type_ptrR_eq : @type_ptrR = _ := type_ptrR_aux.(seal_eq).
   #[global] Instance type_ptrR_persistent σ t : Persistent (type_ptrR σ t).
-  Proof. Admitted.
+  Proof. rewrite type_ptrR_eq; refine _. Qed.
+  #[global] Instance type_ptrR_timeless σ t : Timeless (type_ptrR σ t).
+  Proof. rewrite type_ptrR_eq; refine _. Qed.
 
   (********************* DERIVED CONCEPTS ****************************)
 
@@ -662,18 +663,30 @@ Section with_cpp.
   Definition validR := validR_aux.(unseal).
   Definition validR_eq : @validR = _ := validR_aux.(seal_eq).
   #[global] Instance validR_persistent : Persistent validR.
-  Proof. Admitted.
+  Proof. rewrite validR_eq; refine _. Qed.
+  #[global] Instance validR_timeless : Timeless validR.
+  Proof. rewrite validR_eq; refine _. Qed.
 
   Definition svalidR_def : Rep := as_Rep strict_valid_ptr.
   Definition svalidR_aux : seal (@svalidR_def). Proof. by eexists. Qed.
   Definition svalidR := svalidR_aux.(unseal).
   Definition svalidR_eq : @svalidR = _ := svalidR_aux.(seal_eq).
   #[global] Instance svalidR_persistent : Persistent svalidR.
-  Proof. Admitted.
+  Proof. rewrite svalidR_eq; refine _. Qed.
+  #[global] Instance svalidR_timeless : Timeless svalidR.
+  Proof. rewrite svalidR_eq; refine _. Qed.
   #[global] Instance svalidR_validR_observe : Observe validR svalidR.
-  Proof. Admitted.
-  #[global] Instance _type_ptr_svalidR_observe σ t : Observe svalidR (type_ptrR σ t).
-  Proof. Admitted.
+  Proof.
+    rewrite validR_eq/validR_def svalidR_eq/svalidR_def.
+    apply as_Rep_observe. simpl. red; intros.
+    rewrite strict_valid_relaxed. eauto.
+  Qed.
+  #[global] Instance type_ptrR_svalidR_observe σ t : Observe svalidR (type_ptrR σ t).
+  Proof.
+    rewrite type_ptrR_eq/type_ptrR_def svalidR_eq/svalidR_def.
+    apply as_Rep_observe. simpl. red; intros.
+    rewrite type_ptr_strict_valid. eauto.
+  Qed.
 
   Definition is_null_def : Rep :=
     as_Rep (fun addr => [| addr = nullptr |]).
