@@ -50,6 +50,9 @@ Definition type_of (e : Expr) : type :=
   | Eatomic _ _ t => t
   | Eva_arg _ t => t
   | Epseudo_destructor _ _ => Tvoid
+  | Earrayloop_init _ _ _ _ _ t => t
+  | Earrayloop_index _ t => t
+  | Eopaque_ref _ t => t
   | Eunsupported _ t => t
   end.
 
