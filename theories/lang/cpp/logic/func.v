@@ -292,7 +292,7 @@ Section with_cpp.
         bind_vars ctor.(c_params) rest_vals ρ (fun ρ frees =>
           (wpi_bases ti ρ ctor.(c_class) thisp inits
               (fun free => free **
-                             ((* TODO backwards compat [type_ptr ty thisp -*] *) wp (resolve:=resolve) ⊤ ti ρ body (Kfree frees (void_return (|> Q Vvoid))))))))
+                             (type_ptr ty thisp -* wp (resolve:=resolve) ⊤ ti ρ body (Kfree frees (void_return (|> Q Vvoid))))))))
       | _ => False
       end
     end.
