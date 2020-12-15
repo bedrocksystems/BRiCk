@@ -535,17 +535,17 @@ Module Type VALID_PTR_AXIOMS.
 
     Axiom o_sub_sub : ∀ p ty n1 n2 vt,
       _valid_ptr vt (p .., o_sub σ ty n1) |--
-      [! p .., o_sub σ ty n1 .., o_sub σ ty n2 = p .., o_sub σ ty (n1 + n2) !]%ptr.
+      [| p .., o_sub σ ty n1 .., o_sub σ ty n2 = p .., o_sub σ ty (n1 + n2) |]%ptr.
 
     (* We're ignoring virtual inheritance here, since we have no plans to
     support it for now, but this might hold there too. *)
     Axiom o_base_derived : forall p base derived,
       strict_valid_ptr (p .., o_base σ derived base) |--
-      [! p .., o_base σ derived base .., o_derived σ base derived = p !]%ptr.
+      [| p .., o_base σ derived base .., o_derived σ base derived = p |]%ptr.
 
     Axiom o_derived_base : forall p base derived,
       strict_valid_ptr (p .., o_derived σ base derived) |--
-      [! p .., o_derived σ base derived .., o_base σ derived base = p !]%ptr.
+      [| p .., o_derived σ base derived .., o_base σ derived base = p |]%ptr.
 
     (* Without the validity premise to the cancellation axioms ([o_sub_sub],
       [o_base_derived], [o_derived_base]) we could incorrectly deduce that
