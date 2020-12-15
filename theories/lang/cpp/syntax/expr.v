@@ -175,7 +175,7 @@ Inductive Expr : Set :=
 | Eva_arg (_ : Expr) (_ : type)
 | Epseudo_destructor (_ : type) (_ : Expr) (* type void *)
 
-| Earrayloop_init (oname level : N) (_ : N) (target : Expr) (init : Expr) (_ : type)
+| Earrayloop_init (oname : N) (src : Expr) (level : N) (length : N) (init : Expr) (_ : type)
 | Earrayloop_index (level : N) (_ : type)
 | Eopaque_ref (name : N) (_ : type)
 

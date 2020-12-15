@@ -80,16 +80,14 @@ struct OpaqueNames {
     OpaqueNames() {}
     SmallVector<const clang::OpaqueValueExpr*, 3> indexes;
     int _index_count{-1};
-    int push(const clang::OpaqueValueExpr* e) {
+    int fresh(const clang::OpaqueValueExpr* e) {
         int index = indexes.size();
         indexes.push_back(e);
-        _index_count++;
         return index;
     }
-    void pop() {
-        indexes.pop_back();
-        _index_count--;
-    }
+    // We don't need to reuse names (it would be an optimization), so we don't
+    // bother removing them from the `SmallVector`
+    void free(const clang::OpaqueValueExpr* e) {}
     int find(const clang::OpaqueValueExpr* e) {
         int result = 0;
         for (auto i : indexes) {
@@ -101,6 +99,12 @@ struct OpaqueNames {
     }
     int index_count() const {
         return _index_count;
+    }
+    void inc_index_count() {
+        _index_count++;
+    }
+    void dec_index_count() {
+        _index_count--;
     }
 };
 
@@ -1088,16 +1092,19 @@ public:
                                 const ASTContext&, OpaqueNames& li) {
         print.ctor("Earrayloop_init");
 
-        auto index = li.push(expr->getCommonExpr());
-        print.output() << index << fmt::nbsp << li.index_count() << fmt::nbsp
-                       << expr->getArraySize() << fmt::nbsp;
+        auto index = li.fresh(expr->getCommonExpr());
+        print.output() << index << fmt::nbsp;
 
         // this is the source array which we are initializing
         cprint.printExpr(expr->getCommonExpr()->getSourceExpr(), print, li);
 
         // this is the expression that is evaluated
+        li.inc_index_count();
+        print.output() << li.index_count() << fmt::nbsp
+                       << expr->getArraySize() << fmt::nbsp;
         cprint.printExpr(expr->getSubExpr(), print, li);
-        li.pop();
+        li.dec_index_count();
+        li.free(expr->getCommonExpr()); // index goes out of scope at this point
 
         done(expr, print, cprint);
     }
