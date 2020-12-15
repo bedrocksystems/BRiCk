@@ -5,10 +5,10 @@
  *)
 From iris.algebra Require Import list.
 From iris.bi Require Import monpred big_op.
-From NOVA.cpp Require Import observe numbers.
-From bedrock.auto Require Import cpp.
 From iris.proofmode Require Import tactics.
-Set Default Proof Using "Type".
+From bedrock.lang Require Import prelude.numbers bi.observe.
+(* From bedrock.auto Require Import cpp. *)
+From bedrock.lang Require Import cpp.
 
 Local Set Printing Coercions.	(** Readability *)
 
@@ -27,8 +27,9 @@ Lemma size_of_array_0_None σ ty :
 Proof. by move=>/= ->. Qed.
 Local Hint Resolve size_of_array_0_None : core.
 
+Arguments N.mul : simpl never.
 Lemma size_of_array_1 σ ty : size_of σ (Tarray ty 1) = size_of σ ty.
-Proof. simpl. case_match; last done. f_equal. destruct n; lia. Qed.
+Proof. simpl. case: size_of => //= s. by rewrite left_id. Qed.
 Local Hint Resolve size_of_array_1 : core.
 
 (** PDS: Misplaced *)
@@ -110,22 +111,22 @@ Section offsetR.
   Context `{Σ : cpp_logic, resolve : genv}.
 
   Lemma monPred_at_offsetR offs R p :
-    (_offsetR offs R) p -|- Exists to, _offset offs p to ** R to.
+    (_offsetR offs R) p -|- R (p ., offs).
   Proof. by rewrite _offsetR_eq. Qed.
 
-  Lemma invalidO_False (R : Rep) : _offsetR path_pred.invalidO R -|- False%I.
+  (* Lemma invalidO_False (R : Rep) : _offsetR path_pred.invalidO R -|- False%I.
   Proof.
     constructor=>p. rewrite monPred_at_pure _offsetR_eq /_offsetR_def /=.
     split'; last by apply bi.False_elim. by iDestruct 1 as (to) "[% ?]".
-  Qed.
+  Qed. *)
 End offsetR.
 
 Section sub.
   Context `{Σ : cpp_logic, resolve : genv}.
 
-  Lemma _sub_ty ty1 ty2 i :
+  (* Lemma _sub_ty ty1 ty2 i :
     size_of resolve ty1 = size_of resolve ty2 → _sub ty1 i = _sub ty2 i.
-  Proof. intros Hsz1. by rewrite _sub_eq /_sub_def Hsz1. Qed.
+  Proof. intros Hsz1. rewrite _sub_eq /_sub_def. Hsz1. Qed. *)
 
   Lemma _sub_offsetO sz ty i R :
     size_of resolve ty = Some sz →
@@ -300,8 +301,8 @@ Section validR.
   Qed.
 End validR.
 
-(** Validity of the pointer past the end of an object of type [ty] *)
-Definition endR_def `{Σ : cpp_logic} (ty : type) {σ : genv} : Rep := 
+(* * Validity of the pointer past the end of an object of type [ty]
+Definition endR_def `{Σ : cpp_logic} (ty : type) {σ : genv} : Rep :=
   (*(□ (validR -* _offsetR (_sub ty 1) validR))%I.*)
   _offsetR (_sub ty 1) validR.
 Definition endR_aux : seal (@endR_def). Proof. by eexists. Qed.
@@ -319,8 +320,8 @@ Section endR.
   Global Instance endR_affine ty : Affine (endR ty).
   Proof. rewrite endR_eq. apply _. Qed.
 
-  Lemma endR_ty ty1 ty2 : size_of σ ty1 = size_of σ ty2 → endR ty1 -|- endR ty2.
-  Proof. intros. by rewrite endR_eq /endR_def (_sub_ty _ ty2). Qed.
+  (* Lemma endR_ty ty1 ty2 : size_of σ ty1 = size_of σ ty2 → endR ty1 -|- endR ty2.
+  Proof. intros. by rewrite endR_eq /endR_def (_sub_ty _ ty2). Qed. *)
 
   Lemma endR_sub ty : endR ty -|- _offsetR (_sub ty 1) validR.
   Proof. by rewrite endR_eq. Qed.
@@ -337,7 +338,7 @@ Section endR.
     loc |-> endR ty -|- valid_loc (_offsetL (_sub ty 1) loc).
   Proof. by rewrite endR_sub _at_offsetL_offsetR _at_validR. Qed.
 
-End endR.
+End endR. *)
 
 Definition arrR_def `{Σ : cpp_logic} (ty : type) {σ : genv} (Rs : list Rep) : Rep :=
   endR (Tarray ty $ N.of_nat $ length Rs) **
@@ -378,7 +379,7 @@ Section internal.
 
     ([∗ list] i ↦ R ∈ Rs, _offsetR (_sub ty (base + Z.of_nat i)) R) -|-
     _offsetR (_sub ty base) (arrR' ty Rs).
-    
+
   .[ ty ! 1] |-> ([∗ list] i↦R0 ∈ Rs, .[ ty ! Z.of_nat i] |-> R0)
 
 End internal.
@@ -583,10 +584,10 @@ Section array.
     rewrite !monPred_at_sep /=. rewrite !monPred_at_offsetR /=.
     split'.
     - iDestruct 1 as (sz) "[% A]".
-      
 
-    
-    
+
+
+
 
       loc .[ ty ! iZ ] |-> R x -*
       loc .[ ty ! iZ + 1 ] |-> arrayR ty R (drop (S i) l) -* Q) →
