@@ -16,6 +16,7 @@ From bedrock.lang.cpp.logic Require Import
      pred path_pred heap_pred
      operator
      destroy
+     initializers
      wp call
      translation_unit
      dispatch.
@@ -770,6 +771,7 @@ Module Type Expr.
     Local Notation wp_lval := (wp_lval (resolve:=resolve) M ti).
     Local Notation wp_prval := (wp_prval (resolve:=resolve) M ti).
     Local Notation wp_init := (wp_init (resolve:=resolve) M ti).
+    Local Notation wp_initialize := (wp_initialize (σ:=resolve) M ti).
     Local Notation primR := (primR (resolve:=resolve)) (only parsing).
 
     (* `Earrayloop_init` and `Earrayloop_index` correspond, respectively,
@@ -814,10 +816,13 @@ Module Type Expr.
     Let loop_index (n : N) : bs := "!loop_index" ++ N_to_bs n.
     Let opaque_val (n : N) : bs := "%opaque" ++ N_to_bs n.
 
+    (* Maybe we can `Rbind (opaque n) p`, and then add `_opaque` to encapsulate looking this up in the region;
+       the new premise would be (after Loc:=ptr goes in) `Q _opaque` *)
     Axiom wp_lval_opaque_ref : forall n ρ ty Q,
           wp_lval ρ (Evar (Lname (opaque_val n)) ty) Q
       |-- wp_lval ρ (Eopaque_ref n ty) Q.
 
+    (* Maybe do something similar to what was suggested for `wp_lval_opaque_ref` above. *)
     Axiom wp_lval_arrayloop_index : forall ρ level ty Q,
           wp_lval ρ (Evar (Lname (loop_index level)) ty) Q
       |-- wp_lval ρ (Earrayloop_index level ty) Q.
@@ -862,12 +867,13 @@ Module Type Expr.
                            programs (i.e. the C++ Abstract Machine handles incrementing
                            it between iterations). *)
                       _at loop_index (primR (Tint W64 Unsigned) (1/2) idx) -*
-                      wp_init ρ ty (Vptr $ _offset_ptr targetp $ o_sub resolve ty idx) init
+                      wp_initialize ρ ty (Vptr $ _offset_ptr targetp $ o_sub resolve ty idx) init
                               (fun free => free **
                                  _at loop_index (primR (Tint W64 Unsigned) (1/2) idx) **
                                  rest (N.succ idx))) sz idx.
 
     Axiom wp_init_arrayloop_init : forall oname level sz ρ trg src init ty Q,
+          has_type (Tint W64 Unsigned) (Vn sz) ->
           wp_lval ρ src
                   (fun p free =>
                      (* TODO: Change this once !238 (Loc:=ptr) gets merged *)
@@ -882,7 +888,7 @@ Module Type Expr.
                      | _ => False
                      end)
       |-- wp_init ρ (Tarray ty sz) (Vptr trg)
-                    (Earrayloop_init oname level sz src init (Tarray ty sz)) Q.
+                    (Earrayloop_init oname src level sz init (Tarray ty sz)) Q.
 
   End with_resolve__arrayloop.
 End Expr.
