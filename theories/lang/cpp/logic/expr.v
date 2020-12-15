@@ -863,9 +863,10 @@ Module Type Expr.
       N.peano_rect (fun _ : N => N -> mpred)
                    (fun _ => Q emp)%I
                    (fun _ rest idx =>
-                      (* NOTE: We split ownership because this variable is read-only for
-                           programs (i.e. the C++ Abstract Machine handles incrementing
-                           it between iterations). *)
+                      (* NOTE: The abstract machine only provides 1/2 of the ownership
+                           to the program to make it read-only.
+                           NOTE that no "correct" program will ever modify this variable
+                           anyways. *)
                       _at loop_index (primR (Tint W64 Unsigned) (1/2) idx) -*
                       wp_initialize ρ ty (Vptr $ _offset_ptr targetp $ o_sub resolve ty idx) init
                               (fun free => free **
