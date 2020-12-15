@@ -325,8 +325,21 @@ End RAW_BYTES.
 Module Type PTRS_MIXIN (Import P : PTRS) (Import PD : PTRS_DERIVED P).
   Global Instance same_alloc_dec : RelDecision same_alloc.
   Proof. rewrite same_alloc_eq. apply _. Qed.
+  Global Instance same_alloc_per : RelationClasses.PER same_alloc.
+  Proof. rewrite same_alloc_eq. apply _. Qed.
+  Global Instance same_alloc_comm : Comm iff same_alloc.
+  Proof. apply: symmetry_iff. Qed.
+
   Global Instance same_address_dec : RelDecision same_address.
   Proof. rewrite same_address_eq. apply _. Qed.
+  Global Instance same_address_per : RelationClasses.PER same_address.
+  Proof. rewrite same_address_eq. apply _. Qed.
+  Global Instance same_address_comm : Comm iff same_address.
+  Proof. apply: symmetry_iff. Qed.
+
+  Definition same_address_bool p1 p2 := bool_decide (same_address p1 p2).
+  Global Instance same_address_bool_comm : Comm eq same_address_bool.
+  Proof. move=> p1 p2. apply bool_decide_iff, comm, _. Qed.
 
   Lemma pinned_ptr_pure_unique va1 va2 p :
     pinned_ptr_pure va1 p -> pinned_ptr_pure va2 p -> va1 = va2.
