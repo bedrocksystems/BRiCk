@@ -79,12 +79,17 @@ printCastKind(Formatter& out, const CastKind ck) {
 struct OpaqueNames {
     OpaqueNames() {}
     SmallVector<const clang::OpaqueValueExpr*, 3> indexes;
-    int _index_count{0};
+    int _index_count{-1};
     int push(const clang::OpaqueValueExpr* e) {
+        int index = indexes.size();
         indexes.push_back(e);
-        return indexes.size();
+        _index_count++;
+        return index;
     }
-    void pop() {}
+    void pop() {
+        indexes.pop_back();
+        _index_count--;
+    }
     int find(const clang::OpaqueValueExpr* e) {
         int result = 0;
         for (auto i : indexes) {
@@ -96,12 +101,6 @@ struct OpaqueNames {
     }
     int index_count() const {
         return _index_count;
-    }
-    void inc_loop_index() {
-        _index_count++;
-    }
-    void dec_loop_index() {
-        _index_count--;
     }
 };
 
@@ -1096,10 +1095,8 @@ public:
         // this is the source array which we are initializing
         cprint.printExpr(expr->getCommonExpr()->getSourceExpr(), print, li);
 
-        li.inc_loop_index();
         // this is the expression that is evaluated
         cprint.printExpr(expr->getSubExpr(), print, li);
-        li.dec_loop_index();
         li.pop();
 
         done(expr, print, cprint);
