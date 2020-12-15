@@ -128,14 +128,16 @@ Section sub.
     size_of resolve ty1 = size_of resolve ty2 → _sub ty1 i = _sub ty2 i.
   Proof. intros Hsz1. rewrite _sub_eq /_sub_def. Hsz1. Qed. *)
 
-  Lemma _sub_offsetO sz ty i R :
+  (* Lemma _sub_offsetO sz ty i R :
     size_of resolve ty = Some sz →
     _offsetR (_sub ty i) R = _offsetR (offsetO (i * Z.of_N sz)) R.
-  Proof. intros Hsz. by rewrite _sub_eq /_sub_def Hsz comm_L. Qed.
+  Proof. intros Hsz. by rewrite _sub_eq /_sub_def Hsz comm_L. Qed. *)
+
   Lemma _sub_False ty i R :
     size_of resolve ty = None → _offsetR (_sub ty i) R -|- False%I.
   Proof.
-    intros Hsz. by rewrite _sub_eq /_sub_def Hsz /= invalidO_False.
+    intros Hsz.
+    rewrite  Hsz /= invalidO_False.
   Qed.
   Lemma _sub_inv ty i (R : Rep) :
     _offsetR (_sub ty i) R |-- [| is_Some (size_of resolve ty) |].
@@ -341,23 +343,20 @@ Section endR.
 End endR. *)
 
 Definition arrR_def `{Σ : cpp_logic} (ty : type) {σ : genv} (Rs : list Rep) : Rep :=
-  endR (Tarray ty $ N.of_nat $ length Rs) **
-  ([∗ list] i ↦ R ∈ Rs, _offsetR (_sub ty (Z.of_nat i)) R)%I.
+  ([∗ list] i ↦ R ∈ Rs, _offsetR (_sub ty (Z.of_nat i)) (R))%I.
+  (* ([∗ list] i ↦ R ∈ Rs, _offsetR (_sub ty (Z.of_nat i)) (type_ptrR ty ** R))%I. *)
 Definition arrR_aux : seal (@arrR_def). Proof. by eexists. Qed.
 Definition arrR := arrR_aux.(unseal).
 Definition arrR_eq : @arrR = _ := arrR_aux.(seal_eq).
 Arguments arrR {_ _} _ {_} _%list_scope : assert.
 Instance: Params (@arrR) 4 := {}.	(** TODO: [genv] weakening *)
 
-Module Import internal.
+(* Module Import internal.
 Section internal.
   Context `{Σ : cpp_logic, σ : genv}.
 
   Definition altR (ty : type) (f : Z → Z) (Rs : list Rep) : Rep :=
     ([∗ list] i ↦ R ∈ Rs, _offsetR (_sub ty $ f $ Z.of_nat i) R)%I.
-
-  _at_valid
-  Offset
 
   Lemma arrR_alt ty Rs :
     arrR ty Rs = endR (Tarray ty $ N.of_nat $ length Rs) ** altR ty id Rs.
@@ -383,7 +382,7 @@ Section internal.
   .[ ty ! 1] |-> ([∗ list] i↦R0 ∈ Rs, .[ ty ! Z.of_nat i] |-> R0)
 
 End internal.
-End internal.
+End internal. *)
 
 Section arrR.
   Context `{Σ : cpp_logic, σ : genv}.
@@ -392,7 +391,6 @@ Section arrR.
   Proof.
     intros n l1 l2 Hl. rewrite arrR_eq /arrR_def.
     have Hlen := Forall2_length _ _ _ Hl.
-    apply bi.sep_ne; first by rewrite Hlen.
     apply big_sepL_gen_ne; first done.
     move=>k y1 y2 Hl1 Hl2. apply _offsetR_ne, (inj Some).
     rewrite -Hl1 -Hl2. by apply list_dist_lookup.
@@ -401,7 +399,6 @@ Section arrR.
   Proof.
     intros l1 l2 Hl. rewrite arrR_eq /arrR_def.
     have Hlen : length l1 = length l2 by apply (Forall2_length (≡)), equiv_Forall2.
-    apply bi.sep_proper; first by rewrite Hlen.
     apply big_sepL_gen_proper; first done.
     move=>k y1 y2 Hl1 Hl2. apply _offsetR_proper, (inj Some).
     rewrite -Hl1 -Hl2. by apply list_equiv_lookup.
@@ -412,7 +409,6 @@ Section arrR.
     TCForall Timeless Rs → Timeless (arrR ty Rs).
   Proof.
     rewrite TCForall_Forall Forall_forall=>HR. rewrite arrR_eq /arrR_def.
-    apply bi.sep_timeless; first by apply _.
     apply big_sepL_gen_timeless=>k x Hk.
     apply _offsetR_timeless, HR. exact: elem_of_list_lookup_2.
   Qed.
@@ -420,7 +416,6 @@ Section arrR.
     TCForall Persistent Rs → Persistent (arrR ty Rs).
   Proof.
     rewrite TCForall_Forall Forall_forall=>HR. rewrite arrR_eq /arrR_def.
-    apply bi.sep_persistent; first by apply _.
     apply big_sepL_gen_persistent=>k x Hk.
     apply _offsetR_persistent, HR. exact: elem_of_list_lookup_2.
   Qed.
@@ -428,16 +423,15 @@ Section arrR.
     TCForall Affine Rs → Affine (arrR ty Rs).
   Proof.
     rewrite TCForall_Forall Forall_forall=>HR. rewrite arrR_eq /arrR_def.
-    apply bi.sep_affine; first by apply _.
     apply big_sepL_gen_affine=>k x Hk.
     apply _offsetR_affine, HR. exact: elem_of_list_lookup_2.
   Qed.
 
   Lemma arrR_inv ty Rs : arrR ty Rs |-- [| is_Some (size_of σ ty) |].
   Proof.
-    rewrite arrR_eq /arrR_def. rewrite endR_inv/=.
-    iIntros "[% ?]". iPureIntro. case_match. by eexists. done.
-  Qed.
+    rewrite arrR_eq /arrR_def.
+    (* iIntros "[% ?]". iPureIntro. case_match. by eexists. done. *)
+  Admitted.
 
   Lemma arrR_nil ty : is_Some (size_of σ ty) → arrR ty nil -|- validR.
   Proof.
