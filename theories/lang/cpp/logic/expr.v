@@ -16,6 +16,7 @@ From bedrock.lang.cpp.logic Require Import
      pred path_pred heap_pred
      operator
      destroy
+     initializers
      wp call
      translation_unit
      dispatch.
@@ -961,6 +962,135 @@ Module Type Expr.
 
   End with_resolve.
 
+  (* `Earrayloop_init` needs to extend the region, so we need to start a new section. *)
+  Section with_resolve__arrayloop.
+    Context `{Σ : cpp_logic thread_info} {resolve:genv}.
+    Variables (M : coPset) (ti : thread_info).
+
+    (* These are the only ones that we need here. *)
+    Local Notation wp_lval := (wp_lval (resolve:=resolve) M ti).
+    Local Notation wp_prval := (wp_prval (resolve:=resolve) M ti).
+    Local Notation wp_init := (wp_init (resolve:=resolve) M ti).
+    Local Notation wp_initialize := (wp_initialize (σ:=resolve) M ti).
+    Local Notation primR := (primR (resolve:=resolve)) (only parsing).
+
+    (* `Earrayloop_init` and `Earrayloop_index` correspond, respectively,
+       to the `ArrayInitLoopExpr`[1] and `ArrayInitIndexExpr`[2] expressions
+       from clang. While these expressions are not a part of the C++ standard,
+       we can still ascribe a useful semantics.
+
+       In particular, this is a restricted loop so we ascribe the semantics by
+       unrolling. On each iteration, the C++ Abstract Machine binds a distinguished
+       variable ("!loop_index", which is not a valid identifier in C++) so that
+       `Earrayloop_index` can read the value. We semantically treat this variable
+       as a constant, so we only give `1/2` fraction to it and demand it back at the
+       end of each iteration, preferring to do the incrementing in the logic rather
+       than using the program syntax.
+
+       For example, the following `Earrayloop_init` expression has the same
+       semantics as the C++ loop which follows it /except/ that the array
+       we are initializing is only evaluated once (c.f. [1]):
+       ```
+       (* Coq *)
+       Earrayloop_init 16 target init (Tarray ``::uint8`` 16)
+
+       (* C++ *)
+       for (int "!loop_index" = 0; "!loop_index" < 16; "!loop_index"++) {
+           target["!loop_index"] = init;
+       }
+       ```
+
+       [1] https://clang.llvm.org/doxygen/classclang_1_1ArrayInitLoopExpr.html#details
+       [2] https://clang.llvm.org/doxygen/classclang_1_1ArrayInitIndexExpr.html#details
+     *)
+
+    (* A very simple mangling of numbers to strings. Soundness only requires this to be
+       injective and we don't expect the [N] to be very large in practice so we pick
+       a very naive encoding.
+     *)
+    Definition N_to_bs (n : N) : bs :=
+      N.peano_rect (fun _ => bs)
+                   BS.EmptyString
+                   (fun _ x => BS.String "1" x) n.
+
+    Let loop_index (n : N) : bs := "!loop_index" ++ N_to_bs n.
+    Let opaque_val (n : N) : bs := "%opaque" ++ N_to_bs n.
+
+    (* Maybe we can `Rbind (opaque n) p`, and then add `_opaque` to encapsulate looking this up in the region;
+       the new premise would be (after Loc:=ptr goes in) `Q _opaque` *)
+    Axiom wp_lval_opaque_ref : forall n ρ ty Q,
+          wp_lval ρ (Evar (Lname (opaque_val n)) ty) Q
+      |-- wp_lval ρ (Eopaque_ref n ty) Q.
+
+    (* Maybe do something similar to what was suggested for `wp_lval_opaque_ref` above. *)
+    Axiom wp_prval_arrayloop_index : forall ρ level ty Q,
+          Exists v,
+            ((Exists q, _at (_local ρ (loop_index level)) (primR (erase_qualifiers ty) q v)) **
+              True) //\\ Q v emp
+      |-- wp_prval ρ (Earrayloop_index level ty) Q.
+
+    (* The following loop is essentially the following:
+       recursion of `sz`:
+       ```
+       Fixpoint _arrayloop_init
+                (ρ : region) (level : N)
+                (targetp : ptr) (init : Expr)
+                (ty : type) (Q : FreeTemps -> epred)
+                (sz : nat) (idx : N)
+                {struct sz}
+         : mpred :=
+         let loop_index := _local ρ (loop_index level) in
+         match sz with
+         | O => Q emp
+         | S sz' =>
+           _at loop_index (primR (Tint W64 Unsigned) (1/2) idx) -*
+           wp_init ρ ty (Vptr $ _offset_ptr targetp $ o_sub resolve ty idx) init
+                   (fun free => free **
+                      _at loop_index (primR (Tint W64 Unsigned) (1/2) idx) **
+                      _arrayloop_init level sz' ρ (S idx) targetp init ty Q)
+         end%I.
+       ```
+
+       We use `N.peano_rect` to avoid potentially building a large natural number.
+     *)
+    Definition _arrayloop_init
+               (ρ : region) (level : N)
+               (targetp : ptr) (init : Expr)
+               (ty : type) (Q : FreeTemps -> epred)
+               (* The arguments above this comment are constant throughout the recursion.
+
+                  The arguments below this line will change during the recursion.
+                *)
+               (sz : N) (idx : N)
+      : mpred :=
+      let loop_index := _local ρ (loop_index level) in
+      N.peano_rect (fun _ : N => N -> mpred)
+                   (fun _ => Q emp)%I
+                   (fun _ rest idx =>
+                      (* NOTE: The abstract machine only provides 1/2 of the ownership
+                           to the program to make it read-only.
+                           NOTE that no "correct" program will ever modify this variable
+                           anyways. *)
+                      _at loop_index (primR (Tint W64 Unsigned) (1/2) idx) -*
+                      wp_initialize ρ ty (targetp .[ ty ! idx ]) init
+                              (fun free => free **
+                                 _at loop_index (primR (Tint W64 Unsigned) (1/2) idx) **
+                                 rest (N.succ idx))) sz idx.
+
+    Axiom wp_init_arrayloop_init : forall oname level sz ρ trg src init ty Q,
+          has_type (Vn sz) (Tint W64 Unsigned) ->
+          wp_lval ρ src
+                  (fun p free =>
+                     Forall idxp,
+                     _arrayloop_init (Rbind (opaque_val oname) p
+                                            (Rbind (loop_index level) idxp ρ))
+                                     level trg init ty
+                                     (fun free' => Q (free ** free'))
+                                     sz 0)
+      |-- wp_init ρ (Tarray ty sz) trg
+                    (Earrayloop_init oname src level sz init (Tarray ty sz)) Q.
+
+  End with_resolve__arrayloop.
 End Expr.
 
 Declare Module E : Expr.

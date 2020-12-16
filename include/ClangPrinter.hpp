@@ -27,6 +27,7 @@ class Sema;
 }
 
 class CoqPrinter;
+class OpaqueNames;
 
 class ClangPrinter {
 public:
@@ -41,6 +42,7 @@ public:
     void printType(const clang::Type* t, CoqPrinter& print);
 
     void printExpr(const clang::Expr* d, CoqPrinter& print);
+    void printExpr(const clang::Expr* d, CoqPrinter& print, OpaqueNames& li);
 
     void printValCat(const clang::Expr* d, CoqPrinter& print);
 
@@ -57,6 +59,8 @@ public:
                         CoqPrinter& print) const;
 
     void printExprAndValCat(const clang::Expr* expr, CoqPrinter& print);
+    void printExprAndValCat(const clang::Expr* expr, CoqPrinter& print,
+                            OpaqueNames&);
 
     void printField(const clang::ValueDecl*, CoqPrinter&);
 

@@ -274,6 +274,14 @@ Section with_cpp.
       _at l (P ** Q) -|- _at l P ** _at l Q.
   Proof. by rewrite !_at_loc monPred_at_sep. Qed.
 
+  Lemma _at_and (l : ptr) (P Q : Rep) :
+      _at l (P //\\ Q) -|- _at l P //\\ _at l Q.
+  Proof. by rewrite !_at_loc monPred_at_and. Qed.
+
+  Lemma _at_or (l : ptr) (P Q : Rep) :
+      _at l (P \\// Q) -|- _at l P \\// _at l Q.
+  Proof. by rewrite !_at_loc monPred_at_or. Qed.
+
   Lemma _at_wand (l : ptr) (P Q : Rep) :
       _at l (P -* Q) |-- (_at l P -* _at l Q).
   Proof. by rewrite !_at_loc monPred_wand_force. Qed.
@@ -717,6 +725,17 @@ Section with_cpp.
   Proof. rewrite is_nonnull_eq. apply _. Qed.
   Global Instance is_nonnull_timeless : Timeless is_nonnull.
   Proof. rewrite is_nonnull_eq. apply _. Qed.
+
+  Global Instance primR_nonnull {σ} ty q v :
+    Observe is_nonnull (primR (resolve:=σ) ty q v).
+  Proof.
+    rewrite is_nonnull_eq primR_eq. apply monPred_observe=>p /=. apply _.
+  Qed.
+  Global Instance uninitR_nonnull {σ} ty q :
+    Observe is_nonnull (uninitR (resolve:=σ) ty q).
+  Proof.
+    rewrite is_nonnull_eq uninitR_eq. apply monPred_observe=>p /=. apply _.
+  Qed.
 
   Lemma null_nonnull (R : Rep) : is_null |-- is_nonnull -* R.
   Proof.

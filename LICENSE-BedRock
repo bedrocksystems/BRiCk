@@ -1,0 +1,16 @@
+			BedRock Open-Source License
+
+This software is distributed under the terms of the GNU Lesser General Public License,
+version 2.1 (see LICENSE-LGPL), with the following addendum:
+
+Notwithstanding any other provision of the GNU Lesser General Public License
+version 2.1, if you modify the software, your modified version must prominently
+offer all users interacting with it remotely through a computer network (if your
+version supports such integration) an opportunity to receive the source code of
+your version (including, without limitation, all the source code needed to generate,
+install, and (for an executable work) run the object code and to modify your version,
+including scripts (to control those activities), by providing access to such standard
+or customary means of facilitating copying of software. For the avoidance of doubt,
+linking with the software using a suitable shared library mechanism, shall be deemed
+not to constitute a modification for purposes of this addendum.
+

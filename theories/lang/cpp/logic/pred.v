@@ -712,4 +712,20 @@ Section with_cpp.
   Proof. exact: _valid_ptr_nullptr. Qed.
   Lemma strict_valid_ptr_nullptr : |-- strict_valid_ptr nullptr.
   Proof. exact: _valid_ptr_nullptr. Qed.
+
+  (** We can lift validity entailments through [Observe] (using
+  [Observe_mono]. These are not instances, to avoid causing slowdowns in
+  proof search. *)
+  Lemma observe_strict_valid_valid
+    `(Hobs : !Observe (strict_valid_ptr p) P) : Observe (valid_ptr p) P.
+  Proof. by rewrite -strict_valid_relaxed. Qed.
+
+  Context (σ : genv).
+  Lemma observe_type_ptr_strict_valid
+    `(Hobs : !Observe (type_ptr ty p) P) : Observe (strict_valid_ptr p) P.
+  Proof. by rewrite -type_ptr_strict_valid. Qed.
+
+  Lemma observe_type_ptr_valid_plus_one
+    `(Hobs : !Observe (type_ptr ty p) P) : Observe (valid_ptr (p .., o_sub σ ty 1)) P.
+  Proof. by rewrite -type_ptr_valid_plus_one. Qed.
 End with_cpp.
