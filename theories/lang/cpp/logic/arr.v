@@ -133,86 +133,70 @@ Section sub.
     _offsetR (_sub ty i) R = _offsetR (offsetO (i * Z.of_N sz)) R.
   Proof. intros Hsz. by rewrite _sub_eq /_sub_def Hsz comm_L. Qed. *)
 
-  Lemma _sub_False ty i R :
+  (* Lemma _sub_False ty i R :
     size_of resolve ty = None → _offsetR (_sub ty i) R -|- False%I.
   Proof.
     intros Hsz.
     rewrite  Hsz /= invalidO_False.
-  Qed.
-  Lemma _sub_inv ty i (R : Rep) :
+  Qed. *)
+  (* Lemma _sub_inv ty i (R : Rep) :
     _offsetR (_sub ty i) R |-- [| is_Some (size_of resolve ty) |].
   Proof.
     destruct (size_of resolve ty) eqn:Hsz.
     - iIntros "?". iPureIntro. by eexists.
     - by rewrite _sub_False// bi.False_elim.
-  Qed.
+  Qed. *)
 End sub.
 
-(** Represents knowledge of a valid pointer *)
-Definition validR_def `{Σ : cpp_logic} : Rep := as_Rep (λ this, valid_ptr this).
-Definition validR_aux : seal (@validR_def). Proof. by eexists. Qed.
-Definition validR := validR_aux.(unseal).
-Definition validR_eq : @validR = _ := validR_aux.(seal_eq).
-Arguments validR {_ _} : assert.
 Section validR.
   Context `{Σ : cpp_logic}.
-
-  Global Instance validR_timeless : Timeless validR.
-  Proof. rewrite validR_eq. apply _. Qed.
-  Global Instance validR_persistent : Persistent validR.
-  Proof. rewrite validR_eq. apply _. Qed.
-  Global Instance validR_affine : Affine validR.
-  Proof. rewrite validR_eq. apply _. Qed.
 
   Lemma monPred_at_validR (p : ptr) : validR p -|- valid_ptr p.
   Proof. by rewrite validR_eq. Qed.
 
   (** PDS: Revisit and simplify [Offset2] *)
-  Lemma _offsetR_valid (offs : Offset) (R : Rep) :
+  (* Lemma _offsetR_valid (offs : Offset) (R : Rep) :
     validR |-- offs |-> R -* offs |-> validR.
   Proof.
     constructor=>p /=. rewrite monPred_at_validR monPred_at_wand.
     iIntros "#V" (? <-%ptr_rel_elim). rewrite !monPred_at_offsetR.
-    iDestruct 1 as (to) "[#O R]". iExists to. iFrame "O".
     rewrite monPred_at_validR. iApply (_off_valid with "[$V $O]").
-  Qed.
+  Qed. *)
 
   (** [validR] and [as_ Rep] *)
-  Lemma validR_at_emp : validR -|- as_Rep (λ p, _at (_eq p) emp).
+  (* Lemma validR_at_emp : validR -|- as_Rep (λ p, _at (_eq p) emp).
   Proof.
     constructor=>p /=. rewrite monPred_at_validR. by rewrite plogic._at_empSP.
-  Qed.
-  Lemma validR_at_l (R : Rep) : validR ** R -|- as_Rep (λ p, p |-> R).
+  Qed. *)
+  (* Lemma validR_at_l (R : Rep) : validR ** R -|- as_Rep (λ p, p |-> R).
   Proof.
     rewrite validR_at_emp. constructor=>p/=. rewrite monPred_at_sep/=.
     rewrite !plogic._at_eq_any. by rewrite monPred_at_emp left_id comm.
   Qed.
   Lemma validR_at_r (R : Rep) : R ** validR -|- as_Rep (λ p, p |-> R).
-  Proof. by rewrite comm validR_at_l. Qed.
+  Proof. by rewrite comm validR_at_l. Qed. *)
 
-  Lemma validR_at_offsetR (offs : Offset) (R : Rep) :
+  (* Lemma validR_at_offsetR (offs : Offset) (R : Rep) :
     validR ** offs |-> R -|- as_Rep (λ p, p |-> offs |-> R).
-  Proof. by rewrite validR_at_l. Qed.
+  Proof. by rewrite validR_at_l. Qed. *)
 
   (** [validR] and [_at] *)
-  Lemma _at_validR (loc : Loc) : loc |-> validR -|- valid_loc loc.
-  Proof.
-    rewrite validR_at_emp ptr2loc_ho.as_Rep_at_eq _at_emp.
-    by rewrite -bi.persistent_sep_dup.
-  Qed.
-  Lemma _at_validR_r (loc : Loc) (R : Rep) : loc |-> (R ** validR) -|- loc |-> R.
+  Implicit Types (p : ptr).
+  Lemma _at_validR (p : ptr) : p |-> validR -|- valid_ptr p.
+  Proof. by rewrite _at_eq validR_eq. Qed.
+  (* Lemma _at_validR_r (loc : Loc) (R : Rep) : loc |-> (R ** validR) -|- loc |-> R.
   Proof. by rewrite _at_sep _at_validR -_at_valid_loc. Qed.
   Lemma _at_validR_l (loc : Loc) (R : Rep) : loc |-> (validR ** R) -|- loc |-> R.
-  Proof. by rewrite comm _at_validR_r. Qed.
+  Proof. by rewrite comm _at_validR_r. Qed. *)
 
-  Lemma _at_offsetR_validR (loc : Loc) (offs : Offset) :
-    _at loc (_offsetR offs validR) -|- valid_loc (_offsetL offs loc).
+  Lemma _at_offsetR_validR (loc : Loc) (offs : offset) :
+    _at loc (_offsetR offs validR) -|- valid_ptr (_offset_ptr loc offs ).
   Proof. by rewrite _at_offsetL_offsetR _at_validR. Qed.
 
   (** [validR] and [offsetO] *)
   (** For better or worse, [offsetO] bakes in validity *)
   (** PDS: This is questionable. *)
-  Lemma _offsetO_validR i R :
+  (* Lemma _offsetO_validR i R :
     _offsetR (offsetO i) R |-- _offsetR (offsetO i) validR.
   Proof.
     constructor=>p /=. rewrite !monPred_at_offsetR /offsetO/=.
@@ -251,7 +235,7 @@ Section validR.
     - iDestruct 1 as "[A R]". iDestruct "A" as (?) "[[-> VA] _]".
       iExists _. by iFrame "R VA".
     - iDestruct 1 as (?) "[[-> VA] R]". iFrame "R". iExists _. by iFrame "VA".
-  Qed.
+  Qed. *)
 
   (** [_dot] does not imply validity *)
   (** [_offsetR invalidO] is False, and so does imply validity *)
@@ -303,7 +287,7 @@ Section validR.
   Qed.
 End validR.
 
-(* * Validity of the pointer past the end of an object of type [ty]
+(* * Validity of the pointer past the end of an object of type [ty] *)
 Definition endR_def `{Σ : cpp_logic} (ty : type) {σ : genv} : Rep :=
   (*(□ (validR -* _offsetR (_sub ty 1) validR))%I.*)
   _offsetR (_sub ty 1) validR.
