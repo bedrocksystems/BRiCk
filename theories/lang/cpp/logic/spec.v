@@ -67,4 +67,4 @@ Arguments wpp_with {_} _.
 Arguments wpp_pre {_} _.
 Arguments wpp_post {_} _.
 
-Global Arguments WppD !_ / .
+Global Arguments WppD _ !_ _ _ /.
