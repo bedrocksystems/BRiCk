@@ -665,6 +665,8 @@ Section with_cpp.
   Proof. rewrite type_ptrR_eq; refine _. Qed.
   #[global] Instance type_ptrR_timeless σ t : Timeless (type_ptrR σ t).
   Proof. rewrite type_ptrR_eq; refine _. Qed.
+  #[global] Instance type_ptrR_affine : Affine (type_ptrR σ t).
+  Proof. rewrite type_ptrR_eq; refine _. Qed.
 
   (********************* DERIVED CONCEPTS ****************************)
 
@@ -676,6 +678,8 @@ Section with_cpp.
   Proof. rewrite validR_eq; refine _. Qed.
   #[global] Instance validR_timeless : Timeless validR.
   Proof. rewrite validR_eq; refine _. Qed.
+  #[global] Instance validR_affine : Affine validR.
+  Proof. rewrite validR_eq; refine _. Qed.
 
   Definition svalidR_def : Rep := as_Rep strict_valid_ptr.
   Definition svalidR_aux : seal (@svalidR_def). Proof. by eexists. Qed.
@@ -684,6 +688,8 @@ Section with_cpp.
   #[global] Instance svalidR_persistent : Persistent svalidR.
   Proof. rewrite svalidR_eq; refine _. Qed.
   #[global] Instance svalidR_timeless : Timeless svalidR.
+  Proof. rewrite svalidR_eq; refine _. Qed.
+  #[global] Instance svalidR_affine : Affine svalidR.
   Proof. rewrite svalidR_eq; refine _. Qed.
   #[global] Instance svalidR_validR_observe : Observe validR svalidR.
   Proof.
