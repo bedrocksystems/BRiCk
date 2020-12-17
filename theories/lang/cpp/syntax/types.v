@@ -14,6 +14,13 @@ Record type_qualifiers : Set :=
 ; q_volatile : bool }.
 Instance qual_eq: EqDecision type_qualifiers.
 Proof. solve_decision. Defined.
+Instance qual_countable : Countable type_qualifiers.
+Proof.
+  apply (inj_countable'
+    (λ q, (q_const q, q_volatile q))
+    (λ q, {| q_const := q.1; q_volatile := q.2 |})).
+  abstract (by intros []).
+Defined.
 
 Definition merge_tq (a b : type_qualifiers) : type_qualifiers :=
   {| q_const := a.(q_const) || b.(q_const)
@@ -29,6 +36,20 @@ Variant bitsize : Set :=
 | W128.
 Instance bitsize_eq: EqDecision bitsize.
 Proof. solve_decision. Defined.
+Instance bitsize_countable : Countable bitsize.
+Proof.
+  apply (inj_countable'
+    (λ b,
+      match b with
+      | W8 => 0 | W16 => 1 | W32 => 2 | W64 => 3 | W128 => 4
+      end)
+    (λ n,
+      match n with
+      | 0 => W8 | 1 => W16 | 2 => W32 | 3 => W64 | 4 => W128
+      | _ => W8	(* dummy *)
+      end)).
+  abstract (by intros []).
+Defined.
 
 Definition bitsN (s : bitsize) : N :=
   match s with
@@ -66,8 +87,15 @@ Proof. destruct w; reflexivity. Qed.
 
 (* Signed and Unsigned *)
 Variant signed : Set := Signed | Unsigned.
-#[global] Instance signed_eq_dec: EqDecision signed.
+Instance signed_eq_dec: EqDecision signed.
 Proof. solve_decision. Defined.
+Instance signed_countable : Countable signed.
+Proof.
+  apply (inj_countable'
+    (λ s, if s is Signed then true else false)
+    (λ b, if b then Signed else Unsigned)).
+  abstract (by intros []).
+Defined.
 
 (* Calling conventions are a little bit beyond what is formally blessed by
    C++, but the are necessary for low level code that links with other
@@ -86,8 +114,22 @@ Variant calling_conv : Set :=
 | CC_C
 | CC_MsAbi
 | CC_RegCall.
-#[global] Instance calling_conv_eq_dec: EqDecision calling_conv.
+Instance calling_conv_eq_dec: EqDecision calling_conv.
 Proof. solve_decision. Defined.
+Instance calling_conv_countable : Countable calling_conv.
+Proof.
+  apply (inj_countable'
+    (λ cc,
+      match cc with
+      | CC_C => 0 | CC_MsAbi => 1 | CC_RegCall => 2
+      end)
+    (λ n,
+      match n with
+      | 0 => CC_C | 1 => CC_MsAbi | 2 => CC_RegCall
+      | _ => CC_C	(** dummy *)
+      end)).
+  abstract (by intros []).
+Defined.
 
 (* in almost all contexts, we are going to use [CC_C], so we're going to make
    that the default. Clients interested in specifying another calling convention
@@ -125,7 +167,58 @@ Proof.
   rewrite -{1}/(EqDecision type) in IHty1.
   decide equality; try solve_trivial_decision.
 Defined.
-Global Instance type_eq: EqDecision type := type_eq_dec.
+Instance type_eq: EqDecision type := type_eq_dec.
+Section type_countable.
+  Local Notation BS x      := (GenLeaf (inr x)).
+  Local Notation QUAL x    := (GenLeaf (inl (inr x))).
+  Local Notation BITSIZE x := (GenLeaf (inl (inl (inr x)))).
+  Local Notation SIGNED x  := (GenLeaf (inl (inl (inl (inr x))))).
+  Local Notation CC x      := (GenLeaf (inl (inl (inl (inl (inr x)))))).
+  Local Notation N x       := (GenLeaf (inl (inl (inl (inl (inl x)))))).
+  Global Instance type_countable : Countable type.
+  Proof.
+    set enc := fix go (t : type) :=
+      match t with
+      | Tptr t => GenNode 0 [go t]
+      | Tref t => GenNode 1 [go t]
+      | Trv_ref t => GenNode 2 [go t]
+      | Tint sz sgn => GenNode 3 [BITSIZE sz; SIGNED sgn]
+      | Tvoid => GenNode 4 []
+      | Tarray t n => GenNode 5 [go t; N n]
+      | Tnamed gn => GenNode 6 [BS gn]
+      | @Tfunction cc ret args => GenNode 7 $ (CC cc) :: go ret :: (go <$> args)
+      | Tbool => GenNode 8 []
+      | Tmember_pointer gn t => GenNode 9 [BS gn; go t]
+      | Tfloat sz => GenNode 10 [BITSIZE sz]
+      | Tqualified q t => GenNode 11 [QUAL q; go t]
+      | Tnullptr => GenNode 12 []
+      | Tarch None gn => GenNode 13 [BS gn]
+      | Tarch (Some sz) gn => GenNode 14 [BITSIZE sz; BS gn]
+      end.
+    set dec := fix go t :=
+      match t with
+      | GenNode 0 [t] => Tptr (go t)
+      | GenNode 1 [t] => Tref (go t)
+      | GenNode 2 [t] => Trv_ref (go t)
+      | GenNode 3 [BITSIZE sz; SIGNED sgn] => Tint sz sgn
+      | GenNode 4 [] => Tvoid
+      | GenNode 5 [t; N n] => Tarray (go t) n
+      | GenNode 6 [BS gn] => Tnamed gn
+      | GenNode 7 (CC cc :: ret :: args) => @Tfunction cc (go ret) (go <$> args)
+      | GenNode 8 [] => Tbool
+      | GenNode 9 [BS gn; t] => Tmember_pointer gn (go t)
+      | GenNode 10 [BITSIZE sz] => Tfloat sz
+      | GenNode 11 [QUAL q; t] => Tqualified q (go t)
+      | GenNode 12 [] => Tnullptr
+      | GenNode 13 [BS gn] => Tarch None gn
+      | GenNode 14 [BITSIZE sz; BS gn] => Tarch (Some sz) gn
+      | _ => Tvoid	(** dummy *)
+      end.
+    apply (inj_countable' enc dec). refine (fix go t := _).
+    destruct t as [| | | | | | |cc ret args| | | | | |[]]; simpl; f_equal; try done.
+    induction args; simpl; f_equal; done.
+  Defined.
+End type_countable.
 
 Notation Tpointer := Tptr (only parsing).
 Notation Treference := Tref (only parsing).
