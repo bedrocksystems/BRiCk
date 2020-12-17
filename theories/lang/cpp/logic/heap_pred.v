@@ -745,6 +745,17 @@ Section with_cpp.
     rewrite is_nonnull_eq uninitR_eq. apply monPred_observe=>p /=. apply _.
   Qed.
 
+  Definition alignedR_def (al : N) : Rep := as_Rep (aligned_ptr al).
+  Definition alignedR_aux : seal (@alignedR_def). Proof. by eexists. Qed.
+  Definition alignedR := alignedR_aux.(unseal).
+  Definition alignedR_eq : @alignedR = _ := alignedR_aux.(seal_eq).
+  #[global] Instance alignedR_persistent : Persistent (alignedR al).
+  Proof. rewrite alignedR_eq. apply _. Qed.
+  #[global] Instance alignedR_affine : Affine (alignedR al).
+  Proof. rewrite alignedR_eq. apply _. Qed.
+  #[global] Instance alignedR_timeless : Timeless (alignedR al).
+  Proof. rewrite alignedR_eq. apply _. Qed.
+
   Lemma null_nonnull (R : Rep) : is_null |-- is_nonnull -* R.
   Proof.
     rewrite is_null_eq /is_null_def is_nonnull_eq /is_nonnull_def.
@@ -765,15 +776,15 @@ Section with_cpp.
    * special about it.
    *)
   Definition tblockR {σ} (ty : type) : Rep :=
-    match size_of σ ty with
-    | Some sz => blockR (σ:=σ) sz
-    | None => False
+    match size_of σ ty , align_of ty with
+    | Some sz , Some al => blockR (σ:=σ) sz ** alignedR al
+    | _ , _  => False
     end.
 
 End with_cpp.
 
 Typeclasses Opaque identityR.
-Typeclasses Opaque type_ptrR validR svalidR.
+Typeclasses Opaque type_ptrR validR svalidR alignedR.
 Arguments type_ptrR {_ Σ σ} _%bs.
 Arguments identityR {_ Σ σ} _%bs _%bs _%Qp.
 
