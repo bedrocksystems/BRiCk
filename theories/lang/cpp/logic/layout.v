@@ -60,6 +60,16 @@ Section with_Σ.
     AsFractional (union_padding resolve q cls idx) (λ q, union_padding resolve q cls idx) q.
   Proof. exact: Build_AsFractional. Qed.
 
+  Axiom struct_padding_strict_valid_observe : forall q cls, Observe svalidR (struct_padding resolve q cls).
+  #[global] Existing Instance struct_padding_strict_valid_observe.
+  #[global] Instance struct_padding_valid_observe q cls : Observe validR (struct_padding resolve q cls).
+  Proof. rewrite -svalidR_validR. apply _. Qed.
+
+  Axiom union_padding_strict_valid_observe : forall q cls i, Observe svalidR (union_padding resolve q cls i).
+  #[global] Existing Instance union_padding_strict_valid_observe.
+  #[global] Instance union_padding_valid_observe q cls i : Observe validR (union_padding resolve q cls i).
+  Proof. rewrite -svalidR_validR. apply _. Qed.
+
   (** [raw_values_of_val σ ty v rs] states that the value [v] of type
   [ty] is represented by the raw bytes in [rs]. WHat this means
   depends on the type [ty]. *)

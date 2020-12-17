@@ -691,18 +691,22 @@ Section with_cpp.
   Proof. rewrite svalidR_eq; refine _. Qed.
   #[global] Instance svalidR_affine : Affine svalidR.
   Proof. rewrite svalidR_eq; refine _. Qed.
-  #[global] Instance svalidR_validR_observe : Observe validR svalidR.
+
+  Theorem svalidR_validR : svalidR |-- validR.
   Proof.
     rewrite validR_eq/validR_def svalidR_eq/svalidR_def.
-    apply as_Rep_observe. simpl. red; intros.
-    rewrite strict_valid_relaxed. eauto.
+    constructor =>p /=. by apply strict_valid_relaxed.
   Qed.
-  #[global] Instance type_ptrR_svalidR_observe σ t : Observe svalidR (type_ptrR σ t).
+  Theorem type_ptrR_svalidR : forall σ ty, type_ptrR σ ty |-- svalidR.
   Proof.
     rewrite type_ptrR_eq/type_ptrR_def svalidR_eq/svalidR_def.
-    apply as_Rep_observe. simpl. red; intros.
-    rewrite type_ptr_strict_valid. eauto.
+    constructor =>p /=. by apply type_ptr_strict_valid.
   Qed.
+
+  #[global] Instance svalidR_validR_observe : Observe validR svalidR.
+  Proof. rewrite svalidR_validR. red; iIntros "#$". Qed.
+  #[global] Instance type_ptrR_svalidR_observe σ t : Observe svalidR (type_ptrR σ t).
+  Proof. rewrite type_ptrR_svalidR; red; iIntros "#$". Qed.
 
   Definition is_null_def : Rep :=
     as_Rep (fun addr => [| addr = nullptr |]).
