@@ -511,9 +511,19 @@ Module Type VALID_PTR_AXIOMS.
     (* Axiom _valid_ptr_nullptr_field_false : forall vt f,
       _valid_ptr vt (nullptr .., o_field σ f) |-- False. *)
 
-    (* These axioms are named after the predicate in the conclusion. *)
-    Axiom strict_valid_ptr_sub : ∀ p ty (i : Z) vt,
-      (0 < i)%Z -> _valid_ptr vt (p .., o_sub σ ty i) |-- strict_valid_ptr p.
+    (** These axioms are named after the predicate in the conclusion. *)
+
+    (**
+    TODO: The intended proof of [strict_valid_ptr_sub] assumes that, if [p']
+    normalizes to [p ., [ ty ! i ]], then [valid_ptr p'] is defined to imply
+    validity of all pointers from [p] to [p'].
+
+    Note that `arrR` exposes stronger reasoning principles, but this might still be useful.
+    *)
+    Axiom strict_valid_ptr_sub : ∀ (i j k : Z) p ty vt1 vt2,
+      (i <= j < k)%Z ->
+      _valid_ptr vt1 (p .., o_sub σ ty i) |--
+      _valid_ptr vt2 (p .., o_sub σ ty k) -* strict_valid_ptr (p .., o_sub σ ty j).
     (* TODO: can we deduce that [p] is strictly valid? *)
     Axiom _valid_ptr_base : ∀ p base derived vt,
       _valid_ptr vt (p .., o_base σ derived base) |-- _valid_ptr vt p.
@@ -574,35 +584,11 @@ Section with_cpp.
   Lemma strict_valid_ptr_nullptr : |-- strict_valid_ptr nullptr.
   Proof. exact: _valid_ptr_nullptr. Qed.
 
-  (* TODO (SEMANTICS):
-     set p := p ., (.[ty ! -i])
-     ...
-     we end up with `_valid_ptr vt p |-- _valid_ptr vt (p ., (.[ty ! -i]))
-     which isn't true.
-
-     NOTE: Modify `strict_valid_ptr_sub` and this so that they impose an
-       extra pre-condition on the structure of `p` (namely that it doesn't
-       have negative offsets(?))
-
-     Paolo: good catch. Maybe the axiom should be that if [p ., (.[ty ! i])] and [p .,
-     (.[ty ! j])] are both valid, then everything in between is valid.
-     OTOH, `arrayR` exposes stronger reasoning principles, possibly making this
-     unnecessary.
-
-     The intended model was that, if [p'] normalizes to [p ., [ ty ! i ]],
-     then [valid_ptr p'] implies validity of all pointers from [p] to [p']. As
-     you point out, that model doesn't actually justify [strict_valid_ptr_sub].
-   *)
-  Lemma valid_ptr_sub p ty (i : Z) vt :
-    (0 <= i)%Z -> _valid_ptr vt (p .., o_sub σ ty i) |-- _valid_ptr vt p.
-  Proof.
-    case: i => [|i|i] Hle; iIntros "V".
-    - iDestruct (valid_o_sub_size with "V") as %?.
-      by rewrite _offset_ptr_sub_0.
-    - rewrite strict_valid_ptr_sub; last by lia.
-      case: vt => //. by rewrite strict_valid_valid.
-    - lia.
-  Qed.
+  Lemma valid_ptr_sub (i j k : Z) p ty vt :
+    (i <= j < k)%Z ->
+    _valid_ptr vt (p .., o_sub σ ty i) |--
+    _valid_ptr vt (p .., o_sub σ ty k) -* valid_ptr (p .., o_sub σ ty j).
+  Proof. rewrite -strict_valid_valid. apply strict_valid_ptr_sub. Qed.
 
   (** [p] is a valid pointer value in the sense of the standard, or
   "standard-valid" (https://eel.is/c++draft/basic.compound#3.1), that is both
