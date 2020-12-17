@@ -246,7 +246,7 @@ one is [PTRS_IMPL].
   (https://eel.is/c++draft/expr.add#footnote-80).
   *)
   Axiom o_sub_0 : ∀ σ ty,
-    is_Some (size_of σ ty)->
+    is_Some (size_of σ ty) ->
     o_sub σ ty 0 = o_id.
 
   (** going up and down the class hierarchy, one step at a time. *)

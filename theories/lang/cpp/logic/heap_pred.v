@@ -755,7 +755,7 @@ Section with_cpp.
   (** [blockR sz] represents a contiguous chunk of [sz] bytes *)
   Definition blockR {σ} (sz : _) : Rep :=
     _offsetR (o_sub σ T_uint8 (Z.of_N sz)) validR **
-    (* ^ Encodes valid_loc (this .[ T_uint8 ! sz]). This is
+    (* ^ Encodes valid_ptr (this .[ T_uint8 ! sz]). This is
     necessary to get [l |-> blockR n -|- l |-> blockR n ** l .[ T_uint8 ! m] |-> blockR 0]. *)
     [∗list] i ∈ seq 0 (N.to_nat sz),
       _offsetR (o_sub σ T_uint8 (Z.of_nat i)) (anyR (resolve:=σ) T_uint8 1).
