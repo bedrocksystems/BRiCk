@@ -286,11 +286,14 @@ Section with_cpp.
       _at l (P -* Q) |-- (_at l P -* _at l Q).
   Proof. by rewrite !_at_loc monPred_wand_force. Qed.
 
-  Lemma _at_pers (l : ptr) R : _at l (<pers> R) |-- <pers> _at l R.
+  Lemma _at_pers (l : ptr) R : _at l (<pers> R) -|- <pers> _at l R.
   Proof. by rewrite !_at_loc monPred_at_persistently. Qed.
 
-  Lemma _at_fupd (l : ptr) R E1 E2 : _at l (|={E1,E2}=> R) |-- |={E1,E2}=> _at l R.
+  Lemma _at_fupd (l : ptr) R E1 E2 : _at l (|={E1,E2}=> R) -|- |={E1,E2}=> _at l R.
   Proof. by rewrite !_at_loc monPred_at_fupd. Qed.
+
+  Lemma _at_intuitionistically l (R : Rep) : _at l (□ R) ⊣⊢ □ (_at l R).
+  Proof. by rewrite _at_eq/_at_def monPred_at_intuitionistically. Qed.
 
   Lemma _at_offsetL_offsetR (l : ptr) (o : offset) (r : Rep) :
       _at l (_offsetR o r) -|- _at (_offsetL o l) r.
@@ -299,8 +302,7 @@ Section with_cpp.
   Global Instance _at_fractional (r : Qp → Rep) (l : ptr) `{!Fractional r} :
     Fractional (λ q, _at l (r q)).
   Proof.
-    intros q1 q2.
-    rewrite fractional _at_sep. reflexivity.
+    intros q1 q2; by rewrite fractional _at_sep.
   Qed.
   Global Instance _at_as_fractional (r : Qp → Rep) q (l : ptr)
       `{!AsFractional (r q) r q} :
