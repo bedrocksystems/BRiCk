@@ -354,6 +354,46 @@ Module SIMPLE_PTRS_IMPL : PTRS.
     move=> [<-] []. intros Hne%symmetry%Z2N.inj => //.
     eapply Z.mul_cancel_r, Z.add_cancel_l, Hne; lia.
   Qed.
+   Lemma o_sub_sub_nneg σ p ty (z1 z2 : Z) :
+    (0 <= z1 -> 0 <= z2 ->
+    p .., o_sub σ ty z1 .., o_sub σ ty z2 = p .., o_sub σ ty (z1 + z2))%ptr%Z.
+  Proof.
+    intros.
+    rewrite /o_sub /= /o_sub_off /_offset_ptr_single.
+    case: size_of => [o|] //=.
+    case E: (offset_ptr_ (z1 * Z.of_N o) p) => [p'|/=]; rewrite -E.
+    { apply: offset_ptr_cancel; [|by lia]. naive_solver. }
+    case: p E => [[aid p]|//].
+    rewrite /offset_ptr_ /offset_ptr' /=.
+    case_decide => //=; case: p=> [va|//] //=;
+      (* have ?: (o <> 0)%N by [lia];
+      have ?: (0 < z1)%Z by [lia]; *)
+      last by case_decide => //; exfalso; lia.
+    case E': offset_vaddr => [_ //|/=] => _.
+    exfalso; rewrite /offset_vaddr in E'.
+    simplify_option_eq; lia.
+  Qed.
+
+  Lemma o_sub_sub_npos σ p ty (z1 z2 : Z) :
+    (z1 <= 0 -> z2 <= 0 ->
+    p .., o_sub σ ty z1 .., o_sub σ ty z2 = p .., o_sub σ ty (z1 + z2))%ptr%Z.
+  Proof.
+    intros.
+    rewrite /o_sub /= /o_sub_off /_offset_ptr_single.
+    case: size_of => [o|] //=.
+    case E: (offset_ptr_ (z1 * Z.of_N o) p) => [p'|/=]; rewrite -E.
+    { apply: offset_ptr_cancel; [|by lia]. naive_solver. }
+    case: p E => [[aid p]|//].
+    rewrite /offset_ptr_ /offset_ptr' /=.
+    case_decide => //=; case: p=> [va|//] //=;
+      last by case_decide => //; exfalso; lia.
+    case E': offset_vaddr => [_ //|/=];
+      rewrite /offset_vaddr in E' => _.
+    simplify_option_eq; first lia.
+    case E'': offset_vaddr => [?/=|//].
+    rewrite /offset_vaddr in E''.
+    simplify_option_eq; lia.
+  Qed.
 
   Include PTRS_DERIVED_MIXIN.
 End SIMPLE_PTRS_IMPL.

@@ -293,6 +293,15 @@ one is [PTRS_IMPL].
     size_of σ ty = Some sz -> (sz > 0)%N ->
     (same_property ptr_vaddr (p .., o_sub _ ty n1) (p .., o_sub _ ty n2) ->
     n1 = n2)%ptr.
+
+  (* XXX move into above module. *)
+  Axiom o_sub_sub_nneg : ∀ σ p ty (z1 z2 : Z),
+    (0 <= z1 -> 0 <= z2 ->
+    p .., o_sub σ ty z1 .., o_sub σ ty z2 = p .., o_sub σ ty (z1 + z2))%ptr%Z.
+
+  Axiom o_sub_sub_npos : ∀ σ p ty (z1 z2 : Z),
+    (z1 <= 0 -> z2 <= 0 ->
+    p .., o_sub σ ty z1 .., o_sub σ ty z2 = p .., o_sub σ ty (z1 + z2))%ptr%Z.
 End PTRS.
 
 Module Type PTRS_DERIVED (Import L : PTRS).
