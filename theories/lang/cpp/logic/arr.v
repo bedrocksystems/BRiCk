@@ -432,7 +432,7 @@ Section arrR.
     iIntros "[[$ _] _]".
   Qed.
 
-  Lemma arrR_cons ty R Rs :
+  Lemma arrR_cons' ty R Rs :
     is_Some (size_of σ ty) → (* this side condition is annoying *)
     arrR ty (R :: Rs) -|- type_ptrR ty ** R ** _offsetR (_sub ty 1) (arrR ty Rs).
   Proof.
@@ -447,6 +447,36 @@ Section arrR.
     rewrite -offset_ptr_dot. reflexivity.
   Qed.
 
+  (*
+  TODO to drop side-condition: make o_sub_0 unconditional, or deduce side condition from type_ptr.
+   *)
+
+  (* Debatable, more than dropping size_of from o_sub_0. *)
+  Axiom type_ptr_size : forall p σ ty,
+    type_ptr ty p |-- [| is_Some (size_of σ ty) |].
+  Local Instance type_ptr_size_observe ty p :
+    Observe [| is_Some (size_of σ ty) |] (type_ptr ty p).
+  Proof. rewrite type_ptr_size. exact: observe_intro_persistent. Qed.
+
+  Local Instance type_ptrR_size_observe ty :
+    Observe [| is_Some (size_of σ ty) |] (type_ptrR ty).
+  Proof.
+    (* XXX lifting an observation should be easier. *)
+    apply: observe_intro_persistent.
+    constructor=>p.
+    rewrite monPred_at_type_ptrR monPred_at_only_provable.
+    exact: type_ptr_size.
+  Qed.
+
+  Lemma arrR_cons ty R Rs :
+    arrR ty (R :: Rs) -|- type_ptrR ty ** R ** _offsetR (_sub ty 1) (arrR ty Rs).
+  Proof.
+    iSplit; iIntros "H";
+    iDestruct (observe [| is_Some (size_of σ ty) |] with "H") as %?;
+    by rewrite arrR_cons'.
+  Qed.
+
+  (* TODO Same game here: *)
   Lemma arrR_singleton ty R
     (Hsz : is_Some (size_of σ ty)) :
     arrR ty [R] -|-

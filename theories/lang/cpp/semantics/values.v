@@ -248,6 +248,8 @@ one is [PTRS_IMPL].
   Axiom o_sub_0 : ∀ σ ty,
     is_Some (size_of σ ty) ->
     o_sub σ ty 0 = o_id.
+  (* TODO: drop (is_Some (size_of σ ty)) via
+  `displacement (o_sub σ ty i) = if (i = 0) then 0 else i * size_of σ ty` *)
 
   (** going up and down the class hierarchy, one step at a time. *)
   Parameter o_base : genv -> forall (derived base : globname), offset.
