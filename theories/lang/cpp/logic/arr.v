@@ -387,6 +387,15 @@ Section arrR.
     by rewrite offset_ptr_id.
   Qed.
 
+  Lemma big_sepL_offsetR (o : offset) {T} (Rs : list T) : forall F,
+    (o |-> [∗list] i ↦ x ∈ Rs , F i x) -|- [∗list] i ↦ x ∈ Rs , o |-> F i x.
+  Proof.
+    induction Rs; simpl; intros.
+    - by rewrite _offsetR_emp.
+    - by rewrite _offsetR_sep IHRs.
+  Qed.
+
+(*
   Lemma big_sepL_offsetR_add (f g : nat -> Z) ty (Rs : list Rep) (h : Rep -> Rep) :
     ([∗ list] i ↦ Ri ∈ Rs, .[ ty ! f i + g i ] |-> h Ri) ⊣⊢
     [∗ list] i ↦ Ri ∈ Rs, .[ ty ! f i ] |-> .[ ty ! g i ] |-> h Ri.
@@ -403,34 +412,40 @@ Section arrR.
     (* iApply "H". *)
     (* rewrite (_offsetR_sep _). (bi_sep _ _)). *)
   Admitted.
+*)
 
+  Lemma _offsetR_dot (o1 o2 : offset) (R : Rep) :
+    o1 |-> o2 |-> R -|- o1 ., o2 |-> R.
+  Proof.
+    constructor =>p/=.
+    by rewrite _offsetR_eq/_offsetR_def/= offset_ptr_dot.
+  Qed.
 
   Lemma arrR_cons ty R Rs :
-    is_Some (size_of σ ty) →
+    is_Some (size_of σ ty) → (* this side condition is annoying *)
     arrR ty (R :: Rs) -|- type_ptrR ty ** R ** _offsetR (_sub ty 1) (arrR ty Rs).
   Proof.
     intros. rewrite arrR_eq /arrR_def /=.
     rewrite _offsetR_sep !_sub_0 // (assoc bi_sep); f_equiv.
     setoid_rewrite Nat2Z.inj_succ; setoid_rewrite <-Z.add_1_l.
-    rewrite big_sepL_offsetR_add.
-    elim: Rs => /= [|R' Rs IHRs]; first by rewrite _offsetR_emp.
-    (* rewrite !right_id o_sub_0 //. *)
-    (* rewrite _offsetR_id.
-    rewrite (_offsetR_sep _ (bi_sep _ _)).
+    rewrite big_sepL_offsetR.
+    f_equiv => i r. rewrite !_offsetR_dot.
+    constructor =>p /=. rewrite _offsetR_eq/_offsetR_def/=.
     f_equiv.
-    rewrite -IHRs.
-    split'.
-    - iIntros "E".
-    iDestruct (_sub_offsetR_add with "[] E") as "H".
-    _offsetR *)
-  Admitted.
+    rewrite -o_sub_sub_nneg; [ | lia | lia ].
+    rewrite -offset_ptr_dot. reflexivity.
+  Qed.
 
+  (* NOTE requires affine *)
   Lemma arrR_inv ty R Rs : arrR ty (R :: Rs) |-- [| is_Some (size_of σ ty) |].
   Proof.
-    rewrite arrR_eq /arrR_def.
-    (* iIntros "[% ?]". iPureIntro. case_match. by eexists. done. *)
-  Admitted.
-
+    rewrite arrR_eq /arrR_def /= !_offsetR_sep.
+    constructor =>p/=.
+    rewrite !monPred_at_sep !monPred_at_offsetR/= !monPred_at_only_provable !monPred_at_type_ptrR.
+    rewrite type_ptr_strict_valid strict_valid_relaxed.
+    rewrite -valid_o_sub_size.
+    iIntros "[[$ _] _]".
+  Qed.
 
   (* .[ ty ! 1] |-> endR (Tarray ty (N.of_nat (length Rs))) **
   .[ ty ! 1] |-> ([∗ list] i↦R0 ∈ Rs, .[ ty ! Z.of_nat i] |-> R0) *)
@@ -456,7 +471,6 @@ Section array.
   Lemma arrayR_cons x xs :
     arrayR ty R (x :: xs) -|- type_ptrR ty ** R x ** .[ ty ! 1 ] |-> arrayR ty R xs.
   Proof. rewrite arrayR_eq. exact: arrR_cons. Qed.
-
 
   Lemma arrayR_sub_type_ptr_nat (i : nat) p xs
     (Hlen : i < length xs) :
