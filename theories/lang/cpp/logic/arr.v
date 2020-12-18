@@ -436,14 +436,15 @@ Section arrR.
     rewrite -offset_ptr_dot. reflexivity.
   Qed.
 
-  (* NOTE requires affine *)
-  Lemma arrR_inv ty R Rs : arrR ty (R :: Rs) |-- [| is_Some (size_of σ ty) |].
+  (* Oh yes *)
+  Global Instance arrR_inv ty R Rs : Observe ([| is_Some (size_of σ ty) |]) (arrR ty (R :: Rs)).
   Proof.
+    apply: observe_intro_persistent.
     rewrite arrR_eq /arrR_def /= !_offsetR_sep.
     constructor =>p/=.
     rewrite !monPred_at_sep !monPred_at_offsetR/= !monPred_at_only_provable !monPred_at_type_ptrR.
     rewrite type_ptr_strict_valid strict_valid_relaxed.
-    rewrite -valid_o_sub_size.
+    rewrite valid_o_sub_size.
     iIntros "[[$ _] _]".
   Qed.
 
