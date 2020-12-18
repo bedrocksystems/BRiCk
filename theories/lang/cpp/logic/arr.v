@@ -42,17 +42,17 @@ Section big_op.
 
   Section list.
     Context {A : Type}.
-    Implicit Types l : list A.
+    Implicit Types xs : list A.
     Implicit Types f : nat → A → M.
 
     (** Any [P] compatible with the monoid and with [f] is compatible
         with [big_opL o f] *)
-    Lemma big_opL_gen (P : M → Prop) f l :
+    Lemma big_opL_gen (P : M → Prop) f xs :
       P monoid_unit → (∀ x y, P x → P y → P (x `o` y)) →
-      (∀ k x, l !! k = Some x → P (f k x)) →
-      P ([^o list] k↦x ∈ l, f k x).
+      (∀ k x, xs !! k = Some x → P (f k x)) →
+      P ([^o list] k↦x ∈ xs, f k x).
     Proof.
-      intros ? Hop. elim: l f => [ |x l IH] f /= Hf; first done.
+      intros ? Hop. elim: xs f => [ |x xs IH] f /= Hf; first done.
       apply Hop; first by apply Hf. apply IH=>k y Hk. by apply Hf.
     Qed.
   End list.
@@ -60,7 +60,7 @@ End big_op.
 
 Section big_sepL.
   Context {PROP : bi} {A : Type}.
-  Implicit Types l : list A.
+  Implicit Types xs : list A.
   Implicit Types f g : nat → A → PROP.
 
   (** In contrast with [big_sepL_ne], the lists need not be equal. *)
@@ -92,19 +92,19 @@ Section big_sepL.
   Qed.
 
   (** In contrast with [big_sepL_timeless], [big_sepL_persistent], and
-      [big_sepL_affine], the following offer [l !! k = Some x] in
+      [big_sepL_affine], the following offer [xs !! k = Some x] in
       their premisses. *)
-  Lemma big_sepL_gen_timeless `{!Timeless (emp%I : PROP)} f l :
-    (∀ k x, l !! k = Some x → Timeless (f k x)) →
-    Timeless ([∗ list] k↦x ∈ l, f k x).
+  Lemma big_sepL_gen_timeless `{!Timeless (emp%I : PROP)} f xs :
+    (∀ k x, xs !! k = Some x → Timeless (f k x)) →
+    Timeless ([∗ list] k↦x ∈ xs, f k x).
   Proof. apply big_opL_gen; apply _. Qed.
-  Lemma big_sepL_gen_persistent f l :
-    (∀ k x, l !! k = Some x → Persistent (f k x)) →
-    Persistent ([∗ list] k↦x ∈ l, f k x).
+  Lemma big_sepL_gen_persistent f xs :
+    (∀ k x, xs !! k = Some x → Persistent (f k x)) →
+    Persistent ([∗ list] k↦x ∈ xs, f k x).
   Proof. apply big_opL_gen; apply _. Qed.
-  Lemma big_sepL_gen_affine f l :
-    (∀ k x, l !! k = Some x → Affine (f k x)) →
-    Affine ([∗ list] k↦x ∈ l, f k x).
+  Lemma big_sepL_gen_affine f xs :
+    (∀ k x, xs !! k = Some x → Affine (f k x)) →
+    Affine ([∗ list] k↦x ∈ xs, f k x).
   Proof. apply big_opL_gen; apply _. Qed.
 End big_sepL.
 
