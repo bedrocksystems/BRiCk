@@ -99,7 +99,7 @@ Section with_Σ.
   #[local] Notation invalid := invalid_ptr.
 
   #[deprecated(since="2020-12-07",note="no longer needed")]
-  Notation _eq x := x (only parsing).
+  Notation _eq := (@id ptr) (only parsing).
   (*
   Definition _eq_def (p : ptr) : Loc.
   refine
@@ -258,11 +258,11 @@ End with_Σ.
 #[deprecated(since="2020-12-08",note="use 'offset'")]
 Notation Offset := offset (only parsing).
 #[deprecated(since="2020-12-07",note="no longer needed")]
- Notation _eq x := x (only parsing).
+ Notation _eq := (@id ptr) (only parsing).
 #[deprecated(since="2020-12-07",note="no longer needed, use equality on ptr")]
 Notation "a &~ b" := (addr_of a b) (at level 30, no associativity).
 
-
+ 
 (*
 Program Definition _offsetO `{has_cpp : cpp_logic} (o : Z) : Offset :=
   {| _offset from to := [| to = offset_ptr_ o from |] ** valid_ptr to |}.
