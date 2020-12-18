@@ -487,6 +487,7 @@ Module PTRS_IMPL : PTRS.
       else [os2; os1]
     | (o_num_ z1, off1), (o_num_ z2, off2) =>
       [(o_num_ (z2 + z1), (off1 + off2)%Z)]
+    | (o_invalid_, _), _ => [(o_invalid_, 0%Z)]
     | _, _ => [os2; os1]
     end.
 
