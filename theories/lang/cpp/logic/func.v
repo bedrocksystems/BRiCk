@@ -104,7 +104,7 @@ Section with_cpp.
 
   Definition bind_base_this (o : option ptr) (rty : type) (Q : region -> mpred) : mpred :=
     if is_aggregate rty then
-      Forall ra : ptr, ra |-> tblockR (erase_qualifiers rty) -*
+      Forall ra : ptr, ra |-> anyR rty 1 (* TODO backwards compat [tblockR (erase_qualifiers rty)] *) -*
                        Q (Remp o (Some ra))
     else Q (Remp o None).
 
