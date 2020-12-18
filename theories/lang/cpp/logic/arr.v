@@ -292,47 +292,6 @@ Section validR.
   Qed.
 End validR.
 
-(* * Validity of the pointer past the end of an object of type [ty] *)
-Definition endR_def `{Σ : cpp_logic} (ty : type) {σ : genv} : Rep :=
-  (*(□ (validR -* _offsetR (_sub ty 1) validR))%I.*)
-  _offsetR (_sub ty 1) validR.
-Definition endR_aux : seal (@endR_def). Proof. by eexists. Qed.
-Definition endR := endR_aux.(unseal).
-Definition endR_eq : @endR = _ := endR_aux.(seal_eq).
-Arguments endR {_ _} _ {_} : assert.
-
-Section endR.
-  Context `{Σ : cpp_logic, σ : genv}.
-
-  Global Instance endR_timeless ty : Timeless (endR ty).
-  Proof. rewrite endR_eq. apply _. Qed.
-  Global Instance endR_persistent ty : Persistent (endR ty).
-  Proof. rewrite endR_eq. apply _. Qed.
-  Global Instance endR_affine ty : Affine (endR ty).
-  Proof. rewrite endR_eq. apply _. Qed.
-
-  (* Lemma endR_ty ty1 ty2 : size_of σ ty1 = size_of σ ty2 → endR ty1 -|- endR ty2.
-  Proof. intros. by rewrite endR_eq /endR_def (_sub_ty _ ty2). Qed. *)
-
-  Lemma endR_sub ty : endR ty -|- _offsetR (_sub ty 1) validR.
-  Proof. by rewrite endR_eq. Qed.
-
-  Lemma endR_inv ty : endR ty |-- [| is_Some (size_of σ ty) |].
-  Proof. by rewrite endR_sub _sub_inv. Qed.
-
-  (* Lemma endR_offsetO sz ty :
-    size_of σ ty = Some sz → endR ty -|- _offsetR (offsetO sz) validR.
-  Proof. intros. by rewrite endR_sub (_sub_offsetO sz)// left_id_L. Qed.
-  Lemma endR_False ty : size_of σ ty = None → endR ty -|- False.
-  Proof. intros. by rewrite endR_sub _sub_False. Qed. *)
-  Lemma _at_endR p ty :
-    p |-> endR ty -|- valid_ptr (_offset_ptr p (_sub ty 1)).
-  Proof. by rewrite endR_sub _at_offsetL_offsetR _at_validR. Qed.
-
-End endR.
-
-  (* ([∗ list] i ↦ R ∈ Rs, _offsetR (_sub ty (Z.of_nat i)) (R))%I. *)
-
 Definition arrR_def `{Σ : cpp_logic} (ty : type) {σ : genv} (Rs : list Rep) : Rep :=
   [∗ list] i ↦ Ri ∈ Rs, _offsetR (_sub ty (Z.of_nat i)) (type_ptrR ty ** Ri).
 Definition arrR_aux : seal (@arrR_def). Proof. by eexists. Qed.
@@ -348,39 +307,6 @@ Definition arrayR := arrayR_aux.(unseal).
 Definition arrayR_eq : @arrayR = _ := arrayR_aux.(seal_eq).
 Arguments arrayR {_ _ _ _} _ _%function_scope _%list_scope : assert.
 Instance: Params (@arrayR) 5 := {}.	(** TODO: [genv] weakening *)
-
-(* Module Import internal.
-Section internal.
-  Context `{Σ : cpp_logic, σ : genv}.
-
-  Definition altR (ty : type) (f : Z → Z) (Rs : list Rep) : Rep :=
-    ([∗ list] i ↦ R ∈ Rs, _offsetR (_sub ty $ f $ Z.of_nat i) R)%I.
-
-  Lemma arrR_alt ty Rs :
-    arrR ty Rs = endR (Tarray ty $ N.of_nat $ length Rs) ** altR ty id Rs.
-  Proof. by rewrite arrR_eq. Qed.
-
-  Lemma altR_add n ty Rs :
-    is_Some (size_of σ ty) →
-    ([∗ list] i ∈ seq 0 n, _offsetR (_sub ty $ Z.of_nat i) validR) **
-    altR ty (Z.add $ Z.of_nat n) Rs -|- _offsetR (_sub ty n) (altR ty id Rs).
-  Proof.
-    intros [sz Hsz].
-    rewrite/altR. elim: Rs n => [ |R Rs IH] n /=.
-    - rewrite (_sub_offsetO sz)//.
-      constructor=>p.
-      rewrite monPred_at_emp monPred_at_offsetR.
-      rewrite _sub_eq /_sub_def.
-      setoid_rewrite monPred_at_sub.
-
-
-    ([∗ list] i ↦ R ∈ Rs, _offsetR (_sub ty (base + Z.of_nat i)) R) -|-
-    _offsetR (_sub ty base) (arrR' ty Rs).
-
-  .[ ty ! 1] |-> ([∗ list] i↦R0 ∈ Rs, .[ ty ! Z.of_nat i] |-> R0)
-
-End internal.
-End internal. *)
 
 Section arrR.
   Context `{Σ : cpp_logic, σ : genv}.
