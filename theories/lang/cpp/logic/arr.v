@@ -421,6 +421,17 @@ Section arrR.
     by rewrite _offsetR_eq/_offsetR_def/= offset_ptr_dot.
   Qed.
 
+  Global Instance arrR_inv ty R Rs : Observe ([| is_Some (size_of σ ty) |]) (arrR ty (R :: Rs)).
+  Proof.
+    apply: observe_intro_persistent.
+    rewrite arrR_eq /arrR_def /= !_offsetR_sep.
+    constructor =>p/=.
+    rewrite !monPred_at_sep !monPred_at_offsetR/= !monPred_at_only_provable !monPred_at_type_ptrR.
+    rewrite type_ptr_strict_valid strict_valid_relaxed.
+    rewrite valid_o_sub_size.
+    iIntros "[[$ _] _]".
+  Qed.
+
   Lemma arrR_cons ty R Rs :
     is_Some (size_of σ ty) → (* this side condition is annoying *)
     arrR ty (R :: Rs) -|- type_ptrR ty ** R ** _offsetR (_sub ty 1) (arrR ty Rs).
@@ -436,20 +447,6 @@ Section arrR.
     rewrite -offset_ptr_dot. reflexivity.
   Qed.
 
-  (* Oh yes *)
-  Global Instance arrR_inv ty R Rs : Observe ([| is_Some (size_of σ ty) |]) (arrR ty (R :: Rs)).
-  Proof.
-    apply: observe_intro_persistent.
-    rewrite arrR_eq /arrR_def /= !_offsetR_sep.
-    constructor =>p/=.
-    rewrite !monPred_at_sep !monPred_at_offsetR/= !monPred_at_only_provable !monPred_at_type_ptrR.
-    rewrite type_ptr_strict_valid strict_valid_relaxed.
-    rewrite valid_o_sub_size.
-    iIntros "[[$ _] _]".
-  Qed.
-
-  (* .[ ty ! 1] |-> endR (Tarray ty (N.of_nat (length Rs))) **
-  .[ ty ! 1] |-> ([∗ list] i↦R0 ∈ Rs, .[ ty ! Z.of_nat i] |-> R0) *)
   Lemma arrR_singleton ty R
     (Hsz : is_Some (size_of σ ty)) :
     arrR ty [R] -|-
