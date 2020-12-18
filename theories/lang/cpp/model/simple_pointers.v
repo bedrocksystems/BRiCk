@@ -13,7 +13,7 @@ From iris.base_logic.lib Require Import cancelable_invariants.
 From iris.proofmode Require Import tactics.
 From iris_string_ident Require Import ltac2_string_ident.
 
-From bedrock.lang.prelude Require Import base avl bytestring option.
+From bedrock.lang.prelude Require Import base avl bytestring option numbers.
 
 From bedrock.lang.cpp Require Import ast.
 From bedrock.lang.cpp.semantics Require Import values sub_module.
@@ -916,6 +916,29 @@ Module PTRS_IMPL : PTRS.
     size_of σ ty = Some sz -> (sz > 0)%N ->
     (same_property ptr_vaddr (p .., o_sub _ ty n1) (p .., o_sub _ ty n2) ->
     n1 = n2)%ptr.
+
+  Lemma o_sub_sub_off σ ty (z1 z2 : Z) :
+    (o_sub σ ty z1 .., o_sub σ ty z2 = o_sub σ ty (z1 + z2))%offset.
+  Proof.
+    intros. apply /sig_eq_pi => /=.
+    rewrite /mk_offset_seg /= /o_sub_off /=;
+      case: size_of => [sz|] //=; rewrite decide_True //=.
+    by rewrite -Z.mul_add_distr_r (comm_L _ z2).
+  Qed.
+
+  Lemma o_sub_sub σ p ty (z1 z2 : Z) :
+    (p .., o_sub σ ty z1 .., o_sub σ ty z2 = p .., o_sub σ ty (z1 + z2))%ptr%Z.
+  Proof. by rewrite -offset_ptr_dot o_sub_sub_off. Qed.
+
+  Lemma o_sub_sub_nneg σ p ty (z1 z2 : Z) :
+    (0 <= z1 -> 0 <= z2 ->
+    p .., o_sub σ ty z1 .., o_sub σ ty z2 = p .., o_sub σ ty (z1 + z2))%ptr%Z.
+  Proof. intros. exact: o_sub_sub. Qed.
+
+  Lemma o_sub_sub_npos σ p ty (z1 z2 : Z) :
+    (z1 <= 0 -> z2 <= 0 ->
+    p .., o_sub σ ty z1 .., o_sub σ ty z2 = p .., o_sub σ ty (z1 + z2))%ptr%Z.
+  Proof. intros. exact: o_sub_sub. Qed.
 
   Include PTRS_DERIVED_MIXIN.
 End PTRS_IMPL.
