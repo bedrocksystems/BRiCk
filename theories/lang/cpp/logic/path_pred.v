@@ -164,22 +164,22 @@ Section with_Σ.
   Proof. intros. iIntros "[A B]". iApply (observe_2 with "A B"). Qed.
 
   Global Instance addr_of_observe_Loc_eq loc p :
-    Observe (Loc_equiv loc (_eq p)) (loc &~ p).
+    Observe (Loc_equiv loc p) (loc &~ p).
   Proof.
     rewrite /Loc_equiv addr_of_eq /addr_of_def.
     iIntros "%"; eauto.
   Qed.
 
-  Lemma addr_of_Loc_eq : forall l p, l &~ p |-- Loc_equiv l (_eq p).
+  Lemma addr_of_Loc_eq : forall l p, l &~ p |-- Loc_equiv l p.
   Proof. intros. iIntros "L". iApply (observe with "L"). Qed.
 
   Global Instance addr_of_observe_Loc_impl loc p :
-    Observe (Loc_impl loc (_eq p)) (loc &~ p).
+    Observe (Loc_impl loc p) (loc &~ p).
   Proof.
     rewrite/Observe. rewrite addr_of_Loc_eq Loc_equiv_impl bi.sep_elim_l. auto.
   Qed.
 
-  Lemma addr_of_Loc_impl : forall l p, l &~ p |-- Loc_impl l (_eq p).
+  Lemma addr_of_Loc_impl : forall l p, l &~ p |-- Loc_impl l p.
   Proof. intros. iIntros "L". iApply (observe with "L"). Qed.
 
   (** [valid_loc]
