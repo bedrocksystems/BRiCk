@@ -405,7 +405,7 @@ Module PTRS_IMPL : PTRS.
   | o_derived_ (base derived : globname)
   (* deprecated *)
   | o_num_ (z : Z)
-  | o_invalid.
+  | o_invalid_.
   Local Instance raw_offset_seg_eq_dec : EqDecision raw_offset_seg.
   Proof. solve_decision. Qed.
   Declare Instance raw_offset_seg_countable : Countable raw_offset_seg.
@@ -420,11 +420,11 @@ Module PTRS_IMPL : PTRS.
     | o_sub_ ty z => o_sub_off σ ty z
     | o_base_ derived base => o_base_off σ derived base
     | o_derived_ base derived => o_derived_off σ base derived
-    | o_invalid => None
+    | o_invalid_ => None
     end.
   Definition mk_offset_seg σ (ro : raw_offset_seg) : offset_seg :=
     match eval_raw_offset_seg σ ro with
-    | None => (o_invalid, 0%Z)
+    | None => (o_invalid_, 0%Z)
     | Some off => (ro, off)
     end.
 
