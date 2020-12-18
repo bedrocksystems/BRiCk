@@ -143,13 +143,10 @@ Section sub.
   Qed. *)
 End sub.
 
-Implicit Types (p : ptr).
+Implicit Types (p : ptr) (σ : genv).
 
 Section validR.
   Context `{Σ : cpp_logic}.
-
-  Lemma monPred_at_validR p : validR p -|- valid_ptr p.
-  Proof. by rewrite validR_eq. Qed.
 
   (** PDS: Revisit and simplify [Offset2] *)
   (* Lemma _offsetR_valid (offs : Offset) (R : Rep) :
@@ -177,9 +174,29 @@ Section validR.
     validR ** offs |-> R -|- as_Rep (λ p, p |-> offs |-> R).
   Proof. by rewrite validR_at_l. Qed. *)
 
-  (** [validR] and [_at] *)
+  Lemma monPred_at_validR p : validR p -|- valid_ptr p.
+  Proof. by rewrite validR_eq. Qed.
+  Lemma monPred_at_svalidR p : svalidR p -|- strict_valid_ptr p.
+  Proof. by rewrite svalidR_eq. Qed.
+  Lemma monPred_at_type_ptrR ty σ p : type_ptrR ty p -|- type_ptr ty p.
+  Proof. by rewrite type_ptrR_eq. Qed.
+
   Lemma _at_validR p : p |-> validR -|- valid_ptr p.
   Proof. by rewrite _at_eq validR_eq. Qed.
+  Lemma _at_svalidR p : p |-> svalidR -|- strict_valid_ptr p.
+  Proof. by rewrite _at_eq svalidR_eq. Qed.
+  Lemma _at_type_ptrR ty σ p : p |-> type_ptrR ty -|- type_ptr ty p.
+  Proof. by rewrite _at_eq type_ptrR_eq. Qed.
+
+  Lemma type_ptrR_validR_plus_one (ty : type) σ :
+    type_ptrR ty ⊢@{RepI (Σ := Σ)} (.[ ty ! 1 ]) |-> validR .
+  Proof.
+    constructor => p.
+    rewrite monPred_at_offsetR monPred_at_type_ptrR monPred_at_validR.
+    exact: type_ptr_valid_plus_one.
+  Qed.
+
+  (** [validR] and [_at] *)
 
   Lemma _sub_inv ty i resolve :
     _offsetR (_sub ty i) validR |-- [| is_Some (size_of resolve ty) |].
