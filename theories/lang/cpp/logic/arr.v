@@ -443,47 +443,87 @@ End arrR.
 
 Section array.
   Context `{Σ : cpp_logic, resolve : genv}.
+  Context {X : Type} (R : X -> Rep) (ty : type).
 
-  Lemma arrayR_sub_type_ptr {A} p ty (R : A → Rep) l (i : Z) :
-    (0 ≤ i < Z.of_nat $ length l)%Z →
-    Observe (type_ptr ty (p .[ ty ! i ])) (p |-> arrayR ty R l).
-  Proof.
-    intros []. set P := _at _ _. set Q := type_ptr _ _. suff Hsuff : P |-- Q.
-    { rewrite /P/Q. rewrite /Observe. iIntros "A".
-      iDestruct (Hsuff with "A") as "#$". }
-    rewrite/P/Q {P Q}. iIntros "A". rewrite arrayR_eq /arrayR_def.
-  Admitted.
-
-  Lemma arrayR_sub_svalid {A} p ty (R : A → Rep) l (i : Z) :
-    (0 ≤ i < Z.of_nat $ length l)%Z →
-    Observe (strict_valid_ptr (p .[ ty ! i ])) (p |-> arrayR ty R l).
-  Proof. intros. rewrite -type_ptr_strict_valid. exact: arrayR_sub_type_ptr. Qed.
-
-  Lemma arrayR_sub_valid {A} p ty (R : A → Rep) l (i : Z) :
-    (0 ≤ i < Z.of_nat $ length l)%Z →
-    Observe (valid_ptr (p .[ ty ! i ])) (p |-> arrayR ty R l).
-  Proof. intros. rewrite -strict_valid_relaxed. exact: arrayR_sub_svalid. Qed.
-
-Section nested.
-  Context {X : Type} (R : X -> Rep) (T : type).
-
-  Lemma arrayR_nil : arrayR T R [] -|- emp.
+  Lemma arrayR_nil : arrayR ty R [] -|- emp.
   Proof. by rewrite arrayR_eq /arrayR_def arrR_nil. Qed.
 
   Section has_size.
   (** Compared to [array'_valid], this is a bientailment *)
-    Context (Hsz : is_Some (size_of resolve T)).
+    Context (Hsz : is_Some (size_of resolve ty)).
     Set Default Proof Using "Hsz".
 
-    Lemma arrayR_cons x xs :
-      arrayR T R (x :: xs) -|- type_ptrR T ** R x ** _offsetR (.[ T ! 1 ]) (arrayR T R xs).
-    Proof. rewrite arrayR_eq. exact: arrR_cons. Qed.
+  Lemma arrayR_cons x xs :
+    arrayR ty R (x :: xs) -|- type_ptrR ty ** R x ** .[ ty ! 1 ] |-> arrayR ty R xs.
+  Proof. rewrite arrayR_eq. exact: arrR_cons. Qed.
 
-  Lemma arrayR_valid i xs base :
-    i ≤ length xs →
-    arrayR T R xs base -|-
-    arrayR T R xs base ** valid_ptr (base .[ T ! i ]).
-  Proof. Admitted.
+
+  Lemma arrayR_sub_type_ptr_nat (i : nat) p xs
+    (Hlen : i < length xs) :
+    Observe (p .[ ty ! i ] |-> type_ptrR ty) (p |-> arrayR ty R xs).
+  Proof.
+    apply: observe_intro_persistent.
+    elim: xs i p Hlen => [|x xs IHxs] [|i] p /= Hlen; try lia;
+      rewrite arrayR_cons !_at_sep.
+    { rewrite o_sub_0 // offset_ptr_id. iDestruct 1 as "[$ _]". }
+    { rewrite _at_offsetL_offsetR /flip.
+      rewrite (IHxs i); try lia.
+      rewrite o_sub_sub_nneg; try lia.
+      rewrite Z.add_1_l Nat2Z.inj_succ.
+      iDestruct 1 as "(_ & _ & $)". }
+  Qed.
+
+  Lemma arrayR_sub_type_ptr (i : Z) p xs :
+    (0 ≤ i < Z.of_nat $ length xs)%Z →
+    Observe (p .[ ty ! i ] |-> type_ptrR ty) (p |-> arrayR ty R xs).
+  Proof.
+    intros []. have := arrayR_sub_type_ptr_nat (Z.to_nat i) p xs.
+    rewrite Z2Nat.id //. apply. lia.
+  Qed.
+
+  Lemma arrayR_sub_svalid (i : Z) p xs  :
+    (0 ≤ i < Z.of_nat $ length xs)%Z →
+    Observe (p .[ ty ! i ] |-> svalidR) (p |-> arrayR ty R xs).
+  Proof. intros. rewrite -type_ptrR_svalidR. exact: arrayR_sub_type_ptr. Qed.
+
+  Lemma arrayR_sub_valid p xs (i : Z) :
+    (0 ≤ i < Z.of_nat $ length xs)%Z →
+    Observe (p .[ ty ! i ] |-> validR) (p |-> arrayR ty R xs).
+  Proof. intros. rewrite -svalidR_validR. exact: arrayR_sub_svalid. Qed.
+
+  (* XXX should use Observe *)
+  Lemma arrayR_type_ptr i xs (base : ptr) :
+    i < length xs →
+    base |-> arrayR ty R xs -|-
+    base |-> arrayR ty R xs ** base .[ ty ! i ] |-> type_ptrR ty.
+  Proof.
+    intros.
+    iSplit; last iApply bi.sep_elim_l.
+    iApply observe_elim.
+    apply arrayR_sub_type_ptr; lia.
+  Qed.
+
+  (* XXX should use Observe *)
+  (* Unlike [arrayR_type_ptr], we get past-the-end validity, but only for lists of length >= 1. *)
+  Lemma arrayR_valid i xs p
+    (Hlen : length xs >= 1)
+    (Hi : i ≤ length xs) :
+    p |-> arrayR ty R xs -|-
+    p |-> arrayR ty R xs ** p .[ ty ! i ] |-> validR.
+  Proof.
+    iSplit; last iApply bi.sep_elim_l.
+    set j := pred i.
+    have Hj : j < length xs by simpl; lia.
+    rewrite (arrayR_type_ptr j) //. rewrite -assoc.
+    iIntros "($ & #H)". iFrame "H".
+    subst j.
+    case: i Hi Hj => [|i] /= Hi Him; first
+    by rewrite type_ptrR_svalidR svalidR_validR.
+    rewrite type_ptrR_validR_plus_one.
+    rewrite _at_offsetL_offsetR /flip.
+    rewrite o_sub_sub_nneg; try lia.
+    by rewrite comm_L Z.add_1_l Nat2Z.inj_succ.
+  Qed.
 
   (** Nothing to compare to *)
   (* Lemma arrayR_cons x xs base :
