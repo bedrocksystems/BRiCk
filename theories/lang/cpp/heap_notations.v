@@ -44,7 +44,7 @@ Section with_cpp.
   Arguments _to_offset {!TO_OFFSET} _ : rename.
 
   Canonical Structure TO_OFFSET_field {σ : genv} := {| _to_offset := @o_field σ |}.
-  Canonical Structure TO_OFFSET_offset := {| _to_offset := @id offset |}.
+  Canonical Structure TO_OFFSET_offset := {| _to_offset (o : offset) := o |}.
 
   (* paths *)
   Structure DOT : Type :=
