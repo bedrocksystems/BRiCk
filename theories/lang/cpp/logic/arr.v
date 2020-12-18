@@ -487,16 +487,16 @@ Section nested.
 
   (** Nothing to compare to *)
   (* Lemma arrayR_cons x xs base :
-    arrayR T R (x :: xs) base -|-
-    base |-> R x ** arrayR T R xs (base .[T ! 1]).
+    arrayR ty R (x :: xs) base -|-
+    base |-> R x ** arrayR ty R xs (base .[ty ! 1]).
   Proof. Admitted. *)
   (** Compared to [array'_split] this is a bientailment and does not need an index *)
 
   Lemma arrayR_app xs ys base :
-    arrayR T R (xs ++ ys) base -|-
-    arrayR T R xs base **
-    arrayR T R ys (base .[ T ! length xs ]).
-  Proof using Hsz.
+    arrayR ty R (xs ++ ys) base -|-
+    arrayR ty R xs base **
+    arrayR ty R ys (base .[ ty ! length xs ]).
+  Proof.
     elim: xs ys base => [ |x xs IH] ys base /=.
     - by rewrite o_sub_0 // offset_ptr_id arrayR_nil monPred_at_emp left_id.
     - rewrite !arrayR_cons.
@@ -509,17 +509,17 @@ Section nested.
   (** Compared to [array'_split], this takes [i] as first *)
   Lemma arrayR_split i xs base :
     i ≤ length xs →
-    arrayR T R xs base |--
-    arrayR T R (take i xs) base **
-    arrayR T R (drop i xs) (base .[ T ! i ]).
+    arrayR ty R xs base |--
+    arrayR ty R (take i xs) base **
+    arrayR ty R (drop i xs) (base .[ ty ! i ]).
   Proof.
     intros. by rewrite -{1}(take_drop i xs) arrayR_app take_length_le.
   Qed.
   (** Compared to [array'_combine], this takes [i] is first *)
   Lemma arrayR_combine i xs base :
-    arrayR T R (take i xs) base **
-    arrayR T R (drop i xs) (base .[ T ! i ]) |--
-    arrayR T R xs base.
+    arrayR ty R (take i xs) base **
+    arrayR ty R (drop i xs) (base .[ ty ! i ]) |--
+    arrayR ty R xs base.
   Proof.
     rewrite -{3}(take_drop i xs). destruct (Nat.le_gt_cases i (length xs)).
     - by rewrite -{3}(take_length_le xs i)// -arrayR_app.
@@ -537,9 +537,9 @@ Section nested.
   (** Compared to [arrayR_split], [arrayR_combine], this is a
   bientailment, it omits locations and indices, and it does not
   specialize to take/drop. *)
-  Lemma arrayR_app' l k :
-    arrayR T R (l ++ k) -|-
-    arrayR T R l ** .[ T ! length l ] |-> arrayR T R k.
+  Lemma arrayR_app' xs ys :
+    arrayR ty R (xs ++ ys) -|-
+    arrayR ty R xs ** .[ ty ! length xs ] |-> arrayR ty R ys.
   Proof.
     constructor=>base /=. rewrite monPred_at_sep monPred_at_offsetR /=.
     apply arrayR_app.
@@ -547,14 +547,14 @@ Section nested.
 
 (*
   (** Compare [arrayR_cell], [array_idx_with_addr] *)
-  Lemma arrayR_sub {A} l i x ty (R : A → Rep) iZ :
+  Lemma arrayR_sub {A} xs i x ty (R : A → Rep) iZ :
     (* is_Some (size_of resolve ty) →	(** PDS: This could be avoided *) *)
     iZ = Z.of_nat i →	(** Ease [eapply] *)
-    l !! i = Some x →	(** We have an [i]th element *)
-    arrayR ty R l -|-
-    arrayR ty R (take i l) **
+    xs !! i = Some x →	(** We have an [i]th element *)
+    arrayR ty R xs -|-
+    arrayR ty R (take i xs) **
     _sub ty iZ |-> R x **
-    _sub ty (iZ + 1) |-> arrayR ty R (drop (S i) l).
+    _sub ty (iZ + 1) |-> arrayR ty R (drop (S i) xs).
   Proof.
     intros Hi Hl. constructor=>p /=.
     rewrite !monPred_at_sep /=. rewrite !monPred_at_offsetR /=.
@@ -566,7 +566,8 @@ Section nested.
 
 
       p .[ ty ! iZ ] |-> R x -*
-      p .[ ty ! iZ + 1 ] |-> arrayR ty R (drop (S i) l) -* Q) →
-    p |-> arrayR ty R l |-- Q.
+      p .[ ty ! iZ + 1 ] |-> arrayR ty R (drop (S i) xs) -* Q) →
+    p |-> arrayR ty R xs |-- Q.
 *)
+End has_size.
 End array.
