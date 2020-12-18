@@ -341,6 +341,14 @@ Definition arrR_eq : @arrR = _ := arrR_aux.(seal_eq).
 Arguments arrR {_ _} _ {_} _%list_scope : assert.
 Instance: Params (@arrR) 4 := {}.	(** TODO: [genv] weakening *)
 
+Definition arrayR_def `{Σ : cpp_logic} {X : Type} {σ : genv} (ty : type) (P : X → Rep) (xs : list X) : Rep :=
+  arrR ty (P <$> xs).
+Definition arrayR_aux : seal (@arrayR_def). Proof. by eexists. Qed.
+Definition arrayR := arrayR_aux.(unseal).
+Definition arrayR_eq : @arrayR = _ := arrayR_aux.(seal_eq).
+Arguments arrayR {_ _ _ _} _ _%function_scope _%list_scope : assert.
+Instance: Params (@arrayR) 5 := {}.	(** TODO: [genv] weakening *)
+
 (* Module Import internal.
 Section internal.
   Context `{Σ : cpp_logic, σ : genv}.
@@ -448,8 +456,9 @@ Section arrR.
     iIntros.
     (* TODO: observe that the whole range is valid. and restrict f and g. *)
     iApply _sub_offsetR_add.
-    iApply "H".
-    rewrite (_offsetR_sep _). (bi_sep _ _)).
+    admit.
+    (* iApply "H". *)
+    (* rewrite (_offsetR_sep _). (bi_sep _ _)). *)
   Admitted.
 
 
@@ -462,15 +471,15 @@ Section arrR.
     setoid_rewrite Nat2Z.inj_succ; setoid_rewrite <-Z.add_1_l.
     rewrite big_sepL_offsetR_add.
     elim: Rs => /= [|R' Rs IHRs]; first by rewrite _offsetR_emp.
-    rewrite !right_id o_sub_0 //.
-    rewrite _offsetR_id.
+    (* rewrite !right_id o_sub_0 //. *)
+    (* rewrite _offsetR_id.
     rewrite (_offsetR_sep _ (bi_sep _ _)).
     f_equiv.
     rewrite -IHRs.
     split'.
     - iIntros "E".
     iDestruct (_sub_offsetR_add with "[] E") as "H".
-    _offsetR
+    _offsetR *)
   Admitted.
 
   Lemma arrR_inv ty R Rs : arrR ty (R :: Rs) |-- [| is_Some (size_of σ ty) |].
@@ -490,96 +499,107 @@ Section arrR.
 End arrR.
 
 Section array.
-  Local Transparent arrayR.
   Context `{Σ : cpp_logic, resolve : genv}.
+
+  Lemma arrayR_sub_type_ptr {A} p ty (R : A → Rep) l (i : Z) :
+    (0 ≤ i < Z.of_nat $ length l)%Z →
+    Observe (type_ptr ty (p .[ ty ! i ])) (p |-> arrayR ty R l).
+  Proof.
+    intros []. set P := _at _ _. set Q := type_ptr _ _. suff Hsuff : P |-- Q.
+    { rewrite /P/Q. rewrite /Observe. iIntros "A".
+      iDestruct (Hsuff with "A") as "#$". }
+    rewrite/P/Q {P Q}. iIntros "A". rewrite arrayR_eq /arrayR_def.
+  Admitted.
+
+  Lemma arrayR_sub_svalid {A} p ty (R : A → Rep) l (i : Z) :
+    (0 ≤ i < Z.of_nat $ length l)%Z →
+    Observe (strict_valid_ptr (p .[ ty ! i ])) (p |-> arrayR ty R l).
+  Proof. intros. rewrite -type_ptr_strict_valid. exact: arrayR_sub_type_ptr. Qed.
 
   Lemma arrayR_sub_valid {A} p ty (R : A → Rep) l (i : Z) :
     (0 ≤ i < Z.of_nat $ length l)%Z →
     Observe (valid_ptr (p .[ ty ! i ])) (p |-> arrayR ty R l).
-  Proof.
-    intros []. set P := _at _ _. set Q := valid_ptr _. suff Hsuff : P |-- Q.
-    { rewrite /P/Q. rewrite /Observe. iIntros "A".
-      iDestruct (Hsuff with "A") as "#$". iFrame "A". }
-    rewrite/P/Q {P Q}. iIntros "A". rewrite /arrayR plogic._at_as_Rep.
-    iDestruct "A" as (p) "[#Addr A]". iDestruct "A" as (sz) "[% A]".
-    iDestruct (array'_valid _ _ _ _ _ (Z.to_nat i) with "A") as "[A #V]";
-      first lia.
-    rewrite Z2Nat.id//. set pi := offset_ptr_ _ _.
-    rewrite (sub_offsetO sz)// valid_loc_equiv. iExists pi.
-    rewrite addr_of_eq /addr_of_def _offsetL_eq /_offsetL_def/=.
-    iExists p. by iFrame "Addr V".
-  Qed.
+  Proof. intros. rewrite -strict_valid_relaxed. exact: arrayR_sub_svalid. Qed.
 
+Section nested.
+  Context {X : Type} (R : X -> Rep) (T : type).
+
+  Lemma arrayR_nil : arrayR T R [] -|- emp.
+  Proof. by rewrite arrayR_eq /arrayR_def arrR_nil. Qed.
+
+  Section has_size.
   (** Compared to [array'_valid], this is a bientailment *)
-  Lemma array'_valid {A} i l sz (R : A → Rep) base :
-    i ≤ length l →
-    array' sz R l base -|-
-    array' sz R l base ** valid_ptr (offset_ptr_ (Z.of_nat i * sz) base).
-  Proof. split'. by apply array'_valid. by rewrite bi.sep_elim_l. Qed.
+    Context (Hsz : is_Some (size_of resolve T)).
+    Set Default Proof Using "Hsz".
+
+    Lemma arrayR_cons x xs :
+      arrayR T R (x :: xs) -|- type_ptrR T ** R x ** _offsetR (.[ T ! 1 ]) (arrayR T R xs).
+    Proof. rewrite arrayR_eq. exact: arrR_cons. Qed.
+
+  Lemma arrayR_valid i xs base :
+    i ≤ length xs →
+    arrayR T R xs base -|-
+    arrayR T R xs base ** valid_ptr (base .[ T ! i ]).
+  Proof. Admitted.
 
   (** Nothing to compare to *)
-  Lemma array'_cons {A} x l sz (R : A → Rep) base :
-    array' sz R (x :: l) base -|-
-    base |-> R x ** array' sz R l (offset_ptr_ sz base).
-  Proof. done. Qed.
+  (* Lemma arrayR_cons x xs base :
+    arrayR T R (x :: xs) base -|-
+    base |-> R x ** arrayR T R xs (base .[T ! 1]).
+  Proof. Admitted. *)
   (** Compared to [array'_split] this is a bientailment and does not need an index *)
-  Lemma array'_app {A} l k sz (R : A → Rep) base :
-    array' sz R (l ++ k) base -|-
-    array' sz R l base **
-    array' sz R k (offset_ptr_ (Z.of_nat (length l) * sz) base).
-  Proof.
-    elim: l k base=>[ |x l IH] k base /=.
-    - rewrite {1}(array'_valid 0); last lia.
-      by rewrite left_absorb_L offset_ptr_0_ comm.
-    - rewrite -assoc IH offset_ptr_combine_. repeat f_equiv. lia.
+
+  Lemma arrayR_app xs ys base :
+    arrayR T R (xs ++ ys) base -|-
+    arrayR T R xs base **
+    arrayR T R ys (base .[ T ! length xs ]).
+  Proof using Hsz.
+    elim: xs ys base => [ |x xs IH] ys base /=.
+    - by rewrite o_sub_0 // offset_ptr_id arrayR_nil monPred_at_emp left_id.
+    - rewrite !arrayR_cons.
+      rewrite !monPred_at_sep -!assoc !monPred_at_offsetR.
+      rewrite IH.
+      rewrite o_sub_sub_nneg /id // ?Z.add_1_l ?Nat2Z.inj_succ //.
+      lia.
   Qed.
-  (** Compared to [array'_split], this takes [i] is first *)
-  Lemma array'_split {A} i l sz (R : A → Rep) base :
-    i ≤ length l →
-    array' sz R l base |--
-    array' sz R (take i l) base **
-    array' sz R (drop i l) (offset_ptr_ (Z.of_nat i * sz) base).
+
+  (** Compared to [array'_split], this takes [i] as first *)
+  Lemma arrayR_split i xs base :
+    i ≤ length xs →
+    arrayR T R xs base |--
+    arrayR T R (take i xs) base **
+    arrayR T R (drop i xs) (base .[ T ! i ]).
   Proof.
-    intros. by rewrite -{1}(take_drop i l) array'_app take_length_le.
+    intros. by rewrite -{1}(take_drop i xs) arrayR_app take_length_le.
   Qed.
   (** Compared to [array'_combine], this takes [i] is first *)
-  Lemma array'_combine {A} i l sz (R : A → Rep) base :
-    array' sz R (take i l) base **
-    array' sz R (drop i l) (offset_ptr_ (Z.of_nat i * sz) base) |--
-    array' sz R l base.
+  Lemma arrayR_combine i xs base :
+    arrayR T R (take i xs) base **
+    arrayR T R (drop i xs) (base .[ T ! i ]) |--
+    arrayR T R xs base.
   Proof.
-    rewrite -{3}(take_drop i l). destruct (Nat.le_gt_cases i (length l)).
-    - by rewrite -{3}(take_length_le l i)// -array'_app.
+    rewrite -{3}(take_drop i xs). destruct (Nat.le_gt_cases i (length xs)).
+    - by rewrite -{3}(take_length_le xs i)// -arrayR_app.
     - rewrite take_ge ?drop_ge /=; [ |lia|lia].
       by rewrite right_id_L bi.sep_elim_l.
   Qed.
 
-
-  Lemma arrayR_nil {A} ty (R : A → Rep) :
+  (* Lemma arrayR_nil {A} ty (R : A → Rep) :
     arrayR ty R [] -|- ∃ sz, [| size_of resolve ty = Some sz |] ** validR.
   Proof.
     constructor=>base /=. rewrite monPred_at_exist. f_equiv=>sz.
     by rewrite monPred_at_sep monPred_at_only_provable.
-  Qed.
+  Qed. *)
 
   (** Compared to [arrayR_split], [arrayR_combine], this is a
   bientailment, it omits locations and indices, and it does not
   specialize to take/drop. *)
-  Lemma arrayR_app {A} l k ty (R : A → Rep) :
-    arrayR ty R (l ++ k) -|-
-    arrayR ty R l ** _sub ty (length l) |-> arrayR ty R k.
+  Lemma arrayR_app' l k :
+    arrayR T R (l ++ k) -|-
+    arrayR T R l ** .[ T ! length l ] |-> arrayR T R k.
   Proof.
-    constructor=>base /=. rewrite monPred_at_sep monPred_at_offsetR /=. split'.
-    - iDestruct 1 as (sz) "[% A]".
-      rewrite array'_app. iDestruct "A" as "[L K]".
-      rewrite (array'_valid (length l) l)//. iDestruct "L" as "[L #V]".
-      iSplitL "L"; first by iExists _; iFrame "L".
-      iExists _. iSplitR "K"; last by iExists _; iFrame "K".
-      by rewrite _offset_sub_1.
-    - iIntros "[L O]". iDestruct "L" as (sz1) "[% L]".
-      iDestruct "O" as (to) "[O K]". iDestruct "K" as (sz2) "[% K]". simplify_eq.
-      iExists _. iSplitR; first done. rewrite array'_app. iFrame "L".
-      rewrite _offset_sub_2//. iDestruct "O" as "[-> _]". iFrame "K".
+    constructor=>base /=. rewrite monPred_at_sep monPred_at_offsetR /=.
+    apply arrayR_app.
   Qed.
 
 (*
