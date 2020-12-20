@@ -437,8 +437,6 @@ Module PTRS_IMPL : PTRS_INTF.
   | o_sub_ (ty : type) (z : Z)
   | o_base_ (derived base : globname)
   | o_derived_ (base derived : globname)
-  (* deprecated *)
-  | o_num_ (z : Z)
   | o_invalid_.
   Local Instance raw_offset_seg_eq_dec : EqDecision raw_offset_seg.
   Proof. solve_decision. Qed.
@@ -450,7 +448,6 @@ Module PTRS_IMPL : PTRS_INTF.
 
   Definition eval_raw_offset_seg σ (ro : raw_offset_seg) : option Z :=
     match ro with
-    | o_num_ z => Some z
     | o_field_ f => o_field_off σ f
     | o_sub_ ty z => o_sub_off σ ty z
     | o_base_ derived base => o_base_off σ derived base
@@ -480,8 +477,6 @@ Module PTRS_IMPL : PTRS_INTF.
       if decide (der1 = der2 ∧ base1 = base2)
       then []
       else [os2; os1]
-    | (o_num_ z1, off1), (o_num_ z2, off2) =>
-      [(o_num_ (z2 + z1), (off1 + off2)%Z)]
     | (o_invalid_, _), _ => [(o_invalid_, 0%Z)]
     | _, _ => [os2; os1]
     end.
@@ -526,8 +521,6 @@ Module PTRS_IMPL : PTRS_INTF.
     mkOffset σ (o_base_ derived base).
   Definition o_derived σ base derived : offset :=
     mkOffset σ (o_derived_ base derived).
-  Definition o_num z : offset :=
-    [(o_num_ z, z)] ↾ singleton_raw_offset_wf.
 
   Lemma last_last_equiv {X} d {xs : list X} : default d (stdpp.list.last xs) = List.last xs d.
   Proof. elim: xs => // x1 xs /= <-. by case_match. Qed.
@@ -876,22 +869,6 @@ Module PTRS_IMPL : PTRS_INTF.
     move: o1 o2 => [o1 /= +] [o2 /= +]; rewrite /raw_offset_wf => WF1 WF2.
     repeat (case_match; simplify_eq/= => //).
     by rewrite Heqr in WF2.
-  Admitted.
-
-  Definition offset_ptr_raw (z : Z) (p : ptr) : ptr :=
-    (* _offset_ptr p [o_num_ z] *)
-    if decide (z = 0)%Z
-    then p
-    else _offset_ptr p (o_num z).
-  Lemma offset_ptr_combine p o o' :
-    offset_ptr_raw o p <> invalid_ptr ->
-    offset_ptr_raw o' (offset_ptr_raw o p) = offset_ptr_raw (o + o') p.
-  Proof.
-    rewrite /offset_ptr_raw.
-    Arguments _offset_ptr _ !_ /.
-    repeat (case_decide; rewrite ->?Z.add_0_r in *; subst => //=).
-    - destruct p => //=; admit.
-    - destruct p => //=.
   Admitted.
 
   (* XXX False. *)
