@@ -255,17 +255,6 @@ one is [PTRS_IMPL].
   Parameter o_base : genv -> forall (derived base : globname), offset.
   Parameter o_derived : genv -> forall (base derived : globname), offset.
 
-  (** * Deprecated APIs *)
-  (** Offset a pointer by a certain number of bytes. *)
-  Parameter offset_ptr__ : Z -> ptr -> ptr.
-  #[deprecated(since="2020-12-08", note="Use structured offsets instead.")]
-  Notation offset_ptr_ := offset_ptr__.
-
-  Axiom offset_ptr_0__ : forall b,
-    offset_ptr_ 0 b = b.
-  #[deprecated(since="2020-12-08", note="Use structured offsets instead.")]
-  Notation offset_ptr_0_ := offset_ptr_0__.
-
   (** Map pointers to allocation IDs; total on valid pointers thanks to
   [valid_ptr_alloc_id]. *)
   Parameter ptr_alloc_id : ptr -> option alloc_id.
@@ -406,24 +395,48 @@ Instance val_inhabited : Inhabited val := populate (Vint 0).
 
 End VAL_MIXIN.
 
-Module Type PTRS_FULL := PTRS <+ PTRS_DERIVED <+ RAW_BYTES <+ VAL_MIXIN <+ PTRS_MIXIN.
-Declare Module PTRS_FULL_AXIOM : PTRS_FULL.
-Export PTRS_FULL_AXIOM.
+Module Type PTRS_DEPRECATED (Import P : PTRS).
+  (** * Deprecated APIs *)
+  (** Offset a pointer by a certain number of bytes. *)
+  Parameter offset_ptr__ : Z -> ptr -> ptr.
+  #[deprecated(since="2020-12-08", note="Use structured offsets instead.")]
+  Notation offset_ptr_ := offset_ptr__.
 
-(* Unsound! TODO: this axiom is unsound; if [o + o' = 0],
-but [offset_ptr_ o p] overflows into an invalid pointer, then
-[offset_ptr_ o' (offset_ptr_ o p)] is invalid as well.
+  Axiom offset_ptr_0__ : forall b,
+    offset_ptr_ 0 b = b.
+  #[deprecated(since="2020-12-08", note="Use structured offsets instead.")]
+  Notation offset_ptr_0_ := offset_ptr_0__.
 
-But since [offset_ptr_ ] should be deprecated anyway, we defer removing it,
-to update clients only once.
-*)
-Axiom offset_ptr_combine__ : forall p o o',
-  (* TODO: this premise is necessary, but breaks clients. *)
-  (* offset_ptr_ o p <> invalid_ptr -> *)
-  offset_ptr_ o' (offset_ptr_ o p) = offset_ptr_ (o + o') p.
-#[deprecated(since="2020-11-25",
-note="This is UNSOUND. Use higher-level APIs or o_sub_sub.")]
-Notation offset_ptr_combine_ := offset_ptr_combine__.
+  (* Unsound! TODO: this axiom is unsound; if [o + o' = 0],
+  but [offset_ptr_ o p] overflows into an invalid pointer, then
+  [offset_ptr_ o' (offset_ptr_ o p)] is invalid as well.
+
+  But since [offset_ptr_ ] should be deprecated anyway, we defer removing it,
+  to update clients only once.
+  *)
+  Axiom offset_ptr_combine__ : forall p o o',
+    (* TODO: this premise is necessary, but breaks clients. *)
+    (* offset_ptr_ o p <> invalid_ptr -> *)
+    offset_ptr_ o' (offset_ptr_ o p) = offset_ptr_ (o + o') p.
+  #[deprecated(since="2020-11-25",
+  note="This is UNSOUND. Use higher-level APIs or o_sub_sub.")]
+  Notation offset_ptr_combine_ := offset_ptr_combine__.
+End PTRS_DEPRECATED.
+
+Module Type PTR_INTERNAL (Import P : PTRS).
+  (* Useful *)
+  Parameter eval_offset : genv -> offset -> option Z.
+End PTR_INTERNAL.
+
+(* Collect all the axioms. *)
+Module Type PTRS_INTF := PTRS <+ PTRS_DERIVED <+ PTR_INTERNAL <+ RAW_BYTES.
+Module Type PTRS_INTF_DEPRECATED := PTRS_INTF <+ PTRS_DEPRECATED.
+Declare Module PTRS_INTF_AXIOM : PTRS_INTF_DEPRECATED.
+
+(* Plug mixins. *)
+Module Type PTRS_FULL_INTF := PTRS_INTF_DEPRECATED <+ VAL_MIXIN <+ PTRS_MIXIN.
+Module Export PTRS_FULL_AXIOM : PTRS_FULL_INTF :=
+  PTRS_INTF_AXIOM <+ VAL_MIXIN <+ PTRS_MIXIN.
 
 Instance ptr_inhabited : Inhabited ptr := populate nullptr.
 
@@ -604,34 +617,28 @@ Arguments Z.pow_pos _ _ : simpl never.
 Definition glob_addr (σ : genv) (o : obj_name) : option ptr :=
   (fun _ => global_ptr σ.(genv_tu) o) <$> σ.(genv_tu) !! o.
 
-Module Type PTR_INTERNAL (Import P : PTRS).
-  (* Useful *)
-  Parameter eval_offset : genv -> offset -> option Z.
+(* Clients are not SUPPOSED to look at these APIs; they're only meant for
+transition, and ideally we can drop them. *)
+Axiom _offset_ptr_eq : forall tu p o,
+  is_Some (eval_offset tu o) ->
+  Some (p .., o)%ptr = flip offset_ptr_ p <$> eval_offset tu o.
 
-  (* Clients are not SUPPOSED to look at these APIs; they're only meant for
-  transition, and ideally we can drop them. *)
-  Axiom _offset_ptr_eq : forall tu p o,
-    is_Some (eval_offset tu o) ->
-    Some (p .., o)%ptr = flip offset_ptr_ p <$> eval_offset tu o.
+(* NOTE: the multiplication is flipped from path_pred. *)
+Axiom eval_o_sub : forall resolve ty (i : Z),
+  eval_offset resolve (o_sub resolve ty i) =
+    (fun n => i * Z.of_N n) <$> size_of resolve ty.
 
-  (* NOTE: the multiplication is flipped from path_pred. *)
-  Axiom eval_o_sub : forall resolve ty (i : Z),
-    eval_offset resolve (o_sub resolve ty i) =
-      (fun n => i * Z.of_N n) <$> size_of resolve ty.
+Lemma _o_sub_collapse p i n ty resolve
+  (Hsz : size_of resolve ty = Some n) :
+  (p .., o_sub resolve ty i)%ptr = offset_ptr_ (i * Z.of_N n) p.
+Proof.
+  apply (inj Some).
+  by rewrite (_offset_ptr_eq resolve) eval_o_sub Hsz; eauto.
+Qed.
 
-  Lemma _o_sub_collapse p i n ty resolve
-    (Hsz : size_of resolve ty = Some n) :
-    (p .., o_sub resolve ty i)%ptr = offset_ptr_ (i * Z.of_N n) p.
-  Proof.
-    apply (inj Some).
-    by rewrite (_offset_ptr_eq resolve) eval_o_sub Hsz; eauto.
-  Qed.
-
-  #[deprecated(since="2020-11-29", note="Use higher-level APIs and avoid
-  offset_ptr_; this is only migration band-aid.")]
-  Notation offset_ptr_eq := _offset_ptr_eq.
-  #[deprecated(since="2020-11-29", note="Use higher-level APIs and avoid
-  offset_ptr_; this is only migration band-aid.")]
-  Notation o_sub_collapse := _o_sub_collapse.
-End PTR_INTERNAL.
-Declare Module PTR_INTERNAL_AXIOM : PTR_INTERNAL PTRS_FULL_AXIOM.
+#[deprecated(since="2020-11-29", note="Use higher-level APIs and avoid
+offset_ptr_; this is only migration band-aid.")]
+Notation offset_ptr_eq := _offset_ptr_eq.
+#[deprecated(since="2020-11-29", note="Use higher-level APIs and avoid
+offset_ptr_; this is only migration band-aid.")]
+Notation o_sub_collapse := _o_sub_collapse.
