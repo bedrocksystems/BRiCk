@@ -5,8 +5,12 @@
  *)
 (* Import first, because this overrides [Obligation Tactic]. *)
 Require Import ExtLib.Tactics.
+(* Later modules reset [Obligation Tactic] (by importing stdpp). To ensure
+this reset propagates to clients, we must export one of them; we choose to
+export our [base] module. *)
 Require Import stdpp.fin_maps.
-From bedrock.lang.prelude Require Import base avl.
+From bedrock.lang.prelude Require Export base.
+From bedrock.lang.prelude Require Import avl.
 Require Import bedrock.lang.cpp.ast.
 
 Definition require_eq `{EqDecision T} (a b : T) {U} (r : option U) : option U :=
