@@ -3,10 +3,11 @@
  * This software is distributed under the terms of the BedRock Open-Source License.
  * See the LICENSE-BedRock file in the repository root for details.
  *)
+(* Import first, because this overrides [Obligation Tactic]. *)
+Require Import ExtLib.Tactics.
 Require Import stdpp.fin_maps.
 From bedrock.lang.prelude Require Import base avl.
 Require Import bedrock.lang.cpp.ast.
-Require Import ExtLib.Tactics.
 
 Definition require_eq `{EqDecision T} (a b : T) {U} (r : option U) : option U :=
   if decide (a = b) then r else None.
