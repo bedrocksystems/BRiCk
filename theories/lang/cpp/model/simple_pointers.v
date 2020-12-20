@@ -4,11 +4,11 @@
  * See the LICENSE-BedRock file in the repository root for details.
  *)
 
-From bedrock.lang.prelude Require Import base avl bytestring option numbers.
+From stdpp Require Import gmap.
+From bedrock.lang.prelude Require Import base addr avl bytestring option numbers.
 
 From bedrock.lang.cpp Require Import ast.
-From bedrock.lang.cpp.semantics Require Import values sub_module.
-From bedrock.lang.cpp.logic Require Import pred.
+From bedrock.lang.cpp.semantics Require Import sub_module values.
 
 Implicit Types (σ : genv).
 Module canonical_tu.
