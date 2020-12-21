@@ -392,6 +392,94 @@ Module PTRS_IMPL : PTRS_INTF.
   Local Instance raw_offset_eq_dec : EqDecision offset := _.
   Local Instance raw_offset_countable : Countable raw_offset := _.
 
+  Notation isnt o pattern :=
+    (match o with | pattern => False | _ => True end).
+
+  Implicit Types (z : Z).
+  (* Close Scope nat_scope. *)
+  Local Open Scope Z_scope.
+  Section roff_canon.
+    (* Context {σ : genv}. *)
+
+    (* Ugh, big-step or small-step normalization. *)
+    Inductive roff_canon : list raw_offset_seg -> list raw_offset_seg -> Prop :=
+    | o_nil :
+      roff_canon [] []
+    | o_field_canon s d f :
+      (* is_Some (o_field_off σ f) -> *) (* not canonicalization's problem? *)
+      roff_canon s d ->
+      roff_canon (o_field_ f :: s) (o_field_ f :: d)
+    | o_base_canon s d base derived :
+      isnt d (o_derived_ _ _ :: _) ->
+      roff_canon s d ->
+      roff_canon (o_base_ derived base :: s) (o_base_ derived base :: d)
+    (* should paths start from the complete object? If
+    yes, as done by Ramananandro [POPL 2012],
+    o_derived should just cancel out o_base, and this should be omitted. *)
+    (* | o_derived_wf s d derived base :
+      isnt d (o_base_ _ _ :: d) ->
+      roff_canon s d ->
+      roff_canon (o_derived_ base derived :: s) (o_derived_ base derived :: d) *)
+    | o_derived_cancel_canon s d derived base :
+      roff_canon s d ->
+      (* This premise is a hack, but without it, normalization might not be deterministic. Thankfully, paths can't contain o_derived step, so we're good! *)
+      (* roff_canon (o_base_ derived base :: s) (o_base_ derived base :: d) -> *)
+      roff_canon (o_derived_ base derived :: o_base_ derived base :: s) d
+    | o_sub_canon s d ty1 z :
+      match d with
+      | (o_sub_ ty2 _ :: _) => ty1 <> ty2
+      | _ => True
+      end ->
+      0 < z ->
+      (* isnt o (o_sub_ _ _) *)
+      roff_canon s d ->
+      roff_canon (o_sub_ ty1 z :: s) (o_sub_ ty1 z :: d)
+    | o_sub_merge_canon s d ty z1 z2 :
+      0 < z1 + z2 ->
+      roff_canon s (o_sub_ ty z1 :: d) ->
+      roff_canon (o_sub_ ty z2 :: s) (o_sub_ ty (z1 + z2) :: d)
+    .
+  End roff_canon.
+
+  Lemma roff_canon_o_base_inv s d derived base :
+    roff_canon (o_base_ derived base :: s) (o_base_ derived base :: d) ->
+    roff_canon s d.
+  Proof. inversion 1; auto. Qed.
+
+  Lemma roff_canon_o_sub_wf s d ty z :
+    roff_canon s (o_sub_ ty z :: d) ->
+    0 < z.
+  Proof.
+    move E: (o_sub_ _ _ :: _) => d' Hcn.
+    elim: Hcn E; naive_solver.
+  Qed.
+  Lemma roff_canon_o_sub_no_dup s d o ty1 z :
+    roff_canon s (o_sub_ ty1 z :: o :: d) ->
+    match o with
+    | o_sub_ ty2 _ => ty1 <> ty2
+    | _ => True
+    end.
+  Proof.
+    (* inversion 1 => //; case_match; simplify_eq/=; try naive_solver. *)
+    move E: (o_sub_ _ _ :: _) => d' Hcn.
+    elim: Hcn z E; naive_solver.
+  Qed.
+
+  Lemma foo_o_base_cancel_wf s d derived base :
+    roff_canon (o_derived_ base derived :: s) (o_derived_ base derived :: d) ->
+    roff_canon s d.
+  Proof. intros H.
+  (* dependent induction H; eauto. *)
+    inversion H; subst; eauto using roff_canon_o_base_inv.
+    Fail Qed.
+    Abort.
+
+  (* Lemma foo_o_derived_cancel_wf' o s d :
+    roff_canon (o :: s) (o :: d) ->
+    roff_canon s d.
+  Proof. inversion 1; subst; eauto using foo_o_derived_cancel_wf. apply foo_o_derived_cancel_wf in H3. Qed. *)
+
+
   Definition offset_seg_merge (os1 os2 : offset_seg) : list offset_seg :=
     match os1, os2 with
     | (o_sub_ ty1 n1, off1), (o_sub_ ty2 n2, off2) =>
@@ -414,6 +502,144 @@ Module PTRS_IMPL : PTRS_INTF.
   Instance raw_offset_wf_pi ro : ProofIrrel (raw_offset_wf ro) := _.
   Lemma singleton_raw_offset_wf {os} : raw_offset_wf [os].
   Proof. done. Qed.
+
+  Hint Constructors roff_canon : core.
+  Theorem canon_wf_0 src dst :
+    roff_canon src dst ->
+    roff_canon dst dst.
+  Proof.
+    intros Hrc; induction Hrc; eauto.
+    inversion IHHrc; subst; first naive_solver.
+    (* Show that [o_sub_merge_canon] isn't applicable. *)
+    have ?: z0 = 0 by [lia]; subst.
+    by efeed pose proof roff_canon_o_sub_wf.
+  Qed.
+
+  (* Theorem canon_wf_keep o src dst :
+    roff_canon (o :: src) (o :: dst) ->
+    roff_canon src dst.
+  Proof.
+    move E1: (_ :: src) => s1.
+    move E2: (_ :: dst) => s2 Hrc.
+    move: Hrc o src dst E1 E2.
+    induction 1; intros; simplify_eq/=; eauto.
+    - *)
+    (* destruct dst => //.
+    admit.
+    econstructor. *)
+    (* rewrite Z.add_0_l.
+    clear H4. have {H2} Hz1 : 0 < z1 by lia.
+    constructor => //.
+    destruct d. admit.
+    destruct d.
+    econstructor.
+    rewrite left_id_L.
+    eauto.
+    inversion H6; simplify_eq/=; try naive_solver.
+    inversion Hrc; simplify_eq/=; try naive_solver.
+    destruct d. admit.
+    inversion Hfoo; simplify_eq/=; try naive_solver.
+    econstructor => //. *)
+
+  (* Lemma foo ty z1 dst r rs (Hgt : 0 < z1) :
+    raw_offset_wf (zip (o_sub_ ty z1 :: dst) (r :: rs)) ->
+    raw_offset_wf (zip dst rs).
+  Proof.
+    rewrite /raw_offset_wf /raw_offset_collapse.
+      rewrite /merge_elem /=.
+      case: merge_elems => [|o os] IH; simplify_eq/=. by destruct zip.
+
+      destruct o as [[] ?]; simplify_eq/=; try by rewrite -IH.
+      case_decide; simplify_eq/=; repeat (lia || f_equal || done).
+  Admitted. *)
+
+  Theorem canon_wf src dst rs : roff_canon src dst -> raw_offset_wf (zip dst rs).
+  Proof.
+    rewrite /raw_offset_wf /raw_offset_collapse => /canon_wf_0 Hc.
+    move: Hc rs; induction 1 => // {Hc} -[//|r rs] /=; rewrite ?IHHc /=;
+      try by rewrite /merge_elem /offset_seg_merge /=; repeat case_match.
+    - case_match => //. destruct rs => //.
+      case_match => //=. by rewrite decide_False.
+    - (* Idea: invert the result of normalizing [o_sub ty z1 :: d], and show
+      that [o_sub ty (z1 + z2) :: d] normalizes the same way. *)
+      move: IHHc => /(_ (r :: rs)).
+
+      rewrite /merge_elem /=.
+      case: merge_elems => [|o os] IH; simplify_eq/=. by destruct zip.
+
+      destruct o as [[] ?]; simplify_eq/=; try by rewrite -IH.
+      case_decide; simplify_eq/=; repeat (lia || f_equal). done.
+  Qed.
+(*
+    move: IHHc => /(_ (r :: rs)) /foo.
+    rewrite /raw_offset_wf /raw_offset_collapse.
+
+      rewrite /merge_elem /= => IH. rewrite -IH. move: IH.
+      case: merge_elems => //=.
+      => [|o os] IH; simplify_eq/=. by destruct zip.
+
+      destruct o as [[] ?]; simplify_eq/=; try by rewrite -IH.
+      case_decide; simplify_eq/=; repeat (lia || f_equal). done.
+
+
+        rewrite H0.
+        f_equiv.
+        lia.
+        repeat f_equiv => //.
+        repeat case_match; simplify_eq/=.
+        destruct o.
+        congruence.
+        destruct zs, d => //=.
+      repeat case_match.
+      inversion Hc; subst.
+      +  case_match => //. destruct zs => //=.
+        case_match => //=. by rewrite decide_False.
+      destruct d, zs; simplify_eq/=.
+        case_match.
+      admit.
+      {
+        rewrite /merge_elem. IHHc.
+        destruct d as [|[] ds] => //=; eauto.
+        case: zs d IHhc Hc H => //= [|z1 zs] [|? d].
+      by rewrite /merge_elem /offset_seg_merge /=; repeat case_match. }
+      rewrite /merge_elem /=.
+      case E: merge_elems => [|os oss]; simplify_eq.
+      -
+      (* destruct d as [|? [|? d]], zs as [|? [|? zs]]; simplify_eq/= =>//. *)
+      admit.
+      -
+      simpl in IHHc.
+      rewrite /offset_seg_merge; simplify_eq/=.
+      specialize
+      destruct d as [|d0 d], zs as [|z zs] => //=.
+      repeat case_match => //; subst; simplify_eq/=.
+      rewrite /= -E. *)
+
+    (* elim: dst src Hc zs => [//|d dst IHdst] src Hc [//|z zs] /=.
+    inversion Hc; subst => //; rewrite (IHdst s) //.
+      all: try by rewrite /merge_elem /offset_seg_merge /=; repeat case_match. *)
+
+    (* - rewrite (IHdst s);
+      by rewrite /merge_elem /offset_seg_merge /=; repeat case_match.
+    -
+      rewrite (IHdst s) //.
+        by rewrite /merge_elem /offset_seg_merge /=; repeat case_match.
+    -
+    inversion H3; subst => //.
+      + rewrite (IHdst s0) //.
+        by rewrite /merge_elem /offset_seg_merge /=; repeat case_match.
+      +
+        rewrite (IHdst s0) //.
+      econstructor.
+      by .
+
+    induction 1 => -[//|z zs] /=. {
+      rewrite IHHc /=.
+      rewrite /merge_elem /= /offset_seg_merge.
+      repeat case_match => //.
+    }
+    rewrite IHHc /=. *)
+
 
   Definition raw_offset_merge (o1 o2 : raw_offset) : raw_offset :=
     raw_offset_collapse (o1 ++ o2).
