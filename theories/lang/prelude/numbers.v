@@ -11,7 +11,14 @@ Local Set Printing Coercions.	(** Readability *)
 
 (** Please follow stdpp conventions in this file in case any of this
 code gets upstreamed. If code _is_ upstreamed, please remove or
-deprecate the copy here. *)
+deprecate the copy here.
+
+Those conventions are not fully documented explicitly (other than by
+example), but the Iris docs might be somewhat helpful:
+https://gitlab.mpi-sws.org/iris/iris/-/wikis/style-guide
+https://gitlab.mpi-sws.org/iris/iris/-/blob/master/docs/proof_guide.md
+*)
+
 
 (** * Natural numbers [nat] *)
 
