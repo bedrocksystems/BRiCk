@@ -281,7 +281,7 @@ Notation _sub z := (@o_sub _ z) (only parsing).
 Notation _base := (@o_base _) (only parsing).
 Notation _derived := (@o_derived _) (only parsing).
 #[deprecated(since="2020-12-08",note="use heap notations")]
-Notation _offsetL := (flip _offset_ptr) (only parsing).
+Notation _offsetL o p := (_offset_ptr p o) (only parsing).
 
 Section with_Σ.
   Context `{has_cpp : cpp_logic}.
@@ -377,9 +377,6 @@ Section with_Σ.
   Definition _offsetL := _offsetL_aux.(unseal).
   Definition _offsetL_eq : @_offsetL = _ := _offsetL_aux.(seal_eq).
  *)
-
-  Global Instance _offsetL_proper : Proper ((≡) ==> (≡) ==> (≡)) _offsetL.
-  Proof. refine _. Qed.
 
   Lemma _offsetL_dot : forall (o1 o2 : offset) (l : Loc),
       _offsetL o2 (_offsetL o1 l) == _offsetL (_dot o1 o2) l.

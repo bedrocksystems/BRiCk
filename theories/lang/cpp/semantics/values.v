@@ -248,6 +248,8 @@ one is [PTRS_IMPL].
   Axiom o_sub_0 : ∀ σ ty,
     is_Some (size_of σ ty) ->
     o_sub σ ty 0 = o_id.
+  (* TODO: drop (is_Some (size_of σ ty)) via
+  `displacement (o_sub σ ty i) = if (i = 0) then 0 else i * size_of σ ty` *)
 
   (** going up and down the class hierarchy, one step at a time. *)
   Parameter o_base : genv -> forall (derived base : globname), offset.
@@ -293,6 +295,14 @@ one is [PTRS_IMPL].
     size_of σ ty = Some sz -> (sz > 0)%N ->
     (same_property ptr_vaddr (p .., o_sub _ ty n1) (p .., o_sub _ ty n2) ->
     n1 = n2)%ptr.
+
+  Axiom o_sub_sub_nneg : ∀ σ p ty (z1 z2 : Z),
+    (0 <= z1 -> 0 <= z2 ->
+    p .., o_sub σ ty z1 .., o_sub σ ty z2 = p .., o_sub σ ty (z1 + z2))%ptr%Z.
+
+  Axiom o_sub_sub_npos : ∀ σ p ty (z1 z2 : Z),
+    (z1 <= 0 -> z2 <= 0 ->
+    p .., o_sub σ ty z1 .., o_sub σ ty z2 = p .., o_sub σ ty (z1 + z2))%ptr%Z.
 End PTRS.
 
 Module Type PTRS_DERIVED (Import L : PTRS).
