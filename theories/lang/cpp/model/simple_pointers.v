@@ -460,103 +460,16 @@ Module PTRS_IMPL : PTRS_INTF.
     Context {X} (f : X -> X -> list X).
     Context (Hinv : ∀ x1 x2, merge_elems f (f x1 x2) = f x1 x2).
 
-(*
-    Lemma foo xs ys :
-      merge_elems (merge_elems ys) = merge_elems ys ->
-      merge_elems (merge_elems_aux (merge_elems ys) xs) =
-      merge_elems_aux (merge_elems ys) xs.
+    Global Instance invol_merge_elems: Involutive (merge_elems f).
     Proof.
-      move: xs.
-      induction ys => //= xs Hys.
-      Restart.
-      move: ys.
-      (* induction xs => //= ys Hys. *)
-      rewrite /merge_elems.
-      (* induction xs => //= ys Hys.
-      rewrite -IHxs // -/merge_elems.
-      rewrite -merge_elems_app /=.
-
-      rewrite -/merge_elems in Hys IHxs *.
-      rewrite -Hys merge_elems_aux_app -/merge_elems. *)
-
-      induction xs using rev_ind => //= ys Hys.
-      rewrite merge_elems_aux_app -/merge_elems.
-      rewrite /merge_elems.
-      (* rewrite -Hys merge_elems_aux_app -/merge_elems. *)
-      *)
-
-
-    Global Instance: Involutive (merge_elems f).
-    Proof.
-      unfold Involutive.
-      intros xs. induction xs using rev_ind => //.
-      rewrite merge_elems_app.
-      (* elim => [//|x xs IHxs /=]. *)
-      case E: (merge_elems f xs) => [//|y ys /=].
-      (* case => [//|x xs /=].
-      (* elim E: (merge_elems xs) => [//|y ys IHys /=]. *)
-      move E: (merge_elems xs) => ys.
-      elim: ys xs E => [//|y ys IHys xs E /=]. *)
     Admitted.
 
-
-    Lemma foo x xs :
-      merge_elems f (merge_elems f (x :: xs)) = merge_elem f x (merge_elems f xs).
+    Global Instance invol_app_merge_elems: InvolApp (merge_elems f).
     Proof.
-      case: xs => //= x' xs.
-      rewrite /merge_elem.
-
-      case_match => //.
-      rewrite -{2}Hinv.
-
-      case_match => //; simplify_list_eq.
-      by destruct xs.
-      inversion Heql0.
-    Abort.
-    (* Lemma involutive_merge_elems : Involutive merge_elems
-    with invol_app_merge_elems : InvolApp merge_elems. *)
-    Lemma involutive_merge_elems xs : merge_elems f (merge_elems f xs) = merge_elems f xs
-    with invol_app_merge_elems xs1 xs2 :
-      merge_elems f (xs1 ++ xs2) = merge_elems f (merge_elems f xs1 ++ merge_elems f xs2).
-    Proof.
-      - elim: xs => [//|x xs IHxs /=].
-        rewrite -{2}IHxs.
-        case E: (merge_elems f xs) => [//|y ys /=].
-        (* Guarded. *)
-        rewrite invol_app_merge_elems.
-        (* Fail Guarded. *)
-        case: ys E => [//|y' ys'] /= E.
-        +
-        rewrite !app_nil_r.
-        case E1: (f x y) => [//|fx fxs] /=.
-        rewrite E /= in IHxs.
-    Admitted.
-
-
-    Global Instance: Involutive (merge_elems f).
-    Proof.
-      elim => [//|x xs IHxs /=].
-      case E: (merge_elems f xs) => [//|y ys /=].
-      (* case => [//|x xs /=].
-      (* elim E: (merge_elems xs) => [//|y ys IHys /=]. *)
-      move E: (merge_elems xs) => ys.
-      elim: ys xs E => [//|y ys IHys xs E /=]. *)
-    Admitted.
-    Global Instance: InvolApp (merge_elems f).
-    Proof.
-      elim => [|x1 xs1 IHxs1] xs2 /=.
-      - by rewrite invol.
-      -
-      case E: (merge_elems f xs1) IHxs1 => [//|x' xs' //=] IHxs1.
-      by rewrite IHxs1.
-      rewrite IHxs1 -app_assoc. rewrite -merge_elem_cons //.
-      rewrite /merge_elems /=.
-
-      (* Search foldr cons.
-      Search _ fold_right -Equivalence. *)
     Admitted.
   End merge_elem.
   Local Arguments merge_elems {X} f !_ /.
+  Instance raw_offset_collapse_involutive : Involutive raw_offset_collapse := _.
 
   Definition offset_seg_append : offset_seg -> raw_offset -> raw_offset :=
     merge_elem (flip offset_seg_merge).
@@ -582,18 +495,6 @@ Module PTRS_IMPL : PTRS_INTF.
     destruct o1, o2, o3 => //=.
     all: by repeat (case_decide; simpl).
   Qed.
-  Instance: Involutive raw_offset_collapse.
-  Proof.
-    move=> xs.
-    rewrite /raw_offset_collapse /merge_elems/=.
-    induction xs=> //=.
-    (* rewrite foldr_app /=.
-    (* move: {2 3}[] => ys. *)
-    induction xs using rev_ind => //=.
-    rewrite foldr_app /=.
-    case: xs => // x1 [//|x2 [//|x3 xs]]; first exact: foo2.
-    rewrite /= /raw_offset_collapse /merge_elems /merge_elem /=. etrans. apply: offset_seg_merge_inv. *)
-  Abort.
 
   Local Definition test xs :=
     raw_offset_collapse (raw_offset_collapse xs) = raw_offset_collapse xs.
@@ -622,33 +523,6 @@ Module PTRS_IMPL : PTRS_INTF.
     Goal `{ty1 ≠ ty2 → test [(o_sub_ ty1 n1, o1); (o_sub_ ty1 n2, o2); (o_sub_ ty2 n3, o3); (o_field_ f, o4)] }.
     Proof. start. step_false. step_true. step_false. Qed.
   End tests.
-
-(*
-  Instance: InvolApp raw_offset_collapse.
-  Proof.
-    rewrite /raw_offset_collapse.
-    elim => [|x1 xs1 IHxs1] xs2 /=.
-    - admit.
-    - rewrite IHxs1.
-    Search foldr nil.
-  Admitted. *)
-
-  Instance raw_offset_collapse_involutive : Involutive raw_offset_collapse := _.
-  (* Lemma raw_offset_collapse_involutive ro :
-    raw_offset_collapse (raw_offset_collapse ro) = raw_offset_collapse ro.
-  Proof. apply invol. Qed. *)
-(*
-    (* elim: ro => // os1 [//|os2 ro] /= IHro. *)
-    elim: ro => // os ro /= IHro.
-    (* rewrite {1}/raw_offset_collapse {1}/offset_seg_append /=.
-    rewrite (_ : offset_seg_append os (raw_offset_collapse ro) = *)
-  (* Admitted. *)
-
-    (* (offset_seg_append os (raw_offset_collapse ro)) *)
-    rewrite {1}/raw_offset_collapse.
-    (* elim: os. *)
-  Admitted. *)
-
 
   (* This is probably sound, since it allows temporary underflows. *)
   (* Section eval_offset.
@@ -781,7 +655,6 @@ Module PTRS_IMPL : PTRS_INTF.
       | _ => invalid_ptr_
       end
     end.
-  (* Instance offset_ptr_proper : Proper ((≡) ==> (≡) ==> (≡)) _offset_ptr := _. *)
   Notation "p .., o" := (_offset_ptr p o) : ptr_scope.
 
   Lemma offset_ptr_id p : (p .., o_id = p)%ptr.
