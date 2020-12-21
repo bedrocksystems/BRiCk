@@ -127,8 +127,14 @@ Module Type PTRS_DERIVED_MIXIN (Import P : PTRS).
   Definition same_address : ptr -> ptr -> Prop := same_property ptr_vaddr.
   Lemma same_address_eq : same_address = same_property ptr_vaddr.
   Proof. done. Qed.
+
+  Definition pinned_ptr_pure (va : vaddr) (p : ptr) := ptr_vaddr p = Some va.
+  Lemma pinned_ptr_pure_eq :
+    pinned_ptr_pure = fun (va : vaddr) (p : ptr) => ptr_vaddr p = Some va.
+  Proof. done. Qed.
 End PTRS_DERIVED_MIXIN.
 
+Module Type PTRS_INTF := PTRS <+ PTRS_DERIVED.
 (**
 A simple consistency proof for [PTRS]; this one is inspired by Cerberus's
 model of pointer provenance, and resembles CompCert's model.
@@ -138,7 +144,7 @@ extend, but it's unclear how to extend it to support [VALID_PTR_AXIOMS].
 
 In this models, not all valid pointers are pinned to some address.
 *)
-Module SIMPLE_PTRS_IMPL : PTRS.
+Module SIMPLE_PTRS_IMPL : PTRS_INTF.
   Import address_sums.
 
   Definition ptr' : Set := alloc_id * option vaddr.
@@ -426,7 +432,7 @@ This is more complex than [SIMPLE_PTRS_IMPL], but will be necessary to justify [
 In this model, all valid pointers are pinned, but this is not meant
 to be guaranteed, and is indeed not guaranteed by the other model.
 *)
-Module PTRS_IMPL : PTRS.
+Module PTRS_IMPL : PTRS_INTF.
   Import canonical_tu.
 
   Inductive raw_offset_seg : Set :=
