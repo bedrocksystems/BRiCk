@@ -481,20 +481,6 @@ Module PTRS_IMPL : PTRS_INTF.
     move=> /= [o1 off1] [o2 off2].
     destruct o1, o2 => //=; by repeat (case_decide; simpl).
   Qed.
-  Lemma foo2 x1 x2 :
-    raw_offset_collapse (raw_offset_collapse [x1; x2]) = raw_offset_collapse [x1; x2].
-  Proof.
-    rewrite /= app_nil_r.
-    apply: offset_seg_merge_inv.
-  Qed.
-  Lemma foo3 x1 x2 x3 :
-    raw_offset_collapse (raw_offset_collapse [x1; x2; x3]) = raw_offset_collapse [x1; x2; x3].
-  Proof.
-    rewrite /= app_nil_r /= /flip.
-    move: x1 x2 x3 => [o1 ?] [o2 ?] [o3 ?].
-    destruct o1, o2, o3 => //=.
-    all: by repeat (case_decide; simpl).
-  Qed.
 
   Local Definition test xs :=
     raw_offset_collapse (raw_offset_collapse xs) = raw_offset_collapse xs.
