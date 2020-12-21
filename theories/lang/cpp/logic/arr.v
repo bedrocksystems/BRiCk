@@ -43,64 +43,12 @@ Section offsetR.
   Lemma monPred_at_offsetR offs R p :
     (_offsetR offs R) p -|- R (p ., offs).
   Proof. by rewrite _offsetR_eq. Qed.
-
-  (* Lemma invalidO_False (R : Rep) : _offsetR path_pred.invalidO R -|- False%I.
-  Proof.
-    constructor=>p. rewrite monPred_at_pure _offsetR_eq /_offsetR_def /=.
-    split'; last by apply bi.False_elim. by iDestruct 1 as (to) "[% ?]".
-  Qed. *)
 End offsetR.
-
-Section sub.
-  Context `{Σ : cpp_logic, resolve : genv}.
-
-  (* Lemma _sub_ty ty1 ty2 i :
-    size_of resolve ty1 = size_of resolve ty2 → _sub ty1 i = _sub ty2 i.
-  Proof. intros Hsz1. rewrite _sub_eq /_sub_def. Hsz1. Qed. *)
-
-  (* Lemma _sub_offsetO sz ty i R :
-    size_of resolve ty = Some sz →
-    _offsetR (_sub ty i) R = _offsetR (offsetO (i * Z.of_N sz)) R.
-  Proof. intros Hsz. by rewrite _sub_eq /_sub_def Hsz comm_L. Qed. *)
-
-  (* Lemma _sub_False ty i R :
-    size_of resolve ty = None → _offsetR (_sub ty i) R -|- False%I.
-  Proof.
-    intros Hsz.
-    rewrite  Hsz /= invalidO_False.
-  Qed. *)
-End sub.
 
 Implicit Types (p : ptr) (σ : genv).
 
 Section validR.
   Context `{Σ : cpp_logic}.
-
-  (** PDS: Revisit and simplify [Offset2] *)
-  (* Lemma _offsetR_valid (offs : Offset) (R : Rep) :
-    validR |-- offs |-> R -* offs |-> validR.
-  Proof.
-    constructor=>p /=. rewrite monPred_at_validR monPred_at_wand.
-    iIntros "#V" (? <-%ptr_rel_elim). rewrite !monPred_at_offsetR.
-    rewrite monPred_at_validR. iApply (_off_valid with "[$V $O]").
-  Qed. *)
-
-  (** [validR] and [as_ Rep] *)
-  (* Lemma validR_at_emp : validR -|- as_Rep (λ p, _at (_eq p) emp).
-  Proof.
-    constructor=>p /=. rewrite monPred_at_validR. by rewrite plogic._at_empSP.
-  Qed. *)
-  (* Lemma validR_at_l (R : Rep) : validR ** R -|- as_Rep (λ p, p |-> R).
-  Proof.
-    rewrite validR_at_emp. constructor=>p/=. rewrite monPred_at_sep/=.
-    rewrite !plogic._at_eq_any. by rewrite monPred_at_emp left_id comm.
-  Qed.
-  Lemma validR_at_r (R : Rep) : R ** validR -|- as_Rep (λ p, p |-> R).
-  Proof. by rewrite comm validR_at_l. Qed. *)
-
-  (* Lemma validR_at_offsetR (offs : Offset) (R : Rep) :
-    validR ** offs |-> R -|- as_Rep (λ p, p |-> offs |-> R).
-  Proof. by rewrite validR_at_l. Qed. *)
 
   Lemma monPred_at_validR p : validR p -|- valid_ptr p.
   Proof. by rewrite validR_eq. Qed.
@@ -133,83 +81,6 @@ Section validR.
     rewrite monPred_at_offsetR monPred_at_validR monPred_at_only_provable.
     apply valid_o_sub_size.
   Qed.
-
-  (* Lemma _at_validR_r p (R : Rep) : p |-> (R ** validR) -|- p |-> R.
-  Proof. by rewrite _at_sep _at_validR -_at_valid_loc. Qed.
-  Lemma _at_validR_l p (R : Rep) : p |-> (validR ** R) -|- p |-> R.
-  Proof. by rewrite comm _at_validR_r. Qed. *)
-
-  Lemma _at_offsetR_validR p (offs : offset) :
-    _at p (_offsetR offs validR) -|- valid_ptr (_offset_ptr p offs).
-  Proof. by rewrite _at_offsetL_offsetR _at_validR. Qed.
-
-  (** [validR] and [offsetO] *)
-  (** For better or worse, [offsetO] bakes in validity *)
-  (** PDS: This is questionable. *)
-  (* Lemma _offsetO_validR i R :
-    _offsetR (offsetO i) R |-- _offsetR (offsetO i) validR.
-  Proof.
-    constructor=>p /=. rewrite !monPred_at_offsetR /offsetO/=.
-    setoid_rewrite monPred_at_validR. f_equiv=>to. by iIntros "[[$ #$] ?]".
-  Qed.
-  Lemma _offsetO_validR_emp i :
-    _offsetR (offsetO i) validR -|- _offsetR (offsetO i) emp.
-  Proof.
-    constructor=>p /=. rewrite !monPred_at_offsetR /offsetO/=.
-    setoid_rewrite monPred_at_emp. setoid_rewrite monPred_at_validR.
-    f_equiv=>to. by rewrite right_id -assoc -bi.persistent_sep_dup.
-  Qed.
-  Lemma _offsetO_validR_r i (R : Rep) :
-    _offsetR (offsetO i) (R ** validR) -|- _offsetR (offsetO i) R.
-  Proof.
-    by rewrite _offsetR_sep _offsetO_validR_emp -_offsetR_sep right_id.
-  Qed.
-  Lemma _offsetO_validR_l i (R : Rep) :
-    _offsetR (offsetO i) (validR ** R) -|- _offsetR (offsetO i) R.
-  Proof. by rewrite comm _offsetO_validR_r. Qed.
-  Lemma _offsetO_0 R : _offsetR (offsetO 0) R -|- validR ** R.
-  Proof.
-    constructor=>p /=. rewrite monPred_at_offsetR /offsetO/= offset_ptr_0_.
-    rewrite monPred_at_sep monPred_at_validR. split'.
-    - iDestruct 1 as (?) "[[-> $] $]".
-    - iIntros "[V R]". iExists p. by iFrame "V R".
-  Qed. *)
-  (* Lemma _offsetO_add R a b :
-    _offsetR (offsetO a) emp **	(** PDS: This is unfortunate *)
-    _offsetR (offsetO (a + b)) R -|-
-    _offsetR (offsetO a) (_offsetR (offsetO b) R).
-  Proof.
-    constructor=>p /=. rewrite monPred_at_sep !monPred_at_offsetR.
-    setoid_rewrite monPred_at_offsetR.
-    rewrite /offsetO/= -offset_ptr_combine_. split'.
-    - iDestruct 1 as "[A R]". iDestruct "A" as (?) "[[-> VA] _]".
-      iExists _. by iFrame "R VA".
-    - iDestruct 1 as (?) "[[-> VA] R]". iFrame "R". iExists _. by iFrame "VA".
-  Qed. *)
-
-  (** [_dot] does not imply validity *)
-  (** [_offsetR invalidO] is False, and so does imply validity *)
-  (** The following wrap [offsetO] or [invalidO] and so imply validity *)
-  (** [_sub_def], [_field_def], [_base_def], [_super := _base],
-      [_derived_def], [offset_for] *)
-
-  (** [validR] and [_sub] *)
-  (** For better or worse, [_sub] bakes in validity *)
-  (* Lemma sub_validR_emp {resolve : genv} ty i :
-    _offsetR (_sub ty i) validR -|- _offsetR (_sub ty i) emp.
-  Proof.
-    destruct (size_of resolve ty) as [sz| ] eqn:Hsz.
-    - by rewrite !(_sub_offsetO sz)// _offsetO_validR_emp.
-    - by rewrite !_sub_False.
-  Qed.
-  Lemma sub_validR_r {resolve : genv} ty i (R : Rep) :
-    _offsetR (_sub ty i) (R ** validR) -|- _offsetR (_sub ty i) R.
-  Proof.
-    by rewrite _offsetR_sep sub_validR_emp -_offsetR_sep right_id.
-  Qed.
-  Lemma sub_validR_l {resolve : genv} ty i (R : Rep) :
-    _offsetR (_sub ty i) (validR ** R) -|- _offsetR (_sub ty i) R.
-  Proof. by rewrite comm sub_validR_r. Qed. *)
 
   Lemma _sub_0 {resolve : genv} ty R :
     is_Some (size_of resolve ty) ->
@@ -322,25 +193,6 @@ Section arrR.
     - by rewrite _offsetR_emp.
     - by rewrite _offsetR_sep IHRs.
   Qed.
-
-(*
-  Lemma big_sepL_offsetR_add (f g : nat -> Z) ty (Rs : list Rep) (h : Rep -> Rep) :
-    ([∗ list] i ↦ Ri ∈ Rs, .[ ty ! f i + g i ] |-> h Ri) ⊣⊢
-    [∗ list] i ↦ Ri ∈ Rs, .[ ty ! f i ] |-> .[ ty ! g i ] |-> h Ri.
-  Proof.
-    elim: Rs => /= [//|R' Rs IHRs].
-    (* constructor=> p/=.
-    rewrite _offsetR_eq /_offsetR_def /=.
-    rewrite !monPred_at_sep /=. *)
-    f_equiv.
-    iIntros.
-    (* TODO: observe that the whole range is valid. and restrict f and g. *)
-    iApply _sub_offsetR_add.
-    admit.
-    (* iApply "H". *)
-    (* rewrite (_offsetR_sep _). (bi_sep _ _)). *)
-  Admitted.
-*)
 
   Lemma _offsetR_dot (o1 o2 : offset) (R : Rep) :
     o1 |-> o2 |-> R -|- o1 ., o2 |-> R.
@@ -570,10 +422,6 @@ Section array.
     rewrite !monPred_at_sep /=. rewrite !monPred_at_offsetR /=.
     split'.
     - iDestruct 1 as (sz) "[% A]".
-
-
-
-
 
       p .[ ty ! iZ ] |-> R x -*
       p .[ ty ! iZ + 1 ] |-> arrayR ty R (drop (S i) xs) -* Q) →
