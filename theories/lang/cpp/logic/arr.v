@@ -193,17 +193,15 @@ Section arrR.
 
   Lemma arrR_cons ty R Rs :
     is_Some (size_of σ ty) → (* this side condition is annoying *)
-    arrR ty (R :: Rs) -|- type_ptrR ty ** R ** _offsetR (_sub ty 1) (arrR ty Rs).
+    arrR ty (R :: Rs) -|- type_ptrR ty ** R ** .[ ty ! 1] |-> arrR ty Rs.
   Proof.
     intros. rewrite arrR_eq /arrR_def /=.
     rewrite _offsetR_sep !_sub_0 // (assoc bi_sep); f_equiv.
-    setoid_rewrite Nat2Z.inj_succ; setoid_rewrite <-Z.add_1_l.
-    rewrite big_sepL_offsetR.
-    f_equiv => i r. rewrite !_offsetR_dot.
-    constructor => p /=. rewrite _offsetR_eq/_offsetR_def/=.
-    f_equiv.
-    rewrite -o_sub_sub_nneg; [ | lia | lia ].
-    rewrite -offset_ptr_dot. reflexivity.
+    rewrite big_sepL_offsetR. f_equiv => i r.
+    apply Rep_equiv_at => p.
+    rewrite !_at_offsetL_offsetR.
+    rewrite Nat2Z.inj_succ -Z.add_1_l.
+    rewrite o_sub_sub_nneg //; lia.
   Qed.
 
   (*
