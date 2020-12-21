@@ -378,9 +378,6 @@ Section with_Σ.
   Definition _offsetL_eq : @_offsetL = _ := _offsetL_aux.(seal_eq).
  *)
 
-  Global Instance _offsetL_proper : Proper ((≡) ==> (≡) ==> (≡)) _offsetL.
-  Proof. refine _. Qed.
-
   Lemma _offsetL_dot : forall (o1 o2 : offset) (l : Loc),
       _offsetL o2 (_offsetL o1 l) == _offsetL (_dot o1 o2) l.
   Proof.

@@ -90,11 +90,6 @@ Section validR.
     by rewrite monPred_at_offsetR /= o_sub_0 // offset_ptr_id.
   Qed.
 
-  (* PG: Misplaced *)
-  Lemma Rep_at_wand_iff (P Q : Rep) p :
-    (P ∗-∗ Q) p ⊣⊢ (P p ∗-∗ Q p).
-  Proof. by rewrite /bi_wand_iff monPred_at_and !Rep_wand_force. Qed.
-
   Lemma _sub_offsetR_add {resolve : genv} ty a b R :
     _sub ty a |-> validR ⊢
     _offsetR (_sub ty (a + b)) R ∗-∗
@@ -170,35 +165,12 @@ Section arrR.
   Lemma arrR_nil ty : arrR ty [] -|- emp.
   Proof. by rewrite arrR_eq /arrR_def /=. Qed.
 
-  (* PG : misplaced *)
-  Lemma _offsetR_emp o : _offsetR o emp ⊣⊢ emp.
-  Proof.
-    rewrite _offsetR_eq /_offsetR_def.
-    constructor=>/= p.
-    by rewrite !monPred_at_emp.
-  Qed.
-  (* From plogic, misplaced. *)
-  Lemma _offsetR_id (R : Rep) :
-      _offsetR o_id R -|- R.
-  Proof.
-    rewrite _offsetR_eq /_offsetR_def.
-    constructor=>/= p.
-    by rewrite offset_ptr_id.
-  Qed.
-
   Lemma big_sepL_offsetR (o : offset) {T} (Rs : list T) : forall F,
     (o |-> [∗list] i ↦ x ∈ Rs , F i x) -|- [∗list] i ↦ x ∈ Rs , o |-> F i x.
   Proof.
     induction Rs; simpl; intros.
     - by rewrite _offsetR_emp.
     - by rewrite _offsetR_sep IHRs.
-  Qed.
-
-  Lemma _offsetR_dot (o1 o2 : offset) (R : Rep) :
-    o1 |-> o2 |-> R -|- o1 ., o2 |-> R.
-  Proof.
-    constructor =>p/=.
-    by rewrite _offsetR_eq/_offsetR_def/= offset_ptr_dot.
   Qed.
 
   Global Instance arrR_inv ty R Rs : Observe ([| is_Some (size_of σ ty) |]) (arrR ty (R :: Rs)).

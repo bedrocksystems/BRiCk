@@ -36,6 +36,7 @@ Bind Scope bi_scope with RepO.
 Section with_cpp.
   Context `{Σ : cpp_logic}.
 
+  (** See also [Rep_equiv_at] and [Rep_entails_at]. *)
   Lemma Rep_ext (P Q : Rep) :
       (forall p : ptr, P p -|- Q p) ->
       P -|- Q.
@@ -113,6 +114,9 @@ Section with_cpp.
   Proof. split'. apply monPred_wand_force. by iIntros "a" (? <-%ptr_rel_elim). Qed.
   Lemma Rep_impl_force (R1 R2 : Rep) p : (R1 -->> R2) p -|- R1 p -->> R2 p.
   Proof. split'. apply monPred_impl_force. by iIntros "a" (? <-%ptr_rel_elim). Qed.
+  Lemma Rep_at_wand_iff (P Q : Rep) p :
+    (P ∗-∗ Q) p ⊣⊢ (P p ∗-∗ Q p).
+  Proof. by rewrite /bi_wand_iff monPred_at_and !Rep_wand_force. Qed.
 
   Definition _offsetR_def (o : offset) (r : Rep) : Rep :=
     as_Rep (fun base => r.(monPred_at) (_offset_ptr base o)).
@@ -141,11 +145,16 @@ Section with_cpp.
     Timeless r → Timeless (_offsetR o r).
   Proof. rewrite _offsetR_eq. apply _. Qed.
 
+  Lemma _offsetR_emp o : _offsetR o emp ⊣⊢ emp.
+  Proof.
+    rewrite _offsetR_eq /_offsetR_def.
+    constructor=> p /=. by rewrite !monPred_at_emp.
+  Qed.
   Lemma _offsetR_sep o r1 r2 :
     _offsetR o (r1 ** r2) -|- _offsetR o r1 ** _offsetR o r2.
   Proof.
-    rewrite _offsetR_eq /_offsetR_def. rewrite -as_Rep_sep. f_equiv=>p.
-      by rewrite monPred_at_sep.
+    rewrite _offsetR_eq /_offsetR_def -as_Rep_sep.
+    constructor=> p /=. by rewrite monPred_at_sep.
   Qed.
 
   Global Instance _offsetR_fractional o (r : Qp → Rep) :
@@ -171,8 +180,23 @@ Section with_cpp.
   Proof.
     intros. apply observe_elim, _offsetR_observe. exact: observe_intro.
   Qed.
+  (* Pulled in from plogic. *)
+  Lemma _offsetR_id (R : Rep) :
+    _offsetR o_id R -|- R.
+  Proof.
+    rewrite _offsetR_eq /_offsetR_def.
+    constructor=>/= p.
+    by rewrite offset_ptr_id.
+  Qed.
 
-  (** [_wat base R] states that [R base] holds.
+  Lemma _offsetR_dot (o1 o2 : offset) (R : Rep) :
+    _offsetR o1 (_offsetR o2 R) -|- _offsetR (o_dot o1 o2) R.
+  Proof.
+    constructor =>p/=.
+    by rewrite _offsetR_eq/_offsetR_def/= offset_ptr_dot.
+  Qed.
+
+  (** [_at base R] states that [R base] holds.
 
       NOTE This is "weakly at"
    *)
@@ -197,6 +221,16 @@ Section with_cpp.
   Proof. rewrite _at_eq. apply _. Qed.
   Global Instance _at_timeless : Timeless P -> Timeless (_at base P).
   Proof. rewrite _at_eq. apply _. Qed.
+
+  Lemma Rep_equiv_at (P Q : Rep)
+    (HPQ : forall p : ptr, _at p P -|- _at p Q) :
+    P -|- Q.
+  Proof. constructor => p. move: HPQ => /(_ p). by rewrite _at_eq. Qed.
+
+  Lemma Rep_entails_at (P Q : Rep)
+    (HPQ : forall p : ptr, _at p P |-- _at p Q) :
+    P |-- Q.
+  Proof. constructor => p. move: HPQ => /(_ p). by rewrite _at_eq. Qed.
 
 (*
   (* still useful? *)
@@ -551,7 +585,7 @@ Section with_cpp.
     Fractional (anyR (resolve:=resolve) ty).
   Proof.
     rewrite anyR_eq /anyR_def. intros q1 q2.
-    rewrite -as_Rep_sep. f_equiv=>p. split'.
+    rewrite -as_Rep_sep.  f_equiv=>p. split'.
     { iDestruct 1 as "[V|U]".
       - iDestruct "V" as (v) "[V1 V2]".
         iSplitL "V1"; iLeft; iExists v; [iFrame "V1"|iFrame "V2"].
@@ -692,16 +726,18 @@ Section with_cpp.
   #[global] Instance svalidR_affine : Affine svalidR.
   Proof. rewrite svalidR_eq; refine _. Qed.
 
-  Theorem svalidR_validR : svalidR |-- validR.
+  Lemma svalidR_validR : svalidR |-- validR.
   Proof.
     rewrite validR_eq/validR_def svalidR_eq/svalidR_def.
     constructor =>p /=. by apply strict_valid_relaxed.
   Qed.
-  Theorem type_ptrR_svalidR : forall σ ty, type_ptrR σ ty |-- svalidR.
+  Lemma type_ptrR_svalidR σ ty : type_ptrR σ ty |-- svalidR.
   Proof.
     rewrite type_ptrR_eq/type_ptrR_def svalidR_eq/svalidR_def.
     constructor =>p /=. by apply type_ptr_strict_valid.
   Qed.
+  Lemma type_ptrR_validR σ ty : type_ptrR σ ty |-- validR.
+  Proof. by rewrite type_ptrR_svalidR svalidR_validR. Qed.
 
   #[global] Instance svalidR_validR_observe : Observe validR svalidR.
   Proof. rewrite svalidR_validR. red; iIntros "#$". Qed.
