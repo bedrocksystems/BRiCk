@@ -8,13 +8,16 @@ From iris.bi Require Import monpred big_op.
 From iris.proofmode Require Import tactics.
 From bedrock.lang Require Import prelude.numbers bi.observe bi.big_op.
 (* From bedrock.auto Require Import cpp. *)
-From bedrock.lang Require Import cpp.
+From bedrock.lang.cpp.semantics Require Import types genv.
+From bedrock.lang.cpp.logic Require Import pred path_pred heap_pred.
+From bedrock.lang.cpp Require Import heap_notations.
+From bedrock.lang.cpp.semantics Require Import values.
 
 Local Set Printing Coercions.	(** Readability *)
 
 (** PDS: Mispalced *)
-Arguments N.of_nat _ : simpl never.
-Arguments N.to_nat _ : simpl never.
+Local Arguments N.of_nat _ : simpl never.
+Local Arguments N.to_nat _ : simpl never.
 
 Local Arguments _offsetR {_ _} _ _%bi_scope.
 
@@ -61,11 +64,11 @@ Section validR.
   Proof. by rewrite _at_eq validR_eq. Qed.
   Lemma _at_svalidR p : p |-> svalidR -|- strict_valid_ptr p.
   Proof. by rewrite _at_eq svalidR_eq. Qed.
-  Lemma _at_type_ptrR ty σ p : p |-> type_ptrR ty -|- type_ptr ty p.
+  Lemma _at_type_ptrR σ ty p : p |-> type_ptrR ty -|- type_ptr ty p.
   Proof. by rewrite _at_eq type_ptrR_eq. Qed.
 
   Lemma type_ptrR_validR_plus_one (ty : type) σ :
-    type_ptrR ty ⊢@{RepI (Σ := Σ)} (.[ ty ! 1 ]) |-> validR .
+    type_ptrR ty ⊢@{RepI (Σ := Σ)} .[ ty ! 1 ] |-> validR .
   Proof.
     constructor => p.
     rewrite monPred_at_offsetR monPred_at_type_ptrR monPred_at_validR.
@@ -193,7 +196,7 @@ Section arrR.
     setoid_rewrite Nat2Z.inj_succ; setoid_rewrite <-Z.add_1_l.
     rewrite big_sepL_offsetR.
     f_equiv => i r. rewrite !_offsetR_dot.
-    constructor =>p /=. rewrite _offsetR_eq/_offsetR_def/=.
+    constructor => p /=. rewrite _offsetR_eq/_offsetR_def/=.
     f_equiv.
     rewrite -o_sub_sub_nneg; [ | lia | lia ].
     rewrite -offset_ptr_dot. reflexivity.
