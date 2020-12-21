@@ -296,7 +296,6 @@ one is [PTRS_IMPL].
     (same_property ptr_vaddr (p .., o_sub _ ty n1) (p .., o_sub _ ty n2) ->
     n1 = n2)%ptr.
 
-  (* XXX move into above module. *)
   Axiom o_sub_sub_nneg : ∀ σ p ty (z1 z2 : Z),
     (0 <= z1 -> 0 <= z2 ->
     p .., o_sub σ ty z1 .., o_sub σ ty z2 = p .., o_sub σ ty (z1 + z2))%ptr%Z.
