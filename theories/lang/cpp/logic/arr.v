@@ -285,10 +285,7 @@ Section array.
     rewrite Z2Nat.id //. apply. lia.
   Qed.
 
-  Global Instance _at_observe {p} {P Q : Rep} :
-    Observe Q P ->
-    Observe (_at p Q) (_at p P).
-  Proof. rewrite /Observe => ->. by rewrite _at_pers. Qed.
+  Local Existing Instance _at_observe.
 
   Lemma _at_arrayR_sub_type_ptrR_nat (i : nat) p xs
     (Hlen : i < length xs) :
