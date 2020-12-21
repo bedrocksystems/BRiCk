@@ -259,81 +259,104 @@ Section array.
     arrayR ty R (x :: xs) -|- type_ptrR ty ** R x ** .[ ty ! 1 ] |-> arrayR ty R xs.
   Proof. rewrite arrayR_eq. exact: arrR_cons. Qed.
 
-  Lemma arrayR_sub_type_ptr_nat (i : nat) p xs
+  Lemma arrayR_sub_type_ptr_nat (i : nat) xs
     (Hlen : i < length xs) :
-    Observe (p .[ ty ! i ] |-> type_ptrR ty) (p |-> arrayR ty R xs).
+    Observe (.[ ty ! i ] |-> type_ptrR ty) (arrayR ty R xs).
   Proof.
     apply: observe_intro_persistent.
-    elim: xs i p Hlen => [|x xs IHxs] [|i] p /= Hlen; try lia;
-      rewrite arrayR_cons !_at_sep.
-    { rewrite o_sub_0 // offset_ptr_id. iDestruct 1 as "[$ _]". }
-    { rewrite _at_offsetL_offsetR /flip.
+    elim: xs i Hlen => [|x xs IHxs] [|i] /= Hlen; try lia;
+      rewrite arrayR_cons.
+    { rewrite o_sub_0 // _offsetR_id. iDestruct 1 as "[$ _]". }
+    {
       rewrite (IHxs i); try lia.
+      constructor=> p' /=.
+      rewrite !monPred_at_sep !monPred_at_offsetR.
+      (* XXX can't be done at the Rep level *)
       rewrite o_sub_sub_nneg; try lia.
       rewrite Z.add_1_l Nat2Z.inj_succ.
       iDestruct 1 as "(_ & _ & $)". }
   Qed.
 
-  Lemma arrayR_sub_type_ptr (i : Z) p xs :
+  Lemma arrayR_sub_type_ptr (i : Z) xs :
     (0 ≤ i < Z.of_nat $ length xs)%Z →
-    Observe (p .[ ty ! i ] |-> type_ptrR ty) (p |-> arrayR ty R xs).
+    Observe (.[ ty ! i ] |-> type_ptrR ty) (arrayR ty R xs).
   Proof.
-    intros []. have := arrayR_sub_type_ptr_nat (Z.to_nat i) p xs.
+    intros []. have := arrayR_sub_type_ptr_nat (Z.to_nat i) xs.
     rewrite Z2Nat.id //. apply. lia.
   Qed.
 
-  Lemma arrayR_sub_svalid (i : Z) p xs  :
-    (0 ≤ i < Z.of_nat $ length xs)%Z →
-    Observe (p .[ ty ! i ] |-> svalidR) (p |-> arrayR ty R xs).
-  Proof. intros. rewrite -type_ptrR_svalidR. exact: arrayR_sub_type_ptr. Qed.
+  Global Instance _at_observe {p} {P Q : Rep} :
+    Observe Q P ->
+    Observe (_at p Q) (_at p P).
+  Proof. rewrite /Observe => ->. by rewrite _at_pers. Qed.
 
-  Lemma arrayR_sub_valid p xs (i : Z) :
-    (0 ≤ i < Z.of_nat $ length xs)%Z →
-    Observe (p .[ ty ! i ] |-> validR) (p |-> arrayR ty R xs).
-  Proof. intros. rewrite -svalidR_validR. exact: arrayR_sub_svalid. Qed.
-
-  (* XXX should use Observe *)
-  Lemma arrayR_type_ptr i xs (base : ptr) :
-    i < length xs →
-    base |-> arrayR ty R xs -|-
-    base |-> arrayR ty R xs ** base .[ ty ! i ] |-> type_ptrR ty.
+  Lemma _at_arrayR_sub_type_ptrR_nat (i : nat) p xs
+    (Hlen : i < length xs) :
+    Observe (p .[ ty ! i ] |-> type_ptrR ty) (p |-> arrayR ty R xs).
   Proof.
-    intros.
-    iSplit; last iApply bi.sep_elim_l.
-    iApply observe_elim.
-    apply arrayR_sub_type_ptr; lia.
+    rewrite -_at_offsetL_offsetR //. by apply _at_observe, arrayR_sub_type_ptr_nat.
   Qed.
 
-  (* XXX should use Observe *)
+  Lemma _at_arrayR_sub_type_ptrR (i : Z) p xs
+    (Hlen : (0 ≤ i < Z.of_nat $ length xs)%Z) :
+    Observe (p .[ ty ! i ] |-> type_ptrR ty) (p |-> arrayR ty R xs).
+  Proof.
+    rewrite -_at_offsetL_offsetR //. by apply _at_observe, arrayR_sub_type_ptr.
+  Qed.
+
+  Lemma arrayR_sub_svalidR (i : Z) xs  :
+    (0 ≤ i < Z.of_nat $ length xs)%Z →
+    Observe (.[ ty ! i ] |-> svalidR) (arrayR ty R xs).
+  Proof. intros. rewrite -type_ptrR_svalidR. exact: arrayR_sub_type_ptr. Qed.
+
+  Lemma arrayR_sub_validR (i : Z) xs :
+    (0 ≤ i < Z.of_nat $ length xs)%Z →
+    Observe (.[ ty ! i ] |-> validR) (arrayR ty R xs).
+  Proof. intros. rewrite -svalidR_validR. exact: arrayR_sub_svalidR. Qed.
+
   (* Unlike [arrayR_type_ptr], we get past-the-end validity, but only for lists of length >= 1. *)
-  Lemma arrayR_valid i xs p
-    (Hlen : length xs >= 1)
+  Lemma arrayR_valid i xs
+    (Hlen : 1 <= length xs)
+    (Hi : i ≤ length xs) :
+    Observe (.[ ty ! i ] |-> validR) (arrayR ty R xs).
+  Proof.
+    apply: observe_intro_persistent.
+    set j := pred i.
+    have Hj : j < length xs by simpl; lia.
+    rewrite (arrayR_sub_type_ptr j) //; try lia; subst j.
+    apply Rep_entails_at => p. rewrite _at_pers.
+    iIntros "#H".
+    case: i Hi Hj => [|i] /= Hi Him; first
+      by rewrite type_ptrR_validR.
+    rewrite type_ptrR_validR_plus_one.
+    rewrite !_at_offsetL_offsetR o_sub_sub_nneg; try lia.
+    by rewrite comm_L Z.add_1_l Nat2Z.inj_succ.
+  Qed.
+
+  Lemma _at_arrayR_valid i xs p
+    (Hlen : 1 <= length xs)
+    (Hi : i ≤ length xs) :
+    Observe (p .[ ty ! i ] |-> validR) (p |-> arrayR ty R xs).
+  Proof.
+    rewrite -_at_offsetL_offsetR.
+    by apply _at_observe, arrayR_valid.
+  Qed.
+
+  (** Closer to [array'_valid] *)
+  Lemma _at_arrayR_valid' i xs p
+    (Hlen : 1 <= length xs)
     (Hi : i ≤ length xs) :
     p |-> arrayR ty R xs -|-
     p |-> arrayR ty R xs ** p .[ ty ! i ] |-> validR.
   Proof.
-    iSplit; last iApply bi.sep_elim_l.
-    set j := pred i.
-    have Hj : j < length xs by simpl; lia.
-    rewrite (arrayR_type_ptr j) //. rewrite -assoc.
-    iIntros "($ & #H)". iFrame "H".
-    subst j.
-    case: i Hi Hj => [|i] /= Hi Him; first
-    by rewrite type_ptrR_svalidR svalidR_validR.
-    rewrite type_ptrR_validR_plus_one.
-    rewrite _at_offsetL_offsetR /flip.
-    rewrite o_sub_sub_nneg; try lia.
-    by rewrite comm_L Z.add_1_l Nat2Z.inj_succ.
+    split'; last exact: bi.sep_elim_l.
+    by apply observe_elim, _at_arrayR_valid.
   Qed.
 
-  (** Nothing to compare to *)
-  (* Lemma arrayR_cons x xs base :
-    arrayR ty R (x :: xs) base -|-
-    base |-> R x ** arrayR ty R xs (base .[ty ! 1]).
-  Proof. Admitted. *)
-  (** Compared to [array'_split] this is a bientailment and does not need an index *)
+  (* TODO: backfill versions of the following using Observe and on Reps. *)
 
-  Lemma arrayR_app xs ys base :
+  (** Compared to [array'_split] this is a bientailment and does not need an index *)
+  Lemma _at_arrayR_app' xs ys base :
     arrayR ty R (xs ++ ys) base -|-
     arrayR ty R xs base **
     arrayR ty R ys (base .[ ty ! length xs ]).
@@ -343,27 +366,27 @@ Section array.
     - rewrite !arrayR_cons.
       rewrite !monPred_at_sep -!assoc !monPred_at_offsetR.
       rewrite IH.
-      rewrite o_sub_sub_nneg /id // ?Z.add_1_l ?Nat2Z.inj_succ //.
+      rewrite o_sub_sub_nneg // ?Z.add_1_l ?Nat2Z.inj_succ //.
       lia.
   Qed.
 
   (** Compared to [array'_split], this takes [i] as first *)
-  Lemma arrayR_split i xs base :
+  Lemma _at_arrayR_split i xs base :
     i ≤ length xs →
     arrayR ty R xs base |--
     arrayR ty R (take i xs) base **
     arrayR ty R (drop i xs) (base .[ ty ! i ]).
   Proof.
-    intros. by rewrite -{1}(take_drop i xs) arrayR_app take_length_le.
+    intros. by rewrite -{1}(take_drop i xs) _at_arrayR_app' take_length_le.
   Qed.
   (** Compared to [array'_combine], this takes [i] is first *)
-  Lemma arrayR_combine i xs base :
+  Lemma _at_arrayR_combine i xs base :
     arrayR ty R (take i xs) base **
     arrayR ty R (drop i xs) (base .[ ty ! i ]) |--
     arrayR ty R xs base.
   Proof.
     rewrite -{3}(take_drop i xs). destruct (Nat.le_gt_cases i (length xs)).
-    - by rewrite -{3}(take_length_le xs i)// -arrayR_app.
+    - by rewrite -{3}(take_length_le xs i)// -_at_arrayR_app'.
     - rewrite take_ge ?drop_ge /=; [ |lia|lia].
       by rewrite right_id_L bi.sep_elim_l.
   Qed.
@@ -378,12 +401,12 @@ Section array.
   (** Compared to [arrayR_split], [arrayR_combine], this is a
   bientailment, it omits locations and indices, and it does not
   specialize to take/drop. *)
-  Lemma arrayR_app' xs ys :
+  Lemma _at_arrayR_app'' xs ys :
     arrayR ty R (xs ++ ys) -|-
     arrayR ty R xs ** .[ ty ! length xs ] |-> arrayR ty R ys.
   Proof.
     constructor=>base /=. rewrite monPred_at_sep monPred_at_offsetR /=.
-    apply arrayR_app.
+    apply _at_arrayR_app'.
   Qed.
 
 (*
