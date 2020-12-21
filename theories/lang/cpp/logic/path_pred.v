@@ -281,7 +281,7 @@ Notation _sub z := (@o_sub _ z) (only parsing).
 Notation _base := (@o_base _) (only parsing).
 Notation _derived := (@o_derived _) (only parsing).
 #[deprecated(since="2020-12-08",note="use heap notations")]
-Notation _offsetL := (flip _offset_ptr) (only parsing).
+Notation _offsetL o p := (_offset_ptr p o) (only parsing).
 
 Section with_Σ.
   Context `{has_cpp : cpp_logic}.
