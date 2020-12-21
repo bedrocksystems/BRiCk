@@ -77,6 +77,10 @@ Section validR.
 
   (** [validR] and [_at] *)
 
+  (* Lemma _at_offsetR_validR p (o : offset) :
+    _at p (_offsetR o validR) -|- valid_ptr (_offset_ptr p o).
+  Proof. by rewrite _at_offsetL_offsetR _at_validR. Qed. *)
+
   Lemma _sub_inv ty i resolve :
     _offsetR (_sub ty i) validR |-- [| is_Some (size_of resolve ty) |].
   Proof.
@@ -187,7 +191,7 @@ Section arrR.
     iIntros "[[$ _] _]".
   Qed.
 
-  Lemma arrR_cons' ty R Rs :
+  Lemma arrR_cons ty R Rs :
     is_Some (size_of σ ty) → (* this side condition is annoying *)
     arrR ty (R :: Rs) -|- type_ptrR ty ** R ** _offsetR (_sub ty 1) (arrR ty Rs).
   Proof.
@@ -207,6 +211,7 @@ Section arrR.
    *)
 
   (* Debatable, more than dropping size_of from o_sub_0. *)
+  (*
   Axiom type_ptr_size : forall p σ ty,
     type_ptr ty p |-- [| is_Some (size_of σ ty) |].
   Local Instance type_ptr_size_observe ty p :
@@ -230,6 +235,7 @@ Section arrR.
     iDestruct (observe [| is_Some (size_of σ ty) |] with "H") as %?;
     by rewrite arrR_cons'.
   Qed.
+  *)
 
   (* TODO Same game here: *)
   Lemma arrR_singleton ty R
