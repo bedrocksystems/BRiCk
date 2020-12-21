@@ -110,12 +110,12 @@ Section validR.
   Qed.
 End validR.
 
-Definition arrR_def `{Σ : cpp_logic} (ty : type) {σ : genv} (Rs : list Rep) : Rep :=
+Definition arrR_def `{Σ : cpp_logic} {σ : genv} (ty : type) (Rs : list Rep) : Rep :=
   [∗ list] i ↦ Ri ∈ Rs, _offsetR (_sub ty (Z.of_nat i)) (type_ptrR ty ** Ri).
 Definition arrR_aux : seal (@arrR_def). Proof. by eexists. Qed.
 Definition arrR := arrR_aux.(unseal).
 Definition arrR_eq : @arrR = _ := arrR_aux.(seal_eq).
-Arguments arrR {_ _} _ {_} _%list_scope : assert.
+Arguments arrR {_ _ _} _ _%list_scope : assert.
 Instance: Params (@arrR) 4 := {}.	(** TODO: [genv] weakening *)
 
 Definition arrayR_def `{Σ : cpp_logic} {X : Type} {σ : genv} (ty : type) (P : X → Rep) (xs : list X) : Rep :=
