@@ -346,13 +346,9 @@ Section with_cpp.
       | Base _ =>
         this |-> revert_identity cls (wpd_bases ti ρ cls this dests Q)
       | _ =>
-        match type_of_path cls d.1 with
-        | Some ty =>
-          wpd (resolve:=resolve) ⊤ ti ρ cls this d (
-            (* TODO backwards compat [this ., offset_for _ cls d.1 |-> tblockR ty **] *)
-                     wpd_members ti ρ cls this is' Q)
-        | None => False
-        end
+        wpd (resolve:=resolve) ⊤ ti ρ cls this d (
+              (* TODO backwards compat [this ., offset_for _ cls d.1 |-> tblockR ty **] *)
+              wpd_members ti ρ cls this is' Q)
       end
     end.
 
