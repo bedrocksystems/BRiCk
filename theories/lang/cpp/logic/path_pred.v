@@ -1,5 +1,5 @@
 (*
- * Copyright (C) BedRock Systems Inc. 2019 Gregory Malecha
+ * Copyright (C) BedRock Systems Inc. 2019-2020
  *
  * SPDX-License-Identifier: LGPL-2.1 WITH BedRock Exception for use over network, see repository root for details.
  *)
@@ -13,104 +13,11 @@ Notation Loc := ptr (only parsing).
 Section with_Σ.
   Context `{has_cpp : cpp_logic}.
 
-  (*
-  (* locations represent C++ computations that produce an address.
-   *)
-  Definition Loc : Type := ptr.
-  (*
-    { _location : ptr -> mpred
-    ; _loc_unique : forall p1 p2, _location p1 ** _location p2 |-- [| p1 = p2 |]
-    ; _loc_valid : forall p1, _location p1 |-- valid_ptr p1
-    ; _loc_persist : forall p, Persistent (_location p)
-    ; _loc_affine : forall p, Affine (_location p)
-    ; _loc_timeless : forall p, Timeless (_location p)
-    }.
-   *)
-(*
-  Global Existing Instances _loc_persist _loc_affine _loc_timeless.
-
-  Global Instance _location_unique loc p1 p2 :
-    Observe2 [| p1 = p2 |] (_location loc p1) (_location loc p2).
-  Proof.
-    apply: observe_2_intro_persistent. apply bi.wand_intro_r, _loc_unique.
-  Qed.
-  Global Instance _location_valid loc p :
-    Observe (valid_ptr p) (_location loc p).
-  Proof. apply: observe_intro_persistent. apply _loc_valid. Qed.
- *)
- *)
-
-  Global Instance Loc_Equiv : Equiv Loc := @eq ptr.
-
-  Global Instance Loc_Equivalence : Equivalence (≡@{Loc}).
-  Proof. refine _. Qed.
-
-  (*
-  Global Instance _location_proper : Proper ((≡) ==> eq ==> (≡)) _location.
-  Proof. by intros ??? ??->. Qed.
-  Global Instance _location_mono : Proper ((≡) ==> eq ==> (⊢)) _location.
-  Proof. intros l1 l2 HL p1 p2 ->. by rewrite HL. Qed.
-  Global Instance _location_flip_mono : Proper ((≡) ==> eq ==> flip (⊢)) _location.
-  Proof. intros l1 l2 HL p1 p2 ->. by rewrite -HL. Qed.
-   *)
-  (* [mpred] implication between [Loc] *)
-  Definition Loc_impl (l1 l2 : Loc) : mpred := [! l1 = l2 !].
-
-  Global Instance Loc_impl_proper : Proper ((≡) ==> (≡) ==> (≡)) Loc_impl.
-  Proof. solve_proper. Qed.
-  Global Instance Loc_impl_persistent l1 l2 : Persistent (Loc_impl l1 l2).
-  Proof. apply _. Qed.
-  Global Instance Loc_impl_affine l1 l2 : Affine (Loc_impl l1 l2).
-  Proof. apply _. Qed.
-  Global Instance Loc_impl_timeless l1 l2 : Timeless (Loc_impl l1 l2).
-  Proof. apply _. Qed.
-
-  (* [mpred] equivalence of [Loc] *)
-  Definition Loc_equiv (l1 l2 : Loc) : mpred := [! l1 = l2 !].
-
-  Global Instance Loc_equiv_proper : Proper ((≡) ==> (≡) ==> (≡)) Loc_equiv.
-  Proof. solve_proper. Qed.
-  Global Instance Loc_equiv_persistent l1 l2 : Persistent (Loc_equiv l1 l2).
-  Proof. apply _. Qed.
-  Global Instance Loc_equiv_affine l1 l2 : Affine (Loc_equiv l1 l2).
-  Proof. apply _. Qed.
-  Global Instance Loc_equiv_timeless l1 l2 : Timeless (Loc_equiv l1 l2).
-  Proof. apply _. Qed.
-
-  Lemma Loc_equiv_impl l1 l2 :
-    Loc_equiv l1 l2 -|- Loc_impl l1 l2 ** Loc_impl l2 l1.
-  Proof.
-    iSplit.
-    - iIntros "%". subst. by iSplit.
-    - iIntros "[% _]"; eauto.
-  Qed.
-
-  Lemma Loc_equiv_refl l : |-- Loc_equiv l l.
-  Proof. by eauto. Qed.
-  Lemma Loc_equiv_sym l1 l2 : Loc_equiv l1 l2 |-- Loc_equiv l2 l1.
-  Proof. by eauto. Qed.
-  Lemma Loc_equiv_trans l1 l2 l3 :
-    Loc_equiv l1 l2 |-- Loc_equiv l2 l3 -* Loc_equiv l1 l3.
-  Proof.
-    rewrite Loc_equiv_impl; iIntros "[% %] %". subst; eauto.
-  Qed.
-
   (** absolute locations *)
   #[local] Notation invalid := invalid_ptr.
 
   #[deprecated(since="2020-12-07",note="no longer needed")]
   Notation _eq := (@id ptr) (only parsing).
-  (*
-  Definition _eq_def (p : ptr) : Loc.
-  refine
-    {| _location p' := [| p = p' |] ** valid_ptr p' |}.
-  abstract (intros; iIntros "[[-> _] [#H _]]"; iFrame "#").
-  abstract (intros; iIntros "[-> #H]"; iFrame "#").
-  Defined.
-  Definition _eq_aux : seal (@_eq_def). Proof. by eexists. Qed.
-  Definition _eq := _eq_aux.(unseal).
-  Definition _eq_eq : @_eq = _ := _eq_aux.(seal_eq).
-   *)
 
   (** [_eqv v] represents the pointer of a [val]. The resulting pointer
       is invalid if [v] is not a [ptr].
@@ -141,12 +48,14 @@ Section with_Σ.
   Arguments addr_of : simpl never.
   Notation "a &~ b" := (addr_of a b) (at level 30, no associativity).
 
+  (*
   Global Instance addr_of_proper : Proper ((≡) ==> eq ==> (≡)) addr_of.
   Proof. rewrite addr_of_eq. solve_proper. Qed.
   Global Instance addr_of_mono : Proper ((≡) ==> eq ==> (⊢)) addr_of.
   Proof. rewrite addr_of_eq. solve_proper. Qed.
   Global Instance addr_of_flip_mono : Proper ((≡) ==> eq ==> flip (⊢)) addr_of.
   Proof. rewrite addr_of_eq=>l1 l2 HL p1 p2->/=. by rewrite HL. Qed.
+   *)
 
   Global Instance addr_of_persistent : Persistent (addr_of o l).
   Proof. rewrite addr_of_eq. apply _. Qed.
@@ -163,25 +72,6 @@ Section with_Σ.
       addr_of a b ** addr_of a c |-- [| b = c |].
   Proof. intros. iIntros "[A B]". iApply (observe_2 with "A B"). Qed.
 
-  Global Instance addr_of_observe_Loc_eq loc p :
-    Observe (Loc_equiv loc p) (loc &~ p).
-  Proof.
-    rewrite /Loc_equiv addr_of_eq /addr_of_def.
-    iIntros "%"; eauto.
-  Qed.
-
-  Lemma addr_of_Loc_eq : forall l p, l &~ p |-- Loc_equiv l p.
-  Proof. intros. iIntros "L". iApply (observe with "L"). Qed.
-
-  Global Instance addr_of_observe_Loc_impl loc p :
-    Observe (Loc_impl loc p) (loc &~ p).
-  Proof.
-    rewrite/Observe. rewrite addr_of_Loc_eq Loc_equiv_impl bi.sep_elim_l. auto.
-  Qed.
-
-  Lemma addr_of_Loc_impl : forall l p, l &~ p |-- Loc_impl l p.
-  Proof. intros. iIntros "L". iApply (observe with "L"). Qed.
-
   (** [valid_loc]
       - same as [addr_of] except that it hides the existential quantifier
    *)
@@ -193,20 +83,6 @@ Section with_Σ.
   Definition valid_loc_eq : valid_loc = @valid_loc_def := valid_loc_aux.(seal_eq).
    *)
 
-  Global Instance valid_loc_proper : Proper ((≡) ==> (≡)) valid_loc.
-  Proof. solve_proper. Qed.
-  Global Instance valid_loc_mono : Proper ((≡) ==> (⊢)) valid_loc.
-  Proof. solve_proper. Qed.
-  Global Instance valid_loc_flip_mono : Proper ((≡) ==> flip (⊢)) valid_loc.
-  Proof. move =>l1 l2 HL/=. by destruct HL. Qed.
-
-  Global Instance valid_loc_persistent : Persistent (valid_loc l).
-  Proof. apply _. Qed.
-  Global Instance valid_loc_affine : Affine (valid_loc l).
-  Proof. apply _. Qed.
-  Global Instance valid_loc_timeless : Timeless (valid_loc l).
-  Proof. apply _. Qed.
-
   (*
   Lemma valid_loc_rew l l' : l ≡ l' |-- valid_loc l -* valid_loc l'.
   Proof.
@@ -214,12 +90,6 @@ Section with_Σ.
     iIntros "#A". iDestruct 1 as (p) "L"; iExists p. by iApply "A".
   Qed.
   *)
- Lemma addr_of_loc_rew l1 l2 p : Loc_equiv l1 l2 |-- l1 &~ p -* l2 &~ p.
-  Proof.
-    rewrite addr_of_eq /addr_of_def.
-    iIntros "-> $".
-  Qed.
-
 
   (** offsets *)
   Notation Offset := offset (only parsing).
@@ -235,11 +105,6 @@ Section with_Σ.
 
   Global Existing Instances _off_persist _off_affine _off_timeless.
  *)
-
-  #[global] Instance Offset_Equiv : Equiv Offset := @eq offset.
-
-  Global Instance Offset_Equivalence : Equivalence (≡@{Offset}).
-  Proof. refine _. Qed.
 
   (*
   Local Definition invalidO : Offset.
@@ -379,23 +244,16 @@ Section with_Σ.
  *)
 
   Lemma _offsetL_dot : forall (o1 o2 : offset) (l : Loc),
-      _offsetL o2 (_offsetL o1 l) == _offsetL (_dot o1 o2) l.
+      _offsetL o2 (_offsetL o1 l) = _offsetL (_dot o1 o2) l.
   Proof.
     intros; by rewrite /flip offset_ptr_dot.
   Qed.
 
   #[deprecated(since="2020-12-08",note="use 'assoc'")]
   Lemma _dot_dot : forall (o1 o2 l: offset),
-      _dot o2 (_dot o1 l) == _dot (_dot o2 o1) l.
+      _dot o2 (_dot o1 l) = _dot (_dot o2 o1) l.
   Proof.
     intros; by rewrite assoc.
-  Qed.
-
-  Lemma _offsetL_Loc_impl : forall l1 l2 o,
-      Loc_equiv l1 l2 |-- Loc_equiv (_offsetL o l1) (_offsetL o l2).
-  Proof.
-    intros. rewrite /Loc_equiv /=.
-    iIntros "->"; eauto.
   Qed.
 
 End with_Σ.

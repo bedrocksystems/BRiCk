@@ -95,19 +95,19 @@ Module Type Expr.
 
     (* `this` is a prvalue *)
     Axiom wp_prval_this : forall ty Q,
-      (valid_ptr (_this ρ) ** True) //\\ Q (Vptr $ _this ρ) emp
+          valid_ptr (_this ρ) ** Q (Vptr $ _this ρ) emp
       |-- wp_prval (Ethis ty) Q.
 
 
     (* variables are lvalues *)
     Axiom wp_lval_lvar : forall ty x Q,
-        valid_ptr (_local ρ x) ** Q (_local ρ x) emp
-        |-- wp_lval (Evar (Lname x) ty) Q.
+          valid_ptr (_local ρ x) ** Q (_local ρ x) emp
+      |-- wp_lval (Evar (Lname x) ty) Q.
 
     (* what about the type? if it exists *)
     Axiom wp_lval_gvar : forall ty x Q,
-            valid_ptr (_global x) ** Q (_global x) emp
-        |-- wp_lval (Evar (Gname x) ty) Q.
+          valid_ptr (_global x) ** Q (_global x) emp
+      |-- wp_lval (Evar (Gname x) ty) Q.
 
     (* [Emember a f ty] is an lvalue by default except when
      * - where [m] is a member enumerator or a non-static member function, or
@@ -140,8 +140,7 @@ Module Type Expr.
     Axiom wp_prval_member : forall ty vc a m Q,
         match vc with
         | Prvalue => False
-          (* As above, this doesn't seem to exist because our AST explicitly contains
-             [Cl2r] casts.
+          (* This does not occur because our AST explicitly contains [Cl2r] casts.
            *)
         | _ => False
         end
@@ -153,7 +152,7 @@ Module Type Expr.
     Axiom wp_xval_member : forall ty vc a m Q,
         match vc with
         | Prvalue => False
-          (* As above, this doesn't exist because our AST explicitly contains [Cl2r] casts.
+          (* This does not occur because our AST explicitly contains [Cl2r] casts.
            *)
         | Xvalue =>
           wp_xval a (fun base free =>
@@ -937,7 +936,7 @@ Module Type Expr.
         with [T = int].
 
         To maintain similarity with the rest of the system, we
-        the C++ abstract machine "implments" these destructors as
+        the C++ abstract machine "implements" these destructors as
         (essentially) a function with the specification:
 
            \pre this |-> anyR ty 1

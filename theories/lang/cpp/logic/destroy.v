@@ -57,7 +57,7 @@ Section destroy.
       | Some dtor => destruct_obj dtor cls this Q
       end
     | Tarray t sz =>
-      fold_right (fun i Q =>
+      fold_right (fun i Q => valid_ptr (this .[ t ! Z.of_nat i ]) **
          destruct_val t (this .[ t ! Z.of_nat i ]) dtor Q) Q (List.rev (seq 0 (N.to_nat sz)))
     | _ => emp
     end.

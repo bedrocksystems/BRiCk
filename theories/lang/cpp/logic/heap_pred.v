@@ -208,12 +208,12 @@ Section with_cpp.
 
   Global Instance _at_ne l : Proper (dist n ==> dist n) (_at l).
   Proof. rewrite _at_eq. solve_proper. Qed.
-  Global Instance _at_proper : Proper ((=) ==> (≡) ==> (≡)) _at.
+  Global Instance _at_proper : Proper ((≡) ==> (≡)) (_at p).
   Proof. rewrite _at_eq. solve_proper. Qed.
-  Global Instance _at_mono : Proper ((=) ==> (⊢) ==> (⊢)) _at.
+  Global Instance _at_mono : Proper ((⊢) ==> (⊢)) (_at p).
   Proof. rewrite _at_eq. solve_proper. Qed.
-  Global Instance _at_flip_mono : Proper ((=) ==> flip (⊢) ==> flip (⊢)) _at.
-  Proof. rewrite _at_eq/_at_def=>l1 l2 HL r1 r2 HR/=. by rewrite HL HR. Qed.
+  Global Instance _at_flip_mono : Proper (flip (⊢) ==> flip (⊢)) (_at p).
+  Proof. rewrite _at_eq/_at_def=> ? r1 r2 HR/=. by rewrite HR. Qed.
 
   Global Instance _at_persistent : Persistent P -> Persistent (_at base P).
   Proof. rewrite _at_eq. apply _. Qed.
@@ -244,14 +244,6 @@ Section with_cpp.
   Global Instance _at_valid_loc_observe l R : Observe (valid_loc l) (_at l R).
   Proof. apply: observe_intro. by rewrite -_at_valid_loc. Qed.
  *)
-
-  Lemma _at_loc_rw (l1 l2 : ptr) (R : Rep) :
-      Loc_impl l1 l2 ** _at l1 R |-- _at l2 R.
-  Proof. iIntros "[-> $]". Qed.
-
-  Lemma _at_loc_rwe (l1 l2 : ptr) (R : Rep) :
-      Loc_equiv l1 l2 |-- (_at l1 R ∗-∗ _at l2 R).
-  Proof. iIntros "->"; eauto. Qed.
 
   #[deprecated(since="2020-12-08",note="more cumbersome than necessary")]
   Lemma _at_loc_materialize (l : ptr) (r : Rep) :
@@ -673,6 +665,7 @@ Section with_cpp.
     - by rewrite -H1.
   Qed.
 End with_cpp.
+Global Instance: Params (@_at) 3 := {}.
 Global Instance: Params (@cptr) 3 := {}.
 
 Instance: Params (@as_Rep) 2 := {}.

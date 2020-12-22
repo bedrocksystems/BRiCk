@@ -104,7 +104,7 @@ Notation ".[ t ! n ]" := ((@o_sub _ t n%Z))
 Notation "p ., o" := (_offset_ptr p o)
   (at level 11, left associativity, only printing,
    format "p  .,  o").
-Notation "p ., o" := (_offset_ptr p o)
+Notation "p ., o" := (o_dot p o)
   (at level 11, left associativity, only printing,
    format "p  .,  o").
 
