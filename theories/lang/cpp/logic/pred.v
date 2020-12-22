@@ -559,6 +559,16 @@ Declare Module Export VALID_PTR : VALID_PTR_AXIOMS.
 Section with_cpp.
   Context `{Σ : cpp_logic}.
 
+  (* TODO (SEMANTICS):
+     set p := p ., (.[ty ! -i])
+     ...
+     we end up with `_valid_ptr vt p |-- _valid_ptr vt (p ., (.[ty ! -i]))
+     which isn't true.
+
+     NOTE: Modify `strict_valid_ptr_sub` and this so that they impose an
+       extra pre-condition on the structure of `p` (namely that it doesn't
+       have negative offsets(?))
+   *)
   Lemma valid_ptr_sub {σ : genv} p ty i vt :
     0 <= i -> _valid_ptr vt (p .., o_sub σ ty i) |-- _valid_ptr vt p.
   Proof.
