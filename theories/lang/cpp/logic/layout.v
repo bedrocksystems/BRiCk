@@ -12,23 +12,9 @@ From bedrock.lang.cpp.logic Require Import
      pred path_pred heap_pred translation_unit.
 Require Import bedrock.lang.cpp.semantics.
 Require Import bedrock.lang.cpp.logic.z_to_bytes.
+Require Import bedrock.lang.cpp.logic.arr.
 
 Require Import bedrock.lang.cpp.heap_notations.
-
-(* TODO this should be removed *) 
-Section array.
-  Context `{Σ : cpp_logic} {resolve:genv}.
-  Context {T : Type}.
-  Variable sz : Z.
-  Variable (P : T -> Rep).
-
-  Fixpoint array' (ls : list T) (p : ptr) : mpred :=
-    match ls with
-    | nil => valid_ptr p
-    | l :: ls =>
-      p |-> P l ** array' ls (offset_ptr_ sz p)
-    end.
-End array.
 
 Section with_Σ.
   Context `{Σ : cpp_logic} {resolve:genv}.
@@ -85,8 +71,9 @@ Section with_Σ.
   Axiom raw_bytes_of_sizeof : forall ty v rs,
      raw_bytes_of_val resolve ty v rs -> size_of resolve ty = Some (N.of_nat $ length rs).
 
+  (* TODO confirm that this is correct with respect to our model. *)
   Definition rawR (rs : list raw_byte) (q : Qp) : Rep :=
-    as_Rep (array' 1 (fun r => primR T_uchar q (Vraw r)) rs).
+    arrayR T_uchar (fun r => primR T_uchar q (Vraw r)) rs.
 
   Axiom primR_to_rawR: forall ty q v,
     primR ty q v -|- Exists rs, rawR rs q ** [| raw_bytes_of_val resolve ty v rs |] ** type_ptrR ty.
@@ -155,11 +142,12 @@ Section with_Σ.
   Axiom raw_int_byte_primR : forall q r,
       primR T_uchar q (Vraw (raw_int_byte r)) -|- primR T_uchar q (Vint (Z.of_N r)).
 
+
+  (** TODO: determine whether this is correct with respect to pointers *)
   Lemma decode_uint_primR : forall q sz (x : Z),
     primR (Tint sz Unsigned) q (Vint x) -|-
     Exists l : list N,
-      as_Rep (array' 1 (fun c => primR (Tint W8 Unsigned) q (Vint c))
-             (Z.of_N <$> l)) **
+      arrayR (Tint W8 Unsigned) (fun c => primR (Tint W8 Unsigned) q (Vint c)) (Z.of_N <$> l) **
       type_ptrR (Tint sz Unsigned) **
       [| decodes_uint l x |].
   Proof.
@@ -167,14 +155,19 @@ Section with_Σ.
     rewrite primR_to_rawR. setoid_rewrite raw_byte_of_int_eq.
     iSplit.
     - iDestruct 1 as (rs) "(Hraw&H&$)". iDestruct "H" as %[l [Hdec ->]]. iExists _. iSplit => //. clear Hdec.
-      rewrite /rawR. iStopProof. constructor => p /=. iIntros "Hraw".
-      iInduction l as [ |b l] "IH" forall (p) => //; csimpl. rewrite raw_int_byte_primR.
-      iDestruct "Hraw" as "[$ Hrs]". iApply "IH" => //; iPureIntro.
+      rewrite /rawR arrayR_eq/arrayR_def. iStopProof.
+      (* TODO i need to do induction here because the [Proper] instances are too weak. *)
+      induction l => // /=.
+      rewrite !arrR_cons; eauto.
+      rewrite -IHl /=. f_equiv. f_equiv.
+        by rewrite raw_int_byte_primR.
     - iDestruct 1 as (l) "(Harray&$&H)". iDestruct "H" as %Hdec.
-      iExists _. iSplit => //; eauto with iFrame. rewrite /rawR. clear Hdec.
-      iStopProof. constructor => p /=. iIntros "Hraw".
-      iInduction l as [ |b l] "IH" forall (p) => //; csimpl. rewrite raw_int_byte_primR.
-      iDestruct "Hraw" as "[$ Hrs]". iApply "IH" => //; iPureIntro.
+      iExists _. iSplit => //; eauto with iFrame. clear Hdec.
+      rewrite /rawR arrayR_eq/arrayR_def; iStopProof.
+      induction l => // /=.
+      rewrite !arrR_cons; eauto.
+      rewrite -IHl /=. f_equiv. f_equiv.
+        by rewrite raw_int_byte_primR.
   Qed.
 
   Axiom decode_uint_anyR : forall q sz,

@@ -118,14 +118,6 @@ Definition arrR_eq : @arrR = _ := arrR_aux.(seal_eq).
 Arguments arrR {_ _ _} _ _%list_scope : assert.
 Instance: Params (@arrR) 4 := {}.	(** TODO: [genv] weakening *)
 
-Definition arrayR_def `{Σ : cpp_logic} {X : Type} {σ : genv} (ty : type) (P : X → Rep) (xs : list X) : Rep :=
-  arrR ty (P <$> xs).
-Definition arrayR_aux : seal (@arrayR_def). Proof. by eexists. Qed.
-Definition arrayR := arrayR_aux.(unseal).
-Definition arrayR_eq : @arrayR = _ := arrayR_aux.(seal_eq).
-Arguments arrayR {_ _ _ _} _ _%function_scope _%list_scope : assert.
-Instance: Params (@arrayR) 5 := {}.	(** TODO: [genv] weakening *)
-
 Section arrR.
   Context `{Σ : cpp_logic, σ : genv}.
 
@@ -242,6 +234,14 @@ Section arrR.
     type_ptrR ty ** R.
   Proof. by rewrite arrR_eq /arrR_def /= right_id _offsetR_sep !_sub_0. Qed.
 End arrR.
+
+Definition arrayR_def `{Σ : cpp_logic} {X : Type} {σ : genv} (ty : type) (P : X → Rep) (xs : list X) : Rep :=
+  arrR ty (P <$> xs).
+Definition arrayR_aux : seal (@arrayR_def). Proof. by eexists. Qed.
+Definition arrayR := arrayR_aux.(unseal).
+Definition arrayR_eq : @arrayR = _ := arrayR_aux.(seal_eq).
+Arguments arrayR {_ _ _ _} _ _%function_scope _%list_scope : assert.
+Instance: Params (@arrayR) 5 := {}.	(** TODO: [genv] weakening *)
 
 Section array.
   Context `{Σ : cpp_logic, resolve : genv}.
