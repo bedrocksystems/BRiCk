@@ -568,6 +568,15 @@ Section with_cpp.
      NOTE: Modify `strict_valid_ptr_sub` and this so that they impose an
        extra pre-condition on the structure of `p` (namely that it doesn't
        have negative offsets(?))
+
+     Paolo: good catch. Maybe the axiom should be that if [p ., (.[ty ! i])] and [p .,
+     (.[ty ! j])] are both valid, then everything in between is valid.
+     OTOH, `arrayR` exposes stronger reasoning principles, possibly making this
+     unnecessary.
+
+     The intended model was that, if [p'] normalizes to [p ., [ ty ! i ]],
+     then [valid_ptr p'] implies validity of all pointers from [p] to [p']. As
+     you point out, that model doesn't actually justify [strict_valid_ptr_sub].
    *)
   Lemma valid_ptr_sub {σ : genv} p ty i vt :
     0 <= i -> _valid_ptr vt (p .., o_sub σ ty i) |-- _valid_ptr vt p.
