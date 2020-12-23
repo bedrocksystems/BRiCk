@@ -785,6 +785,7 @@ Module SimpleCPP.
       (* To decide: do we want the "p nonnull" clause? *)
       [| p <> nullptr |] **
       (Exists align, [| @align_of resolve ty = Some align |] ** aligned_ptr align p) **
+      [| is_Some (size_of resolve ty) |] **
 
       strict_valid_ptr p ** valid_ptr (p .., o_sub resolve ty 1).
       (* TODO: inline valid_ptr, and assert validity of the range, like we should do in tptsto!
@@ -798,13 +799,13 @@ Module SimpleCPP.
 
     Lemma type_ptr_strict_valid resolve ty p :
       type_ptr (resolve := resolve) ty p |-- strict_valid_ptr p.
-    Proof. iDestruct 1 as "(_ & _ & $ & _)". Qed.
+    Proof. iDestruct 1 as "(_ & _ & _ & $ & _)". Qed.
 
     Lemma type_ptr_valid_plus_one resolve ty p :
       (* size_of resolve ty = Some sz -> *)
       type_ptr (resolve := resolve) ty p |--
       valid_ptr (p .., o_sub resolve ty 1).
-    Proof. iDestruct 1 as "(_ & _ & _ & $)". Qed.
+    Proof. iDestruct 1 as "(_ & _ & _ & _ & $)". Qed.
 
     Lemma type_ptr_nonnull resolve ty p :
       type_ptr (resolve := resolve) ty p |-- [| p <> nullptr |].
@@ -814,6 +815,9 @@ Module SimpleCPP.
       type_ptr (resolve := σ) ty p |--
       Exists align, [| @align_of σ ty = Some align |] ** aligned_ptr align p.
     Proof. by iDestruct 1 as "(_ & $ & _)". Qed.
+
+    Lemma type_ptr_size {σ} ty p : type_ptr ty p |-- [| is_Some (size_of σ ty) |].
+    Proof. iDestruct 1 as "(_ & _ & %H & _)"; eauto. Qed.
 
     (* TODO: is o_sub Proper? *)
     Instance o_sub_mono :
@@ -828,6 +832,9 @@ Module SimpleCPP.
       - intros ?. (do 2 f_equiv) => Hal1.
         move: Heq => /Proper_align_of /(_ y y eq_refl).
         inversion 1; congruence.
+      - iDestruct 1 as %H. destruct H.
+        destruct (Proper_size_of _ _ Heq _ y eq_refl) => //.
+        eauto.
       - f_equiv. by rewrite Heq.
     Qed.
 
