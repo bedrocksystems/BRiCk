@@ -426,9 +426,9 @@ Module PTRS_IMPL : PTRS_INTF.
       (* roff_canon (o_base_ derived base :: s) (o_base_ derived base :: d) -> *)
       roff_canon ((o_derived_ base derived, o1) :: (o_base_ derived base, o2) :: s) d
     (* correct, not supported below. *)
-    (* | o_sub_0_canon s d ty :
+    | o_sub_0_canon s d ty :
       roff_canon s d ->
-      roff_canon ((o_sub_ ty 0, 0) :: s) d *)
+      roff_canon ((o_sub_ ty 0, 0) :: s) d
     | o_sub_canon s d ty1 z o :
       match d with
       | ((o_sub_ ty2 _, _) :: _) => ty1 <> ty2
@@ -442,8 +442,8 @@ Module PTRS_IMPL : PTRS_INTF.
     | o_sub_merge_canon s d ty z1 z2 o1 o2 :
       (* Again, validity would require [> 0]. *)
       z1 + z2 <> 0 ->
-      roff_canon s ((o_sub_ ty z1, o2) :: d) ->
-      roff_canon ((o_sub_ ty z2, o1) :: s) ((o_sub_ ty (z1 + z2), o1 + o2) :: d)
+      roff_canon s ((o_sub_ ty z1, o1) :: d) ->
+      roff_canon ((o_sub_ ty z2, o2) :: s) ((o_sub_ ty (z1 + z2), o1 + o2) :: d)
     .
   End roff_canon.
 
@@ -471,29 +471,38 @@ Module PTRS_IMPL : PTRS_INTF.
     elim: Hcn z ro E; naive_solver.
   Qed.
 
-  (* Ugh, [merge_elems] has the wrong shape to normalize o_sub_0 to 0. *)
-  Definition offset_seg_merge (os1 os2 : offset_seg) : list offset_seg :=
-    match os1, os2 with
-    | (o_sub_ ty1 n1, off1), (o_sub_ ty2 n2, off2) =>
-      if decide (ty1 = ty2)
-      then [(o_sub_ ty1 (n2 + n1), (off1 + off2)%Z)]
-      else [os2; os1]
-    | (o_base_ der1 base1, off1), (o_derived_ base2 der2, off2) =>
-      if decide (der1 = der2 ∧ base1 = base2)
-      then []
-      else [os2; os1]
+  Definition offset_seg_cons (os : offset_seg) (oss : list offset_seg) : list offset_seg :=
+    match os, oss with
+    | (o_sub_ ty1 n1, off1), _ =>
+      if decide (n1 = 0 /\ off1 = 0)%Z then oss else
+      match oss with
+        | (o_sub_ ty2 n2, off2) :: oss' =>
+        if decide (ty1 <> ty2)
+          then os :: oss
+          else if decide (n2 + n1 = 0 /\ off1 + off2 = 0)%Z
+          then oss
+          else (o_sub_ ty1 (n2 + n1), (off2 + off1)%Z) :: oss'
+        | _ => os :: oss
+      end
+    | (o_derived_ base1 der1, off1), (o_base_ der2 base2, off2) :: oss' =>
+      if decide (der1 = der2 /\ base1 = base2)
+      then oss'
+      else os :: oss
     | (o_invalid_, _), _ => [(o_invalid_, 0%Z)]
-    | _, _ => [os2; os1]
+    | _, _ => os :: oss
     end.
-
   Definition raw_offset_collapse : raw_offset -> raw_offset :=
-    merge_elems (flip offset_seg_merge).
+    foldr offset_seg_cons [].
   Arguments raw_offset_collapse !_ /.
+
   Definition raw_offset_wf (ro : raw_offset) : Prop :=
     raw_offset_collapse ro = ro.
+  Arguments raw_offset_wf !_ /.
   Instance raw_offset_wf_pi ro : ProofIrrel (raw_offset_wf ro) := _.
-  Lemma singleton_raw_offset_wf {os} : raw_offset_wf [os].
-  Proof. done. Qed.
+  Lemma singleton_raw_offset_wf {os}
+    (Hn0 : isnt os (o_sub_ _ 0, _)) :
+    raw_offset_wf [os].
+  Proof. destruct os as [[] ?] => //=; case_decide; naive_solver. Qed.
 
   Hint Constructors roff_canon : core.
   Theorem canon_wf_0 src dst :
@@ -508,37 +517,15 @@ Module PTRS_IMPL : PTRS_INTF.
 
   Theorem canon_wf' src dst : roff_canon src dst -> raw_offset_collapse src = dst.
   Proof.
-    rewrite /raw_offset_wf /raw_offset_collapse => Hc.
-    induction Hc => //=; rewrite ?IHHc /=;
-      try by
-      [ rewrite decide_True //=; repeat (lia || f_equal)
-      | rewrite /merge_elem /offset_seg_merge /=; repeat case_match].
-    (* rewrite merge_elems correctly before tuning further. *)
-    rewrite /merge_elem /offset_seg_merge /=;
-      repeat (case_decide || case_match) => //=; naive_solver.
+    rewrite /raw_offset_wf /raw_offset_collapse => Hc;
+    induction Hc => //=; rewrite ?IHHc /offset_seg_cons //=.
+    { by [ rewrite decide_True //=; repeat (lia || f_equal)]. }
+    all: repeat ((case_decide || case_match); destruct_and?; subst => //).
+    by rewrite !right_id_L.
   Qed.
 
   Theorem canon_wf src dst : roff_canon src dst -> raw_offset_wf dst.
   Proof. intros ?%canon_wf_0. exact: canon_wf'. Qed.
-
-  (* XXX The other proof isn't yet good enough to drop this. *)
-  Theorem canon_wf_alt src dst : roff_canon src dst -> raw_offset_wf dst.
-  Proof.
-    rewrite /raw_offset_wf /raw_offset_collapse => /canon_wf_0 Hc.
-    induction Hc => //= {Hc}; rewrite ?IHHc /=;
-      try by rewrite /merge_elem /offset_seg_merge /=; repeat case_match.
-    (* - case_match => //. destruct rs => //.
-      case_match => //=. by rewrite decide_False. *)
-    - (* Idea: invert the result of normalizing [o_sub ty z1 :: d], and show
-      that [o_sub ty (z1 + z2) :: d] normalizes the same way. *)
-      move: IHHc.
-
-      rewrite /merge_elem /=.
-      case: merge_elems => [|o os] IH; simplify_eq/= => //.
-
-      destruct o as [[] ?]; simplify_eq/= => //.
-      case_decide; simplify_eq/=; repeat (lia || f_equal).
-  Qed.
 
   Definition raw_offset_merge (o1 o2 : raw_offset) : raw_offset :=
     raw_offset_collapse (o1 ++ o2).
@@ -561,26 +548,27 @@ Module PTRS_IMPL : PTRS_INTF.
 
   Program Definition o_id : offset := [] ↾ _.
   Next Obligation. done. Qed.
-  Program Definition mkOffset σ (ro : raw_offset_seg) : offset :=
-    [mk_offset_seg σ ro] ↾ singleton_raw_offset_wf.
+  Program Definition mkOffset σ (ro : raw_offset_seg)
+    (Hn0 : isnt ro (o_sub_ _ 0)) : offset :=
+    [mk_offset_seg σ ro] ↾ singleton_raw_offset_wf _.
+  Next Obligation.
+    rewrite /mk_offset_seg; intros ? [] H => //=; repeat case_match => //.
+  Qed.
   Definition o_field σ f : offset :=
-    mkOffset σ (o_field_ f).
-  Definition o_sub σ ty z : offset :=
-    mkOffset σ (o_sub_ ty z).
+    mkOffset σ (o_field_ f) I.
   Definition o_base σ derived base : offset :=
-    mkOffset σ (o_base_ derived base).
+    mkOffset σ (o_base_ derived base) I.
   Definition o_derived σ base derived : offset :=
-    mkOffset σ (o_derived_ base derived).
+    mkOffset σ (o_derived_ base derived) I.
+  Program Definition o_sub σ ty z : offset :=
+    if decide (z = 0)%Z
+    then o_id
+    else mkOffset σ (o_sub_ ty z) _.
+  Next Obligation. intros; case_match; simplify_eq/=; case_match; naive_solver. Qed.
 
   Lemma last_last_equiv {X} d {xs : list X} : default d (stdpp.list.last xs) = List.last xs d.
   Proof. elim: xs => // x1 xs /= <-. by case_match. Qed.
-
-  Class InvolApp {X} (f : list X → list X) :=
-    invol_app : ∀ xs1 xs2,
-    f (xs1 ++ xs2) = f (f xs1 ++ f xs2).
-  Class Involutive {X} (f : X → X) :=
-    invol : ∀ x, f (f x) = f x.
-
+(*
   Section merge_elem.
     Context {X} (f : X -> X -> list X).
     Context (Hinv : ∀ x1 x2, merge_elems f (f x1 x2) = f x1 x2).
@@ -593,19 +581,17 @@ Module PTRS_IMPL : PTRS_INTF.
     Proof.
     Admitted.
   End merge_elem.
-  Local Arguments merge_elems {X} f !_ /.
-  Instance raw_offset_collapse_involutive : Involutive raw_offset_collapse := _.
+  Local Arguments merge_elems {X} f !_ /. *)
 
   Definition offset_seg_append : offset_seg -> raw_offset -> raw_offset :=
-    merge_elem (flip offset_seg_merge).
-
-  Lemma offset_seg_merge_inv :
-    let f := (flip offset_seg_merge) in
-    ∀ x1 x2, raw_offset_collapse (f x1 x2) = f x1 x2.
+    offset_seg_cons.
+(*
+  Lemma offset_seg_cons_inv x1 x2 :
+    raw_offset_collapse (offset_seg_cons x1 x2) = offset_seg_cons x1 x2.
   Proof.
     move=> /= [o1 off1] [o2 off2].
     destruct o1, o2 => //=; by repeat (case_decide; simpl).
-  Qed.
+  Qed. *)
 
   Local Definition test xs :=
     raw_offset_collapse (raw_offset_collapse xs) = raw_offset_collapse xs.
@@ -618,11 +604,12 @@ Module PTRS_IMPL : PTRS_INTF.
     Ltac res_false := start; repeat step_false.
 
     Goal test []. Proof. res_true. Qed.
-    Goal `{test [(o_sub_ ty n1, o1)] }. Proof. done. Qed.
-    Goal `{test [(o_sub_ ty n1, o1); (o_sub_ ty n2, o2)] }.
-    Proof. res_true. Qed.
+    Goal `{n1 <> 0 -> test [(o_sub_ ty n1, o1)] }.
+    Proof. res_false; naive_solver. Qed.
+    Goal `{n1 <> 0 -> n2 <> 0 -> n2 + n1 <> 0 -> test [(o_sub_ ty n1, o1); (o_sub_ ty n2, o2)] }.
+    Proof. res_false; naive_solver. Qed.
 
-    Goal `{test [(o_sub_ ty n1, o1); (o_sub_ ty n2, o2); (o_field_ f, o3)] }.
+    (* Goal `{test [(o_sub_ ty n1, o1); (o_sub_ ty n2, o2); (o_field_ f, o3)] }.
     Proof. res_true. Qed.
 
     Goal `{test [(o_field_ f, o1); (o_sub_ ty n1, o2); (o_sub_ ty n2, o3)] }.
@@ -632,7 +619,7 @@ Module PTRS_IMPL : PTRS_INTF.
     Proof. res_false. Qed.
 
     Goal `{ty1 ≠ ty2 → test [(o_sub_ ty1 n1, o1); (o_sub_ ty1 n2, o2); (o_sub_ ty2 n3, o3); (o_field_ f, o4)] }.
-    Proof. start. step_false. step_true. step_false. Qed.
+    Proof. start. step_false. step_true. step_false. Qed. *)
   End tests.
 
   (* This is probably sound, since it allows temporary underflows. *)
@@ -642,6 +629,16 @@ Module PTRS_IMPL : PTRS_INTF.
       foldr (liftM2 Z.add) (Some 0%Z) (eval_offset_seg σ <$> o).
     Definition eval_offset (σ : genv) (o : offset) : option Z := eval_raw_offset σ (`o).
   End eval_offset. *)
+
+  Class InvolApp {X} (f : list X → list X) :=
+    invol_app : ∀ xs1 xs2,
+    f (xs1 ++ xs2) = f (f xs1 ++ f xs2).
+  Class Involutive {X} (f : X → X) :=
+    invol : ∀ x, f (f x) = f x.
+  Instance raw_offset_collapse_involutive : Involutive raw_offset_collapse.
+  Admitted.
+  Instance raw_offset_collapse_invol_app : InvolApp raw_offset_collapse.
+  Admitted.
 
   Program Definition o_dot : offset → offset → offset :=
     λ o1 o2, (raw_offset_merge (proj1_sig o1) (proj1_sig o2)) ↾ _.
@@ -759,7 +756,7 @@ Module PTRS_IMPL : PTRS_INTF.
   Definition _offset_ptr (p : ptr) (o : offset) : ptr :=
     match p with
     | offset_ptr p' o' => offset_ptr p' (o' .., o)
-    | invalid_ptr_ => invalid_ptr_
+    | invalid_ptr_ => invalid_ptr_ (* too eager! *)
     | fun_ptr_ _ _ =>
       match `o with
       | [] => p
@@ -780,16 +777,18 @@ Module PTRS_IMPL : PTRS_INTF.
     by rewrite Heqr in WF2.
   Admitted.
 
-  (* XXX False. *)
+  Lemma o_sub_0' σ ty :
+    o_sub σ ty 0 = o_id.
+  Proof. done. Qed.
   Lemma o_sub_0 σ ty :
     is_Some (size_of σ ty) ->
     o_sub σ ty 0 = o_id.
-  Proof. rewrite /o_sub/o_id/=. Admitted.
+  Proof. done. Qed.
 
   Lemma ptr_alloc_id_offset {p o} :
     let p' := (p .., o)%ptr in
     is_Some (ptr_alloc_id p') -> ptr_alloc_id p' = ptr_alloc_id p.
-  Admitted.
+  Proof. by destruct p, o as [[] ?] => //= /is_Some_None []. Qed.
 
   Axiom ptr_vaddr_o_sub_eq : forall p σ ty n1 n2 sz,
     size_of σ ty = Some sz -> (sz > 0)%N ->
