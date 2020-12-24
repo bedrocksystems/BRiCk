@@ -116,7 +116,7 @@ Definition arrR_def `{Σ : cpp_logic} {σ : genv} (ty : type) (Rs : list Rep) : 
   validR ** [| is_Some (size_of σ ty) |] **
   (* ^ both of these are only relevant for empty arrays, otherwise, they are implied by the
      following conjunct *)
-  [∗ list] i ↦ Ri ∈ Rs, _offsetR (_sub ty (Z.of_nat i)) (type_ptrR ty ** Ri).
+  [∗ list] i ↦ Ri ∈ Rs, .[ ty ! Z.of_nat i ] |-> (type_ptrR ty ** Ri).
 Definition arrR_aux : seal (@arrR_def). Proof. by eexists. Qed.
 Definition arrR := arrR_aux.(unseal).
 Definition arrR_eq : @arrR = _ := arrR_aux.(seal_eq).
@@ -187,7 +187,7 @@ Section arrR.
   Proof. by rewrite arrR_eq /arrR_def /= right_id. Qed.
 
   Lemma arrR_cons ty R Rs :
-    arrR ty (R :: Rs) -|- type_ptrR ty ** R ** _offsetR (_sub ty 1) (arrR ty Rs).
+    arrR ty (R :: Rs) -|- type_ptrR ty ** R ** .[ ty ! 1 ] |-> arrR ty Rs.
   Proof.
     rewrite arrR_eq/arrR_def /= !_offsetR_sep !_offsetR_only_provable.
     iSplit.
@@ -270,18 +270,8 @@ Section array.
 
   #[local] Existing Instance type_ptrR_size_observe.
 
-  Lemma arrayR_nil : arrayR ty R [] -|- emp.
+  Lemma arrayR_nil : arrayR ty R [] -|- validR ** [| is_Some (size_of resolve ty) |].
   Proof. by rewrite arrayR_eq /arrayR_def arrR_nil. Qed.
-
-  (* NOTE(gmm) I this is a more reasonable definition of [arrayR_nil] *)
-  (* Lemma arrayR_nil {A} ty (R : A → Rep) :
-      arrayR ty R [] -|- ∃ sz, [| size_of resolve ty = Some sz |] ** validR.
-    Proof.
-      constructor=>base /=. rewrite monPred_at_exist. f_equiv=>sz.
-      by rewrite monPred_at_sep monPred_at_only_provable.
-    Qed. *)
-
-
 
   (** Compared to [array'_valid], this is a bientailment *)
   Lemma arrayR_cons x xs :
@@ -412,16 +402,14 @@ Section array.
 
   (** Compared to [array'_split], this takes [i] as first *)
   Lemma arrayR_split i xs :
+    i <= length xs ->
     arrayR ty R xs |--
            arrayR ty R (take i xs) **
     .[ ty ! i ] |-> arrayR ty R (drop i xs).
   Proof.
     intros. rewrite -{1}(take_drop i xs) arrayR_app.
     f_equiv.
-    destruct (decide (i <= length xs)).
-    { rewrite take_length_le; eauto. }
-    { rewrite drop_ge; last by lia.
-        by rewrite arrayR_nil !_offsetR_emp. }
+    rewrite take_length_le; eauto.
   Qed.
 
   (** Compared to [array'_combine], this takes [i] is first *)
@@ -430,11 +418,12 @@ Section array.
     .[ ty ! i ] |-> arrayR ty R (drop i xs) |--
                 arrayR ty R xs.
   Proof.
-    rewrite -{3}(take_drop i xs). destruct (decide (i <= length xs)).
+    rewrite -{3}(take_drop i xs).
+    destruct (decide (i <= length xs)).
     - rewrite -{3}(take_length_le xs i) // arrayR_app.
       f_equiv. rewrite take_length_le //.
     - rewrite take_ge ?drop_ge /=; [ |lia|lia].
-        by rewrite right_id_L bi.sep_elim_l.
+      by rewrite bi.sep_elim_l app_nil_r.
   Qed.
 
   (** Compare [arrayR_cell], [array_idx_with_addr] *)
