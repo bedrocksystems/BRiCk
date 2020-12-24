@@ -113,6 +113,9 @@ Section validR.
 End validR.
 
 Definition arrR_def `{Σ : cpp_logic} {σ : genv} (ty : type) (Rs : list Rep) : Rep :=
+  validR ** [| is_Some (size_of σ ty) |] **
+  (* ^ both of these are only relevant for empty arrays, otherwise, they are implied by the
+     following conjunct *)
   [∗ list] i ↦ Ri ∈ Rs, _offsetR (_sub ty (Z.of_nat i)) (type_ptrR ty ** Ri).
 Definition arrR_aux : seal (@arrR_def). Proof. by eexists. Qed.
 Definition arrR := arrR_aux.(unseal).
@@ -127,6 +130,7 @@ Section arrR.
   Proof.
     intros n l1 l2 Hl. rewrite arrR_eq /arrR_def.
     have Hlen := Forall2_length _ _ _ Hl.
+    f_equiv. f_equiv.
     apply big_sepL_gen_ne; first done.
     move=>k y1 y2 Hl1 Hl2. apply _offsetR_ne, bi.sep_ne, (inj Some); first done.
     rewrite -Hl1 -Hl2. by apply list_dist_lookup.
@@ -135,6 +139,7 @@ Section arrR.
   Proof.
     intros l1 l2 Hl. rewrite arrR_eq /arrR_def.
     have Hlen : length l1 = length l2 by apply (Forall2_length (≡)), equiv_Forall2.
+    f_equiv. f_equiv.
     apply big_sepL_gen_proper; first done.
     move=>k y1 y2 Hl1 Hl2. apply _offsetR_proper, bi.sep_proper, (inj Some); first done.
     rewrite -Hl1 -Hl2. by apply list_equiv_lookup.
@@ -145,6 +150,8 @@ Section arrR.
     TCForall Timeless Rs → Timeless (arrR ty Rs).
   Proof.
     rewrite TCForall_Forall Forall_forall=>HR. rewrite arrR_eq /arrR_def.
+    apply bi.sep_timeless; refine _.
+    apply bi.sep_timeless; refine _.
     apply big_sepL_gen_timeless=>k x Hk.
     apply _offsetR_timeless, (bi.sep_timeless _ _ _), HR. exact: elem_of_list_lookup_2.
   Qed.
@@ -152,6 +159,8 @@ Section arrR.
     TCForall Persistent Rs → Persistent (arrR ty Rs).
   Proof.
     rewrite TCForall_Forall Forall_forall=>HR. rewrite arrR_eq /arrR_def.
+    apply bi.sep_persistent; refine _.
+    apply bi.sep_persistent; refine _.
     apply big_sepL_gen_persistent=>k x Hk.
     apply _offsetR_persistent, (bi.sep_persistent _ _ _), HR. exact: elem_of_list_lookup_2.
   Qed.
@@ -159,44 +168,40 @@ Section arrR.
     TCForall Affine Rs → Affine (arrR ty Rs).
   Proof.
     rewrite TCForall_Forall Forall_forall=>HR. rewrite arrR_eq /arrR_def.
-    apply big_sepL_gen_affine=>k x Hk.
-    apply _offsetR_affine, (bi.sep_affine _ _ _), HR. exact: elem_of_list_lookup_2.
+    apply bi.sep_affine; refine _.
   Qed.
 
-  Lemma arrR_nil ty : arrR ty [] -|- emp.
-  Proof. by rewrite arrR_eq /arrR_def /=. Qed.
-
-  Lemma big_sepL_offsetR (o : offset) {T} (Rs : list T) : forall F,
-    (o |-> [∗list] i ↦ x ∈ Rs , F i x) -|- [∗list] i ↦ x ∈ Rs , o |-> F i x.
-  Proof.
-    induction Rs; simpl; intros.
-    - by rewrite _offsetR_emp.
-    - by rewrite _offsetR_sep IHRs.
-  Qed.
-
-  Global Instance arrR_inv ty R Rs : Observe ([| is_Some (size_of σ ty) |]) (arrR ty (R :: Rs)).
+  #[global] Instance arrR_inv ty R Rs : Observe ([| is_Some (size_of σ ty) |]) (arrR ty (R :: Rs)).
   Proof.
     apply: observe_intro_persistent.
     rewrite arrR_eq /arrR_def /= !_offsetR_sep.
-    constructor =>p/=.
-    rewrite !monPred_at_sep !monPred_at_offsetR/= !monPred_at_only_provable !monPred_at_type_ptrR.
+    apply Rep_entails_at =>p; rewrite !_at_sep _at_offsetL_offsetR _at_type_ptrR _at_only_provable /=.
+(*    constructor =>p/=.
+    rewrite !monPred_at_sep !monPred_at_offsetR/= !monPred_at_only_provable !monPred_at_type_ptrR. *)
     rewrite type_ptr_strict_valid strict_valid_relaxed.
     rewrite valid_o_sub_size.
-    iIntros "[[$ _] _]".
+    iIntros "[_ [_ [[$ _] _]]]".
   Qed.
 
+  Lemma arrR_nil ty : arrR ty [] -|- validR ** [| is_Some (size_of σ ty) |].
+  Proof. by rewrite arrR_eq /arrR_def /= right_id. Qed.
 
-  #[local] Lemma arrR_cons_pre ty R Rs :
-    is_Some (size_of σ ty) → (* this side condition is annoying *)
-    arrR ty (R :: Rs) -|- type_ptrR ty ** R ** .[ ty ! 1] |-> arrR ty Rs.
+  Lemma arrR_cons ty R Rs :
+    arrR ty (R :: Rs) -|- type_ptrR ty ** R ** _offsetR (_sub ty 1) (arrR ty Rs).
   Proof.
-    intros. rewrite arrR_eq /arrR_def /=.
-    rewrite _offsetR_sep !_sub_0 // (assoc bi_sep); f_equiv.
-    rewrite big_sepL_offsetR. f_equiv => i r.
-    apply Rep_equiv_at => p.
-    rewrite !_at_offsetL_offsetR.
-    rewrite Nat2Z.inj_succ -Z.add_1_l.
-    rewrite o_sub_sub_nneg //; lia.
+    rewrite arrR_eq/arrR_def /= !_offsetR_sep !_offsetR_only_provable.
+    iSplit.
+    { iIntros "(#v & % & [[#tp r] x])".
+      rewrite o_sub_0 // !_offsetR_id _offsetR_big_sepL.
+      rewrite -type_ptrR_validR_plus_one.
+      iFrame "#∗%".
+      iClear "v tp".
+      iStopProof.
+      f_equiv => ? ?. rewrite _offsetR_dot o_dot_o_sub; do 2 f_equiv. lia. }
+    { iIntros "(#tp & r & _ & % & rs)".
+      rewrite -svalidR_validR -type_ptrR_svalidR o_sub_0 // !_offsetR_id _offsetR_big_sepL. iFrame "#∗%".
+      iClear "tp"; iStopProof.
+      f_equiv => ? ?. rewrite _offsetR_dot o_dot_o_sub. f_equiv. f_equiv; lia. }
   Qed.
 
   #[local] Instance type_ptrR_size_observe ty :
@@ -209,6 +214,7 @@ Section arrR.
     exact: type_ptr_size.
   Qed.
 
+  (*
   Lemma arrR_cons ty R Rs :
     arrR ty (R :: Rs) -|- type_ptrR ty ** R ** _offsetR (_sub ty 1) (arrR ty Rs).
   Proof.
@@ -216,30 +222,38 @@ Section arrR.
     iDestruct (observe [| is_Some (size_of σ ty) |] with "H") as %?;
     by rewrite arrR_cons_pre.
   Qed.
+*)
+
+  Instance arrR_validR_observe : Observe validR (arrR ty ys).
+  Proof. rewrite arrR_eq/arrR_def; refine _. Qed.
+  Instance arrR_size_of_observe : Observe [| is_Some (size_of σ ty) |] (arrR ty ys).
+  Proof. rewrite arrR_eq/arrR_def; refine _. Qed.
 
   Lemma arrR_append ty ys xs :
     arrR ty (xs ++ ys) -|- arrR ty xs ** .[ ty ! length xs ] |-> arrR ty ys.
   Proof.
     induction xs => /=.
-    { rewrite arrR_nil !left_id /=.
-      destruct ys.
-      { by rewrite arrR_nil _offsetR_emp. }
-      { apply (observe_both (is_Some (size_of σ ty))); refine _.
-        move => ?.
-          by rewrite arrR_cons _offsetR_sep !o_sub_0 // !_offsetR_id. } }
-    { rewrite !arrR_cons IHxs !_offsetR_sep -!assoc !_offsetR_dot. f_equiv. f_equiv. f_equiv.
-      apply Rep_equiv_at =>p.
-      rewrite !_at_offsetL_offsetR.
-      f_equiv. rewrite -_offsetL_dot o_sub_sub_nneg; try lia.
-      f_equiv. f_equiv. lia. }
+    { rewrite arrR_nil /=.
+      iSplit.
+      { iIntros "X".
+        iDestruct (observe validR with "X") as "#$".
+        iDestruct (observe [| is_Some (size_of σ ty) |] with "X") as "%".
+        iFrame "%". rewrite o_sub_0 // _offsetR_id. iFrame. }
+      { iIntros "[[_ %H] X]". rewrite o_sub_0 // _offsetR_id; eauto. } }
+    { rewrite !arrR_cons IHxs !_offsetR_sep !_offsetR_dot -!assoc o_dot_o_sub.
+      do 5 f_equiv. lia. }
   Qed.
 
-  (* TODO Same game here: *)
-  Lemma arrR_singleton ty R
-    (Hsz : is_Some (size_of σ ty)) :
-    arrR ty [R] -|-
-    type_ptrR ty ** R.
-  Proof. by rewrite arrR_eq /arrR_def /= right_id _offsetR_sep !_sub_0. Qed.
+
+  Lemma arrR_singleton ty R : arrR ty [R] -|- type_ptrR ty ** R.
+  Proof.
+    rewrite arrR_cons arrR_nil _offsetR_sep _offsetR_only_provable.
+    iSplit.
+    { iIntros "($ & $ & _ & %)". }
+    { iIntros "(#tp & r)".
+      iDestruct (observe [| is_Some (size_of σ ty) |] with "tp") as "#?".
+      rewrite -type_ptrR_validR_plus_one. iFrame "#∗". }
+  Qed.
 End arrR.
 
 Definition arrayR_def `{Σ : cpp_logic} {X : Type} {σ : genv} (ty : type) (P : X → Rep) (xs : list X) : Rep :=
