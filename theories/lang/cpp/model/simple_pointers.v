@@ -410,7 +410,8 @@ Module PTRS_IMPL : PTRS_INTF.
       roff_canon s d ->
       roff_canon ((o_field_ f, o) :: s) ((o_field_ f, o) :: d)
     | o_base_canon s d base derived o :
-      isnt d ((o_derived_ _ _ , _) :: _) ->
+      (* no, because (valid?) normal forms don't use [o_derived]? *)
+      (* isnt d ((o_derived_ _ _ , _) :: _) -> *)
       roff_canon s d ->
       roff_canon ((o_base_ derived base, o) :: s) ((o_base_ derived base, o) :: d)
     (* should paths start from the complete object? If
