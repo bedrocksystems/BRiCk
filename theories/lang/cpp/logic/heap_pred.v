@@ -156,6 +156,41 @@ Section with_cpp.
     rewrite _offsetR_eq /_offsetR_def -as_Rep_sep.
     constructor=> p /=. by rewrite monPred_at_sep.
   Qed.
+  Lemma _offsetR_pure (o : offset) (P : Prop) :
+    _offsetR o (bi_pure P) -|- bi_pure P.
+  Proof.
+    rewrite _offsetR_eq/_offsetR_def /=.
+    by constructor=> p/=; rewrite !monPred_at_pure.
+  Qed.
+
+  Lemma _offsetR_only_provable (o : offset) (P : Prop) :
+    _offsetR o [| P |] -|- [| P |].
+  Proof.
+    rewrite _offsetR_eq/_offsetR_def /=.
+    by constructor=> p/=; rewrite !monPred_at_only_provable.
+  Qed.
+
+  Lemma _offsetR_and (o : offset) P Q :
+    _offsetR o (P //\\ Q) -|- _offsetR o P //\\ _offsetR o Q.
+  Proof.
+    rewrite _offsetR_eq/_offsetR_def /=.
+    by constructor=> p/=; rewrite !monPred_at_and.
+  Qed.
+
+  Lemma _offsetR_or (o : offset) P Q :
+    _offsetR o (P \\// Q) -|- _offsetR o P \\// _offsetR o Q.
+  Proof.
+    rewrite _offsetR_eq/_offsetR_def /=.
+    by constructor=> p/=; rewrite !monPred_at_or.
+  Qed.
+
+  Lemma _offsetR_big_sepL (o : offset) {T} (Rs : list T) : forall F,
+    _offsetR o ([∗list] i ↦ x ∈ Rs , F i x) -|- [∗list] i ↦ x ∈ Rs , _offsetR o (F i x).
+  Proof.
+    induction Rs; simpl; intros.
+    - by rewrite _offsetR_emp.
+    - by rewrite _offsetR_sep IHRs.
+  Qed.
 
   Global Instance _offsetR_fractional o (r : Qp → Rep) :
     Fractional r → Fractional (λ q, _offsetR o (r q)).
