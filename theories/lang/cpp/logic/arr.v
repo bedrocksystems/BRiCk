@@ -326,7 +326,7 @@ Section array.
     Observe (.[ ty ! i ] |-> validR) (arrayR ty R xs).
   Proof. intros. rewrite -svalidR_validR. exact: arrayR_sub_svalidR_obs. Qed.
 
-  (* Unlike [arrayR_type_ptr], we get past-the-end validity, but only for lists of length >= 1. *)
+  (* Unlike [arrayR_sub_type_ptr_nat_obs], we get past-the-end validity, but only for lists of length >= 1. *)
   Lemma arrayR_valid_obs i xs
         (Hlen : 1 <= length xs)
         (Hi : i ≤ length xs) :
