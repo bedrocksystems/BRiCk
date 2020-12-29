@@ -5,6 +5,7 @@
  *)
 From iris.algebra Require Import list.
 From iris.bi Require Import monpred big_op.
+From iris.bi.lib Require Import fractional.
 From iris.proofmode Require Import tactics.
 From bedrock.lang Require Import prelude.numbers bi.observe bi.big_op.
 (* From bedrock.auto Require Import cpp. *)
@@ -273,6 +274,25 @@ Section array.
     arrayR ty R (x :: xs) -|- type_ptrR ty ** R x ** .[ ty ! 1 ] |-> arrayR ty R xs.
   Proof. rewrite arrayR_eq. exact: arrR_cons. Qed.
 
+  #[global] Instance arrayR_timeless {T} t (P : T → Rep) l `{!∀ x, Timeless (P x)} :
+    Timeless (arrayR t P l).
+  Proof.
+    rewrite arrayR_eq/arrayR_def. eapply arrR_timeless_when_mpred_affine.
+    induction l; constructor; eauto.
+  Qed.
+  #[global] Instance arrayR_affine {T} t (P : T → Rep) l `{!∀ x, Affine (P x)} :
+    Affine (arrayR t P l).
+  Proof.
+    rewrite arrayR_eq/arrayR_def. eapply arrR_affine.
+    induction l; constructor; eauto.
+  Qed.
+  #[global] Instance arrayR_persistent {T} t (P : T → Rep) l `{!∀ x, Persistent (P x)} :
+    Persistent (arrayR t P l).
+  Proof.
+    rewrite arrayR_eq/arrayR_def. eapply arrR_persistent.
+    induction l; constructor; eauto.
+  Qed.
+
   Lemma arrayR_sub_type_ptr_nat_obs (i : nat) xs
         (Hlen : i < length xs) :
     Observe (.[ ty ! i ] |-> type_ptrR ty) (arrayR ty R xs).
@@ -425,3 +445,22 @@ Section array.
   Qed.
 
 End array.
+
+#[global] Instance arrayR_fractional `{Σ : cpp_logic, σ : genv} {T} t (P : Qp → T → Rep) l
+ `{!∀ x, Fractional (λ q, P q x)} :
+  Fractional (λ q, arrayR t (P q) l).
+Proof.
+  red. intros.
+  induction l.
+  { rewrite !arrayR_nil. iSplit; eauto. }
+  { rewrite !arrayR_cons IHl H !_offsetR_sep. iSplit.
+    { iIntros "(#a & [b c] & d & e)"; iFrame "∗#". }
+    { iIntros "([a [b c]] & [_ [e f]])"; iFrame. } }
+Qed.
+
+#[global] Instance arrayR_as_fractional `{Σ : cpp_logic, σ : genv} {T} t (P : Qp → T → Rep) l q
+ `{!∀ x, Fractional (λ q, P q x)} :
+  AsFractional (arrayR t (P q) l) (λ q, arrayR t (P q) l) q.
+Proof. exact: Build_AsFractional. Qed.
+
+
