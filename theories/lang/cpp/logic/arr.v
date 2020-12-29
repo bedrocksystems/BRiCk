@@ -113,7 +113,7 @@ Section validR.
 End validR.
 
 Definition arrR_def `{Σ : cpp_logic} {σ : genv} (ty : type) (Rs : list Rep) : Rep :=
-  validR ** [| is_Some (size_of σ ty) |] **
+  .[ ty ! length Rs ] |-> validR ** [| is_Some (size_of σ ty) |] **
   (* ^ both of these are only relevant for empty arrays, otherwise, they are implied by the
      following conjunct *)
   [∗ list] i ↦ Ri ∈ Rs, .[ ty ! Z.of_nat i ] |-> (type_ptrR ty ** Ri).
@@ -130,7 +130,7 @@ Section arrR.
   Proof.
     intros n l1 l2 Hl. rewrite arrR_eq /arrR_def.
     have Hlen := Forall2_length _ _ _ Hl.
-    f_equiv. f_equiv.
+    f_equiv. f_equiv. by rewrite Hlen. f_equiv.
     apply big_sepL_gen_ne; first done.
     move=>k y1 y2 Hl1 Hl2. apply _offsetR_ne, bi.sep_ne, (inj Some); first done.
     rewrite -Hl1 -Hl2. by apply list_dist_lookup.
@@ -139,7 +139,7 @@ Section arrR.
   Proof.
     intros l1 l2 Hl. rewrite arrR_eq /arrR_def.
     have Hlen : length l1 = length l2 by apply (Forall2_length (≡)), equiv_Forall2.
-    f_equiv. f_equiv.
+    f_equiv. f_equiv. by rewrite Hlen. f_equiv.
     apply big_sepL_gen_proper; first done.
     move=>k y1 y2 Hl1 Hl2. apply _offsetR_proper, bi.sep_proper, (inj Some); first done.
     rewrite -Hl1 -Hl2. by apply list_equiv_lookup.
@@ -175,33 +175,34 @@ Section arrR.
   Proof.
     apply: observe_intro_persistent.
     rewrite arrR_eq /arrR_def /= !_offsetR_sep.
-    apply Rep_entails_at =>p; rewrite !_at_sep _at_offsetL_offsetR _at_type_ptrR _at_only_provable /=.
-(*    constructor =>p/=.
-    rewrite !monPred_at_sep !monPred_at_offsetR/= !monPred_at_only_provable !monPred_at_type_ptrR. *)
+    apply Rep_entails_at =>p. rewrite !_at_sep !_at_offsetL_offsetR _at_type_ptrR _at_only_provable /=.
     rewrite type_ptr_strict_valid strict_valid_relaxed.
     rewrite valid_o_sub_size.
     iIntros "[_ [_ [[$ _] _]]]".
   Qed.
 
+  #[global] Instance arrR_valid_end ty Rs : Observe (.[ ty ! length Rs ] |-> validR) (arrR ty Rs).
+  Proof. rewrite arrR_eq /arrR_def /=. refine _. Qed.
+
   Lemma arrR_nil ty : arrR ty [] -|- validR ** [| is_Some (size_of σ ty) |].
-  Proof. by rewrite arrR_eq /arrR_def /= right_id. Qed.
+  Proof.
+    rewrite arrR_eq /arrR_def /= right_id.
+    eapply (observe_both (is_Some (size_of σ ty))); refine _.
+    intro. by rewrite o_sub_0 // _offsetR_id.
+  Qed.
 
   Lemma arrR_cons ty R Rs :
     arrR ty (R :: Rs) -|- type_ptrR ty ** R ** .[ ty ! 1 ] |-> arrR ty Rs.
   Proof.
     rewrite arrR_eq/arrR_def /= !_offsetR_sep !_offsetR_only_provable.
+    eapply (observe_both (is_Some (size_of σ ty))); refine _; intro.
+    rewrite !o_sub_0 // !_offsetR_dot !_offsetR_id _offsetR_big_sepL o_dot_o_sub.
+    have ->: Z.of_nat (S (length Rs)) = (1 + Z.of_nat (length Rs))%Z; first by lia.
     iSplit.
-    { iIntros "(#v & % & [[#tp r] x])".
-      rewrite o_sub_0 // !_offsetR_id _offsetR_big_sepL.
-      rewrite -type_ptrR_validR_plus_one.
-      iFrame "#∗%".
-      iClear "v tp".
-      iStopProof.
-      f_equiv => ? ?. rewrite _offsetR_dot o_dot_o_sub; do 2 f_equiv. lia. }
-    { iIntros "(#tp & r & _ & % & rs)".
-      rewrite -svalidR_validR -type_ptrR_svalidR o_sub_0 // !_offsetR_id _offsetR_big_sepL. iFrame "#∗%".
-      iClear "tp"; iStopProof.
-      f_equiv => ? ?. rewrite _offsetR_dot o_dot_o_sub. f_equiv. f_equiv; lia. }
+    { iIntros "($ & _ & [$ $] & b)"; iFrame "%∗".
+      iStopProof; f_equiv => ? ?. rewrite _offsetR_dot o_dot_o_sub; f_equiv; f_equiv; lia. }
+    { iIntros "($ & $ & $ & _ & Rs)"; iFrame "%∗"; iStopProof.
+      f_equiv => ? ?. rewrite _offsetR_dot o_dot_o_sub; f_equiv; f_equiv; lia. }
   Qed.
 
   #[local] Instance type_ptrR_size_observe ty :
@@ -225,7 +226,11 @@ Section arrR.
 *)
 
   Instance arrR_validR_observe : Observe validR (arrR ty ys).
-  Proof. rewrite arrR_eq/arrR_def; refine _. Qed.
+  Proof.
+    destruct ys.
+    { rewrite arrR_nil. refine _. }
+    { rewrite arrR_cons. rewrite type_ptrR_svalidR svalidR_validR; refine _. }
+  Qed.
   Instance arrR_size_of_observe : Observe [| is_Some (size_of σ ty) |] (arrR ty ys).
   Proof. rewrite arrR_eq/arrR_def; refine _. Qed.
 
@@ -455,7 +460,7 @@ End array.
 Proof.
   red. intros.
   induction l.
-  { rewrite !arrayR_nil. iSplit; eauto. }
+  { rewrite !arrayR_nil. iSplit; eauto. iIntros "[[#a b] _]"; eauto. }
   { rewrite !arrayR_cons IHl H !_offsetR_sep. iSplit.
     { iIntros "(#a & [b c] & d & e)"; iFrame "∗#". }
     { iIntros "([a [b c]] & [_ [e f]])"; iFrame. } }
@@ -465,5 +470,4 @@ Qed.
  `{!∀ x, Fractional (λ q, P q x)} :
   AsFractional (arrayR t (P q) l) (λ q, arrayR t (P q) l) q.
 Proof. exact: Build_AsFractional. Qed.
-
 
