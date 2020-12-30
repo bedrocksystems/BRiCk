@@ -214,15 +214,23 @@ Section with_cpp.
     Fractional r → AsFractional (_offsetR o (r q)) (λ q, _offsetR o (r q)) q.
   Proof. constructor. done. apply _. Qed.
 
+  (* TODO: consider making this a global instance, but test performance impact. *)
+  Local Instance _offsetR_observe {o} {Q R : Rep} :
+    Observe Q R ->
+    Observe (_offsetR o Q) (_offsetR o R).
+  Proof. move->. by rewrite /Observe _offsetR_pers. Qed.
+
+  Local Instance _offsetR_observe_2 {o} {Q R1 R2 : Rep} :
+    Observe2 Q R1 R2 ->
+    Observe2 (_offsetR o Q) (_offsetR o R1) (_offsetR o R2).
+  Proof. move->. by rewrite /Observe2 _offsetR_wand _offsetR_pers. Qed.
+
   Global Instance _offsetR_observe_only_provable Q o (R : Rep) :
     Observe [| Q |] R → Observe [| Q |] (_offsetR o R).
-  Proof. intros. rewrite _offsetR_eq. apply _. Qed.
+  Proof. rewrite -{2}_offsetR_only_provable. apply _. Qed.
   Global Instance _offsetR_observe_2_only_provable Q o (R1 R2 : Rep) :
     Observe2 [| Q |] R1 R2 → Observe2 [| Q |] (_offsetR o R1) (_offsetR o R2).
-  Proof.
-    intros Hobs. apply observe_uncurry. rewrite -_offsetR_sep.
-    apply _offsetR_observe_only_provable, observe_curry, Hobs.
-  Qed.
+  Proof. rewrite -{2}_offsetR_only_provable. apply _. Qed.
 
   Lemma _offsetR_obs o r P :
     r |-- r ** [| P |] →
