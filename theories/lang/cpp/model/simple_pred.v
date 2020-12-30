@@ -782,7 +782,6 @@ Module SimpleCPP.
     Qed.
 
     Definition type_ptr {resolve : genv} (ty : type) (p : ptr) : mpred :=
-      (* To decide: do we want the "p nonnull" clause? *)
       [| p <> nullptr |] **
       (Exists align, [| @align_of resolve ty = Some align |] ** aligned_ptr align p) **
       [| is_Some (size_of resolve ty) |] **
@@ -796,6 +795,10 @@ Module SimpleCPP.
     Instance type_ptr_persistent σ p ty : Persistent (type_ptr (resolve:=σ) ty p) := _.
     Instance type_ptr_affine σ p ty : Affine (type_ptr (resolve:=σ) ty p) := _.
     Instance type_ptr_timeless σ p ty : Timeless (type_ptr (resolve:=σ) ty p) := _.
+
+    Lemma type_ptr_off_nonnull {σ ty p o} :
+      type_ptr ty (p .., o) |-- [| p <> nullptr |].
+    Admitted.
 
     Lemma type_ptr_strict_valid resolve ty p :
       type_ptr (resolve := resolve) ty p |-- strict_valid_ptr p.
