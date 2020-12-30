@@ -889,6 +889,10 @@ Section with_cpp.
   Instance uninitR_valid_observe {σ : genv} {ty q} : Observe validR (uninitR ty q).
   Proof. rewrite -svalidR_validR -type_ptrR_svalidR; refine _. Qed.
 
+  #[global]
+  Instance observe_type_ptr_pointsto σ (p : ptr) ty (R : Rep) :
+    Observe (type_ptrR σ ty) R -> Observe (type_ptr ty p) (_at p R).
+  Proof. rewrite -_at_type_ptrR. apply _at_observe. Qed.
 End with_cpp.
 
 Typeclasses Opaque identityR.
