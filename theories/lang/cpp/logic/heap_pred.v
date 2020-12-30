@@ -33,6 +33,8 @@ Bind Scope bi_scope with Rep.
 Bind Scope bi_scope with RepI.
 Bind Scope bi_scope with RepO.
 
+Implicit Types (σ resolve : genv).
+
 Section with_cpp.
   Context `{Σ : cpp_logic}.
 
@@ -463,7 +465,7 @@ Section with_cpp.
    * NOTE [ty] *must* be a primitive type.
    *)
   Definition primR_def {resolve:genv} (ty : type) (q : Qp) (v : val) : Rep :=
-    as_Rep (fun addr => @tptsto _ _ resolve ty q addr v ** [| has_type v (drop_qualifiers ty) |]).
+    as_Rep (fun addr => tptsto ty q addr v ** [| has_type v (drop_qualifiers ty) |]).
   (** TODO what is the current status of [has_type] and [Vundef]? Does it have all types? No types?
    *)
   Definition primR_aux : seal (@primR_def). Proof. by eexists. Qed.
@@ -485,31 +487,31 @@ Section with_cpp.
   Qed.
 
   Global Instance primR_affine resolve ty q p
-    : Affine (primR (resolve:=resolve) ty q p).
+    : Affine (primR ty q p).
   Proof. rewrite primR_eq. apply _. Qed.
   Global Instance primR_timeless resolve ty q p
-    : Timeless (primR (resolve:=resolve) ty q p).
+    : Timeless (primR ty q p).
   Proof. rewrite primR_eq. apply _. Qed.
 
   Global Instance primR_fractional resolve ty v :
-    Fractional (λ q, primR (resolve:=resolve) ty q v).
+    Fractional (λ q, primR ty q v).
   Proof. rewrite primR_eq. apply _. Qed.
   Global Instance primR_as_fractional resolve ty q v :
-    AsFractional (primR (resolve:=resolve) ty q v) (λ q, primR (resolve:=resolve) ty q v) q.
+    AsFractional (primR ty q v) (λ q, primR ty q v) q.
   Proof. constructor. done. apply _. Qed.
 
   Global Instance primR_observe_frac_valid resolve ty (q : Qp) v :
-    Observe [| q ≤ 1 |]%Qc (primR (resolve:=resolve) ty q v).
+    Observe [| q ≤ 1 |]%Qc (primR ty q v).
   Proof. rewrite primR_eq. apply _. Qed.
 
   Global Instance primR_observe_agree resolve ty q1 q2 v1 v2 :
     Observe2 [| v1 = v2 |]
-      (primR (resolve:=resolve) ty q1 v1)
-      (primR (resolve:=resolve) ty q2 v2).
+      (primR ty q1 v1)
+      (primR ty q2 v2).
   Proof. rewrite primR_eq. apply _. Qed.
 
   Global Instance primR_observe_has_type resolve ty q v :
-    Observe [| has_type v (drop_qualifiers ty) |] (primR (resolve:=resolve) ty q v).
+    Observe [| has_type v (drop_qualifiers ty) |] (primR ty q v).
   Proof. rewrite primR_eq. apply _. Qed.
 
   Lemma primR_has_type {σ} ty q v :
@@ -547,28 +549,28 @@ Section with_cpp.
   Qed.
 
   Global Instance uninitR_affine resolve ty q
-    : Affine (uninitR (resolve:=resolve) ty q).
+    : Affine (uninitR ty q).
   Proof. rewrite uninitR_eq. apply _. Qed.
   Global Instance uninitR_timeless resolve ty q
-    : Timeless (uninitR (resolve:=resolve) ty q).
+    : Timeless (uninitR ty q).
   Proof. rewrite uninitR_eq. apply _. Qed.
 
   Global Instance uninitR_fractional resolve ty :
-    Fractional (uninitR (resolve:=resolve) ty).
+    Fractional (uninitR ty).
   Proof. rewrite uninitR_eq. apply _. Qed.
   Global Instance unintR_as_fractional resolve ty q :
-    AsFractional (uninitR (resolve:=resolve) ty q) (uninitR (resolve:=resolve) ty) q.
+    AsFractional (uninitR ty q) (uninitR ty) q.
   Proof. constructor. done. apply _. Qed.
 
   Global Instance uninitR_observe_frac_valid resolve ty (q : Qp) :
-    Observe [| q ≤ 1 |]%Qc (uninitR (resolve:=resolve) ty q).
+    Observe [| q ≤ 1 |]%Qc (uninitR ty q).
   Proof. rewrite uninitR_eq. apply _. Qed.
 
   (** This seems odd, but it's relevant to proof that [anyR] is fractional. *)
   Lemma primR_uninitR {resolve} ty q1 q2 v :
-    primR (resolve:=resolve) ty q1 v |--
-    uninitR (resolve:=resolve) ty q2 -*
-    primR (resolve:=resolve) ty (q1 + q2) Vundef.
+    primR ty q1 v |--
+    uninitR ty q2 -*
+    primR ty (q1 + q2) Vundef.
   Proof.
     rewrite primR_eq/primR_def uninitR_eq/uninitR_def. constructor=>p /=.
     rewrite monPred_at_wand. iIntros "[T1 %]" (? <-%ptr_rel_elim) "/= T2".
@@ -581,18 +583,18 @@ Section with_cpp.
       TODO generalize this to support aggregate types
    *)
   Definition anyR_def {resolve} (ty : type) (q : Qp) : Rep :=
-    (Exists v, primR (resolve:=resolve) ty q v) \\// uninitR (resolve:=resolve) ty q.
+    (Exists v, primR ty q v) \\// uninitR ty q.
   Definition anyR_aux : seal (@anyR_def). Proof. by eexists. Qed.
   Definition anyR := anyR_aux.(unseal).
   Definition anyR_eq : @anyR = _ := anyR_aux.(seal_eq).
   Global Arguments anyR {resolve} ty q : rename.
 
-  Global Instance anyR_affine resolve ty q : Affine (anyR (resolve:=resolve) ty q).
+  Global Instance anyR_affine resolve ty q : Affine (anyR ty q).
   Proof. rewrite anyR_eq. apply _. Qed.
-  Global Instance anyR_timeless resolve ty q : Timeless (anyR (resolve:=resolve) ty q).
+  Global Instance anyR_timeless resolve ty q : Timeless (anyR ty q).
   Proof. rewrite anyR_eq. apply _. Qed.
   Global Instance anyR_fractional resolve ty :
-    Fractional (anyR (resolve:=resolve) ty).
+    Fractional (anyR ty).
   Proof.
     rewrite anyR_eq /anyR_def. intros q1 q2.
     apply Rep_equiv_at => p. rewrite !_at_sep !_at_or !_at_exists.
@@ -620,11 +622,11 @@ Section with_cpp.
     - iRight. rewrite uninitR_fractional _at_sep. iFrame "U1 U2".
   Qed.
   Global Instance anyR_as_fractional resolve ty q :
-    AsFractional (anyR (resolve:=resolve) ty q) (anyR (resolve:=resolve) ty) q.
+    AsFractional (anyR ty q) (anyR ty) q.
   Proof. exact: Build_AsFractional. Qed.
 
   Global Instance anyR_observe_frac_valid resolve ty (q : Qp) :
-    Observe [| q ≤ 1 |]%Qc (anyR (resolve:=resolve) ty q).
+    Observe [| q ≤ 1 |]%Qc (anyR ty q).
   Proof. rewrite anyR_eq. apply _. Qed.
 
   Definition refR_def (ty : type) (p : ptr) : Rep :=
@@ -898,4 +900,4 @@ Arguments type_ptrR {_ Σ σ} _%bs.
 Arguments identityR {_ Σ σ} _%bs _%bs _%Qp.
 
 Instance Persistent_spec `{Σ:cpp_logic ti} {resolve:genv} nm s :
-  Persistent (_at (Σ:=Σ) (_global (resolve:=resolve) nm) (cptrR (resolve:=resolve) s)) := _.
+  Persistent (_at (Σ:=Σ) (_global nm) (cptrR s)) := _.
