@@ -514,6 +514,17 @@ Module Type VALID_PTR_AXIOMS.
     Axiom invalid_ptr_invalid : forall vt,
       _valid_ptr vt invalid_ptr |-- False.
 
+    (** Justified by [https://eel.is/c++draft/expr.add#4.1]. *)
+    Axiom _valid_ptr_nullptr_sub_false : forall vt ty (i : Z) (_ : i <> 0),
+      _valid_ptr vt (nullptr .., o_sub σ ty i) |-- False.
+    (*
+    TODO Controversial; if [f] is the first field, [nullptr->f] or casts relying on
+    https://eel.is/c++draft/basic.compound#4 might invalidate this.
+    To make this valid, we could ensure our axiomatic semantics produces
+    [nullptr] instead of [nullptr ., o_field]. *)
+    (* Axiom _valid_ptr_nullptr_field_false : forall vt f,
+      _valid_ptr vt (nullptr .., o_field σ f) |-- False. *)
+
     (* These axioms are named after the predicate in the conclusion. *)
     Axiom strict_valid_ptr_sub : ∀ p ty i vt,
       0 < i -> _valid_ptr vt (p .., o_sub σ ty i) |-- strict_valid_ptr p.
