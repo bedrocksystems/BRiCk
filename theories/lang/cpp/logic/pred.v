@@ -406,15 +406,15 @@ Module Type CPP_LOGIC (Import CC : CPP_LOGIC_CLASS)
      *)
     Parameter type_ptr : forall {resolve : genv} (c: type), ptr -> mpred.
     Axiom type_ptr_persistent : forall σ p ty,
-      Persistent (type_ptr (resolve:=σ) ty p).
+      Persistent (type_ptr ty p).
     Axiom type_ptr_affine : forall σ p ty,
-      Affine (type_ptr (resolve:=σ) ty p).
+      Affine (type_ptr ty p).
     Axiom type_ptr_timeless : forall σ p ty,
-      Timeless (type_ptr (resolve:=σ) ty p).
+      Timeless (type_ptr ty p).
     Global Existing Instances type_ptr_persistent type_ptr_affine type_ptr_timeless.
 
     Axiom type_ptr_aligned : forall σ ty p,
-      type_ptr (resolve := σ) ty p |--
+      type_ptr ty p |--
       Exists align, [| @align_of σ ty = Some align |] ** aligned_ptr align p.
 
     Axiom type_ptr_off_nonnull : forall {σ ty p o},
@@ -436,12 +436,12 @@ Module Type CPP_LOGIC (Import CC : CPP_LOGIC_CLASS)
     Recall that [type_ptr] and [strict_valid_ptr] don't include
     past-the-end pointers... *)
     Axiom type_ptr_strict_valid : forall resolve ty p,
-      type_ptr (resolve := resolve) ty p |-- strict_valid_ptr p.
+      type_ptr ty p |-- strict_valid_ptr p.
     (** Hence they can be incremented into (possibly past-the-end) valid pointers. *)
     Axiom type_ptr_valid_plus_one : forall resolve ty p,
-      type_ptr (resolve := resolve) ty p |-- valid_ptr (p .., o_sub resolve ty 1).
+      type_ptr ty p |-- valid_ptr (p .., o_sub resolve ty 1).
     Axiom type_ptr_nonnull : forall resolve ty p,
-      type_ptr (resolve := resolve) ty p |-- [| p <> nullptr |].
+      type_ptr ty p |-- [| p <> nullptr |].
 
     (**
      ** Deducing pointer equalities
@@ -627,11 +627,11 @@ Section with_cpp.
   Proof. repeat intro. exact: tptsto_mono. Qed.
 
   Global Instance tptsto_as_fractional {σ} ty q a v :
-    AsFractional (tptsto (σ := σ) ty q a v) (λ q, tptsto (σ := σ) ty q a v) q.
+    AsFractional (tptsto ty q a v) (λ q, tptsto ty q a v) q.
   Proof. exact: Build_AsFractional. Qed.
 
   Global Instance tptsto_observe_nonnull {σ} t q p v :
-    Observe [| p <> nullptr |] (tptsto (σ := σ) t q p v).
+    Observe [| p <> nullptr |] (tptsto t q p v).
   Proof.
     apply: observe_intro.
     destruct (ptr_eq_dec p nullptr); subst; last by eauto.
@@ -740,8 +740,8 @@ Section with_cpp.
   Qed.
 
   Lemma pinned_ptr_type_divide_1 va n σ p ty
-    (Hal : align_of (resolve := σ) ty = Some n) :
-    type_ptr (resolve := σ) ty p ⊢ pinned_ptr va p -∗ [| (n | va)%N |].
+    (Hal : align_of ty = Some n) :
+    type_ptr ty p ⊢ pinned_ptr va p -∗ [| (n | va)%N |].
   Proof.
     rewrite type_ptr_aligned Hal /=. iDestruct 1 as (? [= <-]) "A". iIntros "P".
     iApply (pinned_ptr_aligned_divide with "P A").
