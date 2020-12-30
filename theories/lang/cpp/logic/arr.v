@@ -72,8 +72,8 @@ Section validR.
   Lemma type_ptrR_validR_plus_one (ty : type) σ :
     type_ptrR ty ⊢@{RepI (Σ := Σ)} .[ ty ! 1 ] |-> validR .
   Proof.
-    constructor => p.
-    rewrite monPred_at_offsetR monPred_at_type_ptrR monPred_at_validR.
+    apply Rep_entails_at => p.
+    rewrite _at_type_ptrR _at_offsetL_offsetR _at_validR.
     exact: type_ptr_valid_plus_one.
   Qed.
 
@@ -86,8 +86,8 @@ Section validR.
   Lemma _sub_inv ty i resolve :
     _offsetR (_sub ty i) validR |-- [| is_Some (size_of resolve ty) |].
   Proof.
-    constructor => p.
-    rewrite monPred_at_offsetR monPred_at_validR monPred_at_only_provable.
+    apply Rep_entails_at => p.
+    rewrite _at_offsetL_offsetR _at_validR _at_only_provable.
     apply valid_o_sub_size.
   Qed.
 
@@ -95,8 +95,8 @@ Section validR.
     is_Some (size_of resolve ty) ->
     _offsetR (_sub ty 0) R -|- R.
   Proof.
-    constructor=>/= p.
-    by rewrite monPred_at_offsetR /= o_sub_0 // offset_ptr_id.
+    intros; apply Rep_equiv_at => p /=.
+    by rewrite _at_offsetL_offsetR /= o_sub_0 // offset_ptr_id.
   Qed.
 
   Lemma _sub_offsetR_add {resolve : genv} ty a b R :
@@ -113,7 +113,10 @@ Section validR.
 End validR.
 
 Definition arrR_def `{Σ : cpp_logic} {σ : genv} (ty : type) (Rs : list Rep) : Rep :=
-  [∗ list] i ↦ Ri ∈ Rs, _offsetR (_sub ty (Z.of_nat i)) (type_ptrR ty ** Ri).
+  .[ ty ! length Rs ] |-> validR ** [| is_Some (size_of σ ty) |] **
+  (* ^ both of these are only relevant for empty arrays, otherwise, they are implied by the
+     following conjunct *)
+  [∗ list] i ↦ Ri ∈ Rs, .[ ty ! Z.of_nat i ] |-> (type_ptrR ty ** Ri).
 Definition arrR_aux : seal (@arrR_def). Proof. by eexists. Qed.
 Definition arrR := arrR_aux.(unseal).
 Definition arrR_eq : @arrR = _ := arrR_aux.(seal_eq).
@@ -127,6 +130,7 @@ Section arrR.
   Proof.
     intros n l1 l2 Hl. rewrite arrR_eq /arrR_def.
     have Hlen := Forall2_length _ _ _ Hl.
+    f_equiv. f_equiv. by rewrite Hlen. f_equiv.
     apply big_sepL_gen_ne; first done.
     move=>k y1 y2 Hl1 Hl2. apply _offsetR_ne, bi.sep_ne, (inj Some); first done.
     rewrite -Hl1 -Hl2. by apply list_dist_lookup.
@@ -135,6 +139,7 @@ Section arrR.
   Proof.
     intros l1 l2 Hl. rewrite arrR_eq /arrR_def.
     have Hlen : length l1 = length l2 by apply (Forall2_length (≡)), equiv_Forall2.
+    f_equiv. f_equiv. by rewrite Hlen. f_equiv.
     apply big_sepL_gen_proper; first done.
     move=>k y1 y2 Hl1 Hl2. apply _offsetR_proper, bi.sep_proper, (inj Some); first done.
     rewrite -Hl1 -Hl2. by apply list_equiv_lookup.
@@ -145,6 +150,8 @@ Section arrR.
     TCForall Timeless Rs → Timeless (arrR ty Rs).
   Proof.
     rewrite TCForall_Forall Forall_forall=>HR. rewrite arrR_eq /arrR_def.
+    apply bi.sep_timeless; refine _.
+    apply bi.sep_timeless; refine _.
     apply big_sepL_gen_timeless=>k x Hk.
     apply _offsetR_timeless, (bi.sep_timeless _ _ _), HR. exact: elem_of_list_lookup_2.
   Qed.
@@ -152,6 +159,8 @@ Section arrR.
     TCForall Persistent Rs → Persistent (arrR ty Rs).
   Proof.
     rewrite TCForall_Forall Forall_forall=>HR. rewrite arrR_eq /arrR_def.
+    apply bi.sep_persistent; refine _.
+    apply bi.sep_persistent; refine _.
     apply big_sepL_gen_persistent=>k x Hk.
     apply _offsetR_persistent, (bi.sep_persistent _ _ _), HR. exact: elem_of_list_lookup_2.
   Qed.
@@ -159,44 +168,41 @@ Section arrR.
     TCForall Affine Rs → Affine (arrR ty Rs).
   Proof.
     rewrite TCForall_Forall Forall_forall=>HR. rewrite arrR_eq /arrR_def.
-    apply big_sepL_gen_affine=>k x Hk.
-    apply _offsetR_affine, (bi.sep_affine _ _ _), HR. exact: elem_of_list_lookup_2.
+    apply bi.sep_affine; refine _.
   Qed.
 
-  Lemma arrR_nil ty : arrR ty [] -|- emp.
-  Proof. by rewrite arrR_eq /arrR_def /=. Qed.
-
-  Lemma big_sepL_offsetR (o : offset) {T} (Rs : list T) : forall F,
-    (o |-> [∗list] i ↦ x ∈ Rs , F i x) -|- [∗list] i ↦ x ∈ Rs , o |-> F i x.
-  Proof.
-    induction Rs; simpl; intros.
-    - by rewrite _offsetR_emp.
-    - by rewrite _offsetR_sep IHRs.
-  Qed.
-
-  Global Instance arrR_inv ty R Rs : Observe ([| is_Some (size_of σ ty) |]) (arrR ty (R :: Rs)).
+  #[global] Instance arrR_inv ty R Rs : Observe ([| is_Some (size_of σ ty) |]) (arrR ty (R :: Rs)).
   Proof.
     apply: observe_intro_persistent.
     rewrite arrR_eq /arrR_def /= !_offsetR_sep.
-    constructor =>p/=.
-    rewrite !monPred_at_sep !monPred_at_offsetR/= !monPred_at_only_provable !monPred_at_type_ptrR.
+    apply Rep_entails_at =>p. rewrite !_at_sep !_at_offsetL_offsetR _at_type_ptrR _at_only_provable /=.
     rewrite type_ptr_strict_valid strict_valid_relaxed.
     rewrite valid_o_sub_size.
-    iIntros "[[$ _] _]".
+    iIntros "[_ [_ [[$ _] _]]]".
   Qed.
 
+  #[global] Instance arrR_valid_end ty Rs : Observe (.[ ty ! length Rs ] |-> validR) (arrR ty Rs).
+  Proof. rewrite arrR_eq /arrR_def /=. refine _. Qed.
 
-  #[local] Lemma arrR_cons_pre ty R Rs :
-    is_Some (size_of σ ty) → (* this side condition is annoying *)
-    arrR ty (R :: Rs) -|- type_ptrR ty ** R ** .[ ty ! 1] |-> arrR ty Rs.
+  Lemma arrR_nil ty : arrR ty [] -|- validR ** [| is_Some (size_of σ ty) |].
   Proof.
-    intros. rewrite arrR_eq /arrR_def /=.
-    rewrite _offsetR_sep !_sub_0 // (assoc bi_sep); f_equiv.
-    rewrite big_sepL_offsetR. f_equiv => i r.
-    apply Rep_equiv_at => p.
-    rewrite !_at_offsetL_offsetR.
-    rewrite Nat2Z.inj_succ -Z.add_1_l.
-    rewrite o_sub_sub_nneg //; lia.
+    rewrite arrR_eq /arrR_def /= right_id.
+    eapply (observe_both (is_Some (size_of σ ty))); refine _.
+    intro. by rewrite o_sub_0 // _offsetR_id.
+  Qed.
+
+  Lemma arrR_cons ty R Rs :
+    arrR ty (R :: Rs) -|- type_ptrR ty ** R ** .[ ty ! 1 ] |-> arrR ty Rs.
+  Proof.
+    rewrite arrR_eq/arrR_def /= !_offsetR_sep !_offsetR_only_provable.
+    eapply (observe_both (is_Some (size_of σ ty))); refine _; intro.
+    rewrite !o_sub_0 // !_offsetR_dot !_offsetR_id _offsetR_big_sepL o_dot_o_sub.
+    have ->: Z.of_nat (S (length Rs)) = (1 + Z.of_nat (length Rs))%Z; first by lia.
+    iSplit.
+    { iIntros "($ & _ & [$ $] & b)"; iFrame "%∗".
+      iStopProof; f_equiv => ? ?. rewrite _offsetR_dot o_dot_o_sub; f_equiv; f_equiv; lia. }
+    { iIntros "($ & $ & $ & _ & Rs)"; iFrame "%∗"; iStopProof.
+      f_equiv => ? ?. rewrite _offsetR_dot o_dot_o_sub; f_equiv; f_equiv; lia. }
   Qed.
 
   #[local] Instance type_ptrR_size_observe ty :
@@ -209,37 +215,58 @@ Section arrR.
     exact: type_ptr_size.
   Qed.
 
-  Lemma arrR_cons ty R Rs :
-    arrR ty (R :: Rs) -|- type_ptrR ty ** R ** _offsetR (_sub ty 1) (arrR ty Rs).
+  Instance arrR_size_of_observe : Observe [| is_Some (size_of σ ty) |] (arrR ty ys).
+  Proof. rewrite arrR_eq/arrR_def; refine _. Qed.
+  Instance arrR_valid_obs ty Rs (i : Z) (Hi : (0 ≤ i ≤ Z.of_nat (length Rs))%Z) :
+    Observe (.[ ty ! i ] |-> validR) (arrR ty Rs).
   Proof.
-    iSplit; iIntros "H";
-    iDestruct (observe [| is_Some (size_of σ ty) |] with "H") as %?;
-    by rewrite arrR_cons_pre.
+    eapply observe_intro; refine _.
+    eapply (observe_lhs (is_Some (size_of σ ty))); refine _; intro.
+    generalize dependent i.
+    induction Rs => i Hi /=; [ rewrite arrR_nil | rewrite arrR_cons ].
+    { simpl in *; have ->:i = 0; first lia.
+      iIntros "[#a %h]".
+      rewrite o_sub_0 // _offsetR_id //; iFrame "#%". }
+    { case (decide (0 < i)%Z) => Hlt.
+      { rewrite {1}(IHRs (i -1)%Z); last by simpl in *; split; lia.
+        rewrite _offsetR_sep _offsetR_dot o_dot_o_sub. iIntros "($ & $ & $ & x)".
+        iStopProof. f_equiv. f_equiv. lia. }
+      { have ->: i = 0; first by lia.
+        rewrite -svalidR_validR -type_ptrR_svalidR o_sub_0 // _offsetR_id.
+        iIntros "(#$ & $ & $)". } }
+  Qed.
+
+  Instance arrR_validR_observe : Observe validR (arrR ty ys).
+  Proof.
+    destruct ys.
+    { rewrite arrR_nil. refine _. }
+    { rewrite arrR_cons. rewrite type_ptrR_svalidR svalidR_validR; refine _. }
   Qed.
 
   Lemma arrR_append ty ys xs :
     arrR ty (xs ++ ys) -|- arrR ty xs ** .[ ty ! length xs ] |-> arrR ty ys.
   Proof.
     induction xs => /=.
-    { rewrite arrR_nil !left_id /=.
-      destruct ys.
-      { by rewrite arrR_nil _offsetR_emp. }
-      { apply (observe_both (is_Some (size_of σ ty))); refine _.
-        move => ?.
-          by rewrite arrR_cons _offsetR_sep !o_sub_0 // !_offsetR_id. } }
-    { rewrite !arrR_cons IHxs !_offsetR_sep -!assoc !_offsetR_dot. f_equiv. f_equiv. f_equiv.
-      apply Rep_equiv_at =>p.
-      rewrite !_at_offsetL_offsetR.
-      f_equiv. rewrite -_offsetL_dot o_sub_sub_nneg; try lia.
-      f_equiv. f_equiv. lia. }
+    { rewrite arrR_nil /=.
+      iSplit.
+      { iIntros "X".
+        iDestruct (observe validR with "X") as "#$".
+        iDestruct (observe [| is_Some (size_of σ ty) |] with "X") as "%".
+        iFrame "%". rewrite o_sub_0 // _offsetR_id. iFrame. }
+      { iIntros "[[_ %H] X]". rewrite o_sub_0 // _offsetR_id; eauto. } }
+    { rewrite !arrR_cons IHxs !_offsetR_sep !_offsetR_dot -!assoc o_dot_o_sub.
+      do 5 f_equiv. lia. }
   Qed.
 
-  (* TODO Same game here: *)
-  Lemma arrR_singleton ty R
-    (Hsz : is_Some (size_of σ ty)) :
-    arrR ty [R] -|-
-    type_ptrR ty ** R.
-  Proof. by rewrite arrR_eq /arrR_def /= right_id _offsetR_sep !_sub_0. Qed.
+  Lemma arrR_singleton ty R : arrR ty [R] -|- type_ptrR ty ** R.
+  Proof.
+    rewrite arrR_cons arrR_nil _offsetR_sep _offsetR_only_provable.
+    iSplit.
+    { iIntros "($ & $ & _ & %)". }
+    { iIntros "(#tp & r)".
+      iDestruct (observe [| is_Some (size_of σ ty) |] with "tp") as "#?".
+      rewrite -type_ptrR_validR_plus_one. iFrame "#∗". }
+  Qed.
 End arrR.
 
 Definition arrayR_def `{Σ : cpp_logic} {X : Type} {σ : genv} (ty : type) (P : X → Rep) (xs : list X) : Rep :=
@@ -256,18 +283,8 @@ Section array.
 
   #[local] Existing Instance type_ptrR_size_observe.
 
-  Lemma arrayR_nil : arrayR ty R [] -|- emp.
+  Lemma arrayR_nil : arrayR ty R [] -|- validR ** [| is_Some (size_of resolve ty) |].
   Proof. by rewrite arrayR_eq /arrayR_def arrR_nil. Qed.
-
-  (* NOTE(gmm) I this is a more reasonable definition of [arrayR_nil] *)
-  (* Lemma arrayR_nil {A} ty (R : A → Rep) :
-      arrayR ty R [] -|- ∃ sz, [| size_of resolve ty = Some sz |] ** validR.
-    Proof.
-      constructor=>base /=. rewrite monPred_at_exist. f_equiv=>sz.
-      by rewrite monPred_at_sep monPred_at_only_provable.
-    Qed. *)
-
-
 
   (** Compared to [array'_valid], this is a bientailment *)
   Lemma arrayR_cons x xs :
@@ -292,6 +309,10 @@ Section array.
     rewrite arrayR_eq/arrayR_def. eapply arrR_persistent.
     induction l; constructor; eauto.
   Qed.
+
+  Instance arrayR_valid_type_obs l :
+    Observe [| is_Some (size_of resolve ty) |] (arrayR ty R l).
+  Proof. rewrite arrayR_eq/arrayR_def; apply arrR_size_of_observe. Qed.
 
   Lemma arrayR_sub_type_ptr_nat_obs (i : nat) xs
         (Hlen : i < length xs) :
@@ -341,32 +362,20 @@ Section array.
     Observe (.[ ty ! i ] |-> svalidR) (arrayR ty R xs).
   Proof. intros. rewrite -type_ptrR_svalidR. exact: arrayR_sub_type_ptr_obs. Qed.
 
-  Lemma arrayR_sub_validR_obs (i : Z) xs :
-    (0 ≤ i < Z.of_nat $ length xs)%Z →
+  Lemma arrayR_validR_obs (i : Z) xs :
+    (0 ≤ i ≤ Z.of_nat $ length xs)%Z →
     Observe (.[ ty ! i ] |-> validR) (arrayR ty R xs).
-  Proof. intros. rewrite -svalidR_validR. exact: arrayR_sub_svalidR_obs. Qed.
+  Proof. intros. rewrite arrayR_eq/arrayR_def. apply arrR_valid_obs. rewrite fmap_length. lia. Qed.
 
-  (* Unlike [arrayR_sub_type_ptr_nat_obs], we get past-the-end validity, but only for lists of length >= 1. *)
   Lemma arrayR_valid_obs i xs
-        (Hlen : 1 <= length xs)
         (Hi : i ≤ length xs) :
     Observe (.[ ty ! i ] |-> validR) (arrayR ty R xs).
   Proof.
-    apply: observe_intro_persistent.
-    set j := pred i.
-    have Hj : j < length xs by simpl; lia.
-    rewrite (arrayR_sub_type_ptr_obs j) //; try lia; subst j.
-    apply Rep_entails_at => p. rewrite _at_pers.
-    iIntros "#H".
-    case: i Hi Hj => [|i] /= Hi Him; first
-                      by rewrite type_ptrR_validR.
-    rewrite type_ptrR_validR_plus_one.
-    rewrite !_at_offsetL_offsetR o_sub_sub_nneg; try lia.
-      by rewrite comm_L Z.add_1_l Nat2Z.inj_succ.
+    rewrite arrayR_eq/arrayR_def.
+    apply arrR_valid_obs. rewrite fmap_length; lia.
   Qed.
 
   Lemma _at_arrayR_valid_obs i xs p
-        (Hlen : 1 <= length xs)
         (Hi : i ≤ length xs) :
     Observe (p .[ ty ! i ] |-> validR) (p |-> arrayR ty R xs).
   Proof.
@@ -376,7 +385,6 @@ Section array.
 
   (** Closer to [array'_valid] *)
   Lemma _at_arrayR_valid i xs p
-        (Hlen : 1 <= length xs)
         (Hi : i ≤ length xs) :
     p |-> arrayR ty R xs -|-
       p |-> arrayR ty R xs ** p .[ ty ! i ] |-> validR.
@@ -389,38 +397,34 @@ Section array.
 
   (** Compared to [array'_split] this is a bientailment and does not need an index *)
   Lemma arrayR_app xs ys :
-    arrayR ty R (xs ++ ys) -|-
-           arrayR ty R xs **
-    .[ ty ! length xs ] |-> arrayR ty R ys.
+    arrayR ty R (xs ++ ys) -|- arrayR ty R xs ** .[ ty ! length xs ] |-> arrayR ty R ys.
   Proof.
       by rewrite arrayR_eq/arrayR_def fmap_app arrR_append fmap_length.
   Qed.
 
   (** Compared to [array'_split], this takes [i] as first *)
   Lemma arrayR_split i xs :
-    arrayR ty R xs |--
-           arrayR ty R (take i xs) **
-    .[ ty ! i ] |-> arrayR ty R (drop i xs).
+    i <= length xs ->
+        arrayR ty R xs
+    |-- arrayR ty R (take i xs) ** .[ ty ! i ] |-> arrayR ty R (drop i xs).
   Proof.
     intros. rewrite -{1}(take_drop i xs) arrayR_app.
     f_equiv.
-    destruct (decide (i <= length xs)).
-    { rewrite take_length_le; eauto. }
-    { rewrite drop_ge; last by lia.
-        by rewrite arrayR_nil !_offsetR_emp. }
+    rewrite take_length_le; eauto.
   Qed.
 
   (** Compared to [array'_combine], this takes [i] is first *)
   Lemma arrayR_combine i xs :
     arrayR ty R (take i xs) **
-    .[ ty ! i ] |-> arrayR ty R (drop i xs) |--
-                arrayR ty R xs.
+        .[ ty ! i ] |-> arrayR ty R (drop i xs)
+    |-- arrayR ty R xs.
   Proof.
-    rewrite -{3}(take_drop i xs). destruct (decide (i <= length xs)).
+    rewrite -{3}(take_drop i xs).
+    destruct (decide (i <= length xs)).
     - rewrite -{3}(take_length_le xs i) // arrayR_app.
       f_equiv. rewrite take_length_le //.
     - rewrite take_ge ?drop_ge /=; [ |lia|lia].
-        by rewrite right_id_L bi.sep_elim_l.
+      by rewrite bi.sep_elim_l app_nil_r.
   Qed.
 
   (** Compare [arrayR_cell], [array_idx_with_addr] *)
@@ -452,7 +456,7 @@ End array.
 Proof.
   red. intros.
   induction l.
-  { rewrite !arrayR_nil. iSplit; eauto. }
+  { rewrite !arrayR_nil. iSplit; eauto. iIntros "[[#a b] _]"; eauto. }
   { rewrite !arrayR_cons IHl H !_offsetR_sep. iSplit.
     { iIntros "(#a & [b c] & d & e)"; iFrame "∗#". }
     { iIntros "([a [b c]] & [_ [e f]])"; iFrame. } }
@@ -462,5 +466,4 @@ Qed.
  `{!∀ x, Fractional (λ q, P q x)} :
   AsFractional (arrayR t (P q) l) (λ q, arrayR t (P q) l) q.
 Proof. exact: Build_AsFractional. Qed.
-
 
