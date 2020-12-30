@@ -215,24 +215,32 @@ Section arrR.
     exact: type_ptr_size.
   Qed.
 
-  (*
-  Lemma arrR_cons ty R Rs :
-    arrR ty (R :: Rs) -|- type_ptrR ty ** R ** _offsetR (_sub ty 1) (arrR ty Rs).
-  Proof.
-    iSplit; iIntros "H";
-    iDestruct (observe [| is_Some (size_of σ ty) |] with "H") as %?;
-    by rewrite arrR_cons_pre.
-  Qed.
-*)
-
   Instance arrR_validR_observe : Observe validR (arrR ty ys).
   Proof.
     destruct ys.
     { rewrite arrR_nil. refine _. }
     { rewrite arrR_cons. rewrite type_ptrR_svalidR svalidR_validR; refine _. }
   Qed.
+
   Instance arrR_size_of_observe : Observe [| is_Some (size_of σ ty) |] (arrR ty ys).
   Proof. rewrite arrR_eq/arrR_def; refine _. Qed.
+  Instance arrR_valid_obs ty Rs i (Hi : i ≤ length Rs) :
+    Observe (.[ ty ! i ] |-> validR) (arrR ty Rs).
+  Proof.
+    eapply observe_intro; refine _.
+    eapply (observe_lhs (is_Some (size_of σ ty))); refine _; intro.
+    generalize dependent i.
+    induction Rs => i Hi /=; [ rewrite arrR_nil | rewrite arrR_cons ].
+    { simpl in *; have ->:i = 0; first lia.
+      iIntros "[#a %h]".
+      rewrite o_sub_0 // _offsetR_id //; iFrame "#%". }
+    { destruct i.
+      { rewrite o_sub_0 // _offsetR_id.
+        iIntros "(#a & b & c)"; iFrame "#∗".
+          by rewrite type_ptrR_svalidR svalidR_validR. }
+      { rewrite {1}(IHRs i). rewrite _offsetR_sep _offsetR_dot. iIntros "($ & $ & $ & x)".
+        rewrite o_dot_o_sub. iStopProof. f_equiv. f_equiv. lia. simpl in *; lia. } }
+  Qed.
 
   Lemma arrR_append ty ys xs :
     arrR ty (xs ++ ys) -|- arrR ty xs ** .[ ty ! length xs ] |-> arrR ty ys.
@@ -355,23 +363,12 @@ Section array.
     Observe (.[ ty ! i ] |-> validR) (arrayR ty R xs).
   Proof. intros. rewrite -svalidR_validR. exact: arrayR_sub_svalidR_obs. Qed.
 
-  (* Unlike [arrayR_sub_type_ptr_nat_obs], we get past-the-end validity, but only for lists of length >= 1. *)
   Lemma arrayR_valid_obs i xs
-        (Hlen : 1 <= length xs)
         (Hi : i ≤ length xs) :
     Observe (.[ ty ! i ] |-> validR) (arrayR ty R xs).
   Proof.
-    apply: observe_intro_persistent.
-    set j := pred i.
-    have Hj : j < length xs by simpl; lia.
-    rewrite (arrayR_sub_type_ptr_obs j) //; try lia; subst j.
-    apply Rep_entails_at => p. rewrite _at_pers.
-    iIntros "#H".
-    case: i Hi Hj => [|i] /= Hi Him; first
-                      by rewrite type_ptrR_validR.
-    rewrite type_ptrR_validR_plus_one.
-    rewrite !_at_offsetL_offsetR o_sub_sub_nneg; try lia.
-      by rewrite comm_L Z.add_1_l Nat2Z.inj_succ.
+    rewrite arrayR_eq/arrayR_def.
+    apply arrR_valid_obs. by rewrite fmap_length.
   Qed.
 
   Lemma _at_arrayR_valid_obs i xs p
@@ -398,9 +395,7 @@ Section array.
 
   (** Compared to [array'_split] this is a bientailment and does not need an index *)
   Lemma arrayR_app xs ys :
-    arrayR ty R (xs ++ ys) -|-
-           arrayR ty R xs **
-    .[ ty ! length xs ] |-> arrayR ty R ys.
+    arrayR ty R (xs ++ ys) -|- arrayR ty R xs ** .[ ty ! length xs ] |-> arrayR ty R ys.
   Proof.
       by rewrite arrayR_eq/arrayR_def fmap_app arrR_append fmap_length.
   Qed.
