@@ -214,21 +214,21 @@ Section with_cpp.
     Fractional r → AsFractional (_offsetR o (r q)) (λ q, _offsetR o (r q)) q.
   Proof. constructor. done. apply _. Qed.
 
-  Global Instance _offsetR_observe Q o (R : Rep) :
+  Global Instance _offsetR_observe_only_provable Q o (R : Rep) :
     Observe [| Q |] R → Observe [| Q |] (_offsetR o R).
   Proof. intros. rewrite _offsetR_eq. apply _. Qed.
-  Global Instance _offsetR_observe_2 Q o (R1 R2 : Rep) :
+  Global Instance _offsetR_observe_2_only_provable Q o (R1 R2 : Rep) :
     Observe2 [| Q |] R1 R2 → Observe2 [| Q |] (_offsetR o R1) (_offsetR o R2).
   Proof.
     intros Hobs. apply observe_uncurry. rewrite -_offsetR_sep.
-    apply _offsetR_observe, observe_curry, Hobs.
+    apply _offsetR_observe_only_provable, observe_curry, Hobs.
   Qed.
 
   Lemma _offsetR_obs o r P :
     r |-- r ** [| P |] →
     _offsetR o r |-- _offsetR o r ** [| P |].
   Proof.
-    intros. apply observe_elim, _offsetR_observe. exact: observe_intro.
+    intros. apply observe_elim, _offsetR_observe_only_provable. exact: observe_intro.
   Qed.
   (* Pulled in from plogic. *)
   Lemma _offsetR_id (R : Rep) :
