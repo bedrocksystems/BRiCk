@@ -215,16 +215,9 @@ Section arrR.
     exact: type_ptr_size.
   Qed.
 
-  Instance arrR_validR_observe : Observe validR (arrR ty ys).
-  Proof.
-    destruct ys.
-    { rewrite arrR_nil. refine _. }
-    { rewrite arrR_cons. rewrite type_ptrR_svalidR svalidR_validR; refine _. }
-  Qed.
-
   Instance arrR_size_of_observe : Observe [| is_Some (size_of σ ty) |] (arrR ty ys).
   Proof. rewrite arrR_eq/arrR_def; refine _. Qed.
-  Instance arrR_valid_obs ty Rs i (Hi : i ≤ length Rs) :
+  Instance arrR_valid_obs ty Rs (i : Z) (Hi : (0 ≤ i ≤ Z.of_nat (length Rs))%Z) :
     Observe (.[ ty ! i ] |-> validR) (arrR ty Rs).
   Proof.
     eapply observe_intro; refine _.
@@ -234,12 +227,20 @@ Section arrR.
     { simpl in *; have ->:i = 0; first lia.
       iIntros "[#a %h]".
       rewrite o_sub_0 // _offsetR_id //; iFrame "#%". }
-    { destruct i.
-      { rewrite o_sub_0 // _offsetR_id.
-        iIntros "(#a & b & c)"; iFrame "#∗".
-          by rewrite type_ptrR_svalidR svalidR_validR. }
-      { rewrite {1}(IHRs i). rewrite _offsetR_sep _offsetR_dot. iIntros "($ & $ & $ & x)".
-        rewrite o_dot_o_sub. iStopProof. f_equiv. f_equiv. lia. simpl in *; lia. } }
+    { case (decide (0 < i)%Z) => Hlt.
+      { rewrite {1}(IHRs (i -1)%Z); last by simpl in *; split; lia.
+        rewrite _offsetR_sep _offsetR_dot o_dot_o_sub. iIntros "($ & $ & $ & x)".
+        iStopProof. f_equiv. f_equiv. lia. }
+      { have ->: i = 0; first by lia.
+        rewrite -svalidR_validR -type_ptrR_svalidR o_sub_0 // _offsetR_id.
+        iIntros "(#$ & $ & $)". } }
+  Qed.
+
+  Instance arrR_validR_observe : Observe validR (arrR ty ys).
+  Proof.
+    destruct ys.
+    { rewrite arrR_nil. refine _. }
+    { rewrite arrR_cons. rewrite type_ptrR_svalidR svalidR_validR; refine _. }
   Qed.
 
   Lemma arrR_append ty ys xs :
@@ -256,7 +257,6 @@ Section arrR.
     { rewrite !arrR_cons IHxs !_offsetR_sep !_offsetR_dot -!assoc o_dot_o_sub.
       do 5 f_equiv. lia. }
   Qed.
-
 
   Lemma arrR_singleton ty R : arrR ty [R] -|- type_ptrR ty ** R.
   Proof.
@@ -358,17 +358,17 @@ Section array.
     Observe (.[ ty ! i ] |-> svalidR) (arrayR ty R xs).
   Proof. intros. rewrite -type_ptrR_svalidR. exact: arrayR_sub_type_ptr_obs. Qed.
 
-  Lemma arrayR_sub_validR_obs (i : Z) xs :
-    (0 ≤ i < Z.of_nat $ length xs)%Z →
+  Lemma arrayR_validR_obs (i : Z) xs :
+    (0 ≤ i ≤ Z.of_nat $ length xs)%Z →
     Observe (.[ ty ! i ] |-> validR) (arrayR ty R xs).
-  Proof. intros. rewrite -svalidR_validR. exact: arrayR_sub_svalidR_obs. Qed.
+  Proof. intros. rewrite arrayR_eq/arrayR_def. apply arrR_valid_obs. rewrite fmap_length. lia. Qed.
 
   Lemma arrayR_valid_obs i xs
         (Hi : i ≤ length xs) :
     Observe (.[ ty ! i ] |-> validR) (arrayR ty R xs).
   Proof.
     rewrite arrayR_eq/arrayR_def.
-    apply arrR_valid_obs. by rewrite fmap_length.
+    apply arrR_valid_obs. rewrite fmap_length; lia.
   Qed.
 
   Lemma _at_arrayR_valid_obs i xs p
