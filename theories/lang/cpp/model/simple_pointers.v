@@ -3,15 +3,6 @@
  * This software is distributed under the terms of the BedRock Open-Source License. 
  * See the LICENSE-BedRock file in the repository root for details. 
  *)
-From iris.algebra Require Import excl gmap.
-From iris.algebra.lib Require Import frac_auth.
-From iris.bi Require Import monpred.
-From iris.bi.lib Require Import fractional.
-From iris.base_logic.lib Require Export iprop.
-From iris.base_logic.lib Require Import fancy_updates own.
-From iris.base_logic.lib Require Import cancelable_invariants.
-From iris.proofmode Require Import tactics.
-From iris_string_ident Require Import ltac2_string_ident.
 
 From bedrock.lang.prelude Require Import base avl bytestring option.
 
