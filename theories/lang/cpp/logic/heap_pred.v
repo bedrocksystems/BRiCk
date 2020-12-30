@@ -33,7 +33,7 @@ Bind Scope bi_scope with Rep.
 Bind Scope bi_scope with RepI.
 Bind Scope bi_scope with RepO.
 
-Implicit Types (σ resolve : genv).
+Implicit Types (σ resolve : genv) (p : ptr) (o : offset).
 
 Section with_cpp.
   Context `{Σ : cpp_logic}.
@@ -504,11 +504,11 @@ Section with_cpp.
     rewrite primR_eq/primR_def. by setoid_rewrite Hσ.
   Qed.
 
-  Global Instance primR_affine resolve ty q p
-    : Affine (primR ty q p).
+  Global Instance primR_affine resolve ty q v
+    : Affine (primR ty q v).
   Proof. rewrite primR_eq. apply _. Qed.
-  Global Instance primR_timeless resolve ty q p
-    : Timeless (primR ty q p).
+  Global Instance primR_timeless resolve ty q v
+    : Timeless (primR ty q v).
   Proof. rewrite primR_eq. apply _. Qed.
 
   Global Instance primR_fractional resolve ty v :
