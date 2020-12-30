@@ -193,7 +193,7 @@ Section with_cpp.
   Qed.
 
   Lemma _offsetR_wand o (P Q : Rep) :
-      _offsetR o (P -* Q) |-- (_offsetR o P -* _offsetR o Q).
+      _offsetR o (P -* Q) |-- _offsetR o P -* _offsetR o Q.
   Proof.
     rewrite !_offsetR_eq /_offsetR_def /=.
     constructor=> p/=. by rewrite !Rep_wand_force.
@@ -340,7 +340,7 @@ Section with_cpp.
   Proof. by rewrite !_at_loc monPred_at_or. Qed.
 
   Lemma _at_wand (l : ptr) (P Q : Rep) :
-      _at l (P -* Q) |-- (_at l P -* _at l Q).
+      _at l (P -* Q) |-- _at l P -* _at l Q.
   Proof. by rewrite !_at_loc monPred_wand_force. Qed.
 
   Lemma _at_pers (l : ptr) R : _at l (<pers> R) -|- <pers> _at l R.
