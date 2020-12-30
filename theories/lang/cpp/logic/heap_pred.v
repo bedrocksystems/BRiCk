@@ -867,7 +867,6 @@ Section with_cpp.
     end.
 
 
-  Local Existing Instance tptsto_type_ptr.
   (** Observing [type_ptr] *)
   #[global]
   Instance primR_type_ptr_observe σ ty q v : Observe (type_ptrR σ ty) (primR ty q v).
