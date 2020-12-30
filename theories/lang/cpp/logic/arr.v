@@ -72,8 +72,8 @@ Section validR.
   Lemma type_ptrR_validR_plus_one (ty : type) σ :
     type_ptrR ty ⊢@{RepI (Σ := Σ)} .[ ty ! 1 ] |-> validR .
   Proof.
-    constructor => p.
-    rewrite monPred_at_offsetR monPred_at_type_ptrR monPred_at_validR.
+    apply Rep_entails_at => p.
+    rewrite _at_type_ptrR _at_offsetL_offsetR _at_validR.
     exact: type_ptr_valid_plus_one.
   Qed.
 
@@ -86,8 +86,8 @@ Section validR.
   Lemma _sub_inv ty i resolve :
     _offsetR (_sub ty i) validR |-- [| is_Some (size_of resolve ty) |].
   Proof.
-    constructor => p.
-    rewrite monPred_at_offsetR monPred_at_validR monPred_at_only_provable.
+    apply Rep_entails_at => p.
+    rewrite _at_offsetL_offsetR _at_validR _at_only_provable.
     apply valid_o_sub_size.
   Qed.
 
@@ -95,8 +95,8 @@ Section validR.
     is_Some (size_of resolve ty) ->
     _offsetR (_sub ty 0) R -|- R.
   Proof.
-    constructor=>/= p.
-    by rewrite monPred_at_offsetR /= o_sub_0 // offset_ptr_id.
+    intros; apply Rep_equiv_at => p /=.
+    by rewrite _at_offsetL_offsetR /= o_sub_0 // offset_ptr_id.
   Qed.
 
   Lemma _sub_offsetR_add {resolve : genv} ty a b R :
@@ -310,6 +310,10 @@ Section array.
     induction l; constructor; eauto.
   Qed.
 
+  Instance arrayR_valid_type_obs l :
+    Observe [| is_Some (size_of resolve ty) |] (arrayR ty R l).
+  Proof. rewrite arrayR_eq/arrayR_def; apply arrR_size_of_observe. Qed.
+
   Lemma arrayR_sub_type_ptr_nat_obs (i : nat) xs
         (Hlen : i < length xs) :
     Observe (.[ ty ! i ] |-> type_ptrR ty) (arrayR ty R xs).
@@ -372,7 +376,6 @@ Section array.
   Qed.
 
   Lemma _at_arrayR_valid_obs i xs p
-        (Hlen : 1 <= length xs)
         (Hi : i ≤ length xs) :
     Observe (p .[ ty ! i ] |-> validR) (p |-> arrayR ty R xs).
   Proof.
@@ -382,7 +385,6 @@ Section array.
 
   (** Closer to [array'_valid] *)
   Lemma _at_arrayR_valid i xs p
-        (Hlen : 1 <= length xs)
         (Hi : i ≤ length xs) :
     p |-> arrayR ty R xs -|-
       p |-> arrayR ty R xs ** p .[ ty ! i ] |-> validR.
@@ -403,9 +405,8 @@ Section array.
   (** Compared to [array'_split], this takes [i] as first *)
   Lemma arrayR_split i xs :
     i <= length xs ->
-    arrayR ty R xs |--
-           arrayR ty R (take i xs) **
-    .[ ty ! i ] |-> arrayR ty R (drop i xs).
+        arrayR ty R xs
+    |-- arrayR ty R (take i xs) ** .[ ty ! i ] |-> arrayR ty R (drop i xs).
   Proof.
     intros. rewrite -{1}(take_drop i xs) arrayR_app.
     f_equiv.
@@ -415,8 +416,8 @@ Section array.
   (** Compared to [array'_combine], this takes [i] is first *)
   Lemma arrayR_combine i xs :
     arrayR ty R (take i xs) **
-    .[ ty ! i ] |-> arrayR ty R (drop i xs) |--
-                arrayR ty R xs.
+        .[ ty ! i ] |-> arrayR ty R (drop i xs)
+    |-- arrayR ty R xs.
   Proof.
     rewrite -{3}(take_drop i xs).
     destruct (decide (i <= length xs)).
