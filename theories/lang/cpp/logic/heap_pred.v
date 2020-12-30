@@ -345,26 +345,23 @@ Section with_cpp.
     AsFractional (_at l (r q)) (λ q, _at l (r q)) q.
   Proof. constructor. done. apply _. Qed.
 
-  (* TODO: consider making this an instance, but test performance impact. *)
-  Lemma _at_observe {p} {Q R : Rep} :
+  (* TODO: consider making this a global instance, but test performance impact. *)
+  Local Instance _at_observe {p} {Q R : Rep} :
     Observe Q R ->
     Observe (_at p Q) (_at p R).
   Proof. move->. by rewrite /Observe _at_pers. Qed.
 
-  Lemma _at_observe_2 {p} {Q R1 R2 : Rep} :
+  Local Instance _at_observe_2 {p} {Q R1 R2 : Rep} :
     Observe2 Q R1 R2 ->
     Observe2 (_at p Q) (_at p R1) (_at p R2).
   Proof. move->. by rewrite /Observe2 _at_wand _at_pers. Qed.
 
-  (* TODO: Derive from [_at_observe]? *)
   Global Instance _at_observe_only_provable Q l (R : Rep) :
     Observe [| Q |] R → Observe [| Q |] (_at l R).
-  (* Proof. intros Hobs. rewrite -_at_only_provable. exact: _at_observe. Qed. *)
-  Proof. rewrite _at_eq. apply _. Qed.
+  Proof. rewrite -_at_only_provable. apply _. Qed.
   Global Instance _at_observe_2_only_provable Q l (R1 R2 : Rep) :
     Observe2 [| Q |] R1 R2 → Observe2 [| Q |] (_at l R1) (_at l R2).
-  (* Proof. intros Hobs. rewrite -_at_only_provable. exact: _at_observe_2. Qed. *)
-  Proof. rewrite _at_eq. apply _. Qed.
+  Proof. rewrite -_at_only_provable. apply _. Qed.
 
   Lemma _at_obs (l : ptr) (r : Rep) P :
     r |-- r ** [| P |] →
