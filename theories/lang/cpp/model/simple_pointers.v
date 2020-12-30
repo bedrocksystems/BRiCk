@@ -426,7 +426,6 @@ Module PTRS_IMPL : PTRS_INTF.
       (* This premise is a hack, but without it, normalization might not be deterministic. Thankfully, paths can't contain o_derived step, so we're good! *)
       (* roff_canon (o_base_ derived base :: s) (o_base_ derived base :: d) -> *)
       roff_canon ((o_derived_ base derived, o1) :: (o_base_ derived base, o2) :: s) d
-    (* correct, not supported below. *)
     | o_sub_0_canon s d ty :
       roff_canon s d ->
       roff_canon ((o_sub_ ty 0, 0) :: s) d
@@ -481,7 +480,7 @@ Module PTRS_IMPL : PTRS_INTF.
         if decide (ty1 <> ty2)
           then os :: oss
           else if decide (n2 + n1 = 0 /\ off1 + off2 = 0)%Z
-          then oss
+          then oss'
           else (o_sub_ ty1 (n2 + n1), (off2 + off1)%Z) :: oss'
         | _ => os :: oss
       end
