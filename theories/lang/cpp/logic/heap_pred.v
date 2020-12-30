@@ -867,32 +867,28 @@ Section with_cpp.
     end.
 
 
+  Local Existing Instance tptsto_type_ptr.
   (** Observing [type_ptr] *)
   #[global]
   Instance primR_type_ptr_observe σ ty q v : Observe (type_ptrR σ ty) (primR ty q v).
   Proof.
     red. rewrite primR_eq/primR_def.
     apply Rep_entails_at => p. rewrite _at_as_Rep _at_pers _at_type_ptrR.
-    iIntros "[A _]".
-    iDestruct (observe (type_ptr ty p) with "A") as "$".
-    apply tptsto_type_ptr.
+    apply: observe.
   Qed.
   #[global]
   Instance uninitR_type_ptr_observe σ ty q : Observe (type_ptrR σ ty) (uninitR ty q).
   Proof.
     red. rewrite uninitR_eq/uninitR_def.
     apply Rep_entails_at => p. rewrite _at_as_Rep _at_pers _at_type_ptrR.
-    iIntros "[A _]".
-    iDestruct (observe (type_ptr ty p) with "A") as "$".
-    apply tptsto_type_ptr.
+    apply: observe.
   Qed.
 
   #[global]
   Instance anyR_type_ptr_observe σ ty q : Observe (type_ptrR σ ty) (anyR ty q).
   Proof.
     red. rewrite anyR_eq/anyR_def.
-    iDestruct 1 as "[a|a]"; first iDestruct "a" as (?) "a"; iStopProof.
-    all: apply: observe.
+    apply: observe.
   Qed.
 
   (** Observing [valid_ptr] *)
