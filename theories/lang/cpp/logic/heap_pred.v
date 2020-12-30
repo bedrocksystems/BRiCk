@@ -469,7 +469,7 @@ Section with_cpp.
   Definition primR_aux : seal (@primR_def). Proof. by eexists. Qed.
   Definition primR := primR_aux.(unseal).
   Definition primR_eq : @primR = _ := primR_aux.(seal_eq).
-  Arguments primR {resolve} ty q v : rename.
+  Global Arguments primR {resolve} ty q v : rename.
 
   Global Instance primR_proper :
     Proper (genv_eq ==> (=) ==> (=) ==> (=) ==> (⊣⊢)) (@primR).
@@ -531,7 +531,7 @@ Section with_cpp.
   Definition uninitR_aux : seal (@uninitR_def). Proof. by eexists. Qed.
   Definition uninitR := uninitR_aux.(unseal).
   Definition uninitR_eq : @uninitR = _ := uninitR_aux.(seal_eq).
-  Arguments uninitR {resolve} ty q : rename.
+  Global Arguments uninitR {resolve} ty q : rename.
 
   Global Instance uninitR_proper
     : Proper (genv_eq ==> (=) ==> (=) ==> (=) ==> lequiv) (@uninitR).
@@ -585,7 +585,7 @@ Section with_cpp.
   Definition anyR_aux : seal (@anyR_def). Proof. by eexists. Qed.
   Definition anyR := anyR_aux.(unseal).
   Definition anyR_eq : @anyR = _ := anyR_aux.(seal_eq).
-  Arguments anyR {resolve} ty q : rename.
+  Global Arguments anyR {resolve} ty q : rename.
 
   Global Instance anyR_affine resolve ty q : Affine (anyR (resolve:=resolve) ty q).
   Proof. rewrite anyR_eq. apply _. Qed.
@@ -691,9 +691,6 @@ Global Opaque _at _offsetR primR.
 Typeclasses Opaque pureR.
 Typeclasses Opaque as_Rep.
 
-Arguments anyR {_ Σ resolve} ty q : rename.
-Arguments uninitR {_ Σ resolve} ty q : rename.
-Arguments primR {_ Σ resolve} ty q v : rename.
 Arguments refR {_ Σ} ty v : rename.
 Arguments cptr {_ Σ resolve} _ : rename.
 
