@@ -741,7 +741,7 @@ Module Type Expr.
         NOTE The [resolve_virtual] below means that caller justifies the cast to the dynamic type.
              This is necessary because the function is expecting the correct [this] pointer.
      *)
-    Axiom wp_xval_virtual_call : forall ty fty f vc obj es Q, 
+    Axiom wp_xval_virtual_call : forall ty fty f vc obj es Q,
       wp_specific_glval vc obj (fun this free => wp_args es (fun vs free' =>
           match class_type (type_of obj) with
           | Some cls =>
@@ -946,17 +946,24 @@ Module Type Expr.
         wp_prval e (fun v free => (* TODO backwards compat [_at (_eqv v) (anyR ty 1) ** (_at (_eqv v) (tblockR ty) -*] *) Q Vundef free)
         |-- wp_prval (Epseudo_destructor ty e) Q.
 
-    (* Implicit initialization initializes the variables with
-       indeterminate values.
+    (* `Eimplicit_init` nodes reflect implicit /value initializations/ which are inserted
+       into the AST by Clang [1]. The C++ standard states that value initializations [2]
+       are equivalent to zero initializations for non-class and non-array types [3];
+       zero initializations are documented here [4].
+
+       [1] https://clang.llvm.org/doxygen/classclang_1_1ImplicitValueInitExpr.html#details
+       [2] https://eel.is/c++draft/dcl.init#general-8
+       [3] https://eel.is/c++draft/dcl.init#general-8.3
+       [4] https://eel.is/c++draft/dcl.init#general-6
      *)
     Axiom wp_prval_implicit_init_int : forall ty sz sgn Q,
         drop_qualifiers ty = Tint sz sgn ->
-          Q Vundef emp
+          Q (Vint 0) emp
       |-- wp_prval (Eimplicit_init ty) Q.
 
     Axiom wp_prval_implicit_init_bool : forall ty Q,
         drop_qualifiers ty = Tbool ->
-          Q Vundef emp
+          Q (Vbool false) emp
       |-- wp_prval (Eimplicit_init ty) Q.
 
   End with_resolve.
