@@ -697,7 +697,15 @@ Section with_cpp.
   Global Instance _type_ptr_persistent σ ty : Persistent (_type_ptr σ ty).
   Proof. apply _. Qed.
 
+  Definition type_ptrR_def σ (t : type) : Rep := as_Rep (@type_ptr _ _ σ t).
+  Definition type_ptrR_aux : seal (@type_ptrR_def). Proof. by eexists. Qed.
+  Definition type_ptrR := type_ptrR_aux.(unseal).
+
   (********************* DERIVED CONCEPTS ****************************)
+
+  Definition validR_def : Rep := as_Rep valid_ptr.
+  Definition validR_aux : seal (@validR_def). Proof. by eexists. Qed.
+  Definition validR := validR_aux.(unseal).
 
   Definition is_null_def : Rep :=
     as_Rep (fun addr => [| addr = nullptr |]).
@@ -759,6 +767,8 @@ End with_cpp.
 
 Typeclasses Opaque _identity.
 Typeclasses Opaque _type_ptr.
+Typeclasses Opaque type_ptrR.
+Arguments type_ptrR {_ Σ σ} _%bs.
 
 Instance Persistent_spec `{Σ:cpp_logic ti} {resolve:genv} nm s :
   Persistent (_at (Σ:=Σ) (_global (resolve:=resolve) nm) (cptr (resolve:=resolve) s)) := _.
