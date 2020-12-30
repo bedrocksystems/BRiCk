@@ -186,6 +186,19 @@ Section with_cpp.
     by constructor=> p/=; rewrite !monPred_at_or.
   Qed.
 
+  Lemma _offsetR_pers o R : _offsetR o (<pers> R) -|- <pers> _offsetR o R.
+  Proof.
+    rewrite !_offsetR_eq /_offsetR_def /=.
+    constructor=> p/=. by rewrite !monPred_at_persistently.
+  Qed.
+
+  Lemma _offsetR_wand o (P Q : Rep) :
+      _offsetR o (P -* Q) |-- (_offsetR o P -* _offsetR o Q).
+  Proof.
+    rewrite !_offsetR_eq /_offsetR_def /=.
+    constructor=> p/=. by rewrite !Rep_wand_force.
+  Qed.
+
   Lemma _offsetR_big_sepL (o : offset) {T} (Rs : list T) : forall F,
     _offsetR o ([∗list] i ↦ x ∈ Rs , F i x) -|- [∗list] i ↦ x ∈ Rs , _offsetR o (F i x).
   Proof.
