@@ -6,19 +6,14 @@
 Require Import stdpp.telescopes.
 Require Import bedrock.lang.prelude.bytestring.
 Require Import bedrock.lang.cpp.logic.
+Require Import bedrock.lang.prelude.telescopes.
 Require bedrock.lang.cpp.heap_notations.
+
+Set Universe Polymorphism.
 
 Declare Scope fspec_scope.
 Delimit Scope fspec_scope with fspec.
 Bind Scope fspec_scope with WithPrePost.
-
-Set Universe Polymorphism.
-
-Fixpoint tele_append (t : tele) {struct t}: (t -t> tele) -> tele :=
-  match t as t return (t -t> tele) -> tele with
-  | TeleO => fun x : tele => x
-  | @TeleS T f => fun x => @TeleS T (fun t => tele_append (f t) (x t))
-  end.
 
 Section with_Σ.
   Context `{PROP : bi}.
