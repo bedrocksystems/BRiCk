@@ -417,10 +417,9 @@ Module Type CPP_LOGIC (Import CC : CPP_LOGIC_CLASS)
       type_ptr (resolve := σ) ty p |--
       Exists align, [| @align_of σ ty = Some align |] ** aligned_ptr align p.
 
-    (* Intentionally not an instance, and exposed through
-    [tptsto_observe_type_ptr]. *)
     Axiom tptsto_type_ptr : forall (σ : genv) ty q p v,
       Observe (type_ptr ty p) (tptsto ty q p v).
+    Global Existing Instance tptsto_type_ptr.
 
     (* All objects in the C++ abstract machine have a size
 

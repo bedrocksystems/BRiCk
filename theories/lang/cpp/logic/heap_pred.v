@@ -33,7 +33,7 @@ Bind Scope bi_scope with Rep.
 Bind Scope bi_scope with RepI.
 Bind Scope bi_scope with RepO.
 
-Implicit Types (σ resolve : genv).
+Implicit Types (σ resolve : genv) (p : ptr) (o : offset).
 
 Section with_cpp.
   Context `{Σ : cpp_logic}.
@@ -186,6 +186,19 @@ Section with_cpp.
     by constructor=> p/=; rewrite !monPred_at_or.
   Qed.
 
+  Lemma _offsetR_pers o R : _offsetR o (<pers> R) -|- <pers> _offsetR o R.
+  Proof.
+    rewrite !_offsetR_eq /_offsetR_def /=.
+    constructor=> p/=. by rewrite !monPred_at_persistently.
+  Qed.
+
+  Lemma _offsetR_wand o (P Q : Rep) :
+      _offsetR o (P -* Q) |-- _offsetR o P -* _offsetR o Q.
+  Proof.
+    rewrite !_offsetR_eq /_offsetR_def /=.
+    constructor=> p/=. by rewrite !Rep_wand_force.
+  Qed.
+
   Lemma _offsetR_big_sepL (o : offset) {T} (Rs : list T) : forall F,
     _offsetR o ([∗list] i ↦ x ∈ Rs , F i x) -|- [∗list] i ↦ x ∈ Rs , _offsetR o (F i x).
   Proof.
@@ -201,21 +214,29 @@ Section with_cpp.
     Fractional r → AsFractional (_offsetR o (r q)) (λ q, _offsetR o (r q)) q.
   Proof. constructor. done. apply _. Qed.
 
-  Global Instance _offsetR_observe Q o (R : Rep) :
+  (* TODO: consider making this a global instance, but test performance impact. *)
+  Local Instance _offsetR_observe {o} {Q R : Rep} :
+    Observe Q R ->
+    Observe (_offsetR o Q) (_offsetR o R).
+  Proof. move->. by rewrite /Observe _offsetR_pers. Qed.
+
+  Local Instance _offsetR_observe_2 {o} {Q R1 R2 : Rep} :
+    Observe2 Q R1 R2 ->
+    Observe2 (_offsetR o Q) (_offsetR o R1) (_offsetR o R2).
+  Proof. move->. by rewrite /Observe2 _offsetR_wand _offsetR_pers. Qed.
+
+  Global Instance _offsetR_observe_only_provable Q o (R : Rep) :
     Observe [| Q |] R → Observe [| Q |] (_offsetR o R).
-  Proof. intros. rewrite _offsetR_eq. apply _. Qed.
-  Global Instance _offsetR_observe_2 Q o (R1 R2 : Rep) :
+  Proof. rewrite -{2}_offsetR_only_provable. apply _. Qed.
+  Global Instance _offsetR_observe_2_only_provable Q o (R1 R2 : Rep) :
     Observe2 [| Q |] R1 R2 → Observe2 [| Q |] (_offsetR o R1) (_offsetR o R2).
-  Proof.
-    intros Hobs. apply observe_uncurry. rewrite -_offsetR_sep.
-    apply _offsetR_observe, observe_curry, Hobs.
-  Qed.
+  Proof. rewrite -{2}_offsetR_only_provable. apply _. Qed.
 
   Lemma _offsetR_obs o r P :
     r |-- r ** [| P |] →
     _offsetR o r |-- _offsetR o r ** [| P |].
   Proof.
-    intros. apply observe_elim, _offsetR_observe. exact: observe_intro.
+    intros. apply observe_elim, _offsetR_observe_only_provable. exact: observe_intro.
   Qed.
   (* Pulled in from plogic. *)
   Lemma _offsetR_id (R : Rep) :
@@ -319,7 +340,7 @@ Section with_cpp.
   Proof. by rewrite !_at_loc monPred_at_or. Qed.
 
   Lemma _at_wand (l : ptr) (P Q : Rep) :
-      _at l (P -* Q) |-- (_at l P -* _at l Q).
+      _at l (P -* Q) |-- _at l P -* _at l Q.
   Proof. by rewrite !_at_loc monPred_wand_force. Qed.
 
   Lemma _at_pers (l : ptr) R : _at l (<pers> R) -|- <pers> _at l R.
@@ -345,26 +366,23 @@ Section with_cpp.
     AsFractional (_at l (r q)) (λ q, _at l (r q)) q.
   Proof. constructor. done. apply _. Qed.
 
-  (* TODO: consider making this an instance, but test performance impact. *)
-  Lemma _at_observe {p} {Q R : Rep} :
+  (* TODO: consider making this a global instance, but test performance impact. *)
+  Local Instance _at_observe {p} {Q R : Rep} :
     Observe Q R ->
     Observe (_at p Q) (_at p R).
   Proof. move->. by rewrite /Observe _at_pers. Qed.
 
-  Lemma _at_observe_2 {p} {Q R1 R2 : Rep} :
+  Local Instance _at_observe_2 {p} {Q R1 R2 : Rep} :
     Observe2 Q R1 R2 ->
     Observe2 (_at p Q) (_at p R1) (_at p R2).
   Proof. move->. by rewrite /Observe2 _at_wand _at_pers. Qed.
 
-  (* TODO: Derive from [_at_observe]? *)
   Global Instance _at_observe_only_provable Q l (R : Rep) :
     Observe [| Q |] R → Observe [| Q |] (_at l R).
-  (* Proof. intros Hobs. rewrite -_at_only_provable. exact: _at_observe. Qed. *)
-  Proof. rewrite _at_eq. apply _. Qed.
+  Proof. rewrite -_at_only_provable. apply _. Qed.
   Global Instance _at_observe_2_only_provable Q l (R1 R2 : Rep) :
     Observe2 [| Q |] R1 R2 → Observe2 [| Q |] (_at l R1) (_at l R2).
-  (* Proof. intros Hobs. rewrite -_at_only_provable. exact: _at_observe_2. Qed. *)
-  Proof. rewrite _at_eq. apply _. Qed.
+  Proof. rewrite -_at_only_provable. apply _. Qed.
 
   Lemma _at_obs (l : ptr) (r : Rep) P :
     r |-- r ** [| P |] →
@@ -486,11 +504,11 @@ Section with_cpp.
     rewrite primR_eq/primR_def. by setoid_rewrite Hσ.
   Qed.
 
-  Global Instance primR_affine resolve ty q p
-    : Affine (primR ty q p).
+  Global Instance primR_affine resolve ty q v
+    : Affine (primR ty q v).
   Proof. rewrite primR_eq. apply _. Qed.
-  Global Instance primR_timeless resolve ty q p
-    : Timeless (primR ty q p).
+  Global Instance primR_timeless resolve ty q v
+    : Timeless (primR ty q v).
   Proof. rewrite primR_eq. apply _. Qed.
 
   Global Instance primR_fractional resolve ty v :
@@ -855,26 +873,21 @@ Section with_cpp.
   Proof.
     red. rewrite primR_eq/primR_def.
     apply Rep_entails_at => p. rewrite _at_as_Rep _at_pers _at_type_ptrR.
-    iIntros "[A _]".
-    iDestruct (observe (type_ptr ty p) with "A") as "$".
-    apply tptsto_type_ptr.
+    apply: observe.
   Qed.
   #[global]
   Instance uninitR_type_ptr_observe σ ty q : Observe (type_ptrR σ ty) (uninitR ty q).
   Proof.
     red. rewrite uninitR_eq/uninitR_def.
     apply Rep_entails_at => p. rewrite _at_as_Rep _at_pers _at_type_ptrR.
-    iIntros "[A _]".
-    iDestruct (observe (type_ptr ty p) with "A") as "$".
-    apply tptsto_type_ptr.
+    apply: observe.
   Qed.
 
   #[global]
   Instance anyR_type_ptr_observe σ ty q : Observe (type_ptrR σ ty) (anyR ty q).
   Proof.
     red. rewrite anyR_eq/anyR_def.
-    iDestruct 1 as "[a|a]"; first iDestruct "a" as (?) "a"; iStopProof.
-    all: apply: observe.
+    apply: observe.
   Qed.
 
   (** Observing [valid_ptr] *)
@@ -892,6 +905,22 @@ Section with_cpp.
   Instance observe_type_ptr_pointsto σ (p : ptr) ty (R : Rep) :
     Observe (type_ptrR σ ty) R -> Observe (type_ptr ty p) (_at p R).
   Proof. rewrite -_at_type_ptrR. apply _at_observe. Qed.
+
+  Lemma off_validR o
+    (Hv : ∀ p, valid_ptr (p .., o) |-- valid_ptr p) :
+    _offsetR o validR |-- validR.
+  Proof.
+    apply Rep_entails_at => p. by rewrite _at_offsetL_offsetR !_at_validR.
+  Qed.
+
+  Lemma o_field_validR σ f : _offsetR (_field f) validR |-- validR.
+  Proof. apply off_validR => p. apply _valid_ptr_field. Qed.
+
+  Lemma o_base_validR σ derived base : _offsetR (_base derived base) validR |-- validR.
+  Proof. apply off_validR => p. apply _valid_ptr_base. Qed.
+
+  Lemma o_derived_validR σ base derived : _offsetR (_derived base derived) validR |-- validR.
+  Proof. apply off_validR => p. apply _valid_ptr_derived. Qed.
 End with_cpp.
 
 Typeclasses Opaque identityR.
