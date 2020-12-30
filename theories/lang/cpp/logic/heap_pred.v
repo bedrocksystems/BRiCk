@@ -472,7 +472,7 @@ Section with_cpp.
   Arguments primR {resolve} ty q v : rename.
 
   Global Instance primR_proper :
-    Proper (genv_eq ==> (=) ==> (=) ==> (=) ==> lequiv) (@primR).
+    Proper (genv_eq ==> (=) ==> (=) ==> (=) ==> (⊣⊢)) (@primR).
   Proof.
     intros σ1 σ2 Hσ ??-> ??-> ??->.
     rewrite primR_eq/primR_def. by setoid_rewrite Hσ.
