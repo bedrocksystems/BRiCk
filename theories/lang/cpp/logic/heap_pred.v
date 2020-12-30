@@ -874,10 +874,8 @@ Section with_cpp.
   Instance anyR_type_ptr_observe σ ty q : Observe (type_ptrR σ ty) (anyR ty q).
   Proof.
     red. rewrite anyR_eq/anyR_def.
-    iDestruct 1 as "[a|a]"; iStopProof.
-    - iDestruct 1 as (v) "a"; iStopProof.
-      apply observe; refine _.
-    - apply observe; refine _.
+    iDestruct 1 as "[a|a]"; first iDestruct "a" as (?) "a"; iStopProof.
+    all: apply: observe.
   Qed.
 
   (** Observing [valid_ptr] *)
