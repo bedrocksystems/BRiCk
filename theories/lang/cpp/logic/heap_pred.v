@@ -905,6 +905,22 @@ Section with_cpp.
   Instance observe_type_ptr_pointsto σ (p : ptr) ty (R : Rep) :
     Observe (type_ptrR σ ty) R -> Observe (type_ptr ty p) (_at p R).
   Proof. rewrite -_at_type_ptrR. apply _at_observe. Qed.
+
+  Lemma off_validR o
+    (Hv : ∀ p, valid_ptr (p .., o) |-- valid_ptr p) :
+    _offsetR o validR |-- validR.
+  Proof.
+    apply Rep_entails_at => p. by rewrite _at_offsetL_offsetR !_at_validR.
+  Qed.
+
+  Lemma o_field_validR σ f : _offsetR (_field f) validR |-- validR.
+  Proof. apply off_validR => p. apply _valid_ptr_field. Qed.
+
+  Lemma o_base_validR σ derived base : _offsetR (_base derived base) validR |-- validR.
+  Proof. apply off_validR => p. apply _valid_ptr_base. Qed.
+
+  Lemma o_derived_validR σ base derived : _offsetR (_derived base derived) validR |-- validR.
+  Proof. apply off_validR => p. apply _valid_ptr_derived. Qed.
 End with_cpp.
 
 Typeclasses Opaque identityR.
