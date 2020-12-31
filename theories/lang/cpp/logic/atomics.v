@@ -1,13 +1,8 @@
 (*
- * Copyright (C) BedRock Systems Inc. 2019 Gregory Malecha
- *
- * SPDX-License-Identifier: LGPL-2.1 WITH BedRock Exception for use over network, see repository root for details.
+ * Copyright (c) 2020 BedRock Systems, Inc.
+ * This software is distributed under the terms of the BedRock Open-Source License. 
+ * See the LICENSE-BedRock file in the repository root for details. 
  *)
-Require Import Coq.Lists.List.
-
-From iris.base_logic.lib Require Import
-     fancy_updates invariants cancelable_invariants wsat.
-Import invG.
 
 Require Import bedrock.lang.bi.ChargeCompat.
 From bedrock.lang.cpp Require Import ast semantics.
@@ -18,7 +13,7 @@ Require Import bedrock.lang.cpp.heap_notations.
 Local Open Scope Z_scope.
 
 Section with_Σ.
-  Context `{Σ : cpp_logic thread_info, !invG Σ} {resolve:genv}.
+  Context `{cpp_logic thread_info} {resolve:genv}.
   Variables (M : coPset) (ti : thread_info) (ρ : region).
 
   Local Notation wp_prval := (wp_prval (resolve:=resolve) M ti ρ).
