@@ -5,6 +5,7 @@
  *)
 From bedrock.lang.cpp.syntax Require Import names expr types.
 
+(** [type_of e] returns the type of the expression [e]. *)
 Definition type_of (e : Expr) : type :=
   match e with
   | Econst_ref _ t
@@ -56,6 +57,12 @@ Definition type_of (e : Expr) : type :=
   | Eunsupported _ t => t
   end.
 
+(** [erase_qualifiers t] erases *all* qualifiers that occur everywhere in the type.
+
+    NOTE we currently use this because we do not track [const]ness in the logic, this
+    is somewhat reasonable because we often opt to express this in separation logic.
+    And the type system also enforces some of the other criteria.
+ *)
 Fixpoint erase_qualifiers (t : type) : type :=
   match t with
   | Tpointer t => Tpointer (erase_qualifiers t)
@@ -74,8 +81,33 @@ Fixpoint erase_qualifiers (t : type) : type :=
   | Tarch sz nm => Tarch sz nm
   end.
 
+(** [drop_qualifiers t] drops all the *leading* quallifiers of the type [t].
+    e.g. [drop_qualifiers (Qconst (Qmut t)) = t]
+ *)
 Fixpoint drop_qualifiers (t : type) : type :=
   match t with
   | Tqualified _ t => drop_qualifiers t
   | _ => t
   end.
+
+(** [unptr t] returns the type of the object that a value of type [t] points to
+    or [None] if [t] is not a pointer type.
+ *)
+Definition unptr (t : type) : option type :=
+  match drop_qualifiers t with
+  | Tptr p => Some (drop_qualifiers p)
+  | _ => None
+  end.
+
+(** [class_type t] returns the name of the class that this type refers to
+ *)
+Definition class_type (t : type) : option globname :=
+  match drop_qualifiers t with
+  | Tnamed gn => Some gn
+(*  | Tpointer t
+  | Treference t
+  | Trv_reference t => class_type t
+*)
+  | _ => None
+  end.
+

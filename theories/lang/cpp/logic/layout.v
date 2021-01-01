@@ -12,27 +12,16 @@ From bedrock.lang.cpp.logic Require Import
      pred path_pred heap_pred translation_unit.
 Require Import bedrock.lang.cpp.semantics.
 Require Import bedrock.lang.cpp.logic.z_to_bytes.
+Require Import bedrock.lang.cpp.logic.arr.
 
-Section array.
-  Context `{Σ : cpp_logic} {resolve:genv}.
-  Context {T : Type}.
-  Variable sz : Z.
-  Variable (P : T -> Rep).
-
-  Fixpoint array' (ls : list T) (p : ptr) : mpred :=
-    match ls with
-    | nil => valid_ptr p
-    | l :: ls =>
-      _at (_eq p) (P l) ** array' ls (offset_ptr_ sz p)
-    end.
-End array.
+Require Import bedrock.lang.cpp.heap_notations.
 
 Section with_Σ.
   Context `{Σ : cpp_logic} {resolve:genv}.
 
-  Local Notation _base := (_base (resolve:=resolve)) (only parsing).
-  Local Notation _field := (_field (resolve:=resolve)) (only parsing).
-  Local Notation _sub := (_sub (resolve:=resolve)) (only parsing).
+  Local Notation _base := (o_base resolve) (only parsing).
+  Local Notation _field := (o_field resolve) (only parsing).
+  Local Notation _sub := (o_sub resolve) (only parsing).
   Local Notation anyR := (anyR (resolve:=resolve)) (only parsing).
   Local Notation primR := (primR (resolve:=resolve)) (only parsing).
 
@@ -57,6 +46,16 @@ Section with_Σ.
     AsFractional (union_padding resolve q cls idx) (λ q, union_padding resolve q cls idx) q.
   Proof. exact: Build_AsFractional. Qed.
 
+  Axiom struct_padding_strict_valid_observe : forall q cls, Observe svalidR (struct_padding resolve q cls).
+  #[global] Existing Instance struct_padding_strict_valid_observe.
+  #[global] Instance struct_padding_valid_observe q cls : Observe validR (struct_padding resolve q cls).
+  Proof. rewrite -svalidR_validR. apply _. Qed.
+
+  Axiom union_padding_strict_valid_observe : forall q cls i, Observe svalidR (union_padding resolve q cls i).
+  #[global] Existing Instance union_padding_strict_valid_observe.
+  #[global] Instance union_padding_valid_observe q cls i : Observe validR (union_padding resolve q cls i).
+  Proof. rewrite -svalidR_validR. apply _. Qed.
+
   (** [raw_values_of_val σ ty v rs] states that the value [v] of type
   [ty] is represented by the raw bytes in [rs]. WHat this means
   depends on the type [ty]. *)
@@ -72,13 +71,14 @@ Section with_Σ.
   Axiom raw_bytes_of_sizeof : forall ty v rs,
      raw_bytes_of_val resolve ty v rs -> size_of resolve ty = Some (N.of_nat $ length rs).
 
+  (* TODO confirm that this is correct with respect to our model. *)
   Definition rawR (rs : list raw_byte) (q : Qp) : Rep :=
-    as_Rep (array' 1 (fun r => primR T_uchar q (Vraw r)) rs).
+    arrayR T_uchar (fun r => primR T_uchar q (Vraw r)) rs.
 
   Axiom primR_to_rawR: forall ty q v,
-    primR ty q v -|- Exists rs, rawR rs q ** [| raw_bytes_of_val resolve ty v rs |] ** _type_ptr resolve ty.
+    primR ty q v -|- Exists rs, rawR rs q ** [| raw_bytes_of_val resolve ty v rs |] ** type_ptrR ty.
 
-  (* TODO: Do we need _type_ptr here? *)
+  (* TODO: Do we need type_ptrR here? *)
   Axiom struct_to_raw : forall cls st rss q,
     glob_def resolve cls = Some (Gstruct st) ->
     st.(s_layout) = POD ->
@@ -102,7 +102,7 @@ Section with_Σ.
               _offsetR (_field {| f_name := n ; f_type := cls |})
                        (anyR (erase_qualifiers ty) 1)) **
            (if has_vtable st
-            then _identity resolve cls None 1
+            then identityR cls None 1
             else empSP)
            ** struct_padding resolve 1 cls.
 
@@ -124,8 +124,7 @@ Section with_Σ.
    *)
   Axiom decompose_array : forall t n,
         anyR (Tarray t n) 1
-    -|- _offsetR (_sub t (Z.of_N n)) empSP **
-        (* ^ note: this is equivalent to [valid_loc (this .[ t ! n ])] *)
+    -|- _offsetR (_sub t (Z.of_N n)) validR **
         [∗list] i ↦ _ ∈ repeat () (BinNatDef.N.to_nat n),
                 _offsetR (_sub t (Z.of_nat i)) (anyR t 1).
 
@@ -143,30 +142,36 @@ Section with_Σ.
   Axiom raw_int_byte_primR : forall q r,
       primR T_uchar q (Vraw (raw_int_byte r)) -|- primR T_uchar q (Vint (Z.of_N r)).
 
+
+  (** TODO: determine whether this is correct with respect to pointers *)
   Lemma decode_uint_primR : forall q sz (x : Z),
     primR (Tint sz Unsigned) q (Vint x) -|-
     Exists l : list N,
-      as_Rep (array' 1 (fun c => primR (Tint W8 Unsigned) q (Vint c))
-             (Z.of_N <$> l)) **
-      _type_ptr resolve (Tint sz Unsigned) **
+      arrayR (Tint W8 Unsigned) (fun c => primR (Tint W8 Unsigned) q (Vint c)) (Z.of_N <$> l) **
+      type_ptrR (Tint sz Unsigned) **
       [| decodes_uint l x |].
   Proof.
     move => q sz x.
     rewrite primR_to_rawR. setoid_rewrite raw_byte_of_int_eq.
     iSplit.
     - iDestruct 1 as (rs) "(Hraw&H&$)". iDestruct "H" as %[l [Hdec ->]]. iExists _. iSplit => //. clear Hdec.
-      rewrite /rawR. iStopProof. constructor => p /=. iIntros "Hraw".
-      iInduction l as [ |b l] "IH" forall (p) => //; csimpl. rewrite raw_int_byte_primR.
-      iDestruct "Hraw" as "[$ Hrs]". iApply "IH" => //; iPureIntro.
+      rewrite /rawR arrayR_eq/arrayR_def. iStopProof.
+      (* TODO i need to do induction here because the [Proper] instances are too weak. *)
+      induction l => // /=.
+      rewrite !arrR_cons; eauto.
+      rewrite -IHl /=. f_equiv. f_equiv.
+        by rewrite raw_int_byte_primR.
     - iDestruct 1 as (l) "(Harray&$&H)". iDestruct "H" as %Hdec.
-      iExists _. iSplit => //; eauto with iFrame. rewrite /rawR. clear Hdec.
-      iStopProof. constructor => p /=. iIntros "Hraw".
-      iInduction l as [ |b l] "IH" forall (p) => //; csimpl. rewrite raw_int_byte_primR.
-      iDestruct "Hraw" as "[$ Hrs]". iApply "IH" => //; iPureIntro.
+      iExists _. iSplit => //; eauto with iFrame. clear Hdec.
+      rewrite /rawR arrayR_eq/arrayR_def; iStopProof.
+      induction l => // /=.
+      rewrite !arrR_cons; eauto.
+      rewrite -IHl /=. f_equiv. f_equiv.
+        by rewrite raw_int_byte_primR.
   Qed.
 
   Axiom decode_uint_anyR : forall q sz,
     anyR (Tint sz Unsigned) q -|-
          anyR (Tarray T_uchar (bytesN sz)) q **
-         _type_ptr resolve (Tint sz Unsigned).
+         type_ptrR (Tint sz Unsigned).
 End with_Σ.

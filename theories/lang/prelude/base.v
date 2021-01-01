@@ -78,3 +78,6 @@ Definition liftM2 `{MRet M, MBind M} `(f : A → B → C) : M A → M B → M C 
 Definition bindM2 `{MBind M} `(f : A → B → M C) : M A → M B → M C :=
   λ mx my,
     x ← mx; y ← my; f x y.
+
+#[global] Notation Reduce tm :=
+  ltac:(let H := eval red in tm in exact H) (only parsing).

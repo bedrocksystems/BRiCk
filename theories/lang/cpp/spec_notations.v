@@ -6,18 +6,14 @@
 Require Import stdpp.telescopes.
 Require Import bedrock.lang.prelude.bytestring.
 Require Import bedrock.lang.cpp.logic.
+Require Import bedrock.lang.prelude.telescopes.
+Require bedrock.lang.cpp.heap_notations.
+
+Set Universe Polymorphism.
 
 Declare Scope fspec_scope.
 Delimit Scope fspec_scope with fspec.
 Bind Scope fspec_scope with WithPrePost.
-
-Set Universe Polymorphism.
-
-Fixpoint tele_append (t : tele) {struct t}: (t -t> tele) -> tele :=
-  match t as t return (t -t> tele) -> tele with
-  | TeleO => fun x : tele => x
-  | @TeleS T f => fun x => @TeleS T (fun t => tele_append (f t) (x t))
-  end.
 
 Section with_Σ.
   Context `{PROP : bi}.
@@ -60,13 +56,13 @@ Section with_Σ.
 
   Definition post_void (t : tele) (Q : t -t> PROP) : WithPrePost :=
     {| wpp_with := TeleO
-     ; wpp_pre := (nil, empSP)
+     ; wpp_pre := (nil, emp)%I
      ; wpp_post := {| we_ex := t
                     ; we_post := tele_map (fun Q => (Vvoid, Q)) Q |} |}.
 
   Definition post_ret (t : tele) (Q : t -t> val * PROP) : WithPrePost :=
     {| wpp_with := TeleO
-     ; wpp_pre := (nil, empSP)
+     ; wpp_pre := (nil, emp)%I
      ; wpp_post := {| we_ex := t
                     ; we_post := Q |} |}.
 
@@ -216,10 +212,12 @@ Notation "'\exact' wpp" := (exactWpp wpp)
 Section with_Σ.
   Context `{Σ : cpp_logic ti}.
 
+  Import heap_notations.
+
 Goal WithPrePost mpredI.
 refine (
-  \pre empSP
-  \post  empSP
+  \pre emp
+  \post  emp
 ).
 (* Show Proof. *)
 Abort.
@@ -227,16 +225,16 @@ Abort.
 Goal WithPrePost mpredI.
 refine (
    \with (I J : mpred) (p : ptr) (R : Qp -> Qp -> nat -> Rep)
-   \prepost empSP
+   \prepost emp
    \require True
    \arg{n (nn: nat)} "foo" (Vint n)
    \args{a} [Vint (Z.of_nat a)]
    \with (z : nat)
-   \prepost empSP
-   \prepost{q1 q2} _at (_eq p) (R q1 q2 0)
-   \pre{q3 q4} _at (_eq p) (R q3 q4 0)
-   \pre empSP ** Exists y : nat, [| a = 7 |] ** [| y = 3 |] ** I ** J
-   \post {x} [ Vint x ] empSP).
+   \prepost emp
+   \prepost{q1 q2} p |-> R q1 q2 0
+   \pre{q3 q4} p |-> R q3 q4 0
+   \pre emp ** Exists y : nat, [| a = 7 |] ** [| y = 3 |] ** I ** J
+   \post {x} [ Vint x ] emp).
 (* Show Proof. *)
 Abort.
 
@@ -244,11 +242,11 @@ Goal WithPrePost mpredI.
 refine (
    \with (I J : mpred)
    \with  (a : nat)
-   \prepost empSP
+   \prepost emp
    \with (z : nat)
-   \prepost empSP
-   \pre empSP ** Exists y : nat, [| a = 7 |] ** [| y = 3 |] ** I ** J
-   \post{r}[ r ] empSP).
+   \prepost emp
+   \pre emp ** Exists y : nat, [| a = 7 |] ** [| y = 3 |] ** I ** J
+   \post{r}[ r ] emp).
 (* Show Proof. *)
 Abort.
 
@@ -260,19 +258,19 @@ refine (
    \with (lm : nat * nat)
    \let (l,m) := lm
    \require l+m = 3
-   \prepost empSP
+   \prepost emp
    \with (z : nat)
-   \arg{(zz : Z)} "foo" zz
-   \prepost empSP
-   \pre empSP ** Exists y : nat, [| a = 7 |] ** [| y = 3 |] ** I ** J
-   \post empSP).
+   \arg{(zz : Z)} "foo" (Vint zz)
+   \prepost emp
+   \pre emp ** Exists y : nat, [| a = 7 |] ** [| y = 3 |] ** I ** J
+   \post emp).
 (* Show Proof. *)
 Abort.
 
 Goal WithPrePost mpredI.
 refine (
-    \pre empSP ** Exists y : nat, [| y = 3 |]
-    \post{} [ Vptr nullptr ] empSP).
+    \pre emp ** Exists y : nat, [| y = 3 |]
+    \post{}[Vptr nullptr] emp).
 (* Show Proof. *)
 Abort.
 
@@ -280,7 +278,7 @@ Abort.
 Goal WithPrePost mpredI.
 refine (
     \pre |==> True ** |={∅,⊤}=> False
-    \post{} [ Vptr nullptr ] empSP).
+    \post{}[Vptr nullptr] emp).
 (* Show Proof. *)
 Abort.
 

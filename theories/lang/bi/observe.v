@@ -303,3 +303,21 @@ Proof.
   rewrite -bi.exist_sep; last by intros; exact: observe_2_elim_pure.
   f_equiv=>oa. apply: fractional.
 Qed.
+
+Lemma observe_lhs (p : Prop) {PROP : bi} (P Q : PROP) {o : Observe [| p |] P} :
+  (p -> P ⊢ Q) -> P ⊢ Q.
+Proof.
+  intros H1; iIntros "P"; iDestruct (observe [| p |] with "P") as %HH.
+  iApply H1; eauto.
+Qed.
+
+Lemma observe_both (p : Prop) {PROP : bi} (P Q  : PROP) {_ : Observe [| p |] P} {_ : Observe [| p |] Q} :
+  (p -> P ⊣⊢ Q) -> P ⊣⊢ Q.
+Proof.
+  intros.
+  split'.
+  { iIntros "P"; iDestruct (observe [| p |] with "P") as %HH.
+    iApply H1; eauto. }
+  { iIntros "P"; iDestruct (observe [| p |] with "P") as %HH.
+    iApply H1; eauto. }
+Qed.

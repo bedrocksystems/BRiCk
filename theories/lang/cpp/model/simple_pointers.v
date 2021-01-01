@@ -4,7 +4,7 @@
  * See the LICENSE-BedRock file in the repository root for details. 
  *)
 
-From bedrock.lang.prelude Require Import base avl bytestring option.
+From bedrock.lang.prelude Require Import base avl bytestring option numbers.
 
 From bedrock.lang.cpp Require Import ast.
 From bedrock.lang.cpp.semantics Require Import values sub_module.
@@ -345,6 +345,46 @@ Module SIMPLE_PTRS_IMPL : PTRS.
     move=> [<-] []. intros Hne%symmetry%Z2N.inj => //.
     eapply Z.mul_cancel_r, Z.add_cancel_l, Hne; lia.
   Qed.
+   Lemma o_sub_sub_nneg σ p ty (z1 z2 : Z) :
+    (0 <= z1 -> 0 <= z2 ->
+    p .., o_sub σ ty z1 .., o_sub σ ty z2 = p .., o_sub σ ty (z1 + z2))%ptr%Z.
+  Proof.
+    intros.
+    rewrite /o_sub /= /o_sub_off /_offset_ptr_single.
+    case: size_of => [o|] //=.
+    case E: (offset_ptr_ (z1 * Z.of_N o) p) => [p'|/=]; rewrite -E.
+    { apply: offset_ptr_cancel; [|by lia]. naive_solver. }
+    case: p E => [[aid p]|//].
+    rewrite /offset_ptr_ /offset_ptr' /=.
+    case_decide => //=; case: p=> [va|//] //=;
+      (* have ?: (o <> 0)%N by [lia];
+      have ?: (0 < z1)%Z by [lia]; *)
+      last by case_decide => //; exfalso; lia.
+    case E': offset_vaddr => [_ //|/=] => _.
+    exfalso; rewrite /offset_vaddr in E'.
+    simplify_option_eq; lia.
+  Qed.
+
+  Lemma o_sub_sub_npos σ p ty (z1 z2 : Z) :
+    (z1 <= 0 -> z2 <= 0 ->
+    p .., o_sub σ ty z1 .., o_sub σ ty z2 = p .., o_sub σ ty (z1 + z2))%ptr%Z.
+  Proof.
+    intros.
+    rewrite /o_sub /= /o_sub_off /_offset_ptr_single.
+    case: size_of => [o|] //=.
+    case E: (offset_ptr_ (z1 * Z.of_N o) p) => [p'|/=]; rewrite -E.
+    { apply: offset_ptr_cancel; [|by lia]. naive_solver. }
+    case: p E => [[aid p]|//].
+    rewrite /offset_ptr_ /offset_ptr' /=.
+    case_decide => //=; case: p=> [va|//] //=;
+      last by case_decide => //; exfalso; lia.
+    case E': offset_vaddr => [_ //|/=];
+      rewrite /offset_vaddr in E' => _.
+    simplify_option_eq; first lia.
+    case E'': offset_vaddr => [?/=|//].
+    rewrite /offset_vaddr in E''.
+    simplify_option_eq; lia.
+  Qed.
 
   Include PTRS_DERIVED_MIXIN.
 End SIMPLE_PTRS_IMPL.
@@ -396,7 +436,7 @@ Module PTRS_IMPL : PTRS.
   | o_derived_ (base derived : globname)
   (* deprecated *)
   | o_num_ (z : Z)
-  | o_invalid.
+  | o_invalid_.
   Local Instance raw_offset_seg_eq_dec : EqDecision raw_offset_seg.
   Proof. solve_decision. Qed.
   Declare Instance raw_offset_seg_countable : Countable raw_offset_seg.
@@ -411,11 +451,11 @@ Module PTRS_IMPL : PTRS.
     | o_sub_ ty z => o_sub_off σ ty z
     | o_base_ derived base => o_base_off σ derived base
     | o_derived_ base derived => o_derived_off σ base derived
-    | o_invalid => None
+    | o_invalid_ => None
     end.
   Definition mk_offset_seg σ (ro : raw_offset_seg) : offset_seg :=
     match eval_raw_offset_seg σ ro with
-    | None => (o_invalid, 0%Z)
+    | None => (o_invalid_, 0%Z)
     | Some off => (ro, off)
     end.
 
@@ -438,6 +478,7 @@ Module PTRS_IMPL : PTRS.
       else [os2; os1]
     | (o_num_ z1, off1), (o_num_ z2, off2) =>
       [(o_num_ (z2 + z1), (off1 + off2)%Z)]
+    | (o_invalid_, _), _ => [(o_invalid_, 0%Z)]
     | _, _ => [os2; os1]
     end.
 
@@ -866,6 +907,29 @@ Module PTRS_IMPL : PTRS.
     size_of σ ty = Some sz -> (sz > 0)%N ->
     (same_property ptr_vaddr (p .., o_sub _ ty n1) (p .., o_sub _ ty n2) ->
     n1 = n2)%ptr.
+
+  Lemma o_sub_sub_off σ ty (z1 z2 : Z) :
+    (o_sub σ ty z1 .., o_sub σ ty z2 = o_sub σ ty (z1 + z2))%offset.
+  Proof.
+    intros. apply /sig_eq_pi => /=.
+    rewrite /mk_offset_seg /= /o_sub_off /=;
+      case: size_of => [sz|] //=; rewrite decide_True //=.
+    by rewrite -Z.mul_add_distr_r (comm_L _ z2).
+  Qed.
+
+  Lemma o_sub_sub σ p ty (z1 z2 : Z) :
+    (p .., o_sub σ ty z1 .., o_sub σ ty z2 = p .., o_sub σ ty (z1 + z2))%ptr%Z.
+  Proof. by rewrite -offset_ptr_dot o_sub_sub_off. Qed.
+
+  Lemma o_sub_sub_nneg σ p ty (z1 z2 : Z) :
+    (0 <= z1 -> 0 <= z2 ->
+    p .., o_sub σ ty z1 .., o_sub σ ty z2 = p .., o_sub σ ty (z1 + z2))%ptr%Z.
+  Proof. intros. exact: o_sub_sub. Qed.
+
+  Lemma o_sub_sub_npos σ p ty (z1 z2 : Z) :
+    (z1 <= 0 -> z2 <= 0 ->
+    p .., o_sub σ ty z1 .., o_sub σ ty z2 = p .., o_sub σ ty (z1 + z2))%ptr%Z.
+  Proof. intros. exact: o_sub_sub. Qed.
 
   Include PTRS_DERIVED_MIXIN.
 End PTRS_IMPL.

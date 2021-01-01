@@ -406,32 +406,42 @@ Module Type CPP_LOGIC (Import CC : CPP_LOGIC_CLASS)
      *)
     Parameter type_ptr : forall {resolve : genv} (c: type), ptr -> mpred.
     Axiom type_ptr_persistent : forall σ p ty,
-      Persistent (type_ptr (resolve:=σ) ty p).
+      Persistent (type_ptr ty p).
     Axiom type_ptr_affine : forall σ p ty,
-      Affine (type_ptr (resolve:=σ) ty p).
+      Affine (type_ptr ty p).
     Axiom type_ptr_timeless : forall σ p ty,
-      Timeless (type_ptr (resolve:=σ) ty p).
+      Timeless (type_ptr ty p).
     Global Existing Instances type_ptr_persistent type_ptr_affine type_ptr_timeless.
 
     Axiom type_ptr_aligned : forall σ ty p,
-      type_ptr (resolve := σ) ty p |--
+      type_ptr ty p |--
       Exists align, [| @align_of σ ty = Some align |] ** aligned_ptr align p.
 
-    (* Intentionally not an instance, and exposed through
-    [tptsto_observe_type_ptr]. *)
+    Axiom type_ptr_off_nonnull : forall {σ ty p o},
+      type_ptr ty (p .., o) |-- [| p <> nullptr |].
+
     Axiom tptsto_type_ptr : forall (σ : genv) ty q p v,
       Observe (type_ptr ty p) (tptsto ty q p v).
+    Global Existing Instance tptsto_type_ptr.
+
+    (* All objects in the C++ abstract machine have a size
+
+       NOTE to support un-sized objects, we can simply say that the [sizeof] operator
+            in C++ is only a conservative approximation of the true size of an object.
+     *)
+    Axiom type_ptr_size : forall σ ty p,
+        type_ptr ty p |-- [| is_Some (size_of σ ty) |].
 
     (**
     Recall that [type_ptr] and [strict_valid_ptr] don't include
     past-the-end pointers... *)
     Axiom type_ptr_strict_valid : forall resolve ty p,
-      type_ptr (resolve := resolve) ty p |-- strict_valid_ptr p.
+      type_ptr ty p |-- strict_valid_ptr p.
     (** Hence they can be incremented into (possibly past-the-end) valid pointers. *)
     Axiom type_ptr_valid_plus_one : forall resolve ty p,
-      type_ptr (resolve := resolve) ty p |-- valid_ptr (p .., o_sub resolve ty 1).
+      type_ptr ty p |-- valid_ptr (p .., o_sub resolve ty 1).
     Axiom type_ptr_nonnull : forall resolve ty p,
-      type_ptr (resolve := resolve) ty p |-- [| p <> nullptr |].
+      type_ptr ty p |-- [| p <> nullptr |].
 
     (**
      ** Deducing pointer equalities
@@ -507,6 +517,17 @@ Module Type VALID_PTR_AXIOMS.
     Axiom invalid_ptr_invalid : forall vt,
       _valid_ptr vt invalid_ptr |-- False.
 
+    (** Justified by [https://eel.is/c++draft/expr.add#4.1]. *)
+    Axiom _valid_ptr_nullptr_sub_false : forall vt ty (i : Z) (_ : i <> 0),
+      _valid_ptr vt (nullptr .., o_sub σ ty i) |-- False.
+    (*
+    TODO Controversial; if [f] is the first field, [nullptr->f] or casts relying on
+    https://eel.is/c++draft/basic.compound#4 might invalidate this.
+    To make this valid, we could ensure our axiomatic semantics produces
+    [nullptr] instead of [nullptr ., o_field]. *)
+    (* Axiom _valid_ptr_nullptr_field_false : forall vt f,
+      _valid_ptr vt (nullptr .., o_field σ f) |-- False. *)
+
     (* These axioms are named after the predicate in the conclusion. *)
     Axiom strict_valid_ptr_sub : ∀ p ty i vt,
       0 < i -> _valid_ptr vt (p .., o_sub σ ty i) |-- strict_valid_ptr p.
@@ -559,6 +580,25 @@ Declare Module Export VALID_PTR : VALID_PTR_AXIOMS.
 Section with_cpp.
   Context `{Σ : cpp_logic}.
 
+  (* TODO (SEMANTICS):
+     set p := p ., (.[ty ! -i])
+     ...
+     we end up with `_valid_ptr vt p |-- _valid_ptr vt (p ., (.[ty ! -i]))
+     which isn't true.
+
+     NOTE: Modify `strict_valid_ptr_sub` and this so that they impose an
+       extra pre-condition on the structure of `p` (namely that it doesn't
+       have negative offsets(?))
+
+     Paolo: good catch. Maybe the axiom should be that if [p ., (.[ty ! i])] and [p .,
+     (.[ty ! j])] are both valid, then everything in between is valid.
+     OTOH, `arrayR` exposes stronger reasoning principles, possibly making this
+     unnecessary.
+
+     The intended model was that, if [p'] normalizes to [p ., [ ty ! i ]],
+     then [valid_ptr p'] implies validity of all pointers from [p] to [p']. As
+     you point out, that model doesn't actually justify [strict_valid_ptr_sub].
+   *)
   Lemma valid_ptr_sub {σ : genv} p ty i vt :
     0 <= i -> _valid_ptr vt (p .., o_sub σ ty i) |-- _valid_ptr vt p.
   Proof.
@@ -587,11 +627,11 @@ Section with_cpp.
   Proof. repeat intro. exact: tptsto_mono. Qed.
 
   Global Instance tptsto_as_fractional {σ} ty q a v :
-    AsFractional (tptsto (σ := σ) ty q a v) (λ q, tptsto (σ := σ) ty q a v) q.
+    AsFractional (tptsto ty q a v) (λ q, tptsto ty q a v) q.
   Proof. exact: Build_AsFractional. Qed.
 
   Global Instance tptsto_observe_nonnull {σ} t q p v :
-    Observe [| p <> nullptr |] (tptsto (σ := σ) t q p v).
+    Observe [| p <> nullptr |] (tptsto t q p v).
   Proof.
     apply: observe_intro.
     destruct (ptr_eq_dec p nullptr); subst; last by eauto.
@@ -700,8 +740,8 @@ Section with_cpp.
   Qed.
 
   Lemma pinned_ptr_type_divide_1 va n σ p ty
-    (Hal : align_of (resolve := σ) ty = Some n) :
-    type_ptr (resolve := σ) ty p ⊢ pinned_ptr va p -∗ [| (n | va)%N |].
+    (Hal : align_of ty = Some n) :
+    type_ptr ty p ⊢ pinned_ptr va p -∗ [| (n | va)%N |].
   Proof.
     rewrite type_ptr_aligned Hal /=. iDestruct 1 as (? [= <-]) "A". iIntros "P".
     iApply (pinned_ptr_aligned_divide with "P A").

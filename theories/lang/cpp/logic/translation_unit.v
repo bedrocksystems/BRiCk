@@ -21,41 +21,37 @@ Section with_cpp.
 
   Set Default Proof Using "Σ resolve".
 
-  Local Notation _global := (_global (Σ:=Σ) (resolve:=resolve)) (only parsing).
+  Local Notation _global := (_global (resolve:=resolve)) (only parsing).
   Local Notation code_at := (@code_at _ Σ) (only parsing).
   Local Notation method_at := (@method_at _ Σ) (only parsing).
   Local Notation ctor_at := (@ctor_at _ Σ) (only parsing).
   Local Notation dtor_at := (@dtor_at _ Σ) (only parsing).
-  Local Notation _field := (@_field resolve) (only parsing).
-  Local Notation _base := (@_base resolve) (only parsing).
-  Local Notation _sub := (@_sub resolve) (only parsing).
 
   Definition denoteSymbol (n : obj_name) (o : ObjValue) : mpred :=
-    Exists a, _global n &~ a **
-    match o with
-    | Ovar _ e => empSP
-    | Ofunction f =>
-      match f.(f_body) return mpred with
-      | None => empSP
-      | Some body => code_at resolve f a
-      end
-    | Omethod m =>
-      match m.(m_body) return mpred with
-      | None => emp
-      | Some body =>
-        method_at resolve m a
-      end
-    | Oconstructor c =>
-      match c.(c_body) return mpred with
-      | None => empSP
-      | Some body => ctor_at resolve c a
-      end
-    | Odestructor d =>
-      match d.(d_body) return mpred with
-      | None => empSP
-      | Some body => dtor_at resolve d a
-      end
-    end.
+    _at (_global n)
+        match o with
+        | Ovar _ e => empSP
+        | Ofunction f =>
+          match f.(f_body) with
+          | None => empSP
+          | Some body => as_Rep (code_at resolve f)
+          end
+        | Omethod m =>
+          match m.(m_body) with
+          | None => emp
+          | Some body => as_Rep (method_at resolve m)
+          end
+        | Oconstructor c =>
+          match c.(c_body) with
+          | None => empSP
+          | Some body => as_Rep (ctor_at resolve c)
+          end
+        | Odestructor d =>
+          match d.(d_body) with
+          | None => empSP
+          | Some body => as_Rep (dtor_at resolve d)
+          end
+        end.
 
   Global Instance: Persistent (denoteSymbol n o).
   Proof using .
@@ -71,19 +67,19 @@ Section with_cpp.
   Proof using . refine _. Qed.
 
   Definition initSymbol (n : obj_name) (o : ObjValue) : mpred :=
-    Exists a, _global n &~ a **
-    match o with
-    | Ovar t (Some e) =>
-      ltrue (*
+    _at (_global n)
+        match o with
+        | Ovar t (Some e) =>
+          emp (*
       Exists Q : FreeTemps -> mpred,
       □ (_at (_eq a) (uninitR (resolve:=resolve) t 1) -*
          Forall ρ ti, wp_init (resolve:=resolve) ti ρ t (Vptr a) e Q) ** Q empSP
 *)
       (* ^^ todo(gmm): static initialization is not yet supported *)
-    | Ovar t None =>
-      _at (_eq a) (uninitR (resolve:=resolve) t 1)
-    | _ => empSP
-    end.
+        | Ovar t None =>
+          uninitR (resolve:=resolve) t 1
+        | _ => emp
+        end.
 
   Definition denoteModule_def (d : translation_unit) : mpred :=
     ([∗list] sv ∈ map_to_list d.(symbols), denoteSymbol sv.1 sv.2) **
