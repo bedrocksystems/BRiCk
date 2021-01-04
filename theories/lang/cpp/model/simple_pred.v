@@ -1,7 +1,7 @@
 (*
  * Copyright (c) 2020 BedRock Systems, Inc.
- * This software is distributed under the terms of the BedRock Open-Source License. 
- * See the LICENSE-BedRock file in the repository root for details. 
+ * This software is distributed under the terms of the BedRock Open-Source License.
+ * See the LICENSE-BedRock file in the repository root for details.
  *)
 From iris.algebra Require Import excl gmap.
 From iris.algebra.lib Require Import frac_auth.
