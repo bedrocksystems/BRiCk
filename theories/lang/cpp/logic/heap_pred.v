@@ -356,6 +356,21 @@ Section with_cpp.
       _at l (_offsetR o r) -|- _at (_offsetL o l) r.
   Proof. by rewrite !_at_loc /flip _offsetR_eq/_offsetR_def /=. Qed.
 
+  Lemma _at_sepSPs l (xs : list Rep) : _at l (sepSPs xs) -|- sepSPs (map (_at l) xs).
+  Proof.
+    induction xs => /=.
+    - by rewrite _at_emp.
+    - by rewrite _at_sep IHxs.
+  Qed.
+
+  Lemma _at_big_sepL A l : forall (xs : list A) (Φ : nat -> A -> Rep),
+      _at l ([∗ list] i↦x∈xs, Φ i x) -|- ([∗ list] i↦x∈xs, _at l (Φ i x)).
+  Proof.
+    elim => /=.
+    - move => ?; by rewrite _at_emp.
+    - move => x xs IH ?. by rewrite _at_sep IH.
+  Qed.
+
   Global Instance _at_fractional (r : Qp → Rep) (l : ptr) `{!Fractional r} :
     Fractional (λ q, _at l (r q)).
   Proof.

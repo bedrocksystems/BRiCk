@@ -125,7 +125,7 @@ Section with_PROP.
     iSpecialize ("HQ" $!x). eauto.
   Qed.
 
-  Lemma wandSepSPAdj : forall (P Q R : PROP), sepSP P Q |-- R <-> P |-- wandSP Q R.
+  Lemma wandSepSPAdj : forall (P Q R : PROP), P ** Q |-- R <-> P |-- Q -* R.
   Proof.
     split.
     intros. rewrite <- H. iIntros "HP HQ". iFrame.
@@ -163,7 +163,7 @@ Section with_PROP.
     (P -* Q) ** CL |-- CR.
   Proof. rewrite <-HR, <-HP. apply sepSPAdj. reflexivity. Qed.
 
-  Lemma sepSPA1 : forall (P Q R : PROP), sepSP (sepSP P Q) R |-- sepSP P (sepSP Q R).
+  Lemma sepSPA1 : forall (P Q R : PROP), (P ** Q) ** R |-- P ** (Q ** R).
   Proof. intros. iIntros "[[$ $] $]". Qed.
   Lemma sepSPA2 (P Q R : PROP) : P ** (Q ** R) |-- (P ** Q) ** R.
   Proof. intros. iIntros "[$ [$ $]]". Qed.
@@ -176,7 +176,7 @@ Section with_PROP.
     rewrite <- HQR, HP. reflexivity.
   Qed.
 
-  Lemma empSPR : forall (P : PROP), sepSP P empSP -|- P.
+  Lemma empSPR : forall (P : PROP), P ** emp -|- P.
   Proof. intros. iSplit. iIntros "[$ _]". iIntros "$". Qed.
 
   Lemma lexists_known : forall t a (P : t -> PROP),
@@ -187,7 +187,7 @@ Section with_PROP.
     - iIntros "HP". iExists a. eauto.
   Qed.
 
-  Lemma bilsep (P Q R : PROP) : P |-- Q -> sepSP P R |-- sepSP Q R.
+  Lemma bilsep (P Q R : PROP) : P |-- Q -> P ** R |-- Q ** R.
   Proof. intros. rewrite -> H. reflexivity. Qed.
 
   Lemma bilorscDL (P Q R : PROP) : (P \\// Q) ** R -|- (P ** R) \\// (Q ** R).
@@ -202,7 +202,7 @@ Section with_PROP.
     lforall P |-- P x.
   Proof. intros. eapply lforallL. reflexivity. Qed.
 
-  Lemma sepSPC1 (P Q : PROP) : sepSP P Q |-- sepSP Q P.
+  Lemma sepSPC1 (P Q : PROP) : P ** Q |-- Q ** P.
   Proof. iIntros "[HP HQ]". iFrame. Qed.
 
   Lemma sepSPAdj' (P Q C : PROP) (HWand: C |-- P -* Q) : P ** C |-- Q.
@@ -214,7 +214,7 @@ End with_PROP.
 
 Section with_SPROP.
   Context {SPROP: bi}.
-  Lemma spec_later_weaken (P : SPROP) : P |-- illater P.
+  Lemma spec_later_weaken (P : SPROP) : P |-- |> P.
   Proof. eauto. Qed.
 
   Lemma later_sep : forall (P Q R : SPROP),
