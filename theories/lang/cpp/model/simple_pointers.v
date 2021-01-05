@@ -488,7 +488,7 @@ Module PTRS_IMPL : PTRS_INTF.
       if decide (der1 = der2 /\ base1 = base2)
       then oss'
       else os :: oss
-    | (o_invalid_, _), _ => [(o_invalid_, 0%Z)]
+    (* | (o_invalid_, _), _ => [(o_invalid_, 0%Z)] *)
     | _, _ => os :: oss
     end.
   Definition raw_offset_collapse : raw_offset -> raw_offset :=
@@ -799,10 +799,17 @@ Module PTRS_IMPL : PTRS_INTF.
     (o_sub σ ty z1 .., o_sub σ ty z2 = o_sub σ ty (z1 + z2))%offset.
   Proof.
     intros. apply /sig_eq_pi => /=.
-    rewrite /mk_offset_seg /= /o_sub_off /=;
-      case: size_of => [sz|] //=; rewrite decide_True //=.
-    by rewrite -Z.mul_add_distr_r (comm_L _ z2).
-  Qed.
+    rewrite /o_sub /= /mkOffset. repeat case_decide => //=.
+    all: subst; try lia.
+    all: rewrite ?Z.add_0_r ?Z.add_0_l.
+    all: rewrite /mk_offset_seg /= /o_sub_off; case: size_of => [sz|] //=.
+    all: try by rewrite decide_False //=; lia.
+    - repeat (case_decide; try (lia || by auto)).
+    - admit.
+    - repeat (case_decide; try (lia || by auto)).
+      repeat (lia || f_equiv).
+    - admit.
+  Admitted.
 
   Include PTRS_DERIVED_MIXIN.
 End PTRS_IMPL.
