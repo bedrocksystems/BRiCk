@@ -115,30 +115,30 @@ Section with_cpp.
 
   Fixpoint bind_vars (args : list (ident * type)) (vals : list val) (r : region) (Q : region -> FreeTemps -> mpred) : mpred :=
     match args , vals with
-    | nil , nil => Q r empSP
+    | nil , nil => Q r emp
     | (x,ty) :: xs , v :: vs  =>
       match drop_qualifiers ty with
-      | Tqualified _ t => ltrue (* unreachable *)
+      | Tqualified _ t => True (* unreachable *)
       | Treference    _
       | Trv_reference _
       | Tnamed _ =>
         match v with
         | Vptr p => bind_vars xs vs (Rbind_check x p r) Q
-        | _ => lfalse
+        | _ => False
         end
       | _              =>
         Forall a : ptr, a |-> primR (erase_qualifiers ty) 1 v -*
         bind_vars xs vs (Rbind_check x a r) (fun r free => Q r (a |-> anyR (erase_qualifiers ty) 1 ** free))
       end
-    | _ , _ => lfalse
-    end.
+    | _ , _ => False
+    end%I.
 
   (* the meaning of a function
    *)
   Definition wp_func (f : Func) (ti : thread_info) (args : list val)
              (Q : val -> epred) : mpred :=
     match f.(f_body) with
-    | None => lfalse
+    | None => False
     | Some body =>
       match body with
       | Impl body =>
@@ -229,7 +229,7 @@ Section with_cpp.
            (inits : list Initializer)
            (Q : mpred -> mpred) : mpred :=
     match inits with
-    | nil => Q empSP
+    | nil => Q emp
     | i :: is' =>
       match i.(init_path) with
       | This
@@ -238,14 +238,14 @@ Section with_cpp.
         (* TODO backwards compat [this ., offset_for _ cls i.(init_path) |-> tblockR i.(init_type) -*] *)
         wpi (resolve:=resolve) ⊤ ti ρ cls this i (fun f => f ** wpi_members ti ρ cls this is' Q)
       end
-    end.
+    end%I.
 
   (* initialization of bases in the initializer list *)
   Fixpoint wpi_bases (ti : thread_info) (ρ : region) (cls : globname) (this : ptr)
            (inits : list Initializer)
            (Q : mpred -> mpred) : mpred :=
     match inits with
-    | nil => this |-> init_identity cls (Q empSP)
+    | nil => this |-> init_identity cls (Q emp)
     | i :: is' =>
       match i.(init_path) with
       | Field _
@@ -263,7 +263,7 @@ Section with_cpp.
         (* TODO backwards compat [this ., offset_for _ cls i.(init_path) |-> tblockR i.(init_type) -*] *)
         wpi (resolve:=resolve) ⊤ ti ρ cls this i (fun f => f ** wpi_bases ti ρ cls this is' Q)
       end
-    end.
+    end%I.
 
   (* note(gmm): supporting virtual inheritence will require us to add
    * constructor kinds here

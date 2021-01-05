@@ -33,9 +33,13 @@ Global Notation limpl := (bi_impl) (only parsing).
 Global Notation lforall := (bi_forall) (only parsing).
 Global Notation lexists := (bi_exist) (only parsing).
 
+#[deprecated(since="2021-01-04",note="use 'emp'")]
 Global Notation empSP := (bi_emp) (only parsing).
+#[deprecated(since="2021-01-04",note="use infix '**' (or 'bi_sep')")]
 Global Notation sepSP := (bi_sep) (only parsing).
+#[deprecated(since="2021-01-04",note="use infix '-*' (or 'bi_wand')")]
 Global Notation wandSP := (bi_wand) (only parsing).
+#[deprecated(since="2021-01-04",note="use prefix '|>'")]
 Global Notation illater := (bi_later) (only parsing).
 
 Ltac split' := intros; apply (anti_symm (⊢)).
@@ -62,6 +66,8 @@ Module ChargeNotation.
 
   Notation "P ** Q" := (P ∗ Q)%I (at level 58, right associativity).
   Notation "P -* Q" := (P -∗ Q)%I (at level 60, right associativity).
+
+  #[deprecated(since="2021-01-04",note="use '[∗list]' directly.")]
   Notation "'sepSPs' ps" := ([∗] ps)%I (at level 20).
 
   (* Notation "'|>' P" := (▷  P)%I (at level 71). *)
