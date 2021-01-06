@@ -1021,12 +1021,12 @@ Module Type Expr.
                    (fun _ x => BS.String "1" x) n.
 
     Definition arrayloop_loop_index (n : N) : bs := "!loop_index" ++ N_to_bs n.
-    Definition arrayloop_opaque_val (n : N) : bs := "%opaque" ++ N_to_bs n.
+    Definition opaque_val (n : N) : bs := "%opaque" ++ N_to_bs n.
 
     (* Maybe we can `Rbind (opaque n) p`, and then add `_opaque` to encapsulate looking this up in the region;
        the new premise would be (after Loc:=ptr goes in) `Q _opaque` *)
     Axiom wp_lval_opaque_ref : forall n ρ ty Q,
-          wp_lval ρ (Evar (Lname (arrayloop_opaque_val n)) ty) Q
+          wp_lval ρ (Evar (Lname (opaque_val n)) ty) Q
       |-- wp_lval ρ (Eopaque_ref n ty) Q.
 
     (* Maybe do something similar to what was suggested for `wp_lval_opaque_ref` above. *)
@@ -1085,18 +1085,18 @@ Module Type Expr.
                                  _at loop_index (primR (Tint W64 Unsigned) (1/2) idx) **
                                  rest (N.succ idx))) sz idx.
 
-    Axiom wp_init_arrayloop_init : forall oname level sz ρ trg src init ty Q,
+    Axiom wp_init_arrayloop_init : forall oname level sz ρ trg vc src init ty Q,
           has_type (Vn sz) (Tint W64 Unsigned) ->
           wp_glval ρ src
                    (fun p free =>
                       Forall idxp,
-                      _arrayloop_init (Rbind (arrayloop_opaque_val oname) p
+                      _arrayloop_init (Rbind (opaque_val oname) p
                                              (Rbind (arrayloop_loop_index level) idxp ρ))
                                       level trg init ty
                                       (fun free' => Q (free ** free'))
                                       sz 0)
       |-- wp_init ρ (Tarray ty sz) trg
-                    (Earrayloop_init oname src level sz init (Tarray ty sz)) Q.
+                    (Earrayloop_init oname (vc, src) level sz init (Tarray ty sz)) Q.
 
   End with_resolve__arrayloop.
 End Expr.

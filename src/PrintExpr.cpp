@@ -1096,7 +1096,7 @@ public:
         print.output() << index << fmt::nbsp;
 
         // this is the source array which we are initializing
-        cprint.printExpr(expr->getCommonExpr()->getSourceExpr(), print, li);
+        cprint.printExprAndValCat(expr->getCommonExpr()->getSourceExpr(), print, li);
 
         // this is the expression that is evaluated
         li.inc_index_count();
