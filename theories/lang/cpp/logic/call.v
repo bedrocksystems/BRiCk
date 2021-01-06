@@ -3,6 +3,7 @@
  * This software is distributed under the terms of the BedRock Open-Source License.
  * See the LICENSE-BedRock file in the repository root for details.
  *)
+Require Import iris.proofmode.tactics.
 Require Import bedrock.lang.cpp.ast.
 Require Import bedrock.lang.cpp.semantics.
 From bedrock.lang.cpp.logic Require Import
@@ -51,5 +52,33 @@ Section with_resolve.
                                      Qarg v free -* Q (Vptr v :: vs) (free ** frees))
       end
     end.
+
+  Lemma wp_args_frame : forall es Q Q',
+      (Forall vs free, Q vs free -* Q' vs free) |-- wp_args es Q -* wp_args es Q'.
+  Proof.
+    elim => /=.
+    { iIntros (? ?) "H"; iApply "H". }
+    { iIntros ([vc e] ? IH ? ?) "H".
+      destruct vc.
+      { iIntros "X"; iDestruct "X" as (Qarg) "[He Hes]".
+        iExists Qarg; iFrame.
+        iRevert "Hes"; iApply IH; iIntros (? ?) "X".
+        iIntros (? ?) "Y"; iApply "H"; iApply "X"; iFrame. }
+      { destruct (is_aggregate (type_of e)).
+        { iIntros "X" (a) "B"; iDestruct ("X" with "B") as "X".
+          destruct (destructor_for e).
+          iRevert "X".
+          iIntros "X"; iDestruct "X" as (Qarg) "[He Hes]".
+          iExists Qarg; iFrame; iRevert "Hes"; iApply IH.
+          iIntros (? ?) "Y"; iIntros (?) "Q"; iApply "H"; iApply "Y"; iFrame. }
+      { iIntros "X"; iDestruct "X" as (Qarg) "[He Hes]".
+        iExists Qarg; iFrame.
+        iRevert "Hes"; iApply IH; iIntros (? ?) "X".
+        iIntros (? ?) "Y"; iApply "H"; iApply "X"; iFrame. } }
+      { iIntros "X"; iDestruct "X" as (Qarg) "[He Hes]".
+        iExists Qarg; iFrame.
+        iRevert "Hes"; iApply IH; iIntros (? ?) "X".
+        iIntros (? ?) "Y"; iApply "H"; iApply "X"; iFrame. } }
+  Qed.
 
 End with_resolve.
