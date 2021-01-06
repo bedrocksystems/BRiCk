@@ -24,6 +24,11 @@ Export iris.bi.bi.bi.
 Section derived_laws.
   Context {PROP : bi}.
 
+  Lemma intuitionistically_and_sep P Q : □ (P ∧ Q) ⊣⊢@{PROP} □ P ∗ □ Q.
+  Proof.
+    by rewrite bi.intuitionistically_and bi.and_sep_intuitionistically.
+  Qed.
+
   Lemma exist_pure_eq_sep {A P} v:
     P v ⊢@{PROP} ∃ x : A, ⌜ x = v ⌝ ∗ P x.
   Proof. iIntros. iExists v; eauto. Qed.
