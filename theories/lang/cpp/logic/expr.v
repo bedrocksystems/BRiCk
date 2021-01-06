@@ -1032,8 +1032,8 @@ Module Type Expr.
     (* Maybe do something similar to what was suggested for `wp_lval_opaque_ref` above. *)
     Axiom wp_prval_arrayloop_index : forall ρ level ty Q,
           Exists v,
-            ((Exists q, _at (_local ρ (arrayloop_loop_index level))
-                            (primR (erase_qualifiers ty) q v)) **
+            ((Exists q, _local ρ (arrayloop_loop_index level)
+                               |-> primR (erase_qualifiers ty) q v) **
               True) //\\ Q v emp
       |-- wp_prval ρ (Earrayloop_index level ty) Q.
 
@@ -1079,10 +1079,10 @@ Module Type Expr.
                            to the program to make it read-only.
                            NOTE that no "correct" program will ever modify this variable
                            anyways. *)
-                      _at loop_index (primR (Tint W64 Unsigned) (1/2) idx) -*
+                      loop_index |-> (primR (Tint W64 Unsigned) (1/2) idx) -*
                       wp_initialize ρ ty (targetp .[ ty ! idx ]) init
                               (fun free => free **
-                                 _at loop_index (primR (Tint W64 Unsigned) (1/2) idx) **
+                                 loop_index |-> (primR (Tint W64 Unsigned) (1/2) idx) **
                                  rest (N.succ idx))) sz idx.
 
     Axiom wp_init_arrayloop_init : forall oname level sz ρ trg vc src init ty Q,
