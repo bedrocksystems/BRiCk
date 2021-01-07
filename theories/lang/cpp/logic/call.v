@@ -71,10 +71,10 @@ Section with_resolve.
           iIntros "X"; iDestruct "X" as (Qarg) "[He Hes]".
           iExists Qarg; iFrame; iRevert "Hes"; iApply IH.
           iIntros (? ?) "Y"; iIntros (?) "Q"; iApply "H"; iApply "Y"; iFrame. }
-      { iIntros "X"; iDestruct "X" as (Qarg) "[He Hes]".
-        iExists Qarg; iFrame.
-        iRevert "Hes"; iApply IH; iIntros (? ?) "X".
-        iIntros (? ?) "Y"; iApply "H"; iApply "X"; iFrame. } }
+        { iIntros "X"; iDestruct "X" as (Qarg) "[He Hes]".
+          iExists Qarg; iFrame.
+          iRevert "Hes"; iApply IH; iIntros (? ?) "X".
+          iIntros (? ?) "Y"; iApply "H"; iApply "X"; iFrame. } }
       { iIntros "X"; iDestruct "X" as (Qarg) "[He Hes]".
         iExists Qarg; iFrame.
         iRevert "Hes"; iApply IH; iIntros (? ?) "X".
