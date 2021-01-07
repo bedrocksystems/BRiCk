@@ -22,7 +22,7 @@ Section with_resolve.
   Fixpoint wp_args (es : list (ValCat * Expr)) (Q : list val -> FreeTemps -> mpred)
   : mpred :=
     match es with
-    | nil => Q nil empSP
+    | nil => Q nil emp%I
     | (vc,e) :: es =>
       let ty := type_of e in
       match vc with
