@@ -22,7 +22,7 @@ Section with_resolve.
   Fixpoint wp_args (es : list (ValCat * Expr)) (Q : list val -> FreeTemps -> mpred)
   : mpred :=
     match es with
-    | nil => Q nil empSP
+    | nil => Q nil emp%I
     | (vc,e) :: es =>
       let ty := type_of e in
       match vc with
@@ -71,10 +71,10 @@ Section with_resolve.
           iIntros "X"; iDestruct "X" as (Qarg) "[He Hes]".
           iExists Qarg; iFrame; iRevert "Hes"; iApply IH.
           iIntros (? ?) "Y"; iIntros (?) "Q"; iApply "H"; iApply "Y"; iFrame. }
-      { iIntros "X"; iDestruct "X" as (Qarg) "[He Hes]".
-        iExists Qarg; iFrame.
-        iRevert "Hes"; iApply IH; iIntros (? ?) "X".
-        iIntros (? ?) "Y"; iApply "H"; iApply "X"; iFrame. } }
+        { iIntros "X"; iDestruct "X" as (Qarg) "[He Hes]".
+          iExists Qarg; iFrame.
+          iRevert "Hes"; iApply IH; iIntros (? ?) "X".
+          iIntros (? ?) "Y"; iApply "H"; iApply "X"; iFrame. } }
       { iIntros "X"; iDestruct "X" as (Qarg) "[He Hes]".
         iExists Qarg; iFrame.
         iRevert "Hes"; iApply IH; iIntros (? ?) "X".
