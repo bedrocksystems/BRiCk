@@ -610,7 +610,7 @@ Arguments Z.pow_pos _ _ : simpl never.
 Definition glob_addr (σ : genv) (o : obj_name) : option ptr :=
   (fun _ => global_ptr σ.(genv_tu) o) <$> σ.(genv_tu) !! o.
 
-(* NOTE: the multiplication is flipped from path_pred. *)
 Axiom eval_o_sub : forall resolve ty (i : Z),
   eval_offset resolve (o_sub resolve ty i) =
-    (fun n => i * Z.of_N n) <$> size_of resolve ty.
+    (* This order enables reducing for known ty. *)
+    (fun n => Z.of_N n * i) <$> size_of resolve ty.
