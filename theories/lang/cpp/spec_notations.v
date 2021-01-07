@@ -173,12 +173,12 @@ Notation "'\arg{' x .. y } nm v X" :=
 Notation "'\require' pre X" :=
   (@add_require _ pre X%fspec)
   (at level 10, pre at level 200, X at level 200, left associativity,
-   format "'[v' '\require'  pre  '//' X ']'").
+   format "'[v' '[' '\require'  pre ']' '//' X ']'").
 
 Notation "'\persist' pre X" :=
-  (@add_persist _ pre X%fspec)
+  (@add_persist _ pre%I X%fspec)
   (at level 10, pre at level 200, X at level 200, left associativity,
-   format "'[v' '\persist'  pre  '//' X ']'").
+   format "'[v' '[' '\persist'  pre ']' '//' X ']'").
 
 Notation "'\pre' pre X" :=
   (@add_pre _ pre%I X%fspec)
