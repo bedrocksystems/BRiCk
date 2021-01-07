@@ -307,6 +307,11 @@ Module Type CPP_LOGIC (Import CC : CPP_LOGIC_CLASS)
       Axiom method_at_live : forall f p, method_at f p |-- live_ptr p.
       Axiom ctor_at_live   : forall f p,   ctor_at f p |-- live_ptr p.
       Axiom dtor_at_live   : forall f p,   dtor_at f p |-- live_ptr p.
+
+      Axiom code_at_valid   : forall f p,   code_at f p |-- valid_ptr p.
+      Axiom method_at_valid : forall f p, method_at f p |-- valid_ptr p.
+      Axiom ctor_at_valid   : forall f p,   ctor_at f p |-- valid_ptr p.
+      Axiom dtor_at_valid   : forall f p,   dtor_at f p |-- valid_ptr p.
     End with_genv.
 
     Parameter encodes : forall {σ:genv} (t : type) (v : val) (vs : list runtime_val), mpred.

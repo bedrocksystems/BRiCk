@@ -144,16 +144,7 @@ Module SimpleCPP_BASE <: CPP_LOGIC_CLASS.
     Definition blocks_own (p : ptr) (l h : Z) : mpred :=
       own (A := gmapUR ptr (agreeR (leibnizO (Z * Z))))
         _ghost.(blocks_name) {[ p := to_agree (l, h) ]}.
-
-    (** the pointer points to the code
-
-      note that in the presence of code-loading, function calls will
-      require an extra side-condition that the code is loaded.
-     *)
-    Definition code_own (p : ptr) (f : Func + Method + Ctor + Dtor) : mpred :=
-      own _ghost.(code_name)
-        (A := gmapUR ptr (agreeR (leibnizO (Func + Method + Ctor + Dtor))))
-        {[ p := to_agree f ]}.
+    (* code_own goes below. *)
   End with_cpp.
 End SimpleCPP_BASE.
 
@@ -679,6 +670,23 @@ Module SimpleCPP.
       Observe [| q ≤ 1 |]%Qc (oaddr_encodes σ t q oa p v).
     Proof. destruct oa; apply _. Qed.
 
+    (** the pointer points to the code
+
+      note that in the presence of code-loading, function calls will
+      require an extra side-condition that the code is loaded.
+     *)
+    Definition code_own (p : ptr) (f : Func + Method + Ctor + Dtor) : mpred :=
+      valid_ptr p **
+      own _ghost.(code_name)
+        (A := gmapUR ptr (agreeR (leibnizO (Func + Method + Ctor + Dtor))))
+        {[ p := to_agree f ]}.
+    Instance code_own_persistent : forall f p, Persistent (@code_own p f) := _.
+    Instance code_own_affine : forall f p, Affine (@code_own p f) := _.
+    Instance code_own_timeless : forall f p, Timeless (@code_own p f) := _.
+
+    Lemma code_own_valid f p : code_own p f ⊢ valid_ptr p.
+    Proof. iIntros "[$ _]". Qed.
+
     Definition code_at (_ : genv) (f : Func) (p : ptr) : mpred :=
       code_own p (inl (inl (inl f))).
     Definition method_at (_ : genv) (m : Method) (p : ptr) : mpred :=
@@ -687,6 +695,8 @@ Module SimpleCPP.
       code_own p (inl (inr c)).
     Definition dtor_at (_ : genv) (d : Dtor) (p : ptr) : mpred :=
       code_own p (inr d).
+
+    Typeclasses Opaque code_own.
 
     Instance code_at_persistent : forall s f p, Persistent (@code_at s f p) := _.
     Instance code_at_affine : forall s f p, Affine (@code_at s f p) := _.
@@ -708,6 +718,23 @@ Module SimpleCPP.
     Axiom method_at_live : forall s f p, @method_at s f p |-- live_ptr p.
     Axiom ctor_at_live   : forall s f p,   @ctor_at s f p |-- live_ptr p.
     Axiom dtor_at_live   : forall s f p,   @dtor_at s f p |-- live_ptr p.
+
+    Section with_genv.
+      Context {σ : genv}.
+      Local Notation code_at := (code_at σ) (only parsing).
+      Local Notation method_at := (method_at σ) (only parsing).
+      Local Notation ctor_at := (ctor_at σ) (only parsing).
+      Local Notation dtor_at := (dtor_at σ) (only parsing).
+
+      Lemma code_at_valid   f p :   code_at f p |-- valid_ptr p.
+      Proof. exact: code_own_valid. Qed.
+      Lemma method_at_valid f p : method_at f p |-- valid_ptr p.
+      Proof. exact: code_own_valid. Qed.
+      Lemma ctor_at_valid   f p :   ctor_at f p |-- valid_ptr p.
+      Proof. exact: code_own_valid. Qed.
+      Lemma dtor_at_valid   f p :   dtor_at f p |-- valid_ptr p.
+      Proof. exact: code_own_valid. Qed.
+    End with_genv.
     (** physical representation of pointers
      *)
     Definition pinned_ptr (va : N) (p : ptr) : mpred :=
