@@ -66,12 +66,10 @@ End fractional.
 
 (* Stand-in for an actual model of PTRS_FULL.
 Ensures that everything needed is properly functorized. *)
-Module Type PTRS_I := PTRS <+ PTRS_DERIVED <+ PTR_INTERNAL.
-Declare Module PTRS_IMPL : PTRS_I.
-Declare Module RAW_BYTES_IMPL : RAW_BYTES.
-Module Type PTRS_FULL_I := PTRS_FULL <+ PTR_INTERNAL.
-Module Import PTRS_FULL_IMPL : PTRS_FULL_I :=
-  PTRS_IMPL <+ RAW_BYTES_IMPL <+ VAL_MIXIN <+ PTRS_MIXIN.
+Declare Module PTRS_IMPL : PTRS_INTF_DEPRECATED.
+
+Module Import PTRS_FULL_IMPL : PTRS_FULL_INTF :=
+  PTRS_IMPL <+ VAL_MIXIN <+ PTRS_MIXIN.
 
 Implicit Types (p : ptr).
 
@@ -988,5 +986,5 @@ Module SimpleCPP.
 
 End SimpleCPP.
 
-Module Type SimpleCPP_INTF := SimpleCPP_BASE <+ PTRS_FULL_I <+ CPP_LOGIC.
+Module Type SimpleCPP_INTF := SimpleCPP_BASE <+ PTRS_FULL_INTF <+ CPP_LOGIC.
 Module L : SimpleCPP_INTF := SimpleCPP.

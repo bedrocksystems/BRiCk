@@ -4,11 +4,11 @@
  * See the LICENSE-BedRock file in the repository root for details.
  *)
 
-From bedrock.lang.prelude Require Import base avl bytestring option numbers.
+From stdpp Require Import gmap.
+From bedrock.lang.prelude Require Import base addr avl bytestring option numbers.
 
 From bedrock.lang.cpp Require Import ast.
-From bedrock.lang.cpp.semantics Require Import values sub_module.
-From bedrock.lang.cpp.logic Require Import pred.
+From bedrock.lang.cpp.semantics Require Import sub_module values.
 
 Implicit Types (σ : genv).
 Module canonical_tu.
@@ -127,8 +127,14 @@ Module Type PTRS_DERIVED_MIXIN (Import P : PTRS).
   Definition same_address : ptr -> ptr -> Prop := same_property ptr_vaddr.
   Lemma same_address_eq : same_address = same_property ptr_vaddr.
   Proof. done. Qed.
+
+  Definition pinned_ptr_pure (va : vaddr) (p : ptr) := ptr_vaddr p = Some va.
+  Lemma pinned_ptr_pure_eq :
+    pinned_ptr_pure = fun (va : vaddr) (p : ptr) => ptr_vaddr p = Some va.
+  Proof. done. Qed.
 End PTRS_DERIVED_MIXIN.
 
+Module Type PTRS_INTF := PTRS <+ PTRS_DERIVED.
 (**
 A simple consistency proof for [PTRS]; this one is inspired by Cerberus's
 model of pointer provenance, and resembles CompCert's model.
@@ -138,7 +144,7 @@ extend, but it's unclear how to extend it to support [VALID_PTR_AXIOMS].
 
 In this models, not all valid pointers are pinned to some address.
 *)
-Module SIMPLE_PTRS_IMPL : PTRS.
+Module SIMPLE_PTRS_IMPL : PTRS_INTF.
   Import address_sums.
 
   Definition ptr' : Set := alloc_id * option vaddr.
@@ -195,16 +201,15 @@ Module SIMPLE_PTRS_IMPL : PTRS.
       [do 3 f_equiv|]; lia.
   Qed.
 
-  Definition offset_ptr__ : Z -> ptr -> ptr :=
+  Definition offset_ptr_raw : Z -> ptr -> ptr :=
     λ z p, p ≫= offset_ptr' z.
-  Notation offset_ptr_ := offset_ptr__.
 
-  Lemma offset_ptr_0__ p : offset_ptr_ 0 p = p.
+  Lemma offset_ptr_0 p : offset_ptr_raw 0 p = p.
   Proof. by case: p => [[a p]|]. Qed.
 
   Lemma offset_ptr_combine {p o o'} :
-    offset_ptr_ o p <> invalid_ptr ->
-    offset_ptr_ o' (offset_ptr_ o p) = offset_ptr_ (o + o') p.
+    offset_ptr_raw o p <> invalid_ptr ->
+    offset_ptr_raw o' (offset_ptr_raw o p) = offset_ptr_raw (o + o') p.
   Proof. case: p => // p. exact: offset_ptr_combine'. Qed.
 
   (* This list is reversed.
@@ -224,7 +229,7 @@ Module SIMPLE_PTRS_IMPL : PTRS.
   Notation "o1 .., o2" := (o_dot o1 o2) : offset_scope.
 
   Definition _offset_ptr_single : option Z -> ptr -> ptr :=
-    λ oz p, z ← oz; offset_ptr_ z p.
+    λ oz p, z ← oz; offset_ptr_raw z p.
   Definition _offset_ptr : ptr -> offset -> ptr :=
     foldr _offset_ptr_single.
   Notation "p .., o" := (_offset_ptr p o) : ptr_scope.
@@ -244,7 +249,7 @@ Module SIMPLE_PTRS_IMPL : PTRS.
     let p' := _offset_ptr_single oz p in
     is_Some (ptr_alloc_id p') -> ptr_alloc_id p' = ptr_alloc_id p.
   Proof.
-    rewrite /_offset_ptr_single /offset_ptr_ /offset_ptr'.
+    rewrite /_offset_ptr_single /offset_ptr_raw /offset_ptr'.
     (* XXX messy? good enough? *)
     have ? := @is_Some_None alloc_id.
     case: oz p => [z|//] [[aid' va]|] Hsome //=; simplify_option_eq => //.
@@ -267,14 +272,14 @@ Module SIMPLE_PTRS_IMPL : PTRS.
   Definition o_derived σ base derived := opt_to_off (o_derived_off σ base derived).
 
   Lemma offset_ptr_cancel {p} {o1 o2 : Z} o3
-    (Hval : offset_ptr_ o1 p ≠ None) (Hsum : (o1 + o2 = o3)%Z) :
-    offset_ptr_ o2 (offset_ptr_ o1 p) = (offset_ptr_ o3 p).
+    (Hval : offset_ptr_raw o1 p ≠ None) (Hsum : (o1 + o2 = o3)%Z) :
+    offset_ptr_raw o2 (offset_ptr_raw o1 p) = (offset_ptr_raw o3 p).
   Proof. by rewrite (offset_ptr_combine Hval) Hsum. Qed.
 
   Lemma offset_ptr_cancel0 (o1 o2 : Z) p
-    (Hval : offset_ptr_ o1 p ≠ None) (Hsum : (o1 + o2 = 0)%Z) :
-    offset_ptr_ o2 (offset_ptr_ o1 p) = p.
-  Proof. by rewrite (offset_ptr_cancel 0 Hval Hsum) offset_ptr_0__. Qed.
+    (Hval : offset_ptr_raw o1 p ≠ None) (Hsum : (o1 + o2 = 0)%Z) :
+    offset_ptr_raw o2 (offset_ptr_raw o1 p) = p.
+  Proof. by rewrite (offset_ptr_cancel 0 Hval Hsum) offset_ptr_0. Qed.
 
   (* Lemma o_cancel_raw {p o1 o2} o3 :
     (z1 → o1 + o2 = o3)%Z →
@@ -336,7 +341,7 @@ Module SIMPLE_PTRS_IMPL : PTRS.
     n1 = n2)%ptr.
   Proof.
     rewrite same_property_iff /ptr_vaddr/= /_offset_ptr_single /o_sub_off => -[addr []].
-    rewrite Hsz /offset_ptr_ /offset_ptr' /=.
+    rewrite Hsz /offset_ptr_raw /offset_ptr' /=.
     case: p => [[aid [p|]]|] /=; try by simplify_option_eq.
     case: (decide (n1 = 0)) => [->|?]; case: (decide (n2 = 0))=> [->|?];
       rewrite ?Z.mul_0_l //; repeat case_decide; try lia;
@@ -352,10 +357,9 @@ Module SIMPLE_PTRS_IMPL : PTRS.
     intros.
     rewrite /o_sub /= /o_sub_off /_offset_ptr_single.
     case: size_of => [o|] //=.
-    case E: (offset_ptr_ (z1 * Z.of_N o) p) => [p'|/=]; rewrite -E.
+    case E: (offset_ptr_raw (z1 * Z.of_N o) p) => [p'|/=]; rewrite -E.
     { apply: offset_ptr_cancel; [|by lia]. naive_solver. }
-    case: p E => [[aid p]|//].
-    rewrite /offset_ptr_ /offset_ptr' /=.
+    case: p E => [[aid p]|//] /=.
     case_decide => //=; case: p=> [va|//] //=;
       (* have ?: (o <> 0)%N by [lia];
       have ?: (0 < z1)%Z by [lia]; *)
@@ -372,10 +376,9 @@ Module SIMPLE_PTRS_IMPL : PTRS.
     intros.
     rewrite /o_sub /= /o_sub_off /_offset_ptr_single.
     case: size_of => [o|] //=.
-    case E: (offset_ptr_ (z1 * Z.of_N o) p) => [p'|/=]; rewrite -E.
+    case E: (offset_ptr_raw (z1 * Z.of_N o) p) => [p'|/=]; rewrite -E.
     { apply: offset_ptr_cancel; [|by lia]. naive_solver. }
-    case: p E => [[aid p]|//].
-    rewrite /offset_ptr_ /offset_ptr' /=.
+    case: p E => [[aid p]|//] /=.
     case_decide => //=; case: p=> [va|//] //=;
       last by case_decide => //; exfalso; lia.
     case E': offset_vaddr => [_ //|/=];
@@ -426,7 +429,7 @@ This is more complex than [SIMPLE_PTRS_IMPL], but will be necessary to justify [
 In this model, all valid pointers are pinned, but this is not meant
 to be guaranteed, and is indeed not guaranteed by the other model.
 *)
-Module PTRS_IMPL : PTRS.
+Module PTRS_IMPL : PTRS_INTF.
   Import canonical_tu.
 
   Inductive raw_offset_seg : Set :=
@@ -434,19 +437,17 @@ Module PTRS_IMPL : PTRS.
   | o_sub_ (ty : type) (z : Z)
   | o_base_ (derived base : globname)
   | o_derived_ (base derived : globname)
-  (* deprecated *)
-  | o_num_ (z : Z)
   | o_invalid_.
   Local Instance raw_offset_seg_eq_dec : EqDecision raw_offset_seg.
   Proof. solve_decision. Qed.
   Declare Instance raw_offset_seg_countable : Countable raw_offset_seg.
+
   Definition offset_seg : Set := raw_offset_seg * Z.
   Local Instance offset_seg_eq_dec : EqDecision offset_seg := _.
   Local Instance offset_seg_countable : Countable offset_seg := _.
 
   Definition eval_raw_offset_seg σ (ro : raw_offset_seg) : option Z :=
     match ro with
-    | o_num_ z => Some z
     | o_field_ f => o_field_off σ f
     | o_sub_ ty z => o_sub_off σ ty z
     | o_base_ derived base => o_base_off σ derived base
@@ -476,8 +477,6 @@ Module PTRS_IMPL : PTRS.
       if decide (der1 = der2 ∧ base1 = base2)
       then []
       else [os2; os1]
-    | (o_num_ z1, off1), (o_num_ z2, off2) =>
-      [(o_num_ (z2 + z1), (off1 + off2)%Z)]
     | (o_invalid_, _), _ => [(o_invalid_, 0%Z)]
     | _, _ => [os2; os1]
     end.
@@ -522,8 +521,6 @@ Module PTRS_IMPL : PTRS.
     mkOffset σ (o_base_ derived base).
   Definition o_derived σ base derived : offset :=
     mkOffset σ (o_derived_ base derived).
-  Definition o_num z : offset :=
-    [(o_num_ z, z)] ↾ singleton_raw_offset_wf.
 
   Lemma last_last_equiv {X} d {xs : list X} : default d (stdpp.list.last xs) = List.last xs d.
   Proof. elim: xs => // x1 xs /= <-. by case_match. Qed.
@@ -872,24 +869,6 @@ Module PTRS_IMPL : PTRS.
     move: o1 o2 => [o1 /= +] [o2 /= +]; rewrite /raw_offset_wf => WF1 WF2.
     repeat (case_match; simplify_eq/= => //).
     by rewrite Heqr in WF2.
-  Admitted.
-
-  Definition offset_ptr__ (z : Z) (p : ptr) : ptr :=
-    (* _offset_ptr p [o_num_ z] *)
-    if decide (z = 0)%Z
-    then p
-    else _offset_ptr p (o_num z).
-  Notation offset_ptr_ := offset_ptr__.
-  Definition offset_ptr_0__ b : offset_ptr_ 0 b = b := reflexivity _.
-  Lemma offset_ptr_combine p o o' :
-    offset_ptr_ o p <> invalid_ptr ->
-    offset_ptr_ o' (offset_ptr_ o p) = offset_ptr_ (o + o') p.
-  Proof.
-    rewrite /offset_ptr__.
-    Arguments _offset_ptr _ !_ /.
-    repeat (case_decide; rewrite ->?Z.add_0_r in *; subst => //=).
-    - destruct p => //=; admit.
-    - destruct p => //=.
   Admitted.
 
   (* XXX False. *)
