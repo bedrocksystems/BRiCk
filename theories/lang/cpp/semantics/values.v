@@ -414,26 +414,6 @@ Module Type PTRS_DEPRECATED (Import P : PTRS).
   Parameter offset_ptr__ : Z -> ptr -> ptr.
   #[deprecated(since="2020-12-08", note="Use structured offsets instead.")]
   Notation offset_ptr_ := offset_ptr__.
-
-  Axiom offset_ptr_0__ : forall b,
-    offset_ptr_ 0 b = b.
-  #[deprecated(since="2020-12-08", note="Use structured offsets instead.")]
-  Notation offset_ptr_0_ := offset_ptr_0__.
-
-  (* Unsound! TODO: this axiom is unsound; if [o + o' = 0],
-  but [offset_ptr_ o p] overflows into an invalid pointer, then
-  [offset_ptr_ o' (offset_ptr_ o p)] is invalid as well.
-
-  But since [offset_ptr_ ] should be deprecated anyway, we defer removing it,
-  to update clients only once.
-  *)
-  Axiom offset_ptr_combine__ : forall p o o',
-    (* TODO: this premise is necessary, but breaks clients. *)
-    (* offset_ptr_ o p <> invalid_ptr -> *)
-    offset_ptr_ o' (offset_ptr_ o p) = offset_ptr_ (o + o') p.
-  #[deprecated(since="2020-11-25",
-  note="This is UNSOUND. Use higher-level APIs or o_sub_sub.")]
-  Notation offset_ptr_combine_ := offset_ptr_combine__.
 End PTRS_DEPRECATED.
 
 Module Type PTR_INTERNAL (Import P : PTRS).
@@ -630,28 +610,7 @@ Arguments Z.pow_pos _ _ : simpl never.
 Definition glob_addr (σ : genv) (o : obj_name) : option ptr :=
   (fun _ => global_ptr σ.(genv_tu) o) <$> σ.(genv_tu) !! o.
 
-(* Clients are not SUPPOSED to look at these APIs; they're only meant for
-transition, and ideally we can drop them. *)
-Axiom _offset_ptr_eq : forall tu p o,
-  is_Some (eval_offset tu o) ->
-  Some (p .., o)%ptr = flip offset_ptr_ p <$> eval_offset tu o.
-
 (* NOTE: the multiplication is flipped from path_pred. *)
 Axiom eval_o_sub : forall resolve ty (i : Z),
   eval_offset resolve (o_sub resolve ty i) =
     (fun n => i * Z.of_N n) <$> size_of resolve ty.
-
-Lemma _o_sub_collapse p i n ty resolve
-  (Hsz : size_of resolve ty = Some n) :
-  (p .., o_sub resolve ty i)%ptr = offset_ptr_ (i * Z.of_N n) p.
-Proof.
-  apply (inj Some).
-  by rewrite (_offset_ptr_eq resolve) eval_o_sub Hsz; eauto.
-Qed.
-
-#[deprecated(since="2020-11-29", note="Use higher-level APIs and avoid
-offset_ptr_; this is only migration band-aid.")]
-Notation offset_ptr_eq := _offset_ptr_eq.
-#[deprecated(since="2020-11-29", note="Use higher-level APIs and avoid
-offset_ptr_; this is only migration band-aid.")]
-Notation o_sub_collapse := _o_sub_collapse.
