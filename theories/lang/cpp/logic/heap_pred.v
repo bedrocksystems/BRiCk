@@ -84,18 +84,18 @@ Section defs.
   Definition refR := refR_aux.(unseal).
   Definition refR_eq : @refR = _ := refR_aux.(seal_eq).
 
-  (* this is the core definition that everything will be based on.
-     it is really an assertion about assembly
+  (* this is the core definition that the program logic will be based on.
+     it is really an assertion about assembly.
    *)
-  Definition cptr_def {resolve : genv} (fs : function_spec) : Rep :=
+  Definition cptrR_def {resolve : genv} (fs : function_spec) : Rep :=
     as_Rep (fun p =>
          Forall (ti : thread_info), □ (Forall vs Q,
          [| List.length vs = List.length fs.(fs_arguments) |] -*
          fs.(fs_spec) ti vs Q -*
          fspec resolve.(genv_tu).(globals) (type_of_spec fs) ti (Vptr p) vs Q)).
-  Definition cptr_aux : seal (@cptr_def). Proof. by eexists. Qed.
-  Definition cptr := cptr_aux.(unseal).
-  Definition cptr_eq : @cptr = _ := cptr_aux.(seal_eq).
+  Definition cptrR_aux : seal (@cptrR_def). Proof. by eexists. Qed.
+  Definition cptrR := cptrR_aux.(unseal).
+  Definition cptrR_eq : @cptrR = _ := cptrR_aux.(seal_eq).
 
   (** Values
    * These `Rep` predicates wrap `ptsto` facts
@@ -106,16 +106,17 @@ Section defs.
 End defs.
 
 Global Instance: Params (@_at) 3 := {}.
-Global Instance: Params (@cptr) 3 := {}.
+Global Instance: Params (@cptrR) 3 := {}.
 
 Instance: Params (@as_Rep) 2 := {}.
 Instance: Params (@_offsetR) 3 := {}.
 Instance: Params (@pureR) 2 := {}.
 
 Arguments refR {_ Σ} ty v : rename.
-Arguments cptr {_ Σ resolve} _ : rename.
+Arguments cptrR {_ Σ resolve} _ : rename.
 
-Notation cptrR := cptr (only parsing).
+#[deprecated(since="2020-01-09", note="Use cptrR")]
+Notation cptr := cptrR (only parsing).
 
 Arguments type_ptrR {_ Σ σ} _%bs.
 Arguments identityR {_ Σ σ} _%bs _%bs _%Qp.
@@ -755,13 +756,13 @@ Section with_cpp.
   Global Instance refR_timeless ty p : Timeless (refR ty p).
   Proof. rewrite refR_eq. apply _. Qed.
 
-  #[global] Instance cptr_persistent {resolve} : Persistent (cptr s).
-  Proof. rewrite cptr_eq. apply _. Qed.
+  #[global] Instance cptrR_persistent {resolve} : Persistent (cptrR s).
+  Proof. rewrite cptrR_eq. apply _. Qed.
 
   (* TODO: Proper wrt [genv_leq]. *)
-  #[global] Instance cptr_mono {resolve} : Proper (flip fs_entails ==> (⊢)) cptr.
+  #[global] Instance cptrR_mono {resolve} : Proper (flip fs_entails ==> (⊢)) cptrR.
   Proof.
-    intros ??; rewrite /flip /fs_entails /fs_impl cptr_eq/cptr_def; intros Heq.
+    intros ??; rewrite /flip /fs_entails /fs_impl cptrR_eq/cptrR_def; intros Heq.
     constructor => p /=.
     f_equiv=>ti; f_equiv; f_equiv => vs; f_equiv => Q.
     iIntros "Hcptr -> Hy".
@@ -770,10 +771,10 @@ Section with_cpp.
     exact: length_type_of_spec.
   Qed.
 
-  #[global] Instance cptr_flip_mono {resolve} : Proper (fs_entails ==> flip (⊢)) cptr.
+  #[global] Instance cptrR_flip_mono {resolve} : Proper (fs_entails ==> flip (⊢)) cptrR.
   Proof. by intros ?? <-. Qed.
 
-  #[global] Instance cptr_proper {resolve} : Proper ((≡) ==> (⊣⊢)) cptr.
+  #[global] Instance cptrR_proper {resolve} : Proper ((≡) ==> (⊣⊢)) cptrR.
   Proof.
     intros ? ? [H1 H2]%function_spec_equiv_split; iSplit; iIntros.
     - by rewrite -H2.
