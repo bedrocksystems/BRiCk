@@ -314,17 +314,6 @@ Section with_cpp.
     P |-- Q.
   Proof. constructor => p. move: HPQ => /(_ p). by rewrite _at_eq. Qed.
 
-  #[deprecated(since="2020-12-08",note="more cumbersome than necessary")]
-  Lemma _at_loc_materialize (l : ptr) (r : Rep) :
-      _at l r -|- Exists a, l &~ a ** r a.
-  Proof.
-    rewrite _at_eq/_at_def path_pred.addr_of_eq /addr_of_def.
-    iSplit.
-    - iIntros "A"; iExists l; iFrame "#∗"; eauto.
-    - iIntros "A"; iDestruct "A" as (ll) "X".
-      iDestruct "X" as "[-> $]".
-  Qed.
-
   Lemma _at_as_Rep (l : ptr) (Q : ptr → mpred) : _at l (as_Rep Q) ⊣⊢ Q l.
   Proof. by rewrite _at_eq/_at_def. Qed.
 
@@ -388,7 +377,7 @@ Section with_cpp.
   Proof. by destruct b => //; rewrite _at_eq/_at_def monPred_at_affinely. Qed.
 
   Lemma _at_offsetR (l : ptr) (o : offset) (r : Rep) :
-      _at l (_offsetR o r) -|- _at (_offsetL o l) r.
+      _at l (_offsetR o r) -|- _at (_offset_ptr l o) r.
   Proof. by rewrite !_at_loc /flip _offsetR_eq/_offsetR_def /=. Qed.
 
   Lemma _at_sepSPs l (xs : list Rep) : _at l ([∗] xs) -|- [∗] map (_at l) xs.
