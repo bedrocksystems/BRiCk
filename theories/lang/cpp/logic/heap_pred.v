@@ -798,8 +798,10 @@ Section with_cpp.
   #[global] Instance validR_affine : Affine validR.
   Proof. rewrite validR_eq; refine _. Qed.
 
+  Lemma monPred_at_validR p : validR p -|- valid_ptr p.
+  Proof. by rewrite validR_eq. Qed.
   Lemma _at_validR (p : ptr) : _at p validR -|- valid_ptr p.
-  Proof. by rewrite validR_eq/validR_def _at_eq/_at_def. Qed.
+  Proof. by rewrite validR_eq _at_eq. Qed.
 
   #[global] Instance svalidR_persistent : Persistent svalidR.
   Proof. rewrite svalidR_eq; refine _. Qed.
@@ -808,8 +810,10 @@ Section with_cpp.
   #[global] Instance svalidR_affine : Affine svalidR.
   Proof. rewrite svalidR_eq; refine _. Qed.
 
+  Lemma monPred_at_svalidR p : svalidR p -|- strict_valid_ptr p.
+  Proof. by rewrite svalidR_eq. Qed.
   Lemma _at_svalidR (p : ptr) : _at p svalidR -|- strict_valid_ptr p.
-  Proof. by rewrite svalidR_eq/svalidR_def _at_eq/_at_def. Qed.
+  Proof. by rewrite svalidR_eq _at_eq. Qed.
 
   #[global] Instance type_ptrR_persistent σ t : Persistent (type_ptrR t).
   Proof. rewrite type_ptrR_eq; refine _. Qed.
@@ -818,8 +822,10 @@ Section with_cpp.
   #[global] Instance type_ptrR_affine σ t : Affine (type_ptrR t).
   Proof. rewrite type_ptrR_eq; refine _. Qed.
 
+  Lemma monPred_at_type_ptrR ty σ p : type_ptrR ty p -|- type_ptr ty p.
+  Proof. by rewrite type_ptrR_eq. Qed.
   Lemma _at_type_ptrR σ (p : ptr) ty : _at p (type_ptrR ty) -|- type_ptr ty p.
-  Proof. by rewrite type_ptrR_eq/type_ptrR_def _at_eq/_at_def. Qed.
+  Proof. by rewrite type_ptrR_eq _at_eq. Qed.
 
 
 

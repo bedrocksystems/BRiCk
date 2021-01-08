@@ -55,20 +55,6 @@ Implicit Types (p : ptr) (σ : genv).
 Section validR.
   Context `{Σ : cpp_logic}.
 
-  Lemma monPred_at_validR p : validR p -|- valid_ptr p.
-  Proof. by rewrite validR_eq. Qed.
-  Lemma monPred_at_svalidR p : svalidR p -|- strict_valid_ptr p.
-  Proof. by rewrite svalidR_eq. Qed.
-  Lemma monPred_at_type_ptrR ty σ p : type_ptrR ty p -|- type_ptr ty p.
-  Proof. by rewrite type_ptrR_eq. Qed.
-
-  Lemma _at_validR p : p |-> validR -|- valid_ptr p.
-  Proof. by rewrite _at_eq validR_eq. Qed.
-  Lemma _at_svalidR p : p |-> svalidR -|- strict_valid_ptr p.
-  Proof. by rewrite _at_eq svalidR_eq. Qed.
-  Lemma _at_type_ptrR σ ty p : p |-> type_ptrR ty -|- type_ptr ty p.
-  Proof. by rewrite _at_eq type_ptrR_eq. Qed.
-
   Lemma type_ptrR_validR_plus_one (ty : type) σ :
     type_ptrR ty ⊢@{RepI (Σ := Σ)} .[ ty ! 1 ] |-> validR .
   Proof.
