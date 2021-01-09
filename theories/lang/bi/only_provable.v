@@ -128,6 +128,13 @@ Section bi.
 
   Lemma persistently_only_provable P : <pers> [| P |] ⊣⊢@{PROP} ⌜ P ⌝.
   Proof. by rewrite /only_provable bi.persistently_affinely_elim bi.persistently_pure. Qed.
+  Lemma affinely_only_provable P : <affine> [| P |] ⊣⊢@{PROP} [| P |].
+  Proof. by rewrite /only_provable bi.affinely_idemp. Qed.
+  Lemma absorbingly_only_provable P : <absorb> [| P |] ⊣⊢@{PROP} ⌜ P ⌝.
+  Proof. by rewrite /only_provable bi.persistent_absorbingly_affinely. Qed.
+
+  Lemma intuitionistically_only_provable P : □ [| P |] ⊣⊢@{PROP} [| P |].
+  Proof. by rewrite /bi_intuitionistically persistently_only_provable. Qed.
 End bi.
 Hint Resolve only_provable_intro : core.
 
