@@ -765,12 +765,14 @@ Section with_cpp.
     `(Hobs : !Observe (strict_valid_ptr p) P) : Observe (valid_ptr p) P.
   Proof. by rewrite -strict_valid_relaxed. Qed.
 
-  Context (σ : genv).
-  Lemma observe_type_ptr_strict_valid
-    `(Hobs : !Observe (type_ptr ty p) P) : Observe (strict_valid_ptr p) P.
-  Proof. by rewrite -type_ptr_strict_valid. Qed.
+  Section with_genv.
+    Context (σ : genv).
+    Lemma observe_type_ptr_strict_valid
+      `(Hobs : !Observe (type_ptr ty p) P) : Observe (strict_valid_ptr p) P.
+    Proof. by rewrite -type_ptr_strict_valid. Qed.
 
-  Lemma observe_type_ptr_valid_plus_one
-    `(Hobs : !Observe (type_ptr ty p) P) : Observe (valid_ptr (p .., o_sub σ ty 1)) P.
-  Proof. by rewrite -type_ptr_valid_plus_one. Qed.
+    Lemma observe_type_ptr_valid_plus_one
+      `(Hobs : !Observe (type_ptr ty p) P) : Observe (valid_ptr (p .., o_sub σ ty 1)) P.
+    Proof. by rewrite -type_ptr_valid_plus_one. Qed.
+  End with_genv.
 End with_cpp.
