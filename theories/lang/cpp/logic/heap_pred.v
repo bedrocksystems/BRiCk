@@ -311,6 +311,12 @@ Section with_cpp.
     - by rewrite _offsetR_sep IHRs.
   Qed.
 
+  Lemma _offsetR_later o R : _offsetR o (|> R) -|- |> _offsetR o R.
+  Proof.
+    rewrite _offsetR_eq /_offsetR_def.
+    constructor=>p/=. by rewrite !monPred_at_later.
+  Qed.
+
   Global Instance _offsetR_fractional o (r : Qp → Rep) :
     Fractional r → Fractional (λ q, _offsetR o (r q)).
   Proof. intros ? q1 q2. by rewrite fractional _offsetR_sep. Qed.
@@ -445,6 +451,9 @@ Section with_cpp.
 
   Lemma _at_affinely_if b (p : ptr) R : _at p (<affine>?b R) -|- <affine>?b _at p R.
   Proof. by destruct b => //; rewrite _at_eq/_at_def monPred_at_affinely. Qed.
+
+  Lemma _at_later p R : _at p (|> R) -|- |> _at p R.
+  Proof. by rewrite _at_eq/_at_def monPred_at_later. Qed.
 
   Lemma _at_offsetR (l : ptr) (o : offset) (r : Rep) :
       _at l (_offsetR o r) -|- _at (_offset_ptr l o) r.
