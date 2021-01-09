@@ -106,12 +106,18 @@ Section observe.
   Lemma observe_intro_persistent Q P `{!Persistent Q} : (P ⊢ Q) → Observe Q P.
   Proof. rewrite/Observe=>->. iIntros "#$". Qed.
 
+  Lemma observe_intro_only_provable (Q : Prop) (P : PROP) : (P ⊢ ⌜ Q ⌝) → Observe [| Q |] P.
+  Proof. by rewrite /Observe persistently_only_provable =>->. Qed.
+
   Lemma observe_intro Q P `{!Persistent Q} : (P ⊢ P ∗ Q) → Observe Q P.
   Proof. rewrite/Observe {1}(persistent Q)=>->. iIntros "[_ $]". Qed.
 
   Lemma observe_2_intro_persistent Q P1 P2 `{!Persistent Q} :
     (P1 ⊢ P2 -∗ Q) → Observe2 Q P1 P2.
   Proof. rewrite/Observe2=>->. f_equiv. iIntros "#$". Qed.
+
+  Lemma observe_2_intro_only_provable (Q : Prop) (P1 P2 : PROP) : (P1 ⊢ P2 -∗ ⌜ Q ⌝) → Observe2 [| Q |] P1 P2.
+  Proof. by rewrite /Observe2 persistently_only_provable =>->. Qed.
 
   Lemma observe_2_intro Q P1 P2 `{!Persistent Q} :
     (P1 ⊢ P2 -∗ P1 ∗ P2 ∗ Q) → Observe2 Q P1 P2.

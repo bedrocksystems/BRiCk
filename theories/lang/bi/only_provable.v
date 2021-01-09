@@ -36,9 +36,8 @@ Section bi.
   Local Notation "p ⊢ q" := (p ⊢@{PROP} q) (only parsing).
   Local Notation "p ⊣⊢ q" := (p ⊣⊢@{PROP} q) (only parsing).
 
-  (** [ [| P |] ] indeed holds no resources.
-  This doubles as an unfolding lemma, but that is not meant be used in proofs. *)
-  Local Lemma only_provable_equiv P : [| P |] ⊣⊢ emp ∧ ⌜ P ⌝.
+  (** [ [| P |] ] indeed holds no resources. This is also an unfolding lemma, since [only_provable] is [Opaque]. *)
+  Lemma only_provable_equiv P : [| P |] ⊣⊢ emp ∧ ⌜ P ⌝.
   Proof. done. Qed.
 
   Global Instance only_provable_ne n :
@@ -125,6 +124,16 @@ Section bi.
     apply: anti_symm; auto using
       only_provable_wand_forall_1, only_provable_wand_forall_2.
   Qed.
+
+  Lemma persistently_only_provable P : <pers> [| P |] ⊣⊢@{PROP} ⌜ P ⌝.
+  Proof. by rewrite /only_provable bi.persistently_affinely_elim bi.persistently_pure. Qed.
+  Lemma affinely_only_provable P : <affine> [| P |] ⊣⊢@{PROP} [| P |].
+  Proof. by rewrite /only_provable bi.affinely_idemp. Qed.
+  Lemma absorbingly_only_provable P : <absorb> [| P |] ⊣⊢@{PROP} ⌜ P ⌝.
+  Proof. by rewrite /only_provable bi.persistent_absorbingly_affinely. Qed.
+
+  Lemma intuitionistically_only_provable P : □ [| P |] ⊣⊢@{PROP} [| P |].
+  Proof. by rewrite /bi_intuitionistically persistently_only_provable. Qed.
 End bi.
 Hint Resolve only_provable_intro : core.
 
