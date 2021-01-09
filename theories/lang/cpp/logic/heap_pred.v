@@ -976,15 +976,22 @@ Section with_cpp.
     apply Rep_entails_at => p. by rewrite _at_offsetR !_at_validR.
   Qed.
 
-  Lemma o_field_validR σ f : _offsetR (_field f) validR |-- validR.
+  Lemma _field_validR σ f : _offsetR (_field f) validR |-- validR.
   Proof. apply off_validR => p. apply _valid_ptr_field. Qed.
 
-  Lemma o_base_validR σ derived base : _offsetR (_base derived base) validR |-- validR.
+  Lemma _base_validR σ derived base : _offsetR (_base derived base) validR |-- validR.
   Proof. apply off_validR => p. apply _valid_ptr_base. Qed.
 
-  Lemma o_derived_validR σ base derived : _offsetR (_derived base derived) validR |-- validR.
+  Lemma _derived_validR σ base derived : _offsetR (_derived base derived) validR |-- validR.
   Proof. apply off_validR => p. apply _valid_ptr_derived. Qed.
 End with_cpp.
+
+#[deprecated(since = "2021-01-09", note = "Use _field_validR")]
+Notation o_field_validR := _field_validR.
+#[deprecated(since = "2021-01-09", note = "Use _base_validR")]
+Notation o_base_validR := _base_validR.
+#[deprecated(since = "2021-01-09", note = "Use _field_validR")]
+Notation o_derived_validR := _derived_validR.
 
 Typeclasses Opaque identityR.
 Typeclasses Opaque type_ptrR validR svalidR alignedR.
