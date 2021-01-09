@@ -234,7 +234,7 @@ Module SimpleCPP.
     Theorem _valid_ptr_nullptr b : |-- _valid_ptr b nullptr.
     Proof. by iLeft. Qed.
 
-    Lemma strict_valid_relaxed p :
+    Lemma strict_valid_valid p :
       strict_valid_ptr p |-- valid_ptr p.
     Proof. rewrite /_valid_ptr/=. by setoid_rewrite in_range_weaken. Qed.
 

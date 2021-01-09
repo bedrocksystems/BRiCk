@@ -832,7 +832,7 @@ Section with_cpp.
   Lemma svalidR_validR : svalidR |-- validR.
   Proof.
     rewrite validR_eq/validR_def svalidR_eq/svalidR_def.
-    constructor =>p /=. by apply strict_valid_relaxed.
+    constructor =>p /=. by apply strict_valid_valid.
   Qed.
   Lemma type_ptrR_svalidR σ ty : type_ptrR ty |-- svalidR.
   Proof.
