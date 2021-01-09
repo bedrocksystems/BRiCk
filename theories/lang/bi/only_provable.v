@@ -36,9 +36,8 @@ Section bi.
   Local Notation "p ⊢ q" := (p ⊢@{PROP} q) (only parsing).
   Local Notation "p ⊣⊢ q" := (p ⊣⊢@{PROP} q) (only parsing).
 
-  (** [ [| P |] ] indeed holds no resources.
-  This doubles as an unfolding lemma, but that is not meant be used in proofs. *)
-  Local Lemma only_provable_equiv P : [| P |] ⊣⊢ emp ∧ ⌜ P ⌝.
+  (** [ [| P |] ] indeed holds no resources. This is also an unfolding lemma, since [only_provable] is [Opaque]. *)
+  Lemma only_provable_equiv P : [| P |] ⊣⊢ emp ∧ ⌜ P ⌝.
   Proof. done. Qed.
 
   Global Instance only_provable_ne n :
