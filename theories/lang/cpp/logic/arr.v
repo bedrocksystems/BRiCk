@@ -162,7 +162,7 @@ Section arrR.
     apply: observe_intro_persistent.
     rewrite arrR_eq /arrR_def /= !_offsetR_sep.
     apply Rep_entails_at =>p. rewrite !_at_sep !_at_offsetR _at_type_ptrR _at_only_provable /=.
-    rewrite type_ptr_strict_valid strict_valid_relaxed.
+    rewrite type_ptr_valid.
     rewrite valid_o_sub_size.
     iIntros "[_ [_ [[$ _] _]]]".
   Qed.

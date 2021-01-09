@@ -774,5 +774,8 @@ Section with_cpp.
     Lemma observe_type_ptr_valid_plus_one
       `(Hobs : !Observe (type_ptr ty p) P) : Observe (valid_ptr (p .., o_sub σ ty 1)) P.
     Proof. by rewrite -type_ptr_valid_plus_one. Qed.
+
+    Lemma type_ptr_valid ty p : type_ptr ty p |-- valid_ptr p.
+    Proof. by rewrite type_ptr_strict_valid strict_valid_valid. Qed.
   End with_genv.
 End with_cpp.
