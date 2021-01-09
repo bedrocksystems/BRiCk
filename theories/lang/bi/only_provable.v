@@ -125,6 +125,9 @@ Section bi.
     apply: anti_symm; auto using
       only_provable_wand_forall_1, only_provable_wand_forall_2.
   Qed.
+
+  Lemma persistently_only_provable P : <pers> [| P |] ⊣⊢@{PROP} ⌜ P ⌝.
+  Proof. by rewrite /only_provable bi.persistently_affinely_elim bi.persistently_pure. Qed.
 End bi.
 Hint Resolve only_provable_intro : core.
 
