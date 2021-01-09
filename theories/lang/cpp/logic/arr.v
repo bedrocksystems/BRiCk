@@ -73,7 +73,7 @@ Section validR.
     type_ptrR ty ⊢@{RepI (Σ := Σ)} .[ ty ! 1 ] |-> validR .
   Proof.
     apply Rep_entails_at => p.
-    rewrite _at_type_ptrR _at_offsetL_offsetR _at_validR.
+    rewrite _at_type_ptrR _at_offsetR _at_validR.
     exact: type_ptr_valid_plus_one.
   Qed.
 
@@ -81,13 +81,13 @@ Section validR.
 
   (* Lemma _at_offsetR_validR p (o : offset) :
     _at p (_offsetR o validR) -|- valid_ptr (_offset_ptr p o).
-  Proof. by rewrite _at_offsetL_offsetR _at_validR. Qed. *)
+  Proof. by rewrite _at_offsetR _at_validR. Qed. *)
 
   Lemma _sub_inv ty i resolve :
     _offsetR (_sub ty i) validR |-- [| is_Some (size_of resolve ty) |].
   Proof.
     apply Rep_entails_at => p.
-    rewrite _at_offsetL_offsetR _at_validR _at_only_provable.
+    rewrite _at_offsetR _at_validR _at_only_provable.
     apply valid_o_sub_size.
   Qed.
 
@@ -96,7 +96,7 @@ Section validR.
     _offsetR (_sub ty 0) R -|- R.
   Proof.
     intros; apply Rep_equiv_at => p /=.
-    by rewrite _at_offsetL_offsetR /= o_sub_0 // offset_ptr_id.
+    by rewrite _at_offsetR /= o_sub_0 // offset_ptr_id.
   Qed.
 
   Lemma _sub_offsetR_add {resolve : genv} ty a b R :
@@ -175,7 +175,7 @@ Section arrR.
   Proof.
     apply: observe_intro_persistent.
     rewrite arrR_eq /arrR_def /= !_offsetR_sep.
-    apply Rep_entails_at =>p. rewrite !_at_sep !_at_offsetL_offsetR _at_type_ptrR _at_only_provable /=.
+    apply Rep_entails_at =>p. rewrite !_at_sep !_at_offsetR _at_type_ptrR _at_only_provable /=.
     rewrite type_ptr_strict_valid strict_valid_relaxed.
     rewrite valid_o_sub_size.
     iIntros "[_ [_ [[$ _] _]]]".
@@ -347,14 +347,14 @@ Section array.
         (Hlen : i < length xs) :
     Observe (p .[ ty ! i ] |-> type_ptrR ty) (p |-> arrayR ty R xs).
   Proof.
-    rewrite -_at_offsetL_offsetR //. by apply _at_observe, arrayR_sub_type_ptr_nat_obs.
+    rewrite -_at_offsetR //. by apply _at_observe, arrayR_sub_type_ptr_nat_obs.
   Qed.
 
   Lemma _at_arrayR_sub_type_ptrR_obs (i : Z) p xs
         (Hlen : (0 ≤ i < Z.of_nat $ length xs)%Z) :
     Observe (p .[ ty ! i ] |-> type_ptrR ty) (p |-> arrayR ty R xs).
   Proof.
-    rewrite -_at_offsetL_offsetR //. by apply _at_observe, arrayR_sub_type_ptr_obs.
+    rewrite -_at_offsetR //. by apply _at_observe, arrayR_sub_type_ptr_obs.
   Qed.
 
   Lemma arrayR_sub_svalidR_obs (i : Z) xs  :
@@ -379,7 +379,7 @@ Section array.
         (Hi : i ≤ length xs) :
     Observe (p .[ ty ! i ] |-> validR) (p |-> arrayR ty R xs).
   Proof.
-    rewrite -_at_offsetL_offsetR.
+    rewrite -_at_offsetR.
       by apply _at_observe, arrayR_valid_obs.
   Qed.
 

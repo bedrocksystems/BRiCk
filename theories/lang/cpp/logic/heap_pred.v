@@ -366,11 +366,11 @@ Section with_cpp.
   Lemma _at_except_0 p R : _at p (bi_except_0 R) -|- bi_except_0 (_at p R).
   Proof. by rewrite _at_eq/_at_def monPred_at_except_0. Qed.
 
-  Lemma _at_offsetL_offsetR (l : ptr) (o : offset) (r : Rep) :
+  Lemma _at_offsetR (l : ptr) (o : offset) (r : Rep) :
       _at l (_offsetR o r) -|- _at (_offsetL o l) r.
   Proof. by rewrite !_at_loc /flip _offsetR_eq/_offsetR_def /=. Qed.
 
-  Lemma _at_sepSPs l (xs : list Rep) : _at l (sepSPs xs) -|- sepSPs (map (_at l) xs).
+  Lemma _at_sepSPs l (xs : list Rep) : _at l ([∗] xs) -|- [∗] map (_at l) xs.
   Proof.
     induction xs => /=.
     - by rewrite _at_emp.
@@ -496,7 +496,7 @@ Section with_cpp.
   Proof. by rewrite !_at_loc /pureR. Qed.
 
   Lemma _offsetR_pureR o P : _offsetR o (pureR P) -|- pureR P.
-  Proof. by apply Rep_equiv_at => p; rewrite _at_offsetL_offsetR !_at_pureR. Qed.
+  Proof. by apply Rep_equiv_at => p; rewrite _at_offsetR !_at_pureR. Qed.
 
   (** As this isn't syntax-directed, we conservatively avoid
       registering it as an instance (which could slow down
@@ -941,7 +941,7 @@ Section with_cpp.
     (Hv : ∀ p, valid_ptr (p .., o) |-- valid_ptr p) :
     _offsetR o validR |-- validR.
   Proof.
-    apply Rep_entails_at => p. by rewrite _at_offsetL_offsetR !_at_validR.
+    apply Rep_entails_at => p. by rewrite _at_offsetR !_at_validR.
   Qed.
 
   Lemma o_field_validR σ f : _offsetR (_field f) validR |-- validR.
@@ -961,3 +961,6 @@ Arguments identityR {_ Σ σ} _%bs _%bs _%Qp.
 
 Instance Persistent_spec `{Σ:cpp_logic ti} {resolve:genv} nm s :
   Persistent (_at (Σ:=Σ) (_global nm) (cptrR s)) := _.
+
+
+#[deprecated(since="2021-01-08",note="use _at_offsetR")] Notation _at_offsetL_offsetR := _at_offsetR (only parsing).
