@@ -167,6 +167,8 @@ Section with_cpp.
     AsFractional (as_Rep (P q)) (λ q, as_Rep (P q)) q.
   Proof. constructor. done. apply _. Qed.
 
+  Lemma as_Rep_emp : as_Rep (λ p, emp) -|- emp.
+  Proof. constructor => p. by rewrite monPred_at_emp. Qed.
   Lemma as_Rep_sep P Q : as_Rep (λ p, P p ** Q p) -|- as_Rep P ** as_Rep Q.
   Proof. constructor=>p. by rewrite monPred_at_sep. Qed.
 
@@ -537,6 +539,8 @@ Section with_cpp.
     - constructor=>p. by rewrite monPred_at_only_provable.
   Qed.
 
+  Lemma pureR_emp : pureR emp -|- emp.
+  Proof. exact: as_Rep_emp. Qed.
   Lemma pureR_sep (P Q : mpred) : pureR (P ** Q) -|- pureR P ** pureR Q.
   Proof. exact: as_Rep_sep. Qed.
 
