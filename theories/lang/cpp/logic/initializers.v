@@ -28,10 +28,6 @@ Module Type Init.
     Local Notation wp_args := (wp_args (σ:=σ) M ti ρ).
     Local Notation fspec := (@fspec _ Σ σ.(genv_tu).(globals)).
 
-    Local Notation _global := (_global (resolve:=σ)) (only parsing).
-    Local Notation _field := (@o_field σ) (only parsing).
-    Local Notation _sub := (@o_sub σ) (only parsing).
-    Local Notation _base := (@o_base σ) (only parsing).
     Local Notation primR := (primR (resolve:=σ)) (only parsing).
     Local Notation tblockR := (tblockR (σ:=σ)) (only parsing).
     Local Notation anyR := (anyR (resolve:=σ)) (only parsing).

@@ -37,9 +37,6 @@ Module Type Stmt.
     Local Notation destruct_obj := (destruct_obj (σ:=resolve) ti) (only parsing).
 
     Local Notation glob_def := (glob_def resolve) (only parsing).
-    Local Notation _global := (@_global resolve) (only parsing).
-    Local Notation _field := (@o_field resolve) (only parsing).
-    Local Notation _sub := (@o_sub resolve) (only parsing).
     Local Notation size_of := (@size_of resolve) (only parsing).
     Local Notation align_of := (@align_of resolve) (only parsing).
     Local Notation primR := (primR (resolve:=resolve)) (only parsing).
