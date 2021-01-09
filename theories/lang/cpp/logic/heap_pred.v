@@ -187,13 +187,22 @@ Section with_cpp.
   Qed.
 
   Lemma _offsetR_pers o R : _offsetR o (<pers> R) -|- <pers> _offsetR o R.
-  Proof.
-    rewrite !_offsetR_eq /_offsetR_def /=.
-    constructor=> p/=. by rewrite !monPred_at_persistently.
-  Qed.
+  Proof. by rewrite !_offsetR_eq /_offsetR_def /=; constructor=> p/=; rewrite !monPred_at_persistently. Qed.
+
+  Lemma _offsetR_fupd o R E1 E2 : _offsetR o (|={E1,E2}=> R) -|- |={E1,E2}=> _offsetR o R.
+  Proof. by rewrite _offsetR_eq/_offsetR_def /as_Rep; constructor => p /=; rewrite !monPred_at_fupd. Qed.
+
+  Lemma _offsetR_intuitionistically l (R : Rep) : _offsetR l (□ R) ⊣⊢ □ (_offsetR l R).
+  Proof. by rewrite _offsetR_eq/_offsetR_def; constructor => p /=; rewrite !monPred_at_intuitionistically. Qed.
+
+  Lemma _offsetR_intuitionistically_if o b R : □?b (_offsetR o R) -|- _offsetR o (□?b R).
+  Proof. by destruct b => /= //; rewrite _offsetR_intuitionistically. Qed.
+
+  Lemma _offsetR_except_0 o R : _offsetR o (bi_except_0 R) -|- bi_except_0 (_offsetR o R).
+  Proof. by rewrite _offsetR_eq/_offsetR_def; constructor => p /=; rewrite !monPred_at_except_0. Qed.
 
   Lemma _offsetR_wand o (P Q : Rep) :
-      _offsetR o (P -* Q) |-- _offsetR o P -* _offsetR o Q.
+      _offsetR o (P -* Q) -|- _offsetR o P -* _offsetR o Q.
   Proof.
     rewrite !_offsetR_eq /_offsetR_def /=.
     constructor=> p/=. by rewrite !Rep_wand_force.
@@ -340,8 +349,8 @@ Section with_cpp.
   Proof. by rewrite !_at_loc monPred_at_or. Qed.
 
   Lemma _at_wand (l : ptr) (P Q : Rep) :
-      _at l (P -* Q) |-- _at l P -* _at l Q.
-  Proof. by rewrite !_at_loc monPred_wand_force. Qed.
+      _at l (P -* Q) -|- _at l P -* _at l Q.
+  Proof. by rewrite !_at_loc Rep_wand_force. Qed.
 
   Lemma _at_pers (l : ptr) R : _at l (<pers> R) -|- <pers> _at l R.
   Proof. by rewrite !_at_loc monPred_at_persistently. Qed.
@@ -351,6 +360,11 @@ Section with_cpp.
 
   Lemma _at_intuitionistically l (R : Rep) : _at l (□ R) ⊣⊢ □ (_at l R).
   Proof. by rewrite _at_eq/_at_def monPred_at_intuitionistically. Qed.
+  Lemma _at_intuitionistically_if p b R : □?b (_at p R) -|- _at p (□?b R).
+  Proof. destruct b => /= //. by rewrite _at_intuitionistically. Qed.
+
+  Lemma _at_except_0 p R : _at p (bi_except_0 R) -|- bi_except_0 (_at p R).
+  Proof. by rewrite _at_eq/_at_def monPred_at_except_0. Qed.
 
   Lemma _at_offsetL_offsetR (l : ptr) (o : offset) (r : Rep) :
       _at l (_offsetR o r) -|- _at (_offsetL o l) r.
@@ -478,9 +492,11 @@ Section with_cpp.
   Definition pureR_True : pureR True ⊣⊢ True := pureR_pure _.
   Definition pureR_False : pureR False ⊣⊢ False := pureR_pure _.
 
-  Lemma _at_pureR x (P : mpred) :
-      _at x (pureR P) -|- P.
+  Lemma _at_pureR x (P : mpred) : _at x (pureR P) -|- P.
   Proof. by rewrite !_at_loc /pureR. Qed.
+
+  Lemma _offsetR_pureR o P : _offsetR o (pureR P) -|- pureR P.
+  Proof. by apply Rep_equiv_at => p; rewrite _at_offsetL_offsetR !_at_pureR. Qed.
 
   (** As this isn't syntax-directed, we conservatively avoid
       registering it as an instance (which could slow down
