@@ -76,9 +76,9 @@ Module Type Init.
              (inits : list Initializer)
              (Q : mpred -> mpred) : mpred :=
       match inits with
-      | nil => Q empSP
+      | nil => Q emp
       | i :: is' => wpi cls this i (fun f => f ** wpis cls this is' Q)
-      end.
+      end%I.
 
     Axiom wp_init_constructor : forall cls addr cnd es Q ty,
       wp_args es (fun ls free =>
@@ -110,7 +110,7 @@ Module Type Init.
 
     Fixpoint wp_array_init (ety : type) (base : ptr) (es : list (Z * Expr)) (Q : mpred -> mpred) : mpred :=
       match es with
-      | nil => Q empSP
+      | nil => Q emp
       | (i,e) :: es =>
           (* NOTE: We nest the recursive calls to `wp_array_init` within
                the continuation of the `wp_initialize` statement to
@@ -119,7 +119,7 @@ Module Type Init.
                initializer list (c.f. http://eel.is/c++draft/dcl.init.list#4)
            *)
           wp_initialize ety (base .[ ety ! i ]) e (fun free => free ** wp_array_init ety base es Q)
-      end.
+      end%I.
 
     Axiom wp_init_initlist_array :forall ls fill ety sz addr Q,
       match build_array ls fill (N.to_nat sz) with
