@@ -186,6 +186,21 @@ Section with_cpp.
     by constructor=> p/=; rewrite !monPred_at_or.
   Qed.
 
+  Lemma _offsetR_wand o (P Q : Rep) :
+      _offsetR o (P -* Q) -|- _offsetR o P -* _offsetR o Q.
+  Proof.
+    rewrite !_offsetR_eq /_offsetR_def /=.
+    constructor=> p/=. by rewrite !Rep_wand_force.
+  Qed.
+
+  Lemma _offsetR_exists o {T} (P : T -> Rep) :
+      _offsetR o (Exists v : T, P v) -|- Exists v, _offsetR o (P v).
+  Proof. by rewrite _offsetR_eq/_offsetR_def /as_Rep/=; constructor =>p; rewrite /= !monPred_at_exist. Qed.
+
+  Lemma _offsetR_forall o T (P : T -> Rep) :
+    _offsetR o (Forall x, P x) -|- Forall x, _offsetR o (P x).
+  Proof. by rewrite _offsetR_eq/_offsetR_def /as_Rep/=; constructor =>p; rewrite /= !monPred_at_forall. Qed.
+
   Lemma _offsetR_pers o R : _offsetR o (<pers> R) -|- <pers> _offsetR o R.
   Proof. by rewrite !_offsetR_eq /_offsetR_def /=; constructor=> p/=; rewrite !monPred_at_persistently. Qed.
 
@@ -201,12 +216,12 @@ Section with_cpp.
   Lemma _offsetR_except_0 o R : _offsetR o (bi_except_0 R) -|- bi_except_0 (_offsetR o R).
   Proof. by rewrite _offsetR_eq/_offsetR_def; constructor => p /=; rewrite !monPred_at_except_0. Qed.
 
-  Lemma _offsetR_wand o (P Q : Rep) :
-      _offsetR o (P -* Q) -|- _offsetR o P -* _offsetR o Q.
-  Proof.
-    rewrite !_offsetR_eq /_offsetR_def /=.
-    constructor=> p/=. by rewrite !Rep_wand_force.
-  Qed.
+  Lemma _offsetR_affinely (o : offset) R : _offsetR o (<affine> R) -|- <affine> _offsetR o R.
+  Proof. by rewrite _offsetR_eq/_offsetR_def /as_Rep; constructor => p/=; rewrite !monPred_at_affinely. Qed.
+
+  Lemma _offsetR_affinely_if b (o : offset) R : _offsetR o (<affine>?b R) -|- <affine>?b _offsetR o R.
+  Proof. by destruct b => //; rewrite _offsetR_affinely. Qed.
+
 
   Lemma _offsetR_big_sepL (o : offset) {T} (Rs : list T) : forall F,
     _offsetR o ([∗list] i ↦ x ∈ Rs , F i x) -|- [∗list] i ↦ x ∈ Rs , _offsetR o (F i x).
@@ -325,7 +340,7 @@ Section with_cpp.
   Proof. by rewrite _at_loc monPred_at_exist; setoid_rewrite _at_loc. Qed.
 
   Lemma _at_forall (l : ptr) T (P : T -> Rep) :
-    _at l (Forall x, P x) |-- Forall x, _at l (P x).
+    _at l (Forall x, P x) -|- Forall x, _at l (P x).
   Proof. by rewrite _at_loc monPred_at_forall; setoid_rewrite _at_loc. Qed.
 
   Lemma _at_only_provable l P :
@@ -365,6 +380,12 @@ Section with_cpp.
 
   Lemma _at_except_0 p R : _at p (bi_except_0 R) -|- bi_except_0 (_at p R).
   Proof. by rewrite _at_eq/_at_def monPred_at_except_0. Qed.
+
+  Lemma _at_affinely (p : ptr) R : _at p (<affine> R) -|- <affine> _at p R.
+  Proof. by rewrite _at_eq/_at_def monPred_at_affinely. Qed.
+
+  Lemma _at_affinely_if b (p : ptr) R : _at p (<affine>?b R) -|- <affine>?b _at p R.
+  Proof. by destruct b => //; rewrite _at_eq/_at_def monPred_at_affinely. Qed.
 
   Lemma _at_offsetR (l : ptr) (o : offset) (r : Rep) :
       _at l (_offsetR o r) -|- _at (_offsetL o l) r.
