@@ -170,7 +170,7 @@ Module Type CPP_LOGIC (Import CC : CPP_LOGIC_CLASS)
     Global Existing Instances _valid_ptr_persistent _valid_ptr_affine _valid_ptr_timeless.
 
     Axiom _valid_ptr_nullptr : forall b, |-- _valid_ptr b nullptr.
-    Axiom strict_valid_relaxed : forall p,
+    Axiom strict_valid_valid : forall p,
       strict_valid_ptr p |-- valid_ptr p.
 
     (** Formalizes the notion of "provides storage",
@@ -611,7 +611,7 @@ Section with_cpp.
     - iDestruct (valid_o_sub_size with "V") as %?.
       by rewrite o_sub_0 // offset_ptr_id.
     - rewrite strict_valid_ptr_sub; last by lia.
-      case: vt => //. by rewrite strict_valid_relaxed.
+      case: vt => //. by rewrite strict_valid_valid.
   Qed.
 
   (** [p] is valid pointer value in the sense of the standard, or
@@ -763,14 +763,19 @@ Section with_cpp.
   proof search. *)
   Lemma observe_strict_valid_valid
     `(Hobs : !Observe (strict_valid_ptr p) P) : Observe (valid_ptr p) P.
-  Proof. by rewrite -strict_valid_relaxed. Qed.
+  Proof. by rewrite -strict_valid_valid. Qed.
 
-  Context (σ : genv).
-  Lemma observe_type_ptr_strict_valid
-    `(Hobs : !Observe (type_ptr ty p) P) : Observe (strict_valid_ptr p) P.
-  Proof. by rewrite -type_ptr_strict_valid. Qed.
+  Section with_genv.
+    Context (σ : genv).
+    Lemma observe_type_ptr_strict_valid
+      `(Hobs : !Observe (type_ptr ty p) P) : Observe (strict_valid_ptr p) P.
+    Proof. by rewrite -type_ptr_strict_valid. Qed.
 
-  Lemma observe_type_ptr_valid_plus_one
-    `(Hobs : !Observe (type_ptr ty p) P) : Observe (valid_ptr (p .., o_sub σ ty 1)) P.
-  Proof. by rewrite -type_ptr_valid_plus_one. Qed.
+    Lemma observe_type_ptr_valid_plus_one
+      `(Hobs : !Observe (type_ptr ty p) P) : Observe (valid_ptr (p .., o_sub σ ty 1)) P.
+    Proof. by rewrite -type_ptr_valid_plus_one. Qed.
+
+    Lemma type_ptr_valid ty p : type_ptr ty p |-- valid_ptr p.
+    Proof. by rewrite type_ptr_strict_valid strict_valid_valid. Qed.
+  End with_genv.
 End with_cpp.

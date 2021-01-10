@@ -57,11 +57,6 @@ Module Type Expr.
     Local Notation destruct_val := (destruct_val (σ:=resolve) ti) (only parsing).
 
     Local Notation glob_def := (glob_def resolve) (only parsing).
-    Local Notation _global := (_global (resolve:=resolve)) (only parsing).
-    Local Notation _field := (o_field resolve) (only parsing).
-    Local Notation _base := (o_base resolve) (only parsing).
-    Local Notation _derived := (o_derived resolve) (only parsing).
-    Local Notation _sub := (o_sub resolve) (only parsing).
     Local Notation eval_unop := (@eval_unop resolve) (only parsing).
     Local Notation eval_binop := (eval_binop (resolve := resolve)) (only parsing).
     Local Notation size_of := (@size_of resolve) (only parsing).

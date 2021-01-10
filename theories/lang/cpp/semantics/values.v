@@ -448,15 +448,20 @@ Notation Vz := Vint (only parsing).
 Definition Vvoid := Vundef.
 
 (** lifting pointer offsets to values *)
-Definition offset_ptr (o : Z) (v : val) : val :=
+Definition __offset_ptr (o : Z) (v : val) : val :=
   match v with
   | Vptr p => Vptr (offset_ptr_ o p)
   | _ => Vundef
   end.
-Theorem offset_ptr_val : forall v o p,
+#[deprecated(since="2020-01-09", note="Use structured offsets")]
+Notation offset_ptr := __offset_ptr.
+
+Theorem __offset_ptr_val : forall v o p,
     Vptr p = v ->
     Vptr (offset_ptr_ o p) = offset_ptr o v.
 Proof. intros; subst; reflexivity. Qed.
+#[deprecated(since="2020-01-09", note="Use structured offsets")]
+Notation offset_ptr_val := __offset_ptr_val.
 
 Definition is_true (v : val) : option bool :=
   match v with

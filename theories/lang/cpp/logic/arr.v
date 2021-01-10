@@ -55,20 +55,6 @@ Implicit Types (p : ptr) (σ : genv).
 Section validR.
   Context `{Σ : cpp_logic}.
 
-  Lemma monPred_at_validR p : validR p -|- valid_ptr p.
-  Proof. by rewrite validR_eq. Qed.
-  Lemma monPred_at_svalidR p : svalidR p -|- strict_valid_ptr p.
-  Proof. by rewrite svalidR_eq. Qed.
-  Lemma monPred_at_type_ptrR ty σ p : type_ptrR ty p -|- type_ptr ty p.
-  Proof. by rewrite type_ptrR_eq. Qed.
-
-  Lemma _at_validR p : p |-> validR -|- valid_ptr p.
-  Proof. by rewrite _at_eq validR_eq. Qed.
-  Lemma _at_svalidR p : p |-> svalidR -|- strict_valid_ptr p.
-  Proof. by rewrite _at_eq svalidR_eq. Qed.
-  Lemma _at_type_ptrR σ ty p : p |-> type_ptrR ty -|- type_ptr ty p.
-  Proof. by rewrite _at_eq type_ptrR_eq. Qed.
-
   Lemma type_ptrR_validR_plus_one (ty : type) σ :
     type_ptrR ty ⊢@{RepI (Σ := Σ)} .[ ty ! 1 ] |-> validR .
   Proof.
@@ -176,7 +162,7 @@ Section arrR.
     apply: observe_intro_persistent.
     rewrite arrR_eq /arrR_def /= !_offsetR_sep.
     apply Rep_entails_at =>p. rewrite !_at_sep !_at_offsetR _at_type_ptrR _at_only_provable /=.
-    rewrite type_ptr_strict_valid strict_valid_relaxed.
+    rewrite type_ptr_valid.
     rewrite valid_o_sub_size.
     iIntros "[_ [_ [[$ _] _]]]".
   Qed.
