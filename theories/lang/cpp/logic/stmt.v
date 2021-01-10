@@ -47,7 +47,7 @@ Module Type Stmt.
      * expression.
      *)
     Axiom wp_return_void : forall ρ Q,
-        Q.(k_return) None empSP |-- wp ρ (Sreturn None) Q.
+        Q.(k_return) None emp |-- wp ρ (Sreturn None) Q.
 
     Axiom wp_return : forall ρ c e Q,
            match c with

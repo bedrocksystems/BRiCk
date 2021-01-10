@@ -699,7 +699,7 @@ Section with_cpp.
         try solve [ rewrite bi.sep_assoc; eauto ].
   Qed.
 
-  Lemma Kfree_emp : forall k, Kfree empSP k ≡ k.
+  Lemma Kfree_emp : forall k, Kfree emp k ≡ k.
   Proof using .
     split; [ | split; [ | split ] ]; simpl; intros;
       eapply bi.equiv_spec; split;

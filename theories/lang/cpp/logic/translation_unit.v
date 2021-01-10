@@ -30,10 +30,10 @@ Section with_cpp.
   Definition denoteSymbol (n : obj_name) (o : ObjValue) : mpred :=
     _at (_global n)
         match o with
-        | Ovar _ e => empSP
+        | Ovar _ e => emp
         | Ofunction f =>
           match f.(f_body) with
-          | None => empSP
+          | None => emp
           | Some body => as_Rep (code_at resolve f)
           end
         | Omethod m =>
@@ -43,12 +43,12 @@ Section with_cpp.
           end
         | Oconstructor c =>
           match c.(c_body) with
-          | None => empSP
+          | None => emp
           | Some body => as_Rep (ctor_at resolve c)
           end
         | Odestructor d =>
           match d.(d_body) with
-          | None => empSP
+          | None => emp
           | Some body => as_Rep (dtor_at resolve d)
           end
         end.
@@ -73,7 +73,7 @@ Section with_cpp.
           emp (*
       Exists Q : FreeTemps -> mpred,
       □ (_at (_eq a) (uninitR (resolve:=resolve) t 1) -*
-         Forall ρ ti, wp_init (resolve:=resolve) ti ρ t (Vptr a) e Q) ** Q empSP
+         Forall ρ ti, wp_init (resolve:=resolve) ti ρ t (Vptr a) e Q) ** Q emp
 *)
       (* ^^ todo(gmm): static initialization is not yet supported *)
         | Ovar t None =>

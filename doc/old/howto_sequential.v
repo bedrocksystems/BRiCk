@@ -302,7 +302,7 @@ unsigned int Tree::count() const;
 Definition count_spec (this : ptr) : WithPrePost mpredI :=
   \with (q : Qp) (t : tree Z)
   \prepost this |-> treeR (fun q z => uintR q z) q t
-  \post{}[Vint (trim 32 (count t))] empSP.
+  \post{}[Vint (trim 32 (count t))] emp.
 
 (**
 For more details the syntax/notations for writing the specifications of functions,
