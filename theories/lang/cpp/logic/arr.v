@@ -453,3 +453,4 @@ Qed.
   AsFractional (arrayR t (P q) l) (λ q, arrayR t (P q) l) q.
 Proof. exact: Build_AsFractional. Qed.
 
+#[global] Hint Opaque arrR arrayR : typeclass_instances.
