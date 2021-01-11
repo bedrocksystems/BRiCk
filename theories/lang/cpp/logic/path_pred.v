@@ -16,9 +16,6 @@ Section with_Σ.
   (** absolute locations *)
   #[local] Notation invalid := invalid_ptr.
 
-  #[deprecated(since="2020-12-07",note="no longer needed")]
-  Notation _eq := (@id ptr) (only parsing).
-
   (** [_eqv v] represents the pointer of a [val]. The resulting pointer
       is invalid if [v] is not a [ptr].
 
@@ -68,7 +65,7 @@ End with_Σ.
 #[deprecated(since="2020-12-08",note="use 'offset'")]
 Notation Offset := offset (only parsing).
 #[deprecated(since="2020-12-07",note="no longer needed")]
- Notation _eq := (@id ptr) (only parsing).
+Notation _eq := (@id ptr) (only parsing).
 #[deprecated(since="2020-12-07",note="no longer needed, use equality on ptr")]
 Notation "a &~ b" := (addr_of a b) (at level 30, no associativity).
 #[deprecated(since="2020-12-07",note="use 'valid_ptr' instead")]
