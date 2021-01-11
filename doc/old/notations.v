@@ -25,8 +25,8 @@ Section with_env.
   (** ** Locations *)
 
   (** *** Absolute Locations
-      these types, i.e. [ptr], [val], [Loc], act like locations *)
-  Context (p : ptr) (v : val) (l : Loc).
+      these types, i.e. [ptr], [val], [ptr], act like locations *)
+  Context (p : ptr) (v : val) (l : ptr).
 
   (** *** Relative Locations
       these types act like offsets, i.e. relative locations *)
@@ -56,16 +56,16 @@ Section with_env.
   Example _5 : Rep := f |-> R.
 
   (** note: the value to the right of a [_ |-> _] is *always* a [Rep] regardless
-      of whether the left-side is a [Loc] or an [Offset]
+      of whether the left-side is a [ptr] or an [Offset]
    *)
 
   (** locations can be chained together with offsets to produce new locations.
       the following represents the location [l.f]
    *)
-  Example _6 : Loc := l ., f.
+  Example _6 : ptr := l ., f.
 
   (** note that this also works for offsets *)
-  Example _7 : Loc := l ., o.
+  Example _7 : ptr := l ., o.
 
   (** [_ ., _] can also be used to combine [Offset]s into larger [Offset]s *)
   Example _8 : Offset := o ., f.
@@ -101,8 +101,8 @@ Section with_env.
 
 
   (** in addition to fields, we can also use array subscripts *)
-  Example _13 : Loc := l .[ T_int ! 5 ]. (* l[[5]] (when [l] is an `int *`) *)
-  Example _14 : Loc := l .[ T_uchar ! 5 ]. (* l[[5]] (when [l] is an `unsigned char *`) *)
+  Example _13 : ptr := l .[ T_int ! 5 ]. (* l[[5]] (when [l] is an `int *`) *)
+  Example _14 : ptr := l .[ T_uchar ! 5 ]. (* l[[5]] (when [l] is an `unsigned char *`) *)
 
 
   (** since these are locations, we can use them to position representation
