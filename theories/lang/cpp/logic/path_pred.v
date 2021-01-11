@@ -16,15 +16,12 @@ Section with_Σ.
   (** absolute locations *)
   #[local] Notation invalid := invalid_ptr.
 
-  #[deprecated(since="2020-12-07",note="no longer needed")]
-  Notation _eq := (@id ptr) (only parsing).
-
   (** [_eqv v] represents the pointer of a [val]. The resulting pointer
       is invalid if [v] is not a [ptr].
 
       NOTE this does *not* do things like converting integers to pointers.
    *)
-  Definition _eqv (a : val) : Loc :=
+  Definition _eqv (a : val) : ptr :=
     match a with
     | Vptr p => p
     | _ => invalid
@@ -33,7 +30,7 @@ Section with_Σ.
   Lemma _eqv_eq : forall p, _eqv (Vptr p) = p.
   Proof. reflexivity. Qed.
 
-  Definition _global_def (resolve : genv) (x : obj_name) : Loc :=
+  Definition _global_def (resolve : genv) (x : obj_name) : ptr :=
     global_ptr resolve.(genv_tu) x.
   Definition _global_aux : seal (@_global_def). Proof. by eexists. Qed.
   Definition _global := _global_aux.(unseal).
@@ -41,7 +38,7 @@ Section with_Σ.
 
 
   (** [addr_of]: [addr_of l p] says that pointer [p] "matches" location [l]. *)
-  Definition addr_of_def (a : Loc) (b : ptr) : mpred := [| a = b |].
+  Definition addr_of_def (a : ptr) (b : ptr) : mpred := [| a = b |].
   Definition addr_of_aux : seal (@addr_of_def). Proof. by eexists. Qed.
   Definition addr_of := addr_of_aux.(unseal).
   Definition addr_of_eq : @addr_of = _ := addr_of_aux.(seal_eq).
@@ -68,7 +65,7 @@ End with_Σ.
 #[deprecated(since="2020-12-08",note="use 'offset'")]
 Notation Offset := offset (only parsing).
 #[deprecated(since="2020-12-07",note="no longer needed")]
- Notation _eq := (@id ptr) (only parsing).
+Notation _eq := (@id ptr) (only parsing).
 #[deprecated(since="2020-12-07",note="no longer needed, use equality on ptr")]
 Notation "a &~ b" := (addr_of a b) (at level 30, no associativity).
 #[deprecated(since="2020-12-07",note="use 'valid_ptr' instead")]

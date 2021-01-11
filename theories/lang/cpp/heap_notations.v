@@ -36,7 +36,7 @@ Section with_cpp.
   Canonical Structure Rep_field_AT {σ : genv} : AT :=
     {| AT_at v := heap_pred._offsetR (Σ:=Σ) (o_field σ v) |}.
 
-  (* coercions to Offset *)
+  (* coercions to [offset] *)
   Structure TO_OFFSET : Type :=
   { TO_OFFSET_from :> Type
   ; #[canonical(false)] _to_offset : TO_OFFSET_from -> offset

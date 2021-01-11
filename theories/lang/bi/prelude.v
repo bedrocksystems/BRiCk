@@ -67,7 +67,7 @@ Module ChargeNotation.
   Notation "P ** Q" := (P ∗ Q)%I (at level 58, right associativity).
   Notation "P -* Q" := (P -∗ Q)%I (at level 60, right associativity).
 
-  #[deprecated(since="2021-01-04",note="use '[∗list]' directly.")]
+  #[deprecated(since="2021-01-04",note="use '[∗]' directly.")]
   Notation "'sepSPs' ps" := ([∗] ps)%I (at level 20, only parsing).
 
   (* Notation "'|>' P" := (▷  P)%I (at level 71). *)
