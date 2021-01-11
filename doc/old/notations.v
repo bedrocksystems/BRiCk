@@ -30,7 +30,7 @@ Section with_env.
 
   (** *** Relative Locations
       these types act like offsets, i.e. relative locations *)
-  Context (f : field) (o : Offset).
+  Context (f : field) (o : offset).
 
 
   (** to state that a representation predicates [R] holds at a location [l],
@@ -56,7 +56,7 @@ Section with_env.
   Example _5 : Rep := f |-> R.
 
   (** note: the value to the right of a [_ |-> _] is *always* a [Rep] regardless
-      of whether the left-side is a [ptr] or an [Offset]
+      of whether the left-side is a [ptr] or an [offset]
    *)
 
   (** locations can be chained together with offsets to produce new locations.
@@ -67,11 +67,11 @@ Section with_env.
   (** note that this also works for offsets *)
   Example _7 : ptr := l ., o.
 
-  (** [_ ., _] can also be used to combine [Offset]s into larger [Offset]s *)
-  Example _8 : Offset := o ., f.
-  Example _9 : Offset := f ., o.
+  (** [_ ., _] can also be used to combine [offset]s into larger [offset]s *)
+  Example _8 : offset := o ., f.
+  Example _9 : offset := f ., o.
 
-  Example _10 : Offset := o ., f ., f. (* is parsed as [(o ., f) ., f] *)
+  Example _10 : offset := o ., f ., f. (* is parsed as [(o ., f) ., f] *)
 
   (** using this notation, you can also assert that a [Rep] holds at a compound
       location, e.g. the following means that [R] holds at the location `l.f`.
@@ -110,7 +110,7 @@ Section with_env.
   Example _15 : mpred :=
     l .[ T_int ! 5 ] |-> R.
 
-  (** similarly, they can be used with [Offset]s and [Rep]s *)
+  (** similarly, they can be used with [offset]s and [Rep]s *)
   Example _16 : Rep := .[ T_int ! 3 ] |-> R.
   Example _17 : Rep := o .[ T_int ! -20 ] |-> R.
 

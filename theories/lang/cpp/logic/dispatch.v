@@ -15,7 +15,7 @@ Require Import bedrock.lang.cpp.heap_notations.
 Section with_cpp.
   Context `{Σ : cpp_logic}.
 
-  (* the [Offset] to cast a [base] to a [derived] *)
+  (* the [offset] to cast a [base] to a [derived] *)
   Fixpoint base_to_derived  `(d : class_derives σ derived base) : offset :=
     match d with
     | Derives_here st _ => o_id
@@ -23,7 +23,7 @@ Section with_cpp.
       o_dot (base_to_derived d) (o_derived σ base derived)
     end.
 
-  (* the [Offset] to cast a [derived] to a [base] *)
+  (* the [offset] to cast a [derived] to a [base] *)
   Fixpoint derived_to_base `(d : class_derives σ derived base) : offset :=
     match d with
     | Derives_here st _ => o_id
