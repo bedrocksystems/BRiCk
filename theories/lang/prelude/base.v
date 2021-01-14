@@ -7,7 +7,7 @@
 (** "Prelude" for available-everywhere dependencies. *)
 
 From stdpp Require Export prelude countable.
-From iris.algebra Require Export base.
+From iris.prelude Require Export prelude.
 From bedrock.lang.prelude Require Export notations.
 
 (** Workaround https://github.com/coq/coq/issues/4230. Taken from Software Foundations. *)

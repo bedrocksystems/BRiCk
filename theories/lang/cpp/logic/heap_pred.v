@@ -729,7 +729,7 @@ Section with_cpp.
   Proof. constructor. done. apply _. Qed.
 
   Global Instance primR_observe_frac_valid resolve ty (q : Qp) v :
-    Observe [| q ≤ 1 |]%Qc (primR ty q v).
+    Observe [| q ≤ 1 |]%Qp (primR ty q v).
   Proof. rewrite primR_eq. apply _. Qed.
 
   Global Instance primR_observe_agree resolve ty q1 q2 v1 v2 :
@@ -791,7 +791,7 @@ Section with_cpp.
   Proof. constructor. done. apply _. Qed.
 
   Global Instance uninitR_observe_frac_valid resolve ty (q : Qp) :
-    Observe [| q ≤ 1 |]%Qc (uninitR ty q).
+    Observe [| q ≤ 1 |]%Qp (uninitR ty q).
   Proof. rewrite uninitR_eq. apply _. Qed.
 
   (** This seems odd, but it's relevant to proof that [anyR] is fractional. *)
@@ -854,7 +854,7 @@ Section with_cpp.
   Proof. exact: Build_AsFractional. Qed.
 
   Global Instance anyR_observe_frac_valid resolve ty (q : Qp) :
-    Observe [| q ≤ 1 |]%Qc (anyR ty q).
+    Observe [| q ≤ 1 |]%Qp (anyR ty q).
   Proof. rewrite anyR_eq. apply _. Qed.
 
   Global Instance refR_persistent ty p : Persistent (refR ty p).

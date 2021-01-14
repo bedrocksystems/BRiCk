@@ -21,7 +21,7 @@ Module Type VBYTE.
   #[global] Existing Instance vbyte_at_fractional.
   Axiom vbyte_at_frac_valid :
     forall `{Σ:cpp_logic} addr n (q : Qp),
-      Observe [| q ≤ 1 |]%Qc (vbyte_at q addr n).
+      Observe [| q ≤ 1 |]%Qp (vbyte_at q addr n).
   #[global] Existing Instance vbyte_at_frac_valid.
   Axiom vbyte_at_timeless :
     forall `{Σ:cpp_logic} q addr n, Timeless (vbyte_at q addr n).
@@ -47,7 +47,7 @@ Module Type PHANTDATA.
   #[global] Existing Instance phantdata_at_fractional.
   Axiom phantdata_at_frac_valid :
     forall `{Σ:cpp_logic} {σ:genv} ty (q : Qp) p,
-      Observe [| q ≤ 1 |]%Qc (phantdata_at ty q p).
+      Observe [| q ≤ 1 |]%Qp (phantdata_at ty q p).
   #[global] Existing Instance phantdata_at_frac_valid.
   Axiom phantdata_at_timeless :
     forall `{Σ:cpp_logic} {σ:genv} ty q p, Timeless (phantdata_at ty q p).
