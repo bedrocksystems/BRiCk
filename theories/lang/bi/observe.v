@@ -327,3 +327,24 @@ Proof.
   { iIntros "P"; iDestruct (observe [| p |] with "P") as %HH.
     iApply H1; eauto. }
 Qed.
+
+(**
+  These help deriving observations for [R] from observations for [Q].
+
+  Recommended use:
+  [apply: (observe_derive_only_provable Q_pattern).].
+  [apply: (observe_2_derive_only_provable Q_pattern).].
+  then prove [Q -> R].
+
+  This is almost setoid rewriting, but it does not support rewriting by implication,
+  and those idioms give [Q -> R] as output goal instead of input.
+*)
+Lemma observe_derive_only_provable {PROP : bi} (Q : Prop) {R : Prop} {P : PROP} :
+  (Q -> R) ->
+  Observe [| Q |] P -> Observe [| R |] P.
+Proof. move=> HQR. apply Observe_mono => //. by f_equiv. Qed.
+
+Lemma observe_2_derive_only_provable {PROP : bi} (Q : Prop) {R : Prop} {P1 P2 : PROP} :
+  (Q -> R) ->
+  Observe2 [| Q |] P1 P2 -> Observe2 [| R |] P1 P2.
+Proof. move=> HQR. apply Observe2_mono => //. by f_equiv. Qed.
