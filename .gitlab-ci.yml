@@ -190,37 +190,37 @@ release_latest:
 #   variables:
 #     LLVM_MAJ_VER: ${LLVM_ALT_MAJ_VER}
 
-prepare_pages:
-  image: ${fm_docs_img}
-  stage: prepare_pages
-  dependencies:
-    - test_latest
-  script:
-    # Clone the Alectryon submodule, but only in the pages jobs
-    - git submodule update --init
-    # this line refreshes the artifact to avoid rebuilding the coq code
-    - make touch_deps
-    - make public
-  only:
-    - master
-    - merge_requests
-  artifacts:
-    paths:
-      - public
+# prepare_pages:
+#   image: ${fm_docs_img}
+#   stage: prepare_pages
+#   dependencies:
+#     - test_latest
+#   script:
+#     # Clone the Alectryon submodule, but only in the pages jobs
+#     - git submodule update --init
+#     # this line refreshes the artifact to avoid rebuilding the coq code
+#     - make touch_deps
+#     - make public
+#   only:
+#     - master
+#     - merge_requests
+#   artifacts:
+#     paths:
+#       - public
 
-pages:
-  image: ${fm_docs_img}
-  stage: pages
-  dependencies:
-    - prepare_pages
-  script:
-    # Clone the Alectryon submodule, but only in the pages jobs
-    - git submodule update --init
-    # this line refreshes the artifact to avoid rebuilding the coq code
-    - make touch_deps
-    - make public
-  only:
-    - master
-  artifacts:
-    paths:
-      - public
+# pages:
+#   image: ${fm_docs_img}
+#   stage: pages
+#   dependencies:
+#     - prepare_pages
+#   script:
+#     # Clone the Alectryon submodule, but only in the pages jobs
+#     - git submodule update --init
+#     # this line refreshes the artifact to avoid rebuilding the coq code
+#     - make touch_deps
+#     - make public
+#   only:
+#     - master
+#   artifacts:
+#     paths:
+#       - public
