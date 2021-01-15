@@ -84,20 +84,18 @@ Section with_Σ.
                   tele_append t (tele_map wpp_with wpp) -t> list val * PROP
               with
               | TeleO => fun wpp => wpp.(wpp_pre)
-              | TeleS rst => fun wpp => _
-              end) t wpp). simpl.
-    intro x.
-    eapply go. }
+              | TeleS rst => fun wpp x => go (rst x) (wpp x)
+              end) t wpp).
+  }
   { refine ((fix go (t : tele)  :=
               match t as t
                     return forall (wpp : t -t> WithPrePost),
                   tele_append t (tele_map wpp_with wpp) -t> _
               with
               | TeleO => fun wpp => wpp.(wpp_post)
-              | TeleS rst => fun wpp0 => _
-              end) t wpp). simpl.
-    intro x.
-    eapply go. }
+              | TeleS rst => fun wpp x => go (rst x) (wpp x)
+              end) t wpp).
+  }
   Defined.
 
   Definition with_tele (t : telescopes.tele) (f : telescopes.tele_arg t -> WithPrePost)
