@@ -6,6 +6,9 @@
  *
  * This file is based on the tutorial here:
  * https://clang.llvm.org/docs/LibASTMatchersTutorial.html
+ * This file is distributed under Apache License v2.0 with LLVM Exceptions
+ * See the LICENSE-LLVM file in the repositroy root for details.
+ *
  */
 #include "clang/AST/ASTConsumer.h"
 #include "clang/Frontend/CompilerInstance.h"
