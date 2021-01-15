@@ -54,6 +54,7 @@ Module Type Expr.
     Local Notation wp_specific_glval := (wp_specific_glval (resolve:=resolve) M ti ρ).
     Local Notation wp_args := (wp_args (σ:=resolve) M ti ρ).
     Local Notation fspec := (fspec resolve.(genv_tu).(globals)).
+    Local Notation mspec := (mspec resolve.(genv_tu).(globals)).
     Local Notation destruct_val := (destruct_val (σ:=resolve) ti) (only parsing).
 
     Local Notation glob_def := (glob_def resolve) (only parsing).
@@ -701,28 +702,36 @@ Module Type Expr.
         end
         |-- wp_init ty addr (Ecall f es ty) Q.
 
+    (** member call
+        NOTE it is technically not accurate to treat member calls as regular function calls
+        where the function takes an extra argument. We could fix this by splitting [fspec]
+        more, but we are deferring that for now.
 
-    (** member call *)
+        In practice we assume that the AST is well-typed, so the only way to exploit this problem
+        is to use [reinterpret_cast< >] to cast a function pointer to an member pointer or vice versa.
+
+        TODO we should add type side-conditions to these axioms.
+     *)
     Axiom wp_lval_member_call : forall ty fty f vc obj es Q,
         wp_specific_glval vc obj (fun this free_t => wp_args es (fun vs free =>
-           |> fspec fty ti (Vptr $ _global f) (Vptr this :: vs) (fun v =>
+           |> mspec (type_of obj) fty ti (Vptr $ _global f) (Vptr this :: vs) (fun v =>
                     Exists p, [| v = Vptr p |] ** Q p (free_t ** free))))
         |-- wp_lval (Emember_call (inl (f, Direct, fty)) vc obj es ty) Q.
 
     Axiom wp_xval_member_call : forall ty fty f vc obj es Q,
         wp_specific_glval vc obj (fun this free_t => wp_args es (fun vs free =>
-           |> fspec fty ti (Vptr $ _global f) (Vptr this :: vs) (fun v =>
+           |> mspec (type_of obj) fty ti (Vptr $ _global f) (Vptr this :: vs) (fun v =>
                     Exists p, [| v = Vptr p |] ** Q p (free_t ** free))))
         |-- wp_xval (Emember_call (inl (f, Direct, fty)) vc obj es ty) Q.
 
     Axiom wp_prval_member_call : forall ty fty f vc obj es Q,
           wp_specific_glval vc obj (fun this free_t => wp_args es (fun vs free =>
-              |> fspec fty ti (Vptr $ _global f) (Vptr this :: vs) (fun v => Q v (free_t ** free))))
+              |> mspec (type_of obj) fty ti (Vptr $ _global f) (Vptr this :: vs) (fun v => Q v (free_t ** free))))
         |-- wp_prval (Emember_call (inl (f, Direct, fty)) vc obj es ty) Q.
 
     Axiom wp_init_member_call : forall f fty es addr ty vc obj Q,
         wp_specific_glval vc obj (fun this free_t => wp_args es (fun vs free =>
-             |> fspec fty ti (Vptr $ _global f) (Vptr this :: vs) (fun res =>
+             |> mspec (type_of obj) fty ti (Vptr $ _global f) (Vptr this :: vs) (fun res =>
                       [| res = Vptr addr |] -* Q (free_t ** free))))
         (* NOTE as with regular function calls, we use an assumed equation to unify the address
            of the returned object with the location that we are initializing.
@@ -741,7 +750,7 @@ Module Type Expr.
           match class_type (type_of obj) with
           | Some cls =>
             resolve_virtual (σ:=resolve) this cls f (fun fimpl_addr thisp =>
-              |> fspec fty ti (Vptr fimpl_addr) (Vptr thisp :: vs) (fun v =>
+              |> mspec (type_of obj) fty ti (Vptr fimpl_addr) (Vptr thisp :: vs) (fun v =>
                        Exists p, [| v = Vptr p |] ** Q p (free ** free')))
           | _ => False
           end))
@@ -752,7 +761,7 @@ Module Type Expr.
           match class_type (type_of obj) with
           | Some cls =>
             resolve_virtual (σ:=resolve) this cls f (fun fimpl_addr thisp =>
-              |> fspec fty ti (Vptr fimpl_addr) (Vptr thisp :: vs) (fun v =>
+              |> mspec (type_of obj) fty ti (Vptr fimpl_addr) (Vptr thisp :: vs) (fun v =>
                        Exists p, [| v = Vptr p |] ** Q p (free ** free')))
           | _ => False
           end))
@@ -763,7 +772,7 @@ Module Type Expr.
           match class_type (type_of obj) with
           | Some cls =>
             resolve_virtual (σ:=resolve) this cls f (fun fimpl_addr thisp =>
-              |> fspec fty ti (Vptr fimpl_addr) (Vptr thisp :: vs) (fun v => Q v (free ** free')))
+              |> mspec (type_of obj) fty ti (Vptr fimpl_addr) (Vptr thisp :: vs) (fun v => Q v (free ** free')))
          | _ => False
           end))
       |-- wp_prval (Emember_call (inl (f, Virtual, fty)) vc obj es ty) Q.
@@ -773,7 +782,7 @@ Module Type Expr.
           match class_type (type_of obj) with
           | Some cls =>
             resolve_virtual (σ:=resolve) this cls f (fun fimpl_addr thisp =>
-              |> fspec fty ti (Vptr fimpl_addr) (Vptr thisp :: vs) (fun res => [| res = Vptr addr |] -* Q (free ** free')))
+              |> mspec (type_of obj) fty ti (Vptr fimpl_addr) (Vptr thisp :: vs) (fun res => [| res = Vptr addr |] -* Q (free ** free')))
             (* NOTE as with other function calls, we are assuming an equation on the address in order
                to express the fact the the object is constructed in-place.
              *)

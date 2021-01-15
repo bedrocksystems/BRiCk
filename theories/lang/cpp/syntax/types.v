@@ -261,15 +261,6 @@ Definition tqualified (q : type_qualifiers) (t : type) : type :=
   | _ => Tqualified q t
   end.
 
-
-(*
-Record TypeInfo : Set :=
-{ alignment : nat
-; size : nat
-; offset : list (field * nat)
-}.
-*)
-
 Variant PrimCast : Set :=
 | Cdependent (* this doesn't have any semantics *)
 | Cbitcast

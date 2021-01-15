@@ -834,6 +834,27 @@ Section with_cpp.
     Qed.
   End fspec.
 
+  (* [Tmember_func ty fty] constructs the function type for a
+     member function that takes a [this] parameter of [ty]
+   *)
+  Definition Tmember_func (ty : type) (fty : type) : type :=
+    match fty with
+    | @Tfunction cc ret args => Tfunction (cc:=cc) ret (Qconst (Tptr ty) :: args)
+    | _ => fty
+    end.
+
+  (** [mspec tt this_ty fty ..] is the analogue of [fspec] for member functions.
+
+      NOTE this includes constructors and destructors.
+
+      NOTE the current implementation desugars this to [fspec] but this is not
+           accurate according to the standard because a member function can not
+           be casted to a regular function that takes an extra parameter.
+   *)
+  Definition mspec (tt : type_table) (this_type : type) (fun_type : type)
+    : thread_info -> val -> list val -> (val -> epred) -> mpred :=
+    fspec tt (Tmember_func this_type fun_type).
+
 End with_cpp.
 
 Export stdpp.coPset.

@@ -27,6 +27,7 @@ Module Type Init.
     Local Notation wp_init := (wp_init (resolve:=σ) M ti ρ).
     Local Notation wp_args := (wp_args (σ:=σ) M ti ρ).
     Local Notation fspec := (@fspec _ Σ σ.(genv_tu).(globals)).
+    Local Notation mspec := (@mspec _ Σ σ.(genv_tu).(globals)).
 
     Local Notation primR := (primR (resolve:=σ)) (only parsing).
     Local Notation tblockR := (tblockR (σ:=σ)) (only parsing).
@@ -84,7 +85,7 @@ Module Type Init.
       wp_args es (fun ls free =>
            match σ.(genv_tu) !! cnd with
            | Some cv =>
-             |> fspec (type_of_value cv) ti (Vptr $ _global cnd) (Vptr addr :: ls) (fun _ => Q free)
+             |> mspec (Tnamed cls) (type_of_value cv) ti (Vptr $ _global cnd) (Vptr addr :: ls) (fun _ => Q free)
            | _ => False
            end)
       |-- wp_init (Tnamed cls) addr (Econstructor cnd es ty) Q.
