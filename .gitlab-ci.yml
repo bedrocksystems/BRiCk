@@ -14,9 +14,9 @@
 #      This builds and tests cpp2v against the current
 #      major version of llvm.
 #
-#   2. build_previous -> test_previous
+#   2. build_alternate -> test_alternate
 #
-#      This builds cpp2v against the previous major
+#      This builds cpp2v against the alternate major
 #      version of llvm. It tests only the cpp2v
 #      frontend.
 #
@@ -31,9 +31,9 @@
 
 variables:
   LLVM_CUR_MAJ_VER: "10"
-  LLVM_PREV_MAJ_VER: "9"
+  LLVM_ALT_MAJ_VER: "9"
   cur_main_docker_img: registry.gitlab.com/bedrocksystems/docker-image:cpp2v-llvm${LLVM_CUR_MAJ_VER}
-  prev_main_docker_img: registry.gitlab.com/bedrocksystems/docker-image:cpp2v-llvm${LLVM_PREV_MAJ_VER}
+  alt_main_docker_img: registry.gitlab.com/bedrocksystems/docker-image:cpp2v-llvm${LLVM_ALT_MAJ_VER}
   fm_docs_img: registry.gitlab.com/bedrocksystems/docker-image:fm-docs
 
 stages:
@@ -46,7 +46,7 @@ stages:
   - build_proofs_downstream
 
 #This is a template job that's extended below by the real jobs
-# build_cur and build_prev (see, e.g., https://docs.gitlab.com/ee/ci/yaml/#extends).
+# build_cur and build_alt (see, e.g., https://docs.gitlab.com/ee/ci/yaml/#extends).
 .build:
   stage: build
   script:
@@ -96,16 +96,16 @@ build_latest:
       dotenv: build.env
 
 
-# build_previous:
+# build_alternate:
 #   extends: .build
-#   image: ${prev_main_docker_img}
+#   image: ${alt_main_docker_img}
 #   only:
 #     - schedules
 #     - merge_requests
 #     - tags
 #     - master
 #   variables:
-#     LLVM_MAJ_VER: ${LLVM_PREV_MAJ_VER}
+#     LLVM_MAJ_VER: ${LLVM_ALT_MAJ_VER}
 
 test_latest:
   extends: .test
@@ -115,13 +115,13 @@ test_latest:
   variables:
     LLVM_MAJ_VER: ${LLVM_CUR_MAJ_VER}
 
-# test_previous:
+# test_alternate:
 #   extends: .test
-#   image: ${prev_main_docker_img}
+#   image: ${alt_main_docker_img}
 #   dependencies:
-#     - build_previous
+#     - build_alternate
 #   variables:
-#     LLVM_MAJ_VER: ${LLVM_PREV_MAJ_VER}
+#     LLVM_MAJ_VER: ${LLVM_ALT_MAJ_VER}
 
 prepare_env:
   image: ${cur_main_docker_img}
@@ -180,13 +180,13 @@ release_latest:
   variables:
     LLVM_MAJ_VER: ${LLVM_CUR_MAJ_VER}
 
-# release_previous:
+# release_alternate:
 #   extends: .release
-#   image: ${prev_main_docker_img}
+#   image: ${alt_main_docker_img}
 #   dependencies:
-#     - build_previous
+#     - build_alternate
 #   variables:
-#     LLVM_MAJ_VER: ${LLVM_PREV_MAJ_VER}
+#     LLVM_MAJ_VER: ${LLVM_ALT_MAJ_VER}
 
 prepare_pages:
   image: ${fm_docs_img}
