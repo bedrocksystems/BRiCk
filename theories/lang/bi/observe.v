@@ -313,17 +313,43 @@ Qed.
 Lemma observe_lhs (p : Prop) {PROP : bi} (P Q : PROP) {o : Observe [| p |] P} :
   (p -> P ⊢ Q) -> P ⊢ Q.
 Proof.
-  intros H1; iIntros "P"; iDestruct (observe [| p |] with "P") as %HH.
-  iApply H1; eauto.
+  iIntros (HpPQ) "P"; iDestruct (o with "P") as %?. by iApply (HpPQ with "P").
 Qed.
 
-Lemma observe_both (p : Prop) {PROP : bi} (P Q  : PROP) {_ : Observe [| p |] P} {_ : Observe [| p |] Q} :
-  (p -> P ⊣⊢ Q) -> P ⊣⊢ Q.
+Lemma observe_2_lhs (p : Prop) {PROP : bi} (P1 P2 Q : PROP) {o : Observe2 [| p |] P1 P2} :
+  (p -> P1 ∗ P2 ⊢ Q) -> P1 ∗ P2 ⊢ Q.
 Proof.
-  intros.
-  split'.
-  { iIntros "P"; iDestruct (observe [| p |] with "P") as %HH.
-    iApply H1; eauto. }
-  { iIntros "P"; iDestruct (observe [| p |] with "P") as %HH.
-    iApply H1; eauto. }
+  iIntros (HpPQ) "[P1 P2]"; iDestruct (o with "P1 P2") as %?. by iApply (HpPQ with "[$P1 $P2]").
 Qed.
+
+Lemma observe_both (p : Prop) {PROP : bi} (P Q  : PROP)
+    {_ : Observe [| p |] P} {_ : Observe [| p |] Q} :
+  (p -> P ⊣⊢ Q) -> P ⊣⊢ Q.
+Proof. intros HpPQ. split'; apply: observe_lhs => Hp; by rewrite HpPQ. Qed.
+
+Lemma observe_2_both (p : Prop) {PROP : bi} (P1 P2 Q1 Q2 : PROP)
+    {_ : Observe2 [| p |] P1 P2} {_ : Observe2 [| p |] Q1 Q2} :
+  (p -> P1 ∗ P2 ⊣⊢ Q1 ∗ Q2) -> P1 ∗ P2 ⊣⊢ Q1 ∗ Q2.
+Proof. intros HpPQ. split'; apply: observe_2_lhs => Hp; by rewrite HpPQ. Qed.
+
+
+(**
+  These help deriving observations for [R] from observations for [Q].
+
+  Recommended use:
+  [apply: (observe_derive_only_provable Q_pattern).].
+  [apply: (observe_2_derive_only_provable Q_pattern).].
+  then prove [Q -> R].
+
+  This is almost setoid rewriting, but it does not support rewriting by implication,
+  and those idioms give [Q -> R] as output goal instead of input.
+*)
+Lemma observe_derive_only_provable {PROP : bi} (Q : Prop) {R : Prop} {P : PROP} :
+  (Q -> R) ->
+  Observe [| Q |] P -> Observe [| R |] P.
+Proof. move=> HQR. apply Observe_mono => //. by f_equiv. Qed.
+
+Lemma observe_2_derive_only_provable {PROP : bi} (Q : Prop) {R : Prop} {P1 P2 : PROP} :
+  (Q -> R) ->
+  Observe2 [| Q |] P1 P2 -> Observe2 [| R |] P1 P2.
+Proof. move=> HQR. apply Observe2_mono => //. by f_equiv. Qed.
