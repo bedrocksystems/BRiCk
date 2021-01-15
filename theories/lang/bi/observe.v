@@ -316,10 +316,22 @@ Proof.
   iIntros (HpPQ) "P"; iDestruct (o with "P") as %?. by iApply (HpPQ with "P").
 Qed.
 
+Lemma observe_2_lhs (p : Prop) {PROP : bi} (P1 P2 Q : PROP) {o : Observe2 [| p |] P1 P2} :
+  (p -> P1 ∗ P2 ⊢ Q) -> P1 ∗ P2 ⊢ Q.
+Proof.
+  iIntros (HpPQ) "[P1 P2]"; iDestruct (o with "P1 P2") as %?. by iApply (HpPQ with "[$P1 $P2]").
+Qed.
+
 Lemma observe_both (p : Prop) {PROP : bi} (P Q  : PROP)
     {_ : Observe [| p |] P} {_ : Observe [| p |] Q} :
   (p -> P ⊣⊢ Q) -> P ⊣⊢ Q.
 Proof. intros HpPQ. split'; apply: observe_lhs => Hp; by rewrite HpPQ. Qed.
+
+Lemma observe_2_both (p : Prop) {PROP : bi} (P1 P2 Q1 Q2 : PROP)
+    {_ : Observe2 [| p |] P1 P2} {_ : Observe2 [| p |] Q1 Q2} :
+  (p -> P1 ∗ P2 ⊣⊢ Q1 ∗ Q2) -> P1 ∗ P2 ⊣⊢ Q1 ∗ Q2.
+Proof. intros HpPQ. split'; apply: observe_2_lhs => Hp; by rewrite HpPQ. Qed.
+
 
 (**
   These help deriving observations for [R] from observations for [Q].
