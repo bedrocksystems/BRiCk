@@ -329,7 +329,7 @@ Module Type Expr.
         |-- wp_prval (Ecomma vc e1 e2 ty) Q.
 
     Axiom wp_init_comma : forall {vc} ty' ty p e1 e2 Q,
-        wpe vc e1 (fun _ free1 => wp_init ty' p e2 (fun free2 => Q (free1 ** free2)))
+            wpe vc e1 (fun _ free1 => wp_init ty' p e2 (fun free2 => Q (free1 ** free2)))
         |-- wp_init ty' p (Ecomma vc e1 e2 ty) Q.
 
     (** short-circuting operators *)
@@ -425,9 +425,11 @@ Module Type Expr.
      *)
     Axiom wp_prval_cast_function2pointer_c : forall ty ty' g Q,
         wp_lval (Evar (Gname g) ty') (fun v => Q (Vptr v))
+            (* even though they are [prvalues], we reuse the [Lvalue] rule for
+               evaluating them. *)
         |-- wp_prval (Ecast Cfunction2pointer (Prvalue, Evar (Gname g) ty') ty) Q.
     Axiom wp_prval_cast_function2pointer_cpp : forall ty ty' g Q,
-        wp_lval (Evar (Gname g) ty') (fun v => Q (Vptr v))
+            wp_lval (Evar (Gname g) ty') (fun v => Q (Vptr v))
         |-- wp_prval (Ecast Cfunction2pointer (Lvalue, Evar (Gname g) ty') ty) Q.
 
     (** Known places that bitcasts occur
