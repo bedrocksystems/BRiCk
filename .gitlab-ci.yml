@@ -13,6 +13,8 @@
 #
 #      This builds and tests cpp2v against the current
 #      major version of llvm.
+#      In fact, "latest" does not depend on the latest version, but on the main
+#      supported one.
 #
 #   2. build_alternate -> test_alternate
 #
