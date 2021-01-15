@@ -618,13 +618,18 @@ public:
                 print.output() << "Virtual";
             }
             print.output() << "," << fmt::nbsp;
-            cprint.printQualType(me->getMemberDecl()->getType(), print);
+
+            if (const CXXMethodDecl* const md =
+                    dyn_cast<CXXMethodDecl>(me->getMemberDecl())) {
+                cprint.printQualType(md->getType(), print);
+            } else {
+                assert(false &&
+                       "MemberDecl in MemberCall must be a MethodDecl");
+            }
             print.output() << fmt::rparen;
             print.end_ctor();
 
             print.output() << fmt::nbsp;
-            assert(me != nullptr &&
-                   "member call with MethodDecl must be a MemberExpr");
             if (me->isArrow()) {
                 // NOTE: the C++ standard states that a `*` is always an `lvalue`.
                 print.output() << fmt::nbsp << "Lvalue";
@@ -673,7 +678,7 @@ public:
         } else {
             assert(false && "no method and not a binary operator");
         }
-
+        print.output() << fmt::nbsp;
         print.list(expr->arguments(), [&](auto print, auto i) {
             cprint.printExprAndValCat(i, print, li);
         });
@@ -1096,12 +1101,13 @@ public:
         print.output() << index << fmt::nbsp;
 
         // this is the source array which we are initializing
-        cprint.printExprAndValCat(expr->getCommonExpr()->getSourceExpr(), print, li);
+        cprint.printExprAndValCat(expr->getCommonExpr()->getSourceExpr(), print,
+                                  li);
 
         // this is the expression that is evaluated
         li.inc_index_count();
-        print.output() << li.index_count() << fmt::nbsp
-                       << expr->getArraySize() << fmt::nbsp;
+        print.output() << li.index_count() << fmt::nbsp << expr->getArraySize()
+                       << fmt::nbsp;
         cprint.printExpr(expr->getSubExpr(), print, li);
         li.dec_index_count();
         li.free(expr->getCommonExpr()); // index goes out of scope at this point

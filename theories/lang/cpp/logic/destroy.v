@@ -32,9 +32,9 @@ Section destroy.
         match s.(s_virtual_dtor) with
         | Some dtor =>
           resolve_virtual (σ:=σ) v cls dtor (fun da p =>
-             |> fspec σ.(genv_tu).(globals) ty ti (Vptr da) (Vptr p :: nil) (fun _ => Q))
+             |> mspec σ.(genv_tu).(globals) (Tnamed cls) ty ti (Vptr da) (Vptr p :: nil) (fun _ => Q))
         | None =>
-             |> fspec σ.(genv_tu).(globals) ty ti (Vptr $ _global dtor) (Vptr v :: nil) (fun _ => Q)
+             |> mspec σ.(genv_tu).(globals) (Tnamed cls) ty ti (Vptr $ _global dtor) (Vptr v :: nil) (fun _ => Q)
         end
       | _ => False
       end
