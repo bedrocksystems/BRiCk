@@ -716,8 +716,6 @@ Module Type Expr.
 
         In practice we assume that the AST is well-typed, so the only way to exploit this problem
         is to use [reinterpret_cast< >] to cast a function pointer to an member pointer or vice versa.
-
-        TODO we should add type side-conditions to these axioms.
      *)
     Axiom wp_lval_member_call : forall ty fty f vc obj es Q,
         wp_specific_glval vc obj (fun this free_t => wp_args es (fun vs free =>
