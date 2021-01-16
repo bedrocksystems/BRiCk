@@ -120,7 +120,6 @@ Section FromToBytes.
                 ?andb_false_l //.
         apply Z.ltb_lt in Hn; lia.
       - rewrite Z.testbit_ones_nonneg; try lia.
-        2: apply Z.ltb_ge in Hn; lia.
         destruct (n - 8 * idx <? 8)%Z eqn:Hn';
           rewrite ?andb_false_l ?andb_false_r
                   ?andb_true_l ?andb_true_r //.
@@ -140,7 +139,6 @@ Section FromToBytes.
           apply Z.bits_inj'=> n ?.
           repeat (rewrite ?Z.lor_spec ?Z.shiftl_spec ?Z.land_spec ?Z.shiftr_spec; try lia).
           rewrite Z.bits_0 !Z.testbit_ones; try lia.
-          churn_bits.
         - rewrite /_Z_set_byte.
           apply Z.bits_inj'=> n ?.
           repeat (rewrite ?Z.lor_spec ?Z.shiftl_spec ?Z.land_spec ?Z.shiftr_spec; try lia).
