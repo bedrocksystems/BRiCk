@@ -135,7 +135,7 @@ Section bi.
   Lemma intuitionistically_only_provable P : □ [| P |] ⊣⊢@{PROP} [| P |].
   Proof. by rewrite /bi_intuitionistically persistently_only_provable. Qed.
 End bi.
-Hint Resolve only_provable_intro : core.
+#[global] Hint Resolve only_provable_intro : core.
 
 Section bi.
   Context {PROP : bi}.

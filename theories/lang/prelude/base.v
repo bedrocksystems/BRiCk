@@ -16,7 +16,7 @@ From iris.algebra Require Export base.
 From bedrock.lang.prelude Require Export notations.
 
 (** Workaround https://github.com/coq/coq/issues/4230. Taken from Software Foundations. *)
-Remove Hints Bool.trans_eq_bool : core.
+#[global] Remove Hints Bool.trans_eq_bool : core.
 
 Global Set Suggest Proof Using. (* also warns about forgotten [Proof.] *)
 Global Set Default Proof Using "Type".
