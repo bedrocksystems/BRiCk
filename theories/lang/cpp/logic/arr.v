@@ -201,7 +201,7 @@ Section arrR.
     exact: type_ptr_size.
   Qed.
 
-  Instance arrR_size_of_observe : Observe [| is_Some (size_of σ ty) |] (arrR ty ys).
+  Instance arrR_size_of_observe {ty ys} : Observe [| is_Some (size_of σ ty) |] (arrR ty ys).
   Proof. rewrite arrR_eq/arrR_def; refine _. Qed.
   Instance arrR_valid_obs ty Rs (i : Z) (Hi : (0 ≤ i ≤ Z.of_nat (length Rs))%Z) :
     Observe (.[ ty ! i ] |-> validR) (arrR ty Rs).
@@ -222,7 +222,7 @@ Section arrR.
         iIntros "(#$ & $ & $)". } }
   Qed.
 
-  Instance arrR_validR_observe : Observe validR (arrR ty ys).
+  Instance arrR_validR_observe {ty ys} : Observe validR (arrR ty ys).
   Proof.
     destruct ys.
     { rewrite arrR_nil. refine _. }

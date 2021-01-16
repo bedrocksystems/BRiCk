@@ -522,10 +522,10 @@ Module SimpleCPP.
     Global Instance byte_frac_valid a rv (q : Qp) :
       Observe ([| q ≤ 1 |])%Qc (byte_ a rv q) := _.
 
-    Instance byte_fractional : Fractional (byte_ a rv) := _.
+    Instance byte_fractional {a rv} : Fractional (byte_ a rv) := _.
     Instance byte_as_fractional a rv q :
       AsFractional (byte_ a rv q) (fun q => byte_ a rv q) q := _.
-    Instance: Timeless (byte_ a rv q) := _.
+    Instance byte_timeless {a rv q} : Timeless (byte_ a rv q) := _.
 
     Theorem byte_consistent a b b' q q' :
       byte_ a b q ** byte_ a b' q' |-- byte_ a b (q + q') ** [| b = b' |].
