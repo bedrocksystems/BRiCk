@@ -38,8 +38,7 @@ Definition type_of (e : Expr) : type :=
   | Eimplicit _ t
   | Eif _ _ _ t
   | Ethis t => t
-  | Enull => Tpointer Tvoid
-  (* todo(gmm): c++ seems to have a special nullptr type *)
+  | Enull => Tnullptr
   | Einitlist _ _ t
   | Eimplicit_init t
   | Enew _ _ _ _ _ t
