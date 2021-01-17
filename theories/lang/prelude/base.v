@@ -1,15 +1,10 @@
 (*
- * Copyright (c) 2020 BedRock Systems, Inc.
+ * Copyright (c) 2020-21 BedRock Systems, Inc.
  * This software is distributed under the terms of the BedRock Open-Source License.
  * See the LICENSE-BedRock file in the repository root for details.
  *)
 
 (** "Prelude" for available-everywhere dependencies. *)
-(*
- * Copyright (C) BedRock Systems Inc. 2020
- *
- * SPDX-License-Identifier: LGPL-2.1 WITH BedRock Exception for use over network, see repository root for details.
- *)
 
 From stdpp Require Export prelude countable.
 From iris.algebra Require Export base.
@@ -24,6 +19,9 @@ Global Set Default Proof Using "Type".
 It's more expressive, but it mangles definitions and can cause a quadratic size
 explosion. *)
 Global Unset Program Cases.
+
+Lemma TCElemOf_iff {A} (x : A) (l : list A) : TCElemOf x l ↔ x ∈ l.
+Proof. split; induction 1; by constructor. Qed.
 
 Lemma iff_forall T P Q :
   (forall i: T, P i <-> Q i) ->
