@@ -1,5 +1,5 @@
 (*
- * Copyright (c) 2020 BedRock Systems, Inc.
+ * Copyright (c) 2020-21 BedRock Systems, Inc.
  * This software is distributed under the terms of the BedRock Open-Source License.
  * See the LICENSE-BedRock file in the repository root for details.
  *)
@@ -197,6 +197,56 @@ Section with_cpp.
   Proof.
     intros. apply observe_elim, as_Rep_only_provable_observe =>p. exact: observe_intro.
   Qed.
+
+  Lemma as_Rep_and P Q : as_Rep (λ p, P p //\\ Q p) -|- as_Rep P //\\ as_Rep Q.
+  Proof. constructor=>p. by rewrite monPred_at_and. Qed.
+
+  Lemma as_Rep_or P Q : as_Rep (λ p, P p \\// Q p) -|- as_Rep P \\// as_Rep Q.
+  Proof. constructor=>p. by rewrite monPred_at_or. Qed.
+
+  Lemma as_Rep_wand P Q : as_Rep (λ p, P p -* Q p) -|- as_Rep P -* as_Rep Q.
+  Proof.
+    constructor=>p /=. split'.
+    - rewrite monPred_at_wand. iIntros "H" (p' ->%ptr_rel_elim) "/= P".
+      iApply ("H" with "P").
+    - apply monPred_wand_force.
+  Qed.
+
+  Lemma as_Rep_exist {T} (P : T -> ptr -> mpred) :
+    as_Rep (λ p, Exists x, P x p) -|- Exists x, as_Rep (P x).
+  Proof. constructor=>p /=. by rewrite monPred_at_exist. Qed.
+
+  Lemma as_Rep_forall {T} (P : T -> ptr -> mpred) :
+    as_Rep (λ p, Forall x, P x p) -|- Forall x, as_Rep (P x).
+  Proof. constructor=>p /=. by rewrite monPred_at_forall. Qed.
+
+  Lemma as_Rep_pers P : as_Rep (λ p, <pers> P p) -|- <pers> (as_Rep P).
+  Proof. constructor=>p /=. by rewrite monPred_at_persistently. Qed.
+
+  Lemma as_Rep_fupd P E1 E2 : as_Rep (λ p, |={E1,E2}=> P p) -|- |={E1,E2}=> as_Rep P.
+  Proof. constructor=>p /=. by rewrite monPred_at_fupd. Qed.
+
+  Lemma as_Rep_intuitionistically P : as_Rep (λ p, □ P p) -|- □ as_Rep P.
+  Proof. constructor=>p /=. by rewrite monPred_at_intuitionistically. Qed.
+
+  Lemma as_Rep_intuitionistically_if b P : as_Rep (λ p, □?b P p) -|- □?b as_Rep P.
+  Proof. constructor=>p /=. by rewrite monPred_at_intuitionistically_if. Qed.
+
+  Lemma as_Rep_except_0 P : as_Rep (λ p, bi_except_0 (P p)) -|- bi_except_0 (as_Rep P).
+  Proof. constructor=>p /=. by rewrite monPred_at_except_0. Qed.
+
+  Lemma as_Rep_affinely P : as_Rep (λ p, <affine> P p) -|- <affine> (as_Rep P).
+  Proof. constructor=>p /=. by rewrite monPred_at_affinely. Qed.
+
+  Lemma as_Rep_affinely_if b P : as_Rep (λ p, <affine>?b P p) -|- <affine>?b (as_Rep P).
+  Proof. constructor=>p /=. by rewrite monPred_at_affinely_if. Qed.
+
+  Lemma as_Rep_big_sepL {T} (l : list T) (F : nat -> T -> ptr -> mpred) :
+    as_Rep (λ p, [∗list] i ↦ x ∈ l, F i x p) -|- [∗list] i ↦ x ∈ l, as_Rep (F i x).
+  Proof. constructor=>p /=. by rewrite monPred_at_big_sepL. Qed.
+
+  Lemma as_Rep_later P : as_Rep (λ p, |> P p) -|- |> as_Rep P.
+  Proof. constructor=>p /=. by rewrite monPred_at_later. Qed.
 
   Lemma Rep_wand_force (R1 R2 : Rep) p : (R1 -* R2) p -|- R1 p -* R2 p.
   Proof. split'. apply monPred_wand_force. by iIntros "a" (? <-%ptr_rel_elim). Qed.
@@ -552,6 +602,51 @@ Section with_cpp.
   Proof. exact: as_Rep_emp. Qed.
   Lemma pureR_sep (P Q : mpred) : pureR (P ** Q) -|- pureR P ** pureR Q.
   Proof. exact: as_Rep_sep. Qed.
+
+  Lemma pureR_and (P Q : mpred) : pureR (P //\\ Q) -|- pureR P //\\ pureR Q.
+  Proof. exact: as_Rep_and. Qed.
+
+  Lemma pureR_or (P Q : mpred) : pureR (P \\// Q) -|- pureR P \\// pureR Q.
+  Proof. exact: as_Rep_or. Qed.
+
+  Lemma pureR_wand (P Q : mpred) : pureR (P -* Q) -|- pureR P -* pureR Q.
+  Proof. exact: as_Rep_wand. Qed.
+
+  Lemma pureR_exist {T} (P : T -> mpred) :
+    pureR (Exists x, P x) -|- Exists x, pureR (P x).
+  Proof. exact: as_Rep_exist. Qed.
+
+  Lemma pureR_forall {T} (P : T -> mpred) :
+    pureR (Forall x, P x) -|- Forall x, pureR (P x).
+  Proof. exact: as_Rep_forall. Qed.
+
+  Lemma pureR_pers (P : mpred) : pureR (<pers> P) -|- <pers> pureR P.
+  Proof. exact: as_Rep_pers. Qed.
+
+  Lemma pureR_fupd (P : mpred) E1 E2 : pureR (|={E1,E2}=> P) -|- |={E1,E2}=> pureR P.
+  Proof. exact: as_Rep_fupd. Qed.
+
+  Lemma pureR_intuitionistically (P : mpred) : pureR (□ P) -|- □ pureR P.
+  Proof. exact: as_Rep_intuitionistically. Qed.
+
+  Lemma pureR_intuitionistically_if b (P : mpred) : pureR (□?b P) -|- □?b pureR P.
+  Proof. exact: as_Rep_intuitionistically_if. Qed.
+
+  Lemma pureR_except_0 (P : mpred) : pureR (bi_except_0 P) -|- bi_except_0 (pureR P).
+  Proof. exact: as_Rep_except_0. Qed.
+
+  Lemma pureR_affinely (P : mpred) : pureR (<affine> P) -|- <affine> pureR P.
+  Proof. exact: as_Rep_affinely. Qed.
+
+  Lemma pureR_affinely_if b (P : mpred) : pureR (<affine>?b P) -|- <affine>?b pureR P.
+  Proof. exact: as_Rep_affinely_if. Qed.
+
+  Lemma pureR_big_sepL {T} (l : list T) F :
+    pureR ([∗list] i ↦ x ∈ l , F i x) -|- [∗list] i ↦ x ∈ l , pureR (F i x).
+  Proof. exact: as_Rep_big_sepL. Qed.
+
+  Lemma pureR_later (P : mpred) : pureR (|> P) -|- |> pureR P.
+  Proof. exact: as_Rep_later. Qed.
 
   Global Instance pureR_observe Q (P : mpred) :
     Observe [| Q |] P → Observe [| Q |] (pureR P).
