@@ -4,9 +4,10 @@
  * See the LICENSE-BedRock file in the repository root for details.
  *)
 Require Import stdpp.telescopes.
-Require Import bedrock.lang.prelude.bytestring.
-Require Import bedrock.lang.cpp.logic.
-Require Import bedrock.lang.prelude.telescopes.
+From bedrock.lang.prelude Require Import bytestring telescopes.
+From bedrock.lang.cpp.semantics Require Import values.
+From bedrock.lang.cpp.logic Require Import spec pred.
+(* XXX only needed for examples. *)
 Require bedrock.lang.cpp.heap_notations.
 
 Set Universe Polymorphism.
@@ -240,7 +241,7 @@ Notation "'\exact' wpp" := (exactWpp wpp)
 Section with_Σ.
   Context `{Σ : cpp_logic ti}.
 
-  Import heap_notations.
+  Import heap_notations heap_pred.
 
 Goal WithPrePost mpredI.
 refine (
