@@ -31,12 +31,13 @@ Axiom vdata_at_timeless :
 #[global] Notation vword_at := (vdata_at W32).
 #[global] Notation vdword_at := (vdata_at W64).
 
-(*[phantdata_at sz q p]: In the C++ abstract machine, [p] previously contained
-  some integer data encoded as [sz], with permission [q]. When you re-enter the
-  C++ virtual machine (via [compiler_memory_entry]), you combine [phantdata_at]
-  with a virtual points-to fact to get a C++-level points-to.*)
+(*[phantdata_at ty q p]: In the C++ abstract machine, [p] previously
+  contained a [ty]-typed value with permission [q]. When you re-enter
+  the C++ virtual machine (via [memory_entry]), you combine
+  [phantdata_at] with a virtual points-to fact to get a C++-level
+  points-to.*)
 Parameter phantdata_at :
-  forall `{Σ:cpp_logic} {σ:genv} (sz : bitsize) (q : Qp) (p : ptr), mpred.
+  forall `{Σ:cpp_logic} {σ:genv} (ty : type) (q : Qp) (p : ptr), mpred.
 #[global] Notation phantbyte_at := (phantdata_at W8).
 #[global] Notation phantshort_at := (phantdata_at W16).
 #[global] Notation phantword_at := (phantdata_at W32).
