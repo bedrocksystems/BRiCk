@@ -11,5 +11,6 @@ EXTRA_DIR=$(ROOT)/coqdocjs/extra
 COQDOCFLAGS:= \
   --toc --toc-depth 2 --html --interpolate \
   --index indexpage --no-lib-name --parse-comments \
+  --external https://plv.mpi-sws.org/coqdoc/iris iris \
   --with-header $(EXTRA_DIR)/header.html --with-footer $(EXTRA_DIR)/footer.html
 export COQDOCFLAGS

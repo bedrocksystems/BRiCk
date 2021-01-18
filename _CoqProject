@@ -19,6 +19,13 @@ theories/prelude/hw_types.v
 theories/prelude/page.v
 theories/prelude/interrupts.v
 
+# Documentation
+theories/doc/class_representations.v
+theories/doc/howto_sequential.v
+theories/doc/logic.v
+theories/doc/notations.v
+theories/doc/principles.v
+
 # Utility modules
 theories/prelude/stdpp_ssreflect.v
 theories/prelude/notations.v

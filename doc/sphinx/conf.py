@@ -5,10 +5,9 @@
 # See the LICENSE-BedRock file in the repository root for details.
 #
 
-# TODO: Fix the following 5 fields
 # General information about the project.
 project = 'BedRock FM: CPP2V Foundations'
-copyright = '2020 BedRock Systems'
+copyright = '2021 BedRock Systems'
 author = 'Jasper Haag'
 
 version = "0.0.1"
@@ -22,9 +21,9 @@ release = "alpha"
 # full list see the documentation:
 # http://www.sphinx-doc.org/en/master/config
 
-# NOTE: This configuration is based on coq/doc/sphinx/conf.py, since we utilize
-#       coqrst (and the custom coq documentation setup) in order to create our
-#       own documentation.
+# NOTE: This configuration is based on coq/doc/sphinx/conf.py, since we (used
+#       to) utilize coqrst (and the custom coq documentation setup) in order
+#       to create our own documentation.
 
 # NOTE: Be sure to read coq/doc/README.md if you encounter issues
 
@@ -62,8 +61,6 @@ needs_sphinx = '2.3.1'
 sertop_args = []
 coqpaths = os.environ.get("COQPATH", "").split(':')
 for coqpath in coqpaths:
-    # NOTE: These are the suffixes for where the cpp2v-core and cpp2v artifacts
-    #       are installed in CI
     if coqpath.strip() == '':
         continue
     sertop_args.extend(["-Q", coqpath + ","])
