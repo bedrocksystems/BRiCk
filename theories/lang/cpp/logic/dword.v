@@ -12,30 +12,20 @@ From bedrock.lang.cpp Require Import logic.pred.
 From bedrock.lang.cpp.semantics Require Import types genv values.
 Require Import bedrock.lang.prelude.addr.
 
-Variant Virt_or_phys : Set := Virtual | Physical.
-Parameter data_at :
+Parameter vdata_at :
   forall `{Σ:cpp_logic} {σ:genv}
-     (virt : Virt_or_phys) (sz : bitsize) (q : Qp) (addr : N) (n : N), mpred.
-Axiom data_at_fractional :
-  forall `{Σ:cpp_logic} {σ:genv} virt sz addr n,
-    Fractional (λ q, data_at virt sz q addr n).
-#[global] Existing Instance data_at_fractional.
-Axiom data_at_timeless :
-  forall `{Σ:cpp_logic} {σ:genv} virt sz q addr n,
-    Timeless (data_at virt sz q addr n).
-#[global] Existing Instance data_at_timeless.
-
-(*[pdata_at sz q pa n]: Physical address [pa] contains value [n], encoded
-  as [sz] with permission [q].*)
-#[global] Notation pdata_at := (@data_at _ _ _ Physical).
-#[global] Notation pbyte_at := (pdata_at W8).
-#[global] Notation pshort_at := (pdata_at W16).
-#[global] Notation pword_at := (pdata_at W32).
-#[global] Notation pdword_at := (pdata_at W64).
+    (sz : bitsize) (q : Qp) (addr : N) (n : N), mpred.
+Axiom vdata_at_fractional :
+  forall `{Σ:cpp_logic} {σ:genv} sz addr n,
+    Fractional (λ q, vdata_at sz q addr n).
+#[global] Existing Instance vdata_at_fractional.
+Axiom vdata_at_timeless :
+  forall `{Σ:cpp_logic} {σ:genv} sz q addr n,
+    Timeless (vdata_at sz q addr n).
+#[global] Existing Instance vdata_at_timeless.
 
 (*[vdata_at sz q va n]: Virtual address [va] contains value [n], encoded
   as [sz] with permission [q].*)
-#[global] Notation vdata_at := (@data_at _ _ _ Virtual).
 #[global] Notation vbyte_at := (vdata_at W8).
 #[global] Notation vshort_at := (vdata_at W16).
 #[global] Notation vword_at := (vdata_at W32).
