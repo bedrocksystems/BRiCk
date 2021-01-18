@@ -42,3 +42,36 @@ End extends.
 Arguments Derives_here {_ _} _ _.
 Arguments Derives_base {_ _} _.
 Arguments class_derives σ derived base : rename.
+
+(** The following instances enable TC resolution to prove
+[class_derives σ derived base] when the translation unit [tu] and
+class names [derived], [base] are ground.
+
+The proofs use [iffLR] to avoid destructing [iff]. While verbose,
+that's presumably faster. *)
+Existing Class class_derives.
+Global Hint Mode class_derives + + + : typeclass_instances.
+
+Global Instance class_derives_here tu σ derived st :
+  tu ⊧ σ ->
+  TCEq (tu.(globals) !! derived) (Some (Gstruct st)) ->
+  class_derives σ derived derived.
+Proof.
+  intros. eapply Derives_here, genv_compat_lookup_Some_type.
+  - done.
+  - by apply (iffLR (TCEq_eq _ _)).
+Defined.
+
+Global Instance class_derives_base tu σ derived base st li result :
+  tu ⊧ σ ->
+  TCEq (tu.(globals) !! derived) (Some (Gstruct st)) ->
+  TCElemOf (base, li) st.(s_bases) ->
+  class_derives σ base result ->
+  class_derives σ derived result.
+Proof.
+  intros. eapply Derives_base.
+  - eapply genv_compat_lookup_Some_type.
+    done. by apply (iffLR (TCEq_eq _ _)).
+  - by apply (iffLR (elem_of_list_In _ _)), (iffLR (TCElemOf_iff _ _)).
+  - done.
+Defined.
