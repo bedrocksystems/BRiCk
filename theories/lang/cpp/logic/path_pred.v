@@ -45,11 +45,11 @@ Section with_Σ.
   Arguments addr_of : simpl never.
   Notation "a &~ b" := (addr_of a b) (at level 30, no associativity).
 
-  Global Instance addr_of_persistent : Persistent (addr_of o l).
+  Global Instance addr_of_persistent {o l} : Persistent (addr_of o l).
   Proof. rewrite addr_of_eq. apply _. Qed.
-  Global Instance addr_of_affine : Affine (addr_of o l).
+  Global Instance addr_of_affine {o l} : Affine (addr_of o l).
   Proof. rewrite addr_of_eq. apply _. Qed.
-  Global Instance addr_of_timeless : Timeless (addr_of o l).
+  Global Instance addr_of_timeless {o l} : Timeless (addr_of o l).
   Proof. rewrite addr_of_eq. apply _. Qed.
 
   Global Instance addr_of_observe_precise loc a1 a2 :

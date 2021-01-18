@@ -414,20 +414,20 @@ Section with_cpp.
     by rewrite _offsetR_eq/_offsetR_def/= offset_ptr_dot.
   Qed.
 
-  Global Instance _at_ne l : Proper (dist n ==> dist n) (_at l).
+  Global Instance _at_ne l {n} : Proper (dist n ==> dist n) (_at l).
   Proof. rewrite _at_eq. solve_proper. Qed.
-  Global Instance _at_proper : Proper ((≡) ==> (≡)) (_at p).
+  Global Instance _at_proper {p} : Proper ((≡) ==> (≡)) (_at p).
   Proof. rewrite _at_eq. solve_proper. Qed.
-  Global Instance _at_mono : Proper ((⊢) ==> (⊢)) (_at p).
+  Global Instance _at_mono {p} : Proper ((⊢) ==> (⊢)) (_at p).
   Proof. rewrite _at_eq. solve_proper. Qed.
-  Global Instance _at_flip_mono : Proper (flip (⊢) ==> flip (⊢)) (_at p).
-  Proof. rewrite _at_eq/_at_def=> ? r1 r2 HR/=. by rewrite HR. Qed.
+  Global Instance _at_flip_mono {p} : Proper (flip (⊢) ==> flip (⊢)) (_at p).
+  Proof. rewrite _at_eq/_at_def=> r1 r2 HR/=. by rewrite HR. Qed.
 
-  Global Instance _at_persistent : Persistent P -> Persistent (_at base P).
+  Global Instance _at_persistent {P base} : Persistent P -> Persistent (_at base P).
   Proof. rewrite _at_eq. apply _. Qed.
-  Global Instance _at_affine : Affine P -> Affine (_at base P).
+  Global Instance _at_affine {P base} : Affine P -> Affine (_at base P).
   Proof. rewrite _at_eq. apply _. Qed.
-  Global Instance _at_timeless : Timeless P -> Timeless (_at base P).
+  Global Instance _at_timeless {P base} : Timeless P -> Timeless (_at base P).
   Proof. rewrite _at_eq. apply _. Qed.
 
   Lemma Rep_equiv_at (P Q : Rep)
@@ -864,7 +864,7 @@ Section with_cpp.
   Global Instance refR_timeless ty p : Timeless (refR ty p).
   Proof. rewrite refR_eq. apply _. Qed.
 
-  #[global] Instance cptrR_persistent {resolve} : Persistent (cptrR s).
+  #[global] Instance cptrR_persistent {resolve s} : Persistent (cptrR s).
   Proof. rewrite cptrR_eq. apply _. Qed.
 
   (* TODO: Proper wrt [genv_leq]. *)
@@ -1001,11 +1001,11 @@ Section with_cpp.
   Definition alignedR_aux : seal (@alignedR_def). Proof. by eexists. Qed.
   Definition alignedR := alignedR_aux.(unseal).
   Definition alignedR_eq : @alignedR = _ := alignedR_aux.(seal_eq).
-  #[global] Instance alignedR_persistent : Persistent (alignedR al).
+  #[global] Instance alignedR_persistent {al} : Persistent (alignedR al).
   Proof. rewrite alignedR_eq. apply _. Qed.
-  #[global] Instance alignedR_affine : Affine (alignedR al).
+  #[global] Instance alignedR_affine {al} : Affine (alignedR al).
   Proof. rewrite alignedR_eq. apply _. Qed.
-  #[global] Instance alignedR_timeless : Timeless (alignedR al).
+  #[global] Instance alignedR_timeless {al} : Timeless (alignedR al).
   Proof. rewrite alignedR_eq. apply _. Qed.
 
   Lemma null_nonnull (R : Rep) : is_null |-- is_nonnull -* R.

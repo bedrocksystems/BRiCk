@@ -22,7 +22,7 @@ Instance IMR_map : FMap IM.Raw.t := @IM.Raw.map.
 
 Instance IMR_merge : Merge IM.Raw.t := IM.Raw.map2.
 
-Instance IMR_maptolist : FinMapToList bs A (IM.Raw.t A) := IM.Raw.elements.
+Instance IMR_maptolist A : FinMapToList bs A (IM.Raw.t A) := IM.Raw.elements (elt := A).
 
 Instance IMR_singleton {V} : SingletonM bs V (IM.Raw.t V) :=
   fun k v => <[ k := v ]> ∅.
@@ -42,7 +42,7 @@ Instance IM_map : FMap IM.t := @IM.map.
 
 Instance IM_merge : Merge IM.t := IM.map2.
 
-Instance IM_maptolist : FinMapToList bs A (IM.t A) := IM.elements.
+Instance IM_maptolist A : FinMapToList bs A (IM.t A) := IM.elements (elt := A).
 
 Instance IM_singleton {V} : SingletonM bs V (IM.t V) :=
   fun k v => <[ k := v ]> ∅.

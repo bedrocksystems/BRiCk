@@ -53,7 +53,7 @@ Section with_cpp.
           end
         end.
 
-  Global Instance: Persistent (denoteSymbol n o).
+  Global Instance denoteSymbol_persistent {n o} : Persistent (denoteSymbol n o).
   Proof using .
     rewrite /denoteSymbol; destruct o; simpl; red.
     - iIntros "#H"; iModIntro; iFrame "#".
@@ -63,7 +63,7 @@ Section with_cpp.
     - iIntros "#H"; iModIntro; iFrame "#".
   Qed.
 
-  Global Instance: Affine (denoteSymbol n o).
+  Global Instance denoteSymbol_affine {n o} : Affine (denoteSymbol n o).
   Proof using . refine _. Qed.
 
   Definition initSymbol (n : obj_name) (o : ObjValue) : mpred :=
@@ -88,14 +88,14 @@ Section with_cpp.
   Definition denoteModule := denoteModule_aux.(unseal).
   Definition denoteModule_eq : @denoteModule = _ := denoteModule_aux.(seal_eq).
 
-  Global Instance: Persistent (denoteModule module).
+  Global Instance denoteModule_persistent {module} : Persistent (denoteModule module).
   Proof.
     red. rewrite denoteModule_eq /denoteModule_def; intros.
     destruct module; simpl.
     iIntros "[#M #H]"; iFrame "#".
   Qed.
 
-  Global Instance: Affine (denoteModule module).
+  Global Instance denoteModule_affine {module} : Affine (denoteModule module).
   Proof using . refine _. Qed.
 
 End with_cpp.
