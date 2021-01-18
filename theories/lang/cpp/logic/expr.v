@@ -429,7 +429,7 @@ Module Type Expr.
                evaluating them. *)
         |-- wp_prval (Ecast Cfunction2pointer (Prvalue, Evar (Gname g) ty') ty) Q.
     Axiom wp_prval_cast_function2pointer_cpp : forall ty ty' g Q,
-            wp_lval (Evar (Gname g) ty') (fun v => Q (Vptr v))
+        wp_lval (Evar (Gname g) ty') (fun v => Q (Vptr v))
         |-- wp_prval (Ecast Cfunction2pointer (Lvalue, Evar (Gname g) ty') ty) Q.
 
     (** Known places that bitcasts occur
