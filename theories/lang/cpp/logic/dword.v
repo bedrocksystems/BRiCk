@@ -12,27 +12,18 @@ From bedrock.lang.cpp Require Import logic.pred.
 From bedrock.lang.cpp.semantics Require Import types genv values.
 Require Import bedrock.lang.prelude.addr.
 
-Module Type VDATA.
-  Parameter vdata_at :
-    forall `{Σ:cpp_logic} {σ:genv}
-      (sz : bitsize) (q : Qp) (addr : N) (n : N), mpred.
-  Axiom vdata_at_fractional :
-    forall `{Σ:cpp_logic} {σ:genv} sz addr n,
-      Fractional (λ q, vdata_at sz q addr n).
-  #[global] Existing Instance vdata_at_fractional.
-  Axiom vdata_at_timeless :
-    forall `{Σ:cpp_logic} {σ:genv} sz q addr n,
-      Timeless (vdata_at sz q addr n).
-  #[global] Existing Instance vdata_at_timeless.
-
-  (*[vdata_at sz q va n]: Virtual address [va] contains value [n], encoded
-    as [sz] with permission [q].*)
-  #[global] Notation vbyte_at := (vdata_at W8).
-  #[global] Notation vshort_at := (vdata_at W16).
-  #[global] Notation vword_at := (vdata_at W32).
-  #[global] Notation vdword_at := (vdata_at W64).
-End VDATA.
-Declare Module Export Vdata_impl : VDATA.
+Module Type VBYTE.
+  Parameter vbyte_at : forall `{Σ:cpp_logic} (q : Qp) (addr : N) (n : N), mpred.
+  (*[vbyte_at q va n]: Virtual address [va] contains byte [n] with
+    permission [q].*)
+  Axiom vbyte_at_fractional :
+    forall `{Σ:cpp_logic} addr n, Fractional (λ q, vbyte_at q addr n).
+  #[global] Existing Instance vbyte_at_fractional.
+  Axiom vbyte_at_timeless :
+    forall `{Σ:cpp_logic} q addr n, Timeless (vbyte_at q addr n).
+  #[global] Existing Instance vbyte_at_timeless.
+End VBYTE.
+Declare Module Export Vbyte_impl : VBYTE.
 
 Module Type PHANTDATA.
   (*[phantdata_at ty q p]: In the C++ abstract machine, [p] previously
