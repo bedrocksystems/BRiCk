@@ -13,10 +13,12 @@
 #
 #      This builds and tests cpp2v against the current
 #      major version of llvm.
+#      In fact, "latest" does not depend on the latest version, but on the main
+#      supported one.
 #
-#   2. build_previous -> test_previous
+#   2. build_alternate -> test_alternate
 #
-#      This builds cpp2v against the previous major
+#      This builds cpp2v against the alternate major
 #      version of llvm. It tests only the cpp2v
 #      frontend.
 #
@@ -31,7 +33,10 @@
 
 variables:
   LLVM_CUR_MAJ_VER: "10"
-  LLVM_PREV_MAJ_VER: "9"
+  LLVM_ALT_MAJ_VER: "11"
+  cur_main_docker_img: registry.gitlab.com/bedrocksystems/docker-image:cpp2v-llvm${LLVM_CUR_MAJ_VER}
+  alt_main_docker_img: registry.gitlab.com/bedrocksystems/docker-image:cpp2v-llvm${LLVM_ALT_MAJ_VER}
+  fm_docs_img: registry.gitlab.com/bedrocksystems/docker-image:fm-docs
 
 stages:
   - build
@@ -43,9 +48,8 @@ stages:
   - build_proofs_downstream
 
 #This is a template job that's extended below by the real jobs
-# build_cur and build_prev (see, e.g., https://docs.gitlab.com/ee/ci/yaml/#extends).
+# build_cur and build_alt (see, e.g., https://docs.gitlab.com/ee/ci/yaml/#extends).
 .build:
-  image: registry.gitlab.com/bedrocksystems/docker-image:cpp2v-llvm${LLVM_MAJ_VER}
   stage: build
   script:
     - mkdir -p build
@@ -63,7 +67,6 @@ stages:
       - build/bedrock
 
 .test:
-  image: registry.gitlab.com/bedrocksystems/docker-image:cpp2v-llvm${LLVM_MAJ_VER}
   stage: test
   script:
     - coqc -v
@@ -78,6 +81,7 @@ stages:
 
 build_latest:
   extends: .build
+  image: ${cur_main_docker_img}
   rules:
     - if: $CI_MERGE_REQUEST_IID
     - if: $CI_COMMIT_TAG
@@ -94,32 +98,35 @@ build_latest:
       dotenv: build.env
 
 
-# build_previous:
+# build_alternate:
 #   extends: .build
+#   image: ${alt_main_docker_img}
 #   only:
 #     - schedules
 #     - merge_requests
 #     - tags
 #     - master
 #   variables:
-#     LLVM_MAJ_VER: ${LLVM_PREV_MAJ_VER}
+#     LLVM_MAJ_VER: ${LLVM_ALT_MAJ_VER}
 
 test_latest:
   extends: .test
+  image: ${cur_main_docker_img}
   dependencies:
     - build_latest
   variables:
     LLVM_MAJ_VER: ${LLVM_CUR_MAJ_VER}
 
-# test_previous:
+# test_alternate:
 #   extends: .test
+#   image: ${alt_main_docker_img}
 #   dependencies:
-#     - build_previous
+#     - build_alternate
 #   variables:
-#     LLVM_MAJ_VER: ${LLVM_PREV_MAJ_VER}
+#     LLVM_MAJ_VER: ${LLVM_ALT_MAJ_VER}
 
 prepare_env:
-  image: registry.gitlab.com/bedrocksystems/docker-image:cpp2v-llvm${LLVM_MAJ_VER}
+  image: ${cur_main_docker_img}
   stage: prepare_env_for_downstream
   needs:
     - build_latest
@@ -169,20 +176,22 @@ build_cpp2v:
 
 release_latest:
   extends: .release
+  image: ${cur_main_docker_img}
   dependencies:
     - build_latest
   variables:
     LLVM_MAJ_VER: ${LLVM_CUR_MAJ_VER}
 
-# release_previous:
+# release_alternate:
 #   extends: .release
+#   image: ${alt_main_docker_img}
 #   dependencies:
-#     - build_previous
+#     - build_alternate
 #   variables:
-#     LLVM_MAJ_VER: ${LLVM_PREV_MAJ_VER}
+#     LLVM_MAJ_VER: ${LLVM_ALT_MAJ_VER}
 
 prepare_pages:
-  image: registry.gitlab.com/bedrocksystems/docker-image:fm-docs
+  image: ${fm_docs_img}
   stage: prepare_pages
   dependencies:
     - test_latest
@@ -200,7 +209,7 @@ prepare_pages:
       - public
 
 pages:
-  image: registry.gitlab.com/bedrocksystems/docker-image:fm-docs
+  image: ${fm_docs_img}
   stage: pages
   dependencies:
     - prepare_pages

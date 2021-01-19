@@ -293,6 +293,17 @@ Section sub_module.
 End sub_module.
 Instance: RewriteRelation sub_module := {}.
 
+Lemma sub_module_lookup_Some_type m1 m2 gn st :
+  sub_module m1 m2 ->
+  m1.(globals) !! gn = Some (Gstruct st) ->
+  m2.(globals) !! gn = Some (Gstruct st).
+Proof.
+  intros [Hg%type_table_le_equiv _ _] Heq.
+  specialize (Hg gn). rewrite {}Heq/= in Hg.
+  destruct (_ !! _) as [g|]; last done. destruct g; simplify_eq/=.
+  apply require_eq_success in Hg. destruct Hg. by simplify_eq.
+Qed.
+
 Instance byte_order_proper : Proper (sub_module ==> eq) byte_order.
 Proof. by destruct 1. Qed.
 Instance byte_order_flip_proper : Proper (flip sub_module ==> eq) byte_order.

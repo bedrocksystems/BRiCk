@@ -93,6 +93,14 @@ Qed.
 Instance genv_compat_flip_proper : Proper (sub_module ==> flip genv_leq ==> flip impl) genv_compat.
 Proof. solve_proper. Qed.
 
+Lemma genv_compat_lookup_Some_type tu σ gn st :
+  tu ⊧ σ ->
+  tu.(globals) !! gn = Some (Gstruct st) ->
+  σ.(genv_tu).(globals) !! gn = Some (Gstruct st).
+Proof.
+  eauto using sub_module_lookup_Some_type, genv_compat_submodule.
+Qed.
+
 (* XXX rename/deprecate? *)
 Theorem subModuleModels a b σ : b ⊧ σ -> sub_module a b -> a ⊧ σ.
 Proof. by intros ? ->. Qed.

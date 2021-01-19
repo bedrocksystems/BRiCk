@@ -602,7 +602,7 @@ Axiom has_type_qual : forall t q x,
     has_type x (drop_qualifiers t) ->
     has_type x (Tqualified q t).
 
-Hint Resolve has_type_qual : has_type.
+#[global] Hint Resolve has_type_qual : has_type.
 
 Arguments Z.add _ _ : simpl never.
 Arguments Z.sub _ _ : simpl never.
