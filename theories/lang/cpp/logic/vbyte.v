@@ -19,6 +19,10 @@ Module Type VBYTE.
   Axiom vbyte_at_fractional :
     forall `{Σ:cpp_logic} addr n, Fractional (λ q, vbyte_at q addr n).
   #[global] Existing Instance vbyte_at_fractional.
+  Axiom vbyte_at_frac_valid :
+    forall `{Σ:cpp_logic} addr n (q : Qp),
+      Observe [| q ≤ 1 |]%Qc (vbyte_at q addr n).
+  #[global] Existing Instance vbyte_at_frac_valid.
   Axiom vbyte_at_timeless :
     forall `{Σ:cpp_logic} q addr n, Timeless (vbyte_at q addr n).
   #[global] Existing Instance vbyte_at_timeless.
@@ -39,10 +43,14 @@ Module Type PHANTDATA.
   #[global] Notation phantdword_at := (phantdata_at W64).
 
   Axiom phantdata_at_fractional :
-    forall `{Σ:cpp_logic} {σ:genv} sz p, Fractional (λ q, phantdata_at sz q p).
+    forall `{Σ:cpp_logic} {σ:genv} ty p, Fractional (λ q, phantdata_at ty q p).
   #[global] Existing Instance phantdata_at_fractional.
+  Axiom phantdata_at_frac_valid :
+    forall `{Σ:cpp_logic} {σ:genv} ty (q : Qp) p,
+      Observe [| q ≤ 1 |]%Qc (phantdata_at ty q p).
+  #[global] Existing Instance phantdata_at_frac_valid.
   Axiom phantdata_at_timeless :
-    forall `{Σ:cpp_logic} {σ:genv} sz q p, Timeless (phantdata_at sz q p).
+    forall `{Σ:cpp_logic} {σ:genv} ty q p, Timeless (phantdata_at ty q p).
   #[global] Existing Instance phantdata_at_timeless.
 End PHANTDATA.
 Declare Module Export Phantdata_impl : PHANTDATA.
