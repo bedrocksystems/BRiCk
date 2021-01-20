@@ -74,6 +74,7 @@ theories/lang/cpp/logic/atomics.v
 theories/lang/cpp/logic/atomics_derived.v
 theories/lang/cpp/logic/builtins.v
 theories/lang/cpp/logic/layout.v
+theories/lang/cpp/logic/vbyte.v
 theories/lang/cpp/logic.v
 
 # Notations
