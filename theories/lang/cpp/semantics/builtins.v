@@ -366,13 +366,10 @@ Section Bswap.
       Proof.
         intros *.
         rewrite /bswap16/bswap_/=.
-        rewrite !Z.lor_0_r !Z.lor_0_l.
-        rewrite !_get_byte_lor !_set_byte_lor.
-        rewrite !_get_set_byte_roundtrip !_set_get_byte_roundtrip.
-        rewrite Z.shiftl_0_r.
-        rewrite !_get_set_byte_no_overlap ?_set_byte_0 ?Z.lor_0_r ?Z.lor_0_l; try lia.
-        rewrite !_set_get_0 !_get_0_set_0_eq.
-        repeat (rewrite Z.lor_comm; f_equal).
+        rewrite {1}Z.lor_comm; f_equal;
+          try (rewrite !_get_byte_lor !_set_byte_lor
+                       !_get_set_byte_roundtrip !_get_set_byte_no_overlap
+                       ?_set_byte_0 ?Z.lor_0_r ?Z.lor_0_l ?_set_get_0 //).
       Qed.
 
       Lemma bswap32_set_byte_reverse:
@@ -388,13 +385,11 @@ Section Bswap.
       Proof.
         intros *.
         rewrite /bswap32/bswap_/=.
-        rewrite !Z.lor_0_r !Z.lor_0_l.
-        rewrite !_get_byte_lor !_set_byte_lor.
-        rewrite !_get_set_byte_roundtrip !_set_get_byte_roundtrip.
-        rewrite Z.shiftl_0_r.
-        rewrite !_get_set_byte_no_overlap ?_set_byte_0 ?Z.lor_0_r ?Z.lor_0_l; try lia.
-        rewrite !_set_get_0 !_get_0_set_0_eq.
-        repeat (rewrite Z.lor_comm; f_equal).
+        rewrite {1}Z.lor_comm; f_equal;
+          try (rewrite !_get_byte_lor !_set_byte_lor
+                       !_get_set_byte_roundtrip !_get_set_byte_no_overlap
+                       ?_set_byte_0 ?Z.lor_0_r ?Z.lor_0_l ?_set_get_0 //);
+          repeat (rewrite {1}Z.lor_comm; f_equal).
       Qed.
 
       Lemma bswap64_set_byte_reverse:
@@ -418,13 +413,13 @@ Section Bswap.
       Proof.
         intros *.
         rewrite /bswap64/bswap_/=.
-        rewrite !Z.lor_0_r !Z.lor_0_l.
-        rewrite !_get_byte_lor !_set_byte_lor.
-        rewrite !_get_set_byte_roundtrip !_set_get_byte_roundtrip.
-        rewrite Z.shiftl_0_r.
-        rewrite !_get_set_byte_no_overlap ?_set_byte_0 ?Z.lor_0_r ?Z.lor_0_l; try lia.
-        rewrite !_set_get_0 !_get_0_set_0_eq.
-        repeat (rewrite Z.lor_comm; f_equal).
+        repeat (rewrite {1}Z.lor_comm; f_equal;
+                [now (rewrite !_get_byte_lor !_set_byte_lor
+                              !_get_set_byte_roundtrip !_get_set_byte_no_overlap
+                              ?_set_byte_0 ?Z.lor_0_r ?Z.lor_0_l ?_set_get_0 //) |]).
+        rewrite !_get_byte_lor !_set_byte_lor
+                !_get_set_byte_roundtrip !_get_set_byte_no_overlap
+                ?_set_byte_0 ?Z.lor_0_r ?Z.lor_0_l ?_set_get_0 //.
       Qed.
 
       Lemma bswap128_set_byte_reverse:
@@ -464,13 +459,13 @@ Section Bswap.
       Proof.
         intros *.
         rewrite /bswap128/bswap_/=.
-        rewrite !Z.lor_0_r !Z.lor_0_l.
-        rewrite !_get_byte_lor !_set_byte_lor.
-        rewrite !_get_set_byte_roundtrip !_set_get_byte_roundtrip.
-        rewrite Z.shiftl_0_r.
-        rewrite !_get_set_byte_no_overlap ?_set_byte_0 ?Z.lor_0_r ?Z.lor_0_l; try lia.
-        rewrite !_set_get_0 !_get_0_set_0_eq.
-        repeat (rewrite Z.lor_comm; f_equal).
+        repeat (rewrite {1}Z.lor_comm; f_equal;
+                [now (rewrite !_get_byte_lor !_set_byte_lor
+                              !_get_set_byte_roundtrip !_get_set_byte_no_overlap
+                              ?_set_byte_0 ?Z.lor_0_r ?Z.lor_0_l ?_set_get_0 //) |]).
+        rewrite !_get_byte_lor !_set_byte_lor
+                !_get_set_byte_roundtrip !_get_set_byte_no_overlap
+                ?_set_byte_0 ?Z.lor_0_r ?Z.lor_0_l ?_set_get_0 //.
       Qed.
     End _set_byte_reverse.
   End Theory.

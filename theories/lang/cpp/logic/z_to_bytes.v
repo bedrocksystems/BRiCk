@@ -529,6 +529,38 @@ Section FromToBytes.
       by rewrite IHbytes _set_byte_S_idx.
     Qed.
 
+
+    #[local] Lemma length_1_inv:
+      forall {A} (l : list A),
+        length l = 1%nat ->
+        exists x0,
+          l = [x0].
+    Proof. intros; do 2 (try destruct l)=> //; do 1 eexists; eauto. Qed.
+    #[local] Lemma length_2_inv:
+      forall {A} (l : list A),
+        length l = 2%nat ->
+        exists x0 x1,
+          l = [x0; x1].
+    Proof. intros; do 3 (try destruct l)=> //; do 2 eexists; eauto. Qed.
+    #[local] Lemma length_4_inv:
+      forall {A} (l : list A),
+        length l = 4%nat ->
+        exists x0 x1 x2 x3,
+          l = [x0; x1; x2; x3].
+    Proof. intros; do 5 (try destruct l)=> //; do 4 eexists; eauto. Qed.
+    #[local] Lemma length_8_inv:
+      forall {A} (l : list A),
+        length l = 8%nat ->
+        exists x0 x1 x2 x3 x4 x5 x6 x7,
+          l = [x0; x1; x2; x3; x4; x5; x6; x7].
+    Proof. intros; do 9 (try destruct l)=> //; do 8 eexists; eauto. Qed.
+    #[local] Lemma length_16_inv:
+      forall {A} (l : list A),
+        length l = 16%nat ->
+        exists x0 x1 x2 x3 x4 x5 x6 x7 x8 x9 x10 x11 x12 x13 x14 x15,
+          l = [x0; x1; x2; x3; x4; x5; x6; x7; x8; x9; x10; x11; x12; x13; x14; x15].
+    Proof. intros; do 17 (try destruct l)=> //; do 16 eexists; eauto. Qed.
+
     Lemma _Z_from_bytes_unsigned_le_bswap:
       forall bsz sz (bytes: list N) v,
         Datatypes.length bytes = sz ->
@@ -538,16 +570,18 @@ Section FromToBytes.
     Proof.
       rewrite /_Z_from_bytes_unsigned_le/_Z_from_bytes_unsigned_le';
         move=> bsz sz bytes v Hlen Hsz Hdecodes; destruct bsz;
-        simpl in *; subst.
-      - f_equal; do 2 destruct bytes=> //=.
-      - do 3 destruct bytes=> //=.
-        by rewrite bswap16_set_byte_reverse.
-      - do 5 destruct bytes=> //=.
-        by rewrite bswap32_set_byte_reverse.
-      - do 9 destruct bytes=> //=.
-        by rewrite bswap64_set_byte_reverse.
-      - do 17 destruct bytes=> //=.
-        by rewrite bswap128_set_byte_reverse.
+        simpl in *; rewrite -Hsz in Hlen; subst;
+        [ apply length_1_inv  in Hlen as [? Hbytes]
+        | apply length_2_inv  in Hlen as [? [? Hbytes]]
+        | apply length_4_inv  in Hlen as [? [? [? [? Hbytes]]]]
+        | apply length_8_inv  in Hlen as [? [? [? [? [? [? [? [? Hbytes]]]]]]]]
+        | apply length_16_inv in Hlen as [? [? [? [? [? [? [? [?
+                                            [? [? [? [? [? [? [? [? Hbytes]]]]]]]]]]]]]]]]];
+        rewrite Hbytes //=.
+      - now rewrite bswap16_set_byte_reverse.
+      - now rewrite bswap32_set_byte_reverse.
+      - now rewrite bswap64_set_byte_reverse.
+      - now rewrite bswap128_set_byte_reverse.
     Qed.
   End FromBytesFacts_internal.
 
