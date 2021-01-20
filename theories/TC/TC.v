@@ -50,8 +50,8 @@ Local Definition mkLens (At : term) (fields : list (ident * term)) (i : nat)
       Some ( lensName "_" name
            , tApp cBuild_Lens
                   (At :: At :: Bt :: Bt ::
-                      tLambda nAnon At get_body ::
-                      tLambda nAnon (tProd nAnon Bt Bt) (tLambda nAnon At update_body) ::
+                      tLambda (mkBindAnn nAnon Relevant) At get_body ::
+                      tLambda (mkBindAnn nAnon Relevant) (tProd (mkBindAnn nAnon Relevant) Bt Bt) (tLambda (mkBindAnn nAnon Relevant) At update_body) ::
                       nil))
     end
   | _ => None
