@@ -1050,7 +1050,7 @@ Section with_cpp.
     [∗list] i ∈ seq 0 (N.to_nat sz),
       _offsetR (o_sub σ T_uint8 (Z.of_nat i)) (anyR (resolve:=σ) T_uint8 1).
 
-  (* [tblockR ty] is a [blockR] that is the size of [ty].
+  (* [tblockR ty] is a [blockR] that is the size of [ty] and properly aligned.
    * it is a convenient short-hand since it happens frequently, but there is nothing
    * special about it.
    *)

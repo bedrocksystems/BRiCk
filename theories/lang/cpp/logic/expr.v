@@ -821,9 +821,11 @@ Module Type Expr.
           _provide storage_ for a new _complete object_ [o]
           (http://eel.is/c++draft/intro.object#def:provides_storage).
 
-          In that case, the C++ abstract machine can choose to make [obj_ptr <>
-          storage_ptr], so that the old pointer [storage_ptr] cannot be used to access
-          the new object. Following Cerberus, we model this by giving [obj_ptr] a
+          In that case, the C++ abstract machine can choose to make [obj_ptr
+          <> storage_ptr] (while keeping the same address), so that the old
+          pointer [storage_ptr] cannot be used to access the new object.
+          Inspired by Cerberus, we model this by _allowing_ [obj_ptr] to have
+          a
           different allocation ID.
 
         - The created object might be a subobject of an existing object
@@ -850,6 +852,8 @@ Module Type Expr.
                        (* todo: ^ This misses an condition that [storage_ptr] is suitably aligned. (issue #149) *)
                            (Forall obj_ptr : ptr,
                               obj_ptr |-> anyR aty 1 (* TODO backwards compat [tblockR aty] *) -*
+                              (* This also ensures these pointers share their
+                              address (see [provides_storage_same_address]) *)
                               provides_storage storage_ptr obj_ptr aty -*
                               wp_init (type_of init) obj_ptr init (fun free' =>
                                                               Q (Vptr obj_ptr) (free ** free'))))))
