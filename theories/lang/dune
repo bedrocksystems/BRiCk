@@ -11,7 +11,7 @@
  (flags (
    -w -notation-overridden
    ; Similar to notation warnings.
-   -w -custom-entry-overriden
+   -w -custom-entry-overridden
    ; non-canonical projections (https://github.com/coq/coq/pull/10076) do not exist yet in 8.9.
    -w -redundant-canonical-projection
    ; We have ambiguous paths and so far it is not even clear what they are (https://gitlab.mpi-sws.org/iris/iris/issues/240).
