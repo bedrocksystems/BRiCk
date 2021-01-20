@@ -27,7 +27,7 @@ Section dispatch.
     | Some (_, k) => Some k
     end.
 
-  Fixpoint dispatch `(d : class_derives σ mdc from) (final : obj_name)
+  Fixpoint dispatch `(d : !class_derives σ mdc from) (final : obj_name)
     : vhandle σ * obj_name :=
     match d with
     | Derives_here st _ =>
