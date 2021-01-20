@@ -139,6 +139,15 @@ Section Byte.
       by right.
     Qed.
 
+    Lemma _get_byte_bound:
+      forall (v : Z) (idx : nat),
+        (_get_byte v idx < 256)%Z.
+    Proof.
+      intros *; rewrite /_get_byte Z.land_ones; try lia.
+      pose proof (Z.mod_pos_bound (v ≫ (8 * idx)) 256) as [? ?]; try lia.
+      now replace (2 ^ 8) with 256%Z by lia.
+    Qed.
+
     Lemma _set_byte_nonneg:
       forall (v: Z) (idx: nat),
         (0 <= _set_byte v idx)%Z.
@@ -146,6 +155,20 @@ Section Byte.
       intros; rewrite /_set_byte/Z.ones Z.shiftl_nonneg.
       apply Z.land_nonneg.
       by left.
+    Qed.
+
+    Lemma _set_byte_bound:
+      forall (v : Z) (idx : nat),
+        (_set_byte v idx < 2 ^ (8 * (idx + 1)))%Z.
+    Proof.
+      intros; rewrite /_set_byte Z.land_comm Z.land_ones; try lia.
+      rewrite Z.shiftl_mul_pow2; try lia.
+      pose proof (Z.mod_pos_bound v 256) as [? ?]; try lia.
+      replace (2 ^ (8 * (idx + 1))) with ((2 ^ 8) * (2 ^ (8 * idx)))
+        by (rewrite Z.mul_add_distr_l Zpower_exp; lia).
+      replace (2 ^ 8) with 256%Z by lia.
+      apply Zmult_lt_compat_r; auto.
+      apply Z.pow_pos_nonneg; lia.
     Qed.
 
     Lemma _set_byte_land_no_overlap:
