@@ -214,10 +214,10 @@ pages:
     LLVM_MAJ_VER: ${LLVM_CUR_MAJ_VER}
   stage: pages
   dependencies:
-    - build_latest
+    - test_latest
   script:
     # Download the cpp2v-core artifacts we generated earlier
-    - cp -r build cpp2v-core
+    #- cp -r build cpp2v-core
     # Clone the Alectryon submodule, but only in the pages jobs
     - git submodule update --init
     # this line refreshes the artifact to avoid rebuilding the coq code
