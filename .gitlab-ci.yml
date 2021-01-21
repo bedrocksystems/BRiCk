@@ -210,6 +210,8 @@ pages:
   # TODO (JH): Revert to using the `fm_docs_img` after `serapi` gets an
   #   8.13 bump and we can update the image
   image: ${cur_main_docker_image}
+  variables:
+    LLVM_MAJ_VER: ${LLVM_CUR_MAJ_VER}
   stage: pages
   dependencies:
     - build_latest
