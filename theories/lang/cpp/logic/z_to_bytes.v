@@ -33,7 +33,6 @@ From bedrock.lang.cpp Require Import ast.
   apply Z.bits_inj'=> n ?;
   repeat (rewrite ?Z.lor_spec ?Z.shiftl_spec ?Z.land_spec ?Z.shiftr_spec; try lia);
   rewrite !Z.testbit_ones; try lia;
-  churn_bits'.
 
 Section FromToBytes.
   Section ExtraFacts.

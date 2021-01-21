@@ -29,7 +29,7 @@ Notation "[ | P | ]" := (only_provable P) (format "[ |  P  | ]").
 
 (** * Properties of [only_provable]. *)
 Section bi.
-  Context {PROP : bi}.
+  Context {PROP : bi} `{PF : BiPureForall PROP}.
 
   Implicit Types P Q : Prop.
   Implicit Types p q r : PROP.
@@ -95,13 +95,13 @@ Section bi.
   Proof. auto. Qed.
   Lemma only_provable_forall_2 `{Inhabited A} (φ : A → Prop) :
     (∀ x, [|φ x|]) ⊢ [|∀ x, φ x|].
-  Proof.
+  Proof using PF.
     rewrite/only_provable/bi_affinely. iIntros "Hφ". iSplit; first done.
     rewrite bi.pure_forall. iIntros (x). iDestruct ("Hφ" $! x) as "[_ $]".
   Qed.
   Lemma only_provable_forall `{Inhabited A} (φ : A → Prop) :
     [|∀ x, φ x|] ⊣⊢ ∀ x, [|φ x|].
-  Proof. apply: anti_symm. apply only_provable_forall_1. apply only_provable_forall_2. Qed.
+  Proof using PF. apply: anti_symm. apply only_provable_forall_1. apply only_provable_forall_2. Qed.
   Lemma only_provable_exist {A} (φ : A → Prop) : [|∃ x, φ x|] ⊣⊢ ∃ x, [|φ x|].
   Proof. rewrite/only_provable. by rewrite bi.pure_exist bi.affinely_exist. Qed.
   Lemma only_provable_impl_forall P q : ([| P |] → q) ⊢ (∀ _ : P, emp → q).
@@ -164,7 +164,7 @@ Lemma embed_only_provable `{BiEmbedEmp PROP1 PROP2} (P : Prop) :
 Proof. by rewrite embed_affinely embed_pure. Qed.
 
 Section proofmode.
-  Context {PROP : bi}.
+  Context {PROP : bi} {PF: BiPureForall PROP}.
 
   (**
    * We don't register instances
@@ -208,12 +208,14 @@ Section proofmode.
   Global Instance from_exist_only_provable {A} (P : A → Prop) :
     @FromExist PROP A [| ∃ x, P x |] (λ a, [| P a |]).
   Proof. by rewrite/FromExist only_provable_exist. Qed.
-  Global Instance into_exist_only_provable {A} (P : A → Prop) :
-    @IntoExist PROP A [| ∃ x, P x |] (λ a, [| P a |]).
+  Global Instance into_exist_only_provable {A} (P : A → Prop) name :
+    AsIdentName P name ->
+    @IntoExist PROP A [| ∃ x, P x |] (λ a, [| P a |]) name.
   Proof. by rewrite/IntoExist only_provable_exist. Qed.
-  Global Instance from_forall_only_provable `{Inhabited A} (P : A → Prop) :
-    @FromForall PROP A [| ∀ x, P x |] (λ a, [| P a |]).
-  Proof. by rewrite/FromForall only_provable_forall_2. Qed.
+  Global Instance from_forall_only_provable `{Inhabited A} (P : A → Prop) name :
+    AsIdentName P name ->
+    @FromForall PROP A [| ∀ x, P x |] (λ a, [| P a |]) name.
+  Proof using PF. by rewrite/FromForall only_provable_forall_2. Qed.
   Global Instance into_forall_only_provable {A} (P : A → Prop) :
     @IntoForall PROP A [| ∀ x, P x |] (λ a, [| P a |]).
   Proof. by rewrite/IntoForall only_provable_forall_1. Qed.

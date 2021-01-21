@@ -34,8 +34,8 @@
 variables:
   LLVM_CUR_MAJ_VER: "10"
   LLVM_ALT_MAJ_VER: "11"
-  cur_main_docker_img: registry.gitlab.com/bedrocksystems/docker-image:cpp2v-llvm${LLVM_CUR_MAJ_VER}
-  alt_main_docker_img: registry.gitlab.com/bedrocksystems/docker-image:cpp2v-llvm${LLVM_ALT_MAJ_VER}
+  cur_main_docker_img: registry.gitlab.com/bedrocksystems/docker-image:cpp2v-llvm${LLVM_CUR_MAJ_VER}-coq813
+  alt_main_docker_img: registry.gitlab.com/bedrocksystems/docker-image:cpp2v-llvm${LLVM_ALT_MAJ_VER}-coq813
   fm_docs_img: registry.gitlab.com/bedrocksystems/docker-image:fm-docs
 
 stages:
@@ -190,37 +190,37 @@ release_latest:
 #   variables:
 #     LLVM_MAJ_VER: ${LLVM_ALT_MAJ_VER}
 
-prepare_pages:
-  image: ${fm_docs_img}
-  stage: prepare_pages
-  dependencies:
-    - test_latest
-  script:
-    # Clone the Alectryon submodule, but only in the pages jobs
-    - git submodule update --init
-    # this line refreshes the artifact to avoid rebuilding the coq code
-    - make touch_deps
-    - make public
-  only:
-    - master
-    - merge_requests
-  artifacts:
-    paths:
-      - public
+# prepare_pages:
+#   image: ${fm_docs_img}
+#   stage: prepare_pages
+#   dependencies:
+#     - test_latest
+#   script:
+#     # Clone the Alectryon submodule, but only in the pages jobs
+#     - git submodule update --init
+#     # this line refreshes the artifact to avoid rebuilding the coq code
+#     - make touch_deps
+#     - make public
+#   only:
+#     - master
+#     - merge_requests
+#   artifacts:
+#     paths:
+#       - public
 
-pages:
-  image: ${fm_docs_img}
-  stage: pages
-  dependencies:
-    - prepare_pages
-  script:
-    # Clone the Alectryon submodule, but only in the pages jobs
-    - git submodule update --init
-    # this line refreshes the artifact to avoid rebuilding the coq code
-    - make touch_deps
-    - make public
-  only:
-    - master
-  artifacts:
-    paths:
-      - public
+# pages:
+#   image: ${fm_docs_img}
+#   stage: pages
+#   dependencies:
+#     - prepare_pages
+#   script:
+#     # Clone the Alectryon submodule, but only in the pages jobs
+#     - git submodule update --init
+#     # this line refreshes the artifact to avoid rebuilding the coq code
+#     - make touch_deps
+#     - make public
+#   only:
+#     - master
+#   artifacts:
+#     paths:
+#       - public
