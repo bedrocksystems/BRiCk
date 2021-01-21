@@ -100,27 +100,27 @@ html doc: coq coqdocjs
 
 #	Invoke `coqdoc` using the existing `_CoqProject` file, and move the artifacts
 #	out of `html` and into `doc/sphinx/_static/coqdoc`
-        $(COQMK) html
-        mkdir -p doc/sphinx/_static/coqdoc
-        mv html/* doc/sphinx/_static/coqdoc && rmdir html
+	$(COQMK) html
+	mkdir -p doc/sphinx/_static/coqdoc
+	mv html/* doc/sphinx/_static/coqdoc && rmdir html
 
 #	Generate html files in `doc/sphinx/_build/html` using coqdoc outputs and
 #	other sources in `doc/`
-        $(DOCMK) html
+	$(DOCMK) html
 
 coqdocjs:
 #	Copy (custom) `coqdocjs` resources into `doc/sphinx/_static`, removing all
 #	coqdoc artifacts in the process.
-        rm -rf doc/sphinx/_static/coqdoc
-        mkdir -p doc/sphinx/_static/css/coqdocjs doc/sphinx/_static/js/coqdocjs
-        cp -r coqdocjs/extra/resources/*.css doc/sphinx/_static/css/coqdocjs
-        cp -r coqdocjs/extra/resources/*.js doc/sphinx/_static/js/coqdocjs
+	rm -rf doc/sphinx/_static/coqdoc
+	mkdir -p doc/sphinx/_static/css/coqdocjs doc/sphinx/_static/js/coqdocjs
+	cp -r coqdocjs/extra/resources/*.css doc/sphinx/_static/css/coqdocjs
+	cp -r coqdocjs/extra/resources/*.js doc/sphinx/_static/js/coqdocjs
 
 public: html
-        cp doc/sphinx/_build/html public
+	cp doc/sphinx/_build/html public
 
 doc-open: doc
-        xdg-open doc/sphinx/_build/html/index.html
+	xdg-open doc/sphinx/_build/html/index.html
 .PHONY: doc-open
 
 
@@ -144,10 +144,10 @@ install: install-coq install-cpp2v
 # Clean
 
 doc-clean:
-        +@$(MAKE) -C doc clean
+	+@$(MAKE) -C doc clean
 clean: doc-clean
 	rm -rf build
-        rm -rf public
+	rm -rf public
 	+@$(MAKE) -C cpp2v-tests clean
 	+@if test -f Makefile.coq; then $(COQMK) cleanall; fi
 	rm -f Makefile.coq Makefile.coq.conf
