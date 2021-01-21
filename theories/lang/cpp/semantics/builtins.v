@@ -47,6 +47,7 @@ Definition leading_zeros (sz : bitsize) (l : Z) : Z :=
 (* NOTE (JH): `churn_bits'` and `churn_bits` are used here, and in z_to_bytes.v; we should
      find a better common home.
  *)
+
 (* TODO: using bool_decide would simplify this reasoning. *)
 #[local] Ltac churn_bits' :=
   repeat match goal with
@@ -171,6 +172,28 @@ Section Byte.
       apply Z.pow_pos_nonneg; lia.
     Qed.
 
+    Lemma _set_byte_testbit_low:
+      forall idx v n,
+        0 <= n ->
+        n < 8 * Z.of_nat idx ->
+        Z.testbit (_set_byte v idx) n = false.
+    Proof.
+      intros * Hnonneg Hn.
+      repeat (rewrite ?Z.lor_spec ?Z.shiftl_spec ?Z.land_spec ?Z.shiftr_spec; try lia).
+      rewrite !Z.testbit_ones; lia.
+    Qed.
+
+    Lemma _set_byte_testbit_high:
+      forall idx' idx v n,
+        (idx' < idx)%nat ->
+        8 * Z.of_nat idx <= n ->
+        Z.testbit (_set_byte v idx') n = false.
+    Proof.
+      intros * Hidx Hn.
+      repeat (rewrite ?Z.lor_spec ?Z.shiftl_spec ?Z.land_spec ?Z.shiftr_spec; try lia).
+      rewrite !Z.testbit_ones; lia.
+    Qed.
+
     Lemma _set_byte_land_no_overlap:
       forall (idx idx': nat) mask v,
         idx <> idx' ->
@@ -244,7 +267,517 @@ Section Byte.
         churn_bits'.
     Qed.
   End Theory.
+
+  Section split.
+    Lemma split8:
+      forall z,
+        0 <= z < 2^bitsZ W8 ->
+        z = _set_byte (_get_byte z 0) 0.
+    Proof.
+      intros * Hbounds; rewrite _set_get_0.
+      rewrite /_set_byte Z.shiftl_0_r.
+      rewrite Z.land_comm Z.land_ones; try lia.
+      symmetry; now apply Z.mod_small.
+    Qed.
+
+    Lemma split16:
+      forall z,
+        0 <= z < 2^bitsZ W16 ->
+        z = Z.lor (_set_byte (_get_byte z 1) 1)
+                  (_set_byte (_get_byte z 0) 0).
+    Proof.
+      intros * Hbounds; simpl in Hbounds.
+      apply Z.bits_inj'=> n ?.
+      assert (n < 8 * 1%nat \/ 8 * 1%nat <= n < 8 * 2%nat \/ 8 * 2%nat <= n)
+        as [Hn | [Hn | Hn]]
+        by lia; rewrite !Z.lor_spec;
+        [ rewrite (_set_byte_testbit_low 1); auto; try lia
+        | rewrite (_set_byte_testbit_high 0 1); auto; try lia
+        | rewrite (_set_byte_testbit_high 0 2); auto; try lia;
+            rewrite (_set_byte_testbit_high 1 2); auto; try lia;
+            apply Z.testbit_false; [by lia |];
+            rewrite Z.div_small; [apply Z.mod_0_l; lia |];
+            pose proof (Z.pow_le_mono_r 2 16 n ltac:(lia) ltac:(auto)); lia
+        ]; rewrite ?orb_false_l ?orb_false_r;
+        repeat (rewrite ?Z.lor_spec ?Z.shiftl_spec ?Z.land_spec ?Z.shiftr_spec; try lia);
+        rewrite !Z.testbit_ones; try lia;
+        churn_bits'; now rewrite Z.sub_add.
+    Qed.
+
+    Lemma split32:
+      forall z,
+        0 <= z < 2^bitsZ W32 ->
+        z = Z.lor
+              (Z.lor
+                 (Z.lor
+                    (_set_byte (_get_byte z 3) 3)
+                    (_set_byte (_get_byte z 2) 2))
+                 (_set_byte (_get_byte z 1) 1))
+              (_set_byte (_get_byte z 0) 0).
+    Proof.
+      intros * Hbounds; simpl in Hbounds.
+      apply Z.bits_inj'=> n ?.
+      assert (n < 8 * 1%nat \/
+              8 * 1%nat <= n < 8 * 2%nat \/
+              8 * 2%nat <= n < 8 * 3%nat \/
+              8 * 3%nat <= n < 8 * 4%nat \/
+              8 * 4%nat <= n)
+        as [Hn | [Hn | [Hn | [Hn | Hn]]]]
+        by lia; rewrite !Z.lor_spec;
+        [ rewrite (_set_byte_testbit_low 1); auto; try lia;
+            rewrite (_set_byte_testbit_low 2); auto; try lia;
+            rewrite (_set_byte_testbit_low 3); auto; try lia
+        | rewrite (_set_byte_testbit_high 0 1); auto; try lia;
+            rewrite (_set_byte_testbit_low 2); auto; try lia;
+            rewrite (_set_byte_testbit_low 3); auto; try lia
+        | rewrite (_set_byte_testbit_high 0 2); auto; try lia;
+            rewrite (_set_byte_testbit_high 1 2); auto; try lia;
+            rewrite (_set_byte_testbit_low 3); auto; try lia
+        | rewrite (_set_byte_testbit_high 0 3); auto; try lia;
+            rewrite (_set_byte_testbit_high 1 3); auto; try lia;
+            rewrite (_set_byte_testbit_high 2 3); auto; try lia
+        | rewrite (_set_byte_testbit_high 0 4); auto; try lia;
+            rewrite (_set_byte_testbit_high 1 4); auto; try lia;
+            rewrite (_set_byte_testbit_high 2 4); auto; try lia;
+            rewrite (_set_byte_testbit_high 3 4); auto; try lia;
+            apply Z.testbit_false; [by lia |];
+            rewrite Z.div_small; [apply Z.mod_0_l; lia |];
+            pose proof (Z.pow_le_mono_r 2 32 n ltac:(lia) ltac:(auto)); lia
+        ]; rewrite ?orb_false_l ?orb_false_r;
+        repeat (rewrite ?Z.lor_spec ?Z.shiftl_spec ?Z.land_spec ?Z.shiftr_spec; try lia);
+        rewrite !Z.testbit_ones; try lia;
+        churn_bits'; now rewrite Z.sub_add.
+    Qed.
+
+    Lemma split64:
+      forall z,
+        0 <= z < 2^bitsZ W64 ->
+        z = Z.lor
+              (Z.lor
+                 (Z.lor
+                    (Z.lor
+                       (Z.lor
+                          (Z.lor
+                             (Z.lor
+                                (_set_byte (_get_byte z 7) 7)
+                                (_set_byte (_get_byte z 6) 6))
+                             (_set_byte (_get_byte z 5) 5))
+                          (_set_byte (_get_byte z 4) 4))
+                       (_set_byte (_get_byte z 3) 3))
+                    (_set_byte (_get_byte z 2) 2))
+                 (_set_byte (_get_byte z 1) 1))
+              (_set_byte (_get_byte z 0) 0).
+    Proof.
+      intros * Hbounds; simpl in Hbounds.
+      apply Z.bits_inj'=> n ?.
+      assert (n < 8 * 1%nat \/
+              8 * 1%nat <= n < 8 * 2%nat \/
+              8 * 2%nat <= n < 8 * 3%nat \/
+              8 * 3%nat <= n < 8 * 4%nat \/
+              8 * 4%nat <= n < 8 * 5%nat \/
+              8 * 5%nat <= n < 8 * 6%nat \/
+              8 * 6%nat <= n < 8 * 7%nat \/
+              8 * 7%nat <= n < 8 * 8%nat \/
+              8 * 8%nat <= n)
+        as [Hn | [Hn | [Hn | [Hn | [Hn | [Hn | [Hn | [Hn | Hn]]]]]]]]
+        by lia; rewrite !Z.lor_spec;
+        [ rewrite (_set_byte_testbit_low 1); auto; try lia;
+            rewrite (_set_byte_testbit_low 2); auto; try lia;
+            rewrite (_set_byte_testbit_low 3); auto; try lia;
+            rewrite (_set_byte_testbit_low 4); auto; try lia;
+            rewrite (_set_byte_testbit_low 5); auto; try lia;
+            rewrite (_set_byte_testbit_low 6); auto; try lia;
+            rewrite (_set_byte_testbit_low 7); auto; try lia
+        | rewrite (_set_byte_testbit_high 0 1); auto; try lia;
+            rewrite (_set_byte_testbit_low 2); auto; try lia;
+            rewrite (_set_byte_testbit_low 3); auto; try lia;
+            rewrite (_set_byte_testbit_low 4); auto; try lia;
+            rewrite (_set_byte_testbit_low 5); auto; try lia;
+            rewrite (_set_byte_testbit_low 6); auto; try lia;
+            rewrite (_set_byte_testbit_low 7); auto; try lia
+        | rewrite (_set_byte_testbit_high 0 2); auto; try lia;
+            rewrite (_set_byte_testbit_high 1 2); auto; try lia;
+            rewrite (_set_byte_testbit_low 3); auto; try lia;
+            rewrite (_set_byte_testbit_low 4); auto; try lia;
+            rewrite (_set_byte_testbit_low 5); auto; try lia;
+            rewrite (_set_byte_testbit_low 6); auto; try lia;
+            rewrite (_set_byte_testbit_low 7); auto; try lia
+        | rewrite (_set_byte_testbit_high 0 3); auto; try lia;
+            rewrite (_set_byte_testbit_high 1 3); auto; try lia;
+            rewrite (_set_byte_testbit_high 2 3); auto; try lia;
+            rewrite (_set_byte_testbit_low 4); auto; try lia;
+            rewrite (_set_byte_testbit_low 5); auto; try lia;
+            rewrite (_set_byte_testbit_low 6); auto; try lia;
+            rewrite (_set_byte_testbit_low 7); auto; try lia
+        | rewrite (_set_byte_testbit_high 0 4); auto; try lia;
+            rewrite (_set_byte_testbit_high 1 4); auto; try lia;
+            rewrite (_set_byte_testbit_high 2 4); auto; try lia;
+            rewrite (_set_byte_testbit_high 3 4); auto; try lia;
+            rewrite (_set_byte_testbit_low 5); auto; try lia;
+            rewrite (_set_byte_testbit_low 6); auto; try lia;
+            rewrite (_set_byte_testbit_low 7); auto; try lia
+        | rewrite (_set_byte_testbit_high 0 5); auto; try lia;
+            rewrite (_set_byte_testbit_high 1 5); auto; try lia;
+            rewrite (_set_byte_testbit_high 2 5); auto; try lia;
+            rewrite (_set_byte_testbit_high 3 5); auto; try lia;
+            rewrite (_set_byte_testbit_high 4 5); auto; try lia;
+            rewrite (_set_byte_testbit_low 6); auto; try lia;
+            rewrite (_set_byte_testbit_low 7); auto; try lia
+        | rewrite (_set_byte_testbit_high 0 6); auto; try lia;
+            rewrite (_set_byte_testbit_high 1 6); auto; try lia;
+            rewrite (_set_byte_testbit_high 2 6); auto; try lia;
+            rewrite (_set_byte_testbit_high 3 6); auto; try lia;
+            rewrite (_set_byte_testbit_high 4 6); auto; try lia;
+            rewrite (_set_byte_testbit_high 5 6); auto; try lia;
+            rewrite (_set_byte_testbit_low 7); auto; try lia
+        | rewrite (_set_byte_testbit_high 0 7); auto; try lia;
+            rewrite (_set_byte_testbit_high 1 7); auto; try lia;
+            rewrite (_set_byte_testbit_high 2 7); auto; try lia;
+            rewrite (_set_byte_testbit_high 3 7); auto; try lia;
+            rewrite (_set_byte_testbit_high 4 7); auto; try lia;
+            rewrite (_set_byte_testbit_high 5 7); auto; try lia;
+            rewrite (_set_byte_testbit_high 6 7); auto; try lia
+        | rewrite (_set_byte_testbit_high 0 8); auto; try lia;
+            rewrite (_set_byte_testbit_high 1 8); auto; try lia;
+            rewrite (_set_byte_testbit_high 2 8); auto; try lia;
+            rewrite (_set_byte_testbit_high 3 8); auto; try lia;
+            rewrite (_set_byte_testbit_high 4 8); auto; try lia;
+            rewrite (_set_byte_testbit_high 5 8); auto; try lia;
+            rewrite (_set_byte_testbit_high 6 8); auto; try lia;
+            rewrite (_set_byte_testbit_high 7 8); auto; try lia;
+            apply Z.testbit_false; [by lia |];
+            rewrite Z.div_small; [apply Z.mod_0_l; lia |];
+            pose proof (Z.pow_le_mono_r 2 64 n ltac:(lia) ltac:(auto)); lia
+        ]; rewrite ?orb_false_l ?orb_false_r;
+        repeat (rewrite ?Z.lor_spec ?Z.shiftl_spec ?Z.land_spec ?Z.shiftr_spec; try lia);
+        rewrite !Z.testbit_ones; try lia;
+        churn_bits'; now rewrite Z.sub_add.
+    Qed.
+
+    Lemma split128:
+      forall z,
+        0 <= z < 2^bitsZ W128 ->
+        z = Z.lor
+              (Z.lor
+                 (Z.lor
+                    (Z.lor
+                       (Z.lor
+                          (Z.lor
+                             (Z.lor
+                                (Z.lor
+                                   (Z.lor
+                                      (Z.lor
+                                         (Z.lor
+                                            (Z.lor
+                                               (Z.lor
+                                                  (Z.lor
+                                                     (Z.lor
+                                                        (_set_byte (_get_byte z 15) 15)
+                                                        (_set_byte (_get_byte z 14) 14))
+                                                     (_set_byte (_get_byte z 13) 13))
+                                                  (_set_byte (_get_byte z 12) 12))
+                                               (_set_byte (_get_byte z 11) 11))
+                                            (_set_byte (_get_byte z 10) 10))
+                                         (_set_byte (_get_byte z 9) 9))
+                                      (_set_byte (_get_byte z 8) 8))
+                                   (_set_byte (_get_byte z 7) 7))
+                                (_set_byte (_get_byte z 6) 6))
+                             (_set_byte (_get_byte z 5) 5))
+                          (_set_byte (_get_byte z 4) 4))
+                       (_set_byte (_get_byte z 3) 3))
+                    (_set_byte (_get_byte z 2) 2))
+                 (_set_byte (_get_byte z 1) 1))
+              (_set_byte (_get_byte z 0) 0).
+    Proof.
+      intros * Hbounds; simpl in Hbounds.
+      apply Z.bits_inj'=> n ?.
+      assert (n < 8 * 1%nat \/
+              8 * 1%nat <= n < 8 * 2%nat \/
+              8 * 2%nat <= n < 8 * 3%nat \/
+              8 * 3%nat <= n < 8 * 4%nat \/
+              8 * 4%nat <= n < 8 * 5%nat \/
+              8 * 5%nat <= n < 8 * 6%nat \/
+              8 * 6%nat <= n < 8 * 7%nat \/
+              8 * 7%nat <= n < 8 * 8%nat \/
+              8 * 8%nat <= n < 8 * 9%nat \/
+              8 * 9%nat <= n < 8 * 10%nat \/
+              8 * 10%nat <= n < 8 * 11%nat \/
+              8 * 11%nat <= n < 8 * 12%nat \/
+              8 * 12%nat <= n < 8 * 13%nat \/
+              8 * 13%nat <= n < 8 * 14%nat \/
+              8 * 14%nat <= n < 8 * 15%nat \/
+              8 * 15%nat <= n < 8 * 16%nat \/
+              8 * 16%nat <= n)
+        as [Hn | [Hn | [Hn | [Hn | [Hn | [Hn | [Hn | [Hn | [Hn | [Hn | [Hn | [Hn | [Hn | [Hn | [Hn | [Hn | Hn]]]]]]]]]]]]]]]]
+        by lia; rewrite !Z.lor_spec;
+        [ rewrite (_set_byte_testbit_low 1); auto; try lia;
+            rewrite (_set_byte_testbit_low 2); auto; try lia;
+            rewrite (_set_byte_testbit_low 3); auto; try lia;
+            rewrite (_set_byte_testbit_low 4); auto; try lia;
+            rewrite (_set_byte_testbit_low 5); auto; try lia;
+            rewrite (_set_byte_testbit_low 6); auto; try lia;
+            rewrite (_set_byte_testbit_low 7); auto; try lia;
+            rewrite (_set_byte_testbit_low 8); auto; try lia;
+            rewrite (_set_byte_testbit_low 9); auto; try lia;
+            rewrite (_set_byte_testbit_low 10); auto; try lia;
+            rewrite (_set_byte_testbit_low 11); auto; try lia;
+            rewrite (_set_byte_testbit_low 12); auto; try lia;
+            rewrite (_set_byte_testbit_low 13); auto; try lia;
+            rewrite (_set_byte_testbit_low 14); auto; try lia;
+            rewrite (_set_byte_testbit_low 15); auto; try lia
+        | rewrite (_set_byte_testbit_high 0 1); auto; try lia;
+            rewrite (_set_byte_testbit_low 2); auto; try lia;
+            rewrite (_set_byte_testbit_low 3); auto; try lia;
+            rewrite (_set_byte_testbit_low 4); auto; try lia;
+            rewrite (_set_byte_testbit_low 5); auto; try lia;
+            rewrite (_set_byte_testbit_low 6); auto; try lia;
+            rewrite (_set_byte_testbit_low 7); auto; try lia;
+            rewrite (_set_byte_testbit_low 8); auto; try lia;
+            rewrite (_set_byte_testbit_low 9); auto; try lia;
+            rewrite (_set_byte_testbit_low 10); auto; try lia;
+            rewrite (_set_byte_testbit_low 11); auto; try lia;
+            rewrite (_set_byte_testbit_low 12); auto; try lia;
+            rewrite (_set_byte_testbit_low 13); auto; try lia;
+            rewrite (_set_byte_testbit_low 14); auto; try lia;
+            rewrite (_set_byte_testbit_low 15); auto; try lia
+        | rewrite (_set_byte_testbit_high 0 2); auto; try lia;
+            rewrite (_set_byte_testbit_high 1 2); auto; try lia;
+            rewrite (_set_byte_testbit_low 3); auto; try lia;
+            rewrite (_set_byte_testbit_low 4); auto; try lia;
+            rewrite (_set_byte_testbit_low 5); auto; try lia;
+            rewrite (_set_byte_testbit_low 6); auto; try lia;
+            rewrite (_set_byte_testbit_low 7); auto; try lia;
+            rewrite (_set_byte_testbit_low 8); auto; try lia;
+            rewrite (_set_byte_testbit_low 9); auto; try lia;
+            rewrite (_set_byte_testbit_low 10); auto; try lia;
+            rewrite (_set_byte_testbit_low 11); auto; try lia;
+            rewrite (_set_byte_testbit_low 12); auto; try lia;
+            rewrite (_set_byte_testbit_low 13); auto; try lia;
+            rewrite (_set_byte_testbit_low 14); auto; try lia;
+            rewrite (_set_byte_testbit_low 15); auto; try lia
+        | rewrite (_set_byte_testbit_high 0 3); auto; try lia;
+            rewrite (_set_byte_testbit_high 1 3); auto; try lia;
+            rewrite (_set_byte_testbit_high 2 3); auto; try lia;
+            rewrite (_set_byte_testbit_low 4); auto; try lia;
+            rewrite (_set_byte_testbit_low 5); auto; try lia;
+            rewrite (_set_byte_testbit_low 6); auto; try lia;
+            rewrite (_set_byte_testbit_low 7); auto; try lia;
+            rewrite (_set_byte_testbit_low 8); auto; try lia;
+            rewrite (_set_byte_testbit_low 9); auto; try lia;
+            rewrite (_set_byte_testbit_low 10); auto; try lia;
+            rewrite (_set_byte_testbit_low 11); auto; try lia;
+            rewrite (_set_byte_testbit_low 12); auto; try lia;
+            rewrite (_set_byte_testbit_low 13); auto; try lia;
+            rewrite (_set_byte_testbit_low 14); auto; try lia;
+            rewrite (_set_byte_testbit_low 15); auto; try lia
+        | rewrite (_set_byte_testbit_high 0 4); auto; try lia;
+            rewrite (_set_byte_testbit_high 1 4); auto; try lia;
+            rewrite (_set_byte_testbit_high 2 4); auto; try lia;
+            rewrite (_set_byte_testbit_high 3 4); auto; try lia;
+            rewrite (_set_byte_testbit_low 5); auto; try lia;
+            rewrite (_set_byte_testbit_low 6); auto; try lia;
+            rewrite (_set_byte_testbit_low 7); auto; try lia;
+            rewrite (_set_byte_testbit_low 8); auto; try lia;
+            rewrite (_set_byte_testbit_low 9); auto; try lia;
+            rewrite (_set_byte_testbit_low 10); auto; try lia;
+            rewrite (_set_byte_testbit_low 11); auto; try lia;
+            rewrite (_set_byte_testbit_low 12); auto; try lia;
+            rewrite (_set_byte_testbit_low 13); auto; try lia;
+            rewrite (_set_byte_testbit_low 14); auto; try lia;
+            rewrite (_set_byte_testbit_low 15); auto; try lia
+        | rewrite (_set_byte_testbit_high 0 5); auto; try lia;
+            rewrite (_set_byte_testbit_high 1 5); auto; try lia;
+            rewrite (_set_byte_testbit_high 2 5); auto; try lia;
+            rewrite (_set_byte_testbit_high 3 5); auto; try lia;
+            rewrite (_set_byte_testbit_high 4 5); auto; try lia;
+            rewrite (_set_byte_testbit_low 6); auto; try lia;
+            rewrite (_set_byte_testbit_low 7); auto; try lia;
+            rewrite (_set_byte_testbit_low 8); auto; try lia;
+            rewrite (_set_byte_testbit_low 9); auto; try lia;
+            rewrite (_set_byte_testbit_low 10); auto; try lia;
+            rewrite (_set_byte_testbit_low 11); auto; try lia;
+            rewrite (_set_byte_testbit_low 12); auto; try lia;
+            rewrite (_set_byte_testbit_low 13); auto; try lia;
+            rewrite (_set_byte_testbit_low 14); auto; try lia;
+            rewrite (_set_byte_testbit_low 15); auto; try lia
+        | rewrite (_set_byte_testbit_high 0 6); auto; try lia;
+            rewrite (_set_byte_testbit_high 1 6); auto; try lia;
+            rewrite (_set_byte_testbit_high 2 6); auto; try lia;
+            rewrite (_set_byte_testbit_high 3 6); auto; try lia;
+            rewrite (_set_byte_testbit_high 4 6); auto; try lia;
+            rewrite (_set_byte_testbit_high 5 6); auto; try lia;
+            rewrite (_set_byte_testbit_low 7); auto; try lia;
+            rewrite (_set_byte_testbit_low 8); auto; try lia;
+            rewrite (_set_byte_testbit_low 9); auto; try lia;
+            rewrite (_set_byte_testbit_low 10); auto; try lia;
+            rewrite (_set_byte_testbit_low 11); auto; try lia;
+            rewrite (_set_byte_testbit_low 12); auto; try lia;
+            rewrite (_set_byte_testbit_low 13); auto; try lia;
+            rewrite (_set_byte_testbit_low 14); auto; try lia;
+            rewrite (_set_byte_testbit_low 15); auto; try lia
+        | rewrite (_set_byte_testbit_high 0 7); auto; try lia;
+            rewrite (_set_byte_testbit_high 1 7); auto; try lia;
+            rewrite (_set_byte_testbit_high 2 7); auto; try lia;
+            rewrite (_set_byte_testbit_high 3 7); auto; try lia;
+            rewrite (_set_byte_testbit_high 4 7); auto; try lia;
+            rewrite (_set_byte_testbit_high 5 7); auto; try lia;
+            rewrite (_set_byte_testbit_high 6 7); auto; try lia;
+            rewrite (_set_byte_testbit_low 8); auto; try lia;
+            rewrite (_set_byte_testbit_low 9); auto; try lia;
+            rewrite (_set_byte_testbit_low 10); auto; try lia;
+            rewrite (_set_byte_testbit_low 11); auto; try lia;
+            rewrite (_set_byte_testbit_low 12); auto; try lia;
+            rewrite (_set_byte_testbit_low 13); auto; try lia;
+            rewrite (_set_byte_testbit_low 14); auto; try lia;
+            rewrite (_set_byte_testbit_low 15); auto; try lia
+        | rewrite (_set_byte_testbit_high 0 8); auto; try lia;
+            rewrite (_set_byte_testbit_high 1 8); auto; try lia;
+            rewrite (_set_byte_testbit_high 2 8); auto; try lia;
+            rewrite (_set_byte_testbit_high 3 8); auto; try lia;
+            rewrite (_set_byte_testbit_high 4 8); auto; try lia;
+            rewrite (_set_byte_testbit_high 5 8); auto; try lia;
+            rewrite (_set_byte_testbit_high 6 8); auto; try lia;
+            rewrite (_set_byte_testbit_high 7 8); auto; try lia;
+            rewrite (_set_byte_testbit_low 9); auto; try lia;
+            rewrite (_set_byte_testbit_low 10); auto; try lia;
+            rewrite (_set_byte_testbit_low 11); auto; try lia;
+            rewrite (_set_byte_testbit_low 12); auto; try lia;
+            rewrite (_set_byte_testbit_low 13); auto; try lia;
+            rewrite (_set_byte_testbit_low 14); auto; try lia;
+            rewrite (_set_byte_testbit_low 15); auto; try lia
+        | rewrite (_set_byte_testbit_high 0 9); auto; try lia;
+            rewrite (_set_byte_testbit_high 1 9); auto; try lia;
+            rewrite (_set_byte_testbit_high 2 9); auto; try lia;
+            rewrite (_set_byte_testbit_high 3 9); auto; try lia;
+            rewrite (_set_byte_testbit_high 4 9); auto; try lia;
+            rewrite (_set_byte_testbit_high 5 9); auto; try lia;
+            rewrite (_set_byte_testbit_high 6 9); auto; try lia;
+            rewrite (_set_byte_testbit_high 7 9); auto; try lia;
+            rewrite (_set_byte_testbit_high 8 9); auto; try lia;
+            rewrite (_set_byte_testbit_low 10); auto; try lia;
+            rewrite (_set_byte_testbit_low 11); auto; try lia;
+            rewrite (_set_byte_testbit_low 12); auto; try lia;
+            rewrite (_set_byte_testbit_low 13); auto; try lia;
+            rewrite (_set_byte_testbit_low 14); auto; try lia;
+            rewrite (_set_byte_testbit_low 15); auto; try lia
+        | rewrite (_set_byte_testbit_high 0 10); auto; try lia;
+            rewrite (_set_byte_testbit_high 1 10); auto; try lia;
+            rewrite (_set_byte_testbit_high 2 10); auto; try lia;
+            rewrite (_set_byte_testbit_high 3 10); auto; try lia;
+            rewrite (_set_byte_testbit_high 4 10); auto; try lia;
+            rewrite (_set_byte_testbit_high 5 10); auto; try lia;
+            rewrite (_set_byte_testbit_high 6 10); auto; try lia;
+            rewrite (_set_byte_testbit_high 7 10); auto; try lia;
+            rewrite (_set_byte_testbit_high 8 10); auto; try lia;
+            rewrite (_set_byte_testbit_high 9 10); auto; try lia;
+            rewrite (_set_byte_testbit_low 11); auto; try lia;
+            rewrite (_set_byte_testbit_low 12); auto; try lia;
+            rewrite (_set_byte_testbit_low 13); auto; try lia;
+            rewrite (_set_byte_testbit_low 14); auto; try lia;
+            rewrite (_set_byte_testbit_low 15); auto; try lia
+        | rewrite (_set_byte_testbit_high 0 11); auto; try lia;
+            rewrite (_set_byte_testbit_high 1 11); auto; try lia;
+            rewrite (_set_byte_testbit_high 2 11); auto; try lia;
+            rewrite (_set_byte_testbit_high 3 11); auto; try lia;
+            rewrite (_set_byte_testbit_high 4 11); auto; try lia;
+            rewrite (_set_byte_testbit_high 5 11); auto; try lia;
+            rewrite (_set_byte_testbit_high 6 11); auto; try lia;
+            rewrite (_set_byte_testbit_high 7 11); auto; try lia;
+            rewrite (_set_byte_testbit_high 8 11); auto; try lia;
+            rewrite (_set_byte_testbit_high 9 11); auto; try lia;
+            rewrite (_set_byte_testbit_high 10 11); auto; try lia;
+            rewrite (_set_byte_testbit_low 12); auto; try lia;
+            rewrite (_set_byte_testbit_low 13); auto; try lia;
+            rewrite (_set_byte_testbit_low 14); auto; try lia;
+            rewrite (_set_byte_testbit_low 15); auto; try lia
+        | rewrite (_set_byte_testbit_high 0 12); auto; try lia;
+            rewrite (_set_byte_testbit_high 1 12); auto; try lia;
+            rewrite (_set_byte_testbit_high 2 12); auto; try lia;
+            rewrite (_set_byte_testbit_high 3 12); auto; try lia;
+            rewrite (_set_byte_testbit_high 4 12); auto; try lia;
+            rewrite (_set_byte_testbit_high 5 12); auto; try lia;
+            rewrite (_set_byte_testbit_high 6 12); auto; try lia;
+            rewrite (_set_byte_testbit_high 7 12); auto; try lia;
+            rewrite (_set_byte_testbit_high 8 12); auto; try lia;
+            rewrite (_set_byte_testbit_high 9 12); auto; try lia;
+            rewrite (_set_byte_testbit_high 10 12); auto; try lia;
+            rewrite (_set_byte_testbit_high 11 12); auto; try lia;
+            rewrite (_set_byte_testbit_low 13); auto; try lia;
+            rewrite (_set_byte_testbit_low 14); auto; try lia;
+            rewrite (_set_byte_testbit_low 15); auto; try lia
+        | rewrite (_set_byte_testbit_high 0 13); auto; try lia;
+            rewrite (_set_byte_testbit_high 1 13); auto; try lia;
+            rewrite (_set_byte_testbit_high 2 13); auto; try lia;
+            rewrite (_set_byte_testbit_high 3 13); auto; try lia;
+            rewrite (_set_byte_testbit_high 4 13); auto; try lia;
+            rewrite (_set_byte_testbit_high 5 13); auto; try lia;
+            rewrite (_set_byte_testbit_high 6 13); auto; try lia;
+            rewrite (_set_byte_testbit_high 7 13); auto; try lia;
+            rewrite (_set_byte_testbit_high 8 13); auto; try lia;
+            rewrite (_set_byte_testbit_high 9 13); auto; try lia;
+            rewrite (_set_byte_testbit_high 10 13); auto; try lia;
+            rewrite (_set_byte_testbit_high 11 13); auto; try lia;
+            rewrite (_set_byte_testbit_high 12 13); auto; try lia;
+            rewrite (_set_byte_testbit_low 14); auto; try lia;
+            rewrite (_set_byte_testbit_low 15); auto; try lia
+        | rewrite (_set_byte_testbit_high 0 14); auto; try lia;
+            rewrite (_set_byte_testbit_high 1 14); auto; try lia;
+            rewrite (_set_byte_testbit_high 2 14); auto; try lia;
+            rewrite (_set_byte_testbit_high 3 14); auto; try lia;
+            rewrite (_set_byte_testbit_high 4 14); auto; try lia;
+            rewrite (_set_byte_testbit_high 5 14); auto; try lia;
+            rewrite (_set_byte_testbit_high 6 14); auto; try lia;
+            rewrite (_set_byte_testbit_high 7 14); auto; try lia;
+            rewrite (_set_byte_testbit_high 8 14); auto; try lia;
+            rewrite (_set_byte_testbit_high 9 14); auto; try lia;
+            rewrite (_set_byte_testbit_high 10 14); auto; try lia;
+            rewrite (_set_byte_testbit_high 11 14); auto; try lia;
+            rewrite (_set_byte_testbit_high 12 14); auto; try lia;
+            rewrite (_set_byte_testbit_high 13 14); auto; try lia;
+            rewrite (_set_byte_testbit_low 15); auto; try lia
+        | rewrite (_set_byte_testbit_high 0 15); auto; try lia;
+            rewrite (_set_byte_testbit_high 1 15); auto; try lia;
+            rewrite (_set_byte_testbit_high 2 15); auto; try lia;
+            rewrite (_set_byte_testbit_high 3 15); auto; try lia;
+            rewrite (_set_byte_testbit_high 4 15); auto; try lia;
+            rewrite (_set_byte_testbit_high 5 15); auto; try lia;
+            rewrite (_set_byte_testbit_high 6 15); auto; try lia;
+            rewrite (_set_byte_testbit_high 7 15); auto; try lia;
+            rewrite (_set_byte_testbit_high 8 15); auto; try lia;
+            rewrite (_set_byte_testbit_high 9 15); auto; try lia;
+            rewrite (_set_byte_testbit_high 10 15); auto; try lia;
+            rewrite (_set_byte_testbit_high 11 15); auto; try lia;
+            rewrite (_set_byte_testbit_high 12 15); auto; try lia;
+            rewrite (_set_byte_testbit_high 13 15); auto; try lia;
+            rewrite (_set_byte_testbit_high 14 15); auto; try lia
+        | rewrite (_set_byte_testbit_high 0 16); auto; try lia;
+            rewrite (_set_byte_testbit_high 1 16); auto; try lia;
+            rewrite (_set_byte_testbit_high 2 16); auto; try lia;
+            rewrite (_set_byte_testbit_high 3 16); auto; try lia;
+            rewrite (_set_byte_testbit_high 4 16); auto; try lia;
+            rewrite (_set_byte_testbit_high 5 16); auto; try lia;
+            rewrite (_set_byte_testbit_high 6 16); auto; try lia;
+            rewrite (_set_byte_testbit_high 7 16); auto; try lia;
+            rewrite (_set_byte_testbit_high 8 16); auto; try lia;
+            rewrite (_set_byte_testbit_high 9 16); auto; try lia;
+            rewrite (_set_byte_testbit_high 10 16); auto; try lia;
+            rewrite (_set_byte_testbit_high 11 16); auto; try lia;
+            rewrite (_set_byte_testbit_high 12 16); auto; try lia;
+            rewrite (_set_byte_testbit_high 13 16); auto; try lia;
+            rewrite (_set_byte_testbit_high 14 16); auto; try lia;
+            rewrite (_set_byte_testbit_high 15 16); auto; try lia;
+            apply Z.testbit_false; [by lia |];
+            rewrite Z.div_small; [apply Z.mod_0_l; lia |];
+            pose proof (Z.pow_le_mono_r 2 128 n ltac:(lia) ltac:(auto)); lia
+        ]; rewrite ?orb_false_l ?orb_false_r;
+        repeat (rewrite ?Z.lor_spec ?Z.shiftl_spec ?Z.land_spec ?Z.shiftr_spec; try lia);
+        rewrite !Z.testbit_ones; try lia;
+        churn_bits'; now rewrite Z.sub_add.
+    Qed.
+  End split.
 End Byte.
+
+#[global] Opaque _get_byte _set_byte.
 
 Section Bswap.
   #[local] Definition bswap_idxs (bytes: nat) :=
@@ -257,28 +790,44 @@ Section Bswap.
               (bswap_idxs bytes)
               0.
 
-  #[local] Definition bswap16  (n: Z): Z := bswap_ 2 n.
-  #[local] Definition bswap32  (n: Z): Z := bswap_ 4 n.
-  #[local] Definition bswap64  (n: Z): Z := bswap_ 8 n.
-  #[local] Definition bswap128 (n: Z): Z := bswap_ 16 n.
+  Definition bswap (sz : bitsize) : Z -> Z := bswap_ (bytesNat sz).
+  #[local] Definition bswap8   (n: Z): Z := bswap W8 n.
+  #[local] Definition bswap16  (n: Z): Z := bswap W16 n.
+  #[local] Definition bswap32  (n: Z): Z := bswap W32 n.
+  #[local] Definition bswap64  (n: Z): Z := bswap W64 n.
+  #[local] Definition bswap128 (n: Z): Z := bswap W128 n.
 
-  Definition bswap (sz : bitsize) : Z -> Z :=
-    match sz with
-    | W8 => id
-    | W16 => bswap16
-    | W32 => bswap32
-    | W64 => bswap64
-    | W128 => bswap128
-    end.
+  Section test.
+    Local Definition bytes (ls : list Z) :=
+      fold_left (fun a b => a * 256 + b)%Z ls 0%Z.
+    Arguments bytes _%Z.
 
+    Local Definition _bswap16_test : bswap W16 (bytes (1::2::nil)%Z) = bytes (2::1::nil)%Z := eq_refl.
+    Local Definition _bswap32_test :
+      bswap W32 (bytes (1::2::3::4::nil)%Z) = bytes (4::3::2::1::nil)%Z := eq_refl.
+    Local Definition _bswap64_test :
+      bswap W64 (bytes (1::2::3::4::5::6::7::8::nil)%Z) = bytes (8::7::6::5::4::3::2::1::nil)%Z := eq_refl.
+  End test.
+End Bswap.
+
+#[global] Opaque bswap.
+
+Section Bswap.
   Section Theory.
+    (* TODO: Rewrite these so that they don't use `f_equal` (and thus have a reasonable size) *)
     Section useless_lor.
-      Arguments Z.of_nat !_ /.
-      Arguments Z.opp !_ /.
-      Arguments Z.sub !_ !_ /.
-      Arguments Z.add !_ !_ /.
-      Arguments Z.mul !_ !_ /.
-      Arguments Pos.mul !_ !_ /.
+      #[local] Transparent _get_byte _set_byte bswap.
+
+      Lemma bswap8_useless_lor:
+        forall v v' idx,
+          (idx >= 1)%nat ->
+          bswap8 (Z.lor v (_set_byte v' idx)) =
+          bswap8 v.
+      Proof.
+        move=> v v' idx Hidx.
+        rewrite /bswap8/bswap/bswap_/_get_byte/=; f_equal.
+        rewrite /_set_byte; churn_bits.
+      Qed.
 
       Lemma bswap16_useless_lor:
         forall v v' idx,
@@ -287,16 +836,9 @@ Section Bswap.
           bswap16 v.
       Proof.
         move=> v v' idx Hidx.
-        rewrite /bswap16/bswap_/_get_byte/=.
-        rewrite !Z.lor_0_l !Z.shiftr_0_r.
-        1: f_equal; [ | do 1 (destruct idx; try lia)].
-        all: rewrite ?_set_byte_S_idx ?Z.shiftr_lor
-                     ?[Z.shiftl (Z.shiftl (_set_byte _ _) _) _]Z.shiftl_shiftl
-                     ?Z.shiftr_shiftl_l ?Z.land_lor_distr_l
-                     ?Z.sub_diag ?Z.shiftl_0_r
-                     ?(_set_byte_land_no_overlap idx 0) /=
-                     ?Z.shiftl_0_r ?Z.lor_0_r;
-          try lia.
+        rewrite /bswap16/bswap/bswap_/_get_byte/=.
+        f_equal; [| f_equal; rewrite /_set_byte; churn_bits].
+        f_equal; f_equal; rewrite /_set_byte; churn_bits.
       Qed.
 
       Lemma bswap32_useless_lor:
@@ -306,18 +848,11 @@ Section Bswap.
           bswap32 v.
       Proof.
         move=> v v' idx Hidx.
-        rewrite /bswap32/bswap_/_get_byte/=.
-        rewrite !Z.lor_0_l !Z.shiftr_0_r.
-        1: f_equal; [ | do 3 (destruct idx; try lia)].
-        1: f_equal; [ | do 2 (destruct idx; try lia)].
-        1: f_equal; [ | do 1 (destruct idx; try lia)].
-        all: rewrite ?_set_byte_S_idx ?Z.shiftr_lor
-                     ?[Z.shiftl (Z.shiftl (_set_byte _ _) _) _]Z.shiftl_shiftl
-                     ?Z.shiftr_shiftl_l ?Z.land_lor_distr_l
-                     ?Z.sub_diag ?Z.shiftl_0_r
-                     ?(_set_byte_land_no_overlap idx 0) /=
-                     ?Z.shiftl_0_r ?Z.lor_0_r;
-          try lia.
+        rewrite /bswap32/bswap/bswap_/_get_byte/=.
+        f_equal; [| f_equal; rewrite /_set_byte; churn_bits].
+        f_equal; [| f_equal; rewrite /_set_byte; churn_bits].
+        f_equal; [| f_equal; rewrite /_set_byte; churn_bits].
+        f_equal; f_equal; rewrite /_set_byte; churn_bits.
       Qed.
 
       Lemma bswap64_useless_lor:
@@ -327,22 +862,15 @@ Section Bswap.
           bswap64 v.
       Proof.
         move=> v v' idx Hidx.
-        rewrite /bswap64/bswap_/_get_byte/=.
-        rewrite !Z.lor_0_l !Z.shiftr_0_r.
-        1: f_equal; [ | do 7 (destruct idx; try lia)].
-        1: f_equal; [ | do 6 (destruct idx; try lia)].
-        1: f_equal; [ | do 5 (destruct idx; try lia)].
-        1: f_equal; [ | do 4 (destruct idx; try lia)].
-        1: f_equal; [ | do 3 (destruct idx; try lia)].
-        1: f_equal; [ | do 2 (destruct idx; try lia)].
-        1: f_equal; [ | do 1 (destruct idx; try lia)].
-        all: rewrite ?_set_byte_S_idx ?Z.shiftr_lor
-                     ?[Z.shiftl (Z.shiftl (_set_byte _ _) _) _]Z.shiftl_shiftl
-                     ?Z.shiftr_shiftl_l ?Z.land_lor_distr_l
-                     ?Z.sub_diag ?Z.shiftl_0_r
-                     ?(_set_byte_land_no_overlap idx 0) /=
-                     ?Z.shiftl_0_r ?Z.lor_0_r;
-          try lia.
+        rewrite /bswap64/bswap/bswap_/_get_byte/=.
+        f_equal; [| f_equal; rewrite /_set_byte; churn_bits].
+        f_equal; [| f_equal; rewrite /_set_byte; churn_bits].
+        f_equal; [| f_equal; rewrite /_set_byte; churn_bits].
+        f_equal; [| f_equal; rewrite /_set_byte; churn_bits].
+        f_equal; [| f_equal; rewrite /_set_byte; churn_bits].
+        f_equal; [| f_equal; rewrite /_set_byte; churn_bits].
+        f_equal; [| f_equal; rewrite /_set_byte; churn_bits].
+        f_equal; f_equal; rewrite /_set_byte; churn_bits.
       Qed.
 
       Lemma bswap128_useless_lor:
@@ -352,34 +880,44 @@ Section Bswap.
           bswap128 v.
       Proof.
         move=> v v' idx Hidx.
-        rewrite /bswap128/bswap_/_get_byte/=.
-        rewrite !Z.lor_0_l !Z.shiftr_0_r.
-        1: f_equal; [ | do 15 (destruct idx; try lia)].
-        1: f_equal; [ | do 14 (destruct idx; try lia)].
-        1: f_equal; [ | do 13 (destruct idx; try lia)].
-        1: f_equal; [ | do 12 (destruct idx; try lia)].
-        1: f_equal; [ | do 11 (destruct idx; try lia)].
-        1: f_equal; [ | do 10 (destruct idx; try lia)].
-        1: f_equal; [ | do 9  (destruct idx; try lia)].
-        1: f_equal; [ | do 8  (destruct idx; try lia)].
-        1: f_equal; [ | do 7  (destruct idx; try lia)].
-        1: f_equal; [ | do 6  (destruct idx; try lia)].
-        1: f_equal; [ | do 5  (destruct idx; try lia)].
-        1: f_equal; [ | do 4  (destruct idx; try lia)].
-        1: f_equal; [ | do 3  (destruct idx; try lia)].
-        1: f_equal; [ | do 2  (destruct idx; try lia)].
-        1: f_equal; [ | do 1  (destruct idx; try lia)].
-        all: rewrite ?_set_byte_S_idx ?Z.shiftr_lor
-                     ?[Z.shiftl (Z.shiftl (_set_byte _ _) _) _]Z.shiftl_shiftl
-                     ?Z.shiftr_shiftl_l ?Z.land_lor_distr_l
-                     ?Z.sub_diag ?Z.shiftl_0_r
-                     ?(_set_byte_land_no_overlap idx 0) /=
-                     ?Z.shiftl_0_r ?Z.lor_0_r;
-          try lia.
+        rewrite /bswap128/bswap/bswap_/_get_byte/=.
+        f_equal; [| f_equal; rewrite /_set_byte; churn_bits].
+        f_equal; [| f_equal; rewrite /_set_byte; churn_bits].
+        f_equal; [| f_equal; rewrite /_set_byte; churn_bits].
+        f_equal; [| f_equal; rewrite /_set_byte; churn_bits].
+        f_equal; [| f_equal; rewrite /_set_byte; churn_bits].
+        f_equal; [| f_equal; rewrite /_set_byte; churn_bits].
+        f_equal; [| f_equal; rewrite /_set_byte; churn_bits].
+        f_equal; [| f_equal; rewrite /_set_byte; churn_bits].
+        f_equal; [| f_equal; rewrite /_set_byte; churn_bits].
+        f_equal; [| f_equal; rewrite /_set_byte; churn_bits].
+        f_equal; [| f_equal; rewrite /_set_byte; churn_bits].
+        f_equal; [| f_equal; rewrite /_set_byte; churn_bits].
+        f_equal; [| f_equal; rewrite /_set_byte; churn_bits].
+        f_equal; [| f_equal; rewrite /_set_byte; churn_bits].
+        f_equal; [| f_equal; rewrite /_set_byte; churn_bits].
+        f_equal; f_equal; rewrite /_set_byte; churn_bits.
       Qed.
     End useless_lor.
 
+    Lemma bswap_useless_lor:
+      forall sz v v' idx,
+        (idx >= bytesNat sz)%nat ->
+        bswap sz (Z.lor v (_set_byte v' idx)) =
+        bswap sz v.
+    Proof.
+      intros [] v v' idx Hidx; simpl in *;
+        eauto using
+              bswap8_useless_lor,
+              bswap16_useless_lor,
+              bswap32_useless_lor,
+              bswap64_useless_lor,
+              bswap128_useless_lor.
+    Qed.
+
     Section _set_byte_reverse.
+      #[local] Transparent _get_byte _set_byte bswap.
+
       Lemma bswap16_set_byte_reverse:
         forall x1 x2,
           bswap16 (Z.lor (_set_byte x1 0)
@@ -388,7 +926,7 @@ Section Bswap.
            (Z.lor (_set_byte x1 1) 0).
       Proof.
         intros *.
-        rewrite /bswap16/bswap_/=.
+        rewrite /bswap16/bswap/bswap_/=.
         rewrite {1}Z.lor_comm; f_equal;
           try (rewrite !_get_byte_lor !_set_byte_lor
                        !_get_set_byte_roundtrip !_get_set_byte_no_overlap
@@ -407,7 +945,7 @@ Section Bswap.
             (Z.lor (_set_byte x1 3) 0))).
       Proof.
         intros *.
-        rewrite /bswap32/bswap_/=.
+        rewrite /bswap32/bswap/bswap_/=.
         rewrite {1}Z.lor_comm; f_equal;
           try (rewrite !_get_byte_lor !_set_byte_lor
                        !_get_set_byte_roundtrip !_get_set_byte_no_overlap
@@ -435,7 +973,7 @@ Section Bswap.
                 (Z.lor (_set_byte x1 7) 0))))))).
       Proof.
         intros *.
-        rewrite /bswap64/bswap_/=.
+        rewrite /bswap64/bswap/bswap_/=.
         repeat (rewrite {1}Z.lor_comm; f_equal;
                 [now (rewrite !_get_byte_lor !_set_byte_lor
                               !_get_set_byte_roundtrip !_get_set_byte_no_overlap
@@ -481,7 +1019,7 @@ Section Bswap.
                          (Z.lor (_set_byte x1 15) 0))))))))))))))).
       Proof.
         intros *.
-        rewrite /bswap128/bswap_/=.
+        rewrite /bswap128/bswap/bswap_/=.
         repeat (rewrite {1}Z.lor_comm; f_equal;
                 [now (rewrite !_get_byte_lor !_set_byte_lor
                               !_get_set_byte_roundtrip !_get_set_byte_no_overlap
@@ -491,17 +1029,231 @@ Section Bswap.
                 ?_set_byte_0 ?Z.lor_0_r ?Z.lor_0_l ?_set_get_0 //.
       Qed.
     End _set_byte_reverse.
+
+    Section larger.
+      #[local] Transparent _get_byte _set_byte bswap.
+
+      Lemma bswap8_larger z:
+        0 <= z ->
+        bswap8 z = bswap8 (Z.land z (Z.ones 8)).
+      Proof.
+        intros; rewrite /bswap8/bswap/bswap_/= ?Z.lor_0_l ?Z.lor_0_r.
+        f_equal; rewrite /_get_byte; churn_bits.
+      Qed.
+
+      Lemma bswap16_larger z:
+        0 <= z ->
+        bswap16 z = bswap16 (Z.land z (Z.ones 16)).
+      Proof.
+        intros; rewrite /bswap16/bswap/bswap_/= ?Z.lor_0_l ?Z.lor_0_r.
+        do 1 (f_equal; [| f_equal; rewrite /_get_byte; churn_bits]).
+        f_equal; rewrite /_get_byte; churn_bits.
+      Qed.
+
+      Lemma bswap32_larger z:
+        0 <= z ->
+        bswap32 z = bswap32 (Z.land z (Z.ones 32)).
+      Proof.
+        intros; rewrite /bswap32/bswap/bswap_/= ?Z.lor_0_l ?Z.lor_0_r.
+        do 3 (f_equal; [| f_equal; rewrite /_get_byte; churn_bits]).
+        f_equal; rewrite /_get_byte; churn_bits.
+      Qed.
+
+      Lemma bswap64_larger z:
+        0 <= z ->
+        bswap64 z = bswap64 (Z.land z (Z.ones 64)).
+      Proof.
+        intros; rewrite /bswap64/bswap/bswap_/= ?Z.lor_0_l ?Z.lor_0_r.
+        do 7 (f_equal; [| f_equal; rewrite /_get_byte; churn_bits]).
+        f_equal; rewrite /_get_byte; churn_bits.
+      Qed.
+
+      Lemma bswap128_larger z:
+        0 <= z ->
+        bswap128 z = bswap128 (Z.land z (Z.ones 128)).
+      Proof.
+        intros; rewrite /bswap128/bswap/bswap_/= ?Z.lor_0_l ?Z.lor_0_r.
+        do 15 (f_equal; [| f_equal; rewrite /_get_byte; churn_bits]).
+        f_equal; rewrite /_get_byte; churn_bits.
+      Qed.
+    End larger.
+
+    Lemma bswap_larger sz z:
+      0 <= z ->
+      bswap sz z = bswap sz (Z.land z (Z.ones (bitsZ sz))).
+    Proof.
+      intros; destruct sz;
+        eauto using
+              bswap8_larger,
+              bswap16_larger,
+              bswap32_larger,
+              bswap64_larger,
+              bswap128_larger.
+    Qed.
+
+    Section involutive.
+      #[local] Transparent _get_byte _set_byte bswap.
+
+      Lemma bswap8_involutive:
+        forall z,
+          0 <= z < 2^bitsZ W8 ->
+          bswap8 (bswap8 z) = z.
+      Proof.
+        intros * Hbounds.
+        rewrite {2}(split8 z); auto.
+        rewrite /bswap8/bswap/bswap_/=.
+        rewrite !_set_get_byte_roundtrip !Z.shiftl_0_r !Z.lor_0_l.
+        rewrite _get_0_set_0_eq.
+        now rewrite _set_get_byte_roundtrip Z.shiftl_0_r.
+      Qed.
+
+      Lemma bswap8_involutive_land:
+        forall z,
+          0 <= z < 2^bitsZ W8 ->
+          bswap8 (bswap8 z) = Z.land z (Z.ones (bitsZ W8)).
+      Proof.
+        intros * Hbounds; simpl in *.
+        rewrite bswap8_involutive; auto.
+        rewrite -> Z.land_ones by lia.
+        rewrite Z.mod_small; auto.
+      Qed.
+
+      Lemma bswap16_involutive:
+        forall z,
+          0 <= z < 2^bitsZ W16 ->
+          bswap16 (bswap16 z) = z.
+      Proof.
+        intros * Hbounds.
+        rewrite {2}(split16 z); auto.
+        rewrite /bswap16/bswap/bswap_/=.
+        rewrite !_set_get_byte_roundtrip !Z.shiftl_0_r Z.lor_0_l.
+        rewrite !_get_byte_lor !_set_byte_lor.
+        rewrite !_get_set_byte_roundtrip.
+        rewrite !_get_set_byte_no_overlap; try lia.
+        rewrite !_set_byte_0 ?Z.lor_0_l ?Z.lor_0_r.
+        now rewrite 2!_set_get_0 !_set_get_byte_roundtrip Z.shiftl_0_r.
+      Qed.
+
+      Lemma bswap16_involutive_land:
+        forall z,
+          0 <= z < 2^bitsZ W16 ->
+          bswap16 (bswap16 z) = Z.land z (Z.ones (bitsZ W16)).
+      Proof.
+        intros * Hbounds; simpl in *.
+        rewrite bswap16_involutive; auto.
+        rewrite -> Z.land_ones by lia.
+        rewrite Z.mod_small; auto.
+      Qed.
+
+      Lemma bswap32_involutive:
+        forall z,
+          0 <= z < 2^bitsZ W32 ->
+          bswap32 (bswap32 z) = z.
+      Proof.
+        intros * Hbounds.
+        rewrite {2}(split32 z); auto.
+        rewrite /bswap32/bswap/bswap_/=.
+        rewrite !_set_get_byte_roundtrip !Z.shiftl_0_r Z.lor_0_l.
+        rewrite !_get_byte_lor !_set_byte_lor.
+        rewrite !_get_set_byte_roundtrip.
+        rewrite !_get_set_byte_no_overlap; try lia.
+        rewrite !_set_byte_0 ?Z.lor_0_l ?Z.lor_0_r.
+        now rewrite 4!_set_get_0 !_set_get_byte_roundtrip Z.shiftl_0_r.
+      Qed.
+
+      Lemma bswap32_involutive_land:
+        forall z,
+          0 <= z < 2^bitsZ W32 ->
+          bswap32 (bswap32 z) = Z.land z (Z.ones (bitsZ W32)).
+      Proof.
+        intros * Hbounds; simpl in *.
+        rewrite bswap32_involutive; auto.
+        rewrite -> Z.land_ones by lia.
+        rewrite Z.mod_small; auto.
+      Qed.
+
+      Lemma bswap64_involutive:
+        forall z,
+          0 <= z < 2^bitsZ W64 ->
+          bswap64 (bswap64 z) = z.
+      Proof.
+        intros * Hbounds.
+        rewrite {2}(split64 z); auto.
+        rewrite /bswap64/bswap/bswap_/=.
+        rewrite !_set_get_byte_roundtrip !Z.shiftl_0_r Z.lor_0_l.
+        rewrite !_get_byte_lor !_set_byte_lor.
+        rewrite !_get_set_byte_roundtrip.
+        rewrite !_get_set_byte_no_overlap; try lia.
+        rewrite !_set_byte_0 ?Z.lor_0_l ?Z.lor_0_r.
+        now rewrite 8!_set_get_0 !_set_get_byte_roundtrip Z.shiftl_0_r.
+      Qed.
+
+      Lemma bswap64_involutive_land:
+        forall z,
+          0 <= z < 2^bitsZ W64 ->
+          bswap64 (bswap64 z) = Z.land z (Z.ones (bitsZ W64)).
+      Proof.
+        intros * Hbounds; simpl in *.
+        rewrite bswap64_involutive; auto.
+        rewrite -> Z.land_ones by lia.
+        rewrite Z.mod_small; auto.
+      Qed.
+
+      Lemma bswap128_involutive:
+        forall z,
+          0 <= z < 2^bitsZ W128 ->
+          bswap128 (bswap128 z) = z.
+      Proof.
+        intros * Hbounds.
+        rewrite {2}(split128 z); auto.
+        rewrite /bswap128/bswap/bswap_/=.
+        rewrite !_set_get_byte_roundtrip !Z.shiftl_0_r Z.lor_0_l.
+        rewrite !_get_byte_lor !_set_byte_lor.
+        rewrite !_get_set_byte_roundtrip.
+        rewrite !_get_set_byte_no_overlap; try lia.
+        rewrite !_set_byte_0 ?Z.lor_0_l ?Z.lor_0_r.
+        now rewrite 16!_set_get_0 !_set_get_byte_roundtrip Z.shiftl_0_r.
+      Qed.
+      (* TODO (JH): ^^^ This is really slow *)
+
+      Lemma bswap128_involutive_land:
+        forall z,
+          0 <= z < 2^bitsZ W128 ->
+          bswap128 (bswap128 z) = Z.land z (Z.ones (bitsZ W128)).
+      Proof.
+        intros * Hbounds; simpl in *.
+        rewrite bswap128_involutive; auto.
+        rewrite -> Z.land_ones by lia.
+        rewrite Z.mod_small; auto.
+      Qed.
+    End involutive.
+
+    Lemma bswap_involutive:
+      forall sz z,
+        0 <= z < 2^bitsZ sz ->
+        bswap sz (bswap sz z) = z.
+    Proof.
+      intros * Hbounds; destruct sz;
+        eauto using
+              bswap8_involutive,
+              bswap16_involutive,
+              bswap32_involutive,
+              bswap64_involutive,
+              bswap128_involutive.
+    Qed.
+
+    Lemma bswap_involutive_land:
+      forall sz z,
+        0 <= z < 2^bitsZ sz ->
+        bswap sz (bswap sz z) = Z.land z (Z.ones (bitsZ sz)).
+    Proof.
+      intros * Hbounds; destruct sz;
+        eauto using
+              bswap8_involutive_land,
+              bswap16_involutive_land,
+              bswap32_involutive_land,
+              bswap64_involutive_land,
+              bswap128_involutive_land.
+    Qed.
   End Theory.
-
-  Section test.
-    Local Definition bytes (ls : list Z) :=
-      fold_left (fun a b => a * 256 + b)%Z ls 0%Z.
-    Arguments bytes _%Z.
-
-    Local Definition _bswap16_test : bswap W16 (bytes (1::2::nil)%Z) = bytes (2::1::nil)%Z := eq_refl.
-    Local Definition _bswap32_test :
-      bswap W32 (bytes (1::2::3::4::nil)%Z) = bytes (4::3::2::1::nil)%Z := eq_refl.
-    Local Definition _bswap64_test :
-      bswap W64 (bytes (1::2::3::4::5::6::7::8::nil)%Z) = bytes (8::7::6::5::4::3::2::1::nil)%Z := eq_refl.
-  End test.
 End Bswap.
