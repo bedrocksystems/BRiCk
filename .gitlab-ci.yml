@@ -187,6 +187,7 @@ release_latest:
 #   variables:
 #     LLVM_MAJ_VER: ${LLVM_ALT_MAJ_VER}
 
+# TODO (JH): Determine if we still need this
 # prepare_pages:
 #   image: ${fm_docs_img}
 #   stage: prepare_pages
@@ -205,19 +206,21 @@ release_latest:
 #     paths:
 #       - public
 
-# pages:
-#   image: ${fm_docs_img}
-#   stage: pages
-#   dependencies:
-#     - prepare_pages
-#   script:
-#     # Clone the Alectryon submodule, but only in the pages jobs
-#     - git submodule update --init
-#     # this line refreshes the artifact to avoid rebuilding the coq code
-#     - make touch_deps
-#     - make public
-#   only:
-#     - master
-#   artifacts:
-#     paths:
-#       - public
+pages:
+  # TODO (JH): Revert to using the `fm_docs_img` after `serapi` gets an
+  #   8.13 bump and we can update the image
+  image: ${cur_main_docker_image}
+  stage: pages
+  dependencies:
+    - build_latest
+  script:
+    # Download the cpp2v-core artifacts we generated earlier
+    - cp -r build cpp2v-core
+    # Clone the Alectryon submodule, but only in the pages jobs
+    - git submodule update --init
+    # this line refreshes the artifact to avoid rebuilding the coq code
+    - make touch_deps
+    - make public
+  artifacts:
+    paths:
+      - public
