@@ -24,10 +24,10 @@ Section with_Σ.
 
   Axiom struct_padding_fractional : forall cls, Fractional (fun q => struct_padding resolve q cls).
   Axiom struct_padding_timeless : forall q cls, Timeless  (struct_padding resolve q cls).
-  Axiom struct_padding_frac_valid : forall (q : Qp) cls, Observe [| q ≤ 1 |]%Qc (struct_padding resolve q cls).
+  Axiom struct_padding_frac_valid : forall (q : Qp) cls, Observe [| q ≤ 1 |]%Qp (struct_padding resolve q cls).
   Axiom union_padding_fractional : forall cls idx, Fractional (fun q => union_padding resolve q cls idx).
   Axiom union_padding_timeless : forall q cls idx, Timeless (union_padding resolve q cls idx).
-  Axiom union_padding_frac_valid : forall (q : Qp) cls idx, Observe [| q ≤ 1 |]%Qc (union_padding resolve q cls idx).
+  Axiom union_padding_frac_valid : forall (q : Qp) cls idx, Observe [| q ≤ 1 |]%Qp (union_padding resolve q cls idx).
 
   Global Existing Instances
     struct_padding_fractional struct_padding_timeless struct_padding_frac_valid

@@ -207,7 +207,7 @@ Module Type CPP_LOGIC (Import CC : CPP_LOGIC_CLASS)
     Global Existing Instances tptsto_timeless tptsto_fractional.
 
     Axiom tptsto_frac_valid : forall {σ} t (q : Qp) p v,
-      Observe [| q ≤ 1 |]%Qc (@tptsto σ t q p v).
+      Observe [| q ≤ 1 |]%Qp (@tptsto σ t q p v).
     Global Existing Instance tptsto_frac_valid.
 
     Axiom tptsto_agree : forall {σ} t q1 q2 p v1 v2,

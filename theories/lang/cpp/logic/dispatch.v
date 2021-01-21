@@ -16,7 +16,7 @@ Section with_cpp.
   Context `{Σ : cpp_logic}.
 
   (* the [offset] to cast a [base] to a [derived] *)
-  Fixpoint base_to_derived  `(d : class_derives σ derived base) : offset :=
+  Fixpoint base_to_derived  `(d : !class_derives σ derived base) : offset :=
     match d with
     | Derives_here st _ => o_id
     | Derives_base base st _ _ _ _ d =>
@@ -24,14 +24,14 @@ Section with_cpp.
     end.
 
   (* the [offset] to cast a [derived] to a [base] *)
-  Fixpoint derived_to_base `(d : class_derives σ derived base) : offset :=
+  Fixpoint derived_to_base `(d : !class_derives σ derived base) : offset :=
     match d with
     | Derives_here st _ => o_id
     | Derives_base base st _ _ _ _ d =>
       o_dot (o_base σ derived base) (derived_to_base d)
     end.
 
-  Definition get_impl `(r : class_derives σ mdc tcls) (f : obj_name)
+  Definition get_impl `(r : !class_derives σ mdc tcls) (f : obj_name)
     : option (ptr * offset) :=
     let override := (dispatch σ r f).1 in
     match override.(vimpl) with

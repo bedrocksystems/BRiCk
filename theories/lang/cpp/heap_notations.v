@@ -15,9 +15,9 @@ Section with_cpp.
   (* "points to" *)
   Structure AT : Type :=
   { AT_lhs    : Type
-  ; #[canonical(false)] AT_rhs    : Type
-  ; #[canonical(false)] AT_result : Type
-  ; #[canonical(false)] AT_at     :> AT_lhs -> AT_rhs -> AT_result
+  ; #[canonical=no] AT_rhs    : Type
+  ; #[canonical=no] AT_result : Type
+  ; #[canonical=no] AT_at     :> AT_lhs -> AT_rhs -> AT_result
   }.
   Arguments AT_at {!AT} _ _ : rename.
 
@@ -39,7 +39,7 @@ Section with_cpp.
   (* coercions to [offset] *)
   Structure TO_OFFSET : Type :=
   { TO_OFFSET_from :> Type
-  ; #[canonical(false)] _to_offset : TO_OFFSET_from -> offset
+  ; #[canonical=no] _to_offset : TO_OFFSET_from -> offset
   }.
   Arguments _to_offset {!TO_OFFSET} _ : rename.
 
@@ -49,8 +49,8 @@ Section with_cpp.
   (* paths *)
   Structure DOT : Type :=
   { DOT_from : Type
-  ; #[canonical(false)] DOT_to : Type
-  ; #[canonical(false)] DOT_dot : offset -> DOT_from -> DOT_to
+  ; #[canonical=no] DOT_to : Type
+  ; #[canonical=no] DOT_dot : offset -> DOT_from -> DOT_to
   }.
   Arguments DOT_dot {!AT} _ _ : rename.
 

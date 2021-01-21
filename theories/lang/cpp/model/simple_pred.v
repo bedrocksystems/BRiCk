@@ -31,7 +31,7 @@ Proof. by rewrite -pair_op agree_idemp. Qed.
 
 Lemma frac_valid {A : Type} {q1 q2} {v1 v2 : A} :
   ✓ (frac q1 v1 ⋅ frac q2 v2) → ✓ (q1 + q2)%Qp ∧ v1 = v2.
-Proof. by move /pair_valid => /= []? /agree_op_invL'. Qed.
+Proof. by move /pair_valid => /= []? /to_agree_op_inv_L. Qed.
 
 Section fractional.
   Context {K V : Type} `{Countable K} `{inG Σ (gmapR K (fractionalR V))}.
@@ -56,7 +56,7 @@ Section fractional.
   Qed.
 
   Global Instance gmap_own_frac_valid γ (q : Qp) k v :
-    Observe [| q ≤ 1 |]%Qc (gmap_own γ q k v).
+    Observe [| q ≤ 1 |]%Qp (gmap_own γ q k v).
   Proof.
     apply: observe_intro_only_provable.
     rewrite /gmap_own own_valid !uPred.discrete_valid singleton_valid.
@@ -506,7 +506,7 @@ Module SimpleCPP.
       Observe2 [|v1 = v2|] (val_ a v1 q1) (val_ a v2 q2) := _.
 
     Global Instance val_frac_valid a v (q : Qp) :
-      Observe ([| q ≤ 1 |])%Qc (val_ a v q) := _.
+      Observe ([| q ≤ 1 |])%Qp (val_ a v q) := _.
 
     Instance val_fractional a rv : Fractional (val_ a rv) := _.
     Instance val_as_fractional a rv q :
@@ -520,7 +520,7 @@ Module SimpleCPP.
     Global Instance byte_agree a v1 v2 q1 q2 :
       Observe2 [|v1 = v2|] (byte_ a v1 q1) (byte_ a v2 q2) := _.
     Global Instance byte_frac_valid a rv (q : Qp) :
-      Observe ([| q ≤ 1 |])%Qc (byte_ a rv q) := _.
+      Observe ([| q ≤ 1 |])%Qp (byte_ a rv q) := _.
 
     Instance byte_fractional {a rv} : Fractional (byte_ a rv) := _.
     Instance byte_as_fractional a rv q :
@@ -567,7 +567,7 @@ Module SimpleCPP.
 
     Lemma bytes_frac_valid a vs (q : Qp) :
       length vs > 0 ->
-      bytes a vs q |-- [| q ≤ 1 |]%Qc.
+      bytes a vs q |-- [| q ≤ 1 |]%Qp.
     Proof.
       rewrite /bytes; case: vs => [ |v vs _] /=; first by lia.
       rewrite byte_frac_valid. by iIntros "[% _]".
@@ -606,7 +606,7 @@ Module SimpleCPP.
       apply /observe_2_intro_persistent /bi.wand_intro_r.
       rewrite -own_op singleton_op.
       rewrite own_valid uPred.discrete_valid singleton_valid.
-      by iIntros "!%" => /= /agree_op_invL'.
+      by iIntros "!%" => /= /to_agree_op_inv_L.
     Qed.
 
     (** heap points to *)
@@ -643,7 +643,7 @@ Module SimpleCPP.
     Qed.
 
     Global Instance addr_encodes_frac_valid {σ} ty (q : Qp) a v vs :
-      Observe [| q ≤ 1 |]%Qc (addr_encodes σ ty q a v vs).
+      Observe [| q ≤ 1 |]%Qp (addr_encodes σ ty q a v vs).
     Proof.
       apply: observe_intro_persistent.
       iDestruct 1 as (Hen%length_encodes_pos) "[B _]".
@@ -667,7 +667,7 @@ Module SimpleCPP.
       Observe [| ty <> Tvoid |] (oaddr_encodes σ ty q oa p v).
     Proof. destruct oa; apply _. Qed.
     Local Instance oaddr_encodes_frac_valid {σ} t (q : Qp) oa p v :
-      Observe [| q ≤ 1 |]%Qc (oaddr_encodes σ t q oa p v).
+      Observe [| q ≤ 1 |]%Qp (oaddr_encodes σ t q oa p v).
     Proof. destruct oa; apply _. Qed.
 
     (** the pointer points to the code
@@ -966,7 +966,7 @@ Module SimpleCPP.
       Observe [| ty <> Tvoid |] (@tptsto σ ty q p v) := _.
 
     Global Instance tptsto_frac_valid {σ} ty (q : Qp) p v :
-      Observe [| q ≤ 1 |]%Qc (@tptsto σ ty q p v) := _.
+      Observe [| q ≤ 1 |]%Qp (@tptsto σ ty q p v) := _.
 
     Global Instance tptsto_agree σ t q1 q2 p v1 v2 :
       Observe2 [| v1 = v2 |] (@tptsto σ t q1 p v1) (@tptsto σ t q2 p v2).

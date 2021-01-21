@@ -2,11 +2,10 @@
 # The Iris  [_CoqProject](https://gitlab.mpi-sws.org/iris/iris/-/blob/master/_CoqProject)
 # explains some of them.
 -arg -w -arg -notation-overridden
--arg -w -arg -convert_concl_no_check
 -arg -w -arg -ambiguous-paths
 -arg -w -arg -redundant-canonical-projection
 # Similar to notation warnings.
--arg -w -arg -custom-entry-overriden
+-arg -w -arg -custom-entry-overridden
 # Warns about correct usage:
 -arg -w -arg -ssr-search-moved
 

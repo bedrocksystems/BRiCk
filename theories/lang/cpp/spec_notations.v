@@ -129,7 +129,7 @@ Notation "'\with' x .. y X" :=
    format "'[v' '\with'     '[hv' x  ..  y ']'  '//' X ']'").
 
 Notation "'\withT' ts <- t X" := (@with_tele _ t (fun ts => X))
-  (at level 200, ts ident, X at level 200, right associativity,
+  (at level 200, ts name, X at level 200, right associativity,
    format "'[v' '\withT'     ts <- t  '//' X ']'").
 
 Notation "'\prepost' pp X" :=
