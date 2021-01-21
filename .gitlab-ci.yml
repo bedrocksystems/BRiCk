@@ -190,7 +190,7 @@ release_latest:
 prepare_pages:
   # TODO (JH): Revert to using the `fm_docs_img` after `serapi` gets an
   #   8.13 bump and we can update the image
-  image: ${cur_main_docker_image}
+  image: ${cur_main_docker_img}
   stage: prepare_pages
   dependencies:
     - test_latest
