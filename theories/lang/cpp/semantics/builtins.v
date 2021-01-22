@@ -75,6 +75,60 @@ Definition leading_zeros (sz : bitsize) (l : Z) : Z :=
   rewrite !Z.testbit_ones; try lia;
   churn_bits'.
 
+Section BitsTheory.
+  Lemma log2_lt_pow2ge:
+    ∀ a b : Z,
+      0 <= a →
+      Z.log2 a < b ->
+      a < 2 ^ b.
+  Proof.
+    intros.
+    assert (a=0 \/ 0 < a) as [Hc | Hc] by lia.
+    {
+      subst.
+      simpl in *.
+      apply Z.pow_pos_nonneg; lia.
+    }
+    {
+      apply Z.log2_lt_pow2; auto.
+    }
+  Qed.
+
+  Lemma ZlogLtPow2:   forall (a w: Z),
+      0 < w ->
+      0 ≤ a < 2 ^ w → Z.log2 a < w.
+  Proof.
+    intros.
+    assert (a=0 \/ 0 < a) as Hc by lia.
+    destruct Hc as [Hc | Hc]; [subst; simpl; lia | ].
+    apply Z.log2_lt_pow2; lia.
+  Qed.
+
+  Lemma ZlorRange:
+    forall (a b: Z) (w : N),
+      0 <= a < (2 ^ Z.of_N w) ->
+      0 <= b < (2 ^ Z.of_N w) ->
+      0 <= Z.lor a b < (2 ^ Z.of_N w).
+  Proof.
+    intros.
+    assert (w=0 \/ 0 < w)%N as [Hc | Hc] by lia.
+    {
+      subst.  simpl in *.
+      assert (a=0) by lia.
+      assert (b=0) by lia.
+      subst.
+      simpl.
+      compute. firstorder.
+    }
+    apply and_wlog_r; [apply Z.lor_nonneg; lia | ].
+    intros.
+    apply log2_lt_pow2ge; [assumption | ].
+    rewrite -> Z.log2_lor by lia.
+    apply ZlogLtPow2 in H; try lia.
+    apply ZlogLtPow2 in H0;  lia.
+  Qed.
+End BitsTheory.
+
 Section Byte.
   Definition _get_byte (x: Z) (n: nat): Z := Z.land (x ≫ (8 * n)) (Z.ones 8).
   Definition _set_byte (x: Z) (n: nat): Z := (Z.land (Z.ones 8) x) ≪ (8 * n).
@@ -131,36 +185,23 @@ Section Byte.
       f_equal; lia.
     Qed.
 
-    Lemma _get_byte_nonneg:
-      forall (v: Z) (idx: nat),
-        (0 <= _get_byte v idx)%Z.
-    Proof.
-      intros; rewrite /_get_byte/Z.ones.
-      apply Z.land_nonneg.
-      by right.
-    Qed.
-
     Lemma _get_byte_bound:
       forall (v : Z) (idx : nat),
-        (_get_byte v idx < 256)%Z.
+        (0 <= _get_byte v idx < 256)%Z.
     Proof.
       intros *; rewrite /_get_byte Z.land_ones; try lia.
       pose proof (Z.mod_pos_bound (v ≫ (8 * idx)) 256) as [? ?]; try lia.
       now replace (2 ^ 8) with 256%Z by lia.
     Qed.
 
-    Lemma _set_byte_nonneg:
+    Lemma _get_byte_nonneg:
       forall (v: Z) (idx: nat),
-        (0 <= _set_byte v idx)%Z.
-    Proof.
-      intros; rewrite /_set_byte/Z.ones Z.shiftl_nonneg.
-      apply Z.land_nonneg.
-      by left.
-    Qed.
+        (0 <= _get_byte v idx)%Z.
+    Proof. intros *; pose proof (_get_byte_bound v idx); lia. Qed.
 
     Lemma _set_byte_bound:
       forall (v : Z) (idx : nat),
-        (_set_byte v idx < 2 ^ (8 * (idx + 1)))%Z.
+        (0 <= _set_byte v idx < 2 ^ (8 * (idx + 1)))%Z.
     Proof.
       intros; rewrite /_set_byte Z.land_comm Z.land_ones; try lia.
       rewrite Z.shiftl_mul_pow2; try lia.
@@ -168,9 +209,17 @@ Section Byte.
       replace (2 ^ (8 * (idx + 1))) with ((2 ^ 8) * (2 ^ (8 * idx)))
         by (rewrite Z.mul_add_distr_l Zpower_exp; lia).
       replace (2 ^ 8) with 256%Z by lia.
-      apply Zmult_lt_compat_r; auto.
-      apply Z.pow_pos_nonneg; lia.
+      split.
+      - apply Z.mul_nonneg_nonneg; auto.
+        apply Z.pow_nonneg; lia.
+      - apply Zmult_lt_compat_r; auto.
+        apply Z.pow_pos_nonneg; lia.
     Qed.
+
+    Lemma _set_byte_nonneg:
+      forall (v: Z) (idx: nat),
+        (0 <= _set_byte v idx)%Z.
+    Proof. intros *; pose proof (_set_byte_bound v idx); lia. Qed.
 
     Lemma _set_byte_testbit_low:
       forall idx v n,
@@ -790,7 +839,94 @@ Notation bswap128 := (bswap W128) (only parsing).
 
 Section Bswap.
   Section Theory.
-    (* TODO: Rewrite these so that they don't use `f_equal` (and thus have a reasonable size) *)
+    Section bounded.
+      #[local] Transparent bswap.
+
+      Lemma bswap8_bounded:
+        forall v,
+          0 <= bswap8 v < 256.
+      Proof.
+        intros *; rewrite /bswap/bswap_/= Z.lor_0_l.
+        pose proof (_set_byte_bound (_get_byte v 0) 0).
+        lia.
+      Qed.
+
+      Lemma bswap16_bounded:
+        ∀ v,
+         0 ≤ bswap16 v < 65536.
+      Proof.
+        intros *; rewrite /bswap/bswap_/= Z.lor_0_l.
+        pose proof (_set_byte_bound (_get_byte v 0) 1).
+        pose proof (_set_byte_bound (_get_byte v 1) 0).
+        repeat (try apply ZlorRange with (w:=16%N)); lia.
+      Qed.
+
+      Lemma bswap32_bounded:
+        forall v,
+          0 ≤ bswap32 v < 4294967296.
+      Proof.
+        intros *; rewrite /bswap/bswap_/= Z.lor_0_l.
+        pose proof (_set_byte_bound (_get_byte v 0) 3).
+        pose proof (_set_byte_bound (_get_byte v 1) 2).
+        pose proof (_set_byte_bound (_get_byte v 2) 1).
+        pose proof (_set_byte_bound (_get_byte v 3) 0).
+        repeat (try apply ZlorRange with (w:=32%N)); lia.
+      Qed.
+
+      Lemma bswap64_bounded:
+        forall v,
+          0 ≤ bswap64 v < 18446744073709551616.
+      Proof.
+        intros *; rewrite /bswap/bswap_/= Z.lor_0_l.
+        pose proof (_set_byte_bound (_get_byte v 0) 7).
+        pose proof (_set_byte_bound (_get_byte v 1) 6).
+        pose proof (_set_byte_bound (_get_byte v 2) 5).
+        pose proof (_set_byte_bound (_get_byte v 3) 4).
+        pose proof (_set_byte_bound (_get_byte v 4) 3).
+        pose proof (_set_byte_bound (_get_byte v 5) 2).
+        pose proof (_set_byte_bound (_get_byte v 6) 1).
+        pose proof (_set_byte_bound (_get_byte v 7) 0).
+        repeat (try apply ZlorRange with (w:=64%N)); lia.
+      Qed.
+
+      Lemma bswap128_bounded:
+        forall v,
+          0 ≤ bswap128 v < ltac:(let x := eval cbv in (2^128) in exact x).
+      Proof.
+        intros *; rewrite /bswap/bswap_/= Z.lor_0_l.
+        pose proof (_set_byte_bound (_get_byte v 0) 15).
+        pose proof (_set_byte_bound (_get_byte v 1) 14).
+        pose proof (_set_byte_bound (_get_byte v 2) 13).
+        pose proof (_set_byte_bound (_get_byte v 3) 12).
+        pose proof (_set_byte_bound (_get_byte v 4) 11).
+        pose proof (_set_byte_bound (_get_byte v 5) 10).
+        pose proof (_set_byte_bound (_get_byte v 6) 9).
+        pose proof (_set_byte_bound (_get_byte v 7) 8).
+        pose proof (_set_byte_bound (_get_byte v 8) 7).
+        pose proof (_set_byte_bound (_get_byte v 9) 6).
+        pose proof (_set_byte_bound (_get_byte v 10) 5).
+        pose proof (_set_byte_bound (_get_byte v 11) 4).
+        pose proof (_set_byte_bound (_get_byte v 12) 3).
+        pose proof (_set_byte_bound (_get_byte v 13) 2).
+        pose proof (_set_byte_bound (_get_byte v 14) 1).
+        pose proof (_set_byte_bound (_get_byte v 15) 0).
+        repeat (try apply ZlorRange with (w:=128%N)); lia.
+      Qed.
+    End bounded.
+
+    Lemma bswap_bounded:
+      forall sz v,
+        0 <= bswap sz v < 2^(bitsZ sz).
+    Proof.
+      intros *; destruct sz;
+        eauto using
+              bswap8_bounded,
+              bswap16_bounded,
+              bswap32_bounded,
+              bswap64_bounded,
+              bswap128_bounded.
+    Qed.
+
     Section useless_lor.
       #[local] Transparent _get_byte _set_byte bswap.
 
