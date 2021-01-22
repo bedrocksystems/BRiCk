@@ -283,8 +283,8 @@ Section Byte.
     Lemma split16:
       forall z,
         0 <= z < 2^bitsZ W16 ->
-        z = Z.lor (_set_byte (_get_byte z 1) 1)
-                  (_set_byte (_get_byte z 0) 0).
+        z = Z.lor (_set_byte (_get_byte z 0) 0)
+                  (_set_byte (_get_byte z 1) 1).
     Proof.
       intros * Hbounds; simpl in Hbounds.
       apply Z.bits_inj'=> n ?.
@@ -307,13 +307,10 @@ Section Byte.
     Lemma split32:
       forall z,
         0 <= z < 2^bitsZ W32 ->
-        z = Z.lor
-              (Z.lor
-                 (Z.lor
-                    (_set_byte (_get_byte z 3) 3)
-                    (_set_byte (_get_byte z 2) 2))
-                 (_set_byte (_get_byte z 1) 1))
-              (_set_byte (_get_byte z 0) 0).
+        z = Z.lor (_set_byte (_get_byte z 0) 0)
+            (Z.lor (_set_byte (_get_byte z 1) 1)
+             (Z.lor (_set_byte (_get_byte z 2) 2)
+                    (_set_byte (_get_byte z 3) 3))).
     Proof.
       intros * Hbounds; simpl in Hbounds.
       apply Z.bits_inj'=> n ?.
@@ -352,21 +349,14 @@ Section Byte.
     Lemma split64:
       forall z,
         0 <= z < 2^bitsZ W64 ->
-        z = Z.lor
-              (Z.lor
-                 (Z.lor
-                    (Z.lor
-                       (Z.lor
-                          (Z.lor
-                             (Z.lor
-                                (_set_byte (_get_byte z 7) 7)
-                                (_set_byte (_get_byte z 6) 6))
-                             (_set_byte (_get_byte z 5) 5))
-                          (_set_byte (_get_byte z 4) 4))
-                       (_set_byte (_get_byte z 3) 3))
-                    (_set_byte (_get_byte z 2) 2))
-                 (_set_byte (_get_byte z 1) 1))
-              (_set_byte (_get_byte z 0) 0).
+        z = Z.lor (_set_byte (_get_byte z 0) 0)
+            (Z.lor (_set_byte (_get_byte z 1) 1)
+             (Z.lor (_set_byte (_get_byte z 2) 2)
+              (Z.lor (_set_byte (_get_byte z 3) 3)
+               (Z.lor (_set_byte (_get_byte z 4) 4)
+                (Z.lor (_set_byte (_get_byte z 5) 5)
+                 (Z.lor (_set_byte (_get_byte z 6) 6)
+                        (_set_byte (_get_byte z 7) 7))))))).
     Proof.
       intros * Hbounds; simpl in Hbounds.
       apply Z.bits_inj'=> n ?.
@@ -457,37 +447,22 @@ Section Byte.
     Lemma split128:
       forall z,
         0 <= z < 2^bitsZ W128 ->
-        z = Z.lor
-              (Z.lor
-                 (Z.lor
-                    (Z.lor
-                       (Z.lor
-                          (Z.lor
-                             (Z.lor
-                                (Z.lor
-                                   (Z.lor
-                                      (Z.lor
-                                         (Z.lor
-                                            (Z.lor
-                                               (Z.lor
-                                                  (Z.lor
-                                                     (Z.lor
-                                                        (_set_byte (_get_byte z 15) 15)
-                                                        (_set_byte (_get_byte z 14) 14))
-                                                     (_set_byte (_get_byte z 13) 13))
-                                                  (_set_byte (_get_byte z 12) 12))
-                                               (_set_byte (_get_byte z 11) 11))
-                                            (_set_byte (_get_byte z 10) 10))
-                                         (_set_byte (_get_byte z 9) 9))
-                                      (_set_byte (_get_byte z 8) 8))
-                                   (_set_byte (_get_byte z 7) 7))
-                                (_set_byte (_get_byte z 6) 6))
-                             (_set_byte (_get_byte z 5) 5))
-                          (_set_byte (_get_byte z 4) 4))
-                       (_set_byte (_get_byte z 3) 3))
-                    (_set_byte (_get_byte z 2) 2))
-                 (_set_byte (_get_byte z 1) 1))
-              (_set_byte (_get_byte z 0) 0).
+        z = Z.lor (_set_byte (_get_byte z 0) 0)
+            (Z.lor (_set_byte (_get_byte z 1) 1)
+             (Z.lor (_set_byte (_get_byte z 2) 2)
+              (Z.lor (_set_byte (_get_byte z 3) 3)
+               (Z.lor (_set_byte (_get_byte z 4) 4)
+                (Z.lor (_set_byte (_get_byte z 5) 5)
+                 (Z.lor (_set_byte (_get_byte z 6) 6)
+                  (Z.lor (_set_byte (_get_byte z 7) 7)
+                   (Z.lor (_set_byte (_get_byte z 8) 8)
+                    (Z.lor (_set_byte (_get_byte z 9) 9)
+                     (Z.lor (_set_byte (_get_byte z 10) 10)
+                      (Z.lor (_set_byte (_get_byte z 11) 11)
+                       (Z.lor (_set_byte (_get_byte z 12) 12)
+                        (Z.lor (_set_byte (_get_byte z 13) 13)
+                         (Z.lor (_set_byte (_get_byte z 14) 14)
+                                (_set_byte (_get_byte z 15) 15))))))))))))))).
     Proof.
       intros * Hbounds; simpl in Hbounds.
       apply Z.bits_inj'=> n ?.
@@ -837,7 +812,7 @@ Section Bswap.
       Proof.
         move=> v v' idx Hidx.
         rewrite /bswap16/bswap/bswap_/_get_byte/=.
-        f_equal; [| f_equal; rewrite /_set_byte; churn_bits].
+        do 1 (f_equal; [| f_equal; rewrite /_set_byte; churn_bits]).
         f_equal; f_equal; rewrite /_set_byte; churn_bits.
       Qed.
 
@@ -849,9 +824,7 @@ Section Bswap.
       Proof.
         move=> v v' idx Hidx.
         rewrite /bswap32/bswap/bswap_/_get_byte/=.
-        f_equal; [| f_equal; rewrite /_set_byte; churn_bits].
-        f_equal; [| f_equal; rewrite /_set_byte; churn_bits].
-        f_equal; [| f_equal; rewrite /_set_byte; churn_bits].
+        do 3 (f_equal; [| f_equal; rewrite /_set_byte; churn_bits]).
         f_equal; f_equal; rewrite /_set_byte; churn_bits.
       Qed.
 
@@ -863,13 +836,7 @@ Section Bswap.
       Proof.
         move=> v v' idx Hidx.
         rewrite /bswap64/bswap/bswap_/_get_byte/=.
-        f_equal; [| f_equal; rewrite /_set_byte; churn_bits].
-        f_equal; [| f_equal; rewrite /_set_byte; churn_bits].
-        f_equal; [| f_equal; rewrite /_set_byte; churn_bits].
-        f_equal; [| f_equal; rewrite /_set_byte; churn_bits].
-        f_equal; [| f_equal; rewrite /_set_byte; churn_bits].
-        f_equal; [| f_equal; rewrite /_set_byte; churn_bits].
-        f_equal; [| f_equal; rewrite /_set_byte; churn_bits].
+        do 7 (f_equal; [| f_equal; rewrite /_set_byte; churn_bits]).
         f_equal; f_equal; rewrite /_set_byte; churn_bits.
       Qed.
 
@@ -881,21 +848,7 @@ Section Bswap.
       Proof.
         move=> v v' idx Hidx.
         rewrite /bswap128/bswap/bswap_/_get_byte/=.
-        f_equal; [| f_equal; rewrite /_set_byte; churn_bits].
-        f_equal; [| f_equal; rewrite /_set_byte; churn_bits].
-        f_equal; [| f_equal; rewrite /_set_byte; churn_bits].
-        f_equal; [| f_equal; rewrite /_set_byte; churn_bits].
-        f_equal; [| f_equal; rewrite /_set_byte; churn_bits].
-        f_equal; [| f_equal; rewrite /_set_byte; churn_bits].
-        f_equal; [| f_equal; rewrite /_set_byte; churn_bits].
-        f_equal; [| f_equal; rewrite /_set_byte; churn_bits].
-        f_equal; [| f_equal; rewrite /_set_byte; churn_bits].
-        f_equal; [| f_equal; rewrite /_set_byte; churn_bits].
-        f_equal; [| f_equal; rewrite /_set_byte; churn_bits].
-        f_equal; [| f_equal; rewrite /_set_byte; churn_bits].
-        f_equal; [| f_equal; rewrite /_set_byte; churn_bits].
-        f_equal; [| f_equal; rewrite /_set_byte; churn_bits].
-        f_equal; [| f_equal; rewrite /_set_byte; churn_bits].
+        do 15 (f_equal; [| f_equal; rewrite /_set_byte; churn_bits]).
         f_equal; f_equal; rewrite /_set_byte; churn_bits.
       Qed.
     End useless_lor.
@@ -918,12 +871,23 @@ Section Bswap.
     Section _set_byte_reverse.
       #[local] Transparent _get_byte _set_byte bswap.
 
+      Lemma bswap8_set_byte_reverse:
+        forall x,
+          bswap8 (_set_byte x 0) =
+          _set_byte x 0.
+      Proof.
+        intros *.
+        rewrite /bswap8/bswap/bswap_/=.
+        rewrite !_set_get_byte_roundtrip !Z.shiftl_0_r !Z.lor_0_l.
+        rewrite _get_set_byte_roundtrip; now apply _get_0_set_0_eq.
+      Qed.
+
       Lemma bswap16_set_byte_reverse:
         forall x1 x2,
           bswap16 (Z.lor (_set_byte x1 0)
-                   (Z.lor (_set_byte x2 1) 0)) =
+                         (_set_byte x2 1)) =
           Z.lor (_set_byte x2 0)
-           (Z.lor (_set_byte x1 1) 0).
+                (_set_byte x1 1).
       Proof.
         intros *.
         rewrite /bswap16/bswap/bswap_/=.
@@ -938,11 +902,11 @@ Section Bswap.
           bswap32 (Z.lor (_set_byte x1 0)
                    (Z.lor (_set_byte x2 1)
                     (Z.lor (_set_byte x3 2)
-                     (Z.lor (_set_byte x4 3) 0)))) =
+                           (_set_byte x4 3)))) =
           Z.lor (_set_byte x4 0)
           (Z.lor (_set_byte x3 1)
            (Z.lor (_set_byte x2 2)
-            (Z.lor (_set_byte x1 3) 0))).
+                  (_set_byte x1 3))).
       Proof.
         intros *.
         rewrite /bswap32/bswap/bswap_/=.
@@ -962,7 +926,7 @@ Section Bswap.
                       (Z.lor (_set_byte x5 4)
                        (Z.lor (_set_byte x6 5)
                         (Z.lor (_set_byte x7 6)
-                         (Z.lor (_set_byte x8 7) 0)))))))) =
+                               (_set_byte x8 7)))))))) =
           Z.lor (_set_byte x8 0)
           (Z.lor (_set_byte x7 1)
            (Z.lor (_set_byte x6 2)
@@ -970,7 +934,7 @@ Section Bswap.
              (Z.lor (_set_byte x4 4)
               (Z.lor (_set_byte x3 5)
                (Z.lor (_set_byte x2 6)
-                (Z.lor (_set_byte x1 7) 0))))))).
+                      (_set_byte x1 7))))))).
       Proof.
         intros *.
         rewrite /bswap64/bswap/bswap_/=.
@@ -1000,7 +964,7 @@ Section Bswap.
                                (Z.lor (_set_byte x13 12)
                                 (Z.lor (_set_byte x14 13)
                                  (Z.lor (_set_byte x15 14)
-                                  (Z.lor (_set_byte x16 15) 0)))))))))))))))) =
+                                        (_set_byte x16 15)))))))))))))))) =
           Z.lor (_set_byte x16 0)
            (Z.lor (_set_byte x15 1)
             (Z.lor (_set_byte x14 2)
@@ -1016,7 +980,7 @@ Section Bswap.
                       (Z.lor (_set_byte x4 12)
                        (Z.lor (_set_byte x3 13)
                         (Z.lor (_set_byte x2 14)
-                         (Z.lor (_set_byte x1 15) 0))))))))))))))).
+                               (_set_byte x1 15))))))))))))))).
       Proof.
         intros *.
         rewrite /bswap128/bswap/bswap_/=.
@@ -1092,19 +1056,14 @@ Section Bswap.
     Qed.
 
     Section involutive.
-      #[local] Transparent _get_byte _set_byte bswap.
-
       Lemma bswap8_involutive:
         forall z,
           0 <= z < 2^bitsZ W8 ->
           bswap8 (bswap8 z) = z.
       Proof.
         intros * Hbounds.
-        rewrite {2}(split8 z); auto.
-        rewrite /bswap8/bswap/bswap_/=.
-        rewrite !_set_get_byte_roundtrip !Z.shiftl_0_r !Z.lor_0_l.
-        rewrite _get_0_set_0_eq.
-        now rewrite _set_get_byte_roundtrip Z.shiftl_0_r.
+        rewrite (split8 z); auto.
+        now rewrite 2!bswap8_set_byte_reverse.
       Qed.
 
       Lemma bswap8_involutive_land:
@@ -1124,14 +1083,8 @@ Section Bswap.
           bswap16 (bswap16 z) = z.
       Proof.
         intros * Hbounds.
-        rewrite {2}(split16 z); auto.
-        rewrite /bswap16/bswap/bswap_/=.
-        rewrite !_set_get_byte_roundtrip !Z.shiftl_0_r Z.lor_0_l.
-        rewrite !_get_byte_lor !_set_byte_lor.
-        rewrite !_get_set_byte_roundtrip.
-        rewrite !_get_set_byte_no_overlap; try lia.
-        rewrite !_set_byte_0 ?Z.lor_0_l ?Z.lor_0_r.
-        now rewrite 2!_set_get_0 !_set_get_byte_roundtrip Z.shiftl_0_r.
+        rewrite (split16 z); auto.
+        now rewrite 2!bswap16_set_byte_reverse.
       Qed.
 
       Lemma bswap16_involutive_land:
@@ -1151,14 +1104,8 @@ Section Bswap.
           bswap32 (bswap32 z) = z.
       Proof.
         intros * Hbounds.
-        rewrite {2}(split32 z); auto.
-        rewrite /bswap32/bswap/bswap_/=.
-        rewrite !_set_get_byte_roundtrip !Z.shiftl_0_r Z.lor_0_l.
-        rewrite !_get_byte_lor !_set_byte_lor.
-        rewrite !_get_set_byte_roundtrip.
-        rewrite !_get_set_byte_no_overlap; try lia.
-        rewrite !_set_byte_0 ?Z.lor_0_l ?Z.lor_0_r.
-        now rewrite 4!_set_get_0 !_set_get_byte_roundtrip Z.shiftl_0_r.
+        rewrite (split32 z); auto.
+        now rewrite 2!bswap32_set_byte_reverse.
       Qed.
 
       Lemma bswap32_involutive_land:
@@ -1178,14 +1125,8 @@ Section Bswap.
           bswap64 (bswap64 z) = z.
       Proof.
         intros * Hbounds.
-        rewrite {2}(split64 z); auto.
-        rewrite /bswap64/bswap/bswap_/=.
-        rewrite !_set_get_byte_roundtrip !Z.shiftl_0_r Z.lor_0_l.
-        rewrite !_get_byte_lor !_set_byte_lor.
-        rewrite !_get_set_byte_roundtrip.
-        rewrite !_get_set_byte_no_overlap; try lia.
-        rewrite !_set_byte_0 ?Z.lor_0_l ?Z.lor_0_r.
-        now rewrite 8!_set_get_0 !_set_get_byte_roundtrip Z.shiftl_0_r.
+        rewrite (split64 z); auto.
+        now rewrite 2!bswap64_set_byte_reverse.
       Qed.
 
       Lemma bswap64_involutive_land:
@@ -1205,16 +1146,9 @@ Section Bswap.
           bswap128 (bswap128 z) = z.
       Proof.
         intros * Hbounds.
-        rewrite {2}(split128 z); auto.
-        rewrite /bswap128/bswap/bswap_/=.
-        rewrite !_set_get_byte_roundtrip !Z.shiftl_0_r Z.lor_0_l.
-        rewrite !_get_byte_lor !_set_byte_lor.
-        rewrite !_get_set_byte_roundtrip.
-        rewrite !_get_set_byte_no_overlap; try lia.
-        rewrite !_set_byte_0 ?Z.lor_0_l ?Z.lor_0_r.
-        now rewrite 16!_set_get_0 !_set_get_byte_roundtrip Z.shiftl_0_r.
+        rewrite (split128 z); auto.
+        now rewrite 2!bswap128_set_byte_reverse.
       Qed.
-      (* TODO (JH): ^^^ This is really slow *)
 
       Lemma bswap128_involutive_land:
         forall z,
