@@ -89,6 +89,7 @@ Section defs.
    *)
   Definition cptrR_def {resolve : genv} (fs : function_spec) : Rep :=
     as_Rep (fun p =>
+         valid_ptr p **
          Forall (ti : thread_info), □ (Forall vs Q,
          [| List.length vs = List.length fs.(fs_arguments) |] -*
          fs.(fs_spec) ti vs Q -*
@@ -867,12 +868,20 @@ Section with_cpp.
   #[global] Instance cptrR_persistent {resolve s} : Persistent (cptrR s).
   Proof. rewrite cptrR_eq. apply _. Qed.
 
+  (* NOTE this should become an instance. *)
+  Lemma cptrR_valid_observe {resolve:genv} (p : ptr) f : Observe (valid_ptr p) (_at p (cptrR f)).
+  Proof.
+    apply observe_intro_persistent; refine _.
+    rewrite cptrR_eq/cptrR_def _at_as_Rep.
+    iIntros "[$ _]".
+  Qed.
+
   (* TODO: Proper wrt [genv_leq]. *)
   #[global] Instance cptrR_mono {resolve} : Proper (flip fs_entails ==> (⊢)) cptrR.
   Proof.
     intros ??; rewrite /flip /fs_entails /fs_impl cptrR_eq/cptrR_def; intros Heq.
     constructor => p /=.
-    f_equiv=>ti; f_equiv; f_equiv => vs; f_equiv => Q.
+    f_equiv; f_equiv=>ti; f_equiv; f_equiv => vs; f_equiv => Q.
     iIntros "Hcptr -> Hy".
     iDestruct Heq as "(%Hspec & #Hyx)"; rewrite Hspec.
     iApply ("Hcptr" with "[%] (Hyx Hy)").
