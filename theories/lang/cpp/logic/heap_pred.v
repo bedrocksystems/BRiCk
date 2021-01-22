@@ -996,6 +996,9 @@ Section with_cpp.
   Proof.
     rewrite is_nonnull_eq uninitR_eq. apply monPred_observe=>p /=. apply _.
   Qed.
+  Global Instance anyR_nonnull {σ} ty q :
+    Observe is_nonnull (anyR (resolve:=σ) ty q).
+  Proof. rewrite anyR_eq. apply _. Qed.
 
   Definition alignedR_def (al : N) : Rep := as_Rep (aligned_ptr al).
   Definition alignedR_aux : seal (@alignedR_def). Proof. by eexists. Qed.
