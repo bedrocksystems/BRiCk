@@ -33,6 +33,7 @@ From bedrock.lang.cpp Require Import ast.
   apply Z.bits_inj'=> n ?;
   repeat (rewrite ?Z.lor_spec ?Z.shiftl_spec ?Z.land_spec ?Z.shiftr_spec; try lia);
   rewrite !Z.testbit_ones; try lia;
+  churn_bits'.
 
 Section FromToBytes.
   Section ExtraFacts.
@@ -188,6 +189,8 @@ Section FromToBytes.
   End ToBytes_internal.
 
   Section ToBytesFacts_internal.
+    #[local] Transparent _get_byte _set_byte.
+
     Lemma _Z_to_bytes_unsigned_le'_length:
       forall idx cnt v,
         length (_Z_to_bytes_unsigned_le' idx cnt v) = cnt.
@@ -528,7 +531,6 @@ Section FromToBytes.
       by rewrite IHbytes _set_byte_S_idx.
     Qed.
 
-
     #[local] Lemma length_1_inv:
       forall {A} (l : list A),
         length l = 1%nat ->
@@ -565,7 +567,7 @@ Section FromToBytes.
         Datatypes.length bytes = sz ->
         bytesNat bsz = sz ->
         _Z_from_bytes_unsigned_le bytes = v ->
-        _Z_from_bytes_unsigned_le (rev bytes) = builtins.bswap bsz v.
+        _Z_from_bytes_unsigned_le (rev bytes) = bswap bsz v.
     Proof.
       rewrite /_Z_from_bytes_unsigned_le/_Z_from_bytes_unsigned_le';
         move=> bsz sz bytes v Hlen Hsz Hdecodes; destruct bsz;
@@ -576,7 +578,8 @@ Section FromToBytes.
         | apply length_8_inv  in Hlen as [? [? [? [? [? [? [? [? Hbytes]]]]]]]]
         | apply length_16_inv in Hlen as [? [? [? [? [? [? [? [?
                                             [? [? [? [? [? [? [? [? Hbytes]]]]]]]]]]]]]]]]];
-        rewrite Hbytes //=.
+        rewrite Hbytes //= !Z.lor_0_r.
+      - now rewrite bswap8_set_byte_reverse.
       - now rewrite bswap16_set_byte_reverse.
       - now rewrite bswap32_set_byte_reverse.
       - now rewrite bswap64_set_byte_reverse.
@@ -585,6 +588,8 @@ Section FromToBytes.
   End FromBytesFacts_internal.
 
   Section FromToFacts_internal.
+    #[local] Transparent _get_byte _set_byte.
+
     Lemma _Z_from_to_bytes_unsigned_le'_overflow:
       forall (idx cnt: nat) (v: Z),
         (2^(8*(idx+cnt)) <= v)%Z ->

@@ -766,11 +766,6 @@ Section Bswap.
               0.
 
   Definition bswap (sz : bitsize) : Z -> Z := bswap_ (bytesNat sz).
-  #[local] Definition bswap8   (n: Z): Z := bswap W8 n.
-  #[local] Definition bswap16  (n: Z): Z := bswap W16 n.
-  #[local] Definition bswap32  (n: Z): Z := bswap W32 n.
-  #[local] Definition bswap64  (n: Z): Z := bswap W64 n.
-  #[local] Definition bswap128 (n: Z): Z := bswap W128 n.
 
   Section test.
     Local Definition bytes (ls : list Z) :=
@@ -784,6 +779,12 @@ Section Bswap.
       bswap W64 (bytes (1::2::3::4::5::6::7::8::nil)%Z) = bytes (8::7::6::5::4::3::2::1::nil)%Z := eq_refl.
   End test.
 End Bswap.
+
+Notation bswap8 := (bswap W8) (only parsing).
+Notation bswap16 := (bswap W16) (only parsing).
+Notation bswap32 := (bswap W32) (only parsing).
+Notation bswap64 := (bswap W64) (only parsing).
+Notation bswap128 := (bswap W128) (only parsing).
 
 #[global] Opaque bswap.
 
