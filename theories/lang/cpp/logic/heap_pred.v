@@ -393,6 +393,13 @@ Section with_cpp.
     Observe2 [| Q |] R1 R2 → Observe2 [| Q |] (_offsetR o R1) (_offsetR o R2).
   Proof. rewrite -{2}_offsetR_only_provable. apply _. Qed.
 
+  Global Instance _offsetR_observe_pure Q o (R : Rep) :
+    Observe [! Q !] R → Observe [! Q !] (_offsetR o R).
+  Proof. rewrite -{2}_offsetR_pure. apply _. Qed.
+  Global Instance _offsetR_observe_2_pure Q o (R1 R2 : Rep) :
+    Observe2 [! Q !] R1 R2 → Observe2 [! Q !] (_offsetR o R1) (_offsetR o R2).
+  Proof. rewrite -{2}_offsetR_pure. apply _. Qed.
+
   Lemma _offsetR_obs o r P :
     r |-- r ** [| P |] →
     _offsetR o r |-- _offsetR o r ** [| P |].
@@ -552,6 +559,13 @@ Section with_cpp.
   Global Instance _at_observe_2_only_provable Q l (R1 R2 : Rep) :
     Observe2 [| Q |] R1 R2 → Observe2 [| Q |] (_at l R1) (_at l R2).
   Proof. rewrite -_at_only_provable. apply _. Qed.
+
+  Global Instance _at_observe_pure Q l (R : Rep) :
+    Observe [! Q !] R → Observe [! Q !] (_at l R).
+  Proof. rewrite -_at_pure. apply _. Qed.
+  Global Instance _at_observe_2_pure Q l (R1 R2 : Rep) :
+    Observe2 [! Q !] R1 R2 → Observe2 [! Q !] (_at l R1) (_at l R2).
+  Proof. rewrite -_at_pure. apply _. Qed.
 
   Lemma _at_obs (l : ptr) (r : Rep) P :
     r |-- r ** [| P |] →
