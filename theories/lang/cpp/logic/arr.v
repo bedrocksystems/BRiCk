@@ -296,7 +296,7 @@ Section array.
     induction l; constructor; eauto.
   Qed.
 
-  Instance arrayR_valid_type_obs l :
+  #[global] Instance arrayR_valid_type_obs l :
     Observe [| is_Some (size_of resolve ty) |] (arrayR ty R l).
   Proof. rewrite arrayR_eq/arrayR_def; apply arrR_size_of_observe. Qed.
 
