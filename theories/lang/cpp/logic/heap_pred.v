@@ -375,13 +375,12 @@ Section with_cpp.
     Fractional r → AsFractional (_offsetR o (r q)) (λ q, _offsetR o (r q)) q.
   Proof. constructor. done. apply _. Qed.
 
-  (* TODO: consider making this a global instance, but test performance impact. *)
-  Local Instance _offsetR_observe {o} {Q R : Rep} :
+  Global Instance _offsetR_observe {o} {Q R : Rep} :
     Observe Q R ->
     Observe (_offsetR o Q) (_offsetR o R).
   Proof. move->. by rewrite /Observe _offsetR_pers. Qed.
 
-  Local Instance _offsetR_observe_2 {o} {Q R1 R2 : Rep} :
+  Global Instance _offsetR_observe_2 {o} {Q R1 R2 : Rep} :
     Observe2 Q R1 R2 ->
     Observe2 (_offsetR o Q) (_offsetR o R1) (_offsetR o R2).
   Proof. move->. by rewrite /Observe2 _offsetR_wand _offsetR_pers. Qed.
@@ -542,13 +541,12 @@ Section with_cpp.
     AsFractional (_at l (r q)) (λ q, _at l (r q)) q.
   Proof. constructor. done. apply _. Qed.
 
-  (* TODO: consider making this a global instance, but test performance impact. *)
-  Local Instance _at_observe {p} {Q R : Rep} :
+  Global Instance _at_observe {p} {Q R : Rep} :
     Observe Q R ->
     Observe (_at p Q) (_at p R).
   Proof. move->. by rewrite /Observe _at_pers. Qed.
 
-  Local Instance _at_observe_2 {p} {Q R1 R2 : Rep} :
+  Global Instance _at_observe_2 {p} {Q R1 R2 : Rep} :
     Observe2 Q R1 R2 ->
     Observe2 (_at p Q) (_at p R1) (_at p R2).
   Proof. move->. by rewrite /Observe2 _at_wand _at_pers. Qed.

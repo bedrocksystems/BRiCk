@@ -327,8 +327,6 @@ Section array.
     rewrite Z2Nat.id //. apply. lia.
   Qed.
 
-  Local Existing Instance _at_observe.
-
   Lemma _at_arrayR_sub_type_ptrR_nat_obs (i : nat) p xs
         (Hlen : i < length xs) :
     Observe (p .[ ty ! i ] |-> type_ptrR ty) (p |-> arrayR ty R xs).
