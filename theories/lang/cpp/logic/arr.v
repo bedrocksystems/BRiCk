@@ -53,9 +53,9 @@ End offsetR.
 Implicit Types (p : ptr) (σ : genv).
 
 Section validR.
-  Context `{Σ : cpp_logic}.
+  Context `{Σ : cpp_logic} {resolve : genv}.
 
-  Lemma type_ptrR_validR_plus_one (ty : type) σ :
+  Lemma type_ptrR_validR_plus_one (ty : type) :
     type_ptrR ty ⊢@{RepI (Σ := Σ)} .[ ty ! 1 ] |-> validR .
   Proof.
     apply Rep_entails_at => p.
@@ -69,7 +69,7 @@ Section validR.
     _at p (_offsetR o validR) -|- valid_ptr (_offset_ptr p o).
   Proof. by rewrite _at_offsetR _at_validR. Qed. *)
 
-  Lemma _sub_inv ty i resolve :
+  Lemma _sub_inv ty i :
     _offsetR (_sub ty i) validR |-- [| is_Some (size_of resolve ty) |].
   Proof.
     apply Rep_entails_at => p.
@@ -77,7 +77,7 @@ Section validR.
     apply valid_o_sub_size.
   Qed.
 
-  Lemma _offsetR_sub_0 {resolve : genv} ty R :
+  Lemma _offsetR_sub_0 ty R :
     is_Some (size_of resolve ty) ->
     _offsetR (.[ ty ! 0 ]) R -|- R.
   Proof.
@@ -85,17 +85,17 @@ Section validR.
     by rewrite _at_offsetR /= o_sub_0 // offset_ptr_id.
   Qed.
 
-  Lemma _offsetR_sub_sub {resolve : genv} ty a b R :
+  Lemma _offsetR_sub_sub ty a b R :
     .[ ty ! a ] |-> (.[ ty ! b ] |-> R) ⊣⊢
     .[ ty ! a + b ] |-> R.
   Proof. by rewrite _offsetR_dot o_dot_o_sub. Qed.
 
-  Lemma _offsetR_succ_sub {resolve : genv} ty z R :
+  Lemma _offsetR_succ_sub ty z R :
     .[ ty ! 1 ] |-> (.[ ty ! z ] |-> R) ⊣⊢
     .[ ty ! Z.succ z] |-> R.
   Proof. by rewrite _offsetR_sub_sub Z.add_1_l. Qed.
 
-  Lemma _offsetR_sub_succ {resolve : genv} ty z R :
+  Lemma _offsetR_sub_succ ty z R :
     .[ ty ! z ] |-> (.[ ty ! 1 ] |-> R) ⊣⊢
     .[ ty ! Z.succ z] |-> R.
   Proof. by rewrite _offsetR_sub_sub Z.add_1_r. Qed.
