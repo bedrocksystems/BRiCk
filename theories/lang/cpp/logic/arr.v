@@ -38,9 +38,6 @@ Section simpl_never.
 End simpl_never.
 Local Hint Resolve size_of_array_1 : core.
 
-(** GMM: Misplaced *)
-Axiom o_dot_o_sub : forall {σ : genv} ty i j, _dot (_sub ty i) (_sub ty j) = _sub ty (i + j).
-
 (** PDS: Misplaced *)
 Section offsetR.
   Context `{Σ : cpp_logic}.
