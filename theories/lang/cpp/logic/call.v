@@ -53,32 +53,40 @@ Section with_resolve.
       end
     end.
 
-  Lemma wp_args_frame : forall es Q Q',
-      (Forall vs free, Q vs free -* Q' vs free) |-- wp_args es Q -* wp_args es Q'.
+  Lemma wp_args_frame_strong : forall es Q Q',
+      (Forall vs free, [| length vs = length es |] -* Q vs free -* Q' vs free) |-- wp_args es Q -* wp_args es Q'.
   Proof.
     elim => /=.
-    { iIntros (? ?) "H"; iApply "H". }
+    { by iIntros (? ?) "H"; iApply "H". }
     { iIntros ([vc e] ? IH ? ?) "H".
       destruct vc.
       { iIntros "X"; iDestruct "X" as (Qarg) "[He Hes]".
         iExists Qarg; iFrame.
-        iRevert "Hes"; iApply IH; iIntros (? ?) "X".
-        iIntros (? ?) "Y"; iApply "H"; iApply "X"; iFrame. }
+        iRevert "Hes"; iApply IH; iIntros (? ?) "% X".
+        iIntros (? ?) "Y"; iApply "H" => /=; eauto. iApply "X"; iFrame. }
       { destruct (is_aggregate (type_of e)).
         { iIntros "X" (a) "B"; iDestruct ("X" with "B") as "X".
           destruct (destructor_for e).
           iRevert "X".
           iIntros "X"; iDestruct "X" as (Qarg) "[He Hes]".
           iExists Qarg; iFrame; iRevert "Hes"; iApply IH.
-          iIntros (? ?) "Y"; iIntros (?) "Q"; iApply "H"; iApply "Y"; iFrame. }
+          iIntros (? ?) "% Y"; iIntros (?) "Q"; iApply "H" => /=; eauto; iApply "Y"; iFrame. }
         { iIntros "X"; iDestruct "X" as (Qarg) "[He Hes]".
           iExists Qarg; iFrame.
-          iRevert "Hes"; iApply IH; iIntros (? ?) "X".
-          iIntros (? ?) "Y"; iApply "H"; iApply "X"; iFrame. } }
+          iRevert "Hes"; iApply IH; iIntros (? ?) "% X".
+          iIntros (? ?) "Y"; iApply "H" => /=; eauto; iApply "X"; iFrame. } }
       { iIntros "X"; iDestruct "X" as (Qarg) "[He Hes]".
         iExists Qarg; iFrame.
-        iRevert "Hes"; iApply IH; iIntros (? ?) "X".
-        iIntros (? ?) "Y"; iApply "H"; iApply "X"; iFrame. } }
+        iRevert "Hes"; iApply IH; iIntros (? ?) "% X".
+        iIntros (? ?) "Y"; iApply "H" => /=; eauto; iApply "X"; iFrame. } }
+  Qed.
+
+  Lemma wp_args_frame : forall es Q Q',
+      (Forall vs free, Q vs free -* Q' vs free) |-- wp_args es Q -* wp_args es Q'.
+  Proof.
+    intros; iIntros "X".
+    iApply wp_args_frame_strong.
+      by iIntros (vs free) "% H"; iApply "X".
   Qed.
 
 End with_resolve.

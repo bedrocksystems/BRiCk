@@ -358,6 +358,48 @@ public:
         done(expr, print, cprint);
     }
 
+    void VisitCXXOperatorCallExpr(const CXXOperatorCallExpr* expr,
+                                  CoqPrinter& print, ClangPrinter& cprint,
+                                  const ASTContext& ctxt, OpaqueNames& li) {
+        // TODO operator calls sometimes have stricter order of evaluation
+        // than regular function calls. Because our semantics overapproximates
+        // the possible behaviors, it is sound for us to directly desugar them.
+        auto callee = expr->getCalleeDecl();
+        auto method = dyn_cast<CXXMethodDecl>(callee);
+        // some operator calls are actually method calls.
+        // because we (and C++) distinguish between member calls
+        // and function calls, we need to desugar this to a method
+        // if the called function is a method.
+        if (method and not method->isStatic()) {
+            print.ctor("Emember_call");
+
+            // TODO Handle virtual dispatch.
+            print.ctor("inl") << fmt::lparen;
+            cprint.printGlobalName(method, print);
+            print.output() << "," << fmt::nbsp
+                           << (method->isVirtual() ? "Virtual" : "Direct")
+                           << "," << fmt::nbsp;
+            cprint.printQualType(method->getType(), print);
+            print.output() << fmt::rparen;
+            print.end_ctor() << fmt::nbsp;
+
+            cprint.printValCat(expr->getArg(0), print);
+            print.output() << fmt::nbsp;
+            cprint.printExpr(expr->getArg(0), print, li);
+
+            print.output() << fmt::nbsp;
+            // note skip the first parameter because it is the object.
+            print.list_range(++expr->arg_begin(), expr->arg_end(),
+                             [&](auto print, auto i) {
+                                 cprint.printExprAndValCat(i, print, li);
+                             });
+
+            done(expr, print, cprint);
+        } else if (isa<FunctionDecl>(callee)) {
+            VisitCallExpr(expr, print, cprint, ctxt, li);
+        }
+    }
+
     void VisitCastExpr(const CastExpr* expr, CoqPrinter& print,
                        ClangPrinter& cprint, const ASTContext&,
                        OpaqueNames& li) {

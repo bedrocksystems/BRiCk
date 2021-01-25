@@ -101,6 +101,7 @@ Definition _local (ρ : region) (b : ident) : ptr :=
   | Some p => p
   | _ => invalid_ptr
   end.
+Arguments _local !_ !_ / : simpl nomatch, assert.
 
 (** [_this ρ] returns the [ptr] that [this] is bound to.
 
@@ -112,6 +113,7 @@ Definition _this (ρ : region) : ptr :=
   | Some p => p
   | _ => invalid_ptr
   end.
+Arguments _this !_ / : assert.
 
 (** [_result ρ] is the location that the return value should be returned.
     This is currently only used for aggregates.
@@ -121,6 +123,7 @@ Definition _result (ρ : region) : ptr :=
   | Some p => p
   | _ => invalid_ptr
   end.
+Arguments _result !_ / : assert.
 
 
 (* this is for `Indirect` field references *)

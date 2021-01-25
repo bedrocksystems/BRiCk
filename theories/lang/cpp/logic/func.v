@@ -144,10 +144,10 @@ Section with_cpp.
       | Impl body =>
         bind_base_this None f.(f_return) (fun ρ =>
         bind_vars f.(f_params) args ρ (fun ρ frees =>
-        if is_void f.(f_return) then
-          wp (resolve:=resolve) ⊤ ti ρ body (Kfree frees (void_return (|> Q Vvoid)))
-        else
-          wp (resolve:=resolve) ⊤ ti ρ body (Kfree frees (val_return (fun x => |> Q x)))))
+        |> if is_void f.(f_return) then
+             wp (resolve:=resolve) ⊤ ti ρ body (Kfree frees (void_return (|> Q Vvoid)))
+           else
+             wp (resolve:=resolve) ⊤ ti ρ body (Kfree frees (val_return (fun x => |> Q x)))))
       | Builtin builtin =>
         wp_builtin ⊤ ti builtin (Tfunction (cc:=f.(f_cc)) f.(f_return) (List.map snd f.(f_params))) args Q
       end
@@ -169,10 +169,10 @@ Section with_cpp.
       | Vptr thisp :: rest_vals =>
         bind_base_this (Some thisp) m.(m_return) (fun ρ =>
         bind_vars m.(m_params) rest_vals ρ (fun ρ frees =>
-        if is_void m.(m_return) then
-          wp (resolve:=resolve) ⊤ ti ρ body (Kfree frees (void_return (|>Q Vvoid)))
-        else
-          wp (resolve:=resolve) ⊤ ti ρ body (Kfree frees (val_return (fun x => |>Q x)))))
+        |> if is_void m.(m_return) then
+             wp (resolve:=resolve) ⊤ ti ρ body (Kfree frees (void_return (|>Q Vvoid)))
+           else
+             wp (resolve:=resolve) ⊤ ti ρ body (Kfree frees (val_return (fun x => |>Q x)))))
       | _ => lfalse
       end
     end.
@@ -290,9 +290,8 @@ Section with_cpp.
          *)
         bind_base_this (Some thisp) Tvoid (fun ρ =>
         bind_vars ctor.(c_params) rest_vals ρ (fun ρ frees =>
-          (wpi_bases ti ρ ctor.(c_class) thisp inits
-              (fun free => free **
-                             (type_ptr ty thisp -* wp (resolve:=resolve) ⊤ ti ρ body (Kfree frees (void_return (|> Q Vvoid))))))))
+          |> wpi_bases ti ρ ctor.(c_class) thisp inits (fun free => free **
+               (type_ptr ty thisp -* wp (resolve:=resolve) ⊤ ti ρ body (Kfree frees (void_return (|> Q Vvoid)))))))
       | _ => False
       end
     end.
@@ -362,9 +361,9 @@ Section with_cpp.
       match args with
       | Vptr thisp :: rest_vals =>
         bind_base_this (Some thisp) Tvoid (fun ρ =>
-        wp (resolve:=resolve) ⊤ ti ρ body
-           (void_return (wpd_members ti ρ dtor.(d_class) thisp deinit
-                (|> ((* TODO backwards compat [thisp |-> tblockR (Tnamed dtor.(d_class)) -*] *) Q Vvoid)))))
+          |> wp (resolve:=resolve) ⊤ ti ρ body
+               (void_return (wpd_members ti ρ dtor.(d_class) thisp deinit
+                  ((* TODO backwards compat [thisp |-> tblockR (Tnamed dtor.(d_class)) -*] *) Q Vvoid))))
       | _ => False
       end
     end.

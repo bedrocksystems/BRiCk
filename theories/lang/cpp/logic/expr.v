@@ -329,7 +329,7 @@ Module Type Expr.
         |-- wp_prval (Ecomma vc e1 e2 ty) Q.
 
     Axiom wp_init_comma : forall {vc} ty' ty p e1 e2 Q,
-        wpe vc e1 (fun _ free1 => wp_init ty' p e2 (fun free2 => Q (free1 ** free2)))
+            wpe vc e1 (fun _ free1 => wp_init ty' p e2 (fun free2 => Q (free1 ** free2)))
         |-- wp_init ty' p (Ecomma vc e1 e2 ty) Q.
 
     (** short-circuting operators *)
@@ -425,6 +425,8 @@ Module Type Expr.
      *)
     Axiom wp_prval_cast_function2pointer_c : forall ty ty' g Q,
         wp_lval (Evar (Gname g) ty') (fun v => Q (Vptr v))
+            (* even though they are [prvalues], we reuse the [Lvalue] rule for
+               evaluating them. *)
         |-- wp_prval (Ecast Cfunction2pointer (Prvalue, Evar (Gname g) ty') ty) Q.
     Axiom wp_prval_cast_function2pointer_cpp : forall ty ty' g Q,
         wp_lval (Evar (Gname g) ty') (fun v => Q (Vptr v))
@@ -645,6 +647,16 @@ Module Type Expr.
         wp_prval (Ealign_of (inl (type_of e)) ty') Q
         |-- wp_prval (Ealign_of (inr e) ty') Q.
 
+    Let materialize_into_temp ty e Q :=
+      let raw_type := erase_qualifiers ty in
+      Forall addr : ptr, addr |-> uninitR raw_type 1 (* TODO backwards compat [tblockR raw_type] *) -*
+        wp_init ty addr e (fun free =>
+           Q (Vptr addr) (free ** destruct_val raw_type addr None (addr |-> anyR raw_type 1 (* TODO backwards compat [tblockR (erase_qualifiers ty)] *)))).
+    (* XXX This use of [Vptr] represents an aggregate.
+       XXX The destruction of the value isn't quite correct because we explicitly
+           generate the destructors.
+     *)
+
     (** function calls *)
     (**
     The next few axioms rely on the evaluation order specified
@@ -658,12 +670,7 @@ Module Type Expr.
     *)
     Axiom wp_prval_call : forall ty f es Q,
         (if is_aggregate ty then
-           Forall addr : ptr, wp_init ty addr (Ecall f es ty) (fun free =>
-                Q (Vptr addr) (free ** destruct_val (erase_qualifiers ty) addr None (addr |-> anyR (erase_qualifiers ty) 1 (* TODO backwards compat [tblockR (erase_qualifiers ty)] *))))
-             (* XXX This use of [Vptr] represents an aggregate.
-                XXX The destruction of the value isn't quite correct because we explicitly
-                    generate the destructors.
-              *)
+           Reduce (materialize_into_temp ty (Ecall f es ty) Q)
          else
            match unptr (type_of f) with
            | Some fty =>
@@ -709,8 +716,6 @@ Module Type Expr.
 
         In practice we assume that the AST is well-typed, so the only way to exploit this problem
         is to use [reinterpret_cast< >] to cast a function pointer to an member pointer or vice versa.
-
-        TODO we should add type side-conditions to these axioms.
      *)
     Axiom wp_lval_member_call : forall ty fty f vc obj es Q,
         wp_specific_glval vc obj (fun this free_t => wp_args es (fun vs free =>
@@ -725,8 +730,11 @@ Module Type Expr.
         |-- wp_xval (Emember_call (inl (f, Direct, fty)) vc obj es ty) Q.
 
     Axiom wp_prval_member_call : forall ty fty f vc obj es Q,
-          wp_specific_glval vc obj (fun this free_t => wp_args es (fun vs free =>
-              |> mspec (type_of obj) fty ti (Vptr $ _global f) (Vptr this :: vs) (fun v => Q v (free_t ** free))))
+        (if is_aggregate ty then
+           Reduce (materialize_into_temp ty (Emember_call (inl (f, Direct, fty)) vc obj es ty) Q)
+         else
+            wp_specific_glval vc obj (fun this free_t => wp_args es (fun vs free =>
+              |> mspec (type_of obj) fty ti (Vptr $ _global f) (Vptr this :: vs) (fun v => Q v (free_t ** free)))))
         |-- wp_prval (Emember_call (inl (f, Direct, fty)) vc obj es ty) Q.
 
     Axiom wp_init_member_call : forall f fty es addr ty vc obj Q,
@@ -768,13 +776,16 @@ Module Type Expr.
       |-- wp_lval (Emember_call (inl (f, Virtual, fty)) vc obj es ty) Q.
 
     Axiom wp_prval_virtual_call : forall ty fty f vc obj es Q,
-      wp_specific_glval vc obj (fun this free => wp_args es (fun vs free' =>
+        (if is_aggregate ty then
+           Reduce (materialize_into_temp ty (Emember_call (inl (f, Virtual, fty)) vc obj es ty) Q)
+         else
+           wp_specific_glval vc obj (fun this free => wp_args es (fun vs free' =>
           match class_type (type_of obj) with
           | Some cls =>
             resolve_virtual (σ:=resolve) this cls f (fun fimpl_addr thisp =>
               |> mspec (type_of obj) fty ti (Vptr fimpl_addr) (Vptr thisp :: vs) (fun v => Q v (free ** free')))
          | _ => False
-          end))
+          end)))
       |-- wp_prval (Emember_call (inl (f, Virtual, fty)) vc obj es ty) Q.
 
     Axiom wp_init_virtual_call : forall ty fty f vc obj es Q addr,
