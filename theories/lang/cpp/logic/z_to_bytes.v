@@ -8,556 +8,35 @@ Require Import bedrock.lang.prelude.base.
 From bedrock.lang.cpp.semantics Require Import builtins operator.
 From bedrock.lang.cpp Require Import ast.
 
+(* TODO: using bool_decide would simplify this reasoning. *)
+#[local] Ltac churn_bits' :=
+  repeat match goal with
+  | |- context[(?l <=? ?r)%Z] =>
+    let Hnb := fresh "Hnb" in
+    let Hn := fresh "Hn" in
+    destruct (l <=? r)%Z eqn:Hnb;
+      set (Hn := Hnb);
+      [ apply Z.leb_le in Hn
+      | apply Z.leb_gt in Hn]
+  | |- context[(?l <? ?r)%Z] =>
+    let Hnb := fresh "Hnb" in
+    let Hn := fresh "Hn" in
+    destruct (l <? r)%Z eqn:Hnb;
+      set (Hn := Hnb);
+      [ apply Z.ltb_lt in Hn
+      | apply Z.ltb_ge in Hn]
+  end; rewrite ?andb_false_l ?andb_false_r ?andb_true_l ?andb_true_r
+               ?orb_false_l ?orb_false_r ?orb_true_l ?orb_true_r ?Z.bits_0 //=;
+               try lia.
+
+#[local] Ltac churn_bits :=
+  apply Z.bits_inj'=> n ?;
+  repeat (rewrite ?Z.lor_spec ?Z.shiftl_spec ?Z.land_spec ?Z.shiftr_spec; try lia);
+  rewrite !Z.testbit_ones; try lia;
+  churn_bits'.
+
 Section FromToBytes.
-
-  (* TODO: using bool_decide would simplify this reasoning. *)
-  Local Ltac churn_bits :=
-    repeat match goal with
-    | |- context[(?l <=? ?r)%Z] =>
-      let Hnb := fresh "Hnb" in
-      let Hn := fresh "Hn" in
-      destruct (l <=? r)%Z eqn:Hnb;
-        set (Hn := Hnb);
-        [ apply Z.leb_le in Hn
-        | apply Z.leb_gt in Hn]
-    | |- context[(?l <? ?r)%Z] =>
-      let Hnb := fresh "Hnb" in
-      let Hn := fresh "Hn" in
-      destruct (l <? r)%Z eqn:Hnb;
-        set (Hn := Hnb);
-        [ apply Z.ltb_lt in Hn
-        | apply Z.ltb_ge in Hn]
-    end; rewrite ?andb_false_l ?andb_false_r ?andb_true_l ?andb_true_r
-                 ?orb_false_l ?orb_false_r ?orb_true_l ?orb_true_r ?Z.bits_0 //=;
-                 try lia.
-
-  Section Byte.
-
-    Definition _Z_get_byte (x: Z) (n: nat): Z := Z.land (x ≫ (8 * n)) (Z.ones 8).
-    Definition _Z_set_byte (x: Z) (n: nat): Z := (Z.land (Z.ones 8) x) ≪ (8 * n).
-
-    Lemma _Z_get_byte_0:
-      forall (idx: nat),
-        _Z_get_byte 0 idx = 0.
-    Proof. intros; by rewrite /_Z_get_byte Z.shiftr_0_l Z.land_0_l. Qed.
-
-    Lemma _Z_set_byte_0:
-      forall (idx: nat),
-        _Z_set_byte 0 idx = 0.
-    Proof. intros; by rewrite /_Z_set_byte Z.shiftl_0_l. Qed.
-
-    Lemma Z_mul_of_nat_S (z : Z) (n : nat) : (z * S n)%Z = (z + z * n)%Z.
-    Proof. lia. Qed.
-
-    Lemma _Z_get_byte_S_idx:
-      forall (v: Z) (idx: nat),
-        _Z_get_byte v (S idx) = _Z_get_byte (v ≫ 8) idx.
-    Proof.
-      intros; rewrite /_Z_get_byte.
-      by rewrite Z.shiftr_shiftr ?Z_mul_of_nat_S; lia.
-    Qed.
-
-    Lemma _Z_set_byte_S_idx:
-      forall (v: Z) (idx: nat),
-        _Z_set_byte v (S idx) = ((_Z_set_byte v idx) ≪ 8)%Z.
-    Proof.
-      intros; rewrite /_Z_set_byte.
-      by rewrite Z.shiftl_shiftl ?Z_mul_of_nat_S ?(Z.add_comm 8); lia.
-    Qed.
-
-    Lemma _Z_set_byte_shiftl_idx:
-      forall (idx idx': nat) shift v,
-        idx' <= idx ->
-        (shift = 8 * Z.of_nat idx')%Z ->
-        (_Z_set_byte v idx ≫ shift)%Z = _Z_set_byte v (idx - idx').
-    Proof.
-      induction idx; move=> idx' shift v Hidx Hshift.
-      - assert (idx' = 0) by lia; subst.
-        by rewrite Z.shiftr_0_r.
-      - rewrite _Z_set_byte_S_idx; subst.
-        specialize (IHidx (idx' - 1) (8 * Z.of_nat (idx' - 1))%Z v ltac:(lia) eq_refl).
-        destruct idx'.
-        + by rewrite -minus_n_O Z.shiftr_0_r _Z_set_byte_S_idx.
-        + rewrite Z.shiftr_shiftl_r; try lia.
-          rewrite Nat.sub_succ Nat.sub_0_r in IHidx.
-          rewrite Nat.sub_succ -IHidx.
-          repeat f_equal.
-          lia.
-    Qed.
-
-    Lemma _Z_get_byte_nonneg:
-      forall (v: Z) (idx: nat),
-        (0 <= _Z_get_byte v idx)%Z.
-    Proof.
-      intros; rewrite /_Z_get_byte /Z.ones.
-      apply Z.land_nonneg.
-      by right.
-    Qed.
-
-    Lemma _Z_set_byte_nonneg:
-      forall (v: Z) (idx: nat),
-        (0 <= _Z_set_byte v idx)%Z.
-    Proof.
-      intros; rewrite /_Z_set_byte /Z.ones Z.shiftl_nonneg.
-      apply Z.land_nonneg.
-      by left.
-    Qed.
-
-    Lemma _Z_get_set_byte_roundtrip:
-      forall (v: Z) (idx: nat),
-        _Z_set_byte (_Z_get_byte v idx) idx =
-        Z.land (Z.ones 8 ≪ (8 * idx)) v.
-    Proof.
-      rewrite /_Z_get_byte /_Z_set_byte=> v idx //=.
-      rewrite !Z.shiftl_land -Z.ldiff_ones_r; try lia.
-      apply Z.bits_inj' => n ?.
-      rewrite !Z.land_spec Z.ldiff_spec Z.shiftl_spec; try lia.
-      rewrite [Z.testbit (Z.ones (8 * idx)) n]Z.testbit_ones_nonneg; try lia.
-      destruct (n <? 8 * idx)%Z eqn:Hn;
-        rewrite ?andb_false_l ?andb_false_r
-                ?andb_true_l ?andb_true_r //.
-      - rewrite [Z.testbit (Z.ones 8) _]Z.testbit_neg_r
-                ?andb_false_l //.
-        apply Z.ltb_lt in Hn; lia.
-      - rewrite Z.testbit_ones_nonneg; try lia.
-        destruct (n - 8 * idx <? 8)%Z eqn:Hn';
-          rewrite ?andb_false_l ?andb_false_r
-                  ?andb_true_l ?andb_true_r //.
-    Qed.
-
-    Section bswap.
-
-      Lemma _Z_set_byte_land_no_overlap:
-        forall (idx idx': nat) mask v,
-          idx <> idx' ->
-          (mask = Z.ones 8 ≪ (8 * Z.of_nat idx'))%Z ->
-          Z.land (_Z_set_byte v idx) mask = 0.
-      Proof.
-        intros; subst; generalize dependent idx';
-          induction idx; move=> idx' Hidx.
-        - rewrite /_Z_set_byte.
-          apply Z.bits_inj'=> n ?.
-          repeat (rewrite ?Z.lor_spec ?Z.shiftl_spec ?Z.land_spec ?Z.shiftr_spec; try lia).
-          rewrite Z.bits_0 !Z.testbit_ones; try lia.
-        - rewrite /_Z_set_byte.
-          apply Z.bits_inj'=> n ?.
-          repeat (rewrite ?Z.lor_spec ?Z.shiftl_spec ?Z.land_spec ?Z.shiftr_spec; try lia).
-          rewrite Z.bits_0 !Z.testbit_ones; try lia.
-          churn_bits.
-      Qed.
-
-      Lemma _Z_set_byte_land_useless:
-        forall idx mask v,
-          (mask = Z.ones 8 ≪ (8 * Z.of_nat idx))%Z ->
-          Z.land (_Z_set_byte v idx) mask =
-          _Z_set_byte v idx.
-      Proof.
-        intros; subst; induction idx.
-        - rewrite /_Z_set_byte.
-          apply Z.bits_inj'=> n ?.
-          repeat (rewrite ?Z.lor_spec ?Z.shiftl_spec ?Z.land_spec ?Z.shiftr_spec; try lia).
-          rewrite !Z.testbit_ones; try lia.
-          churn_bits.
-          by (replace (n - 8 * Z.of_nat 0)%Z with n by lia).
-        - rewrite /_Z_set_byte.
-          apply Z.bits_inj'=> n ?.
-          repeat (rewrite ?Z.lor_spec ?Z.shiftl_spec ?Z.land_spec ?Z.shiftr_spec; try lia).
-          rewrite !Z.testbit_ones; try lia.
-          churn_bits.
-      Qed.
-
-      Lemma _Z_set_byte_shiftr_big:
-        forall (idx idx': nat) v,
-          idx < idx' ->
-          (_Z_set_byte v idx ≫ (8 * Z.of_nat idx'))%Z = 0.
-      Proof.
-        move=> idx idx' v Hidx; generalize dependent idx';
-          induction idx; intros; try lia.
-        - rewrite /_Z_set_byte.
-          apply Z.bits_inj'=> n ?.
-          repeat (rewrite ?Z.lor_spec ?Z.shiftl_spec ?Z.land_spec ?Z.shiftr_spec; try lia).
-          rewrite !Z.testbit_ones; try lia.
-          churn_bits.
-        - rewrite _Z_set_byte_S_idx.
-          rewrite Z.shiftr_shiftl_r; try lia.
-          specialize (IHidx (idx' - 1) ltac:(lia)).
-          by replace (8 * idx' - 8)%Z with (8 * (idx' - 1)%nat)%Z by lia.
-      Qed.
-
-      Lemma bswap16_useless_lor:
-        forall v v' idx,
-          idx >= 2 ->
-          builtins.bswap16 (Z.lor v (_Z_set_byte v' idx)) =
-          builtins.bswap16 v.
-      Proof.
-        move=> v v' idx Hidx.
-        rewrite /builtins.bswap16.
-        rewrite Z.land_lor_distr_l.
-        rewrite Z.shiftl_lor.
-        rewrite (_Z_set_byte_land_no_overlap idx 0);
-          [
-          | by lia
-          | by (replace (8 * Z.of_nat 0)%Z with 0%Z by lia;
-                rewrite Z.shiftl_0_r; reflexivity)];
-          rewrite Z.shiftl_0_l Z.lor_0_r.
-        rewrite Z.shiftr_lor.
-        destruct idx; try lia.
-        rewrite _Z_set_byte_S_idx.
-        rewrite Z.shiftr_shiftl_l; try lia.
-        replace (8 - 8)%Z with 0%Z by lia.
-        rewrite Z.shiftl_0_r.
-        rewrite Z.land_lor_distr_l.
-        rewrite (_Z_set_byte_land_no_overlap idx 0) //;
-          [
-          | by lia ].
-        by rewrite Z.lor_0_r.
-      Qed.
-
-      Lemma bswap32_useless_lor:
-        forall v v' idx,
-          idx >= 4 ->
-          builtins.bswap32 (Z.lor v (_Z_set_byte v' idx)) =
-          builtins.bswap32 v.
-      Proof.
-        move=> v v' idx Hidx.
-        rewrite /builtins.bswap32.
-        f_equal.
-        - rewrite bswap16_useless_lor; lia.
-        - do 2 (destruct idx; try lia).
-          rewrite !_Z_set_byte_S_idx Z.shiftr_lor
-                  Z.shiftl_shiftl; try lia.
-          rewrite Z.shiftr_shiftl_l; try lia.
-          rewrite Z.shiftl_0_r.
-          rewrite bswap16_useless_lor; lia.
-      Qed.
-
-      Lemma bswap64_useless_lor:
-        forall v v' idx,
-          idx >= 8 ->
-          builtins.bswap64 (Z.lor v (_Z_set_byte v' idx)) =
-          builtins.bswap64 v.
-      Proof.
-        move=> v v' idx Hidx.
-        rewrite /builtins.bswap64.
-        f_equal.
-        - rewrite bswap32_useless_lor; lia.
-        - do 4 (destruct idx; try lia).
-          rewrite !_Z_set_byte_S_idx Z.shiftr_lor.
-          do 3 (rewrite Z.shiftl_shiftl; try lia).
-          rewrite Z.shiftr_shiftl_l; try lia.
-          rewrite Z.shiftl_0_r.
-          rewrite bswap32_useless_lor; lia.
-      Qed.
-
-      Lemma bswap16_set_byte_reverse:
-        forall x1 x2,
-          builtins.bswap16 (Z.lor (_Z_set_byte x1 0)
-                            (Z.lor (_Z_set_byte x2 1) 0)) =
-          Z.lor (_Z_set_byte x2 0)
-           (Z.lor (_Z_set_byte x1 1) 0).
-      Proof.
-        move=> x1 x2.
-        rewrite /builtins.bswap16.
-        rewrite !Z.lor_0_r Z.lor_comm.
-        f_equal.
-        - rewrite Z.shiftr_lor Z.land_lor_distr_l _Z_set_byte_S_idx
-                  Z.shiftr_shiftl_l; try lia.
-          replace (8 - 8)%Z with 0%Z by lia.
-          rewrite Z.shiftl_0_r.
-          rewrite (_Z_set_byte_shiftr_big 0 1) ?Z.land_0_l ?Z.lor_0_l; try lia.
-          apply _Z_set_byte_land_useless.
-          by rewrite Z.shiftl_0_r.
-        - rewrite Z.land_lor_distr_l.
-          rewrite (_Z_set_byte_land_no_overlap 1 0);
-            [
-            | by lia
-            | by rewrite Z.shiftl_0_r];
-            rewrite Z.lor_0_r.
-          rewrite _Z_set_byte_land_useless;
-            [
-            | by rewrite Z.shiftl_0_r].
-          by rewrite -_Z_set_byte_S_idx.
-      Qed.
-
-      Lemma bswap32_set_byte_reverse:
-        forall x1 x2 x3 x4,
-          builtins.bswap32 (Z.lor (_Z_set_byte x1 0)
-                            (Z.lor (_Z_set_byte x2 1)
-                             (Z.lor (_Z_set_byte x3 2)
-                              (Z.lor (_Z_set_byte x4 3) 0)))) =
-          Z.lor (_Z_set_byte x4 0)
-          (Z.lor (_Z_set_byte x3 1)
-           (Z.lor (_Z_set_byte x2 2)
-            (Z.lor (_Z_set_byte x1 3) 0))).
-      Proof.
-        move=> x1 x2 x3 x4.
-        rewrite /builtins.bswap32.
-        replace (builtins.bswap16
-                   (Z.lor (_Z_set_byte x1 0)
-                    (Z.lor (_Z_set_byte x2 1)
-                     (Z.lor (_Z_set_byte x3 2)
-                      (Z.lor (_Z_set_byte x4 3) 0)))) ≪ 16)%Z
-          with (builtins.bswap16
-                  (Z.lor (_Z_set_byte x1 0)
-                   (Z.lor (_Z_set_byte x2 1) 0)) ≪ 16)%Z. 2: {
-          f_equal.
-          rewrite !Z.lor_assoc !Z.lor_0_r.
-          rewrite (bswap16_useless_lor _ x4 3); try lia.
-          rewrite (bswap16_useless_lor _ x3 2); lia.
-        }
-
-        replace (builtins.bswap16
-                   (Z.lor (_Z_set_byte x1 0)
-                    (Z.lor (_Z_set_byte x2 1)
-                     (Z.lor (_Z_set_byte x3 2)
-                      (Z.lor (_Z_set_byte x4 3) 0))) ≫ 16))
-          with (builtins.bswap16
-                  (Z.lor (_Z_set_byte x3 2)
-                   (Z.lor (_Z_set_byte x4 3) 0) ≫ 16)). 2: {
-          rewrite !Z.lor_0_r !Z.shiftr_lor.
-          rewrite (_Z_set_byte_shiftr_big 0 2 x1); try lia.
-          rewrite (_Z_set_byte_shiftr_big 1 2 x2); try lia.
-          by rewrite !Z.lor_0_l.
-        }
-
-        rewrite !Z.shiftr_lor.
-        rewrite (_Z_set_byte_shiftl_idx 2 2 16 _ ltac:(lia) ltac:(lia));
-          change (2 - 2) with 0%nat.
-        rewrite (_Z_set_byte_shiftl_idx 3 2 16 _ ltac:(lia) ltac:(lia));
-          change (3 - 2) with 1%nat.
-        rewrite !bswap16_set_byte_reverse.
-        rewrite !Z.lor_0_r !Z.shiftl_lor.
-        replace 16%Z with (8 + 8)%Z by lia.
-        rewrite -!Z.shiftl_shiftl; try lia.
-        rewrite -!_Z_set_byte_S_idx.
-        rewrite Z.lor_comm.
-        by rewrite !Z.lor_assoc.
-      Qed.
-
-      Lemma bswap64_set_byte_reverse:
-        forall x1 x2 x3 x4 x5 x6 x7 x8,
-          builtins.bswap64 (Z.lor (_Z_set_byte x1 0)
-                            (Z.lor (_Z_set_byte x2 1)
-                             (Z.lor (_Z_set_byte x3 2)
-                              (Z.lor (_Z_set_byte x4 3)
-                               (Z.lor (_Z_set_byte x5 4)
-                                (Z.lor (_Z_set_byte x6 5)
-                                 (Z.lor (_Z_set_byte x7 6)
-                                  (Z.lor (_Z_set_byte x8 7) 0)))))))) =
-          Z.lor (_Z_set_byte x8 0)
-          (Z.lor (_Z_set_byte x7 1)
-           (Z.lor (_Z_set_byte x6 2)
-            (Z.lor (_Z_set_byte x5 3)
-             (Z.lor (_Z_set_byte x4 4)
-              (Z.lor (_Z_set_byte x3 5)
-               (Z.lor (_Z_set_byte x2 6)
-                (Z.lor (_Z_set_byte x1 7) 0))))))).
-      Proof.
-        move=> x1 x2 x3 x4 x5 x6 x7 x8.
-        rewrite /builtins.bswap64.
-        replace (builtins.bswap32
-                   (Z.lor (_Z_set_byte x1 0)
-                    (Z.lor (_Z_set_byte x2 1)
-                     (Z.lor (_Z_set_byte x3 2)
-                      (Z.lor (_Z_set_byte x4 3)
-                       (Z.lor (_Z_set_byte x5 4)
-                        (Z.lor (_Z_set_byte x6 5)
-                         (Z.lor (_Z_set_byte x7 6)
-                          (Z.lor (_Z_set_byte x8 7) 0)))))))) ≪ 32)%Z
-          with (builtins.bswap32
-                  (Z.lor (_Z_set_byte x1 0)
-                   (Z.lor (_Z_set_byte x2 1)
-                    (Z.lor (_Z_set_byte x3 2)
-                     (Z.lor (_Z_set_byte x4 3) 0)))) ≪ 32)%Z. 2: {
-          f_equal.
-          rewrite !Z.lor_assoc !Z.lor_0_r.
-          rewrite (bswap32_useless_lor _ x8 7); try lia.
-          rewrite (bswap32_useless_lor _ x7 6); try lia.
-          rewrite (bswap32_useless_lor _ x6 5); try lia.
-          rewrite (bswap32_useless_lor _ x5 4); by lia.
-        }
-
-        replace (builtins.bswap32
-                   (Z.lor (_Z_set_byte x1 0)
-                    (Z.lor (_Z_set_byte x2 1)
-                     (Z.lor (_Z_set_byte x3 2)
-                      (Z.lor (_Z_set_byte x4 3)
-                       (Z.lor (_Z_set_byte x5 4)
-                        (Z.lor (_Z_set_byte x6 5)
-                         (Z.lor (_Z_set_byte x7 6)
-                          (Z.lor (_Z_set_byte x8 7) 0))))))) ≫ 32))%Z
-          with (builtins.bswap32
-                  (Z.lor (_Z_set_byte x5 4)
-                   (Z.lor (_Z_set_byte x6 5)
-                    (Z.lor (_Z_set_byte x7 6)
-                     (Z.lor (_Z_set_byte x8 7) 0))) ≫ 32))%Z. 2: {
-          rewrite !Z.lor_0_r !Z.shiftr_lor.
-          replace 32%Z with (8 * 4)%Z by lia.
-          rewrite (_Z_set_byte_shiftr_big 0 4 x1); try lia.
-          rewrite (_Z_set_byte_shiftr_big 1 4 x2); try lia.
-          rewrite (_Z_set_byte_shiftr_big 2 4 x3); try lia.
-          rewrite (_Z_set_byte_shiftr_big 3 4 x4); try lia.
-          by rewrite !Z.lor_0_l.
-        }
-
-        rewrite !Z.shiftr_lor.
-        rewrite (_Z_set_byte_shiftl_idx 4 4 32 _ ltac:(lia) ltac:(lia));
-          replace (4 - 4) with 0%nat by lia.
-        rewrite (_Z_set_byte_shiftl_idx 5 4 32 _ ltac:(lia) ltac:(lia));
-          replace (5 - 4) with 1%nat by lia.
-        rewrite (_Z_set_byte_shiftl_idx 6 4 32 _ ltac:(lia) ltac:(lia));
-          replace (6 - 4) with 2%nat by lia.
-        rewrite (_Z_set_byte_shiftl_idx 7 4 32 _ ltac:(lia) ltac:(lia));
-          replace (7 - 4) with 3%nat by lia.
-        rewrite !bswap32_set_byte_reverse.
-        rewrite !Z.lor_0_r !Z.shiftl_lor.
-        replace 32%Z with (8 + (8 + (8 + 8)))%Z by lia.
-        rewrite -!Z.shiftl_shiftl; try lia.
-        rewrite -!_Z_set_byte_S_idx.
-        rewrite Z.lor_comm.
-        by rewrite !Z.lor_assoc.
-      Qed.
-
-      Lemma bswap128_set_byte_reverse:
-        forall x1 x2 x3 x4 x5 x6 x7 x8 x9 x10 x11 x12 x13 x14 x15 x16,
-          builtins.bswap128 (Z.lor (_Z_set_byte x1 0)
-                             (Z.lor (_Z_set_byte x2 1)
-                              (Z.lor (_Z_set_byte x3 2)
-                               (Z.lor (_Z_set_byte x4 3)
-                                (Z.lor (_Z_set_byte x5 4)
-                                 (Z.lor (_Z_set_byte x6 5)
-                                  (Z.lor (_Z_set_byte x7 6)
-                                   (Z.lor (_Z_set_byte x8 7)
-                                    (Z.lor (_Z_set_byte x9 8)
-                                     (Z.lor (_Z_set_byte x10 9)
-                                      (Z.lor (_Z_set_byte x11 10)
-                                       (Z.lor (_Z_set_byte x12 11)
-                                        (Z.lor (_Z_set_byte x13 12)
-                                         (Z.lor (_Z_set_byte x14 13)
-                                          (Z.lor (_Z_set_byte x15 14)
-                                           (Z.lor (_Z_set_byte x16 15) 0)))))))))))))))) =
-          Z.lor (_Z_set_byte x16 0)
-           (Z.lor (_Z_set_byte x15 1)
-            (Z.lor (_Z_set_byte x14 2)
-             (Z.lor (_Z_set_byte x13 3)
-              (Z.lor (_Z_set_byte x12 4)
-               (Z.lor (_Z_set_byte x11 5)
-                (Z.lor (_Z_set_byte x10 6)
-                 (Z.lor (_Z_set_byte x9 7)
-                  (Z.lor (_Z_set_byte x8 8)
-                   (Z.lor (_Z_set_byte x7 9)
-                    (Z.lor (_Z_set_byte x6 10)
-                     (Z.lor (_Z_set_byte x5 11)
-                      (Z.lor (_Z_set_byte x4 12)
-                       (Z.lor (_Z_set_byte x3 13)
-                        (Z.lor (_Z_set_byte x2 14)
-                         (Z.lor (_Z_set_byte x1 15) 0))))))))))))))).
-      Proof.
-        move=> x1 x2 x3 x4 x5 x6 x7 x8 x9 x10 x11 x12 x13 x14 x15 x16.
-        rewrite /builtins.bswap128.
-
-        replace (builtins.bswap64
-                   (Z.lor (_Z_set_byte x1 0)
-                    (Z.lor (_Z_set_byte x2 1)
-                     (Z.lor (_Z_set_byte x3 2)
-                      (Z.lor (_Z_set_byte x4 3)
-                       (Z.lor (_Z_set_byte x5 4)
-                        (Z.lor (_Z_set_byte x6 5)
-                         (Z.lor (_Z_set_byte x7 6)
-                          (Z.lor (_Z_set_byte x8 7)
-                           (Z.lor (_Z_set_byte x9 8)
-                            (Z.lor (_Z_set_byte x10 9)
-                             (Z.lor (_Z_set_byte x11 10)
-                              (Z.lor (_Z_set_byte x12 11)
-                               (Z.lor (_Z_set_byte x13 12)
-                                (Z.lor (_Z_set_byte x14 13)
-                                 (Z.lor (_Z_set_byte x15 14)
-                                  (Z.lor (_Z_set_byte x16 15) 0)))))))))))))))) ≪ 64)%Z
-          with (builtins.bswap64
-                  (Z.lor (_Z_set_byte x1 0)
-                   (Z.lor (_Z_set_byte x2 1)
-                    (Z.lor (_Z_set_byte x3 2)
-                     (Z.lor (_Z_set_byte x4 3)
-                      (Z.lor (_Z_set_byte x5 4)
-                       (Z.lor (_Z_set_byte x6 5)
-                        (Z.lor (_Z_set_byte x7 6)
-                         (Z.lor (_Z_set_byte x8 7)  0)))))))) ≪ 64)%Z. 2: {
-          f_equal.
-          rewrite !Z.lor_assoc !Z.lor_0_r.
-          rewrite (bswap64_useless_lor _ x16 15); try lia.
-          rewrite (bswap64_useless_lor _ x15 14); try lia.
-          rewrite (bswap64_useless_lor _ x14 13); try lia.
-          rewrite (bswap64_useless_lor _ x13 12); try lia.
-          rewrite (bswap64_useless_lor _ x12 11); try lia.
-          rewrite (bswap64_useless_lor _ x11 10); try lia.
-          rewrite (bswap64_useless_lor _ x10 9); try lia.
-          rewrite (bswap64_useless_lor _ x9 8); lia.
-        }
-
-        replace (builtins.bswap64
-                   (Z.lor (_Z_set_byte x1 0)
-                    (Z.lor (_Z_set_byte x2 1)
-                     (Z.lor (_Z_set_byte x3 2)
-                      (Z.lor (_Z_set_byte x4 3)
-                       (Z.lor (_Z_set_byte x5 4)
-                        (Z.lor (_Z_set_byte x6 5)
-                         (Z.lor (_Z_set_byte x7 6)
-                          (Z.lor (_Z_set_byte x8 7)
-                           (Z.lor (_Z_set_byte x9 8)
-                            (Z.lor (_Z_set_byte x10 9)
-                             (Z.lor (_Z_set_byte x11 10)
-                              (Z.lor (_Z_set_byte x12 11)
-                               (Z.lor (_Z_set_byte x13 12)
-                                (Z.lor (_Z_set_byte x14 13)
-                                 (Z.lor (_Z_set_byte x15 14)
-                                  (Z.lor (_Z_set_byte x16 15) 0))))))))))))))) ≫ 64))%Z
-          with (builtins.bswap64
-                  (Z.lor (_Z_set_byte x9 8)
-                   (Z.lor (_Z_set_byte x10 9)
-                    (Z.lor (_Z_set_byte x11 10)
-                     (Z.lor (_Z_set_byte x12 11)
-                      (Z.lor (_Z_set_byte x13 12)
-                       (Z.lor (_Z_set_byte x14 13)
-                        (Z.lor (_Z_set_byte x15 14)
-                         (Z.lor (_Z_set_byte x16 15) 0))))))) ≫ 64))%Z. 2: {
-          rewrite !Z.lor_0_r !Z.shiftr_lor.
-          replace 64%Z with (8 * 8)%Z by lia.
-          rewrite (_Z_set_byte_shiftr_big 0 8 x1); try lia.
-          rewrite (_Z_set_byte_shiftr_big 1 8 x2); try lia.
-          rewrite (_Z_set_byte_shiftr_big 2 8 x3); try lia.
-          rewrite (_Z_set_byte_shiftr_big 3 8 x4); try lia.
-          rewrite (_Z_set_byte_shiftr_big 4 8 x5); try lia.
-          rewrite (_Z_set_byte_shiftr_big 5 8 x6); try lia.
-          rewrite (_Z_set_byte_shiftr_big 6 8 x7); try lia.
-          rewrite (_Z_set_byte_shiftr_big 7 8 x8); try lia.
-          by rewrite !Z.lor_0_l.
-        }
-
-        rewrite !Z.shiftr_lor.
-        rewrite (_Z_set_byte_shiftl_idx 8 8 64 _ ltac:(lia) ltac:(lia)).
-        rewrite (_Z_set_byte_shiftl_idx 9 8 64 _ ltac:(lia) ltac:(lia)).
-        rewrite (_Z_set_byte_shiftl_idx 10 8 64 _ ltac:(lia) ltac:(lia)).
-        rewrite (_Z_set_byte_shiftl_idx 11 8 64 _ ltac:(lia) ltac:(lia)).
-        rewrite (_Z_set_byte_shiftl_idx 12 8 64 _ ltac:(lia) ltac:(lia)).
-        rewrite (_Z_set_byte_shiftl_idx 13 8 64 _ ltac:(lia) ltac:(lia)).
-        rewrite (_Z_set_byte_shiftl_idx 14 8 64 _ ltac:(lia) ltac:(lia)).
-        rewrite (_Z_set_byte_shiftl_idx 15 8 64 _ ltac:(lia) ltac:(lia)).
-        cbv [minus].
-        rewrite !bswap64_set_byte_reverse.
-        rewrite !Z.lor_0_r !Z.shiftl_lor.
-        change 64%Z with (8 + (8 + (8 + (8 + (8 + (8 + (8 + 8)))))))%Z.
-        have ?: (0 <= 8)%Z by lia.
-        rewrite -!Z.shiftl_shiftl; try assumption.
-        rewrite -!_Z_set_byte_S_idx.
-        rewrite Z.lor_comm.
-        by rewrite !Z.lor_assoc.
-      Qed.
-    End bswap.
-
-  End Byte.
-
   Section ExtraFacts.
-
     Lemma repeat_cons_app:
       forall (A: Type) (a: A) (cnt: nat),
         (a :: repeat a cnt) = repeat a cnt ++ [a].
@@ -616,7 +95,7 @@ Section FromToBytes.
          mask doesn't overlap with any of those bits
          so it is effectively a no-op.
      *)
-      intros.
+      intros **.
       apply Z.bits_inj' => n ?.
       rewrite !Z.land_spec Z.ldiff_spec Z.shiftl_spec // Z.testbit_ones_nonneg; try lia.
       destruct (n <? offset)%Z eqn:Hn => /=; rewrite ?andb_true_r //.
@@ -678,22 +157,17 @@ Section FromToBytes.
       apply Z.bits_inj'=> n ?.
       rewrite Z.lor_spec Z.ldiff_spec !Z.land_spec !Z.shiftl_spec; try lia.
       rewrite !Z.testbit_ones; try lia.
-      churn_bits.
+      churn_bits'.
       apply Z.bits_above_log2; try lia.
       assert (8 * (idx+S cnt)%nat <= n)%Z by lia.
       eapply Z.lt_le_trans; eauto.
       apply Z.log2_lt_pow2; try lia.
-      (* XXX No more needed since Coq 8.12. *)
-      all: by replace (8 * (idx+S cnt)%nat)%Z
-        with (8 * (idx+S cnt))%Z by lia.
     Qed.
-
   End ExtraFacts.
 
   Section ToBytes_internal.
-
     Definition _Z_to_bytes_unsigned_le' (idx: nat) (cnt: nat) (v: Z): list N :=
-      map (Z.to_N ∘ _Z_get_byte v) $ seq idx cnt.
+      map (Z.to_N ∘ _get_byte v) $ seq idx cnt.
 
     Definition _Z_to_bytes_unsigned_le (cnt: nat) (v: Z): list N :=
       _Z_to_bytes_unsigned_le' 0 cnt v.
@@ -712,10 +186,10 @@ Section FromToBytes.
       | Little => little
       | Big => List.rev little
       end.
-
   End ToBytes_internal.
 
   Section ToBytesFacts_internal.
+    #[local] Transparent _get_byte _set_byte.
 
     Lemma _Z_to_bytes_unsigned_le'_length:
       forall idx cnt v,
@@ -784,7 +258,7 @@ Section FromToBytes.
       induction cnt => //=.
       rewrite /_Z_to_bytes_unsigned_le'.
       rewrite seq_S_end_app map_app repeat_cons_app //=.
-      rewrite _Z_get_byte_0; f_equal=> //=.
+      rewrite _get_byte_0; f_equal=> //=.
     Qed.
 
     Lemma _Z_to_bytes_unsigned_le_0_value:
@@ -844,7 +318,7 @@ Section FromToBytes.
               /_Z_to_bytes_unsigned_le'
               repeat_cons_app //=; f_equal.
       - erewrite <- IHcnt; eauto.
-      - rewrite /_Z_get_byte Z_shiftr_small; try lia;
+      - rewrite /_get_byte Z_shiftr_small; try lia;
           [ rewrite Z.land_0_l
           | apply Z_pow2_trans_nat_r]=> //=.
     Qed.
@@ -863,14 +337,14 @@ Section FromToBytes.
       assert (cnt = cnt' \/ cnt < cnt') as [Hcnt | Hcnt] by lia.
       - subst; rewrite _Z_to_bytes_unsigned_le'_S_cnt; f_equal.
         rewrite Nat.sub_diag /_Z_to_bytes_unsigned_le' //=.
-        rewrite /_Z_get_byte Z_shiftr_small; try lia;
+        rewrite /_get_byte Z_shiftr_small; try lia;
           [ rewrite Z.land_0_l
           | apply Z_pow2_trans_nat_l]=> //=.
       - rewrite repeat_cons_app app_assoc.
         rewrite -IHcnt'; try lia.
         rewrite _Z_to_bytes_unsigned_le'_S_cnt //=; f_equal.
         rewrite /_Z_to_bytes_unsigned_le' //=.
-        rewrite /_Z_get_byte Z_shiftr_small; try lia;
+        rewrite /_get_byte Z_shiftr_small; try lia;
           [ rewrite Z.land_0_l
           | eapply Z.lt_trans; eauto; apply Z.pow_lt_mono_r; lia]=> //=.
     Qed.
@@ -893,7 +367,7 @@ Section FromToBytes.
       intros idx cnt v Hlower; generalize dependent idx;
         induction cnt; intros=> //=.
       rewrite /_Z_to_bytes_unsigned_le' //=; f_equal.
-      - rewrite /_Z_get_byte Z.shiftr_shiftr; try lia.
+      - rewrite /_get_byte Z.shiftr_shiftr; try lia.
         by replace (8 + 8 * idx)%Z with (8 * S idx)%Z by lia.
       - fold (_Z_to_bytes_unsigned_le' (S (S idx)) cnt v).
         fold (_Z_to_bytes_unsigned_le' (S idx) cnt (v ≫ 8)).
@@ -902,17 +376,15 @@ Section FromToBytes.
         + rewrite /_Z_to_bytes_unsigned_le' //=.
           rewrite -seq_shift map_map.
           generalize (seq (S idx) cnt); induction l=> //=; f_equal.
-          * rewrite /_Z_get_byte Z.shiftr_shiftr; try lia.
+          * rewrite /_get_byte Z.shiftr_shiftr; try lia.
             by replace (8 + 8 * a)%Z with (8 * S a)%Z by lia.
           * apply IHl.
     Qed.
-
   End ToBytesFacts_internal.
 
   Section FromBytes_internal.
-
     Definition _Z_from_bytes_unsigned_le' (idx: nat) (bytes: list N): Z :=
-      foldr (fun '(idx, byte) acc => Z.lor (_Z_set_byte (Z.of_N byte) idx) acc)
+      foldr (fun '(idx, byte) acc => Z.lor (_set_byte (Z.of_N byte) idx) acc)
             0%Z (zip (seq idx (length bytes)) bytes).
 
     Definition _Z_from_bytes_unsigned_le (bytes: list N): Z :=
@@ -932,11 +404,9 @@ Section FromToBytes.
             | Little => bytes
             | Big    => List.rev bytes
             end.
-
   End FromBytes_internal.
 
   Section FromBytesFacts_internal.
-
     Lemma _Z_from_bytes_unsigned_le'_nil:
       forall (idx: nat),
         _Z_from_bytes_unsigned_le' idx [] = 0%Z.
@@ -1018,7 +488,7 @@ Section FromToBytes.
       rewrite _Z_from_bytes_unsigned_le'_cons.
       rewrite IHcnt.
       rewrite /_Z_from_bytes_unsigned_le' //=.
-      by rewrite _Z_set_byte_0 !Z.lor_0_r.
+      by rewrite _set_byte_0 !Z.lor_0_r.
     Qed.
 
     Lemma _Z_from_bytes_unsigned_le_0s:
@@ -1058,33 +528,67 @@ Section FromToBytes.
       fold (_Z_from_bytes_unsigned_le' (S (S idx)) bytes).
       fold (_Z_from_bytes_unsigned_le' (S idx) bytes).
       rewrite Z.shiftl_lor.
-      by rewrite IHbytes _Z_set_byte_S_idx.
+      by rewrite IHbytes _set_byte_S_idx.
     Qed.
+
+    #[local] Lemma length_1_inv:
+      forall {A} (l : list A),
+        length l = 1%nat ->
+        exists x0,
+          l = [x0].
+    Proof. intros; do 2 (try destruct l)=> //; do 1 eexists; eauto. Qed.
+    #[local] Lemma length_2_inv:
+      forall {A} (l : list A),
+        length l = 2%nat ->
+        exists x0 x1,
+          l = [x0; x1].
+    Proof. intros; do 3 (try destruct l)=> //; do 2 eexists; eauto. Qed.
+    #[local] Lemma length_4_inv:
+      forall {A} (l : list A),
+        length l = 4%nat ->
+        exists x0 x1 x2 x3,
+          l = [x0; x1; x2; x3].
+    Proof. intros; do 5 (try destruct l)=> //; do 4 eexists; eauto. Qed.
+    #[local] Lemma length_8_inv:
+      forall {A} (l : list A),
+        length l = 8%nat ->
+        exists x0 x1 x2 x3 x4 x5 x6 x7,
+          l = [x0; x1; x2; x3; x4; x5; x6; x7].
+    Proof. intros; do 9 (try destruct l)=> //; do 8 eexists; eauto. Qed.
+    #[local] Lemma length_16_inv:
+      forall {A} (l : list A),
+        length l = 16%nat ->
+        exists x0 x1 x2 x3 x4 x5 x6 x7 x8 x9 x10 x11 x12 x13 x14 x15,
+          l = [x0; x1; x2; x3; x4; x5; x6; x7; x8; x9; x10; x11; x12; x13; x14; x15].
+    Proof. intros; do 17 (try destruct l)=> //; do 16 eexists; eauto. Qed.
 
     Lemma _Z_from_bytes_unsigned_le_bswap:
       forall bsz sz (bytes: list N) v,
         Datatypes.length bytes = sz ->
         bytesNat bsz = sz ->
         _Z_from_bytes_unsigned_le bytes = v ->
-        _Z_from_bytes_unsigned_le (rev bytes) = builtins.bswap bsz v.
+        _Z_from_bytes_unsigned_le (rev bytes) = bswap bsz v.
     Proof.
       rewrite /_Z_from_bytes_unsigned_le/_Z_from_bytes_unsigned_le';
         move=> bsz sz bytes v Hlen Hsz Hdecodes; destruct bsz;
-        simpl in *; subst.
-      - f_equal; do 2 destruct bytes=> //=.
-      - do 3 destruct bytes=> //=.
-        by rewrite bswap16_set_byte_reverse.
-      - do 5 destruct bytes=> //=.
-        by rewrite bswap32_set_byte_reverse.
-      - do 9 destruct bytes=> //=.
-        by rewrite bswap64_set_byte_reverse.
-      - do 17 destruct bytes=> //=.
-        by rewrite bswap128_set_byte_reverse.
+        simpl in *; rewrite -Hsz in Hlen; subst;
+        [ apply length_1_inv  in Hlen as [? Hbytes]
+        | apply length_2_inv  in Hlen as [? [? Hbytes]]
+        | apply length_4_inv  in Hlen as [? [? [? [? Hbytes]]]]
+        | apply length_8_inv  in Hlen as [? [? [? [? [? [? [? [? Hbytes]]]]]]]]
+        | apply length_16_inv in Hlen as [? [? [? [? [? [? [? [?
+                                            [? [? [? [? [? [? [? [? Hbytes]]]]]]]]]]]]]]]]];
+        rewrite Hbytes //= !Z.lor_0_r.
+      - now rewrite bswap8_set_byte_reverse.
+      - now rewrite bswap16_set_byte_reverse.
+      - now rewrite bswap32_set_byte_reverse.
+      - now rewrite bswap64_set_byte_reverse.
+      - now rewrite bswap128_set_byte_reverse.
     Qed.
-
   End FromBytesFacts_internal.
 
   Section FromToFacts_internal.
+    #[local] Transparent _get_byte _set_byte.
 
     Lemma _Z_from_to_bytes_unsigned_le'_overflow:
       forall (idx cnt: nat) (v: Z),
@@ -1106,17 +610,19 @@ Section FromToBytes.
         rewrite [_Z_to_bytes_unsigned_le' _ 1 _]/_Z_to_bytes_unsigned_le' //=.
         rewrite [_Z_from_bytes_unsigned_le' _ [_]]/_Z_from_bytes_unsigned_le' //=.
         rewrite Z.lor_0_r.
-        rewrite Z2N.id; [ | apply _Z_get_byte_nonneg].
-        rewrite _Z_get_set_byte_roundtrip.
+        rewrite Z2N.id; [ | apply _get_byte_nonneg].
+        rewrite _set_get_byte_roundtrip/_get_byte.
         assert (2^(8*(idx+cnt)) <= v)%Z as Hlower'. {
           etrans; last eapply Hlower;
             apply Z.pow_le_mono_r; lia.
         }
         specialize (IHcnt v idx Hlower'); rewrite IHcnt //=.
         apply Z.bits_inj'=> n ?.
-        rewrite Z.lor_spec !Z.land_spec !Z.shiftl_spec; try lia.
+        repeat (rewrite ?Z.lor_spec ?Z.land_spec; try lia).
+        rewrite Z.shiftl_land -Z.ldiff_ones_r; try lia.
+        repeat (rewrite ?Z.lor_spec ?Z.land_spec ?Z.shiftl_spec ?Z.ldiff_spec; try lia).
         rewrite !Z.testbit_ones; try lia.
-        churn_bits.
+        churn_bits'.
     Qed.
 
     Lemma _Z_from_to_bytes_unsigned_le'_roundtrip:
@@ -1141,8 +647,6 @@ Section FromToBytes.
                   IHcnt; try lia.
           rewrite _Z_to_bytes_unsigned_le'_small; try lia.
           1: by rewrite _Z_from_bytes_unsigned_le'_0s Z.lor_0_r.
-          (* XXX no more needed in 8.12. *)
-          all: replace (8 * (idx + cnt)%nat)%Z with (8 * (idx + cnt))%Z; lia.
         + clear IHcnt.
           rewrite Zmod_eq_full.
           2: pose proof (Z.pow_pos_nonneg
@@ -1158,10 +662,17 @@ Section FromToBytes.
           rewrite [_Z_to_bytes_unsigned_le' _ 1 _]/_Z_to_bytes_unsigned_le' //=.
           rewrite [_Z_from_bytes_unsigned_le' _ [_]]/_Z_from_bytes_unsigned_le' //=.
           rewrite Z.lor_0_r.
-          rewrite Z2N.id; [ | apply _Z_get_byte_nonneg].
-          rewrite _Z_get_set_byte_roundtrip.
+          rewrite Z2N.id; [ | apply _get_byte_nonneg].
+          rewrite _set_get_byte_roundtrip/_get_byte Z.shiftl_land.
           rewrite _Z_from_to_bytes_unsigned_le'_overflow; try lia.
-          symmetry; apply Z_ldiff_split; lia.
+          erewrite Z_ldiff_split; eauto; f_equal.
+          rewrite -Z.ldiff_ones_r; try lia.
+          rewrite Z.land_comm.
+
+          apply Z.bits_inj'=> n ?.
+          repeat (rewrite ?Z.lor_spec ?Z.land_spec ?Z.shiftl_spec ?Z.ldiff_spec; try lia).
+          rewrite !Z.testbit_ones; try lia.
+          churn_bits'.
     Qed.
 
     Lemma _Z_from_to_bytes_unsigned_le_roundtrip:
@@ -1290,19 +801,15 @@ Section FromToBytes.
         try rewrite rev_involutive;
         by apply _Z_from_signed_to_unsigned_bytes_le.
     Qed.
-
   End FromToFacts_internal.
 
   Section ToBytes_external.
-
     Definition _Z_to_bytes_aux : seal (_Z_to_bytes_def). Proof. by eexists. Qed.
     Definition _Z_to_bytes := _Z_to_bytes_aux.(unseal).
     Definition _Z_to_bytes_eq: _Z_to_bytes = _ := _Z_to_bytes_aux.(seal_eq).
-
   End ToBytes_external.
 
   Section ToBytesFacts_external.
-
     Lemma _Z_to_bytes_length:
       forall (cnt: nat) endianness sgn v,
         length (_Z_to_bytes cnt endianness sgn v) = cnt.
@@ -1317,19 +824,15 @@ Section FromToBytes.
       forall (cnt: nat) endianness sgn,
         _Z_to_bytes cnt endianness sgn 0%Z = repeat 0%N cnt.
     Proof. move=> *; rewrite _Z_to_bytes_eq; apply _Z_to_bytes_def_0_value. Qed.
-
   End ToBytesFacts_external.
 
   Section FromBytes_external.
-
     Definition _Z_from_bytes_aux: seal _Z_from_bytes_def. Proof. by eexists. Qed.
     Definition _Z_from_bytes := _Z_from_bytes_aux.(unseal).
     Definition _Z_from_bytes_eq: @_Z_from_bytes = _ := _Z_from_bytes_aux.(seal_eq).
-
   End FromBytes_external.
 
   Section FromBytesFacts_external.
-
     Lemma _Z_from_bytes_nil:
       forall endianness sgn,
         _Z_from_bytes endianness sgn [] = 0%Z.
@@ -1339,11 +842,9 @@ Section FromToBytes.
       forall endianness sgn (cnt: nat),
         _Z_from_bytes endianness sgn (repeat 0%N cnt) = 0%Z.
     Proof. move=> *; rewrite _Z_from_bytes_eq; apply _Z_from_bytes_def_0s. Qed.
-
   End FromBytesFacts_external.
 
   Section FromToFacts_external.
-
     Lemma _Z_from_to_bytes_roundtrip:
       forall (cnt: nat) (endianness: endian) (sgn: signed) (v: Z),
         match sgn with
@@ -1377,7 +878,5 @@ Section FromToBytes.
       move=> *; rewrite _Z_from_bytes_eq _Z_to_bytes_eq;
         by apply _Z_from_signed_to_unsigned_bytes_def.
     Qed.
-
   End FromToFacts_external.
-
 End FromToBytes.
