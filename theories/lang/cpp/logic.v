@@ -21,4 +21,5 @@ From bedrock.lang.cpp.logic Require Export
      layout
      translation_unit
      cclogic
-     atomics.
+     atomics
+     arr.
