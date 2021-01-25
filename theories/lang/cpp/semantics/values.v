@@ -378,6 +378,11 @@ Module Type PTRS_MIXIN (Import P : PTRS) (Import PD : PTRS_DERIVED P).
     size_of σ ty = Some sz -> (sz > 0)%N ->
     same_address (p .., o_sub _ ty n1) (p .., o_sub _ ty n2) -> n1 = n2.
   Proof. rewrite same_address_eq. exact: ptr_vaddr_o_sub_eq. Qed.
+
+  Lemma _offset_ptr_sub_0 p ty resolve
+    (Hsz : is_Some (size_of resolve ty)) :
+    _offset_ptr p (o_sub _ ty 0) = p.
+  Proof. by rewrite o_sub_0 // offset_ptr_id. Qed.
 End PTRS_MIXIN.
 
 Module Type VAL_MIXIN (Import L : PTRS) (Import R : RAW_BYTES).

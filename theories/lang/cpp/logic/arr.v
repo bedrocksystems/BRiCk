@@ -66,21 +66,18 @@ Section validR.
     _at p (_offsetR o validR) -|- valid_ptr (_offset_ptr p o).
   Proof. by rewrite _at_offsetR _at_validR. Qed. *)
 
-  Lemma _sub_inv ty i :
-    _offsetR (_sub ty i) validR |-- [| is_Some (size_of resolve ty) |].
+  #[global] Instance _offsetR_sub_inv ty i :
+    Observe [| is_Some (size_of resolve ty) |] (_offsetR (_sub ty i) validR).
   Proof.
-    apply Rep_entails_at => p.
+    apply /observe_intro_persistent /Rep_entails_at => p.
     rewrite _at_offsetR _at_validR _at_only_provable.
     apply valid_o_sub_size.
   Qed.
 
-  Lemma _offsetR_sub_0 ty R :
-    is_Some (size_of resolve ty) ->
+  Lemma _offsetR_sub_0 ty R
+    (Hsz : is_Some (size_of resolve ty)) :
     _offsetR (.[ ty ! 0 ]) R -|- R.
-  Proof.
-    intros; apply Rep_equiv_at => p /=.
-    by rewrite _at_offsetR /= o_sub_0 // offset_ptr_id.
-  Qed.
+  Proof. by rewrite o_sub_0 // _offsetR_id. Qed.
 
   Lemma _offsetR_sub_sub ty a b R :
     .[ ty ! a ] |-> (.[ ty ! b ] |-> R) ⊣⊢
@@ -96,6 +93,26 @@ Section validR.
     .[ ty ! z ] |-> (.[ ty ! 1 ] |-> R) ⊣⊢
     .[ ty ! Z.succ z] |-> R.
   Proof. by rewrite _offsetR_sub_sub Z.add_1_r. Qed.
+
+  Lemma _at_sub_0 p ty R
+    (Hsz : is_Some (size_of resolve ty)) :
+    p ., (.[ ty ! 0 ]) |-> R -|- p |-> R.
+  Proof. by rewrite _offset_ptr_sub_0. Qed.
+
+  Lemma _at_sub_sub p ty a b R :
+    p ., (.[ ty ! a ]) |-> (.[ ty ! b ] |-> R) ⊣⊢
+    p ., (.[ ty ! a + b ]) |-> R.
+  Proof. by rewrite -!_at_offsetR _offsetR_sub_sub. Qed.
+
+  Lemma _at_succ_sub p ty z R :
+    p ., (.[ ty ! 1 ]) |-> (.[ ty ! z ] |-> R) ⊣⊢
+    p ., (.[ ty ! Z.succ z]) |-> R.
+  Proof. by rewrite -!_at_offsetR _offsetR_succ_sub. Qed.
+
+  Lemma _at_sub_succ p ty z R :
+    p ., (.[ ty ! z ]) |-> (.[ ty ! 1 ] |-> R) ⊣⊢
+    p .[ ty ! Z.succ z] |-> R.
+  Proof. by rewrite -!_at_offsetR _offsetR_sub_succ. Qed.
 End validR.
 
 Definition arrR_def `{Σ : cpp_logic} {σ : genv} (ty : type) (Rs : list Rep) : Rep :=
@@ -159,12 +176,9 @@ Section arrR.
 
   #[global] Instance arrR_inv ty R Rs : Observe ([| is_Some (size_of σ ty) |]) (arrR ty (R :: Rs)).
   Proof.
-    apply: observe_intro_persistent.
+    apply: observe_intro_only_provable.
     rewrite arrR_eq /arrR_def /= !_offsetR_sep.
-    apply Rep_entails_at =>p. rewrite !_at_sep !_at_offsetR _at_type_ptrR _at_only_provable /=.
-    rewrite type_ptr_valid.
-    rewrite valid_o_sub_size.
-    iIntros "[_ [_ [[$ _] _]]]".
+    by iIntros "[_ [% _]] !%".
   Qed.
 
   #[global] Instance arrR_valid_end ty Rs : Observe (.[ ty ! length Rs ] |-> validR) (arrR ty Rs).
@@ -174,7 +188,7 @@ Section arrR.
   Proof.
     rewrite arrR_eq /arrR_def /= right_id.
     apply: (observe_both (is_Some (size_of σ ty))).
-    intro. by rewrite o_sub_0 // _offsetR_id.
+    intro. by rewrite _offsetR_sub_0.
   Qed.
 
   Lemma arrR_cons ty R Rs :
@@ -183,7 +197,7 @@ Section arrR.
     rewrite arrR_eq/arrR_def /= !_offsetR_sep !_offsetR_only_provable.
     apply: (observe_both (is_Some (size_of σ ty))) => Hsz.
     rewrite _offsetR_succ_sub Nat2Z.inj_succ.
-    rewrite !o_sub_0 // !_offsetR_id _offsetR_big_sepL.
+    rewrite !_offsetR_sub_0 // _offsetR_big_sepL.
     iSplit.
     { iIntros "($ & _ & [$ $] & b)"; iFrame "%∗"; iStopProof; f_equiv => ? ?.
       by rewrite _offsetR_succ_sub Nat2Z.inj_succ. }
@@ -211,13 +225,13 @@ Section arrR.
     generalize dependent i.
     induction Rs => i Hi /=; [ rewrite arrR_nil | rewrite arrR_cons ].
     { simpl in *; have ->:i = 0; first lia.
-      rewrite o_sub_0 // _offsetR_id //. iIntros "[#$ $]". }
+      rewrite o_sub_0 // _offsetR_id. iIntros "[#$ $]". }
     { case (decide (0 < i)%Z) => Hlt.
       { rewrite {1}(IHRs (i -1)%Z); last by simpl in *; split; lia.
         rewrite _offsetR_sep _offsetR_sub_sub. iIntros "($ & $ & $ & x)".
         iStopProof. f_equiv. f_equiv. lia. }
       { have ->: i = 0; first by lia.
-        rewrite -svalidR_validR -type_ptrR_svalidR o_sub_0 // _offsetR_id.
+        rewrite -svalidR_validR -type_ptrR_svalidR _offsetR_sub_0 //.
         iIntros "(#$ & $ & $)". } }
   Qed.
 
