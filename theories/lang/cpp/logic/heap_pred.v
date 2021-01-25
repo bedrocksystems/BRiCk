@@ -446,6 +446,7 @@ Section with_cpp.
     (HPQ : forall p : ptr, _at p P |-- _at p Q) :
     P |-- Q.
   Proof. constructor => p. move: HPQ => /(_ p). by rewrite _at_eq. Qed.
+  (* Inverses of [Rep_equiv_at] and [Rep_entails_at] are [Proper] instances [_at_proper] and [_at_mono], applicable via [f_equiv] or [apply]. *)
 
   Lemma _at_as_Rep (l : ptr) (Q : ptr → mpred) : _at l (as_Rep Q) ⊣⊢ Q l.
   Proof. by rewrite _at_eq/_at_def. Qed.
