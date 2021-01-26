@@ -552,7 +552,7 @@ Module Type Expr.
 
     Axiom wp_prval_cast_derived2base : forall e ty Q,
       wp_prval e (fun addr free =>
-        match unptr (type_of e), unptr ty with
+        match unptr (type_of e) ≫= Some ∘ drop_qualifiers, unptr ty ≫= Some ∘ drop_qualifiers with
         | Some (Tnamed derived) , Some (Tnamed base) =>
           Exists path : @class_derives resolve derived base,
           let addr' := _eqv addr ., derived_to_base path in
@@ -587,7 +587,7 @@ Module Type Expr.
 
     Axiom wp_prval_cast_base2derived : forall e ty Q,
       wp_prval e (fun addr free =>
-        match unptr (type_of e), unptr ty with
+        match unptr (type_of e) ≫= Some ∘ drop_qualifiers, unptr ty ≫= Some ∘ drop_qualifiers with
         | Some (Tnamed base), Some (Tnamed derived) =>
           Exists path : @class_derives resolve derived base,
           let addr' := _eqv addr ., base_to_derived path in
@@ -597,7 +597,7 @@ Module Type Expr.
       |-- wp_prval (Ecast Cbase2derived (Prvalue, e) ty) Q.
 
     (** the ternary operator [_ ? _ : _] has the value category
-     * of the "then" and "else" expressions (which must be the same).
+    * of the "then" and "else" expressions (which must be the same).
      * We express this with 4 rules, one for each of [wp_lval],
      * [wp_prval], [wp_xval], and [wp_init].
      *)
@@ -674,8 +674,9 @@ Module Type Expr.
          else
            match unptr (type_of f) with
            | Some fty =>
-             wp_prval f (fun f free_f => wp_args es (fun vs free =>
-                                                      |> fspec fty ti f vs (fun v => Q v (free ** free_f))))
+             wp_prval f (fun f free_f =>
+                           wp_args es (fun vs free =>
+                                         |> fspec (normalize_type fty) ti f vs (fun v => Q v (free ** free_f))))
            | _ => False
            end)
         |-- wp_prval (Ecall f es ty) Q.
@@ -683,8 +684,9 @@ Module Type Expr.
     Axiom wp_lval_call : forall f (es : list (ValCat * Expr)) Q (ty : type),
         match unptr (type_of f) with
         | Some fty =>
-          wp_prval f (fun f free_f => wp_args es (fun vs free =>
-                        |> fspec fty ti f vs (fun res => Exists p, [| res = Vptr p |] ** Q p (free ** free_f))))
+          wp_prval f (fun f free_f =>
+                        wp_args es (fun vs free =>
+                                      |> fspec (normalize_type fty) ti f vs (fun res => Exists p, [| res = Vptr p |] ** Q p (free ** free_f))))
         | _ => False
         end
         |-- wp_lval (Ecall f es ty) Q.
@@ -692,8 +694,9 @@ Module Type Expr.
     Axiom wp_xval_call : forall ty f es Q,
         match unptr (type_of f) with
         | Some fty =>
-          wp_prval f (fun f free_f => wp_args es (fun vs free =>
-                           |> fspec fty ti f vs (fun v => Exists p, [| v = Vptr p |] ** Q p (free ** free_f))))
+          wp_prval f (fun f free_f =>
+                        wp_args es (fun vs free =>
+                                      |> fspec (normalize_type fty) ti f vs (fun v => Exists p, [| v = Vptr p |] ** Q p (free ** free_f))))
         | _ => False
         end
       |-- wp_xval (Ecall f es ty) Q.
@@ -701,8 +704,9 @@ Module Type Expr.
     Axiom wp_init_call : forall f es Q addr ty,
         match unptr (type_of f) with
         | Some fty =>
-          wp_prval f (fun f free_f => wp_args es (fun vs free =>
-                           |> fspec fty ti f vs (fun res => [| res = Vptr addr |] -* Q (free_f ** free))))
+          wp_prval f (fun f free_f =>
+                        wp_args es (fun vs free =>
+                                      |> fspec (normalize_type fty) ti f vs (fun res => [| res = Vptr addr |] -* Q (free_f ** free))))
           (* NOTE We use the assumed equality to mean that the value was constructed immediately into
              the correct place *)
         | _ => False
@@ -719,13 +723,13 @@ Module Type Expr.
      *)
     Axiom wp_lval_member_call : forall ty fty f vc obj es Q,
         wp_specific_glval vc obj (fun this free_t => wp_args es (fun vs free =>
-           |> mspec (type_of obj) fty ti (Vptr $ _global f) (Vptr this :: vs) (fun v =>
+           |> mspec (type_of obj) (normalize_type fty) ti (Vptr $ _global f) (Vptr this :: vs) (fun v =>
                     Exists p, [| v = Vptr p |] ** Q p (free_t ** free))))
         |-- wp_lval (Emember_call (inl (f, Direct, fty)) vc obj es ty) Q.
 
     Axiom wp_xval_member_call : forall ty fty f vc obj es Q,
         wp_specific_glval vc obj (fun this free_t => wp_args es (fun vs free =>
-           |> mspec (type_of obj) fty ti (Vptr $ _global f) (Vptr this :: vs) (fun v =>
+           |> mspec (type_of obj) (normalize_type fty) ti (Vptr $ _global f) (Vptr this :: vs) (fun v =>
                     Exists p, [| v = Vptr p |] ** Q p (free_t ** free))))
         |-- wp_xval (Emember_call (inl (f, Direct, fty)) vc obj es ty) Q.
 
@@ -734,12 +738,12 @@ Module Type Expr.
            Reduce (materialize_into_temp ty (Emember_call (inl (f, Direct, fty)) vc obj es ty) Q)
          else
             wp_specific_glval vc obj (fun this free_t => wp_args es (fun vs free =>
-              |> mspec (type_of obj) fty ti (Vptr $ _global f) (Vptr this :: vs) (fun v => Q v (free_t ** free)))))
+              |> mspec (type_of obj) (normalize_type fty) ti (Vptr $ _global f) (Vptr this :: vs) (fun v => Q v (free_t ** free)))))
         |-- wp_prval (Emember_call (inl (f, Direct, fty)) vc obj es ty) Q.
 
     Axiom wp_init_member_call : forall f fty es addr ty vc obj Q,
         wp_specific_glval vc obj (fun this free_t => wp_args es (fun vs free =>
-             |> mspec (type_of obj) fty ti (Vptr $ _global f) (Vptr this :: vs) (fun res =>
+             |> mspec (type_of obj) (normalize_type fty) ti (Vptr $ _global f) (Vptr this :: vs) (fun res =>
                       [| res = Vptr addr |] -* Q (free_t ** free))))
         (* NOTE as with regular function calls, we use an assumed equation to unify the address
            of the returned object with the location that we are initializing.
@@ -758,7 +762,7 @@ Module Type Expr.
           match class_type (type_of obj) with
           | Some cls =>
             resolve_virtual (σ:=resolve) this cls f (fun fimpl_addr thisp =>
-              |> mspec (type_of obj) fty ti (Vptr fimpl_addr) (Vptr thisp :: vs) (fun v =>
+              |> mspec (type_of obj) (normalize_type fty) ti (Vptr fimpl_addr) (Vptr thisp :: vs) (fun v =>
                        Exists p, [| v = Vptr p |] ** Q p (free ** free')))
           | _ => False
           end))
@@ -769,7 +773,7 @@ Module Type Expr.
           match class_type (type_of obj) with
           | Some cls =>
             resolve_virtual (σ:=resolve) this cls f (fun fimpl_addr thisp =>
-              |> mspec (type_of obj) fty ti (Vptr fimpl_addr) (Vptr thisp :: vs) (fun v =>
+              |> mspec (type_of obj) (normalize_type fty) ti (Vptr fimpl_addr) (Vptr thisp :: vs) (fun v =>
                        Exists p, [| v = Vptr p |] ** Q p (free ** free')))
           | _ => False
           end))
@@ -783,7 +787,7 @@ Module Type Expr.
           match class_type (type_of obj) with
           | Some cls =>
             resolve_virtual (σ:=resolve) this cls f (fun fimpl_addr thisp =>
-              |> mspec (type_of obj) fty ti (Vptr fimpl_addr) (Vptr thisp :: vs) (fun v => Q v (free ** free')))
+              |> mspec (type_of obj) (normalize_type fty) ti (Vptr fimpl_addr) (Vptr thisp :: vs) (fun v => Q v (free ** free')))
          | _ => False
           end)))
       |-- wp_prval (Emember_call (inl (f, Virtual, fty)) vc obj es ty) Q.
@@ -793,7 +797,7 @@ Module Type Expr.
           match class_type (type_of obj) with
           | Some cls =>
             resolve_virtual (σ:=resolve) this cls f (fun fimpl_addr thisp =>
-              |> mspec (type_of obj) fty ti (Vptr fimpl_addr) (Vptr thisp :: vs) (fun res => [| res = Vptr addr |] -* Q (free ** free')))
+              |> mspec (type_of obj) (normalize_type fty) ti (Vptr fimpl_addr) (Vptr thisp :: vs) (fun res => [| res = Vptr addr |] -* Q (free ** free')))
             (* NOTE as with other function calls, we are assuming an equation on the address in order
                to express the fact the the object is constructed in-place.
              *)
