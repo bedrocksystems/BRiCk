@@ -903,12 +903,12 @@ Module PTRS_IMPL : PTRS_INTF.
   Lemma o_sub_sub_nneg σ p ty (z1 z2 : Z) :
     (0 <= z1 -> 0 <= z2 ->
     p .., o_sub σ ty z1 .., o_sub σ ty z2 = p .., o_sub σ ty (z1 + z2))%ptr%Z.
-  Proof. intros. exact: o_sub_sub. Qed.
+  Proof. intros _ _. exact: o_sub_sub. Qed.
 
   Lemma o_sub_sub_npos σ p ty (z1 z2 : Z) :
     (z1 <= 0 -> z2 <= 0 ->
     p .., o_sub σ ty z1 .., o_sub σ ty z2 = p .., o_sub σ ty (z1 + z2))%ptr%Z.
-  Proof. intros. exact: o_sub_sub. Qed.
+  Proof. intros _ _. exact: o_sub_sub. Qed.
 
   Include PTRS_DERIVED_MIXIN.
 End PTRS_IMPL.
