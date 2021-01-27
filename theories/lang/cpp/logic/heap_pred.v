@@ -880,6 +880,8 @@ Section with_cpp.
 
   #[global] Instance cptrR_persistent {resolve s} : Persistent (cptrR s).
   Proof. rewrite cptrR_eq. apply _. Qed.
+  #[global] Instance cptrR_affine {resolve s} : Affine (cptrR s).
+  Proof. rewrite cptrR_eq. apply _. Qed.
 
   (* NOTE this should become an instance. *)
   Lemma cptrR_valid_observe {resolve:genv} (p : ptr) f : Observe (valid_ptr p) (_at p (cptrR f)).
