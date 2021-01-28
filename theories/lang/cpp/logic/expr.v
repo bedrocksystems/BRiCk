@@ -552,7 +552,7 @@ Module Type Expr.
 
     Axiom wp_prval_cast_derived2base : forall e ty Q,
       wp_prval e (fun addr free =>
-        match unptr (type_of e) ≫= Some ∘ drop_qualifiers, unptr ty ≫= Some ∘ drop_qualifiers with
+        match drop_qualifiers <$> unptr (type_of e), drop_qualifiers <$> unptr ty with
         | Some (Tnamed derived) , Some (Tnamed base) =>
           Exists path : @class_derives resolve derived base,
           let addr' := _eqv addr ., derived_to_base path in
@@ -587,7 +587,7 @@ Module Type Expr.
 
     Axiom wp_prval_cast_base2derived : forall e ty Q,
       wp_prval e (fun addr free =>
-        match unptr (type_of e) ≫= Some ∘ drop_qualifiers, unptr ty ≫= Some ∘ drop_qualifiers with
+        match drop_qualifiers <$> unptr (type_of e), drop_qualifiers <$> unptr ty with
         | Some (Tnamed base), Some (Tnamed derived) =>
           Exists path : @class_derives resolve derived base,
           let addr' := _eqv addr ., base_to_derived path in
