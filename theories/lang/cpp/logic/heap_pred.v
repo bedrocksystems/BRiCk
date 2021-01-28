@@ -375,13 +375,12 @@ Section with_cpp.
     Fractional r → AsFractional (_offsetR o (r q)) (λ q, _offsetR o (r q)) q.
   Proof. constructor. done. apply _. Qed.
 
-  (* TODO: consider making this a global instance, but test performance impact. *)
-  Local Instance _offsetR_observe {o} {Q R : Rep} :
+  Global Instance _offsetR_observe {o} {Q R : Rep} :
     Observe Q R ->
     Observe (_offsetR o Q) (_offsetR o R).
   Proof. move->. by rewrite /Observe _offsetR_pers. Qed.
 
-  Local Instance _offsetR_observe_2 {o} {Q R1 R2 : Rep} :
+  Global Instance _offsetR_observe_2 {o} {Q R1 R2 : Rep} :
     Observe2 Q R1 R2 ->
     Observe2 (_offsetR o Q) (_offsetR o R1) (_offsetR o R2).
   Proof. move->. by rewrite /Observe2 _offsetR_wand _offsetR_pers. Qed.
@@ -392,6 +391,13 @@ Section with_cpp.
   Global Instance _offsetR_observe_2_only_provable Q o (R1 R2 : Rep) :
     Observe2 [| Q |] R1 R2 → Observe2 [| Q |] (_offsetR o R1) (_offsetR o R2).
   Proof. rewrite -{2}_offsetR_only_provable. apply _. Qed.
+
+  Global Instance _offsetR_observe_pure Q o (R : Rep) :
+    Observe [! Q !] R → Observe [! Q !] (_offsetR o R).
+  Proof. rewrite -{2}_offsetR_pure. apply _. Qed.
+  Global Instance _offsetR_observe_2_pure Q o (R1 R2 : Rep) :
+    Observe2 [! Q !] R1 R2 → Observe2 [! Q !] (_offsetR o R1) (_offsetR o R2).
+  Proof. rewrite -{2}_offsetR_pure. apply _. Qed.
 
   Lemma _offsetR_obs o r P :
     r |-- r ** [| P |] →
@@ -440,6 +446,7 @@ Section with_cpp.
     (HPQ : forall p : ptr, _at p P |-- _at p Q) :
     P |-- Q.
   Proof. constructor => p. move: HPQ => /(_ p). by rewrite _at_eq. Qed.
+  (* Inverses of [Rep_equiv_at] and [Rep_entails_at] are [Proper] instances [_at_proper] and [_at_mono], applicable via [f_equiv] or [apply]. *)
 
   Lemma _at_as_Rep (l : ptr) (Q : ptr → mpred) : _at l (as_Rep Q) ⊣⊢ Q l.
   Proof. by rewrite _at_eq/_at_def. Qed.
@@ -535,13 +542,12 @@ Section with_cpp.
     AsFractional (_at l (r q)) (λ q, _at l (r q)) q.
   Proof. constructor. done. apply _. Qed.
 
-  (* TODO: consider making this a global instance, but test performance impact. *)
-  Local Instance _at_observe {p} {Q R : Rep} :
+  Global Instance _at_observe {p} {Q R : Rep} :
     Observe Q R ->
     Observe (_at p Q) (_at p R).
   Proof. move->. by rewrite /Observe _at_pers. Qed.
 
-  Local Instance _at_observe_2 {p} {Q R1 R2 : Rep} :
+  Global Instance _at_observe_2 {p} {Q R1 R2 : Rep} :
     Observe2 Q R1 R2 ->
     Observe2 (_at p Q) (_at p R1) (_at p R2).
   Proof. move->. by rewrite /Observe2 _at_wand _at_pers. Qed.
@@ -552,6 +558,13 @@ Section with_cpp.
   Global Instance _at_observe_2_only_provable Q l (R1 R2 : Rep) :
     Observe2 [| Q |] R1 R2 → Observe2 [| Q |] (_at l R1) (_at l R2).
   Proof. rewrite -_at_only_provable. apply _. Qed.
+
+  Global Instance _at_observe_pure Q l (R : Rep) :
+    Observe [! Q !] R → Observe [! Q !] (_at l R).
+  Proof. rewrite -_at_pure. apply _. Qed.
+  Global Instance _at_observe_2_pure Q l (R1 R2 : Rep) :
+    Observe2 [! Q !] R1 R2 → Observe2 [! Q !] (_at l R1) (_at l R2).
+  Proof. rewrite -_at_pure. apply _. Qed.
 
   Lemma _at_obs (l : ptr) (r : Rep) P :
     r |-- r ** [| P |] →
@@ -866,6 +879,8 @@ Section with_cpp.
   Proof. rewrite refR_eq. apply _. Qed.
 
   #[global] Instance cptrR_persistent {resolve s} : Persistent (cptrR s).
+  Proof. rewrite cptrR_eq. apply _. Qed.
+  #[global] Instance cptrR_affine {resolve s} : Affine (cptrR s).
   Proof. rewrite cptrR_eq. apply _. Qed.
 
   (* NOTE this should become an instance. *)

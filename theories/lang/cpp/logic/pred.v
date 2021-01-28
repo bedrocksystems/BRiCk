@@ -609,7 +609,7 @@ Section with_cpp.
   Proof.
     case: i => [|i] Hle; iIntros "V".
     - iDestruct (valid_o_sub_size with "V") as %?.
-      by rewrite o_sub_0 // offset_ptr_id.
+      by rewrite _offset_ptr_sub_0.
     - rewrite strict_valid_ptr_sub; last by lia.
       case: vt => //. by rewrite strict_valid_valid.
   Qed.
