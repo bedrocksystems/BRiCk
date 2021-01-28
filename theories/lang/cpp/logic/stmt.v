@@ -28,8 +28,6 @@ Module Type Stmt.
     Local Notation wp_lval := (wp_lval (resolve:=resolve) M ti).
     Local Notation wp_prval := (wp_prval (resolve:=resolve) M ti).
     Local Notation wp_xval := (wp_xval (resolve:=resolve) M ti).
-    Local Notation wp_glval := (wp_glval (resolve:=resolve) M ti).
-    Local Notation wp_rval := (wp_rval (resolve:=resolve) M ti).
     Local Notation wp_init := (wp_init (resolve:=resolve) M ti).
     Local Notation wpe := (wpe (resolve:=resolve) M ti).
     Local Notation fspec := (fspec ti).

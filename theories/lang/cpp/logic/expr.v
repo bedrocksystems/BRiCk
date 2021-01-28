@@ -47,8 +47,6 @@ Module Type Expr.
     Local Notation wp_lval := (wp_lval (resolve:=resolve) M ti ρ).
     Local Notation wp_prval := (wp_prval (resolve:=resolve) M ti ρ).
     Local Notation wp_xval := (wp_xval (resolve:=resolve) M ti ρ).
-    Local Notation wp_glval := (wp_glval (resolve:=resolve) M ti ρ).
-    Local Notation wp_rval := (wp_rval (resolve:=resolve) M ti ρ).
     Local Notation wp_init := (wp_init (resolve:=resolve) M ti ρ).
     Local Notation wpe := (wpe (resolve:=resolve) M ti ρ).
     Local Notation wp_specific_glval := (wp_specific_glval (resolve:=resolve) M ti ρ).
@@ -990,11 +988,11 @@ Module Type Expr.
 
     (* These are the only ones that we need here. *)
     Local Notation wp_lval := (wp_lval (resolve:=resolve) M ti).
-    Local Notation wp_glval := (wp_glval (resolve:=resolve) M ti).
     Local Notation wp_prval := (wp_prval (resolve:=resolve) M ti).
     Local Notation wp_init := (wp_init (resolve:=resolve) M ti).
     Local Notation wp_initialize := (wp_initialize (σ:=resolve) M ti).
     Local Notation primR := (primR (resolve:=resolve)) (only parsing).
+    Local Notation wp_specific_glval := (wp_specific_glval (resolve:=resolve) M ti).
 
     (* `Earrayloop_init` and `Earrayloop_index` correspond, respectively,
        to the `ArrayInitLoopExpr`[1] and `ArrayInitIndexExpr`[2] expressions
@@ -1102,7 +1100,7 @@ Module Type Expr.
 
     Axiom wp_init_arrayloop_init : forall oname level sz ρ trg vc src init ty Q,
           has_type (Vn sz) (Tint W64 Unsigned) ->
-          wp_glval ρ src
+          wp_specific_glval ρ vc src
                    (fun p free =>
                       Forall idxp,
                       _arrayloop_init (Rbind (opaque_val oname) p

@@ -21,7 +21,6 @@ Module Type Init.
     Local Notation wpi := (wpi (resolve:=σ) M ti ρ).
     (*Local Notation wpe := (wpe (resolve:=σ) M ti ρ).*)
     Local Notation wp_lval := (wp_lval (resolve:=σ) M ti ρ).
-    Local Notation wp_rval := (wp_rval (resolve:=σ) M ti ρ).
     Local Notation wp_prval := (wp_prval (resolve:=σ) M ti ρ).
     Local Notation wp_xval := (wp_xval (resolve:=σ) M ti ρ).
     Local Notation wp_init := (wp_init (resolve:=σ) M ti ρ).
