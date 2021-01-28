@@ -328,6 +328,10 @@ Section with_cpp.
     Qed.
   End wp_xval.
 
+  (* Opaque wrapper of [False]: this represents a [False] obtained by a [ValCat] mismatch in [wp_specific_glval]. *)
+  Definition wp_specific_glval_mismatch {resolve : genv} (M : coPset) (ti : thread_info) (r : region) (vc : ValCat) (e : Expr) : (ptr -> FreeTemps -> mpred) -> mpred := funI _ => False.
+  Global Arguments wp_specific_glval_mismatch : simpl never.
+
   (* evaluate an expression as a generalized lvalue *)
 
   (* in some cases we need to evaluate a glvalue but we know the
@@ -338,7 +342,7 @@ Section with_cpp.
       match vc with
       | Lvalue => wp_lval (resolve:=resolve) M ti r e
       | Xvalue => wp_xval (resolve:=resolve) M ti r e
-      | _ => fun _ => False
+      | _ => wp_specific_glval_mismatch M ti r vc e
       end%I.
 
   (** Bundled evaluation, this enables us slightly more concisely
