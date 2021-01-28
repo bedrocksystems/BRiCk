@@ -386,15 +386,6 @@ Section normalize_type_involutive.
       merge_tq q (merge_tq q' q'') = merge_tq (merge_tq q q') q''.
   Proof. now intros *; rewrite /merge_tq/= !orb_assoc. Qed.
 
-  Lemma type_Tqualified_dec:
-    forall ty,
-      {exists q ty', ty = Tqualified q ty'} + {not(exists q ty', ty = Tqualified q ty')}.
-  Proof.
-    intros *; destruct ty;
-      try solve[apply right; intros [? [? CONTRA]]; inversion CONTRA].
-    apply left; eauto.
-  Qed.
-
   Fixpoint _drop_norm_involutive q q' ty {struct ty}:
     qual_norm' (fun _ t => normalize_type t) q (qual_norm' (fun _ t => normalize_type t) q' ty) =
     qual_norm' (fun _ t => normalize_type t) (merge_tq q q') ty
@@ -425,7 +416,7 @@ Section normalize_type_involutive.
                     [ now apply _drop_norm_involutive
                     | apply IHtys; now apply Forall_inv_tail in H]]].
     }
-    {
+    { (* normalize_type_involutive *)
       intros *; induction ty using type_ind'; simpl; rewrite ?IHty; eauto.
       rewrite map_map /qual_norm _drop_norm_involutive /merge_tq/=.
       erewrite map_ext_Forall; eauto; induction tys;
