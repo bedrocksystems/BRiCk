@@ -597,7 +597,7 @@ Module Type Expr.
       |-- wp_prval (Ecast Cbase2derived (Prvalue, e) ty) Q.
 
     (** the ternary operator [_ ? _ : _] has the value category
-    * of the "then" and "else" expressions (which must be the same).
+     * of the "then" and "else" expressions (which must be the same).
      * We express this with 4 rules, one for each of [wp_lval],
      * [wp_prval], [wp_xval], and [wp_init].
      *)
