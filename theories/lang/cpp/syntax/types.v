@@ -158,6 +158,83 @@ Inductive type : Set :=
    some Tarch types, like ARM SVE, are "sizeless", hence [option size]. *)
 | Tarch (_ : option bitsize) (name : bs)
 .
+
+(** Strengthened Induction Principle for [type]
+
+    [type] is a `Nested Inductive Type` due to the use of [list type]
+    in the [Tfunction] constructor. In Coq, the default induction
+    principle generated for a nested inductive type is too weak because
+    it fails to thread the indexed predicate through the structure
+    of the parameterized type family. While strengthened induction
+    principles are not generally derivable, we can manually strengthen
+    it if we can find a way to incorporate the nested uses of the Type.
+    Luckily, we can use [List.Forall] to express that the indexed
+    predicate must hold on each element of the list which is sufficient
+    for the [normalize_type_idempotent] Lemma. For more information on
+    this topic, please refer to [1].
+
+    [1] http://adam.chlipala.net/cpdt/html/InductiveTypes.html;
+          "Nested Inductive Types" Section
+ *)
+Section type_ind'.
+  Variable P : type -> Prop.
+
+  Hypothesis Tptr_ind' : forall (ty : type),
+    P ty -> P (Tptr ty).
+  Hypothesis Tref_ind' : forall (ty : type),
+    P ty -> P (Tref ty).
+  Hypothesis Trv_ref_ind' : forall (ty : type),
+    P ty -> P (Trv_ref ty).
+  Hypothesis Tint_ind' : forall (size : bitsize) (sign : signed),
+    P (Tint size sign).
+  Hypothesis Tvoid_ind' : P Tvoid.
+  Hypothesis Tarray_ind' : forall (ty : type) (sz : N),
+    P ty -> P (Tarray ty sz).
+  Hypothesis Tnamed_ind' : forall (name : globname),
+    P (Tnamed name).
+  Hypothesis Tfunction_ind' : forall {cc : calling_conv} (ty : type) (tys : list type),
+    P ty -> Forall P tys -> P (Tfunction ty tys).
+  Hypothesis Tbool_ind' : P Tbool.
+  Hypothesis Tmember_pointer_ind' : forall (name : globname) (ty : type),
+    P ty -> P (Tmember_pointer name ty).
+  Hypothesis Tfloat_ind' : forall (size : bitsize),
+    P (Tfloat size).
+  Hypothesis Tqualified_ind' : forall (q : type_qualifiers) (ty : type),
+    P ty -> P (Tqualified q ty).
+  Hypothesis Tnullptr_ind' : P Tnullptr.
+  Hypothesis Tarch_ind' : forall (osize : option bitsize) (name : bs),
+    P (Tarch osize name).
+
+  Fixpoint type_ind' (ty : type) : P ty :=
+    match ty with
+    | Tptr ty                 => Tptr_ind' ty (type_ind' ty)
+    | Tref ty                 => Tref_ind' ty (type_ind' ty)
+    | Trv_ref ty              => Trv_ref_ind' ty (type_ind' ty)
+    | Tint sz sgn             => Tint_ind' sz sgn
+    | Tvoid                   => Tvoid_ind'
+    | Tarray ty sz            => Tarray_ind' ty sz (type_ind' ty)
+    | Tnamed name             => Tnamed_ind' name
+    | Tfunction ty tys        =>
+      Tfunction_ind' ty tys (type_ind' ty)
+                     (* NOTE: We must use a nested [fix] in order to convince Coq that
+                          the elements of [tys] are actually subterms of
+                          [Tfunction ty tys]
+                      *)
+                     ((fix list_tys_ind' (tys : list type) : Forall P tys :=
+                         match tys with
+                         | []        => List.Forall_nil P
+                         | ty :: tys' => List.Forall_cons P ty tys'
+                                                        (type_ind' ty) (list_tys_ind' tys')
+                         end) tys)
+    | Tbool                   => Tbool_ind'
+    | Tmember_pointer name ty => Tmember_pointer_ind' name ty (type_ind' ty)
+    | Tfloat sz               => Tfloat_ind' sz
+    | Tqualified q ty         => Tqualified_ind' q ty (type_ind' ty)
+    | Tnullptr                => Tnullptr_ind'
+    | Tarch osize name        => Tarch_ind' osize name
+    end.
+End type_ind'.
+
 Notation Tchar := Tint (only parsing).
 (* XXX merge type_eq_dec into type_eq. *)
 Definition type_eq_dec : forall (ty1 ty2 : type), { ty1 = ty2 } + { ty1 <> ty2 }.
@@ -323,6 +400,54 @@ Fixpoint normalize_type (t : type) : type :=
   | Tfloat _ => t
   | Tarch _ _ => t
   end.
+
+Section normalize_type_idempotent.
+  Lemma merge_tq_assoc:
+    forall q q' q'',
+      merge_tq q (merge_tq q' q'') = merge_tq (merge_tq q q') q''.
+  Proof. now intros *; rewrite /merge_tq/= !orb_assoc. Qed.
+
+  Fixpoint _drop_norm_idempotent q q' ty {struct ty}:
+    qual_norm' (fun _ t => normalize_type t) q (qual_norm' (fun _ t => normalize_type t) q' ty) =
+    qual_norm' (fun _ t => normalize_type t) (merge_tq q q') ty
+  with _qual_norm_idempotent q ty {struct ty}:
+    normalize_type (qual_norm' (fun q t => tqualified q (normalize_type t)) q ty) =
+    qual_norm' (fun q t => tqualified q (normalize_type t)) q ty
+  with normalize_type_idempotent ty {struct ty}:
+    normalize_type (normalize_type ty) = normalize_type ty.
+  Proof.
+    { (* _drop_norm_involutive *)
+      generalize dependent q; generalize dependent q';
+        induction ty using type_ind'; intros *;
+        rewrite /qual_norm/= ?normalize_type_idempotent//.
+      - rewrite map_map /qual_norm !IHty /merge_tq/=;
+          erewrite map_ext_Forall; eauto; eapply Forall_impl; eauto;
+          intros * HForall; simpl in HForall; apply HForall.
+      - now rewrite IHty merge_tq_assoc.
+    }
+    { (* _qual_norm_involutive *)
+      intros *; generalize dependent q;
+        induction ty using type_ind'; intros *; simpl;
+        try solve[destruct q as [[|] [|]]; simpl; now rewrite ?normalize_type_idempotent].
+      destruct q as [[|] [|]]; simpl;
+        rewrite map_map /qual_norm ?_drop_norm_idempotent /merge_tq/=;
+        try solve[erewrite map_ext_Forall; eauto; induction tys;
+                  [ now constructor
+                  | constructor;
+                    [ now apply _drop_norm_idempotent
+                    | apply IHtys; now apply Forall_inv_tail in H]]].
+    }
+    { (* normalize_type_involutive *)
+      intros *; induction ty using type_ind'; simpl; rewrite ?IHty; eauto.
+      rewrite map_map /qual_norm _drop_norm_idempotent /merge_tq/=.
+      erewrite map_ext_Forall; eauto; induction tys;
+        [ now constructor
+        | constructor;
+          [ now apply _drop_norm_idempotent
+          | apply IHtys; now apply Forall_inv_tail in H]].
+    }
+  Qed.
+End normalize_type_idempotent.
 
 Definition decompose_type : type -> type_qualifiers * type :=
   qual_norm (fun q t => (q, t)).

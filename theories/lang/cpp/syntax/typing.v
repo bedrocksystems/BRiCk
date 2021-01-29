@@ -94,7 +94,7 @@ Fixpoint drop_qualifiers (t : type) : type :=
  *)
 Definition unptr (t : type) : option type :=
   match drop_qualifiers t with
-  | Tptr p => Some (drop_qualifiers p)
+  | Tptr p => Some p
   | _ => None
   end.
 
@@ -109,4 +109,3 @@ Definition class_type (t : type) : option globname :=
 *)
   | _ => None
   end.
-
