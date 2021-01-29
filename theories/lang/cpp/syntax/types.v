@@ -159,6 +159,23 @@ Inductive type : Set :=
 | Tarch (_ : option bitsize) (name : bs)
 .
 
+(** Strengthened Induction Principle for [type]
+
+    [type] is a `Nested Inductive Type` due to the use of [list type]
+    in the [Tfunction] constructor. In Coq, the default induction
+    principle generated for a nested inductive type is too weak because
+    it fails to thread the indexed predicate through the structure
+    of the parameterized type family. While strengthened induction
+    principles are not generally derivable, we can manually strengthen
+    it if we can find a way to incorporate the nested uses of the Type.
+    Luckily, we can use [List.Forall] to express that the indexed
+    predicate must hold on each element of the list which is sufficient
+    for the [normalize_type_idempotent] Lemma. For more information on
+    this topic, please refer to [1].
+
+    [1] http://adam.chlipala.net/cpdt/html/InductiveTypes.html;
+          "Nested Inductive Types" Section
+ *)
 Section type_ind'.
   Variable P : type -> Prop.
 
@@ -199,6 +216,10 @@ Section type_ind'.
     | Tnamed name             => Tnamed_ind' name
     | Tfunction ty tys        =>
       Tfunction_ind' ty tys (type_ind' ty)
+                     (* NOTE: We must use a nested [fix] in order to convince Coq that
+                          the elements of [tys] are actually subterms of
+                          [Tfunction ty tys]
+                      *)
                      ((fix list_tys_ind' (tys : list type) : Forall P tys :=
                          match tys with
                          | []        => List.Forall_nil P
@@ -380,25 +401,25 @@ Fixpoint normalize_type (t : type) : type :=
   | Tarch _ _ => t
   end.
 
-Section normalize_type_involutive.
+Section normalize_type_idempotent.
   Lemma merge_tq_assoc:
     forall q q' q'',
       merge_tq q (merge_tq q' q'') = merge_tq (merge_tq q q') q''.
   Proof. now intros *; rewrite /merge_tq/= !orb_assoc. Qed.
 
-  Fixpoint _drop_norm_involutive q q' ty {struct ty}:
+  Fixpoint _drop_norm_idempotent q q' ty {struct ty}:
     qual_norm' (fun _ t => normalize_type t) q (qual_norm' (fun _ t => normalize_type t) q' ty) =
     qual_norm' (fun _ t => normalize_type t) (merge_tq q q') ty
-  with _qual_norm_involutive q ty {struct ty}:
+  with _qual_norm_idempotent q ty {struct ty}:
     normalize_type (qual_norm' (fun q t => tqualified q (normalize_type t)) q ty) =
     qual_norm' (fun q t => tqualified q (normalize_type t)) q ty
-  with normalize_type_involutive ty {struct ty}:
+  with normalize_type_idempotent ty {struct ty}:
     normalize_type (normalize_type ty) = normalize_type ty.
   Proof.
     { (* _drop_norm_involutive *)
       generalize dependent q; generalize dependent q';
         induction ty using type_ind'; intros *;
-        rewrite /qual_norm/= ?normalize_type_involutive//.
+        rewrite /qual_norm/= ?normalize_type_idempotent//.
       - rewrite map_map /qual_norm !IHty /merge_tq/=;
           erewrite map_ext_Forall; eauto; eapply Forall_impl; eauto;
           intros * HForall; simpl in HForall; apply HForall.
@@ -407,26 +428,26 @@ Section normalize_type_involutive.
     { (* _qual_norm_involutive *)
       intros *; generalize dependent q;
         induction ty using type_ind'; intros *; simpl;
-        try solve[destruct q as [[|] [|]]; simpl; now rewrite ?normalize_type_involutive].
+        try solve[destruct q as [[|] [|]]; simpl; now rewrite ?normalize_type_idempotent].
       destruct q as [[|] [|]]; simpl;
-        rewrite map_map /qual_norm ?_drop_norm_involutive /merge_tq/=;
+        rewrite map_map /qual_norm ?_drop_norm_idempotent /merge_tq/=;
         try solve[erewrite map_ext_Forall; eauto; induction tys;
                   [ now constructor
                   | constructor;
-                    [ now apply _drop_norm_involutive
+                    [ now apply _drop_norm_idempotent
                     | apply IHtys; now apply Forall_inv_tail in H]]].
     }
     { (* normalize_type_involutive *)
       intros *; induction ty using type_ind'; simpl; rewrite ?IHty; eauto.
-      rewrite map_map /qual_norm _drop_norm_involutive /merge_tq/=.
+      rewrite map_map /qual_norm _drop_norm_idempotent /merge_tq/=.
       erewrite map_ext_Forall; eauto; induction tys;
         [ now constructor
         | constructor;
-          [ now apply _drop_norm_involutive
+          [ now apply _drop_norm_idempotent
           | apply IHtys; now apply Forall_inv_tail in H]].
     }
   Qed.
-End normalize_type_involutive.
+End normalize_type_idempotent.
 
 Definition decompose_type : type -> type_qualifiers * type :=
   qual_norm (fun q t => (q, t)).
