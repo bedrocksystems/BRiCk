@@ -338,11 +338,11 @@ Section with_cpp.
   Lemma _offsetR_fupd o R E1 E2 : _offsetR o (|={E1,E2}=> R) -|- |={E1,E2}=> _offsetR o R.
   Proof. by rewrite _offsetR_eq/_offsetR_def /as_Rep; constructor => p /=; rewrite !monPred_at_fupd. Qed.
 
-  Lemma _offsetR_intuitionistically l (R : Rep) : _offsetR l (□ R) ⊣⊢ □ (_offsetR l R).
+  Lemma _offsetR_intuitionistically o (R : Rep) : _offsetR o (□ R) ⊣⊢ □ (_offsetR o R).
   Proof. by rewrite _offsetR_eq/_offsetR_def; constructor => p /=; rewrite !monPred_at_intuitionistically. Qed.
 
-  Lemma _offsetR_intuitionistically_if o b R : □?b (_offsetR o R) -|- _offsetR o (□?b R).
-  Proof. by destruct b => /= //; rewrite _offsetR_intuitionistically. Qed.
+  Lemma _offsetR_intuitionistically_if o b R : _offsetR o (□?b R) -|- □?b (_offsetR o R).
+  Proof. by destruct b => //=; rewrite _offsetR_intuitionistically. Qed.
 
   Lemma _offsetR_except_0 o R : _offsetR o (bi_except_0 R) -|- bi_except_0 (_offsetR o R).
   Proof. by rewrite _offsetR_eq/_offsetR_def; constructor => p /=; rewrite !monPred_at_except_0. Qed.
@@ -498,8 +498,8 @@ Section with_cpp.
 
   Lemma _at_intuitionistically l (R : Rep) : _at l (□ R) ⊣⊢ □ (_at l R).
   Proof. by rewrite _at_eq/_at_def monPred_at_intuitionistically. Qed.
-  Lemma _at_intuitionistically_if p b R : □?b (_at p R) -|- _at p (□?b R).
-  Proof. destruct b => /= //. by rewrite _at_intuitionistically. Qed.
+  Lemma _at_intuitionistically_if p b R : _at p (□?b R) -|- □?b (_at p R).
+  Proof. destruct b => //=. by rewrite _at_intuitionistically. Qed.
 
   Lemma _at_except_0 p R : _at p (bi_except_0 R) -|- bi_except_0 (_at p R).
   Proof. by rewrite _at_eq/_at_def monPred_at_except_0. Qed.
