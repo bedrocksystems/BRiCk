@@ -328,114 +328,22 @@ Section with_cpp.
     Qed.
   End wp_xval.
 
+  (* Opaque wrapper of [False]: this represents a [False] obtained by a [ValCat] mismatch in [wp_glval]. *)
+  Definition wp_glval_mismatch {resolve : genv} (M : coPset) (ti : thread_info) (r : region) (vc : ValCat) (e : Expr) : (ptr -> FreeTemps -> mpred) -> mpred := funI _ => False.
+  Global Arguments wp_glval_mismatch : simpl never.
+
   (* evaluate an expression as a generalized lvalue *)
-
-  Definition wp_glval {resolve} M ti (r : region) e Q :=
-    @wp_lval resolve M ti r e Q \\// @wp_xval resolve M ti r e Q.
-
-  (** note: you can not shift for [wp_glval] because [|==> wp_glval] allows the
-      ghost code to decide which side you are in
-   *)
-
-  Theorem wp_glval_frame :
-    forall σ1 σ2 M ti ρ e k1 k2,
-      genv_leq σ1 σ2 ->
-      Forall v f, k1 v f -* k2 v f |-- @wp_glval σ1 M ti ρ e k1 -* @wp_glval σ2 M ti ρ e k2.
-  Proof.
-    intros.
-    iIntros "X"; iIntros "W".
-    iDestruct "W" as "[W | W]"; [ iLeft | iRight ].
-    - iRevert "W". iApply wp_lval_frame; eauto with iFrame.
-    - iRevert "W". iApply wp_xval_frame; eauto with iFrame.
-  Qed.
-
-  Global Instance Proper_wp_glval :
-    Proper (genv_leq ==> eq ==> eq ==> eq ==> eq ==>
-            pointwise_relation _ (pointwise_relation _ lentails) ==> lentails)
-           (@wp_glval).
-  Proof using .
-    unfold wp_glval; simpl. repeat red. intros.
-    eapply bi.or_elim; [ rewrite <- bi.or_intro_l | rewrite <- bi.or_intro_r ].
-    eapply Proper_wp_lval; eauto.
-    eapply Proper_wp_xval; eauto.
-  Qed.
-
-  Section wp_glval.
-    Context {σ : genv} (M : coPset) (ti : thread_info) (ρ : region) (e : Expr).
-    Local Notation WP := (wp_glval (resolve:=σ) M ti ρ e) (only parsing).
-    Implicit Types Q : ptr → FreeTemps → epred.
-
-    Lemma wp_glval_wand Q1 Q2 : WP Q1 |-- (∀ v f, Q1 v f -* Q2 v f) -* WP Q2.
-    Proof. iIntros "Hwp HK". by iApply (wp_glval_frame with "HK Hwp"). Qed.
-    Lemma wp_glval_fupd Q : WP (λ v f, |={M}=> Q v f) |-- WP Q.
-    Proof.
-      iIntros "[?|?]".
-      by iLeft; iApply wp_lval_fupd. by iRight; iApply wp_xval_fupd.
-    Qed.
-  End wp_glval.
 
   (* in some cases we need to evaluate a glvalue but we know the
      the underlying primitive value category. This makes some weakest
      pre-condition axioms a bit shorter
    *)
-  Definition wp_specific_glval {resolve} M ti r (vc : ValCat) (e : Expr) : (ptr -> FreeTemps -> mpred) -> mpred :=
+  Definition wp_glval {resolve} M ti r (vc : ValCat) (e : Expr) : (ptr -> FreeTemps -> mpred) -> mpred :=
       match vc with
       | Lvalue => wp_lval (resolve:=resolve) M ti r e
       | Xvalue => wp_xval (resolve:=resolve) M ti r e
-      | _ => fun _ => False
+      | _ => wp_glval_mismatch M ti r vc e
       end%I.
-
-  (** rvalues *)
-  (* evaluate an expression as an rvalue
-   * TODO this doesn't capture initializing prvalues
-   *)
-  Definition wp_rval {resolve} M ti (r : region) e (Q : ptr + val -> FreeTemps -> mpred) :=
-    @wp_prval resolve M ti r e (fun v => Q (inr v)) \\// @wp_xval resolve M ti r e (fun p => Q (inl p)).
-
-  Theorem wp_rval_frame :
-    forall σ1 σ2 M ti ρ e k1 k2,
-      genv_leq σ1 σ2 ->
-      Forall v f, k1 v f -* k2 v f |-- @wp_rval σ1 M ti ρ e k1 -* @wp_rval σ2 M ti ρ e k2.
-  Proof.
-    intros.
-    iIntros "X"; iIntros "W".
-    iDestruct "W" as "[W | W]"; [ iLeft | iRight ].
-    - iRevert "W". iApply wp_prval_frame; eauto with iFrame.
-      iIntros (v f) "Y"; iApply "X"; iFrame.
-    - iRevert "W". iApply wp_xval_frame; eauto with iFrame.
-      iIntros (v f) "Y"; iApply "X"; iFrame.
-  Qed.
-
-  (** note: you can not shift for [wp_rval] because [|==> wp_rval] allows the
-      ghost code to decide which side you are in
-   *)
-
-  Global Instance Proper_wp_rval :
-    Proper (genv_leq ==> eq ==> eq ==> eq ==> eq ==>
-            pointwise_relation _ (pointwise_relation _ lentails) ==> lentails)
-           (@wp_rval).
-  Proof using .
-    unfold wp_rval; simpl. repeat red. intros.
-    eapply bi.or_elim; [ rewrite <- bi.or_intro_l | rewrite <- bi.or_intro_r ].
-    - eapply Proper_wp_prval; eauto.
-      do 2 intro. apply H4.
-    - eapply Proper_wp_xval; eauto.
-      do 2 intro; apply H4.
-  Qed.
-
-  Section wp_rval.
-    Context {σ : genv} (M : coPset) (ti : thread_info) (ρ : region) (e : Expr).
-    Local Notation WP := (wp_rval (resolve:=σ) M ti ρ e) (only parsing).
-    Implicit Types Q : ptr + val → FreeTemps → epred.
-
-    Lemma wp_rval_wand Q1 Q2 : WP Q1 |-- (∀ v f, Q1 v f -* Q2 v f) -* WP Q2.
-    Proof. iIntros "Hwp HK". by iApply (wp_rval_frame with "HK Hwp"). Qed.
-    Lemma wp_rval_fupd Q : WP (λ v f, |={M}=> Q v f) |-- WP Q.
-    Proof.
-      iIntros "[?|?]".
-      by iLeft; iApply wp_prval_fupd. by iRight; iApply wp_xval_fupd.
-    Qed.
-  End wp_rval.
 
   (** Bundled evaluation, this enables us slightly more concisely
       represent some weakest-precondition rules.
