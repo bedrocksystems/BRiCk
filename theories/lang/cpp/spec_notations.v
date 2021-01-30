@@ -113,6 +113,10 @@ Section with_Σ.
 
   Definition with_prepost_fspec (X : WithPrePost) : WithPrePost := X.
 
+  Definition with_require_fspec (X : WithPrePost) : WithPrePost := X.
+
+  Definition with_persist_fspec (X : WithPrePost) : WithPrePost := X.
+
   Definition exactWpp (wpp : WithPrePost) : WithPrePost := wpp.
 
 End with_Σ.
@@ -123,7 +127,7 @@ Strategy expand
    [ add_pre add_args add_require add_arg add_post add_prepost with_tele ].
 (** Make sure to list all identity functions above. And in the same order, for clarity. *)
 Strategy expand
-   [ let_fspec with_arg_fspec with_pre_fspec with_prepost_fspec exactWpp ].
+   [ let_fspec with_arg_fspec with_pre_fspec with_prepost_fspec with_require_fspec with_persist_fspec exactWpp ].
 
 Notation "'\with' x .. y X" :=
   (@add_with _ (TeleS (fun x => .. (TeleS (fun y => TeleO)) ..))
@@ -178,10 +182,22 @@ Notation "'\require' pre X" :=
   (at level 10, pre at level 200, X at level 200, left associativity,
    format "'[v' '[' '\require'  pre ']' '//' X ']'").
 
+Notation "'\require{' x .. y } pre X" :=
+  (@with_require_fspec _ (@add_with _ (TeleS (fun x => .. (TeleS (fun y => TeleO)) ..))
+                                (fun x => .. (fun y => (@add_require _ pre X%fspec)) .. )))
+  (at level 10, pre at level 200, x binder, y binder, X at level 200, left associativity,
+   format "'[v' '\require{' x  ..  y '}'  pre  '//' X ']'").
+
 Notation "'\persist' pre X" :=
   (@add_persist _ pre%I X%fspec)
   (at level 10, pre at level 200, X at level 200, left associativity,
    format "'[v' '[' '\persist'  pre ']' '//' X ']'").
+
+Notation "'\persist{' x .. y } pre X" :=
+  (@with_persist_fspec _ (@add_with _ (TeleS (fun x => .. (TeleS (fun y => TeleO)) ..))
+                                (fun x => .. (fun y => (@add_persist _ pre%I X%fspec)) .. )))
+  (at level 10, pre at level 200, x binder, y binder, X at level 200, left associativity,
+   format "'[v' '\persist{' x  ..  y '}'  pre  '//' X ']'").
 
 Notation "'\pre' pre X" :=
   (@add_pre _ pre%I X%fspec)
@@ -241,6 +257,7 @@ refine (
    \with (I J : mpred) (p : ptr) (R : Qp -> Qp -> nat -> Rep)
    \prepost emp
    \require True
+   \require{x} x = 1
    \arg{n (nn: nat)} "foo" (Vint n)
    \args{a} [Vint (Z.of_nat a)]
    \with (z : nat)
@@ -274,6 +291,9 @@ refine (
    \require l+m = 3
    \prepost emp
    \persist emp
+   \persist{n1} [| n1 = 1 |]
+   \persist{n2} [| n2 = 1 |]%N
+   \persist{z} [| z = 1 |]%Z
    \with (z : nat)
    \arg{(zz : Z)} "foo" (Vint zz)
    \prepost emp
