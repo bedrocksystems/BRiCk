@@ -100,6 +100,11 @@ Section with_Σ.
     eapply go. }
   Defined.
 
+  Definition with_tele (t : telescopes.tele) (f : telescopes.tele_arg t -> WithPrePost)
+  : WithPrePost :=
+    @add_with (telescopes.TeleS (fun x : telescopes.tele_arg t => telescopes.TeleO)) f.
+
+  (* Markers to help notation printing. *)
   Definition let_fspec (X : WithPrePost) : WithPrePost := X.
 
   Definition with_arg_fspec (X : WithPrePost) : WithPrePost := X.
@@ -107,10 +112,6 @@ Section with_Σ.
   Definition with_pre_fspec (X : WithPrePost) : WithPrePost := X.
 
   Definition with_prepost_fspec (X : WithPrePost) : WithPrePost := X.
-
-  Definition with_tele (t : telescopes.tele) (f : telescopes.tele_arg t -> WithPrePost)
-  : WithPrePost :=
-    @add_with (telescopes.TeleS (fun x : telescopes.tele_arg t => telescopes.TeleO)) f.
 
   Definition exactWpp (wpp : WithPrePost) : WithPrePost := wpp.
 
