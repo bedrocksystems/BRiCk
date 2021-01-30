@@ -120,8 +120,10 @@ End with_Σ.
 Arguments with_tele _ _ _ : clear implicits.
 
 Strategy expand
-   [ add_pre add_args add_require add_arg add_post add_prepost let_fspec
-     with_tele with_arg_fspec ].
+   [ add_pre add_args add_require add_arg add_post add_prepost with_tele ].
+(** Make sure to list all identity functions above. And in the same order, for clarity. *)
+Strategy expand
+   [ let_fspec with_arg_fspec with_pre_fspec with_prepost_fspec exactWpp ].
 
 Notation "'\with' x .. y X" :=
   (@add_with _ (TeleS (fun x => .. (TeleS (fun y => TeleO)) ..))
