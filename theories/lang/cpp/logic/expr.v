@@ -487,9 +487,9 @@ Module Type Expr.
           wpe vc e (fun _ free => Q (Vint 0) free)
       |-- wp_prval (Ecast C2void (vc, e) Tvoid) Q.
 
-    Axiom wp_prval_cast_array2pointer : forall e t Q,
-        wp_lval e (fun p => Q (Vptr p))
-        |-- wp_prval (Ecast Carray2pointer (Lvalue, e) t) Q.
+    Axiom wp_prval_cast_array2pointer : forall vc e t Q,
+        wp_glval vc e (fun p => Q (Vptr p))
+        |-- wp_prval (Ecast Carray2pointer (vc, e) t) Q.
 
     (** [Cpointer2int] exposes the pointer, which is expressed with [pinned_ptr]
      *)
@@ -1042,9 +1042,9 @@ Module Type Expr.
 
     (* Maybe we can `Rbind (opaque n) p`, and then add `_opaque` to encapsulate looking this up in the region;
        the new premise would be (after Loc:=ptr goes in) `Q _opaque` *)
-    Axiom wp_lval_opaque_ref : forall n ρ ty Q,
+    Axiom wp_glval_opaque_ref : forall vc n ρ ty Q,
           wp_lval ρ (Evar (Lname (opaque_val n)) ty) Q
-      |-- wp_lval ρ (Eopaque_ref n ty) Q.
+      |-- wp_glval ρ vc (Eopaque_ref n ty) Q.
 
     (* Maybe do something similar to what was suggested for `wp_lval_opaque_ref` above. *)
     Axiom wp_prval_arrayloop_index : forall ρ level ty Q,
