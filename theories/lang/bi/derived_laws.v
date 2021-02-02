@@ -5,10 +5,9 @@
  *)
 (** *)
 
-From iris.bi Require Import bi.
+From iris.bi Require Import bi lib.fractional.
 From iris.proofmode Require Import tactics.
 From bedrock.lang.bi Require only_provable.
-From iris.bi.lib Require Import fractional.
 
 (**
 Derived BI laws, similarly to iris.bi.derived_laws.

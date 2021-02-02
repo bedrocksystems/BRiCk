@@ -4,9 +4,15 @@
  * See the LICENSE-BedRock file in the repository root for details.
  *)
 From iris.bi Require Import bi.
-From iris.proofmode Require Import tactics.
+From iris.base_logic Require Import bi.
+From iris.proofmode Require Import classes.
 From bedrock.lang.prelude Require Export base.
 From bedrock.lang.bi Require Export only_provable derived_laws.
+
+#[global] Instance into_pure_emp PROP : IntoPure (PROP := PROP) emp%I True.
+Proof. by rewrite /IntoPure (bi.pure_intro True emp%I). Qed.
+
+#[global] Hint Opaque uPred_emp : typeclass_instances.
 
 (** * Notation for functions in the Iris scope. To upstream,
 per https://gitlab.mpi-sws.org/iris/iris/-/issues/320. *)
