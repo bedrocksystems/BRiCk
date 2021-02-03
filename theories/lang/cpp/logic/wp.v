@@ -345,6 +345,21 @@ Section with_cpp.
       | _ => wp_glval_mismatch M ti r vc e
       end%I.
 
+  Theorem wp_glval_frame {resolve : genv} M ti r vc e Q Q' :
+    (Forall v free, Q v free -* Q' v free) |-- wp_glval M ti r vc e Q -* wp_glval M ti r vc e Q'.
+  Proof.
+    destruct vc; simpl.
+    - apply wp_lval_frame; reflexivity.
+    - eauto.
+    - apply wp_xval_frame; reflexivity.
+  Qed.
+
+  Theorem wp_glval_wand {resolve : genv} M ti r vc e Q Q' :
+    wp_glval M ti r vc e Q |-- (Forall v free, Q v free -* Q' v free) -* wp_glval M ti r vc e Q'.
+  Proof.
+    iIntros "A B"; iRevert "A"; iApply wp_glval_frame; eauto.
+  Qed.
+
   (** Bundled evaluation, this enables us slightly more concisely
       represent some weakest-precondition rules.
    *)

@@ -4,7 +4,7 @@
  * See the LICENSE-BedRock file in the repository root for details.
  *)
 Require Import Coq.Lists.List.
-
+Require Import iris.proofmode.tactics.
 Require Import bedrock.lang.cpp.ast.
 Require Import bedrock.lang.cpp.semantics.
 From bedrock.lang.cpp.logic Require Import
@@ -66,6 +66,28 @@ Module Type Init.
       | Tarch _ _ => False (* vendor-specific types are not supported *)
       | Tfloat _ => False (* floating point numbers are not supported *)
       end.
+
+    Lemma wp_initialize_frame obj ty e Q Q' :
+      (Forall free, Q free -* Q' free) |-- wp_initialize ty obj e Q -* wp_initialize ty obj e Q'.
+    Proof using.
+      induction ty =>/=; eauto.
+      { iIntros "a". iApply wp_prval_frame; try reflexivity.
+        iIntros (v f) "[$ X] Y"; iApply "a"; iApply "X"; eauto. }
+      { iIntros "a". iApply wp_prval_frame; try reflexivity.
+        iIntros (v f) "[$ X] Y"; iApply "a"; iApply "X"; eauto. }
+      { iIntros "a". iApply wp_init_frame; try reflexivity; eauto. }
+      { iIntros "a". iApply wp_init_frame; try reflexivity; eauto. }
+      { iIntros "a". iApply wp_prval_frame; try reflexivity.
+        iIntros (v f) "[$ X] Y"; iApply "a"; iApply "X"; eauto. }
+      { iIntros "a". iApply wp_prval_frame; try reflexivity.
+        iIntros (v f) "[$ X] Y"; iApply "a"; iApply "X"; eauto. }
+    Qed.
+
+    Lemma wp_initialize_wand obj ty e Q Q' :
+      wp_initialize ty obj e Q |--(Forall free, Q free -* Q' free) -* wp_initialize ty obj e Q'.
+    Proof using.
+      iIntros "A B"; iRevert "A"; iApply wp_initialize_frame; eauto.
+    Qed.
 
     Axiom wpi_initialize : forall (thisp : ptr) i cls Q,
         let p' := thisp ., offset_for cls i.(init_path) in
