@@ -67,6 +67,28 @@ Module Type Init.
       | Tfloat _ => False (* floating point numbers are not supported *)
       end.
 
+    Lemma wp_initialize_frame {resolve: genv} M ti r obj ty e Q Q' :
+      (Forall free, Q free -* Q' free) |-- wp_initialize M ti r ty obj e Q -* wp_initialize M ti r ty obj e Q'.
+    Proof using.
+      induction ty =>/=; eauto.
+      { iIntros "a". iApply wp_prval_frame; try reflexivity.
+        iIntros (v f) "[$ X] Y"; iApply "a"; iApply "X"; eauto. }
+      { iIntros "a". iApply wp_prval_frame; try reflexivity.
+        iIntros (v f) "[$ X] Y"; iApply "a"; iApply "X"; eauto. }
+      { iIntros "a". iApply wp_init_frame; try reflexivity; eauto. }
+      { iIntros "a". iApply wp_init_frame; try reflexivity; eauto. }
+      { iIntros "a". iApply wp_prval_frame; try reflexivity.
+        iIntros (v f) "[$ X] Y"; iApply "a"; iApply "X"; eauto. }
+      { iIntros "a". iApply wp_prval_frame; try reflexivity.
+        iIntros (v f) "[$ X] Y"; iApply "a"; iApply "X"; eauto. }
+    Qed.
+    Lemma wp_initialize_wand {resolve: genv} M ti r obj ty e Q Q' :
+      wp_initialize M ti r ty obj e Q |--(Forall free, Q free -* Q' free) -* wp_initialize M ti r ty obj e Q'.
+    Proof using.
+      iIntros "A B"; iRevert "A"; iApply wp_initialize_frame; eauto.
+    Qed.
+
+
     Axiom wpi_initialize : forall (thisp : ptr) i cls Q,
         let p' := thisp ., offset_for cls i.(init_path) in
           wp_initialize (erase_qualifiers i.(init_type)) p' i.(init_init) Q
