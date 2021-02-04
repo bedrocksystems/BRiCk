@@ -174,12 +174,8 @@ Section arrR.
     apply: bi.sep_affine.
   Qed.
 
-  #[global] Instance arrR_inv ty R Rs : Observe ([| is_Some (size_of σ ty) |]) (arrR ty (R :: Rs)).
-  Proof.
-    apply: observe_intro_only_provable.
-    rewrite arrR_eq /arrR_def /= !_offsetR_sep.
-    by iIntros "[_ [% _]] !%".
-  Qed.
+  #[global] Instance arrR_size_of_observe {ty ys} : Observe [| is_Some (size_of σ ty) |] (arrR ty ys).
+  Proof. rewrite arrR_eq/arrR_def; apply _. Qed.
 
   #[global] Instance arrR_valid_end ty Rs : Observe (.[ ty ! length Rs ] |-> validR) (arrR ty Rs).
   Proof. rewrite arrR_eq /arrR_def /=. refine _. Qed.
@@ -204,8 +200,6 @@ Section arrR.
   Qed.
 
 
-  #[global] Instance arrR_size_of_observe {ty ys} : Observe [| is_Some (size_of σ ty) |] (arrR ty ys).
-  Proof. rewrite arrR_eq/arrR_def; refine _. Qed.
   Lemma arrR_valid_obs ty Rs (i : Z) (Hi : (0 ≤ i ≤ Z.of_nat (length Rs))%Z) :
     Observe (.[ ty ! i ] |-> validR) (arrR ty Rs).
   Proof.
