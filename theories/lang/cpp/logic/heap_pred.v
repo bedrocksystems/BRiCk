@@ -552,11 +552,11 @@ Section with_cpp.
     Observe2 (_at p Q) (_at p R1) (_at p R2).
   Proof. move->. by rewrite /Observe2 _at_wand _at_pers. Qed.
 
-  Global Instance _at_observe_only_provable Q l (R : Rep) :
-    Observe [| Q |] R → Observe [| Q |] (_at l R).
+  Global Instance _at_observe_only_provable Q p (R : Rep) :
+    Observe [| Q |] R → Observe [| Q |] (_at p R).
   Proof. rewrite -_at_only_provable. apply _. Qed.
-  Global Instance _at_observe_2_only_provable Q l (R1 R2 : Rep) :
-    Observe2 [| Q |] R1 R2 → Observe2 [| Q |] (_at l R1) (_at l R2).
+  Global Instance _at_observe_2_only_provable Q p (R1 R2 : Rep) :
+    Observe2 [| Q |] R1 R2 → Observe2 [| Q |] (_at p R1) (_at p R2).
   Proof. rewrite -_at_only_provable. apply _. Qed.
 
   Global Instance _at_observe_pure Q l (R : Rep) :
