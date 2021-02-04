@@ -26,6 +26,7 @@ Definition first_set (sz : bitsize) (n : Z) : Z :=
          then 1 + l
          else get ls
        end)%Z (List.map Z.of_nat (seq 0 (N.to_nat (bitsN sz)))).
+#[global] Arguments first_set : simpl never.
 
 (* Returns the number of trailing 0-bits in x, starting at the least
    significant bit position. If x is 0, the result is undefined. *)
@@ -38,11 +39,13 @@ Definition trailing_zeros (sz : bitsize) (n : Z) : Z :=
        then l
        else get ls
      end)%Z (List.map Z.of_nat (seq 0 (N.to_nat (bitsN sz)))).
+#[global] Arguments trailing_zeros : simpl never.
 
 (* Returns the number of leading 0-bits in x, starting at the most significant
    bit position. If x is 0, the result is undefined. *)
 Definition leading_zeros (sz : bitsize) (l : Z) : Z :=
   bitsZ sz - Z.log2 (l mod (2^64)).
+#[global] Arguments leading_zeros : simpl never.
 
 (* NOTE (JH): `churn_bits'` and `churn_bits` are used here, and in z_to_bytes.v; we should
      find a better common home.
