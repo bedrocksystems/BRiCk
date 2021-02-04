@@ -244,6 +244,10 @@ Section arrR.
     { iIntros "(#tp & $)". rewrite -type_ptrR_validR_plus_one.
       iFrame "tp". iApply (observe with "tp"). }
   Qed.
+
+  Lemma arrR_snoc ty xs (y : Rep) :
+    arrR ty (xs ++ [y]) -|- arrR ty xs ** .[ ty ! length xs ] |-> (type_ptrR ty ** y).
+  Proof. by rewrite arrR_append arrR_singleton. Qed.
 End arrR.
 
 Definition arrayR_def `{Σ : cpp_logic} {X : Type} {σ : genv} (ty : type) (P : X → Rep) (xs : list X) : Rep :=
@@ -287,6 +291,20 @@ Section array.
 
   Lemma arrayR_singleton x : arrayR ty R [x] -|- type_ptrR ty ** R x.
   Proof. rewrite arrayR_eq. exact: arrR_singleton. Qed.
+
+  Lemma arrayR_snoc xs y :
+    arrayR ty R (xs ++ [y]) -|- arrayR ty R xs ** .[ ty ! length xs ] |-> (type_ptrR ty ** R y).
+  Proof. by rewrite arrayR_eq /arrayR_def fmap_app arrR_snoc fmap_length. Qed.
+
+  Lemma arrayR_snoc_obs p xs y
+        `{Hobs : ∀ x, Observe (type_ptrR ty) (R x)} :
+        p |-> arr.arrayR ty R (xs ++ [y])
+    -|- p |-> arr.arrayR ty R xs ** p ., (.[ty ! Z.of_nat (length xs)]) |-> R y.
+  Proof.
+    rewrite arrayR_snoc !_at_sep !_at_offsetR _at_sep. f_equiv.
+    rewrite (comm bi_sep).
+    exact: observe_equiv.
+  Qed.
 
   #[global] Instance arrayR_valid_type_obs l :
     Observe [| is_Some (size_of resolve ty) |] (arrayR ty R l).
