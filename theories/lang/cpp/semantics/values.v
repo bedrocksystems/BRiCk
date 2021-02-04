@@ -406,11 +406,12 @@ Variant val : Set :=
 | Vraw (_ : raw_byte)
 | Vundef
 .
+#[global] Notation Vref := Vptr (only parsing).
 
 Definition val_dec : forall a b : val, {a = b} + {a <> b}.
 Proof. solve_decision. Defined.
-Instance val_eq_dec : EqDecision val := val_dec.
-Instance val_inhabited : Inhabited val := populate (Vint 0).
+#[global] Instance val_eq_dec : EqDecision val := val_dec.
+#[global] Instance val_inhabited : Inhabited val := populate (Vint 0).
 
 End VAL_MIXIN.
 
