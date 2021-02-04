@@ -285,6 +285,9 @@ Section array.
     by induction l; constructor.
   Qed.
 
+  Lemma arrayR_singleton x : arrayR ty R [x] -|- type_ptrR ty ** R x.
+  Proof. rewrite arrayR_eq. exact: arrR_singleton. Qed.
+
   #[global] Instance arrayR_valid_type_obs l :
     Observe [| is_Some (size_of resolve ty) |] (arrayR ty R l).
   Proof. rewrite arrayR_eq/arrayR_def; apply arrR_size_of_observe. Qed.
