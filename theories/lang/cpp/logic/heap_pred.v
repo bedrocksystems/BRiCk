@@ -1100,6 +1100,13 @@ Section with_cpp.
     Observe (type_ptrR ty) R -> Observe (type_ptr ty p) (_at p R).
   Proof. rewrite -_at_type_ptrR. apply _at_observe. Qed.
 
+  #[global] Instance type_ptrR_size_observe σ ty :
+    Observe [| is_Some (size_of σ ty) |] (type_ptrR ty).
+  Proof.
+    apply monPred_observe_only_provable => p.
+    rewrite monPred_at_type_ptrR. apply _.
+  Qed.
+
   Lemma off_validR o
     (Hv : ∀ p, valid_ptr (p .., o) |-- valid_ptr p) :
     _offsetR o validR |-- validR.

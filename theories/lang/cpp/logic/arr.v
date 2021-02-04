@@ -205,15 +205,6 @@ Section arrR.
       by rewrite _offsetR_succ_sub Nat2Z.inj_succ. }
   Qed.
 
-  #[global] Instance type_ptrR_size_observe ty :
-    Observe [| is_Some (size_of σ ty) |] (type_ptrR ty).
-  Proof.
-    (* XXX lifting an observation should be easier. *)
-    apply: observe_intro_persistent.
-    constructor=>p.
-    rewrite monPred_at_type_ptrR monPred_at_only_provable.
-    exact: type_ptr_size.
-  Qed.
 
   #[global] Instance arrR_size_of_observe {ty ys} : Observe [| is_Some (size_of σ ty) |] (arrR ty ys).
   Proof. rewrite arrR_eq/arrR_def; refine _. Qed.

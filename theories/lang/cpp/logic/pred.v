@@ -755,5 +755,9 @@ Section with_cpp.
 
     Lemma type_ptr_valid ty p : type_ptr ty p |-- valid_ptr p.
     Proof. by rewrite type_ptr_strict_valid strict_valid_valid. Qed.
+
+    #[global] Instance type_ptr_size_observe ty p :
+      Observe [| is_Some (size_of σ ty) |] (type_ptr ty p).
+    Proof. rewrite type_ptr_size. apply _. Qed.
   End with_genv.
 End with_cpp.
