@@ -88,6 +88,9 @@ Section observe.
     by rewrite {1}(observe_elim_strong Q P) bi.intuitionistically_elim.
   Qed.
 
+  Lemma observe_equiv Q P `{!Observe Q P} `{!Affine Q} : P ∗ Q ⊣⊢ P.
+  Proof. split'; first iIntros "[$ ?]". apply: observe_elim. Qed.
+
   Lemma observe_2_elim_pure (Q : Prop) P1 P2 `{!Observe2 [| Q |] P1 P2} :
     P1 ⊢ P2 -∗ ⌜Q⌝.
   Proof. rewrite (observe_2 [| _ |] P1 P2). f_equiv. by iIntros "#%". Qed.
@@ -101,6 +104,9 @@ Section observe.
   Proof.
     by rewrite {1}(observe_2_elim_strong Q P1 P2) bi.intuitionistically_elim.
   Qed.
+
+  Lemma observe_2_equiv Q P1 P2 `{!Observe2 Q P1 P2} `{!Affine Q} : P1 ∗ P2 ∗ Q ⊣⊢ P1 ∗ P2.
+  Proof. split'; first iIntros "($ & $ & _)". by apply bi.wand_elim_l', observe_2_elim. Qed.
 
   (** Alternatives for introducing observations *)
   Lemma observe_intro_persistent Q P `{!Persistent Q} : (P ⊢ Q) → Observe Q P.
@@ -124,8 +130,8 @@ Section observe.
   Proof.
     rewrite/Observe2 {1}(persistent Q)=>->. f_equiv. iIntros "(_ &_ & $)".
   Qed.
-
 End observe.
+
 Arguments observe_elim_pure {_} _%type _%I {_} : assert.
 Arguments observe_elim_strong {_} (_ _)%I {_} : assert.
 Arguments observe_elim {_} (_ _)%I {_} : assert.
@@ -244,6 +250,22 @@ Section monpred.
   Proof.
     intros Hobs. apply observe_uncurry, monPred_observe=>i.
     rewrite monPred_at_sep. by apply observe_curry.
+  Qed.
+
+  Lemma monPred_observe_only_provable (Q : Prop) P
+    (Hobs : ∀ i, Observe [| Q |] (P i)) :
+    Observe [| Q |] P.
+  Proof.
+    apply monPred_observe => i.
+    by rewrite monPred_at_only_provable.
+  Qed.
+
+  Lemma monPred_observe_2_only_provalbe (Q : Prop) P1 P2
+    (Hobs : ∀ i, Observe2 [| Q |] (P1 i) (P2 i)) :
+    Observe2 [| Q |] P1 P2.
+  Proof.
+    apply monPred_observe_2 => i.
+    by rewrite monPred_at_only_provable.
   Qed.
 
   (** These should certainly not be instances. *)
