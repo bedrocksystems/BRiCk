@@ -153,8 +153,8 @@ Section arrR.
     TCForall Timeless Rs → Timeless (arrR ty Rs).
   Proof.
     rewrite TCForall_Forall Forall_forall=>HR. rewrite arrR_eq /arrR_def.
-    apply bi.sep_timeless; refine _.
-    apply bi.sep_timeless; refine _.
+    apply: bi.sep_timeless.
+    apply: bi.sep_timeless.
     apply big_sepL_gen_timeless=>k x Hk.
     apply _offsetR_timeless, (bi.sep_timeless _ _ _), HR. exact: elem_of_list_lookup_2.
   Qed.
@@ -162,8 +162,8 @@ Section arrR.
     TCForall Persistent Rs → Persistent (arrR ty Rs).
   Proof.
     rewrite TCForall_Forall Forall_forall=>HR. rewrite arrR_eq /arrR_def.
-    apply bi.sep_persistent; refine _.
-    apply bi.sep_persistent; refine _.
+    apply: bi.sep_persistent.
+    apply: bi.sep_persistent.
     apply big_sepL_gen_persistent=>k x Hk.
     apply _offsetR_persistent, (bi.sep_persistent _ _ _), HR. exact: elem_of_list_lookup_2.
   Qed.
@@ -171,7 +171,7 @@ Section arrR.
     TCForall Affine Rs → Affine (arrR ty Rs).
   Proof.
     rewrite TCForall_Forall Forall_forall=>HR. rewrite arrR_eq /arrR_def.
-    apply bi.sep_affine; refine _.
+    apply: bi.sep_affine.
   Qed.
 
   #[global] Instance arrR_inv ty R Rs : Observe ([| is_Some (size_of σ ty) |]) (arrR ty (R :: Rs)).
@@ -196,13 +196,11 @@ Section arrR.
   Proof.
     rewrite arrR_eq/arrR_def /= !_offsetR_sep !_offsetR_only_provable.
     apply: (observe_both (is_Some (size_of σ ty))) => Hsz.
-    rewrite _offsetR_succ_sub Nat2Z.inj_succ.
-    rewrite !_offsetR_sub_0 // _offsetR_big_sepL.
-    iSplit.
-    { iIntros "($ & _ & [$ $] & b)"; iFrame "%∗"; iStopProof; f_equiv => ? ?.
-      by rewrite _offsetR_succ_sub Nat2Z.inj_succ. }
-    { iIntros "($ & $ & $ & _ & Rs)"; iFrame "%∗"; iStopProof; f_equiv => ? ?.
-      by rewrite _offsetR_succ_sub Nat2Z.inj_succ. }
+    rewrite !_offsetR_sub_0 // _offsetR_big_sepL -assoc.
+    rewrite _offsetR_succ_sub Nat2Z.inj_succ;
+      setoid_rewrite _offsetR_succ_sub; setoid_rewrite Nat2Z.inj_succ.
+    iSplit; [ iIntros "(? & ? & ? & ? & ?)" | iIntros "(? & ? & ? & _ & ?)"];
+     by iFrame.
   Qed.
 
 
@@ -239,11 +237,8 @@ Section arrR.
     induction xs => /=.
     { apply: (observe_both (is_Some _)) => Hsz.
       rewrite arrR_nil /= o_sub_0 // _offsetR_id.
-      iSplit; last iIntros "[_ $]".
-      iIntros "X".
-      iDestruct (observe validR with "X") as "#$".
-      eauto.
-    }
+      iSplit; last iIntros "[_ $]". iIntros "X"; repeat iSplit => //.
+      iApply (observe with "X"). }
     { by rewrite !arrR_cons IHxs !_offsetR_sep !_offsetR_succ_sub Nat2Z.inj_succ -!assoc. }
   Qed.
 
@@ -252,9 +247,8 @@ Section arrR.
     rewrite arrR_cons arrR_nil _offsetR_sep _offsetR_only_provable.
     iSplit.
     { iIntros "($ & $ & _ & %)". }
-    { iIntros "(#tp & r)".
-      iDestruct (observe [| is_Some (size_of σ ty) |] with "tp") as "#$".
-      rewrite -type_ptrR_validR_plus_one. iFrame "#∗". }
+    { iIntros "(#tp & $)". rewrite -type_ptrR_validR_plus_one.
+      iFrame "tp". iApply (observe with "tp"). }
   Qed.
 End arrR.
 
@@ -281,20 +275,20 @@ Section array.
   #[global] Instance arrayR_timeless {T} t (P : T → Rep) l `{!∀ x, Timeless (P x)} :
     Timeless (arrayR t P l).
   Proof.
-    rewrite arrayR_eq/arrayR_def. eapply arrR_timeless_when_mpred_affine.
-    induction l; constructor; eauto.
+    rewrite arrayR_eq/arrayR_def. apply arrR_timeless_when_mpred_affine.
+    by induction l; constructor.
   Qed.
   #[global] Instance arrayR_affine {T} t (P : T → Rep) l `{!∀ x, Affine (P x)} :
     Affine (arrayR t P l).
   Proof.
-    rewrite arrayR_eq/arrayR_def. eapply arrR_affine.
-    induction l; constructor; eauto.
+    rewrite arrayR_eq/arrayR_def. apply arrR_affine.
+    by induction l; constructor.
   Qed.
   #[global] Instance arrayR_persistent {T} t (P : T → Rep) l `{!∀ x, Persistent (P x)} :
     Persistent (arrayR t P l).
   Proof.
-    rewrite arrayR_eq/arrayR_def. eapply arrR_persistent.
-    induction l; constructor; eauto.
+    rewrite arrayR_eq/arrayR_def. apply arrR_persistent.
+    by induction l; constructor.
   Qed.
 
   #[global] Instance arrayR_valid_type_obs l :
