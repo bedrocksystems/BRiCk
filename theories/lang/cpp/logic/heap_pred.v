@@ -552,11 +552,11 @@ Section with_cpp.
     Observe2 (_at p Q) (_at p R1) (_at p R2).
   Proof. move->. by rewrite /Observe2 _at_wand _at_pers. Qed.
 
-  Global Instance _at_observe_only_provable Q l (R : Rep) :
-    Observe [| Q |] R → Observe [| Q |] (_at l R).
+  Global Instance _at_observe_only_provable Q p (R : Rep) :
+    Observe [| Q |] R → Observe [| Q |] (_at p R).
   Proof. rewrite -_at_only_provable. apply _. Qed.
-  Global Instance _at_observe_2_only_provable Q l (R1 R2 : Rep) :
-    Observe2 [| Q |] R1 R2 → Observe2 [| Q |] (_at l R1) (_at l R2).
+  Global Instance _at_observe_2_only_provable Q p (R1 R2 : Rep) :
+    Observe2 [| Q |] R1 R2 → Observe2 [| Q |] (_at p R1) (_at p R2).
   Proof. rewrite -_at_only_provable. apply _. Qed.
 
   Global Instance _at_observe_pure Q l (R : Rep) :
@@ -1099,6 +1099,13 @@ Section with_cpp.
   Instance observe_type_ptr_pointsto σ (p : ptr) ty (R : Rep) :
     Observe (type_ptrR ty) R -> Observe (type_ptr ty p) (_at p R).
   Proof. rewrite -_at_type_ptrR. apply _at_observe. Qed.
+
+  #[global] Instance type_ptrR_size_observe σ ty :
+    Observe [| is_Some (size_of σ ty) |] (type_ptrR ty).
+  Proof.
+    apply monPred_observe_only_provable => p.
+    rewrite monPred_at_type_ptrR. apply _.
+  Qed.
 
   Lemma off_validR o
     (Hv : ∀ p, valid_ptr (p .., o) |-- valid_ptr p) :

@@ -153,8 +153,8 @@ Section arrR.
     TCForall Timeless Rs → Timeless (arrR ty Rs).
   Proof.
     rewrite TCForall_Forall Forall_forall=>HR. rewrite arrR_eq /arrR_def.
-    apply bi.sep_timeless; refine _.
-    apply bi.sep_timeless; refine _.
+    apply: bi.sep_timeless.
+    apply: bi.sep_timeless.
     apply big_sepL_gen_timeless=>k x Hk.
     apply _offsetR_timeless, (bi.sep_timeless _ _ _), HR. exact: elem_of_list_lookup_2.
   Qed.
@@ -162,8 +162,8 @@ Section arrR.
     TCForall Persistent Rs → Persistent (arrR ty Rs).
   Proof.
     rewrite TCForall_Forall Forall_forall=>HR. rewrite arrR_eq /arrR_def.
-    apply bi.sep_persistent; refine _.
-    apply bi.sep_persistent; refine _.
+    apply: bi.sep_persistent.
+    apply: bi.sep_persistent.
     apply big_sepL_gen_persistent=>k x Hk.
     apply _offsetR_persistent, (bi.sep_persistent _ _ _), HR. exact: elem_of_list_lookup_2.
   Qed.
@@ -171,15 +171,11 @@ Section arrR.
     TCForall Affine Rs → Affine (arrR ty Rs).
   Proof.
     rewrite TCForall_Forall Forall_forall=>HR. rewrite arrR_eq /arrR_def.
-    apply bi.sep_affine; refine _.
+    apply: bi.sep_affine.
   Qed.
 
-  #[global] Instance arrR_inv ty R Rs : Observe ([| is_Some (size_of σ ty) |]) (arrR ty (R :: Rs)).
-  Proof.
-    apply: observe_intro_only_provable.
-    rewrite arrR_eq /arrR_def /= !_offsetR_sep.
-    by iIntros "[_ [% _]] !%".
-  Qed.
+  #[global] Instance arrR_size_of_observe {ty ys} : Observe [| is_Some (size_of σ ty) |] (arrR ty ys).
+  Proof. rewrite arrR_eq/arrR_def; apply _. Qed.
 
   #[global] Instance arrR_valid_end ty Rs : Observe (.[ ty ! length Rs ] |-> validR) (arrR ty Rs).
   Proof. rewrite arrR_eq /arrR_def /=. refine _. Qed.
@@ -196,27 +192,14 @@ Section arrR.
   Proof.
     rewrite arrR_eq/arrR_def /= !_offsetR_sep !_offsetR_only_provable.
     apply: (observe_both (is_Some (size_of σ ty))) => Hsz.
-    rewrite _offsetR_succ_sub Nat2Z.inj_succ.
-    rewrite !_offsetR_sub_0 // _offsetR_big_sepL.
-    iSplit.
-    { iIntros "($ & _ & [$ $] & b)"; iFrame "%∗"; iStopProof; f_equiv => ? ?.
-      by rewrite _offsetR_succ_sub Nat2Z.inj_succ. }
-    { iIntros "($ & $ & $ & _ & Rs)"; iFrame "%∗"; iStopProof; f_equiv => ? ?.
-      by rewrite _offsetR_succ_sub Nat2Z.inj_succ. }
+    rewrite !_offsetR_sub_0 // _offsetR_big_sepL -assoc.
+    rewrite _offsetR_succ_sub Nat2Z.inj_succ;
+      setoid_rewrite _offsetR_succ_sub; setoid_rewrite Nat2Z.inj_succ.
+    iSplit; [ iIntros "(? & ? & ? & ? & ?)" | iIntros "(? & ? & ? & _ & ?)"];
+     by iFrame.
   Qed.
 
-  #[global] Instance type_ptrR_size_observe ty :
-    Observe [| is_Some (size_of σ ty) |] (type_ptrR ty).
-  Proof.
-    (* XXX lifting an observation should be easier. *)
-    apply: observe_intro_persistent.
-    constructor=>p.
-    rewrite monPred_at_type_ptrR monPred_at_only_provable.
-    exact: type_ptr_size.
-  Qed.
 
-  #[global] Instance arrR_size_of_observe {ty ys} : Observe [| is_Some (size_of σ ty) |] (arrR ty ys).
-  Proof. rewrite arrR_eq/arrR_def; refine _. Qed.
   Lemma arrR_valid_obs ty Rs (i : Z) (Hi : (0 ≤ i ≤ Z.of_nat (length Rs))%Z) :
     Observe (.[ ty ! i ] |-> validR) (arrR ty Rs).
   Proof.
@@ -248,11 +231,8 @@ Section arrR.
     induction xs => /=.
     { apply: (observe_both (is_Some _)) => Hsz.
       rewrite arrR_nil /= o_sub_0 // _offsetR_id.
-      iSplit; last iIntros "[_ $]".
-      iIntros "X".
-      iDestruct (observe validR with "X") as "#$".
-      eauto.
-    }
+      iSplit; last iIntros "[_ $]". iIntros "X"; repeat iSplit => //.
+      iApply (observe with "X"). }
     { by rewrite !arrR_cons IHxs !_offsetR_sep !_offsetR_succ_sub Nat2Z.inj_succ -!assoc. }
   Qed.
 
@@ -261,10 +241,13 @@ Section arrR.
     rewrite arrR_cons arrR_nil _offsetR_sep _offsetR_only_provable.
     iSplit.
     { iIntros "($ & $ & _ & %)". }
-    { iIntros "(#tp & r)".
-      iDestruct (observe [| is_Some (size_of σ ty) |] with "tp") as "#$".
-      rewrite -type_ptrR_validR_plus_one. iFrame "#∗". }
+    { iIntros "(#tp & $)". rewrite -type_ptrR_validR_plus_one.
+      iFrame "tp". iApply (observe with "tp"). }
   Qed.
+
+  Lemma arrR_snoc ty xs (y : Rep) :
+    arrR ty (xs ++ [y]) -|- arrR ty xs ** .[ ty ! length xs ] |-> (type_ptrR ty ** y).
+  Proof. by rewrite arrR_append arrR_singleton. Qed.
 End arrR.
 
 Definition arrayR_def `{Σ : cpp_logic} {X : Type} {σ : genv} (ty : type) (P : X → Rep) (xs : list X) : Rep :=
@@ -290,20 +273,37 @@ Section array.
   #[global] Instance arrayR_timeless {T} t (P : T → Rep) l `{!∀ x, Timeless (P x)} :
     Timeless (arrayR t P l).
   Proof.
-    rewrite arrayR_eq/arrayR_def. eapply arrR_timeless_when_mpred_affine.
-    induction l; constructor; eauto.
+    rewrite arrayR_eq/arrayR_def. apply arrR_timeless_when_mpred_affine.
+    by induction l; constructor.
   Qed.
   #[global] Instance arrayR_affine {T} t (P : T → Rep) l `{!∀ x, Affine (P x)} :
     Affine (arrayR t P l).
   Proof.
-    rewrite arrayR_eq/arrayR_def. eapply arrR_affine.
-    induction l; constructor; eauto.
+    rewrite arrayR_eq/arrayR_def. apply arrR_affine.
+    by induction l; constructor.
   Qed.
   #[global] Instance arrayR_persistent {T} t (P : T → Rep) l `{!∀ x, Persistent (P x)} :
     Persistent (arrayR t P l).
   Proof.
-    rewrite arrayR_eq/arrayR_def. eapply arrR_persistent.
-    induction l; constructor; eauto.
+    rewrite arrayR_eq/arrayR_def. apply arrR_persistent.
+    by induction l; constructor.
+  Qed.
+
+  Lemma arrayR_singleton x : arrayR ty R [x] -|- type_ptrR ty ** R x.
+  Proof. rewrite arrayR_eq. exact: arrR_singleton. Qed.
+
+  Lemma arrayR_snoc xs y :
+    arrayR ty R (xs ++ [y]) -|- arrayR ty R xs ** .[ ty ! length xs ] |-> (type_ptrR ty ** R y).
+  Proof. by rewrite arrayR_eq /arrayR_def fmap_app arrR_snoc fmap_length. Qed.
+
+  Lemma arrayR_snoc_obs p xs y
+        `{Hobs : ∀ x, Observe (type_ptrR ty) (R x)} :
+        p |-> arr.arrayR ty R (xs ++ [y])
+    -|- p |-> arr.arrayR ty R xs ** p ., (.[ty ! Z.of_nat (length xs)]) |-> R y.
+  Proof.
+    rewrite arrayR_snoc !_at_sep !_at_offsetR _at_sep. f_equiv.
+    rewrite (comm bi_sep).
+    exact: observe_equiv.
   Qed.
 
   #[global] Instance arrayR_valid_type_obs l :
