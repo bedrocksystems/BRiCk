@@ -184,6 +184,10 @@ Section bi.
   Context {PROP : bi}.
   Implicit Types P Q : PROP.
 
+  (*
+  This instance is necessary when _defining_ observations, both by itself
+  and as "leaf" of searches involving [observe_sep_{l,r}].
+  *)
   Global Instance observe_refl Q `{!Persistent Q} : Observe Q Q.
   Proof. exact: observe_intro_persistent. Qed.
 
