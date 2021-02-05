@@ -557,10 +557,18 @@ Definition bound (bits : bitsize) (sgn : signed) (v : Z) : Prop :=
 
 (** typedness of values
     note that only primitives fit into this, there is no [val] representation
-    of aggregates.
+    of aggregates, except through [Vptr p] with [p] pointing to the contents.
  *)
-(** [has_type v t] means that [v] is an initialized value of type [t].
-For all types [t] except [Tvoid], this means that [v] is not [Vundef]. *)
+
+(**
+[has_type v ty] is an approximation in [Prop] of "[v] is an initialized value
+of type [t]." This implies:
+- if [ty <> Tvoid], then [v <> Vundef].
+- if [ty = Tint sz sgn], then [v] fits the appropriate bounds (see
+[has_int_type']).
+- if [ty] is a type of pointers/references/aggregates, we only ensure that [v
+= Vptr p].
+  *)
 Parameter has_type : val -> type -> Prop.
 
 Axiom has_type_pointer : forall v ty,
