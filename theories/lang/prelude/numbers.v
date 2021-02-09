@@ -35,6 +35,12 @@ Instance Nat_mul_left_absorb : LeftAbsorb (=) 0%nat Nat.mul := Nat.mul_0_l.
 Instance Nat_mul_right_absorb : RightAbsorb (=) 0%nat Nat.mul := Nat.mul_0_r.
 Instance Nat_trychotomyT : TrichotomyT Nat.lt := nat_lexico_trichotomy.
 
+Instance Nat_min_comm: Comm eq Nat.min := Nat.min_comm.
+Instance Nat_min_assoc: Assoc eq Nat.min := Nat.min_assoc.
+
+Instance Nat_max_comm: Comm eq Nat.max := Nat.max_comm.
+Instance Nat_max_assoc: Assoc eq Nat.max := Nat.max_assoc.
+
 (** * Natural numbers [N] *)
 
 Arguments N.ones _ : simpl never, assert.
@@ -55,6 +61,12 @@ Instance N_mul_right_id : RightId (=) 1%N N.mul := N.mul_1_r.
 Instance N_mul_left_absorb : LeftAbsorb (=) 0%N N.mul := N.mul_0_l.
 Instance N_mul_right_absorb : RightAbsorb (=) 0%N N.mul := N.mul_0_r.
 Instance N_trychotomyT : TrichotomyT N.lt := N_lexico_trichotomy.
+
+Instance N_min_comm: Comm eq N.min := N.min_comm.
+Instance N_min_assoc: Assoc eq N.min := N.min_assoc.
+
+Instance N_max_comm: Comm eq N.max := N.max_comm.
+Instance N_max_assoc: Assoc eq N.max := N.max_assoc.
 
 Instance N_succ_inj : Inj (=) (=) N.succ.
 Proof. intros n1 n2. lia. Qed.
@@ -94,6 +106,12 @@ Instance Z_mul_right_id : RightId (=) 1%Z Z.mul := Z.mul_1_r.
 Instance Z_mul_left_absorb : LeftAbsorb (=) 0%Z Z.mul := Z.mul_0_l.
 Instance Z_mul_right_absorb : RightAbsorb (=) 0%Z Z.mul := Z.mul_0_r.
 Instance Z_trychotomyT : TrichotomyT Z.lt := Z_lexico_trichotomy.
+
+Instance Z_min_comm: Comm eq Z.min := Z.min_comm.
+Instance Z_min_assoc: Assoc eq Z.min := Z.min_assoc.
+
+Instance Z_max_comm: Comm eq Z.max := Z.max_comm.
+Instance Z_max_assoc: Assoc eq Z.max := Z.max_assoc.
 
 Instance Z_succ_inj : Inj (=) (=) Z.succ.
 Proof. intros n1 n2. lia. Qed.
