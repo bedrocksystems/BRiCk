@@ -25,7 +25,10 @@ Declare Custom Entry cppglobal.
 Declare Scope cppfield_scope.
 Delimit Scope cppfield_scope with field.
 Bind Scope cppfield_scope with field.
-Notation "` e `" := e (e custom cppglobal at level 200, at level 0) : cppfield_scope.
+(* XXX This is only parsing to work around Coq misusing it outside
+[cppfield_scope]. See #235. *)
+Notation "` e `" := e (e custom cppglobal at level 200, at level 0,
+  only parsing) : cppfield_scope.
 
 (** Importing [cpp_notation] makes cpp2v-generated names generally
 available as, e.g., [``::MyClass``]. *)
