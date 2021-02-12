@@ -33,14 +33,32 @@ Section with_prop.
     ; wpp_post : tele_fun@{X Z Y} wpp_with (WithExG@{X Z _ _} RESULT)}.
   Global Arguments WithPrePostG : clear implicits.
 
+  (** Analogues of [bi_texist] and [bi_tforall], with extra universe polymorphism and a slightly different interface.
+  One could prove that [bi_texist f = tbi_exist (tele_bind f)] and [tbi_forall (tele_bind f) = bi_tforall f]. *)
+  Fixpoint tbi_exist@{X Z Y} {t : tele@{X}}
+    : forall (P : tele_fun@{X Z Y} t PROP), PROP :=
+    match t as t0 return ((t0 -t> PROP) → PROP) with
+    | [tele] => fun x : PROP => x
+    | @TeleS X binder =>
+      fun P : (∀ x : X, binder x -t> PROP) => Exists x : X, tbi_exist (P x)
+    end.
+
+  Fixpoint tbi_forall@{X Z Y} {t : tele@{X}}
+    : forall (P : tele_fun@{X Z Y} t PROP), PROP :=
+    match t as t0 return ((t0 -t> PROP) → PROP) with
+    | [tele] => fun x : PROP => x
+    | @TeleS X binder =>
+      fun P : (∀ x : X, binder x -t> PROP) => Forall x : X, tbi_forall (P x)
+    end.
+
   (** Mnemonic: WppGD stands for "[WithPrePostG]'s denotation" *)
   Definition WppGD@{X Z Y A R} {ARGS RESULT} (wpp : WithPrePostG@{X Z Y A R} ARGS RESULT) (params : ARGS)
              (Q : RESULT -> PROP) : PROP :=
-    bi_texist (fun args =>
+    tbi_exist@{X Z Y} (tele_bind (TT:=wpp.(wpp_with)) (fun args =>
       let P := tele_app wpp.(wpp_pre) args in
       let Q' := tele_app wpp.(wpp_post) args in
       [| params = fst P |] ** snd P **
-      bi_tforall (tele_app@{_ X _} (tele_map (fun '(result,Q') => Q' -* Q result) Q'.(we_post)))).
+      tbi_forall@{X Z Y} (tele_map (fun '(result,Q') => Q' -* Q result) Q'.(we_post)))).
 
   (* Aliases specialized to [val]. We use definitions to control the universe
   arguments. *)
