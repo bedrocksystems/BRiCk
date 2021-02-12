@@ -29,7 +29,7 @@ They must be run inside a clone of this repository.
 
 Our instructions are for Linux (Ubuntu) and OSX.
 
-- LLVM 10
+- LLVM 10 (LLVM 11 is not fully supported)
 - cmake
 - [opam 2](https://opam.ocaml.org/)
 
@@ -59,16 +59,10 @@ opam repo add coq-released https://coq.inria.fr/opam/released
 opam repo add iris-dev https://gitlab.mpi-sws.org/iris/opam.git
 # install cpp2v Coq library and Coq dependencies
 opam update
-opam pin -n coq 8.11.2
 opam pin -n coq-cpp2v .
-opam install coq coq-cpp2v
+opam pin -n coq-cpp2v-bin .
+opam install coq coq-cpp2v coq-cpp2v-bin
 # install cpp2v binary
-opam pin coq-cpp2v-bin .
-```
-
-If you want to build the cpp2v-core plugin, do:
-```
-make -j4 plugin
 ```
 
 If you want to build the documentation locally, do:
