@@ -4,9 +4,10 @@
  * See the LICENSE-BedRock file in the repository root for details.
  *)
 Require Import stdpp.telescopes.
-Require Import bedrock.lang.prelude.bytestring.
-Require Import bedrock.lang.cpp.logic.
-Require Import bedrock.lang.prelude.telescopes.
+From bedrock.lang.prelude Require Import bytestring telescopes.
+From bedrock.lang.cpp.semantics Require Import values.
+From bedrock.lang.cpp.logic Require Import spec pred.
+(* XXX only needed for examples. *)
 Require bedrock.lang.cpp.heap_notations.
 
 Set Universe Polymorphism.
@@ -84,20 +85,18 @@ Section with_Σ.
                   tele_append t (tele_map wpp_with wpp) -t> list val * PROP
               with
               | TeleO => fun wpp => wpp.(wpp_pre)
-              | TeleS rst => fun wpp => _
-              end) t wpp). simpl.
-    intro x.
-    eapply go. }
+              | TeleS rst => fun wpp x => go (rst x) (wpp x)
+              end) t wpp).
+  }
   { refine ((fix go (t : tele)  :=
               match t as t
                     return forall (wpp : t -t> WithPrePost),
                   tele_append t (tele_map wpp_with wpp) -t> _
               with
               | TeleO => fun wpp => wpp.(wpp_post)
-              | TeleS rst => fun wpp0 => _
-              end) t wpp). simpl.
-    intro x.
-    eapply go. }
+              | TeleS rst => fun wpp x => go (rst x) (wpp x)
+              end) t wpp).
+  }
   Defined.
 
   Definition with_tele (t : telescopes.tele) (f : telescopes.tele_arg t -> WithPrePost)
@@ -242,7 +241,7 @@ Notation "'\exact' wpp" := (exactWpp wpp)
 Section with_Σ.
   Context `{Σ : cpp_logic ti}.
 
-  Import heap_notations.
+  Import heap_notations heap_pred.
 
 Goal WithPrePost mpredI.
 refine (
