@@ -28,20 +28,99 @@ Global Bind Scope bi_scope with FreeTemps.
 
 (** Statements *)
 (* continuations
-  * C++ statements can terminate in 4 ways.
-  *
-  * note(gmm): technically, they can also raise exceptions; however,
-  * our current semantics doesn't capture this. if we want to support
-  * exceptions, we should be able to add another case,
-  * `k_throw : val -> mpred`.
-  *)
-Record Kpreds `{Σ : cpp_logic thread_info} :=
+ * C++ statements can terminate in 4 ways.
+ *
+ * note(gmm): technically, they can also raise exceptions; however,
+ * our current semantics doesn't capture this. if we want to support
+ * exceptions, we should be able to add another case,
+ * `k_throw : val -> mpred`.
+ *)
+Variant ReturnType : Set :=
+| Normal
+| Break
+| Continue
+| ReturnVal (_ : val)
+| ReturnVoid
+.
+
+Definition rt_biIndex : biIndex :=
+  {| bi_index_type := ReturnType
+   ; bi_index_inhabited := populate Normal
+   ; bi_index_rel := @eq ReturnType
+   ; bi_index_rel_preorder := _ |}.
+
+Section Kpreds.
+  Context `{Σ : cpp_logic thread_info}.
+
+  Record Kpreds' :=
   { k_normal   : mpred
-  ; k_return   : option val -> FreeTemps -> mpred
+  ; k_return_val   : val -> mpred
+  ; k_return_void : mpred
   ; k_break    : mpred
   ; k_continue : mpred
   }.
-Global Bind Scope bi_scope with Kpreds.
+
+  Definition KpredsI : bi := monPredI rt_biIndex mpredI.
+  #[local] Notation Kpreds := KpredsI.
+  Definition KP (P : _) : KpredsI := @MonPred rt_biIndex _ P _.
+  Arguments KP _%I.
+
+  Instance Kpreds_fupd: FUpd KpredsI :=
+    funI l r Q => KP (fun v => |={l,r}=> Q v).
+
+  Definition toKpreds (k : Kpreds') : KpredsI :=
+    KP (fun rt =>
+          match rt with
+          | Normal => k.(k_normal)
+          | Break => k.(k_break)
+          | Continue => k.(k_continue)
+          | ReturnVal v => k.(k_return_val) v
+          | ReturnVoid => k.(k_return_void)
+          end).
+  Definition void_return (P : mpred) : KpredsI :=
+    KP (funI rt =>
+          match rt with
+          | Normal | ReturnVoid => P
+          | _ => False
+          end).
+
+  Definition val_return (P : val -> mpred) : KpredsI :=
+    KP (funI rt =>
+        match rt with
+        | ReturnVal v => P v
+        | _ => False
+        end).
+
+  Definition Kseq (Q : Kpreds -> mpred) (k : Kpreds) : Kpreds :=
+    KP (funI rt =>
+        match rt with
+        | Normal => Q k
+        | rt => k rt
+        end).
+
+  (* loop with invariant `I` *)
+  Definition Kloop (I : mpred) (Q : Kpreds) : Kpreds :=
+    KP (funI rt =>
+        match rt with
+        | Break | Normal => Q Normal
+        | Continue => I
+        | rt => Q rt
+        end).
+
+  Definition Kat_exit (Q : mpred -> mpred) (k : Kpreds) : Kpreds :=
+    KP (funI rt => Q (k rt)).
+
+  Definition Kfree (a : mpred) : Kpreds -> Kpreds :=
+    Kat_exit (fun P => a ** P).
+
+  #[global] Instance mpred_Kpreds_BiEmbed : BiEmbed mpredI KpredsI := _.
+
+  (* NOTE KpredsI does not embed into mpredI because it doesn't respect
+     existentials.
+   *)
+End Kpreds.
+(* #[global] Bind Scope bi_scope with KpredsI. *)
+#[global] Notation Kpreds := (bi_car KpredsI).
 
 Section with_cpp.
   Context `{Σ : cpp_logic thread_info}.
@@ -554,123 +633,53 @@ Section with_cpp.
 
   (** Statements *)
 
-  Instance Kpreds_fupd: FUpd Kpreds :=
-    funI l r Q =>
-      {| k_normal := |={l,r}=> Q.(k_normal)
-       ; k_return v f := |={l,r}=> Q.(k_return) v f
-       ; k_break := |={l,r}=> Q.(k_break)
-       ; k_continue := |={l,r}=> Q.(k_continue) |}.
-
-  Definition void_return (P : mpred) : Kpreds :=
-    {| k_normal := P
-     ; k_return := funI r free => match r with
-                              | None => free ** P
-                              | Some _ => False
-                              end
-     ; k_break := False
-     ; k_continue := False
-    |}.
-
-  Definition val_return (P : val -> mpred) : Kpreds :=
-    {| k_normal := False
-     ; k_return := funI r free => match r with
-                              | None => False
-                              | Some v => free ** P v
-                              end
-     ; k_break := False
-     ; k_continue := False |}.
-
-  Definition Kseq (Q : Kpreds -> mpred) (k : Kpreds) : Kpreds :=
-    {| k_normal   := Q k
-     ; k_return   := k.(k_return)
-     ; k_break    := k.(k_break)
-     ; k_continue := k.(k_continue) |}.
-
-  (* loop with invariant `I` *)
-  Definition Kloop (I : mpred) (Q : Kpreds) : Kpreds :=
-    {| k_break    := Q.(k_normal)
-     ; k_continue := I
-     ; k_return   := Q.(k_return)
-     ; k_normal   := Q.(k_normal) |}.
-
-  Definition Kat_exit (Q : mpred -> mpred) (k : Kpreds) : Kpreds :=
-    {| k_normal   := Q k.(k_normal)
-     ; k_return v free := Q (k.(k_return) v free)
-     ; k_break    := Q k.(k_break)
-     ; k_continue := Q k.(k_continue) |}.
-
-  Definition Kfree (a : mpred) : Kpreds -> Kpreds :=
-    Kat_exit (fun P => a ** P).
-
-  Definition Kpred_entails (k1 k2 : Kpreds) : Prop :=
-      k1.(k_normal) |-- k2.(k_normal) ∧
-      (∀ v free, k1.(k_return) v free |-- k2.(k_return) v free) ∧
-      k1.(k_break) |-- k2.(k_break) ∧
-      k1.(k_continue) |-- k2.(k_continue).
-
-  Global Instance Kpreds_equiv : Equiv Kpreds :=
-    fun (k1 k2 : Kpreds) =>
-      k1.(k_normal) ≡ k2.(k_normal) ∧
-      (∀ v free, k1.(k_return) v free ≡ k2.(k_return) v free) ∧
-      k1.(k_break) ≡ k2.(k_break) ∧
-      k1.(k_continue) ≡ k2.(k_continue).
-
-  Lemma Kfree_Kfree : forall k P Q, Kfree P (Kfree Q k) ≡ Kfree (P ** Q) k.
+  Lemma Kfree_Kfree : forall k P Q, Kfree P (Kfree Q k) -|- Kfree (P ** Q) k.
   Proof using .
-    split; [ | split; [ | split ] ]; simpl; intros;
-      eapply bi.equiv_spec; split;
-        try solve [ rewrite bi.sep_assoc; eauto ].
+    rewrite /Kfree/Kat_exit/KP/=. constructor => rt.
+    rewrite /=. by rewrite assoc.
   Qed.
 
-  Lemma Kfree_emp : forall k, Kfree emp k ≡ k.
+  Lemma Kfree_emp : forall k, Kfree emp k -|- k.
   Proof using .
-    split; [ | split; [ | split ] ]; simpl; intros;
-      eapply bi.equiv_spec; split;
-        try solve [ rewrite bi.emp_sep; eauto ].
+      by rewrite /Kfree/Kat_exit/KP/=; constructor => rt; rewrite /=; rewrite left_id.
   Qed.
 
   (* evaluate a statement *)
   Parameter wp
-    : forall {resolve:genv}, coPset -> thread_info -> region -> Stmt -> Kpreds -> mpred.
+    : forall {resolve:genv}, coPset -> thread_info -> region -> Stmt -> KpredsI -> mpred.
 
   Axiom wp_shift : forall σ M ti ρ s Q,
       (|={M}=> wp (resolve:=σ) M ti ρ s (|={M}=> Q))
     ⊢ wp (resolve:=σ) M ti ρ s Q.
 
   Axiom wp_frame :
-    forall σ1 σ2 M ti ρ s k1 k2,
+    forall σ1 σ2 M ti ρ s (k1 k2 : KpredsI),
       genv_leq σ1 σ2 ->
-      (k1.(k_normal) -* k2.(k_normal)) //\\
-      (Forall v f, k1.(k_return) v f -* k2.(k_return) v f) //\\
-      (k1.(k_break) -* k2.(k_break)) //\\
-      (k1.(k_continue) -* k2.(k_continue))
-      |-- @wp σ1 M ti ρ s k1 -* @wp σ2 M ti ρ s k2.
+      (Forall rt, k1 rt -* k2 rt) |-- @wp σ1 M ti ρ s k1 -* @wp σ2 M ti ρ s k2.
 
-  Global Instance Proper_wp :
-    Proper (genv_leq ==> eq ==> eq ==> eq ==> eq ==> Kpred_entails ==> lentails)
+  #[global] Instance Kseq_mono : Proper (((⊢) ==> (⊢)) ==> (⊢) ==> (⊢)) (@Kseq _ Σ).
+  Proof.
+    constructor => rt; rewrite /Kseq/KP/=.
+    destruct rt; try apply H; apply H0.
+  Qed.
+
+  #[global] Instance Proper_wp :
+    Proper (genv_leq ==> eq ==> eq ==> eq ==> eq ==> (⊢) ==> (⊢))
            (@wp).
-  Proof. repeat red; intros; subst.
-         iIntros "X"; iRevert "X"; iApply wp_frame; eauto.
-         destruct H4 as [ ? [ ? [ ? ? ] ] ].
-         iSplit; [ iApply H0 | iSplit; [ | iSplit; [ iApply H2 | iApply H3 ] ] ].
-         iIntros. iApply H1; eauto.
+  Proof.
+    repeat red; intros; subst.
+    iIntros "X"; iRevert "X"; iApply wp_frame; eauto.
+    by iIntros (rt); iApply monPred_in_entails.
   Qed.
 
   Section wp.
     Context {σ : genv} (M : coPset) (ti : thread_info) (ρ : region) (s : Stmt).
     Local Notation WP := (wp (resolve:=σ) M ti ρ s) (only parsing).
     Implicit Types P : mpred.
-    Implicit Types Q : Kpreds.
+    Implicit Types Q : KpredsI.
 
-    Lemma wp_wand k1 k2 :
-      WP k1 |--
-      (* PDS: This conjunction shows up in several places and may
-      deserve a definition and some supporting lemmas. *)
-      ((k_normal k1 -* k_normal k2) ∧
-      (∀ mv f, k_return k1 mv f -* k_return k2 mv f) ∧
-      (k_break k1 -* k_break k2) ∧
-      (k_continue k1 -* k_continue k2)) -*
-      WP k2.
+    Lemma wp_wand (k1 k2 : KpredsI) :
+      WP k1 |-- (Forall rt, k1 rt -* k2 rt) -* WP k2.
     Proof.
       iIntros "Hwp Hk". by iApply (wp_frame σ _ _ _ _ _ k1 with "[$Hk] Hwp").
     Qed.
@@ -678,6 +687,8 @@ Section with_cpp.
     Proof.
       rewrite -{2}wp_shift. apply fupd_elim. rewrite -fupd_intro.
       iIntros "Hwp". iApply (wp_wand with "Hwp"). auto.
+      iIntros (rt) "x";
+      rewrite monPred_at_fupd. eauto.
     Qed.
     Lemma wp_fupd k : WP (|={M}=> k) |-- WP k.
     Proof. iIntros "Hwp". by iApply (wp_shift with "[$Hwp]"). Qed.
