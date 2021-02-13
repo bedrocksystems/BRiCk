@@ -383,6 +383,17 @@ Module Type PTRS_MIXIN (Import P : PTRS) (Import PD : PTRS_DERIVED P).
     (Hsz : is_Some (size_of resolve ty)) :
     _offset_ptr p (o_sub _ ty 0) = p.
   Proof. by rewrite o_sub_0 // offset_ptr_id. Qed.
+
+  Notation _id := o_id (only parsing).
+  Notation _dot := (o_dot) (only parsing).
+  (** access a field *)
+  Notation _field := (@o_field _) (only parsing).
+  (** subscript an array *)
+  Notation _sub z := (@o_sub _ z) (only parsing).
+  (** [_base derived base] is a cast from derived to base. *)
+  Notation _base := (@o_base _) (only parsing).
+  (** [_derived base derived] is a cast from base to derived *)
+  Notation _derived := (@o_derived _) (only parsing).
 End PTRS_MIXIN.
 
 Module Type VAL_MIXIN (Import L : PTRS) (Import R : RAW_BYTES).
