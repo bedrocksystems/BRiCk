@@ -176,36 +176,24 @@ Module SIMPLE_PTRS_IMPL : PTRS_INTF.
     λ z p,
     (* This use of projections in intentional, to get better reduction behavior *)
     let aid := fst p in
-    if (decide (z = 0)%Z) then
-      Some (aid, snd p)
-    else
-      pa' ← offset_vaddr z (snd p);
-      Some (aid, pa').
+    let pa := snd p in
+    pa' ← offset_vaddr z pa;
+    Some (aid, pa').
   Arguments offset_ptr' _ !_ /.
 
   Lemma offset_ptr_combine' p o o' :
     offset_ptr' o p <> invalid_ptr ->
     offset_ptr' o p ≫= offset_ptr' o' = offset_ptr' (o + o') p.
   Proof.
-    case: p => [a v] /=.
-      destruct (decide (o' = 0)%Z) as [->|Ho'];
-      [rewrite Z.add_0_r|];
-      destruct (decide (o = 0)%Z) as [->|Ho] => //=;
-      rewrite /offset_ptr' /=; rewrite fmap_None /= option_fmap_bind /compose /= => Hval //.
-    rewrite -(offset_vaddr_combine Hval) (offset_vaddr_eq' Hval) //=.
-    case_decide => //=; subst.
-    case_decide => //=; subst.
-    rewrite offset_vaddr_eq' //=;
-    rewrite /offset_vaddr /= in Hval *;
-      repeat case_option_guard => //;
-      [do 2 f_equiv|]; lia.
+    case: p => [a v] /=. rewrite fmap_None => Hval.
+    rewrite -(offset_vaddr_combine Hval) (offset_vaddr_eq' Hval). by [].
   Qed.
 
   Definition offset_ptr_raw : Z -> ptr -> ptr :=
     λ z p, p ≫= offset_ptr' z.
 
   Lemma offset_ptr_0 p : offset_ptr_raw 0 p = p.
-  Proof. by case: p => [[a p]|]. Qed.
+  Proof. case: p => [[a p]|] //=. by rewrite offset_vaddr_0. Qed.
 
   Lemma offset_ptr_combine {p o o'} :
     offset_ptr_raw o p <> invalid_ptr ->
@@ -360,10 +348,6 @@ Module SIMPLE_PTRS_IMPL : PTRS_INTF.
     case E: (offset_ptr_raw (z1 * Z.of_N o) p) => [p'|/=]; rewrite -E.
     { apply: offset_ptr_cancel; [|by lia]. naive_solver. }
     case: p E => [[aid va]|//] /=.
-    case_decide => //=.
-      (* have ?: (o <> 0)%N by [lia];
-      have ?: (0 < z1)%Z by [lia]; *)
-      (* last by case_decide => //; exfalso; lia. *)
     case E': offset_vaddr => [_ //|/=] => _.
     exfalso; rewrite /offset_vaddr in E'.
     simplify_option_eq; lia.
@@ -379,11 +363,9 @@ Module SIMPLE_PTRS_IMPL : PTRS_INTF.
     case E: (offset_ptr_raw (z1 * Z.of_N o) p) => [p'|/=]; rewrite -E.
     { apply: offset_ptr_cancel; [|by lia]. naive_solver. }
     case: p E => [[aid va]|//] /=.
-    case_decide => //=.
-      (* last by case_decide => //; exfalso; lia. *)
     case E': offset_vaddr => [_ //|/=];
       rewrite /offset_vaddr in E' => _.
-    simplify_option_eq; first lia.
+    simplify_option_eq.
     case E'': offset_vaddr => [?/=|//].
     rewrite /offset_vaddr in E''.
     simplify_option_eq; lia.
@@ -404,14 +386,9 @@ Module SIMPLE_PTRS_IMPL : PTRS_INTF.
     case E: (offset_ptr_raw (z1 * Z.of_N o) p) => [p'|/=]; rewrite -E.
     { apply: offset_ptr_cancel; [|by lia]. naive_solver. }
     case: p E => [[aid va]|//] /=.
-    case_decide => //=.
     case E': offset_vaddr => [_ //|/=];
       rewrite /offset_vaddr in E' => _.
     simplify_option_eq. { have ?: (z1 < 0)%Z by lia. admit. (* Extra canonicalization? *) }
-    case E'': offset_vaddr => [?/=|//].
-    rewrite /offset_vaddr in E''.
-    simplify_option_eq.
-    admit.
   Admitted.
 
   Include PTRS_DERIVED_MIXIN.
