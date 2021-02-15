@@ -400,6 +400,20 @@ Module SIMPLE_PTRS_IMPL : PTRS_INTF.
   Lemma o_sub_sub {σ : genv} p ty z1 z2 :
     (p .., o_sub _ ty z1 .., o_sub _ ty z2 = (p .., o_sub _ ty (z1 + z2)))%ptr.
   Proof.
+    rewrite /o_sub /= /o_sub_off /_offset_ptr_single.
+    case: size_of => [o|] //=.
+    case E: (offset_ptr_raw (z1 * Z.of_N o) p) => [p'|/=]; rewrite -E.
+    { apply: offset_ptr_cancel; [|by lia]. naive_solver. }
+    case: p E => [[aid p]|//] /=.
+    case_decide => //=; case: p=> [va|//] //=.
+      2: { case_decide => //. admit. (* When address is missing *) }
+    case E': offset_vaddr => [_ //|/=];
+      rewrite /offset_vaddr in E' => _.
+    simplify_option_eq. { have ?: (z1 < 0)%Z by lia. admit. (* Extra canonicalization? *) }
+    case E'': offset_vaddr => [?/=|//].
+    rewrite /offset_vaddr in E''.
+    simplify_option_eq.
+    admit.
   Admitted.
 
   Include PTRS_DERIVED_MIXIN.
