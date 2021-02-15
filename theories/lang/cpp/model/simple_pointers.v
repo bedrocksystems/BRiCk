@@ -303,8 +303,7 @@ Module SIMPLE_PTRS_IMPL : PTRS_INTF.
     n1 = n2)%ptr.
   Proof.
     rewrite same_property_iff /ptr_vaddr /o_sub /o_sub_off Hsz => -[addr []] /=.
-    case: p => [[aid va]|] Haddr ?; simplify_option_eq.
-    apply Z2N.inj in Haddr => //. eapply Z.mul_cancel_r, Z.add_cancel_r, Haddr. lia.
+    case: p => [[aid va]|] Haddr ?; simplify_option_eq. nia.
   Qed.
 
   Include PTRS_DERIVED_MIXIN.
