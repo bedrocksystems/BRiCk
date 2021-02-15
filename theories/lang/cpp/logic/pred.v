@@ -512,8 +512,8 @@ Module Type VALID_PTR_AXIOMS.
       _valid_ptr vt (nullptr .., o_field σ f) |-- False. *)
 
     (* These axioms are named after the predicate in the conclusion. *)
-    Axiom strict_valid_ptr_sub : ∀ p ty i vt,
-      0 < i -> _valid_ptr vt (p .., o_sub σ ty i) |-- strict_valid_ptr p.
+    Axiom strict_valid_ptr_sub : ∀ p ty (i : Z) vt,
+      (0 < i)%Z -> _valid_ptr vt (p .., o_sub σ ty i) |-- strict_valid_ptr p.
     (* TODO: can we deduce that [p] is strictly valid? *)
     Axiom _valid_ptr_base : ∀ p base derived vt,
       _valid_ptr vt (p .., o_base σ derived base) |-- _valid_ptr vt p.
@@ -582,14 +582,15 @@ Section with_cpp.
      then [valid_ptr p'] implies validity of all pointers from [p] to [p']. As
      you point out, that model doesn't actually justify [strict_valid_ptr_sub].
    *)
-  Lemma valid_ptr_sub {σ : genv} p ty i vt :
-    0 <= i -> _valid_ptr vt (p .., o_sub σ ty i) |-- _valid_ptr vt p.
+  Lemma valid_ptr_sub {σ : genv} p ty (i : Z) vt :
+    (0 <= i)%Z -> _valid_ptr vt (p .., o_sub σ ty i) |-- _valid_ptr vt p.
   Proof.
-    case: i => [|i] Hle; iIntros "V".
+    case: i => [|i|i] Hle; iIntros "V".
     - iDestruct (valid_o_sub_size with "V") as %?.
       by rewrite _offset_ptr_sub_0.
     - rewrite strict_valid_ptr_sub; last by lia.
       case: vt => //. by rewrite strict_valid_valid.
+    - lia.
   Qed.
 
   (** [p] is valid pointer value in the sense of the standard, or
