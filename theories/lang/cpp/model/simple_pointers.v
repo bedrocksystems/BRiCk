@@ -152,7 +152,7 @@ Module SIMPLE_PTRS_IMPL : PTRS_INTF.
   a provenance and an address.
 
   We use [Z] for addresses to allow temporary underflows, but understand
-  negative addresses as _invalid_.
+  negative addresses as _invalid_. In this model (but not in general), all valid pointers have an address.
   *)
   Definition ptr' : Set := alloc_id * Z.
   Definition ptr : Set := option ptr'.
@@ -307,6 +307,14 @@ Module SIMPLE_PTRS_IMPL : PTRS_INTF.
   Qed.
 
   Include PTRS_DERIVED_MIXIN.
+
+  (* Not exposed directly, but proof sketch for
+  [valid_o_sub_size]; recall that in this model, all valid pointers have an
+  address. *)
+  Lemma raw_valid_o_sub_size σ p ty i :
+    is_Some (ptr_vaddr (p .., o_sub σ ty i)) ->
+    is_Some (size_of σ ty).
+  Proof. rewrite /o_sub /o_sub_off. case: size_of=> //. by eexists. Qed.
 End SIMPLE_PTRS_IMPL.
 
 Module Import merge_elems.
