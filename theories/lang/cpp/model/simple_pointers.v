@@ -186,44 +186,9 @@ Module SIMPLE_PTRS_IMPL : PTRS_INTF.
   Lemma ptr_vaddr_nullptr : ptr_vaddr nullptr = Some 0%N.
   Proof. done. Qed.
 
-  (* lift [offset_vaddr] over the [alloc_id * _] monad. *)
-  Definition offset_ptr' : Z -> ptr' -> ptr :=
-    λ z '(aid, pa), Some (aid, z + pa).
-  Arguments offset_ptr' _ !_ /.
-
-  Lemma offset_ptr_combine' p o o' :
-    offset_ptr' o p ≫= offset_ptr' o' = offset_ptr' (o + o') p.
-  Proof. case: p => [a v] /=. rewrite assoc_L (comm_L _ o o') //. Qed.
-
-  Definition offset_ptr_raw : Z -> ptr -> ptr :=
-    λ z p, p ≫= offset_ptr' z.
-
-  Lemma offset_ptr_0 p : offset_ptr_raw 0 p = p.
-  Proof. by case: p => [[a p]|]. Qed.
-
-  Lemma offset_ptr_combine {p o o'} :
-    offset_ptr_raw o' (offset_ptr_raw o p) = offset_ptr_raw (o + o') p.
-  Proof. case: p => // p. exact: offset_ptr_combine'. Qed.
-
-  Lemma offset_ptr_cancel {p} {o1 o2 : Z} o3
-    (Hsum : o1 + o2 = o3) :
-    offset_ptr_raw o2 (offset_ptr_raw o1 p) = (offset_ptr_raw o3 p).
-  Proof. by rewrite offset_ptr_combine Hsum. Qed.
-
-  Lemma offset_ptr_cancel0 (o1 o2 : Z) p
-    (Hsum : o1 + o2 = 0) :
-    offset_ptr_raw o2 (offset_ptr_raw o1 p) = p.
-  Proof. by rewrite (offset_ptr_cancel 0 Hsum) offset_ptr_0. Qed.
-
-
   Definition o_id : offset := Some 0.
   Definition o_dot : offset → offset → offset := liftM2 Z.add.
   Notation "o1 .., o2" := (o_dot o1 o2) : offset_scope.
-
-  Definition _offset_ptr : ptr -> offset -> ptr :=
-    λ p oz, z ← oz; offset_ptr_raw z p.
-  Notation "p .., o" := (_offset_ptr p o) : ptr_scope.
-  Local Open Scope ptr_scope.
 
   Instance dot_id : RightId (=) o_id o_dot.
   Proof. case => [o|//] /=. by rewrite right_id_L. Qed.
@@ -232,24 +197,53 @@ Module SIMPLE_PTRS_IMPL : PTRS_INTF.
   Instance dot_assoc : Assoc (=) o_dot.
   Proof. case => [x|//] [y|//] [z|//] /=. by rewrite assoc. Qed.
 
+  (**
+  [_offset_ptr] is basically [Z.add] lifted over a couple of functors.
+  However, we perform the lifting in 2 stages. *)
+  (*
+   *** The first layer takes offsets in [Z] instead of [offset := option Z].
+   This layer, with its associated lemmas, is useful after case analysis on [offset].
+   *)
+  Definition offset_ptr_raw : Z -> ptr -> ptr :=
+    λ z p, p ≫= (λ '(aid, pa), Some (aid, z + pa)).
+
+  (* Raw versions of [offset_ptr_id], [offset_ptr_dot]. *)
+  Lemma offset_ptr_raw_id p : offset_ptr_raw 0 p = p.
+  Proof. by case: p => [[a p]|]. Qed.
+
+  Lemma offset_ptr_raw_dot {p o o'} :
+    offset_ptr_raw o' (offset_ptr_raw o p) = offset_ptr_raw (o + o') p.
+  Proof. case: p => [[a v]|//] /=. by rewrite assoc_L (comm_L _ o o'). Qed.
+
+  (** Conveniences over [offset_ptr_raw_dot]. *)
+  Lemma offset_ptr_raw_cancel {p} {o1 o2 : Z} o3
+    (Hsum : o1 + o2 = o3) :
+    offset_ptr_raw o2 (offset_ptr_raw o1 p) = (offset_ptr_raw o3 p).
+  Proof. by rewrite offset_ptr_raw_dot Hsum. Qed.
+
+  Lemma offset_ptr_raw_cancel0 (o1 o2 : Z) p
+    (Hsum : o1 + o2 = 0) :
+    offset_ptr_raw o2 (offset_ptr_raw o1 p) = p.
+  Proof. by rewrite (offset_ptr_raw_cancel 0 Hsum) offset_ptr_raw_id. Qed.
+
+  (* *** The second layer encapsulates case analysis on [ptr]. *)
+  Definition _offset_ptr : ptr -> offset -> ptr :=
+    λ p oz, z ← oz; offset_ptr_raw z p.
+  Notation "p .., o" := (_offset_ptr p o) : ptr_scope.
+  Local Open Scope ptr_scope.
+
   Lemma offset_ptr_id p : p .., o_id = p.
-  Proof. apply offset_ptr_0. Qed.
+  Proof. apply offset_ptr_raw_id. Qed.
 
   Lemma offset_ptr_dot p o1 o2 :
     p .., (o1 .., o2) = p .., o1 .., o2.
-  Proof.
-    destruct o1, o2, p => //=.
-    apply symmetry, offset_ptr_combine'.
-  Qed.
+  Proof. destruct o1, o2 => //=. apply symmetry, offset_ptr_raw_dot. Qed.
 
   Lemma ptr_alloc_id_offset {p o} :
     let p' := p .., o in
     is_Some (ptr_alloc_id p') ->
     ptr_alloc_id p' = ptr_alloc_id p.
-  Proof.
-    rewrite /offset_ptr_raw /offset_ptr' => -[aid].
-    case: o p => [z|//] [[??]|] //=.
-  Qed.
+  Proof. move=> /= -[aid]. by case: o p => [?|] [[??]|] /=. Qed.
 
   Definition o_field σ f : offset := o_field_off σ f.
   Definition o_sub σ ty z : offset := o_sub_off σ ty z.
@@ -260,26 +254,34 @@ Module SIMPLE_PTRS_IMPL : PTRS_INTF.
     (p .., o_base σ derived base)%ptr <> invalid_ptr ->
     (p .., o_base σ derived base .., o_derived σ base derived = p)%ptr.
   Proof.
-    rewrite /o_base /o_derived /o_base_off /o_derived_off.
-    case: parent_offset => [o|//] /= Hval.
-    apply offset_ptr_cancel0. lia.
+    rewrite /o_base /o_base_off /o_derived /o_derived_off.
+    case: parent_offset => [o|//] /= Hval. apply offset_ptr_raw_cancel0. lia.
   Qed.
 
   Lemma o_derived_base_raw σ p derived base :
     (p .., o_derived σ base derived)%ptr <> invalid_ptr ->
     (p .., o_derived σ base derived .., o_base σ derived base = p)%ptr.
   Proof.
-    rewrite /o_base /o_derived /o_base_off /o_derived_off.
-    case: parent_offset => [o|//] /= Hval.
-    apply: offset_ptr_cancel0. lia.
+    rewrite /o_base /o_base_off /o_derived /o_derived_off.
+    case: parent_offset => [o|//] /= Hval. apply: offset_ptr_raw_cancel0. lia.
   Qed.
 
   Lemma o_sub_sub_raw σ p ty n1 n2 :
     (p .., o_sub σ ty n1 .., o_sub σ ty n2 = p .., o_sub σ ty (n1 + n2))%ptr.
   Proof.
-    rewrite /o_sub /o_sub_off.
-    case: size_of => [o|//] /=.
-    apply: offset_ptr_cancel. lia.
+    rewrite /o_sub /o_sub_off. case: size_of => [o|//] /=.
+    apply: offset_ptr_raw_cancel. lia.
+  Qed.
+
+  Lemma o_sub_0 σ ty :
+    is_Some (size_of σ ty) ->
+    o_sub σ ty 0 = o_id.
+  Proof. rewrite /o_sub /o_sub_off => -[? ->] //=. Qed.
+
+  Lemma o_dot_sub {σ : genv} i j ty :
+    o_dot (o_sub _ ty i) (o_sub _ ty j) = o_sub _ ty (i + j).
+  Proof.
+    rewrite /o_sub /o_sub_off; case: size_of => //= sz. f_equiv. lia.
   Qed.
 
   (* Caveat: This model of [global_ptr] isn't correct, beyond proving
@@ -294,28 +296,15 @@ Module SIMPLE_PTRS_IMPL : PTRS_INTF.
     Some (aid, Z.of_N va).
 
   Definition fun_ptr := global_ptr.
-  Lemma o_sub_0 σ ty :
-    is_Some (size_of σ ty) ->
-    o_sub σ ty 0 = o_id.
-  Proof. rewrite /o_sub /o_sub_off => -[? ->] //=. Qed.
 
   Lemma ptr_vaddr_o_sub_eq p σ ty n1 n2 sz
     (Hsz : size_of σ ty = Some sz) (Hsz0 : (sz > 0)%N) :
     (same_property ptr_vaddr (p .., o_sub σ ty n1) (p .., o_sub σ ty n2) ->
     n1 = n2)%ptr.
   Proof.
-    rewrite same_property_iff /ptr_vaddr /o_sub /o_sub_off => -[addr []] /=.
-    rewrite Hsz /offset_ptr_raw /offset_ptr' /=.
-    case: p => [[aid va]|]; simplify_option_eq => // [<-] [].
-    intros Hne%symmetry%Z2N.inj => //.
-    eapply Z.mul_cancel_r, Z.add_cancel_r, Hne. lia.
-  Qed.
-
-  Lemma o_dot_sub {σ : genv} i j ty :
-    o_dot (o_sub _ ty i) (o_sub _ ty j) = o_sub _ ty (i + j).
-  Proof.
-    rewrite /o_sub /o_sub_off; case: size_of => //= sz.
-    f_equiv. lia.
+    rewrite same_property_iff /ptr_vaddr /o_sub /o_sub_off Hsz => -[addr []] /=.
+    case: p => [[aid va]|] Haddr ?; simplify_option_eq.
+    apply Z2N.inj in Haddr => //. eapply Z.mul_cancel_r, Z.add_cancel_r, Haddr. lia.
   Qed.
 
   Include PTRS_DERIVED_MIXIN.
