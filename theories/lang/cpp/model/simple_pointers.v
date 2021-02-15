@@ -147,7 +147,7 @@ In this models, not all valid pointers are pinned to some address.
 Module SIMPLE_PTRS_IMPL : PTRS_INTF.
   Import address_sums.
 
-  Definition ptr' : Set := alloc_id * option vaddr.
+  Definition ptr' : Set := alloc_id * vaddr.
   Definition ptr : Set := option ptr'.
 
   Declare Scope ptr_scope.
@@ -158,10 +158,10 @@ Module SIMPLE_PTRS_IMPL : PTRS_INTF.
   (* Addresses are optional, and absent from unpinned pointers, but necessary
   for offsetting. *)
   (* XXX make addresses non-optional, to simplify this model. *)
-  Definition ptr_vaddr : ptr -> option vaddr := mbind snd.
+  Definition ptr_vaddr : ptr -> option vaddr := fmap snd.
 
   Definition invalid_ptr : ptr := None.
-  Definition mkptr a n : ptr := Some (a, Some n).
+  Definition mkptr a n : ptr := Some (a, n).
   Definition nullptr : ptr := mkptr null_alloc_id 0.
 
   Instance ptr_eq_dec : EqDecision ptr := _.
@@ -179,27 +179,26 @@ Module SIMPLE_PTRS_IMPL : PTRS_INTF.
     if (decide (z = 0)%Z) then
       Some (aid, snd p)
     else
-      pa ← snd p;
-      pa' ← offset_vaddr z pa;
-      Some (aid, Some pa').
+      pa' ← offset_vaddr z (snd p);
+      Some (aid, pa').
   Arguments offset_ptr' _ !_ /.
 
   Lemma offset_ptr_combine' p o o' :
     offset_ptr' o p <> invalid_ptr ->
     offset_ptr' o p ≫= offset_ptr' o' = offset_ptr' (o + o') p.
   Proof.
-    case: p => [a p] /=.
+    case: p => [a v] /=.
       destruct (decide (o' = 0)%Z) as [->|Ho'];
       [rewrite Z.add_0_r|];
-      destruct (decide (o = 0)%Z) as [->|Ho] => //=; case: p => [p|] //=;
-      rewrite /offset_ptr' /= fmap_None /= option_fmap_bind /compose /= => Hval //.
+      destruct (decide (o = 0)%Z) as [->|Ho] => //=;
+      rewrite /offset_ptr' /=; rewrite fmap_None /= option_fmap_bind /compose /= => Hval //.
     rewrite -(offset_vaddr_combine Hval) (offset_vaddr_eq' Hval) //=.
     case_decide => //=; subst.
     case_decide => //=; subst.
     rewrite offset_vaddr_eq' //=;
     rewrite /offset_vaddr /= in Hval *;
       repeat case_option_guard => //;
-      [do 3 f_equiv|]; lia.
+      [do 2 f_equiv|]; lia.
   Qed.
 
   Definition offset_ptr_raw : Z -> ptr -> ptr :=
@@ -328,7 +327,7 @@ Module SIMPLE_PTRS_IMPL : PTRS_INTF.
   *)
   Definition global_ptr (tu : translation_unit) (o : obj_name) : ptr :=
     '(aid, va) ← global_ptr_encode_ov o (tu !! o);
-    Some (aid, Some va).
+    Some (aid, va).
 
   Definition fun_ptr := global_ptr.
   Lemma o_sub_0 σ ty :
@@ -343,7 +342,7 @@ Module SIMPLE_PTRS_IMPL : PTRS_INTF.
   Proof.
     rewrite same_property_iff /ptr_vaddr/= /_offset_ptr_single /o_sub_off => -[addr []].
     rewrite Hsz /offset_ptr_raw /offset_ptr' /=.
-    case: p => [[aid [p|]]|] /=; try by simplify_option_eq.
+    case: p => [[aid p]|] /=; try by simplify_option_eq.
     case: (decide (n1 = 0)) => [->|?]; case: (decide (n2 = 0))=> [->|?];
       rewrite ?Z.mul_0_l //; repeat case_decide; try lia;
       [by rewrite /offset_vaddr; intros; simplify_option_eq; lia..|].
@@ -360,11 +359,11 @@ Module SIMPLE_PTRS_IMPL : PTRS_INTF.
     case: size_of => [o|] //=.
     case E: (offset_ptr_raw (z1 * Z.of_N o) p) => [p'|/=]; rewrite -E.
     { apply: offset_ptr_cancel; [|by lia]. naive_solver. }
-    case: p E => [[aid p]|//] /=.
-    case_decide => //=; case: p=> [va|//] //=;
+    case: p E => [[aid va]|//] /=.
+    case_decide => //=.
       (* have ?: (o <> 0)%N by [lia];
       have ?: (0 < z1)%Z by [lia]; *)
-      last by case_decide => //; exfalso; lia.
+      (* last by case_decide => //; exfalso; lia. *)
     case E': offset_vaddr => [_ //|/=] => _.
     exfalso; rewrite /offset_vaddr in E'.
     simplify_option_eq; lia.
@@ -379,9 +378,9 @@ Module SIMPLE_PTRS_IMPL : PTRS_INTF.
     case: size_of => [o|] //=.
     case E: (offset_ptr_raw (z1 * Z.of_N o) p) => [p'|/=]; rewrite -E.
     { apply: offset_ptr_cancel; [|by lia]. naive_solver. }
-    case: p E => [[aid p]|//] /=.
-    case_decide => //=; case: p=> [va|//] //=;
-      last by case_decide => //; exfalso; lia.
+    case: p E => [[aid va]|//] /=.
+    case_decide => //=.
+      (* last by case_decide => //; exfalso; lia. *)
     case E': offset_vaddr => [_ //|/=];
       rewrite /offset_vaddr in E' => _.
     simplify_option_eq; first lia.
@@ -404,9 +403,8 @@ Module SIMPLE_PTRS_IMPL : PTRS_INTF.
     case: size_of => [o|] //=.
     case E: (offset_ptr_raw (z1 * Z.of_N o) p) => [p'|/=]; rewrite -E.
     { apply: offset_ptr_cancel; [|by lia]. naive_solver. }
-    case: p E => [[aid p]|//] /=.
-    case_decide => //=; case: p=> [va|//] //=.
-      2: { case_decide => //. admit. (* When address is missing *) }
+    case: p E => [[aid va]|//] /=.
+    case_decide => //=.
     case E': offset_vaddr => [_ //|/=];
       rewrite /offset_vaddr in E' => _.
     simplify_option_eq. { have ?: (z1 < 0)%Z by lia. admit. (* Extra canonicalization? *) }
