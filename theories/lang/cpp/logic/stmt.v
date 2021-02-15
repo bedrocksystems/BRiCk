@@ -40,7 +40,7 @@ Module Type Stmt.
     Local Notation anyR := (anyR (resolve:=resolve)) (only parsing).
     Local Notation uninitR := (uninitR (resolve:=resolve)) (only parsing).
 
-    Implicit Types Q : KpredsI.
+    Implicit Types Q : KpredI.
 
    (* the semantics of return is like an initialization
      * expression.
@@ -48,7 +48,7 @@ Module Type Stmt.
     Axiom wp_return_void : forall ρ Q,
         Q ReturnVoid |-- wp ρ (Sreturn None) Q.
 
-    Axiom wp_return : forall ρ c e (Q : KpredsI),
+    Axiom wp_return : forall ρ c e (Q : KpredI),
            match c with
            | Prvalue =>
              if is_aggregate (type_of e) then
@@ -81,7 +81,7 @@ Module Type Stmt.
      * just aliases.
      *)
     Fixpoint wp_decl (ρ : region) (x : ident) (ty : type) (init : option Expr) (dtor : option obj_name)
-               (k : region -> KpredsI -> mpred) (Q : KpredsI)
+               (k : region -> KpredI -> mpred) (Q : KpredI)
                (* ^ Q is the continuation for after the declaration
                 *   goes out of scope.
                 * ^ k is the rest of the declaration
@@ -168,7 +168,7 @@ Module Type Stmt.
       end.
 
     Fixpoint wp_decls (ρ : region) (ds : list VarDecl)
-             (k : region -> Kpreds -> mpred) (Q : Kpreds) : mpred :=
+             (k : region -> Kpred -> mpred) (Q : Kpred) : mpred :=
       match ds with
       | nil => k ρ Q
       | {| vd_name := x ; vd_type := ty ; vd_init := init ; vd_dtor := dtor |} :: ds =>
@@ -178,7 +178,7 @@ Module Type Stmt.
     (* note(gmm): this rule is non-compositional because
      * wp_decls requires the rest of the block computation
      *)
-    Fixpoint wp_block (ρ : region) (ss : list Stmt) (Q : Kpreds) : mpred :=
+    Fixpoint wp_block (ρ : region) (ss : list Stmt) (Q : Kpred) : mpred :=
       match ss with
       | nil => Q Normal
       | Sdecl ds :: ss =>
@@ -309,7 +309,7 @@ Module Type Stmt.
       Variable e : Z.
       Variable Ldef : Z -> Prop.
 
-      Fixpoint wp_switch_block (Lcur : option (Z -> Prop)) (ls : list Stmt) (Q : Kpreds) : mpred :=
+      Fixpoint wp_switch_block (Lcur : option (Z -> Prop)) (ls : list Stmt) (Q : Kpred) : mpred :=
         match ls with
         | Scase sb :: ls =>
           wp_switch_block (or_case Lcur (wp_switch_branch sb)) ls Q
@@ -331,7 +331,7 @@ Module Type Stmt.
         end%I.
     End wp_switch_branch.
 
-    Definition Kswitch (k : Kpreds) : Kpreds :=
+    Definition Kswitch (k : Kpred) : Kpred :=
       KP (fun rt =>
             match rt with
             | Break => k Normal

@@ -49,10 +49,10 @@ Definition rt_biIndex : biIndex :=
    ; bi_index_rel := @eq ReturnType
    ; bi_index_rel_preorder := _ |}.
 
-Section Kpreds.
+Section Kpred.
   Context `{Σ : cpp_logic thread_info}.
 
-  Record Kpreds' :=
+  Record Kpred' :=
   { k_normal   : mpred
   ; k_return_val   : val -> mpred
   ; k_return_void : mpred
@@ -60,15 +60,15 @@ Section Kpreds.
   ; k_continue : mpred
   }.
 
-  Definition KpredsI : bi := monPredI rt_biIndex mpredI.
-  #[local] Notation Kpreds := KpredsI.
-  Definition KP (P : _) : KpredsI := @MonPred rt_biIndex _ P _.
+  Definition KpredI : bi := monPredI rt_biIndex mpredI.
+  #[local] Notation Kpred := KpredI.
+  Definition KP (P : _) : KpredI := @MonPred rt_biIndex _ P _.
   Arguments KP _%I.
 
-  Instance Kpreds_fupd: FUpd KpredsI :=
+  Instance Kpred_fupd: FUpd KpredI :=
     funI l r Q => KP (fun v => |={l,r}=> Q v).
 
-  Definition toKpreds (k : Kpreds') : KpredsI :=
+  Definition toKpred (k : Kpred') : KpredI :=
     KP (fun rt =>
           match rt with
           | Normal => k.(k_normal)
@@ -77,21 +77,21 @@ Section Kpreds.
           | ReturnVal v => k.(k_return_val) v
           | ReturnVoid => k.(k_return_void)
           end).
-  Definition void_return (P : mpred) : KpredsI :=
+  Definition void_return (P : mpred) : KpredI :=
     KP (funI rt =>
           match rt with
           | Normal | ReturnVoid => P
           | _ => False
           end).
 
-  Definition val_return (P : val -> mpred) : KpredsI :=
+  Definition val_return (P : val -> mpred) : KpredI :=
     KP (funI rt =>
         match rt with
         | ReturnVal v => P v
         | _ => False
         end).
 
-  Definition Kseq (Q : Kpreds -> mpred) (k : Kpreds) : Kpreds :=
+  Definition Kseq (Q : Kpred -> mpred) (k : Kpred) : Kpred :=
     KP (funI rt =>
         match rt with
         | Normal => Q k
@@ -99,7 +99,7 @@ Section Kpreds.
         end).
 
   (* loop with invariant `I` *)
-  Definition Kloop (I : mpred) (Q : Kpreds) : Kpreds :=
+  Definition Kloop (I : mpred) (Q : Kpred) : Kpred :=
     KP (funI rt =>
         match rt with
         | Break | Normal => Q Normal
@@ -107,20 +107,21 @@ Section Kpreds.
         | rt => Q rt
         end).
 
-  Definition Kat_exit (Q : mpred -> mpred) (k : Kpreds) : Kpreds :=
+  Definition Kat_exit (Q : mpred -> mpred) (k : Kpred) : Kpred :=
     KP (funI rt => Q (k rt)).
 
-  Definition Kfree (a : mpred) : Kpreds -> Kpreds :=
+  Definition Kfree (a : mpred) : Kpred -> Kpred :=
     Kat_exit (fun P => a ** P).
 
-  #[global] Instance mpred_Kpreds_BiEmbed : BiEmbed mpredI KpredsI := _.
+  #[global] Instance mpred_Kpred_BiEmbed : BiEmbed mpredI KpredI := _.
 
-  (* NOTE KpredsI does not embed into mpredI because it doesn't respect
+  (* NOTE KpredI does not embed into mpredI because it doesn't respect
      existentials.
    *)
-End Kpreds.
-(* #[global] Bind Scope bi_scope with KpredsI. *)
-#[global] Notation Kpreds := (bi_car KpredsI).
+End Kpred.
+#[global] Notation Kpred := (bi_car KpredI).
+#[global,deprecated(since="2021-02-15",note="use KpredI")] Notation KpredsI := KpredI (only parsing).
+#[global,deprecated(since="2021-02-15",note="use Kpred")] Notation Kpreds := Kpred (only parsing).
 
 Section with_cpp.
   Context `{Σ : cpp_logic thread_info}.
@@ -646,14 +647,14 @@ Section with_cpp.
 
   (* evaluate a statement *)
   Parameter wp
-    : forall {resolve:genv}, coPset -> thread_info -> region -> Stmt -> KpredsI -> mpred.
+    : forall {resolve:genv}, coPset -> thread_info -> region -> Stmt -> KpredI -> mpred.
 
   Axiom wp_shift : forall σ M ti ρ s Q,
       (|={M}=> wp (resolve:=σ) M ti ρ s (|={M}=> Q))
     ⊢ wp (resolve:=σ) M ti ρ s Q.
 
   Axiom wp_frame :
-    forall σ1 σ2 M ti ρ s (k1 k2 : KpredsI),
+    forall σ1 σ2 M ti ρ s (k1 k2 : KpredI),
       genv_leq σ1 σ2 ->
       (Forall rt, k1 rt -* k2 rt) |-- @wp σ1 M ti ρ s k1 -* @wp σ2 M ti ρ s k2.
 
@@ -676,9 +677,9 @@ Section with_cpp.
     Context {σ : genv} (M : coPset) (ti : thread_info) (ρ : region) (s : Stmt).
     Local Notation WP := (wp (resolve:=σ) M ti ρ s) (only parsing).
     Implicit Types P : mpred.
-    Implicit Types Q : KpredsI.
+    Implicit Types Q : KpredI.
 
-    Lemma wp_wand (k1 k2 : KpredsI) :
+    Lemma wp_wand (k1 k2 : KpredI) :
       WP k1 |-- (Forall rt, k1 rt -* k2 rt) -* WP k2.
     Proof.
       iIntros "Hwp Hk". by iApply (wp_frame σ _ _ _ _ _ k1 with "[$Hk] Hwp").
