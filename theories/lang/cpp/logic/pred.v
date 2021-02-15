@@ -543,10 +543,6 @@ Module Type VALID_PTR_AXIOMS.
     (* Axiom strict_valid_ptr_field : ∀ p f,
       strict_valid_ptr (p .., o_field σ f) |-- strict_valid_ptr p. *)
 
-    Axiom o_sub_sub : ∀ p ty n1 n2 vt,
-      _valid_ptr vt (p .., o_sub σ ty n1) |--
-      [| p .., o_sub σ ty n1 .., o_sub σ ty n2 = p .., o_sub σ ty (n1 + n2) |]%ptr.
-
     (* We're ignoring virtual inheritance here, since we have no plans to
     support it for now, but this might hold there too. *)
     Axiom o_base_derived : forall p base derived,
