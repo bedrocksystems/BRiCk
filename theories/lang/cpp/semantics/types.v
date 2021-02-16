@@ -129,8 +129,8 @@ Parameter align_of : forall {resolve : genv} (t : type), option N.
 Axiom align_of_size_of : forall {σ : genv} (t : type) sz,
     size_of σ t = Some sz ->
     exists al, align_of (resolve:=σ) t = Some al /\
-          (* alignmend is a multiple of the size *)
-          (al mod sz = 0)%N.
+          (* size is a multiple of alignment *)
+          (sz mod al = 0)%N.
 
 Axiom Proper_align_of : Proper (genv_leq ==> eq ==> Roption_leq eq) (@align_of).
 Global Existing Instance Proper_align_of.
