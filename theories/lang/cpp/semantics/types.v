@@ -7,8 +7,6 @@ From bedrock.lang.prelude Require Import base.
 From bedrock.lang.cpp.syntax Require Import names expr stmt types.
 From bedrock.lang.cpp.semantics Require Import genv.
 
-Definition glob_def (g : genv) (gn : globname) : option GlobDecl :=
-  g.(genv_tu).(globals) !! gn.
 
 Definition GlobDecl_size_of (g : GlobDecl) : option N :=
   match g with
