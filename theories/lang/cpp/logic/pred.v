@@ -524,6 +524,18 @@ Module Type VALID_PTR_AXIOMS.
       (i <= j < k)%Z ->
       _valid_ptr vt1 (p .., o_sub σ ty i) |--
       _valid_ptr vt2 (p .., o_sub σ ty k) -* strict_valid_ptr (p .., o_sub σ ty j).
+
+    (** XXX: this axiom is convoluted but
+    TODO: The intended proof of [strict_valid_ptr_field_sub] (and friends) is that
+    (1) if [p'] normalizes to [p'' ., [ ty ! i ]], then [valid_ptr p'] implies
+    [valid_ptr p''].
+    (2) [p .., o_field σ f .., o_sub σ ty i] will normalize to [p .., o_field
+    σ f .., o_sub σ ty i], without cancellation.
+    *)
+    Axiom strict_valid_ptr_field_sub : ∀ p ty (i : Z) f vt,
+      (0 < i)%Z ->
+      _valid_ptr vt (p .., o_field σ f .., o_sub σ ty i) |-- strict_valid_ptr (p .., o_field σ f).
+
     (* TODO: can we deduce that [p] is strictly valid? *)
     Axiom _valid_ptr_base : ∀ p base derived vt,
       _valid_ptr vt (p .., o_base σ derived base) |-- _valid_ptr vt p.
@@ -585,6 +597,16 @@ Section with_cpp.
     _valid_ptr vt (p .., o_sub σ ty i) |--
     _valid_ptr vt (p .., o_sub σ ty k) -* valid_ptr (p .., o_sub σ ty j).
   Proof. rewrite -strict_valid_valid. apply strict_valid_ptr_sub. Qed.
+
+  Lemma _valid_ptr_field_sub (i : Z) p ty f vt (Hle : (0 <= i)%Z) :
+    _valid_ptr vt (p .., o_field σ f .., o_sub σ ty i) |-- _valid_ptr vt (p .., o_field σ f).
+  Proof.
+    iIntros "V". case: (decide (i = 0)%Z) Hle => [-> _|Hne Hle].
+    - iDestruct (valid_o_sub_size with "V") as %?.
+      by rewrite offset_ptr_sub_0.
+    - rewrite strict_valid_ptr_field_sub; last by lia.
+      case: vt => //. by rewrite strict_valid_valid.
+  Qed.
 
   (** [p] is a valid pointer value in the sense of the standard, or
   "standard-valid" (https://eel.is/c++draft/basic.compound#3.1), that is both
