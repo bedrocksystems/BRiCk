@@ -51,7 +51,7 @@ Section with_cpp.
     let this_type := Qmut (Tnamed class) in
     let map_pre this '(args, P) :=
         (Vptr this :: args,
-         this |-> anyR (Tnamed class) 1 (* TODO backwards compat [tblockR (Tnamed class)] *) ** P) in
+         this |-> tblockR (Tnamed class) ** P) in
     SFunction (cc:=cc) (Qmut Tvoid) (Qconst (Tpointer this_type) :: targs)
               {| wpp_with := TeleS (fun this : ptr => (PQ this).(wpp_with))
                ; wpp_pre this :=
@@ -69,7 +69,7 @@ Section with_cpp.
     let map_post (this : ptr) '{| we_ex := pwiths ; we_post := Q|} :=
         {| we_ex := pwiths
          ; we_post := tele_map (fun '(result, Q) =>
-                                  (result, this |-> anyR (Tnamed class) 1 (* TODO backwards compat [tblockR this_type] *) ** Q)) Q |}
+                                  (result, this |-> tblockR (Tnamed class) ** Q)) Q |}
     in
     (** ^ NOTE the size of an object might be different in the presence of virtual base
         classes.
@@ -253,7 +253,7 @@ Section with_cpp.
             False
           end
         | InitIndirect _ _ =>
-          (* this is initializaing an object via sub-objets using indirect initialization.
+          (* this is initializing an object via sub-objets using indirect initialization.
              TODO currently not supported
            *)
           False
@@ -336,7 +336,7 @@ Section with_cpp.
       match args with
       | Vptr thisp :: rest_vals =>
         let ty := Tnamed ctor.(c_class) in
-        (* TODO backwards compat [thisp |-> tblockR ty **] *)
+        thisp |-> tblockR ty **
         (* ^ this requires that you give up the *entire* block of memory that the object
            will use.
          *)
@@ -372,6 +372,7 @@ Section with_cpp.
     | _ => False
     end.
 
+  (*
   (** TODO i should still make a pass through destruction *)
   Fixpoint wpd_bases (ti : thread_info) (ρ : region) (cls : globname) (this : ptr)
            (dests : list (InitPath * globname))
@@ -387,24 +388,28 @@ Section with_cpp.
                 (this ., offset_for _ cls d.1 |-> tblockR (Tnamed b) ** wpd_bases ti ρ cls this is' Q)
       end
     end.
+*)
+  Require Import bedrock.lang.cpp.logic.destroy.
+
+  Fixpoint wpd_bases
+           (ti : thread_info) (cls : globname) (this : ptr)
+           (bases : list globname)
+           (Q : mpred) : mpred :=
+    match bases with
+    | nil => Q
+    | base :: bases =>
+      destruct_val (σ:=resolve) ti (Tnamed base) (this ., _base cls base) None (wpd_bases ti cls this bases Q)
+    end.
 
   Fixpoint wpd_members
-           (ti : thread_info) (ρ : region) (cls : globname) (this : ptr)
-           (dests : list (InitPath * globname))
+           (ti : thread_info) (cls : globname) (this : ptr)
+           (members : list Member)
            (Q : mpred) : mpred :=
-    match dests with
-    | nil => this |-> revert_identity cls Q
-    | d :: is' =>
-      match d.1 with
-      | InitThis
-      | InitIndirect _ _ => False
-      | InitBase _ =>
-        this |-> revert_identity cls (wpd_bases ti ρ cls this dests Q)
-      | _ =>
-        wpd (resolve:=resolve) ⊤ ti ρ cls this d (
-              (* TODO backwards compat [this ., offset_for _ cls d.1 |-> tblockR ty **] *)
-              wpd_members ti ρ cls this is' Q)
-      end
+    match members with
+    | nil => Q
+    | member :: members =>
+      destruct_val (σ:=resolve) ti member.(mem_type) (this ., _field {| f_name := member.(mem_name) ; f_type := cls |}) None
+                   (wpd_members ti cls this members Q)
     end.
 
   Definition wp_dtor (dtor : Dtor) (ti : thread_info) (args : list val)
@@ -413,13 +418,26 @@ Section with_cpp.
     | None => False
     | Some Defaulted => False
       (* ^ defaulted constructors are not supported *)
-    | Some (UserDefined (body, deinit)) =>
-      match args with
-      | Vptr thisp :: rest_vals =>
-        let ρ := Remp (Some thisp) Tvoid in
-          |> wp (resolve:=resolve) ⊤ ti ρ body
-               (void_return (wpd_members ti ρ dtor.(d_class) thisp deinit
-                  ((* TODO backwards compat [thisp |-> tblockR (Tnamed dtor.(d_class)) -*] *) Q Vvoid)))
+    | Some (UserDefined body) =>
+      match resolve.(genv_tu).(globals) !! dtor.(d_class) with
+      | Some (Gstruct s) =>
+        match args with
+        | Vptr thisp :: nil =>
+          let ρ := Remp (Some thisp) Tvoid in
+            wp (resolve:=resolve) ⊤ ti ρ body
+               (void_return (wpd_members ti dtor.(d_class) thisp s.(s_fields)
+                               (thisp |-> revert_identity dtor.(d_class) (wpd_bases ti dtor.(d_class) thisp (List.map fst s.(s_bases))
+                                                                     (|> (thisp |-> tblockR (Tnamed dtor.(d_class)) -* Q Vvoid)))))))
+        | _ => False
+        end
+      | Some (Gunion u) =>
+        match args with
+        | Vptr thisp :: nil =>
+          let ρ := Remp (Some thisp) Tvoid in
+            wp (resolve:=resolve) ⊤ ti ρ body
+               (void_return (|> thisp |-> tblockR (Tnamed dtor.(d_class)) -* Q Vvoid)))
+        | _ => False
+        end
       | _ => False
       end
     end.

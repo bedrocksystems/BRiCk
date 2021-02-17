@@ -41,16 +41,16 @@ Module Type Init.
      * NOTE this is written as a recursive function rather than by using [decompose_type] because
      * we want simplification to reduce it.
      *)
-    Fixpoint wp_initialize (ty : type) (addr : ptr) (init : Expr) (k : FreeTemps -> mpred) : mpred :=
-      match ty with
+    Definition wp_initialize (ty : type) (addr : ptr) (init : Expr) (k : FreeTemps -> mpred) : mpred :=
+      match drop_qualifiers ty with
       | Tvoid => False
       | Tpointer _ as ty
       | Tmember_pointer _ _ as ty
       | Tbool as ty
       | Tint _ _ as ty =>
         wp_prval init (fun v free =>
-                         addr |-> anyR ty 1 (* TODO backwards compat [tblockR ty 1] *) **
-                         (   addr |-> primR ty 1 v
+                         addr |-> tblockR (erase_qualifiers ty) **
+                         (   addr |-> primR (erase_qualifiers ty) 1 v
                           -* k free))
 
         (* non-primitives are handled via prvalue-initialization semantics *)
@@ -61,7 +61,7 @@ Module Type Init.
       | Trv_reference t => False (* reference fields are not supported *)
       | Tfunction _ _ => False (* functions not supported *)
 
-      | Tqualified _ ty => wp_initialize ty addr init k
+      | Tqualified _ ty => False (* unreachable *)
       | Tnullptr => False (* nullptr fields are not supported *)
       | Tarch _ _ => False (* vendor-specific types are not supported *)
       | Tfloat _ => False (* floating point numbers are not supported *)
@@ -70,7 +70,8 @@ Module Type Init.
     Lemma wp_initialize_frame obj ty e Q Q' :
       (Forall free, Q free -* Q' free) |-- wp_initialize ty obj e Q -* wp_initialize ty obj e Q'.
     Proof using.
-      induction ty =>/=; eauto.
+      rewrite /wp_initialize.
+      case_eq (drop_qualifiers ty) =>/=; intros; eauto.
       { iIntros "a". iApply wp_prval_frame; try reflexivity.
         iIntros (v f) "[$ X] Y"; iApply "a"; iApply "X"; eauto. }
       { iIntros "a". iApply wp_prval_frame; try reflexivity.

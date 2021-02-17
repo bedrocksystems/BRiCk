@@ -147,8 +147,7 @@ Module Type Expr.
     Axiom wp_prval_member : forall ty vc a m Q,
         match vc with
         | Prvalue => False
-          (* This does not occur because our AST explicitly contains [Cl2r] casts.
-           *)
+          (* This does not occur because our AST explicitly contains [Cl2r] casts. *)
         | _ => False
         end
       |-- wp_prval (Emember vc a m ty) Q.
@@ -685,9 +684,9 @@ Module Type Expr.
 
     Let materialize_into_temp ty e Q :=
       let raw_type := erase_qualifiers ty in
-      Forall addr : ptr, addr |-> uninitR raw_type 1 (* TODO backwards compat [tblockR raw_type] *) -*
+      Forall addr : ptr, addr |-> tblockR raw_type -*
         wp_init ty addr e (fun free =>
-           Q (Vptr addr) (free ** destruct_val raw_type addr None (addr |-> anyR raw_type 1 (* TODO backwards compat [tblockR (erase_qualifiers ty)] *)))).
+           Q (Vptr addr) (free ** destruct_val raw_type addr None (addr |-> tblockR raw_type))).
     (* XXX This use of [Vptr] represents an aggregate.
        XXX The destruction of the value isn't quite correct because we explicitly
            generate the destructors.
@@ -720,9 +719,8 @@ Module Type Expr.
     Axiom wp_lval_call : forall f (es : list (ValCat * Expr)) Q (ty : type),
         match unptr (type_of f) with
         | Some fty =>
-          wp_prval f (fun f free_f =>
-                        wp_args es (fun vs free =>
-                                      |> fspec (normalize_type fty) ti f vs (fun res => Exists p, [| res = Vptr p |] ** Q p (free ** free_f))))
+          wp_prval f (fun f free_f => wp_args es (fun vs free =>
+             |> fspec (normalize_type fty) ti f vs (fun res => Exists p, [| res = Vptr p |] ** Q p (free ** free_f))))
         | _ => False
         end
         |-- wp_lval (Ecall f es ty) Q.
@@ -730,9 +728,8 @@ Module Type Expr.
     Axiom wp_xval_call : forall ty f es Q,
         match unptr (type_of f) with
         | Some fty =>
-          wp_prval f (fun f free_f =>
-                        wp_args es (fun vs free =>
-                                      |> fspec (normalize_type fty) ti f vs (fun v => Exists p, [| v = Vptr p |] ** Q p (free ** free_f))))
+          wp_prval f (fun f free_f => wp_args es (fun vs free =>
+             |> fspec (normalize_type fty) ti f vs (fun v => Exists p, [| v = Vptr p |] ** Q p (free ** free_f))))
         | _ => False
         end
       |-- wp_xval (Ecall f es ty) Q.
@@ -898,7 +895,7 @@ Module Type Expr.
                         is suitably aligned, accounting for
                         __STDCPP_DEFAULT_NEW_ALIGNMENT__ (issue #149) *)
                            (Forall obj_ptr : ptr,
-                              obj_ptr |-> tblockR aty -*
+                              obj_ptr |-> tblockR aty 1 (* TODO backwards compat [tblockR aty] *) -*
                               (* This also ensures these pointers share their
                               address (see [provides_storage_same_address]) *)
                               provides_storage storage_ptr obj_ptr aty -*
@@ -961,10 +958,10 @@ Module Type Expr.
      *)
     Axiom wp_xval_temp : forall e ty Q,
         (let raw_type := erase_qualifiers ty in
-         Forall a : ptr, a |-> uninitR raw_type 1 (* TODO backwards compat [tblockR raw_type] *) -*
+         Forall a : ptr, a |-> tblockR raw_type -*
                   let '(e,dt) := destructor_for e in
                   wp_init ty a e
-                          (fun free => Q a (destruct_val ty a dt (a |-> anyR raw_type 1 (* TODO backwards compat [tblockR raw_type] *) ** free))))
+                          (fun free => Q a (destruct_val ty a dt (a |-> tblockR raw_type ** free))))
         |-- wp_xval (Ematerialize_temp e ty) Q.
 
     (** temporary materialization only occurs when the resulting value is used.
@@ -982,7 +979,7 @@ Module Type Expr.
          Forall a : ptr, a |-> tblockR raw_type -*
                    let '(e,dt) := destructor_for e in
                    wp_init ty a e (fun free =>
-                                     Q (Vptr a) (destruct_val ty a dt (a |-> anyR raw_type 1 (* TODO backwards compat [tblockR raw_type] *) ** free))))
+                                     Q (Vptr a) (destruct_val ty a dt (a |-> tblockR raw_type ** free))))
         |-- wp_prval e Q.
 
 
@@ -1005,9 +1002,9 @@ Module Type Expr.
     Axiom wp_prval_materialize : forall ty e dtor Q,
       (Forall a : ptr,
       let raw_type := erase_qualifiers ty in
-      a |-> uninitR raw_type 1 (* TODO backwards compat [tblockR raw_type] *) -*
+      a |-> tblockR raw_type -*
           wp_init ty a e (fun free =>
-                            Q (Vptr a) (destruct_val ty a (Some dtor) (a |-> anyR raw_type 1 (* TODO backwards compat [tblockR raw_type] *) ** free))))
+                            Q (Vptr a) (destruct_val ty a (Some dtor) (a |-> tblockR raw_type ** free))))
       |-- wp_prval (Ebind_temp e dtor ty) Q.
 
     (** Pseudo destructors arise from calling the destructor on
@@ -1019,14 +1016,14 @@ Module Type Expr.
         with [T = int].
 
         To maintain similarity with the rest of the system, we
-        the C++ abstract machine "implements" these destructors as
+        the C++ abstract machine "implments" these destructors as
         (essentially) a function with the specification:
 
            \pre this |-> anyR ty 1
            \post this |-> tblockR ty
      *)
     Axiom wp_pseudo_destructor : forall e ty Q,
-        wp_prval e (fun v free => (* TODO backwards compat [_at (_eqv v) (anyR ty 1) ** (_at (_eqv v) (tblockR ty) -*] *) Q Vundef free)
+        wp_prval e (fun v free => _at (_eqv v) (anyR ty 1) ** (_at (_eqv v) (tblockR ty) -* Q Vundef free))
         |-- wp_prval (Epseudo_destructor ty e) Q.
 
     (* `Eimplicit_init` nodes reflect implicit /value initializations/ which are inserted

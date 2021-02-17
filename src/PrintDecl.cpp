@@ -172,10 +172,9 @@ printDestructor(const CXXDestructorDecl *decl, CoqPrinter &print,
     if (decl->getBody()) {
         print.some();
         print.ctor("UserDefined");
-        print.begin_tuple();
         cprint.printStmt(decl->getBody(), print);
-        print.next_tuple();
 
+#if 0
         print.begin_list();
         // i need to destruct each field, and then each parent class
         // in the REVERSE order of construction
@@ -221,7 +220,7 @@ printDestructor(const CXXDestructorDecl *decl, CoqPrinter &print,
             }
         }
         print.end_list();
-        print.end_tuple();
+#endif
         print.end_ctor();
         print.end_ctor();
     } else if (decl->isDefaulted()) {
@@ -294,7 +293,7 @@ public:
                                ClangPrinter &cprint) {
         Expr *expr = field->getInClassInitializer();
         if (expr != nullptr) {
-            print.ctor("Some");
+            print.some();
             cprint.printExpr(expr, print);
             print.end_ctor();
         } else {
@@ -347,6 +346,12 @@ public:
 
         print.ctor("Build_Union");
         printFields(decl, layout, print, cprint);
+
+        if (decl->getDestructor()) {
+            cprint.printGlobalName(decl->getDestructor(), print);
+        } else {
+            assert(false && "destructor is required!");
+        }
 
         print.output() << fmt::line << layout.getSize().getQuantity()
                        << fmt::nbsp << layout.getAlignment().getQuantity()
@@ -408,19 +413,6 @@ public:
         print.output() << fmt::line;
         printFields(decl, layout, print, cprint);
 
-        // print the layout information
-        print.output() << fmt::line;
-        if (decl->isPOD()) {
-            print.output() << "POD";
-        } else if (decl->isStandardLayout()) {
-            print.output() << "Standard";
-        } else {
-            print.output() << "Unspecified";
-        }
-
-        print.output() << fmt::nbsp << layout.getSize().getQuantity()
-                       << fmt::nbsp << layout.getAlignment().getQuantity();
-
         // print the virtual function table
         print.begin_list();
         for (auto m : decl->methods()) {
@@ -441,7 +433,7 @@ public:
         }
         print.end_list();
 
-        // print the virtual function table
+        // print the overrides of this class.
         print.begin_list();
         for (auto m : decl->methods()) {
             if (m->isVirtual() and not m->isPure()) {
@@ -457,15 +449,32 @@ public:
         }
         print.end_list();
 
-        if (decl->getDestructor() && decl->getDestructor()->isVirtual()) {
-            print.some();
+        if (decl->getDestructor()) {
             cprint.printGlobalName(decl->getDestructor(), print);
-            print.end_ctor();
         } else {
-            print.none();
+            assert(false && "destructor is required!");
         }
 
-        // todo(gmm): i need to print any implicit declarations.
+        // trivially destructable
+        print.output() << fmt::nbsp
+                       << (decl->getDestructor()->isTrivial() ? "true" :
+                                                                "false");
+
+        // print the layout information
+        print.output() << fmt::line;
+        if (decl->isPOD()) {
+            print.output() << "POD";
+        } else if (decl->isStandardLayout()) {
+            print.output() << "Standard";
+        } else {
+            print.output() << "Unspecified";
+        }
+
+        // size
+        print.output() << fmt::nbsp << layout.getSize().getQuantity();
+
+        // alignment
+        print.output() << fmt::nbsp << layout.getAlignment().getQuantity();
 
         print.end_ctor();
         print.end_ctor();

@@ -29,13 +29,12 @@ Section destroy.
       match σ.(genv_tu) !! dtor with
       | Some ov =>
         let ty := type_of_value ov in
-        match s.(s_virtual_dtor) with
-        | Some dtor =>
+        let dtor := s.(s_dtor) in
+        if has_virtual_dtor s then
           resolve_virtual (σ:=σ) v cls dtor (fun da p =>
              |> mspec σ.(genv_tu).(globals) (Tnamed cls) ty ti (Vptr da) (Vptr p :: nil) (fun _ => Q))
-        | None =>
+        else
              |> mspec σ.(genv_tu).(globals) (Tnamed cls) ty ti (Vptr $ _global dtor) (Vptr v :: nil) (fun _ => Q)
-        end
       | _ => False
       end
     | _ => False
@@ -52,9 +51,14 @@ Section destroy.
     match t with
     | Tqualified _ t => destruct_val t this dtor Q
     | Tnamed cls =>
+      let continue dtor := destruct_obj dtor cls this Q in
       match dtor with
-      | None => Q
-      | Some dtor => destruct_obj dtor cls this Q
+      | None => match σ.(genv_tu) !! cls with
+               | Some (Gstruct s) => continue s.(s_dtor)
+               | Some (Gunion u) => continue u.(u_dtor)
+               | _ => False
+               end
+      | Some dtor => continue dtor
       end
     | Tarray t sz =>
       fold_right (fun i Q => valid_ptr (this .[ t ! Z.of_nat i ]) **

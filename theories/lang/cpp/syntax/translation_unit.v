@@ -41,8 +41,7 @@ Proof. solve_decision. Defined.
 Record Dtor : Set :=
 { d_class  : globname
 ; d_cc     : calling_conv
-; d_body   : option (OrDefault (Stmt * list (InitPath * obj_name)))
-  (* ^ TODO it is reasonable to eliminate the destructor *)
+; d_body   : option (OrDefault Stmt)
 }.
 Instance: EqDecision Dtor.
 Proof. solve_decision. Defined.
@@ -86,6 +85,8 @@ Proof. solve_decision. Defined.
 Record Union : Set :=
 { u_fields : list Member
   (* ^ fields with type, initializer, and layout information *)
+; u_dtor : obj_name
+  (* ^ the name of the destructor *)
 ; u_size : N
   (* ^ size of the union (including padding) *)
 ; u_alignment : N
@@ -105,18 +106,23 @@ Record Struct : Set :=
   (* ^ base classes *)
 ; s_fields : list Member
   (* ^ fields with type, initializer, and layout information *)
+; s_virtuals : list (obj_name * option obj_name)
+  (* ^ function_name -> symbol *)
+; s_overrides : list (obj_name * obj_name)
+  (* ^ k |-> v ~ update k with v *)
+; s_dtor : obj_name
+  (* ^ the name of the destructor.
+     NOTE at the C++ abstract machine level, there is only
+          one destructor, but implementations (and name mangling)
+          use multiple destructors in cases of classes with [virtual]
+          inheritence.
+   *)
 ; s_layout : LayoutType
   (* ^ the type of layout semantics *)
 ; s_size : N
   (* ^ size of the structure (including padding) *)
 ; s_alignment : N
   (* ^ alignment of the structure *)
-; s_virtuals : list (obj_name * option obj_name)
-  (* ^ function_name -> symbol *)
-; s_overrides : list (obj_name * obj_name)
-  (* ^ k |-> v ~ update k with v *)
-; s_virtual_dtor : option obj_name
-  (* ^ the name of the virtual destructor, if it is virtual *)
 }.
 Instance: EqDecision Struct.
 Proof. solve_decision. Defined.
@@ -126,6 +132,10 @@ Definition has_vtable (s : Struct) : bool :=
   | nil => false
   | _ :: _ => true
   end.
+
+(* [has_virtual_dtor s] returns true if the destructor is virtual. *)
+Definition has_virtual_dtor (s : Struct) : bool :=
+  List.existsb (fun '(a,_) => bool_decide (a = s.(s_dtor))) s.(s_virtuals).
 
 Variant Ctor_type : Set := Ct_Complete | Ct_Base | Ct_alloc | Ct_Comdat.
 Instance: EqDecision Ctor_type.
@@ -207,14 +217,11 @@ Variant GlobDecl : Set :=
 Instance: EqDecision GlobDecl.
 Proof. solve_decision. Defined.
 
-
-
 Definition symbol_table : Type := IM.t ObjValue.
 
 Definition type_table : Type := IM.t GlobDecl.
 
 Variant endian : Set := Little | Big.
-
 Instance endian_dec : EqDecision endian.
 Proof. solve_decision. Defined.
 
