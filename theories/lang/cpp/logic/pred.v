@@ -561,7 +561,18 @@ End VALID_PTR_AXIOMS.
 Declare Module Export VALID_PTR : VALID_PTR_AXIOMS.
 
 Section with_cpp.
-  Context `{Σ : cpp_logic}.
+  Context `{Σ : cpp_logic} {σ : genv}.
+
+  Lemma same_address_bool_null p tv :
+    _valid_ptr tv p |--
+    [| same_address_bool p nullptr = bool_decide (p = nullptr) |].
+  Proof. rewrite same_address_eq_null; iIntros "!%". apply bool_decide_iff. Qed.
+
+  (* Just wrappers. *)
+  Lemma valid_ptr_nullptr : |-- valid_ptr nullptr.
+  Proof. exact: _valid_ptr_nullptr. Qed.
+  Lemma strict_valid_ptr_nullptr : |-- strict_valid_ptr nullptr.
+  Proof. exact: _valid_ptr_nullptr. Qed.
 
   (* TODO (SEMANTICS):
      set p := p ., (.[ty ! -i])
@@ -582,7 +593,7 @@ Section with_cpp.
      then [valid_ptr p'] implies validity of all pointers from [p] to [p']. As
      you point out, that model doesn't actually justify [strict_valid_ptr_sub].
    *)
-  Lemma valid_ptr_sub {σ : genv} p ty (i : Z) vt :
+  Lemma valid_ptr_sub p ty (i : Z) vt :
     (0 <= i)%Z -> _valid_ptr vt (p .., o_sub σ ty i) |-- _valid_ptr vt p.
   Proof.
     case: i => [|i|i] Hle; iIntros "V".
@@ -593,12 +604,7 @@ Section with_cpp.
     - lia.
   Qed.
 
-  Lemma same_address_bool_null p tv :
-    _valid_ptr tv p |--
-    [| same_address_bool p nullptr = bool_decide (p = nullptr) |].
-  Proof. rewrite same_address_eq_null; iIntros "!%". apply bool_decide_iff. Qed.
-
-  (** [p] is valid pointer value in the sense of the standard, or
+  (** [p] is a valid pointer value in the sense of the standard, or
   "standard-valid" (https://eel.is/c++draft/basic.compound#3.1), that is both
   valid (in our sense) and live.
 
@@ -615,11 +621,11 @@ Section with_cpp.
       (@tptsto _ Σ).
   Proof. repeat intro. exact: tptsto_mono. Qed.
 
-  Global Instance tptsto_as_fractional {σ} ty q a v :
+  Global Instance tptsto_as_fractional ty q a v :
     AsFractional (tptsto ty q a v) (λ q, tptsto ty q a v) q.
   Proof. exact: Build_AsFractional. Qed.
 
-  Global Instance tptsto_observe_nonnull {σ} t q p v :
+  Global Instance tptsto_observe_nonnull t q p v :
     Observe [| p <> nullptr |] (tptsto t q p v).
   Proof.
     apply: observe_intro.
@@ -728,7 +734,7 @@ Section with_cpp.
     - by iApply fs_equiv_transitive.
   Qed.
 
-  Lemma pinned_ptr_type_divide_1 va n σ p ty
+  Lemma pinned_ptr_type_divide_1 va n p ty
     (Hal : align_of ty = Some n) :
     type_ptr ty p ⊢ pinned_ptr va p -∗ [| (n | va)%N |].
   Proof.
@@ -736,12 +742,7 @@ Section with_cpp.
     iApply (pinned_ptr_aligned_divide with "P A").
   Qed.
 
-  (* Just wrappers. *)
-  Lemma valid_ptr_nullptr : |-- valid_ptr nullptr.
-  Proof. exact: _valid_ptr_nullptr. Qed.
-  Lemma strict_valid_ptr_nullptr : |-- strict_valid_ptr nullptr.
-  Proof. exact: _valid_ptr_nullptr. Qed.
-
+  (** *** Just wrappers. *)
   (** We can lift validity entailments through [Observe] (using
   [Observe_mono]. These are not instances, to avoid causing slowdowns in
   proof search. *)
@@ -749,21 +750,18 @@ Section with_cpp.
     `(Hobs : !Observe (strict_valid_ptr p) P) : Observe (valid_ptr p) P.
   Proof. by rewrite -strict_valid_valid. Qed.
 
-  Section with_genv.
-    Context (σ : genv).
-    Lemma observe_type_ptr_strict_valid
-      `(Hobs : !Observe (type_ptr ty p) P) : Observe (strict_valid_ptr p) P.
-    Proof. by rewrite -type_ptr_strict_valid. Qed.
+  Lemma observe_type_ptr_strict_valid
+    `(Hobs : !Observe (type_ptr ty p) P) : Observe (strict_valid_ptr p) P.
+  Proof. by rewrite -type_ptr_strict_valid. Qed.
 
-    Lemma observe_type_ptr_valid_plus_one
-      `(Hobs : !Observe (type_ptr ty p) P) : Observe (valid_ptr (p .., o_sub σ ty 1)) P.
-    Proof. by rewrite -type_ptr_valid_plus_one. Qed.
+  Lemma observe_type_ptr_valid_plus_one
+    `(Hobs : !Observe (type_ptr ty p) P) : Observe (valid_ptr (p .., o_sub σ ty 1)) P.
+  Proof. by rewrite -type_ptr_valid_plus_one. Qed.
 
-    Lemma type_ptr_valid ty p : type_ptr ty p |-- valid_ptr p.
-    Proof. by rewrite type_ptr_strict_valid strict_valid_valid. Qed.
+  Lemma type_ptr_valid ty p : type_ptr ty p |-- valid_ptr p.
+  Proof. by rewrite type_ptr_strict_valid strict_valid_valid. Qed.
 
-    #[global] Instance type_ptr_size_observe ty p :
-      Observe [| is_Some (size_of σ ty) |] (type_ptr ty p).
-    Proof. rewrite type_ptr_size. apply _. Qed.
-  End with_genv.
+  #[global] Instance type_ptr_size_observe ty p :
+    Observe [| is_Some (size_of σ ty) |] (type_ptr ty p).
+  Proof. rewrite type_ptr_size. apply _. Qed.
 End with_cpp.
