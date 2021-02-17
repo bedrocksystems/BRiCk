@@ -308,6 +308,36 @@ Proof.
   destruct g2 => //= /require_eq_success. naive_solver.
 Qed.
 
+Lemma sub_module_preserves_gunion m1 m2 gn un :
+  sub_module m1 m2 ->
+  m1.(globals) !! gn = Some (Gunion un) ->
+  m2.(globals) !! gn = Some (Gunion un).
+Proof.
+  move=> Hsub /(sub_module_preserves_globdecl Hsub) {Hsub m1 m2} [g2 [->]].
+  destruct g2 => //= /require_eq_success. naive_solver.
+Qed.
+
+(* Missing: an analogue for enums, because it doesn't hold. *)
+
+Lemma sub_module_preserves_gconstant m1 m2 gn t e :
+  sub_module m1 m2 ->
+  m1.(globals) !! gn = Some (Gconstant t (Some e)) ->
+  m2.(globals) !! gn = Some (Gconstant t (Some e)).
+Proof.
+  move=> Hsub /(sub_module_preserves_globdecl Hsub) {Hsub m1 m2} [g2 [->]].
+  rewrite /GlobDecl_ler /GlobDecl_le. repeat (case_match => //).
+  move=> /require_eq_success [-> /require_eq_success]. naive_solver.
+Qed.
+
+Lemma sub_module_preserves_gtypedef m1 m2 gn t :
+  sub_module m1 m2 ->
+  m1.(globals) !! gn = Some (Gtypedef t) ->
+  m2.(globals) !! gn = Some (Gtypedef t).
+Proof.
+  move=> Hsub /(sub_module_preserves_globdecl Hsub) [g2 [->]].
+  destruct g2 => //= /require_eq_success. naive_solver.
+Qed.
+
 Instance byte_order_proper : Proper (sub_module ==> eq) byte_order.
 Proof. by destruct 1. Qed.
 Instance byte_order_flip_proper : Proper (flip sub_module ==> eq) byte_order.
