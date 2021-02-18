@@ -593,6 +593,11 @@ Section with_cpp.
     - lia.
   Qed.
 
+  Lemma same_address_bool_null p tv :
+    _valid_ptr tv p |--
+    [| same_address_bool p nullptr = bool_decide (p = nullptr) |].
+  Proof. rewrite same_address_eq_null; iIntros "!%". apply bool_decide_iff. Qed.
+
   (** [p] is valid pointer value in the sense of the standard, or
   "standard-valid" (https://eel.is/c++draft/basic.compound#3.1), that is both
   valid (in our sense) and live.
