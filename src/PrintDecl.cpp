@@ -350,7 +350,8 @@ public:
         if (decl->getDestructor()) {
             cprint.printGlobalName(decl->getDestructor(), print);
         } else {
-            assert(false && "destructor is required!");
+            logging::debug() << "destructor is required on union\n";
+            logging::die();
         }
 
         print.output() << fmt::line << layout.getSize().getQuantity()
@@ -452,7 +453,8 @@ public:
         if (decl->getDestructor()) {
             cprint.printGlobalName(decl->getDestructor(), print);
         } else {
-            assert(false && "destructor is required!");
+            logging::debug() << "destructor is required on struct\n";
+            logging::die();
         }
 
         // trivially destructable
