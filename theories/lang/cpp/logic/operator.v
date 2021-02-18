@@ -91,7 +91,7 @@ Section with_Σ.
   Qed.
 
   Let eval_ptr_eq_cmp_op (bo : BinOp) (f : ptr -> ptr -> bool) ty p1 p2 : mpred :=
-    eval_binop bo
+    eval_binop_impure bo
       (Tpointer ty) (Tpointer ty) Tbool
       (Vptr p1) (Vptr p2) (Vbool (f p1 p2)) ∗ True.
 
@@ -115,7 +115,7 @@ Section with_Σ.
       (* we could ask [live_ptr p1] or [live_ptr p2], but those are
       equivalent, so we make the statement obviously symmetric. *)
       live_alloc_id aid ⊢
-      eval_binop bo
+      eval_binop_impure bo
         (Tpointer ty) (Tpointer ty) Tbool
         (Vptr p1) (Vptr p2) (Vbool res) ∗ True.
 
@@ -142,7 +142,7 @@ Section with_Σ.
       is_Some (size_of resolve t) ->
       (p2 = p1 .., o_sub resolve ty (f o))%ptr ->
       valid_ptr p1 ∧ valid_ptr p2 ⊢
-      eval_binop bo
+      eval_binop_impure bo
                 (Tpointer t) (Tint w s) (Tpointer t)
                 (Vptr p1)    (Vint o)  (Vptr p2).
 
@@ -151,7 +151,7 @@ Section with_Σ.
       is_Some (size_of resolve t) ->
       (p2 = p1 .., o_sub resolve ty (f o))%ptr ->
       valid_ptr p1 ∧ valid_ptr p2 ⊢
-      eval_binop bo
+      eval_binop_impure bo
                 (Tint w s) (Tpointer t) (Tpointer t)
                 (Vint o)   (Vptr p1)    (Vptr p2).
 
@@ -199,7 +199,7 @@ Section with_Σ.
       (* Side condition to prevent overflow; needed per https://eel.is/c++draft/expr.add#note-1 *)
       has_type (Vint (o1 - o2)) (Tint w Signed) ->
       valid_ptr p1 ∧ valid_ptr p2 ⊢
-      eval_binop Bsub
+      eval_binop_impure Bsub
                 (Tpointer t) (Tpointer t) (Tint w Signed)
                 (Vptr p1)    (Vptr p2)    (Vint (o1 - o2)).
 
