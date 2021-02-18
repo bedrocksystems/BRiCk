@@ -589,65 +589,6 @@ Section with_cpp.
     Qed.
   End wpi.
 
-  (** destructors *)
-  Parameter wpd
-    : forall {resolve:genv} (M : coPset) (ti : thread_info) (ρ : region)
-        (cls : globname) (this : ptr)
-        (init : InitPath * obj_name)
-        (Q : epred), mpred.
-
-  Axiom wpd_shift : forall σ M ti ρ cls this e Q,
-      (|={M}=> wpd (resolve:=σ) M ti ρ cls this e (|={M}=> Q))
-    ⊢ wpd (resolve:=σ) M ti ρ cls this e Q.
-
-  Axiom wpd_frame :
-    forall σ1 σ2 M ti ρ cls this e k1 k2,
-      genv_leq σ1 σ2 ->
-      k1 -* k2 |-- @wpd σ1 M ti ρ cls this e k1 -* @wpd σ2 M ti ρ cls this e k2.
-
-  Global Instance Proper_wpd :
-    Proper (genv_leq ==> eq ==> eq ==> eq ==> eq ==> eq ==> eq ==> lentails ==> lentails)
-           (@wpd).
-  Proof. repeat red; intros; subst.
-         iIntros "X"; iRevert "X"; iApply wpd_frame; eauto.
-         iApply H6.
-  Qed.
-
-  Section wpd.
-    Context {σ : genv} (M : coPset) (ti : thread_info) (ρ : region)
-      (cls : globname) (this : ptr) (init : InitPath * obj_name).
-    Local Notation WP := (wpd (resolve:=σ) M ti ρ cls this init) (only parsing).
-    Implicit Types P : mpred.
-    Implicit Types k : mpred.
-
-    Lemma wpd_wand k1 k2 : WP k1 |-- (k1 -* k2) -* WP k2.
-    Proof. iIntros "Hwp HK". by iApply (wpd_frame with "HK Hwp"). Qed.
-    Lemma fupd_wpd k : (|={M}=> WP k) |-- WP k.
-    Proof.
-      rewrite -{2}wpd_shift. apply fupd_elim. rewrite -fupd_intro.
-      iIntros "Hwp". iApply (wpd_wand with "Hwp"). auto.
-    Qed.
-    Lemma wpd_fupd k : WP (|={M}=> k) |-- WP k.
-    Proof. iIntros "Hwp". by iApply (wpd_shift with "[$Hwp]"). Qed.
-
-    (* proof mode *)
-    Global Instance elim_modal_fupd_wpd p P k :
-      ElimModal True p false (|={M}=> P) P (WP k) (WP k).
-    Proof.
-      rewrite /ElimModal. rewrite bi.intuitionistically_if_elim/=.
-      by rewrite fupd_frame_r bi.wand_elim_r fupd_wpd.
-    Qed.
-    Global Instance elim_modal_bupd_wpd p P k :
-      ElimModal True p false (|==> P) P (WP k) (WP k).
-    Proof.
-      rewrite /ElimModal (bupd_fupd M). exact: elim_modal_fupd_wpd.
-    Qed.
-    Global Instance add_modal_fupd_wpd P k : AddModal (|={M}=> P) P (WP k).
-    Proof.
-      rewrite/AddModal. by rewrite fupd_frame_r bi.wand_elim_r fupd_wpd.
-    Qed.
-  End wpd.
-
   (** Statements *)
 
   Lemma Kfree_Kfree : forall k P Q, Kfree P (Kfree Q k) -|- Kfree (P ** Q) k.
