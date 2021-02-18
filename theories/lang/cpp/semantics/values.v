@@ -377,6 +377,9 @@ Module Type PTRS_MIXIN (Import P : PTRS) (Import PD : PTRS_DERIVED P).
     _offset_ptr p (o_sub _ ty 0) = p.
   Proof. by rewrite o_sub_0 // offset_ptr_id. Qed.
 
+  #[deprecated(note="Use offset_ptr_sub_0", since="2021-02-18")]
+  Notation _offset_ptr_sub_0 := offset_ptr_sub_0 (only parsing).
+
   Lemma o_sub_sub p ty i j σ :
     (p .., o_sub _ ty i .., o_sub _ ty j = (p .., o_sub _ ty (i + j)))%ptr.
   Proof. by rewrite -offset_ptr_dot o_dot_sub. Qed.
