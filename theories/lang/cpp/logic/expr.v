@@ -684,9 +684,9 @@ Module Type Expr.
 
     Let materialize_into_temp ty e Q :=
       let raw_type := erase_qualifiers ty in
-      Forall addr : ptr, addr |-> tblockR raw_type -*
+      Forall addr : ptr, addr |-> tblockR raw_type 1 -*
         wp_init ty addr e (fun free =>
-           Q (Vptr addr) (free ** destruct_val raw_type addr None (addr |-> tblockR raw_type))).
+           Q (Vptr addr) (free ** destruct_val raw_type addr None (addr |-> tblockR raw_type 1))).
     (* XXX This use of [Vptr] represents an aggregate.
        XXX The destruction of the value isn't quite correct because we explicitly
            generate the destructors.
@@ -890,7 +890,7 @@ Module Type Expr.
                     if bool_decide (storage_ptr = nullptr) then
                       Q res free
                     else
-                      (storage_ptr |-> (blockR sz ** alignedR al) ** (* [blockR sz -|- tblockR aty] *)
+                      (storage_ptr |-> (blockR sz 1 ** alignedR al) ** (* [blockR sz -|- tblockR aty] *)
                        (* todo: ^ This misses an condition that [storage_ptr]
                         is suitably aligned, accounting for
                         __STDCPP_DEFAULT_NEW_ALIGNMENT__ (issue #149) *)
@@ -914,7 +914,7 @@ Module Type Expr.
     Axiom end_provides_storage : forall storage_ptr obj_ptr aty sz,
        size_of aty = Some sz ->
        provides_storage storage_ptr obj_ptr aty ** obj_ptr |-> anyR aty 1
-         ={⊤}=∗ (storage_ptr |-> blockR sz).
+         ={⊤}=∗ (storage_ptr |-> blockR sz 1).
 
     (* delete
 
@@ -958,10 +958,10 @@ Module Type Expr.
      *)
     Axiom wp_xval_temp : forall e ty Q,
         (let raw_type := erase_qualifiers ty in
-         Forall a : ptr, a |-> tblockR raw_type -*
+         Forall a : ptr, a |-> tblockR raw_type 1 -*
                   let '(e,dt) := destructor_for e in
                   wp_init ty a e
-                          (fun free => Q a (destruct_val ty a dt (a |-> tblockR raw_type ** free))))
+                          (fun free => Q a (destruct_val ty a dt (a |-> tblockR raw_type 1 ** free))))
         |-- wp_xval (Ematerialize_temp e ty) Q.
 
     (** temporary materialization only occurs when the resulting value is used.
@@ -976,10 +976,10 @@ Module Type Expr.
         is_aggregate (type_of e) = true ->
         (let ty := type_of e in
          let raw_type := erase_qualifiers ty in
-         Forall a : ptr, a |-> tblockR raw_type -*
+         Forall a : ptr, a |-> tblockR raw_type 1 -*
                    let '(e,dt) := destructor_for e in
                    wp_init ty a e (fun free =>
-                                     Q (Vptr a) (destruct_val ty a dt (a |-> tblockR raw_type ** free))))
+                                     Q (Vptr a) (destruct_val ty a dt (a |-> tblockR raw_type 1 ** free))))
         |-- wp_prval e Q.
 
 
@@ -1002,9 +1002,9 @@ Module Type Expr.
     Axiom wp_prval_materialize : forall ty e dtor Q,
       (Forall a : ptr,
       let raw_type := erase_qualifiers ty in
-      a |-> tblockR raw_type -*
+      a |-> tblockR raw_type 1 -*
           wp_init ty a e (fun free =>
-                            Q (Vptr a) (destruct_val ty a (Some dtor) (a |-> tblockR raw_type ** free))))
+                            Q (Vptr a) (destruct_val ty a (Some dtor) (a |-> tblockR raw_type 1 ** free))))
       |-- wp_prval (Ebind_temp e dtor ty) Q.
 
     (** Pseudo destructors arise from calling the destructor on
@@ -1023,7 +1023,7 @@ Module Type Expr.
            \post this |-> tblockR ty
      *)
     Axiom wp_pseudo_destructor : forall e ty Q,
-        wp_prval e (fun v free => _at (_eqv v) (anyR ty 1) ** (_at (_eqv v) (tblockR ty) -* Q Vundef free))
+        wp_lval e (fun v free => v |-> anyR ty 1 ** (v |-> tblockR ty 1 -* Q Vundef free))
         |-- wp_prval (Epseudo_destructor ty e) Q.
 
     (* `Eimplicit_init` nodes reflect implicit /value initializations/ which are inserted

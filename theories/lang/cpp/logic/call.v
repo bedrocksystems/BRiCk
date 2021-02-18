@@ -33,13 +33,13 @@ Section with_resolve.
                                    Qarg v free -* Q (Vptr v :: vs) (free ** frees))
       | Prvalue =>
         if is_aggregate ty then
-          Forall a : ptr, a |-> tblockR (σ:=σ) ty -*
+          Forall a : ptr, a |-> tblockR (σ:=σ) ty 1 -*
           let (e,dt) := destructor_for e in
           Exists Qarg,
           wp_init ty a e Qarg **
             wp_args es (fun vs frees =>
                           Forall free,
-                          Qarg free -* Q (Vptr a :: vs) (destruct_val (σ:=σ) ti ty a dt (a |-> tblockR (σ:=σ) ty ** free) ** frees))
+                          Qarg free -* Q (Vptr a :: vs) (destruct_val (σ:=σ) ti ty a dt (a |-> tblockR (σ:=σ) ty 1 ** free) ** frees))
         else
           Exists Qarg,
           wp_prval e Qarg **

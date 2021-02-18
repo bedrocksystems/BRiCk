@@ -113,9 +113,9 @@ Module Type Stmt.
         end
 
       | Tnamed cls =>
-        Forall a : ptr, a |-> tblockR (σ:=resolve) ty -*
+        Forall a : ptr, a |-> tblockR (σ:=resolve) ty 1 -*
                   let destroy P :=
-                      destruct_val ty a dtor (a |-> tblockR ty ** P)
+                      destruct_val ty a dtor (a |-> tblockR ty 1 ** P)
                   in
                   let continue :=
                       k (Rbind x a ρ) (Kat_exit destroy Q)
@@ -126,9 +126,9 @@ Module Type Stmt.
                     wp_init ρ ty a (not_mine init) (fun free => free ** continue)
                   end
       | Tarray ty' N =>
-        Forall a : ptr, a |-> tblockR (σ:=resolve) ty -*
+        Forall a : ptr, a |-> tblockR (σ:=resolve) ty 1 -*
                   let destroy P :=
-                      destruct_val ty a dtor (a |-> tblockR (σ:=resolve) ty ** P)
+                      destruct_val ty a dtor (a |-> tblockR (σ:=resolve) ty 1 ** P)
                   in
                   let continue :=
                       k (Rbind x a ρ) (Kat_exit destroy Q)

@@ -14,6 +14,7 @@ From bedrock.lang.cpp Require Import ast semantics spec.
 From bedrock.lang.cpp.logic Require Import
      pred path_pred heap_pred
      wp builtins.
+Require Import bedrock.lang.cpp.logic.destroy.
 Require Import bedrock.lang.cpp.heap_notations.
 
 #[local] Set Universe Polymorphism.
@@ -51,7 +52,7 @@ Section with_cpp.
     let this_type := Qmut (Tnamed class) in
     let map_pre this '(args, P) :=
         (Vptr this :: args,
-         this |-> tblockR (Tnamed class) ** P) in
+         this |-> tblockR (Tnamed class) 1 ** P) in
     SFunction (cc:=cc) (Qmut Tvoid) (Qconst (Tpointer this_type) :: targs)
               {| wpp_with := TeleS (fun this : ptr => (PQ this).(wpp_with))
                ; wpp_pre this :=
@@ -69,7 +70,7 @@ Section with_cpp.
     let map_post (this : ptr) '{| we_ex := pwiths ; we_post := Q|} :=
         {| we_ex := pwiths
          ; we_post := tele_map (fun '(result, Q) =>
-                                  (result, this |-> tblockR (Tnamed class) ** Q)) Q |}
+                                  (result, this |-> tblockR (Tnamed class) 1 ** Q)) Q |}
     in
     (** ^ NOTE the size of an object might be different in the presence of virtual base
         classes.
@@ -115,6 +116,7 @@ Section with_cpp.
       | _              =>
         Forall a : ptr, a |-> primR (erase_qualifiers ty) 1 v -*
         bind_vars xs vs (Rbind_check x a r) (fun r free => Q r (a |-> anyR (erase_qualifiers ty) 1 ** free))
+        (* TODO the use of [anyR] above is a bit strange. *)
       end
     | _ , _ => False
     end%I.
@@ -246,7 +248,7 @@ Section with_cpp.
           match is' with
           | nil =>
             (* there is a *unique* initializer for this field *)
-            this ., offset_for _ cls i.(init_path) |-> tblockR i.(init_type) -*
+            this ., offset_for _ cls i.(init_path) |-> tblockR i.(init_type) 1 -*
             wpi (resolve:=resolve) ⊤ ti ρ cls this i (fun f => f ** wpi_members ti ρ cls this members inits Q)
           | _ =>
             (* there are multiple initializers for this field *)
@@ -275,7 +277,7 @@ Section with_cpp.
         False
       | i :: nil =>
         (* there is an initializer for this class *)
-        this ., offset_for _ cls i.(init_path) |-> tblockR i.(init_type) -*
+        this ., offset_for _ cls i.(init_path) |-> tblockR i.(init_type) 1 -*
         wpi (resolve:=resolve) ⊤ ti ρ cls this i (fun f => f ** wpi_bases ti ρ cls this bases inits Q)
       | _ :: _ :: _ =>
         (* there are multiple initializers for this, so we fail *)
@@ -291,7 +293,7 @@ Section with_cpp.
       | _ :: nil =>
         if bool_decide (drop_qualifiers ty = Tnamed cls) then
           (* this is a delegating constructor, simply delegate *)
-          (this |-> tblockR ty -* wp_init ⊤ ti ρ (Tnamed cls) this e (fun free => free ** Q))
+          (this |-> tblockR ty 1 -* wp_init ⊤ ti ρ (Tnamed cls) this e (fun free => free ** Q))
         else
           (* the type names do not match, this should never happen *)
           False
@@ -336,7 +338,7 @@ Section with_cpp.
       match args with
       | Vptr thisp :: rest_vals =>
         let ty := Tnamed ctor.(c_class) in
-        thisp |-> tblockR ty **
+        thisp |-> tblockR ty 1 **
         (* ^ this requires that you give up the *entire* block of memory that the object
            will use.
          *)
@@ -371,25 +373,6 @@ Section with_cpp.
          _base cls base |-> all_identities (Some base) base) -* pureR Q)
     | _ => False
     end.
-
-  (*
-  (** TODO i should still make a pass through destruction *)
-  Fixpoint wpd_bases (ti : thread_info) (ρ : region) (cls : globname) (this : ptr)
-           (dests : list (InitPath * globname))
-           (Q : mpred) : mpred :=
-    match dests with
-    | nil => Q
-    | d :: is' =>
-      match d.1 with
-      | InitField _
-      | InitIndirect _ _
-      | InitThis => False
-      | InitBase b => wpd (resolve:=resolve) ⊤ ti ρ cls this d
-                (this ., offset_for _ cls d.1 |-> tblockR (Tnamed b) ** wpd_bases ti ρ cls this is' Q)
-      end
-    end.
-*)
-  Require Import bedrock.lang.cpp.logic.destroy.
 
   Fixpoint wpd_bases
            (ti : thread_info) (cls : globname) (this : ptr)
@@ -427,7 +410,7 @@ Section with_cpp.
             wp (resolve:=resolve) ⊤ ti ρ body
                (void_return (wpd_members ti dtor.(d_class) thisp s.(s_fields)
                                (thisp |-> revert_identity dtor.(d_class) (wpd_bases ti dtor.(d_class) thisp (List.map fst s.(s_bases))
-                                                                     (|> (thisp |-> tblockR (Tnamed dtor.(d_class)) -* Q Vvoid)))))))
+                                                                     (|> (thisp |-> tblockR (Tnamed dtor.(d_class)) 1 -* Q Vvoid)))))))
         | _ => False
         end
       | Some (Gunion u) =>
@@ -435,7 +418,7 @@ Section with_cpp.
         | Vptr thisp :: nil =>
           let ρ := Remp (Some thisp) Tvoid in
             wp (resolve:=resolve) ⊤ ti ρ body
-               (void_return (|> thisp |-> tblockR (Tnamed dtor.(d_class)) -* Q Vvoid)))
+               (void_return (|> thisp |-> tblockR (Tnamed dtor.(d_class)) 1 -* Q Vvoid)))
         | _ => False
         end
       | _ => False

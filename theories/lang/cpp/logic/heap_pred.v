@@ -462,20 +462,20 @@ Section with_cpp.
   Qed.
 
   (** [blockR sz] represents a contiguous chunk of [sz] bytes *)
-  Definition blockR {σ} (sz : _) : Rep :=
+  Definition blockR {σ} (sz : _) (q : Qp) : Rep :=
     _offsetR (o_sub σ T_uint8 (Z.of_N sz)) validR **
     (* ^ Encodes valid_ptr (this .[ T_uint8 ! sz]). This is
     necessary to get [l |-> blockR n -|- l |-> blockR n ** l .[ T_uint8 ! m] |-> blockR 0]. *)
     [∗list] i ∈ seq 0 (N.to_nat sz),
-      _offsetR (o_sub σ T_uint8 (Z.of_nat i)) (anyR (resolve:=σ) T_uint8 1).
+      _offsetR (o_sub σ T_uint8 (Z.of_nat i)) (anyR (resolve:=σ) T_uint8 q).
 
   (* [tblockR ty] is a [blockR] that is the size of [ty] and properly aligned.
    * it is a convenient short-hand since it happens frequently, but there is nothing
    * special about it.
    *)
-  Definition tblockR {σ} (ty : type) : Rep :=
+  Definition tblockR {σ} (ty : type) (q : Qp) : Rep :=
     match size_of σ ty , align_of ty with
-    | Some sz , Some al => blockR (σ:=σ) sz ** alignedR al
+    | Some sz , Some al => blockR (σ:=σ) sz q ** alignedR al
     | _ , _  => False
     end.
 
