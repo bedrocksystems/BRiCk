@@ -592,6 +592,9 @@ Section with_cpp.
   Lemma strict_valid_ptr_nullptr : |-- strict_valid_ptr nullptr.
   Proof. exact: _valid_ptr_nullptr. Qed.
 
+  Lemma _valid_valid p vt : _valid_ptr vt p |-- valid_ptr p.
+  Proof. case: vt => [|//]. exact: strict_valid_valid. Qed.
+
   Lemma valid_ptr_sub (i j k : Z) p ty vt :
     (i <= j < k)%Z ->
     _valid_ptr vt (p .., o_sub σ ty i) |--
