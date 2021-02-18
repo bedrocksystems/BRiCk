@@ -16,7 +16,6 @@ From bedrock.lang.cpp.logic Require Export
      expr
      stmt
      initializers
-     destructors
      func
      layout
      translation_unit
