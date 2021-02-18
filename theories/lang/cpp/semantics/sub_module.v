@@ -317,7 +317,16 @@ Proof.
   destruct g2 => //= /require_eq_success. naive_solver.
 Qed.
 
-(* Missing: an analogue for enums, because it doesn't hold. *)
+(* For enums, [names1] and [names2] need not be related, as specified by [GlobDecl_le].
+TODO: https://eel.is/c++draft/basic.def.odr#13 restricts this to anonymous enums. *)
+Lemma sub_module_preserves_genum m1 m2 gn ty names1 :
+  sub_module m1 m2 ->
+  m1.(globals) !! gn = Some (Genum ty names1) ->
+  exists names2, m2.(globals) !! gn = Some (Genum ty names2).
+Proof.
+  move=> Hsub /(sub_module_preserves_globdecl Hsub) {Hsub m1 m2} [g2 [->]].
+  destruct g2 => //= /require_eq_success. naive_solver.
+Qed.
 
 Lemma sub_module_preserves_gconstant m1 m2 gn t e :
   sub_module m1 m2 ->
