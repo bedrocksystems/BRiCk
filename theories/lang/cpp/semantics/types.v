@@ -7,8 +7,6 @@ From bedrock.lang.prelude Require Import base.
 From bedrock.lang.cpp.syntax Require Import names expr stmt types.
 From bedrock.lang.cpp.semantics Require Import genv.
 
-Definition glob_def (g : genv) (gn : globname) : option GlobDecl :=
-  g.(genv_tu).(globals) !! gn.
 
 Definition GlobDecl_size_of (g : GlobDecl) : option N :=
   match g with
@@ -93,6 +91,14 @@ Proof. reflexivity. Qed.
 Lemma size_of_Qconst : forall {c} t ,
     @size_of c t = @size_of c (Qconst t).
 Proof. reflexivity. Qed.
+
+(* XXX: since size_of simplifies eagerly, this might be hard to apply, so you
+might need to inline the proof. *)
+Lemma size_of_genv_compat tu σ gn st
+  (Hσ : tu ⊧ σ)
+  (Hl : tu.(globals) !! gn = Some (Gstruct st)) :
+  size_of σ (Tnamed gn) = GlobDecl_size_of (Gstruct st).
+Proof. by rewrite /= (glob_def_genv_compat st Hl). Qed.
 
 Fixpoint find_field {T} (f : ident) (fs : list (ident * T)) : option T :=
   match fs with
