@@ -42,23 +42,38 @@ Section with_Σ.
    (https://eel.is/c++draft/expr.eq#3), and is inspired by Cerberus's pointer
    provenance semantics for C, and Krebbers's thesis. We forbid cases where
    comparisons have undefined or unspecified behavior.
+   As a deviation, we assume compilers do not perform lifetime-end pointer
+   zapping (see http://www.open-std.org/jtc1/sc22/wg14/www/docs/n2443.pdf).
 
    Crucially, all those semantics _allow_ (but do not _require_) compilers to
-   assume that pointers to different objects compare different, even when
-   they have the same address. Hence, comparing a past-the-end pointer to an
-   object with a pointer to a different object gives unspecified results [1];
-   we choose not to support this case.
+   assume that pointers with distinct provenances compare different, even when
+   they have the same address.
 
-   - We forbid comparing invalid pointer values; hence, we require
-     [p1] and [p2] to satisfy both [_valid_ptr] and [live_ptr].
-   - Past-the-end pointers cannot be compared with pointers to the "beginning" of a different object.
-     Hence, they can be compared:
+   - Hence, comparing a past-the-end pointer to an object with a pointer to a
+     different object gives unspecified results [1]; we choose not to support
+     this case.
+   - We make assumptions about pointer validity.
+     A dangling pointer and a non-null live pointer have different
+     provenances but can have the same address.
+     As we don't support pointer zapping, we assume dangling pointers can be reliably
+     distinguished from [nullptr]. Hence, we require pointers under
+     comparison [p1] and [p2] to satisfy [live_ptr_if_needed] but not
+     [live_ptr].
+     We also require [p1] and [p2] to satisfy [_valid_ptr], even for comparisons against [nullptr].
+     Hence, null pointers can be compared with pointers satisfying [valid_ptr],
+     and otherwise we require that neither [p1] nor [p2] is an "invalid
+     pointer values" in the C++ sense (see [_valid_ptr] for discussion).
+
+   - Via [ptr_unambiguous_cmp], we forbid comparing a one-past-the-end
+     pointer to an object with a pointer to the "beginning" of a different
+     object.
+     Hence, past-the-end pointers can be compared:
      - like Krebbers, with pointers to the same array; more in general, with
        any pointers with the same allocation ID ([same_alloc]).
-     - unlike Krebbers, with [nullptr],
-       and any pointer [p] not to the beginning of a complete object, per [non_beginning_ptr].
-   - In particular, non-past-the-end pointers (including past-the-end
-     pointers) can be compared with arbitrary other non-past-the-end pointers.
+     - unlike Krebbers, with [nullptr], and any pointer [p] not to the
+       beginning of a complete object, per [non_beginning_ptr].
+     In particular, non-past-the-end pointers can be compared with arbitrary
+     other non-past-the-end pointers.
 
    [1] From https://eel.is/c++draft/expr.eq#3.1:
    > If one pointer represents the address of a complete object, and another
