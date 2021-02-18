@@ -65,16 +65,23 @@ Section with_Σ.
      pointer represents the address one past the last element of a different
      complete object, the result of the comparison is unspecified.
    *)
-  Let comparable vt1 p2 : mpred :=
+  Local Definition ptr_unambiguous_cmp vt1 p2 : mpred :=
     [| vt1 = Strict |] ∨ [| p2 = nullptr |] ∨ non_beginning_ptr p2.
+  Lemma ptr_unambiguous_cmp_1 p : ⊢ ptr_unambiguous_cmp Strict p.
+  Proof. rewrite /ptr_unambiguous_cmp; eauto. Qed.
+  Lemma ptr_unambiguous_cmp_2 vt : ⊢ ptr_unambiguous_cmp vt nullptr.
+  Proof. rewrite /ptr_unambiguous_cmp; eauto. Qed.
 
-  Definition live_if_needed p1 p2 : mpred :=
+  Local Definition live_ptr_if_needed p1 p2 : mpred :=
     live_ptr p1 ∨ [| p2 = nullptr |].
+  Lemma live_ptr_if_needed_1 p : ⊢ live_ptr_if_needed p nullptr.
+  Proof. rewrite /live_ptr_if_needed; eauto. Qed.
+  Lemma live_ptr_if_needed_2 p : ⊢ live_ptr_if_needed nullptr p.
+  Proof. rewrite /live_ptr_if_needed -nullptr_live; eauto. Qed.
 
   Definition ptr_comparable p1 p2 vt1 vt2 : mpred :=
-    Unfold comparable (
-      ([| same_alloc p1 p2 |] ∨ (comparable vt1 p2 ∧ comparable vt2 p1)) ∧
-      (_valid_ptr vt1 p1 ∧ _valid_ptr vt2 p2) ∧ (live_if_needed p1 p2 ∧ live_if_needed p2 p1))%I.
+    ([| same_alloc p1 p2 |] ∨ (ptr_unambiguous_cmp vt1 p2 ∧ ptr_unambiguous_cmp vt2 p1)) ∧
+    (_valid_ptr vt1 p1 ∧ _valid_ptr vt2 p2) ∧ (live_ptr_if_needed p1 p2 ∧ live_ptr_if_needed p2 p1).
 
   Lemma ptr_comparable_symm p1 p2 vt1 vt2 :
     ptr_comparable p1 p2 vt1 vt2 ⊢ ptr_comparable p2 p1 vt2 vt1.
@@ -83,13 +90,13 @@ Section with_Σ.
     rewrite (comm same_alloc); f_equiv; [|f_equiv]; by rewrite (comm bi_and).
   Qed.
 
-  Lemma nullptr_comparable p :
-    valid_ptr p ⊢
-    ptr_comparable nullptr p Strict Relaxed.
+  Lemma nullptr_comparable p : valid_ptr p ⊢ ptr_comparable nullptr p Strict Relaxed.
   Proof.
     iIntros "$".
-    rewrite /live_if_needed -nullptr_live -strict_valid_ptr_nullptr.
-    iSplit; last by eauto. iRight; iSplit; eauto.
+    rewrite -strict_valid_ptr_nullptr.
+    rewrite -live_ptr_if_needed_1 -live_ptr_if_needed_2.
+    rewrite -ptr_unambiguous_cmp_1 -ptr_unambiguous_cmp_2.
+    rewrite !(right_id emp%I). by iRight.
   Qed.
 
   Let eval_ptr_eq_cmp_op (bo : BinOp) (f : ptr -> ptr -> bool) ty p1 p2 : mpred :=
