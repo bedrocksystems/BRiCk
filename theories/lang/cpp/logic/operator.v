@@ -68,26 +68,28 @@ Section with_Σ.
   Let comparable vt1 p2 : mpred :=
     [| vt1 = Strict |] ∨ [| p2 = nullptr |] ∨ non_beginning_ptr p2.
 
+  Definition live_if_needed p1 p2 : mpred :=
+    live_ptr p1 ∨ [| p2 = nullptr |].
+
   Definition ptr_comparable p1 p2 vt1 vt2 : mpred :=
     Unfold comparable (
       ([| same_alloc p1 p2 |] ∨ (comparable vt1 p2 ∧ comparable vt2 p1)) ∧
-      (_valid_ptr vt1 p1 ∧ _valid_ptr vt2 p2) ∧ (live_ptr p1 ∧ live_ptr p2))%I.
+      (_valid_ptr vt1 p1 ∧ _valid_ptr vt2 p2) ∧ (live_if_needed p1 p2 ∧ live_if_needed p2 p1))%I.
 
   Lemma ptr_comparable_symm p1 p2 vt1 vt2 :
     ptr_comparable p1 p2 vt1 vt2 ⊢ ptr_comparable p2 p1 vt2 vt1.
   Proof.
     rewrite /ptr_comparable.
-    rewrite (comm same_alloc); f_equiv. by rewrite (comm bi_and).
-    by rewrite (comm bi_and (live_ptr p2)) (comm bi_and (_valid_ptr _ p2)).
+    rewrite (comm same_alloc); f_equiv; [|f_equiv]; by rewrite (comm bi_and).
   Qed.
 
   Lemma nullptr_comparable p :
-    valid_ptr p ∧ live_ptr p ⊢
+    valid_ptr p ⊢
     ptr_comparable nullptr p Strict Relaxed.
   Proof.
-    iIntros "[$ $]".
-    rewrite -nullptr_live -strict_valid_ptr_nullptr !(right_id _ bi_and).
-    iRight; iSplit; iLeft; iIntros "!%"; eauto.
+    iIntros "$".
+    rewrite /live_if_needed -nullptr_live -strict_valid_ptr_nullptr.
+    iSplit; last by eauto. iRight; iSplit; eauto.
   Qed.
 
   Let eval_ptr_eq_cmp_op (bo : BinOp) (f : ptr -> ptr -> bool) ty p1 p2 : mpred :=
@@ -205,17 +207,14 @@ Section with_Σ.
 
   Lemma eval_ptr_nullptr_eq ty ap bp vp :
     (ap = nullptr /\ bp = vp \/ ap = vp /\ bp = nullptr) ->
-    valid_ptr vp |--
-    (* Bug in axiom? *)
-    live_ptr vp -*
-    Unfold eval_ptr_eq_cmp_op
-    (eval_ptr_eq_cmp_op Beq (λ _ _, bool_decide (vp = nullptr)) ty ap bp).
+    valid_ptr vp ⊢ Unfold eval_ptr_eq_cmp_op
+      (eval_ptr_eq_cmp_op Beq (λ _ _, bool_decide (vp = nullptr)) ty ap bp).
   Proof.
-    iIntros (Hdisj) "#V L".
+    iIntros (Hdisj) "#V".
     iDestruct (same_address_bool_null with "V") as %<-.
-    destruct Hdisj as [[-> ->]|[-> ->]];
-      [rewrite (comm same_address_bool) -(eval_ptr_eq _ _ _ Strict Relaxed) |
-      rewrite -(eval_ptr_eq _ _ _ Relaxed Strict) -ptr_comparable_symm].
-    all: iApply nullptr_comparable; eauto.
+    iDestruct (nullptr_comparable with "V") as "{V} Cmp".
+    destruct Hdisj as [[-> ->]|[-> ->]].
+    { rewrite (comm same_address_bool vp). iApply (eval_ptr_eq with "Cmp"). }
+    { rewrite (ptr_comparable_symm nullptr). iApply (eval_ptr_eq with "Cmp"). }
   Qed.
 End with_Σ.
