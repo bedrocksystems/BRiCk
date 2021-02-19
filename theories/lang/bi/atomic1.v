@@ -25,9 +25,6 @@ From iris.bi.lib Require Import fixpoint.
 From iris.proofmode Require Import coq_tactics tactics reduction.
 From iris.prelude Require Import options.
 From iris.bi.lib Require Import atomic.
-Require Import bedrock.bi.telescopes.
-Require Export bedrock.bi.lib.laterable.
-
 
 (** Conveniently split a conjunction on both assumption and conclusion. *)
 Local Tactic Notation "iSplitWith" constr(H) :=
@@ -518,119 +515,32 @@ Section lemmas.
 End lemmas.
 
 
-Section atomic.
+(** ProofMode support for atomic updates *)
+Section proof_mode.
   Context `{BiFUpd PROP} {TA TB : tele}.
-  Implicit Types (α : TA → PROP).
-  Implicit Types (β Φ : TA → TB → PROP).
-
-  Global Instance aacc1_proper Eo Ei :
-    Proper (
-      pointwise_relation TA (≡) ==>
-      (≡) ==>
-      pointwise_relation TA (pointwise_relation TB (≡)) ==>
-      pointwise_relation TA (pointwise_relation TB (≡)) ==>
-      (≡)
-    ) (atomic1_acc (PROP:=PROP) Eo Ei).
-  Proof. solve_proper. Qed.
-
-  Global Instance aacc1_mono' Eo Ei :
-    Proper (
-      pointwise_relation TA (≡) ==>
-      (⊢) ==>
-      pointwise_relation TA (pointwise_relation TB (flip (⊢))) ==>
-      pointwise_relation TA (pointwise_relation TB (⊢)) ==>
-      (⊢)
-    ) (atomic1_acc (PROP:=PROP) Eo Ei).
-  Proof.
-    intros α1 α2 Hα P1 P2 HP β1 β2 Hβ Φ1 Φ2 HΦ. rewrite/atomic1_acc.
-    repeat f_equiv; by rewrite ?Hα ?HP.
-  Qed.
-
-  Global Instance aacc1_flip_mono' Eo Ei :
-    Proper (
-      pointwise_relation TA (≡) ==>
-      flip (⊢) ==>
-      pointwise_relation TA (pointwise_relation TB (⊢)) ==>
-      pointwise_relation TA (pointwise_relation TB (flip (⊢))) ==>
-      flip (⊢)
-    ) (atomic1_acc (PROP:=PROP) Eo Ei).
-  Proof. repeat intro. by rewrite -aacc1_mono'. Qed.
-
-  Global Instance aupd1_proper Eo Ei :
-    Proper (
-      pointwise_relation TA (≡) ==>
-      pointwise_relation TA (pointwise_relation TB (≡)) ==>
-      pointwise_relation TA (pointwise_relation TB (≡)) ==>
-      (≡)
-    ) (atomic1_update (PROP:=PROP) Eo Ei).
-  Proof.
-    rewrite atomic1_update_eq /atomic1_update_def /atomic1_update_pre.
-    solve_proper.
-  Qed.
-
-  Global Instance aupd1_mono' Eo Ei :
-    Proper (
-      pointwise_relation TA (≡) ==>
-      pointwise_relation TA (pointwise_relation TB (flip (⊢))) ==>
-      pointwise_relation TA (pointwise_relation TB (⊢)) ==>
-      (⊢)
-    ) (atomic1_update (PROP:=PROP) Eo Ei).
-  Proof.
-    rewrite atomic1_update_eq /atomic1_update_def /atomic1_update_pre.
-    solve_proper.
-  Qed.
-
-  Global Instance aupd1_flip_mono' Eo Ei :
-    Proper (
-      pointwise_relation TA (≡) ==>
-      pointwise_relation TA (pointwise_relation TB (⊢)) ==>
-      pointwise_relation TA (pointwise_relation TB (flip (⊢))) ==>
-      flip (⊢)
-    ) (atomic1_update (PROP:=PROP) Eo Ei).
-  Proof. repeat intro. by rewrite -aupd1_mono'. Qed.
-
-End atomic.
-
-(** The tactic [iAuIntro] applies lemma [aupd_aacc] to change an Iris
-proof mode goal [P := atomic_update Eo Ei α β Φ] into [atomic_acc Eo
-Ei α P β Φ] _provided_ everything in the proof mode's spatial context
-is [Laterable] (e.g., [Timeless], an atomic update, or something under
-the later modality).
-
-Our version of the tactic generalizes the Iris original to avoid its
-[Timeless emp] assumption when the spatial context is non-empty. *)
-
-Section coq_tactic.
-  Import coq_tactics.
-  Context `{BiFUpd PROP} {TA TB : tele}.
-  Implicit Types (α : TA → PROP).
-  Implicit Types (β Φ : TA → TB → PROP).
+  Implicit Types (α : TA → PROP) (β Φ : TA → TB → PROP) (P : PROP).
 
   Lemma tac_aupd1_intro Γp Γs n α β Eo Ei Φ P :
-    TCOr (ListNonEmpty (env_to_list Γs)) (Timeless (PROP:=PROP) emp) →
+    Timeless (PROP:=PROP) emp →
     TCForall Laterable (env_to_list Γs) →
     P = env_to_prop Γs →
     envs_entails (Envs Γp Γs n) (atomic1_acc Eo Ei α P β Φ) →
     envs_entails (Envs Γp Γs n) (atomic1_update Eo Ei α β Φ).
   Proof.
-    intros ?? ->. rewrite envs_entails_eq of_envs_eq' /=.
-    rewrite env_to_prop_sound=>?. exact: aupd1_intro.
+    intros ? HΓs ->. rewrite envs_entails_eq of_envs_eq' /atomic1_acc /=.
+    setoid_rewrite env_to_prop_sound =>HAU.
+    apply aupd1_intro; [apply _..|]. done.
   Qed.
-End coq_tactic.
+End proof_mode.
 
-Lemma test_before `{BiFUpd PROP} {TA TB : tele} Eo Ei α (β Φ : TA → TB → PROP) :
-  atomic1_update Eo Ei α β Φ ⊢ atomic1_update Eo Ei α β Φ.
-Proof. iIntros "AU". Fail iAuIntro. Abort.
+(** Now the coq-level tactics *)
 
 Tactic Notation "iAuIntro1" :=
   iStartProof; eapply tac_aupd1_intro; [
     iSolveTC || fail "iAuIntro1: emp is not timeless"
   | iSolveTC || fail "iAuIntro1: not all spatial assumptions are laterable"
-  | (* P = ...: make the P pretty *) reduction.pm_reflexivity
+  | (* P = ...: make the P pretty *) pm_reflexivity
   | (* the new proof mode goal *) ].
-Lemma test_after `{BiFUpd PROP} {TA TB : tele} Eo Ei α (β Φ : TA → TB → PROP) :
-  atomic1_update Eo Ei α β Φ ⊢ atomic1_update Eo Ei α β Φ.
-Proof. iIntros "AU". iAuIntro1. Abort.
 
 Tactic Notation "iAaccIntro1" "with" constr(sel) :=
   iStartProof; lazymatch goal with
