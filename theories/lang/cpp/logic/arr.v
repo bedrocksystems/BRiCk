@@ -82,7 +82,7 @@ Section validR.
   Lemma _offsetR_sub_sub ty a b R :
     .[ ty ! a ] |-> (.[ ty ! b ] |-> R) ⊣⊢
     .[ ty ! a + b ] |-> R.
-  Proof. by rewrite _offsetR_dot o_dot_o_sub. Qed.
+  Proof. by rewrite _offsetR_dot o_dot_sub. Qed.
 
   Lemma _offsetR_succ_sub ty z R :
     .[ ty ! 1 ] |-> (.[ ty ! z ] |-> R) ⊣⊢
@@ -97,7 +97,7 @@ Section validR.
   Lemma _at_sub_0 p ty R
     (Hsz : is_Some (size_of resolve ty)) :
     p ., (.[ ty ! 0 ]) |-> R -|- p |-> R.
-  Proof. by rewrite _offset_ptr_sub_0. Qed.
+  Proof. by rewrite offset_ptr_sub_0. Qed.
 
   Lemma _at_sub_sub p ty a b R :
     p ., (.[ ty ! a ]) |-> (.[ ty ! b ] |-> R) ⊣⊢

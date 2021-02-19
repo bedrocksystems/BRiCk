@@ -284,15 +284,8 @@ one is [PTRS_IMPL].
     size_of σ ty = Some sz -> (sz > 0)%N ->
     (same_property ptr_vaddr (p .., o_sub _ ty n1) (p .., o_sub _ ty n2) ->
     n1 = n2)%ptr.
-
-  (* TODO: drop for [o_dot_o_sub]. *)
-  Axiom o_sub_sub_nneg : ∀ σ p ty (z1 z2 : Z),
-    (0 <= z1 -> 0 <= z2 ->
-    p .., o_sub σ ty z1 .., o_sub σ ty z2 = p .., o_sub σ ty (z1 + z2))%ptr%Z.
-
-  Axiom o_sub_sub_npos : ∀ σ p ty (z1 z2 : Z),
-    (z1 <= 0 -> z2 <= 0 ->
-    p .., o_sub σ ty z1 .., o_sub σ ty z2 = p .., o_sub σ ty (z1 + z2))%ptr%Z.
+  Axiom o_dot_sub : ∀ {σ : genv} i j ty,
+    o_dot (o_sub _ ty i) (o_sub _ ty j) = o_sub _ ty (i + j).
 End PTRS.
 
 Module Type PTRS_DERIVED (Import L : PTRS).
@@ -379,10 +372,39 @@ Module Type PTRS_MIXIN (Import P : PTRS) (Import PD : PTRS_DERIVED P).
     same_address (p .., o_sub _ ty n1) (p .., o_sub _ ty n2) -> n1 = n2.
   Proof. rewrite same_address_eq. exact: ptr_vaddr_o_sub_eq. Qed.
 
-  Lemma _offset_ptr_sub_0 p ty resolve
+  Lemma offset_ptr_sub_0 p ty resolve
     (Hsz : is_Some (size_of resolve ty)) :
     _offset_ptr p (o_sub _ ty 0) = p.
   Proof. by rewrite o_sub_0 // offset_ptr_id. Qed.
+
+  #[deprecated(note="Use offset_ptr_sub_0", since="2021-02-18")]
+  Notation _offset_ptr_sub_0 := offset_ptr_sub_0 (only parsing).
+
+  Lemma o_sub_sub p ty i j σ :
+    (p .., o_sub _ ty i .., o_sub _ ty j = (p .., o_sub _ ty (i + j)))%ptr.
+  Proof. by rewrite -offset_ptr_dot o_dot_sub. Qed.
+
+  (* TODO: drop for [o_dot_o_sub]. *)
+  Lemma _o_sub_sub_nneg : ∀ σ p ty (z1 z2 : Z),
+    (0 <= z1 -> 0 <= z2 ->
+    p .., o_sub σ ty z1 .., o_sub σ ty z2 = p .., o_sub σ ty (z1 + z2))%ptr.
+  Proof. intros * _ _. exact: o_sub_sub. Qed.
+
+  #[deprecated(since="2021-02-13", note="Use stronger [o_sub_sub] (or [o_dot_sub]).")]
+  Notation o_sub_sub_nneg := _o_sub_sub_nneg.
+  #[deprecated(since="2021-02-13", note="Use [o_dot_sub]")]
+  Notation o_dot_o_sub := o_dot_sub.
+
+  Notation _id := o_id (only parsing).
+  Notation _dot := (o_dot) (only parsing).
+  (** access a field *)
+  Notation _field := (@o_field _) (only parsing).
+  (** subscript an array *)
+  Notation _sub z := (@o_sub _ z) (only parsing).
+  (** [_base derived base] is a cast from derived to base. *)
+  Notation _base := (@o_base _) (only parsing).
+  (** [_derived base derived] is a cast from base to derived *)
+  Notation _derived := (@o_derived _) (only parsing).
 End PTRS_MIXIN.
 
 Module Type VAL_MIXIN (Import L : PTRS) (Import R : RAW_BYTES).
@@ -426,6 +448,11 @@ End PTRS_DEPRECATED.
 Module Type PTR_INTERNAL (Import P : PTRS).
   (* Useful *)
   Parameter eval_offset : genv -> offset -> option Z.
+
+  Axiom eval_o_sub : forall resolve ty (i : Z),
+    eval_offset resolve (o_sub _ ty i) =
+      (* This order enables reducing for known ty. *)
+      (fun n => Z.of_N n * i) <$> size_of resolve ty.
 End PTR_INTERNAL.
 
 (* Collect all the axioms. *)
@@ -439,9 +466,6 @@ Module Export PTRS_FULL_AXIOM : PTRS_FULL_INTF :=
   PTRS_INTF_AXIOM <+ VAL_MIXIN <+ PTRS_MIXIN.
 
 Instance ptr_inhabited : Inhabited ptr := populate nullptr.
-
-(** GMM: Misplaced. Move up among axioms. *)
-Axiom o_dot_o_sub : forall {σ : genv} ty i j, o_dot (o_sub _ ty i) (o_sub _ ty j) = o_sub _ ty (i + j).
 
 (** wrappers for constructing certain values *)
 Definition Vchar (a : Ascii.ascii) : val :=
@@ -632,8 +656,3 @@ Arguments Z.pow_pos _ _ : simpl never.
 (* XXX adapter. *)
 Definition glob_addr (σ : genv) (o : obj_name) : option ptr :=
   (fun _ => global_ptr σ.(genv_tu) o) <$> σ.(genv_tu) !! o.
-
-Axiom eval_o_sub : forall resolve ty (i : Z),
-  eval_offset resolve (o_sub resolve ty i) =
-    (* This order enables reducing for known ty. *)
-    (fun n => Z.of_N n * i) <$> size_of resolve ty.
