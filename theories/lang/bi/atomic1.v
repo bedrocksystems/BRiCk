@@ -1,7 +1,7 @@
 (*
- * Copyright (C) BedRock Systems Inc. 2020
- *
- * SPDX-License-Identifier: LGPL-2.1 WITH BedRock Exception for use over network, see repository root for details.
+ * Copyright (c) 2021 BedRock Systems, Inc.
+ * This software is distributed under the terms of the BedRock Open-Source License.
+ * See the LICENSE-BedRock file in the repository root for details.
  *
  *
  * Some of the following code is derived from code original to the
@@ -13,8 +13,11 @@
  *
  *	SPDX-License-Identifier: BSD-3-Clause
  *
+ * Original Code:
+ * https://gitlab.mpi-sws.org/iris/iris/-/blob/5bb93f57729a8cc7d0ffeaab769cd24728e51a38/iris/bi/lib/atomic.v
+ *
  * Original Iris License:
- * https://gitlab.mpi-sws.org/iris/iris/-/blob/d8ec293d24af02deb535e4cffc31a2de2fdf0344/LICENSE-CODE
+ * https://gitlab.mpi-sws.org/iris/iris/-/blob/5bb93f57729a8cc7d0ffeaab769cd24728e51a38/LICENSE-CODE
  *)
 
 From stdpp Require Import coPset namespaces.
@@ -42,13 +45,44 @@ Section definition.
 
   (** atomic1_acc as the "introduction form" of atomic updates: An accessor
       that can be aborted back to [P]. *)
-  (* This one can make a step (having a later) for the COMMIT case. *)
+  (** Main extension compared to [atomic_acc]:
+    This one can make a step---having a later---for the COMMIT case,i.e.
+      ▷ (∀.. y, β x y ={Ei, Eo}=∗ Φ x y)
+
+    This means that the client of this spec can make a step before applying the
+    closing COMMIT [fupd], and the prover the spec needs to take an actual step
+    when COMMITing.
+    Consider the example of an AU1 (atomic update) that takes a step.
+    - As a client of an AU spec, which has the form `AU1 ⊢ wp`, the client
+      applies the spec and has to prove the `AU1`. In proving those, the client
+      has a later in the goal of the COMMIT [fupd], which allows them to strip
+      later from resources in the context, including resources that were
+      obtained by opening the invariants around the AU.
+      This stripping of laters is done before actually COMMITing.
+    - As the prover of the same AU spec `AU1 ⊢ wp`, the prover assumes the
+      AU1 and proves the `wp`. Then the prover needs to apply the COMMIT [fupd]
+      to finish. But the COMMIT [fupd] is under a later, so the prover needs to
+      have the `wp` takes an actual step to strip that later before COMMITing.
+      This also demonstrates one you cannot prove an AU1 spec for a `wp` that
+      does not take a step.
+
+    Note that we can also add a later to the ABORT case:
+      ▷ (α x ={Ei, Eo}=∗ P)
+
+    But that means the the prover has to show the implementation takes at least
+    a step every time the abort is used. While this is not unreasonable, it
+    restricts the set of implementations that can be proven with this spec. We
+    therefore choose not to support it here. *)
   Definition atomic1_acc Eo Ei α P β Φ : PROP :=
     (|={Eo, Ei}=> ∃.. x, α x ∗
           ((α x ={Ei, Eo}=∗ P) ∧ ▷ (∀.. y, β x y ={Ei, Eo}=∗ Φ x y))
     )%I.
 
-  (* atomic1_acc is more restricted than atomic_acc *)
+  (* atomic1_acc is more restricted than atomic_acc : ACCC ⊢ ACCC1.
+    The direction of implication may look perplexing, but this really gives us
+    what we want: a AU1 spec implies a AU spec, that is
+      (AU1 -∗ wp) ⊢ (AU -∗ wp)
+  *)
   Lemma atomic_acc_atomic1_acc Eo Ei α P β Φ :
     atomic_acc Eo Ei α P β Φ -∗ atomic1_acc Eo Ei α P β Φ.
   Proof.
