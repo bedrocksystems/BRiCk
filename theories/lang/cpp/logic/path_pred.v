@@ -71,17 +71,6 @@ Notation "a &~ b" := (addr_of a b) (at level 30, no associativity).
 #[deprecated(since="2020-12-07",note="use 'valid_ptr' instead")]
 Notation valid_loc := valid_ptr (only parsing).
 
-Notation _id := o_id (only parsing).
-Notation _dot := (o_dot) (only parsing).
-(** access a field *)
-Notation _field := (@o_field _) (only parsing).
-(** subscript an array *)
-Notation _sub z := (@o_sub _ z) (only parsing).
-(** [_base derived base] is a cast from derived to base. *)
-Notation _base := (@o_base _) (only parsing).
-(** [_derived base derived] is a cast from base to derived *)
-Notation _derived := (@o_derived _) (only parsing).
-
 #[deprecated(since="2020-12-08",note="use heap notations")]
 Notation _offsetL o p := (_offset_ptr p o) (only parsing).
 

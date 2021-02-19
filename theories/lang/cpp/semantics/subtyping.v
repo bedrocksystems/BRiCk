@@ -57,9 +57,8 @@ Global Instance class_derives_here tu σ derived st :
   TCEq (tu.(globals) !! derived) (Some (Gstruct st)) ->
   class_derives σ derived derived.
 Proof.
-  intros. eapply Derives_here, genv_compat_lookup_Some_type.
-  - done.
-  - by apply (iffLR (TCEq_eq _ _)).
+  intros. eapply Derives_here, glob_def_genv_compat.
+  by apply (iffLR (TCEq_eq _ _)).
 Defined.
 
 Global Instance class_derives_base tu σ derived base st li result :
@@ -69,9 +68,8 @@ Global Instance class_derives_base tu σ derived base st li result :
   class_derives σ base result ->
   class_derives σ derived result.
 Proof.
-  intros. eapply Derives_base.
-  - eapply genv_compat_lookup_Some_type.
-    done. by apply (iffLR (TCEq_eq _ _)).
+  intros. eapply Derives_base; last done.
+  - eapply glob_def_genv_compat.
+    by apply (iffLR (TCEq_eq _ _)).
   - by apply (iffLR (elem_of_list_In _ _)), (iffLR (TCElemOf_iff _ _)).
-  - done.
 Defined.

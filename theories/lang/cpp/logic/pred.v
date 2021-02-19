@@ -511,9 +511,31 @@ Module Type VALID_PTR_AXIOMS.
     (* Axiom _valid_ptr_nullptr_field_false : forall vt f,
       _valid_ptr vt (nullptr .., o_field σ f) |-- False. *)
 
-    (* These axioms are named after the predicate in the conclusion. *)
-    Axiom strict_valid_ptr_sub : ∀ p ty (i : Z) vt,
-      (0 < i)%Z -> _valid_ptr vt (p .., o_sub σ ty i) |-- strict_valid_ptr p.
+    (** These axioms are named after the predicate in the conclusion. *)
+
+    (**
+    TODO: The intended proof of [strict_valid_ptr_sub] assumes that, if [p']
+    normalizes to [p ., [ ty ! i ]], then [valid_ptr p'] is defined to imply
+    validity of all pointers from [p] to [p'].
+
+    Note that `arrR` exposes stronger reasoning principles, but this might still be useful.
+    *)
+    Axiom strict_valid_ptr_sub : ∀ (i j k : Z) p ty vt1 vt2,
+      (i <= j < k)%Z ->
+      _valid_ptr vt1 (p .., o_sub σ ty i) |--
+      _valid_ptr vt2 (p .., o_sub σ ty k) -* strict_valid_ptr (p .., o_sub σ ty j).
+
+    (** XXX: this axiom is convoluted but
+    TODO: The intended proof of [strict_valid_ptr_field_sub] (and friends) is that
+    (1) if [p'] normalizes to [p'' ., [ ty ! i ]], then [valid_ptr p'] implies
+    [valid_ptr p''].
+    (2) [p .., o_field σ f .., o_sub σ ty i] will normalize to [p .., o_field
+    σ f .., o_sub σ ty i], without cancellation.
+    *)
+    Axiom strict_valid_ptr_field_sub : ∀ p ty (i : Z) f vt,
+      (0 < i)%Z ->
+      _valid_ptr vt (p .., o_field σ f .., o_sub σ ty i) |-- strict_valid_ptr (p .., o_field σ f).
+
     (* TODO: can we deduce that [p] is strictly valid? *)
     Axiom _valid_ptr_base : ∀ p base derived vt,
       _valid_ptr vt (p .., o_base σ derived base) |-- _valid_ptr vt p.
@@ -533,19 +555,15 @@ Module Type VALID_PTR_AXIOMS.
     (* Axiom strict_valid_ptr_field : ∀ p f,
       strict_valid_ptr (p .., o_field σ f) |-- strict_valid_ptr p. *)
 
-    Axiom o_sub_sub : ∀ p ty n1 n2 vt,
-      _valid_ptr vt (p .., o_sub σ ty n1) |--
-      [! p .., o_sub σ ty n1 .., o_sub σ ty n2 = p .., o_sub σ ty (n1 + n2) !]%ptr.
-
     (* We're ignoring virtual inheritance here, since we have no plans to
     support it for now, but this might hold there too. *)
     Axiom o_base_derived : forall p base derived,
       strict_valid_ptr (p .., o_base σ derived base) |--
-      [! p .., o_base σ derived base .., o_derived σ base derived = p !]%ptr.
+      [| p .., o_base σ derived base .., o_derived σ base derived = p |]%ptr.
 
     Axiom o_derived_base : forall p base derived,
       strict_valid_ptr (p .., o_derived σ base derived) |--
-      [! p .., o_derived σ base derived .., o_base σ derived base = p !]%ptr.
+      [| p .., o_derived σ base derived .., o_base σ derived base = p |]%ptr.
 
     (* Without the validity premise to the cancellation axioms ([o_sub_sub],
       [o_base_derived], [o_derived_base]) we could incorrectly deduce that
@@ -561,39 +579,39 @@ End VALID_PTR_AXIOMS.
 Declare Module Export VALID_PTR : VALID_PTR_AXIOMS.
 
 Section with_cpp.
-  Context `{Σ : cpp_logic}.
+  Context `{Σ : cpp_logic} {σ : genv}.
 
-  (* TODO (SEMANTICS):
-     set p := p ., (.[ty ! -i])
-     ...
-     we end up with `_valid_ptr vt p |-- _valid_ptr vt (p ., (.[ty ! -i]))
-     which isn't true.
+  Lemma same_address_bool_null p tv :
+    _valid_ptr tv p |--
+    [| same_address_bool p nullptr = bool_decide (p = nullptr) |].
+  Proof. rewrite same_address_eq_null; iIntros "!%". apply bool_decide_iff. Qed.
 
-     NOTE: Modify `strict_valid_ptr_sub` and this so that they impose an
-       extra pre-condition on the structure of `p` (namely that it doesn't
-       have negative offsets(?))
+  (* Just wrappers. *)
+  Lemma valid_ptr_nullptr : |-- valid_ptr nullptr.
+  Proof. exact: _valid_ptr_nullptr. Qed.
+  Lemma strict_valid_ptr_nullptr : |-- strict_valid_ptr nullptr.
+  Proof. exact: _valid_ptr_nullptr. Qed.
 
-     Paolo: good catch. Maybe the axiom should be that if [p ., (.[ty ! i])] and [p .,
-     (.[ty ! j])] are both valid, then everything in between is valid.
-     OTOH, `arrayR` exposes stronger reasoning principles, possibly making this
-     unnecessary.
+  Lemma _valid_valid p vt : _valid_ptr vt p |-- valid_ptr p.
+  Proof. case: vt => [|//]. exact: strict_valid_valid. Qed.
 
-     The intended model was that, if [p'] normalizes to [p ., [ ty ! i ]],
-     then [valid_ptr p'] implies validity of all pointers from [p] to [p']. As
-     you point out, that model doesn't actually justify [strict_valid_ptr_sub].
-   *)
-  Lemma valid_ptr_sub {σ : genv} p ty (i : Z) vt :
-    (0 <= i)%Z -> _valid_ptr vt (p .., o_sub σ ty i) |-- _valid_ptr vt p.
+  Lemma valid_ptr_sub (i j k : Z) p ty vt :
+    (i <= j < k)%Z ->
+    _valid_ptr vt (p .., o_sub σ ty i) |--
+    _valid_ptr vt (p .., o_sub σ ty k) -* valid_ptr (p .., o_sub σ ty j).
+  Proof. rewrite -strict_valid_valid. apply strict_valid_ptr_sub. Qed.
+
+  Lemma _valid_ptr_field_sub (i : Z) p ty f vt (Hle : (0 <= i)%Z) :
+    _valid_ptr vt (p .., o_field σ f .., o_sub σ ty i) |-- _valid_ptr vt (p .., o_field σ f).
   Proof.
-    case: i => [|i|i] Hle; iIntros "V".
+    iIntros "V". case: (decide (i = 0)%Z) Hle => [-> _|Hne Hle].
     - iDestruct (valid_o_sub_size with "V") as %?.
-      by rewrite _offset_ptr_sub_0.
-    - rewrite strict_valid_ptr_sub; last by lia.
+      by rewrite offset_ptr_sub_0.
+    - rewrite strict_valid_ptr_field_sub; last by lia.
       case: vt => //. by rewrite strict_valid_valid.
-    - lia.
   Qed.
 
-  (** [p] is valid pointer value in the sense of the standard, or
+  (** [p] is a valid pointer value in the sense of the standard, or
   "standard-valid" (https://eel.is/c++draft/basic.compound#3.1), that is both
   valid (in our sense) and live.
 
@@ -610,11 +628,11 @@ Section with_cpp.
       (@tptsto _ Σ).
   Proof. repeat intro. exact: tptsto_mono. Qed.
 
-  Global Instance tptsto_as_fractional {σ} ty q a v :
+  Global Instance tptsto_as_fractional ty q a v :
     AsFractional (tptsto ty q a v) (λ q, tptsto ty q a v) q.
   Proof. exact: Build_AsFractional. Qed.
 
-  Global Instance tptsto_observe_nonnull {σ} t q p v :
+  Global Instance tptsto_observe_nonnull t q p v :
     Observe [| p <> nullptr |] (tptsto t q p v).
   Proof.
     apply: observe_intro.
@@ -723,7 +741,7 @@ Section with_cpp.
     - by iApply fs_equiv_transitive.
   Qed.
 
-  Lemma pinned_ptr_type_divide_1 va n σ p ty
+  Lemma pinned_ptr_type_divide_1 va n p ty
     (Hal : align_of ty = Some n) :
     type_ptr ty p ⊢ pinned_ptr va p -∗ [| (n | va)%N |].
   Proof.
@@ -731,12 +749,7 @@ Section with_cpp.
     iApply (pinned_ptr_aligned_divide with "P A").
   Qed.
 
-  (* Just wrappers. *)
-  Lemma valid_ptr_nullptr : |-- valid_ptr nullptr.
-  Proof. exact: _valid_ptr_nullptr. Qed.
-  Lemma strict_valid_ptr_nullptr : |-- strict_valid_ptr nullptr.
-  Proof. exact: _valid_ptr_nullptr. Qed.
-
+  (** *** Just wrappers. *)
   (** We can lift validity entailments through [Observe] (using
   [Observe_mono]. These are not instances, to avoid causing slowdowns in
   proof search. *)
@@ -744,21 +757,18 @@ Section with_cpp.
     `(Hobs : !Observe (strict_valid_ptr p) P) : Observe (valid_ptr p) P.
   Proof. by rewrite -strict_valid_valid. Qed.
 
-  Section with_genv.
-    Context (σ : genv).
-    Lemma observe_type_ptr_strict_valid
-      `(Hobs : !Observe (type_ptr ty p) P) : Observe (strict_valid_ptr p) P.
-    Proof. by rewrite -type_ptr_strict_valid. Qed.
+  Lemma observe_type_ptr_strict_valid
+    `(Hobs : !Observe (type_ptr ty p) P) : Observe (strict_valid_ptr p) P.
+  Proof. by rewrite -type_ptr_strict_valid. Qed.
 
-    Lemma observe_type_ptr_valid_plus_one
-      `(Hobs : !Observe (type_ptr ty p) P) : Observe (valid_ptr (p .., o_sub σ ty 1)) P.
-    Proof. by rewrite -type_ptr_valid_plus_one. Qed.
+  Lemma observe_type_ptr_valid_plus_one
+    `(Hobs : !Observe (type_ptr ty p) P) : Observe (valid_ptr (p .., o_sub σ ty 1)) P.
+  Proof. by rewrite -type_ptr_valid_plus_one. Qed.
 
-    Lemma type_ptr_valid ty p : type_ptr ty p |-- valid_ptr p.
-    Proof. by rewrite type_ptr_strict_valid strict_valid_valid. Qed.
+  Lemma type_ptr_valid ty p : type_ptr ty p |-- valid_ptr p.
+  Proof. by rewrite type_ptr_strict_valid strict_valid_valid. Qed.
 
-    #[global] Instance type_ptr_size_observe ty p :
-      Observe [| is_Some (size_of σ ty) |] (type_ptr ty p).
-    Proof. rewrite type_ptr_size. apply _. Qed.
-  End with_genv.
+  #[global] Instance type_ptr_size_observe ty p :
+    Observe [| is_Some (size_of σ ty) |] (type_ptr ty p).
+  Proof. rewrite type_ptr_size. apply _. Qed.
 End with_cpp.

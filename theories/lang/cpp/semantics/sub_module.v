@@ -293,15 +293,58 @@ Section sub_module.
 End sub_module.
 Instance: RewriteRelation sub_module := {}.
 
-Lemma sub_module_lookup_Some_type m1 m2 gn st :
+Lemma sub_module_preserves_globdecl {m1 m2 gn g1} :
+  sub_module m1 m2 ->
+  m1.(globals) !! gn = Some g1 ->
+  ∃ g2, m2.(globals) !! gn = Some g2 ∧ GlobDecl_ler g1 g2.
+Proof. move=>/types_compat + Heq => /(_ _ _ Heq) [g2 [->]]. eauto. Qed.
+
+Lemma sub_module_preserves_gstruct m1 m2 gn st :
   sub_module m1 m2 ->
   m1.(globals) !! gn = Some (Gstruct st) ->
   m2.(globals) !! gn = Some (Gstruct st).
 Proof.
-  intros [Hg%type_table_le_equiv _ _] Heq.
-  specialize (Hg gn). rewrite {}Heq/= in Hg.
-  destruct (_ !! _) as [g|]; last done. destruct g; simplify_eq/=.
-  apply require_eq_success in Hg. destruct Hg. by simplify_eq.
+  move=> Hsub /(sub_module_preserves_globdecl Hsub) {Hsub m1 m2} [g2 [->]].
+  destruct g2 => //= /require_eq_success. naive_solver.
+Qed.
+
+Lemma sub_module_preserves_gunion m1 m2 gn un :
+  sub_module m1 m2 ->
+  m1.(globals) !! gn = Some (Gunion un) ->
+  m2.(globals) !! gn = Some (Gunion un).
+Proof.
+  move=> Hsub /(sub_module_preserves_globdecl Hsub) {Hsub m1 m2} [g2 [->]].
+  destruct g2 => //= /require_eq_success. naive_solver.
+Qed.
+
+(* For enums, [names1] and [names2] need not be related, as specified by [GlobDecl_le].
+TODO: https://eel.is/c++draft/basic.def.odr#13 restricts this to anonymous enums. *)
+Lemma sub_module_preserves_genum m1 m2 gn ty names1 :
+  sub_module m1 m2 ->
+  m1.(globals) !! gn = Some (Genum ty names1) ->
+  exists names2, m2.(globals) !! gn = Some (Genum ty names2).
+Proof.
+  move=> Hsub /(sub_module_preserves_globdecl Hsub) {Hsub m1 m2} [g2 [->]].
+  destruct g2 => //= /require_eq_success. naive_solver.
+Qed.
+
+Lemma sub_module_preserves_gconstant m1 m2 gn t e :
+  sub_module m1 m2 ->
+  m1.(globals) !! gn = Some (Gconstant t (Some e)) ->
+  m2.(globals) !! gn = Some (Gconstant t (Some e)).
+Proof.
+  move=> Hsub /(sub_module_preserves_globdecl Hsub) {Hsub m1 m2} [g2 [->]].
+  rewrite /GlobDecl_ler /GlobDecl_le. repeat (case_match => //).
+  move=> /require_eq_success [-> /require_eq_success]. naive_solver.
+Qed.
+
+Lemma sub_module_preserves_gtypedef m1 m2 gn t :
+  sub_module m1 m2 ->
+  m1.(globals) !! gn = Some (Gtypedef t) ->
+  m2.(globals) !! gn = Some (Gtypedef t).
+Proof.
+  move=> Hsub /(sub_module_preserves_globdecl Hsub) [g2 [->]].
+  destruct g2 => //= /require_eq_success. naive_solver.
 Qed.
 
 Instance byte_order_proper : Proper (sub_module ==> eq) byte_order.
