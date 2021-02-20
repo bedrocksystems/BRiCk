@@ -625,8 +625,8 @@ Section with_cpp.
   *)
   Definition _valid_live_ptr vt (p : ptr) : mpred :=
     _valid_ptr vt p ∗ live_ptr p.
-  Definition valid_live_ptr p : mpred := _valid_ptr Strict p.
-  Definition strict_valid_live_ptr p : mpred := _valid_ptr Relaxed p.
+  Definition valid_live_ptr p : mpred := _valid_live_ptr Relaxed p.
+  Definition strict_valid_live_ptr p : mpred := _valid_live_ptr Strict p.
 
   Global Instance tptsto_flip_mono :
     Proper (flip genv_leq ==> eq ==> eq ==> eq ==> eq ==> flip (⊢))
