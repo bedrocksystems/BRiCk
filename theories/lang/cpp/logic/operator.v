@@ -128,9 +128,10 @@ Section with_Σ.
     (* These premises let you assume that that [p1] and [p2] have an address. *)
     [| is_Some (ptr_vaddr p1) /\ is_Some (ptr_vaddr p2) |] -∗
     [| same_address_bool p1 p2 = res |] ∗
-    ([| same_alloc p1 p2 |] ∨ (ptr_unambiguous_cmp vt1 p2 ∧ ptr_unambiguous_cmp vt2 p1)) ∗
-    (_valid_ptr vt1 p1 ∧ _valid_ptr vt2 p2) ∗
-    (live_ptr_if_needed p1 p2 ∧ live_ptr_if_needed p2 p1).
+    ([| same_alloc p1 p2 |] ∨
+      ((ptr_unambiguous_cmp vt1 p2 ∗ ptr_unambiguous_cmp vt2 p1) ∗
+      live_ptr_if_needed p1 p2 ∧ live_ptr_if_needed p2 p1)) ∗
+    (_valid_ptr vt1 p1 ∧ _valid_ptr vt2 p2).
 
   Lemma ptr_comparable_symm p1 p2 vt1 vt2 res :
     ptr_comparable p1 p2 vt1 vt2 res ⊢ ptr_comparable p2 p1 vt2 vt1 res.
@@ -157,10 +158,10 @@ Section with_Σ.
   Qed.
 
   Lemma self_ptr_comparable p :
-    valid_live_ptr p ⊢ ptr_comparable p p Relaxed Relaxed true.
+    valid_ptr p ⊢ ptr_comparable p p Relaxed Relaxed true.
   Proof.
-    iIntros "[#V L]" ([_ Haddr]). have Hsame := (same_address_bool_partial_reflexive _ Haddr).
-    iDestruct (same_alloc_refl with "V") as "$". iFrame (Hsame) "V L".
+    iIntros "#V" ([_ Haddr]). have Hsame := (same_address_bool_partial_reflexive _ Haddr).
+    iDestruct (same_alloc_refl with "V") as "$". iFrame (Hsame) "V".
   Qed.
 
   #[local] Definition eval_ptr_eq_cmp_op (bo : BinOp) ty p1 p2 res : mpred :=
@@ -183,7 +184,7 @@ Section with_Σ.
   Proof. intros ->%nullptr_ptr_comparable. by rewrite ptr_comparable_symm -eval_ptr_eq. Qed.
 
   Lemma eval_ptr_self_eq ty p :
-    valid_live_ptr p ⊢ Unfold eval_ptr_eq_cmp_op (eval_ptr_eq_cmp_op Beq ty p p true).
+    valid_ptr p ⊢ Unfold eval_ptr_eq_cmp_op (eval_ptr_eq_cmp_op Beq ty p p true).
   Proof. by rewrite -(eval_ptr_eq Relaxed Relaxed) -self_ptr_comparable. Qed.
 
   Axiom eval_ptr_neq : forall ty p1 p2 res,
