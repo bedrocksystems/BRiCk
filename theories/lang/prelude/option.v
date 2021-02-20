@@ -75,8 +75,8 @@ Section same_property.
   Proof. by rewrite /same_property /on some_Forall2_eq_iff. Qed.
 
   Lemma same_property_reflexive_equiv a :
-    (∃ b, obs a = Some b) ↔ same_property obs a a.
-  Proof. rewrite same_property_iff. naive_solver. Qed.
+    is_Some (obs a) ↔ same_property obs a a.
+  Proof. rewrite same_property_iff /is_Some. naive_solver. Qed.
 
   Lemma same_property_partial_reflexive a b :
     obs a = Some b → same_property obs a a.

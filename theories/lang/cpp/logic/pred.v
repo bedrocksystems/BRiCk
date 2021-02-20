@@ -783,4 +783,13 @@ Section with_cpp.
   #[global] Instance type_ptr_size_observe ty p :
     Observe [| is_Some (size_of σ ty) |] (type_ptr ty p).
   Proof. rewrite type_ptr_size. apply _. Qed.
+
+  Lemma same_alloc_refl p : valid_ptr p ⊢ [| same_alloc p p |].
+  Proof.
+    rewrite valid_ptr_alloc_id same_alloc_iff. iIntros "!%". case; naive_solver.
+  Qed.
+
+  Lemma live_has_alloc_id p :
+    live_ptr p ⊢ ∃ aid, [| ptr_alloc_id p = Some aid |] ∗ live_alloc_id aid.
+  Proof. rewrite /live_ptr; iIntros. case: (ptr_alloc_id p) => /= [aid|]; eauto. Qed.
 End with_cpp.
