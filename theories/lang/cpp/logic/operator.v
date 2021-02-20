@@ -36,6 +36,32 @@ Section with_Σ.
     [| eval_binop_pure b lhsT rhsT resT lhs rhs res |] ∨ eval_binop_impure b lhsT rhsT resT lhs rhs res.
 
   (** * Pointer comparison operators *)
+  (** For [Ble, Blt, Bge, Bgt] axioms on pointers. *)
+  Definition ptr_ord_comparable p1 p2 (f : vaddr -> vaddr -> bool) res : mpred :=
+    ∃ aid,
+    [| ptr_alloc_id p1 = Some aid |] ∗
+    [| ptr_alloc_id p2 = Some aid |] ∗
+    [| forall va1 va2, ptr_vaddr p1 = Some va1 -> ptr_vaddr p2 = Some va2 -> f va1 va2 = res |] ∗
+    valid_ptr p1 ∗ valid_ptr p2 ∗
+    (* we could ask [live_ptr p1] or [live_ptr p2], but those are
+    equivalent, so we make the statement obviously symmetric. *)
+    live_alloc_id aid.
+    (* TODO: we should drop [live_alloc_id aid] this, since we forbid pointer
+    zapping and we require a shared allocation id. We do so for subtraction... *)
+
+  (* Two pointers into the same array are [ptr_ord_comparable]. *)
+  Lemma ptr_ord_comparable_based_2 o1 o2 base p1 p2 f res :
+    p1 = base .., o1 ->
+    p2 = base .., o2 ->
+    (forall va1 va2, ptr_vaddr p1 = Some va1 -> ptr_vaddr p2 = Some va2 -> f va1 va2 = res) ->
+    live_ptr base ⊢ valid_ptr p1 -∗ valid_ptr p2 -∗ ptr_ord_comparable p1 p2 f res.
+  Proof.
+    rewrite live_has_alloc_id; intros -> -> Hres; iDestruct 1 as (aid Haid) "L".
+    iIntros "#V1 #V2"; iExists aid; iFrame (Hres) "L V1 V2" => {Hres}.
+    rewrite !valid_ptr_alloc_id; iDestruct "V1" as %V1; iDestruct "V2" as %V2.
+    by do 2 rewrite ptr_alloc_id_offset //.
+  Qed.
+
 
   (** Skeleton for [Beq] and [Bneq] axioms on pointers.
 
@@ -166,15 +192,8 @@ Section with_Σ.
 
   (** Skeleton for [Ble, Blt, Bge, Bgt] axioms on pointers. *)
   #[local] Definition eval_ptr_ord_cmp_op (bo : BinOp) (f : vaddr -> vaddr -> bool) : Prop :=
-    forall ty p1 p2 aid res,
-      ptr_alloc_id p1 = Some aid ->
-      ptr_alloc_id p2 = Some aid ->
-      (is_Some (ptr_vaddr p1) -> is_Some (ptr_vaddr p2) -> liftM2 f (ptr_vaddr p1) (ptr_vaddr p2) = Some res) ->
-
-      valid_ptr p1 ∧ valid_ptr p2 ∧
-      (* we could ask [live_ptr p1] or [live_ptr p2], but those are
-      equivalent, so we make the statement obviously symmetric. *)
-      live_alloc_id aid ⊢
+    forall ty p1 p2 res,
+      ptr_ord_comparable p1 p2 f res ⊢
       eval_binop_impure bo
         (Tpointer ty) (Tpointer ty) Tbool
         (Vptr p1) (Vptr p2) (Vbool res) ∗ True.
