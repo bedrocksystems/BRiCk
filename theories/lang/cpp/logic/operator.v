@@ -73,54 +73,35 @@ Section with_Σ.
    As a deviation, we assume compilers do not perform lifetime-end pointer
    zapping (see http://www.open-std.org/jtc1/sc22/wg14/www/docs/n2443.pdf).
 
-   Crucially, all those semantics _allow_ (but do not _require_) compilers to
-   assume that pointers with distinct provenances compare different, even when
-   they have the same address.
+   (1) We always require both pointers to be valid.
+   (2) Crucially, in all these semantics comparing pointers with distinct
+       provenances (allocation ID) but the same address has non-deterministic
+       results, so we forbid it. Hence, we must prevent ambiguous results.
+       (a) Comparing two pointers with the same allocation ID is never
+           ambiguous.
+       (b) We assume non-null pointers can be reliably distinguished from
+           [nullptr], because we don't support pointer zapping (unlike
+           Krebbers and the standard).
+       (c) Otherwise, we require that both pointers are jointly live, and
+           prevent remaining potential confusion via [ptr_unambiguous_cmp].
 
-   - Hence, comparing a past-the-end pointer to an object with a pointer to a
-     different object gives unspecified results [1]; we choose not to support
-     this case.
-   - We make assumptions about pointer validity.
-     A dangling pointer and a non-null live pointer have different
-     provenances but can have the same address.
-     As we don't support pointer zapping, we assume dangling pointers can be reliably
-     distinguished from [nullptr]. Hence, we require pointers under
-     comparison [p1] and [p2] to satisfy [live_ptr_if_needed] but not
-     [live_ptr].
-     We also require [p1] and [p2] to satisfy [_valid_ptr], even for comparisons against [nullptr].
-     Hence, null pointers can be compared with pointers satisfying [valid_ptr],
-     and otherwise we require that neither [p1] nor [p2] is an "invalid
-     pointer values" in the C++ sense (see [_valid_ptr] for discussion).
-
+   - Joint liveness is required in clause (c) because a dangling pointer and
+     a non-null live pointer have different provenances but can have the same
+     address, because the allocator could have reused the address of the
+     dangling pointer.
    - Via [ptr_unambiguous_cmp], we forbid comparing a one-past-the-end
      pointer to an object with a pointer to the "beginning" of a different
-     object.
-     Hence, past-the-end pointers can be compared:
-     - like Krebbers, with pointers to the same array; more in general, with
-       any pointers with the same allocation ID ([same_alloc]).
-     - unlike Krebbers, with [nullptr], and any pointer [p] not to the
-       beginning of a complete object, per [non_beginning_ptr].
-     In particular, non-past-the-end pointers can be compared with arbitrary
-     other non-past-the-end pointers.
+     object, because that gives unspecified results [1], so we choose not to
+     support this case. We use [non_beginning_ptr] to ensure a pointer is not
+     to the beginning of a complete object.
 
    [1] From https://eel.is/c++draft/expr.eq#3.1:
    > If one pointer represents the address of a complete object, and another
      pointer represents the address one past the last element of a different
      complete object, the result of the comparison is unspecified.
    *)
-  #[local] Definition ptr_unambiguous_cmp vt1 p2 : mpred := (* affine *)
-    [| p2 = nullptr |] ∨ [| vt1 = Strict |] ∨ non_beginning_ptr p2.
-  Lemma ptr_unambiguous_cmp_nullptr vt : ⊢ ptr_unambiguous_cmp vt nullptr.
-  Proof. rewrite /ptr_unambiguous_cmp; iLeft; eauto. Qed.
-  Lemma ptr_unambiguous_cmp_other_strict p : ⊢ ptr_unambiguous_cmp Strict p.
-  Proof. rewrite /ptr_unambiguous_cmp; eauto. Qed.
-
-  #[local] Definition live_ptr_if_needed p1 p2 : mpred := (* ownership *)
-    live_ptr p1 ∨ [| p2 = nullptr |].
-  Lemma live_ptr_if_needed_1 p : ⊢ live_ptr_if_needed p nullptr.
-  Proof. rewrite /live_ptr_if_needed; eauto. Qed.
-  Lemma live_ptr_if_needed_2 p : ⊢ live_ptr_if_needed nullptr p.
-  Proof. rewrite /live_ptr_if_needed -nullptr_live; eauto. Qed.
+  #[local] Definition ptr_unambiguous_cmp vt1 p2 : mpred :=
+    [| vt1 = Strict |] ∨ non_beginning_ptr p2.
 
   (** Can these pointers be validly compared? *)
   (* Written to ease showing [ptr_comparable_symm]. *)
@@ -128,20 +109,20 @@ Section with_Σ.
     (* These premises let you assume that that [p1] and [p2] have an address. *)
     [| is_Some (ptr_vaddr p1) /\ is_Some (ptr_vaddr p2) |] -∗
     [| same_address_bool p1 p2 = res |] ∗
-    ([| same_alloc p1 p2 |] ∨
-      ((ptr_unambiguous_cmp vt1 p2 ∗ ptr_unambiguous_cmp vt2 p1) ∗
-      live_ptr_if_needed p1 p2 ∧ live_ptr_if_needed p2 p1)) ∗
-    (_valid_ptr vt1 p1 ∧ _valid_ptr vt2 p2).
+    (_valid_ptr vt1 p1 ∗ _valid_ptr vt2 p2) ∗
+    ([| same_alloc p1 p2 |] ∨ ([| p1 = nullptr |] ∨ [| p2 = nullptr |]) ∨
+      ((live_ptr p1 ∧ live_ptr p2) ∗
+        ptr_unambiguous_cmp vt1 p2 ∗ ptr_unambiguous_cmp vt2 p1)).
 
   Lemma ptr_comparable_symm p1 p2 vt1 vt2 res :
     ptr_comparable p1 p2 vt1 vt2 res ⊢ ptr_comparable p2 p1 vt2 vt1 res.
   Proof.
     (* To ease rearranging conjuncts or changing connectives, we repeat the
     body (which is easy to update), not the nesting structure. *)
-    rewrite {2}/ptr_comparable.
-    rewrite !(comm and (is_Some (ptr_vaddr p2)), comm same_address_bool p2, comm same_alloc p2,
-      comm _ (ptr_unambiguous_cmp vt2 _), comm _ (_valid_ptr vt2 _), comm _ (live_ptr_if_needed p2 _)).
-    rewrite /ptr_comparable. repeat f_equiv.
+    rewrite /ptr_comparable.
+    rewrite !(comm and (is_Some (ptr_vaddr p2)), comm same_address_bool p2, comm _ (_valid_ptr vt2 _),
+      comm same_alloc p2, comm _ [| p2 = _ |]%I, comm _ (live_ptr p2), comm _ (ptr_unambiguous_cmp vt2 _)).
+    repeat f_equiv.
   Qed.
 
   Lemma nullptr_ptr_comparable {p res} :
@@ -149,12 +130,9 @@ Section with_Σ.
     valid_ptr p ⊢ ptr_comparable p nullptr Relaxed Strict res.
   Proof.
     iIntros "%HresI V" ([Haddr _]).
-    iDestruct (same_address_bool_null with "V") as %->. iFrame "V".
-    move: Haddr => {}/HresI Hres. iFrame (Hres).
-    rewrite -strict_valid_ptr_nullptr.
-    rewrite -live_ptr_if_needed_1 -live_ptr_if_needed_2.
-    rewrite -ptr_unambiguous_cmp_nullptr -ptr_unambiguous_cmp_other_strict.
-    rewrite !(right_id emp%I). by iRight.
+    iDestruct (same_address_bool_null with "V") as %->.
+    iFrame ((HresI Haddr) (eq_refl nullptr)) "V".
+    iApply strict_valid_ptr_nullptr.
   Qed.
 
   Lemma self_ptr_comparable p :
