@@ -105,41 +105,45 @@ Section with_Σ.
 
   (** Can these pointers be validly compared? *)
   (* Written to ease showing [ptr_comparable_symm]. *)
-  Definition ptr_comparable p1 p2 vt1 vt2 res : mpred :=
+  Definition ptr_comparable p1 p2 res : mpred :=
     (* These premises let you assume that that [p1] and [p2] have an address. *)
     [| is_Some (ptr_vaddr p1) /\ is_Some (ptr_vaddr p2) |] -∗
-    [| same_address_bool p1 p2 = res |] ∗
-    (_valid_ptr vt1 p1 ∗ _valid_ptr vt2 p2) ∗
-    ([| same_alloc p1 p2 |] ∨ ([| p1 = nullptr |] ∨ [| p2 = nullptr |]) ∨
-      ((live_ptr p1 ∧ live_ptr p2) ∗
-        ptr_unambiguous_cmp vt1 p2 ∗ ptr_unambiguous_cmp vt2 p1)).
+    ∃ vt1 vt2,
+      [| same_address_bool p1 p2 = res |] ∗
+      (_valid_ptr vt1 p1 ∗ _valid_ptr vt2 p2) ∗
+      ([| same_alloc p1 p2 |] ∨
+        ([| p1 = nullptr |] ∨ [| p2 = nullptr |]) ∨
+        ((live_ptr p1 ∧ live_ptr p2) ∗
+          ptr_unambiguous_cmp vt1 p2 ∗ ptr_unambiguous_cmp vt2 p1)).
 
-  Lemma ptr_comparable_symm p1 p2 vt1 vt2 res :
-    ptr_comparable p1 p2 vt1 vt2 res ⊢ ptr_comparable p2 p1 vt2 vt1 res.
+  Lemma ptr_comparable_symm p1 p2 res :
+    ptr_comparable p1 p2 res ⊢ ptr_comparable p2 p1 res.
   Proof.
+    rewrite /ptr_comparable (comm and (is_Some (ptr_vaddr p2))); f_equiv.
+    iDestruct 1 as (vt1 vt2) "H"; iExists vt2, vt1.
     (* To ease rearranging conjuncts or changing connectives, we repeat the
     body (which is easy to update), not the nesting structure. *)
-    rewrite /ptr_comparable.
     rewrite !(comm and (is_Some (ptr_vaddr p2)), comm same_address_bool p2, comm _ (_valid_ptr vt2 _),
       comm same_alloc p2, comm _ [| p2 = _ |]%I, comm _ (live_ptr p2), comm _ (ptr_unambiguous_cmp vt2 _)).
-    repeat f_equiv.
+    iStopProof. repeat f_equiv.
   Qed.
 
   Lemma nullptr_ptr_comparable {p res} :
     (is_Some (ptr_vaddr p) -> bool_decide (p = nullptr) = res) ->
-    valid_ptr p ⊢ ptr_comparable p nullptr Relaxed Strict res.
+    valid_ptr p ⊢ ptr_comparable p nullptr res.
   Proof.
-    iIntros "%HresI V" ([Haddr _]).
+    iIntros "%HresI V" ([Haddr _]); iExists Relaxed, Strict.
     iDestruct (same_address_bool_null with "V") as %->.
     iFrame ((HresI Haddr) (eq_refl nullptr)) "V".
     iApply strict_valid_ptr_nullptr.
   Qed.
 
   Lemma self_ptr_comparable p :
-    valid_ptr p ⊢ ptr_comparable p p Relaxed Relaxed true.
+    valid_ptr p ⊢ ptr_comparable p p true.
   Proof.
-    iIntros "#V" ([_ Haddr]). have Hsame := (same_address_bool_partial_reflexive _ Haddr).
-    iDestruct (same_alloc_refl with "V") as "$". iFrame (Hsame) "V".
+    iIntros "#V" ([_ Haddr]); iExists Relaxed, Relaxed.
+    iDestruct (same_alloc_refl with "V") as "$".
+    iFrame ((same_address_bool_partial_reflexive _ Haddr)) "V".
   Qed.
 
   #[local] Definition eval_ptr_eq_cmp_op (bo : BinOp) ty p1 p2 res : mpred :=
@@ -147,8 +151,8 @@ Section with_Σ.
       (Tpointer ty) (Tpointer ty) Tbool
       (Vptr p1) (Vptr p2) (Vbool res) ∗ True.
 
-  Axiom eval_ptr_eq : forall vt1 vt2 ty p1 p2 res,
-      ptr_comparable p1 p2 vt1 vt2 res
+  Axiom eval_ptr_eq : forall ty p1 p2 res,
+      ptr_comparable p1 p2 res
     ⊢ Unfold eval_ptr_eq_cmp_op (eval_ptr_eq_cmp_op Beq ty p1 p2 res).
 
   Lemma eval_ptr_nullptr_eq_l {ty vp res} :
@@ -163,7 +167,7 @@ Section with_Σ.
 
   Lemma eval_ptr_self_eq ty p :
     valid_ptr p ⊢ Unfold eval_ptr_eq_cmp_op (eval_ptr_eq_cmp_op Beq ty p p true).
-  Proof. by rewrite -(eval_ptr_eq Relaxed Relaxed) -self_ptr_comparable. Qed.
+  Proof. by rewrite -eval_ptr_eq -self_ptr_comparable. Qed.
 
   Axiom eval_ptr_neq : forall ty p1 p2 res,
     Unfold eval_ptr_eq_cmp_op
