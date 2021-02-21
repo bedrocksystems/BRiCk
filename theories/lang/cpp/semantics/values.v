@@ -534,13 +534,6 @@ Definition __offset_ptr (o : Z) (v : val) : val :=
 #[deprecated(since="2020-01-09", note="Use structured offsets")]
 Notation offset_ptr := __offset_ptr.
 
-Theorem __offset_ptr_val : forall v o p,
-    Vptr p = v ->
-    Vptr (offset_ptr_ o p) = offset_ptr o v.
-Proof. intros; subst; reflexivity. Qed.
-#[deprecated(since="2020-01-09", note="Use structured offsets")]
-Notation offset_ptr_val := __offset_ptr_val.
-
 Definition is_true (v : val) : option bool :=
   match v with
   | Vint v => Some (negb (Z.eqb v 0))
