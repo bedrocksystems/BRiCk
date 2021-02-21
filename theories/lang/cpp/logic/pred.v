@@ -233,7 +233,10 @@ Module Type CPP_LOGIC (Import CC : CPP_LOGIC_CLASS)
     Parameter identity : forall {σ : genv}
         (this : globname) (most_derived : option globname),
         Qp -> ptr -> mpred.
-    (** cpp2v-core#194: [Fractional], [AsFractional], [Timeless]? *)
+    Axiom identity_fractional : forall σ this mdc p, Fractional (λ q, identity this mdc q p).
+    Axiom identity_timeless : forall σ this mdc q p, Timeless (identity this mdc q p).
+    Global Existing Instances identity_fractional identity_timeless.
+
     (** cpp2v-core#194: The fraction is valid? Agreement? *)
 
     (** this allows you to forget an object identity, necessary for doing
@@ -635,6 +638,10 @@ Section with_cpp.
 
   Global Instance tptsto_as_fractional ty q a v :
     AsFractional (tptsto ty q a v) (λ q, tptsto ty q a v) q.
+  Proof. exact: Build_AsFractional. Qed.
+
+  Global Instance identity_as_fractional this mdc p q :
+    AsFractional (identity this mdc q p) (λ q, identity this mdc q p) q.
   Proof. exact: Build_AsFractional. Qed.
 
   Global Instance tptsto_observe_nonnull t q p v :
