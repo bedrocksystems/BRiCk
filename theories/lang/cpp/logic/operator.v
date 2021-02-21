@@ -4,6 +4,7 @@
  * See the LICENSE-BedRock file in the repository root for details.
  *)
 Require Import iris.proofmode.tactics.
+From iris_string_ident Require Import ltac2_string_ident.
 From bedrock.lang.prelude Require Import base option.
 From bedrock.lang.cpp Require Import ast semantics.values semantics.operator.
 From bedrock.lang.cpp Require Import logic.pred.
@@ -80,60 +81,95 @@ Section with_Σ.
      pointer represents the address one past the last element of a different
      complete object, the result of the comparison is unspecified.
    *)
-  #[local] Definition ptr_unambiguous_cmp vt1 p2 : mpred :=
-    [| vt1 = Strict |] ∨ [| p2 = nullptr |] ∨ non_beginning_ptr p2.
-  Lemma ptr_unambiguous_cmp_1 p : ⊢ ptr_unambiguous_cmp Strict p.
-  Proof. rewrite /ptr_unambiguous_cmp; eauto. Qed.
-  Lemma ptr_unambiguous_cmp_2 vt : ⊢ ptr_unambiguous_cmp vt nullptr.
+  #[local] Definition ptr_unambiguous_cmp vt1 p2 : mpred := (* affine *)
+    [| p2 = nullptr |] ∨ [| vt1 = Strict |] ∨ non_beginning_ptr p2.
+  Lemma ptr_unambiguous_cmp_nullptr vt : ⊢ ptr_unambiguous_cmp vt nullptr.
+  Proof. rewrite /ptr_unambiguous_cmp; iLeft; eauto. Qed.
+  Lemma ptr_unambiguous_cmp_other_strict p : ⊢ ptr_unambiguous_cmp Strict p.
   Proof. rewrite /ptr_unambiguous_cmp; eauto. Qed.
 
-  #[local] Definition live_ptr_if_needed p1 p2 : mpred :=
+  #[local] Definition live_ptr_if_needed p1 p2 : mpred := (* ownership *)
     live_ptr p1 ∨ [| p2 = nullptr |].
   Lemma live_ptr_if_needed_1 p : ⊢ live_ptr_if_needed p nullptr.
   Proof. rewrite /live_ptr_if_needed; eauto. Qed.
   Lemma live_ptr_if_needed_2 p : ⊢ live_ptr_if_needed nullptr p.
   Proof. rewrite /live_ptr_if_needed -nullptr_live; eauto. Qed.
 
-  Definition ptr_comparable p1 p2 vt1 vt2 : mpred :=
-    ([| same_alloc p1 p2 |] ∨ (ptr_unambiguous_cmp vt1 p2 ∧ ptr_unambiguous_cmp vt2 p1)) ∧
-    (_valid_ptr vt1 p1 ∧ _valid_ptr vt2 p2) ∧ (live_ptr_if_needed p1 p2 ∧ live_ptr_if_needed p2 p1).
+  (** Can these pointers be validly compared? *)
+  (* Written to ease showing [ptr_comparable_symm]. *)
+  Definition ptr_comparable p1 p2 vt1 vt2 res : mpred :=
+    (* These premises let you assume that that [p1] and [p2] have an address. *)
+    [| is_Some (ptr_vaddr p1) /\ is_Some (ptr_vaddr p2) |] -∗
+    [| same_address_bool p1 p2 = res |] ∗
+    ([| same_alloc p1 p2 |] ∨ (ptr_unambiguous_cmp vt1 p2 ∧ ptr_unambiguous_cmp vt2 p1)) ∗
+    (_valid_ptr vt1 p1 ∧ _valid_ptr vt2 p2) ∗
+    (live_ptr_if_needed p1 p2 ∧ live_ptr_if_needed p2 p1).
 
-  Lemma ptr_comparable_symm p1 p2 vt1 vt2 :
-    ptr_comparable p1 p2 vt1 vt2 ⊢ ptr_comparable p2 p1 vt2 vt1.
+  Lemma ptr_comparable_symm p1 p2 vt1 vt2 res :
+    ptr_comparable p1 p2 vt1 vt2 res ⊢ ptr_comparable p2 p1 vt2 vt1 res.
   Proof.
-    rewrite /ptr_comparable.
-    rewrite (comm same_alloc); f_equiv; [|f_equiv]; by rewrite (comm bi_and).
+    (* To ease rearranging conjuncts or changing connectives, we repeat the
+    body (which is easy to update), not the nesting structure. *)
+    rewrite {2}/ptr_comparable.
+    rewrite !(comm and (is_Some (ptr_vaddr p2)), comm same_address_bool p2, comm same_alloc p2,
+      comm _ (ptr_unambiguous_cmp vt2 _), comm _ (_valid_ptr vt2 _), comm _ (live_ptr_if_needed p2 _)).
+    rewrite /ptr_comparable. repeat f_equiv.
   Qed.
 
-  Lemma nullptr_comparable p : valid_ptr p ⊢ ptr_comparable nullptr p Strict Relaxed.
+  Lemma nullptr_ptr_comparable {p res} :
+    (is_Some (ptr_vaddr p) -> bool_decide (p = nullptr) = res) ->
+    valid_ptr p ⊢ ptr_comparable p nullptr Relaxed Strict res.
   Proof.
-    iIntros "$".
+    iIntros "%HresI V" ([Haddr _]).
+    iDestruct (same_address_bool_null with "V") as %->. iFrame "V".
+    move: Haddr => {}/HresI Hres. iFrame (Hres).
     rewrite -strict_valid_ptr_nullptr.
     rewrite -live_ptr_if_needed_1 -live_ptr_if_needed_2.
-    rewrite -ptr_unambiguous_cmp_1 -ptr_unambiguous_cmp_2.
+    rewrite -ptr_unambiguous_cmp_nullptr -ptr_unambiguous_cmp_other_strict.
     rewrite !(right_id emp%I). by iRight.
   Qed.
 
-  #[local] Definition eval_ptr_eq_cmp_op (bo : BinOp) (f : ptr -> ptr -> bool) ty p1 p2 : mpred :=
+  Lemma self_ptr_comparable p :
+    valid_live_ptr p ⊢ ptr_comparable p p Relaxed Relaxed true.
+  Proof.
+    iIntros "[#V L]" ([_ Haddr]). have Hsame := (same_address_bool_partial_reflexive _ Haddr).
+    iDestruct (same_alloc_refl with "V") as "$". iFrame (Hsame) "V L".
+  Qed.
+
+  #[local] Definition eval_ptr_eq_cmp_op (bo : BinOp) ty p1 p2 res : mpred :=
     eval_binop_impure bo
       (Tpointer ty) (Tpointer ty) Tbool
-      (Vptr p1) (Vptr p2) (Vbool (f p1 p2)) ∗ True.
+      (Vptr p1) (Vptr p2) (Vbool res) ∗ True.
 
-  Axiom eval_ptr_eq : forall ty p1 p2 vt1 vt2,
-      ptr_comparable p1 p2 vt1 vt2
-    ⊢ Unfold eval_ptr_eq_cmp_op (eval_ptr_eq_cmp_op Beq same_address_bool ty p1 p2).
+  Axiom eval_ptr_eq : forall vt1 vt2 ty p1 p2 res,
+      ptr_comparable p1 p2 vt1 vt2 res
+    ⊢ Unfold eval_ptr_eq_cmp_op (eval_ptr_eq_cmp_op Beq ty p1 p2 res).
 
-  Axiom eval_ptr_neq : forall ty p1 p2,
+  Lemma eval_ptr_nullptr_eq_l {ty vp res} :
+    (is_Some (ptr_vaddr vp) -> bool_decide (vp = nullptr) = res) ->
+    valid_ptr vp ⊢ Unfold eval_ptr_eq_cmp_op (eval_ptr_eq_cmp_op Beq ty vp nullptr res).
+  Proof. intros ->%nullptr_ptr_comparable. by rewrite -eval_ptr_eq. Qed.
+
+  Lemma eval_ptr_nullptr_eq_r {ty vp res} :
+    (is_Some (ptr_vaddr vp) -> bool_decide (vp = nullptr) = res) ->
+    valid_ptr vp ⊢ Unfold eval_ptr_eq_cmp_op (eval_ptr_eq_cmp_op Beq ty nullptr vp res).
+  Proof. intros ->%nullptr_ptr_comparable. by rewrite ptr_comparable_symm -eval_ptr_eq. Qed.
+
+  Lemma eval_ptr_self_eq ty p :
+    valid_live_ptr p ⊢ Unfold eval_ptr_eq_cmp_op (eval_ptr_eq_cmp_op Beq ty p p true).
+  Proof. by rewrite -(eval_ptr_eq Relaxed Relaxed) -self_ptr_comparable. Qed.
+
+  Axiom eval_ptr_neq : forall ty p1 p2 res,
     Unfold eval_ptr_eq_cmp_op
-      (eval_ptr_eq_cmp_op Beq same_address_bool     ty p1 p2
-    ⊢ eval_ptr_eq_cmp_op Bneq (λ p1 p2, negb (same_address_bool p1 p2)) ty p1 p2).
+      (eval_ptr_eq_cmp_op Beq ty p1 p2 res
+    ⊢ eval_ptr_eq_cmp_op Bneq ty p1 p2 (negb res)).
 
   (** Skeleton for [Ble, Blt, Bge, Bgt] axioms on pointers. *)
   #[local] Definition eval_ptr_ord_cmp_op (bo : BinOp) (f : vaddr -> vaddr -> bool) : Prop :=
     forall ty p1 p2 aid res,
       ptr_alloc_id p1 = Some aid ->
       ptr_alloc_id p2 = Some aid ->
-      liftM2 f (ptr_vaddr p1) (ptr_vaddr p2) = Some res ->
+      (is_Some (ptr_vaddr p1) -> is_Some (ptr_vaddr p2) -> liftM2 f (ptr_vaddr p1) (ptr_vaddr p2) = Some res) ->
 
       valid_ptr p1 ∧ valid_ptr p2 ∧
       (* we could ask [live_ptr p1] or [live_ptr p2], but those are
@@ -226,17 +262,4 @@ Section with_Σ.
       eval_binop_impure Bsub
                 (Tpointer ty) (Tpointer ty) (Tint w Signed)
                 (Vptr p1)     (Vptr p2)     (Vint (o1 - o2)).
-
-  Lemma eval_ptr_nullptr_eq ty ap bp vp :
-    (ap = nullptr /\ bp = vp \/ ap = vp /\ bp = nullptr) ->
-    valid_ptr vp ⊢ Unfold eval_ptr_eq_cmp_op
-      (eval_ptr_eq_cmp_op Beq (λ _ _, bool_decide (vp = nullptr)) ty ap bp).
-  Proof.
-    iIntros (Hdisj) "#V".
-    iDestruct (same_address_bool_null with "V") as %<-.
-    iDestruct (nullptr_comparable with "V") as "{V} Cmp".
-    destruct Hdisj as [[-> ->]|[-> ->]].
-    { rewrite (comm same_address_bool vp). iApply (eval_ptr_eq with "Cmp"). }
-    { rewrite (ptr_comparable_symm nullptr). iApply (eval_ptr_eq with "Cmp"). }
-  Qed.
 End with_Σ.
