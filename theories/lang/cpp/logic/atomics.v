@@ -6,7 +6,7 @@
 
 Require Import iris.proofmode.tactics. 
 Require Import bedrock.lang.bi.ChargeCompat.
-Require Import bedrock.lang.bi.atomic1.
+Require Export bedrock.lang.bi.atomic1.
 From bedrock.lang.cpp Require Import ast semantics.
 From bedrock.lang.cpp.logic Require Import
      pred path_pred heap_pred wp call.
@@ -18,6 +18,8 @@ Local Open Scope Z_scope.
 Section with_Σ.
   Context `{cpp_logic thread_info} {resolve:genv}.
   Variables (M : coPset) (ti : thread_info) (ρ : region).
+
+  Implicit Type (Q : val → mpred).
 
   Local Notation wp_prval := (wp_prval (resolve:=resolve) M ti ρ).
   Local Notation wp_args := (wp_args (σ:=resolve) M ti ρ).
@@ -78,7 +80,7 @@ Section with_Σ.
     are compiled such that there is at least a full barrier betwen an SC load
     and an SC store.
     See https://www.cl.cam.ac.uk/~pes20/cpp/cpp0xmappings.html *)
-  Axiom wp_prval_atomic: forall ao es ty Q,
+  Axiom wp_prval_atomic: forall ao es ty (Q : val → FreeTemps → epred),
       match get_acc_type ao ty (map (fun x => type_of (snd x)) es) with
       | None => False
       | Some acc_type =>
@@ -99,7 +101,7 @@ Section with_Σ.
    * threads.
    *)
 
-  (* (hai) Semantics of SEQ_CST (SC) accesses:
+  (* note(hai) Semantics of SEQ_CST (SC) accesses:
     - SC load has at least ACQUIRE load semantics.
     - SC store has at least RELEASE store semantics.
     - Additionally, there exists a total order S among all SC accesses
@@ -114,19 +116,33 @@ Section with_Σ.
       [C++draft, atomics#6] : https://eel.is/c++draft/atomics#order-6
       [RC11] : https://plv.mpi-sws.org/scfix/
 
-    Mixing SC and non-SC accesses is not recommended, because then even the
-    usually expected semantics of SC accesses are not guaranteed (see below). *)
+    Mixing SC and non-SC accesses is not recommended, because then the usually
+    expected semantics of SC accesses are not guaranteed (see below). *)
 
-  (* [wrap_shift] is used to allow mask-changing fupd for the physically atomic
+  (** [wrap_shift] is used to allow mask-changing fupd for the physically atomic
     operations. Since our semantics is axiomatized, we don't have a intensional
     definition of physical atomicity. Instead, we can encode it logically as
     the ability to make mask-changing fupd, with a later in between to represent
     at most one step.
+
     Note that the notion of physical atomicity is defined informally, depending
     on the level of abstraction. For example, in hardware, these operations are
     atomic in the transanctional sense, where (something like) a lock can be
     used to mantain that no intermediate state is observable to anyone. At the
-    language level, we can consider that physically atomic. *)
+    language level, we can consider that physically atomic.
+
+    Note also that the later is fixed in [wrap_shift], and we will use it in
+    axioms with the form
+      wrap_shift (fun Q, Pre ** (Post -* Q))
+    which means that there is a later both before Pre and (Post -* Q). That is,
+    when unfolding wrap_shift, we have axioms of the form:
+      (∃ mid, |={M, mid}=> ▷ Pre ** ▷ (Post -* |={mid,M} Q)) |-- wp_atom ...
+    Having the later before Pre is generally NOT always possible. However, in
+    this module, our pre-conditions are always timeless (they are always
+    points-tos) so this is OK. Furthermore, having a later in pre-conditions is
+    also common in Iris, because while it doesn't make any difference
+    soundness-wise, it is convenient for clients to be able strip some laters
+    when providing the pre-conditions. *)
   Definition wrap_shift (F : (val -> mpred) -> mpred) (Q : val -> mpred) : mpred :=
     Exists mid, (|={M,mid}=> |> F (fun result => |={mid,M}=> Q result)).
 
@@ -134,214 +150,192 @@ Section with_Σ.
     (1) the latest SEQ_CST store that is immediately before Ld in S, *or*
     (2) some non-SC store that is racing with (does not happen-before) any
       stores that is before Ld in S.
-    To have the expected SC behavior (1), we need to exclude (2) by simply
-    require the location to be used with SC access only.
+    To have the expected SC behavior (1), we need to exclude (2). A possible
+    restriction is to simply require the location to be used with SC access only.
     In other words, the following rule only holds for SC-only locations. *)
-  (* An SC load on the SC-only location p reads the latest value v of p. *)
+  (* An SC load on the SC-only location p reads the latest value v of p.
+    At the language level, this should be a physically atomic operation. *)
   Axiom wp_atom_load_cst :
     forall memorder (acc_type:type) (p : val) (Q : val -> mpred),
       [| memorder = _SEQ_CST |] **
       wrap_shift (fun Q =>
-                    Exists v q,  _eqv p |-> primR acc_type q v **
-                                (_eqv p |-> primR acc_type q v -* Q v)) Q
+                    Exists v q,  _eqv p |-> primR acc_type q v ** (* pre *)
+                                (_eqv p |-> primR acc_type q v -* Q v)) Q (* post *)
       |-- wp_atom' AO__atomic_load_n acc_type (p :: memorder :: nil) Q.
-
-  Definition atom_load_cst_AU1 (ty : type) (p : val) (Q : val -> mpred) : mpred :=
-    AU1 <<∀ v q, ▷ _eqv p |-> primR ty q v>> @M,∅ (* TODO: masks *)
-        <<       ▷ _eqv p |-> primR ty q v,
-            COMM Q v >>.
-
-  (* TODO : generalize with telescopes. *)
-  Lemma AU1_atom_load_cst :
-    forall memorder acc_type p Q,
-      [| memorder = _SEQ_CST |] **
-      atom_load_cst_AU1 acc_type p Q
-      |-- wp_atom' AO__atomic_load_n acc_type (p :: memorder :: nil) Q.
-  Proof.
-    intros. rewrite -wp_atom_load_cst.
-    iIntros "[$ AU]".
-    iExists ∅. (* TODO: masks *)
-    iMod "AU" as (v q) "[Hp Close]".
-    iIntros "!> !>". iExists v, q. iFrame "Hp".
-    iIntros "Hp". by iMod ("Close" with "Hp") as "$".
-  Qed.
 
   (* An SC store writes the latest value, unless there are racing (no hb)
     non-SC stores. The following rule only holds for SC-only locations. *)
-  (* An SC store on the SC-only location p writes the latest value v of p. *)
+  (* An SC store on the SC-only location p writes the latest value v of p.
+    At the language level, this should be a physically atomic operation. *)
   Axiom wp_atom_store_cst :
     forall memorder acc_type p Q v,
       [| memorder = _SEQ_CST |] **
       [| has_type v acc_type |] **
-      wrap_shift (fun Q => _eqv p |-> anyR acc_type 1 **
-                          (_eqv p |-> primR acc_type 1 v -* Q Vundef)) Q
+      wrap_shift (fun Q => _eqv p |-> anyR acc_type 1 ** (* pre *)
+                          (_eqv p |-> primR acc_type 1 v -* Q Vundef)) Q (* post *)
       |-- wp_atom' AO__atomic_store_n acc_type (p :: memorder :: v :: nil) Q.
 
-  Definition atom_store_cst_AU1 (ty : type) (p : val) (Q : val -> mpred) v : mpred :=
-    AU1 << ▷ _eqv p |-> anyR ty 1 >> @M,∅ (* TODO: masks *)
-        << ▷ _eqv p |-> primR ty 1 v,
-            COMM Q Vundef >>.
-
-  Lemma AU1_atom_store_cst :
-    forall memorder acc_type p Q v,
-      [| memorder = _SEQ_CST |] **
-      [| has_type v acc_type |] **
-      atom_store_cst_AU1 acc_type p Q v
-      |-- wp_atom' AO__atomic_store_n acc_type (p :: memorder :: v :: nil) Q.
-  Proof.
-    intros. rewrite -wp_atom_store_cst.
-    iIntros "[$ [$ AU]]".
-    iExists ∅. (* TODO: masks *)
-    iMod "AU" as "[$ Close]".
-    iIntros "!> !> Hp". by iMod ("Close" with "Hp") as "$".
-  Qed.
-
-  (* The following rule holds for SC-only locations, or no-racing-store
+  (* The following rule holds for SC-only locations, or *no-racing-store*
     locations.
     No-racing-store locations are those whose stores are properly synchronized
     among themselves and with RMWs. For example, RMW-only locations are
     no-racing-store locations. RELEASE-ACQUIRE RMWs on a RMW-only location
     always read and write the latest value. *)
   (* An SC atomic exchange sets the latest value to v and returns the previous
-    latest value w *)
+    latest value w.
+    At the language level, this should be a physically atomic operation. *)
   Axiom wp_atom_exchange_n_cst :
     forall memorder acc_type p Q v,
       [| memorder = _SEQ_CST |] **
       [| has_type v acc_type |] **
       wrap_shift (fun Q => Exists w,
-                          _eqv p |-> primR acc_type 1 w **
-                          (_eqv p |-> primR acc_type 1 v -* Q w)) Q
+                          _eqv p |-> primR acc_type 1 w ** (* pre *)
+                          (_eqv p |-> primR acc_type 1 v -* Q w)) Q (* post *)
       |-- wp_atom' AO__atomic_exchange_n acc_type (p :: memorder :: v :: nil) Q.
-
-  Definition atom_exchange_n_cst_AU1 (ty : type) (p : val) (Q : val -> mpred) v : mpred :=
-    AU1 <<∀ w, ▷ _eqv p |-> primR ty 1 w >> @M,∅ (* TODO: masks *)
-        <<     ▷ _eqv p |-> primR ty 1 v,
-            COMM Q w >>.
-
-  Lemma AU1_atom_exchange_n_cst :
-    forall memorder acc_type p Q v,
-      [| memorder = _SEQ_CST |] **
-      [| has_type v acc_type |] **
-      atom_exchange_n_cst_AU1 acc_type p Q v
-      |-- wp_atom' AO__atomic_exchange_n acc_type (p :: memorder :: v :: nil) Q.
-  Proof.
-    intros. rewrite -wp_atom_exchange_n_cst.
-    iIntros "[$ [$ AU]]".
-    iExists ∅. (* TODO: masks *)
-    iMod "AU" as (w) "[Hp Close]".
-    iIntros "!> !>". iExists w. iFrame "Hp".
-    iIntros "Hp". by iMod ("Close" with "Hp") as "$".
-  Qed.
 
   (* Again, all of the RMWs rules only read and write latest values if the
-    location is SC-only or no-racing-store. *)
-  (* These operations are not physically atomic, because more than one location
-    are involved. See https://eel.is/c++draft/atomics.types.operations#23. *)
+    location is SC-only or no-racing-store.
+    This operation is not physically atomic, because more than one location are
+    involved. See https://eel.is/c++draft/atomics.types.operations#23.
+    However, it is logically atomic w.r.t. the atomic location `p`.
+    The points-to of `p` can be provided logically atomically with the AU1, but
+    the points-to's of `new_p` and `ret` are assumed to be provided locally. *)
   Axiom wp_atom_exchange_cst :
-    forall memorder acc_type p Q v new_p q ret new_v,
+    forall memorder acc_type p Q new_p q ret new_v,
       [| memorder = _SEQ_CST |] **
-      |> ((* latest value of p is v *)
-          _eqv p |-> primR acc_type 1 v **
+      |> ((* private pre-cond *)
           (* new value new_v for p *)
           _eqv new_p |-> primR acc_type q new_v **
           (* placeholder for the original value of p *)
-          _eqv ret |-> anyR acc_type 1 **
-         (* post cond *)
-         ((* latest value updated to new_v *)
-          _eqv p |-> primR acc_type 1 new_v **
-          _eqv new_v |-> primR acc_type q new_v **
-          (* ret stores the previous latest value v *)
-          _eqv ret |-> primR acc_type 1 v -* Q v))
+          _eqv ret |-> anyR acc_type 1) **
+      AU1 <<∀ v, (* public pre-cond: latest value of p is v *)
+              _eqv p |-> primR acc_type 1 v >> @M,∅ (* TODO: masks *)
+          <<  (* public post-cond: latest value updated to new_v *)
+              _eqv p |-> primR acc_type 1 new_v,
+            COMM ((* private post-cond *)
+                  _eqv new_p |-> primR acc_type q new_v **
+                  (* ret stores the previous latest value v *)
+                  _eqv ret |-> primR acc_type 1 v -* Q v) >>
       |-- wp_atom' AO__atomic_exchange acc_type (p :: memorder :: new_p :: ret :: nil) Q.
 
   (* An SC compare and exchange n. This rule combines the postcondition for both
-    success and failure case (using a conjunction). In the failure case, we know
-    that the values are different. *)
+    success and failure case. In the failure case, we know that the values are
+    different.
+    This operation is not physically atomic, because more than one location are
+    involved. However, it is logically atomic w.r.t. the atomic location `p`.
+    The points-to of `p` can be provided logically atomically with the AU1, but
+    the points-to of `expected_p` is assumed to be provided locally. *)
   Axiom wp_atom_compare_exchange_n_cst :
-    forall p expected_p expected_v desired weak succmemord failmemord Q ty v,
+    forall p expected_p expected_v desired weak succmemord failmemord Q ty,
       [| weak = Vbool false |] **
       [| succmemord = _SEQ_CST |] ** [| failmemord = _SEQ_CST |] **
-      |> ((* pre cond *)
-          ((* placeholder for the expected value *)
-           _eqv expected_p |-> primR ty 1 expected_v **
-           (* latest value of p, which is also v, because this is successful *)
-           _eqv p |-> primR ty 1 v) **
-            (* post cond for success case *)
-          ((_eqv expected_p |-> primR ty 1 expected_v **
-            (* afterwards, p has value desired *)
-            _eqv p |-> primR ty 1 desired **
-            [| v = expected_v |] -* Q (Vbool true))) //\\
-            (* post cond for failer case *)
-           ((* afterwards, expected_p stores the value read v, which is the
-              latest one due to failmemord being SC *)
-            _eqv expected_p |-> primR ty 1 v **
-            _eqv p |-> primR ty 1 v **
-            (* as a strong CMPXCHG we know that the values are different *)
-            [| v <> expected_v |] -* Q (Vbool false)))
+      (* private pre-cond : placeholder for the expected value *)
+      |> _eqv expected_p |-> primR ty 1 expected_v **
+      AU1 <<∀ v, (* public pre-cond: latest value of p is v *)
+              _eqv p |-> primR ty 1 v >> @M,∅ (* TODO: masks *)
+          <<∃ (b : bool) v', (* public post-cond: latest value is v' *)
+              _eqv p |-> primR ty 1 v' **
+              (* - success case: p has value desired and expected_p unchanged, or
+                 - failed case: p is unchanged, expected_p stores the value read
+                  v, which is the latest one due to failmemord being SC. Also,
+                  as a strong CMPXCHG we know that the values are different. *)
+              [|    b = true  /\ v' = desired /\ v =  expected_v
+                 \/ b = false /\ v' = v       /\ v <> expected_v |],
+            COMM ((* private post-cond *)
+                  (* Note that this can be stated as
+                      _eqv expected_p |-> primR ty 1 v -* Q (Vbool b)
+                    if comparison is syntactic. If comparison is semantic (e.g.
+                    comparing pointers), then when the CAS succeeds expected_p
+                    is unchanged and still stores expected_v, which is not
+                    syntactically equal to v. *)
+                  ( [| b = true |] **
+                    _eqv expected_p |-> primR ty 1 expected_v -* Q (Vbool b)) //\\
+                  ( [| b = false |] **
+                    _eqv expected_p |-> primR ty 1 v -* Q (Vbool b))) >>
       |-- wp_atom' AO__atomic_compare_exchange_n ty
                   (p::succmemord::expected_p::failmemord::desired::weak::nil) Q.
 
   (* An SC weak compare exchange. This rule combines the postcondition for both
-    success and failure case (using a conjunction). Since a weak CMPXCHG can
-    fail spuriously, we do not know that the values are different. *)
+    success and failure case. Since a weak CMPXCHG can fail spuriously, we do
+    not know that the values are different when it fails.
+    This operation is not physically atomic, because more than one location are
+    involved. However, it is logically atomic w.r.t. the atomic location `p`.
+    The points-to of `p` can be provided logically atomically with the AU1, but
+    the points-to of `expected_p` is assumed to be provided locally. *)
   Axiom wp_atom_compare_exchange_n_cst_weak :
-    forall p expected_p expected_v desired weak succmemord failmemord Q ty v,
+    forall p expected_p expected_v desired weak succmemord failmemord Q ty,
       [| weak = Vbool true |] **
       [| succmemord = _SEQ_CST |] ** [| failmemord = _SEQ_CST |] **
-      |> ( (* pre cond *)
-           (_eqv expected_p |-> primR ty 1 expected_v **
-           _eqv p |-> primR ty 1 v) **
-          (* postcond for success case *)
-          ((_eqv expected_p |-> primR ty 1 expected_v **
-            _eqv p |-> primR ty 1 desired **
-            [| v = expected_v |] -* Q (Vbool true)) //\\
-          (* postcond for failure case *)
-           (_eqv expected_p |-> primR ty 1 v **
-            _eqv p |-> primR ty 1 v -* Q (Vbool false))))
+      (* private pre-cond : placeholder for the expected value *)
+      |> _eqv expected_p |-> primR ty 1 expected_v **
+      AU1 <<∀ v, (* public pre-cond: latest value of p is v *)
+              _eqv p |-> primR ty 1 v >> @M,∅ (* TODO: masks *)
+          <<∃ (b : bool) v', (* public post-cond: latest value is v' *)
+              _eqv p |-> primR ty 1 v' **
+            (* - success case: p has value desired and expected_p unchanged, or
+               - failed case: p is unchanged, expected_p stores the value read
+                v. As a weak CMPXCHG we DO NOT know that the values are different. *)
+              [|    b = true  /\ v' = desired /\ v =  expected_v
+                 \/ b = false /\ v' = v |],
+            COMM ((* private post-cond *)
+                  ( [| b = true |] **
+                    _eqv expected_p |-> primR ty 1 expected_v -* Q (Vbool b)) //\\
+                  ( [| b = false |] **
+                    _eqv expected_p |-> primR ty 1 v -* Q (Vbool b))) >>
       |-- wp_atom' AO__atomic_compare_exchange_n ty
                   (p::succmemord::expected_p::failmemord::desired::weak::nil) Q.
 
   Axiom wp_atom_compare_exchange_cst :
     forall q p expected_p desired_p weak succmemord failmemord Q
       (ty : type)
-      expected desired actual,
+      expected desired,
       [| weak = Vbool false |] **
       [| succmemord = _SEQ_CST |] ** [| failmemord = _SEQ_CST |] **
-      |> ((* pre cond *)
-          (_eqv expected_p |-> primR ty 1 expected **
-            _eqv desired_p |-> primR ty q desired **
-            _eqv p |-> primR ty 1 actual) **
-          (* post cond success case *)
-           (* p is updated with the desired value *)
-          ((_eqv expected_p |-> primR ty 1 expected **
-            _eqv desired_p |-> primR ty q desired **
-            _eqv p |-> primR ty 1 desired **
-            [| actual = expected |] -* Q (Vbool true)) //\\
-          (* post cond failure case *)
-           (* expected_p is updated with the actual value *)
-           (_eqv expected_p |-> primR ty 1 actual **
-            _eqv desired_p |-> primR ty q desired **
-            _eqv p |-> primR ty 1 actual **
-            [| actual <> expected |] -* Q (Vbool false))))
+      |> ((* private pre-cond *)
+          _eqv expected_p |-> primR ty 1 expected **
+          _eqv desired_p |-> primR ty q desired) **
+      AU1 <<∀ v, (* public pre-cond: latest value of p is v *)
+              _eqv p |-> primR ty 1 v >> @M,∅ (* TODO: masks *)
+          <<∃ (b : bool) v', (* public post-cond: latest value is v' *)
+              _eqv p |-> primR ty 1 v' **
+            (* - success case: p has value desired and expected_p unchanged, or
+               - failed case: p is unchanged, expected_p stores the value read v. *)
+              [|    b = true  /\ v' = desired /\ v =  expected
+                 \/ b = false /\ v' = v       /\ v <> expected |],
+            COMM ((* private post-cond *)
+                  ( [| b = true |] **
+                    _eqv expected_p |-> primR ty 1 expected **
+                    _eqv desired_p |-> primR ty q desired -* Q (Vbool b)) //\\
+                  ( [| b = false |] **
+                    _eqv expected_p |-> primR ty 1 v **
+                    _eqv desired_p |-> primR ty q desired -* Q (Vbool b))) >>
       |-- wp_atom' AO__atomic_compare_exchange ty
                   (p::succmemord::expected_p::failmemord::desired_p::weak::nil) Q.
 
   Axiom wp_atom_compare_exchange_cst_weak :
     forall q p expected_p desired_p weak succmemord failmemord Q
       (ty : type)
-      actual expected desired,
+      expected desired,
       [| weak = Vbool true |] **
       [| succmemord = _SEQ_CST |] ** [| failmemord = _SEQ_CST |] **
-      |> ((_eqv expected_p |-> primR ty 1 expected **
-           _eqv desired_p |-> primR ty q desired **
-           _eqv p |-> primR ty 1 actual) **
-          ( _eqv expected_p |-> primR ty 1 expected **
-            _eqv desired_p |-> primR ty q desired **
-            _eqv p |-> primR ty 1 desired **
-            [| actual = expected |] -* Q (Vbool true)) //\\
-           (_eqv expected_p |-> primR ty 1 actual **
-            _eqv desired_p |-> primR ty q desired **
-            _eqv p |-> primR ty 1 actual -* Q (Vbool false)))
+      |> ((* private pre-cond *)
+          _eqv expected_p |-> primR ty 1 expected **
+          _eqv desired_p |-> primR ty q desired) **
+      AU1 <<∀ v, (* public pre-cond: latest value of p is v *)
+              _eqv p |-> primR ty 1 v >> @M,∅ (* TODO: masks *)
+          <<∃ (b : bool) v', (* public post-cond: latest value is v' *)
+              _eqv p |-> primR ty 1 v' **
+            (* - success case: p has value desired and expected_p unchanged, or
+               - failed case: p is unchanged, expected_p stores the value read v. *)
+              [|    b = true  /\ v' = desired /\ v =  expected
+                 \/ b = false /\ v' = v |],
+            COMM ((* private post-cond *)
+                  ( [| b = true |] **
+                    _eqv expected_p |-> primR ty 1 expected **
+                    _eqv desired_p |-> primR ty q desired -* Q (Vbool b)) //\\
+                  ( [| b = false |] **
+                    _eqv expected_p |-> primR ty 1 v **
+                    _eqv desired_p |-> primR ty q desired -* Q (Vbool b))) >>
       |-- wp_atom' AO__atomic_compare_exchange ty
                   (p::succmemord::expected_p::failmemord::desired_p::weak::nil) Q.
 
@@ -419,6 +413,26 @@ Section with_Σ.
   Definition AU1_atom_fetch_nand_cst
     := AU1_atom_fetch_xxx_cst _ _ wp_atom_fetch_nand_cst.
 
+  Definition atom_exchange_n_cst_AU1 (ty : type) (p : val) (Q : val -> mpred) v : mpred :=
+    AU1 <<∀ w, ▷ _eqv p |-> primR ty 1 w >> @M,∅ (* TODO: masks *)
+        <<     ▷ _eqv p |-> primR ty 1 v,
+            COMM Q w >>.
+
+  Lemma AU1_atom_exchange_n_cst :
+    forall memorder acc_type p Q v,
+      [| memorder = _SEQ_CST |] **
+      [| has_type v acc_type |] **
+      atom_exchange_n_cst_AU1 acc_type p Q v
+      |-- wp_atom' AO__atomic_exchange_n acc_type (p :: memorder :: v :: nil) Q.
+  Proof.
+    intros. rewrite -wp_atom_exchange_n_cst.
+    iIntros "[$ [$ AU]]".
+    iExists ∅. (* TODO: masks *)
+    iMod "AU" as (w) "[Hp Close]".
+    iIntros "!> !>". iExists w. iFrame "Hp".
+    iIntros "Hp". by iMod ("Close" with "Hp") as "$".
+  Qed.
+
   (* atomic xxx and fetch rule *)
   Definition wp_xxx_fetch_cst (ao : AtomicOp) (op : Z -> Z -> Z) : Prop :=
     forall p arg memorder Q sz sgn,
@@ -441,6 +455,46 @@ Section with_Σ.
   Axiom wp_atom_xor_fetch_cst  : xxx_fetch AO__atomic_xor_fetch  Z.lxor.
   Axiom wp_atom_or_fetch_cst   : xxx_fetch AO__atomic_or_fetch   Z.lor.
   Axiom wp_atom_nand_fetch_cst : xxx_fetch AO__atomic_nand_fetch nand.
+
+
+  Definition atom_load_cst_AU1 (ty : type) (p : val) (Q : val -> mpred) : mpred :=
+    AU1 <<∀ v q, ▷ _eqv p |-> primR ty q v>> @M,∅ (* TODO: masks *)
+        <<       ▷ _eqv p |-> primR ty q v,
+            COMM Q v >>.
+
+  (* TODO : generalize with telescopes. *)
+  Lemma AU1_atom_load_cst :
+    forall memorder acc_type p Q,
+      [| memorder = _SEQ_CST |] **
+      atom_load_cst_AU1 acc_type p Q
+      |-- wp_atom' AO__atomic_load_n acc_type (p :: memorder :: nil) Q.
+  Proof.
+    intros. rewrite -wp_atom_load_cst.
+    iIntros "[$ AU]".
+    iExists ∅. (* TODO: masks *)
+    iMod "AU" as (v q) "[Hp Close]".
+    iIntros "!> !>". iExists v, q. iFrame "Hp".
+    iIntros "Hp". by iMod ("Close" with "Hp") as "$".
+  Qed.
+
+  Definition atom_store_cst_AU1 (ty : type) (p : val) (Q : val -> mpred) v : mpred :=
+    AU1 << ▷ _eqv p |-> anyR ty 1 >> @M,∅ (* TODO: masks *)
+        << ▷ _eqv p |-> primR ty 1 v,
+            COMM Q Vundef >>.
+
+  Lemma AU1_atom_store_cst :
+    forall memorder acc_type p Q v,
+      [| memorder = _SEQ_CST |] **
+      [| has_type v acc_type |] **
+      atom_store_cst_AU1 acc_type p Q v
+      |-- wp_atom' AO__atomic_store_n acc_type (p :: memorder :: v :: nil) Q.
+  Proof.
+    intros. rewrite -wp_atom_store_cst.
+    iIntros "[$ [$ AU]]".
+    iExists ∅. (* TODO: masks *)
+    iMod "AU" as "[$ Close]".
+    iIntros "!> !> Hp". by iMod ("Close" with "Hp") as "$".
+  Qed.
 
   Definition atom_xxx_fetch_cst_AU1 (op : Z -> Z -> Z)
     ty (p : val) (z : Z) (Q : val -> mpred) sz sgn : mpred :=
