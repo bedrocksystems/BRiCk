@@ -4,9 +4,9 @@
  * See the LICENSE-BedRock file in the repository root for details.
  *)
 
-Require Import iris.bi.lib.atomic.
 Require Import iris.proofmode.tactics. 
 Require Import bedrock.lang.bi.ChargeCompat.
+Require Import bedrock.lang.bi.atomic1.
 From bedrock.lang.cpp Require Import ast semantics.
 From bedrock.lang.cpp.logic Require Import
      pred path_pred heap_pred wp call.
@@ -146,16 +146,16 @@ Section with_Σ.
                                 (_eqv p |-> primR acc_type q v -* Q v)) Q
       |-- wp_atom' AO__atomic_load_n acc_type (p :: memorder :: nil) Q.
 
-  Definition atom_load_cst_AU (ty : type) (p : val) (Q : val -> mpred) : mpred :=
-    AU <<∀ v q, ▷ _eqv p |-> primR ty q v>> @M,∅ (* TODO: masks *)
-       <<       ▷ _eqv p |-> primR ty q v,
-          COMM Q v >>.
+  Definition atom_load_cst_AU1 (ty : type) (p : val) (Q : val -> mpred) : mpred :=
+    AU1 <<∀ v q, ▷ _eqv p |-> primR ty q v>> @M,∅ (* TODO: masks *)
+        <<       ▷ _eqv p |-> primR ty q v,
+            COMM Q v >>.
 
   (* TODO : generalize with telescopes. *)
-  Lemma AU_atom_load_cst :
+  Lemma AU1_atom_load_cst :
     forall memorder acc_type p Q,
       [| memorder = _SEQ_CST |] **
-      atom_load_cst_AU acc_type p Q
+      atom_load_cst_AU1 acc_type p Q
       |-- wp_atom' AO__atomic_load_n acc_type (p :: memorder :: nil) Q.
   Proof.
     intros. rewrite -wp_atom_load_cst.
@@ -177,16 +177,16 @@ Section with_Σ.
                           (_eqv p |-> primR acc_type 1 v -* Q Vundef)) Q
       |-- wp_atom' AO__atomic_store_n acc_type (p :: memorder :: v :: nil) Q.
 
-  Definition atom_store_cst_AU (ty : type) (p : val) (Q : val -> mpred) v : mpred :=
-    AU << ▷ _eqv p |-> anyR ty 1 >> @M,∅ (* TODO: masks *)
-       << ▷ _eqv p |-> primR ty 1 v,
-          COMM Q Vundef >>.
+  Definition atom_store_cst_AU1 (ty : type) (p : val) (Q : val -> mpred) v : mpred :=
+    AU1 << ▷ _eqv p |-> anyR ty 1 >> @M,∅ (* TODO: masks *)
+        << ▷ _eqv p |-> primR ty 1 v,
+            COMM Q Vundef >>.
 
-  Lemma AU_atom_store_cst :
+  Lemma AU1_atom_store_cst :
     forall memorder acc_type p Q v,
       [| memorder = _SEQ_CST |] **
       [| has_type v acc_type |] **
-      atom_store_cst_AU acc_type p Q v
+      atom_store_cst_AU1 acc_type p Q v
       |-- wp_atom' AO__atomic_store_n acc_type (p :: memorder :: v :: nil) Q.
   Proof.
     intros. rewrite -wp_atom_store_cst.
@@ -213,16 +213,16 @@ Section with_Σ.
                           (_eqv p |-> primR acc_type 1 v -* Q w)) Q
       |-- wp_atom' AO__atomic_exchange_n acc_type (p :: memorder :: v :: nil) Q.
 
-  Definition atom_exchange_n_cst_AU (ty : type) (p : val) (Q : val -> mpred) v : mpred :=
-    AU <<∀ w, ▷ _eqv p |-> primR ty 1 w >> @M,∅ (* TODO: masks *)
-       <<     ▷ _eqv p |-> primR ty 1 v,
-          COMM Q w >>.
+  Definition atom_exchange_n_cst_AU1 (ty : type) (p : val) (Q : val -> mpred) v : mpred :=
+    AU1 <<∀ w, ▷ _eqv p |-> primR ty 1 w >> @M,∅ (* TODO: masks *)
+        <<     ▷ _eqv p |-> primR ty 1 v,
+            COMM Q w >>.
 
-  Lemma AU_atom_exchange_n_cst :
+  Lemma AU1_atom_exchange_n_cst :
     forall memorder acc_type p Q v,
       [| memorder = _SEQ_CST |] **
       [| has_type v acc_type |] **
-      atom_exchange_n_cst_AU acc_type p Q v
+      atom_exchange_n_cst_AU1 acc_type p Q v
       |-- wp_atom' AO__atomic_exchange_n acc_type (p :: memorder :: v :: nil) Q.
   Proof.
     intros. rewrite -wp_atom_exchange_n_cst.
@@ -382,20 +382,20 @@ Section with_Σ.
   Axiom wp_atom_fetch_or_cst   : fetch_xxx AO__atomic_fetch_or   Z.lor.
   Axiom wp_atom_fetch_nand_cst : fetch_xxx AO__atomic_fetch_nand nand.
 
-  Definition atom_fetch_xxx_cst_AU (op : Z -> Z -> Z)
+  Definition atom_fetch_xxx_cst_AU1 (op : Z -> Z -> Z)
     ty (p : val) (z : Z) (Q : val -> mpred) sz sgn : mpred :=
-    AU <<∀ n, ▷ _eqv p |-> primR ty 1 (Vint n) >> @M,∅ (* TODO: masks *)
-       <<     let n' := at_eval sz sgn op n z in
+    AU1 <<∀ n, ▷ _eqv p |-> primR ty 1 (Vint n) >> @M,∅ (* TODO: masks *)
+        <<     let n' := at_eval sz sgn op n z in
               ▷ _eqv p |-> primR ty 1 (Vint n'),
-          COMM Q (Vint n) >>.
+            COMM Q (Vint n) >>.
 
-  Lemma AU_atom_fetch_xxx_cst ao op :
+  Lemma AU1_atom_fetch_xxx_cst ao op :
     wp_fetch_xxx_cst ao op ->
     forall p arg memorder Q sz sgn,
       let acc_type := Tint sz sgn in
       [| memorder = _SEQ_CST |] **
       [| has_type (Vint arg) acc_type |] **
-      atom_fetch_xxx_cst_AU op acc_type p arg Q sz sgn
+      atom_fetch_xxx_cst_AU1 op acc_type p arg Q sz sgn
       |-- wp_atom' ao acc_type (p::memorder::Vint arg::nil) Q.
   Proof.
     intros WP. intros. rewrite -WP.
@@ -406,18 +406,18 @@ Section with_Σ.
     iIntros "Hp". by iMod ("Close" with "Hp") as "$".
   Qed.
 
-  Definition AU_atom_fetch_add_cst
-    := AU_atom_fetch_xxx_cst _ _ wp_atom_fetch_add_cst.
-  Definition AU_atom_fetch_sub_cst
-    := AU_atom_fetch_xxx_cst _ _ wp_atom_fetch_sub_cst.
-  Definition AU_atom_fetch_and_cst
-    := AU_atom_fetch_xxx_cst _ _ wp_atom_fetch_and_cst.
-  Definition AU_atom_fetch_xor_cst
-    := AU_atom_fetch_xxx_cst _ _ wp_atom_fetch_xor_cst.
-  Definition AU_atom_fetch_or_cst
-    := AU_atom_fetch_xxx_cst _ _ wp_atom_fetch_or_cst.
-  Definition AU_atom_fetch_nand_cst
-    := AU_atom_fetch_xxx_cst _ _ wp_atom_fetch_nand_cst.
+  Definition AU1_atom_fetch_add_cst
+    := AU1_atom_fetch_xxx_cst _ _ wp_atom_fetch_add_cst.
+  Definition AU1_atom_fetch_sub_cst
+    := AU1_atom_fetch_xxx_cst _ _ wp_atom_fetch_sub_cst.
+  Definition AU1_atom_fetch_and_cst
+    := AU1_atom_fetch_xxx_cst _ _ wp_atom_fetch_and_cst.
+  Definition AU1_atom_fetch_xor_cst
+    := AU1_atom_fetch_xxx_cst _ _ wp_atom_fetch_xor_cst.
+  Definition AU1_atom_fetch_or_cst
+    := AU1_atom_fetch_xxx_cst _ _ wp_atom_fetch_or_cst.
+  Definition AU1_atom_fetch_nand_cst
+    := AU1_atom_fetch_xxx_cst _ _ wp_atom_fetch_nand_cst.
 
   (* atomic xxx and fetch rule *)
   Definition wp_xxx_fetch_cst (ao : AtomicOp) (op : Z -> Z -> Z) : Prop :=
@@ -442,20 +442,20 @@ Section with_Σ.
   Axiom wp_atom_or_fetch_cst   : xxx_fetch AO__atomic_or_fetch   Z.lor.
   Axiom wp_atom_nand_fetch_cst : xxx_fetch AO__atomic_nand_fetch nand.
 
-  Definition atom_xxx_fetch_cst_AU (op : Z -> Z -> Z)
+  Definition atom_xxx_fetch_cst_AU1 (op : Z -> Z -> Z)
     ty (p : val) (z : Z) (Q : val -> mpred) sz sgn : mpred :=
-    AU <<∀ n (n' := at_eval sz sgn op n z),
+    AU1 <<∀ n (n' := at_eval sz sgn op n z),
               ▷ _eqv p |-> primR ty 1 (Vint n) >> @M,∅ (* TODO: masks *)
-       <<     ▷ _eqv p |-> primR ty 1 (Vint n'),
-          COMM Q (Vint n') >>.
+        <<     ▷ _eqv p |-> primR ty 1 (Vint n'),
+            COMM Q (Vint n') >>.
 
-  Lemma AU_atom_xxx_fetch_cst ao op :
+  Lemma AU1_atom_xxx_fetch_cst ao op :
     wp_xxx_fetch_cst ao op ->
     forall p arg memorder Q sz sgn,
       let acc_type := Tint sz sgn in
       [| memorder = _SEQ_CST |] **
       [| has_type (Vint arg) acc_type |] **
-      atom_xxx_fetch_cst_AU op acc_type p arg Q sz sgn
+      atom_xxx_fetch_cst_AU1 op acc_type p arg Q sz sgn
       |-- wp_atom' ao acc_type (p::memorder::Vint arg::nil) Q.
   Proof.
     intros WP. intros. rewrite -WP.
@@ -466,16 +466,16 @@ Section with_Σ.
     iIntros "Hp". by iMod ("Close" with "Hp") as "$".
   Qed.
 
-  Definition AU_atom_add_fetch_cst
-    := AU_atom_xxx_fetch_cst _ _ wp_atom_add_fetch_cst.
-  Definition AU_atom_sub_fetch_cst
-    := AU_atom_xxx_fetch_cst _ _ wp_atom_sub_fetch_cst.
-  Definition AU_atom_and_fetch_cst
-    := AU_atom_xxx_fetch_cst _ _ wp_atom_and_fetch_cst.
-  Definition AU_atom_xor_fetch_cst
-    := AU_atom_xxx_fetch_cst _ _ wp_atom_xor_fetch_cst.
-  Definition AU_atom_or_fetch_cst
-    := AU_atom_xxx_fetch_cst _ _ wp_atom_or_fetch_cst.
-  Definition AU_atom_nand_fetch_cst
-    := AU_atom_xxx_fetch_cst _ _ wp_atom_nand_fetch_cst.
+  Definition AU1_atom_add_fetch_cst
+    := AU1_atom_xxx_fetch_cst _ _ wp_atom_add_fetch_cst.
+  Definition AU1_atom_sub_fetch_cst
+    := AU1_atom_xxx_fetch_cst _ _ wp_atom_sub_fetch_cst.
+  Definition AU1_atom_and_fetch_cst
+    := AU1_atom_xxx_fetch_cst _ _ wp_atom_and_fetch_cst.
+  Definition AU1_atom_xor_fetch_cst
+    := AU1_atom_xxx_fetch_cst _ _ wp_atom_xor_fetch_cst.
+  Definition AU1_atom_or_fetch_cst
+    := AU1_atom_xxx_fetch_cst _ _ wp_atom_or_fetch_cst.
+  Definition AU1_atom_nand_fetch_cst
+    := AU1_atom_xxx_fetch_cst _ _ wp_atom_nand_fetch_cst.
 End with_Σ.
