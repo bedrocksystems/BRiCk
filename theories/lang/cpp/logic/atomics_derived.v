@@ -65,7 +65,7 @@ Section cmpxchg_derived.
     intros. iIntros "(F1 & F2 & F3 & % & Hex & AU)".
     iApply wp_atom_compare_exchange_n_cst. iFrame.
     iAuIntro1.
-    Fail iApply (aacc1_aupd_commit with "AU").
+    iApply (aacc1_aupd_commit with "AU").
   Abort.
 
   (* An SC compare and exchange *)
@@ -89,7 +89,7 @@ Section cmpxchg_derived.
     intros. iIntros "(F1 & F2 & F3 & Pre & AU)".
     iApply wp_atom_compare_exchange_cst. iFrame.
     iAuIntro1.
-    Fail iApply (aacc1_aupd_commit with "AU").
+    iApply (aacc1_aupd_commit with "AU").
   Abort.
 
   Lemma wp_atom_compare_exchange_cst_fail :
@@ -109,9 +109,9 @@ Section cmpxchg_derived.
       |-- wp_atom' AO__atomic_compare_exchange ty
                   (p::succmemord::expected_p::failmemord::desired_p::weak::nil) Q.
   Proof.
-    intros. iIntros "(F1 & F2 & F3 & % & Pre & Post)".
+    intros. iIntros "(F1 & F2 & F3 & % & Pre & AU)".
     iApply wp_atom_compare_exchange_cst. iFrame.
     iAuIntro1.
-    Fail iApply (aacc1_aupd_commit with "AU").
+    iApply (aacc1_aupd_commit with "AU").
   Abort.
 End cmpxchg_derived.
