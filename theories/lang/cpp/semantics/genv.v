@@ -93,13 +93,14 @@ Qed.
 Instance genv_compat_flip_proper : Proper (sub_module ==> flip genv_leq ==> flip impl) genv_compat.
 Proof. solve_proper. Qed.
 
-Lemma genv_compat_lookup_Some_type tu σ gn st :
-  tu ⊧ σ ->
-  tu.(globals) !! gn = Some (Gstruct st) ->
-  σ.(genv_tu).(globals) !! gn = Some (Gstruct st).
-Proof.
-  eauto using sub_module_lookup_Some_type, genv_compat_submodule.
-Qed.
+Definition glob_def (g : genv) (gn : globname) : option GlobDecl :=
+  g.(genv_tu).(globals) !! gn.
+
+(* Supersedes glob_def_submodule *)
+Lemma glob_def_genv_compat {σ gn tu} {Hσ : tu ⊧ σ} st
+  (Hl : tu.(globals) !! gn = Some (Gstruct st)) :
+  glob_def σ gn = Some (Gstruct st).
+Proof. move: Hσ Hl => /genv_compat_submodule. apply: sub_module_preserves_gstruct. Qed.
 
 (* XXX rename/deprecate? *)
 Theorem subModuleModels a b σ : b ⊧ σ -> sub_module a b -> a ⊧ σ.
