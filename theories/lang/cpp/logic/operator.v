@@ -38,30 +38,31 @@ Section with_Σ.
   (** * Pointer comparison operators *)
   (** For [Ble, Blt, Bge, Bgt] axioms on pointers. *)
   Definition ptr_ord_comparable p1 p2 (f : vaddr -> vaddr -> bool) res : mpred :=
-    ∃ aid,
-    [| ptr_alloc_id p1 = Some aid |] ∗
-    [| ptr_alloc_id p2 = Some aid |] ∗
+    [| same_alloc p1 p2 |] ∗
     [| forall va1 va2, ptr_vaddr p1 = Some va1 -> ptr_vaddr p2 = Some va2 -> f va1 va2 = res |] ∗
-    valid_ptr p1 ∗ valid_ptr p2 ∗
-    (* we could ask [live_ptr p1] or [live_ptr p2], but those are
-    equivalent, so we make the statement obviously symmetric. *)
-    live_alloc_id aid.
-    (* TODO: we should drop [live_alloc_id aid] this, since we forbid pointer
-    zapping and we require a shared allocation id. We do so for subtraction... *)
+    valid_ptr p1 ∗ valid_ptr p2.
 
   (* Two pointers into the same array are [ptr_ord_comparable]. *)
-  Lemma ptr_ord_comparable_based_2 o1 o2 base p1 p2 f res :
+  Lemma ptr_ord_comparable_off_off o1 o2 base p1 p2 f res :
     p1 = base .., o1 ->
     p2 = base .., o2 ->
     (forall va1 va2, ptr_vaddr p1 = Some va1 -> ptr_vaddr p2 = Some va2 -> f va1 va2 = res) ->
-    live_ptr base ⊢ valid_ptr p1 -∗ valid_ptr p2 -∗ ptr_ord_comparable p1 p2 f res.
+    valid_ptr p1 ∗ valid_ptr p2 ⊢ ptr_ord_comparable p1 p2 f res.
   Proof.
-    rewrite live_has_alloc_id; intros -> -> Hres; iDestruct 1 as (aid Haid) "L".
-    iIntros "#V1 #V2"; iExists aid; iFrame (Hres) "L V1 V2" => {Hres}.
-    rewrite !valid_ptr_alloc_id; iDestruct "V1" as %V1; iDestruct "V2" as %V2.
-    by do 2 rewrite ptr_alloc_id_offset //.
+    intros -> -> Hres.
+    iIntros "#[V1 V2]". iFrame (Hres) "V1 V2" => {Hres}; rewrite !valid_ptr_alloc_id.
+    iRevert "V1 V2"; iIntros "!%".
+    exact: same_alloc_offset_2.
   Qed.
 
+  Lemma ptr_ord_comparable_off o1 base p1 f res :
+    p1 = base .., o1 ->
+    (forall va1 va2, ptr_vaddr p1 = Some va1 -> ptr_vaddr base = Some va2 -> f va1 va2 = res) ->
+    valid_ptr p1 ∗ valid_ptr base ⊢ ptr_ord_comparable p1 base f res.
+  Proof.
+    intros -> Hres. eapply (ptr_ord_comparable_off_off o1 o_id base) => //.
+    by rewrite offset_ptr_id.
+  Qed.
 
   (** Skeleton for [Beq] and [Bneq] axioms on pointers.
 
