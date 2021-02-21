@@ -204,9 +204,11 @@ Module SimpleCPP.
 
     Definition _valid_ptr vt (p : ptr) : mpred :=
       [| p = nullptr |] \\//
-            Exists base l h o,
+            Exists base l h o zo,
                 blocks_own base l h **
-                in_range vt l o h ** [| p = offset_ptr_ o base |] **
+                in_range vt l zo h **
+                 (* XXX this is wrong: [eval_offset] shouldn't take a genv. *)
+                [| exists resolve, eval_offset resolve o = Some zo /\ p = base .., o |] **
                 [| ptr_vaddr p <> Some 0%N |].
     (* strict validity (not past-the-end) *)
     Notation strict_valid_ptr := (_valid_ptr Strict).
@@ -225,7 +227,7 @@ Module SimpleCPP.
       [| same_address p nullptr <-> p = nullptr |].
     Proof.
       rewrite /_valid_ptr same_address_eq; iIntros "[->|H]";
-        [ |iDestruct "H" as (????) "(_ & _ & _ & %Hne)"]; iIntros "!%".
+        [ |iDestruct "H" as (?????) "(_ & _ & _ & %Hne)"]; iIntros "!%".
       by rewrite same_property_iff ptr_vaddr_nullptr; naive_solver.
       rewrite same_property_iff; split; last intros ->;
         rewrite ptr_vaddr_nullptr; naive_solver.
