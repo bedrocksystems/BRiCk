@@ -16,7 +16,7 @@ Require Import bedrock.lang.cpp.logic.atomics.
 Require Import iris.proofmode.tactics.
 
 Section cmpxchg_derived.
-  Context `{Σ : cpp_logic thread_info, !invG Σ} {resolve:genv}.
+  Context `{Σ : cpp_logic thread_info} {resolve:genv}.
   Variables (M : coPset) (ti : thread_info) (ρ : region).
 
   Local Notation primR := (@primR _ _ resolve) (only parsing).
@@ -43,7 +43,7 @@ Section cmpxchg_derived.
     intros. iIntros "(F1 & F2 & F3 & Hex & AU)".
     iApply wp_atom_compare_exchange_n_cst. iFrame.
     iAuIntro1.
-    Fail iApply (aacc1_aupd_commit with "AU").
+    iApply (aacc1_aupd_commit with "AU").
   Abort.
 
   (* A failed SC strong compare exchange, which tell us that the values are
