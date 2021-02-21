@@ -481,14 +481,6 @@ Proof. solve_decision. Defined.
 
 End VAL_MIXIN.
 
-Module Type PTRS_DEPRECATED (Import P : PTRS).
-  (** * Deprecated APIs *)
-  (** Offset a pointer by a certain number of bytes. *)
-  Parameter offset_ptr__ : Z -> ptr -> ptr.
-  #[deprecated(since="2020-12-08", note="Use structured offsets instead.")]
-  Notation offset_ptr_ := offset_ptr__.
-End PTRS_DEPRECATED.
-
 Module Type PTR_INTERNAL (Import P : PTRS).
   (* Useful *)
   Parameter eval_offset : genv -> offset -> option Z.
@@ -501,11 +493,10 @@ End PTR_INTERNAL.
 
 (* Collect all the axioms. *)
 Module Type PTRS_INTF := PTRS <+ PTRS_DERIVED <+ PTR_INTERNAL <+ RAW_BYTES.
-Module Type PTRS_INTF_DEPRECATED := PTRS_INTF <+ PTRS_DEPRECATED.
-Declare Module PTRS_INTF_AXIOM : PTRS_INTF_DEPRECATED.
+Declare Module PTRS_INTF_AXIOM : PTRS_INTF.
 
 (* Plug mixins. *)
-Module Type PTRS_FULL_INTF := PTRS_INTF_DEPRECATED <+ VAL_MIXIN <+ PTRS_MIXIN.
+Module Type PTRS_FULL_INTF := PTRS_INTF <+ VAL_MIXIN <+ PTRS_MIXIN.
 Module Export PTRS_FULL_AXIOM : PTRS_FULL_INTF :=
   PTRS_INTF_AXIOM <+ VAL_MIXIN <+ PTRS_MIXIN.
 
@@ -524,15 +515,6 @@ Notation Vz := Vint (only parsing).
 
 (** we use [Vundef] as our value of type [void] *)
 Definition Vvoid := Vundef.
-
-(** lifting pointer offsets to values *)
-Definition __offset_ptr (o : Z) (v : val) : val :=
-  match v with
-  | Vptr p => Vptr (offset_ptr_ o p)
-  | _ => Vundef
-  end.
-#[deprecated(since="2020-01-09", note="Use structured offsets")]
-Notation offset_ptr := __offset_ptr.
 
 Definition is_true (v : val) : option bool :=
   match v with
