@@ -19,9 +19,9 @@ Definition non_beginning_ptr `{has_cpp : cpp_logic} p' : mpred :=
 Section non_beginning_ptr.
   Context `{has_cpp : cpp_logic}.
 
-  Global Instance non_beginning_ptr_persistent p : Persistent (non_beginning_ptr p) := _.
-  Global Instance non_beginning_ptr_affine p : Affine (non_beginning_ptr p) := _.
-  Global Instance non_beginning_ptr_timeless p : Timeless (non_beginning_ptr p) := _.
+  #[global] Instance non_beginning_ptr_persistent p : Persistent (non_beginning_ptr p) := _.
+  #[global] Instance non_beginning_ptr_affine p : Affine (non_beginning_ptr p) := _.
+  #[global] Instance non_beginning_ptr_timeless p : Timeless (non_beginning_ptr p) := _.
 End non_beginning_ptr.
 
 Typeclasses Opaque non_beginning_ptr.
@@ -80,14 +80,14 @@ Section with_Σ.
      pointer represents the address one past the last element of a different
      complete object, the result of the comparison is unspecified.
    *)
-  Local Definition ptr_unambiguous_cmp vt1 p2 : mpred :=
+  #[local] Definition ptr_unambiguous_cmp vt1 p2 : mpred :=
     [| vt1 = Strict |] ∨ [| p2 = nullptr |] ∨ non_beginning_ptr p2.
   Lemma ptr_unambiguous_cmp_1 p : ⊢ ptr_unambiguous_cmp Strict p.
   Proof. rewrite /ptr_unambiguous_cmp; eauto. Qed.
   Lemma ptr_unambiguous_cmp_2 vt : ⊢ ptr_unambiguous_cmp vt nullptr.
   Proof. rewrite /ptr_unambiguous_cmp; eauto. Qed.
 
-  Local Definition live_ptr_if_needed p1 p2 : mpred :=
+  #[local] Definition live_ptr_if_needed p1 p2 : mpred :=
     live_ptr p1 ∨ [| p2 = nullptr |].
   Lemma live_ptr_if_needed_1 p : ⊢ live_ptr_if_needed p nullptr.
   Proof. rewrite /live_ptr_if_needed; eauto. Qed.
@@ -114,7 +114,7 @@ Section with_Σ.
     rewrite !(right_id emp%I). by iRight.
   Qed.
 
-  Let eval_ptr_eq_cmp_op (bo : BinOp) (f : ptr -> ptr -> bool) ty p1 p2 : mpred :=
+  #[local] Definition eval_ptr_eq_cmp_op (bo : BinOp) (f : ptr -> ptr -> bool) ty p1 p2 : mpred :=
     eval_binop_impure bo
       (Tpointer ty) (Tpointer ty) Tbool
       (Vptr p1) (Vptr p2) (Vbool (f p1 p2)) ∗ True.
@@ -129,7 +129,7 @@ Section with_Σ.
     ⊢ eval_ptr_eq_cmp_op Bneq (λ p1 p2, negb (same_address_bool p1 p2)) ty p1 p2).
 
   (** Skeleton for [Ble, Blt, Bge, Bgt] axioms on pointers. *)
-  Let eval_ptr_ord_cmp_op (bo : BinOp) (f : vaddr -> vaddr -> bool) : Prop :=
+  #[local] Definition eval_ptr_ord_cmp_op (bo : BinOp) (f : vaddr -> vaddr -> bool) : Prop :=
     forall ty p1 p2 aid res,
       ptr_alloc_id p1 = Some aid ->
       ptr_alloc_id p2 = Some aid ->
@@ -161,7 +161,7 @@ Section with_Σ.
 
   (** Skeletons for ptr/int operators. *)
 
-  Let eval_ptr_int_op (bo : BinOp) (f : Z -> Z) : Prop :=
+  #[local] Definition eval_ptr_int_op (bo : BinOp) (f : Z -> Z) : Prop :=
     forall w s p1 p2 o ty,
       is_Some (size_of resolve ty) ->
       p2 = p1 .., _sub ty (f o) ->
@@ -170,7 +170,7 @@ Section with_Σ.
                 (Tpointer ty) (Tint w s) (Tpointer ty)
                 (Vptr p1)     (Vint o)   (Vptr p2).
 
-  Let eval_int_ptr_op (bo : BinOp) (f : Z -> Z) : Prop :=
+  #[local] Definition eval_int_ptr_op (bo : BinOp) (f : Z -> Z) : Prop :=
     forall w s p1 p2 o ty,
       is_Some (size_of resolve ty) ->
       p2 = p1 .., _sub ty (f o) ->
