@@ -62,8 +62,6 @@ Section with_Σ.
 End with_Σ.
 
 (** offsets *)
-#[deprecated(since="2020-12-08",note="use 'offset'")]
-Notation Offset := offset (only parsing).
 #[deprecated(since="2020-12-07",note="no longer needed")]
 Notation _eq := (@id ptr) (only parsing).
 #[deprecated(since="2020-12-07",note="no longer needed, use equality on ptr")]
@@ -80,8 +78,6 @@ Notation "a &~ b" := (addr_of a b) (at level 30, no associativity).
 Arguments _global {resolve} _ : rename.
 
 
-#[deprecated(since="2020-12-03",note="use _base instead")]
-Notation _super := _base (only parsing).
 
 (** [_local ρ b] returns the [ptr] that stores the local variable [b].
  *)

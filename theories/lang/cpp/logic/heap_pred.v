@@ -116,9 +116,6 @@ Instance: Params (@pureR) 2 := {}.
 Arguments refR {_ Σ} ty v : rename.
 Arguments cptrR {_ Σ resolve} _ : rename.
 
-#[deprecated(since="2020-01-09", note="Use cptrR")]
-Notation cptr := cptrR (only parsing).
-
 Arguments type_ptrR {_ Σ σ} _%bs.
 Arguments identityR {_ Σ σ} _%bs _%bs _%Qp.
 
@@ -1130,13 +1127,6 @@ Section with_cpp.
   Lemma _derived_validR σ base derived : _offsetR (_derived base derived) validR |-- validR.
   Proof. apply off_validR => p. apply _valid_ptr_derived. Qed.
 End with_cpp.
-
-#[deprecated(since = "2021-01-09", note = "Use _field_validR")]
-Notation o_field_validR := _field_validR.
-#[deprecated(since = "2021-01-09", note = "Use _base_validR")]
-Notation o_base_validR := _base_validR.
-#[deprecated(since = "2021-01-09", note = "Use _field_validR")]
-Notation o_derived_validR := _derived_validR.
 
 Typeclasses Opaque identityR.
 Typeclasses Opaque type_ptrR validR svalidR alignedR.
