@@ -56,6 +56,7 @@ theories/lang/cpp/semantics.v
 # Program Logic
 theories/lang/cpp/logic/spec.v
 theories/lang/cpp/logic/pred.v
+theories/lang/cpp/logic/pred_paradoxes.v
 theories/lang/cpp/logic/path_pred.v
 theories/lang/cpp/logic/operator.v
 theories/lang/cpp/logic/heap_pred.v
@@ -93,7 +94,10 @@ theories/lang/cpp/compile.v
 theories/lang/cpp.v
 
 # "consistency" proofs
+theories/lang/cpp/model/simple_pointers_utils.v
 theories/lang/cpp/model/simple_pointers.v
+theories/lang/cpp/model/inductive_pointers_utils.v
+theories/lang/cpp/model/inductive_pointers.v
 theories/lang/cpp/model/simple_pred.v
 
 # misc
