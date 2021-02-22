@@ -1,6 +1,12 @@
-From stdpp Require Import gmap.
-From bedrock.lang.prelude Require Import base addr numbers.
+(*
+ * Copyright (c) 2020-21 BedRock Systems, Inc.
+ * This software is distributed under the terms of the BedRock Open-Source License.
+ * See the LICENSE-BedRock file in the repository root for details.
+ *)
 
+(** Support code for [inductive_pointers.v]. *)
+
+From bedrock.lang.prelude Require Import base addr numbers.
 From bedrock.lang.cpp.semantics Require Import values.
 
 Module address_sums.

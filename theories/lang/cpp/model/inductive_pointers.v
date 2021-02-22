@@ -4,16 +4,6 @@
  * See the LICENSE-BedRock file in the repository root for details.
  *)
 
-From stdpp Require Import gmap.
-From bedrock.lang.prelude Require Import base addr avl bytestring option numbers.
-
-From bedrock.lang.cpp Require Import ast.
-From bedrock.lang.cpp.semantics Require Import sub_module values.
-From bedrock.lang.cpp.model Require Import simple_pointers simple_pointers_utils inductive_pointers_utils.
-
-Close Scope nat_scope.
-Implicit Types (σ : genv).
-
 (**
 Another (incomplete) consistency proof for [PTRS], based on Krebbers' PhD thesis, and
 other formal models of C++ using structured pointers.
@@ -22,7 +12,21 @@ This is more complex than [SIMPLE_PTRS_IMPL], but will be necessary to justify [
 In this model, all valid pointers have an address pinned, but this is not meant
 to be guaranteed.
 *)
-Module PTRS_IMPL : PTRS_INTF.
+
+From stdpp Require Import gmap.
+From bedrock.lang.prelude Require Import base addr avl bytestring option numbers.
+
+From bedrock.lang.cpp Require Import ast.
+From bedrock.lang.cpp.semantics Require Import sub_module values.
+From bedrock.lang.cpp.model Require Import simple_pointers_utils inductive_pointers_utils.
+
+Implicit Types (σ : genv).
+#[local] Close Scope nat_scope.
+#[local] Open Scope Z_scope.
+
+Module Type PTRS_INTF_MINIMAL := PTRS <+ PTRS_DERIVED.
+
+Module PTRS_IMPL : PTRS_INTF_MINIMAL.
   Import canonical_tu address_sums merge_elems.
 
   Inductive raw_offset_seg : Set :=
@@ -31,13 +35,13 @@ Module PTRS_IMPL : PTRS_INTF.
   | o_base_ (derived base : globname)
   | o_derived_ (base derived : globname)
   | o_invalid_.
-  Local Instance raw_offset_seg_eq_dec : EqDecision raw_offset_seg.
+  #[local] Instance raw_offset_seg_eq_dec : EqDecision raw_offset_seg.
   Proof. solve_decision. Qed.
   Declare Instance raw_offset_seg_countable : Countable raw_offset_seg.
 
   Definition offset_seg : Set := raw_offset_seg * Z.
-  Local Instance offset_seg_eq_dec : EqDecision offset_seg := _.
-  Local Instance offset_seg_countable : Countable offset_seg := _.
+  #[local] Instance offset_seg_eq_dec : EqDecision offset_seg := _.
+  #[local] Instance offset_seg_countable : Countable offset_seg := _.
 
   Definition eval_raw_offset_seg σ (ro : raw_offset_seg) : option Z :=
     match ro with
@@ -57,15 +61,15 @@ Module PTRS_IMPL : PTRS_INTF.
   The list of offsets in [[p; o_1; ...; o_n]] is represented as [[o_n; ... o_1]].
   This way, we can cons new offsets to the head, and consume them at the tail. *)
   Definition raw_offset := list offset_seg.
-  Local Instance raw_offset_eq_dec : EqDecision offset := _.
-  Local Instance raw_offset_countable : Countable raw_offset := _.
+  #[local] Instance raw_offset_eq_dec : EqDecision offset := _.
+  #[local] Instance raw_offset_countable : Countable raw_offset := _.
 
   Notation isnt o pattern :=
     (match o with | pattern => False | _ => True end).
 
   Implicit Types (z : Z).
   (* Close Scope nat_scope. *)
-  Local Open Scope Z_scope.
+  #[local] Open Scope Z_scope.
   Section roff_canon.
     (* Context {σ : genv}. *)
 
@@ -202,7 +206,7 @@ Module PTRS_IMPL : PTRS_INTF.
   Definition offset := {ro : raw_offset | raw_offset_wf ro}.
   Instance offset_eq_dec : EqDecision offset := _.
 
-  Local Definition raw_offset_to_offset (ro : raw_offset) : option offset :=
+  #[local] Definition raw_offset_to_offset (ro : raw_offset) : option offset :=
     match decide (raw_offset_wf ro) with
     | left Hwf => Some (exist _ ro Hwf)
     | right _ => None
@@ -241,15 +245,15 @@ Module PTRS_IMPL : PTRS_INTF.
     Context {X} (f : X -> X -> list X).
     Context (Hinv : ∀ x1 x2, merge_elems f (f x1 x2) = f x1 x2).
 
-    Global Instance invol_merge_elems: Involutive (merge_elems f).
+    #[global] Instance invol_merge_elems: Involutive (merge_elems f).
     Proof.
     Admitted.
 
-    Global Instance invol_app_merge_elems: InvolApp (merge_elems f).
+    #[global] Instance invol_app_merge_elems: InvolApp (merge_elems f).
     Proof.
     Admitted.
   End merge_elem.
-  Local Arguments merge_elems {X} f !_ /. *)
+  #[local] Arguments merge_elems {X} f !_ /. *)
 
   Definition offset_seg_append : offset_seg -> raw_offset -> raw_offset :=
     offset_seg_cons.
@@ -261,7 +265,7 @@ Module PTRS_IMPL : PTRS_INTF.
     destruct o1, o2 => //=; by repeat (case_decide; simpl).
   Qed. *)
 
-  Local Definition test xs :=
+  #[local] Definition test xs :=
     raw_offset_collapse (raw_offset_collapse xs) = raw_offset_collapse xs.
 
   Section tests.
@@ -319,11 +323,11 @@ Module PTRS_IMPL : PTRS_INTF.
   | global_ptr_ (tu : translation_unit_canon) (o : obj_name)
   | alloc_ptr_ (a : alloc_id) (va : vaddr).
 
-  Local Instance root_ptr_eq_dec : EqDecision root_ptr.
+  #[local] Instance root_ptr_eq_dec : EqDecision root_ptr.
   Proof. solve_decision. Qed.
   Declare Instance root_ptr_countable : Countable root_ptr.
 
-  Local Definition global_ptr_encode_canon
+  #[local] Definition global_ptr_encode_canon
     (tu : translation_unit_canon) (o : obj_name) : option (alloc_id * vaddr) :=
     global_ptr_encode_ov o (tu !! o).
 
@@ -346,7 +350,7 @@ Module PTRS_IMPL : PTRS_INTF.
   | fun_ptr_ (tu : translation_unit_canon) (o : obj_name)
   | offset_ptr (p : root_ptr) (o : offset).
   Definition ptr := ptr_.
-  Local Instance ptr_eq_dec : EqDecision ptr.
+  #[local] Instance ptr_eq_dec : EqDecision ptr.
   Proof. solve_decision. Qed.
   Declare Instance ptr_countable : Countable ptr.
 
@@ -388,7 +392,7 @@ Module PTRS_IMPL : PTRS_INTF.
     rewrite /= /raw_offset_merge (right_id []).
     by case: o.
   Qed.
-  Local Instance dot_assoc : Assoc (=) o_dot.
+  #[local] Instance dot_assoc : Assoc (=) o_dot.
   Proof.
     intros o1 o2 o3. apply /sig_eq_pi.
     move: o1 o2 o3 => [ro1 /= wf1]
@@ -399,7 +403,7 @@ Module PTRS_IMPL : PTRS_INTF.
       apply: assoc.
   Qed.
 
-  Local Instance ptr_eq_dec' : EqDecision ptr := ptr_eq_dec.
+  #[local] Instance ptr_eq_dec' : EqDecision ptr := ptr_eq_dec.
 
   (* Instance ptr_equiv : Equiv ptr := (=).
   Instance offset_equiv : Equiv offset := (=).

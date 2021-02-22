@@ -4,12 +4,15 @@
  * See the LICENSE-BedRock file in the repository root for details.
  *)
 
+(** Support code for [simple_pointers.v]. *)
+
 From stdpp Require Import gmap.
 From bedrock.lang.prelude Require Import base addr option avl.
 From bedrock.lang.cpp.semantics Require Import values.
 
-Close Scope nat_scope.
 Implicit Types (σ : genv).
+#[local] Close Scope nat_scope.
+#[local] Open Scope Z_scope.
 
 Module canonical_tu.
   Definition im_to_gmap {V} (m : IM.t V) : gmap BS.t V :=
@@ -44,7 +47,7 @@ Module canonical_tu.
 
   Definition tu_to_canon (tu : translation_unit) : translation_unit_canon :=
     let (s, g, bo) := tu in Build_translation_unit_canon (im_to_gmap s) (im_to_gmap g) bo.
-  Local Definition genv_to_canon (σ : genv) : genv_canon :=
+  #[local] Definition genv_to_canon σ : genv_canon :=
     let (tu, sz) := σ in Build_genv_canon (tu_to_canon tu) sz.
 End canonical_tu.
 
@@ -53,7 +56,7 @@ Definition invalid_alloc_id : alloc_id := MkAllocId 1.
 
 (** Compute the actual raw offsets in Z. *)
 Section eval_offset_seg.
-  Context (σ : genv).
+  Context σ.
   Definition o_field_off (f : field) : option Z := offset_of σ f.(f_type) f.(f_name).
   Definition o_sub_off ty z : option Z := Z.mul z <$> (Z.of_N <$> size_of σ ty).
   Definition o_base_off derived base : option Z := parent_offset σ derived base.
@@ -104,3 +107,8 @@ Module Type PTRS_DERIVED_MIXIN (Import P : PTRS).
     pinned_ptr_pure = fun (va : vaddr) (p : ptr) => ptr_vaddr p = Some va.
   Proof. done. Qed.
 End PTRS_DERIVED_MIXIN.
+
+(* Double-check [PTRS_DERIVED_MIXIN] matches its interface. *)
+Module PTRS_DERIVED_TEST (P : PTRS) : PTRS_DERIVED P.
+Include PTRS_DERIVED_MIXIN P.
+End PTRS_DERIVED_TEST.

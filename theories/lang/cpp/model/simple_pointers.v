@@ -4,16 +4,6 @@
  * See the LICENSE-BedRock file in the repository root for details.
  *)
 
-From stdpp Require Import gmap.
-From bedrock.lang.prelude Require Import base addr avl bytestring option numbers.
-
-From bedrock.lang.cpp Require Import ast.
-From bedrock.lang.cpp.semantics Require Import sub_module values.
-From bedrock.lang.cpp.model Require Import simple_pointers_utils.
-
-Close Scope nat_scope.
-Implicit Types (σ : genv).
-
 (**
 A simple consistency proof for [PTRS]; this one is inspired by Cerberus's
 model of pointer provenance, and resembles CompCert's model.
@@ -22,10 +12,19 @@ Unlike [PTRS_IMPL], this model cannot be extended to support
 [VALID_PTR_AXIOMS] because it collapses the structure of pointers.
 *)
 
-Module Type PTRS_INTF := PTRS <+ PTRS_DERIVED.
+From stdpp Require Import gmap.
+From bedrock.lang.prelude Require Import base addr avl bytestring option numbers.
 
-Module SIMPLE_PTRS_IMPL : PTRS_INTF.
-  Local Open Scope Z_scope.
+From bedrock.lang.cpp Require Import ast.
+From bedrock.lang.cpp.semantics Require Import sub_module values.
+From bedrock.lang.cpp.model Require Import simple_pointers_utils.
+
+Implicit Types (σ : genv).
+#[local] Close Scope nat_scope.
+#[local] Open Scope Z_scope.
+
+Module Type PTRS_INTF_MINIMAL := PTRS <+ PTRS_DERIVED <+ PTR_INTERNAL.
+Module SIMPLE_PTRS_IMPL : PTRS_INTF_MINIMAL.
 
   (**
   In this model, a pointer is either [invalid_ptr] (aka [None]) or a pair of
@@ -110,7 +109,7 @@ Module SIMPLE_PTRS_IMPL : PTRS_INTF.
   Definition _offset_ptr : ptr -> offset -> ptr :=
     λ p oz, z ← oz; offset_ptr_raw z p.
   Notation "p .., o" := (_offset_ptr p o) : ptr_scope.
-  Local Open Scope ptr_scope.
+  #[local] Open Scope ptr_scope.
 
   Lemma offset_ptr_id p : p .., o_id = p.
   Proof. apply offset_ptr_raw_id. Qed.
@@ -195,4 +194,14 @@ Module SIMPLE_PTRS_IMPL : PTRS_INTF.
     is_Some (ptr_vaddr (p .., o_sub σ ty i)) ->
     is_Some (size_of σ ty).
   Proof. rewrite /o_sub /o_sub_off. case: size_of=> //. by eexists. Qed.
+
+  Definition eval_offset (_ : genv) (o : offset) : option Z := o.
+  Lemma eval_o_sub σ ty (i : Z) :
+    eval_offset _ (o_sub _ ty i) =
+      (* This order enables reducing for known ty. *)
+      (fun n => Z.of_N n * i) <$> size_of _ ty.
+  Proof.
+    rewrite /o_sub/o_sub_off. case: size_of => //= sz.
+    by rewrite (comm _ i).
+  Qed.
 End SIMPLE_PTRS_IMPL.
