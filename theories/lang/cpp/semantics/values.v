@@ -425,15 +425,6 @@ Module Type PTRS_MIXIN (Import P : PTRS) (Import PD : PTRS_DERIVED P).
     p .., o_sub _ ty i .., o_sub _ ty j = (p .., o_sub _ ty (i + j)).
   Proof. by rewrite -offset_ptr_dot o_dot_sub. Qed.
 
-  (* TODO: drop for [o_dot_o_sub]. *)
-  Lemma _o_sub_sub_nneg : ∀ σ p ty (z1 z2 : Z),
-    0 <= z1 -> 0 <= z2 ->
-    p .., o_sub σ ty z1 .., o_sub σ ty z2 = p .., o_sub σ ty (z1 + z2).
-  Proof. intros * _ _. exact: o_sub_sub. Qed.
-
-  #[deprecated(since="2021-02-13", note="Use stronger [o_sub_sub] (or [o_dot_sub]).")]
-  Notation o_sub_sub_nneg := _o_sub_sub_nneg.
-
   Notation _id := o_id (only parsing).
   Notation _dot := (o_dot) (only parsing).
   (** access a field *)
