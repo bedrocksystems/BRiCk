@@ -94,7 +94,10 @@ theories/lang/cpp/compile.v
 theories/lang/cpp.v
 
 # "consistency" proofs
+theories/lang/cpp/model/simple_pointers_utils.v
 theories/lang/cpp/model/simple_pointers.v
+theories/lang/cpp/model/inductive_pointers_utils.v
+theories/lang/cpp/model/inductive_pointers.v
 theories/lang/cpp/model/simple_pred.v
 
 # misc
