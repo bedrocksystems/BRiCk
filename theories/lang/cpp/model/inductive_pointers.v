@@ -24,7 +24,7 @@ Implicit Types (σ : genv).
 #[local] Close Scope nat_scope.
 #[local] Open Scope Z_scope.
 
-Module Type PTRS_INTF_MINIMAL := PTRS <+ PTRS_DERIVED.
+Module Type PTRS_INTF_MINIMAL := PTRS <+ PTRS_DERIVED <+ PTR_INTERNAL.
 
 Module PTRS_IMPL : PTRS_INTF_MINIMAL.
   Import canonical_tu address_sums merge_elems.
@@ -161,6 +161,7 @@ Module PTRS_IMPL : PTRS_INTF_MINIMAL.
       then oss'
       else os :: oss
     (* | (o_invalid_, _), _ => [(o_invalid_, 0%Z)] *)
+    | (o_invalid_, z), _ => [(o_invalid_, z)]
     | _, _ => os :: oss
     end.
   Definition raw_offset_collapse : raw_offset -> raw_offset :=
@@ -226,6 +227,7 @@ Module PTRS_IMPL : PTRS_INTF_MINIMAL.
   Next Obligation.
     rewrite /mk_offset_seg; intros ? [] H => //=; repeat case_match => //.
   Qed.
+  Definition o_invalid σ : offset := mkOffset σ o_invalid_ I.
   Definition o_field σ f : offset :=
     mkOffset σ (o_field_ f) I.
   Definition o_base σ derived base : offset :=
@@ -234,8 +236,13 @@ Module PTRS_IMPL : PTRS_INTF_MINIMAL.
     mkOffset σ (o_derived_ base derived) I.
   Program Definition o_sub σ ty z : offset :=
     if decide (z = 0)%Z
-    then o_id
-    else mkOffset σ (o_sub_ ty z) _.
+    then
+      match size_of σ ty with
+      | Some _ => o_id
+      | None => o_invalid σ
+      end
+    else
+    mkOffset σ (o_sub_ ty z) _.
   Next Obligation. intros; case_match; simplify_eq/=; case_match; naive_solver. Qed.
 
   Lemma last_last_equiv {X} d {xs : list X} : default d (stdpp.list.last xs) = List.last xs d.
@@ -295,12 +302,29 @@ Module PTRS_IMPL : PTRS_INTF_MINIMAL.
   End tests.
 
   (* This is probably sound, since it allows temporary underflows. *)
-  (* Section eval_offset.
-    (* From PTR_INTERNAL *)
-    Definition eval_raw_offset (σ : genv) (o : raw_offset) : option Z :=
-      foldr (liftM2 Z.add) (Some 0%Z) (eval_offset_seg σ <$> o).
-    Definition eval_offset (σ : genv) (o : offset) : option Z := eval_raw_offset σ (`o).
-  End eval_offset. *)
+  (* From PTR_INTERNAL *)
+  Definition eval_offset_seg (os : offset_seg) : option Z :=
+    match os with
+    | (o_invalid_, _) => None
+    | (_, z) => Some z
+    end.
+  Definition eval_raw_offset (o : raw_offset) : option Z :=
+    foldr (liftM2 Z.add) (Some 0) (map eval_offset_seg o).
+  Definition eval_offset (_ : genv) (o : offset) : option Z :=
+    eval_raw_offset (`o).
+
+  Lemma eval_o_sub σ ty (i : Z) :
+    eval_offset _ (o_sub _ ty i) =
+      (* This order enables reducing for known ty. *)
+      (fun n => Z.of_N n * i) <$> size_of _ ty.
+  Proof.
+    rewrite /o_sub/eval_offset/eval_raw_offset/=.
+    rewrite /= /mkOffset /mk_offset_seg/=/o_sub_off/=.
+    case_decide; subst => //=;
+      case: size_of=> [sz|] //=.
+    by f_equiv; lia.
+    by rewrite /liftM2/= (comm_L _ i) right_id_L.
+  Qed.
 
   Class InvolApp {X} (f : list X → list X) :=
     invol_app : ∀ xs1 xs2,
@@ -443,19 +467,17 @@ Module PTRS_IMPL : PTRS_INTF_MINIMAL.
   Lemma offset_ptr_dot p o1 o2 :
     (p .., (o1 .., o2) = p .., o1 .., o2)%ptr.
   Proof.
+    (* TO FIX: collapse function pointers with offsets less eagerly. *)
     destruct p; rewrite //= ?assoc //=.
     move: o1 o2 => [o1 /= +] [o2 /= +]; rewrite /raw_offset_wf => WF1 WF2.
     repeat (case_match; simplify_eq/= => //).
     by rewrite Heqr in WF2.
   Admitted.
 
-  Lemma o_sub_0' σ ty :
-    o_sub σ ty 0 = o_id.
-  Proof. done. Qed.
   Lemma o_sub_0 σ ty :
     is_Some (size_of σ ty) ->
     o_sub σ ty 0 = o_id.
-  Proof. done. Qed.
+  Proof. rewrite /o_sub; case_decide=>// -[?]; by case: size_of. Qed.
 
   Lemma ptr_alloc_id_offset {p o} :
     let p' := (p .., o)%ptr in
@@ -467,6 +489,7 @@ Module PTRS_IMPL : PTRS_INTF_MINIMAL.
     (same_property ptr_vaddr (p .., o_sub _ ty n1) (p .., o_sub _ ty n2) ->
     n1 = n2)%ptr.
 
+  Arguments mk_offset_seg _ !_ /.
   Lemma o_dot_sub σ (z1 z2 : Z) ty :
     (o_sub σ ty z1 .., o_sub σ ty z2 = o_sub σ ty (z1 + z2))%offset.
   Proof.
@@ -476,12 +499,9 @@ Module PTRS_IMPL : PTRS_INTF_MINIMAL.
     all: rewrite ?Z.add_0_r ?Z.add_0_l.
     all: rewrite /mk_offset_seg /= /o_sub_off; case: size_of => [sz|] //=.
     all: try by rewrite decide_False //=; lia.
-    - repeat (case_decide; try (lia || by auto)).
-    - admit.
-    - repeat (case_decide; try (lia || by auto)).
-      repeat (lia || f_equiv).
-    - admit.
-  Admitted.
+    all: repeat (case_decide; try (lia || by auto)).
+    repeat (lia || f_equiv).
+  Qed.
 
   Include PTRS_DERIVED_MIXIN.
 End PTRS_IMPL.
