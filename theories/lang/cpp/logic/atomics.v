@@ -472,9 +472,9 @@ Section with_Σ.
     intros. rewrite -wp_atom_load_cst.
     iIntros "[$ AU]".
     iExists ∅. (* TODO: masks *)
-    iMod "AU" as (v q) "[Hp Close]".
+    iMod "AU" as (v q) "[Hp [_ Close]]".
     iIntros "!> !>". iExists v, q. iFrame "Hp".
-    iIntros "Hp". by iMod ("Close" with "Hp") as "$".
+    iIntros "Hp". iApply ("Close" with "Hp").
   Qed.
 
   Definition atom_store_cst_AU1 (ty : type) (p : val) (Q : val -> mpred) v : mpred :=
