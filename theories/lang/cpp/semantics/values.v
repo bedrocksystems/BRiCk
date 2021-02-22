@@ -288,7 +288,7 @@ one is [PTRS_IMPL].
     o_dot (o_sub _ ty i) (o_sub _ ty j) = o_sub _ ty (i + j).
 End PTRS.
 
-Module Type PTRS_DERIVED (Import L : PTRS).
+Module Type PTRS_DERIVED (Import P : PTRS).
   Parameter same_alloc : ptr -> ptr -> Prop.
   Axiom same_alloc_eq : same_alloc = same_property ptr_alloc_id.
 
@@ -407,7 +407,7 @@ Module Type PTRS_MIXIN (Import P : PTRS) (Import PD : PTRS_DERIVED P).
   Notation _derived := (@o_derived _) (only parsing).
 End PTRS_MIXIN.
 
-Module Type VAL_MIXIN (Import L : PTRS) (Import R : RAW_BYTES).
+Module Type VAL_MIXIN (Import P : PTRS) (Import R : RAW_BYTES).
 
 (** * Values
     Primitive abstract C++ runtime values come in two flavors.
