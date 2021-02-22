@@ -4,9 +4,6 @@
  * See the LICENSE-BedRock file in the repository root for details.
  *)
 
-Require Import iris.base_logic.lib.wsat.
-Import invG.
-
 From bedrock.lang.cpp Require Import ast semantics.
 From bedrock.lang.cpp.logic Require Import
     pred path_pred heap_pred wp.
@@ -43,8 +40,16 @@ Section cmpxchg_derived.
     intros. iIntros "(F1 & F2 & F3 & Hex & AU)".
     iApply wp_atom_compare_exchange_n_cst. iFrame.
     iAuIntro1.
-    iApply (aacc1_aupd_commit with "AU").
-  Abort.
+    iApply (aacc1_aupd_commit with "AU"); [done|].
+    rewrite {1}/atomic1_acc.
+    iIntros "Hp !>". iExists _. iFrame.
+    iSplit. { by iIntros "$ !> $". }
+    iIntros "!>" (b v') "[Hp F]".
+    iDestruct "F" as %[(?&?&?)|(?&?&?)]; subst; [|done].
+    iFrame. iIntros "!> Post !>". iSplit.
+    - iIntros "[% Hex]". by iApply "Post".
+    - by iIntros "[% _]".
+  Qed.
 
   (* A failed SC strong compare exchange, which tell us that the values are
     truly different. *)
@@ -62,11 +67,19 @@ Section cmpxchg_derived.
       |-- wp_atom' AO__atomic_compare_exchange_n ty
                   (p::succmemord::val_p::failmemord::desired::weak::nil) Q.
   Proof.
-    intros. iIntros "(F1 & F2 & F3 & % & Hex & AU)".
+    intros. iIntros "(? & ? & ? & % & ? & AU)".
     iApply wp_atom_compare_exchange_n_cst. iFrame.
     iAuIntro1.
-    iApply (aacc1_aupd_commit with "AU").
-  Abort.
+    iApply (aacc1_aupd_commit with "AU"); [done|].
+    rewrite {1}/atomic1_acc.
+    iIntros "? !>". iExists _. iFrame.
+    iSplit. { by iIntros "$ !> $". }
+    iIntros "!>" (b v') "[? F]".
+    iDestruct "F" as %[(?&?&?)|(?&?&?)]; subst; [done|].
+    iFrame. iIntros "!> Post !>". iSplit.
+    - by iIntros "[% _]".
+    - iIntros "[% ?]". by iApply "Post".
+  Qed.
 
   (* An SC compare and exchange *)
   Lemma wp_atom_compare_exchange_cst_suc :
@@ -86,11 +99,19 @@ Section cmpxchg_derived.
       |-- wp_atom' AO__atomic_compare_exchange ty
                   (p::succmemord::expected_p::failmemord::desired_p::weak::nil) Q.
   Proof.
-    intros. iIntros "(F1 & F2 & F3 & Pre & AU)".
+    intros. iIntros "(? & ? & ? & ? & AU)".
     iApply wp_atom_compare_exchange_cst. iFrame.
     iAuIntro1.
-    iApply (aacc1_aupd_commit with "AU").
-  Abort.
+    iApply (aacc1_aupd_commit with "AU"); [done|].
+    rewrite {1}/atomic1_acc.
+    iIntros "? !>". iExists _. iFrame.
+    iSplit. { by iIntros "$ !> $". }
+    iIntros "!>" (b v') "[? F]".
+    iDestruct "F" as %[(?&?&?)|(?&?&?)]; subst; [|done].
+    iFrame. iIntros "!> Post !>". iSplit.
+    - iIntros "[% ?]". by iApply "Post".
+    - by iIntros "[% _]".
+  Qed.
 
   Lemma wp_atom_compare_exchange_cst_fail :
     forall q p expected_p desired_p weak succmemord failmemord Q
@@ -109,9 +130,17 @@ Section cmpxchg_derived.
       |-- wp_atom' AO__atomic_compare_exchange ty
                   (p::succmemord::expected_p::failmemord::desired_p::weak::nil) Q.
   Proof.
-    intros. iIntros "(F1 & F2 & F3 & % & Pre & AU)".
+    intros. iIntros "(? & ? & ? & % & ? & AU)".
     iApply wp_atom_compare_exchange_cst. iFrame.
     iAuIntro1.
-    iApply (aacc1_aupd_commit with "AU").
-  Abort.
+    iApply (aacc1_aupd_commit with "AU"); [done|].
+    rewrite {1}/atomic1_acc.
+    iIntros "? !>". iExists _. iFrame.
+    iSplit. { by iIntros "$ !> $". }
+    iIntros "!>" (b v') "[? F]".
+    iDestruct "F" as %[(?&?&?)|(?&?&?)]; subst; [done|].
+    iFrame. iIntros "!> Post !>". iSplit.
+    - by iIntros "[% _]".
+    - iIntros "[% ?]". by iApply "Post".
+  Qed.
 End cmpxchg_derived.
