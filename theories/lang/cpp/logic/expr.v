@@ -809,11 +809,11 @@ Module Type Expr.
       |-- wp_prval Enull Q.
 
     (** [new (...) C(...)]
-        - invokes a C++ new operator [new_fn], which returns a pointer [storage_ptr];
+        - invokes a C++ new operator [new_fn], which returns a storage pointer [storage_ptr];
           [new_fn] _might_ allocate memory
           (https://eel.is/c++draft/expr.new#10), or return an argument
           address for some forms of placement new;
-        - constructs a pointer [obj_ptr], which shares the address of [storage_ptr];
+        - constructs an object pointer [obj_ptr], which shares the address of [storage_ptr];
         - invokes the constructor C over [obj_ptr].
         https://eel.is/c++draft/expr.new
 
