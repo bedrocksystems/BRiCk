@@ -890,10 +890,15 @@ Module Type Expr.
     Axiom wp_prval_delete : forall delete_fn e ty dtor destroyed_type Q,
         (* call the destructor on the object, and then call delete_fn *)
         wp_prval e (fun v free =>
-          Exists obj_ptr storage_ptr, [| v = Vptr obj_ptr |] **
-            provides_storage storage_ptr obj_ptr ty **
-            destruct_val destroyed_type obj_ptr dtor
-              (fspec delete_fn.2 ti (Vptr $ _global delete_fn.1) (Vptr storage_ptr :: nil) (fun v => Q v free)))
+          Exists obj_ptr storage_ptr sz,
+            [| v = Vptr obj_ptr |] **
+            [| size_of destroyed_type = Some sz |] **
+            destruct_val destroyed_type obj_ptr dtor   (* Calling destructor with object pointer *)
+              (provides_storage storage_ptr obj_ptr ty ** (* Token for converting obj memory to storage memory *)
+               obj_ptr |-> anyR destroyed_type 1 **    (* A trade; similar to end_provides_storage. *)
+                (storage_ptr |-> blockR sz -*
+                  fspec delete_fn.2 ti (Vptr $ _global delete_fn.1) (* Calling deallocator with storage pointer *)
+                    (Vptr storage_ptr :: nil) (fun v => Q v free))))
         |-- wp_prval (Edelete false (Some delete_fn) e destroyed_type dtor ty) Q.
 
     (** temporary expressions
