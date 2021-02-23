@@ -367,6 +367,10 @@ Module Type CPP_LOGIC (Import CC : CPP_LOGIC_CLASS)
       pinned_ptr va p ⊢
       aligned_ptr n p ∗-∗ [| (n | va)%N |].
 
+    (* TODO: allow deriving this. *)
+    Axiom aligned_mult_weaken : forall m n p,
+      aligned_ptr (m * n) p ⊢ aligned_ptr n p.
+
     (**
       [type_ptr {resolve := resolve} ty p] asserts that [p] points to
       a (possibly dead) object of type [ty] (in environment
