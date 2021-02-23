@@ -872,13 +872,21 @@ Module Type Expr.
        https://eel.is/c++draft/expr.delete
 
        TODO this does not support array delete yet.
+       NOTE: https://eel.is/c++draft/expr.delete#7.1 says:
+       > The value returned from the allocation call of the new-expression
+       > shall be passed as the first argument to the deallocation function.
+
+       Hence, the destructor is passed a pointer to the object, and the
+       deallocation function [delete] is passed a pointer to the the
+       underlying storage.
      *)
     Axiom wp_prval_delete : forall delete_fn e ty dtor destroyed_type Q,
         (* call the destructor on the object, and then call delete_fn *)
         wp_prval e (fun v free =>
-                      Exists vp, [| v = Vptr vp |] **
-          destruct_val destroyed_type vp dtor
-              (fspec delete_fn.2 ti (Vptr $ _global delete_fn.1) (Vptr vp :: nil) (fun v => Q v free)))
+          Exists obj_ptr storage_ptr, [| v = Vptr obj_ptr |] **
+            provides_storage storage_ptr obj_ptr ty **
+            destruct_val destroyed_type obj_ptr dtor
+              (fspec delete_fn.2 ti (Vptr $ _global delete_fn.1) (Vptr storage_ptr :: nil) (fun v => Q v free)))
         |-- wp_prval (Edelete false (Some delete_fn) e destroyed_type dtor ty) Q.
 
     (** temporary expressions
