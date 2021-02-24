@@ -98,11 +98,11 @@ Module Type CPP_LOGIC (Import CC : CPP_LOGIC_CLASS)
     Context `{Σ : cpp_logic}.
 
     (**
-      [_valid_ptr strict p] is a persistent assertion that [p] is a _valid pointer_, that is:
+      [_valid_ptr vt p] is a persistent assertion that [p] is a _valid pointer_, that is:
       - [p] can be [nullptr]
       - [p] can point to a function or a (possibly dead) object [o]
-      - if [strict = false], [p] can be past-the-end of a (possibly dead) object [o].
-      In particular, [_valid_ptr strict p] prevents producing [p] by incrementing
+      - if [vt = Relaxed], [p] can be past-the-end of a (possibly dead) object [o].
+      In particular, [_valid_ptr vt p] prevents producing [p] by incrementing
       past-the-end pointers into overflow territory.
 
       Our definition of validity includes all cases in which a pointer is not
@@ -110,7 +110,7 @@ Module Type CPP_LOGIC (Import CC : CPP_LOGIC_CLASS)
       (https://eel.is/c++draft/basic.compound#3.1), except that our concept
       of validity survives deallocation; a pointer is only valid according to
       the standard (or "standard-valid") if it is _both_ valid ([_valid_ptr
-      strict p]) and live ([live_ptr p]); we require both where needed (e.g.
+      vt p]) and live ([live_ptr p]); we require both where needed (e.g.
       [eval_ptr_eq]).
 
       When the duration of a region of storage ends [note 1], contained objects [o] go
@@ -118,7 +118,7 @@ Module Type CPP_LOGIC (Import CC : CPP_LOGIC_CLASS)
       _invalid pointer values_ (https://eel.is/c++draft/basic.compound#3.1);
       this is called _pointer zapping_ [note 1].
       In our semantics, that only consumes the non-persistent predicate
-      [live_ptr p], not the persistent predicate [_valid_ptr strict p].
+      [live_ptr p], not the persistent predicate [_valid_ptr vt p].
 
       Following Cerberus, [live_alloc_id] tracks liveness per allocation
       ID (see comments for [ptr]), and [live_ptr] is derived from it. Hence,
