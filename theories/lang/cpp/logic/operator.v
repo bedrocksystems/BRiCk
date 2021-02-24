@@ -140,10 +140,10 @@ Section with_Σ.
     (is_Some (ptr_vaddr p) -> bool_decide (p = nullptr) = res) ->
     valid_ptr p ⊢ ptr_comparable p nullptr res.
   Proof.
-    iIntros "%HresI V" ([Haddr _]); iExists Relaxed, Strict.
+    iIntros "%HresI V" ([Haddr _]); iExists Relaxed, Relaxed.
     iDestruct (same_address_bool_null with "V") as %->.
     iFrame ((HresI Haddr) (eq_refl nullptr)) "V".
-    iApply strict_valid_ptr_nullptr.
+    iApply valid_ptr_nullptr.
   Qed.
 
   Lemma self_ptr_comparable p :
