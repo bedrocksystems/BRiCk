@@ -806,6 +806,10 @@ Module SimpleCPP.
       by iDestruct (mem_inj_own_agree with "MO1 MO2") as "<-".
     Qed.
 
+    Lemma aligned_mult_weaken m n p :
+      aligned_ptr (m * n) p ⊢ aligned_ptr n p.
+    Proof. rewrite /aligned_ptr. repeat f_equiv. by exists m. Qed.
+
     Definition type_ptr {resolve : genv} (ty : type) (p : ptr) : mpred :=
       [| p <> nullptr |] **
       (Exists align, [| @align_of resolve ty = Some align |] ** aligned_ptr align p) **

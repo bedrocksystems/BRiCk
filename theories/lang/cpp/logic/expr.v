@@ -821,9 +821,11 @@ Module Type Expr.
           _provide storage_ for a new _complete object_ [o]
           (http://eel.is/c++draft/intro.object#def:provides_storage).
 
-          In that case, the C++ abstract machine can choose to make [obj_ptr <>
-          storage_ptr], so that the old pointer [storage_ptr] cannot be used to access
-          the new object. Following Cerberus, we model this by giving [obj_ptr] a
+          In that case, the C++ abstract machine can choose to make [obj_ptr
+          <> storage_ptr] (while keeping the same address), so that the old
+          pointer [storage_ptr] cannot be used to access the new object.
+          Inspired by Cerberus, we model this by _allowing_ [obj_ptr] to have
+          a
           different allocation ID.
 
         - The created object might be a subobject of an existing object
@@ -839,17 +841,21 @@ Module Type Expr.
      *)
     Axiom wp_prval_new : forall new_fn new_args init aty ty Q,
         wp_args new_args (fun vs free =>
-          Exists sz, [| size_of aty = Some sz |] **
+          Exists sz al, [| size_of aty = Some sz |] ** [| align_of aty = Some al |] **
             |> fspec new_fn.2 ti (Vptr $ _global new_fn.1) (Vn sz :: vs) (fun res =>
                   Exists storage_ptr : ptr,
                     [| res = Vptr storage_ptr |] **
                     if bool_decide (storage_ptr = nullptr) then
                       Q res free
                     else
-                      (storage_ptr |-> blockR sz ** (* [blockR sz -|- tblockR aty] *)
-                       (* todo: ^ This misses an condition that [storage_ptr] is suitably aligned. (issue #149) *)
+                      (storage_ptr |-> (blockR sz ** alignedR al) ** (* [blockR sz -|- tblockR aty] *)
+                       (* todo: ^ This misses an condition that [storage_ptr]
+                        is suitably aligned, accounting for
+                        __STDCPP_DEFAULT_NEW_ALIGNMENT__ (issue #149) *)
                            (Forall obj_ptr : ptr,
                               obj_ptr |-> anyR aty 1 (* TODO backwards compat [tblockR aty] *) -*
+                              (* This also ensures these pointers share their
+                              address (see [provides_storage_same_address]) *)
                               provides_storage storage_ptr obj_ptr aty -*
                               wp_init (type_of init) obj_ptr init (fun free' =>
                                                               Q (Vptr obj_ptr) (free ** free'))))))

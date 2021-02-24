@@ -1035,6 +1035,13 @@ Section with_cpp.
   #[global] Instance alignedR_timeless {al} : Timeless (alignedR al).
   Proof. rewrite alignedR_eq. apply _. Qed.
 
+  Lemma alignedR_mult_weaken m n :
+    alignedR (m * n) ⊢ alignedR n.
+  Proof.
+    rewrite alignedR_eq /alignedR_def. constructor=>p/=.
+    exact: aligned_mult_weaken.
+  Qed.
+
   Lemma null_nonnull (R : Rep) : is_null |-- is_nonnull -* R.
   Proof.
     rewrite is_null_eq /is_null_def is_nonnull_eq /is_nonnull_def.
@@ -1050,7 +1057,7 @@ Section with_cpp.
     [∗list] i ∈ seq 0 (N.to_nat sz),
       _offsetR (o_sub σ T_uint8 (Z.of_nat i)) (anyR (resolve:=σ) T_uint8 1).
 
-  (* [tblockR ty] is a [blockR] that is the size of [ty].
+  (* [tblockR ty] is a [blockR] that is the size of [ty] and properly aligned.
    * it is a convenient short-hand since it happens frequently, but there is nothing
    * special about it.
    *)

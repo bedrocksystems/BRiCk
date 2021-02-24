@@ -348,8 +348,8 @@ Module Type CPP_LOGIC (Import CC : CPP_LOGIC_CLASS)
     Axiom provides_storage_same_address : forall storage_ptr obj_ptr ty,
       provides_storage storage_ptr obj_ptr ty |-- [| same_address storage_ptr obj_ptr |].
     Axiom provides_storage_pinned_ptr : forall storage_ptr obj_ptr aty va,
-       provides_storage storage_ptr obj_ptr aty ** pinned_ptr va storage_ptr
-       |-- pinned_ptr va obj_ptr.
+      provides_storage storage_ptr obj_ptr aty ** pinned_ptr va storage_ptr
+      |-- pinned_ptr va obj_ptr.
 
     Global Existing Instances
       pinned_ptr_persistent pinned_ptr_affine pinned_ptr_timeless.
@@ -366,6 +366,10 @@ Module Type CPP_LOGIC (Import CC : CPP_LOGIC_CLASS)
     Axiom pinned_ptr_aligned_divide : forall va n p,
       pinned_ptr va p ⊢
       aligned_ptr n p ∗-∗ [| (n | va)%N |].
+
+    (* TODO: allow deriving this. *)
+    Axiom aligned_mult_weaken : forall m n p,
+      aligned_ptr (m * n) p ⊢ aligned_ptr n p.
 
     (**
       [type_ptr {resolve := resolve} ty p] asserts that [p] points to
