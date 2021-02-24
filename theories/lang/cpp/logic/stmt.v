@@ -337,7 +337,7 @@ Module Type Stmt.
        ; k_continue := k.(k_continue) |}.
 
     Axiom wp_switch : forall ρ e b Q,
-        wp_prval ρ e (fun v free =>
+        wp_prval ρ e (fun v free => free **
                     Exists vv : Z, [| v = Vint vv |] **
                     wp_switch_block (has_default b) ρ vv (fun x => ~gather_cases b x) None b (Kswitch Q))
         |-- wp ρ (Sswitch e (Sseq b)) Q.
