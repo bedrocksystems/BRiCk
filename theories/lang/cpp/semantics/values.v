@@ -259,6 +259,10 @@ one is [PTRS_IMPL].
   (** Map pointers to allocation IDs; total on valid pointers thanks to
   [valid_ptr_alloc_id]. *)
   Parameter ptr_alloc_id : ptr -> option alloc_id.
+  Parameter null_alloc_id : alloc_id.
+  Axiom ptr_alloc_id_nullptr :
+    ptr_alloc_id nullptr = Some null_alloc_id.
+
   (**
   Map pointers to the address they represent,
   (https://eel.is/c++draft/basic.compound#def:represents_the_address).

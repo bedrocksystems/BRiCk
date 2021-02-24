@@ -36,6 +36,8 @@ Module SIMPLE_PTRS_IMPL : PTRS_INTF_MINIMAL.
   Definition ptr' : Set := alloc_id * Z.
   Definition ptr : Set := option ptr'.
 
+  Definition null_alloc_id : alloc_id := null_alloc_id.
+
   Definition invalid_ptr : ptr := None.
   Definition mkptr a n : ptr := Some (a, n).
   Definition nullptr : ptr := mkptr null_alloc_id 0.
@@ -45,6 +47,9 @@ Module SIMPLE_PTRS_IMPL : PTRS_INTF_MINIMAL.
     '(_, va) ← p;
     guard 0 ≤ va;
     Some (Z.to_N va).
+
+  Lemma ptr_alloc_id_nullptr : ptr_alloc_id nullptr = Some null_alloc_id.
+  Proof. done. Qed.
 
   Definition offset := option Z.
   Instance offset_eq_dec : EqDecision offset := _.
