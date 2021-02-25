@@ -769,15 +769,6 @@ Section with_cpp.
     Qed.
   End fspec.
 
-  (* [Tmember_func ty fty] constructs the function type for a
-     member function that takes a [this] parameter of [ty]
-   *)
-  Definition Tmember_func (ty : type) (fty : type) : type :=
-    match fty with
-    | @Tfunction cc ret args => Tfunction (cc:=cc) ret (Qconst (Tptr ty) :: args)
-    | _ => fty
-    end.
-
   (** [mspec tt this_ty fty ..] is the analogue of [fspec] for member functions.
 
       NOTE this includes constructors and destructors.
