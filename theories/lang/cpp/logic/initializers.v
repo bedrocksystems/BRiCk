@@ -168,7 +168,11 @@ Module Type Init.
     standard is not explicit about the initialization order for default
     initialization of arrays, but the standard does explicitly specify this
     ordering for arrays with an explicit element list
-    (https://eel.is/c++draft/dcl.init#general-15.5). Therefore, it seems
+    (https://eel.is/c++draft/dcl.init#general-15.5). The standard also demands
+    destructors to be run in opposite order (https://eel.is/c++draft/dcl.init.general#19),
+    and it's expected that every object "is destroyed in the exact reverse order
+    it was constructed." (https://doi.org/10.1145/2103656.2103718,
+    https://eel.is/c++draft/expr.delete#6). Therefore, it seems
     reasonable to assume that the same ordering applies for default
     initialization. For this reason, the rule for default initalization
     simply defers to the rule for initialization with an empty initializer
