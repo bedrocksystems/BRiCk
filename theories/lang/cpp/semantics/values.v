@@ -187,10 +187,11 @@ one is [PTRS_IMPL].
   Reserved Notation "p .., o" (at level 11, left associativity).
   Notation "p .., o" := (_offset_ptr p o) : ptr_scope.
   Notation "o1 .., o2" := (o_dot o1 o2) : offset_scope.
+  Global Open Scope ptr_scope.
 
-  Axiom offset_ptr_id : forall p, (p .., o_id = p)%ptr.
+  Axiom offset_ptr_id : forall p, p .., o_id = p.
   Axiom offset_ptr_dot : forall p o1 o2,
-    (p .., (o1 .., o2) = p .., o1 .., o2)%ptr.
+    p .., (o1 .., o2) = p .., o1 .., o2.
 
   (** C++ provides a distinguished pointer [nullptr] that is *never
       dereferenceable*
@@ -282,13 +283,13 @@ one is [PTRS_IMPL].
   Wrapped by [same_address_o_sub_eq]. *)
   Axiom ptr_vaddr_o_sub_eq : forall p σ ty n1 n2 sz,
     size_of σ ty = Some sz -> (sz > 0)%N ->
-    (same_property ptr_vaddr (p .., o_sub _ ty n1) (p .., o_sub _ ty n2) ->
-    n1 = n2)%ptr.
+    same_property ptr_vaddr (p .., o_sub _ ty n1) (p .., o_sub _ ty n2) ->
+    n1 = n2.
   Axiom o_dot_sub : ∀ {σ : genv} i j ty,
     o_dot (o_sub _ ty i) (o_sub _ ty j) = o_sub _ ty (i + j).
 End PTRS.
 
-Module Type PTRS_DERIVED (Import L : PTRS).
+Module Type PTRS_DERIVED (Import P : PTRS).
   Parameter same_alloc : ptr -> ptr -> Prop.
   Axiom same_alloc_eq : same_alloc = same_property ptr_alloc_id.
 
@@ -381,13 +382,13 @@ Module Type PTRS_MIXIN (Import P : PTRS) (Import PD : PTRS_DERIVED P).
   Notation _offset_ptr_sub_0 := offset_ptr_sub_0 (only parsing).
 
   Lemma o_sub_sub p ty i j σ :
-    (p .., o_sub _ ty i .., o_sub _ ty j = (p .., o_sub _ ty (i + j)))%ptr.
+    p .., o_sub _ ty i .., o_sub _ ty j = (p .., o_sub _ ty (i + j)).
   Proof. by rewrite -offset_ptr_dot o_dot_sub. Qed.
 
   (* TODO: drop for [o_dot_o_sub]. *)
   Lemma _o_sub_sub_nneg : ∀ σ p ty (z1 z2 : Z),
-    (0 <= z1 -> 0 <= z2 ->
-    p .., o_sub σ ty z1 .., o_sub σ ty z2 = p .., o_sub σ ty (z1 + z2))%ptr.
+    0 <= z1 -> 0 <= z2 ->
+    p .., o_sub σ ty z1 .., o_sub σ ty z2 = p .., o_sub σ ty (z1 + z2).
   Proof. intros * _ _. exact: o_sub_sub. Qed.
 
   #[deprecated(since="2021-02-13", note="Use stronger [o_sub_sub] (or [o_dot_sub]).")]
@@ -407,7 +408,7 @@ Module Type PTRS_MIXIN (Import P : PTRS) (Import PD : PTRS_DERIVED P).
   Notation _derived := (@o_derived _) (only parsing).
 End PTRS_MIXIN.
 
-Module Type VAL_MIXIN (Import L : PTRS) (Import R : RAW_BYTES).
+Module Type VAL_MIXIN (Import P : PTRS) (Import R : RAW_BYTES).
 
 (** * Values
     Primitive abstract C++ runtime values come in two flavors.

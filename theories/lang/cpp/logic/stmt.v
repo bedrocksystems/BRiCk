@@ -9,8 +9,7 @@ From Coq.Classes Require Import
      RelationClasses Morphisms.
 
 From Coq Require Import
-     Lists.List
-     Strings.String.
+     Lists.List.
 
 From bedrock.lang.cpp Require Import ast semantics.
 From bedrock.lang.cpp.logic Require Import
@@ -41,13 +40,15 @@ Module Type Stmt.
     Local Notation anyR := (anyR (resolve:=resolve)) (only parsing).
     Local Notation uninitR := (uninitR (resolve:=resolve)) (only parsing).
 
+    Implicit Types Q : KpredI.
+
    (* the semantics of return is like an initialization
      * expression.
      *)
     Axiom wp_return_void : forall ρ Q,
-        Q.(k_return) None emp |-- wp ρ (Sreturn None) Q.
+        Q ReturnVoid |-- wp ρ (Sreturn None) Q.
 
-    Axiom wp_return : forall ρ c e Q,
+    Axiom wp_return : forall ρ c e (Q : KpredI),
            match c with
            | Prvalue =>
              if is_aggregate (type_of e) then
@@ -56,23 +57,23 @@ Module Type Stmt.
                 * so we need to re-construct this information from the value
                 * category of the expression.
                 *)
-               wp_init ρ (erase_qualifiers (type_of e)) (_result ρ) (not_mine e) (Q.(k_return) (Some (Vptr $ _result ρ)))
+               wp_init ρ (erase_qualifiers (type_of e)) (_result ρ) (not_mine e) (fun free => free ** Q (ReturnVal (Vptr $ _result ρ)))
              else
-               wp_prval ρ e (fun v => Q.(k_return) (Some v))
+               wp_prval ρ e (fun v free => free ** Q (ReturnVal v))
            | Lvalue =>
-             wp_lval ρ e (fun v => Q.(k_return) (Some (Vptr v)))
+             wp_lval ρ e (fun v free => free ** Q (ReturnVal (Vptr v)))
            | Xvalue =>
-             wp_xval ρ e (fun v => Q.(k_return) (Some (Vptr v)))
+             wp_xval ρ e (fun v free => free ** Q (ReturnVal (Vptr v)))
            end
-        |-- wp ρ (Sreturn (Some (c, e))) Q.
+       |-- wp ρ (Sreturn (Some (c, e))) Q.
 
     Axiom wp_break : forall ρ Q,
-        |> Q.(k_break) |-- wp ρ Sbreak Q.
+        |> Q Break |-- wp ρ Sbreak Q.
     Axiom wp_continue : forall ρ Q,
-        |> Q.(k_continue) |-- wp ρ Scontinue Q.
+        |> Q Continue |-- wp ρ Scontinue Q.
 
     Axiom wp_expr : forall ρ vc e Q,
-        |> wpe ρ vc e (fun _ free => free ** Q.(k_normal))
+        |> wpe ρ vc e (fun _ free => free ** Q Normal)
         |-- wp ρ (Sexpr vc e) Q.
 
     (* This definition performs allocation of local variables
@@ -80,7 +81,7 @@ Module Type Stmt.
      * just aliases.
      *)
     Fixpoint wp_decl (ρ : region) (x : ident) (ty : type) (init : option Expr) (dtor : option obj_name)
-               (k : region -> Kpreds -> mpred) (Q : Kpreds)
+               (k : region -> KpredI -> mpred) (Q : KpredI)
                (* ^ Q is the continuation for after the declaration
                 *   goes out of scope.
                 * ^ k is the rest of the declaration
@@ -167,7 +168,7 @@ Module Type Stmt.
       end.
 
     Fixpoint wp_decls (ρ : region) (ds : list VarDecl)
-             (k : region -> Kpreds -> mpred) (Q : Kpreds) : mpred :=
+             (k : region -> Kpred -> mpred) (Q : Kpred) : mpred :=
       match ds with
       | nil => k ρ Q
       | {| vd_name := x ; vd_type := ty ; vd_init := init ; vd_dtor := dtor |} :: ds =>
@@ -177,9 +178,9 @@ Module Type Stmt.
     (* note(gmm): this rule is non-compositional because
      * wp_decls requires the rest of the block computation
      *)
-    Fixpoint wp_block (ρ : region) (ss : list Stmt) (Q : Kpreds) : mpred :=
+    Fixpoint wp_block (ρ : region) (ss : list Stmt) (Q : Kpred) : mpred :=
       match ss with
-      | nil => Q.(k_normal)
+      | nil => Q Normal
       | Sdecl ds :: ss =>
         wp_decls ρ ds (fun ρ => wp_block ρ ss) Q
       | s :: ss =>
@@ -308,7 +309,7 @@ Module Type Stmt.
       Variable e : Z.
       Variable Ldef : Z -> Prop.
 
-      Fixpoint wp_switch_block (Lcur : option (Z -> Prop)) (ls : list Stmt) (Q : Kpreds) : mpred :=
+      Fixpoint wp_switch_block (Lcur : option (Z -> Prop)) (ls : list Stmt) (Q : Kpred) : mpred :=
         match ls with
         | Scase sb :: ls =>
           wp_switch_block (or_case Lcur (wp_switch_branch sb)) ls Q
@@ -324,20 +325,21 @@ Module Type Stmt.
               wp_switch_block None ls Q
             end
           else
-            lfalse
+            False
         | nil =>
-          if has_def then ltrue else ([| Ldef e |] -* Q.(k_normal))
-        end.
+          if has_def then True else ([| Ldef e |] -* Q Normal)
+        end%I.
     End wp_switch_branch.
 
-    Definition Kswitch (k : Kpreds) : Kpreds :=
-      {| k_normal := k.(k_normal)
-       ; k_return := k.(k_return)
-       ; k_break  := k.(k_normal)
-       ; k_continue := k.(k_continue) |}.
+    Definition Kswitch (k : Kpred) : Kpred :=
+      KP (fun rt =>
+            match rt with
+            | Break => k Normal
+            | rt => k rt
+            end).
 
     Axiom wp_switch : forall ρ e b Q,
-        wp_prval ρ e (fun v free =>
+        wp_prval ρ e (fun v free => free **
                     Exists vv : Z, [| v = Vint vv |] **
                     wp_switch_block (has_default b) ρ vv (fun x => ~gather_cases b x) None b (Kswitch Q))
         |-- wp ρ (Sswitch e (Sseq b)) Q.
@@ -345,8 +347,8 @@ Module Type Stmt.
     (* note: case and default statements are only meaningful inside of [switch].
      * this is handled by [wp_switch_block].
      *)
-    Axiom wp_case : forall ρ sb Q, Q.(k_normal) |-- wp ρ (Scase sb) Q.
-    Axiom wp_default : forall ρ Q, Q.(k_normal) |-- wp ρ Sdefault Q.
+    Axiom wp_case : forall ρ sb Q, Q Normal |-- wp ρ (Scase sb) Q.
+    Axiom wp_default : forall ρ Q, Q Normal |-- wp ρ Sdefault Q.
 
   End with_resolver.
 
