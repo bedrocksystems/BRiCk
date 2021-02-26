@@ -14,7 +14,7 @@ Parameter eval_binop_impure : forall `{has_cpp : cpp_logic} {resolve : genv}, Bi
 Definition non_beginning_ptr `{has_cpp : cpp_logic} p' : mpred :=
   ∃ p o, [| p' = p .., o /\
     (* ensure that o is > 0 *)
-    some_Forall2 N.lt (ptr_vaddr p) (ptr_vaddr p') |]%ptr ∧ valid_ptr p.
+    some_Forall2 N.lt (ptr_vaddr p) (ptr_vaddr p') |] ∧ valid_ptr p.
 
 Section non_beginning_ptr.
   Context `{has_cpp : cpp_logic}.
@@ -162,22 +162,22 @@ Section with_Σ.
   (** Skeletons for ptr/int operators. *)
 
   Let eval_ptr_int_op (bo : BinOp) (f : Z -> Z) : Prop :=
-    forall resolve t w s p1 p2 o ty,
-      is_Some (size_of resolve t) ->
-      (p2 = p1 .., o_sub resolve ty (f o))%ptr ->
+    forall w s p1 p2 o ty,
+      is_Some (size_of resolve ty) ->
+      p2 = p1 .., _sub ty (f o) ->
       valid_ptr p1 ∧ valid_ptr p2 ⊢
       eval_binop_impure bo
-                (Tpointer t) (Tint w s) (Tpointer t)
-                (Vptr p1)    (Vint o)  (Vptr p2).
+                (Tpointer ty) (Tint w s) (Tpointer ty)
+                (Vptr p1)     (Vint o)   (Vptr p2).
 
   Let eval_int_ptr_op (bo : BinOp) (f : Z -> Z) : Prop :=
-    forall resolve t w s p1 p2 o ty,
-      is_Some (size_of resolve t) ->
-      (p2 = p1 .., o_sub resolve ty (f o))%ptr ->
+    forall w s p1 p2 o ty,
+      is_Some (size_of resolve ty) ->
+      p2 = p1 .., _sub ty (f o) ->
       valid_ptr p1 ∧ valid_ptr p2 ⊢
       eval_binop_impure bo
-                (Tint w s) (Tpointer t) (Tpointer t)
-                (Vint o)   (Vptr p1)    (Vptr p2).
+                (Tint w s) (Tpointer ty) (Tpointer ty)
+                (Vint o)   (Vptr p1)     (Vptr p2).
 
   (**
   lhs + rhs (https://eel.is/c++draft/expr.add#1): one of rhs or lhs is a
@@ -216,16 +216,16 @@ Section with_Σ.
   Liveness note: as above (https://eel.is/c++draft/expr.add#5.2).
   *)
   Axiom eval_ptr_ptr_sub :
-    forall resolve t w p1 p2 o1 o2 base ty,
-      is_Some (size_of resolve t) ->
-      (p1 = base .., o_sub resolve ty o1)%ptr ->
-      (p2 = base .., o_sub resolve ty o2)%ptr ->
+    forall w p1 p2 o1 o2 base ty,
+      is_Some (size_of resolve ty) ->
+      p1 = base .., _sub ty o1 ->
+      p2 = base .., _sub ty o2 ->
       (* Side condition to prevent overflow; needed per https://eel.is/c++draft/expr.add#note-1 *)
       has_type (Vint (o1 - o2)) (Tint w Signed) ->
       valid_ptr p1 ∧ valid_ptr p2 ⊢
       eval_binop_impure Bsub
-                (Tpointer t) (Tpointer t) (Tint w Signed)
-                (Vptr p1)    (Vptr p2)    (Vint (o1 - o2)).
+                (Tpointer ty) (Tpointer ty) (Tint w Signed)
+                (Vptr p1)     (Vptr p2)     (Vint (o1 - o2)).
 
   Lemma eval_ptr_nullptr_eq ty ap bp vp :
     (ap = nullptr /\ bp = vp \/ ap = vp /\ bp = nullptr) ->

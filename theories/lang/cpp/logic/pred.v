@@ -564,11 +564,11 @@ Module Type VALID_PTR_AXIOMS.
     support it for now, but this might hold there too. *)
     Axiom o_base_derived : forall p base derived,
       strict_valid_ptr (p .., o_base σ derived base) |--
-      [| p .., o_base σ derived base .., o_derived σ base derived = p |]%ptr.
+      [| p .., o_base σ derived base .., o_derived σ base derived = p |].
 
     Axiom o_derived_base : forall p base derived,
       strict_valid_ptr (p .., o_derived σ base derived) |--
-      [| p .., o_derived σ base derived .., o_base σ derived base = p |]%ptr.
+      [| p .., o_derived σ base derived .., o_base σ derived base = p |].
 
     (* Without the validity premise to the cancellation axioms ([o_sub_sub],
       [o_base_derived], [o_derived_base]) we could incorrectly deduce that
