@@ -96,7 +96,7 @@ Module Type Init.
 
     Fixpoint wpis (cls : globname) (this : ptr)
              (inits : list Initializer)
-             (Q : mpred -> mpred) : mpred :=
+             (Q : FreeTemps -> mpred) : mpred :=
       match inits with
       | nil => Q emp
       | i :: is' => wpi cls this i (fun f => f ** wpis cls this is' Q)
@@ -111,7 +111,7 @@ Module Type Init.
            end)
       |-- wp_init (Tnamed cls) addr (Econstructor cnd es (Tnamed cls)) Q.
 
-    Fixpoint wp_array_init (ety : type) (base : ptr) (es : list Expr) (idx : Z) (Q : mpred -> mpred) : mpred :=
+    Fixpoint wp_array_init (ety : type) (base : ptr) (es : list Expr) (idx : Z) (Q : FreeTemps -> mpred) : mpred :=
       match es with
       | nil => Q emp
       | e :: rest =>
@@ -135,7 +135,7 @@ Module Type Init.
       let actualsz := N.of_nat (length es) in
       es ++ repeatN f (desiredsz - actualsz).
 
-    Definition wp_array_init_fill (ety : type) (base : ptr) (es : list Expr) (f : option Expr) (sz : N) (Q : mpred -> mpred) : mpred :=
+    Definition wp_array_init_fill (ety : type) (base : ptr) (es : list Expr) (f : option Expr) (sz : N) (Q : FreeTemps -> mpred) : mpred :=
       let len := N.of_nat (length es) in
       match (len ?= sz)%N with
       | Lt =>
