@@ -86,10 +86,6 @@ Module Type CPP_LOGIC (Import CC : CPP_LOGIC_CLASS)
 
   Implicit Types (p : ptr).
 
-  (* TODO: unify with [raw_byte]. This should just be machine bytes. See also
-    cpp2v-core#135. *)
-  Parameter runtime_val : Type.
-
   (* XXX why does this not work in the module type. *)
   Bind Scope ptr_scope with ptr.
   Bind Scope offset_scope with offset.
@@ -292,30 +288,6 @@ Module Type CPP_LOGIC (Import CC : CPP_LOGIC_CLASS)
       Axiom dtor_at_valid   : forall f p,   dtor_at f p |-- valid_ptr p.
     End with_genv.
 
-    Parameter encodes : forall {σ:genv} (t : type) (v : val) (vs : list runtime_val), mpred.
-
-    (** Virtual points-to. *)
-    (** [vbyte va rv q] exposes the access to the underlying byte value, but
-      still with the current address space where the address mapping is
-      implicity within mpred.
-      [vbyte] is an abstraction for the physical machine where the aspect of
-      thread-local state is hidden. For example, the abstraction will model
-      virtual-physical address translation, as well as weak memory behaviors of
-      physical memory.
-      The logic of [mpred] will be enriched orthogonally to have modalities and
-      axioms to support lower-level interactions with such feature. For example,
-      there will be a theory to support transferring ownership of physical bytes
-      across address spaces. *)
-    Parameter vbyte : forall (va : vaddr) (rv : runtime_val) (q : Qp), mpred.
-
-    Axiom vbyte_fractional : forall va rv, Fractional (vbyte va rv).
-    Axiom vbyte_timeless : forall va rv q, Timeless (vbyte va rv q).
-    Global Existing Instances vbyte_fractional vbyte_timeless.
-    (** cpp2v-core#194: The fraction is valid, agreement? *)
-
-    Definition vbytes (a : vaddr) (vs : list runtime_val) (q : Qp) : mpred :=
-      [∗list] o ↦ v ∈ vs, (vbyte (a+N.of_nat o)%N v q).
-
     (** Physical representation of pointers. *)
     (** [pinned_ptr va p] states that the abstract pointer [p] is tied to a
       virtual address [va].
@@ -331,14 +303,6 @@ Module Type CPP_LOGIC (Import CC : CPP_LOGIC_CLASS)
         Observe2 [| va = va' |] (pinned_ptr va p) (pinned_ptr va' p).
     Global Existing Instance pinned_ptr_unique.
     Axiom pinned_ptr_null : |-- pinned_ptr 0 nullptr.
-
-    (* A pinned ptr allows access to the underlying bytes. The fupd is needed to
-      update the C++ abstraction's ghost state. *)
-    Axiom pinned_ptr_borrow : forall {σ} ty p v va,
-      @tptsto σ ty 1 p v ** pinned_ptr va p |--
-        |={↑pred_ns}=> Exists vs, @encodes σ ty v vs ** vbytes va vs 1 **
-                (Forall v' vs', @encodes σ ty v' vs' -* vbytes va vs' 1 -*
-                                |={↑pred_ns}=> @tptsto σ ty 1 p v').
 
     Axiom offset_pinned_ptr : forall resolve o n va p,
       PTR.eval_offset resolve o = Some n ->
@@ -644,17 +608,6 @@ Section with_cpp.
     destruct (ptr_eq_dec p nullptr); subst; last by eauto.
     rewrite {1}tptsto_nonnull. exact: bi.False_elim.
   Qed.
-
-  Global Instance vbyte_as_fractional a v q :
-    AsFractional (vbyte a v q) (vbyte a v) q.
-  Proof. exact: Build_AsFractional. Qed.
-
-  Global Instance vbytes_fractional a vs : Fractional (vbytes a vs).
-  Proof. apply fractional_big_sepL=>o v. apply vbyte_fractional. Qed.
-  Global Instance vbytes_as_fractional a vs q :
-    AsFractional (vbytes a vs q) (vbytes a vs) q.
-  Proof. exact: Build_AsFractional. Qed.
-  (** cpp2v-core#194: The fraction is valid, agreement? *)
 
   (** function specifications written in weakest pre-condition style.
    *)
