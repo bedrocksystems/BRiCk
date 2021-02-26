@@ -111,7 +111,7 @@ Module Type Init.
            end)
       |-- wp_init (Tnamed cls) addr (Econstructor cnd es ty) Q.
 
-    Fixpoint wp_array_init (ety : type) (base : ptr) (es : list Expr) (idx : nat) (Q : mpred -> mpred) : mpred :=
+    Fixpoint wp_array_init (ety : type) (base : ptr) (es : list Expr) (idx : Z) (Q : mpred -> mpred) : mpred :=
       match es with
       | nil => Q emp
       | e :: rest =>
@@ -121,26 +121,29 @@ Module Type Init.
                sequence-points between all of the elements of an
                initializer list (c.f. http://eel.is/c++draft/dcl.init.list#4)
            *)
-          wp_initialize ety (base .[ ety ! idx ]) e (fun free => free ** wp_array_init ety base rest (S idx) Q)
+          wp_initialize ety (base .[ ety ! idx ]) e (fun free => free ** wp_array_init ety base rest (Z.succ idx) Q)
       end%I.
 
-    Definition wp_array_init_repeat (ety : type) (base : ptr) (e : Expr) (count : nat) (Q : mpred -> mpred) : mpred :=
-      wp_array_init ety base (repeat e count) 0 Q.
+    (* TODO: This could be useful elsewhere and should maybe be moved. *)
+    Definition repeatN {A} (x : A) (count : N) : list A :=
+      repeat x (N.to_nat count).
 
     #[global]
-    Arguments wp_array_init_repeat : simpl never.
+    Arguments repeatN : simpl never.
 
-    Definition wp_array_init_fill (ety : type) (base : ptr) (es : list Expr) (f : option Expr) (sz : nat) (Q : mpred -> mpred) : mpred :=
-      let len := length es in
-      match Nat.compare len sz with
+    Definition fill_initlist (desiredsz : N) (es : list Expr) (f : Expr) : list Expr :=
+      let actualsz := N.of_nat (length es) in
+      es ++ repeatN f (desiredsz - actualsz).
+
+    Definition wp_array_init_fill (ety : type) (base : ptr) (es : list Expr) (f : option Expr) (sz : N) (Q : mpred -> mpred) : mpred :=
+      let len := N.of_nat (length es) in
+      match (len ?= sz)%N with
       | Lt =>
           match f with
           | None => False
-          | Some fill =>
-              wp_array_init ety base es 0
-                (fun free => free ** wp_array_init_repeat ety (base .[ ety ! len ]) fill (sz - len) Q)
+          | Some fill => wp_array_init ety base (fill_initlist sz es fill) 0%Z Q
           end
-      | Eq => wp_array_init ety base es 0 Q
+      | Eq => wp_array_init ety base es 0%Z Q
       (* <http://eel.is/c++draft/dcl.init.general#16.5>
 
          Programs which contain more initializer expressions than
@@ -149,9 +152,9 @@ Module Type Init.
       | Gt => False
       end.
 
-    Axiom wp_init_initlist_array :forall ls fill ety sz addr Q,
-      wp_array_init_fill ety addr ls fill (N.to_nat sz) Q
-      |-- wp_init (Tarray ety sz) addr (Einitlist ls fill (Tarray ety sz)) Q.
+    Axiom wp_init_initlist_array :forall ls fill ety (sz : N) base Q,
+      wp_array_init_fill ety base ls fill sz Q
+      |-- wp_init (Tarray ety sz) base (Einitlist ls fill (Tarray ety sz)) Q.
 
     (* https://eel.is/c++draft/dcl.init#general-7.2 says that "To
     default-initialize an object of type T means: If T is an array type, each
