@@ -102,14 +102,14 @@ Module Type Init.
       | i :: is' => wpi cls this i (fun f => f ** wpis cls this is' Q)
       end%I.
 
-    Axiom wp_init_constructor : forall cls addr cnd es Q ty,
+    Axiom wp_init_constructor : forall cls addr cnd es Q,
       wp_args es (fun ls free =>
            match σ.(genv_tu) !! cnd with
            | Some cv =>
              |> mspec (Tnamed cls) (type_of_value cv) ti (Vptr $ _global cnd) (Vptr addr :: ls) (fun _ => Q free)
            | _ => False
            end)
-      |-- wp_init (Tnamed cls) addr (Econstructor cnd es ty) Q.
+      |-- wp_init (Tnamed cls) addr (Econstructor cnd es (Tnamed cls)) Q.
 
     Fixpoint wp_array_init (ety : type) (base : ptr) (es : list Expr) (idx : Z) (Q : mpred -> mpred) : mpred :=
       match es with
