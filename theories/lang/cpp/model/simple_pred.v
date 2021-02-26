@@ -984,7 +984,8 @@ Module SimpleCPP.
       destruct oa2; iApply (observe_2 with "H1 H2").
     Qed.
 
-    Theorem pinned_ptr_borrow {σ} ty p v va :
+    (* This is now internal to the C++ abstract machine. *)
+    Local Lemma pinned_ptr_borrow {σ} ty p v va :
       @tptsto σ ty 1 p v ** pinned_ptr va p |--
         |={↑pred_ns}=> Exists vs, @encodes σ ty v vs ** vbytes va vs 1 **
                 (Forall v' vs', @encodes σ ty v' vs' -* vbytes va vs' 1 -*
