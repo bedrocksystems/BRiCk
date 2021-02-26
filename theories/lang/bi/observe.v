@@ -218,6 +218,21 @@ Section bi.
     intros. iIntros "[_ P1] [_ P2]". iApply (observe_2 with "P1 P2").
   Qed.
 
+  Global Instance observe_and_l Q P R : Observe Q P → Observe Q (P ∧ R).
+  Proof. intros. iIntros "[P _]". iApply (observe with "P"). Qed.
+  Global Instance observe_and_r Q P R : Observe Q P → Observe Q (R ∧ P).
+  Proof. intros. iIntros "[_ P]". iApply (observe with "P"). Qed.
+  Global Instance observe_2_and_l Q P1 P2 R1 R2 :
+    Observe2 Q P1 P2 → Observe2 Q (P1 ∧ R1) (P2 ∧ R2).
+  Proof.
+    intros. iIntros "[P1 _] [P2 _]". iApply (observe_2 with "P1 P2").
+  Qed.
+  Global Instance observe_2_and_r Q P1 P2 R1 R2 :
+    Observe2 Q P1 P2 → Observe2 Q (R1 ∧ P1) (R2 ∧ P2).
+  Proof.
+    intros. iIntros "[_ P1] [_ P2]". iApply (observe_2 with "P1 P2").
+  Qed.
+
   Global Instance observe_or Q P R :
     Observe Q P → Observe Q R → Observe Q (P ∨ R).
   Proof.
@@ -235,6 +250,13 @@ Section bi.
     - iApply (observe_2 with "R1 P2").
     - iApply (observe_2 with "R1 R2").
   Qed.
+
+  Global Instance observe_from_false Q : Observe Q False.
+  Proof. iDestruct 1 as "[]". Qed.
+  Global Instance observe_2_from_false_1 Q P : Observe2 Q False P.
+  Proof. iDestruct 1 as "[]". Qed.
+  Global Instance observe_2_from_false_2 Q P : Observe2 Q P False.
+  Proof. iDestruct 2 as "[]". Qed.
 End bi.
 
 Section monpred.
