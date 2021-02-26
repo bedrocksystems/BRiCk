@@ -151,6 +151,7 @@ build_cpp2v:
     - prepare_env
   trigger:
     project: bedrocksystems/cpp2v
+    strategy: depend
     # If CPP2V_BRANCH is not master, .gitlab-ci.yml in the cpp2v branch has
     # to be modified to allow build_latest on branches.
     branch: $CPP2V_BRANCH
