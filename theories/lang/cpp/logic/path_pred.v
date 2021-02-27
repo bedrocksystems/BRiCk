@@ -43,7 +43,6 @@ Section with_Σ.
   Definition addr_of := addr_of_aux.(unseal).
   Definition addr_of_eq : @addr_of = _ := addr_of_aux.(seal_eq).
   Arguments addr_of : simpl never.
-  Notation "a &~ b" := (addr_of a b) (at level 30, no associativity).
 
   Global Instance addr_of_persistent {o l} : Persistent (addr_of o l).
   Proof. rewrite addr_of_eq. apply _. Qed.
@@ -71,7 +70,6 @@ Notation "a &~ b" := (addr_of a b) (at level 30, no associativity).
 Notation _offsetL o p := (_offset_ptr p o) (only parsing).
 
 Arguments addr_of : simpl never.
-Notation "a &~ b" := (addr_of a b) (at level 30, no associativity).
 
 Arguments _global {resolve} _ : rename.
 
