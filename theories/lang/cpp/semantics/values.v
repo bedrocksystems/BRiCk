@@ -45,7 +45,7 @@
    we still assume users use options such as [-fno-strict-aliasing] GCC/Clang's.
  *)
 From Coq Require Import Strings.Ascii.
-From bedrock.lang.prelude Require Import base addr option.
+From bedrock.lang.prelude Require Import base addr option numbers.
 
 Require Import bedrock.lang.cpp.ast.
 From bedrock.lang.cpp.semantics Require Export types sub_module genv.
@@ -420,6 +420,67 @@ Module Type PTRS_MIXIN (Import P : PTRS) (Import PD : PTRS_DERIVED P).
     (Hsz : is_Some (size_of resolve ty)) :
     _offset_ptr p (o_sub _ ty 0) = p.
   Proof. by rewrite o_sub_0 // offset_ptr_id. Qed.
+
+  (** [aligned_ptr] states that the pointer (if it exists in memory) has
+  the given alignment.
+    *)
+  Definition aligned_ptr align p :=
+    (exists va, ptr_vaddr p = Some va /\ (align | va)%N) \/ ptr_vaddr p = None.
+  Definition aligned_ptr_ty {σ} ty p :=
+    exists align, align_of ty = Some align /\ aligned_ptr align p.
+
+  Global Instance aligned_ptr_divide_mono :
+    Proper (flip N.divide ==> eq ==> impl) aligned_ptr.
+  Proof.
+    move=> m n + _ p ->.
+    rewrite /aligned_ptr => ? [[va [P D]]|]; [left|by right].
+    eexists _; split=> //. by etrans.
+  Qed.
+  Global Instance aligned_ptr_divide_flip_mono :
+    Proper (N.divide ==> eq ==> flip impl) aligned_ptr.
+  Proof. solve_proper. Qed.
+  Global Instance: RewriteRelation N.divide := {}.
+
+  Lemma aligned_ptr_divide_weaken m n p :
+    (n | m)%N ->
+    aligned_ptr m p -> aligned_ptr n p.
+  Proof. by move->. Qed.
+
+  Lemma aligned_ptr_mult_weaken_l m n p :
+    aligned_ptr (m * n) p -> aligned_ptr n p.
+  Proof. by apply aligned_ptr_divide_weaken, N.divide_mul_r. Qed.
+
+  Lemma aligned_ptr_mult_weaken_r m n p :
+    aligned_ptr (m * n) p -> aligned_ptr m p.
+  Proof. by apply aligned_ptr_divide_weaken, N.divide_mul_l. Qed.
+
+  Lemma aligned_ptr_min p : aligned_ptr 1 p.
+  Proof.
+    rewrite /aligned_ptr.
+    case: ptr_vaddr; [|by eauto] => va.
+    eauto using N.divide_1_l.
+  Qed.
+
+  Lemma aligned_ptr_ty_mult_weaken {σ} m n ty p :
+    align_of ty = Some m -> (n | m)%N ->
+    aligned_ptr_ty ty p -> aligned_ptr n p.
+  Proof.
+    rewrite /aligned_ptr_ty;
+      naive_solver eauto using aligned_ptr_divide_weaken.
+  Qed.
+
+  Lemma pinned_ptr_pure_aligned_divide va n p :
+    pinned_ptr_pure va p ->
+    aligned_ptr n p <-> (n | va)%N.
+  Proof. rewrite pinned_ptr_pure_eq /aligned_ptr. naive_solver. Qed.
+
+  Lemma pinned_ptr_pure_divide_1 σ va n p ty
+    (Hal : align_of ty = Some n) :
+    aligned_ptr_ty ty p → pinned_ptr_pure va p → (n | va)%N.
+  Proof.
+    rewrite /aligned_ptr_ty Hal /aligned_ptr pinned_ptr_pure_eq /=.
+    naive_solver.
+  Qed.
 
   Lemma o_sub_sub p ty i j σ :
     p .., o_sub _ ty i .., o_sub _ ty j = (p .., o_sub _ ty (i + j)).

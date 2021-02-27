@@ -1021,7 +1021,7 @@ Section with_cpp.
     Observe is_nonnull (anyR (resolve:=σ) ty q).
   Proof. rewrite anyR_eq. apply _. Qed.
 
-  Definition alignedR_def (al : N) : Rep := as_Rep (aligned_ptr_mpred al).
+  Definition alignedR_def (al : N) : Rep := as_Rep (λ p, [| aligned_ptr al p |]).
   Definition alignedR_aux : seal (@alignedR_def). Proof. by eexists. Qed.
   Definition alignedR := alignedR_aux.(unseal).
   Definition alignedR_eq : @alignedR = _ := alignedR_aux.(seal_eq).
@@ -1032,12 +1032,22 @@ Section with_cpp.
   #[global] Instance alignedR_timeless {al} : Timeless (alignedR al).
   Proof. rewrite alignedR_eq. apply _. Qed.
 
-  Lemma alignedR_mult_weaken m n :
-    alignedR (m * n) ⊢ alignedR n.
+  Global Instance alignedR_divide_mono :
+    Proper (flip N.divide ==> bi_entails) alignedR.
   Proof.
-    rewrite alignedR_eq /alignedR_def. constructor=>p/=.
-    exact: aligned_mult_weaken.
+    intros m n ?.
+    rewrite alignedR_eq /alignedR_def. constructor=>p/=. iIntros "!%".
+    exact: aligned_ptr_divide_weaken.
   Qed.
+
+  Global Instance alignedR_divide_flip_mono :
+    Proper (N.divide ==> flip bi_entails) alignedR.
+  Proof. solve_proper. Qed.
+
+  Lemma alignedR_divide_weaken m n :
+    (n | m)%N ->
+    alignedR m ⊢ alignedR n.
+  Proof. by move->. Qed.
 
   Lemma null_nonnull (R : Rep) : is_null |-- is_nonnull -* R.
   Proof.
