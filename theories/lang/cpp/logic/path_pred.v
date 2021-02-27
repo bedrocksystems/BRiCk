@@ -66,8 +66,6 @@ End with_Σ.
 Notation _eq := (@id ptr) (only parsing).
 #[deprecated(since="2020-12-07",note="no longer needed, use equality on ptr")]
 Notation "a &~ b" := (addr_of a b) (at level 30, no associativity).
-#[deprecated(since="2020-12-07",note="use 'valid_ptr' instead")]
-Notation valid_loc := valid_ptr (only parsing).
 
 #[deprecated(since="2020-12-08",note="use heap notations")]
 Notation _offsetL o p := (_offset_ptr p o) (only parsing).

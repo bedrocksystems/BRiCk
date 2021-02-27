@@ -1133,6 +1133,3 @@ Typeclasses Opaque type_ptrR validR svalidR alignedR.
 
 Instance Persistent_spec `{Σ:cpp_logic ti} {resolve:genv} nm s :
   Persistent (_at (Σ:=Σ) (_global nm) (cptrR s)) := _.
-
-
-#[deprecated(since="2021-01-08",note="use _at_offsetR")] Notation _at_offsetL_offsetR := _at_offsetR (only parsing).
