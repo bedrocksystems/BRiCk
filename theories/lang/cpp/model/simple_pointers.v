@@ -207,5 +207,32 @@ Module SIMPLE_PTRS_IMPL : PTRS_INTF_MINIMAL.
     by rewrite (comm _ i).
   Qed.
 
+  Lemma offset_ptr_vaddr_raw resolve o n va va' p :
+    eval_offset resolve o = Some n ->
+    ptr_vaddr p = Some va ->
+    ptr_vaddr (p .., o) = Some va' ->
+    Z.to_N (Z.of_N va + n) = va'.
+  Proof.
+    rewrite /eval_offset /ptr_vaddr.
+    case: p => [[aid ?]|] /=;
+      intros; simplify_option_eq. lia.
+  Qed.
+
+  Lemma offset_ptr_vaddr resolve o n va p :
+    eval_offset resolve o = Some n ->
+    ptr_vaddr p = Some va ->
+    ptr_vaddr (p .., o) = Some (Z.to_N (Z.of_N va + n)).
+  Proof.
+    case E: (ptr_vaddr (p .., o)) => [va'|] Hoff Hp.
+    { by erewrite offset_ptr_vaddr_raw. }
+    move: E Hp Hoff.
+    rewrite /eval_offset /ptr_vaddr.
+    case: p => [[aid ?]|] //=;
+      intros; simplify_option_eq => //.
+    (* False. *)
+    (* have: 0 <= n by admit. *)
+    (* lia. *)
+  Abort.
+
   Include PTRS_DERIVED_MIXIN.
 End SIMPLE_PTRS_IMPL.
