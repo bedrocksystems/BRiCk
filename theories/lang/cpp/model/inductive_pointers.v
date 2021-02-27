@@ -400,12 +400,16 @@ Module PTRS_IMPL : PTRS_INTF_MINIMAL.
   Definition invalid_ptr := invalid_ptr_.
   Definition fun_ptr tu o := fun_ptr_ (canonical_tu.tu_to_canon tu) o.
 
+  Definition null_alloc_id : alloc_id := null_alloc_id.
   Definition nullptr := lift_root_ptr nullptr_.
   Definition global_ptr (tu : translation_unit) o :=
     lift_root_ptr (global_ptr_ (canonical_tu.tu_to_canon tu) o).
   Definition alloc_ptr a oid := lift_root_ptr (alloc_ptr_ a oid).
 
   Lemma ptr_vaddr_nullptr : ptr_vaddr nullptr = Some 0%N.
+  Proof. done. Qed.
+
+  Lemma ptr_alloc_id_nullptr : ptr_alloc_id nullptr = Some null_alloc_id.
   Proof. done. Qed.
 
   Instance id_dot : LeftId (=) o_id o_dot.

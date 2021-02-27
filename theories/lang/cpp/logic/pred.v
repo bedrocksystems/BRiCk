@@ -94,11 +94,11 @@ Module Type CPP_LOGIC (Import CC : CPP_LOGIC_CLASS)
     Context `{Σ : cpp_logic}.
 
     (**
-      [_valid_ptr strict p] is a persistent assertion that [p] is a _valid pointer_, that is:
+      [_valid_ptr vt p] is a persistent assertion that [p] is a _valid pointer_, that is:
       - [p] can be [nullptr]
       - [p] can point to a function or a (possibly dead) object [o]
-      - if [strict = false], [p] can be past-the-end of a (possibly dead) object [o].
-      In particular, [_valid_ptr strict p] prevents producing [p] by incrementing
+      - if [vt = Relaxed], [p] can be past-the-end of a (possibly dead) object [o].
+      In particular, [_valid_ptr vt p] prevents producing [p] by incrementing
       past-the-end pointers into overflow territory.
 
       Our definition of validity includes all cases in which a pointer is not
@@ -106,7 +106,7 @@ Module Type CPP_LOGIC (Import CC : CPP_LOGIC_CLASS)
       (https://eel.is/c++draft/basic.compound#3.1), except that our concept
       of validity survives deallocation; a pointer is only valid according to
       the standard (or "standard-valid") if it is _both_ valid ([_valid_ptr
-      strict p]) and live ([live_ptr p]); we require both where needed (e.g.
+      vt p]) and live ([live_ptr p]); we require both where needed (e.g.
       [eval_ptr_eq]).
 
       When the duration of a region of storage ends [note 1], contained objects [o] go
@@ -114,7 +114,7 @@ Module Type CPP_LOGIC (Import CC : CPP_LOGIC_CLASS)
       _invalid pointer values_ (https://eel.is/c++draft/basic.compound#3.1);
       this is called _pointer zapping_ [note 1].
       In our semantics, that only consumes the non-persistent predicate
-      [live_ptr p], not the persistent predicate [_valid_ptr strict p].
+      [live_ptr p], not the persistent predicate [_valid_ptr vt p].
 
       Following Cerberus, [live_alloc_id] tracks liveness per allocation
       ID (see comments for [ptr]), and [live_ptr] is derived from it. Hence,
@@ -229,7 +229,10 @@ Module Type CPP_LOGIC (Import CC : CPP_LOGIC_CLASS)
     Parameter identity : forall {σ : genv}
         (this : globname) (most_derived : option globname),
         Qp -> ptr -> mpred.
-    (** cpp2v-core#194: [Fractional], [AsFractional], [Timeless]? *)
+    Axiom identity_fractional : forall σ this mdc p, Fractional (λ q, identity this mdc q p).
+    Axiom identity_timeless : forall σ this mdc q p, Timeless (identity this mdc q p).
+    Global Existing Instances identity_fractional identity_timeless.
+
     (** cpp2v-core#194: The fraction is valid? Agreement? *)
 
     (** this allows you to forget an object identity, necessary for doing
@@ -589,8 +592,8 @@ Section with_cpp.
   *)
   Definition _valid_live_ptr vt (p : ptr) : mpred :=
     _valid_ptr vt p ∗ live_ptr p.
-  Definition valid_live_ptr p : mpred := _valid_ptr Strict p.
-  Definition strict_valid_live_ptr p : mpred := _valid_ptr Relaxed p.
+  Definition valid_live_ptr p : mpred := _valid_live_ptr Relaxed p.
+  Definition strict_valid_live_ptr p : mpred := _valid_live_ptr Strict p.
 
   Global Instance tptsto_flip_mono :
     Proper (flip genv_leq ==> eq ==> eq ==> eq ==> eq ==> flip (⊢))
@@ -599,6 +602,10 @@ Section with_cpp.
 
   Global Instance tptsto_as_fractional ty q a v :
     AsFractional (tptsto ty q a v) (λ q, tptsto ty q a v) q.
+  Proof. exact: Build_AsFractional. Qed.
+
+  Global Instance identity_as_fractional this mdc p q :
+    AsFractional (identity this mdc q p) (λ q, identity this mdc q p) q.
   Proof. exact: Build_AsFractional. Qed.
 
   Global Instance tptsto_observe_nonnull t q p v :
@@ -729,4 +736,13 @@ Section with_cpp.
   #[global] Instance type_ptr_size_observe ty p :
     Observe [| is_Some (size_of σ ty) |] (type_ptr ty p).
   Proof. rewrite type_ptr_size. apply _. Qed.
+
+  Lemma same_alloc_refl p : valid_ptr p ⊢ [| same_alloc p p |].
+  Proof.
+    rewrite valid_ptr_alloc_id same_alloc_iff. iIntros "!%". case; naive_solver.
+  Qed.
+
+  Lemma live_has_alloc_id p :
+    live_ptr p ⊢ ∃ aid, [| ptr_alloc_id p = Some aid |] ∗ live_alloc_id aid.
+  Proof. rewrite /live_ptr; iIntros. case: (ptr_alloc_id p) => /= [aid|]; eauto. Qed.
 End with_cpp.

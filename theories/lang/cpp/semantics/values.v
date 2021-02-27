@@ -259,6 +259,10 @@ one is [PTRS_IMPL].
   (** Map pointers to allocation IDs; total on valid pointers thanks to
   [valid_ptr_alloc_id]. *)
   Parameter ptr_alloc_id : ptr -> option alloc_id.
+  Parameter null_alloc_id : alloc_id.
+  Axiom ptr_alloc_id_nullptr :
+    ptr_alloc_id nullptr = Some null_alloc_id.
+
   (**
   Map pointers to the address they represent,
   (https://eel.is/c++draft/basic.compound#def:represents_the_address).
@@ -336,6 +340,22 @@ Module Type PTRS_MIXIN (Import P : PTRS) (Import PD : PTRS_DERIVED P).
   Global Instance same_address_bool_comm : Comm eq same_address_bool.
   Proof. move=> p1 p2. apply bool_decide_iff, comm, _. Qed.
 
+  Lemma same_address_bool_eq {p1 p2 va1 va2} :
+    ptr_vaddr p1 = Some va1 → ptr_vaddr p2 = Some va2 →
+    same_address_bool p1 p2 = bool_decide (va1 = va2).
+  Proof.
+    intros Hs1 Hs2. apply bool_decide_iff.
+    rewrite same_address_eq same_property_iff. naive_solver.
+  Qed.
+
+  Lemma same_address_bool_partial_reflexive p :
+    is_Some (ptr_vaddr p) ->
+    same_address_bool p p = true.
+  Proof.
+    move=> Hsm. rewrite /same_address_bool bool_decide_true; first done.
+    by rewrite same_address_eq -same_property_reflexive_equiv.
+  Qed.
+
   Lemma pinned_ptr_pure_unique va1 va2 p :
     pinned_ptr_pure va1 p -> pinned_ptr_pure va2 p -> va1 = va2.
   Proof.
@@ -358,12 +378,35 @@ Module Type PTRS_MIXIN (Import P : PTRS) (Import PD : PTRS_DERIVED P).
   Qed.
   Global Instance: Params pinned_ptr_pure 1 := {}.
 
+  Lemma ptr_alloc_id_base p o
+    (Hs : is_Some (ptr_alloc_id (p .., o))) :
+    is_Some (ptr_alloc_id p).
+  Proof. by rewrite -(ptr_alloc_id_offset Hs). Qed.
+
   Lemma same_alloc_offset p o
     (Hs : is_Some (ptr_alloc_id (p .., o))) :
     same_alloc p (p .., o).
   Proof.
     case: (Hs) => aid Eq. rewrite same_alloc_iff.
     exists aid. by rewrite -(ptr_alloc_id_offset Hs).
+  Qed.
+
+  Lemma same_alloc_offset_2 p o1 o2 p1 p2
+    (E1 : p1 = p .., o1) (E2 : p2 = p .., o2)
+    (Hs1 : is_Some (ptr_alloc_id (p .., o1)))
+    (Hs2 : is_Some (ptr_alloc_id (p .., o2))) :
+    same_alloc p1 p2.
+  Proof.
+    subst; move: (Hs1) => [aid Eq]; rewrite same_alloc_iff; exists aid; move: Eq.
+    by rewrite (ptr_alloc_id_offset Hs1) (ptr_alloc_id_offset Hs2).
+  Qed.
+
+  Lemma same_alloc_offset_1 p o
+    (Hs : is_Some (ptr_alloc_id (p .., o))) :
+    same_alloc p (p .., o).
+  Proof.
+    apply: (same_alloc_offset_2 p o_id o); rewrite ?offset_ptr_id //.
+    exact: ptr_alloc_id_base Hs.
   Qed.
 
   (** Pointers into the same array with the same address have the same index.
