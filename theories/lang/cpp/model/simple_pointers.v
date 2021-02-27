@@ -189,6 +189,15 @@ Module SIMPLE_PTRS_IMPL : PTRS_INTF_MINIMAL.
     case: p => [[aid va]|] Haddr ?; simplify_option_eq. nia.
   Qed.
 
+  Instance o_sub_mono :
+    Proper (genv_leq ==> eq ==> eq ==> Roption_leq eq) (@o_sub).
+  Proof.
+    move => σ1 σ2 /Proper_size_of + _ ty -> _ n -> => /(_ ty ty eq_refl).
+    rewrite /o_sub /o_sub_off.
+    move: (size_of σ1) (size_of σ2) => [sz1|] [sz2|] LE //=; inversion LE; constructor.
+    naive_solver .
+  Qed.
+
   (* Not exposed directly, but proof sketch for
   [valid_o_sub_size]; recall that in this model, all valid pointers have an
   address. *)

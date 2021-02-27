@@ -853,23 +853,22 @@ Module SimpleCPP.
     Lemma type_ptr_size {σ} ty p : type_ptr ty p |-- [| is_Some (size_of σ ty) |].
     Proof. iDestruct 1 as "(_ & _ & %H & _)"; eauto. Qed.
 
-    (* TODO: is o_sub Proper? *)
-    Instance o_sub_mono :
-      Proper (genv_leq ==> eq ==> eq ==> eq) (@o_sub).
-    Admitted.
+    (* See [o_sub_mono] in [simple_pointers.v] *)
+    Axiom valid_ptr_o_sub_proper : forall {σ1 σ2 p ty}, genv_leq σ1 σ2 ->
+      valid_ptr (p .., o_sub σ1 ty 1) |-- valid_ptr (p .., o_sub σ2 ty 1).
 
     Instance type_ptr_mono :
       Proper (genv_leq ==> eq ==> eq ==> (⊢)) (@type_ptr).
     Proof.
       rewrite /type_ptr => σ1 σ2 Heq.
-      solve_proper_prepare. do 3 f_equiv.
-      - intros ?. (do 2 f_equiv) => Hal1.
-        move: Heq => /Proper_align_of /(_ y y eq_refl).
-        inversion 1; congruence.
-      - iDestruct 1 as %H. destruct H.
-        destruct (Proper_size_of _ _ Heq _ y eq_refl) => //.
-        eauto.
-      - f_equiv. by rewrite Heq.
+      solve_proper_prepare. rewrite (valid_ptr_o_sub_proper Heq).
+      do 3 f_equiv.
+      - intros n. (do 2 f_equiv)=>+.
+        move: Heq => /Proper_align_of /(_ y _ eq_refl).
+        destruct 1; naive_solver.
+      - f_equiv=> -[sz1].
+        move: Heq => /Proper_size_of /(_ y _ eq_refl).
+        destruct 1; naive_solver.
     Qed.
 
 
