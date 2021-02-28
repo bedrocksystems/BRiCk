@@ -321,22 +321,22 @@ Module Type CPP_LOGIC (Import CC : CPP_LOGIC_CLASS)
     Global Existing Instances
       pinned_ptr_persistent pinned_ptr_affine pinned_ptr_timeless.
 
-    (** [aligned_ptr] states that the pointer (if it exists in memory) has
+    (** [aligned_ptr_mpred] states that the pointer (if it exists in memory) has
     the given alignment. This is persistent.
      *)
-    Parameter aligned_ptr : forall (n : N) (p : ptr), mpred.
-    Axiom aligned_ptr_persistent : forall n p, Persistent (aligned_ptr n p).
-    Axiom aligned_ptr_affine : forall n p, Affine (aligned_ptr n p).
-    Axiom aligned_ptr_timeless : forall n p, Timeless (aligned_ptr n p).
-    Global Existing Instances aligned_ptr_persistent aligned_ptr_affine aligned_ptr_timeless.
+    Parameter aligned_ptr_mpred : forall (n : N) (p : ptr), mpred.
+    Axiom aligned_ptr_mpred_persistent : forall n p, Persistent (aligned_ptr_mpred n p).
+    Axiom aligned_ptr_mpred_affine : forall n p, Affine (aligned_ptr_mpred n p).
+    Axiom aligned_ptr_mpred_timeless : forall n p, Timeless (aligned_ptr_mpred n p).
+    Global Existing Instances aligned_ptr_mpred_persistent aligned_ptr_mpred_affine aligned_ptr_mpred_timeless.
 
     Axiom pinned_ptr_aligned_divide : forall va n p,
       pinned_ptr va p ⊢
-      aligned_ptr n p ∗-∗ [| (n | va)%N |].
+      aligned_ptr_mpred n p ∗-∗ [| (n | va)%N |].
 
     (* TODO: allow deriving this. *)
     Axiom aligned_mult_weaken : forall m n p,
-      aligned_ptr (m * n) p ⊢ aligned_ptr n p.
+      aligned_ptr_mpred (m * n) p ⊢ aligned_ptr_mpred n p.
 
     (**
       [type_ptr {resolve := resolve} ty p] asserts that [p] points to
@@ -370,7 +370,7 @@ Module Type CPP_LOGIC (Import CC : CPP_LOGIC_CLASS)
 
     Axiom type_ptr_aligned : forall σ ty p,
       type_ptr ty p |--
-      Exists align, [| @align_of σ ty = Some align |] ** aligned_ptr align p.
+      Exists align, [| @align_of σ ty = Some align |] ** aligned_ptr_mpred align p.
 
     Axiom type_ptr_off_nonnull : forall {σ ty p o},
       type_ptr ty (p .., o) |-- [| p <> nullptr |].

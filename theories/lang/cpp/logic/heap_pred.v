@@ -1021,7 +1021,7 @@ Section with_cpp.
     Observe is_nonnull (anyR (resolve:=σ) ty q).
   Proof. rewrite anyR_eq. apply _. Qed.
 
-  Definition alignedR_def (al : N) : Rep := as_Rep (aligned_ptr al).
+  Definition alignedR_def (al : N) : Rep := as_Rep (aligned_ptr_mpred al).
   Definition alignedR_aux : seal (@alignedR_def). Proof. by eexists. Qed.
   Definition alignedR := alignedR_aux.(unseal).
   Definition alignedR_eq : @alignedR = _ := alignedR_aux.(seal_eq).

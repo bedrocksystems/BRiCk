@@ -780,25 +780,25 @@ Module SimpleCPP.
 
     (* XXX: with this definition, we cannot prove all pointers have alignment 1. Again, fix by replacing
     mem_inj_own with a pure function of pointers (returning [option vaddr]). *)
-    Definition aligned_ptr (n : N) (p : ptr) : mpred :=
+    Definition aligned_ptr_mpred (n : N) (p : ptr) : mpred :=
       [| p = nullptr |] \\//
       Exists (o : option addr), mem_inj_own p o **
                match o with
                | Some va => [| (n | va)%N |]
                (* This clause comes from [type_ptr]; here, it means that
                non-pinned pointers are indefinitely aligned.
-               However, the whole theory of [aligned_ptr] demands [pinned_ptr], so this is not a real problem. *)
+               However, the whole theory of [aligned_ptr_mpred] demands [pinned_ptr], so this is not a real problem. *)
                | None => ltrue
                end.
-    Instance aligned_ptr_persistent n p : Persistent (aligned_ptr n p) := _.
-    Instance aligned_ptr_affine n p : Affine (aligned_ptr n p) := _.
-    Instance aligned_ptr_timeless n p : Timeless (aligned_ptr n p) := _.
+    Instance aligned_ptr_mpred_persistent n p : Persistent (aligned_ptr_mpred n p) := _.
+    Instance aligned_ptr_mpred_affine n p : Affine (aligned_ptr_mpred n p) := _.
+    Instance aligned_ptr_mpred_timeless n p : Timeless (aligned_ptr_mpred n p) := _.
 
     Lemma pinned_ptr_aligned_divide va n p :
       pinned_ptr va p ⊢
-      aligned_ptr n p ∗-∗ [| (n | va)%N |].
+      aligned_ptr_mpred n p ∗-∗ [| (n | va)%N |].
     Proof.
-      rewrite /pinned_ptr /aligned_ptr /=.
+      rewrite /pinned_ptr /aligned_ptr_mpred /=.
       iDestruct 1 as "[_ [[-> ->]|[[%%] MO1]]]". {
         iSplit; last by iIntros; iLeft.
         by iIntros "_ !%"; exact: N.divide_0_r.
@@ -809,12 +809,12 @@ Module SimpleCPP.
     Qed.
 
     Lemma aligned_mult_weaken m n p :
-      aligned_ptr (m * n) p ⊢ aligned_ptr n p.
-    Proof. rewrite /aligned_ptr. repeat f_equiv. by exists m. Qed.
+      aligned_ptr_mpred (m * n) p ⊢ aligned_ptr_mpred n p.
+    Proof. rewrite /aligned_ptr_mpred. repeat f_equiv. by exists m. Qed.
 
     Definition type_ptr {resolve : genv} (ty : type) (p : ptr) : mpred :=
       [| p <> nullptr |] **
-      (Exists align, [| @align_of resolve ty = Some align |] ** aligned_ptr align p) **
+      (Exists align, [| @align_of resolve ty = Some align |] ** aligned_ptr_mpred align p) **
       [| is_Some (size_of resolve ty) |] **
 
       strict_valid_ptr p ** valid_ptr (p .., o_sub resolve ty 1).
@@ -847,7 +847,7 @@ Module SimpleCPP.
 
     Lemma type_ptr_aligned σ ty p :
       type_ptr (resolve := σ) ty p |--
-      Exists align, [| @align_of σ ty = Some align |] ** aligned_ptr align p.
+      Exists align, [| @align_of σ ty = Some align |] ** aligned_ptr_mpred align p.
     Proof. by iDestruct 1 as "(_ & $ & _)". Qed.
 
     Lemma type_ptr_size {σ} ty p : type_ptr ty p |-- [| is_Some (size_of σ ty) |].
@@ -891,7 +891,7 @@ Module SimpleCPP.
     Axiom align_of_uchar : forall resolve, @align_of resolve T_uchar = Some 1%N.
 
     (* Requirememnt is too strong, we'd want just [(strict_)valid_ptr p]; see comment
-    above on [aligned_ptr] and [mem_inj_own].
+    above on [aligned_ptr_mpred] and [mem_inj_own].
     XXX: this assumes that casting to uchar preserves the pointer.
     *)
     Local Lemma valid_type_uchar resolve p (Hnn : p <> nullptr) va :
