@@ -266,7 +266,7 @@ Module Type Stmt.
       | Sfor _ _ _ s => no_case s
       | Sdo s _ => no_case s
       | Sattr _ s => no_case s
-      | Sswitch _ _ => true
+      | Sswitch _ _ _ => true
       | Scase _
       | Sdefault => false
       | Sbreak
@@ -338,11 +338,15 @@ Module Type Stmt.
             | rt => k rt
             end).
 
+    Axiom wp_switch_decl : forall ρ d e ls Q,
+        wp ρ (Sseq (Sdecl (d :: nil) :: Sswitch None e ls :: nil)) Q
+        |-- wp ρ (Sswitch (Some d) e ls) Q.
+
     Axiom wp_switch : forall ρ e b Q,
         wp_prval ρ e (fun v free => free **
                     Exists vv : Z, [| v = Vint vv |] **
                     wp_switch_block (has_default b) ρ vv (fun x => ~gather_cases b x) None b (Kswitch Q))
-        |-- wp ρ (Sswitch e (Sseq b)) Q.
+        |-- wp ρ (Sswitch None e (Sseq b)) Q.
 
     (* note: case and default statements are only meaningful inside of [switch].
      * this is handled by [wp_switch_block].
