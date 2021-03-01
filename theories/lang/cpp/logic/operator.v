@@ -29,8 +29,6 @@ Typeclasses Opaque non_beginning_ptr.
 
 Section with_Σ.
   Context `{has_cpp : cpp_logic} {resolve : genv}.
-  Notation eval_binop_pure := (eval_binop_pure (resolve := resolve)).
-  Notation eval_binop_impure := (eval_binop_impure (resolve := resolve)).
 
   Definition eval_binop (b : BinOp) (lhsT rhsT resT : type) (lhs rhs res : val) : mpred :=
     [| eval_binop_pure b lhsT rhsT resT lhs rhs res |] ∨ eval_binop_impure b lhsT rhsT resT lhs rhs res.
