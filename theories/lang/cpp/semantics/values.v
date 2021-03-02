@@ -345,6 +345,7 @@ Module Type PTRS_MIXIN (Import P : PTRS) (Import PD : PTRS_DERIVED P).
   Proof. rewrite same_address_eq. apply _. Qed.
   Global Instance same_address_comm : Comm iff same_address.
   Proof. apply: symmetry_iff. Qed.
+  Global Instance: RewriteRelation same_address := {}.
 
   Definition same_address_bool p1 p2 := bool_decide (same_address p1 p2).
   Global Instance same_address_bool_comm : Comm eq same_address_bool.
@@ -366,26 +367,35 @@ Module Type PTRS_MIXIN (Import P : PTRS) (Import PD : PTRS_DERIVED P).
     by rewrite same_address_eq -same_property_reflexive_equiv.
   Qed.
 
+  Lemma pinned_ptr_pure_null : pinned_ptr_pure 0 nullptr.
+  Proof. by rewrite pinned_ptr_pure_eq ptr_vaddr_nullptr. Qed.
+
   Lemma pinned_ptr_pure_unique va1 va2 p :
     pinned_ptr_pure va1 p -> pinned_ptr_pure va2 p -> va1 = va2.
   Proof.
     rewrite pinned_ptr_pure_eq => H1 H2. apply (inj Some). by rewrite -H1 -H2.
   Qed.
 
-  Lemma same_address_pinned p1 p2 :
-    same_address p1 p2 <-> ∃ va, pinned_ptr_pure va p1 ∧ pinned_ptr_pure va p2.
-  Proof. by rewrite same_address_eq pinned_ptr_pure_eq same_property_iff. Qed.
-
   Lemma same_alloc_iff p1 p2 :
     same_alloc p1 p2 <-> ∃ aid, ptr_alloc_id p1 = Some aid ∧ ptr_alloc_id p2 = Some aid.
   Proof. by rewrite same_alloc_eq same_property_iff. Qed.
 
+  Lemma same_address_iff p1 p2 :
+    same_address p1 p2 <-> ∃ va, ptr_vaddr p1 = Some va ∧ ptr_vaddr p2 = Some va.
+  Proof. by rewrite same_address_eq same_property_iff. Qed.
+
+  Lemma same_address_pinned p1 p2 :
+    same_address p1 p2 <-> ∃ va, pinned_ptr_pure va p1 ∧ pinned_ptr_pure va p2.
+  Proof. by rewrite same_address_iff pinned_ptr_pure_eq. Qed.
+
+  Global Instance ptr_vaddr_proper :
+    Proper (same_address ==> eq) ptr_vaddr.
+  Proof. by intros p1 p2 (va&->&->)%same_address_iff. Qed.
+  Global Instance: Params ptr_vaddr 1 := {}.
+
   Global Instance pinned_ptr_pure_proper va :
     Proper (same_address ==> iff) (pinned_ptr_pure va).
-  Proof.
-    move=> p1 p2.
-    by rewrite same_address_pinned pinned_ptr_pure_eq => -[va' [-> ->]].
-  Qed.
+  Proof. rewrite pinned_ptr_pure_eq. by intros p1 p2 ->. Qed.
   Global Instance: Params pinned_ptr_pure 1 := {}.
 
   Lemma ptr_alloc_id_base p o
