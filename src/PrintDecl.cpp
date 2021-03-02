@@ -349,6 +349,7 @@ public:
         printFields(decl, layout, print, cprint);
 
         print.output() << fmt::line << layout.getSize().getQuantity()
+                       << fmt::nbsp << layout.getAlignment().getQuantity()
                        << fmt::nbsp;
 
         print.end_ctor();
@@ -417,7 +418,8 @@ public:
             print.output() << "Unspecified";
         }
 
-        print.output() << fmt::nbsp << layout.getSize().getQuantity();
+        print.output() << fmt::nbsp << layout.getSize().getQuantity()
+                       << fmt::nbsp << layout.getAlignment().getQuantity();
 
         // print the virtual function table
         print.begin_list();
