@@ -141,9 +141,9 @@ Module Type Init.
       | Lt =>
           match f with
           | None => False
-          | Some fill => wp_array_init ety base (fill_initlist sz es fill) 0%Z Q
+          | Some fill => wp_array_init ety base (fill_initlist sz es fill) 0 Q
           end
-      | Eq => wp_array_init ety base es 0%Z Q
+      | Eq => wp_array_init ety base es 0 Q
       (* <http://eel.is/c++draft/dcl.init.general#16.5>
 
          Programs which contain more initializer expressions than
