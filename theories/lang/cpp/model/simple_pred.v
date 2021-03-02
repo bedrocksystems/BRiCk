@@ -66,7 +66,7 @@ End fractional.
 
 (* Stand-in for an actual model of PTRS_FULL.
 Ensures that everything needed is properly functorized. *)
-Declare Module PTRS_IMPL : PTRS_INTF_DEPRECATED.
+Declare Module PTRS_IMPL : PTRS_INTF.
 
 Module Import PTRS_FULL_IMPL : PTRS_FULL_INTF :=
   PTRS_IMPL <+ VAL_MIXIN <+ PTRS_MIXIN.

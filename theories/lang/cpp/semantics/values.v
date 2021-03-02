@@ -421,23 +421,9 @@ Module Type PTRS_MIXIN (Import P : PTRS) (Import PD : PTRS_DERIVED P).
     _offset_ptr p (o_sub _ ty 0) = p.
   Proof. by rewrite o_sub_0 // offset_ptr_id. Qed.
 
-  #[deprecated(note="Use offset_ptr_sub_0", since="2021-02-18")]
-  Notation _offset_ptr_sub_0 := offset_ptr_sub_0 (only parsing).
-
   Lemma o_sub_sub p ty i j σ :
     p .., o_sub _ ty i .., o_sub _ ty j = (p .., o_sub _ ty (i + j)).
   Proof. by rewrite -offset_ptr_dot o_dot_sub. Qed.
-
-  (* TODO: drop for [o_dot_o_sub]. *)
-  Lemma _o_sub_sub_nneg : ∀ σ p ty (z1 z2 : Z),
-    0 <= z1 -> 0 <= z2 ->
-    p .., o_sub σ ty z1 .., o_sub σ ty z2 = p .., o_sub σ ty (z1 + z2).
-  Proof. intros * _ _. exact: o_sub_sub. Qed.
-
-  #[deprecated(since="2021-02-13", note="Use stronger [o_sub_sub] (or [o_dot_sub]).")]
-  Notation o_sub_sub_nneg := _o_sub_sub_nneg.
-  #[deprecated(since="2021-02-13", note="Use [o_dot_sub]")]
-  Notation o_dot_o_sub := o_dot_sub.
 
   Notation _id := o_id (only parsing).
   Notation _dot := (o_dot) (only parsing).
@@ -481,14 +467,6 @@ Proof. solve_decision. Defined.
 
 End VAL_MIXIN.
 
-Module Type PTRS_DEPRECATED (Import P : PTRS).
-  (** * Deprecated APIs *)
-  (** Offset a pointer by a certain number of bytes. *)
-  Parameter offset_ptr__ : Z -> ptr -> ptr.
-  #[deprecated(since="2020-12-08", note="Use structured offsets instead.")]
-  Notation offset_ptr_ := offset_ptr__.
-End PTRS_DEPRECATED.
-
 Module Type PTR_INTERNAL (Import P : PTRS).
   (* Useful *)
   Parameter eval_offset : genv -> offset -> option Z.
@@ -501,11 +479,10 @@ End PTR_INTERNAL.
 
 (* Collect all the axioms. *)
 Module Type PTRS_INTF := PTRS <+ PTRS_DERIVED <+ PTR_INTERNAL <+ RAW_BYTES.
-Module Type PTRS_INTF_DEPRECATED := PTRS_INTF <+ PTRS_DEPRECATED.
-Declare Module PTRS_INTF_AXIOM : PTRS_INTF_DEPRECATED.
+Declare Module PTRS_INTF_AXIOM : PTRS_INTF.
 
 (* Plug mixins. *)
-Module Type PTRS_FULL_INTF := PTRS_INTF_DEPRECATED <+ VAL_MIXIN <+ PTRS_MIXIN.
+Module Type PTRS_FULL_INTF := PTRS_INTF <+ VAL_MIXIN <+ PTRS_MIXIN.
 Module Export PTRS_FULL_AXIOM : PTRS_FULL_INTF :=
   PTRS_INTF_AXIOM <+ VAL_MIXIN <+ PTRS_MIXIN.
 
@@ -524,22 +501,6 @@ Notation Vz := Vint (only parsing).
 
 (** we use [Vundef] as our value of type [void] *)
 Definition Vvoid := Vundef.
-
-(** lifting pointer offsets to values *)
-Definition __offset_ptr (o : Z) (v : val) : val :=
-  match v with
-  | Vptr p => Vptr (offset_ptr_ o p)
-  | _ => Vundef
-  end.
-#[deprecated(since="2020-01-09", note="Use structured offsets")]
-Notation offset_ptr := __offset_ptr.
-
-Theorem __offset_ptr_val : forall v o p,
-    Vptr p = v ->
-    Vptr (offset_ptr_ o p) = offset_ptr o v.
-Proof. intros; subst; reflexivity. Qed.
-#[deprecated(since="2020-01-09", note="Use structured offsets")]
-Notation offset_ptr_val := __offset_ptr_val.
 
 Definition is_true (v : val) : option bool :=
   match v with

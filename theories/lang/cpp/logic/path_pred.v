@@ -43,7 +43,6 @@ Section with_Σ.
   Definition addr_of := addr_of_aux.(unseal).
   Definition addr_of_eq : @addr_of = _ := addr_of_aux.(seal_eq).
   Arguments addr_of : simpl never.
-  Notation "a &~ b" := (addr_of a b) (at level 30, no associativity).
 
   Global Instance addr_of_persistent {o l} : Persistent (addr_of o l).
   Proof. rewrite addr_of_eq. apply _. Qed.
@@ -62,26 +61,19 @@ Section with_Σ.
 End with_Σ.
 
 (** offsets *)
-#[deprecated(since="2020-12-08",note="use 'offset'")]
-Notation Offset := offset (only parsing).
 #[deprecated(since="2020-12-07",note="no longer needed")]
 Notation _eq := (@id ptr) (only parsing).
 #[deprecated(since="2020-12-07",note="no longer needed, use equality on ptr")]
 Notation "a &~ b" := (addr_of a b) (at level 30, no associativity).
-#[deprecated(since="2020-12-07",note="use 'valid_ptr' instead")]
-Notation valid_loc := valid_ptr (only parsing).
 
 #[deprecated(since="2020-12-08",note="use heap notations")]
 Notation _offsetL o p := (_offset_ptr p o) (only parsing).
 
 Arguments addr_of : simpl never.
-Notation "a &~ b" := (addr_of a b) (at level 30, no associativity).
 
 Arguments _global {resolve} _ : rename.
 
 
-#[deprecated(since="2020-12-03",note="use _base instead")]
-Notation _super := _base (only parsing).
 
 (** [_local ρ b] returns the [ptr] that stores the local variable [b].
  *)
