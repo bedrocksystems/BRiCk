@@ -23,7 +23,6 @@ Implicit Types (σ : genv).
 #[local] Close Scope nat_scope.
 #[local] Open Scope Z_scope.
 
-Module Type PTRS_INTF_MINIMAL := PTRS <+ PTRS_DERIVED <+ PTR_INTERNAL.
 Module SIMPLE_PTRS_IMPL : PTRS_INTF_MINIMAL.
 
   (**
@@ -190,7 +189,14 @@ Module SIMPLE_PTRS_IMPL : PTRS_INTF_MINIMAL.
     case: p => [[aid va]|] Haddr ?; simplify_option_eq. nia.
   Qed.
 
-  Include PTRS_DERIVED_MIXIN.
+  Instance o_sub_mono :
+    Proper (genv_leq ==> eq ==> eq ==> Roption_leq eq) (@o_sub).
+  Proof.
+    move => σ1 σ2 /Proper_size_of + _ ty -> _ n -> => /(_ ty ty eq_refl).
+    rewrite /o_sub /o_sub_off.
+    move: (size_of σ1) (size_of σ2) => [sz1|] [sz2|] LE //=; inversion LE; constructor.
+    naive_solver .
+  Qed.
 
   (* Not exposed directly, but proof sketch for
   [valid_o_sub_size]; recall that in this model, all valid pointers have an
@@ -209,4 +215,33 @@ Module SIMPLE_PTRS_IMPL : PTRS_INTF_MINIMAL.
     rewrite /o_sub/o_sub_off. case: size_of => //= sz.
     by rewrite (comm _ i).
   Qed.
+
+  Lemma offset_ptr_vaddr_raw resolve o n va va' p :
+    eval_offset resolve o = Some n ->
+    ptr_vaddr p = Some va ->
+    ptr_vaddr (p .., o) = Some va' ->
+    Z.to_N (Z.of_N va + n) = va'.
+  Proof.
+    rewrite /eval_offset /ptr_vaddr.
+    case: p => [[aid ?]|] /=;
+      intros; simplify_option_eq. lia.
+  Qed.
+
+  Lemma offset_ptr_vaddr resolve o n va p :
+    eval_offset resolve o = Some n ->
+    ptr_vaddr p = Some va ->
+    ptr_vaddr (p .., o) = Some (Z.to_N (Z.of_N va + n)).
+  Proof.
+    case E: (ptr_vaddr (p .., o)) => [va'|] Hoff Hp.
+    { by erewrite offset_ptr_vaddr_raw. }
+    move: E Hp Hoff.
+    rewrite /eval_offset /ptr_vaddr.
+    case: p => [[aid ?]|] //=;
+      intros; simplify_option_eq => //.
+    (* False. *)
+    (* have: 0 <= n by admit. *)
+    (* lia. *)
+  Abort.
+
+  Include PTRS_DERIVED_MIXIN.
 End SIMPLE_PTRS_IMPL.

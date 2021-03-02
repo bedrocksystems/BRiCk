@@ -24,8 +24,6 @@ Implicit Types (σ : genv).
 #[local] Close Scope nat_scope.
 #[local] Open Scope Z_scope.
 
-Module Type PTRS_INTF_MINIMAL := PTRS <+ PTRS_DERIVED <+ PTR_INTERNAL.
-
 Module PTRS_IMPL : PTRS_INTF_MINIMAL.
   Import canonical_tu address_sums merge_elems.
 
@@ -302,7 +300,6 @@ Module PTRS_IMPL : PTRS_INTF_MINIMAL.
   End tests.
 
   (* This is probably sound, since it allows temporary underflows. *)
-  (* From PTR_INTERNAL *)
   Definition eval_offset_seg (os : offset_seg) : option Z :=
     match os with
     | (o_invalid_, _) => None

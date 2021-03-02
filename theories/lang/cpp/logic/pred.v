@@ -18,6 +18,8 @@ From iris.base_logic.lib Require Export iprop.
 Require Import iris.bi.monpred.
 From iris.bi.lib Require Import fractional.
 From iris.proofmode Require Import tactics.
+From iris_string_ident Require Import ltac2_string_ident.
+
 Require Import iris.base_logic.lib.fancy_updates.
 Require Import iris.base_logic.lib.own.
 Require Import iris.base_logic.lib.cancelable_invariants.
@@ -291,52 +293,41 @@ Module Type CPP_LOGIC (Import CC : CPP_LOGIC_CLASS)
       Axiom dtor_at_valid   : forall f p,   dtor_at f p |-- valid_ptr p.
     End with_genv.
 
-    (** Physical representation of pointers. *)
-    (** [pinned_ptr va p] states that the abstract pointer [p] is tied to a
-      virtual address [va].
-      [pinned_ptr] will only hold on pointers that are associated to addresses,
-      but other pointers exist. *)
-    Parameter pinned_ptr : vaddr -> ptr -> mpred.
-    Axiom pinned_ptr_persistent : forall va p, Persistent (pinned_ptr va p).
-    Axiom pinned_ptr_affine : forall va p, Affine (pinned_ptr va p).
-    Axiom pinned_ptr_timeless : forall va p, Timeless (pinned_ptr va p).
-    Axiom pinned_ptr_eq : forall va p,
-      pinned_ptr va p -|- [| pinned_ptr_pure va p |] ** valid_ptr p.
-    Axiom pinned_ptr_unique : forall va va' p,
-        Observe2 [| va = va' |] (pinned_ptr va p) (pinned_ptr va' p).
-    Global Existing Instance pinned_ptr_unique.
-    Axiom pinned_ptr_null : |-- pinned_ptr 0 nullptr.
-
-    Axiom offset_pinned_ptr : forall resolve o n va p,
-      PTR.eval_offset resolve o = Some n ->
+    Axiom offset_pinned_ptr_pure : forall σ o n va p,
+      eval_offset σ o = Some n ->
+      pinned_ptr_pure va p ->
       valid_ptr (p .., o) |--
-      pinned_ptr va p -* pinned_ptr (Z.to_N (Z.of_N va + n)) (p .., o).
+      [| pinned_ptr_pure (Z.to_N (Z.of_N va + n)) (p .., o) |].
 
     Axiom provides_storage_same_address : forall storage_ptr obj_ptr ty,
-      provides_storage storage_ptr obj_ptr ty |-- [| same_address storage_ptr obj_ptr |].
-    Axiom provides_storage_pinned_ptr : forall storage_ptr obj_ptr aty va,
-      provides_storage storage_ptr obj_ptr aty ** pinned_ptr va storage_ptr
-      |-- pinned_ptr va obj_ptr.
+      Observe [| same_address storage_ptr obj_ptr |] (provides_storage storage_ptr obj_ptr ty).
+
+    Axiom provides_storage_valid_storage_ptr : forall storage_ptr obj_ptr aty,
+      Observe (valid_ptr storage_ptr) (provides_storage storage_ptr obj_ptr aty).
+    Axiom provides_storage_valid_obj_ptr : forall storage_ptr obj_ptr aty,
+      Observe (valid_ptr obj_ptr) (provides_storage storage_ptr obj_ptr aty).
+
+    Global Existing Instances provides_storage_same_address
+      provides_storage_valid_storage_ptr provides_storage_valid_obj_ptr.
+
+    (**
+    [exposed_aid aid] states that the storage instance identified by [aid] is
+    "exposed" [1]. This enables int2ptr casts to produce pointers into this
+    storage instance.
+
+    [1] We use "exposed" in the sense defined by the N2577 draft C standard
+    (http://www.open-std.org/jtc1/sc22/wg14/www/docs/n2577.pdf).
+    See https://dl.acm.org/doi/10.1145/3290380 for an introduction.
+    *)
+    Parameter exposed_aid : alloc_id -> mpred.
+    Axiom exposed_aid_persistent : forall aid, Persistent (exposed_aid aid).
+    Axiom exposed_aid_affine : forall aid, Affine (exposed_aid aid).
+    Axiom exposed_aid_timeless : forall aid, Timeless (exposed_aid aid).
+
+    Axiom exposed_aid_null_alloc_id : |-- exposed_aid null_alloc_id.
 
     Global Existing Instances
-      pinned_ptr_persistent pinned_ptr_affine pinned_ptr_timeless.
-
-    (** [aligned_ptr] states that the pointer (if it exists in memory) has
-    the given alignment. This is persistent.
-     *)
-    Parameter aligned_ptr : forall (n : N) (p : ptr), mpred.
-    Axiom aligned_ptr_persistent : forall n p, Persistent (aligned_ptr n p).
-    Axiom aligned_ptr_affine : forall n p, Affine (aligned_ptr n p).
-    Axiom aligned_ptr_timeless : forall n p, Timeless (aligned_ptr n p).
-    Global Existing Instances aligned_ptr_persistent aligned_ptr_affine aligned_ptr_timeless.
-
-    Axiom pinned_ptr_aligned_divide : forall va n p,
-      pinned_ptr va p ⊢
-      aligned_ptr n p ∗-∗ [| (n | va)%N |].
-
-    (* TODO: allow deriving this. *)
-    Axiom aligned_mult_weaken : forall m n p,
-      aligned_ptr (m * n) p ⊢ aligned_ptr n p.
+      exposed_aid_persistent exposed_aid_affine exposed_aid_timeless.
 
     (**
       [type_ptr {resolve := resolve} ty p] asserts that [p] points to
@@ -347,7 +338,7 @@ Module Type CPP_LOGIC (Import CC : CPP_LOGIC_CLASS)
       - the pointer is strictly valid [type_ptr_strict_valid], and
         "p + 1" is also valid (while possibly past-the-end) [type_ptr_valid_plus_one].
       - the pointer is not null [type_ptr_nonnull]
-      - the pointer is properly aligned [type_ptr_aligned]
+      - the pointer is properly aligned [type_ptr_aligned_pure]
 
       [type_ptr] is persistent and survives deallocation of the pointed-to
       object, like [_valid_ptr].
@@ -368,9 +359,8 @@ Module Type CPP_LOGIC (Import CC : CPP_LOGIC_CLASS)
       Timeless (type_ptr ty p).
     Global Existing Instances type_ptr_persistent type_ptr_affine type_ptr_timeless.
 
-    Axiom type_ptr_aligned : forall σ ty p,
-      type_ptr ty p |--
-      Exists align, [| @align_of σ ty = Some align |] ** aligned_ptr align p.
+    Axiom type_ptr_aligned_pure : forall σ ty p,
+      type_ptr ty p |-- [| aligned_ptr_ty ty p |].
 
     Axiom type_ptr_off_nonnull : forall {σ ty p o},
       type_ptr ty (p .., o) |-- [| p <> nullptr |].
@@ -550,6 +540,109 @@ Module Type VALID_PTR_AXIOMS.
 End VALID_PTR_AXIOMS.
 Declare Module Export VALID_PTR : VALID_PTR_AXIOMS.
 
+Section pinned_ptr_def.
+  Context `{Σ : cpp_logic}.
+
+  (* Just wrappers. *)
+  Lemma valid_ptr_nullptr : |-- valid_ptr nullptr.
+  Proof. exact: _valid_ptr_nullptr. Qed.
+  Lemma strict_valid_ptr_nullptr : |-- strict_valid_ptr nullptr.
+  Proof. exact: _valid_ptr_nullptr. Qed.
+
+  Definition exposed_ptr_def p : mpred :=
+    valid_ptr p ** ∃ aid, [| ptr_alloc_id p = Some aid |] ** exposed_aid aid.
+  Definition exposed_ptr_aux : seal exposed_ptr_def. Proof. by eexists. Qed.
+  Definition exposed_ptr := exposed_ptr_aux.(unseal).
+  Definition exposed_ptr_eq : exposed_ptr = _ := exposed_ptr_aux.(seal_eq).
+
+  Global Instance exposed_ptr_persistent p : Persistent (exposed_ptr p).
+  Proof. rewrite exposed_ptr_eq. apply _. Qed.
+  Global Instance exposed_ptr_affine p : Affine (exposed_ptr p).
+  Proof. rewrite exposed_ptr_eq. apply _. Qed.
+  Global Instance exposed_ptr_timeless p : Timeless (exposed_ptr p).
+  Proof. rewrite exposed_ptr_eq. apply _. Qed.
+  Global Instance exposed_ptr_valid p :
+    Observe (valid_ptr p) (exposed_ptr p).
+  Proof. rewrite exposed_ptr_eq. apply _. Qed.
+
+  Lemma exposed_ptr_nullptr : |-- exposed_ptr nullptr.
+  Proof.
+    rewrite exposed_ptr_eq /exposed_ptr_def ptr_alloc_id_nullptr.
+    iDestruct valid_ptr_nullptr as "$". iExists _.
+    by iDestruct exposed_aid_null_alloc_id as "$".
+  Qed.
+
+  Lemma offset_exposed_ptr p o :
+    valid_ptr (p .., o) |-- exposed_ptr p -* exposed_ptr (p .., o).
+  Proof.
+    rewrite exposed_ptr_eq /exposed_ptr_def.
+    iIntros "#V' #[V E]". iDestruct (valid_ptr_alloc_id with "V'") as %?.
+    iFrame "V'". by rewrite ptr_alloc_id_offset.
+  Qed.
+
+  Lemma offset2_exposed_ptr p o1 o2 :
+    valid_ptr (p .., o2) |-- exposed_ptr (p .., o1) -* exposed_ptr (p .., o2).
+  Proof.
+    rewrite exposed_ptr_eq /exposed_ptr_def.
+    iIntros "#V2 #[V1 E]"; iFrame "V2".
+    iDestruct (valid_ptr_alloc_id with "V1") as %?.
+    iDestruct (valid_ptr_alloc_id with "V2") as %?.
+    by rewrite ptr_alloc_id_offset // ptr_alloc_id_offset.
+  Qed.
+
+  (** Physical representation of pointers. *)
+  (** [pinned_ptr va p] states that the abstract pointer [p] is tied to a
+    virtual address [va].
+    [pinned_ptr] will only hold on pointers that are associated to addresses,
+    but other pointers exist. *)
+  Definition pinned_ptr_def (va : vaddr) (p : ptr) : mpred :=
+    [| pinned_ptr_pure va p |] ** exposed_ptr p.
+  Definition pinned_ptr_aux : seal pinned_ptr_def. Proof. by eexists. Qed.
+  Definition pinned_ptr := pinned_ptr_aux.(unseal).
+  Definition pinned_ptr_eq : pinned_ptr = _ := pinned_ptr_aux.(seal_eq).
+
+  Global Instance pinned_ptr_persistent va p : Persistent (pinned_ptr va p).
+  Proof. rewrite pinned_ptr_eq. apply _. Qed.
+  Global Instance pinned_ptr_affine va p : Affine (pinned_ptr va p).
+  Proof. rewrite pinned_ptr_eq. apply _. Qed.
+  Global Instance pinned_ptr_timeless va p : Timeless (pinned_ptr va p).
+  Proof. rewrite pinned_ptr_eq. apply _. Qed.
+
+  Global Instance pinned_ptr_pinned_ptr_pure va p :
+    Observe [| pinned_ptr_pure va p |] (pinned_ptr va p).
+  Proof. rewrite pinned_ptr_eq. apply _. Qed.
+
+  Global Instance pinned_ptr_valid va p :
+    Observe (valid_ptr p) (pinned_ptr va p).
+  Proof. rewrite pinned_ptr_eq. apply _. Qed.
+
+  (** Just a corollary of [provides_storage_same_address] in the style of
+  [provides_storage_pinned_ptr]. *)
+  Lemma provides_storage_pinned_ptr_pure {storage_ptr obj_ptr aty va} :
+    pinned_ptr_pure va storage_ptr ->
+    provides_storage storage_ptr obj_ptr aty |-- [| pinned_ptr_pure va obj_ptr |].
+  Proof. rewrite provides_storage_same_address. by iIntros (HP <-). Qed.
+
+  (* Used, but false. *)
+  Lemma deprecated__provides_storage_pinned_ptr storage_ptr obj_ptr aty va :
+    provides_storage storage_ptr obj_ptr aty ** pinned_ptr va storage_ptr
+    |-- pinned_ptr va obj_ptr.
+  Proof.
+    rewrite pinned_ptr_eq /pinned_ptr_def exposed_ptr_eq /exposed_ptr_def.
+    iIntros "(P & %Hpin_st & #V & #E)"; iDestruct "E" as (st_aid Hst_aid) "E".
+    iDestruct (provides_storage_pinned_ptr_pure Hpin_st with "P") as %Hpin_obj.
+    iFrame (Hpin_obj).
+    iDestruct (provides_storage_valid_obj_ptr with "P") as "#$".
+  Abort.
+
+  Axiom deprecated__provides_storage_pinned_ptr : forall storage_ptr obj_ptr aty va,
+    provides_storage storage_ptr obj_ptr aty ** pinned_ptr va storage_ptr
+    |-- pinned_ptr va obj_ptr.
+End pinned_ptr_def.
+
+#[deprecated(note="",since="2021-03-01")]
+Notation provides_storage_pinned_ptr := deprecated__provides_storage_pinned_ptr.
+
 Section with_cpp.
   Context `{Σ : cpp_logic} {σ : genv}.
 
@@ -558,11 +651,54 @@ Section with_cpp.
     [| same_address_bool p nullptr = bool_decide (p = nullptr) |].
   Proof. rewrite same_address_eq_null; iIntros "!%". apply bool_decide_iff. Qed.
 
-  (* Just wrappers. *)
-  Lemma valid_ptr_nullptr : |-- valid_ptr nullptr.
-  Proof. exact: _valid_ptr_nullptr. Qed.
-  Lemma strict_valid_ptr_nullptr : |-- strict_valid_ptr nullptr.
-  Proof. exact: _valid_ptr_nullptr. Qed.
+  Global Instance pinned_ptr_unique va va' p :
+    Observe2 [| va = va' |] (pinned_ptr va p) (pinned_ptr va' p).
+  Proof.
+    rewrite pinned_ptr_eq.
+    iIntros "[%H1 _] [%H2 _] !> !%". exact: pinned_ptr_pure_unique.
+  Qed.
+
+  Lemma pinned_ptr_null : |-- pinned_ptr 0 nullptr.
+  Proof.
+    rewrite pinned_ptr_eq /pinned_ptr_def.
+    iFrame (pinned_ptr_pure_null).
+    iApply exposed_ptr_nullptr.
+  Qed.
+
+  Lemma offset_pinned_ptr o n va p :
+    eval_offset _ o = Some n ->
+    valid_ptr (p .., o) |--
+    pinned_ptr va p -* pinned_ptr (Z.to_N (Z.of_N va + n)) (p .., o).
+  Proof.
+    rewrite pinned_ptr_eq /pinned_ptr_def.
+    iIntros (He) "#V' #(%P & E)".
+    iDestruct (offset_pinned_ptr_pure with "V'") as "$"; [done..|].
+    by iApply offset_exposed_ptr.
+  Qed.
+
+  Lemma pinned_ptr_aligned_divide va n p :
+    pinned_ptr va p ⊢
+    [| aligned_ptr n p <-> (n | va)%N |].
+  Proof.
+    rewrite pinned_ptr_eq /pinned_ptr_def; iIntros "(%P & _) !%".
+    exact: pinned_ptr_pure_aligned_divide.
+  Qed.
+
+  Lemma pinned_ptr_pure_type_divide_1 va n p ty
+    (Hal : align_of ty = Some n) :
+    type_ptr ty p ⊢ [| pinned_ptr_pure va p |] -∗ [| (n | va)%N |].
+  Proof.
+    rewrite type_ptr_aligned_pure. iIntros "!%".
+    exact: pinned_ptr_pure_divide_1.
+  Qed.
+
+  Lemma pinned_ptr_type_divide_1 va n p ty
+    (Hal : align_of ty = Some n) :
+    type_ptr ty p ⊢ pinned_ptr va p -∗ [| (n | va)%N |].
+  Proof.
+    rewrite pinned_ptr_eq /pinned_ptr_def.
+    iIntros "#? #(? & _)". by iApply pinned_ptr_pure_type_divide_1.
+  Qed.
 
   Lemma _valid_valid p vt : _valid_ptr vt p |-- valid_ptr p.
   Proof. case: vt => [|//]. exact: strict_valid_valid. Qed.
@@ -704,14 +840,6 @@ Section with_cpp.
     - by iApply fs_equiv_reflexive.
     - by iApply fs_equiv_symmetric.
     - by iApply fs_equiv_transitive.
-  Qed.
-
-  Lemma pinned_ptr_type_divide_1 va n p ty
-    (Hal : align_of ty = Some n) :
-    type_ptr ty p ⊢ pinned_ptr va p -∗ [| (n | va)%N |].
-  Proof.
-    rewrite type_ptr_aligned Hal /=. iDestruct 1 as (? [= <-]) "A". iIntros "P".
-    iApply (pinned_ptr_aligned_divide with "P A").
   Qed.
 
   (** *** Just wrappers. *)

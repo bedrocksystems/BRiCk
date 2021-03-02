@@ -45,7 +45,7 @@
    we still assume users use options such as [-fno-strict-aliasing] GCC/Clang's.
  *)
 From Coq Require Import Strings.Ascii.
-From bedrock.lang.prelude Require Import base addr option.
+From bedrock.lang.prelude Require Import base addr option numbers.
 
 Require Import bedrock.lang.cpp.ast.
 From bedrock.lang.cpp.semantics Require Export types sub_module genv.
@@ -291,6 +291,16 @@ one is [PTRS_IMPL].
     n1 = n2.
   Axiom o_dot_sub : ∀ {σ : genv} i j ty,
     o_dot (o_sub _ ty i) (o_sub _ ty j) = o_sub _ ty (i + j).
+
+  (** [eval_offset] and associated axioms are more advanced, only to be used
+  in special cases. *)
+  (* TODO drop [genv]. *)
+  Parameter eval_offset : genv -> offset -> option Z.
+
+  Axiom eval_o_sub : forall resolve ty (i : Z),
+    eval_offset resolve (o_sub _ ty i) =
+      (* This order enables reducing for known ty. *)
+      (fun n => Z.of_N n * i) <$> size_of resolve ty.
 End PTRS.
 
 Module Type PTRS_DERIVED (Import P : PTRS).
@@ -335,6 +345,7 @@ Module Type PTRS_MIXIN (Import P : PTRS) (Import PD : PTRS_DERIVED P).
   Proof. rewrite same_address_eq. apply _. Qed.
   Global Instance same_address_comm : Comm iff same_address.
   Proof. apply: symmetry_iff. Qed.
+  Global Instance: RewriteRelation same_address := {}.
 
   Definition same_address_bool p1 p2 := bool_decide (same_address p1 p2).
   Global Instance same_address_bool_comm : Comm eq same_address_bool.
@@ -356,26 +367,35 @@ Module Type PTRS_MIXIN (Import P : PTRS) (Import PD : PTRS_DERIVED P).
     by rewrite same_address_eq -same_property_reflexive_equiv.
   Qed.
 
+  Lemma pinned_ptr_pure_null : pinned_ptr_pure 0 nullptr.
+  Proof. by rewrite pinned_ptr_pure_eq ptr_vaddr_nullptr. Qed.
+
   Lemma pinned_ptr_pure_unique va1 va2 p :
     pinned_ptr_pure va1 p -> pinned_ptr_pure va2 p -> va1 = va2.
   Proof.
     rewrite pinned_ptr_pure_eq => H1 H2. apply (inj Some). by rewrite -H1 -H2.
   Qed.
 
-  Lemma same_address_pinned p1 p2 :
-    same_address p1 p2 <-> ∃ va, pinned_ptr_pure va p1 ∧ pinned_ptr_pure va p2.
-  Proof. by rewrite same_address_eq pinned_ptr_pure_eq same_property_iff. Qed.
-
   Lemma same_alloc_iff p1 p2 :
     same_alloc p1 p2 <-> ∃ aid, ptr_alloc_id p1 = Some aid ∧ ptr_alloc_id p2 = Some aid.
   Proof. by rewrite same_alloc_eq same_property_iff. Qed.
 
+  Lemma same_address_iff p1 p2 :
+    same_address p1 p2 <-> ∃ va, ptr_vaddr p1 = Some va ∧ ptr_vaddr p2 = Some va.
+  Proof. by rewrite same_address_eq same_property_iff. Qed.
+
+  Lemma same_address_pinned p1 p2 :
+    same_address p1 p2 <-> ∃ va, pinned_ptr_pure va p1 ∧ pinned_ptr_pure va p2.
+  Proof. by rewrite same_address_iff pinned_ptr_pure_eq. Qed.
+
+  Global Instance ptr_vaddr_proper :
+    Proper (same_address ==> eq) ptr_vaddr.
+  Proof. by intros p1 p2 (va&->&->)%same_address_iff. Qed.
+  Global Instance: Params ptr_vaddr 1 := {}.
+
   Global Instance pinned_ptr_pure_proper va :
     Proper (same_address ==> iff) (pinned_ptr_pure va).
-  Proof.
-    move=> p1 p2.
-    by rewrite same_address_pinned pinned_ptr_pure_eq => -[va' [-> ->]].
-  Qed.
+  Proof. rewrite pinned_ptr_pure_eq. by intros p1 p2 ->. Qed.
   Global Instance: Params pinned_ptr_pure 1 := {}.
 
   Lemma ptr_alloc_id_base p o
@@ -420,6 +440,67 @@ Module Type PTRS_MIXIN (Import P : PTRS) (Import PD : PTRS_DERIVED P).
     (Hsz : is_Some (size_of resolve ty)) :
     _offset_ptr p (o_sub _ ty 0) = p.
   Proof. by rewrite o_sub_0 // offset_ptr_id. Qed.
+
+  (** [aligned_ptr] states that the pointer (if it exists in memory) has
+  the given alignment.
+    *)
+  Definition aligned_ptr align p :=
+    (exists va, ptr_vaddr p = Some va /\ (align | va)%N) \/ ptr_vaddr p = None.
+  Definition aligned_ptr_ty {σ} ty p :=
+    exists align, align_of ty = Some align /\ aligned_ptr align p.
+
+  Global Instance aligned_ptr_divide_mono :
+    Proper (flip N.divide ==> eq ==> impl) aligned_ptr.
+  Proof.
+    move=> m n + _ p ->.
+    rewrite /aligned_ptr => ? [[va [P D]]|]; [left|by right].
+    eexists _; split=> //. by etrans.
+  Qed.
+  Global Instance aligned_ptr_divide_flip_mono :
+    Proper (N.divide ==> eq ==> flip impl) aligned_ptr.
+  Proof. solve_proper. Qed.
+  Global Instance: RewriteRelation N.divide := {}.
+
+  Lemma aligned_ptr_divide_weaken m n p :
+    (n | m)%N ->
+    aligned_ptr m p -> aligned_ptr n p.
+  Proof. by move->. Qed.
+
+  Lemma aligned_ptr_mult_weaken_l m n p :
+    aligned_ptr (m * n) p -> aligned_ptr n p.
+  Proof. by apply aligned_ptr_divide_weaken, N.divide_mul_r. Qed.
+
+  Lemma aligned_ptr_mult_weaken_r m n p :
+    aligned_ptr (m * n) p -> aligned_ptr m p.
+  Proof. by apply aligned_ptr_divide_weaken, N.divide_mul_l. Qed.
+
+  Lemma aligned_ptr_min p : aligned_ptr 1 p.
+  Proof.
+    rewrite /aligned_ptr.
+    case: ptr_vaddr; [|by eauto] => va.
+    eauto using N.divide_1_l.
+  Qed.
+
+  Lemma aligned_ptr_ty_mult_weaken {σ} m n ty p :
+    align_of ty = Some m -> (n | m)%N ->
+    aligned_ptr_ty ty p -> aligned_ptr n p.
+  Proof.
+    rewrite /aligned_ptr_ty;
+      naive_solver eauto using aligned_ptr_divide_weaken.
+  Qed.
+
+  Lemma pinned_ptr_pure_aligned_divide va n p :
+    pinned_ptr_pure va p ->
+    aligned_ptr n p <-> (n | va)%N.
+  Proof. rewrite pinned_ptr_pure_eq /aligned_ptr. naive_solver. Qed.
+
+  Lemma pinned_ptr_pure_divide_1 σ va n p ty
+    (Hal : align_of ty = Some n) :
+    aligned_ptr_ty ty p → pinned_ptr_pure va p → (n | va)%N.
+  Proof.
+    rewrite /aligned_ptr_ty Hal /aligned_ptr pinned_ptr_pure_eq /=.
+    naive_solver.
+  Qed.
 
   Lemma o_sub_sub p ty i j σ :
     p .., o_sub _ ty i .., o_sub _ ty j = (p .., o_sub _ ty (i + j)).
@@ -467,18 +548,9 @@ Proof. solve_decision. Defined.
 
 End VAL_MIXIN.
 
-Module Type PTR_INTERNAL (Import P : PTRS).
-  (* Useful *)
-  Parameter eval_offset : genv -> offset -> option Z.
-
-  Axiom eval_o_sub : forall resolve ty (i : Z),
-    eval_offset resolve (o_sub _ ty i) =
-      (* This order enables reducing for known ty. *)
-      (fun n => Z.of_N n * i) <$> size_of resolve ty.
-End PTR_INTERNAL.
-
 (* Collect all the axioms. *)
-Module Type PTRS_INTF := PTRS <+ PTRS_DERIVED <+ PTR_INTERNAL <+ RAW_BYTES.
+Module Type PTRS_INTF_MINIMAL := PTRS <+ PTRS_DERIVED.
+Module Type PTRS_INTF := PTRS_INTF_MINIMAL <+ RAW_BYTES.
 Declare Module PTRS_INTF_AXIOM : PTRS_INTF.
 
 (* Plug mixins. *)
