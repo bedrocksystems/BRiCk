@@ -23,7 +23,6 @@ Implicit Types (σ : genv).
 #[local] Close Scope nat_scope.
 #[local] Open Scope Z_scope.
 
-Module Type PTRS_INTF_MINIMAL := PTRS <+ PTRS_DERIVED <+ PTR_INTERNAL.
 Module SIMPLE_PTRS_IMPL : PTRS_INTF_MINIMAL.
 
   (**
@@ -190,8 +189,6 @@ Module SIMPLE_PTRS_IMPL : PTRS_INTF_MINIMAL.
     case: p => [[aid va]|] Haddr ?; simplify_option_eq. nia.
   Qed.
 
-  Include PTRS_DERIVED_MIXIN.
-
   (* Not exposed directly, but proof sketch for
   [valid_o_sub_size]; recall that in this model, all valid pointers have an
   address. *)
@@ -209,4 +206,6 @@ Module SIMPLE_PTRS_IMPL : PTRS_INTF_MINIMAL.
     rewrite /o_sub/o_sub_off. case: size_of => //= sz.
     by rewrite (comm _ i).
   Qed.
+
+  Include PTRS_DERIVED_MIXIN.
 End SIMPLE_PTRS_IMPL.

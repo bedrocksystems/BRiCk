@@ -291,6 +291,16 @@ one is [PTRS_IMPL].
     n1 = n2.
   Axiom o_dot_sub : ∀ {σ : genv} i j ty,
     o_dot (o_sub _ ty i) (o_sub _ ty j) = o_sub _ ty (i + j).
+
+  (** [eval_offset] and associated axioms are more advanced, only to be used
+  in special cases. *)
+  (* TODO drop [genv]. *)
+  Parameter eval_offset : genv -> offset -> option Z.
+
+  Axiom eval_o_sub : forall resolve ty (i : Z),
+    eval_offset resolve (o_sub _ ty i) =
+      (* This order enables reducing for known ty. *)
+      (fun n => Z.of_N n * i) <$> size_of resolve ty.
 End PTRS.
 
 Module Type PTRS_DERIVED (Import P : PTRS).
@@ -528,18 +538,9 @@ Proof. solve_decision. Defined.
 
 End VAL_MIXIN.
 
-Module Type PTR_INTERNAL (Import P : PTRS).
-  (* Useful *)
-  Parameter eval_offset : genv -> offset -> option Z.
-
-  Axiom eval_o_sub : forall resolve ty (i : Z),
-    eval_offset resolve (o_sub _ ty i) =
-      (* This order enables reducing for known ty. *)
-      (fun n => Z.of_N n * i) <$> size_of resolve ty.
-End PTR_INTERNAL.
-
 (* Collect all the axioms. *)
-Module Type PTRS_INTF := PTRS <+ PTRS_DERIVED <+ PTR_INTERNAL <+ RAW_BYTES.
+Module Type PTRS_INTF_MINIMAL := PTRS <+ PTRS_DERIVED.
+Module Type PTRS_INTF := PTRS_INTF_MINIMAL <+ RAW_BYTES.
 Declare Module PTRS_INTF_AXIOM : PTRS_INTF.
 
 (* Plug mixins. *)
