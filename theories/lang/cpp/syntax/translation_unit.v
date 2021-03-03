@@ -63,6 +63,8 @@ Record Union : Set :=
   (* ^ fields with type, initializer, and layout information *)
 ; u_size : N
   (* ^ size of the union (including padding) *)
+; u_alignment : N
+  (* ^ alignment of the union *)
 }.
 Instance: EqDecision Union.
 Proof. solve_decision. Defined.
@@ -81,6 +83,8 @@ Record Struct : Set :=
   (* ^ the type of layout semantics *)
 ; s_size : N
   (* ^ size of the structure (including padding) *)
+; s_alignment : N
+  (* ^ alignment of the structure *)
 ; s_virtuals : list (obj_name * option obj_name)
   (* ^ function_name -> symbol *)
 ; s_overrides : list (obj_name * obj_name)
@@ -139,17 +143,32 @@ Variant ObjValue : Set :=
 Instance: EqDecision ObjValue.
 Proof. solve_decision. Defined.
 
+(* [Tmember_func ty fty] constructs the function type for a
+     member function that takes a [this] parameter of [ty]
+
+   TODO technically the [this] parameter is [const], but we are not
+        treating [const] correctly right now, so we make it non-const
+        in the type. The C++ typesystem prevents us from attempting to
+        modify the value of [this] since it is not an Lvalue.
+ *)
+Definition Tmember_func (ty : type) (fty : type) : type :=
+  match fty with
+  | @Tfunction cc ret args => Tfunction (cc:=cc) ret (Tptr ty :: args)
+  | _ => fty
+  end.
+
 (** [type_of_value o] returns the type of the given [ObjValue] *)
 Definition type_of_value (o : ObjValue) : type :=
   normalize_type
   match o with
   | Ovar t _ => t
   | Ofunction f => Tfunction (cc:=f.(f_cc)) f.(f_return) $ snd <$> f.(f_params)
-  | Omethod m => Tfunction (cc:=m.(m_cc)) m.(m_return) $ Qconst (Tptr (Tqualified m.(m_this_qual) (Tnamed m.(m_class)))) :: (snd <$> m.(m_params))
+  | Omethod m =>
+    Tmember_func (Tqualified m.(m_this_qual) (Tnamed m.(m_class))) $ Tfunction (cc:=m.(m_cc)) m.(m_return) $ snd <$> m.(m_params)
   | Oconstructor c =>
-    Tfunction (cc:=c.(c_cc)) Tvoid $ Qconst (Tptr (Tnamed c.(c_class))) :: (snd <$> c.(c_params))
+    Tmember_func (Tnamed c.(c_class)) $ Tfunction (cc:=c.(c_cc)) Tvoid $ snd <$> c.(c_params)
   | Odestructor d =>
-    Tfunction (cc:=d.(d_cc)) Tvoid $ Qconst (Tptr (Tnamed d.(d_class))) :: nil
+    Tmember_func (Tnamed d.(d_class)) $ Tfunction (cc:=d.(d_cc)) Tvoid nil
   end.
 
 Variant GlobDecl : Set :=

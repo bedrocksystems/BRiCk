@@ -45,7 +45,7 @@
    we still assume users use options such as [-fno-strict-aliasing] GCC/Clang's.
  *)
 From Coq Require Import Strings.Ascii.
-From bedrock.lang.prelude Require Import base addr option.
+From bedrock.lang.prelude Require Import base addr option numbers.
 
 Require Import bedrock.lang.cpp.ast.
 From bedrock.lang.cpp.semantics Require Export types sub_module genv.
@@ -259,6 +259,10 @@ one is [PTRS_IMPL].
   (** Map pointers to allocation IDs; total on valid pointers thanks to
   [valid_ptr_alloc_id]. *)
   Parameter ptr_alloc_id : ptr -> option alloc_id.
+  Parameter null_alloc_id : alloc_id.
+  Axiom ptr_alloc_id_nullptr :
+    ptr_alloc_id nullptr = Some null_alloc_id.
+
   (**
   Map pointers to the address they represent,
   (https://eel.is/c++draft/basic.compound#def:represents_the_address).
@@ -287,6 +291,16 @@ one is [PTRS_IMPL].
     n1 = n2.
   Axiom o_dot_sub : ∀ {σ : genv} i j ty,
     o_dot (o_sub _ ty i) (o_sub _ ty j) = o_sub _ ty (i + j).
+
+  (** [eval_offset] and associated axioms are more advanced, only to be used
+  in special cases. *)
+  (* TODO drop [genv]. *)
+  Parameter eval_offset : genv -> offset -> option Z.
+
+  Axiom eval_o_sub : forall resolve ty (i : Z),
+    eval_offset resolve (o_sub _ ty i) =
+      (* This order enables reducing for known ty. *)
+      (fun n => Z.of_N n * i) <$> size_of resolve ty.
 End PTRS.
 
 Module Type PTRS_DERIVED (Import P : PTRS).
@@ -331,10 +345,30 @@ Module Type PTRS_MIXIN (Import P : PTRS) (Import PD : PTRS_DERIVED P).
   Proof. rewrite same_address_eq. apply _. Qed.
   Global Instance same_address_comm : Comm iff same_address.
   Proof. apply: symmetry_iff. Qed.
+  Global Instance: RewriteRelation same_address := {}.
 
   Definition same_address_bool p1 p2 := bool_decide (same_address p1 p2).
   Global Instance same_address_bool_comm : Comm eq same_address_bool.
   Proof. move=> p1 p2. apply bool_decide_iff, comm, _. Qed.
+
+  Lemma same_address_bool_eq {p1 p2 va1 va2} :
+    ptr_vaddr p1 = Some va1 → ptr_vaddr p2 = Some va2 →
+    same_address_bool p1 p2 = bool_decide (va1 = va2).
+  Proof.
+    intros Hs1 Hs2. apply bool_decide_iff.
+    rewrite same_address_eq same_property_iff. naive_solver.
+  Qed.
+
+  Lemma same_address_bool_partial_reflexive p :
+    is_Some (ptr_vaddr p) ->
+    same_address_bool p p = true.
+  Proof.
+    move=> Hsm. rewrite /same_address_bool bool_decide_true; first done.
+    by rewrite same_address_eq -same_property_reflexive_equiv.
+  Qed.
+
+  Lemma pinned_ptr_pure_null : pinned_ptr_pure 0 nullptr.
+  Proof. by rewrite pinned_ptr_pure_eq ptr_vaddr_nullptr. Qed.
 
   Lemma pinned_ptr_pure_unique va1 va2 p :
     pinned_ptr_pure va1 p -> pinned_ptr_pure va2 p -> va1 = va2.
@@ -342,21 +376,32 @@ Module Type PTRS_MIXIN (Import P : PTRS) (Import PD : PTRS_DERIVED P).
     rewrite pinned_ptr_pure_eq => H1 H2. apply (inj Some). by rewrite -H1 -H2.
   Qed.
 
-  Lemma same_address_pinned p1 p2 :
-    same_address p1 p2 <-> ∃ va, pinned_ptr_pure va p1 ∧ pinned_ptr_pure va p2.
-  Proof. by rewrite same_address_eq pinned_ptr_pure_eq same_property_iff. Qed.
-
   Lemma same_alloc_iff p1 p2 :
     same_alloc p1 p2 <-> ∃ aid, ptr_alloc_id p1 = Some aid ∧ ptr_alloc_id p2 = Some aid.
   Proof. by rewrite same_alloc_eq same_property_iff. Qed.
 
+  Lemma same_address_iff p1 p2 :
+    same_address p1 p2 <-> ∃ va, ptr_vaddr p1 = Some va ∧ ptr_vaddr p2 = Some va.
+  Proof. by rewrite same_address_eq same_property_iff. Qed.
+
+  Lemma same_address_pinned p1 p2 :
+    same_address p1 p2 <-> ∃ va, pinned_ptr_pure va p1 ∧ pinned_ptr_pure va p2.
+  Proof. by rewrite same_address_iff pinned_ptr_pure_eq. Qed.
+
+  Global Instance ptr_vaddr_proper :
+    Proper (same_address ==> eq) ptr_vaddr.
+  Proof. by intros p1 p2 (va&->&->)%same_address_iff. Qed.
+  Global Instance: Params ptr_vaddr 1 := {}.
+
   Global Instance pinned_ptr_pure_proper va :
     Proper (same_address ==> iff) (pinned_ptr_pure va).
-  Proof.
-    move=> p1 p2.
-    by rewrite same_address_pinned pinned_ptr_pure_eq => -[va' [-> ->]].
-  Qed.
+  Proof. rewrite pinned_ptr_pure_eq. by intros p1 p2 ->. Qed.
   Global Instance: Params pinned_ptr_pure 1 := {}.
+
+  Lemma ptr_alloc_id_base p o
+    (Hs : is_Some (ptr_alloc_id (p .., o))) :
+    is_Some (ptr_alloc_id p).
+  Proof. by rewrite -(ptr_alloc_id_offset Hs). Qed.
 
   Lemma same_alloc_offset p o
     (Hs : is_Some (ptr_alloc_id (p .., o))) :
@@ -364,6 +409,24 @@ Module Type PTRS_MIXIN (Import P : PTRS) (Import PD : PTRS_DERIVED P).
   Proof.
     case: (Hs) => aid Eq. rewrite same_alloc_iff.
     exists aid. by rewrite -(ptr_alloc_id_offset Hs).
+  Qed.
+
+  Lemma same_alloc_offset_2 p o1 o2 p1 p2
+    (E1 : p1 = p .., o1) (E2 : p2 = p .., o2)
+    (Hs1 : is_Some (ptr_alloc_id (p .., o1)))
+    (Hs2 : is_Some (ptr_alloc_id (p .., o2))) :
+    same_alloc p1 p2.
+  Proof.
+    subst; move: (Hs1) => [aid Eq]; rewrite same_alloc_iff; exists aid; move: Eq.
+    by rewrite (ptr_alloc_id_offset Hs1) (ptr_alloc_id_offset Hs2).
+  Qed.
+
+  Lemma same_alloc_offset_1 p o
+    (Hs : is_Some (ptr_alloc_id (p .., o))) :
+    same_alloc p (p .., o).
+  Proof.
+    apply: (same_alloc_offset_2 p o_id o); rewrite ?offset_ptr_id //.
+    exact: ptr_alloc_id_base Hs.
   Qed.
 
   (** Pointers into the same array with the same address have the same index.
@@ -378,23 +441,70 @@ Module Type PTRS_MIXIN (Import P : PTRS) (Import PD : PTRS_DERIVED P).
     _offset_ptr p (o_sub _ ty 0) = p.
   Proof. by rewrite o_sub_0 // offset_ptr_id. Qed.
 
-  #[deprecated(note="Use offset_ptr_sub_0", since="2021-02-18")]
-  Notation _offset_ptr_sub_0 := offset_ptr_sub_0 (only parsing).
+  (** [aligned_ptr] states that the pointer (if it exists in memory) has
+  the given alignment.
+    *)
+  Definition aligned_ptr align p :=
+    (exists va, ptr_vaddr p = Some va /\ (align | va)%N) \/ ptr_vaddr p = None.
+  Definition aligned_ptr_ty {σ} ty p :=
+    exists align, align_of ty = Some align /\ aligned_ptr align p.
+
+  Global Instance aligned_ptr_divide_mono :
+    Proper (flip N.divide ==> eq ==> impl) aligned_ptr.
+  Proof.
+    move=> m n + _ p ->.
+    rewrite /aligned_ptr => ? [[va [P D]]|]; [left|by right].
+    eexists _; split=> //. by etrans.
+  Qed.
+  Global Instance aligned_ptr_divide_flip_mono :
+    Proper (N.divide ==> eq ==> flip impl) aligned_ptr.
+  Proof. solve_proper. Qed.
+  Global Instance: RewriteRelation N.divide := {}.
+
+  Lemma aligned_ptr_divide_weaken m n p :
+    (n | m)%N ->
+    aligned_ptr m p -> aligned_ptr n p.
+  Proof. by move->. Qed.
+
+  Lemma aligned_ptr_mult_weaken_l m n p :
+    aligned_ptr (m * n) p -> aligned_ptr n p.
+  Proof. by apply aligned_ptr_divide_weaken, N.divide_mul_r. Qed.
+
+  Lemma aligned_ptr_mult_weaken_r m n p :
+    aligned_ptr (m * n) p -> aligned_ptr m p.
+  Proof. by apply aligned_ptr_divide_weaken, N.divide_mul_l. Qed.
+
+  Lemma aligned_ptr_min p : aligned_ptr 1 p.
+  Proof.
+    rewrite /aligned_ptr.
+    case: ptr_vaddr; [|by eauto] => va.
+    eauto using N.divide_1_l.
+  Qed.
+
+  Lemma aligned_ptr_ty_mult_weaken {σ} m n ty p :
+    align_of ty = Some m -> (n | m)%N ->
+    aligned_ptr_ty ty p -> aligned_ptr n p.
+  Proof.
+    rewrite /aligned_ptr_ty;
+      naive_solver eauto using aligned_ptr_divide_weaken.
+  Qed.
+
+  Lemma pinned_ptr_pure_aligned_divide va n p :
+    pinned_ptr_pure va p ->
+    aligned_ptr n p <-> (n | va)%N.
+  Proof. rewrite pinned_ptr_pure_eq /aligned_ptr. naive_solver. Qed.
+
+  Lemma pinned_ptr_pure_divide_1 σ va n p ty
+    (Hal : align_of ty = Some n) :
+    aligned_ptr_ty ty p → pinned_ptr_pure va p → (n | va)%N.
+  Proof.
+    rewrite /aligned_ptr_ty Hal /aligned_ptr pinned_ptr_pure_eq /=.
+    naive_solver.
+  Qed.
 
   Lemma o_sub_sub p ty i j σ :
     p .., o_sub _ ty i .., o_sub _ ty j = (p .., o_sub _ ty (i + j)).
   Proof. by rewrite -offset_ptr_dot o_dot_sub. Qed.
-
-  (* TODO: drop for [o_dot_o_sub]. *)
-  Lemma _o_sub_sub_nneg : ∀ σ p ty (z1 z2 : Z),
-    0 <= z1 -> 0 <= z2 ->
-    p .., o_sub σ ty z1 .., o_sub σ ty z2 = p .., o_sub σ ty (z1 + z2).
-  Proof. intros * _ _. exact: o_sub_sub. Qed.
-
-  #[deprecated(since="2021-02-13", note="Use stronger [o_sub_sub] (or [o_dot_sub]).")]
-  Notation o_sub_sub_nneg := _o_sub_sub_nneg.
-  #[deprecated(since="2021-02-13", note="Use [o_dot_sub]")]
-  Notation o_dot_o_sub := o_dot_sub.
 
   Notation _id := o_id (only parsing).
   Notation _dot := (o_dot) (only parsing).
@@ -438,31 +548,13 @@ Proof. solve_decision. Defined.
 
 End VAL_MIXIN.
 
-Module Type PTRS_DEPRECATED (Import P : PTRS).
-  (** * Deprecated APIs *)
-  (** Offset a pointer by a certain number of bytes. *)
-  Parameter offset_ptr__ : Z -> ptr -> ptr.
-  #[deprecated(since="2020-12-08", note="Use structured offsets instead.")]
-  Notation offset_ptr_ := offset_ptr__.
-End PTRS_DEPRECATED.
-
-Module Type PTR_INTERNAL (Import P : PTRS).
-  (* Useful *)
-  Parameter eval_offset : genv -> offset -> option Z.
-
-  Axiom eval_o_sub : forall resolve ty (i : Z),
-    eval_offset resolve (o_sub _ ty i) =
-      (* This order enables reducing for known ty. *)
-      (fun n => Z.of_N n * i) <$> size_of resolve ty.
-End PTR_INTERNAL.
-
 (* Collect all the axioms. *)
-Module Type PTRS_INTF := PTRS <+ PTRS_DERIVED <+ PTR_INTERNAL <+ RAW_BYTES.
-Module Type PTRS_INTF_DEPRECATED := PTRS_INTF <+ PTRS_DEPRECATED.
-Declare Module PTRS_INTF_AXIOM : PTRS_INTF_DEPRECATED.
+Module Type PTRS_INTF_MINIMAL := PTRS <+ PTRS_DERIVED.
+Module Type PTRS_INTF := PTRS_INTF_MINIMAL <+ RAW_BYTES.
+Declare Module PTRS_INTF_AXIOM : PTRS_INTF.
 
 (* Plug mixins. *)
-Module Type PTRS_FULL_INTF := PTRS_INTF_DEPRECATED <+ VAL_MIXIN <+ PTRS_MIXIN.
+Module Type PTRS_FULL_INTF := PTRS_INTF <+ VAL_MIXIN <+ PTRS_MIXIN.
 Module Export PTRS_FULL_AXIOM : PTRS_FULL_INTF :=
   PTRS_INTF_AXIOM <+ VAL_MIXIN <+ PTRS_MIXIN.
 
@@ -481,22 +573,6 @@ Notation Vz := Vint (only parsing).
 
 (** we use [Vundef] as our value of type [void] *)
 Definition Vvoid := Vundef.
-
-(** lifting pointer offsets to values *)
-Definition __offset_ptr (o : Z) (v : val) : val :=
-  match v with
-  | Vptr p => Vptr (offset_ptr_ o p)
-  | _ => Vundef
-  end.
-#[deprecated(since="2020-01-09", note="Use structured offsets")]
-Notation offset_ptr := __offset_ptr.
-
-Theorem __offset_ptr_val : forall v o p,
-    Vptr p = v ->
-    Vptr (offset_ptr_ o p) = offset_ptr o v.
-Proof. intros; subst; reflexivity. Qed.
-#[deprecated(since="2020-01-09", note="Use structured offsets")]
-Notation offset_ptr_val := __offset_ptr_val.
 
 Definition is_true (v : val) : option bool :=
   match v with

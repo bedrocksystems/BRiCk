@@ -66,7 +66,7 @@ End fractional.
 
 (* Stand-in for an actual model of PTRS_FULL.
 Ensures that everything needed is properly functorized. *)
-Declare Module PTRS_IMPL : PTRS_INTF_DEPRECATED.
+Declare Module PTRS_IMPL : PTRS_INTF.
 
 Module Import PTRS_FULL_IMPL : PTRS_FULL_INTF :=
   PTRS_IMPL <+ VAL_MIXIN <+ PTRS_MIXIN.
@@ -244,11 +244,15 @@ Module SimpleCPP.
       valid_ptr p |-- [| is_Some (ptr_alloc_id p) |].
     (** This is a very simplistic definition of [provides_storage].
     A more useful definition should probably not be persistent. *)
-    Definition provides_storage (base newp : ptr) (_ : type) : mpred :=
-      [| same_address base newp |].
-    Lemma provides_storage_same_address base newp ty :
-      provides_storage base newp ty |-- [| same_address base newp |].
-    Proof. done. Qed.
+    Definition provides_storage (storage_ptr obj_ptr : ptr) (_ : type) : mpred :=
+      [| same_address storage_ptr obj_ptr |] ** valid_ptr storage_ptr ** valid_ptr obj_ptr.
+    Global Instance provides_storage_same_address storage_ptr obj_ptr ty :
+      Observe [| same_address storage_ptr obj_ptr |] (provides_storage storage_ptr obj_ptr ty) := _.
+
+    Global Instance provides_storage_valid_storage_ptr storage_ptr obj_ptr aty :
+      Observe (valid_ptr storage_ptr) (provides_storage storage_ptr obj_ptr aty) := _.
+    Global Instance provides_storage_valid_obj_ptr storage_ptr obj_ptr aty :
+      Observe (valid_ptr obj_ptr) (provides_storage storage_ptr obj_ptr aty) := _.
 
     Section with_genv.
       Variable σ : genv.
@@ -737,84 +741,29 @@ Module SimpleCPP.
       Lemma dtor_at_valid   f p :   dtor_at f p |-- valid_ptr p.
       Proof. exact: code_own_valid. Qed.
     End with_genv.
-    (** physical representation of pointers
+
+    (** physical representation of pointers.
+    OLD, not exposed any more.
      *)
-    Definition pinned_ptr (va : N) (p : ptr) : mpred :=
+    Local Definition pinned_ptr (va : N) (p : ptr) : mpred :=
       valid_ptr p **
       ([| p = nullptr /\ va = 0%N |] \\//
       ([| p <> nullptr /\ ptr_vaddr p = Some va |] ** mem_inj_own p (Some va))).
 
-    Instance pinned_ptr_persistent va p : Persistent (pinned_ptr va p) := _.
-    Instance pinned_ptr_affine va p : Affine (pinned_ptr va p) := _.
-    Instance pinned_ptr_timeless va p : Timeless (pinned_ptr va p) := _.
-    (* Currently false, while we fix the model. *)
-    Axiom pinned_ptr_eq : forall va p,
-      pinned_ptr va p -|- [| pinned_ptr_pure va p |] ** valid_ptr p.
-    Instance pinned_ptr_unique va va' p :
-      Observe2 [| va = va' |] (pinned_ptr va p) (pinned_ptr va' p).
-    Proof.
-      apply: observe_2_intro_persistent.
-      iIntros "A B".
-      iDestruct "A" as "[_ [[->->] | [[%%] A]]]"; iDestruct "B" as "[_ [[%->] | [[%%] B]]]" => //.
-      by iDestruct (observe_2_elim_pure (Some va = Some va') with "A B") as %[= ->].
-    Qed.
 
-    Lemma pinned_ptr_null : |-- pinned_ptr 0 nullptr.
-    Proof. iSplit; by [iApply _valid_ptr_nullptr | iLeft]. Qed.
-
-    (* Not true in the current model, requires making pinned_ptr part of pointers. *)
-    Axiom offset_pinned_ptr : forall resolve o n va p,
-      eval_offset resolve o = Some n ->
+    (* Not provable in the current model without tying to a concrete model of pointers. *)
+    Lemma offset_pinned_ptr_pure σ o n va p :
+      eval_offset σ o = Some n ->
+      pinned_ptr_pure va p ->
       valid_ptr (p .., o) |--
-      pinned_ptr va p -* pinned_ptr (Z.to_N (Z.of_N va + n)) (p .., o).
-
-    Instance pinned_ptr_valid va p :
-      Observe (valid_ptr p) (pinned_ptr va p) := _.
-
-    Theorem provides_storage_pinned_ptr : forall res newp aty va,
-       provides_storage res newp aty ** pinned_ptr va res |-- pinned_ptr va newp.
+      [| pinned_ptr_pure (Z.to_N (Z.of_N va + n)) (p .., o) |].
     Proof.
-      rewrite /provides_storage /pinned_ptr.
-      iIntros (????) "[%Hsame ?]".
-    Admitted.
-
-    (* XXX: with this definition, we cannot prove all pointers have alignment 1. Again, fix by replacing
-    mem_inj_own with a pure function of pointers (returning [option vaddr]). *)
-    Definition aligned_ptr (n : N) (p : ptr) : mpred :=
-      [| p = nullptr |] \\//
-      Exists (o : option addr), mem_inj_own p o **
-               match o with
-               | Some va => [| (n | va)%N |]
-               (* This clause comes from [type_ptr]; here, it means that
-               non-pinned pointers are indefinitely aligned.
-               However, the whole theory of [aligned_ptr] demands [pinned_ptr], so this is not a real problem. *)
-               | None => ltrue
-               end.
-    Instance aligned_ptr_persistent n p : Persistent (aligned_ptr n p) := _.
-    Instance aligned_ptr_affine n p : Affine (aligned_ptr n p) := _.
-    Instance aligned_ptr_timeless n p : Timeless (aligned_ptr n p) := _.
-
-    Lemma pinned_ptr_aligned_divide va n p :
-      pinned_ptr va p ⊢
-      aligned_ptr n p ∗-∗ [| (n | va)%N |].
-    Proof.
-      rewrite /pinned_ptr /aligned_ptr /=.
-      iDestruct 1 as "[_ [[-> ->]|[[%%] MO1]]]". {
-        iSplit; last by iIntros; iLeft.
-        by iIntros "_ !%"; exact: N.divide_0_r.
-      }
-      iSplit; last by iIntros; iRight; eauto.
-      iDestruct 1 as "[->|H]"; first done; iDestruct "H" as (o) "[MO2 Ha]".
-      by iDestruct (mem_inj_own_agree with "MO1 MO2") as "<-".
-    Qed.
-
-    Lemma aligned_mult_weaken m n p :
-      aligned_ptr (m * n) p ⊢ aligned_ptr n p.
-    Proof. rewrite /aligned_ptr. repeat f_equiv. by exists m. Qed.
+      rewrite pinned_ptr_pure_eq. intros E P.
+    Abort.
 
     Definition type_ptr {resolve : genv} (ty : type) (p : ptr) : mpred :=
       [| p <> nullptr |] **
-      (Exists align, [| @align_of resolve ty = Some align |] ** aligned_ptr align p) **
+      [| aligned_ptr_ty ty p |] **
       [| is_Some (size_of resolve ty) |] **
 
       strict_valid_ptr p ** valid_ptr (p .., o_sub resolve ty 1).
@@ -845,31 +794,29 @@ Module SimpleCPP.
       type_ptr (resolve := resolve) ty p |-- [| p <> nullptr |].
     Proof. iDestruct 1 as "($ & _ & _)". Qed.
 
-    Lemma type_ptr_aligned σ ty p :
-      type_ptr (resolve := σ) ty p |--
-      Exists align, [| @align_of σ ty = Some align |] ** aligned_ptr align p.
-    Proof. by iDestruct 1 as "(_ & $ & _)". Qed.
+    Lemma type_ptr_aligned_pure σ ty p :
+      type_ptr ty p |-- [| aligned_ptr_ty ty p |].
+    Proof. iDestruct 1 as "(_ & $ & _)". Qed.
 
     Lemma type_ptr_size {σ} ty p : type_ptr ty p |-- [| is_Some (size_of σ ty) |].
     Proof. iDestruct 1 as "(_ & _ & %H & _)"; eauto. Qed.
 
-    (* TODO: is o_sub Proper? *)
-    Instance o_sub_mono :
-      Proper (genv_leq ==> eq ==> eq ==> eq) (@o_sub).
-    Admitted.
+    (* See [o_sub_mono] in [simple_pointers.v] *)
+    Axiom valid_ptr_o_sub_proper : forall {σ1 σ2 p ty}, genv_leq σ1 σ2 ->
+      valid_ptr (p .., o_sub σ1 ty 1) |-- valid_ptr (p .., o_sub σ2 ty 1).
 
     Instance type_ptr_mono :
       Proper (genv_leq ==> eq ==> eq ==> (⊢)) (@type_ptr).
     Proof.
-      rewrite /type_ptr => σ1 σ2 Heq.
-      solve_proper_prepare. do 3 f_equiv.
-      - intros ?. (do 2 f_equiv) => Hal1.
-        move: Heq => /Proper_align_of /(_ y y eq_refl).
-        inversion 1; congruence.
-      - iDestruct 1 as %H. destruct H.
-        destruct (Proper_size_of _ _ Heq _ y eq_refl) => //.
-        eauto.
-      - f_equiv. by rewrite Heq.
+      rewrite /type_ptr /aligned_ptr_ty => σ1 σ2 Heq.
+      solve_proper_prepare. rewrite (valid_ptr_o_sub_proper Heq).
+      do 3 f_equiv.
+      - move=> -[align [HalTy Halp]]. eexists; split => //.
+        move: Heq HalTy => /Proper_align_of /(_ y _ eq_refl).
+        destruct 1; naive_solver.
+      - f_equiv=> -[sz1].
+        move: Heq => /Proper_size_of /(_ y _ eq_refl).
+        destruct 1; naive_solver.
     Qed.
 
 
@@ -880,18 +827,21 @@ Module SimpleCPP.
       pinned_ptr va p ⊢ valid_ptr (p .., o_sub σ ty 1) -∗
       [| (n | va)%N |] -∗ type_ptr (resolve := σ) ty p.
     Proof.
-      rewrite /type_ptr Hal /=. iIntros "P #$ %HvaAl"; iFrame (Hnn).
+      rewrite /type_ptr /aligned_ptr_ty Hal /=.
+      iIntros "[V [%P|[%P P]]] #$ %HvaAl"; first by case P.
+      iFrame (Hnn).
       (* iDestruct (pinned_ptr_valid with "P") as "#$". *)
       iSplit; last admit.
       iExists _; iSplit; first done.
-      by iApply (pinned_ptr_aligned_divide with "P").
+      iIntros "!%". rewrite /aligned_ptr.
+      naive_solver.
     Admitted.
 
     (* XXX move *)
     Axiom align_of_uchar : forall resolve, @align_of resolve T_uchar = Some 1%N.
 
     (* Requirememnt is too strong, we'd want just [(strict_)valid_ptr p]; see comment
-    above on [aligned_ptr] and [mem_inj_own].
+    above on [aligned_ptr_mpred] and [mem_inj_own].
     XXX: this assumes that casting to uchar preserves the pointer.
     *)
     Local Lemma valid_type_uchar resolve p (Hnn : p <> nullptr) va :
@@ -908,7 +858,12 @@ Module SimpleCPP.
     (* todo(gmm): this isn't accurate, but it is sufficient to show that the axioms are
     instantiatable. *)
     Definition identity {σ : genv} (this : globname) (most_derived : option globname)
-               (q : Qp) (p : ptr) : mpred := ltrue.
+               (q : Qp) (p : ptr) : mpred := True.
+
+    Instance identity_fractional σ this mdc p : Fractional (λ q, identity this mdc q p).
+    Proof. move =>q1 q2. by rewrite /identity left_id. Qed.
+    (* No frac_valid. *)
+    Instance identity_timeless σ this mdc q p : Timeless (identity this mdc q p) := _.
 
     (** this allows you to forget an object identity, necessary for doing
         placement [new] over an existing object.
@@ -984,7 +939,8 @@ Module SimpleCPP.
       destruct oa2; iApply (observe_2 with "H1 H2").
     Qed.
 
-    Theorem pinned_ptr_borrow {σ} ty p v va :
+    (* This is now internal to the C++ abstract machine. *)
+    Local Lemma pinned_ptr_borrow {σ} ty p v va :
       @tptsto σ ty 1 p v ** pinned_ptr va p |--
         |={↑pred_ns}=> Exists vs, @encodes σ ty v vs ** vbytes va vs 1 **
                 (Forall v' vs', @encodes σ ty v' vs' -* vbytes va vs' 1 -*
@@ -1014,6 +970,20 @@ Module SimpleCPP.
       (n > 0)%N ->
       type_ptr ty p1 ∧ type_ptr ty p2 ∧ live_ptr p1 ∧ live_ptr p2 ⊢
         |={↑pred_ns}=> [| p1 = p2 |].
+
+    Axiom offset_pinned_ptr_pure : forall σ o n va p,
+      eval_offset σ o = Some n ->
+      pinned_ptr_pure va p ->
+      valid_ptr (p .., o) |--
+      [| pinned_ptr_pure (Z.to_N (Z.of_N va + n)) (p .., o) |].
+
+
+    Parameter exposed_aid : alloc_id -> mpred.
+    Axiom exposed_aid_persistent : forall aid, Persistent (exposed_aid aid).
+    Axiom exposed_aid_affine : forall aid, Affine (exposed_aid aid).
+    Axiom exposed_aid_timeless : forall aid, Timeless (exposed_aid aid).
+
+    Axiom exposed_aid_null_alloc_id : |-- exposed_aid null_alloc_id.
 
   End with_cpp.
 

@@ -64,6 +64,9 @@ Section flip_app.
   Proof. apply: flip_assoc. Qed.
 End flip_app.
 
+Lemma negb_bool_decide `{Hdec : Decision P} : negb (bool_decide P) = bool_decide (not P).
+Proof. by case: Hdec. Qed.
+
 Notation Unfold x tm :=
   ltac:(let H := eval unfold x in tm in exact H) (only parsing).
 
@@ -79,5 +82,7 @@ Definition bindM2 `{MBind M} `(f : A → B → M C) : M A → M B → M C :=
 
 #[global] Notation Reduce tm :=
   ltac:(let H := eval red in tm in exact H) (only parsing).
+#[global] Notation Cbn tm :=
+  ltac:(let H := eval cbn in tm in exact H) (only parsing).
 #[global] Notation Evaluate tm :=
   ltac:(let H := eval vm_compute in tm in exact H) (only parsing).

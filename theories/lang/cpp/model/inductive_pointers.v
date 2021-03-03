@@ -24,8 +24,6 @@ Implicit Types (σ : genv).
 #[local] Close Scope nat_scope.
 #[local] Open Scope Z_scope.
 
-Module Type PTRS_INTF_MINIMAL := PTRS <+ PTRS_DERIVED <+ PTR_INTERNAL.
-
 Module PTRS_IMPL : PTRS_INTF_MINIMAL.
   Import canonical_tu address_sums merge_elems.
 
@@ -302,7 +300,6 @@ Module PTRS_IMPL : PTRS_INTF_MINIMAL.
   End tests.
 
   (* This is probably sound, since it allows temporary underflows. *)
-  (* From PTR_INTERNAL *)
   Definition eval_offset_seg (os : offset_seg) : option Z :=
     match os with
     | (o_invalid_, _) => None
@@ -400,12 +397,16 @@ Module PTRS_IMPL : PTRS_INTF_MINIMAL.
   Definition invalid_ptr := invalid_ptr_.
   Definition fun_ptr tu o := fun_ptr_ (canonical_tu.tu_to_canon tu) o.
 
+  Definition null_alloc_id : alloc_id := null_alloc_id.
   Definition nullptr := lift_root_ptr nullptr_.
   Definition global_ptr (tu : translation_unit) o :=
     lift_root_ptr (global_ptr_ (canonical_tu.tu_to_canon tu) o).
   Definition alloc_ptr a oid := lift_root_ptr (alloc_ptr_ a oid).
 
   Lemma ptr_vaddr_nullptr : ptr_vaddr nullptr = Some 0%N.
+  Proof. done. Qed.
+
+  Lemma ptr_alloc_id_nullptr : ptr_alloc_id nullptr = Some null_alloc_id.
   Proof. done. Qed.
 
   Instance id_dot : LeftId (=) o_id o_dot.

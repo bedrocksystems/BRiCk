@@ -90,6 +90,13 @@ Proof.
   intros [a ->]. rewrite N2Z.inj_mul. by exists (Z.of_N a).
 Qed.
 
+Lemma N_mul_divide_weaken_l (m n o : N) :
+  (m * n | o)%N -> (m | o)%N.
+Proof. case => q ->. exists (q * n)%N. lia. Qed.
+Lemma N_mul_divide_weaken_r (m n o : N) :
+  (m * n | o)%N -> (n | o)%N.
+Proof. case => q ->. exists (q * m)%N. lia. Qed.
+
 (** * Integers *)
 
 Arguments Z.ones _ : simpl never, assert.
