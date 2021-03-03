@@ -63,6 +63,8 @@ Record Union : Set :=
   (* ^ fields with type, initializer, and layout information *)
 ; u_size : N
   (* ^ size of the union (including padding) *)
+; u_alignment : N
+  (* ^ alignment of the union *)
 }.
 Instance: EqDecision Union.
 Proof. solve_decision. Defined.
@@ -81,6 +83,8 @@ Record Struct : Set :=
   (* ^ the type of layout semantics *)
 ; s_size : N
   (* ^ size of the structure (including padding) *)
+; s_alignment : N
+  (* ^ alignment of the structure *)
 ; s_virtuals : list (obj_name * option obj_name)
   (* ^ function_name -> symbol *)
 ; s_overrides : list (obj_name * obj_name)

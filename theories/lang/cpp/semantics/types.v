@@ -14,6 +14,12 @@ Definition GlobDecl_size_of (g : GlobDecl) : option N :=
   | Gunion u => Some u.(u_size)
   | _ => None
   end.
+Definition GlobDecl_align_of (g : GlobDecl) : option N :=
+  match g with
+  | Gstruct s => Some s.(s_alignment)
+  | Gunion u => Some u.(u_alignment)
+  | _ => None
+  end.
 Variant Roption_leq {T} (R : T -> T -> Prop) : option T -> option T -> Prop :=
 | Rleq_None {x} : Roption_leq R None x
 | Rleq_Some {x y} (_ : R x y) : Roption_leq R (Some x) (Some y).
@@ -22,6 +28,13 @@ Variant Roption_leq {T} (R : T -> T -> Prop) : option T -> option T -> Prop :=
 Instance proper_GlobDecl_size_of: Proper (GlobDecl_ler ==> Roption_leq eq) GlobDecl_size_of.
 Proof.
   rewrite /GlobDecl_size_of => x y Heq.
+  repeat (case_match; try constructor);
+    simplify_eq/= => //;
+    apply require_eq_success in Heq; naive_solver.
+Qed.
+Instance proper_GlobDecl_align_of: Proper (GlobDecl_ler ==> Roption_leq eq) GlobDecl_align_of.
+Proof.
+  rewrite /GlobDecl_align_of => x y Heq.
   repeat (case_match; try constructor);
     simplify_eq/= => //;
     apply require_eq_success in Heq; naive_solver.
@@ -132,6 +145,9 @@ Definition parent_offset (resolve : genv) (t : globname) (f : globname) : option
 (** * alignof() *)
 (* todo: we should embed alignment information in our types *)
 Parameter align_of : forall {resolve : genv} (t : type), option N.
+Axiom align_of_named : ∀ {σ : genv} (nm : globname),
+  align_of (resolve:=σ) (Tnamed nm) =
+  glob_def σ nm ≫= GlobDecl_align_of.
 Axiom align_of_size_of : forall {σ : genv} (t : type) sz,
     size_of σ t = Some sz ->
     exists al, align_of (resolve:=σ) t = Some al /\
