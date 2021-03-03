@@ -892,15 +892,21 @@ Section with_cpp.
   Qed.
 
   (* TODO: Proper wrt [genv_leq]. *)
+  Lemma cptrR_fs_impl {resolve} f g :
+    pureR (fs_impl g f) |-- cptrR f -* cptrR g.
+  Proof.
+    rewrite cptrR_eq/cptrR_def.
+    constructor => p; rewrite Rep_wand_force; iIntros "#(%ty & fs_impl)" => /=.
+    iIntros "(val & #rest)"; iFrame. iIntros (ti vs Q len).
+    rewrite ty. iSpecialize ("rest" $! ti). iModIntro. iIntros "fs_g".
+    iApply "rest"; first by apply length_type_of_spec in ty; rewrite -ty len.
+    by iApply "fs_impl".
+  Qed.
+
   #[global] Instance cptrR_mono {resolve} : Proper (flip fs_entails ==> (⊢)) cptrR.
   Proof.
-    intros ??; rewrite /flip /fs_entails /fs_impl cptrR_eq/cptrR_def; intros Heq.
-    constructor => p /=.
-    f_equiv; f_equiv=>ti; f_equiv; f_equiv => vs; f_equiv => Q.
-    iIntros "Hcptr -> Hy".
-    iDestruct Heq as "(%Hspec & #Hyx)"; rewrite Hspec.
-    iApply ("Hcptr" with "[%] (Hyx Hy)").
-    exact: length_type_of_spec.
+    intros ??; rewrite /fs_entails/flip => impl. iApply cptrR_fs_impl.
+    by rewrite -impl pureR_emp.
   Qed.
 
   #[global] Instance cptrR_flip_mono {resolve} : Proper (fs_entails ==> flip (⊢)) cptrR.
