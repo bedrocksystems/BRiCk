@@ -225,35 +225,30 @@ Section with_Σ.
     involved. However, it is logically atomic w.r.t. the atomic location `p`.
     The points-to of `p` can be provided logically atomically with the AU1, but
     the points-to of `expected_p` is assumed to be provided locally. *)
+  (* TODO: this rule is currently only available to integers. It should be able
+    to support pointers, but pointer comparison is more involved and will be
+    handled in the future. Tracked by cpp2v-core#306. *)
   Axiom wp_atom_compare_exchange_n_cst :
-    forall p expected_p expected_v desired weak succmemord failmemord Q ty,
+    forall p expected_p expected_v desired weak succmemord failmemord Q sz sgn,
+    let ty := Tint sz sgn in
       [| weak = Vbool false |] **
       [| succmemord = _SEQ_CST |] ** [| failmemord = _SEQ_CST |] **
       (* private pre-cond : placeholder for the expected value *)
-      |> _eqv expected_p |-> primR ty 1 expected_v **
-      AU1 <<∀ v, (* public pre-cond: latest value of p is v *)
-              _eqv p |-> primR ty 1 v >> @M,∅ (* TODO: masks *)
-          <<∃ (b : bool) v', (* public post-cond: latest value is v' *)
-              _eqv p |-> primR ty 1 v' **
+      |> _eqv expected_p |-> primR ty 1 (Vint expected_v) **
+      AU1 <<∀ v : Z, (* public pre-cond: latest value of p is v *)
+              _eqv p |-> primR ty 1 (Vint v) >> @M,∅ (* TODO: masks *)
+          <<∃ (b : bool) (v' : Z), (* public post-cond: latest value is v' *)
+              _eqv p |-> primR ty 1 (Vint v') **
               (* - success case: p has value desired and expected_p unchanged, or
                  - failed case: p is unchanged, expected_p stores the value read
                   v, which is the latest one due to failmemord being SC. Also,
                   as a strong CMPXCHG we know that the values are different. *)
               [|    b = true  /\ v' = desired /\ v =  expected_v
                  \/ b = false /\ v' = v       /\ v <> expected_v |],
-            COMM ((* private post-cond *)
-                  (* Note that this can be stated as
-                      _eqv expected_p |-> primR ty 1 v -* Q (Vbool b)
-                    if comparison is syntactic. If comparison is semantic (e.g.
-                    comparing pointers), then when the CAS succeeds expected_p
-                    is unchanged and still stores expected_v, which is not
-                    syntactically equal to v. *)
-                  ( [| b = true |] **
-                    _eqv expected_p |-> primR ty 1 expected_v -* Q (Vbool b)) //\\
-                  ( [| b = false |] **
-                    _eqv expected_p |-> primR ty 1 v -* Q (Vbool b))) >>
+            COMM (* private post-cond *)
+                _eqv expected_p |-> primR ty 1 (Vint v) -* Q (Vbool b) >>
       |-- wp_atom' AO__atomic_compare_exchange_n ty
-                  (p::succmemord::expected_p::failmemord::desired::weak::nil) Q.
+                  (p::succmemord::expected_p::failmemord::Vint desired::weak::nil) Q.
 
   (* An SC weak compare exchange. This rule combines the postcondition for both
     success and failure case. Since a weak CMPXCHG can fail spuriously, we do
@@ -262,80 +257,73 @@ Section with_Σ.
     involved. However, it is logically atomic w.r.t. the atomic location `p`.
     The points-to of `p` can be provided logically atomically with the AU1, but
     the points-to of `expected_p` is assumed to be provided locally. *)
+  (* TODO: support for pointers, see cpp2v-core#306. *)
   Axiom wp_atom_compare_exchange_n_cst_weak :
-    forall p expected_p expected_v desired weak succmemord failmemord Q ty,
+    forall p expected_p expected_v desired weak succmemord failmemord Q sz sgn,
+      let ty := Tint sz sgn in
       [| weak = Vbool true |] **
       [| succmemord = _SEQ_CST |] ** [| failmemord = _SEQ_CST |] **
       (* private pre-cond : placeholder for the expected value *)
-      |> _eqv expected_p |-> primR ty 1 expected_v **
+      |> _eqv expected_p |-> primR ty 1 (Vint expected_v) **
       AU1 <<∀ v, (* public pre-cond: latest value of p is v *)
-              _eqv p |-> primR ty 1 v >> @M,∅ (* TODO: masks *)
+              _eqv p |-> primR ty 1 (Vint v) >> @M,∅ (* TODO: masks *)
           <<∃ (b : bool) v', (* public post-cond: latest value is v' *)
-              _eqv p |-> primR ty 1 v' **
+              _eqv p |-> primR ty 1 (Vint v') **
             (* - success case: p has value desired and expected_p unchanged, or
                - failed case: p is unchanged, expected_p stores the value read
                 v. As a weak CMPXCHG we DO NOT know that the values are different. *)
               [|    b = true  /\ v' = desired /\ v =  expected_v
                  \/ b = false /\ v' = v |],
-            COMM ((* private post-cond *)
-                  ( [| b = true |] **
-                    _eqv expected_p |-> primR ty 1 expected_v -* Q (Vbool b)) //\\
-                  ( [| b = false |] **
-                    _eqv expected_p |-> primR ty 1 v -* Q (Vbool b))) >>
+            COMM (* private post-cond *)
+                _eqv expected_p |-> primR ty 1 (Vint v) -* Q (Vbool b) >>
       |-- wp_atom' AO__atomic_compare_exchange_n ty
-                  (p::succmemord::expected_p::failmemord::desired::weak::nil) Q.
+                  (p::succmemord::expected_p::failmemord::Vint desired::weak::nil) Q.
 
+  (* TODO: support for pointers, see cpp2v-core#306. *)
   Axiom wp_atom_compare_exchange_cst :
     forall q p expected_p desired_p weak succmemord failmemord Q
-      (ty : type)
-      expected desired,
+      sz sgn expected desired,
+      let ty := Tint sz sgn in
       [| weak = Vbool false |] **
       [| succmemord = _SEQ_CST |] ** [| failmemord = _SEQ_CST |] **
       |> ((* private pre-cond *)
-          _eqv expected_p |-> primR ty 1 expected **
-          _eqv desired_p |-> primR ty q desired) **
+          _eqv expected_p |-> primR ty 1 (Vint expected) **
+          _eqv desired_p |-> primR ty q (Vint desired)) **
       AU1 <<∀ v, (* public pre-cond: latest value of p is v *)
-              _eqv p |-> primR ty 1 v >> @M,∅ (* TODO: masks *)
+              _eqv p |-> primR ty 1 (Vint v) >> @M,∅ (* TODO: masks *)
           <<∃ (b : bool) v', (* public post-cond: latest value is v' *)
-              _eqv p |-> primR ty 1 v' **
+              _eqv p |-> primR ty 1 (Vint v') **
             (* - success case: p has value desired and expected_p unchanged, or
                - failed case: p is unchanged, expected_p stores the value read v. *)
               [|    b = true  /\ v' = desired /\ v =  expected
                  \/ b = false /\ v' = v       /\ v <> expected |],
             COMM ((* private post-cond *)
-                  ( [| b = true |] **
-                    _eqv expected_p |-> primR ty 1 expected **
-                    _eqv desired_p |-> primR ty q desired -* Q (Vbool b)) //\\
-                  ( [| b = false |] **
-                    _eqv expected_p |-> primR ty 1 v **
-                    _eqv desired_p |-> primR ty q desired -* Q (Vbool b))) >>
+                  _eqv expected_p |-> primR ty 1 (Vint v) **
+                  _eqv desired_p |-> primR ty q (Vint desired) -* Q (Vbool b)) >>
       |-- wp_atom' AO__atomic_compare_exchange ty
                   (p::succmemord::expected_p::failmemord::desired_p::weak::nil) Q.
 
+  (* TODO: support for pointers, see cpp2v-core#306. *)
   Axiom wp_atom_compare_exchange_cst_weak :
     forall q p expected_p desired_p weak succmemord failmemord Q
-      (ty : type)
-      expected desired,
+      sz sgn expected desired,
+      let ty := Tint sz sgn in
       [| weak = Vbool true |] **
       [| succmemord = _SEQ_CST |] ** [| failmemord = _SEQ_CST |] **
       |> ((* private pre-cond *)
-          _eqv expected_p |-> primR ty 1 expected **
-          _eqv desired_p |-> primR ty q desired) **
+          _eqv expected_p |-> primR ty 1 (Vint expected) **
+          _eqv desired_p |-> primR ty q (Vint desired)) **
       AU1 <<∀ v, (* public pre-cond: latest value of p is v *)
-              _eqv p |-> primR ty 1 v >> @M,∅ (* TODO: masks *)
+              _eqv p |-> primR ty 1 (Vint v) >> @M,∅ (* TODO: masks *)
           <<∃ (b : bool) v', (* public post-cond: latest value is v' *)
-              _eqv p |-> primR ty 1 v' **
+              _eqv p |-> primR ty 1 (Vint v') **
             (* - success case: p has value desired and expected_p unchanged, or
                - failed case: p is unchanged, expected_p stores the value read v. *)
-              [|    b = true  /\ v' = desired /\ v =  expected
+              [|    b = true  /\ v' = desired /\ v = expected
                  \/ b = false /\ v' = v |],
             COMM ((* private post-cond *)
-                  ( [| b = true |] **
-                    _eqv expected_p |-> primR ty 1 expected **
-                    _eqv desired_p |-> primR ty q desired -* Q (Vbool b)) //\\
-                  ( [| b = false |] **
-                    _eqv expected_p |-> primR ty 1 v **
-                    _eqv desired_p |-> primR ty q desired -* Q (Vbool b))) >>
+                  _eqv expected_p |-> primR ty 1 (Vint v) **
+                  _eqv desired_p |-> primR ty q (Vint desired) -* Q (Vbool b)) >>
       |-- wp_atom' AO__atomic_compare_exchange ty
                   (p::succmemord::expected_p::failmemord::desired_p::weak::nil) Q.
 

@@ -23,19 +23,20 @@ Section cmpxchg_derived.
   (* It succeeds because the location p has the expected value v, which is
     stored in expected_p. *)
   Lemma wp_atom_compare_exchange_n_cst_suc :
-    forall p expected_p desired weak succmemord failmemord Q ty v,
+    forall p expected_p desired weak succmemord failmemord Q sz sgn v,
+      let ty := Tint sz sgn in
       [| weak = Vbool false |] **
       [| succmemord = _SEQ_CST |] ** [| failmemord = _SEQ_CST |] **
       (* private pre-cond *)
-      |>  _eqv expected_p |-> primR ty 1 v **
+      |>  _eqv expected_p |-> primR ty 1 (Vint v) **
       AU1 << (* public pre-cond: latest value of p is also v, because this is
                 successful *)
-              _eqv p |-> primR ty 1 v >> @M,∅ (* TODO: masks *)
+              _eqv p |-> primR ty 1 (Vint v) >> @M,∅ (* TODO: masks *)
           << (* public post-cond: latest value is desired *)
-              _eqv p |-> primR ty 1 desired,
-            COMM (_eqv expected_p |-> primR ty 1 v -* Q (Vbool true)) >>
+              _eqv p |-> primR ty 1 (Vint desired),
+            COMM (_eqv expected_p |-> primR ty 1 (Vint v) -* Q (Vbool true)) >>
       |-- wp_atom' AO__atomic_compare_exchange_n ty
-                  (p::succmemord::expected_p::failmemord::desired::weak::nil) Q.
+                  (p::succmemord::expected_p::failmemord::Vint desired::weak::nil) Q.
   Proof.
     intros. iIntros "(F1 & F2 & F3 & Hex & AU)".
     iApply wp_atom_compare_exchange_n_cst. iFrame.
@@ -46,26 +47,24 @@ Section cmpxchg_derived.
     iSplit. { by iIntros "$ !> $". }
     iIntros "!>" (b v') "[Hp F]".
     iDestruct "F" as %[(?&?&?)|(?&?&?)]; subst; [|done].
-    iFrame. iIntros "!> Post !>". iSplit.
-    - iIntros "[% Hex]". by iApply "Post".
-    - by iIntros "[% _]".
+    iFrame. by eauto.
   Qed.
 
   (* A failed SC strong compare exchange, which tell us that the values are
     truly different. *)
   Lemma wp_atom_compare_exchange_n_cst_fail :
-    forall p val_p desired weak succmemord failmemord Q
-           (ty : type) v expected_v,
+    forall p val_p desired weak succmemord failmemord Q sz sgn v expected_v,
+      let ty := Tint sz sgn in
       [| weak = Vbool false |] **
       [| succmemord = _SEQ_CST |] ** [| failmemord = _SEQ_CST |] **
       (* we know that the values are different *)
       [| v <> expected_v |] **
-      |> _eqv val_p |-> primR ty 1 expected_v **
-      AU1 << _eqv p |-> primR ty 1 v >> @M,∅ (* TODO: masks *)
-          << _eqv p |-> primR ty 1 v,
-            COMM (_eqv val_p |-> primR ty 1 v -* Q (Vbool false)) >>
+      |> _eqv val_p |-> primR ty 1 (Vint expected_v) **
+      AU1 << _eqv p |-> primR ty 1 (Vint v) >> @M,∅ (* TODO: masks *)
+          << _eqv p |-> primR ty 1 (Vint v),
+            COMM (_eqv val_p |-> primR ty 1 (Vint v) -* Q (Vbool false)) >>
       |-- wp_atom' AO__atomic_compare_exchange_n ty
-                  (p::succmemord::val_p::failmemord::desired::weak::nil) Q.
+                  (p::succmemord::val_p::failmemord::Vint desired::weak::nil) Q.
   Proof.
     intros. iIntros "(? & ? & ? & % & ? & AU)".
     iApply wp_atom_compare_exchange_n_cst. iFrame.
@@ -76,26 +75,24 @@ Section cmpxchg_derived.
     iSplit. { by iIntros "$ !> $". }
     iIntros "!>" (b v') "[? F]".
     iDestruct "F" as %[(?&?&?)|(?&?&?)]; subst; [done|].
-    iFrame. iIntros "!> Post !>". iSplit.
-    - by iIntros "[% _]".
-    - iIntros "[% ?]". by iApply "Post".
+    iFrame. by eauto.
   Qed.
 
   (* An SC compare and exchange *)
   Lemma wp_atom_compare_exchange_cst_suc :
     forall q p expected_p desired_p weak succmemord failmemord Q
-      (ty : type)
-      expected desired,
+      sz sgn expected desired,
+      let ty := Tint sz sgn in
       [| weak = Vbool false |] **
       [| succmemord = _SEQ_CST |] ** [| failmemord = _SEQ_CST |] **
       |> ((* private pre-cond *)
-          _eqv expected_p |-> primR ty 1 expected **
-           _eqv desired_p |-> primR ty q desired) **
-      AU1 << _eqv p |-> primR ty 1 expected >> @M,∅ (* TODO: masks *)
+          _eqv expected_p |-> primR ty 1 (Vint expected) **
+           _eqv desired_p |-> primR ty q (Vint desired)) **
+      AU1 << _eqv p |-> primR ty 1 (Vint expected) >> @M,∅ (* TODO: masks *)
           << (* public post-cond: latest value is desired *)
-              _eqv p |-> primR ty 1 desired,
-            COMM (_eqv expected_p |-> primR ty 1 expected **
-                  _eqv desired_p |-> primR ty q desired -* Q (Vbool true)) >>
+              _eqv p |-> primR ty 1 (Vint desired),
+            COMM (_eqv expected_p |-> primR ty 1 (Vint expected) **
+                  _eqv desired_p |-> primR ty q (Vint desired) -* Q (Vbool true)) >>
       |-- wp_atom' AO__atomic_compare_exchange ty
                   (p::succmemord::expected_p::failmemord::desired_p::weak::nil) Q.
   Proof.
@@ -108,25 +105,23 @@ Section cmpxchg_derived.
     iSplit. { by iIntros "$ !> $". }
     iIntros "!>" (b v') "[? F]".
     iDestruct "F" as %[(?&?&?)|(?&?&?)]; subst; [|done].
-    iFrame. iIntros "!> Post !>". iSplit.
-    - iIntros "[% ?]". by iApply "Post".
-    - by iIntros "[% _]".
+    iFrame. by eauto.
   Qed.
 
   Lemma wp_atom_compare_exchange_cst_fail :
     forall q p expected_p desired_p weak succmemord failmemord Q
-      (ty : type)
-      v expected desired,
+      sz sgn v expected desired,
+      let ty := Tint sz sgn in
       [| weak = Vbool false |] **
       [| succmemord = _SEQ_CST |] ** [| failmemord = _SEQ_CST |] **
       (* we know that the values are different *)
       [| v <> expected |] **
-      |> (_eqv expected_p |-> primR ty 1 expected **
-           _eqv desired_p |-> primR ty q desired) **
-      AU1 << _eqv p |-> primR ty 1 v >> @M,∅ (* TODO: masks *)
-          << _eqv p |-> primR ty 1 v,
-            COMM (_eqv expected_p |-> primR ty 1 v **
-                  _eqv desired_p |-> primR ty q desired -* Q (Vbool false)) >>
+      |> (_eqv expected_p |-> primR ty 1 (Vint expected) **
+           _eqv desired_p |-> primR ty q (Vint desired)) **
+      AU1 << _eqv p |-> primR ty 1 (Vint v) >> @M,∅ (* TODO: masks *)
+          << _eqv p |-> primR ty 1 (Vint v),
+            COMM (_eqv expected_p |-> primR ty 1 (Vint v) **
+                  _eqv desired_p |-> primR ty q (Vint desired) -* Q (Vbool false)) >>
       |-- wp_atom' AO__atomic_compare_exchange ty
                   (p::succmemord::expected_p::failmemord::desired_p::weak::nil) Q.
   Proof.
@@ -139,8 +134,6 @@ Section cmpxchg_derived.
     iSplit. { by iIntros "$ !> $". }
     iIntros "!>" (b v') "[? F]".
     iDestruct "F" as %[(?&?&?)|(?&?&?)]; subst; [done|].
-    iFrame. iIntros "!> Post !>". iSplit.
-    - by iIntros "[% _]".
-    - iIntros "[% ?]". by iApply "Post".
+    iFrame. by eauto.
   Qed.
 End cmpxchg_derived.
