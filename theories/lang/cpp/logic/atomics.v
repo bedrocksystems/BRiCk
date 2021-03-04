@@ -161,7 +161,7 @@ Section with_Σ.
       wrap_shift (fun Q =>
                     Exists v q,  _eqv p |-> primR acc_type q v ** (* pre *)
                                 (_eqv p |-> primR acc_type q v -* Q v)) Q (* post *)
-      |-- wp_atom' AO__atomic_load_n acc_type (p :: memorder :: nil) Q.
+      |-- wp_atom' AO__atomic_load_n acc_type [p; memorder] Q.
 
   (* An SC store writes the latest value, unless there are racing (no hb)
     non-SC stores. The following rule only holds for SC-only locations. *)
@@ -173,7 +173,7 @@ Section with_Σ.
       [| has_type v acc_type |] **
       wrap_shift (fun Q => _eqv p |-> anyR acc_type 1 ** (* pre *)
                           (_eqv p |-> primR acc_type 1 v -* Q Vundef)) Q (* post *)
-      |-- wp_atom' AO__atomic_store_n acc_type (p :: memorder :: v :: nil) Q.
+      |-- wp_atom' AO__atomic_store_n acc_type [p; memorder; v] Q.
 
   (* The following rule holds for SC-only locations, or *no-racing-store*
     locations.
@@ -191,7 +191,7 @@ Section with_Σ.
       wrap_shift (fun Q => Exists w,
                           _eqv p |-> primR acc_type 1 w ** (* pre *)
                           (_eqv p |-> primR acc_type 1 v -* Q w)) Q (* post *)
-      |-- wp_atom' AO__atomic_exchange_n acc_type (p :: memorder :: v :: nil) Q.
+      |-- wp_atom' AO__atomic_exchange_n acc_type [p; memorder; v] Q.
 
   (* Again, all of the RMWs rules only read and write latest values if the
     location is SC-only or no-racing-store.
@@ -216,7 +216,7 @@ Section with_Σ.
                   _eqv new_p |-> primR acc_type q new_v **
                   (* ret stores the previous latest value v *)
                   _eqv ret |-> primR acc_type 1 v -* Q v) >>
-      |-- wp_atom' AO__atomic_exchange acc_type (p :: memorder :: new_p :: ret :: nil) Q.
+      |-- wp_atom' AO__atomic_exchange acc_type [p; memorder; new_p; ret] Q.
 
   (* An SC compare and exchange n. This rule combines the postcondition for both
     success and failure case. In the failure case, we know that the values are
@@ -235,7 +235,7 @@ Section with_Σ.
       [| succmemord = _SEQ_CST |] ** [| failmemord = _SEQ_CST |] **
       (* private pre-cond : placeholder for the expected value *)
       |> _eqv expected_p |-> primR ty 1 (Vint expected_v) **
-      AU1 <<∀ v : Z, (* public pre-cond: latest value of p is v *)
+      AU1 <<∀ v, (* public pre-cond: latest value of p is v *)
               _eqv p |-> primR ty 1 (Vint v) >> @M,∅ (* TODO: masks *)
           <<∃ (b : bool) (v' : Z), (* public post-cond: latest value is v' *)
               _eqv p |-> primR ty 1 (Vint v') **
@@ -248,7 +248,7 @@ Section with_Σ.
             COMM (* private post-cond *)
                 _eqv expected_p |-> primR ty 1 (Vint v) -* Q (Vbool b) >>
       |-- wp_atom' AO__atomic_compare_exchange_n ty
-                  (p::succmemord::expected_p::failmemord::Vint desired::weak::nil) Q.
+                  [p; succmemord; expected_p; failmemord; Vint desired; weak] Q.
 
   (* An SC weak compare exchange. This rule combines the postcondition for both
     success and failure case. Since a weak CMPXCHG can fail spuriously, we do
@@ -277,7 +277,7 @@ Section with_Σ.
             COMM (* private post-cond *)
                 _eqv expected_p |-> primR ty 1 (Vint v) -* Q (Vbool b) >>
       |-- wp_atom' AO__atomic_compare_exchange_n ty
-                  (p::succmemord::expected_p::failmemord::Vint desired::weak::nil) Q.
+                  [p; succmemord; expected_p; failmemord; Vint desired; weak] Q.
 
   (* TODO: support for pointers, see cpp2v-core#306. *)
   Axiom wp_atom_compare_exchange_cst :
@@ -301,7 +301,7 @@ Section with_Σ.
                   _eqv expected_p |-> primR ty 1 (Vint v) **
                   _eqv desired_p |-> primR ty q (Vint desired) -* Q (Vbool b)) >>
       |-- wp_atom' AO__atomic_compare_exchange ty
-                  (p::succmemord::expected_p::failmemord::desired_p::weak::nil) Q.
+                  [p; succmemord; expected_p; failmemord; desired_p; weak] Q.
 
   (* TODO: support for pointers, see cpp2v-core#306. *)
   Axiom wp_atom_compare_exchange_cst_weak :
@@ -325,7 +325,7 @@ Section with_Σ.
                   _eqv expected_p |-> primR ty 1 (Vint v) **
                   _eqv desired_p |-> primR ty q (Vint desired) -* Q (Vbool b)) >>
       |-- wp_atom' AO__atomic_compare_exchange ty
-                  (p::succmemord::expected_p::failmemord::desired_p::weak::nil) Q.
+                  [p; succmemord; expected_p; failmemord; desired_p; weak] Q.
 
   (** Atomic operations use two's complement arithmetic. This
   definition presupposes that the [n_i] satisfy [n_i = n_i `mod` 2 ^
@@ -350,7 +350,7 @@ Section with_Σ.
                     _eqv p |-> primR acc_type 1 (Vint n) **
                     (let n' := at_eval sz sgn op n arg in
                       _eqv p |-> primR acc_type 1 (Vint n') -* Q (Vint n))) Q
-      |-- wp_atom' ao acc_type (p::memorder::Vint arg::nil) Q.
+      |-- wp_atom' ao acc_type [p; memorder; Vint arg] Q.
 
   Local Notation fetch_xxx ao op :=
     (Unfold wp_fetch_xxx_cst (wp_fetch_xxx_cst ao op)) (only parsing).
@@ -363,6 +363,90 @@ Section with_Σ.
   Axiom wp_atom_fetch_xor_cst  : fetch_xxx AO__atomic_fetch_xor  Z.lxor.
   Axiom wp_atom_fetch_or_cst   : fetch_xxx AO__atomic_fetch_or   Z.lor.
   Axiom wp_atom_fetch_nand_cst : fetch_xxx AO__atomic_fetch_nand nand.
+
+  (* atomic xxx and fetch rule *)
+  Definition wp_xxx_fetch_cst (ao : AtomicOp) (op : Z -> Z -> Z) : Prop :=
+    forall p arg memorder Q sz sgn,
+      let acc_type := Tint sz sgn in
+      [| memorder = _SEQ_CST |] **
+      [| has_type (Vint arg) acc_type |] **
+      wrap_shift (fun Q =>
+                    Exists n,
+                    _eqv p |-> primR acc_type 1 (Vint n) **
+                    (let n' := at_eval sz sgn op n arg in
+                      _eqv p |-> primR acc_type 1 (Vint n') -* Q (Vint n'))) Q
+      |-- wp_atom' ao acc_type [p; memorder; Vint arg] Q.
+
+  Local Notation xxx_fetch ao op :=
+    (Unfold wp_xxx_fetch_cst (wp_xxx_fetch_cst ao op)) (only parsing).
+
+  Axiom wp_atom_add_fetch_cst  : xxx_fetch AO__atomic_add_fetch  Z.add.
+  Axiom wp_atom_sub_fetch_cst  : xxx_fetch AO__atomic_sub_fetch  Z.sub.
+  Axiom wp_atom_and_fetch_cst  : xxx_fetch AO__atomic_and_fetch  Z.land.
+  Axiom wp_atom_xor_fetch_cst  : xxx_fetch AO__atomic_xor_fetch  Z.lxor.
+  Axiom wp_atom_or_fetch_cst   : xxx_fetch AO__atomic_or_fetch   Z.lor.
+  Axiom wp_atom_nand_fetch_cst : xxx_fetch AO__atomic_nand_fetch nand.
+
+  (** Derived AU1 specs *)
+
+  Definition atom_load_cst_AU1 (ty : type) (p : val) (Q : val -> mpred) : mpred :=
+    AU1 <<∀ v q, ▷ _eqv p |-> primR ty q v>> @M,∅ (* TODO: masks *)
+        <<       ▷ _eqv p |-> primR ty q v,
+            COMM Q v >>.
+
+  (* TODO : generalize with telescopes. *)
+  Lemma AU1_atom_load_cst :
+    forall memorder acc_type p Q,
+      [| memorder = _SEQ_CST |] **
+      atom_load_cst_AU1 acc_type p Q
+      |-- wp_atom' AO__atomic_load_n acc_type [p; memorder] Q.
+  Proof.
+    intros. rewrite -wp_atom_load_cst.
+    iIntros "[$ AU]".
+    iExists ∅. (* TODO: masks *)
+    iMod "AU" as (v q) "[Hp [_ Close]]".
+    iIntros "!> !>". iExists v, q. iFrame "Hp".
+    iIntros "Hp". iApply ("Close" with "Hp").
+  Qed.
+
+  Definition atom_store_cst_AU1 (ty : type) (p : val) (Q : val -> mpred) v : mpred :=
+    AU1 << ▷ _eqv p |-> anyR ty 1 >> @M,∅ (* TODO: masks *)
+        << ▷ _eqv p |-> primR ty 1 v,
+            COMM Q Vundef >>.
+
+  Lemma AU1_atom_store_cst :
+    forall memorder acc_type p Q v,
+      [| memorder = _SEQ_CST |] **
+      [| has_type v acc_type |] **
+      atom_store_cst_AU1 acc_type p Q v
+      |-- wp_atom' AO__atomic_store_n acc_type [p; memorder; v] Q.
+  Proof.
+    intros. rewrite -wp_atom_store_cst.
+    iIntros "[$ [$ AU]]".
+    iExists ∅. (* TODO: masks *)
+    iMod "AU" as "[$ Close]".
+    iIntros "!> !> Hp". by iMod ("Close" with "Hp") as "$".
+  Qed.
+
+  Definition atom_exchange_n_cst_AU1 (ty : type) (p : val) (Q : val -> mpred) v : mpred :=
+    AU1 <<∀ w, ▷ _eqv p |-> primR ty 1 w >> @M,∅ (* TODO: masks *)
+        <<     ▷ _eqv p |-> primR ty 1 v,
+            COMM Q w >>.
+
+  Lemma AU1_atom_exchange_n_cst :
+    forall memorder acc_type p Q v,
+      [| memorder = _SEQ_CST |] **
+      [| has_type v acc_type |] **
+      atom_exchange_n_cst_AU1 acc_type p Q v
+      |-- wp_atom' AO__atomic_exchange_n acc_type [p; memorder; v] Q.
+  Proof.
+    intros. rewrite -wp_atom_exchange_n_cst.
+    iIntros "[$ [$ AU]]".
+    iExists ∅. (* TODO: masks *)
+    iMod "AU" as (w) "[Hp Close]".
+    iIntros "!> !>". iExists w. iFrame "Hp".
+    iIntros "Hp". by iMod ("Close" with "Hp") as "$".
+  Qed.
 
   Definition atom_fetch_xxx_cst_AU1 (op : Z -> Z -> Z)
     ty (p : val) (z : Z) (Q : val -> mpred) sz sgn : mpred :=
@@ -378,7 +462,7 @@ Section with_Σ.
       [| memorder = _SEQ_CST |] **
       [| has_type (Vint arg) acc_type |] **
       atom_fetch_xxx_cst_AU1 op acc_type p arg Q sz sgn
-      |-- wp_atom' ao acc_type (p::memorder::Vint arg::nil) Q.
+      |-- wp_atom' ao acc_type [p; memorder; Vint arg] Q.
   Proof.
     intros WP. intros. rewrite -WP.
     iIntros "[$ [$ AU]]".
@@ -401,89 +485,6 @@ Section with_Σ.
   Definition AU1_atom_fetch_nand_cst
     := AU1_atom_fetch_xxx_cst _ _ wp_atom_fetch_nand_cst.
 
-  Definition atom_exchange_n_cst_AU1 (ty : type) (p : val) (Q : val -> mpred) v : mpred :=
-    AU1 <<∀ w, ▷ _eqv p |-> primR ty 1 w >> @M,∅ (* TODO: masks *)
-        <<     ▷ _eqv p |-> primR ty 1 v,
-            COMM Q w >>.
-
-  Lemma AU1_atom_exchange_n_cst :
-    forall memorder acc_type p Q v,
-      [| memorder = _SEQ_CST |] **
-      [| has_type v acc_type |] **
-      atom_exchange_n_cst_AU1 acc_type p Q v
-      |-- wp_atom' AO__atomic_exchange_n acc_type (p :: memorder :: v :: nil) Q.
-  Proof.
-    intros. rewrite -wp_atom_exchange_n_cst.
-    iIntros "[$ [$ AU]]".
-    iExists ∅. (* TODO: masks *)
-    iMod "AU" as (w) "[Hp Close]".
-    iIntros "!> !>". iExists w. iFrame "Hp".
-    iIntros "Hp". by iMod ("Close" with "Hp") as "$".
-  Qed.
-
-  (* atomic xxx and fetch rule *)
-  Definition wp_xxx_fetch_cst (ao : AtomicOp) (op : Z -> Z -> Z) : Prop :=
-    forall p arg memorder Q sz sgn,
-      let acc_type := Tint sz sgn in
-      [| memorder = _SEQ_CST |] **
-      [| has_type (Vint arg) acc_type |] **
-      wrap_shift (fun Q =>
-                    Exists n,
-                    _eqv p |-> primR acc_type 1 (Vint n) **
-                    (let n' := at_eval sz sgn op n arg in
-                      _eqv p |-> primR acc_type 1 (Vint n') -* Q (Vint n'))) Q
-      |-- wp_atom' ao acc_type (p::memorder::Vint arg::nil) Q.
-
-  Local Notation xxx_fetch ao op :=
-    (Unfold wp_xxx_fetch_cst (wp_xxx_fetch_cst ao op)) (only parsing).
-
-  Axiom wp_atom_add_fetch_cst  : xxx_fetch AO__atomic_add_fetch  Z.add.
-  Axiom wp_atom_sub_fetch_cst  : xxx_fetch AO__atomic_sub_fetch  Z.sub.
-  Axiom wp_atom_and_fetch_cst  : xxx_fetch AO__atomic_and_fetch  Z.land.
-  Axiom wp_atom_xor_fetch_cst  : xxx_fetch AO__atomic_xor_fetch  Z.lxor.
-  Axiom wp_atom_or_fetch_cst   : xxx_fetch AO__atomic_or_fetch   Z.lor.
-  Axiom wp_atom_nand_fetch_cst : xxx_fetch AO__atomic_nand_fetch nand.
-
-
-  Definition atom_load_cst_AU1 (ty : type) (p : val) (Q : val -> mpred) : mpred :=
-    AU1 <<∀ v q, ▷ _eqv p |-> primR ty q v>> @M,∅ (* TODO: masks *)
-        <<       ▷ _eqv p |-> primR ty q v,
-            COMM Q v >>.
-
-  (* TODO : generalize with telescopes. *)
-  Lemma AU1_atom_load_cst :
-    forall memorder acc_type p Q,
-      [| memorder = _SEQ_CST |] **
-      atom_load_cst_AU1 acc_type p Q
-      |-- wp_atom' AO__atomic_load_n acc_type (p :: memorder :: nil) Q.
-  Proof.
-    intros. rewrite -wp_atom_load_cst.
-    iIntros "[$ AU]".
-    iExists ∅. (* TODO: masks *)
-    iMod "AU" as (v q) "[Hp [_ Close]]".
-    iIntros "!> !>". iExists v, q. iFrame "Hp".
-    iIntros "Hp". iApply ("Close" with "Hp").
-  Qed.
-
-  Definition atom_store_cst_AU1 (ty : type) (p : val) (Q : val -> mpred) v : mpred :=
-    AU1 << ▷ _eqv p |-> anyR ty 1 >> @M,∅ (* TODO: masks *)
-        << ▷ _eqv p |-> primR ty 1 v,
-            COMM Q Vundef >>.
-
-  Lemma AU1_atom_store_cst :
-    forall memorder acc_type p Q v,
-      [| memorder = _SEQ_CST |] **
-      [| has_type v acc_type |] **
-      atom_store_cst_AU1 acc_type p Q v
-      |-- wp_atom' AO__atomic_store_n acc_type (p :: memorder :: v :: nil) Q.
-  Proof.
-    intros. rewrite -wp_atom_store_cst.
-    iIntros "[$ [$ AU]]".
-    iExists ∅. (* TODO: masks *)
-    iMod "AU" as "[$ Close]".
-    iIntros "!> !> Hp". by iMod ("Close" with "Hp") as "$".
-  Qed.
-
   Definition atom_xxx_fetch_cst_AU1 (op : Z -> Z -> Z)
     ty (p : val) (z : Z) (Q : val -> mpred) sz sgn : mpred :=
     AU1 <<∀ n (n' := at_eval sz sgn op n z),
@@ -498,7 +499,7 @@ Section with_Σ.
       [| memorder = _SEQ_CST |] **
       [| has_type (Vint arg) acc_type |] **
       atom_xxx_fetch_cst_AU1 op acc_type p arg Q sz sgn
-      |-- wp_atom' ao acc_type (p::memorder::Vint arg::nil) Q.
+      |-- wp_atom' ao acc_type [p; memorder; Vint arg] Q.
   Proof.
     intros WP. intros. rewrite -WP.
     iIntros "[$ [$ AU]]".
