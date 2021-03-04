@@ -891,7 +891,6 @@ Section with_cpp.
     iIntros "[$ _]".
   Qed.
 
-  (* TODO: Proper wrt [genv_leq]. *)
   Lemma cptrR_fs_impl {resolve} f g :
     pureR (fs_impl g f) |-- cptrR f -* cptrR g.
   Proof.
@@ -903,6 +902,7 @@ Section with_cpp.
     by iApply "fs_impl".
   Qed.
 
+(* TODO: Proper wrt [genv_leq]. *)
   #[global] Instance cptrR_mono {resolve} : Proper (flip fs_entails ==> (⊢)) cptrR.
   Proof.
     intros ??; rewrite /fs_entails/flip => impl. iApply cptrR_fs_impl.
