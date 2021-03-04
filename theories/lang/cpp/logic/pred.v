@@ -608,6 +608,14 @@ Section pinned_ptr_def.
   Global Instance pinned_ptr_timeless va p : Timeless (pinned_ptr va p).
   Proof. rewrite pinned_ptr_eq. apply _. Qed.
 
+  Lemma pinned_ptr_intro p va :
+    pinned_ptr_pure va p -> exposed_ptr p |-- pinned_ptr va p.
+  Proof. rewrite pinned_ptr_eq /pinned_ptr_def. by iIntros (?) "$". Qed.
+
+  Lemma pinned_ptr_change_va p va va' :
+    pinned_ptr_pure va p -> pinned_ptr va' p |-- pinned_ptr va p.
+  Proof. rewrite pinned_ptr_eq /pinned_ptr_def. by iIntros (?) "(_ & $)". Qed.
+
   Global Instance pinned_ptr_pinned_ptr_pure va p :
     Observe [| pinned_ptr_pure va p |] (pinned_ptr va p).
   Proof. rewrite pinned_ptr_eq. apply _. Qed.
