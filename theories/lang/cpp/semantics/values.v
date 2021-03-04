@@ -682,8 +682,20 @@ Axiom has_type_rv_reference : forall v ty,
     has_type v (Trv_reference ty) -> exists p, v = Vptr p /\ p <> nullptr.
 Axiom has_type_array : forall v ty n,
     has_type v (Tarray ty n) -> exists p, v = Vptr p /\ p <> nullptr.
+Axiom has_type_named : forall v name,
+    has_type v (Tnamed name) -> exists p, v = Vptr p /\ p <> nullptr.
 Axiom has_type_function : forall v cc rty args,
     has_type v (Tfunction (cc:=cc) rty args) -> exists p, v = Vptr p /\ p <> nullptr.
+Axiom has_type_member_pointer : forall v name ty,
+    has_type v (Tmember_pointer name ty) -> exists p, v = Vptr p /\ p <> nullptr.
+
+(* Not supported at the moment *)
+Axiom has_type_arch : forall v osz bs,
+    has_type v (Tarch osz bs) -> False.
+
+(* Not supported at the moment *)
+Axiom has_type_float : forall v sz,
+    has_type v (Tfloat sz) -> False.
 
 Axiom has_type_void : forall v,
     has_type v Tvoid -> v = Vundef.
