@@ -65,10 +65,9 @@ Section defs.
 End defs.
 
 Global Instance: Params (@_at) 3 := {}.
-
-Instance: Params (@as_Rep) 2 := {}.
-Instance: Params (@_offsetR) 3 := {}.
-Instance: Params (@pureR) 2 := {}.
+Global Instance: Params (@as_Rep) 2 := {}.
+Global Instance: Params (@_offsetR) 3 := {}.
+Global Instance: Params (@pureR) 2 := {}.
 
 Section with_cpp.
   Context `{Σ : cpp_logic}.
@@ -658,8 +657,6 @@ Section with_cpp.
 
 End with_cpp.
 
-Typeclasses Opaque _at _offsetR.
+Typeclasses Opaque _at _offsetR pureR as_Rep.
 Global Opaque _at _offsetR.
 
-Typeclasses Opaque pureR.
-Typeclasses Opaque as_Rep.
