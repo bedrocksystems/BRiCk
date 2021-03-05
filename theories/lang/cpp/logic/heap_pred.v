@@ -792,8 +792,8 @@ Section with_cpp.
       apply has_type_bool in Hty2 as [? ?]; subst.
       apply: tptsto_agree_int; eauto.
     - iApply (observe_2 with "Htptsto1 Htptsto2").
-      apply has_type_member_pointer in Hty1 as [? [? ?]]; subst.
-      apply has_type_member_pointer in Hty2 as [? [? ?]]; subst.
+      apply has_type_member_pointer in Hty1 as [? ?]; subst.
+      apply has_type_member_pointer in Hty2 as [? ?]; subst.
       apply: tptsto_agree_ptr; eauto.
     - apply has_type_float in Hty1; contradiction.
     - iApply (observe_2 with "Htptsto1 Htptsto2");

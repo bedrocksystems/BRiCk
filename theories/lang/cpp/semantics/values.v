@@ -199,8 +199,14 @@ Axiom has_type_named : forall v name,
     has_type v (Tnamed name) -> exists p, v = Vptr p /\ p <> nullptr.
 Axiom has_type_function : forall v cc rty args,
     has_type v (Tfunction (cc:=cc) rty args) -> exists p, v = Vptr p /\ p <> nullptr.
+(* "A null pointer constant can be converted to a pointer-to-member type; the result is the
+    null member pointer value of that type and is distinguishable from any pointer to member
+    not created from a null pointer constant. [...]"
+
+   - http://eel.is/c++draft/conv.mem#1
+ *)
 Axiom has_type_member_pointer : forall v name ty,
-    has_type v (Tmember_pointer name ty) -> exists p, v = Vptr p /\ p <> nullptr.
+    has_type v (Tmember_pointer name ty) -> exists p, v = Vptr p.
 
 (* Not supported at the moment *)
 Axiom has_type_arch : forall v osz bs,
