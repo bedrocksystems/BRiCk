@@ -43,6 +43,7 @@ theories/lang/cpp/syntax/typing.v
 theories/lang/cpp/ast.v
 
 # Semantics
+theories/lang/cpp/semantics/ptrs.v
 theories/lang/cpp/semantics/values.v
 theories/lang/cpp/semantics/operator.v
 theories/lang/cpp/semantics/builtins.v
