@@ -659,6 +659,15 @@ Section with_cpp.
     [| same_address_bool p nullptr = bool_decide (p = nullptr) |].
   Proof. rewrite same_address_eq_null; iIntros "!%". apply bool_decide_iff. Qed.
 
+  Lemma valid_ptr_nonnull_nonzero p :
+    p <> nullptr ->
+    valid_ptr p |-- [| ptr_vaddr p <> Some 0%N |].
+  Proof.
+    rewrite same_address_eq_null; iIntros (Hne Hiff) "!%".
+    have {Hne Hiff}: ~same_address p nullptr by intuition.
+    rewrite same_address_iff ptr_vaddr_nullptr. naive_solver.
+  Qed.
+
   Global Instance pinned_ptr_unique va va' p :
     Observe2 [| va = va' |] (pinned_ptr va p) (pinned_ptr va' p).
   Proof.
