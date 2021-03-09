@@ -10,6 +10,7 @@ From Coq.Classes Require Import
 
 From Coq Require Import
      Lists.List.
+Require Import iris.proofmode.tactics.
 
 From bedrock.lang.cpp Require Import ast semantics.
 From bedrock.lang.cpp.logic Require Import
@@ -167,6 +168,14 @@ Module Type Stmt.
       | Tarch _ _ => False (* not supported *)
       end.
 
+    Lemma wp_decl_frame : forall x ρ m (Q Q' : Kpred) init ty dtor,
+        Forall rt : rt_biIndex, Q rt -* Q' rt
+        |-- (Forall a (b b' : Kpred), (Forall rt, b rt -* b' rt) -* m a b -* m a b') -*
+            wp_decl ρ x ty init dtor m Q -* wp_decl ρ x ty init dtor m Q'.
+    Proof.
+      (* TODO(gmm) postponing since I am revising initialization semantics *)
+    Admitted.
+
     Fixpoint wp_decls (ρ : region) (ds : list VarDecl)
              (k : region -> Kpred -> mpred) (Q : Kpred) : mpred :=
       match ds with
@@ -174,6 +183,19 @@ Module Type Stmt.
       | {| vd_name := x ; vd_type := ty ; vd_init := init ; vd_dtor := dtor |} :: ds =>
         |> wp_decl ρ x ty init dtor (fun ρ => wp_decls ρ ds k) Q
       end.
+
+    Lemma wp_decls_frame : forall ds ρ m (Q Q' : Kpred),
+        (Forall rt : rt_biIndex, Q rt -* Q' rt)
+        |-- (Forall a (b b' : Kpred), (Forall rt, b rt -* b' rt) -* m a b -* m a b') -*
+            wp_decls ρ ds m Q -* wp_decls ρ ds m Q'.
+    Proof.
+      clear. induction ds; simpl; intros.
+      - iIntros "a b c".
+        iApply ("b" with "a"); eauto.
+      - iIntros "a b c". iNext.
+        iRevert "c". iApply (wp_decl_frame with "a").
+        iIntros (???) "a". iApply (IHds with "a"). eauto.
+    Qed.
 
     (* note(gmm): this rule is non-compositional because
      * wp_decls requires the rest of the block computation
@@ -186,6 +208,34 @@ Module Type Stmt.
       | s :: ss =>
         |> wp ρ s (Kseq (wp_block ρ ss) Q)
       end.
+
+    Lemma wp_block_frame : forall body ρ (Q Q' : Kpred),
+        (Forall rt, Q rt -* Q' rt) |-- wp_block ρ body Q -* wp_block ρ body Q'.
+    Proof.
+      clear.
+      induction body; simpl; intros.
+      - iIntros "A"; iApply "A".
+      - assert
+          (Forall rt, Q rt -* Q' rt |--
+                        (Forall ds, wp_decls ρ ds (fun ρ' => wp_block ρ' body) Q -*
+                                    wp_decls ρ ds (fun ρ' => wp_block ρ' body) Q') //\\
+                        (|> wp ρ a (Kseq (wp_block ρ body) Q) -*
+                            |> wp ρ a (Kseq (wp_block ρ body) Q'))).
+        { iIntros "X"; iSplit.
+          - iIntros (ds).
+            iDestruct (wp_decls_frame ds ρ (fun a b => wp_block a body b)
+                         with "X") as "X".
+            iApply "X".
+            iIntros (???) "X". by iApply IHbody.
+          - iIntros "Z". iNext. iRevert "Z".
+            iApply wp_frame =>//.
+            iIntros (rt) => /=. destruct rt; eauto.
+              by iApply IHbody. }
+        iIntros "X".
+        iDestruct (H with "X") as "X".
+        destruct a; try solve [ iDestruct "X" as "[_ $]" ].
+        iDestruct "X" as "[X _]". iApply "X".
+    Qed.
 
     Axiom wp_seq : forall ρ Q ss,
         wp_block ρ ss Q |-- wp ρ (Sseq ss) Q.
