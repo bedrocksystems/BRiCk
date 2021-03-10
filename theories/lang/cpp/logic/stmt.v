@@ -338,7 +338,7 @@ Module Type Stmt.
       end.
 
     Definition default_from_cases (ls : list SwitchBranch) (v : Z) : Prop :=
-      fold_right (fun sb P => wp_switch_branch sb v \/ P) False ls.
+      (fold_right (fun sb P => ~wp_switch_branch sb v /\ P) True ls).
 
 
     (** apply the [wp] calculation to the body of a switch
