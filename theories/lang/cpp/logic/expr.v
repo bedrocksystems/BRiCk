@@ -512,7 +512,7 @@ Module Type Expr.
         match unptr ty with
         | Some ptype =>
           wp_prval e (fun v free => Exists va : N, [| v = Vint (Z.of_N va) |] **
-             (([| (va > 0)%N |] ** Exists p, pinned_ptr va p ** type_ptr (resolve:=resolve) ptype p ** Q (Vptr p) free) \\//
+             (([| (0 < va)%N |] ** Exists p, pinned_ptr va p ** type_ptr (resolve:=resolve) ptype p ** Q (Vptr p) free) \\//
               ([| va = 0%N |] ** Q (Vptr nullptr) free)))
         | _ => False
         end
