@@ -304,6 +304,14 @@ Module Type PTRS.
     eval_offset resolve (o_sub _ ty i) =
       (* This order enables reducing for known ty. *)
       (fun n => Z.of_N n * i) <$> size_of resolve ty.
+
+  Axiom eval_o_field : ∀ resolve f n cls st,
+      f = {| f_name := n ; f_type := cls |} ->
+      glob_def resolve cls = Some (Gstruct st) ->
+      st.(s_layout) = Standard ->
+      f_name f ∈ List.map (fst ∘ fst ∘ fst) st.(s_fields) -> (* Needed? *)
+      eval_offset resolve (o_field resolve f) =
+      offset_of resolve (f_type f) (f_name f).
 End PTRS.
 
 Module Type PTRS_DERIVED (Import P : PTRS).
