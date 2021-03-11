@@ -323,6 +323,29 @@ Module PTRS_IMPL : PTRS_INTF_MINIMAL.
     by rewrite /liftM2/= (comm_L _ i) right_id_L.
   Qed.
 
+  Lemma eval_o_field :
+      ∀ (resolve : genv) (f : field) (n : ident) (cls : globname) (st : Struct),
+   f = {| f_type := cls; f_name := n |}
+   → glob_def resolve cls = Some (Gstruct st)
+   → s_layout st = Standard
+   → f_name f ∈ map (fst ∘ fst ∘ fst) (s_fields st)
+   → eval_offset resolve (o_field resolve f) =
+   offset_of resolve (f_type f) (f_name f).
+  Proof.
+    move => resolve f n cls st -> ? ? ?.
+    cbn.
+    rewrite/mk_offset_seg.
+    rewrite/eval_raw_offset_seg.
+    rewrite/o_field_off.
+    cbn.
+    set X := offset_of resolve cls n.
+    case X.
+    2: reflexivity.
+    move => off; cbn.
+    f_equal.
+    lia.
+  Qed.
+
   Class InvolApp {X} (f : list X → list X) :=
     invol_app : ∀ xs1 xs2,
     f (xs1 ++ xs2) = f (f xs1 ++ f xs2).
