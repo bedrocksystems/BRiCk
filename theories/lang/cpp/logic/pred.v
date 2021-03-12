@@ -630,26 +630,7 @@ Section pinned_ptr_def.
     pinned_ptr_pure va storage_ptr ->
     provides_storage storage_ptr obj_ptr aty |-- [| pinned_ptr_pure va obj_ptr |].
   Proof. rewrite provides_storage_same_address. by iIntros (HP <-). Qed.
-
-  (* Used, but false. *)
-  Lemma deprecated__provides_storage_pinned_ptr storage_ptr obj_ptr aty va :
-    provides_storage storage_ptr obj_ptr aty ** pinned_ptr va storage_ptr
-    |-- pinned_ptr va obj_ptr.
-  Proof.
-    rewrite pinned_ptr_eq /pinned_ptr_def exposed_ptr_eq /exposed_ptr_def.
-    iIntros "(P & %Hpin_st & #V & #E)"; iDestruct "E" as (st_aid Hst_aid) "E".
-    iDestruct (provides_storage_pinned_ptr_pure Hpin_st with "P") as %Hpin_obj.
-    iFrame (Hpin_obj).
-    iDestruct (provides_storage_valid_obj_ptr with "P") as "#$".
-  Abort.
-
-  Axiom deprecated__provides_storage_pinned_ptr : forall storage_ptr obj_ptr aty va,
-    provides_storage storage_ptr obj_ptr aty ** pinned_ptr va storage_ptr
-    |-- pinned_ptr va obj_ptr.
 End pinned_ptr_def.
-
-#[deprecated(note="",since="2021-03-01")]
-Notation provides_storage_pinned_ptr := deprecated__provides_storage_pinned_ptr.
 
 Section with_cpp.
   Context `{Σ : cpp_logic} {σ : genv}.
@@ -658,6 +639,15 @@ Section with_cpp.
     _valid_ptr tv p |--
     [| same_address_bool p nullptr = bool_decide (p = nullptr) |].
   Proof. rewrite same_address_eq_null; iIntros "!%". apply bool_decide_iff. Qed.
+
+  Lemma valid_ptr_nonnull_nonzero p :
+    p <> nullptr ->
+    valid_ptr p |-- [| ptr_vaddr p <> Some 0%N |].
+  Proof.
+    rewrite same_address_eq_null; iIntros (Hne Hiff) "!%".
+    have {Hne Hiff}: ~same_address p nullptr by intuition.
+    rewrite same_address_iff ptr_vaddr_nullptr. naive_solver.
+  Qed.
 
   Global Instance pinned_ptr_unique va va' p :
     Observe2 [| va = va' |] (pinned_ptr va p) (pinned_ptr va' p).
