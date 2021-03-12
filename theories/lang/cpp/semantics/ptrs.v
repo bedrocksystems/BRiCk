@@ -309,7 +309,6 @@ Module Type PTRS.
       f = {| f_name := n ; f_type := cls |} ->
       glob_def resolve cls = Some (Gstruct st) ->
       st.(s_layout) = Standard ->
-      f_name f ∈ List.map (fst ∘ fst ∘ fst) st.(s_fields) -> (* Needed? *)
       eval_offset resolve (o_field resolve f) =
       offset_of resolve (f_type f) (f_name f).
 End PTRS.

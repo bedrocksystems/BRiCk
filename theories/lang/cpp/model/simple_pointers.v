@@ -221,7 +221,6 @@ Module SIMPLE_PTRS_IMPL : PTRS_INTF_MINIMAL.
       f = {| f_type := cls; f_name := n |}
       → glob_def resolve cls = Some (Gstruct st)
       → s_layout st = Standard
-      → f_name f ∈ map (fst ∘ fst ∘ fst) (s_fields st)
       → eval_offset resolve (o_field resolve f) =
         offset_of resolve (f_type f) (f_name f).
   Proof. reflexivity. Qed.
