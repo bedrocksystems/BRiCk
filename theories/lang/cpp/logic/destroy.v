@@ -44,6 +44,9 @@ Section destroy.
      with the type of [this] is [t].
 
      note: it does *not* free the underlying memory.
+
+     NOTE since we switched to using implicit destructors, we no longer need to worry about
+          invoking the destructor if [dtor] is [None].
    *)
   Fixpoint destruct_val (t : type) (this : ptr) (dtor : option obj_name) (Q : mpred)
            {struct t}
@@ -53,17 +56,22 @@ Section destroy.
     | Tnamed cls =>
       let continue dtor := destruct_obj dtor cls this Q in
       match dtor with
-      | None => match σ.(genv_tu) !! cls with
+      | None =>
+        |==> this |-> tblockR t 1 ** (this |-> tblockR t 1 -* Q)
+(*        match σ.(genv_tu) !! cls with
                | Some (Gstruct s) => continue s.(s_dtor)
                | Some (Gunion u) => continue u.(u_dtor)
                | _ => False
                end
+*)
       | Some dtor => continue dtor
       end
     | Tarray t sz =>
       fold_right (fun i Q => valid_ptr (this .[ t ! Z.of_nat i ]) **
          destruct_val t (this .[ t ! Z.of_nat i ]) dtor Q) Q (List.rev (seq 0 (N.to_nat sz)))
-    | _ => emp
+    | _ =>
+      |==> this |-> anyR t 1 ** (this |-> tblockR t 1 -* Q)
+      (* emp *)
     end.
 
 End destroy.

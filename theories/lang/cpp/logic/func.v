@@ -418,12 +418,43 @@ Section with_cpp.
         | Vptr thisp :: nil =>
           let ρ := Remp (Some thisp) Tvoid in
             wp (resolve:=resolve) ⊤ ti ρ body
-               (void_return (|> thisp |-> tblockR (Tnamed dtor.(d_class)) 1 -* Q Vvoid)))
+               (void_return (|> thisp |-> tblockR (Tnamed dtor.(d_class)) 1 ** (thisp |-> tblockR (Tnamed dtor.(d_class)) 1 -* Q Vvoid))))
         | _ => False
         end
       | _ => False
       end
     end.
+(*
+  template<typename T>
+  struct optional {
+    union U { T val; char nothing[sizeof(T)]; ~u() {} } u;
+    bool has_value;
+    ~optional() {
+      if (has_value)
+        val.~T();
+      
+    } // has_value.~bool(); u.~U();
+  }
+
+  p |-> classR .... -* |==> p |-> tblockR "class" 1
+
+  union { int x; short y; } u;
+    // u |-> tblockR "U" 1
+    // CREATE(0)
+    u.x = 1;
+    // DESTROY(0)
+    // CREATE(1)
+    u.y = 1;
+    // DESTROY(1)
+    // u |-> tblockR "U" 1
+
+    // [CREATE(n)] implicit pick a union branch
+    u |-> tblockR "U" 1 ==*
+        u |-> (upaddingR "U" 1 ** ucaseR "U" 0 1 ** _field "x" |-> uninitR "U" 1)
+    // [DESTORY(n)] implicit "destruction" of the union
+    u |-> (upaddingR "U" 1 ** ucaseR "U" 0 1 ** _field "x" |-> uninitR "U" 1) ==*
+        u |-> tblockR "U" 1
+*)
 
   Definition dtor_ok (dtor : Dtor) (ti : thread_info) (spec : function_spec)
     : mpred :=

@@ -117,6 +117,8 @@ Record Struct : Set :=
           use multiple destructors in cases of classes with [virtual]
           inheritence.
    *)
+; s_trivially_destructible : bool
+  (* ^ this is actually computable, and we could compute it *)
 ; s_layout : LayoutType
   (* ^ the type of layout semantics *)
 ; s_size : N
