@@ -216,6 +216,13 @@ Module SIMPLE_PTRS_IMPL : PTRS_INTF_MINIMAL.
     by rewrite (comm _ i).
   Qed.
 
+  Lemma eval_o_field σ f n cls st :
+    f = {| f_name := n ; f_type := cls |} ->
+    glob_def σ cls = Some (Gstruct st) ->
+    st.(s_layout) = POD \/ st.(s_layout) = Standard ->
+    eval_offset σ (o_field σ f) = offset_of σ (f_type f) (f_name f).
+  Proof. done. Qed.
+
   Lemma offset_ptr_vaddr_raw resolve o n va va' p :
     eval_offset resolve o = Some n ->
     ptr_vaddr p = Some va ->

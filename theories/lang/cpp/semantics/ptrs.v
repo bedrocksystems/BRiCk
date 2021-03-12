@@ -300,10 +300,20 @@ Module Type PTRS.
   (* TODO drop [genv]. *)
   Parameter eval_offset : genv -> offset -> option Z.
 
-  Axiom eval_o_sub : forall resolve ty (i : Z),
-    eval_offset resolve (o_sub _ ty i) =
+  Axiom eval_o_sub : forall σ ty (i : Z),
+    eval_offset σ (o_sub σ ty i) =
       (* This order enables reducing for known ty. *)
-      (fun n => Z.of_N n * i) <$> size_of resolve ty.
+      (fun n => Z.of_N n * i) <$> size_of σ ty.
+
+  (**
+  To hide implementation details of the compiler from proofs, we restrict
+  this axiom to POD/Standard-layout structures.
+  *)
+  Axiom eval_o_field : forall σ f n cls st,
+    f = {| f_name := n ; f_type := cls |} ->
+    glob_def σ cls = Some (Gstruct st) ->
+    st.(s_layout) = POD \/ st.(s_layout) = Standard ->
+    eval_offset σ (o_field σ f) = offset_of σ (f_type f) (f_name f).
 End PTRS.
 
 Module Type PTRS_DERIVED (Import P : PTRS).
