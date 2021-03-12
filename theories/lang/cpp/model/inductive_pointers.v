@@ -329,18 +329,9 @@ Module PTRS_IMPL : PTRS_INTF_MINIMAL.
     st.(s_layout) = Standard ->
     eval_offset σ (o_field σ f) = offset_of σ (f_type f) (f_name f).
   Proof.
-    move => -> ? ?.
-    cbn.
-    rewrite/mk_offset_seg.
-    rewrite/eval_raw_offset_seg.
-    rewrite/o_field_off.
-    cbn.
-    set X := offset_of σ cls n.
-    case X.
-    2: reflexivity.
-    move => off; cbn.
-    f_equal.
-    lia.
+    move => -> _ _. cbn.
+    rewrite/mk_offset_seg /eval_raw_offset_seg /o_field_off /=.
+    case: offset_of => [off|//]. cbn. by rewrite right_id_L.
   Qed.
 
   Class InvolApp {X} (f : list X → list X) :=
