@@ -309,6 +309,8 @@ Module PTRS_IMPL : PTRS_INTF_MINIMAL.
     foldr (liftM2 Z.add) (Some 0) (map eval_offset_seg o).
   Definition eval_offset (_ : genv) (o : offset) : option Z :=
     eval_raw_offset (`o).
+  (* This is probably not generally applicable. *)
+  Local Arguments liftM2 {_ _ _ _ _ _} _ !_ !_ / : simpl nomatch.
 
   Lemma eval_o_sub σ ty (i : Z) :
     eval_offset _ (o_sub _ ty i) =
@@ -320,7 +322,7 @@ Module PTRS_IMPL : PTRS_INTF_MINIMAL.
     case_decide; subst => //=;
       case: size_of=> [sz|] //=.
     by f_equiv; lia.
-    by rewrite /liftM2/= (comm_L _ i) right_id_L.
+    by rewrite (comm_L _ i) right_id_L.
   Qed.
 
   Lemma eval_o_field σ f n cls st :
@@ -331,7 +333,7 @@ Module PTRS_IMPL : PTRS_INTF_MINIMAL.
   Proof.
     move => -> _ _. cbn.
     rewrite/mk_offset_seg /eval_raw_offset_seg /o_field_off /=.
-    case: offset_of => [off|//]. cbn. by rewrite right_id_L.
+    case: offset_of => [off|//] /=. by rewrite right_id_L.
   Qed.
 
   Class InvolApp {X} (f : list X → list X) :=
