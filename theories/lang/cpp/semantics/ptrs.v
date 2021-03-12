@@ -308,7 +308,7 @@ Module Type PTRS.
   Axiom eval_o_field : forall σ f n cls st,
     f = {| f_name := n ; f_type := cls |} ->
     glob_def σ cls = Some (Gstruct st) ->
-    st.(s_layout) = Standard ->
+    st.(s_layout) = POD \/ st.(s_layout) = Standard ->
     eval_offset σ (o_field σ f) = offset_of σ (f_type f) (f_name f).
 End PTRS.
 
