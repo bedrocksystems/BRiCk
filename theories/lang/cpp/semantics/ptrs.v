@@ -305,6 +305,10 @@ Module Type PTRS.
       (* This order enables reducing for known ty. *)
       (fun n => Z.of_N n * i) <$> size_of σ ty.
 
+  (**
+  To hide implementation details of the compiler from proofs, we restrict
+  this axiom to POD/Standard-layout structures.
+  *)
   Axiom eval_o_field : forall σ f n cls st,
     f = {| f_name := n ; f_type := cls |} ->
     glob_def σ cls = Some (Gstruct st) ->
