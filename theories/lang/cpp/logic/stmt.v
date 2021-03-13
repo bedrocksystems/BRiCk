@@ -10,6 +10,7 @@ From Coq.Classes Require Import
 
 From Coq Require Import
      Lists.List.
+Require Import iris.proofmode.tactics.
 
 From bedrock.lang.cpp Require Import ast semantics.
 From bedrock.lang.cpp.logic Require Import
@@ -167,6 +168,14 @@ Module Type Stmt.
       | Tarch _ _ => False (* not supported *)
       end.
 
+    Lemma wp_decl_frame : forall x ρ m (Q Q' : Kpred) init ty dtor,
+        Forall rt : rt_biIndex, Q rt -* Q' rt
+        |-- (Forall a (b b' : Kpred), (Forall rt, b rt -* b' rt) -* m a b -* m a b') -*
+            wp_decl ρ x ty init dtor m Q -* wp_decl ρ x ty init dtor m Q'.
+    Proof.
+      (* TODO(gmm) postponing since I am revising initialization semantics *)
+    Admitted.
+
     Fixpoint wp_decls (ρ : region) (ds : list VarDecl)
              (k : region -> Kpred -> mpred) (Q : Kpred) : mpred :=
       match ds with
@@ -174,6 +183,19 @@ Module Type Stmt.
       | {| vd_name := x ; vd_type := ty ; vd_init := init ; vd_dtor := dtor |} :: ds =>
         |> wp_decl ρ x ty init dtor (fun ρ => wp_decls ρ ds k) Q
       end.
+
+    Lemma wp_decls_frame : forall ds ρ m (Q Q' : Kpred),
+        (Forall rt : rt_biIndex, Q rt -* Q' rt)
+        |-- (Forall a (b b' : Kpred), (Forall rt, b rt -* b' rt) -* m a b -* m a b') -*
+            wp_decls ρ ds m Q -* wp_decls ρ ds m Q'.
+    Proof.
+      clear. induction ds; simpl; intros.
+      - iIntros "a b c".
+        iApply ("b" with "a"); eauto.
+      - iIntros "a b c". iNext.
+        iRevert "c". iApply (wp_decl_frame with "a").
+        iIntros (???) "a". iApply (IHds with "a"). eauto.
+    Qed.
 
     (* note(gmm): this rule is non-compositional because
      * wp_decls requires the rest of the block computation
@@ -186,6 +208,34 @@ Module Type Stmt.
       | s :: ss =>
         |> wp ρ s (Kseq (wp_block ρ ss) Q)
       end.
+
+    Lemma wp_block_frame : forall body ρ (Q Q' : Kpred),
+        (Forall rt, Q rt -* Q' rt) |-- wp_block ρ body Q -* wp_block ρ body Q'.
+    Proof.
+      clear.
+      induction body; simpl; intros.
+      - iIntros "A"; iApply "A".
+      - assert
+          (Forall rt, Q rt -* Q' rt |--
+                        (Forall ds, wp_decls ρ ds (fun ρ' => wp_block ρ' body) Q -*
+                                    wp_decls ρ ds (fun ρ' => wp_block ρ' body) Q') //\\
+                        (|> wp ρ a (Kseq (wp_block ρ body) Q) -*
+                            |> wp ρ a (Kseq (wp_block ρ body) Q'))).
+        { iIntros "X"; iSplit.
+          - iIntros (ds).
+            iDestruct (wp_decls_frame ds ρ (fun a b => wp_block a body b)
+                         with "X") as "X".
+            iApply "X".
+            iIntros (???) "X". by iApply IHbody.
+          - iIntros "Z". iNext. iRevert "Z".
+            iApply wp_frame =>//.
+            iIntros (rt) => /=. destruct rt; eauto.
+              by iApply IHbody. }
+        iIntros "X".
+        iDestruct (H with "X") as "X".
+        destruct a; try solve [ iDestruct "X" as "[_ $]" ].
+        iDestruct "X" as "[X _]". iApply "X".
+    Qed.
 
     Axiom wp_seq : forall ρ Q ss,
         wp_block ρ ss Q |-- wp ρ (Sseq ss) Q.
@@ -266,7 +316,7 @@ Module Type Stmt.
       | Sfor _ _ _ s => no_case s
       | Sdo s _ => no_case s
       | Sattr _ s => no_case s
-      | Sswitch _ _ => true
+      | Sswitch _ _ _ => true
       | Scase _
       | Sdefault => false
       | Sbreak
@@ -279,57 +329,67 @@ Module Type Stmt.
       | Sunsupported _ => false
       end.
 
-    Fixpoint gather_cases (ls : list Stmt) : Z -> Prop :=
+    Fixpoint get_cases (ls : list Stmt) : list SwitchBranch :=
       match ls with
       | Scase sb :: ls =>
-        fun n' => wp_switch_branch sb n' \/ gather_cases ls n'
-      | _ :: ls => gather_cases ls
-      | nil => fun _ => False
+        sb :: get_cases ls
+      | _ :: ls => get_cases ls
+      | nil => nil
       end.
 
-    Fixpoint has_default (ls : list Stmt) : bool :=
-      match ls with
-      | Sdefault :: _ => true
-      | _ :: ls => has_default ls
-      | nil => false
-      end.
+    Definition default_from_cases (ls : list SwitchBranch) (v : Z) : Prop :=
+      (fold_right (fun sb P => ~wp_switch_branch sb v /\ P) True ls).
 
-    Definition or_case (P : option (Z -> Prop)) (Q : Z -> Prop) : option (Z -> Prop) :=
-      match P with
-      | None => Some Q
-      | Some P =>  Some (fun x => P x \/ Q x)
-      end.
 
     (** apply the [wp] calculation to the body of a switch
-        the [t] argument tells you if you just processed a [case] or [default] statement.
-     *)
-    Section wp_switch_branch.
-      Variable has_def : bool.
-      Variable ρ : region.
-      Variable e : Z.
-      Variable Ldef : Z -> Prop.
 
-      Fixpoint wp_switch_block (Lcur : option (Z -> Prop)) (ls : list Stmt) (Q : Kpred) : mpred :=
-        match ls with
-        | Scase sb :: ls =>
-          wp_switch_block (or_case Lcur (wp_switch_branch sb)) ls Q
-        | Sdefault :: ls =>
-          wp_switch_block (or_case Lcur Ldef) ls Q
-        | s :: ls =>
-          if no_case s then
-            match Lcur with
-            | None =>
-              wp_switch_block None ls Q
-            | Some Lcur =>
-              ([| Lcur e |] -* wp ρ (Sseq (s :: ls)) Q) //\\
-              wp_switch_block None ls Q
-            end
-          else
-            False
-        | nil =>
-          if has_def then True else ([| Ldef e |] -* Q Normal)
-        end%I.
-    End wp_switch_branch.
+        NOTE that the semantics of [switch] statements is *very* conservative in the
+        current setup. In particular.
+
+          1. We do not support using a [case] to jump over a variable declaration
+          2. We do not support [case] statements that jump into the bodies of loops,
+             i.e. Duft's device.
+
+        Supporting 1 should not be difficult in principle.
+        Full support for 2 seems to require a more sophisticated setup for [wp].
+        In other work, this sort of thing is handled as essentially unstructured
+        programs.
+
+        We interpret the semantics of [wp_switch_block] by el
+     *)
+    Fixpoint wp_switch_block (Ldef : option (Z -> Prop)) (ls : list Stmt)
+      : option (list ((Z -> Prop) * list Stmt)) :=
+      match ls with
+      | Scase sb :: ls =>
+        (fun x => (wp_switch_branch sb, ls) :: x) <$> wp_switch_block Ldef ls
+      | Sdefault :: ls =>
+        match Ldef with
+        | None =>
+          (* NOTE in this case there were multiple [default] statements which is
+             not legal *)
+          None
+        | Some def =>
+          (fun x => (def, ls) :: x) <$> wp_switch_block None ls
+        end
+      | Sdecl _ :: ls' =>
+        (* NOTE this check ensures that we never case past a declaration which
+           could be problematic from a soundness point of view.
+         *)
+        if no_case (Sseq ls') then
+          wp_switch_block Ldef ls'
+        else
+          None
+      | s :: ls' =>
+        if no_case s then
+          wp_switch_block Ldef ls'
+        else
+          None
+      | nil =>
+        match Ldef with
+        | None => Some nil
+        | Some def => Some ((def, nil) :: nil)
+        end
+      end.
 
     Definition Kswitch (k : Kpred) : Kpred :=
       KP (fun rt =>
@@ -338,11 +398,19 @@ Module Type Stmt.
             | rt => k rt
             end).
 
+    Axiom wp_switch_decl : forall ρ d e ls Q,
+        wp ρ (Sseq (Sdecl (d :: nil) :: Sswitch None e ls :: nil)) Q
+        |-- wp ρ (Sswitch (Some d) e ls) Q.
+
     Axiom wp_switch : forall ρ e b Q,
-        wp_prval ρ e (fun v free => free **
+        match wp_switch_block (Some $ default_from_cases (get_cases b)) b with
+        | None => False
+        | Some cases =>
+          wp_prval ρ e (fun v free => free **
                     Exists vv : Z, [| v = Vint vv |] **
-                    wp_switch_block (has_default b) ρ vv (fun x => ~gather_cases b x) None b (Kswitch Q))
-        |-- wp ρ (Sswitch e (Sseq b)) Q.
+                    [∧list] x ∈ cases, [| x.1 vv |] -* wp_block ρ x.2 (Kswitch Q))
+        end
+        |-- wp ρ (Sswitch None e (Sseq b)) Q.
 
     (* note: case and default statements are only meaningful inside of [switch].
      * this is handled by [wp_switch_block].
