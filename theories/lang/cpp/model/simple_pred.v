@@ -874,7 +874,8 @@ Module SimpleCPP.
 
     Definition tptsto {σ:genv} (t : type) (q : Qp) (p : ptr) (v : val) : mpred :=
       [| p <> nullptr |] **
-      Exists (oa : option addr),
+      Exists (oa : option addr) (v' : val),
+              [| val_related σ t v v' |] **
               type_ptr t p ** (* use the appropriate ghost state instead *)
               mem_inj_own p oa **
               oaddr_encodes σ t q oa p v.
