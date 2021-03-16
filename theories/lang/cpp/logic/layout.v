@@ -30,14 +30,14 @@ Section with_Σ.
   Axiom union_padding_timeless : forall q cls idx, Timeless (union_padding resolve q cls idx).
   Axiom union_padding_frac_valid : forall (q : Qp) cls idx, Observe [| q ≤ 1 |]%Qp (union_padding resolve q cls idx).
 
-  #[global] Existing Instances
+  Global Existing Instances
     struct_padding_fractional struct_padding_timeless struct_padding_frac_valid
     union_padding_fractional union_padding_timeless union_padding_frac_valid.
 
-  #[global] Instance struct_padding_as_fractional q cls :
+  Global Instance struct_padding_as_fractional q cls :
     AsFractional (struct_padding resolve q cls) (λ q, struct_padding resolve q cls) q.
   Proof. exact: Build_AsFractional. Qed.
-  #[global] Instance union_padding_as_fractional q cls idx :
+  Global Instance union_padding_as_fractional q cls idx :
     AsFractional (union_padding resolve q cls idx) (λ q, union_padding resolve q cls idx) q.
   Proof. exact: Build_AsFractional. Qed.
 

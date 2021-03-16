@@ -38,15 +38,15 @@ Section fractional.
 
   Let gmap_own γ q k v :=
     own (A := gmapR K (fractionalR V)) γ {[ k := frac q v ]}.
-  #[global] Instance fractional_own_frac γ k v :
+  Global Instance fractional_own_frac γ k v :
     Fractional (λ q, gmap_own γ q k v).
   Proof. intros q1 q2. by rewrite -own_op singleton_op frac_op. Qed.
 
-  #[global] Instance fractional_own_frac_as_fractional γ k v q :
+  Global Instance fractional_own_frac_as_fractional γ k v q :
     AsFractional (gmap_own γ q k v) (λ q, gmap_own γ q k v) q.
   Proof. exact: Build_AsFractional. Qed.
 
-  #[global] Instance gmap_own_agree v1 v2 γ q1 q2 k :
+  Global Instance gmap_own_agree v1 v2 γ q1 q2 k :
     Observe2 [| v1 = v2 |] (gmap_own γ q1 k v1) (gmap_own γ q2 k v2).
   Proof.
     apply: observe_2_intro_only_provable.
@@ -55,7 +55,7 @@ Section fractional.
     by iIntros "!%" => /frac_valid [].
   Qed.
 
-  #[global] Instance gmap_own_frac_valid γ (q : Qp) k v :
+  Global Instance gmap_own_frac_valid γ (q : Qp) k v :
     Observe [| q ≤ 1 |]%Qp (gmap_own γ q k v).
   Proof.
     apply: observe_intro_only_provable.
@@ -157,19 +157,19 @@ Module Type SimpleCPP_VIRTUAL.
 
     Axiom vbyte_fractional : forall va rv, Fractional (vbyte va rv).
     Axiom vbyte_timeless : forall va rv q, Timeless (vbyte va rv q).
-    #[global] Existing Instances vbyte_fractional vbyte_timeless.
+    Global Existing Instances vbyte_fractional vbyte_timeless.
 
     Definition vbytes (a : addr) (rv : list runtime_val') (q : Qp) : mpred :=
       [∗list] o ↦ v ∈ rv, (vbyte (a+N.of_nat o)%N v q).
 
-    #[global] Instance vbytes_fractional va rv : Fractional (vbytes va rv).
+    Global Instance vbytes_fractional va rv : Fractional (vbytes va rv).
     Proof. apply fractional_big_sepL; intros. apply vbyte_fractional. Qed.
 
-    #[global] Instance vbytes_as_fractional va rv q :
+    Global Instance vbytes_as_fractional va rv q :
       AsFractional (vbytes va rv q) (vbytes va rv) q.
     Proof. exact: Build_AsFractional. Qed.
 
-    #[global] Instance vbytes_timeless va rv q : Timeless (vbytes va rv q) := _.
+    Global Instance vbytes_timeless va rv q : Timeless (vbytes va rv q) := _.
   End with_cpp.
 End SimpleCPP_VIRTUAL.
 
@@ -185,7 +185,7 @@ Module SimpleCPP.
 
     Parameter live_alloc_id : alloc_id -> mpred.
     Axiom live_alloc_id_timeless : forall aid, Timeless (live_alloc_id aid).
-    #[global] Existing Instance live_alloc_id_timeless.
+    Global Existing Instance live_alloc_id_timeless.
 
     Definition live_ptr (p : ptr) :=
       default False%I (live_alloc_id <$> ptr_alloc_id p).
@@ -245,12 +245,12 @@ Module SimpleCPP.
     A more useful definition should probably not be persistent. *)
     Definition provides_storage (storage_ptr obj_ptr : ptr) (_ : type) : mpred :=
       [| same_address storage_ptr obj_ptr |] ** valid_ptr storage_ptr ** valid_ptr obj_ptr.
-    #[global] Instance provides_storage_same_address storage_ptr obj_ptr ty :
+    Global Instance provides_storage_same_address storage_ptr obj_ptr ty :
       Observe [| same_address storage_ptr obj_ptr |] (provides_storage storage_ptr obj_ptr ty) := _.
 
-    #[global] Instance provides_storage_valid_storage_ptr storage_ptr obj_ptr aty :
+    Global Instance provides_storage_valid_storage_ptr storage_ptr obj_ptr aty :
       Observe (valid_ptr storage_ptr) (provides_storage storage_ptr obj_ptr aty) := _.
-    #[global] Instance provides_storage_valid_obj_ptr storage_ptr obj_ptr aty :
+    Global Instance provides_storage_valid_obj_ptr storage_ptr obj_ptr aty :
       Observe (valid_ptr obj_ptr) (provides_storage storage_ptr obj_ptr aty) := _.
 
     Section with_genv.
@@ -401,16 +401,16 @@ Module SimpleCPP.
       Definition encodes (t : type) (v : val) (vs : list runtime_val) : mpred :=
         [| pure_encodes t v vs |].
 
-      #[global] Instance encodes_persistent : forall t v vs, Persistent (encodes t v vs) := _.
+      Global Instance encodes_persistent : forall t v vs, Persistent (encodes t v vs) := _.
 
-      #[global] Instance encodes_timeless : forall t v a, Timeless (encodes t v a) := _.
+      Global Instance encodes_timeless : forall t v a, Timeless (encodes t v a) := _.
 
       Local Hint Resolve length_Z_to_bytes : core.
       Local Hint Resolve length_aptr : core.
       Local Hint Resolve length_cptr : core.
       Local Hint Resolve length_pure_encodes_undef : core.
 
-      #[global] Instance encodes_nonvoid t v vs :
+      Global Instance encodes_nonvoid t v vs :
         Observe [| t <> Tvoid |] (encodes t v vs).
       Proof. apply: observe_intro_persistent; iIntros "!%". by destruct t. Qed.
 
@@ -442,7 +442,7 @@ Module SimpleCPP.
         repeat case_match; by [ | exact: bytesNat_pos].
       Qed.
 
-      #[global] Instance Inj_aptr: Inj eq eq aptr.
+      Global Instance Inj_aptr: Inj eq eq aptr.
       Proof.
         rewrite /aptr => p1 p2.
         by rewrite bytesNat_nnonnull'; csimpl => -[? _].
@@ -465,7 +465,7 @@ Module SimpleCPP.
 
       Local Hint Resolve pure_encodes_undef_aptr pure_encodes_undef_Z_to_bytes : core.
 
-      #[global] Instance encodes_agree t v1 v2 vs :
+      Global Instance encodes_agree t v1 v2 vs :
         Observe2 [| val_related σ t v1 v2 |] (encodes t v1 vs) (encodes t v2 vs).
       Proof.
         apply: observe_2_intro_persistent; rewrite /encodes /pure_encodes;
@@ -479,7 +479,7 @@ Module SimpleCPP.
                 | assert (z0 = z) by (eapply Z_to_bytes_inj; eauto); subst; constructor].
       Qed.
 
-      #[global] Instance encodes_consistent t v1 v2 vs1 vs2 :
+      Global Instance encodes_consistent t v1 v2 vs1 vs2 :
         Observe2 [| length vs1 = length vs2 |] (encodes t v1 vs1) (encodes t v2 vs2).
       Proof. iIntros "!%". by move=> /length_encodes -> /length_encodes ->. Qed.
     End with_genv.
@@ -508,10 +508,10 @@ Module SimpleCPP.
     Definition val_ (a : ptr) (v : val) (q : Qp) : mpred :=
       ghost_mem_own a q v.
 
-    #[global] Instance val_agree a v1 v2 q1 q2 :
+    Global Instance val_agree a v1 v2 q1 q2 :
       Observe2 [|v1 = v2|] (val_ a v1 q1) (val_ a v2 q2) := _.
 
-    #[global] Instance val_frac_valid a v (q : Qp) :
+    Global Instance val_frac_valid a v (q : Qp) :
       Observe ([| q ≤ 1 |])%Qp (val_ a v q) := _.
 
     Instance val_fractional a rv : Fractional (val_ a rv) := _.
@@ -523,9 +523,9 @@ Module SimpleCPP.
     Definition byte_ (a : addr) (rv : runtime_val) (q : Qp) : mpred :=
       heap_own a q rv.
 
-    #[global] Instance byte_agree a v1 v2 q1 q2 :
+    Global Instance byte_agree a v1 v2 q1 q2 :
       Observe2 [|v1 = v2|] (byte_ a v1 q1) (byte_ a v2 q2) := _.
-    #[global] Instance byte_frac_valid a rv (q : Qp) :
+    Global Instance byte_frac_valid a rv (q : Qp) :
       Observe ([| q ≤ 1 |])%Qp (byte_ a rv q) := _.
 
     Instance byte_fractional {a rv} : Fractional (byte_ a rv) := _.
@@ -648,7 +648,7 @@ Module SimpleCPP.
       iApply (observe_2 with "H1 H2").
     Qed.
 
-    #[global] Instance addr_encodes_frac_valid {σ} ty (q : Qp) a v vs :
+    Global Instance addr_encodes_frac_valid {σ} ty (q : Qp) a v vs :
       Observe [| q ≤ 1 |]%Qp (addr_encodes σ ty q a v vs).
     Proof.
       apply: observe_intro_persistent.
@@ -881,7 +881,7 @@ Module SimpleCPP.
     (* TODO: [tptsto] should not include [type_ptr] wholesale, but its
     pieces in the new model, replacing [mem_inj_own], and [tptsto_type_ptr]
     should be proved properly. *)
-    #[global] Instance tptsto_type_ptr : forall (σ : genv) ty q p v,
+    Global Instance tptsto_type_ptr : forall (σ : genv) ty q p v,
       Observe (type_ptr ty p) (tptsto ty q p v) := _.
 (*
     Instance tptsto_type_ptr resolve ty q p v align
@@ -923,13 +923,13 @@ Module SimpleCPP.
     Instance tptsto_fractional {σ} ty p v : Fractional (λ q, @tptsto σ ty q p v) := _.
     Instance tptsto_timeless {σ} ty q p v : Timeless (@tptsto σ ty q p v) := _.
 
-    #[global] Instance tptsto_nonvoid {σ} ty (q : Qp) p v :
+    Global Instance tptsto_nonvoid {σ} ty (q : Qp) p v :
       Observe [| ty <> Tvoid |] (@tptsto σ ty q p v) := _.
 
-    #[global] Instance tptsto_frac_valid {σ} ty (q : Qp) p v :
+    Global Instance tptsto_frac_valid {σ} ty (q : Qp) p v :
       Observe [| q ≤ 1 |]%Qp (@tptsto σ ty q p v) := _.
 
-    #[global] Instance tptsto_agree σ ty q1 q2 p v1 v2 :
+    Global Instance tptsto_agree σ ty q1 q2 p v1 v2 :
       Observe2 [| val_related σ ty v1 v2 |] (@tptsto σ ty q1 p v1) (@tptsto σ ty q2 p v2).
     Proof.
       intros; apply: observe_2_intro_persistent.
@@ -941,7 +941,7 @@ Module SimpleCPP.
       iPureIntro; constructor.
     Qed.
 
-    #[global] Instance tptsto_agree_qual σ t ty q1 q2 p v1 v2 :
+    Global Instance tptsto_agree_qual σ t ty q1 q2 p v1 v2 :
       Observe2 [| val_related σ ty v1 v2|] (@tptsto σ ty q1 p v1) (@tptsto σ ty q2 p v2) ->
       Observe2 [| val_related σ (Tqualified t ty) v1 v2 |]
                (@tptsto σ (Tqualified t ty) q1 p v1)
