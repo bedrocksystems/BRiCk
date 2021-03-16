@@ -757,7 +757,7 @@ Section with_cpp.
              (Htptsto2 & %Hnotraw2 & %Hhas_type2)".
     iDestruct (observe_2_elim_pure with "Htptsto1 Htptsto2") as %Hvs.
     assert (v1 = v2)
-      by (inversion Hvs; subst; auto; exfalso;
+      by (induction Hvs; subst; auto; exfalso;
           [apply Hnotraw1 | apply Hnotraw2];
           eauto).
     by iPureIntro.
@@ -819,6 +819,16 @@ Section with_cpp.
     Observe [| q ≤ 1 |]%Qp (uninitR ty q).
   Proof. rewrite uninitR_eq. apply _. Qed.
 
+  Lemma test:
+    forall σ ty v v',
+      v' = Vundef ->
+      val_related σ ty v v' ->
+      v = Vundef.
+  Proof.
+    intros * Hv' Hval_related; induction Hval_related;
+      try (by inversion Hv'); auto.
+  Qed.
+
   (** This seems odd, but it's relevant to proof that [anyR] is fractional. *)
   Lemma primR_uninitR {resolve} ty q1 q2 v :
     primR ty q1 v |--
@@ -826,9 +836,11 @@ Section with_cpp.
     primR ty (q1 + q2) Vundef.
   Proof.
     rewrite primR_eq/primR_def uninitR_eq/uninitR_def. constructor=>p /=.
-    rewrite monPred_at_wand. iIntros "[T1 %Hnotraw]" (? <-%ptr_rel_elim) "/= T2".
+    rewrite monPred_at_wand. iIntros "[T1 [%Hnotraw %Hty]]" (? <-%ptr_rel_elim) "/= T2".
     iDestruct (observe_2 [| val_related resolve ty v Vundef |] with "T1 T2") as "%Hrelated".
-    assert (v = Vundef) by (inversion Hrelated; auto); subst.
+    assert (v = Vundef)
+      by (remember Vundef as v'; induction Hrelated;
+          try (by inversion Heqv'); auto); subst.
     iCombine "T1 T2" as "T"; by iFrame "∗%".
   Qed.
 

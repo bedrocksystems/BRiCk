@@ -189,33 +189,16 @@ Module Type CPP_LOGIC (Import CC : CPP_LOGIC_CLASS) (Import INTF : FULL_INTF).
       Observe2 [| val_related σ ty v1 v2 |]
                (@tptsto σ ty q1 p v1)
                (@tptsto σ ty q2 p v2).
-    Axiom tptsto_agree_qual : forall {σ} t ty q1 q2 p v1 v2,
-      Observe2 [| val_related σ ty v1 v2 |] (@tptsto σ ty q1 p v1) (@tptsto σ ty q2 p v2) ->
-      Observe2 [| val_related σ (Tqualified t ty) v1 v2 |]
-               (@tptsto σ (Tqualified t ty) q1 p v1)
-               (@tptsto σ (Tqualified t ty) q2 p v2).
-    Global Existing Instances tptsto_agree tptsto_agree_qual.
+    Global Existing Instances tptsto_agree.
 
-    (* TODO (JH): Does this actually avoid the soundness issue which Paolo discovered? *)
+    (* TODO (JH/PG): Add in a proper instance using this which allows us to rewrite
+         `val_related` values within `tptsto`s. *)
     Axiom tptsto_val_related_transport : forall {σ} ty q p v1 v2,
         [| val_related σ ty v1 v2 |] |-- @tptsto σ ty q p v1 -* @tptsto σ ty q p v2.
 
     Axiom tptsto_nonvoid : forall {σ} ty (q : Qp) p v,
       Observe [| ty <> Tvoid |] (@tptsto σ ty q p v).
     Global Existing Instance tptsto_nonvoid.
-
-    (* TODO: `simple_pred` demands this even though it is a `Lemma` rather than an `Axiom` *)
-    Lemma tptsto_disjoint : forall {σ} ty p v1 v2,
-      @tptsto σ ty 1 p v1 ** @tptsto σ ty 1 p v2 |-- False.
-    Proof.
-      intros *; iIntros "[T1 T2]".
-      iDestruct (observe_2_elim_pure with "T1 T2") as %Hvs.
-      iDestruct (tptsto_val_related_transport $! Hvs with "T1") as "T2'".
-      iCombine "T2 T2'" as "T".
-      iDestruct (fractional (Φ := fun q => tptsto ty q p v2) 1 1) as "FRACTIONAL".
-      iDestruct ("FRACTIONAL" with "T") as "CONTRA".
-      iDestruct (tptsto_frac_valid with "CONTRA") as %L => //.
-    Qed.
 
     (** The allocation is alive. Neither persistent nor fractional.
       See https://eel.is/c++draft/basic.stc.general#4 and
@@ -723,15 +706,15 @@ Section with_cpp.
 
   Lemma shift_pinned_ptr_sub ty n va (p1 : ptr) p2 o:
     size_of σ ty = Some o ->
-        [| _offset_ptr p1 (o_sub _ ty n) = p2 |] ** valid_ptr p2 ** pinned_ptr va p1
+    _offset_ptr p1 (o_sub _ ty n) = p2 ->
+        valid_ptr p2 ** pinned_ptr va p1
     |-- pinned_ptr (Z.to_N (Z.of_N va + n * Z.of_N o)) p2.
   Proof.
-    move => o_eq.
-    iIntros "[<- [val pin1]]".
+    move => o_eq <-.
+    iIntros "[val pin1]".
     iApply (offset_pinned_ptr _ with "val") => //.
     rewrite eval_o_sub o_eq /= Z.mul_comm //.
   Qed.
-
 
   Lemma _valid_valid p vt : _valid_ptr vt p |-- valid_ptr p.
   Proof. case: vt => [|//]. exact: strict_valid_valid. Qed.
@@ -783,6 +766,16 @@ Section with_cpp.
     apply: observe_intro.
     destruct (ptr_eq_dec p nullptr); subst; last by eauto.
     rewrite {1}tptsto_nonnull. exact: bi.False_elim.
+  Qed.
+
+  Lemma tptsto_disjoint : forall ty p v1 v2,
+    tptsto ty 1 p v1 ** tptsto ty 1 p v2 |-- False.
+  Proof.
+    intros *; iIntros "[T1 T2]".
+    iDestruct (observe_2_elim_pure with "T1 T2") as %Hvs.
+    iDestruct (tptsto_val_related_transport $! Hvs with "T1") as "T2'".
+    iCombine "T2 T2'" as "T".
+    iDestruct (tptsto_frac_valid with "T") as %L => //.
   Qed.
 
   (** function specifications written in weakest pre-condition style.
