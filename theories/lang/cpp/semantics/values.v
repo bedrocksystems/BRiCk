@@ -65,13 +65,24 @@ Proof. solve_decision. Defined.
 
 End VAL_MIXIN.
 
-Module Type RAW_BYTES_DERIVED
+Module Type RAW_BYTES_VAL
        (Import P : PTRS) (Import R : RAW_BYTES)
        (Import V : VAL_MIXIN P R).
   (** [raw_bytes_of_val σ ty v rs] states that the value [v] of type
       [ty] is represented by the raw bytes in [rs]. What this means
       depends on the type [ty]. *)
   Parameter raw_bytes_of_val : genv -> type -> val -> list raw_byte -> Prop.
+
+  Axiom raw_bytes_of_val_Proper : Proper (genv_leq ==> eq ==> eq ==> eq ==> iff) raw_bytes_of_val.
+  #[global] Existing Instance raw_bytes_of_val_Proper.
+
+  Axiom raw_bytes_of_val_unique_encoding : forall σ ty v rs rs',
+      raw_bytes_of_val σ ty v rs -> raw_bytes_of_val σ ty v rs' -> rs = rs'.
+
+  Axiom raw_bytes_of_val_int_unique_val : forall σ sz sgn z z' rs,
+      raw_bytes_of_val σ (Tint sz sgn) (Vint z) rs ->
+      raw_bytes_of_val σ (Tint sz sgn) (Vint z') rs ->
+      z = z'.
 
   Axiom raw_bytes_of_val_sizeof : forall σ ty v rs,
       raw_bytes_of_val σ ty v rs -> size_of σ ty = Some (N.of_nat $ length rs).
@@ -99,15 +110,18 @@ Module Type RAW_BYTES_DERIVED
   (* TODO (JH): We should probably restrict this interface with some `Axiom`s. *)
   Parameter raw_bytes_of_struct :
     genv -> globname -> gmap ident (list raw_byte) -> list raw_byte -> Prop.
-End RAW_BYTES_DERIVED.
+End RAW_BYTES_VAL.
 
 Module Type RAW_BYTES_MIXIN
        (Import P : PTRS) (Import R : RAW_BYTES)
        (Import V : VAL_MIXIN P R)
-       (Import RD : RAW_BYTES_DERIVED P R V).
+       (Import RD : RAW_BYTES_VAL P R V).
 
   Inductive val_related : genv -> type -> val -> val -> Prop :=
-  | Veq σ ty v: val_related σ ty v v
+  | Veq_refl σ ty v: val_related σ ty v v
+  | Vqual σ t ty v1 v2:
+      val_related σ ty v1 v2 ->
+      val_related σ (Tqualified t ty) v1 v2
   | Vraw_uint8 σ raw z:
       raw_bytes_of_val σ (Tint W8 Unsigned) (Vint z) [raw] ->
       val_related σ (Tint W8 Unsigned) (Vraw raw) (Vint z)
@@ -115,44 +129,59 @@ Module Type RAW_BYTES_MIXIN
       raw_bytes_of_val σ (Tint W8 Unsigned) (Vint z) [raw] ->
       val_related σ (Tint W8 Unsigned) (Vint z) (Vraw raw).
 
-  Lemma raw_bytes_of_val_uint_inv : forall σ v rs sz sgn,
+  #[global] Instance val_related_reflexive σ ty : Reflexive (val_related σ ty).
+  Proof. constructor. Qed.
+  #[global] Instance val_related_symmetric σ ty : Symmetric (val_related σ ty).
+  Proof.
+    rewrite /Symmetric; intros * Hval_related;
+      induction Hval_related; subst; by constructor.
+  Qed.
+  #[global] Instance val_related_transitive σ ty : Transitive (val_related σ ty).
+  Proof.
+    rewrite /Transitive; intros * Hval_related1;
+      induction Hval_related1; intros * Hval_related2.
+    - by auto.
+    - constructor; apply IHHval_related1;
+        inversion Hval_related2; subst;
+        by [constructor | auto].
+    - inversion Hval_related2; subst.
+      + by constructor.
+      + pose proof (raw_bytes_of_val_unique_encoding _ _ _ _ _ H H2) as Hraws.
+        inversion Hraws; constructor.
+    - inversion Hval_related2; subst.
+      + by constructor.
+      + pose proof (raw_bytes_of_val_int_unique_val _ _ _ _ _ _ H H2); subst.
+        by constructor.
+  Qed.
+  #[global] Instance val_related_Proper : Proper (genv_leq ==> eq ==> eq ==> eq ==> iff) val_related.
+  Proof.
+    repeat red; intros; subst; split; intros.
+    - induction H0; subst.
+      + constructor.
+      + constructor; auto.
+      + setoid_rewrite H in H0; by constructor.
+      + setoid_rewrite H in H0; by constructor.
+    - induction H0; subst.
+      + constructor.
+      + constructor; auto.
+      + setoid_rewrite <- H in H0; by constructor.
+      + setoid_rewrite <- H in H0; by constructor.
+  Qed.
+
+  Lemma raw_bytes_of_val_uint_length : forall σ v rs sz sgn,
       raw_bytes_of_val σ (Tint sz sgn) v rs ->
-      match sz with
-      | W8   =>
-        exists r0,
-          rs = [r0]
-      | W16  =>
-        exists r0 r1,
-          rs = [r0; r1]
-      | W32  =>
-        exists r0 r1 r2 r3,
-          rs = [r0; r1; r2; r3]
-      | W64  =>
-        exists r0 r1 r2 r3 r4 r5 r6 r7,
-          rs = [r0; r1; r2; r3; r4; r5; r6; r7]
-      | W128 =>
-        exists r0 r1 r2 r3 r4 r5 r6 r7 r8 r9 r10 r11 r12 r13 r14 r15,
-          rs = [r0; r1; r2; r3; r4; r5; r6; r7; r8; r9; r10; r11; r12; r13; r14; r15]
-      end.
+      length rs = bytesNat sz.
   Proof.
     intros * Hraw_bytes_of_val.
     apply raw_bytes_of_val_sizeof in Hraw_bytes_of_val.
     inversion Hraw_bytes_of_val as [Hsz]; clear Hraw_bytes_of_val.
-    destruct sz; rewrite /size_of/bytesN/= in Hsz;
-      [ assert (length rs = 1)%nat  as Hlen by lia
-      | assert (length rs = 2)%nat  as Hlen by lia
-      | assert (length rs = 4)%nat  as Hlen by lia
-      | assert (length rs = 8)%nat  as Hlen by lia
-      | assert (length rs = 16)%nat as Hlen by lia];
-      clear Hsz;
-      repeat (destruct rs; eauto; try (simpl in Hlen; lia));
-      repeat eexists.
+    by apply N_of_nat_inj in Hsz.
   Qed.
 End RAW_BYTES_MIXIN.
 
 (* Collect all the axioms. *)
 Module Type PTRS_INTF_MINIMAL := PTRS <+ PTRS_DERIVED.
-Module Type PTRS_INTF := PTRS_INTF_MINIMAL <+ RAW_BYTES <+ VAL_MIXIN <+ RAW_BYTES_DERIVED.
+Module Type PTRS_INTF := PTRS_INTF_MINIMAL <+ RAW_BYTES <+ VAL_MIXIN <+ RAW_BYTES_VAL.
 Declare Module PTRS_INTF_AXIOM : PTRS_INTF.
 
 (* Plug mixins. *)
