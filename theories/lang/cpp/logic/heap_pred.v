@@ -751,61 +751,16 @@ Section with_cpp.
       (primR ty q2 v2).
   Proof.
     rewrite primR_eq/primR_def;
-      apply as_Rep_only_provable_observe_2=> p;
-      rewrite /Observe2.
-    induction ty; simpl in *;
-      iIntros "(Htptsto1 & %Hnotraw1 & %Hty1)
-               (Htptsto2 & %Hnotraw2 & %Hty2)".
-    - iApply (observe_2 with "Htptsto1 Htptsto2").
-      apply has_type_pointer in Hty1 as [? ?]; subst.
-      apply has_type_pointer in Hty2 as [? ?]; subst.
-      apply: tptsto_agree_ptr; eauto.
-    - iApply (observe_2 with "Htptsto1 Htptsto2").
-      apply has_type_reference in Hty1 as [? [? ?]]; subst.
-      apply has_type_reference in Hty2 as [? [? ?]]; subst.
-      apply: tptsto_agree_ptr; eauto.
-    - iApply (observe_2 with "Htptsto1 Htptsto2").
-      apply has_type_rv_reference in Hty1 as [? [? ?]]; subst.
-      apply has_type_rv_reference in Hty2 as [? [? ?]]; subst.
-      apply: tptsto_agree_ptr; eauto.
-    - iApply (observe_2 with "Htptsto1 Htptsto2").
-      apply has_int_type' in Hty1 as [[? [? ?]] | [raw1 [? ?]]];
-        subst; [| exfalso; apply Hnotraw1; by exists raw1].
-      apply has_int_type' in Hty2 as [[? [? ?]] | [raw2 [? ?]]];
-        subst; [| exfalso; apply Hnotraw2; by exists raw2].
-      apply: tptsto_agree_int; eauto.
-    - iDestruct (observe [| Tvoid <> Tvoid |] with "Htptsto1") as "%"; contradiction.
-    - iApply (observe_2 with "Htptsto1 Htptsto2").
-      apply has_type_array in Hty1 as [? [? ?]]; subst.
-      apply has_type_array in Hty2 as [? [? ?]]; subst.
-      apply: tptsto_agree_ptr; eauto.
-    - iApply (observe_2 with "Htptsto1 Htptsto2").
-      apply has_type_named in Hty1 as [? [? ?]]; subst.
-      apply has_type_named in Hty2 as [? [? ?]]; subst.
-      apply: tptsto_agree_ptr; eauto.
-    - iApply (observe_2 with "Htptsto1 Htptsto2").
-      apply has_type_function in Hty1 as [? [? ?]]; subst.
-      apply has_type_function in Hty2 as [? [? ?]]; subst.
-      apply: tptsto_agree_ptr; eauto.
-    - iApply (observe_2 with "Htptsto1 Htptsto2").
-      apply has_type_bool in Hty1 as [? ?]; subst.
-      apply has_type_bool in Hty2 as [? ?]; subst.
-      apply: tptsto_agree_int; eauto.
-    - iApply (observe_2 with "Htptsto1 Htptsto2").
-      apply has_type_member_pointer in Hty1 as [? ?]; subst.
-      apply has_type_member_pointer in Hty2 as [? ?]; subst.
-      apply: tptsto_agree_ptr; eauto.
-    - apply has_type_float in Hty1; contradiction.
-    - iApply (observe_2 with "Htptsto1 Htptsto2");
-        apply: tptsto_agree_qual.
-      iPoseProof IHty as "H"; iIntros "Htptsto1 Htptsto2".
-      iDestruct ("H" with "[$Htptsto1] [$Htptsto2]") as "?";
-        [iPureIntro; by intuition.. | by iFrame].
-    - iApply (observe_2 with "Htptsto1 Htptsto2").
-      apply has_type_nullptr in Hty1; subst.
-      apply has_type_nullptr in Hty2; subst.
-      apply: tptsto_agree_ptr; eauto.
-    - apply has_type_arch in Hty1; contradiction.
+      apply: as_Rep_only_provable_observe_2=> p;
+      apply: observe_2_intro_only_provable.
+    iIntros "(Htptsto1 & %Hnotraw1 & %Hhas_type1)
+             (Htptsto2 & %Hnotraw2 & %Hhas_type2)".
+    iDestruct (observe_2_elim_pure with "Htptsto1 Htptsto2") as %Hvs.
+    assert (v1 = v2)
+      by (inversion Hvs; subst; auto; exfalso;
+          [apply Hnotraw1 | apply Hnotraw2];
+          eauto).
+    by iPureIntro.
   Qed.
 
   #[global] Instance primR_observe_has_type resolve ty q v :
@@ -871,8 +826,10 @@ Section with_cpp.
     primR ty (q1 + q2) Vundef.
   Proof.
     rewrite primR_eq/primR_def uninitR_eq/uninitR_def. constructor=>p /=.
-    rewrite monPred_at_wand. iIntros "[T1 %H]" (? <-%ptr_rel_elim) "/= T2".
-    iDestruct (observe_2 [| v = Vundef |] with "T1 T2") as %->; by iFrame "∗%".
+    rewrite monPred_at_wand. iIntros "[T1 %Hnotraw]" (? <-%ptr_rel_elim) "/= T2".
+    iDestruct (observe_2 [| val_related resolve ty v Vundef |] with "T1 T2") as "%Hrelated".
+    assert (v = Vundef) by (inversion Hrelated; auto); subst.
+    iCombine "T1 T2" as "T"; by iFrame "∗%".
   Qed.
 
   (** [anyR] The argument pointers points to a value of C++ type [ty] that might be

@@ -40,13 +40,12 @@ Section with_Σ.
           [| raw_bytes_of_val σ ty v rs |] **
           type_ptrR ty.
 
-      primR ``uint8`` 1 (Vint 42)
-
-      Lemma raw_int_byte_primR : forall q r,
-        rawR q (raw_int_byte r) -|- primR T_uchar q (Vint (Z.of_N r)).
+      Lemma raw_int_byte_primR : forall q r z,
+        (z = Z.of_N (of_raw_byte r))%Z ->
+        rawR q r -|- primR T_uchar q (Vint z).
       Proof.
-        intros *; rewrite primR_to_rawsR; split'.
-        - iIntros "HrawR"; iExists [raw_int_byte r].
+        intros * Hz; subst; rewrite primR_to_rawsR; split'.
+        - iIntros "HrawR"; iExists [r].
           rewrite /rawsR arrayR_singleton.
           iDestruct (observe (type_ptrR (Tint char_bits Unsigned)) with "HrawR")
             as "#Htype_ptrR". {
@@ -60,17 +59,6 @@ Section with_Σ.
           (* TODO: Missing Axioms describing the behavior of raw_bytes_of_val for `uint8` *)
           admit.
       Admitted.
-
- Lemma well_actually q r :
-    primR T_uchar q (Vraw (raw_int_byte r)) |-- False.
-  Proof.
-    iDestruct 1 as "[A B]".
-    iDestruct (raw_int_byte_primR with "A") as "A".
-    set Vi := Vint _. set Vr := Vraw _.
-    iAssert ([| Vi = Vr |]) as %?; last done.
-    by iDestruct (observe_2 [| _ = _ |]with "A B") as "#%H".
-  Qed.
-
 
       Section decodes.
         (* TODO (JH): Determine if we can axiomatize a more specific property and use it
@@ -90,35 +78,35 @@ Section with_Σ.
         (* JH: TODO: Determine what new axioms we should add here. *)
         Axiom raw_byte_of_int_eq : forall sz x rs,
             raw_bytes_of_val σ (Tint sz Unsigned) (Vint x) rs <->
-            (exists l, decodes_uint l x /\ rs = raw_int_byte <$> l).
+            (exists l, decodes_uint l x /\ of_raw_byte <$> rs = l).
 
         (** TODO: determine whether this is correct with respect to pointers *)
         Lemma decode_uint_primR : forall q sz (x : Z),
           primR (Tint sz Unsigned) q (Vint x) -|-
-          Exists l : list N,
+          Exists (rs : list raw_byte) (l : list N),
             arrayR (Tint W8 Unsigned) (fun c => primR (Tint W8 Unsigned) q (Vint c)) (Z.of_N <$> l) **
             type_ptrR (Tint sz Unsigned) **
-            [| decodes_uint l x |].
+            [| decodes_uint l x |] **
+            [| of_raw_byte <$> rs  = l |].
         Proof.
           move => q sz x.
           rewrite primR_to_rawsR. setoid_rewrite raw_byte_of_int_eq.
           iSplit.
           - iDestruct 1 as (rs) "(Hraw & H & $)".
-            iDestruct "H" as %[l [Hdec ->]].
-            iExists _; iSplit => //. clear Hdec.
+            iDestruct "H" as %[l [Hdec <-]].
+            iExists rs, _; iSplit => //. clear Hdec.
             rewrite /rawsR arrayR_eq/arrayR_def. iStopProof.
             (* TODO i need to do induction here because the [Proper] instances are too weak. *)
-            induction l => // /=.
+            induction rs => // /=.
             rewrite !arrR_cons; eauto.
-            rewrite -IHl /=. f_equiv. f_equiv.
+            rewrite -IHrs /=. f_equiv. f_equiv.
               by rewrite raw_int_byte_primR.
-          - iDestruct 1 as (l) "(Harray & $ & H)".
-            iDestruct "H" as %Hdec.
-            iExists _; iSplit => //; eauto with iFrame. clear Hdec.
+          - iDestruct 1 as (rs l) "(Harray & $ & %Hdec & %Hbytes)".
+            iExists rs; iSplit => //; eauto with iFrame. clear Hdec; rewrite -{}Hbytes.
             rewrite /rawsR arrayR_eq/arrayR_def; iStopProof.
-            induction l => // /=.
+            induction rs => // /=.
             rewrite !arrR_cons; eauto.
-            rewrite -IHl /=. f_equiv. f_equiv.
+            rewrite -IHrs /=. f_equiv. f_equiv.
               by rewrite raw_int_byte_primR.
         Qed.
       End decodes.

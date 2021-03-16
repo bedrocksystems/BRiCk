@@ -6,6 +6,8 @@
 
 (** The "operational" style definitions about C++ values. *)
 From Coq Require Import Strings.Ascii.
+Require Import stdpp.gmap.
+
 From bedrock.lang.prelude Require Import base addr option numbers.
 
 Require Import bedrock.lang.cpp.ast.
@@ -28,7 +30,9 @@ Module Type RAW_BYTES.
   Parameter raw_byte_eq_dec : EqDecision raw_byte.
   Existing Instance raw_byte_eq_dec.
 
-  Axiom raw_int_byte : N -> raw_byte.
+  Parameter of_raw_byte : raw_byte -> N.
+  Axiom inj_of_raw_byte : Inj (=) (=) of_raw_byte.
+  #[global] Existing Instance inj_of_raw_byte.
 End RAW_BYTES.
 
 Module Type VAL_MIXIN (Import P : PTRS) (Import R : RAW_BYTES).
@@ -48,8 +52,8 @@ Module Type VAL_MIXIN (Import P : PTRS) (Import R : RAW_BYTES).
  *)
 Variant val : Set :=
 | Vint (_ : Z)
-| Vptr (_ : ptr)
-| Vraw (_ : raw_byte)
+| Vptr (_ : P.ptr)
+| Vraw (_ : R.raw_byte)
 | Vundef
 .
 #[global] Notation Vref := Vptr (only parsing).
@@ -61,15 +65,99 @@ Proof. solve_decision. Defined.
 
 End VAL_MIXIN.
 
+Module Type RAW_BYTES_DERIVED
+       (Import P : PTRS) (Import R : RAW_BYTES)
+       (Import V : VAL_MIXIN P R).
+  (** [raw_bytes_of_val σ ty v rs] states that the value [v] of type
+      [ty] is represented by the raw bytes in [rs]. What this means
+      depends on the type [ty]. *)
+  Parameter raw_bytes_of_val : genv -> type -> val -> list raw_byte -> Prop.
+
+  Axiom raw_bytes_of_val_sizeof : forall σ ty v rs,
+      raw_bytes_of_val σ ty v rs -> size_of σ ty = Some (N.of_nat $ length rs).
+
+  (* TODO (JH): Change structure s.t. I can import `z_to_bytes` here.
+
+     NOTE: It seems like we probably want to move purely arithmetic stuff (like `trim`
+       and `z_to_bytes.v`) out of the cpp-specific subdirectories within cpp2v-core.
+       That way, we can easily use these concepts within our axiomatic semantics. It
+       will also make it easier for us to (potentially) concretize a model of machine words
+       and use them throughout our axiomatic semantics.
+
+    Axiom raw_bytes_of_val_int : forall σ sz z rs,
+        raw_bytes_of_val σ (Tint sz Unsigned) (Vint z) rs <->
+        exists l,
+          (_Z_from_bytes (genv_byte_order σ) Unsigned l = z) /\
+          rs = raw_int_byte <$> l.
+  *)
+
+  (** [raw_bytes_of_struct σ cls rss rs] states that the struct
+      consisting of fields of the raw bytes [rss] is represented by the
+      raw bytes in [rs]. [rs] should agree with [rss] on the offsets of
+      the fields. It might be possible to make some assumptions about the
+      parts of [rs] that represent padding based on the ABI. *)
+  (* TODO (JH): We should probably restrict this interface with some `Axiom`s. *)
+  Parameter raw_bytes_of_struct :
+    genv -> globname -> gmap ident (list raw_byte) -> list raw_byte -> Prop.
+End RAW_BYTES_DERIVED.
+
+Module Type RAW_BYTES_MIXIN
+       (Import P : PTRS) (Import R : RAW_BYTES)
+       (Import V : VAL_MIXIN P R)
+       (Import RD : RAW_BYTES_DERIVED P R V).
+
+  Inductive val_related : genv -> type -> val -> val -> Prop :=
+  | Veq σ ty v: val_related σ ty v v
+  | Vraw_uint8 σ raw z:
+      raw_bytes_of_val σ (Tint W8 Unsigned) (Vint z) [raw] ->
+      val_related σ (Tint W8 Unsigned) (Vraw raw) (Vint z)
+  | Vuint8_raw σ z raw:
+      raw_bytes_of_val σ (Tint W8 Unsigned) (Vint z) [raw] ->
+      val_related σ (Tint W8 Unsigned) (Vint z) (Vraw raw).
+
+  Lemma raw_bytes_of_val_uint_inv : forall σ v rs sz sgn,
+      raw_bytes_of_val σ (Tint sz sgn) v rs ->
+      match sz with
+      | W8   =>
+        exists r0,
+          rs = [r0]
+      | W16  =>
+        exists r0 r1,
+          rs = [r0; r1]
+      | W32  =>
+        exists r0 r1 r2 r3,
+          rs = [r0; r1; r2; r3]
+      | W64  =>
+        exists r0 r1 r2 r3 r4 r5 r6 r7,
+          rs = [r0; r1; r2; r3; r4; r5; r6; r7]
+      | W128 =>
+        exists r0 r1 r2 r3 r4 r5 r6 r7 r8 r9 r10 r11 r12 r13 r14 r15,
+          rs = [r0; r1; r2; r3; r4; r5; r6; r7; r8; r9; r10; r11; r12; r13; r14; r15]
+      end.
+  Proof.
+    intros * Hraw_bytes_of_val.
+    apply raw_bytes_of_val_sizeof in Hraw_bytes_of_val.
+    inversion Hraw_bytes_of_val as [Hsz]; clear Hraw_bytes_of_val.
+    destruct sz; rewrite /size_of/bytesN/= in Hsz;
+      [ assert (length rs = 1)%nat  as Hlen by lia
+      | assert (length rs = 2)%nat  as Hlen by lia
+      | assert (length rs = 4)%nat  as Hlen by lia
+      | assert (length rs = 8)%nat  as Hlen by lia
+      | assert (length rs = 16)%nat as Hlen by lia];
+      clear Hsz;
+      repeat (destruct rs; eauto; try (simpl in Hlen; lia));
+      repeat eexists.
+  Qed.
+End RAW_BYTES_MIXIN.
+
 (* Collect all the axioms. *)
 Module Type PTRS_INTF_MINIMAL := PTRS <+ PTRS_DERIVED.
-Module Type PTRS_INTF := PTRS_INTF_MINIMAL <+ RAW_BYTES.
+Module Type PTRS_INTF := PTRS_INTF_MINIMAL <+ RAW_BYTES <+ VAL_MIXIN <+ RAW_BYTES_DERIVED.
 Declare Module PTRS_INTF_AXIOM : PTRS_INTF.
 
 (* Plug mixins. *)
-Module Type PTRS_FULL_INTF := PTRS_INTF <+ VAL_MIXIN <+ PTRS_MIXIN.
-Module Export PTRS_FULL_AXIOM : PTRS_FULL_INTF :=
-  PTRS_INTF_AXIOM <+ VAL_MIXIN <+ PTRS_MIXIN.
+Module Type FULL_INTF := PTRS_INTF <+ PTRS_MIXIN <+ RAW_BYTES_MIXIN.
+Module Export FULL_INTF_AXIOM : FULL_INTF := PTRS_INTF_AXIOM <+ PTRS_MIXIN <+ RAW_BYTES_MIXIN.
 
 Instance ptr_inhabited : Inhabited ptr := populate nullptr.
 
@@ -195,8 +283,17 @@ Axiom has_type_rv_reference : forall v ty,
     has_type v (Trv_reference ty) -> exists p, v = Vptr p /\ p <> nullptr.
 Axiom has_type_array : forall v ty n,
     has_type v (Tarray ty n) -> exists p, v = Vptr p /\ p <> nullptr.
-Axiom has_type_named : forall v name,
-    has_type v (Tnamed name) -> exists p, v = Vptr p /\ p <> nullptr.
+Axiom has_type_named : forall σ v name,
+    has_type v (Tnamed name) ->
+    match glob_def σ name with
+    | None => False
+    | Some decl =>
+      match decl with
+      | Gtype => False
+      | Gunion _ | Gstruct _ => exists p, v = Vptr p
+      | Genum ty _ | Gconstant ty _ | Gtypedef ty => has_type v ty
+      end
+    end.
 Axiom has_type_function : forall v cc rty args,
     has_type v (Tfunction (cc:=cc) rty args) -> exists p, v = Vptr p /\ p <> nullptr.
 (* "A null pointer constant can be converted to a pointer-to-member type; the result is the
@@ -205,7 +302,8 @@ Axiom has_type_function : forall v cc rty args,
 
    - http://eel.is/c++draft/conv.mem#1
  *)
-Axiom has_type_member_pointer : forall v name ty,
+(* TODO (SEMANTICS): Should we also use the `glob_def` logic here (see: [Tmember]) *)
+Axiom has_type_member_pointer : forall σ v name ty,
     has_type v (Tmember_pointer name ty) -> exists p, v = Vptr p.
 
 (* Not supported at the moment *)

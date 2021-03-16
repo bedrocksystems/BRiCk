@@ -83,8 +83,7 @@ End CPP_LOGIC_CLASS_MIXIN.
 
 Module Type CPP_LOGIC_CLASS := CPP_LOGIC_CLASS_BASE <+ CPP_LOGIC_CLASS_MIXIN.
 
-Module Type CPP_LOGIC (Import CC : CPP_LOGIC_CLASS)
-  (Import PTR : PTRS_FULL_INTF).
+Module Type CPP_LOGIC (Import CC : CPP_LOGIC_CLASS) (Import INTF : FULL_INTF).
 
   Implicit Types (p : ptr).
 
@@ -186,29 +185,37 @@ Module Type CPP_LOGIC (Import CC : CPP_LOGIC_CLASS)
       Observe [| q ≤ 1 |]%Qp (@tptsto σ t q p v).
     #[global] Existing Instance tptsto_frac_valid.
 
-    Axiom tptsto_agree_int : forall {σ} t q1 q2 p v1 v2 z1 z2,
-      v1 = Vint z1 -> v2 = Vint z2 ->
-      Observe2 [| v1 = v2 |] (@tptsto σ t q1 p v1) (@tptsto σ t q2 p v2).
-    Axiom tptsto_agree_ptr : forall {σ} t q1 q2 p v1 v2 p1 p2,
-      v1 = Vptr p1 -> v2 = Vptr p2 ->
-      Observe2 [| v1 = v2 |] (@tptsto σ t q1 p v1) (@tptsto σ t q2 p v2).
-    Axiom tptsto_agree_raw : forall {σ} t q1 q2 p v1 v2 raw1 raw2,
-      v1 = Vraw raw1 -> v2 = Vraw raw2 ->
-      Observe2 [| v1 = v2 |] (@tptsto σ t q1 p v1) (@tptsto σ t q2 p v2).
-    Axiom tptsto_agree_undef : forall {σ} t q1 q2 p v,
-      Observe2 [| v = Vundef |] (@tptsto σ t q1 p v) (@tptsto σ t q2 p Vundef).
+    Axiom tptsto_agree : forall {σ} ty q1 q2 p v1 v2,
+      Observe2 [| val_related σ ty v1 v2 |]
+               (@tptsto σ ty q1 p v1)
+               (@tptsto σ ty q2 p v2).
     Axiom tptsto_agree_qual : forall {σ} t ty q1 q2 p v1 v2,
-      Observe2 [| v1 = v2 |] (@tptsto σ ty q1 p v1) (@tptsto σ ty q2 p v2) ->
-      Observe2 [| v1 = v2 |]
+      Observe2 [| val_related σ ty v1 v2 |] (@tptsto σ ty q1 p v1) (@tptsto σ ty q2 p v2) ->
+      Observe2 [| val_related σ (Tqualified t ty) v1 v2 |]
                (@tptsto σ (Tqualified t ty) q1 p v1)
                (@tptsto σ (Tqualified t ty) q2 p v2).
-    #[global] Existing Instances tptsto_agree_int tptsto_agree_ptr
-                                 tptsto_agree_undef tptsto_agree_raw
-                                 tptsto_agree_qual.
+    #[global] Existing Instances tptsto_agree tptsto_agree_qual.
+
+    (* TODO (JH): Does this actually avoid the soundness issue which Paolo discovered? *)
+    Axiom tptsto_val_related_transport : forall {σ} ty q p v1 v2,
+        [| val_related σ ty v1 v2 |] |-- @tptsto σ ty q p v1 -* @tptsto σ ty q p v2.
 
     Axiom tptsto_nonvoid : forall {σ} ty (q : Qp) p v,
       Observe [| ty <> Tvoid |] (@tptsto σ ty q p v).
     #[global] Existing Instance tptsto_nonvoid.
+
+    (* TODO: `simple_pred` demands this even though it is a `Lemma` rather than an `Axiom` *)
+    Lemma tptsto_disjoint : forall {σ} ty p v1 v2,
+      @tptsto σ ty 1 p v1 ** @tptsto σ ty 1 p v2 |-- False.
+    Proof.
+      intros *; iIntros "[T1 T2]".
+      iDestruct (observe_2_elim_pure with "T1 T2") as %Hvs.
+      iDestruct (tptsto_val_related_transport $! Hvs with "T1") as "T2'".
+      iCombine "T2 T2'" as "T".
+      iDestruct (fractional (Φ := fun q => tptsto ty q p v2) 1 1) as "FRACTIONAL".
+      iDestruct ("FRACTIONAL" with "T") as "CONTRA".
+      iDestruct (tptsto_frac_valid with "CONTRA") as %L => //.
+    Qed.
 
     (** The allocation is alive. Neither persistent nor fractional.
       See https://eel.is/c++draft/basic.stc.general#4 and
@@ -461,7 +468,7 @@ Module Type CPP_LOGIC (Import CC : CPP_LOGIC_CLASS)
 End CPP_LOGIC.
 
 Declare Module LC : CPP_LOGIC_CLASS.
-Declare Module L : CPP_LOGIC LC PTRS_FULL_AXIOM.
+Declare Module L : CPP_LOGIC LC FULL_INTF_AXIOM.
 Export LC L.
 
 (* strict validity (not past-the-end) *)
@@ -713,6 +720,18 @@ Section with_cpp.
     rewrite pinned_ptr_eq /pinned_ptr_def.
     iIntros "#? #(? & _)". by iApply pinned_ptr_pure_type_divide_1.
   Qed.
+
+  Lemma shift_pinned_ptr_sub ty n va (p1 : ptr) p2 o:
+    size_of σ ty = Some o ->
+        [| _offset_ptr p1 (o_sub _ ty n) = p2 |] ** valid_ptr p2 ** pinned_ptr va p1
+    |-- pinned_ptr (Z.to_N (Z.of_N va + n * Z.of_N o)) p2.
+  Proof.
+    move => o_eq.
+    iIntros "[<- [val pin1]]".
+    iApply (offset_pinned_ptr _ with "val") => //.
+    rewrite eval_o_sub o_eq /= Z.mul_comm //.
+  Qed.
+
 
   Lemma _valid_valid p vt : _valid_ptr vt p |-- valid_ptr p.
   Proof. case: vt => [|//]. exact: strict_valid_valid. Qed.

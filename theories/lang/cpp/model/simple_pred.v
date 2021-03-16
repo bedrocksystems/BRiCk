@@ -68,8 +68,7 @@ End fractional.
 Ensures that everything needed is properly functorized. *)
 Declare Module PTRS_IMPL : PTRS_INTF.
 
-Module Import PTRS_FULL_IMPL : PTRS_FULL_INTF :=
-  PTRS_IMPL <+ VAL_MIXIN <+ PTRS_MIXIN.
+Module Import FULL_IMPL : FULL_INTF := PTRS_IMPL <+ RAW_BYTES_MIXIN <+ PTRS_MIXIN.
 
 Implicit Types (p : ptr).
 
@@ -177,7 +176,7 @@ End SimpleCPP_VIRTUAL.
 Module SimpleCPP.
   Include SimpleCPP_BASE.
   Include SimpleCPP_VIRTUAL.
-  Include PTRS_FULL_IMPL.
+  Include FULL_IMPL.
 
   Definition runtime_val := runtime_val'.
 
@@ -467,16 +466,17 @@ Module SimpleCPP.
       Local Hint Resolve pure_encodes_undef_aptr pure_encodes_undef_Z_to_bytes : core.
 
       #[global] Instance encodes_agree t v1 v2 vs :
-        Observe2 [| v1 = v2 |] (encodes t v1 vs) (encodes t v2 vs).
+        Observe2 [| val_related σ t v1 v2 |] (encodes t v1 vs) (encodes t v2 vs).
       Proof.
         apply: observe_2_intro_persistent; rewrite /encodes /pure_encodes;
           iIntros (H1 H2) "!%".
         destruct (erase_qualifiers t) eqn:? =>//=; intros;
           repeat (try (case_decide || case_match); destruct_and?; simplify_eq => //);
-        by [
-          edestruct cptr_ne_aptr | edestruct pure_encodes_undef_aptr |
-          edestruct pure_encodes_undef_Z_to_bytes |
-          f_equiv; exact: Z_to_bytes_inj ].
+          solve [ constructor
+                | edestruct cptr_ne_aptr; eauto
+                | edestruct pure_encodes_undef_aptr; eauto
+                | edestruct pure_encodes_undef_Z_to_bytes; eauto
+                | assert (z0 = z) by (eapply Z_to_bytes_inj; eauto); subst; constructor].
       Qed.
 
       #[global] Instance encodes_consistent t v1 v2 vs1 vs2 :
@@ -638,7 +638,7 @@ Module SimpleCPP.
     Qed.
 
     Local Instance addr_encodes_agree_src σ t v1 v2 a vs1 vs2 q1 q2 :
-      Observe2 [| v1 = v2 |]
+      Observe2 [| val_related σ t v1 v2 |]
         (addr_encodes σ t q1 a v1 vs1)
         (addr_encodes σ t q2 a v2 vs2).
     Proof.
@@ -929,52 +929,21 @@ Module SimpleCPP.
     #[global] Instance tptsto_frac_valid {σ} ty (q : Qp) p v :
       Observe [| q ≤ 1 |]%Qp (@tptsto σ ty q p v) := _.
 
-    #[global] Instance tptsto_agree_int σ t q1 q2 p v1 v2 z1 z2 :
-      v1 = Vint z1 -> v2 = Vint z2 ->
-      Observe2 [| v1 = v2 |] (@tptsto σ t q1 p v1) (@tptsto σ t q2 p v2).
+    #[global] Instance tptsto_agree σ ty q1 q2 p v1 v2 :
+      Observe2 [| val_related σ ty v1 v2 |] (@tptsto σ ty q1 p v1) (@tptsto σ ty q2 p v2).
     Proof.
-      intros; subst; apply: observe_2_intro_persistent.
+      intros; apply: observe_2_intro_persistent.
       iDestruct 1 as (Hnn1 oa1) "H1".
       iDestruct 1 as (Hnn2 oa2) "H2".
       iDestruct (observe_2_elim_pure (oa1 = oa2) with "H1 H2") as %->.
-      destruct oa2; iApply (observe_2 with "H1 H2").
-    Qed.
-
-    #[global] Instance tptsto_agree_ptr σ t q1 q2 p v1 v2 p1 p2 :
-      v1 = Vptr p1 -> v2 = Vptr p2 ->
-      Observe2 [| v1 = v2 |] (@tptsto σ t q1 p v1) (@tptsto σ t q2 p v2).
-    Proof.
-      intros; subst; apply: observe_2_intro_persistent.
-      iDestruct 1 as (Hnn1 oa1) "H1".
-      iDestruct 1 as (Hnn2 oa2) "H2".
-      iDestruct (observe_2_elim_pure (oa1 = oa2) with "H1 H2") as %->.
-      destruct oa2; iApply (observe_2 with "H1 H2").
-    Qed.
-
-    #[global] Instance tptsto_agree_raw σ t q1 q2 p v1 v2 raw1 raw2 :
-      v1 = Vraw raw1 -> v2 = Vraw raw2 ->
-      Observe2 [| v1 = v2 |] (@tptsto σ t q1 p v1) (@tptsto σ t q2 p v2).
-    Proof.
-      intros; subst; apply: observe_2_intro_persistent.
-      iDestruct 1 as (Hnn1 oa1) "H1".
-      iDestruct 1 as (Hnn2 oa2) "H2".
-      iDestruct (observe_2_elim_pure (oa1 = oa2) with "H1 H2") as %->.
-      destruct oa2; iApply (observe_2 with "H1 H2").
-    Qed.
-
-    #[global] Instance tptsto_agree_undef σ t q1 q2 p v :
-      Observe2 [| v = Vundef |] (@tptsto σ t q1 p v) (@tptsto σ t q2 p Vundef).
-    Proof.
-      intros; subst; apply: observe_2_intro_persistent.
-      iDestruct 1 as (Hnn1 oa1) "H1".
-      iDestruct 1 as (Hnn2 oa2) "H2".
-      iDestruct (observe_2_elim_pure (oa1 = oa2) with "H1 H2") as %->.
-      destruct oa2; iApply (observe_2 with "H1 H2").
+      destruct oa2; [iApply (observe_2 with "H1 H2") |].
+      iDestruct (observe_2 [| v1 = v2 |] with "H1 H2") as %->.
+      iPureIntro; constructor.
     Qed.
 
     #[global] Instance tptsto_agree_qual σ t ty q1 q2 p v1 v2 :
-      Observe2 [| v1 = v2|] (@tptsto σ ty q1 p v1) (@tptsto σ ty q2 p v2) ->
-      Observe2 [| v1 = v2 |]
+      Observe2 [| val_related σ ty v1 v2|] (@tptsto σ ty q1 p v1) (@tptsto σ ty q2 p v2) ->
+      Observe2 [| val_related σ (Tqualified t ty) v1 v2 |]
                (@tptsto σ (Tqualified t ty) q1 p v1)
                (@tptsto σ (Tqualified t ty) q2 p v2).
     Proof.
@@ -982,7 +951,21 @@ Module SimpleCPP.
       iDestruct 1 as (Hnn1 oa1) "H1".
       iDestruct 1 as (Hnn2 oa2) "H2".
       iDestruct (observe_2_elim_pure (oa1 = oa2) with "H1 H2") as %->.
-      destruct oa2; iApply (observe_2 with "H1 H2").
+      destruct oa2; [iApply (observe_2 with "H1 H2") |].
+      iDestruct (observe_2 [| v1 = v2 |] with "H1 H2") as %->.
+      iDestruct (H with "H1 H2") as "?".
+    Qed.
+
+    Lemma tptsto_disjoint : forall {σ} ty p v1 v2,
+      @tptsto σ ty 1 p v1 ** @tptsto σ ty 1 p v2 |-- False.
+    Proof.
+      intros *; iIntros "[T1 T2]".
+      iDestruct (observe_2_elim_pure with "T1 T2") as %Hvs;
+        rewrite -{}Hvs; clear v2.
+      iCombine "T1 T2" as "T".
+      iDestruct (fractional (Φ := fun q => tptsto ty q p v1) 1 1) as "FRACTIONAL".
+      iDestruct ("FRACTIONAL" with "T") as "CONTRA".
+      iDestruct (tptsto_frac_valid with "CONTRA") as %L => //.
     Qed.
 
     (* This is now internal to the C++ abstract machine. *)
@@ -1035,5 +1018,5 @@ Module SimpleCPP.
 
 End SimpleCPP.
 
-Module Type SimpleCPP_INTF := SimpleCPP_BASE <+ PTRS_FULL_INTF <+ CPP_LOGIC.
+Module Type SimpleCPP_INTF := SimpleCPP_BASE <+ FULL_INTF <+ CPP_LOGIC.
 Module L : SimpleCPP_INTF := SimpleCPP.
