@@ -129,6 +129,12 @@ Module Type RAW_BYTES_MIXIN
       raw_bytes_of_val σ (Tint W8 Unsigned) (Vint z) [raw] ->
       val_related σ (Tint W8 Unsigned) (Vint z) (Vraw raw).
 
+  Lemma val_related_qual :
+    forall σ t ty v1 v2,
+      val_related σ ty v1 v2 ->
+      val_related σ (Tqualified t ty) v1 v2.
+  Proof. intros; by constructor. Qed.
+
   #[global] Instance val_related_reflexive σ ty : Reflexive (val_related σ ty).
   Proof. constructor. Qed.
   #[global] Instance val_related_symmetric σ ty : Symmetric (val_related σ ty).

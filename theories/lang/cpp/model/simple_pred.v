@@ -912,7 +912,15 @@ Module SimpleCPP.
 
     Instance tptsto_mono :
       Proper (genv_leq ==> eq ==> eq ==> eq ==> eq ==> (⊢)) (@tptsto).
-    Proof. rewrite /tptsto /oaddr_encodes /addr_encodes. solve_proper. Qed.
+    Proof.
+      rewrite /tptsto /oaddr_encodes /addr_encodes.
+      intros ?? Hσ ??-> ??-> ??-> ??->.
+      iIntros "(%Hnonnull & H)";
+        iDestruct "H" as (oa v') "(%Hval_related & Htype_ptr & Hmem_inj_own & Hoa)".
+      iSplitR; [by iPureIntro |]; iExists oa, v'; iFrame "#∗".
+      iSplitR; by [ iPureIntro; setoid_rewrite Hσ in Hval_related
+                  | iSplitL "Htype_ptr"; iStopProof; solve_proper].
+    Qed.
 
     Instance tptsto_proper :
       Proper (genv_eq ==> eq ==> eq ==> eq ==> eq ==> (≡)) (@tptsto).
@@ -921,7 +929,36 @@ Module SimpleCPP.
       by split'; apply tptsto_mono.
     Qed.
 
-    Instance tptsto_fractional {σ} ty p v : Fractional (λ q, @tptsto σ ty q p v) := _.
+    Instance tptsto_fractional {σ} ty p v :
+      Fractional (λ q, @tptsto σ ty q p v).
+    Proof.
+      intros ??; split'; rewrite /tptsto.
+      - iIntros "(%Hnonnull & H)";
+          iDestruct "H" as (oa v') "(%Hval_related & #Htype_ptr & #Hmem_inj_own & Hoa)".
+        #[local] Opaque type_ptr. iFrame "%". #[local] Transparent type_ptr.
+        rewrite -bi.exist_sep_1; iExists oa.
+        rewrite -bi.exist_sep_1; iExists v'.
+        iFrame "#%∗"; destruct oa; simpl in *.
+        + iDestruct "Hoa" as (vs) "Ha".
+          rewrite -bi.exist_sep_1; iExists vs.
+          by iDestruct (addr_encodes_fractional with "Ha") as "?".
+        + iDestruct "Hoa" as "(%Hnonvoid & Hval_)"; iFrame "%".
+          by iDestruct (val_fractional with "Hval_") as "?".
+      - iIntros "((%Hnonnull & H1) & (%Hnonnull' & H2))"; clear Hnonnull';
+          iDestruct "H1" as (oa1 v'1) "(%Hval_related1 & #Htype_ptr1 & #Hmem_inj_own1 & Hoa1)";
+          iDestruct "H2" as (oa2 v'2) "(%Hval_related2 & #Htype_ptr2 & #Hmem_inj_own2 & Hoa2)".
+        iDestruct (observe_2 [| oa1 = oa2 |] with "Hmem_inj_own1 Hmem_inj_own2") as "#%H";
+          rewrite -{}H; iFrame "#%".
+        iExists oa1, v'1; iFrame "#%∗"; destruct oa1; simpl in *.
+        + iDestruct "Hoa1" as (vs1) "Ha1"; iDestruct "Hoa2" as (vs2) "Ha2";
+            iDestruct (observe_2 [| vs1 = vs2 |] with "Ha1 Ha2") as "#%Hvs";
+            rewrite -{}Hvs; iExists vs1.
+          iApply addr_encodes_fractional; iFrame "∗".
+        + iDestruct "Hoa1" as "(%Hnonvoid1 & Hval_1)";
+            iDestruct "Hoa2" as "(%Hnonvoid2 & Hval_2)";
+            iFrame "%∗".
+    Qed.
+
     Instance tptsto_timeless {σ} ty q p v : Timeless (@tptsto σ ty q p v) := _.
 
     Global Instance tptsto_nonvoid {σ} ty (q : Qp) p v :
@@ -942,32 +979,29 @@ Module SimpleCPP.
       iPureIntro; constructor.
     Qed.
 
-    Global Instance tptsto_agree_qual σ t ty q1 q2 p v1 v2 :
-      Observe2 [| val_related σ ty v1 v2|] (@tptsto σ ty q1 p v1) (@tptsto σ ty q2 p v2) ->
-      Observe2 [| val_related σ (Tqualified t ty) v1 v2 |]
-               (@tptsto σ (Tqualified t ty) q1 p v1)
-               (@tptsto σ (Tqualified t ty) q2 p v2).
+    Lemma tptsto_val_related_transport :
+      forall σ ty q p v1 v2,
+        [| val_related σ ty v1 v2 |] |-- tptsto ty q p v1 -* tptsto ty q p v2.
     Proof.
-      intros; subst; apply: observe_2_intro_persistent.
-      iDestruct 1 as (Hnn1 oa1) "H1".
-      iDestruct 1 as (Hnn2 oa2) "H2".
-      iDestruct (observe_2_elim_pure (oa1 = oa2) with "H1 H2") as %->.
-      destruct oa2; [iApply (observe_2 with "H1 H2") |].
-      iDestruct (observe_2 [| v1 = v2 |] with "H1 H2") as %->.
-      iDestruct (H with "H1 H2") as "?".
-    Qed.
-
-    Lemma tptsto_disjoint : forall {σ} ty p v1 v2,
-      @tptsto σ ty 1 p v1 ** @tptsto σ ty 1 p v2 |-- False.
-    Proof.
-      intros *; iIntros "[T1 T2]".
-      iDestruct (observe_2_elim_pure with "T1 T2") as %Hvs;
-        rewrite -{}Hvs; clear v2.
-      iCombine "T1 T2" as "T".
-      iDestruct (fractional (Φ := fun q => tptsto ty q p v1) 1 1) as "FRACTIONAL".
-      iDestruct ("FRACTIONAL" with "T") as "CONTRA".
-      iDestruct (tptsto_frac_valid with "CONTRA") as %L => //.
-    Qed.
+      intros *; iIntros "%Hrelated (%Hnonnull & H)";
+        iDestruct "H" as (oa v') "(%Hval_related' & Htype_ptr & Hmem_inj_own & Hoa)".
+      #[local] Opaque type_ptr. iFrame "%". #[local] Transparent type_ptr.
+      iExists oa, v'; iSplitR; [iPureIntro; transitivity v1; by [symmetry | assumption] |].
+      iFrame "∗"; destruct oa; simpl in *.
+      - iDestruct "Hoa" as (vs) "[%Hencodes [? ?]]"; iExists vs.
+        rewrite /addr_encodes; iFrame "∗"; iPureIntro.
+        admit.
+      - iDestruct "Hoa" as "(%Hnonvoid & Hval_)"; iFrame "%".
+        rewrite /val_/ghost_mem_own.
+(*
+        iApply own_mono; [| done].
+        apply singleton_mono.
+        rewrite /frac/fractionalR.
+        apply pair_included; split.
+        + rewrite /included.
+          Search (_ ≡ _ ⋅ _).
+*)
+    Admitted.
 
     (* This is now internal to the C++ abstract machine. *)
     Local Lemma pinned_ptr_borrow {σ} ty p v va :
@@ -979,16 +1013,17 @@ Module SimpleCPP.
       iIntros "(TP & PI)".
       iDestruct "PI" as "[_ [[-> %]|[[%%] MJ]]]"; first by rewrite tptsto_nonnull.
       rewrite /tptsto.
-      iDestruct "TP" as (_ ma) "[TP [MJ' OA]]".
+      iDestruct "TP" as (_ ma v') "[% [TP [MJ' OA]]]".
       iDestruct (mem_inj_own_agree with "MJ MJ'") as %<-.
       iDestruct "OA" as (vs) "(#EN & Bys & VBys)".
       iIntros "!>".
       iExists vs. iFrame "EN VBys".
-      iIntros (v' vs') "#EN' VBys".
+      iIntros (v'' vs') "#EN' VBys".
       iDestruct (encodes_consistent with "EN EN'") as %Heq.
       iMod (bytes_update vs' Heq with "Bys") as "Bys'".
       iModIntro.
-      iSplit; first done. iExists (Some va). iFrame "TP MJ".
+      iSplit; first done. iExists (Some va), v''. iFrame "TP MJ".
+      iSplitR; [iPureIntro; by constructor |].
       iExists vs'. by iFrame.
     Qed.
 
