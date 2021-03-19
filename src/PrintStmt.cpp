@@ -217,6 +217,13 @@ public:
     void VisitSwitchStmt(const SwitchStmt *stmt, CoqPrinter &print,
                          ClangPrinter &cprint, ASTContext &) {
         print.ctor("Sswitch");
+        if (auto v = stmt->getConditionVariable()) {
+            print.some();
+            cprint.printLocalDecl(v, print);
+            print.end_ctor();
+        } else {
+            print.none();
+        }
         cprint.printExpr(stmt->getCond(), print);
 
         cprint.printStmt(stmt->getBody(), print);
