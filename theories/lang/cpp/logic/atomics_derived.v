@@ -27,12 +27,12 @@ Section cmpxchg_derived.
       let ty := Tint sz sgn in
       [| weak = Vbool false |] **
       [| succmemord = _SEQ_CST |] ** [| failmemord = _SEQ_CST |] **
-      (* private pre-cond *)
+      (* local pre-cond *)
       |>  _eqv expected_p |-> primR ty 1 (Vint v) **
-      AU1 << (* public pre-cond: latest value of p is also v, because this is
+      AU1 << (* atomic pre-cond: latest value of p is also v, because this is
                 successful *)
-              _eqv p |-> primR ty 1 (Vint v) >> @M,∅ (* TODO: masks *)
-          << (* public post-cond: latest value is desired *)
+              _eqv p |-> primR ty 1 (Vint v) >> @M,∅
+          << (* atomic post-cond: latest value is desired *)
               _eqv p |-> primR ty 1 (Vint desired),
             COMM (_eqv expected_p |-> primR ty 1 (Vint v) -* Q (Vbool true)) >>
       |-- wp_atom' AO__atomic_compare_exchange_n ty
@@ -60,7 +60,7 @@ Section cmpxchg_derived.
       (* we know that the values are different *)
       [| v <> expected_v |] **
       |> _eqv val_p |-> primR ty 1 (Vint expected_v) **
-      AU1 << _eqv p |-> primR ty 1 (Vint v) >> @M,∅ (* TODO: masks *)
+      AU1 << _eqv p |-> primR ty 1 (Vint v) >> @M,∅
           << _eqv p |-> primR ty 1 (Vint v),
             COMM (_eqv val_p |-> primR ty 1 (Vint v) -* Q (Vbool false)) >>
       |-- wp_atom' AO__atomic_compare_exchange_n ty
@@ -85,11 +85,11 @@ Section cmpxchg_derived.
       let ty := Tint sz sgn in
       [| weak = Vbool false |] **
       [| succmemord = _SEQ_CST |] ** [| failmemord = _SEQ_CST |] **
-      |> ((* private pre-cond *)
+      |> ((* local pre-cond *)
           _eqv expected_p |-> primR ty 1 (Vint expected) **
            _eqv desired_p |-> primR ty q (Vint desired)) **
-      AU1 << _eqv p |-> primR ty 1 (Vint expected) >> @M,∅ (* TODO: masks *)
-          << (* public post-cond: latest value is desired *)
+      AU1 << _eqv p |-> primR ty 1 (Vint expected) >> @M,∅
+          << (* atomic post-cond: latest value is desired *)
               _eqv p |-> primR ty 1 (Vint desired),
             COMM (_eqv expected_p |-> primR ty 1 (Vint expected) **
                   _eqv desired_p |-> primR ty q (Vint desired) -* Q (Vbool true)) >>
@@ -118,7 +118,7 @@ Section cmpxchg_derived.
       [| v <> expected |] **
       |> (_eqv expected_p |-> primR ty 1 (Vint expected) **
            _eqv desired_p |-> primR ty q (Vint desired)) **
-      AU1 << _eqv p |-> primR ty 1 (Vint v) >> @M,∅ (* TODO: masks *)
+      AU1 << _eqv p |-> primR ty 1 (Vint v) >> @M,∅
           << _eqv p |-> primR ty 1 (Vint v),
             COMM (_eqv expected_p |-> primR ty 1 (Vint v) **
                   _eqv desired_p |-> primR ty q (Vint desired) -* Q (Vbool false)) >>

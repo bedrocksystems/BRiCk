@@ -203,16 +203,22 @@ Section with_Σ.
   Axiom wp_atom_exchange_cst :
     forall memorder acc_type p Q new_p q ret new_v,
       [| memorder = _SEQ_CST |] **
-      |> ((* private pre-cond *)
+      |> ((* local pre-cond *)
           (* new value new_v for p *)
           _eqv new_p |-> primR acc_type q new_v **
           (* placeholder for the original value of p *)
           _eqv ret |-> anyR acc_type 1) **
-      AU1 <<∀ v, (* public pre-cond: latest value of p is v *)
-              _eqv p |-> primR acc_type 1 v >> @M,∅ (* TODO: masks *)
-          <<  (* public post-cond: latest value updated to new_v *)
+      AU1 <<∀ v, (* atomic pre-cond: latest value of p is v *)
+              _eqv p |-> primR acc_type 1 v >> @M,∅
+              (* Masks: M is picked by the client, for the invariants that the
+                client needs to provide the atomic pre/post. The empty mask ∅ is
+                assumed by the prover of the rule, meaning that the prover doesn't
+                need internal invariants. Since we are only axiomatizing the rule
+                and not proving it, empty mask is OK. *)
+          <<  (* atomic post-cond: latest value updated to new_v *)
               _eqv p |-> primR acc_type 1 new_v,
-            COMM ((* private post-cond *)
+            COMM ((* post-cond: the client can assume the local points-to, which
+                    is returned by the rule, to prove its post condition Q *)
                   _eqv new_p |-> primR acc_type q new_v **
                   (* ret stores the previous latest value v *)
                   _eqv ret |-> primR acc_type 1 v -* Q v) >>
@@ -233,11 +239,11 @@ Section with_Σ.
     let ty := Tint sz sgn in
       [| weak = Vbool false |] **
       [| succmemord = _SEQ_CST |] ** [| failmemord = _SEQ_CST |] **
-      (* private pre-cond : placeholder for the expected value *)
+      (* local pre-cond : placeholder for the expected value *)
       |> _eqv expected_p |-> primR ty 1 (Vint expected_v) **
-      AU1 <<∀ v, (* public pre-cond: latest value of p is v *)
-              _eqv p |-> primR ty 1 (Vint v) >> @M,∅ (* TODO: masks *)
-          <<∃ (b : bool) (v' : Z), (* public post-cond: latest value is v' *)
+      AU1 <<∀ v, (* atomic pre-cond: latest value of p is v *)
+              _eqv p |-> primR ty 1 (Vint v) >> @M,∅
+          <<∃ (b : bool) (v' : Z), (* atomic post-cond: latest value is v' *)
               _eqv p |-> primR ty 1 (Vint v') **
               (* - success case: p has value desired and expected_p unchanged, or
                  - failed case: p is unchanged, expected_p stores the value read
@@ -245,7 +251,7 @@ Section with_Σ.
                   as a strong CMPXCHG we know that the values are different. *)
               [|    b = true  /\ v' = desired /\ v =  expected_v
                  \/ b = false /\ v' = v       /\ v <> expected_v |],
-            COMM (* private post-cond *)
+            COMM (* post-cond *)
                 _eqv expected_p |-> primR ty 1 (Vint v) -* Q (Vbool b) >>
       |-- wp_atom' AO__atomic_compare_exchange_n ty
                   [p; succmemord; expected_p; failmemord; Vint desired; weak] Q.
@@ -263,18 +269,18 @@ Section with_Σ.
       let ty := Tint sz sgn in
       [| weak = Vbool true |] **
       [| succmemord = _SEQ_CST |] ** [| failmemord = _SEQ_CST |] **
-      (* private pre-cond : placeholder for the expected value *)
+      (* local pre-cond : placeholder for the expected value *)
       |> _eqv expected_p |-> primR ty 1 (Vint expected_v) **
-      AU1 <<∀ v, (* public pre-cond: latest value of p is v *)
-              _eqv p |-> primR ty 1 (Vint v) >> @M,∅ (* TODO: masks *)
-          <<∃ (b : bool) v', (* public post-cond: latest value is v' *)
+      AU1 <<∀ v, (* atomic pre-cond: latest value of p is v *)
+              _eqv p |-> primR ty 1 (Vint v) >> @M,∅
+          <<∃ (b : bool) v', (* atomic post-cond: latest value is v' *)
               _eqv p |-> primR ty 1 (Vint v') **
             (* - success case: p has value desired and expected_p unchanged, or
                - failed case: p is unchanged, expected_p stores the value read
                 v. As a weak CMPXCHG we DO NOT know that the values are different. *)
               [|    b = true  /\ v' = desired /\ v =  expected_v
                  \/ b = false /\ v' = v |],
-            COMM (* private post-cond *)
+            COMM (* post-cond *)
                 _eqv expected_p |-> primR ty 1 (Vint v) -* Q (Vbool b) >>
       |-- wp_atom' AO__atomic_compare_exchange_n ty
                   [p; succmemord; expected_p; failmemord; Vint desired; weak] Q.
@@ -286,18 +292,18 @@ Section with_Σ.
       let ty := Tint sz sgn in
       [| weak = Vbool false |] **
       [| succmemord = _SEQ_CST |] ** [| failmemord = _SEQ_CST |] **
-      |> ((* private pre-cond *)
+      |> ((* local pre-cond *)
           _eqv expected_p |-> primR ty 1 (Vint expected) **
           _eqv desired_p |-> primR ty q (Vint desired)) **
-      AU1 <<∀ v, (* public pre-cond: latest value of p is v *)
-              _eqv p |-> primR ty 1 (Vint v) >> @M,∅ (* TODO: masks *)
-          <<∃ (b : bool) v', (* public post-cond: latest value is v' *)
+      AU1 <<∀ v, (* atomic pre-cond: latest value of p is v *)
+              _eqv p |-> primR ty 1 (Vint v) >> @M,∅
+          <<∃ (b : bool) v', (* atomic post-cond: latest value is v' *)
               _eqv p |-> primR ty 1 (Vint v') **
             (* - success case: p has value desired and expected_p unchanged, or
                - failed case: p is unchanged, expected_p stores the value read v. *)
               [|    b = true  /\ v' = desired /\ v =  expected
                  \/ b = false /\ v' = v       /\ v <> expected |],
-            COMM ((* private post-cond *)
+            COMM ((* post-cond *)
                   _eqv expected_p |-> primR ty 1 (Vint v) **
                   _eqv desired_p |-> primR ty q (Vint desired) -* Q (Vbool b)) >>
       |-- wp_atom' AO__atomic_compare_exchange ty
@@ -310,18 +316,18 @@ Section with_Σ.
       let ty := Tint sz sgn in
       [| weak = Vbool true |] **
       [| succmemord = _SEQ_CST |] ** [| failmemord = _SEQ_CST |] **
-      |> ((* private pre-cond *)
+      |> ((* local pre-cond *)
           _eqv expected_p |-> primR ty 1 (Vint expected) **
           _eqv desired_p |-> primR ty q (Vint desired)) **
-      AU1 <<∀ v, (* public pre-cond: latest value of p is v *)
-              _eqv p |-> primR ty 1 (Vint v) >> @M,∅ (* TODO: masks *)
-          <<∃ (b : bool) v', (* public post-cond: latest value is v' *)
+      AU1 <<∀ v, (* atomic pre-cond: latest value of p is v *)
+              _eqv p |-> primR ty 1 (Vint v) >> @M,∅
+          <<∃ (b : bool) v', (* atomic post-cond: latest value is v' *)
               _eqv p |-> primR ty 1 (Vint v') **
             (* - success case: p has value desired and expected_p unchanged, or
                - failed case: p is unchanged, expected_p stores the value read v. *)
               [|    b = true  /\ v' = desired /\ v = expected
                  \/ b = false /\ v' = v |],
-            COMM ((* private post-cond *)
+            COMM ((* post-cond *)
                   _eqv expected_p |-> primR ty 1 (Vint v) **
                   _eqv desired_p |-> primR ty q (Vint desired) -* Q (Vbool b)) >>
       |-- wp_atom' AO__atomic_compare_exchange ty
@@ -390,7 +396,7 @@ Section with_Σ.
   (** Derived AU1 specs *)
 
   Definition atom_load_cst_AU1 (ty : type) (p : val) (Q : val -> mpred) : mpred :=
-    AU1 <<∀ v q, ▷ _eqv p |-> primR ty q v>> @M,∅ (* TODO: masks *)
+    AU1 <<∀ v q, ▷ _eqv p |-> primR ty q v>> @M,∅
         <<       ▷ _eqv p |-> primR ty q v,
             COMM Q v >>.
 
@@ -403,14 +409,14 @@ Section with_Σ.
   Proof.
     intros. rewrite -wp_atom_load_cst.
     iIntros "[$ AU]".
-    iExists ∅. (* TODO: masks *)
+    iExists ∅.
     iMod "AU" as (v q) "[Hp [_ Close]]".
     iIntros "!> !>". iExists v, q. iFrame "Hp".
     iIntros "Hp". iApply ("Close" with "Hp").
   Qed.
 
   Definition atom_store_cst_AU1 (ty : type) (p : val) (Q : val -> mpred) v : mpred :=
-    AU1 << ▷ _eqv p |-> anyR ty 1 >> @M,∅ (* TODO: masks *)
+    AU1 << ▷ _eqv p |-> anyR ty 1 >> @M,∅
         << ▷ _eqv p |-> primR ty 1 v,
             COMM Q Vundef >>.
 
@@ -423,13 +429,13 @@ Section with_Σ.
   Proof.
     intros. rewrite -wp_atom_store_cst.
     iIntros "[$ [$ AU]]".
-    iExists ∅. (* TODO: masks *)
+    iExists ∅.
     iMod "AU" as "[$ Close]".
     iIntros "!> !> Hp". by iMod ("Close" with "Hp") as "$".
   Qed.
 
   Definition atom_exchange_n_cst_AU1 (ty : type) (p : val) (Q : val -> mpred) v : mpred :=
-    AU1 <<∀ w, ▷ _eqv p |-> primR ty 1 w >> @M,∅ (* TODO: masks *)
+    AU1 <<∀ w, ▷ _eqv p |-> primR ty 1 w >> @M,∅
         <<     ▷ _eqv p |-> primR ty 1 v,
             COMM Q w >>.
 
@@ -442,7 +448,7 @@ Section with_Σ.
   Proof.
     intros. rewrite -wp_atom_exchange_n_cst.
     iIntros "[$ [$ AU]]".
-    iExists ∅. (* TODO: masks *)
+    iExists ∅.
     iMod "AU" as (w) "[Hp Close]".
     iIntros "!> !>". iExists w. iFrame "Hp".
     iIntros "Hp". by iMod ("Close" with "Hp") as "$".
@@ -450,7 +456,7 @@ Section with_Σ.
 
   Definition atom_fetch_xxx_cst_AU1 (op : Z -> Z -> Z)
     ty (p : val) (z : Z) (Q : val -> mpred) sz sgn : mpred :=
-    AU1 <<∀ n, ▷ _eqv p |-> primR ty 1 (Vint n) >> @M,∅ (* TODO: masks *)
+    AU1 <<∀ n, ▷ _eqv p |-> primR ty 1 (Vint n) >> @M,∅
         <<     let n' := at_eval sz sgn op n z in
               ▷ _eqv p |-> primR ty 1 (Vint n'),
             COMM Q (Vint n) >>.
@@ -466,7 +472,7 @@ Section with_Σ.
   Proof.
     intros WP. intros. rewrite -WP.
     iIntros "[$ [$ AU]]".
-    iExists ∅. (* TODO: masks *)
+    iExists ∅.
     iMod "AU" as (w) "[Hp Close]".
     iIntros "!> !>". iExists w. iFrame "Hp".
     iIntros "Hp". by iMod ("Close" with "Hp") as "$".
@@ -488,7 +494,7 @@ Section with_Σ.
   Definition atom_xxx_fetch_cst_AU1 (op : Z -> Z -> Z)
     ty (p : val) (z : Z) (Q : val -> mpred) sz sgn : mpred :=
     AU1 <<∀ n (n' := at_eval sz sgn op n z),
-              ▷ _eqv p |-> primR ty 1 (Vint n) >> @M,∅ (* TODO: masks *)
+              ▷ _eqv p |-> primR ty 1 (Vint n) >> @M,∅
         <<     ▷ _eqv p |-> primR ty 1 (Vint n'),
             COMM Q (Vint n') >>.
 
@@ -503,7 +509,7 @@ Section with_Σ.
   Proof.
     intros WP. intros. rewrite -WP.
     iIntros "[$ [$ AU]]".
-    iExists ∅. (* TODO: masks *)
+    iExists ∅.
     iMod "AU" as (w) "[Hp Close]".
     iIntros "!> !>". iExists w. iFrame "Hp".
     iIntros "Hp". by iMod ("Close" with "Hp") as "$".
