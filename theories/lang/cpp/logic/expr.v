@@ -468,10 +468,10 @@ Module Type Expr.
     Axiom wp_prval_cast_reinterpret : forall e qt ty Q,
         match (* source *) type_of e , (* target *) qt with
         | Tptr _ , Tint _ _ =>
-          (* A pointer can be explicitly converted to any integral type large
+          (* https://eel.is/c++draft/expr.reinterpret.cast#4
+             A pointer can be explicitly converted to any integral type large
              enough to hold all values of its type. The mapping function is
-             implementation-defined.
-           *)
+             implementation-defined. *)
           wp_prval (Ecast Cpointer2int (Prvalue, e) ty) Q
         | Tint _ _ , Tptr _ =>
           (* A value of integral type or enumeration type can be explicitly
@@ -486,10 +486,6 @@ Module Type Expr.
              (void* )0 to the integral type.
            *)
           wp_prval e (fun _ free => Q (Vint 0) free)
-        | Tptr _ , Tptr trg =>
-          wp_prval e (fun v free =>
-                        Exists p, [| v = Vptr p |] **
-                        Exists al, [| align_of trg = Some al |] ** p |-> alignedR al ** Q (Vptr p) free)
         | ty1 , ty2 => UNSUPPORTED_reinterpret_cast ty1 ty2
         end
         |-- wp_prval (Ecast (Creinterpret qt) (Prvalue, e) ty) Q.
