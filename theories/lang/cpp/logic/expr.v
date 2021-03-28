@@ -93,7 +93,7 @@ Module Type Expr.
        e.g. those that occur with something like [assert(..., "ERROR MESSAGE")]
        because, in these cases, the string is dead.
      *)
-    Axiom wp_prval_string : forall bytes ty Q,
+    Axiom wp_lval_string : forall bytes ty Q,
         match unptr ty with
         | Some ty => Forall p, type_ptr (drop_qualifiers ty) p -* Q p emp
         | None => False
