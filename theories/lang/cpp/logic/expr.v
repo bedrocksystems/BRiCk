@@ -87,6 +87,19 @@ Module Type Expr.
       Q (Vbool b) emp
       |-- wp_prval (Ebool b) Q.
 
+    (* string literals are a lot more complex than other literals because they
+       act more like global variables than constants. This rule is a *very*
+       conservative rule for them, that enables verification of "debug strings",
+       e.g. those that occur with something like [assert(..., "ERROR MESSAGE")]
+       because, in these cases, the string is dead.
+     *)
+    Axiom wp_prval_string : forall bytes ty Q,
+        match unptr ty with
+        | Some ty => Forall p, type_ptr (drop_qualifiers ty) p -* Q p emp
+        | None => False
+        end
+      |-- wp_lval (Estring bytes ty) Q.
+
     (* `this` is a prvalue *)
     Axiom wp_prval_this : forall ty Q,
           valid_ptr (_this ρ) ** Q (Vptr $ _this ρ) emp
