@@ -21,7 +21,10 @@ theories/lang/prelude/bytestring.v
 theories/lang/prelude/telescopes.v
 theories/lang/prelude/avl.v
 theories/lang/bi/big_op.v
+theories/lang/bi/laterable.v
+theories/lang/bi/telescopes.v
 theories/lang/bi/atomic1.v
+theories/lang/bi/atomic_commit.v
 theories/lang/bi/observe.v
 theories/lang/bi/only_provable.v
 theories/lang/bi/derived_laws.v
