@@ -654,6 +654,13 @@ Lemma test_after `{BiFUpd PROP} {TA TB : tele} Eo Ei α (β Φ : TA → TB → P
   atomic1_update Eo Ei α β Φ ⊢ atomic1_update Eo Ei α β Φ.
 Proof. iIntros "AU". iAuIntro1. Abort.
 
+Tactic Notation "iAaccIntro1" "with" constr(sel) :=
+  iStartProof; lazymatch goal with
+  | |- environments.envs_entails _ (@atomic1_acc ?PROP ?H ?TA ?TB ?Eo ?Ei ?α ?P ?β ?Φ) =>
+    iApply (@aacc1_intro PROP H TA TB Eo Ei α P β Φ with sel);
+    first try solve_ndisj; last iSplit
+  | _ => fail "iAaccIntro1: Goal is not an atomic accessor"
+  end.
 
 (* From here on, prevent TC search from implicitly unfolding these. *)
 Typeclasses Opaque atomic1_acc atomic1_update.
