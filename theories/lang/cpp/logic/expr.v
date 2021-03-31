@@ -94,11 +94,11 @@ Module Type Expr.
        because, in these cases, the string is dead.
      *)
     Axiom wp_lval_string : forall bytes ty Q,
-        match unptr ty with
-        | Some ty => Forall p, type_ptr (drop_qualifiers ty) p -* Q p emp
-        | None => False
+        match drop_qualifiers ty with
+        | Tarray ty' _ => Forall p, type_ptr (drop_qualifiers ty') p -* Q p emp
+        | _ => False
         end
-      |-- wp_lval (Estring bytes ty) Q.
+          |-- wp_lval (Estring bytes ty) Q.
 
     (* `this` is a prvalue *)
     Axiom wp_prval_this : forall ty Q,
