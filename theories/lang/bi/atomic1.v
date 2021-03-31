@@ -26,6 +26,9 @@ From iris.proofmode Require Import coq_tactics tactics reduction.
 From iris.prelude Require Import options.
 From iris.bi.lib Require Import atomic.
 
+Require Export bedrock.lang.bi.laterable.
+Require Import bedrock.lang.bi.telescopes.
+
 (** Conveniently split a conjunction on both assumption and conclusion. *)
 Local Tactic Notation "iSplitWith" constr(H) :=
   iApply (bi.and_parallel with H); iSplit; iIntros H.
@@ -514,33 +517,142 @@ Section lemmas.
 
 End lemmas.
 
-
-(** ProofMode support for atomic updates *)
-Section proof_mode.
+(** This adds a few TC instances that are not automatically inferred. *)
+  Section atomic.
   Context `{BiFUpd PROP} {TA TB : tele}.
-  Implicit Types (α : TA → PROP) (β Φ : TA → TB → PROP) (P : PROP).
+  Implicit Types (α : TA → PROP).
+  Implicit Types (β Φ : TA → TB → PROP).
+
+  Global Instance aacc1_proper Eo Ei :
+    Proper (
+      pointwise_relation TA (≡) ==>
+      (≡) ==>
+      pointwise_relation TA (pointwise_relation TB (≡)) ==>
+      pointwise_relation TA (pointwise_relation TB (≡)) ==>
+      (≡)
+    ) (atomic1_acc (PROP:=PROP) Eo Ei).
+  Proof. solve_proper. Qed.
+
+  Global Instance aacc1_mono' Eo Ei :
+    Proper (
+      pointwise_relation TA (≡) ==>
+      (⊢) ==>
+      pointwise_relation TA (pointwise_relation TB (flip (⊢))) ==>
+      pointwise_relation TA (pointwise_relation TB (⊢)) ==>
+      (⊢)
+    ) (atomic1_acc (PROP:=PROP) Eo Ei).
+  Proof.
+    intros α1 α2 Hα P1 P2 HP β1 β2 Hβ Φ1 Φ2 HΦ. rewrite/atomic1_acc.
+    repeat f_equiv; by rewrite ?Hα ?HP.
+  Qed.
+
+  Global Instance aacc1_flip_mono' Eo Ei :
+    Proper (
+      pointwise_relation TA (≡) ==>
+      flip (⊢) ==>
+      pointwise_relation TA (pointwise_relation TB (⊢)) ==>
+      pointwise_relation TA (pointwise_relation TB (flip (⊢))) ==>
+      flip (⊢)
+    ) (atomic1_acc (PROP:=PROP) Eo Ei).
+  Proof. repeat intro. by rewrite -aacc1_mono'. Qed.
+
+  Global Instance aupd1_proper Eo Ei :
+    Proper (
+      pointwise_relation TA (≡) ==>
+      pointwise_relation TA (pointwise_relation TB (≡)) ==>
+      pointwise_relation TA (pointwise_relation TB (≡)) ==>
+      (≡)
+    ) (atomic1_update (PROP:=PROP) Eo Ei).
+  Proof.
+    rewrite atomic1_update_eq /atomic1_update_def /atomic1_update_pre.
+    solve_proper.
+  Qed.
+
+  Global Instance aupd1_mono' Eo Ei :
+    Proper (
+      pointwise_relation TA (≡) ==>
+      pointwise_relation TA (pointwise_relation TB (flip (⊢))) ==>
+      pointwise_relation TA (pointwise_relation TB (⊢)) ==>
+      (⊢)
+    ) (atomic1_update (PROP:=PROP) Eo Ei).
+  Proof.
+    rewrite atomic1_update_eq /atomic1_update_def /atomic1_update_pre.
+    solve_proper.
+  Qed.
+
+  Global Instance aupd1_flip_mono' Eo Ei :
+    Proper (
+      pointwise_relation TA (≡) ==>
+      pointwise_relation TA (pointwise_relation TB (⊢)) ==>
+      pointwise_relation TA (pointwise_relation TB (flip (⊢))) ==>
+      flip (⊢)
+    ) (atomic1_update (PROP:=PROP) Eo Ei).
+  Proof. repeat intro. by rewrite -aupd1_mono'. Qed.
+
+  (* TODO: this is duplicated from bedrock.lib.aupd. This should be cleaned up
+    once we unify AU/AC with AU1/AC1. *)
+  (** Learn from an atomic precondition. (To use the bound variables
+    [x], pick [P := ∃ x, P' x].) *)
+  Lemma aupd1_obs_fupd P Eo Ei α β Φ :
+    atomic1_update Eo Ei α β Φ ⊢
+    (∀.. x, α x ={Ei}=∗ α x ∗ P) ={Eo}=∗ atomic1_update Eo Ei α β Φ ∗ P.
+  Proof.
+    iIntros "AU Obs". iMod "AU" as (x) "[Hα Close]".
+    iMod ("Obs" with "Hα") as "[Hα $]". by iMod ("Close" with "Hα") as "$".
+  Qed.
+  Lemma aupd1_obs_wand P Eo Ei α β Φ :
+    atomic1_update Eo Ei α β Φ ⊢
+    (∀.. x, α x -∗ α x ∗ P) ={Eo}=∗ atomic1_update Eo Ei α β Φ ∗ P.
+  Proof.
+    iIntros "AU Obs". iApply (aupd1_obs_fupd with "AU [Obs]").
+    iIntros (x) "Hα !>". by iApply "Obs".
+  Qed.
+  Lemma aupd1_obs P Eo Ei α β Φ :
+    (∀.. x, α x ⊢ α x ∗ P) →
+    atomic1_update Eo Ei α β Φ ⊢ |={Eo}=> atomic1_update Eo Ei α β Φ ∗ P.
+  Proof.
+    rewrite tforall_forall. iIntros (Hobs) "AU".
+    iMod (aupd1_obs_wand P with "AU []") as "$"; auto.
+    iIntros (x). iApply Hobs.
+  Qed.
+End atomic.
+
+(** The tactic [iAuIntro1] applies lemma [aupd1_aacc] to change an Iris
+    proof mode goal [P := atomic1_update Eo Ei α β Φ] into [atomic1_acc Eo
+    Ei α P β Φ] _provided_ everything in the proof mode's spatial context
+    is [Laterable] (e.g., [Timeless], an atomic update, or something under
+    the later modality). *)
+Section coq_tactic.
+  Import coq_tactics.
+  Context `{BiFUpd PROP} {TA TB : tele}.
+  Implicit Types (α : TA → PROP).
+  Implicit Types (β Φ : TA → TB → PROP).
 
   Lemma tac_aupd1_intro Γp Γs n α β Eo Ei Φ P :
-    Timeless (PROP:=PROP) emp →
+    TCOr (ListNonEmpty (env_to_list Γs)) (Timeless (PROP:=PROP) emp) →
     TCForall Laterable (env_to_list Γs) →
     P = env_to_prop Γs →
     envs_entails (Envs Γp Γs n) (atomic1_acc Eo Ei α P β Φ) →
     envs_entails (Envs Γp Γs n) (atomic1_update Eo Ei α β Φ).
   Proof.
-    intros ? HΓs ->. rewrite envs_entails_eq of_envs_eq' /atomic1_acc /=.
-    setoid_rewrite env_to_prop_sound =>HAU.
-    apply aupd1_intro; [apply _..|]. done.
+    intros ?? ->. rewrite envs_entails_eq of_envs_eq' /=.
+    rewrite env_to_prop_sound=>?. exact: aupd1_intro.
   Qed.
-End proof_mode.
+End coq_tactic.
 
-(** Now the coq-level tactics *)
+Lemma test_before `{BiFUpd PROP} {TA TB : tele} Eo Ei α (β Φ : TA → TB → PROP) :
+  atomic1_update Eo Ei α β Φ ⊢ atomic1_update Eo Ei α β Φ.
+Proof. iIntros "AU". Fail iAuIntro. Abort.
 
 Tactic Notation "iAuIntro1" :=
   iStartProof; eapply tac_aupd1_intro; [
     iSolveTC || fail "iAuIntro1: emp is not timeless"
   | iSolveTC || fail "iAuIntro1: not all spatial assumptions are laterable"
-  | (* P = ...: make the P pretty *) pm_reflexivity
+  | (* P = ...: make the P pretty *) reduction.pm_reflexivity
   | (* the new proof mode goal *) ].
+Lemma test_after `{BiFUpd PROP} {TA TB : tele} Eo Ei α (β Φ : TA → TB → PROP) :
+  atomic1_update Eo Ei α β Φ ⊢ atomic1_update Eo Ei α β Φ.
+Proof. iIntros "AU". iAuIntro1. Abort.
 
 Tactic Notation "iAaccIntro1" "with" constr(sel) :=
   iStartProof; lazymatch goal with
