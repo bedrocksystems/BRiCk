@@ -7,6 +7,7 @@
 #include "CoqPrinter.hpp"
 #include "Formatter.hpp"
 #include "Logging.hpp"
+#include "OpaqueNames.hpp"
 #include "clang/AST/Decl.h"
 #include "clang/AST/Mangle.h"
 #include "clang/AST/StmtVisitor.h"
@@ -75,38 +76,6 @@ printCastKind(Formatter& out, const CastKind ck) {
         out << "Cunsupported";
     }
 }
-
-struct OpaqueNames {
-    OpaqueNames() {}
-    SmallVector<const clang::OpaqueValueExpr*, 3> indexes;
-    int _index_count{-1};
-    int fresh(const clang::OpaqueValueExpr* e) {
-        int index = indexes.size();
-        indexes.push_back(e);
-        return index;
-    }
-    // We don't need to reuse names (it would be an optimization), so we don't
-    // bother removing them from the `SmallVector`
-    void free(const clang::OpaqueValueExpr* e) {}
-    int find(const clang::OpaqueValueExpr* e) {
-        int result = 0;
-        for (auto i : indexes) {
-            if (i == e)
-                return result;
-            ++result;
-        }
-        return -1;
-    }
-    int index_count() const {
-        return _index_count;
-    }
-    void inc_index_count() {
-        _index_count++;
-    }
-    void dec_index_count() {
-        _index_count--;
-    }
-};
 
 class PrintExpr :
     public ConstStmtVisitor<PrintExpr, void, CoqPrinter&, ClangPrinter&,
@@ -332,14 +301,20 @@ public:
 
     void VisitDeclRefExpr(const DeclRefExpr* expr, CoqPrinter& print,
                           ClangPrinter& cprint, const ASTContext& ctxt,
-                          OpaqueNames&) {
+                          OpaqueNames& on) {
         auto d = expr->getDecl();
         if (isa<EnumConstantDecl>(d)) {
             print.ctor("Econst_ref", false);
         } else {
             print.ctor("Evar", false);
         }
-        cprint.printName(d, print);
+        auto t = on.find_anon(expr->getDecl());
+        if (t != -1) {
+            print.ctor("Lname", false) << "\"$" << t << "\"";
+            print.end_ctor();
+        } else {
+            cprint.printName(d, print);
+        }
         done(expr, print, cprint);
     }
 

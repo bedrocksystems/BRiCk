@@ -88,7 +88,7 @@ Module Type Stmt.
      * TODO there is a lot of overlap between this and [wp_initialize] (which does initialization
      * of aggregate fields).
      *)
-    Fixpoint wp_decl (ρ : region) (x : ident) (ty : type) (init : option Expr)
+    Fixpoint wp_decl_var (ρ ρ_init : region) (x : ident) (ty : type) (init : option Expr)
                (k : region -> (mpred -> mpred) -> mpredI)
     : mpred :=
       match ty with
@@ -108,7 +108,7 @@ Module Type Stmt.
         | None =>
           a |-> uninitR (erase_qualifiers ty) 1 -* continue
         | Some init =>
-          wp_prval ρ init (fun v free => free **
+          wp_prval ρ_init init (fun v free => free **
               (a |-> primR (erase_qualifiers ty) 1 v -* continue))
         end
 
@@ -121,7 +121,7 @@ Module Type Stmt.
                   match init with
                   | None => continue
                   | Some init =>
-                    wp_init ρ ty a (not_mine init) (fun free => free ** continue)
+                    wp_init ρ_init ty a (not_mine init) (fun free => free ** continue)
                   end
       | Tarray ty' N =>
         Forall a : ptr, a |-> tblockR (σ:=resolve) ty 1 -*
@@ -132,7 +132,7 @@ Module Type Stmt.
                   match init with
                   | None => continue
                   | Some init =>
-                    wp_init ρ ty a (not_mine init) (fun free => free ** continue)
+                    wp_init ρ_init ty a (not_mine init) (fun free => free ** continue)
                   end
 
         (* references *)
@@ -149,7 +149,7 @@ Module Type Stmt.
 
       | Tfunction _ _ => UNSUPPORTED "local function declarations are not supported" (* not supported *)
 
-      | Tqualified _ ty => wp_decl ρ x ty init k
+      | Tqualified _ ty => wp_decl_var ρ ρ_init x ty init k
       | Tnullptr =>
         Forall a : ptr,
         let continue :=
@@ -159,21 +159,20 @@ Module Type Stmt.
         | None =>
           a |-> primR Tnullptr 1 (Vptr nullptr) -* continue
         | Some init =>
-          wp_prval ρ init (fun v free => free **
+          wp_prval ρ_init init (fun v free => free **
              (a |-> primR (erase_qualifiers ty) 1 v -* continue))
         end
       | Tfloat _ => UNSUPPORTED "floating point declarations" (* not supportd *)
       | Tarch _ _ => UNSUPPORTED "architecure specific declarations" (* not supported *)
       end.
 
-    Lemma decl_prim:
-         ∀ (x : ident) (ρ : region) (init : option Expr) (ty : type)
-           (k k' : region → (mpred → mpred) → mpred),
+    Lemma decl_prim (x : ident) (ρ ρ_init : region) (init : option Expr) (ty : type)
+           (k k' : region → (mpred → mpred) → mpred) :
              Forall (a : region) (b b' : mpred → mpredI), (Forall rt rt' : mpred, (rt -* rt') -* b rt -* b' rt') -* k a b -* k' a b'
          |-- (Forall a : ptr,
                          match init with
                          | Some init0 =>
-                           wp_prval ρ init0
+                           wp_prval ρ_init init0
                                     (λ (v : val) (free : FreeTemps),
                                      free **
                                           (a |-> heap_pred.primR (erase_qualifiers ty) 1 v -*
@@ -185,7 +184,7 @@ Module Type Stmt.
          (Forall a : ptr,
                      match init with
                      | Some init0 =>
-                       wp_prval ρ init0
+                       wp_prval ρ_init init0
                                 (λ (v : val) (free : FreeTemps),
                                  free **
                                       (a |-> heap_pred.primR (erase_qualifiers ty) 1 v -*
@@ -204,86 +203,113 @@ Module Type Stmt.
         iIntros (??) "X [$ a]"; iApply "X"; eauto. }
     Qed.
 
-    Lemma wp_decl_frame : forall x ρ init ty (k k' : region -> (mpred -> mpred) -> mpred),
+    Lemma wp_decl_var_frame : forall x ρ ρ_init init ty (k k' : region -> (mpred -> mpred) -> mpred),
         Forall a (b b' : _), (Forall rt rt' : mpred, (rt -* rt') -* b rt -* b' rt') -* k a b -* k' a b'
-        |-- wp_decl ρ x ty init k -* wp_decl ρ x ty init k'.
+        |-- wp_decl_var ρ ρ_init x ty init k -* wp_decl_var ρ ρ_init x ty init k'.
     Proof.
-      induction ty using type_ind'; simpl;
-        try solve [ intros; apply decl_prim with (ty:=Tptr ty)
-                  | intros; apply decl_prim with (ty:=Tint _ _)
-                  | intros; apply decl_prim with (ty:=Tbool)
-                  | intros; apply decl_prim with (ty:=Tmember_pointer _ _)
-                  | intros; iIntros "? []"
-                  | intros; iIntros "? $"
-                  ].
+      induction ty using type_ind'; simpl.
+      { intros; apply decl_prim with (ty:=Tptr ty). }
       { destruct init; intros.
         { iIntros "X"; iApply wp_lval_frame; first reflexivity.
           iIntros (??) "[$ k]"; iRevert "k"; iApply "X".
           iIntros (??) "$". }
         { iIntros "? $". } }
-       { destruct init; intros.
+      { destruct init; intros.
         { iIntros "X"; iApply wp_lval_frame; first reflexivity.
           iIntros (??) "[$ k]"; iRevert "k"; iApply "X".
           iIntros (??) "$". }
         { iIntros "? $". } }
-       { destruct init; intros.
-         { iIntros "X Y" (?) "a"; iDestruct ("Y" with "a") as "Y"; iRevert "Y".
-           iApply wp_init_frame; first reflexivity.
-           iIntros (?) "[$ k]"; iRevert "k"; iApply "X".
-           clear. iStopProof. induction (rev (seq 0 (N.to_nat sz))); simpl.
-           { iIntros "_" (??) "X [$ y]"; iApply "X"; eauto. }
-           { iIntros "_" (??) "X [$ y]"; iRevert "y".
-             iApply destruct_val_frame; by iApply IHl. } }
-         { iIntros "X Y" (?) "a"; iDestruct ("Y" with "a") as "Y"; iRevert "Y".
-           iApply "X".
-           clear. iStopProof. induction (rev (seq 0 (N.to_nat sz))); simpl.
-           { iIntros "_" (??) "X [$ y]"; iApply "X"; eauto. }
-           { iIntros "_" (??) "X [$ y]"; iRevert "y".
-             iApply destruct_val_frame; by iApply IHl. } } }
-       { intros. iIntros "X y" (a) "z".
-         iDestruct ("y" with "z") as "y"; iRevert "y".
-         destruct init.
-         { iApply wp_init_frame; first reflexivity.
-           iIntros (?) "[$ x]"; iRevert "x"; iApply "X".
-           case_match; last iIntros (??) "? []".
-           case_match; try iIntros (??) "? []".
-           { iIntros (??) "k x !>".
-             iRevert "x"; iApply mspec_frame.
-             iIntros (_) "[? ?]"; iFrame; by iApply "k". }
-           { iIntros (??) "k x !>".
-             iRevert "x"; iApply mspec_frame.
-             iIntros (_) "[? ?]"; iFrame; by iApply "k". } }
-         { iApply "X".
-           case_match; last iIntros (??) "? []".
-           case_match; try iIntros (??) "? []".
-           { iIntros (??) "k x !>".
-             iRevert "x"; iApply mspec_frame.
-             iIntros (_) "[? ?]"; iFrame; by iApply "k". }
-           { iIntros (??) "k x !>".
-             iRevert "x"; iApply mspec_frame.
-             iIntros (_) "[? ?]"; iFrame; by iApply "k". } } }
-       { intros. iIntros "X"; iApply IHty; eauto. }
-       { intros; destruct init; iIntros "k Y" (a).
-         { iDestruct ("Y" $! a) as "Y"; iRevert "Y".
-           iApply wp_prval_frame; first reflexivity.
-           iIntros (??) "[$ z] x"; iDestruct ("z" with "x") as "z"; iRevert "z".
-           iApply "k". iIntros (??) "x [$ y]"; iApply "x"; eauto. }
-         { iDestruct ("Y" $! a) as "Y"; iRevert "Y".
-           iIntros "x y"; iDestruct ("x" with "y") as "x"; iRevert "x".
-           iApply "k". iIntros (??) "x [$ y]"; iApply "x"; eauto. } }
+      { intros; apply decl_prim with (ty:=Tint _ _). }
+      { intros; iIntros "? []". }
+      { destruct init; intros.
+        { iIntros "X Y" (?) "a"; iDestruct ("Y" with "a") as "Y"; iRevert "Y".
+          iApply wp_init_frame; first reflexivity.
+          iIntros (?) "[$ k]"; iRevert "k"; iApply "X".
+          clear. iStopProof. induction (rev (seq 0 (N.to_nat sz))); simpl.
+          { iIntros "_" (??) "X [$ y]"; iApply "X"; eauto. }
+          { iIntros "_" (??) "X [$ y]"; iRevert "y".
+            iApply destruct_val_frame; by iApply IHl. } }
+        { iIntros "X Y" (?) "a"; iDestruct ("Y" with "a") as "Y"; iRevert "Y".
+          iApply "X".
+          clear. iStopProof. induction (rev (seq 0 (N.to_nat sz))); simpl.
+          { iIntros "_" (??) "X [$ y]"; iApply "X"; eauto. }
+          { iIntros "_" (??) "X [$ y]"; iRevert "y".
+            iApply destruct_val_frame; by iApply IHl. } } }
+      { intros. iIntros "X y" (a) "z".
+        iDestruct ("y" with "z") as "y"; iRevert "y".
+        destruct init.
+        { iApply wp_init_frame; first reflexivity.
+          iIntros (?) "[$ x]"; iRevert "x"; iApply "X".
+          case_match; last iIntros (??) "? []".
+          case_match; try iIntros (??) "? []".
+          { iIntros (??) "k x !>".
+            iRevert "x"; iApply mspec_frame.
+            iIntros (_) "[? ?]"; iFrame; by iApply "k". }
+          { iIntros (??) "k x !>".
+            iRevert "x"; iApply mspec_frame.
+            iIntros (_) "[? ?]"; iFrame; by iApply "k". } }
+        { iApply "X".
+          case_match; last iIntros (??) "? []".
+          case_match; try iIntros (??) "? []".
+          { iIntros (??) "k x !>".
+            iRevert "x"; iApply mspec_frame.
+            iIntros (_) "[? ?]"; iFrame; by iApply "k". }
+          { iIntros (??) "k x !>".
+            iRevert "x"; iApply mspec_frame.
+            iIntros (_) "[? ?]"; iFrame; by iApply "k". } } }
+      { intros. iIntros "? $". }
+      { intros; apply decl_prim with (ty:=Tbool). }
+      { intros; apply decl_prim with (ty:=Tmember_pointer _ _). }
+      { intros; iIntros "? $". }
+      { intros. iIntros "X"; iApply IHty; eauto. }
+      { intros; destruct init; iIntros "k Y" (a).
+        { iDestruct ("Y" $! a) as "Y"; iRevert "Y".
+          iApply wp_prval_frame; first reflexivity.
+          iIntros (??) "[$ z] x"; iDestruct ("z" with "x") as "z"; iRevert "z".
+          iApply "k". iIntros (??) "x [$ y]"; iApply "x"; eauto. }
+        { iDestruct ("Y" $! a) as "Y"; iRevert "Y".
+          iIntros "x y"; iDestruct ("x" with "y") as "x"; iRevert "x".
+          iApply "k". iIntros (??) "x [$ y]"; iApply "x"; eauto. } }
+      { intros; iIntros "? $". }
     Qed.
 
-    Fixpoint wp_decls (ρ : region) (ds : list VarDecl)
+    Fixpoint wp_decl (ρ ρ_init : region) (d : VarDecl) (k : region -> (mpred -> mpred) -> mpred) {struct d} : mpred :=
+      match d with
+      | Dvar x ty init => wp_decl_var ρ ρ_init x ty init k
+      | Ddecompose init x ds =>
+        wp_decl_var ρ_init ρ_init x (type_of init) (Some init) (fun ρ_init' free =>
+          (fix continue ds ρ k free :=
+             match ds with
+             | nil => k ρ free
+             | d :: ds => wp_decl ρ ρ_init' d (fun ρ free' => continue ds ρ k (fun x => free' (free x)))
+             end) ds ρ k free)
+      end.
+
+    Lemma wp_decl_frame : forall ds ρ ρ_init m m',
+        (Forall a (b b' : _), (Forall rt rt', (rt -* rt') -* b rt -* b' rt') -* m a b -* m' a b')
+        |-- wp_decl ρ ρ_init ds m -* wp_decl ρ ρ_init ds m'.
+    Proof.
+      refine (fix IH ds := _); destruct ds; simpl; intros.
+      { iIntros "X"; by iApply wp_decl_var_frame. }
+      { iIntros "A". iApply wp_decl_var_frame.
+        iStopProof.
+        generalize dependent ρ; generalize dependent m. induction l; intros.
+        { iIntros "X" (???) "Y". iApply "X". eauto. }
+        { iIntros "X" (???) "Y". iApply IH.
+          iIntros (???) "Z". iApply (IHl with "X"); eauto.
+          iIntros (??) "a". iApply "Z". iApply "Y". done. } }
+    Qed.
+
+    Fixpoint wp_decls (ρ ρ_init : region) (ds : list VarDecl)
              (k : region -> (mpred -> mpred) -> mpred) : mpred :=
       match ds with
       | nil => k ρ (fun P => P)%I
-      | {| vd_name := x ; vd_type := ty ; vd_init := init |} :: ds =>
-        |> wp_decl ρ x ty init (fun ρ free => wp_decls ρ ds (fun ρ free' => k ρ (fun P => free' (free P))))
+      | d :: ds => |> wp_decl ρ ρ_init d (fun ρ free => wp_decls ρ ρ_init ds (fun ρ' free' => k ρ' (fun x => free' (free x))))
       end.
 
-    Lemma wp_decls_frame : forall ds ρ (Q Q' : region -> (mpred -> mpred) -> mpred),
+    Lemma wp_decls_frame : forall ds ρ ρ_init (Q Q' : region -> (mpred -> mpred) -> mpred),
         Forall a (b b' : _), (Forall rt rt' : mpred, (rt -* rt') -* b rt -* b' rt') -* Q a b -* Q' a b'
-        |-- wp_decls ρ ds Q -* wp_decls ρ ds Q'.
+        |-- wp_decls ρ ρ_init ds Q -* wp_decls ρ ρ_init ds Q'.
     Proof.
       induction ds; simpl; intros.
       - iIntros "a"; iApply "a". iIntros (??) "$".
@@ -297,7 +323,7 @@ Module Type Stmt.
       match ss with
       | nil => |> Q Normal
       | Sdecl ds :: ss =>
-        wp_decls ρ ds (fun ρ free => |> wp_block ρ ss (Kat_exit free Q))
+        wp_decls ρ ρ ds (fun ρ free => |> wp_block ρ ss (Kat_exit free Q))
       | s :: ss =>
         |> wp ρ s (Kseq (wp_block ρ ss) Q)
       end.
@@ -317,10 +343,11 @@ Module Type Stmt.
       induction body; simpl; intros.
       - iIntros "a b"; iNext; iApply "a"; eauto.
       - assert
-          (Forall rt, Q rt -* Q' rt
-           |-- (Forall ds, wp_decls ρ ds (λ (ρ0 : region) (free : mpred → mpred), |> wp_block ρ0 body (Kat_exit free Q)) -*
-                           wp_decls ρ ds (λ (ρ0 : region) (free : mpred → mpred), |> wp_block ρ0 body (Kat_exit free Q'))) //\\
-               ((|> wp ρ a (Kseq (wp_block ρ body) Q)) -* |> wp ρ a (Kseq (wp_block ρ body) Q'))).
+          (Forall rt, Q rt -* Q' rt |--
+                        (Forall ds, wp_decls ρ ρ ds (fun ρ' free => |> wp_block ρ' body (Kat_exit free Q)) -*
+                                    wp_decls ρ ρ ds (fun ρ' free => |> wp_block ρ' body (Kat_exit free Q'))) //\\
+                        (|> wp ρ a (Kseq (wp_block ρ body) Q) -*
+                            |> wp ρ a (Kseq (wp_block ρ body) Q'))).
         { iIntros "X"; iSplit.
           - iIntros (ds).
             iApply wp_decls_frame. iIntros (???) "x y"; iNext.
@@ -329,9 +356,10 @@ Module Type Stmt.
           - iIntros "x"; iNext; iRevert "x"; iApply wp_frame; first by reflexivity.
             iIntros (rt); destruct rt =>/=; eauto.
             iApply IHbody. eauto. }
-        { iIntros "x"; iDestruct (H with "x") as "x".
-          destruct a; try iDestruct "x" as "[_ $]".
-          iDestruct "x" as "[x _]". iApply "x". }
+        iIntros "X".
+        iDestruct (H with "X") as "X".
+        destruct a; try solve [ iDestruct "X" as "[_ $]" ].
+        iDestruct "X" as "[X _]". iApply "X".
     Qed.
 
     Axiom wp_seq : forall ρ Q ss,
