@@ -87,6 +87,19 @@ Module Type Expr.
       Q (Vbool b) emp
       |-- wp_prval (Ebool b) Q.
 
+    (* string literals are a lot more complex than other literals because they
+       act more like global variables than constants. This rule is a *very*
+       conservative rule for them, that enables verification of "debug strings",
+       e.g. those that occur with something like [assert(..., "ERROR MESSAGE")]
+       because, in these cases, the string is dead.
+     *)
+    Axiom wp_lval_string : forall bytes ty Q,
+        match drop_qualifiers ty with
+        | Tarray ty' _ => Forall p, type_ptr (drop_qualifiers ty') p -* Q p emp
+        | _ => False
+        end
+          |-- wp_lval (Estring bytes ty) Q.
+
     (* `this` is a prvalue *)
     Axiom wp_prval_this : forall ty Q,
           valid_ptr (_this ρ) ** Q (Vptr $ _this ρ) emp
@@ -458,12 +471,37 @@ Module Type Expr.
         wp_prval e Q
         |-- wp_prval (Ecast (Cuser Z) (Prvalue, e) ty) Q.
 
+    Definition UNSUPPORTED_reinterpret_cast (ty1 ty2 : type) : mpred.
+    Proof. exact False%I. Qed.
 
-    (** TODO there is a lot of subtlety around [reinterpret_cast]
+    (** https://eel.is/c++draft/expr.reinterpret.cast
+
+        NOTE there is a lot of subtlety around [reinterpret_cast]
      *)
-    Axiom wp_prval_cast_reinterpret : forall q e ty Q,
-        wp_prval e Q
-        |-- wp_prval (Ecast (Creinterpret q) (Prvalue, e) ty) Q.
+    Axiom wp_prval_cast_reinterpret : forall e qt ty Q,
+        match (* source *) type_of e , (* target *) qt with
+        | Tptr _ , Tint _ _ =>
+          (* https://eel.is/c++draft/expr.reinterpret.cast#4
+             A pointer can be explicitly converted to any integral type large
+             enough to hold all values of its type. The mapping function is
+             implementation-defined. *)
+          wp_prval (Ecast Cpointer2int (Prvalue, e) ty) Q
+        | Tint _ _ , Tptr _ =>
+          (* A value of integral type or enumeration type can be explicitly
+             converted to a pointer. A pointer converted to an integer of sufficient
+             size (if any such exists on the implementation) and back to the same
+             pointer type will have its original value; mappings between pointers
+             and integers are otherwise implementation-defined. *)
+          wp_prval (Ecast Cint2pointer (Prvalue, e) ty) Q
+        | Tnullptr , Tint _ _ =>
+          (* A value of type [std​::​nullptr_t] can be converted to an integral type;
+             the conversion has the same meaning and validity as a conversion of
+             (void* )0 to the integral type.
+           *)
+          wp_prval e (fun _ free => Q (Vint 0) free)
+        | ty1 , ty2 => UNSUPPORTED_reinterpret_cast ty1 ty2
+        end
+        |-- wp_prval (Ecast (Creinterpret qt) (Prvalue, e) ty) Q.
 
     (* [Cstatic from to] represents a static cast from [from] to
      * [to].

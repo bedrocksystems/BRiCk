@@ -219,15 +219,13 @@ Notation "'\post' { x .. y } [ r ] post" :=
 Notation "'\post' { } [ r ] post" :=
   (@post_ret _ TeleO (r, post%I))
   (at level 10, r at level 200, no associativity,
-   post at level 200,
-   format "'[v' '\post' { } [ r ]  '//'          '[hv ' post ']' ']'").
+   post at level 200, only parsing).
 
 Notation "'\post' [ r ] post" :=
-  (@post_ret _ (TeleS (fun r : val => TeleO))
-               (fun r => (r, post%I)))
+  (@post_ret _ TeleO (r, post%I))
   (at level 10, r at level 200, no associativity,
    post at level 200,
-   format "'[v' '\post' [ r ]  '[hv ' post ']' ']'").
+   format "'[v' '\post' [ r ]  '//'          '[hv ' post ']' ']'").
 
 Notation "'\post' post" :=
   (@post_void _ TeleO post%I)
