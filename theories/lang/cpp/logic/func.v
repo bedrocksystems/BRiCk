@@ -13,7 +13,7 @@ Require Import bedrock.lang.bi.ChargeCompat.
 From bedrock.lang.cpp Require Import ast semantics spec.
 From bedrock.lang.cpp.logic Require Import
      pred path_pred heap_pred
-     wp builtins.
+     wp builtins layout.
 Require Import bedrock.lang.cpp.logic.destroy.
 Require Import bedrock.lang.cpp.heap_notations.
 
@@ -220,8 +220,20 @@ Section with_cpp.
        ([∗list] b ∈ st.(s_bases),
           let '(base,_) := b in
           _base cls base |-> all_identities (Some cls) base) -* pureR Q)
-    | _ => lfalse
+    | _ => False
     end.
+
+  Definition default_initialize
+             (M : coPset) (ti : thread_info) (ρ : region) (ty : type) (p : ptr) (Q : FreeTemps → epred) : mpred :=
+    match drop_qualifiers ty with
+    | Tnamed _ => False (* default initialization of aggregates is done at elaboration time. *)
+    | _ as rty => p |-> uninitR rty 1 -* Q emp
+    end.
+
+  Definition UNSUPPORTED (msg : bs) : mpred := False.
+
+  Definition ERROR (msg : bs) : mpred := False.
+
 
   (* initialization of members in the initializer list *)
   Fixpoint wpi_members
@@ -241,7 +253,7 @@ Section with_cpp.
         (* there is no initializer for this member, so we "default initialize" it
            (see https://eel.is/c++draft/dcl.init#general-7 )
          *)
-        False
+        default_initialize ⊤ ti ρ m.(mem_type) (this ., _field {| f_type := cls ; f_name := m.(mem_name) |}) (fun _ => Q)
       | i :: is' =>
         match i.(init_path) with
         | InitField _ (* = m.(mem_name) *) =>
@@ -252,13 +264,13 @@ Section with_cpp.
             wpi (resolve:=resolve) ⊤ ti ρ cls this i (fun f => f ** wpi_members ti ρ cls this members inits Q)
           | _ =>
             (* there are multiple initializers for this field *)
-            False
+            ERROR "multiple initializers for field"
           end
         | InitIndirect _ _ =>
           (* this is initializing an object via sub-objets using indirect initialization.
              TODO currently not supported
            *)
-          False
+          UNSUPPORTED "indirect initialization"
         | _ => False (* unreachable due to the filter *)
         end
       end
@@ -274,14 +286,14 @@ Section with_cpp.
       match List.filter (fun i => bool_decide (i.(init_path) = InitBase b)) inits with
       | nil =>
         (* there is no initializer for this base class, so we use the default constructor *)
-        False
+        ERROR "missing base class initializer"
       | i :: nil =>
         (* there is an initializer for this class *)
         this ., offset_for _ cls i.(init_path) |-> tblockR i.(init_type) 1 -*
         wpi (resolve:=resolve) ⊤ ti ρ cls this i (fun f => f ** wpi_bases ti ρ cls this bases inits Q)
       | _ :: _ :: _ =>
         (* there are multiple initializers for this, so we fail *)
-        False
+        ERROR "multiple initializers for base"
       end
     end%I.
 
@@ -296,11 +308,11 @@ Section with_cpp.
           (this |-> tblockR ty 1 -* wp_init ⊤ ti ρ (Tnamed cls) this e (fun free => free ** Q))
         else
           (* the type names do not match, this should never happen *)
-          False
+          ERROR "type name mismatch"
       | _ =>
         (* delegating constructors are not allowed to have any other initializers
          *)
-        False
+        ERROR "delegating constructor has other initializers"
       end
     | None =>
       match resolve.(genv_tu).(globals) !! cls with
@@ -309,13 +321,13 @@ Section with_cpp.
         let members := wpi_members ti ρ cls this s.(s_fields) inits in
         let ident Q := this |-> init_identity cls Q in
         (** initialize the bases, then the identity, then the members *)
-        bases (ident (members (type_ptr (Tnamed cls) this -* Q)))
+        bases (ident (members (type_ptr (Tnamed cls) this -* this |-> struct_padding _ 1 cls -*  Q)))
         (* TODO here we are constructing the [type_ptr] after the members have been initialized
            TODO we should also get [_padding] and anything else here.
          *)
       | _ =>
         (* We only support initializer lists for struct/class. *)
-        False
+        UNSUPPORTED "union construction"
       end
     end%I.
 
@@ -344,11 +356,8 @@ Section with_cpp.
          *)
         let ρ := Remp (Some thisp) Tvoid in
         bind_vars ctor.(c_params) rest_vals ρ (fun ρ frees =>
-          wp_initializer_list ti ρ ctor.(c_class) thisp inits
-              (type_ptr ty thisp -* wp (resolve:=resolve) ⊤ ti ρ body (Kfree frees (void_return (|> Q Vvoid)))))
-              (* TODO shoudl we get [type_ptr] here instead of above? if so, then construction (might not be) compositional in the
-                 way that we want it to be
-               *)
+          (wp_initializer_list ti ρ ctor.(c_class) thisp inits
+              (wp (resolve:=resolve) ⊤ ti ρ body (Kfree frees (void_return (|> Q Vvoid)))))))
       | _ => False
       end
     end.
@@ -432,7 +441,7 @@ Section with_cpp.
     ~optional() {
       if (has_value)
         val.~T();
-      
+
     } // has_value.~bool(); u.~U();
   }
 
