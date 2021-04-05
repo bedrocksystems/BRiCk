@@ -92,7 +92,7 @@ Module Type Stmt.
                 *)
     : mpred :=
       match ty with
-      | Tvoid => lfalse
+      | Tvoid => False
 
         (* primitives *)
       | Tpointer _
