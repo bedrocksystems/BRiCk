@@ -16,6 +16,7 @@ From bedrock.lang.cpp.logic Require Import
      wp builtins layout.
 Require Import bedrock.lang.cpp.logic.destroy.
 Require Import bedrock.lang.cpp.heap_notations.
+Require Import bedrock.lang.bi.errors.
 
 #[local] Set Universe Polymorphism.
 
@@ -230,10 +231,6 @@ Section with_cpp.
     | _ as rty => p |-> uninitR rty 1 -* Q emp
     end.
 
-  Definition UNSUPPORTED (msg : bs) : mpred := False.
-
-  Definition ERROR (msg : bs) : mpred := False.
-
 
   (* initialization of members in the initializer list *)
   Fixpoint wpi_members
@@ -297,7 +294,7 @@ Section with_cpp.
       end
     end%I.
 
-  Definition wp_initializer_list  (ti : thread_info) (ρ : region) (cls : globname) (this : ptr)
+  Definition wp_struct_initializer_list (s : Struct) (ti : thread_info) (ρ : region) (cls : globname) (this : ptr)
              (inits : list Initializer) (Q : mpred) : mpred :=
     match List.find (fun i => bool_decide (i.(init_path) = InitThis)) inits with
     | Some {| init_type := ty ; init_init := e |} =>
@@ -315,20 +312,36 @@ Section with_cpp.
         ERROR "delegating constructor has other initializers"
       end
     | None =>
-      match resolve.(genv_tu).(globals) !! cls with
-      | Some (Gstruct s) =>
-        let bases := wpi_bases ti ρ cls this (List.map fst s.(s_bases)) inits in
-        let members := wpi_members ti ρ cls this s.(s_fields) inits in
-        let ident Q := this |-> init_identity cls Q in
-        (** initialize the bases, then the identity, then the members *)
-        bases (ident (members (type_ptr (Tnamed cls) this -* this |-> struct_padding _ 1 cls -*  Q)))
-        (* TODO here we are constructing the [type_ptr] after the members have been initialized
-           TODO we should also get [_padding] and anything else here.
-         *)
+      let bases := wpi_bases ti ρ cls this (List.map fst s.(s_bases)) inits in
+      let members := wpi_members ti ρ cls this s.(s_fields) inits in
+      let ident Q := this |-> init_identity cls Q in
+      (** initialize the bases, then the identity, then the members *)
+      bases (ident (members (type_ptr (Tnamed cls) this -* this |-> struct_padding _ 1 cls -*  Q)))
+      (* TODO here we are constructing the [type_ptr] after the members have been initialized
+         TODO we should also get [_padding] and anything else here.
+       *)
+    end%I.
+
+  Definition wp_union_initializer_list (s : translation_unit.Union) (ti : thread_info) (ρ : region) (cls : globname) (this : ptr)
+             (inits : list Initializer) (Q : mpred) : mpred :=
+    match List.find (fun i => bool_decide (i.(init_path) = InitThis)) inits with
+    | Some {| init_type := ty ; init_init := e |} =>
+      match inits with
+      | _ :: nil =>
+        if bool_decide (drop_qualifiers ty = Tnamed cls) then
+          (* this is a delegating constructor, simply delegate *)
+          (this |-> tblockR ty 1 -* wp_init ⊤ ti ρ (Tnamed cls) this e (fun free => free ** Q))
+        else
+          (* the type names do not match, this should never happen *)
+          ERROR "type name mismatch"
       | _ =>
-        (* We only support initializer lists for struct/class. *)
-        UNSUPPORTED "union construction"
+        (* delegating constructors are not allowed to have any other initializers
+         *)
+        ERROR "delegating constructor has other initializers"
       end
+    | None =>
+      UNSUPPORTED "union initialization"
+      (* TODO what is the right thing to do when initializing unions? *)
     end%I.
 
   (* note(gmm): supporting virtual inheritence will require us to add
@@ -350,15 +363,32 @@ Section with_cpp.
       match args with
       | Vptr thisp :: rest_vals =>
         let ty := Tnamed ctor.(c_class) in
-        thisp |-> tblockR ty 1 **
-        (* ^ this requires that you give up the *entire* block of memory that the object
-           will use.
-         *)
-        let ρ := Remp (Some thisp) Tvoid in
-        bind_vars ctor.(c_params) rest_vals ρ (fun ρ frees =>
-          (wp_initializer_list ti ρ ctor.(c_class) thisp inits
-              (wp (resolve:=resolve) ⊤ ti ρ body (Kfree frees (void_return (|> Q Vvoid)))))))
-      | _ => False
+        match resolve.(genv_tu).(globals) !! ctor.(c_class) with
+        | Some (Gstruct cls) =>
+          (* this is a structure *)
+          thisp |-> tblockR ty 1 **
+          (* ^ this requires that you give up the *entire* block of memory that the object
+             will use.
+           *)
+          |> let ρ := Remp (Some thisp) Tvoid in
+             bind_vars ctor.(c_params) rest_vals ρ (fun ρ frees =>
+               (wp_struct_initializer_list cls ti ρ ctor.(c_class) thisp inits
+                  (wp (resolve:=resolve) ⊤ ti ρ body (Kfree frees (void_return (|> Q Vvoid))))))
+        | Some (Gunion union) =>
+        (* this is a union *)
+          thisp |-> tblockR ty 1 **
+          (* ^ this requires that you give up the *entire* block of memory that the object
+             will use.
+           *)
+          |> let ρ := Remp (Some thisp) Tvoid in
+             bind_vars ctor.(c_params) rest_vals ρ (fun ρ frees =>
+               (wp_union_initializer_list union ti ρ ctor.(c_class) thisp inits
+                  (wp (resolve:=resolve) ⊤ ti ρ body (Kfree frees (void_return (|> Q Vvoid))))))
+        | Some _ =>
+          ERROR "constructor for non-aggregate"
+        | None => False
+        end
+      | _ => ERROR "constructor without leading [this] argument"
       end
     end.
 
@@ -404,6 +434,9 @@ Section with_cpp.
                    (wpd_members ti cls this members Q)
     end.
 
+  (** [wp_dtor dtor ti args Q] defines the semantics of the destructor [dtor] when
+      applied to [args] with post-condition [Q].
+   *)
   Definition wp_dtor (dtor : Dtor) (ti : thread_info) (args : list val)
              (Q : val -> epred) : mpred :=
     match dtor.(d_body) with
@@ -411,28 +444,44 @@ Section with_cpp.
     | Some Defaulted => False
       (* ^ defaulted constructors are not supported *)
     | Some (UserDefined body) =>
-      match resolve.(genv_tu).(globals) !! dtor.(d_class) with
-      | Some (Gstruct s) =>
-        match args with
-        | Vptr thisp :: nil =>
-          let ρ := Remp (Some thisp) Tvoid in
-            wp (resolve:=resolve) ⊤ ti ρ body
-               (void_return (wpd_members ti dtor.(d_class) thisp s.(s_fields)
-                               (thisp |-> revert_identity dtor.(d_class) (wpd_bases ti dtor.(d_class) thisp (List.map fst s.(s_bases))
-                                                                     (|> (thisp |-> tblockR (Tnamed dtor.(d_class)) 1 -* Q Vvoid)))))))
-        | _ => False
-        end
-      | Some (Gunion u) =>
-        match args with
-        | Vptr thisp :: nil =>
-          let ρ := Remp (Some thisp) Tvoid in
-            wp (resolve:=resolve) ⊤ ti ρ body
-               (void_return (|> thisp |-> tblockR (Tnamed dtor.(d_class)) 1 ** (thisp |-> tblockR (Tnamed dtor.(d_class)) 1 -* Q Vvoid))))
-        | _ => False
-        end
-      | _ => False
+      let epilog :=
+          match resolve.(genv_tu).(globals) !! dtor.(d_class) with
+          | Some (Gstruct s) => Some $ fun thisp : ptr =>
+            wpd_members ti dtor.(d_class) thisp s.(s_fields)
+               (* ^ fields are destroyed *)
+               (thisp |-> revert_identity dtor.(d_class)
+               (* ^ the identity of the object is destroyed *)
+                  (wpd_bases ti dtor.(d_class) thisp (List.map fst s.(s_bases))
+                  (* ^ the base classes are destroyed (reverse order) *)
+                     (thisp |-> tblockR (Tnamed dtor.(d_class)) 1 -* |> Q Vvoid)))
+                     (* ^ the operations above destroy each object returning its memory to
+                        the abstract machine. Then the abstract machine gives this memory
+                        back to the program.
+                        NOTE the [|>] here is for the function epilog.
+                      *)
+          | Some (Gunion u) => Some $ fun thisp : ptr =>
+            (* the function epilog of a union destructor doesn't actually destroy anything
+               because it isn't clear what to destroy (this is dictated by the C++ standard).
+               Instead, the epilog provides a fancy update to destroy things.
+
+               In practice, this means that programs can only destroy unions
+               where they can prove the active entry has a trivial destructor.
+             *)
+            |={⊤}=> thisp |-> tblockR (Tnamed dtor.(d_class)) 1 **
+                   (thisp |-> tblockR (Tnamed dtor.(d_class)) 1 -* |> Q Vvoid)
+          | _ => None
+          end%I
+      in
+      match epilog , args with
+      | Some epilog , Vptr thisp :: nil =>
+        let ρ := Remp (Some thisp) Tvoid in
+          |> (* the function prolog consumes a step. *)
+             wp (resolve:=resolve) ⊤ ti ρ body
+               (void_return (epilog thisp))
+      | _ , _ => False
       end
     end.
+
 (*
   template<typename T>
   struct optional {

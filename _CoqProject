@@ -35,6 +35,7 @@ theories/lang/bi/cancelable_invariants.v
 theories/lang/bi/prelude.v
 theories/lang/bi/IrisBridge.v
 theories/lang/bi/ChargeCompat.v
+theories/lang/bi/errors.v
 
 # Syntax
 theories/lang/cpp/syntax/names.v
