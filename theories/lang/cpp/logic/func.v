@@ -294,6 +294,39 @@ Section with_cpp.
       end
     end%I.
 
+  Lemma wpi_bases_frame:
+    ∀ (ti : thread_info) ρ (p : ptr) (ty : globname) bases (inits : list Initializer) (Q Q' : mpredI),
+      Q -* Q'
+        |-- wpi_bases ti ρ ty p bases inits Q -*
+        wpi_bases ti ρ ty p bases inits Q'.
+  Proof.
+    induction bases => /=; eauto.
+    intros.
+    case_match; eauto.
+    case_match; eauto.
+    iIntros "a b c"; iDestruct ("b" with "c") as "b"; iRevert "b".
+    iApply wpi_frame; first by reflexivity.
+    iIntros (f) "[$ b]"; iRevert "b".
+      by iApply IHbases.
+  Qed.
+
+  Lemma wpi_members_frame:
+    ∀ (ti : thread_info) (ρ : region) flds (p : ptr) (ty : globname) (li : list Initializer) (Q Q' : mpredI),
+      (Q -* Q') |-- wpi_members ti ρ ty p flds li Q -*
+                wpi_members ti ρ ty p flds li Q'.
+  Proof.
+    induction flds => /=; eauto.
+    intros.
+    case_match.
+    { admit. }
+    { case_match; eauto.
+      case_match; eauto.
+      iIntros "a b c"; iDestruct ("b" with "c") as "b". iRevert "b".
+      iApply wpi_frame; first by reflexivity.
+      iIntros (?) "[$ x]"; iRevert "x"; iApply IHflds; eauto. }
+  Admitted.
+
+
   Definition wp_struct_initializer_list (s : Struct) (ti : thread_info) (ρ : region) (cls : globname) (this : ptr)
              (inits : list Initializer) (Q : mpred) : mpred :=
     match List.find (fun i => bool_decide (i.(init_path) = InitThis)) inits with
@@ -322,6 +355,30 @@ Section with_cpp.
        *)
     end%I.
 
+  (* TODO this is easy to prove, but will be replaced fairly soon. *)
+  Lemma wp_struct_initializer_list_frame : forall ti ρ cls p ty li Q Q',
+      (Q -* Q') |-- wp_struct_initializer_list cls ti ρ ty p li Q -* wp_struct_initializer_list cls ti ρ ty p li Q'.
+  Proof.
+    rewrite /wp_struct_initializer_list/=. intros. case_match.
+    { case_match => //.
+      destruct l; eauto.
+      case_match; eauto.
+      iIntros "X Y Z".
+      iDestruct ("Y" with "Z") as "Y"; iRevert "Y".
+      iApply wp_init_frame. reflexivity. iIntros (?) "[$ ?]"; iApply "X"; eauto. }
+    {
+      iIntros "a"; iApply wpi_bases_frame.
+      rewrite /init_identity.
+      case_match; eauto.
+      case_match; eauto.
+      rewrite !_at_sep !_at_wand !_at_pureR.
+      iIntros "[$ [$ x]]".
+      iIntros "b c"; iDestruct ("x" with "b c") as "x".
+      iRevert "x"; iApply wpi_members_frame. iIntros "b c d".
+      iApply "a".
+      iApply ("b" with "c d"). }
+  Qed.
+
   Definition wp_union_initializer_list (s : translation_unit.Union) (ti : thread_info) (ρ : region) (cls : globname) (this : ptr)
              (inits : list Initializer) (Q : mpred) : mpred :=
     match List.find (fun i => bool_decide (i.(init_path) = InitThis)) inits with
@@ -343,6 +400,19 @@ Section with_cpp.
       UNSUPPORTED "union initialization"
       (* TODO what is the right thing to do when initializing unions? *)
     end%I.
+
+  (* TODO this is easy to prove, but will be replaced fairly soon. *)
+  Lemma wp_union_initializer_list_frame : forall ti ρ cls p ty li Q Q',
+      (Q -* Q') |-- wp_union_initializer_list cls ti ρ ty p li Q -* wp_union_initializer_list cls ti ρ ty p li Q'.
+  Proof.
+    rewrite /wp_union_initializer_list/=. intros. case_match; eauto.
+    { case_match => //.
+      destruct l; eauto.
+      case_bool_decide; eauto.
+      iIntros "X Y Z".
+      iDestruct ("Y" with "Z") as "Y"; iRevert "Y".
+      iApply wp_init_frame. reflexivity. iIntros (?) "[$ ?]"; iApply "X"; eauto. }
+  Qed.
 
   (* note(gmm): supporting virtual inheritence will require us to add
    * constructor kinds here
