@@ -296,7 +296,7 @@ Section with_cpp.
 
   Lemma wpi_bases_frame:
     ∀ (ti : thread_info) ρ (p : ptr) (ty : globname) bases (inits : list Initializer) (Q Q' : mpredI),
-      Q -* Q'
+      (Q -* Q')
         |-- wpi_bases ti ρ ty p bases inits Q -*
         wpi_bases ti ρ ty p bases inits Q'.
   Proof.
@@ -535,7 +535,7 @@ Section with_cpp.
                Instead, the epilog provides a fancy update to destroy things.
 
                In practice, this means that programs can only destroy unions
-               where they can prove the active entry has a trivial destructor.
+               automatically where they can prove the active entry has a trivial destructor.
              *)
             |={⊤}=> thisp |-> tblockR (Tnamed dtor.(d_class)) 1 **
                    (thisp |-> tblockR (Tnamed dtor.(d_class)) 1 -* |> Q Vvoid)
@@ -579,7 +579,7 @@ Section with_cpp.
     // [CREATE(n)] implicit pick a union branch
     u |-> tblockR "U" 1 ==*
         u |-> (upaddingR "U" 1 ** ucaseR "U" 0 1 ** _field "x" |-> uninitR "U" 1)
-    // [DESTORY(n)] implicit "destruction" of the union
+    // [DESTROY(n)] implicit "destruction" of the union
     u |-> (upaddingR "U" 1 ** ucaseR "U" 0 1 ** _field "x" |-> uninitR "U" 1) ==*
         u |-> tblockR "U" 1
 *)

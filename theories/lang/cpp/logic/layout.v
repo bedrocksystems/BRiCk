@@ -117,7 +117,7 @@ Section with_Σ.
           uninitialized memory ([tblockR]).
 
      NOTE C++ permits this rule to be slightly stronger becaues it guarantees
-          that if two fiels have common prefixes, that those values are preserved
+          that if two fields have common prefixes, that those values are preserved
           across this operation.
    *)
   Axiom union_change
@@ -125,11 +125,11 @@ Section with_Σ.
       glob_def resolve cls = Some (Gunion st) ->
 (*      st.(u_trivially_destructible) -> *)
       type_ptrR (Tnamed cls)
-      |-- ([∨list] idx↦it ∈ st.(u_fields),
+      |-- ([∨ list] idx ↦ it ∈ st.(u_fields),
            let f := _field {| f_name := it.(mem_name) ; f_type := cls |} in
            f |-> tblockR (erase_qualifiers it.(mem_type)) 1 **
            union_padding resolve 1 cls idx)
-      -* [∧list] idx ↦it ∈ st.(u_fields),
+      -* [∧ list] idx ↦ it ∈ st.(u_fields),
           let f := _field {| f_name := it.(mem_name) ; f_type := cls |} in
           |==> f |-> tblockR (erase_qualifiers it.(mem_type)) 1 **
                union_padding resolve 1 cls idx.

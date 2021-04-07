@@ -895,7 +895,7 @@ Module Type Expr.
                         is suitably aligned, accounting for
                         __STDCPP_DEFAULT_NEW_ALIGNMENT__ (issue #149) *)
                            (Forall obj_ptr : ptr,
-                              obj_ptr |-> tblockR aty 1 (* TODO backwards compat [tblockR aty] *) -*
+                              obj_ptr |-> tblockR aty 1 -*
                               (* This also ensures these pointers share their
                               address (see [provides_storage_same_address]) *)
                               provides_storage storage_ptr obj_ptr aty -*
@@ -1016,7 +1016,7 @@ Module Type Expr.
         with [T = int].
 
         To maintain similarity with the rest of the system, we
-        the C++ abstract machine "implments" these destructors as
+        the C++ abstract machine "implements" these destructors as
         (essentially) a function with the specification:
 
            \pre this |-> anyR ty 1
