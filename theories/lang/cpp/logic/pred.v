@@ -15,14 +15,13 @@ Require Import bedrock.lang.prelude.base.
 Require Export bedrock.lang.prelude.addr.
 
 From iris.base_logic.lib Require Export iprop.
+(* TODO: ^^ only needed to export uPredI, should be removed. *)
 Require Import iris.bi.monpred.
 From iris.bi.lib Require Import fractional.
 From iris.proofmode Require Import tactics.
 From iris_string_ident Require Import ltac2_string_ident.
 
-Require Import iris.base_logic.lib.fancy_updates.
-Require Import iris.base_logic.lib.own.
-Require Import iris.base_logic.lib.cancelable_invariants.
+Require Import bedrock.lang.bi.cancelable_invariants.
 
 Require Export bedrock.lang.bi.prelude.
 Require Export bedrock.lang.bi.observe.

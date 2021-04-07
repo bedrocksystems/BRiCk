@@ -7,11 +7,11 @@ From iris.algebra Require Import excl gmap.
 From iris.algebra.lib Require Import frac_auth.
 From iris.bi Require Import monpred.
 From iris.bi.lib Require Import fractional.
-From iris.base_logic.lib Require Export iprop.
-From iris.base_logic.lib Require Import fancy_updates own.
-From iris.base_logic.lib Require Import cancelable_invariants.
 From iris.proofmode Require Import tactics.
 From iris_string_ident Require Import ltac2_string_ident.
+
+Require Import bedrock.lang.bi.own_instances.
+Require Import bedrock.lang.bi.cancelable_invariants.
 
 From bedrock.lang.prelude Require Import base option.
 From bedrock.lang.cpp Require Import ast semantics.
@@ -51,7 +51,7 @@ Section fractional.
   Proof.
     apply: observe_2_intro_only_provable.
     apply bi.wand_intro_r; rewrite /gmap_own -own_op singleton_op.
-    rewrite own_valid uPred.discrete_valid singleton_valid.
+    rewrite own_valid discrete_valid singleton_valid.
     by iIntros "!%" => /frac_valid [].
   Qed.
 
@@ -59,7 +59,7 @@ Section fractional.
     Observe [| q ≤ 1 |]%Qp (gmap_own γ q k v).
   Proof.
     apply: observe_intro_only_provable.
-    rewrite /gmap_own own_valid !uPred.discrete_valid singleton_valid.
+    rewrite /gmap_own own_valid !discrete_valid singleton_valid.
     by iIntros "!%" => /pair_valid [? _].
   Qed.
 End fractional.
@@ -611,7 +611,7 @@ Module SimpleCPP.
     Proof.
       apply /observe_2_intro_persistent /bi.wand_intro_r.
       rewrite -own_op singleton_op.
-      rewrite own_valid uPred.discrete_valid singleton_valid.
+      rewrite own_valid discrete_valid singleton_valid.
       by iIntros "!%" => /= /to_agree_op_inv_L.
     Qed.
 
