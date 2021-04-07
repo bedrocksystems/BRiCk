@@ -65,6 +65,7 @@ Section with_Σ.
   Axiom implicit_destruct_struct
   : forall cls st,
       glob_def resolve cls = Some (Gstruct st) ->
+      st.(s_trivially_destructible) ->
       type_ptrR (Tnamed cls)
       |-- (([∗list] base ∈ st.(s_bases),
          let '(gn,_) := base in
@@ -102,12 +103,12 @@ Section with_Σ.
   Axiom implicit_destruct_union
   : forall (cls : globname) st,
       glob_def resolve cls = Some (Gunion st) ->
-(*      st.(u_trivially_destructible) -> *)
-      ([∨list] idx↦it ∈ st.(u_fields),
+      type_ptrR (Tnamed cls)
+      |-- ([∨list] idx↦it ∈ st.(u_fields),
            let f := _field {| f_name := it.(mem_name) ; f_type := cls |} in
            f |-> tblockR (erase_qualifiers it.(mem_type)) 1 **
            union_padding resolve 1 cls idx)
-      |-- |==> tblockR (Tnamed cls) 1.
+          -* |==> tblockR (Tnamed cls) 1.
 
   (* this allows you to change the active entity in a union
 
