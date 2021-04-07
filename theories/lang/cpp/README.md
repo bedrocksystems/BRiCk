@@ -42,7 +42,6 @@ The [logic](logic) directory contains axiomatic semantics for C++.
 - [logic/destroy.v](logic/destroy.v) defines the rules for destructing objects, e.g. calling destructors on primitives, objects, and arrays.
 - [logic/spec.v](logic/spec.v) defines a Hoare logic style for representing function specifications.
 - [logic/func.v](logic/func.v) defines axiomatic semantics for functions, methods, constructors, and destructors
-- [logic/cclogic.v](logic/cclogic.v) defines some simple abstractions built on top of Iris for concurrency
 - [logic/atomics.v](logic/atomics.v) defines the semantics of primitive atomic operations such as fetch-and-add, etc.
 - [logic/layout.v](logic/layout.v) defines the semantics of `struct`, `union`, and `array` layout.
 
