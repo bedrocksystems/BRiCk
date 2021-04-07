@@ -35,11 +35,10 @@ Require Export iris.base_logic.lib.cancelable_invariants. (* << exporting [cinvG
 Require Import iris.bi.derived_laws.
 Import bi.
 
-Require Import iris.bi.monpred.
 Require Import iris.proofmode.tactics.
 
 Require Export bedrock.lang.bi.invariants.
-Require Export bedrock.lang.bi.own_instances.
+Require Export bedrock.lang.bi.own.
 
 Set Default Proof Using "Type".
 Set Suggest Proof Using.
@@ -112,7 +111,7 @@ Section proofs.
   Lemma cinv_acc_strong E N γ p P :
     ↑N ⊆ E →
     cinv N γ P -∗ (cinv_own γ p ={E,E∖↑N}=∗
-    ▷ P ∗ cinv_own γ p ∗ (∀ E' : coPset, ▷ P ∨ cinv_own γ 1 ={E',↑N ∪ E'}=∗ True)).
+    ▷ P ∗ cinv_own γ p ∗ (∀ E' : coPset, ▷ P ∨ cinv_own γ 1 ={E',↑N ∪ E'}=∗ emp)).
   Proof.
     iIntros (?) "Hinv Hown".
     iPoseProof (inv_acc (↑ N) N with "Hinv") as "H"; first done.
@@ -128,7 +127,7 @@ Section proofs.
 
   Lemma cinv_acc E N γ p P :
     ↑N ⊆ E →
-    cinv N γ P -∗ cinv_own γ p ={E,E∖↑N}=∗ ▷ P ∗ cinv_own γ p ∗ (▷ P ={E∖↑N,E}=∗ True).
+    cinv N γ P -∗ cinv_own γ p ={E,E∖↑N}=∗ ▷ P ∗ cinv_own γ p ∗ (▷ P ={E∖↑N,E}=∗ emp).
   Proof.
     iIntros (?) "#Hinv Hγ".
     iMod (cinv_acc_strong with "Hinv Hγ") as "($ & $ & H)"; first done.
@@ -138,7 +137,7 @@ Section proofs.
   Qed.
 
   (*** Other *)
-  Lemma cinv_cancel E N γ P : ↑N ⊆ E → cinv N γ P -∗ cinv_own γ 1 ={E}=∗ <absorb> ▷ P.
+  Lemma cinv_cancel E N γ P : ↑N ⊆ E → cinv N γ P -∗ cinv_own γ 1 ={E}=∗ ▷ P.
   Proof.
     iIntros (?) "#Hinv Hγ".
     iMod (cinv_acc_strong with "Hinv Hγ") as "($ & Hγ & H)"; first done.
@@ -151,7 +150,7 @@ Section proofs.
   Global Instance into_acc_cinv E N γ P p :
     IntoAcc (X:=unit) (cinv N γ P)
             (↑N ⊆ E) (cinv_own γ p) (fupd E (E∖↑N)) (fupd (E∖↑N) E)
-            (λ _, ▷ P ∗ cinv_own γ p)%I (λ _, ▷ P)%I (λ _, Some True)%I.
+            (λ _, ▷ P ∗ cinv_own γ p)%I (λ _, ▷ P)%I (λ _, None).
   Proof.
     rewrite /IntoAcc /accessor. iIntros (?) "#Hinv Hown".
     rewrite exist_unit -assoc.

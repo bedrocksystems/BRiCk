@@ -28,7 +28,7 @@
 
 Require Export iris.base_logic.lib.invariants. (* << export [invG] *)
 
-From iris.proofmode Require Import tactics monpred.
+From iris.proofmode Require Import tactics.
 
 Set Default Proof Using "Type".
 Set Suggest Proof Using.
@@ -40,7 +40,7 @@ Section defs.
 
   (* Duplicates from Iris, but for general [bi], instead of being tied to [iProp]. *)
   Definition inv_def N (P : PROP) : PROP :=
-    (□ ∀ E : coPset, ⌜↑N ⊆ E⌝ → |={E,E ∖ ↑N}=> ▷ P ∗ (▷ P ={E ∖ ↑N,E}=∗ True))%I.
+    (□ ∀ E : coPset, ⌜↑N ⊆ E⌝ → |={E,E ∖ ↑N}=> ▷ P ∗ (▷ P ={E ∖ ↑N,E}=∗ emp))%I.
   Local Definition inv_aux : seal (@inv_def). Proof. by eexists. Qed.
   Definition inv := inv_aux.(unseal).
   Definition inv_eq : @inv = @inv_def := inv_aux.(seal_eq).
@@ -98,7 +98,7 @@ Proof.
 Qed.
 
 Lemma inv_acc E N P :
-  ↑N ⊆ E → inv N P ={E,E∖↑N}=∗ ▷ P ∗ (▷ P ={E∖↑N,E}=∗ True).
+  ↑N ⊆ E → inv N P ={E,E∖↑N}=∗ ▷ P ∗ (▷ P ={E∖↑N,E}=∗ emp).
 Proof.
   rewrite inv_eq /inv_def; iIntros (?) "HI". by iApply ("HI" $! E with "[%//]").
 Qed.
@@ -116,7 +116,7 @@ Proof.
   iMod "Hclose" as "_". iMod ("HcloseQ" with "HQ") as "?". by iMod ("HcloseP" with "HP").
 Qed.
 
-Lemma inv_combine_dup_l N P Q :
+Lemma inv_combine_dup_l `{BiAffine PROP} N P Q :
   □ (P -∗ P ∗ P) -∗
   inv N P -∗ inv N Q -∗ inv N (P ∗ Q).
 Proof.
@@ -134,7 +134,7 @@ Global Instance into_inv_inv N P : IntoInv (inv N P) N := {}.
 Global Instance into_acc_inv N P E:
   IntoAcc (X := unit) (inv N P)
           (↑N ⊆ E) emp (fupd E (E ∖ ↑N)) (fupd (E ∖ ↑N) E)
-          (λ _ : (), (▷ P)%I) (λ _ : (), (▷ P)%I) (λ _ : (), Some True%I).
+          (λ _ : (), (▷ P)%I) (λ _ : (), (▷ P)%I) (λ _ : (), None).
 Proof.
   rewrite inv_eq /IntoAcc /accessor bi.exist_unit.
   iIntros (?) "Hinv _". iMod ("Hinv" $! E with "[%//]") as "[$ Close]".
@@ -143,7 +143,7 @@ Qed.
 
 (** ** Derived properties *)
 Lemma inv_acc_strong E N P :
-  ↑N ⊆ E → inv N P ={E,E∖↑N}=∗ ▷ P ∗ ∀ E', ▷ P ={E',↑N ∪ E'}=∗ True.
+  ↑N ⊆ E → inv N P ={E,E∖↑N}=∗ ▷ P ∗ ∀ E', ▷ P ={E',↑N ∪ E'}=∗ emp.
 Proof.
   iIntros (?) "Hinv".
   iPoseProof (inv_acc (↑ N) N with "Hinv") as "H"; first done.
@@ -156,7 +156,7 @@ Proof.
 Qed.
 
 Lemma inv_acc_timeless E N P `{!Timeless P} :
-  ↑N ⊆ E → inv N P ={E,E∖↑N}=∗ P ∗ (P ={E∖↑N,E}=∗ True).
+  ↑N ⊆ E → inv N P ={E,E∖↑N}=∗ P ∗ (P ={E∖↑N,E}=∗ emp).
 Proof.
   iIntros (?) "Hinv". iMod (inv_acc with "Hinv") as "[>HP Hclose]"; auto.
   iIntros "!> {$HP} HP". iApply "Hclose"; auto.
