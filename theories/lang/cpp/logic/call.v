@@ -24,7 +24,7 @@ Section with_resolve.
     match es with
     | nil => Q nil emp%I
     | (vc,e) :: es =>
-      let ty := type_of e in
+      let ty := erase_qualifiers $ type_of e in
       match vc with
       | Lvalue =>
         Exists Qarg,
@@ -64,7 +64,7 @@ Section with_resolve.
         iExists Qarg; iFrame.
         iRevert "Hes"; iApply IH; iIntros (? ?) "% X".
         iIntros (? ?) "Y"; iApply "H" => /=; eauto. iApply "X"; iFrame. }
-      { destruct (is_aggregate (type_of e)).
+      { case_match.
         { iIntros "X" (a) "B"; iDestruct ("X" with "B") as "X".
           destruct (destructor_for e).
           iRevert "X".

@@ -15,6 +15,7 @@ Require Import iris.proofmode.tactics.
 From bedrock.lang.cpp Require Import ast semantics.
 From bedrock.lang.cpp.logic Require Import
      pred path_pred heap_pred destroy wp initializers call.
+Require Import bedrock.lang.bi.errors.
 Require Import bedrock.lang.cpp.heap_notations.
 
 Module Type Stmt.
@@ -139,7 +140,7 @@ Module Type Stmt.
       | Trv_reference t
       | Treference t =>
         match init with
-        | None => False
+        | None => ERROR "uninitialized reference"
           (* ^ references must be initialized *)
         | Some init =>
           (* i should use the type here *)
@@ -147,7 +148,7 @@ Module Type Stmt.
              (free ** k (Rbind x p ρ) (fun P => P)))
         end
 
-      | Tfunction _ _ => False (* not supported *)
+      | Tfunction _ _ => UNSUPPORTED "local function declarations are not supported" (* not supported *)
 
       | Tqualified _ ty => wp_decl ρ x ty init dtor k
       | Tnullptr =>
@@ -162,13 +163,13 @@ Module Type Stmt.
           wp_prval ρ init (fun v free => free **
              (a |-> primR (erase_qualifiers ty) 1 v -* continue))
         end
-      | Tfloat _ => False (* not supportd *)
-      | Tarch _ _ => False (* not supported *)
+      | Tfloat _ => UNSUPPORTED "floating point declarations" (* not supportd *)
+      | Tarch _ _ => UNSUPPORTED "architecure specific declarations" (* not supported *)
       end.
 
-    Lemma wp_decl_frame : forall x ρ init ty dtor (Q Q' : region -> (mpred -> mpred) -> mpred),
-        Forall a (b b' : _), (Forall rt rt' : mpred, (rt -* rt') -* b rt -* b' rt') -* Q a b -* Q' a b'
-        |-- wp_decl ρ x ty init dtor Q -* wp_decl ρ x ty init dtor Q'.
+    Lemma wp_decl_frame : forall x ρ init ty dtor (k k' : region -> (mpred -> mpred) -> mpred),
+        Forall a (b b' : _), (Forall rt rt' : mpred, (rt -* rt') -* b rt -* b' rt') -* k a b -* k' a b'
+        |-- wp_decl ρ x ty init dtor k -* wp_decl ρ x ty init dtor k'.
     Proof.
       induction ty; simpl.
       { destruct init.
@@ -176,7 +177,7 @@ Module Type Stmt.
           iIntros "K h" (a); iSpecialize ("h" $! a). iRevert "h". iApply wp_prval_frame; first by reflexivity.
           iIntros (v f) "[$ h] h'". iDestruct ("h" with "h'") as "h". iRevert "h". iApply "K".
           iIntros (??) "h [$ x]". iApply "h". auto. }
-      (* TODO(gmm) postponing since I am revising initialization semantics *)
+      (* TODO(gmm) postponing this likely long but very boring proof. *)
     Admitted.
 
 

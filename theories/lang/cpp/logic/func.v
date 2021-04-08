@@ -106,20 +106,21 @@ Section with_cpp.
     | nil , nil => Q r emp
     | (x,ty) :: xs , v :: vs  =>
       match drop_qualifiers ty with
-      | Tqualified _ t => True (* unreachable *)
+      | Tqualified _ t => ERROR "unreachable" (* unreachable *)
       | Treference    _
       | Trv_reference _
       | Tnamed _ =>
         match v with
         | Vptr p => bind_vars xs vs (Rbind_check x p r) Q
-        | _ => False
+        | _ => ERROR "non-pointer passed for aggregate"
         end
       | _              =>
         Forall a : ptr, a |-> primR (erase_qualifiers ty) 1 v -*
         bind_vars xs vs (Rbind_check x a r) (fun r free => Q r (a |-> anyR (erase_qualifiers ty) 1 ** free))
-        (* TODO the use of [anyR] above is a bit strange. *)
+        (* Here we view [anyR (erase_quaifiers ty) 1] as essentially the pre-condition
+           to the "destructor" of a primitive. *)
       end
-    | _ , _ => False
+    | _ , _ => ERROR "bind_vars: argument mismatch"
     end%I.
 
   Lemma bind_vars_frame : forall ts args ρ Q Q',
@@ -224,13 +225,36 @@ Section with_cpp.
     | _ => False
     end.
 
+  (** TODO move + document. *)
   Definition default_initialize
-             (M : coPset) (ti : thread_info) (ρ : region) (ty : type) (p : ptr) (Q : FreeTemps → epred) : mpred :=
+             (ty : type) (p : ptr) (Q : FreeTemps → epred) : mpred :=
     match drop_qualifiers ty with
+    | Tint _ _ as rty
+    | Tptr _ as rty
+    | Tbool as rty
+    | Tfloat _ as rty => p |-> uninitR rty 1 -* Q emp
+    | Tarray _ _ => UNSUPPORTED "default initialization of arrays"
+    | Tnullptr => UNSUPPORTED "default initialization of [nullptr_t]"
+
+    | Tref _
+    | Trv_ref _ => ERROR "default initialization of reference"
+    | Tvoid => ERROR "default initialization of void"
+    | Tfunction _ _ => ERROR "default initialization of functions"
+    | Tmember_pointer _ _ => ERROR "default initialization of member pointers"
     | Tnamed _ => False (* default initialization of aggregates is done at elaboration time. *)
-    | _ as rty => p |-> uninitR rty 1 -* Q emp
+
+    | Tarch _ _ => UNSUPPORTED "default initialization of architecture type"
+    | Tqualified _ _ => False (* unreachable *)
     end.
 
+  Lemma default_initialize_frame:
+    ∀ ty Q Q' (p : ptr),
+      Forall f, Q f -* Q' f
+                  |-- default_initialize ty p Q -* default_initialize ty p Q'.
+  Proof.
+    rewrite /default_initialize; intros; case_match;
+      try solve [ iIntros "a b c"; iApply "a"; iApply "b"; eauto | eauto ].
+  Qed.
 
   (* initialization of members in the initializer list *)
   Fixpoint wpi_members
@@ -250,7 +274,7 @@ Section with_cpp.
         (* there is no initializer for this member, so we "default initialize" it
            (see https://eel.is/c++draft/dcl.init#general-7 )
          *)
-        default_initialize ⊤ ti ρ m.(mem_type) (this ., _field {| f_type := cls ; f_name := m.(mem_name) |}) (fun _ => Q)
+        default_initialize m.(mem_type) (this ., _field {| f_type := cls ; f_name := m.(mem_name) |}) (fun _ => Q)
       | i :: is' =>
         match i.(init_path) with
         | InitField _ (* = m.(mem_name) *) =>
@@ -318,14 +342,13 @@ Section with_cpp.
     induction flds => /=; eauto.
     intros.
     case_match.
-    { admit. }
+    { iIntros "a"; iApply default_initialize_frame; iIntros (?); eauto. }
     { case_match; eauto.
       case_match; eauto.
       iIntros "a b c"; iDestruct ("b" with "c") as "b". iRevert "b".
       iApply wpi_frame; first by reflexivity.
       iIntros (?) "[$ x]"; iRevert "x"; iApply IHflds; eauto. }
-  Admitted.
-
+  Qed.
 
   Definition wp_struct_initializer_list (s : Struct) (ti : thread_info) (ρ : region) (cls : globname) (this : ptr)
              (inits : list Initializer) (Q : mpred) : mpred :=
@@ -350,12 +373,12 @@ Section with_cpp.
       let ident Q := this |-> init_identity cls Q in
       (** initialize the bases, then the identity, then the members *)
       bases (ident (members (type_ptr (Tnamed cls) this -* this |-> struct_padding _ 1 cls -*  Q)))
-      (* TODO here we are constructing the [type_ptr] after the members have been initialized
+      (* NOTE here we are constructing the [type_ptr] for the *full object*
+         after we have provided the [type_ptr] for the individual fields.
          TODO we should also get [_padding] and anything else here.
        *)
     end%I.
 
-  (* TODO this is easy to prove, but will be replaced fairly soon. *)
   Lemma wp_struct_initializer_list_frame : forall ti ρ cls p ty li Q Q',
       (Q -* Q') |-- wp_struct_initializer_list cls ti ρ ty p li Q -* wp_struct_initializer_list cls ti ρ ty p li Q'.
   Proof.
