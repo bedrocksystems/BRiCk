@@ -300,11 +300,17 @@ Definition bound (bits : bitsize) (sgn : signed) (v : Z) : Prop :=
 (**
 [has_type v ty] is an approximation in [Prop] of "[v] is an initialized value
 of type [t]." This implies:
-- if [ty <> Tvoid], then [v <> Vundef].
+- if [ty = Tvoid], then [v = Vundef].
+- if [ty = Tnullptr], then [v = Vptr nullptr].
 - if [ty = Tint sz sgn], then [v] fits the appropriate bounds (see
-[has_int_type']).
-- if [ty] is a type of pointers/references/aggregates, we only ensure that [v
-= Vptr p].
+  [has_int_type']).
+- if [ty] is a type of pointers/aggregates, we only ensure that [v = Vptr p].
+  + NOTE: We require that - for a type [Tnamed nm] - the name resolves to some
+    [GlobDecl] other than [Gtype] in a given [σ : genv].
+- if [ty] is a type of references, we ensure that [v = Vref p] and
+  that [p <> nullptr]; [Vref] is an alias for [Vptr]
+- if [ty] is a type of arrays, we ensure that [v = Vptr p] and
+  that [p <> nullptr].
   *)
 Parameter has_type : val -> type -> Prop.
 
@@ -313,9 +319,9 @@ Axiom has_type_pointer : forall v ty,
 Axiom has_type_nullptr : forall v,
     has_type v Tnullptr -> v = Vptr nullptr.
 Axiom has_type_reference : forall v ty,
-    has_type v (Treference ty) -> exists p, v = Vptr p /\ p <> nullptr.
+    has_type v (Treference ty) -> exists p, v = Vref p /\ p <> nullptr.
 Axiom has_type_rv_reference : forall v ty,
-    has_type v (Trv_reference ty) -> exists p, v = Vptr p /\ p <> nullptr.
+    has_type v (Trv_reference ty) -> exists p, v = Vref p /\ p <> nullptr.
 Axiom has_type_array : forall v ty n,
     has_type v (Tarray ty n) -> exists p, v = Vptr p /\ p <> nullptr.
 Axiom has_type_named : forall σ v name,
