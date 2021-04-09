@@ -53,14 +53,6 @@ Definition rt_biIndex : biIndex :=
 Section Kpred.
   Context `{Σ : cpp_logic thread_info}.
 
-  (* Record Kpred' := *)
-  (* { k_normal   : mpred *)
-  (* ; k_return_val   : val -> mpred *)
-  (* ; k_return_void : mpred *)
-  (* ; k_break    : mpred *)
-  (* ; k_continue : mpred *)
-  (* }. *)
-
   Definition KpredI : bi := monPredI rt_biIndex mpredI.
   #[local] Notation Kpred := KpredI.
   Definition KP (P : _) : KpredI := @MonPred rt_biIndex _ P _.
@@ -69,15 +61,6 @@ Section Kpred.
   Instance Kpred_fupd: FUpd KpredI :=
     funI l r Q => KP (fun v => |={l,r}=> Q v).
 
-  (* Definition toKpred (k : Kpred') : KpredI := *)
-  (*   KP (fun rt => *)
-  (*         match rt with *)
-  (*         | Normal => k.(k_normal) *)
-  (*         | Break => k.(k_break) *)
-  (*         | Continue => k.(k_continue) *)
-  (*         | ReturnVal v => k.(k_return_val) v *)
-  (*         | ReturnVoid => k.(k_return_void) *)
-  (*         end). *)
   Definition void_return (P : mpred) : KpredI :=
     KP (funI rt =>
           match rt with
