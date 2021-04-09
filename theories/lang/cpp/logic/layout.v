@@ -13,7 +13,7 @@ From bedrock.lang.cpp.logic Require Import
 Require Import bedrock.lang.cpp.semantics.
 Require Import bedrock.lang.cpp.logic.z_to_bytes.
 Require Import bedrock.lang.cpp.logic.arr.
-Require Import bedrock.lang.cpp.logic.raw.
+Require Export bedrock.lang.cpp.logic.raw.
 
 Require Import bedrock.lang.cpp.heap_notations.
 
