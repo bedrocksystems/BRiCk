@@ -20,6 +20,7 @@ Require Import bedrock.lang.cpp.heap_notations.
 Section with_Σ.
   Context `{Σ : cpp_logic} {resolve:genv}.
 
+  (** TODO move to pred.v *)
   Axiom struct_padding : genv -> Qp -> globname -> Rep.
   Axiom union_padding : genv -> Qp -> globname -> nat -> Rep.
 
@@ -30,26 +31,30 @@ Section with_Σ.
   Axiom union_padding_timeless : forall q cls idx, Timeless (union_padding resolve q cls idx).
   Axiom union_padding_frac_valid : forall (q : Qp) cls idx, Observe [| q ≤ 1 |]%Qp (union_padding resolve q cls idx).
 
-  Global Existing Instances
+  #[global] Existing Instances
     struct_padding_fractional struct_padding_timeless struct_padding_frac_valid
     union_padding_fractional union_padding_timeless union_padding_frac_valid.
 
-  Global Instance struct_padding_as_fractional q cls :
+  #[global] Instance struct_padding_as_fractional q cls :
     AsFractional (struct_padding resolve q cls) (λ q, struct_padding resolve q cls) q.
   Proof. exact: Build_AsFractional. Qed.
-  Global Instance union_padding_as_fractional q cls idx :
+  #[global] Instance union_padding_as_fractional q cls idx :
     AsFractional (union_padding resolve q cls idx) (λ q, union_padding resolve q cls idx) q.
   Proof. exact: Build_AsFractional. Qed.
 
-  Axiom struct_padding_strict_valid_observe : forall q cls, Observe svalidR (struct_padding resolve q cls).
-  #[global] Existing Instance struct_padding_strict_valid_observe.
+  Axiom struct_padding_type_ptr_observe : forall q cls, Observe (type_ptrR (Tnamed cls)) (struct_padding resolve q cls).
+  #[global] Existing Instance struct_padding_type_ptr_observe.
+  #[global] Instance struct_padding_strict_valid_observe q cls : Observe svalidR (struct_padding resolve q cls).
+  Proof. rewrite -type_ptrR_svalidR; apply _. Qed.
   #[global] Instance struct_padding_valid_observe q cls : Observe validR (struct_padding resolve q cls).
-  Proof. rewrite -svalidR_validR. apply _. Qed.
+  Proof. rewrite -svalidR_validR; apply _. Qed.
 
-  Axiom union_padding_strict_valid_observe : forall q cls i, Observe svalidR (union_padding resolve q cls i).
-  #[global] Existing Instance union_padding_strict_valid_observe.
+  Axiom union_padding_type_ptr_observe : forall q cls i, Observe (type_ptrR (Tnamed cls)) (union_padding resolve q cls i).
+  #[global] Existing Instance union_padding_type_ptr_observe.
+  #[global] Instance union_padding_strict_valid_observe q cls i : Observe svalidR (union_padding resolve q cls i).
+  Proof. rewrite -type_ptrR_svalidR; apply _. Qed.
   #[global] Instance union_padding_valid_observe q cls i : Observe validR (union_padding resolve q cls i).
-  Proof. rewrite -svalidR_validR. apply _. Qed.
+  Proof. rewrite -svalidR_validR; apply _. Qed.
 
   (* TODO: Do we need type_ptrR here? *)
   Axiom struct_to_raw : forall cls st rss (q : Qp),
