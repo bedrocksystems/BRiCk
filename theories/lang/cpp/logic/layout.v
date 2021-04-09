@@ -83,7 +83,7 @@ Section with_Σ.
        then identityR cls None 1
        else emp)
       ** struct_padding resolve 1 cls)
-      -* |==> tblockR (Tnamed cls) 1.
+      -* |={↑pred_ns}=> tblockR (Tnamed cls) 1.
 
 (*
   (** decompose a struct into its constituent fields and base classes.
@@ -113,7 +113,7 @@ Section with_Σ.
            let f := _field {| f_name := it.(mem_name) ; f_type := cls |} in
            f |-> tblockR (erase_qualifiers it.(mem_type)) 1 **
            union_padding resolve 1 cls idx)
-          -* |==> tblockR (Tnamed cls) 1.
+          -* |={↑pred_ns}=> tblockR (Tnamed cls) 1.
 
   (* this allows you to change the active entity in a union
 
@@ -136,7 +136,7 @@ Section with_Σ.
            union_padding resolve 1 cls idx)
       -* [∧ list] idx ↦ it ∈ st.(u_fields),
           let f := _field {| f_name := it.(mem_name) ; f_type := cls |} in
-          |==> f |-> tblockR (erase_qualifiers it.(mem_type)) 1 **
+          |={↑pred_ns}=> f |-> tblockR (erase_qualifiers it.(mem_type)) 1 **
                union_padding resolve 1 cls idx.
 
 (*
