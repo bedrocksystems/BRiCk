@@ -171,7 +171,7 @@ Section with_Σ.
         AsFractional (rawsR q rs) (λ q, rawsR q rs) q.
       Proof. constructor. done. apply _. Qed.
 
-      #[global] Instance rawsR_observe_frac_valid (q : Qp) rs :
+      Lemma rawsR_observe_frac_valid (q : Qp) rs :
         (0 < length rs) ->
         Observe [| q ≤ 1 |]%Qp (rawsR q rs).
       Proof.
@@ -180,7 +180,7 @@ Section with_Σ.
              | rewrite arrayR_cons; apply _].
       Qed.
 
-      #[global] Instance rawsR_observe_agree q1 q2 rs1 rs2 :
+      Lemma rawsR_observe_agree q1 q2 rs1 rs2 :
         length rs1 = length rs2 ->
         Observe2 [| rs1 = rs2 |] (rawsR q1 rs1) (rawsR q2 rs2).
       Proof.
