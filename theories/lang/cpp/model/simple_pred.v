@@ -10,8 +10,8 @@ From iris.bi.lib Require Import fractional.
 From iris.proofmode Require Import tactics.
 From iris_string_ident Require Import ltac2_string_ident.
 
-Require Import bedrock.lang.bi.own_instances.
 Require Import bedrock.lang.bi.cancelable_invariants.
+Require Import bedrock.lang.cpp.logic.own_instances.
 
 From bedrock.lang.prelude Require Import base option.
 From bedrock.lang.cpp Require Import ast semantics.
