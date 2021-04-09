@@ -27,7 +27,7 @@ From iris.proofmode Require Import tactics.
 
 Require Import bedrock.lang.bi.cancelable_invariants.
 Require Import bedrock.lang.bi.invariants.
-Require Import bedrock.lang.bi.iprop_own.
+Require Import bedrock.lang.cpp.logic.iprop_own.
 
 (*** Invariants for iProp **)
 (* Copy from

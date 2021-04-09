@@ -11,7 +11,7 @@ Require Import iris.bi.monpred.
 Require Import iris.base_logic.lib.own. (* << exporting [inG] and [gFunctors] *)
 
 Require Import bedrock.lang.bi.own.
-Require Import bedrock.lang.bi.iprop_own.
+Require Import bedrock.lang.cpp.logic.iprop_own.
 
 (* Instances for monpred *)
 
