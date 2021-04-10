@@ -66,6 +66,16 @@ Section with_Σ.
       ** struct_padding resolve q cls -|-
       Exists rs, rawsR q rs ** [| raw_bytes_of_struct resolve cls rss rs |].
 
+  Definition implicit_destruct_ty (ty : type) := anyR ty 1 |-- |={↑pred_ns}=> tblockR ty 1.
+
+
+  (** implicit destruction of a primitive *)
+  Axiom implicit_destruct_int : forall sz sgn, Reduce (implicit_destruct_ty (Tint sz sgn)).
+  Axiom implicit_destruct_bool : Reduce (implicit_destruct_ty Tbool).
+  Axiom implicit_destruct_nullptr : Reduce (implicit_destruct_ty Tnullptr).
+  Axiom implicit_destruct_ptr : forall ty, Reduce (implicit_destruct_ty (Tptr ty)).
+  Axiom implicit_destruct_member_pointer : forall cls ty, Reduce (implicit_destruct_ty (Tmember_pointer cls ty)).
+
   (** implicit destruction of an aggregate *)
   Axiom implicit_destruct_struct
   : forall cls st,
@@ -85,10 +95,9 @@ Section with_Σ.
       ** struct_padding resolve 1 cls)
       -* |={↑pred_ns}=> tblockR (Tnamed cls) 1.
 
-(*
   (** decompose a struct into its constituent fields and base classes.
    *)
-  Axiom decompose_struct
+  Axiom anyR_struct
   : forall cls st,
     glob_def resolve cls = Some (Gstruct st) ->
         anyR (Tnamed cls) 1
@@ -102,7 +111,6 @@ Section with_Σ.
             then identityR cls None 1
             else emp)
            ** struct_padding resolve 1 cls.
-           *)
 
   (** implicit destruction of a union. *)
   Axiom implicit_destruct_union
@@ -115,7 +123,11 @@ Section with_Σ.
            union_padding resolve 1 cls idx)
           -* |={↑pred_ns}=> tblockR (Tnamed cls) 1.
 
-  (* this allows you to change the active entity in a union
+(*
+  (* the following rule would allow you to change the active entity in a union
+     using only ghost code. The C++ semantics does not permit this, rather
+     it requires this to happen in code, so we will need to fuse this rule into
+     the assignment rule.
 
      NOTE the axiom requires the the union element has been destructed
           (which will often be done implicitly), and the result gives you
@@ -138,28 +150,44 @@ Section with_Σ.
           let f := _field {| f_name := it.(mem_name) ; f_type := cls |} in
           |={↑pred_ns}=> f |-> tblockR (erase_qualifiers it.(mem_type)) 1 **
                union_padding resolve 1 cls idx.
+*)
 
-(*
-  (** decompose a union into the classical conjunction of the alternatives
+  (** decompose a union into the classical disjunction of the alternatives
    *)
-  Axiom decompose_union
+  Axiom anyR_union
   : forall (cls : globname) st,
     glob_def resolve cls = Some (Gunion st) ->
         anyR (Tnamed cls) 1
-    -|- [∧list] idx↦it ∈ st.(u_fields),
+    -|- [∨ list] idx↦it ∈ st.(u_fields),
            let f := _field {| f_name := it.(mem_name) ; f_type := cls |} in
            _offsetR f (anyR (erase_qualifiers it.(mem_type)) 1) **
            union_padding resolve 1 cls idx.
- *)
 
   (** decompose an array into individual components
       note that one past the end of an array is a valid location, but
       it doesn't store anything.
+
+      TODO this should move
    *)
-  Axiom decompose_array : forall t n q,
+  Theorem tblockR_array : forall t n q,
+      (0 < n)%N ->
         tblockR (Tarray t n) q
     -|- _offsetR (_sub t (Z.of_N n)) validR **
         [∗list] i ↦ _ ∈ repeat () (BinNatDef.N.to_nat n),
-                _offsetR (_sub t (Z.of_nat i)) (tblockR t q).
+           _offsetR (_sub t (Z.of_nat i)) (tblockR t q).
+  Proof.
+    rewrite /tblockR /=. intros.
+    assert (exists n', BinNatDef.N.to_nat n = S n').
+    { admit. }
+    destruct H0. rewrite H0. simpl.
+    rewrite align_of_array.
+    destruct (size_of resolve t) => /=.
+    { case_match; eauto.
+      { admit. }
+      { split'. iIntros "[]".
+        rewrite _offsetR_pure. iIntros "(? & [] & ?)". } }
+    { split'; try solve [ iIntros "[]" ].
+      rewrite _offsetR_pure. iIntros "(? & [] & ?)". }
+  Admitted.
 
 End with_Σ.
