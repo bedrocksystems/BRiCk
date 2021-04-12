@@ -171,25 +171,44 @@ Section with_Σ.
 
       TODO this should move
    *)
+  Theorem anyR_array : forall t n q,
+        anyR (Tarray t n) q
+    -|- _offsetR (_sub t (Z.of_N n)) validR **
+        [∗list] i ↦ _ ∈ repeat () (BinNatDef.N.to_nat n),
+           _offsetR (_sub t (Z.of_nat i)) (anyR t q).
+  Proof. Admitted. (** Proof requires the generalization of [anyR] to support aggregates (and arrays) *)
+
+  (** decompose an array into individual components
+      note that one past the end of an array is a valid location, but
+      it doesn't store anything.
+
+      TODO this should move
+   *)
+  (* TODO a type has a size if and only if it has an alignment *)
   Theorem tblockR_array : forall t n q,
-      (0 < n)%N ->
         tblockR (Tarray t n) q
     -|- _offsetR (_sub t (Z.of_N n)) validR **
         [∗list] i ↦ _ ∈ repeat () (BinNatDef.N.to_nat n),
            _offsetR (_sub t (Z.of_nat i)) (tblockR t q).
   Proof.
     rewrite /tblockR /=. intros.
-    assert (exists n', BinNatDef.N.to_nat n = S n').
-    { admit. }
-    destruct H0. rewrite H0. simpl.
     rewrite align_of_array.
+<<<<<<< HEAD
     destruct (size_of σ t) => /=.
+||||||| parent of f6f1e6b0 (Exposing [anyR_array].)
+    destruct (size_of resolve t) => /=.
+=======
+    destruct (size_of resolve t) eqn:Hsize => /=.
+>>>>>>> f6f1e6b0 (Exposing [anyR_array].)
     { case_match; eauto.
       { admit. }
-      { split'. iIntros "[]".
-        rewrite _offsetR_pure. iIntros "(? & [] & ?)". } }
+      { (* the type needs to have an alignment *)
+        split'; try solve [ iIntros "[]" ].
+        admit. } }
     { split'; try solve [ iIntros "[]" ].
-      rewrite _offsetR_pure. iIntros "(? & [] & ?)". }
+      (* TODO if a type doesn't have a size, then you can not
+         subscript it. *)
+      admit. }
   Admitted.
 
 End with_Σ.
