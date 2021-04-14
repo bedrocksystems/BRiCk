@@ -56,6 +56,7 @@ Module Type Init.
         (* non-primitives are handled via prvalue-initialization semantics *)
       | Tarray _ _
       | Tnamed _ => wp_init ty addr (not_mine init) k
+        (* NOTE that just like this function [wp_init] will consume the object. *)
 
       | Treference t => False (* reference fields are not supported *)
       | Trv_reference t => False (* reference fields are not supported *)
@@ -76,8 +77,8 @@ Module Type Init.
         iIntros (v f) "[$ X] Y"; iApply "a"; iApply "X"; eauto. }
       { iIntros "a". iApply wp_prval_frame; try reflexivity.
         iIntros (v f) "[$ X] Y"; iApply "a"; iApply "X"; eauto. }
-      { iIntros "a". iApply wp_init_frame; try reflexivity; eauto. }
-      { iIntros "a". iApply wp_init_frame; try reflexivity; eauto. }
+      { iIntros "a". iApply wp_init_frame => //. }
+      { iIntros "a". iApply wp_init_frame => //. }
       { iIntros "a". iApply wp_prval_frame; try reflexivity.
         iIntros (v f) "[$ X] Y"; iApply "a"; iApply "X"; eauto. }
       { iIntros "a". iApply wp_prval_frame; try reflexivity.
@@ -122,7 +123,8 @@ Module Type Init.
                sequence-points between all of the elements of an
                initializer list (c.f. http://eel.is/c++draft/dcl.init.list#4)
            *)
-          wp_initialize ety (base .[ ety ! idx ]) e (fun free => free ** wp_array_init ety base rest (Z.succ idx) Q)
+         base .[ ety ! idx ] |-> tblockR ety 1 -* (* provide the memory to the initializer. *)
+         wp_initialize ety (base .[ ety ! idx ]) e (fun free => free ** wp_array_init ety base rest (Z.succ idx) Q)
       end%I.
 
     (* TODO: This could be useful elsewhere and should maybe be moved. *)
@@ -136,6 +138,8 @@ Module Type Init.
       let actualsz := N.of_nat (length es) in
       es ++ repeatN f (desiredsz - actualsz).
 
+    (** NOTE this assumes that the C++ abstract machine already owns the array
+        that is being initialized, see [wp_init_initlist_array] *)
     Definition wp_array_init_fill (ety : type) (base : ptr) (es : list Expr) (f : option Expr) (sz : N) (Q : FreeTemps -> mpred) : mpred :=
       let len := N.of_nat (length es) in
       match (len ?= sz)%N with
@@ -153,8 +157,8 @@ Module Type Init.
       | Gt => False
       end.
 
-    Axiom wp_init_initlist_array :forall ls fill ety (sz : N) base Q,
-      wp_array_init_fill ety base ls fill sz Q
+    Axiom wp_init_initlist_array :forall ls fill ety (sz : N) (base : ptr) Q,
+          base |-> tblockR (Tarray ety sz) 1 ** wp_array_init_fill ety base ls fill sz Q
       |-- wp_init (Tarray ety sz) base (Einitlist ls fill (Tarray ety sz)) Q.
 
     (* https://eel.is/c++draft/dcl.init#general-7.2 says that "To

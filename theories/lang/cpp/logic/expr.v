@@ -1159,14 +1159,16 @@ Module Type Expr.
                            to the program to make it read-only.
                          NOTE that no "correct" program will ever modify this variable
                            anyways. *)
-                      loop_index |-> (primR (Tint W64 Unsigned) (1/2) idx) -*
+                      loop_index |-> primR (Tint W64 Unsigned) (1/2) idx -*
+                      targetp .[ ty ! idx ] |-> tblockR ty 1 -*
                       wp_initialize ρ ty (targetp .[ ty ! idx ]) init
                               (fun free => free **
-                                 loop_index |-> (primR (Tint W64 Unsigned) (1/2) idx) **
+                                 loop_index |-> primR (Tint W64 Unsigned) (1/2) idx **
                                  rest (N.succ idx))) sz idx.
 
-    Axiom wp_init_arrayloop_init : forall oname level sz ρ trg vc src init ty Q,
+    Axiom wp_init_arrayloop_init : forall oname level sz ρ (trg : ptr) vc src init ty Q,
           has_type (Vn sz) (Tint W64 Unsigned) ->
+          trg |-> tblockR (Tarray ty sz) 1 ** (* give up your memory *)
           wp_glval ρ vc src
                    (fun p free =>
                       Forall idxp,
