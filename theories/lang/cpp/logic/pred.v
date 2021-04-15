@@ -83,8 +83,7 @@ End CPP_LOGIC_CLASS_MIXIN.
 
 Module Type CPP_LOGIC_CLASS := CPP_LOGIC_CLASS_BASE <+ CPP_LOGIC_CLASS_MIXIN.
 
-Module Type CPP_LOGIC (Import CC : CPP_LOGIC_CLASS)
-  (Import PTR : PTRS_FULL_INTF).
+Module Type CPP_LOGIC (Import CC : CPP_LOGIC_CLASS) (Import INTF : FULL_INTF).
 
   Implicit Types (p : ptr).
 
@@ -186,9 +185,18 @@ Module Type CPP_LOGIC (Import CC : CPP_LOGIC_CLASS)
       Observe [| q ≤ 1 |]%Qp (@tptsto σ t q p v).
     Global Existing Instance tptsto_frac_valid.
 
-    Axiom tptsto_agree : forall {σ} t q1 q2 p v1 v2,
-      Observe2 [| v1 = v2 |] (@tptsto σ t q1 p v1) (@tptsto σ t q2 p v2).
-    Global Existing Instance tptsto_agree.
+    Axiom tptsto_agree : forall {σ} ty q1 q2 p v1 v2,
+      Observe2 [| val_related σ ty v1 v2 |]
+               (@tptsto σ ty q1 p v1)
+               (@tptsto σ ty q2 p v2).
+    Global Existing Instances tptsto_agree.
+
+    (* TODO (JH/PG): Add in a proper instance using this which allows us to rewrite
+         `val_related` values within `tptsto`s.
+
+         <https://gitlab.com/bedrocksystems/cpp2v-core/-/merge_requests/377#note_530611061> *)
+    Axiom tptsto_val_related_transport : forall {σ} ty q p v1 v2,
+        [| val_related σ ty v1 v2 |] |-- @tptsto σ ty q p v1 -* @tptsto σ ty q p v2.
 
     Axiom tptsto_nonvoid : forall {σ} ty (q : Qp) p v,
       Observe [| ty <> Tvoid |] (@tptsto σ ty q p v).
@@ -445,7 +453,7 @@ Module Type CPP_LOGIC (Import CC : CPP_LOGIC_CLASS)
 End CPP_LOGIC.
 
 Declare Module LC : CPP_LOGIC_CLASS.
-Declare Module L : CPP_LOGIC LC PTRS_FULL_AXIOM.
+Declare Module L : CPP_LOGIC LC FULL_INTF_AXIOM.
 Export LC L.
 
 (* strict validity (not past-the-end) *)
@@ -698,6 +706,18 @@ Section with_cpp.
     iIntros "#? #(? & _)". by iApply pinned_ptr_pure_type_divide_1.
   Qed.
 
+  Lemma shift_pinned_ptr_sub ty n va (p1 : ptr) p2 o:
+    size_of σ ty = Some o ->
+    _offset_ptr p1 (o_sub _ ty n) = p2 ->
+        valid_ptr p2 ** pinned_ptr va p1
+    |-- pinned_ptr (Z.to_N (Z.of_N va + n * Z.of_N o)) p2.
+  Proof.
+    move => o_eq <-.
+    iIntros "[val pin1]".
+    iApply (offset_pinned_ptr _ with "val") => //.
+    rewrite eval_o_sub o_eq /= Z.mul_comm //.
+  Qed.
+
   Lemma _valid_valid p vt : _valid_ptr vt p |-- valid_ptr p.
   Proof. case: vt => [|//]. exact: strict_valid_valid. Qed.
 
@@ -748,6 +768,16 @@ Section with_cpp.
     apply: observe_intro.
     destruct (ptr_eq_dec p nullptr); subst; last by eauto.
     rewrite {1}tptsto_nonnull. exact: bi.False_elim.
+  Qed.
+
+  Lemma tptsto_disjoint : forall ty p v1 v2,
+    tptsto ty 1 p v1 ** tptsto ty 1 p v2 |-- False.
+  Proof.
+    intros *; iIntros "[T1 T2]".
+    iDestruct (observe_2_elim_pure with "T1 T2") as %Hvs.
+    iDestruct (tptsto_val_related_transport $! Hvs with "T1") as "T2'".
+    iCombine "T2 T2'" as "T".
+    iDestruct (tptsto_frac_valid with "T") as %L => //.
   Qed.
 
   (** function specifications written in weakest pre-condition style.

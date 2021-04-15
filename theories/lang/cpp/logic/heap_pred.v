@@ -704,7 +704,9 @@ Section with_cpp.
    * NOTE [ty] *must* be a primitive type.
    *)
   Definition primR_def {resolve:genv} (ty : type) (q : Qp) (v : val) : Rep :=
-    as_Rep (fun addr => tptsto ty q addr v ** [| has_type v (drop_qualifiers ty) |]).
+    as_Rep (fun addr => tptsto ty q addr v **
+                      [| not(exists raw, v = Vraw raw) |] **
+                      [| has_type v (drop_qualifiers ty) |]).
   (** TODO what is the current status of [has_type] and [Vundef]? Does it have all types? No types?
    *)
   Definition primR_aux : seal (@primR_def). Proof. by eexists. Qed.
@@ -747,7 +749,19 @@ Section with_cpp.
     Observe2 [| v1 = v2 |]
       (primR ty q1 v1)
       (primR ty q2 v2).
-  Proof. rewrite primR_eq. apply _. Qed.
+  Proof.
+    rewrite primR_eq/primR_def;
+      apply: as_Rep_only_provable_observe_2=> p;
+      apply: observe_2_intro_only_provable.
+    iIntros "(Htptsto1 & %Hnotraw1 & %Hhas_type1)
+             (Htptsto2 & %Hnotraw2 & %Hhas_type2)".
+    iDestruct (observe_2_elim_pure with "Htptsto1 Htptsto2") as %Hvs.
+    assert (v1 = v2)
+      by (induction Hvs; subst; auto; exfalso;
+          [apply Hnotraw1 | apply Hnotraw2];
+          eauto).
+    by iPureIntro.
+  Qed.
 
   Global Instance primR_observe_has_type resolve ty q v :
     Observe [| has_type v (drop_qualifiers ty) |] (primR ty q v).
@@ -805,6 +819,16 @@ Section with_cpp.
     Observe [| q ≤ 1 |]%Qp (uninitR ty q).
   Proof. rewrite uninitR_eq. apply _. Qed.
 
+  Lemma test:
+    forall σ ty v v',
+      v' = Vundef ->
+      val_related σ ty v v' ->
+      v = Vundef.
+  Proof.
+    intros * Hv' Hval_related; induction Hval_related;
+      try (by inversion Hv'); auto.
+  Qed.
+
   (** This seems odd, but it's relevant to proof that [anyR] is fractional. *)
   Lemma primR_uninitR {resolve} ty q1 q2 v :
     primR ty q1 v |--
@@ -812,8 +836,12 @@ Section with_cpp.
     primR ty (q1 + q2) Vundef.
   Proof.
     rewrite primR_eq/primR_def uninitR_eq/uninitR_def. constructor=>p /=.
-    rewrite monPred_at_wand. iIntros "[T1 %]" (? <-%ptr_rel_elim) "/= T2".
-    iDestruct (observe_2 [|v = Vundef|] with "T1 T2") as %->. iFrame "T1 T2 %".
+    rewrite monPred_at_wand. iIntros "[T1 [%Hnotraw %Hty]]" (? <-%ptr_rel_elim) "/= T2".
+    iDestruct (observe_2 [| val_related resolve ty v Vundef |] with "T1 T2") as "%Hrelated".
+    assert (v = Vundef)
+      by (remember Vundef as v'; induction Hrelated;
+          try (by inversion Heqv'); auto); subst.
+    iCombine "T1 T2" as "T"; by iFrame "∗%".
   Qed.
 
   (** [anyR] The argument pointers points to a value of C++ type [ty] that might be
