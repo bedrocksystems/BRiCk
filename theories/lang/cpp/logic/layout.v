@@ -13,6 +13,7 @@ From bedrock.lang.cpp.logic Require Import
 Require Import bedrock.lang.cpp.semantics.
 Require Import bedrock.lang.cpp.logic.z_to_bytes.
 Require Import bedrock.lang.cpp.logic.arr.
+Require Export bedrock.lang.cpp.logic.raw.
 
 Require Import bedrock.lang.cpp.heap_notations.
 
@@ -50,37 +51,15 @@ Section with_Σ.
   #[global] Instance union_padding_valid_observe q cls i : Observe validR (union_padding resolve q cls i).
   Proof. rewrite -svalidR_validR. apply _. Qed.
 
-  (** [raw_values_of_val σ ty v rs] states that the value [v] of type
-  [ty] is represented by the raw bytes in [rs]. WHat this means
-  depends on the type [ty]. *)
-  Axiom raw_bytes_of_val : genv -> type -> val -> list raw_byte -> Prop.
-
-  (** [raw_bytes_of_struct σ cls rss rs] states that the struct
-  consisting of fields of the raw bytes [rss] is represented by the
-  raw bytes in [rs]. [rs] should agree with [rss] on the offsets of
-  the fields. It might be possible to make some assumptions about the
-  parts of [rs] that represent padding based on the ABI. *)
-  Axiom raw_bytes_of_struct : genv -> globname -> gmap ident (list raw_byte) -> list raw_byte -> Prop.
-
-  Axiom raw_bytes_of_sizeof : forall ty v rs,
-     raw_bytes_of_val resolve ty v rs -> size_of resolve ty = Some (N.of_nat $ length rs).
-
-  (* TODO confirm that this is correct with respect to our model. *)
-  Definition rawR (rs : list raw_byte) (q : Qp) : Rep :=
-    arrayR T_uchar (fun r => primR T_uchar q (Vraw r)) rs.
-
-  Axiom primR_to_rawR: forall ty q v,
-    primR ty q v -|- Exists rs, rawR rs q ** [| raw_bytes_of_val resolve ty v rs |] ** type_ptrR ty.
-
   (* TODO: Do we need type_ptrR here? *)
   Axiom struct_to_raw : forall cls st rss q,
     glob_def resolve cls = Some (Gstruct st) ->
     st.(s_layout) = POD ->
     ([∗ list] fld ∈ st.(s_fields), let '(n,ty,_,_) := fld in
-       Exists r, [| rss !! n = Some r |] **
-       _offsetR (_field {| f_name := n ; f_type := cls |}) (rawR r q))
+       Exists rs, [| rss !! n = Some rs |] **
+       _offsetR (_field {| f_name := n ; f_type := cls |}) (rawsR q rs))
       ** struct_padding resolve q cls -|-
-      Exists rs, rawR rs q ** [| raw_bytes_of_struct resolve cls rss rs |].
+      Exists rs, rawsR q rs ** [| raw_bytes_of_struct resolve cls rss rs |].
 
   (** decompose a struct into its constituent fields and base classes.
    *)
@@ -121,51 +100,4 @@ Section with_Σ.
     -|- _offsetR (_sub t (Z.of_N n)) validR **
         [∗list] i ↦ _ ∈ repeat () (BinNatDef.N.to_nat n),
                 _offsetR (_sub t (Z.of_nat i)) (anyR t 1).
-
-  Definition decodes (endianness: endian) (sgn: signed) (l: list N) (z: Z) :=
-    _Z_from_bytes endianness sgn l = z.
-
-  (* JH: TODO: Deprecate the following stuff *)
-  Definition decodes_uint (l : list N) (z : Z) :=
-    Unfold decodes (decodes (genv_byte_order resolve) Unsigned l z).
-
-  (* JH: TODO: Determine what new axioms we should add here. *)
-  Axiom raw_byte_of_int_eq : forall sz x rs,
-      raw_bytes_of_val resolve (Tint sz Unsigned) (Vint x) rs <-> (exists l, decodes_uint l x /\ rs = raw_int_byte <$> l).
-
-  Axiom raw_int_byte_primR : forall q r,
-      primR T_uchar q (Vraw (raw_int_byte r)) -|- primR T_uchar q (Vint (Z.of_N r)).
-
-
-  (** TODO: determine whether this is correct with respect to pointers *)
-  Lemma decode_uint_primR : forall q sz (x : Z),
-    primR (Tint sz Unsigned) q (Vint x) -|-
-    Exists l : list N,
-      arrayR (Tint W8 Unsigned) (fun c => primR (Tint W8 Unsigned) q (Vint c)) (Z.of_N <$> l) **
-      type_ptrR (Tint sz Unsigned) **
-      [| decodes_uint l x |].
-  Proof.
-    move => q sz x.
-    rewrite primR_to_rawR. setoid_rewrite raw_byte_of_int_eq.
-    iSplit.
-    - iDestruct 1 as (rs) "(Hraw&H&$)". iDestruct "H" as %[l [Hdec ->]]. iExists _. iSplit => //. clear Hdec.
-      rewrite /rawR arrayR_eq/arrayR_def. iStopProof.
-      (* TODO i need to do induction here because the [Proper] instances are too weak. *)
-      induction l => // /=.
-      rewrite !arrR_cons; eauto.
-      rewrite -IHl /=. f_equiv. f_equiv.
-        by rewrite raw_int_byte_primR.
-    - iDestruct 1 as (l) "(Harray&$&H)". iDestruct "H" as %Hdec.
-      iExists _. iSplit => //; eauto with iFrame. clear Hdec.
-      rewrite /rawR arrayR_eq/arrayR_def; iStopProof.
-      induction l => // /=.
-      rewrite !arrR_cons; eauto.
-      rewrite -IHl /=. f_equiv. f_equiv.
-        by rewrite raw_int_byte_primR.
-  Qed.
-
-  Axiom decode_uint_anyR : forall q sz,
-    anyR (Tint sz Unsigned) q -|-
-         anyR (Tarray T_uchar (bytesN sz)) q **
-         type_ptrR (Tint sz Unsigned).
 End with_Σ.

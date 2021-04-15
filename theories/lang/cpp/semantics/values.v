@@ -6,6 +6,8 @@
 
 (** The "operational" style definitions about C++ values. *)
 From Coq Require Import Strings.Ascii.
+Require Import stdpp.gmap.
+
 From bedrock.lang.prelude Require Import base addr option numbers.
 
 Require Import bedrock.lang.cpp.ast.
@@ -29,6 +31,18 @@ Module Type RAW_BYTES.
   Existing Instance raw_byte_eq_dec.
 
   Axiom raw_int_byte : N -> raw_byte.
+
+(* TODO: refine our treatment of `raw_bytes` s.t. we respect
+     the size constraints imposed by the physical hardware.
+
+     The following might help but will likely require other
+     axioms which reflect boundedness or round-trip properties.
+
+
+  Parameter of_raw_byte : raw_byte -> N.
+  Axiom inj_of_raw_byte : Inj (=) (=) of_raw_byte.
+  #[global] Existing Instance inj_of_raw_byte.
+*)
 End RAW_BYTES.
 
 Module Type VAL_MIXIN (Import P : PTRS) (Import R : RAW_BYTES).
@@ -61,15 +75,134 @@ Proof. solve_decision. Defined.
 
 End VAL_MIXIN.
 
+Module Type RAW_BYTES_VAL
+       (Import P : PTRS) (Import R : RAW_BYTES)
+       (Import V : VAL_MIXIN P R).
+  (** [raw_bytes_of_val σ ty v rs] states that the value [v] of type
+      [ty] is represented by the raw bytes in [rs]. What this means
+      depends on the type [ty]. *)
+  Parameter raw_bytes_of_val : genv -> type -> val -> list raw_byte -> Prop.
+
+  Axiom raw_bytes_of_val_Proper : Proper (genv_leq ==> eq ==> eq ==> eq ==> iff) raw_bytes_of_val.
+  #[global] Existing Instance raw_bytes_of_val_Proper.
+
+  Axiom raw_bytes_of_val_unique_encoding : forall σ ty v rs rs',
+      raw_bytes_of_val σ ty v rs -> raw_bytes_of_val σ ty v rs' -> rs = rs'.
+
+  Axiom raw_bytes_of_val_int_unique_val : forall σ sz sgn z z' rs,
+      raw_bytes_of_val σ (Tint sz sgn) (Vint z) rs ->
+      raw_bytes_of_val σ (Tint sz sgn) (Vint z') rs ->
+      z = z'.
+
+  Axiom raw_bytes_of_val_sizeof : forall σ ty v rs,
+      raw_bytes_of_val σ ty v rs -> size_of σ ty = Some (N.of_nat $ length rs).
+
+  (* TODO (JH): Change structure s.t. I can import `z_to_bytes` here.
+
+     NOTE: It seems like we probably want to move purely arithmetic stuff (like `trim`
+       and `z_to_bytes.v`) out of the cpp-specific subdirectories within cpp2v-core.
+       That way, we can easily use these concepts within our axiomatic semantics. It
+       will also make it easier for us to (potentially) concretize a model of machine words
+       and use them throughout our axiomatic semantics.
+
+    Axiom raw_bytes_of_val_int : forall σ sz z rs,
+        raw_bytes_of_val σ (Tint sz Unsigned) (Vint z) rs <->
+        exists l,
+          (_Z_from_bytes (genv_byte_order σ) Unsigned l = z) /\
+          rs = raw_int_byte <$> l.
+  *)
+
+  (** [raw_bytes_of_struct σ cls rss rs] states that the struct
+      consisting of fields of the raw bytes [rss] is represented by the
+      raw bytes in [rs]. [rs] should agree with [rss] on the offsets of
+      the fields. It might be possible to make some assumptions about the
+      parts of [rs] that represent padding based on the ABI. *)
+  (* TODO (JH): We should probably restrict this interface with some `Axiom`s. *)
+  Parameter raw_bytes_of_struct :
+    genv -> globname -> gmap ident (list raw_byte) -> list raw_byte -> Prop.
+End RAW_BYTES_VAL.
+
+Module Type RAW_BYTES_MIXIN
+       (Import P : PTRS) (Import R : RAW_BYTES)
+       (Import V : VAL_MIXIN P R)
+       (Import RD : RAW_BYTES_VAL P R V).
+
+  Inductive val_related : genv -> type -> val -> val -> Prop :=
+  | Veq_refl σ ty v: val_related σ ty v v
+  | Vqual σ t ty v1 v2:
+      val_related σ ty v1 v2 ->
+      val_related σ (Tqualified t ty) v1 v2
+  | Vraw_uint8 σ raw z:
+      raw_bytes_of_val σ (Tint W8 Unsigned) (Vint z) [raw] ->
+      val_related σ (Tint W8 Unsigned) (Vraw raw) (Vint z)
+  | Vuint8_raw σ z raw:
+      raw_bytes_of_val σ (Tint W8 Unsigned) (Vint z) [raw] ->
+      val_related σ (Tint W8 Unsigned) (Vint z) (Vraw raw).
+
+  Lemma val_related_qual :
+    forall σ t ty v1 v2,
+      val_related σ ty v1 v2 ->
+      val_related σ (Tqualified t ty) v1 v2.
+  Proof. intros; by constructor. Qed.
+
+  #[global] Instance val_related_reflexive σ ty : Reflexive (val_related σ ty).
+  Proof. constructor. Qed.
+  #[global] Instance val_related_symmetric σ ty : Symmetric (val_related σ ty).
+  Proof.
+    rewrite /Symmetric; intros * Hval_related;
+      induction Hval_related; subst; by constructor.
+  Qed.
+  #[global] Instance val_related_transitive σ ty : Transitive (val_related σ ty).
+  Proof.
+    rewrite /Transitive; intros * Hval_related1;
+      induction Hval_related1; intros * Hval_related2.
+    - by auto.
+    - constructor; apply IHHval_related1;
+        inversion Hval_related2; subst;
+        by [constructor | auto].
+    - inversion Hval_related2; subst.
+      + by constructor.
+      + pose proof (raw_bytes_of_val_unique_encoding _ _ _ _ _ H H2) as Hraws.
+        inversion Hraws; constructor.
+    - inversion Hval_related2; subst.
+      + by constructor.
+      + pose proof (raw_bytes_of_val_int_unique_val _ _ _ _ _ _ H H2); subst.
+        by constructor.
+  Qed.
+  #[global] Instance val_related_Proper : Proper (genv_leq ==> eq ==> eq ==> eq ==> iff) val_related.
+  Proof.
+    repeat red; intros; subst; split; intros.
+    - induction H0; subst.
+      + constructor.
+      + constructor; auto.
+      + setoid_rewrite H in H0; by constructor.
+      + setoid_rewrite H in H0; by constructor.
+    - induction H0; subst.
+      + constructor.
+      + constructor; auto.
+      + setoid_rewrite <- H in H0; by constructor.
+      + setoid_rewrite <- H in H0; by constructor.
+  Qed.
+
+  Lemma raw_bytes_of_val_uint_length : forall σ v rs sz sgn,
+      raw_bytes_of_val σ (Tint sz sgn) v rs ->
+      length rs = bytesNat sz.
+  Proof.
+    intros * Hraw_bytes_of_val.
+    apply raw_bytes_of_val_sizeof in Hraw_bytes_of_val.
+    inversion Hraw_bytes_of_val as [Hsz]; clear Hraw_bytes_of_val.
+    by apply N_of_nat_inj in Hsz.
+  Qed.
+End RAW_BYTES_MIXIN.
+
 (* Collect all the axioms. *)
 Module Type PTRS_INTF_MINIMAL := PTRS <+ PTRS_DERIVED.
-Module Type PTRS_INTF := PTRS_INTF_MINIMAL <+ RAW_BYTES.
+Module Type PTRS_INTF := PTRS_INTF_MINIMAL <+ RAW_BYTES <+ VAL_MIXIN <+ RAW_BYTES_VAL.
 Declare Module PTRS_INTF_AXIOM : PTRS_INTF.
 
 (* Plug mixins. *)
-Module Type PTRS_FULL_INTF := PTRS_INTF <+ VAL_MIXIN <+ PTRS_MIXIN.
-Module Export PTRS_FULL_AXIOM : PTRS_FULL_INTF :=
-  PTRS_INTF_AXIOM <+ VAL_MIXIN <+ PTRS_MIXIN.
+Module Type FULL_INTF := PTRS_INTF <+ PTRS_MIXIN <+ RAW_BYTES_MIXIN.
+Module Export FULL_INTF_AXIOM : FULL_INTF := PTRS_INTF_AXIOM <+ PTRS_MIXIN <+ RAW_BYTES_MIXIN.
 
 Instance ptr_inhabited : Inhabited ptr := populate nullptr.
 
@@ -177,11 +310,19 @@ Definition bound (bits : bitsize) (sgn : signed) (v : Z) : Prop :=
 (**
 [has_type v ty] is an approximation in [Prop] of "[v] is an initialized value
 of type [t]." This implies:
-- if [ty <> Tvoid], then [v <> Vundef].
+- if [ty <> Tvoid], then [v <> Vundef] <--
+  ^---- TODO: <https://gitlab.com/bedrocksystems/cpp2v-core/-/issues/319>
+- if [ty = Tvoid], then [v = Vundef].
+- if [ty = Tnullptr], then [v = Vptr nullptr].
 - if [ty = Tint sz sgn], then [v] fits the appropriate bounds (see
-[has_int_type']).
-- if [ty] is a type of pointers/references/aggregates, we only ensure that [v
-= Vptr p].
+  [has_int_type']).
+- if [ty] is a type of pointers/aggregates, we only ensure that [v = Vptr p].
+  + NOTE: We require that - for a type [Tnamed nm] - the name resolves to some
+    [GlobDecl] other than [Gtype] in a given [σ : genv].
+- if [ty] is a type of references, we ensure that [v = Vref p] and
+  that [p <> nullptr]; [Vref] is an alias for [Vptr]
+- if [ty] is a type of arrays, we ensure that [v = Vptr p] and
+  that [p <> nullptr].
   *)
 Parameter has_type : val -> type -> Prop.
 
@@ -190,9 +331,9 @@ Axiom has_type_pointer : forall v ty,
 Axiom has_type_nullptr : forall v,
     has_type v Tnullptr -> v = Vptr nullptr.
 Axiom has_type_reference : forall v ty,
-    has_type v (Treference ty) -> exists p, v = Vptr p /\ p <> nullptr.
+    has_type v (Treference ty) -> exists p, v = Vref p /\ p <> nullptr.
 Axiom has_type_rv_reference : forall v ty,
-    has_type v (Trv_reference ty) -> exists p, v = Vptr p /\ p <> nullptr.
+    has_type v (Trv_reference ty) -> exists p, v = Vref p /\ p <> nullptr.
 Axiom has_type_array : forall v ty n,
     has_type v (Tarray ty n) -> exists p, v = Vptr p /\ p <> nullptr.
 Axiom has_type_function : forall v cc rty args,

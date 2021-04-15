@@ -68,8 +68,7 @@ End fractional.
 Ensures that everything needed is properly functorized. *)
 Declare Module PTRS_IMPL : PTRS_INTF.
 
-Module Import PTRS_FULL_IMPL : PTRS_FULL_INTF :=
-  PTRS_IMPL <+ VAL_MIXIN <+ PTRS_MIXIN.
+Module Import FULL_IMPL : FULL_INTF := PTRS_IMPL <+ RAW_BYTES_MIXIN <+ PTRS_MIXIN.
 
 Implicit Types (p : ptr).
 
@@ -177,7 +176,7 @@ End SimpleCPP_VIRTUAL.
 Module SimpleCPP.
   Include SimpleCPP_BASE.
   Include SimpleCPP_VIRTUAL.
-  Include PTRS_FULL_IMPL.
+  Include FULL_IMPL.
 
   Definition runtime_val := runtime_val'.
 
@@ -872,94 +871,165 @@ Module SimpleCPP.
         @identity σ this (Some mdc) 1 p |-- |={↑pred_ns}=> @identity σ this None 1 p.
     Proof. rewrite /identity. eauto. Qed.
 
-    Definition tptsto {σ:genv} (t : type) (q : Qp) (p : ptr) (v : val) : mpred :=
+    Definition tptsto' {σ : genv} (t : type) (q : Qp) (p : ptr) (v : val) : mpred :=
       [| p <> nullptr |] **
       Exists (oa : option addr),
-              type_ptr t p ** (* use the appropriate ghost state instead *)
-              mem_inj_own p oa **
-              oaddr_encodes σ t q oa p v.
+        type_ptr t p ** (* use the appropriate ghost state instead *)
+        mem_inj_own p oa **
+        oaddr_encodes σ t q oa p v.
     (* TODO: [tptsto] should not include [type_ptr] wholesale, but its
     pieces in the new model, replacing [mem_inj_own], and [tptsto_type_ptr]
     should be proved properly. *)
-    Global Instance tptsto_type_ptr : forall (σ : genv) ty q p v,
-      Observe (type_ptr ty p) (tptsto ty q p v) := _.
-(*
-    Instance tptsto_type_ptr resolve ty q p v align
-      (Hal : align_of (resolve := resolve) ty = Some align) :
-      Observe (type_ptr (resolve := resolve) ty p)
-        (tptsto (σ := resolve) ty q p v).
-    Proof.
-      apply: observe_intro_persistent.
-      rewrite /tptsto /type_ptr.
-      f_equiv.
-      iDestruct 1 as (oa) "(? & #$ & ?)".
-      iSplit; last admit. (* validity of range. *)
-      iExists align. iFrame (Hal).
-      (* alignment of pointer. *)
-    Abort. *)
 
+    #[local] Instance tptsto'_type_ptr : forall (σ : genv) ty q p v,
+        Observe (type_ptr ty p) (tptsto' ty q p v) := _.
 
-    Axiom tptsto_live : forall {σ} ty (q : Qp) p v,
-      @tptsto σ ty q p v |-- live_ptr p ** True.
+    (* TODO (JH): We shouldn't be axiomatizing this in our model in the long-run *)
+    Axiom tptsto'_live : forall {σ} ty (q : Qp) p v,
+      @tptsto' σ ty q p v |-- live_ptr p ** True.
 
-    Instance tptsto_nonnull_obs {σ} ty q a :
-      Observe False (@tptsto σ ty q nullptr a).
+    #[local] Instance tptsto'_nonnull_obs {σ} ty q a :
+      Observe False (@tptsto' σ ty q nullptr a).
     Proof. iDestruct 1 as (Hne) "_". naive_solver. Qed.
+
+    Theorem tptsto'_nonnull {σ} ty q a :
+      @tptsto' σ ty q nullptr a |-- False.
+    Proof. rewrite tptsto'_nonnull_obs. iDestruct 1 as "[]". Qed.
+
+    #[local] Instance tptsto'_mono :
+      Proper (genv_leq ==> eq ==> eq ==> eq ==> eq ==> (⊢)) (@tptsto').
+    Proof.
+      rewrite /tptsto' /oaddr_encodes /addr_encodes.
+      intros ?? Hσ ??-> ??-> ??-> ??->.
+      iIntros "(%Hnonnull & H)";
+        iDestruct "H" as (oa) "(Htype_ptr & Hmem_inj_own & Hoa)".
+      iSplitR; [by iPureIntro |]; iExists oa; iFrame "#∗".
+      iSplitL "Htype_ptr"; iStopProof; [| destruct oa]; by solve_proper.
+    Qed.
+
+    #[local] Instance tptsto'_proper :
+      Proper (genv_eq ==> eq ==> eq ==> eq ==> eq ==> (≡)) (@tptsto').
+    Proof.
+      intros σ1 σ2 [Hσ1 Hσ2] ??-> ??-> ??-> ??->.
+      by split'; apply tptsto'_mono.
+    Qed.
+
+    #[local] Instance tptsto'_fractional {σ} ty p v :
+      Fractional (λ q, @tptsto' σ ty q p v) := _.
+
+    #[local] Instance tptsto'_timeless {σ} ty q p v :
+      Timeless (@tptsto' σ ty q p v) := _.
+
+    #[local] Instance tptsto'_nonvoid {σ} ty (q : Qp) p v :
+      Observe [| ty <> Tvoid |] (@tptsto' σ ty q p v) := _.
+
+    #[local] Instance tptsto'_frac_valid {σ} ty (q : Qp) p v :
+      Observe [| q ≤ 1 |]%Qp (@tptsto' σ ty q p v) := _.
+
+    #[local] Instance tptsto'_agree σ ty q1 q2 p v1 v2 :
+      Observe2 [| v1 = v2 |] (@tptsto' σ ty q1 p v1) (@tptsto' σ ty q2 p v2).
+    Proof.
+      intros; apply: observe_2_intro_persistent.
+      iDestruct 1 as (Hnn1 oa1) "H1".
+      iDestruct 1 as (Hnn2 oa2) "H2".
+      iDestruct (observe_2_elim_pure (oa1 = oa2) with "H1 H2") as %->.
+      destruct oa2; [iApply (observe_2 with "H1 H2") |].
+      iDestruct (observe_2 [| v1 = v2 |] with "H1 H2") as %->.
+      by iPureIntro.
+    Qed.
+
+    Definition tptsto {σ : genv} (ty : type) (q : Qp) (p : ptr) (v : val) : mpred :=
+      Exists v', [| val_related σ ty v v' |] ** @tptsto' σ ty q p v'.
+
+    #[global] Instance tptsto_type_ptr : forall (σ : genv) ty q p v,
+      Observe (type_ptr ty p) (tptsto ty q p v) := _.
+
+    Lemma tptsto_live : forall {σ} ty (q : Qp) p v,
+      @tptsto σ ty q p v |-- live_ptr p ** True.
+    Proof.
+      intros *; rewrite /tptsto.
+      iIntros "H"; iDestruct "H" as (v') "(% & Htptsto')".
+      iApply (tptsto'_live with "Htptsto'").
+    Qed.
+
+    #[global] Instance tptsto_nonnull_obs {σ} ty q a :
+      Observe False (@tptsto σ ty q nullptr a) := _.
+
     Theorem tptsto_nonnull {σ} ty q a :
       @tptsto σ ty q nullptr a |-- False.
     Proof. rewrite tptsto_nonnull_obs. iDestruct 1 as "[]". Qed.
 
-    Instance tptsto_mono :
+    #[global] Instance tptsto_mono :
       Proper (genv_leq ==> eq ==> eq ==> eq ==> eq ==> (⊢)) (@tptsto).
-    Proof. rewrite /tptsto /oaddr_encodes /addr_encodes. solve_proper. Qed.
+    Proof.
+      rewrite /tptsto /oaddr_encodes /addr_encodes.
+      intros ?? Hσ ??-> ??-> ??-> ??->.
+      iIntros "H"; iDestruct "H" as (v') "(%Hval_related & Htptsto')".
+      setoid_rewrite Hσ; setoid_rewrite Hσ in Hval_related.
+      iExists v'; by iFrame "%∗".
+    Qed.
 
-    Instance tptsto_proper :
+    #[global] Instance tptsto_proper :
       Proper (genv_eq ==> eq ==> eq ==> eq ==> eq ==> (≡)) (@tptsto).
     Proof.
       intros σ1 σ2 [Hσ1 Hσ2] ??-> ??-> ??-> ??->.
       by split'; apply tptsto_mono.
     Qed.
 
-    Instance tptsto_fractional {σ} ty p v : Fractional (λ q, @tptsto σ ty q p v) := _.
-    Instance tptsto_timeless {σ} ty q p v : Timeless (@tptsto σ ty q p v) := _.
+    #[global] Instance tptsto_fractional {σ} ty p v :
+      Fractional (λ q, @tptsto σ ty q p v) := _.
 
-    Global Instance tptsto_nonvoid {σ} ty (q : Qp) p v :
+    #[global] Instance tptsto_timeless {σ} ty q p v :
+      Timeless (@tptsto σ ty q p v) := _.
+
+    #[global] Instance tptsto_nonvoid {σ} ty (q : Qp) p v :
       Observe [| ty <> Tvoid |] (@tptsto σ ty q p v) := _.
 
-    Global Instance tptsto_frac_valid {σ} ty (q : Qp) p v :
+    #[global] Instance tptsto_frac_valid {σ} ty (q : Qp) p v :
       Observe [| q ≤ 1 |]%Qp (@tptsto σ ty q p v) := _.
 
-    Global Instance tptsto_agree σ t q1 q2 p v1 v2 :
-      Observe2 [| v1 = v2 |] (@tptsto σ t q1 p v1) (@tptsto σ t q2 p v2).
+    #[global] Instance tptsto_agree σ ty q1 q2 p v1 v2 :
+      Observe2 [| val_related σ ty v1 v2 |] (@tptsto σ ty q1 p v1) (@tptsto σ ty q2 p v2).
     Proof.
-      apply: observe_2_intro_persistent.
-      iDestruct 1 as (Hnn1 oa1) "H1".
-      iDestruct 1 as (Hnn2 oa2) "H2".
-      iDestruct (observe_2_elim_pure (oa1 = oa2) with "H1 H2") as %->.
-      destruct oa2; iApply (observe_2 with "H1 H2").
+      intros; apply: observe_2_intro_persistent.
+      iDestruct 1 as (v1' Hval_related1) "H1".
+      iDestruct 1 as (v2' Hval_related2) "H2".
+      iDestruct (observe_2_elim_pure (v1' = v2') with "H1 H2") as %->.
+      iPureIntro; transitivity v2'; by [assumption | symmetry].
+    Qed.
+
+    Lemma tptsto_val_related_transport :
+      forall σ ty q p v1 v2,
+        [| val_related σ ty v1 v2 |] |-- tptsto ty q p v1 -* tptsto ty q p v2.
+    Proof.
+      intros *; rewrite /tptsto; iIntros "%Hval_related".
+      iDestruct 1 as (v1' Hval_related1) "H1";
+        iExists v1'; iFrame; iPureIntro.
+      transitivity v1; by [symmetry | assumption].
     Qed.
 
     (* This is now internal to the C++ abstract machine. *)
     Local Lemma pinned_ptr_borrow {σ} ty p v va :
       @tptsto σ ty 1 p v ** pinned_ptr va p |--
-        |={↑pred_ns}=> Exists vs, @encodes σ ty v vs ** vbytes va vs 1 **
-                (Forall v' vs', @encodes σ ty v' vs' -* vbytes va vs' 1 -*
-                                |={↑pred_ns}=> @tptsto σ ty 1 p v').
+        |={↑pred_ns}=> Exists v' vs, @encodes σ ty v' vs ** vbytes va vs 1 **
+                (Forall v'' vs', @encodes σ ty v'' vs' -* vbytes va vs' 1 -*
+                                |={↑pred_ns}=> @tptsto σ ty 1 p v'').
     Proof.
       iIntros "(TP & PI)".
       iDestruct "PI" as "[_ [[-> %]|[[%%] MJ]]]"; first by rewrite tptsto_nonnull.
-      rewrite /tptsto.
-      iDestruct "TP" as (_ ma) "[TP [MJ' OA]]".
+      rewrite /tptsto/tptsto'.
+      iDestruct "TP" as (v') "(%Hval_related & TP')";
+        iDestruct "TP'" as (_ ma) "[TP [MJ' OA]]".
       iDestruct (mem_inj_own_agree with "MJ MJ'") as %<-.
       iDestruct "OA" as (vs) "(#EN & Bys & VBys)".
       iIntros "!>".
-      iExists vs. iFrame "EN VBys".
-      iIntros (v' vs') "#EN' VBys".
+      iExists v', vs. iFrame "EN VBys".
+      iIntros (v'' vs') "#EN' VBys".
       iDestruct (encodes_consistent with "EN EN'") as %Heq.
       iMod (bytes_update vs' Heq with "Bys") as "Bys'".
-      iModIntro.
-      iSplit; first done. iExists (Some va). iFrame "TP MJ".
-      iExists vs'. by iFrame.
+      iModIntro. iExists v''.
+      do 2 (iSplit; first done). iExists (Some va). iFrame "TP MJ".
+      simpl; iExists vs'; iFrame "#∗".
     Qed.
 
     Axiom same_address_eq_type_ptr : forall resolve ty p1 p2 n,
@@ -989,5 +1059,5 @@ Module SimpleCPP.
 
 End SimpleCPP.
 
-Module Type SimpleCPP_INTF := SimpleCPP_BASE <+ PTRS_FULL_INTF <+ CPP_LOGIC.
+Module Type SimpleCPP_INTF := SimpleCPP_BASE <+ FULL_INTF <+ CPP_LOGIC.
 Module L : SimpleCPP_INTF := SimpleCPP.
