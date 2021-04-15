@@ -30,9 +30,19 @@ Module Type RAW_BYTES.
   Parameter raw_byte_eq_dec : EqDecision raw_byte.
   Existing Instance raw_byte_eq_dec.
 
+  Axiom raw_int_byte : N -> raw_byte.
+
+(* TODO: refine our treatment of `raw_bytes` s.t. we respect
+     the size constraints imposed by the physical hardware.
+
+     The following might help but will likely require other
+     axioms which reflect boundedness or round-trip properties.
+
+
   Parameter of_raw_byte : raw_byte -> N.
   Axiom inj_of_raw_byte : Inj (=) (=) of_raw_byte.
   #[global] Existing Instance inj_of_raw_byte.
+*)
 End RAW_BYTES.
 
 Module Type VAL_MIXIN (Import P : PTRS) (Import R : RAW_BYTES).
@@ -52,8 +62,8 @@ Module Type VAL_MIXIN (Import P : PTRS) (Import R : RAW_BYTES).
  *)
 Variant val : Set :=
 | Vint (_ : Z)
-| Vptr (_ : P.ptr)
-| Vraw (_ : R.raw_byte)
+| Vptr (_ : ptr)
+| Vraw (_ : raw_byte)
 | Vundef
 .
 #[global] Notation Vref := Vptr (only parsing).
@@ -300,6 +310,8 @@ Definition bound (bits : bitsize) (sgn : signed) (v : Z) : Prop :=
 (**
 [has_type v ty] is an approximation in [Prop] of "[v] is an initialized value
 of type [t]." This implies:
+- if [ty <> Tvoid], then [v <> Vundef] <--
+  ^---- TODO: <https://gitlab.com/bedrocksystems/cpp2v-core/-/issues/319>
 - if [ty = Tvoid], then [v = Vundef].
 - if [ty = Tnullptr], then [v = Vptr nullptr].
 - if [ty = Tint sz sgn], then [v] fits the appropriate bounds (see
@@ -324,36 +336,8 @@ Axiom has_type_rv_reference : forall v ty,
     has_type v (Trv_reference ty) -> exists p, v = Vref p /\ p <> nullptr.
 Axiom has_type_array : forall v ty n,
     has_type v (Tarray ty n) -> exists p, v = Vptr p /\ p <> nullptr.
-Axiom has_type_named : forall σ v name,
-    has_type v (Tnamed name) ->
-    match glob_def σ name with
-    | None => False
-    | Some decl =>
-      match decl with
-      | Gtype => False
-      | Gunion _ | Gstruct _ => exists p, v = Vptr p
-      | Genum ty _ | Gconstant ty _ | Gtypedef ty => has_type v ty
-      end
-    end.
 Axiom has_type_function : forall v cc rty args,
     has_type v (Tfunction (cc:=cc) rty args) -> exists p, v = Vptr p /\ p <> nullptr.
-(* "A null pointer constant can be converted to a pointer-to-member type; the result is the
-    null member pointer value of that type and is distinguishable from any pointer to member
-    not created from a null pointer constant. [...]"
-
-   - http://eel.is/c++draft/conv.mem#1
- *)
-(* TODO (SEMANTICS): Should we also use the `glob_def` logic here (see: [Tmember]) *)
-Axiom has_type_member_pointer : forall σ v name ty,
-    has_type v (Tmember_pointer name ty) -> exists p, v = Vptr p.
-
-(* Not supported at the moment *)
-Axiom has_type_arch : forall v osz bs,
-    has_type v (Tarch osz bs) -> False.
-
-(* Not supported at the moment *)
-Axiom has_type_float : forall v sz,
-    has_type v (Tfloat sz) -> False.
 
 Axiom has_type_void : forall v,
     has_type v Tvoid -> v = Vundef.

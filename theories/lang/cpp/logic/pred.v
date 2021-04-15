@@ -192,7 +192,9 @@ Module Type CPP_LOGIC (Import CC : CPP_LOGIC_CLASS) (Import INTF : FULL_INTF).
     Global Existing Instances tptsto_agree.
 
     (* TODO (JH/PG): Add in a proper instance using this which allows us to rewrite
-         `val_related` values within `tptsto`s. *)
+         `val_related` values within `tptsto`s.
+
+         <https://gitlab.com/bedrocksystems/cpp2v-core/-/merge_requests/377#note_530611061> *)
     Axiom tptsto_val_related_transport : forall {σ} ty q p v1 v2,
         [| val_related σ ty v1 v2 |] |-- @tptsto σ ty q p v1 -* @tptsto σ ty q p v2.
 

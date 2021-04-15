@@ -472,29 +472,11 @@ Module SimpleCPP.
           iIntros (H1 H2) "!%".
         destruct (erase_qualifiers t) eqn:? =>//=; intros;
           repeat (try (case_decide || case_match); destruct_and?; simplify_eq => //);
-          solve [ constructor
-                | edestruct cptr_ne_aptr; eauto
-                | edestruct pure_encodes_undef_aptr; eauto
-                | edestruct pure_encodes_undef_Z_to_bytes; eauto
-                | assert (z0 = z) by (eapply Z_to_bytes_inj; eauto); subst; constructor].
+        by [
+          edestruct cptr_ne_aptr | edestruct pure_encodes_undef_aptr |
+          edestruct pure_encodes_undef_Z_to_bytes |
+          f_equiv; exact: Z_to_bytes_inj ].
       Qed.
-
-(*
-      Lemma encodes_val_related_transport ty v1 v2 vs :
-        [| val_related σ ty v1 v2 |] |-- encodes ty v1 vs -* encodes ty v2 vs.
-      Proof.
-        iIntros "%Hval_related %Hpure_encodes"; iPureIntro; unfold pure_encodes in *.
-        generalize dependent v1; generalize dependent v2; generalize dependent vs;
-          induction ty; simpl in *; intros;
-          try solve [inversion Hval_related; by subst].
-        - inversion Hval_related.
-          + by subst.
-          + subst; split.
-            * rewrite /in_Z_to_bytes_bounds.
-            *
-          +
-        -
-*)
 
       Global Instance encodes_consistent t v1 v2 vs1 vs2 :
         Observe2 [| length vs1 = length vs2 |] (encodes t v1 vs1) (encodes t v2 vs2).

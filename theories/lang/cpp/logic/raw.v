@@ -41,11 +41,11 @@ Section with_Σ.
           type_ptrR ty.
 
       Lemma raw_int_byte_primR : forall q r z,
-        (z = Z.of_N (of_raw_byte r))%Z ->
-        rawR q r -|- primR T_uchar q (Vint z).
+        (raw_int_byte z = r)%Z ->
+        rawR q r -|- primR T_uchar q (Vn z).
       Proof.
         intros * Hz; subst; rewrite primR_to_rawsR; split'.
-        - iIntros "HrawR"; iExists [r].
+        - iIntros "HrawR"; iExists [raw_int_byte z].
           rewrite /rawsR arrayR_singleton.
           iDestruct (observe (type_ptrR (Tint char_bits Unsigned)) with "HrawR")
             as "#Htype_ptrR". {
@@ -78,7 +78,7 @@ Section with_Σ.
         (* JH: TODO: Determine what new axioms we should add here. *)
         Axiom raw_byte_of_int_eq : forall sz x rs,
             raw_bytes_of_val σ (Tint sz Unsigned) (Vint x) rs <->
-            (exists l, decodes_uint l x /\ of_raw_byte <$> rs = l).
+            (exists l, decodes_uint l x /\ raw_int_byte <$> l = rs).
 
         (** TODO: determine whether this is correct with respect to pointers *)
         Lemma decode_uint_primR : forall q sz (x : Z),
@@ -87,26 +87,28 @@ Section with_Σ.
             arrayR (Tint W8 Unsigned) (fun c => primR (Tint W8 Unsigned) q (Vint c)) (Z.of_N <$> l) **
             type_ptrR (Tint sz Unsigned) **
             [| decodes_uint l x |] **
-            [| of_raw_byte <$> rs  = l |].
+            [| raw_int_byte <$> l = rs |].
         Proof.
           move => q sz x.
           rewrite primR_to_rawsR. setoid_rewrite raw_byte_of_int_eq.
           iSplit.
           - iDestruct 1 as (rs) "(Hraw & H & $)".
-            iDestruct "H" as %[l [Hdec <-]].
+            iDestruct "H" as %[l [Hdec Hrs]].
             iExists rs, _; iSplit => //. clear Hdec.
             rewrite /rawsR arrayR_eq/arrayR_def. iStopProof.
             (* TODO i need to do induction here because the [Proper] instances are too weak. *)
-            induction rs => // /=.
-            rewrite !arrR_cons; eauto.
-            rewrite -IHrs /=. f_equiv. f_equiv.
-              by rewrite raw_int_byte_primR.
+            generalize dependent rs; induction l => rs Hrs // /=; simpl in Hrs.
+            + by subst.
+            + destruct rs; inversion Hrs; subst; simpl.
+              rewrite !arrR_cons; eauto.
+              rewrite -IHl /=; [| auto]. f_equiv. f_equiv.
+                by rewrite raw_int_byte_primR.
           - iDestruct 1 as (rs l) "(Harray & $ & %Hdec & %Hbytes)".
             iExists rs; iSplit => //; eauto with iFrame. clear Hdec; rewrite -{}Hbytes.
             rewrite /rawsR arrayR_eq/arrayR_def; iStopProof.
-            induction rs => // /=.
+            induction l => // /=.
             rewrite !arrR_cons; eauto.
-            rewrite -IHrs /=. f_equiv. f_equiv.
+            rewrite -IHl /=. f_equiv. f_equiv.
               by rewrite raw_int_byte_primR.
         Qed.
       End decodes.
