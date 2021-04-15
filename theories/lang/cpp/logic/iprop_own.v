@@ -78,6 +78,15 @@ Section si_embedding.
     {| bi_embed_mixin := siProp_embedding_mixin |}.
   #[global] Instance siProp_bi_embed_emp : BiEmbedEmp siPropI iPropI.
   Proof. constructor. intros. by rewrite /bi_emp /= /uPred_emp uPred_pure_eq. Qed.
+
+  (* TODO: uPred_cmra_valid should have been defined as si_cmra_valid.
+    This is to be fixed upstream. *)
+  Lemma si_cmra_valid_validI `{inG Σ A} (a : A) :
+    ⎡ si_cmra_valid a ⎤ ⊣⊢@{iPropI} uPred_cmra_valid a.
+  Proof.
+    constructor => ???. unseal.
+    by rewrite si_cmra_valid_eq uPred_cmra_valid_eq.
+  Qed.
 End si_embedding.
 
 Section iprop_instances.
