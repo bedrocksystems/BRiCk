@@ -891,7 +891,7 @@ Module Type Expr.
                         is suitably aligned, accounting for
                         __STDCPP_DEFAULT_NEW_ALIGNMENT__ (issue #149) *)
                            (Forall obj_ptr : ptr,
-                              obj_ptr |-> anyR aty 1 (* TODO backwards compat [tblockR aty] *) -*
+                              obj_ptr |-> tblockR aty -*
                               (* This also ensures these pointers share their
                               address (see [provides_storage_same_address]) *)
                               provides_storage storage_ptr obj_ptr aty -*
@@ -971,7 +971,7 @@ Module Type Expr.
         is_aggregate (type_of e) = true ->
         (let ty := type_of e in
          let raw_type := erase_qualifiers ty in
-         Forall a : ptr, a |-> uninitR raw_type 1 (* TODO backwards compat [tblockR raw_type] *) -*
+         Forall a : ptr, a |-> tblockR raw_type -*
                    let '(e,dt) := destructor_for e in
                    wp_init ty a e (fun free =>
                                      Q (Vptr a) (destruct_val ty a dt (a |-> anyR raw_type 1 (* TODO backwards compat [tblockR raw_type] *) ** free))))
