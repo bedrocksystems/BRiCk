@@ -7,8 +7,9 @@
  * Definitions for the semantics
  *)
 Require Import bedrock.lang.prelude.base.
+
+Require Import stdpp.coPset.
 Require Import iris.bi.monpred.
-Require Import iris.base_logic.lib.fancy_updates.
 From iris.proofmode Require Import tactics classes.
 
 From bedrock.lang.cpp Require Import
