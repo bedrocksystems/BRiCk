@@ -372,10 +372,11 @@ Section with_cpp.
       let members := wpi_members ti ρ cls this s.(s_fields) inits in
       let ident Q := this |-> init_identity cls Q in
       (** initialize the bases, then the identity, then the members *)
-      bases (ident (members (type_ptr (Tnamed cls) this -* this |-> struct_padding _ 1 cls -*  Q)))
+      bases (ident (members (type_ptr (Tnamed cls) this -* this |-> struct_padding 1 cls -*  Q)))
       (* NOTE here we are constructing the [type_ptr] for the *full object*
          after we have provided the [type_ptr] for the individual fields.
          TODO we should also get [_padding] and anything else here.
+         NOTE [struct_padding] now implies [type_ptr], so this is a little bit redundant.
        *)
     end%I.
 

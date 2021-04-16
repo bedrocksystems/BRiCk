@@ -18,53 +18,55 @@ Require Export bedrock.lang.cpp.logic.raw.
 Require Import bedrock.lang.cpp.heap_notations.
 
 Section with_Σ.
-  Context `{Σ : cpp_logic} {resolve:genv}.
+  Context `{Σ : cpp_logic}.
 
   (** TODO move to pred.v *)
-  Axiom struct_padding : genv -> Qp -> globname -> Rep.
-  Axiom union_padding : genv -> Qp -> globname -> nat -> Rep.
+  Axiom struct_padding : forall {σ:genv}, Qp -> globname -> Rep.
+  Axiom union_padding : forall {σ:genv}, Qp -> globname -> nat -> Rep.
 
-  Axiom struct_padding_fractional : forall cls, Fractional (fun q => struct_padding resolve q cls).
-  Axiom struct_padding_timeless : forall q cls, Timeless  (struct_padding resolve q cls).
-  Axiom struct_padding_frac_valid : forall (q : Qp) cls, Observe [| q ≤ 1 |]%Qp (struct_padding resolve q cls).
-  Axiom union_padding_fractional : forall cls idx, Fractional (fun q => union_padding resolve q cls idx).
-  Axiom union_padding_timeless : forall q cls idx, Timeless (union_padding resolve q cls idx).
-  Axiom union_padding_frac_valid : forall (q : Qp) cls idx, Observe [| q ≤ 1 |]%Qp (union_padding resolve q cls idx).
+  Context {σ : genv}.
+
+  Axiom struct_padding_fractional : forall cls, Fractional (fun q => struct_padding q cls).
+  Axiom struct_padding_timeless : forall q cls, Timeless  (struct_padding q cls).
+  Axiom struct_padding_frac_valid : forall (q : Qp) cls, Observe [| q ≤ 1 |]%Qp (struct_padding q cls).
+  Axiom union_padding_fractional : forall cls idx, Fractional (fun q => union_padding q cls idx).
+  Axiom union_padding_timeless : forall q cls idx, Timeless (union_padding q cls idx).
+  Axiom union_padding_frac_valid : forall (q : Qp) cls idx, Observe [| q ≤ 1 |]%Qp (union_padding q cls idx).
 
   #[global] Existing Instances
     struct_padding_fractional struct_padding_timeless struct_padding_frac_valid
     union_padding_fractional union_padding_timeless union_padding_frac_valid.
 
   #[global] Instance struct_padding_as_fractional q cls :
-    AsFractional (struct_padding resolve q cls) (λ q, struct_padding resolve q cls) q.
+    AsFractional (struct_padding q cls) (λ q, struct_padding q cls) q.
   Proof. exact: Build_AsFractional. Qed.
   #[global] Instance union_padding_as_fractional q cls idx :
-    AsFractional (union_padding resolve q cls idx) (λ q, union_padding resolve q cls idx) q.
+    AsFractional (union_padding q cls idx) (λ q, union_padding q cls idx) q.
   Proof. exact: Build_AsFractional. Qed.
 
-  Axiom struct_padding_type_ptr_observe : forall q cls, Observe (type_ptrR (Tnamed cls)) (struct_padding resolve q cls).
+  Axiom struct_padding_type_ptr_observe : forall q cls, Observe (type_ptrR (Tnamed cls)) (struct_padding q cls).
   #[global] Existing Instance struct_padding_type_ptr_observe.
-  #[global] Instance struct_padding_strict_valid_observe q cls : Observe svalidR (struct_padding resolve q cls).
+  #[global] Instance struct_padding_strict_valid_observe q cls : Observe svalidR (struct_padding q cls).
   Proof. rewrite -type_ptrR_svalidR; apply _. Qed.
-  #[global] Instance struct_padding_valid_observe q cls : Observe validR (struct_padding resolve q cls).
+  #[global] Instance struct_padding_valid_observe q cls : Observe validR (struct_padding q cls).
   Proof. rewrite -svalidR_validR; apply _. Qed.
 
-  Axiom union_padding_type_ptr_observe : forall q cls i, Observe (type_ptrR (Tnamed cls)) (union_padding resolve q cls i).
+  Axiom union_padding_type_ptr_observe : forall q cls i, Observe (type_ptrR (Tnamed cls)) (union_padding q cls i).
   #[global] Existing Instance union_padding_type_ptr_observe.
-  #[global] Instance union_padding_strict_valid_observe q cls i : Observe svalidR (union_padding resolve q cls i).
+  #[global] Instance union_padding_strict_valid_observe q cls i : Observe svalidR (union_padding q cls i).
   Proof. rewrite -type_ptrR_svalidR; apply _. Qed.
-  #[global] Instance union_padding_valid_observe q cls i : Observe validR (union_padding resolve q cls i).
+  #[global] Instance union_padding_valid_observe q cls i : Observe validR (union_padding q cls i).
   Proof. rewrite -svalidR_validR; apply _. Qed.
 
   (* TODO: Do we need type_ptrR here? *)
   Axiom struct_to_raw : forall cls st rss (q : Qp),
-    glob_def resolve cls = Some (Gstruct st) ->
+    glob_def σ cls = Some (Gstruct st) ->
     st.(s_layout) = POD ->
     ([∗ list] fld ∈ st.(s_fields),
        Exists rs, [| rss !! fld.(mem_name) = Some rs |] **
        _offsetR (_field {| f_name := fld.(mem_name) ; f_type := cls |}) (rawsR q rs))
-      ** struct_padding resolve q cls -|-
-      Exists rs, rawsR q rs ** [| raw_bytes_of_struct resolve cls rss rs |].
+      ** struct_padding q cls -|-
+      Exists rs, rawsR q rs ** [| raw_bytes_of_struct σ cls rss rs |].
 
   Definition implicit_destruct_ty (ty : type) := anyR ty 1 |-- |={↑pred_ns}=> tblockR ty 1.
 
@@ -79,7 +81,7 @@ Section with_Σ.
   (** implicit destruction of an aggregate *)
   Axiom implicit_destruct_struct
   : forall cls st,
-      glob_def resolve cls = Some (Gstruct st) ->
+      glob_def σ cls = Some (Gstruct st) ->
       st.(s_trivially_destructible) ->
       type_ptrR (Tnamed cls)
       |-- (([∗list] base ∈ st.(s_bases),
@@ -92,14 +94,14 @@ Section with_Σ.
                            object is trivially destructible. *)
        then identityR cls None 1
        else emp)
-      ** struct_padding resolve 1 cls)
+      ** struct_padding 1 cls)
       -* |={↑pred_ns}=> tblockR (Tnamed cls) 1.
 
   (** decompose a struct into its constituent fields and base classes.
    *)
   Axiom anyR_struct
   : forall cls st,
-    glob_def resolve cls = Some (Gstruct st) ->
+    glob_def σ cls = Some (Gstruct st) ->
         anyR (Tnamed cls) 1
     -|- ([∗list] base ∈ st.(s_bases),
               let '(gn,_) := base in
@@ -110,17 +112,17 @@ Section with_Σ.
            (if has_vtable st
             then identityR cls None 1
             else emp)
-           ** struct_padding resolve 1 cls.
+           ** struct_padding 1 cls.
 
   (** implicit destruction of a union. *)
   Axiom implicit_destruct_union
   : forall (cls : globname) st,
-      glob_def resolve cls = Some (Gunion st) ->
+      glob_def σ cls = Some (Gunion st) ->
       type_ptrR (Tnamed cls)
       |-- ([∨list] idx↦it ∈ st.(u_fields),
            let f := _field {| f_name := it.(mem_name) ; f_type := cls |} in
            f |-> tblockR (erase_qualifiers it.(mem_type)) 1 **
-           union_padding resolve 1 cls idx)
+           union_padding 1 cls idx)
           -* |={↑pred_ns}=> tblockR (Tnamed cls) 1.
 
 (*
@@ -156,12 +158,12 @@ Section with_Σ.
    *)
   Axiom anyR_union
   : forall (cls : globname) st,
-    glob_def resolve cls = Some (Gunion st) ->
+    glob_def σ cls = Some (Gunion st) ->
         anyR (Tnamed cls) 1
     -|- [∨ list] idx↦it ∈ st.(u_fields),
            let f := _field {| f_name := it.(mem_name) ; f_type := cls |} in
            _offsetR f (anyR (erase_qualifiers it.(mem_type)) 1) **
-           union_padding resolve 1 cls idx.
+           union_padding 1 cls idx.
 
   (** decompose an array into individual components
       note that one past the end of an array is a valid location, but
@@ -181,7 +183,7 @@ Section with_Σ.
     { admit. }
     destruct H0. rewrite H0. simpl.
     rewrite align_of_array.
-    destruct (size_of resolve t) => /=.
+    destruct (size_of σ t) => /=.
     { case_match; eauto.
       { admit. }
       { split'. iIntros "[]".
@@ -191,3 +193,4 @@ Section with_Σ.
   Admitted.
 
 End with_Σ.
+
