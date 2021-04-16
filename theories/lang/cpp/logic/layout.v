@@ -59,7 +59,7 @@ Section with_Σ.
   Proof. rewrite -svalidR_validR; apply _. Qed.
 
   (* TODO: Do we need type_ptrR here? *)
-  Axiom struct_to_raw : forall cls st rss (q : Qp),
+  Axiom struct_to_raw : forall cls st rss q,
     glob_def σ cls = Some (Gstruct st) ->
     st.(s_layout) = POD ->
     ([∗ list] fld ∈ st.(s_fields),
@@ -193,13 +193,7 @@ Section with_Σ.
   Proof.
     rewrite /tblockR /=. intros.
     rewrite align_of_array.
-<<<<<<< HEAD
-    destruct (size_of σ t) => /=.
-||||||| parent of f6f1e6b0 (Exposing [anyR_array].)
-    destruct (size_of resolve t) => /=.
-=======
-    destruct (size_of resolve t) eqn:Hsize => /=.
->>>>>>> f6f1e6b0 (Exposing [anyR_array].)
+    destruct (size_of σ t) eqn:Hsize => /=.
     { case_match; eauto.
       { admit. }
       { (* the type needs to have an alignment *)
