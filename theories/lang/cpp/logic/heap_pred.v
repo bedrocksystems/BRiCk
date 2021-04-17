@@ -924,7 +924,7 @@ Section with_cpp.
   Lemma cptrR_fs_impl {resolve} f g :
     pureR (fs_impl g f) |-- cptrR f -* cptrR g.
   Proof.
-    rewrite cptrR_eq/cptrR_def.
+    rewrite cptrR_eq/cptrR_def /pureR /as_Rep.
     constructor => p; rewrite Rep_wand_force; iIntros "#(%ty & fs_impl)" => /=.
     iIntros "(val & #rest)"; iFrame. iIntros (ti vs Q len).
     rewrite ty. iSpecialize ("rest" $! ti). iModIntro. iIntros "fs_g".
