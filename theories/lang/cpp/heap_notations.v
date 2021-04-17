@@ -22,19 +22,19 @@ Section with_cpp.
   Arguments AT_at {!AT} _ _ : rename.
 
   Canonical Structure mpred_AT : AT :=
-    {| AT_at := heap_pred._at (Σ:=Σ) |}.
+    {| AT_at := rep._at (Σ:=Σ) |}.
 
   Canonical Structure Rep_AT : AT :=
-    {| AT_at := heap_pred._offsetR (Σ:=Σ) |}.
+    {| AT_at := rep._offsetR (Σ:=Σ) |}.
 
   Canonical Structure mpred_val_AT : AT :=
-    {| AT_at v := heap_pred._at (Σ:=Σ) (_eqv v) |}.
+    {| AT_at v := rep._at (Σ:=Σ) (_eqv v) |}.
 
   Canonical Structure mpred_ptr_AT : AT :=
-    {| AT_at v := heap_pred._at (Σ:=Σ) v |}.
+    {| AT_at v := rep._at (Σ:=Σ) v |}.
 
   Canonical Structure Rep_field_AT {σ : genv} : AT :=
-    {| AT_at v := heap_pred._offsetR (Σ:=Σ) (o_field σ v) |}.
+    {| AT_at v := rep._offsetR (Σ:=Σ) (o_field σ v) |}.
 
   (* coercions to [offset] *)
   Structure TO_OFFSET : Type :=

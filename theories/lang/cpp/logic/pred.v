@@ -11,6 +11,9 @@
     - the memory model is simplified from the standard C++ memory
       model.
  *)
+From bedrock.lang Require Import prelude.base bi.prelude.
+From bedrock.lang.cpp.logic Require Export mpred rep.
+
 Require Import bedrock.lang.prelude.base.
 Require Export bedrock.lang.prelude.addr.
 
@@ -27,7 +30,11 @@ Require Export bedrock.lang.bi.prelude.
 Require Export bedrock.lang.bi.observe.
 Export ChargeNotation.
 
-From bedrock.lang.cpp Require Import ast semantics.
+From bedrock.lang.cpp.syntax Require Import
+     names
+     types
+     translation_unit.
+From bedrock.lang.cpp Require Import semantics.values.
 
 Variant validity_type : Set := Strict | Relaxed.
 
@@ -35,52 +42,6 @@ Implicit Types (vt : validity_type) (σ resolve : genv).
 
 (* Namespace for the invariants of the C++ abstraction's ghost state. *)
 Definition pred_ns : namespace := (nroot .@ "bedrock" .@ "lang" .@ "cpp_logic")%bs.
-
-Module Type CPP_LOGIC_CLASS_BASE.
-  Parameter cppG : gFunctors -> Type.
-  Axiom has_inv : forall Σ, cppG Σ -> invG Σ.
-  Axiom has_cinv : forall Σ, cppG Σ -> cinvG Σ.
-
-  Global Existing Instances has_inv has_cinv.
-
-  Existing Class cppG.
-
-  Parameter _cpp_ghost : Type.
-End CPP_LOGIC_CLASS_BASE.
-
-Module Type CPP_LOGIC_CLASS_MIXIN (Import CC : CPP_LOGIC_CLASS_BASE).
-
-  Class cpp_logic {thread_info : biIndex} : Type :=
-  { _Σ       : gFunctors
-  ; _ghost   : _cpp_ghost
-  ; has_cppG : cppG _Σ
-  }.
-  Arguments cpp_logic : clear implicits.
-  Coercion _Σ : cpp_logic >-> gFunctors.
-
-  Global Existing Instance has_cppG.
-
-  Section with_cpp.
-    Context `{cpp_logic}.
-
-    Definition mpred := iProp _Σ.
-    Canonical Structure mpredO : ofeT
-      := OfeT mpred (ofe_mixin (iPropO _Σ)).
-    Canonical Structure mpredI : bi :=
-    {|
-      bi_car := mpred ;
-      bi_ofe_mixin := bi_ofe_mixin (iPropI _Σ);
-      bi_bi_mixin := bi_bi_mixin (iPropI _Σ);
-      bi_bi_later_mixin := bi_bi_later_mixin (iPropI _Σ);
-    |}.
-  End with_cpp.
-
-  Bind Scope bi_scope with bi_car.
-  Bind Scope bi_scope with mpred.
-  Bind Scope bi_scope with mpredI.
-End CPP_LOGIC_CLASS_MIXIN.
-
-Module Type CPP_LOGIC_CLASS := CPP_LOGIC_CLASS_BASE <+ CPP_LOGIC_CLASS_MIXIN.
 
 Module Type CPP_LOGIC (Import CC : CPP_LOGIC_CLASS) (Import INTF : FULL_INTF).
 
@@ -451,9 +412,8 @@ Module Type CPP_LOGIC (Import CC : CPP_LOGIC_CLASS) (Import INTF : FULL_INTF).
 
 End CPP_LOGIC.
 
-Declare Module LC : CPP_LOGIC_CLASS.
 Declare Module L : CPP_LOGIC LC FULL_INTF_AXIOM.
-Export LC L.
+Export mpred.LC L.
 
 (* strict validity (not past-the-end) *)
 Notation strict_valid_ptr := (_valid_ptr Strict).
