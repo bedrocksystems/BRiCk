@@ -335,6 +335,9 @@ Section with_cpp.
   Lemma _offsetR_fupd o R E1 E2 : _offsetR o (|={E1,E2}=> R) -|- |={E1,E2}=> _offsetR o R.
   Proof. by rewrite _offsetR_eq/_offsetR_def /as_Rep; constructor => p /=; rewrite !monPred_at_fupd. Qed.
 
+  Lemma _offsetR_bupd o R : _offsetR o (|==> R) -|- |==> _offsetR o R.
+  Proof. by rewrite _offsetR_eq/_offsetR_def /as_Rep; constructor => p /=; rewrite !monPred_at_bupd. Qed.
+
   Lemma _offsetR_intuitionistically o (R : Rep) : _offsetR o (□ R) ⊣⊢ □ (_offsetR o R).
   Proof. by rewrite _offsetR_eq/_offsetR_def; constructor => p /=; rewrite !monPred_at_intuitionistically. Qed.
 
@@ -349,7 +352,6 @@ Section with_cpp.
 
   Lemma _offsetR_affinely_if b (o : offset) R : _offsetR o (<affine>?b R) -|- <affine>?b _offsetR o R.
   Proof. by destruct b => //; rewrite _offsetR_affinely. Qed.
-
 
   Lemma _offsetR_big_sepL (o : offset) {T} (Rs : list T) : forall F,
     _offsetR o ([∗list] i ↦ x ∈ Rs , F i x) -|- [∗list] i ↦ x ∈ Rs , _offsetR o (F i x).
@@ -492,6 +494,9 @@ Section with_cpp.
 
   Lemma _at_fupd (l : ptr) R E1 E2 : _at l (|={E1,E2}=> R) -|- |={E1,E2}=> _at l R.
   Proof. by rewrite !_at_loc monPred_at_fupd. Qed.
+
+  Lemma _at_bupd (l : ptr) R : _at l (|==> R) -|- |==> _at l R.
+  Proof. by rewrite !_at_loc monPred_at_bupd. Qed.
 
   Lemma _at_intuitionistically l (R : Rep) : _at l (□ R) ⊣⊢ □ (_at l R).
   Proof. by rewrite _at_eq/_at_def monPred_at_intuitionistically. Qed.
