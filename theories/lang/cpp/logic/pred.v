@@ -12,7 +12,7 @@
       model.
  *)
 From bedrock.lang Require Import prelude.base bi.prelude.
-From bedrock.lang Require Export logic.mpred.
+From bedrock.lang.cpp.logic Require Export mpred rep.
 
 Require Import bedrock.lang.prelude.base.
 Require Export bedrock.lang.prelude.addr.
