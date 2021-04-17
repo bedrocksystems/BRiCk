@@ -59,6 +59,7 @@ theories/lang/cpp/semantics.v
 
 # Program Logic
 theories/lang/cpp/logic/spec.v
+theories/lang/cpp/logic/mpred.v
 theories/lang/cpp/logic/pred.v
 theories/lang/cpp/logic/iprop_own.v
 theories/lang/cpp/logic/monpred_own.v
