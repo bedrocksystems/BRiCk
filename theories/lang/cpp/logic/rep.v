@@ -171,6 +171,9 @@ Section with_cpp.
   Lemma as_Rep_pers P : as_Rep (λ p, <pers> P p) -|- <pers> (as_Rep P).
   Proof. constructor=>p /=. by rewrite monPred_at_persistently. Qed.
 
+  Lemma as_Rep_bupd P : as_Rep (λ p, |==> P p) -|- |==> as_Rep P.
+  Proof. constructor=>p /=. by rewrite monPred_at_bupd. Qed.
+
   Lemma as_Rep_fupd P E1 E2 : as_Rep (λ p, |={E1,E2}=> P p) -|- |={E1,E2}=> as_Rep P.
   Proof. constructor=>p /=. by rewrite monPred_at_fupd. Qed.
 
@@ -589,6 +592,9 @@ Section with_cpp.
 
   Lemma pureR_pers (P : mpred) : pureR (<pers> P) -|- <pers> pureR P.
   Proof. exact: as_Rep_pers. Qed.
+
+  Lemma pureR_bupd (P : mpred) : pureR (|==> P) -|- |==> pureR P.
+  Proof. exact: as_Rep_bupd. Qed.
 
   Lemma pureR_fupd (P : mpred) E1 E2 : pureR (|={E1,E2}=> P) -|- |={E1,E2}=> pureR P.
   Proof. exact: as_Rep_fupd. Qed.
