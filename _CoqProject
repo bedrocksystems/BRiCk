@@ -68,6 +68,7 @@ theories/lang/cpp/logic/iprop_invariants.v
 theories/lang/cpp/logic/pred_paradoxes.v
 theories/lang/cpp/logic/path_pred.v
 theories/lang/cpp/logic/operator.v
+theories/lang/cpp/logic/rep.v
 theories/lang/cpp/logic/heap_pred.v
 theories/lang/cpp/logic/wp.v
 theories/lang/cpp/logic/destroy.v
