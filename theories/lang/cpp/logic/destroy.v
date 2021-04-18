@@ -57,7 +57,7 @@ Section destroy.
       let continue dtor := destruct_obj dtor cls this Q in
       match dtor with
       | None =>
-        |==> this |-> tblockR t 1 ** (this |-> tblockR t 1 -* Q)
+        |={↑pred_ns}=> this |-> tblockR t 1 ** (this |-> tblockR t 1 -* Q)
 (*        match σ.(genv_tu) !! cls with
                | Some (Gstruct s) => continue s.(s_dtor)
                | Some (Gunion u) => continue u.(u_dtor)
@@ -70,7 +70,7 @@ Section destroy.
       fold_right (fun i Q => valid_ptr (this .[ t ! Z.of_nat i ]) **
          destruct_val t (this .[ t ! Z.of_nat i ]) dtor Q) Q (List.rev (seq 0 (N.to_nat sz)))
     | _ =>
-      |==> this |-> anyR t 1 ** (this |-> tblockR t 1 -* Q)
+      (* |={↑pred_ns}=> *) this |-> anyR t 1 ** (this |-> tblockR t 1 -* Q)
       (* emp *)
     end.
 
