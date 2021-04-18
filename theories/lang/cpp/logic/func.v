@@ -13,7 +13,7 @@ Require Import bedrock.lang.bi.ChargeCompat.
 From bedrock.lang.cpp Require Import ast semantics spec.
 From bedrock.lang.cpp.logic Require Import
      pred path_pred heap_pred
-     wp builtins layout.
+     wp builtins layout initializers.
 Require Import bedrock.lang.cpp.logic.destroy.
 Require Import bedrock.lang.cpp.heap_notations.
 Require Import bedrock.lang.bi.errors.
@@ -225,36 +225,6 @@ Section with_cpp.
     | _ => False
     end.
 
-  (** TODO move + document. *)
-  Definition default_initialize
-             (ty : type) (p : ptr) (Q : FreeTemps → epred) : mpred :=
-    match drop_qualifiers ty with
-    | Tint _ _ as rty
-    | Tptr _ as rty
-    | Tbool as rty
-    | Tfloat _ as rty => p |-> uninitR rty 1 -* Q emp
-    | Tarray _ _ => UNSUPPORTED "default initialization of arrays"
-    | Tnullptr => UNSUPPORTED "default initialization of [nullptr_t]"
-
-    | Tref _
-    | Trv_ref _ => ERROR "default initialization of reference"
-    | Tvoid => ERROR "default initialization of void"
-    | Tfunction _ _ => ERROR "default initialization of functions"
-    | Tmember_pointer _ _ => ERROR "default initialization of member pointers"
-    | Tnamed _ => False (* default initialization of aggregates is done at elaboration time. *)
-
-    | Tarch _ _ => UNSUPPORTED "default initialization of architecture type"
-    | Tqualified _ _ => False (* unreachable *)
-    end.
-
-  Lemma default_initialize_frame:
-    ∀ ty Q Q' (p : ptr),
-      Forall f, Q f -* Q' f
-                  |-- default_initialize ty p Q -* default_initialize ty p Q'.
-  Proof.
-    rewrite /default_initialize; intros; case_match;
-      try solve [ iIntros "a b c"; iApply "a"; iApply "b"; eauto | eauto ].
-  Qed.
 
   (* initialization of members in the initializer list *)
   Fixpoint wpi_members

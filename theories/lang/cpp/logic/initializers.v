@@ -7,6 +7,7 @@ Require Import Coq.Lists.List.
 Require Import iris.proofmode.tactics.
 Require Import bedrock.lang.cpp.ast.
 Require Import bedrock.lang.cpp.semantics.
+Require Import bedrock.lang.bi.errors.
 From bedrock.lang.cpp.logic Require Import
      pred path_pred heap_pred call wp.
 Require Import bedrock.lang.cpp.heap_notations.
@@ -28,10 +29,42 @@ Module Type Init.
     Local Notation fspec := (@fspec _ Σ σ.(genv_tu).(globals)).
     Local Notation mspec := (@mspec _ Σ σ.(genv_tu).(globals)).
 
-    Local Notation primR := (primR (resolve:=σ)) (only parsing).
-    Local Notation tblockR := (tblockR (σ:=σ)) (only parsing).
-    Local Notation anyR := (anyR (resolve:=σ)) (only parsing).
-    Local Notation offset_for := (offset_for σ) (only parsing).
+    (** [default_initialize ty p Q] default initializes the memory at [p] according to
+        the type [ty].
+
+        NOTE this assumes that the underlying memory has already been given to the
+             C++ abstract machine.
+     *)
+    Definition default_initialize
+               (ty : type) (p : ptr) (Q : FreeTemps → epred) : mpred :=
+      match drop_qualifiers ty with
+      | Tint _ _ as rty
+      | Tptr _ as rty
+      | Tbool as rty
+      | Tfloat _ as rty => p |-> uninitR (erase_qualifiers rty) 1 -* Q emp
+      | Tarray _ _ => UNSUPPORTED "default initialization of arrays"
+      | Tnullptr => UNSUPPORTED "default initialization of [nullptr_t]"
+
+      | Tref _
+      | Trv_ref _ => ERROR "default initialization of reference"
+      | Tvoid => ERROR "default initialization of void"
+      | Tfunction _ _ => ERROR "default initialization of functions"
+      | Tmember_pointer _ _ => ERROR "default initialization of member pointers"
+      | Tnamed _ => False (* default initialization of aggregates is done at elaboration time. *)
+
+      | Tarch _ _ => UNSUPPORTED "default initialization of architecture type"
+      | Tqualified _ _ => False (* unreachable *)
+      end.
+
+    Lemma default_initialize_frame:
+      ∀ ty Q Q' (p : ptr),
+        Forall f, Q f -* Q' f
+        |-- default_initialize ty p Q -* default_initialize ty p Q'.
+    Proof.
+      rewrite /default_initialize; intros; case_match;
+        try solve [ iIntros "a b c"; iApply "a"; iApply "b"; eauto | eauto ].
+    Qed.
+
 
     (* [wp_initialize] provides "constructor" semantics for types.
      * For aggregates, simply delegates to [wp_init], but for primitives,
@@ -40,6 +73,9 @@ Module Type Init.
      *
      * NOTE this is written as a recursive function rather than by using [decompose_type] because
      * we want simplification to reduce it.
+     *
+     * NOTE this assumes that the memory has *not* yet been given to the C++ abstract machine.
+     * TODO make this consistent with [default_initialize].
      *)
     Definition wp_initialize (ty : type) (addr : ptr) (init : Expr) (k : FreeTemps -> mpred) : mpred :=
       match drop_qualifiers ty with
@@ -220,6 +256,8 @@ Module Type Init.
     Axiom wp_init_mut : forall ty addr e Q,
         wp_init ty addr e Q
         |-- wp_init (Qmut ty) addr e Q.
+
+
 
   End with_resolve.
 
