@@ -281,7 +281,7 @@ Section with_cpp.
           match is' with
           | nil =>
             (* there is a *unique* initializer for this field *)
-            this ., offset_for _ cls i.(init_path) |-> tblockR i.(init_type) 1 -*
+            this ., offset_for cls i.(init_path) |-> tblockR (erase_qualifiers i.(init_type)) 1 -*
             wpi (resolve:=resolve) ⊤ ti ρ cls this i (fun f => f ** wpi_members ti ρ cls this members inits Q)
           | _ =>
             (* there are multiple initializers for this field *)
@@ -310,7 +310,7 @@ Section with_cpp.
         ERROR "missing base class initializer"
       | i :: nil =>
         (* there is an initializer for this class *)
-        this ., offset_for _ cls i.(init_path) |-> tblockR i.(init_type) 1 -*
+        this ., offset_for cls i.(init_path) |-> tblockR (erase_qualifiers i.(init_type)) 1 -*
         wpi (resolve:=resolve) ⊤ ti ρ cls this i (fun f => f ** wpi_bases ti ρ cls this bases inits Q)
       | _ :: _ :: _ =>
         (* there are multiple initializers for this, so we fail *)

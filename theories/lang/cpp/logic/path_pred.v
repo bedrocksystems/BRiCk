@@ -113,7 +113,7 @@ Fixpoint path_to_Offset (resolve:genv) (from : globname) (final : ident)
 
     NOTE this function assumes that [f] is well-typed.
  *)
-Definition offset_for (resolve:genv) (cls : globname) (f : InitPath) : offset :=
+Definition offset_for {resolve:genv} (cls : globname) (f : InitPath) : offset :=
   match f with
   | InitBase parent => o_base resolve cls parent
   | InitField i => o_field resolve {| f_type := cls ; f_name := i |}
