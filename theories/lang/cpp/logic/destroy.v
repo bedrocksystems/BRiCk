@@ -75,7 +75,6 @@ Section destroy.
           |> mspec σ.(genv_tu).(globals) (Tnamed cls) ty ti (Vptr $ _global dtor) (Vptr this :: nil) (fun _ => Q) in
         match dtor with
         | None =>
-          (*        |={↑pred_ns}=> this |-> tblockR t 1 ** (this |-> tblockR t 1 -* Q) *)
           match σ.(genv_tu) !! cls with
           | Some (Gstruct s) => continue s.(s_dtor)
           | Some (Gunion u) => continue u.(u_dtor)
@@ -84,8 +83,9 @@ Section destroy.
         | Some dtor => continue dtor
         end
     | Tarray t sz =>
+      (* NOTE when destroying an array, elements of the array are destroyed with non-virtual dispatch. *)
       fold_right (fun i Q => valid_ptr (this .[ t ! Z.of_nat i ]) **
-         destruct_val dispatch t (this .[ t ! Z.of_nat i ]) dtor Q) Q (List.rev (seq 0 (N.to_nat sz)))
+         destruct_val false t (this .[ t ! Z.of_nat i ]) dtor Q) Q (List.rev (seq 0 (N.to_nat sz)))
     | _ =>
       (* |={↑pred_ns}=> *) this |-> anyR (erase_qualifiers t) 1 ** (this |-> tblockR (erase_qualifiers t) 1 -* Q)
       (* emp *)
@@ -95,7 +95,7 @@ Section destroy.
   Lemma destruct_val_frame dispatch : forall ty this dt Q Q',
       Q -* Q' |-- destruct_val dispatch ty this dt Q -* destruct_val dispatch ty this dt Q'.
   Proof.
-    induction ty; simpl; eauto;
+    intro ty; generalize dependent dispatch; induction ty; simpl; eauto;
       try solve [
             intros; iIntros "Q [$ X]"; iIntros "A"; iApply "Q"; iApply "X"; eauto ].
     { induction (rev _); simpl; eauto.
