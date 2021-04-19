@@ -484,7 +484,7 @@ Section with_cpp.
     match bases with
     | nil => Q
     | base :: bases =>
-      destruct_val (σ:=resolve) ti (Tnamed base) (this ., _base cls base) None (wpd_bases ti cls this bases Q)
+      destruct_val (σ:=resolve) ti false (Tnamed base) (this ., _base cls base) None (wpd_bases ti cls this bases Q)
     end.
 
   Fixpoint wpd_members
@@ -494,7 +494,8 @@ Section with_cpp.
     match members with
     | nil => Q
     | member :: members =>
-      destruct_val (σ:=resolve) ti member.(mem_type) (this ., _field {| f_name := member.(mem_name) ; f_type := cls |}) None
+      (** TODO this needs to actually invoke a destructor if one exists *)
+      destruct_val (σ:=resolve) ti false member.(mem_type) (this ., _field {| f_name := member.(mem_name) ; f_type := cls |}) None
                    (wpd_members ti cls this members Q)
     end.
 

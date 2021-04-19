@@ -33,7 +33,6 @@ Module Type Stmt.
     Local Notation wpe := (wpe (resolve:=resolve) M ti).
     Local Notation fspec := (fspec ti).
     Local Notation destruct_val := (destruct_val (σ:=resolve) ti) (only parsing).
-    Local Notation destruct_obj := (destruct_obj (σ:=resolve) ti) (only parsing).
 
     Local Notation glob_def := (glob_def resolve) (only parsing).
     Local Notation size_of := (@size_of resolve) (only parsing).
@@ -116,7 +115,7 @@ Module Type Stmt.
       | Tnamed cls =>
         Forall a : ptr, a |-> tblockR (σ:=resolve) ty 1 -*
                   let destroy P :=
-                      destruct_val ty a dtor (a |-> tblockR ty 1 ** P)
+                      destruct_val false ty a dtor (a |-> tblockR ty 1 ** P)
                   in
                   let continue := k (Rbind x a ρ) destroy in
                   match init with
@@ -127,7 +126,7 @@ Module Type Stmt.
       | Tarray ty' N =>
         Forall a : ptr, a |-> tblockR (σ:=resolve) ty 1 -*
                   let destroy P :=
-                      destruct_val ty a dtor (a |-> tblockR (σ:=resolve) ty 1 ** P)
+                      destruct_val false ty a dtor (a |-> tblockR (σ:=resolve) ty 1 ** P)
                   in
                   let continue := k (Rbind x a ρ) destroy in
                   match init with

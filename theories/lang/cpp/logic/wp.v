@@ -721,6 +721,11 @@ Section with_cpp.
     : thread_info -> val -> list val -> (val -> epred) -> mpred :=
     fspec tt (Tmember_func this_type fun_type).
 
+  Lemma mspec_frame:
+    ∀ ti (t : type) (l : list val) (v : val) (t0 : type) (t1 : type_table) (Q Q' : val -> _),
+      Forall v, Q v -* Q' v |-- mspec t1 t t0 ti v l Q -* mspec t1 t t0 ti v l Q'.
+  Proof. intros; apply fspec_frame. Qed.
+
 End with_cpp.
 
 Export stdpp.coPset.
