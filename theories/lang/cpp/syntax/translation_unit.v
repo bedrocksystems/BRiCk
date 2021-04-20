@@ -121,6 +121,7 @@ Record Struct : Set :=
   (* ^ this is actually computable, and we could compute it *)
 ; s_layout : LayoutType
   (* ^ the type of layout semantics *)
+(* The remaining fields are implementation-dependent. They might be mandated by the per-platform ABI. *)
 ; s_size : N
   (* ^ size of the structure (including padding) *)
 ; s_alignment : N
