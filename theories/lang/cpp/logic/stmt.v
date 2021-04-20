@@ -102,7 +102,7 @@ Module Type Stmt.
         Forall a : ptr,
         let continue :=
             k (Rbind x a ρ)
-              (fun P => a |-> anyR ty 1 ** P)
+              (fun P => a |-> anyR (erase_qualifiers ty) 1 ** P)
         in
         match init with
         | None =>
@@ -115,7 +115,7 @@ Module Type Stmt.
       | Tnamed cls =>
         Forall a : ptr, a |-> tblockR (σ:=resolve) ty 1 -*
                   let destroy P :=
-                      destruct_val false ty a dtor (a |-> tblockR ty 1 ** P)
+                      destruct_val false ty a dtor (a |-> tblockR (erase_qualifiers ty) 1 ** P)
                   in
                   let continue := k (Rbind x a ρ) destroy in
                   match init with
@@ -126,7 +126,7 @@ Module Type Stmt.
       | Tarray ty' N =>
         Forall a : ptr, a |-> tblockR (σ:=resolve) ty 1 -*
                   let destroy P :=
-                      destruct_val false ty a dtor (a |-> tblockR (σ:=resolve) ty 1 ** P)
+                      destruct_val false ty a dtor (a |-> tblockR (σ:=resolve) (erase_qualifiers ty) 1 ** P)
                   in
                   let continue := k (Rbind x a ρ) destroy in
                   match init with

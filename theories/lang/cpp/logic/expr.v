@@ -776,16 +776,16 @@ Module Type Expr.
               |> mspec (type_of obj) (normalize_type fty) ti (Vptr $ _global f) (Vptr this :: vs) (fun v => Q v (free_t ** free)))))
         |-- wp_prval (Emember_call (inl (f, Direct, fty)) vc obj es ty) Q.
 
-    Axiom wp_init_member_call : forall f fty es (addr : ptr) ty vc obj Q,
-        addr |-> uninitR (erase_qualifiers ty) 1 ** (* TODO backwards compat [tblockR ty 1] *)
-        (* ^ give up the memory that was created by [materialize_into_temp] *)
+    Axiom wp_init_member_call : forall f ret ts cc es (addr : ptr) ty vc obj Q,
         wp_glval vc obj (fun this free_t => wp_args es (fun vs free =>
-             |> mspec (type_of obj) (normalize_type fty) ti (Vptr $ _global f) (Vptr this :: vs) (fun res =>
+            addr |-> tblockR (erase_qualifiers ret) 1 **
+            let fty := Tfunction (cc:=cc) ret ts in
+            |> mspec (type_of obj) (normalize_type fty) ti (Vptr $ _global f) (Vptr this :: vs) (fun res =>
                       [| res = Vptr addr |] -* Q (free_t ** free))))
         (* NOTE as with regular function calls, we use an assumed equation to unify the address
            of the returned object with the location that we are initializing.
          *)
-        |-- wp_init ty addr (Emember_call (inl (f, Direct, fty)) vc obj es ty) Q.
+        |-- wp_init ty addr (Emember_call (inl (f, Direct, Tfunction (cc:=cc) ret ts)) vc obj es ty) Q.
 
     (** virtual functions
         these are slightly more complex because we need to compute the address of the function
@@ -829,21 +829,20 @@ Module Type Expr.
           end)))
       |-- wp_prval (Emember_call (inl (f, Virtual, fty)) vc obj es ty) Q.
 
-    Axiom wp_init_virtual_call : forall ty fty f vc obj es Q (addr : ptr),
-        addr |-> uninitR (erase_qualifiers ty) 1 ** (* TODO backwards compat [tblockR ty 1] *)
-        (* ^ give up the memory that was created by [materialize_into_temp] *)
-
+    Axiom wp_init_virtual_call : forall ty cc ret ts f vc obj es Q (addr : ptr),
       wp_glval vc obj (fun this free => wp_args es (fun vs free' =>
           match class_type (type_of obj) with
           | Some cls =>
             resolve_virtual (σ:=resolve) this cls f (fun fimpl_addr impl_class thisp =>
+              addr |-> tblockR (erase_qualifiers ret) 1 **
+              let fty := Tfunction (cc:=cc) ret ts in
               |> mspec (Tnamed impl_class) (normalize_type fty) ti (Vptr fimpl_addr) (Vptr thisp :: vs) (fun res => [| res = Vptr addr |] -* Q (free ** free')))
             (* NOTE as with other function calls, we are assuming an equation on the address in order
                to express the fact the the object is constructed in-place.
              *)
           | _ => False
           end))
-      |-- wp_init ty addr (Emember_call (inl (f, Virtual, fty)) vc obj es ty) Q.
+      |-- wp_init ty addr (Emember_call (inl (f, Virtual, Tfunction (cc:=cc) ret ts)) vc obj es ty) Q.
 
     (* null *)
     Axiom wp_null : forall Q,
