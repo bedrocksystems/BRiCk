@@ -23,10 +23,13 @@ End ops.
 
 Module LensNotations.
   Declare Scope lens_scope.
+  Delimit Scope lens_scope with lens.
+  Notation "X -l> Y" := (Lens X X Y Y)
+    (at level 99, Y at level 200, right associativity) : type_scope.
   Notation "a & b" := (b a) (at level 50, only parsing, left associativity) : lens_scope.
-  Notation "a %= f" := (Lens.over a f) (at level 45, left associativity) : lens_scope.
-  Notation "a .= b" := (Lens.set a b) (at level 45, left associativity) : lens_scope.
-  Notation "a .^ f" := (Lens.view f a) (at level 44, left associativity) : lens_scope.
+  Notation "a %= f" := (Lens.over a f) (at level 49, left associativity) : lens_scope.
+  Notation "a .= b" := (Lens.set a b) (at level 49, left associativity) : lens_scope.
+  Notation "a .^ f" := (Lens.view f a) (at level 45, left associativity) : lens_scope.
   (* level 19 to be compatible with Iris .@ *)
   Notation "a .@ b" := (lens_compose a b) (at level 19, left associativity) : lens_scope.
 End LensNotations.
