@@ -174,53 +174,6 @@ printDestructor(const CXXDestructorDecl *decl, CoqPrinter &print,
         print.ctor("UserDefined");
         cprint.printStmt(decl->getBody(), print);
 
-#if 0
-        print.begin_list();
-        // i need to destruct each field, and then each parent class
-        // in the REVERSE order of construction
-        {
-            std::list<const FieldDecl *> fields(record->field_begin(),
-                                                record->field_end());
-            for (auto i = fields.crbegin(), e = fields.crend(); i != e; i++) {
-                const FieldDecl *fd = *i;
-                if (auto rd =
-                        fd->getType().getTypePtr()->getAsCXXRecordDecl()) {
-                    print.begin_tuple();
-                    print.output() << "InitField \"" << fd->getName() << "\","
-                                   << fmt::nbsp;
-                    cprint.printGlobalName(rd->getDestructor(), print);
-                    print.end_tuple();
-                    print.cons();
-                }
-            }
-        }
-
-        // base classes
-        {
-            std::list<CXXBaseSpecifier> bases(record->bases_begin(),
-                                              record->bases_end());
-            for (auto i = bases.crbegin(), e = bases.crend(); i != e; i++) {
-                if (i->isVirtual()) {
-                    using namespace logging;
-                    fatal() << "virtual base classes are not supported.";
-                }
-                auto rec = i->getType().getTypePtr()->getAsCXXRecordDecl();
-                if (rec) {
-                    print.ctor("InitBase");
-                    cprint.printGlobalName(rec, print);
-                    print.output() << "," << fmt::nbsp;
-                    cprint.printGlobalName(rec->getDestructor(), print);
-                    print.output() << fmt::rparen;
-                } else {
-                    using namespace logging;
-                    fatal() << "base class is not a RecordType.";
-                    assert(false);
-                }
-                print.output() << "::";
-            }
-        }
-        print.end_list();
-#endif
         print.end_ctor();
         print.end_ctor();
     } else if (decl->isDefaulted()) {
