@@ -96,17 +96,6 @@ Definition _this (ρ : region) : ptr :=
   end.
 Arguments _this !_ / : assert.
 
-(** [_result ρ] is the location that the return value should be returned.
-    This is currently only used for aggregates.
- *)
-Definition _result (ρ : region) : ptr :=
-  match get_result ρ with
-  | Some p => p
-  | _ => invalid_ptr
-  end.
-Arguments _result !_ / : assert.
-
-
 (* this is for `Indirect` field references *)
 Fixpoint path_to_Offset (resolve:genv) (from : globname) (final : ident)
          (ls : list (ident * globname))

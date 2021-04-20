@@ -42,9 +42,6 @@ Section with_cpp.
      ; fs_arguments := targs
      ; fs_spec _    := WppD PQ |}.
 
-  Local Notation anyR := (@anyR _ Σ resolve) (only parsing).
-  Local Notation primR := (@primR _ Σ resolve) (only parsing).
-
   (* Hoare triple for a constructor.
    *)
   Definition SConstructor@{X Z Y} {cc : calling_conv} (class : globname)
@@ -103,10 +100,7 @@ Section with_cpp.
                |}.
 
   Definition bind_base_this (o : option ptr) (rty : type) (Q : region -> mpred) : mpred :=
-    if is_aggregate rty then
-      Forall ra : ptr, ra |-> anyR rty 1 (* TODO backwards compat [tblockR (erase_qualifiers rty)] *) -*
-                       Q (Remp o (Some ra))
-    else Q (Remp o None).
+    Q (Remp o rty).
 
   Definition Rbind_check (x : ident) (p : ptr) (r : region) : region :=
     if decide (x = ""%bs)

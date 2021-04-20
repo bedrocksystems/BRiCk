@@ -249,7 +249,7 @@ Proof. by move=>[] [] /Vint_inj. Qed.
     to their addresses.
  *)
 Inductive region : Type :=
-| Remp (this : option ptr) (result : option ptr)
+| Remp (this : option ptr) (_ : type)
 | Rbind (_ : localname) (_ : ptr) (_ : region).
 
 Fixpoint get_location (ρ : region) (b : localname) : option ptr :=
@@ -266,10 +266,10 @@ Fixpoint get_this (ρ : region) : option ptr :=
   | Rbind _ _ rs => get_this rs
   end.
 
-Fixpoint get_result (ρ : region) : option ptr :=
+Fixpoint get_return_type (ρ : region) : type :=
   match ρ with
-  | Remp _ result => result
-  | Rbind _ _ rs => get_result rs
+  | Remp _ ty => ty
+  | Rbind _ _ rs => get_return_type rs
   end.
 
 Definition max_val (bits : bitsize) (sgn : signed) : Z :=
