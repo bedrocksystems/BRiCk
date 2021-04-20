@@ -541,6 +541,22 @@ Section with_cpp.
 
   Lemma _derived_validR σ base derived : _offsetR (_derived base derived) validR |-- validR.
   Proof. apply off_validR => p. apply _valid_ptr_derived. Qed.
+
+  (** Observation of [is_nonnull] *)
+  #[global]
+  Instance primR_nonnull_observe {σ : genv} {ty q v} : Observe is_nonnull (primR ty q v).
+  Proof. apply monPred_observe => p. rewrite primR_eq/primR_def is_nonnull_eq/is_nonnull_def/=. refine _. Qed.
+  #[global]
+  Instance uninitR_nonnull_observe {σ : genv} {ty q} : Observe is_nonnull (uninitR ty q).
+  Proof. apply monPred_observe => p. rewrite uninitR_eq/uninitR_def is_nonnull_eq/is_nonnull_def/=. refine _. Qed.
+  #[global]
+  Instance anyR_nonnull_observe {σ : genv} {ty q} : Observe is_nonnull (anyR ty q).
+  Proof. apply monPred_observe => p. rewrite anyR_eq/anyR_def.
+         red. iIntros "[X | X]".
+         - iDestruct "X" as (?) "X". iDestruct (observe is_nonnull with "X") as "#$".
+         - iDestruct (observe is_nonnull with "X") as "#$".
+  Qed.
+
 End with_cpp.
 
 Typeclasses Opaque identityR.
