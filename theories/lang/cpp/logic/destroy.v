@@ -67,11 +67,11 @@ Section destroy.
     | Tnamed cls =>
       if dispatch then
         resolve_dtor cls this (fun fimpl impl_class this' =>
-          let ty := Tmember_func (Tnamed impl_class) $ Tfunction Tvoid nil in
-          |> mspec σ.(genv_tu).(globals) (Tnamed cls) ty ti (Vptr fimpl) (Vptr this' :: nil) (fun _ => Q))
+          let ty := Tfunction Tvoid nil in
+          |> mspec σ.(genv_tu).(globals) (Tnamed impl_class) ty ti (Vptr fimpl) (Vptr this' :: nil) (fun _ => Q))
       else
         let continue dtor :=
-          let ty := Tmember_func (Tnamed cls) $ Tfunction Tvoid nil in
+          let ty := Tfunction Tvoid nil in
           |> mspec σ.(genv_tu).(globals) (Tnamed cls) ty ti (Vptr $ _global dtor) (Vptr this :: nil) (fun _ => Q) in
         match dtor with
         | None =>
