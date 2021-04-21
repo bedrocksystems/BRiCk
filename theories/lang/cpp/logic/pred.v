@@ -616,6 +616,27 @@ Section with_cpp.
     rewrite same_address_iff ptr_vaddr_nullptr. naive_solver.
   Qed.
 
+  #[global] Instance provides_storage_preserves_nullptr {storage_ptr obj_ptr aty} :
+    Observe [| storage_ptr = nullptr <-> obj_ptr = nullptr |] (provides_storage storage_ptr obj_ptr aty).
+  Proof.
+    apply observe_intro_only_provable; iIntros "PS".
+    iDestruct (provides_storage_same_address with "PS") as %Hsm.
+    iDestruct (provides_storage_valid_obj_ptr with "PS") as "#VO".
+    iDestruct (provides_storage_valid_storage_ptr with "PS") as "#VS {PS}".
+    iDestruct (same_address_eq_null with "VO") as %[HeqO _].
+    iDestruct (same_address_eq_null with "VS") as %[HeqS _].
+    iIntros "!%"; split; intros ->.
+    - apply HeqO, symmetry, Hsm.
+    - apply HeqS, Hsm.
+  Qed.
+
+  #[global] Instance provides_storage_preserves_nonnull {storage_ptr obj_ptr aty} :
+    Observe [| storage_ptr <> nullptr <-> obj_ptr <> nullptr |] (provides_storage storage_ptr obj_ptr aty).
+  Proof.
+    apply observe_intro_only_provable. iIntros "PS".
+    by iDestruct (provides_storage_preserves_nullptr with "PS") as "#-> {PS}".
+  Qed.
+
   Global Instance pinned_ptr_unique va va' p :
     Observe2 [| va = va' |] (pinned_ptr va p) (pinned_ptr va' p).
   Proof.
