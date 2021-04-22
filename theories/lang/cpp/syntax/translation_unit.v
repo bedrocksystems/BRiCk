@@ -87,6 +87,8 @@ Record Union : Set :=
   (* ^ fields with type, initializer, and layout information *)
 ; u_dtor : obj_name
   (* ^ the name of the destructor *)
+; u_trivially_destructible : bool
+  (* ^ whether objects of the union type are trivially destructible. *)
 ; u_size : N
   (* ^ size of the union (including padding) *)
 ; u_alignment : N

@@ -52,7 +52,7 @@ Section destroy.
      with the type of [this] is [t].
 
      The [dispatch] parameter determines whether the call is a *potentially* virtual call.
-     If [dispatch] is true *and the destructor of the class is virtual, then the call is a
+     If [dispatch] is true *and the destructor of the class is virtual*, then the call is a
      virtual call.
 
      note: it does *not* free the underlying memory.
@@ -65,23 +65,39 @@ Section destroy.
     match t with
     | Tqualified _ t => destruct_val dispatch t this dtor Q
     | Tnamed cls =>
-      if dispatch then
-        resolve_dtor cls this (fun fimpl impl_class this' =>
+      match σ.(genv_tu) !! cls with
+      | Some (Gstruct s) =>
+        if s.(s_trivially_destructible) then
+          (** trivially destructible objects have no destructors,
+              so they are destroyed implicitly.
+           *)
+          |={↑pred_ns}=> this |-> tblockR (erase_qualifiers t) 1 **
+                       (this |-> tblockR (erase_qualifiers t) 1 -* Q)
+        else
+          (** when [dispatch:=true], we should use virtual dispatch
+              to invoke the destructor.
+           *)
+          if dispatch && has_virtual_dtor s then
+            resolve_dtor cls this (fun fimpl impl_class this' =>
+              let ty := Tfunction Tvoid nil in
+              |> mspec σ.(genv_tu).(globals) (Tnamed impl_class) ty ti (Vptr fimpl) (Vptr this' :: nil) (fun _ => Q))
+          else
+            let dtor := s.(s_dtor) in
+            let ty := Tfunction Tvoid nil in
+            |> mspec σ.(genv_tu).(globals) (Tnamed cls) ty ti (Vptr $ _global s.(s_dtor)) (Vptr this :: nil) (fun _ => Q)
+
+      | Some (Gunion u) =>
+        if u.(u_trivially_destructible) then
+          |={↑pred_ns}=> this |-> tblockR (erase_qualifiers t) 1 ** (this |-> tblockR (erase_qualifiers t) 1 -* Q)
+        else
+          (* unions can not have [virtual] destructors, so we directly invoke
+             the destructor.
+           *)
+          let dtor := u.(u_dtor) in
           let ty := Tfunction Tvoid nil in
-          |> mspec σ.(genv_tu).(globals) (Tnamed impl_class) ty ti (Vptr fimpl) (Vptr this' :: nil) (fun _ => Q))
-      else
-        let continue dtor :=
-          let ty := Tfunction Tvoid nil in
-          |> mspec σ.(genv_tu).(globals) (Tnamed cls) ty ti (Vptr $ _global dtor) (Vptr this :: nil) (fun _ => Q) in
-        match dtor with
-        | None =>
-          match σ.(genv_tu) !! cls with
-          | Some (Gstruct s) => continue s.(s_dtor)
-          | Some (Gunion u) => continue u.(u_dtor)
-          | _ => False
-          end
-        | Some dtor => continue dtor
-        end
+          |> mspec σ.(genv_tu).(globals) (Tnamed cls) ty ti (Vptr $ _global u.(u_dtor)) (Vptr this :: nil) (fun _ => Q)
+      | _ => False
+      end
     | Tarray t sz =>
       (* NOTE when destroying an array, elements of the array are destroyed with non-virtual dispatch. *)
       fold_right (fun i Q => valid_ptr (this .[ t ! Z.of_nat i ]) **
@@ -90,7 +106,6 @@ Section destroy.
       (* |={↑pred_ns}=> *) this |-> anyR (erase_qualifiers t) 1 ** (this |-> tblockR (erase_qualifiers t) 1 -* Q)
       (* emp *)
     end%I.
-
 
   Lemma destruct_val_frame dispatch : forall ty this dt Q Q',
       Q -* Q' |-- destruct_val dispatch ty this dt Q -* destruct_val dispatch ty this dt Q'.
@@ -101,17 +116,16 @@ Section destroy.
     { induction (rev _); simpl; eauto.
       intros.
       iIntros "Q [$ V]"; iRevert "V"; iApply IHty; iApply IHl; eauto. }
-    { destruct dispatch.
-      { intros. iIntros "X"; iApply resolve_dtor_frame.
-        iIntros (???) "Y"; iNext; iRevert "Y".
-        iApply mspec_frame.
-        iIntros (?); eauto. }
-      { destruct dt.
-        - iIntros (??) "X Y"; iNext; iRevert "Y"; iApply mspec_frame; iIntros (?); eauto.
-        - case_match; eauto.
-        case_match; eauto.
-          + iIntros (??) "X Y"; iNext; iRevert "Y"; iApply mspec_frame; iIntros (?); eauto.
-          + iIntros (??) "X Y"; iNext; iRevert "Y"; iApply mspec_frame; iIntros (?); eauto. } }
+    { intros. case_match; eauto.
+      case_match; eauto.
+      { case_match.
+        + by iIntros "A >[$ B]"; iModIntro; iIntros "C"; iApply "A"; iApply "B".
+        + by iIntros "A B"; iNext; iRevert "B"; iApply mspec_frame; iIntros (?). }
+      { case_match.
+        + by iIntros "A >[$ B]"; iModIntro; iIntros "C"; iApply "A"; iApply "B".
+        + case_match.
+          - by iIntros "X"; iApply resolve_dtor_frame; iIntros (???) "B"; iNext; iRevert "B"; iApply mspec_frame; iIntros (?).
+          - by iIntros "A B"; iNext; iRevert "B"; iApply mspec_frame; iIntros (?). } }
   Qed.
 
 End destroy.

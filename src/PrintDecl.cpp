@@ -300,8 +300,9 @@ public:
         print.ctor("Build_Union");
         printFields(decl, layout, print, cprint);
 
-        if (decl->getDestructor()) {
-            cprint.printGlobalName(decl->getDestructor(), print);
+        if (auto dtor = decl->getDestructor()) {
+            cprint.printGlobalName(dtor, print);
+            print.output() << fmt::line << dtor->isTrivial();
         } else {
             logging::debug() << "destructor is required on union\n";
             logging::die();
@@ -403,17 +404,16 @@ public:
         }
         print.end_list();
 
-        if (decl->getDestructor()) {
-            cprint.printGlobalName(decl->getDestructor(), print);
+        if (auto dtor = decl->getDestructor()) {
+            cprint.printGlobalName(dtor, print);
+            // trivially destructable
+            print.output() << fmt::nbsp
+                           << (dtor->isTrivial() ? "true" : "false");
+
         } else {
             logging::debug() << "destructor is required on struct\n";
             logging::die();
         }
-
-        // trivially destructable
-        print.output() << fmt::nbsp
-                       << (decl->getDestructor()->isTrivial() ? "true" :
-                                                                "false");
 
         // print the layout information
         print.output() << fmt::line;
