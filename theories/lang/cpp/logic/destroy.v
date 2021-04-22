@@ -67,35 +67,56 @@ Section destroy.
     | Tnamed cls =>
       match σ.(genv_tu) !! cls with
       | Some (Gstruct s) =>
-        if s.(s_trivially_destructible) then
-          (** trivially destructible objects have no destructors,
-              so they are destroyed implicitly.
-           *)
-          |={↑pred_ns}=> this |-> tblockR (erase_qualifiers t) 1 **
-                       (this |-> tblockR (erase_qualifiers t) 1 -* Q)
-        else
-          (** when [dispatch:=true], we should use virtual dispatch
-              to invoke the destructor.
-           *)
-          if dispatch && has_virtual_dtor s then
-            resolve_dtor cls this (fun fimpl impl_class this' =>
-              let ty := Tfunction Tvoid nil in
-              |> mspec σ.(genv_tu).(globals) (Tnamed impl_class) ty ti (Vptr fimpl) (Vptr this' :: nil) (fun _ => Q))
-          else
-            let dtor := s.(s_dtor) in
+        (** when [dispatch:=true], we should use virtual dispatch
+            to invoke the destructor.
+         *)
+        if dispatch && has_virtual_dtor s then
+          resolve_dtor cls this (fun fimpl impl_class this' =>
             let ty := Tfunction Tvoid nil in
-            |> mspec σ.(genv_tu).(globals) (Tnamed cls) ty ti (Vptr $ _global s.(s_dtor)) (Vptr this :: nil) (fun _ => Q)
+            |> mspec σ.(genv_tu).(globals) (Tnamed impl_class) ty ti (Vptr fimpl) (Vptr this' :: nil) (fun _ => Q))
+        else
+          (* NOTE the setup with explicit destructors (even when those destructors are trivial)
+                  abstracts away some of the complexities of the underlying C++ semantics that
+                  the semantics itself seems less than clear about. [CITATION NEEDED]
+
+             NOTE the two branches of this disjunction are really the same because trivially
+             destructible classes require no code to run and therefore running the code or
+             not running the code is the same from the C++ language point of view.
+
+             NOTE technically this disjunction should be a conjunction because it is the
+             compiler's choice to determine which of these it does.
+
+             We might be able to address this with the following axiom about [dtor_at]
+             [[[
+               [| s.(s_trivially_destructible) /\ d is a Defaulted destructor |] |-- dtor_at σ d (_global s.(s_dtor))
+             ]]]
+             This axiom essentially states that there are no resources required for [dtor_at]
+             when the destructor is trivial.
+
+             TODO let's find some justification in the standard.
+           *)
+          ([| s.(s_trivially_destructible) |] **
+           |={↑pred_ns}=> this |-> tblockR (erase_qualifiers t) 1 **
+                       (this |-> tblockR (erase_qualifiers t) 1 -* Q)) \\//
+          (* In the current implementation, we generate destructor even when they are implicit
+             to make the framework a bit more uniform (all objects have destructors) and allow
+             for direct desructor calls, e.g. [c.~C()], which are encoded as
+             [Emember_call ... "~C" ..] *)
+          (let dtor := s.(s_dtor) in
+           let ty := Tfunction Tvoid nil in
+           |> mspec σ.(genv_tu).(globals) (Tnamed cls) ty ti (Vptr $ _global s.(s_dtor)) (Vptr this :: nil) (fun _ => Q))
 
       | Some (Gunion u) =>
-        if u.(u_trivially_destructible) then
-          |={↑pred_ns}=> this |-> tblockR (erase_qualifiers t) 1 ** (this |-> tblockR (erase_qualifiers t) 1 -* Q)
-        else
+        (** See comment above *)
+          ([| u.(u_trivially_destructible) |] **
+           |={↑pred_ns}=> this |-> tblockR (erase_qualifiers t) 1 **
+                       (this |-> tblockR (erase_qualifiers t) 1 -* Q)) \\//
           (* unions can not have [virtual] destructors, so we directly invoke
              the destructor.
            *)
-          let dtor := u.(u_dtor) in
-          let ty := Tfunction Tvoid nil in
-          |> mspec σ.(genv_tu).(globals) (Tnamed cls) ty ti (Vptr $ _global u.(u_dtor)) (Vptr this :: nil) (fun _ => Q)
+          (let dtor := u.(u_dtor) in
+           let ty := Tfunction Tvoid nil in
+           |> mspec σ.(genv_tu).(globals) (Tnamed cls) ty ti (Vptr $ _global u.(u_dtor)) (Vptr this :: nil) (fun _ => Q))
       | _ => False
       end
     | Tarray t sz =>
