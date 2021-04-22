@@ -217,7 +217,7 @@ Section with_cpp.
   (** prvalue *)
   (*
    * there are two distinct weakest pre-conditions for this corresponding to the
-   * stndard text:
+   * standard text:
    * "A prvalue is an expression whose evaluation...
    * 1. initializes an object, or
    * 2. computes the value of an operand of an operator,
@@ -225,6 +225,21 @@ Section with_cpp.
    *)
 
   (* evaluate a prvalue that "initializes an object"
+
+     Schematically, a [wp_init ty addr e Q] looks like the following:
+       [[[
+         addr |-> tblockR ty 1 ** (addr |-> R ... 1 -* Q)
+       ]]]
+     which captures the fact that it:
+     1. *consumes* uninitialized memory at [addr], the [addr |-> tblockR ty 1], and
+     2. *produces* initialized memory at [addr], something like [addr |-> R ... 1].
+
+     An alternative scheme would be to not give this block back to the user each time
+     and instead keep it in the C++ abstract machine. Currently, the problem with
+     this approach is that constructors would essentially be performing allocation out
+     of the abstract machine, which would require us to distinguish (in a more semantic
+     way) between constructors and regular functions.
+     TODO this is something that we should probably revisit at some point.
    *)
   Parameter wp_init
     : forall {resolve:genv}, coPset -> thread_info -> region ->
@@ -713,7 +728,7 @@ Section with_cpp.
     Qed.
   End wp.
 
-  (* this is the specification of assembly code
+  (* this is the low-level specificaiton of C++ code blocks.
    *
    * [addr] represents the address of the entry point of the code.
    * note: the [list val] will be related to the register set.
