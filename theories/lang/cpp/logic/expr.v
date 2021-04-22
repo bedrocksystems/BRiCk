@@ -1007,7 +1007,7 @@ Module Type Expr.
       let raw_type := erase_qualifiers ty in
       a |-> uninitR raw_type 1 (* TODO backwards compat [tblockR raw_type] *) -*
           wp_init ty a e (fun free =>
-                            Q (Vptr a) (destruct_val ty a (Some dtor) (a |-> uninitR raw_type 1 (* TODO backwards compat [tblockR raw_type] *) ** free))))
+                            Q (Vptr a) (destruct_val ty a (Some dtor) (a |-> anyR raw_type 1 (* TODO backwards compat [tblockR raw_type] *) ** free))))
       |-- wp_prval (Ebind_temp e dtor ty) Q.
 
     (** Pseudo destructors arise from calling the destructor on
