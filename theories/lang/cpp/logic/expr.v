@@ -737,9 +737,11 @@ Module Type Expr.
         end
       |-- wp_xval (Ecall f es ty) Q.
 
-    Axiom wp_init_call : forall f es Q addr ty,
+    Axiom wp_init_call : forall f es Q (addr : ptr) ty,
         match unptr (type_of f) with
         | Some fty =>
+          addr |-> uninitR (erase_qualifiers ty) 1 ** (* TODO backwards compat [tblockR ty 1] *)
+          (* ^ give up the memory that was created by [materialize_into_temp] *)
           wp_prval f (fun f free_f =>
                         wp_args es (fun vs free =>
                                       |> fspec (normalize_type fty) ti f vs (fun res => [| res = Vptr addr |] -* Q (free_f ** free))))
@@ -778,6 +780,8 @@ Module Type Expr.
         |-- wp_prval (Emember_call (inl (f, Direct, fty)) vc obj es ty) Q.
 
     Axiom wp_init_member_call : forall f fty es addr ty vc obj Q,
+        addr |-> uninitR (erase_qualifiers ty) 1 ** (* TODO backwards compat [tblockR ty 1] *)
+        (* ^ give up the memory that was created by [materialize_into_temp] *)
         wp_glval vc obj (fun this free_t => wp_args es (fun vs free =>
              |> mspec (type_of obj) (normalize_type fty) ti (Vptr $ _global f) (Vptr this :: vs) (fun res =>
                       [| res = Vptr addr |] -* Q (free_t ** free))))
@@ -829,6 +833,9 @@ Module Type Expr.
       |-- wp_prval (Emember_call (inl (f, Virtual, fty)) vc obj es ty) Q.
 
     Axiom wp_init_virtual_call : forall ty fty f vc obj es Q addr,
+        addr |-> uninitR (erase_qualifiers ty) 1 ** (* TODO backwards compat [tblockR ty 1] *)
+        (* ^ give up the memory that was created by [materialize_into_temp] *)
+
       wp_glval vc obj (fun this free => wp_args es (fun vs free' =>
           match class_type (type_of obj) with
           | Some cls =>
@@ -966,6 +973,7 @@ Module Type Expr.
         free the result.
 
         XXX this needs a thorough review.
+        FIXME this might be too general.
      *)
     Axiom wp_prval_implicit_materialize : forall e Q,
         is_aggregate (type_of e) = true ->
