@@ -34,8 +34,8 @@
 variables:
   LLVM_CUR_MAJ_VER: "10"
   LLVM_ALT_MAJ_VER: "11"
-  cur_main_docker_img: registry.gitlab.com/bedrocksystems/docker-image:cpp2v-llvm${LLVM_CUR_MAJ_VER}-coq813
-  alt_main_docker_img: registry.gitlab.com/bedrocksystems/docker-image:cpp2v-llvm${LLVM_ALT_MAJ_VER}-coq813
+  cur_main_docker_img: registry.gitlab.com/bedrocksystems/docker-image:cpp2v-llvm${LLVM_CUR_MAJ_VER}
+  alt_main_docker_img: registry.gitlab.com/bedrocksystems/docker-image:cpp2v-llvm${LLVM_ALT_MAJ_VER}
   fm_docs_img: registry.gitlab.com/bedrocksystems/docker-image:fm-docs
 
 stages:
