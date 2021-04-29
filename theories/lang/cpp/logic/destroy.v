@@ -97,7 +97,7 @@ Section destroy.
            *)
           ([| s.(s_trivially_destructible) |] **
            |={↑pred_ns}=> this |-> tblockR (erase_qualifiers t) 1 **
-                       (this |-> tblockR (erase_qualifiers t) 1 -* Q)) \\//
+                       (this |-> tblockR (erase_qualifiers t) 1 -* Q)) //\\
           (* In the current implementation, we generate destructor even when they are implicit
              to make the framework a bit more uniform (all objects have destructors) and allow
              for direct desructor calls, e.g. [c.~C()], which are encoded as
@@ -139,14 +139,16 @@ Section destroy.
       iIntros "Q [$ V]"; iRevert "V"; iApply IHty; iApply IHl; eauto. }
     { intros. case_match; eauto.
       case_match; eauto.
+      { iIntros "X [Y | Y]"; [ iLeft | iRight ].
+        + by iDestruct "Y" as "[$ >Y]"; iModIntro; iDestruct "Y" as "[$ Y]"; iIntros "Z"; iApply "X"; iApply "Y".
+        + by iNext; iRevert "Y"; iApply mspec_frame; iIntros (?). }
       { case_match.
-        + by iIntros "A >[$ B]"; iModIntro; iIntros "C"; iApply "A"; iApply "B".
-        + by iIntros "A B"; iNext; iRevert "B"; iApply mspec_frame; iIntros (?). }
-      { case_match.
-        + by iIntros "A >[$ B]"; iModIntro; iIntros "C"; iApply "A"; iApply "B".
-        + case_match.
-          - by iIntros "X"; iApply resolve_dtor_frame; iIntros (???) "B"; iNext; iRevert "B"; iApply mspec_frame; iIntros (?).
-          - by iIntros "A B"; iNext; iRevert "B"; iApply mspec_frame; iIntros (?). } }
+        + by iIntros "X"; iApply resolve_dtor_frame; iIntros (???) "B"; iNext; iRevert "B"; iApply mspec_frame; iIntros (?).
+        + iIntros "A B". iSplit.
+          { rewrite bi.and_elim_l. iDestruct "B" as "[$ >B]"; iModIntro; iDestruct "B" as "[$ B]".
+            iIntros "C"; iApply "A"; iApply "B"; eauto. }
+          { rewrite bi.and_elim_r. iNext. iRevert "B".
+            iApply mspec_frame; iIntros (?); eauto. } } }
   Qed.
 
 End destroy.
