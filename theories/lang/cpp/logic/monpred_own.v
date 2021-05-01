@@ -61,6 +61,12 @@ Section si_monpred_embedding.
     rewrite /BiEmbedEmp /bi_embed_embed /si_monpred_embed /=.
     rewrite -embed_emp. apply embed_mono. by rewrite -embed_emp_1.
   Qed.
+
+  (* TODO: uPred_cmra_valid should have been defined as si_cmra_valid.
+    This is to be fixed upstream in Iris. *)
+  Lemma monPred_si_cmra_valid_validI `{inG Σ A} (a : A) :
+    ⎡ si_cmra_valid a ⎤ ⊣⊢ ⎡ uPred_cmra_valid a ⎤.
+  Proof. by rewrite -si_cmra_valid_validI. Qed.
 End si_monpred_embedding.
 
 Section monpred_instances.
