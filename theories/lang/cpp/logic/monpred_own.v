@@ -63,8 +63,8 @@ Section si_monpred_embedding.
   Qed.
 
   (* TODO: uPred_cmra_valid should have been defined as si_cmra_valid.
-    This is to be fixed upstream. *)
-    Lemma si_cmra_valid_validI `{inG Σ A} (a : A) :
+    This is to be fixed upstream in Iris. *)
+  Lemma si_cmra_valid_validI `{inG Σ A} (a : A) :
     ⎡ si_cmra_valid a ⎤ ⊣⊢ ⎡ uPred_cmra_valid a ⎤.
   Proof. by rewrite -si_cmra_valid_validI. Qed.
 End si_monpred_embedding.
