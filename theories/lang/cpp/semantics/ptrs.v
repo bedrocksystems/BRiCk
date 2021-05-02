@@ -51,6 +51,7 @@ From bedrock.lang.prelude Require Import base addr option numbers.
 
 Require Import bedrock.lang.cpp.ast.
 From bedrock.lang.cpp.semantics Require Export types genv.
+Require Import iris.algebra.ofe. (* XXX we're mostly not using Iris here. *)
 
 Local Close Scope nat_scope.
 Local Open Scope Z_scope.
@@ -329,6 +330,12 @@ Module Type PTRS_DERIVED (Import P : PTRS).
 End PTRS_DERIVED.
 
 Module Type PTRS_MIXIN (Import P : PTRS) (Import PD : PTRS_DERIVED P).
+  (**
+  Explictly declare that all Iris equalities on pointers are trivial.
+  We only add such explicit declarations as actually needed.
+  *)
+  Canonical Structure ptrO := leibnizO ptr.
+
   #[global] Instance same_alloc_dec : RelDecision same_alloc.
   Proof. rewrite same_alloc_eq. apply _. Qed.
   #[global] Instance same_alloc_per : RelationClasses.PER same_alloc.
