@@ -79,38 +79,17 @@ Section destroy.
                   abstracts away some of the complexities of the underlying C++ semantics that
                   the semantics itself seems less than clear about. [CITATION NEEDED]
 
-             NOTE the two branches of this disjunction are really the same because trivially
-             destructible classes require no code to run and therefore running the code or
-             not running the code is the same from the C++ language point of view.
-
-             NOTE technically this disjunction should be a conjunction because it is the
-             compiler's choice to determine which of these it does.
-
-             We might be able to address this with the following axiom about [dtor_at]
-             [[[
-               [| s.(s_trivially_destructible) /\ d is a Defaulted destructor |] |-- dtor_at σ d (_global s.(s_dtor))
-             ]]]
-             This axiom essentially states that there are no resources required for [dtor_at]
-             when the destructor is trivial.
-
              TODO let's find some justification in the standard.
            *)
-          ([| s.(s_trivially_destructible) |] **
-           |={↑pred_ns}=> this |-> tblockR (erase_qualifiers t) 1 **
-                       (this |-> tblockR (erase_qualifiers t) 1 -* Q)) //\\
           (* In the current implementation, we generate destructor even when they are implicit
              to make the framework a bit more uniform (all objects have destructors) and allow
              for direct desructor calls, e.g. [c.~C()], which are encoded as
              [Emember_call ... "~C" ..] *)
           (let dtor := s.(s_dtor) in
-           let ty := Tfunction Tvoid nil in
+           let ty := Tfunction Tvoid nil in (** NOTE this implicitly requires all destructors to have C calling convention *)
            |> mspec σ.(genv_tu).(globals) (Tnamed cls) ty ti (Vptr $ _global s.(s_dtor)) (Vptr this :: nil) (fun _ => Q))
 
       | Some (Gunion u) =>
-        (** See comment above *)
-          ([| u.(u_trivially_destructible) |] **
-           |={↑pred_ns}=> this |-> tblockR (erase_qualifiers t) 1 **
-                       (this |-> tblockR (erase_qualifiers t) 1 -* Q)) \\//
           (* unions can not have [virtual] destructors, so we directly invoke
              the destructor.
            *)
@@ -139,16 +118,10 @@ Section destroy.
       iIntros "Q [$ V]"; iRevert "V"; iApply IHty; iApply IHl; eauto. }
     { intros. case_match; eauto.
       case_match; eauto.
-      { iIntros "X [Y | Y]"; [ iLeft | iRight ].
-        + by iDestruct "Y" as "[$ >Y]"; iModIntro; iDestruct "Y" as "[$ Y]"; iIntros "Z"; iApply "X"; iApply "Y".
-        + by iNext; iRevert "Y"; iApply mspec_frame; iIntros (?). }
+      { iIntros "X Y"; iNext; iRevert "Y"; iApply mspec_frame; iIntros (?); done. }
       { case_match.
-        + by iIntros "X"; iApply resolve_dtor_frame; iIntros (???) "B"; iNext; iRevert "B"; iApply mspec_frame; iIntros (?).
-        + iIntros "A B". iSplit.
-          { rewrite bi.and_elim_l. iDestruct "B" as "[$ >B]"; iModIntro; iDestruct "B" as "[$ B]".
-            iIntros "C"; iApply "A"; iApply "B"; eauto. }
-          { rewrite bi.and_elim_r. iNext. iRevert "B".
-            iApply mspec_frame; iIntros (?); eauto. } } }
+        { by iIntros "X"; iApply resolve_dtor_frame; iIntros (???) "B"; iNext; iRevert "B"; iApply mspec_frame; iIntros (?). }
+        { iIntros "X Y"; iNext; iRevert "Y"; iApply mspec_frame; iIntros (?); done. } } }
   Qed.
 
 End destroy.
