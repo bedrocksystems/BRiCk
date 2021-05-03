@@ -125,7 +125,7 @@ Lemma size_of_genv_compat tu σ gn st
   (Hσ : tu ⊧ σ)
   (Hl : tu.(globals) !! gn = Some (Gstruct st)) :
   size_of σ (Tnamed gn) = GlobDecl_size_of (Gstruct st).
-Proof. by rewrite /= (glob_def_genv_compat st Hl). Qed.
+Proof. by rewrite /= (glob_def_genv_compat_struct st Hl). Qed.
 
 Fixpoint find_field {T} (f : ident) (fs : list (ident * T)) : option T :=
   match fs with
