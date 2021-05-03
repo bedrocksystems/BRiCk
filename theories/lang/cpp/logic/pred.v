@@ -268,6 +268,13 @@ Module Type CPP_LOGIC (Import CC : CPP_LOGIC_CLASS) (Import INTF : FULL_INTF).
       valid_ptr (p .., o) |--
       [| pinned_ptr_pure (Z.to_N (Z.of_N va + z)) (p .., o) |].
 
+    Axiom offset_inv_pinned_ptr_pure : forall σ o z va p,
+      eval_offset σ o = Some z ->
+      pinned_ptr_pure va (p .., o) ->
+      valid_ptr (p .., o) |--
+      [| 0 <= Z.of_N va - z |]%Z **
+      [| pinned_ptr_pure (Z.to_N (Z.of_N va - z)) p |].
+
     Axiom provides_storage_same_address : forall storage_ptr obj_ptr ty,
       Observe [| same_address storage_ptr obj_ptr |] (provides_storage storage_ptr obj_ptr ty).
 
@@ -643,6 +650,19 @@ Section with_cpp.
   Proof.
     rewrite pinned_ptr_eq.
     iIntros "[%H1 _] [%H2 _] !> !%". exact: pinned_ptr_pure_unique.
+  Qed.
+
+  Lemma offset_2_pinned_ptr_pure o1 o2 z1 z2 va p :
+    eval_offset σ o1 = Some z1 ->
+    eval_offset σ o2 = Some z2 ->
+    pinned_ptr_pure va (p .., o1) ->
+    valid_ptr p |-- valid_ptr (p .., o1) -* valid_ptr (p .., o2) -*
+    [| pinned_ptr_pure (Z.to_N (Z.of_N va - z1 + z2)) (p .., o2) |].
+  Proof.
+    iIntros (He1 He2 Hpin1) "V V1 V2".
+    iDestruct (offset_inv_pinned_ptr_pure with "V1") as %[??]; [done..|].
+    iDestruct (offset_pinned_ptr_pure with "V2") as %Hgoal; [done..|].
+    iIntros "!%". by rewrite Z2N.id in Hgoal.
   Qed.
 
   Lemma pinned_ptr_null : |-- pinned_ptr 0 nullptr.

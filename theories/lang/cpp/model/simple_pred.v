@@ -1047,6 +1047,12 @@ Module SimpleCPP.
       valid_ptr (p .., o) |--
       [| pinned_ptr_pure (Z.to_N (Z.of_N va + z)) (p .., o) |].
 
+    Axiom offset_inv_pinned_ptr_pure : forall σ o z va p,
+      eval_offset σ o = Some z ->
+      pinned_ptr_pure va (p .., o) ->
+      valid_ptr (p .., o) |--
+      [| 0 <= Z.of_N va - z |]%Z **
+      [| pinned_ptr_pure (Z.to_N (Z.of_N va - z)) p |].
 
     Parameter exposed_aid : alloc_id -> mpred.
     Axiom exposed_aid_persistent : forall aid, Persistent (exposed_aid aid).
