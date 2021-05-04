@@ -39,6 +39,7 @@ From bedrock.lang.cpp Require Import semantics.values.
 Variant validity_type : Set := Strict | Relaxed.
 
 Implicit Types (vt : validity_type) (σ resolve : genv).
+Implicit Types (n : N) (z : Z).
 
 (* Namespace for the invariants of the C++ abstraction's ghost state. *)
 Definition pred_ns : namespace := (nroot .@ "bedrock" .@ "lang" .@ "cpp_logic")%bs.
@@ -261,11 +262,11 @@ Module Type CPP_LOGIC (Import CC : CPP_LOGIC_CLASS) (Import INTF : FULL_INTF).
       Axiom dtor_at_valid   : forall f p,   dtor_at f p |-- valid_ptr p.
     End with_genv.
 
-    Axiom offset_pinned_ptr_pure : forall σ o n va p,
-      eval_offset σ o = Some n ->
+    Axiom offset_pinned_ptr_pure : forall σ o z va p,
+      eval_offset σ o = Some z ->
       pinned_ptr_pure va p ->
       valid_ptr (p .., o) |--
-      [| pinned_ptr_pure (Z.to_N (Z.of_N va + n)) (p .., o) |].
+      [| pinned_ptr_pure (Z.to_N (Z.of_N va + z)) (p .., o) |].
 
     Axiom provides_storage_same_address : forall storage_ptr obj_ptr ty,
       Observe [| same_address storage_ptr obj_ptr |] (provides_storage storage_ptr obj_ptr ty).
@@ -651,10 +652,10 @@ Section with_cpp.
     iApply exposed_ptr_nullptr.
   Qed.
 
-  Lemma offset_pinned_ptr o n va p :
-    eval_offset _ o = Some n ->
+  Lemma offset_pinned_ptr o z va p :
+    eval_offset _ o = Some z ->
     valid_ptr (p .., o) |--
-    pinned_ptr va p -* pinned_ptr (Z.to_N (Z.of_N va + n)) (p .., o).
+    pinned_ptr va p -* pinned_ptr (Z.to_N (Z.of_N va + z)) (p .., o).
   Proof.
     rewrite pinned_ptr_eq /pinned_ptr_def.
     iIntros (He) "#V' #(%P & E)".
@@ -686,11 +687,11 @@ Section with_cpp.
     iIntros "#? #(? & _)". by iApply pinned_ptr_pure_type_divide_1.
   Qed.
 
-  Lemma shift_pinned_ptr_sub ty n va (p1 : ptr) p2 o:
+  Lemma shift_pinned_ptr_sub ty z va (p1 : ptr) p2 o:
     size_of σ ty = Some o ->
-    _offset_ptr p1 (o_sub _ ty n) = p2 ->
+    _offset_ptr p1 (o_sub _ ty z) = p2 ->
         valid_ptr p2 ** pinned_ptr va p1
-    |-- pinned_ptr (Z.to_N (Z.of_N va + n * Z.of_N o)) p2.
+    |-- pinned_ptr (Z.to_N (Z.of_N va + z * Z.of_N o)) p2.
   Proof.
     move => o_eq <-.
     iIntros "[val pin1]".

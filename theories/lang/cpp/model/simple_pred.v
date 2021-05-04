@@ -1041,11 +1041,11 @@ Module SimpleCPP.
       type_ptr ty p1 ∧ type_ptr ty p2 ∧ live_ptr p1 ∧ live_ptr p2 ⊢
         |={↑pred_ns}=> [| p1 = p2 |].
 
-    Axiom offset_pinned_ptr_pure : forall σ o n va p,
-      eval_offset σ o = Some n ->
+    Axiom offset_pinned_ptr_pure : forall σ o z va p,
+      eval_offset σ o = Some z ->
       pinned_ptr_pure va p ->
       valid_ptr (p .., o) |--
-      [| pinned_ptr_pure (Z.to_N (Z.of_N va + n)) (p .., o) |].
+      [| pinned_ptr_pure (Z.to_N (Z.of_N va + z)) (p .., o) |].
 
 
     Parameter exposed_aid : alloc_id -> mpred.
