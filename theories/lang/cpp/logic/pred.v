@@ -565,6 +565,10 @@ Section pinned_ptr_def.
     by rewrite ptr_alloc_id_offset // ptr_alloc_id_offset.
   Qed.
 
+  Lemma offset_inv_exposed_ptr p o :
+    valid_ptr p |-- exposed_ptr (p .., o) -* exposed_ptr p.
+  Proof. rewrite -{1 3}(offset_ptr_id p). apply offset2_exposed_ptr. Qed.
+
   (** Physical representation of pointers. *)
   (** [pinned_ptr va p] states that the abstract pointer [p] is tied to a
     virtual address [va].
@@ -681,6 +685,31 @@ Section with_cpp.
     iIntros (He) "#V' #(%P & E)".
     iDestruct (offset_pinned_ptr_pure with "V'") as "$"; [done..|].
     by iApply offset_exposed_ptr.
+  Qed.
+
+  Lemma offset_inv_pinned_ptr o z va p :
+    eval_offset _ o = Some z ->
+    valid_ptr p |-- pinned_ptr va (p .., o) -*
+    [| 0 <= Z.of_N va - z |]%Z ** pinned_ptr (Z.to_N (Z.of_N va - z)) p.
+  Proof.
+    rewrite pinned_ptr_eq /pinned_ptr_def.
+    iIntros (He) "#V #(%P & E)".
+    iDestruct (offset_inv_pinned_ptr_pure with "[]") as "-#[$$]"; [done..| |].
+    { by iApply (observe with "E"). }
+    by iApply offset_inv_exposed_ptr.
+  Qed.
+
+  Lemma offset2_pinned_ptr o1 o2 z1 z2 va p :
+    eval_offset σ o1 = Some z1 ->
+    eval_offset σ o2 = Some z2 ->
+    valid_ptr p |-- valid_ptr (p .., o1) -* valid_ptr (p .., o2) -*
+    pinned_ptr va (p .., o1) -*
+    pinned_ptr (Z.to_N (Z.of_N va - z1 + z2)) (p .., o2).
+  Proof.
+    rewrite pinned_ptr_eq /pinned_ptr_def.
+    iIntros (He1 He2) "V V1 #V2 #(%P & E)".
+    iDestruct (offset_2_pinned_ptr_pure with "V V1 V2") as "$"; [done..|].
+    by iApply offset2_exposed_ptr.
   Qed.
 
   Lemma pinned_ptr_aligned_divide va n p :
