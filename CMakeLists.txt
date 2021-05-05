@@ -61,7 +61,7 @@ add_library(tocoq
   src/ToCoq.cpp
 )
 set_property(TARGET tocoq PROPERTY POSITION_INDEPENDENT_CODE ON)
-
+add_compile_options(-fno-rtti)
 IF (APPLE)
    set(CMAKE_MACOSX_RPATH ON)
 ENDIF (APPLE)

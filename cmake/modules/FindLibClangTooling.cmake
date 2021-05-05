@@ -1,5 +1,5 @@
 find_package(LLVM REQUIRED)
-find_package(Clang REQUIRED)
+find_package(LibClang REQUIRED)
 
 message(STATUS "Found LLVM_VERSION_MAJOR ${LLVM_VERSION_MAJOR}")
 
@@ -38,8 +38,8 @@ if (LibClangTooling_clang-cpp_LIBRARY AND NOT("${CMAKE_HOST_SYSTEM_NAME}" STREQU
 # Method (2): individual libraries
 else()
   message(STATUS "clang-cpp not available")
-  foreach (lib clangTooling clangFrontend clangSerialization clangDriver clangParse clangSema clangAnalysis clangEdit clangAST clangLex clangBasic)
-    find_library(LibClangTooling_${lib}_LIBRARY NAMES ${lib} PATHS ${LLVM_LIB_DIR})
+  foreach (lib clangTooling clangFrontend clangFrontendTool clangSerialization clangDriver clangParse clangSema clangAnalysis clangEdit clangAST clangLex clangBasic clangToolingCore clangHandleCXX)
+    find_library(LibClangTooling_${lib}_LIBRARY NAMES ${lib} PATHS ${CLANG_LIB_DIR} ${LLVM_LIB_DIR})
     mark_as_advanced(LibClangTooling_${lib}_LIBRARY)
     list(APPEND LibClangTooling_LIBRARIES ${LibClangTooling_${lib}_LIBRARY})
   endforeach()
@@ -47,7 +47,7 @@ endif()
 message(STATUS "Found LibClangTooling_LIBRARIES ${LibClangTooling_LIBRARIES}")
 list(APPEND LibClangTooling_LIBRARIES ${LLVM_LIBRARIES})
 
-set(LibClangTooling_INCLUDE_DIRS ${LLVM_INCLUDE_DIRS})
+set(LibClangTooling_INCLUDE_DIRS ${CLANG_INCLUDE_DIR} ${LLVM_INCLUDE_DIRS})
 set(LibClangTooling_DEFINITIONS ${LLVM_DEFINITIONS})
 
 include(FindPackageHandleStandardArgs)
