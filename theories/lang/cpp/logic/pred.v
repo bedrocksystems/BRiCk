@@ -39,6 +39,7 @@ From bedrock.lang.cpp Require Import semantics.values.
 Variant validity_type : Set := Strict | Relaxed.
 
 Implicit Types (vt : validity_type) (σ resolve : genv).
+Implicit Types (n : N) (z : Z).
 
 (* Namespace for the invariants of the C++ abstraction's ghost state. *)
 Definition pred_ns : namespace := (nroot .@ "bedrock" .@ "lang" .@ "cpp_logic")%bs.
@@ -261,11 +262,18 @@ Module Type CPP_LOGIC (Import CC : CPP_LOGIC_CLASS) (Import INTF : FULL_INTF).
       Axiom dtor_at_valid   : forall f p,   dtor_at f p |-- valid_ptr p.
     End with_genv.
 
-    Axiom offset_pinned_ptr_pure : forall σ o n va p,
-      eval_offset σ o = Some n ->
+    Axiom offset_pinned_ptr_pure : forall σ o z va p,
+      eval_offset σ o = Some z ->
       pinned_ptr_pure va p ->
       valid_ptr (p .., o) |--
-      [| pinned_ptr_pure (Z.to_N (Z.of_N va + n)) (p .., o) |].
+      [| pinned_ptr_pure (Z.to_N (Z.of_N va + z)) (p .., o) |].
+
+    Axiom offset_inv_pinned_ptr_pure : forall σ o z va p,
+      eval_offset σ o = Some z ->
+      pinned_ptr_pure va (p .., o) ->
+      valid_ptr (p .., o) |--
+      [| 0 <= Z.of_N va - z |]%Z **
+      [| pinned_ptr_pure (Z.to_N (Z.of_N va - z)) p |].
 
     Axiom provides_storage_same_address : forall storage_ptr obj_ptr ty,
       Observe [| same_address storage_ptr obj_ptr |] (provides_storage storage_ptr obj_ptr ty).
@@ -557,6 +565,10 @@ Section pinned_ptr_def.
     by rewrite ptr_alloc_id_offset // ptr_alloc_id_offset.
   Qed.
 
+  Lemma offset_inv_exposed_ptr p o :
+    valid_ptr p |-- exposed_ptr (p .., o) -* exposed_ptr p.
+  Proof. rewrite -{1 3}(offset_ptr_id p). apply offset2_exposed_ptr. Qed.
+
   (** Physical representation of pointers. *)
   (** [pinned_ptr va p] states that the abstract pointer [p] is tied to a
     virtual address [va].
@@ -644,6 +656,19 @@ Section with_cpp.
     iIntros "[%H1 _] [%H2 _] !> !%". exact: pinned_ptr_pure_unique.
   Qed.
 
+  Lemma offset_2_pinned_ptr_pure o1 o2 z1 z2 va p :
+    eval_offset σ o1 = Some z1 ->
+    eval_offset σ o2 = Some z2 ->
+    pinned_ptr_pure va (p .., o1) ->
+    valid_ptr p |-- valid_ptr (p .., o1) -* valid_ptr (p .., o2) -*
+    [| pinned_ptr_pure (Z.to_N (Z.of_N va - z1 + z2)) (p .., o2) |].
+  Proof.
+    iIntros (He1 He2 Hpin1) "V V1 V2".
+    iDestruct (offset_inv_pinned_ptr_pure with "V1") as %[??]; [done..|].
+    iDestruct (offset_pinned_ptr_pure with "V2") as %Hgoal; [done..|].
+    iIntros "!%". by rewrite Z2N.id in Hgoal.
+  Qed.
+
   Lemma pinned_ptr_null : |-- pinned_ptr 0 nullptr.
   Proof.
     rewrite pinned_ptr_eq /pinned_ptr_def.
@@ -651,15 +676,40 @@ Section with_cpp.
     iApply exposed_ptr_nullptr.
   Qed.
 
-  Lemma offset_pinned_ptr o n va p :
-    eval_offset _ o = Some n ->
+  Lemma offset_pinned_ptr o z va p :
+    eval_offset _ o = Some z ->
     valid_ptr (p .., o) |--
-    pinned_ptr va p -* pinned_ptr (Z.to_N (Z.of_N va + n)) (p .., o).
+    pinned_ptr va p -* pinned_ptr (Z.to_N (Z.of_N va + z)) (p .., o).
   Proof.
     rewrite pinned_ptr_eq /pinned_ptr_def.
     iIntros (He) "#V' #(%P & E)".
     iDestruct (offset_pinned_ptr_pure with "V'") as "$"; [done..|].
     by iApply offset_exposed_ptr.
+  Qed.
+
+  Lemma offset_inv_pinned_ptr o z va p :
+    eval_offset _ o = Some z ->
+    valid_ptr p |-- pinned_ptr va (p .., o) -*
+    [| 0 <= Z.of_N va - z |]%Z ** pinned_ptr (Z.to_N (Z.of_N va - z)) p.
+  Proof.
+    rewrite pinned_ptr_eq /pinned_ptr_def.
+    iIntros (He) "#V #(%P & E)".
+    iDestruct (offset_inv_pinned_ptr_pure with "[]") as "-#[$$]"; [done..| |].
+    { by iApply (observe with "E"). }
+    by iApply offset_inv_exposed_ptr.
+  Qed.
+
+  Lemma offset2_pinned_ptr o1 o2 z1 z2 va p :
+    eval_offset σ o1 = Some z1 ->
+    eval_offset σ o2 = Some z2 ->
+    valid_ptr p |-- valid_ptr (p .., o1) -* valid_ptr (p .., o2) -*
+    pinned_ptr va (p .., o1) -*
+    pinned_ptr (Z.to_N (Z.of_N va - z1 + z2)) (p .., o2).
+  Proof.
+    rewrite pinned_ptr_eq /pinned_ptr_def.
+    iIntros (He1 He2) "V V1 #V2 #(%P & E)".
+    iDestruct (offset_2_pinned_ptr_pure with "V V1 V2") as "$"; [done..|].
+    by iApply offset2_exposed_ptr.
   Qed.
 
   Lemma pinned_ptr_aligned_divide va n p :
@@ -686,11 +736,11 @@ Section with_cpp.
     iIntros "#? #(? & _)". by iApply pinned_ptr_pure_type_divide_1.
   Qed.
 
-  Lemma shift_pinned_ptr_sub ty n va (p1 : ptr) p2 o:
+  Lemma shift_pinned_ptr_sub ty z va (p1 : ptr) p2 o:
     size_of σ ty = Some o ->
-    _offset_ptr p1 (o_sub _ ty n) = p2 ->
+    _offset_ptr p1 (o_sub _ ty z) = p2 ->
         valid_ptr p2 ** pinned_ptr va p1
-    |-- pinned_ptr (Z.to_N (Z.of_N va + n * Z.of_N o)) p2.
+    |-- pinned_ptr (Z.to_N (Z.of_N va + z * Z.of_N o)) p2.
   Proof.
     move => o_eq <-.
     iIntros "[val pin1]".
