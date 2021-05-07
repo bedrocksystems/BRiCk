@@ -252,6 +252,13 @@ Inductive region : Type :=
 | Remp (this : option ptr) (_ : type)
 | Rbind (_ : localname) (_ : ptr) (_ : region).
 
+(** NOTE anonymous variables are not recorded in the environment.
+ *)
+Definition Rbind_check (x : ident) (p : ptr) (r : region) : region :=
+  if decide (x = ""%bs)
+  then r
+  else Rbind x p r.
+
 Fixpoint get_location (ρ : region) (b : localname) : option ptr :=
   match ρ with
   | Remp _ _ => None

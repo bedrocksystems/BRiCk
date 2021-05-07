@@ -16,7 +16,7 @@ From bedrock.lang.cpp.logic Require Import
      wp builtins.
 Require Import bedrock.lang.cpp.heap_notations.
 
-Local Set Universe Polymorphism.
+#[local] Set Universe Polymorphism.
 
 Section with_cpp.
   Context `{Σ : cpp_logic thread_info} {resolve:genv}.
@@ -99,14 +99,6 @@ Section with_cpp.
                ; wpp_post this := (PQ this).(wpp_post)
                |}.
 
-  Definition bind_base_this (o : option ptr) (rty : type) (Q : region -> mpred) : mpred :=
-    Q (Remp o rty).
-
-  Definition Rbind_check (x : ident) (p : ptr) (r : region) : region :=
-    if decide (x = ""%bs)
-    then r
-    else Rbind x p r.
-
   Fixpoint bind_vars (args : list (ident * type)) (vals : list val) (r : region) (Q : region -> FreeTemps -> mpred) : mpred :=
     match args , vals with
     | nil , nil => Q r emp
@@ -127,6 +119,18 @@ Section with_cpp.
     | _ , _ => False
     end%I.
 
+  Lemma bind_vars_frame : forall ts args ρ Q Q',
+      (Forall ρ free, Q ρ free -* Q' ρ free) |-- bind_vars ts args ρ Q -* bind_vars ts args ρ Q'.
+  Proof.
+    induction ts; destruct args => /= *; eauto.
+    { iIntros "A B"; iApply "A"; eauto. }
+    { iIntros "A B". destruct a.
+      destruct (typing.drop_qualifiers t);
+        try solve
+            [ iIntros (?) "X"; iDestruct ("B" with "X") as "B"; iRevert "B"; iApply IHts; iIntros (? ?) "Z"; iApply "A"; iFrame
+            | destruct v; eauto; iRevert "B"; iApply IHts; eauto ]. }
+  Qed.
+
   (* the meaning of a function
    *)
   Definition wp_func (f : Func) (ti : thread_info) (args : list val)
@@ -136,12 +140,12 @@ Section with_cpp.
     | Some body =>
       match body with
       | Impl body =>
-        bind_base_this None f.(f_return) (fun ρ =>
+        let ρ := Remp None f.(f_return) in
         bind_vars f.(f_params) args ρ (fun ρ frees =>
         |> if is_void f.(f_return) then
              wp (resolve:=resolve) ⊤ ti ρ body (Kfree frees (void_return (|> Q Vvoid)))
            else
-             wp (resolve:=resolve) ⊤ ti ρ body (Kfree frees (val_return (fun x => |> Q x)))))
+             wp (resolve:=resolve) ⊤ ti ρ body (Kfree frees (val_return (fun x => |> Q x))))
       | Builtin builtin =>
         wp_builtin ⊤ ti builtin (Tfunction (cc:=f.(f_cc)) f.(f_return) (List.map snd f.(f_params))) args Q
       end
@@ -161,12 +165,12 @@ Section with_cpp.
     | Some body =>
       match args with
       | Vptr thisp :: rest_vals =>
-        bind_base_this (Some thisp) m.(m_return) (fun ρ =>
+        let ρ := Remp (Some thisp) m.(m_return) in
         bind_vars m.(m_params) rest_vals ρ (fun ρ frees =>
         |> if is_void m.(m_return) then
              wp (resolve:=resolve) ⊤ ti ρ body (Kfree frees (void_return (|>Q Vvoid)))
            else
-             wp (resolve:=resolve) ⊤ ti ρ body (Kfree frees (val_return (fun x => |>Q x)))))
+             wp (resolve:=resolve) ⊤ ti ρ body (Kfree frees (val_return (fun x => |>Q x))))
       | _ => lfalse
       end
     end.
@@ -282,10 +286,10 @@ Section with_cpp.
         (* ^ this requires that you give up the *entire* block of memory that the object
            will use.
          *)
-        bind_base_this (Some thisp) Tvoid (fun ρ =>
+        let ρ := Remp (Some thisp) Tvoid in
         bind_vars ctor.(c_params) rest_vals ρ (fun ρ frees =>
           |> wpi_bases ti ρ ctor.(c_class) thisp inits (fun free => free **
-               (type_ptr ty thisp -* wp (resolve:=resolve) ⊤ ti ρ body (Kfree frees (void_return (|> Q Vvoid)))))))
+               (type_ptr ty thisp -* wp (resolve:=resolve) ⊤ ti ρ body (Kfree frees (void_return (|> Q Vvoid))))))
       | _ => False
       end
     end.
@@ -354,10 +358,10 @@ Section with_cpp.
     | Some (UserDefined (body, deinit)) =>
       match args with
       | Vptr thisp :: rest_vals =>
-        bind_base_this (Some thisp) Tvoid (fun ρ =>
+        let ρ := Remp (Some thisp) Tvoid in
           |> wp (resolve:=resolve) ⊤ ti ρ body
                (void_return (wpd_members ti ρ dtor.(d_class) thisp deinit
-                  ((* TODO backwards compat [thisp |-> tblockR (Tnamed dtor.(d_class)) -*] *) Q Vvoid))))
+                  ((* TODO backwards compat [thisp |-> tblockR (Tnamed dtor.(d_class)) -*] *) Q Vvoid)))
       | _ => False
       end
     end.
@@ -369,3 +373,4 @@ Section with_cpp.
       spec.(fs_spec) ti vals Q -* wp_dtor dtor ti vals Q.
 
 End with_cpp.
+
