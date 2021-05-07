@@ -512,6 +512,7 @@ Section with_cpp.
       let epilog :=
           match resolve.(genv_tu).(globals) !! dtor.(d_class) with
           | Some (Gstruct s) => Some $ fun thisp : ptr =>
+            thisp |-> struct_padding 1 dtor.(d_class) **
             wpd_members ti dtor.(d_class) thisp s.(s_fields)
                (* ^ fields are destroyed *)
                (thisp |-> revert_identity dtor.(d_class)
