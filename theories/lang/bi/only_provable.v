@@ -102,6 +102,22 @@ Section bi.
   Lemma only_provable_forall `{Inhabited A} (φ : A → Prop) :
     [|∀ x, φ x|] ⊣⊢ ∀ x, [|φ x|].
   Proof using PF. apply: anti_symm. apply only_provable_forall_1. apply only_provable_forall_2. Qed.
+  (** Not very useful, but the best we can do in general:
+  it's unclear how to commute [emp ∧ ∀ x : A, P] into [∀ x : A, emp ∧ P]. *)
+  Lemma only_provable_forall_2_gen {A} (φ : A → Prop) :
+    ([| ∀ x : A, φ x |]) ⊣⊢@{PROP} (emp ∧ ∀ x : A, [| φ x |]).
+  Proof using PF.
+    rewrite /only_provable; iSplit.
+    { iIntros "!% /=". done. }
+    { iIntros "[_ HPQ]". iRevert "HPQ". iIntros "!% /=". done. }
+  Qed.
+  Lemma only_provable_forall_2_biaffine `{BiAffine PROP} {A} (φ : A → Prop) :
+    ([| ∀ x : A, φ x |]) ⊣⊢@{PROP} (∀ x : A, [| φ x |]).
+  Proof using PF.
+    rewrite only_provable_forall_2_gen.
+    iSplit; [|done]. iIntros "[_ $]".
+  Qed.
+
   Lemma only_provable_exist {A} (φ : A → Prop) : [|∃ x, φ x|] ⊣⊢ ∃ x, [|φ x|].
   Proof. rewrite/only_provable. by rewrite bi.pure_exist bi.affinely_exist. Qed.
   Lemma only_provable_impl_forall P q : ([| P |] → q) ⊢ (∀ _ : P, emp → q).
@@ -212,10 +228,19 @@ Section proofmode.
     AsIdentName P name ->
     @IntoExist PROP A [| ∃ x, P x |] (λ a, [| P a |]) name.
   Proof. by rewrite/IntoExist only_provable_exist. Qed.
-  Global Instance from_forall_only_provable `{Inhabited A} (P : A → Prop) name :
+
+  (* TODO: avoid backtracking between these two instances by adding a TCOrT;
+  TCOr does not work because it only takes Props but Inhabited is in Type. *)
+  Global Instance from_forall_only_provable
+      `{HTC : TCOrT (BiAffine PROP) (Inhabited A)} (P : A → Prop) name :
     AsIdentName P name ->
     @FromForall PROP A [| ∀ x, P x |] (λ a, [| P a |]) name.
-  Proof using PF. by rewrite/FromForall only_provable_forall_2. Qed.
+  Proof using PF.
+    destruct HTC.
+    - by rewrite/FromForall only_provable_forall_2_biaffine.
+    - by rewrite/FromForall only_provable_forall_2.
+  Qed.
+
   Global Instance into_forall_only_provable {A} (P : A → Prop) :
     @IntoForall PROP A [| ∀ x, P x |] (λ a, [| P a |]).
   Proof. by rewrite/IntoForall only_provable_forall_1. Qed.
