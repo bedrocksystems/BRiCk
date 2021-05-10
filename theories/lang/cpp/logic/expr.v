@@ -737,9 +737,11 @@ Module Type Expr.
         end
       |-- wp_xval (Ecall f es ty) Q.
 
-    Axiom wp_init_call : forall f es Q addr ty,
+    Axiom wp_init_call : forall f es Q (addr : ptr) ty,
         match unptr (type_of f) with
         | Some fty =>
+          addr |-> uninitR (erase_qualifiers ty) 1 ** (* TODO backwards compat [tblockR ty 1] *)
+          (* ^ give up the memory that was created by [materialize_into_temp] *)
           wp_prval f (fun f free_f =>
                         wp_args es (fun vs free =>
                                       |> fspec (normalize_type fty) ti f vs (fun res => [| res = Vptr addr |] -* Q (free_f ** free))))
@@ -777,7 +779,9 @@ Module Type Expr.
               |> mspec (type_of obj) (normalize_type fty) ti (Vptr $ _global f) (Vptr this :: vs) (fun v => Q v (free_t ** free)))))
         |-- wp_prval (Emember_call (inl (f, Direct, fty)) vc obj es ty) Q.
 
-    Axiom wp_init_member_call : forall f fty es addr ty vc obj Q,
+    Axiom wp_init_member_call : forall f fty es (addr : ptr) ty vc obj Q,
+        addr |-> uninitR (erase_qualifiers ty) 1 ** (* TODO backwards compat [tblockR ty 1] *)
+        (* ^ give up the memory that was created by [materialize_into_temp] *)
         wp_glval vc obj (fun this free_t => wp_args es (fun vs free =>
              |> mspec (type_of obj) (normalize_type fty) ti (Vptr $ _global f) (Vptr this :: vs) (fun res =>
                       [| res = Vptr addr |] -* Q (free_t ** free))))
@@ -828,7 +832,10 @@ Module Type Expr.
           end)))
       |-- wp_prval (Emember_call (inl (f, Virtual, fty)) vc obj es ty) Q.
 
-    Axiom wp_init_virtual_call : forall ty fty f vc obj es Q addr,
+    Axiom wp_init_virtual_call : forall ty fty f vc obj es Q (addr : ptr),
+        addr |-> uninitR (erase_qualifiers ty) 1 ** (* TODO backwards compat [tblockR ty 1] *)
+        (* ^ give up the memory that was created by [materialize_into_temp] *)
+
       wp_glval vc obj (fun this free => wp_args es (fun vs free' =>
           match class_type (type_of obj) with
           | Some cls =>
@@ -966,6 +973,7 @@ Module Type Expr.
         free the result.
 
         XXX this needs a thorough review.
+        FIXME this might be too general.
      *)
     Axiom wp_prval_implicit_materialize : forall e Q,
         is_aggregate (type_of e) = true ->
@@ -999,7 +1007,7 @@ Module Type Expr.
       let raw_type := erase_qualifiers ty in
       a |-> uninitR raw_type 1 (* TODO backwards compat [tblockR raw_type] *) -*
           wp_init ty a e (fun free =>
-                            Q (Vptr a) (destruct_val ty a (Some dtor) (a |-> uninitR raw_type 1 (* TODO backwards compat [tblockR raw_type] *) ** free))))
+                            Q (Vptr a) (destruct_val ty a (Some dtor) (a |-> anyR raw_type 1 (* TODO backwards compat [tblockR raw_type] *) ** free))))
       |-- wp_prval (Ebind_temp e dtor ty) Q.
 
     (** Pseudo destructors arise from calling the destructor on
@@ -1150,9 +1158,9 @@ Module Type Expr.
       N.peano_rect (fun _ : N => N -> mpred)
                    (fun _ => Q emp)%I
                    (fun _ rest idx =>
-                      (* NOTE: The abstract machine only provides 1/2 of the ownership
+                      (* NOTE The abstract machine only provides 1/2 of the ownership
                            to the program to make it read-only.
-                           NOTE that no "correct" program will ever modify this variable
+                         NOTE that no "correct" program will ever modify this variable
                            anyways. *)
                       loop_index |-> (primR (Tint W64 Unsigned) (1/2) idx) -*
                       wp_initialize ρ ty (targetp .[ ty ! idx ]) init

@@ -47,18 +47,21 @@ Module Type Stmt.
      * expression.
      *)
     Axiom wp_return_void : forall ρ Q,
+        get_return_type ρ = Tvoid ->
         Q ReturnVoid |-- wp ρ (Sreturn None) Q.
 
     Axiom wp_return : forall ρ c e (Q : KpredI),
            match c with
            | Prvalue =>
-             if is_aggregate (type_of e) then
+             let rty := get_return_type ρ in
+             if is_aggregate rty then
                (* ^ C++ erases the reference information on types for an unknown
                 * reason, see http://eel.is/c++draft/expr.prop#expr.type-1.sentence-1
                 * so we need to re-construct this information from the value
                 * category of the expression.
                 *)
-               wp_init ρ (erase_qualifiers (type_of e)) (_result ρ) (not_mine e) (fun free => free ** Q (ReturnVal (Vptr $ _result ρ)))
+               Forall ra : ptr, ra |-> uninitR (erase_qualifiers rty) 1 -*
+               wp_init ρ (erase_qualifiers rty) ra (not_mine e) (fun free => free ** Q (ReturnVal (Vptr ra)))
              else
                wp_prval ρ e (fun v free => free ** Q (ReturnVal v))
            | Lvalue =>
