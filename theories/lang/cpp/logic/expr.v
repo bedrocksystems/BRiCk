@@ -737,7 +737,7 @@ Module Type Expr.
     Axiom wp_init_call : forall f es Q (addr : ptr) ty,
         match unptr (type_of f) with
         | Some fty =>
-          addr |-> tblockR (erase_qualifiers ty) 1 ** (* TODO backwards compat [tblockR ty 1] *)
+          addr |-> tblockR (erase_qualifiers ty) 1 **
           (* ^ give up the memory that was created by [materialize_into_temp] *)
           wp_prval f (fun f free_f =>
                         wp_args es (fun vs free =>
