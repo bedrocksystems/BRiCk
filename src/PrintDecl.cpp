@@ -301,8 +301,10 @@ public:
         printFields(decl, layout, print, cprint);
 
         if (auto dtor = decl->getDestructor()) {
+            print.output() << fmt::nbsp;
             cprint.printGlobalName(dtor, print);
-            print.output() << fmt::line << dtor->isTrivial();
+            print.output() << fmt::line
+                           << (dtor->isTrivial() ? "true" : "false");
         } else {
             logging::debug() << "destructor is required on union\n";
             logging::die();
