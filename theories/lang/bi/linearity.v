@@ -9,7 +9,7 @@ Import this module to make uPred mostly non-affine, while still assuming [▷ em
 This is guaranteed not to affect clients, since all we add is a few [#[export] Hints].
 *)
 
-From bedrock.lang Require Import prelude.base bi.prelude.
+From bedrock.lang Require Import prelude.base bi.prelude bi.only_provable.
 From iris.proofmode Require Import tactics.
 
 #[export] Remove Hints uPred_affine : typeclass_instances.
@@ -46,7 +46,7 @@ Specialize the lemmas in [Section with_later_emp] to [uPred] (hence
 All lemmas use suffix [_uPred].
 *)
 
-Section uPred.
+Section uPred_with_later_emp.
   Context (M : ucmraT).
   Local Notation "'emp'" := (bi_emp (PROP := uPredI M)) : bi_scope.
 
@@ -62,6 +62,23 @@ Section uPred.
   #[local] Instance affine_later_uPred (P : uPredI M) :
     Affine P → Affine (▷ P).
   Proof. apply affine_later_with_later_emp, later_emp_uPred. Qed.
-End uPred.
+End uPred_with_later_emp.
 
 #[export] Hint Resolve timeless_emp_uPred affine_later_emp_uPred affine_later_uPred : typeclass_instances.
+
+(**
+Other instances that we derive from affinity but seem safe.
+This relies on [only_provable_forall_2_gen] and
+[ (emp ∧ ∀ x : A, [| φ x |]) ⊣⊢ ∀ x : A, [| φ x |] ].
+*)
+Section uPred.
+  Context (M : ucmraT).
+
+  #[local] Instance from_forall_only_provable_uPred {A} (P : A → Prop) name :
+    AsIdentName P name ->
+    @FromForall (uPredI M) A [| ∀ x, P x |] (λ a, [| P a |]) name.
+  Proof. apply (@from_forall_only_provable _ _), TCOrT_l, uPred_affine. Qed.
+End uPred.
+
+#[export] Remove Hints from_forall_only_provable : typeclass_instances.
+#[export] Hint Resolve from_forall_only_provable_uPred : typeclass_instances.
