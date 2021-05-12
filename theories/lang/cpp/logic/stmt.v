@@ -60,7 +60,7 @@ Module Type Stmt.
                 * so we need to re-construct this information from the value
                 * category of the expression.
                 *)
-               Forall ra : ptr, ra |-> uninitR (erase_qualifiers rty) 1 -*
+               Forall ra : ptr, ra |-> tblockR (erase_qualifiers rty) 1 -*
                wp_init ρ (erase_qualifiers rty) ra (not_mine e) (fun free => free ** Q (ReturnVal (Vptr ra)))
              else
                wp_prval ρ e (fun v free => free ** Q (ReturnVal v))
