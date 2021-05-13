@@ -19,6 +19,7 @@ Require Import bedrock.lang.cpp.heap_notations.
 Require Import bedrock.lang.bi.errors.
 
 #[local] Set Universe Polymorphism.
+Arguments ERROR {_ _} _%bs.
 
 Section with_cpp.
   Context `{Σ : cpp_logic thread_info} {resolve:genv}.
