@@ -20,6 +20,7 @@ Require Import bedrock.lang.bi.errors.
 
 #[local] Set Universe Polymorphism.
 Arguments ERROR {_ _} _%bs.
+Arguments UNSUPPORTED {_ _} _%bs.
 
 Section with_cpp.
   Context `{Σ : cpp_logic thread_info} {resolve:genv}.
@@ -193,7 +194,7 @@ Section with_cpp.
     | S f =>
       match resolve.(genv_tu).(globals) !! cls with
       | Some (Gstruct st) =>
-        identityR cls mdc 1 **
+        (if has_vtable st then identityR cls mdc 1 else emp) **
         [∗list] b ∈ st.(s_bases),
            let '(base,_) := b in
            _base cls base |-> all_identities' f mdc base
@@ -218,14 +219,24 @@ Section with_cpp.
       ([∗list] b ∈ st.(s_bases),
          let '(base,_) := b in
          _base cls base |-> all_identities (Some base) base) **
-       identityR cls None 1 **
-      (identityR cls (Some cls) 1 -*
+      ((if has_vtable st then identityR cls (Some cls) 1 else emp) -*
        ([∗list] b ∈ st.(s_bases),
           let '(base,_) := b in
           _base cls base |-> all_identities (Some cls) base) -* pureR Q)
     | _ => False
     end.
 
+  Theorem init_identity_frame cls Q Q' :
+    pureR (Q' -* Q) |-- init_identity cls Q' -* init_identity cls Q.
+  Proof.
+    rewrite /init_identity.
+    case_match; eauto.
+    case_match; eauto.
+    iIntros "X [$ Y] Z K".
+    iDestruct ("Y" with "Z K") as "Y".
+    iStopProof. rewrite -pureR_sep. apply pureR_mono.
+    iIntros "[X Y]"; iApply "X"; eauto.
+  Qed.
 
   (* initialization of members in the initializer list *)
   Fixpoint wpi_members
@@ -367,7 +378,7 @@ Section with_cpp.
       case_match; eauto.
       case_match; eauto.
       rewrite !_at_sep !_at_wand !_at_pureR.
-      iIntros "[$ [$ x]]".
+      iIntros "[$ x]".
       iIntros "b c"; iDestruct ("x" with "b c") as "x".
       iRevert "x"; iApply wpi_members_frame. iIntros "b c d".
       iApply "a".
@@ -467,16 +478,38 @@ Section with_cpp.
   Definition revert_identity (cls : globname) (Q : mpred) : Rep :=
     match resolve.(genv_tu).(globals) !! cls with
     | Some (Gstruct st) =>
-      identityR cls (Some cls) 1 **
+      (if has_vtable st then identityR cls (Some cls) 1 else emp) **
       ([∗list] b ∈ st.(s_bases),
           let '(base,_) := b in
           _base cls base |-> all_identities (Some cls) base) **
-      (identityR cls None 1 -*
-       ([∗list] b ∈ st.(s_bases),
+      (([∗list] b ∈ st.(s_bases),
          let '(base,_) := b in
          _base cls base |-> all_identities (Some base) base) -* pureR Q)
     | _ => False
     end.
+
+  Theorem revert_identity_frame cls Q Q' :
+    pureR (Q' -* Q) |-- revert_identity cls Q' -* revert_identity cls Q.
+  Proof.
+    rewrite /revert_identity.
+    case_match; eauto.
+    case_match; eauto.
+    iIntros "X [$ [$ Y]] Z".
+    iDestruct ("Y" with "Z") as "Y".
+    iStopProof. rewrite -pureR_sep. apply pureR_mono.
+    iIntros "[X Y]"; iApply "X"; eauto.
+  Qed.
+
+  Corollary init_revert cls Q (p : ptr) st :
+    globals (genv_tu resolve) !! cls = Some (Gstruct st) ->
+    p |-> ([∗ list] b ∈ s_bases st, let '(base, _) := b in _base cls base |-> all_identities (Some base) base) **
+ Q |-- p |-> init_identity cls (p |-> revert_identity cls (p |-> ([∗ list] b ∈ s_bases st, let '(base, _) := b in _base cls base |-> all_identities (Some base) base) **
+Q)).
+  Proof.
+    rewrite /revert_identity/init_identity => ->.
+    rewrite !_at_sep !_at_wand !_at_pureR.
+    iIntros "[$ $] $ $ $".
+  Qed.
 
   Fixpoint wpd_bases
            (ti : thread_info) (cls : globname) (this : ptr)
