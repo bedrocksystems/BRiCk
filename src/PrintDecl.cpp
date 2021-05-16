@@ -306,7 +306,7 @@ public:
             print.output() << fmt::line
                            << (dtor->isTrivial() ? "true" : "false");
         } else {
-            logging::debug() << "destructor is required on union\n";
+            logging::fatal() << "destructor is required on union\n";
             logging::die();
         }
 
@@ -413,7 +413,7 @@ public:
                            << (dtor->isTrivial() ? "true" : "false");
 
         } else {
-            logging::debug() << "destructor is required on struct\n";
+            logging::fatal() << "destructor is required on struct\n";
             logging::die();
         }
 

@@ -970,7 +970,7 @@ public:
 	  error() << "mangling number = " << expr->getManglingNumber() << "\n";
 #endif
 #if 0
-        logging::debug() << "got a 'MaterializeTemporaryExpr' at "
+        logging::fatal() << "got a 'MaterializeTemporaryExpr' at "
                          << expr->getSourceRange().printToString(
                                 ctxt.getSourceManager())
                          << "\n";
