@@ -35,14 +35,16 @@ Module Type Init.
         NOTE this assumes that the underlying memory has already been given to the
              C++ abstract machine.
      *)
-    Definition default_initialize
+    Fixpoint default_initialize
                (ty : type) (p : ptr) (Q : FreeTemps → epred) : mpred :=
-      match drop_qualifiers ty with
+      match ty with
       | Tint _ _ as rty
       | Tptr _ as rty
       | Tbool as rty
       | Tfloat _ as rty => p |-> uninitR (erase_qualifiers rty) 1 -* Q emp
-      | Tarray _ _ => UNSUPPORTED "default initialization of arrays"
+      | Tarray ty sz =>
+        fold_right (fun i PP free => default_initialize ty (p ., o_sub _ ty (Z.of_nat i)) (fun free' => PP (free ** free')))
+                   Q (seq 0 (N.to_nat sz)) emp%I
       | Tnullptr => UNSUPPORTED "default initialization of [nullptr_t]"
 
       | Tref _
@@ -53,7 +55,7 @@ Module Type Init.
       | Tnamed _ => False (* default initialization of aggregates is done at elaboration time. *)
 
       | Tarch _ _ => UNSUPPORTED "default initialization of architecture type"
-      | Tqualified _ _ => False (* unreachable *)
+      | Tqualified _ ty => default_initialize ty p Q
       end.
 
     Lemma default_initialize_frame:
@@ -61,10 +63,12 @@ Module Type Init.
         Forall f, Q f -* Q' f
         |-- default_initialize ty p Q -* default_initialize ty p Q'.
     Proof.
-      rewrite /default_initialize; intros; case_match;
-        try solve [ iIntros "a b c"; iApply "a"; iApply "b"; eauto | eauto ].
+      induction ty; simpl;
+        try solve [ intros; iIntros "a b c"; iApply "a"; iApply "b"; eauto | eauto ].
+      { generalize dependent (@bi_emp mpredI). induction (seq 0 (N.to_nat n)) =>/=; intros.
+        - iIntros "X"; iApply "X".
+        - iIntros "F". iApply IHty. iIntros (?). iApply IHl; eauto. }
     Qed.
-
 
     (* [wp_initialize] provides "constructor" semantics for types.
      * For aggregates, simply delegates to [wp_init], but for primitives,
@@ -256,8 +260,6 @@ Module Type Init.
     Axiom wp_init_mut : forall ty addr e Q,
         wp_init ty addr e Q
         |-- wp_init (Qmut ty) addr e Q.
-
-
 
   End with_resolve.
 
