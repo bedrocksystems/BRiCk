@@ -81,4 +81,11 @@ Formatter& operator<<(Formatter& out, const LINE* _);
 
 Formatter& operator<<(Formatter& out, const RPAREN* _);
 
+struct BOOL {
+    bool value;
+    explicit BOOL(bool b) : value(b) {}
+};
+
+Formatter& operator<<(Formatter& out, BOOL b);
+
 }

@@ -910,7 +910,7 @@ public:
                             ClangPrinter& cprint, const ASTContext&,
                             OpaqueNames& li) {
         print.ctor("Edelete");
-        print.output() << (expr->isArrayForm() ? "true" : "false") << fmt::nbsp;
+        print.output() << fmt::BOOL(expr->isArrayForm()) << fmt::nbsp;
 
         if (expr->getOperatorDelete()) {
             print.some();

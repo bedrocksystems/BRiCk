@@ -303,8 +303,7 @@ public:
         if (auto dtor = decl->getDestructor()) {
             print.output() << fmt::nbsp;
             cprint.printGlobalName(dtor, print);
-            print.output() << fmt::line
-                           << (dtor->isTrivial() ? "true" : "false");
+            print.output() << fmt::line << fmt::BOOL(dtor->isTrivial());
         } else {
             logging::fatal()
                 << "Error: union '" << decl->getNameAsString()
@@ -413,8 +412,7 @@ public:
         if (auto dtor = decl->getDestructor()) {
             cprint.printGlobalName(dtor, print);
             // trivially destructable
-            print.output() << fmt::nbsp
-                           << (dtor->isTrivial() ? "true" : "false");
+            print.output() << fmt::nbsp << fmt::BOOL(dtor->isTrivial());
 
         } else {
             logging::fatal()
