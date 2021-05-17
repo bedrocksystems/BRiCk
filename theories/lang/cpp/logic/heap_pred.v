@@ -460,12 +460,37 @@ Section with_cpp.
   Qed.
 
   (** [blockR sz] represents a contiguous chunk of [sz] bytes *)
-  Definition blockR {σ} sz (q : Qp) : Rep :=
+  Definition blockR_def {σ} sz (q : Qp) : Rep :=
     _offsetR (o_sub σ T_uint8 (Z.of_N sz)) validR **
     (* ^ Encodes valid_ptr (this .[ T_uint8 ! sz]). This is
     necessary to get [l |-> blockR n -|- l |-> blockR n ** l .[ T_uint8 ! m] |-> blockR 0]. *)
     [∗list] i ∈ seq 0 (N.to_nat sz),
       _offsetR (o_sub σ T_uint8 (Z.of_nat i)) (anyR (resolve:=σ) T_uint8 q).
+  Definition blockR_aux : seal (@blockR_def). Proof. by eexists. Qed.
+  Definition blockR := blockR_aux.(unseal).
+  Definition blockR_eq : @blockR = _ := blockR_aux.(seal_eq).
+  #[global] Arguments blockR {_} _ _%Qp.
+
+  #[global] Instance blockR_timeless {resolve : genv} sz q :
+    Timeless (blockR sz q).
+  Proof. rewrite blockR_eq. apply _. Qed.
+  #[global] Instance blockR_fractional resolve sz :
+    Fractional (blockR sz).
+  Proof.
+    by rewrite blockR_eq /blockR_def; apply _.
+  Qed.
+  #[global] Instance blockR_as_fractional resolve sz q :
+    AsFractional (blockR sz q) (blockR sz) q.
+  Proof. exact: Build_AsFractional. Qed.
+
+  #[global] Instance blockR_observe_frac_valid resolve sz (q : Qp) : (0 < sz)%N ->
+    Observe [| q ≤ 1 |]%Qp (blockR sz q).
+  Proof.
+    rewrite blockR_eq/blockR_def.
+    intros.
+    destruct (N.zero_or_succ sz) as [ | [ ? -> ] ]; try lia.
+    rewrite N2Nat.inj_succ /=. refine _.
+  Qed.
 
   (* [tblockR ty] is a [blockR] that is the size of [ty] and properly aligned.
    * it is a convenient short-hand since it happens frequently, but there is nothing
