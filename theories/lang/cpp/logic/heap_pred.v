@@ -459,7 +459,8 @@ Section with_cpp.
     by iIntros "->" (? <-%ptr_rel_elim) "%".
   Qed.
 
-  (** [blockR sz] represents a contiguous chunk of [sz] bytes *)
+  (** [blockR sz q] represents [q] ownership of a contiguous chunk of
+      [sz] bytes without any C++ structure on top of it. *)
   Definition blockR_def {σ} sz (q : Qp) : Rep :=
     _offsetR (o_sub σ T_uint8 (Z.of_N sz)) validR **
     (* ^ Encodes valid_ptr (this .[ T_uint8 ! sz]). This is
@@ -469,7 +470,7 @@ Section with_cpp.
   Definition blockR_aux : seal (@blockR_def). Proof. by eexists. Qed.
   Definition blockR := blockR_aux.(unseal).
   Definition blockR_eq : @blockR = _ := blockR_aux.(seal_eq).
-  #[global] Arguments blockR {_} _ _%Qp.
+  #[global] Arguments blockR {_} _%N _%Qp.
 
   #[global] Instance blockR_timeless {resolve : genv} sz q :
     Timeless (blockR sz q).
@@ -488,8 +489,8 @@ Section with_cpp.
   Proof.
     rewrite blockR_eq/blockR_def.
     intros.
-    destruct (N.zero_or_succ sz) as [ | [ ? -> ] ]; try lia.
-    rewrite N2Nat.inj_succ /=. refine _.
+    destruct (N.to_nat sz) eqn:?; [ lia | ] => /=.
+    refine _.
   Qed.
 
   (* [tblockR ty] is a [blockR] that is the size of [ty] and properly aligned.
@@ -578,6 +579,19 @@ Section with_cpp.
          red. iIntros "[X | X]".
          - iDestruct "X" as (?) "X". iDestruct (observe is_nonnull with "X") as "#$".
          - iDestruct (observe is_nonnull with "X") as "#$".
+  Qed.
+  #[global]
+  Instance blockR_nonnull {σ : genv} (p : ptr) n q:
+    (0 < n)%N -> Observe is_nonnull (blockR n q).
+  Proof.
+    iIntros (?) "Hb".
+    rewrite blockR_eq/blockR_def. (** TODO upstream *)
+    iDestruct "Hb" as "[_ Hb]".
+    destruct (N.to_nat n) eqn:?; [ lia | ] => /=.
+    iDestruct "Hb" as "[Hany _]".
+    rewrite o_sub_0; [ | by eauto].
+    rewrite _offsetR_id.
+    iDestruct (observe is_nonnull with "Hany") as "#$".
   Qed.
 
 End with_cpp.
