@@ -349,12 +349,9 @@ public:
         print.ctor("Ecall");
         cprint.printExpr(expr->getCallee(), print, li);
         print.output() << fmt::line;
-        print.begin_list();
-        for (auto i : expr->arguments()) {
+        print.list(expr->arguments(), [&](auto print, auto i) {
             cprint.printExprAndValCat(i, print, li);
-            print.cons();
-        }
-        print.end_list();
+        });
         done(expr, print, cprint);
     }
 
@@ -633,12 +630,10 @@ public:
         print.ctor("Econstructor");
         // print.output() << expr->isElidable() << fmt::nbsp;
         cprint.printGlobalName(expr->getConstructor(), print);
-        print.output() << fmt::nbsp << fmt::lparen;
-        for (auto i : expr->arguments()) {
+        print.output() << fmt::nbsp;
+        print.list(expr->arguments(), [&](auto print, auto i) {
             cprint.printExprAndValCat(i, print, li);
-            print.cons();
-        }
-        print.end_list();
+        });
         //print.output() << fmt::nbsp << expr->isElidable();
         done(expr, print, cprint);
     }
@@ -774,12 +769,9 @@ public:
                            OpaqueNames& li) {
         print.ctor("Einitlist");
 
-        print.begin_list();
-        for (auto i : expr->inits()) {
+        print.list(expr->inits(), [&](auto print, auto i) {
             cprint.printExpr(i, print, li);
-            print.cons();
-        }
-        print.end_list() << fmt::nbsp;
+        }) << fmt::nbsp;
 
         if (expr->getArrayFiller()) {
             print.some();
@@ -867,14 +859,9 @@ public:
             print.none();
         }
 
-        print.begin_list();
-        for (auto arg : expr->placement_arguments()) {
+        print.list(expr->placement_arguments(), [&](auto print, auto arg) {
             cprint.printExprAndValCat(arg, print, li);
-            print.cons();
-        }
-        print.end_list();
-
-        print.output() << fmt::nbsp;
+        }) << fmt::nbsp;
 
         cprint.printQualType(expr->getAllocatedType(), print);
 
@@ -1016,12 +1003,9 @@ public:
         cprint.printGlobalName(expr->getConstructor(), print);
         print.output() << fmt::nbsp;
 
-        print.begin_list();
-        for (auto i : expr->arguments()) {
+        print.list(expr->arguments(), [&](auto print, auto i) {
             cprint.printExprAndValCat(i, print, li);
-            print.cons();
-        }
-        print.end_list();
+        });
 
         //print.output() << fmt::nbsp << expr->isElidable();
 
