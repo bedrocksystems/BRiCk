@@ -105,7 +105,7 @@ public:
         }
 
         if (elaborate_) {
-            if (not(decl->isImplicit() or decl->isAnonymousStructOrUnion())) {
+            if (not(decl->isImplicit() /* or decl->isAnonymousStructOrUnion() */)) {
                 ci_->getSema().ForceDeclarationOfImplicitMembers(decl);
             }
         }
