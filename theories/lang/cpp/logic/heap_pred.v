@@ -230,8 +230,6 @@ Section with_cpp.
   Definition anyR_eq : @anyR = _ := anyR_aux.(seal_eq).
   Global Arguments anyR {resolve} ty q : rename.
 
-  Global Instance anyR_affine resolve ty q : Affine (anyR ty q).
-  Proof. rewrite anyR_eq. apply _. Qed.
   Global Instance anyR_timeless resolve ty q : Timeless (anyR ty q).
   Proof. rewrite anyR_eq. apply _. Qed.
   Global Instance anyR_fractional resolve ty :
