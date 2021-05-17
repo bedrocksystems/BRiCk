@@ -198,8 +198,8 @@ public:
     bool VisitDecl(const Decl *d, CoqPrinter &print, ClangPrinter &cprint,
                    const ASTContext &) {
         using namespace logging;
-        fatal() << "visiting declaration..." << d->getDeclKindName() << "(at "
-                << cprint.sourceRange(d->getSourceRange()) << ")\n";
+        fatal() << "Error: visiting declaration..." << d->getDeclKindName()
+                << "(at " << cprint.sourceRange(d->getSourceRange()) << ")\n";
         die();
         return false;
     }
@@ -207,9 +207,9 @@ public:
     bool VisitTypeDecl(const TypeDecl *type, CoqPrinter &print,
                        ClangPrinter &cprint, const ASTContext &) {
         using namespace logging;
-        fatal() << "unsupported type declaration `" << type->getDeclKindName()
-                << "(at " << cprint.sourceRange(type->getSourceRange())
-                << ")\n";
+        fatal() << "Error: unsupported type declaration `"
+                << type->getDeclKindName() << "(at "
+                << cprint.sourceRange(type->getSourceRange()) << ")\n";
         die();
         return false;
     }
@@ -261,7 +261,7 @@ public:
         for (const FieldDecl *field : decl->fields()) {
             if (field->isBitField()) {
                 logging::fatal()
-                    << "bit fields are not supported "
+                    << "Error: bit fields are not supported "
                     << cprint.sourceRange(field->getSourceRange()) << "\n";
                 logging::die();
             }
@@ -306,7 +306,10 @@ public:
             print.output() << fmt::line
                            << (dtor->isTrivial() ? "true" : "false");
         } else {
-            logging::fatal() << "destructor is required on union\n";
+            logging::fatal()
+                << "Error: union '" << decl->getNameAsString()
+                << "' is missing a destructor at"
+                << cprint.sourceRange(decl->getSourceRange()) << "\n";
             logging::die();
         }
 
@@ -358,7 +361,8 @@ public:
                 }
             } else {
                 using namespace logging;
-                fatal() << "base class is not a RecordType at "
+                fatal() << "Error: base class of '" << decl->getNameAsString()
+                        << "' is not a RecordType at "
                         << cprint.sourceRange(decl->getSourceRange()) << "\n";
                 die();
             }
@@ -413,7 +417,10 @@ public:
                            << (dtor->isTrivial() ? "true" : "false");
 
         } else {
-            logging::fatal() << "destructor is required on struct\n";
+            logging::fatal()
+                << "Error: struct '" << decl->getNameAsString()
+                << "' is missing a destructor at "
+                << cprint.sourceRange(decl->getSourceRange()) << "\n";
             logging::die();
         }
 

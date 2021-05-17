@@ -170,7 +170,7 @@ public:
 
     void VisitStmt(const Stmt* stmt, CoqPrinter& print, ClangPrinter& cprint,
                    const ASTContext&, OpaqueNames&) {
-        logging::fatal() << "while printing an expr, got a statement '"
+        logging::fatal() << "Error: while printing an expr, got a statement '"
                          << stmt->getStmtClassName() << " at "
                          << cprint.sourceRange(stmt->getSourceRange()) << "'\n";
         logging::die();
@@ -292,7 +292,7 @@ public:
             CASE(PreInc, "<PreInc>")
 #undef CASE
         default:
-            logging::unsupported() << "unsupported unary operator\n";
+            logging::unsupported() << "Error: unsupported unary operator\n";
             print.output() << "(Uother \"" << UnaryOperator::getOpcodeStr(op)
                            << "\")";
             break;
@@ -484,14 +484,14 @@ public:
             }
         } else if (isa<CXXDynamicCastExpr>(expr)) {
             using namespace logging;
-            fatal() << "dynamic casts are not supported (at "
+            fatal() << "Error: dynamic casts are not supported (at "
                     << expr->getSourceRange().printToString(
                            ctxt.getSourceManager())
                     << ")\n";
             die();
         } else {
             using namespace logging;
-            fatal() << "unknown named cast" << expr->getCastKindName()
+            fatal() << "Error: unknown named cast" << expr->getCastKindName()
                     << " (at "
                     << expr->getSourceRange().printToString(
                            ctxt.getSourceManager())
@@ -835,7 +835,8 @@ public:
             done(expr, print, cprint);
         } else {
             using namespace logging;
-            fatal() << "unsupported expression `UnaryExprOrTypeTraitExpr` at "
+            fatal() << "Error: unsupported expression "
+                       "`UnaryExprOrTypeTraitExpr` at "
                     << expr->getSourceRange().printToString(
                            ctxt.getSourceManager())
                     << "\n";
@@ -970,7 +971,7 @@ public:
 	  error() << "mangling number = " << expr->getManglingNumber() << "\n";
 #endif
 #if 0
-        logging::fatal() << "got a 'MaterializeTemporaryExpr' at "
+        logging::fatal() << "Error: got a 'MaterializeTemporaryExpr' at "
                          << expr->getSourceRange().printToString(
                                 ctxt.getSourceManager())
                          << "\n";
@@ -978,11 +979,12 @@ public:
 #endif
         if (expr->getExtendingDecl() != nullptr) {
             using namespace logging;
-            fatal()
-                << "binding a reference to a temporary is not (yet?) supported "
-                   "(scope extrusion)"
-                << expr->getSourceRange().printToString(ctxt.getSourceManager())
-                << "\n";
+            fatal() << "Error: binding a reference to a temporary is not "
+                       "(yet?) supported "
+                       "(scope extrusion)"
+                    << expr->getSourceRange().printToString(
+                           ctxt.getSourceManager())
+                    << "\n";
             die();
         }
 
@@ -1174,8 +1176,8 @@ ClangPrinter::printExpr(const clang::Expr* expr, CoqPrinter& print) {
     PrintExpr::printer.Visit(expr, print, *this, *this->context_, li);
     if (depth != print.output().get_depth()) {
         using namespace logging;
-        fatal() << "indentation bug in during: " << expr->getStmtClassName()
-                << "\n";
+        fatal() << "Error: BUG indentation bug in during: "
+                << expr->getStmtClassName() << "\n";
         assert(false);
     }
 }
@@ -1187,8 +1189,8 @@ ClangPrinter::printExpr(const clang::Expr* expr, CoqPrinter& print,
     PrintExpr::printer.Visit(expr, print, *this, *this->context_, li);
     if (depth != print.output().get_depth()) {
         using namespace logging;
-        fatal() << "indentation bug in during: " << expr->getStmtClassName()
-                << "\n";
+        fatal() << "Error: BUG indentation bug in during: "
+                << expr->getStmtClassName() << "\n";
         assert(false);
     }
 }
