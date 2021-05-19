@@ -104,7 +104,16 @@ public:
 
     void VisitDeducedType(const DeducedType* type, CoqPrinter& print,
                           ClangPrinter& cprint) {
-        cprint.printQualType(type->getDeducedType(), print);
+        if (type->isDeduced()) {
+            cprint.printQualType(type->getDeducedType(), print);
+        } else {
+            using namespace logging;
+            logging::fatal()
+                << "\nError: Unsupported non-deduced type.\nYou probably have an "
+                   "instance of [auto] that can not be deduced based on the "
+                   "file.\n";
+            logging::die();
+        }
     }
 
     void VisitTemplateTypeParmType(const TemplateTypeParmType* type,
