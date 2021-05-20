@@ -20,7 +20,6 @@ Module Type Init.
 
     Local Notation wp := (wp (resolve:=σ) M ti ρ).
     Local Notation wpi := (wpi (resolve:=σ) M ti ρ).
-    (*Local Notation wpe := (wpe (resolve:=σ) M ti ρ).*)
     Local Notation wp_lval := (wp_lval (resolve:=σ) M ti ρ).
     Local Notation wp_prval := (wp_prval (resolve:=σ) M ti ρ).
     Local Notation wp_xval := (wp_xval (resolve:=σ) M ti ρ).
@@ -29,6 +28,34 @@ Module Type Init.
     Local Notation fspec := (@fspec _ Σ σ.(genv_tu).(globals)).
     Local Notation mspec := (@mspec _ Σ σ.(genv_tu).(globals)).
 
+    (* TODO: This could be useful elsewhere and should maybe be moved. *)
+    Definition repeatN {A} (x : A) (count : N) : list A :=
+      repeat x (N.to_nat count).
+    #[global] Arguments repeatN : simpl never.
+
+
+    (* TODO: This could be useful elsewhere and should maybe be moved. *)
+    Definition seqN (from count : N) : list N :=
+      map N.of_nat (seq (N.to_nat from) (N.to_nat count)).
+    #[global] Arguments seqN : simpl never.
+
+    Definition default_initialize_array (default_initialize : type -> ptr -> (FreeTemps -> epred) -> mpred)
+               (ty : type) (len : N) (p : ptr) (Q : FreeTemps -> epred) : mpred :=
+      fold_right (fun i PP => default_initialize ty (p ., o_sub _ ty (Z.of_N i)) (fun free' => free' ** PP))
+                 (p .[ ty ! Z.of_N len ] |-> validR -* Q emp) (seqN 0 len).
+
+    Lemma default_initialize_array_frame : ∀ di ty sz Q Q' (p : ptr),
+        (Forall f, Q f -* Q' f)
+    |-- <pers> (Forall p Q Q', (Forall f, Q f -* Q' f) -* di ty p Q -* di ty p Q')
+          -* default_initialize_array di ty sz p Q -* default_initialize_array di ty sz p Q'.
+    Proof.
+      intros ? ? sz Q Q' p; rewrite /default_initialize_array.
+      generalize dependent (p .[ ty ! Z.of_N sz ] |-> validR).
+      induction (seqN 0 sz) =>/=; intros.
+      - iIntros "X #Y a b"; iApply "X"; iApply "a"; eauto.
+      - iIntros "F #Hty". iApply "Hty". iIntros (?) "[$ x]"; iRevert "x". iApply (IHl with "F"); eauto.
+    Qed.
+
     (** [default_initialize ty p Q] default initializes the memory at [p] according to
         the type [ty].
 
@@ -36,15 +63,14 @@ Module Type Init.
              C++ abstract machine.
      *)
     Fixpoint default_initialize
-               (ty : type) (p : ptr) (Q : FreeTemps → epred) : mpred :=
+               (ty : type) (p : ptr) (Q : FreeTemps → epred) {struct ty} : mpred :=
       match ty with
       | Tint _ _ as rty
       | Tptr _ as rty
       | Tbool as rty
       | Tfloat _ as rty => p |-> uninitR (erase_qualifiers rty) 1 -* Q emp
       | Tarray ty sz =>
-        fold_right (fun i PP free => default_initialize ty (p ., o_sub _ ty (Z.of_nat i)) (fun free' => PP (free ** free')))
-                   Q (seq 0 (N.to_nat sz)) emp%I
+        default_initialize_array default_initialize ty sz p Q
       | Tnullptr => UNSUPPORTED "default initialization of [nullptr_t]"
 
       | Tref _
@@ -59,15 +85,14 @@ Module Type Init.
       end.
 
     Lemma default_initialize_frame:
-      ∀ ty Q Q' (p : ptr),
+      ∀ ty (p : ptr) Q Q',
         Forall f, Q f -* Q' f
         |-- default_initialize ty p Q -* default_initialize ty p Q'.
     Proof.
       induction ty; simpl;
         try solve [ intros; iIntros "a b c"; iApply "a"; iApply "b"; eauto | eauto ].
-      { generalize dependent (@bi_emp mpredI). induction (seq 0 (N.to_nat n)) =>/=; intros.
-        - iIntros "X"; iApply "X".
-        - iIntros "F". iApply IHty. iIntros (?). iApply IHl; eauto. }
+      iIntros (? ? ?) "X"; iApply (default_initialize_array_frame with "X").
+      iModIntro. iIntros (???). iApply IHty.
     Qed.
 
     (* [wp_initialize] provides "constructor" semantics for types.
@@ -167,12 +192,6 @@ Module Type Init.
          wp_initialize ety (base .[ ety ! idx ]) e (fun free => free ** wp_array_init ety base rest (Z.succ idx) Q)
       end%I.
 
-    (* TODO: This could be useful elsewhere and should maybe be moved. *)
-    Definition repeatN {A} (x : A) (count : N) : list A :=
-      repeat x (N.to_nat count).
-
-    #[global]
-    Arguments repeatN : simpl never.
 
     Definition fill_initlist (desiredsz : N) (es : list Expr) (f : Expr) : list Expr :=
       let actualsz := N.of_nat (length es) in

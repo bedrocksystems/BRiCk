@@ -354,13 +354,11 @@ Section with_cpp.
       let members := wpi_members ti ρ cls this s.(s_fields) inits in
       let ident Q := this |-> init_identity cls Q in
       (** initialize the bases, then the identity, then the members *)
-      bases (ident (members (type_ptr (Tnamed cls) this -* this |-> struct_padding 1 cls -*  Q)))
-      (* NOTE here we are constructing the [type_ptr] for the *full object*
-         after we have provided the [type_ptr] for the individual fields.
-         TODO we should also get [_padding] and anything else here.
-         NOTE [struct_padding] now implies [type_ptr], so this is a little bit redundant.
+      bases (ident (members (this |-> struct_padding 1 cls -*  Q)))
+      (* NOTE we get the [struct_padding] at the end since
+         [struct_padding 1 cls |-- type_ptrR (Tnamed cls)].
        *)
-    end%I.
+    end.
 
   Lemma wp_struct_initializer_list_frame : forall ti ρ cls p ty li Q Q',
       (Q -* Q') |-- wp_struct_initializer_list cls ti ρ ty p li Q -* wp_struct_initializer_list cls ti ρ ty p li Q'.
@@ -372,17 +370,16 @@ Section with_cpp.
       iIntros "X Y Z".
       iDestruct ("Y" with "Z") as "Y"; iRevert "Y".
       iApply wp_init_frame. reflexivity. iIntros (?) "[$ ?]"; iApply "X"; eauto. }
-    {
-      iIntros "a"; iApply wpi_bases_frame.
+    { iIntros "a"; iApply wpi_bases_frame.
       rewrite /init_identity.
       case_match; eauto.
       case_match; eauto.
       rewrite !_at_sep !_at_wand !_at_pureR.
       iIntros "[$ x]".
       iIntros "b c"; iDestruct ("x" with "b c") as "x".
-      iRevert "x"; iApply wpi_members_frame. iIntros "b c d".
+      iRevert "x"; iApply wpi_members_frame. iIntros "b c".
       iApply "a".
-      iApply ("b" with "c d"). }
+      iApply ("b" with "c"). }
   Qed.
 
   Definition wp_union_initializer_list (s : translation_unit.Union) (ti : thread_info) (ρ : region) (cls : globname) (this : ptr)
@@ -405,7 +402,7 @@ Section with_cpp.
     | None =>
       UNSUPPORTED "union initialization"
       (* TODO what is the right thing to do when initializing unions? *)
-    end%I.
+    end.
 
   (* TODO this is easy to prove, but will be replaced fairly soon. *)
   Lemma wp_union_initializer_list_frame : forall ti ρ cls p ty li Q Q',
@@ -420,6 +417,20 @@ Section with_cpp.
       iApply wp_init_frame. reflexivity. iIntros (?) "[$ ?]"; iApply "X"; eauto. }
   Qed.
 
+  (* [type_validity ty p] is the pointer validity of a class that is learned
+     at the beginning of the constructor.
+
+     Generally, it is the **strict** validity of all of the sub-objects.
+     [[[
+         type_validity (Tnamed cls) this
+     |-- strict_valid_ptr p **
+         [∗list] f ∈ s_fields , type_validity f.(f_type) (p ., _field f)
+     ]]]
+
+     TODO we leave this trivival for now.
+   *)
+  Definition type_valdity : type -> ptr -> mpred := fun _ _ => emp%I.
+
   (* note(gmm): supporting virtual inheritence will require us to add
    * constructor kinds here
    *
@@ -427,6 +438,9 @@ Section with_cpp.
    * that is being constructed and the C++ abstract machine breaks this block down
    * and provides each sub-block immediately before the initialization of the field
    * or base.
+   *
+   * Alternative: it would also be sound for the class to provide the [tblockR]
+   * for each sub-object up front.
    *)
   Definition wp_ctor (ctor : Ctor)
              (ti : thread_info) (args : list val)
