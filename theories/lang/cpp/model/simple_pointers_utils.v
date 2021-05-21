@@ -76,10 +76,8 @@ are disjoint, or that
 *)
 Definition global_ptr_encode_ov (o : obj_name) (obj : option ObjValue) :
     option (alloc_id * vaddr) :=
-  match obj with
-  | Some _ => let p := Npos (encode o) in Some (MkAllocId p, p)
-  | None => None
-  end.
+  let p := Npos (encode o) in Some (MkAllocId p, p).
+
 Lemma global_ptr_encode_ov_nonnull o obj a va :
   global_ptr_encode_ov o obj = Some (a, va) ->
   a <> null_alloc_id ∧ va <> 0%N.

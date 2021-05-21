@@ -420,12 +420,15 @@ Module PTRS_IMPL : PTRS_INTF_MINIMAL.
   Proof. done. Qed.
 
   Lemma global_ptr_nonnull_addr tu o : ptr_vaddr (global_ptr tu o) <> Some 0%N.
-  Proof. rewrite /=/global_ptr_encode_canon. by case: (_ !! _). Qed.
+  Proof. done. Qed.
   Lemma global_ptr_nonnull_aid tu o : ptr_alloc_id (global_ptr tu o) <> Some null_alloc_id.
-  Proof. rewrite /=/global_ptr_encode_canon. by case: (_ !! _). Qed.
+  Proof. done. Qed.
 
   Instance global_ptr_inj tu : Inj (=) (=) (global_ptr tu).
   Proof. by intros ?? [=]. Qed.
+
+  Instance global_ptr_addr_inj tu : Inj (=) (=) (λ o, ptr_vaddr (global_ptr tu o)).
+  Proof. by intros ?? [= ?%(inj encode)]. Qed.
 
   Lemma ptr_vaddr_nullptr : ptr_vaddr nullptr = Some 0%N.
   Proof. done. Qed.

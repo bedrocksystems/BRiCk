@@ -181,20 +181,19 @@ Module SIMPLE_PTRS_IMPL : PTRS_INTF_MINIMAL.
   Definition fun_ptr := global_ptr.
 
   Lemma global_ptr_nonnull tu o : global_ptr tu o <> nullptr.
-  Proof. rewrite /global_ptr/nullptr. by case: (tu !! o). Qed.
+  Proof. done. Qed.
 
   Lemma global_ptr_nonnull_addr tu o : ptr_vaddr (global_ptr tu o) <> Some 0%N.
-  Proof. rewrite /global_ptr/=. by case: (_ !! _). Qed.
+  Proof. done. Qed.
   Lemma global_ptr_nonnull_aid tu o : ptr_alloc_id (global_ptr tu o) <> Some null_alloc_id.
-  Proof. rewrite /global_ptr/=. by case: (_ !! _). Qed.
+  Proof. done. Qed.
 
   Instance global_ptr_inj tu : Inj (=) (=) (global_ptr tu).
-  Proof.
-    rewrite /Inj/global_ptr=>o1 o2 /=.
-    destruct (tu !! o1), (tu !! o2) =>//=.
-    move=>[]. by intros ?%encode_inj.
-    admit.
-  Admitted.
+  Proof. move => o1 o2 []. by intros ?%(inj encode). Qed.
+
+  Instance global_ptr_addr_inj tu : Inj (=) (=) (λ o, ptr_vaddr (global_ptr tu o)).
+  Proof. by intros ?? [= ?%(inj encode)]. Qed.
+
   Lemma ptr_vaddr_o_sub_eq p σ ty n1 n2 sz
     (Hsz : size_of σ ty = Some sz) (Hsz0 : (sz > 0)%N) :
     (same_property ptr_vaddr (p .., o_sub σ ty n1) (p .., o_sub σ ty n2) ->
