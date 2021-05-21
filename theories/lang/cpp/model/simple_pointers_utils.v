@@ -80,6 +80,13 @@ Definition global_ptr_encode_ov (o : obj_name) (obj : option ObjValue) :
   | Some _ => let p := Npos (encode o) in Some (MkAllocId p, p)
   | None => None
   end.
+Lemma global_ptr_encode_ov_nonnull o obj a va :
+  global_ptr_encode_ov o obj = Some (a, va) ->
+  a <> null_alloc_id ∧ va <> 0%N.
+Proof. by case: obj => [obj /=|//] [<- <-]. Qed.
+Instance global_ptr_encode_ov_inj ov :
+  Inj (=) (=) (flip global_ptr_encode_ov (Some ov)).
+Proof. by move=>o1 o2 /= [_ /(inj encode _ _)]. Qed.
 
 (*
 A slightly better model might be something like the following, but we don't
