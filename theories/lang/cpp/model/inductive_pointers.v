@@ -416,6 +416,9 @@ Module PTRS_IMPL : PTRS_INTF_MINIMAL.
     lift_root_ptr (global_ptr_ (canonical_tu.tu_to_canon tu) o).
   Definition alloc_ptr a oid := lift_root_ptr (alloc_ptr_ a oid).
 
+  Lemma global_ptr_nonnull tu o : global_ptr tu o <> nullptr.
+  Proof. done. Qed.
+
   Lemma ptr_vaddr_nullptr : ptr_vaddr nullptr = Some 0%N.
   Proof. done. Qed.
 

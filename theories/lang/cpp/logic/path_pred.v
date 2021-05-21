@@ -36,6 +36,8 @@ Section with_Σ.
   Definition _global := _global_aux.(unseal).
   Definition _global_eq : @_global = _ := _global_aux.(seal_eq).
 
+  Lemma _global_nonnull resolve n : _global resolve n <> nullptr.
+  Proof. rewrite _global_eq /_global_def. apply global_ptr_nonnull. Qed.
 
   (** [addr_of]: [addr_of l p] says that pointer [p] "matches" location [l]. *)
   Definition addr_of_def (a : ptr) (b : ptr) : mpred := [| a = b |].
