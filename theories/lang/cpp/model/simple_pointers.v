@@ -180,6 +180,9 @@ Module SIMPLE_PTRS_IMPL : PTRS_INTF_MINIMAL.
 
   Definition fun_ptr := global_ptr.
 
+  Lemma global_ptr_nonnull tu o : global_ptr tu o <> nullptr.
+  Proof. rewrite /global_ptr/nullptr. by case: (tu !! o). Qed.
+
   Lemma ptr_vaddr_o_sub_eq p σ ty n1 n2 sz
     (Hsz : size_of σ ty = Some sz) (Hsz0 : (sz > 0)%N) :
     (same_property ptr_vaddr (p .., o_sub σ ty n1) (p .., o_sub σ ty n2) ->

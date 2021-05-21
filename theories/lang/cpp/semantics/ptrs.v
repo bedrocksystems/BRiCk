@@ -221,6 +221,7 @@ Module Type PTRS.
     (* Might need deferring, as it needs designing a [translation_unit_id];
      since loading the same translation unit twice can give different
      addresses. *)
+  Axiom global_ptr_nonnull : forall tu o, global_ptr tu o <> nullptr.
 
   (* Other constructors exist, but they are internal to C++ model.
      They include:
