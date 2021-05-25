@@ -423,8 +423,8 @@ Section with_cpp.
      Generally, it is the **strict** validity of all of the sub-objects.
      [[[
          type_validity (Tnamed cls) this
-     |-- strict_valid_ptr p **
-         [∗list] f ∈ s_fields , type_validity f.(f_type) (p ., _field f)
+     |-- strict_valid_ptr this **
+         [∗list] f ∈ s_fields , type_validity f.(f_type) (this ., _field f)
      ]]]
 
      TODO we leave this trivival for now.
@@ -542,7 +542,6 @@ Q)).
     match members with
     | nil => Q
     | member :: members =>
-      (** TODO this needs to actually invoke a destructor if one exists *)
       destruct_val (σ:=resolve) ti false member.(mem_type) (this ., _field {| f_name := member.(mem_name) ; f_type := cls |}) None
                    (wpd_members ti cls this members Q)
     end.
