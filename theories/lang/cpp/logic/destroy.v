@@ -57,7 +57,7 @@ Section destroy.
 
      note: it does *not* free the underlying memory.
 
-     TODO we can remove [dtor] with the new desructor scheme
+     TODO we can remove [dtor] with the new destructor scheme
    *)
   Fixpoint destruct_val (dispatch : bool) (t : type) (this : ptr) (dtor : option obj_name) (Q : mpred)
            {struct t}

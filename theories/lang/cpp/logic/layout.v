@@ -68,7 +68,7 @@ Section with_Σ.
       ** struct_paddingR q cls -|-
       Exists rs, rawsR q rs ** [| raw_bytes_of_struct σ cls rss rs |].
 
-  Definition implicit_destruct_ty (ty : type) := anyR ty 1 |-- |={↑pred_ns}=> tblockR ty 1.
+  #[local] Definition implicit_destruct_ty (ty : type) := anyR ty 1 |-- |={↑pred_ns}=> tblockR ty 1.
 
 
   (** implicit destruction of a primitive *)
@@ -129,11 +129,11 @@ Section with_Σ.
      it requires this to happen in code, so we will need to fuse this rule into
      the assignment rule.
 
-     NOTE the axiom requires the the union element has been destructed
+     NOTE the axiom requires that the union element has been destructed
           (which will often be done implicitly), and the result gives you
           uninitialized memory ([tblockR]).
 
-     NOTE C++ permits this rule to be slightly stronger becaues it guarantees
+     NOTE C++ would permit this rule to be slightly stronger than stated here, because C++ guarantees
           that if two fields have common prefixes, that those values are preserved
           across this operation.
    *)
