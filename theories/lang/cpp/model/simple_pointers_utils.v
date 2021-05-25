@@ -69,22 +69,22 @@ This is a really bad model and it'd fail a bunch of sanity checks.
 
 Caveat: a model this to model [global_ptr] isn't correct, beyond proving
 [global_ptr]'s isn't contradictory.
-This model would fail proving that [global_ptr] is injective, that objects
-are disjoint, or that
+This model would fail proving that objects are disjoint or that
 [global_ptr tu1 "staticR" |-> anyR T 1%Qp  ... ∗
   global_ptr tu2 "staticR" |-> anyR T 1%Qp  ...] actually holds at startup.
 *)
-Definition global_ptr_encode_ov (o : obj_name) (obj : option ObjValue) :
-    option (alloc_id * vaddr) :=
-  let p := Npos (encode o) in Some (MkAllocId p, p).
 
-Lemma global_ptr_encode_ov_nonnull o obj a va :
-  global_ptr_encode_ov o obj = Some (a, va) ->
-  a <> null_alloc_id ∧ va <> 0%N.
-Proof. by case: obj => [obj /=|//] [<- <-]. Qed.
-Instance global_ptr_encode_ov_inj ov :
-  Inj (=) (=) (flip global_ptr_encode_ov (Some ov)).
-Proof. by move=>o1 o2 /= [_ /(inj encode _ _)]. Qed.
+Definition global_ptr_encode_vaddr (o : obj_name) : vaddr := Npos (encode o).
+Definition global_ptr_encode_aid (o : obj_name) : alloc_id := MkAllocId (global_ptr_encode_vaddr o).
+
+Instance global_ptr_encode_vaddr_inj : Inj (=) (=) global_ptr_encode_vaddr := _.
+Instance global_ptr_encode_aid_inj : Inj (=) (=) global_ptr_encode_aid := _.
+
+Lemma global_ptr_encode_vaddr_nonnull o va : va = global_ptr_encode_vaddr o -> va <> 0%N.
+Proof. by move->. Qed.
+
+Lemma global_ptr_encode_aid_nonnull o aid : aid = global_ptr_encode_aid o -> aid <> null_alloc_id.
+Proof. by move->. Qed.
 
 (*
 A slightly better model might be something like the following, but we don't
