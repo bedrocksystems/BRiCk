@@ -208,7 +208,7 @@ Module Type Stmt.
         Forall a (b b' : _), (Forall rt rt' : mpred, (rt -* rt') -* b rt -* b' rt') -* k a b -* k' a b'
         |-- wp_decl ρ x ty init dtor k -* wp_decl ρ x ty init dtor k'.
     Proof.
-      induction ty; simpl;
+      induction ty using type_ind'; simpl;
         try solve [ intros; apply decl_prim with (ty:=Tptr ty)
                   | intros; apply decl_prim with (ty:=Tint _ _)
                   | intros; apply decl_prim with (ty:=Tbool)
@@ -230,11 +230,16 @@ Module Type Stmt.
          { iIntros "X Y" (?) "a"; iDestruct ("Y" with "a") as "Y"; iRevert "Y".
            iApply wp_init_frame; first reflexivity.
            iIntros (?) "[$ k]"; iRevert "k"; iApply "X".
-           clear. iStopProof. induction (rev (seq 0 (N.to_nat n))); simpl.
+           clear. iStopProof. induction (rev (seq 0 (N.to_nat sz))); simpl.
            { iIntros "_" (??) "X [$ y]"; iApply "X"; eauto. }
            { iIntros "_" (??) "X [$ y]"; iRevert "y".
-             iApply destruct_val_frame. admit. } }
-         { admit. } }
+             iApply destruct_val_frame; by iApply IHl. } }
+         { iIntros "X Y" (?) "a"; iDestruct ("Y" with "a") as "Y"; iRevert "Y".
+           iApply "X".
+           clear. iStopProof. induction (rev (seq 0 (N.to_nat sz))); simpl.
+           { iIntros "_" (??) "X [$ y]"; iApply "X"; eauto. }
+           { iIntros "_" (??) "X [$ y]"; iRevert "y".
+             iApply destruct_val_frame; by iApply IHl. } } }
        { intros. iIntros "X y" (a) "z".
          iDestruct ("y" with "z") as "y"; iRevert "y".
          destruct init.
@@ -242,13 +247,21 @@ Module Type Stmt.
            iIntros (?) "[$ x]"; iRevert "x"; iApply "X".
            case_match; last iIntros (??) "? []".
            case_match; try iIntros (??) "? []".
-           { iIntros (??) "k x". iNext. admit. }
-           { iIntros (??) "k x". iNext. admit. } }
+           { iIntros (??) "k x !>".
+             iRevert "x"; iApply mspec_frame.
+             iIntros (_) "[? ?]"; iFrame; by iApply "k". }
+           { iIntros (??) "k x !>".
+             iRevert "x"; iApply mspec_frame.
+             iIntros (_) "[? ?]"; iFrame; by iApply "k". } }
          { iApply "X".
            case_match; last iIntros (??) "? []".
            case_match; try iIntros (??) "? []".
-           { iIntros (??) "k x". iNext. admit. }
-           { iIntros (??) "k x". iNext. admit. } } }
+           { iIntros (??) "k x !>".
+             iRevert "x"; iApply mspec_frame.
+             iIntros (_) "[? ?]"; iFrame; by iApply "k". }
+           { iIntros (??) "k x !>".
+             iRevert "x"; iApply mspec_frame.
+             iIntros (_) "[? ?]"; iFrame; by iApply "k". } } }
        { intros. iIntros "X"; iApply IHty; eauto. }
        { intros; destruct init; iIntros "k Y" (a).
          { iDestruct ("Y" $! a) as "Y"; iRevert "Y".
@@ -258,7 +271,7 @@ Module Type Stmt.
          { iDestruct ("Y" $! a) as "Y"; iRevert "Y".
            iIntros "x y"; iDestruct ("x" with "y") as "x"; iRevert "x".
            iApply "k". iIntros (??) "x [$ y]"; iApply "x"; eauto. } }
-    Admitted.
+    Qed.
 
     Fixpoint wp_decls (ρ : region) (ds : list VarDecl)
              (k : region -> (mpred -> mpred) -> mpred) : mpred :=
