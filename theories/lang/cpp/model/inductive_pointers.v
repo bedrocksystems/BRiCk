@@ -360,22 +360,20 @@ Module PTRS_IMPL : PTRS_INTF_MINIMAL.
   #[local] Instance root_ptr_eq_dec : EqDecision root_ptr.
   Proof. solve_decision. Qed.
   Declare Instance root_ptr_countable : Countable root_ptr.
-
-  #[local] Definition global_ptr_encode_canon
-    (tu : translation_unit_canon) (o : obj_name) : option (alloc_id * vaddr) :=
-    global_ptr_encode_ov o (tu !! o).
+  Instance global_ptr__inj : Inj2 (=) (=) (=) global_ptr_.
+  Proof. by intros ???? [=]. Qed.
 
   Definition root_ptr_alloc_id (rp : root_ptr) : option alloc_id :=
     match rp with
     | nullptr_ => Some null_alloc_id
-    | global_ptr_ tu o => fst <$> global_ptr_encode_canon tu o
+    | global_ptr_ tu o => Some (global_ptr_encode_aid o)
     | alloc_ptr_ aid _ => Some aid
     end.
 
   Definition root_ptr_vaddr (rp : root_ptr) : option vaddr :=
     match rp with
     | nullptr_ => Some 0%N
-    | global_ptr_ tu o => snd <$> global_ptr_encode_canon tu o
+    | global_ptr_ tu o => Some (global_ptr_encode_vaddr o)
     | alloc_ptr_ aid va => Some va
     end.
 
@@ -387,18 +385,20 @@ Module PTRS_IMPL : PTRS_INTF_MINIMAL.
   #[local] Instance ptr_eq_dec : EqDecision ptr.
   Proof. solve_decision. Qed.
   Declare Instance ptr_countable : Countable ptr.
+  Instance offset_ptr_inj : Inj2 (=) (=) (=) offset_ptr.
+  Proof. by intros ???? [=]. Qed.
 
   Definition ptr_alloc_id (p : ptr) : option alloc_id :=
     match p with
     | invalid_ptr_ => None
-    | fun_ptr_ tu o => fst <$> global_ptr_encode_canon tu o
+    | fun_ptr_ tu o => Some (global_ptr_encode_aid o)
     | offset_ptr p o => root_ptr_alloc_id p
     end.
 
   Definition ptr_vaddr (p : ptr) : option vaddr :=
     match p with
     | invalid_ptr_ => None
-    | fun_ptr_ tu o => snd <$> global_ptr_encode_canon tu o
+    | fun_ptr_ tu o => Some (global_ptr_encode_vaddr o)
     | offset_ptr p o =>
       foldr
         (λ off ova, ova ≫= offset_vaddr off)
@@ -419,11 +419,33 @@ Module PTRS_IMPL : PTRS_INTF_MINIMAL.
   Lemma global_ptr_nonnull tu o : global_ptr tu o <> nullptr.
   Proof. done. Qed.
 
+  Instance global_ptr_inj tu : Inj (=) (=) (global_ptr tu) := _.
+
+  (* Some proofs using these helpers could be shortened, tactic-wise, but I find
+  them clearer this way, and they work in both models. *)
+  Lemma ptr_vaddr_global_ptr tu o :
+    ptr_vaddr (global_ptr tu o) = Some (global_ptr_encode_vaddr o).
+  Proof. done. Qed.
+  Lemma ptr_alloc_id_global_ptr tu o :
+    ptr_alloc_id (global_ptr tu o) = Some (global_ptr_encode_aid o).
+  Proof. done. Qed.
+
+  Lemma global_ptr_nonnull_addr tu o : ptr_vaddr (global_ptr tu o) <> Some 0%N.
+  Proof. rewrite ptr_vaddr_global_ptr. done. Qed.
+  Lemma global_ptr_nonnull_aid tu o : ptr_alloc_id (global_ptr tu o) <> Some null_alloc_id.
+  Proof. rewrite ptr_alloc_id_global_ptr. done. Qed.
+
+  Instance global_ptr_addr_inj tu : Inj (=) (=) (λ o, ptr_vaddr (global_ptr tu o)).
+  Proof. intros ??. rewrite !ptr_vaddr_global_ptr. by intros ?%(inj _)%(inj _). Qed.
+  Instance global_ptr_aid_inj tu : Inj (=) (=) (λ o, ptr_alloc_id (global_ptr tu o)).
+  Proof. intros ??. rewrite !ptr_alloc_id_global_ptr. by intros ?%(inj _)%(inj _). Qed.
+
   Lemma ptr_vaddr_nullptr : ptr_vaddr nullptr = Some 0%N.
   Proof. done. Qed.
 
   Lemma ptr_alloc_id_nullptr : ptr_alloc_id nullptr = Some null_alloc_id.
   Proof. done. Qed.
+
 
   Instance id_dot : LeftId (=) o_id o_dot.
   Proof. intros o. apply /sig_eq_pi. by case: o. Qed.

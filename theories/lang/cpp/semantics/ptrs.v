@@ -61,6 +61,8 @@ Implicit Types (σ : genv).
 Cerberus. *)
 Record alloc_id := MkAllocId { alloc_id_car : N }.
 
+#[global] Instance MkAllocId_inj : Inj (=) (=) MkAllocId.
+Proof. by intros ?? [=]. Qed.
 #[global] Instance alloc_id_eq_dec : EqDecision alloc_id.
 Proof. solve_decision. Qed.
 #[global] Instance alloc_id_countable : Countable alloc_id.
@@ -287,6 +289,14 @@ Module Type PTRS.
       The closest hint is in https://eel.is/c++draft/conv.ptr
    *)
   Axiom ptr_vaddr_nullptr : ptr_vaddr nullptr = Some 0%N.
+
+  Axiom global_ptr_nonnull_addr : forall tu o, ptr_vaddr (global_ptr tu o) <> Some 0%N.
+  Axiom global_ptr_nonnull_aid : forall tu o, ptr_alloc_id (global_ptr tu o) <> Some null_alloc_id.
+
+  Axiom global_ptr_inj : forall tu, Inj (=) (=) (global_ptr tu).
+  Axiom global_ptr_addr_inj : forall tu, Inj (=) (=) (λ o, ptr_vaddr (global_ptr tu o)).
+  Axiom global_ptr_aid_inj : forall tu, Inj (=) (=) (λ o, ptr_alloc_id (global_ptr tu o)).
+  #[global] Existing Instances global_ptr_inj global_ptr_addr_inj global_ptr_aid_inj.
 
   (** Pointers into the same array with the same address have the same index.
   Wrapped by [same_address_o_sub_eq]. *)

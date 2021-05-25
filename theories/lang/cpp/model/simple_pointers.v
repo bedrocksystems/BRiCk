@@ -175,13 +175,32 @@ Module SIMPLE_PTRS_IMPL : PTRS_INTF_MINIMAL.
    global_ptr tu2 "staticR" |-> anyR T 1%Qp  ...] actually holds at startup.
   *)
   Definition global_ptr (tu : translation_unit) (o : obj_name) : ptr :=
-    '(aid, va) ← global_ptr_encode_ov o (tu !! o);
-    Some (aid, Z.of_N va).
+    Some (global_ptr_encode_aid o, Z.of_N $ global_ptr_encode_vaddr o).
 
   Definition fun_ptr := global_ptr.
 
   Lemma global_ptr_nonnull tu o : global_ptr tu o <> nullptr.
-  Proof. rewrite /global_ptr/nullptr. by case: (tu !! o). Qed.
+  Proof. done. Qed.
+
+  Lemma ptr_vaddr_global_ptr tu o :
+    ptr_vaddr (global_ptr tu o) = Some (global_ptr_encode_vaddr o).
+  Proof. done. Qed.
+  Lemma ptr_alloc_id_global_ptr tu o :
+    ptr_alloc_id (global_ptr tu o) = Some (global_ptr_encode_aid o).
+  Proof. done. Qed.
+
+  Lemma global_ptr_nonnull_addr tu o : ptr_vaddr (global_ptr tu o) <> Some 0%N.
+  Proof. rewrite ptr_vaddr_global_ptr. done. Qed.
+  Lemma global_ptr_nonnull_aid tu o : ptr_alloc_id (global_ptr tu o) <> Some null_alloc_id.
+  Proof. rewrite ptr_alloc_id_global_ptr. done. Qed.
+
+  Instance global_ptr_inj tu : Inj (=) (=) (global_ptr tu).
+  Proof. by intros o1 o2 [?%(inj global_ptr_encode_aid) _]%(inj Some)%(inj2 _). Qed.
+
+  Instance global_ptr_addr_inj tu : Inj (=) (=) (λ o, ptr_vaddr (global_ptr tu o)).
+  Proof. intros ??. rewrite !ptr_vaddr_global_ptr. by intros ?%(inj _)%(inj _). Qed.
+  Instance global_ptr_aid_inj tu : Inj (=) (=) (λ o, ptr_alloc_id (global_ptr tu o)).
+  Proof. intros ??. rewrite !ptr_alloc_id_global_ptr. by intros ?%(inj _)%(inj _). Qed.
 
   Lemma ptr_vaddr_o_sub_eq p σ ty n1 n2 sz
     (Hsz : size_of σ ty = Some sz) (Hsz0 : (sz > 0)%N) :
