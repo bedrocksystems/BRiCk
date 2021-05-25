@@ -560,25 +560,38 @@ Section with_cpp.
   Lemma _field_validR σ f : _offsetR (_field f) validR |-- validR.
   Proof. apply off_validR => p. apply _valid_ptr_field. Qed.
 
-  Lemma _base_validR σ derived base : _offsetR (_base derived base) validR |-- validR.
+  Lemma _base_validR σ derived base :
+    _offsetR (_base derived base) validR |-- validR.
   Proof. apply off_validR => p. apply _valid_ptr_base. Qed.
 
-  Lemma _derived_validR σ base derived : _offsetR (_derived base derived) validR |-- validR.
+  Lemma _derived_validR σ base derived :
+    _offsetR (_derived base derived) validR |-- validR.
   Proof. apply off_validR => p. apply _valid_ptr_derived. Qed.
 
   (** Observation of [is_nonnull] *)
   #[global]
-  Instance primR_nonnull_observe {σ : genv} {ty q v} : Observe is_nonnull (primR ty q v).
-  Proof. apply monPred_observe => p. rewrite primR_eq/primR_def is_nonnull_eq/is_nonnull_def/=. refine _. Qed.
+  Instance primR_nonnull_observe {σ : genv} {ty q v} :
+    Observe is_nonnull (primR ty q v).
+  Proof.
+    apply monPred_observe => p.
+    rewrite primR_eq/primR_def is_nonnull_eq/is_nonnull_def/=. refine _.
+  Qed.
   #[global]
-  Instance uninitR_nonnull_observe {σ : genv} {ty q} : Observe is_nonnull (uninitR ty q).
-  Proof. apply monPred_observe => p. rewrite uninitR_eq/uninitR_def is_nonnull_eq/is_nonnull_def/=. refine _. Qed.
+  Instance uninitR_nonnull_observe {σ : genv} {ty q} :
+    Observe is_nonnull (uninitR ty q).
+  Proof.
+    apply monPred_observe => p.
+    rewrite uninitR_eq/uninitR_def is_nonnull_eq/is_nonnull_def/=.
+    refine _.
+  Qed.
   #[global]
-  Instance anyR_nonnull_observe {σ : genv} {ty q} : Observe is_nonnull (anyR ty q).
-  Proof. apply monPred_observe => p. rewrite anyR_eq/anyR_def.
-         red. iIntros "[X | X]".
-         - iDestruct "X" as (?) "X". iDestruct (observe is_nonnull with "X") as "#$".
-         - iDestruct (observe is_nonnull with "X") as "#$".
+  Instance anyR_nonnull_observe {σ : genv} {ty q} :
+    Observe is_nonnull (anyR ty q).
+  Proof.
+    apply monPred_observe => p. rewrite anyR_eq/anyR_def.
+    red. iIntros "[X | X]".
+    - iDestruct "X" as (?) "X". iDestruct (observe is_nonnull with "X") as "#$".
+    - iDestruct (observe is_nonnull with "X") as "#$".
   Qed.
   #[global]
   Instance blockR_nonnull {σ : genv} (p : ptr) n q:
