@@ -93,6 +93,16 @@ Qed.
 Instance genv_compat_flip_proper : Proper (sub_module ==> flip genv_leq ==> flip impl) genv_compat.
 Proof. solve_proper. Qed.
 
+Lemma module_le_genv_tu_models X σ :
+  module_le X (genv_tu σ) ->
+  X ⊧ σ.
+Proof.
+  generalize (module_le_sound X (genv_tu σ)).
+  unfold Is_true in *.
+  case_match; try contradiction. intros.
+  apply Build_genv_compat. assumption.
+Qed.
+
 (** TODO deprecate this in favor of inlining it *)
 Definition glob_def (g : genv) (gn : globname) : option GlobDecl :=
   g.(genv_tu).(globals) !! gn.
