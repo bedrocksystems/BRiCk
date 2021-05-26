@@ -25,10 +25,12 @@ Arguments UNSUPPORTED {_ _} _%bs.
 Section with_cpp.
   Context `{Σ : cpp_logic thread_info} {resolve:genv}.
 
-  Local Notation _base := (o_base resolve).
-  Local Notation _derived := (o_derived resolve).
+  #[local] Notation _base := (o_base resolve).
+  #[local] Notation _derived := (o_derived resolve).
 
-  (* Hoare triple for a function. *)
+  (** * Wrappers to build [function_spec] from a [WithPrePost] *)
+
+  (* A specification for a function (with explicit thread info) *)
   Definition TSFunction@{X Z Y} {cc : calling_conv} (ret : type) (targs : list type)
              (PQ : thread_info -> WithPrePost@{X Z Y} mpredI)
   : function_spec :=
@@ -38,6 +40,7 @@ Section with_cpp.
      ; fs_spec ti   := WppD (PQ ti) |}.
 
 
+  (* A specification for a function  *)
   Definition SFunction@{X Z Y} {cc : calling_conv} (ret : type) (targs : list type)
              (PQ : WithPrePost@{X Z Y} mpredI)
   : function_spec :=
@@ -46,8 +49,7 @@ Section with_cpp.
      ; fs_arguments := targs
      ; fs_spec _    := WppD PQ |}.
 
-  (* Hoare triple for a constructor.
-   *)
+  (* A specification for a constructor *)
   Definition SConstructor@{X Z Y} {cc : calling_conv} (class : globname)
              (targs : list type)
              (PQ : ptr -> WithPrePost@{X Z Y} mpredI)
@@ -63,8 +65,7 @@ Section with_cpp.
                ; wpp_post this := (PQ this).(wpp_post)
                |}.
 
-  (* Hoare triple for a destructor.
-   *)
+  (* A specification for a destructor *)
   Definition SDestructor@{X Z Y} {cc : calling_conv} (class : globname)
              (PQ : ptr -> WithPrePost@{X Z Y} mpredI)
   : function_spec :=
@@ -86,8 +87,7 @@ Section with_cpp.
                    tele_map (map_post this) (PQ this).(wpp_post)
               |}.
 
-  (* Hoare triple for a method.
-   *)
+  (* A specification for a method *)
   Definition SMethod@{X Z Y} {cc : calling_conv}
              (class : globname) (qual : type_qualifiers)
              (ret : type) (targs : list type)
@@ -103,92 +103,8 @@ Section with_cpp.
                ; wpp_post this := (PQ this).(wpp_post)
                |}.
 
-  Fixpoint bind_vars (args : list (ident * type)) (vals : list val) (r : region) (Q : region -> FreeTemps -> mpred) : mpred :=
-    match args , vals with
-    | nil , nil => Q r emp
-    | (x,ty) :: xs , v :: vs  =>
-      match drop_qualifiers ty with
-      | Tqualified _ t => ERROR "unreachable" (* unreachable *)
-      | Treference    _
-      | Trv_reference _
-      | Tnamed _ =>
-        match v with
-        | Vptr p => bind_vars xs vs (Rbind_check x p r) Q
-        | _ => ERROR "non-pointer passed for aggregate"
-        end
-      | _              =>
-        Forall a : ptr, a |-> primR (erase_qualifiers ty) 1 v -*
-        bind_vars xs vs (Rbind_check x a r) (fun r free => Q r (a |-> anyR (erase_qualifiers ty) 1 ** free))
-        (* Here we view [anyR (erase_quaifiers ty) 1] as essentially the pre-condition
-           to the "destructor" of a primitive. *)
-      end
-    | _ , _ => ERROR "bind_vars: argument mismatch"
-    end%I.
-
-  Lemma bind_vars_frame : forall ts args ρ Q Q',
-      (Forall ρ free, Q ρ free -* Q' ρ free) |-- bind_vars ts args ρ Q -* bind_vars ts args ρ Q'.
-  Proof.
-    induction ts; destruct args => /= *; eauto.
-    { iIntros "A B"; iApply "A"; eauto. }
-    { iIntros "A B". destruct a.
-      destruct (typing.drop_qualifiers t);
-        try solve
-            [ iIntros (?) "X"; iDestruct ("B" with "X") as "B"; iRevert "B"; iApply IHts; iIntros (? ?) "Z"; iApply "A"; iFrame
-            | destruct v; eauto; iRevert "B"; iApply IHts; eauto ]. }
-  Qed.
-
-  (* the meaning of a function
-   *)
-  Definition wp_func (f : Func) (ti : thread_info) (args : list val)
-             (Q : val -> epred) : mpred :=
-    match f.(f_body) with
-    | None => False
-    | Some body =>
-      match body with
-      | Impl body =>
-        let ρ := Remp None f.(f_return) in
-        bind_vars f.(f_params) args ρ (fun ρ frees =>
-        |> if is_void f.(f_return) then
-             wp (resolve:=resolve) ⊤ ti ρ body (Kfree frees (void_return (|> Q Vvoid)))
-           else
-             wp (resolve:=resolve) ⊤ ti ρ body (Kfree frees (val_return (fun x => |> Q x))))
-      | Builtin builtin =>
-        wp_builtin ⊤ ti builtin (Tfunction (cc:=f.(f_cc)) f.(f_return) (List.map snd f.(f_params))) args Q
-      end
-    end.
-
-  Definition func_ok (f : Func) (ti : thread_info) (spec : function_spec)
-    : mpred :=
-      [| type_of_spec spec = type_of_value (Ofunction f) |] **
-      (* forall each argument, apply to [fs_spec ti] *)
-      □ Forall Q : val -> mpred, Forall vals,
-        spec.(fs_spec) ti vals Q -* wp_func f ti vals Q.
-
-  Definition wp_method (m : Method) ti (args : list val)
-             (Q : val -> epred) : mpred :=
-    match m.(m_body) with
-    | None => lfalse
-    | Some body =>
-      match args with
-      | Vptr thisp :: rest_vals =>
-        let ρ := Remp (Some thisp) m.(m_return) in
-        bind_vars m.(m_params) rest_vals ρ (fun ρ frees =>
-        |> if is_void m.(m_return) then
-             wp (resolve:=resolve) ⊤ ti ρ body (Kfree frees (void_return (|>Q Vvoid)))
-           else
-             wp (resolve:=resolve) ⊤ ti ρ body (Kfree frees (val_return (fun x => |>Q x))))
-      | _ => lfalse
-      end
-    end.
-
-  Definition method_ok (m : Method) (ti : thread_info) (spec : function_spec)
-    : mpred :=
-    [| type_of_spec spec = type_of_value (Omethod m) |] **
-    (* forall each argument, apply to [fs_spec ti] *)
-    □ Forall Q : val -> mpred, Forall vals,
-      spec.(fs_spec) ti vals Q -* wp_method m ti vals Q.
-
-  Fixpoint all_identities' (f : nat) (mdc : option globname) (cls : globname) : Rep :=
+  (** * Aggregate identity *)
+  #[local] Fixpoint all_identities' (f : nat) (mdc : option globname) (cls : globname) : Rep :=
     match f with
     | 0 => False
     | S f =>
@@ -202,6 +118,10 @@ Section with_cpp.
       end
     end.
 
+  (** [this |-> all_identities mdc cls] is all of the object identities
+      of the [this] object where [this] is of type [cls*] and is part of
+      a most-derived-class [cls].
+   *)
   Definition all_identities : option globname -> globname -> Rep :=
     let size := avl.IM.cardinal resolve.(genv_tu).(globals) in
     (* ^ the number of global entries is an upper bound on the height of the
@@ -209,7 +129,7 @@ Section with_cpp.
      *)
     all_identities' size.
 
-  (* this function creates an [_instance_of] fact for this class *and*,
+  (* [init_identities cls Q] initializes the identities of this function creates an [_instance_of] fact for this class *and*,
      transitively, updates all of the [_instance_of] assertions for all base
      classes.
    *)
@@ -238,6 +158,148 @@ Section with_cpp.
     iIntros "[X Y]"; iApply "X"; eauto.
   Qed.
 
+  Definition revert_identity (cls : globname) (Q : mpred) : Rep :=
+    match resolve.(genv_tu).(globals) !! cls with
+    | Some (Gstruct st) =>
+      (if has_vtable st then identityR cls (Some cls) 1 else emp) **
+      ([∗list] b ∈ st.(s_bases),
+          let '(base,_) := b in
+          _base cls base |-> all_identities (Some cls) base) **
+      (([∗list] b ∈ st.(s_bases),
+         let '(base,_) := b in
+         _base cls base |-> all_identities (Some base) base) -* pureR Q)
+    | _ => False
+    end.
+
+  Theorem revert_identity_frame cls Q Q' :
+    pureR (Q' -* Q) |-- revert_identity cls Q' -* revert_identity cls Q.
+  Proof.
+    rewrite /revert_identity.
+    case_match; eauto.
+    case_match; eauto.
+    iIntros "X [$ [$ Y]] Z".
+    iDestruct ("Y" with "Z") as "Y".
+    iStopProof. rewrite -pureR_sep. apply pureR_mono.
+    iIntros "[X Y]"; iApply "X"; eauto.
+  Qed.
+
+  (** sanity chect that initialization and revert are inverses *)
+  Corollary init_revert cls Q (p : ptr) st :
+    globals (genv_tu resolve) !! cls = Some (Gstruct st) ->
+    let REQ :=
+        ([∗ list] b ∈ s_bases st,
+          let '(base, _) := b in
+          _base cls base |-> all_identities (Some base) base)%I
+    in
+        p |-> REQ ** Q
+    |-- p |-> init_identity cls (p |-> revert_identity cls (p |-> REQ ** Q)).
+  Proof.
+    rewrite /revert_identity/init_identity => ->.
+    rewrite !_at_sep !_at_wand !_at_pureR.
+    iIntros "[$ $] $ $ $".
+  Qed.
+
+  (** * Binding parameters *)
+
+  (** [bind_vars args vals r Q] preforms initialization of the parameters
+      given the values being passed.
+
+      TODO this is technically inaccurate, because the caller of the function
+      should be constructing the pointers. In this setup, [vals] should
+      just be a list of [ptr] and the signature would be:
+      [bind_vars : list (ident * type) -> list ptr -> region -> region]
+   *)
+  Fixpoint bind_vars (args : list (ident * type)) (vals : list val) (r : region) (Q : region -> FreeTemps -> mpred) : mpred :=
+    match args , vals with
+    | nil , nil => Q r emp
+    | (x,ty) :: xs , v :: vs  =>
+      match drop_qualifiers ty with
+      | Tqualified _ t => ERROR "unreachable" (* unreachable *)
+      | Treference    _
+      | Trv_reference _
+      | Tnamed _ =>
+        match v with
+        | Vptr p => bind_vars xs vs (Rbind_check x p r) Q
+        | _ => ERROR "non-pointer passed for aggregate"
+        end
+      | _              =>
+        Forall a : ptr, a |-> primR (erase_qualifiers ty) 1 v -*
+        bind_vars xs vs (Rbind_check x a r) (fun r free => Q r (a |-> anyR (erase_qualifiers ty) 1 ** free))
+        (* Here we view [anyR (erase_quaifiers ty) 1] as essentially the pre-condition
+           to the "destructor" of a primitive. *)
+      end
+    | _ , _ => ERROR "bind_vars: argument mismatch"
+    end%I.
+
+  Lemma bind_vars_frame : forall ts args ρ Q Q',
+      Forall ρ free, Q ρ free -* Q' ρ free
+    |-- bind_vars ts args ρ Q -* bind_vars ts args ρ Q'.
+  Proof.
+    induction ts; destruct args => /= *; eauto.
+    { iIntros "A B"; iApply "A"; eauto. }
+    { iIntros "A B". destruct a.
+      destruct (typing.drop_qualifiers t);
+        try solve
+            [ iIntros (?) "X"; iDestruct ("B" with "X") as "B"; iRevert "B";
+              iApply IHts; iIntros (? ?) "Z"; iApply "A"; iFrame
+            | destruct v; eauto; iRevert "B"; iApply IHts; eauto ]. }
+  Qed.
+
+  (** * Weakest preconditions of the flavors of C++ "functions"  *)
+
+  (** ** the weakest precondition of a function *)
+  Definition wp_func (f : Func) (ti : thread_info) (args : list val)
+             (Q : val -> epred) : mpred :=
+    match f.(f_body) with
+    | None => False
+    | Some body =>
+      match body with
+      | Impl body =>
+        let ρ := Remp None f.(f_return) in
+        bind_vars f.(f_params) args ρ (fun ρ frees =>
+        |> if is_void f.(f_return) then
+             wp ⊤ ti ρ body (Kfree frees (void_return (|> Q Vvoid)))
+           else
+             wp ⊤ ti ρ body (Kfree frees (val_return (fun x => |> Q x))))
+      | Builtin builtin =>
+        wp_builtin ⊤ ti builtin (Tfunction (cc:=f.(f_cc)) f.(f_return) (List.map snd f.(f_params))) args Q
+      end
+    end.
+
+  Definition func_ok (f : Func) (ti : thread_info) (spec : function_spec)
+    : mpred :=
+      [| type_of_spec spec = type_of_value (Ofunction f) |] **
+      (* forall each argument, apply to [fs_spec ti] *)
+      □ Forall Q : val -> mpred, Forall vals,
+        spec.(fs_spec) ti vals Q -* wp_func f ti vals Q.
+
+  (** ** The weakest precondition of a method *)
+  Definition wp_method (m : Method) ti (args : list val)
+             (Q : val -> epred) : mpred :=
+    match m.(m_body) with
+    | None => False
+    | Some body =>
+      match args with
+      | Vptr thisp :: rest_vals =>
+        let ρ := Remp (Some thisp) m.(m_return) in
+        bind_vars m.(m_params) rest_vals ρ (fun ρ frees =>
+        |> if is_void m.(m_return) then
+             wp ⊤ ti ρ body (Kfree frees (void_return (|>Q Vvoid)))
+           else
+             wp ⊤ ti ρ body (Kfree frees (val_return (fun x => |>Q x))))
+      | _ => False
+      end
+    end.
+
+  Definition method_ok (m : Method) (ti : thread_info) (spec : function_spec)
+    : mpred :=
+    [| type_of_spec spec = type_of_value (Omethod m) |] **
+    (* forall each argument, apply to [fs_spec ti] *)
+    □ Forall Q : val -> mpred, Forall vals,
+      spec.(fs_spec) ti vals Q -* wp_method m ti vals Q.
+
+  (** ** Weakest precondition of a constructor *)
+
   (* initialization of members in the initializer list *)
   Fixpoint wpi_members
            (ti : thread_info) (ρ : region) (cls : globname) (this : ptr)
@@ -264,7 +326,7 @@ Section with_cpp.
           | nil =>
             (* there is a *unique* initializer for this field *)
             this ., offset_for cls i.(init_path) |-> tblockR (erase_qualifiers i.(init_type)) 1 -*
-            wpi (resolve:=resolve) ⊤ ti ρ cls this i (fun f => f ** wpi_members ti ρ cls this members inits Q)
+            wpi ⊤ ti ρ cls this i (fun f => f ** wpi_members ti ρ cls this members inits Q)
           | _ =>
             (* there are multiple initializers for this field *)
             ERROR "multiple initializers for field"
@@ -293,7 +355,7 @@ Section with_cpp.
       | i :: nil =>
         (* there is an initializer for this class *)
         this ., offset_for cls i.(init_path) |-> tblockR (erase_qualifiers i.(init_type)) 1 -*
-        wpi (resolve:=resolve) ⊤ ti ρ cls this i (fun f => f ** wpi_bases ti ρ cls this bases inits Q)
+        wpi ⊤ ti ρ cls this i (fun f => f ** wpi_bases ti ρ cls this bases inits Q)
       | _ :: _ :: _ =>
         (* there are multiple initializers for this, so we fail *)
         ERROR "multiple initializers for base"
@@ -404,9 +466,10 @@ Section with_cpp.
       (* TODO what is the right thing to do when initializing unions? *)
     end.
 
-  (* TODO this is easy to prove, but will be replaced fairly soon. *)
   Lemma wp_union_initializer_list_frame : forall ti ρ cls p ty li Q Q',
-      (Q -* Q') |-- wp_union_initializer_list cls ti ρ ty p li Q -* wp_union_initializer_list cls ti ρ ty p li Q'.
+        Q -* Q'
+    |-- wp_union_initializer_list cls ti ρ ty p li Q -*
+        wp_union_initializer_list cls ti ρ ty p li Q'.
   Proof.
     rewrite /wp_union_initializer_list/=. intros. case_match; eauto.
     { case_match => //.
@@ -463,7 +526,7 @@ Section with_cpp.
           |> let ρ := Remp (Some thisp) Tvoid in
              bind_vars ctor.(c_params) rest_vals ρ (fun ρ frees =>
                (wp_struct_initializer_list cls ti ρ ctor.(c_class) thisp inits
-                  (wp (resolve:=resolve) ⊤ ti ρ body (Kfree frees (void_return (|> Q Vvoid))))))
+                  (wp ⊤ ti ρ body (Kfree frees (void_return (|> Q Vvoid))))))
         | Some (Gunion union) =>
         (* this is a union *)
           thisp |-> tblockR ty 1 **
@@ -473,7 +536,7 @@ Section with_cpp.
           |> let ρ := Remp (Some thisp) Tvoid in
              bind_vars ctor.(c_params) rest_vals ρ (fun ρ frees =>
                (wp_union_initializer_list union ti ρ ctor.(c_class) thisp inits
-                  (wp (resolve:=resolve) ⊤ ti ρ body (Kfree frees (void_return (|> Q Vvoid))))))
+                  (wp ⊤ ti ρ body (Kfree frees (void_return (|> Q Vvoid))))))
         | Some _ =>
           ERROR "constructor for non-aggregate"
         | None => False
@@ -489,41 +552,7 @@ Section with_cpp.
     □ Forall Q : val -> mpred, Forall vals,
       spec.(fs_spec) ti vals Q -* wp_ctor ctor ti vals Q.
 
-  Definition revert_identity (cls : globname) (Q : mpred) : Rep :=
-    match resolve.(genv_tu).(globals) !! cls with
-    | Some (Gstruct st) =>
-      (if has_vtable st then identityR cls (Some cls) 1 else emp) **
-      ([∗list] b ∈ st.(s_bases),
-          let '(base,_) := b in
-          _base cls base |-> all_identities (Some cls) base) **
-      (([∗list] b ∈ st.(s_bases),
-         let '(base,_) := b in
-         _base cls base |-> all_identities (Some base) base) -* pureR Q)
-    | _ => False
-    end.
-
-  Theorem revert_identity_frame cls Q Q' :
-    pureR (Q' -* Q) |-- revert_identity cls Q' -* revert_identity cls Q.
-  Proof.
-    rewrite /revert_identity.
-    case_match; eauto.
-    case_match; eauto.
-    iIntros "X [$ [$ Y]] Z".
-    iDestruct ("Y" with "Z") as "Y".
-    iStopProof. rewrite -pureR_sep. apply pureR_mono.
-    iIntros "[X Y]"; iApply "X"; eauto.
-  Qed.
-
-  Corollary init_revert cls Q (p : ptr) st :
-    globals (genv_tu resolve) !! cls = Some (Gstruct st) ->
-    p |-> ([∗ list] b ∈ s_bases st, let '(base, _) := b in _base cls base |-> all_identities (Some base) base) **
- Q |-- p |-> init_identity cls (p |-> revert_identity cls (p |-> ([∗ list] b ∈ s_bases st, let '(base, _) := b in _base cls base |-> all_identities (Some base) base) **
-Q)).
-  Proof.
-    rewrite /revert_identity/init_identity => ->.
-    rewrite !_at_sep !_at_wand !_at_pureR.
-    iIntros "[$ $] $ $ $".
-  Qed.
+  (** ** Weakest precondition of a destructor *)
 
   Fixpoint wpd_bases
            (ti : thread_info) (cls : globname) (this : ptr)
@@ -532,7 +561,7 @@ Q)).
     match bases with
     | nil => Q
     | base :: bases =>
-      destruct_val (σ:=resolve) ti false (Tnamed base) (this ., _base cls base) None (wpd_bases ti cls this bases Q)
+      destruct_val ti false (Tnamed base) (this ., _base cls base) None (wpd_bases ti cls this bases Q)
     end.
 
   Fixpoint wpd_members
@@ -542,7 +571,7 @@ Q)).
     match members with
     | nil => Q
     | member :: members =>
-      destruct_val (σ:=resolve) ti false member.(mem_type) (this ., _field {| f_name := member.(mem_name) ; f_type := cls |}) None
+      destruct_val ti false member.(mem_type) (this ., _field {| f_name := member.(mem_name) ; f_type := cls |}) None
                    (wpd_members ti cls this members Q)
     end.
 
@@ -589,7 +618,7 @@ Q)).
       | Some epilog , Vptr thisp :: nil =>
         let ρ := Remp (Some thisp) Tvoid in
           |> (* the function prolog consumes a step. *)
-             wp (resolve:=resolve) ⊤ ti ρ body
+             wp ⊤ ti ρ body
                (void_return (epilog thisp))
       | _ , _ => False
       end
