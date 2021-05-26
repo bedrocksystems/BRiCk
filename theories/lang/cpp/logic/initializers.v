@@ -5,6 +5,7 @@
  *)
 Require Import Coq.Lists.List.
 Require Import iris.proofmode.tactics.
+Require Import bedrock.lang.prelude.numbers.
 Require Import bedrock.lang.cpp.ast.
 Require Import bedrock.lang.cpp.semantics.
 Require Import bedrock.lang.bi.errors.
@@ -27,17 +28,6 @@ Module Type Init.
     Local Notation wp_args := (wp_args (σ:=σ) M ti ρ).
     Local Notation fspec := (@fspec _ Σ σ.(genv_tu).(globals)).
     Local Notation mspec := (@mspec _ Σ σ.(genv_tu).(globals)).
-
-    (* TODO: This could be useful elsewhere and should maybe be moved. *)
-    Definition repeatN {A} (x : A) (count : N) : list A :=
-      repeat x (N.to_nat count).
-    #[global] Arguments repeatN : simpl never.
-
-
-    (* TODO: This could be useful elsewhere and should maybe be moved. *)
-    Definition seqN (from count : N) : list N :=
-      map N.of_nat (seq (N.to_nat from) (N.to_nat count)).
-    #[global] Arguments seqN : simpl never.
 
     Definition default_initialize_array (default_initialize : type -> ptr -> (FreeTemps -> epred) -> mpred)
                (ty : type) (len : N) (p : ptr) (Q : FreeTemps -> epred) : mpred :=
