@@ -70,7 +70,6 @@ Section with_Σ.
 
   #[local] Definition implicit_destruct_ty (ty : type) := anyR ty 1 |-- |={↑pred_ns}=> tblockR ty 1.
 
-
   (** implicit destruction of a primitive *)
   Axiom implicit_destruct_int : forall sz sgn, Reduce (implicit_destruct_ty (Tint sz sgn)).
   Axiom implicit_destruct_bool : Reduce (implicit_destruct_ty Tbool).
