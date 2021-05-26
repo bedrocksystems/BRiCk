@@ -19,15 +19,15 @@ Module Type Init.
     Context `{Σ : cpp_logic thread_info} {σ:genv}.
     Variables (M : coPset) (ti : thread_info) (ρ : region).
 
-    Local Notation wp := (wp (resolve:=σ) M ti ρ).
-    Local Notation wpi := (wpi (resolve:=σ) M ti ρ).
-    Local Notation wp_lval := (wp_lval (resolve:=σ) M ti ρ).
-    Local Notation wp_prval := (wp_prval (resolve:=σ) M ti ρ).
-    Local Notation wp_xval := (wp_xval (resolve:=σ) M ti ρ).
-    Local Notation wp_init := (wp_init (resolve:=σ) M ti ρ).
-    Local Notation wp_args := (wp_args (σ:=σ) M ti ρ).
-    Local Notation fspec := (@fspec _ Σ σ.(genv_tu).(globals)).
-    Local Notation mspec := (@mspec _ Σ σ.(genv_tu).(globals)).
+    #[local] Notation wp := (wp (resolve:=σ) M ti ρ).
+    #[local] Notation wpi := (wpi (resolve:=σ) M ti ρ).
+    #[local] Notation wp_lval := (wp_lval (resolve:=σ) M ti ρ).
+    #[local] Notation wp_prval := (wp_prval (resolve:=σ) M ti ρ).
+    #[local] Notation wp_xval := (wp_xval (resolve:=σ) M ti ρ).
+    #[local] Notation wp_init := (wp_init (resolve:=σ) M ti ρ).
+    #[local] Notation wp_args := (wp_args (σ:=σ) M ti ρ).
+    #[local] Notation fspec := (@fspec _ Σ σ.(genv_tu).(globals)).
+    #[local] Notation mspec := (@mspec _ Σ σ.(genv_tu).(globals)).
 
     Definition default_initialize_array (default_initialize : type -> ptr -> (FreeTemps -> epred) -> mpred)
                (ty : type) (len : N) (p : ptr) (Q : FreeTemps -> epred) : mpred :=
