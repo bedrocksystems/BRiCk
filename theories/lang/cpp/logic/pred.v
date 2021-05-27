@@ -751,11 +751,15 @@ Section with_cpp.
   Lemma _valid_valid p vt : _valid_ptr vt p |-- valid_ptr p.
   Proof. case: vt => [|//]. exact: strict_valid_valid. Qed.
 
-  Lemma valid_ptr_sub (i j k : Z) p ty vt :
-    (i <= j < k)%Z ->
+  Lemma valid_ptr_sub (i j k : Z) p ty vt
+    (Hj : (i <= j <= k)%Z) :
     _valid_ptr vt (p .., o_sub σ ty i) |--
     _valid_ptr vt (p .., o_sub σ ty k) -* valid_ptr (p .., o_sub σ ty j).
-  Proof. rewrite -strict_valid_valid. apply strict_valid_ptr_sub. Qed.
+  Proof.
+    destruct (decide (j = k)) as [->|Hne].
+    { rewrite -_valid_valid. by iIntros "_ $". }
+    rewrite -strict_valid_valid. apply strict_valid_ptr_sub. lia.
+  Qed.
 
   Lemma _valid_ptr_field_sub (i : Z) p ty f vt (Hle : (0 <= i)%Z) :
     _valid_ptr vt (p .., o_field σ f .., o_sub σ ty i) |-- _valid_ptr vt (p .., o_field σ f).
