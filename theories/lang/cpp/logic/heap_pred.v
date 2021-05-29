@@ -503,7 +503,6 @@ Section with_cpp.
     | _ , _  => False
     end.
 
-
   (** Observing [type_ptr] *)
   #[global]
   Instance primR_type_ptr_observe σ ty q v : Observe (type_ptrR ty) (primR ty q v).
@@ -605,6 +604,26 @@ Section with_cpp.
     rewrite o_sub_0; [ | by eauto].
     rewrite _offsetR_id.
     iDestruct (observe is_nonnull with "Hany") as "#$".
+  Qed.
+
+  #[global] Instance blockR_valid_ptr {σ} sz q : Observe validR (blockR sz q).
+  Proof.
+    rewrite blockR_eq/blockR_def.
+    destruct sz.
+    { iIntros "[#A _]".
+      rewrite o_sub_0; last by econstructor.
+      rewrite _offsetR_id. eauto. }
+    { iIntros "[_ X]".
+      simpl. destruct (Pos.to_nat p) eqn:?; first lia.
+      simpl. iDestruct "X" as "[X _]".
+      rewrite o_sub_0; last by econstructor. rewrite _offsetR_id.
+      iApply (observe with "X"). }
+  Qed.
+
+  #[global] Instance tblockR_valid_ptr {σ} ty q : Observe validR (tblockR ty q).
+  Proof.
+    rewrite /tblockR. case_match; refine _.
+    case_match; refine _.
   Qed.
 
 End with_cpp.
