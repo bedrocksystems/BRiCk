@@ -97,6 +97,16 @@ Lemma N_mul_divide_weaken_r (m n o : N) :
   (m * n | o)%N -> (n | o)%N.
 Proof. case => q ->. exists (q * m)%N. lia. Qed.
 
+Definition replicateN {A} (x : A) (count : N) : list A :=
+  repeat x (N.to_nat count).
+#[global] Arguments replicateN : simpl never.
+#[deprecated(since="2021-05-26",note="use [replicateN]")]
+Notation repeatN := replicateN (only parsing).
+
+Definition seqN (from count : N) : list N :=
+  map N.of_nat (seq (N.to_nat from) (N.to_nat count)).
+#[global] Arguments seqN : simpl never.
+
 (** * Integers *)
 
 Arguments Z.ones _ : simpl never, assert.

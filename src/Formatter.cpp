@@ -117,4 +117,10 @@ operator<<(Formatter& out, const LINE* _) {
     return out;
 }
 
+Formatter&
+operator<<(Formatter& out, BOOL b) {
+    out.nobreak() << (b.value ? "true" : "false");
+    return out;
+}
+
 }

@@ -228,6 +228,13 @@ Section with_cpp.
     Timeless r → Timeless (_offsetR o r).
   Proof. rewrite _offsetR_eq. apply _. Qed.
 
+  Lemma _offsetR_offsetR (o1 o2 : offset) R :
+    _offsetR o1 (_offsetR o2 R) -|- _offsetR (o_dot o1 o2) R.
+  Proof.
+    rewrite _offsetR_eq/_offsetR_def/=.
+    f_equiv. by intro; rewrite offset_ptr_dot.
+  Qed.
+
   Lemma _offsetR_emp o : _offsetR o emp ⊣⊢ emp.
   Proof.
     rewrite _offsetR_eq /_offsetR_def.

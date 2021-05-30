@@ -35,6 +35,7 @@ theories/lang/bi/cancelable_invariants.v
 theories/lang/bi/prelude.v
 theories/lang/bi/IrisBridge.v
 theories/lang/bi/ChargeCompat.v
+theories/lang/bi/errors.v
 
 # Syntax
 theories/lang/cpp/syntax/names.v
@@ -73,7 +74,6 @@ theories/lang/cpp/logic/rep.v
 theories/lang/cpp/logic/heap_pred.v
 theories/lang/cpp/logic/wp.v
 theories/lang/cpp/logic/destroy.v
-theories/lang/cpp/logic/destructors.v
 theories/lang/cpp/logic/initializers.v
 theories/lang/cpp/logic/dispatch.v
 theories/lang/cpp/logic/call.v

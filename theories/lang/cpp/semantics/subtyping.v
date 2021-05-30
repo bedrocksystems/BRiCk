@@ -50,18 +50,18 @@ class names [derived], [base] are ground.
 The proofs use [iffLR] to avoid destructing [iff]. While verbose,
 that's presumably faster. *)
 Existing Class class_derives.
-Global Hint Mode class_derives + + + : typeclass_instances.
+#[global] Hint Mode class_derives + + + : typeclass_instances.
 
-Global Instance class_derives_here tu σ derived st :
+#[global] Instance class_derives_here tu σ derived st :
   tu ⊧ σ ->
   TCEq (tu.(globals) !! derived) (Some (Gstruct st)) ->
   class_derives σ derived derived.
 Proof.
-  intros. eapply Derives_here, glob_def_genv_compat.
+  intros. eapply Derives_here, glob_def_genv_compat_struct.
   by apply (iffLR (TCEq_eq _ _)).
 Defined.
 
-Global Instance class_derives_base tu σ derived base st li result :
+#[global] Instance class_derives_base tu σ derived base st li result :
   tu ⊧ σ ->
   TCEq (tu.(globals) !! derived) (Some (Gstruct st)) ->
   TCElemOf (base, li) st.(s_bases) ->
@@ -69,7 +69,7 @@ Global Instance class_derives_base tu σ derived base st li result :
   class_derives σ derived result.
 Proof.
   intros. eapply Derives_base; last done.
-  - eapply glob_def_genv_compat.
+  - eapply glob_def_genv_compat_struct.
     by apply (iffLR (TCEq_eq _ _)).
   - by apply (iffLR (elem_of_list_In _ _)), (iffLR (TCElemOf_iff _ _)).
 Defined.

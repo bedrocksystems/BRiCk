@@ -172,56 +172,8 @@ printDestructor(const CXXDestructorDecl *decl, CoqPrinter &print,
     if (decl->getBody()) {
         print.some();
         print.ctor("UserDefined");
-        print.begin_tuple();
         cprint.printStmt(decl->getBody(), print);
-        print.next_tuple();
 
-        print.begin_list();
-        // i need to destruct each field, and then each parent class
-        // in the REVERSE order of construction
-        {
-            std::list<const FieldDecl *> fields(record->field_begin(),
-                                                record->field_end());
-            for (auto i = fields.crbegin(), e = fields.crend(); i != e; i++) {
-                const FieldDecl *fd = *i;
-                if (auto rd =
-                        fd->getType().getTypePtr()->getAsCXXRecordDecl()) {
-                    print.begin_tuple();
-                    print.output()
-                        << "Field \"" << fd->getName() << "\"," << fmt::nbsp;
-                    cprint.printGlobalName(rd->getDestructor(), print);
-                    print.end_tuple();
-                    print.cons();
-                }
-            }
-        }
-
-        // base classes
-        {
-            std::list<CXXBaseSpecifier> bases(record->bases_begin(),
-                                              record->bases_end());
-            for (auto i = bases.crbegin(), e = bases.crend(); i != e; i++) {
-                if (i->isVirtual()) {
-                    using namespace logging;
-                    fatal() << "virtual base classes are not supported.";
-                }
-                auto rec = i->getType().getTypePtr()->getAsCXXRecordDecl();
-                if (rec) {
-                    print.ctor("Base");
-                    cprint.printGlobalName(rec, print);
-                    print.output() << "," << fmt::nbsp;
-                    cprint.printGlobalName(rec->getDestructor(), print);
-                    print.output() << fmt::rparen;
-                } else {
-                    using namespace logging;
-                    fatal() << "base class is not a RecordType.";
-                    assert(false);
-                }
-                print.output() << "::";
-            }
-        }
-        print.end_list();
-        print.end_tuple();
         print.end_ctor();
         print.end_ctor();
     } else if (decl->isDefaulted()) {
@@ -246,8 +198,8 @@ public:
     bool VisitDecl(const Decl *d, CoqPrinter &print, ClangPrinter &cprint,
                    const ASTContext &) {
         using namespace logging;
-        fatal() << "visiting declaration..." << d->getDeclKindName() << "(at "
-                << cprint.sourceRange(d->getSourceRange()) << ")\n";
+        fatal() << "Error: visiting declaration..." << d->getDeclKindName()
+                << "(at " << cprint.sourceRange(d->getSourceRange()) << ")\n";
         die();
         return false;
     }
@@ -255,9 +207,9 @@ public:
     bool VisitTypeDecl(const TypeDecl *type, CoqPrinter &print,
                        ClangPrinter &cprint, const ASTContext &) {
         using namespace logging;
-        fatal() << "unsupported type declaration `" << type->getDeclKindName()
-                << "(at " << cprint.sourceRange(type->getSourceRange())
-                << ")\n";
+        fatal() << "Error: unsupported type declaration `"
+                << type->getDeclKindName() << "(at "
+                << cprint.sourceRange(type->getSourceRange()) << ")\n";
         die();
         return false;
     }
@@ -294,7 +246,7 @@ public:
                                ClangPrinter &cprint) {
         Expr *expr = field->getInClassInitializer();
         if (expr != nullptr) {
-            print.ctor("Some");
+            print.some();
             cprint.printExpr(expr, print);
             print.end_ctor();
         } else {
@@ -309,19 +261,19 @@ public:
         for (const FieldDecl *field : decl->fields()) {
             if (field->isBitField()) {
                 logging::fatal()
-                    << "bit fields are not supported "
+                    << "Error: bit fields are not supported "
                     << cprint.sourceRange(field->getSourceRange()) << "\n";
                 logging::die();
             }
-            print.output() << "(";
+            print.ctor("mkMember") << fmt::nbsp;
             printMangledFieldName(field, print, cprint);
-            print.output() << "," << fmt::nbsp;
+            print.output() << fmt::nbsp;
             cprint.printQualType(field->getType(), print);
-            print.output() << "," << fmt::nbsp;
+            print.output() << fmt::nbsp;
             printFieldInitializer(field, print, cprint);
-            print.output() << "," << fmt::nbsp;
-            print.output() << "Build_LayoutInfo " << layout.getFieldOffset(i++)
-                           << ")";
+            print.output() << fmt::nbsp;
+            print.ctor("Build_LayoutInfo", false)
+                << layout.getFieldOffset(i++) << fmt::rparen << fmt::rparen;
             print.cons();
         };
         print.end_list();
@@ -347,6 +299,18 @@ public:
 
         print.ctor("Build_Union");
         printFields(decl, layout, print, cprint);
+
+        if (auto dtor = decl->getDestructor()) {
+            print.output() << fmt::nbsp;
+            cprint.printGlobalName(dtor, print);
+            print.output() << fmt::line << fmt::BOOL(dtor->isTrivial());
+        } else {
+            logging::fatal()
+                << "Error: union '" << decl->getNameAsString()
+                << "' is missing a destructor at"
+                << cprint.sourceRange(decl->getSourceRange()) << "\n";
+            logging::die();
+        }
 
         print.output() << fmt::line << layout.getSize().getQuantity()
                        << fmt::nbsp << layout.getAlignment().getQuantity()
@@ -396,7 +360,8 @@ public:
                 }
             } else {
                 using namespace logging;
-                fatal() << "base class is not a RecordType at "
+                fatal() << "Error: base class of '" << decl->getNameAsString()
+                        << "' is not a RecordType at "
                         << cprint.sourceRange(decl->getSourceRange()) << "\n";
                 die();
             }
@@ -407,19 +372,6 @@ public:
         // print the fields
         print.output() << fmt::line;
         printFields(decl, layout, print, cprint);
-
-        // print the layout information
-        print.output() << fmt::line;
-        if (decl->isPOD()) {
-            print.output() << "POD";
-        } else if (decl->isStandardLayout()) {
-            print.output() << "Standard";
-        } else {
-            print.output() << "Unspecified";
-        }
-
-        print.output() << fmt::nbsp << layout.getSize().getQuantity()
-                       << fmt::nbsp << layout.getAlignment().getQuantity();
 
         // print the virtual function table
         print.begin_list();
@@ -441,7 +393,7 @@ public:
         }
         print.end_list();
 
-        // print the virtual function table
+        // print the overrides of this class.
         print.begin_list();
         for (auto m : decl->methods()) {
             if (m->isVirtual() and not m->isPure()) {
@@ -457,15 +409,34 @@ public:
         }
         print.end_list();
 
-        if (decl->getDestructor() && decl->getDestructor()->isVirtual()) {
-            print.some();
-            cprint.printGlobalName(decl->getDestructor(), print);
-            print.end_ctor();
+        if (auto dtor = decl->getDestructor()) {
+            cprint.printGlobalName(dtor, print);
+            // trivially destructable
+            print.output() << fmt::nbsp << fmt::BOOL(dtor->isTrivial());
+
         } else {
-            print.none();
+            logging::fatal()
+                << "Error: struct '" << decl->getNameAsString()
+                << "' is missing a destructor at "
+                << cprint.sourceRange(decl->getSourceRange()) << "\n";
+            logging::die();
         }
 
-        // todo(gmm): i need to print any implicit declarations.
+        // print the layout information
+        print.output() << fmt::line;
+        if (decl->isPOD()) {
+            print.output() << "POD";
+        } else if (decl->isStandardLayout()) {
+            print.output() << "Standard";
+        } else {
+            print.output() << "Unspecified";
+        }
+
+        // size
+        print.output() << fmt::nbsp << layout.getSize().getQuantity();
+
+        // alignment
+        print.output() << fmt::nbsp << layout.getAlignment().getQuantity();
 
         print.end_ctor();
         print.end_ctor();
@@ -569,20 +540,21 @@ public:
             // note that implicit initialization is represented explicitly in this list
             // also, the order is corrrect with respect to initalization order
             print.begin_list();
+            // note that not all fields are listed.
             for (auto init : decl->inits()) {
                 print.ctor("Build_Initializer");
                 if (init->isMemberInitializer()) {
-                    print.ctor("Field")
+                    print.ctor("InitField")
                         << "\"" << init->getMember()->getNameAsString() << "\"";
                     print.end_ctor();
                 } else if (init->isBaseInitializer()) {
-                    print.ctor("Base");
+                    print.ctor("InitBase");
                     cprint.printGlobalName(
                         init->getBaseClass()->getAsCXXRecordDecl(), print);
                     print.end_ctor();
                 } else if (init->isIndirectMemberInitializer()) {
                     auto im = init->getIndirectMember();
-                    print.ctor("Indirect");
+                    print.ctor("InitIndirect");
 
                     bool completed = false;
                     print.begin_list();
@@ -614,7 +586,7 @@ public:
 
                     print.end_ctor();
                 } else if (init->isDelegatingInitializer()) {
-                    print.output() << "This";
+                    print.output() << "InitThis";
                 } else {
                     assert(false && "unknown initializer type");
                 }

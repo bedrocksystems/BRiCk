@@ -74,20 +74,3 @@ Arguments OrDefault : clear implicits.
 
 Instance OrDefault_eq_dec: forall {T: Set}, EqDecision T -> EqDecision (OrDefault T).
 Proof. solve_decision. Defined.
-
-
-Variant FieldOrBase : Set :=
-| Base (_ : globname)
-| Field (_ : ident)
-| Indirect (anon_path : list (ident * globname)) (_ : ident)
-| This.
-Instance: EqDecision FieldOrBase.
-Proof. solve_decision. Defined.
-
-
-Record Initializer :=
-  { init_path : FieldOrBase
-  ; init_type : type
-  ; init_init : Expr }.
-Instance: EqDecision Initializer.
-Proof. solve_decision. Defined.

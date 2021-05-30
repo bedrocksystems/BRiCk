@@ -14,6 +14,21 @@ Record LayoutInfo : Set :=
 Instance: EqDecision LayoutInfo.
 Proof. solve_decision. Defined.
 
+Variant InitPath : Set :=
+| InitBase (_ : globname)
+| InitField (_ : ident)
+| InitIndirect (anon_path : list (ident * globname)) (_ : ident)
+| InitThis.
+Instance: EqDecision InitPath.
+Proof. solve_decision. Defined.
+
+Record Initializer :=
+  { init_path : InitPath
+  ; init_type : type
+  ; init_init : Expr }.
+Instance: EqDecision Initializer.
+Proof. solve_decision. Defined.
+
 Record Ctor : Set :=
 { c_class  : globname
 ; c_params : list (ident * type)
@@ -26,7 +41,7 @@ Proof. solve_decision. Defined.
 Record Dtor : Set :=
 { d_class  : globname
 ; d_cc     : calling_conv
-; d_body   : option (OrDefault (Stmt * list (FieldOrBase * obj_name)))
+; d_body   : option (OrDefault Stmt)
 }.
 Instance: EqDecision Dtor.
 Proof. solve_decision. Defined.
@@ -58,9 +73,22 @@ Record Method : Set :=
 Instance: EqDecision Method.
 Proof. solve_decision. Defined.
 
+Record Member : Set := mkMember
+{ mem_name : ident
+; mem_type : type
+; mem_init : option Expr
+; mem_layout : LayoutInfo }.
+Instance: EqDecision Member.
+Proof. solve_decision. Defined.
+
+
 Record Union : Set :=
-{ u_fields : list (ident * type * option Expr * LayoutInfo)
+{ u_fields : list Member
   (* ^ fields with type, initializer, and layout information *)
+; u_dtor : obj_name
+  (* ^ the name of the destructor *)
+; u_trivially_destructible : bool
+  (* ^ whether objects of the union type are trivially destructible. *)
 ; u_size : N
   (* ^ size of the union (including padding) *)
 ; u_alignment : N
@@ -74,23 +102,32 @@ Variant LayoutType : Set := POD | Standard | Unspecified.
 Instance: EqDecision LayoutType.
 Proof. solve_decision. Defined.
 
+
 Record Struct : Set :=
 { s_bases : list (globname * LayoutInfo)
   (* ^ base classes *)
-; s_fields : list (ident * type * option Expr * LayoutInfo)
+; s_fields : list Member
   (* ^ fields with type, initializer, and layout information *)
-; s_layout : LayoutType
-  (* ^ the type of layout semantics *)
-; s_size : N
-  (* ^ size of the structure (including padding) *)
-; s_alignment : N
-  (* ^ alignment of the structure *)
 ; s_virtuals : list (obj_name * option obj_name)
   (* ^ function_name -> symbol *)
 ; s_overrides : list (obj_name * obj_name)
   (* ^ k |-> v ~ update k with v *)
-; s_virtual_dtor : option obj_name
-  (* ^ the name of the virtual destructor, if it is virtual *)
+; s_dtor : obj_name
+  (* ^ the name of the destructor.
+     NOTE at the C++ abstract machine level, there is only
+          one destructor, but implementations (and name mangling)
+          use multiple destructors in cases of classes with [virtual]
+          inheritence.
+   *)
+; s_trivially_destructible : bool
+  (* ^ this is actually computable, and we could compute it *)
+; s_layout : LayoutType
+  (* ^ the type of layout semantics *)
+(* The remaining fields are implementation-dependent. They might be mandated by the per-platform ABI. *)
+; s_size : N
+  (* ^ size of the structure (including padding) *)
+; s_alignment : N
+  (* ^ alignment of the structure *)
 }.
 Instance: EqDecision Struct.
 Proof. solve_decision. Defined.
@@ -100,6 +137,10 @@ Definition has_vtable (s : Struct) : bool :=
   | nil => false
   | _ :: _ => true
   end.
+
+(* [has_virtual_dtor s] returns true if the destructor is virtual. *)
+Definition has_virtual_dtor (s : Struct) : bool :=
+  List.existsb (fun '(a,_) => bool_decide (a = s.(s_dtor))) s.(s_virtuals).
 
 Variant Ctor_type : Set := Ct_Complete | Ct_Base | Ct_alloc | Ct_Comdat.
 Instance: EqDecision Ctor_type.
@@ -181,14 +222,11 @@ Variant GlobDecl : Set :=
 Instance: EqDecision GlobDecl.
 Proof. solve_decision. Defined.
 
-
-
 Definition symbol_table : Type := IM.t ObjValue.
 
 Definition type_table : Type := IM.t GlobDecl.
 
 Variant endian : Set := Little | Big.
-
 Instance endian_dec : EqDecision endian.
 Proof. solve_decision. Defined.
 
@@ -234,10 +272,10 @@ Section with_type_table.
   Inductive complete_decl : GlobDecl -> Prop :=
   | complete_Struct {st}
               (_ : forall b li, In (b, li) st.(s_bases) -> complete_type (Tnamed b))
-              (_ : forall x t e li, In (x, t, e, li) st.(s_fields) -> complete_type t)
+              (_ : forall x t e li, In (mkMember x t e li) st.(s_fields) -> complete_type t)
     : complete_decl (Gstruct st)
   | complete_Union {u}
-              (_ : forall x t e li, In (x, t, e, li) u.(u_fields) -> complete_type t)
+              (_ : forall x t e li, In (mkMember x t e li) u.(u_fields) -> complete_type t)
     : complete_decl (Gunion u)
   | complete_enum {t consts} (_ : complete_type t)
     : complete_decl (Genum t consts)

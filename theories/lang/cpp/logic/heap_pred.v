@@ -230,8 +230,6 @@ Section with_cpp.
   Definition anyR_eq : @anyR = _ := anyR_aux.(seal_eq).
   Global Arguments anyR {resolve} ty q : rename.
 
-  Global Instance anyR_affine resolve ty q : Affine (anyR ty q).
-  Proof. rewrite anyR_eq. apply _. Qed.
   Global Instance anyR_timeless resolve ty q : Timeless (anyR ty q).
   Proof. rewrite anyR_eq. apply _. Qed.
   Global Instance anyR_fractional resolve ty :
@@ -461,24 +459,49 @@ Section with_cpp.
     by iIntros "->" (? <-%ptr_rel_elim) "%".
   Qed.
 
-  (** [blockR sz] represents a contiguous chunk of [sz] bytes *)
-  Definition blockR {σ} (sz : _) : Rep :=
+  (** [blockR sz q] represents [q] ownership of a contiguous chunk of
+      [sz] bytes without any C++ structure on top of it. *)
+  Definition blockR_def {σ} sz (q : Qp) : Rep :=
     _offsetR (o_sub σ T_uint8 (Z.of_N sz)) validR **
     (* ^ Encodes valid_ptr (this .[ T_uint8 ! sz]). This is
     necessary to get [l |-> blockR n -|- l |-> blockR n ** l .[ T_uint8 ! m] |-> blockR 0]. *)
     [∗list] i ∈ seq 0 (N.to_nat sz),
-      _offsetR (o_sub σ T_uint8 (Z.of_nat i)) (anyR (resolve:=σ) T_uint8 1).
+      _offsetR (o_sub σ T_uint8 (Z.of_nat i)) (anyR (resolve:=σ) T_uint8 q).
+  Definition blockR_aux : seal (@blockR_def). Proof. by eexists. Qed.
+  Definition blockR := blockR_aux.(unseal).
+  Definition blockR_eq : @blockR = _ := blockR_aux.(seal_eq).
+  #[global] Arguments blockR {_} _%N _%Qp.
+
+  #[global] Instance blockR_timeless {resolve : genv} sz q :
+    Timeless (blockR sz q).
+  Proof. rewrite blockR_eq. apply _. Qed.
+  #[global] Instance blockR_fractional resolve sz :
+    Fractional (blockR sz).
+  Proof.
+    by rewrite blockR_eq /blockR_def; apply _.
+  Qed.
+  #[global] Instance blockR_as_fractional resolve sz q :
+    AsFractional (blockR sz q) (blockR sz) q.
+  Proof. exact: Build_AsFractional. Qed.
+
+  #[global] Instance blockR_observe_frac_valid resolve sz (q : Qp) : (0 < sz)%N ->
+    Observe [| q ≤ 1 |]%Qp (blockR sz q).
+  Proof.
+    rewrite blockR_eq/blockR_def.
+    intros.
+    destruct (N.to_nat sz) eqn:?; [ lia | ] => /=.
+    refine _.
+  Qed.
 
   (* [tblockR ty] is a [blockR] that is the size of [ty] and properly aligned.
    * it is a convenient short-hand since it happens frequently, but there is nothing
    * special about it.
    *)
-  Definition tblockR {σ} (ty : type) : Rep :=
+  Definition tblockR {σ} (ty : type) (q : Qp) : Rep :=
     match size_of σ ty , align_of ty with
-    | Some sz , Some al => blockR (σ:=σ) sz ** alignedR al
+    | Some sz , Some al => blockR (σ:=σ) sz q ** alignedR al
     | _ , _  => False
     end.
-
 
   (** Observing [type_ptr] *)
   #[global]
@@ -536,11 +559,73 @@ Section with_cpp.
   Lemma _field_validR σ f : _offsetR (_field f) validR |-- validR.
   Proof. apply off_validR => p. apply _valid_ptr_field. Qed.
 
-  Lemma _base_validR σ derived base : _offsetR (_base derived base) validR |-- validR.
+  Lemma _base_validR σ derived base :
+    _offsetR (_base derived base) validR |-- validR.
   Proof. apply off_validR => p. apply _valid_ptr_base. Qed.
 
-  Lemma _derived_validR σ base derived : _offsetR (_derived base derived) validR |-- validR.
+  Lemma _derived_validR σ base derived :
+    _offsetR (_derived base derived) validR |-- validR.
   Proof. apply off_validR => p. apply _valid_ptr_derived. Qed.
+
+  (** Observation of [is_nonnull] *)
+  #[global]
+  Instance primR_nonnull_observe {σ : genv} {ty q v} :
+    Observe is_nonnull (primR ty q v).
+  Proof.
+    apply monPred_observe => p.
+    rewrite primR_eq/primR_def is_nonnull_eq/is_nonnull_def/=. refine _.
+  Qed.
+  #[global]
+  Instance uninitR_nonnull_observe {σ : genv} {ty q} :
+    Observe is_nonnull (uninitR ty q).
+  Proof.
+    apply monPred_observe => p.
+    rewrite uninitR_eq/uninitR_def is_nonnull_eq/is_nonnull_def/=.
+    refine _.
+  Qed.
+  #[global]
+  Instance anyR_nonnull_observe {σ : genv} {ty q} :
+    Observe is_nonnull (anyR ty q).
+  Proof.
+    apply monPred_observe => p. rewrite anyR_eq/anyR_def.
+    red. iIntros "[X | X]".
+    - iDestruct "X" as (?) "X". iDestruct (observe is_nonnull with "X") as "#$".
+    - iDestruct (observe is_nonnull with "X") as "#$".
+  Qed.
+  #[global]
+  Instance blockR_nonnull {σ : genv} (p : ptr) n q:
+    (0 < n)%N -> Observe is_nonnull (blockR n q).
+  Proof.
+    iIntros (?) "Hb".
+    rewrite blockR_eq/blockR_def. (** TODO upstream *)
+    iDestruct "Hb" as "[_ Hb]".
+    destruct (N.to_nat n) eqn:?; [ lia | ] => /=.
+    iDestruct "Hb" as "[Hany _]".
+    rewrite o_sub_0; [ | by eauto].
+    rewrite _offsetR_id.
+    iDestruct (observe is_nonnull with "Hany") as "#$".
+  Qed.
+
+  #[global] Instance blockR_valid_ptr {σ} sz q : Observe validR (blockR sz q).
+  Proof.
+    rewrite blockR_eq/blockR_def.
+    destruct sz.
+    { iIntros "[#A _]".
+      rewrite o_sub_0; last by econstructor.
+      rewrite _offsetR_id. eauto. }
+    { iIntros "[_ X]".
+      simpl. destruct (Pos.to_nat p) eqn:?; first lia.
+      simpl. iDestruct "X" as "[X _]".
+      rewrite o_sub_0; last by econstructor. rewrite _offsetR_id.
+      iApply (observe with "X"). }
+  Qed.
+
+  #[global] Instance tblockR_valid_ptr {σ} ty q : Observe validR (tblockR ty q).
+  Proof.
+    rewrite /tblockR. case_match; refine _.
+    case_match; refine _.
+  Qed.
+
 End with_cpp.
 
 Typeclasses Opaque identityR.

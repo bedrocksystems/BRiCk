@@ -170,7 +170,7 @@ public:
 
     void VisitStmt(const Stmt* stmt, CoqPrinter& print, ClangPrinter& cprint,
                    const ASTContext&, OpaqueNames&) {
-        logging::fatal() << "while printing an expr, got a statement '"
+        logging::fatal() << "Error: while printing an expr, got a statement '"
                          << stmt->getStmtClassName() << " at "
                          << cprint.sourceRange(stmt->getSourceRange()) << "'\n";
         logging::die();
@@ -292,7 +292,7 @@ public:
             CASE(PreInc, "<PreInc>")
 #undef CASE
         default:
-            logging::unsupported() << "unsupported unary operator\n";
+            logging::unsupported() << "Error: unsupported unary operator\n";
             print.output() << "(Uother \"" << UnaryOperator::getOpcodeStr(op)
                            << "\")";
             break;
@@ -349,12 +349,9 @@ public:
         print.ctor("Ecall");
         cprint.printExpr(expr->getCallee(), print, li);
         print.output() << fmt::line;
-        print.begin_list();
-        for (auto i : expr->arguments()) {
+        print.list(expr->arguments(), [&](auto print, auto i) {
             cprint.printExprAndValCat(i, print, li);
-            print.cons();
-        }
-        print.end_list();
+        });
         done(expr, print, cprint);
     }
 
@@ -484,14 +481,14 @@ public:
             }
         } else if (isa<CXXDynamicCastExpr>(expr)) {
             using namespace logging;
-            fatal() << "dynamic casts are not supported (at "
+            fatal() << "Error: dynamic casts are not supported (at "
                     << expr->getSourceRange().printToString(
                            ctxt.getSourceManager())
                     << ")\n";
             die();
         } else {
             using namespace logging;
-            fatal() << "unknown named cast" << expr->getCastKindName()
+            fatal() << "Error: unknown named cast" << expr->getCastKindName()
                     << " (at "
                     << expr->getSourceRange().printToString(
                            ctxt.getSourceManager())
@@ -633,12 +630,10 @@ public:
         print.ctor("Econstructor");
         // print.output() << expr->isElidable() << fmt::nbsp;
         cprint.printGlobalName(expr->getConstructor(), print);
-        print.output() << fmt::nbsp << fmt::lparen;
-        for (auto i : expr->arguments()) {
+        print.output() << fmt::nbsp;
+        print.list(expr->arguments(), [&](auto print, auto i) {
             cprint.printExprAndValCat(i, print, li);
-            print.cons();
-        }
-        print.end_list();
+        });
         //print.output() << fmt::nbsp << expr->isElidable();
         done(expr, print, cprint);
     }
@@ -774,12 +769,9 @@ public:
                            OpaqueNames& li) {
         print.ctor("Einitlist");
 
-        print.begin_list();
-        for (auto i : expr->inits()) {
+        print.list(expr->inits(), [&](auto print, auto i) {
             cprint.printExpr(i, print, li);
-            print.cons();
-        }
-        print.end_list() << fmt::nbsp;
+        }) << fmt::nbsp;
 
         if (expr->getArrayFiller()) {
             print.some();
@@ -835,7 +827,8 @@ public:
             done(expr, print, cprint);
         } else {
             using namespace logging;
-            fatal() << "unsupported expression `UnaryExprOrTypeTraitExpr` at "
+            fatal() << "Error: unsupported expression "
+                       "`UnaryExprOrTypeTraitExpr` at "
                     << expr->getSourceRange().printToString(
                            ctxt.getSourceManager())
                     << "\n";
@@ -866,14 +859,9 @@ public:
             print.none();
         }
 
-        print.begin_list();
-        for (auto arg : expr->placement_arguments()) {
+        print.list(expr->placement_arguments(), [&](auto print, auto arg) {
             cprint.printExprAndValCat(arg, print, li);
-            print.cons();
-        }
-        print.end_list();
-
-        print.output() << fmt::nbsp;
+        }) << fmt::nbsp;
 
         cprint.printQualType(expr->getAllocatedType(), print);
 
@@ -909,7 +897,7 @@ public:
                             ClangPrinter& cprint, const ASTContext&,
                             OpaqueNames& li) {
         print.ctor("Edelete");
-        print.output() << (expr->isArrayForm() ? "true" : "false") << fmt::nbsp;
+        print.output() << fmt::BOOL(expr->isArrayForm()) << fmt::nbsp;
 
         if (expr->getOperatorDelete()) {
             print.some();
@@ -970,7 +958,7 @@ public:
 	  error() << "mangling number = " << expr->getManglingNumber() << "\n";
 #endif
 #if 0
-        logging::debug() << "got a 'MaterializeTemporaryExpr' at "
+        logging::fatal() << "Error: got a 'MaterializeTemporaryExpr' at "
                          << expr->getSourceRange().printToString(
                                 ctxt.getSourceManager())
                          << "\n";
@@ -978,11 +966,12 @@ public:
 #endif
         if (expr->getExtendingDecl() != nullptr) {
             using namespace logging;
-            fatal()
-                << "binding a reference to a temporary is not (yet?) supported "
-                   "(scope extrusion)"
-                << expr->getSourceRange().printToString(ctxt.getSourceManager())
-                << "\n";
+            fatal() << "Error: binding a reference to a temporary is not "
+                       "(yet?) supported "
+                       "(scope extrusion)"
+                    << expr->getSourceRange().printToString(
+                           ctxt.getSourceManager())
+                    << "\n";
             die();
         }
 
@@ -1014,12 +1003,9 @@ public:
         cprint.printGlobalName(expr->getConstructor(), print);
         print.output() << fmt::nbsp;
 
-        print.begin_list();
-        for (auto i : expr->arguments()) {
+        print.list(expr->arguments(), [&](auto print, auto i) {
             cprint.printExprAndValCat(i, print, li);
-            print.cons();
-        }
-        print.end_list();
+        });
 
         //print.output() << fmt::nbsp << expr->isElidable();
 
@@ -1174,8 +1160,8 @@ ClangPrinter::printExpr(const clang::Expr* expr, CoqPrinter& print) {
     PrintExpr::printer.Visit(expr, print, *this, *this->context_, li);
     if (depth != print.output().get_depth()) {
         using namespace logging;
-        fatal() << "indentation bug in during: " << expr->getStmtClassName()
-                << "\n";
+        fatal() << "Error: BUG indentation bug in during: "
+                << expr->getStmtClassName() << "\n";
         assert(false);
     }
 }
@@ -1187,8 +1173,8 @@ ClangPrinter::printExpr(const clang::Expr* expr, CoqPrinter& print,
     PrintExpr::printer.Visit(expr, print, *this, *this->context_, li);
     if (depth != print.output().get_depth()) {
         using namespace logging;
-        fatal() << "indentation bug in during: " << expr->getStmtClassName()
-                << "\n";
+        fatal() << "Error: BUG indentation bug in during: "
+                << expr->getStmtClassName() << "\n";
         assert(false);
     }
 }

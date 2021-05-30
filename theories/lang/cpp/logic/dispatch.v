@@ -6,6 +6,7 @@
 (**
  * reflecting virtual function dispatch in the logic.
  *)
+Require Import iris.proofmode.tactics.
 Require Import bedrock.lang.cpp.ast.
 Require Import bedrock.lang.cpp.semantics.
 From bedrock.lang.cpp.logic Require Import pred heap_pred path_pred.
@@ -48,7 +49,7 @@ Section with_cpp.
    *)
   Definition resolve_virtual {σ : genv}
              (this : ptr) (cls : globname) (f : obj_name)
-             (Q : forall (faddr this_addr : ptr), mpred) : mpred :=
+             (Q : forall (faddr : ptr) (cls_type : globname) (this_addr : ptr), mpred) : mpred :=
     Exists σ' mdc (pf : class_derives σ' mdc cls),
         (* ^ we quantify over another program environment because class
              extension is open, the caller does not need to know the target
@@ -57,15 +58,30 @@ Section with_cpp.
              not exist in [σ].
          *)
     (Exists q, this |-> identityR (σ:=σ') cls (Some mdc) q  **
-                 [| class_compatible σ.(genv_tu) σ'.(genv_tu) cls |] ** ltrue) //\\
+                 [| class_compatible σ.(genv_tu) σ'.(genv_tu) cls |] ** True) //\\
               (* ^ the [class_compatible σ' mdc cls] ensures that the virtual
                    tables the [cls] class are compatible between the (possibly
                    different) translation units.
                *)
       match get_impl pf f with
-      | Some (fa, off) => Q fa (_offset_ptr this off)
+      | Some (fa, off) => Q fa mdc (_offset_ptr this off)
       | None => (* the function wasn't found or the implemenation was pure virtual *)
         False
       end.
+
+  Lemma resolve_virtual_frame:
+    ∀ {σ : genv} (cls : globname) (this : ptr) (Q Q' : ptr → globname → ptr → mpredI) (s : Struct),
+      Forall (a : ptr) (b : globname) (c : ptr), Q a b c -* Q' a b c
+      |-- resolve_virtual this cls (s_dtor s) Q -* resolve_virtual this cls (s_dtor s) Q'.
+  Proof.
+    intros.
+    rewrite /resolve_virtual.
+    iIntros "X Y". iDestruct "Y" as (a b c) "Y".
+    iExists a; iExists b; iExists c.
+    iSplit.
+    { iDestruct "Y" as "[Y _]". eauto. }
+    { iDestruct "Y" as "[_ Y]". case_match; eauto.
+      destruct p. iApply "X"; eauto. }
+  Qed.
 
 End with_cpp.

@@ -15,6 +15,7 @@ Require Import iris.proofmode.tactics.
 From bedrock.lang.cpp Require Import ast semantics.
 From bedrock.lang.cpp.logic Require Import
      pred path_pred heap_pred destroy wp initializers call.
+Require Import bedrock.lang.bi.errors.
 Require Import bedrock.lang.cpp.heap_notations.
 
 Module Type Stmt.
@@ -32,7 +33,6 @@ Module Type Stmt.
     Local Notation wpe := (wpe (resolve:=resolve) M ti).
     Local Notation fspec := (fspec ti).
     Local Notation destruct_val := (destruct_val (σ:=resolve) ti) (only parsing).
-    Local Notation destruct_obj := (destruct_obj (σ:=resolve) ti) (only parsing).
 
     Local Notation glob_def := (glob_def resolve) (only parsing).
     Local Notation size_of := (@size_of resolve) (only parsing).
@@ -60,7 +60,7 @@ Module Type Stmt.
                 * so we need to re-construct this information from the value
                 * category of the expression.
                 *)
-               Forall ra : ptr, ra |-> uninitR (erase_qualifiers rty) 1 -*
+               Forall ra : ptr, ra |-> tblockR (erase_qualifiers rty) 1 -*
                wp_init ρ (erase_qualifiers rty) ra (not_mine e) (fun free => free ** Q (ReturnVal (Vptr ra)))
              else
                wp_prval ρ e (fun v free => free ** Q (ReturnVal v))
@@ -80,19 +80,19 @@ Module Type Stmt.
         |> wpe ρ vc e (fun _ free => free ** Q Normal)
         |-- wp ρ (Sexpr vc e) Q.
 
-    (* This definition performs allocation of local variables
+    (* This definition performs allocation of local variables.
+     *
      * note that references do not allocate anything in the semantics, they are
      * just aliases.
+     *
+     * TODO there is a lot of overlap between this and [wp_initialize] (which does initialization
+     * of aggregate fields).
      *)
     Fixpoint wp_decl (ρ : region) (x : ident) (ty : type) (init : option Expr) (dtor : option obj_name)
-               (k : region -> KpredI -> mpred) (Q : KpredI)
-               (* ^ Q is the continuation for after the declaration
-                *   goes out of scope.
-                * ^ k is the rest of the declaration
-                *)
+               (k : region -> (mpred -> mpred) -> mpredI)
     : mpred :=
       match ty with
-      | Tvoid => lfalse
+      | Tvoid => False
 
         (* primitives *)
       | Tpointer _
@@ -102,7 +102,7 @@ Module Type Stmt.
         Forall a : ptr,
         let continue :=
             k (Rbind x a ρ)
-              (Kfree (a |-> anyR (erase_qualifiers ty) 1) Q)
+              (fun P => a |-> anyR (erase_qualifiers ty) 1 ** P)
         in
         match init with
         | None =>
@@ -113,26 +113,22 @@ Module Type Stmt.
         end
 
       | Tnamed cls =>
-        Forall a : ptr, a |-> uninitR ty 1 (* TODO backwards compat [tblockR (σ:=resolve) ty] *) -*
+        Forall a : ptr, a |-> tblockR (σ:=resolve) ty 1 -*
                   let destroy P :=
-                      destruct_val ty a dtor (a |-> anyR ty 1 (* TODO backwards compat [tblockR ty] *) ** P)
+                      destruct_val false ty a dtor (a |-> tblockR (erase_qualifiers ty) 1 ** P)
                   in
-                  let continue :=
-                      k (Rbind x a ρ) (Kat_exit destroy Q)
-                  in
+                  let continue := k (Rbind x a ρ) destroy in
                   match init with
                   | None => continue
                   | Some init =>
                     wp_init ρ ty a (not_mine init) (fun free => free ** continue)
                   end
       | Tarray ty' N =>
-        Forall a : ptr, a |-> uninitR ty 1 (* TODO backwards compat [tblockR (σ:=resolve) ty] *) -*
+        Forall a : ptr, a |-> tblockR (σ:=resolve) ty 1 -*
                   let destroy P :=
-                      destruct_val ty a dtor (a |-> anyR ty 1 (* TODO backwards compat [tblockR (σ:=resolve) ty] *) ** P)
+                      destruct_val false ty a dtor (a |-> tblockR (σ:=resolve) (erase_qualifiers ty) 1 ** P)
                   in
-                  let continue :=
-                      k (Rbind x a ρ) (Kat_exit destroy Q)
-                  in
+                  let continue := k (Rbind x a ρ) destroy in
                   match init with
                   | None => continue
                   | Some init =>
@@ -143,22 +139,21 @@ Module Type Stmt.
       | Trv_reference t
       | Treference t =>
         match init with
-        | None => False
+        | None => ERROR "uninitialized reference"
           (* ^ references must be initialized *)
         | Some init =>
           (* i should use the type here *)
           wp_lval ρ init (fun p free =>
-             (free ** k (Rbind x p ρ) Q))
+             (free ** k (Rbind x p ρ) (fun P => P)))
         end
 
-      | Tfunction _ _ => False (* not supported *)
+      | Tfunction _ _ => UNSUPPORTED "local function declarations are not supported" (* not supported *)
 
-      | Tqualified _ ty => wp_decl ρ x ty init dtor k Q
+      | Tqualified _ ty => wp_decl ρ x ty init dtor k
       | Tnullptr =>
         Forall a : ptr,
         let continue :=
-            k (Rbind x a ρ)
-              (Kfree (a |-> anyR Tnullptr 1) Q)
+            k (Rbind x a ρ) (fun P => a |-> anyR Tnullptr 1 ** P)
         in
         match init with
         | None =>
@@ -167,77 +162,176 @@ Module Type Stmt.
           wp_prval ρ init (fun v free => free **
              (a |-> primR (erase_qualifiers ty) 1 v -* continue))
         end
-      | Tfloat _ => False (* not supportd *)
-      | Tarch _ _ => False (* not supported *)
+      | Tfloat _ => UNSUPPORTED "floating point declarations" (* not supportd *)
+      | Tarch _ _ => UNSUPPORTED "architecure specific declarations" (* not supported *)
       end.
 
-    Lemma wp_decl_frame : forall x ρ m (Q Q' : Kpred) init ty dtor,
-        Forall rt : rt_biIndex, Q rt -* Q' rt
-        |-- (Forall a (b b' : Kpred), (Forall rt, b rt -* b' rt) -* m a b -* m a b') -*
-            wp_decl ρ x ty init dtor m Q -* wp_decl ρ x ty init dtor m Q'.
+    Lemma decl_prim:
+         ∀ (x : ident) (ρ : region) (init : option Expr) (ty : type)
+           (k k' : region → (mpred → mpred) → mpred),
+             Forall (a : region) (b b' : mpred → mpredI), (Forall rt rt' : mpred, (rt -* rt') -* b rt -* b' rt') -* k a b -* k' a b'
+         |-- (Forall a : ptr,
+                         match init with
+                         | Some init0 =>
+                           wp_prval ρ init0
+                                    (λ (v : val) (free : FreeTemps),
+                                     free **
+                                          (a |-> heap_pred.primR (erase_qualifiers ty) 1 v -*
+                                             k (Rbind x a ρ) (λ P : mpred, a |-> heap_pred.anyR (erase_qualifiers ty) 1 ** P)))
+                         | None =>
+                           a |-> heap_pred.uninitR (erase_qualifiers ty) 1 -*
+                             k (Rbind x a ρ) (λ P : mpred, a |-> heap_pred.anyR (erase_qualifiers ty) 1 ** P)
+                         end) -*
+         (Forall a : ptr,
+                     match init with
+                     | Some init0 =>
+                       wp_prval ρ init0
+                                (λ (v : val) (free : FreeTemps),
+                                 free **
+                                      (a |-> heap_pred.primR (erase_qualifiers ty) 1 v -*
+                                         k' (Rbind x a ρ) (λ P : mpred, a |-> heap_pred.anyR (erase_qualifiers ty) 1 ** P)))
+                     | None =>
+                       a |-> heap_pred.uninitR (erase_qualifiers ty) 1 -*
+                         k' (Rbind x a ρ) (λ P : mpred, a |-> heap_pred.anyR (erase_qualifiers ty) 1 ** P)
+                     end).
     Proof.
-      (* TODO(gmm) postponing since I am revising initialization semantics *)
-    Admitted.
-
-    Fixpoint wp_decls (ρ : region) (ds : list VarDecl)
-             (k : region -> Kpred -> mpred) (Q : Kpred) : mpred :=
-      match ds with
-      | nil => k ρ Q
-      | {| vd_name := x ; vd_type := ty ; vd_init := init ; vd_dtor := dtor |} :: ds =>
-        |> wp_decl ρ x ty init dtor (fun ρ => wp_decls ρ ds k) Q
-      end.
-
-    Lemma wp_decls_frame : forall ds ρ m (Q Q' : Kpred),
-        (Forall rt : rt_biIndex, Q rt -* Q' rt)
-        |-- (Forall a (b b' : Kpred), (Forall rt, b rt -* b' rt) -* m a b -* m a b') -*
-            wp_decls ρ ds m Q -* wp_decls ρ ds m Q'.
-    Proof.
-      clear. induction ds; simpl; intros.
-      - iIntros "a b c".
-        iApply ("b" with "a"); eauto.
-      - iIntros "a b c". iNext.
-        iRevert "c". iApply (wp_decl_frame with "a").
-        iIntros (???) "a". iApply (IHds with "a"). eauto.
+      destruct init; intros.
+      { iIntros "K h" (a); iSpecialize ("h" $! a); iRevert "h"; iApply wp_prval_frame; first by reflexivity.
+        iIntros (v f) "[$ h] h'"; iDestruct ("h" with "h'") as "h"; iRevert "h"; iApply "K".
+        iIntros (??) "h [$ x]"; iApply "h"; auto. }
+      { iIntros "K h" (a); iSpecialize ("h" $! a); iRevert "h".
+        iIntros "A B".  iDestruct ("A" with "B") as "A"; iRevert "A"; iApply "K".
+        iIntros (??) "X [$ a]"; iApply "X"; eauto. }
     Qed.
 
-    (* note(gmm): this rule is non-compositional because
-     * wp_decls requires the rest of the block computation
-     *)
+    Lemma wp_decl_frame : forall x ρ init ty dtor (k k' : region -> (mpred -> mpred) -> mpred),
+        Forall a (b b' : _), (Forall rt rt' : mpred, (rt -* rt') -* b rt -* b' rt') -* k a b -* k' a b'
+        |-- wp_decl ρ x ty init dtor k -* wp_decl ρ x ty init dtor k'.
+    Proof.
+      induction ty using type_ind'; simpl;
+        try solve [ intros; apply decl_prim with (ty:=Tptr ty)
+                  | intros; apply decl_prim with (ty:=Tint _ _)
+                  | intros; apply decl_prim with (ty:=Tbool)
+                  | intros; apply decl_prim with (ty:=Tmember_pointer _ _)
+                  | intros; iIntros "? []"
+                  | intros; iIntros "? $"
+                  ].
+      { destruct init; intros.
+        { iIntros "X"; iApply wp_lval_frame; first reflexivity.
+          iIntros (??) "[$ k]"; iRevert "k"; iApply "X".
+          iIntros (??) "$". }
+        { iIntros "? $". } }
+       { destruct init; intros.
+        { iIntros "X"; iApply wp_lval_frame; first reflexivity.
+          iIntros (??) "[$ k]"; iRevert "k"; iApply "X".
+          iIntros (??) "$". }
+        { iIntros "? $". } }
+       { destruct init; intros.
+         { iIntros "X Y" (?) "a"; iDestruct ("Y" with "a") as "Y"; iRevert "Y".
+           iApply wp_init_frame; first reflexivity.
+           iIntros (?) "[$ k]"; iRevert "k"; iApply "X".
+           clear. iStopProof. induction (rev (seq 0 (N.to_nat sz))); simpl.
+           { iIntros "_" (??) "X [$ y]"; iApply "X"; eauto. }
+           { iIntros "_" (??) "X [$ y]"; iRevert "y".
+             iApply destruct_val_frame; by iApply IHl. } }
+         { iIntros "X Y" (?) "a"; iDestruct ("Y" with "a") as "Y"; iRevert "Y".
+           iApply "X".
+           clear. iStopProof. induction (rev (seq 0 (N.to_nat sz))); simpl.
+           { iIntros "_" (??) "X [$ y]"; iApply "X"; eauto. }
+           { iIntros "_" (??) "X [$ y]"; iRevert "y".
+             iApply destruct_val_frame; by iApply IHl. } } }
+       { intros. iIntros "X y" (a) "z".
+         iDestruct ("y" with "z") as "y"; iRevert "y".
+         destruct init.
+         { iApply wp_init_frame; first reflexivity.
+           iIntros (?) "[$ x]"; iRevert "x"; iApply "X".
+           case_match; last iIntros (??) "? []".
+           case_match; try iIntros (??) "? []".
+           { iIntros (??) "k x !>".
+             iRevert "x"; iApply mspec_frame.
+             iIntros (_) "[? ?]"; iFrame; by iApply "k". }
+           { iIntros (??) "k x !>".
+             iRevert "x"; iApply mspec_frame.
+             iIntros (_) "[? ?]"; iFrame; by iApply "k". } }
+         { iApply "X".
+           case_match; last iIntros (??) "? []".
+           case_match; try iIntros (??) "? []".
+           { iIntros (??) "k x !>".
+             iRevert "x"; iApply mspec_frame.
+             iIntros (_) "[? ?]"; iFrame; by iApply "k". }
+           { iIntros (??) "k x !>".
+             iRevert "x"; iApply mspec_frame.
+             iIntros (_) "[? ?]"; iFrame; by iApply "k". } } }
+       { intros. iIntros "X"; iApply IHty; eauto. }
+       { intros; destruct init; iIntros "k Y" (a).
+         { iDestruct ("Y" $! a) as "Y"; iRevert "Y".
+           iApply wp_prval_frame; first reflexivity.
+           iIntros (??) "[$ z] x"; iDestruct ("z" with "x") as "z"; iRevert "z".
+           iApply "k". iIntros (??) "x [$ y]"; iApply "x"; eauto. }
+         { iDestruct ("Y" $! a) as "Y"; iRevert "Y".
+           iIntros "x y"; iDestruct ("x" with "y") as "x"; iRevert "x".
+           iApply "k". iIntros (??) "x [$ y]"; iApply "x"; eauto. } }
+    Qed.
+
+    Fixpoint wp_decls (ρ : region) (ds : list VarDecl)
+             (k : region -> (mpred -> mpred) -> mpred) : mpred :=
+      match ds with
+      | nil => k ρ (fun P => P)%I
+      | {| vd_name := x ; vd_type := ty ; vd_init := init ; vd_dtor := dtor |} :: ds =>
+        |> wp_decl ρ x ty init dtor (fun ρ free => wp_decls ρ ds (fun ρ free' => k ρ (fun P => free' (free P))))
+      end.
+
+    Lemma wp_decls_frame : forall ds ρ (Q Q' : region -> (mpred -> mpred) -> mpred),
+        Forall a (b b' : _), (Forall rt rt' : mpred, (rt -* rt') -* b rt -* b' rt') -* Q a b -* Q' a b'
+        |-- wp_decls ρ ds Q -* wp_decls ρ ds Q'.
+    Proof.
+      induction ds; simpl; intros.
+      - iIntros "a"; iApply "a". iIntros (??) "$".
+      - iIntros "a b"; iNext; iRevert "b".
+        iApply wp_decl_frame.
+        iIntros (???) "b". iApply IHds. iIntros (???) "X". iApply "a".
+        iIntros (??) "h". iApply "X". iApply "b". eauto.
+    Qed.
+
     Fixpoint wp_block (ρ : region) (ss : list Stmt) (Q : Kpred) : mpred :=
       match ss with
-      | nil => Q Normal
+      | nil => |> Q Normal
       | Sdecl ds :: ss =>
-        wp_decls ρ ds (fun ρ => wp_block ρ ss) Q
+        wp_decls ρ ds (fun ρ free => |> wp_block ρ ss (Kat_exit free Q))
       | s :: ss =>
         |> wp ρ s (Kseq (wp_block ρ ss) Q)
       end.
+
+    Lemma Kat_exit_frame b b' Q Q' :
+      (Forall rt, Q rt -* Q' rt)
+      |-- (Forall f f', (f -* f') -* b f -* b' f') -*
+          Forall rt, Kat_exit b Q rt -* Kat_exit b' Q' rt.
+    Proof.
+      iIntros "a b" (rt); destruct rt => /=; iApply "b"; iApply "a".
+    Qed.
 
     Lemma wp_block_frame : forall body ρ (Q Q' : Kpred),
         (Forall rt, Q rt -* Q' rt) |-- wp_block ρ body Q -* wp_block ρ body Q'.
     Proof.
       clear.
       induction body; simpl; intros.
-      - iIntros "A"; iApply "A".
+      - iIntros "a b"; iNext; iApply "a"; eauto.
       - assert
-          (Forall rt, Q rt -* Q' rt |--
-                        (Forall ds, wp_decls ρ ds (fun ρ' => wp_block ρ' body) Q -*
-                                    wp_decls ρ ds (fun ρ' => wp_block ρ' body) Q') //\\
-                        (|> wp ρ a (Kseq (wp_block ρ body) Q) -*
-                            |> wp ρ a (Kseq (wp_block ρ body) Q'))).
+          (Forall rt, Q rt -* Q' rt
+           |-- (Forall ds, wp_decls ρ ds (λ (ρ0 : region) (free : mpred → mpred), |> wp_block ρ0 body (Kat_exit free Q)) -*
+                           wp_decls ρ ds (λ (ρ0 : region) (free : mpred → mpred), |> wp_block ρ0 body (Kat_exit free Q'))) //\\
+               ((|> wp ρ a (Kseq (wp_block ρ body) Q)) -* |> wp ρ a (Kseq (wp_block ρ body) Q'))).
         { iIntros "X"; iSplit.
           - iIntros (ds).
-            iDestruct (wp_decls_frame ds ρ (fun a b => wp_block a body b)
-                         with "X") as "X".
-            iApply "X".
-            iIntros (???) "X". by iApply IHbody.
-          - iIntros "Z". iNext. iRevert "Z".
-            iApply wp_frame =>//.
-            iIntros (rt) => /=. destruct rt; eauto.
-              by iApply IHbody. }
-        iIntros "X".
-        iDestruct (H with "X") as "X".
-        destruct a; try solve [ iDestruct "X" as "[_ $]" ].
-        iDestruct "X" as "[X _]". iApply "X".
+            iApply wp_decls_frame. iIntros (???) "x y"; iNext.
+            iRevert "y"; iApply IHbody.
+            iApply (Kat_exit_frame with "X"). eauto.
+          - iIntros "x"; iNext; iRevert "x"; iApply wp_frame; first by reflexivity.
+            iIntros (rt); destruct rt =>/=; eauto.
+            iApply IHbody. eauto. }
+        { iIntros "x"; iDestruct (H with "x") as "x".
+          destruct a; try iDestruct "x" as "[_ $]".
+          iDestruct "x" as "[x _]". iApply "x". }
     Qed.
 
     Axiom wp_seq : forall ρ Q ss,

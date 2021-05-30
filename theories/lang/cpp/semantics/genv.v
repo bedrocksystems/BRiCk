@@ -93,14 +93,31 @@ Qed.
 Instance genv_compat_flip_proper : Proper (sub_module ==> flip genv_leq ==> flip impl) genv_compat.
 Proof. solve_proper. Qed.
 
+Lemma module_le_genv_tu_models X σ :
+  module_le X (genv_tu σ) ->
+  X ⊧ σ.
+Proof.
+  generalize (module_le_sound X (genv_tu σ)).
+  unfold Is_true in *.
+  case_match; try contradiction. intros.
+  apply Build_genv_compat. assumption.
+Qed.
+
+(** TODO deprecate this in favor of inlining it *)
 Definition glob_def (g : genv) (gn : globname) : option GlobDecl :=
   g.(genv_tu).(globals) !! gn.
 
 (* Supersedes glob_def_submodule *)
-Lemma glob_def_genv_compat {σ gn tu} {Hσ : tu ⊧ σ} st
+Lemma glob_def_genv_compat_struct {σ gn tu} {Hσ : tu ⊧ σ} st
   (Hl : tu.(globals) !! gn = Some (Gstruct st)) :
   glob_def σ gn = Some (Gstruct st).
 Proof. move: Hσ Hl => /genv_compat_submodule. apply: sub_module_preserves_gstruct. Qed.
+
+Lemma glob_def_genv_compat_union {σ gn tu} {Hσ : tu ⊧ σ} st
+  (Hl : tu.(globals) !! gn = Some (Gunion st)) :
+  glob_def σ gn = Some (Gunion st).
+Proof. move: Hσ Hl => /genv_compat_submodule. apply: sub_module_preserves_gunion. Qed.
+
 
 (* XXX rename/deprecate? *)
 Theorem subModuleModels a b σ : b ⊧ σ -> sub_module a b -> a ⊧ σ.
@@ -114,24 +131,24 @@ Section type_of_field.
     match σ.(genv_tu) !! cls with
     | None => None
     | Some (Gstruct st) =>
-      match List.find (fun '(x,_,_,_) => bool_decide (f = x)) st.(s_fields) with
-      | Some (_, ty, _, _) => Some ty
+      match List.find (fun m => bool_decide (f = m.(mem_name))) st.(s_fields) with
+      | Some m => Some m.(mem_type)
       | _ => None
       end
     | Some (Gunion u) =>
-      match List.find (fun '(x,_,_,_) => bool_decide (f = x)) u.(u_fields) with
-      | Some (_, ty, _, _) => Some ty
+      match List.find (fun m => bool_decide (f = m.(mem_name))) u.(u_fields) with
+      | Some m => Some m.(mem_type)
       | _ => None
       end
     | _ => None
     end.
 
-  Definition type_of_path (from : globname) (p : FieldOrBase) : option type :=
+  Definition type_of_path (from : globname) (p : InitPath) : option type :=
     match p with
-    | This => Some (Tnamed from)
-    | Field fn => type_of_field from fn
-    | Base gn => Some (Tnamed gn)
-    | Indirect ls i =>
+    | InitThis => Some (Tnamed from)
+    | InitField fn => type_of_field from fn
+    | InitBase gn => Some (Tnamed gn)
+    | InitIndirect ls i =>
       (* this is a little bit awkward because we assume the correctness of
          the type annotations in the path
        *)

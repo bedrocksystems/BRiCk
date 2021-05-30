@@ -55,7 +55,7 @@ Fixpoint size_of (resolve : genv) (t : type) : option N :=
   | Tnamed nm => glob_def resolve nm ≫= GlobDecl_size_of
   | Tfunction _ _ => None
   | Tbool => Some 1
-  | Tmember_pointer _ _ => Some (pointer_size resolve)
+  | Tmember_pointer _ _ => None (* TODO these are not well supported right now *)
   | Tqualified _ t => size_of resolve t
   | Tnullptr => Some (pointer_size resolve)
   | Tfloat sz => Some (bytesN sz)
@@ -92,10 +92,24 @@ Proof. reflexivity. Qed.
 Theorem size_of_qualified : forall {c : genv} t q,
     @size_of c t = @size_of c (Tqualified q t).
 Proof. reflexivity. Qed.
-Theorem size_of_array : forall {c : genv} t n sz,
+Theorem size_of_array_0 : forall {c : genv} t sz,
     @size_of c t = Some sz ->
-    @size_of c (Tarray t n) = Some (n * sz)%N.
-Proof. simpl; intros. rewrite H. reflexivity. Qed.
+    @size_of c (Tarray t 0) = Some 0%N.
+Proof. intros; simpl. by rewrite H. Qed.
+
+Theorem size_of_array_pos : forall {c : genv} t n sz,
+    (0 < n)%N ->
+    @size_of c t = Some sz <-> @size_of c (Tarray t n) = Some (n * sz)%N.
+Proof.
+  simpl. intros. destruct (size_of c t) => /=; split; try congruence.
+  inversion 1. f_equal. apply N.mul_cancel_l in H2.  auto. lia.
+Qed.
+
+Theorem size_of_array : forall {c : genv} t n sz,
+    @size_of c t = Some sz -> @size_of c (Tarray t n) = Some (n * sz)%N.
+Proof.
+  simpl. intros. destruct (size_of c t) => /=; try congruence.
+Qed.
 
 Lemma size_of_Qmut : forall {c} t,
     @size_of c t = @size_of c (Qmut t).
@@ -111,7 +125,7 @@ Lemma size_of_genv_compat tu σ gn st
   (Hσ : tu ⊧ σ)
   (Hl : tu.(globals) !! gn = Some (Gstruct st)) :
   size_of σ (Tnamed gn) = GlobDecl_size_of (Gstruct st).
-Proof. by rewrite /= (glob_def_genv_compat st Hl). Qed.
+Proof. by rewrite /= (glob_def_genv_compat_struct st Hl). Qed.
 
 Fixpoint find_field {T} (f : ident) (fs : list (ident * T)) : option T :=
   match fs with
@@ -130,9 +144,9 @@ Local Open Scope Z_scope.
 Definition offset_of (resolve : genv) (t : globname) (f : ident) : option Z :=
   match glob_def resolve t with
   | Some (Gstruct s) =>
-    find_field f (List.map (fun '(a,_,_,c) => (a,c.(li_offset) / 8)) s.(s_fields))
+    find_field f (List.map (fun m => (m.(mem_name),m.(mem_layout).(li_offset) / 8)) s.(s_fields))
   | Some (Gunion u) =>
-    find_field f (List.map (fun '(a,_,_,c) => (a,c.(li_offset) / 8)) u.(u_fields))
+    find_field f (List.map (fun m => (m.(mem_name),m.(mem_layout).(li_offset) / 8)) u.(u_fields))
   | _ => None
   end.
 
@@ -153,6 +167,8 @@ Axiom align_of_size_of : forall {σ : genv} (t : type) sz,
     exists al, align_of (resolve:=σ) t = Some al /\
           (* size is a multiple of alignment *)
           (sz mod al = 0)%N.
+Axiom align_of_array : forall {σ : genv} (ty : type) n,
+    align_of (Tarray ty n) = align_of ty.
 
 Axiom Proper_align_of : Proper (genv_leq ==> eq ==> Roption_leq eq) (@align_of).
 Global Existing Instance Proper_align_of.

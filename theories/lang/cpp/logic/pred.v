@@ -927,6 +927,27 @@ Section with_cpp.
     Observe [| is_Some (size_of σ ty) |] (type_ptr ty p).
   Proof. rewrite type_ptr_size. apply _. Qed.
 
+  #[global] Instance valid_ptr_sub_0 (p : ptr) (ty : type) :
+    is_Some (size_of _ ty) ->
+    Observe (valid_ptr (p .., o_sub σ ty 0)) (valid_ptr p).
+  Proof. intros. rewrite o_sub_0 // offset_ptr_id. refine _. Qed.
+  #[global] Instance type_ptr_sub_0 (p : ptr) (ty : type) :
+    is_Some (size_of _ ty) ->
+    Observe (valid_ptr (p .., o_sub σ ty 0)) (type_ptr ty p).
+  Proof.
+    intros. by rewrite type_ptr_valid; apply valid_ptr_sub_0.
+  Qed.
+  #[global] Instance type_ptr_valid_ptr_next (p : ptr) (ty : type) (m n : Z) :
+    (m = n + 1)%Z ->
+    Observe (valid_ptr (p .., o_sub σ ty m)) (type_ptr ty (p .., o_sub σ ty n)).
+  Proof.
+    intros; subst.
+    iIntros "X".
+    iDestruct (observe (valid_ptr (p .., o_sub _ _ _ .., o_sub _ _ _)) with "X") as "z".
+    apply observe_type_ptr_valid_plus_one. refine _.
+    by rewrite o_sub_sub.
+  Qed.
+
   Lemma same_alloc_refl p : valid_ptr p ⊢ [| same_alloc p p |].
   Proof.
     rewrite valid_ptr_alloc_id same_alloc_iff. iIntros "!%". case; naive_solver.
