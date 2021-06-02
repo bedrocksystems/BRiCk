@@ -8,6 +8,8 @@
 -arg -w -arg -custom-entry-overridden
 # Warns about correct usage:
 -arg -w -arg -ssr-search-moved
+# Turn warning on hints into error:
+-arg -w -arg +deprecated-hint-without-locality
 
 -Q theories bedrock
 
