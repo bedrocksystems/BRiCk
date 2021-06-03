@@ -934,6 +934,7 @@ Module Type Expr.
           Exists obj_ptr storage_ptr sz,
             [| v = Vptr obj_ptr |] **
             [| size_of destroyed_type = Some sz |] **
+            type_ptr ty obj_ptr **
             destruct_val true destroyed_type obj_ptr dtor   (* Calling destructor with object pointer *)
               (provides_storage storage_ptr obj_ptr ty ** (* Token for converting obj memory to storage memory *)
                obj_ptr |-> anyR destroyed_type 1 **    (* A trade; similar to end_provides_storage. *)
