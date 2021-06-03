@@ -18,5 +18,6 @@
    -w -ambiguous-paths
    ; Warns about correct usage:
    -w -ssr-search-moved
+   -w +deprecated-hint-without-locality
    )
 ))
