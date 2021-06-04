@@ -111,7 +111,8 @@ Module Type CPP_LOGIC (Import CC : CPP_LOGIC_CLASS) (Import INTF : FULL_INTF).
 
     (** Formalizes the notion of "provides storage",
     http://eel.is/c++draft/intro.object#def:provides_storage *)
-    Parameter provides_storage : ptr -> ptr -> type -> mpred.
+    Parameter provides_storage :
+      (*storage*)ptr -> (*object*)ptr -> (*storage*)type -> mpred.
 
     (**
     Typed points-to predicate. Fact [tptsto t q p v] asserts the following things:
