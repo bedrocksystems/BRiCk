@@ -136,6 +136,47 @@ Proof. intros n1 n2. lia. Qed.
 Instance Z_pred_inj : Inj (=) (=) Z.pred.
 Proof. intros n1 n2. lia. Qed.
 
+(* Z.max and other operations *)
+Lemma Z_max_add_distr_l (a b c : Z) :
+  (a `max` b + c = (a + c) `max` (b + c))%Z.
+Proof.
+  Local Open Scope Z_scope.
+  rewrite/Z.max.
+  rewrite [a + c] Z_add_comm.
+  rewrite [b + c] Z_add_comm.
+  rewrite Zcompare_plus_compat.
+  case_eq (a ?= b); lia.
+  Local Close Scope Z_scope.
+Qed.
+
+Lemma Z_max_add_distr_r (a b c : Z) :
+  (a + b `max` c = (a + b) `max` (a + c))%Z.
+Proof.
+  Local Open Scope Z_scope.
+  rewrite/Z.max.
+  rewrite Zcompare_plus_compat.
+  case_eq (b ?= c); lia.
+  Local Close Scope Z_scope.
+Qed.
+
+Lemma Z_pow_max_distr_r (a m n : Z) :
+  (1 < a)%Z → (0 <= m)%Z -> (0 <= n)%Z ->
+  (a ^ m `max` a ^ n)%Z = (a ^ (m `max` n))%Z.
+Proof.
+  move => apos n1nneg n2nneg.
+  case_eq (m <? n)%Z.
+  {
+    move => ?.
+    have ? : (a ^ m < a ^n)%Z
+      by apply Z.pow_lt_mono_r; lia.
+    rewrite !Zmax_right; lia.
+  }
+  move => ?.
+  have ? : (a ^ n <= a ^ m)%Z
+    by apply Z.pow_le_mono_r; lia.
+  rewrite !Zmax_left; lia.
+Qed.
+
 (** ** Alignment to powers of two *)
 
 (** Round [n] down to a multiple of [2^bits] *)
