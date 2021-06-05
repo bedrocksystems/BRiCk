@@ -34,7 +34,7 @@ Section with_cpp.
 
   Definition get_impl `(r : !class_derives σ mdc tcls) (f : obj_name)
     : option (ptr * offset) :=
-    let override := (dispatch σ r f).1 in
+    let override := dispatch σ r f in
     s ← override.(vimpl);
     p ← glob_addr σ s;
     mret (p, base_to_derived override.(derivation)).
