@@ -934,9 +934,12 @@ Module Type Expr.
           Exists obj_ptr storage_ptr sz,
             [| v = Vptr obj_ptr |] **
             [| size_of destroyed_type = Some sz |] **
+            type_ptr destroyed_type obj_ptr **
             destruct_val true destroyed_type obj_ptr dtor   (* Calling destructor with object pointer *)
               (provides_storage storage_ptr obj_ptr ty ** (* Token for converting obj memory to storage memory *)
-               obj_ptr |-> anyR destroyed_type 1 **    (* A trade; similar to end_provides_storage. *)
+               (* Transfer memory to underlying storage pointer; unlike in [end_provides_storage],
+                  this memory was pre-destructed by [destruct_val]. *)
+               obj_ptr |-> tblockR destroyed_type 1 **
                 (storage_ptr |-> blockR sz 1 -*
                   fspec delete_fn.2 ti (Vptr $ _global delete_fn.1) (* Calling deallocator with storage pointer *)
                     (Vptr storage_ptr :: nil) (fun v => Q v free))))
