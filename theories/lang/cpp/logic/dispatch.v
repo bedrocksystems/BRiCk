@@ -65,7 +65,7 @@ Section with_cpp.
                *)
       match get_impl pf f with
       | Some (fa, off) => Q fa mdc (_offset_ptr this off)
-      | None => (* the function wasn't found or the implemenation was pure virtual *)
+      | None => (* the function wasn't found or the implementation was pure virtual *)
         False
       end.
 
@@ -76,12 +76,11 @@ Section with_cpp.
   Proof.
     intros.
     rewrite /resolve_virtual.
-    iIntros "X Y". iDestruct "Y" as (a b c) "Y".
-    iExists a; iExists b; iExists c.
+    iIntros "X". iDestruct 1 as (a b c) "Y"; iExists a, b, c.
     iSplit.
-    { iDestruct "Y" as "[Y _]". eauto. }
-    { iDestruct "Y" as "[_ Y]". case_match; eauto.
-      destruct p. iApply "X"; eauto. }
+    { iDestruct "Y" as "[$ _]". }
+    { iDestruct "Y" as "[_ Y]". case_match => //.
+      destruct p. by iApply "X". }
   Qed.
 
 End with_cpp.

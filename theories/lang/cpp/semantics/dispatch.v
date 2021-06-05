@@ -5,7 +5,7 @@
  *)
 Require Import stdpp.decidable.
 Require Import bedrock.lang.cpp.ast.
-Require Import bedrock.lang.cpp.semantics.values.
+Require Import bedrock.lang.cpp.semantics.genv.
 Require Import bedrock.lang.cpp.semantics.subtyping.
 
 Record vhandle {σ : genv} : Set :=
@@ -20,8 +20,7 @@ Section dispatch.
 
   Definition list_get {T} (t : obj_name) (l : list (obj_name * T)) : option T :=
     match
-      List.find (fun '(t',_) =>
-                   if decide (t = t') then true else false) l
+      List.find (fun '(t',_) => bool_decide (t = t')) l
     with
     | None => None
     | Some (_, k) => Some k
@@ -39,11 +38,11 @@ Section dispatch.
       let '(result, cand) := dispatch d' final in
       match list_get cand st.(s_overrides) with
       | None => (result, cand)
-      | Some cand =>
-        ({| vimpl := list_get cand st.(s_overrides)
+      | Some cand' =>
+        ({| vimpl := list_get cand' st.(s_overrides)
           ; voverrider := mdc
           ; vfrom := from
-          ; derivation := d |}, cand)
+          ; derivation := d |}, cand')
       end
     end.
 
