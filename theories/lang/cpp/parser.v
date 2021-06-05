@@ -9,6 +9,11 @@ Require Export bedrock.lang.cpp.ast.
 Definition Nanon (ty : globname) : globname :=
   ("#" ++ ty)%bs.
 
+Definition pure_virt (x : obj_name) : obj_name * option obj_name :=
+  (x, None).
+Definition impl_virt (x : obj_name) : obj_name * option obj_name :=
+  (x, Some x).
+
 Definition Talias (name : globname) (underlying : type) : type :=
   underlying.
 
