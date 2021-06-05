@@ -912,7 +912,7 @@ Module Type Expr.
         the destructor would potentially do. *)
     Axiom end_provides_storage : forall storage_ptr obj_ptr aty sz,
        size_of aty = Some sz ->
-       provides_storage storage_ptr obj_ptr aty ** obj_ptr |-> tblockR aty 1
+       provides_storage storage_ptr obj_ptr aty ** obj_ptr |-> anyR aty 1
          ={⊤}=∗ (storage_ptr |-> blockR sz 1).
 
     (* delete
@@ -937,7 +937,7 @@ Module Type Expr.
             type_ptr destroyed_type obj_ptr **
             destruct_val true destroyed_type obj_ptr dtor   (* Calling destructor with object pointer *)
               (provides_storage storage_ptr obj_ptr ty ** (* Token for converting obj memory to storage memory *)
-               obj_ptr |-> tblockR destroyed_type 1 **    (* A trade; similar to end_provides_storage. *)
+               obj_ptr |-> anyR destroyed_type 1 **    (* A trade; similar to end_provides_storage. *)
                 (storage_ptr |-> blockR sz 1 -*
                   fspec delete_fn.2 ti (Vptr $ _global delete_fn.1) (* Calling deallocator with storage pointer *)
                     (Vptr storage_ptr :: nil) (fun v => Q v free))))
