@@ -40,7 +40,7 @@ Section dispatch.
       match list_get cand st.(s_overrides) with
       | None => (result, cand)
       | Some cand =>
-        ({| vimpl := mjoin (list_get final st.(s_virtuals))
+        ({| vimpl := list_get cand st.(s_overrides)
           ; voverrider := mdc
           ; vfrom := from
           ; derivation := d |}, cand)
