@@ -35,13 +35,9 @@ Section with_cpp.
   Definition get_impl `(r : !class_derives σ mdc tcls) (f : obj_name)
     : option (ptr * offset) :=
     let override := (dispatch σ r f).1 in
-    match override.(vimpl) with
-    | None => None
-    | Some s => match glob_addr σ s with
-               | None => None
-               | Some p => Some (p, base_to_derived override.(derivation))
-               end
-    end.
+    s ← override.(vimpl);
+    p ← glob_addr σ s;
+    mret (p, base_to_derived override.(derivation)).
 
   (** [resolve_virtual σ this cls f Q] returns [Q fa this'] if resolving [f] on
    * [this] results in a function that is equivalent to calling the pointer [fa]

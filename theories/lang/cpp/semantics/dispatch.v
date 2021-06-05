@@ -19,12 +19,7 @@ Section dispatch.
   Context (σ : genv).
 
   Definition list_get {T} (t : obj_name) (l : list (obj_name * T)) : option T :=
-    match
-      List.find (fun '(t',_) => bool_decide (t = t')) l
-    with
-    | None => None
-    | Some (_, k) => Some k
-    end.
+    snd <$> List.find (fun '(t',_) => bool_decide (t = t')) l.
 
   Fixpoint dispatch `(d : !class_derives σ mdc from) (final : obj_name)
     : vhandle σ * obj_name :=
