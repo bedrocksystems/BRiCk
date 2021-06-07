@@ -137,9 +137,9 @@ Inductive Expr : Set :=
 | Epostdec (_ : Expr) (_ : type)
   (* ^ special unary operators *)
 
-| Eseqand (_ _ : Expr) (_ : type)
-| Eseqor  (_ _ : Expr) (_ : type)
-| Ecomma (vc : ValCat) (_ _ : Expr) (_ : type)
+| Eseqand (_ _ : Expr) (_ : type) (* XXX type = bool *)
+| Eseqor  (_ _ : Expr) (_ : type) (* XXX type = bool *)
+| Ecomma (vc : ValCat) (e1 e2 : Expr) (_ : type) (* XXX type of [e2] *)
   (* ^ these are specialized because they have special control flow semantics *)
 
 | Ecall    (_ : Expr) (_ : list (ValCat * Expr)) (_ : type)
@@ -153,7 +153,7 @@ Inductive Expr : Set :=
 | Esize_of (_ : type + Expr) (_ : type)
 | Ealign_of (_ : type + Expr) (_ : type)
 | Econstructor (_ : obj_name) (_ : list (ValCat * Expr)) (_ : type)
-| Eimplicit (_ : Expr) (_ : type)
+| Eimplicit (_ : Expr) (_ : type) (* XXX type of child *)
 | Eimplicit_init (_ : type)
 | Eif       (_ _ _ : Expr) (_ : type)
 
@@ -165,11 +165,11 @@ Inductive Expr : Set :=
        (alloc_ty : type)
        (array_size : option Expr) (init : option Expr) (_ : type)
 | Edelete (is_array : bool) (delete_fn : option (obj_name * type)) (arg : Expr)
-          (deleted_type : type) (dtor : option obj_name) (_ : type)
+          (deleted_type : type) (_ : type)
 
 | Eandclean (_ : Expr) (_ : type)
 | Ematerialize_temp (_ : Expr) (_ : type)
-| Ebind_temp (_ : Expr) (_ : obj_name) (_ : type)
+| Ebind_temp (_ : Expr) (_ : type)
 
 | Ebuiltin (_ : BuiltinFn) (_ : type)
 | Eatomic (_ : AtomicOp) (_ : list (ValCat * Expr)) (_ : type)

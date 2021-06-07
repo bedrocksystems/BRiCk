@@ -51,6 +51,7 @@ Module Type Stmt.
         Q ReturnVoid |-- wp ρ (Sreturn None) Q.
 
     Axiom wp_return : forall ρ c e (Q : KpredI),
+           let rty := get_return_type ρ in
            match c with
            | Prvalue =>
              let rty := get_return_type ρ in
@@ -88,7 +89,7 @@ Module Type Stmt.
      * TODO there is a lot of overlap between this and [wp_initialize] (which does initialization
      * of aggregate fields).
      *)
-    Fixpoint wp_decl (ρ : region) (x : ident) (ty : type) (init : option Expr) (dtor : option obj_name)
+    Fixpoint wp_decl (ρ : region) (x : ident) (ty : type) (init : option Expr)
                (k : region -> (mpred -> mpred) -> mpredI)
     : mpred :=
       match ty with
@@ -115,7 +116,7 @@ Module Type Stmt.
       | Tnamed cls =>
         Forall a : ptr, a |-> tblockR (σ:=resolve) ty 1 -*
                   let destroy P :=
-                      destruct_val false ty a dtor (a |-> tblockR (erase_qualifiers ty) 1 ** P)
+                      destruct_val false ty a (a |-> tblockR (erase_qualifiers ty) 1 ** P)
                   in
                   let continue := k (Rbind x a ρ) destroy in
                   match init with
@@ -126,7 +127,7 @@ Module Type Stmt.
       | Tarray ty' N =>
         Forall a : ptr, a |-> tblockR (σ:=resolve) ty 1 -*
                   let destroy P :=
-                      destruct_val false ty a dtor (a |-> tblockR (σ:=resolve) (erase_qualifiers ty) 1 ** P)
+                      destruct_val false ty a (a |-> tblockR (σ:=resolve) (erase_qualifiers ty) 1 ** P)
                   in
                   let continue := k (Rbind x a ρ) destroy in
                   match init with
@@ -149,7 +150,7 @@ Module Type Stmt.
 
       | Tfunction _ _ => UNSUPPORTED "local function declarations are not supported" (* not supported *)
 
-      | Tqualified _ ty => wp_decl ρ x ty init dtor k
+      | Tqualified _ ty => wp_decl ρ x ty init k
       | Tnullptr =>
         Forall a : ptr,
         let continue :=
@@ -204,9 +205,9 @@ Module Type Stmt.
         iIntros (??) "X [$ a]"; iApply "X"; eauto. }
     Qed.
 
-    Lemma wp_decl_frame : forall x ρ init ty dtor (k k' : region -> (mpred -> mpred) -> mpred),
+    Lemma wp_decl_frame : forall x ρ init ty (k k' : region -> (mpred -> mpred) -> mpred),
         Forall a (b b' : _), (Forall rt rt' : mpred, (rt -* rt') -* b rt -* b' rt') -* k a b -* k' a b'
-        |-- wp_decl ρ x ty init dtor k -* wp_decl ρ x ty init dtor k'.
+        |-- wp_decl ρ x ty init k -* wp_decl ρ x ty init k'.
     Proof.
       induction ty using type_ind'; simpl;
         try solve [ intros; apply decl_prim with (ty:=Tptr ty)
@@ -277,8 +278,8 @@ Module Type Stmt.
              (k : region -> (mpred -> mpred) -> mpred) : mpred :=
       match ds with
       | nil => k ρ (fun P => P)%I
-      | {| vd_name := x ; vd_type := ty ; vd_init := init ; vd_dtor := dtor |} :: ds =>
-        |> wp_decl ρ x ty init dtor (fun ρ free => wp_decls ρ ds (fun ρ free' => k ρ (fun P => free' (free P))))
+      | {| vd_name := x ; vd_type := ty ; vd_init := init |} :: ds =>
+        |> wp_decl ρ x ty init (fun ρ free => wp_decls ρ ds (fun ρ free' => k ρ (fun P => free' (free P))))
       end.
 
     Lemma wp_decls_frame : forall ds ρ (Q Q' : region -> (mpred -> mpred) -> mpred),

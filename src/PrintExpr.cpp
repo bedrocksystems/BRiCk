@@ -920,14 +920,6 @@ public:
 
         print.output() << fmt::nbsp;
 
-        if (auto dt = get_dtor(expr->getDestroyedType())) {
-            print.some();
-            cprint.printGlobalName(dt, print);
-            print.end_ctor();
-        } else {
-            print.none();
-        }
-
         done(expr, print, cprint);
     }
 
