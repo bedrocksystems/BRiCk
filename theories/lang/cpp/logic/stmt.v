@@ -51,7 +51,6 @@ Module Type Stmt.
         Q ReturnVoid |-- wp ρ (Sreturn None) Q.
 
     Axiom wp_return : forall ρ c e (Q : KpredI),
-           let rty := get_return_type ρ in
            match c with
            | Prvalue =>
              let rty := get_return_type ρ in
