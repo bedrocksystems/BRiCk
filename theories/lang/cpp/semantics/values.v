@@ -390,7 +390,3 @@ Arguments Z.mul _ _ : simpl never.
 Arguments Z.pow _ _ : simpl never.
 Arguments Z.opp _ : simpl never.
 Arguments Z.pow_pos _ _ : simpl never.
-
-(* XXX adapter. *)
-Definition glob_addr (σ : genv) (o : obj_name) : option ptr :=
-  (fun _ => global_ptr σ.(genv_tu) o) <$> σ.(genv_tu) !! o.

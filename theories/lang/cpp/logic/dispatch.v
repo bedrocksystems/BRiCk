@@ -36,8 +36,7 @@ Section with_cpp.
     : option (ptr * offset) :=
     let override := dispatch σ r f in
     s ← override.(vimpl);
-    p ← glob_addr σ s;
-    mret (p, base_to_derived override.(derivation)).
+    mret (_global s, base_to_derived override.(derivation)).
 
   (** [resolve_virtual σ this cls f Q] returns [Q fa this'] if resolving [f] on
    * [this] results in a function that is equivalent to calling the pointer [fa]
