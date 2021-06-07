@@ -146,6 +146,7 @@ Inductive Expr : Set :=
 | Ecast    (_ : Cast) (_ : ValCat * Expr) (_ : type)
 
 | Emember  (_ : ValCat) (obj : Expr) (_ : field) (_ : type)
+(* TODO: maybe replace the left branch use [Expr] here? *)
 | Emember_call (method : (obj_name * call_type * type) + Expr) (_ : ValCat) (obj : Expr) (_ : list (ValCat * Expr)) (_ : type)
 
 | Esubscript (_ : Expr) (_ : Expr) (_ : type)

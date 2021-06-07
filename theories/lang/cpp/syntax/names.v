@@ -43,8 +43,13 @@ Definition localname : Set := ident.
 Bind Scope bs_scope with localname.
 Global Instance localname_eq: EqDecision localname := _.
 
+(**
+Identify an aggregate field.
+XXX: is this used for function members? If so, rename.
+[Member] is taken, but [member_name] or shortenings of
+[member_qualified_name] could work. *)
 Record field : Set :=
-{ f_type : globname (* name of struct or class *)
+{ f_type : globname (* name of containing aggregate *)
 ; f_name : ident
 }.
 Global Instance field_eq: EqDecision field.
