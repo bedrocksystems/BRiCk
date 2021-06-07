@@ -23,11 +23,6 @@ Export iris.bi.bi.bi.
 Section derived_laws.
   Context {PROP : bi}.
 
-  Lemma intuitionistically_and_sep P Q : □ (P ∧ Q) ⊣⊢@{PROP} □ P ∗ □ Q.
-  Proof.
-    by rewrite bi.intuitionistically_and bi.and_sep_intuitionistically.
-  Qed.
-
   Lemma exist_pure_eq_sep {A P} v:
     P v ⊢@{PROP} ∃ x : A, ⌜ x = v ⌝ ∗ P x.
   Proof. iIntros. iExists v; eauto. Qed.
@@ -99,6 +94,51 @@ Section derived_laws.
     (Hag : ∀ a1 a2, Φ a1 ∧ Ψ a2 ⊢ ⌜a1 = a2⌝) :
     (∃ a, Φ a ∧ Ψ a) ⊣⊢ (∃ a, Φ a) ∧ (∃ a, Ψ a).
   Proof. apply (anti_symm (⊢)); eauto using exist_and_1, exist_and_2. Qed.
+
+  Lemma and_forall {A} (P Q : A -> PROP) :
+    (∀ x : A, P x) ∧ (∀ x : A, Q x) ⊣⊢ (∀ x : A, P x ∧ Q x).
+  Proof.
+    apply (anti_symm _).
+    { apply forall_intro => a. apply and_intro;
+        (etrans; last apply forall_elim);
+        trivial using and_elim_l, and_elim_r. }
+    { apply and_intro; apply forall_intro => x;
+        (etrans; last apply forall_elim); apply forall_mono=>{}x;
+        trivial using and_elim_l, and_elim_r. }
+  Qed.
+
+  Lemma and_wand_distr_l (P Q R : PROP) :
+    (P -∗ Q) ∧ (P -∗ R) ⊣⊢ (P -∗ (Q ∧ R)).
+  Proof.
+    apply (anti_symm _).
+    { apply wand_intro_r, and_intro;
+        (etrans; last apply (wand_elim_l P)); f_equiv;
+        trivial using and_elim_l, and_elim_r. }
+    { apply and_intro; f_equiv; trivial using and_elim_l, and_elim_r. }
+  Qed.
+
+  Lemma wand_wand_swap (P Q R : PROP) :
+    (P -∗ Q -∗ R) -> (Q -∗ P -∗ R).
+  Proof. intros HW. apply wand_intro_l, wand_elim_l', HW. Qed.
+
+  Lemma and_wand_distr_r (P Q R : PROP) :
+    (P -∗ R) ∧ (Q -∗ R) ⊣⊢ (P ∨ Q -∗ R).
+  Proof.
+    apply (anti_symm _).
+    { apply wand_wand_swap, or_elim; apply wand_wand_swap; trivial using and_elim_l, and_elim_r. }
+    { apply and_intro; apply wand_mono; trivial using or_intro_l, or_intro_r. }
+  Qed.
+
+  (** Lemmas about modalities. *)
+  (* Upstreamed in.https://gitlab.mpi-sws.org/iris/iris/-/merge_requests/685. *)
+  Lemma fupd_and `{BiFUpd PROP} E1 E2 P Q :
+    (|={E1,E2}=> (P ∧ Q)) ⊢@{PROP} (|={E1,E2}=> P) ∧ (|={E1,E2}=> Q).
+  Proof. apply and_intro; apply fupd_mono; [apply and_elim_l | apply and_elim_r]. Qed.
+
+  Lemma intuitionistically_and_sep P Q : □ (P ∧ Q) ⊣⊢@{PROP} □ P ∗ □ Q.
+  Proof.
+    by rewrite bi.intuitionistically_and bi.and_sep_intuitionistically.
+  Qed.
 
   (* See https://gitlab.mpi-sws.org/iris/iris/-/merge_requests/556 *)
   Lemma intuitionistic_sep_dup (P : PROP) `{!Persistent P, !Affine P} :
