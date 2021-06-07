@@ -13,7 +13,7 @@
  *)
 Require Import stdpp.fin_maps.
 Require Import bedrock.lang.cpp.ast.
-Require Import bedrock.lang.cpp.semantics.values.
+Require Import bedrock.lang.cpp.semantics.genv.
 
 Section extends.
   Context (σ : genv).

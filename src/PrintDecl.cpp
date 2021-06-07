@@ -377,16 +377,13 @@ public:
         print.begin_list();
         for (auto m : decl->methods()) {
             if (m->isVirtual()) {
-                print.output() << "(";
-                cprint.printGlobalName(m, print);
-                print.output() << "," << fmt::nbsp;
                 if (m->isPure()) {
-                    print.none();
+                    print.output() << "(pure_virt";
                 } else {
-                    print.some();
-                    cprint.printGlobalName(m, print);
-                    print.end_ctor();
+                    print.output() << "(impl_virt";
                 }
+                print.output() << fmt::nbsp;
+                cprint.printGlobalName(m, print);
                 print.output() << ")";
                 print.cons();
             }

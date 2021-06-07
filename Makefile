@@ -73,7 +73,7 @@ coq: Makefile.coq
 
 # Tests for `cpp2v`
 
-test: test-cpp2v
+test: test-cpp2v test-coq
 .PHONY: test
 
 build-minimal: Makefile.coq
@@ -86,6 +86,11 @@ build-minimal: Makefile.coq
 test-cpp2v: build-minimal cpp2v
 	+@$(MAKE) -C cpp2v-tests CPP2V=$(ROOT)/build/cpp2v
 .PHONY: test-cpp2v
+
+test-coq: cpp2v coq
+	+@$(MAKE) -C test CPP2V=$(ROOT)/build/cpp2v
+.PHONY: test-cpp2v
+
 
 # Build Coq docs
 
