@@ -23,11 +23,6 @@ Export iris.bi.bi.bi.
 Section derived_laws.
   Context {PROP : bi}.
 
-  Lemma intuitionistically_and_sep P Q : □ (P ∧ Q) ⊣⊢@{PROP} □ P ∗ □ Q.
-  Proof.
-    by rewrite bi.intuitionistically_and bi.and_sep_intuitionistically.
-  Qed.
-
   Lemma exist_pure_eq_sep {A P} v:
     P v ⊢@{PROP} ∃ x : A, ⌜ x = v ⌝ ∗ P x.
   Proof. iIntros. iExists v; eauto. Qed.
@@ -99,6 +94,12 @@ Section derived_laws.
     (Hag : ∀ a1 a2, Φ a1 ∧ Ψ a2 ⊢ ⌜a1 = a2⌝) :
     (∃ a, Φ a ∧ Ψ a) ⊣⊢ (∃ a, Φ a) ∧ (∃ a, Ψ a).
   Proof. apply (anti_symm (⊢)); eauto using exist_and_1, exist_and_2. Qed.
+
+  (** Lemmas about modalities. *)
+  Lemma intuitionistically_and_sep P Q : □ (P ∧ Q) ⊣⊢@{PROP} □ P ∗ □ Q.
+  Proof.
+    by rewrite bi.intuitionistically_and bi.and_sep_intuitionistically.
+  Qed.
 
   (* See https://gitlab.mpi-sws.org/iris/iris/-/merge_requests/556 *)
   Lemma intuitionistic_sep_dup (P : PROP) `{!Persistent P, !Affine P} :
