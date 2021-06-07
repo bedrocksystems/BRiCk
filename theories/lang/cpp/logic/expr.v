@@ -994,8 +994,7 @@ Module Type Expr.
        [[
     Axiom wp_init_bind_temp : forall e ty a dtor Q,
         wp_init ty a e (fun free =>
-                     Exists fa, [| glob_addr resolve dtor fa |] **
-                     |> fspec (Vptr fa) (a :: nil) ti (fun _ => Q free))
+                     |> fspec (Vptr (_global dtor)) (a :: nil) ti (fun _ => Q free))
       |-- wp_init ty a (Ebind_temp e dtor ty) Q.
        ]]
      *)
