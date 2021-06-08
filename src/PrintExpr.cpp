@@ -988,8 +988,8 @@ public:
         // It should only be needed for non-POD, non-trivially destructable class types."
         // We can omit these nodes because in our semantics, objects are *always* deleted with
         // destructors, even if the destructor is trivial. Thus, our semantics
-        // essentially implicitly has a [BindTemporary] node around all aggregate
-        // constructions.
+        // essentially implicitly has a [BindTemporary] node around all automatic
+        // storage duration aggregates.
 
         cprint.printExpr(expr->getSubExpr(), print, li);
     }
