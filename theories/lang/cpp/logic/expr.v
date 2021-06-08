@@ -997,15 +997,6 @@ Module Type Expr.
        ]]
      *)
 
-    (** XXX this needs a thorough review *)
-    Axiom wp_prval_materialize : forall ty e Q,
-      (Forall a : ptr,
-      let raw_type := erase_qualifiers ty in
-      a |-> tblockR raw_type 1 -*
-          wp_init ty a e (fun free =>
-                            Q (Vptr a) (destruct_val false ty a (a |-> tblockR raw_type 1 ** free))))
-      |-- wp_prval (Ebind_temp e ty) Q.
-
     (** Pseudo destructors arise from calling the destructor on
         an object of templated type when the type is instantiated
         with a primitive. For example,

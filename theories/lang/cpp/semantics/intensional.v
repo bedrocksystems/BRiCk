@@ -26,7 +26,6 @@ Require Import bedrock.lang.cpp.semantics.values.
 #[deprecated(since="2021-06-07",note="destructors are now recorded in classes")]
 Fixpoint destructor_for (e : Expr) : Expr * option obj_name :=
   match e with
-  | Ebind_temp e _ => (e, None)
   | Eandclean e _ => destructor_for e
   | _ => (e, None)
   end.

@@ -169,7 +169,6 @@ Inductive Expr : Set :=
 
 | Eandclean (_ : Expr) (_ : type)
 | Ematerialize_temp (_ : Expr) (_ : type)
-| Ebind_temp (_ : Expr) (_ : type)
 
 | Ebuiltin (_ : BuiltinFn) (_ : type)
 | Eatomic (_ : AtomicOp) (_ : list (ValCat * Expr)) (_ : type)
