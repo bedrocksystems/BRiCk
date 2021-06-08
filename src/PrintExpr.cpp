@@ -926,6 +926,9 @@ public:
     void VisitExprWithCleanups(const ExprWithCleanups* expr, CoqPrinter& print,
                                ClangPrinter& cprint, const ASTContext&,
                                OpaqueNames& li) {
+        // NOTE candidate for removal
+        // our semantics cleans everything, so we don't need to
+        // mark this explicitly.
         print.ctor("Eandclean");
 #ifdef DEBUG
         llvm::errs() << "and_clean objects: " << expr->getNumObjects() << "\n";
@@ -983,11 +986,12 @@ public:
         // a CXXBindTemporary node "represents binding an expression to a temporary.
         // This ensures the destructor is called for the temporary.
         // It should only be needed for non-POD, non-trivially destructable class types."
-        // But we can omit these nodes because in our semantics, objects are *always* deleted with
-        // destructors, even if the destructor is trivial.
-        // print.ctor("Ebind_temp");
+        // We can omit these nodes because in our semantics, objects are *always* deleted with
+        // destructors, even if the destructor is trivial. Thus, our semantics
+        // essentially implicitly has a [BindTemporary] node around all aggregate
+        // constructions.
+
         cprint.printExpr(expr->getSubExpr(), print, li);
-        // done(expr, print, cprint);
     }
 
     void VisitOpaqueValueExpr(const OpaqueValueExpr* expr, CoqPrinter& print,
