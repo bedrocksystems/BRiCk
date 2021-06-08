@@ -979,9 +979,12 @@ public:
     void VisitCXXBindTemporaryExpr(const CXXBindTemporaryExpr* expr,
                                    CoqPrinter& print, ClangPrinter& cprint,
                                    const ASTContext&, OpaqueNames& li) {
-        // CXXBindTemporary nodes are only used to record destructor
-        // information. In our semantics, objects are *always* deleted with
-        // destructors.
+        // According to [clang docs](https://clang.llvm.org/doxygen/classclang_1_1CXXBindTemporaryExpr.html),
+        // a CXXBindTemporary node "represents binding an expression to a temporary.
+        // This ensures the destructor is called for the temporary.
+        // It should only be needed for non-POD, non-trivially destructable class types."
+        // But we can omit these nodes because in our semantics, objects are *always* deleted with
+        // destructors, even if the destructor is trivial.
         // print.ctor("Ebind_temp");
         cprint.printExpr(expr->getSubExpr(), print, li);
         // done(expr, print, cprint);
