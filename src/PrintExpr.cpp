@@ -979,9 +979,12 @@ public:
     void VisitCXXBindTemporaryExpr(const CXXBindTemporaryExpr* expr,
                                    CoqPrinter& print, ClangPrinter& cprint,
                                    const ASTContext&, OpaqueNames& li) {
-        print.ctor("Ebind_temp");
+        // CXXBindTemporary nodes are only used to record destructor
+        // information. In our semantics, objects are *always* deleted with
+        // destructors.
+        // print.ctor("Ebind_temp");
         cprint.printExpr(expr->getSubExpr(), print, li);
-        done(expr, print, cprint);
+        // done(expr, print, cprint);
     }
 
     void VisitCXXTemporaryObjectExpr(const CXXTemporaryObjectExpr* expr,
