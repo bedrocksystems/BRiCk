@@ -990,24 +990,6 @@ public:
         // done(expr, print, cprint);
     }
 
-    void VisitCXXTemporaryObjectExpr(const CXXTemporaryObjectExpr* expr,
-                                     CoqPrinter& print, ClangPrinter& cprint,
-                                     const ASTContext&, OpaqueNames& li) {
-        // todo(gmm): initialization semantics?
-        print.ctor("Econstructor");
-        // print.output() << expr->isElidable() << fmt::nbsp;
-        cprint.printGlobalName(expr->getConstructor(), print);
-        print.output() << fmt::nbsp;
-
-        print.list(expr->arguments(), [&](auto print, auto i) {
-            cprint.printExprAndValCat(i, print, li);
-        });
-
-        //print.output() << fmt::nbsp << expr->isElidable();
-
-        done(expr, print, cprint);
-    }
-
     void VisitOpaqueValueExpr(const OpaqueValueExpr* expr, CoqPrinter& print,
                               ClangPrinter& cprint, const ASTContext&,
                               OpaqueNames& li) {
