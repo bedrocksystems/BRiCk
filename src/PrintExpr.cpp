@@ -920,20 +920,15 @@ public:
 
         print.output() << fmt::nbsp;
 
-        if (auto dt = get_dtor(expr->getDestroyedType())) {
-            print.some();
-            cprint.printGlobalName(dt, print);
-            print.end_ctor();
-        } else {
-            print.none();
-        }
-
         done(expr, print, cprint);
     }
 
     void VisitExprWithCleanups(const ExprWithCleanups* expr, CoqPrinter& print,
                                ClangPrinter& cprint, const ASTContext&,
                                OpaqueNames& li) {
+        // NOTE candidate for removal
+        // our semantics cleans everything, so we don't need to
+        // mark this explicitly.
         print.ctor("Eandclean");
 #ifdef DEBUG
         llvm::errs() << "and_clean objects: " << expr->getNumObjects() << "\n";
@@ -987,29 +982,16 @@ public:
     void VisitCXXBindTemporaryExpr(const CXXBindTemporaryExpr* expr,
                                    CoqPrinter& print, ClangPrinter& cprint,
                                    const ASTContext&, OpaqueNames& li) {
-        print.ctor("Ebind_temp");
+        // According to [clang docs](https://clang.llvm.org/doxygen/classclang_1_1CXXBindTemporaryExpr.html),
+        // a CXXBindTemporary node "represents binding an expression to a temporary.
+        // This ensures the destructor is called for the temporary.
+        // It should only be needed for non-POD, non-trivially destructable class types."
+        // We can omit these nodes because in our semantics, objects are *always* deleted with
+        // destructors, even if the destructor is trivial. Thus, our semantics
+        // essentially implicitly has a [BindTemporary] node around all automatic
+        // storage duration aggregates.
+
         cprint.printExpr(expr->getSubExpr(), print, li);
-        print.output() << fmt::nbsp;
-        cprint.printGlobalName(expr->getTemporary()->getDestructor(), print);
-        done(expr, print, cprint);
-    }
-
-    void VisitCXXTemporaryObjectExpr(const CXXTemporaryObjectExpr* expr,
-                                     CoqPrinter& print, ClangPrinter& cprint,
-                                     const ASTContext&, OpaqueNames& li) {
-        // todo(gmm): initialization semantics?
-        print.ctor("Econstructor");
-        // print.output() << expr->isElidable() << fmt::nbsp;
-        cprint.printGlobalName(expr->getConstructor(), print);
-        print.output() << fmt::nbsp;
-
-        print.list(expr->arguments(), [&](auto print, auto i) {
-            cprint.printExprAndValCat(i, print, li);
-        });
-
-        //print.output() << fmt::nbsp << expr->isElidable();
-
-        done(expr, print, cprint);
     }
 
     void VisitOpaqueValueExpr(const OpaqueValueExpr* expr, CoqPrinter& print,

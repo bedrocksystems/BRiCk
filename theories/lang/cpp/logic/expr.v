@@ -686,7 +686,7 @@ Module Type Expr.
       let raw_type := erase_qualifiers ty in
       Forall addr : ptr, addr |-> tblockR raw_type 1 -*
         wp_init ty addr e (fun free =>
-           Q (Vptr addr) (free ** destruct_val false raw_type addr None (addr |-> tblockR raw_type 1))).
+           Q (Vptr addr) (free ** destruct_val false raw_type addr (addr |-> tblockR raw_type 1))).
     (* XXX This use of [Vptr] represents an aggregate.
        XXX The destruction of the value isn't quite correct because we explicitly
            generate the destructors.
@@ -928,14 +928,14 @@ Module Type Expr.
        deallocation function [delete] is passed a pointer to the the
        underlying storage.
      *)
-    Axiom wp_prval_delete : forall delete_fn e ty dtor destroyed_type Q,
+    Axiom wp_prval_delete : forall delete_fn e ty destroyed_type Q,
         (* call the destructor on the object, and then call delete_fn *)
         wp_prval e (fun v free =>
           Exists obj_ptr storage_ptr sz,
             [| v = Vptr obj_ptr |] **
             [| size_of destroyed_type = Some sz |] **
             type_ptr destroyed_type obj_ptr **
-            destruct_val true destroyed_type obj_ptr dtor   (* Calling destructor with object pointer *)
+            destruct_val true destroyed_type obj_ptr      (* Calling destructor with object pointer *)
               (provides_storage storage_ptr obj_ptr ty ** (* Token for converting obj memory to storage memory *)
                (* Transfer memory to underlying storage pointer; unlike in [end_provides_storage],
                   this memory was pre-destructed by [destruct_val]. *)
@@ -943,7 +943,7 @@ Module Type Expr.
                 (storage_ptr |-> blockR sz 1 -*
                   fspec delete_fn.2 ti (Vptr $ _global delete_fn.1) (* Calling deallocator with storage pointer *)
                     (Vptr storage_ptr :: nil) (fun v => Q v free))))
-        |-- wp_prval (Edelete false (Some delete_fn) e destroyed_type dtor ty) Q.
+        |-- wp_prval (Edelete false (Some delete_fn) e destroyed_type ty) Q.
 
     (** temporary expressions
        note(gmm): these axioms should be reviewed thoroughly
@@ -961,9 +961,8 @@ Module Type Expr.
     Axiom wp_xval_temp : forall e ty Q,
         (let raw_type := erase_qualifiers ty in
          Forall a : ptr, a |-> tblockR raw_type 1 -*
-                  let '(e,dt) := destructor_for e in
                   wp_init ty a e
-                          (fun free => Q a (destruct_val false ty a dt (a |-> tblockR raw_type 1 ** free))))
+                          (fun free => Q a (destruct_val false ty a (a |-> tblockR raw_type 1 ** free))))
         |-- wp_xval (Ematerialize_temp e ty) Q.
 
     (** temporary materialization only occurs when the resulting value is used.
@@ -979,9 +978,8 @@ Module Type Expr.
         (let ty := type_of e in
          let raw_type := erase_qualifiers ty in
          Forall a : ptr, a |-> tblockR raw_type 1 -*
-                   let '(e,dt) := destructor_for e in
                    wp_init ty a e (fun free =>
-                                     Q (Vptr a) (destruct_val false ty a dt (a |-> tblockR raw_type 1 ** free))))
+                                     Q (Vptr a) (destruct_val false ty a (a |-> tblockR raw_type 1 ** free))))
         |-- wp_prval e Q.
 
 
@@ -998,15 +996,6 @@ Module Type Expr.
       |-- wp_init ty a (Ebind_temp e dtor ty) Q.
        ]]
      *)
-
-    (** XXX this needs a thorough review *)
-    Axiom wp_prval_materialize : forall ty e dtor Q,
-      (Forall a : ptr,
-      let raw_type := erase_qualifiers ty in
-      a |-> tblockR raw_type 1 -*
-          wp_init ty a e (fun free =>
-                            Q (Vptr a) (destruct_val false ty a (Some dtor) (a |-> tblockR raw_type 1 ** free))))
-      |-- wp_prval (Ebind_temp e dtor ty) Q.
 
     (** Pseudo destructors arise from calling the destructor on
         an object of templated type when the type is instantiated

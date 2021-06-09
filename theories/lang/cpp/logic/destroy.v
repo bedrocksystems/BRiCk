@@ -48,22 +48,26 @@ Section destroy.
       { iIntros "X"; iApply "X". } }
   Qed.
 
-  (* [destruct_val dispatch t this dtor Q] invokes the destructor ([dtor]) on [this]
+  (* [destruct_val dispatch t this Q] invokes the destructor on [this]
      with the type of [this] is [t].
 
-     The [dispatch] parameter determines whether the call is a *potentially* virtual call.
-     If [dispatch] is true *and the destructor of the class is virtual*, then the call is a
-     virtual call.
+     The [dispatch] parameter determines whether the call is a *potentially*
+     virtual call. If [dispatch] is true *and the destructor of the class is
+     virtual*, then the call is a virtual call.
 
      note: it does *not* free the underlying memory.
 
-     TODO we can remove [dtor] with the new destructor scheme
+     NOTE in our semantics (unlike the standard) all objects are destroyed
+     via destructors. This is justified because the only objects
+     that do not have destructors according to the standard have
+     no-op destructors. Thus, we can model the "not having a destructor"
+     as an optimization. This choice makes the semantics more uniform.
    *)
-  Fixpoint destruct_val (dispatch : bool) (t : type) (this : ptr) (dtor : option obj_name) (Q : mpred)
+  Fixpoint destruct_val (dispatch : bool) (t : type) (this : ptr) (Q : mpred)
            {struct t}
   : mpred :=
     match t with
-    | Tqualified _ t => destruct_val dispatch t this dtor Q
+    | Tqualified _ t => destruct_val dispatch t this Q
     | Tnamed cls =>
       match σ.(genv_tu) !! cls with
       | Some (Gstruct s) =>
@@ -101,14 +105,14 @@ Section destroy.
     | Tarray t sz =>
       (* NOTE when destroying an array, elements of the array are destroyed with non-virtual dispatch. *)
       fold_right (fun i Q => valid_ptr (this .[ t ! Z.of_nat i ]) **
-         destruct_val false t (this .[ t ! Z.of_nat i ]) dtor Q) Q (List.rev (seq 0 (N.to_nat sz)))
+         destruct_val false t (this .[ t ! Z.of_nat i ]) Q) Q (List.rev (seq 0 (N.to_nat sz)))
     | _ =>
       (* |={↑pred_ns}=> *) this |-> anyR (erase_qualifiers t) 1 ** (this |-> tblockR (erase_qualifiers t) 1 -* Q)
       (* emp *)
     end%I.
 
-  Lemma destruct_val_frame dispatch : forall ty this dt Q Q',
-      Q -* Q' |-- destruct_val dispatch ty this dt Q -* destruct_val dispatch ty this dt Q'.
+  Lemma destruct_val_frame dispatch : forall ty this Q Q',
+      Q -* Q' |-- destruct_val dispatch ty this Q -* destruct_val dispatch ty this Q'.
   Proof.
     intro ty; generalize dependent dispatch; induction ty; simpl; eauto;
       try solve [

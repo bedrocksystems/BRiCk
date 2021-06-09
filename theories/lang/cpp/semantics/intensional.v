@@ -23,9 +23,9 @@ Require Import bedrock.lang.cpp.semantics.values.
  * This function extracts the destructor information from [Ebind_temp] and
  * returns it along with the child node if it exists.
  *)
+#[deprecated(since="2021-06-07",note="destructors are now recorded in classes")]
 Fixpoint destructor_for (e : Expr) : Expr * option obj_name :=
   match e with
-  | Ebind_temp e dtor _ => (e, Some dtor)
   | Eandclean e _ => destructor_for e
   | _ => (e, None)
   end.

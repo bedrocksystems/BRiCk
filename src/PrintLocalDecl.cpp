@@ -49,17 +49,7 @@ public:
         } else {
             print.none();
         }
-
-        print.output() << fmt::line << ";";
-        print.record_field("vd_dtor");
-        if (auto dest = get_dtor(decl->getType())) {
-            print.some();
-            cprint.printGlobalName(dest, print);
-            print.end_ctor();
-        } else {
-            print.none();
-        }
-
+        
         print.end_record();
         return true;
     }

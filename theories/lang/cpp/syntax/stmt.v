@@ -19,7 +19,6 @@ Record VarDecl : Set :=
 { vd_name : ident
 ; vd_type : type
 ; vd_init : option Expr
-; vd_dtor : option obj_name
 }.
 Instance: EqDecision VarDecl.
 Proof. solve_decision. Defined.

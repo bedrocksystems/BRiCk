@@ -39,7 +39,7 @@ Section with_resolve.
           wp_init ty a e Qarg **
             wp_args es (fun vs frees =>
                           Forall free,
-                          Qarg free -* Q (Vptr a :: vs) (destruct_val (σ:=σ) ti false ty a dt (a |-> tblockR (σ:=σ) ty 1 ** free) ** frees))
+                          Qarg free -* Q (Vptr a :: vs) (destruct_val (σ:=σ) ti false ty a (a |-> tblockR (σ:=σ) ty 1 ** free) ** frees))
         else
           Exists Qarg,
           wp_prval e Qarg **
