@@ -87,7 +87,6 @@ Section monPred_with_later_emp.
   Proof. apply affine_later_with_later_emp, later_emp_monPred. Qed.
 End monPred_with_later_emp.
 
-#[export] Hint Resolve timeless_emp_uPred affine_later_emp_uPred affine_later_uPred : typeclass_instances.
 #[export] Hint Resolve timeless_emp_monPred affine_later_emp_monPred affine_later_monPred : typeclass_instances.
 
 (**
