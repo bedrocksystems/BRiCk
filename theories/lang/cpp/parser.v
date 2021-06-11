@@ -52,7 +52,7 @@ End cpp_notation.
 Definition translation_unitK : Type :=
   symbol_table -> type_table -> (symbol_table -> type_table -> translation_unit) -> translation_unit.
 
-Definition Dvar (name : obj_name) (t : type) (init : option Expr) : translation_unitK :=
+Definition Dvariable (name : obj_name) (t : type) (init : option Expr) : translation_unitK :=
   fun syms tys k => k (<[ name := Ovar t init ]> syms) tys.
 
 Definition Dfunction    (name : obj_name) (f : Func) : translation_unitK :=

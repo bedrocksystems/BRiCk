@@ -8,12 +8,13 @@
 #include "DeclVisitorWithArgs.h"
 #include "Formatter.hpp"
 #include "Logging.hpp"
+#include "OpaqueNames.hpp"
 
 using namespace clang;
 
 class PrintLocalDecl :
     public ConstDeclVisitorArgs<PrintLocalDecl, bool, CoqPrinter&,
-                                ClangPrinter&> {
+                                ClangPrinter&, OpaqueNames&> {
 private:
     PrintLocalDecl() {}
 
@@ -27,35 +28,42 @@ private:
         }
     }
 
+    static void printDestructor(QualType qt, CoqPrinter& print,
+                                ClangPrinter& cprint) {
+        // TODO when destructors move to classes, we can change this
+        if (auto dest = get_dtor(qt)) {
+            print.some();
+            cprint.printGlobalName(dest, print);
+            print.end_ctor();
+        } else {
+            print.none();
+        }
+    }
+
 public:
     static PrintLocalDecl printer;
 
     bool VisitVarDecl(const VarDecl* decl, CoqPrinter& print,
-                      ClangPrinter& cprint) {
-        print.begin_record();
-        print.record_field("vd_name")
-            << "\"" << decl->getNameAsString() << "\"";
-
-        print.output() << fmt::line << ";";
-        print.record_field("vd_type");
+                      ClangPrinter& cprint, OpaqueNames& on) {
+        print.ctor("Dvar") << "\"" << decl->getNameAsString() << "\""
+                           << fmt::nbsp;
         cprint.printQualType(decl->getType(), print);
+        print.output() << fmt::nbsp;
 
-        print.output() << fmt::line << ";";
-        print.record_field("vd_init");
         if (decl->hasInit()) {
-            print.ctor("Some", false);
-            cprint.printExpr(decl->getInit(), print);
-            print.output() << fmt::rparen;
+            print.some();
+            cprint.printExpr(decl->getInit(), print, on);
+            print.end_ctor();
         } else {
-            print.none();
+            print.none() << fmt::nbsp;
         }
-        
-        print.end_record();
+
+        print.end_ctor();
         return true;
     }
 
-    bool VisitTypeDecl(const TypeDecl* decl, CoqPrinter&,
-                       ClangPrinter& cprint) {
+    bool VisitTypeDecl(const TypeDecl* decl, CoqPrinter&, ClangPrinter& cprint,
+                       OpaqueNames&) {
         using namespace logging;
         debug() << "local type declarations are (currently) not well supported "
                 << decl->getDeclKindName() << " (at "
@@ -64,16 +72,39 @@ public:
     }
 
     bool VisitStaticAssertDecl(const StaticAssertDecl* decl, CoqPrinter&,
-                               ClangPrinter&) {
+                               ClangPrinter&, OpaqueNames&) {
         return false;
     }
 
-    bool VisitDecl(const Decl* decl, CoqPrinter& print, ClangPrinter& cprint) {
+    bool VisitDecl(const Decl* decl, CoqPrinter& print, ClangPrinter& cprint,
+                   OpaqueNames&) {
         using namespace logging;
         debug() << "unexpected local declaration while printing local decl "
                 << decl->getDeclKindName() << " (at "
                 << cprint.sourceRange(decl->getSourceRange()) << ")\n";
         return false;
+    }
+
+    bool VisitDecompositionDecl(const DecompositionDecl* decl,
+                                CoqPrinter& print, ClangPrinter& cprint,
+                                OpaqueNames& on) {
+        print.ctor("Ddecompose");
+
+        cprint.printExpr(decl->getInit(), print, on);
+
+        int index = on.push_anon(decl);
+        print.output() << fmt::nbsp << "\"$" << index << "\"";
+
+        print.output() << fmt::nbsp;
+
+	print.list(decl->bindings(), [&](auto print, auto b) {
+		this->Visit(b->getHoldingVar(), print, cprint, on);
+	});
+
+        on.pop_anon(decl);
+
+        print.end_ctor();
+        return true;
     }
 };
 
@@ -81,5 +112,6 @@ PrintLocalDecl PrintLocalDecl::printer;
 
 bool
 ClangPrinter::printLocalDecl(const clang::Decl* decl, CoqPrinter& print) {
-    return PrintLocalDecl::printer.Visit(decl, print, *this);
+    OpaqueNames names;
+    return PrintLocalDecl::printer.Visit(decl, print, *this, names);
 }

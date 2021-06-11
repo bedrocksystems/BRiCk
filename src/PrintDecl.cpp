@@ -650,7 +650,7 @@ public:
         } else if (decl->isTemplated()) {
             return false;
         } else {
-            print.ctor("Dvar");
+            print.ctor("Dvariable");
 
             cprint.printGlobalName(decl, print);
             print.output() << fmt::nbsp;
@@ -701,7 +701,7 @@ public:
         print.output() << fmt::nbsp;
         auto t = decl->getIntegerType();
         if (!t.isNull()) {
-            print.ctor("Some", false);
+            print.some();
             cprint.printQualType(decl->getIntegerType(), print);
             print.output() << fmt::rparen;
         } else {

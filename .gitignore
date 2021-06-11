@@ -22,3 +22,4 @@ doc/src/_downloads
 doc/sphinx/cache
 .Makefile.coq.d
 _build
+cpp2v-tests/reject/*.ERR

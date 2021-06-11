@@ -1,5 +1,5 @@
 (*
- * Copyright (c) 2020 BedRock Systems, Inc.
+ * Copyright (c) 2020-2021 BedRock Systems, Inc.
  * This software is distributed under the terms of the BedRock Open-Source License.
  * See the LICENSE-BedRock file in the repository root for details.
  *)
@@ -15,14 +15,35 @@ Variant SwitchBranch : Set :=
 Instance: EqDecision SwitchBranch.
 Proof. solve_decision. Defined.
 
-Record VarDecl : Set :=
-{ vd_name : ident
-; vd_type : type
-; vd_init : option Expr
-}.
+Inductive VarDecl : Set :=
+| Dvar (name : localname) (_ : type) (init : option Expr)
+| Ddecompose (_ : Expr) (anon_var : ident) (_ : list VarDecl).
 Instance: EqDecision VarDecl.
-Proof. solve_decision. Defined.
-
+Proof.
+  refine (fix dec (x y : VarDecl) : {x = y} + {x <> y} :=
+            match x as x , y as y return {x = y} + {x <> y} with
+            | Ddecompose xi xx xs , Ddecompose yi yx ys =>
+              match List.list_eq_dec dec xs ys with
+              | left pf => match decide (xi = yi /\ xx = yx) with
+                          | left pf' => left _
+                          | right pf' => right _
+                          end
+              | right pf => right _
+              end
+            | Dvar x tx ix , Dvar y ty iy =>
+              match decide (x = y /\ tx = ty /\ ix = iy) with
+              | left pf => left _
+              | right pf => right _
+              end
+            | _ , _ => right _
+            end); try solve [ intro pf; inversion pf ].
+  { destruct pf as [ ? [ ? ? ] ].
+    subst; reflexivity. }
+  { intro X; inversion X; apply pf; tauto. }
+  { destruct pf' as [ ? ? ]; f_equal; assumption. }
+  { intro zz; inversion zz; apply pf'; tauto. }
+  { intro. apply pf. inversion H; auto. }
+Defined.
 
 Inductive Stmt : Set :=
 | Sseq    (_ : list Stmt)
@@ -63,8 +84,6 @@ Proof.
 Defined.
 
 Definition Sskip := Sseq nil.
-
-
 
 Variant OrDefault {t : Set} : Set :=
 | Defaulted

@@ -7,6 +7,7 @@ COQC	?= coqc
 QPATH   ?= ../theories
 WARN    ?= -w -notation-overridden
 CPP2V	?= ../build/cpp2v
+CPPFLAGS = -std=c++17
 
 ALL	= $(wildcard *.cpp)
 
@@ -22,7 +23,7 @@ clean:
 .PHONY: clean
 
 %_cpp.v %_cpp_names.v: %.cpp $(CPP2V)
-	$(CPP2V) -v -names $*_cpp_names.v -o $*_cpp.v $< --
+	$(CPP2V) -v -names $*_cpp_names.v -o $*_cpp.v $< -- $(CPPFLAGS)
 
 %.vo: %.v
 	$(COQC) $(WARN) -Q $(QPATH) bedrock $<
