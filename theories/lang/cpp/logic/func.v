@@ -318,7 +318,8 @@ Section with_cpp.
         (* there is no initializer for this member, so we "default initialize" it
            (see https://eel.is/c++draft/dcl.init#general-7 )
          *)
-        default_initialize m.(mem_type) (this ., _field {| f_type := cls ; f_name := m.(mem_name) |}) (fun _ => Q)
+        default_initialize m.(mem_type) (this ., _field {| f_type := cls ; f_name := m.(mem_name) |})
+          (fun free => free ** wpi_members ti ρ cls this members inits Q)
       | i :: is' =>
         match i.(init_path) with
         | InitField _ (* = m.(mem_name) *) =>
@@ -386,7 +387,8 @@ Section with_cpp.
     induction flds => /=; eauto.
     intros.
     case_match.
-    { iIntros "a"; iApply default_initialize_frame; iIntros (?); eauto. }
+    { iIntros "a"; iApply default_initialize_frame; iIntros (?) "[$ x]".
+      iRevert "x"; by iApply IHflds. }
     { case_match; eauto.
       case_match; eauto.
       iIntros "a b c"; iDestruct ("b" with "c") as "b". iRevert "b".
