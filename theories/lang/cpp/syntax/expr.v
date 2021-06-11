@@ -125,9 +125,9 @@ Inductive Expr : Set :=
   * operator shows up as a function call, not a `Eunop` or `Ebinop`.
   * this includes the assignment operator for classes.
   *)
-| Ederef (_ : Expr) (_ : type)
-| Eaddrof (_ : Expr) (_ : type)
-| Eassign (_ _ : Expr) (_ : type)
+| Ederef (_ : Expr) (_ : type) (* XXX type = strip pointer from (type_of e) *)
+| Eaddrof (_ : Expr)
+| Eassign (_ _ : Expr) (_ : type) (* = type of lhs, if not dependent *)
 | Eassign_op (_ : BinOp) (_ _ : Expr) (_ : type)
   (* ^ these are specialized because they are common *)
 
@@ -137,23 +137,23 @@ Inductive Expr : Set :=
 | Epostdec (_ : Expr) (_ : type)
   (* ^ special unary operators *)
 
-| Eseqand (_ _ : Expr) (_ : type) (* XXX type = bool *)
-| Eseqor  (_ _ : Expr) (_ : type) (* XXX type = bool *)
-| Ecomma (vc : ValCat) (e1 e2 : Expr) (_ : type) (* XXX type of [e2] *)
+| Eseqand (_ _ : Expr)
+| Eseqor  (_ _ : Expr)
+| Ecomma (vc : ValCat) (e1 e2 : Expr)
   (* ^ these are specialized because they have special control flow semantics *)
 
 | Ecall    (_ : Expr) (_ : list (ValCat * Expr)) (_ : type)
 | Ecast    (_ : Cast) (_ : ValCat * Expr) (_ : type)
 
 | Emember  (_ : ValCat) (obj : Expr) (_ : field) (_ : type)
-(* TODO: maybe replace the left branch use [Expr] here? *)
+  (* TODO: maybe replace the left branch use [Expr] here? *)
 | Emember_call (method : (obj_name * call_type * type) + Expr) (_ : ValCat) (obj : Expr) (_ : list (ValCat * Expr)) (_ : type)
 
 | Esubscript (_ : Expr) (_ : Expr) (_ : type)
 | Esize_of (_ : type + Expr) (_ : type)
 | Ealign_of (_ : type + Expr) (_ : type)
 | Econstructor (_ : obj_name) (_ : list (ValCat * Expr)) (_ : type)
-| Eimplicit (_ : Expr) (_ : type) (* XXX type of child *)
+| Eimplicit (_ : Expr)
 | Eimplicit_init (_ : type)
 | Eif       (_ _ _ : Expr) (_ : type)
 
@@ -167,13 +167,13 @@ Inductive Expr : Set :=
 | Edelete (is_array : bool) (delete_fn : option (obj_name * type)) (arg : Expr)
           (deleted_type : type) (_ : type)
 
-| Eandclean (_ : Expr) (_ : type)
-| Ematerialize_temp (_ : Expr) (_ : type)
+| Eandclean (_ : Expr)
+| Ematerialize_temp (_ : Expr)
 
 | Ebuiltin (_ : BuiltinFn) (_ : type)
 | Eatomic (_ : AtomicOp) (_ : list (ValCat * Expr)) (_ : type)
 | Eva_arg (_ : Expr) (_ : type)
-| Epseudo_destructor (_ : type) (_ : Expr) (* type void *)
+| Epseudo_destructor (_ : type) (_ : Expr)
 
 | Earrayloop_init (oname : N) (src : ValCat * Expr) (level : N) (length : N) (init : Expr) (_ : type)
 | Earrayloop_index (level : N) (_ : type)

@@ -6,7 +6,7 @@
 From bedrock.lang.cpp.syntax Require Import names expr types.
 
 (** [type_of e] returns the type of the expression [e]. *)
-Definition type_of (e : Expr) : type :=
+Fixpoint type_of (e : Expr) : type :=
   match e with
   | Econst_ref _ t
   | Evar _ t
@@ -16,17 +16,17 @@ Definition type_of (e : Expr) : type :=
   | Ebool _ => Tbool
   | Eunop _ _ t
   | Ebinop _ _ _ t
-  | Ederef _ t
-  | Eaddrof _ t
+  | Ederef _ t => t
+  | Eaddrof e => Tptr (type_of e)
   | Eassign _ _ t
   | Eassign_op _ _ _ t
   | Epreinc _ t
   | Epostinc _ t
   | Epredec _ t
-  | Epostdec _ t
-  | Eseqand _ _ t
-  | Eseqor _ _ t
-  | Ecomma _ _ _ t
+  | Epostdec _ t => t
+  | Eseqand _ _ => Tbool
+  | Eseqor _ _ => Tbool
+  | Ecomma _ _ e2 => type_of e2
   | Ecall _ _ t
   | Ecast _ _ t
   | Emember _ _ _ t
@@ -34,17 +34,17 @@ Definition type_of (e : Expr) : type :=
   | Esubscript _ _ t
   | Esize_of _ t
   | Ealign_of _ t
-  | Econstructor _ _ t
-  | Eimplicit _ t
+  | Econstructor _ _ t => t
+  | Eimplicit e => type_of e
   | Eif _ _ _ t
   | Ethis t => t
   | Enull => Tnullptr
   | Einitlist _ _ t
   | Eimplicit_init t
   | Enew _ _ _ _ _ t
-  | Edelete _ _ _ _ t
-  | Eandclean _ t
-  | Ematerialize_temp _ t => t
+  | Edelete _ _ _ _ t => t
+  | Eandclean e => type_of e
+  | Ematerialize_temp e => type_of e
   | Ebuiltin _ t => t
   | Eatomic _ _ t => t
   | Eva_arg _ t => t

@@ -260,9 +260,9 @@ Module Type Init.
         wp_init ty addr e Q
         |-- wp_init ty addr (Ecast Cnoop (Prvalue, e) ty') Q.
 
-    Axiom wp_init_clean : forall e ty ty' addr Q,
-        wp_init ty' addr e Q
-        |-- wp_init ty' addr (Eandclean e ty) Q.
+    Axiom wp_init_clean : forall e ty addr Q,
+        wp_init ty addr e Q
+        |-- wp_init ty addr (Eandclean e) Q.
     Axiom wp_init_const : forall ty addr e Q,
         wp_init ty addr e Q
         |-- wp_init (Qconst ty) addr e Q.
