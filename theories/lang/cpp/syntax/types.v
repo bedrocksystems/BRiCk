@@ -114,6 +114,7 @@ Variant calling_conv : Set :=
 | CC_C
 | CC_MsAbi
 | CC_RegCall.
+Instance calling_conv_inhabited : Inhabited calling_conv := populate CC_C.
 Instance calling_conv_eq_dec: EqDecision calling_conv.
 Proof. solve_decision. Defined.
 Instance calling_conv_countable : Countable calling_conv.
@@ -158,6 +159,7 @@ Inductive type : Set :=
    some Tarch types, like ARM SVE, are "sizeless", hence [option size]. *)
 | Tarch (_ : option bitsize) (name : bs)
 .
+Instance type_inhabited : Inhabited type := populate Tvoid.
 
 (** Strengthened Induction Principle for [type]
 
