@@ -40,12 +40,6 @@ Variant BinOp : Set :=
 Instance: EqDecision BinOp.
 Proof. solve_decision. Defined.
 
-Variant VarRef : Set :=
-| Lname (_ : localname)
-| Gname (_ : globname).
-Instance: EqDecision VarRef.
-Proof. solve_decision. Defined.
-
 
 Variant AtomicOp : Set :=
 | AO__atomic_load
@@ -98,6 +92,13 @@ Variant BuiltinFn : Set :=
 | Bin_unknown (_ : bs)
 .
 Instance: EqDecision BuiltinFn.
+Proof. solve_decision. Defined.
+
+(** * References *)
+Variant VarRef : Set :=
+| Lname (_ : localname)
+| Gname (_ : globname).
+Instance: EqDecision VarRef.
 Proof. solve_decision. Defined.
 
 Variant call_type : Set := Virtual | Direct.
