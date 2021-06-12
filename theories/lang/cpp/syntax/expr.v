@@ -46,9 +46,6 @@ Variant VarRef : Set :=
 Instance: EqDecision VarRef.
 Proof. solve_decision. Defined.
 
-Variant ValCat : Set := Lvalue | Prvalue | Xvalue.
-Instance: EqDecision ValCat.
-Proof. solve_decision. Defined.
 
 Variant AtomicOp : Set :=
 | AO__atomic_load
@@ -105,6 +102,10 @@ Proof. solve_decision. Defined.
 
 Variant call_type : Set := Virtual | Direct.
 Instance: EqDecision call_type.
+Proof. solve_decision. Defined.
+
+Variant ValCat : Set := Lvalue | Prvalue | Xvalue.
+Instance: EqDecision ValCat.
 Proof. solve_decision. Defined.
 
 Inductive Expr : Set :=
