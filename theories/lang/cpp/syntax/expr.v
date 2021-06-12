@@ -119,7 +119,7 @@ Variant Cast : Set :=
 | Cstatic      (from to : globname)
 | Cdynamic     (from to : globname)
 | Cconst       (_ : type).
-Instance Case_eq: EqDecision Cast.
+Instance Cast_eqdec: EqDecision Cast.
 Proof. solve_decision. Defined.
 
 (** * References *)
