@@ -102,7 +102,7 @@ private:
     void printOptionalExpr(Optional<const Expr*> expr, CoqPrinter& print,
                            ClangPrinter& cprint) {
         if (expr.hasValue()) {
- 	    print.some();
+            print.some();
             cprint.printExpr(expr.getValue(), print);
             print.end_ctor();
         } else {
@@ -202,24 +202,24 @@ public:
         case BinaryOperatorKind::BO_Comma:
             print.ctor("Ecomma");
             cprint.printValCat(expr->getLHS(), print);
-	    print.output() << fmt::nbsp;
-	    cprint.printExpr(expr->getLHS(), print);
-	    print.output() << fmt::nbsp;
-	    cprint.printExpr(expr->getRHS(), print);
+            print.output() << fmt::nbsp;
+            cprint.printExpr(expr->getLHS(), print);
+            print.output() << fmt::nbsp;
+            cprint.printExpr(expr->getRHS(), print);
             print.end_ctor(); // no type information
-	    return;
+            return;
         case BinaryOperatorKind::BO_LAnd:
             print.ctor("Eseqand");
             cprint.printExpr(expr->getLHS(), print);
-	    print.output() << fmt::nbsp;
-	    cprint.printExpr(expr->getRHS(), print);
+            print.output() << fmt::nbsp;
+            cprint.printExpr(expr->getRHS(), print);
             print.end_ctor(); // no type information
             return;
         case BinaryOperatorKind::BO_LOr:
             print.ctor("Eseqor");
             cprint.printExpr(expr->getLHS(), print);
-	    print.output() << fmt::nbsp;
-	    cprint.printExpr(expr->getRHS(), print);
+            print.output() << fmt::nbsp;
+            cprint.printExpr(expr->getRHS(), print);
             print.end_ctor(); // no type information
             return;
         case BinaryOperatorKind::BO_Assign:
@@ -287,8 +287,8 @@ public:
         switch (expr->getOpcode()) {
         case UnaryOperatorKind::UO_AddrOf:
             print.ctor("Eaddrof");
-	    cprint.printExpr(expr->getSubExpr(), print, li);
-	    print.end_ctor(); // elide type
+            cprint.printExpr(expr->getSubExpr(), print, li);
+            print.end_ctor(); // elide type
             return;
         case UnaryOperatorKind::UO_Deref:
             print.ctor("Ederef");
@@ -721,7 +721,7 @@ public:
                                 const ASTContext&, OpaqueNames& li) {
         print.ctor("Eimplicit");
         cprint.printExpr(expr->getExpr(), print, li);
-	print.end_ctor();
+        print.end_ctor();
     }
 
     void VisitConditionalOperator(const ConditionalOperator* expr,
@@ -923,7 +923,7 @@ public:
         }
 #endif /* DEBUG */
         cprint.printExpr(expr->getSubExpr(), print, li);
-	print.end_ctor();
+        print.end_ctor();
     }
 
     void VisitMaterializeTemporaryExpr(const MaterializeTemporaryExpr* expr,
@@ -962,7 +962,7 @@ public:
 #else
         cprint.printExpr(expr->GetTemporaryExpr(), print);
 #endif
-	print.end_ctor();
+        print.end_ctor();
     }
 
     void VisitCXXBindTemporaryExpr(const CXXBindTemporaryExpr* expr,
