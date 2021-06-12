@@ -406,9 +406,7 @@ public:
 
         } else {
             print.ctor("Ecast");
-            print.ctor("CCcast", false);
             printCastKind(print.output(), expr->getCastKind());
-            print.end_ctor();
 
             print.output() << fmt::nbsp;
             cprint.printExprAndValCat(expr->getSubExpr(), print, li);
@@ -465,9 +463,7 @@ public:
                 cprint.printGlobalName(to, print);
                 print.end_ctor();
             } else {
-                print.ctor("CCcast", false);
                 printCastKind(print.output(), expr->getCastKind());
-                print.end_ctor();
             }
         } else if (isa<CXXDynamicCastExpr>(expr)) {
             using namespace logging;

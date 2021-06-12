@@ -94,6 +94,34 @@ Variant BuiltinFn : Set :=
 Instance: EqDecision BuiltinFn.
 Proof. solve_decision. Defined.
 
+(** * Casts *)
+Variant Cast : Set :=
+| Cdependent (* this doesn't have any semantics *)
+| Cbitcast
+| Clvaluebitcast
+| Cl2r
+| Cnoop
+| Carray2pointer
+| Cfunction2pointer
+| Cint2pointer
+| Cpointer2int
+| Cptr2bool
+| Cderived2base
+| Cbase2derived
+| Cintegral
+| Cint2bool
+| Cnull2ptr
+| Cbuiltin2function
+| Cconstructorconversion
+| C2void
+| Cuser        (conversion_function : obj_name)
+| Creinterpret (_ : type)
+| Cstatic      (from to : globname)
+| Cdynamic     (from to : globname)
+| Cconst       (_ : type).
+Instance Case_eq: EqDecision Cast.
+Proof. solve_decision. Defined.
+
 (** * References *)
 Variant VarRef : Set :=
 | Lname (_ : localname)
