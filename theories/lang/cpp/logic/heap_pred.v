@@ -300,6 +300,16 @@ Section with_cpp.
   Qed.
 
 (* TODO: Proper wrt [genv_leq]. *)
+  #[global] Instance cptrR_ne {resolve} : NonExpansive cptrR.
+  Proof.
+    intros n P Q HPQ. rewrite cptrR_eq. rewrite/cptrR_def.
+    rewrite (length_fs_arguments_ne _ _ _ HPQ) (type_of_spec_ne _ _ _ HPQ).
+    apply as_Rep_ne=>p. (do 2!f_equiv)=>ti. (do 2!f_equiv)=>vs. f_equiv=>K.
+    do 2!f_equiv. by apply fs_spec_ne.
+  Qed.
+  #[global] Instance cptrR_proper {resolve} : Proper (equiv ==> equiv) cptrR.
+  Proof. exact: ne_proper. Qed.
+
   #[global] Instance cptrR_mono {resolve} : Proper (flip fs_entails ==> (⊢)) cptrR.
   Proof.
     intros ??; rewrite /fs_entails/flip => impl. iApply cptrR_fs_impl.
@@ -309,12 +319,6 @@ Section with_cpp.
   #[global] Instance cptrR_flip_mono {resolve} : Proper (fs_entails ==> flip (⊢)) cptrR.
   Proof. by intros ?? <-. Qed.
 
-  #[global] Instance cptrR_proper {resolve} : Proper ((≡) ==> (⊣⊢)) cptrR.
-  Proof.
-    intros ? ? [H1 H2]%function_spec_equiv_split; iSplit; iIntros.
-    - by rewrite -H2.
-    - by rewrite -H1.
-  Qed.
 End with_cpp.
 
 Typeclasses Opaque primR.

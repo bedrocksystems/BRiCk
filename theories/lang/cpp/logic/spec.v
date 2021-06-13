@@ -33,8 +33,8 @@ Section with_prop.
     ; wpp_post : tele_fun@{X Z Y} wpp_with (WithExG@{X Z _ _} RESULT)}.
   Global Arguments WithPrePostG : clear implicits.
 
-  (** Analogues of [bi_texist] and [bi_tforall], with extra universe polymorphism and a slightly different interface.
-  One could prove that [bi_texist f = tbi_exist (tele_bind f)] and [tbi_forall (tele_bind f) = bi_tforall f]. *)
+  (** Analogues of [bi_texist] and [bi_tforall], with extra universe
+  polymorphism and a slightly different interface. *)
   Fixpoint tbi_exist@{X Z Y} {t : tele@{X}}
     : forall (P : tele_fun@{X Z Y} t PROP), PROP :=
     match t as t0 return ((t0 -t> PROP) → PROP) with
@@ -83,3 +83,76 @@ Arguments wpp_post {PROP ARGS RESULT} _: assert.
 
 Global Arguments WppGD {PROP ARGS RESULT} !wpp _ _ / : assert.
 Global Arguments WppD {PROP} !wpp _ _ / : assert.
+
+(** Support for guarded recursive specs. *)
+Section tele_fun_ofe.
+  Context {t : tele} {A : ofeT}.
+
+  (** Imposing a discrete order here might be limiting in practice,
+      but the same limitation exists upstream; for example, in
+      [bi_texist_ne]. *)
+  Instance tele_fun_equiv : Equiv (t -t> A) :=
+    fun f g => forall x, tele_app f x ≡ tele_app g x.
+  Instance tele_fun_dist : Dist (t -t> A) :=
+    fun n f g => forall x, tele_app f x ≡{n}≡ tele_app g x.
+
+  Lemma tele_fun_ofe_mixin : OfeMixin (t -t> A).
+  Proof. exact: (iso_ofe_mixin (A:=tele_arg t -d> A) tele_app). Qed.
+
+  Canonical Structure tele_funO := OfeT (t -t> A) tele_fun_ofe_mixin.
+End tele_fun_ofe.
+Arguments tele_funO _ _ : clear implicits, assert.
+
+Section tele_fun_quantifiers.
+  Context {PROP : bi} {t : tele}.
+  Implicit Types (P : t -t> PROP).
+  Implicit Types (R : t -> PROP).
+
+  Lemma tbi_exist_bi_texist P : tbi_exist P -|- ∃.. x, tele_app P x.
+  Proof. induction t as [|?? IH]; simpl; first done. f_equiv=>x. by rewrite IH. Qed.
+  Lemma bi_texist_tbi_exist R : (∃.. x, R x) -|- tbi_exist (tele_bind R).
+  Proof. rewrite tbi_exist_bi_texist. f_equiv=>x. by rewrite tele_app_bind. Qed.
+  Lemma tbi_exist_exist P : tbi_exist P -|- Exists x, tele_app P x.
+  Proof. by rewrite tbi_exist_bi_texist bi_texist_exist. Qed.
+
+  Lemma tbi_forall_bi_tforall P : tbi_forall P -|- ∀.. x, tele_app P x.
+  Proof. induction t as [|?? IH]; simpl; first done. f_equiv=>x. by rewrite IH. Qed.
+  Lemma bi_tforall_tbi_forall R : (∀.. x, R x) -|- tbi_forall (tele_bind R).
+  Proof. rewrite tbi_forall_bi_tforall. f_equiv=>x. by rewrite tele_app_bind. Qed.
+  Lemma tbi_forall_forall P : tbi_forall P -|- Forall x, tele_app P x.
+  Proof. by rewrite tbi_forall_bi_tforall bi_tforall_forall. Qed.
+
+  #[global] Instance tbi_exist_ne : NonExpansive (@tbi_exist PROP t).
+  Proof. intros n P Q ?. rewrite !tbi_exist_exist. solve_proper. Qed.
+  #[global] Instance tbi_exist_proper : Proper (equiv ==> equiv) (@tbi_exist PROP t).
+  Proof.
+    apply ne_proper.
+    (** TODO: Typeclass resolution here takes a long time to find
+        [tbi_exist_ne] because it first tries [contractive_ne]. Can
+        similarly slow searches arise downstream? *)
+    apply tbi_exist_ne.
+  Qed.
+
+  #[global] Instance tbi_forall_ne : NonExpansive (@tbi_forall PROP t).
+  Proof. intros n P Q ?. rewrite !tbi_forall_forall. solve_proper. Qed.
+  #[global] Instance tbi_forall_proper : Proper (equiv ==> equiv) (@tbi_forall PROP t).
+  Proof. apply ne_proper, tbi_forall_ne. Qed.
+End tele_fun_quantifiers.
+
+Section wpp_ofe.
+  Context {PROP : bi} {ARGS RESULT : Type}.
+  Notation WPP := (WithPrePostG PROP ARGS RESULT) (only parsing).
+
+  Instance wpp_equiv : Equiv WPP :=
+    fun wpp1 wpp2 => forall x Q, WppGD wpp1 x Q ≡ WppGD wpp2 x Q.
+  Instance wpp_dist : Dist WPP :=
+    fun n wpp1 wpp2 => forall x Q, WppGD wpp1 x Q ≡{n}≡ WppGD wpp2 x Q.
+
+  Lemma wpp_ofe_mixin : OfeMixin WPP.
+  Proof.
+    exact: (iso_ofe_mixin (A:=ARGS -d> (RESULT -> PROP) -d> PROP) WppGD).
+  Qed.
+  Canonical Structure WithPrePostGO := OfeT WPP wpp_ofe_mixin.
+End wpp_ofe.
+Arguments WithPrePostGO : clear implicits.
+Notation WithPrePostO PROP := (WithPrePostGO PROP (list val) val).

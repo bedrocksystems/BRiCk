@@ -39,6 +39,17 @@ Section with_cpp.
      ; fs_arguments := targs
      ; fs_spec ti   := WppD (PQ ti) |}.
 
+  #[global] Instance TSFunction_ne {cc} ret targs n :
+    Proper (dist (A:=thread_info -d> WithPrePostO mpredI) n ==> dist n)
+      (TSFunction (cc:=cc) ret targs).
+  Proof.
+    intros wpp1 wpp2 Hwpp. split. by rewrite/type_of_spec/=. done.
+  Qed.
+  #[global] Instance TSFunction_proper {cc} ret targs :
+    Proper (equiv (A:=thread_info -d> WithPrePostO mpredI) ==> equiv)
+      (TSFunction (cc:=cc) ret targs).
+  Proof. exact: ne_proper. Qed.
+
 
   (* A specification for a function  *)
   Definition SFunction@{X Z Y} {cc : calling_conv} (ret : type) (targs : list type)
@@ -48,6 +59,16 @@ Section with_cpp.
      ; fs_return    := ret
      ; fs_arguments := targs
      ; fs_spec _    := WppD PQ |}.
+
+  #[global] Instance SFunction_ne {cc} ret targs :
+    NonExpansive (SFunction (cc:=cc) ret targs).
+  Proof.
+    intros n wpp1 wpp2 Hwpp. split. by rewrite/type_of_spec/=. by move=>ti.
+  Qed.
+  #[global] Instance SFunction_proper {cc} ret targs :
+    Proper (equiv ==> equiv) (SFunction (cc:=cc) ret targs).
+  Proof. exact: ne_proper. Qed.
+
 
   (* A specification for a constructor *)
   Definition SConstructor@{X Z Y} {cc : calling_conv} (class : globname)
