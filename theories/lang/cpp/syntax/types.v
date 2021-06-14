@@ -340,38 +340,6 @@ Definition tqualified (q : type_qualifiers) (t : type) : type :=
   | _ => Tqualified q t
   end.
 
-Variant PrimCast : Set :=
-| Cdependent (* this doesn't have any semantics *)
-| Cbitcast
-| Clvaluebitcast
-| Cl2r
-| Cnoop
-| Carray2pointer
-| Cfunction2pointer
-| Cint2pointer
-| Cpointer2int
-| Cptr2bool
-| Cderived2base
-| Cbase2derived
-| Cintegral
-| Cint2bool
-| Cnull2ptr
-| Cbuiltin2function
-| Cconstructorconversion
-| C2void.
-Instance PrimCast_eq: EqDecision PrimCast.
-Proof. solve_decision. Defined.
-
-Variant Cast : Set :=
-| CCcast       (_ : PrimCast)
-| Cuser        (conversion_function : obj_name)
-| Creinterpret (_ : type)
-| Cstatic      (from to : globname)
-| Cdynamic     (from to : globname)
-| Cconst       (_ : type).
-Instance Case_eq: EqDecision Cast.
-Proof. solve_decision. Defined.
-
 
 (** normalization of types
     - compresses adjacent [Tqualified] constructors
@@ -499,5 +467,3 @@ Definition T_int : type := Tint int_bits Signed.
 Notation T_schar := (Tchar char_bits Signed) (only parsing).
 Notation T_uchar := (Tchar char_bits Unsigned) (only parsing).
 
-
-Coercion CCcast : PrimCast >-> Cast.

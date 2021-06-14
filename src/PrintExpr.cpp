@@ -91,7 +91,7 @@ private:
     void printOptionalExpr(Optional<const Expr*> expr, CoqPrinter& print,
                            ClangPrinter& cprint, OpaqueNames& li) {
         if (expr.hasValue()) {
-            print.ctor("Some");
+            print.some();
             cprint.printExpr(expr.getValue(), print, li);
             print.end_ctor();
         } else {
@@ -102,7 +102,7 @@ private:
     void printOptionalExpr(Optional<const Expr*> expr, CoqPrinter& print,
                            ClangPrinter& cprint) {
         if (expr.hasValue()) {
-            print.ctor("Some");
+            print.some();
             cprint.printExpr(expr.getValue(), print);
             print.end_ctor();
         } else {
@@ -197,18 +197,35 @@ public:
     case BinaryOperatorKind::BO_##k##Assign:                                   \
         print.ctor("Eassign_op") << #v << fmt::nbsp;                           \
         break;
+
         switch (expr->getOpcode()) {
         case BinaryOperatorKind::BO_Comma:
             print.ctor("Ecomma");
             cprint.printValCat(expr->getLHS(), print);
             print.output() << fmt::nbsp;
-            break;
+            cprint.printExpr(expr->getLHS(), print);
+            print.output() << fmt::nbsp;
+            cprint.printExpr(expr->getRHS(), print);
+            assert(expr->getRHS()->getType() == expr->getType() &&
+                   "types must match");
+            print.end_ctor(); // no type information
+            return;
         case BinaryOperatorKind::BO_LAnd:
             print.ctor("Eseqand");
-            break;
+            cprint.printExpr(expr->getLHS(), print);
+            print.output() << fmt::nbsp;
+            cprint.printExpr(expr->getRHS(), print);
+			assert(expr->getType().getTypePtr()->isBooleanType() && "&& is a bool");
+            print.end_ctor(); // no type information
+            return;
         case BinaryOperatorKind::BO_LOr:
             print.ctor("Eseqor");
-            break;
+            cprint.printExpr(expr->getLHS(), print);
+            print.output() << fmt::nbsp;
+            cprint.printExpr(expr->getRHS(), print);
+			assert(expr->getType().getTypePtr()->isBooleanType() && "|| is a bool");
+            print.end_ctor(); // no type information
+            return;
         case BinaryOperatorKind::BO_Assign:
             print.ctor("Eassign");
             break;
@@ -274,7 +291,9 @@ public:
         switch (expr->getOpcode()) {
         case UnaryOperatorKind::UO_AddrOf:
             print.ctor("Eaddrof");
-            break;
+            cprint.printExpr(expr->getSubExpr(), print, li);
+            print.end_ctor(); // elide type
+            return;
         case UnaryOperatorKind::UO_Deref:
             print.ctor("Ederef");
             break;
@@ -391,9 +410,7 @@ public:
 
         } else {
             print.ctor("Ecast");
-            print.ctor("CCcast", false);
             printCastKind(print.output(), expr->getCastKind());
-            print.end_ctor();
 
             print.output() << fmt::nbsp;
             cprint.printExprAndValCat(expr->getSubExpr(), print, li);
@@ -450,9 +467,7 @@ public:
                 cprint.printGlobalName(to, print);
                 print.end_ctor();
             } else {
-                print.ctor("CCcast", false);
                 printCastKind(print.output(), expr->getCastKind());
-                print.end_ctor();
             }
         } else if (isa<CXXDynamicCastExpr>(expr)) {
             using namespace logging;
@@ -542,7 +557,7 @@ public:
                 print.output() << fmt::nbsp;
                 cprint.printQualType(vd->getType(), print);
                 print.end_ctor();
-                done(expr, print, cprint);
+                print.end_ctor();
 
 #if 0
                 // this handles the special case of static members
@@ -564,7 +579,7 @@ public:
                 print.output() << fmt::nbsp;
                 cprint.printQualType(md->getType(), print);
                 print.end_ctor();
-                done(expr, print, cprint);
+                print.end_ctor();
                 return;
             }
         }
@@ -710,7 +725,7 @@ public:
                                 const ASTContext&, OpaqueNames& li) {
         print.ctor("Eimplicit");
         cprint.printExpr(expr->getExpr(), print, li);
-        done(expr, print, cprint);
+        print.end_ctor();
     }
 
     void VisitConditionalOperator(const ConditionalOperator* expr,
@@ -912,7 +927,7 @@ public:
         }
 #endif /* DEBUG */
         cprint.printExpr(expr->getSubExpr(), print, li);
-        done(expr, print, cprint);
+        print.end_ctor();
     }
 
     void VisitMaterializeTemporaryExpr(const MaterializeTemporaryExpr* expr,
@@ -951,7 +966,7 @@ public:
 #else
         cprint.printExpr(expr->GetTemporaryExpr(), print);
 #endif
-        done(expr, print, cprint);
+        print.end_ctor();
     }
 
     void VisitCXXBindTemporaryExpr(const CXXBindTemporaryExpr* expr,

@@ -224,9 +224,9 @@ Module Type Expr.
         |-- wp_lval (Ederef e ty) Q.
 
     (* the `&` operator is a prvalue *)
-    Axiom wp_prval_addrof : forall ty e Q,
+    Axiom wp_prval_addrof : forall e Q,
         wp_lval e (fun p free => Q (Vptr p) free)
-        |-- wp_prval (Eaddrof e ty) Q.
+        |-- wp_prval (Eaddrof e) Q.
 
     (** * Unary Operators
         NOTE the following axioms assume that [eval_unop] is deterministic when it is defined
@@ -326,24 +326,24 @@ Module Type Expr.
     (* The comma operator can be both an lvalue and a prvalue
      * depending on what the second expression is.
      *)
-    Axiom wp_lval_comma : forall {vc} ty e1 e2 Q,
+    Axiom wp_lval_comma : forall {vc} e1 e2 Q,
         wpe vc e1 (fun _ free1 => wp_lval e2 (fun val free2 => Q val (free1 ** free2)))
-        |-- wp_lval (Ecomma vc e1 e2 ty) Q.
+        |-- wp_lval (Ecomma vc e1 e2) Q.
 
-    Axiom wp_xval_comma : forall {vc} ty e1 e2 Q,
+    Axiom wp_xval_comma : forall {vc} e1 e2 Q,
         wpe vc e1 (fun _ free1 => wp_xval e2 (fun val free2 => Q val (free1 ** free2)))
-        |-- wp_xval (Ecomma vc e1 e2 ty) Q.
+        |-- wp_xval (Ecomma vc e1 e2) Q.
 
-    Axiom wp_prval_comma : forall {vc} ty e1 e2 Q,
+    Axiom wp_prval_comma : forall {vc} e1 e2 Q,
         wpe vc e1 (fun _ free1 => wp_prval e2 (fun val free2 => Q val (free1 ** free2)))
-        |-- wp_prval (Ecomma vc e1 e2 ty) Q.
+        |-- wp_prval (Ecomma vc e1 e2) Q.
 
-    Axiom wp_init_comma : forall {vc} ty' ty p e1 e2 Q,
+    Axiom wp_init_comma : forall {vc} ty' p e1 e2 Q,
             wpe vc e1 (fun _ free1 => wp_init ty' p e2 (fun free2 => Q (free1 ** free2)))
-        |-- wp_init ty' p (Ecomma vc e1 e2 ty) Q.
+        |-- wp_init ty' p (Ecomma vc e1 e2) Q.
 
     (** short-circuting operators *)
-    Axiom wp_prval_seqand : forall ty e1 e2 Q,
+    Axiom wp_prval_seqand : forall e1 e2 Q,
         wp_prval e1 (fun v1 free1 =>
         (* ^ note: technically an rvalue, but it must be a primitive,
            otherwise there will be an implicit cast to bool, to it is
@@ -356,9 +356,9 @@ Module Type Expr.
                                      then Q (Vint 1) (free1 ** free2)
                                      else Q (Vint 0) (free1 ** free2))
            else Q (Vint 0) free1)
-        |-- wp_prval (Eseqand e1 e2 ty) Q.
+        |-- wp_prval (Eseqand e1 e2) Q.
 
-    Axiom wp_prval_seqor : forall ty e1 e2 Q,
+    Axiom wp_prval_seqor : forall e1 e2 Q,
         wp_prval e1 (fun v1 free1 =>
         (* ^ note: technically an rvalue, but it must be a primitive,
            otherwise there will be an implicit cast to bool, to it is
@@ -371,7 +371,7 @@ Module Type Expr.
                                      if c
                                      then Q (Vint 1) (free1 ** free2)
                                      else Q (Vint 0) (free1 ** free2)))
-        |-- wp_prval (Eseqor e1 e2 ty) Q.
+        |-- wp_prval (Eseqor e1 e2) Q.
 
     (** * Casts
         Casts apply exclusively to primitive types, all other casts in C++
@@ -662,8 +662,8 @@ Module Type Expr.
            else wp_init ty addr el (fun free' => free ** Q free'))
         |-- wp_init ty addr (Eif tst th el ty') Q.
 
-    Axiom wp_prval_implicit: forall  e Q ty,
-        wp_prval e Q |-- wp_prval (Eimplicit e ty) Q.
+    Axiom wp_prval_implicit: forall  e Q,
+        wp_prval e Q |-- wp_prval (Eimplicit e) Q.
 
     (** [sizeof] and [alignof] do not evaluate their arguments *)
     Axiom wp_prval_sizeof : forall ty' ty Q,
@@ -948,22 +948,23 @@ Module Type Expr.
     (** temporary expressions
        note(gmm): these axioms should be reviewed thoroughly
      *)
-    Axiom wp_lval_clean : forall e ty Q,
-        wp_lval e Q |-- wp_lval (Eandclean e ty) Q.
-    Axiom wp_prval_clean : forall e ty Q,
-        wp_prval e Q |-- wp_prval (Eandclean e ty) Q.
-    Axiom wp_xval_clean : forall e ty Q,
-        wp_xval e Q |-- wp_xval (Eandclean e ty) Q.
+    Axiom wp_lval_clean : forall e Q,
+        wp_lval e Q |-- wp_lval (Eandclean e) Q.
+    Axiom wp_prval_clean : forall e Q,
+        wp_prval e Q |-- wp_prval (Eandclean e) Q.
+    Axiom wp_xval_clean : forall e Q,
+        wp_xval e Q |-- wp_xval (Eandclean e) Q.
 
     (** [Ematerialize_temp e ty] is an xvalue that gets memory (with automatic
         storage duration) and initializes it using the expression.
      *)
-    Axiom wp_xval_temp : forall e ty Q,
-        (let raw_type := erase_qualifiers ty in
+    Axiom wp_xval_temp : forall e Q,
+        (let ty := type_of e in
+         let raw_type := erase_qualifiers ty in
          Forall a : ptr, a |-> tblockR raw_type 1 -*
                   wp_init ty a e
                           (fun free => Q a (destruct_val false ty a (a |-> tblockR raw_type 1 ** free))))
-        |-- wp_xval (Ematerialize_temp e ty) Q.
+        |-- wp_xval (Ematerialize_temp e) Q.
 
     (** temporary materialization only occurs when the resulting value is used.
         if the value is ignored, e.g. in `go();` (when the result of `go` is an
