@@ -50,7 +50,7 @@ class names [derived], [base] are ground.
 The proofs use [iffLR] to avoid destructing [iff]. While verbose,
 that's presumably faster. *)
 Existing Class class_derives.
-#[global] Hint Mode class_derives + + + : typeclass_instances.
+#[global] Hint Mode class_derives - + + : typeclass_instances.
 
 #[global] Instance class_derives_here tu σ derived st :
   tu ⊧ σ ->
