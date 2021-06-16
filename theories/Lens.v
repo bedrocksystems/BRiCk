@@ -24,6 +24,8 @@ End ops.
 Module LensNotations.
   Declare Scope lens_scope.
   Delimit Scope lens_scope with lens.
+  Bind Scope lens_scope with Lens.
+
   Notation "X -l> Y" := (Lens X X Y Y)
     (at level 99, Y at level 200, right associativity) : type_scope.
   Notation "a & b" := (b a) (at level 50, only parsing, left associativity) : lens_scope.
