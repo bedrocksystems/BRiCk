@@ -7,32 +7,7 @@
 Require Import bedrock.lang.prelude.base.
 From bedrock.lang.cpp.arith Require Import types builtins operator.
 
-(* TODO: using bool_decide would simplify this reasoning. *)
-#[local] Ltac churn_bits' :=
-  repeat match goal with
-  | |- context[(?l <=? ?r)%Z] =>
-    let Hnb := fresh "Hnb" in
-    let Hn := fresh "Hn" in
-    destruct (l <=? r)%Z eqn:Hnb;
-      set (Hn := Hnb);
-      [ apply Z.leb_le in Hn
-      | apply Z.leb_gt in Hn]
-  | |- context[(?l <? ?r)%Z] =>
-    let Hnb := fresh "Hnb" in
-    let Hn := fresh "Hn" in
-    destruct (l <? r)%Z eqn:Hnb;
-      set (Hn := Hnb);
-      [ apply Z.ltb_lt in Hn
-      | apply Z.ltb_ge in Hn]
-  end; rewrite ?andb_false_l ?andb_false_r ?andb_true_l ?andb_true_r
-               ?orb_false_l ?orb_false_r ?orb_true_l ?orb_true_r ?Z.bits_0 //=;
-               try lia.
-
-#[local] Ltac churn_bits :=
-  apply Z.bits_inj'=> n ?;
-  repeat (rewrite ?Z.lor_spec ?Z.shiftl_spec ?Z.land_spec ?Z.shiftr_spec; try lia);
-  rewrite !Z.testbit_ones; try lia;
-  churn_bits'.
+Import arith.builtins.churn_bits.
 
 Section FromToBytes.
   Section ExtraFacts.

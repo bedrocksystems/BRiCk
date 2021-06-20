@@ -46,12 +46,13 @@ Definition leading_zeros (sz : bitsize) (l : Z) : Z :=
   bitsZ sz - Z.log2 (l mod (2^64)).
 #[global] Arguments leading_zeros : simpl never.
 
+Module Import churn_bits.
 (* NOTE (JH): `churn_bits'` and `churn_bits` are used here, and in z_to_bytes.v; we should
      find a better common home.
  *)
 
 (* TODO: using bool_decide would simplify this reasoning. *)
-#[local] Ltac churn_bits' :=
+Ltac churn_bits' :=
   repeat match goal with
   | |- context[(?l <=? ?r)%Z] =>
     let Hnb := fresh "Hnb" in
@@ -71,11 +72,12 @@ Definition leading_zeros (sz : bitsize) (l : Z) : Z :=
                ?orb_false_l ?orb_false_r ?orb_true_l ?orb_true_r ?Z.bits_0 //=;
                try lia.
 
-#[local] Ltac churn_bits :=
+Ltac churn_bits :=
   apply Z.bits_inj'=> n ?;
   repeat (rewrite ?Z.lor_spec ?Z.shiftl_spec ?Z.land_spec ?Z.shiftr_spec; try lia);
   rewrite !Z.testbit_ones; try lia;
   churn_bits'.
+End churn_bits.
 
 Section BitsTheory.
   Lemma log2_lt_pow2ge:
