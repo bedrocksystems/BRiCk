@@ -52,7 +52,7 @@ Section with_cpp.
   }.
   #[global] Arguments DOT_dot {!DOT} _ _ : rename.
 
-  Canonical Structure DOT_offset_loc : DOT :=
+  Canonical Structure DOT_offset_ptr : DOT :=
     {| DOT_from := ptr; DOT_to := ptr; DOT_dot o p := _offset_ptr p o |}.
   Canonical Structure DOT_field_offset {σ : genv} : DOT :=
     {| DOT_from := field; DOT_to := offset; DOT_dot o f := o_dot (o_field σ f) o |}.
@@ -73,7 +73,7 @@ Local Ltac simple_refine ____x :=
                    TO_OFFSET_from  _to_offset
                    TO_OFFSET_field TO_OFFSET_offset
                    DOT_from DOT_to DOT_dot
-                   DOT_offset_loc DOT_field_offset DOT_offset_offset (* DOT_ptr_offset *) DOT_val_offset ] in ____x in
+                   DOT_offset_ptr DOT_field_offset DOT_offset_offset DOT_val_offset ] in ____x in
   exact x'.
 
 Notation "l |-> r" := (match AT_at l r with
