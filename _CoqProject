@@ -39,6 +39,9 @@ theories/lang/bi/IrisBridge.v
 theories/lang/bi/ChargeCompat.v
 theories/lang/bi/errors.v
 
+# Arithmetic support theory
+theories/lang/cpp/arith/types.v
+
 # Syntax
 theories/lang/cpp/syntax/names.v
 theories/lang/cpp/syntax/types.v
