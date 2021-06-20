@@ -76,3 +76,6 @@ Proof.
   abstract (by intros []).
 Defined.
 
+Variant endian : Set := Little | Big.
+Instance endian_dec : EqDecision endian.
+Proof. solve_decision. Defined.
