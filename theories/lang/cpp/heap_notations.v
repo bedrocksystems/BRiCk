@@ -17,7 +17,7 @@ Section with_cpp.
   Structure AT : Type :=
   { AT_lhs    : Type
   ; AT_rhs    : Type
-  ; AT_result : Type
+  ; AT_result :> Type
   ; #[canonical=no] AT_at     :> AT_lhs -> AT_rhs -> AT_result
   }.
   #[global] Arguments AT_at {!AT} _ _ : rename.
@@ -47,7 +47,7 @@ Section with_cpp.
   (* paths *)
   Structure DOT : Type :=
   { DOT_from : Type
-  ; DOT_to : Type
+  ; DOT_to :> Type
   ; #[canonical=no] DOT_dot : offset -> DOT_from -> DOT_to
   }.
   #[global] Arguments DOT_dot {!DOT} _ _ : rename.
