@@ -120,6 +120,8 @@ Section test_suite.
 
   Example _1 := |> p ., f |-> R.
 
+  Example _1' := |> v ., f |-> R.
+
   Example _2 := p |-> f |-> R.
 
   Example _3 := p .[ T_int ! 0 ] |-> R.
@@ -143,6 +145,8 @@ Section test_suite.
   Example _12 := o .[ T_int ! 1 ] |-> R.
 
   Example _13 := v .[ T_int ! 1 ] |-> R.
+
+  Example _13' := v |-> R.
 
   Example _14 := .[ T_int ! 1 ] |-> R.
 
