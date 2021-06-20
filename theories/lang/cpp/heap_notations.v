@@ -76,6 +76,8 @@ Local Ltac simple_refine ____x :=
                    DOT_offset_ptr DOT_field_offset DOT_offset_offset DOT_val_offset ] in ____x in
   exact x'.
 
+(* For each notation, we list the parsing form and then the printing forms. *)
+
 Notation "l |-> r" := (match AT_at l r with
                        | ____x => ltac:(simple_refine ____x)
                        end)
@@ -89,14 +91,6 @@ Notation "p ., o" := (match DOT_dot (_to_offset o) p with
                       | ____x => ltac:(simple_refine ____x)
                       end)
   (at level 11, left associativity, only parsing).
-
-Notation "p .[ t ! n ]" := (match DOT_dot (o_sub _ t n) p with
-                            | ____x => ltac:(simple_refine ____x)
-                            end)
-  (at level 11, left associativity, only parsing).
-Notation ".[ t ! n ]" := ((o_sub _ t n))
-  (at level 11, only parsing).
-
 Notation "p ., o" := (_offset_ptr p o)
   (at level 11, left associativity, only printing,
    format "p  .,  o").
@@ -104,10 +98,18 @@ Notation "p ., o" := (o_dot p o)
   (at level 11, left associativity, only printing,
    format "p  .,  o").
 
-Notation ".[ t ! n ]" := ((o_sub _ t n))
-  (at level 11, no associativity, only printing, format ".[  t  !  n  ]").
+
+Notation "p .[ t ! n ]" := (match DOT_dot (o_sub _ t n) p with
+                            | ____x => ltac:(simple_refine ____x)
+                            end)
+  (at level 11, left associativity, only parsing).
 Notation "p .[ t ! n ]" := (_offset_ptr (o_sub _ t n) p)
   (at level 11, left associativity, only printing, format "p  .[  t  '!'  n  ]").
+
+Notation ".[ t ! n ]" := (o_sub _ t n)
+  (at level 11, only parsing).
+Notation ".[ t ! n ]" := (o_sub _ t n)
+  (at level 11, no associativity, only printing, format ".[  t  !  n  ]").
 
 (* Test suite *)
 Section test_suite.
