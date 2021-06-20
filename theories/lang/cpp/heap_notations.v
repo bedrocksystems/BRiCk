@@ -78,13 +78,13 @@ Local Ltac simple_refine ____x :=
 
 (* For each notation, we list the parsing form and then the printing forms. *)
 
-Notation "l |-> r" := (match AT_at l r with
+Notation "p |-> r" := (match AT_at p r with
                        | ____x => ltac:(simple_refine ____x)
                        end)
   (at level 15, r at level 20, right associativity, only parsing).
-Notation "l |-> r" := (_at l r)
+Notation "p |-> r" := (_at p r)
   (at level 15, r at level 20, right associativity, only printing).
-Notation "l |-> r" := (_offsetR l r)
+Notation "p |-> r" := (_offsetR p r)
   (at level 15, r at level 20, right associativity, only printing).
 
 Notation "p ., o" := (match DOT_dot (_to_offset o) p with
@@ -114,23 +114,23 @@ Notation ".[ t ! n ]" := (o_sub _ t n)
 (* Test suite *)
 Section test_suite.
 
-  Context {σ : genv} `{Σ : cpp_logic} (R : Rep) (f g : field) (o : offset) (l : ptr) (p : ptr) (v : val).
+  Context {σ : genv} `{Σ : cpp_logic} (R : Rep) (f g : field) (o : offset) (p : ptr) (v : val).
 
-  Example _0 := |> l |-> R.
+  Example _0 := |> p |-> R.
 
-  Example _1 := |> l ., f |-> R.
+  Example _1 := |> p ., f |-> R.
 
-  Example _2 := l |-> f |-> R.
+  Example _2 := p |-> f |-> R.
 
-  Example _3 := l .[ T_int ! 0 ] |-> R.
+  Example _3 := p .[ T_int ! 0 ] |-> R.
 
-  Example _4 := l |-> f .[ T_int ! 0 ] |-> R.
+  Example _4 := p |-> f .[ T_int ! 0 ] |-> R.
 
-  Example _5 := l .[ T_int ! 0 ] .[ T_int ! 3 ] |-> R.
+  Example _5 := p .[ T_int ! 0 ] .[ T_int ! 3 ] |-> R.
 
-  Example _6 := l ., f .[ T_int ! 0 ] ., g |-> R.
+  Example _6 := p ., f .[ T_int ! 0 ] ., g |-> R.
 
-  Example _7 := l ., g ., f .[ T_int ! 1 ] .[ T_int ! 0 ] ., f |-> f |-> R.
+  Example _7 := p ., g ., f .[ T_int ! 1 ] .[ T_int ! 0 ] ., f |-> f |-> R.
 
   Example _8 := p ., g ., f .[ T_int ! 1 ] .[ T_int ! 0 ] ., f |-> .[ T_int ! 1 ] |-> R.
 
@@ -148,11 +148,11 @@ Section test_suite.
 
   Example _15 := |> .[ T_int ! 1 ] |-> |> R.
 
-  Fail Example _16 := l |-> ▷ R ∗ R.
-  Fail Example _16 := l |-> |> R ** R. (* requires parsing as [(l |-> |> R) ** R] *)
+  Fail Example _16 := p |-> ▷ R ∗ R.
+  Fail Example _16 := p |-> |> R ** R. (* requires parsing as [(p |-> |> R) ** R] *)
 
-  Fail Example _f := l |-> R ** R. (* requires parsing as [(l |-> R) ** R] *)
+  Fail Example _f := p |-> R ** R. (* requires parsing as [(p |-> R) ** R] *)
 
-  Fail Example _BAD := l |-> R q.
+  Fail Example _BAD := p |-> R q.
 
 End test_suite.
