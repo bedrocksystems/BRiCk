@@ -14,8 +14,9 @@ Require Import bedrock.lang.bi.cancelable_invariants.
 Require Import bedrock.lang.cpp.logic.own_instances.
 
 From bedrock.lang.prelude Require Import base option.
+Require Import bedrock.lang.cpp.arith.z_to_bytes.
 From bedrock.lang.cpp Require Import ast semantics.
-From bedrock.lang.cpp.logic Require Import mpred pred z_to_bytes.
+From bedrock.lang.cpp.logic Require Import mpred pred.
 
 Implicit Types (vt : validity_type) (σ resolve : genv).
 
