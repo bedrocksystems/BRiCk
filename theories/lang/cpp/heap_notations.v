@@ -12,6 +12,16 @@ Set Primitive Projections.
 Section with_cpp.
   Context `{Σ : cpp_logic}.
 
+  (* coercions to [offset] *)
+  Structure TO_OFFSET : Type :=
+  { TO_OFFSET_from :> Type
+  ; #[canonical=no] _to_offset : TO_OFFSET_from -> offset
+  }.
+  #[global] Arguments _to_offset {!TO_OFFSET} _ : rename.
+
+  Canonical Structure TO_OFFSET_field {σ : genv} := {| TO_OFFSET_from := field; _to_offset := o_field σ |}.
+  Canonical Structure TO_OFFSET_offset := {| TO_OFFSET_from := offset; _to_offset o := o |}.
+
 
   (* "points to" *)
   Structure AT : Type :=
@@ -25,24 +35,17 @@ Section with_cpp.
   Canonical Structure mpredA : AT :=
     {| AT_lhs := ptr; AT_rhs := Rep; AT_result := mpred; AT_at := _at |}.
 
-  Canonical Structure RepA : AT :=
-    {| AT_lhs := offset; AT_rhs := Rep; AT_result := Rep; AT_at o := _offsetR o |}.
-
+  (* [mpredA] + [eqv] coercion *)
   Canonical Structure mpred_val_AT : AT :=
     {| AT_lhs := val; AT_rhs := Rep; AT_result := mpred; AT_at v := _at (_eqv v) |}.
 
+
+  Canonical Structure RepA : AT :=
+    {| AT_lhs := offset; AT_rhs := Rep; AT_result := Rep; AT_at o := _offsetR o |}.
+
+  (* [RepA] + [o_field σ] coercion *)
   Canonical Structure Rep_field_AT {σ : genv} : AT :=
     {| AT_lhs := field; AT_rhs := Rep; AT_result := Rep; AT_at v := _offsetR (o_field σ v) |}.
-
-  (* coercions to [offset] *)
-  Structure TO_OFFSET : Type :=
-  { TO_OFFSET_from :> Type
-  ; #[canonical=no] _to_offset : TO_OFFSET_from -> offset
-  }.
-  #[global] Arguments _to_offset {!TO_OFFSET} _ : rename.
-
-  Canonical Structure TO_OFFSET_field {σ : genv} := {| TO_OFFSET_from := field; _to_offset := o_field σ |}.
-  Canonical Structure TO_OFFSET_offset := {| TO_OFFSET_from := offset; _to_offset o := o |}.
 
   (* paths *)
   Structure DOT : Type :=
@@ -52,15 +55,21 @@ Section with_cpp.
   }.
   #[global] Arguments DOT_dot {!DOT} _ _ : rename.
 
+
   Canonical Structure DOT_offset_ptr : DOT :=
     {| DOT_from := ptr; DOT_to := ptr; DOT_dot o p := _offset_ptr p o |}.
-  Canonical Structure DOT_field_offset {σ : genv} : DOT :=
-    {| DOT_from := field; DOT_to := offset; DOT_dot o f := o_dot (o_field σ f) o |}.
+
+  (* [DOT_offset_ptr] + [eqv] coercion *)
+  Canonical Structure DOT_val_offset : DOT :=
+    {| DOT_from := val; DOT_to := ptr; DOT_dot o p := _offset_ptr (_eqv p) o |}.
+
+
   Canonical Structure DOT_offset_offset : DOT :=
     {| DOT_from := offset; DOT_to := offset; DOT_dot o1 o2 := o_dot o2 o1 |}.
 
-  Canonical Structure DOT_val_offset : DOT :=
-    {| DOT_from := val; DOT_to := ptr; DOT_dot o p := _offset_ptr (_eqv p) o |}.
+  (* [DOT_offset_offset] + [o_field σ] coercion *)
+  Canonical Structure DOT_field_offset {σ : genv} : DOT :=
+    {| DOT_from := field; DOT_to := offset; DOT_dot o f := o_dot (o_field σ f) o |}.
 
 End with_cpp.
 
