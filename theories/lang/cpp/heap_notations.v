@@ -5,12 +5,13 @@
  *)
 From bedrock.lang.cpp Require Import ast semantics.
 From bedrock.lang.cpp.logic Require Import
-     pred path_pred heap_pred.
+     pred path_pred.
 
 Set Primitive Projections.
 
 Section with_cpp.
-  Context `{Σ : cpp_logic ti}.
+  Context `{Σ : cpp_logic}.
+
 
   (* "points to" *)
   Structure AT : Type :=
@@ -60,9 +61,6 @@ Section with_cpp.
     {| DOT_dot o f := o_dot (o_field σ f) o |}.
   Canonical Structure DOT_offset_offset : DOT :=
     {| DOT_dot o1 o2 := o_dot o2 o1 |}. (** TODO confirm this *)
-(*
-  Canonical Structure DOT_ptr_offset : DOT :=
-    {| DOT_dot o p := _offset_ptr p o |}. *)
   Canonical Structure DOT_val_offset : DOT :=
     {| DOT_dot o p := _offset_ptr (_eqv p) o |}.
 
@@ -116,7 +114,7 @@ Notation "p .[ t ! n ]" := (_offset_ptr (o_sub _ t n) p)
 (* Test suite *)
 Section test_suite.
 
-  Context {σ : genv} `{Σ : cpp_logic ti} (R : Rep) (f g : field) (o : offset) (l : ptr) (p : ptr) (v : val).
+  Context {σ : genv} `{Σ : cpp_logic} (R : Rep) (f g : field) (o : offset) (l : ptr) (p : ptr) (v : val).
 
   Example _0 := |> l |-> R.
 

@@ -9,6 +9,7 @@ From bedrock.lang.cpp.semantics Require Import values.
 From bedrock.lang.cpp.logic Require Import spec pred.
 (* XXX only needed for examples. *)
 Require bedrock.lang.cpp.heap_notations.
+From bedrock.lang.cpp.logic Require heap_pred.
 
 Set Universe Polymorphism.
 
