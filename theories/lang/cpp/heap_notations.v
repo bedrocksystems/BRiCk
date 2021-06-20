@@ -9,6 +9,12 @@ From bedrock.lang.cpp.logic Require Import
 
 Set Primitive Projections.
 
+(*
+XXX to fix:
+- We should make these operations more widely available.
+- We currently reduce away the overloading via [simple_refine]; however, this
+  reduction fails whenever evars remain in the notation arguments.
+*)
 Section with_cpp.
   Context `{Σ : cpp_logic}.
 
