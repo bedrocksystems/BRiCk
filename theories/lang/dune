@@ -5,7 +5,7 @@
  ; be MyPlugin.A, etc... when seen from
  ; outside.
 
- ; (package coq-cpp2v)            ; Adding this line will make your
+ (package coq-cpp2v)            ; Adding this line will make your
  ; library installable in the package
 
  (flags (
