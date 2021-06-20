@@ -47,10 +47,6 @@ Definition leading_zeros (sz : bitsize) (l : Z) : Z :=
 #[global] Arguments leading_zeros : simpl never.
 
 Module Import churn_bits.
-(* NOTE (JH): `churn_bits'` and `churn_bits` are used here, and in z_to_bytes.v; we should
-     find a better common home.
- *)
-
 (* TODO: using bool_decide would simplify this reasoning. *)
 Ltac churn_bits' :=
   repeat match goal with

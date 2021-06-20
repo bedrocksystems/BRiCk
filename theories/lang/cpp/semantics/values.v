@@ -98,14 +98,7 @@ Module Type RAW_BYTES_VAL
   Axiom raw_bytes_of_val_sizeof : forall σ ty v rs,
       raw_bytes_of_val σ ty v rs -> size_of σ ty = Some (N.of_nat $ length rs).
 
-  (* TODO (JH): Change structure s.t. I can import `z_to_bytes` here.
-
-     NOTE: It seems like we probably want to move purely arithmetic stuff (like `trim`
-       and `z_to_bytes.v`) out of the cpp-specific subdirectories within cpp2v-core.
-       That way, we can easily use these concepts within our axiomatic semantics. It
-       will also make it easier for us to (potentially) concretize a model of machine words
-       and use them throughout our axiomatic semantics.
-
+  (* TODO Maybe add?
     Axiom raw_bytes_of_val_int : forall σ sz z rs,
         raw_bytes_of_val σ (Tint sz Unsigned) (Vint z) rs <->
         exists l,
