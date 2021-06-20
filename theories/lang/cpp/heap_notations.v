@@ -78,7 +78,7 @@ Local Ltac simple_refine ____x :=
                    DOT_offset_loc DOT_field_offset DOT_offset_offset (* DOT_ptr_offset *) DOT_val_offset ] in ____x in
   exact x'.
 
-Notation "l |-> r" := (match @AT_at _ l r with
+Notation "l |-> r" := (match AT_at l r with
                        | ____x => ltac:(simple_refine ____x)
                        end)
   (at level 15, r at level 20, right associativity, only parsing).
@@ -87,16 +87,16 @@ Notation "l |-> r" := (_at l r)
 Notation "l |-> r" := (_offsetR l r)
   (at level 15, r at level 20, right associativity, only printing).
 
-Notation "p ., o" := (match @DOT_dot _ (@_to_offset _ o) p with
+Notation "p ., o" := (match DOT_dot (_to_offset o) p with
                       | ____x => ltac:(simple_refine ____x)
                       end)
   (at level 11, left associativity, only parsing).
 
-Notation "p .[ t ! n ]" := (match @DOT_dot _ (@o_sub _ t n%Z) p with
+Notation "p .[ t ! n ]" := (match DOT_dot (o_sub _ t n) p with
                             | ____x => ltac:(simple_refine ____x)
                             end)
   (at level 11, left associativity, only parsing).
-Notation ".[ t ! n ]" := ((@o_sub _ t n%Z))
+Notation ".[ t ! n ]" := ((o_sub _ t n))
   (at level 11, only parsing).
 
 Notation "p ., o" := (_offset_ptr p o)
