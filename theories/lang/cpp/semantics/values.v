@@ -10,6 +10,7 @@ Require Import stdpp.gmap.
 
 From bedrock.lang.prelude Require Import base addr option numbers.
 
+Require Import bedrock.lang.cpp.arith.builtins.
 Require Import bedrock.lang.cpp.ast.
 From bedrock.lang.cpp.semantics Require Export types sub_module genv ptrs.
 
@@ -390,3 +391,45 @@ Arguments Z.mul _ _ : simpl never.
 Arguments Z.pow _ _ : simpl never.
 Arguments Z.opp _ : simpl never.
 Arguments Z.pow_pos _ _ : simpl never.
+
+Section has_type.
+  Lemma has_type_bswap8:
+    forall v,
+      has_type (Vint (bswap8 v)) (Tint W8 Unsigned).
+  Proof. intros *; apply has_int_type; red; generalize (bswap8_bounded v); simpl; lia. Qed.
+
+  Lemma has_type_bswap16:
+    forall v,
+      has_type (Vint (bswap16 v)) (Tint W16 Unsigned).
+  Proof. intros *; apply has_int_type; red; generalize (bswap16_bounded v); simpl; lia. Qed.
+
+  Lemma has_type_bswap32:
+    forall v,
+      has_type (Vint (bswap32 v)) (Tint W32 Unsigned).
+  Proof. intros *; apply has_int_type; red; generalize (bswap32_bounded v); simpl; lia. Qed.
+
+  Lemma has_type_bswap64:
+    forall v,
+      has_type (Vint (bswap64 v)) (Tint W64 Unsigned).
+  Proof. intros *; apply has_int_type; red; generalize (bswap64_bounded v); simpl; lia. Qed.
+
+  Lemma has_type_bswap128:
+    forall v,
+      has_type (Vint (bswap128 v)) (Tint W128 Unsigned).
+  Proof. intros *; apply has_int_type; red; generalize (bswap128_bounded v); simpl; lia. Qed.
+End has_type.
+
+Lemma has_type_bswap:
+  forall sz v,
+    has_type (Vint (bswap sz v)) (Tint sz Unsigned).
+Proof.
+  intros *; destruct sz;
+    eauto using
+          has_type_bswap8,
+          has_type_bswap16,
+          has_type_bswap32,
+          has_type_bswap64,
+          has_type_bswap128.
+Qed.
+
+#[global] Hint Resolve has_type_bswap : has_type.

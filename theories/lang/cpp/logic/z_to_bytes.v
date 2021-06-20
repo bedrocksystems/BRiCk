@@ -5,8 +5,7 @@
  *)
 
 Require Import bedrock.lang.prelude.base.
-From bedrock.lang.cpp.semantics Require Import builtins operator.
-From bedrock.lang.cpp Require Import ast.
+From bedrock.lang.cpp.arith Require Import types builtins operator.
 
 (* TODO: using bool_decide would simplify this reasoning. *)
 #[local] Ltac churn_bits' :=

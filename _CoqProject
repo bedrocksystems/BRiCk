@@ -42,6 +42,7 @@ theories/lang/bi/errors.v
 # Arithmetic support theory
 theories/lang/cpp/arith/types.v
 theories/lang/cpp/arith/operator.v
+theories/lang/cpp/arith/builtins.v
 
 # Syntax
 theories/lang/cpp/syntax/names.v

@@ -7,7 +7,7 @@ Require Import bedrock.lang.prelude.base.
 Require Import iris.proofmode.tactics.
 Require Import bedrock.lang.bi.ChargeCompat.
 From bedrock.lang.cpp Require Import ast semantics.
-Require Import bedrock.lang.cpp.semantics.builtins.
+Require Import bedrock.lang.cpp.arith.builtins.
 From bedrock.lang.cpp.logic Require Import
      pred path_pred heap_pred wp.
 
