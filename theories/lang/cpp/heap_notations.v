@@ -22,17 +22,14 @@ Section with_cpp.
   }.
   #[global] Arguments AT_at {!AT} _ _ : rename.
 
-  Canonical Structure mpred_AT : AT :=
-    {| AT_at := rep._at (Σ:=Σ) |}.
+  Canonical Structure mpred_ptr_AT : AT :=
+    {| AT_at v := rep._at (Σ:=Σ) v |}.
 
   Canonical Structure Rep_AT : AT :=
     {| AT_at := rep._offsetR (Σ:=Σ) |}.
 
   Canonical Structure mpred_val_AT : AT :=
     {| AT_at v := rep._at (Σ:=Σ) (_eqv v) |}.
-
-  Canonical Structure mpred_ptr_AT : AT :=
-    {| AT_at v := rep._at (Σ:=Σ) v |}.
 
   Canonical Structure Rep_field_AT {σ : genv} : AT :=
     {| AT_at v := rep._offsetR (Σ:=Σ) (o_field σ v) |}.
@@ -71,7 +68,7 @@ Local Ltac simple_refine ____x :=
   let x' := eval cbv beta iota delta
                  [ ____x id
                    AT_lhs AT_rhs AT_result  AT_at
-                   mpred_AT Rep_AT mpred_val_AT mpred_ptr_AT Rep_field_AT
+                   Rep_AT mpred_val_AT mpred_ptr_AT Rep_field_AT
                    TO_OFFSET_from  _to_offset
                    TO_OFFSET_field TO_OFFSET_offset
                    DOT_from DOT_to DOT_dot
