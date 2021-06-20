@@ -18,8 +18,6 @@ From bedrock.lang.cpp Require Import ast semantics.values.
 
 Local Open Scope Z_scope.
 
-Local Ltac smash __N :=
-  generalize dependent __N; intro __N; destruct __N; rewrite /bitsZ /=; try lia.
 
 
 (** truncation (used for unsigned operations) *)
