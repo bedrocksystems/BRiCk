@@ -908,12 +908,15 @@ Section with_cpp.
     P ≡ Q ⊢@{mpredI} [| type_of_spec P = type_of_spec Q |].
   Proof.
     rewrite only_provable_equiv.
-    repeat uPred.unseal. constructor=>n x ?. by intros [? _].
+    constructor => ?.
+    rewrite monPred_at_internal_eq monPred_at_and monPred_at_emp monPred_at_pure.
+    repeat uPred.unseal. constructor => n x ?. by intros [? _].
   Qed.
 
   Lemma fs_equivI_spec P Q ti vs K :
     P ≡ Q ⊢@{mpredI} P.(fs_spec) ti vs K ≡ Q.(fs_spec) ti vs K.
   Proof.
+    constructor => ?. rewrite !monPred_at_internal_eq.
     repeat uPred.unseal. constructor=>n x ? [_ HPQ]. apply HPQ.
   Qed.
 
@@ -921,7 +924,10 @@ Section with_cpp.
     type_of_spec P = type_of_spec Q ->
     Forall ti vs K, P.(fs_spec) ti vs K ≡ Q.(fs_spec) ti vs K ⊢@{mpredI} P ≡ Q.
   Proof.
-    intros. repeat uPred.unseal. constructor=>n x ?. by split.
+    intros.
+    constructor => ?. repeat setoid_rewrite monPred_at_forall.
+    setoid_rewrite monPred_at_internal_eq.
+    repeat uPred.unseal. constructor=>n x ?. by split.
   Qed.
 
   Lemma fs_equivI P Q :
@@ -996,7 +1002,8 @@ Section with_cpp.
       - rewrite /bi_emp_valid {2}plainly_emp_2=>->. by rewrite fs_equiv_equivI. }
     split.
     - intros->. apply internal_eq_refl.
-    - apply uPred.internal_eq_soundness.
+    - rewrite monPred_internal_eq_unfold => /embed_emp_valid_inj.
+      apply uPred.internal_eq_soundness.
   Qed.
 
   Lemma function_spec_equiv_split P Q : P ≡ Q ↔ fs_entails P Q /\ fs_entails Q P.

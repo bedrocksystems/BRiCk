@@ -10,9 +10,11 @@ This is guaranteed not to affect clients, since all we add is a few [#[export] H
 *)
 
 From bedrock.lang Require Import prelude.base bi.prelude bi.only_provable.
+From iris.bi Require Import monpred.
 From iris.proofmode Require Import tactics.
 
 #[export] Remove Hints uPred_affine : typeclass_instances.
+#[export] Remove Hints monPred_bi_affine : typeclass_instances.
 
 Import bi.
 
@@ -66,6 +68,27 @@ End uPred_with_later_emp.
 
 #[export] Hint Resolve timeless_emp_uPred affine_later_emp_uPred affine_later_uPred : typeclass_instances.
 
+Section monPred_with_later_emp.
+  Context (I : biIndex) (M : ucmraT).
+  Local Notation monPredI := (monPredI I (uPredI M)).
+  Local Notation "'emp'" := (bi_emp (PROP := monPredI)) : bi_scope.
+
+  Definition later_emp_monPred := @bi.later_emp _ (@monPred_bi_affine I _ (uPred_affine M)).
+
+  (* TODO: switch to [#[export] Instance] when Coq supports it. *)
+  #[local] Instance timeless_emp_monPred : Timeless (PROP := monPredI) emp.
+  Proof. apply timeless_emp_with_later_emp, later_emp_monPred. Qed.
+
+  #[local] Instance affine_later_emp_monPred : Affine (PROP := monPredI) (▷ emp).
+  Proof. apply affine_later_emp_with_later_emp, later_emp_monPred. Qed.
+
+  #[local] Instance affine_later_monPred (P : monPredI) :
+    Affine P → Affine (▷ P).
+  Proof. apply affine_later_with_later_emp, later_emp_monPred. Qed.
+End monPred_with_later_emp.
+
+#[export] Hint Resolve timeless_emp_monPred affine_later_emp_monPred affine_later_monPred : typeclass_instances.
+
 (**
 Other instances that we derive from affinity but seem safe.
 This relies on [only_provable_forall_2_gen] and
@@ -80,5 +103,15 @@ Section uPred.
   Proof. apply (@from_forall_only_provable _ _), TCOrT_l, uPred_affine. Qed.
 End uPred.
 
+Section monPred.
+  Context (I : biIndex) (M : ucmraT).
+
+  #[local] Instance from_forall_only_provable_monPred {A} (P : A → Prop) name :
+    AsIdentName P name ->
+    @FromForall (monPredI I (uPredI M)) A [| ∀ x, P x |] (λ a, [| P a |]) name.
+  Proof. apply (@from_forall_only_provable _ _), TCOrT_l, monPred_bi_affine, uPred_affine. Qed.
+End monPred.
+
 #[export] Remove Hints from_forall_only_provable : typeclass_instances.
 #[export] Hint Resolve from_forall_only_provable_uPred : typeclass_instances.
+#[export] Hint Resolve from_forall_only_provable_monPred : typeclass_instances.

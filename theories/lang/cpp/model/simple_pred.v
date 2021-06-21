@@ -34,7 +34,7 @@ Lemma frac_valid {A : Type} {q1 q2} {v1 v2 : A} :
 Proof. by move /pair_valid => /= []? /to_agree_op_inv_L. Qed.
 
 Section fractional.
-  Context {K V : Type} `{Countable K} `{inG Σ (gmapR K (fractionalR V))}.
+  Context {K V : Type} `{Countable K} `{!HasOwn PROP (gmapR K (fractionalR V))}.
 
   Let gmap_own γ q k v :=
     own (A := gmapR K (fractionalR V)) γ {[ k := frac q v ]}.
@@ -46,7 +46,9 @@ Section fractional.
     AsFractional (gmap_own γ q k v) (λ q, gmap_own γ q k v) q.
   Proof. exact: Build_AsFractional. Qed.
 
-  Global Instance gmap_own_agree v1 v2 γ q1 q2 k :
+  Global Instance gmap_own_agree
+    `{!BiEmbed siPropI PROP} `{!HasOwnValid PROP (gmapR K (fractionalR V))}
+    v1 v2 γ q1 q2 k :
     Observe2 [| v1 = v2 |] (gmap_own γ q1 k v1) (gmap_own γ q2 k v2).
   Proof.
     apply: observe_2_intro_only_provable.
@@ -55,7 +57,9 @@ Section fractional.
     by iIntros "!%" => /frac_valid [].
   Qed.
 
-  Global Instance gmap_own_frac_valid γ (q : Qp) k v :
+  Global Instance gmap_own_frac_valid
+    `{!BiEmbed siPropI PROP} `{!HasOwnValid PROP (gmapR K (fractionalR V))}
+    γ (q : Qp) k v :
     Observe [| q ≤ 1 |]%Qp (gmap_own γ q k v).
   Proof.
     apply: observe_intro_only_provable.

@@ -37,18 +37,14 @@ Module Type CPP_LOGIC_CLASS_MIXIN (Import CC : CPP_LOGIC_CLASS_BASE).
   Global Existing Instance has_cppG.
 
   Section with_cpp.
-    Context `{cpp_logic}.
+    Context `{cpp_logic ti}.
 
-    Definition mpred := iProp _Σ.
+    Definition mpredI : bi := monPredI ti (iPropI _Σ).
+    Definition mpred := bi_car mpredI.
+
+    (* TODO: seal *)
     Canonical Structure mpredO : ofeT
-      := OfeT mpred (ofe_mixin (iPropO _Σ)).
-    Canonical Structure mpredI : bi :=
-    {|
-      bi_car := mpred ;
-      bi_ofe_mixin := bi_ofe_mixin (iPropI _Σ);
-      bi_bi_mixin := bi_bi_mixin (iPropI _Σ);
-      bi_bi_later_mixin := bi_bi_later_mixin (iPropI _Σ);
-    |}.
+      := OfeT mpred (ofe_mixin (monPredO ti (iPropI _Σ))).
   End with_cpp.
 
   Bind Scope bi_scope with bi_car.
