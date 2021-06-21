@@ -24,7 +24,7 @@ Implicit Types (σ : genv).
 #[local] Close Scope nat_scope.
 #[local] Open Scope Z_scope.
 
-Module PTRS_IMPL : PTRS_INTF_MINIMAL.
+Module PTRS_IMPL <: PTRS_INTF_MINIMAL.
   Import canonical_tu address_sums merge_elems.
 
   Inductive raw_offset_seg : Set :=
@@ -203,14 +203,14 @@ Module PTRS_IMPL : PTRS_INTF_MINIMAL.
   Arguments raw_offset_merge !_ _ /.
 
   Definition offset := {ro : raw_offset | raw_offset_wf ro}.
-  Instance offset_eq_dec : EqDecision offset := _.
+  #[global] Instance offset_eq_dec : EqDecision offset := _.
 
   #[local] Definition raw_offset_to_offset (ro : raw_offset) : option offset :=
     match decide (raw_offset_wf ro) with
     | left Hwf => Some (exist _ ro Hwf)
     | right _ => None
     end.
-  Instance offset_countable : Countable offset.
+  #[global] Instance offset_countable : Countable offset.
   Proof.
     apply (inj_countable proj1_sig raw_offset_to_offset) => -[ro Hwf] /=.
     rewrite /raw_offset_to_offset; case_match => //.
@@ -360,7 +360,7 @@ Module PTRS_IMPL : PTRS_INTF_MINIMAL.
   #[local] Instance root_ptr_eq_dec : EqDecision root_ptr.
   Proof. solve_decision. Defined.
   Declare Instance root_ptr_countable : Countable root_ptr.
-  Instance global_ptr__inj : Inj2 (=) (=) (=) global_ptr_.
+  #[global] Instance global_ptr__inj : Inj2 (=) (=) (=) global_ptr_.
   Proof. by intros ???? [=]. Qed.
 
   Definition root_ptr_alloc_id (rp : root_ptr) : option alloc_id :=
@@ -382,10 +382,10 @@ Module PTRS_IMPL : PTRS_INTF_MINIMAL.
   | fun_ptr_ (tu : translation_unit_canon) (o : obj_name)
   | offset_ptr (p : root_ptr) (o : offset).
   Definition ptr := ptr_.
-  #[local] Instance ptr_eq_dec : EqDecision ptr.
+  #[global] Instance ptr_eq_dec : EqDecision ptr.
   Proof. solve_decision. Defined.
-  Declare Instance ptr_countable : Countable ptr.
-  Instance offset_ptr_inj : Inj2 (=) (=) (=) offset_ptr.
+  #[global] Declare Instance ptr_countable : Countable ptr.
+  #[global] Instance offset_ptr_inj : Inj2 (=) (=) (=) offset_ptr.
   Proof. by intros ???? [=]. Qed.
 
   Definition ptr_alloc_id (p : ptr) : option alloc_id :=
@@ -447,15 +447,15 @@ Module PTRS_IMPL : PTRS_INTF_MINIMAL.
   Proof. done. Qed.
 
 
-  Instance id_dot : LeftId (=) o_id o_dot.
+  #[global] Instance id_dot : LeftId (=) o_id o_dot.
   Proof. intros o. apply /sig_eq_pi. by case: o. Qed.
-  Instance dot_id : RightId (=) o_id o_dot.
+  #[global] Instance dot_id : RightId (=) o_id o_dot.
   Proof.
     intros o. apply /sig_eq_pi.
     rewrite /= /raw_offset_merge (right_id []).
     by case: o.
   Qed.
-  #[local] Instance dot_assoc : Assoc (=) o_dot.
+  #[global] Instance dot_assoc : Assoc (=) o_dot.
   Proof.
     intros o1 o2 o3. apply /sig_eq_pi.
     move: o1 o2 o3 => [ro1 /= wf1]
