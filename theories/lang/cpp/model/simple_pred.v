@@ -1085,8 +1085,17 @@ Module VALID_PTR : VALID_PTR_AXIOMS L L L.
   Notation valid_ptr := (_valid_ptr Relaxed).
   Section with_cpp.
     Context `{cpp_logic} {σ : genv}.
-    Axiom invalid_ptr_invalid : forall vt,
+
+    Lemma invalid_ptr_invalid vt :
       _valid_ptr vt invalid_ptr |-- False.
+    Proof.
+      (* A proper proof requires redesigning valid_ptr *)
+      rewrite /_valid_ptr; iDestruct 1 as "[%|H]"; first done.
+      change FULL_IMPL.ptr with ptr.
+      iDestruct "H" as (base l h o zo) "(B & Rng & %Hoff & _)".
+      destruct Hoff as (? & Heval & Habs).
+    Admitted.
+
     (** Justified by [https://eel.is/c++draft/expr.add#4.1]. *)
     Axiom _valid_ptr_nullptr_sub_false : forall vt ty (i : Z) (_ : i <> 0),
       _valid_ptr vt (nullptr .., o_sub σ ty i) |-- False.
