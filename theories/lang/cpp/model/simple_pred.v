@@ -1074,7 +1074,7 @@ Module SimpleCPP.
 
 End SimpleCPP.
 
-Module Type SimpleCPP_INTF := SimpleCPP_BASE <+ CPP_LOGIC FULL_IMPL.
+Module Type SimpleCPP_INTF := CPP_LOGIC_CLASS <+ CPP_LOGIC FULL_IMPL.
 Module L <: SimpleCPP_INTF := SimpleCPP.
 
 Module VALID_PTR : VALID_PTR_AXIOMS FULL_IMPL L L.
