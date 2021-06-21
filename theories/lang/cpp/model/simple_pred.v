@@ -69,11 +69,16 @@ Section fractional.
   Qed.
 End fractional.
 
+From bedrock.lang.cpp.model Require Import inductive_pointers.
 (* Stand-in for an actual model of PTRS_FULL.
 Ensures that everything needed is properly functorized. *)
-Declare Module PTRS_IMPL : PTRS_INTF.
+Declare Module RAW_BYTES_IMPL : RAW_BYTES.
+Module PTRS_IMPL_MINIMAL <: PTRS_INTF_MINIMAL := inductive_pointers.PTRS_IMPL.
+Module PTRS_IMPL <: PTRS_INTF := PTRS_IMPL_MINIMAL <+ RAW_BYTES_IMPL <+ VAL_MIXIN
+  (* This one only adds axioms. *)
+  <+ RAW_BYTES_VAL.
 
-Module Import FULL_IMPL : FULL_INTF := PTRS_IMPL <+ RAW_BYTES_MIXIN <+ PTRS_MIXIN.
+Module Import FULL_IMPL <: FULL_INTF := PTRS_IMPL <+ RAW_BYTES_MIXIN <+ PTRS_MIXIN.
 
 Implicit Types (p : ptr).
 
@@ -1071,4 +1076,9 @@ Module SimpleCPP.
 End SimpleCPP.
 
 Module Type SimpleCPP_INTF := SimpleCPP_BASE <+ FULL_INTF <+ CPP_LOGIC.
-Module L : SimpleCPP_INTF := SimpleCPP.
+Module L <: SimpleCPP_INTF := SimpleCPP.
+
+Module VALID_PTR : VALID_PTR_AXIOMS L L L.
+  Include SimpleCPP.
+  Include VALID_PTR_AXIOMS.
+End VALID_PTR.
