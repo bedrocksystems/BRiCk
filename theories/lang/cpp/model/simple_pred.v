@@ -1079,6 +1079,87 @@ Module Type SimpleCPP_INTF := SimpleCPP_BASE <+ FULL_INTF <+ CPP_LOGIC.
 Module L <: SimpleCPP_INTF := SimpleCPP.
 
 Module VALID_PTR : VALID_PTR_AXIOMS L L L.
-  Include SimpleCPP.
-  Include VALID_PTR_AXIOMS.
+  Import SimpleCPP.
+
+  Notation strict_valid_ptr := (_valid_ptr Strict).
+  Notation valid_ptr := (_valid_ptr Relaxed).
+  Section with_cpp.
+    Context `{cpp_logic} {σ : genv}.
+    Axiom invalid_ptr_invalid : forall vt,
+      _valid_ptr vt invalid_ptr |-- False.
+    (** Justified by [https://eel.is/c++draft/expr.add#4.1]. *)
+    Axiom _valid_ptr_nullptr_sub_false : forall vt ty (i : Z) (_ : i <> 0),
+      _valid_ptr vt (nullptr .., o_sub σ ty i) |-- False.
+    (*
+    TODO Controversial; if [f] is the first field, [nullptr->f] or casts relying on
+    https://eel.is/c++draft/basic.compound#4 might invalidate this.
+    To make this valid, we could ensure our axiomatic semantics produces
+    [nullptr] instead of [nullptr ., o_field]. *)
+    (* Axiom _valid_ptr_nullptr_field_false : forall vt f,
+      _valid_ptr vt (nullptr .., o_field σ f) |-- False. *)
+
+    (** These axioms are named after the predicate in the conclusion. *)
+
+    (**
+    TODO: The intended proof of [strict_valid_ptr_sub] assumes that, if [p']
+    normalizes to [p ., [ ty ! i ]], then [valid_ptr p'] is defined to imply
+    validity of all pointers from [p] to [p'].
+
+    Note that `arrR` exposes stronger reasoning principles, but this might still be useful.
+    *)
+    Axiom strict_valid_ptr_sub : ∀ (i j k : Z) p ty vt1 vt2,
+      (i <= j < k)%Z ->
+      _valid_ptr vt1 (p .., o_sub σ ty i) |--
+      _valid_ptr vt2 (p .., o_sub σ ty k) -* strict_valid_ptr (p .., o_sub σ ty j).
+
+    (** XXX: this axiom is convoluted but
+    TODO: The intended proof of [strict_valid_ptr_field_sub] (and friends) is that
+    (1) if [p'] normalizes to [p'' ., [ ty ! i ]], then [valid_ptr p'] implies
+    [valid_ptr p''].
+    (2) [p .., o_field σ f .., o_sub σ ty i] will normalize to [p .., o_field
+    σ f .., o_sub σ ty i], without cancellation.
+    *)
+    Axiom strict_valid_ptr_field_sub : ∀ p ty (i : Z) f vt,
+      (0 < i)%Z ->
+      _valid_ptr vt (p .., o_field σ f .., o_sub σ ty i) |-- strict_valid_ptr (p .., o_field σ f).
+
+    (* TODO: can we deduce that [p] is strictly valid? *)
+    Axiom _valid_ptr_base : ∀ p base derived vt,
+      _valid_ptr vt (p .., o_base σ derived base) |-- _valid_ptr vt p.
+    (* TODO: can we deduce that [p] is strictly valid? *)
+    Axiom _valid_ptr_derived : ∀ p base derived vt,
+      _valid_ptr vt (p .., o_derived σ base derived) |-- _valid_ptr vt p.
+    (* TODO: can we deduce that [p] is strictly valid? *)
+    Axiom _valid_ptr_field : ∀ p f vt,
+      _valid_ptr vt (p .., o_field σ f) |-- _valid_ptr vt p.
+    (* TODO: Pointers to fields can't be past-the-end, right?
+    Except 0-size arrays. *)
+    (* Axiom strict_valid_ptr_field : ∀ p f,
+      valid_ptr (p .., o_field σ f) |--
+      strict_valid_ptr (p .., o_field σ f). *)
+    (* TODO: if we add [strict_valid_ptr_field], we can derive
+    [_valid_ptr_field] from just [strict_valid_ptr_field] *)
+    (* Axiom strict_valid_ptr_field : ∀ p f,
+      strict_valid_ptr (p .., o_field σ f) |-- strict_valid_ptr p. *)
+
+    (* We're ignoring virtual inheritance here, since we have no plans to
+    support it for now, but this might hold there too. *)
+    Axiom o_base_derived : forall p base derived,
+      strict_valid_ptr (p .., o_base σ derived base) |--
+      [| p .., o_base σ derived base .., o_derived σ base derived = p |].
+
+    Axiom o_derived_base : forall p base derived,
+      strict_valid_ptr (p .., o_derived σ base derived) |--
+      [| p .., o_derived σ base derived .., o_base σ derived base = p |].
+
+    (* Without the validity premise to the cancellation axioms ([o_sub_sub],
+      [o_base_derived], [o_derived_base]) we could incorrectly deduce that
+      [valid_ptr p] entails [valid_ptr (p ., o_base derived base ., o_derived
+      base derived)] which entails [valid_ptr (p ., o_base derived base)].
+    *)
+
+    (* TODO: maybe add a validity of offsets to allow stating this more generally. *)
+    Axiom valid_o_sub_size : forall p ty i vt,
+      _valid_ptr vt (p .., o_sub σ ty i) |-- [| is_Some (size_of σ ty) |].
+  End with_cpp.
 End VALID_PTR.
