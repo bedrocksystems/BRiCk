@@ -59,7 +59,7 @@ Module PTRS_IMPL : PTRS_INTF_MINIMAL.
   The list of offsets in [[p; o_1; ...; o_n]] is represented as [[o_n; ... o_1]].
   This way, we can cons new offsets to the head, and consume them at the tail. *)
   Definition raw_offset := list offset_seg.
-  #[local] Instance raw_offset_eq_dec : EqDecision offset := _.
+  #[local] Instance raw_offset_eq_dec : EqDecision raw_offset := _.
   #[local] Instance raw_offset_countable : Countable raw_offset := _.
 
   Notation isnt o pattern :=
