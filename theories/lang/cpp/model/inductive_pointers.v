@@ -34,7 +34,7 @@ Module PTRS_IMPL : PTRS_INTF_MINIMAL.
   | o_derived_ (base derived : globname)
   | o_invalid_.
   #[local] Instance raw_offset_seg_eq_dec : EqDecision raw_offset_seg.
-  Proof. solve_decision. Qed.
+  Proof. solve_decision. Defined.
   Declare Instance raw_offset_seg_countable : Countable raw_offset_seg.
 
   Definition offset_seg : Set := raw_offset_seg * Z.
@@ -358,7 +358,7 @@ Module PTRS_IMPL : PTRS_INTF_MINIMAL.
   | alloc_ptr_ (a : alloc_id) (va : vaddr).
 
   #[local] Instance root_ptr_eq_dec : EqDecision root_ptr.
-  Proof. solve_decision. Qed.
+  Proof. solve_decision. Defined.
   Declare Instance root_ptr_countable : Countable root_ptr.
   Instance global_ptr__inj : Inj2 (=) (=) (=) global_ptr_.
   Proof. by intros ???? [=]. Qed.
@@ -383,7 +383,7 @@ Module PTRS_IMPL : PTRS_INTF_MINIMAL.
   | offset_ptr (p : root_ptr) (o : offset).
   Definition ptr := ptr_.
   #[local] Instance ptr_eq_dec : EqDecision ptr.
-  Proof. solve_decision. Qed.
+  Proof. solve_decision. Defined.
   Declare Instance ptr_countable : Countable ptr.
   Instance offset_ptr_inj : Inj2 (=) (=) (=) offset_ptr.
   Proof. by intros ???? [=]. Qed.
