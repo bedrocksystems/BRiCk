@@ -186,7 +186,6 @@ End SimpleCPP_VIRTUAL.
 Module SimpleCPP.
   Include SimpleCPP_BASE.
   Include SimpleCPP_VIRTUAL.
-  Include FULL_IMPL.
 
   Definition runtime_val := runtime_val'.
 
@@ -1075,10 +1074,10 @@ Module SimpleCPP.
 
 End SimpleCPP.
 
-Module Type SimpleCPP_INTF := SimpleCPP_BASE <+ FULL_INTF <+ CPP_LOGIC.
+Module Type SimpleCPP_INTF := SimpleCPP_BASE <+ CPP_LOGIC FULL_IMPL.
 Module L <: SimpleCPP_INTF := SimpleCPP.
 
-Module VALID_PTR : VALID_PTR_AXIOMS L L L.
+Module VALID_PTR : VALID_PTR_AXIOMS FULL_IMPL L L.
   Import SimpleCPP.
 
   Notation strict_valid_ptr := (_valid_ptr Strict).
@@ -1091,7 +1090,6 @@ Module VALID_PTR : VALID_PTR_AXIOMS L L L.
     Proof.
       (* A proper proof requires redesigning valid_ptr *)
       rewrite /_valid_ptr; iDestruct 1 as "[%|H]"; first done.
-      change FULL_IMPL.ptr with ptr.
       iDestruct "H" as (base l h o zo) "(B & Rng & %Hoff & _)".
       destruct Hoff as (? & Heval & Habs).
     Admitted.
