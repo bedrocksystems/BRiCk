@@ -78,7 +78,7 @@ Module PTRS_IMPL <: PTRS_INTF := PTRS_IMPL_MINIMAL <+ RAW_BYTES_IMPL <+ VAL_MIXI
   (* This one only adds axioms. *)
   <+ RAW_BYTES_VAL.
 
-Module Import FULL_IMPL <: FULL_INTF := PTRS_IMPL <+ RAW_BYTES_MIXIN <+ PTRS_MIXIN.
+Module Import VALUES_FULL_IMPL <: VALUES_FULL_INTF := PTRS_IMPL <+ RAW_BYTES_MIXIN <+ PTRS_MIXIN.
 
 Implicit Types (p : ptr).
 
@@ -1074,10 +1074,10 @@ Module SimpleCPP.
 
 End SimpleCPP.
 
-Module Type SimpleCPP_INTF := CPP_LOGIC_CLASS <+ CPP_LOGIC FULL_IMPL.
+Module Type SimpleCPP_INTF := CPP_LOGIC_CLASS <+ CPP_LOGIC VALUES_FULL_IMPL.
 Module L <: SimpleCPP_INTF := SimpleCPP.
 
-Module VALID_PTR : VALID_PTR_AXIOMS FULL_IMPL L L.
+Module VALID_PTR : VALID_PTR_AXIOMS VALUES_FULL_IMPL L L.
   Import SimpleCPP.
 
   Notation strict_valid_ptr := (_valid_ptr Strict).
