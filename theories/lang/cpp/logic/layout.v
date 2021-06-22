@@ -7,11 +7,11 @@ Require Import bedrock.lang.prelude.base.
 Require Import iris.proofmode.tactics.
 From iris.bi.lib Require Import fractional.
 
+Require Import bedrock.lang.cpp.arith.z_to_bytes.
 Require Import bedrock.lang.cpp.ast.
 From bedrock.lang.cpp.logic Require Import
      pred path_pred heap_pred translation_unit.
 Require Import bedrock.lang.cpp.semantics.
-Require Import bedrock.lang.cpp.logic.z_to_bytes.
 Require Import bedrock.lang.cpp.logic.arr.
 Require Export bedrock.lang.cpp.logic.raw.
 

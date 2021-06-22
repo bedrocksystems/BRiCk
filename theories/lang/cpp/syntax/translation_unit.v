@@ -226,10 +226,6 @@ Definition symbol_table : Type := IM.t ObjValue.
 
 Definition type_table : Type := IM.t GlobDecl.
 
-Variant endian : Set := Little | Big.
-Instance endian_dec : EqDecision endian.
-Proof. solve_decision. Defined.
-
 (**
 A [translation_unit] value represents all the statically known information
 about a C++ translation unit, that is, a source file.

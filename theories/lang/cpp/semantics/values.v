@@ -10,6 +10,7 @@ Require Import stdpp.gmap.
 
 From bedrock.lang.prelude Require Import base addr option numbers.
 
+Require Import bedrock.lang.cpp.arith.builtins.
 Require Import bedrock.lang.cpp.ast.
 From bedrock.lang.cpp.semantics Require Export types sub_module genv ptrs.
 
@@ -97,14 +98,7 @@ Module Type RAW_BYTES_VAL
   Axiom raw_bytes_of_val_sizeof : forall σ ty v rs,
       raw_bytes_of_val σ ty v rs -> size_of σ ty = Some (N.of_nat $ length rs).
 
-  (* TODO (JH): Change structure s.t. I can import `z_to_bytes` here.
-
-     NOTE: It seems like we probably want to move purely arithmetic stuff (like `trim`
-       and `z_to_bytes.v`) out of the cpp-specific subdirectories within cpp2v-core.
-       That way, we can easily use these concepts within our axiomatic semantics. It
-       will also make it easier for us to (potentially) concretize a model of machine words
-       and use them throughout our axiomatic semantics.
-
+  (* TODO Maybe add?
     Axiom raw_bytes_of_val_int : forall σ sz z rs,
         raw_bytes_of_val σ (Tint sz Unsigned) (Vint z) rs <->
         exists l,
@@ -201,8 +195,8 @@ Module Type PTRS_INTF := PTRS_INTF_MINIMAL <+ RAW_BYTES <+ VAL_MIXIN <+ RAW_BYTE
 Declare Module PTRS_INTF_AXIOM : PTRS_INTF.
 
 (* Plug mixins. *)
-Module Type FULL_INTF := PTRS_INTF <+ PTRS_MIXIN <+ RAW_BYTES_MIXIN.
-Module Export FULL_INTF_AXIOM : FULL_INTF := PTRS_INTF_AXIOM <+ PTRS_MIXIN <+ RAW_BYTES_MIXIN.
+Module Type VALUES_FULL_INTF := PTRS_INTF <+ PTRS_MIXIN <+ RAW_BYTES_MIXIN.
+Module Export VALUES_FULL_INTF_AXIOM : VALUES_FULL_INTF := PTRS_INTF_AXIOM <+ PTRS_MIXIN <+ RAW_BYTES_MIXIN.
 
 Instance ptr_inhabited : Inhabited ptr := populate nullptr.
 
@@ -390,3 +384,45 @@ Arguments Z.mul _ _ : simpl never.
 Arguments Z.pow _ _ : simpl never.
 Arguments Z.opp _ : simpl never.
 Arguments Z.pow_pos _ _ : simpl never.
+
+Section has_type.
+  Lemma has_type_bswap8:
+    forall v,
+      has_type (Vint (bswap8 v)) (Tint W8 Unsigned).
+  Proof. intros *; apply has_int_type; red; generalize (bswap8_bounded v); simpl; lia. Qed.
+
+  Lemma has_type_bswap16:
+    forall v,
+      has_type (Vint (bswap16 v)) (Tint W16 Unsigned).
+  Proof. intros *; apply has_int_type; red; generalize (bswap16_bounded v); simpl; lia. Qed.
+
+  Lemma has_type_bswap32:
+    forall v,
+      has_type (Vint (bswap32 v)) (Tint W32 Unsigned).
+  Proof. intros *; apply has_int_type; red; generalize (bswap32_bounded v); simpl; lia. Qed.
+
+  Lemma has_type_bswap64:
+    forall v,
+      has_type (Vint (bswap64 v)) (Tint W64 Unsigned).
+  Proof. intros *; apply has_int_type; red; generalize (bswap64_bounded v); simpl; lia. Qed.
+
+  Lemma has_type_bswap128:
+    forall v,
+      has_type (Vint (bswap128 v)) (Tint W128 Unsigned).
+  Proof. intros *; apply has_int_type; red; generalize (bswap128_bounded v); simpl; lia. Qed.
+End has_type.
+
+Lemma has_type_bswap:
+  forall sz v,
+    has_type (Vint (bswap sz v)) (Tint sz Unsigned).
+Proof.
+  intros *; destruct sz;
+    eauto using
+          has_type_bswap8,
+          has_type_bswap16,
+          has_type_bswap32,
+          has_type_bswap64,
+          has_type_bswap128.
+Qed.
+
+#[global] Hint Resolve has_type_bswap : has_type.

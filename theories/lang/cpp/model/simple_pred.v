@@ -14,8 +14,9 @@ Require Import bedrock.lang.bi.cancelable_invariants.
 Require Import bedrock.lang.cpp.logic.own_instances.
 
 From bedrock.lang.prelude Require Import base option.
+Require Import bedrock.lang.cpp.arith.z_to_bytes.
 From bedrock.lang.cpp Require Import ast semantics.
-From bedrock.lang.cpp.logic Require Import mpred pred z_to_bytes.
+From bedrock.lang.cpp.logic Require Import mpred pred.
 
 Implicit Types (vt : validity_type) (σ resolve : genv).
 
@@ -68,11 +69,16 @@ Section fractional.
   Qed.
 End fractional.
 
+From bedrock.lang.cpp.model Require Import inductive_pointers.
 (* Stand-in for an actual model of PTRS_FULL.
 Ensures that everything needed is properly functorized. *)
-Declare Module PTRS_IMPL : PTRS_INTF.
+Declare Module RAW_BYTES_IMPL : RAW_BYTES.
+Module PTRS_IMPL_MINIMAL <: PTRS_INTF_MINIMAL := inductive_pointers.PTRS_IMPL.
+Module PTRS_IMPL <: PTRS_INTF := PTRS_IMPL_MINIMAL <+ RAW_BYTES_IMPL <+ VAL_MIXIN
+  (* This one only adds axioms. *)
+  <+ RAW_BYTES_VAL.
 
-Module Import FULL_IMPL : FULL_INTF := PTRS_IMPL <+ RAW_BYTES_MIXIN <+ PTRS_MIXIN.
+Module Import VALUES_FULL_IMPL <: VALUES_FULL_INTF := PTRS_IMPL <+ RAW_BYTES_MIXIN <+ PTRS_MIXIN.
 
 Implicit Types (p : ptr).
 
@@ -180,7 +186,6 @@ End SimpleCPP_VIRTUAL.
 Module SimpleCPP.
   Include SimpleCPP_BASE.
   Include SimpleCPP_VIRTUAL.
-  Include FULL_IMPL.
 
   Definition runtime_val := runtime_val'.
 
@@ -1069,5 +1074,99 @@ Module SimpleCPP.
 
 End SimpleCPP.
 
-Module Type SimpleCPP_INTF := SimpleCPP_BASE <+ FULL_INTF <+ CPP_LOGIC.
-Module L : SimpleCPP_INTF := SimpleCPP.
+Module Type SimpleCPP_INTF := CPP_LOGIC_CLASS <+ CPP_LOGIC VALUES_FULL_IMPL.
+Module L <: SimpleCPP_INTF := SimpleCPP.
+
+Module VALID_PTR : VALID_PTR_AXIOMS VALUES_FULL_IMPL L L.
+  Import SimpleCPP.
+
+  Notation strict_valid_ptr := (_valid_ptr Strict).
+  Notation valid_ptr := (_valid_ptr Relaxed).
+  Section with_cpp.
+    Context `{cpp_logic} {σ : genv}.
+
+    Lemma invalid_ptr_invalid vt :
+      _valid_ptr vt invalid_ptr |-- False.
+    Proof.
+      (* A proper proof requires redesigning valid_ptr *)
+      rewrite /_valid_ptr; iDestruct 1 as "[%|H]"; first done.
+      iDestruct "H" as (base l h o zo) "(B & Rng & %Hoff & _)".
+      destruct Hoff as (? & Heval & Habs).
+    Admitted.
+
+    (** Justified by [https://eel.is/c++draft/expr.add#4.1]. *)
+    Axiom _valid_ptr_nullptr_sub_false : forall vt ty (i : Z) (_ : i <> 0),
+      _valid_ptr vt (nullptr .., o_sub σ ty i) |-- False.
+    (*
+    TODO Controversial; if [f] is the first field, [nullptr->f] or casts relying on
+    https://eel.is/c++draft/basic.compound#4 might invalidate this.
+    To make this valid, we could ensure our axiomatic semantics produces
+    [nullptr] instead of [nullptr ., o_field]. *)
+    (* Axiom _valid_ptr_nullptr_field_false : forall vt f,
+      _valid_ptr vt (nullptr .., o_field σ f) |-- False. *)
+
+    (** These axioms are named after the predicate in the conclusion. *)
+
+    (**
+    TODO: The intended proof of [strict_valid_ptr_sub] assumes that, if [p']
+    normalizes to [p ., [ ty ! i ]], then [valid_ptr p'] is defined to imply
+    validity of all pointers from [p] to [p'].
+
+    Note that `arrR` exposes stronger reasoning principles, but this might still be useful.
+    *)
+    Axiom strict_valid_ptr_sub : ∀ (i j k : Z) p ty vt1 vt2,
+      (i <= j < k)%Z ->
+      _valid_ptr vt1 (p .., o_sub σ ty i) |--
+      _valid_ptr vt2 (p .., o_sub σ ty k) -* strict_valid_ptr (p .., o_sub σ ty j).
+
+    (** XXX: this axiom is convoluted but
+    TODO: The intended proof of [strict_valid_ptr_field_sub] (and friends) is that
+    (1) if [p'] normalizes to [p'' ., [ ty ! i ]], then [valid_ptr p'] implies
+    [valid_ptr p''].
+    (2) [p .., o_field σ f .., o_sub σ ty i] will normalize to [p .., o_field
+    σ f .., o_sub σ ty i], without cancellation.
+    *)
+    Axiom strict_valid_ptr_field_sub : ∀ p ty (i : Z) f vt,
+      (0 < i)%Z ->
+      _valid_ptr vt (p .., o_field σ f .., o_sub σ ty i) |-- strict_valid_ptr (p .., o_field σ f).
+
+    (* TODO: can we deduce that [p] is strictly valid? *)
+    Axiom _valid_ptr_base : ∀ p base derived vt,
+      _valid_ptr vt (p .., o_base σ derived base) |-- _valid_ptr vt p.
+    (* TODO: can we deduce that [p] is strictly valid? *)
+    Axiom _valid_ptr_derived : ∀ p base derived vt,
+      _valid_ptr vt (p .., o_derived σ base derived) |-- _valid_ptr vt p.
+    (* TODO: can we deduce that [p] is strictly valid? *)
+    Axiom _valid_ptr_field : ∀ p f vt,
+      _valid_ptr vt (p .., o_field σ f) |-- _valid_ptr vt p.
+    (* TODO: Pointers to fields can't be past-the-end, right?
+    Except 0-size arrays. *)
+    (* Axiom strict_valid_ptr_field : ∀ p f,
+      valid_ptr (p .., o_field σ f) |--
+      strict_valid_ptr (p .., o_field σ f). *)
+    (* TODO: if we add [strict_valid_ptr_field], we can derive
+    [_valid_ptr_field] from just [strict_valid_ptr_field] *)
+    (* Axiom strict_valid_ptr_field : ∀ p f,
+      strict_valid_ptr (p .., o_field σ f) |-- strict_valid_ptr p. *)
+
+    (* We're ignoring virtual inheritance here, since we have no plans to
+    support it for now, but this might hold there too. *)
+    Axiom o_base_derived : forall p base derived,
+      strict_valid_ptr (p .., o_base σ derived base) |--
+      [| p .., o_base σ derived base .., o_derived σ base derived = p |].
+
+    Axiom o_derived_base : forall p base derived,
+      strict_valid_ptr (p .., o_derived σ base derived) |--
+      [| p .., o_derived σ base derived .., o_base σ derived base = p |].
+
+    (* Without the validity premise to the cancellation axioms ([o_sub_sub],
+      [o_base_derived], [o_derived_base]) we could incorrectly deduce that
+      [valid_ptr p] entails [valid_ptr (p ., o_base derived base ., o_derived
+      base derived)] which entails [valid_ptr (p ., o_base derived base)].
+    *)
+
+    (* TODO: maybe add a validity of offsets to allow stating this more generally. *)
+    Axiom valid_o_sub_size : forall p ty i vt,
+      _valid_ptr vt (p .., o_sub σ ty i) |-- [| is_Some (size_of σ ty) |].
+  End with_cpp.
+End VALID_PTR.
