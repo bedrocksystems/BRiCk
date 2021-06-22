@@ -14,10 +14,10 @@ Section with_resolve.
   Context `{Σ : cpp_logic} {σ : genv}.
   Variables (M : coPset) (ti : thread_info) (ρ : region).
 
-  Local Notation wp_lval := (wp_lval (resolve:=σ) M ti ρ).
-  Local Notation wp_prval := (wp_prval (resolve:=σ) M ti ρ).
-  Local Notation wp_xval := (wp_xval (resolve:=σ) M ti ρ).
-  Local Notation wp_init := (wp_init (resolve:=σ) M ti ρ).
+  Local Notation wp_lval := (wp_lval M ti ρ).
+  Local Notation wp_prval := (wp_prval M ti ρ).
+  Local Notation wp_xval := (wp_xval M ti ρ).
+  Local Notation wp_init := (wp_init M ti ρ).
 
   Fixpoint wp_args (es : list (ValCat * Expr)) (Q : list val -> FreeTemps -> mpred)
   : mpred :=

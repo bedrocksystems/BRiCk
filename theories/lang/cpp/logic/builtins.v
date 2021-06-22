@@ -15,9 +15,6 @@ Section with_Σ.
   Context `{Σ : cpp_logic thread_info} {resolve:genv}.
   Variables (M : coPset) (ti : thread_info).
 
-  Local Notation primR := (@primR _ _ resolve) (only parsing).
-  Local Notation anyR := (@anyR _ _ resolve) (only parsing).
-
   (****** Wp Semantics for builtins
    *)
   Parameter wp_builtin :

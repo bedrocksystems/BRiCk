@@ -4,7 +4,7 @@
  * See the LICENSE-BedRock file in the repository root for details.
  *)
 
-Require Import iris.proofmode.tactics. 
+Require Import iris.proofmode.tactics.
 Require Import bedrock.lang.bi.ChargeCompat.
 Require Export bedrock.lang.bi.atomic1.
 From bedrock.lang.cpp Require Import ast semantics.
@@ -21,16 +21,8 @@ Section with_Σ.
 
   Implicit Type (Q : val → mpred).
 
-  Local Notation wp_prval := (wp_prval (resolve:=resolve) M ti ρ).
-  Local Notation wp_args := (wp_args (σ:=resolve) M ti ρ).
-
-  Local Notation glob_def := (glob_def resolve) (only parsing).
-  Local Notation eval_unop := (@eval_unop resolve) (only parsing).
-  Local Notation eval_binop_pure := (@eval_binop_pure resolve) (only parsing).
-  Local Notation size_of := (@size_of resolve) (only parsing).
-  Local Notation align_of := (@align_of resolve) (only parsing).
-  Local Notation primR := (@primR _ _ resolve) (only parsing).
-  Local Notation anyR := (@anyR _ _ resolve) (only parsing).
+  Local Notation wp_prval := (wp_prval M ti ρ).
+  Local Notation wp_args := (wp_args M ti ρ).
 
   (* Builtins for Atomic operations. We follow those provided by GCC.
    * https://gcc.gnu.org/onlinedocs/gcc/_005f_005fatomic-Builtins.html

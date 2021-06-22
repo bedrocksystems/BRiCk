@@ -44,27 +44,19 @@ Module Type Expr.
     Context `{Σ : cpp_logic thread_info} {resolve:genv}.
     Variables (M : coPset) (ti : thread_info) (ρ : region).
 
-    Local Notation wp_lval := (wp_lval (resolve:=resolve) M ti ρ).
-    Local Notation wp_prval := (wp_prval (resolve:=resolve) M ti ρ).
-    Local Notation wp_xval := (wp_xval (resolve:=resolve) M ti ρ).
-    Local Notation wp_init := (wp_init (resolve:=resolve) M ti ρ).
-    Local Notation wpe := (wpe (resolve:=resolve) M ti ρ).
-    Local Notation wp_glval := (wp_glval (resolve:=resolve) M ti ρ).
-    Local Notation wp_args := (wp_args (σ:=resolve) M ti ρ).
+    Local Notation wp_lval := (wp_lval M ti ρ).
+    Local Notation wp_prval := (wp_prval M ti ρ).
+    Local Notation wp_xval := (wp_xval M ti ρ).
+    Local Notation wp_init := (wp_init M ti ρ).
+    Local Notation wpe := (wpe M ti ρ).
+    Local Notation wp_glval := (wp_glval M ti ρ).
+    Local Notation wp_args := (wp_args M ti ρ).
     Local Notation fspec := (fspec resolve.(genv_tu).(globals)).
     Local Notation mspec := (mspec resolve.(genv_tu).(globals)).
-    Local Notation destruct_val := (destruct_val (σ:=resolve) ti) (only parsing).
+    Local Notation destruct_val := (destruct_val ti) (only parsing).
 
     Local Notation glob_def := (glob_def resolve) (only parsing).
-    Local Notation eval_unop := (@eval_unop resolve) (only parsing).
-    Local Notation eval_binop := (eval_binop (resolve := resolve)) (only parsing).
     Local Notation size_of := (@size_of resolve) (only parsing).
-    Local Notation align_of := (@align_of resolve) (only parsing).
-    Local Notation primR := (primR (resolve:=resolve)) (only parsing).
-    Local Notation anyR := (anyR (resolve:=resolve)) (only parsing).
-    Local Notation tblockR := (tblockR (σ:=resolve)) (only parsing).
-    Local Notation uninitR := (uninitR (resolve:=resolve)) (only parsing).
-    Local Notation blockR := (blockR (σ:=resolve)) (only parsing).
 
     (* constants are rvalues *)
     Axiom wp_prval_constant : forall ty cnst e Q,
@@ -1045,12 +1037,11 @@ Module Type Expr.
     Variables (M : coPset) (ti : thread_info).
 
     (* These are the only ones that we need here. *)
-    Local Notation wp_lval := (wp_lval (resolve:=resolve) M ti).
-    Local Notation wp_prval := (wp_prval (resolve:=resolve) M ti).
-    Local Notation wp_init := (wp_init (resolve:=resolve) M ti).
-    Local Notation wp_initialize := (wp_initialize (σ:=resolve) M ti).
-    Local Notation primR := (primR (resolve:=resolve)) (only parsing).
-    Local Notation wp_glval := (wp_glval (resolve:=resolve) M ti).
+    Local Notation wp_lval := (wp_lval M ti).
+    Local Notation wp_prval := (wp_prval M ti).
+    Local Notation wp_init := (wp_init M ti).
+    Local Notation wp_initialize := (wp_initialize M ti).
+    Local Notation wp_glval := (wp_glval M ti).
 
     (* `Earrayloop_init` and `Earrayloop_index` correspond, respectively,
        to the `ArrayInitLoopExpr`[1] and `ArrayInitIndexExpr`[2] expressions

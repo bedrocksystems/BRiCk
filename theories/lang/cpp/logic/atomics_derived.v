@@ -16,8 +16,7 @@ Section cmpxchg_derived.
   Context `{Σ : cpp_logic thread_info} {resolve:genv}.
   Variables (M : coPset) (ti : thread_info) (ρ : region).
 
-  Local Notation primR := (@primR _ _ resolve) (only parsing).
-  Local Notation wp_atom' := (@wp_atom _ Σ resolve M ti) (only parsing).
+  Local Notation wp_atom' := (wp_atom M ti) (only parsing).
 
   (* A successful SC compare and exchange n *)
   (* It succeeds because the location p has the expected value v, which is
