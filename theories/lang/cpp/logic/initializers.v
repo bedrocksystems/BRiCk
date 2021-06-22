@@ -185,7 +185,7 @@ Module Type Init.
 
     Definition fill_initlist (desiredsz : N) (es : list Expr) (f : Expr) : list Expr :=
       let actualsz := N.of_nat (length es) in
-      es ++ replicateN f (desiredsz - actualsz).
+      es ++ replicateN (desiredsz - actualsz) f.
 
     (** NOTE this assumes that the C++ abstract machine already owns the array
         that is being initialized, see [wp_init_initlist_array] *)
