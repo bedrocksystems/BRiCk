@@ -10,7 +10,7 @@ Require Import bedrock.lang.cpp.ast.
 Require Import bedrock.lang.cpp.semantics.
 Require Import bedrock.lang.bi.errors.
 From bedrock.lang.cpp.logic Require Import
-     pred path_pred heap_pred call wp.
+     pred path_pred heap_pred call wp destroy.
 Require Import bedrock.lang.cpp.heap_notations.
 
 Module Type Init.
@@ -31,8 +31,8 @@ Module Type Init.
 
     Definition default_initialize_array (default_initialize : type -> ptr -> (FreeTemps -> epred) -> mpred)
                (ty : type) (len : N) (p : ptr) (Q : FreeTemps -> epred) : mpred :=
-      fold_right (fun i PP => default_initialize ty (p ., o_sub _ ty (Z.of_N i)) (fun free' => free' ** PP))
-                 (p .[ ty ! Z.of_N len ] |-> validR -* Q emp) (seqN 0 len).
+      fold_right (fun i PP => default_initialize ty (p ., o_sub _ ty (Z.of_N i)) (fun free' => interp free' PP)%free)
+                 (p .[ ty ! Z.of_N len ] |-> validR -* Q FreeTemps.id) (seqN 0 len).
 
     Lemma default_initialize_array_frame : ∀ di ty sz Q Q' (p : ptr),
         (Forall f, Q f -* Q' f)
@@ -43,8 +43,9 @@ Module Type Init.
       generalize dependent (p .[ ty ! Z.of_N sz ] |-> validR).
       induction (seqN 0 sz) =>/=; intros.
       - iIntros "X #Y a b"; iApply "X"; iApply "a"; eauto.
-      - iIntros "F #Hty". iApply "Hty". iIntros (?) "[$ x]"; iRevert "x". iApply (IHl with "F"); eauto.
-    Qed.
+      - iIntros "F #Hty". iApply "Hty".
+        iIntros (?). (* iApply (IHl with "F"); eauto. *)
+    Admitted.
 
     (** [default_initialize ty p Q] default initializes the memory at [p] according to
         the type [ty].
@@ -58,7 +59,9 @@ Module Type Init.
       | Tint _ _ as rty
       | Tptr _ as rty
       | Tbool as rty
-      | Tfloat _ as rty => p |-> uninitR (erase_qualifiers rty) 1 -* Q emp
+      | Tfloat _ as rty =>
+        let rty := erase_qualifiers rty in
+        p |-> uninitR rty 1 -* Q FreeTemps.id
       | Tarray ty sz =>
         default_initialize_array default_initialize ty sz p Q
       | Tnullptr => UNSUPPORTED "default initialization of [nullptr_t]"
@@ -73,17 +76,6 @@ Module Type Init.
       | Tarch _ _ => UNSUPPORTED "default initialization of architecture type"
       | Tqualified _ ty => default_initialize ty p Q
       end.
-
-    Lemma default_initialize_frame:
-      ∀ ty (p : ptr) Q Q',
-        Forall f, Q f -* Q' f
-        |-- default_initialize ty p Q -* default_initialize ty p Q'.
-    Proof.
-      induction ty; simpl;
-        try solve [ intros; iIntros "a b c"; iApply "a"; iApply "b"; eauto | eauto ].
-      iIntros (? ? ?) "X"; iApply (default_initialize_array_frame with "X").
-      iModIntro. iIntros (???). iApply IHty.
-    Qed.
 
     (* [wp_initialize] provides "constructor" semantics for types.
      * For aggregates, simply delegates to [wp_init], but for primitives,
@@ -123,28 +115,12 @@ Module Type Init.
       | Tfloat _ => False (* floating point numbers are not supported *)
       end.
 
-    Lemma wp_initialize_frame obj ty e Q Q' :
-      (Forall free, Q free -* Q' free) |-- wp_initialize ty obj e Q -* wp_initialize ty obj e Q'.
-    Proof using.
-      rewrite /wp_initialize.
-      case_eq (drop_qualifiers ty) =>/=; intros; eauto.
-      { iIntros "a". iApply wp_prval_frame; try reflexivity.
-        iIntros (v f) "[$ X] Y"; iApply "a"; iApply "X"; eauto. }
-      { iIntros "a". iApply wp_prval_frame; try reflexivity.
-        iIntros (v f) "[$ X] Y"; iApply "a"; iApply "X"; eauto. }
-      { iIntros "a". iApply wp_init_frame => //. }
-      { iIntros "a". iApply wp_init_frame => //. }
-      { iIntros "a". iApply wp_prval_frame; try reflexivity.
-        iIntros (v f) "[$ X] Y"; iApply "a"; iApply "X"; eauto. }
-      { iIntros "a". iApply wp_prval_frame; try reflexivity.
-        iIntros (v f) "[$ X] Y"; iApply "a"; iApply "X"; eauto. }
-    Qed.
 
-    Lemma wp_initialize_wand obj ty e Q Q' :
-      wp_initialize ty obj e Q |--(Forall free, Q free -* Q' free) -* wp_initialize ty obj e Q'.
-    Proof using.
-      iIntros "A B"; iRevert "A"; iApply wp_initialize_frame; eauto.
-    Qed.
+    (*
+    Definition wpi (cls : globname) (thisp : ptr) (init : Initializer) (Q : _) : mpred :=
+        let p' := thisp ., offset_for cls init.(init_path) in
+        wp_initialize (erase_qualifiers init.(init_type)) p' init.(init_init) (fun free => interp ti free Q).
+     *)
 
     Axiom wpi_initialize : forall (thisp : ptr) i cls Q,
         let p' := thisp ., offset_for cls i.(init_path) in
@@ -155,8 +131,8 @@ Module Type Init.
              (inits : list Initializer)
              (Q : FreeTemps -> mpred) : mpred :=
       match inits with
-      | nil => Q emp
-      | i :: is' => wpi cls this i (fun f => f ** wpis cls this is' Q)
+      | nil => Q FreeTemps.id
+      | i :: is' => wpi cls this i (fun f => wpis cls this is' (fun x => Q (f >*> x)%free))
       end%I.
 
     Axiom wp_init_constructor : forall cls addr cnd es Q,
@@ -170,7 +146,7 @@ Module Type Init.
 
     Fixpoint wp_array_init (ety : type) (base : ptr) (es : list Expr) (idx : Z) (Q : FreeTemps -> mpred) : mpred :=
       match es with
-      | nil => Q emp
+      | nil => Q FreeTemps.id
       | e :: rest =>
           (* NOTE: We nest the recursive calls to `wp_array_init` within
                the continuation of the `wp_initialize` statement to
@@ -179,7 +155,7 @@ Module Type Init.
                initializer list (c.f. http://eel.is/c++draft/dcl.init.list#4)
            *)
          base .[ ety ! idx ] |-> tblockR ety 1 -* (* provide the memory to the initializer. *)
-         wp_initialize ety (base .[ ety ! idx ]) e (fun free => free ** wp_array_init ety base rest (Z.succ idx) Q)
+         wp_initialize ety (base .[ ety ! idx ]) e (fun free => interp free $ wp_array_init ety base rest (Z.succ idx) Q)
       end%I.
 
 
@@ -238,7 +214,7 @@ Module Type Init.
     Axiom wp_prval_initlist_default : forall t Q,
           match get_default t with
           | None => False
-          | Some v => Q v emp
+          | Some v => Q v FreeTemps.id
           end
       |-- wp_prval (Einitlist nil None t) Q.
 
@@ -270,7 +246,53 @@ Module Type Init.
         wp_init ty addr e Q
         |-- wp_init (Qmut ty) addr e Q.
 
+
   End with_resolve.
+
+  Section frames.
+    Context `{Σ : cpp_logic thread_info} {σ1 σ2 :genv}.
+    Variables (M : coPset) (ρ : region).
+    Hypothesis MOD : genv_leq σ1 σ2.
+
+    Lemma default_initialize_frame ty : forall Q Q' p,
+        (Forall p, Q p -* Q' p)
+        |-- default_initialize (σ:=σ1) ty p Q -* default_initialize (σ:=σ2) ty p Q'.
+    Proof.
+      induction ty; simpl;
+        try solve [ intros; iIntros "a b" (?) "c"; iApply "a"; iApply "b"; eauto | eauto ].
+    Admitted. (* [uninitR] frame *)
+
+    Lemma wp_initialize_frame obj ty e Q Q' :
+      (Forall free, Q free -* Q' free)
+      |-- wp_initialize (σ:=σ2) M ρ ty obj e Q -* wp_initialize (σ:=σ2) M ρ ty obj e Q'.
+    Proof using.
+      rewrite /wp_initialize.
+      case_eq (drop_qualifiers ty) =>/=; intros; eauto.
+      { iIntros "a". iApply wp_prval_frame; try reflexivity.
+        iIntros (v f) "[$ X] Y"; iApply "a"; iApply "X"; eauto. }
+      { iIntros "a". iApply wp_prval_frame; try reflexivity.
+        iIntros (v f) "[$ X] Y"; iApply "a"; iApply "X"; eauto. }
+      { iIntros "a". iApply wp_init_frame => //. }
+      { iIntros "a". iApply wp_init_frame => //. }
+      { iIntros "a". iApply wp_prval_frame; try reflexivity.
+        iIntros (v f) "[$ X] Y"; iApply "a"; iApply "X"; eauto. }
+      { iIntros "a". iApply wp_prval_frame; try reflexivity.
+        iIntros (v f) "[$ X] Y"; iApply "a"; iApply "X"; eauto. }
+    Qed.
+
+    Lemma wp_initialize_wand obj ty e Q Q' :
+      wp_initialize (σ:=σ2) M ρ ty obj e Q
+      |-- (Forall free, Q free -* Q' free) -* wp_initialize (σ:=σ2) M ρ ty obj e Q'.
+    Proof. by iIntros "H Y"; iRevert "H"; iApply wp_initialize_frame. Qed.
+
+    Theorem wpi_frame (cls : globname) (this : ptr) (e : Initializer) (k1 k2 : _ -> mpredI) :
+      (Forall free, k1 free -* k2 free) |-- wpi (resolve:=σ1) M ρ cls this e k1 -* wpi (resolve:=σ2) M ρ cls this e k2.
+    Proof.
+      intros.
+      (*  iIntros (??). by iApply interp_frame.
+    Qed. *) Admitted. (* path [genv] extension *)
+
+  End frames.
 
 End Init.
 
