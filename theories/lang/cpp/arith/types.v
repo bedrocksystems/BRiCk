@@ -6,6 +6,8 @@
 
 Require Import bedrock.lang.prelude.base.
 
+#[local] Open Scope Z_scope.
+
 (* Bit-widths *)
 Variant bitsize : Set :=
 | W8
@@ -79,3 +81,33 @@ Defined.
 Variant endian : Set := Little | Big.
 Instance endian_dec : EqDecision endian.
 Proof. solve_decision. Defined.
+
+Definition max_val (bits : bitsize) (sgn : signed) : Z :=
+  match bits , sgn with
+  | W8   , Signed   => 2^7 - 1
+  | W8   , Unsigned => 2^8 - 1
+  | W16  , Signed   => 2^15 - 1
+  | W16  , Unsigned => 2^16 - 1
+  | W32  , Signed   => 2^31 - 1
+  | W32  , Unsigned => 2^32 - 1
+  | W64  , Signed   => 2^63 - 1
+  | W64  , Unsigned => 2^64 - 1
+  | W128 , Signed   => 2^127 - 1
+  | W128 , Unsigned => 2^128 - 1
+  end.
+
+Definition min_val (bits : bitsize) (sgn : signed) : Z :=
+  match sgn with
+  | Unsigned => 0
+  | Signed =>
+    match bits with
+    | W8   => -2^7
+    | W16  => -2^15
+    | W32  => -2^31
+    | W64  => -2^63
+    | W128 => -2^127
+    end
+  end.
+
+Definition bound (bits : bitsize) (sgn : signed) (v : Z) : Prop :=
+  min_val bits sgn <= v <= max_val bits sgn.
