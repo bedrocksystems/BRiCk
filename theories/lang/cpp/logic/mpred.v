@@ -49,7 +49,6 @@ Module Type CPP_LOGIC_CLASS_MIXIN (Import CC : CPP_LOGIC_CLASS_BASE).
 
   Bind Scope bi_scope with bi_car.
   Bind Scope bi_scope with mpred.
-  Bind Scope bi_scope with mpredI.
 End CPP_LOGIC_CLASS_MIXIN.
 
 Module Type CPP_LOGIC_CLASS := CPP_LOGIC_CLASS_BASE <+ CPP_LOGIC_CLASS_MIXIN.
