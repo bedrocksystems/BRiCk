@@ -25,21 +25,16 @@ Module Type Stmt.
     Context `{Σ : cpp_logic thread_info} {resolve:genv}.
     Variables (M : coPset) (ti : thread_info).
 
-    Local Notation wp := (wp (resolve:=resolve) M ti).
-    Local Notation wp_lval := (wp_lval (resolve:=resolve) M ti).
-    Local Notation wp_prval := (wp_prval (resolve:=resolve) M ti).
-    Local Notation wp_xval := (wp_xval (resolve:=resolve) M ti).
-    Local Notation wp_init := (wp_init (resolve:=resolve) M ti).
-    Local Notation wpe := (wpe (resolve:=resolve) M ti).
+    Local Notation wp := (wp M ti).
+    Local Notation wp_lval := (wp_lval M ti).
+    Local Notation wp_prval := (wp_prval M ti).
+    Local Notation wp_xval := (wp_xval M ti).
+    Local Notation wp_init := (wp_init M ti).
+    Local Notation wpe := (wpe M ti).
     Local Notation fspec := (fspec ti).
-    Local Notation destruct_val := (destruct_val (σ:=resolve) ti) (only parsing).
+    Local Notation destruct_val := (destruct_val ti) (only parsing).
 
     Local Notation glob_def := (glob_def resolve) (only parsing).
-    Local Notation size_of := (@size_of resolve) (only parsing).
-    Local Notation align_of := (@align_of resolve) (only parsing).
-    Local Notation primR := (primR (resolve:=resolve)) (only parsing).
-    Local Notation anyR := (anyR (resolve:=resolve)) (only parsing).
-    Local Notation uninitR := (uninitR (resolve:=resolve)) (only parsing).
 
     Implicit Types Q : KpredI.
 

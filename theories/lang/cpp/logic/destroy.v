@@ -17,10 +17,6 @@ Section destroy.
   Context `{Σ : cpp_logic thread_info} {σ:genv}.
   Variable (ti : thread_info).
 
-  Local Notation _sub := (o_sub σ) (only parsing).
-  Local Notation anyR := (anyR (resolve:=σ)) (only parsing).
-  Local Notation _global := (_global (resolve:=σ)) (only parsing).
-
   (** [resolve_dtor cls this Q] reduces to [Q dtor' this'] where [dtor'] is the
       destructor to be called on [this'] which is used to destroy [this].
    *)

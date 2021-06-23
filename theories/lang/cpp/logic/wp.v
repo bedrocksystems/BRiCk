@@ -165,7 +165,7 @@ Section with_cpp.
 
   Section wp_lval.
     Context {σ : genv} (M : coPset) (ti : thread_info) (ρ : region) (e : Expr).
-    Local Notation WP := (wp_lval (resolve:=σ) M ti ρ e) (only parsing).
+    Local Notation WP := (wp_lval M ti ρ e) (only parsing).
     Implicit Types P : mpred.
     Implicit Types Q : ptr → FreeTemps → epred.
 
@@ -252,7 +252,7 @@ Section with_cpp.
   Section wp_init.
     Context {σ : genv} (M : coPset) (ti : thread_info) (ρ : region)
       (t : type) (p : ptr) (e : Expr).
-    Local Notation WP := (wp_init (resolve:=σ) M ti ρ t p e) (only parsing).
+    Local Notation WP := (wp_init M ti ρ t p e) (only parsing).
     Implicit Types P : mpred.
     Implicit Types Q : FreeTemps → epred.
 
@@ -314,7 +314,7 @@ Section with_cpp.
 
   Section wp_prval.
     Context {σ : genv} (M : coPset) (ti : thread_info) (ρ : region) (e : Expr).
-    Local Notation WP := (wp_prval (resolve:=σ) M ti ρ e) (only parsing).
+    Local Notation WP := (wp_prval M ti ρ e) (only parsing).
     Implicit Types P : mpred.
     Implicit Types Q : val → FreeTemps → epred.
 
@@ -375,7 +375,7 @@ Section with_cpp.
 
   Section wp_xval.
     Context {σ : genv} (M : coPset) (ti : thread_info) (ρ : region) (e : Expr).
-    Local Notation WP := (wp_xval (resolve:=σ) M ti ρ e) (only parsing).
+    Local Notation WP := (wp_xval M ti ρ e) (only parsing).
     Implicit Types P : mpred.
     Implicit Types Q : ptr → FreeTemps → epred.
 
@@ -540,7 +540,7 @@ Section with_cpp.
   Section wpi.
     Context {σ : genv} (M : coPset) (ti : thread_info) (ρ : region)
       (cls : globname) (this : ptr) (init : Initializer).
-    Local Notation WP := (wpi (resolve:=σ) M ti ρ cls this init) (only parsing).
+    Local Notation WP := (wpi M ti ρ cls this init) (only parsing).
     Implicit Types P : mpred.
     Implicit Types k : mpred → mpred.
 
@@ -615,7 +615,7 @@ Section with_cpp.
 
   Section wp.
     Context {σ : genv} (M : coPset) (ti : thread_info) (ρ : region) (s : Stmt).
-    Local Notation WP := (wp (resolve:=σ) M ti ρ s) (only parsing).
+    Local Notation WP := (wp M ti ρ s) (only parsing).
     Implicit Types P : mpred.
     Implicit Types Q : KpredI.
 
