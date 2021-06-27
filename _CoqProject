@@ -23,6 +23,8 @@ theories/lang/prelude/bytestring.v
 theories/lang/prelude/tc_cond_type.v
 theories/lang/prelude/telescopes.v
 theories/lang/prelude/avl.v
+
+theories/lang/bi/entailsN.v
 theories/lang/bi/big_op.v
 theories/lang/bi/laterable.v
 theories/lang/bi/telescopes.v
@@ -38,6 +40,13 @@ theories/lang/bi/prelude.v
 theories/lang/bi/IrisBridge.v
 theories/lang/bi/ChargeCompat.v
 theories/lang/bi/errors.v
+
+# Specific BIs
+theories/lang/cpp/logic/upred_entailsN.v
+theories/lang/cpp/logic/iprop_own.v
+theories/lang/cpp/logic/iprop_invariants.v
+theories/lang/cpp/logic/monpred_entailsN.v
+theories/lang/cpp/logic/monpred_own.v
 
 # Arithmetic support theory
 theories/lang/cpp/arith/types.v
@@ -68,13 +77,11 @@ theories/lang/cpp/semantics/intensional.v
 theories/lang/cpp/semantics.v
 
 # Program Logic
+theories/lang/cpp/logic/entailsN.v
 theories/lang/cpp/logic/spec.v
 theories/lang/cpp/logic/mpred.v
 theories/lang/cpp/logic/pred.v
-theories/lang/cpp/logic/iprop_own.v
-theories/lang/cpp/logic/monpred_own.v
 theories/lang/cpp/logic/own_instances.v
-theories/lang/cpp/logic/iprop_invariants.v
 theories/lang/cpp/logic/pred_paradoxes.v
 theories/lang/cpp/logic/path_pred.v
 theories/lang/cpp/logic/operator.v
