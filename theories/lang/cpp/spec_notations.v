@@ -1,9 +1,8 @@
 (*
- * Copyright (c) 2020 BedRock Systems, Inc.
+ * Copyright (c) 2020-21 BedRock Systems, Inc.
  * This software is distributed under the terms of the BedRock Open-Source License.
  * See the LICENSE-BedRock file in the repository root for details.
  *)
-Require Import stdpp.telescopes.
 From bedrock.lang.prelude Require Import bytestring telescopes.
 From bedrock.lang.cpp.semantics Require Import values.
 From bedrock.lang.cpp.logic Require Import spec pred.

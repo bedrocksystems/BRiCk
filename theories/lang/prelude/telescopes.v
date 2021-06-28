@@ -1,9 +1,10 @@
 (*
- * Copyright (C) BedRock Systems Inc. 2020
+ * Copyright (C) BedRock Systems Inc. 2020-21
  *
  * SPDX-License-Identifier: LGPL-2.1 WITH BedRock Exception for use over network, see repository root for details.
  *)
-Require Import stdpp.telescopes.
+Require Export stdpp.telescopes.
+Require Export bedrock.lang.prelude.base.
 
 Set Universe Polymorphism.
 

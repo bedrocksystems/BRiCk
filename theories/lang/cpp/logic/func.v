@@ -1,22 +1,18 @@
 (*
- * Copyright (c) 2020 BedRock Systems, Inc.
+ * Copyright (c) 2020-21 BedRock Systems, Inc.
  * This software is distributed under the terms of the BedRock Open-Source License.
  * See the LICENSE-BedRock file in the repository root for details.
  *)
-Require Import Coq.Lists.List.
-
-Require Import stdpp.telescopes.
-
-From iris.proofmode Require Import tactics.
+Require Import bedrock.lang.prelude.telescopes.
 Require Import bedrock.lang.bi.ChargeCompat.
-
-From bedrock.lang.cpp Require Import ast semantics spec.
-From bedrock.lang.cpp.logic Require Import
-     pred path_pred heap_pred
-     wp builtins layout initializers.
-Require Import bedrock.lang.cpp.logic.destroy.
-Require Import bedrock.lang.cpp.heap_notations.
 Require Import bedrock.lang.bi.errors.
+Require Import iris.proofmode.tactics.	(** Early to get the right [ident] *)
+Require Import bedrock.lang.cpp.ast.
+Require Import bedrock.lang.cpp.semantics.
+From bedrock.lang.cpp.logic Require Import
+  spec pred path_pred heap_pred wp builtins
+  layout initializers destroy.
+Require Import bedrock.lang.cpp.heap_notations.
 
 #[local] Set Universe Polymorphism.
 Arguments ERROR {_ _} _%bs.
@@ -686,4 +682,3 @@ Section with_cpp.
       spec.(fs_spec) ti vals Q -* wp_dtor dtor ti vals Q.
 
 End with_cpp.
-
