@@ -3,9 +3,10 @@
  * This software is distributed under the terms of the BedRock Open-Source License.
  * See the LICENSE-BedRock file in the repository root for details.
  *)
-Require Import bedrock.lang.prelude.telescopes.
 Require Import bedrock.lang.bi.ChargeCompat.
 Require Import bedrock.lang.bi.errors.
+Require Import bedrock.lang.bi.telescopes.
+Require Import bedrock.lang.cpp.logic.entailsN.
 Require Import iris.proofmode.tactics.	(** Early to get the right [ident] *)
 Require Import bedrock.lang.cpp.ast.
 Require Import bedrock.lang.cpp.semantics.
@@ -15,8 +16,82 @@ From bedrock.lang.cpp.logic Require Import
 Require Import bedrock.lang.cpp.heap_notations.
 
 #[local] Set Universe Polymorphism.
+#[local] Set Printing Universes.
+#[local] Set Printing Coercions.
+
 Arguments ERROR {_ _} _%bs.
 Arguments UNSUPPORTED {_ _} _%bs.
+
+(** * Wrappers to build [function_spec] from a [WithPrePost] *)
+
+(* A specification for a function (with explicit thread info) *)
+Definition TSFunction@{X Z Y} `{Σ : cpp_logic} {cc : calling_conv}
+    (ret : type) (targs : list type) (PQ : thread_info -> WithPrePost@{X Z Y} mpredI)
+    : function_spec :=
+  {| fs_cc        := cc
+   ; fs_return    := ret
+   ; fs_arguments := targs
+   ; fs_spec ti   := WppD (PQ ti) |}.
+
+(* A specification for a function  *)
+Definition SFunction@{X Z Y} `{Σ : cpp_logic} {cc : calling_conv}
+    (ret : type) (targs : list type) (PQ : WithPrePost@{X Z Y} mpredI)
+    : function_spec :=
+  {| fs_cc        := cc
+   ; fs_return    := ret
+   ; fs_arguments := targs
+   ; fs_spec _    := WppD PQ |}.
+
+(* A specification for a constructor *)
+Definition SConstructor@{X Z Y} `{Σ : cpp_logic, resolve : genv} {cc : calling_conv}
+    (class : globname) (targs : list type) (PQ : ptr -> WithPrePost@{X Z Y} mpredI)
+    : function_spec :=
+  let this_type := Qmut (Tnamed class) in
+  let map_pre this '(args, P) :=
+    (Vptr this :: args,
+     this |-> tblockR (Tnamed class) 1 ** P)
+  in
+  SFunction (cc:=cc) (Qmut Tvoid) (Qconst (Tpointer this_type) :: targs)
+    {| wpp_with := TeleS (fun this : ptr => (PQ this).(wpp_with))
+     ; wpp_pre this := tele_map (map_pre this) (PQ this).(wpp_pre)
+     ; wpp_post this := (PQ this).(wpp_post)
+     |}.
+
+(* A specification for a destructor *)
+Definition SDestructor@{X Z Y} `{Σ : cpp_logic, resolve : genv} {cc : calling_conv}
+    (class : globname) (PQ : ptr -> WithPrePost@{X Z Y} mpredI)
+    : function_spec :=
+  let this_type := Qmut (Tnamed class) in
+  let map_pre this '(args, P) := (Vptr this :: args, P) in
+  let map_post (this : ptr) '{| we_ex := pwiths ; we_post := Q|} :=
+    {| we_ex := pwiths
+     ; we_post := tele_map (fun '(result, Q) =>
+      (result, this |-> tblockR (Tnamed class) 1 ** Q)) Q
+     |}
+  in
+  (** ^ NOTE the size of an object might be different in the presence
+      of virtual base classes. *)
+  SFunction@{X Z Y} (cc:=cc) (Qmut Tvoid) (Qconst (Tpointer this_type) :: nil)
+    {| wpp_with := TeleS (fun this : ptr => (PQ this).(wpp_with))
+     ; wpp_pre this := tele_map (map_pre this) (PQ this).(wpp_pre)
+     ; wpp_post this := tele_map (map_post this) (PQ this).(wpp_post)
+    |}.
+
+(* A specification for a method *)
+#[local] Definition SMethod_wpp@{X Z Y} `{Σ : cpp_logic}
+    (wpp : ptr -> WithPrePost@{X Z Y} mpredI) : WithPrePost@{X Z Y} mpredI :=
+  let map_pre this pair := (this :: pair.1, pair.2) in
+  {| wpp_with := TeleS (fun this : ptr => (wpp this).(wpp_with))
+   ; wpp_pre this := tele_map (map_pre (Vptr this)) (wpp this).(wpp_pre)
+   ; wpp_post this := (wpp this).(wpp_post)
+   |}.
+Definition SMethod@{X Z Y} `{Σ : cpp_logic} {cc : calling_conv}
+    (class : globname) (qual : type_qualifiers) (ret : type) (targs : list type)
+    (PQ : ptr -> WithPrePost@{X Z Y} mpredI) : function_spec :=
+  let class_type := Tnamed class in
+  let this_type := Tqualified qual class_type in
+  SFunction@{X Z Y} (cc:=cc) ret (Qconst (Tpointer this_type) :: targs)
+    (SMethod_wpp PQ).
 
 Section with_cpp.
   Context `{Σ : cpp_logic thread_info} {resolve:genv}.
@@ -24,101 +99,177 @@ Section with_cpp.
   #[local] Notation _base := (o_base resolve).
   #[local] Notation _derived := (o_derived resolve).
 
-  (** * Wrappers to build [function_spec] from a [WithPrePost] *)
+  (** The following monotonicity lemmas are (i) stated so that they
+      don't force a pair of related WPPs to share universes and (ii)
+      proved so that they don't constrain the WPP universes [Y1], [Y2]
+      from above. The TC instances are strictly less useful, as they
+      necessarily give up on both (i) and (ii). *)
+  Section TSFunction.
+    Import disable_proofmode_telescopes.
+    Context {cc : calling_conv} (ret : type) (targs : list type).
 
-  (* A specification for a function (with explicit thread info) *)
-  Definition TSFunction@{X Z Y} {cc : calling_conv} (ret : type) (targs : list type)
-             (PQ : thread_info -> WithPrePost@{X Z Y} mpredI)
-  : function_spec :=
-    {| fs_cc        := cc
-     ; fs_return    := ret
-     ; fs_arguments := targs
-     ; fs_spec ti   := WppD (PQ ti) |}.
+    Lemma TSFunction_mono@{X1 X2 Z1 Z2 Y1 Y2} wpp1 wpp2 :
+      (∀ ti, wpp_entails (wpp1 ti) (wpp2 ti)) ->
+      fs_entails
+        (TSFunction@{X1 Z1 Y1} (cc:=cc) ret targs wpp1)
+        (TSFunction@{X2 Z2 Y2} (cc:=cc) ret targs wpp2).
+    Proof.
+      intros Hwpp. iSplit; first by rewrite/type_of_spec. simpl.
+      iIntros "!>" (ti vs K) "wpp". by iApply Hwpp.
+    Qed.
 
-  #[global] Instance TSFunction_ne {cc} ret targs n :
-    Proper (dist (A:=thread_info -d> WithPrePostO mpredI) n ==> dist n)
-      (TSFunction (cc:=cc) ret targs).
-  Proof.
-    intros wpp1 wpp2 Hwpp. split. by rewrite/type_of_spec/=. done.
-  Qed.
-  #[global] Instance TSFunction_proper {cc} ret targs :
-    Proper (equiv (A:=thread_info -d> WithPrePostO mpredI) ==> equiv)
-      (TSFunction (cc:=cc) ret targs).
-  Proof. exact: ne_proper. Qed.
+    #[global] Instance: Params (@TSFunction) 5 := {}.
+    #[global] Instance TSFunction_ne n :
+      Proper (dist (A:=thread_info -d> WithPrePostO mpredI) n ==> dist n)
+        (TSFunction (cc:=cc) ret targs).
+    Proof.
+      intros wpp1 wpp2 Hwpp. split. by rewrite/type_of_spec/=. done.
+    Qed.
 
+    #[global] Instance TSFunction_proper :
+      Proper (equiv (A:=thread_info -d> WithPrePostO mpredI) ==> equiv)
+        (TSFunction (cc:=cc) ret targs).
+    Proof. exact: ne_proper. Qed.
 
-  (* A specification for a function  *)
-  Definition SFunction@{X Z Y} {cc : calling_conv} (ret : type) (targs : list type)
-             (PQ : WithPrePost@{X Z Y} mpredI)
-  : function_spec :=
-    {| fs_cc        := cc
-     ; fs_return    := ret
-     ; fs_arguments := targs
-     ; fs_spec _    := WppD PQ |}.
+    #[global] Instance TSFunction_mono'@{X Z Y} :
+      Proper (pointwise_relation _ wpp_entails ==> fs_entails)
+        (TSFunction@{X Z Y} (cc:=cc) ret targs).
+    Proof. repeat intro. by apply TSFunction_mono. Qed.
 
-  #[global] Instance SFunction_ne {cc} ret targs :
-    NonExpansive (SFunction (cc:=cc) ret targs).
-  Proof.
-    intros n wpp1 wpp2 Hwpp. split. by rewrite/type_of_spec/=. by move=>ti.
-  Qed.
-  #[global] Instance SFunction_proper {cc} ret targs :
-    Proper (equiv ==> equiv) (SFunction (cc:=cc) ret targs).
-  Proof. exact: ne_proper. Qed.
+    #[global] Instance TSFunction_flip_mono'@{X Z Y} :
+      Proper (pointwise_relation _ (flip wpp_entails) ==> flip fs_entails)
+        (TSFunction@{X Z Y} (cc:=cc) ret targs).
+    Proof. solve_proper. Qed.
 
+  End TSFunction.
 
-  (* A specification for a constructor *)
-  Definition SConstructor@{X Z Y} {cc : calling_conv} (class : globname)
-             (targs : list type)
-             (PQ : ptr -> WithPrePost@{X Z Y} mpredI)
-  : function_spec :=
-    let this_type := Qmut (Tnamed class) in
-    let map_pre this '(args, P) :=
-        (Vptr this :: args,
-         this |-> tblockR (Tnamed class) 1 ** P) in
-    SFunction (cc:=cc) (Qmut Tvoid) (Qconst (Tpointer this_type) :: targs)
-              {| wpp_with := TeleS (fun this : ptr => (PQ this).(wpp_with))
-               ; wpp_pre this :=
-                   tele_map (map_pre this) (PQ this).(wpp_pre)
-               ; wpp_post this := (PQ this).(wpp_post)
-               |}.
+  Section SFunction.
+    Import disable_proofmode_telescopes.
+    Context {cc : calling_conv} (ret : type) (targs : list type).
 
-  (* A specification for a destructor *)
-  Definition SDestructor@{X Z Y} {cc : calling_conv} (class : globname)
-             (PQ : ptr -> WithPrePost@{X Z Y} mpredI)
-  : function_spec :=
-    let this_type := Qmut (Tnamed class) in
-    let map_pre this '(args, P) := (Vptr this :: args, P) in
-    let map_post (this : ptr) '{| we_ex := pwiths ; we_post := Q|} :=
-        {| we_ex := pwiths
-         ; we_post := tele_map (fun '(result, Q) =>
-                                  (result, this |-> tblockR (Tnamed class) 1 ** Q)) Q |}
-    in
-    (** ^ NOTE the size of an object might be different in the presence of virtual base
-        classes.
-     *)
-    SFunction@{X Z Y} (cc:=cc) (Qmut Tvoid) (Qconst (Tpointer this_type) :: nil)
-              {| wpp_with := TeleS (fun this : ptr => (PQ this).(wpp_with))
-               ; wpp_pre this :=
-                   tele_map (map_pre this) (PQ this).(wpp_pre)
-               ; wpp_post this :=
-                   tele_map (map_post this) (PQ this).(wpp_post)
-              |}.
+    Lemma SFunction_mono@{X1 X2 Z1 Z2 Y1 Y2} wpp1 wpp2 :
+      wpp_entails wpp1 wpp2 ->
+      fs_entails
+        (SFunction@{X1 Z1 Y1} (cc:=cc) ret targs wpp1)
+        (SFunction@{X2 Z2 Y2} (cc:=cc) ret targs wpp2).
+    Proof.
+      intros Hwpp. iSplit; first by rewrite/type_of_spec. simpl.
+      iIntros "!>" (_ vs K) "wpp". by iApply Hwpp.
+    Qed.
 
-  (* A specification for a method *)
-  Definition SMethod@{X Z Y} {cc : calling_conv}
-             (class : globname) (qual : type_qualifiers)
-             (ret : type) (targs : list type)
-             (PQ : ptr -> WithPrePost@{X Z Y} mpredI)
-  : function_spec :=
-    let map_pre this '(args, P) := (this :: args, P) in
-    let class_type := Tnamed class in
-    let this_type := Tqualified qual class_type in
-    SFunction (cc:=cc) ret (Qconst (Tpointer this_type) :: targs)
-              {| wpp_with := TeleS (fun this : ptr => (PQ this).(wpp_with))
-               ; wpp_pre this :=
-                   tele_map (map_pre (Vptr this)) (PQ this).(wpp_pre)
-               ; wpp_post this := (PQ this).(wpp_post)
-               |}.
+    #[global] Instance: Params (@SFunction) 5 := {}.
+    #[global] Instance SFunction_ne : NonExpansive (SFunction (cc:=cc) ret targs).
+    Proof.
+      intros n wpp1 wpp2 Hwpp. split. by rewrite/type_of_spec/=. by move=>ti.
+    Qed.
+
+    #[global] Instance SFunction_proper :
+      Proper (equiv ==> equiv) (SFunction (cc:=cc) ret targs).
+    Proof. exact: ne_proper. Qed.
+
+    #[global] Instance SFunction_mono'@{X Z Y} :
+      Proper (wpp_entails ==> fs_entails) (SFunction@{X Z Y} (cc:=cc) ret targs).
+    Proof. repeat intro. by apply SFunction_mono. Qed.
+
+    #[global] Instance SFunction_flip_mono'@{X Z Y} :
+      Proper (flip wpp_entails ==> flip fs_entails)
+        (SFunction@{X Z Y} (cc:=cc) ret targs).
+    Proof. solve_proper. Qed.
+  End SFunction.
+
+  Section SMethod.
+    Import disable_proofmode_telescopes.
+    Context {cc : calling_conv} (class : globname) (qual : type_qualifiers).
+    Context (ret : type) (targs : list type).
+
+    (** We could derive [SMethod_mono] from the following
+        [SMethod_wpp_monoN]. We retain this proof because it's easier
+        to understand and it goes through without [BiEntailsN]. *)
+    Lemma SMethod_mono@{X1 X2 Z1 Z2 Y1 Y2} wpp1 wpp2 :
+      (∀ this, wpp_entails (wpp1 this) (wpp2 this)) ->
+      fs_entails
+        (SMethod@{X1 Z1 Y1} (cc:=cc) class qual ret targs wpp1)
+        (SMethod@{X2 Z2 Y2} (cc:=cc) class qual ret targs wpp2).
+    Proof.
+      intros Hwpp. iSplit; first by rewrite/type_of_spec. simpl.
+      iIntros "!>" (_ vs K) "wpp".
+      (** To apply [Hwpp], we have to deconstruct the WPP we've got,
+          stripping off the extra "this" argument. *)
+      iDestruct "wpp" as (this) "wpp". rewrite {1}tbi_exist_exist.
+      iDestruct "wpp" as (xs) "wpp". rewrite tele_app_bind tele_map_app.
+      destruct (tele_app _ xs) as [args P] eqn:Hargs. simpl.
+      iDestruct "wpp" as "(-> & pre & post)".
+      iDestruct (Hwpp this args K with "[pre post]") as "wpp".
+      { rewrite /WppD/WppGD. rewrite tbi_exist_exist.
+        iExists xs. rewrite tele_app_bind Hargs/=. by iFrame "pre post". }
+      iExists this. rewrite tbi_exist_exist. rewrite/WppD/WppGD tbi_exist_exist.
+      iDestruct "wpp" as (ys) "wpp". rewrite tele_app_bind.
+      iDestruct "wpp" as "(-> & pre & post)".
+      iExists ys. rewrite tele_app_bind tele_map_app. simpl. by iFrame "pre post".
+    Qed.
+
+    #[local] Lemma SMethod_wpp_monoN@{X1 X2 Z1 Z2 Y1 Y2} wpp1 wpp2 vs K n :
+      (∀ this, wpp_entailsN n (wpp1 this) (wpp2 this)) ->
+      WppD@{X1 Z1 Y1} (SMethod_wpp wpp1) vs K ⊢{n}
+      WppD@{X2 Z2 Y2} (SMethod_wpp wpp2) vs K.
+    Proof.
+      move=>Hwpp /=. f_equiv=>this.
+      rewrite !tbi_exist_exist. set M1 := tele_app _. set M2 := tele_app _.
+      apply exist_elimN=>x1. rewrite /M1 {M1} tele_app_bind tele_map_app.
+      destruct (tele_app _ x1) as [vs1 P1] eqn:Hvs1; simpl.
+      apply wand_elimN_l', only_provable_elimN'; intros ->;
+        apply wand_introN_r; rewrite left_id.
+      move: {Hwpp} (Hwpp this vs1 K). rewrite/WppD/WppGD.
+      rewrite !tbi_exist_exist. set F1 := tele_app _. set F2 := tele_app _.
+      move=>HF. trans (Exists x, F1 x).
+      { apply (exist_introN' _ _ x1). rewrite/F1 tele_app_bind Hvs1 /=.
+        rewrite -{1}[P1](left_id emp%I bi_sep) -assoc. f_equiv.
+        exact: only_provable_introN. }
+      rewrite {F1}HF. f_equiv=>x2. rewrite /F2 {F2} tele_app_bind.
+      rewrite /M2 {M2} tele_app_bind tele_map_app. simpl. f_equiv.
+      apply only_provable_elimN'=>->. exact: only_provable_introN.
+    Qed.
+
+    Lemma SMethod_ne@{X Y Z} wpp1 wpp2 n :
+      (∀ this, wpp_dist n (wpp1 this) (wpp2 this)) ->
+      SMethod@{X Y Z} (cc:=cc) class qual ret targs wpp1 ≡{n}≡
+      SMethod@{X Y Z} (cc:=cc) class qual ret targs wpp2.
+    Proof.
+      setoid_rewrite wpp_dist_entailsN=>Hwpp.
+      rewrite/SMethod. f_equiv=>vs K /=. apply dist_entailsN.
+      split; apply SMethod_wpp_monoN=>this; by destruct (Hwpp this).
+    Qed.
+
+    Lemma SMethod_proper@{X1 X2 Z1 Z2 Y1 Y2} wpp1 wpp2 :
+      (∀ this, wpp_equiv (wpp1 this) (wpp2 this)) ->
+      SMethod@{X1 Z1 Y1} (cc:=cc) class qual ret targs wpp1 ≡
+      SMethod@{X2 Z2 Y2} (cc:=cc) class qual ret targs wpp2.
+    Proof.
+      setoid_rewrite wpp_equiv_spec=>Hwpp. apply function_spec_equiv_split.
+      split; apply SMethod_mono=>this; by destruct (Hwpp this).
+    Qed.
+
+    #[global] Instance: Params (@SMethod) 7 := {}.
+    #[global] Instance SMethod_ne' n :
+      Proper (dist (A:=ptr -d> WithPrePostO mpredI) n ==> dist n)
+        (SMethod (cc:=cc) class qual ret targs).
+    Proof. repeat intro. by apply SMethod_ne. Qed.
+
+    #[global] Instance SMethod_proper' :
+      Proper (equiv (A:=ptr -d> WithPrePostO mpredI) ==> equiv)
+        (SMethod (cc:=cc) class qual ret targs).
+    Proof. exact: ne_proper. Qed.
+
+    #[global] Instance SMethod_mono'@{X Z Y} :
+      Proper (pointwise_relation _ wpp_entails ==> fs_entails)
+        (SMethod@{X Z Y} (cc:=cc) class qual ret targs).
+    Proof. repeat intro. by apply SMethod_mono. Qed.
+
+    #[global] Instance SMethod_flip_mono'@{X Z Y} :
+      Proper (pointwise_relation _ (flip wpp_entails) ==> flip fs_entails)
+        (SMethod@{X Z Y} (cc:=cc) class qual ret targs).
+    Proof. repeat intro. by apply SMethod_mono. Qed.
+  End SMethod.
 
   (** * Aggregate identity *)
   #[local] Fixpoint all_identities' (f : nat) (mdc : option globname) (cls : globname) : Rep :=
