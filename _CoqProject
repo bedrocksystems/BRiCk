@@ -24,6 +24,8 @@ theories/lang/prelude/tc_cond_type.v
 theories/lang/prelude/telescopes.v
 theories/lang/prelude/avl.v
 
+theories/lang/algebra/telescopes.v
+
 theories/lang/bi/entailsN.v
 theories/lang/bi/big_op.v
 theories/lang/bi/laterable.v
