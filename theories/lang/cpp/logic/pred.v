@@ -11,11 +11,10 @@
     - the memory model is simplified from the standard C++ memory
       model.
  *)
-From bedrock.lang Require Import prelude.base bi.prelude.
-From bedrock.lang.cpp.logic Require Export mpred rep.
-
-Require Import bedrock.lang.prelude.base.
 Require Export bedrock.lang.prelude.addr.
+
+From bedrock.lang.bi Require Export prelude observe.
+From bedrock.lang.cpp.logic Require Export mpred rep.
 
 From iris.base_logic.lib Require Export iprop.
 (* TODO: ^^ only needed to export uPredI, should be removed. *)
@@ -25,9 +24,6 @@ From iris.proofmode Require Import tactics.
 From iris_string_ident Require Import ltac2_string_ident.
 
 Require Import bedrock.lang.bi.cancelable_invariants.
-
-Require Export bedrock.lang.bi.prelude.
-Require Export bedrock.lang.bi.observe.
 Export ChargeNotation.
 
 From bedrock.lang.cpp.syntax Require Import
