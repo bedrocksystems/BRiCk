@@ -141,7 +141,7 @@ End properties.
 Definition emp_validN `{BiEntailsN PROP} (n : nat) (P : PROP) : Prop :=
   emp ⊢{n} P.
 #[global] Arguments emp_validN {_ _} _%nat_scope _%I : simpl never, assert.
-#[global] Hint Opaque bi_emp_valid : typeclass_instances.
+#[global] Hint Opaque emp_validN : typeclass_instances.
 
 Notation "'⊢{' n } Q" := (emp_validN n Q) : stdpp_scope.
 Notation "'⊢@{' PROP , n } Q" := (@emp_validN PROP _ n Q)
