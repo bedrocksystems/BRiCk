@@ -1,19 +1,31 @@
 (*
- * Copyright (c) 2020 BedRock Systems, Inc.
+ * Copyright (c) 2020-21 BedRock Systems, Inc.
  * This software is distributed under the terms of the BedRock Open-Source License.
  * See the LICENSE-BedRock file in the repository root for details.
  *)
-Require Import Coq.Lists.List.
+Require Import bedrock.lang.algebra.telescopes.
+Require Import bedrock.lang.bi.telescopes.
+Require Import bedrock.lang.cpp.semantics.values.
+Require Import bedrock.lang.cpp.logic.entailsN.
+Import ChargeNotation.
 
-Require Import stdpp.telescopes.
+#[local] Set Universe Polymorphism.
+#[local] Set Printing Universes.
+#[local] Set Printing Coercions.
 
-From iris.proofmode Require Import tactics.
+(** The universes in [WithPrePostG], [WithExG] are best seen with
+    [Unset Printing Notations] to expose [tele_fun]'s universes:
 
-From bedrock.lang.cpp Require Import ast semantics.
-From bedrock.lang.cpp Require Import pred.
+    - X: The telescopes [wpp_with], [we_ex], i.e., the domains of the
+      telescopic functions [wpp_pre], [wpp_post], [we_post].
 
-Local Set Universe Polymorphism.
+    - Z: The codomains of the telescopic functions
 
+    - Y: The telescopic functions themselves
+
+    - A: [wpp_pre] argument type
+
+    - R: [wpp_post], [we_ex] result type *)
 Section with_prop.
   Context {PROP : bi}.
 
@@ -32,24 +44,6 @@ Section with_prop.
     ; wpp_pre  : tele_fun@{X Z Y} wpp_with (ARGS * PROP)
     ; wpp_post : tele_fun@{X Z Y} wpp_with (WithExG@{X Z _ _} RESULT)}.
   Global Arguments WithPrePostG : clear implicits.
-
-  (** Analogues of [bi_texist] and [bi_tforall], with extra universe
-  polymorphism and a slightly different interface. *)
-  Fixpoint tbi_exist@{X Z Y} {t : tele@{X}}
-    : forall (P : tele_fun@{X Z Y} t PROP), PROP :=
-    match t as t0 return ((t0 -t> PROP) → PROP) with
-    | [tele] => fun x : PROP => x
-    | @TeleS X binder =>
-      fun P : (∀ x : X, binder x -t> PROP) => Exists x : X, tbi_exist (P x)
-    end.
-
-  Fixpoint tbi_forall@{X Z Y} {t : tele@{X}}
-    : forall (P : tele_fun@{X Z Y} t PROP), PROP :=
-    match t as t0 return ((t0 -t> PROP) → PROP) with
-    | [tele] => fun x : PROP => x
-    | @TeleS X binder =>
-      fun P : (∀ x : X, binder x -t> PROP) => Forall x : X, tbi_forall (P x)
-    end.
 
   (** Mnemonic: WppGD stands for "[WithPrePostG]'s denotation" *)
   Definition WppGD@{X Z Y A R} {ARGS RESULT} (wpp : WithPrePostG@{X Z Y A R} ARGS RESULT) (params : ARGS)
@@ -84,61 +78,7 @@ Arguments wpp_post {PROP ARGS RESULT} _: assert.
 Global Arguments WppGD {PROP ARGS RESULT} !wpp _ _ / : assert.
 Global Arguments WppD {PROP} !wpp _ _ / : assert.
 
-(** Support for guarded recursive specs. *)
-Section tele_fun_ofe.
-  Context {t : tele} {A : ofeT}.
-
-  (** Imposing a discrete order here might be limiting in practice,
-      but the same limitation exists upstream; for example, in
-      [bi_texist_ne]. *)
-  Instance tele_fun_equiv : Equiv (t -t> A) :=
-    fun f g => forall x, tele_app f x ≡ tele_app g x.
-  Instance tele_fun_dist : Dist (t -t> A) :=
-    fun n f g => forall x, tele_app f x ≡{n}≡ tele_app g x.
-
-  Lemma tele_fun_ofe_mixin : OfeMixin (t -t> A).
-  Proof. exact: (iso_ofe_mixin (A:=tele_arg t -d> A) tele_app). Qed.
-
-  Canonical Structure tele_funO := OfeT (t -t> A) tele_fun_ofe_mixin.
-End tele_fun_ofe.
-Arguments tele_funO _ _ : clear implicits, assert.
-
-Section tele_fun_quantifiers.
-  Context {PROP : bi} {t : tele}.
-  Implicit Types (P : t -t> PROP).
-  Implicit Types (R : t -> PROP).
-
-  Lemma tbi_exist_bi_texist P : tbi_exist P -|- ∃.. x, tele_app P x.
-  Proof. induction t as [|?? IH]; simpl; first done. f_equiv=>x. by rewrite IH. Qed.
-  Lemma bi_texist_tbi_exist R : (∃.. x, R x) -|- tbi_exist (tele_bind R).
-  Proof. rewrite tbi_exist_bi_texist. f_equiv=>x. by rewrite tele_app_bind. Qed.
-  Lemma tbi_exist_exist P : tbi_exist P -|- Exists x, tele_app P x.
-  Proof. by rewrite tbi_exist_bi_texist bi_texist_exist. Qed.
-
-  Lemma tbi_forall_bi_tforall P : tbi_forall P -|- ∀.. x, tele_app P x.
-  Proof. induction t as [|?? IH]; simpl; first done. f_equiv=>x. by rewrite IH. Qed.
-  Lemma bi_tforall_tbi_forall R : (∀.. x, R x) -|- tbi_forall (tele_bind R).
-  Proof. rewrite tbi_forall_bi_tforall. f_equiv=>x. by rewrite tele_app_bind. Qed.
-  Lemma tbi_forall_forall P : tbi_forall P -|- Forall x, tele_app P x.
-  Proof. by rewrite tbi_forall_bi_tforall bi_tforall_forall. Qed.
-
-  #[global] Instance tbi_exist_ne : NonExpansive (@tbi_exist PROP t).
-  Proof. intros n P Q ?. rewrite !tbi_exist_exist. solve_proper. Qed.
-  #[global] Instance tbi_exist_proper : Proper (equiv ==> equiv) (@tbi_exist PROP t).
-  Proof.
-    apply ne_proper.
-    (** TODO: Typeclass resolution here takes a long time to find
-        [tbi_exist_ne] because it first tries [contractive_ne]. Can
-        similarly slow searches arise downstream? *)
-    apply tbi_exist_ne.
-  Qed.
-
-  #[global] Instance tbi_forall_ne : NonExpansive (@tbi_forall PROP t).
-  Proof. intros n P Q ?. rewrite !tbi_forall_forall. solve_proper. Qed.
-  #[global] Instance tbi_forall_proper : Proper (equiv ==> equiv) (@tbi_forall PROP t).
-  Proof. apply ne_proper, tbi_forall_ne. Qed.
-End tele_fun_quantifiers.
-
+Module Export wpp_ofe.
 Section wpp_ofe.
   Context {PROP : bi} {ARGS RESULT : Type}.
   Notation WPP := (WithPrePostG PROP ARGS RESULT) (only parsing).
@@ -154,5 +94,87 @@ Section wpp_ofe.
   Qed.
   Canonical Structure WithPrePostGO := OfeT WPP wpp_ofe_mixin.
 End wpp_ofe.
+End wpp_ofe.
 Arguments WithPrePostGO : clear implicits.
 Notation WithPrePostO PROP := (WithPrePostGO PROP (list val) val).
+
+(** Universe polymorphic relations between WPPs. *)
+Definition wppg_relation@{X1 X2 Z1 Z2 Y1 Y2 A R} {PROP : bi} (R : relation PROP)
+    {ARGS : Type@{A}} {RESULT : Type@{R}}
+    (wpp1 : WithPrePostG@{X1 Z1 Y1 A R} PROP ARGS RESULT)
+    (wpp2 : WithPrePostG@{X2 Z2 Y2 A R} PROP ARGS RESULT) : Prop :=
+  (** We use a single [K] rather than pointwise equal [K1], [K2] for
+      compatibility with [fs_entails], [fs_impl]. *)
+  forall xs K, R (WppGD wpp1 xs K) (WppGD wpp2 xs K).
+#[global] Instance: Params (@wppg_relation) 4 := {}.
+
+Notation wppg_entailsN n := (wppg_relation (entailsN n)) (only parsing).
+Notation wppg_entails := (wppg_relation bi_entails) (only parsing).
+Notation wppg_dist n := (wppg_relation (dist n)) (only parsing).
+Notation wppg_equiv := (wppg_relation equiv) (only parsing).
+
+Definition wpp_relation@{X1 X2 Z1 Z2 Y1 Y2} {PROP : bi} (R : relation PROP)
+    (wpp1 : WithPrePost@{X1 Z1 Y1} PROP)
+    (wpp2 : WithPrePost@{X2 Z2 Y2} PROP) : Prop :=
+  (** Can generate nicer goals compared to [:= wppg_entails ...]. *)
+  forall xs K, R (WppD wpp1 xs K) (WppD wpp2 xs K).
+#[global] Instance: Params (@wpp_relation) 2 := {}.
+
+Notation wpp_entailsN n := (wpp_relation (entailsN n)) (only parsing).
+Notation wpp_entails := (wpp_relation bi_entails) (only parsing).
+Notation wpp_dist n := (wpp_relation (dist n)) (only parsing).
+Notation wpp_equiv := (wpp_relation equiv) (only parsing).
+
+Section wpp_relations.
+  Universe X1 X2 Z1 Z2 Y1 Y2.
+  Context `{!BiEntailsN PROP}.
+
+  Lemma wppg_equiv_spec@{A R} {ARGS : Type@{A}} {RESULT : Type@{R}} wpp1 wpp2 :
+    @wppg_relation@{X1 X2 Z1 Z2 Y1 Y2 A R} PROP (≡) ARGS RESULT wpp1 wpp2 <->
+    @wppg_relation@{X1 X2 Z1 Z2 Y1 Y2 A R} PROP (⊢) ARGS RESULT wpp1 wpp2 /\
+    @wppg_relation@{X2 X1 Z2 Z1 Y2 Y1 A R} PROP (⊢) ARGS RESULT wpp2 wpp1.
+  Proof.
+    split.
+    - intros Hwpp. by split=>vs K; rewrite (Hwpp vs K).
+    - intros [] vs K. by split'.
+  Qed.
+
+  Lemma wpp_equiv_spec wpp1 wpp2 :
+    @wpp_relation@{X1 X2 Z1 Z2 Y1 Y2} PROP (≡) wpp1 wpp2 <->
+    @wpp_relation@{X1 X2 Z1 Z2 Y1 Y2} PROP (⊢) wpp1 wpp2 /\
+    @wpp_relation@{X2 X1 Z2 Z1 Y2 Y1} PROP (⊢) wpp2 wpp1.
+  Proof. apply wppg_equiv_spec. Qed.
+
+  Lemma wppg_equiv_dist@{A R} {ARGS : Type@{A}} {RESULT : Type@{R}} wpp1 wpp2 :
+    @wppg_relation@{X1 X2 Z1 Z2 Y1 Y2 A R} PROP (≡) ARGS RESULT wpp1 wpp2 <->
+    ∀ n, @wppg_relation@{X1 X2 Z1 Z2 Y1 Y2 A R} PROP (dist n) ARGS RESULT wpp1 wpp2.
+  Proof.
+    split.
+    - intros Hwpp n vs K. apply equiv_dist, Hwpp.
+    - intros Hwpp vs K. apply equiv_dist=>n. apply Hwpp.
+  Qed.
+
+  Lemma wpp_equiv_dist wpp1 wpp2 :
+    @wpp_relation@{X1 X2 Z1 Z2 Y1 Y2} PROP (≡) wpp1 wpp2 <->
+    ∀ n, @wpp_relation@{X1 X2 Z1 Z2 Y1 Y2} PROP (dist n) wpp1 wpp2.
+  Proof. apply wppg_equiv_dist. Qed.
+
+  Notation entailsN := (@entailsN PROP).
+
+  Lemma wppg_dist_entailsN@{A R} {ARGS : Type@{A}} {RESULT : Type@{R}} wpp1 wpp2 n :
+    @wppg_relation@{X1 X2 Z1 Z2 Y1 Y2 A R} _ (dist n) ARGS RESULT wpp1 wpp2 <->
+    @wppg_relation@{X1 X2 Z1 Z2 Y1 Y2 A R} _ (entailsN n) ARGS RESULT wpp1 wpp2 /\
+    @wppg_relation@{X2 X1 Z2 Z1 Y2 Y1 A R} _ (entailsN n) ARGS RESULT wpp2 wpp1.
+  Proof.
+    split.
+    - intros Hwpp. by split=>vs K; apply dist_entailsN; rewrite (Hwpp vs K).
+    - intros [] vs K. by apply dist_entailsN.
+  Qed.
+
+  Lemma wpp_dist_entailsN wpp1 wpp2 n :
+    @wpp_relation@{X1 X2 Z1 Z2 Y1 Y2} _ (dist n) wpp1 wpp2 <->
+    @wpp_relation@{X1 X2 Z1 Z2 Y1 Y2} _ (entailsN n) wpp1 wpp2 /\
+    @wpp_relation@{X2 X1 Z2 Z1 Y2 Y1} _ (entailsN n) wpp2 wpp1.
+  Proof. apply wppg_dist_entailsN. Qed.
+
+End wpp_relations.
