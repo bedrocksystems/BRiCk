@@ -29,24 +29,6 @@ Section with_prop.
     ; wpp_post : tele_fun@{X Z Y} wpp_with (WithExG@{X Z _ _} RESULT)}.
   Global Arguments WithPrePostG : clear implicits.
 
-  (** Analogues of [bi_texist] and [bi_tforall], with extra universe
-  polymorphism and a slightly different interface. *)
-  Fixpoint tbi_exist@{X Z Y} {t : tele@{X}}
-    : forall (P : tele_fun@{X Z Y} t PROP), PROP :=
-    match t as t0 return ((t0 -t> PROP) → PROP) with
-    | [tele] => fun x : PROP => x
-    | @TeleS X binder =>
-      fun P : (∀ x : X, binder x -t> PROP) => Exists x : X, tbi_exist (P x)
-    end.
-
-  Fixpoint tbi_forall@{X Z Y} {t : tele@{X}}
-    : forall (P : tele_fun@{X Z Y} t PROP), PROP :=
-    match t as t0 return ((t0 -t> PROP) → PROP) with
-    | [tele] => fun x : PROP => x
-    | @TeleS X binder =>
-      fun P : (∀ x : X, binder x -t> PROP) => Forall x : X, tbi_forall (P x)
-    end.
-
   (** Mnemonic: WppGD stands for "[WithPrePostG]'s denotation" *)
   Definition WppGD@{X Z Y A R} {ARGS RESULT} (wpp : WithPrePostG@{X Z Y A R} ARGS RESULT) (params : ARGS)
              (Q : RESULT -> PROP) : PROP :=
@@ -79,42 +61,6 @@ Arguments wpp_post {PROP ARGS RESULT} _: assert.
 
 Global Arguments WppGD {PROP ARGS RESULT} !wpp _ _ / : assert.
 Global Arguments WppD {PROP} !wpp _ _ / : assert.
-
-Section tele_fun_quantifiers.
-  Context {PROP : bi} {t : tele}.
-  Implicit Types (P : t -t> PROP).
-  Implicit Types (R : t -> PROP).
-
-  Lemma tbi_exist_bi_texist P : tbi_exist P -|- ∃.. x, tele_app P x.
-  Proof. induction t as [|?? IH]; simpl; first done. f_equiv=>x. by rewrite IH. Qed.
-  Lemma bi_texist_tbi_exist R : (∃.. x, R x) -|- tbi_exist (tele_bind R).
-  Proof. rewrite tbi_exist_bi_texist. f_equiv=>x. by rewrite tele_app_bind. Qed.
-  Lemma tbi_exist_exist P : tbi_exist P -|- Exists x, tele_app P x.
-  Proof. by rewrite tbi_exist_bi_texist bi_texist_exist. Qed.
-
-  Lemma tbi_forall_bi_tforall P : tbi_forall P -|- ∀.. x, tele_app P x.
-  Proof. induction t as [|?? IH]; simpl; first done. f_equiv=>x. by rewrite IH. Qed.
-  Lemma bi_tforall_tbi_forall R : (∀.. x, R x) -|- tbi_forall (tele_bind R).
-  Proof. rewrite tbi_forall_bi_tforall. f_equiv=>x. by rewrite tele_app_bind. Qed.
-  Lemma tbi_forall_forall P : tbi_forall P -|- Forall x, tele_app P x.
-  Proof. by rewrite tbi_forall_bi_tforall bi_tforall_forall. Qed.
-
-  #[global] Instance tbi_exist_ne : NonExpansive (@tbi_exist PROP t).
-  Proof. intros n P Q ?. rewrite !tbi_exist_exist. solve_proper. Qed.
-  #[global] Instance tbi_exist_proper : Proper (equiv ==> equiv) (@tbi_exist PROP t).
-  Proof.
-    apply ne_proper.
-    (** TODO: Typeclass resolution here takes a long time to find
-        [tbi_exist_ne] because it first tries [contractive_ne]. Can
-        similarly slow searches arise downstream? *)
-    apply tbi_exist_ne.
-  Qed.
-
-  #[global] Instance tbi_forall_ne : NonExpansive (@tbi_forall PROP t).
-  Proof. intros n P Q ?. rewrite !tbi_forall_forall. solve_proper. Qed.
-  #[global] Instance tbi_forall_proper : Proper (equiv ==> equiv) (@tbi_forall PROP t).
-  Proof. apply ne_proper, tbi_forall_ne. Qed.
-End tele_fun_quantifiers.
 
 Section wpp_ofe.
   Context {PROP : bi} {ARGS RESULT : Type}.
