@@ -632,6 +632,16 @@ Section with_cpp.
   Global Instance pureR_observe_2 Q (P1 P2 : mpred) :
     Observe2 [| Q |] P1 P2 → Observe2 [| Q |] (pureR P1) (pureR P2).
   Proof. apply _. Qed.
+  #[global] Instance pureR_observe_pure Q (P : mpred) :
+    Observe [! Q !] P → Observe [! Q !] (pureR P).
+  Proof.
+    intros. apply monPred_observe=>p. by rewrite monPred_at_pure.
+  Qed.
+  #[global] Instance pureR_observe_2_pure Q (P1 P2 : mpred) :
+    Observe2 [! Q !] P1 P2 → Observe2 [! Q !] (pureR P1) (pureR P2).
+  Proof.
+    intros. apply monPred_observe_2=>p. by rewrite monPred_at_pure.
+  Qed.
 
   Lemma pureR_obs P Q :
     P |-- P ** [| Q |] →
