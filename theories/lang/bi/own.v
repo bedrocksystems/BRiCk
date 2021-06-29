@@ -26,12 +26,14 @@
 
   TODO: These should be upstreamed to Iris's code base. **)
 
-Require Export iris.si_logic.bi.
+Require Export bedrock.lang.si_logic.bi.
 
 Require Import iris.algebra.proofmode_classes.
 Require Import iris.proofmode.classes.
 
 Require Import iris.base_logic.lib.iprop. (* << for [gname] only *)
+
+#[local] Set Default Proof Using "Type*".
 
 (* Step-indexed Validity *)
 Program Definition si_cmra_valid_def {A : cmraT} (a : A) : siProp :=
@@ -59,6 +61,16 @@ Instance prop_valid_plain
 Instance prop_valid_persistent
   {PROP : bi} `{!BiEmbed siPropI PROP} {A : cmraT} (a : A) :
   Persistent (✓ a) := _.
+
+Lemma validI_unfold `{BiEmbed siPropI PROP} {A : cmraT} (a : A) :
+  ✓ a ⊣⊢ embed (si_cmra_valid a).
+Proof. done. Qed.
+
+#[global] Hint Opaque bi_cmra_valid : typeclass_instances.
+(** Mark it TC opaque; otherwise, TC resolution can prove anew, e.g.,
+[Persistent (✓ a)] and tactics like [iDestruct (own_valid_2 with "A
+B") as "#Hv"] produce [embed (si_cmra_valid (a ⋅ b))] rather than [✓
+(a ⋅ b)]. (We might also wind up wanting "simpl never".) *)
 
 (* own *)
 Class HasOwn {PROP : bi} {A : cmraT} : Type := {
