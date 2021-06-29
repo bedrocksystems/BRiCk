@@ -36,6 +36,9 @@ Section with_Σ.
   Definition _global := _global_aux.(unseal).
   Definition _global_eq : @_global = _ := _global_aux.(seal_eq).
 
+  #[global] Instance _global_inj {resolve : genv} : Inj (=) (=) (_global resolve).
+  Proof. rewrite _global_eq. apply _. Qed.
+
   Lemma _global_nonnull resolve n : _global resolve n <> nullptr.
   Proof. rewrite _global_eq /_global_def. apply global_ptr_nonnull. Qed.
 
