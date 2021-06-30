@@ -101,9 +101,6 @@ Section with_cpp.
     rewrite primR_eq/primR_def. by setoid_rewrite Hσ.
   Qed.
 
-  Global Instance primR_affine resolve ty q v
-    : Affine (primR ty q v).
-  Proof. rewrite primR_eq. apply _. Qed.
   Global Instance primR_timeless resolve ty q v
     : Timeless (primR ty q v).
   Proof. rewrite primR_eq. apply _. Qed.
@@ -175,9 +172,6 @@ Section with_cpp.
     rewrite uninitR_eq/uninitR_def. by setoid_rewrite Hσ.
   Qed.
 
-  Global Instance uninitR_affine resolve ty q
-    : Affine (uninitR ty q).
-  Proof. rewrite uninitR_eq. apply _. Qed.
   Global Instance uninitR_timeless resolve ty q
     : Timeless (uninitR ty q).
   Proof. rewrite uninitR_eq. apply _. Qed.
