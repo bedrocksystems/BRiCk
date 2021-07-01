@@ -91,6 +91,9 @@ End monPred_lift.
 
 (**
 Other instances that we derive from affinity but seem safe.
+*)
+
+(*
 This proves that
 [ (∀ x : A, [| φ x |]) ⊢@{PROP} <affine> (∀ x : A, [| φ x |]) ]
 so is related to [affinely_sep].
@@ -98,4 +101,12 @@ so is related to [affinely_sep].
 Definition bi_emp_forall_only_provable_uPred (M : ucmraT) : BiEmpForallOnlyProvable (uPredI M) :=
   bi_affine_emp_forall_only_provable (uPred_affine M).
 
+Section uPred.
+  Context (M : ucmraT).
+
+  #[local] Instance bi_positive_uPred : BiPositive (uPredI M).
+  Proof. apply @bi_affine_positive, uPred_affine. Qed.
+End uPred.
+
 #[export] Hint Resolve bi_emp_forall_only_provable_uPred : typeclass_instances.
+#[export] Hint Resolve bi_positive_uPred : typeclass_instances.
