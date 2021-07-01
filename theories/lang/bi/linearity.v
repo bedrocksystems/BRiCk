@@ -41,6 +41,19 @@ Section with_later_emp.
   Proof. intros. by rewrite /Affine (affine P) (affine (▷ emp)). Qed.
 End with_later_emp.
 
+(* Here, we assume [affinely_sep] as reasonable,
+and derive desirable consequences, such as BiPositive. *)
+Section with_affinely_sep.
+  Context {PROP : bi} (Haffinely_sep : ∀ P Q : PROP, <affine> (P ∗ Q) ⊣⊢ <affine> P ∗ <affine> Q).
+  Local Set Default Proof Using "Haffinely_sep".
+
+  (* Iris proves [affinely_sep] from [BiPositive PROP]; we prove the converse holds *)
+  (* [BiPositive PROP] is equivalent to [affinely_sep], which in turn seems
+  perfectly natural. *)
+  #[local] Instance bi_positive_with_affinely_sep : BiPositive PROP.
+  Proof. intros P Q. by rewrite (Haffinely_sep P Q) (affinely_elim Q). Qed.
+End with_affinely_sep.
+
 (**
 Specialize the lemmas in [Section with_later_emp] to [uPred] (hence
 [iProp] and for now [mpred]).
@@ -100,13 +113,14 @@ so is related to [affinely_sep].
 *)
 Definition bi_emp_forall_only_provable_uPred (M : ucmraT) : BiEmpForallOnlyProvable (uPredI M) :=
   bi_affine_emp_forall_only_provable (uPred_affine M).
+#[export] Hint Resolve bi_emp_forall_only_provable_uPred : typeclass_instances.
 
-Section uPred.
+Section uPred_affinely_sep.
   Context (M : ucmraT).
+  Definition affinely_sep_uPred := @affinely_sep _ (@bi_affine_positive _ (uPred_affine M)).
 
   #[local] Instance bi_positive_uPred : BiPositive (uPredI M).
-  Proof. apply @bi_affine_positive, uPred_affine. Qed.
-End uPred.
+  Proof. apply bi_positive_with_affinely_sep, affinely_sep_uPred. Qed.
+End uPred_affinely_sep.
 
-#[export] Hint Resolve bi_emp_forall_only_provable_uPred : typeclass_instances.
 #[export] Hint Resolve bi_positive_uPred : typeclass_instances.
