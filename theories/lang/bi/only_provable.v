@@ -104,17 +104,18 @@ Section bi.
   Proof using PF. apply: anti_symm. apply only_provable_forall_1. apply only_provable_forall_2. Qed.
   (** Not very useful, but the best we can do in general:
   it's unclear how to commute [emp ∧ ∀ x : A, P] into [∀ x : A, emp ∧ P]. *)
-  Lemma only_provable_forall_2_gen {A} (φ : A → Prop) :
-    ([| ∀ x : A, φ x |]) ⊣⊢@{PROP} (emp ∧ ∀ x : A, [| φ x |]).
+  Lemma only_provable_forall_2_gen {A} (φ : A → Prop)
+    (Hswap : emp ∧ (∀ x : A, [| φ x |]) ⊣⊢ (∀ x : A, [| φ x |])) :
+    ([| ∀ x : A, φ x |]) ⊣⊢@{PROP} (∀ x : A, [| φ x |]).
   Proof using PF.
-    rewrite /only_provable; iSplit.
+    rewrite -Hswap /only_provable; iSplit.
     { iIntros "!% /=". done. }
     { iIntros "[_ HPQ]". iRevert "HPQ". iIntros "!% /=". done. }
   Qed.
   Lemma only_provable_forall_2_biaffine `{BiAffine PROP} {A} (φ : A → Prop) :
     ([| ∀ x : A, φ x |]) ⊣⊢@{PROP} (∀ x : A, [| φ x |]).
   Proof using PF.
-    rewrite only_provable_forall_2_gen.
+    apply only_provable_forall_2_gen.
     iSplit; [|done]. iIntros "[_ $]".
   Qed.
 
