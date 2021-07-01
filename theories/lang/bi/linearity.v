@@ -5,8 +5,11 @@
  *)
 
 (**
-Import this module to make uPred mostly non-affine, while still assuming [▷ emp ⊣⊢ emp].
-This is guaranteed not to affect clients, since all we add is a few [#[export] Hints].
+Import this module to make uPred mostly non-affine, while still assuming [▷ emp
+⊣⊢ emp] and other principles that do not cause leaks.
+
+All changes to [typeclass_instances] will not propagate to your clients:
+technically, they have [#[export]] visibility.
 *)
 
 From bedrock.lang Require Import prelude.base bi.prelude bi.only_provable.
@@ -80,6 +83,26 @@ End uPred_with_later_emp.
 
 #[export] Hint Resolve timeless_emp_uPred affine_later_emp_uPred affine_later_uPred : typeclass_instances.
 
+(** *** Other instances that we derive from affinity but seem safe. *)
+Section uPred.
+  Context (M : ucmraT).
+  Definition affinely_sep_uPred := @affinely_sep _ (@bi_affine_positive _ (uPred_affine M)).
+
+  #[local] Instance bi_positive_uPred : BiPositive (uPredI M).
+  Proof. apply bi_positive_with_affinely_sep, affinely_sep_uPred. Qed.
+
+  (*
+  This instance is needed by some [only_provable] lemmas. It proves that
+  [ (∀ x : A, [| φ x |]) ⊢@{PROP} <affine> (∀ x : A, [| φ x |]) ]
+  so it seems related to [affinely_sep].
+  *)
+  #[local] Instance bi_emp_forall_only_provable_uPred (M : ucmraT) : BiEmpForallOnlyProvable (uPredI M) :=
+    bi_affine_emp_forall_only_provable (uPred_affine M).
+End uPred.
+
+#[export] Hint Resolve bi_positive_uPred bi_emp_forall_only_provable_uPred : typeclass_instances.
+
+(** *** Lift over [monPred] instances declared above. *)
 Section monPred_lift.
   Context (PROP : bi).
   Context (I : biIndex).
@@ -98,29 +121,8 @@ Section monPred_lift.
     (HA : ∀ P : PROP, Affine P → Affine (▷ P)) :
     Affine P → Affine (▷ P).
   Proof. intros AP. constructor=> i. rewrite monPred_at_later monPred_at_emp. apply HA, monPred_at_affine, AP. Qed.
+
+  (** Liftings for [BiPositive] and [BiEmpForallOnlyProvable] are declared elsewhere. *)
 End monPred_lift.
 
 #[export] Hint Resolve timeless_emp_monPred_lift affine_later_emp_monPred_lift affine_later_monPred_lift : typeclass_instances.
-
-(**
-Other instances that we derive from affinity but seem safe.
-*)
-
-(*
-This proves that
-[ (∀ x : A, [| φ x |]) ⊢@{PROP} <affine> (∀ x : A, [| φ x |]) ]
-so is related to [affinely_sep].
-*)
-Definition bi_emp_forall_only_provable_uPred (M : ucmraT) : BiEmpForallOnlyProvable (uPredI M) :=
-  bi_affine_emp_forall_only_provable (uPred_affine M).
-#[export] Hint Resolve bi_emp_forall_only_provable_uPred : typeclass_instances.
-
-Section uPred_affinely_sep.
-  Context (M : ucmraT).
-  Definition affinely_sep_uPred := @affinely_sep _ (@bi_affine_positive _ (uPred_affine M)).
-
-  #[local] Instance bi_positive_uPred : BiPositive (uPredI M).
-  Proof. apply bi_positive_with_affinely_sep, affinely_sep_uPred. Qed.
-End uPred_affinely_sep.
-
-#[export] Hint Resolve bi_positive_uPred : typeclass_instances.
