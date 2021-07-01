@@ -50,7 +50,6 @@ All lemmas use suffix [_uPred].
 
 Section uPred_with_later_emp.
   Context (M : ucmraT).
-  Local Notation "'emp'" := (bi_emp (PROP := uPredI M)) : bi_scope.
 
   Definition later_emp_uPred := @bi.later_emp _ (uPred_affine M).
 
@@ -71,7 +70,6 @@ End uPred_with_later_emp.
 Section monPred_with_later_emp.
   Context (I : biIndex) (M : ucmraT).
   Local Notation monPredI := (monPredI I (uPredI M)).
-  Local Notation "'emp'" := (bi_emp (PROP := monPredI)) : bi_scope.
 
   Definition later_emp_monPred := @bi.later_emp _ (@monPred_bi_affine I _ (uPred_affine M)).
 
