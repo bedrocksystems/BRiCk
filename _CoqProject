@@ -144,8 +144,8 @@ theories/lang/cpp/logic.v
 
 # Notations
 theories/lang/cpp/heap_notations.v
-theories/lang/cpp/spec_notations.v
 theories/lang/cpp/primitives.v
+theories/lang/cpp/specs/spec_notations.v
 
 # Notations for cpp2v
 theories/lang/cpp/parser.v
