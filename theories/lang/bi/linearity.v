@@ -72,6 +72,7 @@ Section monPred_lift.
   Context (I : biIndex).
   Local Notation monPredI := (monPredI I PROP).
 
+  (* TODO: switch to [#[export] Instance] when Coq supports it. *)
   #[local] Instance timeless_emp_monPred_lift (HT : Timeless (PROP := PROP) emp) :
     Timeless (PROP := monPredI) emp.
   Proof. constructor=> i. rewrite monPred_at_later monPred_at_except_0 monPred_at_emp. exact HT. Qed.
@@ -86,22 +87,7 @@ Section monPred_lift.
   Proof. intros AP. constructor=> i. rewrite monPred_at_later monPred_at_emp. apply HA, monPred_at_affine, AP. Qed.
 End monPred_lift.
 
-Module monPred_linearity_lift.
-  #[export] Hint Resolve timeless_emp_monPred_lift affine_later_emp_monPred_lift affine_later_monPred_lift : typeclass_instances.
-End monPred_linearity_lift.
-
-Section monPred_with_later_emp.
-  Context (I : biIndex) (M : ucmraT).
-  Local Notation monPredI := (monPredI I (uPredI M)).
-
-  Import monPred_linearity_lift.
-  (* TODO: switch to [#[export] Instance] when Coq supports it. *)
-  #[local] Instance timeless_emp_monPred : Timeless (PROP := monPredI) emp := _.
-  #[local] Instance affine_later_emp_monPred : Affine (PROP := monPredI) (▷ emp) := _.
-  #[local] Instance affine_later_monPred (P : monPredI) : Affine P → Affine (▷ P) := _.
-End monPred_with_later_emp.
-
-#[export] Hint Resolve timeless_emp_monPred affine_later_emp_monPred affine_later_monPred : typeclass_instances.
+#[export] Hint Resolve timeless_emp_monPred_lift affine_later_emp_monPred_lift affine_later_monPred_lift : typeclass_instances.
 
 (**
 Other instances that we derive from affinity but seem safe.
