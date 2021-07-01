@@ -89,27 +89,11 @@ End monPred_with_later_emp.
 
 (**
 Other instances that we derive from affinity but seem safe.
-This relies on [only_provable_forall_2_gen] and
-[ (emp ∧ ∀ x : A, [| φ x |]) ⊣⊢ ∀ x : A, [| φ x |] ].
+This proves that
+[ (∀ x : A, [| φ x |]) ⊢@{PROP} <affine> (∀ x : A, [| φ x |]) ]
+so is related to [affinely_sep].
 *)
-Section uPred.
-  Context (M : ucmraT).
+Definition bi_emp_forall_only_provable_uPred (M : ucmraT) : BiEmpForallOnlyProvable (uPredI M) :=
+  bi_affine_emp_forall_only_provable (uPred_affine M).
 
-  #[local] Instance from_forall_only_provable_uPred {A} (P : A → Prop) name :
-    AsIdentName P name ->
-    @FromForall (uPredI M) A [| ∀ x, P x |] (λ a, [| P a |]) name.
-  Proof. apply (@from_forall_only_provable _ _), TCOrT_l, uPred_affine. Qed.
-End uPred.
-
-Section monPred.
-  Context (I : biIndex) (M : ucmraT).
-
-  #[local] Instance from_forall_only_provable_monPred {A} (P : A → Prop) name :
-    AsIdentName P name ->
-    @FromForall (monPredI I (uPredI M)) A [| ∀ x, P x |] (λ a, [| P a |]) name.
-  Proof. apply (@from_forall_only_provable _ _), TCOrT_l, monPred_bi_affine, uPred_affine. Qed.
-End monPred.
-
-#[export] Remove Hints from_forall_only_provable : typeclass_instances.
-#[export] Hint Resolve from_forall_only_provable_uPred : typeclass_instances.
-#[export] Hint Resolve from_forall_only_provable_monPred : typeclass_instances.
+#[export] Hint Resolve bi_emp_forall_only_provable_uPred : typeclass_instances.
