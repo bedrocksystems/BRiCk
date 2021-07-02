@@ -5,8 +5,11 @@
  *)
 
 (**
-Import this module to make uPred mostly non-affine, while still assuming [▷ emp ⊣⊢ emp].
-This is guaranteed not to affect clients, since all we add is a few [#[export] Hints].
+Import this module to make uPred mostly non-affine, while still assuming [▷ emp
+⊣⊢ emp] and other principles that do not cause leaks.
+
+All changes to [typeclass_instances] will not propagate to your clients:
+technically, they have [#[export]] visibility.
 *)
 
 From bedrock.lang Require Import prelude.base bi.prelude bi.only_provable.
@@ -41,6 +44,19 @@ Section with_later_emp.
   Proof. intros. by rewrite /Affine (affine P) (affine (▷ emp)). Qed.
 End with_later_emp.
 
+(* Here, we assume [affinely_sep] as reasonable,
+and derive desirable consequences, such as BiPositive. *)
+Section with_affinely_sep.
+  Context {PROP : bi} (Haffinely_sep : ∀ P Q : PROP, <affine> (P ∗ Q) ⊣⊢ <affine> P ∗ <affine> Q).
+  Local Set Default Proof Using "Haffinely_sep".
+
+  (* Iris proves [affinely_sep] from [BiPositive PROP]; we prove the converse holds *)
+  (* [BiPositive PROP] is equivalent to [affinely_sep], which in turn seems
+  perfectly natural. *)
+  #[local] Instance bi_positive_with_affinely_sep : BiPositive PROP.
+  Proof. intros P Q. by rewrite (Haffinely_sep P Q) (affinely_elim Q). Qed.
+End with_affinely_sep.
+
 (**
 Specialize the lemmas in [Section with_later_emp] to [uPred] (hence
 [iProp] and for now [mpred]).
@@ -50,7 +66,6 @@ All lemmas use suffix [_uPred].
 
 Section uPred_with_later_emp.
   Context (M : ucmraT).
-  Local Notation "'emp'" := (bi_emp (PROP := uPredI M)) : bi_scope.
 
   Definition later_emp_uPred := @bi.later_emp _ (uPred_affine M).
 
@@ -68,50 +83,46 @@ End uPred_with_later_emp.
 
 #[export] Hint Resolve timeless_emp_uPred affine_later_emp_uPred affine_later_uPred : typeclass_instances.
 
-Section monPred_with_later_emp.
-  Context (I : biIndex) (M : ucmraT).
-  Local Notation monPredI := (monPredI I (uPredI M)).
-  Local Notation "'emp'" := (bi_emp (PROP := monPredI)) : bi_scope.
-
-  Definition later_emp_monPred := @bi.later_emp _ (@monPred_bi_affine I _ (uPred_affine M)).
-
-  (* TODO: switch to [#[export] Instance] when Coq supports it. *)
-  #[local] Instance timeless_emp_monPred : Timeless (PROP := monPredI) emp.
-  Proof. apply timeless_emp_with_later_emp, later_emp_monPred. Qed.
-
-  #[local] Instance affine_later_emp_monPred : Affine (PROP := monPredI) (▷ emp).
-  Proof. apply affine_later_emp_with_later_emp, later_emp_monPred. Qed.
-
-  #[local] Instance affine_later_monPred (P : monPredI) :
-    Affine P → Affine (▷ P).
-  Proof. apply affine_later_with_later_emp, later_emp_monPred. Qed.
-End monPred_with_later_emp.
-
-#[export] Hint Resolve timeless_emp_monPred affine_later_emp_monPred affine_later_monPred : typeclass_instances.
-
-(**
-Other instances that we derive from affinity but seem safe.
-This relies on [only_provable_forall_2_gen] and
-[ (emp ∧ ∀ x : A, [| φ x |]) ⊣⊢ ∀ x : A, [| φ x |] ].
-*)
+(** *** Other instances that we derive from affinity but seem safe. *)
 Section uPred.
   Context (M : ucmraT).
+  Definition affinely_sep_uPred := @affinely_sep _ (@bi_affine_positive _ (uPred_affine M)).
 
-  #[local] Instance from_forall_only_provable_uPred {A} (P : A → Prop) name :
-    AsIdentName P name ->
-    @FromForall (uPredI M) A [| ∀ x, P x |] (λ a, [| P a |]) name.
-  Proof. apply (@from_forall_only_provable _ _), TCOrT_l, uPred_affine. Qed.
+  #[local] Instance bi_positive_uPred : BiPositive (uPredI M).
+  Proof. apply bi_positive_with_affinely_sep, affinely_sep_uPred. Qed.
+
+  (*
+  This instance is needed by some [only_provable] lemmas. It proves that
+  [ (∀ x : A, [| φ x |]) ⊢@{PROP} <affine> (∀ x : A, [| φ x |]) ]
+  so it seems related to [affinely_sep].
+  *)
+  #[local] Instance bi_emp_forall_only_provable_uPred (M : ucmraT) : BiEmpForallOnlyProvable (uPredI M) :=
+    bi_affine_emp_forall_only_provable (uPred_affine M).
 End uPred.
 
-Section monPred.
-  Context (I : biIndex) (M : ucmraT).
+#[export] Hint Resolve bi_positive_uPred bi_emp_forall_only_provable_uPred : typeclass_instances.
 
-  #[local] Instance from_forall_only_provable_monPred {A} (P : A → Prop) name :
-    AsIdentName P name ->
-    @FromForall (monPredI I (uPredI M)) A [| ∀ x, P x |] (λ a, [| P a |]) name.
-  Proof. apply (@from_forall_only_provable _ _), TCOrT_l, monPred_bi_affine, uPred_affine. Qed.
-End monPred.
+(** *** Lift over [monPred] instances declared above. *)
+Section monPred_lift.
+  Context (PROP : bi).
+  Context (I : biIndex).
+  Local Notation monPredI := (monPredI I PROP).
 
-#[export] Remove Hints from_forall_only_provable : typeclass_instances.
-#[export] Hint Resolve from_forall_only_provable_uPred : typeclass_instances.
-#[export] Hint Resolve from_forall_only_provable_monPred : typeclass_instances.
+  (* TODO: switch to [#[export] Instance] when Coq supports it. *)
+  #[local] Instance timeless_emp_monPred_lift (HT : Timeless (PROP := PROP) emp) :
+    Timeless (PROP := monPredI) emp.
+  Proof. constructor=> i. rewrite monPred_at_later monPred_at_except_0 monPred_at_emp. exact HT. Qed.
+
+  #[local] Instance affine_later_emp_monPred_lift (HA : Affine (PROP := PROP) (▷ emp)) :
+    Affine (PROP := monPredI) (▷ emp).
+  Proof. constructor=> i. rewrite monPred_at_later monPred_at_emp. exact HA. Qed.
+
+  #[local] Instance affine_later_monPred_lift (P : monPredI)
+    (HA : ∀ P : PROP, Affine P → Affine (▷ P)) :
+    Affine P → Affine (▷ P).
+  Proof. intros AP. constructor=> i. rewrite monPred_at_later monPred_at_emp. apply HA, monPred_at_affine, AP. Qed.
+
+  (** Liftings for [BiPositive] and [BiEmpForallOnlyProvable] are declared elsewhere. *)
+End monPred_lift.
+
+#[export] Hint Resolve timeless_emp_monPred_lift affine_later_emp_monPred_lift affine_later_monPred_lift : typeclass_instances.
