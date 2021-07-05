@@ -35,6 +35,7 @@ theories/lang/bi/atomic_commit.v
 theories/lang/bi/observe.v
 theories/lang/bi/only_provable.v
 theories/lang/bi/derived_laws.v
+theories/lang/bi/embedding.v
 theories/lang/bi/invariants.v
 theories/lang/bi/own.v
 theories/lang/bi/cancelable_invariants.v
