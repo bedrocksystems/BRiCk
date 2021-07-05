@@ -109,6 +109,13 @@ Section observe.
   Context {PROP : bi}.
   Implicit Types P Q : PROP.
 
+  #[global] Instance Observe2_comm Q : Comm iff (Observe2 Q).
+  Proof.
+    suff observe_2_comm P1 P2 : Observe2 Q P1 P2 → Observe2 Q P2 P1.
+    - by split; apply observe_2_comm.
+    - iIntros (HQ) "P1 P2". iApply (HQ with "P2 P1").
+  Qed.
+
   Lemma observe_curry Q P1 P2 : Observe2 Q P1 P2 → Observe Q (P1 ∗ P2).
   Proof. intros Hobs. rewrite /Observe. apply bi.wand_elim_l', Hobs. Qed.
   Lemma observe_uncurry Q P1 P2 : Observe Q (P1 ∗ P2) → Observe2 Q P1 P2.
@@ -362,6 +369,13 @@ Qed.
 Section theory.
   Context {PROP : bi}.
   Implicit Types P Q : PROP.
+
+  Lemma observe_pure (Q : Prop) P : Observe [! Q !] P ↔ Observe [| Q |] P.
+  Proof. by rewrite /Observe bi.persistently_pure persistently_only_provable. Qed.
+
+  Lemma observe_2_pure (Q : Prop) P1 P2 :
+    Observe2 [! Q !] P1 P2 ↔ Observe2 [| Q |] P1 P2.
+  Proof. by rewrite /Observe2 bi.persistently_pure persistently_only_provable. Qed.
 
   Lemma observe_lhs p P Q : Observe [| p |] P → (p → P ⊢ Q) → P ⊢ Q.
   Proof.
