@@ -6,7 +6,7 @@
 
 (** Own instances for iProp **)
 (* TODO: these should be upstreamed to Iris. *)
-Require Export iris.si_logic.bi.
+Require Export bedrock.lang.si_logic.bi.
 
 Require Export iris.base_logic.lib.own. (* << exporting [inG] and [gFunctors] *)
 
@@ -16,76 +16,85 @@ Require Export bedrock.lang.bi.own.
 
 (* Embedding of si in iProp. It seems that such an embedding doesn't exist
   upstream yet. *)
+
+Program Definition si_embed_def {M} : Embed siPropI (uPredI M) :=
+  λ P, {| uPred_holds n x := P n |}.
+Solve Obligations with naive_solver eauto using siProp_closed.
+Definition si_embed_aux : seal (@si_embed_def). Proof. by eexists. Qed.
+Definition si_embed := si_embed_aux.(unseal).
+Definition si_embed_eq : @si_embed = _ := si_embed_aux.(seal_eq).
+#[global] Arguments si_embed {_} _%bi_scope : assert.
+
 Section si_embedding.
-  Context {Σ : gFunctors}.
+  #[local] Existing Instance si_embed.
+  Context {M : ucmraT}.
+  Notation PROP := (uPredI M).
 
-  #[local] Arguments siProp_holds !_ _ /.
-  #[local] Arguments uPred_holds !_ _ _ /.
+  #[local] Arguments siProp_holds !_ _ / : assert.
+  #[local] Arguments uPred_holds _ !_ _ _ / : assert.
 
-  Notation iPropI := (iPropI Σ).
-  Notation iProp  := (iProp Σ).
-
-  #[global] Program Instance si_embed : Embed siPropI iPropI :=
-    λ P, {| uPred_holds n x := P n |}.
-  Solve Obligations with naive_solver eauto using siProp_closed.
-
-  #[global] Instance si_embed_mono : Proper ((⊢) ==> (⊢)) (@embed siPropI _ _).
-  Proof. intros ?? PQ. constructor => ??? /=. by apply PQ. Qed.
-
-  #[global] Instance si_embed_ne : NonExpansive (@embed siPropI _ _).
-  Proof. intros ??? EQ. constructor => ???? /=. by apply EQ. Qed.
-
-  Program Definition si_unembed (P : iProp) : siProp :=
+  Program Definition si_unembed (P : PROP) : siProp :=
     {| siProp_holds n := P n ε |}.
-  Next Obligation. simpl. intros P n1 n2 ??. by eapply uPred_mono; eauto. Qed.
-  Instance si_unembed_ne : NonExpansive si_unembed.
-  Proof. intros ??? EQ. constructor => ??. rewrite /=. by apply EQ. Qed.
+  Next Obligation. move=>P n1 n2 /= HP Hn. by eapply uPred_mono. Qed.
 
-  Lemma si_embed_unembed (P : siProp) : si_unembed (embed P) ≡ P.
-  Proof. by constructor. Qed.
+  #[local] Instance si_unembed_ne : NonExpansive si_unembed.
+  Proof.
+    intros n P1 P2 HP. constructor=>??. apply HP; auto using ucmra_unit_validN.
+  Qed.
+
+  Lemma si_embed_unembed P : si_unembed (embed P) ≡ P.
+  Proof. rewrite si_embed_eq. by constructor. Qed.
 
   #[local] Ltac unseal :=
-    rewrite /bi_emp /= /uPred_emp /= ?uPred_pure_eq /=
-            /bi_emp /= /siProp_emp /= ?siProp_pure_eq /=
-            /bi_impl /= ?uPred_impl_eq /bi_impl /= ?siProp_impl_eq /=
-            /bi_forall /= ?uPred_forall_eq /= /bi_forall /= ?siProp_forall_eq /=
-            /bi_exist /= ?siProp_exist_eq /bi_exist /= ?uPred_exist_eq /=
-            /bi_sep /= /siProp_sep ?siProp_and_eq /bi_sep /= ?uPred_sep_eq /=
-            /bi_wand /= ?uPred_wand_eq /bi_wand /= /siProp_wand ?siProp_impl_eq /=
-            /bi_persistently /= /siProp_persistently /bi_persistently /=
-            ?uPred_persistently_eq.
-  #[local] Ltac unseal' := constructor => ???; unseal.
+    unfold embed, bi_embed_embed; cbn;
+    do ?rewrite si_embed_eq; unfold si_embed_def; cbn;
+    try uPred.unseal;
+    siProp.unseal.
 
-  Definition siProp_embedding_mixin : BiEmbedMixin siPropI iPropI si_embed.
+  #[local] Ltac unseal' :=
+    let n := fresh "n" in let x := fresh "x" in
+    constructor; intros n x ?; unseal.
+
+  Lemma si_embedding_mixin : BiEmbedMixin siPropI PROP si_embed.
   Proof.
-    split; try apply _.
-    - intros P [EP]. constructor => ??. apply (EP _ ε). done. by unseal.
-    - intros PROP' IN P Q.
-      rewrite -{2}(si_embed_unembed P) -{2}(si_embed_unembed Q).
-      apply (f_equivI si_unembed).
+    split.
+    - intros n P1 P2 HP. unseal'=>?. by apply HP.
+    - intros P1 P2 HP. unseal'. by apply HP.
+    - intros P [HP]. constructor=>n _. generalize (HP n ε).
+      unseal. auto using ucmra_unit_validN.
+    - intros PROP' ? P Q.
+      rewrite -{2}(si_embed_unembed P) -{2}(si_embed_unembed Q). apply (f_equivI _).
     - by unseal'.
-    - intros ??. unseal' => PQ ??. eapply PQ; [done..|by eapply cmra_validN_le].
-    - intros A Φ. by unseal'.
-    - intros A Φ. by unseal'.
-    - intros P Q. unseal'. split; last naive_solver.
+    - intros. unseal'=>HPQ ??. eapply HPQ; [done..|by eapply cmra_validN_le].
+    - intros. by unseal'.
+    - intros. by unseal'.
+    - intros. unseal'. split; last naive_solver.
       intros []. exists ε. eexists. by rewrite left_id.
-    - intros P Q. unseal' => PQ ??.
+    - intros P Q. unseal'=> PQ ??.
       apply (PQ _ ε); [done|rewrite right_id; by eapply cmra_validN_le].
     - intros P. by unseal'.
   Qed.
+  #[global] Instance si_embedding : BiEmbed siPropI PROP :=
+    {| bi_embed_mixin := si_embedding_mixin |}.
 
-  #[global] Instance siProp_bi_embed : BiEmbed siPropI iPropI :=
-    {| bi_embed_mixin := siProp_embedding_mixin |}.
-  #[global] Instance siProp_bi_embed_emp : BiEmbedEmp siPropI iPropI.
-  Proof. constructor. intros. by rewrite /bi_emp /= /uPred_emp uPred_pure_eq. Qed.
+  #[global] Instance si_embed_emp : BiEmbedEmp siPropI PROP.
+  Proof. rewrite /BiEmbedEmp. by unseal'. Qed.
+
+  #[global] Instance si_embed_later : BiEmbedLater siPropI PROP.
+  Proof. intros P. constructor=>-[]; by unseal. Qed.
+
+  #[global] Instance si_embed_internal_eq : BiEmbedInternalEq siPropI PROP.
+  Proof. intros A x y. by unseal'. Qed.
+
+  #[global] Instance si_embed_plainly : BiEmbedPlainly siPropI PROP.
+  Proof. intros P. by unseal'. Qed.
 
   (* TODO: uPred_cmra_valid should have been defined as si_cmra_valid.
     This is to be fixed upstream. *)
-  Lemma si_cmra_valid_validI `{inG Σ A} (a : A) :
-    ⎡ si_cmra_valid a ⎤ ⊣⊢@{iPropI} uPred_cmra_valid a.
+  Lemma si_cmra_valid_validI {A : cmraT} (a : A) :
+    ⎡ si_cmra_valid a ⎤ ⊣⊢@{uPredI M} uPred_cmra_valid a.
   Proof.
-    constructor => ???. unseal.
-    by rewrite si_cmra_valid_eq uPred_cmra_valid_eq.
+    constructor => ???. unseal. by rewrite si_cmra_valid_eq.
   Qed.
 End si_embedding.
 
@@ -109,7 +118,10 @@ Section iprop_instances.
 
   Lemma uPred_cmra_valid_bi_cmra_valid (a : A) :
     (uPred_cmra_valid a) ⊣⊢@{iPropI} bi_cmra_valid a.
-  Proof. constructor => n x ? /=. by rewrite si_cmra_valid_eq uPred_cmra_valid_eq. Qed.
+  Proof.
+    constructor => n x ? /=.
+    by rewrite si_cmra_valid_eq uPred_cmra_valid_eq si_embed_eq.
+  Qed.
 
   #[global] Instance has_own_valid_iprop : HasOwnValid iPropI A.
   Proof.
