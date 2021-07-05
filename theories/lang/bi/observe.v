@@ -1,5 +1,5 @@
 (*
- * Copyright (c) 2020 BedRock Systems, Inc.
+ * Copyright (c) 2020-21 BedRock Systems, Inc.
  * This software is distributed under the terms of the BedRock Open-Source License.
  * See the LICENSE-BedRock file in the repository root for details.
  *)
@@ -64,6 +64,46 @@ Section example.
     iFrame "P R".
   Abort.
 End example.
+
+Section proof_mode.
+  Context {PROP : bi}.
+  Implicit Types P Q : PROP.
+
+  (** Enable things like [iIntros] and [iDestruct] when the goal is
+      [Observe Q P], as well as [iApply lem] when [lem] is an
+      observation instance. *)
+  Lemma test_before Q P : Observe Q P.
+  Proof. Fail iIntros "P". Abort.
+  Lemma test_before `{Hobs : !Observe Q P} : P ⊢ <pers> Q.
+  Proof. Fail iApply Hobs. Abort.
+  Global Instance observe_as_emp_valid Q P :
+    AsEmpValid (Observe Q P) (P -∗ <pers> Q).
+  Proof.
+    rewrite/AsEmpValid/Observe. split.
+    - move=>->. by auto.
+    - move/bi.wand_elim_r'. by rewrite right_id.
+  Qed.
+  Lemma test_after `{Hobs : !Observe Q P} : P ⊢ <pers> Q.
+  Proof. iApply Hobs. Abort.
+  Lemma test_after Q P : Observe Q P.
+  Proof. iIntros "P". Abort.
+
+  Lemma test_before Q P1 P2 : Observe2 Q P1 P2.
+  Proof. Fail iIntros "P1 P2". Abort.
+  Lemma test_before `{Hobs : !Observe2 Q P1 P2} : P1 ⊢ P2 -∗ <pers> Q.
+  Proof. Fail iApply Hobs. Abort.
+  Global Instance observe_2_as_emp_valid Q P1 P2 :
+    AsEmpValid (Observe2 Q P1 P2) (P1 -∗ P2 -∗ <pers> Q).
+  Proof.
+    rewrite/AsEmpValid/Observe2. split.
+    - move=>->. apply bi.wand_intro_r, bi.emp_sep_2.
+    - move/bi.wand_elim_r'. by rewrite right_id.
+  Qed.
+  Lemma test_after Q P1 P2 : Observe2 Q P1 P2.
+  Proof. iIntros "P1 P2". Abort.
+  Lemma test_after `{Hobs : !Observe2 Q P1 P2} : P1 ⊢ P2 -∗ <pers> Q.
+  Proof. iApply Hobs. Abort.
+End proof_mode.
 
 Section observe.
   Context {PROP : bi}.
@@ -138,46 +178,6 @@ Arguments observe_elim {_} (_ _)%I {_} : assert.
 Arguments observe_2_elim_pure {_} _%type (_ _)%I {_} : assert.
 Arguments observe_2_elim_strong {_} (_ _ _)%I {_} : assert.
 Arguments observe_2_elim {_} (_ _ _)%I {_} : assert.
-
-Section proof_mode.
-  Context {PROP : bi}.
-  Implicit Types P Q : PROP.
-
-  (** Enable things like [iIntros] and [iDestruct] when the goal is
-      [Observe Q P], as well as [iApply lem] when [lem] is an
-      observation instance. *)
-  Lemma test_before Q P : Observe Q P.
-  Proof. Fail iIntros "P". Abort.
-  Lemma test_before `{Hobs : !Observe Q P} : P ⊢ <pers> Q.
-  Proof. Fail iApply Hobs. Abort.
-  Global Instance observe_as_emp_valid Q P :
-    AsEmpValid (Observe Q P) (P -∗ <pers> Q).
-  Proof.
-    rewrite/AsEmpValid/Observe. split.
-    - move=>->. by auto.
-    - move/bi.wand_elim_r'. by rewrite right_id.
-  Qed.
-  Lemma test_after `{Hobs : !Observe Q P} : P ⊢ <pers> Q.
-  Proof. iApply Hobs. Abort.
-  Lemma test_after Q P : Observe Q P.
-  Proof. iIntros "P". Abort.
-
-  Lemma test_before Q P1 P2 : Observe2 Q P1 P2.
-  Proof. Fail iIntros "P1 P2". Abort.
-  Lemma test_before `{Hobs : !Observe2 Q P1 P2} : P1 ⊢ P2 -∗ <pers> Q.
-  Proof. Fail iApply Hobs. Abort.
-  Global Instance observe_2_as_emp_valid Q P1 P2 :
-    AsEmpValid (Observe2 Q P1 P2) (P1 -∗ P2 -∗ <pers> Q).
-  Proof.
-    rewrite/AsEmpValid/Observe2. split.
-    - move=>->. apply bi.wand_intro_r, bi.emp_sep_2.
-    - move/bi.wand_elim_r'. by rewrite right_id.
-  Qed.
-  Lemma test_after Q P1 P2 : Observe2 Q P1 P2.
-  Proof. iIntros "P1 P2". Abort.
-  Lemma test_after `{Hobs : !Observe2 Q P1 P2} : P1 ⊢ P2 -∗ <pers> Q.
-  Proof. iApply Hobs. Abort.
-End proof_mode.
 
 (** Instances *)
 Section bi.
@@ -358,46 +358,49 @@ Proof.
   f_equiv=>oa. apply: fractional.
 Qed.
 
-Lemma observe_lhs (p : Prop) {PROP : bi} (P Q : PROP) {o : Observe [| p |] P} :
-  (p -> P ⊢ Q) -> P ⊢ Q.
-Proof.
-  iIntros (HpPQ) "P"; iDestruct (o with "P") as %?. by iApply (HpPQ with "P").
-Qed.
+(** Helpful lemmas. *)
+Section theory.
+  Context {PROP : bi}.
+  Implicit Types P Q : PROP.
 
-Lemma observe_2_lhs (p : Prop) {PROP : bi} (P1 P2 Q : PROP) {o : Observe2 [| p |] P1 P2} :
-  (p -> P1 ∗ P2 ⊢ Q) -> P1 ∗ P2 ⊢ Q.
-Proof.
-  iIntros (HpPQ) "[P1 P2]"; iDestruct (o with "P1 P2") as %?. by iApply (HpPQ with "[$P1 $P2]").
-Qed.
+  Lemma observe_lhs p P Q : Observe [| p |] P → (p → P ⊢ Q) → P ⊢ Q.
+  Proof.
+    iIntros (Hp HpPQ) "P"; iDestruct (Hp with "P") as %?. by iApply (HpPQ with "P").
+  Qed.
 
-Lemma observe_both (p : Prop) {PROP : bi} (P Q  : PROP)
-    {_ : Observe [| p |] P} {_ : Observe [| p |] Q} :
-  (p -> P ⊣⊢ Q) -> P ⊣⊢ Q.
-Proof. intros HpPQ. split'; apply: observe_lhs => Hp; by rewrite HpPQ. Qed.
+  Lemma observe_2_lhs p P1 P2 Q :
+    Observe2 [| p |] P1 P2 → (p → P1 ∗ P2 ⊢ Q) → P1 ∗ P2 ⊢ Q.
+  Proof.
+    iIntros (Hp HpPQ) "[P1 P2]"; iDestruct (Hp with "P1 P2") as %?.
+    by iApply (HpPQ with "[$P1 $P2]").
+  Qed.
 
-Lemma observe_2_both (p : Prop) {PROP : bi} (P1 P2 Q1 Q2 : PROP)
-    {_ : Observe2 [| p |] P1 P2} {_ : Observe2 [| p |] Q1 Q2} :
-  (p -> P1 ∗ P2 ⊣⊢ Q1 ∗ Q2) -> P1 ∗ P2 ⊣⊢ Q1 ∗ Q2.
-Proof. intros HpPQ. split'; apply: observe_2_lhs => Hp; by rewrite HpPQ. Qed.
+  Lemma observe_both p P Q :
+    Observe [| p |] P → Observe [| p |] Q → (p → P ⊣⊢ Q) → P ⊣⊢ Q.
+  Proof. intros ?? HpPQ. split'; apply: observe_lhs => Hp; by rewrite HpPQ. Qed.
 
+  Lemma observe_2_both p P1 P2 Q1 Q2 :
+    Observe2 [| p |] P1 P2 → Observe2 [| p |] Q1 Q2 →
+    (p → P1 ∗ P2 ⊣⊢ Q1 ∗ Q2) → P1 ∗ P2 ⊣⊢ Q1 ∗ Q2.
+  Proof. intros ?? HpPQ. split'; apply: observe_2_lhs => Hp; by rewrite HpPQ. Qed.
 
-(**
-  These help deriving observations for [R] from observations for [Q].
+  (**
+    These help deriving observations for [R] from observations for [Q].
 
-  Recommended use:
-  [apply: (observe_derive_only_provable Q_pattern).].
-  [apply: (observe_2_derive_only_provable Q_pattern).].
-  then prove [Q -> R].
+    Recommended use:
+    [apply: (observe_derive_only_provable Q_pattern).].
+    [apply: (observe_2_derive_only_provable Q_pattern).].
+    then prove [Q -> R].
 
-  This is almost setoid rewriting, but it does not support rewriting by implication,
-  and those idioms give [Q -> R] as output goal instead of input.
-*)
-Lemma observe_derive_only_provable {PROP : bi} (Q : Prop) {R : Prop} {P : PROP} :
-  (Q -> R) ->
-  Observe [| Q |] P -> Observe [| R |] P.
-Proof. move=> HQR. apply Observe_mono => //. by f_equiv. Qed.
+    This is almost setoid rewriting, but it does not support rewriting by implication,
+    and those idioms give [Q -> R] as output goal instead of input.
+  *)
+  Lemma observe_derive_only_provable (Q : Prop) {R : Prop} {P} :
+    (Q → R) → Observe [| Q |] P → Observe [| R |] P.
+  Proof. move=> HQR. apply Observe_mono => //. by f_equiv. Qed.
 
-Lemma observe_2_derive_only_provable {PROP : bi} (Q : Prop) {R : Prop} {P1 P2 : PROP} :
-  (Q -> R) ->
-  Observe2 [| Q |] P1 P2 -> Observe2 [| R |] P1 P2.
-Proof. move=> HQR. apply Observe2_mono => //. by f_equiv. Qed.
+  Lemma observe_2_derive_only_provable (Q : Prop) {R : Prop} {P1 P2} :
+    (Q → R) → Observe2 [| Q |] P1 P2 → Observe2 [| R |] P1 P2.
+  Proof. move=> HQR. apply Observe2_mono => //. by f_equiv. Qed.
+
+End theory.
