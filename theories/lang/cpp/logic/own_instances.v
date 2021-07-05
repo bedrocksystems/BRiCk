@@ -5,13 +5,9 @@
  *)
 
 (** NOTE FOR MAINTAINTERS: This is the central authority for controlling the
-  right own instances to use.
-  Currently, [mpred] is defined as [iProp], so iProp's instances for [own] are
-  being exported, while monPred's instances are not.
-  Once we move mpred to monPred, this file should stop exporting iProp's
-  instances, and start exporting monPred's instances. *)
+  right own instances to use. *)
 
-Require Export iris.si_logic.bi.
+Require Export bedrock.lang.si_logic.bi. (** << exporting [siProp] *)
 Require Export iris.base_logic.lib.own. (* << exporting [inG] and [gFunctors] *)
 Require Export bedrock.lang.bi.own. (* << general [own]. *)
 
