@@ -8,8 +8,9 @@
 (* TODO: these should be upstreamed to Iris. *)
 Require Import iris.si_logic.bi.
 Require Import iris.bi.monpred.
-Require Import iris.base_logic.lib.own. (* << exporting [inG] and [gFunctors] *)
+Require Import iris.base_logic.lib.own.
 
+Require Import bedrock.lang.bi.embedding.
 Require Import bedrock.lang.bi.own.
 Require Import bedrock.lang.cpp.logic.iprop_own.
 
@@ -17,56 +18,22 @@ Require Import bedrock.lang.cpp.logic.iprop_own.
 
 Section si_monpred_embedding.
   Context {I : biIndex} {Σ : gFunctors}.
-
-  Notation monPred  := (monPred I (iPropI Σ)).
   Notation monPredI := (monPredI I (iPropI Σ)).
+  Import compose_embed_instances.
 
-  #[local] Arguments siProp_holds !_ _ /.
-  #[local] Arguments uPred_holds !_ _ _ /.
-
-  #[global] Instance si_monpred_embed : Embed siPropI monPredI :=
-    λ P, embed (embed P).
-
-  #[local] Ltac un_membed := rewrite /embed /si_monpred_embed /=.
-
-  #[global] Instance si_monpred_embed_mono :
-    Proper ((⊢) ==> (⊢)) (@embed siPropI monPredI _).
-  Proof. intros ?? PQ. un_membed. by rewrite PQ. Qed.
-
-  #[global] Instance si_monpred_embed_ne : NonExpansive (@embed siPropI monPredI _).
-  Proof. un_membed. solve_proper. Qed.
-
-  (* TODO: generalize to embedding of embedding *)
-  Definition siProp_monpred_embedding_mixin :
-    BiEmbedMixin siPropI monPredI si_monpred_embed.
-  Proof.
-    split; try apply _; un_membed.
-    - intros P. rewrite embed_emp_valid. apply siProp_embedding_mixin.
-    - intros PROP' IN P Q.
-      rewrite embed_interal_inj; by apply siProp_embedding_mixin.
-    - rewrite -embed_emp. apply embed_mono, siProp_embedding_mixin.
-    - intros P Q. rewrite -embed_impl. apply embed_mono, siProp_embedding_mixin.
-    - intros A Φ. rewrite -embed_forall. apply embed_mono, siProp_embedding_mixin.
-    - intros A Φ. rewrite -embed_exist. apply embed_mono, siProp_embedding_mixin.
-    - intros P Q. rewrite -embed_sep. apply embed_proper, siProp_embedding_mixin.
-    - intros P Q. rewrite -embed_wand. apply embed_mono, siProp_embedding_mixin.
-    - intros P. rewrite -embed_persistently.
-      apply embed_proper, siProp_embedding_mixin.
-  Qed.
-
-  #[global] Instance siProp_bi_monpred_embed : BiEmbed siPropI monPredI :=
-    {| bi_embed_mixin := siProp_monpred_embedding_mixin |}.
-  #[global] Instance siProp_bi_monpred_embed_emp : BiEmbedEmp siPropI monPredI.
-  Proof.
-    rewrite /BiEmbedEmp /bi_embed_embed /si_monpred_embed /=.
-    rewrite -embed_emp. apply embed_mono. by rewrite -embed_emp_1.
-  Qed.
+  (** We could easily replace the hard-coded [iPropI Σ] with any BI
+      that embeds [siProp]. *)
+  #[global] Instance si_monpred_embedding : BiEmbed siPropI monPredI := _.
+  #[global] Instance si_monpred_emp : BiEmbedEmp siPropI monPredI := _.
+  #[global] Instance si_monpred_later : BiEmbedLater siPropI monPredI := _.
+  #[global] Instance si_monpred_internal_eq : BiEmbedInternalEq siPropI monPredI := _.
+  #[global] Instance si_monpred_plainly : BiEmbedPlainly siPropI monPredI := _.
 
   (* TODO: uPred_cmra_valid should have been defined as si_cmra_valid.
     This is to be fixed upstream in Iris. *)
   Lemma monPred_si_cmra_valid_validI `{inG Σ A} (a : A) :
-    ⎡ si_cmra_valid a ⎤ ⊣⊢ ⎡ uPred_cmra_valid a ⎤.
-  Proof. by rewrite -si_cmra_valid_validI. Qed.
+    ⎡ si_cmra_valid a ⎤ ⊣⊢@{monPredI} ⎡ uPred_cmra_valid a ⎤.
+  Proof. by rewrite -si_cmra_valid_validI embed_embed. Qed.
 End si_monpred_embedding.
 
 Section monpred_instances.
@@ -92,7 +59,7 @@ Section monpred_instances.
     constructor; intros; rewrite /own has_own_monpred_eq /has_own_monpred_def; red.
 
   #[global] Instance has_own_valid_monpred: HasOwnValid monPredI A.
-  Proof. unseal_monpred. by rewrite own_valid. Qed.
+  Proof. unseal_monpred. by rewrite own_valid -embed_embed. Qed.
 
   #[global] Instance has_own_update_monpred : HasOwnUpd monPredI A.
   Proof.
