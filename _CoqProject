@@ -45,6 +45,7 @@ theories/lang/bi/ChargeCompat.v
 theories/lang/bi/errors.v
 
 # Specific BIs
+theories/lang/si_logic/bi.v
 theories/lang/cpp/logic/upred_entailsN.v
 theories/lang/cpp/logic/iprop_own.v
 theories/lang/cpp/logic/iprop_invariants.v
