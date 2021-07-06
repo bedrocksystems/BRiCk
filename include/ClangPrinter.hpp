@@ -68,7 +68,7 @@ public:
 
     unsigned getTypeSize(const clang::BuiltinType* type) const;
 
-    std::string sourceRange(const clang::SourceRange&& sr) const;
+    std::string sourceRange(const clang::SourceRange sr) const;
 
     llvm::Optional<int> getParameterNumber(const clang::ParmVarDecl* decl);
 
@@ -84,5 +84,5 @@ private:
     clang::CompilerInstance* compiler_;
     clang::ASTContext* context_;
     clang::MangleContext* mangleContext_;
-    clang::DiagnosticsEngine engine_;
+    // clang::DiagnosticsEngine engine_;
 };

@@ -325,16 +325,16 @@ public:
                           OpaqueNames& on) {
         auto d = expr->getDecl();
         if (isa<EnumConstantDecl>(d)) {
-            print.ctor("Econst_ref", false);
+            print.ctor("Econst_ref", false) << "\"enum-constant-decl\"";
         } else {
             print.ctor("Evar", false);
-        }
-        auto t = on.find_anon(expr->getDecl());
-        if (t != -1) {
-            print.ctor("Lname", false) << "\"$" << t << "\"";
-            print.end_ctor();
-        } else {
-            cprint.printName(d, print);
+            auto t = on.find_anon(d);
+            if (t != -1) {
+              print.ctor("Lname", false) << "\"$" << t << "\"";
+              print.end_ctor();
+            } else {
+              cprint.printName(d, print);
+            }
         }
         done(expr, print, cprint);
     }

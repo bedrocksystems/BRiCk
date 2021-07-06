@@ -3,25 +3,27 @@
  * This software is distributed under the terms of the BedRock Open-Source License.
  * See the LICENSE-BedRock file in the repository root for details.
  */
-#include <clang/AST/ASTContext.h>
-#include <clang/AST/DeclCXX.h>
-#include <clang/AST/ExprCXX.h>
-#include <clang/AST/Mangle.h>
-#include <clang/Frontend/CompilerInstance.h>
-
 #include "ClangPrinter.hpp"
 #include "CoqPrinter.hpp"
 #include "Formatter.hpp"
 #include "Logging.hpp"
+#include <clang/AST/ASTContext.h>
+#include <clang/AST/DeclCXX.h>
+#include <clang/AST/ExprCXX.h>
+#include <clang/AST/Mangle.h>
+#include <clang/Basic/Version.h>
+#include <clang/Frontend/CompilerInstance.h>
 
 using namespace clang;
 
 ClangPrinter::ClangPrinter(clang::CompilerInstance *compiler,
                            clang::ASTContext *context)
-    : compiler_(compiler), context_(context),
+    : compiler_(compiler), context_(context) /*,
       engine_(IntrusiveRefCntPtr<DiagnosticIDs>(),
-              IntrusiveRefCntPtr<DiagnosticOptions>()) {
-    mangleContext_ = ItaniumMangleContext::create(*context, engine_);
+              IntrusiveRefCntPtr<DiagnosticOptions>()) */
+{
+    mangleContext_ =
+        ItaniumMangleContext::create(*context, compiler->getDiagnostics());
 }
 
 clang::Sema &
@@ -34,21 +36,77 @@ ClangPrinter::getTypeSize(const BuiltinType *t) const {
     return this->context_->getTypeSize(t);
 }
 
+#if CLANG_VERSION_MAJOR >= 11
+static GlobalDecl
+to_gd(const NamedDecl *decl) {
+    if (auto ct = dyn_cast<CXXConstructorDecl>(decl)) {
+        return GlobalDecl(ct, CXXCtorType::Ctor_Complete);
+    } else if (auto dt = dyn_cast<CXXDestructorDecl>(decl)) {
+        return GlobalDecl(dt, CXXDtorType::Dtor_Deleting);
+    } else {
+        return GlobalDecl(decl);
+    }
+}
+#else
+static const NamedDecl *
+to_gd(const NamedDecl *decl) {
+    return decl;
+}
+#endif /* CLANG_VERSION_MAJOR >= 11 */
+
 void
 ClangPrinter::printGlobalName(const NamedDecl *decl, CoqPrinter &print,
                               bool raw) {
     if (!raw) {
         print.output() << "\"";
     }
-    if (auto fd = dyn_cast<FunctionDecl>(decl)) {
-        if (fd->getLanguageLinkage() == LanguageLinkage::CLanguageLinkage) {
-            print.output() << fd->getNameAsString();
+
+    if (isa<RecordDecl>(decl)) {
+        if (auto RD = dyn_cast<CXXRecordDecl>(decl)) {
+            auto dtor = RD->getDestructor();
+            std::string sout;
+            llvm::raw_string_ostream out(sout);
+            mangleContext_->mangleName(to_gd(dtor), out);
+            print.output() << sout.substr(3, sout.length() - 7);
         } else {
-            mangleContext_->mangleCXXName(decl, print.output().nobreak());
+            assert(false);
         }
+#if 0
+        decl->getNameForDiagnostic(print.output().nobreak(),
+                                   PrintingPolicy(getContext().getLangOpts()),
+                                   true);
+#endif
+    } else if (mangleContext_->shouldMangleDeclName(decl)) {
+#if 0
+        auto x = to_gd(decl);
+        assert(decl == x.getDecl() && "HERE");
+        auto y = cast<NamedDecl>(x.getDecl());
+        auto DC = y->getDeclContext();
+        llvm::errs() << "DC = " << isa<CapturedDecl>(DC)
+                     << isa<OMPDeclareReductionDecl>(DC)
+                     << isa<OMPDeclareMapperDecl>(DC) << "\n";
+        DC->getRedeclContext()->dumpDeclContext();
+        llvm::errs() << "===========\n";
+        if (dyn_cast<clang::BlockDecl, clang::Decl const>(y)) {
+            assert(false && "HERE 2");
+        }
+#endif
+        mangleContext_->mangleName(to_gd(decl), print.output().nobreak());
     } else {
-        mangleContext_->mangleCXXName(decl, print.output().nobreak());
+        print.output() << decl->getQualifiedNameAsString();
+#if 0
+        if (auto fd = dyn_cast<FunctionDecl>(decl)) {
+            if (fd->getLanguageLinkage() == LanguageLinkage::CLanguageLinkage) {
+                print.output() << fd->getNameAsString();
+            } else {
+                mangleContext_->mangleName(to_gd(fd), print.output().nobreak());
+            }
+        } else {
+            mangleContext_->mangleName(to_gd(decl), print.output().nobreak());
+        }
+#endif
     }
+
     if (!raw) {
         print.output() << "\"";
     }
@@ -182,7 +240,7 @@ ClangPrinter::printField(const ValueDecl *decl, CoqPrinter &print) {
 }
 
 std::string
-ClangPrinter::sourceRange(const SourceRange &&sr) const {
+ClangPrinter::sourceRange(const SourceRange sr) const {
     return sr.printToString(this->context_->getSourceManager());
 }
 
