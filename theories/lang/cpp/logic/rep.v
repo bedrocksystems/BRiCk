@@ -11,7 +11,7 @@ From iris_string_ident Require Import ltac2_string_ident.
 Require Import bedrock.lang.prelude.base.
 
 From bedrock.lang.cpp Require Import semantics.values logic.mpred.
-From bedrock.lang.bi Require Import prelude only_provable observe.
+From bedrock.lang.bi Require Import prelude only_provable observe laterable.
 
 Import ChargeNotation.
 Implicit Types (σ resolve : genv) (p : ptr) (o : offset).
@@ -62,10 +62,10 @@ Section defs.
     as_Rep (fun _ => P).
 End defs.
 
-Global Instance: Params (@_at) 3 := {}.
-Global Instance: Params (@as_Rep) 2 := {}.
-Global Instance: Params (@_offsetR) 3 := {}.
-Global Instance: Params (@pureR) 2 := {}.
+#[global] Instance: Params (@_at) 3 := {}.
+#[global] Instance: Params (@as_Rep) 2 := {}.
+#[global] Instance: Params (@_offsetR) 3 := {}.
+#[global] Instance: Params (@pureR) 2 := {}.
 
 Section with_cpp.
   Context `{Σ : cpp_logic}.
@@ -76,42 +76,54 @@ Section with_cpp.
       P -|- Q.
   Proof. by constructor. Qed.
 
-  Global Instance as_Rep_ne n :
+  #[global] Instance as_Rep_ne n :
     Proper (pointwise_relation _ (dist n) ==> dist n) as_Rep.
   Proof. intros R1 R2 HR. constructor=>p. apply HR. Qed.
-  Global Instance as_Rep_proper :
+  #[global] Instance as_Rep_proper :
     Proper (pointwise_relation _ (≡) ==> (≡)) as_Rep.
   Proof. intros R1 R2 HR. constructor=>p. apply HR. Qed.
 
-  Global Instance as_Rep_mono :
+  #[global] Instance as_Rep_mono :
     Proper (pointwise_relation _ (⊢) ==> (⊢)) as_Rep.
   Proof. by constructor. Qed.
-  Global Instance as_Rep_flip_mono :
+  #[global] Instance as_Rep_flip_mono :
     Proper (pointwise_relation _ (flip (⊢)) ==> flip (⊢)) as_Rep.
   Proof. by constructor. Qed.
 
-  Global Instance as_Rep_persistent P :
+  #[global] Instance as_Rep_persistent P :
     (∀ p, Persistent (P p)) → Persistent (as_Rep P).
   Proof.
     intros HP. constructor=>p. by rewrite monPred_at_persistently -HP.
   Qed.
-  Global Instance as_Rep_affine P :
+  #[global] Instance as_Rep_affine P :
     (∀ p, Affine (P p)) → Affine (as_Rep P) := _.
-  Global Instance as_Rep_timeless P :
+  #[global] Instance as_Rep_timeless P :
     (∀ p, Timeless (P p)) → Timeless (as_Rep P).
   Proof.
     intros HP. constructor=>p.
     by rewrite monPred_at_later monPred_at_except_0 HP.
   Qed.
-  Global Instance as_Rep_fractional P :
+  #[global] Instance as_Rep_fractional P :
     (∀ p, Fractional (λ q, P q p)) → Fractional (λ q, as_Rep (P q)).
   Proof.
     intros HP q1 q2. constructor=>p. by rewrite monPred_at_sep /= HP.
   Qed.
-  Global Instance as_Rep_as_fractional P q :
+  #[global] Instance as_Rep_as_fractional P q :
     (∀ p, AsFractional (P q p) (λ q, P q p) q) →
     AsFractional (as_Rep (P q)) (λ q, as_Rep (P q)) q.
   Proof. constructor. done. apply _. Qed.
+
+  #[global] Instance as_Rep_laterable (R : ptr -> mpred) :
+    (∀ p, Laterable (R p)) -> Laterable (as_Rep R).
+  Proof.
+    rewrite/Laterable=>HR. constructor=>p/=.
+    iIntros "R". iDestruct (HR with "R") as (R') "[R #close]".
+    rewrite monPred_at_exist. iExists (pureR R').
+    rewrite monPred_at_sep monPred_at_later/=. iFrame "R".
+    rewrite monPred_at_intuitionistically monPred_at_wand.
+    iIntros "!>" (p' ->%ptr_rel_elim).
+    by rewrite monPred_at_later monPred_at_except_0/=.
+  Qed.
 
   Lemma as_Rep_emp : as_Rep (λ p, emp) -|- emp.
   Proof. constructor => p. by rewrite monPred_at_emp. Qed.
@@ -205,25 +217,28 @@ Section with_cpp.
     (P ∗-∗ Q) p ⊣⊢ (P p ∗-∗ Q p).
   Proof. by rewrite /bi_wand_iff monPred_at_and !Rep_wand_force. Qed.
 
-  Global Instance _offsetR_ne o n : Proper (dist n ==> dist n) (_offsetR o).
+  #[global] Instance _offsetR_ne o n : Proper (dist n ==> dist n) (_offsetR o).
   Proof. rewrite _offsetR_eq. solve_proper. Qed.
-  Global Instance _offsetR_proper o : Proper ((≡) ==> (≡)) (_offsetR o).
+  #[global] Instance _offsetR_proper o : Proper ((≡) ==> (≡)) (_offsetR o).
   Proof. rewrite _offsetR_eq. solve_proper. Qed.
-  Global Instance _offsetR_mono o : Proper ((⊢) ==> (⊢)) (_offsetR o).
+  #[global] Instance _offsetR_mono o : Proper ((⊢) ==> (⊢)) (_offsetR o).
   Proof. rewrite _offsetR_eq. solve_proper. Qed.
-  Local Lemma _offsetR_mono_old : Proper (eq ==> (⊢) ==> (⊢)) _offsetR.
+  #[local] Lemma _offsetR_mono_old : Proper (eq ==> (⊢) ==> (⊢)) _offsetR.
   Proof. solve_proper. Qed.
-  Global Instance _offsetR_flip_mono o : Proper (flip (⊢) ==> flip (⊢)) (_offsetR o).
+  #[global] Instance _offsetR_flip_mono o : Proper (flip (⊢) ==> flip (⊢)) (_offsetR o).
   Proof. rewrite _offsetR_eq. solve_proper. Qed.
 
-  Global Instance _offsetR_persistent o (r : Rep) :
+  #[global] Instance _offsetR_persistent o (r : Rep) :
     Persistent r -> Persistent (_offsetR o r).
   Proof. rewrite _offsetR_eq. apply _. Qed.
-  Global Instance _offsetR_affine o (r : Rep) :
+  #[global] Instance _offsetR_affine o (r : Rep) :
     Affine r -> Affine (_offsetR o r).
   Proof. rewrite _offsetR_eq. apply _. Qed.
-  Global Instance _offsetR_timeless o (r : Rep) :
+  #[global] Instance _offsetR_timeless o (r : Rep) :
     Timeless r → Timeless (_offsetR o r).
+  Proof. rewrite _offsetR_eq. apply _. Qed.
+  #[global] Instance _offsetR_laterable o (r : Rep) :
+    Laterable r → Laterable (_offsetR o r).
   Proof. rewrite _offsetR_eq. apply _. Qed.
 
   Lemma _offsetR_offsetR (o1 o2 : offset) R :
@@ -326,34 +341,34 @@ Section with_cpp.
     constructor=>p/=. by rewrite !monPred_at_later.
   Qed.
 
-  Global Instance _offsetR_fractional o (r : Qp → Rep) :
+  #[global] Instance _offsetR_fractional o (r : Qp → Rep) :
     Fractional r → Fractional (λ q, _offsetR o (r q)).
   Proof. intros ? q1 q2. by rewrite fractional _offsetR_sep. Qed.
-  Global Instance _offsetR_as_fractional o (r : Qp → Rep) q :
+  #[global] Instance _offsetR_as_fractional o (r : Qp → Rep) q :
     Fractional r → AsFractional (_offsetR o (r q)) (λ q, _offsetR o (r q)) q.
   Proof. constructor. done. apply _. Qed.
 
-  Global Instance _offsetR_observe {o} {Q R : Rep} :
+  #[global] Instance _offsetR_observe {o} {Q R : Rep} :
     Observe Q R ->
     Observe (_offsetR o Q) (_offsetR o R).
   Proof. move->. by rewrite /Observe _offsetR_pers. Qed.
 
-  Global Instance _offsetR_observe_2 {o} {Q R1 R2 : Rep} :
+  #[global] Instance _offsetR_observe_2 {o} {Q R1 R2 : Rep} :
     Observe2 Q R1 R2 ->
     Observe2 (_offsetR o Q) (_offsetR o R1) (_offsetR o R2).
   Proof. move->. by rewrite /Observe2 _offsetR_wand _offsetR_pers. Qed.
 
-  Global Instance _offsetR_observe_only_provable Q o (R : Rep) :
+  #[global] Instance _offsetR_observe_only_provable Q o (R : Rep) :
     Observe [| Q |] R → Observe [| Q |] (_offsetR o R).
   Proof. rewrite -{2}_offsetR_only_provable. apply _. Qed.
-  Global Instance _offsetR_observe_2_only_provable Q o (R1 R2 : Rep) :
+  #[global] Instance _offsetR_observe_2_only_provable Q o (R1 R2 : Rep) :
     Observe2 [| Q |] R1 R2 → Observe2 [| Q |] (_offsetR o R1) (_offsetR o R2).
   Proof. rewrite -{2}_offsetR_only_provable. apply _. Qed.
 
-  Global Instance _offsetR_observe_pure Q o (R : Rep) :
+  #[global] Instance _offsetR_observe_pure Q o (R : Rep) :
     Observe [! Q !] R → Observe [! Q !] (_offsetR o R).
   Proof. rewrite -{2}_offsetR_pure. apply _. Qed.
-  Global Instance _offsetR_observe_2_pure Q o (R1 R2 : Rep) :
+  #[global] Instance _offsetR_observe_2_pure Q o (R1 R2 : Rep) :
     Observe2 [! Q !] R1 R2 → Observe2 [! Q !] (_offsetR o R1) (_offsetR o R2).
   Proof. rewrite -{2}_offsetR_pure. apply _. Qed.
 
@@ -379,20 +394,22 @@ Section with_cpp.
     by rewrite _offsetR_eq/_offsetR_def/= offset_ptr_dot.
   Qed.
 
-  Global Instance _at_ne l {n} : Proper (dist n ==> dist n) (_at l).
+  #[global] Instance _at_ne l {n} : Proper (dist n ==> dist n) (_at l).
   Proof. rewrite _at_eq. solve_proper. Qed.
-  Global Instance _at_proper {p} : Proper ((≡) ==> (≡)) (_at p).
+  #[global] Instance _at_proper {p} : Proper ((≡) ==> (≡)) (_at p).
   Proof. rewrite _at_eq. solve_proper. Qed.
-  Global Instance _at_mono {p} : Proper ((⊢) ==> (⊢)) (_at p).
+  #[global] Instance _at_mono {p} : Proper ((⊢) ==> (⊢)) (_at p).
   Proof. rewrite _at_eq. solve_proper. Qed.
-  Global Instance _at_flip_mono {p} : Proper (flip (⊢) ==> flip (⊢)) (_at p).
+  #[global] Instance _at_flip_mono {p} : Proper (flip (⊢) ==> flip (⊢)) (_at p).
   Proof. rewrite _at_eq/_at_def=> r1 r2 HR/=. by rewrite HR. Qed.
 
-  Global Instance _at_persistent {P base} : Persistent P -> Persistent (_at base P).
+  #[global] Instance _at_persistent {P base} : Persistent P -> Persistent (_at base P).
   Proof. rewrite _at_eq. apply _. Qed.
-  Global Instance _at_affine {P base} : Affine P -> Affine (_at base P).
+  #[global] Instance _at_affine {P base} : Affine P -> Affine (_at base P).
   Proof. rewrite _at_eq. apply _. Qed.
-  Global Instance _at_timeless {P base} : Timeless P -> Timeless (_at base P).
+  #[global] Instance _at_timeless {P base} : Timeless P -> Timeless (_at base P).
+  Proof. rewrite _at_eq. apply _. Qed.
+  #[global] Instance _at_laterable p (P : Rep) : Laterable P → Laterable (_at p P).
   Proof. rewrite _at_eq. apply _. Qed.
 
   Lemma Rep_equiv_at (P Q : Rep)
@@ -493,37 +510,37 @@ Section with_cpp.
     - move => x xs IH ?. by rewrite _at_sep IH.
   Qed.
 
-  Global Instance _at_fractional (r : Qp → Rep) (l : ptr) `{!Fractional r} :
+  #[global] Instance _at_fractional (r : Qp → Rep) (l : ptr) `{!Fractional r} :
     Fractional (λ q, _at l (r q)).
   Proof.
     intros q1 q2; by rewrite fractional _at_sep.
   Qed.
-  Global Instance _at_as_fractional (r : Qp → Rep) q (l : ptr)
+  #[global] Instance _at_as_fractional (r : Qp → Rep) q (l : ptr)
       `{!AsFractional (r q) r q} :
     AsFractional (_at l (r q)) (λ q, _at l (r q)) q.
   Proof. constructor. done. apply _. Qed.
 
-  Global Instance _at_observe {p} {Q R : Rep} :
+  #[global] Instance _at_observe {p} {Q R : Rep} :
     Observe Q R ->
     Observe (_at p Q) (_at p R).
   Proof. move->. by rewrite /Observe _at_pers. Qed.
 
-  Global Instance _at_observe_2 {p} {Q R1 R2 : Rep} :
+  #[global] Instance _at_observe_2 {p} {Q R1 R2 : Rep} :
     Observe2 Q R1 R2 ->
     Observe2 (_at p Q) (_at p R1) (_at p R2).
   Proof. move->. by rewrite /Observe2 _at_wand _at_pers. Qed.
 
-  Global Instance _at_observe_only_provable Q p (R : Rep) :
+  #[global] Instance _at_observe_only_provable Q p (R : Rep) :
     Observe [| Q |] R → Observe [| Q |] (_at p R).
   Proof. rewrite -_at_only_provable. apply _. Qed.
-  Global Instance _at_observe_2_only_provable Q p (R1 R2 : Rep) :
+  #[global] Instance _at_observe_2_only_provable Q p (R1 R2 : Rep) :
     Observe2 [| Q |] R1 R2 → Observe2 [| Q |] (_at p R1) (_at p R2).
   Proof. rewrite -_at_only_provable. apply _. Qed.
 
-  Global Instance _at_observe_pure Q l (R : Rep) :
+  #[global] Instance _at_observe_pure Q l (R : Rep) :
     Observe [! Q !] R → Observe [! Q !] (_at l R).
   Proof. rewrite -_at_pure. apply _. Qed.
-  Global Instance _at_observe_2_pure Q l (R1 R2 : Rep) :
+  #[global] Instance _at_observe_2_pure Q l (R1 R2 : Rep) :
     Observe2 [! Q !] R1 R2 → Observe2 [! Q !] (_at l R1) (_at l R2).
   Proof. rewrite -_at_pure. apply _. Qed.
 
@@ -532,34 +549,37 @@ Section with_cpp.
     _at l r |-- _at l r ** [| P |].
   Proof. intros. apply observe_elim, _at_observe_only_provable. exact: observe_intro. Qed.
 
-  Global Instance pureR_ne : NonExpansive pureR.
+  #[global] Instance pureR_ne : NonExpansive pureR.
   Proof. solve_proper. Qed.
-  Global Instance pureR_proper : Proper ((≡) ==> (≡)) pureR.
+  #[global] Instance pureR_proper : Proper ((≡) ==> (≡)) pureR.
   Proof. solve_proper. Qed.
-  Global Instance pureR_mono : Proper ((⊢) ==> (⊢)) pureR.
+  #[global] Instance pureR_mono : Proper ((⊢) ==> (⊢)) pureR.
   Proof. by constructor. Qed.
-  Global Instance pureR_flip_momo : Proper (flip (⊢) ==> flip (⊢)) pureR.
+  #[global] Instance pureR_flip_momo : Proper (flip (⊢) ==> flip (⊢)) pureR.
   Proof. by constructor. Qed.
 
-  Global Instance pureR_persistent (P : mpred) :
+  #[global] Instance pureR_persistent (P : mpred) :
     Persistent P -> Persistent (pureR P).
   Proof. apply _. Qed.
-  Global Instance pureR_affine (P : mpred) :
+  #[global] Instance pureR_affine (P : mpred) :
     Affine P -> Affine (pureR P).
   Proof. apply _. Qed.
-  Global Instance pureR_timeless (P : mpred) :
+  #[global] Instance pureR_timeless (P : mpred) :
     Timeless P → Timeless (pureR P).
   Proof. apply _. Qed.
-  Global Instance pureR_fractional (P : Qp → mpred) :
+  #[global] Instance pureR_fractional (P : Qp → mpred) :
     Fractional P → Fractional (λ q, pureR (P q)).
   Proof. apply _. Qed.
-  Global Instance pureR_as_fractional P Φ q :
+  #[global] Instance pureR_as_fractional P Φ q :
     AsFractional P Φ q →
     AsFractional (pureR P) (λ q, pureR (Φ q)) q.
   Proof. intros [??]. constructor. done. apply _. Qed.
 
-  Global Instance pureR_objective P : Objective (pureR P).
+  #[global] Instance pureR_objective P : Objective (pureR P).
   Proof. done. Qed.
+
+  #[global] Instance pureR_laterable P : Laterable P → Laterable (pureR P).
+  Proof. intros. exact: as_Rep_laterable. Qed.
 
   Lemma pureR_persistently P : pureR (<pers> P) -|- <pers> pureR P.
   Proof. constructor=>p /=. by rewrite monPred_at_persistently. Qed.
@@ -626,10 +646,10 @@ Section with_cpp.
   Lemma pureR_later (P : mpred) : pureR (|> P) -|- |> pureR P.
   Proof. exact: as_Rep_later. Qed.
 
-  Global Instance pureR_observe Q (P : mpred) :
+  #[global] Instance pureR_observe Q (P : mpred) :
     Observe [| Q |] P → Observe [| Q |] (pureR P).
   Proof. apply _. Qed.
-  Global Instance pureR_observe_2 Q (P1 P2 : mpred) :
+  #[global] Instance pureR_observe_2 Q (P1 P2 : mpred) :
     Observe2 [| Q |] P1 P2 → Observe2 [| Q |] (pureR P1) (pureR P2).
   Proof. apply _. Qed.
   #[global] Instance pureR_observe_pure Q (P : mpred) :
@@ -667,7 +687,7 @@ Section with_cpp.
 
   (** As this isn't syntax-directed, we conservatively avoid
       registering it as an instance (which could slow down
-      observations). It's handy under [Local Existing Instance
+      observations). It's handy under [#[local] Existing Instance
       _at_observe_pureR] to project a [pureR Q] conjunct out of
       representation predicates. *)
   Lemma _at_observe_pureR Q (l : ptr) (R : Rep) :
@@ -679,5 +699,4 @@ Section with_cpp.
 End with_cpp.
 
 Typeclasses Opaque _at _offsetR pureR as_Rep.
-Global Opaque _at _offsetR.
-
+#[global] Opaque _at _offsetR.
