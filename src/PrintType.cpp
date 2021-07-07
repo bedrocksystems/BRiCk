@@ -19,17 +19,6 @@
 using namespace clang;
 using namespace fmt;
 
-void
-printQualifier(const QualType& qt, CoqPrinter& print) {
-    print.begin_record();
-    print.record_field("q_const");
-    print.boolean(qt.isConstQualified());
-    print.output() << ";" << fmt::nbsp;
-    print.record_field("q_volatile");
-    print.boolean(qt.isVolatileQualified());
-    print.end_record();
-}
-
 const std::string
 bitsize(unsigned n) {
     switch (n) {
@@ -396,9 +385,7 @@ ClangPrinter::printQualType(const QualType& qt, CoqPrinter& print) {
 
 void
 ClangPrinter::printQualifier(const QualType& qt, CoqPrinter& print) const {
-    auto depth = print.output().get_depth();
-    ::printQualifier(qt, print);
-    assert(depth == print.output().get_depth());
+    printQualifier(qt.isConstQualified(), qt.isVolatileQualified(), print);
 }
 
 void
