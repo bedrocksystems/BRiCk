@@ -253,13 +253,8 @@ public:
         print.output() << fmt::nbsp;
         cprint.printQualType(type->getReturnType(), print);
         print.output() << fmt::nbsp;
-        print.begin_list();
-        for (auto i : type->param_types()) {
-            cprint.printQualType(i, print);
-            print.cons();
-        }
-        print.end_list();
-
+        print.list(type->param_types(),
+                   [&](auto print, auto i) { cprint.printQualType(i, print); });
         print.end_ctor();
     }
 
