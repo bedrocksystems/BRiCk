@@ -264,7 +264,7 @@ public:
                     << cprint.sourceRange(field->getSourceRange()) << "\n";
                 logging::die();
             }
-            print.ctor("mkMember") << fmt::nbsp;
+            print.ctor("mkMember", i != 0) << fmt::nbsp;
             printMangledFieldName(field, print, cprint);
             print.output() << fmt::nbsp;
             cprint.printQualType(field->getType(), print);

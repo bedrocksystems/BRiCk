@@ -267,8 +267,8 @@ public:
                                 CoqPrinter& print, ClangPrinter& cprint) {
         print.ctor("Tarray");
         cprint.printQualType(type->getElementType(), print);
-        print.output() << fmt::nbsp << type->getSize().getLimitedValue()
-                       << fmt::rparen;
+        print.output() << fmt::nbsp << type->getSize().getLimitedValue();
+        print.end_ctor();
     }
 
     void VisitSubstTemplateTypeParmType(const SubstTemplateTypeParmType* type,
@@ -283,7 +283,8 @@ public:
         print.ctor("Qconst");
         print.ctor("Tptr", false);
         cprint.printQualType(type->getElementType(), print);
-        print.output() << fmt::rparen << fmt::rparen;
+        print.end_ctor();
+        print.end_ctor();
     }
 
     void VisitDecayedType(const DecayedType* type, CoqPrinter& print,
@@ -291,7 +292,8 @@ public:
         print.ctor("Qconst");
         print.ctor("Tptr", false);
         cprint.printQualType(type->getPointeeType(), print);
-        print.output() << fmt::rparen << fmt::rparen;
+        print.end_ctor();
+        print.end_ctor();
     }
 
     void VisitTemplateSpecializationType(const TemplateSpecializationType* type,
@@ -317,7 +319,7 @@ public:
     void VisitInjectedClassNameType(const InjectedClassNameType* type,
                                     CoqPrinter& print, ClangPrinter& cprint) {
         if (type->getDecl()) {
-            print.ctor("Tnamed");
+            print.ctor("Tnamed", false);
             cprint.printGlobalName(type->getDecl(), print);
             print.end_ctor();
         } else {
@@ -327,7 +329,6 @@ public:
 #else
             type->dump(logging::log());
 #endif
-
             cprint.printQualType(type->getInjectedSpecializationType(), print);
         }
     }

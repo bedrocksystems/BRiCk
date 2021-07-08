@@ -97,9 +97,9 @@ public:
 
         print.output() << fmt::nbsp;
 
-	print.list(decl->bindings(), [&](auto print, auto b) {
-		this->Visit(b->getHoldingVar(), print, cprint, on);
-	});
+        print.list(decl->bindings(), [&](auto print, auto b) {
+            this->Visit(b->getHoldingVar(), print, cprint, on);
+        });
 
         on.pop_anon(decl);
 
