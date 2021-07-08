@@ -54,6 +54,7 @@ to_gd(const NamedDecl *decl) {
 }
 #endif /* CLANG_VERSION_MAJOR >= 11 */
 
+#define STRUCTURED_NAMES
 #ifdef STRUCTURED_NAMES
 unsigned
 getAnonymousIndex(const NamedDecl *here) {
@@ -154,69 +155,72 @@ ClangPrinter::printTypeName(const NamedDecl *here, CoqPrinter &print) {
         assert(false && "unknown type in print_path");
     }
 }
+#else /* STRUCTURED NAMES */
+
+void
+ClangPrinter::printTypeName(const NamedDecl *decl, CoqPrinter &print) {
+    if (auto RD = dyn_cast<CXXRecordDecl>(decl)) {
+        if (auto dtor = RD->getDestructor()) {
+            // HACK: this mangles an aggregate name by mangling
+            // the destructor and then doing some string manipulation
+            std::string sout;
+            llvm::raw_string_ostream out(sout);
+            mangleContext_->mangleName(to_gd(dtor), out);
+            out.flush();
+            // the mangling of the destructor has the following form:
+            // _ZN...DnEv -> _Z... [if the name is not compound]
+            // _ZN...DnEv -> _ZN...E [if the name is compound]
+            // compound names are ones with scopes or templates
+            bool is_compound = true;
+            // TODO
+            if (is_compound) {
+                print.output()
+                    << "\"" << sout.substr(0, sout.length() - 4) << "E\"";
+            } else {
+                print.output()
+                    << "\"_Z" << sout.substr(3, sout.length() - 4 - 3) << "\"";
+            }
+        } else {
+            // if it doesn't have a destructor, then it is a special
+            // compiler type. So we just print the name.
+            print.str(decl->getQualifiedNameAsString());
+        }
+    } else if (auto ed = dyn_cast<EnumDecl>(decl)) {
+        // TODO this is sketchy
+        print.output() << "\"";
+        mangleContext_->mangleTypeName(QualType(ed->getTypeForDecl(), 0),
+                                       print.output().nobreak());
+        print.output() << "\"";
+    } else {
+        using namespace logging;
+        fatal() << "Unknown decl kind to [printTypeName]: "
+                << decl->getDeclKindName() << "\n";
+        die();
+    }
+}
+#endif
 
 void
 ClangPrinter::printObjName(const NamedDecl *decl, CoqPrinter &print, bool raw) {
-    if (!raw) {
-        print.output() << "\"";
-    }
+    assert(!raw && "printing raw object names is no longer supported");
+    print.output() << "\"";
 
-    if (isa<RecordDecl>(decl)) {
-#if 1
-        if (auto RD = dyn_cast<CXXRecordDecl>(decl)) {
-            if (auto dtor = RD->getDestructor()) {
-                // HACK: this mangles an aggregate name by mangling
-                // the destructor and then doing some string manipulation
-                std::string sout;
-                llvm::raw_string_ostream out(sout);
-                mangleContext_->mangleName(to_gd(dtor), out);
-                // the mangling of the destructor has the following form:
-                // _ZN...DnEv -> _Z... [if the name is not compound]
-                // _ZN...DnEv -> _ZN...E [if the name is compound]
-                // compound names are ones with scopes or templates
-                bool is_compound = true;
-                // TODO
-                if (is_compound) {
-                    print.output() << sout.substr(0, sout.length() - 4) << "E";
-                } else {
-                    print.output()
-                        << "_Z" << sout.substr(3, sout.length() - 4 - 3);
-                }
-            } else {
-                print.output() << decl->getQualifiedNameAsString();
-            }
-        } else {
-            assert(false);
-        }
-    } else if (auto ecd = dyn_cast<EnumConstantDecl>(decl)) {
-        mangleContext_->mangleTypeName(ecd->getType(),
+    if (auto ecd = dyn_cast<EnumConstantDecl>(decl)) {
+        // While they are values, they are not mangled because they do
+        // not end up in the resulting binary. Therefore, we need a special
+        // case.
+        auto ed = dyn_cast<EnumDecl>(ecd->getDeclContext());
+        assert(ed);
+        mangleContext_->mangleTypeName(QualType(ed->getTypeForDecl(), 0),
                                        print.output().nobreak());
-        print.output() << "::" << ecd->getName();
-#else
-        decl->getNameForDiagnostic(print.output().nobreak(),
-                                   PrintingPolicy(getContext().getLangOpts()),
-                                   true);
-#endif
+        print.output() << "::" << ecd->getIdentifier();
     } else if (mangleContext_->shouldMangleDeclName(decl)) {
         mangleContext_->mangleName(to_gd(decl), print.output().nobreak());
     } else {
-        print.output() << decl->getQualifiedNameAsString();
-#if 0
-        if (auto fd = dyn_cast<FunctionDecl>(decl)) {
-            if (fd->getLanguageLinkage() == LanguageLinkage::CLanguageLinkage) {
-                print.output() << fd->getNameAsString();
-            } else {
-                mangleContext_->mangleName(to_gd(fd), print.output().nobreak());
-            }
-        } else {
-            mangleContext_->mangleName(to_gd(decl), print.output().nobreak());
-        }
-#endif
+        decl->printQualifiedName(print.output().nobreak());
     }
 
-    if (!raw) {
-        print.output() << "\"";
-    }
+    print.output() << "\"";
 }
 
 Optional<int>
