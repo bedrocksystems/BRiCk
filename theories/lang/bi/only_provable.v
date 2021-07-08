@@ -163,7 +163,7 @@ End bi.
 Section bi.
   Context {PROP : bi}.
 
-  Global Instance only_provable_timeless `{BiAffine PROP} P :
+  Global Instance only_provable_timeless `{Timeless PROP emp} P :
     Timeless (PROP:=PROP) [| P |].
   Proof. apply _. Qed.
   Global Instance only_provable_plain `{BiPlainly PROP} P :
