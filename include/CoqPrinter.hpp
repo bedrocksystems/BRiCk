@@ -85,8 +85,28 @@ public:
     }
 
     template<typename C, typename CLOSURE>
-    fmt::Formatter& list(const C list, CLOSURE fn) {
+    fmt::Formatter& list(const C &&list, CLOSURE fn) {
         return list_range(list.begin(), list.end(), fn);
+    }
+
+    // List-printing functions
+    template<typename I, typename CLOSURE>
+    fmt::Formatter& list_range_filter(I begin, I end, CLOSURE fn) {
+        if (begin == end) {
+            return this->output_ << "nil";
+        }
+        begin_list();
+        while (begin != end) {
+            if (fn(*this, *begin))
+                cons();
+            ++begin;
+        }
+        return end_list();
+    }
+
+    template<typename C, typename CLOSURE>
+    fmt::Formatter& list_filter(const C &&list, CLOSURE fn) {
+        return list_range_filter(list.begin(), list.end(), fn);
     }
 
     // low-level list-printing API

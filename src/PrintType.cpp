@@ -19,44 +19,6 @@
 using namespace clang;
 using namespace fmt;
 
-void
-printQualType(const QualType& qt, CoqPrinter& print, ClangPrinter& cprint) {
-    if (auto p = qt.getTypePtrOrNull()) {
-        if (qt.isLocalConstQualified()) {
-            if (qt.isVolatileQualified()) {
-                print.ctor("Qconst_volatile", false);
-            } else {
-                print.ctor("Qconst", false);
-            }
-            cprint.printType(p, print);
-            print.end_ctor();
-        } else {
-            if (qt.isLocalVolatileQualified()) {
-                print.ctor("Qmut_volatile", false);
-                cprint.printType(p, print);
-                print.end_ctor();
-            } else {
-                cprint.printType(p, print);
-            }
-        }
-    } else {
-        using namespace logging;
-        fatal() << "unexpected null type in printQualType\n";
-        die();
-    }
-}
-
-void
-printQualifier(const QualType& qt, CoqPrinter& print) {
-    print.begin_record();
-    print.record_field("q_const");
-    print.boolean(qt.isConstQualified());
-    print.output() << ";" << fmt::nbsp;
-    print.record_field("q_volatile");
-    print.boolean(qt.isVolatileQualified());
-    print.end_record();
-}
-
 const std::string
 bitsize(unsigned n) {
     switch (n) {
@@ -256,21 +218,21 @@ public:
     void VisitLValueReferenceType(const LValueReferenceType* type,
                                   CoqPrinter& print, ClangPrinter& cprint) {
         print.ctor("Tref", false);
-        printQualType(type->getPointeeType(), print, cprint);
+        cprint.printQualType(type->getPointeeType(), print);
         print.end_ctor();
     }
 
     void VisitRValueReferenceType(const RValueReferenceType* type,
                                   CoqPrinter& print, ClangPrinter& cprint) {
         print.ctor("Trv_ref", false);
-        printQualType(type->getPointeeType(), print, cprint);
+        cprint.printQualType(type->getPointeeType(), print);
         print.end_ctor();
     }
 
     void VisitPointerType(const PointerType* type, CoqPrinter& print,
                           ClangPrinter& cprint) {
         print.ctor("Tptr", false);
-        printQualType(type->getPointeeType(), print, cprint);
+        cprint.printQualType(type->getPointeeType(), print);
         print.end_ctor();
     }
 
@@ -289,27 +251,22 @@ public:
         print.ctor("@Tfunction");
         cprint.printCallingConv(type->getCallConv(), print);
         print.output() << fmt::nbsp;
-        printQualType(type->getReturnType(), print, cprint);
+        cprint.printQualType(type->getReturnType(), print);
         print.output() << fmt::nbsp;
-        print.begin_list();
-        for (auto i : type->param_types()) {
-            printQualType(i, print, cprint);
-            print.cons();
-        }
-        print.end_list();
-
+        print.list(type->param_types(),
+                   [&](auto print, auto i) { cprint.printQualType(i, print); });
         print.end_ctor();
     }
 
     void VisitElaboratedType(const ElaboratedType* type, CoqPrinter& print,
                              ClangPrinter& cprint) {
-        printQualType(type->getNamedType(), print, cprint);
+        cprint.printQualType(type->getNamedType(), print);
     }
 
     void VisitConstantArrayType(const ConstantArrayType* type,
                                 CoqPrinter& print, ClangPrinter& cprint) {
         print.ctor("Tarray");
-        printQualType(type->getElementType(), print, cprint);
+        cprint.printQualType(type->getElementType(), print);
         print.output() << fmt::nbsp << type->getSize().getLimitedValue()
                        << fmt::rparen;
     }
@@ -317,7 +274,7 @@ public:
     void VisitSubstTemplateTypeParmType(const SubstTemplateTypeParmType* type,
                                         CoqPrinter& print,
                                         ClangPrinter& cprint) {
-        printQualType(type->getReplacementType(), print, cprint);
+        cprint.printQualType(type->getReplacementType(), print);
     }
 
     void VisitIncompleteArrayType(const IncompleteArrayType* type,
@@ -325,7 +282,7 @@ public:
         // note(gmm): i might want to note the sugar.
         print.ctor("Qconst");
         print.ctor("Tptr", false);
-        printQualType(type->getElementType(), print, cprint);
+        cprint.printQualType(type->getElementType(), print);
         print.output() << fmt::rparen << fmt::rparen;
     }
 
@@ -333,7 +290,7 @@ public:
                           ClangPrinter& cprint) {
         print.ctor("Qconst");
         print.ctor("Tptr", false);
-        printQualType(type->getPointeeType(), print, cprint);
+        cprint.printQualType(type->getPointeeType(), print);
         print.output() << fmt::rparen << fmt::rparen;
     }
 
@@ -396,16 +353,34 @@ ClangPrinter::printType(const clang::Type* type, CoqPrinter& print) {
 
 void
 ClangPrinter::printQualType(const QualType& qt, CoqPrinter& print) {
-    auto depth = print.output().get_depth();
-    ::printQualType(qt, print, *this);
-    assert(depth == print.output().get_depth());
+    if (auto p = qt.getTypePtrOrNull()) {
+        if (qt.isLocalConstQualified()) {
+            if (qt.isVolatileQualified()) {
+                print.ctor("Qconst_volatile", false);
+            } else {
+                print.ctor("Qconst", false);
+            }
+            printType(p, print);
+            print.end_ctor();
+        } else {
+            if (qt.isLocalVolatileQualified()) {
+                print.ctor("Qmut_volatile", false);
+                printType(p, print);
+                print.end_ctor();
+            } else {
+                printType(p, print);
+            }
+        }
+    } else {
+        using namespace logging;
+        fatal() << "unexpected null type in printQualType\n";
+        die();
+    }
 }
 
 void
 ClangPrinter::printQualifier(const QualType& qt, CoqPrinter& print) const {
-    auto depth = print.output().get_depth();
-    ::printQualifier(qt, print);
-    assert(depth == print.output().get_depth());
+    printQualifier(qt.isConstQualified(), qt.isVolatileQualified(), print);
 }
 
 void

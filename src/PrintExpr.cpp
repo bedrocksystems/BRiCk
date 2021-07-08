@@ -215,7 +215,8 @@ public:
             cprint.printExpr(expr->getLHS(), print);
             print.output() << fmt::nbsp;
             cprint.printExpr(expr->getRHS(), print);
-			assert(expr->getType().getTypePtr()->isBooleanType() && "&& is a bool");
+            assert(expr->getType().getTypePtr()->isBooleanType() &&
+                   "&& is a bool");
             print.end_ctor(); // no type information
             return;
         case BinaryOperatorKind::BO_LOr:
@@ -223,7 +224,8 @@ public:
             cprint.printExpr(expr->getLHS(), print);
             print.output() << fmt::nbsp;
             cprint.printExpr(expr->getRHS(), print);
-			assert(expr->getType().getTypePtr()->isBooleanType() && "|| is a bool");
+            assert(expr->getType().getTypePtr()->isBooleanType() &&
+                   "|| is a bool");
             print.end_ctor(); // no type information
             return;
         case BinaryOperatorKind::BO_Assign:

@@ -257,8 +257,7 @@ public:
     bool printFields(const CXXRecordDecl *decl, const ASTRecordLayout &layout,
                      CoqPrinter &print, ClangPrinter &cprint) {
         auto i = 0;
-        print.begin_list();
-        for (const FieldDecl *field : decl->fields()) {
+        print.list(decl->fields(), [&](auto print, auto field) {
             if (field->isBitField()) {
                 logging::fatal()
                     << "Error: bit fields are not supported "
@@ -274,9 +273,7 @@ public:
             print.output() << fmt::nbsp;
             print.ctor("Build_LayoutInfo", false)
                 << layout.getFieldOffset(i++) << fmt::rparen << fmt::rparen;
-            print.cons();
-        };
-        print.end_list();
+        });
         return true;
     }
 
@@ -340,8 +337,8 @@ public:
         print.ctor("Build_Struct");
 
         // print the base classes
-        print.begin_list();
-        for (auto base : decl->bases()) {
+        print.list(decl->bases(), [&cprint, &layout, &decl](auto print,
+                                                            auto base) {
             if (base.isVirtual()) {
                 logging::unsupported()
                     << "virtual base classes not supported\n";
@@ -365,30 +362,28 @@ public:
                         << cprint.sourceRange(decl->getSourceRange()) << "\n";
                 die();
             }
-            print.cons();
-        }
-        print.end_list();
+        });
 
         // print the fields
         print.output() << fmt::line;
         printFields(decl, layout, print, cprint);
+        print.output() << fmt::nbsp;
 
         // print the virtual function table
-        print.begin_list();
-        for (auto m : decl->methods()) {
-            if (m->isVirtual()) {
-                if (m->isPure()) {
-                    print.output() << "(pure_virt";
-                } else {
-                    print.output() << "(impl_virt";
-                }
-                print.output() << fmt::nbsp;
-                cprint.printGlobalName(m, print);
-                print.output() << ")";
-                print.cons();
+        print.list_filter(decl->methods(), [&cprint](auto print, auto m) {
+            if (not m->isVirtual())
+                return false;
+            if (m->isPure()) {
+                print.output() << "(pure_virt";
+            } else {
+                print.output() << "(impl_virt";
             }
-        }
-        print.end_list();
+            print.output() << fmt::nbsp;
+            cprint.printGlobalName(m, print);
+            print.output() << ")";
+            return true;
+        });
+        print.output() << fmt::nbsp;
 
         // print the overrides of this class.
         print.begin_list();
@@ -404,7 +399,7 @@ public:
                 }
             }
         }
-        print.end_list();
+        print.end_list() << fmt::nbsp;
 
         if (auto dtor = decl->getDestructor()) {
             cprint.printGlobalName(dtor, print);
