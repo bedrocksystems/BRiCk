@@ -85,7 +85,7 @@ public:
     }
 
     template<typename C, typename CLOSURE>
-    fmt::Formatter& list(const C list, CLOSURE fn) {
+    fmt::Formatter& list(const C &&list, CLOSURE fn) {
         return list_range(list.begin(), list.end(), fn);
     }
 
@@ -105,7 +105,7 @@ public:
     }
 
     template<typename C, typename CLOSURE>
-    fmt::Formatter& list_filter(const C list, CLOSURE fn) {
+    fmt::Formatter& list_filter(const C &&list, CLOSURE fn) {
         return list_range_filter(list.begin(), list.end(), fn);
     }
 
