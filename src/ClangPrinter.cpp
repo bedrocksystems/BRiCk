@@ -54,7 +54,6 @@ to_gd(const NamedDecl *decl) {
 }
 #endif /* CLANG_VERSION_MAJOR >= 11 */
 
-#define STRUCTURED_NAMES
 #ifdef STRUCTURED_NAMES
 unsigned
 getAnonymousIndex(const NamedDecl *here) {
@@ -156,6 +155,33 @@ ClangPrinter::printTypeName(const NamedDecl *here, CoqPrinter &print) {
     }
 }
 #else /* STRUCTURED NAMES */
+static bool
+is_compound(const std::string &val) {
+    // the mangling of the destructor has the following form:
+    //   _ZN...DnEv -> _Z... [if the name is not compound]
+    //   _ZN...DnEv -> _ZN...E [if the name is compound]
+    // compound names are ones with scopes or templates
+
+    auto cur = val.begin(), end = val.end();
+    int numbers = 0;
+    // find the first group of numbers
+    for (; cur != end && !('0' <= *cur && *cur <= '9'); ++cur)
+        ;
+    if (cur == end)
+        return false;
+
+    // find the next group of letters
+    for (; cur != end && ('0' <= *cur && *cur <= '9'); ++cur)
+        ;
+    if (cur == end)
+        return false;
+
+    // find the next number
+    for (; cur != end && !('0' <= *cur && *cur <= '9'); ++cur)
+        ;
+    // it is compound if we are not at the end of the string
+    return cur != end;
+}
 
 void
 ClangPrinter::printTypeName(const NamedDecl *decl, CoqPrinter &print) {
@@ -167,18 +193,14 @@ ClangPrinter::printTypeName(const NamedDecl *decl, CoqPrinter &print) {
             llvm::raw_string_ostream out(sout);
             mangleContext_->mangleName(to_gd(dtor), out);
             out.flush();
-            // the mangling of the destructor has the following form:
-            // _ZN...DnEv -> _Z... [if the name is not compound]
-            // _ZN...DnEv -> _ZN...E [if the name is compound]
-            // compound names are ones with scopes or templates
-            bool is_compound = true;
-            // TODO
-            if (is_compound) {
+            assert(3 < sout.length() && "mangled string length is too small");
+            sout = sout.substr(0, sout.length() - 4); // cut of the final 'DnEv'
+            if (is_compound(sout)) {
                 print.output()
-                    << "\"" << sout.substr(0, sout.length() - 4) << "E\"";
+                    << "\"" << sout.substr(0, sout.length()) << "E\"";
             } else {
                 print.output()
-                    << "\"_Z" << sout.substr(3, sout.length() - 4 - 3) << "\"";
+                    << "\"_Z" << sout.substr(3, sout.length() - 3) << "\"";
             }
         } else {
             // if it doesn't have a destructor, then it is a special
