@@ -33,8 +33,6 @@ class ClangPrinter {
 public:
     bool printDecl(const clang::Decl* d, CoqPrinter& print);
 
-    void printParamName(const clang::ParmVarDecl* d, CoqPrinter& print);
-
     bool printLocalDecl(const clang::Decl* d, CoqPrinter& print);
 
     void printStmt(const clang::Stmt* s, CoqPrinter& print);
@@ -46,11 +44,16 @@ public:
 
     void printValCat(const clang::Expr* d, CoqPrinter& print);
 
-    void printGlobalName(const clang::NamedDecl* decl, CoqPrinter& print,
-                         bool raw = false);
+    // Print value name
+    void printObjName(const clang::NamedDecl* decl, CoqPrinter& print,
+                      bool raw = false);
+    void printTypeName(const clang::NamedDecl* decl, CoqPrinter& print);
 
     void printName(const clang::NamedDecl* decl, CoqPrinter& print);
 
+    void printParamName(const clang::ParmVarDecl* d, CoqPrinter& print);
+
+    // Printing types
     void printQualType(const clang::QualType& qt, CoqPrinter& print);
 
     void printQualifier(const clang::QualType& qt, CoqPrinter& print) const;

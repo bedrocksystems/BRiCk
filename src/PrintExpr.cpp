@@ -368,7 +368,7 @@ public:
 
             // TODO Handle virtual dispatch.
             print.ctor("inl") << fmt::lparen;
-            cprint.printGlobalName(method, print);
+            cprint.printObjName(method, print);
             print.output() << "," << fmt::nbsp
                            << (method->isVirtual() ? "Virtual" : "Direct")
                            << "," << fmt::nbsp;
@@ -404,7 +404,7 @@ public:
             // desugar user casts to function calls
             print.ctor("Ecast");
             print.ctor("Cuser");
-            cprint.printGlobalName(cf, print);
+            cprint.printObjName(cf, print);
             print.end_ctor();
 
             cprint.printExprAndValCat(expr->getSubExpr(), print, li);
@@ -431,7 +431,7 @@ public:
                 // assume that this is a builtin
                 print.ctor("Evar", false);
                 print.ctor("Gname", false);
-                cprint.printGlobalName(ref->getDecl(), print);
+                cprint.printObjName(ref->getDecl(), print);
                 print.end_ctor();
                 done(expr, print, cprint);
                 return;
@@ -464,9 +464,9 @@ public:
             auto to = expr->getType().getTypePtr()->getPointeeCXXRecordDecl();
             if (from && to) {
                 print.ctor("Cstatic", false);
-                cprint.printGlobalName(from, print);
+                cprint.printTypeName(from, print);
                 print.output() << fmt::nbsp;
-                cprint.printGlobalName(to, print);
+                cprint.printTypeName(to, print);
                 print.end_ctor();
             } else {
                 printCastKind(print.output(), expr->getCastKind());
@@ -621,7 +621,7 @@ public:
                                OpaqueNames& li) {
         print.ctor("Econstructor");
         // print.output() << expr->isElidable() << fmt::nbsp;
-        cprint.printGlobalName(expr->getConstructor(), print);
+        cprint.printObjName(expr->getConstructor(), print);
         print.output() << fmt::nbsp;
         print.list(expr->arguments(), [&](auto print, auto i) {
             cprint.printExprAndValCat(i, print, li);
@@ -638,7 +638,7 @@ public:
         auto method = expr->getMethodDecl();
         if (auto me = dyn_cast<MemberExpr>(callee)) {
             print.ctor("inl") << fmt::lparen;
-            cprint.printGlobalName(method, print);
+            cprint.printObjName(method, print);
             print.output() << "," << fmt::nbsp;
             if (me->hasQualifier() or not method->isVirtual()) {
                 // not virtual call
@@ -842,7 +842,7 @@ public:
         if (expr->getOperatorNew()) {
             print.some();
             print.begin_tuple();
-            cprint.printGlobalName(expr->getOperatorNew(), print);
+            cprint.printObjName(expr->getOperatorNew(), print);
             print.next_tuple();
             cprint.printQualType(expr->getOperatorNew()->getType(), print);
             print.end_tuple();
@@ -894,7 +894,7 @@ public:
         if (expr->getOperatorDelete()) {
             print.some();
             print.begin_tuple();
-            cprint.printGlobalName(expr->getOperatorDelete(), print);
+            cprint.printObjName(expr->getOperatorDelete(), print);
             print.next_tuple();
             cprint.printQualType(expr->getOperatorDelete()->getType(), print);
             print.end_tuple();

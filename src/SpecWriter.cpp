@@ -187,7 +187,7 @@ public:
             print.end_ctor();
         } else {
             print.ctor("SMethod");
-            cprint.printGlobalName(decl->getParent(), print);
+            cprint.printObjName(decl->getParent(), print);
             print.output() << fmt::nbsp;
             cprint.printQualifier(decl->isConst(), decl->isVolatile(), print);
             print.output() << fmt::nbsp;
@@ -235,7 +235,7 @@ public:
         print.ctor("ticptr");
         if (is_raw(cmt)) {
             print.ctor("SMethod");
-            cprint.printGlobalName(decl->getParent(), print);
+            cprint.printObjName(decl->getParent(), print);
             print.output() << fmt::nbsp;
             cprint.printQualifier(false, false, print);
             print.output() << fmt::nbsp;
@@ -245,7 +245,7 @@ public:
         } else {
             print.ctor("SConstructor");
 
-            cprint.printGlobalName(decl->getParent(), print);
+            cprint.printObjName(decl->getParent(), print);
             print.output() << fmt::nbsp;
         }
 
@@ -268,7 +268,7 @@ public:
         print.ctor("ticptr");
         if (is_raw(cmt)) {
             print.ctor("SMethod");
-            cprint.printGlobalName(decl->getParent(), print);
+            cprint.printObjName(decl->getParent(), print);
             print.output() << fmt::nbsp;
             cprint.printQualifier(false, false, print);
             print.output() << fmt::nbsp;
@@ -278,7 +278,7 @@ public:
         } else {
             print.ctor("SDestructor");
 
-            cprint.printGlobalName(decl->getParent(), print);
+            cprint.printObjName(decl->getParent(), print);
             print.output() << fmt::nbsp;
         }
 
@@ -302,11 +302,11 @@ private:
 static void
 begin_decl(const NamedDecl *decl, CoqPrinter &print, ClangPrinter &cprint) {
     print.output() << "Definition ";
-    cprint.printGlobalName(decl, print, true);
+    cprint.printObjName(decl, print, true);
     print.output() << "_spec :=" << fmt::indent;
     print.begin_record();
     print.record_field("s_name");
-    cprint.printGlobalName(decl, print);
+    cprint.printObjName(decl, print);
     print.output() << fmt::line << " ; ";
     print.record_field("s_spec") << fmt::indent;
 }
@@ -384,7 +384,7 @@ write_globals(::Module &mod, CoqPrinter &print, ClangPrinter &cprint) {
                 print_path(print, rd, false);
                 print.output() << "'\" :=" << fmt::nbsp;
 
-                cprint.printGlobalName(def, print);
+                cprint.printObjName(def, print);
                 print.output()
                     << "%bs (in custom cppglobal at level 0)." << fmt::line;
             }
@@ -522,7 +522,7 @@ write_spec(clang::CompilerInstance *compiler, ::Module *mod,
                    << fmt::line << "make_signature" << fmt::nbsp;
     print.begin_list();
     for (auto d : internal_names) {
-        cprint.printGlobalName(d, print, true);
+        cprint.printObjName(d, print, true);
         print.output() << "_spec";
         print.cons();
     }
@@ -533,7 +533,7 @@ write_spec(clang::CompilerInstance *compiler, ::Module *mod,
                    << fmt::line << "make_signature" << fmt::nbsp;
     print.begin_list();
     for (auto d : public_names) {
-        cprint.printGlobalName(d, print, true);
+        cprint.printObjName(d, print, true);
         print.output() << "_spec";
         print.cons();
     }

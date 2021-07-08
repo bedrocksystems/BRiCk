@@ -55,8 +55,12 @@ to_gd(const NamedDecl *decl) {
 #endif /* CLANG_VERSION_MAJOR >= 11 */
 
 void
-ClangPrinter::printGlobalName(const NamedDecl *decl, CoqPrinter &print,
-                              bool raw) {
+ClangPrinter::printTypeName(const NamedDecl *decl, CoqPrinter &print) {
+    printObjName(decl, print);
+}
+
+void
+ClangPrinter::printObjName(const NamedDecl *decl, CoqPrinter &print, bool raw) {
     if (!raw) {
         print.output() << "\"";
     }
@@ -130,9 +134,9 @@ ClangPrinter::getParameterNumber(const ParmVarDecl *decl) {
 
 void
 ClangPrinter::printParamName(const ParmVarDecl *decl, CoqPrinter &print) {
-    const auto &name = decl->getNameAsString();
+    auto name = decl->getIdentifier();
     print.output() << "\"";
-    if (name == "") {
+    if (name == nullptr) {
         auto d = dyn_cast<ParmVarDecl>(decl);
         auto i = getParameterNumber(d);
         if (i.hasValue()) {
@@ -156,7 +160,7 @@ ClangPrinter::printName(const NamedDecl *decl, CoqPrinter &print) {
         }
     } else {
         print.ctor("Gname", false);
-        printGlobalName(decl, print);
+        printObjName(decl, print);
     }
     print.output() << fmt::rparen;
 }
@@ -210,7 +214,7 @@ void
 ClangPrinter::printField(const ValueDecl *decl, CoqPrinter &print) {
     if (const FieldDecl *f = dyn_cast<clang::FieldDecl>(decl)) {
         print.ctor("Build_field", false);
-        this->printGlobalName(f->getParent(), print);
+        this->printTypeName(f->getParent(), print);
         print.output() << fmt::nbsp;
 
         if (decl->getName() == "") {

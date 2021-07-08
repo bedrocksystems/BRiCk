@@ -87,9 +87,9 @@ public:
 
     void VisitEnumType(const EnumType* type, CoqPrinter& print,
                        ClangPrinter& cprint) {
-        print.ctor("@Talias", false);
-        cprint.printGlobalName(type->getDecl(), print);
-        print.output() << fmt::nbsp;
+        print.ctor("@Talias", false) << "\"";
+        type->getDecl()->printQualifiedName(print.output().nobreak());
+        print.output() << "\"" << fmt::nbsp;
         cprint.printQualType(
             //getPromotionType returns the integer type that the enum promotes to
             type->getDecl()->getCanonicalDecl()->getPromotionType(), print);
@@ -98,7 +98,7 @@ public:
     void VisitRecordType(const RecordType* type, CoqPrinter& print,
                          ClangPrinter& cprint) {
         print.ctor("Tnamed", false);
-        cprint.printGlobalName(type->getDecl(), print);
+        cprint.printTypeName(type->getDecl(), print);
         print.end_ctor();
     }
 
@@ -238,12 +238,13 @@ public:
 
     void VisitTypedefType(const TypedefType* type, CoqPrinter& print,
                           ClangPrinter& cprint) {
-        print.ctor("@Talias", false);
-        cprint.printGlobalName(type->getDecl(), print);
-        print.output() << fmt::nbsp;
+        print.ctor("@Talias", false) << "\"";
+        type->getDecl()->printQualifiedName(print.output().nobreak());
+        print.output() << "\"" << fmt::nbsp;
         cprint.printQualType(
+            //getPromotionType returns the integer type that the enum promotes to
             type->getDecl()->getCanonicalDecl()->getUnderlyingType(), print);
-        print.output() << fmt::rparen;
+        print.end_ctor();
     }
 
     void VisitFunctionProtoType(const FunctionProtoType* type,
@@ -320,7 +321,7 @@ public:
                                     CoqPrinter& print, ClangPrinter& cprint) {
         if (type->getDecl()) {
             print.ctor("Tnamed", false);
-            cprint.printGlobalName(type->getDecl(), print);
+            cprint.printTypeName(type->getDecl(), print);
             print.end_ctor();
         } else {
             logging::log() << "no underlying declaration for \n";
@@ -336,7 +337,7 @@ public:
     void VisitMemberPointerType(const MemberPointerType* type,
                                 CoqPrinter& print, ClangPrinter& cprint) {
         print.ctor("Tmember_pointer");
-        cprint.printGlobalName(type->getClass()->getAsCXXRecordDecl(), print);
+        cprint.printTypeName(type->getClass()->getAsCXXRecordDecl(), print);
         print.output() << fmt::nbsp;
         cprint.printQualType(type->getPointeeType(), print);
         print.end_ctor();
