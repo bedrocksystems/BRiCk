@@ -490,10 +490,9 @@ public:
 
     bool VisitEnumConstantDecl(const EnumConstantDecl *decl, CoqPrinter &print,
                                ClangPrinter &cprint, const ASTContext &) {
-#if 0
         print.ctor("Dconstant");
         assert((decl != nullptr) && (!decl->getNameAsString().empty()));
-        cprint.printGlobalName(decl, print);
+        cprint.printObjName(decl, print);
         print.output() << fmt::nbsp;
         cprint.printQualType(decl->getType(), print);
         print.output() << fmt::nbsp;
@@ -506,8 +505,6 @@ public:
         }
         print.end_ctor();
         return true;
-#endif
-        return false;
     }
 
     bool VisitCXXConstructorDecl(const CXXConstructorDecl *decl,
