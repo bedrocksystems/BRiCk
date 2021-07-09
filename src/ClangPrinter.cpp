@@ -350,7 +350,7 @@ ClangPrinter::printField(const ValueDecl *decl, CoqPrinter &print) {
             const CXXRecordDecl *rd = f->getType()->getAsCXXRecordDecl();
             assert(rd && "unnamed field must be a record");
             print.ctor("Nanon", false);
-            this->printGlobalName(rd, print);
+            this->printTypeName(rd, print);
             print.end_ctor();
         } else {
             print.str(decl->getName());
@@ -359,7 +359,7 @@ ClangPrinter::printField(const ValueDecl *decl, CoqPrinter &print) {
     } else if (const CXXMethodDecl *meth =
                    dyn_cast<clang::CXXMethodDecl>(decl)) {
         print.ctor("Build_field", false);
-        this->printGlobalName(meth->getParent(), print);
+        this->printTypeName(meth->getParent(), print);
         print.output() << fmt::nbsp << "\"" << decl->getNameAsString() << "\"";
         print.end_ctor();
     } else if (const VarDecl *var = dyn_cast<VarDecl>(decl)) {
