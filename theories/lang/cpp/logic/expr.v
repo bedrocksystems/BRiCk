@@ -118,9 +118,13 @@ Module Type Expr.
         match vc with
         | Prvalue => False
         | Lvalue =>
-          wp_lval a (fun base free =>
-                       let addr := (base ., _field m) in
+          match class_name (type_of a) with
+          | Some nm =>
+            wp_lval a (fun base free =>
+                       let addr := (base ., _field {| f_name := m ; f_type := nm |}) in
                        valid_ptr addr ** Q addr free)
+          | _ => False
+          end
         | Xvalue => False
           (* NOTE If the object is a temporary, then the field access will also be a
              temporary. Being conservative is sensible in our semantic style.
@@ -153,9 +157,13 @@ Module Type Expr.
           (* This does not occur because our AST explicitly contains [Cl2r] casts.
            *)
         | Xvalue =>
-          wp_xval a (fun base free =>
-                       let addr := base ., _field m in
+          match class_name (type_of a) with
+          | Some nm =>
+            wp_xval a (fun base free =>
+                       let addr := (base ., _field {| f_name := m ; f_type := nm |}) in
                        valid_ptr addr ** Q addr free)
+          | _ => False
+          end
         | _ => False
         end%I
       |-- wp_xval (Emember vc a m ty) Q.
@@ -788,7 +796,7 @@ Module Type Expr.
      *)
     Axiom wp_xval_virtual_call : forall ty fty f vc obj es Q,
       wp_glval vc obj (fun this free => wp_args es (fun vs free' =>
-          match class_type (type_of obj) with
+          match class_name (type_of obj) with
           | Some cls =>
             resolve_virtual (σ:=resolve) this cls f (fun fimpl_addr impl_class thisp =>
               |> mspec (Tnamed impl_class) (normalize_type fty) ti (Vptr fimpl_addr) (Vptr thisp :: vs) (fun v =>
@@ -799,7 +807,7 @@ Module Type Expr.
 
     Axiom wp_lval_virtual_call : forall ty fty f vc obj es Q,
       wp_glval vc obj (fun this free => wp_args es (fun vs free' =>
-          match class_type (type_of obj) with
+          match class_name (type_of obj) with
           | Some cls =>
             resolve_virtual (σ:=resolve) this cls f (fun fimpl_addr impl_type thisp =>
               |> mspec (Tnamed impl_type) (normalize_type fty) ti (Vptr fimpl_addr) (Vptr thisp :: vs) (fun v =>
@@ -813,7 +821,7 @@ Module Type Expr.
            Reduce (materialize_into_temp ty (Emember_call (inl (f, Virtual, fty)) vc obj es ty) Q)
          else
            wp_glval vc obj (fun this free => wp_args es (fun vs free' =>
-          match class_type (type_of obj) with
+          match class_name (type_of obj) with
           | Some cls =>
             resolve_virtual (σ:=resolve) this cls f (fun fimpl_addr impl_class thisp =>
               |> mspec (Tnamed impl_class) (normalize_type fty) ti (Vptr fimpl_addr) (Vptr thisp :: vs) (fun v => Q v (free ** free')))
@@ -823,7 +831,7 @@ Module Type Expr.
 
     Axiom wp_init_virtual_call : forall ty cc ret ts f vc obj es Q (addr : ptr),
       wp_glval vc obj (fun this free => wp_args es (fun vs free' =>
-          match class_type (type_of obj) with
+          match class_name (type_of obj) with
           | Some cls =>
             resolve_virtual (σ:=resolve) this cls f (fun fimpl_addr impl_class thisp =>
               addr |-> tblockR (erase_qualifiers ret) 1 **

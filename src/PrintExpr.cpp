@@ -591,21 +591,29 @@ public:
         print.ctor("Emember");
 
         auto base = expr->getBase();
+        auto record_type = expr->getMemberDecl()->getDeclContext();
+        // TODO Assert that the type of the base is the type of the field.
         if (expr->isArrow()) {
             print.output() << "Lvalue" << fmt::nbsp;
             print.ctor("Ederef");
             cprint.printExpr(base, print, li);
             print.output() << fmt::nbsp;
             cprint.printQualType(base->getType()->getPointeeType(), print);
+            assert(base->getType()->getPointeeCXXRecordDecl() == record_type &&
+                   "record projection type mismatch");
             print.end_ctor();
         } else {
             cprint.printValCat(base, print);
             print.output() << fmt::nbsp;
             cprint.printExpr(base, print, li);
+            assert(base->getType()->getAsCXXRecordDecl() == record_type &&
+                   "record projection type mismatch");
         }
 
         print.output() << fmt::nbsp;
-        cprint.printField(expr->getMemberDecl(), print);
+        print.str(expr->getMemberDecl()->getNameAsString());
+        //print.ctor("Field");
+        //cprint.printField(expr->getMemberDecl(), print);
         done(expr, print, cprint);
     }
 

@@ -97,9 +97,9 @@ Definition unptr (t : type) : option type :=
   | _ => None
   end.
 
-(** [class_type t] returns the name of the class that this type refers to
+(** [class_name t] returns the name of the class that this type refers to
  *)
-Definition class_type (t : type) : option globname :=
+Definition class_name (t : type) : option globname :=
   match drop_qualifiers t with
   | Tnamed gn => Some gn
 (*  | Tpointer t
