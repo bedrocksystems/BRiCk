@@ -43,6 +43,7 @@ theories/lang/bi/prelude.v
 theories/lang/bi/IrisBridge.v
 theories/lang/bi/ChargeCompat.v
 theories/lang/bi/errors.v
+theories/lang/bi/linearity.v
 
 # Specific BIs
 theories/lang/si_logic/bi.v
