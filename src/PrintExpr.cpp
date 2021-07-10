@@ -611,9 +611,8 @@ public:
         }
 
         print.output() << fmt::nbsp;
-        print.str(expr->getMemberDecl()->getNameAsString());
-        //print.ctor("Field");
-        //cprint.printField(expr->getMemberDecl(), print);
+        //print.str(expr->getMemberDecl()->getNameAsString());
+        cprint.printField(expr->getMemberDecl(), print);
         done(expr, print, cprint);
     }
 

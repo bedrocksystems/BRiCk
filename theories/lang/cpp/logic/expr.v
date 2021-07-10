@@ -118,13 +118,9 @@ Module Type Expr.
         match vc with
         | Prvalue => False
         | Lvalue =>
-          match class_name (type_of a) with
-          | Some nm =>
-            wp_lval a (fun base free =>
-                       let addr := (base ., _field {| f_name := m ; f_type := nm |}) in
+          wp_lval a (fun base free =>
+                       let addr := base ., _field m in
                        valid_ptr addr ** Q addr free)
-          | _ => False
-          end
         | Xvalue => False
           (* NOTE If the object is a temporary, then the field access will also be a
              temporary. Being conservative is sensible in our semantic style.
@@ -157,13 +153,9 @@ Module Type Expr.
           (* This does not occur because our AST explicitly contains [Cl2r] casts.
            *)
         | Xvalue =>
-          match class_name (type_of a) with
-          | Some nm =>
-            wp_xval a (fun base free =>
-                       let addr := (base ., _field {| f_name := m ; f_type := nm |}) in
+          wp_xval a (fun base free =>
+                       let addr := base ., _field m in
                        valid_ptr addr ** Q addr free)
-          | _ => False
-          end
         | _ => False
         end%I
       |-- wp_xval (Emember vc a m ty) Q.
