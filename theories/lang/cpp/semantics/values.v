@@ -228,12 +228,16 @@ Theorem is_true_int : forall i,
     is_true (Vint i) = Some (negb (BinIntDef.Z.eqb i 0)).
 Proof. reflexivity. Qed.
 
-Theorem Vptr_inj : forall p1 p2, Vptr p1 = Vptr p2 -> p1 = p2.
-Proof. inversion 1; reflexivity. Qed.
-Theorem Vint_inj : forall a b, Vint a = Vint b -> a = b.
-Proof. inversion 1; reflexivity. Qed.
-Theorem Vbool_inj : forall a b, Vbool a = Vbool b -> a = b.
-Proof. by move=>[] [] /Vint_inj. Qed.
+Lemma Vptr_inj p1 p2 : Vptr p1 = Vptr p2 -> p1 = p2.
+Proof. by move=> []. Qed.
+Lemma Vint_inj a b : Vint a = Vint b -> a = b.
+Proof. by move=> []. Qed.
+Lemma Vbool_inj a b : Vbool a = Vbool b -> a = b.
+Proof. by move: a b =>[] [] /Vint_inj. Qed.
+
+#[global] Instance Vptr_Inj : Inj (=) (=) Vptr := Vptr_inj.
+#[global] Instance Vint_Inj : Inj (=) (=) Vint := Vint_inj.
+#[global] Instance Vbool_Inj : Inj (=) (=) Vbool := Vbool_inj.
 
 (** * regions
     to model the stack frame in separation logic, we use a notion of regions
