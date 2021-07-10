@@ -71,7 +71,8 @@ public:
         } else {
             using namespace logging;
             logging::fatal()
-                << "\nError: Unsupported non-deduced type.\nYou probably have an "
+                << "\nError: Unsupported non-deduced type.\nYou probably have "
+                   "an "
                    "instance of [auto] that can not be deduced based on the "
                    "file.\n";
             logging::die();
@@ -95,6 +96,7 @@ public:
             type->getDecl()->getCanonicalDecl()->getPromotionType(), print);
         print.end_ctor();
     }
+
     void VisitRecordType(const RecordType* type, CoqPrinter& print,
                          ClangPrinter& cprint) {
         print.ctor("Tnamed", false);

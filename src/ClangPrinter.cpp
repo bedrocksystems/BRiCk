@@ -54,9 +54,105 @@ to_gd(const NamedDecl *decl) {
 }
 #endif /* CLANG_VERSION_MAJOR >= 11 */
 
+#ifdef STRUCTURED_NAMES
+unsigned
+getAnonymousIndex(const NamedDecl *here) {
+    auto i = 0;
+    for (auto x : here->getDeclContext()->decls()) {
+        if (x == here)
+            return i;
+        break;
+        if (auto ns = dyn_cast<NamespaceDecl>(x)) {
+            if (ns->isAnonymousNamespace())
+                ++i;
+        } else if (auto r = dyn_cast<RecordDecl>(x)) {
+            if (r->getIdentifier() == nullptr)
+                ++i;
+        } else if (auto e = dyn_cast<EnumDecl>(x)) {
+            if (e->getIdentifier() == nullptr)
+                ++i;
+        }
+    }
+    assert(false && "didn't find declaration in its own DeclContext.");
+}
+
 void
-ClangPrinter::printTypeName(const NamedDecl *decl, CoqPrinter &print) {
-    printObjName(decl, print);
+ClangPrinter::printTypeName(const NamedDecl *here, CoqPrinter &print) {
+    if (auto ts = dyn_cast<ClassTemplateSpecializationDecl>(here)) {
+        print.ctor("Tspecialize");
+        printTypeName(ts->getSpecializedTemplate(), print);
+        print.output() << fmt::nbsp;
+        auto &&args = ts->getTemplateArgs();
+        print.begin_list();
+        for (auto i = 0; i < args.size(); ++i) {
+            auto &&arg = args[i];
+            switch (arg.getKind()) {
+            case TemplateArgument::ArgKind::Type:
+                printQualType(arg.getAsType(), print);
+                break;
+            case TemplateArgument::ArgKind::Expression:
+                printExpr(arg.getAsExpr(), print);
+                break;
+            case TemplateArgument::ArgKind::Integral:
+                print.output() << arg.getAsIntegral().toString(10);
+                break;
+            case TemplateArgument::ArgKind::NullPtr:
+                print.output() << "Enullptr";
+                break;
+            default:
+                print.output() << "<else>";
+            }
+            print.cons();
+        }
+        print.end_list();
+        print.end_ctor();
+        return;
+    }
+
+    auto print_parent = [&](const DeclContext *parent) {
+        if (auto pnd = dyn_cast<NamedDecl>(parent)) {
+            printTypeName(pnd, print);
+            print.output() << fmt::nbsp;
+        } else {
+            llvm::errs() << here->getDeclKindName() << "\n";
+            assert(false && "unknown type in print_path");
+        }
+    };
+
+    auto parent = here->getDeclContext();
+    if (parent == nullptr or parent->isTranslationUnit()) {
+        print.ctor("Qglobal", false);
+        print.str(here->getName());
+        print.end_ctor();
+    } else if (auto nd = dyn_cast<NamespaceDecl>(here)) {
+        print.ctor("Qnested", false);
+        print_parent(parent);
+        if (nd->isAnonymousNamespace() or nd->getIdentifier() == nullptr) {
+            print.output() << "(Tanon " << getAnonymousIndex(nd) << ")";
+        } else {
+            print.str(here->getName());
+        }
+        print.end_ctor();
+    } else if (auto rd = dyn_cast<RecordDecl>(here)) {
+        print.ctor("Qnested", false);
+        print_parent(parent);
+        if (rd->getIdentifier() == nullptr) {
+            print.output() << "(Tanon " << getAnonymousIndex(rd) << ")";
+        } else {
+            print.str(here->getName());
+        }
+        print.end_ctor();
+
+    } else if (auto pnd = dyn_cast<NamedDecl>(parent)) {
+        print.ctor("Qnested", false);
+        printTypeName(pnd, print);
+        print.output() << fmt::nbsp;
+        print.str(here->getName());
+        print.end_ctor();
+    } else {
+        llvm::errs() << here->getDeclKindName() << "\n";
+        assert(false && "unknown type in print_path");
+    }
 }
 
 void
@@ -66,35 +162,42 @@ ClangPrinter::printObjName(const NamedDecl *decl, CoqPrinter &print, bool raw) {
     }
 
     if (isa<RecordDecl>(decl)) {
+#if 1
         if (auto RD = dyn_cast<CXXRecordDecl>(decl)) {
-            auto dtor = RD->getDestructor();
-            std::string sout;
-            llvm::raw_string_ostream out(sout);
-            mangleContext_->mangleName(to_gd(dtor), out);
-            print.output() << sout.substr(3, sout.length() - 7);
+            if (auto dtor = RD->getDestructor()) {
+                // HACK: this mangles an aggregate name by mangling
+                // the destructor and then doing some string manipulation
+                std::string sout;
+                llvm::raw_string_ostream out(sout);
+                mangleContext_->mangleName(to_gd(dtor), out);
+                // the mangling of the destructor has the following form:
+                // _ZN...DnEv -> _Z... [if the name is not compound]
+                // _ZN...DnEv -> _ZN...E [if the name is compound]
+                // compound names are ones with scopes or templates
+                bool is_compound = true;
+                // TODO
+                if (is_compound) {
+                    print.output() << sout.substr(0, sout.length() - 4) << "E";
+                } else {
+                    print.output()
+                        << "_Z" << sout.substr(3, sout.length() - 4 - 3);
+                }
+            } else {
+                print.output() << decl->getQualifiedNameAsString();
+            }
         } else {
             assert(false);
         }
-#if 0
+    } else if (auto ecd = dyn_cast<EnumConstantDecl>(decl)) {
+        mangleContext_->mangleTypeName(ecd->getType(),
+                                       print.output().nobreak());
+        print.output() << "::" << ecd->getName();
+#else
         decl->getNameForDiagnostic(print.output().nobreak(),
                                    PrintingPolicy(getContext().getLangOpts()),
                                    true);
 #endif
     } else if (mangleContext_->shouldMangleDeclName(decl)) {
-#if 0
-        auto x = to_gd(decl);
-        assert(decl == x.getDecl() && "HERE");
-        auto y = cast<NamedDecl>(x.getDecl());
-        auto DC = y->getDeclContext();
-        llvm::errs() << "DC = " << isa<CapturedDecl>(DC)
-                     << isa<OMPDeclareReductionDecl>(DC)
-                     << isa<OMPDeclareMapperDecl>(DC) << "\n";
-        DC->getRedeclContext()->dumpDeclContext();
-        llvm::errs() << "===========\n";
-        if (dyn_cast<clang::BlockDecl, clang::Decl const>(y)) {
-            assert(false && "HERE 2");
-        }
-#endif
         mangleContext_->mangleName(to_gd(decl), print.output().nobreak());
     } else {
         print.output() << decl->getQualifiedNameAsString();
@@ -143,7 +246,7 @@ ClangPrinter::printParamName(const ParmVarDecl *decl, CoqPrinter &print) {
             print.output() << "#" << i;
         }
     } else {
-        print.output() << name;
+        decl->printName(print.output().nobreak());
     }
     print.output() << "\"";
 }
