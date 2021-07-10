@@ -54,14 +54,13 @@ to_gd(const NamedDecl *decl) {
 }
 #endif /* CLANG_VERSION_MAJOR >= 11 */
 
-#ifdef STRUCTURED_NAMES
+namespace {
 unsigned
 getAnonymousIndex(const NamedDecl *here) {
     auto i = 0;
     for (auto x : here->getDeclContext()->decls()) {
         if (x == here)
             return i;
-        break;
         if (auto ns = dyn_cast<NamespaceDecl>(x)) {
             if (ns->isAnonymousNamespace())
                 ++i;
@@ -73,9 +72,14 @@ getAnonymousIndex(const NamedDecl *here) {
                 ++i;
         }
     }
-    assert(false && "didn't find declaration in its own DeclContext.");
+    logging::fatal()
+        << "Failed to find anonymous declaration in its own [DeclContext].\n"
+        << here->getQualifiedNameAsString() << "\n";
+    logging::die();
 }
+} // namespace
 
+#ifdef STRUCTURED_NAMES
 void
 ClangPrinter::printTypeName(const NamedDecl *here, CoqPrinter &print) {
     if (auto ts = dyn_cast<ClassTemplateSpecializationDecl>(here)) {
@@ -142,7 +146,6 @@ ClangPrinter::printTypeName(const NamedDecl *here, CoqPrinter &print) {
             print.str(here->getName());
         }
         print.end_ctor();
-
     } else if (auto pnd = dyn_cast<NamedDecl>(parent)) {
         print.ctor("Qnested", false);
         printTypeName(pnd, print);
@@ -183,6 +186,79 @@ is_compound(const std::string &val) {
     return cur != end;
 }
 
+// returns the number of components that it printed
+size_t
+printSimpleContext(const DeclContext *dc, CoqPrinter &print,
+                   MangleContext &mangle, size_t remaining = 0) {
+    auto printSimple = [&](const DeclContext *parent, const NamedDecl *decl,
+                           bool anonymous) {
+        auto compound =
+            printSimpleContext(parent, print, mangle, remaining + 1);
+        if (anonymous) {
+            auto i = getAnonymousIndex(decl);
+            if (i == 0) {
+                print.output() << "Ut_";
+            } else {
+                print.output() << "Ut" << i - 1 << "_";
+            }
+        } else {
+            auto name = decl->getNameAsString();
+            print.output() << name.length() << name;
+        }
+        if (remaining == 0 && 0 < compound)
+            print.output() << "E";
+        return compound + 1;
+    };
+
+    if (dc == nullptr or dc->isTranslationUnit()) {
+        print.output() << "_Z" << (1 < remaining ? "N" : "");
+        return 0;
+    } else if (auto ts = dyn_cast<ClassTemplateSpecializationDecl>(dc)) {
+        if (auto dtor = ts->getDestructor()) {
+            // HACK: this mangles an aggregate name by mangling
+            // the destructor and then doing some string manipulation
+            std::string sout;
+            llvm::raw_string_ostream out(sout);
+            mangle.mangleName(to_gd(dtor), out);
+            out.flush();
+            assert(3 < sout.length() && "mangled string length is too small");
+            sout = sout.substr(0, sout.length() - 4); // cut of the final 'DnEv'
+            if (is_compound(sout)) {
+                print.output() << sout.substr(0, sout.length())
+                               << (remaining == 0 ? "E" : "");
+                return 2; // we approximate the whole string by 2
+            } else {
+                print.output() << "_Z" << sout.substr(3, sout.length() - 3);
+                return 1;
+            }
+        } else {
+            logging::debug()
+                << "ClassTemplateSpecializationDecl not supported for "
+                   "simple contexts.\n";
+            ts->printName(logging::debug());
+            logging::debug() << "\n";
+            ts->printQualifiedName(print.output().nobreak());
+            return true;
+        }
+    } else if (auto ns = dyn_cast<NamespaceDecl>(dc)) {
+        return printSimple(ns->getDeclContext(), ns,
+                           ns->isAnonymousNamespace());
+    } else if (auto rd = dyn_cast<RecordDecl>(dc)) {
+        return printSimple(rd->getDeclContext(), rd,
+                           rd->isAnonymousStructOrUnion() or
+                               rd->getIdentifier() == nullptr);
+    } else if (auto ed = dyn_cast<EnumDecl>(dc)) {
+        return printSimple(ed->getDeclContext(), ed,
+                           ed->getIdentifier() == nullptr);
+    } else if (auto fd = dyn_cast<FunctionDecl>(dc)) {
+        return printSimple(fd->getDeclContext(), fd, false);
+    } else {
+        logging::fatal() << "Unknown type (" << dc->getDeclKindName()
+                         << ") in [printSimpleContext]\n";
+        logging::die();
+    }
+}
+
 void
 ClangPrinter::printTypeName(const NamedDecl *decl, CoqPrinter &print) {
     if (auto RD = dyn_cast<CXXRecordDecl>(decl)) {
@@ -203,19 +279,33 @@ ClangPrinter::printTypeName(const NamedDecl *decl, CoqPrinter &print) {
                     << "\"_Z" << sout.substr(3, sout.length() - 3) << "\"";
             }
         } else {
-            // if it doesn't have a destructor, then it is a special
-            // compiler type. So we just print the name.
-            print.str(decl->getQualifiedNameAsString());
+            // NOTE: this occurs when you have a forward declaration,
+            // e.g. [struct C;], or when you have a compiler builtin.
+            // We need to mangle the name, but we can't really get any help
+            // from clang.
+            logging::debug() << "CXXRecordDecl without destructor: "
+                             << decl->getQualifiedNameAsString() << "\n";
+            print.output() << "\"";
+            printSimpleContext(RD, print, *mangleContext_);
+            print.output() << "\"";
         }
+    } else if (auto rd = dyn_cast<RecordDecl>(decl)) {
+        // NOTE: this only matches C records, not C++ records
+        // therefore, we do not perform any mangling.
+        logging::debug() << "RecordDecl: " << decl->getQualifiedNameAsString()
+                         << "\n";
+        print.output() << "\"";
+        decl->printQualifiedName(print.output().nobreak());
+        print.output() << "\"";
     } else if (auto ed = dyn_cast<EnumDecl>(decl)) {
         // TODO this is sketchy
         print.output() << "\"";
-        mangleContext_->mangleTypeName(QualType(ed->getTypeForDecl(), 0),
-                                       print.output().nobreak());
+        printSimpleContext(ed, print, *mangleContext_);
         print.output() << "\"";
     } else {
         using namespace logging;
         fatal() << "Unknown decl kind to [printTypeName]: "
+                << decl->getQualifiedNameAsString() << " "
                 << decl->getDeclKindName() << "\n";
         die();
     }
@@ -225,7 +315,6 @@ ClangPrinter::printTypeName(const NamedDecl *decl, CoqPrinter &print) {
 void
 ClangPrinter::printObjName(const NamedDecl *decl, CoqPrinter &print, bool raw) {
     assert(!raw && "printing raw object names is no longer supported");
-    print.output() << "\"";
 
     if (auto ecd = dyn_cast<EnumConstantDecl>(decl)) {
         // While they are values, they are not mangled because they do
@@ -240,12 +329,14 @@ ClangPrinter::printObjName(const NamedDecl *decl, CoqPrinter &print, bool raw) {
         print.output() << "\"";
         print.end_ctor();
     } else if (mangleContext_->shouldMangleDeclName(decl)) {
+        print.output() << "\"";
         mangleContext_->mangleName(to_gd(decl), print.output().nobreak());
+        print.output() << "\"";
     } else {
+        print.output() << "\"";
         decl->printQualifiedName(print.output().nobreak());
+        print.output() << "\"";
     }
-
-    print.output() << "\"";
 }
 
 Optional<int>
@@ -282,19 +373,22 @@ ClangPrinter::printParamName(const ParmVarDecl *decl, CoqPrinter &print) {
 
 void
 ClangPrinter::printName(const NamedDecl *decl, CoqPrinter &print) {
-    if (decl->getDeclContext()->isFunctionOrMethod()) {
+    if (decl->getDeclContext()->isFunctionOrMethod() and
+        not isa<FunctionDecl>(decl)) {
         print.ctor("Lname", false) << fmt::nbsp;
-        auto name = decl->getNameAsString();
-        if (auto pd = dyn_cast_or_null<ParmVarDecl>(decl)) {
+        if (auto pd = dyn_cast<ParmVarDecl>(decl)) {
             printParamName(pd, print);
         } else {
-            print.output() << "\"" << decl->getNameAsString() << "\"";
+            print.output() << "\"";
+            decl->printName(print.output().nobreak());
+            print.output() << "\"";
         }
+        print.end_ctor();
     } else {
         print.ctor("Gname", false);
         printObjName(decl, print);
+        print.end_ctor();
     }
-    print.output() << fmt::rparen;
 }
 
 void

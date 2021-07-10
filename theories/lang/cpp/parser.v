@@ -23,6 +23,8 @@ Definition mk_virtuals (methods : list (obj_name * option obj_name)) : list (obj
 
 Definition NStop : list ident := nil.
 
+Definition Cenum_const (e : globname) (x : ident) : obj_name := (e ++ "::" ++ x)%bs.
+
 Bind Scope Z_scope with Z.
 
 Declare Custom Entry cppglobal.
