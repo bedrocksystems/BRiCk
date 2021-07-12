@@ -46,7 +46,7 @@ public:
     void printValCat(const clang::Expr* d, CoqPrinter& print);
 
     // Print value name
-    void printObjName(const clang::NamedDecl* decl, CoqPrinter& print,
+    void printObjName(const clang::ValueDecl* decl, CoqPrinter& print,
                       bool raw = false);
     void printTypeName(const clang::TypeDecl* decl, CoqPrinter& print);
 

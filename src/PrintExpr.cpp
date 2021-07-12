@@ -405,9 +405,11 @@ public:
             cprint.printExpr(expr->getSubExpr(), print);
         } else if (auto cf = expr->getConversionFunction()) {
             // desugar user casts to function calls
+            auto vd = dyn_cast<ValueDecl>(cf);
+            assert(vd && "conversion function must be a [ValueDecl]");
             print.ctor("Ecast");
             print.ctor("Cuser");
-            cprint.printObjName(cf, print);
+            cprint.printObjName(vd, print);
             print.end_ctor();
 
             cprint.printExprAndValCat(expr->getSubExpr(), print, li);

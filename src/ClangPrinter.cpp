@@ -328,7 +328,7 @@ ClangPrinter::printTypeName(const TypeDecl *decl, CoqPrinter &print) {
 #endif /* CLANG_NAMES */
 
 void
-ClangPrinter::printObjName(const NamedDecl *decl, CoqPrinter &print, bool raw) {
+ClangPrinter::printObjName(const ValueDecl *decl, CoqPrinter &print, bool raw) {
     assert(!raw && "printing raw object names is no longer supported");
 
     if (auto ecd = dyn_cast<EnumConstantDecl>(decl)) {
