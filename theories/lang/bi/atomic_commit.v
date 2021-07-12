@@ -600,3 +600,42 @@ Tactic Notation "iCaccIntro" "with" constr(sel) :=
 
 (* From here on, prevent TC search from implicitly unfolding these. *)
 Typeclasses Opaque commit_acc atomic_commit.
+
+Section derived.
+  Context `{BiFUpd PROP} {TA TB : tele}.
+  Implicit Types (α : TA → PROP) (β Φ : TA → TB → PROP).
+
+  (* ppost = (thread-)private postcondition, as opposed to the public or
+  _atomic_ postcondition. *)
+  Lemma atomic_commit1_ppost_wand Eo Ei α β Φ1 Φ2 :
+    atomic_commit true Eo Ei α β Φ1 ⊢
+    ▷ (∀.. x y, Φ1 x y -∗ Φ2 x y) -∗
+    atomic_commit true Eo Ei α β Φ2.
+  Proof.
+    iIntros "AC1 W". iAcIntro; rewrite /commit_acc/=.
+    iMod "AC1" as (x) "[A Cl] /=".
+    iExists _; iFrame "A". iIntros "!> !> % B".
+    iApply ("W" with "(Cl B)").
+  Qed.
+
+  Lemma atomic_commit1_weak_ppost_wand Eo Ei α β Φ1 Φ2 :
+    atomic_commit true Eo Ei α β Φ1 ⊢
+    □ (∀.. x y, Φ1 x y -∗ Φ2 x y) -∗
+    atomic_commit true Eo Ei α β Φ2.
+  Proof. iIntros "AC1 #W". iApply (atomic_commit1_ppost_wand with "AC1 W"). Qed.
+
+  (* This proof is almost a duplicate of [atomic_commit1_ppost_wand], but due to *)
+  (* the different modalities, simplicity we prefer duplicating it rather than *)
+  (* doing conditional modality reasoning using [▷?b □?(negb b)] and trying to *)
+  (* extend [iAc{1,}Intro] for this scenario. *)
+  Lemma atomic_commit_weak_ppost_wand Eo Ei α β Φ1 Φ2 :
+    atomic_commit false Eo Ei α β Φ1 ⊢
+    □ (∀.. x y, Φ1 x y -∗ Φ2 x y) -∗
+    atomic_commit false Eo Ei α β Φ2.
+  Proof.
+    iIntros "AC1 #W". iAcIntro; rewrite /commit_acc/=.
+    iMod "AC1" as (x) "[A Cl]".
+    iExists _; iFrame "A". iIntros "!> % B".
+    iApply ("W" with "(Cl B)").
+  Qed.
+End derived.

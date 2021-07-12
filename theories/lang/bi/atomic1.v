@@ -343,7 +343,7 @@ Section lemmas.
   Qed.
 
   (** The elimination form: an atomic accessor *)
-  Lemma aupd1_aacc  Eo Ei α β Φ :
+  Lemma aupd1_aacc Eo Ei α β Φ :
     atomic1_update Eo Ei α β Φ -∗
     atomic1_acc Eo Ei α (atomic1_update Eo Ei α β Φ) β Φ.
   Proof using Type*.
@@ -664,3 +664,26 @@ Tactic Notation "iAaccIntro1" "with" constr(sel) :=
 
 (* From here on, prevent TC search from implicitly unfolding these. *)
 Typeclasses Opaque atomic1_acc atomic1_update.
+
+Section derived.
+  Context `{BiFUpd PROP} {TA TB : tele}.
+  Implicit Types (α : TA → PROP) (β Φ : TA → TB → PROP).
+
+  Lemma atomic_update1_ppost_wand Eo Ei α β Φ1 Φ2 :
+    atomic1_update Eo Ei α β Φ1 ⊢
+    ▷ (∀.. x y, Φ1 x y -∗ Φ2 x y) -∗
+    atomic1_update Eo Ei α β Φ2.
+  Proof.
+    iIntros "AU1 W". iAuIntro1; rewrite /atomic1_acc.
+    iMod "AU1" as (x) "[A Cl]"; iExists _; iFrame "A"; iIntros "!>".
+    iSplit. { iFrame "W". iIntros "A". iDestruct "Cl" as "[H _]". iApply ("H" with "A"). }
+    iIntros "!> % B". iApply ("W" with "(Cl B)").
+  Qed.
+
+  (* Strictly weaker, but proven for consistency. *)
+  Lemma atomic_update1_weak_ppost_wand Eo Ei α β Φ1 Φ2 :
+    atomic1_update Eo Ei α β Φ1 ⊢
+    □ (∀.. x y, Φ1 x y -∗ Φ2 x y) -∗
+    atomic1_update Eo Ei α β Φ2.
+  Proof. iIntros "AU1 #W". iApply (atomic_update1_ppost_wand with "AU1 W"). Qed.
+End derived.
