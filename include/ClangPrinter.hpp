@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020 BedRock Systems, Inc.
+ * Copyright (c) 2020-2021 BedRock Systems, Inc.
  * This software is distributed under the terms of the BedRock Open-Source License.
  * See the LICENSE-BedRock file in the repository root for details.
  */
@@ -48,9 +48,9 @@ public:
     // Print value name
     void printObjName(const clang::ValueDecl* decl, CoqPrinter& print,
                       bool raw = false);
-    void printTypeName(const clang::TypeDecl* decl, CoqPrinter& print);
+    void printTypeName(const clang::TypeDecl* decl, CoqPrinter& print) const;
 
-    void printParamName(const clang::ParmVarDecl* d, CoqPrinter& print);
+    void printParamName(const clang::ParmVarDecl* d, CoqPrinter& print) const;
 
     // Printing types
     void printQualType(const clang::QualType& qt, CoqPrinter& print);
@@ -66,7 +66,7 @@ public:
 
     void printField(const clang::ValueDecl*, CoqPrinter&);
 
-    void printCallingConv(clang::CallingConv, CoqPrinter&);
+    void printCallingConv(clang::CallingConv, CoqPrinter&) const;
 
     unsigned getTypeSize(const clang::BuiltinType* type) const;
 
@@ -82,5 +82,4 @@ private:
     clang::CompilerInstance* compiler_;
     clang::ASTContext* context_;
     clang::MangleContext* mangleContext_;
-    // clang::DiagnosticsEngine engine_;
 };

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020 BedRock Systems, Inc.
+ * Copyright (c) 2020-2021 BedRock Systems, Inc.
  * This software is distributed under the terms of the BedRock Open-Source License.
  * See the LICENSE-BedRock file in the repository root for details.
  */
@@ -18,10 +18,7 @@ using namespace clang;
 
 ClangPrinter::ClangPrinter(clang::CompilerInstance *compiler,
                            clang::ASTContext *context)
-    : compiler_(compiler), context_(context) /*,
-      engine_(IntrusiveRefCntPtr<DiagnosticIDs>(),
-              IntrusiveRefCntPtr<DiagnosticOptions>()) */
-{
+    : compiler_(compiler), context_(context) {
     mangleContext_ =
         ItaniumMangleContext::create(*context, compiler->getDiagnostics());
 }
@@ -52,7 +49,7 @@ to_gd(const NamedDecl *decl) {
 #define CLANG_NAMES
 #ifdef CLANG_NAMES
 void
-ClangPrinter::printTypeName(const TypeDecl *decl, CoqPrinter &print) {
+ClangPrinter::printTypeName(const TypeDecl *decl, CoqPrinter &print) const {
     std::string sout;
     llvm::raw_string_ostream out(sout);
     mangleContext_->mangleTypeName(QualType(decl->getTypeForDecl(), 0), out);
@@ -90,7 +87,7 @@ getAnonymousIndex(const NamedDecl *here) {
 
 #ifdef STRUCTURED_NAMES
 void
-ClangPrinter::printTypeName(const TypeDecl *here, CoqPrinter &print) {
+ClangPrinter::printTypeName(const TypeDecl *here, CoqPrinter &print) const {
     if (auto ts = dyn_cast<ClassTemplateSpecializationDecl>(here)) {
         print.ctor("Tspecialize");
         printTypeName(ts->getSpecializedTemplate(), print);
@@ -269,7 +266,7 @@ printSimpleContext(const DeclContext *dc, CoqPrinter &print,
 }
 
 void
-ClangPrinter::printTypeName(const TypeDecl *decl, CoqPrinter &print) {
+ClangPrinter::printTypeName(const TypeDecl *decl, CoqPrinter &print) const {
     if (auto RD = dyn_cast<CXXRecordDecl>(decl)) {
         if (auto dtor = RD->getDestructor()) {
             // HACK: this mangles an aggregate name by mangling
@@ -368,7 +365,7 @@ getParameterNumber(const ParmVarDecl *decl) {
 } // namespace
 
 void
-ClangPrinter::printParamName(const ParmVarDecl *decl, CoqPrinter &print) {
+ClangPrinter::printParamName(const ParmVarDecl *decl, CoqPrinter &print) const {
     print.output() << "\"";
     if (decl->getIdentifier()) {
         decl->printName(print.output().nobreak());
@@ -469,7 +466,7 @@ ClangPrinter::sourceRange(const SourceRange sr) const {
 }
 
 void
-ClangPrinter::printCallingConv(clang::CallingConv cc, CoqPrinter &print) {
+ClangPrinter::printCallingConv(clang::CallingConv cc, CoqPrinter &print) const {
 #define PRINT(x)                                                               \
     case CallingConv::x:                                                       \
         print.output() << #x;                                                  \
