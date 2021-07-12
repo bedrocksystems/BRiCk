@@ -372,16 +372,18 @@ ClangPrinter::getParameterNumber(const ParmVarDecl *decl) {
 
 void
 ClangPrinter::printParamName(const ParmVarDecl *decl, CoqPrinter &print) {
-    auto name = decl->getIdentifier();
     print.output() << "\"";
-    if (name == nullptr) {
+    if (decl->getIdentifier()) {
+        decl->printName(print.output().nobreak());
+    } else {
         auto d = dyn_cast<ParmVarDecl>(decl);
         auto i = getParameterNumber(d);
         if (i.hasValue()) {
             print.output() << "#" << i;
+        } else {
+            logging::fatal() << "failed to find a parameter.";
+            logging::die();
         }
-    } else {
-        decl->printName(print.output().nobreak());
     }
     print.output() << "\"";
 }
