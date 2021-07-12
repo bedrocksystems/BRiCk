@@ -389,26 +389,6 @@ ClangPrinter::printParamName(const ParmVarDecl *decl, CoqPrinter &print) {
 }
 
 void
-ClangPrinter::printName(const ValueDecl *decl, CoqPrinter &print) {
-    if (decl->getDeclContext()->isFunctionOrMethod() and
-        not isa<FunctionDecl>(decl)) {
-        print.ctor("Lname", false) << fmt::nbsp;
-        if (auto pd = dyn_cast<ParmVarDecl>(decl)) {
-            printParamName(pd, print);
-        } else {
-            print.output() << "\"";
-            decl->printName(print.output().nobreak());
-            print.output() << "\"";
-        }
-        print.end_ctor();
-    } else {
-        print.ctor("Gname", false);
-        printObjName(decl, print);
-        print.end_ctor();
-    }
-}
-
-void
 ClangPrinter::printValCat(const Expr *d, CoqPrinter &print) {
 #ifdef DEBUG
     d->dump(llvm::errs());

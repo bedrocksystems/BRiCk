@@ -50,8 +50,6 @@ public:
                       bool raw = false);
     void printTypeName(const clang::TypeDecl* decl, CoqPrinter& print);
 
-    void printName(const clang::ValueDecl* decl, CoqPrinter& print);
-
     void printParamName(const clang::ParmVarDecl* d, CoqPrinter& print);
 
     // Printing types

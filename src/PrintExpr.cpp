@@ -87,6 +87,30 @@ private:
         print.end_ctor();
     }
 
+    void printVarRef(const ValueDecl* decl, CoqPrinter& print,
+                     ClangPrinter& cprint, OpaqueNames& on) {
+        auto t = on.find_anon(decl);
+        if (t != -1) {
+            print.ctor("Lname", false) << "\"$" << t << "\"";
+            print.end_ctor();
+        } else if (decl->getDeclContext()->isFunctionOrMethod() and
+                   not isa<FunctionDecl>(decl)) {
+            print.ctor("Lname", false) << fmt::nbsp;
+            if (auto pd = dyn_cast<ParmVarDecl>(decl)) {
+                cprint.printParamName(pd, print);
+            } else {
+                print.output() << "\"";
+                decl->printName(print.output().nobreak());
+                print.output() << "\"";
+            }
+            print.end_ctor();
+        } else {
+            print.ctor("Gname", false);
+            cprint.printObjName(decl, print);
+            print.end_ctor();
+        }
+    }
+
 #if CLANG_VERSION_MAJOR >= 9
     void printOptionalExpr(Optional<const Expr*> expr, CoqPrinter& print,
                            ClangPrinter& cprint, OpaqueNames& li) {
@@ -331,13 +355,7 @@ public:
             print.end_ctor();
         } else {
             print.ctor("Evar", false);
-            auto t = on.find_anon(d);
-            if (t != -1) {
-                print.ctor("Lname", false) << "\"$" << t << "\"";
-                print.end_ctor();
-            } else {
-                cprint.printName(d, print);
-            }
+            printVarRef(d, print, cprint, on);
         }
         done(expr, print, cprint);
     }
@@ -560,18 +578,11 @@ public:
                 cprint.printExpr(expr->getBase(), print, li);
                 print.output() << fmt::nbsp;
                 print.ctor("Evar", false);
-                cprint.printName(vd, print);
+                printVarRef(vd, print, cprint, li);
                 print.output() << fmt::nbsp;
                 cprint.printQualType(vd->getType(), print);
                 print.end_ctor();
                 print.end_ctor();
-
-#if 0
-                // this handles the special case of static members
-                print.ctor("Evar");
-                cprint.printName(vd, print);
-                done(expr, print, cprint);
-#endif
                 return;
             }
         } else if (auto md = dyn_cast<CXXMethodDecl>(expr->getMemberDecl())) {
@@ -582,7 +593,7 @@ public:
                 cprint.printExpr(expr->getBase(), print, li);
                 print.output() << fmt::nbsp;
                 print.ctor("Evar", false);
-                cprint.printName(md, print);
+                printVarRef(md, print, cprint, li);
                 print.output() << fmt::nbsp;
                 cprint.printQualType(md->getType(), print);
                 print.end_ctor();
