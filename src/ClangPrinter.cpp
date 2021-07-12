@@ -387,7 +387,7 @@ ClangPrinter::printParamName(const ParmVarDecl *decl, CoqPrinter &print) {
 }
 
 void
-ClangPrinter::printName(const NamedDecl *decl, CoqPrinter &print) {
+ClangPrinter::printName(const ValueDecl *decl, CoqPrinter &print) {
     if (decl->getDeclContext()->isFunctionOrMethod() and
         not isa<FunctionDecl>(decl)) {
         print.ctor("Lname", false) << fmt::nbsp;
