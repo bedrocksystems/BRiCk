@@ -158,6 +158,8 @@ ToCoqConsumer::toCoqModule(clang::ASTContext *ctxt,
     }
 
     if (spec_file_.hasValue()) {
+        llvm::errs() << "writing specifications is no longer supported!\n";
+#if 0
         std::error_code ec;
         llvm::raw_fd_ostream spec_output(*spec_file_, ec);
         if (ec.value()) {
@@ -168,5 +170,6 @@ ToCoqConsumer::toCoqModule(clang::ASTContext *ctxt,
             fmt::Formatter spec_fmt(spec_output);
             write_spec(compiler_, &mod, specs, decl, filter, spec_fmt);
         }
+#endif
     }
 }
