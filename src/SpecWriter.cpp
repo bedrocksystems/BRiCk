@@ -384,7 +384,7 @@ write_globals(::Module &mod, CoqPrinter &print, ClangPrinter &cprint) {
                 print_path(print, rd, false);
                 print.output() << "'\" :=" << fmt::nbsp;
 
-                cprint.printTypeName(def, print);
+                cprint.printTypeName(rd, print);
                 print.output()
                     << "%bs (in custom cppglobal at level 0)." << fmt::line;
             }

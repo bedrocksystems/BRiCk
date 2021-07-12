@@ -81,7 +81,7 @@ getAnonymousIndex(const NamedDecl *here) {
 
 #ifdef STRUCTURED_NAMES
 void
-ClangPrinter::printTypeName(const NamedDecl *here, CoqPrinter &print) {
+ClangPrinter::printTypeName(const TypeDecl *here, CoqPrinter &print) {
     if (auto ts = dyn_cast<ClassTemplateSpecializationDecl>(here)) {
         print.ctor("Tspecialize");
         printTypeName(ts->getSpecializedTemplate(), print);
@@ -260,7 +260,7 @@ printSimpleContext(const DeclContext *dc, CoqPrinter &print,
 }
 
 void
-ClangPrinter::printTypeName(const NamedDecl *decl, CoqPrinter &print) {
+ClangPrinter::printTypeName(const TypeDecl *decl, CoqPrinter &print) {
     if (auto RD = dyn_cast<CXXRecordDecl>(decl)) {
         if (auto dtor = RD->getDestructor()) {
             // HACK: this mangles an aggregate name by mangling

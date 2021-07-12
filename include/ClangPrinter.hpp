@@ -24,6 +24,7 @@ class ValueDecl;
 class SourceRange;
 class CompilerInstance;
 class Sema;
+class TypeDecl;
 }
 
 class CoqPrinter;
@@ -47,7 +48,7 @@ public:
     // Print value name
     void printObjName(const clang::NamedDecl* decl, CoqPrinter& print,
                       bool raw = false);
-    void printTypeName(const clang::NamedDecl* decl, CoqPrinter& print);
+    void printTypeName(const clang::TypeDecl* decl, CoqPrinter& print);
 
     void printName(const clang::NamedDecl* decl, CoqPrinter& print);
 
