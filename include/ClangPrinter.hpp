@@ -72,11 +72,7 @@ public:
 
     std::string sourceRange(const clang::SourceRange sr) const;
 
-    llvm::Optional<int> getParameterNumber(const clang::ParmVarDecl* decl);
-
     ClangPrinter(clang::CompilerInstance* compiler, clang::ASTContext* context);
-
-    clang::Sema& getSema() const;
 
     const clang::ASTContext& getContext() const {
         return *context_;

@@ -26,11 +26,6 @@ ClangPrinter::ClangPrinter(clang::CompilerInstance *compiler,
         ItaniumMangleContext::create(*context, compiler->getDiagnostics());
 }
 
-clang::Sema &
-ClangPrinter::getSema() const {
-    return this->compiler_->getSema();
-}
-
 unsigned
 ClangPrinter::getTypeSize(const BuiltinType *t) const {
     return this->context_->getTypeSize(t);
@@ -354,8 +349,9 @@ ClangPrinter::printObjName(const ValueDecl *decl, CoqPrinter &print, bool raw) {
     }
 }
 
+namespace {
 Optional<int>
-ClangPrinter::getParameterNumber(const ParmVarDecl *decl) {
+getParameterNumber(const ParmVarDecl *decl) {
     assert(decl->getDeclContext()->isFunctionOrMethod() &&
            "function or method");
     if (auto fd = dyn_cast_or_null<FunctionDecl>(decl->getDeclContext())) {
@@ -369,6 +365,7 @@ ClangPrinter::getParameterNumber(const ParmVarDecl *decl) {
     }
     return Optional<int>();
 }
+} // namespace
 
 void
 ClangPrinter::printParamName(const ParmVarDecl *decl, CoqPrinter &print) {
