@@ -54,6 +54,20 @@ to_gd(const NamedDecl *decl) {
 }
 #endif /* CLANG_VERSION_MAJOR >= 11 */
 
+#define CLANG_NAMES
+#ifdef CLANG_NAMES
+void
+ClangPrinter::printTypeName(const TypeDecl *decl, CoqPrinter &print) {
+    std::string sout;
+    llvm::raw_string_ostream out(sout);
+    mangleContext_->mangleTypeName(QualType(decl->getTypeForDecl(), 0), out);
+    out.flush();
+    assert(3 < sout.length() && "mangled string length is too small");
+    assert(sout.substr(0, 4) == "_ZTS");
+    sout = sout.substr(4, sout.length() - 4);
+    print.output() << "\"_Z" << sout << "\"";
+}
+#else /* CLANG_NAMES */
 namespace {
 unsigned
 getAnonymousIndex(const NamedDecl *here) {
@@ -157,7 +171,7 @@ ClangPrinter::printTypeName(const TypeDecl *here, CoqPrinter &print) {
         assert(false && "unknown type in print_path");
     }
 }
-#else /* STRUCTURED NAMES */
+#else  /* STRUCTURED NAMES */
 static bool
 is_compound(const std::string &val) {
     // the mangling of the destructor has the following form:
@@ -310,7 +324,8 @@ ClangPrinter::printTypeName(const TypeDecl *decl, CoqPrinter &print) {
         die();
     }
 }
-#endif
+#endif /* STRUCTURED_NAMES */
+#endif /* CLANG_NAMES */
 
 void
 ClangPrinter::printObjName(const NamedDecl *decl, CoqPrinter &print, bool raw) {
