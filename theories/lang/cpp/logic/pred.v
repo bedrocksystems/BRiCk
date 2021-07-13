@@ -811,7 +811,12 @@ Section with_cpp.
     iDestruct (tptsto_frac_valid with "T") as %L => //.
   Qed.
 
-  (** function specifications written in weakest pre-condition style.
+  (**
+  Function specifications written in weakest pre-condition style.
+
+  In other words, [fs_spec] asserts that arguments satisfy the function's
+  precondition _and_ that the continuation coincides with the function's
+  postcondition.
    *)
   Record function_spec : Type :=
     { fs_cc : calling_conv
@@ -935,7 +940,9 @@ Section with_cpp.
     - iIntros "[% ?]". by rewrite fs_equivI_intro.
   Qed.
 
-  (* [mpred] implication on [function_spec] *)
+  (** [mpred] implication on [function_spec].
+  Here, [Q] is a lower-level spec, and [P] is a derived/higher-level spec.
+   *)
   Definition fs_impl (P Q : function_spec) : mpred :=
     [| type_of_spec P = type_of_spec Q |] ∗
     □ ∀ ti vs K, P.(fs_spec) ti vs K -∗ Q.(fs_spec) ti vs K.
