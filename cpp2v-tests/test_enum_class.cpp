@@ -3,11 +3,15 @@
  *
  * SPDX-License-Identifier:MIT-0
  */
-
 enum X {
-    A, B
+  AA , A = 1 + 1, B = 1 << 8 , CC
 };
 
+enum class C;
 enum class C {
-    L, R
+  L = 1 + 1, R = 1 << 7
+};
+
+enum : unsigned short {
+  GLOBAL = 3
 };

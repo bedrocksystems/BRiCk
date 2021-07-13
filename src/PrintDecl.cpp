@@ -490,20 +490,45 @@ public:
 
     bool VisitEnumConstantDecl(const EnumConstantDecl *decl, CoqPrinter &print,
                                ClangPrinter &cprint, const ASTContext &) {
-        print.ctor("Dconstant");
-        assert((decl != nullptr) && (!decl->getNameAsString().empty()));
-        cprint.printObjName(decl, print);
-        print.output() << fmt::nbsp;
-        cprint.printQualType(decl->getType(), print);
-        print.output() << fmt::nbsp;
-        if (decl->getInitExpr()) {
-            cprint.printExpr(decl->getInitExpr(), print);
-        } else {
-            print.ctor("Eint") << decl->getInitVal() << fmt::nbsp;
+        assert(not decl->getNameAsString().empty());
+        auto ed = dyn_cast<EnumDecl>(decl->getDeclContext());
+        if (ed->getIdentifier()) {
+            print.ctor("Denum_constant");
+            cprint.printObjName(decl, print);
+            print.output() << fmt::nbsp;
             cprint.printQualType(decl->getType(), print);
-            print.output() << fmt::rparen;
+            print.output() << fmt::nbsp << "(" << decl->getInitVal() << ")%Z"
+                           << fmt::nbsp;
+
+            if (decl->getInitExpr()) {
+                print.some();
+                cprint.printExpr(decl->getInitExpr(), print);
+                print.end_ctor();
+            } else {
+                print.none();
+            }
+
+            print.end_ctor();
+        } else {
+            // anonymous enumeration name
+            print.ctor("Dconstant");
+            cprint.printObjName(decl, print);
+            print.output() << fmt::nbsp;
+            cprint.printQualType(decl->getType(), print);
+            print.output() << fmt::nbsp;
+
+            if (decl->getInitExpr()) {
+                cprint.printExpr(decl->getInitExpr(), print);
+            } else {
+                print.ctor("Eint", false);
+                print.output()
+                    << "(" << decl->getInitVal() << ")%Z" << fmt::nbsp;
+                cprint.printQualType(ed->getIntegerType(), print);
+                print.end_ctor();
+            }
+
+            print.end_ctor();
         }
-        print.end_ctor();
         return true;
     }
 
@@ -627,6 +652,7 @@ public:
 
     bool VisitVarDecl(const VarDecl *decl, CoqPrinter &print,
                       ClangPrinter &cprint, const ASTContext &) {
+        // TODO handling of [constexpr] needs to be improved.
         if (decl->isConstexpr()) {
             if (decl->hasInit()) {
                 print.ctor("Dconstant");
@@ -679,39 +705,44 @@ public:
         print.ctor("Dnamespace")
             /* << "\"" << decl->getNameAsString() << "\"" */
             << fmt::line;
-        print.begin_list();
-        for (auto d : decl->decls()) {
+        print.list(decl->decls(), [&cprint](auto &&print, auto d) {
             cprint.printDecl(d, print);
-            print.cons();
-        }
-        print.end_list();
+        });
         print.end_ctor();
-        return false;
+        return true;
     }
 
     bool VisitEnumDecl(const EnumDecl *decl, CoqPrinter &print,
                        ClangPrinter &cprint, const ASTContext &) {
-        print.ctor("Denum");
-        cprint.printTypeName(decl, print);
-        print.output() << fmt::nbsp;
         auto t = decl->getIntegerType();
-        if (!t.isNull()) {
-            print.some();
-            cprint.printQualType(decl->getIntegerType(), print);
+        if (t.isNull()) {
+            assert(decl->getIdentifier() && "anonymous forward declaration");
+            print.ctor("Dtype", false);
+            cprint.printTypeName(decl, print);
             print.end_ctor();
+            return true;
+        } else if (decl->getIdentifier()) {
+            // Anonymous enumerations do not result in types
+            print.ctor("Denum");
+            cprint.printTypeName(decl, print);
+            print.output() << fmt::nbsp;
+            cprint.printQualType(decl->getIntegerType(), print);
+            print.output() << fmt::nbsp;
+
+            // TODO the values are not necessary.
+            print.list(decl->enumerators(), [&cprint](auto &print, auto i) {
+                print.output() << fmt::line << "(";
+                print.str(i->getNameAsString());
+                print.output() << "," << fmt::nbsp << "("
+                               << i->getInitVal().getExtValue() << ")%Z)";
+            });
+
+            print.end_ctor();
+
+            return true;
         } else {
-            print.none();
+            return false;
         }
-        print.output() << fmt::nbsp;
-
-        print.list(decl->enumerators(), [&cprint](auto &print, auto i) {
-            print.output() << fmt::line << "(\"" << i->getNameAsString()
-                           << "\"," << fmt::nbsp << "("
-                           << i->getInitVal().getExtValue() << ")%Z)";
-        });
-
-        print.end_ctor();
-        return true;
     }
 
     bool VisitLinkageSpecDecl(const LinkageSpecDecl *decl, CoqPrinter &print,
@@ -725,7 +756,7 @@ public:
                                    CoqPrinter &print, ClangPrinter &cprint,
                                    const ASTContext &) {
         // we only print specializations
-        assert(false);
+        assert(false && "FunctionTemplateDecl");
         return false;
     }
 
@@ -733,7 +764,7 @@ public:
                                 CoqPrinter &print, ClangPrinter &cprint,
                                 const ASTContext &) {
         // we only print specializations
-        assert(false);
+        assert(false && "ClassTemplateDecl");
         return false;
     }
 

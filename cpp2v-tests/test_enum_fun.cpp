@@ -9,5 +9,13 @@ enum A : int {
   Y = 1,
 };
 
+enum B : unsigned char {
+  XX, YY
+};
+
+void g(B) { }
+
 void f(A x) {
+  g(XX);
 }
+

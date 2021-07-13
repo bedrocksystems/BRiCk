@@ -88,13 +88,22 @@ public:
 
     void VisitEnumType(const EnumType* type, CoqPrinter& print,
                        ClangPrinter& cprint) {
-        print.ctor("@Talias", false) << "\"";
-        type->getDecl()->printQualifiedName(print.output().nobreak());
-        print.output() << "\"" << fmt::nbsp;
-        cprint.printQualType(
+        auto ed = type->getDecl()->getCanonicalDecl();
+        if (not ed->getIdentifier()) {
+            cprint.printQualType(ed->getIntegerType(), print);
+        } else {
+            print.ctor("@Talias", false);
+            cprint.printTypeName(ed, print);
+            print.output() << fmt::nbsp;
+            cprint.printQualType(ed->getIntegerType(), print);
+#if 0
             //getPromotionType returns the integer type that the enum promotes to
-            type->getDecl()->getCanonicalDecl()->getPromotionType(), print);
-        print.end_ctor();
+            //print.output() << "(*";
+            cprint.printQualType(ed->getPromotionType(), print);
+            //print.output() << "*)";
+#endif
+            print.end_ctor();
+        }
     }
 
     void VisitRecordType(const RecordType* type, CoqPrinter& print,

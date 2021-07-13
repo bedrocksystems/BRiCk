@@ -329,12 +329,39 @@ ClangPrinter::printObjName(const ValueDecl *decl, CoqPrinter &print, bool raw) {
         // case.
         auto ed = dyn_cast<EnumDecl>(ecd->getDeclContext());
         assert(ed);
-        print.ctor("Cenum_const", false);
-        printTypeName(ed, print);
-        print.output() << " \"";
-        ecd->printName(print.output().nobreak());
-        print.output() << "\"";
-        print.end_ctor();
+        if (ed->getIdentifier()) {
+            print.ctor("Cenum_const", false);
+            printTypeName(ed, print);
+            print.output() << " \"";
+            ecd->printName(print.output().nobreak());
+            print.output() << "\"";
+            print.end_ctor();
+        } else {
+            auto parent = ed->getDeclContext();
+            while (not(parent == nullptr or parent->isTranslationUnit())) {
+                if (auto td = dyn_cast<TypeDecl>(parent)) {
+                    print.ctor("Cenum_const", false);
+                    printTypeName(td, print); // TODO this is wrong.
+                    print.output() << " \"";
+                    ecd->printName(print.output().nobreak());
+                    print.output() << "\"";
+                    print.end_ctor();
+                    return;
+                } else if (auto ns = dyn_cast<NamespaceDecl>(parent)) {
+                    if (ns->isAnonymousNamespace()) {
+                        parent = ns->getDeclContext();
+                        continue;
+                    }
+                    print.output() << "\"";
+                    ns->printQualifiedName(print.output().nobreak());
+                    print.output() << "\"";
+                    break;
+                }
+            }
+            print.output() << "\"";
+            ecd->printName(print.output().nobreak());
+            print.output() << "\"";
+        }
     } else if (mangleContext_->shouldMangleDeclName(decl)) {
         print.output() << "\"";
         mangleContext_->mangleName(to_gd(decl), print.output().nobreak());
