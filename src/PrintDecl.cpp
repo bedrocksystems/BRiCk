@@ -698,20 +698,17 @@ public:
         if (!t.isNull()) {
             print.some();
             cprint.printQualType(decl->getIntegerType(), print);
-            print.output() << fmt::rparen;
+            print.end_ctor();
         } else {
             print.none();
         }
         print.output() << fmt::nbsp;
 
-        print.begin_list();
-        for (auto i : decl->enumerators()) {
+        print.list(decl->enumerators(), [&cprint](auto &print, auto i) {
             print.output() << fmt::line << "(\"" << i->getNameAsString()
                            << "\"," << fmt::nbsp << "("
                            << i->getInitVal().getExtValue() << ")%Z)";
-            print.cons();
-        }
-        print.end_list();
+        });
 
         print.end_ctor();
         return true;
