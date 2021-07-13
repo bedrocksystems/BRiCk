@@ -52,8 +52,6 @@ End list.
 #[global] Hint Resolve NoDup_cons_2 : core.
 #[global] Hint Resolve not_elem_of_nil | 0 : core.
 Require Import stdpp.list.
-Require Import stdpp.base.
-Require Import ssreflect.
 Require Import stdpp.sets.
 
 Section list_difference.
