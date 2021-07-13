@@ -943,7 +943,7 @@ Section with_cpp.
   (** [mpred] implication on [function_spec].
   Here, [Q] is a lower-level spec, and [P] is a derived/higher-level spec.
    *)
-  Definition fs_impl (P Q : function_spec) : mpred :=
+  Definition fs_impl (Q P : function_spec) : mpred :=
     [| type_of_spec P = type_of_spec Q |] ∗
     □ ∀ ti vs K, P.(fs_spec) ti vs K -∗ Q.(fs_spec) ti vs K.
   Lemma fs_impl_reflexive P : |-- fs_impl P P.
@@ -953,7 +953,7 @@ Section with_cpp.
     rewrite /fs_impl; iIntros "(-> & #H1) (-> & #H2)".
     iSplit; first done.
     iIntros "!>" (ti vs K) "Y".
-    iApply ("H2" with "(H1 Y)").
+    iApply ("H1" with "(H2 Y)").
   Qed.
 
   Definition fs_entails (P Q : function_spec) : Prop := |-- fs_impl P Q.
@@ -992,7 +992,7 @@ Section with_cpp.
       iIntros "!>" (???) "A"; iApply ("W" with "A").
     - iIntros "((-> & #W1) & (_ & #W2))".
       iSplit => //; iIntros "!>" (???); iSplit;
-        [by iApply "W1" | by iApply "W2"].
+        [by iApply "W2" | by iApply "W1"].
   Qed.
 
   Lemma function_spec_equiv_iff P Q : P ≡ Q <-> |-- fs_equiv P Q.
