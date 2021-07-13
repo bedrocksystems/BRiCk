@@ -7,6 +7,7 @@
 From iris.algebra Require Import list.
 From iris.bi Require Import monpred big_op.
 From iris.proofmode Require Import tactics.
+Require Import bedrock.lang.prelude.list.
 
 Section big_op.
   Context `{Monoid M o}.
@@ -80,3 +81,79 @@ Section big_sepL.
     Affine ([∗ list] k↦x ∈ xs, f k x).
   Proof. apply big_opL_gen; apply _. Qed.
 End big_sepL.
+
+
+
+Lemma big_sepL_mono_elem {PROP : bi} {A : Type} (Φ Ψ : A → PROP) (l : list A):
+  (∀ (y : A),  y ∈ l -> Φ y  ⊢ Ψ y)
+  → ([∗ list] y ∈ l, Φ y) ⊢ ([∗ list] y ∈ l, Ψ y).
+Proof using.
+  intros Hin.
+  apply big_sepL_mono.
+  intros.
+  apply Hin.
+  eauto using elem_of_list_lookup_2.
+Qed.
+
+Lemma list_difference_id {T} {dec: EqDecision T} (l: list T) (x: T) :
+  (¬ x ∈ l) ->
+  list_difference l [x] = l.
+Proof using.
+  intros Hin.
+  induction l; [reflexivity | ].
+  simpl in *.
+  setoid_rewrite decide_False; eauto;[ | intros xx].
+  {
+    f_equal. apply IHl. rewrite -> elem_of_cons in Hin. tauto.
+  }
+  {
+    rewrite -> elem_of_cons in Hin.
+    inversion xx; subst; try tauto.
+    rewrite -> @elem_of_nil in *. tauto.
+  }
+Qed.
+
+Lemma lstar_one {PROP: bi} {A} {eqd: EqDecision A} (f  : A -> PROP) (l: list A) (x: A):
+  x ∈ l ->
+  NoDup l ->
+  ([∗ list] i ∈ l, f i)%I ≡ ((f x) ∗ (([∗ list] id ∈ (list_difference l [x]), f id)))%I.
+Proof using.
+  induction l; intros Hin Hnd; [ inversion Hin |].
+  inversion Hnd; subst; clear Hnd.
+  unfold decide_rel. unfold elem_of_list_dec.
+  simpl.
+  case_decide.
+  {
+    rewrite -> @elem_of_list_singleton in *.
+    subst.
+    rewrite list_difference_id; auto.
+  }
+  {
+    inversion Hin; subst;
+      rewrite -> @elem_of_list_singleton in *; try tauto;[].
+    rewrite -> IHl; auto.
+    simpl.
+    do 2 rewrite assoc.
+    rewrite (comm _ (f a) (f x)).
+    reflexivity.
+  }
+Qed.
+
+Lemma lstar_two {PROP: bi} {A} {eqd: EqDecision A} (f  : A -> PROP) l x y:
+  x<>y ->
+  x ∈ l ->
+  y ∈ l ->
+  NoDup l -> (* we only need x to be not duplicated *)
+  ([∗ list] id ∈ l, f id)%I ≡ (f x ∗ f y ∗ (([∗ list] id ∈ (list_difference l [x;y]), f id)))%I.
+Proof using.
+  clear.
+  intros Hneq H1l H2l Hnd.
+  rewrite -> lstar_one with (x0:=x); eauto.
+  rewrite -> lstar_one with (x0:=y); eauto using NoDup_list_difference;
+    [|rewrite elem_of_list_difference; split; set_solver].
+  f_equiv.
+  f_equiv.
+  change [x;y] with ([x]++[y]).
+  rewrite list_difference_app_r.
+  reflexivity.
+Qed.
