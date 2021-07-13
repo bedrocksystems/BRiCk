@@ -198,9 +198,9 @@ public:
     }
 
     void VisitEnumDecl(const EnumDecl *decl, bool) {
-        if (decl->getName() != "") {
-            go(decl);
-        }
+        if (not decl->isCanonicalDecl())
+            return;
+        go(decl);
         for (auto i : decl->enumerators()) {
             go(i);
         }
