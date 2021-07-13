@@ -488,50 +488,6 @@ public:
         return true;
     }
 
-    bool VisitEnumConstantDecl(const EnumConstantDecl *decl, CoqPrinter &print,
-                               ClangPrinter &cprint, const ASTContext &) {
-        assert(not decl->getNameAsString().empty());
-        auto ed = dyn_cast<EnumDecl>(decl->getDeclContext());
-        if (ed->getIdentifier()) {
-            print.ctor("Denum_constant");
-            cprint.printObjName(decl, print);
-            print.output() << fmt::nbsp;
-            cprint.printQualType(decl->getType(), print);
-            print.output() << fmt::nbsp << "(" << decl->getInitVal() << ")%Z"
-                           << fmt::nbsp;
-
-            if (decl->getInitExpr()) {
-                print.some();
-                cprint.printExpr(decl->getInitExpr(), print);
-                print.end_ctor();
-            } else {
-                print.none();
-            }
-
-            print.end_ctor();
-        } else {
-            // anonymous enumeration name
-            print.ctor("Dconstant");
-            cprint.printObjName(decl, print);
-            print.output() << fmt::nbsp;
-            cprint.printQualType(decl->getType(), print);
-            print.output() << fmt::nbsp;
-
-            if (decl->getInitExpr()) {
-                cprint.printExpr(decl->getInitExpr(), print);
-            } else {
-                print.ctor("Eint", false);
-                print.output()
-                    << "(" << decl->getInitVal() << ")%Z" << fmt::nbsp;
-                cprint.printQualType(ed->getIntegerType(), print);
-                print.end_ctor();
-            }
-
-            print.end_ctor();
-        }
-        return true;
-    }
-
     bool VisitCXXConstructorDecl(const CXXConstructorDecl *decl,
                                  CoqPrinter &print, ClangPrinter &cprint,
                                  const ASTContext &) {
@@ -722,7 +678,6 @@ public:
             print.end_ctor();
             return true;
         } else if (decl->getIdentifier()) {
-            // Anonymous enumerations do not result in types
             print.ctor("Denum");
             cprint.printTypeName(decl, print);
             print.output() << fmt::nbsp;
@@ -738,11 +693,55 @@ public:
             });
 
             print.end_ctor();
-
             return true;
         } else {
+            // Anonymous enumerations do not result in types
             return false;
         }
+    }
+
+    bool VisitEnumConstantDecl(const EnumConstantDecl *decl, CoqPrinter &print,
+                               ClangPrinter &cprint, const ASTContext &) {
+        assert(not decl->getNameAsString().empty());
+        auto ed = dyn_cast<EnumDecl>(decl->getDeclContext());
+        if (ed->getIdentifier()) {
+            print.ctor("Denum_constant");
+            cprint.printObjName(decl, print);
+            print.output() << fmt::nbsp;
+            cprint.printQualType(decl->getType(), print);
+            print.output() << fmt::nbsp << "(" << decl->getInitVal() << ")%Z"
+                           << fmt::nbsp;
+
+            if (decl->getInitExpr()) {
+                print.some();
+                cprint.printExpr(decl->getInitExpr(), print);
+                print.end_ctor();
+            } else {
+                print.none();
+            }
+
+            print.end_ctor();
+        } else {
+            // anonymous enumeration value
+            print.ctor("Dconstant");
+            cprint.printObjName(decl, print);
+            print.output() << fmt::nbsp;
+            cprint.printQualType(decl->getType(), print);
+            print.output() << fmt::nbsp;
+
+            if (decl->getInitExpr()) {
+                cprint.printExpr(decl->getInitExpr(), print);
+            } else {
+                print.ctor("Eint", false);
+                print.output()
+                    << "(" << decl->getInitVal() << ")%Z" << fmt::nbsp;
+                cprint.printQualType(ed->getIntegerType(), print);
+                print.end_ctor();
+            }
+
+            print.end_ctor();
+        }
+        return true;
     }
 
     bool VisitLinkageSpecDecl(const LinkageSpecDecl *decl, CoqPrinter &print,
