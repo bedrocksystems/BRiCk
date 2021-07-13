@@ -19,39 +19,6 @@
 #include <Formatter.hpp>
 #include <list>
 
-using namespace clang;
-using namespace fmt;
-
-#if 0
-void declToCoq(ASTContext *ctxt, const clang::Decl* decl) {
-	Formatter fmt(llvm::outs());
-	Default filter(Filter::What::DEFINITION);
-	SpecCollector specs;
-	CoqPrinter cprint(fmt);
-	ClangPrinter(ctxt).printDecl(decl, cprint);
-}
-
-void stmtToCoq(ASTContext *ctxt, const clang::Stmt* stmt) {
-	Formatter fmt(llvm::outs());
-	Default filter(Filter::What::DEFINITION);
-	SpecCollector specs;
-	CoqPrinter cprint(fmt);
-	ClangPrinter(ctxt).printStmt(stmt, cprint);
-}
-
-
-void
-translateModule(const TranslationUnitDecl* decl, CoqPrinter& print, ClangPrinter& cprint) {
-	print.output() << "Definition module : list Decl :=" << fmt::indent << fmt::line;
-	for (auto i : decl->decls()) {
-		cprint.printDecl(i, print);
-		print.output() << fmt::line << "::" << fmt::nbsp;
-	}
-	print.output() << "nil." << fmt::outdent;
-	print.output() << fmt::line;
-}
-#endif
-
 #include "clang/AST/ASTConsumer.h"
 #include "clang/Frontend/CompilerInstance.h"
 #include "clang/Frontend/FrontendAction.h"
@@ -63,6 +30,7 @@ translateModule(const TranslationUnitDecl* decl, CoqPrinter& print, ClangPrinter
 #include "ToCoq.hpp"
 
 using namespace clang;
+using namespace fmt;
 
 void
 ToCoqConsumer::toCoqModule(clang::ASTContext *ctxt,
