@@ -819,8 +819,6 @@ Section with_cpp.
     ; fs_arguments : list type
     ; fs_spec : thread_info -d> list val -d> (val -> mpred) -d> mpredO
     }.
-  Arguments function_spec : clear implicits.
-  Arguments Build_function_spec : clear implicits.
 
   #[global] Instance function_spec_inhabited : Inhabited function_spec :=
     populate (Build_function_spec inhabitant inhabitant inhabitant inhabitant).
