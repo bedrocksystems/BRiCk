@@ -23,6 +23,7 @@ theories/lang/prelude/bytestring.v
 theories/lang/prelude/tc_cond_type.v
 theories/lang/prelude/telescopes.v
 theories/lang/prelude/avl.v
+theories/lang/prelude/list.v
 
 theories/lang/algebra/telescopes.v
 
