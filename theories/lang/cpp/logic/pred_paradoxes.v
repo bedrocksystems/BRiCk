@@ -21,7 +21,7 @@ Section with_cpp.
     valid_ptr (p .., o_sub σ ty i) |-- valid_ptr p.
   ]]
   Take [p = p_base .., o_sub σ ty -i], assuming [valid_ptr p_base] but not [valid_ptr p]:
-  that gives [valid_ptr (p .., o_sub σ ty i) hence [valid_ptr p].
+  that gives [valid_ptr (p .., o_sub σ ty i)] hence [valid_ptr p].
 
   Choosing [p_base = nullptr] gives [False], but we get incorrect results even
   if [p_base] points to the beginning of an array.

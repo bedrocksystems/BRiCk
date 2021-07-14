@@ -13,7 +13,7 @@ satisfies
 
 - [(P ⊢ Q) ↔ ∀ n, P ⊢{n} Q]
 
-- [P ≡{n}≡ Q ↔ (P ⊢{n} Q) ∧ (Q ⊢{n} P)
+- [P ≡{n}≡ Q ↔ (P ⊢{n} Q) ∧ (Q ⊢{n} P)]
 
 This generalization gives us a proof technique for lemmas of the form
 [∃ x : A, P x ≡{n}≡ ∃ y : B, Q y] where the two sides quantify over

@@ -12,13 +12,13 @@ Require Import bedrock.lang.cpp.semantics.subtyping.
     1. Finding the correct function to invoke
     2. Fixing up the dispatch object.
     Consider the following example
-    [[[
+    [[
     struct A { virtual void foo() = 0; };
     struct B : public A { virtual void foo() { } };
 
     A* a = new B();
     a->foo(); // same as [static_cast<B*>(a)->B::foo()]
-    ]]]
+    ]]
     note that in order to dispatch to the overridden function
     the dispatch also introduces a [static_cast] to get a pointer
     of the correct type.
