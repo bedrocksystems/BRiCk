@@ -609,7 +609,9 @@ public:
     bool VisitVarDecl(const VarDecl *decl, CoqPrinter &print,
                       ClangPrinter &cprint, const ASTContext &) {
         // TODO handling of [constexpr] needs to be improved.
-        if (decl->isConstexpr()) {
+        if (decl->isTemplated()) {
+            return false;
+        } else if (decl->isConstexpr()) {
             if (decl->hasInit()) {
                 print.ctor("Dconstant");
                 cprint.printObjName(decl, print);
@@ -624,11 +626,8 @@ public:
                 cprint.printQualType(decl->getType(), print);
             }
             print.end_ctor();
-        } else if (decl->isTemplated()) {
-            return false;
         } else {
             print.ctor("Dvariable");
-
             cprint.printObjName(decl, print);
             print.output() << fmt::nbsp;
             cprint.printQualType(decl->getType(), print);
@@ -673,7 +672,7 @@ public:
         auto t = decl->getIntegerType();
         if (t.isNull()) {
             assert(decl->getIdentifier() && "anonymous forward declaration");
-            print.ctor("Dtype", false);
+            print.ctor("Dtype");
             cprint.printTypeName(decl, print);
             print.end_ctor();
             return true;
