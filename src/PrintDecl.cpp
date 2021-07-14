@@ -677,11 +677,11 @@ public:
             cprint.printTypeName(decl, print);
             print.end_ctor();
             return true;
-        } else if (decl->getIdentifier()) {
+        } else {
             print.ctor("Denum");
             cprint.printTypeName(decl, print);
             print.output() << fmt::nbsp;
-            cprint.printQualType(decl->getIntegerType(), print);
+            cprint.printQualType(t, print);
             print.output() << fmt::nbsp;
 
             // TODO the values are not necessary.
@@ -694,9 +694,6 @@ public:
 
             print.end_ctor();
             return true;
-        } else {
-            // Anonymous enumerations do not result in types
-            return false;
         }
     }
 
