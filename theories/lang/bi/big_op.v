@@ -113,7 +113,7 @@ Proof using.
   }
 Qed.
 
-Lemma lstar_one {PROP: bi} {A} {eqd: EqDecision A} (f  : A -> PROP) (l: list A) (x: A):
+Lemma big_sepL_difference_one {PROP: bi} {A} {eqd: EqDecision A} (f  : A -> PROP) (l: list A) (x: A):
   x ∈ l ->
   NoDup l ->
   ([∗ list] i ∈ l, f i)%I ≡ ((f x) ∗ (([∗ list] id ∈ (list_difference l [x]), f id)))%I.
@@ -139,7 +139,7 @@ Proof using.
   }
 Qed.
 
-Lemma lstar_two {PROP: bi} {A} {eqd: EqDecision A} (f  : A -> PROP) l x y:
+Lemma big_sepL_difference_two {PROP: bi} {A} {eqd: EqDecision A} (f  : A -> PROP) l x y:
   x<>y ->
   x ∈ l ->
   y ∈ l ->
