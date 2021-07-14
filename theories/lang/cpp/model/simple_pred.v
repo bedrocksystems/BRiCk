@@ -777,8 +777,8 @@ Module SimpleCPP.
       strict_valid_ptr p ** valid_ptr (p .., o_sub resolve ty 1).
       (* TODO: inline valid_ptr, and assert validity of the range, like we should do in tptsto!
       For 0-byte objects, should we assert ownership of one byte, to get character pointers? *)
-      (* alloc_own (alloc_id p) (l, h) **
-      [| l <= ptr_addr p <= ptr_addr (p .., o_sub resolve ty 1) <= h  *)
+      (* [alloc_own (alloc_id p) (l, h) **
+      [| l <= ptr_addr p <= ptr_addr (p .., o_sub resolve ty 1) <= h |]] *)
 
     Instance type_ptr_persistent σ p ty : Persistent (type_ptr (resolve:=σ) ty p) := _.
     Instance type_ptr_affine σ p ty : Affine (type_ptr (resolve:=σ) ty p) := _.

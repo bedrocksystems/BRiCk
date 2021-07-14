@@ -123,7 +123,7 @@ Axiom eval_mod :
     c = Z.rem a b ->
     eval_binop_pure (resolve:=resolve) Bmod (Tint w s) (Tint w s) (Tint w s) (Vint a) (Vint b) (Vint c).
 
-(* [C++14,C++20) *)
+(* C++14 <= VER < C++20 *)
 (* The value of E1 << E2 is E1 left-shifted E2 bit positions; vacated
    bits are zero-filled. If E1 has an unsigned type, the value of the
    result is E1 * 2^E2, reduced modulo one more than the maximum value
@@ -155,7 +155,7 @@ Axiom eval_shl :
     has_type (Vint c) (Tint w s) ->
     eval_binop_pure (resolve:=resolve) Bshl (Tint w s) (Tint w2 s2) (Tint w s) (Vint a) (Vint b) (Vint c).
 
-(* [C++14,C++20): The value of E1 >> E2 is E1 right-shifted E2 bit
+(* C++14 <= VER < C++20: The value of E1 >> E2 is E1 right-shifted E2 bit
    positions. If E1 has an unsigned type or if E1 has a signed type
    and a non-negative value, the value of the result is the integral
    part of the quotient of E1/(2^E2). If E1 has a signed type and a
