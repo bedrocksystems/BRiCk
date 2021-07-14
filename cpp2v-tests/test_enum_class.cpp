@@ -15,3 +15,11 @@ enum class C {
 enum : unsigned short {
   GLOBAL = 3
 };
+
+enum {
+  GLOBAL2 = 2
+};
+
+namespace {
+  enum { GLOBAL3 = 3 };
+};

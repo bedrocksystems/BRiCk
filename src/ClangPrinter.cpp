@@ -46,7 +46,7 @@ to_gd(const NamedDecl *decl) {
 }
 #endif /* CLANG_VERSION_MAJOR >= 11 */
 
-#define CLANG_NAMES
+// #define CLANG_NAMES
 #ifdef CLANG_NAMES
 void
 ClangPrinter::printTypeName(const TypeDecl *decl, CoqPrinter &print) const {
@@ -247,15 +247,63 @@ printSimpleContext(const DeclContext *dc, CoqPrinter &print,
             return true;
         }
     } else if (auto ns = dyn_cast<NamespaceDecl>(dc)) {
-        return printSimple(ns->getDeclContext(), ns,
-                           ns->isAnonymousNamespace());
+        auto parent = ns->getDeclContext();
+        auto compound =
+            printSimpleContext(parent, print, mangle, remaining + 1);
+        if (not ns->isAnonymousNamespace()) {
+            auto name = ns->getNameAsString();
+            print.output() << name.length() << name;
+        } else if (not ns->decls_empty()) {
+            // a proposed scheme is to use the name of the first declaration.
+            print.output() << ".<TODO>";
+            // TODO
+            // ns->field_begin()->printName(print.output().nobreak());
+        } else {
+            assert(false);
+        }
+        if (remaining == 0 && 0 < compound)
+            print.output() << "E";
+        return compound + 1;
     } else if (auto rd = dyn_cast<RecordDecl>(dc)) {
-        return printSimple(rd->getDeclContext(), rd,
-                           rd->isAnonymousStructOrUnion() or
-                               rd->getIdentifier() == nullptr);
+        auto parent = rd->getDeclContext();
+        auto compound =
+            printSimpleContext(parent, print, mangle, remaining + 1);
+        if (rd->getIdentifier()) {
+            auto name = rd->getNameAsString();
+            print.output() << name.length() << name;
+        } else if (auto tdn = rd->getTypedefNameForAnonDecl()) {
+            tdn->printName(print.output().nobreak());
+        } else if (not rd->field_empty()) {
+            print.output() << ".";
+            rd->field_begin()->printName(print.output().nobreak());
+        } else {
+            assert(false);
+        }
+        if (remaining == 0 && 0 < compound)
+            print.output() << "E";
+        return compound + 1;
     } else if (auto ed = dyn_cast<EnumDecl>(dc)) {
-        return printSimple(ed->getDeclContext(), ed,
-                           ed->getIdentifier() == nullptr);
+        auto parent = ed->getDeclContext();
+        auto compound =
+            printSimpleContext(parent, print, mangle, remaining + 1);
+        if (ed->getIdentifier()) {
+            auto name = ed->getNameAsString();
+            print.output() << name.length() << name;
+            //} else if (auto tdn = rd->getTypedefNameForAnonDecl()) {
+            //    llvm::errs() << "typedef name not null " << tdn << "\n";
+            //    tdn->printName(print.output().nobreak());
+        } else {
+            if (ed->enumerators().empty()) {
+                // no idea what to do
+                print.output() << "<empty-enum>";
+            } else {
+                print.output() << ".";
+                ed->enumerators().begin()->printName(print.output().nobreak());
+            }
+        }
+        if (remaining == 0 && 0 < compound)
+            print.output() << "E";
+        return compound + 1;
     } else if (auto fd = dyn_cast<FunctionDecl>(dc)) {
         return printSimple(fd->getDeclContext(), fd, false);
     } else {
@@ -323,20 +371,39 @@ void
 ClangPrinter::printObjName(const ValueDecl *decl, CoqPrinter &print, bool raw) {
     assert(!raw && "printing raw object names is no longer supported");
 
+    // All enumerations introduce types, but only some of them have names.
+    // While positional names work in scoped contexts, they generally
+    // do not work in extensible contexts (e.g. the global context)
+    //
+    // To address this, we use the name of their first declation.
+    // To avoid potential clashes (since the first declaration might be
+    // a term name and not a type name), we prefix the symbol with a dot,
+    // e.g.
+    // [enum { X , Y , Z };] -> [.X]
+    // note that [MangleContext::mangleTypeName] does *not* follow this
+    // strategy.
+
     if (auto ecd = dyn_cast<EnumConstantDecl>(decl)) {
         // While they are values, they are not mangled because they do
         // not end up in the resulting binary. Therefore, we need a special
         // case.
         auto ed = dyn_cast<EnumDecl>(ecd->getDeclContext());
-        assert(ed);
-        if (ed->getIdentifier()) {
-            print.ctor("Cenum_const", false);
-            printTypeName(ed, print);
-            print.output() << " \"";
-            ecd->printName(print.output().nobreak());
-            print.output() << "\"";
-            print.end_ctor();
+        print.ctor("Cenum_const", false);
+        printTypeName(ed, print);
+        print.output() << " \"";
+        ecd->printName(print.output().nobreak());
+        print.output() << "\"";
+        print.end_ctor();
+#if 0
         } else {
+            assert(not ed->enumerators().empty());
+            auto i = *ed->enumerators().begin();
+            print.output() << "\"\" (* ";
+            printTypeName(ed, print);
+            ed->print.output() << " / " << ed->getNameAsString() << " *)";
+            //print.ctor("Cenum_const", false);
+
+#if 0
             auto parent = ed->getDeclContext();
             while (not(parent == nullptr or parent->isTranslationUnit())) {
                 if (auto td = dyn_cast<TypeDecl>(parent)) {
@@ -361,7 +428,9 @@ ClangPrinter::printObjName(const ValueDecl *decl, CoqPrinter &print, bool raw) {
             print.output() << "\"";
             ecd->printName(print.output().nobreak());
             print.output() << "\"";
+#endif
         }
+#endif
     } else if (mangleContext_->shouldMangleDeclName(decl)) {
         print.output() << "\"";
         mangleContext_->mangleName(to_gd(decl), print.output().nobreak());
