@@ -167,7 +167,8 @@ ClangPrinter::printTypeName(const TypeDecl *here, CoqPrinter &print) const {
 // returns the number of components that it printed
 size_t
 printSimpleContext(const DeclContext *dc, CoqPrinter &print,
-                   MangleContext &mangle, size_t remaining = 0) {
+                   const ClangPrinter &cprint, MangleContext &mangle,
+                   size_t remaining = 0) {
     if (dc == nullptr or dc->isTranslationUnit()) {
         print.output() << "_Z" << (1 < remaining ? "N" : "");
         return 0;
@@ -202,17 +203,20 @@ printSimpleContext(const DeclContext *dc, CoqPrinter &print,
     } else if (auto ns = dyn_cast<NamespaceDecl>(dc)) {
         auto parent = ns->getDeclContext();
         auto compound =
-            printSimpleContext(parent, print, mangle, remaining + 1);
+            printSimpleContext(parent, print, cprint, mangle, remaining + 1);
         if (not ns->isAnonymousNamespace()) {
             auto name = ns->getNameAsString();
             print.output() << name.length() << name;
         } else if (not ns->decls_empty()) {
             // a proposed scheme is to use the name of the first declaration.
-            print.output() << ".<TODO>";
+            print.output() << "~<TODO>";
             // TODO
             // ns->field_begin()->printName(print.output().nobreak());
         } else {
             print.output() << "~<empty>";
+            logging::unsupported()
+                << "empty anonymous namespaces are not supported. (at "
+                << cprint.sourceRange(ns->getSourceRange()) << ")\n";
         }
         if (remaining == 0 && 0 < compound)
             print.output() << "E";
@@ -225,7 +229,7 @@ printSimpleContext(const DeclContext *dc, CoqPrinter &print,
 
         auto parent = rd->getDeclContext();
         auto compound =
-            printSimpleContext(parent, print, mangle, remaining + 1);
+            printSimpleContext(parent, print, cprint, mangle, remaining + 1);
         if (rd->getIdentifier()) {
             auto name = rd->getNameAsString();
             print.output() << name.length() << name;
@@ -237,7 +241,11 @@ printSimpleContext(const DeclContext *dc, CoqPrinter &print,
             print.output() << ".";
             rd->field_begin()->printName(print.output().nobreak());
         } else {
-            assert(false);
+            // TODO this isn't technically sound
+            print.output() << "~<empty>";
+            logging::unsupported()
+                << "empty anonymous records are not supported. (at "
+                << cprint.sourceRange(rd->getSourceRange()) << ")\n";
         }
         if (remaining == 0 && 0 < compound)
             print.output() << "E";
@@ -245,7 +253,7 @@ printSimpleContext(const DeclContext *dc, CoqPrinter &print,
     } else if (auto ed = dyn_cast<EnumDecl>(dc)) {
         auto parent = ed->getDeclContext();
         auto compound =
-            printSimpleContext(parent, print, mangle, remaining + 1);
+            printSimpleContext(parent, print, cprint, mangle, remaining + 1);
         if (ed->getIdentifier()) {
             auto name = ed->getNameAsString();
             print.output() << name.length() << name;
@@ -255,9 +263,13 @@ printSimpleContext(const DeclContext *dc, CoqPrinter &print,
         } else {
             if (ed->enumerators().empty()) {
                 // no idea what to do
-                print.output() << "<empty-enum>";
+                print.output() << "~<empty-enum>";
+                logging::unsupported()
+                    << "empty anonymous enumerations are not supported. (at "
+                    << cprint.sourceRange(ed->getSourceRange()) << ")\n";
+
             } else {
-                print.output() << ".";
+                print.output() << "~";
                 ed->enumerators().begin()->printName(print.output().nobreak());
             }
         }
@@ -288,7 +300,7 @@ void
 ClangPrinter::printTypeName(const TypeDecl *decl, CoqPrinter &print) const {
     if (auto RD = dyn_cast<CXXRecordDecl>(decl)) {
         print.output() << "\"";
-        printSimpleContext(RD, print, *mangleContext_);
+        printSimpleContext(RD, print, *this, *mangleContext_);
         print.output() << "\"";
     } else if (auto rd = dyn_cast<RecordDecl>(decl)) {
         // NOTE: this only matches C records, not C++ records
@@ -300,7 +312,7 @@ ClangPrinter::printTypeName(const TypeDecl *decl, CoqPrinter &print) const {
         print.output() << "\"";
     } else if (auto ed = dyn_cast<EnumDecl>(decl)) {
         print.output() << "\"";
-        printSimpleContext(ed, print, *mangleContext_);
+        printSimpleContext(ed, print, *this, *mangleContext_);
         print.output() << "\"";
     } else {
         using namespace logging;
