@@ -148,8 +148,8 @@ Lemma big_sepL_difference_two {PROP: bi} {A} {eqd: EqDecision A} (f  : A -> PROP
 Proof using.
   clear.
   intros Hneq H1l H2l Hnd.
-  rewrite -> lstar_one with (x0:=x); eauto.
-  rewrite -> lstar_one with (x0:=y); eauto using NoDup_list_difference;
+  rewrite -> big_sepL_difference_one with (x0:=x); eauto.
+  rewrite -> big_sepL_difference_one with (x0:=y); eauto using NoDup_list_difference;
     [|rewrite elem_of_list_difference; split; set_solver].
   f_equiv.
   f_equiv.
