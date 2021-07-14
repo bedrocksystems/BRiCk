@@ -14,7 +14,9 @@ Definition pure_virt (x : obj_name) : obj_name * option obj_name :=
 Definition impl_virt (x : obj_name) : obj_name * option obj_name :=
   (x, Some x).
 
-Definition Talias (name : globname) (underlying : type) : type :=
+Definition Talias (name : globname) {underlying : type} : type :=
+  underlying.
+Definition Tenum (name : globname) {underlying : type} : type :=
   underlying.
 
 Definition mk_overrides (methods : list (obj_name * obj_name)) : list (obj_name * obj_name) := methods.
