@@ -210,9 +210,9 @@ Section with_cpp.
   (* evaluate a prvalue that "initializes an object"
 
      Schematically, a [wp_init ty addr e Q] looks like the following:
-       [[[
+       [[
          addr |-> tblockR ty 1 ** (addr |-> R ... 1 -* Q)
-       ]]]
+       ]]
      which captures the fact that it:
      1. *consumes* uninitialized memory at [addr], the [addr |-> tblockR ty 1], and
      2. *produces* initialized memory at [addr], something like [addr |-> R ... 1].

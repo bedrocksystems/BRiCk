@@ -654,11 +654,11 @@ Section with_cpp.
      at the beginning of the constructor.
 
      Generally, it is the **strict** validity of all of the sub-objects.
-     [[[
+     [[
          type_validity (Tnamed cls) this
      |-- strict_valid_ptr this **
          [∗list] f ∈ s_fields , type_validity f.(f_type) (this ., _field f)
-     ]]]
+     ]]
 
      TODO we leave this trivival for now.
    *)
