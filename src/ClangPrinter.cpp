@@ -164,58 +164,10 @@ ClangPrinter::printTypeName(const TypeDecl *here, CoqPrinter &print) const {
     }
 }
 #else  /* STRUCTURED NAMES */
-static bool
-is_compound(const std::string &val) {
-    // the mangling of the destructor has the following form:
-    //   _ZN...DnEv -> _Z... [if the name is not compound]
-    //   _ZN...DnEv -> _ZN...E [if the name is compound]
-    // compound names are ones with scopes or templates
-
-    auto cur = val.begin(), end = val.end();
-    int numbers = 0;
-    // find the first group of numbers
-    for (; cur != end && !('0' <= *cur && *cur <= '9'); ++cur)
-        ;
-    if (cur == end)
-        return false;
-
-    // find the next group of letters
-    for (; cur != end && ('0' <= *cur && *cur <= '9'); ++cur)
-        ;
-    if (cur == end)
-        return false;
-
-    // find the next number
-    for (; cur != end && !('0' <= *cur && *cur <= '9'); ++cur)
-        ;
-    // it is compound if we are not at the end of the string
-    return cur != end;
-}
-
 // returns the number of components that it printed
 size_t
 printSimpleContext(const DeclContext *dc, CoqPrinter &print,
                    MangleContext &mangle, size_t remaining = 0) {
-    auto printSimple = [&](const DeclContext *parent, const NamedDecl *decl,
-                           bool anonymous) {
-        auto compound =
-            printSimpleContext(parent, print, mangle, remaining + 1);
-        if (anonymous) {
-            auto i = getAnonymousIndex(decl);
-            if (i == 0) {
-                print.output() << "Ut_";
-            } else {
-                print.output() << "Ut" << i - 1 << "_";
-            }
-        } else {
-            auto name = decl->getNameAsString();
-            print.output() << name.length() << name;
-        }
-        if (remaining == 0 && 0 < compound)
-            print.output() << "E";
-        return compound + 1;
-    };
-
     if (dc == nullptr or dc->isTranslationUnit()) {
         print.output() << "_Z" << (1 < remaining ? "N" : "");
         return 0;
@@ -228,10 +180,11 @@ printSimpleContext(const DeclContext *dc, CoqPrinter &print,
             mangle.mangleName(to_gd(dtor), out);
             out.flush();
             assert(3 < sout.length() && "mangled string length is too small");
-            sout = sout.substr(0, sout.length() - 4); // cut of the final 'DnEv'
-            if (is_compound(sout)) {
-                print.output() << sout.substr(0, sout.length())
-                               << (remaining == 0 ? "E" : "");
+            sout =
+                sout.substr(0, sout.length() - 4); // cut off the final 'DnEv'
+            if (not ts->getDeclContext()->isTranslationUnit() or
+                0 < remaining) {
+                print.output() << sout << (remaining == 0 ? "E" : "");
                 return 2; // we approximate the whole string by 2
             } else {
                 print.output() << "_Z" << sout.substr(3, sout.length() - 3);
@@ -259,12 +212,17 @@ printSimpleContext(const DeclContext *dc, CoqPrinter &print,
             // TODO
             // ns->field_begin()->printName(print.output().nobreak());
         } else {
-            assert(false);
+            print.output() << "~<empty>";
         }
         if (remaining == 0 && 0 < compound)
             print.output() << "E";
         return compound + 1;
     } else if (auto rd = dyn_cast<RecordDecl>(dc)) {
+        // NOTE: this occurs when you have a forward declaration,
+        // e.g. [struct C;], or when you have a compiler builtin.
+        // We need to mangle the name, but we can't really get any help
+        // from clang.
+
         auto parent = rd->getDeclContext();
         auto compound =
             printSimpleContext(parent, print, mangle, remaining + 1);
@@ -272,7 +230,9 @@ printSimpleContext(const DeclContext *dc, CoqPrinter &print,
             auto name = rd->getNameAsString();
             print.output() << name.length() << name;
         } else if (auto tdn = rd->getTypedefNameForAnonDecl()) {
-            tdn->printName(print.output().nobreak());
+            auto s = tdn->getNameAsString();
+            print.output() << s.length() << s;
+            //tdn->printName(print.output().nobreak());
         } else if (not rd->field_empty()) {
             print.output() << ".";
             rd->field_begin()->printName(print.output().nobreak());
@@ -305,7 +265,18 @@ printSimpleContext(const DeclContext *dc, CoqPrinter &print,
             print.output() << "E";
         return compound + 1;
     } else if (auto fd = dyn_cast<FunctionDecl>(dc)) {
-        return printSimple(fd->getDeclContext(), fd, false);
+        std::string sout;
+        llvm::raw_string_ostream out(sout);
+        mangle.mangleName(to_gd(fd), out);
+        out.flush();
+        assert(3 < sout.length() && "mangled string length is too small");
+        if (not fd->getDeclContext()->isTranslationUnit()) {
+            print.output() << sout << (remaining == 0 ? "E" : "");
+            return 2; // we approximate the whole string by 2
+        } else {
+            print.output() << sout;
+            return 1;
+        }
     } else {
         logging::fatal() << "Unknown type (" << dc->getDeclKindName()
                          << ") in [printSimpleContext]\n";
@@ -316,33 +287,9 @@ printSimpleContext(const DeclContext *dc, CoqPrinter &print,
 void
 ClangPrinter::printTypeName(const TypeDecl *decl, CoqPrinter &print) const {
     if (auto RD = dyn_cast<CXXRecordDecl>(decl)) {
-        if (auto dtor = RD->getDestructor()) {
-            // HACK: this mangles an aggregate name by mangling
-            // the destructor and then doing some string manipulation
-            std::string sout;
-            llvm::raw_string_ostream out(sout);
-            mangleContext_->mangleName(to_gd(dtor), out);
-            out.flush();
-            assert(3 < sout.length() && "mangled string length is too small");
-            sout = sout.substr(0, sout.length() - 4); // cut of the final 'DnEv'
-            if (is_compound(sout)) {
-                print.output()
-                    << "\"" << sout.substr(0, sout.length()) << "E\"";
-            } else {
-                print.output()
-                    << "\"_Z" << sout.substr(3, sout.length() - 3) << "\"";
-            }
-        } else {
-            // NOTE: this occurs when you have a forward declaration,
-            // e.g. [struct C;], or when you have a compiler builtin.
-            // We need to mangle the name, but we can't really get any help
-            // from clang.
-            logging::debug() << "CXXRecordDecl without destructor: "
-                             << decl->getQualifiedNameAsString() << "\n";
-            print.output() << "\"";
-            printSimpleContext(RD, print, *mangleContext_);
-            print.output() << "\"";
-        }
+        print.output() << "\"";
+        printSimpleContext(RD, print, *mangleContext_);
+        print.output() << "\"";
     } else if (auto rd = dyn_cast<RecordDecl>(decl)) {
         // NOTE: this only matches C records, not C++ records
         // therefore, we do not perform any mangling.
@@ -352,7 +299,6 @@ ClangPrinter::printTypeName(const TypeDecl *decl, CoqPrinter &print) const {
         decl->printQualifiedName(print.output().nobreak());
         print.output() << "\"";
     } else if (auto ed = dyn_cast<EnumDecl>(decl)) {
-        // TODO this is sketchy
         print.output() << "\"";
         printSimpleContext(ed, print, *mangleContext_);
         print.output() << "\"";
