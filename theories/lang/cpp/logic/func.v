@@ -393,7 +393,7 @@ Section with_cpp.
       | _              =>
         Forall a : ptr, a |-> primR (erase_qualifiers ty) 1 v -*
         bind_vars xs vs (Rbind_check x a r) (fun r free => Q r (a |-> anyR (erase_qualifiers ty) 1 ** free))
-        (* Here we view [anyR (erase_quaifiers ty) 1] as essentially the pre-condition
+        (* Here we view [anyR (erase_qualifiers ty) 1] as essentially the pre-condition
            to the "destructor" of a primitive. *)
       end
     | _ , _ => ERROR "bind_vars: argument mismatch"

@@ -45,7 +45,7 @@ Section destroy.
   Qed.
 
   (* [destruct_val dispatch t this Q] invokes the destructor on [this]
-     with the type of [this] is [t].
+     where the type of [this] is [t].
 
      The [dispatch] parameter determines whether the call is a *potentially*
      virtual call. If [dispatch] is true *and the destructor of the class is
