@@ -37,7 +37,10 @@ SYS := $(shell uname)
 
 BUILDARG=
 ifeq ($(SYS),Darwin)
+# Not needed under Nix.
+ifeq ($(CLANG_DIR),)
 	BUILDARG +=-D'CMAKE_SHARED_LINKER_FLAGS=-L/usr/local/opt/llvm/lib -lclangSerialization -lclangASTMatchers -lclangSema -lclangAnalysis -lclangRewriteFrontend -lclangEdit -lclangParse -lclangFrontend -lclangBasic -lclangDriver -lclangAST -lclangLex -lz -lcurses' -DCMAKE_EXE_LINKER_FLAGS=-L/usr/local/opt/llvm/lib
+endif
 endif
 
 BUILD_TYPE ?= Release
