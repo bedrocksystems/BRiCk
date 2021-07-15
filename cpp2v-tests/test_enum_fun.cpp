@@ -9,5 +9,24 @@ enum A : int {
   Y = 1,
 };
 
+enum class B : unsigned char {
+  XX, YY
+};
+
+void g(B) { }
+
 void f(A x) {
+  g(B::XX);
 }
+
+#if 0
+int getA() { return X; }
+unsigned char ofB() { return XX; }
+unsigned int getB_promote() { return XX; }
+#endif
+B getB() { return B::XX; }
+
+bool compareB() {
+  return getB() == B::YY;
+}
+

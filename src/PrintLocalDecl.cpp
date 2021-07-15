@@ -33,7 +33,7 @@ private:
         // TODO when destructors move to classes, we can change this
         if (auto dest = get_dtor(qt)) {
             print.some();
-            cprint.printGlobalName(dest, print);
+            cprint.printObjName(dest, print);
             print.end_ctor();
         } else {
             print.none();
@@ -97,9 +97,9 @@ public:
 
         print.output() << fmt::nbsp;
 
-	print.list(decl->bindings(), [&](auto print, auto b) {
-		this->Visit(b->getHoldingVar(), print, cprint, on);
-	});
+        print.list(decl->bindings(), [&](auto print, auto b) {
+            this->Visit(b->getHoldingVar(), print, cprint, on);
+        });
 
         on.pop_anon(decl);
 

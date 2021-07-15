@@ -4,12 +4,10 @@
  * SPDX-License-Identifier:MIT-0
  */
 
-union U;
-union U {
+struct U {
     int x;
     int y;
 };
-
 union U_init {
     int x;
     int y {1};

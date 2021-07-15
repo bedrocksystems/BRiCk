@@ -87,6 +87,30 @@ private:
         print.end_ctor();
     }
 
+    void printVarRef(const ValueDecl* decl, CoqPrinter& print,
+                     ClangPrinter& cprint, OpaqueNames& on) {
+        auto t = on.find_anon(decl);
+        if (t != -1) {
+            print.ctor("Lname", false) << "\"$" << t << "\"";
+            print.end_ctor();
+        } else if (decl->getDeclContext()->isFunctionOrMethod() and
+                   not isa<FunctionDecl>(decl)) {
+            print.ctor("Lname", false) << fmt::nbsp;
+            if (auto pd = dyn_cast<ParmVarDecl>(decl)) {
+                cprint.printParamName(pd, print);
+            } else {
+                print.output() << "\"";
+                decl->printName(print.output().nobreak());
+                print.output() << "\"";
+            }
+            print.end_ctor();
+        } else {
+            print.ctor("Gname", false);
+            cprint.printObjName(decl, print);
+            print.end_ctor();
+        }
+    }
+
 #if CLANG_VERSION_MAJOR >= 9
     void printOptionalExpr(Optional<const Expr*> expr, CoqPrinter& print,
                            ClangPrinter& cprint, OpaqueNames& li) {
@@ -326,15 +350,12 @@ public:
         auto d = expr->getDecl();
         if (isa<EnumConstantDecl>(d)) {
             print.ctor("Econst_ref", false);
-        } else {
-            print.ctor("Evar", false);
-        }
-        auto t = on.find_anon(expr->getDecl());
-        if (t != -1) {
-            print.ctor("Lname", false) << "\"$" << t << "\"";
+            print.ctor("Gname", false);
+            cprint.printObjName(d, print);
             print.end_ctor();
         } else {
-            cprint.printName(d, print);
+            print.ctor("Evar", false);
+            printVarRef(d, print, cprint, on);
         }
         done(expr, print, cprint);
     }
@@ -368,7 +389,7 @@ public:
 
             // TODO Handle virtual dispatch.
             print.ctor("inl") << fmt::lparen;
-            cprint.printGlobalName(method, print);
+            cprint.printObjName(method, print);
             print.output() << "," << fmt::nbsp
                            << (method->isVirtual() ? "Virtual" : "Direct")
                            << "," << fmt::nbsp;
@@ -402,9 +423,11 @@ public:
             cprint.printExpr(expr->getSubExpr(), print);
         } else if (auto cf = expr->getConversionFunction()) {
             // desugar user casts to function calls
+            auto vd = dyn_cast<ValueDecl>(cf);
+            assert(vd && "conversion function must be a [ValueDecl]");
             print.ctor("Ecast");
             print.ctor("Cuser");
-            cprint.printGlobalName(cf, print);
+            cprint.printObjName(vd, print);
             print.end_ctor();
 
             cprint.printExprAndValCat(expr->getSubExpr(), print, li);
@@ -431,7 +454,7 @@ public:
                 // assume that this is a builtin
                 print.ctor("Evar", false);
                 print.ctor("Gname", false);
-                cprint.printGlobalName(ref->getDecl(), print);
+                cprint.printObjName(ref->getDecl(), print);
                 print.end_ctor();
                 done(expr, print, cprint);
                 return;
@@ -464,9 +487,9 @@ public:
             auto to = expr->getType().getTypePtr()->getPointeeCXXRecordDecl();
             if (from && to) {
                 print.ctor("Cstatic", false);
-                cprint.printGlobalName(from, print);
+                cprint.printTypeName(from, print);
                 print.output() << fmt::nbsp;
-                cprint.printGlobalName(to, print);
+                cprint.printTypeName(to, print);
                 print.end_ctor();
             } else {
                 printCastKind(print.output(), expr->getCastKind());
@@ -555,18 +578,11 @@ public:
                 cprint.printExpr(expr->getBase(), print, li);
                 print.output() << fmt::nbsp;
                 print.ctor("Evar", false);
-                cprint.printName(vd, print);
+                printVarRef(vd, print, cprint, li);
                 print.output() << fmt::nbsp;
                 cprint.printQualType(vd->getType(), print);
                 print.end_ctor();
                 print.end_ctor();
-
-#if 0
-                // this handles the special case of static members
-                print.ctor("Evar");
-                cprint.printName(vd, print);
-                done(expr, print, cprint);
-#endif
                 return;
             }
         } else if (auto md = dyn_cast<CXXMethodDecl>(expr->getMemberDecl())) {
@@ -577,7 +593,7 @@ public:
                 cprint.printExpr(expr->getBase(), print, li);
                 print.output() << fmt::nbsp;
                 print.ctor("Evar", false);
-                cprint.printName(md, print);
+                printVarRef(md, print, cprint, li);
                 print.output() << fmt::nbsp;
                 cprint.printQualType(md->getType(), print);
                 print.end_ctor();
@@ -588,20 +604,27 @@ public:
         print.ctor("Emember");
 
         auto base = expr->getBase();
+        auto record_type = expr->getMemberDecl()->getDeclContext();
+        // TODO Assert that the type of the base is the type of the field.
         if (expr->isArrow()) {
             print.output() << "Lvalue" << fmt::nbsp;
             print.ctor("Ederef");
             cprint.printExpr(base, print, li);
             print.output() << fmt::nbsp;
             cprint.printQualType(base->getType()->getPointeeType(), print);
+            assert(base->getType()->getPointeeCXXRecordDecl() == record_type &&
+                   "record projection type mismatch");
             print.end_ctor();
         } else {
             cprint.printValCat(base, print);
             print.output() << fmt::nbsp;
             cprint.printExpr(base, print, li);
+            assert(base->getType()->getAsCXXRecordDecl() == record_type &&
+                   "record projection type mismatch");
         }
 
         print.output() << fmt::nbsp;
+        //print.str(expr->getMemberDecl()->getNameAsString());
         cprint.printField(expr->getMemberDecl(), print);
         done(expr, print, cprint);
     }
@@ -621,7 +644,7 @@ public:
                                OpaqueNames& li) {
         print.ctor("Econstructor");
         // print.output() << expr->isElidable() << fmt::nbsp;
-        cprint.printGlobalName(expr->getConstructor(), print);
+        cprint.printObjName(expr->getConstructor(), print);
         print.output() << fmt::nbsp;
         print.list(expr->arguments(), [&](auto print, auto i) {
             cprint.printExprAndValCat(i, print, li);
@@ -638,7 +661,7 @@ public:
         auto method = expr->getMethodDecl();
         if (auto me = dyn_cast<MemberExpr>(callee)) {
             print.ctor("inl") << fmt::lparen;
-            cprint.printGlobalName(method, print);
+            cprint.printObjName(method, print);
             print.output() << "," << fmt::nbsp;
             if (me->hasQualifier() or not method->isVirtual()) {
                 // not virtual call
@@ -842,7 +865,7 @@ public:
         if (expr->getOperatorNew()) {
             print.some();
             print.begin_tuple();
-            cprint.printGlobalName(expr->getOperatorNew(), print);
+            cprint.printObjName(expr->getOperatorNew(), print);
             print.next_tuple();
             cprint.printQualType(expr->getOperatorNew()->getType(), print);
             print.end_tuple();
@@ -894,7 +917,7 @@ public:
         if (expr->getOperatorDelete()) {
             print.some();
             print.begin_tuple();
-            cprint.printGlobalName(expr->getOperatorDelete(), print);
+            cprint.printObjName(expr->getOperatorDelete(), print);
             print.next_tuple();
             cprint.printQualType(expr->getOperatorDelete()->getType(), print);
             print.end_tuple();

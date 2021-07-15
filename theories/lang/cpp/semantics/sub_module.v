@@ -130,7 +130,7 @@ Section GlobDecl_ler.
   Local Instance GlobDecl_le_refl : Reflexive GlobDecl_ler.
   Proof.
     intros []; rewrite /= ?require_eq_refl; eauto.
-    destruct o => //.
+    destruct init => //.
     by rewrite !require_eq_refl.
   Qed.
 

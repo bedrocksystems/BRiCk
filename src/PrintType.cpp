@@ -71,7 +71,8 @@ public:
         } else {
             using namespace logging;
             logging::fatal()
-                << "\nError: Unsupported non-deduced type.\nYou probably have an "
+                << "\nError: Unsupported non-deduced type.\nYou probably have "
+                   "an "
                    "instance of [auto] that can not be deduced based on the "
                    "file.\n";
             logging::die();
@@ -87,18 +88,19 @@ public:
 
     void VisitEnumType(const EnumType* type, CoqPrinter& print,
                        ClangPrinter& cprint) {
-        print.ctor("@Talias", false);
-        cprint.printGlobalName(type->getDecl(), print);
+        auto ed = type->getDecl()->getCanonicalDecl();
+        print.ctor("@Tenum", false);
+        cprint.printTypeName(ed, print);
         print.output() << fmt::nbsp;
-        cprint.printQualType(
-            //getPromotionType returns the integer type that the enum promotes to
-            type->getDecl()->getCanonicalDecl()->getPromotionType(), print);
+        // TODO this should use [getIntegerType]
+        cprint.printQualType(ed->getPromotionType(), print);
         print.end_ctor();
     }
+
     void VisitRecordType(const RecordType* type, CoqPrinter& print,
                          ClangPrinter& cprint) {
         print.ctor("Tnamed", false);
-        cprint.printGlobalName(type->getDecl(), print);
+        cprint.printTypeName(type->getDecl(), print);
         print.end_ctor();
     }
 
@@ -238,12 +240,14 @@ public:
 
     void VisitTypedefType(const TypedefType* type, CoqPrinter& print,
                           ClangPrinter& cprint) {
-        print.ctor("@Talias", false);
-        cprint.printGlobalName(type->getDecl(), print);
-        print.output() << fmt::nbsp;
+        print.ctor("@Talias", false) << "\"";
+        // cprint.printTypeName(type->getDecl(), print);
+        // printing a "humann readable" type
+        type->getDecl()->printQualifiedName(print.output().nobreak());
+        print.output() << "\"" << fmt::nbsp;
         cprint.printQualType(
             type->getDecl()->getCanonicalDecl()->getUnderlyingType(), print);
-        print.output() << fmt::rparen;
+        print.end_ctor();
     }
 
     void VisitFunctionProtoType(const FunctionProtoType* type,
@@ -267,8 +271,8 @@ public:
                                 CoqPrinter& print, ClangPrinter& cprint) {
         print.ctor("Tarray");
         cprint.printQualType(type->getElementType(), print);
-        print.output() << fmt::nbsp << type->getSize().getLimitedValue()
-                       << fmt::rparen;
+        print.output() << fmt::nbsp << type->getSize().getLimitedValue();
+        print.end_ctor();
     }
 
     void VisitSubstTemplateTypeParmType(const SubstTemplateTypeParmType* type,
@@ -283,7 +287,8 @@ public:
         print.ctor("Qconst");
         print.ctor("Tptr", false);
         cprint.printQualType(type->getElementType(), print);
-        print.output() << fmt::rparen << fmt::rparen;
+        print.end_ctor();
+        print.end_ctor();
     }
 
     void VisitDecayedType(const DecayedType* type, CoqPrinter& print,
@@ -291,7 +296,8 @@ public:
         print.ctor("Qconst");
         print.ctor("Tptr", false);
         cprint.printQualType(type->getPointeeType(), print);
-        print.output() << fmt::rparen << fmt::rparen;
+        print.end_ctor();
+        print.end_ctor();
     }
 
     void VisitTemplateSpecializationType(const TemplateSpecializationType* type,
@@ -317,8 +323,8 @@ public:
     void VisitInjectedClassNameType(const InjectedClassNameType* type,
                                     CoqPrinter& print, ClangPrinter& cprint) {
         if (type->getDecl()) {
-            print.ctor("Tnamed");
-            cprint.printGlobalName(type->getDecl(), print);
+            print.ctor("Tnamed", false);
+            cprint.printTypeName(type->getDecl(), print);
             print.end_ctor();
         } else {
             logging::log() << "no underlying declaration for \n";
@@ -327,7 +333,6 @@ public:
 #else
             type->dump(logging::log());
 #endif
-
             cprint.printQualType(type->getInjectedSpecializationType(), print);
         }
     }
@@ -335,7 +340,7 @@ public:
     void VisitMemberPointerType(const MemberPointerType* type,
                                 CoqPrinter& print, ClangPrinter& cprint) {
         print.ctor("Tmember_pointer");
-        cprint.printGlobalName(type->getClass()->getAsCXXRecordDecl(), print);
+        cprint.printTypeName(type->getClass()->getAsCXXRecordDecl(), print);
         print.output() << fmt::nbsp;
         cprint.printQualType(type->getPointeeType(), print);
         print.end_ctor();

@@ -54,6 +54,8 @@ static cl::opt<bool> Verbose("v", cl::desc("verbose"), cl::Optional,
                              cl::cat(Cpp2V));
 static cl::opt<bool> Verboser("vv", cl::desc("verboser"), cl::Optional,
                               cl::cat(Cpp2V));
+static cl::opt<bool> Quiet("q", cl::desc("quiet"), cl::Optional,
+                           cl::cat(Cpp2V));
 
 static cl::opt<bool> Version("cpp2v-version", cl::Optional, cl::ValueOptional,
                              cl::cat(Cpp2V));
@@ -101,11 +103,12 @@ main(int argc, const char **argv) {
         return 0;
     }
 
+    logging::set_level(logging::UNSUPPORTED);
     if (Verboser) {
         logging::set_level(logging::VERBOSER);
     } else if (Verbose) {
         logging::set_level(logging::VERBOSE);
-    } else {
+    } else if (Quiet) {
         logging::set_level(logging::NONE);
     }
 

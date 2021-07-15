@@ -55,6 +55,7 @@ add_library(tocoq
   src/ModuleBuilder.cpp
   src/CommentScanner.cpp
   src/SpecWriter.cpp
+  src/NotationWriter.cpp
   src/Formatter.cpp
   src/Logging.cpp
   src/ClangPrinter.cpp

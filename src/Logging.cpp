@@ -11,7 +11,7 @@ static Level log_level = Level::NONE;
 
 llvm::raw_ostream&
 log(Level level) {
-    if (level < log_level) {
+    if (level <= log_level) {
         return llvm::errs();
     } else {
         return llvm::nulls();

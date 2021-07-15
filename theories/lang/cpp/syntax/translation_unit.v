@@ -217,7 +217,7 @@ Variant GlobDecl : Set :=
 | Gunion    (_ : Union)
 | Gstruct   (_ : Struct)
 | Genum     (_ : type) (_ : list ident)
-| Gconstant (_ : type) (_ : option Expr)
+| Gconstant (_ : type) (init : option Expr)
 | Gtypedef  (_ : type).
 Instance: EqDecision GlobDecl.
 Proof. solve_decision. Defined.

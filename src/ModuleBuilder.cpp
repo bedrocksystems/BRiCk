@@ -28,7 +28,7 @@ private:
     std::set<int64_t> visited_;
 
 private:
-    Filter::What go(NamedDecl *decl, bool definition = true) {
+    Filter::What go(const NamedDecl *decl, bool definition = true) {
         auto what = filter_.shouldInclude(decl);
         switch (what) {
         case Filter::What::DEFINITION:
@@ -87,7 +87,7 @@ public:
         go(type);
     }
 
-    void VisitTagDecl(TagDecl *decl, bool) {
+    void VisitTagDecl(const TagDecl *decl, bool) {
         auto defn = decl->getDefinition();
         if (defn == decl) {
             go(decl, true);
@@ -136,10 +136,11 @@ public:
                 }
             }
         }
+
         go(decl);
     }
 
-    void VisitFunctionDecl(FunctionDecl *decl, bool) {
+    void VisitFunctionDecl(const FunctionDecl *decl, bool) {
         if (decl->isDependentContext())
             return;
 
@@ -165,11 +166,11 @@ public:
         }
     }
 
-    void VisitEnumConstantDecl(EnumConstantDecl *decl, bool) {
+    void VisitEnumConstantDecl(const EnumConstantDecl *decl, bool) {
         go(decl);
     }
 
-    void VisitVarDecl(VarDecl *decl, bool) {
+    void VisitVarDecl(const VarDecl *decl, bool) {
         if (not decl->isTemplated())
             go(decl);
     }
@@ -196,10 +197,10 @@ public:
         }
     }
 
-    void VisitEnumDecl(EnumDecl *decl, bool) {
-        if (decl->getName() != "") {
-            go(decl);
-        }
+    void VisitEnumDecl(const EnumDecl *decl, bool) {
+        if (not decl->isCanonicalDecl())
+            return;
+        go(decl);
         for (auto i : decl->enumerators()) {
             go(i);
         }
@@ -245,7 +246,6 @@ public:
                                                         decl);
             }
         }
-
         this->DeclVisitorArgs::VisitCXXDestructorDecl(decl, false);
     }
 
@@ -282,7 +282,7 @@ build_module(clang::TranslationUnitDecl *tu, ::Module &mod, Filter &filter,
     ci->getSema().ActOnEndOfTranslationUnit();
 }
 
-void ::Module::add_definition(clang::NamedDecl *d, bool opaque) {
+void ::Module::add_definition(const clang::NamedDecl *d, bool opaque) {
     if (opaque) {
         add_declaration(d);
     } else {
@@ -294,7 +294,7 @@ void ::Module::add_definition(clang::NamedDecl *d, bool opaque) {
     }
 }
 
-void ::Module::add_declaration(clang::NamedDecl *d) {
+void ::Module::add_declaration(const clang::NamedDecl *d) {
     std::string name = d->getNameAsString();
     auto found = imports_.find(name);
     if ((found == imports_.end()) || found->second.first != d) {

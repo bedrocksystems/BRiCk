@@ -19,39 +19,6 @@
 #include <Formatter.hpp>
 #include <list>
 
-using namespace clang;
-using namespace fmt;
-
-#if 0
-void declToCoq(ASTContext *ctxt, const clang::Decl* decl) {
-	Formatter fmt(llvm::outs());
-	Default filter(Filter::What::DEFINITION);
-	SpecCollector specs;
-	CoqPrinter cprint(fmt);
-	ClangPrinter(ctxt).printDecl(decl, cprint);
-}
-
-void stmtToCoq(ASTContext *ctxt, const clang::Stmt* stmt) {
-	Formatter fmt(llvm::outs());
-	Default filter(Filter::What::DEFINITION);
-	SpecCollector specs;
-	CoqPrinter cprint(fmt);
-	ClangPrinter(ctxt).printStmt(stmt, cprint);
-}
-
-
-void
-translateModule(const TranslationUnitDecl* decl, CoqPrinter& print, ClangPrinter& cprint) {
-	print.output() << "Definition module : list Decl :=" << fmt::indent << fmt::line;
-	for (auto i : decl->decls()) {
-		cprint.printDecl(i, print);
-		print.output() << fmt::line << "::" << fmt::nbsp;
-	}
-	print.output() << "nil." << fmt::outdent;
-	print.output() << fmt::line;
-}
-#endif
-
 #include "clang/AST/ASTConsumer.h"
 #include "clang/Frontend/CompilerInstance.h"
 #include "clang/Frontend/FrontendAction.h"
@@ -63,6 +30,7 @@ translateModule(const TranslationUnitDecl* decl, CoqPrinter& print, ClangPrinter
 #include "ToCoq.hpp"
 
 using namespace clang;
+using namespace fmt;
 
 void
 ToCoqConsumer::toCoqModule(clang::ASTContext *ctxt,
@@ -106,13 +74,13 @@ ToCoqConsumer::toCoqModule(clang::ASTContext *ctxt,
             print.begin_list();
             for (auto entry : mod.imports()) {
                 auto decl = entry.second.first;
-                cprint.printDecl(decl, print);
-                print.cons();
+                if (cprint.printDecl(decl, print))
+                    print.cons();
             }
             for (auto entry : mod.definitions()) {
                 auto decl = entry.second;
-                cprint.printDecl(decl, print);
-                print.cons();
+                if (cprint.printDecl(decl, print))
+                    print.cons();
             }
             print.end_list();
             print.output() << fmt::nbsp;
@@ -158,6 +126,8 @@ ToCoqConsumer::toCoqModule(clang::ASTContext *ctxt,
     }
 
     if (spec_file_.hasValue()) {
+        llvm::errs() << "writing specifications is no longer supported!\n";
+#if 0
         std::error_code ec;
         llvm::raw_fd_ostream spec_output(*spec_file_, ec);
         if (ec.value()) {
@@ -168,5 +138,6 @@ ToCoqConsumer::toCoqModule(clang::ASTContext *ctxt,
             fmt::Formatter spec_fmt(spec_output);
             write_spec(compiler_, &mod, specs, decl, filter, spec_fmt);
         }
+#endif
     }
 }

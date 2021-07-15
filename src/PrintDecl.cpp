@@ -134,7 +134,7 @@ printMethod(const CXXMethodDecl *decl, CoqPrinter &print,
     print.ctor("Build_Method");
     cprint.printQualType(decl->getReturnType(), print);
     print.output() << fmt::line;
-    cprint.printGlobalName(decl->getParent(), print);
+    cprint.printTypeName(decl->getParent(), print);
     print.output() << fmt::line;
     cprint.printQualifier(decl->isConst(), decl->isVolatile(), print);
     print.output() << fmt::nbsp;
@@ -164,7 +164,7 @@ printDestructor(const CXXDestructorDecl *decl, CoqPrinter &print,
                 ClangPrinter &cprint) {
     auto record = decl->getParent();
     print.ctor("Build_Dtor");
-    cprint.printGlobalName(record, print);
+    cprint.printTypeName(record, print);
     print.output() << fmt::nbsp;
 
     cprint.printCallingConv(getCallingConv(decl), print);
@@ -222,8 +222,9 @@ public:
 
     bool VisitTypedefNameDecl(const TypedefNameDecl *type, CoqPrinter &print,
                               ClangPrinter &cprint, const ASTContext &) {
-        print.ctor("Dtypedef")
-            << "\"" << type->getNameAsString() << "\"" << fmt::nbsp;
+        print.ctor("Dtypedef") << "\"";
+        type->printQualifiedName(print.output().nobreak());
+        print.output() << "\"" << fmt::nbsp;
         cprint.printQualType(type->getUnderlyingType(), print);
         print.end_ctor();
         return true;
@@ -233,8 +234,7 @@ public:
                                ClangPrinter &cprint) {
         if (field->isAnonymousStructOrUnion()) {
             print.ctor("Nanon", false);
-            cprint.printGlobalName(field->getType()->getAsCXXRecordDecl(),
-                                   print);
+            cprint.printTypeName(field->getType()->getAsCXXRecordDecl(), print);
             print.end_ctor();
         } else {
             print.str(field->getName());
@@ -264,7 +264,7 @@ public:
                     << cprint.sourceRange(field->getSourceRange()) << "\n";
                 logging::die();
             }
-            print.ctor("mkMember") << fmt::nbsp;
+            print.ctor("mkMember", i != 0) << fmt::nbsp;
             printMangledFieldName(field, print, cprint);
             print.output() << fmt::nbsp;
             cprint.printQualType(field->getType(), print);
@@ -284,7 +284,7 @@ public:
         const auto &layout = ctxt.getASTRecordLayout(decl);
         print.ctor("Dunion");
 
-        cprint.printGlobalName(decl, print);
+        cprint.printTypeName(decl, print);
         print.output() << fmt::nbsp;
         if (!decl->isCompleteDefinition()) {
             print.none();
@@ -299,7 +299,7 @@ public:
 
         if (auto dtor = decl->getDestructor()) {
             print.output() << fmt::nbsp;
-            cprint.printGlobalName(dtor, print);
+            cprint.printObjName(dtor, print);
             print.output() << fmt::line << fmt::BOOL(dtor->isTrivial());
         } else {
             logging::fatal()
@@ -325,7 +325,7 @@ public:
                decl->getTagKind() == TagTypeKind::TTK_Struct);
         auto &layout = ctxt.getASTRecordLayout(decl);
         print.ctor("Dstruct");
-        cprint.printGlobalName(decl, print);
+        cprint.printTypeName(decl, print);
         print.output() << fmt::nbsp;
         if (!decl->isCompleteDefinition()) {
             print.none();
@@ -347,7 +347,7 @@ public:
             auto rec = base.getType().getTypePtr()->getAsCXXRecordDecl();
             if (rec) {
                 print.output() << "(";
-                cprint.printGlobalName(rec, print);
+                cprint.printTypeName(rec, print);
                 if (not base.isVirtual()) {
                     print.output()
                         << ", Build_LayoutInfo "
@@ -379,7 +379,7 @@ public:
                 print.output() << "(impl_virt";
             }
             print.output() << fmt::nbsp;
-            cprint.printGlobalName(m, print);
+            cprint.printObjName(m, print);
             print.output() << ")";
             return true;
         });
@@ -391,9 +391,9 @@ public:
             if (m->isVirtual() and not m->isPure()) {
                 for (auto o : m->overridden_methods()) {
                     print.output() << "(";
-                    cprint.printGlobalName(o, print);
+                    cprint.printObjName(o, print);
                     print.output() << "," << fmt::nbsp;
-                    cprint.printGlobalName(m, print);
+                    cprint.printObjName(m, print);
                     print.output() << ")";
                     print.cons();
                 }
@@ -402,7 +402,7 @@ public:
         print.end_list() << fmt::nbsp;
 
         if (auto dtor = decl->getDestructor()) {
-            cprint.printGlobalName(dtor, print);
+            cprint.printObjName(dtor, print);
             // trivially destructable
             print.output() << fmt::nbsp << fmt::BOOL(dtor->isTrivial());
 
@@ -440,7 +440,7 @@ public:
                             ClangPrinter &cprint, const ASTContext &ctxt) {
         if (!decl->isCompleteDefinition()) {
             print.ctor("Dtype");
-            cprint.printGlobalName(decl, print);
+            cprint.printTypeName(decl, print);
             print.end_ctor();
         } else {
             switch (decl->getTagKind()) {
@@ -466,7 +466,7 @@ public:
     bool VisitFunctionDecl(const FunctionDecl *decl, CoqPrinter &print,
                            ClangPrinter &cprint, const ASTContext &) {
         print.ctor("Dfunction");
-        cprint.printGlobalName(decl, print);
+        cprint.printObjName(decl, print);
         printFunction(decl, print, cprint);
         print.end_ctor();
         return true;
@@ -476,34 +476,15 @@ public:
                             ClangPrinter &cprint, const ASTContext &) {
         if (decl->isStatic()) {
             print.ctor("Dfunction");
-            cprint.printGlobalName(decl, print);
+            cprint.printObjName(decl, print);
             printFunction(decl, print, cprint);
             print.end_ctor();
         } else {
             print.ctor("Dmethod");
-            cprint.printGlobalName(decl, print);
+            cprint.printObjName(decl, print);
             printMethod(decl, print, cprint);
             print.end_ctor();
         }
-        return true;
-    }
-
-    bool VisitEnumConstantDecl(const EnumConstantDecl *decl, CoqPrinter &print,
-                               ClangPrinter &cprint, const ASTContext &) {
-        print.ctor("Dconstant");
-        assert((decl != nullptr) && (!decl->getNameAsString().empty()));
-        cprint.printGlobalName(decl, print);
-        print.output() << fmt::nbsp;
-        cprint.printQualType(decl->getType(), print);
-        print.output() << fmt::nbsp;
-        if (decl->getInitExpr()) {
-            cprint.printExpr(decl->getInitExpr(), print);
-        } else {
-            print.ctor("Eint") << decl->getInitVal() << fmt::nbsp;
-            cprint.printQualType(decl->getType(), print);
-            print.output() << fmt::rparen;
-        }
-        print.end_ctor();
         return true;
     }
 
@@ -511,9 +492,9 @@ public:
                                  CoqPrinter &print, ClangPrinter &cprint,
                                  const ASTContext &) {
         print.ctor("Dconstructor");
-        cprint.printGlobalName(decl, print);
+        cprint.printObjName(decl, print);
         print.ctor("Build_Ctor");
-        cprint.printGlobalName(decl->getParent(), print);
+        cprint.printTypeName(decl->getParent(), print);
         print.output() << fmt::line;
 
         print.list(decl->parameters(), [&cprint](auto print, auto i) {
@@ -541,7 +522,7 @@ public:
                     print.end_ctor();
                 } else if (init->isBaseInitializer()) {
                     print.ctor("InitBase");
-                    cprint.printGlobalName(
+                    cprint.printTypeName(
                         init->getBaseClass()->getAsCXXRecordDecl(), print);
                     print.end_ctor();
                 } else if (init->isIndirectMemberInitializer()) {
@@ -557,7 +538,7 @@ public:
                                 print.begin_tuple();
                                 printMangledFieldName(field, print, cprint);
                                 print.next_tuple();
-                                cprint.printGlobalName(
+                                cprint.printTypeName(
                                     field->getType()->getAsCXXRecordDecl(),
                                     print);
                                 print.end_tuple();
@@ -619,7 +600,7 @@ public:
                                 CoqPrinter &print, ClangPrinter &cprint,
                                 const ASTContext &ctxt) {
         print.ctor("Ddestructor");
-        cprint.printGlobalName(decl, print);
+        cprint.printObjName(decl, print);
         printDestructor(decl, print, cprint);
         print.end_ctor();
         return true;
@@ -627,27 +608,27 @@ public:
 
     bool VisitVarDecl(const VarDecl *decl, CoqPrinter &print,
                       ClangPrinter &cprint, const ASTContext &) {
-        if (decl->isConstexpr()) {
+        // TODO handling of [constexpr] needs to be improved.
+        if (decl->isTemplated()) {
+            return false;
+        } else if (decl->isConstexpr()) {
             if (decl->hasInit()) {
                 print.ctor("Dconstant");
-                cprint.printGlobalName(decl, print);
+                cprint.printObjName(decl, print);
                 print.output() << fmt::nbsp;
                 cprint.printQualType(decl->getType(), print);
                 print.output() << fmt::nbsp;
                 cprint.printExpr(decl->getInit(), print);
             } else { //no initializer
                 print.ctor("Dconstant_undef");
-                cprint.printGlobalName(decl, print);
+                cprint.printObjName(decl, print);
                 print.output() << fmt::nbsp;
                 cprint.printQualType(decl->getType(), print);
             }
             print.end_ctor();
-        } else if (decl->isTemplated()) {
-            return false;
         } else {
             print.ctor("Dvariable");
-
-            cprint.printGlobalName(decl, print);
+            cprint.printObjName(decl, print);
             print.output() << fmt::nbsp;
             cprint.printQualType(decl->getType(), print);
             print.output() << fmt::nbsp;
@@ -679,42 +660,84 @@ public:
         print.ctor("Dnamespace")
             /* << "\"" << decl->getNameAsString() << "\"" */
             << fmt::line;
-        print.begin_list();
-        for (auto d : decl->decls()) {
+        print.list(decl->decls(), [&cprint](auto &&print, auto d) {
             cprint.printDecl(d, print);
-            print.cons();
-        }
-        print.end_list();
+        });
         print.end_ctor();
-        return false;
+        return true;
     }
 
     bool VisitEnumDecl(const EnumDecl *decl, CoqPrinter &print,
                        ClangPrinter &cprint, const ASTContext &) {
-        print.ctor("Denum");
-        cprint.printGlobalName(decl, print);
-        print.output() << fmt::nbsp;
         auto t = decl->getIntegerType();
-        if (!t.isNull()) {
-            print.some();
-            cprint.printQualType(decl->getIntegerType(), print);
-            print.output() << fmt::rparen;
+        if (t.isNull()) {
+            assert(decl->getIdentifier() && "anonymous forward declaration");
+            print.ctor("Dtype");
+            cprint.printTypeName(decl, print);
+            print.end_ctor();
+            return true;
         } else {
-            print.none();
-        }
-        print.output() << fmt::nbsp;
+            print.ctor("Denum");
+            cprint.printTypeName(decl, print);
+            print.output() << fmt::nbsp;
+            cprint.printQualType(t, print);
+            print.output() << fmt::nbsp;
 
-        print.begin_list();
-        for (auto i : decl->enumerators()) {
-            print.output() << fmt::line << "(\"" << i->getNameAsString()
-                           << "\"," << fmt::nbsp << "("
-                           << i->getInitVal().getExtValue() << ")%Z)";
-            print.cons();
-        }
-        print.end_list();
+            // TODO the values are not necessary.
+            print.list(decl->enumerators(), [&cprint](auto &print, auto i) {
+                print.output() << fmt::line << "(";
+                print.str(i->getNameAsString());
+                print.output() << "," << fmt::nbsp << "("
+                               << i->getInitVal().getExtValue() << ")%Z)";
+            });
 
-        print.end_ctor();
-        return false;
+            print.end_ctor();
+            return true;
+        }
+    }
+
+    bool VisitEnumConstantDecl(const EnumConstantDecl *decl, CoqPrinter &print,
+                               ClangPrinter &cprint, const ASTContext &) {
+        assert(not decl->getNameAsString().empty());
+        auto ed = dyn_cast<EnumDecl>(decl->getDeclContext());
+        if (ed->getIdentifier()) {
+            print.ctor("Denum_constant");
+            cprint.printObjName(decl, print);
+            print.output() << fmt::nbsp;
+            cprint.printQualType(decl->getType(), print);
+            print.output() << fmt::nbsp << "(" << decl->getInitVal() << ")%Z"
+                           << fmt::nbsp;
+
+            if (decl->getInitExpr()) {
+                print.some();
+                cprint.printExpr(decl->getInitExpr(), print);
+                print.end_ctor();
+            } else {
+                print.none();
+            }
+
+            print.end_ctor();
+        } else {
+            // anonymous enumeration value
+            print.ctor("Dconstant");
+            cprint.printObjName(decl, print);
+            print.output() << fmt::nbsp;
+            cprint.printQualType(decl->getType(), print);
+            print.output() << fmt::nbsp;
+
+            if (decl->getInitExpr()) {
+                cprint.printExpr(decl->getInitExpr(), print);
+            } else {
+                print.ctor("Eint", false);
+                print.output()
+                    << "(" << decl->getInitVal() << ")%Z" << fmt::nbsp;
+                cprint.printQualType(ed->getIntegerType(), print);
+                print.end_ctor();
+            }
+
+            print.end_ctor();
+        }
+        return true;
     }
 
     bool VisitLinkageSpecDecl(const LinkageSpecDecl *decl, CoqPrinter &print,
@@ -728,7 +751,7 @@ public:
                                    CoqPrinter &print, ClangPrinter &cprint,
                                    const ASTContext &) {
         // we only print specializations
-        assert(false);
+        assert(false && "FunctionTemplateDecl");
         return false;
     }
 
@@ -736,7 +759,7 @@ public:
                                 CoqPrinter &print, ClangPrinter &cprint,
                                 const ASTContext &) {
         // we only print specializations
-        assert(false);
+        assert(false && "ClassTemplateDecl");
         return false;
     }
 
