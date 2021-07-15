@@ -14,6 +14,7 @@ Definition pure_virt (x : obj_name) : obj_name * option obj_name :=
 Definition impl_virt (x : obj_name) : obj_name * option obj_name :=
   (x, Some x).
 
+(* Indicate that [underlying] is used to represent alias type [name]. Enums are treated similarly. *)
 Definition Talias (name : globname) {underlying : type} : type :=
   underlying.
 Definition Tenum (name : globname) {underlying : type} : type :=
