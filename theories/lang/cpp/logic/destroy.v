@@ -124,4 +124,15 @@ Section destroy.
         { iIntros "X Y"; iNext; iRevert "Y"; iApply mspec_frame; iIntros (?); done. } } }
   Qed.
 
+  (* [destroy_val dispatch t this Q] destroys [this]:
+      - it invokes the destructor via [destruct_val]
+      - and then it *does* free the underlying memory.
+  *)
+  Definition destroy_val dispatch (t : type) (this : ptr) (Q : mpred) : mpred :=
+    destruct_val dispatch t this (this |-> tblockR (erase_qualifiers t) 1 ** Q).
+
+  Lemma destroy_val_frame dispatch ty this Q Q' :
+      Q -* Q' |-- destroy_val dispatch ty this Q -* destroy_val dispatch ty this Q'.
+  Proof. rewrite /destroy_val -destruct_val_frame. iIntros "W [$ Q]". by iApply "W". Qed.
+
 End destroy.
