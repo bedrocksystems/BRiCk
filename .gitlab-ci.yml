@@ -33,7 +33,7 @@
 
 variables:
   LLVM_CUR_MAJ_VER: "10"
-  LLVM_ALT_MAJ_VER: "11"
+  LLVM_ALT_MAJ_VER: "12"
   cur_main_docker_img: registry.gitlab.com/bedrocksystems/docker-image:cpp2v-llvm${LLVM_CUR_MAJ_VER}
   alt_main_docker_img: registry.gitlab.com/bedrocksystems/docker-image:cpp2v-llvm${LLVM_ALT_MAJ_VER}
   fm_docs_img: registry.gitlab.com/bedrocksystems/docker-image:fm-docs
@@ -51,6 +51,10 @@ stages:
 # build_cur and build_alt (see, e.g., https://docs.gitlab.com/ee/ci/yaml/#extends).
 .build:
   stage: build
+  rules:
+    - if: $CI_MERGE_REQUEST_IID
+    - if: $CI_COMMIT_TAG
+    - if: $CI_COMMIT_BRANCH # == $CI_DEFAULT_BRANCH
   script:
     - mkdir -p build
     - echo "fmdeps/cpp2v-core:$(git rev-parse HEAD)" | tee build/gitshas.txt
@@ -82,10 +86,6 @@ stages:
 build_latest:
   extends: .build
   image: ${cur_main_docker_img}
-  rules:
-    - if: $CI_MERGE_REQUEST_IID
-    - if: $CI_COMMIT_TAG
-    - if: $CI_COMMIT_BRANCH # == $CI_DEFAULT_BRANCH
   variables:
     LLVM_MAJ_VER: ${LLVM_CUR_MAJ_VER}
   after_script:
@@ -97,17 +97,11 @@ build_latest:
     reports:
       dotenv: build.env
 
-
-# build_alternate:
-#   extends: .build
-#   image: ${alt_main_docker_img}
-#   only:
-#     - schedules
-#     - merge_requests
-#     - tags
-#     - master
-#   variables:
-#     LLVM_MAJ_VER: ${LLVM_ALT_MAJ_VER}
+build_alternate:
+  extends: .build
+  image: ${alt_main_docker_img}
+  variables:
+    LLVM_MAJ_VER: ${LLVM_ALT_MAJ_VER}
 
 test_latest:
   extends: .test
@@ -117,13 +111,13 @@ test_latest:
   variables:
     LLVM_MAJ_VER: ${LLVM_CUR_MAJ_VER}
 
-# test_alternate:
-#   extends: .test
-#   image: ${alt_main_docker_img}
-#   dependencies:
-#     - build_alternate
-#   variables:
-#     LLVM_MAJ_VER: ${LLVM_ALT_MAJ_VER}
+test_alternate:
+  extends: .test
+  image: ${alt_main_docker_img}
+  dependencies:
+    - build_alternate
+  variables:
+    LLVM_MAJ_VER: ${LLVM_ALT_MAJ_VER}
 
 prepare_env:
   image: ${cur_main_docker_img}
