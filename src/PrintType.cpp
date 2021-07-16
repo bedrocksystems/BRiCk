@@ -345,6 +345,11 @@ public:
         cprint.printQualType(type->getPointeeType(), print);
         print.end_ctor();
     }
+
+    void VisitMacroQualifiedType(const MacroQualifiedType* type,
+                                 CoqPrinter& print, ClangPrinter& cprint) {
+        cprint.printQualType(type->getModifiedType(), print);
+    }
 };
 
 PrintType PrintType::printer;
