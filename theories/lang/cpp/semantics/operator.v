@@ -231,9 +231,6 @@ Axiom eval_le_int :
 Axiom eval_ge_int :
   ltac:(let x := eval hnf in (eval_int_rel_op_int Bge ZArith_dec.Z_ge_lt_dec) in refine x).
 
-Definition bitFlipZU (len: bitsize) (z:Z) : Z :=
-  to_unsigned len (Z.lnot z).
-
 (* note [Z.lnot a = -1 - a] *)
 Axiom eval_unop_not:
   forall {genv} (w : bitsize) (sgn : signed) (a b : Z),
