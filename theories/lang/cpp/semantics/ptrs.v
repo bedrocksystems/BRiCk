@@ -337,12 +337,15 @@ Module Type PTRS_DERIVED (Import P : PTRS).
   Axiom pinned_ptr_pure_eq : pinned_ptr_pure = fun (va : vaddr) (p : ptr) => ptr_vaddr p = Some va.
 End PTRS_DERIVED.
 
+Module Type PTRS_INTF_MINIMAL := PTRS <+ PTRS_DERIVED.
+
 Module Type PTRS_MIXIN (Import P : PTRS) (Import PD : PTRS_DERIVED P).
   (**
   Explictly declare that all Iris equalities on pointers are trivial.
   We only add such explicit declarations as actually needed.
   *)
   Canonical Structure ptrO := leibnizO ptr.
+  #[global] Instance ptr_inhabited : Inhabited ptr := populate nullptr.
 
   (** ** [same_address] lemmas *)
 

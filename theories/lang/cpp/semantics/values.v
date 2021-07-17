@@ -193,15 +193,12 @@ Module Type RAW_BYTES_MIXIN
 End RAW_BYTES_MIXIN.
 
 (* Collect all the axioms. *)
-Module Type PTRS_INTF_MINIMAL := PTRS <+ PTRS_DERIVED.
 Module Type PTRS_INTF := PTRS_INTF_MINIMAL <+ RAW_BYTES <+ VAL_MIXIN <+ RAW_BYTES_VAL.
 Declare Module PTRS_INTF_AXIOM : PTRS_INTF.
 
 (* Plug mixins. *)
 Module Type VALUES_FULL_INTF := PTRS_INTF <+ PTRS_MIXIN <+ RAW_BYTES_MIXIN.
 Module Export VALUES_FULL_INTF_AXIOM : VALUES_FULL_INTF := PTRS_INTF_AXIOM <+ PTRS_MIXIN <+ RAW_BYTES_MIXIN.
-
-Instance ptr_inhabited : Inhabited ptr := populate nullptr.
 
 (** wrappers for constructing certain values *)
 Definition Vchar (a : Ascii.ascii) : val :=
