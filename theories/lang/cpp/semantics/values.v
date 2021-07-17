@@ -77,6 +77,83 @@ Proof. solve_decision. Defined.
 #[global] Instance val_eq_dec : EqDecision val := val_dec.
 #[global] Instance val_inhabited : Inhabited val := populate (Vint 0).
 
+(** wrappers for constructing certain values *)
+Definition Vchar (a : Ascii.ascii) : val :=
+  Vint (Z.of_N (N_of_ascii a)).
+Definition Vbool (b : bool) : val :=
+  Vint (if b then 1 else 0).
+Definition Vnat (b : nat) : val :=
+  Vint (Z.of_nat b).
+Definition Vn (b : N) : val :=
+  Vint (Z.of_N b).
+Notation Vz := Vint (only parsing).
+
+(** we use [Vundef] as our value of type [void] *)
+Definition Vvoid := Vundef.
+
+Definition is_true (v : val) : option bool :=
+  match v with
+  | Vint v => Some (negb (Z.eqb v 0))
+  | Vptr p => Some match ptr_eq_dec p nullptr with
+                  | left _ => false
+                  | right _ => true
+                  end
+  | Vundef | Vraw _ => None
+  end.
+
+Theorem is_true_int : forall i,
+    is_true (Vint i) = Some (negb (BinIntDef.Z.eqb i 0)).
+Proof. reflexivity. Qed.
+
+Lemma Vptr_inj p1 p2 : Vptr p1 = Vptr p2 -> p1 = p2.
+Proof. by move=> []. Qed.
+Lemma Vint_inj a b : Vint a = Vint b -> a = b.
+Proof. by move=> []. Qed.
+Lemma Vbool_inj a b : Vbool a = Vbool b -> a = b.
+Proof. by move: a b =>[] [] /Vint_inj. Qed.
+
+#[global] Instance Vptr_Inj : Inj (=) (=) Vptr := Vptr_inj.
+#[global] Instance Vint_Inj : Inj (=) (=) Vint := Vint_inj.
+#[global] Instance Vbool_Inj : Inj (=) (=) Vbool := Vbool_inj.
+
+(** * regions
+    to model the stack frame in separation logic, we use a notion of regions
+    that are threaded through the semantics.
+
+    we instantiate [region] as a stack of finite maps from variables
+    to their addresses.
+ *)
+Inductive region : Type :=
+| Remp (this : option ptr) (_ : type)
+| Rbind (_ : localname) (_ : ptr) (_ : region).
+
+(** NOTE anonymous variables are not recorded in the environment.
+ *)
+Definition Rbind_check (x : ident) (p : ptr) (r : region) : region :=
+  if decide (x = ""%bs)
+  then r
+  else Rbind x p r.
+
+Fixpoint get_location (ρ : region) (b : localname) : option ptr :=
+  match ρ with
+  | Remp _ _ => None
+  | Rbind x p rs =>
+    if decide (b = x) then Some p
+    else get_location rs b
+  end.
+
+Fixpoint get_this (ρ : region) : option ptr :=
+  match ρ with
+  | Remp this _ => this
+  | Rbind _ _ rs => get_this rs
+  end.
+
+Fixpoint get_return_type (ρ : region) : type :=
+  match ρ with
+  | Remp _ ty => ty
+  | Rbind _ _ rs => get_return_type rs
+  end.
+
 End VAL_MIXIN.
 
 Module Type RAW_BYTES_VAL
@@ -199,83 +276,6 @@ Declare Module PTRS_INTF_AXIOM : PTRS_INTF.
 (* Plug mixins. *)
 Module Type VALUES_FULL_INTF := PTRS_INTF <+ PTRS_MIXIN <+ RAW_BYTES_MIXIN.
 Module Export VALUES_FULL_INTF_AXIOM : VALUES_FULL_INTF := PTRS_INTF_AXIOM <+ PTRS_MIXIN <+ RAW_BYTES_MIXIN.
-
-(** wrappers for constructing certain values *)
-Definition Vchar (a : Ascii.ascii) : val :=
-  Vint (Z.of_N (N_of_ascii a)).
-Definition Vbool (b : bool) : val :=
-  Vint (if b then 1 else 0).
-Definition Vnat (b : nat) : val :=
-  Vint (Z.of_nat b).
-Definition Vn (b : N) : val :=
-  Vint (Z.of_N b).
-Notation Vz := Vint (only parsing).
-
-(** we use [Vundef] as our value of type [void] *)
-Definition Vvoid := Vundef.
-
-Definition is_true (v : val) : option bool :=
-  match v with
-  | Vint v => Some (negb (Z.eqb v 0))
-  | Vptr p => Some match ptr_eq_dec p nullptr with
-                  | left _ => false
-                  | right _ => true
-                  end
-  | Vundef | Vraw _ => None
-  end.
-
-Theorem is_true_int : forall i,
-    is_true (Vint i) = Some (negb (BinIntDef.Z.eqb i 0)).
-Proof. reflexivity. Qed.
-
-Lemma Vptr_inj p1 p2 : Vptr p1 = Vptr p2 -> p1 = p2.
-Proof. by move=> []. Qed.
-Lemma Vint_inj a b : Vint a = Vint b -> a = b.
-Proof. by move=> []. Qed.
-Lemma Vbool_inj a b : Vbool a = Vbool b -> a = b.
-Proof. by move: a b =>[] [] /Vint_inj. Qed.
-
-#[global] Instance Vptr_Inj : Inj (=) (=) Vptr := Vptr_inj.
-#[global] Instance Vint_Inj : Inj (=) (=) Vint := Vint_inj.
-#[global] Instance Vbool_Inj : Inj (=) (=) Vbool := Vbool_inj.
-
-(** * regions
-    to model the stack frame in separation logic, we use a notion of regions
-    that are threaded through the semantics.
-
-    we instantiate [region] as a stack of finite maps from variables
-    to their addresses.
- *)
-Inductive region : Type :=
-| Remp (this : option ptr) (_ : type)
-| Rbind (_ : localname) (_ : ptr) (_ : region).
-
-(** NOTE anonymous variables are not recorded in the environment.
- *)
-Definition Rbind_check (x : ident) (p : ptr) (r : region) : region :=
-  if decide (x = ""%bs)
-  then r
-  else Rbind x p r.
-
-Fixpoint get_location (ρ : region) (b : localname) : option ptr :=
-  match ρ with
-  | Remp _ _ => None
-  | Rbind x p rs =>
-    if decide (b = x) then Some p
-    else get_location rs b
-  end.
-
-Fixpoint get_this (ρ : region) : option ptr :=
-  match ρ with
-  | Remp this _ => this
-  | Rbind _ _ rs => get_this rs
-  end.
-
-Fixpoint get_return_type (ρ : region) : type :=
-  match ρ with
-  | Remp _ ty => ty
-  | Rbind _ _ rs => get_return_type rs
-  end.
 
 (** typedness of values
     note that only primitives fit into this, there is no [val] representation
