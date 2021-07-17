@@ -331,6 +331,14 @@ Axiom has_nullptr_type : forall ty,
 Axiom has_type_bool : forall v,
     has_type v Tbool <-> exists b, v = Vbool b.
 
+(** Note that from [has_type v (Tint sz sgn)] does not follow
+  [v = Vint _] since [v] might also be [Vraw _] (for [T_uchar]). *)
+Axiom has_int_type' : forall sz sgn v,
+    has_type v (Tint sz sgn) <-> (exists z, v = Vint z /\ bound sz sgn z) \/ (exists r, v = Vraw r /\ Tint sz sgn = T_uchar).
+
+Axiom has_type_qual : forall t q x,
+    has_type x (drop_qualifiers t) ->
+    has_type x (Tqualified q t).
 Lemma has_bool_type : forall z,
   0 <= z < 2 <-> has_type (Vint z) Tbool.
 Proof.
@@ -341,11 +349,6 @@ Proof.
     destruct b; simplify_eq; lia.
 Qed.
 
-(** Note that from [has_type v (Tint sz sgn)] does not follow
-  [v = Vint _] since [v] might also be [Vraw _] (for [T_uchar]). *)
-Axiom has_int_type' : forall sz sgn v,
-    has_type v (Tint sz sgn) <-> (exists z, v = Vint z /\ bound sz sgn z) \/ (exists r, v = Vraw r /\ Tint sz sgn = T_uchar).
-
 Lemma has_int_type : forall sz (sgn : signed) z,
     bound sz sgn z <-> has_type (Vint z) (Tint sz sgn).
 Proof. move => *. rewrite has_int_type'. naive_solver. Qed.
@@ -353,10 +356,6 @@ Proof. move => *. rewrite has_int_type'. naive_solver. Qed.
 Theorem has_char_type : forall sz (sgn : signed) z,
     bound sz sgn z <-> has_type (Vint z) (Tchar sz sgn).
 Proof. apply has_int_type. Qed.
-
-Axiom has_type_qual : forall t q x,
-    has_type x (drop_qualifiers t) ->
-    has_type x (Tqualified q t).
 
 #[global] Hint Resolve has_type_qual : has_type.
 
