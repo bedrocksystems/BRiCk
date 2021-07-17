@@ -283,7 +283,7 @@ Section with_cpp.
   Qed.
 
   Lemma cptrR_fs_impl {resolve} f g :
-    pureR (fs_impl g f) |-- cptrR f -* cptrR g.
+    pureR (fs_impl f g) |-- cptrR f -* cptrR g.
   Proof.
     rewrite cptrR_eq/cptrR_def /pureR /as_Rep.
     constructor => p; rewrite Rep_wand_force; iIntros "#(%ty & fs_impl)" => /=.
@@ -304,13 +304,13 @@ Section with_cpp.
   #[global] Instance cptrR_proper {resolve} : Proper (equiv ==> equiv) cptrR.
   Proof. exact: ne_proper. Qed.
 
-  #[global] Instance cptrR_mono {resolve} : Proper (flip fs_entails ==> (⊢)) cptrR.
+  #[global] Instance cptrR_mono {resolve} : Proper (fs_entails ==> (⊢)) cptrR.
   Proof.
     intros ??; rewrite /fs_entails/flip => impl. iApply cptrR_fs_impl.
     by rewrite -impl pureR_emp.
   Qed.
 
-  #[global] Instance cptrR_flip_mono {resolve} : Proper (fs_entails ==> flip (⊢)) cptrR.
+  #[global] Instance cptrR_flip_mono {resolve} : Proper (flip fs_entails ==> flip (⊢)) cptrR.
   Proof. by intros ?? <-. Qed.
 
 End with_cpp.

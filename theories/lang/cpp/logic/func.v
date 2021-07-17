@@ -111,8 +111,8 @@ Section with_cpp.
     Lemma TSFunction_mono@{X1 X2 Z1 Z2 Y1 Y2} wpp1 wpp2 :
       (∀ ti, wpp_entails (wpp1 ti) (wpp2 ti)) ->
       fs_entails
-        (TSFunction@{X1 Z1 Y1} (cc:=cc) ret targs wpp1)
-        (TSFunction@{X2 Z2 Y2} (cc:=cc) ret targs wpp2).
+        (TSFunction@{X1 Z1 Y1} (cc:=cc) ret targs wpp2)
+        (TSFunction@{X2 Z2 Y2} (cc:=cc) ret targs wpp1).
     Proof.
       intros Hwpp. iSplit; first by rewrite/type_of_spec. simpl.
       iIntros "!>" (ti vs K) "wpp". by iApply Hwpp.
@@ -132,12 +132,12 @@ Section with_cpp.
     Proof. exact: ne_proper. Qed.
 
     #[global] Instance TSFunction_mono'@{X Z Y} :
-      Proper (pointwise_relation _ wpp_entails ==> fs_entails)
+      Proper (pointwise_relation _ (flip wpp_entails) ==> fs_entails)
         (TSFunction@{X Z Y} (cc:=cc) ret targs).
     Proof. repeat intro. by apply TSFunction_mono. Qed.
 
     #[global] Instance TSFunction_flip_mono'@{X Z Y} :
-      Proper (pointwise_relation _ (flip wpp_entails) ==> flip fs_entails)
+      Proper (pointwise_relation _ (wpp_entails) ==> flip fs_entails)
         (TSFunction@{X Z Y} (cc:=cc) ret targs).
     Proof. solve_proper. Qed.
 
@@ -148,7 +148,7 @@ Section with_cpp.
     Context {cc : calling_conv} (ret : type) (targs : list type).
 
     Lemma SFunction_mono@{X1 X2 Z1 Z2 Y1 Y2} wpp1 wpp2 :
-      wpp_entails wpp1 wpp2 ->
+      wpp_entails wpp2 wpp1 ->
       fs_entails
         (SFunction@{X1 Z1 Y1} (cc:=cc) ret targs wpp1)
         (SFunction@{X2 Z2 Y2} (cc:=cc) ret targs wpp2).
@@ -168,11 +168,11 @@ Section with_cpp.
     Proof. exact: ne_proper. Qed.
 
     #[global] Instance SFunction_mono'@{X Z Y} :
-      Proper (wpp_entails ==> fs_entails) (SFunction@{X Z Y} (cc:=cc) ret targs).
+      Proper (flip wpp_entails ==> fs_entails) (SFunction@{X Z Y} (cc:=cc) ret targs).
     Proof. repeat intro. by apply SFunction_mono. Qed.
 
     #[global] Instance SFunction_flip_mono'@{X Z Y} :
-      Proper (flip wpp_entails ==> flip fs_entails)
+      Proper (wpp_entails ==> flip fs_entails)
         (SFunction@{X Z Y} (cc:=cc) ret targs).
     Proof. solve_proper. Qed.
   End SFunction.
@@ -186,7 +186,7 @@ Section with_cpp.
         [SMethod_wpp_monoN]. We retain this proof because it's easier
         to understand and it goes through without [BiEntailsN]. *)
     Lemma SMethod_mono@{X1 X2 Z1 Z2 Y1 Y2} wpp1 wpp2 :
-      (∀ this, wpp_entails (wpp1 this) (wpp2 this)) ->
+      (∀ this, wpp_entails (wpp2 this) (wpp1 this)) ->
       fs_entails
         (SMethod@{X1 Z1 Y1} (cc:=cc) class qual ret targs wpp1)
         (SMethod@{X2 Z2 Y2} (cc:=cc) class qual ret targs wpp2).
@@ -261,12 +261,12 @@ Section with_cpp.
     Proof. exact: ne_proper. Qed.
 
     #[global] Instance SMethod_mono'@{X Z Y} :
-      Proper (pointwise_relation _ wpp_entails ==> fs_entails)
+      Proper (pointwise_relation _ (flip wpp_entails) ==> fs_entails)
         (SMethod@{X Z Y} (cc:=cc) class qual ret targs).
     Proof. repeat intro. by apply SMethod_mono. Qed.
 
     #[global] Instance SMethod_flip_mono'@{X Z Y} :
-      Proper (pointwise_relation _ (flip wpp_entails) ==> flip fs_entails)
+      Proper (pointwise_relation _ wpp_entails ==> flip fs_entails)
         (SMethod@{X Z Y} (cc:=cc) class qual ret targs).
     Proof. repeat intro. by apply SMethod_mono. Qed.
   End SMethod.

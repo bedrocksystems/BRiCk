@@ -811,7 +811,12 @@ Section with_cpp.
     iDestruct (tptsto_frac_valid with "T") as %L => //.
   Qed.
 
-  (** function specifications written in weakest pre-condition style.
+  (**
+  Function specifications written in weakest pre-condition style.
+
+  In other words, [fs_spec] asserts that arguments satisfy the function's
+  precondition _and_ that the continuation coincides with the function's
+  postcondition.
    *)
   Record function_spec : Type :=
     { fs_cc : calling_conv
@@ -819,8 +824,6 @@ Section with_cpp.
     ; fs_arguments : list type
     ; fs_spec : thread_info -d> list val -d> (val -> mpred) -d> mpredO
     }.
-  Arguments function_spec : clear implicits.
-  Arguments Build_function_spec : clear implicits.
 
   #[global] Instance function_spec_inhabited : Inhabited function_spec :=
     populate (Build_function_spec inhabitant inhabitant inhabitant inhabitant).
@@ -937,8 +940,10 @@ Section with_cpp.
     - iIntros "[% ?]". by rewrite fs_equivI_intro.
   Qed.
 
-  (* [mpred] implication on [function_spec] *)
-  Definition fs_impl (P Q : function_spec) : mpred :=
+  (** [mpred] implication on [function_spec].
+  Here, [Q] is a lower-level spec, and [P] is a derived/higher-level spec.
+   *)
+  Definition fs_impl (Q P : function_spec) : mpred :=
     [| type_of_spec P = type_of_spec Q |] ∗
     □ ∀ ti vs K, P.(fs_spec) ti vs K -∗ Q.(fs_spec) ti vs K.
   Lemma fs_impl_reflexive P : |-- fs_impl P P.
@@ -948,7 +953,7 @@ Section with_cpp.
     rewrite /fs_impl; iIntros "(-> & #H1) (-> & #H2)".
     iSplit; first done.
     iIntros "!>" (ti vs K) "Y".
-    iApply ("H2" with "(H1 Y)").
+    iApply ("H1" with "(H2 Y)").
   Qed.
 
   Definition fs_entails (P Q : function_spec) : Prop := |-- fs_impl P Q.
@@ -987,7 +992,7 @@ Section with_cpp.
       iIntros "!>" (???) "A"; iApply ("W" with "A").
     - iIntros "((-> & #W1) & (_ & #W2))".
       iSplit => //; iIntros "!>" (???); iSplit;
-        [by iApply "W1" | by iApply "W2"].
+        [by iApply "W2" | by iApply "W1"].
   Qed.
 
   Lemma function_spec_equiv_iff P Q : P ≡ Q <-> |-- fs_equiv P Q.
