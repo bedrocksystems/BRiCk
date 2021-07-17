@@ -4,7 +4,6 @@
  * This software is distributed under the terms of the BedRock Open-Source License.
  * See the LICENSE-BedRock file in the repository root for details.
  *)
-Require Export stdpp.list.
 Require Export bedrock.lang.prelude.base.
 
 (** * Small extensions to [stdpp.list]. *)
@@ -51,8 +50,6 @@ End list.
 #[global] Hint Resolve NoDup_nil_2 | 0 : core.
 #[global] Hint Resolve NoDup_cons_2 : core.
 #[global] Hint Resolve not_elem_of_nil | 0 : core.
-Require Import stdpp.list.
-Require Import stdpp.sets.
 
 Section list_difference.
   Context `{EqDecision A}.
@@ -82,18 +79,18 @@ Section list_difference.
   Lemma list_difference_id l x :
     (¬ x ∈ l) ->
     list_difference l [x] = l.
-  Proof using.
+  Proof.
     intros Hin.
-    induction l; [reflexivity | ].
+    induction l; [ reflexivity | ].
     simpl in *.
-    setoid_rewrite decide_False; eauto;[ | intros xx].
+    rewrite -> elem_of_cons in Hin.
+    rewrite decide_False; [ | intros Hax].
     {
-      f_equal. apply IHl. rewrite -> elem_of_cons in Hin. tauto.
+      f_equal. apply IHl. tauto.
     }
     {
-      rewrite -> elem_of_cons in Hin.
-      inversion xx; subst; try tauto.
-      rewrite -> @elem_of_nil in *. tauto.
+      inversion Hax; subst; try tauto.
+      by rewrite -> @elem_of_nil in *.
     }
   Qed.
 
