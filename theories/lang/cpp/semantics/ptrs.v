@@ -339,7 +339,7 @@ End PTRS_DERIVED.
 
 Module Type PTRS_INTF_MINIMAL := PTRS <+ PTRS_DERIVED.
 
-Module Type PTRS_MIXIN (Import P : PTRS) (Import PD : PTRS_DERIVED P).
+Module Type PTRS_MIXIN (Import P : PTRS_INTF_MINIMAL).
   (**
   Explictly declare that all Iris equalities on pointers are trivial.
   We only add such explicit declarations as actually needed.
