@@ -277,14 +277,7 @@ Module Type RAW_BYTES_MIXIN
   Qed.
 End RAW_BYTES_MIXIN.
 
-(* Collect all the axioms. *)
-Module Type PTRS_INTF := PTRS_INTF_MINIMAL <+ RAW_BYTES <+ VAL_MIXIN <+ RAW_BYTES_VAL.
-Declare Module PTRS_INTF_AXIOM : PTRS_INTF.
-
-(* Plug mixins. *)
-Module Type VALUES_FULL_INTF := PTRS_INTF <+ PTRS_MIXIN <+ RAW_BYTES_MIXIN.
-Module Export VALUES_FULL_INTF_AXIOM : VALUES_FULL_INTF := PTRS_INTF_AXIOM <+ PTRS_MIXIN <+ RAW_BYTES_MIXIN.
-
+Module Type HAS_TYPE (Import P : PTRS) (Import R : RAW_BYTES) (Import V : VAL_MIXIN P R).
 (** typedness of values
     note that only primitives fit into this, there is no [val] representation
     of aggregates, except through [Vptr p] with [p] pointing to the contents.
@@ -339,6 +332,10 @@ Axiom has_int_type' : forall sz sgn v,
 Axiom has_type_qual : forall t q x,
     has_type x (drop_qualifiers t) ->
     has_type x (Tqualified q t).
+End HAS_TYPE.
+
+Module Type HAS_TYPE_MIXIN (Import P : PTRS) (Import R : RAW_BYTES) (Import V : VAL_MIXIN P R)
+  (Import HT : HAS_TYPE P R V).
 Lemma has_bool_type : forall z,
   0 <= z < 2 <-> has_type (Vint z) Tbool.
 Proof.
@@ -407,3 +404,14 @@ Proof.
 Qed.
 
 #[global] Hint Resolve has_type_bswap : has_type.
+End HAS_TYPE_MIXIN.
+
+(* Collect all the axioms. *)
+Module Type PTRS_INTF := PTRS_INTF_MINIMAL <+ RAW_BYTES <+ VAL_MIXIN <+ RAW_BYTES_VAL <+ HAS_TYPE.
+(* Plug mixins. *)
+Module Type VALUES_FULL_INTF := PTRS_INTF <+ PTRS_MIXIN <+ RAW_BYTES_MIXIN <+ HAS_TYPE_MIXIN.
+
+Declare Module PTRS_INTF_AXIOM : PTRS_INTF.
+
+Module Export VALUES_FULL_INTF_AXIOM : VALUES_FULL_INTF :=
+  PTRS_INTF_AXIOM <+ PTRS_MIXIN <+ RAW_BYTES_MIXIN <+ HAS_TYPE_MIXIN.
