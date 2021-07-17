@@ -14,7 +14,6 @@
  *)
 Require Import Coq.ZArith.ZArith_base.
 Require Import bedrock.lang.cpp.ast.
-Require Import bedrock.lang.cpp.semantics.values.
 
 (* The AST includes [Ebind_temp] nodes that contain destructor information
  * however, these nodes are embedded in the sub-expression rather than in the
@@ -55,20 +54,6 @@ Fixpoint is_void (t : type) : bool :=
   | Tqualified _ t => is_void t
   | Tvoid => true
   | _ => false
-  end.
-
-(* the default value for a type.
- * this is used to initialize primitives if you do, e.g.
- *   [int x{};]
- *)
-Fixpoint get_default (t : type) : option val :=
-  match t with
-  | Tpointer _ => Some (Vptr nullptr)
-  | Tint _ _ => Some (Vint 0%Z)
-  | Tbool => Some (Vbool false)
-  | Tnullptr => Some (Vptr nullptr)
-  | Tqualified _ t => get_default t
-  | _ => None
   end.
 
 (* this determines whether a type is initializable from a primitive.

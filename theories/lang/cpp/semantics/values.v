@@ -154,6 +154,20 @@ Fixpoint get_return_type (ρ : region) : type :=
   | Rbind _ _ rs => get_return_type rs
   end.
 
+(* the default value for a type.
+ * this is used to initialize primitives if you do, e.g.
+ *   [int x{};]
+ *)
+Fixpoint get_default (t : type) : option val :=
+  match t with
+  | Tpointer _ => Some (Vptr nullptr)
+  | Tint _ _ => Some (Vint 0%Z)
+  | Tbool => Some (Vbool false)
+  | Tnullptr => Some (Vptr nullptr)
+  | Tqualified _ t => get_default t
+  | _ => None
+  end.
+
 End VAL_MIXIN.
 
 Module Type RAW_BYTES_VAL
