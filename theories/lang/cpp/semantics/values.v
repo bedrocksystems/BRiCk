@@ -10,7 +10,7 @@ Require Import stdpp.gmap.
 
 From bedrock.prelude Require Import base addr option numbers.
 
-Require Import bedrock.lang.cpp.arith.builtins.
+From bedrock.lang.cpp.arith Require Import operator builtins.
 Require Import bedrock.lang.cpp.ast.
 From bedrock.lang.cpp.semantics Require Export types sub_module genv ptrs.
 
@@ -404,6 +404,34 @@ Proof.
 Qed.
 
 #[global] Hint Resolve has_type_bswap : has_type.
+
+(** Integral conversions *)
+Definition conv_int (from to : type) (v v' : val) : Prop :=
+  match drop_qualifiers from , drop_qualifiers to with
+  | Tbool , Tint _ _ =>
+    match is_true v with
+    | Some v => v' = Vbool v
+    | _ => False
+    end
+  | Tint _ _ , Tbool =>
+    match v with
+    | Vint v =>
+      v' = Vbool (if Z.eqb 0 v then false else true)
+    | _ => False
+    end
+  | Tint _ _ , Tint sz Unsigned =>
+    match v with
+    | Vint v =>
+      v' = Vint (to_unsigned sz v)
+    | _ => False
+    end
+  | Tint _ _ , Tint sz Signed =>
+    has_type v (Tint sz Signed) /\ v' = v
+  | _ , _ => False
+  end.
+Arguments conv_int !_ !_ _ _ /.
+
+
 End HAS_TYPE_MIXIN.
 
 (* Collect all the axioms. *)

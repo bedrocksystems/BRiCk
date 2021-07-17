@@ -28,31 +28,6 @@ Module Type OPERATOR_PARAMS (Import V : VALUES_INTF).
 End OPERATOR_PARAMS.
 
 Module Type OPERATOR_MIXIN (Import V : VALUES_INTF) (Import O : OPERATOR_PARAMS V).
-(** Integral conversions *)
-Definition conv_int (from to : type) (v v' : val) : Prop :=
-  match drop_qualifiers from , drop_qualifiers to with
-  | Tbool , Tint _ _ =>
-    match is_true v with
-    | Some v => v' = Vbool v
-    | _ => False
-    end
-  | Tint _ _ , Tbool =>
-    match v with
-    | Vint v =>
-      v' = Vbool (if Z.eqb 0 v then false else true)
-    | _ => False
-    end
-  | Tint _ _ , Tint sz Unsigned =>
-    match v with
-    | Vint v =>
-      v' = Vint (to_unsigned sz v)
-    | _ => False
-    end
-  | Tint _ _ , Tint sz Signed =>
-    has_type v (Tint sz Signed) /\ v' = v
-  | _ , _ => False
-  end.
-Arguments conv_int !_ !_ _ _ /.
 
 Module auxiliary.
 Definition eval_int_op (bo : BinOp) (o : Z -> Z -> Z) : Prop :=
