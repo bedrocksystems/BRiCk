@@ -82,7 +82,7 @@ Module PTRS_IMPL <: PTRS_INTF := VAL_IMPL <+ HAS_TYPE_IMPL
   (* This one only adds axioms. *)
   <+ RAW_BYTES_VAL <+ HAS_TYPE_MIXIN.
 
-Module Import VALUES_FULL_IMPL <: VALUES_FULL_INTF := PTRS_IMPL <+ RAW_BYTES_MIXIN <+ PTRS_MIXIN.
+Module Import VALUES_FULL_IMPL <: VALUES_INTF := PTRS_IMPL <+ RAW_BYTES_MIXIN <+ PTRS_MIXIN.
 
 Implicit Types (p : ptr).
 
