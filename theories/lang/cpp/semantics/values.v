@@ -181,15 +181,15 @@ Module Type RAW_BYTES_VAL
   Axiom raw_bytes_of_val_Proper : Proper (genv_leq ==> eq ==> eq ==> eq ==> iff) raw_bytes_of_val.
   #[global] Existing Instance raw_bytes_of_val_Proper.
 
-  Axiom raw_bytes_of_val_unique_encoding : forall σ ty v rs rs',
+  Axiom raw_bytes_of_val_unique_encoding : forall {σ ty v rs rs'},
       raw_bytes_of_val σ ty v rs -> raw_bytes_of_val σ ty v rs' -> rs = rs'.
 
-  Axiom raw_bytes_of_val_int_unique_val : forall σ sz sgn z z' rs,
+  Axiom raw_bytes_of_val_int_unique_val : forall {σ sz sgn z z' rs},
       raw_bytes_of_val σ (Tint sz sgn) (Vint z) rs ->
       raw_bytes_of_val σ (Tint sz sgn) (Vint z') rs ->
       z = z'.
 
-  Axiom raw_bytes_of_val_sizeof : forall σ ty v rs,
+  Axiom raw_bytes_of_val_sizeof : forall {σ ty v rs},
       raw_bytes_of_val σ ty v rs -> size_of σ ty = Some (N.of_nat $ length rs).
 
   (* TODO Maybe add?
@@ -220,11 +220,11 @@ Module Type RAW_BYTES_MIXIN
   | Vqual σ t ty v1 v2:
       val_related σ ty v1 v2 ->
       val_related σ (Tqualified t ty) v1 v2
-  | Vraw_uint8 σ raw z:
-      raw_bytes_of_val σ (Tint W8 Unsigned) (Vint z) [raw] ->
+  | Vraw_uint8 σ raw z
+      (Hraw : raw_bytes_of_val σ (Tint W8 Unsigned) (Vint z) [raw]) :
       val_related σ (Tint W8 Unsigned) (Vraw raw) (Vint z)
-  | Vuint8_raw σ z raw:
-      raw_bytes_of_val σ (Tint W8 Unsigned) (Vint z) [raw] ->
+  | Vuint8_raw σ z raw
+      (Hraw : raw_bytes_of_val σ (Tint W8 Unsigned) (Vint z) [raw]) :
       val_related σ (Tint W8 Unsigned) (Vint z) (Vraw raw).
 
   Lemma val_related_qual :
@@ -235,11 +235,13 @@ Module Type RAW_BYTES_MIXIN
 
   #[global] Instance val_related_reflexive σ ty : Reflexive (val_related σ ty).
   Proof. constructor. Qed.
+
   #[global] Instance val_related_symmetric σ ty : Symmetric (val_related σ ty).
   Proof.
     rewrite /Symmetric; intros * Hval_related;
       induction Hval_related; subst; by constructor.
   Qed.
+
   #[global] Instance val_related_transitive σ ty : Transitive (val_related σ ty).
   Proof.
     rewrite /Transitive; intros * Hval_related1;
@@ -248,37 +250,29 @@ Module Type RAW_BYTES_MIXIN
     - constructor; apply IHHval_related1;
         inversion Hval_related2; subst;
         by [constructor | auto].
-    - inversion Hval_related2; subst.
+    - inversion Hval_related2 as [ | | | ??? Hraw' ]; subst.
       + by constructor.
-      + pose proof (raw_bytes_of_val_unique_encoding _ _ _ _ _ H H2) as Hraws.
-        inversion Hraws; constructor.
-    - inversion Hval_related2; subst.
+      + pose proof (raw_bytes_of_val_unique_encoding Hraw Hraw') as [= ->].
+        by constructor.
+    - inversion Hval_related2 as [ | | ??? Hraw' | ]; subst.
       + by constructor.
-      + pose proof (raw_bytes_of_val_int_unique_val _ _ _ _ _ _ H H2); subst.
+      + pose proof (raw_bytes_of_val_int_unique_val Hraw Hraw') as ->.
         by constructor.
   Qed.
+
   #[global] Instance val_related_Proper : Proper (genv_leq ==> eq ==> eq ==> eq ==> iff) val_related.
   Proof.
-    repeat red; intros; subst; split; intros.
-    - induction H0; subst.
-      + constructor.
-      + constructor; auto.
-      + setoid_rewrite H in H0; by constructor.
-      + setoid_rewrite H in H0; by constructor.
-    - induction H0; subst.
-      + constructor.
-      + constructor; auto.
-      + setoid_rewrite <- H in H0; by constructor.
-      + setoid_rewrite <- H in H0; by constructor.
+    repeat red; intros ?? Heq **; subst; split; intros Hval;
+      induction Hval; subst; constructor; auto;
+      by [rewrite -> Heq in Hraw | rewrite <- Heq in Hraw].
   Qed.
 
   Lemma raw_bytes_of_val_uint_length : forall σ v rs sz sgn,
       raw_bytes_of_val σ (Tint sz sgn) v rs ->
       length rs = bytesNat sz.
   Proof.
-    intros * Hraw_bytes_of_val.
-    apply raw_bytes_of_val_sizeof in Hraw_bytes_of_val.
-    inversion Hraw_bytes_of_val as [Hsz]; clear Hraw_bytes_of_val.
+    intros * Hraw_bytes_of_val%raw_bytes_of_val_sizeof.
+    inversion Hraw_bytes_of_val as [Hsz]. clear Hraw_bytes_of_val.
     by apply N_of_nat_inj in Hsz.
   Qed.
 End RAW_BYTES_MIXIN.
