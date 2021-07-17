@@ -7,7 +7,7 @@ From iris.bi Require Import bi.
 (* This export ensures that [upredI] is registered as a canonical structure everywhere. *)
 From iris.base_logic Require Export bi.
 From iris.proofmode Require Import classes.
-From bedrock.lang.prelude Require Export base.
+From bedrock.lang.prelude Require Export base gmap.
 From bedrock.lang.bi Require Export only_provable derived_laws.
 
 #[global] Instance into_pure_emp PROP : IntoPure (PROP := PROP) emp%I True.
