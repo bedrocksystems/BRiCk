@@ -64,6 +64,8 @@ Proof. solve_decision. Qed.
 #[global] Instance alloc_id_countable : Countable alloc_id.
 Proof. by apply: (inj_countable' alloc_id_car MkAllocId) => -[?]. Qed.
 
+Reserved Notation "p .., o" (at level 11, left associativity).
+
 Module Type PTRS.
   (** * Pointers.
 
@@ -183,7 +185,6 @@ Module Type PTRS.
     this is a right monoid action.
    *)
   Parameter _offset_ptr : ptr -> offset -> ptr.
-  Reserved Notation "p .., o" (at level 11, left associativity).
   Notation "p .., o"   := (_offset_ptr p o) : ptr_scope.
   Notation "o1 .., o2" := (o_dot o1 o2)     : offset_scope.
   #[global] Open Scope ptr_scope.
