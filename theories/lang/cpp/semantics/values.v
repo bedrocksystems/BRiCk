@@ -435,9 +435,10 @@ Arguments conv_int !_ !_ _ _ /.
 End HAS_TYPE_MIXIN.
 
 (* Collect all the axioms. *)
-Module Type PTRS_INTF := PTRS_INTF_MINIMAL <+ RAW_BYTES <+ VAL_MIXIN <+ RAW_BYTES_VAL <+ HAS_TYPE.
+Module Type VALUES_DEFS (P : PTRS_INTF) := RAW_BYTES <+ VAL_MIXIN P <+ RAW_BYTES_VAL P <+ HAS_TYPE P.
 (* Plug mixins. *)
-Module Type VALUES_INTF_FUNCTOR (P : PTRS_INTF) := PTRS_MIXIN P <+ RAW_BYTES_MIXIN P P P P <+ HAS_TYPE_MIXIN P P P P.
+Module Type VALUES_INTF_FUNCTOR (P : PTRS_INTF) := VALUES_DEFS P <+ RAW_BYTES_MIXIN P <+ HAS_TYPE_MIXIN P.
+(* Interface for other modules. *)
 Module Type VALUES_INTF := PTRS_INTF <+ VALUES_INTF_FUNCTOR.
 
 Declare Module PTRS_INTF_AXIOM : PTRS_INTF.

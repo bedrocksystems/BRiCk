@@ -24,7 +24,7 @@ Implicit Types (σ : genv).
 #[local] Close Scope nat_scope.
 #[local] Open Scope Z_scope.
 
-Module PTRS_IMPL <: PTRS_INTF_MINIMAL.
+Module PTRS_IMPL <: PTRS_INTF.
   Import canonical_tu address_sums merge_elems.
 
   Inductive raw_offset_seg : Set :=
@@ -543,4 +543,5 @@ Module PTRS_IMPL <: PTRS_INTF_MINIMAL.
   Qed.
 
   Include PTRS_DERIVED_MIXIN.
+  Include PTRS_MIXIN.
 End PTRS_IMPL.

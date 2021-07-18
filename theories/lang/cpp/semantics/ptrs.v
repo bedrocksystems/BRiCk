@@ -562,3 +562,5 @@ Module Type PTRS_MIXIN (Import P : PTRS_INTF_MINIMAL).
   (** [_derived base derived] is a cast from base to derived *)
   Notation _derived := (@o_derived _) (only parsing).
 End PTRS_MIXIN.
+
+Module Type PTRS_INTF := PTRS_INTF_MINIMAL <+ PTRS_MIXIN.
