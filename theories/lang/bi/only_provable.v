@@ -4,7 +4,7 @@
  * See the LICENSE-BedRock file in the repository root for details.
  *)
 Require Import bedrock.lang.prelude.base.
-From iris.bi Require Import bi monpred embedding.
+From iris.bi Require Import bi monpred embedding fractional.
 From iris.proofmode Require Import tactics.
 
 (**
@@ -31,6 +31,16 @@ Notation "[ | P | ]" := (only_provable P) (format "[ |  P  | ]").
 Class BiEmpForallOnlyProvable (PROP : bi) :=
   emp_forall_only_provable A φ : (∀ x : A, [| φ x |]) ⊢@{PROP} <affine> (∀ x : A, [| φ x |]).
 Global Hint Mode BiEmpForallOnlyProvable + : typeclass_instances.
+
+(*
+Patch [persistent_fractional] for [persistent_sep_dup] update.
+
+Misplaced, being upstreamed in https://gitlab.mpi-sws.org/iris/iris/-/merge_requests/717.
+*)
+Global Remove Hints persistent_fractional : typeclass_instances.
+Global Instance persistent_fractional {PROP : bi} (P : PROP) :
+  Persistent P → TCOr (Affine P) (Absorbing P) → Fractional (λ _, P).
+Proof. intros ?? q q'. apply: bi.persistent_sep_dup. Qed.
 
 (** * Properties of [only_provable]. *)
 Section bi.
