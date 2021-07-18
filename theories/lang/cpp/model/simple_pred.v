@@ -918,8 +918,9 @@ Module SimpleCPP.
       intros ?? Hσ ??-> ??-> ??-> ??->.
       iIntros "(%Hnonnull & H)";
         iDestruct "H" as (oa) "(Htype_ptr & Hmem_inj_own & Hoa)".
-      iSplitR; [by iPureIntro |]; iExists oa; iFrame "#∗".
-      iSplitL "Htype_ptr"; iStopProof; [| destruct oa]; by solve_proper.
+      iSplitR; [by iPureIntro |]; iExists oa; iFrame "Hmem_inj_own".
+      iSplitL "Htype_ptr"; first by rewrite Hσ.
+      iStopProof; destruct oa; by solve_proper.
     Qed.
 
     #[local] Instance tptsto'_proper :
