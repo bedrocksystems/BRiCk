@@ -106,39 +106,44 @@ Module SimpleCPP_BASE <: CPP_LOGIC_CLASS.
     }.
   Definition _cpp_ghost := cpp_ghost.
 
-  Class cppG' (Σ : gFunctors) : Type :=
-    { heapG :> inG Σ (gmapR addr (fractionalR runtime_val'))
+  Record cppG' (Σ : gFunctors) : Type :=
+    { heapG : inG Σ (gmapR addr (fractionalR runtime_val'))
       (* ^ this represents the contents of physical memory *)
-    ; ghost_memG :> inG Σ (gmapR ptr (fractionalR val))
+    ; ghost_memG : inG Σ (gmapR ptr (fractionalR val))
       (* ^ this represents the contents of the C++ runtime that might
          not be represented in physical memory, e.g. values stored in
          registers or temporaries on the stack *)
-    ; mem_injG :> inG Σ (gmapUR ptr (agreeR (leibnizO (option addr))))
+    ; mem_injG : inG Σ (gmapUR ptr (agreeR (leibnizO (option addr))))
       (* ^ this carries the (compiler-supplied) mapping from C++ locations
          (represented as pointers) to physical memory addresses. Locations that
          are not stored in physical memory (e.g. because they are register
          allocated) are mapped to [None] *)
-    ; blocksG :> inG Σ (gmapUR ptr (agreeR (leibnizO (Z * Z))))
+    ; blocksG : inG Σ (gmapUR ptr (agreeR (leibnizO (Z * Z))))
       (* ^ this represents the minimum and maximum offset of the block *)
-    ; codeG :> inG Σ (gmapUR ptr (agreeR (leibnizO (Func + Method + Ctor + Dtor))))
+    ; codeG : inG Σ (gmapUR ptr (agreeR (leibnizO (Func + Method + Ctor + Dtor))))
       (* ^ this carries the (compiler-supplied) mapping from C++ locations
          to the code stored at that location *)
     ; has_inv' : invG Σ
-    ; has_cinv :> cinvG Σ
+    ; has_cinv' : cinvG Σ
     }.
 
   Definition cppG : gFunctors -> Type := cppG'.
   Existing Class cppG.
-  Typeclasses Opaque cppG. (* Prevent turning instances of cppG' into cppG and risking loops. *)
+  (* Used to be needed to prevent turning instances of cppG' into cppG and risking loops in this file;
+  should not hurt now. *)
+  Typeclasses Opaque cppG.
 
   #[global] Instance has_inv Σ : cppG Σ -> invG Σ := @has_inv' Σ.
+  #[global] Instance has_cinv Σ : cppG Σ -> cinvG Σ := @has_cinv' Σ.
 
   Include CPP_LOGIC_CLASS_MIXIN.
 
   Section with_cpp.
     Context `{Σ : cpp_logic}.
 
-    Instance cppG_cppG' Σ : cppG Σ -> cppG' Σ := id.
+    Existing Class cppG'.
+    #[local] Instance cppG_cppG' Σ : cppG Σ -> cppG' Σ := id.
+    #[local] Existing Instances heapG ghost_memG mem_injG blocksG codeG.
 
     Definition heap_own (a : addr) (q : Qp) (r : runtime_val') : mpred :=
       own (A := gmapR addr (fractionalR runtime_val'))
