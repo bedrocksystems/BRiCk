@@ -165,12 +165,6 @@ Section bi.
     RightId (≡@{PROP}) [| True |] bi_sep.
   Proof. intros P. by rewrite only_provable_emp right_id. Qed.
 
-End bi.
-#[global] Hint Resolve only_provable_intro : core.
-
-Section bi.
-  Context {PROP : bi}.
-
   Global Instance only_provable_timeless `{Timeless PROP emp} P :
     Timeless (PROP:=PROP) [| P |].
   Proof. apply _. Qed.
@@ -178,6 +172,7 @@ Section bi.
     Plain (PROP:=PROP) [| P |].
   Proof. apply _. Qed.
 End bi.
+#[global] Hint Resolve only_provable_intro : core.
 
 Section monpred.
   Context {I : biIndex} {PROP : bi}.
