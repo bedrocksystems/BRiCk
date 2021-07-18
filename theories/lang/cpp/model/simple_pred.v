@@ -123,19 +123,23 @@ Module SimpleCPP_BASE <: CPP_LOGIC_CLASS.
     ; codeG :> inG Σ (gmapUR ptr (agreeR (leibnizO (Func + Method + Ctor + Dtor))))
       (* ^ this carries the (compiler-supplied) mapping from C++ locations
          to the code stored at that location *)
-    ; has_inv :> invG Σ
+    ; has_inv' : invG Σ
     ; has_cinv :> cinvG Σ
     }.
 
   Definition cppG : gFunctors -> Type := cppG'.
   Existing Class cppG.
-  Instance cppG_cppG' Σ : cppG Σ -> cppG' Σ := id.
   Typeclasses Opaque cppG. (* Prevent turning instances of cppG' into cppG and risking loops. *)
+
+  #[global] Instance has_inv Σ : cppG Σ -> invG Σ := @has_inv' Σ.
 
   Include CPP_LOGIC_CLASS_MIXIN.
 
   Section with_cpp.
     Context `{Σ : cpp_logic}.
+
+    Instance cppG_cppG' Σ : cppG Σ -> cppG' Σ := id.
+
     Definition heap_own (a : addr) (q : Qp) (r : runtime_val') : mpred :=
       own (A := gmapR addr (fractionalR runtime_val'))
       _ghost.(heap_name) {[ a := frac q r ]}.
@@ -148,7 +152,10 @@ Module SimpleCPP_BASE <: CPP_LOGIC_CLASS.
     Definition blocks_own (p : ptr) (l h : Z) : mpred :=
       own (A := gmapUR ptr (agreeR (leibnizO (Z * Z))))
         _ghost.(blocks_name) {[ p := to_agree (l, h) ]}.
-    (* code_own goes below. *)
+    Definition _code_own (p : ptr) (f : Func + Method + Ctor + Dtor) : mpred :=
+      own _ghost.(code_name)
+        (A := gmapUR ptr (agreeR (leibnizO (Func + Method + Ctor + Dtor))))
+        {[ p := to_agree f ]}.
   End with_cpp.
 End SimpleCPP_BASE.
 
@@ -696,10 +703,7 @@ Module SimpleCPP.
       require an extra side-condition that the code is loaded.
      *)
     Definition code_own (p : ptr) (f : Func + Method + Ctor + Dtor) : mpred :=
-      strict_valid_ptr p **
-      own _ghost.(code_name)
-        (A := gmapUR ptr (agreeR (leibnizO (Func + Method + Ctor + Dtor))))
-        {[ p := to_agree f ]}.
+      strict_valid_ptr p ** _code_own p f.
     Instance code_own_persistent f p : Persistent (code_own p f) := _.
     Instance code_own_affine f p : Affine (code_own p f) := _.
     Instance code_own_timeless f p : Timeless (code_own p f) := _.
