@@ -8,6 +8,7 @@ From iris.proofmode Require Import tactics.
 Require Import bedrock.lang.bi.prelude.
 Import ChargeNotation.
 
+(* TODO: move used lemmas that aren't trivial Iris wrappers into derived_laws with new names. *)
 Section with_PROP.
   Context {PROP : bi}.
 
