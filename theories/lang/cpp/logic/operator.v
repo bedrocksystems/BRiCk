@@ -103,7 +103,7 @@ Section with_Σ.
 
   (** Can these pointers be validly compared? *)
   (* Written to ease showing [ptr_comparable_symm]. *)
-  Definition ptr_comparable p1 p2 res : mpred :=
+  Definition ptr_comparable_def p1 p2 res : mpred :=
     (* These premises let you assume that that [p1] and [p2] have an address. *)
     [| is_Some (ptr_vaddr p1) /\ is_Some (ptr_vaddr p2) |] -∗
     ∃ vt1 vt2,
@@ -113,10 +113,14 @@ Section with_Σ.
         ([| p1 = nullptr |] ∨ [| p2 = nullptr |]) ∨
         ((live_ptr p1 ∧ live_ptr p2) ∗
           ptr_unambiguous_cmp vt1 p2 ∗ ptr_unambiguous_cmp vt2 p1)).
+  Definition ptr_comparable_aux : seal ptr_comparable_def. Proof. by eexists. Qed.
+  Definition ptr_comparable := ptr_comparable_aux.(unseal).
+  Definition ptr_comparable_eq : ptr_comparable = _ := ptr_comparable_aux.(seal_eq).
 
   Lemma ptr_ord_comparable_comparable p1 p2 res :
     ptr_ord_comparable p1 p2 (λ va1 va2, bool_decide (va1 = va2)) res ⊢ ptr_comparable p1 p2 res.
   Proof.
+    rewrite ptr_comparable_eq /ptr_comparable_def.
     iIntros "($ & %Hi & ? & ?)" ([[va1 Hs1] [va2 Hs2]]);
       iExists Relaxed, Relaxed; iFrame.
     by rewrite -(Hi _ _ Hs1 Hs2) (same_address_bool_eq Hs1 Hs2).
@@ -125,7 +129,8 @@ Section with_Σ.
   Lemma ptr_comparable_symm p1 p2 res :
     ptr_comparable p1 p2 res ⊢ ptr_comparable p2 p1 res.
   Proof.
-    rewrite /ptr_comparable (comm and (is_Some (ptr_vaddr p2))); f_equiv.
+    rewrite ptr_comparable_eq /ptr_comparable_def.
+    rewrite (comm and (is_Some (ptr_vaddr p2))); f_equiv.
     iDestruct 1 as (vt1 vt2) "H"; iExists vt2, vt1.
     (* To ease rearranging conjuncts or changing connectives, we repeat the
     body (which is easy to update), not the nesting structure. *)
@@ -138,6 +143,7 @@ Section with_Σ.
     (is_Some (ptr_vaddr p) -> bool_decide (p = nullptr) = res) ->
     valid_ptr p ⊢ ptr_comparable p nullptr res.
   Proof.
+    rewrite ptr_comparable_eq /ptr_comparable_def.
     iIntros "%HresI V" ([Haddr _]); iExists Relaxed, Relaxed.
     iDestruct (same_address_bool_null with "V") as %->.
     iFrame ((HresI Haddr) (eq_refl nullptr)) "V".
