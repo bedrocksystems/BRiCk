@@ -585,6 +585,11 @@ Module SimpleCPP.
     Definition bytes (a : addr) (vs : list runtime_val) (q : Qp) : mpred :=
       [∗list] o ↦ v ∈ vs, byte_ (a+N.of_nat o)%N v q.
 
+    Instance bytes_timeless a rv q : Timeless (bytes a rv q) := _.
+    Instance bytes_fractional a vs : Fractional (bytes a vs) := _.
+    Instance bytes_as_fractional a vs q :
+      AsFractional (bytes a vs q) (bytes a vs) q.
+    Proof. exact: Build_AsFractional. Qed.
     Lemma bytes_nil a q : bytes a [] q -|- emp.
     Proof. done. Qed.
 
@@ -616,12 +621,6 @@ Module SimpleCPP.
       rewrite /bytes; case: vs => [ |v vs _] /=; first by lia.
       rewrite byte_frac_valid. by iIntros "[% _]".
     Qed.
-
-    Instance bytes_timeless a rv q : Timeless (bytes a rv q) := _.
-    Instance bytes_fractional a vs : Fractional (bytes a vs) := _.
-    Instance bytes_as_fractional a vs q :
-      AsFractional (bytes a vs q) (bytes a vs) q.
-    Proof. exact: Build_AsFractional. Qed.
 
     Lemma bytes_update {a : addr} {vs} vs' :
       length vs = length vs' →
