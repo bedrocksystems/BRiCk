@@ -161,7 +161,16 @@ Module SimpleCPP_BASE <: CPP_LOGIC_CLASS.
       own _ghost.(code_name)
         (A := gmapUR ptr (agreeR (leibnizO (Func + Method + Ctor + Dtor))))
         {[ p := to_agree f ]}.
+
+    #[global] Instance mem_inj_own_persistent p va : Persistent (mem_inj_own p va) := _.
+    #[global] Instance mem_inj_own_affine p va : Affine (mem_inj_own p va) := _.
+    #[global] Instance mem_inj_own_timeless p va : Timeless (mem_inj_own p va) := _.
+
+    #[global] Instance _code_own_persistent p f : Persistent (_code_own p f) := _.
+    #[global] Instance _code_own_affine p f : Affine (_code_own p f) := _.
+    #[global] Instance _code_own_timeless p f : Timeless (_code_own p f) := _.
   End with_cpp.
+  Typeclasses Opaque mem_inj_own _code_own.
 End SimpleCPP_BASE.
 
 (* TODO: provide an instance for this. *)
@@ -546,6 +555,7 @@ Module SimpleCPP.
     Instance val_as_fractional a rv q :
       AsFractional (val_ a rv q) (val_ a rv) q := _.
     Instance val_timeless a rv q : Timeless (val_ a rv q) := _.
+    Typeclasses Opaque val_.
 
 
     Definition byte_ (a : addr) (rv : runtime_val) (q : Qp) : mpred :=
