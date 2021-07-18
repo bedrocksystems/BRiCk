@@ -206,6 +206,7 @@ Module SimpleCPP.
     Definition live_ptr (p : ptr) :=
       default False%I (live_alloc_id <$> ptr_alloc_id p).
     Axiom nullptr_live : |-- live_ptr nullptr.
+    Typeclasses Opaque live_ptr.
 
     (** pointer validity *)
     (** Pointers past the end of an object/array can be valid; see
@@ -256,6 +257,7 @@ Module SimpleCPP.
       iDestruct 1 as "[[_ %]|H] /="; first done.
       by iDestruct "H" as (?????) "(_ & _ & _ & %Hne)".
     Qed.
+    Typeclasses Opaque _valid_ptr.
 
     Lemma strict_valid_valid p :
       strict_valid_ptr p |-- valid_ptr p.
