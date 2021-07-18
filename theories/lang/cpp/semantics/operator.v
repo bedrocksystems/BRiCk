@@ -21,13 +21,11 @@ Local Open Scope Z_scope.
 
 
 
-Module Type OPERATOR_PARAMS (Import V : VALUES_INTF).
+Module Type OPERATOR_INTF_FUNCTOR (Import V : VALUES_INTF).
   (** operator semantics *)
   Parameter eval_unop : forall {resolve : genv}, UnOp -> forall (argT resT : type) (arg res : val), Prop.
   Parameter eval_binop_pure : forall {resolve : genv}, BinOp -> forall (lhsT rhsT resT : type) (lhs rhs res : val), Prop.
-End OPERATOR_PARAMS.
 
-Module Type OPERATOR_AXIOMS (Import V : VALUES_INTF) (Import O : OPERATOR_PARAMS V).
 Section operator_axioms.
 
 Let eval_int_op (bo : BinOp) (o : Z -> Z -> Z) : Prop :=
@@ -200,11 +198,10 @@ Axiom eval_unop_not:
     @eval_unop genv Ubnot (Tint w sgn) (Tint w sgn)  (Vint a) (Vint b).
 
 End operator_axioms.
-End OPERATOR_AXIOMS.
+End OPERATOR_INTF_FUNCTOR.
 
 (* Collect all the axioms. *)
 
-Module Type OPERATOR_INTF_FUNCTOR (V : VALUES_INTF) := OPERATOR_PARAMS V <+ OPERATOR_AXIOMS V.
 Module Type OPERATOR_INTF := VALUES_INTF <+ OPERATOR_INTF_FUNCTOR.
 
 Module Export OPERATOR_INTF_AXIOM <: OPERATOR_INTF := VALUES_INTF_AXIOM <+ OPERATOR_INTF_FUNCTOR.
