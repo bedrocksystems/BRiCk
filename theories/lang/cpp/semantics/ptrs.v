@@ -355,7 +355,7 @@ Module Type PTRS_MIXIN (Import P : PTRS_INTF_MINIMAL).
   Proof. rewrite same_address_eq. apply _. Qed.
   #[global] Instance same_address_comm : Comm iff same_address.
   Proof. apply: symmetry_iff. Qed.
-  #[global] Instance: RewriteRelation same_address := {}.
+  #[global] Instance same_address_RewriteRelation : RewriteRelation same_address := {}.
 
   Lemma same_address_iff p1 p2 :
     same_address p1 p2 <-> ∃ va, ptr_vaddr p1 = Some va ∧ ptr_vaddr p2 = Some va.
@@ -380,7 +380,7 @@ Module Type PTRS_MIXIN (Import P : PTRS_INTF_MINIMAL).
     Proper (same_address ==> eq) ptr_vaddr.
   Proof. by intros p1 p2 (va&->&->)%same_address_iff. Qed.
 
-  #[global] Instance: Params ptr_vaddr 1 := {}.
+  #[global] Instance ptr_vaddr_params : Params ptr_vaddr 1 := {}.
 
 
   (** ** [same_address_bool] lemmas *)
@@ -419,7 +419,7 @@ Module Type PTRS_MIXIN (Import P : PTRS_INTF_MINIMAL).
     Proper (same_address ==> iff) (pinned_ptr_pure va).
   Proof. rewrite pinned_ptr_pure_eq. by intros p1 p2 ->. Qed.
 
-  #[global] Instance: Params pinned_ptr_pure 1 := {}.
+  #[global] Instance pinned_ptr_pure_params : Params pinned_ptr_pure 1 := {}.
 
   (** ** [same_alloc] lemmas *)
 
@@ -504,7 +504,7 @@ Module Type PTRS_MIXIN (Import P : PTRS_INTF_MINIMAL).
   #[global] Instance aligned_ptr_divide_flip_mono :
     Proper (N.divide ==> eq ==> flip impl) aligned_ptr.
   Proof. solve_proper. Qed.
-  #[global] Instance: RewriteRelation N.divide := {}.
+  #[global] Instance N_divide_RewriteRelation : RewriteRelation N.divide := {}.
 
   Lemma aligned_ptr_divide_weaken m n p :
     (n | m)%N ->
