@@ -4,6 +4,7 @@
  * See the LICENSE-BedRock file in the repository root for details.
  *)
 Require Import iris.proofmode.tactics.
+From iris_string_ident Require Import ltac2_string_ident.
 From bedrock.lang.prelude Require Import base option.
 From bedrock.lang.cpp Require Import ast semantics.values semantics.operator.
 From bedrock.lang.cpp Require Import logic.pred.
@@ -19,22 +20,47 @@ Definition non_beginning_ptr `{has_cpp : cpp_logic} p' : mpred :=
 Section non_beginning_ptr.
   Context `{has_cpp : cpp_logic}.
 
-  Global Instance non_beginning_ptr_persistent p : Persistent (non_beginning_ptr p) := _.
-  Global Instance non_beginning_ptr_affine p : Affine (non_beginning_ptr p) := _.
-  Global Instance non_beginning_ptr_timeless p : Timeless (non_beginning_ptr p) := _.
+  #[global] Instance non_beginning_ptr_persistent p : Persistent (non_beginning_ptr p) := _.
+  #[global] Instance non_beginning_ptr_affine p : Affine (non_beginning_ptr p) := _.
+  #[global] Instance non_beginning_ptr_timeless p : Timeless (non_beginning_ptr p) := _.
 End non_beginning_ptr.
 
 Typeclasses Opaque non_beginning_ptr.
 
 Section with_Σ.
   Context `{has_cpp : cpp_logic} {resolve : genv}.
-  Notation eval_binop_pure := (eval_binop_pure (resolve := resolve)).
-  Notation eval_binop_impure := (eval_binop_impure (resolve := resolve)).
 
   Definition eval_binop (b : BinOp) (lhsT rhsT resT : type) (lhs rhs res : val) : mpred :=
     [| eval_binop_pure b lhsT rhsT resT lhs rhs res |] ∨ eval_binop_impure b lhsT rhsT resT lhs rhs res.
 
   (** * Pointer comparison operators *)
+  (** For [Ble, Blt, Bge, Bgt] axioms on pointers. *)
+  Definition ptr_ord_comparable p1 p2 (f : vaddr -> vaddr -> bool) res : mpred :=
+    [| same_alloc p1 p2 |] ∗
+    [| forall va1 va2, ptr_vaddr p1 = Some va1 -> ptr_vaddr p2 = Some va2 -> f va1 va2 = res |] ∗
+    valid_ptr p1 ∗ valid_ptr p2.
+
+  (* Two pointers into the same array are [ptr_ord_comparable]. *)
+  Lemma ptr_ord_comparable_off_off o1 o2 base p1 p2 f res :
+    p1 = base .., o1 ->
+    p2 = base .., o2 ->
+    (forall va1 va2, ptr_vaddr p1 = Some va1 -> ptr_vaddr p2 = Some va2 -> f va1 va2 = res) ->
+    valid_ptr p1 ∗ valid_ptr p2 ⊢ ptr_ord_comparable p1 p2 f res.
+  Proof.
+    intros -> -> Hres.
+    iIntros "#[V1 V2]". iFrame (Hres) "V1 V2" => {Hres}; rewrite !valid_ptr_alloc_id.
+    iRevert "V1 V2"; iIntros "!%".
+    exact: same_alloc_offset_2.
+  Qed.
+
+  Lemma ptr_ord_comparable_off o1 base p1 f res :
+    p1 = base .., o1 ->
+    (forall va1 va2, ptr_vaddr p1 = Some va1 -> ptr_vaddr base = Some va2 -> f va1 va2 = res) ->
+    valid_ptr p1 ∗ valid_ptr base ⊢ ptr_ord_comparable p1 base f res.
+  Proof.
+    intros -> Hres. eapply (ptr_ord_comparable_off_off o1 o_id base) => //.
+    by rewrite offset_ptr_id.
+  Qed.
 
   (** Skeleton for [Beq] and [Bneq] axioms on pointers.
 
@@ -45,100 +71,145 @@ Section with_Σ.
    As a deviation, we assume compilers do not perform lifetime-end pointer
    zapping (see http://www.open-std.org/jtc1/sc22/wg14/www/docs/n2443.pdf).
 
-   Crucially, all those semantics _allow_ (but do not _require_) compilers to
-   assume that pointers with distinct provenances compare different, even when
-   they have the same address.
+   (1) We always require both pointers to be valid.
+   (2) Crucially, in all these semantics comparing pointers with distinct
+       provenances (allocation ID) but the same address has non-deterministic
+       results, so we forbid it. Hence, we must prevent ambiguous results.
+       (a) Comparing two pointers with the same allocation ID is never
+           ambiguous.
+       (b) We assume non-null pointers can be reliably distinguished from
+           [nullptr], because we don't support pointer zapping (unlike
+           Krebbers and the standard).
+       (c) Otherwise, we require that both pointers are jointly live, and
+           prevent remaining potential confusion via [ptr_unambiguous_cmp].
 
-   - Hence, comparing a past-the-end pointer to an object with a pointer to a
-     different object gives unspecified results [1]; we choose not to support
-     this case.
-   - We make assumptions about pointer validity.
-     A dangling pointer and a non-null live pointer have different
-     provenances but can have the same address.
-     As we don't support pointer zapping, we assume dangling pointers can be reliably
-     distinguished from [nullptr]. Hence, we require pointers under
-     comparison [p1] and [p2] to satisfy [live_ptr_if_needed] but not
-     [live_ptr].
-     We also require [p1] and [p2] to satisfy [_valid_ptr], even for comparisons against [nullptr].
-     Hence, null pointers can be compared with pointers satisfying [valid_ptr],
-     and otherwise we require that neither [p1] nor [p2] is an "invalid
-     pointer values" in the C++ sense (see [_valid_ptr] for discussion).
-
+   - Joint liveness is required in clause (c) because a dangling pointer and
+     a non-null live pointer have different provenances but can have the same
+     address, because the allocator could have reused the address of the
+     dangling pointer.
    - Via [ptr_unambiguous_cmp], we forbid comparing a one-past-the-end
      pointer to an object with a pointer to the "beginning" of a different
-     object.
-     Hence, past-the-end pointers can be compared:
-     - like Krebbers, with pointers to the same array; more in general, with
-       any pointers with the same allocation ID ([same_alloc]).
-     - unlike Krebbers, with [nullptr], and any pointer [p] not to the
-       beginning of a complete object, per [non_beginning_ptr].
-     In particular, non-past-the-end pointers can be compared with arbitrary
-     other non-past-the-end pointers.
+     object, because that gives unspecified results [1], so we choose not to
+     support this case. We use [non_beginning_ptr] to ensure a pointer is not
+     to the beginning of a complete object.
 
    [1] From https://eel.is/c++draft/expr.eq#3.1:
    > If one pointer represents the address of a complete object, and another
      pointer represents the address one past the last element of a different
      complete object, the result of the comparison is unspecified.
    *)
-  Local Definition ptr_unambiguous_cmp vt1 p2 : mpred :=
-    [| vt1 = Strict |] ∨ [| p2 = nullptr |] ∨ non_beginning_ptr p2.
-  Lemma ptr_unambiguous_cmp_1 p : ⊢ ptr_unambiguous_cmp Strict p.
-  Proof. rewrite /ptr_unambiguous_cmp; eauto. Qed.
-  Lemma ptr_unambiguous_cmp_2 vt : ⊢ ptr_unambiguous_cmp vt nullptr.
-  Proof. rewrite /ptr_unambiguous_cmp; eauto. Qed.
+  #[local] Definition ptr_unambiguous_cmp vt1 p2 : mpred :=
+    [| vt1 = Strict |] ∨ non_beginning_ptr p2.
 
-  Local Definition live_ptr_if_needed p1 p2 : mpred :=
-    live_ptr p1 ∨ [| p2 = nullptr |].
-  Lemma live_ptr_if_needed_1 p : ⊢ live_ptr_if_needed p nullptr.
-  Proof. rewrite /live_ptr_if_needed; eauto. Qed.
-  Lemma live_ptr_if_needed_2 p : ⊢ live_ptr_if_needed nullptr p.
-  Proof. rewrite /live_ptr_if_needed -nullptr_live; eauto. Qed.
+  (** Can these pointers be validly compared? *)
+  (* Written to ease showing [ptr_comparable_symm]. *)
+  Definition ptr_comparable_def p1 p2 res : mpred :=
+    (* These premises let you assume that that [p1] and [p2] have an address. *)
+    [| is_Some (ptr_vaddr p1) /\ is_Some (ptr_vaddr p2) |] -∗
+    ∃ vt1 vt2,
+      [| same_address_bool p1 p2 = res |] ∗
+      (_valid_ptr vt1 p1 ∗ _valid_ptr vt2 p2) ∗
+      ([| same_alloc p1 p2 |] ∨
+        ([| p1 = nullptr |] ∨ [| p2 = nullptr |]) ∨
+        ((live_ptr p1 ∧ live_ptr p2) ∗
+          ptr_unambiguous_cmp vt1 p2 ∗ ptr_unambiguous_cmp vt2 p1)).
+  Definition ptr_comparable_aux : seal ptr_comparable_def. Proof. by eexists. Qed.
+  Definition ptr_comparable := ptr_comparable_aux.(unseal).
+  Definition ptr_comparable_eq : ptr_comparable = _ := ptr_comparable_aux.(seal_eq).
 
-  Definition ptr_comparable p1 p2 vt1 vt2 : mpred :=
-    ([| same_alloc p1 p2 |] ∨ (ptr_unambiguous_cmp vt1 p2 ∧ ptr_unambiguous_cmp vt2 p1)) ∧
-    (_valid_ptr vt1 p1 ∧ _valid_ptr vt2 p2) ∧ (live_ptr_if_needed p1 p2 ∧ live_ptr_if_needed p2 p1).
-
-  Lemma ptr_comparable_symm p1 p2 vt1 vt2 :
-    ptr_comparable p1 p2 vt1 vt2 ⊢ ptr_comparable p2 p1 vt2 vt1.
+  Lemma ptr_ord_comparable_comparable p1 p2 res :
+    ptr_ord_comparable p1 p2 (λ va1 va2, bool_decide (va1 = va2)) res ⊢ ptr_comparable p1 p2 res.
   Proof.
-    rewrite /ptr_comparable.
-    rewrite (comm same_alloc); f_equiv; [|f_equiv]; by rewrite (comm bi_and).
+    rewrite ptr_comparable_eq /ptr_comparable_def.
+    iIntros "($ & %Hi & ? & ?)" ([[va1 Hs1] [va2 Hs2]]);
+      iExists Relaxed, Relaxed; iFrame.
+    by rewrite -(Hi _ _ Hs1 Hs2) (same_address_bool_eq Hs1 Hs2).
   Qed.
 
-  Lemma nullptr_comparable p : valid_ptr p ⊢ ptr_comparable nullptr p Strict Relaxed.
+  Lemma ptr_comparable_symm p1 p2 res :
+    ptr_comparable p1 p2 res ⊢ ptr_comparable p2 p1 res.
   Proof.
-    iIntros "$".
-    rewrite -strict_valid_ptr_nullptr.
-    rewrite -live_ptr_if_needed_1 -live_ptr_if_needed_2.
-    rewrite -ptr_unambiguous_cmp_1 -ptr_unambiguous_cmp_2.
-    rewrite !(right_id emp%I). by iRight.
+    rewrite ptr_comparable_eq /ptr_comparable_def.
+    rewrite (comm and (is_Some (ptr_vaddr p2))); f_equiv.
+    iDestruct 1 as (vt1 vt2) "H"; iExists vt2, vt1.
+    (* To ease rearranging conjuncts or changing connectives, we repeat the
+    body (which is easy to update), not the nesting structure. *)
+    rewrite !(comm and (is_Some (ptr_vaddr p2)), comm same_address_bool p2, comm _ (_valid_ptr vt2 _),
+      comm same_alloc p2, comm _ [| p2 = _ |]%I, comm _ (live_ptr p2), comm _ (ptr_unambiguous_cmp vt2 _)).
+    iStopProof. repeat f_equiv.
   Qed.
 
-  Let eval_ptr_eq_cmp_op (bo : BinOp) (f : ptr -> ptr -> bool) ty p1 p2 : mpred :=
+  Lemma nullptr_ptr_comparable {p res} :
+    (is_Some (ptr_vaddr p) -> bool_decide (p = nullptr) = res) ->
+    valid_ptr p ⊢ ptr_comparable p nullptr res.
+  Proof.
+    rewrite ptr_comparable_eq /ptr_comparable_def.
+    iIntros "%HresI V" ([Haddr _]); iExists Relaxed, Relaxed.
+    iDestruct (same_address_bool_null with "V") as %->.
+    iFrame ((HresI Haddr) (eq_refl nullptr)) "V".
+    iApply valid_ptr_nullptr.
+  Qed.
+
+  Lemma self_ptr_comparable p :
+    valid_ptr p ⊢ ptr_comparable p p true.
+  Proof.
+    rewrite -ptr_ord_comparable_comparable /ptr_ord_comparable; iIntros "#V".
+    iDestruct (same_alloc_refl with "V") as "$"; iFrame "V"; iIntros "!%".
+    intros; simplify_eq. exact: bool_decide_true.
+  Qed.
+
+  Lemma ptr_comparable_off_off o1 o2 base p1 p2 res :
+    p1 = base .., o1 ->
+    p2 = base .., o2 ->
+    same_address_bool p1 p2 = res ->
+    valid_ptr p1 ∗ valid_ptr p2 ⊢ ptr_comparable p1 p2 res.
+  Proof.
+    intros ->-> Hs. rewrite -ptr_ord_comparable_comparable.
+    apply: ptr_ord_comparable_off_off; [done..|].
+    move=> va1 va2 Hs1 Hs2. by rewrite -(same_address_bool_eq Hs1 Hs2).
+  Qed.
+
+  Lemma ptr_comparable_off o1 base p1 res :
+    p1 = base .., o1 ->
+    same_address_bool p1 base = res ->
+    valid_ptr p1 ∗ valid_ptr base ⊢ ptr_comparable p1 base res.
+  Proof.
+    intros -> Hres. eapply (ptr_comparable_off_off o1 o_id base) => //.
+    by rewrite offset_ptr_id.
+  Qed.
+
+  #[local] Definition eval_ptr_eq_cmp_op (bo : BinOp) ty p1 p2 res : mpred :=
     eval_binop_impure bo
       (Tpointer ty) (Tpointer ty) Tbool
-      (Vptr p1) (Vptr p2) (Vbool (f p1 p2)) ∗ True.
+      (Vptr p1) (Vptr p2) (Vbool res) ∗ True.
 
-  Axiom eval_ptr_eq : forall ty p1 p2 vt1 vt2,
-      ptr_comparable p1 p2 vt1 vt2
-    ⊢ Unfold eval_ptr_eq_cmp_op (eval_ptr_eq_cmp_op Beq same_address_bool ty p1 p2).
+  Axiom eval_ptr_eq : forall ty p1 p2 res,
+      ptr_comparable p1 p2 res
+    ⊢ Unfold eval_ptr_eq_cmp_op (eval_ptr_eq_cmp_op Beq ty p1 p2 res).
 
-  Axiom eval_ptr_neq : forall ty p1 p2,
+  Lemma eval_ptr_nullptr_eq_l {ty vp res} :
+    (is_Some (ptr_vaddr vp) -> bool_decide (vp = nullptr) = res) ->
+    valid_ptr vp ⊢ Unfold eval_ptr_eq_cmp_op (eval_ptr_eq_cmp_op Beq ty vp nullptr res).
+  Proof. intros ->%nullptr_ptr_comparable. by rewrite -eval_ptr_eq. Qed.
+
+  Lemma eval_ptr_nullptr_eq_r {ty vp res} :
+    (is_Some (ptr_vaddr vp) -> bool_decide (vp = nullptr) = res) ->
+    valid_ptr vp ⊢ Unfold eval_ptr_eq_cmp_op (eval_ptr_eq_cmp_op Beq ty nullptr vp res).
+  Proof. intros ->%nullptr_ptr_comparable. by rewrite ptr_comparable_symm -eval_ptr_eq. Qed.
+
+  Lemma eval_ptr_self_eq ty p :
+    valid_ptr p ⊢ Unfold eval_ptr_eq_cmp_op (eval_ptr_eq_cmp_op Beq ty p p true).
+  Proof. by rewrite -eval_ptr_eq -self_ptr_comparable. Qed.
+
+  Axiom eval_ptr_neq : forall ty p1 p2 res,
     Unfold eval_ptr_eq_cmp_op
-      (eval_ptr_eq_cmp_op Beq same_address_bool     ty p1 p2
-    ⊢ eval_ptr_eq_cmp_op Bneq (λ p1 p2, negb (same_address_bool p1 p2)) ty p1 p2).
+      (eval_ptr_eq_cmp_op Beq ty p1 p2 res
+    ⊢ eval_ptr_eq_cmp_op Bneq ty p1 p2 (negb res)).
 
   (** Skeleton for [Ble, Blt, Bge, Bgt] axioms on pointers. *)
-  Let eval_ptr_ord_cmp_op (bo : BinOp) (f : vaddr -> vaddr -> bool) : Prop :=
-    forall ty p1 p2 aid res,
-      ptr_alloc_id p1 = Some aid ->
-      ptr_alloc_id p2 = Some aid ->
-      liftM2 f (ptr_vaddr p1) (ptr_vaddr p2) = Some res ->
-
-      valid_ptr p1 ∧ valid_ptr p2 ∧
-      (* we could ask [live_ptr p1] or [live_ptr p2], but those are
-      equivalent, so we make the statement obviously symmetric. *)
-      live_alloc_id aid ⊢
+  #[local] Definition eval_ptr_ord_cmp_op (bo : BinOp) (f : vaddr -> vaddr -> bool) : Prop :=
+    forall ty p1 p2 res,
+      ptr_ord_comparable p1 p2 f res ⊢
       eval_binop_impure bo
         (Tpointer ty) (Tpointer ty) Tbool
         (Vptr p1) (Vptr p2) (Vbool res) ∗ True.
@@ -161,7 +232,7 @@ Section with_Σ.
 
   (** Skeletons for ptr/int operators. *)
 
-  Let eval_ptr_int_op (bo : BinOp) (f : Z -> Z) : Prop :=
+  #[local] Definition eval_ptr_int_op (bo : BinOp) (f : Z -> Z) : Prop :=
     forall w s p1 p2 o ty,
       is_Some (size_of resolve ty) ->
       p2 = p1 .., _sub ty (f o) ->
@@ -170,7 +241,7 @@ Section with_Σ.
                 (Tpointer ty) (Tint w s) (Tpointer ty)
                 (Vptr p1)     (Vint o)   (Vptr p2).
 
-  Let eval_int_ptr_op (bo : BinOp) (f : Z -> Z) : Prop :=
+  #[local] Definition eval_int_ptr_op (bo : BinOp) (f : Z -> Z) : Prop :=
     forall w s p1 p2 o ty,
       is_Some (size_of resolve ty) ->
       p2 = p1 .., _sub ty (f o) ->
@@ -226,17 +297,4 @@ Section with_Σ.
       eval_binop_impure Bsub
                 (Tpointer ty) (Tpointer ty) (Tint w Signed)
                 (Vptr p1)     (Vptr p2)     (Vint (o1 - o2)).
-
-  Lemma eval_ptr_nullptr_eq ty ap bp vp :
-    (ap = nullptr /\ bp = vp \/ ap = vp /\ bp = nullptr) ->
-    valid_ptr vp ⊢ Unfold eval_ptr_eq_cmp_op
-      (eval_ptr_eq_cmp_op Beq (λ _ _, bool_decide (vp = nullptr)) ty ap bp).
-  Proof.
-    iIntros (Hdisj) "#V".
-    iDestruct (same_address_bool_null with "V") as %<-.
-    iDestruct (nullptr_comparable with "V") as "{V} Cmp".
-    destruct Hdisj as [[-> ->]|[-> ->]].
-    { rewrite (comm same_address_bool vp). iApply (eval_ptr_eq with "Cmp"). }
-    { rewrite (ptr_comparable_symm nullptr). iApply (eval_ptr_eq with "Cmp"). }
-  Qed.
 End with_Σ.

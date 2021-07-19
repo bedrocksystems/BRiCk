@@ -347,12 +347,7 @@ Module Type PTRS_MIXIN (Import P : PTRS) (Import PD : PTRS_DERIVED P).
   *)
   Canonical Structure ptrO := leibnizO ptr.
 
-  #[global] Instance same_alloc_dec : RelDecision same_alloc.
-  Proof. rewrite same_alloc_eq. apply _. Qed.
-  #[global] Instance same_alloc_per : RelationClasses.PER same_alloc.
-  Proof. rewrite same_alloc_eq. apply _. Qed.
-  #[global] Instance same_alloc_comm : Comm iff same_alloc.
-  Proof. apply: symmetry_iff. Qed.
+  (** ** [same_address] lemmas *)
 
   #[global] Instance same_address_dec : RelDecision same_address.
   Proof. rewrite same_address_eq. apply _. Qed.
@@ -362,7 +357,35 @@ Module Type PTRS_MIXIN (Import P : PTRS) (Import PD : PTRS_DERIVED P).
   Proof. apply: symmetry_iff. Qed.
   #[global] Instance: RewriteRelation same_address := {}.
 
+  Lemma same_address_iff p1 p2 :
+    same_address p1 p2 <-> ∃ va, ptr_vaddr p1 = Some va ∧ ptr_vaddr p2 = Some va.
+  Proof. by rewrite same_address_eq same_property_iff. Qed.
+
+  Lemma same_address_pinned p1 p2 :
+    same_address p1 p2 <-> ∃ va, pinned_ptr_pure va p1 ∧ pinned_ptr_pure va p2.
+  Proof. by rewrite same_address_iff pinned_ptr_pure_eq. Qed.
+
+  Lemma same_address_intro p1 p2 va :
+    ptr_vaddr p1 = Some va -> ptr_vaddr p2 = Some va -> same_address p1 p2.
+  Proof. rewrite same_address_eq; exact: same_property_intro. Qed.
+
+  Lemma same_address_pinned_intro p1 p2 va :
+    pinned_ptr_pure va p1 -> pinned_ptr_pure va p2 -> same_address p1 p2.
+  Proof. rewrite pinned_ptr_pure_eq; exact: same_address_intro. Qed.
+
+  Lemma same_address_nullptr_nullptr : same_address nullptr nullptr.
+  Proof. have ? := ptr_vaddr_nullptr. exact: same_address_intro. Qed.
+
+  #[global] Instance ptr_vaddr_proper :
+    Proper (same_address ==> eq) ptr_vaddr.
+  Proof. by intros p1 p2 (va&->&->)%same_address_iff. Qed.
+
+  #[global] Instance: Params ptr_vaddr 1 := {}.
+
+
+  (** ** [same_address_bool] lemmas *)
   Definition same_address_bool p1 p2 := bool_decide (same_address p1 p2).
+
   #[global] Instance same_address_bool_comm : Comm eq same_address_bool.
   Proof. move=> p1 p2. apply bool_decide_iff, comm, _. Qed.
 
@@ -382,6 +405,7 @@ Module Type PTRS_MIXIN (Import P : PTRS) (Import PD : PTRS_DERIVED P).
     by rewrite same_address_eq -same_property_reflexive_equiv.
   Qed.
 
+  (** ** [pinned_ptr_pure] derived lemmas *)
   Lemma pinned_ptr_pure_null : pinned_ptr_pure 0 nullptr.
   Proof. by rewrite pinned_ptr_pure_eq ptr_vaddr_nullptr. Qed.
 
@@ -391,27 +415,33 @@ Module Type PTRS_MIXIN (Import P : PTRS) (Import PD : PTRS_DERIVED P).
     rewrite pinned_ptr_pure_eq => H1 H2. apply (inj Some). by rewrite -H1 -H2.
   Qed.
 
+  #[global] Instance pinned_ptr_pure_proper va :
+    Proper (same_address ==> iff) (pinned_ptr_pure va).
+  Proof. rewrite pinned_ptr_pure_eq. by intros p1 p2 ->. Qed.
+
+  #[global] Instance: Params pinned_ptr_pure 1 := {}.
+
+  (** ** [same_alloc] lemmas *)
+
+  #[global] Instance same_alloc_dec : RelDecision same_alloc.
+  Proof. rewrite same_alloc_eq. apply _. Qed.
+  #[global] Instance same_alloc_per : RelationClasses.PER same_alloc.
+  Proof. rewrite same_alloc_eq. apply _. Qed.
+  #[global] Instance same_alloc_comm : Comm iff same_alloc.
+  Proof. apply: symmetry_iff. Qed.
+
   Lemma same_alloc_iff p1 p2 :
     same_alloc p1 p2 <-> ∃ aid, ptr_alloc_id p1 = Some aid ∧ ptr_alloc_id p2 = Some aid.
   Proof. by rewrite same_alloc_eq same_property_iff. Qed.
 
-  Lemma same_address_iff p1 p2 :
-    same_address p1 p2 <-> ∃ va, ptr_vaddr p1 = Some va ∧ ptr_vaddr p2 = Some va.
-  Proof. by rewrite same_address_eq same_property_iff. Qed.
+  Lemma same_alloc_intro p1 p2 aid :
+    ptr_alloc_id p1 = Some aid -> ptr_alloc_id p2 = Some aid -> same_alloc p1 p2.
+  Proof. rewrite same_alloc_eq; exact: same_property_intro. Qed.
 
-  Lemma same_address_pinned p1 p2 :
-    same_address p1 p2 <-> ∃ va, pinned_ptr_pure va p1 ∧ pinned_ptr_pure va p2.
-  Proof. by rewrite same_address_iff pinned_ptr_pure_eq. Qed.
+  Lemma same_alloc_nullptr_nullptr : same_alloc nullptr nullptr.
+  Proof. have ? := ptr_alloc_id_nullptr. exact: same_alloc_intro. Qed.
 
-  #[global] Instance ptr_vaddr_proper :
-    Proper (same_address ==> eq) ptr_vaddr.
-  Proof. by intros p1 p2 (va&->&->)%same_address_iff. Qed.
-  #[global] Instance: Params ptr_vaddr 1 := {}.
 
-  #[global] Instance pinned_ptr_pure_proper va :
-    Proper (same_address ==> iff) (pinned_ptr_pure va).
-  Proof. rewrite pinned_ptr_pure_eq. by intros p1 p2 ->. Qed.
-  #[global] Instance: Params pinned_ptr_pure 1 := {}.
 
   Lemma ptr_alloc_id_base p o
     (Hs : is_Some (ptr_alloc_id (p .., o))) :

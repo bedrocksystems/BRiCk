@@ -211,7 +211,7 @@ Module SimpleCPP.
     Proof. rewrite /in_range/=. f_equiv. rewrite/impl. tauto. Qed.
 
     Definition _valid_ptr vt (p : ptr) : mpred :=
-      [| p = nullptr |] \\//
+      [| p = nullptr /\ vt = Relaxed |] \\//
             Exists base l h o zo,
                 blocks_own base l h **
                 in_range vt l zo h **
@@ -234,19 +234,28 @@ Module SimpleCPP.
       _valid_ptr tv p |--
       [| same_address p nullptr <-> p = nullptr |].
     Proof.
-      rewrite /_valid_ptr same_address_eq; iIntros "[->|H]";
+      rewrite /_valid_ptr same_address_eq; iIntros "[[-> _]|H]";
         [ |iDestruct "H" as (?????) "(_ & _ & _ & %Hne)"]; iIntros "!%".
       by rewrite same_property_iff ptr_vaddr_nullptr; naive_solver.
       rewrite same_property_iff; split; last intros ->;
         rewrite ptr_vaddr_nullptr; naive_solver.
     Qed.
 
-    Theorem _valid_ptr_nullptr b : |-- _valid_ptr b nullptr.
+    Theorem valid_ptr_nullptr : |-- valid_ptr nullptr.
     Proof. by iLeft. Qed.
+
+    Theorem not_strictly_valid_ptr_nullptr : strict_valid_ptr nullptr |-- False.
+    Proof.
+      iDestruct 1 as "[[_ %]|H] /="; first done.
+      by iDestruct "H" as (?????) "(_ & _ & _ & %Hne)".
+    Qed.
 
     Lemma strict_valid_valid p :
       strict_valid_ptr p |-- valid_ptr p.
-    Proof. rewrite /_valid_ptr/=. by setoid_rewrite in_range_weaken. Qed.
+    Proof.
+      rewrite /_valid_ptr/=; f_equiv. { by iIntros "!%" ([_ ?]). }
+      by setoid_rewrite in_range_weaken.
+    Qed.
 
     Axiom valid_ptr_alloc_id : forall p,
       valid_ptr p |-- [| is_Some (ptr_alloc_id p) |].
@@ -758,6 +767,8 @@ Module SimpleCPP.
       ([| p = nullptr /\ va = 0%N |] \\//
       ([| p <> nullptr /\ ptr_vaddr p = Some va |] ** mem_inj_own p (Some va))).
 
+    Lemma pinned_ptr_null : |-- pinned_ptr 0 nullptr.
+    Proof. iSplit; by [iApply valid_ptr_nullptr | iLeft]. Qed.
 
     (* Not provable in the current model without tying to a concrete model of pointers. *)
     Lemma offset_pinned_ptr_pure σ o n va p :
@@ -1089,7 +1100,7 @@ Module VALID_PTR : VALID_PTR_AXIOMS VALUES_FULL_IMPL L L.
       _valid_ptr vt invalid_ptr |-- False.
     Proof.
       (* A proper proof requires redesigning valid_ptr *)
-      rewrite /_valid_ptr; iDestruct 1 as "[%|H]"; first done.
+      rewrite /_valid_ptr; iDestruct 1 as "[%|H]"; first naive_solver.
       iDestruct "H" as (base l h o zo) "(B & Rng & %Hoff & _)".
       destruct Hoff as (? & Heval & Habs).
     Admitted.
