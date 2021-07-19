@@ -45,7 +45,7 @@ Section destroy.
   Qed.
 
   (* [destruct_val dispatch t this Q] invokes the destructor on [this]
-     with the type of [this] is [t].
+     where the type of [this] is [t].
 
      The [dispatch] parameter determines whether the call is a *potentially*
      virtual call. If [dispatch] is true *and the destructor of the class is
@@ -123,5 +123,25 @@ Section destroy.
         { by iIntros "X"; iApply resolve_dtor_frame; iIntros (???) "B"; iNext; iRevert "B"; iApply mspec_frame; iIntros (?). }
         { iIntros "X Y"; iNext; iRevert "Y"; iApply mspec_frame; iIntros (?); done. } } }
   Qed.
+End destroy.
+
+(* [destroy_val dispatch t this Q] destroys [this]:
+    - it invokes the destructor via [destruct_val]
+    - and then it *does* free the underlying memory.
+*)
+Notation destroy_val ti dispatch t this Q :=
+  (destruct_val ti dispatch t%I this%ptr%I (_at this%ptr (tblockR (erase_qualifiers t) 1) ** Q)).
+
+Section destroy.
+  Context `{Σ : cpp_logic thread_info} {σ:genv}.
+  Variable (ti : thread_info).
+
+  (* Just as a crutch for typechecking. *)
+  #[local] Definition __destroy_val dispatch (t : type) (this : ptr) (Q : mpred) : mpred :=
+    destroy_val ti dispatch t this Q.
+
+  Lemma destroy_val_frame dispatch ty this Q Q' :
+      Q -* Q' |-- destroy_val ti dispatch ty this Q -* destroy_val ti dispatch ty this Q'.
+  Proof. rewrite -destruct_val_frame. iIntros "W [$ Q]". by iApply "W". Qed.
 
 End destroy.

@@ -393,7 +393,7 @@ Section with_cpp.
       | _              =>
         Forall a : ptr, a |-> primR (erase_qualifiers ty) 1 v -*
         bind_vars xs vs (Rbind_check x a r) (fun r free => Q r (a |-> anyR (erase_qualifiers ty) 1 ** free))
-        (* Here we view [anyR (erase_quaifiers ty) 1] as essentially the pre-condition
+        (* Here we view [anyR (erase_qualifiers ty) 1] as essentially the pre-condition
            to the "destructor" of a primitive. *)
       end
     | _ , _ => ERROR "bind_vars: argument mismatch"
@@ -731,7 +731,7 @@ Section with_cpp.
     match bases with
     | nil => Q
     | base :: bases =>
-      destruct_val ti false (Tnamed base) (this ., _base cls base) (wpd_bases ti cls this bases Q)
+      destroy_val ti false (Tnamed base) (this ., _base cls base) (wpd_bases ti cls this bases Q)
     end.
 
   Fixpoint wpd_members
@@ -741,7 +741,7 @@ Section with_cpp.
     match members with
     | nil => Q
     | member :: members =>
-      destruct_val ti false member.(mem_type) (this ., _field {| f_name := member.(mem_name) ; f_type := cls |})
+      destroy_val ti false member.(mem_type) (this ., _field {| f_name := member.(mem_name) ; f_type := cls |})
            (wpd_members ti cls this members Q)
     end.
 

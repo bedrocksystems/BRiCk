@@ -33,6 +33,7 @@ Module Type Stmt.
     Local Notation wpe := (wpe M ti).
     Local Notation fspec := (fspec ti).
     Local Notation destruct_val := (destruct_val ti) (only parsing).
+    Local Notation destroy_val dispatch t this Q := (destroy_val ti dispatch t this Q) (only parsing).
 
     Local Notation glob_def := (glob_def resolve) (only parsing).
 
@@ -109,10 +110,7 @@ Module Type Stmt.
 
       | Tnamed cls =>
         Forall a : ptr, a |-> tblockR (σ:=resolve) ty 1 -*
-                  let destroy P :=
-                      destruct_val false ty a (a |-> tblockR (erase_qualifiers ty) 1 ** P)
-                  in
-                  let continue := k (Rbind x a ρ) destroy in
+                  let continue := k (Rbind x a ρ) (fun P => destroy_val false ty a P) in
                   match init with
                   | None => continue
                   | Some init =>
@@ -120,10 +118,7 @@ Module Type Stmt.
                   end
       | Tarray ty' N =>
         Forall a : ptr, a |-> tblockR (σ:=resolve) ty 1 -*
-                  let destroy P :=
-                      destruct_val false ty a (a |-> tblockR (σ:=resolve) (erase_qualifiers ty) 1 ** P)
-                  in
-                  let continue := k (Rbind x a ρ) destroy in
+                  let continue := k (Rbind x a ρ) (fun P => destroy_val false ty a P) in
                   match init with
                   | None => continue
                   | Some init =>
@@ -202,7 +197,7 @@ Module Type Stmt.
         Forall a (b b' : _), (Forall rt rt' : mpred, (rt -* rt') -* b rt -* b' rt') -* k a b -* k' a b'
         |-- wp_decl_var ρ ρ_init x ty init k -* wp_decl_var ρ ρ_init x ty init k'.
     Proof.
-      induction ty using type_ind'; simpl.
+      induction ty using type_ind'.
       { intros; apply decl_prim with (ty:=Tptr ty). }
       { destruct init; intros.
         { iIntros "X"; iApply wp_lval_frame; first reflexivity.
@@ -220,38 +215,17 @@ Module Type Stmt.
         { iIntros "X Y" (?) "a"; iDestruct ("Y" with "a") as "Y"; iRevert "Y".
           iApply wp_init_frame; first reflexivity.
           iIntros (?) "[$ k]"; iRevert "k"; iApply "X".
-          clear. iStopProof. induction (rev (seq 0 (N.to_nat sz))); simpl.
-          { iIntros "_" (??) "X [$ y]"; iApply "X"; eauto. }
-          { iIntros "_" (??) "X [$ y]"; iRevert "y".
-            iApply destruct_val_frame; by iApply IHl. } }
+          iIntros (??). iApply destroy_val_frame. }
         { iIntros "X Y" (?) "a"; iDestruct ("Y" with "a") as "Y"; iRevert "Y".
-          iApply "X".
-          clear. iStopProof. induction (rev (seq 0 (N.to_nat sz))); simpl.
-          { iIntros "_" (??) "X [$ y]"; iApply "X"; eauto. }
-          { iIntros "_" (??) "X [$ y]"; iRevert "y".
-            iApply destruct_val_frame; by iApply IHl. } } }
+          iApply "X". iIntros (??). iApply destroy_val_frame. } }
       { intros. iIntros "X y" (a) "z".
         iDestruct ("y" with "z") as "y"; iRevert "y".
         destruct init.
         { iApply wp_init_frame; first reflexivity.
           iIntros (?) "[$ x]"; iRevert "x"; iApply "X".
-          case_match; last iIntros (??) "? []".
-          case_match; try iIntros (??) "? []".
-          { iIntros (??) "k x !>".
-            iRevert "x"; iApply mspec_frame.
-            iIntros (_) "[? ?]"; iFrame; by iApply "k". }
-          { iIntros (??) "k x !>".
-            iRevert "x"; iApply mspec_frame.
-            iIntros (_) "[? ?]"; iFrame; by iApply "k". } }
+          iIntros (??). iApply destroy_val_frame. }
         { iApply "X".
-          case_match; last iIntros (??) "? []".
-          case_match; try iIntros (??) "? []".
-          { iIntros (??) "k x !>".
-            iRevert "x"; iApply mspec_frame.
-            iIntros (_) "[? ?]"; iFrame; by iApply "k". }
-          { iIntros (??) "k x !>".
-            iRevert "x"; iApply mspec_frame.
-            iIntros (_) "[? ?]"; iFrame; by iApply "k". } } }
+          iIntros (??). iApply destroy_val_frame. } }
       { intros. iIntros "? $". }
       { intros; apply decl_prim with (ty:=Tbool). }
       { intros; apply decl_prim with (ty:=Tmember_pointer _ _). }
