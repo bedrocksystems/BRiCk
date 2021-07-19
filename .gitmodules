@@ -1,0 +1,4 @@
+[submodule "alectryon"]
+	path = alectryon
+	url = git@gitlab.com:bedrocksystems/formal-methods/alectryon.git
+	branch = include-position-information
