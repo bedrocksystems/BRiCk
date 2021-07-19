@@ -33,7 +33,7 @@ Module Type Stmt.
     Local Notation wpe := (wpe M ti).
     Local Notation fspec := (fspec ti).
     Local Notation destruct_val := (destruct_val ti) (only parsing).
-    Local Notation destroy_val := (destroy_val ti) (only parsing).
+    Local Notation destroy_val dispatch t this Q := (destroy_val ti dispatch t this Q) (only parsing).
 
     Local Notation glob_def := (glob_def resolve) (only parsing).
 
@@ -110,7 +110,7 @@ Module Type Stmt.
 
       | Tnamed cls =>
         Forall a : ptr, a |-> tblockR (σ:=resolve) ty 1 -*
-                  let continue := k (Rbind x a ρ) (destroy_val false ty a) in
+                  let continue := k (Rbind x a ρ) (fun P => destroy_val false ty a P) in
                   match init with
                   | None => continue
                   | Some init =>
@@ -118,7 +118,7 @@ Module Type Stmt.
                   end
       | Tarray ty' N =>
         Forall a : ptr, a |-> tblockR (σ:=resolve) ty 1 -*
-                  let continue := k (Rbind x a ρ) (destroy_val false ty a) in
+                  let continue := k (Rbind x a ρ) (fun P => destroy_val false ty a P) in
                   match init with
                   | None => continue
                   | Some init =>
@@ -197,7 +197,7 @@ Module Type Stmt.
         Forall a (b b' : _), (Forall rt rt' : mpred, (rt -* rt') -* b rt -* b' rt') -* k a b -* k' a b'
         |-- wp_decl_var ρ ρ_init x ty init k -* wp_decl_var ρ ρ_init x ty init k'.
     Proof.
-      induction ty using type_ind'; simpl.
+      induction ty using type_ind'.
       { intros; apply decl_prim with (ty:=Tptr ty). }
       { destruct init; intros.
         { iIntros "X"; iApply wp_lval_frame; first reflexivity.
