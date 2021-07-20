@@ -66,11 +66,23 @@ Module Type Stmt.
              wp_xval ρ e (fun v free => free ** Q (ReturnVal (Vptr v)))
            end
        |-- wp ρ (Sreturn (Some (c, e))) Q.
+    Axiom wp_return_frame : forall ρ rv (Q Q' : KpredI),
+        match rv with
+        | None => Q ReturnVoid -* Q' ReturnVoid
+        | Some _ =>
+          (* NOTE unsound in the presence of exceptions *)
+          Forall v, Q (ReturnVal v) -* Q' (ReturnVal v)
+        end |-- wp ρ (Sreturn rv) Q -* wp ρ (Sreturn rv) Q'.
 
     Axiom wp_break : forall ρ Q,
         |> Q Break |-- wp ρ Sbreak Q.
+    Axiom wp_break_frame : forall ρ (Q Q' : KpredI),
+        Q Break -* Q' Break |-- wp ρ Sbreak Q -* wp ρ Sbreak Q'.
+
     Axiom wp_continue : forall ρ Q,
         |> Q Continue |-- wp ρ Scontinue Q.
+    Axiom wp_continue_frame : forall ρ (Q Q' : KpredI),
+        Q Continue -* Q' Continue |-- wp ρ Scontinue Q -* wp ρ Scontinue Q'.
 
     Axiom wp_expr : forall ρ vc e Q,
         |> wpe ρ vc e (fun _ free => free ** Q Normal)
