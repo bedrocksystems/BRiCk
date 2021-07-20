@@ -20,6 +20,8 @@ https://gitlab.mpi-sws.org/iris/iris/-/wikis/style-guide
 https://gitlab.mpi-sws.org/iris/iris/-/blob/master/docs/proof_guide.md
 *)
 
+(* TODO Maybe this should be removed *)
+#[global] Coercion Z.of_N : N >-> Z.
 
 (** * Natural numbers [nat] *)
 
