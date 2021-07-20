@@ -69,6 +69,9 @@ Variant val : Set :=
 .
 #[global] Notation Vref := Vptr (only parsing).
 
+(* TODO Maybe this should be removed *)
+#[global] Coercion Vint : Z >-> val.
+
 Definition val_dec : forall a b : val, {a = b} + {a <> b}.
 Proof. solve_decision. Defined.
 #[global] Instance val_eq_dec : EqDecision val := val_dec.
