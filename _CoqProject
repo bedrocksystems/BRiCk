@@ -11,7 +11,12 @@
 # Turn warning on hints into error:
 -arg -w -arg +deprecated-hint-without-locality
 
--Q theories bedrock
+-Q theories/prelude bedrock.prelude
+-Q theories/lang bedrock.lang
+
+# Utility modules from iris-independent prelude
+theories/prelude/wrap.v
+theories/prelude/hw_types.v
 
 # Utility modules
 theories/lang/prelude/base.v
