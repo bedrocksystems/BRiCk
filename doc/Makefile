@@ -18,7 +18,7 @@ COQLIB       = $(shell coqc -where)
 ######################################################################
 
 # Sphinx-related variables
-SPHINXENV:=COQBIN="$(COQBIN)" COQLIB="$(COQLIB)" COQPATH="$(COQPATH):$(COQPATHEXTRA)"
+SPHINXENV:=COQBIN="$(COQBIN)" COQLIB="$(COQLIB)" COQPATH=$(COQPATH):$(COQPATHEXTRA)
 SPHINXWARNERROR ?= 1
 ifeq ($(SPHINXWARNERROR),1)
 SPHINXOPTS= -W
