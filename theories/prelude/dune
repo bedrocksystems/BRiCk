@@ -1,0 +1,16 @@
+(include_subdirs qualified)
+(coq.theory
+ (name bedrock.prelude)                ; This will determine the toplevel
+ ; module of your theory, modules will
+ ; be MyPlugin.A, etc... when seen from
+ ; outside.
+
+ (package coq-cpp2v)            ; Adding this line will make your
+ ; library installable in the package
+
+ (flags (
+   ; Warns about correct usage:
+   -w -ssr-search-moved
+   -w +deprecated-hint-without-locality
+  ))
+)

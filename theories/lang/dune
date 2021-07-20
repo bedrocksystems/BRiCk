@@ -19,5 +19,6 @@
    ; Warns about correct usage:
    -w -ssr-search-moved
    -w +deprecated-hint-without-locality
-   )
-))
+  ))
+ (theories bedrock.prelude)
+)
