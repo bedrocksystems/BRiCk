@@ -277,6 +277,9 @@ public:
             this->Visit(decl->getFriendDecl(), true);
         }
     }
+
+    void VisitTypeAliasTemplateDecl(const TypeAliasTemplateDecl *, bool) {}
+    void VisitUsingShadowDecl(const UsingShadowDecl *, bool) {}
 };
 
 void

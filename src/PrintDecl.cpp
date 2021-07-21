@@ -230,6 +230,12 @@ public:
         return true;
     }
 
+    bool VisitTypeAliasTemplateDecl(const TypeAliasTemplateDecl *type,
+                                    CoqPrinter &print, ClangPrinter &cprint,
+                                    const ASTContext &) {
+        return false;
+    }
+
     bool printMangledFieldName(const FieldDecl *field, CoqPrinter &print,
                                ClangPrinter &cprint) {
         if (field->isAnonymousStructOrUnion()) {
