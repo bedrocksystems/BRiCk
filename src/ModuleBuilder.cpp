@@ -76,6 +76,10 @@ public:
         }
     }
 
+    void VisitStaticAssertDecl(const StaticAssertDecl *decl, bool) {
+        module_.add_assert(decl);
+    }
+
     void VisitAccessSpecDecl(const AccessSpecDecl *, bool) {
         // ignore
     }

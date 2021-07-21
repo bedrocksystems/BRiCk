@@ -5,6 +5,7 @@
  */
 #pragma once
 #include <clang/AST/Decl.h>
+#include <clang/AST/DeclCXX.h>
 #include <list>
 #include <map>
 #include <set>
@@ -19,6 +20,14 @@ public:
 
     void add_declaration(const clang::NamedDecl* d);
 
+    void add_assert(const clang::StaticAssertDecl* d) {
+        asserts_.push_back(d);
+    }
+
+    const auto& asserts() const {
+        return asserts_;
+    }
+
     const auto& imports() const {
         return imports_;
     }
@@ -32,6 +41,8 @@ public:
 private:
     std::map<const clang::NamedDecl*, bool> imports_;
     std::set<const clang::NamedDecl*> definitions_;
+
+    std::list<const clang::StaticAssertDecl*> asserts_;
 };
 
 class Filter;

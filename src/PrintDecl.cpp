@@ -777,6 +777,21 @@ public:
                               ClangPrinter &, const ASTContext &) {
         return false;
     }
+
+    bool VisitStaticAssertDecl(const StaticAssertDecl *decl, CoqPrinter &print,
+                               ClangPrinter &cprint, const ASTContext &) {
+        print.ctor("Dstatic_assert");
+        if (auto msg = decl->getMessage()) {
+            print.some();
+            print.str(msg->getString()) << fmt::nbsp;
+            print.end_ctor();
+        } else {
+            print.none();
+        }
+        cprint.printExpr(decl->getAssertExpr(), print);
+        print.end_ctor();
+        return true;
+    }
 };
 
 PrintDecl PrintDecl::printer;

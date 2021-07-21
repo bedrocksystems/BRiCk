@@ -73,13 +73,15 @@ ToCoqConsumer::toCoqModule(clang::ASTContext *ctxt,
 
             print.begin_list();
             for (auto entry : mod.imports()) {
-                auto decl = entry.first;
+                if (cprint.printDecl(entry.first, print))
+                    print.cons();
+            }
+            for (auto decl : mod.definitions()) {
                 if (cprint.printDecl(decl, print))
                     print.cons();
             }
-            for (auto entry : mod.definitions()) {
-                auto decl = entry;
-                if (cprint.printDecl(decl, print))
+            for (auto entry : mod.asserts()) {
+                if (cprint.printDecl(entry, print))
                     print.cons();
             }
             print.end_list();
