@@ -576,7 +576,6 @@ public:
                 } else {
                     assert(false && "not member, base class, or indirect");
                 }
-                print.output() << fmt::line;
                 cprint.printExpr(init->getInit(), print);
                 print.end_ctor();
                 print.cons();
