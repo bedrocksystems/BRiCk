@@ -7,6 +7,7 @@
 #include <clang/AST/Decl.h>
 #include <list>
 #include <map>
+#include <set>
 #include <utility>
 namespace clang {
 class CompilerInstance;
@@ -18,22 +19,19 @@ public:
 
     void add_declaration(const clang::NamedDecl* d);
 
-    const std::multimap<std::string, std::pair<const clang::NamedDecl*, bool>>&
-    imports() const {
+    const auto& imports() const {
         return imports_;
     }
 
-    const std::multimap<std::string, const clang::NamedDecl*>&
-    definitions() const {
+    const auto& definitions() const {
         return definitions_;
     }
 
     Module() : imports_(), definitions_() {}
 
 private:
-    std::multimap<std::string, std::pair<const clang::NamedDecl*, bool>>
-        imports_;
-    std::multimap<std::string, const clang::NamedDecl*> definitions_;
+    std::map<const clang::NamedDecl*, bool> imports_;
+    std::set<const clang::NamedDecl*> definitions_;
 };
 
 class Filter;

@@ -62,8 +62,18 @@ public:
     }
 
     void VisitDecl(const Decl *d, bool) {
-        logging::log() << "visiting declaration..." << d->getDeclKindName()
-                       << "\n";
+        logging::debug() << "Unknown declaration kind \""
+                         << d->getDeclKindName() << "\" dropping.\n";
+    }
+
+    void VisitBuiltinTemplateDecl(const BuiltinTemplateDecl *, bool) {
+        // ignore
+    }
+
+    void VisitVarTemplateDecl(const VarTemplateDecl *decl, bool) {
+        for (auto i : decl->specializations()) {
+            this->Visit(i, true);
+        }
     }
 
     void VisitAccessSpecDecl(const AccessSpecDecl *, bool) {
@@ -286,18 +296,23 @@ void ::Module::add_definition(const clang::NamedDecl *d, bool opaque) {
     if (opaque) {
         add_declaration(d);
     } else {
-        std::string name = d->getNameAsString();
-        auto found = definitions_.find(name);
-        if ((found == definitions_.end()) || found->second != d) {
-            definitions_.insert(std::make_pair(name, d));
+        auto found = definitions_.find(d);
+        if (found != definitions_.end()) {
+            logging::debug()
+                << "duplicate definition: " << d->getQualifiedNameAsString()
+                << "\n";
+        } else {
+            definitions_.insert(d);
         }
     }
 }
 
 void ::Module::add_declaration(const clang::NamedDecl *d) {
-    std::string name = d->getNameAsString();
-    auto found = imports_.find(name);
-    if ((found == imports_.end()) || found->second.first != d) {
-        imports_.insert(std::make_pair(name, std::make_pair(d, true)));
+    auto found = imports_.find(d);
+    if (found == imports_.end()) {
+        imports_.insert(std::make_pair(d, true));
+    } else {
+        logging::debug() << "re-adding declaration: "
+                         << d->getQualifiedNameAsString() << "\n";
     }
 }

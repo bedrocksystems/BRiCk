@@ -64,8 +64,7 @@ write_globals(::Module &mod, CoqPrinter &print, ClangPrinter &cprint) {
     print.output() << "Module _'." << fmt::indent << fmt::line;
 
     // todo(gmm): i would like to generate function names.
-    for (auto i : mod.definitions()) {
-        auto def = i.second;
+    for (auto def : mod.definitions()) {
         if (const FieldDecl *fd = dyn_cast<FieldDecl>(def)) {
             print.output() << "Notation \"'";
             print_path(print, fd->getParent(), true);
