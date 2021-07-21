@@ -64,7 +64,46 @@ add_library(tocoq
 set_property(TARGET tocoq PROPERTY POSITION_INDEPENDENT_CODE ON)
 add_compile_options(-fno-rtti)
 IF (APPLE)
+   message(STATUS "Apple platform detected")
    set(CMAKE_MACOSX_RPATH ON)
+
+   IF (DEFINED "CLANG_DIR")
+      message(STATUS "Building under Nix")
+   ELSE (DEFINED "CLANG_DIR")
+      # Use 'clang' from PATH to find the LLVM libs directory.
+      # Assumes the clang used to build cpp2v is the same as the one found in PATH.
+      # Similar to:
+      #    echo $(dirname $(dirname $(which clang)))/lib
+
+      find_path(llvm_lib clang)
+
+      IF (llvm_lib MATCHES "-NOTFOUND$")
+         MESSAGE(SEND_ERROR "Command 'clang' not found. Check your shell's PATH.")
+         return()
+      ENDIF (llvm_lib MATCHES "-NOTFOUND$")
+
+      # TODO: upgrade to 3.2, set cmake_minimum_required and update below
+      IF (${CMAKE_VERSION} VERSION_LESS "3.20")
+         set(llvm_lib "${llvm_lib}/../lib")
+      ELSE (${CMAKE_VERSION} VERSION_LESS "3.20")
+         file(TO_CMAKE_PATH "${llvm_lib}" llvm_lib)
+         cmake_path(APPEND llvm_lib "..")
+         cmake_path(APPEND llvm_lib "lib")
+         cmake_path(ABSOLUTE_PATH llvm_lib NORMALIZE)
+         file(TO_NATIVE_PATH "${llvm_lib}" llvm_lib)
+      ENDIF (${CMAKE_VERSION} VERSION_LESS "3.20")
+
+      IF (NOT IS_DIRECTORY "${llvm_lib}")
+         MESSAGE(SEND_ERROR "LLVM libraries directory not found: ${llvm_lib}")
+         return()
+      ENDIF (NOT IS_DIRECTORY "${llvm_lib}")
+      message(STATUS "LLVM libraries: ${llvm_lib}")
+
+      set(CMAKE_INSTALL_RPATH "${llvm_lib}")
+      set(CMAKE_PREFIX_PATH "${llvm_lib}")
+      set(CMAKE_SHARED_LINKER_FLAGS "-L${llvm_lib} -lclangSerialization -lclangASTMatchers -lclangSema -lclangAnalysis -lclangRewriteFrontend -lclangEdit -lclangParse -lclangFrontend -lclangBasic -lclangDriver -lclangAST -lclangLex -lz -lcurses")
+      set(CMAKE_EXE_LINKER_FLAGS "-L${llvm_lib}")
+   ENDIF (DEFINED "CLANG_DIR")
 ENDIF (APPLE)
 
 add_executable(cpp2v
