@@ -653,6 +653,37 @@ public:
         done(expr, print, cprint);
     }
 
+    void VisitCXXInheritedCtorInitExpr(const CXXInheritedCtorInitExpr* expr,
+                                       CoqPrinter& print, ClangPrinter& cprint,
+                                       const ASTContext&, OpaqueNames& li) {
+        print.ctor("Econstructor");
+        // print.output() << expr->isElidable() << fmt::nbsp;
+        auto ctor = expr->getConstructor();
+        cprint.printObjName(ctor, print);
+        print.output() << fmt::nbsp;
+        // NOTE clang does not include the arguments to the constructor here
+        // they are forwarded from the function itself; however, with the
+        // data that we have, we can't get to the actual function.
+        // A good solution would be to store this information in the [OpaqueNames]
+        // object, but for now, we can get away with printing the variable references
+        // directly.
+        auto idx = 0;
+        print.list(ctor->parameters(), [&](auto print, auto i) {
+            print.output() << "(Lvalue, ";
+            print.ctor("Evar", false);
+            print.ctor("Lname", false);
+            print.output() << "\"#" << idx << "\"";
+            print.end_ctor();
+            print.output() << fmt::nbsp;
+            cprint.printQualType(i->getType(), print);
+            print.end_ctor();
+            print.output() << ")";
+            ++idx;
+        });
+        //print.output() << fmt::nbsp << expr->isElidable();
+        done(expr, print, cprint);
+    }
+
     void VisitCXXMemberCallExpr(const CXXMemberCallExpr* expr,
                                 CoqPrinter& print, ClangPrinter& cprint,
                                 const ASTContext&, OpaqueNames& li) {
