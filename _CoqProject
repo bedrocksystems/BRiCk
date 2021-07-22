@@ -18,15 +18,15 @@
 theories/prelude/stdpp_ssreflect.v
 theories/prelude/wrap.v
 theories/prelude/hw_types.v
+theories/prelude/notations.v
+theories/prelude/tc_cond_type.v
 
 # Utility modules
 theories/lang/prelude/base.v
 theories/lang/prelude/option.v
 theories/lang/prelude/addr.v
 theories/lang/prelude/numbers.v
-theories/lang/prelude/notations.v
 theories/lang/prelude/bytestring.v
-theories/lang/prelude/tc_cond_type.v
 theories/lang/prelude/telescopes.v
 theories/lang/prelude/avl.v
 theories/lang/prelude/gmap.v
