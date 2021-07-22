@@ -7,7 +7,7 @@
 (** "Prelude" for available-everywhere dependencies. *)
 
 From stdpp Require Export prelude countable.
-From iris.prelude Require Export prelude.
+From bedrock.prelude Require Export stdpp_ssreflect.
 From bedrock.lang.prelude Require Export notations tc_cond_type.
 
 (** Workaround https://github.com/coq/coq/issues/4230. Taken from Software Foundations. *)

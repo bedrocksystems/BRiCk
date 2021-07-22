@@ -15,6 +15,7 @@
 -Q theories/lang bedrock.lang
 
 # Utility modules from iris-independent prelude
+theories/prelude/stdpp_ssreflect.v
 theories/prelude/wrap.v
 theories/prelude/hw_types.v
 
