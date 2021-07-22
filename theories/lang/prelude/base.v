@@ -82,6 +82,8 @@ Definition bindM2 `{MBind M} `(f : A → B → M C) : M A → M B → M C :=
 
 #[global] Notation Reduce tm :=
   ltac:(let H := eval red in tm in exact H) (only parsing).
+#[global] Notation Hnf tm :=
+  ltac:(let H := eval hnf in tm in exact H) (only parsing).
 #[global] Notation Cbn tm :=
   ltac:(let H := eval cbn in tm in exact H) (only parsing).
 #[global] Notation Evaluate tm :=
