@@ -8,7 +8,6 @@ From iris.bi Require Import monpred big_op.
 From iris.bi.lib Require Import fractional.
 From iris.proofmode Require Import tactics.
 From bedrock.lang Require Import prelude.numbers bi.observe bi.big_op.
-(* From bedrock.auto Require Import cpp. *)
 From bedrock.lang.cpp.semantics Require Import types genv.
 From bedrock.lang.cpp.logic Require Import pred path_pred heap_pred.
 From bedrock.lang.cpp Require Import heap_notations.
