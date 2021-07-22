@@ -7,9 +7,7 @@
  * Semantics of expressions
  * (expressed in weakest pre-condition style)
  *)
-Require Import Coq.Lists.List.
-Require Import Coq.ZArith.BinInt.
-Require Import Coq.NArith.BinNatDef.
+Require Export bedrock.lang.prelude.numbers.
 
 From bedrock.lang.cpp Require Import ast semantics.
 From bedrock.lang.cpp.logic Require Import
