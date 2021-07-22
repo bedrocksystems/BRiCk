@@ -309,8 +309,8 @@ public:
             print.output() << fmt::line << fmt::BOOL(dtor->isTrivial());
         } else {
             logging::fatal()
-                << "Error: union '" << decl->getNameAsString()
-                << "' is missing a destructor at"
+                << "Error: union '" << decl->getQualifiedNameAsString()
+                << "' is missing a destructor at "
                 << cprint.sourceRange(decl->getSourceRange()) << "\n";
             logging::die();
         }
@@ -414,7 +414,7 @@ public:
 
         } else {
             logging::fatal()
-                << "Error: struct '" << decl->getNameAsString()
+                << "Error: struct '" << decl->getQualifiedNameAsString()
                 << "' is missing a destructor at "
                 << cprint.sourceRange(decl->getSourceRange()) << "\n";
             logging::die();

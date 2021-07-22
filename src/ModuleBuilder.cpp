@@ -63,7 +63,7 @@ public:
 
     void VisitDecl(const Decl *d, bool) {
         logging::debug() << "Unknown declaration kind \""
-                         << d->getDeclKindName() << "\" dropping.\n";
+                         << d->getDeclKindName() << "\", dropping.\n";
     }
 
     void VisitBuiltinTemplateDecl(const BuiltinTemplateDecl *, bool) {
@@ -319,7 +319,7 @@ void ::Module::add_declaration(const clang::NamedDecl *d) {
     if (found == imports_.end()) {
         imports_.insert(std::make_pair(d, true));
     } else {
-        logging::debug() << "re-adding declaration: "
+        logging::debug() << "duplicate declaration: "
                          << d->getQualifiedNameAsString() << "\n";
     }
 }

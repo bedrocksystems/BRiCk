@@ -57,7 +57,7 @@ End cpp_notation.
 Definition translation_unitK : Type :=
   symbol_table -> type_table -> (symbol_table -> type_table -> translation_unit) -> translation_unit.
 
-(** TODO don't ignore this *)
+(** TODO FM-601 don't ignore this *)
 Definition Dstatic_assert (_ : option bs) (_ : Expr) : translation_unitK :=
   fun syms tys k => k syms tys.
 
