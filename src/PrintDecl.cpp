@@ -303,6 +303,15 @@ public:
         print.ctor("Build_Union");
         printFields(decl, layout, print, cprint);
 
+        print.ctor("DTOR", false);
+        cprint.printTypeName(decl, print);
+        print.end_ctor() << fmt::nbsp;
+        // cprint.printObjName(dtor, print) << fmt::nbsp;
+
+        // trivially destructable
+        print.output() << fmt::BOOL(decl->hasTrivialDestructor());
+
+#if 0
         if (auto dtor = decl->getDestructor()) {
             print.output() << fmt::nbsp;
             cprint.printObjName(dtor, print);
@@ -314,6 +323,7 @@ public:
                 << cprint.sourceRange(decl->getSourceRange()) << "\n";
             logging::die();
         }
+#endif
 
         print.output() << fmt::line << layout.getSize().getQuantity()
                        << fmt::nbsp << layout.getAlignment().getQuantity()
@@ -406,19 +416,13 @@ public:
             }
         }
         print.end_list() << fmt::nbsp;
+        print.ctor("DTOR", false);
+        cprint.printTypeName(decl, print);
+        print.end_ctor() << fmt::nbsp;
+        // cprint.printObjName(dtor, print) << fmt::nbsp;
 
-        if (auto dtor = decl->getDestructor()) {
-            cprint.printObjName(dtor, print);
-            // trivially destructable
-            print.output() << fmt::nbsp << fmt::BOOL(dtor->isTrivial());
-
-        } else {
-            logging::fatal()
-                << "Error: struct '" << decl->getQualifiedNameAsString()
-                << "' is missing a destructor at "
-                << cprint.sourceRange(decl->getSourceRange()) << "\n";
-            logging::die();
-        }
+        // trivially destructable
+        print.output() << fmt::BOOL(decl->hasTrivialDestructor());
 
         // print the layout information
         print.output() << fmt::line;

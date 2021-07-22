@@ -352,6 +352,18 @@ ClangPrinter::printObjName(const ValueDecl *decl, CoqPrinter &print, bool raw) {
         ecd->printName(print.output().nobreak());
         print.output() << "\"";
         print.end_ctor();
+    } else if (auto dd = dyn_cast<CXXDestructorDecl>(decl)) {
+        // NOTE we implement our own destructor mangling because
+        // we are not guaranteed to be able to generate the
+        // destructor for every aggregate and our current setup requires
+        // that all aggregates have named destructors.
+        //
+        // An alternative (cleaner) solution is to extend the type
+        // of names to introduce a distinguished name for destructors.
+        // Doing this is a bit more invasive.
+        print.ctor("DTOR", false);
+        printTypeName(dd->getParent(), print);
+        print.end_ctor();
     } else if (mangleContext_->shouldMangleDeclName(decl)) {
         print.output() << "\"";
         mangleContext_->mangleName(to_gd(decl), print.output().nobreak());

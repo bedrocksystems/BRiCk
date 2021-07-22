@@ -6,8 +6,34 @@
 Require Export bedrock.prelude.base.
 Require Export bedrock.lang.cpp.ast.
 
+Fixpoint do_end (ty : globname) : obj_name :=
+  match ty with
+  | BS.String _ BS.EmptyString => "D0Ev"
+  | BS.String x v => BS.String x (do_end v)
+  | _ => BS.EmptyString
+  end.
+
+(** Build the name of a destructor for a type.
+    NOTE this can be improved if we essentially turn it into a
+    constructor of [obj_name]; however, that has some wider
+    implications that we should solve in a separate issue.
+ *)
+Definition DTOR (ty : globname) : obj_name :=
+  match ty with
+  | BS.String _ (BS.String _ ((BS.String c _) as rest)) =>
+    if bool_decide (c = "N"%byte) then
+      "_Z" ++ do_end rest
+    else
+      "_ZN" ++ rest ++ "D0Ev"
+  | BS.String _ (BS.String _ v) => "_ZN" ++ do_end v
+  | _ => "OOPS"
+  end%bs.
+
 Definition Nanon (ty : globname) : globname :=
-  ("#" ++ ty)%bs.
+  "#" ++ ty.
+
+Definition Cenum_const (e : globname) (x : ident) : obj_name :=
+  e ++ "::" ++ x.
 
 Definition pure_virt (x : obj_name) : obj_name * option obj_name :=
   (x, None).
@@ -25,8 +51,6 @@ Definition mk_overrides (methods : list (obj_name * obj_name)) : list (obj_name 
 Definition mk_virtuals (methods : list (obj_name * option obj_name)) : list (obj_name * option obj_name) := methods.
 
 Definition NStop : list ident := nil.
-
-Definition Cenum_const (e : globname) (x : ident) : obj_name := (e ++ "::" ++ x)%bs.
 
 Bind Scope Z_scope with Z.
 
