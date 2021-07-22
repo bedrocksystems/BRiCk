@@ -7,7 +7,7 @@
 From stdpp Require Export listset_nodup.
 Require Import bedrock.prelude.base.
 
-#[global] Instance listset_elem_of_dec `{EqDecision A} : RelDecision (∈@{listset_nodup A}).
+#[global] Instance listset_nodup_elem_of_dec `{EqDecision A} : RelDecision (∈@{listset_nodup A}).
 Proof.
   refine (λ x X, cast_if (decide (x ∈ listset_nodup_car X))); done.
 Defined.
