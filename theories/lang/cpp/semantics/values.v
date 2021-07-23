@@ -33,141 +33,139 @@ Module Type RAW_BYTES.
 
   Axiom raw_int_byte : N -> raw_byte.
 
-(* TODO: refine our treatment of `raw_bytes` s.t. we respect
-     the size constraints imposed by the physical hardware.
+  (* TODO: refine our treatment of `raw_bytes` s.t. we respect
+      the size constraints imposed by the physical hardware.
 
-     The following might help but will likely require other
-     axioms which reflect boundedness or round-trip properties.
+      The following might help but will likely require other
+      axioms which reflect boundedness or round-trip properties.
 
 
-  Parameter of_raw_byte : raw_byte -> N.
-  Axiom inj_of_raw_byte : Inj (=) (=) of_raw_byte.
-  #[global] Existing Instance inj_of_raw_byte.
-*)
+    Parameter of_raw_byte : raw_byte -> N.
+    Axiom inj_of_raw_byte : Inj (=) (=) of_raw_byte.
+    #[global] Existing Instance inj_of_raw_byte.
+  *)
 End RAW_BYTES.
 
 Module Type VAL_MIXIN (Import P : PTRS) (Import R : RAW_BYTES).
+  (** * Values
+      Primitive abstract C++ runtime values come in two flavors.
+      - pointers (also used for references)
+      - integers (used for everything else)
+      Aggregates are not represented directly, but only by talking about
+      primitive subobjects.
 
-(** * Values
-    Primitive abstract C++ runtime values come in two flavors.
-    - pointers (also used for references)
-    - integers (used for everything else)
-    Aggregates are not represented directly, but only by talking about
-    primitive subobjects.
+      There is also a distinguished undefined element [Vundef] that
+      models uninitialized values (https://eel.is/c++draft/basic.indet).
+      Operations on [Vundef] are all undefined behavior.
+      [Vraw] (a raw byte) represents the low-level bytewise view of data.
+      See [logic/layout.v] for more axioms about it.
+  *)
+  Variant val : Set :=
+  | Vint (_ : Z)
+  | Vptr (_ : ptr)
+  | Vraw (_ : raw_byte)
+  | Vundef
+  .
+  #[global] Notation Vref := Vptr (only parsing).
 
-    There is also a distinguished undefined element [Vundef] that
-    models uninitialized values (https://eel.is/c++draft/basic.indet).
-    Operations on [Vundef] are all undefined behavior.
-    [Vraw] (a raw byte) represents the low-level bytewise view of data.
-    See [logic/layout.v] for more axioms about it.
- *)
-Variant val : Set :=
-| Vint (_ : Z)
-| Vptr (_ : ptr)
-| Vraw (_ : raw_byte)
-| Vundef
-.
-#[global] Notation Vref := Vptr (only parsing).
+  (* TODO Maybe this should be removed *)
+  #[global] Coercion Vint : Z >-> val.
 
-(* TODO Maybe this should be removed *)
-#[global] Coercion Vint : Z >-> val.
+  Definition val_dec : forall a b : val, {a = b} + {a <> b}.
+  Proof. solve_decision. Defined.
+  #[global] Instance val_eq_dec : EqDecision val := val_dec.
+  #[global] Instance val_inhabited : Inhabited val := populate (Vint 0).
 
-Definition val_dec : forall a b : val, {a = b} + {a <> b}.
-Proof. solve_decision. Defined.
-#[global] Instance val_eq_dec : EqDecision val := val_dec.
-#[global] Instance val_inhabited : Inhabited val := populate (Vint 0).
+  (** wrappers for constructing certain values *)
+  Definition Vchar (a : Ascii.ascii) : val :=
+    Vint (Z.of_N (N_of_ascii a)).
+  Definition Vbool (b : bool) : val :=
+    Vint (if b then 1 else 0).
+  Definition Vnat (b : nat) : val :=
+    Vint (Z.of_nat b).
+  Definition Vn (b : N) : val :=
+    Vint (Z.of_N b).
+  Notation Vz := Vint (only parsing).
 
-(** wrappers for constructing certain values *)
-Definition Vchar (a : Ascii.ascii) : val :=
-  Vint (Z.of_N (N_of_ascii a)).
-Definition Vbool (b : bool) : val :=
-  Vint (if b then 1 else 0).
-Definition Vnat (b : nat) : val :=
-  Vint (Z.of_nat b).
-Definition Vn (b : N) : val :=
-  Vint (Z.of_N b).
-Notation Vz := Vint (only parsing).
+  (** we use [Vundef] as our value of type [void] *)
+  Definition Vvoid := Vundef.
 
-(** we use [Vundef] as our value of type [void] *)
-Definition Vvoid := Vundef.
+  Definition is_true (v : val) : option bool :=
+    match v with
+    | Vint v => Some (negb (Z.eqb v 0))
+    | Vptr p => Some match ptr_eq_dec p nullptr with
+                    | left _ => false
+                    | right _ => true
+                    end
+    | Vundef | Vraw _ => None
+    end.
 
-Definition is_true (v : val) : option bool :=
-  match v with
-  | Vint v => Some (negb (Z.eqb v 0))
-  | Vptr p => Some match ptr_eq_dec p nullptr with
-                  | left _ => false
-                  | right _ => true
-                  end
-  | Vundef | Vraw _ => None
-  end.
+  Theorem is_true_int : forall i,
+      is_true (Vint i) = Some (negb (BinIntDef.Z.eqb i 0)).
+  Proof. reflexivity. Qed.
 
-Theorem is_true_int : forall i,
-    is_true (Vint i) = Some (negb (BinIntDef.Z.eqb i 0)).
-Proof. reflexivity. Qed.
+  Lemma Vptr_inj p1 p2 : Vptr p1 = Vptr p2 -> p1 = p2.
+  Proof. by move=> []. Qed.
+  Lemma Vint_inj a b : Vint a = Vint b -> a = b.
+  Proof. by move=> []. Qed.
+  Lemma Vbool_inj a b : Vbool a = Vbool b -> a = b.
+  Proof. by move: a b =>[] [] /Vint_inj. Qed.
 
-Lemma Vptr_inj p1 p2 : Vptr p1 = Vptr p2 -> p1 = p2.
-Proof. by move=> []. Qed.
-Lemma Vint_inj a b : Vint a = Vint b -> a = b.
-Proof. by move=> []. Qed.
-Lemma Vbool_inj a b : Vbool a = Vbool b -> a = b.
-Proof. by move: a b =>[] [] /Vint_inj. Qed.
+  #[global] Instance Vptr_Inj : Inj (=) (=) Vptr := Vptr_inj.
+  #[global] Instance Vint_Inj : Inj (=) (=) Vint := Vint_inj.
+  #[global] Instance Vbool_Inj : Inj (=) (=) Vbool := Vbool_inj.
 
-#[global] Instance Vptr_Inj : Inj (=) (=) Vptr := Vptr_inj.
-#[global] Instance Vint_Inj : Inj (=) (=) Vint := Vint_inj.
-#[global] Instance Vbool_Inj : Inj (=) (=) Vbool := Vbool_inj.
+  (** * regions
+      to model the stack frame in separation logic, we use a notion of regions
+      that are threaded through the semantics.
 
-(** * regions
-    to model the stack frame in separation logic, we use a notion of regions
-    that are threaded through the semantics.
+      we instantiate [region] as a stack of finite maps from variables
+      to their addresses.
+  *)
+  Inductive region : Type :=
+  | Remp (this : option ptr) (_ : type)
+  | Rbind (_ : localname) (_ : ptr) (_ : region).
 
-    we instantiate [region] as a stack of finite maps from variables
-    to their addresses.
- *)
-Inductive region : Type :=
-| Remp (this : option ptr) (_ : type)
-| Rbind (_ : localname) (_ : ptr) (_ : region).
+  (** NOTE anonymous variables are not recorded in the environment.
+  *)
+  Definition Rbind_check (x : ident) (p : ptr) (r : region) : region :=
+    if decide (x = ""%bs)
+    then r
+    else Rbind x p r.
 
-(** NOTE anonymous variables are not recorded in the environment.
- *)
-Definition Rbind_check (x : ident) (p : ptr) (r : region) : region :=
-  if decide (x = ""%bs)
-  then r
-  else Rbind x p r.
+  Fixpoint get_location (ρ : region) (b : localname) : option ptr :=
+    match ρ with
+    | Remp _ _ => None
+    | Rbind x p rs =>
+      if decide (b = x) then Some p
+      else get_location rs b
+    end.
 
-Fixpoint get_location (ρ : region) (b : localname) : option ptr :=
-  match ρ with
-  | Remp _ _ => None
-  | Rbind x p rs =>
-    if decide (b = x) then Some p
-    else get_location rs b
-  end.
+  Fixpoint get_this (ρ : region) : option ptr :=
+    match ρ with
+    | Remp this _ => this
+    | Rbind _ _ rs => get_this rs
+    end.
 
-Fixpoint get_this (ρ : region) : option ptr :=
-  match ρ with
-  | Remp this _ => this
-  | Rbind _ _ rs => get_this rs
-  end.
+  Fixpoint get_return_type (ρ : region) : type :=
+    match ρ with
+    | Remp _ ty => ty
+    | Rbind _ _ rs => get_return_type rs
+    end.
 
-Fixpoint get_return_type (ρ : region) : type :=
-  match ρ with
-  | Remp _ ty => ty
-  | Rbind _ _ rs => get_return_type rs
-  end.
-
-(* the default value for a type.
- * this is used to initialize primitives if you do, e.g.
- *   [int x{};]
- *)
-Fixpoint get_default (t : type) : option val :=
-  match t with
-  | Tpointer _ => Some (Vptr nullptr)
-  | Tint _ _ => Some (Vint 0%Z)
-  | Tbool => Some (Vbool false)
-  | Tnullptr => Some (Vptr nullptr)
-  | Tqualified _ t => get_default t
-  | _ => None
-  end.
-
+  (* the default value for a type.
+  * this is used to initialize primitives if you do, e.g.
+  *   [int x{};]
+  *)
+  Fixpoint get_default (t : type) : option val :=
+    match t with
+    | Tpointer _ => Some (Vptr nullptr)
+    | Tint _ _ => Some (Vint 0%Z)
+    | Tbool => Some (Vbool false)
+    | Tnullptr => Some (Vptr nullptr)
+    | Tqualified _ t => get_default t
+    | _ => None
+    end.
 End VAL_MIXIN.
 
 Module Type RAW_BYTES_VAL
@@ -278,160 +276,158 @@ Module Type RAW_BYTES_MIXIN
 End RAW_BYTES_MIXIN.
 
 Module Type HAS_TYPE (Import P : PTRS) (Import R : RAW_BYTES) (Import V : VAL_MIXIN P R).
-(** typedness of values
-    note that only primitives fit into this, there is no [val] representation
-    of aggregates, except through [Vptr p] with [p] pointing to the contents.
- *)
-
-(**
-[has_type v ty] is an approximation in [Prop] of "[v] is an initialized value
-of type [t]." This implies:
-- if [ty <> Tvoid], then [v <> Vundef] <--
-  ^---- TODO: <https://gitlab.com/bedrocksystems/cpp2v-core/-/issues/319>
-- if [ty = Tvoid], then [v = Vundef].
-- if [ty = Tnullptr], then [v = Vptr nullptr].
-- if [ty = Tint sz sgn], then [v] fits the appropriate bounds (see
-  [has_int_type']).
-- if [ty] is a type of pointers/aggregates, we only ensure that [v = Vptr p].
-  + NOTE: We require that - for a type [Tnamed nm] - the name resolves to some
-    [GlobDecl] other than [Gtype] in a given [σ : genv].
-- if [ty] is a type of references, we ensure that [v = Vref p] and
-  that [p <> nullptr]; [Vref] is an alias for [Vptr]
-- if [ty] is a type of arrays, we ensure that [v = Vptr p] and
-  that [p <> nullptr].
+  (** typedness of values
+      note that only primitives fit into this, there is no [val] representation
+      of aggregates, except through [Vptr p] with [p] pointing to the contents.
   *)
-Parameter has_type : val -> type -> Prop.
 
-Axiom has_type_pointer : forall v ty,
-    has_type v (Tpointer ty) -> exists p, v = Vptr p.
-Axiom has_type_nullptr : forall v,
-    has_type v Tnullptr -> v = Vptr nullptr.
-Axiom has_type_reference : forall v ty,
-    has_type v (Treference ty) -> exists p, v = Vref p /\ p <> nullptr.
-Axiom has_type_rv_reference : forall v ty,
-    has_type v (Trv_reference ty) -> exists p, v = Vref p /\ p <> nullptr.
-Axiom has_type_array : forall v ty n,
-    has_type v (Tarray ty n) -> exists p, v = Vptr p /\ p <> nullptr.
-Axiom has_type_function : forall v cc rty args,
-    has_type v (Tfunction (cc:=cc) rty args) -> exists p, v = Vptr p /\ p <> nullptr.
+  (**
+  [has_type v ty] is an approximation in [Prop] of "[v] is an initialized value
+  of type [t]." This implies:
+  - if [ty <> Tvoid], then [v <> Vundef] <--
+    ^---- TODO: <https://gitlab.com/bedrocksystems/cpp2v-core/-/issues/319>
+  - if [ty = Tvoid], then [v = Vundef].
+  - if [ty = Tnullptr], then [v = Vptr nullptr].
+  - if [ty = Tint sz sgn], then [v] fits the appropriate bounds (see
+    [has_int_type']).
+  - if [ty] is a type of pointers/aggregates, we only ensure that [v = Vptr p].
+    + NOTE: We require that - for a type [Tnamed nm] - the name resolves to some
+      [GlobDecl] other than [Gtype] in a given [σ : genv].
+  - if [ty] is a type of references, we ensure that [v = Vref p] and
+    that [p <> nullptr]; [Vref] is an alias for [Vptr]
+  - if [ty] is a type of arrays, we ensure that [v = Vptr p] and
+    that [p <> nullptr].
+    *)
+  Parameter has_type : val -> type -> Prop.
 
-Axiom has_type_void : forall v,
-    has_type v Tvoid -> v = Vundef.
+  Axiom has_type_pointer : forall v ty,
+      has_type v (Tpointer ty) -> exists p, v = Vptr p.
+  Axiom has_type_nullptr : forall v,
+      has_type v Tnullptr -> v = Vptr nullptr.
+  Axiom has_type_reference : forall v ty,
+      has_type v (Treference ty) -> exists p, v = Vref p /\ p <> nullptr.
+  Axiom has_type_rv_reference : forall v ty,
+      has_type v (Trv_reference ty) -> exists p, v = Vref p /\ p <> nullptr.
+  Axiom has_type_array : forall v ty n,
+      has_type v (Tarray ty n) -> exists p, v = Vptr p /\ p <> nullptr.
+  Axiom has_type_function : forall v cc rty args,
+      has_type v (Tfunction (cc:=cc) rty args) -> exists p, v = Vptr p /\ p <> nullptr.
 
-Axiom has_nullptr_type : forall ty,
-    has_type (Vptr nullptr) (Tpointer ty).
+  Axiom has_type_void : forall v,
+      has_type v Tvoid -> v = Vundef.
 
-Axiom has_type_bool : forall v,
-    has_type v Tbool <-> exists b, v = Vbool b.
+  Axiom has_nullptr_type : forall ty,
+      has_type (Vptr nullptr) (Tpointer ty).
 
-(** Note that from [has_type v (Tint sz sgn)] does not follow
-  [v = Vint _] since [v] might also be [Vraw _] (for [T_uchar]). *)
-Axiom has_int_type' : forall sz sgn v,
-    has_type v (Tint sz sgn) <-> (exists z, v = Vint z /\ bound sz sgn z) \/ (exists r, v = Vraw r /\ Tint sz sgn = T_uchar).
+  Axiom has_type_bool : forall v,
+      has_type v Tbool <-> exists b, v = Vbool b.
 
-Axiom has_type_qual : forall t q x,
-    has_type x (drop_qualifiers t) ->
-    has_type x (Tqualified q t).
+  (** Note that from [has_type v (Tint sz sgn)] does not follow
+    [v = Vint _] since [v] might also be [Vraw _] (for [T_uchar]). *)
+  Axiom has_int_type' : forall sz sgn v,
+      has_type v (Tint sz sgn) <-> (exists z, v = Vint z /\ bound sz sgn z) \/ (exists r, v = Vraw r /\ Tint sz sgn = T_uchar).
+
+  Axiom has_type_qual : forall t q x,
+      has_type x (drop_qualifiers t) ->
+      has_type x (Tqualified q t).
 End HAS_TYPE.
 
 Module Type HAS_TYPE_MIXIN (Import P : PTRS) (Import R : RAW_BYTES) (Import V : VAL_MIXIN P R)
-  (Import HT : HAS_TYPE P R V).
-Lemma has_bool_type : forall z,
-  0 <= z < 2 <-> has_type (Vint z) Tbool.
-Proof.
-  intros z. rewrite has_type_bool. split=>Hz.
-  - destruct (decide (z = 0)); simplify_eq; first by exists false.
-    destruct (decide (z = 1)); simplify_eq; first by exists true. lia.
-  - unfold Vbool in Hz. destruct Hz as [b Hb].
-    destruct b; simplify_eq; lia.
-Qed.
+    (Import HT : HAS_TYPE P R V).
+  Lemma has_bool_type : forall z,
+    0 <= z < 2 <-> has_type (Vint z) Tbool.
+  Proof.
+    intros z. rewrite has_type_bool. split=>Hz.
+    - destruct (decide (z = 0)); simplify_eq; first by exists false.
+      destruct (decide (z = 1)); simplify_eq; first by exists true. lia.
+    - unfold Vbool in Hz. destruct Hz as [b Hb].
+      destruct b; simplify_eq; lia.
+  Qed.
 
-Lemma has_int_type : forall sz (sgn : signed) z,
-    bound sz sgn z <-> has_type (Vint z) (Tint sz sgn).
-Proof. move => *. rewrite has_int_type'. naive_solver. Qed.
+  Lemma has_int_type : forall sz (sgn : signed) z,
+      bound sz sgn z <-> has_type (Vint z) (Tint sz sgn).
+  Proof. move => *. rewrite has_int_type'. naive_solver. Qed.
 
-Theorem has_char_type : forall sz (sgn : signed) z,
-    bound sz sgn z <-> has_type (Vint z) (Tchar sz sgn).
-Proof. apply has_int_type. Qed.
+  Theorem has_char_type : forall sz (sgn : signed) z,
+      bound sz sgn z <-> has_type (Vint z) (Tchar sz sgn).
+  Proof. apply has_int_type. Qed.
 
-#[global] Hint Resolve has_type_qual : has_type.
+  #[global] Hint Resolve has_type_qual : has_type.
 
-Arguments Z.add _ _ : simpl never.
-Arguments Z.sub _ _ : simpl never.
-Arguments Z.mul _ _ : simpl never.
-Arguments Z.pow _ _ : simpl never.
-Arguments Z.opp _ : simpl never.
-Arguments Z.pow_pos _ _ : simpl never.
+  Arguments Z.add _ _ : simpl never.
+  Arguments Z.sub _ _ : simpl never.
+  Arguments Z.mul _ _ : simpl never.
+  Arguments Z.pow _ _ : simpl never.
+  Arguments Z.opp _ : simpl never.
+  Arguments Z.pow_pos _ _ : simpl never.
 
-Section has_type.
-  Lemma has_type_bswap8:
-    forall v,
-      has_type (Vint (bswap8 v)) (Tint W8 Unsigned).
-  Proof. intros *; apply has_int_type; red; generalize (bswap8_bounded v); simpl; lia. Qed.
+  Section has_type.
+    Lemma has_type_bswap8:
+      forall v,
+        has_type (Vint (bswap8 v)) (Tint W8 Unsigned).
+    Proof. intros *; apply has_int_type; red; generalize (bswap8_bounded v); simpl; lia. Qed.
 
-  Lemma has_type_bswap16:
-    forall v,
-      has_type (Vint (bswap16 v)) (Tint W16 Unsigned).
-  Proof. intros *; apply has_int_type; red; generalize (bswap16_bounded v); simpl; lia. Qed.
+    Lemma has_type_bswap16:
+      forall v,
+        has_type (Vint (bswap16 v)) (Tint W16 Unsigned).
+    Proof. intros *; apply has_int_type; red; generalize (bswap16_bounded v); simpl; lia. Qed.
 
-  Lemma has_type_bswap32:
-    forall v,
-      has_type (Vint (bswap32 v)) (Tint W32 Unsigned).
-  Proof. intros *; apply has_int_type; red; generalize (bswap32_bounded v); simpl; lia. Qed.
+    Lemma has_type_bswap32:
+      forall v,
+        has_type (Vint (bswap32 v)) (Tint W32 Unsigned).
+    Proof. intros *; apply has_int_type; red; generalize (bswap32_bounded v); simpl; lia. Qed.
 
-  Lemma has_type_bswap64:
-    forall v,
-      has_type (Vint (bswap64 v)) (Tint W64 Unsigned).
-  Proof. intros *; apply has_int_type; red; generalize (bswap64_bounded v); simpl; lia. Qed.
+    Lemma has_type_bswap64:
+      forall v,
+        has_type (Vint (bswap64 v)) (Tint W64 Unsigned).
+    Proof. intros *; apply has_int_type; red; generalize (bswap64_bounded v); simpl; lia. Qed.
 
-  Lemma has_type_bswap128:
-    forall v,
-      has_type (Vint (bswap128 v)) (Tint W128 Unsigned).
-  Proof. intros *; apply has_int_type; red; generalize (bswap128_bounded v); simpl; lia. Qed.
-End has_type.
+    Lemma has_type_bswap128:
+      forall v,
+        has_type (Vint (bswap128 v)) (Tint W128 Unsigned).
+    Proof. intros *; apply has_int_type; red; generalize (bswap128_bounded v); simpl; lia. Qed.
+  End has_type.
 
-Lemma has_type_bswap:
-  forall sz v,
-    has_type (Vint (bswap sz v)) (Tint sz Unsigned).
-Proof.
-  intros *; destruct sz;
-    eauto using
-          has_type_bswap8,
-          has_type_bswap16,
-          has_type_bswap32,
-          has_type_bswap64,
-          has_type_bswap128.
-Qed.
+  Lemma has_type_bswap:
+    forall sz v,
+      has_type (Vint (bswap sz v)) (Tint sz Unsigned).
+  Proof.
+    intros *; destruct sz;
+      eauto using
+            has_type_bswap8,
+            has_type_bswap16,
+            has_type_bswap32,
+            has_type_bswap64,
+            has_type_bswap128.
+  Qed.
 
-#[global] Hint Resolve has_type_bswap : has_type.
+  #[global] Hint Resolve has_type_bswap : has_type.
 
-(** Integral conversions *)
-Definition conv_int (from to : type) (v v' : val) : Prop :=
-  match drop_qualifiers from , drop_qualifiers to with
-  | Tbool , Tint _ _ =>
-    match is_true v with
-    | Some v => v' = Vbool v
-    | _ => False
-    end
-  | Tint _ _ , Tbool =>
-    match v with
-    | Vint v =>
-      v' = Vbool (if Z.eqb 0 v then false else true)
-    | _ => False
-    end
-  | Tint _ _ , Tint sz Unsigned =>
-    match v with
-    | Vint v =>
-      v' = Vint (to_unsigned sz v)
-    | _ => False
-    end
-  | Tint _ _ , Tint sz Signed =>
-    has_type v (Tint sz Signed) /\ v' = v
-  | _ , _ => False
-  end.
-Arguments conv_int !_ !_ _ _ /.
-
-
+  (** Integral conversions *)
+  Definition conv_int (from to : type) (v v' : val) : Prop :=
+    match drop_qualifiers from , drop_qualifiers to with
+    | Tbool , Tint _ _ =>
+      match is_true v with
+      | Some v => v' = Vbool v
+      | _ => False
+      end
+    | Tint _ _ , Tbool =>
+      match v with
+      | Vint v =>
+        v' = Vbool (if Z.eqb 0 v then false else true)
+      | _ => False
+      end
+    | Tint _ _ , Tint sz Unsigned =>
+      match v with
+      | Vint v =>
+        v' = Vint (to_unsigned sz v)
+      | _ => False
+      end
+    | Tint _ _ , Tint sz Signed =>
+      has_type v (Tint sz Signed) /\ v' = v
+    | _ , _ => False
+    end.
+  Arguments conv_int !_ !_ _ _ /.
 End HAS_TYPE_MIXIN.
 
 (* Collect all the axioms. *)
