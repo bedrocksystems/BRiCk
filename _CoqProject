@@ -31,6 +31,12 @@ theories/prelude/avl.v
 theories/prelude/gmap.v
 theories/prelude/list.v
 
+theories/prelude/bool.v
+theories/prelude/fin_sets.v
+theories/prelude/listset_nodup.v
+theories/prelude/prelude.v
+theories/prelude/sets.v
+
 # Adapters
 theories/lang/prelude/base.v
 theories/lang/prelude/option.v
