@@ -5,7 +5,7 @@
  *)
 Require Import Coq.Lists.List.
 Require Import iris.proofmode.tactics.
-Require Import bedrock.lang.prelude.numbers.
+Require Import bedrock.prelude.numbers.
 Require Import bedrock.lang.cpp.ast.
 Require Import bedrock.lang.cpp.semantics.
 Require Import bedrock.lang.bi.errors.

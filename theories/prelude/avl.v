@@ -4,7 +4,7 @@
  * See the LICENSE-BedRock file in the repository root for details.
  *)
 From stdpp Require Import fin_maps strings.
-From bedrock.lang.prelude Require Import base bytestring.
+From bedrock.prelude Require Import base bytestring.
 Require Import Coq.FSets.FMapAVL.
 
 Module IM := FMapAVL.Make OT_bs.

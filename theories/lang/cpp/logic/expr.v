@@ -7,7 +7,7 @@
  * Semantics of expressions
  * (expressed in weakest pre-condition style)
  *)
-Require Export bedrock.lang.prelude.numbers.
+Require Export bedrock.prelude.numbers.
 
 From bedrock.lang.cpp Require Import ast semantics.
 From bedrock.lang.cpp.logic Require Import

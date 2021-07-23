@@ -8,7 +8,7 @@
 From Coq Require Import Strings.Ascii.
 Require Import stdpp.gmap.
 
-From bedrock.lang.prelude Require Import base addr option numbers.
+From bedrock.prelude Require Import base addr option numbers.
 
 Require Import bedrock.lang.cpp.arith.builtins.
 Require Import bedrock.lang.cpp.ast.

@@ -5,7 +5,7 @@
  * See the LICENSE-BedRock file in the repository root for details.
  *)
 Require Export stdpp.numbers.
-Require Export bedrock.lang.prelude.base.
+Require Export bedrock.prelude.base.
 Local Set Printing Coercions.	(** Readability *)
 
 (** * Small extensions to [stdpp.numbers]. *)

@@ -4,7 +4,7 @@
  * See the LICENSE-BedRock file in the repository root for details.
  *)
 Require Export iris.si_logic.bi.
-Require Import bedrock.lang.prelude.base.
+Require Import bedrock.prelude.base.
 
 Module siProp.
   Export iris.si_logic.bi.siProp.

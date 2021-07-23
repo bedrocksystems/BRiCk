@@ -13,7 +13,7 @@ Unlike [PTRS_IMPL], this model cannot be extended to support
 *)
 
 From stdpp Require Import gmap.
-From bedrock.lang.prelude Require Import base addr avl bytestring option numbers.
+From bedrock.prelude Require Import base addr avl bytestring option numbers.
 
 From bedrock.lang.cpp Require Import ast.
 From bedrock.lang.cpp.semantics Require Import sub_module values.

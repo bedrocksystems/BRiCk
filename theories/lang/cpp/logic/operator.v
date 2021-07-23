@@ -5,7 +5,7 @@
  *)
 Require Import iris.proofmode.tactics.
 From iris_string_ident Require Import ltac2_string_ident.
-From bedrock.lang.prelude Require Import base option.
+From bedrock.prelude Require Import base option.
 From bedrock.lang.cpp Require Import ast semantics.values semantics.operator.
 From bedrock.lang.cpp Require Import logic.pred.
 

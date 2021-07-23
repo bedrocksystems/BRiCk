@@ -5,7 +5,7 @@
  *)
 
 From stdpp Require Export gmap.
-From bedrock.lang.prelude Require Import base.
+From bedrock.prelude Require Import base.
 
 (* TODO Remove when we bump to a version with
 https://gitlab.mpi-sws.org/iris/stdpp/-/merge_requests/298. *)

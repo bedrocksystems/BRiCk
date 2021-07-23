@@ -14,23 +14,22 @@
 -Q theories/prelude bedrock.prelude
 -Q theories/lang bedrock.lang
 
-# Utility modules from iris-independent prelude
+# Utility modules
 theories/prelude/stdpp_ssreflect.v
 theories/prelude/wrap.v
 theories/prelude/hw_types.v
 theories/prelude/notations.v
 theories/prelude/tc_cond_type.v
 
-# Utility modules
-theories/lang/prelude/base.v
-theories/lang/prelude/option.v
-theories/lang/prelude/addr.v
-theories/lang/prelude/numbers.v
-theories/lang/prelude/bytestring.v
-theories/lang/prelude/telescopes.v
-theories/lang/prelude/avl.v
-theories/lang/prelude/gmap.v
-theories/lang/prelude/list.v
+theories/prelude/base.v
+theories/prelude/option.v
+theories/prelude/addr.v
+theories/prelude/numbers.v
+theories/prelude/bytestring.v
+theories/prelude/telescopes.v
+theories/prelude/avl.v
+theories/prelude/gmap.v
+theories/prelude/list.v
 
 theories/lang/algebra/telescopes.v
 

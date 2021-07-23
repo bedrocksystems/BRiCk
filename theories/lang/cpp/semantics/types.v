@@ -3,7 +3,7 @@
  * This software is distributed under the terms of the BedRock Open-Source License.
  * See the LICENSE-BedRock file in the repository root for details.
  *)
-From bedrock.lang.prelude Require Import base.
+From bedrock.prelude Require Import base.
 From bedrock.lang.cpp.syntax Require Import names expr stmt types.
 From bedrock.lang.cpp.semantics Require Import genv.
 

@@ -4,7 +4,7 @@
  * See the LICENSE-BedRock file in the repository root for details.
  *)
 
-Require Import bedrock.lang.prelude.base.
+Require Import bedrock.prelude.base.
 
 #[local] Open Scope Z_scope.
 

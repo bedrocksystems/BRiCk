@@ -11,7 +11,7 @@
     - the memory model is simplified from the standard C++ memory
       model.
  *)
-Require Export bedrock.lang.prelude.addr.
+Require Export bedrock.prelude.addr.
 
 From bedrock.lang.bi Require Export prelude observe.
 From bedrock.lang.cpp.logic Require Export mpred rep.

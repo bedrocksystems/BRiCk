@@ -6,7 +6,7 @@
 
 (** Support code for [inductive_pointers.v]. *)
 
-From bedrock.lang.prelude Require Import base addr numbers.
+From bedrock.prelude Require Import base addr numbers.
 From bedrock.lang.cpp.semantics Require Import values.
 
 Module address_sums.

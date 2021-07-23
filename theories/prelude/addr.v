@@ -3,7 +3,7 @@
  * This software is distributed under the terms of the BedRock Open-Source License.
  * See the LICENSE-BedRock file in the repository root for details.
  *)
-From bedrock.lang.prelude Require Import base.
+From bedrock.prelude Require Import base.
 
 Definition vaddr : Set := N.
 Bind Scope N_scope with vaddr.

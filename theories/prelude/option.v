@@ -4,7 +4,7 @@
  * See the LICENSE-BedRock file in the repository root for details.
  *)
 
-From bedrock.lang.prelude Require Import base.
+From bedrock.prelude Require Import base.
 
 Definition on {A B C} (R : B -> B -> C) (f : A -> B) (x y : A) : C :=
   R (f x) (f y).

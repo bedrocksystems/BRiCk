@@ -4,7 +4,7 @@
  * See the LICENSE-BedRock file in the repository root for details.
  *)
 
-Require Import bedrock.lang.prelude.base.
+Require Import bedrock.prelude.base.
 From bedrock.lang.cpp.arith Require Import types builtins operator.
 
 Import arith.builtins.churn_bits.

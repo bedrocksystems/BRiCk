@@ -12,7 +12,8 @@ All changes to [typeclass_instances] will not propagate to your clients:
 technically, they have [#[export]] visibility.
 *)
 
-From bedrock.lang Require Import prelude.base bi.prelude bi.only_provable.
+Require Import bedrock.prelude.base.
+From bedrock.lang Require Import bi.prelude bi.only_provable.
 From iris.bi Require Import monpred.
 From iris.proofmode Require Import tactics.
 

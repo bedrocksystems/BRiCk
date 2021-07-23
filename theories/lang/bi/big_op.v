@@ -7,7 +7,7 @@
 From iris.algebra Require Import list.
 From iris.bi Require Import monpred big_op.
 From iris.proofmode Require Import tactics.
-Require Import bedrock.lang.prelude.list.
+Require Import bedrock.prelude.list.
 
 Section big_op.
   Context `{Monoid M o}.

@@ -6,7 +6,7 @@
 (**
  * Definitions for the semantics
  *)
-Require Import bedrock.lang.prelude.base.
+Require Import bedrock.prelude.base.
 
 Require Import stdpp.coPset.
 Require Import iris.bi.monpred.
