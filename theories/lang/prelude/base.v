@@ -19,6 +19,8 @@ It's more expressive, but it mangles definitions and can cause a quadratic size
 explosion. *)
 Global Unset Program Cases.
 
+(** * Small extensions to [stdpp.base] *)
+
 Lemma TCElemOf_iff {A} (x : A) (l : list A) : TCElemOf x l ↔ x ∈ l.
 Proof. split; induction 1; by constructor. Qed.
 
@@ -87,3 +89,67 @@ Definition bindM2 `{MBind M} `(f : A → B → M C) : M A → M B → M C :=
   ltac:(let H := eval cbn in tm in exact H) (only parsing).
 #[global] Notation Evaluate tm :=
   ltac:(let H := eval vm_compute in tm in exact H) (only parsing).
+
+(** ** Pairwise disjointness *)
+(** Operational type class for pairwise disjointness, with notation
+[Xs ##ₚ Ys] and [[##ₚ Xs]]. *)
+Class PairwiseDisjoint A := pairwise_disjoint : relation A.
+#[global] Hint Mode PairwiseDisjoint ! : typeclass_instances.
+#[global] Instance: Params (@pairwise_disjoint) 2 := {}.
+Infix "##ₚ" := pairwise_disjoint (at level 70) : stdpp_scope.
+Notation "(##ₚ)" := pairwise_disjoint (only parsing) : stdpp_scope.
+Notation "( Xs ##ₚ.)" := (pairwise_disjoint Xs) (only parsing) : stdpp_scope.
+Notation "(.##ₚ Ys )" := (fun Xs => Xs ##ₚ Ys) (only parsing) : stdpp_scope.
+
+Infix "##ₚ@{ A }" := (@pairwise_disjoint A _) (at level 70, only parsing) : stdpp_scope.
+Notation "(##ₚ@{ A } )" := (@pairwise_disjoint A _) (only parsing) : stdpp_scope.
+
+Notation "[##ₚ  Xs ]" := (Xs ##ₚ Xs) (at level 0) : stdpp_scope.
+Notation "[##ₚ@{ A }  Xs ]" := (Xs ##ₚ@{A} Xs) (at level 0, only parsing) : stdpp_scope.
+
+(** ** Typeclass operations *)
+(** [TCLeq (a ?= b)] expresses [a <= b] in a way that can be proved,
+    for some [a]s and [b]s, during typeclass resolution. *)
+Variant TCLeq : comparison -> Prop :=
+| TCLeq_eq : TCLeq Eq
+| TCLeq_lt : TCLeq Lt.
+Existing Class TCLeq.
+Existing Instances TCLeq_eq TCLeq_lt.
+#[global] Hint Mode TCLeq + : typeclass_instances.
+
+Lemma TCLeq_iff c : TCLeq c <-> c ≠ Gt.
+Proof. split. by inversion 1. by destruct c; first [done|constructor]. Qed.
+Lemma TCLeq_positive x y : (TCLeq (x ?= y) <-> x <= y)%positive.
+Proof. by rewrite TCLeq_iff. Qed.
+Lemma TCLeq_Z x y : (TCLeq (x ?= y) <-> x <= y)%Z.
+Proof. by rewrite TCLeq_iff. Qed.
+Lemma TCLeq_N x y : (TCLeq (x ?= y) <-> x <= y)%N.
+Proof. by rewrite TCLeq_iff. Qed.
+Lemma TCLeq_nat x y : (TCLeq (x ?= y) <-> x <= y)%nat.
+Proof. by rewrite TCLeq_iff Nat.compare_le_iff. Qed.
+
+(** Useful when rewriting. *)
+Lemma refl_True `(R : relation A) `{!Reflexive R} a : R a a ↔ True.
+Proof. done. Qed.
+
+(** Witnessing non-disjointness *)
+(** We prove a few lemmas witnessing non-disjointness. Examples
+include [list_not_disjoint] in [./list.v] and [set_not_disjoint] in
+[./fin_sets.v]. Such lemmas convert non-disjointness into constructive
+evidence; for example, turning `¬ X ## Y` when `X, Y : list A` into an
+`x : A` s.t. `x ∈ X`, `y ∈ Y`.
+
+Such witnesses can be useful to prove disjointness properties from
+ownership. Suppose, for example, that you have a representation
+predicate [myList (l : list A) : Rep] for some [A : Type] defined so
+that [myList l ** myList k] implies [l ## k]. One way to prove an
+observation like [Observe2 [| l ## k |] (myList l) (mList k)] is to
+
+- decide if [l ## k] (possible because lists have finite inhabitants)
+  and,
+
+- when they are not disjoint, convert [¬ l ## k] into a witness [x :
+  A] such that [x ∈ l], [y ∈ k], and
+
+- use that witness to derive a contradiction from the ownership in
+  [myList l ** myList k]. *)
