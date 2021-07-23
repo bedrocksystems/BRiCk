@@ -34,24 +34,22 @@ Qed.
 
 Implicit Types (n : N) (p : positive).
 
-Definition fin n := {m : N | m < n}.
+Module fin.
+  Definition t n := {m : N | m < n}.
 
-Definition as_fin (p : positive) (n : N) : fin (Npos p) :=
-  match decide (n < Npos p) with
-  | left prf => n ↾ prf
-  | right _ => 0 ↾ eq_refl
-  end.
+  Definition of_N (p : positive) (n : N) : t (Npos p) :=
+    match decide (n < Npos p) with
+    | left prf => n ↾ prf
+    | right _ => 0 ↾ eq_refl
+    end.
+  Definition to_N {n} (f : t n) : N := proj1_sig f.
 
-#[global] Instance fin_eq_dec n : EqDecision (fin n) := _.
-#[global] Instance fin_countable n : Countable (fin n) := _.
-#[global] Instance fin_pos_inhabited p : Inhabited (fin (Npos p)) := populate (as_fin _ 0).
-#[global] Hint Opaque fin : typeclass_instances.
+  (** Not declared an instance, because redudant. *)
+  Lemma to_N_inj n : Inj eq eq (to_N (n := n)).
+  Proof. apply _. Qed.
 
-(* Was [fin_eq], unused. *)
-Lemma proj1_sig_proper {n} (a b : fin n) : a = b -> proj1_sig a = proj1_sig b.
-Proof. apply f_equal. Qed.
-
-(* Was [fineq] *)
-Lemma fin_proj1_sig_inj {n} (a b : fin n):
-  proj1_sig a = proj1_sig b -> a = b.
-Proof. apply: proj1_sig_inj. Qed.
+  #[global] Instance fin_eq_dec n : EqDecision (t n) := _.
+  #[global] Instance fin_countable n : Countable (t n) := _.
+  #[global] Instance fin_pos_inhabited p : Inhabited (t (Npos p)) := populate (of_N _ 0).
+  #[global] Hint Opaque t : typeclass_instances.
+End fin.
