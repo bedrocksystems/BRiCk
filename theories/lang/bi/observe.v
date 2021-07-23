@@ -417,4 +417,7 @@ Section theory.
     (Q → R) → Observe2 [| Q |] P1 P2 → Observe2 [| R |] P1 P2.
   Proof. move=> HQR. apply Observe2_mono => //. by f_equiv. Qed.
 
+  Lemma observe2_inj `{Inj A B R1 R2 f} x y P1 P2 :
+    Observe2 [| R2 (f x) (f y) |] P1 P2 -> Observe2 [| R1 x y |] P1 P2.
+  Proof. apply observe_2_derive_only_provable, inj, _. Qed.
 End theory.
