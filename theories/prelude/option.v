@@ -3,8 +3,28 @@
  * This software is distributed under the terms of the BedRock Open-Source License.
  * See the LICENSE-BedRock file in the repository root for details.
  *)
+(*
+ * The following code contains code derived from code original to the
+ * stdpp project. That original code is
+ *
+ *	Copyright stdpp developers and contributors
+ *
+ * and used according to the following license.
+ *
+ *	SPDX-License-Identifier: BSD-3-Clause
+ *
+ * Original stdpp License:
+ * https://gitlab.mpi-sws.org/iris/stdpp/-/blob/5415ad3003fd4b587a2189ddc2cc29c1bd9a9999/LICENSE
+ *)
 
 From bedrock.prelude Require Import base.
+
+(* From stdpp START, to drop on bump. *)
+Lemma option_guard_True_pi {A} P `{Decision P, ProofIrrel P} (f : P → option A)
+    (HP : P) :
+  mguard P f = f HP.
+Proof. intros. case_option_guard; [|done]. f_equal; apply proof_irrel. Qed.
+(* From stdpp END. *)
 
 Definition on {A B C} (R : B -> B -> C) (f : A -> B) (x y : A) : C :=
   R (f x) (f y).
