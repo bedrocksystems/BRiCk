@@ -115,19 +115,17 @@ Module Type VAL_MIXIN (Import P : PTRS) (Import R : RAW_BYTES).
   #[global] Instance Vint_Inj : Inj (=) (=) Vint := Vint_inj.
   #[global] Instance Vbool_Inj : Inj (=) (=) Vbool := Vbool_inj.
 
-  (** * regions
-      to model the stack frame in separation logic, we use a notion of regions
+  (** * Regions
+      To model the stack frame in separation logic, we use a notion of regions
       that are threaded through the semantics.
 
-      we instantiate [region] as a stack of finite maps from variables
-      to their addresses.
+      We instantiate [region] as a finite map from variables to their addresses
+      (implemented as an association list).
   *)
   Inductive region : Type :=
   | Remp (this : option ptr) (_ : type)
   | Rbind (_ : localname) (_ : ptr) (_ : region).
 
-  (** NOTE anonymous variables are not recorded in the environment.
-  *)
   Definition Rbind_check (x : ident) (p : ptr) (r : region) : region :=
     if decide (x = ""%bs)
     then r
@@ -403,7 +401,7 @@ Module Type HAS_TYPE_MIXIN (Import P : PTRS) (Import R : RAW_BYTES) (Import V : 
 
   #[global] Hint Resolve has_type_bswap : has_type.
 
-  (** Integral conversions *)
+  (** Integral conversions. For use in the semantics of C++ operators. *)
   Definition conv_int (from to : type) (v v' : val) : Prop :=
     match drop_qualifiers from , drop_qualifiers to with
     | Tbool , Tint _ _ =>
