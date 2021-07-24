@@ -257,7 +257,7 @@ Section with_cpp.
           | nil =>
             (* there is a *unique* initializer for this field *)
             this ., offset_for cls i.(init_path) |-> tblockR (erase_qualifiers i.(init_type)) 1 -*
-            wpi ⊤ ρ cls this i (fun f => interp f $ wpi_members ρ cls this members inits Q)
+            wpi ⊤ ρ cls this i (wpi_members ρ cls this members inits Q)
           | _ =>
             (* there are multiple initializers for this field *)
             ERROR $ "multiple initializers for field: " ++ cls ++ "::" ++ m.(mem_name)
@@ -286,7 +286,7 @@ Section with_cpp.
       | i :: nil =>
         (* there is an initializer for this class *)
         this ., offset_for cls i.(init_path) |-> tblockR (erase_qualifiers i.(init_type)) 1 -*
-        wpi ⊤ ρ cls this i (fun f => interp f $ wpi_bases ρ cls this bases inits Q)
+        wpi ⊤ ρ cls this i (wpi_bases ρ cls this bases inits Q)
       | _ :: _ :: _ =>
         (* there are multiple initializers for this, so we fail *)
         ERROR $ "multiple initializers for base: " ++ cls ++ "::" ++ b
@@ -304,7 +304,6 @@ Section with_cpp.
     case_match; eauto.
     iIntros "a b c"; iDestruct ("b" with "c") as "b"; iRevert "b".
     iApply wpi_frame => //.
-    iIntros (?). iApply interp_frame.
     by iApply IHbases.
   Qed.
 
@@ -321,8 +320,7 @@ Section with_cpp.
     { case_match; eauto.
       case_match; eauto.
       iIntros "a b c"; iDestruct ("b" with "c") as "b". iRevert "b".
-      iApply wpi_frame => //; iIntros (?); iApply interp_frame.
-        by iApply IHflds. }
+      iApply wpi_frame => //; by iApply IHflds. }
   Qed.
 
   Definition wp_struct_initializer_list (s : Struct) (ρ : region) (cls : globname) (this : ptr)
@@ -526,7 +524,7 @@ Section with_cpp.
     match dtor.(d_body) with
     | None => False
     | Some Defaulted => False
-      (* ^ defaulted constructors are not supported *)
+      (* ^ defaulted destructors are not supported *)
     | Some (UserDefined body) =>
       let epilog :=
           match resolve.(genv_tu).(globals) !! dtor.(d_class) with

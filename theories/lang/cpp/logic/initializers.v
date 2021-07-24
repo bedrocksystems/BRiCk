@@ -20,7 +20,6 @@ Module Type Init.
     Variables (M : coPset) (ρ : region).
 
     #[local] Notation wp := (wp (resolve:=σ) M ρ).
-    #[local] Notation wpi := (wpi (resolve:=σ) M ρ).
     #[local] Notation wp_lval := (wp_lval (resolve:=σ) M ρ).
     #[local] Notation wp_prval := (wp_prval (resolve:=σ) M ρ).
     #[local] Notation wp_xval := (wp_xval (resolve:=σ) M ρ).
@@ -116,24 +115,9 @@ Module Type Init.
       end.
 
 
-    (*
-    Definition wpi (cls : globname) (thisp : ptr) (init : Initializer) (Q : _) : mpred :=
+    Definition wpi (cls : globname) (thisp : ptr) (init : Initializer) (Q : epred) : mpred :=
         let p' := thisp ., offset_for cls init.(init_path) in
-        wp_initialize (erase_qualifiers init.(init_type)) p' init.(init_init) (fun free => interp ti free Q).
-     *)
-
-    Axiom wpi_initialize : forall (thisp : ptr) i cls Q,
-        let p' := thisp ., offset_for cls i.(init_path) in
-          wp_initialize (erase_qualifiers i.(init_type)) p' i.(init_init) Q
-      |-- wpi cls thisp i Q.
-
-    Fixpoint wpis (cls : globname) (this : ptr)
-             (inits : list Initializer)
-             (Q : FreeTemps -> mpred) : mpred :=
-      match inits with
-      | nil => Q FreeTemps.id
-      | i :: is' => wpi cls this i (fun f => wpis cls this is' (fun x => Q (f >*> x)%free))
-      end%I.
+        wp_initialize (erase_qualifiers init.(init_type)) p' init.(init_init) (fun free => interp free Q).
 
     Axiom wp_init_constructor : forall cls addr cnd es Q,
       wp_args es (fun ls free =>
@@ -165,7 +149,8 @@ Module Type Init.
 
     (** NOTE this assumes that the C++ abstract machine already owns the array
         that is being initialized, see [wp_init_initlist_array] *)
-    Definition wp_array_init_fill (ety : type) (base : ptr) (es : list Expr) (f : option Expr) (sz : N) (Q : FreeTemps -> mpred) : mpred :=
+    Definition wp_array_init_fill (ety : type) (base : ptr) (es : list Expr) (f : option Expr) (sz : N)
+               (Q : FreeTemps -> mpred) : mpred :=
       let len := N.of_nat (length es) in
       match (len ?= sz)%N with
       | Lt =>
@@ -290,7 +275,31 @@ Module Type Init.
       |-- (Forall free, Q free -* Q' free) -* wp_initialize (σ:=σ2) M ρ ty obj e Q'.
     Proof. by iIntros "H Y"; iRevert "H"; iApply wp_initialize_frame. Qed.
 
+    Theorem wpi_frame (cls : globname) (this : ptr) (e : Initializer) k1 k2 :
+      k1 -* k2 |-- wpi (σ:=σ1) M ρ cls this e k1 -* wpi (σ:=σ2) M ρ cls this e k2.
+    Proof. Abort. (* This is not quite provable *)
+
   End frames.
+
+  Section mono_frames.
+    (* Really all framing lemmas should work with [genv] weakening, but that
+       requires some additional side-conditions on paths that we can't prove
+       right now. So, for the time being, we prove [_frame] lemmas without
+       [genv] weakening.
+     *)
+
+    Context `{Σ : cpp_logic thread_info} {σ : genv}.
+    Variables (M : coPset) (ρ : region).
+
+    Theorem wpi_frame (cls : globname) (this : ptr) (e : Initializer) k1 k2 :
+      k1 -* k2 |-- wpi M ρ cls this e k1 -* wpi M ρ cls this e k2.
+    Proof.
+      clear.
+      iIntros "X". rewrite /wpi. iApply wp_initialize_frame.
+      iIntros (?); by iApply interp_frame.
+    Qed.
+
+  End mono_frames.
 
 End Init.
 
