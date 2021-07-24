@@ -44,10 +44,8 @@ Module fin.
     end.
   Definition to_N {n} (f : t n) : N := proj1_sig f.
 
-  (** Not declared an instance, because redudant. *)
-  Lemma to_N_inj n : Inj eq eq (to_N (n := n)).
-  Proof. apply _. Qed.
-
+  (** Declared an instance, because it is not redudant after [t] is made opaque. *)
+  #[global] Instance to_N_inj n : Inj eq eq (to_N (n := n)) := _.
   #[global] Instance fin_eq_dec n : EqDecision (t n) := _.
   #[global] Instance fin_countable n : Countable (t n) := _.
   #[global] Instance fin_pos_inhabited p : Inhabited (t (Npos p)) := populate (of_N _ 0).
