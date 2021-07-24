@@ -5,7 +5,11 @@
  */
 #pragma once
 
+#include <clang/AST/ASTConsumer.h>
+#include <clang/AST/ASTContext.h>
+#include <llvm/ADT/Optional.h>
 #include <optional>
+#include <string>
 
 namespace clang {
 class TranslationUnitDecl;
@@ -21,25 +25,25 @@ using namespace clang;
 
 class ToCoqConsumer : public clang::ASTConsumer {
 public:
-    explicit ToCoqConsumer(clang::CompilerInstance* compiler,
-                           const Optional<std::string> output_file,
-                           const Optional<std::string> spec_file,
-                           const Optional<std::string> notations_file)
-        : compiler_(compiler),
-          spec_file_(spec_file), output_file_(output_file),
-          notations_file_(notations_file) {}
+    explicit ToCoqConsumer(clang::CompilerInstance *compiler,
+                           const llvm::Optional<std::string> output_file,
+                           const llvm::Optional<std::string> spec_file,
+                           const llvm::Optional<std::string> notations_file,
+                           bool elaborate = true)
+        : compiler_(compiler), spec_file_(spec_file), output_file_(output_file),
+          notations_file_(notations_file), elaborate_(elaborate) {}
 
     virtual void HandleTranslationUnit(clang::ASTContext &Context) {
         toCoqModule(&Context, Context.getTranslationUnitDecl());
     }
 
 private:
-    void toCoqModule(clang::ASTContext *ctxt,
-                     clang::TranslationUnitDecl *decl);
+    void toCoqModule(clang::ASTContext *ctxt, clang::TranslationUnitDecl *decl);
 
 private:
-    clang::CompilerInstance*    compiler_;
+    clang::CompilerInstance *compiler_;
     const Optional<std::string> spec_file_;
     const Optional<std::string> output_file_;
     const Optional<std::string> notations_file_;
+    bool elaborate_;
 };

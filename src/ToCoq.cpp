@@ -48,7 +48,7 @@ ToCoqConsumer::toCoqModule(clang::ASTContext *ctxt,
 
     ::Module mod;
 
-    build_module(decl, mod, filter, specs, compiler_);
+    build_module(decl, mod, filter, specs, compiler_, elaborate_);
 
     if (output_file_.hasValue()) {
         std::error_code ec;
@@ -73,13 +73,15 @@ ToCoqConsumer::toCoqModule(clang::ASTContext *ctxt,
 
             print.begin_list();
             for (auto entry : mod.imports()) {
-                auto decl = entry.second.first;
+                if (cprint.printDecl(entry.first, print))
+                    print.cons();
+            }
+            for (auto decl : mod.definitions()) {
                 if (cprint.printDecl(decl, print))
                     print.cons();
             }
-            for (auto entry : mod.definitions()) {
-                auto decl = entry.second;
-                if (cprint.printDecl(decl, print))
+            for (auto entry : mod.asserts()) {
+                if (cprint.printDecl(entry, print))
                     print.cons();
             }
             print.end_list();

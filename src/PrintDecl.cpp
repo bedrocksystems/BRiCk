@@ -230,6 +230,12 @@ public:
         return true;
     }
 
+    bool VisitTypeAliasTemplateDecl(const TypeAliasTemplateDecl *type,
+                                    CoqPrinter &print, ClangPrinter &cprint,
+                                    const ASTContext &) {
+        return false;
+    }
+
     bool printMangledFieldName(const FieldDecl *field, CoqPrinter &print,
                                ClangPrinter &cprint) {
         if (field->isAnonymousStructOrUnion()) {
@@ -297,17 +303,27 @@ public:
         print.ctor("Build_Union");
         printFields(decl, layout, print, cprint);
 
+        print.ctor("DTOR", false);
+        cprint.printTypeName(decl, print);
+        print.end_ctor() << fmt::nbsp;
+        // cprint.printObjName(dtor, print) << fmt::nbsp;
+
+        // trivially destructable
+        print.output() << fmt::BOOL(decl->hasTrivialDestructor());
+
+#if 0
         if (auto dtor = decl->getDestructor()) {
             print.output() << fmt::nbsp;
             cprint.printObjName(dtor, print);
             print.output() << fmt::line << fmt::BOOL(dtor->isTrivial());
         } else {
             logging::fatal()
-                << "Error: union '" << decl->getNameAsString()
-                << "' is missing a destructor at"
+                << "Error: union '" << decl->getQualifiedNameAsString()
+                << "' is missing a destructor at "
                 << cprint.sourceRange(decl->getSourceRange()) << "\n";
             logging::die();
         }
+#endif
 
         print.output() << fmt::line << layout.getSize().getQuantity()
                        << fmt::nbsp << layout.getAlignment().getQuantity()
@@ -400,19 +416,13 @@ public:
             }
         }
         print.end_list() << fmt::nbsp;
+        print.ctor("DTOR", false);
+        cprint.printTypeName(decl, print);
+        print.end_ctor() << fmt::nbsp;
+        // cprint.printObjName(dtor, print) << fmt::nbsp;
 
-        if (auto dtor = decl->getDestructor()) {
-            cprint.printObjName(dtor, print);
-            // trivially destructable
-            print.output() << fmt::nbsp << fmt::BOOL(dtor->isTrivial());
-
-        } else {
-            logging::fatal()
-                << "Error: struct '" << decl->getNameAsString()
-                << "' is missing a destructor at "
-                << cprint.sourceRange(decl->getSourceRange()) << "\n";
-            logging::die();
-        }
+        // trivially destructable
+        print.output() << fmt::BOOL(decl->hasTrivialDestructor());
 
         // print the layout information
         print.output() << fmt::line;
@@ -576,7 +586,6 @@ public:
                 } else {
                     assert(false && "not member, base class, or indirect");
                 }
-                print.output() << fmt::line;
                 cprint.printExpr(init->getInit(), print);
                 print.end_ctor();
                 print.cons();
@@ -771,6 +780,21 @@ public:
     bool VisitUsingShadowDecl(const UsingShadowDecl *, CoqPrinter &,
                               ClangPrinter &, const ASTContext &) {
         return false;
+    }
+
+    bool VisitStaticAssertDecl(const StaticAssertDecl *decl, CoqPrinter &print,
+                               ClangPrinter &cprint, const ASTContext &) {
+        print.ctor("Dstatic_assert");
+        if (auto msg = decl->getMessage()) {
+            print.some();
+            print.str(msg->getString()) << fmt::nbsp;
+            print.end_ctor();
+        } else {
+            print.none();
+        }
+        cprint.printExpr(decl->getAssertExpr(), print);
+        print.end_ctor();
+        return true;
     }
 };
 

@@ -5,8 +5,10 @@
  */
 #pragma once
 #include <clang/AST/Decl.h>
+#include <clang/AST/DeclCXX.h>
 #include <list>
 #include <map>
+#include <set>
 #include <utility>
 namespace clang {
 class CompilerInstance;
@@ -18,22 +20,29 @@ public:
 
     void add_declaration(const clang::NamedDecl* d);
 
-    const std::multimap<std::string, std::pair<const clang::NamedDecl*, bool>>&
-    imports() const {
+    void add_assert(const clang::StaticAssertDecl* d) {
+        asserts_.push_back(d);
+    }
+
+    const auto& asserts() const {
+        return asserts_;
+    }
+
+    const auto& imports() const {
         return imports_;
     }
 
-    const std::multimap<std::string, const clang::NamedDecl*>&
-    definitions() const {
+    const auto& definitions() const {
         return definitions_;
     }
 
     Module() : imports_(), definitions_() {}
 
 private:
-    std::multimap<std::string, std::pair<const clang::NamedDecl*, bool>>
-        imports_;
-    std::multimap<std::string, const clang::NamedDecl*> definitions_;
+    std::map<const clang::NamedDecl*, bool> imports_;
+    std::set<const clang::NamedDecl*> definitions_;
+
+    std::list<const clang::StaticAssertDecl*> asserts_;
 };
 
 class Filter;

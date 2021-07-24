@@ -57,6 +57,11 @@ static cl::opt<bool> Verboser("vv", cl::desc("verboser"), cl::Optional,
 static cl::opt<bool> Quiet("q", cl::desc("quiet"), cl::Optional,
                            cl::cat(Cpp2V));
 
+static cl::opt<bool>
+    Naked("n", cl::desc("naked"), cl::Optional,
+          cl::desc("do not elaborate defaulted definitions in the file."),
+          cl::cat(Cpp2V));
+
 static cl::opt<bool> Version("cpp2v-version", cl::Optional, cl::ValueOptional,
                              cl::cat(Cpp2V));
 
@@ -89,7 +94,9 @@ public:
     virtual bool BeginSourceFileAction(CompilerInstance &CI) override {
         // Because we enable incremental processing, we must call [ActOnEndOfTranslationUnit]
         // explicitly.
-        CI.getPreprocessor().enableIncrementalProcessing();
+        if (not Naked) {
+            CI.getPreprocessor().enableIncrementalProcessing();
+        }
         return this->clang::ASTFrontendAction::BeginSourceFileAction(CI);
     }
 };
