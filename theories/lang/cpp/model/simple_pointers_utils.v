@@ -7,7 +7,7 @@
 (** Support code for [simple_pointers.v]. *)
 
 From stdpp Require Import gmap.
-From bedrock.lang.prelude Require Import base addr option avl.
+From bedrock.prelude Require Import base addr option avl.
 From bedrock.lang.cpp.semantics Require Import values.
 
 Implicit Types (σ : genv).

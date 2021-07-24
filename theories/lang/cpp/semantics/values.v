@@ -8,7 +8,7 @@
 From Coq Require Import Strings.Ascii.
 Require Import stdpp.gmap.
 
-From bedrock.lang.prelude Require Import base addr option numbers.
+From bedrock.prelude Require Import base addr option numbers.
 
 Require Import bedrock.lang.cpp.arith.builtins.
 Require Import bedrock.lang.cpp.ast.
@@ -68,6 +68,9 @@ Variant val : Set :=
 | Vundef
 .
 #[global] Notation Vref := Vptr (only parsing).
+
+(* TODO Maybe this should be removed *)
+#[global] Coercion Vint : Z >-> val.
 
 Definition val_dec : forall a b : val, {a = b} + {a <> b}.
 Proof. solve_decision. Defined.

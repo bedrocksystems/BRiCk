@@ -5,7 +5,7 @@
  *)
 From iris Require Import bi.bi.
 From bedrock Require Import IrisBridge.
-Require Import bedrock.lang.prelude.addr.
+Require Import bedrock.prelude.addr.
 Import ChargeNotation.
 Local Open Scope N_scope.
 Section lift.

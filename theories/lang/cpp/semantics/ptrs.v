@@ -43,11 +43,7 @@ assumptions on our compilers, here and elsewhere:
 - Support for effective types is also incomplete; similarly to Cerberus,
   we still assume users use options such as [-fno-strict-aliasing] GCC/Clang's.
  *)
-(*
-From Coq Require Import Strings.Ascii.
-From bedrock.lang.prelude Require Import base addr option numbers.
-*)
-From bedrock.lang.prelude Require Import base addr option numbers.
+From bedrock.prelude Require Import base addr option numbers.
 
 Require Import bedrock.lang.cpp.ast.
 From bedrock.lang.cpp.semantics Require Export types genv.

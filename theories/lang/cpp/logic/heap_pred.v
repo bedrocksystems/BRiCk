@@ -8,7 +8,7 @@ From iris.proofmode Require Import tactics monpred.
 Require Import iris.bi.lib.fractional.
 From iris_string_ident Require Import ltac2_string_ident.
 
-Require Import bedrock.lang.prelude.base.
+Require Import bedrock.prelude.base.
 
 From bedrock.lang.cpp Require Import
      semantics ast logic.pred logic.path_pred logic.rep logic.wp logic.spec.

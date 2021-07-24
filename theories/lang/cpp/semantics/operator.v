@@ -13,7 +13,7 @@
  * made uniform.
  *)
 
-From bedrock.lang.prelude Require Import base numbers.
+From bedrock.prelude Require Import base numbers.
 From bedrock.lang.cpp.arith Require Export operator.
 From bedrock.lang.cpp Require Import ast semantics.values.
 

@@ -9,7 +9,8 @@ The core logic is defined in [pred.v]. *)
 From iris.base_logic.lib Require Import own cancelable_invariants.
 Require Import iris.bi.monpred.
 
-From bedrock.lang Require Import prelude.base bi.prelude.
+From bedrock.prelude Require Import base.
+From bedrock.lang Require Import bi.prelude.
 Import ChargeNotation.
 
 Module Type CPP_LOGIC_CLASS_BASE.

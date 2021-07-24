@@ -4,8 +4,8 @@
  * See the LICENSE-BedRock file in the repository root for details.
  *)
 From stdpp Require Import countable strings.
-Require Import bedrock.lang.prelude.base.
-Require Export bedrock.lang.prelude.bytestring.
+Require Import bedrock.prelude.base.
+Require Export bedrock.prelude.bytestring.
 
 Set Primitive Projections.
 

@@ -7,9 +7,7 @@
  * Semantics of expressions
  * (expressed in weakest pre-condition style)
  *)
-Require Import Coq.Lists.List.
-Require Import Coq.ZArith.BinInt.
-Require Import Coq.NArith.BinNatDef.
+Require Export bedrock.prelude.numbers.
 
 From bedrock.lang.cpp Require Import ast semantics.
 From bedrock.lang.cpp.logic Require Import
@@ -26,7 +24,6 @@ Require Import bedrock.lang.cpp.heap_notations.
 Module Type Expr.
 
   (* TODO these should be removed *)
-  Coercion Vint : Z >-> val.
   Coercion Z.of_N : N >-> Z.
 
   (**

@@ -9,8 +9,8 @@ Require Import ExtLib.Tactics.
 this reset propagates to clients, we must export one of them; we choose to
 export our [base] module. *)
 Require Import stdpp.fin_maps.
-From bedrock.lang.prelude Require Export base.
-From bedrock.lang.prelude Require Import avl.
+From bedrock.prelude Require Export base.
+From bedrock.prelude Require Import avl.
 Require Import bedrock.lang.cpp.ast.
 
 Definition require_eq `{EqDecision T} (a b : T) {U} (r : option U) : option U :=

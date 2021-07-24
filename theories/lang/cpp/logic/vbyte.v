@@ -10,7 +10,7 @@ From iris.bi.lib Require Import fractional.
 
 From bedrock.lang.cpp Require Import logic.pred.
 From bedrock.lang.cpp.semantics Require Import types genv values.
-Require Import bedrock.lang.prelude.addr.
+Require Import bedrock.prelude.addr.
 
 Module Type VBYTE.
   Parameter vbyte_at : forall `{Σ:cpp_logic} (q : Qp) (addr : N) (n : N), mpred.

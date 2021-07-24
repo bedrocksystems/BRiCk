@@ -3,9 +3,9 @@
  * This software is distributed under the terms of the BedRock Open-Source License.
  * See the LICENSE-BedRock file in the repository root for details.
  *)
-Require Import bedrock.lang.prelude.base.
+Require Import bedrock.prelude.base.
 From bedrock.lang.cpp.syntax Require Import names types expr.
-Require Import bedrock.lang.prelude.bytestring.
+Require Import bedrock.prelude.bytestring.
 
 Set Primitive Projections.
 

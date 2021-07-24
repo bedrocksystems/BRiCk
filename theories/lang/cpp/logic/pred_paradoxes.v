@@ -5,7 +5,7 @@
  *)
 (* Demonstrate paradoxes from alluring but incorrect axioms. *)
 Require Import iris.proofmode.tactics.
-Require Import bedrock.lang.prelude.base.
+Require Import bedrock.prelude.base.
 
 From bedrock.lang.cpp Require Import semantics logic.pred ast.
 
