@@ -9,6 +9,12 @@ Require Import stdpp.countable.
 Record WrapN {Phant : Set} : Set := { unwrapN : N }.
 Arguments WrapN Phant : clear implicits.
 (* using the wrapper means we define these instances only once. *)
+
+(* this instance is useful in combination with [Refine1_Cancel]. *)
+#[global] Instance cancel_Build_WrapN_unwrapN {Phant} :
+  Cancel eq (Build_WrapN Phant) unwrapN.
+Proof. by intros []. Qed.
+
 #[global] Instance wrapN_eq_decision {Phant} : EqDecision (WrapN Phant).
 Proof. solve_decision. Defined.
 #[global, program] Instance wrapN_countable {Phant} : Countable (WrapN Phant) :=
@@ -21,10 +27,6 @@ Next Obligation. by intros ? []. Qed.
 #[global] Instance unwrapN_inj Phant : Inj eq eq (@unwrapN Phant).
 Proof. intros [] [] ?. by simplify_eq/=. Qed.
 
-(* this instance is useful in combination with [Refine1_Cancel]. *)
-#[global] Instance cancel_Build_WrapN_unwrapN {Phant} :
-  Cancel eq (Build_WrapN Phant) unwrapN.
-Proof. by intros []. Qed.
 
 Module wrapN_notations.
   Declare Scope wrapN_scope.
