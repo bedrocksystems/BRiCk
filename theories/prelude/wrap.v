@@ -17,9 +17,9 @@ Proof. by intros []. Qed.
 
 #[global] Instance wrapN_eq_decision {Phant} : EqDecision (WrapN Phant).
 Proof. solve_decision. Defined.
-#[global, program] Instance wrapN_countable {Phant} : Countable (WrapN Phant) :=
-  inj_countable' unwrapN (Build_WrapN _) _.
-Next Obligation. by intros ? []. Qed.
+
+#[global] Instance wrapN_countable {Phant} : Countable (WrapN Phant) :=
+  inj_countable' unwrapN (Build_WrapN _) (cancel _ _).
 
 #[global] Instance wrapN_inhabited {Phant} : Inhabited (WrapN Phant) :=
   populate {| unwrapN := 0 |}.
