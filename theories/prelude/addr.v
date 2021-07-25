@@ -5,8 +5,10 @@
  *)
 From bedrock.prelude Require Import base.
 
+(** virtual addresses *)
 Definition vaddr : Set := N.
 Bind Scope N_scope with vaddr.
 
+(** physical addresses *)
 Definition paddr : Set := N.
 Bind Scope N_scope with paddr.

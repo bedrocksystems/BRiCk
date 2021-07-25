@@ -23,9 +23,6 @@ Require Import bedrock.lang.cpp.heap_notations.
 
 Module Type Expr.
 
-  (* TODO these should be removed *)
-  Coercion Z.of_N : N >-> Z.
-
   (**
    * Weakest pre-condition for expressions
    *
