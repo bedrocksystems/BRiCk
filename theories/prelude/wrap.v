@@ -27,6 +27,8 @@ Proof. solve_decision. Defined.
 #[global] Instance unwrapN_inj Phant : Inj eq eq (@unwrapN Phant).
 Proof. intros [] [] ?. by simplify_eq/=. Qed.
 
+#[global] Instance Build_WrapN_inj Phant : Inj eq eq (Build_WrapN Phant).
+Proof. by intros ?? [=]. Qed.
 
 Module wrapN_notations.
   Declare Scope wrapN_scope.
