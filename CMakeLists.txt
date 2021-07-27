@@ -67,7 +67,7 @@ IF (APPLE)
    message(STATUS "Apple environment detected")
    set(CMAKE_MACOSX_RPATH ON)
 
-   IF (DEFINED "CLANG_DIR")
+   IF (DEFINED ENV{CLANG_DIR})
       message(STATUS "Building under Nix")
       return ()
    ENDIF ()
