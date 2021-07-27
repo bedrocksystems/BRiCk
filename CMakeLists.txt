@@ -73,9 +73,6 @@ IF (APPLE)
    ENDIF ()
 
    # LLVM_LIB_DIR defined in cmake/modules/FindLLVM.cmake
-   #set(CMAKE_INSTALL_RPATH "${LLVM_LIB_DIR}")
-   #set(CMAKE_PREFIX_PATH "${LLVM_LIB_DIR}")
-   #set(CMAKE_SHARED_LINKER_FLAGS "-L${LLVM_LIB_DIR} -lclangSerialization -lclangASTMatchers -lclangSema -lclangAnalysis -lclangRewriteFrontend -lclangEdit -lclangParse -lclangFrontend -lclangBasic -lclangDriver -lclangAST -lclangLex -lz -lcurses")
    set(CMAKE_EXE_LINKER_FLAGS "-L${LLVM_LIB_DIR}")
 ENDIF (APPLE)
 
