@@ -64,7 +64,16 @@ add_library(tocoq
 set_property(TARGET tocoq PROPERTY POSITION_INDEPENDENT_CODE ON)
 add_compile_options(-fno-rtti)
 IF (APPLE)
+   message(STATUS "Apple environment detected")
    set(CMAKE_MACOSX_RPATH ON)
+
+   IF (NOT(DEFINED ENV{CLANG_DIR}))
+      # LLVM_LIB_DIR defined in cmake/modules/FindLLVM.cmake
+      set(CMAKE_EXE_LINKER_FLAGS "-L${LLVM_LIB_DIR}")
+      message(STATUS "Building outside Nix")
+   ELSE ()
+      message(STATUS "Building under Nix")
+   ENDIF ()
 ENDIF (APPLE)
 
 add_executable(cpp2v
