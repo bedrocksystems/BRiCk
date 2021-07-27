@@ -18,6 +18,7 @@
 theories/prelude/stdpp_ssreflect.v
 theories/prelude/wrap.v
 theories/prelude/hw_types.v
+theories/prelude/interrupts.v
 theories/prelude/notations.v
 theories/prelude/tc_cond_type.v
 
