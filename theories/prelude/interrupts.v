@@ -8,10 +8,7 @@
 
 (* XXX Only temporarily here. *)
 
-Require Import ssreflect.
-Require Import stdpp.base stdpp.decidable.
-Require Import Coq.NArith.BinNatDef.
-Require Import bedrock.hw_models.types.
+From bedrock.prelude Require Import base hw_types.
 
 (** * Configurations of the interrupt lines attached to devices *)
 
