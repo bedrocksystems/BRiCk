@@ -9,11 +9,17 @@ Require Import stdpp.countable.
 Record WrapN {Phant : Set} : Set := { unwrapN : N }.
 Arguments WrapN Phant : clear implicits.
 (* using the wrapper means we define these instances only once. *)
+
+(* this instance is useful in combination with [Refine1_Cancel]. *)
+#[global] Instance cancel_Build_WrapN_unwrapN {Phant} :
+  Cancel eq (Build_WrapN Phant) unwrapN.
+Proof. by intros []. Qed.
+
 #[global] Instance wrapN_eq_decision {Phant} : EqDecision (WrapN Phant).
 Proof. solve_decision. Defined.
-#[global, program] Instance wrapN_countable {Phant} : Countable (WrapN Phant) :=
-  inj_countable' unwrapN (Build_WrapN _) _.
-Next Obligation. by intros ? []. Qed.
+
+#[global] Instance wrapN_countable {Phant} : Countable (WrapN Phant) :=
+  inj_countable' unwrapN (Build_WrapN _) (cancel _ _).
 
 #[global] Instance wrapN_inhabited {Phant} : Inhabited (WrapN Phant) :=
   populate {| unwrapN := 0 |}.
@@ -21,10 +27,8 @@ Next Obligation. by intros ? []. Qed.
 #[global] Instance unwrapN_inj Phant : Inj eq eq (@unwrapN Phant).
 Proof. intros [] [] ?. by simplify_eq/=. Qed.
 
-(* this instance is useful in combination with [Refine1_Cancel]. *)
-#[global] Instance cancel_Build_WrapN_unwrapN {Phant} :
-  Cancel eq (Build_WrapN Phant) unwrapN.
-Proof. by intros []. Qed.
+#[global] Instance Build_WrapN_inj Phant : Inj eq eq (Build_WrapN Phant).
+Proof. by intros ?? [=]. Qed.
 
 Module wrapN_notations.
   Declare Scope wrapN_scope.
