@@ -86,12 +86,13 @@ Definition intcfg_valid (cfg : IntConfig) (own : IntOwner) (sig : InterruptSigna
     cfg.(int_owner) = Some own /\
     cfg.(int_status) = IntEnabled.
 
+(* Confirm these instances are already derivable. *)
 Instance intline_elem_of_dec :
   @RelDecision (int_line * IntConfig) (list (int_line * IntConfig)) elem_of.
-Proof. apply: _. Defined.
+Proof. apply _. Abort.
 
 Instance intcfg_valid_decision cfg own sig : Decision (intcfg_valid cfg own sig).
-Proof. apply: _. Defined.
+Proof. apply _. Abort.
 
 Record IntAction :=
 { line : int_line
