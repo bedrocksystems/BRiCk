@@ -32,8 +32,8 @@
 ################################################
 
 variables:
-  LLVM_CUR_MAJ_VER: "10"
-  LLVM_ALT_MAJ_VER: "12"
+  LLVM_CUR_MAJ_VER: "12"
+  LLVM_ALT_MAJ_VER: "10"
   cur_main_docker_img: registry.gitlab.com/bedrocksystems/docker-image:cpp2v-llvm${LLVM_CUR_MAJ_VER}
   alt_main_docker_img: registry.gitlab.com/bedrocksystems/docker-image:cpp2v-llvm${LLVM_ALT_MAJ_VER}
   fm_docs_img: registry.gitlab.com/bedrocksystems/docker-image:fm-docs
@@ -135,6 +135,7 @@ prepare_env:
   rules:
     - if: $CI_MERGE_REQUEST_IID
     - if: $CI_COMMIT_TAG
+    - if: '$CI_COMMIT_BRANCH == "master"'
   artifacts:
     reports:
       dotenv: build.env
@@ -155,6 +156,7 @@ build_cpp2v:
   rules:
     - if: $CI_MERGE_REQUEST_IID
     - if: $CI_COMMIT_TAG
+    - if: '$CI_COMMIT_BRANCH == "master"'
 
 .release:
   stage: release
