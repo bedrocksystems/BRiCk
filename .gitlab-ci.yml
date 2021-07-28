@@ -135,6 +135,7 @@ prepare_env:
   rules:
     - if: $CI_MERGE_REQUEST_IID
     - if: $CI_COMMIT_TAG
+    - if: '$CI_COMMIT_BRANCH == "master"'
   artifacts:
     reports:
       dotenv: build.env
@@ -155,6 +156,7 @@ build_cpp2v:
   rules:
     - if: $CI_MERGE_REQUEST_IID
     - if: $CI_COMMIT_TAG
+    - if: '$CI_COMMIT_BRANCH == "master"'
 
 .release:
   stage: release
