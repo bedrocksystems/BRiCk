@@ -14,6 +14,9 @@ CPPMK := $(MAKE) -C build
 COQMK := $(MAKE) -f Makefile.coq
 DOCMK := $(MAKE) -C doc
 
+# You can override this with a different program which you can use to preview html files within your filesystem.
+DOCOPEN ?= xdg-open
+
 ROOT := $(shell pwd)
 include Makefile.doc
 
@@ -120,7 +123,7 @@ public: html
 	cp -R doc/sphinx/_build/html public
 
 doc-open: doc
-	xdg-open doc/sphinx/_build/html/index.html
+	$(DOCOPEN) doc/sphinx/_build/html/index.html
 .PHONY: doc-open
 
 
