@@ -20,11 +20,12 @@ theories/prelude/page.v
 theories/prelude/interrupts.v
 
 # Documentation
-theories/doc/class_representations.v
-theories/doc/howto_sequential.v
-theories/doc/logic.v
-theories/doc/notations.v
-theories/doc/principles.v
+# NOTE: You should NOT [Require]/[Import] these files.
+theories/lang/cpp/doc/class_representations.v
+theories/lang/cpp/doc/howto_sequential.v
+theories/lang/cpp/doc/logic.v
+theories/lang/cpp/doc/notations.v
+theories/lang/cpp/doc/principles.v
 
 # Utility modules
 theories/prelude/stdpp_ssreflect.v
