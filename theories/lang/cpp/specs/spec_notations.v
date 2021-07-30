@@ -5,7 +5,8 @@
  *)
 From bedrock.prelude Require Import bytestring telescopes.
 From bedrock.lang.cpp.semantics Require Import values.
-From bedrock.lang.cpp.logic Require Import spec pred.
+From bedrock.lang.cpp.logic Require Import pred.
+Require Import bedrock.lang.cpp.specs.with_pre_post.
 (* XXX only needed for examples. *)
 Require bedrock.lang.cpp.heap_notations.
 From bedrock.lang.cpp.logic Require heap_pred.
@@ -19,7 +20,7 @@ Bind Scope fspec_scope with WithPrePost.
 Section with_Σ.
   Context `{PROP : bi}.
 
-  Local Notation WithPrePost := (WithPrePost PROP) (only parsing).
+  #[local] Notation WithPrePost := (WithPrePost PROP) (only parsing).
 
   Definition add_pre (P : PROP) (wpp : WithPrePost) : WithPrePost :=
     {| wpp_with := wpp.(wpp_with)
