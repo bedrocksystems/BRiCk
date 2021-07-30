@@ -6,13 +6,13 @@ You can check out the old coqdoc-documentation for cpp2v-core `here <./_static/c
 
 You can view the old cpp2v-core tutorials at the following links:
 
-- `Logic <./_static/coqdoc/bedrock.lang.cpp.doc.logic.html>`__
+- `Logic <./_static/coqdoc/bedrock.doc.cpp.logic.html>`__
 
-- `Notations <./_static/coqdoc/bedrock.lang.cpp.doc.notations.html>`__
+- `Notations <./_static/coqdoc/bedrock.doc.cpp.notations.html>`__
 
-- `Sequential Specs/Proofs <./_static/coqdoc/bedrock.lang.cpp.doc.howto_sequential.html>`__
+- `Sequential Specs/Proofs <./_static/coqdoc/bedrock.doc.cpp.howto_sequential.html>`__
 
-- `Classes <./_static/coqdoc/bedrock.lang.cpp.doc.class_representations.html>`__
+- `Classes <./_static/coqdoc/bedrock.doc.cpp.class_representations.html>`__
 
 .. toctree::
    :maxdepth: 2

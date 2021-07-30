@@ -13,6 +13,7 @@
 
 -Q theories/prelude bedrock.prelude
 -Q theories/lang bedrock.lang
+-Q theories/doc bedrock.doc
 
 # Definitions about hardware (some misplaced)
 theories/prelude/hw_types.v
@@ -21,11 +22,11 @@ theories/prelude/interrupts.v
 
 # Documentation
 # NOTE: You should NOT [Require]/[Import] these files.
-theories/lang/cpp/doc/class_representations.v
-theories/lang/cpp/doc/howto_sequential.v
-theories/lang/cpp/doc/logic.v
-theories/lang/cpp/doc/notations.v
-theories/lang/cpp/doc/principles.v
+theories/doc/cpp/class_representations.v
+theories/doc/cpp/howto_sequential.v
+theories/doc/cpp/logic.v
+theories/doc/cpp/notations.v
+theories/doc/cpp/principles.v
 
 # Utility modules
 theories/prelude/stdpp_ssreflect.v
