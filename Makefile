@@ -117,7 +117,7 @@ coqdocjs:
 	cp -r coqdocjs/extra/resources/*.js doc/sphinx/_static/js/coqdocjs
 
 public: html
-	cp doc/sphinx/_build/html public
+	cp -R doc/sphinx/_build/html public
 
 doc-open: doc
 	xdg-open doc/sphinx/_build/html/index.html
