@@ -127,3 +127,63 @@ Section monPred_lift.
 End monPred_lift.
 
 #[export] Hint Resolve timeless_emp_monPred_lift affine_later_emp_monPred_lift affine_later_monPred_lift : typeclass_instances.
+
+(**
+FM-569: Backport fixed priorities of IPM [Frame] instances from our upstream
+contribution at https://gitlab.mpi-sws.org/iris/iris/-/merge_requests/715.
+Drop this upon Iris bump.
+
+For simplicity, we include all upstream instances marked with priority 2,
+including those that have that as default.
+
+We do not adjust the priorities of [weakestpre.frame_wp] and
+[total_weakestpre.frame_twp] as we do not use the Iris program logic.
+*)
+Import frame_instances.
+Require iris.proofmode.monpred.
+
+#[export] Remove Hints
+  frame_here_pure_persistent
+  frame_here_pure
+  frame_embed
+  frame_pure_embed
+  frame_big_sepL_cons
+  frame_big_sepL_app
+  frame_big_sepMS_disj_union
+  frame_wand
+  frame_intuitionistically
+  frame_absorbingly
+  frame_persistently
+  frame_exist
+  frame_texist
+  frame_forall
+  frame_tforall
+  frame_impl_persistent
+  frame_bupd
+  frame_fupd
+  frame_except_0
+  monpred.frame_monPred_at_enter
+  : typeclass_instances.
+
+#[export] Hint Resolve
+  frame_here_pure_persistent
+  frame_here_pure
+  frame_embed
+  frame_pure_embed
+  frame_big_sepL_cons
+  frame_big_sepL_app
+  frame_big_sepMS_disj_union
+  frame_wand
+  frame_intuitionistically
+  frame_absorbingly
+  frame_persistently
+  frame_exist
+  frame_texist
+  frame_forall
+  frame_tforall
+  frame_impl_persistent
+  frame_bupd
+  frame_fupd
+  frame_except_0
+  monpred.frame_monPred_at_enter
+  | 2 : typeclass_instances.
