@@ -7,7 +7,7 @@
 (** Functionality to elaborate specifications that are written to take
     operands (i.e. [val]) and convert them to take materialized values.
 
-    We implement this in an ad-hoc manner (i.e. using type classes) because:
+    We implement this using ad-hoc polymorphism (i.e. type classes) because:
     1. the implementation requires matching under lambdas.
     2. the implementation is complex due to the telescopes.
  *)
