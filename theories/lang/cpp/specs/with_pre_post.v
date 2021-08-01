@@ -178,3 +178,108 @@ Section wpp_relations.
   Proof. apply wppg_dist_entailsN. Qed.
 
 End wpp_relations.
+
+(** Combinators for building [WithPrePostG]s *)
+Section with_AR.
+  Context {PROP : bi}.
+  #[local] Set Universe Polymorphism.
+  #[universes(polymorphic=yes)] Universes X Z Y A R.
+  Context {A : Type@{A}} {R : Type@{R}}.
+
+  #[local] Notation WPP := (WithPrePostG@{X Z Y A R} PROP).
+
+  (** [add_with] adds ghost variables scoped over the pre-
+      and post-conditions.
+   *)
+  Definition add_with {t : tele} (wpp : t -t> WPP A R) : WPP A R.
+    refine
+      {| wpp_with := tele_append t (tele_map wpp_with wpp)
+       ; wpp_pre  := _
+       ; wpp_post := _
+       |}.
+    { refine ((fix go (t : tele)  :=
+                 match t as t
+                       return forall (wpp : t -t> WPP A R),
+                     tele_append t (tele_map wpp_with wpp) -t> A * PROP
+                 with
+                 | TeleO => fun wpp => wpp.(wpp_pre)
+                 | TeleS rst => fun wpp x => go (rst x) (wpp x)
+                 end) t wpp).
+    }
+    { refine ((fix go (t : tele)  :=
+                 match t as t
+                       return forall (wpp : t -t> WPP A R),
+                     tele_append t (tele_map wpp_with wpp) -t> _
+                 with
+                 | TeleO => fun wpp => wpp.(wpp_post)
+                 | TeleS rst => fun wpp x => go (rst x) (wpp x)
+                 end) t wpp).
+    }
+  Defined.
+
+  (** [add_pre P wpp] adds [P] as a pre-condition to [wpp] *)
+  Definition add_pre (P : PROP) (wpp : WPP A R) : WPP A R :=
+    {| wpp_with := wpp.(wpp_with)
+     ; wpp_pre  := tele_map (fun '(args,X) => (args, P ** X)) wpp.(wpp_pre)
+     ; wpp_post := wpp.(wpp_post)
+     |}.
+
+  (** [add_require P wpp] adds [P] as a pure pre-condition to [wpp] *)
+  Definition add_require (P : Prop) (wpp : WPP A R) : WPP A R :=
+    {| wpp_with := wpp.(wpp_with)
+     ; wpp_pre := tele_map (fun '(args,X) => (args, [| P |] ** X)) wpp.(wpp_pre)
+     ; wpp_post := wpp.(wpp_post)
+     |}.
+
+  (** [add_require P wpp] adds [P] as a persistent pre-condition to [wpp] *)
+  Definition add_persist (P : PROP) (wpp : WPP A R) : WPP A R :=
+    {| wpp_with := wpp.(wpp_with)
+     ; wpp_pre := tele_map (fun '(args,X) => (args, □ P ** X)) wpp.(wpp_pre)
+     ; wpp_post := wpp.(wpp_post)
+     |}.
+
+  (** [add_post P wpp] adds [P] as a post-condition to [wpp] *)
+  Definition add_post (P : PROP) (wpp : WPP A R) : WPP A R :=
+    {| wpp_with := wpp.(wpp_with)
+     ; wpp_pre  := wpp.(wpp_pre)
+     ; wpp_post := tele_map (WithExG_map (fun r Q => (r,P ** Q))) wpp.(wpp_post)
+     |}.
+
+  (** [add_prepost P wpp] adds [P] as a pre- and post-condition to [wpp] *)
+  Definition add_prepost (P : PROP) (wpp : WPP A R) : WPP A R :=
+    add_pre P (add_post P wpp).
+
+  (** [add_arg x v wpp] adds an argument (named [x]) with value [v] to
+      the beginning of [wpp].
+
+      NOTE this requires that the arguments are a [list]
+   *)
+  Definition add_arg (s : names.ident) (v : A)
+             (wpp : WPP (list A) R) : WPP (list A) R :=
+    {| wpp_with := wpp.(wpp_with)
+     ; wpp_pre  := tele_map (fun '(args,X) => (v :: args, X)) wpp.(wpp_pre)
+     ; wpp_post := wpp.(wpp_post)
+    |}.
+
+  (** [post_ret Q] is a specification where the post-condition is.
+
+      NOTE this requires that the arguments are a [list], but this could be
+           something with a unit.
+   *)
+  Definition post_ret {t : tele} (Q : t -t> R * PROP) : WPP (list A) R :=
+    {| wpp_with := TeleO
+     ; wpp_pre := (nil, emp%I)
+     ; wpp_post := {| we_ex := t
+                    ; we_post := Q |} |}.
+
+  (** [post_void void Q] is a specialization of [post_ret] where the return
+      value does not depend on any quantifiers introduced in [Q].
+
+      NOTE this requires that the arguments are a [list], but this could be
+           something with a unit.
+   *)
+  Definition post_void (void : R) (t : tele) (Q : t -t> PROP) : WPP (list A) R :=
+    post_ret (t:=t) (tele_map (fun Q => (void, Q)) Q).
+
+End with_AR.
+

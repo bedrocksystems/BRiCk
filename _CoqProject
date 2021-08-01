@@ -114,7 +114,6 @@ theories/lang/cpp/semantics.v
 
 # Program Logic
 theories/lang/cpp/logic/entailsN.v
-theories/lang/cpp/logic/spec.v
 theories/lang/cpp/logic/mpred.v
 theories/lang/cpp/logic/pred.v
 theories/lang/cpp/logic/own_instances.v
@@ -142,14 +141,21 @@ theories/lang/cpp/logic/raw.v
 theories/lang/cpp/logic/vbyte.v
 theories/lang/cpp/logic.v
 
+# Specifications
+theories/lang/cpp/specs/with_pre_post.v
+theories/lang/cpp/specs/functions.v
+theories/lang/cpp/specs.v
+
 # Notations
 theories/lang/cpp/heap_notations.v
-theories/lang/cpp/spec_notations.v
 theories/lang/cpp/primitives.v
+theories/lang/cpp/specs/elaborate.v
+theories/lang/cpp/specs/spec_notations.v
 
 # Notations for cpp2v
 theories/lang/cpp/parser.v
 
+# Soundness semantics
 theories/lang/cpp/compile.v
 
 theories/lang/cpp.v

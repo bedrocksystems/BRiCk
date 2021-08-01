@@ -11,7 +11,7 @@ From iris_string_ident Require Import ltac2_string_ident.
 Require Import bedrock.prelude.base.
 
 From bedrock.lang.cpp Require Import
-     semantics ast logic.pred logic.path_pred logic.rep logic.wp logic.spec.
+     semantics ast logic.pred logic.path_pred logic.rep logic.wp.
 Export bedrock.lang.cpp.logic.rep.
 
 Implicit Types (σ resolve : genv) (p : ptr) (o : offset).

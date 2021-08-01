@@ -11,7 +11,6 @@ From bedrock.lang.cpp Require Import ast semantics.
 From bedrock.lang.cpp.logic Require Import
      pred path_pred heap_pred wp call.
 Require Import bedrock.lang.cpp.heap_notations.
-Require Import bedrock.lang.cpp.logic.spec.
 
 Local Open Scope Z_scope.
 
