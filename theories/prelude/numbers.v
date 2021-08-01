@@ -44,6 +44,12 @@ Instance Nat_min_assoc: Assoc eq Nat.min := Nat.min_assoc.
 Instance Nat_max_comm: Comm eq Nat.max := Nat.max_comm.
 Instance Nat_max_assoc: Assoc eq Nat.max := Nat.max_assoc.
 
+Instance Nat_land_comm : Comm eq Nat.land := Nat.land_comm.
+Instance Nat_land_assoc : Assoc eq Nat.land := Nat.land_assoc.
+
+Instance Nat_lor_comm : Comm eq Nat.lor := Nat.lor_comm.
+Instance Nat_lor_assoc : Assoc eq Nat.lor := Nat.lor_assoc.
+
 (** * Natural numbers [N] *)
 
 Arguments N.ones _ : simpl never, assert.
@@ -71,8 +77,17 @@ Instance N_min_assoc: Assoc eq N.min := N.min_assoc.
 Instance N_max_comm: Comm eq N.max := N.max_comm.
 Instance N_max_assoc: Assoc eq N.max := N.max_assoc.
 
+Instance N_land_comm : Comm eq N.land := N.land_comm.
+Instance N_land_assoc : Assoc eq N.land := N.land_assoc.
+
+Instance N_lor_comm : Comm eq N.lor := N.lor_comm.
+Instance N_lor_assoc : Assoc eq N.lor := N.lor_assoc.
+
 Instance N_succ_inj : Inj (=) (=) N.succ.
 Proof. intros n1 n2. lia. Qed.
+
+Lemma N_succ_pos_pred p : N.succ_pos (Pos.pred_N p) = p.
+Proof. rewrite /N.succ_pos. case E: Pos.pred_N=>[|p']; lia. Qed.
 
 Instance N_divide_dec : RelDecision N.divide.
 Proof.
@@ -132,6 +147,12 @@ Instance Z_min_assoc: Assoc eq Z.min := Z.min_assoc.
 
 Instance Z_max_comm: Comm eq Z.max := Z.max_comm.
 Instance Z_max_assoc: Assoc eq Z.max := Z.max_assoc.
+
+Instance Z_land_comm : Comm eq Z.land := Z.land_comm.
+Instance Z_land_assoc : Assoc eq Z.land := Z.land_assoc.
+
+Instance Z_lor_comm : Comm eq Z.lor := Z.lor_comm.
+Instance Z_lor_assoc : Assoc eq Z.lor := Z.lor_assoc.
 
 Instance Z_succ_inj : Inj (=) (=) Z.succ.
 Proof. intros n1 n2. lia. Qed.

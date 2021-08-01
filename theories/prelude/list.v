@@ -9,6 +9,9 @@ Require Export bedrock.prelude.base.
 
 (** * Small extensions to [stdpp.list]. *)
 
+Lemma foldr_cons {A B} (f : A -> B -> B) x y ys : foldr f x (y :: ys) = f y (foldr f x ys).
+Proof. done. Qed.
+
 Section list.
   Context {A : Type}.
   Implicit Types l k : list A.
