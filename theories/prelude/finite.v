@@ -128,12 +128,18 @@ End bitmask_type_simple_mixin.
 Module Type finite_bitmask_type_mixin (Import F : finite_type) (Import B : bitmask_type F).
   Definition to_bitmask (r : t) : N := 2 ^ to_bit r.
 
+  Lemma to_bitmask_setbit x : to_bitmask x = N.setbit 0 (to_bit x).
+  Proof. by rewrite N.setbit_spec'. Qed.
+
   (* Parse a bitmask into a list of flags. *)
   Definition to_list_aux (r : N) (xs : list t) : list t :=
     x ← xs;
     if N.testbit r (to_bit x) then [x] else [].
 
   Definition to_list (r : N) : list t := to_list_aux r $ enum t.
+
+  Lemma to_list_0 : to_list 0 = [].
+  Proof. rewrite /to_list. by elim: enum. Qed.
 End finite_bitmask_type_mixin.
 
 (* All the above mixins in the right order, for when [bitmask_type_simple_mixin]
@@ -160,9 +166,40 @@ Module finite_bits (BT : finite_bitmask_type_intf).
   *)
   Definition of_bits (mask : N) : t := list_to_set $ BT.to_list mask.
 
+  Lemma of_bits_0 : of_bits 0 = ∅.
+  Proof. by rewrite /of_bits BT.to_list_0. Qed.
+
   Definition to_bits (rs : t) : N :=
     foldr (flip N.setbit) 0%N (BT.to_bit <$> elements rs).
 
+  Definition to_bits_alt (rs : t) : N :=
+    foldr N.lor 0%N (BT.to_bitmask <$> elements rs).
+
+  Lemma to_bits_is_alt rs :
+    to_bits rs = to_bits_alt rs.
+  Proof.
+    rewrite /to_bits /to_bits_alt /BT.to_bitmask !foldr_fmap.
+    apply: foldr_ext => // b a.
+    by rewrite /flip N.setbit_spec' comm_L.
+  Qed.
+
+  Lemma to_bits_alt_empty :
+    to_bits_alt ∅ = 0%N.
+  Proof. by rewrite /to_bits_alt elements_empty. Qed.
+
+  Lemma to_bits_alt_singleton x :
+    to_bits_alt {[x]} = BT.to_bitmask x.
+  Proof. by rewrite /to_bits_alt elements_singleton /= N.lor_0_r. Qed.
+
+  Lemma to_bits_alt_union_singleton x xs :
+    x ∉ xs ->
+    to_bits_alt ({[x]} ∪ xs) = N.lor (to_bits_alt {[ x ]}) (to_bits_alt xs).
+  Proof.
+    rewrite to_bits_alt_singleton /to_bits_alt.
+    trans (foldr N.lor 0%N (BT.to_bitmask <$> x :: elements xs)) => //.
+    apply foldr_permutation_proper'; [apply _ ..|].
+    f_equiv. exact: elements_union_singleton.
+  Qed.
 
   Definition masked (mask : N) (x : t) : t :=
     x ∩ of_bits mask.
