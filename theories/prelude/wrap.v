@@ -6,14 +6,20 @@
 Require Import stdpp.countable.
 From bedrock.prelude Require Import numbers.
 
-(* a generic wrapper for types isomorphic to N *)
-Record WrapN {Phant : Set} : Set := { unwrapN : N }.
-Arguments WrapN Phant : clear implicits.
-(* using the wrapper means we define these instances only once. *)
 
+Section type.
+  #[local] Set Primitive Projections.
+  (* a generic wrapper for types isomorphic to N *)
+  Record WrapN {Phant : Set} : Set := { unwrapN : N }.
+End type.
+
+Arguments WrapN Phant : clear implicits.
+
+(* using the wrapper means we define these instances only once. *)
 Lemma cancel_unwrapN {Phant} (x : WrapN Phant) :
   {| unwrapN := unwrapN x |} = x.
-Proof. by case: x. Qed.
+Proof. by reflexivity. Qed.
+
 
 (* this instance is useful in combination with [Refine1_Cancel]. *)
 #[global] Instance cancel_Build_WrapN_unwrapN {Phant} :
@@ -24,7 +30,7 @@ Proof. exact cancel_unwrapN. Qed.
 Proof. solve_decision. Defined.
 
 #[global] Instance wrapN_countable {Phant} : Countable (WrapN Phant) :=
-  inj_countable' unwrapN (Build_WrapN _) (cancel _ _).
+  inj_countable' unwrapN (Build_WrapN _) cancel_unwrapN.
 
 #[global] Instance wrapN_inhabited {Phant} : Inhabited (WrapN Phant) :=
   populate {| unwrapN := 0 |}.
