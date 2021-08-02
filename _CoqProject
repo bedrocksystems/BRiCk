@@ -41,6 +41,7 @@ theories/prelude/fin_sets.v
 theories/prelude/listset_nodup.v
 theories/prelude/prelude.v
 theories/prelude/sets.v
+theories/prelude/finite.v
 
 # Adapters
 theories/lang/prelude/base.v
