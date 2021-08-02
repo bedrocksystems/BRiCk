@@ -199,6 +199,7 @@ prepare_pages:
     # Clone the Alectryon submodule, but only in the pages jobs
     - git submodule update --init
     - cp -r build/bedrock theories
+    - make touch_deps
     - make doc
   rules:
     - if: $CI_MERGE_REQUEST_IID
