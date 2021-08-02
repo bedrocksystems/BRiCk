@@ -138,11 +138,15 @@ Section with_cpp.
       match drop_qualifiers ty with
       | Tqualified _ t => ERROR "unreachable" (* unreachable *)
       | Treference    _
-      | Trv_reference _
-      | Tnamed _ =>
+      | Trv_reference _ =>
         match v with
         | Vptr p => bind_vars xs vs (Rbind_check x p r) Q
-        | _ => ERROR "non-pointer passed for aggregate"
+        | _ => ERROR $ "non-pointer passed for reference"
+        end
+      | Tnamed nm =>
+        match v with
+        | Vptr p => bind_vars xs vs (Rbind_check x p r) Q
+        | _ => ERROR $ "non-pointer passed for aggregate (named " ++ nm ++ ")"
         end
       | _              =>
         Forall a : ptr, a |-> primR (erase_qualifiers ty) 1 v -*
@@ -151,7 +155,7 @@ Section with_cpp.
            to the "destructor" of a primitive. *)
       end
     | _ , _ => ERROR "bind_vars: argument mismatch"
-    end%I.
+    end%I%bs.
 
   Lemma bind_vars_frame : forall ts args ρ Q Q',
       Forall ρ free, Q ρ free -* Q' ρ free
@@ -252,17 +256,17 @@ Section with_cpp.
             wpi ⊤ ti ρ cls this i (fun f => f ** wpi_members ti ρ cls this members inits Q)
           | _ =>
             (* there are multiple initializers for this field *)
-            ERROR "multiple initializers for field"
+            ERROR $ "multiple initializers for field: " ++ cls ++ "::" ++ m.(mem_name)
           end
         | InitIndirect _ _ =>
           (* this is initializing an object via sub-objets using indirect initialization.
              TODO currently not supported
            *)
-          UNSUPPORTED "indirect initialization"
+          UNSUPPORTED $ "indirect initialization: " ++ cls ++ "::" ++ m.(mem_name)
         | _ => False (* unreachable due to the filter *)
         end
       end
-    end%I.
+    end%I%bs.
 
   (* initialization of bases in the initializer list *)
   Fixpoint wpi_bases (ti : thread_info) (ρ : region) (cls : globname) (this : ptr)
@@ -274,16 +278,16 @@ Section with_cpp.
       match List.filter (fun i => bool_decide (i.(init_path) = InitBase b)) inits with
       | nil =>
         (* there is no initializer for this base class, so we use the default constructor *)
-        ERROR "missing base class initializer"
+        ERROR $ "missing base class initializer: " ++ cls
       | i :: nil =>
         (* there is an initializer for this class *)
         this ., offset_for cls i.(init_path) |-> tblockR (erase_qualifiers i.(init_type)) 1 -*
         wpi ⊤ ti ρ cls this i (fun f => f ** wpi_bases ti ρ cls this bases inits Q)
       | _ :: _ :: _ =>
         (* there are multiple initializers for this, so we fail *)
-        ERROR "multiple initializers for base"
+        ERROR $ "multiple initializers for base: " ++ cls ++ "::" ++ b
       end
-    end%I.
+    end%I%bs.
 
   Lemma wpi_bases_frame:
     ∀ (ti : thread_info) ρ (p : ptr) (ty : globname) bases (inits : list Initializer) (Q Q' : mpredI),
@@ -462,12 +466,12 @@ Section with_cpp.
                (wp_union_initializer_list union ti ρ ctor.(c_class) thisp inits
                   (wp ⊤ ti ρ body (Kfree frees (void_return (|> Q Vvoid))))))
         | Some _ =>
-          ERROR "constructor for non-aggregate"
+          ERROR $ "constructor for non-aggregate (" ++ ctor.(c_class) ++ ")"
         | None => False
         end
       | _ => ERROR "constructor without leading [this] argument"
       end
-    end.
+    end%I%bs.
 
   Definition ctor_ok (ctor : Ctor) (ti : thread_info) (spec : function_spec)
     : mpred :=
