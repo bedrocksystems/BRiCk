@@ -6,7 +6,7 @@
  *)
 
 From stdpp Require Export finite.
-From bedrock.prelude Require Export base numbers gmap.
+From bedrock.prelude Require Export base numbers gmap list.
 
 (**
 Extensions of [stdpp.finite], especially for variants:
@@ -169,34 +169,49 @@ Module finite_bits (BT : finite_bitmask_type_intf).
   Lemma of_bits_0 : of_bits 0 = ∅.
   Proof. by rewrite /of_bits BT.to_list_0. Qed.
 
-  Definition to_bits (rs : t) : N :=
-    set_fold (λ b n, N.setbit n (BT.to_bit b)) 0%N rs.
+  Definition setbit (b : BT.t) (n : N) := N.setbit n (BT.to_bit b).
+  Notation setbit_alt b n := (N.lor (BT.to_bitmask b) n).
 
-  Definition to_bits_alt (rs : t) : N :=
-    set_fold (λ b n, N.lor (BT.to_bitmask b) n) 0%N rs.
+  Lemma setbit_0 x : setbit x 0 = BT.to_bitmask x.
+  Proof. by rewrite BT.to_bitmask_setbit. Qed.
+  Lemma setbit_is_alt b n : setbit b n = setbit_alt b n.
+  Proof. by rewrite /setbit N.setbit_spec' comm_L. Qed.
 
-  Lemma to_bits_is_alt rs :
-    to_bits rs = to_bits_alt rs.
+  Definition to_bits (rs : t) : N := set_fold setbit 0%N rs.
+
+  Lemma to_bits_empty : to_bits ∅ = 0%N.
+  Proof. apply set_fold_empty. Qed.
+  Lemma to_bits_singleton x : to_bits {[x]} = BT.to_bitmask x.
+  Proof. by rewrite /to_bits set_fold_singleton setbit_0. Qed.
+
+  Module Import internal.
+    Definition to_bits_alt (rs : t) : N := set_fold (λ b n, setbit_alt b n) 0%N rs.
+    Lemma to_bits_is_alt rs : to_bits rs = to_bits_alt rs.
+    Proof. apply: foldr_ext => // b a. apply setbit_is_alt. Qed.
+
+    (**
+    Writing [to_bits] as a commutative, associative fold
+    allows reasoning with lemmas about [foldr] and [Permutation].
+    See for instance [to_bits_union_singleton]. *)
+    Definition to_bits_comm (rs : t) : N :=
+      foldr N.lor 0%N (BT.to_bitmask <$> elements rs).
+    Lemma to_bits_is_comm rs : to_bits rs = to_bits_comm rs.
+    Proof. rewrite to_bits_is_alt. apply symmetry, foldr_fmap. Qed.
+
+    (*
+    We could also use
+
+    Definition to_bits_comm' (rs : t) : N :=
+      set_fold N.lor 0%N (set_map (D := gset N) BT.to_bitmask rs).
+
+    But it seems that more lemmas are available on the [foldr] form.
+    *)
+  End internal.
+
+  Lemma to_bits_union_singleton x xs (Hni : x ∉ xs) :
+    to_bits ({[x]} ∪ xs) = N.lor (to_bits {[ x ]}) (to_bits xs).
   Proof.
-    rewrite /to_bits /to_bits_alt /BT.to_bitmask.
-    apply: foldr_ext => // b a.
-    by rewrite N.setbit_spec' comm_L.
-  Qed.
-
-  Lemma to_bits_alt_empty :
-    to_bits_alt ∅ = 0%N.
-  Proof. by rewrite /to_bits_alt set_fold_empty. Qed.
-
-  Lemma to_bits_alt_singleton x :
-    to_bits_alt {[x]} = BT.to_bitmask x.
-  Proof. by rewrite /to_bits_alt set_fold_singleton N.lor_0_r. Qed.
-
-  Lemma to_bits_alt_union_singleton x xs :
-    x ∉ xs ->
-    to_bits_alt ({[x]} ∪ xs) = N.lor (to_bits_alt {[ x ]}) (to_bits_alt xs).
-  Proof.
-    rewrite to_bits_alt_singleton /to_bits_alt /set_fold /= -!foldr_fmap.
-    trans (foldr N.lor 0%N (BT.to_bitmask <$> x :: elements xs)) => //.
+    rewrite to_bits_singleton !to_bits_is_comm /to_bits_comm -foldr_cons -fmap_cons.
     apply foldr_permutation_proper'; [apply _ ..|].
     f_equiv. exact: elements_union_singleton.
   Qed.
