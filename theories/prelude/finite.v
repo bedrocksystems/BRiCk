@@ -170,32 +170,32 @@ Module finite_bits (BT : finite_bitmask_type_intf).
   Proof. by rewrite /of_bits BT.to_list_0. Qed.
 
   Definition to_bits (rs : t) : N :=
-    foldr (flip N.setbit) 0%N (BT.to_bit <$> elements rs).
+    set_fold (λ b n, N.setbit n (BT.to_bit b)) 0%N rs.
 
   Definition to_bits_alt (rs : t) : N :=
-    foldr N.lor 0%N (BT.to_bitmask <$> elements rs).
+    set_fold (λ b n, N.lor (BT.to_bitmask b) n) 0%N rs.
 
   Lemma to_bits_is_alt rs :
     to_bits rs = to_bits_alt rs.
   Proof.
-    rewrite /to_bits /to_bits_alt /BT.to_bitmask !foldr_fmap.
+    rewrite /to_bits /to_bits_alt /BT.to_bitmask.
     apply: foldr_ext => // b a.
-    by rewrite /flip N.setbit_spec' comm_L.
+    by rewrite N.setbit_spec' comm_L.
   Qed.
 
   Lemma to_bits_alt_empty :
     to_bits_alt ∅ = 0%N.
-  Proof. by rewrite /to_bits_alt elements_empty. Qed.
+  Proof. by rewrite /to_bits_alt set_fold_empty. Qed.
 
   Lemma to_bits_alt_singleton x :
     to_bits_alt {[x]} = BT.to_bitmask x.
-  Proof. by rewrite /to_bits_alt elements_singleton /= N.lor_0_r. Qed.
+  Proof. by rewrite /to_bits_alt set_fold_singleton N.lor_0_r. Qed.
 
   Lemma to_bits_alt_union_singleton x xs :
     x ∉ xs ->
     to_bits_alt ({[x]} ∪ xs) = N.lor (to_bits_alt {[ x ]}) (to_bits_alt xs).
   Proof.
-    rewrite to_bits_alt_singleton /to_bits_alt.
+    rewrite to_bits_alt_singleton /to_bits_alt /set_fold /= -!foldr_fmap.
     trans (foldr N.lor 0%N (BT.to_bitmask <$> x :: elements xs)) => //.
     apply foldr_permutation_proper'; [apply _ ..|].
     f_equiv. exact: elements_union_singleton.
