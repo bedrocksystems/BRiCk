@@ -255,9 +255,9 @@ public:
         VisitTagDecl(decl, false);
     }
     void VisitCXXMethodDecl(const CXXMethodDecl *decl, bool) {
-        if (decl->isDeleted() or decl->isDependentContext())
+        if (decl->isDeleted())
             return;
-        go(decl);
+        this->ConstDeclVisitorArgs::VisitCXXMethodDecl(decl, false);
     }
 
     void VisitFunctionDecl(const FunctionDecl *decl, bool) {
@@ -334,9 +334,9 @@ public:
     }
 
     void VisitCXXConstructorDecl(const CXXConstructorDecl *decl, bool) {
-        if (decl->isDeleted()) {
+        if (decl->isDeleted())
             return;
-        }
+
         this->ConstDeclVisitorArgs::VisitCXXConstructorDecl(decl, false);
     }
 
