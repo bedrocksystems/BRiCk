@@ -93,9 +93,9 @@ Section proofs.
 
   (**
   Absent in Iris upstream.
-  TODO: switch to ⌜q1 ≤ 1⌝%Qp conclusion, maybe after Iris bump.
+  TODO: switch to ⌜q ≤ 1⌝%Qp conclusion, maybe after Iris bump.
   we currently lack [frac_validI] to do that.. *)
-  Lemma cinv_own_valid_1 γ q : cinv_own γ q -∗ ✓ q%Qp.
+  Lemma cinv_own_valid_1 γ q : cinv_own γ q -∗ ✓ q.
   Proof. apply (own_valid γ q). Qed.
 
   Lemma cinv_own_valid γ q1 q2 :
