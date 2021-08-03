@@ -62,7 +62,7 @@ stages:
     - make -j ${NJOBS} cpp2v
     - make -j ${NJOBS} coq
     - rm -f build/bedrock
-    - cp -r theories build/bedrock
+    - cp -a theories build/bedrock
   artifacts:
     name: cpp2v-${LLVM_MAJ_VER}
     paths:
@@ -198,7 +198,7 @@ prepare_pages:
   script:
     # Clone the Alectryon submodule, but only in the pages jobs
     - git submodule update --init
-    - cp -r build/bedrock theories
+    - cp -a build/bedrock theories
     - make touch_deps
     - make doc
   rules:
