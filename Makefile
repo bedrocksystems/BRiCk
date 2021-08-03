@@ -183,12 +183,12 @@ release: coq cpp2v
 
 
 touch_deps:
-	touch `find -iname *.vo`  || true
-	touch `find -iname *.vok` || true
-	touch `find -iname *.vos` || true
-	touch `find -iname *.glob` || true
-	touch `find -iname *.aux` || true
-	touch `find tests/cpp2v-parser/ -iname *.v` || true
+	touch `find . -iname '*.vo'`  || true
+	touch `find . -iname '*.vok'` || true
+	touch `find . -iname '*.vos'` || true
+	touch `find . -iname '*.glob'` || true
+	touch `find . -iname '.*.aux'` || true
+	touch `find cpp2v-tests -iname '*.v'` || true
 	touch `find build` || true
 .PHONY: touch_deps
 
