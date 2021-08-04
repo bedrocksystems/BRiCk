@@ -196,6 +196,7 @@ prepare_pages:
   variables:
     LLVM_MAJ_VER: ${LLVM_CUR_MAJ_VER}
   script:
+    - sudo chown coq.coq -R .
     # Clone the Alectryon submodule, but only in the pages jobs
     - git submodule update --init
     # Beware: the trailing slash affects the semantics.
