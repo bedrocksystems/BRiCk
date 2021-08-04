@@ -231,7 +231,7 @@ pages:
   dependencies:
     - prepare_pages
   script:
-    - make public
+    - cp -R doc/sphinx/_build/html public
   only:
     - master
   artifacts:
