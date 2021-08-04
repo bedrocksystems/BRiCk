@@ -188,7 +188,8 @@ touch_deps:
 	touch `find . -iname '*.vos'` || true
 	touch `find . -iname '*.glob'` || true
 	touch `find . -iname '.*.aux'` || true
-	touch `find cpp2v-tests -iname '*.v'` || true
+# Unneeded and fails in CI
+#	touch `find cpp2v-tests -iname '*.v'` || true
 	touch `find build` || true
 .PHONY: touch_deps
 
