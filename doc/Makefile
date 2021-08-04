@@ -40,8 +40,9 @@ ALLSPHINXOPTS= -d $(SPHINXBUILDDIR)/doctrees $(SPHINXOPTS)
 ######################################################################
 
 all: html
+html: doc
 
-.PHONY: old-doc doc doc-public doc-private redoc src tangle-src tangle
+.PHONY: doc doc-private doc-public html redoc src tangle-src tangle
 
 TANGLE_DIR     = $(SPHINXDIR)/orphans
 TANGLE_INPUTS  = $(wildcard $(TANGLE_DIR)/*.v)
@@ -62,17 +63,9 @@ tangle-src:
 doc-public: tangle-src tangle refman-public
 doc-private: tangle-src tangle refman-private
 
+html: doc
 doc: doc-private
 redoc: clean doc
-
-old-doc:
-	$(MAKE) -C old doc
-	mkdir -p $(SPHINXBUILDDIR)/html/coqdoc
-	cp old/html/* $(SPHINXBUILDDIR)/html/coqdoc
-.PHONY: doc
-
-html: old-doc doc
-.PHONY: html
 
 refman-public-%:
 	@echo $(COQBIN) $(COQLIB)
@@ -96,7 +89,6 @@ refman-private: | tangle-src tangle
 
 
 clean:
-	$(MAKE) -C old clean
 	+$(MAKE) -C src clean
 	rm -rf $(SPHINXBUILDDIR)
 	rm -rf $(SPHINXDIR)/tangles

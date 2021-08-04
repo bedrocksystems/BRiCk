@@ -62,7 +62,7 @@ stages:
     - make -j ${NJOBS} cpp2v
     - make -j ${NJOBS} coq
     - rm -f build/bedrock
-    - cp -r theories build/bedrock
+    - cp -a theories build/bedrock
   artifacts:
     name: cpp2v-${LLVM_MAJ_VER}
     paths:
@@ -187,37 +187,45 @@ release_latest:
 #   variables:
 #     LLVM_MAJ_VER: ${LLVM_ALT_MAJ_VER}
 
-# prepare_pages:
-#   image: ${fm_docs_img}
-#   stage: prepare_pages
-#   dependencies:
-#     - test_latest
-#   script:
-#     # Clone the Alectryon submodule, but only in the pages jobs
-#     - git submodule update --init
-#     # this line refreshes the artifact to avoid rebuilding the coq code
-#     - make touch_deps
-#     - make public
-#   only:
-#     - master
-#     - merge_requests
-#   artifacts:
-#     paths:
-#       - public
 
-# pages:
-#   image: ${fm_docs_img}
-#   stage: pages
-#   dependencies:
-#     - prepare_pages
-#   script:
-#     # Clone the Alectryon submodule, but only in the pages jobs
-#     - git submodule update --init
-#     # this line refreshes the artifact to avoid rebuilding the coq code
-#     - make touch_deps
-#     - make public
-#   only:
-#     - master
-#   artifacts:
-#     paths:
-#       - public
+prepare_pages:
+  image: ${fm_docs_img}
+  stage: prepare_pages
+  dependencies:
+    - build_latest
+  variables:
+    LLVM_MAJ_VER: ${LLVM_CUR_MAJ_VER}
+  script:
+    - sudo chown coq.coq -R .
+    # Clone the Alectryon submodule, but only in the pages jobs
+    - git submodule update --init
+    # Beware: the trailing slash affects the semantics.
+    # Excluded flags, compared to -a: -pgoD
+    # --omit-dir-times because of https://stackoverflow.com/a/668049/53974 and
+    # https://gitlab.com/bedrocksystems/cpp2v-core/-/jobs/1474918505#L1325
+    # and --omit-link-times to be safe.
+    - sudo rsync
+        --exclude '*.vok' --exclude '*.vos' --exclude '*.v'
+        -avc
+        --omit-link-times --omit-dir-times
+        build/bedrock/ theories
+    - make touch_deps
+    - make -j ${NJOBS} doc
+  rules:
+    - if: $CI_MERGE_REQUEST_IID
+    - if: $CI_COMMIT_TAG
+  artifacts:
+    paths:
+      - doc/sphinx/_build
+
+pages:
+  stage: pages
+  dependencies:
+    - prepare_pages
+  script:
+    - make public
+  only:
+    - master
+  artifacts:
+    paths:
+      - public

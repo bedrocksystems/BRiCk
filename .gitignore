@@ -16,10 +16,11 @@ deps.dot
 .envrc
 public
 html
-doc_extra
-doc/old/html
 doc/src/_downloads
 doc/sphinx/cache
+doc/sphinx/_static/coqdoc
+doc/sphinx/_static/css/coqdocjs
+doc/sphinx/_static/js/coqdocjs
 .Makefile.coq.d
 _build
 cpp2v-tests/reject/*.ERR

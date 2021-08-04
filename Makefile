@@ -14,8 +14,11 @@ CPPMK := $(MAKE) -C build
 COQMK := $(MAKE) -f Makefile.coq
 DOCMK := $(MAKE) -C doc
 
+# You can override this with a different program which you can use to preview html files within your filesystem.
+DOCOPEN ?= xdg-open
+
 ROOT := $(shell pwd)
-include doc/old/Makefile.doc
+include Makefile.doc
 
 OPAM_PREFIX := $(shell opam config var prefix)
 BINDIR = $(OPAM_PREFIX)/bin
@@ -90,25 +93,38 @@ test-coq: cpp2v coq
 
 # Build Coq docs
 
-html doc: coq doc_extra
+.PHONY: html coqdocjs doc public redoc
+
+redoc: doc-clean doc
+html doc: coq coqdocjs
+#	Cleanup existing artifacts (if there are any)
 	rm -rf public
 	rm -rf html
-	$(COQMK) html
-	mkdir -p doc/old/html
-	mv html/* doc/old/html && rmdir html
-	cp -r doc_extra/extra/resources/* doc/old/html
-	$(DOCMK) html # generates html files in `doc/old/html`
-.PHONY: html doc
 
-doc_extra:
-	git clone --depth 1 https://github.com/coq-community/coqdocjs.git doc_extra
+#	Invoke `coqdoc` using the existing `_CoqProject` file, and move the artifacts
+#	out of `html` and into `doc/sphinx/_static/coqdoc`
+	$(COQMK) html
+	mkdir -p doc/sphinx/_static/coqdoc
+	mv html/* doc/sphinx/_static/coqdoc && rmdir html
+
+#	Generate html files in `doc/sphinx/_build/html` using coqdoc outputs and
+#	other sources in `doc/`
+	$(DOCMK) html
+
+coqdocjs:
+#	Copy (custom) `coqdocjs` resources into `doc/sphinx/_static`, removing all
+#	coqdoc artifacts in the process.
+	rm -rf doc/sphinx/_static/coqdoc
+	mkdir -p doc/sphinx/_static/css/coqdocjs doc/sphinx/_static/js/coqdocjs
+	cp -r coqdocjs/extra/resources/*.css doc/sphinx/_static/css/coqdocjs
+	cp -r coqdocjs/extra/resources/*.js doc/sphinx/_static/js/coqdocjs
 
 public: html
-	mv doc/sphinx/_build/html public
-.PHONY: public
+	cp -R doc/sphinx/_build/html public
 
-
-
+doc-open: doc
+	$(DOCOPEN) doc/sphinx/_build/html/index.html
+.PHONY: doc-open
 
 
 
@@ -130,14 +146,16 @@ install: install-coq install-cpp2v
 
 # Clean
 
-clean:
+doc-clean:
+	+@$(MAKE) -C doc clean
+clean: doc-clean
 	rm -rf build
-	+@$(DOCMK) $@
+	rm -rf public
 	+@$(MAKE) -C cpp2v-tests clean
 	+@if test -f Makefile.coq; then $(COQMK) cleanall; fi
 	rm -f Makefile.coq Makefile.coq.conf
 	find . ! -path '*/.git/*' -name '.lia.cache' -type f -print0 | xargs -0 rm -f
-.PHONY: clean
+.PHONY: clean doc-clean
 
 
 
@@ -165,12 +183,13 @@ release: coq cpp2v
 
 
 touch_deps:
-	touch `find -iname *.vo`  || true
-	touch `find -iname *.vok` || true
-	touch `find -iname *.vos` || true
-	touch `find -iname *.glob` || true
-	touch `find -iname *.aux` || true
-	touch `find tests/cpp2v-parser/ -iname *.v` || true
+	touch `find . -iname '*.vo'`  || true
+	touch `find . -iname '*.vok'` || true
+	touch `find . -iname '*.vos'` || true
+	touch `find . -iname '*.glob'` || true
+	touch `find . -iname '.*.aux'` || true
+# Unneeded and fails in CI
+#	touch `find cpp2v-tests -iname '*.v'` || true
 	touch `find build` || true
 .PHONY: touch_deps
 
