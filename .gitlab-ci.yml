@@ -200,9 +200,13 @@ prepare_pages:
     - git submodule update --init
     # Beware: the trailing slash affects the semantics.
     # Excluded flags, compared to -a: -pgoD
-    - rsync
+    # --omit-dir-times because of https://stackoverflow.com/a/668049/53974 and
+    # https://gitlab.com/bedrocksystems/cpp2v-core/-/jobs/1474918505#L1325
+    # and --omit-link-times to be safe.
+    - sudo rsync
         --exclude '*.vok' --exclude '*.vos' --exclude '*.v'
-        -rl -vc build/bedrock/ theories
+        -t --omit-link-times --omit-dir-times
+        -avc build/bedrock/ theories
     - make touch_deps
     - make -j ${NJOBS} doc
   rules:
