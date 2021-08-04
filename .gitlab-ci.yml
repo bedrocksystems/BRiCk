@@ -140,22 +140,30 @@ prepare_env:
     reports:
       dotenv: build.env
 
-build_cpp2v:
+.build_cpp2v_base:
   stage: build_proofs_downstream
   needs:
     - prepare_env
   trigger:
     project: bedrocksystems/cpp2v
-    strategy: depend
     # If CPP2V_BRANCH is not master, .gitlab-ci.yml in the cpp2v branch has
     # to be modified to allow build_latest on branches.
     branch: $CPP2V_BRANCH
     # Currently, the whole pipeline succeeds even if the cpp2v build fails
   variables:
     UPSTREAM_CPP2V_CORE_JOB_ID: $ARTIFACT_JOB_ID
+
+build_cpp2v:
+  extends: .build_cpp2v_base
+  trigger:
+    strategy: depend
   rules:
     - if: $CI_MERGE_REQUEST_IID
     - if: $CI_COMMIT_TAG
+
+build_cpp2v_master:
+  extends: .build_cpp2v_base
+  rules:
     - if: '$CI_COMMIT_BRANCH == "master"'
 
 .release:
@@ -223,7 +231,7 @@ pages:
   dependencies:
     - prepare_pages
   script:
-    - make public
+    - cp -R doc/sphinx/_build/html public
   only:
     - master
   artifacts:
