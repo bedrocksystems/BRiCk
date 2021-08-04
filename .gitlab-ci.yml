@@ -205,8 +205,9 @@ prepare_pages:
     # and --omit-link-times to be safe.
     - sudo rsync
         --exclude '*.vok' --exclude '*.vos' --exclude '*.v'
-        -t --omit-link-times --omit-dir-times
-        -avc build/bedrock/ theories
+        -avc
+        --omit-link-times --omit-dir-times
+        build/bedrock/ theories
     - make touch_deps
     - make -j ${NJOBS} doc
   rules:
