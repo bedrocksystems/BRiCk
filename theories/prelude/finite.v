@@ -220,7 +220,7 @@ Module finite_bits (BT : finite_bitmask_type_intf).
     x ∩ of_bits mask.
   Definition masked_opt (mask : N) (x : t) : option t :=
     let res := masked mask x in
-    guard (res = ∅); Some res.
+    guard (res <> ∅); Some res.
 End finite_bits.
 
 
