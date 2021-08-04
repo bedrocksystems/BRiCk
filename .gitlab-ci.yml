@@ -200,7 +200,9 @@ prepare_pages:
     - git submodule update --init
     # Beware: the trailing slash affects the semantics.
     # Excluded flags, compared to -a: -pgoD
-    - rsync -rl -vci build/bedrock/ theories
+    - rsync
+        --exclude '*.vok' --exclude '*.vos' --exclude '*.v'
+        -rl -vc build/bedrock/ theories
     - make touch_deps
     - make -j ${NJOBS} doc
   rules:
