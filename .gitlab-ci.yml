@@ -227,14 +227,21 @@ prepare_pages:
     paths:
       - doc/sphinx/_build
 
-# pages:
-#   stage: pages
-#   dependencies:
-#     - prepare_pages
-#   script:
-#     - cp -R doc/sphinx/_build/html public
-#   only:
-#     - master
-#   artifacts:
-#     paths:
-#       - public
+pages:
+  stage: pages
+  dependencies:
+    - prepare_pages
+  script:
+    # Note: we inline the definition of the `make pages` rule to avoid a CI breakage which we
+    # encountered when attempting to invoke `make pages` /after/ downloading the doc-artifacts
+    # from the `prepare-pages` stage and /without/ pulling the `fm-docs` image.
+    #
+    # While there is likely a solution which allows us to continue using `make pages` directly,
+    # we're taking the easy way out to avoid being nerd-sniped by CI.
+    - cp -R doc/sphinx/_build/html public
+  rules:
+    # Run on master
+    - if: '$CI_COMMIT_BRANCH == "master"'
+  artifacts:
+    paths:
+      - public
