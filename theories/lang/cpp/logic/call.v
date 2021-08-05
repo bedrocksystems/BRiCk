@@ -12,12 +12,12 @@ Require Import bedrock.lang.cpp.heap_notations.
 
 Section with_resolve.
   Context `{Σ : cpp_logic} {σ : genv}.
-  Variables (M : coPset) (ti : thread_info) (ρ : region).
+  Variables (M : coPset) (ρ : region).
 
-  Local Notation wp_lval := (wp_lval M ti ρ).
-  Local Notation wp_prval := (wp_prval M ti ρ).
-  Local Notation wp_xval := (wp_xval M ti ρ).
-  Local Notation wp_init := (wp_init M ti ρ).
+  Local Notation wp_lval := (wp_lval M ρ).
+  Local Notation wp_prval := (wp_prval M ρ).
+  Local Notation wp_xval := (wp_xval M ρ).
+  Local Notation wp_init := (wp_init M ρ).
 
   Fixpoint wp_args (es : list (ValCat * Expr)) (Q : list val -> FreeTemps -> mpred)
   : mpred :=
@@ -39,7 +39,7 @@ Section with_resolve.
           wp_init ty a e Qarg **
             wp_args es (fun vs frees =>
                           Forall free,
-                          Qarg free -* Q (Vptr a :: vs) (destruct_val (σ:=σ) ti false ty a (a |-> tblockR (σ:=σ) ty 1 ** free) ** frees))
+                          Qarg free -* Q (Vptr a :: vs) (destruct_val (σ:=σ) false ty a (a |-> tblockR (σ:=σ) ty 1 ** free) ** frees))
         else
           Exists Qarg,
           wp_prval e Qarg **

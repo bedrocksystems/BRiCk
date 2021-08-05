@@ -174,7 +174,7 @@ Section with_cpp.
   (** * Weakest preconditions of the flavors of C++ "functions"  *)
 
   (** ** the weakest precondition of a function *)
-  Definition wp_func (f : Func) (ti : thread_info) (args : list val)
+  Definition wp_func (f : Func) (args : list val)
              (Q : val -> epred) : mpred :=
     match f.(f_body) with
     | None => False
@@ -184,11 +184,11 @@ Section with_cpp.
         let ρ := Remp None f.(f_return) in
         bind_vars f.(f_params) args ρ (fun ρ frees =>
         |> if is_void f.(f_return) then
-             wp ⊤ ti ρ body (Kfree frees (void_return (|> Q Vvoid)))
+             wp ⊤ ρ body (Kfree frees (void_return (|> Q Vvoid)))
            else
-             wp ⊤ ti ρ body (Kfree frees (val_return (fun x => |> Q x))))
+             wp ⊤ ρ body (Kfree frees (val_return (fun x => |> Q x))))
       | Builtin builtin =>
-        wp_builtin ⊤ ti builtin (Tfunction (cc:=f.(f_cc)) f.(f_return) (List.map snd f.(f_params))) args Q
+        wp_builtin ⊤ builtin (Tfunction (cc:=f.(f_cc)) f.(f_return) (List.map snd f.(f_params))) args Q
       end
     end.
 
@@ -197,10 +197,10 @@ Section with_cpp.
       [| type_of_spec spec = type_of_value (Ofunction f) |] **
       (* forall each argument, apply to [fs_spec ti] *)
       □ Forall Q : val -> mpred, Forall vals,
-        spec.(fs_spec) ti vals Q -* wp_func f ti vals Q.
+        spec.(fs_spec) ti vals Q -* wp_func f vals Q. (** TODO **)
 
   (** ** The weakest precondition of a method *)
-  Definition wp_method (m : Method) ti (args : list val)
+  Definition wp_method (m : Method) (args : list val)
              (Q : val -> epred) : mpred :=
     match m.(m_body) with
     | None => False
@@ -210,9 +210,9 @@ Section with_cpp.
         let ρ := Remp (Some thisp) m.(m_return) in
         bind_vars m.(m_params) rest_vals ρ (fun ρ frees =>
         |> if is_void m.(m_return) then
-             wp ⊤ ti ρ body (Kfree frees (void_return (|>Q Vvoid)))
+             wp ⊤ ρ body (Kfree frees (void_return (|>Q Vvoid)))
            else
-             wp ⊤ ti ρ body (Kfree frees (val_return (fun x => |>Q x))))
+             wp ⊤ ρ body (Kfree frees (val_return (fun x => |>Q x))))
       | _ => False
       end
     end.
@@ -222,13 +222,13 @@ Section with_cpp.
     [| type_of_spec spec = type_of_value (Omethod m) |] **
     (* forall each argument, apply to [fs_spec ti] *)
     □ Forall Q : val -> mpred, Forall vals,
-      spec.(fs_spec) ti vals Q -* wp_method m ti vals Q.
+      spec.(fs_spec) ti vals Q -* wp_method m vals Q. (** TODO **)
 
   (** ** Weakest precondition of a constructor *)
 
   (* initialization of members in the initializer list *)
   Fixpoint wpi_members
-           (ti : thread_info) (ρ : region) (cls : globname) (this : ptr)
+           (ρ : region) (cls : globname) (this : ptr)
            (members : list Member) (inits : list Initializer)
            (Q : mpred) : mpred :=
     match members with
@@ -245,7 +245,7 @@ Section with_cpp.
            (see https://eel.is/c++draft/dcl.init#general-7 )
          *)
         default_initialize m.(mem_type) (this ., _field {| f_type := cls ; f_name := m.(mem_name) |})
-          (fun free => free ** wpi_members ti ρ cls this members inits Q)
+          (fun free => free ** wpi_members ρ cls this members inits Q)
       | i :: is' =>
         match i.(init_path) with
         | InitField _ (* = m.(mem_name) *) =>
@@ -253,7 +253,7 @@ Section with_cpp.
           | nil =>
             (* there is a *unique* initializer for this field *)
             this ., offset_for cls i.(init_path) |-> tblockR (erase_qualifiers i.(init_type)) 1 -*
-            wpi ⊤ ti ρ cls this i (fun f => f ** wpi_members ti ρ cls this members inits Q)
+            wpi ⊤ ρ cls this i (fun f => f ** wpi_members ρ cls this members inits Q)
           | _ =>
             (* there are multiple initializers for this field *)
             ERROR $ "multiple initializers for field: " ++ cls ++ "::" ++ m.(mem_name)
@@ -269,7 +269,7 @@ Section with_cpp.
     end%I%bs.
 
   (* initialization of bases in the initializer list *)
-  Fixpoint wpi_bases (ti : thread_info) (ρ : region) (cls : globname) (this : ptr)
+  Fixpoint wpi_bases (ρ : region) (cls : globname) (this : ptr)
            (bases : list globname) (inits : list Initializer)
            (Q : mpred) : mpred :=
     match bases with
@@ -282,7 +282,7 @@ Section with_cpp.
       | i :: nil =>
         (* there is an initializer for this class *)
         this ., offset_for cls i.(init_path) |-> tblockR (erase_qualifiers i.(init_type)) 1 -*
-        wpi ⊤ ti ρ cls this i (fun f => f ** wpi_bases ti ρ cls this bases inits Q)
+        wpi ⊤ ρ cls this i (fun f => f ** wpi_bases ρ cls this bases inits Q)
       | _ :: _ :: _ =>
         (* there are multiple initializers for this, so we fail *)
         ERROR $ "multiple initializers for base: " ++ cls ++ "::" ++ b
@@ -290,10 +290,9 @@ Section with_cpp.
     end%I%bs.
 
   Lemma wpi_bases_frame:
-    ∀ (ti : thread_info) ρ (p : ptr) (ty : globname) bases (inits : list Initializer) (Q Q' : mpredI),
-      (Q -* Q')
-        |-- wpi_bases ti ρ ty p bases inits Q -*
-        wpi_bases ti ρ ty p bases inits Q'.
+    ∀ ρ (p : ptr) (ty : globname) bases (inits : list Initializer) (Q Q' : mpredI),
+      Q -* Q'
+      |-- wpi_bases ρ ty p bases inits Q -* wpi_bases ρ ty p bases inits Q'.
   Proof.
     induction bases => /=; eauto.
     intros.
@@ -306,9 +305,9 @@ Section with_cpp.
   Qed.
 
   Lemma wpi_members_frame:
-    ∀ (ti : thread_info) (ρ : region) flds (p : ptr) (ty : globname) (li : list Initializer) (Q Q' : mpredI),
-      (Q -* Q') |-- wpi_members ti ρ ty p flds li Q -*
-                wpi_members ti ρ ty p flds li Q'.
+    ∀ (ρ : region) flds (p : ptr) (ty : globname) (li : list Initializer) (Q Q' : mpredI),
+      Q -* Q'
+      |-- wpi_members ρ ty p flds li Q -* wpi_members ρ ty p flds li Q'.
   Proof.
     induction flds => /=; eauto.
     intros.
@@ -322,7 +321,7 @@ Section with_cpp.
       iIntros (?) "[$ x]"; iRevert "x"; iApply IHflds; eauto. }
   Qed.
 
-  Definition wp_struct_initializer_list (s : Struct) (ti : thread_info) (ρ : region) (cls : globname) (this : ptr)
+  Definition wp_struct_initializer_list (s : Struct) (ρ : region) (cls : globname) (this : ptr)
              (inits : list Initializer) (Q : mpred) : mpred :=
     match List.find (fun i => bool_decide (i.(init_path) = InitThis)) inits with
     | Some {| init_type := ty ; init_init := e |} =>
@@ -330,7 +329,7 @@ Section with_cpp.
       | _ :: nil =>
         if bool_decide (drop_qualifiers ty = Tnamed cls) then
           (* this is a delegating constructor, simply delegate *)
-          (this |-> tblockR ty 1 -* wp_init ⊤ ti ρ (Tnamed cls) this e (fun free => free ** Q))
+          (this |-> tblockR ty 1 -* wp_init ⊤ ρ (Tnamed cls) this e (fun free => free ** Q))
         else
           (* the type names do not match, this should never happen *)
           ERROR "type name mismatch"
@@ -340,8 +339,8 @@ Section with_cpp.
         ERROR "delegating constructor has other initializers"
       end
     | None =>
-      let bases := wpi_bases ti ρ cls this (List.map fst s.(s_bases)) inits in
-      let members := wpi_members ti ρ cls this s.(s_fields) inits in
+      let bases := wpi_bases ρ cls this (List.map fst s.(s_bases)) inits in
+      let members := wpi_members ρ cls this s.(s_fields) inits in
       let ident Q := this |-> init_identity cls Q in
       (** initialize the bases, then the identity, then the members *)
       bases (ident (members (this |-> struct_padding 1 cls -*  Q)))
@@ -350,8 +349,8 @@ Section with_cpp.
        *)
     end.
 
-  Lemma wp_struct_initializer_list_frame : forall ti ρ cls p ty li Q Q',
-      (Q -* Q') |-- wp_struct_initializer_list cls ti ρ ty p li Q -* wp_struct_initializer_list cls ti ρ ty p li Q'.
+  Lemma wp_struct_initializer_list_frame : forall ρ cls p ty li Q Q',
+      Q -* Q' |-- wp_struct_initializer_list cls ρ ty p li Q -* wp_struct_initializer_list cls ρ ty p li Q'.
   Proof.
     rewrite /wp_struct_initializer_list/=. intros. case_match.
     { case_match => //.
@@ -372,7 +371,7 @@ Section with_cpp.
       iApply ("b" with "c"). }
   Qed.
 
-  Definition wp_union_initializer_list (s : translation_unit.Union) (ti : thread_info) (ρ : region) (cls : globname) (this : ptr)
+  Definition wp_union_initializer_list (s : translation_unit.Union) (ρ : region) (cls : globname) (this : ptr)
              (inits : list Initializer) (Q : mpred) : mpred :=
     match List.find (fun i => bool_decide (i.(init_path) = InitThis)) inits with
     | Some {| init_type := ty ; init_init := e |} =>
@@ -380,7 +379,7 @@ Section with_cpp.
       | _ :: nil =>
         if bool_decide (drop_qualifiers ty = Tnamed cls) then
           (* this is a delegating constructor, simply delegate *)
-          (this |-> tblockR ty 1 -* wp_init ⊤ ti ρ (Tnamed cls) this e (fun free => free ** Q))
+          (this |-> tblockR ty 1 -* wp_init ⊤ ρ (Tnamed cls) this e (fun free => free ** Q))
         else
           (* the type names do not match, this should never happen *)
           ERROR "type name mismatch"
@@ -394,10 +393,10 @@ Section with_cpp.
       (* TODO what is the right thing to do when initializing unions? *)
     end.
 
-  Lemma wp_union_initializer_list_frame : forall ti ρ cls p ty li Q Q',
+  Lemma wp_union_initializer_list_frame : forall ρ cls p ty li Q Q',
         Q -* Q'
-    |-- wp_union_initializer_list cls ti ρ ty p li Q -*
-        wp_union_initializer_list cls ti ρ ty p li Q'.
+    |-- wp_union_initializer_list cls ρ ty p li Q -*
+        wp_union_initializer_list cls ρ ty p li Q'.
   Proof.
     rewrite /wp_union_initializer_list/=. intros. case_match; eauto.
     { case_match => //.
@@ -433,9 +432,7 @@ Section with_cpp.
    * Alternative: it would also be sound for the class to provide the [tblockR]
    * for each sub-object up front.
    *)
-  Definition wp_ctor (ctor : Ctor)
-             (ti : thread_info) (args : list val)
-             (Q : val -> epred) : mpred :=
+  Definition wp_ctor (ctor : Ctor) (args : list val) (Q : val -> epred) : mpred :=
     match ctor.(c_body) with
     | None => False
     | Some Defaulted => False
@@ -453,8 +450,8 @@ Section with_cpp.
            *)
           |> let ρ := Remp (Some thisp) Tvoid in
              bind_vars ctor.(c_params) rest_vals ρ (fun ρ frees =>
-               (wp_struct_initializer_list cls ti ρ ctor.(c_class) thisp inits
-                  (wp ⊤ ti ρ body (Kfree frees (void_return (|> Q Vvoid))))))
+               (wp_struct_initializer_list cls ρ ctor.(c_class) thisp inits
+                  (wp ⊤ ρ body (Kfree frees (void_return (|> Q Vvoid))))))
         | Some (Gunion union) =>
         (* this is a union *)
           thisp |-> tblockR ty 1 **
@@ -463,8 +460,8 @@ Section with_cpp.
            *)
           |> let ρ := Remp (Some thisp) Tvoid in
              bind_vars ctor.(c_params) rest_vals ρ (fun ρ frees =>
-               (wp_union_initializer_list union ti ρ ctor.(c_class) thisp inits
-                  (wp ⊤ ti ρ body (Kfree frees (void_return (|> Q Vvoid))))))
+               (wp_union_initializer_list union ρ ctor.(c_class) thisp inits
+                  (wp ⊤ ρ body (Kfree frees (void_return (|> Q Vvoid))))))
         | Some _ =>
           ERROR $ "constructor for non-aggregate (" ++ ctor.(c_class) ++ ")"
         | None => False
@@ -478,35 +475,35 @@ Section with_cpp.
     [| type_of_spec spec = type_of_value (Oconstructor ctor) |] **
     (* forall each argument, apply to [fs_spec ti] *)
     □ Forall Q : val -> mpred, Forall vals,
-      spec.(fs_spec) ti vals Q -* wp_ctor ctor ti vals Q.
+      spec.(fs_spec) ti vals Q -* wp_ctor ctor vals Q. (** TODO **)
 
   (** ** Weakest precondition of a destructor *)
 
   Fixpoint wpd_bases
-           (ti : thread_info) (cls : globname) (this : ptr)
+           (cls : globname) (this : ptr)
            (bases : list globname)
            (Q : mpred) : mpred :=
     match bases with
     | nil => Q
     | base :: bases =>
-      destroy_val ti false (Tnamed base) (this ., _base cls base) (wpd_bases ti cls this bases Q)
+      destroy_val false (Tnamed base) (this ., _base cls base) (wpd_bases cls this bases Q)
     end.
 
   Fixpoint wpd_members
-           (ti : thread_info) (cls : globname) (this : ptr)
+           (cls : globname) (this : ptr)
            (members : list Member)
            (Q : mpred) : mpred :=
     match members with
     | nil => Q
     | member :: members =>
-      destroy_val ti false member.(mem_type) (this ., _field {| f_name := member.(mem_name) ; f_type := cls |})
-           (wpd_members ti cls this members Q)
+      destroy_val false member.(mem_type) (this ., _field {| f_name := member.(mem_name) ; f_type := cls |})
+           (wpd_members cls this members Q)
     end.
 
   (** [wp_dtor dtor ti args Q] defines the semantics of the destructor [dtor] when
       applied to [args] with post-condition [Q].
    *)
-  Definition wp_dtor (dtor : Dtor) (ti : thread_info) (args : list val)
+  Definition wp_dtor (dtor : Dtor) (args : list val)
              (Q : val -> epred) : mpred :=
     match dtor.(d_body) with
     | None => False
@@ -517,11 +514,11 @@ Section with_cpp.
           match resolve.(genv_tu).(globals) !! dtor.(d_class) with
           | Some (Gstruct s) => Some $ fun thisp : ptr =>
             thisp |-> struct_padding 1 dtor.(d_class) **
-            wpd_members ti dtor.(d_class) thisp s.(s_fields)
+            wpd_members dtor.(d_class) thisp s.(s_fields)
                (* ^ fields are destroyed *)
                (thisp |-> revert_identity dtor.(d_class)
                (* ^ the identity of the object is destroyed *)
-                  (wpd_bases ti dtor.(d_class) thisp (List.map fst s.(s_bases))
+                  (wpd_bases dtor.(d_class) thisp (List.map fst s.(s_bases))
                   (* ^ the base classes are destroyed (reverse order) *)
                      (thisp |-> tblockR (Tnamed dtor.(d_class)) 1 -* |> Q Vvoid)))
                      (* ^ the operations above destroy each object returning its memory to
@@ -546,8 +543,7 @@ Section with_cpp.
       | Some epilog , Vptr thisp :: nil =>
         let ρ := Remp (Some thisp) Tvoid in
           |> (* the function prolog consumes a step. *)
-             wp ⊤ ti ρ body
-               (void_return (epilog thisp))
+             wp ⊤ ρ body (void_return (epilog thisp))
       | _ , _ => False
       end
     end.
@@ -588,6 +584,6 @@ Section with_cpp.
     : mpred :=
     [| type_of_spec spec = type_of_value (Odestructor dtor) |] **
     □ Forall Q : val -> mpred, Forall vals,
-      spec.(fs_spec) ti vals Q -* wp_dtor dtor ti vals Q.
+      spec.(fs_spec) ti vals Q -* wp_dtor dtor vals Q. (** TODO **)
 
 End with_cpp.

@@ -13,16 +13,16 @@ From bedrock.lang.cpp.logic Require Import
 
 Section with_Σ.
   Context `{Σ : cpp_logic thread_info} {resolve:genv}.
-  Variables (M : coPset) (ti : thread_info).
+  Variables (M : coPset).
 
   (****** Wp Semantics for builtins
    *)
   Parameter wp_builtin :
-      forall {resolve:genv}, coPset -> thread_info ->
+      forall {resolve:genv}, coPset ->
         BuiltinFn -> type (* the type of the builtin *) ->
         list val -> (val -> mpred) -> mpred.
 
-  Local Notation BUILTIN := (wp_builtin (resolve:=resolve) M ti).
+  Local Notation BUILTIN := (wp_builtin (resolve:=resolve) M).
 
   Lemma wp_unreachable : forall Q,
       False |-- BUILTIN Bin_unreachable (Tfunction Tvoid nil) nil Q.

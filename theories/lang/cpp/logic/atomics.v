@@ -16,12 +16,12 @@ Local Open Scope Z_scope.
 
 Section with_Σ.
   Context `{cpp_logic thread_info} {resolve:genv}.
-  Variables (M : coPset) (ti : thread_info) (ρ : region).
+  Variables (M : coPset) (ρ : region).
 
   Implicit Type (Q : val → mpred).
 
-  Local Notation wp_prval := (wp_prval M ti ρ).
-  Local Notation wp_args := (wp_args M ti ρ).
+  Local Notation wp_prval := (wp_prval M ρ).
+  Local Notation wp_args := (wp_args M ρ).
 
   (* Builtins for Atomic operations. We follow those provided by GCC.
    * https://gcc.gnu.org/onlinedocs/gcc/_005f_005fatomic-Builtins.html
@@ -32,11 +32,11 @@ Section with_Σ.
    * These are given in the style of function call axioms
    *)
   Parameter wp_atom :
-      forall {resolve:genv}, coPset -> thread_info ->
+      forall {resolve:genv}, coPset ->
         AtomicOp -> type (* the access type of the atomic operation *) ->
         list val -> (val -> mpred) -> mpred.
 
-  Local Notation wp_atom' := (@wp_atom resolve M ti) (only parsing).
+  Local Notation wp_atom' := (@wp_atom resolve M) (only parsing).
 
   Definition pointee_type (t : type) : option type :=
     match t with

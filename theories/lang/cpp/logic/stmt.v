@@ -23,17 +23,17 @@ Module Type Stmt.
    *)
   Section with_resolver.
     Context `{Σ : cpp_logic thread_info} {resolve:genv}.
-    Variables (M : coPset) (ti : thread_info).
+    Variables (M : coPset).
 
-    Local Notation wp := (wp M ti).
-    Local Notation wp_lval := (wp_lval M ti).
-    Local Notation wp_prval := (wp_prval M ti).
-    Local Notation wp_xval := (wp_xval M ti).
-    Local Notation wp_init := (wp_init M ti).
-    Local Notation wpe := (wpe M ti).
-    Local Notation fspec := (fspec ti).
-    Local Notation destruct_val := (destruct_val ti) (only parsing).
-    Local Notation destroy_val dispatch t this Q := (destroy_val ti dispatch t this Q) (only parsing).
+    Local Notation wp := (wp M).
+    Local Notation wp_lval := (wp_lval M).
+    Local Notation wp_prval := (wp_prval M).
+    Local Notation wp_xval := (wp_xval M).
+    Local Notation wp_init := (wp_init M).
+    Local Notation wpe := (wpe M).
+    Local Notation fspec := (fspec).
+    Local Notation destruct_val := (destruct_val) (only parsing).
+    Local Notation destroy_val dispatch t this Q := (destroy_val dispatch t this Q) (only parsing).
 
     Local Notation glob_def := (glob_def resolve) (only parsing).
 
