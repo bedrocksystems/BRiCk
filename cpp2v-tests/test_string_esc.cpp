@@ -6,4 +6,5 @@
 
 void test() {
     const char* p = "\"hello\0\n\r";
+    const char* bar = "bye \xE2\x84\xA2 \u2122";
 }

@@ -542,7 +542,7 @@ public:
         for (auto i = lit->getBytes().begin(), end = lit->getBytes().end();
              i != end; ++i) {
             char buf[25];
-            sprintf(buf, "Byte.x%02x", (unsigned)*i);
+            sprintf(buf, "Byte.x%02x", (unsigned char)*i);
             print.output() << "(BS.String " << buf << " ";
         }
         print.output() << "BS.EmptyString";
