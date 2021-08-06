@@ -192,12 +192,12 @@ Section with_cpp.
       end
     end.
 
-  Definition func_ok (f : Func) (ti : thread_info) (spec : function_spec)
+  Definition func_ok (f : Func) (spec : function_spec)
     : mpred :=
       [| type_of_spec spec = type_of_value (Ofunction f) |] **
       (* forall each argument, apply to [fs_spec ti] *)
       □ Forall Q : val -> mpred, Forall vals,
-        spec.(fs_spec) ti vals Q -* wp_func f vals Q. (** TODO **)
+        spec.(fs_spec) vals Q -* wp_func f vals Q.
 
   (** ** The weakest precondition of a method *)
   Definition wp_method (m : Method) (args : list val)
@@ -217,12 +217,12 @@ Section with_cpp.
       end
     end.
 
-  Definition method_ok (m : Method) (ti : thread_info) (spec : function_spec)
+  Definition method_ok (m : Method) (spec : function_spec)
     : mpred :=
     [| type_of_spec spec = type_of_value (Omethod m) |] **
     (* forall each argument, apply to [fs_spec ti] *)
     □ Forall Q : val -> mpred, Forall vals,
-      spec.(fs_spec) ti vals Q -* wp_method m vals Q. (** TODO **)
+      spec.(fs_spec) vals Q -* wp_method m vals Q.
 
   (** ** Weakest precondition of a constructor *)
 
@@ -470,12 +470,12 @@ Section with_cpp.
       end
     end%I%bs.
 
-  Definition ctor_ok (ctor : Ctor) (ti : thread_info) (spec : function_spec)
+  Definition ctor_ok (ctor : Ctor) (spec : function_spec)
     : mpred :=
     [| type_of_spec spec = type_of_value (Oconstructor ctor) |] **
     (* forall each argument, apply to [fs_spec ti] *)
     □ Forall Q : val -> mpred, Forall vals,
-      spec.(fs_spec) ti vals Q -* wp_ctor ctor vals Q. (** TODO **)
+      spec.(fs_spec) vals Q -* wp_ctor ctor vals Q.
 
   (** ** Weakest precondition of a destructor *)
 
@@ -580,10 +580,10 @@ Section with_cpp.
         u |-> tblockR "U" 1
 *)
 
-  Definition dtor_ok (dtor : Dtor) (ti : thread_info) (spec : function_spec)
+  Definition dtor_ok (dtor : Dtor) (spec : function_spec)
     : mpred :=
     [| type_of_spec spec = type_of_value (Odestructor dtor) |] **
     □ Forall Q : val -> mpred, Forall vals,
-      spec.(fs_spec) ti vals Q -* wp_dtor dtor vals Q. (** TODO **)
+      spec.(fs_spec) vals Q -* wp_dtor dtor vals Q.
 
 End with_cpp.

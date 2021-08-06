@@ -816,7 +816,7 @@ Section with_cpp.
     { fs_cc : calling_conv
     ; fs_return : type
     ; fs_arguments : list type
-    ; fs_spec : thread_info -d> list val -d> (val -> mpred) -d> mpredO
+    ; fs_spec : list val -d> (val -> mpred) -d> mpredO
     }.
 
   #[global] Instance function_spec_inhabited : Inhabited function_spec :=
@@ -906,8 +906,8 @@ Section with_cpp.
     repeat uPred.unseal. constructor => n x ?. by intros [? _].
   Qed.
 
-  Lemma fs_equivI_spec P Q ti vs K :
-    P ≡ Q ⊢@{mpredI} P.(fs_spec) ti vs K ≡ Q.(fs_spec) ti vs K.
+  Lemma fs_equivI_spec P Q vs K :
+    P ≡ Q ⊢@{mpredI} P.(fs_spec) vs K ≡ Q.(fs_spec) vs K.
   Proof.
     constructor => ?. rewrite !monPred_at_internal_eq.
     repeat uPred.unseal. constructor=>n x ? [_ HPQ]. apply HPQ.
@@ -915,22 +915,23 @@ Section with_cpp.
 
   Lemma fs_equivI_intro P Q :
     type_of_spec P = type_of_spec Q ->
-    Forall ti vs K, P.(fs_spec) ti vs K ≡ Q.(fs_spec) ti vs K ⊢@{mpredI} P ≡ Q.
+    Forall vs K, P.(fs_spec) vs K ≡ Q.(fs_spec) vs K ⊢@{mpredI} P ≡ Q.
   Proof.
     intros.
-    constructor => ?. repeat setoid_rewrite monPred_at_forall.
-    setoid_rewrite monPred_at_internal_eq.
-    repeat uPred.unseal. constructor=>n x ?. by split.
+    constructor => ?.
+    repeat setoid_rewrite monPred_at_forall.
+    repeat setoid_rewrite monPred_at_internal_eq.
+    repeat uPred.unseal. constructor=>x ?; by split.
   Qed.
 
   Lemma fs_equivI P Q :
     P ≡ Q ⊣⊢@{mpredI}
     [| type_of_spec P = type_of_spec Q |] **
-    Forall ti vs K, P.(fs_spec) ti vs K ≡ Q.(fs_spec) ti vs K.
+    Forall vs K, P.(fs_spec) vs K ≡ Q.(fs_spec) vs K.
   Proof.
     split'.
     - iIntros "?". iSplit; first by rewrite fs_equivI_type.
-      iIntros (ti vs K). by rewrite fs_equivI_spec.
+      iIntros (vs K). by rewrite fs_equivI_spec.
     - iIntros "[% ?]". by rewrite fs_equivI_intro.
   Qed.
 
@@ -939,14 +940,14 @@ Section with_cpp.
    *)
   Definition fs_impl (Q P : function_spec) : mpred :=
     [| type_of_spec P = type_of_spec Q |] ∗
-    □ ∀ ti vs K, P.(fs_spec) ti vs K -∗ Q.(fs_spec) ti vs K.
+    □ ∀ vs K, P.(fs_spec) vs K -∗ Q.(fs_spec) vs K.
   Lemma fs_impl_reflexive P : |-- fs_impl P P.
   Proof. iSplit; auto. Qed.
   Lemma fs_impl_transitive P Q R : fs_impl P Q |-- fs_impl Q R -* fs_impl P R.
   Proof.
     rewrite /fs_impl; iIntros "(-> & #H1) (-> & #H2)".
     iSplit; first done.
-    iIntros "!>" (ti vs K) "Y".
+    iIntros "!>" (vs K) "Y".
     iApply ("H1" with "(H2 Y)").
   Qed.
 
@@ -963,7 +964,7 @@ Section with_cpp.
   (* [mpred] bi-implication on [function_spec] *)
   Definition fs_equiv (P Q : function_spec) : mpred :=
     [| type_of_spec P = type_of_spec Q |] ∗
-    □ ∀ ti vs K, P.(fs_spec) ti vs K ∗-∗ Q.(fs_spec) ti vs K.
+    □ ∀ vs K, P.(fs_spec) vs K ∗-∗ Q.(fs_spec) vs K.
 
   Lemma fs_equivI_equiv P Q : P ≡ Q |-- fs_equiv P Q.
   Proof.
@@ -976,16 +977,16 @@ Section with_cpp.
   Lemma fs_equiv_equivI P Q : ■ fs_equiv P Q |-- P ≡ Q.
   Proof.
     iIntros "[% #EQ]". iApply fs_equivI_intro; first done.
-    iIntros (ti vs K). iApply prop_ext. iModIntro. iApply "EQ".
+    iIntros (vs K). iApply prop_ext. iModIntro. iApply "EQ".
   Qed.
 
   Lemma fs_equiv_split P Q : fs_equiv P Q -|- fs_impl P Q ** fs_impl Q P.
   Proof.
     rewrite /fs_equiv /fs_impl; iSplit.
     - iIntros "(-> & #W)"; repeat iSplit => //;
-      iIntros "!>" (???) "A"; iApply ("W" with "A").
+      iIntros "!>" (??) "A"; iApply ("W" with "A").
     - iIntros "((-> & #W1) & (_ & #W2))".
-      iSplit => //; iIntros "!>" (???); iSplit;
+      iSplit => //; iIntros "!>" (??); iSplit;
         [by iApply "W2" | by iApply "W1"].
   Qed.
 

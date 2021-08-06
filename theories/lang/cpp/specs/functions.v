@@ -21,15 +21,6 @@ Arguments UNSUPPORTED {_ _} _%bs.
 
 (** * Wrappers to build [function_spec] from a [WithPrePost] *)
 
-(* A specification for a function (with explicit thread info) *)
-Definition TSFunction@{X Z Y} `{Σ : cpp_logic} {cc : calling_conv}
-    (ret : type) (targs : list type) (PQ : thread_info -> WithPrePost@{X Z Y} mpredI)
-    : function_spec :=
-  {| fs_cc        := cc
-   ; fs_return    := ret
-   ; fs_arguments := targs
-   ; fs_spec ti   := WppD (PQ ti) |}.
-
 (* A specification for a function  *)
 Definition SFunction@{X Z Y} `{Σ : cpp_logic} {cc : calling_conv}
     (ret : type) (targs : list type) (PQ : WithPrePost@{X Z Y} mpredI)
@@ -37,7 +28,7 @@ Definition SFunction@{X Z Y} `{Σ : cpp_logic} {cc : calling_conv}
   {| fs_cc        := cc
    ; fs_return    := ret
    ; fs_arguments := targs
-   ; fs_spec _    := WppD PQ |}.
+   ; fs_spec      := WppD PQ |}.
 
 (* A specification for a constructor *)
 Definition SConstructor@{X Z Y} `{Σ : cpp_logic, resolve : genv} {cc : calling_conv}
@@ -101,45 +92,6 @@ Section with_cpp.
       proved so that they don't constrain the WPP universes [Y1], [Y2]
       from above. The TC instances are strictly less useful, as they
       necessarily give up on both (i) and (ii). *)
-  Section TSFunction.
-    Import disable_proofmode_telescopes.
-    Context {cc : calling_conv} (ret : type) (targs : list type).
-
-    Lemma TSFunction_mono@{X1 X2 Z1 Z2 Y1 Y2} wpp1 wpp2 :
-      (∀ ti, wpp_entails (wpp1 ti) (wpp2 ti)) ->
-      fs_entails
-        (TSFunction@{X1 Z1 Y1} (cc:=cc) ret targs wpp2)
-        (TSFunction@{X2 Z2 Y2} (cc:=cc) ret targs wpp1).
-    Proof.
-      intros Hwpp. iSplit; first by rewrite/type_of_spec. simpl.
-      iIntros "!>" (ti vs K) "wpp". by iApply Hwpp.
-    Qed.
-
-    #[global] Instance: Params (@TSFunction) 5 := {}.
-    #[global] Instance TSFunction_ne n :
-      Proper (dist (A:=thread_info -d> WithPrePostO mpredI) n ==> dist n)
-        (TSFunction (cc:=cc) ret targs).
-    Proof.
-      intros wpp1 wpp2 Hwpp. split. by rewrite/type_of_spec/=. done.
-    Qed.
-
-    #[global] Instance TSFunction_proper :
-      Proper (equiv (A:=thread_info -d> WithPrePostO mpredI) ==> equiv)
-        (TSFunction (cc:=cc) ret targs).
-    Proof. exact: ne_proper. Qed.
-
-    #[global] Instance TSFunction_mono'@{X Z Y} :
-      Proper (pointwise_relation _ (flip wpp_entails) ==> fs_entails)
-        (TSFunction@{X Z Y} (cc:=cc) ret targs).
-    Proof. repeat intro. by apply TSFunction_mono. Qed.
-
-    #[global] Instance TSFunction_flip_mono'@{X Z Y} :
-      Proper (pointwise_relation _ (wpp_entails) ==> flip fs_entails)
-        (TSFunction@{X Z Y} (cc:=cc) ret targs).
-    Proof. solve_proper. Qed.
-
-  End TSFunction.
-
   Section SFunction.
     Import disable_proofmode_telescopes.
     Context {cc : calling_conv} (ret : type) (targs : list type).
@@ -151,13 +103,13 @@ Section with_cpp.
         (SFunction@{X2 Z2 Y2} (cc:=cc) ret targs wpp2).
     Proof.
       intros Hwpp. iSplit; first by rewrite/type_of_spec. simpl.
-      iIntros "!>" (_ vs K) "wpp". by iApply Hwpp.
+      iIntros "!>" (vs K) "wpp". by iApply Hwpp.
     Qed.
 
     #[global] Instance: Params (@SFunction) 5 := {}.
     #[global] Instance SFunction_ne : NonExpansive (SFunction (cc:=cc) ret targs).
     Proof.
-      intros n wpp1 wpp2 Hwpp. split. by rewrite/type_of_spec/=. by move=>ti.
+      intros n wpp1 wpp2 Hwpp. split; by rewrite/type_of_spec/=.
     Qed.
 
     #[global] Instance SFunction_proper :
@@ -189,7 +141,7 @@ Section with_cpp.
         (SMethod@{X2 Z2 Y2} (cc:=cc) class qual ret targs wpp2).
     Proof.
       intros Hwpp. iSplit; first by rewrite/type_of_spec. simpl.
-      iIntros "!>" (_ vs K) "wpp".
+      iIntros "!>" (vs K) "wpp".
       (** To apply [Hwpp], we have to deconstruct the WPP we've got,
           stripping off the extra "this" argument. *)
       iDestruct "wpp" as (this) "wpp". rewrite {1}tbi_exist_exist.
