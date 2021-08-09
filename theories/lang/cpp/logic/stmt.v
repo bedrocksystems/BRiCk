@@ -31,8 +31,6 @@ Module Type Stmt.
     Local Notation wp_xval := (wp_xval M).
     Local Notation wp_init := (wp_init M).
     Local Notation wpe := (wpe M).
-    Local Notation fspec := (fspec).
-    Local Notation destruct_val := (destruct_val) (only parsing).
     Local Notation destroy_val dispatch t this Q := (destroy_val dispatch t this Q) (only parsing).
 
     Local Notation glob_def := (glob_def resolve) (only parsing).
