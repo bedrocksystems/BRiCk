@@ -13,14 +13,6 @@ Tool for converting C++ files into Coq files.
 cpp2v -v -names XXX_names.v -o XXX_cpp.v XXX.cpp -- ...clang options...
 ```
 
-### As a plugin
-
-```sh
-CPP2V_PLUGIN=./libcpp2v_plugin.so	# .dylib on OSX
-clang -Xclang -load -Xclang $CPP2V_PLUGIN -Xclang -plugin -Xclang cpp2v -Xclang -plugin-arg-cpp2v -Xclang -o -Xclang -plugin-arg-cpp2v -Xclang foo_cpp.v
--Xclang -plugin-arg-cpp2v -Xclang -names -Xclang -plugin-arg-cpp2v -Xclang foo_names_cpp.v ...standard clang options...
-```
-
 ## Build & Dependencies
 
 The following scripts should work, but you can customize them based on your
@@ -29,15 +21,15 @@ They must be run inside a clone of this repository.
 
 Our instructions are for Linux (Ubuntu) and OSX.
 
-- LLVM 10 (LLVM 11 is not fully supported)
+- LLVM 12 (should be backwards compatibile with 10 & 11)
 - cmake
 - [opam 2](https://opam.ocaml.org/)
 
 ### Native dependencies: Linux (Ubuntu)
 
 ```sh
-sudo apt install llvm-10-dev clang-tools-10 libclang-10-dev cmake
-sudo apt install opam
+sudo apt install llvm-12 llvm-12-dev clang-12 libclang-12-dev libclang-cpp12-dev # tested on Ubuntu 20.04.2 LTS (10 Aug 2021)
+sudo apt install cmake opam
 ```
 
 ### Native dependencies: OSX
