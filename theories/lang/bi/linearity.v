@@ -1,5 +1,5 @@
 (*
- * Copyright (c) 2020 BedRock Systems, Inc.
+ * Copyright (c) 2020-2021 BedRock Systems, Inc.
  * This software is distributed under the terms of the BedRock Open-Source License.
  * See the LICENSE-BedRock file in the repository root for details.
  *)
@@ -17,8 +17,20 @@ From bedrock.lang Require Import bi.prelude bi.only_provable.
 From iris.bi Require Import monpred.
 From iris.proofmode Require Import tactics.
 
+(* Disable [BiAffine uPred] *)
 #[export] Remove Hints uPred_affine : typeclass_instances.
+
+(*
+As a small optimization, we can remove dependent instances.
+This causes further incompleteness if other affine logics are relevant.
+*)
 #[export] Remove Hints monPred_bi_affine : typeclass_instances.
+#[export] Remove Hints absorbing_bi : typeclass_instances.
+
+(* Potentially useful to exploit [siProp_affine]. *)
+Module enable_absorbing_bi.
+  #[export] Hint Resolve absorbing_bi : typeclass_instances.
+End enable_absorbing_bi.
 
 Import bi.
 
