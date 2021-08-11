@@ -34,10 +34,11 @@ sudo apt install cmake opam
 
 ### Native dependencies: OSX
 
+For OSX we recommend clang 11 due to issues linking with clang 12:
 
 ```sh
-brew install llvm cmake opam
-export PATH=/usr/local/opt/llvm/bin:${PATH}
+brew install llvm@11 cmake opam
+export PATH=/usr/local/opt/llvm@11/bin:${PATH}
 ```
 
 ### Build
