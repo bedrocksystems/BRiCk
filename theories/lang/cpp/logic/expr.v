@@ -36,18 +36,17 @@ Module Type Expr.
 
   Section with_resolve.
     Context `{Σ : cpp_logic thread_info} {resolve:genv}.
-    Variables (M : coPset) (ti : thread_info) (ρ : region).
+    Variables (M : coPset) (ρ : region).
 
-    Local Notation wp_lval := (wp_lval M ti ρ).
-    Local Notation wp_prval := (wp_prval M ti ρ).
-    Local Notation wp_xval := (wp_xval M ti ρ).
-    Local Notation wp_init := (wp_init M ti ρ).
-    Local Notation wpe := (wpe M ti ρ).
-    Local Notation wp_glval := (wp_glval M ti ρ).
-    Local Notation wp_args := (wp_args M ti ρ).
+    Local Notation wp_lval := (wp_lval M ρ).
+    Local Notation wp_prval := (wp_prval M ρ).
+    Local Notation wp_xval := (wp_xval M ρ).
+    Local Notation wp_init := (wp_init M ρ).
+    Local Notation wpe := (wpe M ρ).
+    Local Notation wp_glval := (wp_glval M ρ).
+    Local Notation wp_args := (wp_args M ρ).
     Local Notation fspec := (fspec resolve.(genv_tu).(globals)).
     Local Notation mspec := (mspec resolve.(genv_tu).(globals)).
-    Local Notation destruct_val := (destruct_val ti) (only parsing).
 
     Local Notation glob_def := (glob_def resolve) (only parsing).
     Local Notation size_of := (@size_of resolve) (only parsing).
@@ -697,7 +696,7 @@ Module Type Expr.
            | Some fty =>
              wp_prval f (fun f free_f =>
                            wp_args es (fun vs free =>
-                                         |> fspec (normalize_type fty) ti f vs (fun v => Q v (free ** free_f))))
+                                         |> fspec (normalize_type fty) f vs (fun v => Q v (free ** free_f))))
            | _ => False
            end)
         |-- wp_prval (Ecall f es ty) Q.
@@ -706,7 +705,7 @@ Module Type Expr.
         match unptr (type_of f) with
         | Some fty =>
           wp_prval f (fun f free_f => wp_args es (fun vs free =>
-             |> fspec (normalize_type fty) ti f vs (fun res => Exists p, [| res = Vptr p |] ** Q p (free ** free_f))))
+             |> fspec (normalize_type fty) f vs (fun res => Exists p, [| res = Vptr p |] ** Q p (free ** free_f))))
         | _ => False
         end
         |-- wp_lval (Ecall f es ty) Q.
@@ -715,7 +714,7 @@ Module Type Expr.
         match unptr (type_of f) with
         | Some fty =>
           wp_prval f (fun f free_f => wp_args es (fun vs free =>
-             |> fspec (normalize_type fty) ti f vs (fun v => Exists p, [| v = Vptr p |] ** Q p (free ** free_f))))
+             |> fspec (normalize_type fty) f vs (fun v => Exists p, [| v = Vptr p |] ** Q p (free ** free_f))))
         | _ => False
         end
       |-- wp_xval (Ecall f es ty) Q.
@@ -727,7 +726,7 @@ Module Type Expr.
           (* ^ give up the memory that was created by [materialize_into_temp] *)
           wp_prval f (fun f free_f =>
                         wp_args es (fun vs free =>
-                                      |> fspec (normalize_type fty) ti f vs (fun res => [| res = Vptr addr |] -* Q (free_f ** free))))
+                                      |> fspec (normalize_type fty) f vs (fun res => [| res = Vptr addr |] -* Q (free_f ** free))))
           (* NOTE We use the assumed equality to mean that the value was constructed immediately into
              the correct place *)
         | _ => False
@@ -744,13 +743,13 @@ Module Type Expr.
      *)
     Axiom wp_lval_member_call : forall ty fty f vc obj es Q,
         wp_glval vc obj (fun this free_t => wp_args es (fun vs free =>
-           |> mspec (type_of obj) (normalize_type fty) ti (Vptr $ _global f) (Vptr this :: vs) (fun v =>
+           |> mspec (type_of obj) (normalize_type fty) (Vptr $ _global f) (Vptr this :: vs) (fun v =>
                     Exists p, [| v = Vptr p |] ** Q p (free_t ** free))))
         |-- wp_lval (Emember_call (inl (f, Direct, fty)) vc obj es ty) Q.
 
     Axiom wp_xval_member_call : forall ty fty f vc obj es Q,
         wp_glval vc obj (fun this free_t => wp_args es (fun vs free =>
-           |> mspec (type_of obj) (normalize_type fty) ti (Vptr $ _global f) (Vptr this :: vs) (fun v =>
+           |> mspec (type_of obj) (normalize_type fty) (Vptr $ _global f) (Vptr this :: vs) (fun v =>
                     Exists p, [| v = Vptr p |] ** Q p (free_t ** free))))
         |-- wp_xval (Emember_call (inl (f, Direct, fty)) vc obj es ty) Q.
 
@@ -759,14 +758,14 @@ Module Type Expr.
            Reduce (materialize_into_temp ty (Emember_call (inl (f, Direct, fty)) vc obj es ty) Q)
          else
             wp_glval vc obj (fun this free_t => wp_args es (fun vs free =>
-              |> mspec (type_of obj) (normalize_type fty) ti (Vptr $ _global f) (Vptr this :: vs) (fun v => Q v (free_t ** free)))))
+              |> mspec (type_of obj) (normalize_type fty) (Vptr $ _global f) (Vptr this :: vs) (fun v => Q v (free_t ** free)))))
         |-- wp_prval (Emember_call (inl (f, Direct, fty)) vc obj es ty) Q.
 
     Axiom wp_init_member_call : forall f ret ts cc es (addr : ptr) ty vc obj Q,
         wp_glval vc obj (fun this free_t => wp_args es (fun vs free =>
             addr |-> tblockR (erase_qualifiers ret) 1 **
             let fty := Tfunction (cc:=cc) ret ts in
-            |> mspec (type_of obj) (normalize_type fty) ti (Vptr $ _global f) (Vptr this :: vs) (fun res =>
+            |> mspec (type_of obj) (normalize_type fty) (Vptr $ _global f) (Vptr this :: vs) (fun res =>
                       [| res = Vptr addr |] -* Q (free_t ** free))))
         (* NOTE as with regular function calls, we use an assumed equation to unify the address
            of the returned object with the location that we are initializing.
@@ -785,7 +784,7 @@ Module Type Expr.
           match class_name (type_of obj) with
           | Some cls =>
             resolve_virtual (σ:=resolve) this cls f (fun fimpl_addr impl_class thisp =>
-              |> mspec (Tnamed impl_class) (normalize_type fty) ti (Vptr fimpl_addr) (Vptr thisp :: vs) (fun v =>
+              |> mspec (Tnamed impl_class) (normalize_type fty) (Vptr fimpl_addr) (Vptr thisp :: vs) (fun v =>
                        Exists p, [| v = Vptr p |] ** Q p (free ** free')))
           | _ => False
           end))
@@ -796,7 +795,7 @@ Module Type Expr.
           match class_name (type_of obj) with
           | Some cls =>
             resolve_virtual (σ:=resolve) this cls f (fun fimpl_addr impl_type thisp =>
-              |> mspec (Tnamed impl_type) (normalize_type fty) ti (Vptr fimpl_addr) (Vptr thisp :: vs) (fun v =>
+              |> mspec (Tnamed impl_type) (normalize_type fty) (Vptr fimpl_addr) (Vptr thisp :: vs) (fun v =>
                        Exists p, [| v = Vptr p |] ** Q p (free ** free')))
           | _ => False
           end))
@@ -810,7 +809,7 @@ Module Type Expr.
           match class_name (type_of obj) with
           | Some cls =>
             resolve_virtual (σ:=resolve) this cls f (fun fimpl_addr impl_class thisp =>
-              |> mspec (Tnamed impl_class) (normalize_type fty) ti (Vptr fimpl_addr) (Vptr thisp :: vs) (fun v => Q v (free ** free')))
+              |> mspec (Tnamed impl_class) (normalize_type fty) (Vptr fimpl_addr) (Vptr thisp :: vs) (fun v => Q v (free ** free')))
          | _ => False
           end)))
       |-- wp_prval (Emember_call (inl (f, Virtual, fty)) vc obj es ty) Q.
@@ -822,7 +821,7 @@ Module Type Expr.
             resolve_virtual (σ:=resolve) this cls f (fun fimpl_addr impl_class thisp =>
               addr |-> tblockR (erase_qualifiers ret) 1 **
               let fty := Tfunction (cc:=cc) ret ts in
-              |> mspec (Tnamed impl_class) (normalize_type fty) ti (Vptr fimpl_addr) (Vptr thisp :: vs) (fun res => [| res = Vptr addr |] -* Q (free ** free')))
+              |> mspec (Tnamed impl_class) (normalize_type fty) (Vptr fimpl_addr) (Vptr thisp :: vs) (fun res => [| res = Vptr addr |] -* Q (free ** free')))
             (* NOTE as with other function calls, we are assuming an equation on the address in order
                to express the fact the the object is constructed in-place.
              *)
@@ -869,7 +868,7 @@ Module Type Expr.
     Axiom wp_prval_new : forall new_fn new_args init aty ty Q,
         wp_args new_args (fun vs free =>
           Exists sz al, [| size_of aty = Some sz |] ** [| align_of aty = Some al |] **
-            |> fspec new_fn.2 ti (Vptr $ _global new_fn.1) (Vn sz :: vs) (fun res =>
+            |> fspec new_fn.2 (Vptr $ _global new_fn.1) (Vn sz :: vs) (fun res =>
                   Exists storage_ptr : ptr,
                     [| res = Vptr storage_ptr |] **
                     if bool_decide (storage_ptr = nullptr) then
@@ -927,7 +926,7 @@ Module Type Expr.
                   this memory was pre-destructed by [destruct_val]. *)
                obj_ptr |-> tblockR destroyed_type 1 **
                 (storage_ptr |-> blockR sz 1 -*
-                  fspec delete_fn.2 ti (Vptr $ _global delete_fn.1) (* Calling deallocator with storage pointer *)
+                  fspec delete_fn.2 (Vptr $ _global delete_fn.1) (* Calling deallocator with storage pointer *)
                     (Vptr storage_ptr :: nil) (fun v => Q v free))))
         |-- wp_prval (Edelete false (Some delete_fn) e destroyed_type ty) Q.
 
@@ -979,7 +978,7 @@ Module Type Expr.
        [[
     Axiom wp_init_bind_temp : forall e ty a dtor Q,
         wp_init ty a e (fun free =>
-                     |> fspec (Vptr (_global dtor)) (a :: nil) ti (fun _ => Q free))
+                     |> fspec (Vptr (_global dtor)) (a :: nil) (fun _ => Q free))
       |-- wp_init ty a (Ebind_temp e dtor ty) Q.
        ]]
      *)
@@ -1028,14 +1027,14 @@ Module Type Expr.
   (* `Earrayloop_init` needs to extend the region, so we need to start a new section. *)
   Section with_resolve__arrayloop.
     Context `{Σ : cpp_logic thread_info} {resolve:genv}.
-    Variables (M : coPset) (ti : thread_info).
+    Variables (M : coPset).
 
     (* These are the only ones that we need here. *)
-    Local Notation wp_lval := (wp_lval M ti).
-    Local Notation wp_prval := (wp_prval M ti).
-    Local Notation wp_init := (wp_init M ti).
-    Local Notation wp_initialize := (wp_initialize M ti).
-    Local Notation wp_glval := (wp_glval M ti).
+    Local Notation wp_lval := (wp_lval M).
+    Local Notation wp_prval := (wp_prval M).
+    Local Notation wp_init := (wp_init M).
+    Local Notation wp_initialize := (wp_initialize M).
+    Local Notation wp_glval := (wp_glval M).
 
     (* `Earrayloop_init` and `Earrayloop_index` correspond, respectively,
        to the `ArrayInitLoopExpr`[1] and `ArrayInitIndexExpr`[2] expressions

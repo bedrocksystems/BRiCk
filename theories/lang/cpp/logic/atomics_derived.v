@@ -14,9 +14,9 @@ Require Import iris.proofmode.tactics.
 
 Section cmpxchg_derived.
   Context `{Σ : cpp_logic thread_info} {resolve:genv}.
-  Variables (M : coPset) (ti : thread_info) (ρ : region).
+  Variables (M : coPset) (ρ : region).
 
-  Local Notation wp_atom' := (wp_atom M ti) (only parsing).
+  Local Notation wp_atom' := (wp_atom M) (only parsing).
 
   (* A successful SC compare and exchange n *)
   (* It succeeds because the location p has the expected value v, which is

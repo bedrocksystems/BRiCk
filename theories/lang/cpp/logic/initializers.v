@@ -17,15 +17,15 @@ Module Type Init.
 
   Section with_resolve.
     Context `{Σ : cpp_logic thread_info} {σ:genv}.
-    Variables (M : coPset) (ti : thread_info) (ρ : region).
+    Variables (M : coPset) (ρ : region).
 
-    #[local] Notation wp := (wp (resolve:=σ) M ti ρ).
-    #[local] Notation wpi := (wpi (resolve:=σ) M ti ρ).
-    #[local] Notation wp_lval := (wp_lval (resolve:=σ) M ti ρ).
-    #[local] Notation wp_prval := (wp_prval (resolve:=σ) M ti ρ).
-    #[local] Notation wp_xval := (wp_xval (resolve:=σ) M ti ρ).
-    #[local] Notation wp_init := (wp_init (resolve:=σ) M ti ρ).
-    #[local] Notation wp_args := (wp_args (σ:=σ) M ti ρ).
+    #[local] Notation wp := (wp (resolve:=σ) M ρ).
+    #[local] Notation wpi := (wpi (resolve:=σ) M ρ).
+    #[local] Notation wp_lval := (wp_lval (resolve:=σ) M ρ).
+    #[local] Notation wp_prval := (wp_prval (resolve:=σ) M ρ).
+    #[local] Notation wp_xval := (wp_xval (resolve:=σ) M ρ).
+    #[local] Notation wp_init := (wp_init (resolve:=σ) M ρ).
+    #[local] Notation wp_args := (wp_args (σ:=σ) M ρ).
     #[local] Notation fspec := (@fspec _ Σ σ.(genv_tu).(globals)).
     #[local] Notation mspec := (@mspec _ Σ σ.(genv_tu).(globals)).
 
@@ -163,7 +163,7 @@ Module Type Init.
       wp_args es (fun ls free =>
            match σ.(genv_tu) !! cnd with
            | Some cv =>
-             |> mspec (Tnamed cls) (type_of_value cv) ti (Vptr $ _global cnd) (Vptr addr :: ls) (fun _ => Q free)
+             |> mspec (Tnamed cls) (type_of_value cv) (Vptr $ _global cnd) (Vptr addr :: ls) (fun _ => Q free)
            | _ => False
            end)
       |-- wp_init (Tnamed cls) addr (Econstructor cnd es (Tnamed cls)) Q.

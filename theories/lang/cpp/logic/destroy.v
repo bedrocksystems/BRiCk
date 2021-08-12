@@ -73,7 +73,7 @@ Section destroy.
         if dispatch && has_virtual_dtor s then
           resolve_dtor cls this (fun fimpl impl_class this' =>
             let ty := Tfunction Tvoid nil in
-            |> mspec σ.(genv_tu).(globals) (Tnamed impl_class) ty ti (Vptr fimpl) (Vptr this' :: nil) (fun _ => Q))
+            |> mspec σ.(genv_tu).(globals) (Tnamed impl_class) ty (Vptr fimpl) (Vptr this' :: nil) (fun _ => Q))
         else
           (* NOTE the setup with explicit destructors (even when those destructors are trivial)
                   abstracts away some of the complexities of the underlying C++ semantics that
@@ -87,7 +87,7 @@ Section destroy.
              [Emember_call ... "~C" ..] *)
           (let dtor := s.(s_dtor) in
            let ty := Tfunction Tvoid nil in (** NOTE this implicitly requires all destructors to have C calling convention *)
-           |> mspec σ.(genv_tu).(globals) (Tnamed cls) ty ti (Vptr $ _global s.(s_dtor)) (Vptr this :: nil) (fun _ => Q))
+           |> mspec σ.(genv_tu).(globals) (Tnamed cls) ty (Vptr $ _global s.(s_dtor)) (Vptr this :: nil) (fun _ => Q))
 
       | Some (Gunion u) =>
           (* unions can not have [virtual] destructors, so we directly invoke
@@ -95,7 +95,7 @@ Section destroy.
            *)
           (let dtor := u.(u_dtor) in
            let ty := Tfunction Tvoid nil in
-           |> mspec σ.(genv_tu).(globals) (Tnamed cls) ty ti (Vptr $ _global u.(u_dtor)) (Vptr this :: nil) (fun _ => Q))
+           |> mspec σ.(genv_tu).(globals) (Tnamed cls) ty (Vptr $ _global u.(u_dtor)) (Vptr this :: nil) (fun _ => Q))
       | _ => False
       end
     | Tarray t sz =>
@@ -129,19 +129,18 @@ End destroy.
     - it invokes the destructor via [destruct_val]
     - and then it *does* free the underlying memory.
 *)
-Notation destroy_val ti dispatch t this Q :=
-  (destruct_val ti dispatch t%I this%ptr%I (_at this%ptr (tblockR (erase_qualifiers t) 1) ** Q)).
+Notation destroy_val dispatch t this Q :=
+  (destruct_val dispatch t%I this%ptr%I (_at this%ptr (tblockR (erase_qualifiers t) 1) ** Q)).
 
 Section destroy.
   Context `{Σ : cpp_logic thread_info} {σ:genv}.
-  Variable (ti : thread_info).
 
   (* Just as a crutch for typechecking. *)
   #[local] Definition __destroy_val dispatch (t : type) (this : ptr) (Q : mpred) : mpred :=
-    destroy_val ti dispatch t this Q.
+    destroy_val dispatch t this Q.
 
   Lemma destroy_val_frame dispatch ty this Q Q' :
-      Q -* Q' |-- destroy_val ti dispatch ty this Q -* destroy_val ti dispatch ty this Q'.
+      Q -* Q' |-- destroy_val dispatch ty this Q -* destroy_val dispatch ty this Q'.
   Proof. rewrite -destruct_val_frame. iIntros "W [$ Q]". by iApply "W". Qed.
 
 End destroy.
