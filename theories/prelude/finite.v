@@ -69,14 +69,49 @@ Proof.
   intros. rewrite NoDup_app. by split_and!; first apply /NoDup_fmap_2 /NoDup_enum.
 Qed.
 
-(** Module-based infrastructure to generate Finite-based utilities. *)
+(**
+Module-based infrastructure to generate Finite-based utilities.
+
+Example use for a variant.
+
+Module my_finite_type.
+  Variant _t := FOO | BAR.
+  Definition t := _t. (* Workaround Coq bug. *)
+  #[global] Instance t_inh : Inhabited t.
+  Proof. exact (populate ...). Qed.
+  #[global] Instance t_eqdec : EqDecision t.
+  Proof. solve_decision. Defined.
+
+  #[global,program] Instance t_finite : Finite t :=
+  { enum := [FOO; BAR] }.
+  Next Obligation. solve_finite_nodup. Qed.
+  Next Obligation. solve_finite_total. Qed.
+
+  (* Option 1: specify [to_N] by hand:  *)
+  Definition to_N : t -> N := ..
+
+  (* get a specialized copy of [of_N] and [of_to_N]. *)
+  Include finite_encoded_type_mixin.
+
+  (* Option 2 (alternative to 1):
+  INSTEAD OF defining [to_N], obtain it from [Finite], together with various
+  other parts of an encoding into bitmasks.
+  *)
+  Include simple_finite_bitmask_type_mixin.
+
+  (* [simple_finite_bitmask_type_mixin] can be replaced by (some subset of). *)
+  Include finite_type_mixin.
+  Include bitmask_type_simple_mixin.
+  Include finite_bitmask_type_mixin.
+End my_finite_type.
+*)
 Module Type eqdec_type.
   Parameter t : Type.
   #[global] Declare Instance t_inh : Inhabited t.
   #[global] Declare Instance t_eqdec : EqDecision t.
 End eqdec_type.
 
-Module Type finite_type.
+Module Type finite_type <: eqdec_type.
   Include eqdec_type.
   #[global] Declare Instance t_finite : Finite t.
 End finite_type.
