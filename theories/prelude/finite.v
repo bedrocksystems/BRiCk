@@ -69,14 +69,49 @@ Proof.
   intros. rewrite NoDup_app. by split_and!; first apply /NoDup_fmap_2 /NoDup_enum.
 Qed.
 
-(** Module-based infrastructure to generate Finite-based utilities. *)
+(**
+Module-based infrastructure to generate Finite-based utilities.
+
+Example use for a variant.
+
+Module my_finite_type.
+  Variant _t := FOO | BAR.
+  Definition t := _t. (* Workaround Coq bug. *)
+  #[global] Instance t_inh : Inhabited t.
+  Proof. exact (populate ...). Qed.
+  #[global] Instance t_eqdec : EqDecision t.
+  Proof. solve_decision. Defined.
+
+  #[global,program] Instance t_finite : Finite t :=
+  { enum := [FOO; BAR] }.
+  Next Obligation. solve_finite_nodup. Qed.
+  Next Obligation. solve_finite_total. Qed.
+
+  (* Option 1: specify [to_N] by hand:  *)
+  Definition to_N : t -> N := ..
+
+  (* get a specialized copy of [of_N] and [of_to_N]. *)
+  Include finite_encoded_type_mixin.
+
+  (* Option 2 (alternative to 1):
+  INSTEAD OF defining [to_N], obtain it from [Finite], together with various
+  other parts of an encoding into bitmasks.
+  *)
+  Include simple_finite_bitmask_type_mixin.
+
+  (* [simple_finite_bitmask_type_mixin] can be replaced by (some subset of). *)
+  Include finite_type_mixin.
+  Include bitmask_type_simple_mixin.
+  Include finite_bitmask_type_mixin.
+End my_finite_type.
+*)
 Module Type eqdec_type.
   Parameter t : Type.
   #[global] Declare Instance t_inh : Inhabited t.
   #[global] Declare Instance t_eqdec : EqDecision t.
 End eqdec_type.
 
-Module Type finite_type.
+Module Type finite_type <: eqdec_type.
   Include eqdec_type.
   #[global] Declare Instance t_finite : Finite t.
 End finite_type.
@@ -94,6 +129,46 @@ Next Obligation. solve_finite_total. Qed.
 Ltac solve_finite_nodup := repeat (constructor; first set_solver); constructor.
 Ltac solve_finite_total := intros []; set_solver.
 
+(*
+TODO: unclear how to best present this abstraction, without adding an
+operational typeclass for [of_N].
+
+For now, we nest these functions in a module, to avoid polluting the global
+namespace.
+*)
+Module invert_of_N.
+  Section of_N.
+    Context `{!EqDecision A} `{!Finite A} (to_N : A -> N).
+    Definition of_N (r : N) : option A :=
+      head $ filter (fun x => bool_decide (to_N x = r)) $ enum A.
+
+    Lemma of_to_N `[Hinj : !Inj eq eq to_N] x : of_N (to_N x) = Some x.
+    Proof.
+      rewrite /of_N.
+      generalize (NoDup_enum A); generalize (elem_of_enum x).
+      elim: (enum A) => [|x' xs IHxs]; cbn.
+      - by move /elem_of_nil.
+      - move=> /elem_of_cons [{IHxs} ->|Hin] /NoDup_cons [Hx'NiXs NDxs].
+        + by rewrite bool_decide_eq_true_2.
+        + rewrite bool_decide_eq_false_2. apply /IHxs /NDxs /Hin.
+          intros ->%(inj to_N). apply /Hx'NiXs /Hin.
+    Qed.
+  End of_N.
+End invert_of_N.
+
+(* Mixin hierarchy 1: given a Finite instance and a [to_N] function, we can
+create an [of_N] function. This contains [finite_encoded_type] *)
+Module Type finite_encoded_type <: finite_type.
+  Include finite_type.
+  Parameter to_N : t -> N.
+End finite_encoded_type.
+
+Module Type finite_encoded_type_mixin (Import F : finite_encoded_type).
+  Definition of_N := Unfold (@invert_of_N.of_N) (invert_of_N.of_N to_N).
+  Definition of_to_N := invert_of_N.of_to_N to_N.
+End finite_encoded_type_mixin.
+
+(* Mixin hierarchy 2: *)
 Module Type finite_type_mixin (Import F : finite_type).
   (*
   Not marked as an instance because it is derivable.
