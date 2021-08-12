@@ -129,6 +129,46 @@ Next Obligation. solve_finite_total. Qed.
 Ltac solve_finite_nodup := repeat (constructor; first set_solver); constructor.
 Ltac solve_finite_total := intros []; set_solver.
 
+(*
+TODO: unclear how to best present this abstraction, without adding an
+operational typeclass for [of_N].
+
+For now, we nest these functions in a module, to avoid polluting the global
+namespace.
+*)
+Module invert_of_N.
+  Section of_N.
+    Context `{!EqDecision A} `{!Finite A} (to_N : A -> N).
+    Definition of_N (r : N) : option A :=
+      head $ filter (fun x => bool_decide (to_N x = r)) $ enum A.
+
+    Lemma of_to_N `[Hinj : !Inj eq eq to_N] x : of_N (to_N x) = Some x.
+    Proof.
+      rewrite /of_N.
+      generalize (NoDup_enum A); generalize (elem_of_enum x).
+      elim: (enum A) => [|x' xs IHxs]; cbn.
+      - by move /elem_of_nil.
+      - move=> /elem_of_cons [{IHxs} ->|Hin] /NoDup_cons [Hx'NiXs NDxs].
+        + by rewrite bool_decide_eq_true_2.
+        + rewrite bool_decide_eq_false_2. apply /IHxs /NDxs /Hin.
+          intros ->%(inj to_N). apply /Hx'NiXs /Hin.
+    Qed.
+  End of_N.
+End invert_of_N.
+
+(* Mixin hierarchy 1: given a Finite instance and a [to_N] function, we can
+create an [of_N] function. This contains [finite_encoded_type] *)
+Module Type finite_encoded_type <: finite_type.
+  Include finite_type.
+  Parameter to_N : t -> N.
+End finite_encoded_type.
+
+Module Type finite_encoded_type_mixin (Import F : finite_encoded_type).
+  Definition of_N := Unfold (@invert_of_N.of_N) (invert_of_N.of_N to_N).
+  Definition of_to_N := invert_of_N.of_to_N to_N.
+End finite_encoded_type_mixin.
+
+(* Mixin hierarchy 2: *)
 Module Type finite_type_mixin (Import F : finite_type).
   (*
   Not marked as an instance because it is derivable.
