@@ -122,8 +122,19 @@ Definition replicateN {A} (count : N) (x : A) : list A :=
 Notation repeatN := (flip replicateN) (only parsing).
 
 Definition seqN (from count : N) : list N :=
-  map N.of_nat (seq (N.to_nat from) (N.to_nat count)).
+  N.of_nat <$> (seq (N.to_nat from) (N.to_nat count)).
 #[global] Arguments seqN : simpl never.
+
+(** [pow2N n]'s output term has size exponential in [n], and simplifying
+callers is even worse; so we seal it. *)
+Definition pow2N_def (n : N) : N := 2^n.
+Definition pow2N_aux : seal pow2N_def. Proof. by eexists. Qed.
+Definition pow2N := pow2N_aux.(unseal).
+Definition pow2N_eq : pow2N = _ := pow2N_aux.(seal_eq).
+#[global] Hint Opaque pow2N : typeclass_instances.
+
+#[deprecated(note="Use [pow2N]")]
+Notation pow2 := pow2N.
 
 (** * Integers *)
 
