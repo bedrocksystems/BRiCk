@@ -3,7 +3,7 @@
  * This software is distributed under the terms of the BedRock Open-Source License.
  * See the LICENSE-BedRock file in the repository root for details.
  *)
-From stdpp Require Import countable strings.
+From stdpp Require Import countable strings namespaces.
 
 Set Primitive Projections.
 Set Default Proof Using "Type".
@@ -350,3 +350,8 @@ Module OT_bs <: OrderedType.OrderedType with Definition t := bs.
   Defined.
 
 End OT_bs.
+
+(* stdpp-specific. *)
+Notation "N .@@ x" := (ndot (A := bs) N x%bs)
+  (at level 19, left associativity, format "N .@@ x") : stdpp_scope.
+Notation "(.@@)" := (ndot (A := bs)) (only parsing) : stdpp_scope.
