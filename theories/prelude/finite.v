@@ -198,6 +198,9 @@ Module Type bitmask_type_simple_mixin (Import F : finite_type) (Import FM : fini
   (* Here, [to_N] is a valid bit encoding *)
   Definition to_bit := to_N.
   Definition of_bit := of_N.
+
+  Lemma of_to_bit x : of_bit (to_bit x) = Some x.
+  Proof. apply of_to_N. Qed.
 End bitmask_type_simple_mixin.
 
 Module Type finite_bitmask_type_mixin (Import F : finite_type) (Import B : bitmask_type F).
