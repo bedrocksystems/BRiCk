@@ -54,14 +54,7 @@ theories/prelude/finite.v
 
 # Adapters
 theories/lang/prelude/base.v
-theories/lang/prelude/option.v
 theories/lang/prelude/addr.v
-theories/lang/prelude/numbers.v
-theories/lang/prelude/bytestring.v
-theories/lang/prelude/telescopes.v
-theories/lang/prelude/avl.v
-theories/lang/prelude/gmap.v
-theories/lang/prelude/list.v
 
 # OFE modules
 theories/lang/algebra/telescopes.v
