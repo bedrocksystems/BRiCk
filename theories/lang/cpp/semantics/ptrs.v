@@ -9,39 +9,7 @@ The "operational" style definitions about C++ pointers.
 
 C++ pointers are subtle to model.
 The definitions in this file are based on the C and C++ standards, and
-formalizations of their memory object models.
-- the CompCert memory model
-- Robbert Krebbers's model of C (Krebbers 2015, PhD thesis,
-  https://robbertkrebbers.nl/research/thesis.pdf).
-- The formal model of pointer provenance for C given by Cerberus
-  (https://www.cl.cam.ac.uk/~pes20/cerberus/, POPL'19 https://doi.org/10.1145/3290380,
-- A Provenance-aware Memory Object Model for C.
-  Working paper N2577 of the C standards committee (ISO TC1/SC22/WG14),
-  September 30, 2020
-  (http://www.open-std.org/jtc1/sc22/wg14/www/docs/n2577.pdf).
-- Work by Ramananandro et al. (e.g. POPL'12 https://doi.org/10.1145/2103656.2103718).
-- LLVM's twin semantics, that is,
-"Reconciling high-level optimizations and low-level code in LLVM", OOPSLA'18
-  (https://doi.org/10.1145/3276495).
-
-For a crash course on formal models of pointers, consider
-https://www.ralfj.de/blog/2018/07/24/pointers-and-bytes.html; the summary is
-that two pointers might differ despite representing the same address
-(https://eel.is/c++draft/basic.compound#def:represents_the_address),
-depending on how they're constructed, and C/C++ optimizers are allowed to
-treat them differently.
-
-As our goal is verifying low-level systems software, we make
-assumptions on our compilers, here and elsewhere:
-- We assume compilers do not zap pointers to deallocated objects, but might
-  restrict operations on them (in particular equality comparisons). See
-  http://www.open-std.org/jtc1/sc22/wg14/www/docs/n2369.pdf,
-  https://www.cl.cam.ac.uk/~pes20/cerberus/notes30.pdf
-- We assume useful semantics for integer-to-pointer casts, in particular,
-  the PNVI-ae-udi model by the Cerberus project (as in the N2577 draft).
-  Our semantics is built with them in mind but does not provide them yet.
-- Support for effective types is also incomplete; similarly to Cerberus,
-  we still assume users use options such as [-fno-strict-aliasing] GCC/Clang's.
+formalizations of their memory object models (see [doc/sphinx/bibliography.rst]).
  *)
 From bedrock.prelude Require Import base addr option numbers.
 
