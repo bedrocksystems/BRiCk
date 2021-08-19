@@ -10,6 +10,10 @@ default_target: coq cpp2v
 CMAKE=$$(which cmake)
 COQMAKEFILE=$(COQBIN)coq_makefile
 
+# To avoid "jobserver unavailable" warnings, prepend + to recursive make
+# invocations using these variables; + is inferred when $(MAKE) appears
+# literally in the invocation, not when $(MAKE) appears indirectly.
+# https://stackoverflow.com/a/60706372/53974
 CPPMK := $(MAKE) -C build
 COQMK := $(MAKE) -f Makefile.coq
 DOCMK := $(MAKE) -C doc
@@ -103,13 +107,13 @@ html doc: coq coqdocjs
 
 #	Invoke `coqdoc` using the existing `_CoqProject` file, and move the artifacts
 #	out of `html` and into `doc/sphinx/_static/coqdoc`
-	$(COQMK) html
+	+$(COQMK) html
 	mkdir -p doc/sphinx/_static/coqdoc
 	mv html/* doc/sphinx/_static/coqdoc && rmdir html
 
 #	Generate html files in `doc/sphinx/_build/html` using coqdoc outputs and
 #	other sources in `doc/`
-	$(DOCMK) html
+	+$(DOCMK) html
 
 coqdocjs:
 #	Copy (custom) `coqdocjs` resources into `doc/sphinx/_static`, removing all
