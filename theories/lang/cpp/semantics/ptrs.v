@@ -47,10 +47,12 @@ From bedrock.prelude Require Import base addr option numbers.
 
 Require Import bedrock.lang.cpp.ast.
 From bedrock.lang.cpp.semantics Require Export types genv.
-Require Import iris.algebra.ofe. (* XXX we're mostly not using Iris here. *)
 
-Local Close Scope nat_scope.
-Local Open Scope Z_scope.
+(* We only load Iris to declare trivial OFEs over pointers via [leibnizO]. *)
+Require Import iris.algebra.ofe.
+
+#[local] Close Scope nat_scope.
+#[local] Open Scope Z_scope.
 Implicit Types (σ : genv).
 
 (** ** Allocation IDs. We use them to model pointer provenance, following
