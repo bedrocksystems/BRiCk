@@ -28,16 +28,14 @@ is similar to the restriction we showed in :ref:`undefined_behavior`.
     //...
   }
 
-More in general, a pointer identifies to what "object" it points to, and pointer
-arithmetic is only allowed to produce pointers to other objects within strong
-restrictions.
+More generally, a pointer identifies to what "object" it points to, and pointer
+arithmetic is only allowed to produce pointers to other objects in limited circumstances.
 
 Objects in the C++ standard
 ================================================
 
-The C++ standard uses "object" unlike common OOP jargon, but similarly to the C
-standard. Informally, objects are instances of some type (not necessarily a
-class type), usually represented in memory. Objects include variables and what
+Unlike in traditional object oriented programming jargon, the C++ standard uses the word "object" to mean an instance of some type (not necessarily a class type). This is similar
+to the way that the C standard uses the term object. Objects include variables and what
 is created by `new` expressions. These and other cases are introduced by
 https://eel.is/c++draft/intro.object.
 
@@ -78,7 +76,7 @@ Pointers, pointer values and objects
 cpp2v introduces an abstract type `ptr` of *pointer values*, which models
 the analogous concept in the standard\ [#std-ptr-values]_. cpp2v uses pointer
 values to identify objects: each object has an associated pointer value, but a
-pointer value might not point to an object. More in detail:
+pointer value might not point to an object. Specifically:
 
 * Whenever an object `o` is created, the cpp2v logic creates a *pointer value*
   `p : ptr` that describes where `o` lives. This pointer value need not exist in
@@ -103,7 +101,7 @@ cpp2v pointers and optional addresses
 -------------------------------------
 
 Pointers always contain an address, but cpp2v pointer values need not. In our
-last example, `x` might live in a registry or be removed altogether by
+last example, `x` might live in a register or be removed altogether by
 optimizations. But since cpp2v pointer values need not have an address, we can
 reason about `x_ptr` uniformly, irrespective of optimizations.
 
