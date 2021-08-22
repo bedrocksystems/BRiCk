@@ -32,7 +32,7 @@ End attrs.
 (* XXX Module [base] is a compatibility hack that will be inlined. *)
 Module Export base.
 #[deprecated(note="")]
-Notation Attrs := attrs.t.
+Notation Attrs := attrs.t (only parsing).
 End base.
 
 (** page table levels, 0 is the smallest page table level *)
