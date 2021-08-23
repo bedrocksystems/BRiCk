@@ -49,7 +49,7 @@ Section inv.
   Qed.
 
   Lemma inv_alloc_open N E P :
-  ↑N ⊆ E → ⊢ |={E, E∖↑N}=> inv N P ∗ (▷P ={E∖↑N, E}=∗ True).
+    ↑N ⊆ E → ⊢ |={E, E∖↑N}=> inv N P ∗ (▷P ={E∖↑N, E}=∗ True).
   Proof.
     iIntros (?). iMod own_inv_alloc_open as "[HI $]"; first done.
     iApply own_inv_to_inv. done.
