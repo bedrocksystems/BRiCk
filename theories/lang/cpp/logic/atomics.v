@@ -72,12 +72,13 @@ Section with_Σ.
     and an SC store.
     See https://www.cl.cam.ac.uk/~pes20/cpp/cpp0xmappings.html *)
   Axiom wp_prval_atomic: forall ao es ty (Q : val → FreeTemps → epred),
-      match get_acc_type ao ty (map (fun x => type_of (snd x)) es) with
+      (let targs := List.map (fun x => type_of (snd x)) es in
+      match get_acc_type ao ty targs with
       | None => False
       | Some acc_type =>
-        wp_args es (fun (vs : list val) (free : FreeTemps) =>
+        wp_args targs (List.map snd es) (fun (vs : list val) (free : FreeTemps) =>
           wp_atom' ao acc_type vs (fun v => Q v free))
-      end
+      end)
       |-- wp_prval (Eatomic ao es ty) Q.
 
   (* Memory Ordering Patterns: Now we only have _SEQ_CST *)

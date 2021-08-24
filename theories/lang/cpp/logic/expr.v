@@ -680,6 +680,12 @@ Module Type Expr.
      *)
 
     (** function calls *)
+    Definition arg_types (ty : type) : option (list type) :=
+      match ty with
+      | @Tfunction _ _ args => Some args
+      | _ => None
+      end.
+
     (**
     The next few axioms rely on the evaluation order specified
     since C++17 (implemented in Clang >= 4):
@@ -689,16 +695,20 @@ Module Type Expr.
     Official references (from http://clang.llvm.org/cxx_status.html):
     http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2016/p0400r0.html
     http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2016/p0145r3.pdf
-    *)
+     *)
     Axiom wp_prval_call : forall ty f es Q,
         (if is_aggregate ty then
            Reduce (materialize_into_temp ty (Ecall f es ty) Q)
          else
            match unptr (type_of f) with
            | Some fty =>
-             wp_prval f (fun f free_f =>
-                           wp_args es (fun vs free =>
+             match arg_types fty with
+             | Some targs =>
+               wp_prval f (fun f free_f =>
+                           wp_args targs (snd <$> es) (fun vs free =>
                                          |> fspec (normalize_type fty) f vs (fun v => Q v (free >*> free_f))))
+             | _ => False
+             end
            | _ => False
            end)
         |-- wp_prval (Ecall f es ty) Q.
@@ -707,8 +717,12 @@ Module Type Expr.
     Axiom wp_lval_call : forall f (es : list (ValCat * Expr)) Q (ty : type),
         match unptr (type_of f) with
         | Some fty =>
-          wp_prval f (fun f free_f => wp_args es (fun vs free =>
+          match arg_types fty with
+          | Some targs =>
+          wp_prval f (fun f free_f => wp_args targs (snd <$> es) (fun vs free =>
              |> fspec (normalize_type fty) f vs (fun res => Exists p, [| res = Vptr p |] ** Q p (free >*> free_f))))
+          | _ => False
+          end
         | _ => False
         end
         |-- wp_lval (Ecall f es ty) Q.
@@ -716,8 +730,12 @@ Module Type Expr.
     Axiom wp_xval_call : forall ty f es Q,
         match unptr (type_of f) with
         | Some fty =>
-          wp_prval f (fun f free_f => wp_args es (fun vs free =>
+          match arg_types fty with
+          | Some targs =>
+          wp_prval f (fun f free_f => wp_args targs (snd <$> es) (fun vs free =>
              |> fspec (normalize_type fty) f vs (fun v => Exists p, [| v = Vptr p |] ** Q p (free >*> free_f))))
+          | None => False
+          end
         | _ => False
         end
       |-- wp_xval (Ecall f es ty) Q.
@@ -725,18 +743,30 @@ Module Type Expr.
     Axiom wp_init_call : forall f es Q (addr : ptr) ty,
         match unptr (type_of f) with
         | Some fty =>
-          addr |-> tblockR (erase_qualifiers ty) 1 **
-          (* ^ give up the memory that was created by [materialize_into_temp] *)
-          wp_prval f (fun f free_f =>
-                        wp_args es (fun vs free =>
-                                      |> fspec (normalize_type fty) f vs (fun res => [| res = Vptr addr |] -* Q (free_f >*> free))))
+          match arg_types fty with
+          | Some targs =>
+            addr |-> tblockR (erase_qualifiers ty) 1 **
+            (* ^ give up the memory that was created by [materialize_into_temp] *)
+            wp_prval f (fun f free_f => wp_args targs (snd <$> es) (fun vs free =>
+              |> fspec (normalize_type fty) f vs (fun res => [| res = Vptr addr |] -* Q (free >*> free_f))))
           (* NOTE We use the assumed equality to mean that the value was constructed immediately into
              the correct place *)
+          | None => False
+          end
         | _ => False
         end
         |-- wp_init ty addr (Ecall f es ty) Q.
 
-    (** member call
+    (** * Member calls *)
+
+    Definition member_arg_types (fty : type) : option (list type) :=
+      match fty with
+      | @Tfunction _ _ (_ :: args) => Some args
+      | _ => None
+      end.
+
+
+    (** member calls
         NOTE it is technically not accurate to treat member calls as regular function calls
         where the function takes an extra argument. We could fix this by splitting [fspec]
         more, but we are deferring that for now.
@@ -744,30 +774,32 @@ Module Type Expr.
         In practice we assume that the AST is well-typed, so the only way to exploit this problem
         is to use [reinterpret_cast< >] to cast a function pointer to an member pointer or vice versa.
      *)
-    Axiom wp_lval_member_call : forall ty fty f vc obj es Q,
-        wp_glval vc obj (fun this free_t => wp_args es (fun vs free =>
+    Axiom wp_lval_member_call : forall ty fty f vc obj es Q targs
+                                  (_ : member_arg_types fty = Some targs),
+        wp_glval vc obj (fun this free_t => wp_args targs (snd <$> es) (fun vs free =>
            |> mspec (type_of obj) (normalize_type fty) (Vptr $ _global f) (Vptr this :: vs) (fun v =>
                     Exists p, [| v = Vptr p |] ** Q p (free >*> free_t))))
         |-- wp_lval (Emember_call (inl (f, Direct, fty)) vc obj es ty) Q.
 
-    Axiom wp_xval_member_call : forall ty fty f vc obj es Q,
-        wp_glval vc obj (fun this free_t => wp_args es (fun vs free =>
+    Axiom wp_xval_member_call : forall ty fty f vc obj es Q targs (_ : member_arg_types fty = Some targs),
+        wp_glval vc obj (fun this free_t => wp_args targs (snd <$> es) (fun vs free =>
            |> mspec (type_of obj) (normalize_type fty) (Vptr $ _global f) (Vptr this :: vs) (fun v =>
                     Exists p, [| v = Vptr p |] ** Q p (free >*> free_t))))
         |-- wp_xval (Emember_call (inl (f, Direct, fty)) vc obj es ty) Q.
 
-    Axiom wp_prval_member_call : forall ty fty f vc obj es Q,
+    Axiom wp_prval_member_call : forall ty fty f vc obj es Q targs (_ : member_arg_types fty = Some targs),
         (if is_aggregate ty then
            Reduce (materialize_into_temp ty (Emember_call (inl (f, Direct, fty)) vc obj es ty) Q)
          else
-            wp_glval vc obj (fun this free_t => wp_args es (fun vs free =>
+            wp_glval vc obj (fun this free_t => wp_args targs (snd <$> es) (fun vs free =>
               |> mspec (type_of obj) (normalize_type fty) (Vptr $ _global f) (Vptr this :: vs) (fun v => Q v (free >*> free_t)))))
         |-- wp_prval (Emember_call (inl (f, Direct, fty)) vc obj es ty) Q.
 
-    Axiom wp_init_member_call : forall f ret ts cc es (addr : ptr) ty vc obj Q,
-        wp_glval vc obj (fun this free_t => wp_args es (fun vs free =>
+    Axiom wp_init_member_call : forall f ret ts cc es (addr : ptr) ty vc obj Q
+                                  (fty := Tfunction (cc:=cc) ret ts)
+                                  targs (_ : member_arg_types fty = Some targs),
+        wp_glval vc obj (fun this free_t => wp_args targs (snd <$> es) (fun vs free =>
             addr |-> tblockR (erase_qualifiers ret) 1 **
-            let fty := Tfunction (cc:=cc) ret ts in
             |> mspec (type_of obj) (normalize_type fty) (Vptr $ _global f) (Vptr this :: vs) (fun res =>
                       [| res = Vptr addr |] -* Q (free >*> free_t))))
         (* NOTE as with regular function calls, we use an assumed equation to unify the address
@@ -775,6 +807,7 @@ Module Type Expr.
          *)
         |-- wp_init ty addr (Emember_call (inl (f, Direct, Tfunction (cc:=cc) ret ts)) vc obj es ty) Q.
 
+(** * TODO port this
     (** virtual functions
         these are slightly more complex because we need to compute the address of the function
         using the most-derived-class of the [this] object. This is done using [resolve_virtual].
@@ -833,6 +866,8 @@ Module Type Expr.
           | _ => False
           end))
       |-- wp_init ty addr (Emember_call (inl (f, Virtual, Tfunction (cc:=cc) ret ts)) vc obj es ty) Q.
+DONE ***)
+
 
     (* null *)
     Axiom wp_null : forall Q,
@@ -870,8 +905,10 @@ Module Type Expr.
         - Currently, we do not model coalescing of multiple allocations
           (https://eel.is/c++draft/expr.new#14).
      *)
-    Axiom wp_prval_new : forall new_fn new_args init aty ty Q,
-        wp_args new_args (fun vs free =>
+    Axiom wp_prval_new : forall new_fn new_args init aty ty Q targs (_ : arg_types new_fn.2 = Some targs),
+        (** TODO this needs a side-condition requiring that [new] with no arguments does not return
+            [nullptr] because the C++ standard permits the assumption. *)
+        wp_args targs (snd <$> new_args) (fun vs free =>
           Exists sz al, [| size_of aty = Some sz |] ** [| align_of aty = Some al |] **
             |> fspec new_fn.2 (Vptr $ _global new_fn.1) (Vn sz :: vs) (fun res =>
                   Exists storage_ptr : ptr,
@@ -1035,14 +1072,14 @@ Module Type Expr.
       wp_args targs (snd <$> es) (fun ls free =>
            match resolve.(genv_tu) !! cnd with
            | Some cv =>
-             |> mspec (Tnamed cls) (type_of_value cv) ti (Vptr $ _global cnd) (Vptr addr :: ls) (fun _ => Q free)
+             |> mspec (Tnamed cls) (type_of_value cv) (Vptr $ _global cnd) (Vptr addr :: ls) (fun _ => Q free)
            | _ => False
            end)
       |-- wp_init (Tnamed cls) addr (Econstructor cnd es (Tnamed cls)) Q.
 
     Fixpoint wp_array_init (ety : type) (base : ptr) (es : list Expr) (idx : Z) (Q : FreeTemps -> mpred) : mpred :=
       match es with
-      | nil => Q emp
+      | nil => Q FreeTemps.id
       | e :: rest =>
           (* NOTE: We nest the recursive calls to `wp_array_init` within
                the continuation of the `wp_initialize` statement to
@@ -1051,7 +1088,7 @@ Module Type Expr.
                initializer list (c.f. http://eel.is/c++draft/dcl.init.list#4)
            *)
          base .[ ety ! idx ] |-> tblockR ety 1 -* (* provide the memory to the initializer. *)
-         wp_initialize M ti ρ ety (base .[ ety ! idx ]) e (fun free => free ** wp_array_init ety base rest (Z.succ idx) Q)
+         wp_initialize M ρ ety (base .[ ety ! idx ]) e (fun _ => wp_array_init ety base rest (Z.succ idx) Q)
       end%I.
 
     Definition fill_initlist (desiredsz : N) (es : list Expr) (f : Expr) : list Expr :=
@@ -1109,7 +1146,7 @@ Module Type Expr.
     Axiom wp_prval_initlist_default : forall t Q,
           match get_default t with
           | None => False
-          | Some v => Q v emp
+          | Some v => Q v FreeTemps.id
           end
       |-- wp_prval (Einitlist nil None t) Q.
 
@@ -1131,9 +1168,9 @@ Module Type Expr.
         wp_init ty addr e Q
         |-- wp_init ty addr (Ecast Cnoop (Prvalue, e) ty') Q.
 
-    Axiom wp_init_clean : forall e ty ty' addr Q,
+    Axiom wp_init_clean : forall e ty' addr Q,
         wp_init ty' addr e Q
-        |-- wp_init ty' addr (Eandclean e ty) Q.
+        |-- wp_init ty' addr (Eandclean e) Q.
     Axiom wp_init_const : forall ty addr e Q,
         wp_init ty addr e Q
         |-- wp_init (Qconst ty) addr e Q.

@@ -10,7 +10,7 @@ Require Import bedrock.lang.cpp.ast.
 Require Import bedrock.lang.cpp.semantics.
 Require Import bedrock.lang.bi.errors.
 From bedrock.lang.cpp.logic Require Import
-     pred path_pred heap_pred wp.
+     pred path_pred heap_pred wp destroy.
 Require Import bedrock.lang.cpp.heap_notations.
 
 Module Type Init.
@@ -24,7 +24,6 @@ Module Type Init.
     #[local] Notation wp_prval := (wp_prval (resolve:=σ) M ρ).
     #[local] Notation wp_xval := (wp_xval (resolve:=σ) M ρ).
     #[local] Notation wp_init := (wp_init (resolve:=σ) M ρ).
-    #[local] Notation wp_args := (wp_args (σ:=σ) M ρ).
     #[local] Notation fspec := (@fspec _ Σ σ.(genv_tu).(globals)).
     #[local] Notation mspec := (@mspec _ Σ σ.(genv_tu).(globals)).
 
