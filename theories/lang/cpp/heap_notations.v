@@ -118,7 +118,7 @@ Notation "p .[ t ! n ]" := (match DOT_dot (o_sub _ t n) p with
                             | ____x => ltac:(simple_refine ____x)
                             end)
   (at level 11, left associativity, only parsing).
-Notation "p .[ t ! n ]" := (_offset_ptr (o_sub _ t n) p)
+Notation "p .[ t ! n ]" := (_offset_ptr p (o_sub _ t n))
   (at level 11, left associativity, only printing, format "p  .[  t  '!'  n  ]").
 
 Notation ".[ t ! n ]" := (o_sub _ t n)
