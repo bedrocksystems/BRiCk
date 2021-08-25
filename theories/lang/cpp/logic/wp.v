@@ -707,7 +707,13 @@ Section with_cpp.
 
       NOTE the current implementation desugars this to [fspec] but this is not
            accurate according to the standard because a member function can not
-           be casted to a regular function that takes an extra parameter.
+           be cast to a regular function that takes an extra parameter.
+           We could fix this by splitting [fspec] more, but we are deferring that
+           for now.
+
+           In practice we assume that the AST is well-typed, so the only way to
+           exploit this is to use [reinterpret_cast< >] to cast a function pointer
+           to an member pointer or vice versa.
    *)
   Definition mspec (tt : type_table) (this_type : type) (fun_type : type)
     : val -> list val -> (val -> epred) -> mpred :=

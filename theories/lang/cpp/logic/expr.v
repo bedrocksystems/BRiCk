@@ -679,82 +679,86 @@ Module Type Expr.
            generate the destructors.
      *)
 
-    (** function calls *)
+    (** function calls
+
+        The next few axioms rely on the evaluation order specified
+        since C++17 (implemented in Clang >= 4):
+        to evaluate [f(args)], [f] is evaluated before [args].
+
+        Summary of the change: https://stackoverflow.com/a/38798487/53974.
+        Official references (from http://clang.llvm.org/cxx_status.html):
+        http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2016/p0400r0.html
+        http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2016/p0145r3.pdf
+     *)
+
+    (* Due to our non-standard calling convention (the fact that [fspec]
+       "returns" a [val] rather than a [ptr]), there is some processing
+       that we must do to the result. We consolidate these definitions here
+       because they are shared between function and member function calls.
+     *)
+    Definition xval_receive (res : val) (Q : ptr -> mpred) : mpred :=
+      Exists p, [| res = Vptr p |] ** Q p.
+    Definition lval_receive (res : val) (Q : ptr -> mpred) : mpred :=
+      Exists p, [| res = Vptr p |] ** Q p.
+    Definition prval_receive (ty : type) (res : val) (Q : val -> (FreeTemps -> FreeTemps) -> mpred) : mpred :=
+      if is_aggregate ty then
+        Exists p, [| res = Vptr p |] ** Q (Vptr p) (fun free => FreeTemps.delete (erase_qualifiers ty) p >*> free)
+      else
+        Q res (fun x => x).
+    Definition init_receive (addr : ptr) (res : val) (Q : mpred) : mpred :=
+      Exists p, [| res = Vptr p |] ** ([| p = addr |] -* Q).
+
     Definition arg_types (ty : type) : option (list type) :=
       match ty with
       | @Tfunction _ _ args => Some args
       | _ => None
       end.
 
-    (**
-    The next few axioms rely on the evaluation order specified
-    since C++17 (implemented in Clang >= 4):
-    to evaluate [f(args)], [f] is evaluated before [args].
+    (** [wp_call pfty f es Q] calls [f] taking the arguments from the
+        evaluations of [es] and then acts like [Q].
+        [pfty] is the type that the call is being carried out using,
+        i.e. the syntactic type of the function (it is a pointer type).
 
-    Summary of the change: https://stackoverflow.com/a/38798487/53974.
-    Official references (from http://clang.llvm.org/cxx_status.html):
-    http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2016/p0400r0.html
-    http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2016/p0145r3.pdf
+        NOTE that the AST *must* insert implicit casts for casting
+             qualifiers so that the types match up exactly up to top-level
+             qualifiers, e.g. [foo(const int)] will be passed a value of
+             type [int] (not [const int]). the issue with type-level
+             qualifiers is addressed through the use of [normalize_type]
+             below.
      *)
-    Axiom wp_prval_call : forall ty f es Q,
-        (if is_aggregate ty then
-           Reduce (materialize_into_temp ty (Ecall f es ty) Q)
-         else
-           match unptr (type_of f) with
-           | Some fty =>
-             match arg_types fty with
-             | Some targs =>
-               wp_prval f (fun f free_f => wp_args targs es (fun vs free =>
-                  |> fspec (normalize_type fty) f vs (fun v => Q v (free >*> free_f))))
-             | _ => False
-             end
-           | _ => False
-           end)
-        |-- wp_prval (Ecall f es ty) Q.
-
-    #[local] Open Scope free_scope.
-    Axiom wp_lval_call : forall f (es : list Expr) Q (ty : type),
-        match unptr (type_of f) with
-        | Some fty =>
-          match arg_types fty with
-          | Some targs =>
-            wp_prval f (fun f free_f => wp_args targs es (fun vs free =>
-               |> fspec (normalize_type fty) f vs (fun res => Exists p, [| res = Vptr p |] ** Q p (free >*> free_f))))
-          | _ => False
-          end
+    Definition wp_call (pfty : type) (f : val) (es : list Expr) (Q : val -> FreeTemps -> epred) : mpred :=
+      match unptr pfty with
+      | Some fty =>
+        let fty := normalize_type fty in
+        match arg_types fty with
+        | Some targs =>
+          wp_args targs es $ fun vs free => |> fspec fty f vs (fun v => Q v free)
         | _ => False
         end
+      | None => False
+      end.
+
+    Axiom wp_prval_call : forall ty f es Q,
+        wp_prval f (fun fn free_f => wp_call (type_of f) fn es $ fun res free_args =>
+           Reduce (prval_receive ty res $ fun v ft => Q v (ft $ free_args >*> free_f)))
+       |-- wp_prval (Ecall f es ty) Q.
+
+    Axiom wp_lval_call : forall f (es : list Expr) Q (ty : type),
+        wp_prval f (fun fn free_f => wp_call (type_of f) fn es $ fun res free_args =>
+           Reduce (lval_receive res $ fun v => Q v (free_args >*> free_f)))
         |-- wp_lval (Ecall f es ty) Q.
 
-    Axiom wp_xval_call : forall ty f es Q,
-        match unptr (type_of f) with
-        | Some fty =>
-          match arg_types fty with
-          | Some targs =>
-            wp_prval f (fun f free_f => wp_args targs es (fun vs free =>
-               |> fspec (normalize_type fty) f vs (fun v => Exists p, [| v = Vptr p |] ** Q p (free >*> free_f))))
-          | None => False
-          end
-        | _ => False
-        end
-      |-- wp_xval (Ecall f es ty) Q.
+    Axiom wp_xval_call : forall f (es : list Expr) Q (ty : type),
+        wp_prval f (fun fn free_f => wp_call (type_of f) fn es $ fun res free_args =>
+           Reduce (xval_receive res $ fun v => Q v (free_args >*> free_f)))
+        |-- wp_xval (Ecall f es ty) Q.
 
     Axiom wp_init_call : forall f es Q (addr : ptr) ty,
-        match unptr (type_of f) with
-        | Some fty =>
-          match arg_types fty with
-          | Some targs =>
-            addr |-> tblockR (erase_qualifiers ty) 1 **
-            (* ^ give up the memory that was created by [materialize_into_temp] *)
-            wp_prval f (fun f free_f => wp_args targs es (fun vs free =>
-              |> fspec (normalize_type fty) f vs (fun res => [| res = Vptr addr |] -* Q (free >*> free_f))))
-          (* NOTE We use the assumed equality to mean that the value was constructed immediately into
-             the correct place *)
-          | None => False
-          end
-        | _ => False
-        end
-        |-- wp_init ty addr (Ecall f es ty) Q.
+          addr |-> tblockR (erase_qualifiers ty) 1 **
+          (* ^ give the memory back to the C++ abstract machine *)
+          wp_prval f (fun fn free_f => wp_call (type_of f) fn es $ fun res free_args =>
+             Reduce (init_receive addr res $ Q (free_args >*> free_f)))
+      |-- wp_init ty addr (Ecall f es ty) Q.
 
     (** * Member calls *)
 
@@ -764,49 +768,36 @@ Module Type Expr.
       | _ => None
       end.
 
+    Definition wp_mcall (f : val) (this : ptr) (this_type : type) (fty : type) (es : list Expr)
+               (Q : val -> FreeTemps -> epred) : mpred :=
+      let fty := normalize_type fty in
+      match arg_types fty with
+      | Some targs =>
+        wp_args targs es $ fun vs free => |> mspec this_type fty f (Vptr this :: vs) (fun v => Q v free)
+      | _ => False
+      end.
 
-    (** member calls
-        NOTE it is technically not accurate to treat member calls as regular function calls
-        where the function takes an extra argument. We could fix this by splitting [fspec]
-        more, but we are deferring that for now.
-
-        In practice we assume that the AST is well-typed, so the only way to exploit this problem
-        is to use [reinterpret_cast< >] to cast a function pointer to an member pointer or vice versa.
-     *)
-    Axiom wp_lval_member_call : forall ty fty f vc obj es Q targs
-                                  (_ : member_arg_types fty = Some targs),
-        wp_glval vc obj (fun this free_t => wp_args targs es (fun vs free =>
-           |> mspec (type_of obj) (normalize_type fty) (Vptr $ _global f) (Vptr this :: vs) (fun v =>
-                    Exists p, [| v = Vptr p |] ** Q p (free >*> free_t))))
-        |-- wp_lval (Emember_call (inl (f, Direct, fty)) vc obj es ty) Q.
-
-    Axiom wp_xval_member_call : forall ty fty f vc obj es Q targs (_ : member_arg_types fty = Some targs),
-        wp_glval vc obj (fun this free_t => wp_args targs es (fun vs free =>
-           |> mspec (type_of obj) (normalize_type fty) (Vptr $ _global f) (Vptr this :: vs) (fun v =>
-                    Exists p, [| v = Vptr p |] ** Q p (free >*> free_t))))
-        |-- wp_xval (Emember_call (inl (f, Direct, fty)) vc obj es ty) Q.
-
-    Axiom wp_prval_member_call : forall ty fty f vc obj es Q targs (_ : member_arg_types fty = Some targs),
-        (if is_aggregate ty then
-           Reduce (materialize_into_temp ty (Emember_call (inl (f, Direct, fty)) vc obj es ty) Q)
-         else
-            wp_glval vc obj (fun this free_t => wp_args targs es (fun vs free =>
-              |> mspec (type_of obj) (normalize_type fty) (Vptr $ _global f) (Vptr this :: vs) (fun v => Q v (free >*> free_t)))))
+    Axiom wp_prval_member_call : forall ty fty f vc obj es Q,
+        wp_glval vc obj (fun this free_this => wp_mcall (Vptr $ _global f) this (type_of obj) fty es $ fun res free_args =>
+           prval_receive ty res $ fun v ft => Q v (ft $ free_args >*> free_this))
         |-- wp_prval (Emember_call (inl (f, Direct, fty)) vc obj es ty) Q.
 
-    Axiom wp_init_member_call : forall f ret ts cc es (addr : ptr) ty vc obj Q
-                                  (fty := Tfunction (cc:=cc) ret ts)
-                                  targs (_ : member_arg_types fty = Some targs),
-        wp_glval vc obj (fun this free_t => wp_args targs es (fun vs free =>
-            addr |-> tblockR (erase_qualifiers ret) 1 **
-            |> mspec (type_of obj) (normalize_type fty) (Vptr $ _global f) (Vptr this :: vs) (fun res =>
-                      [| res = Vptr addr |] -* Q (free >*> free_t))))
-        (* NOTE as with regular function calls, we use an assumed equation to unify the address
-           of the returned object with the location that we are initializing.
-         *)
-        |-- wp_init ty addr (Emember_call (inl (f, Direct, Tfunction (cc:=cc) ret ts)) vc obj es ty) Q.
+    Axiom wp_lval_member_call : forall ty fty f vc obj es Q,
+        wp_glval vc obj (fun this free_this => wp_mcall (Vptr $ _global f) this (type_of obj) fty es $ fun res free_args =>
+           lval_receive res $ fun v => Q v (free_args >*> free_this))
+        |-- wp_lval (Emember_call (inl (f, Direct, fty)) vc obj es ty) Q.
 
-(** * TODO port this
+    Axiom wp_xval_member_call : forall ty fty f vc obj es Q,
+        wp_glval vc obj (fun this free_this => wp_mcall (Vptr $ _global f) this (type_of obj) fty es $ fun res free_args =>
+           xval_receive res $ fun v => Q v (free_args >*> free_this))
+        |-- wp_xval (Emember_call (inl (f, Direct, fty)) vc obj es ty) Q.
+
+    Axiom wp_init_member_call : forall f fty es (addr : ptr) ty vc obj Q,
+        addr |-> tblockR (erase_qualifiers ty) 1 **
+        wp_glval vc obj (fun this free_this => wp_mcall (Vptr $ _global f) this (type_of obj) fty es $ fun res free_args =>
+           init_receive addr res $ Q (free_args >*> free_this))
+        |-- wp_init ty addr (Emember_call (inl (f, Direct, fty)) vc obj es ty) Q.
+
     (** virtual functions
         these are slightly more complex because we need to compute the address of the function
         using the most-derived-class of the [this] object. This is done using [resolve_virtual].
@@ -814,59 +805,35 @@ Module Type Expr.
         NOTE The [resolve_virtual] below means that caller justifies the cast to the dynamic type.
              This is necessary because the function is expecting the correct [this] pointer.
      *)
+    Definition wp_virtual_call (f : obj_name) (this : ptr) (this_type : type) (fty : type) (es : list Expr)
+               (Q : val -> FreeTemps -> epred) : mpred :=
+      match class_name this_type with
+      | Some cls =>
+        resolve_virtual (σ:=resolve) this cls f (fun fimpl_addr impl_class thisp =>
+            wp_mcall (Vptr fimpl_addr) thisp (Tnamed impl_class) fty es $ fun res free_args => Q res free_args)
+      | _ => False
+      end.
+
+    Axiom wp_prval_virtual_call : forall ty fty f vc obj es Q,
+        wp_glval vc obj (fun this free_this => wp_virtual_call f this (type_of obj) fty es $ fun res free_args =>
+           prval_receive ty res $ fun v ft => Q v (ft $ free_args >*> free_this))
+        |-- wp_prval (Emember_call (inl (f, Direct, fty)) vc obj es ty) Q.
+
     Axiom wp_xval_virtual_call : forall ty fty f vc obj es Q,
-      wp_glval vc obj (fun this free => wp_args es (fun vs free' =>
-          match class_name (type_of obj) with
-          | Some cls =>
-            resolve_virtual (σ:=resolve) this cls f (fun fimpl_addr impl_class thisp =>
-              |> mspec (Tnamed impl_class) (normalize_type fty) (Vptr fimpl_addr) (Vptr thisp :: vs) (fun v =>
-                       Exists p, [| v = Vptr p |] ** Q p (free' >*> free)))
-          | _ => False
-          end))
+        wp_glval vc obj (fun this free_this => wp_virtual_call f this (type_of obj) fty es $ fun res free_args =>
+                   xval_receive res $ fun v => Q v (free_args >*> free_this))
       |-- wp_xval (Emember_call (inl (f, Virtual, fty)) vc obj es ty) Q.
 
     Axiom wp_lval_virtual_call : forall ty fty f vc obj es Q,
-      wp_glval vc obj (fun this free => wp_args es (fun vs free' =>
-          match class_name (type_of obj) with
-          | Some cls =>
-            resolve_virtual (σ:=resolve) this cls f (fun fimpl_addr impl_type thisp =>
-              |> mspec (Tnamed impl_type) (normalize_type fty) (Vptr fimpl_addr) (Vptr thisp :: vs) (fun v =>
-                       Exists p, [| v = Vptr p |] ** Q p (free' >*> free)))
-          | _ => False
-          end))
+        wp_glval vc obj (fun this free_this => wp_virtual_call f this (type_of obj) fty es $ fun res free_args =>
+                   lval_receive res $ fun v => Q v (free_args >*> free_this))
       |-- wp_lval (Emember_call (inl (f, Virtual, fty)) vc obj es ty) Q.
 
-    Axiom wp_prval_virtual_call : forall ty fty f vc obj es Q,
-        (if is_aggregate ty then
-           Reduce (materialize_into_temp ty (Emember_call (inl (f, Virtual, fty)) vc obj es ty) Q)
-         else
-           wp_glval vc obj (fun this free => wp_args es (fun vs free' =>
-          match class_name (type_of obj) with
-          | Some cls =>
-            resolve_virtual (σ:=resolve) this cls f (fun fimpl_addr impl_class thisp =>
-              |> mspec (Tnamed impl_class) (normalize_type fty) (Vptr fimpl_addr) (Vptr thisp :: vs)
-                       (fun v => Q v (free' >*> free)))
-         | _ => False
-          end)))
-      |-- wp_prval (Emember_call (inl (f, Virtual, fty)) vc obj es ty) Q.
-
-    Axiom wp_init_virtual_call : forall ty cc ret ts f vc obj es Q (addr : ptr),
-      wp_glval vc obj (fun this free => wp_args es (fun vs free' =>
-          match class_name (type_of obj) with
-          | Some cls =>
-            resolve_virtual (σ:=resolve) this cls f (fun fimpl_addr impl_class thisp =>
-              addr |-> tblockR (erase_qualifiers ret) 1 **
-              let fty := Tfunction (cc:=cc) ret ts in
-              |> mspec (Tnamed impl_class) (normalize_type fty) (Vptr fimpl_addr) (Vptr thisp :: vs)
-                       (fun res => [| res = Vptr addr |] -* Q (free' >*> free)))
-            (* NOTE as with other function calls, we are assuming an equation on the address in order
-               to express the fact the the object is constructed in-place.
-             *)
-          | _ => False
-          end))
-      |-- wp_init ty addr (Emember_call (inl (f, Virtual, Tfunction (cc:=cc) ret ts)) vc obj es ty) Q.
-DONE ***)
-
+    Axiom wp_init_virtual_call : forall f fty es (addr : ptr) ty vc obj Q,
+        addr |-> tblockR (erase_qualifiers ty) 1 **
+        wp_glval vc obj (fun this free_this => wp_virtual_call f this (type_of obj) fty es $ fun res free_args =>
+           init_receive addr res $ Q (free_args >*> free_this))
+        |-- wp_init ty addr (Emember_call (inl (f, Direct, fty)) vc obj es ty) Q.
 
     (* null *)
     Axiom wp_null : forall Q,
@@ -1087,7 +1054,7 @@ DONE ***)
                initializer list (c.f. http://eel.is/c++draft/dcl.init.list#4)
            *)
          base .[ ety ! idx ] |-> tblockR ety 1 -* (* provide the memory to the initializer. *)
-         wp_initialize M ρ ety (base .[ ety ! idx ]) e (fun _ => wp_array_init ety base rest (Z.succ idx) Q)
+         wp_initialize M ρ ety (base .[ ety ! idx ]) e (fun free => interp free $ wp_array_init ety base rest (Z.succ idx) Q)
       end%I.
 
     Definition fill_initlist (desiredsz : N) (es : list Expr) (f : Expr) : list Expr :=
@@ -1176,7 +1143,6 @@ DONE ***)
     Axiom wp_init_mut : forall ty addr e Q,
         wp_init ty addr e Q
         |-- wp_init (Qmut ty) addr e Q.
-
 
   End with_resolve.
 
