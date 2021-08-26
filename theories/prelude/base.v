@@ -18,6 +18,7 @@ Global Set Default Proof Using "Type".
 It's more expressive, but it mangles definitions and can cause a quadratic size
 explosion. *)
 Global Unset Program Cases.
+#[global] Set Ltac Backtrace.
 
 (** * Small extensions to [stdpp.base] *)
 
