@@ -15,7 +15,6 @@ Require Import bedrock.lang.cpp.heap_notations.
 
 Section destroy.
   Context `{Σ : cpp_logic thread_info} {σ:genv}.
-  Variable (ti : thread_info).
 
   (** [resolve_dtor cls this Q] reduces to [Q dtor' this'] where [dtor'] is the
       destructor to be called on [this'] which is used to destroy [this].
@@ -125,22 +124,55 @@ Section destroy.
   Qed.
 End destroy.
 
-(* [destroy_val dispatch t this Q] destroys [this]:
-    - it invokes the destructor via [destruct_val]
-    - and then it *does* free the underlying memory.
-*)
-Notation destroy_val dispatch t this Q :=
-  (destruct_val dispatch t%I this%ptr%I (_at this%ptr (tblockR (erase_qualifiers t) 1) ** Q)).
-
 Section destroy.
   Context `{Σ : cpp_logic thread_info} {σ:genv}.
 
-  (* Just as a crutch for typechecking. *)
-  #[local] Definition __destroy_val dispatch (t : type) (this : ptr) (Q : mpred) : mpred :=
-    destroy_val dispatch t this Q.
+  (*
+  (** [wp_alloc ty Q] allocates storage for [ty] and passes the address
+      to [Q]. Generally, [Q] will initialize this memory.
+   *)
+  Definition wp_alloc (ty : type) (Q : ptr -> mpred) : mpred :=
+    Forall addr : ptr, addr |-> tblockR (erase_qualifiers ty) 1 -* Q addr.
 
-  Lemma destroy_val_frame dispatch ty this Q Q' :
-      Q -* Q' |-- destroy_val dispatch ty this Q -* destroy_val dispatch ty this Q'.
-  Proof. rewrite -destruct_val_frame. iIntros "W [$ Q]". by iApply "W". Qed.
+  (** [wp_free ty addr Q] frees the memory of a [ty] at address [addr].
+   *)
+  Definition wp_free (ty : type) (addr : ptr) (Q : mpred) : mpred :=
+    destruct_val false ty addr (addr |-> tblockR (σ:=σ) ty 1 ** Q).
+  *)
+
+  (** [delete_val dispatch ty this Q] destructs [this] (of type [t]) and then
+      frees the underlying memory
+   *)
+  Definition delete_val (ty : type) (this : ptr) (Q : epred) : mpred :=
+    destruct_val false ty this (this |-> tblockR (erase_qualifiers ty) 1 ** Q).
+
+  Lemma delete_val_frame ty this Q1 Q2 :
+      Q1 -* Q2 |-- delete_val ty this Q1 -* delete_val ty this Q2.
+  Proof.
+    iIntros "a"; iApply destruct_val_frame. iIntros "[$ X]"; by iApply "a".
+  Qed.
+
+  (** [interp free Q] "runs" [free] and then acts like [Q].
+
+      TODO it might make sense for this to be like a [wp] where this
+      will have fancy update modalities.
+   *)
+  Fixpoint interp (free : FreeTemps) (Q : epred) : mpred :=
+    match free with
+    | FreeTemps.id => Q
+    | FreeTemps.seq f g => interp f $ interp g Q
+    | FreeTemps.par f g => Exists Qf Qg, interp f Qf ** interp g Qg ** (Qf -* Qg -* Q)
+    | FreeTemps.delete ty addr => delete_val ty addr Q
+    end.
+
+  Lemma interp_frame free : forall Q1 Q2,
+      Q1 -* Q2 |-- interp free Q1 -* interp free Q2.
+  Proof.
+    induction free; simpl; intros; eauto.
+    { iApply delete_val_frame. }
+    { iIntros "a"; iApply IHfree1; iApply IHfree2; done. }
+    { iIntros "a b"; iDestruct "b" as (??) "(x & y & z)"; iExists _; iExists _; iFrame.
+      iIntros "f g"; iApply "a"; iRevert "g"; by iApply "z". }
+  Qed.
 
 End destroy.

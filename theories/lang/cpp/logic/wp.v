@@ -1,5 +1,5 @@
 (*
- * Copyright (c) 2020 BedRock Systems, Inc.
+ * Copyright (c) 2020-2021 BedRock Systems, Inc.
  * This software is distributed under the terms of the BedRock Open-Source License.
  * See the LICENSE-BedRock file in the repository root for details.
  *)
@@ -22,12 +22,80 @@ Set Primitive Projections.
  *   doesn't treat those.
  *)
 Definition epred `{Σ : cpp_logic thread_info} := mpred.
-Global Bind Scope bi_scope with epred.
+Notation epredO := mpredO (only parsing).
 
-Definition FreeTemps `{Σ : cpp_logic thread_info} := mpred.
-Global Bind Scope bi_scope with FreeTemps.
+Module FreeTemps.
+Section FreeTemps.
+  Context `{Σ : cpp_logic thread_info}.
 
-(** Statements *)
+  Inductive t : Type :=
+  | id (* = fun x => x *)
+  | delete (ty : type) (p : ptr) (* = delete_val ty p  *)
+  | seq (f g : t) (* = fun x => f $ g x *)
+  | par (f g : t)
+    (* = fun x => Exists Qf Qg, f Qf ** g Qg ** (Qf -* Qg -* x)
+       (simplified)
+       fun x => f emp ** g emp ** x
+     *)
+  .
+
+  Inductive t_eq : t -> t -> Prop :=
+  | refl l : t_eq l l
+  | sym l r : t_eq l r -> t_eq r l
+  | trans a b c : t_eq a b -> t_eq b c -> t_eq a c
+
+  | seqA x y z : t_eq (seq x (seq y z)) (seq (seq x y) z)
+  | seq_id_unitR l : t_eq (seq l id) l
+  | seq_id_unitL l : t_eq (seq id l) l
+
+  | parC r l : t_eq (par l r) (par r l)
+  | parA x y z : t_eq (par x (par y z)) (par (par x y) z)
+  | par_id_unitR l : t_eq (par l id) l
+  | par_id_unitL l : t_eq (par id l) l.
+
+  #[global] Instance t_Equiv : Equiv t := t_eq.
+
+  #[global] Instance t_Equivalence : Equivalence (@equiv t _).
+  Proof.
+    constructor.
+    - red; eapply refl.
+    - red; eapply sym.
+    - red; eapply trans.
+  Qed.
+
+  #[global] Instance : Assoc equiv seq.
+  Proof. red; apply seqA. Qed.
+  #[global] Instance : LeftId equiv id seq.
+  Proof. red; apply seq_id_unitL. Qed.
+  #[global] Instance : RightId equiv id seq.
+  Proof. red; apply seq_id_unitR. Qed.
+
+  #[global] Instance : Comm equiv par.
+  Proof. red; intros; apply parC. Qed.
+  #[global] Instance : Assoc equiv par.
+  Proof. red; apply parA. Qed.
+  #[global] Instance : LeftId equiv id par.
+  Proof. red; apply par_id_unitL. Qed.
+  #[global] Instance : RightId equiv id par.
+  Proof. red; apply par_id_unitR. Qed.
+
+  (** [pars ls] is the [FreeTemp] representing the destruction
+      of each element in [ls] *in non-deterministic order.
+   *)
+  Definition pars := fold_right FreeTemps.par FreeTemps.id.
+
+End FreeTemps.
+End FreeTemps.
+Notation FreeTemps := FreeTemps.t.
+Notation FreeTemp := FreeTemps.t (only parsing).
+
+(* Notations *)
+Declare Scope free_scope.
+Delimit Scope free_scope with free.
+Infix "|*|" := FreeTemps.par (at level 30) : free_scope.
+Infix ">*>" := FreeTemps.seq (at level 30) : free_scope.
+Bind Scope free_scope with FreeTemps.t.
+
 (* continuations
  * C++ statements can terminate in 4 ways.
  *
@@ -94,8 +162,11 @@ Section Kpred.
   Definition Kat_exit (Q : mpred -> mpred) (k : Kpred) : Kpred :=
     KP (funI rt => Q (k rt)).
 
-  Definition Kfree (a : mpred) : Kpred -> Kpred :=
-    Kat_exit (fun P => a ** P).
+  Theorem Kat_exit_frame Q Q' (k k' : KpredI) :
+    Forall x y, (x -* y) -* Q x -* Q' y |-- Forall rt, (k rt -* k' rt) -* Kat_exit Q k rt -* Kat_exit Q' k' rt.
+  Proof.
+    rewrite /Kat_exit. iIntros "A" (?) "B" =>/=. iApply "A"; iApply "B".
+  Qed.
 
   #[global] Instance mpred_Kpred_BiEmbed : BiEmbed mpredI KpredI := _.
 
@@ -107,12 +178,9 @@ End Kpred.
 #[global,deprecated(since="2021-02-15",note="use KpredI")] Notation KpredsI := KpredI (only parsing).
 #[global,deprecated(since="2021-02-15",note="use Kpred")] Notation Kpreds := Kpred (only parsing).
 
+Module WPE.
 Section with_cpp.
   Context `{Σ : cpp_logic thread_info}.
-
-  (* [SP] denotes the sequence point for an expression *)
-  Definition SP (Q : val -> mpred) (v : val) (free : FreeTemps) : mpred :=
-    free ** Q v.
 
   (* The expressions in the C++ language are categorized into five
    * "value categories" as defined in:
@@ -302,6 +370,7 @@ Section with_cpp.
     forall σ1 σ2 M ρ e k1 k2,
       genv_leq σ1 σ2 ->
       Forall v f, k1 v f -* k2 v f |-- @wp_prval σ1 M ρ e k1 -* @wp_prval σ2 M ρ e k2.
+
   Global Instance Proper_wp_prval :
     Proper (genv_leq ==> eq ==> eq ==> eq ==>
             pointwise_relation _ (pointwise_relation _ lentails) ==> lentails)
@@ -346,7 +415,7 @@ Section with_cpp.
     Qed.
   End wp_prval.
 
-  (** xvalues *)
+  (** * xvalues *)
 
   (* evaluate an expression as an xvalue *)
   Parameter wp_xval
@@ -458,7 +527,7 @@ Section with_cpp.
       let '(vc,e) := vce in
       wpe vc e.
 
-    Definition wpAnys := fun ve Q free => wpAny ve (fun v f => Q v (f ** free)).
+    Definition wpAnys := fun ve Q free => wpAny ve (fun v f => Q v (f >*> free)%free).
   End wpe.
 
   Lemma wpe_frame σ1 σ2 M ρ vc e k1 k2:
@@ -473,7 +542,7 @@ Section with_cpp.
   Qed.
 
   Global Instance Proper_wpe :
-    Proper (genv_leq ==> eq ==> eq ==> eq ==> eq ==> (eq ==> lentails ==> lentails) ==> lentails)
+    Proper (genv_leq ==> eq ==> eq ==> eq ==> eq ==> (eq ==> (≡) ==> (⊢)) ==> (⊢))
            (@wpe).
   Proof.
     repeat red; intros; subst.
@@ -496,7 +565,7 @@ Section with_cpp.
   Proof. destruct e; apply: wpe_frame. Qed.
 
   Global Instance Proper_wpAny :
-    Proper (genv_leq ==> eq ==> eq ==> eq ==> (eq ==> lentails ==> lentails) ==> lentails)
+    Proper (genv_leq ==> eq ==> eq ==> eq ==> (eq ==> (≡) ==> (⊢)) ==> (⊢))
            (@wpAny).
   Proof.
     repeat red; intros; subst.
@@ -513,12 +582,12 @@ Section with_cpp.
     iIntros (v f); iApply H3; reflexivity.
   Qed.
 
-  (** initializers *)
+  (** * initializers *)
   (* TODO this seems unnecessary *)
   Parameter wpi
     : forall {resolve:genv} (M : coPset) (ρ : region)
         (cls : globname) (this : ptr) (init : Initializer)
-        (Q : mpred -> mpred), mpred.
+        (Q : FreeTemps -> mpred), mpred.
 
   Axiom wpi_shift : forall σ M ρ cls this e Q,
       (|={M}=> wpi (resolve:=σ) M ρ cls this e (fun k => |={M}=> Q k))
@@ -530,7 +599,7 @@ Section with_cpp.
       Forall f, k1 f -* k2 f |-- @wpi σ1 M ρ cls this e k1 -* @wpi σ2 M ρ cls this e k2.
 
   Global Instance Proper_wpi :
-    Proper (genv_leq ==> eq ==> eq ==> eq ==> eq ==> eq ==> (lentails ==> lentails) ==> lentails)
+    Proper (genv_leq ==> eq ==> eq ==> eq ==> eq ==> eq ==> ((≡) ==> (⊢)) ==> (⊢))
            (@wpi).
   Proof. repeat red; intros; subst.
          iIntros "X"; iRevert "X"; iApply wpi_frame; eauto.
@@ -542,7 +611,7 @@ Section with_cpp.
       (cls : globname) (this : ptr) (init : Initializer).
     Local Notation WP := (wpi M ρ cls this init) (only parsing).
     Implicit Types P : mpred.
-    Implicit Types k : mpred → mpred.
+    Implicit Types k : FreeTemps → mpred.
 
     Lemma wpi_wand k1 k2 : WP k1 |-- (∀ Q, k1 Q -* k2 Q) -* WP k2.
     Proof. iIntros "Hwp HK". by iApply (wpi_frame with "HK Hwp"). Qed.
@@ -572,18 +641,7 @@ Section with_cpp.
     Qed.
   End wpi.
 
-  (** Statements *)
-
-  Lemma Kfree_Kfree : forall k P Q, Kfree P (Kfree Q k) -|- Kfree (P ** Q) k.
-  Proof using .
-    rewrite /Kfree/Kat_exit/KP/=. constructor => rt.
-    rewrite /=. by rewrite assoc.
-  Qed.
-
-  Lemma Kfree_emp : forall k, Kfree emp k -|- k.
-  Proof using .
-      by rewrite /Kfree/Kat_exit/KP/=; constructor => rt; rewrite /=; rewrite left_id.
-  Qed.
+  (** * Statements *)
 
   (* evaluate a statement *)
   Parameter wp
@@ -597,12 +655,6 @@ Section with_cpp.
     forall σ1 σ2 M ρ s (k1 k2 : KpredI),
       genv_leq σ1 σ2 ->
       (Forall rt, k1 rt -* k2 rt) |-- @wp σ1 M ρ s k1 -* @wp σ2 M ρ s k2.
-
-  #[global] Instance Kseq_mono : Proper (((⊢) ==> (⊢)) ==> (⊢) ==> (⊢)) (@Kseq _ Σ).
-  Proof.
-    constructor => rt; rewrite /Kseq/KP/=.
-    destruct rt; try apply H; apply H0.
-  Qed.
 
   #[global] Instance Proper_wp :
     Proper (genv_leq ==> eq ==> eq ==> eq ==> (⊢) ==> (⊢))
@@ -627,9 +679,8 @@ Section with_cpp.
     Lemma fupd_wp k : (|={M}=> WP k) |-- WP k.
     Proof.
       rewrite -{2}wp_shift. apply fupd_elim. rewrite -fupd_intro.
-      iIntros "Hwp". iApply (wp_wand with "Hwp"). auto.
-      iIntros (rt) "x";
-      rewrite monPred_at_fupd. eauto.
+      iIntros "Hwp". iApply (wp_wand with "Hwp").
+      iIntros (?) "X". iModIntro; eauto.
     Qed.
     Lemma wp_fupd k : WP (|={M}=> k) |-- WP k.
     Proof. iIntros "Hwp". by iApply (wp_shift with "[$Hwp]"). Qed.
@@ -652,7 +703,7 @@ Section with_cpp.
     Qed.
   End wp.
 
-  (* this is the low-level specificaiton of C++ code blocks.
+  (* this is the low-level specification of C++ code blocks.
    *
    * [addr] represents the address of the entry point of the code.
    * note: the [list val] will be related to the register set.
@@ -727,5 +778,7 @@ Section with_cpp.
   Proof. intros; apply fspec_frame. Qed.
 
 End with_cpp.
+End WPE.
 
+Export WPE.
 Export stdpp.coPset.

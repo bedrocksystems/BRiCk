@@ -22,8 +22,13 @@ Arguments UNSUPPORTED {_ _} _%bs.
 Section with_cpp.
   Context `{Σ : cpp_logic thread_info} {resolve:genv}.
 
+  #[local] Open Scope free_scope.
+
   #[local] Notation _base := (o_base resolve).
   #[local] Notation _derived := (o_derived resolve).
+
+  Definition Kfree (free : FreeTemp) : KpredI -> KpredI :=
+    Kat_exit (interp free).
 
   (** * Aggregate identity *)
   #[local] Fixpoint all_identities' (f : nat) (mdc : option globname) (cls : globname) : Rep :=
@@ -133,7 +138,7 @@ Section with_cpp.
    *)
   Fixpoint bind_vars (args : list (ident * type)) (vals : list val) (r : region) (Q : region -> FreeTemps -> mpred) : mpred :=
     match args , vals with
-    | nil , nil => Q r emp
+    | nil , nil => Q r FreeTemps.id
     | (x,ty) :: xs , v :: vs  =>
       match drop_qualifiers ty with
       | Tqualified _ t => ERROR "unreachable" (* unreachable *)
@@ -150,15 +155,13 @@ Section with_cpp.
         end
       | _              =>
         Forall a : ptr, a |-> primR (erase_qualifiers ty) 1 v -*
-        bind_vars xs vs (Rbind_check x a r) (fun r free => Q r (a |-> anyR (erase_qualifiers ty) 1 ** free))
-        (* Here we view [anyR (erase_qualifiers ty) 1] as essentially the pre-condition
-           to the "destructor" of a primitive. *)
+        bind_vars xs vs (Rbind_check x a r) (fun r free => Q r (FreeTemps.delete (erase_qualifiers ty) a |*| free))
       end
     | _ , _ => ERROR "bind_vars: argument mismatch"
     end%I%bs.
 
   Lemma bind_vars_frame : forall ts args ρ Q Q',
-      Forall ρ free, Q ρ free -* Q' ρ free
+        Forall ρ free, Q ρ free -* Q' ρ free
     |-- bind_vars ts args ρ Q -* bind_vars ts args ρ Q'.
   Proof.
     induction ts; destruct args => /= *; eauto.
@@ -184,9 +187,9 @@ Section with_cpp.
         let ρ := Remp None f.(f_return) in
         bind_vars f.(f_params) args ρ (fun ρ frees =>
         |> if is_void f.(f_return) then
-             wp ⊤ ρ body (Kfree frees (void_return (|> Q Vvoid)))
+             wp ⊤ ρ body (Kfree frees $ void_return (|={⊤}=> |> Q Vvoid))
            else
-             wp ⊤ ρ body (Kfree frees (val_return (fun x => |> Q x))))
+             wp ⊤ ρ body (Kfree frees $ val_return (fun x => |={⊤}=> |> Q x)))
       | Builtin builtin =>
         wp_builtin ⊤ builtin (Tfunction (cc:=f.(f_cc)) f.(f_return) (List.map snd f.(f_params))) args Q
       end
@@ -195,7 +198,7 @@ Section with_cpp.
   Definition func_ok (f : Func) (spec : function_spec)
     : mpred :=
       [| type_of_spec spec = type_of_value (Ofunction f) |] **
-      (* forall each argument, apply to [fs_spec ti] *)
+      (* forall each argument, apply to [fs_spec] *)
       □ Forall Q : val -> mpred, Forall vals,
         spec.(fs_spec) vals Q -* wp_func f vals Q.
 
@@ -210,9 +213,9 @@ Section with_cpp.
         let ρ := Remp (Some thisp) m.(m_return) in
         bind_vars m.(m_params) rest_vals ρ (fun ρ frees =>
         |> if is_void m.(m_return) then
-             wp ⊤ ρ body (Kfree frees (void_return (|>Q Vvoid)))
+             wp ⊤ ρ body (Kfree frees (void_return (|={⊤}=> |>Q Vvoid)))
            else
-             wp ⊤ ρ body (Kfree frees (val_return (fun x => |>Q x))))
+             wp ⊤ ρ body (Kfree frees (val_return (fun x => |={⊤}=> |>Q x))))
       | _ => False
       end
     end.
@@ -220,7 +223,7 @@ Section with_cpp.
   Definition method_ok (m : Method) (spec : function_spec)
     : mpred :=
     [| type_of_spec spec = type_of_value (Omethod m) |] **
-    (* forall each argument, apply to [fs_spec ti] *)
+    (* forall each argument, apply to [fs_spec] *)
     □ Forall Q : val -> mpred, Forall vals,
       spec.(fs_spec) vals Q -* wp_method m vals Q.
 
@@ -244,8 +247,9 @@ Section with_cpp.
         (* there is no initializer for this member, so we "default initialize" it
            (see https://eel.is/c++draft/dcl.init#general-7 )
          *)
-        default_initialize m.(mem_type) (this ., _field {| f_type := cls ; f_name := m.(mem_name) |})
-          (fun free => free ** wpi_members ρ cls this members inits Q)
+        default_initialize m.(mem_type)
+          (this ., _field {| f_type := cls ; f_name := m.(mem_name) |})
+          (fun frees => interp frees (wpi_members ρ cls this members inits Q))
       | i :: is' =>
         match i.(init_path) with
         | InitField _ (* = m.(mem_name) *) =>
@@ -253,7 +257,7 @@ Section with_cpp.
           | nil =>
             (* there is a *unique* initializer for this field *)
             this ., offset_for cls i.(init_path) |-> tblockR (erase_qualifiers i.(init_type)) 1 -*
-            wpi ⊤ ρ cls this i (fun f => f ** wpi_members ρ cls this members inits Q)
+            wpi ⊤ ρ cls this i (fun f => interp f $ wpi_members ρ cls this members inits Q)
           | _ =>
             (* there are multiple initializers for this field *)
             ERROR $ "multiple initializers for field: " ++ cls ++ "::" ++ m.(mem_name)
@@ -282,7 +286,7 @@ Section with_cpp.
       | i :: nil =>
         (* there is an initializer for this class *)
         this ., offset_for cls i.(init_path) |-> tblockR (erase_qualifiers i.(init_type)) 1 -*
-        wpi ⊤ ρ cls this i (fun f => f ** wpi_bases ρ cls this bases inits Q)
+        wpi ⊤ ρ cls this i (fun f => interp f $ wpi_bases ρ cls this bases inits Q)
       | _ :: _ :: _ =>
         (* there are multiple initializers for this, so we fail *)
         ERROR $ "multiple initializers for base: " ++ cls ++ "::" ++ b
@@ -299,9 +303,9 @@ Section with_cpp.
     case_match; eauto.
     case_match; eauto.
     iIntros "a b c"; iDestruct ("b" with "c") as "b"; iRevert "b".
-    iApply wpi_frame; first by reflexivity.
-    iIntros (f) "[$ b]"; iRevert "b".
-      by iApply IHbases.
+    iApply wpi_frame => //.
+    iIntros (?). iApply interp_frame.
+    by iApply IHbases.
   Qed.
 
   Lemma wpi_members_frame:
@@ -312,13 +316,13 @@ Section with_cpp.
     induction flds => /=; eauto.
     intros.
     case_match.
-    { iIntros "a"; iApply default_initialize_frame; iIntros (?) "[$ x]".
-      iRevert "x"; by iApply IHflds. }
+    { iIntros "a"; iApply default_initialize_frame.
+      iIntros (?); iApply interp_frame. by iApply IHflds. }
     { case_match; eauto.
       case_match; eauto.
       iIntros "a b c"; iDestruct ("b" with "c") as "b". iRevert "b".
-      iApply wpi_frame; first by reflexivity.
-      iIntros (?) "[$ x]"; iRevert "x"; iApply IHflds; eauto. }
+      iApply wpi_frame => //; iIntros (?); iApply interp_frame.
+        by iApply IHflds. }
   Qed.
 
   Definition wp_struct_initializer_list (s : Struct) (ρ : region) (cls : globname) (this : ptr)
@@ -329,7 +333,7 @@ Section with_cpp.
       | _ :: nil =>
         if bool_decide (drop_qualifiers ty = Tnamed cls) then
           (* this is a delegating constructor, simply delegate *)
-          (this |-> tblockR ty 1 -* wp_init ⊤ ρ (Tnamed cls) this e (fun free => free ** Q))
+          this |-> tblockR ty 1 -* wp_init ⊤ ρ (Tnamed cls) this e (fun free => interp free Q)
         else
           (* the type names do not match, this should never happen *)
           ERROR "type name mismatch"
@@ -356,9 +360,9 @@ Section with_cpp.
     { case_match => //.
       destruct l; eauto.
       case_match; eauto.
-      iIntros "X Y Z".
-      iDestruct ("Y" with "Z") as "Y"; iRevert "Y".
-      iApply wp_init_frame. reflexivity. iIntros (?) "[$ ?]"; iApply "X"; eauto. }
+      iIntros "x y z".
+      iDestruct ("y" with "z") as "y"; iRevert "y"; iApply wp_init_frame => //.
+      iIntros (?); by iApply interp_frame. }
     { iIntros "a"; iApply wpi_bases_frame.
       rewrite /init_identity.
       case_match; eauto.
@@ -379,7 +383,7 @@ Section with_cpp.
       | _ :: nil =>
         if bool_decide (drop_qualifiers ty = Tnamed cls) then
           (* this is a delegating constructor, simply delegate *)
-          (this |-> tblockR ty 1 -* wp_init ⊤ ρ (Tnamed cls) this e (fun free => free ** Q))
+          this |-> tblockR ty 1 -* wp_init ⊤ ρ (Tnamed cls) this e (fun free => interp free Q)
         else
           (* the type names do not match, this should never happen *)
           ERROR "type name mismatch"
@@ -404,7 +408,7 @@ Section with_cpp.
       case_bool_decide; eauto.
       iIntros "X Y Z".
       iDestruct ("Y" with "Z") as "Y"; iRevert "Y".
-      iApply wp_init_frame. reflexivity. iIntros (?) "[$ ?]"; iApply "X"; eauto. }
+      iApply wp_init_frame. reflexivity. iIntros (?); by iApply interp_frame. }
   Qed.
 
   (* [type_validity ty p] is the pointer validity of a class that is learned
@@ -451,7 +455,7 @@ Section with_cpp.
           |> let ρ := Remp (Some thisp) Tvoid in
              bind_vars ctor.(c_params) rest_vals ρ (fun ρ frees =>
                (wp_struct_initializer_list cls ρ ctor.(c_class) thisp inits
-                  (wp ⊤ ρ body (Kfree frees (void_return (|> Q Vvoid))))))
+                  (wp ⊤ ρ body (Kfree frees (void_return (|={⊤}=> |> Q Vvoid))))))
         | Some (Gunion union) =>
         (* this is a union *)
           thisp |-> tblockR ty 1 **
@@ -461,7 +465,7 @@ Section with_cpp.
           |> let ρ := Remp (Some thisp) Tvoid in
              bind_vars ctor.(c_params) rest_vals ρ (fun ρ frees =>
                (wp_union_initializer_list union ρ ctor.(c_class) thisp inits
-                  (wp ⊤ ρ body (Kfree frees (void_return (|> Q Vvoid))))))
+                  (wp ⊤ ρ body (Kfree frees (void_return (|={⊤}=> |> Q Vvoid))))))
         | Some _ =>
           ERROR $ "constructor for non-aggregate (" ++ ctor.(c_class) ++ ")"
         | None => False
@@ -473,7 +477,7 @@ Section with_cpp.
   Definition ctor_ok (ctor : Ctor) (spec : function_spec)
     : mpred :=
     [| type_of_spec spec = type_of_value (Oconstructor ctor) |] **
-    (* forall each argument, apply to [fs_spec ti] *)
+    (* forall each argument, apply to [fs_spec] *)
     □ Forall Q : val -> mpred, Forall vals,
       spec.(fs_spec) vals Q -* wp_ctor ctor vals Q.
 
@@ -486,8 +490,15 @@ Section with_cpp.
     match bases with
     | nil => Q
     | base :: bases =>
-      destroy_val false (Tnamed base) (this ., _base cls base) (wpd_bases cls this bases Q)
+      delete_val (Tnamed base) (this ., _base cls base) (wpd_bases cls this bases Q)
     end.
+
+  Lemma wpd_bases_frame cls this : forall bases Q Q',
+      Q -* Q' |-- wpd_bases cls this bases Q -* wpd_bases cls this bases Q'.
+  Proof.
+    induction bases => /=; eauto.
+    intros. by iIntros "X"; iApply delete_val_frame; iApply IHbases.
+  Qed.
 
   Fixpoint wpd_members
            (cls : globname) (this : ptr)
@@ -496,11 +507,18 @@ Section with_cpp.
     match members with
     | nil => Q
     | member :: members =>
-      destroy_val false member.(mem_type) (this ., _field {| f_name := member.(mem_name) ; f_type := cls |})
+      delete_val member.(mem_type) (this ., _field {| f_name := member.(mem_name) ; f_type := cls |})
            (wpd_members cls this members Q)
     end.
 
-  (** [wp_dtor dtor ti args Q] defines the semantics of the destructor [dtor] when
+  Lemma wpd_members_frame cls this : forall members Q Q',
+      Q -* Q' |-- wpd_members cls this members Q -* wpd_members cls this members Q'.
+  Proof.
+    induction members => /=; eauto.
+    intros. by iIntros "X"; iApply delete_val_frame; iApply IHmembers.
+  Qed.
+
+  (** [wp_dtor dtor args Q] defines the semantics of the destructor [dtor] when
       applied to [args] with post-condition [Q].
    *)
   Definition wp_dtor (dtor : Dtor) (args : list val)
@@ -520,7 +538,7 @@ Section with_cpp.
                (* ^ the identity of the object is destroyed *)
                   (wpd_bases dtor.(d_class) thisp (List.map fst s.(s_bases))
                   (* ^ the base classes are destroyed (reverse order) *)
-                     (thisp |-> tblockR (Tnamed dtor.(d_class)) 1 -* |> Q Vvoid)))
+                     (thisp |-> tblockR (Tnamed dtor.(d_class)) 1 -* |={⊤}=> |> Q Vvoid)))
                      (* ^ the operations above destroy each object returning its memory to
                         the abstract machine. Then the abstract machine gives this memory
                         back to the program.
@@ -535,7 +553,7 @@ Section with_cpp.
                automatically where they can prove the active entry has a trivial destructor.
              *)
             |={⊤}=> thisp |-> tblockR (Tnamed dtor.(d_class)) 1 **
-                   (thisp |-> tblockR (Tnamed dtor.(d_class)) 1 -* |> Q Vvoid)
+                   (thisp |-> tblockR (Tnamed dtor.(d_class)) 1 -* |={⊤}=> |> Q Vvoid)
           | _ => None
           end%I
       in
