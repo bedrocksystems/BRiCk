@@ -31,7 +31,7 @@ Module Type Init.
 
     Definition default_initialize_array (default_initialize : type -> ptr -> (FreeTemps -> epred) -> mpred)
                (ty : type) (len : N) (p : ptr) (Q : FreeTemps -> epred) : mpred :=
-      fold_right (fun i PP => default_initialize ty (p ., o_sub _ ty (Z.of_N i)) (fun free' => interp free' PP)%free)
+      fold_right (fun i PP => default_initialize ty (p ., o_sub _ ty (Z.of_N i)) (fun free' => interp free' PP))
                  (p .[ ty ! Z.of_N len ] |-> validR -* Q FreeTemps.id) (seqN 0 len).
 
     Lemma default_initialize_array_frame : ∀ di ty sz Q Q' (p : ptr),
@@ -44,8 +44,8 @@ Module Type Init.
       induction (seqN 0 sz) =>/=; intros.
       - iIntros "X #Y a b"; iApply "X"; iApply "a"; eauto.
       - iIntros "F #Hty". iApply "Hty".
-        iIntros (?). (* iApply (IHl with "F"); eauto. *)
-    Admitted.
+        iIntros (?). iApply interp_frame. iApply (IHl with "F"); eauto.
+    Qed.
 
     (** [default_initialize ty p Q] default initializes the memory at [p] according to
         the type [ty].
@@ -247,20 +247,25 @@ Module Type Init.
         |-- wp_init (Qmut ty) addr e Q.
 
 
+    (** TODO this should be generalized to different [σ] but, in that case it relies
+        on the fact that [ty] is defined in both environments.
+     *)
+    Lemma default_initialize_frame ty : forall Q Q' p,
+        (Forall p, Q p -* Q' p)
+        |-- default_initialize ty p Q -* default_initialize ty p Q'.
+    Proof.
+      induction ty; simpl;
+        try solve [ intros; iIntros "a b c"; iApply "a"; iApply "b"; eauto | eauto ].
+      intros; iIntros "a"; iApply (default_initialize_array_frame with "a").
+      iModIntro. by iIntros (???) "a"; iApply IHty.
+    Qed.
+
   End with_resolve.
 
   Section frames.
     Context `{Σ : cpp_logic thread_info} {σ1 σ2 :genv}.
     Variables (M : coPset) (ρ : region).
     Hypothesis MOD : genv_leq σ1 σ2.
-
-    Lemma default_initialize_frame ty : forall Q Q' p,
-        (Forall p, Q p -* Q' p)
-        |-- default_initialize (σ:=σ1) ty p Q -* default_initialize (σ:=σ2) ty p Q'.
-    Proof.
-      induction ty; simpl;
-        try solve [ intros; iIntros "a b" (?) "c"; iApply "a"; iApply "b"; eauto | eauto ].
-    Admitted. (* [uninitR] frame *)
 
     Lemma wp_initialize_frame obj ty e Q Q' :
       (Forall free, Q free -* Q' free)
@@ -284,13 +289,6 @@ Module Type Init.
       wp_initialize (σ:=σ2) M ρ ty obj e Q
       |-- (Forall free, Q free -* Q' free) -* wp_initialize (σ:=σ2) M ρ ty obj e Q'.
     Proof. by iIntros "H Y"; iRevert "H"; iApply wp_initialize_frame. Qed.
-
-    Theorem wpi_frame (cls : globname) (this : ptr) (e : Initializer) (k1 k2 : _ -> mpredI) :
-      (Forall free, k1 free -* k2 free) |-- wpi (resolve:=σ1) M ρ cls this e k1 -* wpi (resolve:=σ2) M ρ cls this e k2.
-    Proof.
-      intros.
-      (*  iIntros (??). by iApply interp_frame.
-    Qed. *) Admitted. (* path [genv] extension *)
 
   End frames.
 

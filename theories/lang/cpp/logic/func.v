@@ -22,6 +22,8 @@ Arguments UNSUPPORTED {_ _} _%bs.
 Section with_cpp.
   Context `{Σ : cpp_logic thread_info} {resolve:genv}.
 
+  #[local] Open Scope free_scope.
+
   #[local] Notation _base := (o_base resolve).
   #[local] Notation _derived := (o_derived resolve).
 
@@ -153,9 +155,7 @@ Section with_cpp.
         end
       | _              =>
         Forall a : ptr, a |-> primR (erase_qualifiers ty) 1 v -*
-        bind_vars xs vs (Rbind_check x a r) (fun r free => Q r (FreeTemps.delete (erase_qualifiers ty) a |*| free)%free)
-        (* Here we view [anyR (erase_qualifiers ty) 1] as essentially the pre-condition
-           to the "destructor" of a primitive. *)
+        bind_vars xs vs (Rbind_check x a r) (fun r free => Q r (FreeTemps.delete (erase_qualifiers ty) a |*| free))
       end
     | _ , _ => ERROR "bind_vars: argument mismatch"
     end%I%bs.
@@ -303,7 +303,7 @@ Section with_cpp.
     case_match; eauto.
     case_match; eauto.
     iIntros "a b c"; iDestruct ("b" with "c") as "b"; iRevert "b".
-    iApply wpi_frame.
+    iApply wpi_frame => //.
     iIntros (?). iApply interp_frame.
     by iApply IHbases.
   Qed.
@@ -321,7 +321,7 @@ Section with_cpp.
     { case_match; eauto.
       case_match; eauto.
       iIntros "a b c"; iDestruct ("b" with "c") as "b". iRevert "b".
-      iApply wpi_frame; iIntros (?); iApply interp_frame.
+      iApply wpi_frame => //; iIntros (?); iApply interp_frame.
         by iApply IHflds. }
   Qed.
 

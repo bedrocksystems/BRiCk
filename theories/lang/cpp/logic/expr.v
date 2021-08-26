@@ -23,6 +23,8 @@ Require Import bedrock.lang.cpp.heap_notations.
 
 Module Type Expr.
 
+  #[local] Open Scope free_scope.
+
   (**
    * Weakest pre-condition for expressions
    *
@@ -38,20 +40,18 @@ Module Type Expr.
     Context `{Σ : cpp_logic thread_info} {resolve:genv}.
     Variables (M : coPset) (ρ : region).
 
-    #[local] Open Scope free_scope.
+    #[local] Notation wp_lval := (wp_lval M ρ).
+    #[local] Notation wp_prval := (wp_prval M ρ).
+    #[local] Notation wp_xval := (wp_xval M ρ).
+    #[local] Notation wp_init := (wp_init M ρ).
+    #[local] Notation wpe := (wpe M ρ).
+    #[local] Notation wp_glval := (wp_glval M ρ).
+    #[local] Notation wp_args := (wp_args M ρ).
+    #[local] Notation fspec := (fspec resolve.(genv_tu).(globals)).
+    #[local] Notation mspec := (mspec resolve.(genv_tu).(globals)).
 
-    Local Notation wp_lval := (wp_lval M ρ).
-    Local Notation wp_prval := (wp_prval M ρ).
-    Local Notation wp_xval := (wp_xval M ρ).
-    Local Notation wp_init := (wp_init M ρ).
-    Local Notation wpe := (wpe M ρ).
-    Local Notation wp_glval := (wp_glval M ρ).
-    Local Notation wp_args := (wp_args M ρ).
-    Local Notation fspec := (fspec resolve.(genv_tu).(globals)).
-    Local Notation mspec := (mspec resolve.(genv_tu).(globals)).
-
-    Local Notation glob_def := (glob_def resolve) (only parsing).
-    Local Notation size_of := (@size_of resolve) (only parsing).
+    #[local] Notation glob_def := (glob_def resolve) (only parsing).
+    #[local] Notation size_of := (@size_of resolve) (only parsing).
 
     (* constants are rvalues *)
     Axiom wp_prval_constant : forall ty cnst e Q,
@@ -178,7 +178,7 @@ Module Type Expr.
          Qbase base free -* Qidx idx free' -*
          (Exists i, [| idx = Vint i |] **
           let addr := base .[ erase_qualifiers t ! i ] in
-          valid_ptr addr ** Q addr (free' >*> free)))
+          valid_ptr addr ** Q addr (free' |*| free)))
       |-- wp_lval (Esubscript e i t) Q.
 
     (* [Esubscript e i t]
@@ -198,7 +198,7 @@ Module Type Expr.
             Q (Vptr (basep .., o_sub resolve (erase_qualifiers t) i)) (free' ** free)))) *)
           (Exists i, [| idx = Vint i |] **
            let addr := _eqv base .[ erase_qualifiers t ! i ] in
-           valid_ptr addr ** Q addr (free' >*> free)))
+           valid_ptr addr ** Q addr (free' |*| free)))
       |-- wp_xval (Esubscript e i t) Q.
 
     (* the `*` operator is an lvalue *)
@@ -915,11 +915,11 @@ Module Type Expr.
        > shall be passed as the first argument to the deallocation function.
 
        Hence, the destructor is passed a pointer to the object, and the
-       deallocation function [delete] is passed a pointer to the the
+       deallocation function [delete] is passed a pointer to the
        underlying storage.
 
        TODO there is a bug here for [virtual] destruction since, in that case,
-       the full object is destroyed.
+       the full object is destroyed. (see FM-815)
      *)
     Axiom wp_prval_delete : forall delete_fn e ty destroyed_type Q,
         (* call the destructor on the object, and then call delete_fn *)
@@ -1038,11 +1038,11 @@ Module Type Expr.
     Variables (M : coPset).
 
     (* These are the only ones that we need here. *)
-    Local Notation wp_lval := (wp_lval M).
-    Local Notation wp_prval := (wp_prval M).
-    Local Notation wp_init := (wp_init M).
-    Local Notation wp_initialize := (wp_initialize M).
-    Local Notation wp_glval := (wp_glval M).
+    #[local] Notation wp_lval := (wp_lval M).
+    #[local] Notation wp_prval := (wp_prval M).
+    #[local] Notation wp_init := (wp_init M).
+    #[local] Notation wp_initialize := (wp_initialize M).
+    #[local] Notation wp_glval := (wp_glval M).
 
     (* `Earrayloop_init` and `Earrayloop_index` correspond, respectively,
        to the `ArrayInitLoopExpr`[1] and `ArrayInitIndexExpr`[2] expressions
@@ -1158,7 +1158,7 @@ Module Type Expr.
                       _arrayloop_init (Rbind (opaque_val oname) p
                                              (Rbind (arrayloop_loop_index level) idxp ρ))
                                       level trg init ty
-                                      (fun free' => Q (free' >*> free)%free)
+                                      (fun free' => Q (free' >*> free))
                                       sz 0)
       |-- wp_init ρ (Tarray ty sz) trg
                     (Earrayloop_init oname (vc, src) level sz init (Tarray ty sz)) Q.

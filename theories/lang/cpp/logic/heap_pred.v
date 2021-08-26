@@ -160,15 +160,15 @@ Section with_cpp.
   Global Arguments uninitR {resolve} ty q : rename.
 
   Global Instance uninitR_proper
-    : Proper (genv_eq ==> (=) ==> (=) ==> (=) ==> lequiv) (@uninitR).
+    : Proper (genv_eq ==> (=) ==> (=) ==> (≡)) (@uninitR).
   Proof.
-    intros σ1 σ2 Hσ ??-> ??-> ??->.
+    intros σ1 σ2 Hσ ??-> ??->     .
     rewrite uninitR_eq/uninitR_def. by setoid_rewrite Hσ.
   Qed.
   Global Instance uninitR_mono
-    : Proper (genv_leq ==> (=) ==> (=) ==> (=) ==> lentails) (@uninitR).
+    : Proper (genv_leq ==> (=) ==> (=) ==> (⊢)) (@uninitR).
   Proof.
-    intros σ1 σ2 Hσ ??-> ??-> ??->.
+    intros σ1 σ2 Hσ ??-> ??->     .
     rewrite uninitR_eq/uninitR_def. by setoid_rewrite Hσ.
   Qed.
 

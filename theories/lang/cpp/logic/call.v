@@ -67,16 +67,29 @@ Section with_resolve.
         iIntros (??) "% H"; iIntros (??) "H'".
         iDestruct ("H" with "H'") as "H".
         iRevert "H". iApply "X". iPureIntro. simpl; eauto. }
-      { admit. }
+      { case_match.
+        { case_match. iIntros "X Y" (a) "at".
+          iDestruct ("Y" with "at") as (?) "Y".
+          iExists _. iDestruct "Y" as "[$ A]".
+          iRevert "A"; iApply H.
+          iIntros (??) "% Y"; iIntros (?) "Z".
+          iApply "X"; first by simpl; eauto.
+            by iApply "Y". }
+        { iIntros "X Y".
+          iDestruct "Y" as (?) "Y".
+          iExists _; iDestruct "Y" as "[$ Y]".
+          iRevert "Y"; iApply H.
+          iIntros (??) "% Y"; iIntros (??) "Z".
+          iApply "X"; first by simpl; eauto.
+          by iApply "Y". } }
       { iIntros "X Y".
         iDestruct "Y" as (Qa) "[Y Ys]".
         iExists Qa. iFrame.
         iRevert "Ys". iApply H.
         iIntros (??) "% H"; iIntros (??) "H'".
         iDestruct ("H" with "H'") as "H".
-        iRevert "H". iApply "X". iPureIntro. simpl; eauto. }
-  Admitted.
-
+        iRevert "H". iApply "X". iPureIntro. simpl; eauto. } }
+  Qed.
 
   #[program] Definition wp_args (es : list (ValCat * Expr)) (Q : list val -> FreeTemps -> mpred) : mpred :=
     wp_args' es (fun ps (frees : list FreeTemps.t) => Q ps (FreeTemps.pars frees)).
