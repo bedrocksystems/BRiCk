@@ -6,7 +6,7 @@
  *)
 Require Export stdpp.numbers.
 Require Export bedrock.prelude.base.
-Local Set Printing Coercions.	(** Readability *)
+#[local] Set Printing Coercions.	(** Readability *)
 
 (** * Small extensions to [stdpp.numbers]. *)
 
@@ -175,23 +175,23 @@ Proof. intros n1 n2. lia. Qed.
 Lemma Z_max_add_distr_l (a b c : Z) :
   (a `max` b + c = (a + c) `max` (b + c))%Z.
 Proof.
-  Local Open Scope Z_scope.
+  #[local] Open Scope Z_scope.
   rewrite/Z.max.
   rewrite [a + c] Z_add_comm.
   rewrite [b + c] Z_add_comm.
   rewrite Zcompare_plus_compat.
   case_eq (a ?= b); lia.
-  Local Close Scope Z_scope.
+  #[local] Close Scope Z_scope.
 Qed.
 
 Lemma Z_max_add_distr_r (a b c : Z) :
   (a + b `max` c = (a + b) `max` (a + c))%Z.
 Proof.
-  Local Open Scope Z_scope.
+  #[local] Open Scope Z_scope.
   rewrite/Z.max.
   rewrite Zcompare_plus_compat.
   case_eq (b ?= c); lia.
-  Local Close Scope Z_scope.
+  #[local] Close Scope Z_scope.
 Qed.
 
 Lemma Z_pow_max_distr_r (a m n : Z) :
@@ -229,7 +229,7 @@ Definition round_down (n m d : Z) : Prop := ((d | m) ∧ m ≤ n < m + d)%Z.
 Definition round_up (n m d : Z) : Prop := ((d | m) ∧ n ≤ m < n + d)%Z.
 
 Section with_Z.
-  Local Open Scope Z_scope.
+  #[local] Open Scope Z_scope.
 
   (** Properties of [Z.divide] *)
   Lemma Z_divide_gcd_iff' a b : (a | b) ↔ Z.gcd a b = Z.abs a.
@@ -237,7 +237,7 @@ Section with_Z.
     rewrite -Z.divide_abs_l -Z.gcd_abs_l Z.divide_gcd_iff//. apply Z.abs_nonneg.
   Qed.
 
-  Global Instance Z_divide_dec a b : Decision (a | b).
+  #[global] Instance Z_divide_dec a b : Decision (a | b).
   Proof.
     refine (cast_if (decide (Z.gcd a b = Z.abs a)));
       abstract (by rewrite Z_divide_gcd_iff').

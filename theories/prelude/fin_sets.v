@@ -57,7 +57,7 @@ End finset.
 
 (** The [set_map] operation *)
 Section set_map.
-  Local Set Default Proof Using "Type*".
+  #[local] Set Default Proof Using "Type*".
   Context `{FinSet A C, Set_ B D}.
 
   Lemma set_map_disjoint (f : A → B) (X Y : C) :

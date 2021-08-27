@@ -70,7 +70,7 @@ Module Import BS.
     Delimit Scope bs_scope with bs.
     Bind Scope bs_scope with bs.
 
-    Local Fixpoint append (x y : bs) : bs :=
+    #[local] Fixpoint append (x y : bs) : bs :=
       match x with
       | BS.EmptyString => y
       | BS.String x xs => BS.String x (append xs y)

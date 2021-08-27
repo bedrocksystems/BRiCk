@@ -6,15 +6,15 @@
  *)
 Require Export bedrock.prelude.base.
 
-Local Set Printing Coercions.
+#[local] Set Printing Coercions.
 
 Lemma Is_true_is_true b : Is_true b ↔ is_true b.
 Proof. by destruct b. Qed.
 Lemma Is_true_eq b : Is_true b ↔ b = true.
 Proof. by rewrite Is_true_is_true. Qed.
 
-Global Instance orb_comm' : Comm (=) orb := orb_comm.
-Global Instance orb_assoc' : Assoc (=) orb := orb_assoc.
+#[global] Instance orb_comm' : Comm (=) orb := orb_comm.
+#[global] Instance orb_assoc' : Assoc (=) orb := orb_assoc.
 
 Section implb.
   Implicit Types a b : bool.

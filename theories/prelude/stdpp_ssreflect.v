@@ -15,8 +15,8 @@
 (* Load both ssreflect and stdpp, using the same settings as Iris. *)
 From Coq.ssr Require Export ssreflect.
 From stdpp Require Export prelude.
-Global Open Scope general_if_scope.
-Global Set SsrOldRewriteGoalsOrder. (* See Coq issue #5706 *)
+#[global] Open Scope general_if_scope.
+#[global] Set SsrOldRewriteGoalsOrder. (* See Coq issue #5706 *)
 Ltac done := stdpp.tactics.done.
 
 (* TODO: to enable after the Iris bump. *)
@@ -26,4 +26,4 @@ Coercion Z.of_nat : nat >-> Z.
 
 (* No Hint Mode set in stdpp because of Coq bugs #5735 and #9058, only
 fixed in Coq >= 8.12, which Iris depends on. *)
-Global Hint Mode Equiv ! : typeclass_instances. *)
+#[global] Hint Mode Equiv ! : typeclass_instances. *)
