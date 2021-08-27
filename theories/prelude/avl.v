@@ -104,7 +104,7 @@ destruct b.
           end).
 Defined.
 
-Local Lemma check_canon_lem : forall e (b : IM.Raw.tree e) min max,
+#[local] Lemma check_canon_lem : forall e (b : IM.Raw.tree e) min max,
     check_canon min max b ->
     IM.Raw.bst b /\
     match min with

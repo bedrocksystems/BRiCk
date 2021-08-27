@@ -23,7 +23,7 @@ Definition encode_N `{Countable A} (x : A) : N :=
   Pos.pred_N (encode x).
 Definition decode_N `{Countable A} (i : N) : option A :=
   decode (N.succ_pos i).
-Global Instance encode_nat_inj `{Countable A} : Inj (=) (=) (encode_N (A:=A)).
+#[global] Instance encode_nat_inj `{Countable A} : Inj (=) (=) (encode_N (A:=A)).
 Proof. unfold encode_N; intros x y Hxy; apply (inj encode); lia. Qed.
 Lemma decode_encode_N `{Countable A} (x : A) : decode_N (encode_N x) = Some x.
 Proof. rewrite /decode_N /encode_N N_succ_pos_pred. apply decode_encode. Qed.

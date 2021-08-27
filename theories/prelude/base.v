@@ -12,12 +12,13 @@ From bedrock.prelude Require Export stdpp_ssreflect tc_cond_type notations.
 (** Workaround https://github.com/coq/coq/issues/4230. Taken from Software Foundations. *)
 #[global] Remove Hints Bool.trans_eq_bool : core.
 
-Global Set Suggest Proof Using. (* also warns about forgotten [Proof.] *)
-Global Set Default Proof Using "Type".
+#[global] Set Suggest Proof Using. (* also warns about forgotten [Proof.] *)
+#[global] Set Default Proof Using "Type".
 (** Disable [Program]'s compiler for pattern matches.
 It's more expressive, but it mangles definitions and can cause a quadratic size
 explosion. *)
-Global Unset Program Cases.
+#[global] Unset Program Cases.
+#[global] Set Ltac Backtrace.
 
 (** * Small extensions to [stdpp.base] *)
 
@@ -57,11 +58,11 @@ Proof. intros ???. symmetry. apply: (assoc f). Qed.
 Section flip_app.
   Context {A : Type}.
 
-  Global Instance flip_app_left_id : LeftId (=) (@nil A) (flip app).
+  #[global] Instance flip_app_left_id : LeftId (=) (@nil A) (flip app).
   Proof. apply: right_id. Qed.
-  Global Instance flip_app_right_id : RightId (=) (@nil A) (flip app).
+  #[global] Instance flip_app_right_id : RightId (=) (@nil A) (flip app).
   Proof. apply: left_id. Qed.
-  Global Instance flip_app_assoc : Assoc (=) (flip (@app A)).
+  #[global] Instance flip_app_assoc : Assoc (=) (flip (@app A)).
   Proof. apply: flip_assoc. Qed.
 End flip_app.
 

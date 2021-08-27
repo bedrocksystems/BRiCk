@@ -36,11 +36,11 @@ Module on_props.
 Section on_props.
   Context `{R : relation B} `{f : A -> B}.
 
-  Local Instance on_reflexive `{!Reflexive R}: Reflexive (on R f).
+  #[local] Instance on_reflexive `{!Reflexive R}: Reflexive (on R f).
   Proof. rewrite /on. by intros ?. Qed.
-  Local Instance on_symmetric `{!Symmetric R}: Symmetric (on R f).
+  #[local] Instance on_symmetric `{!Symmetric R}: Symmetric (on R f).
   Proof. rewrite /on. by intros ?. Qed.
-  Local Instance on_transitive `{!Transitive R}: Transitive (on R f).
+  #[local] Instance on_transitive `{!Transitive R}: Transitive (on R f).
   Proof. rewrite /on. by intros ???; etrans. Qed.
 End on_props.
 #[export] Hint Resolve on_reflexive on_symmetric on_transitive : typeclass_instances.
@@ -52,11 +52,11 @@ Definition some_Forall2 `(R : relation A) (oa1 oa2 : option A) :=
 Section some_Forall2.
   Context `{R : relation A}.
 
-  (* Global Instance some_Forall2_reflexive `{!Reflexive R}: Reflexive (some_Forall2 R).
+  (* #[global] Instance some_Forall2_reflexive `{!Reflexive R}: Reflexive (some_Forall2 R).
   Proof. rewrite /some_Forall2. intros ?. Qed. *)
-  Global Instance some_Forall2_symmetric `{!Symmetric R}: Symmetric (some_Forall2 R).
+  #[global] Instance some_Forall2_symmetric `{!Symmetric R}: Symmetric (some_Forall2 R).
   Proof. rewrite /some_Forall2. intros ?; naive_solver. Qed.
-  Global Instance some_Forall2_transitive `{!Transitive R}: Transitive (some_Forall2 R).
+  #[global] Instance some_Forall2_transitive `{!Transitive R}: Transitive (some_Forall2 R).
   Proof. rewrite /some_Forall2. intros ?; intuition idtac. by etrans. Qed.
 
   Lemma some_Forall2_iff oa1 oa2 :
@@ -85,9 +85,9 @@ Section same_property.
   Context `{obs : A → option B}.
   Import on_props.
 
-  Global Instance same_property_per : RelationClasses.PER (same_property obs).
+  #[global] Instance same_property_per : RelationClasses.PER (same_property obs).
   Proof. rewrite /same_property. split; apply _. Qed.
-  Global Instance: RewriteRelation (same_property obs) := {}.
+  #[global] Instance: RewriteRelation (same_property obs) := {}.
 
   Lemma same_property_iff a1 a2 :
     same_property obs a1 a2 ↔
@@ -106,7 +106,7 @@ Section same_property.
     obs a = Some b → same_property obs a a.
   Proof. rewrite -same_property_reflexive_equiv. naive_solver. Qed.
 
-  Global Instance same_property_decision `{EqDecision B} :
+  #[global] Instance same_property_decision `{EqDecision B} :
     RelDecision (same_property obs).
   Proof.
     rewrite /RelDecision => a1 a2.
