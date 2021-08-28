@@ -75,17 +75,18 @@ Module Type Init.
       | Tarch _ _ => UNSUPPORTED "default initialization of architecture type"
       | Tqualified _ ty => default_initialize ty p Q
       end.
+    #[global] Arguments default_initialize !_ _ _ /.
 
-    (* [wp_initialize] provides "constructor" semantics for types.
-     * For aggregates, simply delegates to [wp_init], but for primitives,
-     * the semantics is to evaluate the primitive and initialize the location
-     * with the value.
-     *
-     * NOTE this is written as a recursive function rather than by using [decompose_type] because
-     * we want simplification to reduce it.
-     *
-     * NOTE this assumes that the memory has *not* yet been given to the C++ abstract machine.
-     * TODO make this consistent with [default_initialize].
+    (** [wp_initialize] provides "constructor" semantics for types.
+        For aggregates, simply delegates to [wp_init], but for primitives,
+        the semantics is to evaluate the primitive and initialize the location
+        with the value.
+
+        NOTE this is written as a recursive function rather than by using [decompose_type] because
+        we want simplification to reduce it.
+
+        NOTE this assumes that the memory has *not* yet been given to the C++ abstract machine.
+        TODO make this consistent with [default_initialize].
      *)
     Definition wp_initialize (ty : type) (addr : ptr) (init : Expr) (k : FreeTemps -> mpred) : mpred :=
       match drop_qualifiers ty with
@@ -113,11 +114,17 @@ Module Type Init.
       | Tarch _ _ => False (* vendor-specific types are not supported *)
       | Tfloat _ => False (* floating point numbers are not supported *)
       end.
+    #[global] Arguments wp_initialize !_ _ _ _ /.
 
-
-    Definition wpi (cls : globname) (thisp : ptr) (init : Initializer) (Q : epred) : mpred :=
-        let p' := thisp ., offset_for cls init.(init_path) in
+    (** [wpi cls this init Q] evaluates the initializer [init] from class [cls]
+        on the object [this] and then acts like [Q].
+        NOTE temporaries introduced when evaluating [init] are cleaned up before
+        running [Q].
+     *)
+    Definition wpi (cls : globname) (this : ptr) (init : Initializer) (Q : epred) : mpred :=
+        let p' := this ., offset_for cls init.(init_path) in
         wp_initialize (erase_qualifiers init.(init_type)) p' init.(init_init) (fun free => interp free Q).
+    #[global] Arguments wpi _ _ _ _ /.
 
     Axiom wp_init_constructor : forall cls addr cnd es Q,
       wp_args es (fun ls free =>
@@ -154,10 +161,10 @@ Module Type Init.
       let len := N.of_nat (length es) in
       match (len ?= sz)%N with
       | Lt =>
-          match f with
-          | None => False
-          | Some fill => wp_array_init ety base (fill_initlist sz es fill) 0 Q
-          end
+        match f with
+        | None => False
+        | Some fill => wp_array_init ety base (fill_initlist sz es fill) 0 Q
+        end
       | Eq => wp_array_init ety base es 0 Q
       (* <http://eel.is/c++draft/dcl.init.general#16.5>
 
@@ -166,7 +173,13 @@ Module Type Init.
        *)
       | Gt => False
       end.
+    #[global] Arguments wp_array_init_fill _ _ _ _ _ _ / : simpl nomatch.
 
+    (** NOTE initialization of arrays is sequenced in C++ (first to last) but indeterminately
+        sequenced in C. Despite the fact that the the initialization order is not specified,
+        the initializers are still considered full-expressions and temporaries are cleaned up
+        at the end of each initialization.
+     *)
     Axiom wp_init_initlist_array :forall ls fill ety (sz : N) (base : ptr) Q,
           base |-> tblockR (Tarray ety sz) 1 ** wp_array_init_fill ety base ls fill sz Q
       |-- wp_init (Tarray ety sz) base (Einitlist ls fill (Tarray ety sz)) Q.
@@ -282,7 +295,7 @@ Module Type Init.
   End frames.
 
   Section mono_frames.
-    (* Really all framing lemmas should work with [genv] weakening, but that
+    (* All framing lemmas *should* work with [genv] weakening, but that
        requires some additional side-conditions on paths that we can't prove
        right now. So, for the time being, we prove [_frame] lemmas without
        [genv] weakening.

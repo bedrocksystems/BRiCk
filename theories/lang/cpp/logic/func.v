@@ -312,15 +312,14 @@ Section with_cpp.
       Q -* Q'
       |-- wpi_members ρ ty p flds li Q -* wpi_members ρ ty p flds li Q'.
   Proof.
-    induction flds => /=; eauto.
-    intros.
+    induction flds => /=; eauto; intros.
     case_match.
     { iIntros "a"; iApply default_initialize_frame.
       iIntros (?); iApply interp_frame. by iApply IHflds. }
     { case_match; eauto.
       case_match; eauto.
       iIntros "a b c"; iDestruct ("b" with "c") as "b". iRevert "b".
-      iApply wpi_frame => //; by iApply IHflds. }
+      iApply wp_initialize_frame => //; iIntros (?); iApply interp_frame; by iApply IHflds. }
   Qed.
 
   Definition wp_struct_initializer_list (s : Struct) (ρ : region) (cls : globname) (this : ptr)
