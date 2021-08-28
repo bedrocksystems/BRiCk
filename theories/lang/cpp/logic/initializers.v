@@ -115,13 +115,17 @@ Module Type Init.
       end.
     #[global] Arguments wp_initialize !_ _ _ _ /.
 
-    (** [wpi cls this init Q] evaluates the initializer [init] from class [cls]
-        on the object [this] and then acts like [Q].
-        NOTE temporaries introduced when evaluating [init] are cleaned up before
-        running [Q].
+
+    (** [wpi cls this init Q] evaluates the initializer [init] form the
+        object [thisp] (of type [Tnamed cls]) and then proceeds as [Q].
+
+        NOTE that temporaries introduced by the evaluation of [init] are cleaned
+        up before [Q] is run ([Q] does not have a [FreeTemps] argument). This is
+        because initialization is considered a full expression.
+        See [https://eel.is/c++draft/class.init#class.base.init-note-2].
      *)
-    Definition wpi (cls : globname) (this : ptr) (init : Initializer) (Q : epred) : mpred :=
-        let p' := this ., offset_for cls init.(init_path) in
+    Definition wpi (cls : globname) (thisp : ptr) (init : Initializer) (Q : epred) : mpred :=
+        let p' := thisp ., offset_for cls init.(init_path) in
         wp_initialize (erase_qualifiers init.(init_type)) p' init.(init_init) (fun free => interp free Q).
     #[global] Arguments wpi _ _ _ _ /.
 
