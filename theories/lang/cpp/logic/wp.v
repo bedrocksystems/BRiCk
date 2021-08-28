@@ -34,8 +34,6 @@ Section FreeTemps.
   | seq (f g : t) (* = fun x => f $ g x *)
   | par (f g : t)
     (* = fun x => Exists Qf Qg, f Qf ** g Qg ** (Qf -* Qg -* x)
-       (simplified)
-       fun x => f emp ** g emp ** x
      *)
   .
 
@@ -80,9 +78,21 @@ Section FreeTemps.
   Proof. red; apply par_id_unitR. Qed.
 
   (** [pars ls] is the [FreeTemp] representing the destruction
-      of each element in [ls] *in non-deterministic order.
+      of each element in [ls] *in non-deterministic order*.
    *)
-  Definition pars := fold_right FreeTemps.par FreeTemps.id.
+  Definition pars : list t -> t := fold_right FreeTemps.par FreeTemps.id.
+
+  (** [seqs ls] is the [FreeTemp] representing the destruction
+      of each element in [ls] sequentially from left-to-right, i.e.
+      the first element in the list is run first.
+   *)
+  Definition seqs : list t -> t := fold_right FreeTemps.seq FreeTemps.id.
+
+  (** [seqsR ls] is the [FreeTemp] representing the destruction
+      of each element in [ls] sequentially from right-to-left, i.e.
+      the first element in the list is destructed last.
+   *)
+  Definition seqsR : list t -> t := foldl (fun a b => FreeTemps.seq b a) FreeTemps.id.
 
 End FreeTemps.
 End FreeTemps.
