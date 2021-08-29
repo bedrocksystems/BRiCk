@@ -173,7 +173,7 @@ Module Type Init.
        *)
       | Gt => False
       end.
-    #[global] Arguments wp_array_init_fill _ _ _ _ _ _ / : simpl nomatch.
+    #[global] Arguments wp_array_init_fill _ _ !_ _ !_ _ / : simpl nomatch.
 
     (** NOTE initialization of arrays is sequenced in C++ (first to last) but indeterminately
         sequenced in C. Despite the fact that the the initialization order is not specified,
