@@ -76,6 +76,19 @@ Module Type Init.
       end.
     #[global] Arguments default_initialize !_ _ _ /.
 
+    (** TODO this should be generalized to different [σ] but, in that case it relies
+        on the fact that [ty] is defined in both environments.
+     *)
+    Lemma default_initialize_frame ty : forall this Q Q',
+        (Forall f, Q f -* Q' f)
+        |-- default_initialize ty this Q -* default_initialize ty this Q'.
+    Proof.
+      induction ty; simpl;
+        try solve [ intros; iIntros "a b c"; iApply "a"; iApply "b"; eauto | eauto ].
+      { intros. iIntros "a"; iApply (default_initialize_array_frame with "a").
+        iModIntro. iIntros (???) "a". by iApply IHty. }
+    Qed.
+
     (** [wp_initialize] provides "constructor" semantics for types.
         For aggregates, simply delegates to [wp_init], but for primitives,
         the semantics is to evaluate the primitive and initialize the location
@@ -128,19 +141,6 @@ Module Type Init.
         let p' := thisp ., offset_for cls init.(init_path) in
         wp_initialize (erase_qualifiers init.(init_type)) p' init.(init_init) (fun free => interp free Q).
     #[global] Arguments wpi _ _ _ _ /.
-
-    (** TODO this should be generalized to different [σ] but, in that case it relies
-        on the fact that [ty] is defined in both environments.
-     *)
-    Lemma default_initialize_frame ty : forall Q Q' p,
-        (Forall p, Q p -* Q' p)
-        |-- default_initialize ty p Q -* default_initialize ty p Q'.
-    Proof.
-      induction ty; simpl;
-        try solve [ intros; iIntros "a b c"; iApply "a"; iApply "b"; eauto | eauto ].
-      intros; iIntros "a"; iApply (default_initialize_array_frame with "a").
-      iModIntro. by iIntros (???) "a"; iApply IHty.
-    Qed.
 
   End with_resolve.
 
