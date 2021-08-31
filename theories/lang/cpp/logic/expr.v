@@ -1035,14 +1035,15 @@ Module Type Expr.
           Q (Vbool false) FreeTemps.id
       |-- wp_prval (Eimplicit_init ty) Q.
 
-    (** TODO missing the type of the (arguments of the) constructor *)
-    Axiom wp_init_constructor : forall cls addr cnd es Q targs,
-      wp_args targs es (fun ls free =>
+    Axiom wp_init_constructor : forall cls addr cnd es Q,
+        (* NOTE because the AST does not include the types of the arguments of
+           the constructor, we have to look up the type in the environment.
+         *)
            match resolve.(genv_tu) !! cnd with
            | Some cv =>
-             |> mspec (Tnamed cls) (type_of_value cv) (Vptr $ _global cnd) (Vptr addr :: ls) (fun _ => Q free)
+             wp_mcall (Vptr $ _global cnd) addr (Tnamed cls) (type_of_value cv) es (fun v free => [| v = Vundef |] ** Q free)
            | _ => False
-           end)
+           end
       |-- wp_init (Tnamed cls) addr (Econstructor cnd es (Tnamed cls)) Q.
 
     Fixpoint wp_array_init (ety : type) (base : ptr) (es : list Expr) (idx : Z) (Q : FreeTemps -> mpred) : mpred :=
