@@ -871,12 +871,14 @@ Module Type Expr.
         - Currently, we do not model coalescing of multiple allocations
           (https://eel.is/c++draft/expr.new#14).
      *)
-    Axiom wp_prval_new : forall new_fn new_args init aty ty Q targs (_ : arg_types new_fn.2 = Some targs),
+    Axiom wp_prval_new : forall new_fn new_args init aty ty Q targs sz
+                           (nfty := normalize_type new_fn.2)
+                           (_ : arg_types nfty = Some (Tint sz Unsigned :: targs)),
         (** TODO this needs a side-condition requiring that [new] with no arguments does not return
             [nullptr] because the C++ standard permits the assumption. *)
         wp_args targs new_args (fun vs free =>
           Exists sz al, [| size_of aty = Some sz |] ** [| align_of aty = Some al |] **
-            |> fspec new_fn.2 (Vptr $ _global new_fn.1) (Vn sz :: vs) (fun res =>
+            |> fspec nfty (Vptr $ _global new_fn.1) (Vn sz :: vs) (fun res =>
                   Exists storage_ptr : ptr,
                     [| res = Vptr storage_ptr |] **
                     if bool_decide (storage_ptr = nullptr) then
