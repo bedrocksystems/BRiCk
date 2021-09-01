@@ -34,6 +34,7 @@ theories/prelude/notations.v
 theories/prelude/tc_cond_type.v
 theories/prelude/wrap.v
 theories/prelude/fin.v
+theories/prelude/letstar.v
 
 theories/prelude/base.v
 theories/prelude/option.v
