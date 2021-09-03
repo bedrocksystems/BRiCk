@@ -25,8 +25,15 @@ Definition RWX : t :=
 #[global] Instance t_eqdec : EqDecision t.
 Proof. solve_decision. Defined.
 
-#[global] Instance t_inh : Inhabited t.
-Proof. apply (populate R). Qed.
+#[global] Instance t_inh : Inhabited t := populate R.
+
+#[global] Instance t_countable : Countable t.
+Proof.
+  apply (inj_countable'
+    (λ a : t, ((read a, write a), (exec a, user a)))
+    (λ n, {| read := n.1.1 ; write := n.1.2 ; exec := n.2.1 ; user := n.2.2 |})).
+  abstract (by intros []).
+Qed.
 End attrs.
 
 (* XXX Module [base] is a compatibility hack that will be inlined. *)
