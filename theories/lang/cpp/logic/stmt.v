@@ -225,16 +225,17 @@ Module Type Stmt.
                        a |-> heap_pred.uninitR (erase_qualifiers ty) 1 -*
                          k' (Rbind x a ρ) (FreeTemps.delete (erase_qualifiers ty) a)
                      end).
-    Proof. (*
-      destruct init; intros.
-      { iIntros "K h" (a); iSpecialize ("h" $! a); iRevert "h"; iApply wp_prval_frame; first by reflexivity.
-        iIntros (v f); iApply interp_frame.
-        iIntros "h h'";  iDestruct ("h" with "h'") as "h"; iRevert "h"; iApply "K".
-        iIntros (??) "h [$ x]"; iApply "h"; auto. }
-      { iIntros "K h" (a); iSpecialize ("h" $! a); iRevert "h".
-        iIntros "A B".  iDestruct ("A" with "B") as "A"; iRevert "A"; iApply "K".
-        iIntros (??) "X [$ a]"; iApply "X"; eauto. }
-    Qed. *) Admitted.
+    Proof. 
+      case: init=>[e | ];iIntros "K h" (a).
+      { iSpecialize ("h" $! a);iRevert "h".
+        iApply wp_prval_frame;first by done.
+        iIntros (v f);iApply interp_frame.
+        iIntros "h h'";iDestruct ("h" with "h'") as "h".
+        by iApply "K". }
+      { iSpecialize ("h" $! a);iRevert "h".
+        iIntros "h h'";iDestruct ("h" with "h'") as "h".
+        by iApply "K". }
+    Qed.
 
     Lemma wp_decl_var_frame : forall x ρ ρ_init init ty (k k' : region -> FreeTemps -> mpred),
         Forall a (b : _), k a b -* k' a b
