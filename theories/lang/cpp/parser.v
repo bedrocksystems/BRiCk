@@ -66,7 +66,7 @@ Notation "` e `" := e (e custom cppglobal at level 200, at level 0,
 
 (** Importing [cpp_notation] makes cpp2v-generated names generally
 available as, e.g., [``::MyClass``]. *)
-Module cpp_notation.
+Module Export cpp_notation.
   Declare Scope cpp_scope.
   Delimit Scope cpp_scope with cpp.
   Notation "'``' e '``'" := e
