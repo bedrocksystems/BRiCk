@@ -62,7 +62,7 @@ Fixpoint size_of (resolve : genv) (t : type) : option N :=
   | Tarch sz _ => bytesN <$> sz
   end%N.
 
-Global Instance Proper_size_of
+#[global] Instance Proper_size_of
   : Proper (genv_leq ==> eq ==> Roption_leq eq) (@size_of).
 Proof.
   intros ?? Hle ? t ->; induction t; simpl; (try constructor) => //.
@@ -136,8 +136,8 @@ Fixpoint find_field {T} (f : ident) (fs : list (ident * T)) : option T :=
     else find_field f fs
   end%list.
 
-Local Close Scope nat_scope.
-Local Open Scope Z_scope.
+#[local] Close Scope nat_scope.
+#[local] Open Scope Z_scope.
 (* note: we expose the fact that reference fields are compiled to pointers,
    so the [offset_of] a reference field is the offset of the pointer.
  *)
@@ -183,7 +183,7 @@ Axiom align_of_qualified : ∀ σ t q,
     align_of (resolve:=σ) (Tqualified q t) = align_of (resolve:=σ) t.
 
 Axiom Proper_align_of : Proper (genv_leq ==> eq ==> Roption_leq eq) (@align_of).
-Global Existing Instance Proper_align_of.
+#[global] Existing Instance Proper_align_of.
 
 Lemma align_of_genv_compat tu σ gn st
       (Hσ : tu ⊧ σ)
