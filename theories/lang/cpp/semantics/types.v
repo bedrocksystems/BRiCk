@@ -162,11 +162,22 @@ Parameter align_of : forall {resolve : genv} (t : type), option N.
 Axiom align_of_named : ∀ {σ : genv} (nm : globname),
   align_of (Tnamed nm) =
   glob_def σ nm ≫= GlobDecl_align_of.
-Axiom align_of_size_of : forall {σ : genv} (t : type) sz,
+
+(** If [size_of] is defined, [align_of] must divide [size_of]. *)
+Axiom align_of_size_of' : forall {σ : genv} (t : type) sz,
+    size_of σ t = Some sz ->
+    (exists al, align_of t = Some al /\ al <> 0 /\ (al | sz))%N.
+
+Lemma align_of_size_of {σ : genv} (t : type) sz :
     size_of σ t = Some sz ->
     exists al, align_of t = Some al /\
           (* size is a multiple of alignment *)
           (sz mod al = 0)%N.
+Proof.
+  move=>/align_of_size_of' [al [? [? /N.mod_divide ?]]].
+  eauto.
+Qed.
+
 Axiom align_of_array : forall {σ : genv} (ty : type) n,
     align_of (Tarray ty n) = align_of ty.
 
