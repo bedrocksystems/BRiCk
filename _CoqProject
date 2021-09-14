@@ -143,6 +143,9 @@ theories/lang/cpp/logic/atomics_derived.v
 theories/lang/cpp/logic/builtins.v
 theories/lang/cpp/logic/layout.v
 theories/lang/cpp/logic/raw.v
+theories/lang/cpp/logic/cstring.v
+theories/lang/cpp/logic/zstring.v
+theories/lang/cpp/logic/string.v
 theories/lang/cpp/logic/vbyte.v
 theories/lang/cpp/logic.v
 
