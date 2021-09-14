@@ -36,11 +36,11 @@ Module on_props.
 Section on_props.
   Context `{R : relation B} `{f : A -> B}.
 
-  #[local] Instance on_reflexive `{!Reflexive R}: Reflexive (on R f).
+  #[local] Instance on_reflexive `{!Reflexive R} : Reflexive (on R f).
   Proof. rewrite /on. by intros ?. Qed.
-  #[local] Instance on_symmetric `{!Symmetric R}: Symmetric (on R f).
+  #[local] Instance on_symmetric `{!Symmetric R} : Symmetric (on R f).
   Proof. rewrite /on. by intros ?. Qed.
-  #[local] Instance on_transitive `{!Transitive R}: Transitive (on R f).
+  #[local] Instance on_transitive `{!Transitive R} : Transitive (on R f).
   Proof. rewrite /on. by intros ???; etrans. Qed.
 End on_props.
 #[export] Hint Resolve on_reflexive on_symmetric on_transitive : typeclass_instances.
