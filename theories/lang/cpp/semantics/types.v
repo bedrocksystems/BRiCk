@@ -160,11 +160,11 @@ Definition parent_offset (resolve : genv) (t : globname) (f : globname) : option
 (* todo: we should embed alignment information in our types *)
 Parameter align_of : forall {resolve : genv} (t : type), option N.
 Axiom align_of_named : ∀ {σ : genv} (nm : globname),
-  align_of (resolve:=σ) (Tnamed nm) =
+  align_of (Tnamed nm) =
   glob_def σ nm ≫= GlobDecl_align_of.
 Axiom align_of_size_of : forall {σ : genv} (t : type) sz,
     size_of σ t = Some sz ->
-    exists al, align_of (resolve:=σ) t = Some al /\
+    exists al, align_of t = Some al /\
           (* size is a multiple of alignment *)
           (sz mod al = 0)%N.
 Axiom align_of_array : forall {σ : genv} (ty : type) n,
