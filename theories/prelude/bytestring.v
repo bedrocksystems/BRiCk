@@ -1,5 +1,5 @@
 (*
- * Copyright (c) 2020 BedRock Systems, Inc.
+ * Copyright (c) 2020-2021 BedRock Systems, Inc.
  * This software is distributed under the terms of the BedRock Open-Source License.
  * See the LICENSE-BedRock file in the repository root for details.
  *)
@@ -58,6 +58,13 @@ Module Import BS.
     f_equal; auto.
   Qed.
 
+  Lemma parse_print_inv:
+    ∀ x : list Byte.byte, BS.print (BS.parse x) = x.
+  Proof.
+    induction x; simpl; intros; auto.
+    f_equal; auto.
+  Qed.
+
   Instance t_dec : EqDecision t.
   Proof. solve_decision. Defined.
 
@@ -101,6 +108,24 @@ Module Import BS.
     | String.String x xs => String (Ascii.byte_of_ascii x) (of_string xs)
     end%bs.
 
+  Lemma of_string_to_string_inv :
+    forall (b : bs),
+      of_string (to_string b) = b.
+  Proof.
+    intros *; induction b as [| a b' IHb']; simpl.
+    - by reflexivity.
+    - by rewrite IHb', Ascii.byte_of_ascii_of_byte.
+  Qed.
+
+  Lemma to_string_of_string_inv :
+    forall (b : string),
+      to_string (of_string b) = b.
+  Proof.
+    intros *; induction b as [| a b' IHb']; simpl.
+    - by reflexivity.
+    - by rewrite IHb', Ascii.ascii_of_byte_of_ascii.
+  Qed.
+
   Fixpoint rev (acc s : bs) : bs :=
     match s with
     | EmptyString => acc
@@ -118,6 +143,18 @@ Module Import BS.
         else false
       end
     end%bs.
+
+  (** [substring n m s] returns the substring of [s] that starts
+      at position [n] and of length [m];
+      if this does not make sense it returns [""] *)
+  Fixpoint substring (n m : nat) (s : bs) : bs :=
+    match n, m, s with
+    | O,    O,    _              => BS.EmptyString
+    | O,    S m', BS.EmptyString => s
+    | O,    S m', BS.String c s' => BS.String c (substring 0 m' s')
+    | S n', _,    BS.EmptyString => s
+    | S n', _,    BS.String c s' => substring n' m s'
+    end.
 
   Fixpoint index (n : nat) (s1 s2 : bs) {struct s2} : option nat :=
     match s2 with
@@ -150,6 +187,15 @@ Module Import BS.
     | EmptyString => 0
     | String _ l => S (length l)
     end.
+
+  Lemma print_length :
+    forall (s : bs),
+      List.length (BS.print s) = BS.length s.
+  Proof.
+    intros s; induction s; intros *; simpl.
+    - done.
+    - by rewrite IHs.
+  Qed.
 
   Fixpoint contains (start: nat) (keys: list bs) (fullname: bs) :bool :=
     match keys with
