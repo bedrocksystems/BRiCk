@@ -3,7 +3,7 @@
  * This software is distributed under the terms of the BedRock Open-Source License.
  * See the LICENSE-BedRock file in the repository root for details.
  *)
-Require Import bedrock.prelude.base.
+From bedrock.prelude Require Import base numbers list.
 Require Import iris.proofmode.tactics.
 From iris.bi.lib Require Import fractional.
 
@@ -159,16 +159,38 @@ Section with_Σ.
         anyR (Tnamed cls) 1
     -|- Reduce (union_def (fun ty => anyR ty 1) cls un).
 
+ (** Proof requires the generalization of [anyR] to support aggregates (and arrays) *)
+  Lemma anyR_array_0 t q :
+    anyR (Tarray t 0) q -|- validR ** [| is_Some (size_of σ t) |].
+  Admitted.
+
+  Lemma anyR_array_succ t n q :
+    anyR (Tarray t (N.succ n)) q -|-
+    type_ptrR t ** anyR t q ** .[ t ! 1 ] |-> anyR (Tarray t n) q.
+  Admitted.
+
   (** decompose an array into individual components
       note that one past the end of an array is a valid location, but
       it doesn't store anything.
 
       TODO this should move
    *)
-  Theorem anyR_array : forall t n q,
+  Lemma anyR_array' t n q :
         anyR (Tarray t n) q
-    -|- arrayR t (fun _ => anyR t q) (repeat () (BinNatDef.N.to_nat n)).
-  Proof. Admitted. (** Proof requires the generalization of [anyR] to support aggregates (and arrays) *)
+    -|- arrayR t (fun _ => anyR t q) (replicateN n ()).
+  Proof.
+    induction n using N.peano_ind;
+      rewrite (replicateN_0, replicateN_S) (arrayR_nil, arrayR_cons).  {
+      apply anyR_array_0.
+    }
+    by rewrite -IHn anyR_array_succ.
+  Qed.
+
+  (* Wrapper using [repeat] instead of [replicate] for compatibility. *)
+  Lemma anyR_array t n q :
+        anyR (Tarray t n) q
+    -|- arrayR t (fun _ => anyR t q) (repeat () (N.to_nat n)).
+  Proof. by rewrite anyR_array' repeatN_replicateN. Qed.
 
   (** decompose an array into individual components
       note that one past the end of an array is a valid location, but
@@ -177,24 +199,37 @@ Section with_Σ.
       TODO this should move
    *)
   (* TODO a type has a size if and only if it has an alignment *)
-  Theorem tblockR_array : forall t n q,
+  Lemma tblockR_array_better t n q sz :
+        size_of σ t = Some sz ->
+        tblockR (Tarray t n) q
+    -|- .[ T_uint8 ! Z.of_N (n * sz) ] |-> validR **
+        [∗list] i ∈ seq 0 (N.to_nat n),
+           .[ T_uint8 ! Z.of_N (N.of_nat i * sz) ] |-> tblockR t q.
+  Proof.
+    rewrite /tblockR /= => Hsz.
+    rewrite Hsz /= align_of_array.
+    case: (align_of_size_of _ _ Hsz) => [al [Hal HalSz]].
+    rewrite Hal.
+    (*
+    Unclear if unfolding is recommended, but at least it should be sufficient for a hacky proof;
+    maybe we should lift lemmas about [blockR] (not sure which).
+    *)
+    rewrite blockR_eq /blockR_def.
+    rewrite -assoc.
+    f_equiv.
+    (* Maybe useful? *)
+    apply Rep_equiv_at => p.
+    (* To finish the proof, we need to rearrange [anyR], use [o_sub_sub] & c and
+    [anyR_valid_observe], and reason about pointer alignment. For alignment, we
+    need to unfold [alignedR], and maybe [aligned_ptr]. *)
+  Admitted.
+
+  (* TODO: migrate client to the statement above, and drop this. *)
+  Lemma tblockR_array : forall t n q,
         tblockR (Tarray t n) q
     -|- _offsetR (_sub t (Z.of_N n)) validR **
         [∗list] i ↦ _ ∈ repeat () (BinNatDef.N.to_nat n),
            _offsetR (_sub t (Z.of_nat i)) (tblockR t q).
-  Proof.
-    rewrite /tblockR /=. intros.
-    rewrite align_of_array.
-    destruct (size_of σ t) eqn:Hsize => /=.
-    { case_match; eauto.
-      { admit. }
-      { (* the type needs to have an alignment *)
-        split'; try solve [ iIntros "[]" ].
-        admit. } }
-    { split'; try solve [ iIntros "[]" ].
-      (* TODO if a type doesn't have a size, then you can not
-         subscript it. *)
-      admit. }
   Admitted.
 
 End with_Σ.
