@@ -5,12 +5,28 @@
  * See the LICENSE-BedRock file in the repository root for details.
  *)
 Require Export stdpp.list.
-Require Export bedrock.prelude.base.
+From bedrock.prelude Require Import base numbers.
+Export bedrock.prelude.base.
 
 (** * Small extensions to [stdpp.list]. *)
 
 Lemma foldr_cons {A B} (f : A -> B -> B) x y ys : foldr f x (y :: ys) = f y (foldr f x ys).
 Proof. done. Qed.
+
+(* From stdlib's [repeat] to stdpp's [replicate]. *)
+Lemma repeat_replicate {A} (x : A) n :
+  repeat x n = replicate n x.
+Proof. by elim: n => [//| n /= ->]. Qed.
+
+Lemma repeatN_replicateN {A} (x : A) n :
+  repeat x (N.to_nat n) = replicateN n x.
+Proof. apply repeat_replicate. Qed.
+
+Lemma replicateN_0 {A} (x : A) : replicateN 0 x = [].
+Proof. done. Qed.
+
+Lemma replicateN_S {A} (x : A) n : replicateN (N.succ n) x = x :: replicateN n x.
+Proof. by rewrite /replicateN/= N2Nat.inj_succ. Qed.
 
 Section list.
   Context {A : Type}.
