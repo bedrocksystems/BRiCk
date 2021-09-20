@@ -157,6 +157,15 @@ Section with_cpp.
         Forall a : ptr, a |-> primR (erase_qualifiers ty) 1 v -*
         bind_vars xs vs (Rbind_check x a r) (fun r free => Q r (FreeTemps.delete (erase_qualifiers ty) a |*| free))
       end
+
+    (* the (more) correct definition would rely on the caller to create primitive
+       values (in the logic). See the note on [wp_args']. The corresponding implementation
+       here would be the following:
+      match v with
+      | Vptr p => bind_vars xs vs (Rbind_check x p r) Q
+      | _ => ERROR "non-pointer passed to function (the caller is responsible for constructing objects)"
+      end
+     *)
     | _ , _ => ERROR "bind_vars: argument mismatch"
     end%I%bs.
 

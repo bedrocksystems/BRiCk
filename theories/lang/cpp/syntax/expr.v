@@ -172,17 +172,17 @@ Inductive Expr : Set :=
 | Ecomma (vc : ValCat) (e1 e2 : Expr)
   (* ^ these are specialized because they have special control flow semantics *)
 
-| Ecall    (_ : Expr) (_ : list (ValCat * Expr)) (_ : type)
+| Ecall    (_ : Expr) (_ : list Expr) (_ : type)
 | Ecast    (_ : Cast) (_ : ValCat * Expr) (_ : type)
 
 | Emember  (_ : ValCat) (obj : Expr) (_ : field) (_ : type)
   (* TODO: maybe replace the left branch use [Expr] here? *)
-| Emember_call (method : (obj_name * call_type * type) + Expr) (_ : ValCat) (obj : Expr) (_ : list (ValCat * Expr)) (_ : type)
+| Emember_call (method : (obj_name * call_type * type) + Expr) (_ : ValCat) (obj : Expr) (_ : list Expr) (_ : type)
 
 | Esubscript (_ : Expr) (_ : Expr) (_ : type)
 | Esize_of (_ : type + Expr) (_ : type)
 | Ealign_of (_ : type + Expr) (_ : type)
-| Econstructor (_ : obj_name) (_ : list (ValCat * Expr)) (_ : type)
+| Econstructor (_ : obj_name) (_ : list Expr) (_ : type)
 | Eimplicit (_ : Expr)
 | Eimplicit_init (_ : type)
 | Eif       (_ _ _ : Expr) (_ : type)
@@ -191,7 +191,7 @@ Inductive Expr : Set :=
 | Enull
 | Einitlist (_ : list Expr) (_ : option Expr) (_ : type)
 
-| Enew (new_fn : option (obj_name * type)) (new_args : list (ValCat * Expr))
+| Enew (new_fn : option (obj_name * type)) (new_args : list Expr)
        (alloc_ty : type)
        (array_size : option Expr) (init : option Expr) (_ : type)
 | Edelete (is_array : bool) (delete_fn : option (obj_name * type)) (arg : Expr)
@@ -201,7 +201,7 @@ Inductive Expr : Set :=
 | Ematerialize_temp (_ : Expr)
 
 | Ebuiltin (_ : BuiltinFn) (_ : type)
-| Eatomic (_ : AtomicOp) (_ : list (ValCat * Expr)) (_ : type)
+| Eatomic (_ : AtomicOp) (_ : list Expr) (_ : type)
 | Eva_arg (_ : Expr) (_ : type)
 | Epseudo_destructor (_ : type) (_ : Expr)
 

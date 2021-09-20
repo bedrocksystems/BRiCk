@@ -7,7 +7,7 @@ Require Import iris.proofmode.tactics.
 Require Import bedrock.lang.cpp.ast.
 Require Import bedrock.lang.cpp.semantics.
 From bedrock.lang.cpp.logic Require Import
-     pred path_pred heap_pred wp destroy.
+     pred path_pred heap_pred wp destroy initializers.
 Require Import bedrock.lang.cpp.heap_notations.
 
 Section with_resolve.
@@ -19,47 +19,80 @@ Section with_resolve.
   Local Notation wp_xval := (wp_xval M ρ).
   Local Notation wp_init := (wp_init M ρ).
 
-  Fixpoint wp_args' (es : list (ValCat * Expr)) (Q : list val -> list FreeTemp -> mpred)
+  (** [valcat_of_type t] is the value category embedded in the type [t].
+      This is used when calling a function that takes [t] as an argument.
+   *)
+  Fixpoint valcat_of_type (t : type) : ValCat :=
+    match t with
+    | Tref _ => Lvalue
+    | Trv_ref _ => Xvalue
+    | Tqualified _ t => valcat_of_type t
+    | _ => Prvalue
+    end.
+
+  (**
+     [wp_args' ts es Q] evaluates the arguments [es] to a function taking types [ts]
+     and invokes [Q] with the values and the temporary destruction expression.
+
+     This is encapsulated because the order of evaluation of function arguments is not
+     specified in C++.
+     NOTE this definition is *not* sound in the presence of exceptions.
+
+     NOTE that this deviates from the standard because it uses a different parameter
+     passing convention.
+  *)
+  (** TODO [Q] could be [list ptr -> FreeTemps -> mpred] *)
+  Fixpoint wp_args' (ts : list type) (es : list Expr) (Q : list val -> list FreeTemps -> mpred)
   : mpred :=
-    match es with
-    | nil => Q nil nil
-    | (vc,e) :: es =>
-      let ty := erase_qualifiers $ type_of e in
-      match vc with
+    match ts , es with
+    | nil , nil => Q nil nil
+    | t :: ts , e :: es =>
+      match valcat_of_type t with
       | Lvalue =>
         Exists Qarg,
         wp_lval e Qarg **
-          wp_args' es (fun vs frees => Forall v free,
+         wp_args' ts es (fun vs frees => Forall v free,
                                    Qarg v free -* Q (Vptr v :: vs) (free :: frees))
       | Prvalue =>
-        if is_aggregate ty then
-          Forall a : ptr, a |-> tblockR (σ:=σ) ty 1 -*
+        if is_aggregate t then
+          Forall a : ptr, a |-> tblockR (σ:=σ) t 1 -*
           let (e,dt) := destructor_for e in
           Exists Qarg,
-          wp_init ty a e Qarg **
-            wp_args' es (fun vs frees =>
+         wp_init t a e Qarg **
+            wp_args' ts es (fun vs frees =>
                           Forall free,
-                          Qarg free -* Q (Vptr a :: vs) (FreeTemps.delete ty a >*> free :: frees)%free)
+                          Qarg free -* Q (Vptr a :: vs) (FreeTemps.delete t a >*> free :: frees)%free)
         else
           Exists Qarg,
           wp_prval e Qarg **
-            wp_args' es (fun vs frees => Forall v free,
+           wp_args' ts es (fun vs frees => Forall v free,
                                      Qarg v free -* Q (v :: vs) (free :: frees))
       | Xvalue =>
         Exists Qarg,
         wp_xval e Qarg **
-            wp_args' es (fun vs frees => Forall v free,
+            wp_args' ts es (fun vs frees => Forall v free,
                                      Qarg v free -* Q (Vptr v :: vs) (free :: frees))
       end
+     (* the (more) correct definition would use initialization semantics for each expression.
+        > When a function is called, each parameter ([dcl.fct]) is initialized ([dcl.init], [class.copy.ctor])
+        > with its corresponding argument.
+      Forall a : ptr, a |-> tblockR (erase_qualifiers t) 1 -*
+      Exists Qarg,
+        wp_initialize M ti ρ t a e Qarg **
+        wp_args ts es (fun vs frees =>
+                         Forall free,
+                         Qarg free -* Q (Vptr a :: vs) (FreeTemps.delete t a >*> free :: frees))
+      *)
+    | _ , _ => False (* mismatched arguments and parameters. *)
     end.
 
-  Lemma wp_args'_frame_strong : forall es Q Q',
-      (Forall vs free, [| length vs = length es |] -* Q vs free -* Q' vs free) |-- wp_args' es Q -* wp_args' es Q'.
+  Lemma wp_args'_frame_strong : forall ts es Q Q',
+      Forall vs free, [| length vs = length es |] -* Q vs free -* Q' vs free
+      |-- wp_args' ts es Q -* wp_args' ts es Q'.
   Proof.
-    elim => /=; try solve [ by intros; iIntros "? []" ].
+    elim; destruct es => /=; try solve [ by intros; iIntros "? []" ].
     { by iIntros (? ?) "H"; iApply "H". }
-    { destruct a => /=; intros.
-      destruct v.
+    { destruct (valcat_of_type a) => /=; intros.
       { iIntros "X Y".
         iDestruct "Y" as (Qa) "[Y Ys]".
         iExists Qa. iFrame.
@@ -68,7 +101,7 @@ Section with_resolve.
         iDestruct ("H" with "H'") as "H".
         iRevert "H". iApply "X". iPureIntro. simpl; eauto. }
       { case_match.
-        { case_match. iIntros "X Y" (a) "at".
+        { case_match. iIntros "X Y" (?) "at".
           iDestruct ("Y" with "at") as (?) "Y".
           iExists _. iDestruct "Y" as "[$ A]".
           iRevert "A"; iApply H.
@@ -83,26 +116,27 @@ Section with_resolve.
           iApply "X"; first by simpl; eauto.
           by iApply "Y". } }
       { iIntros "X Y".
-        iDestruct "Y" as (Qa) "[Y Ys]".
-        iExists Qa. iFrame.
+        iDestruct "Y" as (?) "[Y Ys]".
+        iExists _. iFrame.
         iRevert "Ys". iApply H.
         iIntros (??) "% H"; iIntros (??) "H'".
         iDestruct ("H" with "H'") as "H".
         iRevert "H". iApply "X". iPureIntro. simpl; eauto. } }
   Qed.
 
-  #[program] Definition wp_args (es : list (ValCat * Expr)) (Q : list val -> FreeTemps -> mpred) : mpred :=
-    wp_args' es (fun ps (frees : list FreeTemps.t) => Q ps (FreeTemps.pars frees)).
+  Definition wp_args ts es Q :=
+    wp_args' ts es (fun vs frees => Q vs (FreeTemps.pars frees)).
 
-  Lemma wp_args_frame_strong : forall es Q Q',
-      (Forall vs free, [| length vs = length es |] -* Q vs free -* Q' vs free) |-- wp_args es Q -* wp_args es Q'.
+  Lemma wp_args_frame_strong : forall ts es Q Q',
+      (Forall vs free, [| length vs = length es |] -* Q vs free -* Q' vs free) |-- wp_args ts es Q -* wp_args ts es Q'.
   Proof.
-    intros. iIntros "X"; iApply wp_args'_frame_strong.
-    iIntros (??) "?". by iApply "X".
+    intros.
+    iIntros "X". iApply wp_args'_frame_strong.
+    iIntros (? ?) "%". by iApply "X".
   Qed.
 
-  Lemma wp_args_frame : forall es Q Q',
-      (Forall vs free, Q vs free -* Q' vs free) |-- wp_args es Q -* wp_args es Q'.
+  Lemma wp_args_frame : forall ts es Q Q',
+      (Forall vs free, Q vs free -* Q' vs free) |-- wp_args ts es Q -* wp_args ts es Q'.
   Proof.
     intros; iIntros "X".
     iApply wp_args_frame_strong.

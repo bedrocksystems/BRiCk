@@ -34,8 +34,6 @@ Section FreeTemps.
   | seq (f g : t) (* = fun x => f $ g x *)
   | par (f g : t)
     (* = fun x => Exists Qf Qg, f Qf ** g Qg ** (Qf -* Qg -* x)
-       (simplified)
-       fun x => f emp ** g emp ** x
      *)
   .
 
@@ -80,9 +78,21 @@ Section FreeTemps.
   Proof. red; apply par_id_unitR. Qed.
 
   (** [pars ls] is the [FreeTemp] representing the destruction
-      of each element in [ls] *in non-deterministic order.
+      of each element in [ls] *in non-deterministic order*.
    *)
-  Definition pars := fold_right FreeTemps.par FreeTemps.id.
+  Definition pars : list t -> t := fold_right FreeTemps.par FreeTemps.id.
+
+  (** [seqs ls] is the [FreeTemp] representing the destruction
+      of each element in [ls] sequentially from left-to-right, i.e.
+      the first element in the list is run first.
+   *)
+  Definition seqs : list t -> t := fold_right FreeTemps.seq FreeTemps.id.
+
+  (** [seqsR ls] is the [FreeTemp] representing the destruction
+      of each element in [ls] sequentially from right-to-left, i.e.
+      the first element in the list is destructed last.
+   *)
+  Definition seqsR : list t -> t := foldl (fun a b => FreeTemps.seq b a) FreeTemps.id.
 
 End FreeTemps.
 End FreeTemps.
@@ -707,7 +717,13 @@ Section with_cpp.
 
       NOTE the current implementation desugars this to [fspec] but this is not
            accurate according to the standard because a member function can not
-           be casted to a regular function that takes an extra parameter.
+           be cast to a regular function that takes an extra parameter.
+           We could fix this by splitting [fspec] more, but we are deferring that
+           for now.
+
+           In practice we assume that the AST is well-typed, so the only way to
+           exploit this is to use [reinterpret_cast< >] to cast a function pointer
+           to an member pointer or vice versa.
    *)
   Definition mspec (tt : type_table) (this_type : type) (fun_type : type)
     : val -> list val -> (val -> epred) -> mpred :=

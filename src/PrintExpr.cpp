@@ -366,9 +366,8 @@ public:
         print.ctor("Ecall");
         cprint.printExpr(expr->getCallee(), print, li);
         print.output() << fmt::line;
-        print.list(expr->arguments(), [&](auto print, auto i) {
-            cprint.printExprAndValCat(i, print, li);
-        });
+        print.list(expr->arguments(),
+                   [&](auto print, auto i) { cprint.printExpr(i, print, li); });
         done(expr, print, cprint);
     }
 
@@ -403,10 +402,9 @@ public:
 
             print.output() << fmt::nbsp;
             // note skip the first parameter because it is the object.
-            print.list_range(++expr->arg_begin(), expr->arg_end(),
-                             [&](auto print, auto i) {
-                                 cprint.printExprAndValCat(i, print, li);
-                             });
+            print.list_range(
+                ++expr->arg_begin(), expr->arg_end(),
+                [&](auto print, auto i) { cprint.printExpr(i, print, li); });
 
             done(expr, print, cprint);
         } else if (isa<FunctionDecl>(callee)) {
@@ -646,9 +644,8 @@ public:
         // print.output() << expr->isElidable() << fmt::nbsp;
         cprint.printObjName(expr->getConstructor(), print);
         print.output() << fmt::nbsp;
-        print.list(expr->arguments(), [&](auto print, auto i) {
-            cprint.printExprAndValCat(i, print, li);
-        });
+        print.list(expr->arguments(),
+                   [&](auto print, auto i) { cprint.printExpr(i, print, li); });
         //print.output() << fmt::nbsp << expr->isElidable();
         done(expr, print, cprint);
     }
@@ -669,7 +666,6 @@ public:
         // directly.
         auto idx = 0;
         print.list(ctor->parameters(), [&](auto print, auto i) {
-            print.output() << "(Lvalue, ";
             print.ctor("Evar", false);
             print.ctor("Lname", false);
             print.output() << "\"#" << idx << "\"";
@@ -677,7 +673,6 @@ public:
             print.output() << fmt::nbsp;
             cprint.printQualType(i->getType(), print);
             print.end_ctor();
-            print.output() << ")";
             ++idx;
         });
         //print.output() << fmt::nbsp << expr->isElidable();
@@ -762,13 +757,12 @@ public:
             assert(false && "no method and not a binary operator");
         }
         print.output() << fmt::nbsp;
-        print.list(expr->arguments(), [&](auto print, auto i) {
-            cprint.printExprAndValCat(i, print, li);
-        });
+        print.list(expr->arguments(),
+                   [&](auto print, auto i) { cprint.printExpr(i, print, li); });
 #if 0
         print.output() << fmt::nbsp << fmt::lparen;
         for (auto i : expr->arguments()) {
-            cprint.printExprAndValCat(i, print, li);
+            cprint.printExpr(i, print, li);
             print.cons();
         }
         print.end_list();
@@ -906,7 +900,7 @@ public:
         }
 
         print.list(expr->placement_arguments(), [&](auto print, auto arg) {
-            cprint.printExprAndValCat(arg, print, li);
+            cprint.printExpr(arg, print, li);
         }) << fmt::nbsp;
 
         cprint.printQualType(expr->getAllocatedType(), print);
@@ -1065,7 +1059,7 @@ public:
 
         print.begin_list();
         for (unsigned i = 0; i < expr->getNumSubExprs(); ++i) {
-            cprint.printExprAndValCat(expr->getSubExprs()[i], print, li);
+            cprint.printExpr(expr->getSubExprs()[i], print, li);
             print.cons();
         }
         print.end_list();
