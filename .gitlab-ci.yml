@@ -113,9 +113,10 @@ test_latest:
 
 test_alternate:
   extends: .test
-  image: ${alt_main_docker_img}
   dependencies:
     - build_alternate
+  # Must match build_alternate:
+  image: ${alt_main_docker_img}
   variables:
     LLVM_MAJ_VER: ${LLVM_ALT_MAJ_VER}
 
