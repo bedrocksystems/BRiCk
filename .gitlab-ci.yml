@@ -113,14 +113,14 @@ build_public:
 test_latest:
   extends: .test
   image: ${cur_main_docker_img}
-  dependencies:
+  needs:
     - build_latest
   variables:
     LLVM_MAJ_VER: ${LLVM_CUR_MAJ_VER}
 
 test_alternate:
   extends: .test
-  dependencies:
+  needs:
     - build_alternate
   # Must match build_alternate:
   image: ${alt_main_docker_img}
@@ -129,7 +129,7 @@ test_alternate:
 
 test_public:
   extends: .test
-  dependencies:
+  needs:
     - build_public
   # Must match build_public:
   image: ${public_main_docker_img}
@@ -199,7 +199,7 @@ build_cpp2v_master:
 release_latest:
   extends: .release
   image: ${cur_main_docker_img}
-  dependencies:
+  needs:
     - build_latest
   variables:
     LLVM_MAJ_VER: ${LLVM_CUR_MAJ_VER}
@@ -207,7 +207,7 @@ release_latest:
 # release_alternate:
 #   extends: .release
 #   image: ${alt_main_docker_img}
-#   dependencies:
+#   needs:
 #     - build_alternate
 #   variables:
 #     LLVM_MAJ_VER: ${LLVM_ALT_MAJ_VER}
@@ -216,7 +216,7 @@ release_latest:
 prepare_pages:
   image: ${fm_docs_img}
   stage: prepare_pages
-  dependencies:
+  needs:
     - build_latest
   variables:
     LLVM_MAJ_VER: ${LLVM_CUR_MAJ_VER}
@@ -246,7 +246,7 @@ prepare_pages:
 
 pages:
   stage: pages
-  dependencies:
+  needs:
     - prepare_pages
   script:
     # Note: we inline the definition of the `make pages` rule to avoid a CI breakage which we
