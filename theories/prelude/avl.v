@@ -132,14 +132,14 @@ Proof.
             | H : _ /\ _ |- _ => destruct H
             end.
      repeat constructor; eauto.
-     { destruct min; simpl in *; auto.
+     { destruct min as [b|]; simpl in *; auto.
        red. inversion 1; subst.
        { destruct (bs_cmp b k); simpl in *; try congruence; contradiction. }
        { apply H7 in H11. auto. }
        { apply H4 in H11.
          destruct (bs_cmp b k) eqn:?; simpl in *; try contradiction.
          eapply IM.E.lt_trans; eauto. } }
-     { destruct max; simpl in *; auto.
+     { destruct max as [b|]; simpl in *; auto.
        red. inversion 1; subst.
        { destruct (bs_cmp k b); simpl in *; try congruence; contradiction. }
        { apply H8 in H11.
