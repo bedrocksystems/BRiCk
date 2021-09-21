@@ -257,7 +257,7 @@ Module cstring.
         WF (BS.String b s) ->
         b <> "000"%byte.
     Proof.
-      intros * HWF; destruct (byte_dec b "000"%byte);
+      intros * HWF; destruct (byte_eq_dec b "000"%byte);
         try subst; last by done.
       intros _; destruct s; intros *; move: HWF.
       - rewrite /WF to_zstring_unfold/=; unfold zstring.WF.
