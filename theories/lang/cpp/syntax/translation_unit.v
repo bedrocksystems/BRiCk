@@ -226,9 +226,6 @@ Definition symbol_table : Type := IM.t ObjValue.
 
 Definition type_table : Type := IM.t GlobDecl.
 
-Instance Singleton_twothree {V} : SingletonM bs V (IM.t V) :=
-  fun k v => <[ k := v ]> ∅.
-
 Instance Singleton_symbol_table : SingletonM obj_name ObjValue symbol_table := _.
 Instance Singleton_type_table : SingletonM globname GlobDecl type_table := _.
 
