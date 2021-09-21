@@ -5,8 +5,7 @@
  *)
 From stdpp Require Import countable strings namespaces.
 
-Set Primitive Projections.
-Set Default Proof Using "Type".
+#[local] Set Default Proof Using "Type".
 
 (** bytes *)
 Instance byte_inhabited : Inhabited Byte.byte := populate Byte.x00.
