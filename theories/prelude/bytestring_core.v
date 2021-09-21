@@ -137,11 +137,10 @@ Module Import BS.
   (** Module [Bytestring_notations] is exported below, and contains
   notations that can be safely exported. *)
   Module Import Bytestring_notations.
-    Definition bs := BS.t.
+    Notation bs := BS.t.
 
     Declare Scope bs_scope.
     Delimit Scope bs_scope with bs.
-    Bind Scope bs_scope with BS.t.
     Bind Scope bs_scope with bs.
 
     #[local] Fixpoint append (x y : bs) : bs :=
@@ -152,7 +151,7 @@ Module Import BS.
 
     Notation "x ++ y" := (append x y) : bs_scope.
 
-    String Notation BS.t BS.parse BS.print : bs_scope.
+    String Notation bs BS.parse BS.print : bs_scope.
   End Bytestring_notations.
   Notation append := Bytestring_notations.append.
 
