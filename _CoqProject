@@ -41,6 +41,7 @@ theories/prelude/option.v
 theories/prelude/addr.v
 theories/prelude/numbers.v
 theories/prelude/bytestring.v
+theories/prelude/bytestring_core.v
 theories/prelude/telescopes.v
 theories/prelude/avl.v
 theories/prelude/gmap.v
