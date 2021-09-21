@@ -215,10 +215,10 @@ Definition type_of_value (o : ObjValue) : type :=
 
 Variant GlobDecl : Set :=
 | Gtype     (* this is a type declaration, but not a definition *)
-| Gunion    (_ : Union)
-| Gstruct   (_ : Struct)
-| Genum     (_ : type) (_ : list ident)
-| Gconstant (_ : type) (init : option Expr)
+| Gunion    (_ : Union) (* union body *)
+| Gstruct   (_ : Struct) (* struct body *)
+| Genum     (_ : type) (_ : list ident) (* *)
+| Gconstant (_ : type) (init : option Expr) (* used for enumerator constants*)
 | Gtypedef  (_ : type).
 Instance: EqDecision GlobDecl.
 Proof. solve_decision. Defined.
@@ -243,10 +243,32 @@ Notation not_ref_type t := (ref_to_type t = None).
 
 Section with_type_table.
   Variable te : type_table.
-  (* Adapted from Krebbers'15, Definition 3.3.5 *)
+  (*
+  To traverse a type definition and compute, say, its list of subobjects,
+  we require that the type is _complete_, as in the usual sense.
+
+  This definition is adapted from Krebbers'15, Definition 3.3.5, with needed
+  adjustments for C++.
+
+  Unlike Krebbers:
+  - our [type_table] are not ordered
+  - [complete_named] takes a proof of [complete_decl] to simplify its use for consumers,
+    so we'd naively recheck a struct wherever needed; but an actual checker can
+    be smarter (it could use a state monad carrying a map of known-complete types).
+
+  The C++ standard defines and constrains "(in)complete type"s at
+  https://eel.is/c++draft/basic.types.general#def:object_type,incompletely-defined,
+  and constraints it at https://eel.is/c++draft/basic.scope.pdecl#6,
+  https://eel.is/c++draft/class.mem#def:data_member,
+  https://eel.is/c++draft/basic.def.odr#12,
+  https://eel.is/c++draft/basic.def#5.
+  *)
 
   (* Check that [g : GlobDecl] is complete in environment [te]. *)
   Inductive complete_decl : GlobDecl -> Prop :=
+  (* We intentionally omit Krebbers' clauses checking the aggregate is not
+  empty: empty aggregates are legal in full C/C++ (see
+  [cpp2v-tests/test_translation_unit_validity.cpp]). *)
   | complete_Struct {st}
               (_ : forall b li, In (b, li) st.(s_bases) -> complete_type (Tnamed b))
               (_ : forall x t e li, In (mkMember x t e li) st.(s_fields) -> complete_type t)
@@ -256,7 +278,10 @@ Section with_type_table.
     : complete_decl (Gunion u)
   | complete_enum {t consts} (_ : complete_type t)
     : complete_decl (Genum t consts)
-  (* Basic types. This excludes references (see [complete_basic_type_not_ref]). *)
+  (* No need for typedefs since those are forbidden in `Tnamed`, `Gtype` isn't
+  legal, `Gconstant` is illegal and wouldn't make sense. *)
+
+  (* Basic types. This excludes references (as checked by [complete_basic_type_not_ref]). *)
   with complete_basic_type : type -> Prop :=
   | complete_float sz : complete_basic_type (Tfloat sz)
   | complete_int sgn sz : complete_basic_type (Tint sgn sz)
@@ -267,7 +292,8 @@ Section with_type_table.
   | complete_ptr {t} : complete_pointee_type t -> complete_basic_type (Tptr t)
 
   (* [complete_pointee_type t] says that a pointer/reference to [t] is complete.
-     This excludes references (see [complete_pointee_type_not_ref]). *)
+     This excludes references (as checked by [complete_pointee_type_not_ref])
+     since they cannot be nested. *)
   with complete_pointee_type : type -> Prop :=
   | complete_pt_qualified {q t} (_ : complete_pointee_type t)
     : complete_pointee_type (Tqualified q t)
@@ -290,7 +316,8 @@ Section with_type_table.
   (* Beware:
   [Tfunction] represents a function type; somewhat counterintuitively,
   a pointer to a function type is complete even if the argument/return types
-  are not complete, you're just forbidden from actually invoking the pointer. *)
+  are not complete but only pointer-complete, you're just forbidden from
+  actually invoking the pointer; this follows Krebbers'15 3.3.5. *)
   | complete_pt_function {cc ret args}
       (_ : complete_pointee_type ret)
       (_ : complete_pointee_types args)
