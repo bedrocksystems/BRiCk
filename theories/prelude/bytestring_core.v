@@ -134,6 +134,12 @@ Module Import BS.
     f_equal; auto.
   Qed.
 
+  Fixpoint append (x y : t) : t :=
+    match x with
+    | EmptyString => y
+    | String x xs => String x (append xs y)
+    end.
+
   (** Module [Bytestring_notations] is exported below, and contains
   notations that can be safely exported. *)
   Module Import Bytestring_notations.
@@ -143,17 +149,10 @@ Module Import BS.
     Delimit Scope bs_scope with bs.
     Bind Scope bs_scope with bs.
 
-    #[local] Fixpoint append (x y : bs) : bs :=
-      match x with
-      | EmptyString => y
-      | String x xs => String x (append xs y)
-      end.
-
     Notation "x ++ y" := (append x y) : bs_scope.
 
     String Notation bs BS.parse BS.print : bs_scope.
   End Bytestring_notations.
-  Notation append := Bytestring_notations.append.
 
   Fixpoint rev (acc s : bs) : bs :=
     match s with
