@@ -6,7 +6,7 @@
 From bedrock.prelude Require Import base avl.
 From bedrock.lang.cpp.syntax Require Import names expr stmt types.
 
-Set Primitive Projections.
+#[local] Set Primitive Projections.
 
 (** Record an offset in _bits_. *)
 Record LayoutInfo : Set :=
@@ -226,23 +226,6 @@ Definition symbol_table : Type := IM.t ObjValue.
 
 Definition type_table : Type := IM.t GlobDecl.
 
-(**
-A [translation_unit] value represents all the statically known information
-about a C++ translation unit, that is, a source file.
-TOOD: add support for symbols with _internal_ linkage.
-TODO: does linking induce a (non-commutative) monoid on object files? Is then
-a translation unit a "singleton" value in this monoid? *)
-Record translation_unit : Type :=
-{ symbols    : symbol_table
-; globals    : type_table
-; byte_order : endian
-}.
-
-Instance global_lookup : Lookup globname GlobDecl translation_unit :=
-  fun k m => m.(globals) !! k.
-Instance symbol_lookup : Lookup obj_name ObjValue translation_unit :=
-  fun k m => m.(symbols) !! k.
-
 Instance Singleton_twothree {V} : SingletonM bs V (IM.t V) :=
   fun k v => <[ k := v ]> ∅.
 
@@ -377,3 +360,20 @@ Proof.
     try by [exact: complete_pointee_type_not_ref| tauto].
   move => /complete_basic_type_not_ref; naive_solver.
 Qed.
+
+(**
+A [translation_unit] value represents all the statically known information
+about a C++ translation unit, that is, a source file.
+TOOD: add support for symbols with _internal_ linkage.
+TODO: does linking induce a (non-commutative) monoid on object files? Is then
+a translation unit a "singleton" value in this monoid? *)
+Record translation_unit : Type :=
+{ symbols    : symbol_table
+; globals    : type_table
+; byte_order : endian
+}.
+
+Instance global_lookup : Lookup globname GlobDecl translation_unit :=
+  fun k m => m.(globals) !! k.
+Instance symbol_lookup : Lookup obj_name ObjValue translation_unit :=
+  fun k m => m.(symbols) !! k.
