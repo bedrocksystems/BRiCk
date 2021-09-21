@@ -375,6 +375,30 @@ Definition complete_symbol_table (te : type_table) (syms : symbol_table) :=
 Definition complete_translation_unit (te : type_table) (syms : symbol_table) :=
   complete_type_table te /\ complete_symbol_table te syms.
 
+(*
+#[global] Instance complete_type_table_dec te : Decision (complete_type_table te).
+Proof.
+apply: map_Forall_dec.
+(* unshelve eapply map_Forall_dec; try apply _. *)
+*)
+
+(*
+TODOs for FM-216:
+1. prove [complete_type_table_dec] above with an efficient checker.
+2. add [bool_decide (complete_type_table globals = true] to translation_unit;
+   that's automatically proof-irrelevant, and proofs are just cheap [eq_refl].
+3. add any helper lemmas, say for proving equality of [translation_unit] from
+   equality of the relevant componets.
+
+Twist: the "decision procedure" likely requires fuel; find how to adapt the
+above plan. We'll likely end up with a boolean checker proven correct.
+
+Question: do we need [complete_symbol_table]? This is not expected.
+
+Goal: enable recursion on proofs of [complete_type_table], e.g. for defining
+[anyR] (FM-215).
+*)
+
 (**
 A [translation_unit] value represents all the statically known information
 about a C++ translation unit, that is, a source file.

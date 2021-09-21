@@ -27,6 +27,11 @@ Instance IMR_maptolist A : FinMapToList bs A (IM.Raw.t A) := IM.Raw.elements (el
 Instance IMR_singleton {V} : SingletonM bs V (IM.Raw.t V) :=
   fun k v => <[ k := v ]> ∅.
 
+Instance IMR_delete {V} : Delete bs (IM.Raw.t V) :=
+  fun k m => IM.Raw.remove k m.
+
+Instance IMR_omap : OMap IM.Raw.t := fun _ _ f =>
+  IM.Raw.map_option (fun _ v => f v).
 
 
 Instance IM_lookup {V} : Lookup bs V (IM.t V) :=
@@ -46,6 +51,25 @@ Instance IM_maptolist A : FinMapToList bs A (IM.t A) := IM.elements (elt := A).
 
 Instance IM_singleton {V} : SingletonM bs V (IM.t V) :=
   fun k v => <[ k := v ]> ∅.
+
+Instance IM_delete {V} : Delete bs (IM.t V) :=
+  fun k m => IM.remove k m.
+
+(* TODO: more efficient implementation, doing a single tree traversal (like in
+stdpp), not one for lookup and one for insertion. *)
+Instance IM_partial_alter {V} : PartialAlter bs V (IM.t V) :=
+  fun f k m =>
+  match f (m !! k) with
+  | Some v => <[ k := v ]> m
+  | None => delete k m
+  end.
+
+(* TODO:
+- lifting of [IMR_omap].
+- [FinMap bs IM.t].
+(* Instance IM_omap : OMap IM.t. *)
+(* Instance IM_fin_map : FinMap bs IM.t. *)
+*)
 
 Definition find_any {T} (b : bs -> T -> bool) (l : IM.t T) : bool :=
   IM.fold (λ (k : IM.key) (v : T) (acc : bool), if acc then true else b k v) l false.
