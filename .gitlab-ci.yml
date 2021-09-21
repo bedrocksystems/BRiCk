@@ -89,11 +89,11 @@ stages:
     - opam list
     - ./build/cpp2v --cpp2v-version 0 --
     - PATH=`llvm-config-${LLVM_MAJ_VER} --bindir`:`pwd`/build:$PATH make -C cpp2v-tests -j ${NJOBS} TIMED=1 QPATH=`pwd`/build/bedrock
-  only:
-    - merge_requests
-  except:
-    variables:
-      - $CI_MERGE_REQUEST_TITLE =~ /^WIP:/
+  rules:
+    - if: $CI_MERGE_REQUEST_IID
+    # This is a negated if.
+    - if: $CI_MERGE_REQUEST_TITLE =~ /^WIP:/
+      when: never
 
 build_latest:
   extends: .build
