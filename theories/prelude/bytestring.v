@@ -38,6 +38,8 @@ Module Import BS.
   Inductive t : Set :=
   | EmptyString
   | String (_ : Byte.byte) (_ : t).
+  Definition eq_dec (x y : t) : {x = y} + {x <> y}.
+  Proof. decide equality. apply Byte.byte_eq_dec. Defined.
 
   Fixpoint print (b : t) : list Byte.byte :=
     match b with
@@ -384,17 +386,7 @@ Module OT_bs <: OrderedType.OrderedType with Definition t := bs.
     rewrite ->byte_cmp_refl in *. auto.
   Qed.
 
-  Definition eq_dec : ∀ x y : t, {eq x y} + {¬ eq x y}.
-  refine (fun x y =>
-      match bs_cmp x y as Z return CompareSpec _ _ _ Z -> _ with
-      | Eq => fun pf => left _
-      | _ => fun pf => right _
-      end (lm x y)).
-  - abstract (inversion pf; auto).
-  - abstract (apply lt_not_eq; inversion pf; auto).
-  - abstract (inversion_clear pf as [ | |?%lt_not_eq]; naive_solver).
-  Defined.
-
+  Definition eq_dec := BS.eq_dec.
 End OT_bs.
 
 (* stdpp-specific. *)
