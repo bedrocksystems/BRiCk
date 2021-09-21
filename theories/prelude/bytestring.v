@@ -218,7 +218,7 @@ Module Import BS.
       match s2 with
       | EmptyString => false
       | String y ys =>
-        if decide (x = y) then prefix xs ys
+        if Byte.byte_eq_dec x y then prefix xs ys
         else false
       end
     end%bs.
@@ -271,8 +271,8 @@ Module Import BS.
     List.length (BS.print s) = BS.length s.
   Proof.
     induction s; simpl.
-    - done.
-    - by rewrite IHs.
+    - easy.
+    - now rewrite IHs.
   Qed.
 
   Fixpoint contains (start : nat) (keys : list bs) (fullname : bs) :bool :=
@@ -286,7 +286,7 @@ Module Import BS.
     end.
 
   Definition eqb (a b : bs) : bool :=
-    if decide (a = b) then true else false.
+    if eq_dec a b then true else false.
 
   #[deprecated(since="2021-09-21", note="Use [byte_to_N_inj]")]
   Notation to_N_inj := byte_to_N_inj.
