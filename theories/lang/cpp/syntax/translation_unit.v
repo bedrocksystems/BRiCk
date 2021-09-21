@@ -3,6 +3,7 @@
  * This software is distributed under the terms of the BedRock Open-Source License.
  * See the LICENSE-BedRock file in the repository root for details.
  *)
+Require Import stdpp.fin_maps.
 From bedrock.prelude Require Import base avl.
 From bedrock.lang.cpp.syntax Require Import names expr stmt types.
 
@@ -359,6 +360,20 @@ Proof.
     try by [exact: complete_pointee_type_not_ref| tauto].
   move => /complete_basic_type_not_ref; naive_solver.
 Qed.
+
+(**
+Adapted from Krebbers'15, Definition 3.3.6:
+- all member types must be complete
+- all function types must be pointer-complete as defined above.
+*)
+Definition complete_type_table (te : type_table) :=
+  map_Forall (fun _key d => complete_decl te d) te.
+
+Definition complete_symbol_table (te : type_table) (syms : symbol_table) :=
+  map_Forall (fun _key d => complete_pointee_type te (type_of_value d)) syms.
+
+Definition complete_translation_unit (te : type_table) (syms : symbol_table) :=
+  complete_type_table te /\ complete_symbol_table te syms.
 
 (**
 A [translation_unit] value represents all the statically known information
