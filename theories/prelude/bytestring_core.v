@@ -141,6 +141,7 @@ Module Import BS.
 
     Declare Scope bs_scope.
     Delimit Scope bs_scope with bs.
+    Bind Scope bs_scope with BS.t.
     Bind Scope bs_scope with bs.
 
     #[local] Fixpoint append (x y : bs) : bs :=
