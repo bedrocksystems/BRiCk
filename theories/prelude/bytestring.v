@@ -3,6 +3,7 @@
  * This software is distributed under the terms of the BedRock Open-Source License.
  * See the LICENSE-BedRock file in the repository root for details.
  *)
+Require Import Coq.Structures.OrderedType.
 From stdpp Require Import countable strings namespaces.
 
 #[local] Set Default Proof Using "Type".
@@ -21,10 +22,96 @@ Defined.
 Definition byte_parse (b : Byte.byte) : Byte.byte := b.
 Definition byte_print (b : Byte.byte) : Byte.byte := b.
 
+(** comparison *)
+Definition byte_cmp (a b : Byte.byte) : comparison :=
+  N.compare (Byte.to_N a) (Byte.to_N b).
+
 Delimit Scope byte_scope with byte.
 String Notation Byte.byte byte_parse byte_print : byte_scope.
 
 Bind Scope byte_scope with Byte.byte.
+
+Lemma byte_cmp_refl : forall a, byte_cmp a a = Eq.
+Proof. intros. apply N.compare_refl. Qed.
+
+Lemma byte_to_N_inj x y : Byte.to_N x = Byte.to_N y <-> x = y.
+Proof.
+  split.
+  2: destruct 1; reflexivity.
+  intros.
+  assert (Some x = Some y).
+  { do 2 rewrite <- Byte.of_to_N.
+    destruct H. reflexivity. }
+  injection H0. auto.
+Qed.
+
+Module OT_byte <: OrderedType.OrderedType with Definition t := Byte.byte.
+  Definition t := Byte.byte.
+  Definition eq := fun l r => byte_cmp l r = Eq.
+  Definition lt := fun l r => byte_cmp l r = Lt.
+  Theorem eq_refl : ∀ x : t, eq x x.
+  Proof.
+    intros; apply N.compare_refl.
+  Qed.
+  Theorem eq_sym : ∀ x y : t, eq x y → eq y x.
+  Proof.
+    intros. eapply N.compare_eq in H. red. unfold byte_cmp.
+    destruct H. apply eq_refl.
+  Qed.
+  Theorem eq_trans : ∀ x y z : t, eq x y → eq y z → eq x z.
+  Proof.
+    intros. eapply N.compare_eq in H. eapply N.compare_eq in H0.
+    red. unfold byte_cmp.
+    destruct H. destruct H0. apply eq_refl.
+  Qed.
+  Theorem lt_trans : ∀ x y z : t, lt x y → lt y z → lt x z.
+  Proof.
+    unfold lt, byte_cmp.
+    intros.
+    rewrite ->N.compare_lt_iff in H.
+    rewrite ->N.compare_lt_iff in H0.
+    rewrite N.compare_lt_iff.
+    lia.
+  Qed.
+  Theorem lt_not_eq : ∀ x y : t, lt x y → ¬ eq x y.
+  Proof.
+    unfold lt, eq, byte_cmp; intros.
+    rewrite ->N.compare_lt_iff in H.
+    rewrite N.compare_eq_iff.
+    lia.
+  Qed.
+  Definition compare (x y : t) : OrderedType.Compare lt eq x y.
+    refine  (
+    match byte_cmp x y as X return byte_cmp x y = X -> OrderedType.Compare lt eq x y  with
+    | Eq => fun pf => OrderedType.EQ pf
+    | Lt => fun pf => OrderedType.LT pf
+    | Gt => fun pf => OrderedType.GT _
+    end (Logic.eq_refl)).
+    unfold lt, byte_cmp.
+    abstract (rewrite N.compare_antisym; apply CompOpp_iff, pf).
+  Defined.
+
+  Definition eq_dec : ∀ x y : t, {eq x y} + {¬ eq x y}.
+  Proof.
+  unfold eq.
+  refine (fun x y =>
+      match byte_cmp x y as Z return byte_cmp x y = Z -> _ with
+      | Eq => fun pf => left pf
+      | _ => fun _ => right _
+      end Logic.eq_refl);
+  abstract congruence.
+  Defined.
+
+End OT_byte.
+
+Theorem byte_cmp_spec : forall x y, CompareSpec (x = y) (OT_byte.lt x y) (OT_byte.lt y x) (byte_cmp x y).
+Proof.
+  intros. unfold byte_cmp.
+  unfold OT_byte.lt, byte_cmp.
+  destruct (N.compare_spec (Byte.to_N x) (Byte.to_N y)); constructor; auto.
+  apply byte_to_N_inj. assumption.
+Qed.
+
 
 (** bytestrings *)
 (** Many functions on byte strings are meant to be always used
@@ -211,83 +298,10 @@ Module Import BS.
   Definition eqb (a b : bs) : bool :=
     if decide (a = b) then true else false.
 
-  Definition byte_cmp (a b : Byte.byte) : comparison :=
-    N.compare (Byte.to_N a) (Byte.to_N b).
-
-  Lemma to_N_inj : forall x y, Byte.to_N x = Byte.to_N y <-> x = y.
-  Proof.
-    split.
-    2: destruct 1; reflexivity.
-    intros.
-    assert (Some x = Some y).
-    { do 2 rewrite <- Byte.of_to_N.
-      destruct H. reflexivity. }
-    injection H0. auto.
-  Qed.
+  #[deprecated(since="2021-09-21", note="Use [byte_to_N_inj]")]
+  Notation to_N_inj := byte_to_N_inj.
 End BS.
 Export Bytestring_notations.
-
-(** comparison *)
-Require Import Coq.Structures.OrderedType.
-
-Module OT_byte <: OrderedType.OrderedType with Definition t := Byte.byte.
-  Definition t := Byte.byte.
-  Definition eq := fun l r => byte_cmp l r = Eq.
-  Definition lt := fun l r => byte_cmp l r = Lt.
-  Theorem eq_refl : ∀ x : t, eq x x.
-  Proof.
-    intros; apply N.compare_refl.
-  Qed.
-  Theorem eq_sym : ∀ x y : t, eq x y → eq y x.
-  Proof.
-    intros. eapply N.compare_eq in H. red. unfold byte_cmp.
-    destruct H. apply eq_refl.
-  Qed.
-  Theorem eq_trans : ∀ x y z : t, eq x y → eq y z → eq x z.
-  Proof.
-    intros. eapply N.compare_eq in H. eapply N.compare_eq in H0.
-    red. unfold byte_cmp.
-    destruct H. destruct H0. apply eq_refl.
-  Qed.
-  Theorem lt_trans : ∀ x y z : t, lt x y → lt y z → lt x z.
-  Proof.
-    unfold lt, byte_cmp.
-    intros.
-    rewrite ->N.compare_lt_iff in H.
-    rewrite ->N.compare_lt_iff in H0.
-    rewrite N.compare_lt_iff.
-    lia.
-  Qed.
-  Theorem lt_not_eq : ∀ x y : t, lt x y → ¬ eq x y.
-  Proof.
-    unfold lt, eq, byte_cmp; intros.
-    rewrite ->N.compare_lt_iff in H.
-    rewrite N.compare_eq_iff.
-    lia.
-  Qed.
-  Definition compare (x y : t) : OrderedType.Compare lt eq x y.
-    refine  (
-    match byte_cmp x y as X return byte_cmp x y = X -> OrderedType.Compare lt eq x y  with
-    | Eq => fun pf => OrderedType.EQ pf
-    | Lt => fun pf => OrderedType.LT pf
-    | Gt => fun pf => OrderedType.GT _
-    end (Logic.eq_refl)).
-    unfold lt, byte_cmp.
-    abstract (rewrite N.compare_antisym; apply CompOpp_iff, pf).
-  Defined.
-
-  Definition eq_dec : ∀ x y : t, {eq x y} + {¬ eq x y}.
-  Proof.
-  unfold eq.
-  refine (fun x y =>
-      match byte_cmp x y as Z return byte_cmp x y = Z -> _ with
-      | Eq => fun pf => left pf
-      | _ => fun _ => right _
-      end Logic.eq_refl);
-  abstract congruence.
-  Defined.
-
-End OT_byte.
 
 Fixpoint bs_cmp (xs ys : bs) : comparison :=
   match xs , ys with
@@ -300,18 +314,6 @@ Fixpoint bs_cmp (xs ys : bs) : comparison :=
     | x => x
     end
   end%bs.
-
-Lemma byte_cmp_refl : forall a, byte_cmp a a = Eq.
-Proof. intros. apply N.compare_refl. Qed.
-
-Theorem byte_cmp_spec : forall x y, CompareSpec (x = y) (OT_byte.lt x y) (OT_byte.lt y x) (byte_cmp x y).
-Proof.
-  intros. unfold byte_cmp.
-  unfold OT_byte.lt, byte_cmp.
-  destruct (N.compare_spec (Byte.to_N x) (Byte.to_N y)); constructor; auto.
-  apply to_N_inj. assumption.
-Qed.
-
 
 Module OT_bs <: OrderedType.OrderedType with Definition t := bs.
   Definition t := bs.
