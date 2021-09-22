@@ -357,8 +357,14 @@ Section with_type_table.
       (_ : complete_pointee_type (Tnamed n))
       (_ : complete_pointee_type t)
     : complete_type (Tmember_pointer n t)
-  (* We omit a clause for function types, as it duplicates the one for
-  [complete_pointee_type], and we only ever store pointers to functions. *)
+  | complete_function {cc ret args} :
+    (*
+    We could probably omit this constructor, and consider function types as not
+    complete; "complete function types" do not exist in the standard, and
+    [complete_symbol_table] does not use the concept.
+     *)
+    complete_pointee_type (Tfunction (cc:=cc) ret args) ->
+    complete_type (Tfunction (cc:=cc) ret args)
   | complete_basic t :
     complete_basic_type t ->
     complete_type t.
