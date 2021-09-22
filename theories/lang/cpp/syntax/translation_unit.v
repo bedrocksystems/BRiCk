@@ -304,8 +304,8 @@ Section with_type_table.
 
     [struct T; int foo(struct T x[][10]);]
 
-    However, C++ compilers appear to accept this code.
-    TODO: decide behavior.
+    However, C++ compilers appear to accept this code, which we cover
+    in [wellscoped_array].
     *)
   | complete_pt_array t n
     (_ : (n <> 0)%N) (* From Krebbers. Probably needed to reject [T[][]]. *)
@@ -367,6 +367,9 @@ Section with_type_table.
   with wellscoped_type : type -> Prop :=
   | wellscoped_qualified {q t} (_ : wellscoped_type t)
     : wellscoped_type (Tqualified q t)
+  | wellscoped_array t n
+    (_ : (n <> 0)%N) : (* From Krebbers. Probably needed to reject [T[][]]. *)
+    wellscoped_type (Tarray t n)
   | wellscoped_pointee t :
     complete_pointee_type t ->
     wellscoped_type t
