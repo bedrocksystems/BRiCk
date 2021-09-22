@@ -383,6 +383,15 @@ Section with_type_table.
     wellscoped_type t ->
     wellscoped_types ts ->
     wellscoped_types (t :: ts).
+
+  Inductive valid_decl : GlobDecl -> Prop :=
+  | valid_typedef t :
+    valid_decl (Gtypedef t)
+  | valid_type : valid_decl Gtype
+  | valid_const t oe :
+    valid_decl (Gconstant t oe)
+  | valid_complete_decl g :
+    complete_decl g -> valid_decl g.
 End with_type_table.
 
 Scheme complete_decl_mut_ind := Minimality for complete_decl Sort Prop
@@ -414,7 +423,7 @@ Adapted from Krebbers'15, Definition 3.3.6:
 - all function types must be pointer-complete as defined above.
 *)
 Definition complete_type_table (te : type_table) :=
-  map_Forall (fun _key d => complete_decl te d) te.
+  map_Forall (fun _key d => valid_decl te d) te.
 
 Definition complete_symbol_table (te : type_table) (syms : symbol_table) :=
   map_Forall (fun _key d => complete_pointee_type te (type_of_value d)) syms.
