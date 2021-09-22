@@ -151,21 +151,25 @@ Module Type Stmt.
         end
 
       | Tnamed cls =>
-        Forall a : ptr, a |-> tblockR (σ:=resolve) ty 1 -*
-                  let continue := k (Rbind x a ρ) (FreeTemps.delete ty a) in
-                  match init with
-                  | None => continue
-                  | Some init =>
-                    wp_init ρ_init ty a (not_mine init) (fun free => interp free continue)
-                  end
-      | Tarray ty' N =>
-        Forall a : ptr, a |-> tblockR (σ:=resolve) ty 1 -*
-                  let continue := k (Rbind x a ρ) (FreeTemps.delete ty a) in
-                  match init with
-                  | None => continue
-                  | Some init =>
-                    wp_init ρ_init ty a (not_mine init) (fun free => interp free continue)
-                  end
+        match init with
+        | None => ERROR "uninitialized class"
+                 (* NOTE this does not occur within our semantics because constructors
+                    are explicit. *)
+        | Some init =>
+          Forall a : ptr,
+          a |-> tblockR (σ:=resolve) ty 1 -*
+            wp_init ρ_init ty a (not_mine init) (fun free => interp free $ k (Rbind x a ρ) (FreeTemps.delete ty a))
+        end
+      | Tarray ty' N as rty =>
+        Forall a : ptr,
+        let continue := k (Rbind x a ρ) (FreeTemps.delete ty a) in
+        match init with
+        | None =>
+          default_initialize rty a (fun free => interp free continue)
+        | Some init =>
+          a |-> tblockR (σ:=resolve) ty 1 -*
+            wp_init ρ_init ty a (not_mine init) (fun free => interp free continue)
+        end
 
         (* references *)
       | Trv_reference t
@@ -196,7 +200,7 @@ Module Type Stmt.
         end
       | Tfloat _ => UNSUPPORTED "floating point declarations" (* not supportd *)
       | Tarch _ _ => UNSUPPORTED "architecure specific declarations" (* not supported *)
-      end.
+      end%I%bs.
 
     Lemma decl_prim (x : ident) (ρ ρ_init : region) (init : option Expr) (ty : type)
            (k k' : region → FreeTemps → mpred) :
@@ -225,7 +229,7 @@ Module Type Stmt.
                        a |-> heap_pred.uninitR (erase_qualifiers ty) 1 -*
                          k' (Rbind x a ρ) (FreeTemps.delete (erase_qualifiers ty) a)
                      end).
-    Proof. 
+    Proof.
       case: init=>[e | ];iIntros "K h" (a).
       { iSpecialize ("h" $! a);iRevert "h".
         iApply wp_prval_frame;first by done.
@@ -242,7 +246,7 @@ Module Type Stmt.
         |-- wp_decl_var ρ ρ_init x ty init k -* wp_decl_var ρ ρ_init x ty init k'.
     Proof.
       induction ty using type_ind'.
-      { simpl. intros; apply decl_prim with (ty:=Tptr ty). }
+      { intros; apply decl_prim with (ty:=Tptr ty). }
       { destruct init; intros.
         { iIntros "X"; iApply wp_lval_frame; first reflexivity.
           iIntros (??); iApply interp_frame; iApply "X". }
@@ -257,14 +261,16 @@ Module Type Stmt.
         { iIntros "X Y" (?) "a"; iDestruct ("Y" with "a") as "Y"; iRevert "Y".
           iApply wp_init_frame; first reflexivity.
           iIntros (?); iApply interp_frame; iApply "X". }
-        { iIntros "X Y" (?) "a"; iDestruct ("Y" with "a") as "Y"; iRevert "Y".
-          iApply "X". } }
-      { intros. iIntros "X y" (a) "z".
-        iDestruct ("y" with "z") as "y"; iRevert "y".
+        { iIntros "X Y" (?). iSpecialize ("Y" $! a).
+          iRevert "Y". iApply default_initialize_frame.
+          iIntros (?); iApply interp_frame; iApply "X". } }
+      { simpl. intros.
         destruct init.
-        { iApply wp_init_frame; first reflexivity.
+        { iIntros "X Y" (a) "a".
+          iDestruct ("Y" with "a") as "Y"; iRevert "Y".
+          iApply wp_init_frame; first reflexivity.
           iIntros (?); iApply interp_frame; iApply "X". }
-        { iApply "X". } }
+        { iIntros "? $". } }
       { intros. iIntros "? $". }
       { intros; apply decl_prim with (ty:=Tbool). }
       { intros; apply decl_prim with (ty:=Tmember_pointer _ _). }
