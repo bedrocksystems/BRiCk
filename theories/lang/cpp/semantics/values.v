@@ -92,16 +92,13 @@ Module Type VAL_MIXIN (Import P : PTRS) (Import R : RAW_BYTES).
 
   Definition is_true (v : val) : option bool :=
     match v with
-    | Vint v => Some (negb (Z.eqb v 0))
-    | Vptr p => Some match ptr_eq_dec p nullptr with
-                    | left _ => false
-                    | right _ => true
-                    end
+    | Vint v => Some (bool_decide (v <> 0))
+    | Vptr p => Some (bool_decide (p <> nullptr))
     | Vundef | Vraw _ => None
     end.
 
   Theorem is_true_int : forall i,
-      is_true (Vint i) = Some (negb (BinIntDef.Z.eqb i 0)).
+      is_true (Vint i) = Some (bool_decide (i <> 0)).
   Proof. reflexivity. Qed.
 
   Lemma Vptr_inj p1 p2 : Vptr p1 = Vptr p2 -> p1 = p2.
