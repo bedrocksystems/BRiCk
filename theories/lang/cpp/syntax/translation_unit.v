@@ -316,21 +316,15 @@ Section with_type_table.
   (* Beware:
   [Tfunction] represents a function type; somewhat counterintuitively,
   a pointer to a function type is complete even if the argument/return types
-  are not complete but only pointer-complete, you're just forbidden from
+  are not complete but only well-scoped, you're just forbidden from
   actually invoking the pointer; this follows Krebbers'15 3.3.5. *)
   | complete_pt_function {cc ret args}
-      (_ : complete_pointee_type ret)
-      (_ : complete_pointee_types args)
+      (_ : wellscoped_type ret)
+      (_ : wellscoped_types args)
     : complete_pointee_type (Tfunction (cc:=cc) ret args)
   | complete_pt_basic t :
     complete_basic_type t ->
     complete_pointee_type t
-  with complete_pointee_types : list type -> Prop :=
-  | complete_pt_nil : complete_pointee_types []
-  | complete_pt_cons t ts :
-    complete_pointee_type t ->
-    complete_pointee_types ts ->
-    complete_pointee_types (t :: ts)
   (* [complete_type t] says that type [t] is well-formed, that is, complete. *)
   with complete_type : type -> Prop :=
   | complete_qualified {q t} (_ : complete_type t)
@@ -367,17 +361,37 @@ Section with_type_table.
     complete_type (Tfunction (cc:=cc) ret args)
   | complete_basic t :
     complete_basic_type t ->
-    complete_type t.
+    complete_type t
+  (** Well-scoped arguments cannot mention undeclared types. Krebbers identifies
+  them with valid pointee, but that breaks down in C++ due to references. *)
+  with wellscoped_type : type -> Prop :=
+  | wellscoped_qualified {q t} (_ : wellscoped_type t)
+    : wellscoped_type (Tqualified q t)
+  | wellscoped_pointee t :
+    complete_pointee_type t ->
+    wellscoped_type t
+  (* covers references. *)
+  | wellscoped_complete {t} :
+    complete_type t ->
+    wellscoped_type t
+  with wellscoped_types : list type -> Prop :=
+  | wellscoped_nil : wellscoped_types []
+  | wellscoped_cons t ts :
+    wellscoped_type t ->
+    wellscoped_types ts ->
+    wellscoped_types (t :: ts).
 End with_type_table.
 
 Scheme complete_decl_mut_ind := Minimality for complete_decl Sort Prop
 with complete_basic_type_mut_ind := Minimality for complete_basic_type Sort Prop
-with complete_type_mut_ind := Minimality for complete_type Sort Prop
 with complete_pointee_type_mut_ind := Minimality for complete_pointee_type Sort Prop
-with complete_pointee_types_mut_ind := Minimality for complete_pointee_types Sort Prop.
+with complete_type_mut_ind := Minimality for complete_type Sort Prop
+with wellscoped_type_mut_ind := Minimality for wellscoped_type Sort Prop
+with wellscoped_types_mut_ind := Minimality for wellscoped_types Sort Prop.
 
 Combined Scheme complete_mut_ind from complete_decl_mut_ind, complete_basic_type_mut_ind,
-  complete_pointee_type_mut_ind, complete_pointee_types_mut_ind, complete_type_mut_ind.
+  complete_pointee_type_mut_ind, complete_type_mut_ind,
+  wellscoped_type_mut_ind, wellscoped_types_mut_ind.
 
 Lemma complete_basic_type_not_ref te t : complete_basic_type te t → not_ref_type t.
 Proof. by inversion 1. Qed.

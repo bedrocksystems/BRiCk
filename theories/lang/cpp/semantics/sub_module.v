@@ -228,7 +228,8 @@ Proof.
   apply _.
 Qed.
 
-#[local] Hint Constructors complete_decl complete_basic_type complete_type complete_pointee_type complete_pointee_types : core.
+#[local] Hint Constructors complete_decl complete_basic_type complete_type
+  complete_pointee_type wellscoped_type wellscoped_types : core.
 
 Lemma complete_decl_respects_GlobDecl_le {te g1 g2} :
   GlobDecl_ler g1 g2 ->
@@ -249,20 +250,24 @@ Qed.
 #[local] Definition complete_pointee_type_respects te2 t := ∀ te1,
   type_table_le te2 te1 ->
   complete_pointee_type te1 t.
-#[local] Definition complete_pointee_types_respects te2 ts := ∀ te1,
-  type_table_le te2 te1 ->
-  complete_pointee_types te1 ts.
 #[local] Definition complete_type_respects te2 t := ∀ te1,
   type_table_le te2 te1 ->
   complete_type te1 t.
+#[local] Definition wellscoped_type_respects te2 ts := ∀ te1,
+  type_table_le te2 te1 ->
+  wellscoped_type te1 ts.
+#[local] Definition wellscoped_types_respects te2 ts := ∀ te1,
+  type_table_le te2 te1 ->
+  wellscoped_types te1 ts.
 
 (* Actual mutual induction. *)
 Lemma complete_respects_sub_table_mut te2 :
   (∀ g : GlobDecl, complete_decl te2 g → complete_decl_respects te2 g) ∧
   (∀ t : type, complete_basic_type te2 t → complete_basic_type_respects te2 t) ∧
   (∀ t : type, complete_pointee_type te2 t → complete_pointee_type_respects te2 t) ∧
-  (∀ l : list type, complete_pointee_types te2 l → complete_pointee_types_respects te2 l) ∧
-  (∀ t : type, complete_type te2 t → complete_type_respects te2 t).
+  (∀ t : type, complete_type te2 t → complete_type_respects te2 t) ∧
+  (∀ t : type, wellscoped_type te2 t → wellscoped_type_respects te2 t) ∧
+  (∀ t : list type, wellscoped_types te2 t → wellscoped_types_respects te2 t).
 Proof.
   apply complete_mut_ind; try solve [intros; red; repeat_on_hyps (fun H => red in H); eauto].
   intros * Hlook Hct IH ? Hsub.
