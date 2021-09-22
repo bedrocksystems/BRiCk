@@ -272,7 +272,7 @@ Proof.
   apply complete_mut_ind; try solve [intros; red; repeat_on_hyps (fun H => red in H); eauto].
   intros * Hlook Hct IH ? Hsub.
   destruct (Hsub _ _ Hlook) as (st1 & Hlook1 & Hle).
-  apply (complete_named_struct _ Hlook1).
+  apply (complete_named _ Hlook1).
   apply (complete_decl_respects_GlobDecl_le Hle), IH, Hsub.
 Qed.
 

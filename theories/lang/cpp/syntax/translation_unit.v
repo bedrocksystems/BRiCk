@@ -340,7 +340,7 @@ Section with_type_table.
   However, that might require replacing [type_table] by a _sequence_ of
   declarations, instead of an unordered dictionary.
   *)
-  | complete_named_struct {n st} (_ : te !! n = Some st)
+  | complete_named {n st} (_ : te !! n = Some st)
                     (_ : complete_decl st) :
     complete_type (Tnamed n)
   | complete_array {t n}
