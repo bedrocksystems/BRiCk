@@ -268,9 +268,6 @@ Section with_type_table.
   (* [complete_pointee_type t] says that a pointer/reference to [t] is complete.
      This excludes references (see [complete_pointee_type_not_ref]). *)
   with complete_pointee_type : type -> Prop :=
-  | complete_pt_basic t :
-    complete_basic_type t ->
-    complete_pointee_type t
   (*
     Pointers to array are only legal if the array is complete, at least
     in C, since they cannot actually be indexed or created.
@@ -295,6 +292,9 @@ Section with_type_table.
       (_ : complete_pointee_type ret)
       (_ : complete_pointee_types args)
     : complete_pointee_type (Tfunction (cc:=cc) ret args)
+  | complete_pt_basic t :
+    complete_basic_type t ->
+    complete_pointee_type t
   with complete_pointee_types : list type -> Prop :=
   | complete_pt_nil : complete_pointee_types []
   | complete_pt_cons t ts :
@@ -303,9 +303,8 @@ Section with_type_table.
     complete_pointee_types (t :: ts)
   (* [complete_type t] says that type [t] is well-formed, that is, complete. *)
   with complete_type : type -> Prop :=
-  | complete_basic t :
-    complete_basic_type t ->
-    complete_type t
+  | complete_qualified {q t} (_ : complete_type t)
+    : complete_type (Tqualified q t)
   (* Reference types. This setup forbids references to references. *)
   | complete_ref {t} : complete_pointee_type t -> complete_type (Tref t)
   | complete_rv_ref {t} : complete_pointee_type t -> complete_type (Trv_ref t)
@@ -333,8 +332,9 @@ Section with_type_table.
       (_ : complete_pointee_type ret)
       (_ : complete_pointee_types args)
     : complete_type (Tfunction (cc:=cc) ret args)
-  | complete_qualified {q t} (_ : complete_type t)
-    : complete_type (Tqualified q t).
+  | complete_basic t :
+    complete_basic_type t ->
+    complete_type t.
 End with_type_table.
 
 Scheme complete_decl_mut_ind := Minimality for complete_decl Sort Prop
