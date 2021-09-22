@@ -268,6 +268,8 @@ Section with_type_table.
   (* [complete_pointee_type t] says that a pointer/reference to [t] is complete.
      This excludes references (see [complete_pointee_type_not_ref]). *)
   with complete_pointee_type : type -> Prop :=
+  | complete_pt_qualified {q t} (_ : complete_pointee_type t)
+    : complete_pointee_type (Tqualified q t)
   (*
     Pointers to array are only legal if the array is complete, at least
     in C, since they cannot actually be indexed or created.
@@ -349,7 +351,7 @@ Combined Scheme complete_mut_ind from complete_decl_mut_ind, complete_basic_type
 Lemma complete_basic_type_not_ref te t : complete_basic_type te t → not_ref_type t.
 Proof. by inversion 1. Qed.
 Lemma complete_pointee_type_not_ref te t : complete_pointee_type te t → not_ref_type t.
-Proof. inversion 1; by [eapply complete_basic_type_not_ref | ]. Qed.
+Proof. induction 1; by [eapply complete_basic_type_not_ref | ]. Qed.
 
 Lemma complete_type_not_ref_ref te t1 t2 : complete_type te t1 → ref_to_type t1 = Some t2 → not_ref_type t2.
 Proof.
