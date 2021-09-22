@@ -964,6 +964,14 @@ Module Type Expr.
                           (fun free => Q a (FreeTemps.delete ty a >*> free)))
         |-- wp_xval (Ematerialize_temp e) Q.
 
+    Axiom wp_lval_temp : forall e Q,
+        (let ty := type_of e in
+         let raw_type := erase_qualifiers ty in
+         Forall a : ptr, a |-> tblockR raw_type 1 -*
+                  wp_init ty a e
+                          (fun free => Q a (FreeTemps.delete ty a >*> free)))
+        |-- wp_lval (Ematerialize_temp e) Q.
+
     (** temporary materialization only occurs when the resulting value is used.
         if the value is ignored, e.g. in `go();` (when the result of `go` is an
         aggregate) we introduce an implicit materialization and then immediately
