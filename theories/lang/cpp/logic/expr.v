@@ -15,7 +15,7 @@ From bedrock.lang.cpp.logic Require Import
      operator
      destroy
      initializers
-     wp call
+     wp call string
      translation_unit
      dispatch.
 
@@ -74,24 +74,55 @@ Module Type Expr.
       Q (Vbool b) FreeTemps.id
       |-- wp_prval (Ebool b) Q.
 
-    (* string literals are a lot more complex than other literals because they
-       act more like global variables than constants. This rule is a *very*
-       conservative rule for them, that enables verification of "debug strings",
-       e.g. those that occur with something like [assert(..., "ERROR MESSAGE")]
-       because, in these cases, the string is dead.
+    (** * String Literals
+
+        The standard states <https://eel.is/c++draft/lex.string#9>:
+
+            | Evaluating a string-literal results in a string literal object with
+            | static storage duration ([basic.stc]). Whether all string-literals
+            | are distinct (that is, are stored in nonoverlapping objects) and whether
+            | successive evaluations of a string-literal yield the same or a different
+            | object is unspecified.
+            |
+            | [Note 4: The effect of attempting to modify a string literal object is
+            | undefined. — end note]
+
+        which means the C++ abstract machine manages ownership of string literals
+        during its lifetime, handing out read-access to the underlying memory when
+        necessary - in an implementation-defined way.
+
+        We treat this in our logic by granting a pair of resources
+        each time a string literal is evaluated:
+
+        1. a read-only (fraction < 1) of memory containing the string, and
+        2. a destroyer which can be used to give the values back to
+           the abstract machine.
+
+        Note that the pointer `p` is universally quantified. This follows
+        the standard which does *not* guarantee that successive evaluations
+        of the same string literal will return the same pointer
+        (in practice, this generally only occurs when there are multiple
+         translation units involved).
+
+        Note that the fancy update is necessary to support a model where
+        the string pool is maintained within an invariant of the abstract
+        machine.
      *)
     Axiom wp_lval_string : forall bytes ty Q,
-        match drop_qualifiers ty with
-        | Tarray ty' _ => Forall p, type_ptr (drop_qualifiers ty') p -* Q p FreeTemps.id
-        | _ => False
-        end
+          match drop_qualifiers ty with
+          | Tarray ty' _ =>
+            Forall (p : ptr) (q : Qp),
+              (p |-> cstring.R q bytes **
+               (p |-> cstring.R q bytes ={⊤}=∗ emp)) -*
+              Q p FreeTemps.id
+          | _ => False
+          end
       |-- wp_lval (Estring bytes ty) Q.
 
     (* `this` is a prvalue *)
     Axiom wp_prval_this : forall ty Q,
           valid_ptr (_this ρ) ** Q (Vptr $ _this ρ) FreeTemps.id
       |-- wp_prval (Ethis ty) Q.
-
 
     (* variables are lvalues *)
     Axiom wp_lval_lvar : forall ty x Q,

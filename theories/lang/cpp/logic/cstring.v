@@ -11,10 +11,15 @@ From iris.proofmode Require Import tactics.
 
 Require Import bedrock.prelude.stdpp_ssreflect.
 Require bedrock.prelude.bytestring.
-Require Import bedrock.lang.cpp.
-Require Import bedrock.lang.cpp.logic.arr.
-Require Import bedrock.lang.cpp.logic.zstring.
+Require Import bedrock.prelude.base.
+From bedrock.lang.bi Require Import
+     prelude observe.
+From bedrock.lang.cpp Require Import
+     semantics.values
+     logic.arr logic.heap_pred logic.mpred logic.zstring
+     heap_notations.
 
+Import ChargeNotation.
 #[local] Open Scope Z_scope.
 
 Section Cruft.
@@ -731,7 +736,7 @@ Module cstring.
         Lemma bufR_nil :
           forall (q : Qp) (sz : Z),
             (1 <= sz)%Z ->
-                arrayR T_uchar (fun _ => uint8R q 0) (repeat () (Z.to_nat sz))
+                arrayR T_uchar (fun _ => primR T_uchar q 0) (repeat () (Z.to_nat sz))
             |-- bufR q sz "".
         Proof.
           intros **; iIntros "rest"; rewrite /bufR/zstring.bufR.
@@ -780,7 +785,7 @@ Module cstring.
           forall (q : Qp) (sz : Z) (b : Byte.byte) (cstr : t),
             b <> "000"%byte ->
                 bufR q sz (BS.String b cstr)
-            -|- uint8R q (Z.of_N (N_of_ascii (ascii_of_byte b))) **
+            -|- primR T_uchar q (Z.of_N (N_of_ascii (ascii_of_byte b))) **
                 .[Tint W8 Unsigned ! 1] |-> bufR q (sz - 1) cstr.
         Proof.
           lift_zstring_bufR2bufR zstring.bufR_cons.
@@ -800,8 +805,8 @@ Module cstring.
 
         (* TODO (AUTO): Fix this once we add the correct observations for arrayR *)
         #[global] Instance bufR_type_ptrR_observe :
-          forall q (sz : Z) (zs : t),
-            Observe (type_ptrR (Tint W8 Unsigned)) (bufR q sz zs).
+          forall q (sz : Z) (cstr : t),
+            Observe (type_ptrR (Tint W8 Unsigned)) (bufR q sz cstr).
         Proof.
           intros **; rewrite /bufR/Observe/=; iIntros "zstr".
           iDestruct (observe (type_ptrR T_uchar) with "zstr") as "#?".
@@ -809,12 +814,23 @@ Module cstring.
         Qed.
 
         #[global] Instance bufR_validR_end_observe :
-          forall q (sz : Z) (zs : t),
-            Observe (.[T_uchar ! sz] |-> validR) (bufR q sz zs).
+          forall q (sz : Z) (cstr : t),
+            Observe (.[T_uchar ! sz] |-> validR) (bufR q sz cstr).
         Proof.
           intros **; rewrite /bufR/Observe/=; iIntros "zstr".
           iDestruct (observe (.[T_uchar ! sz] |-> validR) with "zstr") as "#?".
           by iModIntro.
+        Qed.
+
+        #[global] Instance bufR_validR_inbounds_observe :
+          forall q (sz : Z) (z : Z) (cstr : t),
+            (0 <= z <= sz)%Z ->
+            Observe (.[T_uchar ! z] |-> validR) (bufR q sz cstr).
+        Proof.
+          intros **; rewrite /bufR/Observe/=; iIntros "zstr".
+          iDestruct (observe (.[T_uchar ! z] |-> validR) with "zstr") as "#?";
+            last by iModIntro.
+          by pose proof (zstring.bufR_validR_inbounds_observe q sz z (to_zstring cstr) H).
         Qed.
       End bufR.
 
@@ -825,7 +841,7 @@ Module cstring.
         Lemma bufR'_nil :
           forall (q : Qp) (sz : Z),
             (1 <= sz)%Z ->
-                arrayR T_uchar (fun _ => uint8R q 0) (repeat () (Z.to_nat sz))
+                arrayR T_uchar (fun _ => primR T_uchar q 0) (repeat () (Z.to_nat sz))
             |-- bufR' q sz "".
         Proof. by lift_WF2WF' bufR_nil. Qed.
 
@@ -845,7 +861,7 @@ Module cstring.
           forall (q : Qp) (sz : Z) (b : Byte.byte) (cstr : t),
             b <> "000"%byte ->
                 bufR' q sz (BS.String b cstr)
-            -|- uint8R q (Z.of_N (N_of_ascii (ascii_of_byte b))) **
+            -|- primR T_uchar q (Z.of_N (N_of_ascii (ascii_of_byte b))) **
                 .[Tint W8 Unsigned ! 1] |-> bufR' q (sz - 1) cstr.
         Proof. by lift_WF2WF' bufR_cons. Qed.
 
@@ -864,13 +880,19 @@ Module cstring.
           forall q (sz : Z) (zs : t),
             Observe (.[T_uchar ! sz] |-> validR) (bufR' q sz zs).
         Proof. by lift_WF2WF' bufR_validR_end_observe. Qed.
+
+        #[global] Instance bufR'_validR_inbounds_observe :
+          forall q (sz : Z) (z : Z) (cstr : t),
+            (0 <= z <= sz)%Z ->
+            Observe (.[T_uchar ! z] |-> validR) (bufR' q sz cstr).
+        Proof. by lift_WF2WF' bufR_validR_inbounds_observe. Qed.
       End bufR'.
 
       Lemma bufR_unfold :
         forall (q : Qp) (sz : Z) (cstr : t),
           bufR q sz cstr -|-
           [| size cstr <= sz |] ** R q cstr **
-          .[ T_uchar ! size cstr] |-> arrayR T_uchar (fun _ => uint8R q 0)
+          .[ T_uchar ! size cstr] |-> arrayR T_uchar (fun _ => primR T_uchar q 0)
                                            (repeat () (Z.to_nat (sz - size cstr))).
       Proof.
         intros **; split'.
@@ -882,7 +904,7 @@ Module cstring.
         forall (q : Qp) (sz : Z) (cstr : t),
           bufR' q sz cstr -|-
           [| size cstr <= sz |] ** R' q cstr **
-          .[ T_uchar ! size cstr] |-> arrayR T_uchar (fun _ => uint8R q 0)
+          .[ T_uchar ! size cstr] |-> arrayR T_uchar (fun _ => primR T_uchar q 0)
                                            (repeat () (Z.to_nat (sz - size cstr))).
       Proof. intros **; rewrite -!bufRs_equiv -!Rs_equiv; by apply bufR_unfold. Qed.
 
@@ -895,32 +917,9 @@ Module cstring.
         #[local] Ltac try_lift_bufR H :=
           intros **; rewrite !R_bufR_equiv; eapply H; eauto.
 
-        (* TODO (AUTO): Fix this once we add the correct observations for arrayR *)
-        #[global] Instance R_type_ptrR_observe :
-          forall q (cstr : t),
-            Observe (type_ptrR (Tint W8 Unsigned)) (R q cstr).
-        Proof. refine _. Qed.
-
-        #[global] Instance R_validR_end_observe :
-          forall q (zs : t),
-            Observe (.[T_uchar ! size zs] |-> validR) (R q zs).
-        Proof. refine _. Qed.
-
-        #[global] Instance R_validR_end_observe' :
-          forall q (zs : t),
-            Observe (.[T_uchar ! strlen zs] |-> .[T_uchar ! 1] |-> validR) (R q zs).
-        Proof.
-          intros *; pose proof (R_validR_end_observe q zs).
-          rewrite _offsetR_sub_sub; unfold size, strlen, zstring.size, zstring.strlen in *.
-          unfold zstring.size in *.
-          by replace (length (to_zstring zs) - 1 + 1)%Z
-            with (Z.of_nat (length (to_zstring zs)))
-            by lia.
-        Qed.
-
         Remark R_nil :
           forall (q : Qp),
-                arrayR T_uchar (fun c => uint8R q c) [0]
+                arrayR T_uchar (fun c => primR T_uchar q (Vint c)) [0]
             |-- R q "".
         Proof.
           intros *; rewrite /R !/zstring.R arrayR_singleton
@@ -942,7 +941,7 @@ Module cstring.
           forall (q : Qp) (b : Byte.byte) (cstr : t),
             b <> "000"%byte ->
                 R q (BS.String b cstr)
-            -|- uint8R q (Z.of_N (N_of_ascii (ascii_of_byte b))) **
+            -|- primR T_uchar q (Z.of_N (N_of_ascii (ascii_of_byte b))) **
                 .[Tint W8 Unsigned ! 1] |-> R q cstr.
         Proof.
           intros **; rewrite !R_bufR_equiv.
@@ -955,6 +954,35 @@ Module cstring.
           forall (q : Qp) (b b' : Byte.byte) (cstr : t),
             Observe [| b <> "000" |]%byte (R q (BS.String b (BS.String b' cstr))).
         Proof. try_lift_bufR bufR_cons_cons_head_nonzero. Qed.
+
+        (* TODO (AUTO): Fix this once we add the correct observations for arrayR *)
+        #[global] Instance R_type_ptrR_observe :
+          forall q (cstr : t),
+            Observe (type_ptrR (Tint W8 Unsigned)) (R q cstr).
+        Proof. refine _. Qed.
+
+        #[global] Instance R_validR_end_observe :
+          forall q (cstr : t),
+            Observe (.[T_uchar ! size cstr] |-> validR) (R q cstr).
+        Proof. refine _. Qed.
+
+        #[global] Instance R_validR_end_observe' :
+          forall q (cstr : t),
+            Observe (.[T_uchar ! strlen cstr] |-> .[T_uchar ! 1] |-> validR) (R q cstr).
+        Proof.
+          intros *; pose proof (R_validR_end_observe q cstr).
+          rewrite _offsetR_sub_sub; unfold size, strlen, zstring.size, zstring.strlen in *.
+          unfold zstring.size in *.
+          by replace (length (to_zstring cstr) - 1 + 1)%Z
+            with (Z.of_nat (length (to_zstring cstr)))
+            by lia.
+        Qed.
+
+        #[global] Instance R_validR_inbounds_observe :
+          forall q (z : Z) (cstr : t),
+            (0 <= z <= size cstr)%Z ->
+            Observe (.[T_uchar ! z] |-> validR) (R q cstr).
+        Proof. refine _. Qed.
       End R.
 
       Section R'.
@@ -968,6 +996,31 @@ Module cstring.
 
         #[local] Ltac try_lift_bufR H :=
           intros **; rewrite !R_bufR_equiv; eapply H; eauto.
+
+        Remark R'_nil :
+          forall (q : Qp),
+                arrayR T_uchar (fun c => primR T_uchar q (Vint c)) [0]
+            |-- R' q "".
+        Proof. lift_WF2WF' R_nil. Qed.
+
+        #[global] Instance R'_singleton :
+          forall (q : Qp) (b : Byte.byte),
+            Observe [| b <> "000" |]%byte
+                    (R' q (BS.String b ""%bs)).
+        Proof. lift_WF2WF' R_singleton. Qed.
+
+        Lemma R'_cons :
+          forall (q : Qp) (b : Byte.byte) (cstr : t),
+            b <> "000"%byte ->
+                R' q (BS.String b cstr)
+            -|- primR T_uchar q (Z.of_N (N_of_ascii (ascii_of_byte b))) **
+                .[Tint W8 Unsigned ! 1] |-> R' q cstr.
+        Proof. lift_WF2WF' R_cons. Qed.
+
+        #[global] Instance R'_cons_cons_head_nonzero :
+          forall (q : Qp) (b b' : Byte.byte) (cstr : t),
+            Observe [| b <> "000" |]%byte (R' q (BS.String b (BS.String b' cstr))).
+        Proof. lift_WF2WF' R_cons_cons_head_nonzero. Qed.
 
         (* TODO (AUTO): Fix this once we add the correct observations for arrayR *)
         #[global] Instance R'_type_ptrR_observe :
@@ -985,42 +1038,23 @@ Module cstring.
             Observe (.[T_uchar ! strlen zs] |-> .[T_uchar ! 1] |-> validR) (R' q zs).
         Proof. lift_WF2WF' R_validR_end_observe'. Qed.
 
-        Remark R'_nil :
-          forall (q : Qp),
-                arrayR T_uchar (fun c => uint8R q c) [0]
-            |-- R' q "".
-        Proof. lift_WF2WF' R_nil. Qed.
-
-        #[global] Instance R'_singleton :
-          forall (q : Qp) (b : Byte.byte),
-            Observe [| b <> "000" |]%byte
-                    (R' q (BS.String b ""%bs)).
-        Proof. lift_WF2WF' R_singleton. Qed.
-
-        Lemma R'_cons :
-          forall (q : Qp) (b : Byte.byte) (cstr : t),
-            b <> "000"%byte ->
-                R' q (BS.String b cstr)
-            -|- uint8R q (Z.of_N (N_of_ascii (ascii_of_byte b))) **
-                .[Tint W8 Unsigned ! 1] |-> R' q cstr.
-        Proof. lift_WF2WF' R_cons. Qed.
-
-        #[global] Instance R'_cons_cons_head_nonzero :
-          forall (q : Qp) (b b' : Byte.byte) (cstr : t),
-            Observe [| b <> "000" |]%byte (R' q (BS.String b (BS.String b' cstr))).
-        Proof. lift_WF2WF' R_cons_cons_head_nonzero. Qed.
+        #[global] Instance R'_validR_inbounds_observe :
+          forall q (z : Z) (cstr : t),
+            (0 <= z <= size cstr)%Z ->
+            Observe (.[T_uchar ! z] |-> validR) (R' q cstr).
+        Proof. lift_WF2WF' R_validR_inbounds_observe. Qed.
       End R'.
 
       Lemma R_unfold :
         forall (q : Qp) (cstr : t),
               R q cstr
-          -|- arrayR T_uchar (fun c => uint8R q c) (to_zstring cstr) ** [| WF cstr |].
+          -|- arrayR T_uchar (fun c => primR T_uchar q (Vint c)) (to_zstring cstr) ** [| WF cstr |].
       Proof. intros **; split'; by rewrite /R. Qed.
 
       Lemma R'_unfold :
         forall (q : Qp) (cstr : t),
               R' q cstr
-          -|- arrayR T_uchar (fun c => uint8R q c) (to_zstring cstr) ** [| WF' cstr |].
+          -|- arrayR T_uchar (fun c => primR T_uchar q (Vint c)) (to_zstring cstr) ** [| WF' cstr |].
       Proof. intros **; split'; by rewrite /R'. Qed.
 
       Section Extra.

@@ -9,9 +9,16 @@ From Coq Require Import ZArith.BinInt Lists.List.
 From iris.proofmode Require Import tactics.
 
 Require Import bedrock.prelude.stdpp_ssreflect.
-Require Import bedrock.lang.cpp.
-Require Import bedrock.lang.cpp.logic.arr.
 
+Require Import bedrock.prelude.base.
+From bedrock.lang.bi Require Import
+     prelude observe.
+From bedrock.lang.cpp Require Import
+     semantics.values
+     logic.arr logic.heap_pred logic.mpred
+     heap_notations.
+
+Import ChargeNotation.
 #[local] Open Scope Z_scope.
 
 (** * [zstring]s
@@ -442,17 +449,18 @@ Module zstring.
     Context `{Σ : cpp_logic} `{σ : genv}.
 
     (* The toplevel definition of [zstring.bufR]: *)
+
     Definition bufR (q : Qp) (sz : Z) (zs : t) : Rep :=
       [| size zs <= sz |] **
-      arrayR T_uchar (fun c => uint8R q c) zs ** [| WF zs |] **
+      arrayR T_uchar (fun c => primR T_uchar q (Vint c)) zs ** [| WF zs |] **
       .[T_uchar ! size zs]
-         |-> arrayR T_uchar (fun _ => uint8R q 0) (repeat () (Z.to_nat (sz - size zs))).
+         |-> arrayR T_uchar (fun _ => primR T_uchar q 0) (repeat () (Z.to_nat (sz - size zs))).
     (* The toplevel definition of [zstring.bufR']: *)
     Definition bufR' (q : Qp) (sz : Z) (zs : t) : Rep :=
       [| size zs <= sz |] **
-      arrayR T_uchar (fun c => uint8R q c) zs ** [| WF' zs |] **
+      arrayR T_uchar (fun c => primR T_uchar q (Vint c)) zs ** [| WF' zs |] **
       .[T_uchar ! size zs]
-         |-> arrayR T_uchar (fun _ => uint8R q 0) (repeat () (Z.to_nat (sz - size zs))).
+         |-> arrayR T_uchar (fun _ => primR T_uchar q 0) (repeat () (Z.to_nat (sz - size zs))).
 
     #[global] Instance bufR_WF_observe :
       forall q (sz : Z) (zs : t),
@@ -470,10 +478,10 @@ Module zstring.
 
     (* The toplevel definition of [zstring.R]: *)
     Definition R (q : Qp) (zs : t) : Rep :=
-      arrayR T_uchar (fun c => uint8R q c) zs ** [| WF zs |].
+      arrayR T_uchar (fun c => primR T_uchar q (Vint c)) zs ** [| WF zs |].
     (* The toplevel definition of [zstring.R']: *)
     Definition R' (q : Qp) (zs : t) : Rep :=
-      arrayR T_uchar (fun c => uint8R q c) zs ** [| WF' zs |].
+      arrayR T_uchar (fun c => primR T_uchar q (Vint c)) zs ** [| WF' zs |].
 
     #[global] Instance R_WF_observe :
       forall q (zs : t),
@@ -519,7 +527,8 @@ Module zstring.
         Lemma bufR_cons :
           forall (q : Qp) (sz : Z) (z : Z) (zs : t),
             z <> 0 ->
-            bufR q sz (z :: zs) -|- uint8R q z ** .[Tint W8 Unsigned ! 1] |-> bufR q (sz - 1) zs.
+            bufR q sz (z :: zs) -|-
+            primR T_uchar q z ** .[Tint W8 Unsigned ! 1] |-> bufR q (sz - 1) zs.
         Proof.
           intros * Hz; split'.
           - rewrite /bufR arrayR_cons.
@@ -603,7 +612,8 @@ Module zstring.
         Proof.
           move=> q sz zs; rewrite /bufR/Observe.
           iIntros "[%Hsz [array [%HWF rest]]]".
-          iAssert (arrayR T_uchar (fun c => uint8R q c) (zs ++ repeat 0 (Z.to_nat (sz - size zs))))
+          iAssert (arrayR T_uchar (fun c => primR T_uchar q (Vint c))
+                          (zs ++ repeat 0 (Z.to_nat (sz - size zs))))
             with "[array rest]" as "array'". 2: {
             assert (Z.to_nat sz <= length (zs ++ repeat 0%Z (Z.to_nat (sz - size zs))))%nat
               as AUX. 1: {
@@ -612,7 +622,7 @@ Module zstring.
               unfold size in *.
               lia.
             }
-            pose proof (arrayR_valid_obs (λ c : Z, uint8R q c) T_uchar (Z.to_nat sz)
+            pose proof (arrayR_valid_obs (λ c : Z, primR T_uchar q c) T_uchar (Z.to_nat sz)
                                          (zs ++ repeat 0 (Z.to_nat (sz - size zs)))
                                          AUX).
             iDestruct (observe (.[ Tint char_bits Unsigned ! sz ] |-> validR) with "array'")
@@ -629,6 +639,44 @@ Module zstring.
           setoid_rewrite IHn.
           rewrite /fmap.
           reflexivity.
+        Qed.
+
+        #[global] Instance bufR_validR_inbounds_observe :
+          forall q sz (z : Z) (zs : t),
+            (0 <= z <= sz)%Z ->
+            Observe (.[T_uchar ! z] |-> validR) (bufR q sz zs).
+        Proof.
+          intros **; generalize dependent zs; induction z; intros **; simpl in *.
+          - rewrite ->o_sub_0 by eauto; rewrite _offsetR_id; refine _.
+          - assert (Z.pos p < sz \/ Z.pos p = sz)%Z
+              as [Hp | Hp] by lia; last by (rewrite Hp; refine _).
+            unfold Observe, bufR.
+            move: H Hp; generalize (Z.pos p).
+            iIntros (z H Hz) "[%SZ [zs [_ zeros]]]".
+            assert (z <= length zs \/ length zs < z)%Z
+              as [Hz' | Hz'] by lia.
+            + iClear "zeros".
+              iDestruct (observe (.[Tint char_bits Unsigned ! z] |-> validR) with "zs")
+                as "#valid"; last by iFrame "#".
+              pose proof (arrayR_valid_obs
+                            (fun c => primR (Tint char_bits Unsigned) q (Vint c))
+                            (Tint char_bits Unsigned) (Z.to_nat z) zs ltac:(lia)).
+              by rewrite ->Z2Nat.id in H0 by lia.
+            + iClear "zs".
+              iDestruct (observe (.[Tint char_bits Unsigned ! z] |-> validR) with "zeros")
+                as "#valid"; last by iFrame "#".
+              assert (exists z', size zs + z' = z /\ 0 <= z')
+                as [z' [Hz'' Hneg]]
+                by (exists (z - size zs)%Z; unfold size; lia);
+                subst.
+              rewrite -_offsetR_sub_sub; apply _offsetR_observe.
+              pose proof (arrayR_valid_obs
+                            (fun c => primR (Tint char_bits Unsigned) q 0)
+                            (Tint char_bits Unsigned) (Z.to_nat z')
+                            (repeat () (Z.to_nat (sz - size zs)))
+                            ltac:(rewrite repeat_length; lia)).
+              by rewrite ->Z2Nat.id in H0 by lia.
+          - by lia.
         Qed.
       End bufR.
 
@@ -654,7 +702,8 @@ Module zstring.
         Lemma bufR'_cons :
           forall (q : Qp) (sz : Z) (z : Z) (zs : t),
             z <> 0 ->
-            bufR' q sz (z :: zs) -|- uint8R q z ** .[Tint W8 Unsigned ! 1] |-> bufR' q (sz - 1) zs.
+            bufR' q sz (z :: zs) -|-
+            primR T_uchar q z ** .[Tint W8 Unsigned ! 1] |-> bufR' q (sz - 1) zs.
         Proof. lift_WF2WF' bufR_cons. Qed.
 
         #[global] Instance bufR'_cons_cons_head_nonzero :
@@ -678,13 +727,19 @@ Module zstring.
           forall q (sz : Z) (zs : t),
             Observe (.[T_uchar ! sz] |-> validR) (bufR' q sz zs).
         Proof. lift_WF2WF' bufR_validR_end_observe. Qed.
+
+        #[global] Instance bufR'_validR_inbounds_observe :
+          forall q sz (z : Z) (zs : t),
+            (0 <= z <= sz)%Z ->
+            Observe (.[T_uchar ! z] |-> validR) (bufR' q sz zs).
+        Proof. lift_WF2WF' bufR_validR_inbounds_observe. Qed.
       End bufR'.
 
       Lemma bufR_unfold :
         forall (q : Qp) (sz : Z) (zs : t),
           bufR q sz zs -|-
           [| size zs <= sz |] ** R q zs **
-          .[ T_uchar ! size zs] |-> arrayR T_uchar (fun _ => uint8R q 0)
+          .[ T_uchar ! size zs] |-> arrayR T_uchar (fun _ => primR T_uchar q 0)
                                            (repeat () (Z.to_nat (sz - size zs))).
       Proof.
         intros **; split'.
@@ -696,7 +751,7 @@ Module zstring.
         forall (q : Qp) (sz : Z) (cstr : t),
           bufR' q sz cstr -|-
           [| size cstr <= sz |] ** R' q cstr **
-          .[ T_uchar ! size cstr] |-> arrayR T_uchar (fun _ => uint8R q 0)
+          .[ T_uchar ! size cstr] |-> arrayR T_uchar (fun _ => primR T_uchar q 0)
                                              (repeat () (Z.to_nat (sz - size cstr))).
       Proof. intros **; rewrite -!bufRs_equiv -!Rs_equiv; by apply bufR_unfold. Qed.
 
@@ -719,6 +774,40 @@ Module zstring.
 
         #[local] Ltac try_lift_bufR H :=
           intros **; rewrite !R_bufR_equiv; eapply H; eauto.
+
+        Remark R_nil : forall (q : Qp), R q [] |-- False.
+        Proof. try_lift_bufR bufR_nil. Qed.
+
+        #[global] Instance R_singleton :
+          forall (q : Qp) (z : Z),
+            Observe [| z = 0 |]%Z (R q [z]).
+        Proof. try_lift_bufR bufR_singleton. Qed.
+
+        Lemma R_cons :
+          forall (q : Qp) (z : Z) (zs : t),
+            z <> 0 ->
+            R q (z :: zs) -|-
+            primR T_uchar q z ** .[Tint W8 Unsigned ! 1] |-> R q zs.
+        Proof.
+          intros **; rewrite !R_bufR_equiv.
+          replace (size zs) with ((size (z :: zs)) - 1)
+            by (rewrite size_cons; lia).
+          eapply bufR_cons; eauto.
+        Qed.
+
+        #[global] Instance R_cons_cons_head_nonzero :
+          forall (q : Qp) (z z' : Z) (zs : t),
+            Observe [| z <> 0 |]%Z (R q (z :: z' :: zs)).
+        Proof. try_lift_bufR bufR_cons_cons_head_nonzero. Qed.
+
+        Lemma R_has_type :
+          forall (q : Qp) (zs : t),
+                R q zs
+            |-- R q zs ** [| List.Forall (fun c => has_type (Vint c) T_uchar) zs |].
+        Proof.
+          try_lift_bufR bufR_has_type.
+          unfold strlen; by lia.
+        Qed.
 
         (* TODO (AUTO): Fix this once we add the correct observations for arrayR *)
         #[global] Instance R_type_ptrR_observe :
@@ -743,37 +832,17 @@ Module zstring.
             by lia.
         Qed.
 
-        Remark R_nil : forall (q : Qp), R q [] |-- False.
-        Proof. try_lift_bufR bufR_nil. Qed.
-
-        #[global] Instance R_singleton :
-          forall (q : Qp) (z : Z),
-            Observe [| z = 0 |]%Z (R q [z]).
-        Proof. try_lift_bufR bufR_singleton. Qed.
-
-        Lemma R_cons :
-          forall (q : Qp) (z : Z) (zs : t),
-            z <> 0 ->
-            R q (z :: zs) -|- uint8R q z ** .[Tint W8 Unsigned ! 1] |-> R q zs.
+        #[global] Instance R_validR_inbounds_observe :
+          forall q (z : Z) (zs : t),
+            (0 <= z <= size zs)%Z ->
+            Observe (.[T_uchar ! z] |-> validR) (R q zs).
         Proof.
-          intros **; rewrite !R_bufR_equiv.
-          replace (size zs) with ((size (z :: zs)) - 1)
-            by (rewrite size_cons; lia).
-          eapply bufR_cons; eauto.
-        Qed.
-
-        #[global] Instance R_cons_cons_head_nonzero :
-          forall (q : Qp) (z z' : Z) (zs : t),
-            Observe [| z <> 0 |]%Z (R q (z :: z' :: zs)).
-        Proof. try_lift_bufR bufR_cons_cons_head_nonzero. Qed.
-
-        Lemma R_has_type :
-          forall (q : Qp) (zs : t),
-                R q zs
-            |-- R q zs ** [| List.Forall (fun c => has_type (Vint c) T_uchar) zs |].
-        Proof.
-          try_lift_bufR bufR_has_type.
-          unfold strlen; by lia.
+          intros * Hsize; unfold R; unfold size in Hsize.
+          apply observe_sep_l.
+          pose proof (arrayR_valid_obs
+                        (fun c => primR (Tint char_bits Unsigned) q (Vint c))
+                        (Tint char_bits Unsigned) (Z.to_nat z) zs ltac:(lia)).
+          by rewrite ->Z2Nat.id in H by lia.
         Qed.
       End R_Theory.
 
@@ -785,6 +854,32 @@ Module zstring.
           forall q (zs : t),
             R' q zs ≡ bufR' q (size zs) zs.
         Proof. intros **; rewrite -Rs_equiv -bufRs_equiv; by apply R_bufR_equiv. Qed.
+
+        Remark R'_nil : forall (q : Qp), R' q [] |-- False.
+        Proof. lift_WF2WF' R_nil. Qed.
+
+        #[global] Instance R'_singleton :
+          forall (q : Qp) (z : Z),
+            Observe [| z = 0 |]%Z (R' q [z]).
+        Proof. lift_WF2WF' R_singleton. Qed.
+
+        Lemma R'_cons :
+          forall (q : Qp) (z : Z) (zs : t),
+            z <> 0 ->
+            R' q (z :: zs) -|-
+            primR T_uchar q z ** .[Tint W8 Unsigned ! 1] |-> R' q zs.
+        Proof. lift_WF2WF' R_cons. Qed.
+
+        #[global] Instance R'_cons_cons_head_nonzero :
+          forall (q : Qp) (z z' : Z) (zs : t),
+            Observe [| z <> 0 |]%Z (R' q (z :: z' :: zs)).
+        Proof. lift_WF2WF' R_cons_cons_head_nonzero. Qed.
+
+        Lemma R'_has_type :
+          forall (q : Qp) (zs : t),
+                R' q zs
+            |-- R' q zs ** [| List.Forall (fun c => has_type (Vint c) T_uchar) zs |].
+        Proof. lift_WF2WF' R_has_type. Qed.
 
         #[global] Instance R'_type_ptrR_observe :
           forall q (zs : t),
@@ -801,42 +896,23 @@ Module zstring.
             Observe (.[T_uchar ! strlen zs] |-> .[T_uchar ! 1] |-> validR) (R' q zs).
         Proof. lift_WF2WF' R_validR_end_observe'. Qed.
 
-        Remark R'_nil : forall (q : Qp), R' q [] |-- False.
-        Proof. lift_WF2WF' R_nil. Qed.
-
-        #[global] Instance R'_singleton :
-          forall (q : Qp) (z : Z),
-            Observe [| z = 0 |]%Z (R' q [z]).
-        Proof. lift_WF2WF' R_singleton. Qed.
-
-        Lemma R'_cons :
-          forall (q : Qp) (z : Z) (zs : t),
-            z <> 0 ->
-            R' q (z :: zs) -|- uint8R q z ** .[Tint W8 Unsigned ! 1] |-> R' q zs.
-        Proof. lift_WF2WF' R_cons. Qed.
-
-        #[global] Instance R'_cons_cons_head_nonzero :
-          forall (q : Qp) (z z' : Z) (zs : t),
-            Observe [| z <> 0 |]%Z (R' q (z :: z' :: zs)).
-        Proof. lift_WF2WF' R_cons_cons_head_nonzero. Qed.
-
-        Lemma R'_has_type :
-          forall (q : Qp) (zs : t),
-                R' q zs
-            |-- R' q zs ** [| List.Forall (fun c => has_type (Vint c) T_uchar) zs |].
-        Proof. lift_WF2WF' R_has_type. Qed.
+        #[global] Instance R'_validR_inbounds_observe :
+          forall q (z : Z) (zs : t),
+            (0 <= z <= size zs)%Z ->
+            Observe (.[T_uchar ! z] |-> validR) (R' q zs).
+        Proof. lift_WF2WF' R_validR_inbounds_observe. Qed.
       End R'_Theory.
 
       Lemma R_unfold :
         forall (q : Qp) (zs : t),
               R q zs
-          -|- arrayR T_uchar (fun c => uint8R q c) zs ** [| WF zs |].
+          -|- arrayR T_uchar (fun c => primR T_uchar q (Vint c)) zs ** [| WF zs |].
       Proof. intros **; split'; by rewrite /R. Qed.
 
       Lemma R'_unfold :
         forall (q : Qp) (zs : t),
               R' q zs
-          -|- arrayR T_uchar (fun c => uint8R q c) zs ** [| WF' zs |].
+          -|- arrayR T_uchar (fun c => primR T_uchar q (Vint c)) zs ** [| WF' zs |].
       Proof. intros **; split'; by rewrite /R'. Qed.
     End Theory.
   End with_Σ.
