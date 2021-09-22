@@ -127,14 +127,14 @@ Definition GlobDecl_ler : relation GlobDecl := λ g1 g2, GlobDecl_le g1 g2 = Som
 Arguments GlobDecl_ler !_ _ /.
 
 Section GlobDecl_ler.
-  Local Instance GlobDecl_le_refl : Reflexive GlobDecl_ler.
+  #[local] Instance GlobDecl_le_refl : Reflexive GlobDecl_ler.
   Proof.
     intros []; rewrite /= ?require_eq_refl; eauto.
     destruct init => //.
     by rewrite !require_eq_refl.
   Qed.
 
-  Local Instance GlobDecl_le_trans : Transitive GlobDecl_ler.
+  #[local] Instance GlobDecl_le_trans : Transitive GlobDecl_ler.
   Proof.
     intros a b c.
     destruct a, b; simpl => //; destruct c; simpl => //; intros;
@@ -150,17 +150,17 @@ Section GlobDecl_ler.
               end || rewrite ?require_eq_refl //).
   Qed.
 
-  Global Instance: PreOrder GlobDecl_ler := {}.
+  #[global] Instance: PreOrder GlobDecl_ler := {}.
 End GlobDecl_ler.
 
 Section ObjValue_ler.
-  Local Instance ObjValue_le_refl : Reflexive ObjValue_ler.
+  #[local] Instance ObjValue_le_refl : Reflexive ObjValue_ler.
   Proof.
     intros []; rewrite /= ?require_eq_refl;
       case_match; rewrite ?require_eq_refl //.
   Qed.
 
-  Local Instance ObjValue_le_trans : Transitive ObjValue_ler.
+  #[local] Instance ObjValue_le_trans : Transitive ObjValue_ler.
   Proof.
     intros a b c.
     destruct a, b => //=;
@@ -174,7 +174,7 @@ Section ObjValue_ler.
               end || rewrite ?require_eq_refl //).
   Qed.
 
-  Global Instance: PreOrder ObjValue_ler := {}.
+  #[global] Instance: PreOrder ObjValue_ler := {}.
 End ObjValue_ler.
 
 (* TODO: consider replacing [type_table_le]'s definition with [type_table_le_alt] *)
@@ -228,7 +228,7 @@ Proof.
   apply _.
 Qed.
 
-Local Hint Constructors complete_decl complete_basic_type complete_type complete_pointee_type complete_pointee_types : core.
+#[local] Hint Constructors complete_decl complete_basic_type complete_type complete_pointee_type complete_pointee_types : core.
 
 Lemma complete_decl_respects_GlobDecl_le {te g1 g2} :
   GlobDecl_ler g1 g2 ->
@@ -240,19 +240,19 @@ Proof.
     destruct_and!; simplify_eq; auto.
 Qed.
 
-Local Definition complete_decl_respects te2 g := ∀ te1,
+#[local] Definition complete_decl_respects te2 g := ∀ te1,
   type_table_le te2 te1 ->
   complete_decl te1 g.
-Local Definition complete_basic_type_respects te2 t := ∀ te1,
+#[local] Definition complete_basic_type_respects te2 t := ∀ te1,
   type_table_le te2 te1 ->
   complete_basic_type te1 t.
-Local Definition complete_pointee_type_respects te2 t := ∀ te1,
+#[local] Definition complete_pointee_type_respects te2 t := ∀ te1,
   type_table_le te2 te1 ->
   complete_pointee_type te1 t.
-Local Definition complete_pointee_types_respects te2 ts := ∀ te1,
+#[local] Definition complete_pointee_types_respects te2 ts := ∀ te1,
   type_table_le te2 te1 ->
   complete_pointee_types te1 ts.
-Local Definition complete_type_respects te2 t := ∀ te1,
+#[local] Definition complete_type_respects te2 t := ∀ te1,
   type_table_le te2 te1 ->
   complete_type te1 t.
 
@@ -283,13 +283,13 @@ Record sub_module (a b : translation_unit) : Prop :=
 ; byte_order_compat : a.(byte_order) = b.(byte_order) }.
 
 Section sub_module.
-  Local Instance: Reflexive sub_module.
+  #[local] Instance: Reflexive sub_module.
   Proof. done. Qed.
 
-  Local Instance: Transitive sub_module.
+  #[local] Instance: Transitive sub_module.
   Proof. intros ??? [] []; split; by etrans. Qed.
 
-  Global Instance: PreOrder sub_module := {}.
+  #[global] Instance: PreOrder sub_module := {}.
 End sub_module.
 Instance: RewriteRelation sub_module := {}.
 
