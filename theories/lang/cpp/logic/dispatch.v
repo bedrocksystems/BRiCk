@@ -17,7 +17,7 @@ Section with_cpp.
   Context `{Σ : cpp_logic}.
 
   (* the [offset] to cast a [base] to a [derived] *)
-  Fixpoint base_to_derived  `(d : !class_derives σ derived base) : offset :=
+  Fixpoint base_to_derived `(d : !class_derives σ derived base) : offset :=
     match d with
     | Derives_here st _ => o_id
     | Derives_base base st _ _ _ _ d =>
