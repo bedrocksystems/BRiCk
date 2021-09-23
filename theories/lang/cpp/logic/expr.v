@@ -848,7 +848,7 @@ Module Type Expr.
     Axiom wp_prval_virtual_call : forall ty fty f vc obj es Q,
         wp_glval vc obj (fun this free_this => wp_virtual_call f this (type_of obj) fty es $ fun res free_args =>
            prval_receive ty res $ fun v ft => Q v (ft $ free_args >*> free_this))
-        |-- wp_prval (Emember_call (inl (f, Direct, fty)) vc obj es ty) Q.
+        |-- wp_prval (Emember_call (inl (f, Virtual, fty)) vc obj es ty) Q.
 
     Axiom wp_xval_virtual_call : forall ty fty f vc obj es Q,
         wp_glval vc obj (fun this free_this => wp_virtual_call f this (type_of obj) fty es $ fun res free_args =>
@@ -864,7 +864,7 @@ Module Type Expr.
         addr |-> tblockR (erase_qualifiers ty) 1 **
         wp_glval vc obj (fun this free_this => wp_virtual_call f this (type_of obj) fty es $ fun res free_args =>
            init_receive addr res $ Q (free_args >*> free_this))
-        |-- wp_init ty addr (Emember_call (inl (f, Direct, fty)) vc obj es ty) Q.
+        |-- wp_init ty addr (Emember_call (inl (f, Virtual, fty)) vc obj es ty) Q.
 
     (* null *)
     Axiom wp_null : forall Q,
