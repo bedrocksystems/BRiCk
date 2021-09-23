@@ -8,6 +8,6 @@ From bedrock.prelude Require Import base wrap.
 From bedrock.lang.cpp Require Import semantics.values.
 
 Module Type val_wrapper.
-	Include wrapper.
+  Include wrapper.
   Definition to_V : t -> val := Vn ∘ to_N.
 End val_wrapper.

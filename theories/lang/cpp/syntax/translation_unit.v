@@ -3,10 +3,11 @@
  * This software is distributed under the terms of the BedRock Open-Source License.
  * See the LICENSE-BedRock file in the repository root for details.
  *)
+Require Import stdpp.fin_maps.
 From bedrock.prelude Require Import base avl.
 From bedrock.lang.cpp.syntax Require Import names expr stmt types.
 
-Set Primitive Projections.
+#[local] Set Primitive Projections.
 
 (** Record an offset in _bits_. *)
 Record LayoutInfo : Set :=
@@ -214,10 +215,10 @@ Definition type_of_value (o : ObjValue) : type :=
 
 Variant GlobDecl : Set :=
 | Gtype     (* this is a type declaration, but not a definition *)
-| Gunion    (_ : Union)
-| Gstruct   (_ : Struct)
-| Genum     (_ : type) (_ : list ident)
-| Gconstant (_ : type) (init : option Expr)
+| Gunion    (_ : Union) (* union body *)
+| Gstruct   (_ : Struct) (* struct body *)
+| Genum     (_ : type) (_ : list ident) (* *)
+| Gconstant (_ : type) (init : option Expr) (* used for enumerator constants*)
 | Gtypedef  (_ : type).
 Instance: EqDecision GlobDecl.
 Proof. solve_decision. Defined.
@@ -225,26 +226,6 @@ Proof. solve_decision. Defined.
 Definition symbol_table : Type := IM.t ObjValue.
 
 Definition type_table : Type := IM.t GlobDecl.
-
-(**
-A [translation_unit] value represents all the statically known information
-about a C++ translation unit, that is, a source file.
-TOOD: add support for symbols with _internal_ linkage.
-TODO: does linking induce a (non-commutative) monoid on object files? Is then
-a translation unit a "singleton" value in this monoid? *)
-Record translation_unit : Type :=
-{ symbols    : symbol_table
-; globals    : type_table
-; byte_order : endian
-}.
-
-Instance global_lookup : Lookup globname GlobDecl translation_unit :=
-  fun k m => m.(globals) !! k.
-Instance symbol_lookup : Lookup obj_name ObjValue translation_unit :=
-  fun k m => m.(symbols) !! k.
-
-Instance Singleton_twothree {V} : SingletonM bs V (IM.t V) :=
-  fun k v => <[ k := v ]> ∅.
 
 Instance Singleton_symbol_table : SingletonM obj_name ObjValue symbol_table := _.
 Instance Singleton_type_table : SingletonM globname GlobDecl type_table := _.
@@ -262,10 +243,32 @@ Notation not_ref_type t := (ref_to_type t = None).
 
 Section with_type_table.
   Variable te : type_table.
-  (* Adapted from Krebbers'15, Definition 3.3.5 *)
+  (*
+  To traverse a type definition and compute, say, its list of subobjects,
+  we require that the type is _complete_, as in the usual sense.
+
+  This definition is adapted from Krebbers'15, Definition 3.3.5, with needed
+  adjustments for C++.
+
+  Unlike Krebbers:
+  - our [type_table] are not ordered
+  - [complete_named] takes a proof of [complete_decl] to simplify its use for consumers,
+    so we'd naively recheck a struct wherever needed; but an actual checker can
+    be smarter (it could use a state monad carrying a map of known-complete types).
+
+  The C++ standard defines and constrains "(in)complete type"s at
+  https://eel.is/c++draft/basic.types.general#def:object_type,incompletely-defined,
+  and constraints it at https://eel.is/c++draft/basic.scope.pdecl#6,
+  https://eel.is/c++draft/class.mem#def:data_member,
+  https://eel.is/c++draft/basic.def.odr#12,
+  https://eel.is/c++draft/basic.def#5.
+  *)
 
   (* Check that [g : GlobDecl] is complete in environment [te]. *)
   Inductive complete_decl : GlobDecl -> Prop :=
+  (* We intentionally omit Krebbers' clauses checking the aggregate is not
+  empty: empty aggregates are legal in full C/C++ (see
+  [cpp2v-tests/test_translation_unit_validity.cpp]). *)
   | complete_Struct {st}
               (_ : forall b li, In (b, li) st.(s_bases) -> complete_type (Tnamed b))
               (_ : forall x t e li, In (mkMember x t e li) st.(s_fields) -> complete_type t)
@@ -275,7 +278,10 @@ Section with_type_table.
     : complete_decl (Gunion u)
   | complete_enum {t consts} (_ : complete_type t)
     : complete_decl (Genum t consts)
-  (* Basic types. This excludes references (see [complete_basic_type_not_ref]). *)
+  (* No need for typedefs since those are forbidden in `Tnamed`, `Gtype` isn't
+  legal, `Gconstant` is illegal and wouldn't make sense. *)
+
+  (* Basic types. This excludes references (as checked by [complete_basic_type_not_ref]). *)
   with complete_basic_type : type -> Prop :=
   | complete_float sz : complete_basic_type (Tfloat sz)
   | complete_int sgn sz : complete_basic_type (Tint sgn sz)
@@ -286,11 +292,11 @@ Section with_type_table.
   | complete_ptr {t} : complete_pointee_type t -> complete_basic_type (Tptr t)
 
   (* [complete_pointee_type t] says that a pointer/reference to [t] is complete.
-     This excludes references (see [complete_pointee_type_not_ref]). *)
+     This excludes references (as checked by [complete_pointee_type_not_ref])
+     since they cannot be nested. *)
   with complete_pointee_type : type -> Prop :=
-  | complete_pt_basic t :
-    complete_basic_type t ->
-    complete_pointee_type t
+  | complete_pt_qualified {q t} (_ : complete_pointee_type t)
+    : complete_pointee_type (Tqualified q t)
   (*
     Pointers to array are only legal if the array is complete, at least
     in C, since they cannot actually be indexed or created.
@@ -298,34 +304,35 @@ Section with_type_table.
 
     [struct T; int foo(struct T x[][10]);]
 
-    However, C++ compilers appear to accept this code.
-    TODO: decide behavior.
+    However, C++ compilers appear to accept this code, which we cover
+    in [wellscoped_array].
     *)
   | complete_pt_array t n
     (_ : (n <> 0)%N) (* From Krebbers. Probably needed to reject [T[][]]. *)
     (_ : complete_type t) :
     complete_pointee_type (Tarray t n)
-  | complete_pt_named n :
+  | complete_pt_named {n decl} :
+    (* This check could not appear in a Krebbers-style definition.
+       And it is not needed to enable computation on complete types.
+     *)
+    te !! n = Some decl ->
     complete_pointee_type (Tnamed n)
   (* Beware:
   [Tfunction] represents a function type; somewhat counterintuitively,
   a pointer to a function type is complete even if the argument/return types
-  are not complete, you're just forbidden from actually invoking the pointer. *)
+  are not complete but only well-scoped, you're just forbidden from
+  actually invoking the pointer; this follows Krebbers'15 3.3.5. *)
   | complete_pt_function {cc ret args}
-      (_ : complete_pointee_type ret)
-      (_ : complete_pointee_types args)
+      (_ : wellscoped_type ret)
+      (_ : wellscoped_types args)
     : complete_pointee_type (Tfunction (cc:=cc) ret args)
-  with complete_pointee_types : list type -> Prop :=
-  | complete_pt_nil : complete_pointee_types []
-  | complete_pt_cons t ts :
-    complete_pointee_type t ->
-    complete_pointee_types ts ->
-    complete_pointee_types (t :: ts)
+  | complete_pt_basic t :
+    complete_basic_type t ->
+    complete_pointee_type t
   (* [complete_type t] says that type [t] is well-formed, that is, complete. *)
   with complete_type : type -> Prop :=
-  | complete_basic t :
-    complete_basic_type t ->
-    complete_type t
+  | complete_qualified {q t} (_ : complete_type t)
+    : complete_type (Tqualified q t)
   (* Reference types. This setup forbids references to references. *)
   | complete_ref {t} : complete_pointee_type t -> complete_type (Tref t)
   | complete_rv_ref {t} : complete_pointee_type t -> complete_type (Trv_ref t)
@@ -337,8 +344,8 @@ Section with_type_table.
   However, that might require replacing [type_table] by a _sequence_ of
   declarations, instead of an unordered dictionary.
   *)
-  | complete_named_struct {n st} (_ : te !! n = Some st)
-                    (_ : complete_decl st) :
+  | complete_named {n decl} (_ : te !! n = Some decl)
+                    (_ : complete_decl decl) :
     complete_type (Tnamed n)
   | complete_array {t n}
     (_ : (n <> 0)%N) (* Needed? from Krebbers*)
@@ -348,28 +355,76 @@ Section with_type_table.
       (_ : complete_pointee_type (Tnamed n))
       (_ : complete_pointee_type t)
     : complete_type (Tmember_pointer n t)
-  (* Beware: Argument/return types need not be complete. *)
-  | complete_function {cc ret args}
-      (_ : complete_pointee_type ret)
-      (_ : complete_pointee_types args)
-    : complete_type (Tfunction (cc:=cc) ret args)
-  | complete_qualified {q t} (_ : complete_type t)
-    : complete_type (Tqualified q t).
+  | complete_function {cc ret args} :
+    (*
+    We could probably omit this constructor, and consider function types as not
+    complete; "complete function types" do not exist in the standard, and
+    [complete_symbol_table] does not use the concept.
+     *)
+    complete_pointee_type (Tfunction (cc:=cc) ret args) ->
+    complete_type (Tfunction (cc:=cc) ret args)
+  | complete_basic t :
+    complete_basic_type t ->
+    complete_type t
+  (** Well-scoped arguments cannot mention undeclared types. Krebbers identifies
+  them with valid pointee, but that breaks down in C++ due to references. *)
+  with wellscoped_type : type -> Prop :=
+  | wellscoped_qualified {q t} (_ : wellscoped_type t)
+    : wellscoped_type (Tqualified q t)
+  | wellscoped_array t n
+    (_ : (n <> 0)%N) : (* From Krebbers. Probably needed to reject [T[][]]. *)
+    wellscoped_type t ->
+    wellscoped_type (Tarray t n)
+  | wellscoped_pointee t :
+    complete_pointee_type t ->
+    wellscoped_type t
+  (* covers references. *)
+  | wellscoped_complete {t} :
+    complete_type t ->
+    wellscoped_type t
+  with wellscoped_types : list type -> Prop :=
+  | wellscoped_nil : wellscoped_types []
+  | wellscoped_cons t ts :
+    wellscoped_type t ->
+    wellscoped_types ts ->
+    wellscoped_types (t :: ts).
+
+  Inductive valid_decl : GlobDecl -> Prop :=
+  | valid_typedef t :
+    (*
+    All typedefs in use have been inlined at their use-site, so we don't enforce
+    their validity.
+
+    In addition, we can't enforce their validity because `clang` produces
+    builtin typedefs with ill-scoped bodies, such as
+    [(Dtypedef "__NSConstantString" (Tnamed "_Z22__NSConstantString_tag")) :: ... ::
+    (Dtypedef "__builtin_va_list" (Tarray (Tnamed "_Z13__va_list_tag") 1)) ::]. *)
+    (* wellscoped_type t -> *)
+    valid_decl (Gtypedef t)
+  | valid_type : valid_decl Gtype
+  | valid_const t oe :
+    (* Potentially redundant. *)
+    wellscoped_type t ->
+    valid_decl (Gconstant t oe)
+  | valid_complete_decl g :
+    complete_decl g -> valid_decl g.
 End with_type_table.
 
 Scheme complete_decl_mut_ind := Minimality for complete_decl Sort Prop
 with complete_basic_type_mut_ind := Minimality for complete_basic_type Sort Prop
-with complete_type_mut_ind := Minimality for complete_type Sort Prop
 with complete_pointee_type_mut_ind := Minimality for complete_pointee_type Sort Prop
-with complete_pointee_types_mut_ind := Minimality for complete_pointee_types Sort Prop.
+with complete_type_mut_ind := Minimality for complete_type Sort Prop
+with wellscoped_type_mut_ind := Minimality for wellscoped_type Sort Prop
+with wellscoped_types_mut_ind := Minimality for wellscoped_types Sort Prop.
 
 Combined Scheme complete_mut_ind from complete_decl_mut_ind, complete_basic_type_mut_ind,
-  complete_pointee_type_mut_ind, complete_pointee_types_mut_ind, complete_type_mut_ind.
+  complete_pointee_type_mut_ind, complete_type_mut_ind,
+  wellscoped_type_mut_ind, wellscoped_types_mut_ind.
 
 Lemma complete_basic_type_not_ref te t : complete_basic_type te t → not_ref_type t.
 Proof. by inversion 1. Qed.
 Lemma complete_pointee_type_not_ref te t : complete_pointee_type te t → not_ref_type t.
-Proof. inversion 1; by [eapply complete_basic_type_not_ref | ]. Qed.
+Proof. induction 1; by [eapply complete_basic_type_not_ref | ]. Qed.
 
 Lemma complete_type_not_ref_ref te t1 t2 : complete_type te t1 → ref_to_type t1 = Some t2 → not_ref_type t2.
 Proof.
@@ -377,3 +432,58 @@ Proof.
     try by [exact: complete_pointee_type_not_ref| tauto].
   move => /complete_basic_type_not_ref; naive_solver.
 Qed.
+
+(**
+Adapted from Krebbers'15, Definition 3.3.6:
+- all member types must be complete
+- all function types must be pointer-complete as defined above.
+*)
+Definition complete_type_table (te : type_table) :=
+  map_Forall (fun _key d => valid_decl te d) te.
+
+Definition complete_symbol_table (te : type_table) (syms : symbol_table) :=
+  map_Forall (fun _key d => complete_pointee_type te (type_of_value d)) syms.
+
+Definition complete_translation_unit (te : type_table) (syms : symbol_table) :=
+  complete_type_table te /\ complete_symbol_table te syms.
+
+(*
+#[global] Instance complete_type_table_dec te : Decision (complete_type_table te).
+Proof.
+apply: map_Forall_dec.
+(* unshelve eapply map_Forall_dec; try apply _. *)
+*)
+
+(*
+TODOs for FM-216:
+1. prove [complete_type_table_dec] above with an efficient checker.
+2. add [bool_decide (complete_type_table globals = true] to translation_unit;
+   that's automatically proof-irrelevant, and proofs are just cheap [eq_refl].
+3. add any helper lemmas, say for proving equality of [translation_unit] from
+   equality of the relevant componets.
+
+Twist: the "decision procedure" likely requires fuel; find how to adapt the
+above plan. We'll likely end up with a boolean checker proven correct.
+
+Question: do we need [complete_symbol_table]? This is not expected.
+
+Goal: enable recursion on proofs of [complete_type_table], e.g. for defining
+[anyR] (FM-215).
+*)
+
+(**
+A [translation_unit] value represents all the statically known information
+about a C++ translation unit, that is, a source file.
+TOOD: add support for symbols with _internal_ linkage.
+TODO: does linking induce a (non-commutative) monoid on object files? Is then
+a translation unit a "singleton" value in this monoid? *)
+Record translation_unit : Type :=
+{ symbols    : symbol_table
+; globals    : type_table
+; byte_order : endian
+}.
+
+Instance global_lookup : Lookup globname GlobDecl translation_unit :=
+  fun k m => m.(globals) !! k.
+Instance symbol_lookup : Lookup obj_name ObjValue translation_unit :=
+  fun k m => m.(symbols) !! k.

@@ -1,0 +1,14 @@
+(include_subdirs qualified)
+(coq.theory
+ (name bedrocktest) ; logical path of this library
+ (flags (
+   -w -notation-overridden
+      -w -custom-entry-overridden
+      -w -redundant-canonical-projection
+      -w -ambiguous-paths
+      -w -ssr-search-moved
+      -w +deprecated-hint-without-locality
+ ))
+ (theories bedrock.lang)
+)
+(include dune.inc)
