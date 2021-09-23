@@ -311,7 +311,11 @@ Section with_type_table.
     (_ : (n <> 0)%N) (* From Krebbers. Probably needed to reject [T[][]]. *)
     (_ : complete_type t) :
     complete_pointee_type (Tarray t n)
-  | complete_pt_named n :
+  | complete_pt_named {n decl} :
+    (* This check could not appear in a Krebbers-style definition.
+       And it is not needed to enable computation on complete types.
+     *)
+    te !! n = Some decl ->
     complete_pointee_type (Tnamed n)
   (* Beware:
   [Tfunction] represents a function type; somewhat counterintuitively,
@@ -340,8 +344,8 @@ Section with_type_table.
   However, that might require replacing [type_table] by a _sequence_ of
   declarations, instead of an unordered dictionary.
   *)
-  | complete_named {n st} (_ : te !! n = Some st)
-                    (_ : complete_decl st) :
+  | complete_named {n decl} (_ : te !! n = Some decl)
+                    (_ : complete_decl decl) :
     complete_type (Tnamed n)
   | complete_array {t n}
     (_ : (n <> 0)%N) (* Needed? from Krebbers*)
@@ -369,6 +373,7 @@ Section with_type_table.
     : wellscoped_type (Tqualified q t)
   | wellscoped_array t n
     (_ : (n <> 0)%N) : (* From Krebbers. Probably needed to reject [T[][]]. *)
+    wellscoped_type t ->
     wellscoped_type (Tarray t n)
   | wellscoped_pointee t :
     complete_pointee_type t ->
@@ -386,9 +391,20 @@ Section with_type_table.
 
   Inductive valid_decl : GlobDecl -> Prop :=
   | valid_typedef t :
+    (*
+    All typedefs in use have been inlined at their use-site, so we don't enforce
+    their validity.
+
+    In addition, we can't enforce their validity because `clang` produces
+    builtin typedefs with ill-scoped bodies, such as
+    [(Dtypedef "__NSConstantString" (Tnamed "_Z22__NSConstantString_tag")) :: ... ::
+    (Dtypedef "__builtin_va_list" (Tarray (Tnamed "_Z13__va_list_tag") 1)) ::]. *)
+    (* wellscoped_type t -> *)
     valid_decl (Gtypedef t)
   | valid_type : valid_decl Gtype
   | valid_const t oe :
+    (* Potentially redundant. *)
+    wellscoped_type t ->
     valid_decl (Gconstant t oe)
   | valid_complete_decl g :
     complete_decl g -> valid_decl g.

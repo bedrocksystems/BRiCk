@@ -269,7 +269,11 @@ Lemma complete_respects_sub_table_mut te2 :
   (∀ t : type, wellscoped_type te2 t → wellscoped_type_respects te2 t) ∧
   (∀ t : list type, wellscoped_types te2 t → wellscoped_types_respects te2 t).
 Proof.
-  apply complete_mut_ind; try solve [intros; red; repeat_on_hyps (fun H => red in H); eauto].
+  apply complete_mut_ind; try solve [intros; red; repeat_on_hyps (fun H => red in H); eauto]. {
+    intros * Hlook ? Hsub.
+    destruct (Hsub _ _ Hlook) as (st1 & Hlook1 & _).
+    eapply (complete_pt_named _ Hlook1).
+  }
   intros * Hlook Hct IH ? Hsub.
   destruct (Hsub _ _ Hlook) as (st1 & Hlook1 & Hle).
   apply (complete_named _ Hlook1).
