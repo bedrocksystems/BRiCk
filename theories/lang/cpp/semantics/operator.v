@@ -166,34 +166,28 @@ Axiom eval_gt_bool : Hnf (eval_int_rel_op Z.gt Bgt).
 Axiom eval_le_bool : Hnf (eval_int_rel_op Z.le Ble).
 Axiom eval_ge_bool : Hnf (eval_int_rel_op Z.ge Bge).
 
-(*
-Definition eval_int_rel_op_int (bo : BinOp) {P Q : Z -> Z -> Prop}
-           (o : forall a b : Z, {P a b} + {Q a b}) : Prop :=
-  forall resolve w s a b (av bv : Z) (c : Z),
+Definition b2i (b : bool) : Z := if b then 1 else 0.
+
+#[local] Definition eval_int_rel_op_int (o : Z -> Z -> Prop) {RD : RelDecision o} (bo : BinOp) : Prop :=
+  forall resolve w s a b (av bv : Z) c,
     a = Vint av ->
     b = Vint bv ->
     has_type a (Tint w s) ->
     has_type b (Tint w s) ->
-    c = (if o av bv then 1 else 0)%Z ->
-    eval_binop_pure (resolve:=resolve) bo (Tint w s) (Tint w s) (T_int) a b (Vint c).
+    c = bool_decide (o av bv) ->
+    eval_binop_pure (resolve:=resolve) bo (Tint w s) (Tint w s) T_int a b (Vint $ b2i c).
 
-Axiom eval_eq_int :
-  ltac:(let x := eval hnf in (eval_int_rel_op_int eq Beq) in refine x).
+Axiom eval_eq_int : Hnf (eval_int_rel_op_int eq Beq).
 Axiom eval_neq_int :
   forall resolve ty a b (av bv : Z) (c : bool),
     a = Vint av ->
     b = Vint bv ->
     c = bool_decide (av <> bv) ->
     eval_binop_pure (resolve:=resolve) Bneq ty ty T_int a b (Vbool c).
-Axiom eval_lt_int :
-  ltac:(let x := eval hnf in (eval_int_rel_op_int Blt ZArith_dec.Z_lt_ge_dec) in refine x).
-Axiom eval_gt_int :
-  ltac:(let x := eval hnf in (eval_int_rel_op_int Bgt ZArith_dec.Z_gt_le_dec) in refine x).
-Axiom eval_le_int :
-  ltac:(let x := eval hnf in (eval_int_rel_op_int Ble ZArith_dec.Z_le_gt_dec) in refine x).
-Axiom eval_ge_int :
-  ltac:(let x := eval hnf in (eval_int_rel_op_int Bge ZArith_dec.Z_ge_lt_dec) in refine x).
- *)
+Axiom eval_lt_int : Hnf (eval_int_rel_op_int Z.lt Blt).
+Axiom eval_gt_int : Hnf (eval_int_rel_op_int Z.gt Bgt).
+Axiom eval_le_int : Hnf (eval_int_rel_op_int Z.le Ble).
+Axiom eval_ge_int : Hnf (eval_int_rel_op_int Z.ge Bge).
 
 Definition bitFlipZU (len: bitsize) (z:Z) : Z :=
   to_unsigned len (Z.lnot z).
