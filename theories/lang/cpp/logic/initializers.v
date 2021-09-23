@@ -31,6 +31,7 @@ Module Type Init.
                (ty : type) (len : N) (p : ptr) (Q : FreeTemps -> epred) : mpred :=
       fold_right (fun i PP => default_initialize ty (p ., o_sub _ ty (Z.of_N i)) (fun free' => interp free' PP))
                  (p .[ ty ! Z.of_N len ] |-> validR -* Q FreeTemps.id) (seqN 0 len).
+    #[global] Arguments default_initialize_array : simpl never.
 
     Lemma default_initialize_array_frame : ∀ di ty sz Q Q' (p : ptr),
         (Forall f, Q f -* Q' f)
@@ -143,6 +144,8 @@ Module Type Init.
     #[global] Arguments wpi _ _ _ _ /.
 
   End with_resolve.
+
+  #[global] Hint Opaque default_initialize_array : typeclass_instances.
 
   Section frames.
     Context `{Σ : cpp_logic thread_info} {σ1 σ2 :genv}.
