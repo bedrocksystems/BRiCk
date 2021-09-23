@@ -17,6 +17,10 @@ Require Import bedrocktest.test_translation_unit_validity_cpp.
 Instance: OMap avl.IM.t. Admitted.
 Instance: FinMap bs avl.IM.t. Admitted.
 
+#[local] Hint Extern 10 => match goal with
+| H : In _ _ |- _ => simpl in *; intuition simplify_eq
+end : core.
+
 Goal complete_translation_unit (globals module) (symbols module).
 Proof.
   rewrite /complete_translation_unit /complete_type_table /complete_symbol_table.
@@ -24,9 +28,7 @@ Proof.
   split; apply map_Forall_to_list.
   all: remember (map_to_list _) as l; lazy in Heql; subst.
   #[local] Opaque module.
-  all: repeat apply List.Forall_cons; rewrite /type_of_value/=/qual_norm/=; try by repeat constructor.
-  apply valid_complete_decl, complete_Struct => //=; intuition;
-    simplify_eq; by repeat constructor.
+  all: repeat apply List.Forall_cons; rewrite /type_of_value/=/qual_norm/=; eauto 20.
 Qed.
 #[local] Transparent module.
 
