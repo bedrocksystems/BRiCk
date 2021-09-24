@@ -3,13 +3,6 @@
  * This software is distributed under the terms of the BedRock Open-Source License.
  * See the LICENSE-BedRock file in the repository root for details.
  *)
-Require Import Coq.ZArith.BinInt.
-Require Import Coq.micromega.Lia.
-From Coq.Classes Require Import
-     RelationClasses Morphisms.
-
-From Coq Require Import
-     Lists.List.
 Require Import iris.proofmode.tactics.
 
 From bedrock.lang.cpp Require Import ast semantics.

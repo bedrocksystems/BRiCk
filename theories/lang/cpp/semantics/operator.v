@@ -21,37 +21,57 @@ Local Open Scope Z_scope.
 
 
 
+Module Type OPERATOR_INTF_FUNCTOR (Import V : VALUES_INTF).
+  (** operator semantics *)
+  Parameter eval_unop : forall {resolve : genv}, UnOp -> forall (argT resT : type) (arg res : val), Prop.
+  Parameter eval_binop_pure : forall {resolve : genv}, BinOp -> forall (lhsT rhsT resT : type) (lhs rhs res : val), Prop.
 
-(** Integral conversions *)
-Definition conv_int (from to : type) (v v' : val) : Prop :=
-  match drop_qualifiers from , drop_qualifiers to with
-  | Tbool , Tint _ _ =>
-    match is_true v with
-    | Some v => v' = Vbool v
-    | _ => False
-    end
-  | Tint _ _ , Tbool =>
-    match v with
-    | Vint v =>
-      v' = Vbool (if Z.eqb 0 v then false else true)
-    | _ => False
-    end
-  | Tint _ _ , Tint sz Unsigned =>
-    match v with
-    | Vint v =>
-      v' = Vint (to_unsigned sz v)
-    | _ => False
-    end
-  | Tint _ _ , Tint sz Signed =>
-    has_type v (Tint sz Signed) /\ v' = v
-  | _ , _ => False
-  end.
-Arguments conv_int !_ !_ _ _ /.
+Section operator_axioms.
 
+Let eval_int_op (bo : BinOp) (o : Z -> Z -> Z) : Prop :=
+  forall resolve w (s : signed) (a b c : Z),
+    has_type (Vint a) (Tint w s) ->
+    has_type (Vint b) (Tint w s) ->
+    c = match s with
+        | Signed => o a b
+        | Unsigned => trim (bitsN w) (o a b)
+        end ->
+    has_type (Vint c) (Tint w s) ->
+    eval_binop_pure (resolve:=resolve) bo (Tint w s) (Tint w s) (Tint w s) (Vint a) (Vint b) (Vint c).
 
-(** operator semantics *)
-Parameter eval_unop : forall {resolve : genv}, UnOp -> forall (argT resT : type) (arg res : val), Prop.
-Parameter eval_binop_pure : forall {resolve : genv}, BinOp -> forall (lhsT rhsT resT : type) (lhs rhs res : val), Prop.
+(* this is bitwise operators *)
+Let eval_int_bitwise_op (bo : BinOp) (o : Z -> Z -> Z) : Prop :=
+  forall resolve w (s : signed) (a b c : Z),
+    has_type (Vint a) (Tint w s) ->
+    has_type (Vint b) (Tint w s) ->
+    c = o a b -> (* note that bitwise operators respect bounds *)
+    eval_binop_pure (resolve:=resolve) bo (Tint w s) (Tint w s) (Tint w s) (Vint a) (Vint b) (Vint c).
+
+(* Arithmetic comparison operators *)
+
+(* If the operands has arithmetic or enumeration type (scoped or
+   unscoped), usual arithmetic conversions are performed on both
+   operands following the rules for arithmetic operators. The values
+   are compared after conversions. *)
+Let eval_int_rel_op (bo : BinOp) {P Q : Z -> Z -> Prop}
+           (o : forall a b : Z, {P a b} + {Q a b}) : Prop :=
+  forall resolve w s a b (av bv : Z) (c : Z),
+    a = Vint av ->
+    b = Vint bv ->
+    has_type a (Tint w s) ->
+    has_type b (Tint w s) ->
+    c = (if o av bv then 1 else 0)%Z ->
+    eval_binop_pure (resolve:=resolve) bo (Tint w s) (Tint w s) Tbool a b (Vint c).
+
+Let eval_int_rel_op_int (bo : BinOp) {P Q : Z -> Z -> Prop}
+           (o : forall a b : Z, {P a b} + {Q a b}) : Prop :=
+  forall resolve w s a b (av bv : Z) (c : Z),
+    a = Vint av ->
+    b = Vint bv ->
+    has_type a (Tint w s) ->
+    has_type b (Tint w s) ->
+    c = (if o av bv then 1 else 0)%Z ->
+    eval_binop_pure (resolve:=resolve) bo (Tint w s) (Tint w s) (T_int) a b (Vint c).
 
 Axiom eval_not_bool : forall resolve a,
     eval_unop (resolve:=resolve) Unot Tbool Tbool (Vbool a) (Vbool (negb a)).
@@ -68,40 +88,15 @@ Axiom eval_minus_int : forall resolve (s : signed) a c w,
     eval_unop (resolve:=resolve) Uminus (Tint w s) (Tint w s)
               (Vint a) (Vint c).
 
-Definition eval_int_op (bo : BinOp) (o : Z -> Z -> Z) : Prop :=
-  forall resolve w (s : signed) (a b c : Z),
-    has_type (Vint a) (Tint w s) ->
-    has_type (Vint b) (Tint w s) ->
-    c = match s with
-        | Signed => o a b
-        | Unsigned => trim (bitsN w) (o a b)
-        end ->
-    has_type (Vint c) (Tint w s) ->
-    eval_binop_pure (resolve:=resolve) bo (Tint w s) (Tint w s) (Tint w s) (Vint a) (Vint b) (Vint c).
-
-(* this is bitwise operators *)
-Definition eval_int_bitwise_op (bo : BinOp) (o : Z -> Z -> Z) : Prop :=
-  forall resolve w (s : signed) (a b c : Z),
-    has_type (Vint a) (Tint w s) ->
-    has_type (Vint b) (Tint w s) ->
-    c = o a b -> (* note that bitwise operators respect bounds *)
-    eval_binop_pure (resolve:=resolve) bo (Tint w s) (Tint w s) (Tint w s) (Vint a) (Vint b) (Vint c).
-
 (* arithmetic operators *)
-Axiom eval_add :
-  ltac:(let x := eval hnf in (eval_int_op Badd Z.add) in refine x).
-Axiom eval_sub :
-  ltac:(let x := eval hnf in (eval_int_op Bsub Z.sub) in refine x).
-Axiom eval_mul :
-  ltac:(let x := eval hnf in (eval_int_op Bmul Z.mul) in refine x).
+Axiom eval_add : Hnf (eval_int_op Badd Z.add).
+Axiom eval_sub : Hnf (eval_int_op Bsub Z.sub).
+Axiom eval_mul : Hnf (eval_int_op Bmul Z.mul).
 
 (* bitwise(logical) operators *)
-Axiom eval_or :
-  ltac:(let x := eval hnf in (eval_int_bitwise_op Bor Z.lor) in refine x).
-Axiom eval_and :
-  ltac:(let x := eval hnf in (eval_int_bitwise_op Band Z.land) in refine x).
-Axiom eval_xor :
-  ltac:(let x := eval hnf in (eval_int_bitwise_op Bxor Z.lxor) in refine x).
+Axiom eval_or : Hnf (eval_int_bitwise_op Bor Z.lor).
+Axiom eval_and : Hnf (eval_int_bitwise_op Band Z.land).
+Axiom eval_xor : Hnf (eval_int_bitwise_op Bxor Z.lxor).
 
 (* The binary operator / divides the first operand by the second, after usual
    arithmetic conversions.
@@ -169,34 +164,7 @@ Axiom eval_shr :
     c = match s with Signed => Z.shiftr a b | Unsigned => trim (bitsN w) (Z.shiftr a b) end ->
     eval_binop_pure (resolve:=resolve) Bshr (Tint w s) (Tint w2 s2) (Tint w s) (Vint a) (Vint b) (Vint c).
 
-(* Arithmetic comparison operators *)
-
-(* If the operands has arithmetic or enumeration type (scoped or
-   unscoped), usual arithmetic conversions are performed on both
-   operands following the rules for arithmetic operators. The values
-   are compared after conversions. *)
-Definition eval_int_rel_op (bo : BinOp) {P Q : Z -> Z -> Prop}
-           (o : forall a b : Z, {P a b} + {Q a b}) : Prop :=
-  forall resolve w s a b (av bv : Z) (c : Z),
-    a = Vint av ->
-    b = Vint bv ->
-    has_type a (Tint w s) ->
-    has_type b (Tint w s) ->
-    c = (if o av bv then 1 else 0)%Z ->
-    eval_binop_pure (resolve:=resolve) bo (Tint w s) (Tint w s) Tbool a b (Vint c).
-
-Definition eval_int_rel_op_int (bo : BinOp) {P Q : Z -> Z -> Prop}
-           (o : forall a b : Z, {P a b} + {Q a b}) : Prop :=
-  forall resolve w s a b (av bv : Z) (c : Z),
-    a = Vint av ->
-    b = Vint bv ->
-    has_type a (Tint w s) ->
-    has_type b (Tint w s) ->
-    c = (if o av bv then 1 else 0)%Z ->
-    eval_binop_pure (resolve:=resolve) bo (Tint w s) (Tint w s) (T_int) a b (Vint c).
-
-Axiom eval_eq_bool :
-  ltac:(let x := eval hnf in (eval_int_rel_op Beq Z.eq_dec) in refine x).
+Axiom eval_eq_bool : Hnf (eval_int_rel_op Beq Z.eq_dec).
 Axiom eval_neq_bool :
   forall resolve ty a b (av bv : Z) (c : Z),
     a = Vint av ->
@@ -205,34 +173,22 @@ Axiom eval_neq_bool :
     has_type b ty ->
     c = (if Z.eq_dec av bv then 0 else 1)%Z ->
     eval_binop_pure (resolve:=resolve) Bneq ty ty Tbool a b (Vint c).
-Axiom eval_lt_bool :
-  ltac:(let x := eval hnf in (eval_int_rel_op Blt ZArith_dec.Z_lt_ge_dec) in refine x).
-Axiom eval_gt_bool :
-  ltac:(let x := eval hnf in (eval_int_rel_op Bgt ZArith_dec.Z_gt_le_dec) in refine x).
-Axiom eval_le_bool :
-  ltac:(let x := eval hnf in (eval_int_rel_op Ble ZArith_dec.Z_le_gt_dec) in refine x).
-Axiom eval_ge_bool :
-  ltac:(let x := eval hnf in (eval_int_rel_op Bge ZArith_dec.Z_ge_lt_dec) in refine x).
+Axiom eval_lt_bool : Hnf (eval_int_rel_op Blt ZArith_dec.Z_lt_ge_dec).
+Axiom eval_gt_bool : Hnf (eval_int_rel_op Bgt ZArith_dec.Z_gt_le_dec).
+Axiom eval_le_bool : Hnf (eval_int_rel_op Ble ZArith_dec.Z_le_gt_dec).
+Axiom eval_ge_bool : Hnf (eval_int_rel_op Bge ZArith_dec.Z_ge_lt_dec).
 
-Axiom eval_eq_int :
-  ltac:(let x := eval hnf in (eval_int_rel_op_int Beq Z.eq_dec) in refine x).
+Axiom eval_eq_int : Hnf (eval_int_rel_op_int Beq Z.eq_dec).
 Axiom eval_neq_int :
   forall resolve ty a b (av bv : Z) (c : Z),
     a = Vint av ->
     b = Vint bv ->
     c = (if Z.eq_dec av bv then 0 else 1)%Z ->
     eval_binop_pure (resolve:=resolve) Bneq ty ty T_int a b (Vint c).
-Axiom eval_lt_int :
-  ltac:(let x := eval hnf in (eval_int_rel_op_int Blt ZArith_dec.Z_lt_ge_dec) in refine x).
-Axiom eval_gt_int :
-  ltac:(let x := eval hnf in (eval_int_rel_op_int Bgt ZArith_dec.Z_gt_le_dec) in refine x).
-Axiom eval_le_int :
-  ltac:(let x := eval hnf in (eval_int_rel_op_int Ble ZArith_dec.Z_le_gt_dec) in refine x).
-Axiom eval_ge_int :
-  ltac:(let x := eval hnf in (eval_int_rel_op_int Bge ZArith_dec.Z_ge_lt_dec) in refine x).
-
-Definition bitFlipZU (len: bitsize) (z:Z) : Z :=
-  to_unsigned len (Z.lnot z).
+Axiom eval_lt_int : Hnf (eval_int_rel_op_int Blt ZArith_dec.Z_lt_ge_dec).
+Axiom eval_gt_int : Hnf (eval_int_rel_op_int Bgt ZArith_dec.Z_gt_le_dec).
+Axiom eval_le_int : Hnf (eval_int_rel_op_int Ble ZArith_dec.Z_le_gt_dec).
+Axiom eval_ge_int : Hnf (eval_int_rel_op_int Bge ZArith_dec.Z_ge_lt_dec).
 
 (* note [Z.lnot a = -1 - a] *)
 Axiom eval_unop_not:
@@ -240,6 +196,15 @@ Axiom eval_unop_not:
     b = match sgn with Signed => -1 - a | Unsigned => bitFlipZU w a end ->
     has_type (Vint b) (Tint w sgn) ->
     @eval_unop genv Ubnot (Tint w sgn) (Tint w sgn)  (Vint a) (Vint b).
+
+End operator_axioms.
+End OPERATOR_INTF_FUNCTOR.
+
+(* Collect all the axioms. *)
+
+Module Type OPERATOR_INTF := VALUES_INTF <+ OPERATOR_INTF_FUNCTOR.
+
+Module Export OPERATOR_INTF_AXIOM <: OPERATOR_INTF := VALUES_INTF_AXIOM <+ OPERATOR_INTF_FUNCTOR.
 
 (** for pre- and post- increment/decrement, this function determines the type
     of the [1] that is added or subtracted

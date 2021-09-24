@@ -23,7 +23,7 @@ Implicit Types (σ : genv).
 #[local] Close Scope nat_scope.
 #[local] Open Scope Z_scope.
 
-Module SIMPLE_PTRS_IMPL : PTRS_INTF_MINIMAL.
+Module SIMPLE_PTRS_IMPL <: PTRS_INTF.
 
   (**
   In this model, a pointer is either [invalid_ptr] (aka [None]) or a pair of
@@ -273,4 +273,5 @@ Module SIMPLE_PTRS_IMPL : PTRS_INTF_MINIMAL.
   Abort.
 
   Include PTRS_DERIVED_MIXIN.
+  Include PTRS_MIXIN.
 End SIMPLE_PTRS_IMPL.

@@ -70,15 +70,10 @@ Section fractional.
 End fractional.
 
 From bedrock.lang.cpp.model Require Import inductive_pointers.
-(* Stand-in for an actual model of PTRS_FULL.
+(* Stand-in for actual models.
 Ensures that everything needed is properly functorized. *)
-Declare Module RAW_BYTES_IMPL : RAW_BYTES.
-Module PTRS_IMPL_MINIMAL <: PTRS_INTF_MINIMAL := inductive_pointers.PTRS_IMPL.
-Module PTRS_IMPL <: PTRS_INTF := PTRS_IMPL_MINIMAL <+ RAW_BYTES_IMPL <+ VAL_MIXIN
-  (* This one only adds axioms. *)
-  <+ RAW_BYTES_VAL.
-
-Module Import VALUES_FULL_IMPL <: VALUES_FULL_INTF := PTRS_IMPL <+ RAW_BYTES_MIXIN <+ PTRS_MIXIN.
+Declare Module VALUES_DEFS_IMPL : VALUES_INTF_FUNCTOR PTRS_IMPL.
+Module Import VALUES_FULL_IMPL <: VALUES_INTF := PTRS_IMPL <+ VALUES_DEFS_IMPL.
 
 Implicit Types (p : ptr).
 

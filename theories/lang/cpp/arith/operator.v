@@ -36,6 +36,9 @@ Proof. move=> w; rewrite /trim Z.mod_0_l; [ | apply Z.pow_nonzero ]; lia. Qed.
 Notation to_unsigned_bits := (trim) (only parsing).
 Notation to_unsigned a    := (to_unsigned_bits (bitsN a)) (only parsing).
 
+Definition bitFlipZU (len : bitsize) (z : Z) : Z :=
+  to_unsigned len (Z.lnot z).
+
 Lemma to_unsigned_bits_id : forall z (bits : N),
     0 <= z < 2 ^ (Z.of_N bits) ->
     to_unsigned_bits bits z = z.

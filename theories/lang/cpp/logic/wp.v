@@ -188,6 +188,63 @@ End Kpred.
 #[global,deprecated(since="2021-02-15",note="use KpredI")] Notation KpredsI := KpredI (only parsing).
 #[global,deprecated(since="2021-02-15",note="use Kpred")] Notation Kpreds := Kpred (only parsing).
 
+(** * Regions
+    To model the stack frame in separation logic, we use a notion of regions
+    that are threaded through the semantics.
+
+    We instantiate [region] as a finite map from variables to their addresses
+    (implemented as an association list).
+*)
+Inductive region : Type :=
+| Remp (this : option ptr) (_ : type)
+| Rbind (_ : localname) (_ : ptr) (_ : region).
+
+Definition Rbind_check (x : ident) (p : ptr) (r : region) : region :=
+  if decide (x = ""%bs)
+  then r
+  else Rbind x p r.
+
+Fixpoint get_location (ρ : region) (b : localname) : option ptr :=
+  match ρ with
+  | Remp _ _ => None
+  | Rbind x p rs =>
+    if decide (b = x) then Some p
+    else get_location rs b
+  end.
+
+Fixpoint get_this (ρ : region) : option ptr :=
+  match ρ with
+  | Remp this _ => this
+  | Rbind _ _ rs => get_this rs
+  end.
+
+Fixpoint get_return_type (ρ : region) : type :=
+  match ρ with
+  | Remp _ ty => ty
+  | Rbind _ _ rs => get_return_type rs
+  end.
+
+(** [_local ρ b] returns the [ptr] that stores the local variable [b].
+ *)
+Definition _local (ρ : region) (b : ident) : ptr :=
+  match get_location ρ b with
+  | Some p => p
+  | _ => invalid_ptr
+  end.
+Arguments _local !_ !_ / : simpl nomatch, assert.
+
+(** [_this ρ] returns the [ptr] that [this] is bound to.
+
+    NOTE because [this] is [const], we actually store the value directly
+    rather than indirectly representing it in memory.
+ *)
+Definition _this (ρ : region) : ptr :=
+  match get_this ρ with
+  | Some p => p
+  | _ => invalid_ptr
+  end.
+Arguments _this !_ / : assert.
+
 Module WPE.
 Section with_cpp.
   Context `{Σ : cpp_logic thread_info}.

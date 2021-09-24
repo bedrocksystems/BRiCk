@@ -64,6 +64,8 @@ Proof. solve_decision. Qed.
 #[global] Instance alloc_id_countable : Countable alloc_id.
 Proof. by apply: (inj_countable' alloc_id_car MkAllocId) => -[?]. Qed.
 
+Reserved Notation "p .., o" (at level 11, left associativity).
+
 Module Type PTRS.
   (** * Pointers.
 
@@ -183,7 +185,6 @@ Module Type PTRS.
     this is a right monoid action.
    *)
   Parameter _offset_ptr : ptr -> offset -> ptr.
-  Reserved Notation "p .., o" (at level 11, left associativity).
   Notation "p .., o"   := (_offset_ptr p o) : ptr_scope.
   Notation "o1 .., o2" := (o_dot o1 o2)     : offset_scope.
   #[global] Open Scope ptr_scope.
@@ -336,12 +337,15 @@ Module Type PTRS_DERIVED (Import P : PTRS).
   Axiom pinned_ptr_pure_eq : pinned_ptr_pure = fun (va : vaddr) (p : ptr) => ptr_vaddr p = Some va.
 End PTRS_DERIVED.
 
-Module Type PTRS_MIXIN (Import P : PTRS) (Import PD : PTRS_DERIVED P).
+Module Type PTRS_INTF_MINIMAL := PTRS <+ PTRS_DERIVED.
+
+Module Type PTRS_MIXIN (Import P : PTRS_INTF_MINIMAL).
   (**
   Explictly declare that all Iris equalities on pointers are trivial.
   We only add such explicit declarations as actually needed.
   *)
   Canonical Structure ptrO := leibnizO ptr.
+  #[global] Instance ptr_inhabited : Inhabited ptr := populate nullptr.
 
   (** ** [same_address] lemmas *)
 
@@ -351,7 +355,7 @@ Module Type PTRS_MIXIN (Import P : PTRS) (Import PD : PTRS_DERIVED P).
   Proof. rewrite same_address_eq. apply _. Qed.
   #[global] Instance same_address_comm : Comm iff same_address.
   Proof. apply: symmetry_iff. Qed.
-  #[global] Instance: RewriteRelation same_address := {}.
+  #[global] Instance same_address_RewriteRelation : RewriteRelation same_address := {}.
 
   Lemma same_address_iff p1 p2 :
     same_address p1 p2 <-> ∃ va, ptr_vaddr p1 = Some va ∧ ptr_vaddr p2 = Some va.
@@ -376,7 +380,7 @@ Module Type PTRS_MIXIN (Import P : PTRS) (Import PD : PTRS_DERIVED P).
     Proper (same_address ==> eq) ptr_vaddr.
   Proof. by intros p1 p2 (va&->&->)%same_address_iff. Qed.
 
-  #[global] Instance: Params ptr_vaddr 1 := {}.
+  #[global] Instance ptr_vaddr_params : Params ptr_vaddr 1 := {}.
 
 
   (** ** [same_address_bool] lemmas *)
@@ -415,7 +419,7 @@ Module Type PTRS_MIXIN (Import P : PTRS) (Import PD : PTRS_DERIVED P).
     Proper (same_address ==> iff) (pinned_ptr_pure va).
   Proof. rewrite pinned_ptr_pure_eq. by intros p1 p2 ->. Qed.
 
-  #[global] Instance: Params pinned_ptr_pure 1 := {}.
+  #[global] Instance pinned_ptr_pure_params : Params pinned_ptr_pure 1 := {}.
 
   (** ** [same_alloc] lemmas *)
 
@@ -500,7 +504,7 @@ Module Type PTRS_MIXIN (Import P : PTRS) (Import PD : PTRS_DERIVED P).
   #[global] Instance aligned_ptr_divide_flip_mono :
     Proper (N.divide ==> eq ==> flip impl) aligned_ptr.
   Proof. solve_proper. Qed.
-  #[global] Instance: RewriteRelation N.divide := {}.
+  #[global] Instance N_divide_RewriteRelation : RewriteRelation N.divide := {}.
 
   Lemma aligned_ptr_divide_weaken m n p :
     (n | m)%N ->
@@ -558,3 +562,5 @@ Module Type PTRS_MIXIN (Import P : PTRS) (Import PD : PTRS_DERIVED P).
   (** [_derived base derived] is a cast from base to derived *)
   Notation _derived := (@o_derived _) (only parsing).
 End PTRS_MIXIN.
+
+Module Type PTRS_INTF := PTRS_INTF_MINIMAL <+ PTRS_MIXIN.

@@ -14,8 +14,6 @@ Section with_Σ.
   Context `{has_cpp : cpp_logic}.
 
   (** absolute locations *)
-  #[local] Notation invalid := invalid_ptr.
-
   (** [_eqv v] represents the pointer of a [val]. The resulting pointer
       is invalid if [v] is not a [ptr].
 
@@ -24,7 +22,7 @@ Section with_Σ.
   Definition _eqv (a : val) : ptr :=
     match a with
     | Vptr p => p
-    | _ => invalid
+    | _ => invalid_ptr
     end.
 
   Lemma _eqv_eq : forall p, _eqv (Vptr p) = p.
@@ -41,73 +39,18 @@ Section with_Σ.
 
   Lemma _global_nonnull resolve n : _global resolve n <> nullptr.
   Proof. rewrite _global_eq /_global_def. apply global_ptr_nonnull. Qed.
-
-  (** [addr_of]: [addr_of l p] says that pointer [p] "matches" location [l]. *)
-  Definition addr_of_def (a : ptr) (b : ptr) : mpred := [| a = b |].
-  Definition addr_of_aux : seal (@addr_of_def). Proof. by eexists. Qed.
-  Definition addr_of := addr_of_aux.(unseal).
-  Definition addr_of_eq : @addr_of = _ := addr_of_aux.(seal_eq).
-  Arguments addr_of : simpl never.
-
-  Global Instance addr_of_persistent {o l} : Persistent (addr_of o l).
-  Proof. rewrite addr_of_eq. apply _. Qed.
-  Global Instance addr_of_affine {o l} : Affine (addr_of o l).
-  Proof. rewrite addr_of_eq. apply _. Qed.
-  Global Instance addr_of_timeless {o l} : Timeless (addr_of o l).
-  Proof. rewrite addr_of_eq. apply _. Qed.
-
-  Global Instance addr_of_observe_precise loc a1 a2 :
-    Observe2 [| a1 = a2 |] (addr_of loc a1) (addr_of loc a2).
-  Proof. rewrite !addr_of_eq/addr_of_def. iIntros "-> %"; iModIntro; iFrame "%". Qed.
-
-  Lemma addr_of_precise : forall a b c,
-      addr_of a b ** addr_of a c |-- [| b = c |].
-  Proof. intros. iIntros "[A B]". iApply (observe_2 with "A B"). Qed.
 End with_Σ.
-
-(** offsets *)
-#[deprecated(since="2020-12-07",note="no longer needed")]
-Notation _eq := (@id ptr) (only parsing).
-#[deprecated(since="2020-12-07",note="no longer needed, use equality on ptr")]
-Notation "a &~ b" := (addr_of a b) (at level 30, no associativity).
-
-#[deprecated(since="2020-12-08",note="use heap notations")]
-Notation _offsetL o p := (_offset_ptr p o) (only parsing).
-
-Arguments addr_of : simpl never.
 
 Arguments _global {resolve} _ : rename.
 
-
-
-(** [_local ρ b] returns the [ptr] that stores the local variable [b].
- *)
-Definition _local (ρ : region) (b : ident) : ptr :=
-  match get_location ρ b with
-  | Some p => p
-  | _ => invalid_ptr
-  end.
-Arguments _local !_ !_ / : simpl nomatch, assert.
-
-(** [_this ρ] returns the [ptr] that [this] is bound to.
-
-    NOTE because [this] is [const], we actually store the value directly
-    rather than indirectly representing it in memory.
- *)
-Definition _this (ρ : region) : ptr :=
-  match get_this ρ with
-  | Some p => p
-  | _ => invalid_ptr
-  end.
-Arguments _this !_ / : assert.
 
 (* this is for `Indirect` field references *)
 Fixpoint path_to_Offset (resolve:genv) (from : globname) (final : ident)
          (ls : list (ident * globname))
   : offset :=
   match ls with
-  | nil => o_field resolve {| f_type := from ; f_name := final |}
-  | cons (i,c) ls =>
+  | [] => o_field resolve {| f_type := from ; f_name := final |}
+  | (i, c) :: ls =>
     o_dot (o_field resolve {| f_type := from ; f_name := i |}) (path_to_Offset resolve c final ls)
   end.
 
