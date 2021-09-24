@@ -66,8 +66,6 @@ Section with_Σ.
 End with_Σ.
 
 (** offsets *)
-#[deprecated(since="2020-12-07",note="no longer needed")]
-Notation _eq := (@id ptr) (only parsing).
 #[deprecated(since="2020-12-07",note="no longer needed, use equality on ptr")]
 Notation "a &~ b" := (addr_of a b) (at level 30, no associativity).
 
