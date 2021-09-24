@@ -14,8 +14,6 @@ Section with_Σ.
   Context `{has_cpp : cpp_logic}.
 
   (** absolute locations *)
-  #[local] Notation invalid := invalid_ptr.
-
   (** [_eqv v] represents the pointer of a [val]. The resulting pointer
       is invalid if [v] is not a [ptr].
 
@@ -24,7 +22,7 @@ Section with_Σ.
   Definition _eqv (a : val) : ptr :=
     match a with
     | Vptr p => p
-    | _ => invalid
+    | _ => invalid_ptr
     end.
 
   Lemma _eqv_eq : forall p, _eqv (Vptr p) = p.
@@ -51,8 +49,8 @@ Fixpoint path_to_Offset (resolve:genv) (from : globname) (final : ident)
          (ls : list (ident * globname))
   : offset :=
   match ls with
-  | nil => o_field resolve {| f_type := from ; f_name := final |}
-  | cons (i,c) ls =>
+  | [] => o_field resolve {| f_type := from ; f_name := final |}
+  | (i, c) :: ls =>
     o_dot (o_field resolve {| f_type := from ; f_name := i |}) (path_to_Offset resolve c final ls)
   end.
 
