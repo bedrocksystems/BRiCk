@@ -118,8 +118,16 @@ Module Type Init.
       | Tnamed _ => wp_init ty addr (not_mine init) k
         (* NOTE that just like this function [wp_init] will consume the object. *)
 
-      | Treference t => False (* reference fields are not supported *)
-      | Trv_reference t => False (* reference fields are not supported *)
+      | Tref ty =>
+        let rty := Tref $ erase_qualifiers ty in
+        wp_lval init (fun p free =>
+                        addr |-> tblockR rty 1 **
+                        ( addr |-> primR rty 1 (Vref p) -* k free))
+      | Trv_ref ty =>
+        let rty := Tref $ erase_qualifiers ty in
+        wp_xval init (fun p free =>
+                        addr |-> tblockR rty 1 **
+                        ( addr |-> primR rty 1 (Vref p) -* k free))
       | Tfunction _ _ => False (* functions not supported *)
 
       | Tqualified _ ty => False (* unreachable *)
@@ -159,6 +167,10 @@ Module Type Init.
       rewrite /wp_initialize.
       case_eq (drop_qualifiers ty) =>/=; intros; eauto.
       { iIntros "a". iApply wp_prval_frame; try reflexivity.
+        iIntros (v f) "[$ X] Y"; iApply "a"; iApply "X"; eauto. }
+      { iIntros "a". iApply wp_lval_frame; try reflexivity.
+        iIntros (v f) "[$ X] Y"; iApply "a"; iApply "X"; eauto. }
+      { iIntros "a". iApply wp_xval_frame; try reflexivity.
         iIntros (v f) "[$ X] Y"; iApply "a"; iApply "X"; eauto. }
       { iIntros "a". iApply wp_prval_frame; try reflexivity.
         iIntros (v f) "[$ X] Y"; iApply "a"; iApply "X"; eauto. }

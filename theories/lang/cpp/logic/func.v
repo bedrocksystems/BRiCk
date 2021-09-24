@@ -136,26 +136,31 @@ Section with_cpp.
       just be a list of [ptr] and the signature would be:
       [bind_vars : list (ident * type) -> list ptr -> region -> region]
    *)
-  Fixpoint bind_vars (args : list (ident * type)) (vals : list val) (r : region) (Q : region -> FreeTemps -> mpred) : mpred :=
+  Fixpoint bind_vars (args : list (ident * type)) (vals : list val) (ρ : region)
+           (Q : region -> FreeTemps -> mpred) : mpred :=
     match args , vals with
-    | nil , nil => Q r FreeTemps.id
+    | nil , nil => Q ρ FreeTemps.id
     | (x,ty) :: xs , v :: vs  =>
-      match drop_qualifiers ty with
+      let rty := erase_qualifiers ty in
+      match rty with
       | Tqualified _ t => ERROR "unreachable" (* unreachable *)
-      | Treference    _
-      | Trv_reference _ =>
+      | Tref    ty
+      | Trv_ref ty =>
+        let rty := Tref $ erase_qualifiers ty in
         match v with
-        | Vptr p => bind_vars xs vs (Rbind_check x p r) Q
+        | Vptr p => Forall a, a |-> primR rty 1 (Vptr p) -*
+                             bind_vars xs vs (Rbind_check x a ρ) (fun r free => Q r (FreeTemps.delete rty a >*> free))
+          (* NOTE: when we create a reference, we always use [Tref] *)
         | _ => ERROR $ "non-pointer passed for reference"
         end
       | Tnamed nm =>
         match v with
-        | Vptr p => bind_vars xs vs (Rbind_check x p r) Q
+        | Vptr p => bind_vars xs vs (Rbind_check x p ρ) Q
         | _ => ERROR $ "non-pointer passed for aggregate (named " ++ nm ++ ")"
         end
       | _              =>
-        Forall a : ptr, a |-> primR (erase_qualifiers ty) 1 v -*
-        bind_vars xs vs (Rbind_check x a r) (fun r free => Q r (FreeTemps.delete (erase_qualifiers ty) a |*| free))
+        Forall a : ptr, a |-> primR rty 1 v -*
+        bind_vars xs vs (Rbind_check x a ρ) (fun r free => Q r (FreeTemps.delete rty a >*> free))
       end
 
     (* the (more) correct definition would rely on the caller to create primitive
@@ -176,10 +181,11 @@ Section with_cpp.
     induction ts; destruct args => /= *; eauto.
     { iIntros "A B"; iApply "A"; eauto. }
     { iIntros "A B". destruct a.
-      destruct (typing.drop_qualifiers t);
+      destruct (erase_qualifiers t);
         try solve
             [ iIntros (?) "X"; iDestruct ("B" with "X") as "B"; iRevert "B";
               iApply IHts; iIntros (? ?) "Z"; iApply "A"; iFrame
+            | destruct v; eauto; iIntros (?) "a"; iSpecialize ("B" with "a"); iRevert "B"; iApply IHts; iIntros (??); iApply "A"
             | destruct v; eauto; iRevert "B"; iApply IHts; eauto ]. }
   Qed.
 

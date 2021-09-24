@@ -124,23 +124,23 @@ Module Type Stmt.
                (k : region -> FreeTemps -> mpredI)
     : mpred :=
       match ty with
-      | Tvoid => False
+      | Tvoid => ERROR "declaration of void"
 
         (* primitives *)
       | Tpointer _
       | Tmember_pointer _ _
       | Tbool
       | Tint _ _ =>
+        let rty := erase_qualifiers ty in
         Forall a : ptr,
         let continue :=
-            k (Rbind x a ρ) (FreeTemps.delete (erase_qualifiers ty) a)
+            k (Rbind x a ρ) (FreeTemps.delete rty a)
         in
         match init with
         | None =>
-          a |-> uninitR (erase_qualifiers ty) 1 -* continue
+          a |-> uninitR rty 1 -* continue
         | Some init =>
-          wp_prval ρ_init init (fun v free => interp free $
-              (a |-> primR (erase_qualifiers ty) 1 v -* continue))
+          wp_prval ρ_init init (fun v free => interp free $ a |-> primR rty 1 v -* continue)
         end
 
       | Tnamed cls =>
@@ -150,30 +150,43 @@ Module Type Stmt.
                     are explicit. *)
         | Some init =>
           Forall a : ptr,
-          a |-> tblockR (σ:=resolve) ty 1 -*
+          a |-> tblockR ty 1 -*
             wp_init ρ_init ty a (not_mine init) (fun free => interp free $ k (Rbind x a ρ) (FreeTemps.delete ty a))
         end
-      | Tarray ty' N as rty =>
+      | Tarray ty' N =>
+        let rty := erase_qualifiers ty in
         Forall a : ptr,
-        let continue := k (Rbind x a ρ) (FreeTemps.delete ty a) in
+        let continue := k (Rbind x a ρ) (FreeTemps.delete rty a) in
         match init with
         | None =>
-          default_initialize rty a (fun free => interp free continue)
+          default_initialize ty a (fun free => interp free continue)
         | Some init =>
-          a |-> tblockR (σ:=resolve) ty 1 -*
+          a |-> tblockR ty 1 -*
             wp_init ρ_init ty a (not_mine init) (fun free => interp free continue)
         end
 
         (* references *)
-      | Trv_reference t
-      | Treference t =>
+      | Trv_ref ty =>
+        let rty := Tref $ erase_qualifiers ty in
+        (* NOTE: we always allocate a [Tref]. *)
+        match init with
+        | None => ERROR "uninitialized reference"
+          (* ^ references must be initialized *)
+        | Some init =>
+          (* i should use the type here *)
+          wp_xval ρ init (fun p free =>
+             interp free $ Forall r, r |-> primR rty 1 (Vref p) -* k (Rbind x r ρ) (FreeTemps.delete rty r))
+        end
+
+      | Tref t as ty =>
+        let rty := erase_qualifiers ty in
         match init with
         | None => ERROR "uninitialized reference"
           (* ^ references must be initialized *)
         | Some init =>
           (* i should use the type here *)
           wp_lval ρ init (fun p free =>
-             interp free $ k (Rbind x p ρ) FreeTemps.id)
+             interp free $ Forall r, r |-> primR rty 1 (Vref p) -* k (Rbind x r ρ) (FreeTemps.delete rty r))
         end
 
       | Tfunction _ _ => UNSUPPORTED "local function declarations are not supported" (* not supported *)
@@ -189,7 +202,7 @@ Module Type Stmt.
           a |-> primR Tnullptr 1 (Vptr nullptr) -* continue
         | Some init =>
           wp_prval ρ_init init (fun v free => interp free $
-             (a |-> primR (erase_qualifiers ty) 1 v -* continue))
+             (a |-> primR Tnullptr 1 v -* continue))
         end
       | Tfloat _ => UNSUPPORTED "floating point declarations" (* not supportd *)
       | Tarch _ _ => UNSUPPORTED "architecure specific declarations" (* not supported *)
@@ -242,14 +255,16 @@ Module Type Stmt.
       { intros; apply decl_prim with (ty:=Tptr ty). }
       { destruct init; intros.
         { iIntros "X"; iApply wp_lval_frame; first reflexivity.
-          iIntros (??); iApply interp_frame; iApply "X". }
+          iIntros (??); iApply interp_frame.
+          iIntros "Y" (?) "a"; iSpecialize ("Y" with "a"); iRevert "Y"; iApply "X". }
         { iIntros "? $". } }
       { destruct init; intros.
-        { iIntros "X"; iApply wp_lval_frame; first reflexivity.
-          iIntros (??); iApply interp_frame; iApply "X". }
+        { iIntros "X"; iApply wp_xval_frame; first reflexivity.
+          iIntros (??); iApply interp_frame.
+          iIntros "Y" (?) "a"; iSpecialize ("Y" with "a"); iRevert "Y"; iApply "X". }
         { iIntros "? $". } }
       { intros; apply decl_prim with (ty:=Tint _ _). }
-      { intros; iIntros "? []". }
+      { intros; iIntros "? $". }
       { destruct init; intros.
         { iIntros "X Y" (?) "a"; iDestruct ("Y" with "a") as "Y"; iRevert "Y".
           iApply wp_init_frame; first reflexivity.

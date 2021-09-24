@@ -397,8 +397,8 @@ Module SimpleCPP.
           | _ => False
           end
         | Tfunction _ _
-        | Treference _
-        | Trv_reference _ =>
+        | Tref _
+        | Trv_ref _ =>
           match v with
           | Vptr p =>
             p <> nullptr /\
@@ -434,7 +434,7 @@ Module SimpleCPP.
           | Tint sz _ => bytesNat sz
 
           | Tmember_pointer _ _ | Tnullptr | Tpointer _
-          | Tfunction _ _ | Treference _ | Trv_reference _ =>
+          | Tfunction _ _ | Tref _ | Trv_ref _ =>
             POINTER_BYTES
 
           | _ => 1	(* dummy for absurd case, but useful for length_encodes_pos. *)

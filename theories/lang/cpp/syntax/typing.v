@@ -15,7 +15,8 @@ Fixpoint type_of (e : Expr) : type :=
   | Eint _ t => t
   | Ebool _ => Tbool
   | Eunop _ _ t
-  | Ebinop _ _ _ t
+  | Ebinop _ _ _ t => t
+  | Eread_ref e => type_of e
   | Ederef _ t => t
   | Eaddrof e => Tptr (type_of e)
   | Eassign _ _ t
@@ -64,8 +65,8 @@ Fixpoint type_of (e : Expr) : type :=
 Fixpoint erase_qualifiers (t : type) : type :=
   match t with
   | Tpointer t => Tpointer (erase_qualifiers t)
-  | Treference t => Treference (erase_qualifiers t)
-  | Trv_reference t => Trv_reference (erase_qualifiers t)
+  | Tref t => Tref (erase_qualifiers t)
+  | Trv_ref t => Trv_ref (erase_qualifiers t)
   | Tint _ _
   | Tbool
   | Tvoid
@@ -102,9 +103,5 @@ Definition unptr (t : type) : option type :=
 Definition class_name (t : type) : option globname :=
   match drop_qualifiers t with
   | Tnamed gn => Some gn
-(*  | Tpointer t
-  | Treference t
-  | Trv_reference t => class_type t
-*)
   | _ => None
   end.

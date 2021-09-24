@@ -286,8 +286,8 @@ Fixpoint normalize_type (t : type) : type :=
   in
   match t with
   | Tpointer t => Tpointer (normalize_type t)
-  | Treference t => Treference (normalize_type t)
-  | Trv_reference t => Trv_reference (normalize_type t)
+  | Tref t => Tref (normalize_type t)
+  | Trv_ref t => Trv_ref (normalize_type t)
   | Tarray t n => Tarray (normalize_type t) n
   | @Tfunction cc r args =>
     Tfunction (cc:=cc) (drop_norm r) (List.map drop_norm args)

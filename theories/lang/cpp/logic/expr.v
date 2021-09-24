@@ -53,6 +53,19 @@ Module Type Expr.
     #[local] Notation glob_def := (glob_def resolve) (only parsing).
     #[local] Notation size_of := (@size_of resolve) (only parsing).
 
+    (** * References
+
+        References are allocated explicitly in our semantics and are read
+        using a special [Eread_ref] node that is inserted into the program.
+
+        NOTE this rule requires that both [int&& x] and [int& x] are materialized
+        into [Tref].
+     *)
+    Axiom wp_lval_read_ref : forall e Q,
+        wp_lval e (fun r free => Exists (p : ptr),
+           (Exists q, r |-> primR (Tref $ erase_qualifiers $ type_of e) q (Vptr p) ** True) //\\ Q p free)
+      |-- wp_lval (Eread_ref e) Q.
+
     (* constants are rvalues *)
     Axiom wp_prval_constant : forall ty cnst e Q,
       glob_def cnst = Some (Gconstant ty (Some e)) ->
@@ -398,13 +411,13 @@ Module Type Expr.
 
     (** [Cl2r] represents reads of locations. *)
     Axiom wp_prval_cast_l2r_l : forall ty e Q,
-        wp_lval e (fun a free => Exists q, Exists v,
-           (a |-> primR (erase_qualifiers ty) q v ** True) //\\ Q v free)
+        wp_lval e (fun a free => Exists v,
+           (Exists q, a |-> primR (erase_qualifiers ty) q v ** True) //\\ Q v free)
         |-- wp_prval (Ecast Cl2r Lvalue e ty) Q.
 
     Axiom wp_prval_cast_l2r_x : forall ty e Q,
-        wp_xval e (fun a free => Exists q, Exists v, (* was wp_lval *)
-          (a |-> primR (erase_qualifiers ty) q v ** True) //\\ Q v free)
+        wp_xval e (fun a free => Exists v, (* was wp_lval *)
+          (Exists q, a |-> primR (erase_qualifiers ty) q v ** True) //\\ Q v free)
         |-- wp_prval (Ecast Cl2r Xvalue e ty) Q.
 
     (** [Cnoop] casts are no-op casts. *)

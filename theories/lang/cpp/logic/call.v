@@ -48,17 +48,12 @@ Section with_resolve.
     | nil , nil => Q nil nil
     | t :: ts , e :: es =>
       match valcat_of_type t with
-      | Lvalue =>
-        Exists Qarg,
-        wp_lval e Qarg **
-         wp_args' ts es (fun vs frees => Forall v free,
-                                   Qarg v free -* Q (Vptr v :: vs) (free :: frees))
       | Prvalue =>
         if is_aggregate t then
           Forall a : ptr, a |-> tblockR (σ:=σ) t 1 -*
           let (e,dt) := destructor_for e in
           Exists Qarg,
-         wp_init t a e Qarg **
+          wp_init t a e Qarg **
             wp_args' ts es (fun vs frees =>
                           Forall free,
                           Qarg free -* Q (Vptr a :: vs) (FreeTemps.delete t a >*> free :: frees)%free)
@@ -67,11 +62,16 @@ Section with_resolve.
           wp_prval e Qarg **
            wp_args' ts es (fun vs frees => Forall v free,
                                      Qarg v free -* Q (v :: vs) (free :: frees))
+      | Lvalue =>
+        Exists Qarg,
+        wp_lval e Qarg **
+        wp_args' ts es (fun vs frees => Forall p free,
+           Qarg p free -* Q (Vptr p :: vs) (free :: frees))
       | Xvalue =>
         Exists Qarg,
         wp_xval e Qarg **
-            wp_args' ts es (fun vs frees => Forall v free,
-                                     Qarg v free -* Q (Vptr v :: vs) (free :: frees))
+        wp_args' ts es (fun vs frees => Forall p free,
+           Qarg p free -* Q (Vptr p :: vs) (free :: frees))
       end
      (* the (more) correct definition would use initialization semantics for each expression.
         > When a function is called, each parameter ([dcl.fct]) is initialized ([dcl.init], [class.copy.ctor])
@@ -84,7 +84,7 @@ Section with_resolve.
                          Qarg free -* Q (Vptr a :: vs) (FreeTemps.delete t a >*> free :: frees))
       *)
     | _ , _ => False (* mismatched arguments and parameters. *)
-    end.
+    end%I%free.
 
   Lemma wp_args'_frame_strong : forall ts es Q Q',
       Forall vs free, [| length vs = length es |] -* Q vs free -* Q' vs free

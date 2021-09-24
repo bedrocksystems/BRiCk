@@ -155,10 +155,11 @@ Inductive Expr : Set :=
   * operator shows up as a function call, not a `Eunop` or `Ebinop`.
   * this includes the assignment operator for classes.
   *)
-| Ederef (_ : Expr) (_ : type) (* XXX type = strip pointer from (type_of e) *)
-| Eaddrof (_ : Expr)
-| Eassign (_ _ : Expr) (_ : type) (* = type of lhs, if not dependent *)
-| Eassign_op (_ : BinOp) (_ _ : Expr) (_ : type)
+| Eread_ref (_ : Expr) (* type = type_of e *)
+| Ederef (_ : Expr) (_ : type)
+| Eaddrof (e : Expr) (* type = Tptr (type_of e) *)
+| Eassign (e _ : Expr) (_ : type) (* XXX type = type_of e *)
+| Eassign_op (_ : BinOp) (e _ : Expr) (_ : type) (* XXX = type_of e *)
   (* ^ these are specialized because they are common *)
 
 | Epreinc (_ : Expr) (_ : type)
