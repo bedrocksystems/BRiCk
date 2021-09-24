@@ -1087,7 +1087,8 @@ Module Type Expr.
 
     Fixpoint wp_array_init (ety : type) (base : ptr) (es : list Expr) (idx : Z) (Q : FreeTemps -> mpred) : mpred :=
       match es with
-      | nil => Q FreeTemps.id
+      | nil => 
+        base .[ ety ! idx ] |-> validR -* Q FreeTemps.id
       | e :: rest =>
           (* NOTE: We nest the recursive calls to `wp_array_init` within
                the continuation of the `wp_initialize` statement to
