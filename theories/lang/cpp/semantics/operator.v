@@ -21,6 +21,10 @@ Local Open Scope Z_scope.
 
 
 
+(** operator semantics *)
+Parameter eval_unop : forall {resolve : genv}, UnOp -> forall (argT resT : type) (arg res : val), Prop.
+Parameter eval_binop_pure : forall {resolve : genv}, BinOp -> forall (lhsT rhsT resT : type) (lhs rhs res : val), Prop.
+
 
 (** Integral conversions *)
 Definition conv_int (from to : type) (v v' : val) : Prop :=
@@ -48,26 +52,6 @@ Definition conv_int (from to : type) (v v' : val) : Prop :=
   end.
 Arguments conv_int !_ !_ _ _ /.
 
-
-(** operator semantics *)
-Parameter eval_unop : forall {resolve : genv}, UnOp -> forall (argT resT : type) (arg res : val), Prop.
-Parameter eval_binop_pure : forall {resolve : genv}, BinOp -> forall (lhsT rhsT resT : type) (lhs rhs res : val), Prop.
-
-Axiom eval_not_bool : forall resolve a,
-    eval_unop (resolve:=resolve) Unot Tbool Tbool (Vbool a) (Vbool (negb a)).
-
-(* The builtin unary minus operator calculates the negative of its
-   promoted operand. For unsigned a, the value of -a is 2^b -a, where b
-   is the number of bits after promotion.  *)
-Axiom eval_minus_int : forall resolve (s : signed) a c w,
-    c = match s with
-        | Signed => 0 - a
-        | Unsigned => trim (bitsN w) (0 - a)
-        end ->
-    has_type (Vint c) (Tint w s) ->
-    eval_unop (resolve:=resolve) Uminus (Tint w s) (Tint w s)
-              (Vint a) (Vint c).
-
 #[local] Definition eval_int_op (bo : BinOp) (o : Z -> Z -> Z) : Prop :=
   forall resolve w (s : signed) (a b c : Z),
     has_type (Vint a) (Tint w s) ->
@@ -86,6 +70,47 @@ Axiom eval_minus_int : forall resolve (s : signed) a c w,
     has_type (Vint b) (Tint w s) ->
     c = o a b -> (* note that bitwise operators respect bounds *)
     eval_binop_pure (resolve:=resolve) bo (Tint w s) (Tint w s) (Tint w s) (Vint a) (Vint b) (Vint c).
+
+(* Arithmetic comparison operators *)
+
+(* If the operands has arithmetic or enumeration type (scoped or
+   unscoped), usual arithmetic conversions are performed on both
+   operands following the rules for arithmetic operators. The values
+   are compared after conversions. *)
+#[local] Definition eval_int_rel_op (bo : BinOp) {P Q : Z -> Z -> Prop}
+           (o : forall a b : Z, {P a b} + {Q a b}) : Prop :=
+  forall resolve w s a b (av bv : Z) (c : Z),
+    a = Vint av ->
+    b = Vint bv ->
+    has_type a (Tint w s) ->
+    has_type b (Tint w s) ->
+    c = (if o av bv then 1 else 0)%Z ->
+    eval_binop_pure (resolve:=resolve) bo (Tint w s) (Tint w s) Tbool a b (Vint c).
+
+#[local] Definition eval_int_rel_op_int (bo : BinOp) {P Q : Z -> Z -> Prop}
+           (o : forall a b : Z, {P a b} + {Q a b}) : Prop :=
+  forall resolve w s a b (av bv : Z) (c : Z),
+    a = Vint av ->
+    b = Vint bv ->
+    has_type a (Tint w s) ->
+    has_type b (Tint w s) ->
+    c = (if o av bv then 1 else 0)%Z ->
+    eval_binop_pure (resolve:=resolve) bo (Tint w s) (Tint w s) (T_int) a b (Vint c).
+
+Axiom eval_not_bool : forall resolve a,
+    eval_unop (resolve:=resolve) Unot Tbool Tbool (Vbool a) (Vbool (negb a)).
+
+(* The builtin unary minus operator calculates the negative of its
+   promoted operand. For unsigned a, the value of -a is 2^b -a, where b
+   is the number of bits after promotion.  *)
+Axiom eval_minus_int : forall resolve (s : signed) a c w,
+    c = match s with
+        | Signed => 0 - a
+        | Unsigned => trim (bitsN w) (0 - a)
+        end ->
+    has_type (Vint c) (Tint w s) ->
+    eval_unop (resolve:=resolve) Uminus (Tint w s) (Tint w s)
+              (Vint a) (Vint c).
 
 (* arithmetic operators *)
 Axiom eval_add : Hnf (eval_int_op Badd Z.add).
@@ -162,32 +187,6 @@ Axiom eval_shr :
     has_type (Vint b) (Tint w2 s2) ->
     c = match s with Signed => Z.shiftr a b | Unsigned => trim (bitsN w) (Z.shiftr a b) end ->
     eval_binop_pure (resolve:=resolve) Bshr (Tint w s) (Tint w2 s2) (Tint w s) (Vint a) (Vint b) (Vint c).
-
-(* Arithmetic comparison operators *)
-
-(* If the operands has arithmetic or enumeration type (scoped or
-   unscoped), usual arithmetic conversions are performed on both
-   operands following the rules for arithmetic operators. The values
-   are compared after conversions. *)
-#[local] Definition eval_int_rel_op (bo : BinOp) {P Q : Z -> Z -> Prop}
-           (o : forall a b : Z, {P a b} + {Q a b}) : Prop :=
-  forall resolve w s a b (av bv : Z) (c : Z),
-    a = Vint av ->
-    b = Vint bv ->
-    has_type a (Tint w s) ->
-    has_type b (Tint w s) ->
-    c = (if o av bv then 1 else 0)%Z ->
-    eval_binop_pure (resolve:=resolve) bo (Tint w s) (Tint w s) Tbool a b (Vint c).
-
-#[local] Definition eval_int_rel_op_int (bo : BinOp) {P Q : Z -> Z -> Prop}
-           (o : forall a b : Z, {P a b} + {Q a b}) : Prop :=
-  forall resolve w s a b (av bv : Z) (c : Z),
-    a = Vint av ->
-    b = Vint bv ->
-    has_type a (Tint w s) ->
-    has_type b (Tint w s) ->
-    c = (if o av bv then 1 else 0)%Z ->
-    eval_binop_pure (resolve:=resolve) bo (Tint w s) (Tint w s) (T_int) a b (Vint c).
 
 Axiom eval_eq_bool : Hnf (eval_int_rel_op Beq Z.eq_dec).
 Axiom eval_neq_bool :
