@@ -115,42 +115,6 @@ Module Type VAL_MIXIN (Import P : PTRS) (Import R : RAW_BYTES).
   #[global] Instance Vint_Inj : Inj (=) (=) Vint := Vint_inj.
   #[global] Instance Vbool_Inj : Inj (=) (=) Vbool := Vbool_inj.
 
-  (** * Regions
-      To model the stack frame in separation logic, we use a notion of regions
-      that are threaded through the semantics.
-
-      We instantiate [region] as a finite map from variables to their addresses
-      (implemented as an association list).
-  *)
-  Inductive region : Type :=
-  | Remp (this : option ptr) (_ : type)
-  | Rbind (_ : localname) (_ : ptr) (_ : region).
-
-  Definition Rbind_check (x : ident) (p : ptr) (r : region) : region :=
-    if decide (x = ""%bs)
-    then r
-    else Rbind x p r.
-
-  Fixpoint get_location (ρ : region) (b : localname) : option ptr :=
-    match ρ with
-    | Remp _ _ => None
-    | Rbind x p rs =>
-      if decide (b = x) then Some p
-      else get_location rs b
-    end.
-
-  Fixpoint get_this (ρ : region) : option ptr :=
-    match ρ with
-    | Remp this _ => this
-    | Rbind _ _ rs => get_this rs
-    end.
-
-  Fixpoint get_return_type (ρ : region) : type :=
-    match ρ with
-    | Remp _ ty => ty
-    | Rbind _ _ rs => get_return_type rs
-    end.
-
   (* the default value for a type.
   * this is used to initialize primitives if you do, e.g.
   *   [int x{};]

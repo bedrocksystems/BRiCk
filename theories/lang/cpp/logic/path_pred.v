@@ -79,28 +79,6 @@ Arguments addr_of : simpl never.
 Arguments _global {resolve} _ : rename.
 
 
-
-(** [_local ρ b] returns the [ptr] that stores the local variable [b].
- *)
-Definition _local (ρ : region) (b : ident) : ptr :=
-  match get_location ρ b with
-  | Some p => p
-  | _ => invalid_ptr
-  end.
-Arguments _local !_ !_ / : simpl nomatch, assert.
-
-(** [_this ρ] returns the [ptr] that [this] is bound to.
-
-    NOTE because [this] is [const], we actually store the value directly
-    rather than indirectly representing it in memory.
- *)
-Definition _this (ρ : region) : ptr :=
-  match get_this ρ with
-  | Some p => p
-  | _ => invalid_ptr
-  end.
-Arguments _this !_ / : assert.
-
 (* this is for `Indirect` field references *)
 Fixpoint path_to_Offset (resolve:genv) (from : globname) (final : ident)
          (ls : list (ident * globname))
