@@ -43,10 +43,6 @@ Section with_Σ.
   Proof. rewrite _global_eq /_global_def. apply global_ptr_nonnull. Qed.
 End with_Σ.
 
-(** offsets *)
-#[deprecated(since="2020-12-08",note="use heap notations")]
-Notation _offsetL o p := (_offset_ptr p o) (only parsing).
-
 Arguments _global {resolve} _ : rename.
 
 
