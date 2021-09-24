@@ -41,38 +41,11 @@ Section with_Σ.
 
   Lemma _global_nonnull resolve n : _global resolve n <> nullptr.
   Proof. rewrite _global_eq /_global_def. apply global_ptr_nonnull. Qed.
-
-  (** [addr_of]: [addr_of l p] says that pointer [p] "matches" location [l]. *)
-  Definition addr_of_def (a : ptr) (b : ptr) : mpred := [| a = b |].
-  Definition addr_of_aux : seal (@addr_of_def). Proof. by eexists. Qed.
-  Definition addr_of := addr_of_aux.(unseal).
-  Definition addr_of_eq : @addr_of = _ := addr_of_aux.(seal_eq).
-  Arguments addr_of : simpl never.
-
-  Global Instance addr_of_persistent {o l} : Persistent (addr_of o l).
-  Proof. rewrite addr_of_eq. apply _. Qed.
-  Global Instance addr_of_affine {o l} : Affine (addr_of o l).
-  Proof. rewrite addr_of_eq. apply _. Qed.
-  Global Instance addr_of_timeless {o l} : Timeless (addr_of o l).
-  Proof. rewrite addr_of_eq. apply _. Qed.
-
-  Global Instance addr_of_observe_precise loc a1 a2 :
-    Observe2 [| a1 = a2 |] (addr_of loc a1) (addr_of loc a2).
-  Proof. rewrite !addr_of_eq/addr_of_def. iIntros "-> %"; iModIntro; iFrame "%". Qed.
-
-  Lemma addr_of_precise : forall a b c,
-      addr_of a b ** addr_of a c |-- [| b = c |].
-  Proof. intros. iIntros "[A B]". iApply (observe_2 with "A B"). Qed.
 End with_Σ.
 
 (** offsets *)
-#[deprecated(since="2020-12-07",note="no longer needed, use equality on ptr")]
-Notation "a &~ b" := (addr_of a b) (at level 30, no associativity).
-
 #[deprecated(since="2020-12-08",note="use heap notations")]
 Notation _offsetL o p := (_offset_ptr p o) (only parsing).
-
-Arguments addr_of : simpl never.
 
 Arguments _global {resolve} _ : rename.
 
