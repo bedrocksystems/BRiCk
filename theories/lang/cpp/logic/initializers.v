@@ -74,7 +74,7 @@ Module Type Init.
 
       | Tarch _ _ => UNSUPPORTED "default initialization of architecture type"
       | Tqualified _ ty => default_initialize ty p Q
-      end.
+      end%bs%I.
     #[global] Arguments default_initialize !_ _ _ /.
 
     (** TODO this should be generalized to different [σ] but, in that case it relies
