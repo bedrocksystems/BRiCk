@@ -202,9 +202,9 @@ End OPERATOR_INTF_FUNCTOR.
 
 (* Collect all the axioms. *)
 
-Module Type OPERATOR_INTF := VALUES_INTF <+ OPERATOR_INTF_FUNCTOR.
-
-Module Export OPERATOR_INTF_AXIOM <: OPERATOR_INTF := VALUES_INTF_AXIOM <+ OPERATOR_INTF_FUNCTOR.
+Module Export OPERATOR_INTF_AXIOM <: OPERATOR_INTF_FUNCTOR VALUES_INTF_AXIOM.
+  Include OPERATOR_INTF_FUNCTOR VALUES_INTF_AXIOM.
+End OPERATOR_INTF_AXIOM.
 
 (** for pre- and post- increment/decrement, this function determines the type
     of the [1] that is added or subtracted
