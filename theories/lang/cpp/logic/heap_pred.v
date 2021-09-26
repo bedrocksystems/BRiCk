@@ -407,20 +407,6 @@ Section with_cpp.
   Global Instance is_nonnull_timeless : Timeless is_nonnull.
   Proof. rewrite is_nonnull_eq. apply _. Qed.
 
-  Global Instance primR_nonnull {σ} ty q v :
-    Observe is_nonnull (primR (resolve:=σ) ty q v).
-  Proof.
-    rewrite is_nonnull_eq primR_eq. apply monPred_observe=>p /=. apply _.
-  Qed.
-  Global Instance uninitR_nonnull {σ} ty q :
-    Observe is_nonnull (uninitR (resolve:=σ) ty q).
-  Proof.
-    rewrite is_nonnull_eq uninitR_eq. apply monPred_observe=>p /=. apply _.
-  Qed.
-  Global Instance anyR_nonnull {σ} ty q :
-    Observe is_nonnull (anyR (resolve:=σ) ty q).
-  Proof. rewrite anyR_eq. apply _. Qed.
-
   Definition alignedR_def (al : N) : Rep := as_Rep (λ p, [| aligned_ptr al p |]).
   Definition alignedR_aux : seal (@alignedR_def). Proof. by eexists. Qed.
   Definition alignedR := alignedR_aux.(unseal).
@@ -566,43 +552,31 @@ Section with_cpp.
 
   (** Observation of [is_nonnull] *)
   #[global]
-  Instance primR_nonnull_observe {σ : genv} {ty q v} :
+  Instance primR_nonnull_observe {σ} {ty q v} :
     Observe is_nonnull (primR ty q v).
   Proof.
-    apply monPred_observe => p.
-    rewrite primR_eq/primR_def is_nonnull_eq/is_nonnull_def/=. refine _.
+    rewrite is_nonnull_eq primR_eq. apply monPred_observe=>p /=. apply _.
   Qed.
   #[global]
-  Instance uninitR_nonnull_observe {σ : genv} {ty q} :
+  Instance uninitR_nonnull_observe {σ} {ty q} :
     Observe is_nonnull (uninitR ty q).
   Proof.
-    apply monPred_observe => p.
-    rewrite uninitR_eq/uninitR_def is_nonnull_eq/is_nonnull_def/=.
-    refine _.
+    rewrite is_nonnull_eq uninitR_eq. apply monPred_observe=>p /=. apply _.
   Qed.
   #[global]
-  Instance anyR_nonnull_observe {σ : genv} {ty q} :
+  Instance anyR_nonnull_observe {σ} {ty q} :
     Observe is_nonnull (anyR ty q).
-  Proof.
-    apply monPred_observe => p. rewrite anyR_eq/anyR_def.
-    red. iIntros "[X | X]".
-    - iDestruct "X" as (?) "X". iDestruct (observe is_nonnull with "X") as "#$".
-    - iDestruct (observe is_nonnull with "X") as "#$".
-  Qed.
+  Proof. rewrite anyR_eq /anyR_def. apply _. Qed.
   #[global]
+
   Instance blockR_nonnull {σ : genv} (p : ptr) n q:
     (0 < n)%N -> Observe is_nonnull (blockR n q).
   Proof.
-    iIntros (?) "Hb".
-    rewrite blockR_eq/blockR_def. (** TODO upstream *)
-    iDestruct "Hb" as "[_ Hb]".
-    destruct (N.to_nat n) eqn:?; [ lia | ] => /=.
-    iDestruct "Hb" as "[Hany _]".
-    rewrite o_sub_0; [ | by eauto].
-    rewrite _offsetR_id.
-    iDestruct (observe is_nonnull with "Hany") as "#$".
+    rewrite blockR_eq/blockR_def.
+    destruct (N.to_nat n) eqn:Hn; [ lia | ] => {Hn} /=.
+    rewrite o_sub_0 ?_offsetR_id; [ | by eauto].
+    apply _.
   Qed.
-
   #[global] Instance blockR_valid_ptr {σ} sz q : Observe validR (blockR sz q).
   Proof.
     rewrite blockR_eq/blockR_def.
