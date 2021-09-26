@@ -354,9 +354,9 @@ Section with_cpp.
       let members := wpi_members ρ cls this s.(s_fields) inits in
       let ident Q := this |-> init_identity cls Q in
       (** initialize the bases, then the identity, then the members *)
-      bases (ident (members (this |-> struct_padding 1 cls -*  Q)))
-      (* NOTE we get the [struct_padding] at the end since
-         [struct_padding 1 cls |-- type_ptrR (Tnamed cls)].
+      bases (ident (members (this |-> struct_paddingR 1 cls -*  Q)))
+      (* NOTE we get the [struct_paddingR] at the end since
+         [struct_paddingR 1 cls |-- type_ptrR (Tnamed cls)].
        *)
     end.
 
@@ -538,7 +538,7 @@ Section with_cpp.
       let epilog :=
           match resolve.(genv_tu).(globals) !! dtor.(d_class) with
           | Some (Gstruct s) => Some $ fun thisp : ptr =>
-            thisp |-> struct_padding 1 dtor.(d_class) **
+            thisp |-> struct_paddingR 1 dtor.(d_class) **
             wpd_members dtor.(d_class) thisp s.(s_fields)
                (* ^ fields are destroyed *)
                (thisp |-> revert_identity dtor.(d_class)
