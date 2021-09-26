@@ -804,10 +804,6 @@ Module SimpleCPP.
       valid_ptr (p .., o_sub resolve ty 1).
     Proof. iDestruct 1 as "(_ & _ & _ & _ & $)". Qed.
 
-    Lemma type_ptr_nonnull resolve ty p :
-      type_ptr (resolve := resolve) ty p |-- [| p <> nullptr |].
-    Proof. iDestruct 1 as "($ & _ & _)". Qed.
-
     Lemma type_ptr_aligned_pure σ ty p :
       type_ptr ty p |-- [| aligned_ptr_ty ty p |].
     Proof. iDestruct 1 as "(_ & $ & _)". Qed.

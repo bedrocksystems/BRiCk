@@ -358,8 +358,6 @@ Module Type CPP_LOGIC (Import INTF : VALUES_INTF) (Import CC : CPP_LOGIC_CLASS).
     (** Hence they can be incremented into (possibly past-the-end) valid pointers. *)
     Axiom type_ptr_valid_plus_one : forall resolve ty p,
       type_ptr ty p |-- valid_ptr (p .., o_sub resolve ty 1).
-    Axiom type_ptr_nonnull : forall resolve ty p,
-      type_ptr ty p |-- [| p <> nullptr |].
 
     (**
      ** Deducing pointer equalities
@@ -618,6 +616,10 @@ Section with_cpp.
     have {Hne Hiff}: ~same_address p nullptr by intuition.
     rewrite same_address_iff ptr_vaddr_nullptr. naive_solver.
   Qed.
+
+  Lemma type_ptr_nonnull ty p :
+    type_ptr ty p |-- [| p <> nullptr |].
+  Proof. rewrite -{1}(offset_ptr_id p). apply type_ptr_off_nonnull. Qed.
 
   #[global] Instance provides_storage_preserves_nullptr {storage_ptr obj_ptr aty} :
     Observe [| storage_ptr = nullptr <-> obj_ptr = nullptr |] (provides_storage storage_ptr obj_ptr aty).
