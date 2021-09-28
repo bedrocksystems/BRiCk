@@ -148,7 +148,9 @@ printMethod(const CXXMethodDecl *decl, CoqPrinter &print,
     print.output() << fmt::line;
     if (decl->getBody()) {
         print.ctor("Some", false);
+        print.ctor("UserDefined");
         cprint.printStmt(decl->getBody(), print);
+        print.end_ctor();
         print.end_ctor();
     } else if (decl->isDefaulted()) {
         print.output() << "(Some Defaulted)";

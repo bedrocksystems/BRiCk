@@ -216,7 +216,7 @@ Section with_cpp.
              (Q : val -> epred) : mpred :=
     match m.(m_body) with
     | None => False
-    | Some body =>
+    | Some (UserDefined body) =>
       match args with
       | Vptr thisp :: rest_vals =>
         let ρ := Remp (Some thisp) m.(m_return) in
@@ -227,6 +227,7 @@ Section with_cpp.
              wp ⊤ ρ body (Kfree frees (val_return (fun x => |={⊤}=> |>Q x))))
       | _ => False
       end
+    | Some _ => UNSUPPORTED "defaulted methods"%bs
     end.
 
   Definition method_ok (m : Method) (spec : function_spec)
@@ -401,7 +402,7 @@ Section with_cpp.
     | None =>
       UNSUPPORTED "union initialization"
       (* TODO what is the right thing to do when initializing unions? *)
-    end.
+    end%bs%I.
 
   Lemma wp_union_initializer_list_frame : forall ρ cls p ty li Q Q',
         Q -* Q'
@@ -445,7 +446,7 @@ Section with_cpp.
   Definition wp_ctor (ctor : Ctor) (args : list val) (Q : val -> epred) : mpred :=
     match ctor.(c_body) with
     | None => False
-    | Some Defaulted => False
+    | Some Defaulted => UNSUPPORTED "defaulted constructors"
       (* ^ defaulted constructors are not supported yet *)
     | Some (UserDefined (inits, body)) =>
       match args with
@@ -531,7 +532,7 @@ Section with_cpp.
              (Q : val -> epred) : mpred :=
     match dtor.(d_body) with
     | None => False
-    | Some Defaulted => False
+    | Some Defaulted => UNSUPPORTED "defaulted destructors"
       (* ^ defaulted destructors are not supported *)
     | Some (UserDefined body) =>
       let epilog :=
@@ -570,7 +571,7 @@ Section with_cpp.
              wp ⊤ ρ body (void_return (epilog thisp))
       | _ , _ => False
       end
-    end.
+    end%bs%I.
 
 (*
   template<typename T>

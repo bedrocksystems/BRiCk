@@ -69,7 +69,7 @@ Record Method : Set :=
 ; m_this_qual : type_qualifiers
 ; m_params  : list (ident * type)
 ; m_cc      : calling_conv
-; m_body    : option Stmt
+; m_body    : option (OrDefault Stmt)
 }.
 Instance: EqDecision Method.
 Proof. solve_decision. Defined.
