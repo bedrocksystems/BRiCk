@@ -7,7 +7,7 @@ From iris.bi Require Import bi.
 (* This export ensures that [upredI] is registered as a canonical structure everywhere. *)
 From iris.base_logic Require Export bi.
 From iris.proofmode Require Import classes.
-From bedrock.prelude Require Export base gmap.
+From bedrock.prelude Require Export base gmap letstar.
 From bedrock.lang.bi Require Export only_provable derived_laws.
 
 #[global] Instance into_pure_emp PROP : IntoPure (PROP := PROP) emp%I True.
@@ -25,6 +25,11 @@ Notation "'λI' x .. y , t" := (fun x => .. (fun y => t%I) ..)
 Notation "'funI' x .. y => t" := (fun x => .. (fun y => t%I) ..)
   (at level 200, x binder, y binder, right associativity,
   only parsing) : function_scope.
+
+(* Variant of [let*] (from [bedrock.prelude.letstar]) for the Iris scope. *)
+Notation "'letI*' x , .. , z := t 'in' f" :=
+  (t (funI x => .. (funI z => f) ..))
+    (only parsing, at level 200, x closed binder, z closed binder).
 
 (* ASCII alias for [bi_pure] notation [⌜P⌝]. *)
 Global Notation "[! P !]" := (bi_pure P%type%stdpp) (only parsing) : bi_scope.
