@@ -16,6 +16,7 @@ Require Import bedrock.lang.cpp.logic.arr.
 Require Export bedrock.lang.cpp.logic.raw.
 
 Require Import bedrock.lang.cpp.heap_notations.
+Require Import bedrock.lang.bi.linearity.
 
 Section with_Σ.
   Context `{Σ : cpp_logic}.
@@ -233,6 +234,3 @@ Section with_Σ.
   Admitted.
 
 End with_Σ.
-
-Notation struct_padding := struct_paddingR.
-Notation union_padding := union_paddingR.
