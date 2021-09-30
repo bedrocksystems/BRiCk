@@ -511,14 +511,14 @@ Section with_cpp.
     match bases with
     | nil => Q
     | base :: bases =>
-      delete_val (Tnamed base) (this ., _base cls base) (wpd_bases cls this bases Q)
+      delete_val false (Tnamed base) (this ., _base cls base) (wpd_bases cls this bases Q)
     end.
 
   Lemma wpd_bases_frame cls this : forall bases Q Q',
       Q -* Q' |-- wpd_bases cls this bases Q -* wpd_bases cls this bases Q'.
   Proof.
-    induction bases => /=; eauto.
-    intros. by iIntros "X"; iApply delete_val_frame; iApply IHbases.
+    induction bases; eauto.
+    intros. iIntros "X". iApply delete_val_frame. iApply IHbases. done.
   Qed.
 
   Fixpoint wpd_members
@@ -528,7 +528,7 @@ Section with_cpp.
     match members with
     | nil => Q
     | member :: members =>
-      delete_val member.(mem_type) (this ., _field {| f_name := member.(mem_name) ; f_type := cls |})
+      delete_val false member.(mem_type) (this ., _field {| f_name := member.(mem_name) ; f_type := cls |})
            (wpd_members cls this members Q)
     end.
 

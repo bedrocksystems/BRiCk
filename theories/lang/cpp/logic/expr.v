@@ -965,6 +965,9 @@ Module Type Expr.
 
        TODO there is a bug here for [virtual] destruction since, in that case,
        the full object is destroyed. (see FM-815)
+
+       TODO this rule does not support [delete nullptr] (which is defined by
+       the standard to be a no-op). (see FM-)
      *)
     Axiom wp_prval_delete : forall delete_fn e ty destroyed_type Q,
         (* call the destructor on the object, and then call delete_fn *)
@@ -973,10 +976,10 @@ Module Type Expr.
             [| v = Vptr obj_ptr |] **
             [| size_of destroyed_type = Some sz |] **
             type_ptr destroyed_type obj_ptr **
-            destruct_val true destroyed_type obj_ptr      (* Calling destructor with object pointer *)
+            delete_val true destroyed_type obj_ptr      (* Calling destructor with object pointer *)
               (provides_storage storage_ptr obj_ptr ty ** (* Token for converting obj memory to storage memory *)
                (* Transfer memory to underlying storage pointer; unlike in [end_provides_storage],
-                  this memory was pre-destructed by [destruct_val]. *)
+                  this memory was pre-destructed by [delete_val]. *)
                 (storage_ptr |-> blockR sz 1 -*
                   fspec delete_fn.2 (Vptr $ _global delete_fn.1) (* Calling deallocator with storage pointer *)
                     (Vptr storage_ptr :: nil) (fun v => Q v free))))
