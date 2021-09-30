@@ -98,7 +98,7 @@ Module Type Init.
         NOTE this is written as a recursive function rather than by using [decompose_type] because
         we want simplification to reduce it.
 
-        NOTE this assumes that the memory has *not* yet been given to the C++ abstract machine.
+        NOTE this assumes that the memory is coming from the C++ abstract machine.
         TODO make this consistent with [default_initialize].
      *)
     Definition wp_initialize (ty : type) (addr : ptr) (init : Expr) (k : FreeTemps -> mpred) : mpred :=
@@ -109,9 +109,7 @@ Module Type Init.
       | Tbool as ty
       | Tint _ _ as ty =>
         wp_prval init (fun v free =>
-                         addr |-> tblockR (erase_qualifiers ty) 1 **
-                         (   addr |-> primR (erase_qualifiers ty) 1 v
-                          -* k free))
+                          addr |-> primR (erase_qualifiers ty) 1 v -* k free)
 
         (* non-primitives are handled via prvalue-initialization semantics *)
       | Tarray _ _
@@ -121,13 +119,11 @@ Module Type Init.
       | Tref ty =>
         let rty := Tref $ erase_qualifiers ty in
         wp_lval init (fun p free =>
-                        addr |-> tblockR rty 1 **
-                        ( addr |-> primR rty 1 (Vref p) -* k free))
+                        addr |-> primR rty 1 (Vref p) -* k free)
       | Trv_ref ty =>
         let rty := Tref $ erase_qualifiers ty in
         wp_xval init (fun p free =>
-                        addr |-> tblockR rty 1 **
-                        ( addr |-> primR rty 1 (Vref p) -* k free))
+                        addr |-> primR rty 1 (Vref p) -* k free)
       | Tfunction _ _ => False (* functions not supported *)
 
       | Tqualified _ ty => False (* unreachable *)
@@ -165,21 +161,14 @@ Module Type Init.
       |-- wp_initialize (σ:=σ2) M ρ ty obj e Q -* wp_initialize (σ:=σ2) M ρ ty obj e Q'.
     Proof using.
       rewrite /wp_initialize.
-      case_eq (drop_qualifiers ty) =>/=; intros; eauto.
-      { iIntros "a". iApply wp_prval_frame; try reflexivity.
-        iIntros (v f) "[$ X] Y"; iApply "a"; iApply "X"; eauto. }
-      { iIntros "a". iApply wp_lval_frame; try reflexivity.
-        iIntros (v f) "[$ X] Y"; iApply "a"; iApply "X"; eauto. }
-      { iIntros "a". iApply wp_xval_frame; try reflexivity.
-        iIntros (v f) "[$ X] Y"; iApply "a"; iApply "X"; eauto. }
-      { iIntros "a". iApply wp_prval_frame; try reflexivity.
-        iIntros (v f) "[$ X] Y"; iApply "a"; iApply "X"; eauto. }
+      case_eq (drop_qualifiers ty) =>/=; intros; eauto;
+        try solve [
+              iIntros "a"; first [ iApply wp_prval_frame
+                                 | iApply wp_lval_frame
+                                 | iApply wp_xval_frame ]; try reflexivity;
+              iIntros (v f) "X Y"; iApply "a"; iApply "X"; eauto ].
       { iIntros "a". iApply wp_init_frame => //. }
       { iIntros "a". iApply wp_init_frame => //. }
-      { iIntros "a". iApply wp_prval_frame; try reflexivity.
-        iIntros (v f) "[$ X] Y"; iApply "a"; iApply "X"; eauto. }
-      { iIntros "a". iApply wp_prval_frame; try reflexivity.
-        iIntros (v f) "[$ X] Y"; iApply "a"; iApply "X"; eauto. }
     Qed.
 
     Lemma wp_initialize_wand obj ty e Q Q' :

@@ -342,22 +342,16 @@ Section with_cpp.
    * as specified by the context in which it appears,..."
    *)
 
-  (* evaluate a prvalue that "initializes an object"
-
-     Schematically, a [wp_init ty addr e Q] looks like the following:
+  (* evaluate a prvalue that "initializes an object".
+     The memory that is being initialized is already owned by the C++ abstract machine.
+     Therefore, schematically, a [wp_init ty addr e Q] looks like the following:
        [[
-         addr |-> tblockR ty 1 ** (addr |-> R ... 1 -* Q)
+          addr |-> R ... 1 -* Q
        ]]
-     which captures the fact that it:
-     1. *consumes* uninitialized memory at [addr], the [addr |-> tblockR ty 1], and
-     2. *produces* initialized memory at [addr], something like [addr |-> R ... 1].
-
-     An alternative scheme would be to not give this block back to the user each time
-     and instead keep it in the C++ abstract machine. Currently, the problem with
-     this approach is that constructors would essentially be performing allocation out
-     of the abstract machine, which would require us to distinguish (in a more semantic
-     way) between constructors and regular functions.
-     TODO this is something that we should probably revisit at some point.
+     This choice means that a thread needs to give up the memory to the abstract
+     machine when it transitions to running a [wp_init]. In the case of
+     stack allocation, there is nothing to do here, but in the case of [new],
+     the memory must be given up.
    *)
   Parameter wp_init
     : forall {resolve:genv}, coPset -> region ->

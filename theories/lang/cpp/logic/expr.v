@@ -715,7 +715,7 @@ Module Type Expr.
 
     Let materialize_into_temp ty e Q :=
       let raw_type := erase_qualifiers ty in
-      Forall addr : ptr, addr |-> tblockR raw_type 1 -*
+      Forall addr : ptr,
         wp_init ty addr e (fun free =>
            Q (Vptr addr) (FreeTemps.delete raw_type addr >*> free)).
     (* XXX This use of [Vptr] represents an aggregate.
@@ -798,7 +798,6 @@ Module Type Expr.
         |-- wp_xval (Ecall f es ty) Q.
 
     Axiom wp_init_call : forall f es Q (addr : ptr) ty,
-          addr |-> tblockR (erase_qualifiers ty) 1 **
           (* ^ give the memory back to the C++ abstract machine *)
           wp_prval f (fun fn free_f => wp_call (type_of f) fn es $ fun res free_args =>
              Reduce (init_receive addr res $ Q (free_args >*> free_f)))
@@ -837,7 +836,6 @@ Module Type Expr.
         |-- wp_xval (Emember_call (inl (f, Direct, fty)) vc obj es ty) Q.
 
     Axiom wp_init_member_call : forall f fty es (addr : ptr) ty vc obj Q,
-        addr |-> tblockR (erase_qualifiers ty) 1 **
         wp_glval vc obj (fun this free_this => wp_mcall (Vptr $ _global f) this (type_of obj) fty es $ fun res free_args =>
            init_receive addr res $ Q (free_args >*> free_this))
         |-- wp_init ty addr (Emember_call (inl (f, Direct, fty)) vc obj es ty) Q.
@@ -874,7 +872,6 @@ Module Type Expr.
       |-- wp_lval (Emember_call (inl (f, Virtual, fty)) vc obj es ty) Q.
 
     Axiom wp_init_virtual_call : forall f fty es (addr : ptr) ty vc obj Q,
-        addr |-> tblockR (erase_qualifiers ty) 1 **
         wp_glval vc obj (fun this free_this => wp_virtual_call f this (type_of obj) fty es $ fun res free_args =>
            init_receive addr res $ Q (free_args >*> free_this))
         |-- wp_init ty addr (Emember_call (inl (f, Virtual, fty)) vc obj es ty) Q.
@@ -933,7 +930,6 @@ Module Type Expr.
                         is suitably aligned, accounting for
                         __STDCPP_DEFAULT_NEW_ALIGNMENT__ (issue #149) *)
                            (Forall obj_ptr : ptr,
-                              obj_ptr |-> tblockR aty 1 -*
                               (* This also ensures these pointers share their
                               address (see [provides_storage_same_address]) *)
                               provides_storage storage_ptr obj_ptr aty -*
@@ -981,7 +977,6 @@ Module Type Expr.
               (provides_storage storage_ptr obj_ptr ty ** (* Token for converting obj memory to storage memory *)
                (* Transfer memory to underlying storage pointer; unlike in [end_provides_storage],
                   this memory was pre-destructed by [destruct_val]. *)
-               obj_ptr |-> tblockR destroyed_type 1 **
                 (storage_ptr |-> blockR sz 1 -*
                   fspec delete_fn.2 (Vptr $ _global delete_fn.1) (* Calling deallocator with storage pointer *)
                     (Vptr storage_ptr :: nil) (fun v => Q v free))))
@@ -1003,17 +998,15 @@ Module Type Expr.
     Axiom wp_xval_temp : forall e Q,
         (let ty := type_of e in
          let raw_type := erase_qualifiers ty in
-         Forall a : ptr, a |-> tblockR raw_type 1 -*
-                  wp_init ty a e
-                          (fun free => Q a (FreeTemps.delete ty a >*> free)))
+         Forall a : ptr,
+         wp_init ty a e (fun free => Q a (FreeTemps.delete ty a >*> free)))
         |-- wp_xval (Ematerialize_temp e) Q.
 
     Axiom wp_lval_temp : forall e Q,
         (let ty := type_of e in
          let raw_type := erase_qualifiers ty in
-         Forall a : ptr, a |-> tblockR raw_type 1 -*
-                  wp_init ty a e
-                          (fun free => Q a (FreeTemps.delete ty a >*> free)))
+         Forall a : ptr,
+         wp_init ty a e (fun free => Q a (FreeTemps.delete ty a >*> free)))
         |-- wp_lval (Ematerialize_temp e) Q.
 
     (** temporary materialization only occurs when the resulting value is used.
@@ -1028,9 +1021,9 @@ Module Type Expr.
         is_aggregate (type_of e) = true ->
         (let ty := type_of e in
          let raw_type := erase_qualifiers ty in
-         Forall a : ptr, a |-> tblockR raw_type 1 -*
-                   wp_init ty a e (fun free =>
-                                     Q (Vptr a) (FreeTemps.delete ty a >*> free)))
+         Forall a : ptr,
+           wp_init ty a e (fun free =>
+              Q (Vptr a) (FreeTemps.delete ty a >*> free)))
         |-- wp_prval e Q.
 
 
@@ -1062,6 +1055,10 @@ Module Type Expr.
 
            \pre this |-> anyR ty 1
            \post this |-> tblockR ty
+
+        Note that the memory is *not* returned to the C++ abstract
+        machine because this is not reclaimation for an object going
+        out of scope.
      *)
     Axiom wp_pseudo_destructor : forall e ty Q,
         wp_lval e (fun v free => v |-> anyR ty 1 ** (v |-> tblockR ty 1 -* Q Vundef free))
@@ -1093,6 +1090,8 @@ Module Type Expr.
          *)
            match resolve.(genv_tu) !! cnd with
            | Some cv =>
+             addr |-> tblockR (Tnamed cls) 1 -*
+             (* ^^ Our semantics currently has constructors take ownership of a [tblockR] *)
              wp_mcall (Vptr $ _global cnd) addr (Tnamed cls) (type_of_value cv) es (fun v free => [| v = Vundef |] ** Q free)
            | _ => False
            end
@@ -1100,7 +1099,7 @@ Module Type Expr.
 
     Fixpoint wp_array_init (ety : type) (base : ptr) (es : list Expr) (idx : Z) (Q : FreeTemps -> mpred) : mpred :=
       match es with
-      | nil => 
+      | nil =>
         base .[ ety ! idx ] |-> validR -* Q FreeTemps.id
       | e :: rest =>
           (* NOTE: We nest the recursive calls to `wp_array_init` within
@@ -1109,7 +1108,6 @@ Module Type Expr.
                sequence-points between all of the elements of an
                initializer list (c.f. http://eel.is/c++draft/dcl.init.list#4)
            *)
-         base .[ ety ! idx ] |-> tblockR ety 1 -* (* provide the memory to the initializer. *)
          wp_initialize M ρ ety (base .[ ety ! idx ]) e (fun free => interp free $ wp_array_init ety base rest (Z.succ idx) Q)
       end%I.
 
@@ -1137,7 +1135,7 @@ Module Type Expr.
       end.
 
     Axiom wp_init_initlist_array :forall ls fill ety (sz : N) (base : ptr) Q,
-          base |-> tblockR (Tarray ety sz) 1 ** wp_array_init_fill ety base ls fill sz Q
+          wp_array_init_fill ety base ls fill sz Q
       |-- wp_init (Tarray ety sz) base (Einitlist ls fill (Tarray ety sz)) Q.
 
     (* https://eel.is/c++draft/dcl.init#general-7.2 says that "To
@@ -1313,7 +1311,6 @@ Module Type Expr.
                          NOTE that no "correct" program will ever modify this variable
                            anyways. *)
                       loop_index |-> primR (Tint W64 Unsigned) (1/2) idx -*
-                      targetp .[ ty ! idx ] |-> tblockR ty 1 -*
                       wp_initialize ρ ty (targetp .[ ty ! idx ]) init
                               (fun free => interp free $
                                  loop_index |-> primR (Tint W64 Unsigned) (1/2) idx **
@@ -1321,10 +1318,10 @@ Module Type Expr.
 
     Axiom wp_init_arrayloop_init : forall oname level sz ρ (trg : ptr) vc src init ty Q,
           has_type (Vn sz) (Tint W64 Unsigned) ->
-          trg |-> tblockR (Tarray ty sz) 1 ** (* give up your memory *)
           wp_glval ρ vc src
                    (fun p free =>
                       Forall idxp,
+                      trg |-> validR -*
                       _arrayloop_init (Rbind (opaque_val oname) p
                                              (Rbind (arrayloop_loop_index level) idxp ρ))
                                       level trg init ty

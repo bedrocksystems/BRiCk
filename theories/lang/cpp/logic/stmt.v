@@ -80,7 +80,7 @@ Module Type Stmt.
                 * so we need to re-construct this information from the value
                 * category of the expression.
                 *)
-               Forall ra : ptr, ra |-> tblockR (erase_qualifiers rty) 1 -*
+               Forall ra : ptr,
                wp_init ρ (erase_qualifiers rty) ra (not_mine e) (fun free => interp free $ Q (ReturnVal (Vptr ra)))
              else
                wp_prval ρ e (fun v free => interp free $ Q (ReturnVal v))
@@ -150,8 +150,7 @@ Module Type Stmt.
                     are explicit. *)
         | Some init =>
           Forall a : ptr,
-          a |-> tblockR ty 1 -*
-            wp_init ρ_init ty a (not_mine init) (fun free => interp free $ k (Rbind x a ρ) (FreeTemps.delete ty a))
+          wp_init ρ_init ty a (not_mine init) (fun free => interp free $ k (Rbind x a ρ) (FreeTemps.delete ty a))
         end
       | Tarray ty' N =>
         let rty := erase_qualifiers ty in
@@ -161,8 +160,7 @@ Module Type Stmt.
         | None =>
           default_initialize ty a (fun free => interp free continue)
         | Some init =>
-          a |-> tblockR ty 1 -*
-            wp_init ρ_init ty a (not_mine init) (fun free => interp free continue)
+          wp_init ρ_init ty a (not_mine init) (fun free => interp free continue)
         end
 
         (* references *)
@@ -266,19 +264,17 @@ Module Type Stmt.
       { intros; apply decl_prim with (ty:=Tint _ _). }
       { intros; iIntros "? $". }
       { destruct init; intros.
-        { iIntros "X Y" (?) "a"; iDestruct ("Y" with "a") as "Y"; iRevert "Y".
-          iApply wp_init_frame; first reflexivity.
+        { iIntros "X Y" (aa); iSpecialize ("Y" $! aa);
+            iRevert "Y"; iApply wp_init_frame; first reflexivity.
           iIntros (?); iApply interp_frame; iApply "X". }
         { iIntros "X Y" (?). iSpecialize ("Y" $! a).
           iRevert "Y". iApply default_initialize_frame.
           iIntros (?); iApply interp_frame; iApply "X". } }
       { simpl. intros.
-        destruct init.
-        { iIntros "X Y" (a) "a".
-          iDestruct ("Y" with "a") as "Y"; iRevert "Y".
-          iApply wp_init_frame; first reflexivity.
-          iIntros (?); iApply interp_frame; iApply "X". }
-        { iIntros "? $". } }
+        destruct init; intros; last by iIntros "? $".
+        { iIntros "X Y" (aa); iSpecialize ("Y" $! aa);
+            iRevert "Y"; iApply wp_init_frame; first reflexivity.
+          iIntros (?); iApply interp_frame; iApply "X". } }
       { intros. iIntros "? $". }
       { intros; apply decl_prim with (ty:=Tbool). }
       { intros; apply decl_prim with (ty:=Tmember_pointer _ _). }

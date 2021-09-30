@@ -272,7 +272,6 @@ Section with_cpp.
           match is' with
           | nil =>
             (* there is a *unique* initializer for this field *)
-            this ., offset_for cls i.(init_path) |-> tblockR (erase_qualifiers i.(init_type)) 1 -*
             wpi ⊤ ρ cls this i (wpi_members ρ cls this members inits Q)
           | _ =>
             (* there are multiple initializers for this field *)
@@ -301,7 +300,6 @@ Section with_cpp.
         ERROR $ "missing base class initializer: " ++ cls
       | i :: nil =>
         (* there is an initializer for this class *)
-        this ., offset_for cls i.(init_path) |-> tblockR (erase_qualifiers i.(init_type)) 1 -*
         wpi ⊤ ρ cls this i (wpi_bases ρ cls this bases inits Q)
       | _ :: _ :: _ =>
         (* there are multiple initializers for this, so we fail *)
@@ -318,7 +316,7 @@ Section with_cpp.
     intros.
     case_match; eauto.
     case_match; eauto.
-    iIntros "a b c"; iDestruct ("b" with "c") as "b"; iRevert "b".
+    iIntros "a".
     iApply wpi_frame => //.
     by iApply IHbases.
   Qed.
@@ -334,7 +332,7 @@ Section with_cpp.
       iIntros (?); iApply interp_frame. by iApply IHflds. }
     { case_match; eauto.
       case_match; eauto.
-      iIntros "a b c"; iDestruct ("b" with "c") as "b". iRevert "b".
+      iIntros "a".
       iApply wp_initialize_frame => //; iIntros (?); iApply interp_frame; by iApply IHflds. }
   Qed.
 
@@ -345,8 +343,8 @@ Section with_cpp.
       match inits with
       | _ :: nil =>
         if bool_decide (drop_qualifiers ty = Tnamed cls) then
-          (* this is a delegating constructor, simply delegate *)
-          this |-> tblockR ty 1 -* wp_init ⊤ ρ (Tnamed cls) this e (fun free => interp free Q)
+          (* this is a delegating constructor, simply delegate. *)
+          wp_init ⊤ ρ (Tnamed cls) this e (fun free => interp free Q)
         else
           (* the type names do not match, this should never happen *)
           ERROR "type name mismatch"
@@ -373,8 +371,8 @@ Section with_cpp.
     { case_match => //.
       destruct l; eauto.
       case_match; eauto.
-      iIntros "x y z".
-      iDestruct ("y" with "z") as "y"; iRevert "y"; iApply wp_init_frame => //.
+      iIntros "x".
+      iApply wp_init_frame => //.
       iIntros (?); by iApply interp_frame. }
     { iIntros "a"; iApply wpi_bases_frame.
       rewrite /init_identity.
@@ -396,7 +394,7 @@ Section with_cpp.
       | _ :: nil =>
         if bool_decide (drop_qualifiers ty = Tnamed cls) then
           (* this is a delegating constructor, simply delegate *)
-          this |-> tblockR ty 1 -* wp_init ⊤ ρ (Tnamed cls) this e (fun free => interp free Q)
+          wp_init ⊤ ρ (Tnamed cls) this e (fun free => interp free Q)
         else
           (* the type names do not match, this should never happen *)
           ERROR "type name mismatch"
@@ -419,8 +417,7 @@ Section with_cpp.
     { case_match => //.
       destruct l; eauto.
       case_bool_decide; eauto.
-      iIntros "X Y Z".
-      iDestruct ("Y" with "Z") as "Y"; iRevert "Y".
+      iIntros "X".
       iApply wp_init_frame. reflexivity. iIntros (?); by iApply interp_frame. }
   Qed.
 
@@ -438,16 +435,27 @@ Section with_cpp.
    *)
   Definition type_valdity : type -> ptr -> mpred := fun _ _ => emp%I.
 
-  (* note(gmm): supporting virtual inheritence will require us to add
-   * constructor kinds here
-   *
-   * NOTE that the constructor semantics consumes the entire [blockR] of the object
-   * that is being constructed and the C++ abstract machine breaks this block down
-   * and provides each sub-block immediately before the initialization of the field
-   * or base.
-   *
-   * Alternative: it would also be sound for the class to provide the [tblockR]
-   * for each sub-object up front.
+  (**
+     [wp_ctor ctor args Q] is the weakest pre-condition (with post-condition [Q])
+     running the constructor [ctor] with arguments [args].
+
+     Note that the constructor semantics consumes the entire [blockR] of the object
+     that is being constructed and the C++ abstract machine breaks this block down
+     producing usable† memory.
+     **Alternative**: Because constructor calls are *always* syntactically distinguished
+     (since C++ does not allow taking a pointer to a constructor), we know that any
+     invocation of a constructor will be from a [wp_init] which means that the C++
+     abstract machine will already own the memory (see the documentation for [wp_init]
+     in [wp.v]). In order to enforce this semantically within the abstract machine,
+     we would need a new predicate to say "a constructor with the given specification"
+     (rather than simply desugaring this to "a function with the given specification").
+
+     NOTE: supporting virtual inheritence will require us to add
+     constructor kinds here
+
+     † It is not necessarily initialized, e.g. because primitive fields are not
+       initialized (you get an [uninitR]), but you will get something that implies
+       [type_ptr].
    *)
   Definition wp_ctor (ctor : Ctor) (args : list val) (Q : val -> epred) : mpred :=
     match ctor.(c_body) with
@@ -533,6 +541,13 @@ Section with_cpp.
 
   (** [wp_dtor dtor args Q] defines the semantics of the destructor [dtor] when
       applied to [args] with post-condition [Q].
+
+      Note that destructors are not always syntactically distinguished from
+      function calls (e.g. in the case of [c.~C()]). Therefore, in order to
+      have a uniform specification, they need to return the underlying memory
+      (i.e. a [this |-> tblockR (Tnamed cls) 1]) to the caller.
+      When the program is destroying this object, e.g. due to stack allocation,
+      this resource will be consumed immediately.
    *)
   Definition wp_dtor (dtor : Dtor) (args : list val)
              (Q : val -> epred) : mpred :=
