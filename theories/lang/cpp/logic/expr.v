@@ -954,7 +954,6 @@ Module Type Expr.
 
        https://eel.is/c++draft/expr.delete
 
-       TODO this does not support array delete yet.
        NOTE: https://eel.is/c++draft/expr.delete#7.1 says:
        > The value returned from the allocation call of the new-expression
        > shall be passed as the first argument to the deallocation function.
@@ -963,21 +962,21 @@ Module Type Expr.
        deallocation function [delete] is passed a pointer to the
        underlying storage.
 
-       TODO there is a bug here for [virtual] destruction since, in that case,
-       the full object is destroyed. (see FM-815)
-
        TODO this rule does not support [delete nullptr] (which is defined by
-       the standard to be a no-op). (see FM-)
+       the standard to be a no-op). (see FM-1010)
+
+       TODO this does not support array delete yet. (FM-1012)
      *)
     Axiom wp_prval_delete : forall delete_fn e ty destroyed_type Q,
         (* call the destructor on the object, and then call delete_fn *)
         wp_prval e (fun v free =>
-          Exists obj_ptr storage_ptr sz,
+          Exists obj_ptr,
             [| v = Vptr obj_ptr |] **
-            [| size_of destroyed_type = Some sz |] **
             type_ptr destroyed_type obj_ptr **
             delete_val true destroyed_type obj_ptr      (* Calling destructor with object pointer *)
-              (provides_storage storage_ptr obj_ptr ty ** (* Token for converting obj memory to storage memory *)
+              (fun this' ty =>
+                 Exists storage_ptr sz, [| size_of ty = Some sz |] **
+               provides_storage storage_ptr this' ty ** (* Token for converting obj memory to storage memory *)
                (* Transfer memory to underlying storage pointer; unlike in [end_provides_storage],
                   this memory was pre-destructed by [delete_val]. *)
                 (storage_ptr |-> blockR sz 1 -*

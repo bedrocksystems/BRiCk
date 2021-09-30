@@ -511,14 +511,14 @@ Section with_cpp.
     match bases with
     | nil => Q
     | base :: bases =>
-      delete_val false (Tnamed base) (this ., _base cls base) (wpd_bases cls this bases Q)
+      delete_val false (Tnamed base) (this ., _base cls base) (fun _ _ => wpd_bases cls this bases Q)
     end.
 
   Lemma wpd_bases_frame cls this : forall bases Q Q',
       Q -* Q' |-- wpd_bases cls this bases Q -* wpd_bases cls this bases Q'.
   Proof.
     induction bases; eauto.
-    intros. iIntros "X". iApply delete_val_frame. iApply IHbases. done.
+    intros. iIntros "X". iApply delete_val_frame. iIntros (??); iApply IHbases. done.
   Qed.
 
   Fixpoint wpd_members
@@ -529,14 +529,14 @@ Section with_cpp.
     | nil => Q
     | member :: members =>
       delete_val false member.(mem_type) (this ., _field {| f_name := member.(mem_name) ; f_type := cls |})
-           (wpd_members cls this members Q)
+           (fun _ _ => wpd_members cls this members Q)
     end.
 
   Lemma wpd_members_frame cls this : forall members Q Q',
       Q -* Q' |-- wpd_members cls this members Q -* wpd_members cls this members Q'.
   Proof.
     induction members => /=; eauto.
-    intros. by iIntros "X"; iApply delete_val_frame; iApply IHmembers.
+    intros. by iIntros "X"; iApply delete_val_frame; iIntros (??); iApply IHmembers.
   Qed.
 
   (** [wp_dtor dtor args Q] defines the semantics of the destructor [dtor] when

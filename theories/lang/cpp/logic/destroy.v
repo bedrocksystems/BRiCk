@@ -56,7 +56,7 @@ Section destroy.
      no-op destructors. Thus, we can model the "not having a destructor"
      as an optimization. This choice makes the semantics more uniform.
    *)
-  Fixpoint delete_val (dispatch : bool) (t : type) (this : ptr) (Q : mpred)
+  Fixpoint delete_val (dispatch : bool) (t : type) (this : ptr) (Q : ptr -> type -> mpred)
            {struct t}
   : mpred :=
     match t with
@@ -71,7 +71,7 @@ Section destroy.
           resolve_dtor cls this (fun fimpl impl_class this' =>
             let ty := Tfunction Tvoid nil in
             |> mspec σ.(genv_tu).(globals) (Tnamed impl_class) ty (Vptr fimpl) (Vptr this' :: nil) (fun _ =>
-                     this' |-> tblockR (Tnamed impl_class) 1 ** Q))
+                     this' |-> tblockR (Tnamed impl_class) 1 ** Q this' (Tnamed impl_class)))
         else
           (* NOTE the setup with explicit destructors (even when those destructors are trivial)
                   abstracts away some of the complexities of the underlying C++ semantics that
@@ -86,7 +86,7 @@ Section destroy.
           (let dtor := s.(s_dtor) in
            let ty := Tfunction Tvoid nil in (** NOTE this implicitly requires all destructors to have C calling convention *)
            |> mspec σ.(genv_tu).(globals) (Tnamed cls) ty (Vptr $ _global s.(s_dtor)) (Vptr this :: nil) (fun _ =>
-                    this |-> tblockR (Tnamed cls) 1 ** Q))
+                    this |-> tblockR (Tnamed cls) 1 ** Q this t))
 
       | Some (Gunion u) =>
           (* unions can not have [virtual] destructors, so we directly invoke
@@ -95,30 +95,30 @@ Section destroy.
           (let dtor := u.(u_dtor) in
            let ty := Tfunction Tvoid nil in
            |> mspec σ.(genv_tu).(globals) (Tnamed cls) ty (Vptr $ _global u.(u_dtor)) (Vptr this :: nil) (fun _ =>
-                    this |-> tblockR (Tnamed cls) 1 ** Q))
+                    this |-> tblockR (Tnamed cls) 1 ** Q this t))
       | _ => False
       end
-    | Tarray t sz =>
+    | Tarray ety sz =>
       (* NOTE when destroying an array, elements of the array are destroyed with non-virtual dispatch. *)
       fold_right (fun i Q =>
-                    valid_ptr (this .[ t ! Z.of_nat i ]) **
-                    delete_val false t (this .[ t ! Z.of_nat i ]) Q)
-                 Q (List.rev (seq 0 (N.to_nat sz)))
+                    valid_ptr (this .[ ety ! Z.of_nat i ]) **
+                    delete_val false ety (this .[ ety ! Z.of_nat i ]) (fun _ _ => Q))
+                 (Q this t) (List.rev (seq 0 (N.to_nat sz)))
     | Trv_ref ty
     | Tref ty =>
-      (* |={↑pred_ns}=> *) this |-> anyR (Tref $ erase_qualifiers ty) 1 ** Q
+      (* |={↑pred_ns}=> *) this |-> anyR (Tref $ erase_qualifiers ty) 1 ** Q this t
     | _ =>
-      (* |={↑pred_ns}=> *) this |-> anyR (erase_qualifiers t) 1 ** Q
+      (* |={↑pred_ns}=> *) this |-> anyR (erase_qualifiers t) 1 ** Q this t
     end%I.
 
   Lemma delete_val_frame dispatch : forall ty this Q Q',
-      Q -* Q' |-- delete_val dispatch ty this Q -* delete_val dispatch ty this Q'.
+      Forall this' ty, Q this' ty -* Q' this' ty |-- delete_val dispatch ty this Q -* delete_val dispatch ty this Q'.
   Proof.
     intro ty; generalize dependent dispatch; induction ty; simpl; eauto;
       try solve [ intros; iIntros "Q [$ X]"; iRevert "X"; done ].
     { induction (rev _); simpl; intros.
       { iIntros "X"; iApply "X". }
-      { iIntros "Q [$ V]". iRevert "V"; iApply IHty; iApply IHl; eauto. } }
+      { iIntros "Q [$ V]". iRevert "V"; iApply IHty; iIntros (??); iApply IHl; eauto. } }
     { intros. case_match; eauto.
       case_match; eauto.
       { iIntros "X Y"; iNext; iRevert "Y"; iApply mspec_frame.
@@ -140,14 +140,14 @@ Section destroy.
     | FreeTemps.id => Q
     | FreeTemps.seq f g => interp f $ interp g Q
     | FreeTemps.par f g => Exists Qf Qg, interp f Qf ** interp g Qg ** (Qf -* Qg -* Q)
-    | FreeTemps.delete ty addr => delete_val false ty addr Q
+    | FreeTemps.delete ty addr => delete_val false ty addr (fun _ _ => Q)
     end.
 
   Lemma interp_frame free : forall Q1 Q2,
       Q1 -* Q2 |-- interp free Q1 -* interp free Q2.
   Proof.
     induction free; simpl; intros; eauto.
-    { iApply delete_val_frame. }
+    { iIntros "X"; iApply delete_val_frame; iIntros (??); done. }
     { iIntros "a"; iApply IHfree1; iApply IHfree2; done. }
     { iIntros "a b"; iDestruct "b" as (??) "(x & y & z)"; iExists _; iExists _; iFrame.
       iIntros "f g"; iApply "a"; iRevert "g"; by iApply "z". }
