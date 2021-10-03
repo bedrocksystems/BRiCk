@@ -11,10 +11,14 @@ Record WrapN {Phant : Set} : Set := { unwrapN : N }.
 Arguments WrapN Phant : clear implicits.
 (* using the wrapper means we define these instances only once. *)
 
+Lemma cancel_unwrapN {Phant} (x : WrapN Phant) :
+  {| unwrapN := unwrapN x |} = x.
+Proof. by case: x. Qed.
+
 (* this instance is useful in combination with [Refine1_Cancel]. *)
 #[global] Instance cancel_Build_WrapN_unwrapN {Phant} :
   Cancel eq (Build_WrapN Phant) unwrapN.
-Proof. by intros []. Qed.
+Proof. exact cancel_unwrapN. Qed.
 
 #[global] Instance wrapN_eq_decision {Phant} : EqDecision (WrapN Phant).
 Proof. solve_decision. Defined.
@@ -49,6 +53,53 @@ Module wrapN_notations.
   Infix "+" := wrapN_add (only parsing) : wrapN_scope.
 End wrapN_notations.
 
+Import wrapN_notations.
+
+Section seqW.
+  Context {Phant : Set}.
+  Implicit Types (w : WrapN Phant).
+  #[local] Open Scope wrapN_scope.
+
+  Lemma wrapN_add_0N_r w : w + 0%N = w.
+  Proof. by rewrite /wrapN_add /wrapNN_add N.add_0_r cancel_unwrapN. Qed.
+  Lemma wrapN_add_0w_r w : w + 0 = w.
+  Proof. by rewrite /wrapN_add /wrapNwrapN_add N.add_0_r cancel_unwrapN. Qed.
+
+  Definition wrapN_succ w : WrapN Phant :=
+    Build_WrapN _ $ N.succ $ unwrapN w.
+
+  Lemma unwrapN_succ_inj w : unwrapN (wrapN_succ w) = N.succ (unwrapN w).
+  Proof. done. Qed.
+
+  Definition seqW (base : WrapN Phant) (sz : N) : list (WrapN Phant) :=
+    (fun n => base + n)%wrapN <$> (seqN 0 sz).
+
+  (* Better definition? *)
+  Definition seqW' w (sz : N) : list (WrapN Phant) :=
+    Build_WrapN _ <$> seqN (unwrapN w) sz.
+  Lemma seqW_seqW' w sz : seqW w sz = seqW' w sz.
+  Proof.
+    rewrite /seqW /seqW'.
+    induction sz as [|sz IHsz] using N.peano_ind; first done.
+    by rewrite !seqN_S_end_app !fmap_app IHsz.
+  Qed.
+  Lemma seqW_alt w sz : Unfold seqW' (seqW w sz = seqW' w sz).
+  Proof. apply seqW_seqW'. Qed.
+
+  Lemma cons_seqW len start :
+    start :: seqW (wrapN_succ start) len = seqW start (N.succ len).
+  Proof.
+    by rewrite !seqW_alt -cons_seqN fmap_cons cancel_unwrapN.
+  Qed.
+
+  (* Lifts [seqN_S_end_app] *)
+  Lemma seqW_S_end_app w n : seqW w (N.succ n) = seqW w n ++ [w + n].
+  Proof.
+    by rewrite /seqW seqN_S_end_app fmap_app.
+    (* by rewrite !seqW_alt seqN_S_end_app fmap_app. *)
+  Qed.
+End seqW.
+
 Module Type wrapper.
   Variant Phant := Build_Phant.
 
@@ -58,10 +109,5 @@ Module Type wrapper.
   Definition of_N : N -> t := Build_WrapN Phant.
   Definition to_N : t -> N := unwrapN.
   Lemma of_to_N x : of_N (to_N x) = x.
-  Proof. apply: cancel. Qed.
+  Proof. apply cancel_unwrapN. Qed.
 End wrapper.
-
-Import wrapN_notations.
-
-Definition seqW {Phant} (base : WrapN Phant) (sz : N) : list (WrapN Phant) :=
-  (fun n => base + n)%wrapN <$> (seqN 0 sz).
