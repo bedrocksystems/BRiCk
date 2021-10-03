@@ -74,6 +74,15 @@ Section seqW.
   Definition seqW w (sz : N) : list (WrapN Phant) :=
     Build_WrapN _ <$> seqN (unwrapN w) sz.
 
+  Lemma cons_seqW len start :
+    start :: seqW (wrapN_succ start) len = seqW start (N.succ len).
+  Proof. by rewrite /seqW -cons_seqN fmap_cons cancel_unwrapN. Qed.
+
+  (* Lifts [seqN_S_end_app] *)
+  Lemma seqW_S_end_app w n : seqW w (N.succ n) = seqW w n ++ [w + n].
+  Proof. by rewrite /seqW seqN_S_end_app fmap_app. Qed.
+
+  (* Old definition, and equivalence with it. *)
   Definition seqW' (base : WrapN Phant) (sz : N) : list (WrapN Phant) :=
     (fun n => base + n)%wrapN <$> (seqN 0 sz).
 
@@ -85,14 +94,6 @@ Section seqW.
   Qed.
   Lemma seqW_alt w sz : Unfold seqW' (seqW w sz = seqW' w sz).
   Proof. apply seqW_seqW'. Qed.
-
-  Lemma cons_seqW len start :
-    start :: seqW (wrapN_succ start) len = seqW start (N.succ len).
-  Proof. by rewrite /seqW -cons_seqN fmap_cons cancel_unwrapN. Qed.
-
-  (* Lifts [seqN_S_end_app] *)
-  Lemma seqW_S_end_app w n : seqW w (N.succ n) = seqW w n ++ [w + n].
-  Proof. by rewrite /seqW seqN_S_end_app fmap_app. Qed.
 End seqW.
 
 Module Type wrapper.
