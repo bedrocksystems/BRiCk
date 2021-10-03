@@ -104,3 +104,8 @@ Module Type wrapper.
   Lemma of_to_N x : of_N (to_N x) = x.
   Proof. apply cancel_unwrapN. Qed.
 End wrapper.
+
+Module Type succ_wrapper (Import W : wrapper).
+  Notation succ := (wrapN_succ (Phant := Phant) : t -> t) (only parsing).
+  Notation seqW := (seqW (Phant := Phant) : (t -> N -> list t)) (only parsing).
+End succ_wrapper.
