@@ -138,6 +138,16 @@ Section seqN.
     rewrite /seqN !N2Nat.inj_succ seq_S_end_app fmap_app /=.
     by rewrite -N2Nat.inj_add N2Nat.id.
   Qed.
+
+  Lemma cons_seqN' [len start] sstart :
+    sstart = N.succ start ->
+    start :: seqN sstart len = seqN start (N.succ len).
+  Proof. move->. apply cons_seqN. Qed.
+
+  Lemma seqN_S_end_app' [w n] sn :
+    sn = N.succ n ->
+    seqN w sn = seqN w n ++ [w + n].
+  Proof. move->. apply seqN_S_end_app. Qed.
 End seqN.
 
 (** [pow2N n]'s output term has size exponential in [n], and simplifying

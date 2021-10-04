@@ -81,6 +81,16 @@ Section seqW.
   (* Lifts [seqN_S_end_app] *)
   Lemma seqW_S_end_app w n : seqW w (N.succ n) = seqW w n ++ [w + n].
   Proof. by rewrite /seqW seqN_S_end_app fmap_app. Qed.
+
+  Lemma cons_seqW' [len start] sstart :
+    sstart = wrapN_succ start ->
+    start :: seqW sstart len = seqW start (N.succ len).
+  Proof. move->. apply cons_seqW. Qed.
+
+  Lemma seqW_S_end_app' [w n] sn :
+    sn = N.succ n ->
+    seqW w sn = seqW w n ++ [w + n].
+  Proof. move->. apply seqW_S_end_app. Qed.
 End seqW.
 
 Module Type wrapper.
