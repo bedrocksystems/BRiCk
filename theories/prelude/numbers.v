@@ -150,6 +150,132 @@ Definition replicateN {A} (count : N) (x : A) : list A :=
 #[deprecated(since="2021-05-26",note="use [replicateN]")]
 Notation repeatN := (flip replicateN) (only parsing).
 
+Definition dropN {A} n := drop (A := A) (N.to_nat n).
+Definition takeN {A} n := take (A := A) (N.to_nat n).
+Definition lengthN {A} xs := N.of_nat (length (A := A) xs).
+Definition resizeN {A} n := resize (A := A) (N.to_nat n).
+
+Section listN.
+  #[local] Open Scope N_scope.
+  Context {A : Type}.
+
+  Lemma N2Nat_inj_le n m :
+    n ≤ m ->
+    (N.to_nat n <= N.to_nat m)%nat.
+  Proof. lia. Qed.
+
+  Implicit Type (x : A) (n m : N).
+
+  (* TODO: extend the theory of [lengthN], we have few lemmas here. *)
+  Lemma nil_lengthN :
+    lengthN (A := A) [] = 0.
+  Proof. done. Qed.
+
+  Lemma cons_lengthN x xs :
+    lengthN (x :: xs) = N.succ (lengthN xs).
+  Proof. by rewrite /lengthN cons_length Nat2N.inj_succ. Qed.
+
+  (* Lift all theory about [drop] and [replicate] interaction. *)
+  Lemma dropN_replicateN n m x :
+    dropN n (replicateN m x) = replicateN (m - n) x.
+  Proof. by rewrite /dropN /replicateN drop_replicate N2Nat.inj_sub. Qed.
+
+  Lemma dropN_replicateN_plus n m x :
+    dropN n (replicateN (n + m) x) = replicateN m x.
+  Proof. by rewrite /dropN /replicateN N2Nat.inj_add drop_replicate_plus. Qed.
+
+  (* Lift all theory about [take] and [replicate] interaction. *)
+  Lemma takeN_replicateN n m x :
+    takeN n (replicateN m x) = replicateN (n `min` m) x.
+  Proof. by rewrite /takeN /replicateN take_replicate N2Nat.inj_min. Qed.
+
+  Lemma takeN_replicateN_plus n m x :
+    takeN n (replicateN (n + m) x) = replicateN n x.
+  Proof. by rewrite /takeN /replicateN N2Nat.inj_add take_replicate_plus. Qed.
+
+  Lemma resizeN_spec l n x :
+    resizeN n x l = takeN n l ++ replicateN (n - lengthN l) x.
+  Proof.
+    by rewrite /resizeN /replicateN resize_spec !N2Nat.inj_sub Nat2N.id.
+  Qed.
+
+  (* Part of the theory of [resize], it's rather large. *)
+  Lemma resizeN_all l x : resizeN (lengthN l) x l = l.
+  Proof. by rewrite /resizeN /lengthN Nat2N.id resize_all. Qed.
+
+  Lemma resizeN_0 l x : resizeN 0 x l = [].
+  Proof. by rewrite /resizeN resize_0. Qed.
+
+  Lemma resizeN_lengthN l n x :
+    lengthN (resizeN n x l) = n.
+  Proof. by rewrite /lengthN /resizeN /= resize_length N2Nat.id. Qed.
+
+  Lemma resizeN_nil n x : resizeN n x [] = replicateN n x.
+  Proof. apply resize_nil. Qed.
+
+  Lemma resizeN_replicateN x n m:
+    resizeN n x (replicateN m x) = replicateN n x.
+  Proof. by rewrite /resizeN /replicateN resize_replicate. Qed.
+
+  Lemma resizeN_idemp l n x :
+    resizeN n x (resizeN n x l) = resizeN n x l.
+  Proof. apply resize_idemp. Qed.
+
+  (* Lift all theory about [drop] and [resize] interaction. *)
+  Lemma dropN_resizeN_plus l m n x :
+    dropN n (resizeN (n + m) x l) = resizeN m x (dropN n l).
+  Proof. by rewrite /dropN /resizeN N2Nat.inj_add drop_resize_plus. Qed.
+
+  Lemma dropN_resizeN_le l n m x :
+    n <= m →
+    dropN n (resizeN m x l) = resizeN (m - n) x (dropN n l).
+  Proof.
+    move=> /N2Nat_inj_le Hle.
+    by rewrite /dropN /resizeN drop_resize_le // N2Nat.inj_sub.
+  Qed.
+
+  Lemma resizeN_plusN l n m x :
+    resizeN (n + m) x l = resizeN n x l ++ resizeN m x (dropN n l).
+  Proof. by rewrite /resizeN /dropN N2Nat.inj_add resize_plus. Qed.
+
+  (* Lift all theory about [take] and [resize] interaction. *)
+  Lemma takeN_resizeN_eq l n x :
+    takeN n (resizeN n x l) = resizeN n x l.
+  Proof. apply take_resize_eq. Qed.
+
+  Lemma resizeN_takeN_eq l n x :
+    resizeN n x (takeN n l) = resizeN n x l.
+  Proof. apply resize_take_eq. Qed.
+
+  Lemma takeN_resizeN l n m x :
+    takeN n (resizeN m x l) = resizeN (n `min` m) x l.
+  Proof. by rewrite /takeN /resizeN take_resize N2Nat.inj_min. Qed.
+
+  Lemma takeN_resizeN_plus l n m x :
+    takeN n (resizeN (n + m) x l) = resizeN n x l.
+  Proof. by rewrite /takeN /resizeN N2Nat.inj_add take_resize_plus. Qed.
+
+  Lemma to_nat_lengthN (l : list A) :
+    N.to_nat (lengthN l) = length l.
+  Proof. by rewrite /lengthN Nat2N.id. Qed.
+
+  Lemma resizeN_le l n x :
+    n <= lengthN l ->
+    resizeN n x l = takeN n l.
+  Proof. move=> /N2Nat_inj_le. rewrite to_nat_lengthN. apply resize_le. Qed.
+
+  Lemma takeN_resizeN_le l n m x  :
+    n ≤ m →
+    takeN n (resizeN m x l) = resizeN n x l.
+  Proof. move=> /N2Nat_inj_le. apply take_resize_le. Qed.
+
+  Lemma resizeN_takeN_le l n m x :
+    (n <= m) → resizeN n x (takeN m l) = resizeN n x l.
+  Proof. move=> /N2Nat_inj_le. apply resize_take_le. Qed.
+
+  (* resizeN_spec is above *)
+End listN.
+
 (** [pow2N n]'s output term has size exponential in [n], and simplifying
 callers is even worse; so we seal it. *)
 Definition pow2N_def (n : N) : N := 2^n.
