@@ -81,19 +81,6 @@ Section seqW.
   (* Lifts [seqN_S_end_app] *)
   Lemma seqW_S_end_app w n : seqW w (N.succ n) = seqW w n ++ [w + n].
   Proof. by rewrite /seqW seqN_S_end_app fmap_app. Qed.
-
-  (* Old definition, and equivalence with it. *)
-  Definition seqW' (base : WrapN Phant) (sz : N) : list (WrapN Phant) :=
-    (fun n => base + n)%wrapN <$> (seqN 0 sz).
-
-  Lemma seqW_seqW' w sz : seqW w sz = seqW' w sz.
-  Proof.
-    rewrite /seqW /seqW'.
-    induction sz as [|sz IHsz] using N.peano_ind; first done.
-    by rewrite !seqN_S_end_app !fmap_app IHsz.
-  Qed.
-  Lemma seqW_alt w sz : Unfold seqW' (seqW w sz = seqW' w sz).
-  Proof. apply seqW_seqW'. Qed.
 End seqW.
 
 Module Type wrapper.
