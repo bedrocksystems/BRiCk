@@ -115,12 +115,6 @@ Lemma N_mul_divide_weaken_r (m n o : N) :
   (m * n | o)%N -> (n | o)%N.
 Proof. case => q ->. exists (q * m)%N. lia. Qed.
 
-Definition replicateN {A} (count : N) (x : A) : list A :=
-  replicate (N.to_nat count) x.
-#[global] Arguments replicateN : simpl never.
-#[deprecated(since="2021-05-26",note="use [replicateN]")]
-Notation repeatN := (flip replicateN) (only parsing).
-
 Definition seqN (from count : N) : list N :=
   N.of_nat <$> (seq (N.to_nat from) (N.to_nat count)).
 #[global] Arguments seqN : simpl never.
@@ -149,6 +143,12 @@ Section seqN.
     seqN w sn = seqN w n ++ [w + n].
   Proof. move->. apply seqN_S_end_app. Qed.
 End seqN.
+
+Definition replicateN {A} (count : N) (x : A) : list A :=
+  replicate (N.to_nat count) x.
+#[global] Arguments replicateN : simpl never.
+#[deprecated(since="2021-05-26",note="use [replicateN]")]
+Notation repeatN := (flip replicateN) (only parsing).
 
 (** [pow2N n]'s output term has size exponential in [n], and simplifying
 callers is even worse; so we seal it. *)
