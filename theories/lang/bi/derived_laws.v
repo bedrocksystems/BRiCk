@@ -23,6 +23,13 @@ Export iris.bi.bi.bi.
 Section derived_laws.
   Context {PROP : bi}.
 
+  (* Variant of [fractional_big_sepL], upstreamed in
+  https://gitlab.mpi-sws.org/iris/iris/-/merge_requests/737. *)
+  #[global] Instance fractional_big_sepL2 {A B} l1 l2 Ψ :
+    (∀ k (x1 : A) (x2 : B), Fractional (Ψ k x1 x2)) →
+    Fractional (PROP:=PROP) (λ q, [∗ list] k↦x1; x2 ∈ l1; l2 , Ψ k x1 x2 q)%I.
+  Proof. intros ? q q'. rewrite -big_sepL2_sep. by setoid_rewrite fractional. Qed.
+
   Lemma exist_pure_eq_sep {A P} v:
     P v ⊢@{PROP} ∃ x : A, ⌜ x = v ⌝ ∗ P x.
   Proof. iIntros. iExists v; eauto. Qed.

@@ -125,6 +125,31 @@ Definition seqN (from count : N) : list N :=
   N.of_nat <$> (seq (N.to_nat from) (N.to_nat count)).
 #[global] Arguments seqN : simpl never.
 
+Section seqN.
+  #[local] Open Scope N_scope.
+
+  Lemma cons_seqN len start :
+    start :: seqN (N.succ start) len = seqN start (N.succ len).
+  Proof. by rewrite /seqN !N2Nat.inj_succ -cons_seq fmap_cons N2Nat.id. Qed.
+
+  (* Lifts stdpp's [seq_S_end_app] aka stdlib's [seq_S] *)
+  Lemma seqN_S_end_app j n : seqN j (N.succ n) = seqN j n ++ [j + n].
+  Proof.
+    rewrite /seqN !N2Nat.inj_succ seq_S_end_app fmap_app /=.
+    by rewrite -N2Nat.inj_add N2Nat.id.
+  Qed.
+
+  Lemma cons_seqN' [len start] sstart :
+    sstart = N.succ start ->
+    start :: seqN sstart len = seqN start (N.succ len).
+  Proof. move->. apply cons_seqN. Qed.
+
+  Lemma seqN_S_end_app' [w n] sn :
+    sn = N.succ n ->
+    seqN w sn = seqN w n ++ [w + n].
+  Proof. move->. apply seqN_S_end_app. Qed.
+End seqN.
+
 (** [pow2N n]'s output term has size exponential in [n], and simplifying
 callers is even worse; so we seal it. *)
 Definition pow2N_def (n : N) : N := 2^n.
