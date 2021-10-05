@@ -115,3 +115,26 @@ Section list_difference.
   Qed.
 
 End list_difference.
+
+Lemma tail_length {A} (l: list A):
+  (length (tail l) <= length l <= length (tail l) + 1)%nat.
+Proof.
+  induction l; simpl; by lia.
+Qed.
+
+Lemma tail_length_eq {A} (l: list A):
+  (0 < length l)%nat
+  -> (length (tail l) + 1)%nat = length l.
+Proof.
+  intros H.
+  destruct l; simpl in *; by lia.
+Qed.
+
+Lemma elem_of_replicateN : ∀ {A} (count: N) (b a : A), a ∈ replicateN count b → b = a.
+Proof.
+  unfold replicateN.
+  intros ? ? ? ? Ha.
+  apply elem_of_replicate in Ha.
+  destruct Ha.
+  congruence.
+Qed.
