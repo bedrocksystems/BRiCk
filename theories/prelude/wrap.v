@@ -97,6 +97,9 @@ Module Type wrapper.
   Variant Phant := Build_Phant.
 
   Definition t := WrapN Phant.
+
+  (** Beware this is not actually (super)global:
+  https://github.com/coq/coq/issues/14988 *)
   #[global] Bind Scope wrapN_scope with t.
 
   Definition of_N : N -> t := Build_WrapN Phant.
@@ -109,3 +112,17 @@ Module Type succ_wrapper (Import W : wrapper).
   Notation succ := (wrapN_succ (Phant := Phant) : t -> t) (only parsing).
   Notation seqW := (seqW (Phant := Phant) : (t -> N -> list t)) (only parsing).
 End succ_wrapper.
+
+(**
+Example usage for [wrapper]:
+Module your_type.
+  (* Include wrapper. *) (* Or *)
+  Include val_wrapper. (* Using [val_wrap.v] *)
+
+  Include succ_wrapper. (* If appropriate for your type. *)
+End your_type.
+
+(* Workaround https://github.com/coq/coq/issues/14988 *)
+#[global] Bind Scope wrapN_scope with your_type.t.
+
+ *)
