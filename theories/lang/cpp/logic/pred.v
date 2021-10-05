@@ -30,7 +30,7 @@ From bedrock.lang.cpp.syntax Require Import
      names
      types
      translation_unit.
-From bedrock.lang.cpp Require Import semantics.values.
+From bedrock.lang.cpp.semantics Require Import values subtyping.
 
 Variant validity_type : Set := Strict | Relaxed.
 
@@ -502,6 +502,10 @@ Module Type VALID_PTR_AXIOMS (Import INTF : VALUES_INTF) (Import CC : CPP_LOGIC_
     (* TODO: maybe add a validity of offsets to allow stating this more generally. *)
     Axiom valid_o_sub_size : forall p ty i vt,
       _valid_ptr vt (p .., o_sub σ ty i) |-- [| is_Some (size_of σ ty) |].
+
+    Axiom type_ptr_o_base : forall derived base p,
+      class_derives _ derived base ->
+      type_ptr (Tnamed derived) p ⊢ type_ptr (Tnamed base) (p .., _base derived base).
   End with_cpp.
 End VALID_PTR_AXIOMS.
 
