@@ -154,6 +154,8 @@ Definition dropN {A} n := drop (A := A) (N.to_nat n).
 Definition takeN {A} n := take (A := A) (N.to_nat n).
 Definition lengthN {A} xs := N.of_nat (length (A := A) xs).
 Definition resizeN {A} n := resize (A := A) (N.to_nat n).
+Definition rotateN {A} n xs :=
+  dropN (A := A) (n mod lengthN xs) xs ++ takeN (A := A) (n mod lengthN xs) xs.
 
 Section listN.
   #[local] Open Scope N_scope.
