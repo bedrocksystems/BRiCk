@@ -1170,5 +1170,9 @@ Module VALID_PTR : VALID_PTR_AXIOMS VALUES_FULL_IMPL L L.
     (* TODO: maybe add a validity of offsets to allow stating this more generally. *)
     Axiom valid_o_sub_size : forall p ty i vt,
       _valid_ptr vt (p .., o_sub σ ty i) |-- [| is_Some (size_of σ ty) |].
+
+    Axiom type_ptr_o_base : forall derived base p,
+      class_derives _ derived base ->
+      type_ptr (Tnamed derived) p ⊢ type_ptr (Tnamed base) (p .., _base derived base).
   End with_cpp.
 End VALID_PTR.
