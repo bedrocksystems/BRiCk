@@ -46,7 +46,7 @@ Module canonical_tu.
   Proof. solve_decision. Qed.
 
   Definition tu_to_canon (tu : translation_unit) : translation_unit_canon :=
-    let (s, g, bo) := tu in Build_translation_unit_canon (im_to_gmap s) (im_to_gmap g) bo.
+    let (s, g, init, bo) := tu in Build_translation_unit_canon (im_to_gmap s) (im_to_gmap g) bo.
   #[local] Definition genv_to_canon σ : genv_canon :=
     let (tu, sz) := σ in Build_genv_canon (tu_to_canon tu) sz.
 End canonical_tu.

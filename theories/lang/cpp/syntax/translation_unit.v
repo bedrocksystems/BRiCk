@@ -471,6 +471,47 @@ Goal: enable recursion on proofs of [complete_type_table], e.g. for defining
 [anyR] (FM-215).
 *)
 
+Variant GlobalInit : Set :=
+  (* initialization by an expression *)
+| ExprInit (_ : Expr)
+  (* zero initialization *)
+| ZeroInit
+  (* declaration will be initialized from within a function.
+     The C++ standard states that these need to be initialized
+     in a concurrency-safe way; however, in practice it is common
+     to disable this functionality in embedded code using
+     [-fno-threadsafe-statics]. The boolean attached to this
+     determines whether *the compiler* guarantees there is at most
+     a single call to this constructor.
+
+     See https://eel.is/c++draft/stmt.dcl#3
+   *)
+| FunctionInit (at_most_once : bool).
+
+
+(** [GlobalInitializer] represents an initializer for a
+    global variable.
+ *)
+Record GlobalInitializer : Set :=
+  { g_name : obj_name
+  ; g_type : type
+  ; g_init : GlobalInit
+  }.
+
+(** An initialization block is a sequence of variable initializers
+    that will be run when the compilation unit is loaded.
+
+    Note that C++ guarantees the order of some initialization, but
+    the order of template initialized globals is not specified by the
+    standard.
+
+    This means that, to be completely precise, this type needs to be
+    something a bit more exotic that permits concurrent initialization.
+ *)
+Definition InitializerBlock : Set :=
+  list GlobalInitializer.
+#[global] Instance InitializerBlock_empty : Empty InitializerBlock := nil.
+
 (**
 A [translation_unit] value represents all the statically known information
 about a C++ translation unit, that is, a source file.
@@ -480,6 +521,7 @@ a translation unit a "singleton" value in this monoid? *)
 Record translation_unit : Type :=
 { symbols    : symbol_table
 ; globals    : type_table
+; initializer : InitializerBlock
 ; byte_order : endian
 }.
 

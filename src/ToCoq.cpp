@@ -92,6 +92,9 @@ ToCoqConsumer::toCoqModule(clang::ASTContext *ctxt,
                 assert(ctxt->getTargetInfo().isLittleEndian());
                 print.output() << "Little";
             }
+
+            // TODO I still need to generate the initializer
+
             print.output() << "." << fmt::outdent << fmt::line;
         }
     }

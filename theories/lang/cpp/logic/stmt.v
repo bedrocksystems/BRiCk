@@ -302,6 +302,18 @@ Module Type Stmt.
              | nil => k ρ free
              | d :: ds => wp_decl ρ ρ_init' d (fun ρ free' => continue ds ρ k (FreeTemps.seq free' free))
              end) ds ρ k free)
+      | Dinit ts nm ty init =>
+        let do_init :=
+            match init with
+            | None => default_initialize ty (_global nm) (k ρ)
+            | Some init => wp_init ρ_init ty (_global nm) init (k ρ)
+            end
+        in
+        if ts then
+          (* thread safe initialization is not currently supported *)
+          False%I
+        else
+          do_init (* NOTE: this currently consumes the [tblockR] *)
       end.
 
     Lemma wp_decl_frame : forall ds ρ ρ_init m m',
@@ -316,6 +328,10 @@ Module Type Stmt.
         { iIntros "X" (??) "Y". iApply "X". eauto. }
         { iIntros "x" (??). iApply IH.
           iIntros (??) "Z". iRevert "Z". iApply (IHl with "x"); eauto. } }
+      { case_match; eauto.
+        case_match.
+        { iIntros "?"; iApply wp_init_frame => //. }
+        { iIntros "?"; iApply default_initialize_frame => //. } }
     Qed.
 
     Fixpoint wp_decls (ρ ρ_init : region) (ds : list VarDecl)

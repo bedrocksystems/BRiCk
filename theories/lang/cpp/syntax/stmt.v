@@ -17,7 +17,9 @@ Proof. solve_decision. Defined.
 
 Inductive VarDecl : Set :=
 | Dvar (name : localname) (_ : type) (init : option Expr)
-| Ddecompose (_ : Expr) (anon_var : ident) (_ : list VarDecl).
+| Ddecompose (_ : Expr) (anon_var : ident) (_ : list VarDecl)
+  (* initialization of a function-local [static]. See https://eel.is/c++draft/stmt.dcl#3 *)
+| Dinit (thread_safe : bool) (name : obj_name) (_ : type) (init : option Expr).
 Instance: EqDecision VarDecl.
 Proof.
   refine (fix dec (x y : VarDecl) : {x = y} + {x <> y} :=
@@ -35,6 +37,11 @@ Proof.
               | left pf => left _
               | right pf => right _
               end
+            | Dinit xts x tx ix , Dinit yts y ty iy =>
+              match decide (xts = yts /\ x = y /\ tx = ty /\ ix = iy) with
+              | left pf => left _
+              | right pf => right _
+              end
             | _ , _ => right _
             end); try solve [ intro pf; inversion pf ].
   { destruct pf as [ ? [ ? ? ] ].
@@ -43,6 +50,8 @@ Proof.
   { destruct pf' as [ ? ? ]; f_equal; assumption. }
   { intro zz; inversion zz; apply pf'; tauto. }
   { intro. apply pf. inversion H; auto. }
+  { by destruct pf as [ -> [ -> [ -> -> ] ] ]. }
+  { intro. apply pf. inversion H; tauto. }
 Defined.
 
 Inductive Stmt : Set :=
