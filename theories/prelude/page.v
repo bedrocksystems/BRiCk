@@ -42,6 +42,18 @@ Proof.
     (λ n, {| read := n.1.1 ; write := n.1.2 ; uexec := n.2.1 ; sexec := n.2.2 |})).
   abstract (by intros []).
 Qed.
+
+Definition is_r (a : attrs.t) : bool :=
+  a.(read).
+
+Definition is_rw (a : attrs.t) : bool :=
+  a.(read) && a.(write).
+
+Definition is_rwux (a : attrs.t) : bool :=
+  is_rw a && a.(uexec).
+
+Definition is_rwsx (a : attrs.t) : bool :=
+  is_rw a && a.(sexec).
 End attrs.
 
 (** page table levels, 0 is the smallest page table level *)
