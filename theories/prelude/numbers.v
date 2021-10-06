@@ -157,16 +157,32 @@ Definition resizeN {A} n := resize (A := A) (N.to_nat n).
 Definition rotateN {A} n xs :=
   dropN (A := A) (n mod lengthN xs) xs ++ takeN (A := A) (n mod lengthN xs) xs.
 
+(* Arguably misplaced. *)
+Lemma elem_of_seq (len start n : nat) :
+  n ∈ seq start len ↔ start <= n < start + len.
+Proof. by rewrite elem_of_list_In in_seq. Qed.
+
 Section listN.
   #[local] Open Scope N_scope.
   Context {A : Type}.
+
+  Implicit Type (x : A) (n m : N).
 
   Lemma N2Nat_inj_le n m :
     n ≤ m ->
     (N.to_nat n <= N.to_nat m)%nat.
   Proof. lia. Qed.
 
-  Implicit Type (x : A) (n m : N).
+  Lemma elem_of_seqN (len start n : N) :
+    n ∈ seqN start len ↔ start <= n < start + len.
+  Proof.
+    rewrite /seqN -{1} (N2Nat.id n) elem_of_list_fmap_inj.
+    rewrite elem_of_seq. lia.
+  Qed.
+
+  Lemma Forall_seqN P (i n : N) :
+    List.Forall P (seqN i n) ↔ (∀ j : N, i <= j < i + n → P j).
+  Proof. rewrite Forall_forall. by setoid_rewrite elem_of_seqN. Qed.
 
   (* TODO: extend the theory of [lengthN], we have few lemmas here. *)
   Lemma nil_lengthN :

@@ -38,7 +38,7 @@ Implicit Types (vt : validity_type) (σ resolve : genv).
 Implicit Types (n : N) (z : Z).
 
 (* Namespace for the invariants of the C++ abstraction's ghost state. *)
-Definition pred_ns : namespace := (nroot .@ "bedrock" .@ "lang" .@ "cpp_logic")%bs.
+Definition pred_ns : namespace := nroot .@@ "bedrock" .@@ "lang" .@@ "cpp_logic".
 
 Module Type CPP_LOGIC (Import INTF : VALUES_INTF) (Import CC : CPP_LOGIC_CLASS).
 
