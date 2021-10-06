@@ -36,12 +36,6 @@ Proof.
 Qed.
 End attrs.
 
-(* XXX Module [base] is a compatibility hack that will be inlined. *)
-Module Export base.
-#[deprecated(note="")]
-Notation Attrs := attrs.t (only parsing).
-End base.
-
 (** page table levels, 0 is the smallest page table level *)
 Definition Level : Set := nat.
 Bind Scope nat_scope with Level.
