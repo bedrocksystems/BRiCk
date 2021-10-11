@@ -428,7 +428,9 @@ public:
             cprint.printObjName(vd, print);
             print.end_ctor();
 
-            cprint.printExprAndValCat(expr->getSubExpr(), print, li);
+            cprint.printValCat(expr->getSubExpr(), print);
+            print.output() << fmt::nbsp;
+            cprint.printExpr(expr->getSubExpr(), print, li);
             done(expr, print, cprint);
 
         } else {
@@ -436,7 +438,9 @@ public:
             printCastKind(print.output(), expr->getCastKind());
 
             print.output() << fmt::nbsp;
-            cprint.printExprAndValCat(expr->getSubExpr(), print, li);
+            cprint.printValCat(expr->getSubExpr(), print);
+            print.output() << fmt::nbsp;
+            cprint.printExpr(expr->getSubExpr(), print, li);
             done(expr, print, cprint);
         }
     }
@@ -510,7 +514,10 @@ public:
         }
         print.output() << fmt::nbsp;
 
-        cprint.printExprAndValCat(expr->getSubExpr(), print, li);
+        cprint.printValCat(expr->getSubExpr(), print);
+        print.output() << fmt::nbsp;
+        cprint.printExpr(expr->getSubExpr(), print, li);
+
         done(expr, print, cprint);
     }
 
@@ -1151,8 +1158,10 @@ public:
         print.output() << index << fmt::nbsp;
 
         // this is the source array which we are initializing
-        cprint.printExprAndValCat(expr->getCommonExpr()->getSourceExpr(), print,
-                                  li);
+        auto src = expr->getCommonExpr()->getSourceExpr();
+        cprint.printValCat(src, print);
+        print.output() << fmt::nbsp;
+        cprint.printExpr(src, print, li);
 
         // this is the expression that is evaluated
         li.inc_index_count();

@@ -173,7 +173,7 @@ Inductive Expr : Set :=
   (* ^ these are specialized because they have special control flow semantics *)
 
 | Ecall    (_ : Expr) (_ : list Expr) (_ : type)
-| Ecast    (_ : Cast) (_ : ValCat * Expr) (_ : type)
+| Ecast    (_ : Cast) (_ : ValCat) (e : Expr) (_ : type)
 
 | Emember  (_ : ValCat) (obj : Expr) (_ : field) (_ : type)
   (* TODO: maybe replace the left branch use [Expr] here? *)
@@ -205,7 +205,7 @@ Inductive Expr : Set :=
 | Eva_arg (_ : Expr) (_ : type)
 | Epseudo_destructor (_ : type) (_ : Expr)
 
-| Earrayloop_init (oname : N) (src : ValCat * Expr) (level : N) (length : N) (init : Expr) (_ : type)
+| Earrayloop_init (oname : N) (src_vc : ValCat) (src : Expr) (level : N) (length : N) (init : Expr) (_ : type)
 | Earrayloop_index (level : N) (_ : type)
 | Eopaque_ref (name : N) (_ : type)
 
