@@ -56,7 +56,7 @@ Module Import wrapN_notations.
   Instance wrapNN_add {Phant} : @WrapNAdd (WrapN Phant) N (WrapN Phant) :=
     fun w n => MkWrapN (unwrapN w + n).
   Instance NwrapN_add {Phant} : @WrapNAdd N (WrapN Phant) (WrapN Phant) :=
-    fun n w => MkWrapN (unwrapN w + n).
+    fun n w => MkWrapN (n + unwrapN w).
   Instance wrapNwrapN_add {Phant} : @WrapNAdd (WrapN Phant) (WrapN Phant) (WrapN Phant) :=
     fun w1 w2 => MkWrapN (unwrapN w1 + unwrapN w2).
   Notation "0" := (MkWrapN 0) (only parsing) : wrapN_scope.
@@ -74,7 +74,7 @@ Section seqW.
   #[local] Open Scope wrapN_scope.
 
   Lemma wrapN_add_0N_l w : 0%N + w = w.
-  Proof. by rewrite /= N.add_0_r. Qed.
+  Proof. by rewrite /= N.add_0_l. Qed.
   Lemma wrapN_add_0w_l w : 0 + w = w.
   Proof. by rewrite /= N.add_0_l. Qed.
   Lemma wrapN_add_0N_r w : w + 0%N = w.
