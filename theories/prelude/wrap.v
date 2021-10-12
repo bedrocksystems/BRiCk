@@ -9,19 +9,20 @@ From bedrock.prelude Require Import numbers.
 
 Section type.
   #[local] Set Primitive Projections.
-  (* a generic wrapper for types isomorphic to N *)
+  (** A generic wrapper for types isomorphic to N *)
   Record WrapN {Phant : Set} : Set := { unwrapN : N }.
 End type.
 
 Arguments WrapN Phant : clear implicits.
 
-(* using the wrapper means we define these instances only once. *)
+(* Using the wrapper means we define these instances/lemmas only once. *)
+
 Lemma cancel_unwrapN {Phant} (x : WrapN Phant) :
   {| unwrapN := unwrapN x |} = x.
-Proof. by reflexivity. Qed.
+Proof. done. Qed.
 
 
-(* this instance is useful in combination with [Refine1_Cancel]. *)
+(** This instance is useful in combination with [Refine1_Cancel]. *)
 #[global] Instance cancel_Build_WrapN_unwrapN {Phant} :
   Cancel eq (Build_WrapN Phant) unwrapN.
 Proof. exact cancel_unwrapN. Qed.
@@ -47,7 +48,7 @@ Proof. by intros ?? [=]. Qed.
     but that doesn't seem possible? *)
 #[global] Bind Scope wrapN_scope with WrapN.
 
-Module wrapN_notations.
+Module Import wrapN_notations.
   Class WrapNAdd {T U R : Set} := wrapN_add : T -> U -> R.
   Instance wrapNN_add {Phant} : @WrapNAdd (WrapN Phant) N (WrapN Phant) :=
     fun w n => Build_WrapN Phant (unwrapN w + n).
@@ -59,17 +60,15 @@ Module wrapN_notations.
   Infix "+" := wrapN_add (only parsing) : wrapN_scope.
 End wrapN_notations.
 
-Import wrapN_notations.
-
 Section seqW.
   Context {Phant : Set}.
   Implicit Types (w : WrapN Phant).
   #[local] Open Scope wrapN_scope.
 
   Lemma wrapN_add_0N_r w : w + 0%N = w.
-  Proof. by rewrite /wrapN_add /wrapNN_add N.add_0_r cancel_unwrapN. Qed.
+  Proof. by rewrite /wrapN_add /wrapNN_add N.add_0_r. Qed.
   Lemma wrapN_add_0w_r w : w + 0 = w.
-  Proof. by rewrite /wrapN_add /wrapNwrapN_add N.add_0_r cancel_unwrapN. Qed.
+  Proof. by rewrite /wrapN_add /wrapNwrapN_add N.add_0_r. Qed.
 
   Definition wrapN_succ w : WrapN Phant :=
     Build_WrapN _ $ N.succ $ unwrapN w.
