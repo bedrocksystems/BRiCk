@@ -73,6 +73,10 @@ Section seqW.
   Implicit Types (w : WrapN Phant).
   #[local] Open Scope wrapN_scope.
 
+  Lemma wrapN_add_0N_l w : 0%N + w = w.
+  Proof. by rewrite /= N.add_0_r. Qed.
+  Lemma wrapN_add_0w_l w : 0 + w = w.
+  Proof. by rewrite /= N.add_0_l. Qed.
   Lemma wrapN_add_0N_r w : w + 0%N = w.
   Proof. by rewrite /= N.add_0_r. Qed.
   Lemma wrapN_add_0w_r w : w + 0 = w.
