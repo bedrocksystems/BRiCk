@@ -63,15 +63,20 @@ Module Import wrapN_notations.
   Infix "+" := wrapN_add (only parsing) : wrapN_scope.
 End wrapN_notations.
 
+#[global] Arguments wrapNN_add {_} _ _ /.
+#[global] Arguments NwrapN_add {_} _ _ /.
+#[global] Arguments wrapNwrapN_add {_} _ _ /.
+#[global] Arguments wrapN_add {T U R _} _ _ /.
+
 Section seqW.
   Context {Phant : Set}.
   Implicit Types (w : WrapN Phant).
   #[local] Open Scope wrapN_scope.
 
   Lemma wrapN_add_0N_r w : w + 0%N = w.
-  Proof. by rewrite /wrapN_add /wrapNN_add N.add_0_r. Qed.
+  Proof. by rewrite /= N.add_0_r. Qed.
   Lemma wrapN_add_0w_r w : w + 0 = w.
-  Proof. by rewrite /wrapN_add /wrapNwrapN_add N.add_0_r. Qed.
+  Proof. by rewrite /= N.add_0_r. Qed.
 
   Definition wrapN_succ w : WrapN Phant :=
     MkWrapN $ N.succ $ unwrapN w.
