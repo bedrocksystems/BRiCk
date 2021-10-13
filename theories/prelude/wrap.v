@@ -9,36 +9,40 @@ From bedrock.prelude Require Import numbers.
 
 Section type.
   #[local] Set Primitive Projections.
-  (* a generic wrapper for types isomorphic to N *)
-  Record WrapN {Phant : Set} : Set := { unwrapN : N }.
+  (** A generic wrapper for types isomorphic to N *)
+  Record WrapN {Phant : Set} : Set := MkWrapN { unwrapN : N }.
 End type.
+Add Printing Constructor WrapN.
 
 Arguments WrapN Phant : clear implicits.
+Arguments MkWrapN {Phant} _ : assert.
 
-(* using the wrapper means we define these instances only once. *)
-Lemma cancel_unwrapN {Phant} (x : WrapN Phant) :
-  {| unwrapN := unwrapN x |} = x.
-Proof. by reflexivity. Qed.
+Notation Build_WrapN := @MkWrapN (only parsing).
+
+(* Using the wrapper means we define these instances/lemmas only once. *)
+
+Lemma cancel_unwrapN {Phant} (x : WrapN Phant) : MkWrapN (unwrapN x) = x.
+Proof. done. Qed.
 
 
-(* this instance is useful in combination with [Refine1_Cancel]. *)
+(** This instance is useful in combination with [Refine1_Cancel]. *)
 #[global] Instance cancel_Build_WrapN_unwrapN {Phant} :
-  Cancel eq (Build_WrapN Phant) unwrapN.
+  Cancel eq (@MkWrapN Phant) unwrapN.
 Proof. exact cancel_unwrapN. Qed.
 
 #[global] Instance wrapN_eq_decision {Phant} : EqDecision (WrapN Phant).
 Proof. solve_decision. Defined.
 
 #[global] Instance wrapN_countable {Phant} : Countable (WrapN Phant) :=
-  inj_countable' unwrapN (Build_WrapN _) cancel_unwrapN.
+  inj_countable' unwrapN MkWrapN cancel_unwrapN.
 
 #[global] Instance wrapN_inhabited {Phant} : Inhabited (WrapN Phant) :=
-  populate {| unwrapN := 0 |}.
+  populate (MkWrapN 0).
 
 #[global] Instance unwrapN_inj Phant : Inj eq eq (@unwrapN Phant).
 Proof. intros [] [] ?. by simplify_eq/=. Qed.
 
-#[global] Instance Build_WrapN_inj Phant : Inj eq eq (Build_WrapN Phant).
+#[global] Instance MkWrapN_inj Phant : Inj eq eq (@MkWrapN Phant).
 Proof. by intros ?? [=]. Qed.
 
 #[global] Declare Scope wrapN_scope.
@@ -47,42 +51,49 @@ Proof. by intros ?? [=]. Qed.
     but that doesn't seem possible? *)
 #[global] Bind Scope wrapN_scope with WrapN.
 
-Module wrapN_notations.
+Module Import wrapN_notations.
   Class WrapNAdd {T U R : Set} := wrapN_add : T -> U -> R.
   Instance wrapNN_add {Phant} : @WrapNAdd (WrapN Phant) N (WrapN Phant) :=
-    fun w n => Build_WrapN Phant (unwrapN w + n).
+    fun w n => MkWrapN (unwrapN w + n).
   Instance NwrapN_add {Phant} : @WrapNAdd N (WrapN Phant) (WrapN Phant) :=
-    fun n w => Build_WrapN Phant (unwrapN w + n).
+    fun n w => MkWrapN (n + unwrapN w).
   Instance wrapNwrapN_add {Phant} : @WrapNAdd (WrapN Phant) (WrapN Phant) (WrapN Phant) :=
-    fun w1 w2 => Build_WrapN Phant (unwrapN w1 + unwrapN w2).
-  Notation "0" := (Build_WrapN _ 0) (only parsing) : wrapN_scope.
+    fun w1 w2 => MkWrapN (unwrapN w1 + unwrapN w2).
+  Notation "0" := (MkWrapN 0) (only parsing) : wrapN_scope.
   Infix "+" := wrapN_add (only parsing) : wrapN_scope.
 End wrapN_notations.
 
-Import wrapN_notations.
+#[global] Arguments wrapNN_add {_} _ _ /.
+#[global] Arguments NwrapN_add {_} _ _ /.
+#[global] Arguments wrapNwrapN_add {_} _ _ /.
+#[global] Arguments wrapN_add {T U R _} _ _ /.
 
 Section seqW.
   Context {Phant : Set}.
   Implicit Types (w : WrapN Phant).
   #[local] Open Scope wrapN_scope.
 
+  Lemma wrapN_add_0N_l w : 0%N + w = w.
+  Proof. by rewrite /= N.add_0_l. Qed.
+  Lemma wrapN_add_0w_l w : 0 + w = w.
+  Proof. by rewrite /= N.add_0_l. Qed.
   Lemma wrapN_add_0N_r w : w + 0%N = w.
-  Proof. by rewrite /wrapN_add /wrapNN_add N.add_0_r cancel_unwrapN. Qed.
+  Proof. by rewrite /= N.add_0_r. Qed.
   Lemma wrapN_add_0w_r w : w + 0 = w.
-  Proof. by rewrite /wrapN_add /wrapNwrapN_add N.add_0_r cancel_unwrapN. Qed.
+  Proof. by rewrite /= N.add_0_r. Qed.
 
   Definition wrapN_succ w : WrapN Phant :=
-    Build_WrapN _ $ N.succ $ unwrapN w.
+    MkWrapN $ N.succ $ unwrapN w.
 
   Lemma unwrapN_succ_inj w : unwrapN (wrapN_succ w) = N.succ (unwrapN w).
   Proof. done. Qed.
 
   Definition seqW w (sz : N) : list (WrapN Phant) :=
-    Build_WrapN _ <$> seqN (unwrapN w) sz.
+    MkWrapN <$> seqN (unwrapN w) sz.
 
   Lemma cons_seqW len start :
     start :: seqW (wrapN_succ start) len = seqW start (N.succ len).
-  Proof. by rewrite /seqW -cons_seqN fmap_cons cancel_unwrapN. Qed.
+  Proof. by rewrite /seqW -cons_seqN. Qed.
 
   (* Lifts [seqN_S_end_app] *)
   Lemma seqW_S_end_app w n : seqW w (N.succ n) = seqW w n ++ [w + n].
@@ -108,7 +119,7 @@ Module Type wrapper.
   https://github.com/coq/coq/issues/14988 *)
   #[global] Bind Scope wrapN_scope with t.
 
-  Definition of_N : N -> t := Build_WrapN Phant.
+  Definition of_N : N -> t := MkWrapN.
   Definition to_N : t -> N := unwrapN.
   Lemma of_to_N x : of_N (to_N x) = x.
   Proof. apply cancel_unwrapN. Qed.
