@@ -22,6 +22,10 @@ Lemma repeatN_replicateN {A} (x : A) n :
   repeat x (N.to_nat n) = replicateN n x.
 Proof. apply repeat_replicate. Qed.
 
+Lemma repeat_replicateN {A} (x : A) n :
+  repeat x n = replicateN (N.of_nat n) x.
+Proof. by rewrite repeat_replicate /replicateN Nat2N.id. Qed.
+
 Lemma replicateN_0 {A} (x : A) : replicateN 0 x = [].
 Proof. done. Qed.
 
