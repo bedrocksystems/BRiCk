@@ -41,12 +41,6 @@ Section defs.
   Definition type_ptrR := type_ptrR_aux.(unseal).
   Definition type_ptrR_eq : @type_ptrR = _ := type_ptrR_aux.(seal_eq).
 
-  Definition refR_def (ty : type) (p : ptr) : Rep :=
-    as_Rep (fun addr => [| addr = p |]).
-  Definition refR_aux : seal (@refR_def). Proof. by eexists. Qed.
-  Definition refR := refR_aux.(unseal).
-  Definition refR_eq : @refR = _ := refR_aux.(seal_eq).
-
   (* this is the core definition that the program logic will be based on.
      it is really an assertion about assembly.
    *)
@@ -64,7 +58,6 @@ End defs.
 
 Global Instance: Params (@cptrR) 3 := {}.
 
-Arguments refR {_ Σ} ty v : rename.
 Arguments cptrR {_ Σ resolve} _ : rename.
 
 Arguments type_ptrR {_ Σ σ} _%bs.
@@ -261,13 +254,6 @@ Section with_cpp.
   Global Instance anyR_observe_frac_valid resolve ty (q : Qp) :
     Observe [| q ≤ 1 |]%Qp (anyR ty q).
   Proof. rewrite anyR_eq. apply _. Qed.
-
-  Global Instance refR_persistent ty p : Persistent (refR ty p).
-  Proof. rewrite refR_eq. apply _. Qed.
-  Global Instance refR_affine ty p : Affine (refR ty p).
-  Proof. rewrite refR_eq. apply _. Qed.
-  Global Instance refR_timeless ty p : Timeless (refR ty p).
-  Proof. rewrite refR_eq. apply _. Qed.
 
   #[global] Instance cptrR_persistent {resolve s} : Persistent (cptrR s).
   Proof. rewrite cptrR_eq. apply _. Qed.

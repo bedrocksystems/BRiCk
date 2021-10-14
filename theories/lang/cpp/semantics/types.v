@@ -47,8 +47,8 @@ Qed.
 Fixpoint size_of (resolve : genv) (t : type) : option N :=
   match t with
   | Tpointer _ => Some (pointer_size resolve)
-  | Treference _ => None
-  | Trv_reference _ => None
+  | Tref _ => None
+  | Trv_ref _ => None
   | Tint sz _ => Some (bytesN sz)
   | Tvoid => None
   | Tarray t n => N.mul n <$> size_of resolve t

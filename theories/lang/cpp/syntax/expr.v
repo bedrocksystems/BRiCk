@@ -155,10 +155,11 @@ Inductive Expr : Set :=
   * operator shows up as a function call, not a `Eunop` or `Ebinop`.
   * this includes the assignment operator for classes.
   *)
-| Ederef (_ : Expr) (_ : type) (* XXX type = strip pointer from (type_of e) *)
-| Eaddrof (_ : Expr)
-| Eassign (_ _ : Expr) (_ : type) (* = type of lhs, if not dependent *)
-| Eassign_op (_ : BinOp) (_ _ : Expr) (_ : type)
+| Eread_ref (e : Expr) (* type = type_of e *)
+| Ederef (e : Expr) (_ : type) (* XXX type = strip [Tptr] from [type_of e] *)
+| Eaddrof (e : Expr) (* type = Tptr (type_of e) *)
+| Eassign (e _ : Expr) (_ : type) (* XXX type = type_of e *)
+| Eassign_op (_ : BinOp) (e _ : Expr) (_ : type) (* XXX = type_of e *)
   (* ^ these are specialized because they are common *)
 
 | Epreinc (_ : Expr) (_ : type)
@@ -167,9 +168,9 @@ Inductive Expr : Set :=
 | Epostdec (_ : Expr) (_ : type)
   (* ^ special unary operators *)
 
-| Eseqand (_ _ : Expr)
-| Eseqor  (_ _ : Expr)
-| Ecomma (vc : ValCat) (e1 e2 : Expr)
+| Eseqand (_ _ : Expr) (* type = Tbool *)
+| Eseqor  (_ _ : Expr) (* type = Tbool *)
+| Ecomma (vc : ValCat) (e1 e2 : Expr) (* type = type_of e2 *)
   (* ^ these are specialized because they have special control flow semantics *)
 
 | Ecall    (_ : Expr) (_ : list Expr) (_ : type)

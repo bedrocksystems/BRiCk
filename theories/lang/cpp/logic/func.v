@@ -136,26 +136,31 @@ Section with_cpp.
       just be a list of [ptr] and the signature would be:
       [bind_vars : list (ident * type) -> list ptr -> region -> region]
    *)
-  Fixpoint bind_vars (args : list (ident * type)) (vals : list val) (r : region) (Q : region -> FreeTemps -> mpred) : mpred :=
+  Fixpoint bind_vars (args : list (ident * type)) (vals : list val) (ρ : region)
+           (Q : region -> FreeTemps -> mpred) : mpred :=
     match args , vals with
-    | nil , nil => Q r FreeTemps.id
+    | nil , nil => Q ρ FreeTemps.id
     | (x,ty) :: xs , v :: vs  =>
-      match drop_qualifiers ty with
+      let rty := erase_qualifiers ty in
+      match rty with
       | Tqualified _ t => ERROR "unreachable" (* unreachable *)
-      | Treference    _
-      | Trv_reference _ =>
+      | Tref    ty
+      | Trv_ref ty =>
+        let rty := Tref $ erase_qualifiers ty in
         match v with
-        | Vptr p => bind_vars xs vs (Rbind_check x p r) Q
+        | Vptr p => Forall a, a |-> primR rty 1 (Vptr p) -*
+                             bind_vars xs vs (Rbind_check x a ρ) (fun r free => Q r (FreeTemps.delete rty a >*> free))
+          (* NOTE: when we create a reference, we always use [Tref] *)
         | _ => ERROR $ "non-pointer passed for reference"
         end
       | Tnamed nm =>
         match v with
-        | Vptr p => bind_vars xs vs (Rbind_check x p r) Q
+        | Vptr p => bind_vars xs vs (Rbind_check x p ρ) Q
         | _ => ERROR $ "non-pointer passed for aggregate (named " ++ nm ++ ")"
         end
       | _              =>
-        Forall a : ptr, a |-> primR (erase_qualifiers ty) 1 v -*
-        bind_vars xs vs (Rbind_check x a r) (fun r free => Q r (FreeTemps.delete (erase_qualifiers ty) a |*| free))
+        Forall a : ptr, a |-> primR rty 1 v -*
+        bind_vars xs vs (Rbind_check x a ρ) (fun r free => Q r (FreeTemps.delete rty a >*> free))
       end
 
     (* the (more) correct definition would rely on the caller to create primitive
@@ -176,10 +181,11 @@ Section with_cpp.
     induction ts; destruct args => /= *; eauto.
     { iIntros "A B"; iApply "A"; eauto. }
     { iIntros "A B". destruct a.
-      destruct (typing.drop_qualifiers t);
+      destruct (erase_qualifiers t);
         try solve
             [ iIntros (?) "X"; iDestruct ("B" with "X") as "B"; iRevert "B";
               iApply IHts; iIntros (? ?) "Z"; iApply "A"; iFrame
+            | destruct v; eauto; iIntros (?) "a"; iSpecialize ("B" with "a"); iRevert "B"; iApply IHts; iIntros (??); iApply "A"
             | destruct v; eauto; iRevert "B"; iApply IHts; eauto ]. }
   Qed.
 
@@ -266,7 +272,6 @@ Section with_cpp.
           match is' with
           | nil =>
             (* there is a *unique* initializer for this field *)
-            this ., offset_for cls i.(init_path) |-> tblockR (erase_qualifiers i.(init_type)) 1 -*
             wpi ⊤ ρ cls this i (wpi_members ρ cls this members inits Q)
           | _ =>
             (* there are multiple initializers for this field *)
@@ -295,7 +300,6 @@ Section with_cpp.
         ERROR $ "missing base class initializer: " ++ cls
       | i :: nil =>
         (* there is an initializer for this class *)
-        this ., offset_for cls i.(init_path) |-> tblockR (erase_qualifiers i.(init_type)) 1 -*
         wpi ⊤ ρ cls this i (wpi_bases ρ cls this bases inits Q)
       | _ :: _ :: _ =>
         (* there are multiple initializers for this, so we fail *)
@@ -312,7 +316,7 @@ Section with_cpp.
     intros.
     case_match; eauto.
     case_match; eauto.
-    iIntros "a b c"; iDestruct ("b" with "c") as "b"; iRevert "b".
+    iIntros "a".
     iApply wpi_frame => //.
     by iApply IHbases.
   Qed.
@@ -328,7 +332,7 @@ Section with_cpp.
       iIntros (?); iApply interp_frame. by iApply IHflds. }
     { case_match; eauto.
       case_match; eauto.
-      iIntros "a b c"; iDestruct ("b" with "c") as "b". iRevert "b".
+      iIntros "a".
       iApply wp_initialize_frame => //; iIntros (?); iApply interp_frame; by iApply IHflds. }
   Qed.
 
@@ -339,8 +343,8 @@ Section with_cpp.
       match inits with
       | _ :: nil =>
         if bool_decide (drop_qualifiers ty = Tnamed cls) then
-          (* this is a delegating constructor, simply delegate *)
-          this |-> tblockR ty 1 -* wp_init ⊤ ρ (Tnamed cls) this e (fun free => interp free Q)
+          (* this is a delegating constructor, simply delegate. *)
+          wp_init ⊤ ρ (Tnamed cls) this e (fun free => interp free Q)
         else
           (* the type names do not match, this should never happen *)
           ERROR "type name mismatch"
@@ -367,8 +371,8 @@ Section with_cpp.
     { case_match => //.
       destruct l; eauto.
       case_match; eauto.
-      iIntros "x y z".
-      iDestruct ("y" with "z") as "y"; iRevert "y"; iApply wp_init_frame => //.
+      iIntros "x".
+      iApply wp_init_frame => //.
       iIntros (?); by iApply interp_frame. }
     { iIntros "a"; iApply wpi_bases_frame.
       rewrite /init_identity.
@@ -390,7 +394,7 @@ Section with_cpp.
       | _ :: nil =>
         if bool_decide (drop_qualifiers ty = Tnamed cls) then
           (* this is a delegating constructor, simply delegate *)
-          this |-> tblockR ty 1 -* wp_init ⊤ ρ (Tnamed cls) this e (fun free => interp free Q)
+          wp_init ⊤ ρ (Tnamed cls) this e (fun free => interp free Q)
         else
           (* the type names do not match, this should never happen *)
           ERROR "type name mismatch"
@@ -413,8 +417,7 @@ Section with_cpp.
     { case_match => //.
       destruct l; eauto.
       case_bool_decide; eauto.
-      iIntros "X Y Z".
-      iDestruct ("Y" with "Z") as "Y"; iRevert "Y".
+      iIntros "X".
       iApply wp_init_frame. reflexivity. iIntros (?); by iApply interp_frame. }
   Qed.
 
@@ -432,16 +435,27 @@ Section with_cpp.
    *)
   Definition type_valdity : type -> ptr -> mpred := fun _ _ => emp%I.
 
-  (* note(gmm): supporting virtual inheritence will require us to add
-   * constructor kinds here
-   *
-   * NOTE that the constructor semantics consumes the entire [blockR] of the object
-   * that is being constructed and the C++ abstract machine breaks this block down
-   * and provides each sub-block immediately before the initialization of the field
-   * or base.
-   *
-   * Alternative: it would also be sound for the class to provide the [tblockR]
-   * for each sub-object up front.
+  (**
+     [wp_ctor ctor args Q] is the weakest pre-condition (with post-condition [Q])
+     running the constructor [ctor] with arguments [args].
+
+     Note that the constructor semantics consumes the entire [blockR] of the object
+     that is being constructed and the C++ abstract machine breaks this block down
+     producing usable† memory.
+     **Alternative**: Because constructor calls are *always* syntactically distinguished
+     (since C++ does not allow taking a pointer to a constructor), we know that any
+     invocation of a constructor will be from a [wp_init] which means that the C++
+     abstract machine will already own the memory (see the documentation for [wp_init]
+     in [wp.v]). In order to enforce this semantically within the abstract machine,
+     we would need a new predicate to say "a constructor with the given specification"
+     (rather than simply desugaring this to "a function with the given specification").
+
+     NOTE: supporting virtual inheritence will require us to add
+     constructor kinds here
+
+     † It is not necessarily initialized, e.g. because primitive fields are not
+       initialized (you get an [uninitR]), but you will get something that implies
+       [type_ptr].
    *)
   Definition wp_ctor (ctor : Ctor) (args : list val) (Q : val -> epred) : mpred :=
     match ctor.(c_body) with
@@ -497,14 +511,14 @@ Section with_cpp.
     match bases with
     | nil => Q
     | base :: bases =>
-      delete_val (Tnamed base) (this ., _base cls base) (wpd_bases cls this bases Q)
+      delete_val false (Tnamed base) (this ., _base cls base) (fun _ _ => wpd_bases cls this bases Q)
     end.
 
   Lemma wpd_bases_frame cls this : forall bases Q Q',
       Q -* Q' |-- wpd_bases cls this bases Q -* wpd_bases cls this bases Q'.
   Proof.
-    induction bases => /=; eauto.
-    intros. by iIntros "X"; iApply delete_val_frame; iApply IHbases.
+    induction bases; eauto.
+    intros. iIntros "X". iApply delete_val_frame. iIntros (??); iApply IHbases. done.
   Qed.
 
   Fixpoint wpd_members
@@ -514,19 +528,26 @@ Section with_cpp.
     match members with
     | nil => Q
     | member :: members =>
-      delete_val member.(mem_type) (this ., _field {| f_name := member.(mem_name) ; f_type := cls |})
-           (wpd_members cls this members Q)
+      delete_val false member.(mem_type) (this ., _field {| f_name := member.(mem_name) ; f_type := cls |})
+           (fun _ _ => wpd_members cls this members Q)
     end.
 
   Lemma wpd_members_frame cls this : forall members Q Q',
       Q -* Q' |-- wpd_members cls this members Q -* wpd_members cls this members Q'.
   Proof.
     induction members => /=; eauto.
-    intros. by iIntros "X"; iApply delete_val_frame; iApply IHmembers.
+    intros. by iIntros "X"; iApply delete_val_frame; iIntros (??); iApply IHmembers.
   Qed.
 
   (** [wp_dtor dtor args Q] defines the semantics of the destructor [dtor] when
       applied to [args] with post-condition [Q].
+
+      Note that destructors are not always syntactically distinguished from
+      function calls (e.g. in the case of [c.~C()]). Therefore, in order to
+      have a uniform specification, they need to return the underlying memory
+      (i.e. a [this |-> tblockR (Tnamed cls) 1]) to the caller.
+      When the program is destroying this object, e.g. due to stack allocation,
+      this resource will be consumed immediately.
    *)
   Definition wp_dtor (dtor : Dtor) (args : list val)
              (Q : val -> epred) : mpred :=
