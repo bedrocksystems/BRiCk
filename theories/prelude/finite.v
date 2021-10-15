@@ -247,7 +247,7 @@ Module finite_bits (BT : finite_bitmask_type_intf).
   Lemma of_bits_0 : of_bits 0 = ∅.
   Proof. by rewrite /of_bits BT.to_list_0. Qed.
 
-  Definition setbit (b : BT.t) (n : N) := N.setbit n (BT.to_bit b).
+  Definition setbit (b : BT.t) (n : N) : N := N.setbit n (BT.to_bit b).
   Notation setbit_alt b n := (N.lor (BT.to_bitmask b) n).
 
   Lemma setbit_0 x : setbit x 0 = BT.to_bitmask x.
@@ -299,6 +299,12 @@ Module finite_bits (BT : finite_bitmask_type_intf).
   Definition masked_opt (mask : N) (x : t) : option t :=
     let res := masked mask x in
     guard (res <> ∅); Some res.
+
+  Lemma masked_0 rights : masked 0 rights = ∅.
+  Proof. by rewrite /masked of_bits_0 right_absorb_L. Qed.
+
+  Lemma masked_opt_0 rights : masked_opt 0 rights = None.
+  Proof. by rewrite /masked_opt masked_0. Qed.
 End finite_bits.
 
 
