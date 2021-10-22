@@ -47,7 +47,7 @@ For example, consider the following code:
 
   void do_dma() {
     struct dma_struct *ptr = dma_address;
-    // This examples ignores concerns about UB via data-races or the compiler reordering writes or endianness concerns or alignment
+    // This example ignores concerns about UB via data-races or the compiler reordering writes or endianness concerns or alignment
     ptr->a = ...; // (1) This write must go to dma_address + 0
     ptr->b = ...; // (2) This write must go to dma_address + 8
   }
@@ -57,7 +57,7 @@ The important point is that the writes on line `(1)` and `(2)`, must go to the a
 In particular, there must not be padding at the start of the `struct` and between `a` and `b`.
 
 How can this reasoning be justified?
-The C++ standard itself only gives light guarantees about `layout of structs <http://eel.is/c++draft/class.mem#26>`_:
+The C++ standard itself only gives light guarantees about the `layout of structs <http://eel.is/c++draft/class.mem#26>`_:
 
 .. pull-quote::
 
@@ -128,6 +128,8 @@ The C++ standard defines the `layout of unions <http://eel.is/c++draft/class.uni
 
 .. note::
 
+   .. TODO: FIX THIS SECTION UP AND ADD UP TO DATE QUOTES
+
    All members sharing the same address does not mean that the same
    pointer is valid to access all of them. In particular, accessing
    the member that is not the active member of a union is UB. This is currently
@@ -136,6 +138,8 @@ The C++ standard defines the `layout of unions <http://eel.is/c++draft/class.uni
 How is this reflected in cpp2v?
 -------------------------------
 
+.. TODO: FIX THIS SECTION UP AND ADD UP TO DATE QUOTES
+
 cpp2v does not reflect that all members of the same union have the same address.
 `Axiom decompose_union <https://gitlab.com/bedrocksystems/cpp2v-core/-/blob/232541a3a7410ac585908a35c50583007c3a391c/theories/lang/cpp/logic/layout.v#L61>`_ uses `_field` that in turn uses `offset_of` that uses opaque offset information from the translation unit.
 
@@ -143,6 +147,8 @@ cpp2v does not reflect that all members of the same union have the same address.
 
 Working with the low-level representation of objects
 ====================================================
+
+.. TODO: FIX THIS SECTION UP AND ADD UP TO DATE QUOTES
 
 Consider the following code that does not exhibit undefined behavior (can be checked using `Cerberus <https://cerberus.cl.cam.ac.uk/cerberus>`_):
 
