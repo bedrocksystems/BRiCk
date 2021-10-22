@@ -6,11 +6,11 @@
 #
 
 # General information about the project.
-project = 'BedRock FM: CPP2V Foundations'
+project = 'BedRock BRiCk'
 copyright = '2021 BedRock Systems'
 author = 'Jasper Haag'
 
-version = "0.0.1"
+version = "0.5.0"
 release = "alpha"
 
 # -*- coding: utf-8 -*-
@@ -243,7 +243,7 @@ latex_elements = {
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-    (master_doc, 'pragmaticFM.tex', 'BedRock FM: A Pragmatic Guide',
+    (master_doc, 'pragmaticFM.tex', 'BedRock BRiCk',
      'Jasper Haag', 'manual'),
 ]
 
@@ -253,7 +253,7 @@ latex_documents = [
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    (master_doc, 'pragmaticfm', 'BedRock FM: A Pragmatic Guide',
+    (master_doc, 'pragmaticfm', 'BedRock BRiCk',
      [author], 1)
 ]
 
@@ -264,7 +264,7 @@ man_pages = [
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-    (master_doc, 'PragmaticFMDocumentation', 'BedRock FM: A Pragmatic Guide',
+    (master_doc, 'PragmaticFMDocumentation', 'BedRock BRiCk',
      author, 'PragmaticFMDocumentation', 'A pragmatic guide to formal methods within BedRock.',
      'Miscellaneous'),
 ]
