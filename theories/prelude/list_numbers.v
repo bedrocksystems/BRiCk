@@ -20,6 +20,10 @@ Definition resizeN {A} n := resize (A := A) (N.to_nat n).
 Definition rotateN {A} n xs :=
   dropN (A := A) (n mod lengthN xs) xs ++ takeN (A := A) (n mod lengthN xs) xs.
 
+Lemma fmap_lengthN {A B} (f : A → B) (l : list A) :
+  lengthN (f <$> l) = lengthN l.
+Proof. by rewrite /lengthN fmap_length. Qed.
+
 Section seqN.
   Lemma cons_seqN len start :
     start :: seqN (N.succ start) len = seqN start (N.succ len).
@@ -41,6 +45,14 @@ Section seqN.
     sn = N.succ n ->
     seqN w sn = seqN w n ++ [w + n].
   Proof. move->. apply seqN_S_end_app. Qed.
+
+  Lemma seqN_lengthN len start : lengthN (seqN start len) = len.
+  Proof.
+    by rewrite /seqN fmap_lengthN /lengthN seq_length N2Nat.id.
+  Qed.
+
+  Lemma NoDup_seqN j n : NoDup (seqN j n).
+  Proof. apply /NoDup_fmap_2 /NoDup_seq. Qed.
 End seqN.
 
 Lemma repeatN_replicateN {A} (x : A) n :

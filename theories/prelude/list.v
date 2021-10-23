@@ -26,6 +26,14 @@ Section list.
   Context {A : Type}.
   Implicit Types l k : list A.
 
+  Lemma fmap_ext_in {B} (f g : A → B) l :
+    (∀ a : A, a ∈ l → f a = g a) → f <$> l = g <$> l.
+  Proof.
+    elim: l => [//|x l IHl Hext]; cbn; f_equiv.
+    { apply Hext, elem_of_cons, or_introl, eq_refl. }
+    apply IHl => y Hin. apply Hext, elem_of_cons, or_intror, Hin.
+  Qed.
+
   (** List disjointness is decidable *)
   Section disjoint_dec.
     Notation Disjoint l k :=
