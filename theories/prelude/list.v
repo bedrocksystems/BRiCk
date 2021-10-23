@@ -104,25 +104,19 @@ Section list_difference.
     - by rewrite (list_difference_cons_r y) IH -(list_difference_cons_r y).
   Qed.
 
-  Lemma list_difference_id l x :
-    (¬ x ∈ l) ->
-    list_difference l [x] = l.
+  Lemma list_difference_singleton_not_in l x :
+    x ∉ l -> list_difference l [x] = l.
   Proof.
-    intros Hin.
-    induction l; [ reflexivity | ].
-    simpl in *.
-    rewrite -> elem_of_cons in Hin.
-    rewrite decide_False; [ | intros Hax].
-    {
-      f_equal. apply IHl. tauto.
-    }
-    {
-      inversion Hax; subst; try tauto.
-      by rewrite -> @elem_of_nil in *.
-    }
+    elim: l => /= [//|y l IHl] /not_elem_of_cons [Hne Hni].
+    rewrite decide_False.
+    2: { by intros ->%elem_of_list_singleton. }
+    f_equal. apply IHl, Hni.
   Qed.
 
 End list_difference.
+
+#[deprecated(note="Use list_difference_singleton_not_in")]
+Notation list_difference_id := list_difference_singleton_not_in.
 
 Lemma tail_length {A} (l : list A):
   length (tail l) <= length l <= length (tail l) + 1.
