@@ -157,11 +157,6 @@ Definition resizeN {A} n := resize (A := A) (N.to_nat n).
 Definition rotateN {A} n xs :=
   dropN (A := A) (n mod lengthN xs) xs ++ takeN (A := A) (n mod lengthN xs) xs.
 
-(* Arguably misplaced. *)
-Lemma elem_of_seq (len start n : nat) :
-  n ∈ seq start len ↔ start <= n < start + len.
-Proof. by rewrite elem_of_list_In in_seq. Qed.
-
 Section listN.
   #[local] Open Scope N_scope.
   Context {A : Type}.
