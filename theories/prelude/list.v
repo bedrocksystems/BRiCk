@@ -18,20 +18,6 @@ Lemma repeat_replicate {A} (x : A) n :
   repeat x n = replicate n x.
 Proof. by elim: n => [//| n /= ->]. Qed.
 
-Lemma repeatN_replicateN {A} (x : A) n :
-  repeat x (N.to_nat n) = replicateN n x.
-Proof. apply repeat_replicate. Qed.
-
-Lemma repeat_replicateN {A} (x : A) n :
-  repeat x n = replicateN (N.of_nat n) x.
-Proof. by rewrite repeat_replicate /replicateN Nat2N.id. Qed.
-
-Lemma replicateN_0 {A} (x : A) : replicateN 0 x = [].
-Proof. done. Qed.
-
-Lemma replicateN_S {A} (x : A) n : replicateN (N.succ n) x = x :: replicateN n x.
-Proof. by rewrite /replicateN/= N2Nat.inj_succ. Qed.
-
 Lemma elem_of_seq (len start n : nat) :
   n ∈ seq start len ↔ start <= n < start + len.
 Proof. by rewrite elem_of_list_In in_seq. Qed.
@@ -131,6 +117,3 @@ Proof.
   intros H.
   destruct l; simpl in *; by lia.
 Qed.
-
-Lemma elem_of_replicateN {A} (count : N) (b a : A) : a ∈ replicateN count b → b = a.
-Proof. by intros [-> _]%elem_of_replicate. Qed.
