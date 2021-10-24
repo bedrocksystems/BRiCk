@@ -8,7 +8,7 @@
  (package coq-cpp2v)            ; Adding this line will make your
  ; library installable in the package
 
- (flags (
+ (flags (:standard
    -w -notation-overridden
    ; Similar to notation warnings.
    -w -custom-entry-overridden
