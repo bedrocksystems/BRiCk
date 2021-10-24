@@ -18,23 +18,21 @@ Lemma repeat_replicate {A} (x : A) n :
   repeat x n = replicate n x.
 Proof. by elim: n => [//| n /= ->]. Qed.
 
-Lemma repeatN_replicateN {A} (x : A) n :
-  repeat x (N.to_nat n) = replicateN n x.
-Proof. apply repeat_replicate. Qed.
-
-Lemma repeat_replicateN {A} (x : A) n :
-  repeat x n = replicateN (N.of_nat n) x.
-Proof. by rewrite repeat_replicate /replicateN Nat2N.id. Qed.
-
-Lemma replicateN_0 {A} (x : A) : replicateN 0 x = [].
-Proof. done. Qed.
-
-Lemma replicateN_S {A} (x : A) n : replicateN (N.succ n) x = x :: replicateN n x.
-Proof. by rewrite /replicateN/= N2Nat.inj_succ. Qed.
+Lemma elem_of_seq (len start n : nat) :
+  n ∈ seq start len ↔ start <= n < start + len.
+Proof. by rewrite elem_of_list_In in_seq. Qed.
 
 Section list.
   Context {A : Type}.
   Implicit Types l k : list A.
+
+  Lemma fmap_ext_in {B} (f g : A → B) l :
+    (∀ a : A, a ∈ l → f a = g a) → f <$> l = g <$> l.
+  Proof.
+    elim: l => [//|x l IHl Hext]; cbn; f_equiv.
+    { apply Hext, elem_of_cons, or_introl, eq_refl. }
+    apply IHl => y Hin. apply Hext, elem_of_cons, or_intror, Hin.
+  Qed.
 
   (** List disjointness is decidable *)
   Section disjoint_dec.
@@ -100,25 +98,19 @@ Section list_difference.
     - by rewrite (list_difference_cons_r y) IH -(list_difference_cons_r y).
   Qed.
 
-  Lemma list_difference_id l x :
-    (¬ x ∈ l) ->
-    list_difference l [x] = l.
+  Lemma list_difference_singleton_not_in l x :
+    x ∉ l -> list_difference l [x] = l.
   Proof.
-    intros Hin.
-    induction l; [ reflexivity | ].
-    simpl in *.
-    rewrite -> elem_of_cons in Hin.
-    rewrite decide_False; [ | intros Hax].
-    {
-      f_equal. apply IHl. tauto.
-    }
-    {
-      inversion Hax; subst; try tauto.
-      by rewrite -> @elem_of_nil in *.
-    }
+    elim: l => /= [//|y l IHl] /not_elem_of_cons [Hne Hni].
+    rewrite decide_False.
+    2: { by intros ->%elem_of_list_singleton. }
+    f_equal. apply IHl, Hni.
   Qed.
 
 End list_difference.
+
+#[deprecated(note="Use list_difference_singleton_not_in")]
+Notation list_difference_id := list_difference_singleton_not_in.
 
 Lemma tail_length {A} (l : list A):
   length (tail l) <= length l <= length (tail l) + 1.
@@ -133,6 +125,3 @@ Proof.
   intros H.
   destruct l; simpl in *; by lia.
 Qed.
-
-Lemma elem_of_replicateN {A} (count : N) (b a : A) : a ∈ replicateN count b → b = a.
-Proof. by intros [-> _]%elem_of_replicate. Qed.
