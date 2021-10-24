@@ -24,6 +24,10 @@ Lemma fmap_lengthN {A B} (f : A → B) (l : list A) :
   lengthN (f <$> l) = lengthN l.
 Proof. by rewrite /lengthN fmap_length. Qed.
 
+Lemma length_lengthN {A} (xs : list A) :
+  length xs = N.to_nat (lengthN xs).
+Proof. by rewrite /lengthN Nat2N.id. Qed.
+
 Section seqN.
   Lemma cons_seqN len start :
     start :: seqN (N.succ start) len = seqN start (N.succ len).
