@@ -962,17 +962,27 @@ Module Type Expr.
        deallocation function [delete] is passed a pointer to the
        underlying storage.
 
-       TODO this rule does not support [delete nullptr] (which is defined by
-       the standard to be a no-op). (see FM-1010)
+       On deleting null:
+       From the C++ standard (https://en.cppreference.com/w/cpp/language/delete)
+
+       > If expression evaluates to a null pointer value, no destructors are
+       > called, and the deallocation function may or may not be called (it's
+       > unspecified), but the default deallocation functions are guaranteed
+       > to do nothing when passed a null pointer.
 
        TODO this does not support array delete yet. (FM-1012)
      *)
     Axiom wp_prval_delete : forall delete_fn e ty destroyed_type Q,
         (* call the destructor on the object, and then call delete_fn *)
         wp_prval e (fun v free =>
-          Exists obj_ptr,
-            [| v = Vptr obj_ptr |] **
-            type_ptr destroyed_type obj_ptr **
+           Exists obj_ptr, [| v = Vptr obj_ptr |] **
+           if bool_decide (obj_ptr = nullptr)
+           then
+             (* this conjunction justifies the compiler calling the delete function
+                or not calling it. *)
+                (fspec delete_fn.2 (Vptr $ _global delete_fn.1) (v :: nil) (fun _ => Q Vvoid free))
+             ∧ Q Vvoid free
+           else (type_ptr destroyed_type obj_ptr **
             delete_val true destroyed_type obj_ptr      (* Calling destructor with object pointer *)
               (fun this' ty =>
                  Exists storage_ptr sz, [| size_of ty = Some sz |] **
@@ -981,7 +991,7 @@ Module Type Expr.
                   this memory was pre-destructed by [delete_val]. *)
                 (storage_ptr |-> blockR sz 1 -*
                   fspec delete_fn.2 (Vptr $ _global delete_fn.1) (* Calling deallocator with storage pointer *)
-                    (Vptr storage_ptr :: nil) (fun v => Q v free))))
+                    (Vptr storage_ptr :: nil) (fun v => Q v free)))))
         |-- wp_prval (Edelete false (Some delete_fn) e destroyed_type ty) Q.
 
     (** temporary expressions
