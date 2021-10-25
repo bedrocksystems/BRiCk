@@ -137,7 +137,7 @@ Section derived_laws.
   Qed.
 
   (** Lemmas about modalities. *)
-  (* Upstreamed in.https://gitlab.mpi-sws.org/iris/iris/-/merge_requests/685. *)
+  (* Upstreamed in https://gitlab.mpi-sws.org/iris/iris/-/merge_requests/685. *)
   Lemma fupd_and `{BiFUpd PROP} E1 E2 P Q :
     (|={E1,E2}=> (P ∧ Q)) ⊢@{PROP} (|={E1,E2}=> P) ∧ (|={E1,E2}=> Q).
   Proof. apply and_intro; apply fupd_mono; [apply and_elim_l | apply and_elim_r]. Qed.
