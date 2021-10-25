@@ -111,7 +111,7 @@ Section seqW.
 End seqW.
 
 Module Type wrapper.
-  Variant Phant := Build_Phant.
+  Variant Phant : Set :=.	(** i.e., empty *)
 
   Definition t := WrapN Phant.
 
