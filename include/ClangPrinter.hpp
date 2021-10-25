@@ -78,6 +78,10 @@ public:
         return *context_;
     }
 
+    const clang::CompilerInstance& getCompiler() const {
+        return *compiler_;
+    }
+
 private:
     clang::CompilerInstance* compiler_;
     clang::ASTContext* context_;

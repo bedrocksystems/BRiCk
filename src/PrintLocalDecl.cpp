@@ -9,6 +9,7 @@
 #include "Formatter.hpp"
 #include "Logging.hpp"
 #include "OpaqueNames.hpp"
+#include "clang/Frontend/CompilerInstance.h"
 
 using namespace clang;
 
@@ -45,8 +46,16 @@ public:
 
     bool VisitVarDecl(const VarDecl* decl, CoqPrinter& print,
                       ClangPrinter& cprint, OpaqueNames& on) {
-        print.ctor("Dvar") << "\"" << decl->getNameAsString() << "\""
-                           << fmt::nbsp;
+        if (decl->isStaticLocal()) {
+            bool thread_safe =
+                cprint.getCompiler().getLangOpts().ThreadsafeStatics;
+            print.ctor("Dinit");
+            print.output() << fmt::BOOL(thread_safe) << fmt::nbsp;
+            cprint.printObjName(decl, print, false);
+        } else {
+            print.ctor("Dvar")
+                << "\"" << decl->getNameAsString() << "\"" << fmt::nbsp;
+        }
         cprint.printQualType(decl->getType(), print);
         print.output() << fmt::nbsp;
 

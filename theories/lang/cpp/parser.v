@@ -152,6 +152,7 @@ Fixpoint decls' (ls : list translation_unitK) : translation_unitK :=
 Definition decls ls (e : endian) : translation_unit :=
   decls' ls ∅ ∅ (fun a b => {| symbols := avl.map_canon a
                            ; globals := avl.map_canon b
+                           ; initializer := nil (* FIXME *)
                            ; byte_order := e |}).
 
 Declare Reduction reduce_translation_unit := vm_compute.
