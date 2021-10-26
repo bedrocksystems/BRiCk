@@ -694,7 +694,7 @@ Module SimpleCPP.
       require an extra side-condition that the code is loaded.
      *)
     Definition code_own (p : ptr) (f : Func + Method + Ctor + Dtor) : mpred :=
-      valid_ptr p **
+      strict_valid_ptr p **
       own _ghost.(code_name)
         (A := gmapUR ptr (agreeR (leibnizO (Func + Method + Ctor + Dtor))))
         {[ p := to_agree f ]}.
@@ -702,9 +702,11 @@ Module SimpleCPP.
     Instance code_own_affine : forall f p, Affine (@code_own p f) := _.
     Instance code_own_timeless : forall f p, Timeless (@code_own p f) := _.
 
-    Lemma code_own_valid f p : code_own p f ⊢ valid_ptr p.
+    Lemma code_own_strict_valid f p : code_own p f ⊢ strict_valid_ptr p.
     Proof. iIntros "[$ _]". Qed.
 
+    Lemma code_own_valid f p : code_own p f ⊢ valid_ptr p.
+    Proof. by rewrite code_own_strict_valid strict_valid_valid. Qed.
     Definition code_at (_ : genv) (f : Func) (p : ptr) : mpred :=
       code_own p (inl (inl (inl f))).
     Definition method_at (_ : genv) (m : Method) (p : ptr) : mpred :=
@@ -744,14 +746,14 @@ Module SimpleCPP.
       Local Notation ctor_at := (ctor_at σ) (only parsing).
       Local Notation dtor_at := (dtor_at σ) (only parsing).
 
-      Lemma code_at_valid   f p :   code_at f p |-- valid_ptr p.
-      Proof. exact: code_own_valid. Qed.
-      Lemma method_at_valid f p : method_at f p |-- valid_ptr p.
-      Proof. exact: code_own_valid. Qed.
-      Lemma ctor_at_valid   f p :   ctor_at f p |-- valid_ptr p.
-      Proof. exact: code_own_valid. Qed.
-      Lemma dtor_at_valid   f p :   dtor_at f p |-- valid_ptr p.
-      Proof. exact: code_own_valid. Qed.
+      Lemma code_at_strict_valid   f p :   code_at f p |-- strict_valid_ptr p.
+      Proof. exact: code_own_strict_valid. Qed.
+      Lemma method_at_strict_valid f p :   method_at f p |-- strict_valid_ptr p.
+      Proof. exact: code_own_strict_valid. Qed.
+      Lemma ctor_at_strict_valid   f p :   ctor_at f p |-- strict_valid_ptr p.
+      Proof. exact: code_own_strict_valid. Qed.
+      Lemma dtor_at_strict_valid   f p :   dtor_at f p |-- strict_valid_ptr p.
+      Proof. exact: code_own_strict_valid. Qed.
     End with_genv.
 
     (** physical representation of pointers.

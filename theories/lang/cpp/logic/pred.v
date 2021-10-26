@@ -253,10 +253,11 @@ Module Type CPP_LOGIC (Import INTF : VALUES_INTF) (Import CC : CPP_LOGIC_CLASS).
       Axiom ctor_at_live   : forall f p,   ctor_at f p |-- live_ptr p.
       Axiom dtor_at_live   : forall f p,   dtor_at f p |-- live_ptr p.
 
-      Axiom code_at_valid   : forall f p,   code_at f p |-- valid_ptr p.
-      Axiom method_at_valid : forall f p, method_at f p |-- valid_ptr p.
-      Axiom ctor_at_valid   : forall f p,   ctor_at f p |-- valid_ptr p.
-      Axiom dtor_at_valid   : forall f p,   dtor_at f p |-- valid_ptr p.
+      Axiom code_at_strict_valid   : forall f p,   code_at f p |-- strict_valid_ptr p.
+      Axiom method_at_strict_valid : forall f p, method_at f p |-- strict_valid_ptr p.
+      Axiom ctor_at_strict_valid   : forall f p,   ctor_at f p |-- strict_valid_ptr p.
+      Axiom dtor_at_strict_valid   : forall f p,   dtor_at f p |-- strict_valid_ptr p.
+
     End with_genv.
 
     Axiom offset_pinned_ptr_pure : forall σ o z va p,
@@ -513,6 +514,19 @@ Declare Module L : CPP_LOGIC VALUES_INTF_AXIOM LC.
 Export L.
 
 Declare Module Export VALID_PTR : VALID_PTR_AXIOMS VALUES_INTF_AXIOM LC L.
+
+Section valid_ptr_code.
+  Context `{Σ : cpp_logic} {σ : genv}.
+
+  Lemma code_at_valid   : forall f p,   code_at _ f p |-- valid_ptr p.
+  Proof. intros. rewrite code_at_strict_valid; apply strict_valid_valid. Qed.
+  Lemma method_at_valid : forall f p, method_at _ f p |-- valid_ptr p.
+  Proof. intros. rewrite method_at_strict_valid; apply strict_valid_valid. Qed.
+  Lemma ctor_at_valid   : forall f p,   ctor_at _ f p |-- valid_ptr p.
+  Proof. intros. rewrite ctor_at_strict_valid; apply strict_valid_valid. Qed.
+  Lemma dtor_at_valid   : forall f p,   dtor_at _ f p |-- valid_ptr p.
+  Proof. intros. rewrite dtor_at_strict_valid; apply strict_valid_valid. Qed.
+End valid_ptr_code.
 
 Section pinned_ptr_def.
   Context `{Σ : cpp_logic}.
