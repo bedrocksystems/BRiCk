@@ -92,8 +92,9 @@ guarantees that:
 
 .. note::
 
-   We also make an **additional assumption**: For standard-layout class objects,
-   compilers only insert padding between fields if it is necessary to achieve alignment.
+   We also make an **additional assumption**: For standard-layout class objects - otherwise
+   known as **POD** (Plain Old Data) - compilers only insert padding between fields if it
+   is necessary to achieve alignment.
 
 How is this reflected in |project|?
 ------------------------------------
@@ -112,11 +113,13 @@ We believe that a good, platform independent way to reason about layout informat
 Reasoning about the layout of an array in memory
 =================================================
 
-The C++ standard defines the `layout of arrays <http://eel.is/c++draft/dcl.array#6>`_ as follows:
+The C++ standard defines the `layout of arrays <http://eel.is/c++draft/dcl.array#6>`_ as
+follows:
 
 .. pull-quote::
 
-  An object of type “array of N U” contains a contiguously allocated non-empty set of N subobjects of type U, known as the elements of the array, and numbered 0 to N-1.
+  An object of type “array of N U” contains a contiguously allocated non-empty set of N
+  subobjects of type U, known as the elements of the array, and numbered 0 to N-1.
 
 This means that there is no padding between elements of an array.
 
