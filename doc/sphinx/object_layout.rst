@@ -19,12 +19,15 @@ Object representation, layout and padding
 This document highlights some tricky aspects around object
 representation, layout and padding in C++ and describes how |project| deals with them.
 
-A basic problem when formalizing C(++) is that there are multiple ways to view the same data [#krebbers-thesis-2.5]_:
+A basic problem when formalizing C(++) is that there are multiple ways to view the same
+data [#krebbers-thesis-2.5]_:
 
 - In a *high-level* way using arrays, structs and unions.
 - In a *low-level* way using unstructured and untyped byte representations.
 
-This especially affects reasoning about the representation of an object in memory, i.e. how it is laid out and how data that is part of the low-level presentation, but not part of the high-level representation is handled (i.e. padding).
+This especially affects reasoning about the representation of an object in memory, i.e.
+how it is laid out and how data that is part of the low-level presentation, but not part
+of the high-level representation is handled (i.e. padding).
 
 .. warning::
 
@@ -47,7 +50,11 @@ For example, consider the following code:
 
   void do_dma() {
     struct dma_struct *ptr = dma_address;
-    // This example ignores concerns about UB via data-races or the compiler reordering writes or endianness concerns or alignment
+    // This example ignores many concerns including (but not limited to):
+    // - UB via data-races
+    // - the compiler reordering writes
+    // - endianness
+    // - alignment
     ptr->a = ...; // (1) This write must go to dma_address + 0
     ptr->b = ...; // (2) This write must go to dma_address + 8
   }
@@ -56,28 +63,37 @@ This code communicates with a device via DMA by casting a pointer to a `struct` 
 The important point is that the writes on line `(1)` and `(2)`, must go to the address `dma_address + 0` resp. `dma_address + 8` for correctness.
 In particular, there must not be padding at the start of the `struct` and between `a` and `b`.
 
-How can this reasoning be justified?
-The C++ standard itself only gives light guarantees about the `layout of structs <http://eel.is/c++draft/class.mem#26>`_:
+*How can this reasoning be justified?* The C++ standard itself only gives light
+guarantees about the `layout of structs <http://eel.is/c++draft/class.mem#26>`_:
 
 .. pull-quote::
 
-   If a standard-layout class object has any non-static data members, its address is the same as the address of its first non-static data member if that member is not a bit-field.
+   If a standard-layout class object has any non-static data members, its address is
+   the same as the address of its first non-static data member if that member is not
+   a bit-field.
    Its address is also the same as the address of each of its base class subobjects.
-   [Note: There might therefore be unnamed padding within a standard-layout struct object inserted by an implementation, but not at its beginning, as necessary to achieve appropriate alignment.
-   — end note]
+   [Note: There might therefore be unnamed padding within a standard-layout struct
+   object inserted by an implementation, but not at its beginning, as necessary to
+   achieve appropriate alignment. — end note]
 
-Thus, the C++ standard guarantees that the write on line `(1)` goes to  `dma_address + 0`, but on its own it does not guarantee that there won't be padding between `a` and `b`.
-More concrete guarantees are given by the platform ABI. For example, the ARM ABI [#abi-arm]_ guarantees that
+Thus, the C++ standard guarantees that the write on line `(1)` goes to  `dma_address + 0`,
+but on its own it does not guarantee the exclusion of padding between `a` and `b`.
+However, more concrete guarantees are given by the platform ABI and we rely on those for
+the particular architectures which we support. For example, the ARM ABI [#abi-arm]_
+guarantees that:
 
 .. pull-quote::
 
    - The alignment of an aggregate shall be the alignment of its most-aligned component.
+   - The size of an aggregate shall be the smallest multiple of its alignment that is
+     sufficient to hold all of its members when they are laid out according to these rules.
 
-   - The size of an aggregate shall be the smallest multiple of its alignment that is sufficient to hold all of its members when they are laid out according to these rules.
+.. todo:: is the following note accurate?
 
 .. note::
 
-   Additional assumption: For standard-layout class objects, compilers only insert padding between fields if it is necessary to achieve alignment.
+   We also make an **additional assumption**: For standard-layout class objects,
+   compilers only insert padding between fields if it is necessary to achieve alignment.
 
 How is this reflected in |project|?
 ------------------------------------
@@ -112,7 +128,7 @@ How is this reflected in |project|?
 .. Additionally `Axiom decompose_array <https://gitlab.com/bedrocksystems/cpp2v-core/-/blob/232541a3a7410ac585908a35c50583007c3a391c/theories/lang/cpp/logic/layout.v#L75>`_ as well as `ArrayR (cpp2v) <https://gitlab.com/bedrocksystems/cpp2v/-/blob/86cde4b410d50adcb05d78de31bdbcf6e04ec109/theories/lib/array.v#L34>`_ do not mention padding for arrays.
 
 Reasoning about the layout of a union in memory
-================================================
+==========================================================================================
 
 The C++ standard defines the `layout of unions <http://eel.is/c++draft/class.union#3>`_ as follows:
 
@@ -136,7 +152,7 @@ The C++ standard defines the `layout of unions <http://eel.is/c++draft/class.uni
    the source of a `soundness bug in cpp2v <https://gitlab.com/bedrocksystems/cpp2v-core/-/issues/101>`_.
 
 How is this reflected in cpp2v?
--------------------------------
+------------------------------------------------------------------------------------------
 
 .. TODO: FIX THIS SECTION UP AND ADD UP TO DATE QUOTES
 
@@ -146,7 +162,7 @@ cpp2v does not reflect that all members of the same union have the same address.
 **Potential solution**: Allow the user to assume some facts about the offset information in the translation unit.
 
 Working with the low-level representation of objects
-====================================================
+==========================================================================================
 
 .. TODO: FIX THIS SECTION UP AND ADD UP TO DATE QUOTES
 
