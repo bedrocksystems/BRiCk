@@ -702,8 +702,6 @@ Module SimpleCPP.
     Instance code_own_affine : forall f p, Affine (@code_own p f) := _.
     Instance code_own_timeless : forall f p, Timeless (@code_own p f) := _.
 
-    Lemma code_own_valid f p : code_own p f ⊢ valid_ptr p.
-    Proof. iIntros "[$ _]". Qed.
     Lemma code_own_strict_valid f p : code_own p f ⊢ strict_valid_ptr p.
     Proof. iIntros "[$ _]". Qed.
 
