@@ -46,7 +46,7 @@ Section defs.
    *)
   Definition cptrR_def {resolve : genv} (fs : function_spec) : Rep :=
     as_Rep (fun p =>
-         valid_ptr p **
+         strict_valid_ptr p **
          □ (Forall vs Q,
          [| List.length vs = List.length fs.(fs_arguments) |] -*
          fs.(fs_spec) vs Q -*
@@ -260,13 +260,17 @@ Section with_cpp.
   #[global] Instance cptrR_affine {resolve s} : Affine (cptrR s).
   Proof. rewrite cptrR_eq. apply _. Qed.
 
-  (* NOTE this should become an instance. *)
-  Lemma cptrR_valid_observe {resolve:genv} (p : ptr) f : Observe (valid_ptr p) (_at p (cptrR f)).
+
+  Lemma cptrR_strict_valid_observe {resolve:genv} (p : ptr) f : Observe (strict_valid_ptr p) (_at p (cptrR f)).
   Proof.
     apply observe_intro_persistent; refine _.
     rewrite cptrR_eq/cptrR_def _at_as_Rep.
     iIntros "[$ _]".
   Qed.
+
+  (* NOTE this should become an instance. *)
+  Lemma cptrR_valid_observe {resolve:genv} (p : ptr) f : Observe (valid_ptr p) (_at p (cptrR f)).
+  Proof. apply observe_strict_valid_valid; apply cptrR_strict_valid_observe. Qed.
 
   Lemma cptrR_fs_impl {resolve} f g :
     pureR (fs_impl f g) |-- cptrR f -* cptrR g.
