@@ -32,6 +32,8 @@ Section with_cpp.
       o_dot (o_base σ derived base) (derived_to_base d)
     end.
 
+  (** If successful, returns a pair of the function pointer to the
+   *  implementation and the downcast for [this] pointer. *)
   Definition get_impl `(r : !class_derives σ mdc tcls) (f : obj_name)
     : option (ptr * offset) :=
     let override := dispatch σ r f in
