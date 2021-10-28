@@ -66,20 +66,34 @@ Definition SDestructor@{X Z Y} `{Σ : cpp_logic, resolve : genv} {cc : calling_c
     |}.
 
 (* A specification for a method *)
-#[local] Definition SMethod_wpp@{X Z Y} `{Σ : cpp_logic}
-    (wpp : ptr -> WithPrePost@{X Z Y} mpredI) : WithPrePost@{X Z Y} mpredI :=
-  let map_pre this pair := (this :: pair.1, pair.2) in
+(** Sometimes, especially after a virtual function resolution,
+ *  [this] pointer needs to be adjusted before a call. *)
+#[local] Definition SMethodOptCast_wpp@{X Z Y} `{Σ : cpp_logic}
+    (base_to_derived : option offset) (wpp : ptr -> WithPrePost@{X Z Y} mpredI)
+    : WithPrePost@{X Z Y} mpredI :=
+  let map_pre this pair :=
+      (Vptr (if base_to_derived is Some o then (this ., o ) else this) :: pair.1, pair.2) in
   {| wpp_with := TeleS (fun this : ptr => (wpp this).(wpp_with))
-   ; wpp_pre this := tele_map (map_pre (Vptr this)) (wpp this).(wpp_pre)
+   ; wpp_pre this := tele_map (map_pre this) (wpp this).(wpp_pre)
    ; wpp_post this := (wpp this).(wpp_post)
    |}.
-Definition SMethod@{X Z Y} `{Σ : cpp_logic} {cc : calling_conv}
-    (class : globname) (qual : type_qualifiers) (ret : type) (targs : list type)
+#[local] Definition SMethodOptCast@{X Z Y} `{Σ : cpp_logic} {cc : calling_conv}
+    (class : globname) (base_to_derived : option offset) (qual : type_qualifiers)
+    (ret : type) (targs : list type)
     (PQ : ptr -> WithPrePost@{X Z Y} mpredI) : function_spec :=
   let class_type := Tnamed class in
   let this_type := Tqualified qual class_type in
   SFunction@{X Z Y} (cc:=cc) ret (Qconst (Tpointer this_type) :: targs)
-    (SMethod_wpp PQ).
+    (SMethodOptCast_wpp base_to_derived PQ).
+Definition SMethodCast@{X Z Y} `{Σ : cpp_logic} {cc : calling_conv}
+    (class : globname) (base_to_derived : offset) (qual : type_qualifiers)
+    (ret : type) (targs : list type)
+    (PQ : ptr -> WithPrePost@{X Z Y} mpredI) : function_spec :=
+  SMethodOptCast (cc:=cc) class (Some base_to_derived) qual ret targs PQ.
+Definition SMethod@{X Z Y} `{Σ : cpp_logic} {cc : calling_conv}
+    (class : globname) (qual : type_qualifiers) (ret : type) (targs : list type)
+    (PQ : ptr -> WithPrePost@{X Z Y} mpredI) : function_spec :=
+  SMethodOptCast (cc:=cc) class None qual ret targs PQ.
 
 Section with_cpp.
   Context `{Σ : cpp_logic thread_info} {resolve:genv}.
@@ -134,11 +148,11 @@ Section with_cpp.
     (** We could derive [SMethod_mono] from the following
         [SMethod_wpp_monoN]. We retain this proof because it's easier
         to understand and it goes through without [BiEntailsN]. *)
-    Lemma SMethod_mono@{X1 X2 Z1 Z2 Y1 Y2} wpp1 wpp2 :
+    #[local] Lemma SMethodOptCast_mono@{X1 X2 Z1 Z2 Y1 Y2} cast wpp1 wpp2 :
       (∀ this, wpp_entails (wpp2 this) (wpp1 this)) ->
       fs_entails
-        (SMethod@{X1 Z1 Y1} (cc:=cc) class qual ret targs wpp1)
-        (SMethod@{X2 Z2 Y2} (cc:=cc) class qual ret targs wpp2).
+        (SMethodOptCast@{X1 Z1 Y1} (cc:=cc) class cast qual ret targs wpp1)
+        (SMethodOptCast@{X2 Z2 Y2} (cc:=cc) class cast qual ret targs wpp2).
     Proof.
       intros Hwpp. iSplit; first by rewrite/type_of_spec. simpl.
       iIntros "!>" (vs K) "wpp".
@@ -157,10 +171,25 @@ Section with_cpp.
       iExists ys. rewrite tele_app_bind tele_map_app. simpl. by iFrame "pre post".
     Qed.
 
-    #[local] Lemma SMethod_wpp_monoN@{X1 X2 Z1 Z2 Y1 Y2} wpp1 wpp2 vs K n :
+    Lemma SMethodCast_mono@{X1 X2 Z1 Z2 Y1 Y2} cast wpp1 wpp2 :
+      (∀ this, wpp_entails (wpp2 this) (wpp1 this)) ->
+      fs_entails
+        (SMethodOptCast@{X1 Z1 Y1} (cc:=cc) class cast qual ret targs wpp1)
+        (SMethodOptCast@{X2 Z2 Y2} (cc:=cc) class cast qual ret targs wpp2).
+    Proof. exact: SMethodOptCast_mono. Qed.
+
+    Lemma SMethod_mono@{X1 X2 Z1 Z2 Y1 Y2} wpp1 wpp2 :
+      (∀ this, wpp_entails (wpp2 this) (wpp1 this)) ->
+      fs_entails
+        (SMethod@{X1 Z1 Y1} (cc:=cc) class qual ret targs wpp1)
+        (SMethod@{X2 Z2 Y2} (cc:=cc) class qual ret targs wpp2).
+    Proof. exact: SMethodOptCast_mono. Qed.
+
+    #[local] Lemma SMethodOptCast_wpp_monoN@{X1 X2 Z1 Z2 Y1 Y2}
+        c wpp1 wpp2 vs K n :
       (∀ this, wpp_entailsN n (wpp1 this) (wpp2 this)) ->
-      WppD@{X1 Z1 Y1} (SMethod_wpp wpp1) vs K ⊢{n}
-      WppD@{X2 Z2 Y2} (SMethod_wpp wpp2) vs K.
+      WppD@{X1 Z1 Y1} (SMethodOptCast_wpp c wpp1) vs K ⊢{n}
+      WppD@{X2 Z2 Y2} (SMethodOptCast_wpp c wpp2) vs K.
     Proof.
       move=>Hwpp /=. f_equiv=>this.
       rewrite !tbi_exist_exist. set M1 := tele_app _. set M2 := tele_app _.
@@ -179,41 +208,80 @@ Section with_cpp.
       apply only_provable_elimN'=>->. exact: only_provable_introN.
     Qed.
 
+    #[local] Lemma SMethodOptCast_ne@{X Y Z} cast wpp1 wpp2 n :
+      (∀ this, wpp_dist n (wpp1 this) (wpp2 this)) ->
+      SMethodOptCast@{X Y Z} (cc:=cc) class cast qual ret targs wpp1 ≡{n}≡
+      SMethodOptCast@{X Y Z} (cc:=cc) class cast qual ret targs wpp2.
+    Proof.
+      setoid_rewrite wpp_dist_entailsN=>Hwpp.
+      rewrite/SMethodOptCast. f_equiv=>vs K /=. apply dist_entailsN.
+      split; apply SMethodOptCast_wpp_monoN=>this; by destruct (Hwpp this).
+    Qed.
+
+    Lemma SMethodCast_ne@{X Y Z} cast wpp1 wpp2 n :
+      (∀ this, wpp_dist n (wpp1 this) (wpp2 this)) ->
+      SMethodCast@{X Y Z} (cc:=cc) class cast qual ret targs wpp1 ≡{n}≡
+      SMethodCast@{X Y Z} (cc:=cc) class cast qual ret targs wpp2.
+    Proof. exact: SMethodOptCast_ne. Qed.
+
     Lemma SMethod_ne@{X Y Z} wpp1 wpp2 n :
       (∀ this, wpp_dist n (wpp1 this) (wpp2 this)) ->
       SMethod@{X Y Z} (cc:=cc) class qual ret targs wpp1 ≡{n}≡
       SMethod@{X Y Z} (cc:=cc) class qual ret targs wpp2.
-    Proof.
-      setoid_rewrite wpp_dist_entailsN=>Hwpp.
-      rewrite/SMethod. f_equiv=>vs K /=. apply dist_entailsN.
-      split; apply SMethod_wpp_monoN=>this; by destruct (Hwpp this).
-    Qed.
+    Proof. exact: SMethodOptCast_ne. Qed.
 
+    #[local] Lemma SMethodOptCast_proper@{X1 X2 Z1 Z2 Y1 Y2} cast wpp1 wpp2 :
+      (∀ this, wpp_equiv (wpp1 this) (wpp2 this)) ->
+      SMethodOptCast@{X1 Z1 Y1} (cc:=cc) class cast qual ret targs wpp1 ≡
+      SMethodOptCast@{X2 Z2 Y2} (cc:=cc) class cast qual ret targs wpp2.
+    Proof.
+      setoid_rewrite wpp_equiv_spec=>Hwpp. apply function_spec_equiv_split.
+      split; apply SMethodCast_mono=>this; by destruct (Hwpp this).
+    Qed.
+    Lemma SMethodCast_proper@{X1 X2 Z1 Z2 Y1 Y2} cast wpp1 wpp2 :
+      (∀ this, wpp_equiv (wpp1 this) (wpp2 this)) ->
+      SMethodCast@{X1 Z1 Y1} (cc:=cc) class cast qual ret targs wpp1 ≡
+      SMethodCast@{X2 Z2 Y2} (cc:=cc) class cast qual ret targs wpp2.
+    Proof. exact: SMethodOptCast_proper. Qed.
     Lemma SMethod_proper@{X1 X2 Z1 Z2 Y1 Y2} wpp1 wpp2 :
       (∀ this, wpp_equiv (wpp1 this) (wpp2 this)) ->
       SMethod@{X1 Z1 Y1} (cc:=cc) class qual ret targs wpp1 ≡
       SMethod@{X2 Z2 Y2} (cc:=cc) class qual ret targs wpp2.
-    Proof.
-      setoid_rewrite wpp_equiv_spec=>Hwpp. apply function_spec_equiv_split.
-      split; apply SMethod_mono=>this; by destruct (Hwpp this).
-    Qed.
+    Proof. exact: SMethodOptCast_proper. Qed.
 
+    #[global] Instance: Params (@SMethodCast) 8 := {}.
     #[global] Instance: Params (@SMethod) 7 := {}.
+    #[global] Instance SMethodCast_ne' cast n :
+      Proper (dist (A:=ptr -d> WithPrePostO mpredI) n ==> dist n)
+        (SMethodCast (cc:=cc) class cast qual ret targs).
+    Proof. repeat intro. by apply SMethodCast_ne. Qed.
     #[global] Instance SMethod_ne' n :
       Proper (dist (A:=ptr -d> WithPrePostO mpredI) n ==> dist n)
         (SMethod (cc:=cc) class qual ret targs).
     Proof. repeat intro. by apply SMethod_ne. Qed.
 
+    #[global] Instance SMethodCast_proper' cast :
+      Proper (equiv (A:=ptr -d> WithPrePostO mpredI) ==> equiv)
+        (SMethodCast (cc:=cc) class cast qual ret targs).
+    Proof. exact: ne_proper. Qed.
     #[global] Instance SMethod_proper' :
       Proper (equiv (A:=ptr -d> WithPrePostO mpredI) ==> equiv)
         (SMethod (cc:=cc) class qual ret targs).
     Proof. exact: ne_proper. Qed.
 
+    #[global] Instance SMethodCast_mono'@{X Z Y} cast :
+      Proper (pointwise_relation _ (flip wpp_entails) ==> fs_entails)
+        (SMethodCast@{X Z Y} (cc:=cc) class cast qual ret targs).
+    Proof. repeat intro. by apply SMethodCast_mono. Qed.
     #[global] Instance SMethod_mono'@{X Z Y} :
       Proper (pointwise_relation _ (flip wpp_entails) ==> fs_entails)
         (SMethod@{X Z Y} (cc:=cc) class qual ret targs).
     Proof. repeat intro. by apply SMethod_mono. Qed.
 
+    #[global] Instance SMethodCast_flip_mono'@{X Z Y} cast :
+      Proper (pointwise_relation _ wpp_entails ==> flip fs_entails)
+        (SMethodCast@{X Z Y} (cc:=cc) class cast qual ret targs).
+    Proof. repeat intro. by apply SMethodCast_mono. Qed.
     #[global] Instance SMethod_flip_mono'@{X Z Y} :
       Proper (pointwise_relation _ wpp_entails ==> flip fs_entails)
         (SMethod@{X Z Y} (cc:=cc) class qual ret targs).
