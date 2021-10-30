@@ -8,8 +8,7 @@ familiar with the standard.
 Surprisingly, C++ pointers are not just addresses; here we explain what they are
 in the C++ standard and in cpp2v.
 
-Two pointers might differ despite representing the same address
-(https://eel.is/c++draft/basic.compound#def:represents_the_address), depending
+Two pointers might differ despite `representing the same address <https://eel.is/c++draft/basic.compound#def:represents_the_address>`_, depending
 on how they're constructed, and C/C++ optimizers are allowed to treat them
 differently.
 
@@ -24,7 +23,7 @@ is similar to the restriction we showed in :ref:`undefined_behavior`.
     int x, y;
     int *px = &x;
     int *py = &y;
-    int px1 = px + 1;
+    int *px1 = px + 1;
     //...
   }
 
