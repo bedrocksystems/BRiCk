@@ -6,7 +6,7 @@ TODO: move the background on the standard out-of-line, to be skippable by people
 familiar with the standard.
 
 Surprisingly, C++ pointers are not just addresses; here we explain what they are
-in the C++ standard and in cpp2v.
+in the C++ standard and in |project|.
 
 Two pointers might differ despite `representing the same address <https://eel.is/c++draft/basic.compound#def:represents_the_address>`_, depending
 on how they're constructed, and C/C++ optimizers are allowed to treat them
@@ -61,7 +61,7 @@ to *provide storage* for the new object:
   object if: [...]
 
 Objects and values
-------------------
+-------------------
 
 The C++ standard also talks about `values
 <https://eel.is/c++draft/basic.types.general#def:value>`_, at least for
@@ -72,12 +72,12 @@ In our semantics, we define a type `val` of primitive values.
 Pointers, pointer values and objects
 =====================================
 
-cpp2v introduces an abstract type `ptr` of *pointer values*, which models
-the analogous concept in the standard\ [#std-ptr-values]_. cpp2v uses pointer
+|project| introduces an abstract type `ptr` of *pointer values*, which models
+the analogous concept in the standard\ [#std-ptr-values]_. |project| uses pointer
 values to identify objects: each object has an associated pointer value, but a
 pointer value might not point to an object. Specifically:
 
-* Whenever an object `o` is created, the cpp2v logic creates a *pointer value*
+* Whenever an object `o` is created, the |project| logic creates a *pointer value*
   `p : ptr` that describes where `o` lives. This pointer value need not exist in
   the C++ program, but it always exists in the logic.
 * All C++ *pointers* have an associated pointer value in `ptr`, but the latter
@@ -96,19 +96,19 @@ value `x_ptr` points to an integer object with value `42`.
     return x;
   }
 
-cpp2v pointers and optional addresses
--------------------------------------
+|project| pointers and optional addresses
+------------------------------------------
 
-Pointers always contain an address, but cpp2v pointer values need not. In our
+Pointers always contain an address, but |project| pointer values need not. In our
 last example, `x` might live in a register or be removed altogether by
-optimizations. But since cpp2v pointer values need not have an address, we can
+optimizations. But since |project| pointer values need not have an address, we can
 reason about `x_ptr` uniformly, irrespective of optimizations.
 
 .. code-block:: coq
 
   Parameter ptr_vaddr : ptr -> option vaddr.
 
-Pointer provenance in cpp2v
+Pointer provenance in |project|
 ================================================
 
 Each pointer can contain an allocation ID. This ID identifies the complete

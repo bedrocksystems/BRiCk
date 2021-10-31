@@ -145,8 +145,8 @@ default_role = 'coq'
 #show_authors = False
 
 # The name of the Pygments (syntax highlighting) style to use.
-#pygments_style = 'sphinx'
-#highlight_language = 'text'
+pygments_style = 'sphinx'
+highlight_language = 'text'
 #suppress_warnings = ["misc.highlighting_failure"]
 
 # A list of ignored prefixes for module index sorting.
@@ -286,3 +286,51 @@ epub_title = project
 
 # A list of files that should not be packed into the epub file.
 epub_exclude_files = ['search.html']
+
+# The following snippet is taken from
+# https://github.com/sphinx-doc/sphinx/issues/2173
+global_substitutions = {
+    'project' : 'BRiCk',
+    'full_project': 'BedRock BRiCk',
+    'cpp2v': 'cpp2v'
+}
+
+from docutils.transforms import Transform
+from docutils import nodes
+
+class GlobalSubstitutions(Transform):
+    default_priority = 200
+
+    def apply(self):
+        config = self.document.settings.env.config
+        global global_substitutions
+        to_handle = set( global_substitutions.keys() ) - set(self.document.substitution_defs)
+        for ref in self.document.traverse(nodes.substitution_reference):
+            refname = ref['refname']
+            if not refname in self.document.substitution_defs:
+                try:
+                    text = global_substitutions[ refname ]
+                    if type(text) is str:
+                        txt = nodes.Text(text, text);
+                        ref.replace_self(txt)
+                    else:
+                        ref.replace_self(text)
+                except:
+                    if refname.startswith('link:'):
+                        path = refname[len('link:'):]
+                        if '#' in path:
+                            m,d = path.split('#')
+                            target = '_static/coqdoc/{module}.html#{defn}'.format(module=m, defn=d)
+                            text = d
+                        else:
+                            target = '_static/coqdoc/{module}.html'.format(module=path)
+                            text = path
+                        refnode = nodes.reference('', '', internal=False, refuri=target)
+                        refnode.append(nodes.Text(text, text))
+
+                        ref.replace_self(refnode)
+
+                    pass
+
+def setup(app):
+    app.add_transform(GlobalSubstitutions)
