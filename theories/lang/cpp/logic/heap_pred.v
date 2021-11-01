@@ -476,6 +476,31 @@ Section with_cpp.
     | _ , _  => False
     end.
 
+  #[global] Instance tblockR_timeless {σ} ty q :
+    Timeless (tblockR ty q).
+  Proof. rewrite/tblockR. case_match; apply _. Qed.
+  #[global] Instance tblockR_fractional {σ} ty :
+    Fractional (tblockR ty).
+  Proof.
+    rewrite/tblockR. do 2!(case_match; last by apply _).
+    apply _.
+  Qed.
+  #[global] Instance tblockR_as_fractional {σ} ty q :
+    AsFractional (tblockR ty q) (tblockR ty) q.
+  Proof. exact: Build_AsFractional. Qed.
+  (**
+   * Note: Neither this instance nor [blockR_observe_frac_valid] will
+   * be found by TC resolution due to the non-TC side-conditions.
+   *)
+  #[global] Instance tblockR_observe_frac_valid {σ} ty q n :
+    size_of σ ty = Some n -> (0 < n)%N ->
+    Observe [| q ≤ 1 |]%Qp (tblockR ty q).
+  Proof.
+    rewrite/tblockR=>-> ?. case_match.
+    - by apply observe_sep_l, blockR_observe_frac_valid.
+    - by apply bi.False_elim.
+  Qed.
+
   (** Observing [type_ptr] *)
   #[global]
   Instance primR_type_ptr_observe σ ty q v : Observe (type_ptrR ty) (primR ty q v).
