@@ -110,6 +110,11 @@ Module Type CPP_LOGIC (Import INTF : VALUES_INTF) (Import CC : CPP_LOGIC_CLASS).
     Parameter provides_storage :
       forall (storage : ptr) (object : ptr) (storage_type : type), mpred.
 
+    Axiom provides_storage_timeless :
+      forall storage_ptr obj_ptr ty,
+      Timeless (provides_storage storage_ptr obj_ptr ty).
+    #[global] Existing Instance provides_storage_timeless.
+
     (**
     Typed points-to predicate. Fact [tptsto t q p v] asserts the following things:
     1. Pointer [p] points to value [v].

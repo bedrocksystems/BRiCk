@@ -258,6 +258,8 @@ Module SimpleCPP.
     A more useful definition should probably not be persistent. *)
     Definition provides_storage (storage_ptr obj_ptr : ptr) (_ : type) : mpred :=
       [| same_address storage_ptr obj_ptr |] ** valid_ptr storage_ptr ** valid_ptr obj_ptr.
+    Global Instance provides_storage_timeless storage_ptr obj_ptr ty :
+      Timeless (provides_storage storage_ptr obj_ptr ty) := _.
     Global Instance provides_storage_same_address storage_ptr obj_ptr ty :
       Observe [| same_address storage_ptr obj_ptr |] (provides_storage storage_ptr obj_ptr ty) := _.
 
