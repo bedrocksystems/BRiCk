@@ -30,6 +30,12 @@ Section with_resolve.
     | _ => Prvalue
     end.
 
+  Definition arg_types (ty : type) : option (list type) :=
+    match ty with
+    | @Tfunction _ _ args => Some args
+    | _ => None
+    end.
+
   (**
      [wp_args' ts es Q] evaluates the arguments [es] to a function taking types [ts]
      and invokes [Q] with the values and the temporary destruction expression.

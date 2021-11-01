@@ -135,6 +135,7 @@ theories/lang/cpp/logic/initializers.v
 theories/lang/cpp/logic/dispatch.v
 theories/lang/cpp/logic/call.v
 theories/lang/cpp/logic/expr.v
+theories/lang/cpp/logic/new_delete.v
 theories/lang/cpp/logic/stmt.v
 theories/lang/cpp/logic/func.v
 theories/lang/cpp/logic/translation_unit.v

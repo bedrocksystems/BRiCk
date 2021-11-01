@@ -51,6 +51,17 @@ Module Type Init.
 
         NOTE this assumes that the underlying memory has already been given to the
              C++ abstract machine.
+
+        NOTE: <https://eel.is/c++draft/dcl.init#general-7>:
+        | (7) To default-initialize an object of type T means:
+        | (7.1) If T is a (possibly cv-qualified) class type ([class]), constructors are considered.
+        |       The applicable constructors are enumerated ([over.match.ctor]), and the best one for
+        |       the initializer () is chosen through overload resolution ([over.match]).
+        |       The constructor thus selected is called, with an empty argument list, to initialize
+        |       the object.
+        | (7.2) If T is an array type, each element is default-initialized.
+        | (7.3) Otherwise, no initialization is performed.
+        and [default_initialize] corresponds to [default-initialization] as described above.
      *)
     Fixpoint default_initialize
                (ty : type) (p : ptr) (Q : FreeTemps → epred) {struct ty} : mpred :=

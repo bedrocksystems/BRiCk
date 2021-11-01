@@ -352,6 +352,16 @@ Section with_cpp.
      machine when it transitions to running a [wp_init]. In the case of
      stack allocation, there is nothing to do here, but in the case of [new],
      the memory must be given up.
+
+     Note: <https://eel.is/c++draft/dcl.init#general-15>:
+     | (15) The initialization that occurs
+     | (15.1) for an initializer that is a parenthesized expression-list or a braced-init-list,
+     | (15.2) for a new-initializer ([expr.new]),
+     | (15.3) in a static_­cast expression ([expr.static.cast]),
+     | (15.4) in a functional notation type conversion ([expr.type.conv]), and
+     | (15.5) in the braced-init-list form of a condition
+     | is called direct-initialization.
+     and [wp_init] corresponds to [direct-initialization] as described above.
    *)
   Parameter wp_init
     : forall {resolve:genv}, coPset -> region ->
