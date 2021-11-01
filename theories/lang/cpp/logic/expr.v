@@ -1,5 +1,5 @@
 (*
- * Copyright (c) 2020 BedRock Systems, Inc.
+ * Copyright (c) 2020-2021 BedRock Systems, Inc.
  * This software is distributed under the terms of the BedRock Open-Source License.
  * See the LICENSE-BedRock file in the repository root for details.
  *)
@@ -8,6 +8,7 @@
  * (expressed in weakest pre-condition style)
  *)
 Require Export bedrock.prelude.numbers.
+Require Export bedrock.lang.cpp.logic.new_delete.
 
 From bedrock.lang.cpp Require Import ast semantics.
 From bedrock.lang.cpp.logic Require Import
@@ -752,12 +753,6 @@ Module Type Expr.
     Definition init_receive (addr : ptr) (res : val) (Q : mpred) : mpred :=
       Exists p, [| res = Vptr p |] ** ([| p = addr |] -* Q).
 
-    Definition arg_types (ty : type) : option (list type) :=
-      match ty with
-      | @Tfunction _ _ args => Some args
-      | _ => None
-      end.
-
     (** [wp_call pfty f es Q] calls [f] taking the arguments from the
         evaluations of [es] and then acts like [Q].
         [pfty] is the type that the call is being carried out using,
@@ -881,62 +876,6 @@ Module Type Expr.
       Q (Vptr nullptr) FreeTemps.id
       |-- wp_prval Enull Q.
 
-    (** [new (...) C(...)]
-        - invokes a C++ new operator [new_fn], which returns a storage pointer [storage_ptr];
-          [new_fn] _might_ allocate memory
-          (https://eel.is/c++draft/expr.new#10), or return an argument
-          address for some forms of placement new;
-        - constructs an object pointer [obj_ptr], which shares the address of [storage_ptr];
-        - invokes the constructor C over [obj_ptr].
-        https://eel.is/c++draft/expr.new
-
-        - This axiom assumes that [storage_ptr] points to a character array that will
-          _provide storage_ for a new _complete object_ [o]
-          (http://eel.is/c++draft/intro.object#def:provides_storage).
-
-          In that case, the C++ abstract machine can choose to make [obj_ptr
-          <> storage_ptr] (while keeping the same address), so that the old
-          pointer [storage_ptr] cannot be used to access the new object.
-          Inspired by Cerberus, we model this by _allowing_ [obj_ptr] to have
-          a
-          different allocation ID.
-
-        - The created object might be a subobject of an existing object
-          (pointed to by some pointer [p])
-          (https://eel.is/c++draft/basic.memobj#intro.object-2).
-          It is unclear whether that requires [storage_ptr = p] or just
-          [provides_storage storage_ptr p].
-          In that case, we plan to allow proving that [obj_ptr] = [p ., o]; we
-          offer no such support at present; we account for this case by not specifying that
-          [ptr_alloc_id obj_ptr <> ptr_alloc_id storage_ptr].
-        - Currently, we do not model coalescing of multiple allocations
-          (https://eel.is/c++draft/expr.new#14).
-     *)
-    Axiom wp_prval_new : forall new_fn new_args init aty ty Q targs sz
-                           (nfty := normalize_type new_fn.2)
-                           (_ : arg_types nfty = Some (Tint sz Unsigned :: targs)),
-        (** TODO this needs a side-condition requiring that [new] with no arguments does not return
-            [nullptr] because the C++ standard permits the assumption. *)
-        wp_args targs new_args (fun vs free =>
-          Exists sz al, [| size_of aty = Some sz |] ** [| align_of aty = Some al |] **
-            |> fspec nfty (Vptr $ _global new_fn.1) (Vn sz :: vs) (fun res =>
-                  Exists storage_ptr : ptr,
-                    [| res = Vptr storage_ptr |] **
-                    if bool_decide (storage_ptr = nullptr) then
-                      Q res free
-                    else
-                      (storage_ptr |-> (blockR sz 1 ** alignedR al) ** (* [blockR sz -|- tblockR aty] *)
-                       (* todo: ^ This misses an condition that [storage_ptr]
-                        is suitably aligned, accounting for
-                        __STDCPP_DEFAULT_NEW_ALIGNMENT__ (issue #149) *)
-                           (Forall obj_ptr : ptr,
-                              (* This also ensures these pointers share their
-                              address (see [provides_storage_same_address]) *)
-                              provides_storage storage_ptr obj_ptr aty -*
-                              wp_init (type_of init) obj_ptr init (fun free' =>
-                                                              Q (Vptr obj_ptr) (free' >*> free))))))
-      |-- wp_prval (Enew (Some new_fn) new_args aty None (Some init) ty) Q.
-
     (** The lifetime of an object can be ended at an arbitrary point
         without calling the destructor
         (http://eel.is/c++draft/basic.life#5). According to
@@ -949,50 +888,6 @@ Module Type Expr.
        size_of aty = Some sz ->
        provides_storage storage_ptr obj_ptr aty ** obj_ptr |-> anyR aty 1
          ={⊤}=∗ (storage_ptr |-> blockR sz 1).
-
-    (* delete
-
-       https://eel.is/c++draft/expr.delete
-
-       NOTE: https://eel.is/c++draft/expr.delete#7.1 says:
-       > The value returned from the allocation call of the new-expression
-       > shall be passed as the first argument to the deallocation function.
-
-       Hence, the destructor is passed a pointer to the object, and the
-       deallocation function [delete] is passed a pointer to the
-       underlying storage.
-
-       On deleting null:
-       From the C++ standard (https://en.cppreference.com/w/cpp/language/delete)
-
-       > If expression evaluates to a null pointer value, no destructors are
-       > called, and the deallocation function may or may not be called (it's
-       > unspecified), but the default deallocation functions are guaranteed
-       > to do nothing when passed a null pointer.
-
-       TODO this does not support array delete yet. (FM-1012)
-     *)
-    Axiom wp_prval_delete : forall delete_fn e ty destroyed_type Q,
-        (* call the destructor on the object, and then call delete_fn *)
-        wp_prval e (fun v free =>
-           Exists obj_ptr, [| v = Vptr obj_ptr |] **
-           if bool_decide (obj_ptr = nullptr)
-           then
-             (* this conjunction justifies the compiler calling the delete function
-                or not calling it. *)
-                (fspec delete_fn.2 (Vptr $ _global delete_fn.1) (v :: nil) (fun _ => Q Vvoid free))
-             ∧ Q Vvoid free
-           else (type_ptr destroyed_type obj_ptr **
-            delete_val true destroyed_type obj_ptr      (* Calling destructor with object pointer *)
-              (fun this' ty =>
-                 Exists storage_ptr sz, [| size_of ty = Some sz |] **
-               provides_storage storage_ptr this' ty ** (* Token for converting obj memory to storage memory *)
-               (* Transfer memory to underlying storage pointer; unlike in [end_provides_storage],
-                  this memory was pre-destructed by [delete_val]. *)
-                (storage_ptr |-> blockR sz 1 -*
-                  fspec delete_fn.2 (Vptr $ _global delete_fn.1) (* Calling deallocator with storage pointer *)
-                    (Vptr storage_ptr :: nil) (fun v => Q v free)))))
-        |-- wp_prval (Edelete false (Some delete_fn) e destroyed_type ty) Q.
 
     (** temporary expressions
        note(gmm): these axioms should be reviewed thoroughly
@@ -1209,7 +1104,6 @@ Module Type Expr.
     Axiom wp_init_mut : forall ty addr e Q,
         wp_init ty addr e Q
         |-- wp_init (Qmut ty) addr e Q.
-
   End with_resolve.
 
   (* `Earrayloop_init` needs to extend the region, so we need to start a new section. *)
