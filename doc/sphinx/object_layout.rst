@@ -1,10 +1,11 @@
 #############################################################
-Object representation, layout and padding and Materialization
+Object representation, layout and padding and materialization
 #############################################################
 
+.. sectionauthor:: Michael Sammler
+
 This document highlights some tricky aspects around object
-representation, layout and padding in C++ and describes how they are
-resolved in our formalization.
+representation, layout and padding in C++ and describes how |project| deals with them.
 
 A basic problem when formalizing C(++) is that there are multiple ways to view the same data [#krebbers-thesis-2.5]_:
 
@@ -13,11 +14,16 @@ A basic problem when formalizing C(++) is that there are multiple ways to view t
 
 This especially affects reasoning about the representation of an object in memory, i.e. how it is laid out and how data that is part of the low-level presentation, but not part of the high-level representation is handled (i.e. padding).
 
+.. warning::
+
+  Much of the reasoning described in this section is still experimental and subject to change.
+  In practice, most C++ programs do not require this level of reasoning.
 
 Reasoning about the layout of a struct in memory
-================================================
+=================================================
 
-Reasoning about the layout of an object in memory is, for example, often required when interacting with drivers. For example, consider the following code:
+Reasoning about the layout of an object in memory is often required when interacting with drivers.
+For example, consider the following code:
 
 .. code-block:: cpp
 
@@ -34,7 +40,9 @@ Reasoning about the layout of an object in memory is, for example, often require
     ptr->b = ...; // (2) This write must go to dma_address + 8
   }
 
-This code communicates with a device via DMA by casting a pointer to a struct and then uses field accesses to write to memory. The important point is that the writes on line `(1)` and `(2)`, must go to the address `dma_address + 0` resp. `dma_address + 8` for correctness. In particular, there must not be padding at the start of the struct and between `a` and `b`.
+This code communicates with a device via DMA by casting a pointer to a `struct` and then uses field accesses to write to memory.
+The important point is that the writes on line `(1)` and `(2)`, must go to the address `dma_address + 0` resp. `dma_address + 8` for correctness.
+In particular, there must not be padding at the start of the `struct` and between `a` and `b`.
 
 How can this reasoning be justified?
 The C++ standard itself only gives light guarantees about `layout of structs <http://eel.is/c++draft/class.mem#26>`_:
@@ -59,15 +67,23 @@ More concrete guarantees are given by the platform ABI. For example, the ARM ABI
 
    Additional assumption: For standard-layout class objects, compilers only insert padding between fields if it is necessary to achieve alignment.
 
-How is this reflected in cpp2v?
--------------------------------
+How is this reflected in |project|?
+------------------------------------
 
-This reasoning is currently not supported by cpp2v. There is `Axiom decompose_struct <https://gitlab.com/bedrocksystems/cpp2v-core/-/blob/232541a3a7410ac585908a35c50583007c3a391c/theories/lang/cpp/logic/layout.v#L42>`_, but it only applies to `anyR (Tnamed cls**` and it represents padding as a magic wand. No axiom gives information about field offsets of a struct.
+The virtual address offset of a |link:bedrock.lang.cpp.semantics.ptrs#offset| is determined by |link:bedrock.lang.cpp.semantics.ptrs#eval_offset|.
+|project| currently supports reasoning about the layout of (a limited number of) aggregates by embedding the layout information from the Clang front-end into the |project| abstract syntax tree (see |link:bedrock.lang.cpp.syntax.translation_unit#Struct| and |link:bedrock.lang.cpp.syntax.translation_unit#Union|\ ).
+Because the C++ standard only requires portability of the layout of certain types of aggregates we limit the use of this information in our axioms to POD and standard layout classes (see |link:bedrock.lang.cpp.semantics.ptrs#eval_o_field|\ .
 
-**Potential solution**: Allow the user to assume some facts about the offset information in the translation unit (e.g. that there is no padding if it is not necessary).
+.. project| does not currently support reasoning about the integer offset of fields.
+.. The `Definition struct_def <_static/coqdoc/bedrock.lang.cpp.logic.layout.html>`_ characterizes how a `struct` can be viewed as its constituent pieces and padding.
+.. which shows how the `anyR` of a `struct` can be broken down into its constituent fields and padding but there are no axioms , but it only applies to `anyR (Tnamed cls)` and it represents padding as a magic wand. No axiom gives information about field offsets of a struct.
+
+We believe that a good, platform independent way to reason about layout information is to use a combination of :cpp:`static_assert` and :cpp:`offsetof`.
+|project| does not currently support this level of reasoning about :cpp:`offsetof`, but it is likely to be added in the future by connecting |link:bedrock.lang.cpp.semantics.ptrs#eval_offset| to the semantics of :cpp:`offsetof`.
+
 
 Reasoning about the layout of an array in memory
-================================================
+=================================================
 
 The C++ standard defines the `layout of arrays <http://eel.is/c++draft/dcl.array#6>`_ as follows:
 
@@ -77,11 +93,12 @@ The C++ standard defines the `layout of arrays <http://eel.is/c++draft/dcl.array
 
 This means that there is no padding between elements of an array.
 
-How is this reflected in cpp2v?
--------------------------------
+How is this reflected in |project|?
+-------------------------------------
 
-The fact that there is no padding in arrays is exploited by `_sub_def <https://gitlab.com/bedrocksystems/cpp2v-core/-/blob/232541a3a7410ac585908a35c50583007c3a391c/theories/lang/cpp/logic/path_pred.v#L306>`_ in combination with `Axiom wp_lval_subscript <https://gitlab.com/bedrocksystems/cpp2v-core/-/blob/232541a3a7410ac585908a35c50583007c3a391c/theories/lang/cpp/logic/expr.v#L141>`_.
-Additionally `Axiom decompose_array <https://gitlab.com/bedrocksystems/cpp2v-core/-/blob/232541a3a7410ac585908a35c50583007c3a391c/theories/lang/cpp/logic/layout.v#L75>`_ as well as `ArrayR (cpp2v) <https://gitlab.com/bedrocksystems/cpp2v/-/blob/86cde4b410d50adcb05d78de31bdbcf6e04ec109/theories/lib/array.v#L34>`_ do not mention padding for arrays.
+.. The fact that there is no padding in arrays is exploited by `_sub_def <https://gitlab.com/bedrocksystems/cpp2v-core/-/blob/232541a3a7410ac585908a35c50583007c3a391c/theories/lang/cpp/logic/path_pred.v#L306>`_ in combination with `Axiom wp_lval_subscript <https://gitlab.com/bedrocksystems/cpp2v-core/-/blob/232541a3a7410ac585908a35c50583007c3a391c/theories/lang/cpp/logic/expr.v#L141>`_.
+
+.. Additionally `Axiom decompose_array <https://gitlab.com/bedrocksystems/cpp2v-core/-/blob/232541a3a7410ac585908a35c50583007c3a391c/theories/lang/cpp/logic/layout.v#L75>`_ as well as `ArrayR (cpp2v) <https://gitlab.com/bedrocksystems/cpp2v/-/blob/86cde4b410d50adcb05d78de31bdbcf6e04ec109/theories/lib/array.v#L34>`_ do not mention padding for arrays.
 
 Reasoning about the layout of a union in memory
 ================================================
@@ -143,13 +160,13 @@ Consider the following code that does not exhibit undefined behavior (can be che
     assert(s2.b == 2); // Access the resulting memory via the high-level representation
   }
 
+This code is interesting because it accesses both the high-level representation and low-level representation of an object.
+In particular, there are parts of memory that are not accessible via the high-level representation (the padding of :cpp:`struct S`), but that are accessible via the low-level representation.
 
-This code is interesting because it accesses both the high-level representation and low-level representation of an object. In particular, there are parts of memory that are not accessible via the high-level representation (the padding of `struct S`), but that are accessible via the low-level representation.
+How is this reflected in |project|?
+------------------------------------
 
-How is this reflected in cpp2v?
--------------------------------
-
-cpp2v provides access to the low-level view of data via the `Vraw r` value where `r` represents a "raw byte". cpp2v is parametric in this notion of raw byte, but a simple model would instantiate it with `byte | pointer fragment | poison` (i.e. `runtime_val` in `simple_pred`).    `layout.v <https://gitlab.com/bedrocksystems/cpp2v-core/-/blob/master/theories/lang/cpp/logic/layout.v>`_ provides axioms for converting between the high-level representation (e.g. `primR`) and the low-level representation based on `Vraw`.
+|project| provides access to the low-level view of data via the `Vraw r` value where `r` represents a "raw byte". cpp2v is parametric in this notion of raw byte, but a simple model would instantiate it with `byte | pointer fragment | poison` (i.e. `runtime_val` in `simple_pred`).    `layout.v <https://gitlab.com/bedrocksystems/cpp2v-core/-/blob/master/theories/lang/cpp/logic/layout.v>`_ provides axioms for converting between the high-level representation (e.g. `primR`) and the low-level representation based on `Vraw`.
 
 Thus, the example above can be verified by first converting the struct to raw bytes, copying the raw bytes and then converting the raw bytes back into the struct.
 
@@ -157,7 +174,22 @@ Thus, the example above can be verified by first converting the struct to raw by
 Materialization
 ===============
 
-Questions: How should function arguments and return values be passed?
+The C++ standard `talks explicitly about when materialization occurs <https://eel.is/c++draft/class.temporary#2>`_.
+In the |project| separation logic, we choose to immediately materialize all aggregates (i.e. aggregates do not have a Coq-value representation), and address the delayed materialization through the fact that not all pointers (|link:bedrock.lang.cpp.semantics.ptrs#ptr|) are required to be backed by memory.
+
+Pinned Pointers
+----------------
+
+In certain instances, especially when communicating pointers with assembly, it is necessary to connect pointers to the virtual addresses.
+To do this, |project| exposes a separation logic assertion `pinned_ptr : ptr -> vaddr -> mpred` (|link:bedrock.lang.cpp.logic.pred#pinned_ptr|) that connects the `ptr` to the virtual address that backs it.
+
+
+Function Call Semantics
+------------------------
+
+.. todo::
+
+  determine whether this is going to change before the release.
 
 Following options:
 
