@@ -52,6 +52,12 @@ sys.path.append(os.path.abspath('../../alectryon/'))
 #       so it may make sense to leave this part off for now
 # with open(os.pat.abspath('../coq/doc/sphinx/refman-preamble.rst')) as s:
 #     rst_prolog = s.read()
+rst_prolog = """
+.. role:: cpp(code)
+    :language: cpp
+    :class: highlight
+
+"""
 
 # -- General configuration ---------------------------------------------------
 
