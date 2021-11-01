@@ -126,30 +126,18 @@ in the following way:
 .. pull-quote::
 
    (3) A class S is a standard-layout class if it:
-   (3.1) has no non-static data members of type non-standard-layout class (or array of
-         such types) or reference,
+   (3.1) has no non-static data members of type non-standard-layout class (or array of such types) or reference,
    (3.2) has no virtual functions and no virtual base classes,
    (3.3) has the same access control for all non-static data members,
    (3.4) has no non-standard-layout base classes,
    (3.5) has at most one base class subobject of any given type,
-   (3.6) has all non-static data members and bit-fields in the class and its base classes
-         first declared in the same class, and
-   (3.7) has no element of the set M(S) of types as a base class, where for any type X,
-         M(X) is defined as follows.
-         [Note 2: M(X) is the set of the types of all non-base-class subobjects that can
-          be at a zero offset in X. — end note]
-         (3.7.1) If X is a non-union class type with no non-static data members, the set
-                 M(X) is empty.
-         (3.7.2) If X is a non-union class type with a non-static data member of type X0
-                 that is either of zero size or is the first non-static data member of X
-                 (where said member may be an anonymous union), the set M(X) consists of
-                 X0 and the elements of M(X0).
-         (3.7.3) If X is a union type, the set M(X) is the union of all M(Ui) and the set
-                 containing all Ui, where each Ui is the type of the ith non-static data
-                 member of X.
-         (3.7.4) If X is an array type with element type Xe, the set M(X) consists of Xe
-                 and the elements of M(Xe).
-         (3.7.5) If X is a non-class, non-array type, the set M(X) is empty.
+   (3.6) has all non-static data members and bit-fields in the class and its base classes first declared in the same class, and
+   (3.7) has no element of the set M(S) of types as a base class, where for any type X, M(X) is defined as follows. [Note 2: M(X) is the set of the types of all non-base-class subobjects that can be at a zero offset in X. — end note]
+   (3.7.1) If X is a non-union class type with no non-static data members, the set M(X) is empty.
+   (3.7.2) If X is a non-union class type with a non-static data member of type X0 that is either of zero size or is the first non-static data member of X (where said member may be an anonymous union), the set M(X) consists of X0 and the elements of M(X0).
+   (3.7.3) If X is a union type, the set M(X) is the union of all M(Ui) and the set containing all Ui, where each Ui is the type of the ith non-static data member of X.
+   (3.7.4) If X is an array type with element type Xe, the set M(X) consists of Xe and the elements of M(Xe).
+   (3.7.5) If X is a non-class, non-array type, the set M(X) is empty.
 
 .. _object_layout.trivial:
 
@@ -159,19 +147,14 @@ Trivial Data
 The C++ Standard defines a `trivial class <https://eel.is/c++draft/class.prop#2>`_
 in the following way:
 
-.. pull_quote::
+.. pull-quote::
 
    (1) A trivially copyable class is a class:
-   (1.1) that has at least one eligible copy constructor, move constructor, copy assignment
-         operator, or move assignment operator ([special], [class.copy.ctor], [class.copy.assign]),
-   (1.2) where each eligible copy constructor, move constructor, copy assignment operator,
-         and move assignment operator is trivial, and
+   (1.1) that has at least one eligible copy constructor, move constructor, copy assignment operator, or move assignment operator ([special], [class.copy.ctor], [class.copy.assign]),
+   (1.2) where each eligible copy constructor, move constructor, copy assignment operator, and move assignment operator is trivial, and
    (1.3) that has a trivial, non-deleted destructor ([class.dtor]).
 
-   (2) A trivial class is a class that is trivially copyable and has one or more eligible
-       default constructors ([class.default.ctor]), all of which are trivial.
-       [Note 1: In particular, a trivially copyable or trivial class does not have virtual
-        functions or virtual base classes. — end note]
+   (2) A trivial class is a class that is trivially copyable and has one or more eligible default constructors ([class.default.ctor]), all of which are trivial. [Note 1: In particular, a trivially copyable or trivial class does not have virtual functions or virtual base classes. — end note]
 
 How is this reflected in |project|?
 ------------------------------------
