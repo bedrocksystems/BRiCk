@@ -2,7 +2,19 @@
 Object representation, layout and padding and materialization
 #############################################################
 
-.. sectionauthor:: Michael Sammler
+.. todo::
+
+   - primR
+   - what makes up a struct (struct_def)
+     - struct_paddingR
+     - identityR
+   - what makes up a union (union_def)
+     - union_paddingR
+   - implicit destruction
+   - raw
+     - Vraw
+     - rawR
+     - maybe? blockR and tblockR
 
 This document highlights some tricky aspects around object
 representation, layout and padding in C++ and describes how |project| deals with them.
@@ -171,10 +183,11 @@ How is this reflected in |project|?
 Thus, the example above can be verified by first converting the struct to raw bytes, copying the raw bytes and then converting the raw bytes back into the struct.
 
 
-Materialization
-===============
+Representing Values
+====================
 
-The C++ standard `talks explicitly about when materialization occurs <https://eel.is/c++draft/class.temporary#2>`_.
+.. The C++ standard `talks explicitly about when materialization occurs <https://eel.is/c++draft/class.temporary#2>`_.
+
 In the |project| separation logic, we choose to immediately materialize all aggregates (i.e. aggregates do not have a Coq-value representation), and address the delayed materialization through the fact that not all pointers (|link:bedrock.lang.cpp.semantics.ptrs#ptr|) are required to be backed by memory.
 
 Pinned Pointers
