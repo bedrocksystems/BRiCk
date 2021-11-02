@@ -34,14 +34,14 @@ Deviations from the Standard
 
 In certain instances, |project|'s semantics deviates from the C++ standard.
 
-* Our semantics do not currently permit "pointer zapping". See ???Section???
+* Our semantics do not currently permit "pointer zapping". See :ref:`no-pointer-zapping`.
 * Function call semantics are do not currently (precisely) follow the standard. We believe that this encoding is sound but are currently working on an approach that more closely tracks teh standard text.
 
 Extensions to the Standard
 ===========================
 
 |project| also extends the C++ standard in limited ways to make low-level program verification possible.
-For example, interoperation with assembly, sharing data across address spaces, etc.
+For example, interoperation with assembly (see :ref:`machine-interop`), sharing data across address spaces, etc.
 We believe that our extensions are conservative and characterize the way that low-level programmers rely on compilers to work.
 
 .. [#weak-mem] We plan to support weak memory C++ in the future based on other work in Iris.

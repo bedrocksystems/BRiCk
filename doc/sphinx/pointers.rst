@@ -150,6 +150,8 @@ In C complete objects are generally disjoint, except that a past-the-end-pointer
 can overlap with a pointer to another object; however, in C++ a complete object
 can be nested within an array that provides storage to it.
 
+.. _no-pointer-zapping:
+
 Assumptions beyond the standard
 ================================================
 
