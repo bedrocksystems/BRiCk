@@ -582,9 +582,8 @@ Section with_cpp.
   Instance anyR_nonnull_observe {σ} {ty q} :
     Observe is_nonnull (anyR ty q).
   Proof. rewrite anyR_eq /anyR_def. apply _. Qed.
-  #[global]
 
-  Instance blockR_nonnull {σ : genv} (p : ptr) n q:
+  #[global] Instance blockR_nonnull {σ : genv} n q:
     (0 < n)%N -> Observe is_nonnull (blockR n q).
   Proof.
     rewrite blockR_eq/blockR_def.
@@ -604,6 +603,14 @@ Section with_cpp.
       simpl. iDestruct "X" as "[X _]".
       rewrite o_sub_0; last by econstructor. rewrite _offsetR_id.
       iApply (observe with "X"). }
+  Qed.
+
+  #[global] Instance tblockR_nonnull {σ} n ty q :
+    size_of σ ty = Some n -> (0 < n)%N ->
+    Observe is_nonnull (tblockR ty q).
+  Proof.
+    intros Heq ?. rewrite/tblockR {}Heq.
+    case_match; last by apply _. by apply observe_sep_l, blockR_nonnull.
   Qed.
 
   #[global] Instance tblockR_valid_ptr {σ} ty q : Observe validR (tblockR ty q).
