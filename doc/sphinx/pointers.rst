@@ -1,3 +1,5 @@
+.. _pointers-and-pointer-provenance:
+
 ###############################
 Pointers and pointer provenance
 ###############################

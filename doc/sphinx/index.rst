@@ -35,6 +35,7 @@ BRiCk is a work in progress. We welcome feedback, colloaborations, and contribut
    undefined_behavior
    pointers
    object_layout
+   machine
    documentation
    bibliography
    acknowledgements
