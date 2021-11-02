@@ -12,6 +12,7 @@ Limitations |project|
 * Assumes well-typed programs. The |project| program logic *assumes* that the abstract syntax tree is well-typed and uses this assumption to avoid performing type checking within the semantics.
 * |project| is based on the Clang frontend IR. We believe that this is a reasonable proxy for source-level C++.
 * Exceptions. In addition to not supporting `throw` and `try`, |project| additionally assumes that function calls do not throw exceptions.
+* Weak memory accesses. |project| currently requires that all atomic accesses are sequentially consistent [#weak-mem]_.
 * Floating point values and operations
 * `virtual` inheritence.
 * `template` code can only be reasoned about *after* for a particular instantiation.
@@ -42,3 +43,5 @@ Extensions to the Standard
 |project| also extends the C++ standard in limited ways to make low-level program verification possible.
 For example, interoperation with assembly, sharing data across address spaces, etc.
 We believe that our extensions are conservative and characterize the way that low-level programmers rely on compilers to work.
+
+.. [#weak-mem] We plan to support weak memory C++ in the future based on other work in Iris.
