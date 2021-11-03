@@ -179,13 +179,13 @@ Proof.
 Defined.
 Instance type_eq: EqDecision type := type_eq_dec.
 Section type_countable.
-  Local Notation BS x      := (GenLeaf (inr x)).
-  Local Notation QUAL x    := (GenLeaf (inl (inr x))).
-  Local Notation BITSIZE x := (GenLeaf (inl (inl (inr x)))).
-  Local Notation SIGNED x  := (GenLeaf (inl (inl (inl (inr x))))).
-  Local Notation CC x      := (GenLeaf (inl (inl (inl (inl (inr x)))))).
-  Local Notation N x       := (GenLeaf (inl (inl (inl (inl (inl x)))))).
-  Global Instance type_countable : Countable type.
+  #[local] Notation BS x      := (GenLeaf (inr x)).
+  #[local] Notation QUAL x    := (GenLeaf (inl (inr x))).
+  #[local] Notation BITSIZE x := (GenLeaf (inl (inl (inr x)))).
+  #[local] Notation SIGNED x  := (GenLeaf (inl (inl (inl (inr x))))).
+  #[local] Notation CC x      := (GenLeaf (inl (inl (inl (inl (inr x)))))).
+  #[local] Notation N x       := (GenLeaf (inl (inl (inl (inl (inl x)))))).
+  #[global] Instance type_countable : Countable type.
   Proof.
     set enc := fix go (t : type) :=
       match t with

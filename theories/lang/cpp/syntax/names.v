@@ -14,11 +14,11 @@ Local Open Scope N_scope.
 (* this represents names that exist in object files. *)
 Definition obj_name : Set := bs.
 Bind Scope bs_scope with obj_name.
-Global Instance obj_name_eq: EqDecision obj_name := _.
+#[global] Instance obj_name_eq: EqDecision obj_name := _.
 
 Definition ident : Set := bs.
 Bind Scope bs_scope with ident.
-Global Instance ident_eq: EqDecision ident := _.
+#[global] Instance ident_eq: EqDecision ident := _.
 
 (* naming in C++ is complex.
  * - everything has a path, e.g. namespaces, classes, etc.
@@ -36,12 +36,12 @@ Bind Scope bs_scope with globname.
   (* these are mangled names. for consistency, we're going to
    * mangle everything.
    *)
-Global Instance globname_eq: EqDecision globname := _.
+#[global] Instance globname_eq: EqDecision globname := _.
 
 (* local names *)
 Definition localname : Set := ident.
 Bind Scope bs_scope with localname.
-Global Instance localname_eq: EqDecision localname := _.
+#[global] Instance localname_eq: EqDecision localname := _.
 
 (**
 Identify an aggregate field.
@@ -52,5 +52,5 @@ Record field : Set :=
 { f_type : globname (* name of containing aggregate *)
 ; f_name : ident
 }.
-Global Instance field_eq: EqDecision field.
+#[global] Instance field_eq: EqDecision field.
 Proof. solve_decision. Defined.

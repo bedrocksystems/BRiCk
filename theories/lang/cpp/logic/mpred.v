@@ -18,7 +18,7 @@ Module Type CPP_LOGIC_CLASS_BASE.
   Axiom has_inv : forall Σ, cppG Σ -> invG Σ.
   Axiom has_cinv : forall Σ, cppG Σ -> cinvG Σ.
 
-  Global Existing Instances has_inv has_cinv.
+  #[global] Existing Instances has_inv has_cinv.
 
   Existing Class cppG.
 
@@ -35,7 +35,7 @@ Module Type CPP_LOGIC_CLASS_MIXIN (Import CC : CPP_LOGIC_CLASS_BASE).
   Arguments cpp_logic : clear implicits.
   Coercion _Σ : cpp_logic >-> gFunctors.
 
-  Global Existing Instance has_cppG.
+  #[global] Existing Instance has_cppG.
 
   Section with_cpp.
     Context `{cpp_logic ti}.

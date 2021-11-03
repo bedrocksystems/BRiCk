@@ -14,29 +14,29 @@ From bedrock.lang.cpp.logic Require Import pred path_pred heap_pred.
 From bedrock.lang.cpp Require Import heap_notations.
 From bedrock.lang.cpp.semantics Require Import values.
 
-Local Set Printing Coercions.	(** Readability *)
+#[local] Set Printing Coercions.	(** Readability *)
 
 (** PDS: Mispalced *)
-Local Arguments N.of_nat _ : simpl never.
-Local Arguments N.to_nat _ : simpl never.
+#[local] Arguments N.of_nat _ : simpl never.
+#[local] Arguments N.to_nat _ : simpl never.
 
-Local Arguments _offsetR {_ _} _ _%bi_scope.
+#[local] Arguments _offsetR {_ _} _ _%bi_scope.
 
 Lemma size_of_array_0_Some σ ty :
   is_Some (size_of σ ty) → size_of σ (Tarray ty 0) = Some 0%N.
 Proof. by move=>[]sz /= ->. Qed.
-Local Hint Resolve size_of_array_0_Some : core.
+#[local] Hint Resolve size_of_array_0_Some : core.
 Lemma size_of_array_0_None σ ty :
   size_of σ ty = None → size_of σ (Tarray ty 0) = None.
 Proof. by move=>/= ->. Qed.
-Local Hint Resolve size_of_array_0_None : core.
+#[local] Hint Resolve size_of_array_0_None : core.
 
 Section simpl_never.
-  Local Arguments N.mul : simpl never.
+  #[local] Arguments N.mul : simpl never.
   Lemma size_of_array_1 σ ty : size_of σ (Tarray ty 1) = size_of σ ty.
   Proof. simpl. case: (size_of _ ty) => //= s. f_equiv. apply: left_id. Qed.
 End simpl_never.
-Local Hint Resolve size_of_array_1 : core.
+#[local] Hint Resolve size_of_array_1 : core.
 
 (** PDS: Misplaced *)
 Section offsetR.
@@ -129,7 +129,7 @@ Instance: Params (@arrR) 4 := {}.	(** TODO: [genv] weakening *)
 Section arrR.
   Context `{Σ : cpp_logic, σ : genv}.
 
-  Global Instance arrR_ne ty : NonExpansive (arrR ty).
+  #[global] Instance arrR_ne ty : NonExpansive (arrR ty).
   Proof.
     intros n l1 l2 Hl. rewrite arrR_eq /arrR_def.
     have Hlen := Forall2_length _ _ _ Hl.
@@ -138,7 +138,7 @@ Section arrR.
     move=>k y1 y2 Hl1 Hl2. apply _offsetR_ne, bi.sep_ne, (inj Some); first done.
     rewrite -Hl1 -Hl2. by apply list_dist_lookup.
   Qed.
-  Global Instance arrR_proper ty : Proper ((≡) ==> (≡)) (arrR ty).
+  #[global] Instance arrR_proper ty : Proper ((≡) ==> (≡)) (arrR ty).
   Proof.
     intros l1 l2 Hl. rewrite arrR_eq /arrR_def.
     have Hlen : length l1 = length l2 by apply (Forall2_length (≡)), equiv_Forall2.
@@ -158,7 +158,7 @@ Section arrR.
     apply big_sepL_gen_timeless=>k x Hk.
     apply _offsetR_timeless, (bi.sep_timeless _ _ _), HR. exact: elem_of_list_lookup_2.
   Qed.
-  Global Instance arrR_persistent ty Rs :
+  #[global] Instance arrR_persistent ty Rs :
     TCForall Persistent Rs → Persistent (arrR ty Rs).
   Proof.
     rewrite TCForall_Forall Forall_forall=>HR. rewrite arrR_eq /arrR_def.
@@ -167,7 +167,7 @@ Section arrR.
     apply big_sepL_gen_persistent=>k x Hk.
     apply _offsetR_persistent, (bi.sep_persistent _ _ _), HR. exact: elem_of_list_lookup_2.
   Qed.
-  Global Instance arrR_affine ty Rs :
+  #[global] Instance arrR_affine ty Rs :
     TCForall Affine Rs → Affine (arrR ty Rs).
   Proof.
     rewrite TCForall_Forall Forall_forall=>HR. rewrite arrR_eq /arrR_def.
