@@ -267,16 +267,16 @@ Module Type CPP_LOGIC (Import INTF : VALUES_INTF) (Import CC : CPP_LOGIC_CLASS).
 
     Axiom offset_pinned_ptr_pure : forall σ o z va p,
       eval_offset σ o = Some z ->
-      pinned_ptr_pure va p ->
+      ptr_vaddr p = Some va ->
       valid_ptr (p .., o) |--
-      [| pinned_ptr_pure (Z.to_N (Z.of_N va + z)) (p .., o) |].
+      [| ptr_vaddr (p .., o) = Some (Z.to_N (Z.of_N va + z)) |].
 
     Axiom offset_inv_pinned_ptr_pure : forall σ o z va p,
       eval_offset σ o = Some z ->
-      pinned_ptr_pure va (p .., o) ->
+      ptr_vaddr (p .., o) = Some va ->
       valid_ptr (p .., o) |--
       [| 0 <= Z.of_N va - z |]%Z **
-      [| pinned_ptr_pure (Z.to_N (Z.of_N va - z)) p |].
+      [| ptr_vaddr p = Some (Z.to_N (Z.of_N va - z)) |].
 
     Axiom provides_storage_same_address : forall storage_ptr obj_ptr ty,
       Observe [| same_address storage_ptr obj_ptr |] (provides_storage storage_ptr obj_ptr ty).
@@ -587,7 +587,7 @@ Section pinned_ptr_def.
     [pinned_ptr] will only hold on pointers that are associated to addresses,
     but other pointers exist. *)
   Definition pinned_ptr_def (va : vaddr) (p : ptr) : mpred :=
-    [| pinned_ptr_pure va p |] ** exposed_ptr p.
+    [| ptr_vaddr p = Some va |] ** exposed_ptr p.
   Definition pinned_ptr_aux : seal pinned_ptr_def. Proof. by eexists. Qed.
   Definition pinned_ptr := pinned_ptr_aux.(unseal).
   Definition pinned_ptr_eq : pinned_ptr = _ := pinned_ptr_aux.(seal_eq).
@@ -600,15 +600,15 @@ Section pinned_ptr_def.
   Proof. rewrite pinned_ptr_eq. apply _. Qed.
 
   Lemma pinned_ptr_intro p va :
-    pinned_ptr_pure va p -> exposed_ptr p |-- pinned_ptr va p.
+    ptr_vaddr p = Some va -> exposed_ptr p |-- pinned_ptr va p.
   Proof. rewrite pinned_ptr_eq /pinned_ptr_def. by iIntros (?) "$". Qed.
 
   Lemma pinned_ptr_change_va p va va' :
-    pinned_ptr_pure va p -> pinned_ptr va' p |-- pinned_ptr va p.
+    ptr_vaddr p = Some va -> pinned_ptr va' p |-- pinned_ptr va p.
   Proof. rewrite pinned_ptr_eq /pinned_ptr_def. by iIntros (?) "(_ & $)". Qed.
 
   Global Instance pinned_ptr_pinned_ptr_pure va p :
-    Observe [| pinned_ptr_pure va p |] (pinned_ptr va p).
+    Observe [| ptr_vaddr p = Some va |] (pinned_ptr va p).
   Proof. rewrite pinned_ptr_eq. apply _. Qed.
 
   Global Instance pinned_ptr_valid va p :
@@ -618,8 +618,8 @@ Section pinned_ptr_def.
   (** Just a corollary of [provides_storage_same_address] in the style of
   [provides_storage_pinned_ptr]. *)
   Lemma provides_storage_pinned_ptr_pure {storage_ptr obj_ptr aty va} :
-    pinned_ptr_pure va storage_ptr ->
-    provides_storage storage_ptr obj_ptr aty |-- [| pinned_ptr_pure va obj_ptr |].
+    ptr_vaddr storage_ptr = Some va ->
+    provides_storage storage_ptr obj_ptr aty |-- [| ptr_vaddr obj_ptr = Some va |].
   Proof. rewrite provides_storage_same_address. by iIntros (HP <-). Qed.
 End pinned_ptr_def.
 
@@ -669,15 +669,15 @@ Section with_cpp.
     Observe2 [| va = va' |] (pinned_ptr va p) (pinned_ptr va' p).
   Proof.
     rewrite pinned_ptr_eq.
-    iIntros "[%H1 _] [%H2 _] !> !%". exact: pinned_ptr_pure_unique.
+    iIntros "[%H1 _] [%H2 _] !> !%". congruence.
   Qed.
 
   Lemma offset_2_pinned_ptr_pure o1 o2 z1 z2 va p :
     eval_offset σ o1 = Some z1 ->
     eval_offset σ o2 = Some z2 ->
-    pinned_ptr_pure va (p .., o1) ->
+    ptr_vaddr (p .., o1) = Some va ->
     valid_ptr p |-- valid_ptr (p .., o1) -* valid_ptr (p .., o2) -*
-    [| pinned_ptr_pure (Z.to_N (Z.of_N va - z1 + z2)) (p .., o2) |].
+    [| ptr_vaddr (p .., o2) = Some (Z.to_N (Z.of_N va - z1 + z2)) |].
   Proof.
     iIntros (He1 He2 Hpin1) "V V1 V2".
     iDestruct (offset_inv_pinned_ptr_pure with "V1") as %[??]; [done..|].
@@ -688,7 +688,7 @@ Section with_cpp.
   Lemma pinned_ptr_null : |-- pinned_ptr 0 nullptr.
   Proof.
     rewrite pinned_ptr_eq /pinned_ptr_def.
-    iFrame (pinned_ptr_pure_null).
+    iFrame (ptr_vaddr_nullptr).
     iApply exposed_ptr_nullptr.
   Qed.
 
@@ -738,7 +738,7 @@ Section with_cpp.
 
   Lemma pinned_ptr_pure_type_divide_1 va n p ty
     (Hal : align_of ty = Some n) :
-    type_ptr ty p ⊢ [| pinned_ptr_pure va p |] -∗ [| (n | va)%N |].
+    type_ptr ty p ⊢ [| ptr_vaddr p = Some va |] -∗ [| (n | va)%N |].
   Proof.
     rewrite type_ptr_aligned_pure. iIntros "!%".
     exact: pinned_ptr_pure_divide_1.
