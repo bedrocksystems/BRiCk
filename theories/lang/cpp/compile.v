@@ -20,6 +20,7 @@ Section with_Σ.
   Context `{Σ : cpp_logic thread_info}.
   Context {ti : thread_info} {σ : genv}.
 
+  (* BEGIN COMPILE SNIPPET *)
   (** compilation of a function [f] is correct if the weakest pre-condition
       of the function ([wp_func]) implies the weakest pre-condition of the
       compiled code ([fspec]).
@@ -43,5 +44,6 @@ Section with_Σ.
       dtor_at σ d p
       |-- Forall ls Q, wp_dtor (resolve:=σ) d ls Q -*
                        fspec σ.(genv_tu).(globals) (type_of_value (Odestructor d)) (Vptr p) ls Q.
+  (* END COMPILE SNIPPET *)
 
 End with_Σ.

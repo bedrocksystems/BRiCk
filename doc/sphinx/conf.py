@@ -6,11 +6,11 @@
 #
 
 # General information about the project.
-project = 'BedRock FM: CPP2V Foundations'
+project = 'BedRock BRiCk'
 copyright = '2021 BedRock Systems'
 author = 'Jasper Haag'
 
-version = "0.0.1"
+version = "0.5.0"
 release = "alpha"
 
 # -*- coding: utf-8 -*-
@@ -52,6 +52,12 @@ sys.path.append(os.path.abspath('../../alectryon/'))
 #       so it may make sense to leave this part off for now
 # with open(os.pat.abspath('../coq/doc/sphinx/refman-preamble.rst')) as s:
 #     rst_prolog = s.read()
+rst_prolog = """
+.. role:: cpp(code)
+    :language: cpp
+    :class: highlight
+
+"""
 
 # -- General configuration ---------------------------------------------------
 
@@ -145,8 +151,8 @@ default_role = 'coq'
 #show_authors = False
 
 # The name of the Pygments (syntax highlighting) style to use.
-#pygments_style = 'sphinx'
-#highlight_language = 'text'
+pygments_style = 'sphinx'
+highlight_language = 'text'
 #suppress_warnings = ["misc.highlighting_failure"]
 
 # A list of ignored prefixes for module index sorting.
@@ -243,7 +249,7 @@ latex_elements = {
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-    (master_doc, 'pragmaticFM.tex', 'BedRock FM: A Pragmatic Guide',
+    (master_doc, 'pragmaticFM.tex', 'BedRock BRiCk',
      'Jasper Haag', 'manual'),
 ]
 
@@ -253,7 +259,7 @@ latex_documents = [
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    (master_doc, 'pragmaticfm', 'BedRock FM: A Pragmatic Guide',
+    (master_doc, 'pragmaticfm', 'BedRock BRiCk',
      [author], 1)
 ]
 
@@ -264,7 +270,7 @@ man_pages = [
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-    (master_doc, 'PragmaticFMDocumentation', 'BedRock FM: A Pragmatic Guide',
+    (master_doc, 'PragmaticFMDocumentation', 'BedRock BRiCk',
      author, 'PragmaticFMDocumentation', 'A pragmatic guide to formal methods within BedRock.',
      'Miscellaneous'),
 ]
@@ -286,3 +292,51 @@ epub_title = project
 
 # A list of files that should not be packed into the epub file.
 epub_exclude_files = ['search.html']
+
+# The following snippet is taken from
+# https://github.com/sphinx-doc/sphinx/issues/2173
+global_substitutions = {
+    'project' : 'BRiCk',
+    'full_project': 'BedRock BRiCk',
+    'cpp2v': 'cpp2v'
+}
+
+from docutils.transforms import Transform
+from docutils import nodes
+
+class GlobalSubstitutions(Transform):
+    default_priority = 200
+
+    def apply(self):
+        config = self.document.settings.env.config
+        global global_substitutions
+        to_handle = set( global_substitutions.keys() ) - set(self.document.substitution_defs)
+        for ref in self.document.traverse(nodes.substitution_reference):
+            refname = ref['refname']
+            if not refname in self.document.substitution_defs:
+                try:
+                    text = global_substitutions[ refname ]
+                    if type(text) is str:
+                        txt = nodes.Text(text, text);
+                        ref.replace_self(txt)
+                    else:
+                        ref.replace_self(text)
+                except:
+                    if refname.startswith('link:'):
+                        path = refname[len('link:'):]
+                        if '#' in path:
+                            m,d = path.split('#')
+                            target = '_static/coqdoc/{module}.html#{defn}'.format(module=m, defn=d)
+                            text = d
+                        else:
+                            target = '_static/coqdoc/{module}.html'.format(module=path)
+                            text = path
+                        refnode = nodes.reference('', '', internal=False, refuri=target)
+                        refnode.append(nodes.Text(text, text))
+
+                        ref.replace_self(refnode)
+
+                    pass
+
+def setup(app):
+    app.add_transform(GlobalSubstitutions)
