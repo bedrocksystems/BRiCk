@@ -17,7 +17,7 @@ differently.
 For instance, in the following snippet `px1` and `py` are always different
 pointers, even when they have the same address. In particular, since `px1` is
 created from a pointer to `x`, it cannot be used to read or write to `y`; this
-is similar to the restriction we showed in :ref:`undefined_behavior`.
+is similar to the restriction we show in :ref:`undefined_behavior`.
 
 .. code-block:: cpp
 
@@ -29,8 +29,8 @@ is similar to the restriction we showed in :ref:`undefined_behavior`.
     //...
   }
 
-More generally, a pointer identifies to what "object" it points to, and pointer
-arithmetic is only allowed to produce pointers to other objects in limited circumstances.
+More generally, a pointer is associated with the "object" to which it points, and pointer
+arithmetic is only allowed to produce pointers to different objects in limited circumstances.
 
 Objects in the C++ standard
 ================================================

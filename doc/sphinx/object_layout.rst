@@ -86,7 +86,7 @@ The virtual address offset of a |link:bedrock.lang.cpp.semantics.ptrs#offset| is
 |project| currently supports reasoning about the layout of (a limited number of) aggregates by embedding the layout information from the Clang front-end into the |project| abstract syntax tree (see |link:bedrock.lang.cpp.syntax.translation_unit#Struct| and |link:bedrock.lang.cpp.syntax.translation_unit#Union|\ ).
 Because the C++ standard only requires portability of the layout of certain types of aggregates we limit the use of this information in our axioms to POD and standard layout classes (see |link:bedrock.lang.cpp.semantics.ptrs#eval_o_field|\ .
 
-.. project| does not currently support reasoning about the integer offset of fields.
+.. |project| does not currently support reasoning about the integer offset of fields.
 .. The `Definition struct_def <_static/coqdoc/bedrock.lang.cpp.logic.layout.html>`_ characterizes how a `struct` can be viewed as its constituent pieces and padding.
 .. which shows how the `anyR` of a `struct` can be broken down into its constituent fields and padding but there are no axioms , but it only applies to `anyR (Tnamed cls)` and it represents padding as a magic wand. No axiom gives information about field offsets of a struct.
 
