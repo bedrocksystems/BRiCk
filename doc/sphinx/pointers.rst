@@ -37,8 +37,8 @@ Objects in the C++ standard
 
 Unlike in traditional object oriented programming jargon, the C++ standard uses the word "object" to mean an instance of some type (not necessarily a class type). This is similar
 to the way that the C standard uses the term object. Objects include variables and what
-is created by `new` expressions. These and other cases are introduced by
-https://eel.is/c++draft/intro.object.
+is created by :cpp:`new` expressions. These and other cases are introduced by
+`[intro.object] <https://eel.is/c++draft/intro.object>`_.
 
 Objects form a hierarchy of complete objects and subobjects (`intro.object#2
 <https://eel.is/c++draft/intro.object#2>`_):
@@ -69,7 +69,7 @@ The C++ standard also talks about `values
 <https://eel.is/c++draft/basic.types.general#def:value>`_, at least for
 primitive objects; during its lifetime, an object of primitive type stores a
 primitive value\ [#objects-have-values]_.
-In our semantics, we define a type `val` of primitive values.
+The |project| semantics contains a type `val` of primitive values.
 
 Pointers, pointer values and objects
 =====================================
@@ -106,6 +106,9 @@ last example, `x` might live in a register or be removed altogether by
 optimizations. But since |project| pointer values need not have an address, we can
 reason about `x_ptr` uniformly, irrespective of optimizations.
 
+We use the function |link:bedrock.lang.cpp.semantics.ptrs#PTRS.ptr_vaddr| to compute the
+virtual address of a pointer.
+
 .. code-block:: coq
 
   Parameter ptr_vaddr : ptr -> option vaddr.
@@ -113,12 +116,12 @@ reason about `x_ptr` uniformly, irrespective of optimizations.
 Pointer provenance in |project|
 ================================================
 
-Each pointer can contain an allocation ID. This ID identifies the complete
+Each (valid) pointer value must contain an allocation ID. This ID identifies the complete
 object that the pointer refers to; similar concepts are common in modern
-formalizations of pointers, from CompCert onwards.
+formalizations of pointers, from `CompCert <https://hal.inria.fr/hal-00703441/document>`_ onwards.
 
-Notably, a single call to `malloc` might allocate storage for multiple objects:
-each such object will have a distinct allocation ID.
+Notably, a single call to :cpp:`malloc` might allocate storage for multiple objects:
+each such object will have a distinct allocation ID [#invalid-ptr-no-alloc-id].
 
 .. code-block:: coq
 
@@ -143,7 +146,7 @@ from the C++ semantics.
 
 As in Cerberus, casting pointers to integers marks the allocation ID of the
 pointer as _exposed_. Casting an integer to a pointer can produce any pointer
-with the same address and an exposed allocation ID;
+with the same address and an exposed allocation ID.
 
 Unlike in Cerberus, more than two allocation IDs can cover the same address.
 In C complete objects are generally disjoint, except that a past-the-end-pointer
@@ -177,9 +180,11 @@ For a crash course on formal models of pointers, consider also
   <https://eel.is/c++draft/intro.object#1>_,
   `basic.life#4 <https://eel.is/c++draft/basic.life#4>`_ and
   `basic.types.general#def:value <https://eel.is/c++draft/basic.types.general#def:value>`_.
-  In particular, `basic.life#4` licenses compilers to discard object contents
+  In particular, `basic.life#4 <https://eel.is/c++draft/basic.life#4>`_ licenses compilers to discard object contents
   outside their lifetime even in surprising scenarios; e.g. placement new over
   initialized memory is allowed to discard the initialization, even when the
   constructor is a no-op.
 .. [#std-ptr-values] "Values of pointer type" are discussed in `basic.compound#3
   <https://eel.is/c++draft/basic.compound#3>`_.
+
+.. [#invalid-ptr-no-alloc-id] The reason that this function is partial is because invalid pointers do not contain allocation IDs.
