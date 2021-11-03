@@ -841,13 +841,16 @@ Module Type Expr.
 
         NOTE The [resolve_virtual] below means that caller justifies the cast to the dynamic type.
              This is necessary because the function is expecting the correct [this] pointer.
+
+        [tq] is passed on to [wp_mcall] because that contains the information whether or not
+        the called method is a [const] method. This matches the construction of [SMethod].
      *)
     Definition wp_virtual_call (f : obj_name) (this : ptr) (this_type : type) (fty : type) (es : list Expr)
                (Q : val -> FreeTemps -> epred) : mpred :=
-      match class_name this_type with
-      | Some cls =>
+      match decompose_type this_type with
+      | (tq, Tnamed cls) =>
         resolve_virtual (σ:=resolve) this cls f (fun fimpl_addr impl_class thisp =>
-            wp_mcall (Vptr fimpl_addr) thisp (Tnamed impl_class) fty es $ fun res free_args => Q res free_args)
+            wp_mcall (Vptr fimpl_addr) thisp (tqualified tq (Tnamed impl_class)) fty es $ fun res free_args => Q res free_args)
       | _ => False
       end.
 
