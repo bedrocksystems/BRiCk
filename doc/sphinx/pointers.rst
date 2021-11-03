@@ -139,7 +139,7 @@ Integer-pointer casts
 
 Beyond what is provided by the C++ standard, we assume useful semantics for
 integer-to-pointer casts, in particular, the PNVI-ae-udi model by the Cerberus
-project (as in the N2577 paper from the C standard committee).
+project (as in the `N2577 paper from the C standard committee <http://www.open-std.org/jtc1/sc22/wg14/www/docs/n2577.pdf>`_).
 
 However, some twists are required to account for the more complex memory model
 from the C++ semantics.
@@ -167,7 +167,7 @@ assumptions on our compilers, here and elsewhere:
   `C memory object and value semantics: the space of de facto and ISO standards
   <https://www.cl.cam.ac.uk/~pes20/cerberus/notes30.pdf>`_.
 - Support for effective types is also incomplete; similarly to Cerberus,
-  we still assume users use options such as [-fno-strict-aliasing] GCC/Clang's.
+  we still assume users use options such as `-fno-strict-aliasing` GCC/Clang's.
 
 Further readings
 ================================================
