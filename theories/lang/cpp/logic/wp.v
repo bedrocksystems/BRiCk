@@ -287,7 +287,7 @@ Section with_cpp.
     forall σ1 σ2 M ρ e k1 k2,
       genv_leq σ1 σ2 ->
       Forall v f, k1 v f -* k2 v f |-- @wp_lval σ1 M ρ e k1 -* @wp_lval σ2 M ρ e k2.
-  Global Instance Proper_wp_lval :
+  #[global] Instance Proper_wp_lval :
     Proper (genv_leq ==> eq ==> eq ==> eq ==>
             pointwise_relation _ (pointwise_relation _ lentails) ==> lentails)
            (@wp_lval).
@@ -315,18 +315,18 @@ Section with_cpp.
     Proof. iIntros "Hwp". by iApply (wp_lval_shift with "[$Hwp]"). Qed.
 
     (* proof mode *)
-    Global Instance elim_modal_fupd_wp_lval p P Q :
+    #[global] Instance elim_modal_fupd_wp_lval p P Q :
       ElimModal True p false (|={M}=> P) P (WP Q) (WP Q).
     Proof.
       rewrite /ElimModal. rewrite bi.intuitionistically_if_elim/=.
       by rewrite fupd_frame_r bi.wand_elim_r fupd_wp_lval.
     Qed.
-    Global Instance elim_modal_bupd_wp_lval p P Q :
+    #[global] Instance elim_modal_bupd_wp_lval p P Q :
       ElimModal True p false (|==> P) P (WP Q) (WP Q).
     Proof.
       rewrite /ElimModal (bupd_fupd M). exact: elim_modal_fupd_wp_lval.
     Qed.
-    Global Instance add_modal_fupd_wp_lval P Q : AddModal (|={M}=> P) P (WP Q).
+    #[global] Instance add_modal_fupd_wp_lval P Q : AddModal (|={M}=> P) P (WP Q).
     Proof.
       rewrite/AddModal. by rewrite fupd_frame_r bi.wand_elim_r fupd_wp_lval.
     Qed.
@@ -378,7 +378,7 @@ Section with_cpp.
       genv_leq σ1 σ2 ->
       Forall f, k1 f -* k2 f |-- @wp_init σ1 M ρ t v e k1 -* @wp_init σ2 M ρ t v e k2.
 
-  Global Instance Proper_wp_init :
+  #[global] Instance Proper_wp_init :
     Proper (genv_leq ==> eq ==> eq ==> eq ==> eq ==> eq ==>
             pointwise_relation _ lentails ==> lentails)
            (@wp_init).
@@ -406,18 +406,18 @@ Section with_cpp.
     Proof. iIntros "Hwp". by iApply (wp_init_shift with "[$Hwp]"). Qed.
 
     (* proof mode *)
-    Global Instance elim_modal_fupd_wp_init q P Q :
+    #[global] Instance elim_modal_fupd_wp_init q P Q :
       ElimModal True q false (|={M}=> P) P (WP Q) (WP Q).
     Proof.
       rewrite /ElimModal. rewrite bi.intuitionistically_if_elim/=.
       by rewrite fupd_frame_r bi.wand_elim_r fupd_wp_init.
     Qed.
-    Global Instance elim_modal_bupd_wp_init q P Q :
+    #[global] Instance elim_modal_bupd_wp_init q P Q :
       ElimModal True q false (|==> P) P (WP Q) (WP Q).
     Proof.
       rewrite /ElimModal (bupd_fupd M). exact: elim_modal_fupd_wp_init.
     Qed.
-    Global Instance add_modal_fupd_wp_init P Q : AddModal (|={M}=> P) P (WP Q).
+    #[global] Instance add_modal_fupd_wp_init P Q : AddModal (|={M}=> P) P (WP Q).
     Proof.
       rewrite/AddModal. by rewrite fupd_frame_r bi.wand_elim_r fupd_wp_init.
     Qed.
@@ -442,7 +442,7 @@ Section with_cpp.
       genv_leq σ1 σ2 ->
       Forall v f, k1 v f -* k2 v f |-- @wp_prval σ1 M ρ e k1 -* @wp_prval σ2 M ρ e k2.
 
-  Global Instance Proper_wp_prval :
+  #[global] Instance Proper_wp_prval :
     Proper (genv_leq ==> eq ==> eq ==> eq ==>
             pointwise_relation _ (pointwise_relation _ lentails) ==> lentails)
            (@wp_prval).
@@ -469,18 +469,18 @@ Section with_cpp.
     Proof. iIntros "Hwp". by iApply (wp_prval_shift with "[$Hwp]"). Qed.
 
     (* proof mode *)
-    Global Instance elim_modal_fupd_wp_prval p P Q :
+    #[global] Instance elim_modal_fupd_wp_prval p P Q :
       ElimModal True p false (|={M}=> P) P (WP Q) (WP Q).
     Proof.
       rewrite /ElimModal. rewrite bi.intuitionistically_if_elim/=.
       by rewrite fupd_frame_r bi.wand_elim_r fupd_wp_prval.
     Qed.
-    Global Instance elim_modal_bupd_wp_prval p P Q :
+    #[global] Instance elim_modal_bupd_wp_prval p P Q :
       ElimModal True p false (|==> P) P (WP Q) (WP Q).
     Proof.
       rewrite /ElimModal (bupd_fupd M). exact: elim_modal_fupd_wp_prval.
     Qed.
-    Global Instance add_modal_fupd_wp_prval P Q : AddModal (|={M}=> P) P (WP Q).
+    #[global] Instance add_modal_fupd_wp_prval P Q : AddModal (|={M}=> P) P (WP Q).
     Proof.
       rewrite/AddModal. by rewrite fupd_frame_r bi.wand_elim_r fupd_wp_prval.
     Qed.
@@ -503,7 +503,7 @@ Section with_cpp.
     forall σ1 σ2 M ρ e k1 k2,
       genv_leq σ1 σ2 ->
       Forall v f, k1 v f -* k2 v f |-- @wp_xval σ1 M ρ e k1 -* @wp_xval σ2 M ρ e k2.
-  Global Instance Proper_wp_xval :
+  #[global] Instance Proper_wp_xval :
     Proper (genv_leq ==> eq ==> eq ==> eq ==>
             pointwise_relation _ (pointwise_relation _ lentails) ==> lentails)
            (@wp_xval).
@@ -530,18 +530,18 @@ Section with_cpp.
     Proof. iIntros "Hwp". by iApply (wp_xval_shift with "[$Hwp]"). Qed.
 
     (* proof mode *)
-    Global Instance elim_modal_fupd_wp_xval p P Q :
+    #[global] Instance elim_modal_fupd_wp_xval p P Q :
       ElimModal True p false (|={M}=> P) P (WP Q) (WP Q).
     Proof.
       rewrite /ElimModal. rewrite bi.intuitionistically_if_elim/=.
       by rewrite fupd_frame_r bi.wand_elim_r fupd_wp_xval.
     Qed.
-    Global Instance elim_modal_bupd_wp_xval p P Q :
+    #[global] Instance elim_modal_bupd_wp_xval p P Q :
       ElimModal True p false (|==> P) P (WP Q) (WP Q).
     Proof.
       rewrite /ElimModal (bupd_fupd M). exact: elim_modal_fupd_wp_xval.
     Qed.
-    Global Instance add_modal_fupd_wp_xval P Q : AddModal (|={M}=> P) P (WP Q).
+    #[global] Instance add_modal_fupd_wp_xval P Q : AddModal (|={M}=> P) P (WP Q).
     Proof.
       rewrite/AddModal. by rewrite fupd_frame_r bi.wand_elim_r fupd_wp_xval.
     Qed.
@@ -549,7 +549,7 @@ Section with_cpp.
 
   (* Opaque wrapper of [False]: this represents a [False] obtained by a [ValCat] mismatch in [wp_glval]. *)
   Definition wp_glval_mismatch {resolve : genv} (M : coPset) (r : region) (vc : ValCat) (e : Expr) : (ptr -> FreeTemps -> mpred) -> mpred := funI _ => False.
-  Global Arguments wp_glval_mismatch : simpl never.
+  #[global] Arguments wp_glval_mismatch : simpl never.
 
   (* evaluate an expression as a generalized lvalue *)
 
@@ -612,7 +612,7 @@ Section with_cpp.
       iIntros "h" (v f) "x"; iApply "h"; iFrame.
   Qed.
 
-  Global Instance Proper_wpe :
+  #[global] Instance Proper_wpe :
     Proper (genv_leq ==> eq ==> eq ==> eq ==> eq ==> (eq ==> (≡) ==> (⊢)) ==> (⊢))
            (@wpe).
   Proof.
@@ -621,7 +621,7 @@ Section with_cpp.
     iIntros (v f); iApply H4; reflexivity.
   Qed.
 
-  Global Instance Proper_wpe' :
+  #[global] Instance Proper_wpe' :
     Proper (genv_leq ==> eq ==> eq ==> eq ==> eq ==> (pointwise_relation _ (pointwise_relation _ lentails)) ==> lentails)
            (@wpe).
   Proof.
@@ -635,7 +635,7 @@ Section with_cpp.
     Forall v f, k1 v f -* k2 v f |-- wpAny (resolve := σ1) M ρ e k1 -* wpAny (resolve:=σ2) M ρ e k2.
   Proof. destruct e; apply: wpe_frame. Qed.
 
-  Global Instance Proper_wpAny :
+  #[global] Instance Proper_wpAny :
     Proper (genv_leq ==> eq ==> eq ==> eq ==> (eq ==> (≡) ==> (⊢)) ==> (⊢))
            (@wpAny).
   Proof.
@@ -644,7 +644,7 @@ Section with_cpp.
     iIntros (v f); iApply H3; reflexivity.
   Qed.
 
-  Global Instance Proper_wpAny' :
+  #[global] Instance Proper_wpAny' :
     Proper (genv_leq ==> eq ==> eq ==> eq ==> (pointwise_relation _ (pointwise_relation _ lentails)) ==> lentails)
            (@wpAny).
   Proof.
@@ -698,18 +698,18 @@ Section with_cpp.
     Proof. iIntros "Hwp". by iApply (wp_shift with "[$Hwp]"). Qed.
 
     (* proof mode *)
-    Global Instance elim_modal_fupd_wp p P k :
+    #[global] Instance elim_modal_fupd_wp p P k :
       ElimModal True p false (|={M}=> P) P (WP k) (WP k).
     Proof.
       rewrite /ElimModal. rewrite bi.intuitionistically_if_elim/=.
       by rewrite fupd_frame_r bi.wand_elim_r fupd_wp.
     Qed.
-    Global Instance elim_modal_bupd_wp p P k :
+    #[global] Instance elim_modal_bupd_wp p P k :
       ElimModal True p false (|==> P) P (WP k) (WP k).
     Proof.
       rewrite /ElimModal (bupd_fupd M). exact: elim_modal_fupd_wp.
     Qed.
-    Global Instance add_modal_fupd_wp P k : AddModal (|={M}=> P) P (WP k).
+    #[global] Instance add_modal_fupd_wp P k : AddModal (|={M}=> P) P (WP k).
     Proof.
       rewrite/AddModal. by rewrite fupd_frame_r bi.wand_elim_r fupd_wp.
     Qed.
@@ -752,7 +752,7 @@ Section with_cpp.
   Axiom fspec_frame : forall tt ft a ls Q1 Q2,
       Forall v, Q1 v -* Q2 v |-- @fspec tt ft a ls Q1 -* @fspec tt ft a ls Q2.
 
-  Global Instance Proper_fspec : forall tt ft a ls,
+  #[global] Instance Proper_fspec : forall tt ft a ls,
       Proper (pointwise_relation _ lentails ==> lentails) (@fspec tt ft a ls).
   Proof. repeat red; intros.
          rewrite fspec_complete_type.

@@ -98,7 +98,7 @@ Module Type CPP_LOGIC (Import INTF : VALUES_INTF) (Import CC : CPP_LOGIC_CLASS).
     Axiom _valid_ptr_persistent : forall b p, Persistent (_valid_ptr b p).
     Axiom _valid_ptr_affine : forall b p, Affine (_valid_ptr b p).
     Axiom _valid_ptr_timeless : forall b p, Timeless (_valid_ptr b p).
-    Global Existing Instances _valid_ptr_persistent _valid_ptr_affine _valid_ptr_timeless.
+    #[global] Existing Instances _valid_ptr_persistent _valid_ptr_affine _valid_ptr_timeless.
 
     Axiom valid_ptr_nullptr : |-- valid_ptr nullptr.
     Axiom not_strictly_valid_ptr_nullptr : strict_valid_ptr nullptr |-- False.
@@ -136,23 +136,23 @@ Module Type CPP_LOGIC (Import INTF : VALUES_INTF) (Import CC : CPP_LOGIC_CLASS).
       Proper (genv_eq ==> eq ==> eq ==> eq ==> eq ==> (≡)) (@tptsto).
     Axiom tptsto_mono :
       Proper (genv_leq ==> eq ==> eq ==> eq ==> eq ==> (⊢)) (@tptsto).
-    Global Existing Instances tptsto_proper tptsto_mono.
+    #[global] Existing Instances tptsto_proper tptsto_mono.
 
     Axiom tptsto_timeless :
       forall {σ} ty q a v, Timeless (@tptsto σ ty q a v).
     Axiom tptsto_fractional :
       forall {σ} ty a v, Fractional (λ q, @tptsto σ ty q a v).
-    Global Existing Instances tptsto_timeless tptsto_fractional.
+    #[global] Existing Instances tptsto_timeless tptsto_fractional.
 
     Axiom tptsto_frac_valid : forall {σ} t (q : Qp) p v,
       Observe [| q ≤ 1 |]%Qp (@tptsto σ t q p v).
-    Global Existing Instance tptsto_frac_valid.
+    #[global] Existing Instance tptsto_frac_valid.
 
     Axiom tptsto_agree : forall {σ} ty q1 q2 p v1 v2,
       Observe2 [| val_related σ ty v1 v2 |]
                (@tptsto σ ty q1 p v1)
                (@tptsto σ ty q2 p v2).
-    Global Existing Instances tptsto_agree.
+    #[global] Existing Instances tptsto_agree.
 
     (* TODO (JH/PG): Add in a proper instance using this which allows us to rewrite
          `val_related` values within `tptsto`s.
@@ -163,7 +163,7 @@ Module Type CPP_LOGIC (Import INTF : VALUES_INTF) (Import CC : CPP_LOGIC_CLASS).
 
     Axiom tptsto_nonvoid : forall {σ} ty (q : Qp) p v,
       Observe [| ty <> Tvoid |] (@tptsto σ ty q p v).
-    Global Existing Instance tptsto_nonvoid.
+    #[global] Existing Instance tptsto_nonvoid.
 
     (** The allocation is alive. Neither persistent nor fractional.
       See https://eel.is/c++draft/basic.stc.general#4 and
@@ -171,7 +171,7 @@ Module Type CPP_LOGIC (Import INTF : VALUES_INTF) (Import CC : CPP_LOGIC_CLASS).
     *)
     Parameter live_alloc_id : alloc_id -> mpred.
     Axiom live_alloc_id_timeless : forall aid, Timeless (live_alloc_id aid).
-    Global Existing Instance live_alloc_id_timeless.
+    #[global] Existing Instance live_alloc_id_timeless.
 
     Axiom valid_ptr_alloc_id : forall p,
       valid_ptr p |-- [| is_Some (ptr_alloc_id p) |].
@@ -204,7 +204,7 @@ Module Type CPP_LOGIC (Import INTF : VALUES_INTF) (Import CC : CPP_LOGIC_CLASS).
         Qp -> ptr -> mpred.
     Axiom identity_fractional : forall σ this mdc p, Fractional (λ q, identity this mdc q p).
     Axiom identity_timeless : forall σ this mdc q p, Timeless (identity this mdc q p).
-    Global Existing Instances identity_fractional identity_timeless.
+    #[global] Existing Instances identity_fractional identity_timeless.
 
     (** cpp2v-core#194: The fraction is valid? Agreement? *)
 
@@ -247,7 +247,7 @@ Module Type CPP_LOGIC (Import INTF : VALUES_INTF) (Import CC : CPP_LOGIC_CLASS).
       Axiom dtor_at_affine : forall f p, Affine (dtor_at f p).
       Axiom dtor_at_timeless : forall f p, Timeless (dtor_at f p).
 
-      Global Existing Instances
+      #[global] Existing Instances
         code_at_persistent code_at_affine code_at_timeless
         method_at_persistent method_at_affine method_at_timeless
         ctor_at_persistent ctor_at_affine ctor_at_timeless
@@ -267,16 +267,16 @@ Module Type CPP_LOGIC (Import INTF : VALUES_INTF) (Import CC : CPP_LOGIC_CLASS).
 
     Axiom offset_pinned_ptr_pure : forall σ o z va p,
       eval_offset σ o = Some z ->
-      pinned_ptr_pure va p ->
+      ptr_vaddr p = Some va ->
       valid_ptr (p .., o) |--
-      [| pinned_ptr_pure (Z.to_N (Z.of_N va + z)) (p .., o) |].
+      [| ptr_vaddr (p .., o) = Some (Z.to_N (Z.of_N va + z)) |].
 
     Axiom offset_inv_pinned_ptr_pure : forall σ o z va p,
       eval_offset σ o = Some z ->
-      pinned_ptr_pure va (p .., o) ->
+      ptr_vaddr (p .., o) = Some va ->
       valid_ptr (p .., o) |--
       [| 0 <= Z.of_N va - z |]%Z **
-      [| pinned_ptr_pure (Z.to_N (Z.of_N va - z)) p |].
+      [| ptr_vaddr p = Some (Z.to_N (Z.of_N va - z)) |].
 
     Axiom provides_storage_same_address : forall storage_ptr obj_ptr ty,
       Observe [| same_address storage_ptr obj_ptr |] (provides_storage storage_ptr obj_ptr ty).
@@ -286,7 +286,7 @@ Module Type CPP_LOGIC (Import INTF : VALUES_INTF) (Import CC : CPP_LOGIC_CLASS).
     Axiom provides_storage_valid_obj_ptr : forall storage_ptr obj_ptr aty,
       Observe (valid_ptr obj_ptr) (provides_storage storage_ptr obj_ptr aty).
 
-    Global Existing Instances provides_storage_same_address
+    #[global] Existing Instances provides_storage_same_address
       provides_storage_valid_storage_ptr provides_storage_valid_obj_ptr.
 
     (**
@@ -305,7 +305,7 @@ Module Type CPP_LOGIC (Import INTF : VALUES_INTF) (Import CC : CPP_LOGIC_CLASS).
 
     Axiom exposed_aid_null_alloc_id : |-- exposed_aid null_alloc_id.
 
-    Global Existing Instances
+    #[global] Existing Instances
       exposed_aid_persistent exposed_aid_affine exposed_aid_timeless.
 
     (**
@@ -336,7 +336,7 @@ Module Type CPP_LOGIC (Import INTF : VALUES_INTF) (Import CC : CPP_LOGIC_CLASS).
       Affine (type_ptr ty p).
     Axiom type_ptr_timeless : forall σ p ty,
       Timeless (type_ptr ty p).
-    Global Existing Instances type_ptr_persistent type_ptr_affine type_ptr_timeless.
+    #[global] Existing Instances type_ptr_persistent type_ptr_affine type_ptr_timeless.
 
     Axiom type_ptr_aligned_pure : forall σ ty p,
       type_ptr ty p |-- [| aligned_ptr_ty ty p |].
@@ -346,7 +346,7 @@ Module Type CPP_LOGIC (Import INTF : VALUES_INTF) (Import CC : CPP_LOGIC_CLASS).
 
     Axiom tptsto_type_ptr : forall (σ : genv) ty q p v,
       Observe (type_ptr ty p) (tptsto ty q p v).
-    Global Existing Instance tptsto_type_ptr.
+    #[global] Existing Instance tptsto_type_ptr.
 
     (* All objects in the C++ abstract machine have a size
 
@@ -542,13 +542,13 @@ Section pinned_ptr_def.
   Definition exposed_ptr := exposed_ptr_aux.(unseal).
   Definition exposed_ptr_eq : exposed_ptr = _ := exposed_ptr_aux.(seal_eq).
 
-  Global Instance exposed_ptr_persistent p : Persistent (exposed_ptr p).
+  #[global] Instance exposed_ptr_persistent p : Persistent (exposed_ptr p).
   Proof. rewrite exposed_ptr_eq. apply _. Qed.
-  Global Instance exposed_ptr_affine p : Affine (exposed_ptr p).
+  #[global] Instance exposed_ptr_affine p : Affine (exposed_ptr p).
   Proof. rewrite exposed_ptr_eq. apply _. Qed.
-  Global Instance exposed_ptr_timeless p : Timeless (exposed_ptr p).
+  #[global] Instance exposed_ptr_timeless p : Timeless (exposed_ptr p).
   Proof. rewrite exposed_ptr_eq. apply _. Qed.
-  Global Instance exposed_ptr_valid p :
+  #[global] Instance exposed_ptr_valid p :
     Observe (valid_ptr p) (exposed_ptr p).
   Proof. rewrite exposed_ptr_eq. apply _. Qed.
 
@@ -587,39 +587,39 @@ Section pinned_ptr_def.
     [pinned_ptr] will only hold on pointers that are associated to addresses,
     but other pointers exist. *)
   Definition pinned_ptr_def (va : vaddr) (p : ptr) : mpred :=
-    [| pinned_ptr_pure va p |] ** exposed_ptr p.
+    [| ptr_vaddr p = Some va |] ** exposed_ptr p.
   Definition pinned_ptr_aux : seal pinned_ptr_def. Proof. by eexists. Qed.
   Definition pinned_ptr := pinned_ptr_aux.(unseal).
   Definition pinned_ptr_eq : pinned_ptr = _ := pinned_ptr_aux.(seal_eq).
 
-  Global Instance pinned_ptr_persistent va p : Persistent (pinned_ptr va p).
+  #[global] Instance pinned_ptr_persistent va p : Persistent (pinned_ptr va p).
   Proof. rewrite pinned_ptr_eq. apply _. Qed.
-  Global Instance pinned_ptr_affine va p : Affine (pinned_ptr va p).
+  #[global] Instance pinned_ptr_affine va p : Affine (pinned_ptr va p).
   Proof. rewrite pinned_ptr_eq. apply _. Qed.
-  Global Instance pinned_ptr_timeless va p : Timeless (pinned_ptr va p).
+  #[global] Instance pinned_ptr_timeless va p : Timeless (pinned_ptr va p).
   Proof. rewrite pinned_ptr_eq. apply _. Qed.
 
   Lemma pinned_ptr_intro p va :
-    pinned_ptr_pure va p -> exposed_ptr p |-- pinned_ptr va p.
+    ptr_vaddr p = Some va -> exposed_ptr p |-- pinned_ptr va p.
   Proof. rewrite pinned_ptr_eq /pinned_ptr_def. by iIntros (?) "$". Qed.
 
   Lemma pinned_ptr_change_va p va va' :
-    pinned_ptr_pure va p -> pinned_ptr va' p |-- pinned_ptr va p.
+    ptr_vaddr p = Some va -> pinned_ptr va' p |-- pinned_ptr va p.
   Proof. rewrite pinned_ptr_eq /pinned_ptr_def. by iIntros (?) "(_ & $)". Qed.
 
-  Global Instance pinned_ptr_pinned_ptr_pure va p :
-    Observe [| pinned_ptr_pure va p |] (pinned_ptr va p).
+  #[global] Instance pinned_ptr_pinned_ptr_pure va p :
+    Observe [| ptr_vaddr p = Some va |] (pinned_ptr va p).
   Proof. rewrite pinned_ptr_eq. apply _. Qed.
 
-  Global Instance pinned_ptr_valid va p :
+  #[global] Instance pinned_ptr_valid va p :
     Observe (valid_ptr p) (pinned_ptr va p).
   Proof. rewrite pinned_ptr_eq. apply _. Qed.
 
   (** Just a corollary of [provides_storage_same_address] in the style of
   [provides_storage_pinned_ptr]. *)
   Lemma provides_storage_pinned_ptr_pure {storage_ptr obj_ptr aty va} :
-    pinned_ptr_pure va storage_ptr ->
-    provides_storage storage_ptr obj_ptr aty |-- [| pinned_ptr_pure va obj_ptr |].
+    ptr_vaddr storage_ptr = Some va ->
+    provides_storage storage_ptr obj_ptr aty |-- [| ptr_vaddr obj_ptr = Some va |].
   Proof. rewrite provides_storage_same_address. by iIntros (HP <-). Qed.
 End pinned_ptr_def.
 
@@ -665,19 +665,19 @@ Section with_cpp.
     by iDestruct (provides_storage_preserves_nullptr with "PS") as "#-> {PS}".
   Qed.
 
-  Global Instance pinned_ptr_unique va va' p :
+  #[global] Instance pinned_ptr_unique va va' p :
     Observe2 [| va = va' |] (pinned_ptr va p) (pinned_ptr va' p).
   Proof.
     rewrite pinned_ptr_eq.
-    iIntros "[%H1 _] [%H2 _] !> !%". exact: pinned_ptr_pure_unique.
+    iIntros "[%H1 _] [%H2 _] !> !%". congruence.
   Qed.
 
   Lemma offset_2_pinned_ptr_pure o1 o2 z1 z2 va p :
     eval_offset σ o1 = Some z1 ->
     eval_offset σ o2 = Some z2 ->
-    pinned_ptr_pure va (p .., o1) ->
+    ptr_vaddr (p .., o1) = Some va ->
     valid_ptr p |-- valid_ptr (p .., o1) -* valid_ptr (p .., o2) -*
-    [| pinned_ptr_pure (Z.to_N (Z.of_N va - z1 + z2)) (p .., o2) |].
+    [| ptr_vaddr (p .., o2) = Some (Z.to_N (Z.of_N va - z1 + z2)) |].
   Proof.
     iIntros (He1 He2 Hpin1) "V V1 V2".
     iDestruct (offset_inv_pinned_ptr_pure with "V1") as %[??]; [done..|].
@@ -688,7 +688,7 @@ Section with_cpp.
   Lemma pinned_ptr_null : |-- pinned_ptr 0 nullptr.
   Proof.
     rewrite pinned_ptr_eq /pinned_ptr_def.
-    iFrame (pinned_ptr_pure_null).
+    iFrame (ptr_vaddr_nullptr).
     iApply exposed_ptr_nullptr.
   Qed.
 
@@ -738,7 +738,7 @@ Section with_cpp.
 
   Lemma pinned_ptr_pure_type_divide_1 va n p ty
     (Hal : align_of ty = Some n) :
-    type_ptr ty p ⊢ [| pinned_ptr_pure va p |] -∗ [| (n | va)%N |].
+    type_ptr ty p ⊢ [| ptr_vaddr p = Some va |] -∗ [| (n | va)%N |].
   Proof.
     rewrite type_ptr_aligned_pure. iIntros "!%".
     exact: pinned_ptr_pure_divide_1.
@@ -799,20 +799,20 @@ Section with_cpp.
   Definition valid_live_ptr p : mpred := _valid_live_ptr Relaxed p.
   Definition strict_valid_live_ptr p : mpred := _valid_live_ptr Strict p.
 
-  Global Instance tptsto_flip_mono :
+  #[global] Instance tptsto_flip_mono :
     Proper (flip genv_leq ==> eq ==> eq ==> eq ==> eq ==> flip (⊢))
       (@tptsto _ Σ).
   Proof. repeat intro. exact: tptsto_mono. Qed.
 
-  Global Instance tptsto_as_fractional ty q a v :
+  #[global] Instance tptsto_as_fractional ty q a v :
     AsFractional (tptsto ty q a v) (λ q, tptsto ty q a v) q.
   Proof. exact: Build_AsFractional. Qed.
 
-  Global Instance identity_as_fractional this mdc p q :
+  #[global] Instance identity_as_fractional this mdc p q :
     AsFractional (identity this mdc q p) (λ q, identity this mdc q p) q.
   Proof. exact: Build_AsFractional. Qed.
 
-  Global Instance tptsto_observe_nonnull t q p v :
+  #[global] Instance tptsto_observe_nonnull t q p v :
     Observe [| p <> nullptr |] (tptsto t q p v).
   Proof.
     apply: observe_intro.

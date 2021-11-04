@@ -302,9 +302,6 @@ Module Type PTRS_DERIVED (Import P : PTRS).
   Parameter same_address : ptr -> ptr -> Prop.
   Axiom same_address_eq : same_address = same_property ptr_vaddr.
 
-  (** Define when [p]'s address is pinned to [va], as defined via [ptr_vaddr]. *)
-  Parameter pinned_ptr_pure : forall (va : vaddr) (p : ptr), Prop.
-  Axiom pinned_ptr_pure_eq : pinned_ptr_pure = fun (va : vaddr) (p : ptr) => ptr_vaddr p = Some va.
 End PTRS_DERIVED.
 
 Module Type PTRS_INTF_MINIMAL := PTRS <+ PTRS_DERIVED.
@@ -332,16 +329,12 @@ Module Type PTRS_MIXIN (Import P : PTRS_INTF_MINIMAL).
   Proof. by rewrite same_address_eq same_property_iff. Qed.
 
   Lemma same_address_pinned p1 p2 :
-    same_address p1 p2 <-> ∃ va, pinned_ptr_pure va p1 ∧ pinned_ptr_pure va p2.
-  Proof. by rewrite same_address_iff pinned_ptr_pure_eq. Qed.
+    same_address p1 p2 <-> ∃ va, ptr_vaddr p1 = Some va /\ ptr_vaddr p2 = Some va.
+  Proof. by rewrite same_address_iff. Qed.
 
   Lemma same_address_intro p1 p2 va :
     ptr_vaddr p1 = Some va -> ptr_vaddr p2 = Some va -> same_address p1 p2.
   Proof. rewrite same_address_eq; exact: same_property_intro. Qed.
-
-  Lemma same_address_pinned_intro p1 p2 va :
-    pinned_ptr_pure va p1 -> pinned_ptr_pure va p2 -> same_address p1 p2.
-  Proof. rewrite pinned_ptr_pure_eq; exact: same_address_intro. Qed.
 
   Lemma same_address_nullptr_nullptr : same_address nullptr nullptr.
   Proof. have ? := ptr_vaddr_nullptr. exact: same_address_intro. Qed.
@@ -374,22 +367,6 @@ Module Type PTRS_MIXIN (Import P : PTRS_INTF_MINIMAL).
     move=> Hsm. rewrite /same_address_bool bool_decide_true; first done.
     by rewrite same_address_eq -same_property_reflexive_equiv.
   Qed.
-
-  (** ** [pinned_ptr_pure] derived lemmas *)
-  Lemma pinned_ptr_pure_null : pinned_ptr_pure 0 nullptr.
-  Proof. by rewrite pinned_ptr_pure_eq ptr_vaddr_nullptr. Qed.
-
-  Lemma pinned_ptr_pure_unique va1 va2 p :
-    pinned_ptr_pure va1 p -> pinned_ptr_pure va2 p -> va1 = va2.
-  Proof.
-    rewrite pinned_ptr_pure_eq => H1 H2. apply (inj Some). by rewrite -H1 -H2.
-  Qed.
-
-  #[global] Instance pinned_ptr_pure_proper va :
-    Proper (same_address ==> iff) (pinned_ptr_pure va).
-  Proof. rewrite pinned_ptr_pure_eq. by intros p1 p2 ->. Qed.
-
-  #[global] Instance pinned_ptr_pure_params : Params pinned_ptr_pure 1 := {}.
 
   (** ** [same_alloc] lemmas *)
 
@@ -505,15 +482,15 @@ Module Type PTRS_MIXIN (Import P : PTRS_INTF_MINIMAL).
   Qed.
 
   Lemma pinned_ptr_pure_aligned_divide va n p :
-    pinned_ptr_pure va p ->
+    ptr_vaddr p = Some va ->
     aligned_ptr n p <-> (n | va)%N.
-  Proof. rewrite pinned_ptr_pure_eq /aligned_ptr. naive_solver. Qed.
+  Proof. rewrite /aligned_ptr. naive_solver. Qed.
 
   Lemma pinned_ptr_pure_divide_1 σ va n p ty
     (Hal : align_of ty = Some n) :
-    aligned_ptr_ty ty p → pinned_ptr_pure va p → (n | va)%N.
+    aligned_ptr_ty ty p → ptr_vaddr p = Some va → (n | va)%N.
   Proof.
-    rewrite /aligned_ptr_ty Hal /aligned_ptr pinned_ptr_pure_eq /=.
+    rewrite /aligned_ptr_ty Hal /aligned_ptr /=.
     naive_solver.
   Qed.
 

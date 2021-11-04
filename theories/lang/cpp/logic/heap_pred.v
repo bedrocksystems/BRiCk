@@ -56,7 +56,7 @@ Section defs.
   Definition cptrR_eq : @cptrR = _ := cptrR_aux.(seal_eq).
 End defs.
 
-Global Instance: Params (@cptrR) 3 := {}.
+#[global] Instance: Params (@cptrR) 3 := {}.
 
 Arguments cptrR {_ Σ resolve} _ : rename.
 
@@ -79,37 +79,37 @@ Section with_cpp.
   Definition primR_aux : seal (@primR_def). Proof. by eexists. Qed.
   Definition primR := primR_aux.(unseal).
   Definition primR_eq : @primR = _ := primR_aux.(seal_eq).
-  Global Arguments primR {resolve} ty q v : rename.
+  #[global] Arguments primR {resolve} ty q v : rename.
 
-  Global Instance primR_proper :
+  #[global] Instance primR_proper :
     Proper (genv_eq ==> (=) ==> (=) ==> (=) ==> (⊣⊢)) (@primR).
   Proof.
     intros σ1 σ2 Hσ ??-> ??-> ??->.
     rewrite primR_eq/primR_def. by setoid_rewrite Hσ.
   Qed.
-  Global Instance primR_mono :
+  #[global] Instance primR_mono :
     Proper (genv_leq ==> (=) ==> (=) ==> (=) ==> (⊢)) (@primR).
   Proof.
     intros σ1 σ2 Hσ ??-> ??-> ??->.
     rewrite primR_eq/primR_def. by setoid_rewrite Hσ.
   Qed.
 
-  Global Instance primR_timeless resolve ty q v
+  #[global] Instance primR_timeless resolve ty q v
     : Timeless (primR ty q v).
   Proof. rewrite primR_eq. apply _. Qed.
 
-  Global Instance primR_fractional resolve ty v :
+  #[global] Instance primR_fractional resolve ty v :
     Fractional (λ q, primR ty q v).
   Proof. rewrite primR_eq. apply _. Qed.
-  Global Instance primR_as_fractional resolve ty q v :
+  #[global] Instance primR_as_fractional resolve ty q v :
     AsFractional (primR ty q v) (λ q, primR ty q v) q.
   Proof. constructor. done. apply _. Qed.
 
-  Global Instance primR_observe_frac_valid resolve ty (q : Qp) v :
+  #[global] Instance primR_observe_frac_valid resolve ty (q : Qp) v :
     Observe [| q ≤ 1 |]%Qp (primR ty q v).
   Proof. rewrite primR_eq. apply _. Qed.
 
-  Global Instance primR_observe_agree resolve ty q1 q2 v1 v2 :
+  #[global] Instance primR_observe_agree resolve ty q1 q2 v1 v2 :
     Observe2 [| v1 = v2 |]
       (primR ty q1 v1)
       (primR ty q2 v2).
@@ -127,7 +127,7 @@ Section with_cpp.
     by iPureIntro.
   Qed.
 
-  Global Instance primR_observe_has_type resolve ty q v :
+  #[global] Instance primR_observe_has_type resolve ty q v :
     Observe [| has_type v (drop_qualifiers ty) |] (primR ty q v).
   Proof. rewrite primR_eq. apply _. Qed.
 
@@ -150,33 +150,33 @@ Section with_cpp.
   Definition uninitR_aux : seal (@uninitR_def). Proof. by eexists. Qed.
   Definition uninitR := uninitR_aux.(unseal).
   Definition uninitR_eq : @uninitR = _ := uninitR_aux.(seal_eq).
-  Global Arguments uninitR {resolve} ty q : rename.
+  #[global] Arguments uninitR {resolve} ty q : rename.
 
-  Global Instance uninitR_proper
+  #[global] Instance uninitR_proper
     : Proper (genv_eq ==> (=) ==> (=) ==> (≡)) (@uninitR).
   Proof.
     intros σ1 σ2 Hσ ??-> ??->     .
     rewrite uninitR_eq/uninitR_def. by setoid_rewrite Hσ.
   Qed.
-  Global Instance uninitR_mono
+  #[global] Instance uninitR_mono
     : Proper (genv_leq ==> (=) ==> (=) ==> (⊢)) (@uninitR).
   Proof.
     intros σ1 σ2 Hσ ??-> ??->     .
     rewrite uninitR_eq/uninitR_def. by setoid_rewrite Hσ.
   Qed.
 
-  Global Instance uninitR_timeless resolve ty q
+  #[global] Instance uninitR_timeless resolve ty q
     : Timeless (uninitR ty q).
   Proof. rewrite uninitR_eq. apply _. Qed.
 
-  Global Instance uninitR_fractional resolve ty :
+  #[global] Instance uninitR_fractional resolve ty :
     Fractional (uninitR ty).
   Proof. rewrite uninitR_eq. apply _. Qed.
-  Global Instance unintR_as_fractional resolve ty q :
+  #[global] Instance unintR_as_fractional resolve ty q :
     AsFractional (uninitR ty q) (uninitR ty) q.
   Proof. constructor. done. apply _. Qed.
 
-  Global Instance uninitR_observe_frac_valid resolve ty (q : Qp) :
+  #[global] Instance uninitR_observe_frac_valid resolve ty (q : Qp) :
     Observe [| q ≤ 1 |]%Qp (uninitR ty q).
   Proof. rewrite uninitR_eq. apply _. Qed.
 
@@ -215,11 +215,11 @@ Section with_cpp.
   Definition anyR_aux : seal (@anyR_def). Proof. by eexists. Qed.
   Definition anyR := anyR_aux.(unseal).
   Definition anyR_eq : @anyR = _ := anyR_aux.(seal_eq).
-  Global Arguments anyR {resolve} ty q : rename.
+  #[global] Arguments anyR {resolve} ty q : rename.
 
-  Global Instance anyR_timeless resolve ty q : Timeless (anyR ty q).
+  #[global] Instance anyR_timeless resolve ty q : Timeless (anyR ty q).
   Proof. rewrite anyR_eq. apply _. Qed.
-  Global Instance anyR_fractional resolve ty :
+  #[global] Instance anyR_fractional resolve ty :
     Fractional (anyR ty).
   Proof.
     rewrite anyR_eq /anyR_def. intros q1 q2.
@@ -247,11 +247,11 @@ Section with_cpp.
       iLeft. iExists _. rewrite comm_L. iFrame "V".
     - iRight. rewrite uninitR_fractional _at_sep. iFrame "U1 U2".
   Qed.
-  Global Instance anyR_as_fractional resolve ty q :
+  #[global] Instance anyR_as_fractional resolve ty q :
     AsFractional (anyR ty q) (anyR ty) q.
   Proof. exact: Build_AsFractional. Qed.
 
-  Global Instance anyR_observe_frac_valid resolve ty (q : Qp) :
+  #[global] Instance anyR_observe_frac_valid resolve ty (q : Qp) :
     Observe [| q ≤ 1 |]%Qp (anyR ty q).
   Proof. rewrite anyR_eq. apply _. Qed.
 
@@ -305,7 +305,7 @@ Section with_cpp.
 End with_cpp.
 
 Typeclasses Opaque primR.
-Global Opaque primR.
+#[global] Opaque primR.
 
 Section with_cpp.
   Context `{Σ : cpp_logic}.
@@ -373,15 +373,15 @@ Section with_cpp.
   Definition is_null := is_null_aux.(unseal).
   Definition is_null_eq : @is_null = _ := is_null_aux.(seal_eq).
 
-  Global Instance is_null_persistent : Persistent is_null.
+  #[global] Instance is_null_persistent : Persistent is_null.
   Proof. rewrite is_null_eq. apply _. Qed.
-  Global Instance is_null_affine : Affine is_null.
+  #[global] Instance is_null_affine : Affine is_null.
   Proof. rewrite is_null_eq. apply _. Qed.
-  Global Instance is_null_timeless : Timeless is_null.
+  #[global] Instance is_null_timeless : Timeless is_null.
   Proof. rewrite is_null_eq. apply _. Qed.
-  Global Instance is_null_fractional : Fractional (λ _, is_null).
+  #[global] Instance is_null_fractional : Fractional (λ _, is_null).
   Proof. apply _. Qed.
-  Global Instance is_null_as_fractional q : AsFractional is_null (λ _, is_null) q.
+  #[global] Instance is_null_as_fractional q : AsFractional is_null (λ _, is_null) q.
   Proof. exact: Build_AsFractional. Qed.
 
   Definition is_nonnull_def : Rep :=
@@ -390,11 +390,11 @@ Section with_cpp.
   Definition is_nonnull := is_nonnull_aux.(unseal).
   Definition is_nonnull_eq : @is_nonnull = _ := is_nonnull_aux.(seal_eq).
 
-  Global Instance is_nonnull_persistent : Persistent is_nonnull.
+  #[global] Instance is_nonnull_persistent : Persistent is_nonnull.
   Proof. rewrite is_nonnull_eq. apply _. Qed.
-  Global Instance is_nonnull_affine : Affine is_nonnull.
+  #[global] Instance is_nonnull_affine : Affine is_nonnull.
   Proof. rewrite is_nonnull_eq. apply _. Qed.
-  Global Instance is_nonnull_timeless : Timeless is_nonnull.
+  #[global] Instance is_nonnull_timeless : Timeless is_nonnull.
   Proof. rewrite is_nonnull_eq. apply _. Qed.
 
   Definition alignedR_def (al : N) : Rep := as_Rep (λ p, [| aligned_ptr al p |]).
@@ -408,7 +408,7 @@ Section with_cpp.
   #[global] Instance alignedR_timeless {al} : Timeless (alignedR al).
   Proof. rewrite alignedR_eq. apply _. Qed.
 
-  Global Instance alignedR_divide_mono :
+  #[global] Instance alignedR_divide_mono :
     Proper (flip N.divide ==> bi_entails) alignedR.
   Proof.
     intros m n ?.
@@ -416,7 +416,7 @@ Section with_cpp.
     exact: aligned_ptr_divide_weaken.
   Qed.
 
-  Global Instance alignedR_divide_flip_mono :
+  #[global] Instance alignedR_divide_flip_mono :
     Proper (N.divide ==> flip bi_entails) alignedR.
   Proof. solve_proper. Qed.
 
