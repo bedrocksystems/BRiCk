@@ -45,6 +45,7 @@ Module Type Expr.
     #[local] Notation wp_prval := (wp_prval M ρ).
     #[local] Notation wp_xval := (wp_xval M ρ).
     #[local] Notation wp_init := (wp_init M ρ).
+    #[local] Notation wp_initialize := (wp_initialize M ρ).
     #[local] Notation wpe := (wpe M ρ).
     #[local] Notation wp_glval := (wp_glval M ρ).
     #[local] Notation wp_args := (wp_args M ρ).
@@ -1018,7 +1019,8 @@ Module Type Expr.
                sequence-points between all of the elements of an
                initializer list (c.f. http://eel.is/c++draft/dcl.init.list#4)
            *)
-         wp_initialize M ρ ety (base .[ ety ! idx ]) e (fun free => interp free $ wp_array_init ety base rest (Z.succ idx) Q)
+         wp_initialize ety (base .[ ety ! idx ]) e
+                       (fun free => interp free $ wp_array_init ety base rest (Z.succ idx) Q)
       end%I.
 
     Definition fill_initlist (desiredsz : N) (es : list Expr) (f : Expr) : list Expr :=
