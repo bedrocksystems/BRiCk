@@ -17,6 +17,8 @@ Record t : Set :=
 ; write : bool
 ; uexec : bool
 ; sexec : bool }.
+Definition pteT : Set := paddr * attrs.t.
+Definition opteT : Set := option pteT.
 
 #[deprecated(note="")]
 Notation user := uexec (only parsing).
@@ -54,7 +56,29 @@ Definition is_rwux (a : attrs.t) : bool :=
 
 Definition is_rwsx (a : attrs.t) : bool :=
   is_rw a && a.(sexec).
+
+Definition nonnull (a : attrs.t) : bool :=
+  read a || write a || uexec a || sexec a.
+
+Definition masked (perm_mask : N) (a : attrs.t) : attrs.t :=
+  {| read  := andb (N.testbit perm_mask 0) (read  a)
+   ; write := andb (N.testbit perm_mask 1) (write a)
+   ; uexec := andb (N.testbit perm_mask 2) (uexec a)
+   ; sexec := andb (N.testbit perm_mask 3) (sexec a)
+  |}.
+
+Definition masked_opt (perm_mask : N) (a : attrs.t) : option attrs.t :=
+  let res := masked perm_mask a in
+  guard (nonnull res); Some res.
+
+Definition opte_mask (perm_mask : N) (opte : opteT) : opteT :=
+  '(pa, pte) ← opte;
+  masked ← masked_opt perm_mask pte;
+  Some (pa, masked).
+
 End attrs.
+Notation pteT := attrs.pteT.
+Notation opteT := attrs.opteT.
 
 (** page table levels, 0 is the smallest page table level *)
 Definition Level : Set := nat.
