@@ -1058,11 +1058,11 @@ Section with_cpp.
   Proof. rewrite type_ptr_size. apply _. Qed.
 
   #[global] Instance valid_ptr_sub_0 (p : ptr) (ty : type) :
-    is_Some (size_of _ ty) ->
+    HasSize ty ->
     Observe (valid_ptr (p .., o_sub σ ty 0)) (valid_ptr p).
   Proof. intros. rewrite o_sub_0 // offset_ptr_id. refine _. Qed.
   #[global] Instance type_ptr_sub_0 (p : ptr) (ty : type) :
-    is_Some (size_of _ ty) ->
+    HasSize ty ->
     Observe (valid_ptr (p .., o_sub σ ty 0)) (type_ptr ty p).
   Proof.
     intros. by rewrite type_ptr_valid; apply valid_ptr_sub_0.

@@ -457,11 +457,11 @@ Section with_cpp.
     AsFractional (blockR sz q) (blockR sz) q.
   Proof. exact: Build_AsFractional. Qed.
 
-  #[global] Instance blockR_observe_frac_valid resolve sz (q : Qp) : (0 < sz)%N ->
+  #[global] Instance blockR_observe_frac_valid resolve sz (q : Qp) :
+    TCLt (0 ?= sz)%N ->
     Observe [| q ≤ 1 |]%Qp (blockR sz q).
   Proof.
-    rewrite blockR_eq/blockR_def.
-    intros.
+    rewrite TCLt_N blockR_eq/blockR_def. intros.
     destruct (N.to_nat sz) eqn:?; [ lia | ] => /=.
     refine _.
   Qed.
@@ -488,17 +488,11 @@ Section with_cpp.
   #[global] Instance tblockR_as_fractional {σ} ty q :
     AsFractional (tblockR ty q) (tblockR ty) q.
   Proof. exact: Build_AsFractional. Qed.
-  (**
-   * Note: Neither this instance nor [blockR_observe_frac_valid] will
-   * be found by TC resolution due to the non-TC side-conditions.
-   *)
   #[global] Instance tblockR_observe_frac_valid {σ} ty q n :
-    size_of σ ty = Some n -> (0 < n)%N ->
+    SizeOf ty n -> TCLt (0 ?= n)%N ->
     Observe [| q ≤ 1 |]%Qp (tblockR ty q).
   Proof.
-    rewrite/tblockR=>-> ?. case_match.
-    - by apply observe_sep_l, blockR_observe_frac_valid.
-    - by apply bi.False_elim.
+    rewrite/tblockR=>-> ?. case_match; by apply _.
   Qed.
 
   (** Observing [type_ptr] *)
@@ -583,10 +577,10 @@ Section with_cpp.
     Observe is_nonnull (anyR ty q).
   Proof. rewrite anyR_eq /anyR_def. apply _. Qed.
 
-  #[global] Instance blockR_nonnull {σ : genv} n q:
-    (0 < n)%N -> Observe is_nonnull (blockR n q).
+  #[global] Instance blockR_nonnull {σ : genv} n q :
+    TCLt (0 ?= n)%N -> Observe is_nonnull (blockR n q).
   Proof.
-    rewrite blockR_eq/blockR_def.
+    rewrite TCLt_N blockR_eq/blockR_def.
     destruct (N.to_nat n) eqn:Hn; [ lia | ] => {Hn} /=.
     rewrite o_sub_0 ?_offsetR_id; [ | by eauto].
     apply _.
@@ -606,11 +600,11 @@ Section with_cpp.
   Qed.
 
   #[global] Instance tblockR_nonnull {σ} n ty q :
-    size_of σ ty = Some n -> (0 < n)%N ->
+    SizeOf ty n -> TCLt (0 ?= n)%N ->
     Observe is_nonnull (tblockR ty q).
   Proof.
     intros Heq ?. rewrite/tblockR {}Heq.
-    case_match; last by apply _. by apply observe_sep_l, blockR_nonnull.
+    case_match; by apply _.
   Qed.
 
   #[global] Instance tblockR_valid_ptr {σ} ty q : Observe validR (tblockR ty q).
