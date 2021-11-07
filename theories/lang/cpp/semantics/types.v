@@ -1,5 +1,5 @@
 (*
- * Copyright (c) 2020 BedRock Systems, Inc.
+ * Copyright (c) 2020-2021 BedRock Systems, Inc.
  * This software is distributed under the terms of the BedRock Open-Source License.
  * See the LICENSE-BedRock file in the repository root for details.
  *)
@@ -126,6 +126,89 @@ Lemma size_of_genv_compat tu σ gn st
       (Hl : tu.(globals) !! gn = Some (Gstruct st)) :
   size_of σ (Tnamed gn) = GlobDecl_size_of (Gstruct st).
 Proof. by rewrite /= (glob_def_genv_compat_struct st Hl). Qed.
+
+(** [SizeOf ty n] means that C++ type [ty] has size [n] bytes *)
+Class SizeOf {σ : genv} (ty : type) (n : N) : Prop :=
+  size_of_spec : size_of σ ty = Some n.
+#[global] Hint Mode SizeOf - + - : typeclass_instances.
+
+#[global] Instance SizeOf_mono :
+  Proper (genv_leq ==> eq ==> eq ==> impl) (@SizeOf).
+Proof.
+  rewrite /SizeOf=>σ1 σ2 Hσ t1 t2 Ht n ? <- ?.
+  by destruct (Proper_size_of _ _ Hσ _ _ Ht); simplify_eq.
+Qed.
+
+#[global] Instance array_size_of {σ : genv} ty a n b :
+  SizeOf ty a ->
+  TCEq (n * a)%N b ->
+  SizeOf (Tarray ty n) b.
+Proof.
+  rewrite /SizeOf TCEq_eq=>Hty <-.
+  cbn. by rewrite Hty.
+Qed.
+
+#[global] Instance named_struct_size_of tu σ gn st n :
+  genv_compat tu σ ->
+  TCEq (globals tu !! gn) (Some (Gstruct st)) ->
+  TCEq st.(s_size) n ->
+  SizeOf (Tnamed gn) n.
+Proof.
+  rewrite /SizeOf !TCEq_eq=>? /glob_def_genv_compat_struct Htu <-.
+  cbn. by rewrite Htu.
+Qed.
+
+#[global] Instance named_union_size_of tu σ gn u n :
+  genv_compat tu σ ->
+  TCEq (globals tu !! gn) (Some (Gunion u)) ->
+  TCEq u.(u_size) n ->
+  SizeOf (Tnamed gn) n.
+Proof.
+  rewrite /SizeOf !TCEq_eq=>? /glob_def_genv_compat_union Htu <-.
+  cbn. by rewrite Htu.
+Qed.
+
+#[global] Instance bool_size_of {σ : genv} : SizeOf Tbool 1.
+Proof. done. Qed.
+
+#[global] Instance int_size_of {σ : genv} sz sgn n :
+  TCEq (bytesN sz) n -> SizeOf (Tint sz sgn) n.
+Proof. by rewrite /SizeOf TCEq_eq=><-. Qed.
+
+#[global] Instance qualified_size_of {σ : genv} qual ty n :
+  SizeOf ty n -> SizeOf (Tqualified qual ty) n.
+Proof. done. Qed.
+
+#[global] Instance ptr_size_of {σ : genv} ty n :
+  TCEq (pointer_size σ) n -> SizeOf (Tptr ty) n.
+Proof. by rewrite /SizeOf TCEq_eq=><-. Qed.
+
+#[global] Instance arch_size_of {σ : genv} sz name n :
+  TCEq (bytesN sz) n -> SizeOf (Tarch (Some sz) name) n.
+Proof. by rewrite /SizeOf TCEq_eq=><-. Qed.
+
+(** [HasSize ty] means that C++ type [ty] has a defined size *)
+Class HasSize {σ : genv} (ty : type) : Prop :=
+  has_size : is_Some (size_of σ ty).
+#[global] Hint Mode HasSize - + : typeclass_instances.
+#[global] Arguments has_size {_} _ {_} : assert.
+
+#[global] Instance HasSize_mono :
+  Proper (genv_leq ==> eq ==> impl) (@HasSize).
+Proof.
+  rewrite /HasSize=>σ1 σ2 Hσ t1 t2 Ht H.
+  destruct (Proper_size_of _ _ Hσ _ _ Ht).
+  - exfalso. exact: is_Some_None.
+  - by simplify_eq.
+Qed.
+
+#[global] Instance size_of_has_size {σ : genv} ty n :
+  SizeOf ty n -> HasSize ty.
+Proof.
+  intros. rewrite /HasSize size_of_spec. by eexists.
+Qed.
+
+(** [offset_of] *)
 
 Fixpoint find_field {T} (f : ident) (fs : list (ident * T)) : option T :=
   match fs with
