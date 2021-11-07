@@ -559,7 +559,7 @@ Module SimpleCPP.
     Proof. by apply own_update, singleton_update, cmra_update_exclusive. Qed.
 
     Definition bytes (a : addr) (vs : list runtime_val) (q : Qp) : mpred :=
-      [∗list] o ↦ v ∈ vs, (byte_ (a+N.of_nat o)%N v) q.
+      [∗list] o ↦ v ∈ vs, byte_ (a+N.of_nat o)%N v q.
 
     Lemma bytes_nil a q : bytes a [] q -|- emp.
     Proof. done. Qed.
@@ -700,15 +700,17 @@ Module SimpleCPP.
       own _ghost.(code_name)
         (A := gmapUR ptr (agreeR (leibnizO (Func + Method + Ctor + Dtor))))
         {[ p := to_agree f ]}.
-    Instance code_own_persistent : forall f p, Persistent (@code_own p f) := _.
-    Instance code_own_affine : forall f p, Affine (@code_own p f) := _.
-    Instance code_own_timeless : forall f p, Timeless (@code_own p f) := _.
+    Instance code_own_persistent f p : Persistent (code_own p f) := _.
+    Instance code_own_affine f p : Affine (code_own p f) := _.
+    Instance code_own_timeless f p : Timeless (code_own p f) := _.
 
     Lemma code_own_strict_valid f p : code_own p f ⊢ strict_valid_ptr p.
     Proof. iIntros "[$ _]". Qed.
 
     Lemma code_own_valid f p : code_own p f ⊢ valid_ptr p.
     Proof. by rewrite code_own_strict_valid strict_valid_valid. Qed.
+    Typeclasses Opaque code_own.
+
     Definition code_at (_ : genv) (f : Func) (p : ptr) : mpred :=
       code_own p (inl (inl (inl f))).
     Definition method_at (_ : genv) (m : Method) (p : ptr) : mpred :=
@@ -717,8 +719,6 @@ Module SimpleCPP.
       code_own p (inl (inr c)).
     Definition dtor_at (_ : genv) (d : Dtor) (p : ptr) : mpred :=
       code_own p (inr d).
-
-    Typeclasses Opaque code_own.
 
     Instance code_at_persistent : forall s f p, Persistent (@code_at s f p) := _.
     Instance code_at_affine : forall s f p, Affine (@code_at s f p) := _.
