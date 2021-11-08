@@ -131,9 +131,6 @@ Definition pow2N := pow2N_aux.(unseal).
 Definition pow2N_eq : pow2N = _ := pow2N_aux.(seal_eq).
 #[global] Hint Opaque pow2N : typeclass_instances.
 
-#[deprecated(note="Use [pow2N]")]
-Notation pow2 := pow2N (only parsing).
-
 (** * Integers *)
 
 Arguments Z.ones _ : simpl never, assert.
