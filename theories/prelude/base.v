@@ -93,6 +93,13 @@ Definition bindM2 `{MBind M} `(f : A → B → M C) : M A → M B → M C :=
 #[global] Notation Evaluate tm :=
   ltac:(let H := eval vm_compute in tm in exact H) (only parsing).
 
+(**
+Useful to force typeclass inference; inspired by math-comp's [!!] notation.
+Example:
+[suff Hname: Refine (∀ (xs : gset nat), xs ∪ xs = xs).]
+*)
+#[global] Notation Refine x := (ltac:(refine x)) (only parsing).
+
 (** ** Pairwise disjointness *)
 (** Operational type class for pairwise disjointness, with notation
 [Xs ##ₚ Ys] and [[##ₚ Xs]]. *)
