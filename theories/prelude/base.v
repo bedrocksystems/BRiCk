@@ -72,9 +72,6 @@ Proof. by case: Hdec. Qed.
 Lemma bool_decide_Is_true (b : bool) : bool_decide (Is_true b) = b.
 Proof. by case: b. Qed.
 
-Notation Unfold x tm :=
-  ltac:(let H := eval unfold x in tm in exact H) (only parsing).
-
 (* Very incomplete set of monadic liftings. *)
 Definition liftM2 `{MRet M, MBind M} `(f : A → B → C) : M A → M B → M C :=
   λ mx my,
@@ -85,6 +82,8 @@ Definition bindM2 `{MBind M} `(f : A → B → M C) : M A → M B → M C :=
   λ mx my,
     x ← mx; y ← my; f x y.
 
+#[global] Notation Unfold x tm :=
+  ltac:(let H := eval unfold x in tm in exact H) (only parsing).
 #[global] Notation Reduce tm :=
   ltac:(let H := eval red in tm in exact H) (only parsing).
 #[global] Notation Hnf tm :=
