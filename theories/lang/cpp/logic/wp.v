@@ -343,6 +343,7 @@ Section with_cpp.
    *)
 
   (* evaluate a prvalue that "initializes an object".
+
      The memory that is being initialized is already owned by the C++ abstract machine.
      Therefore, schematically, a [wp_init ty addr e Q] looks like the following:
        [[
@@ -353,15 +354,15 @@ Section with_cpp.
      stack allocation, there is nothing to do here, but in the case of [new],
      the memory must be given up.
 
-     Note: <https://eel.is/c++draft/dcl.init#general-15>:
-     | (15) The initialization that occurs
-     | (15.1) for an initializer that is a parenthesized expression-list or a braced-init-list,
-     | (15.2) for a new-initializer ([expr.new]),
-     | (15.3) in a static_­cast expression ([expr.static.cast]),
-     | (15.4) in a functional notation type conversion ([expr.type.conv]), and
-     | (15.5) in the braced-init-list form of a condition
-     | is called direct-initialization.
-     and [wp_init] corresponds to [direct-initialization] as described above.
+     The C++ standard has many forms of initialization (see
+     <https://eel.is/c++draft/dcl.init>). The Clang frontend (and therefore our
+     AST) implements the different forms of initialization through elaboration.
+
+     For example, in aggregate pass-by-value the standard states that copy initialization
+     <https://eel.is/c++draft/dcl.init#general-14> is used; however, our AST
+     produces an explicit [Econstructor] in the AST to represent this. This seems
+     necessary to have a uniform representation of the various evoluations of
+     initialization between different standards, e.g. C++14, C++17, etc.
    *)
   Parameter wp_init
     : forall {resolve:genv}, coPset -> region ->
