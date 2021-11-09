@@ -17,7 +17,9 @@ Record t : Set :=
 ; write : bool
 ; uexec : bool
 ; sexec : bool }.
+(** Page Table Entry *)
 Definition pteT : Set := paddr * attrs.t.
+(** Optional Page Table Entry *)
 Definition opteT : Set := option pteT.
 
 #[deprecated(note="")]
