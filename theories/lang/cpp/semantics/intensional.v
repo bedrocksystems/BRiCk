@@ -15,29 +15,6 @@
 Require Import Coq.ZArith.ZArith_base.
 Require Import bedrock.lang.cpp.ast.
 
-(* The AST includes [Ebind_temp] nodes that contain destructor information
- * however, these nodes are embedded in the sub-expression rather than in the
- * creating node.
- *
- * This function extracts the destructor information from [Ebind_temp] and
- * returns it along with the child node if it exists.
- *)
-#[deprecated(since="2021-06-07",note="destructors are now recorded in classes")]
-Fixpoint destructor_for (e : Expr) : Expr * option obj_name :=
-  match e with
-  | Eandclean e => destructor_for e
-  | _ => (e, None)
-  end.
-
-(* if an expression is being constructed into an object not owned by
- * the lexical scope of this object, then we won't be in charge of
- * running the destructor
- *)
-Definition not_mine (e : Expr) : Expr :=
-  match destructor_for e with
-  | (a,_) => a
-  end.
-
 (* this function determines whether the type is an aggregate type, i.e.
  * arrays and objects.
  *)

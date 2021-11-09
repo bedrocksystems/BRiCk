@@ -81,7 +81,7 @@ Module Type Stmt.
                 * category of the expression.
                 *)
                Forall ra : ptr,
-               wp_init ρ (erase_qualifiers rty) ra (not_mine e) (fun free => interp free $ Q (ReturnVal (Vptr ra)))
+               wp_init ρ (erase_qualifiers rty) ra e (fun free => interp free $ Q (ReturnVal (Vptr ra)))
              else
                wp_prval ρ e (fun v free => interp free $ Q (ReturnVal v))
            | Lvalue =>
@@ -150,7 +150,7 @@ Module Type Stmt.
                     are explicit. *)
         | Some init =>
           Forall a : ptr,
-          wp_init ρ_init ty a (not_mine init) (fun free => interp free $ k (Rbind x a ρ) (FreeTemps.delete ty a))
+          wp_init ρ_init ty a init (fun free => interp free $ k (Rbind x a ρ) (FreeTemps.delete ty a))
         end
       | Tarray ty' N =>
         let rty := erase_qualifiers ty in
@@ -160,7 +160,7 @@ Module Type Stmt.
         | None =>
           default_initialize ty a (fun free => interp free continue)
         | Some init =>
-          wp_init ρ_init ty a (not_mine init) (fun free => interp free continue)
+          wp_init ρ_init ty a init (fun free => interp free continue)
         end
 
         (* references *)

@@ -124,7 +124,7 @@ Module Type Init.
 
         (* non-primitives are handled via prvalue-initialization semantics *)
       | Tarray _ _
-      | Tnamed _ => wp_init ty addr (not_mine init) k
+      | Tnamed _ => wp_init ty addr init k
         (* NOTE that just like this function [wp_init] will consume the object. *)
 
       | Tref ty =>

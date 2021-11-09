@@ -57,7 +57,6 @@ Section with_resolve.
       | Prvalue =>
         if is_aggregate t then
           Forall a : ptr,
-          let (e,dt) := destructor_for e in
           Exists Qarg,
           wp_init t a e Qarg **
           wp_args' ts es (fun vs frees =>
@@ -107,7 +106,7 @@ Section with_resolve.
         iDestruct ("H" with "H'") as "H".
         iRevert "H". iApply "X". iPureIntro. simpl; eauto. }
       { case_match.
-        { case_match. iIntros "X Y" (?).
+        { iIntros "X Y" (?).
           iDestruct ("Y" $! a0) as (?) "Y".
           iExists _. iDestruct "Y" as "[$ A]".
           iRevert "A"; iApply H.
