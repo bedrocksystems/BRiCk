@@ -896,12 +896,31 @@ Module Type Expr.
     (** temporary expressions
        note(gmm): these axioms should be reviewed thoroughly
      *)
+    (* Clang's documentation for [ExprWithCleanups] states:
+
+       > Represents an expression – generally a full-expression – that
+       > introduces cleanups to be run at the end of the sub-expression's
+       > evaluation.
+
+       Therefore, we destroy temporaries created when evaluating [e]
+       before running the continuation.
+
+       NOTE: We follow C++'s AST rules for destroying temporaries appropraitely
+       so these nodes should effectively be no-ops, though there are certain
+       places in the AST that has odd evaluation semantics
+     *)
     Axiom wp_lval_clean : forall e Q,
-        wp_lval e Q |-- wp_lval (Eandclean e) Q.
+        wp_lval e (fun p free => interp free $ Q p FreeTemps.id)
+      |-- wp_lval (Eandclean e) Q.
     Axiom wp_prval_clean : forall e Q,
-        wp_prval e Q |-- wp_prval (Eandclean e) Q.
+        wp_prval e (fun v free => interp free $ Q v FreeTemps.id)
+      |-- wp_prval (Eandclean e) Q.
     Axiom wp_xval_clean : forall e Q,
-        wp_xval e Q |-- wp_xval (Eandclean e) Q.
+        wp_xval e (fun p free => interp free $ Q p FreeTemps.id)
+      |-- wp_xval (Eandclean e) Q.
+    Axiom wp_init_clean : forall e ty' addr Q,
+        wp_init ty' addr e (fun free => interp free $ Q FreeTemps.id)
+      |-- wp_init ty' addr (Eandclean e) Q.
 
     (** [Ematerialize_temp e ty] is an xvalue that gets memory (with automatic
         storage duration) and initializes it using the expression.
@@ -1100,9 +1119,6 @@ Module Type Expr.
         wp_init ty addr e Q
         |-- wp_init ty addr (Ecast Cnoop Prvalue e ty') Q.
 
-    Axiom wp_init_clean : forall e ty' addr Q,
-        wp_init ty' addr e Q
-        |-- wp_init ty' addr (Eandclean e) Q.
     Axiom wp_init_const : forall ty addr e Q,
         wp_init ty addr e Q
         |-- wp_init (Qconst ty) addr e Q.
