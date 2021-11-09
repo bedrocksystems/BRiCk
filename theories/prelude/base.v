@@ -69,8 +69,8 @@ End flip_app.
 Lemma negb_bool_decide `{Hdec : Decision P} : negb (bool_decide P) = bool_decide (not P).
 Proof. by case: Hdec. Qed.
 
-Notation Unfold x tm :=
-  ltac:(let H := eval unfold x in tm in exact H) (only parsing).
+Lemma bool_decide_Is_true (b : bool) : bool_decide (Is_true b) = b.
+Proof. by case: b. Qed.
 
 (* Very incomplete set of monadic liftings. *)
 Definition liftM2 `{MRet M, MBind M} `(f : A → B → C) : M A → M B → M C :=
@@ -82,6 +82,8 @@ Definition bindM2 `{MBind M} `(f : A → B → M C) : M A → M B → M C :=
   λ mx my,
     x ← mx; y ← my; f x y.
 
+#[global] Notation Unfold x tm :=
+  ltac:(let H := eval unfold x in tm in exact H) (only parsing).
 #[global] Notation Reduce tm :=
   ltac:(let H := eval red in tm in exact H) (only parsing).
 #[global] Notation Hnf tm :=
@@ -90,6 +92,13 @@ Definition bindM2 `{MBind M} `(f : A → B → M C) : M A → M B → M C :=
   ltac:(let H := eval cbn in tm in exact H) (only parsing).
 #[global] Notation Evaluate tm :=
   ltac:(let H := eval vm_compute in tm in exact H) (only parsing).
+
+(**
+Useful to force typeclass inference; inspired by math-comp's [!!] notation.
+Example:
+[suff Hname: Refine (∀ (xs : gset nat), xs ∪ xs = xs).]
+*)
+#[global] Notation Refine x := (ltac:(refine x)) (only parsing).
 
 (** ** Pairwise disjointness *)
 (** Operational type class for pairwise disjointness, with notation

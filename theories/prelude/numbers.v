@@ -115,6 +115,13 @@ Lemma N_mul_divide_weaken_r (m n o : N) :
   (m * n | o)%N -> (n | o)%N.
 Proof. case => q ->. exists (q * m)%N. lia. Qed.
 
+#[global] Instance N_b2n_inj : Inj eq eq N.b2n := N.b2n_inj.
+
+Lemma N_b2n_0 b : N.b2n b = 0%N <-> ~b.
+Proof. case: b; naive_solver. Qed.
+
+Lemma N_b2n_1 b : N.b2n b = 1%N <-> b.
+Proof. by case: b. Qed.
 
 (** [pow2N n]'s output term has size exponential in [n], and simplifying
 callers is even worse; so we seal it. *)
@@ -123,9 +130,6 @@ Definition pow2N_aux : seal pow2N_def. Proof. by eexists. Qed.
 Definition pow2N := pow2N_aux.(unseal).
 Definition pow2N_eq : pow2N = _ := pow2N_aux.(seal_eq).
 #[global] Hint Opaque pow2N : typeclass_instances.
-
-#[deprecated(note="Use [pow2N]")]
-Notation pow2 := pow2N (only parsing).
 
 (** * Integers *)
 
@@ -202,6 +206,14 @@ Proof.
     by apply Z.pow_le_mono_r; lia.
   rewrite !Zmax_left; lia.
 Qed.
+
+#[global] Instance Z_b2z_inj : Inj eq eq Z.b2z := Z.b2z_inj.
+
+Lemma Z_b2z_0 b : Z.b2z b = 0%Z <-> ~b.
+Proof. case: b; naive_solver. Qed.
+
+Lemma Z_b2z_1 b : Z.b2z b = 1%Z <-> b.
+Proof. by case: b. Qed.
 
 (** ** Alignment to powers of two *)
 
