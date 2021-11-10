@@ -8,6 +8,7 @@ From bedrock.lang.cpp.logic Require Export
      pred
      path_pred
      heap_pred
+     cptr
      wp
      destroy
      call
