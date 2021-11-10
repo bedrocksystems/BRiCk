@@ -195,7 +195,7 @@ End Kpred.
     We instantiate [region] as a finite map from variables to their addresses
     (implemented as an association list).
 *)
-Inductive region : Type :=
+Inductive region : Set :=
 | Remp (this : option ptr) (_ : type)
 | Rbind (_ : localname) (_ : ptr) (_ : region).
 
