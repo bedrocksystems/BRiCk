@@ -106,36 +106,45 @@ Module SimpleCPP_BASE <: CPP_LOGIC_CLASS.
     }.
   Definition _cpp_ghost := cpp_ghost.
 
-  Class cppG' (Σ : gFunctors) : Type :=
-    { heapG :> inG Σ (gmapR addr (fractionalR runtime_val'))
+  Record cppG' (Σ : gFunctors) : Type :=
+    { heapG : inG Σ (gmapR addr (fractionalR runtime_val'))
       (* ^ this represents the contents of physical memory *)
-    ; ghost_memG :> inG Σ (gmapR ptr (fractionalR val))
+    ; ghost_memG : inG Σ (gmapR ptr (fractionalR val))
       (* ^ this represents the contents of the C++ runtime that might
          not be represented in physical memory, e.g. values stored in
          registers or temporaries on the stack *)
-    ; mem_injG :> inG Σ (gmapUR ptr (agreeR (leibnizO (option addr))))
+    ; mem_injG : inG Σ (gmapUR ptr (agreeR (leibnizO (option addr))))
       (* ^ this carries the (compiler-supplied) mapping from C++ locations
          (represented as pointers) to physical memory addresses. Locations that
          are not stored in physical memory (e.g. because they are register
          allocated) are mapped to [None] *)
-    ; blocksG :> inG Σ (gmapUR ptr (agreeR (leibnizO (Z * Z))))
+    ; blocksG : inG Σ (gmapUR ptr (agreeR (leibnizO (Z * Z))))
       (* ^ this represents the minimum and maximum offset of the block *)
-    ; codeG :> inG Σ (gmapUR ptr (agreeR (leibnizO (Func + Method + Ctor + Dtor))))
+    ; codeG : inG Σ (gmapUR ptr (agreeR (leibnizO (Func + Method + Ctor + Dtor))))
       (* ^ this carries the (compiler-supplied) mapping from C++ locations
          to the code stored at that location *)
-    ; has_inv :> invG Σ
-    ; has_cinv :> cinvG Σ
+    ; has_inv' : invG Σ
+    ; has_cinv' : cinvG Σ
     }.
 
   Definition cppG : gFunctors -> Type := cppG'.
   Existing Class cppG.
-  Instance cppG_cppG' Σ : cppG Σ -> cppG' Σ := id.
-  Typeclasses Opaque cppG. (* Prevent turning instances of cppG' into cppG and risking loops. *)
+  (* Used to be needed to prevent turning instances of cppG' into cppG and risking loops in this file;
+  should not hurt now. *)
+  Typeclasses Opaque cppG.
+
+  #[global] Instance has_inv Σ : cppG Σ -> invG Σ := @has_inv' Σ.
+  #[global] Instance has_cinv Σ : cppG Σ -> cinvG Σ := @has_cinv' Σ.
 
   Include CPP_LOGIC_CLASS_MIXIN.
 
   Section with_cpp.
     Context `{Σ : cpp_logic}.
+
+    Existing Class cppG'.
+    #[local] Instance cppG_cppG' Σ : cppG Σ -> cppG' Σ := id.
+    #[local] Existing Instances heapG ghost_memG mem_injG blocksG codeG.
+
     Definition heap_own (a : addr) (q : Qp) (r : runtime_val') : mpred :=
       own (A := gmapR addr (fractionalR runtime_val'))
       _ghost.(heap_name) {[ a := frac q r ]}.
@@ -148,8 +157,20 @@ Module SimpleCPP_BASE <: CPP_LOGIC_CLASS.
     Definition blocks_own (p : ptr) (l h : Z) : mpred :=
       own (A := gmapUR ptr (agreeR (leibnizO (Z * Z))))
         _ghost.(blocks_name) {[ p := to_agree (l, h) ]}.
-    (* code_own goes below. *)
+    Definition _code_own (p : ptr) (f : Func + Method + Ctor + Dtor) : mpred :=
+      own _ghost.(code_name)
+        (A := gmapUR ptr (agreeR (leibnizO (Func + Method + Ctor + Dtor))))
+        {[ p := to_agree f ]}.
+
+    #[global] Instance mem_inj_own_persistent p va : Persistent (mem_inj_own p va) := _.
+    #[global] Instance mem_inj_own_affine p va : Affine (mem_inj_own p va) := _.
+    #[global] Instance mem_inj_own_timeless p va : Timeless (mem_inj_own p va) := _.
+
+    #[global] Instance _code_own_persistent p f : Persistent (_code_own p f) := _.
+    #[global] Instance _code_own_affine p f : Affine (_code_own p f) := _.
+    #[global] Instance _code_own_timeless p f : Timeless (_code_own p f) := _.
   End with_cpp.
+  Typeclasses Opaque mem_inj_own _code_own.
 End SimpleCPP_BASE.
 
 (* TODO: provide an instance for this. *)
@@ -194,6 +215,7 @@ Module SimpleCPP.
     Definition live_ptr (p : ptr) :=
       default False%I (live_alloc_id <$> ptr_alloc_id p).
     Axiom nullptr_live : |-- live_ptr nullptr.
+    Typeclasses Opaque live_ptr.
 
     (** pointer validity *)
     (** Pointers past the end of an object/array can be valid; see
@@ -244,6 +266,7 @@ Module SimpleCPP.
       iDestruct 1 as "[[_ %]|H] /="; first done.
       by iDestruct "H" as (?????) "(_ & _ & _ & %Hne)".
     Qed.
+    Typeclasses Opaque _valid_ptr.
 
     Lemma strict_valid_valid p :
       strict_valid_ptr p |-- valid_ptr p.
@@ -532,6 +555,7 @@ Module SimpleCPP.
     Instance val_as_fractional a rv q :
       AsFractional (val_ a rv q) (val_ a rv) q := _.
     Instance val_timeless a rv q : Timeless (val_ a rv q) := _.
+    Typeclasses Opaque val_.
 
 
     Definition byte_ (a : addr) (rv : runtime_val) (q : Qp) : mpred :=
@@ -559,8 +583,13 @@ Module SimpleCPP.
     Proof. by apply own_update, singleton_update, cmra_update_exclusive. Qed.
 
     Definition bytes (a : addr) (vs : list runtime_val) (q : Qp) : mpred :=
-      [∗list] o ↦ v ∈ vs, (byte_ (a+N.of_nat o)%N v) q.
+      [∗list] o ↦ v ∈ vs, byte_ (a+N.of_nat o)%N v q.
 
+    Instance bytes_timeless a rv q : Timeless (bytes a rv q) := _.
+    Instance bytes_fractional a vs : Fractional (bytes a vs) := _.
+    Instance bytes_as_fractional a vs q :
+      AsFractional (bytes a vs q) (bytes a vs) q.
+    Proof. exact: Build_AsFractional. Qed.
     Lemma bytes_nil a q : bytes a [] q -|- emp.
     Proof. done. Qed.
 
@@ -592,12 +621,6 @@ Module SimpleCPP.
       rewrite /bytes; case: vs => [ |v vs _] /=; first by lia.
       rewrite byte_frac_valid. by iIntros "[% _]".
     Qed.
-
-    Instance bytes_timeless a rv q : Timeless (bytes a rv q) := _.
-    Instance bytes_fractional a vs : Fractional (bytes a vs) := _.
-    Instance bytes_as_fractional a vs q :
-      AsFractional (bytes a vs q) (bytes a vs) q.
-    Proof. exact: Build_AsFractional. Qed.
 
     Lemma bytes_update {a : addr} {vs} vs' :
       length vs = length vs' →
@@ -696,19 +719,18 @@ Module SimpleCPP.
       require an extra side-condition that the code is loaded.
      *)
     Definition code_own (p : ptr) (f : Func + Method + Ctor + Dtor) : mpred :=
-      strict_valid_ptr p **
-      own _ghost.(code_name)
-        (A := gmapUR ptr (agreeR (leibnizO (Func + Method + Ctor + Dtor))))
-        {[ p := to_agree f ]}.
-    Instance code_own_persistent : forall f p, Persistent (@code_own p f) := _.
-    Instance code_own_affine : forall f p, Affine (@code_own p f) := _.
-    Instance code_own_timeless : forall f p, Timeless (@code_own p f) := _.
+      strict_valid_ptr p ** _code_own p f.
+    Instance code_own_persistent f p : Persistent (code_own p f) := _.
+    Instance code_own_affine f p : Affine (code_own p f) := _.
+    Instance code_own_timeless f p : Timeless (code_own p f) := _.
 
     Lemma code_own_strict_valid f p : code_own p f ⊢ strict_valid_ptr p.
     Proof. iIntros "[$ _]". Qed.
 
     Lemma code_own_valid f p : code_own p f ⊢ valid_ptr p.
     Proof. by rewrite code_own_strict_valid strict_valid_valid. Qed.
+    Typeclasses Opaque code_own.
+
     Definition code_at (_ : genv) (f : Func) (p : ptr) : mpred :=
       code_own p (inl (inl (inl f))).
     Definition method_at (_ : genv) (m : Method) (p : ptr) : mpred :=
@@ -717,8 +739,6 @@ Module SimpleCPP.
       code_own p (inl (inr c)).
     Definition dtor_at (_ : genv) (d : Dtor) (p : ptr) : mpred :=
       code_own p (inr d).
-
-    Typeclasses Opaque code_own.
 
     Instance code_at_persistent : forall s f p, Persistent (@code_at s f p) := _.
     Instance code_at_affine : forall s f p, Affine (@code_at s f p) := _.
@@ -918,8 +938,9 @@ Module SimpleCPP.
       intros ?? Hσ ??-> ??-> ??-> ??->.
       iIntros "(%Hnonnull & H)";
         iDestruct "H" as (oa) "(Htype_ptr & Hmem_inj_own & Hoa)".
-      iSplitR; [by iPureIntro |]; iExists oa; iFrame "#∗".
-      iSplitL "Htype_ptr"; iStopProof; [| destruct oa]; by solve_proper.
+      iSplitR; [by iPureIntro |]; iExists oa; iFrame "Hmem_inj_own".
+      iSplitL "Htype_ptr"; first by rewrite Hσ.
+      iStopProof; destruct oa; by solve_proper.
     Qed.
 
     #[local] Instance tptsto'_proper :
