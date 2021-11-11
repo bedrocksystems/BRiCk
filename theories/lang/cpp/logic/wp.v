@@ -367,7 +367,7 @@ Section with_cpp.
   Parameter wp_init
     : forall {resolve:genv}, coPset -> region ->
                         ptr -> Expr ->
-                        (FreeTemp -> FreeTemps -> epred) -> (* free -> post *)
+                        (FreeTemp -> FreeTemps -> epred) -> (* top-free -> free -> post *)
                         mpred. (* pre-condition *)
 
   Axiom wp_init_shift : forall σ M ρ v e Q,

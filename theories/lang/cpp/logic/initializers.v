@@ -19,11 +19,12 @@ Module Type Init.
     Context `{Σ : cpp_logic thread_info} {σ:genv}.
     Variables (M : coPset) (ρ : region).
 
-    #[local] Notation wp := (wp (resolve:=σ) M ρ).
-    #[local] Notation wp_lval := (wp_lval (resolve:=σ) M ρ).
-    #[local] Notation wp_prval := (wp_prval (resolve:=σ) M ρ).
-    #[local] Notation wp_xval := (wp_xval (resolve:=σ) M ρ).
-    #[local] Notation wp_init := (wp_init (resolve:=σ) M ρ).
+    #[local] Notation wp := (wp M ρ).
+    #[local] Notation wp_lval := (wp_lval M ρ).
+    #[local] Notation wp_prval := (wp_prval M ρ).
+    #[local] Notation wp_operand := (wp_operand M ρ).
+    #[local] Notation wp_xval := (wp_xval M ρ).
+    #[local] Notation wp_init := (wp_init M ρ).
     #[local] Notation fspec := (@fspec _ Σ σ.(genv_tu).(globals)).
     #[local] Notation mspec := (@mspec _ Σ σ.(genv_tu).(globals)).
 
@@ -69,12 +70,12 @@ Module Type Init.
       | Tint _ _ as rty
       | Tptr _ as rty
       | Tbool as rty
-      | Tfloat _ as rty =>
+      | Tfloat _ as rty
+      | Tnullptr as rty =>
         let rty := erase_qualifiers rty in
         p |-> uninitR rty 1 -* Q FreeTemps.id
-      | Tarray ty sz =>
-        default_initialize_array default_initialize ty sz p Q
-      | Tnullptr => UNSUPPORTED "default initialization of [nullptr_t]"
+      | Tarray ety sz =>
+        default_initialize_array default_initialize ety sz p (fun _ => Q FreeTemps.id)
 
       | Tref _
       | Trv_ref _ => ERROR "default initialization of reference"
@@ -118,13 +119,14 @@ Module Type Init.
       | Tpointer _ as ty
       | Tmember_pointer _ _ as ty
       | Tbool as ty
-      | Tint _ _ as ty =>
-        wp_prval init (fun v free =>
+      | Tint _ _ as ty
+      | Tnullptr as ty =>
+        wp_operand init (fun v free =>
                           addr |-> primR (erase_qualifiers ty) 1 v -* k free)
 
         (* non-primitives are handled via prvalue-initialization semantics *)
       | Tarray _ _
-      | Tnamed _ => wp_init ty addr init k
+      | Tnamed _ => wp_init addr init (fun _ frees => k frees)
         (* NOTE that just like this function [wp_init] will consume the object. *)
 
       | Tref ty =>
@@ -138,12 +140,43 @@ Module Type Init.
       | Tfunction _ _ => False (* functions not supported *)
 
       | Tqualified _ ty => False (* unreachable *)
-      | Tnullptr => False (* nullptr fields are not supported *)
       | Tarch _ _ => False (* vendor-specific types are not supported *)
       | Tfloat _ => False (* floating point numbers are not supported *)
       end.
     #[global] Arguments wp_initialize !_ _ _ _ /.
 
+    (* TEMPORARY we use a slightly different semantics for calls
+       because we need to revise the way that we define function
+       specifications.
+     *)
+    Definition wp_call_initialize (ty : type) (init : Expr)
+               (k : val -> FreeTemp -> FreeTemps -> epred) : mpred :=
+      match drop_qualifiers ty with
+      | Tvoid => False
+      | Tpointer _ as ty
+      | Tmember_pointer _ _ as ty
+      | Tbool as ty
+      | Tnullptr as ty
+      | Tint _ _ as ty =>
+        wp_operand init (fun v frees => k v FreeTemps.id frees)
+
+        (* non-primitives are handled via prvalue-initialization semantics *)
+      | Tarray _ _
+      | Tnamed _ => Forall addr, wp_init addr init (k (Vptr addr))
+        (* NOTE because we are initializing an object, we drop the destruction of the temporary *)
+
+      | Treference _ as ty =>
+        wp_lval init (fun p free => k (Vref p) FreeTemps.id free)
+
+      | Trv_reference _ as ty =>
+        wp_xval init (fun p free => k (Vref p) FreeTemps.id free)
+
+      | Tfunction _ _ => False (* functions not supported *)
+
+      | Tqualified _ ty => False (* unreachable *)
+      | Tarch _ _ => False (* vendor-specific types are not supported *)
+      | Tfloat _ => False (* floating point numbers are not supported *)
+      end.
 
     (** [wpi cls this init Q] evaluates the initializer [init] form the
         object [thisp] (of type [Tnamed cls]) and then proceeds as [Q].
@@ -174,12 +207,12 @@ Module Type Init.
       rewrite /wp_initialize.
       case_eq (drop_qualifiers ty) =>/=; intros; eauto;
         try solve [
-              iIntros "a"; first [ iApply wp_prval_frame
+              iIntros "a"; first [ iApply wp_operand_frame
                                  | iApply wp_lval_frame
                                  | iApply wp_xval_frame ]; try reflexivity;
               iIntros (v f) "X Y"; iApply "a"; iApply "X"; eauto ].
-      { iIntros "a". iApply wp_init_frame => //. }
-      { iIntros "a". iApply wp_init_frame => //. }
+      { iIntros "a". iApply wp_init_frame => //; iIntros (?) => //. }
+      { iIntros "a". iApply wp_init_frame => //; iIntros (?) => //. }
     Qed.
 
     Lemma wp_initialize_wand obj ty e Q Q' :

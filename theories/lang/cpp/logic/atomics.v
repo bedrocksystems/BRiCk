@@ -21,6 +21,7 @@ Section with_Σ.
   Implicit Type (Q : val → mpred).
 
   Local Notation wp_prval := (wp_prval M ρ).
+  Local Notation wp_operand := (wp_operand M ρ).
   Local Notation wp_args := (wp_args M ρ).
 
   (* Builtins for Atomic operations. We follow those provided by GCC.
@@ -79,7 +80,7 @@ Section with_Σ.
           wp_args targs es (fun (vs : list val) (free : FreeTemps) =>
             wp_atom' ao acc_type vs (fun v => Q v free))
         end)
-    |-- wp_prval (Eatomic ao es ty) Q.
+    |-- wp_operand (Eatomic ao es ty) Q.
   (** ^ TODO the calling convention for atomics should change to be
       more uniform. e.g. atomics should be treated more like builtin
       functions.

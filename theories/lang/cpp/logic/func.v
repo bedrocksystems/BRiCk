@@ -148,8 +148,9 @@ Section with_cpp.
       | Trv_ref ty =>
         let rty := Tref $ erase_qualifiers ty in
         match v with
-        | Vptr p => Forall a, a |-> primR rty 1 (Vptr p) -*
-                             bind_vars xs vs (Rbind_check x a ρ) (fun r free => Q r (FreeTemps.delete rty a >*> free))
+        | Vptr p =>
+          Forall a, a |-> primR rty 1 (Vref p) -*
+          bind_vars xs vs (Rbind_check x a ρ) (fun r free => Q r (FreeTemps.delete rty a >*> free))
           (* NOTE: when we create a reference, we always use [Tref] *)
         | _ => ERROR $ "non-pointer passed for reference"
         end
@@ -344,7 +345,7 @@ Section with_cpp.
       | _ :: nil =>
         if bool_decide (drop_qualifiers ty = Tnamed cls) then
           (* this is a delegating constructor, simply delegate. *)
-          wp_init ⊤ ρ (Tnamed cls) this e (fun free => interp free Q)
+          wp_init ⊤ ρ this e (fun _ frees => interp frees Q)
         else
           (* the type names do not match, this should never happen *)
           ERROR "type name mismatch"
@@ -373,7 +374,7 @@ Section with_cpp.
       case_match; eauto.
       iIntros "x".
       iApply wp_init_frame => //.
-      iIntros (?); by iApply interp_frame. }
+      iIntros (??); by iApply interp_frame. }
     { iIntros "a"; iApply wpi_bases_frame.
       rewrite /init_identity.
       case_match; eauto.
@@ -394,7 +395,7 @@ Section with_cpp.
       | _ :: nil =>
         if bool_decide (drop_qualifiers ty = Tnamed cls) then
           (* this is a delegating constructor, simply delegate *)
-          wp_init ⊤ ρ (Tnamed cls) this e (fun free => interp free Q)
+          wp_init ⊤ ρ this e (fun _ frees => interp frees Q)
         else
           (* the type names do not match, this should never happen *)
           ERROR "type name mismatch"
@@ -418,7 +419,7 @@ Section with_cpp.
       destruct l; eauto.
       case_bool_decide; eauto.
       iIntros "X".
-      iApply wp_init_frame. reflexivity. iIntros (?); by iApply interp_frame. }
+      iApply wp_init_frame. reflexivity. iIntros (??); by iApply interp_frame. }
   Qed.
 
   (* [type_validity ty p] is the pointer validity of a class that is learned
