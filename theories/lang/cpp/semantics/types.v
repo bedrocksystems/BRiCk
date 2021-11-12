@@ -208,6 +208,16 @@ Proof.
   intros. rewrite /HasSize size_of_spec. by eexists.
 Qed.
 
+(** [sizeof ty : N] is the size of C++ type [ty] (if it has a size) *)
+Definition sizeof {σ : genv} (ty : type) `{!HasSize ty} : N :=
+  is_Some_proj (has_size ty).
+
+Lemma sizeof_spec {σ : genv} ty `{Hsz : !HasSize ty} :
+  size_of σ ty = Some (sizeof ty).
+Proof.
+  rewrite/sizeof/has_size. by destruct Hsz as [sz ->].
+Qed.
+
 (** [offset_of] *)
 
 Fixpoint find_field {T} (f : ident) (fs : list (ident * T)) : option T :=
