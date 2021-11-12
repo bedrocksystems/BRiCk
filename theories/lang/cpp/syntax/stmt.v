@@ -70,7 +70,7 @@ Inductive Stmt : Set :=
 | Sbreak
 | Scontinue
 
-| Sreturn (_ : option (ValCat * Expr))
+| Sreturn (_ : option Expr)
 
 | Sexpr   (_ : ValCat) (_ : Expr)
 
