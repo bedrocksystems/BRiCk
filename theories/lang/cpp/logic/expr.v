@@ -174,22 +174,6 @@ Module Type Expr.
         end
       |-- wp_lval (Emember vc a m ty) Q.
 
-
-    (* [Emember a m ty] is a prvalue if
-     * - [a] is a member enumerator or non-static member function, or
-     * - [a] is an rvalue and [m] is non-static data of non-reference type
-     TODO: consider requiring (1) [type_ptr] (2) [valid_live_ptr], here and
-     elsewhere; most operations in the standard are described in terms of
-     objects, which restricts them to _live_ objects.
-     *)
-    Axiom wp_prval_member : forall ty vc a m Q,
-        match vc with
-        | Prvalue => False
-          (* This does not occur because our AST explicitly contains [Cl2r] casts. *)
-        | _ => False
-        end
-      |-- wp_prval (Emember vc a m ty) Q.
-
     (* [Emember a m ty] is an xvalue if
      * - [a] is an rvalue and [m] is a non-static data member of non-reference type
      *)
@@ -730,16 +714,6 @@ Module Type Expr.
         wp_operand (Ealign_of (inl (type_of e)) ty') Q
         |-- wp_operand (Ealign_of (inr e) ty') Q.
 
-    Let materialize_into_temp ty e Q :=
-      let raw_type := erase_qualifiers ty in
-      Forall addr : ptr,
-        wp_init addr e (fun free =>
-           Q (Vptr addr) (FreeTemps.delete raw_type addr >*> free)).
-    (* XXX This use of [Vptr] represents an aggregate.
-       XXX The destruction of the value isn't quite correct because we explicitly
-           generate the destructors.
-     *)
-
     (** function calls
 
         The next few axioms rely on the evaluation order specified
@@ -939,31 +913,15 @@ Module Type Expr.
      *)
     Axiom wp_xval_temp : forall e Q,
         (let ty := type_of e in
-         let raw_type := erase_qualifiers ty in
          Forall a : ptr,
          wp_init a e (fun free frees => Q a (free >*> frees)))
         |-- wp_xval (Ematerialize_temp e) Q.
 
     Axiom wp_lval_temp : forall e Q,
         (let ty := type_of e in
-         let raw_type := erase_qualifiers ty in
          Forall a : ptr,
          wp_init a e (fun free frees => Q a (free >*> frees)))
         |-- wp_lval (Ematerialize_temp e) Q.
-
-    (** [Ebind_temp e dtor ty] is an initialization expression that ensures
-       that the destructor is called.
-
-       this aspect of the AST seems to be non-compositional, so we handle it
-       in another way, naively, the rule might look something like the following
-
-       [[
-    Axiom wp_init_bind_temp : forall e ty a dtor Q,
-        wp_init ty a e (fun free =>
-                     |> fspec (Vptr (_global dtor)) (a :: nil) (fun _ => Q free))
-      |-- wp_init ty a (Ebind_temp e dtor ty) Q.
-       ]]
-     *)
 
     (** Pseudo destructors arise from calling the destructor on
         an object of templated type when the type is instantiated

@@ -172,7 +172,6 @@ Module Type Stmt.
         iIntros (?); iApply interp_frame; iApply "X".
     Qed.
 
-    About WPE.wp_init.
     Fixpoint wp_decl (ρ ρ_init : region) (d : VarDecl) (k : region -> FreeTemps -> mpred) {struct d} : mpred :=
       match d with
       | Dvar x ty init => wp_decl_var ρ ρ_init x ty init k
