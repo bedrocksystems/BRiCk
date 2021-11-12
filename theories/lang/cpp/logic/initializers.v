@@ -106,11 +106,11 @@ Module Type Init.
         the semantics is to evaluate the primitive and initialize the location
         with the value.
 
-        NOTE this is written as a recursive function rather than by using [decompose_type] because
-        we want simplification to reduce it.
-
         NOTE this assumes that the memory is coming from the C++ abstract machine.
-        TODO make this consistent with [default_initialize].
+
+        NOTE [wp_initialize] is very similar to [wp_init] except that [wp_initialize]
+        can be used to initialize all values (including references) whereas [wp_init]
+        is only safe to initialize C-style values (primitives or aggregates).
      *)
     Definition wp_initialize (ty : type) (addr : ptr) (init : Expr) (k : FreeTemps -> mpred) : mpred :=
       match drop_qualifiers ty with
