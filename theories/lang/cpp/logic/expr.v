@@ -51,7 +51,7 @@ Module Type Expr.
     #[local] Notation wp_init := (wp_init M ρ).
     #[local] Notation wp_operand := (wp_operand M ρ).
     #[local] Notation wp_initialize := (wp_initialize M ρ).
-    #[local] Notation wpe := (wpe M ρ).
+    #[local] Notation wp_discard := (wp_discard M ρ).
     #[local] Notation wp_glval := (wp_glval M ρ).
     #[local] Notation wp_args := (wp_args M ρ).
     #[local] Notation fspec := (fspec resolve.(genv_tu).(globals)).
@@ -365,19 +365,19 @@ Module Type Expr.
      * depending on what the second expression is.
      *)
     Axiom wp_lval_comma : forall {vc} e1 e2 Q,
-        wpe vc e1 (fun _ free1 => wp_lval e2 (fun val free2 => Q val (free2 >*> free1)))
+        wp_discard vc e1 (fun free1 => wp_lval e2 (fun val free2 => Q val (free2 >*> free1)))
         |-- wp_lval (Ecomma vc e1 e2) Q.
 
     Axiom wp_xval_comma : forall {vc} e1 e2 Q,
-        wpe vc e1 (fun _ free1 => wp_xval e2 (fun val free2 => Q val (free2 >*> free1)))
+        wp_discard vc e1 (fun free1 => wp_xval e2 (fun val free2 => Q val (free2 >*> free1)))
         |-- wp_xval (Ecomma vc e1 e2) Q.
 
     Axiom wp_operand_comma : forall {vc} e1 e2 Q,
-        wpe vc e1 (fun _ free1 => wp_operand e2 (fun val free2 => Q val (free2 >*> free1)))
+        wp_discard vc e1 (fun free1 => wp_operand e2 (fun val free2 => Q val (free2 >*> free1)))
         |-- wp_operand (Ecomma vc e1 e2) Q.
 
     Axiom wp_init_comma : forall {vc} p e1 e2 Q,
-        wpe vc e1 (fun _ free1 => wp_init p e2 (fun free free2 => Q free (free2 >*> free1)))
+        wp_discard vc e1 (fun free1 => wp_init p e2 (fun free free2 => Q free (free2 >*> free1)))
         |-- wp_init p (Ecomma vc e1 e2) Q.
 
     (** short-circuting operators *)
@@ -567,7 +567,7 @@ Module Type Expr.
     (** You can cast anything to void, but an expression of type
      * [void] can only be a pr_value *)
     Axiom wp_operand_cast_tovoid : forall vc e Q,
-          wpe vc e (fun _ free => Q Vundef free)
+          wp_discard vc e (fun free => Q Vundef free)
       |-- wp_operand (Ecast C2void vc e Tvoid) Q.
 
     Axiom wp_operand_cast_array2pointer : forall vc e t Q,

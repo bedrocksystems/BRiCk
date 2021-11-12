@@ -24,7 +24,7 @@ Module Type Stmt.
     Local Notation wp_operand := (wp_operand M).
     Local Notation wp_xval := (wp_xval M).
     Local Notation wp_init := (wp_init M).
-    Local Notation wpe := (wpe M).
+    Local Notation wp_discard := (wp_discard M).
 
     Local Notation glob_def := (glob_def resolve) (only parsing).
 
@@ -97,7 +97,7 @@ Module Type Stmt.
         Q Continue -* Q' Continue |-- wp ρ Scontinue Q -* wp ρ Scontinue Q'.
 
     Axiom wp_expr : forall ρ vc e Q,
-        |> wpe ρ vc e (fun _ free => interp free (Q Normal))
+        |> wp_discard ρ vc e (fun free => interp free (Q Normal))
         |-- wp ρ (Sexpr vc e) Q.
 
     (* This definition performs allocation of local variables.
@@ -309,13 +309,13 @@ Module Type Stmt.
           Inv |-- wp ρ (Sseq (b :: Scontinue :: nil))
               (Kloop match incr with
                      | None => Inv
-                     | Some (vc,incr) => wpe ρ vc incr (fun _ free => interp free Inv)
+                     | Some (vc,incr) => wp_discard ρ vc incr (fun free => interp free Inv)
                      end Q)
         | Some test =>
           Inv |-- wp ρ (Sif None test (Sseq (b :: Scontinue :: nil)) Sskip)
               (Kloop match incr with
                      | None => Inv
-                     | Some (vc,incr) => wpe ρ vc incr (fun _ free => interp free Inv)
+                     | Some (vc,incr) => wp_discard ρ vc incr (fun free => interp free Inv)
                      end Q)
         end ->
         Inv |-- wp ρ (Sfor None test incr b) Q.

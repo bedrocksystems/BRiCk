@@ -601,32 +601,35 @@ Section with_cpp.
     iIntros "A B"; iRevert "A"; iApply wp_glval_frame; eauto.
   Qed.
 
-  (** Bundled evaluation, this enables us slightly more concisely
-      represent some weakest-precondition rules.
+  (** Discarded values.
+      Sometimes expressions are evaluated only for their side-effects.
+      https://eel.is/c++draft/expr#context-2
+
+      The definition [wp_discard] captures this and allows us to express some rules
+      more concisely. Note that due to the fact that we have different [wp]s for each
+      value category, [wp_discard] takes the value category of the expression which
+      must be embedded into the AST.
    *)
-  Section wpe.
+  Section wp_discard.
     Context {resolve:genv}.
     Variable (M : coPset) (ρ : region).
 
-    Definition wpe (vc : ValCat) (e : Expr) (Q : ptr -> FreeTemps -> mpred) : mpred :=
+    Definition wp_discard (vc : ValCat) (e : Expr) (Q : FreeTemps -> mpred) : mpred :=
       match vc with
-      | Lvalue => @wp_lval resolve M ρ e Q
-      | Prvalue => @wp_prval resolve M ρ e (fun p free frees => Q p (free >*> frees)%free)
-      | Xvalue => @wp_xval resolve M ρ e Q
+      | Lvalue => @wp_lval resolve M ρ e (fun _ => Q)
+      | Prvalue =>
+        if is_primitive (type_of e) then
+          @wp_operand resolve M ρ e (fun _ free => Q free)
+        else
+          @wp_prval resolve M ρ e (fun p free frees => Q (free >*> frees)%free)
+      | Xvalue => @wp_xval resolve M ρ e (fun _ => Q)
       end.
 
-    Definition wpe2 (vc : ValCat) (e : Expr) (Q : ptr -> FreeTemp -> FreeTemps -> mpred) : mpred :=
-      match vc with
-      | Lvalue => @wp_lval resolve M ρ e (fun p frees => Q p FreeTemps.id frees)
-      | Prvalue => @wp_prval resolve M ρ e Q
-      | Xvalue => @wp_xval resolve M ρ e (fun p frees => Q p FreeTemps.id frees)
-      end.
+  End wp_discard.
 
-  End wpe.
-
-  Lemma wpe_frame σ1 σ2 M ρ vc e k1 k2:
+  Lemma wp_discard_frame σ1 σ2 M ρ vc e k1 k2:
     genv_leq σ1 σ2 ->
-    Forall v f, k1 v f -* k2 v f |-- wpe (resolve := σ1) M ρ vc e k1 -* wpe (resolve:=σ2) M ρ vc e k2.
+    Forall f, k1 f -* k2 f |-- wp_discard (resolve := σ1) M ρ vc e k1 -* wp_discard (resolve:=σ2) M ρ vc e k2.
   Proof. (*
     destruct vc => /=; [ | apply wp_prval_frame | ].
     - intros. rewrite -wp_lval_frame; eauto.
@@ -636,21 +639,21 @@ Section with_cpp.
   Qed. *) Admitted.
 
   #[global] Instance Proper_wpe :
-    Proper (genv_leq ==> eq ==> eq ==> eq ==> eq ==> (eq ==> (≡) ==> (⊢)) ==> (⊢))
-           (@wpe).
+    Proper (genv_leq ==> eq ==> eq ==> eq ==> eq ==> ((≡) ==> (⊢)) ==> (⊢))
+           (@wp_discard).
   Proof.
     repeat red; intros; subst.
-    iIntros "X"; iRevert "X"; iApply wpe_frame; eauto.
-    iIntros (v f); iApply H4; reflexivity.
+    iIntros "X"; iRevert "X"; iApply wp_discard_frame; eauto.
+    iIntros (?); iApply H4; reflexivity.
   Qed.
 
   #[global] Instance Proper_wpe' :
-    Proper (genv_leq ==> eq ==> eq ==> eq ==> eq ==> (pointwise_relation _ (pointwise_relation _ lentails)) ==> lentails)
-           (@wpe).
+    Proper (genv_leq ==> eq ==> eq ==> eq ==> eq ==> (pointwise_relation _ lentails) ==> lentails)
+           (@wp_discard).
   Proof.
     repeat red; intros; subst.
-    iIntros "X"; iRevert "X"; iApply wpe_frame; eauto.
-    iIntros (v f); iApply H4; reflexivity.
+    iIntros "X"; iRevert "X"; iApply wp_discard_frame; eauto.
+    iIntros (?); iApply H4; reflexivity.
   Qed.
 
   (** * Statements *)
