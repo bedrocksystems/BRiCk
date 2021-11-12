@@ -12,7 +12,7 @@ From bedrock.lang.cpp.logic Require Import
      pred path_pred heap_pred wp call.
 Require Import bedrock.lang.cpp.heap_notations.
 
-Local Open Scope Z_scope.
+#[local] Open Scope Z_scope.
 
 Section with_Σ.
   Context `{cpp_logic thread_info} {resolve:genv}.
@@ -20,9 +20,9 @@ Section with_Σ.
 
   Implicit Type (Q : val → mpred).
 
-  Local Notation wp_prval := (wp_prval M ρ).
-  Local Notation wp_operand := (wp_operand M ρ).
-  Local Notation wp_args := (wp_args M ρ).
+  #[local] Notation wp_prval := (wp_prval M ρ).
+  #[local] Notation wp_operand := (wp_operand M ρ).
+  #[local] Notation wp_args := (wp_args M ρ).
 
   (* Builtins for Atomic operations. We follow those provided by GCC.
    * https://gcc.gnu.org/onlinedocs/gcc/_005f_005fatomic-Builtins.html
@@ -37,7 +37,7 @@ Section with_Σ.
         AtomicOp -> type (* the access type of the atomic operation *) ->
         list val -> (val -> mpred) -> mpred.
 
-  Local Notation wp_atom' := (@wp_atom resolve M) (only parsing).
+  #[local] Notation wp_atom' := (@wp_atom resolve M) (only parsing).
 
   Definition pointee_type (t : type) : option type :=
     match t with
@@ -339,7 +339,7 @@ Section with_Σ.
     let r := op n1 n2 in
     if sgn is Signed then to_signed sz r else to_unsigned sz r.
 
-  Local Notation at_eval sz sgn op n1 n2 :=
+  #[local] Notation at_eval sz sgn op n1 n2 :=
     (Unfold atomic_eval (atomic_eval sz sgn op n1 n2)) (only parsing).
 
   (* atomic fetch and xxx rule *)
@@ -355,7 +355,7 @@ Section with_Σ.
                       _eqv p |-> primR acc_type 1 (Vint n') -* Q (Vint n))) Q
       |-- wp_atom' ao acc_type [p; memorder; Vint arg] Q.
 
-  Local Notation fetch_xxx ao op :=
+  #[local] Notation fetch_xxx ao op :=
     (Unfold wp_fetch_xxx_cst (wp_fetch_xxx_cst ao op)) (only parsing).
 
   Let nand (a b : Z) : Z := Z.lnot (Z.land a b).
@@ -380,7 +380,7 @@ Section with_Σ.
                       _eqv p |-> primR acc_type 1 (Vint n') -* Q (Vint n'))) Q
       |-- wp_atom' ao acc_type [p; memorder; Vint arg] Q.
 
-  Local Notation xxx_fetch ao op :=
+  #[local] Notation xxx_fetch ao op :=
     (Unfold wp_xxx_fetch_cst (wp_xxx_fetch_cst ao op)) (only parsing).
 
   Axiom wp_atom_add_fetch_cst  : xxx_fetch AO__atomic_add_fetch  Z.add.
