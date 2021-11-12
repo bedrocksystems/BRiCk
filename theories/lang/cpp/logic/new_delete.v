@@ -110,7 +110,7 @@ Module Type Expr__newdelete.
             - Currently, we do not model coalescing of multiple allocations
               (https://eel.is/c++draft/expr.new#14).
          *)
-        Axiom wp_prval_new :
+        Axiom wp_operand_new :
           forall (oinit : option Expr)
             new_fn new_args aty ty Q targs sz
             (nfty := normalize_type new_fn.2)
@@ -155,7 +155,7 @@ Module Type Expr__newdelete.
                                   end))))
         |-- wp_operand (Enew (Some new_fn) new_args aty None oinit ty) Q.
 
-        Axiom wp_prval_array_new :
+        Axiom wp_operand_array_new :
           forall (array_size : Expr) (oinit : option Expr)
             new_fn new_args aty ty Q targs sz
             (nfty := normalize_type new_fn.2)
@@ -256,7 +256,7 @@ Module Type Expr__newdelete.
            NOTE: [Edelete]'s first argument is [true] iff the expression corresponds to
            an array-delete ([delete[]]).
          *)
-        Axiom wp_prval_delete : forall delete_fn e ty destroyed_type Q,
+        Axiom wp_operand_delete : forall delete_fn e ty destroyed_type Q,
           (* call the destructor on the object, and then call delete_fn *)
           wp_operand e (fun v free =>
              Exists obj_ptr, [| v = Vptr obj_ptr |] **
@@ -287,7 +287,7 @@ Module Type Expr__newdelete.
         |-- wp_operand (Edelete false (Some delete_fn) e destroyed_type ty) Q.
 
         (* NOTE: [destroyed_type] will refer to the /element/ of the array *)
-        Axiom wp_prval_array_delete : forall delete_fn e ty carrier_type array_size Q,
+        Axiom wp_operand_array_delete : forall delete_fn e ty carrier_type array_size Q,
           (* call the destructor on the object, and then call delete_fn *)
           wp_operand e (fun v free =>
              Exists obj_ptr, [| v = Vptr obj_ptr |] **

@@ -74,10 +74,10 @@ Module Type Expr.
       |-- wp_lval (Eread_ref e) Q.
 
     (* constants are rvalues *)
-    Axiom wp_prval_constant : forall ty cnst e Q,
+    Axiom wp_operand_constant : forall ty cnst e Q,
       glob_def cnst = Some (Gconstant ty (Some e)) ->
-      wp_prval e Q
-      |-- wp_prval (Econst_ref (Gname cnst) ty) Q.
+      wp_operand e Q
+      |-- wp_operand (Econst_ref (Gname cnst) ty) Q.
 
     (* integer literals are prvalues *)
     Axiom wp_operand_int : forall n ty Q,
@@ -1171,7 +1171,7 @@ Module Type Expr.
       |-- wp_glval ρ vc (Eopaque_ref n ty) Q.
 
     (* Maybe do something similar to what was suggested for `wp_lval_opaque_ref` above. *)
-    Axiom wp_prval_arrayloop_index : forall ρ level ty Q,
+    Axiom wp_operand_arrayloop_index : forall ρ level ty Q,
           Exists v,
             ((Exists q, _local ρ (arrayloop_loop_index level)
                                |-> primR (erase_qualifiers ty) q v) **
