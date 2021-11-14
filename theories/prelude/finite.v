@@ -82,7 +82,7 @@ Module-based infrastructure to generate Finite-based utilities.
 
 Example use for a variant.
 
-Module my_finite_type.
+Module right.
   Variant _t := FOO | BAR.
   Definition t := _t. (* Workaround Coq bug. *)
   #[global] Instance t_inh : Inhabited t.
@@ -111,7 +111,7 @@ Module my_finite_type.
   Include finite_type_mixin.
   Include bitmask_type_simple_mixin.
   Include finite_bitmask_type_mixin.
-End my_finite_type.
+End right.
 *)
 Module Type eqdec_type.
   Parameter t : Type.
@@ -147,6 +147,7 @@ namespace.
 Module invert_of_N.
   Section of_N.
     Context `{!EqDecision A} `{!Finite A} (to_N : A -> N).
+    (* TODO: Use [list_find] instead? *)
     Definition of_N (r : N) : option A :=
       head $ filter (fun x => bool_decide (to_N x = r)) $ enum A.
 
@@ -189,6 +190,7 @@ Module Type finite_type_mixin (Import F : finite_type).
   (* Obtain encoding from [t_finite] *)
   Definition to_N : t -> N := encode_N.
   Definition of_N : N -> option t := decode_N.
+
   Lemma of_to_N x : of_N (to_N x) = Some x.
   Proof. apply decode_encode_N. Qed.
 End finite_type_mixin.
@@ -220,16 +222,22 @@ Module Type finite_bitmask_type_mixin (Import F : finite_type) (Import B : bitma
   Lemma to_bitmask_setbit x : to_bitmask x = N.setbit 0 (to_bit x).
   Proof. by rewrite N.setbit_spec'. Qed.
 
-  (* Parse a bitmask into a list of flags. *)
-  Definition to_list_aux (r : N) (xs : list t) : list t :=
-    x ← xs;
-    if N.testbit r (to_bit x) then [x] else [].
+  Definition testbit (mask : N) (x : t) : bool :=
+    N.testbit mask (to_bit x).
+  Definition filter (mask : N) (x : t) : list t :=
+    if testbit mask x then [x] else [].
 
-  Definition to_list (r : N) : list t := to_list_aux r $ enum t.
+  (* Parse a bitmask into a list of flags. *)
+  Definition to_list_aux (mask : N) (xs : list t) : list t :=
+    xs ≫= filter mask.
+
+  Definition to_list (mask : N) : list t := to_list_aux mask $ enum t.
 
   Lemma to_list_0 : to_list 0 = [].
   Proof. rewrite /to_list. by elim: enum. Qed.
 End finite_bitmask_type_mixin.
+
+Module Type finite_bitmask_type_intf := finite_type <+ bitmask_type <+ finite_bitmask_type_mixin.
 
 (* All the above mixins in the right order, for when [bitmask_type_simple_mixin]
 is appropriate. *)
@@ -239,7 +247,7 @@ Module Type simple_finite_bitmask_type_mixin (Import F : finite_type).
   Include finite_bitmask_type_mixin F.
 End simple_finite_bitmask_type_mixin.
 
-Module Type finite_bitmask_type_intf := finite_type <+ bitmask_type <+ finite_bitmask_type_mixin.
+Module Type simple_finite_bitmask_type_intf := finite_type <+ simple_finite_bitmask_type_mixin.
 
 (* A type for _sets_ of flags, as opposed to the type of flags described above. *)
 Module finite_bits (BT : finite_bitmask_type_intf).
