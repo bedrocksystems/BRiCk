@@ -26,3 +26,12 @@ Section implb.
   Lemma implb_prop_elim a b : implb a b → a → b.
   Proof. by rewrite implb_True. Qed.
 End implb.
+
+Lemma bool_decide_Is_true (b : bool) : bool_decide (Is_true b) = b.
+Proof. by case: b. Qed.
+
+Lemma bool_decide_bool_eq b : bool_decide (b = true) = b.
+Proof. by case: b. Qed.
+
+Lemma bool_decide_is_true b : bool_decide (is_true b) = b.
+Proof. by case: b. Qed.
