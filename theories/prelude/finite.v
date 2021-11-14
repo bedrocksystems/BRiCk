@@ -6,7 +6,7 @@
  *)
 
 From stdpp Require Export finite.
-From bedrock.prelude Require Import base numbers list_numbers gmap list.
+From bedrock.prelude Require Import base bool numbers list_numbers gmap list.
 
 #[local] Open Scope N_scope.
 

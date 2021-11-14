@@ -6,6 +6,7 @@
  *)
 Require Export stdpp.numbers.
 Require Export bedrock.prelude.base.
+Require Import bedrock.prelude.bool.
 #[local] Set Printing Coercions.	(** Readability *)
 
 (** * Small extensions to [stdpp.numbers]. *)
@@ -86,8 +87,50 @@ Instance N_lor_assoc : Assoc eq N.lor := N.lor_assoc.
 Instance N_succ_inj : Inj (=) (=) N.succ.
 Proof. intros n1 n2. lia. Qed.
 
+(** Misc cancellation lemmas for odd operators *)
 Lemma N_succ_pos_pred p : N.succ_pos (Pos.pred_N p) = p.
 Proof. rewrite /N.succ_pos. case E: Pos.pred_N=>[|p']; lia. Qed.
+
+Lemma Pos_of_S i :
+  Pos.of_nat (S i) = N.succ_pos (N.of_nat i).
+Proof. case: i => [//|i]. rewrite Nat2Pos.inj_succ //= Pos.of_nat_succ //. Qed.
+
+Lemma pred_nat_succ n :
+  Nat.pred (Pos.to_nat (N.succ_pos n)) = N.to_nat n.
+Proof. case: n => //= p. lia. Qed.
+
+(** [N.of_nat] is monotone re [<]. *)
+Lemma N_of_nat_lt_mono (i j : nat) :
+  (i < j)%nat ↔ (N.of_nat i < N.of_nat j)%N.
+Proof. rewrite /N.lt -Nat2N.inj_compare. apply nat_compare_lt. Qed.
+
+(** [N.of_nat] is monotone re [≤]. *)
+Lemma N_of_nat_le_mono (i j : nat) :
+  (i ≤ j)%nat ↔ (N.of_nat i ≤ N.of_nat j)%N.
+Proof. rewrite /N.le -Nat2N.inj_compare. apply nat_compare_le. Qed.
+
+(** Adapter [N.eqb] into [bool_decide]. *)
+Lemma N_eqb_bool_decide (m n : N) : N.eqb m n = bool_decide (m = n).
+Proof.
+  by rewrite -(bool_decide_iff _ _ (N.eqb_eq _ _)) bool_decide_bool_eq.
+Qed.
+
+Lemma N_leb_bool_decide (m n : N) : N.leb m n = bool_decide (m ≤ n)%N.
+Proof.
+  by rewrite -(bool_decide_iff _ _ (N.leb_le _ _)) bool_decide_bool_eq.
+Qed.
+
+(** Rephrase spec for [N.ones] using [bool_decide]. *)
+Lemma N_ones_spec (n m : N) :
+  N.testbit (N.ones n) m = bool_decide (m < n)%N.
+Proof.
+  case_bool_decide; [exact: N.ones_spec_low|].
+  apply N.ones_spec_high. lia.
+Qed.
+
+Lemma N_setbit_bool_decide (a n m : N) :
+  N.testbit (N.setbit a n) m = bool_decide (n = m) || N.testbit a m.
+Proof. by rewrite N.setbit_eqb N_eqb_bool_decide. Qed.
 
 Instance N_divide_dec : RelDecision N.divide.
 Proof.
