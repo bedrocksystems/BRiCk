@@ -137,11 +137,17 @@ Module right.
   *)
   Include simple_finite_bitmask_type_mixin.
 
-  (* [simple_finite_bitmask_type_mixin] can be replaced by (some subset of). *)
+  (* [simple_finite_bitmask_type_mixin] can almost be replaced by (some subset of), but
+  enjoys extra lemmas. *)
   Include finite_type_mixin.
   Include bitmask_type_simple_mixin.
   Include finite_bitmask_type_mixin.
 End right.
+
+(* For bitmasks over [simple_finite_bitmask_type_intf]. *)
+Module rights := simple_finite_bits rights.
+(* Else, for bitmasks over [finite_bitmask_type_intf]. *)
+Module rights := finite_bits rights.
 *)
 Module Type eqdec_type.
   Parameter t : Type.
@@ -275,6 +281,18 @@ Module Type simple_finite_bitmask_type_mixin (Import F : finite_type).
   Include finite_type_mixin F.
   Include bitmask_type_simple_mixin F.
   Include finite_bitmask_type_mixin F.
+
+  Definition all_bits : N := N.ones (N.of_nat (card F.t)).
+
+  (* Cannot be proven in [finite_bitmask_type_mixin] because we need [to_bit]'s
+  definition. *)
+  Lemma to_list_max : to_list all_bits = enum F.t.
+  Proof.
+    rewrite /to_list /to_list_aux /filter.
+    elim: enum => [//|x xs IH]; cbn; rewrite {}IH.
+    set c := testbit _ _; suff -> : c = true by []; rewrite {}/c.
+    apply N.ones_spec_iff, encode_N_lt_card.
+  Qed.
 End simple_finite_bitmask_type_mixin.
 
 Module Type simple_finite_bitmask_type_intf := finite_type <+ simple_finite_bitmask_type_mixin.
@@ -434,4 +452,37 @@ Module finite_bits (BT : finite_bitmask_type_intf).
 
   Lemma masked_opt_0 rights : masked_opt 0 rights = None.
   Proof. by rewrite /masked_opt masked_0. Qed.
+
+  Lemma masked_empty n : masked n ∅ = ∅.
+  Proof. rewrite /masked. set_solver. Qed.
+
+  Lemma masked_opt_empty n : masked_opt n ∅ = None.
+  Proof. by rewrite /masked_opt masked_empty. Qed.
+
+  (* Warning: prefer [BT.all_bits] if available, that's simpler to reason about. *)
+  Definition mask_top : N := to_bits ⊤.
+
+  Lemma masked_top `{Hinj : !Inj eq eq BT.to_bit} rights :
+    masked mask_top rights = rights.
+  Proof. rewrite /masked /mask_top of_to_bits. set_solver. Qed.
+
+  Lemma masked_opt_top `{Hinj : !Inj eq eq BT.to_bit}
+    rights (Hrights : rights ≠ ∅) :
+    masked_opt mask_top rights = Some rights.
+  Proof. by rewrite /masked_opt masked_top option_guard_True. Qed.
 End finite_bits.
+
+Module simple_finite_bits (BT : simple_finite_bitmask_type_intf).
+  Include finite_bits BT.
+
+  Lemma of_bits_max : of_bits BT.all_bits = ⊤.
+  Proof. by rewrite /of_bits BT.to_list_max. Qed.
+
+  Lemma masked_max rights :
+    masked BT.all_bits rights = rights.
+  Proof. rewrite /masked of_bits_max. set_solver. Qed.
+
+  Lemma masked_opt_max rights (Hrights : rights ≠ ∅) :
+    masked_opt BT.all_bits rights = Some rights.
+  Proof. by rewrite /masked_opt masked_max option_guard_True. Qed.
+End simple_finite_bits.
