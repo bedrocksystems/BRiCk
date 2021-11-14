@@ -173,7 +173,10 @@ End finite_encoded_type.
 
 Module Type finite_encoded_type_mixin (Import F : finite_encoded_type).
   Definition of_N := Unfold (@invert_of_N.of_N) (invert_of_N.of_N to_N).
-  Definition of_to_N := invert_of_N.of_to_N to_N.
+
+  Definition of_to_N `[Hinj : !Inj eq eq to_N] (x : t) :
+      of_N (to_N x) = Some x :=
+    invert_of_N.of_to_N to_N (Hinj := Hinj) x.
 End finite_encoded_type_mixin.
 
 (* Mixin hierarchy 2: *)
