@@ -311,6 +311,9 @@ Module finite_bits (BT : finite_bitmask_type_intf).
   Lemma to_bits_singleton x : to_bits {[x]} = BT.to_bitmask x.
   Proof. by rewrite /to_bits set_fold_singleton setbit_0. Qed.
 
+  Lemma testbit_singleton (x : BT.t) : BT.testbit (to_bits {[ x ]}) x = true.
+  Proof. rewrite to_bits_singleton. apply N.pow2_bits_true. Qed.
+
   Module Import internal.
     Definition to_bits_alt (rs : t) : N := set_fold (λ b n, setbit_alt b n) 0 rs.
     Lemma to_bits_is_alt rs : to_bits rs = to_bits_alt rs.
@@ -335,13 +338,90 @@ Module finite_bits (BT : finite_bitmask_type_intf).
     *)
   End internal.
 
-  Lemma to_bits_union_singleton x xs (Hni : x ∉ xs) :
+  (** Use [to_bits_union_singleton]. *)
+  #[local] Lemma to_bits_union_singleton' x xs (Hni : x ∉ xs) :
     to_bits ({[x]} ∪ xs) = N.lor (to_bits {[ x ]}) (to_bits xs).
   Proof.
     rewrite to_bits_singleton !to_bits_is_comm /to_bits_comm -foldr_cons -fmap_cons.
     apply foldr_permutation_proper'; [apply _ ..|].
     f_equiv. exact: elements_union_singleton.
   Qed.
+
+  Lemma setbit_in_idemp x xs
+    (Hin : x ∈ xs) :
+    setbit x (to_bits xs) = to_bits xs.
+  Proof.
+    apply N.bits_inj_iff => i.
+    rewrite N_setbit_bool_decide.
+    case_bool_decide as Hdec => //=. symmetry.
+    induction xs as [|y ys Hni IHys] using set_ind_L; first by set_solver.
+    set_unfold in Hin.
+    rewrite to_bits_union_singleton' // N.lor_spec.
+    destruct Hin as [->|Hin]; first last.
+    { rewrite IHys //. apply: right_absorb_L. }
+    clear IHys Hni.
+    suff ->: Refine (N.testbit (to_bits {[y]}) i = true) by [].
+    subst i. apply testbit_singleton.
+  Qed.
+
+  Lemma to_bits_union_singleton x xs :
+    to_bits ({[x]} ∪ xs) = N.lor (to_bits {[ x ]}) (to_bits xs).
+  Proof.
+    destruct (decide (x ∈ xs)). 2: exact: to_bits_union_singleton'.
+    rewrite subseteq_union_1_L; [|set_solver].
+    rewrite to_bits_singleton -setbit_is_alt.
+    by rewrite setbit_in_idemp.
+  Qed.
+
+  (* TODO move [setbit], and these lemmas, with [BT.testbit]. *)
+  Section BT_to_bit_inj.
+    Context`{Hinj : !Inj eq eq BT.to_bit}.
+    #[local] Set Default Proof Using "Hinj".
+
+    Lemma testbit_setbit (x y : BT.t) (mask : N) :
+      BT.testbit (setbit x mask) y =
+      bool_decide (x = y) || BT.testbit mask y.
+    Proof.
+      rewrite /BT.testbit /setbit N_setbit_bool_decide.
+      by rewrite (bool_decide_iff _ _ (inj_iff BT.to_bit _ _)).
+    Qed.
+
+    Lemma filter_setbit (x y z : BT.t) mask :
+      y ∈ BT.filter (setbit x mask) z ↔ x = y ∧ y = z ∨ y ∈ BT.filter mask z.
+    Proof.
+      rewrite /BT.filter (testbit_setbit x).
+      case_bool_decide; simpl; case_match; set_solver.
+    Qed.
+
+    Lemma to_list_setbit (x z : BT.t) (mask : N) :
+      z ∈ BT.to_list (setbit x mask) ↔ z = x ∨ z ∈ BT.to_list mask.
+    Proof.
+      rewrite /BT.to_list /BT.to_list_aux !elem_of_list_bind.
+      setoid_rewrite filter_setbit.
+      naive_solver eauto using elem_of_enum.
+    Qed.
+
+    Lemma of_bits_setbit x xs :
+      of_bits (setbit x xs) = {[x]} ∪ of_bits xs.
+    Proof.
+      apply gset_eq => y; rewrite elem_of_union elem_of_singleton.
+      by rewrite /of_bits !elem_of_list_to_set to_list_setbit.
+    Qed.
+
+    Lemma of_to_bits rs :
+      of_bits (to_bits rs) = rs.
+    Proof.
+      induction rs as [|x xs Hni IHxs] using set_ind_L.
+      { by rewrite to_bits_empty of_bits_0. }
+      rewrite to_bits_union_singleton // to_bits_singleton -setbit_is_alt.
+      by rewrite of_bits_setbit IHxs.
+    Qed.
+
+    #[global] Instance of_to_bits_cancel : Cancel eq of_bits to_bits :=
+      of_to_bits.
+    #[global] Instance to_bits_inj : Inj eq eq to_bits := cancel_inj.
+    #[global] Instance of_bits_surj : Surj eq of_bits := cancel_surj.
+  End BT_to_bit_inj.
 
   Definition masked (mask : N) (x : t) : t :=
     x ∩ of_bits mask.
