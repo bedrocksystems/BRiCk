@@ -233,7 +233,7 @@ Module Type finite_bitmask_type_intf := finite_type <+ bitmask_type <+ finite_bi
 (* A type for _sets_ of flags, as opposed to the type of flags described above. *)
 Module finite_bits (BT : finite_bitmask_type_intf).
   Definition t := gset BT.t.
-  #[global] Instance top_t : Top t := list_to_set (C := t) (enum BT.t).
+  #[global] Instance top_t : Top t := fin_to_set BT.t (C := t).
 
   (*
   [to_bits] and [of_bits] implement a bitset encoding of [t] into N, given
