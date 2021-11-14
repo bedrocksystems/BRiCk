@@ -51,6 +51,25 @@ Section finite.
   Context `{Finite A}.
   Implicit Type (x : A).
 
+  (* Unfolding lemma: pretty annoying to prove inline by unfolding. *)
+  Lemma finite_decode_nat_unfold n :
+    decode_nat n = enum A !! n.
+  Proof. apply (f_equal (flip lookup (enum _))). lia. Qed.
+
+  (* To upstream! Missing companion to [encode_lt_card]. *)
+  Lemma finite_decode_nat_lt n x :
+    decode_nat n = Some x → (n < card A)%nat.
+  Proof. rewrite finite_decode_nat_unfold /card. apply lookup_lt_Some. Qed.
+
+  (** Lift the above lemmas *)
+  Lemma finite_decode_N_unfold n :
+    decode_N n = enum A !! N.to_nat n.
+  Proof. by rewrite decode_N_nat finite_decode_nat_unfold. Qed.
+
+  Lemma finite_decode_N_lt n x :
+    decode_N n = Some x → n < card_N A.
+  Proof. rewrite /card_N decode_N_nat => /finite_decode_nat_lt. lia. Qed.
+
   Lemma encode_N_lt_card x : encode_N x < card_N A.
   Proof. rewrite encode_N_nat. apply N_of_nat_lt_mono, encode_lt_card. Qed.
 
@@ -62,6 +81,16 @@ Section finite.
     have [x [Hdec Henc]] := encode_decode A (N.to_nat i) Hle.
     exists x. rewrite decode_nat_N encode_nat_N N2Nat.id in Hdec Henc.
     by apply (inj N.to_nat) in Henc.
+  Qed.
+
+  (** A partial inverse to [decode_encode_N]: if [decode_N] succeeds, we can
+  [encode_N] the result back. *)
+  Lemma decode_N_Some_encode_N (n : N) (x : A)
+    (Hdec : decode_N n = Some x) : encode_N x = n.
+  Proof.
+    pose proof (finite_decode_N_lt _ _ Hdec) as Hcmp.
+    destruct (encode_decode_N _ Hcmp) as (x' & ?Hdec & Henc).
+    naive_solver.
   Qed.
 End finite.
 
@@ -198,6 +227,15 @@ Module invert_of_N.
         + rewrite bool_decide_eq_false_2. apply /IHxs /NDxs /Hin.
           intros ->%(inj to_N). apply /Hx'NiXs /Hin.
     Qed.
+
+    Lemma to_of_N (n : N) (x : A)
+      (Hof : of_N n = Some x) : to_N x = n.
+    Proof.
+      suff: Refine (x ∈ filter (fun x => bool_decide (to_N x = n)) $ enum A). {
+        intros [? _]%elem_of_list_filter. by case_bool_decide.
+      }
+      move: Hof. rewrite /of_N. case: (filter _ _) => [//|y ys /=]. set_solver.
+    Qed.
   End of_N.
 End invert_of_N.
 
@@ -214,6 +252,10 @@ Module Type finite_encoded_type_mixin (Import F : finite_encoded_type).
   Definition of_to_N `[Hinj : !Inj eq eq to_N] (x : t) :
       of_N (to_N x) = Some x :=
     invert_of_N.of_to_N to_N (Hinj := Hinj) x.
+
+  Definition to_of_N (n : N) (x : t) :
+      of_N n = Some x → to_N x = n :=
+    invert_of_N.to_of_N to_N n x.
 End finite_encoded_type_mixin.
 
 (* Mixin hierarchy 2: *)
@@ -229,6 +271,10 @@ Module Type finite_type_mixin (Import F : finite_type).
 
   Lemma of_to_N x : of_N (to_N x) = Some x.
   Proof. apply decode_encode_N. Qed.
+
+  Lemma of_N_Some_to_N (n : N) (x : t) :
+    of_N n = Some x → to_N x = n.
+  Proof. apply decode_N_Some_encode_N. Qed.
 End finite_type_mixin.
 
 Module Type finite_type_intf := finite_type <+ finite_type_mixin.
@@ -250,6 +296,10 @@ Module Type bitmask_type_simple_mixin (Import F : finite_type) (Import FM : fini
 
   Lemma of_to_bit x : of_bit (to_bit x) = Some x.
   Proof. apply of_to_N. Qed.
+
+  Lemma of_bit_Some_to_bit (n : N) (x : t) :
+    of_bit n = Some x → to_bit x = n.
+  Proof. apply of_N_Some_to_N. Qed.
 End bitmask_type_simple_mixin.
 
 Module Type finite_bitmask_type_mixin (Import F : finite_type) (Import B : bitmask_type F).
