@@ -33,7 +33,37 @@ Section countable.
   Proof. unfold encode_N; intros x y Hxy; apply (inj encode); lia. Qed.
   Lemma decode_encode_N x : decode_N (encode_N x) = Some x.
   Proof. rewrite /decode_N /encode_N N_succ_pos_pred. apply decode_encode. Qed.
+
+  Lemma encode_nat_N x : encode_nat x = N.to_nat (encode_N x).
+  Proof. rewrite /encode_nat /encode_N. lia. Qed.
+
+  Lemma encode_N_nat x : encode_N x = N.of_nat (encode_nat x).
+  Proof. by rewrite encode_nat_N N2Nat.id. Qed.
+  Lemma decode_nat_N i : decode_nat i =@{option A} decode_N (N.of_nat i).
+  Proof. by rewrite /decode_nat Pos_of_S. Qed.
+  Lemma decode_N_nat i : decode_N i =@{option A} decode_nat (N.to_nat i).
+  Proof. by rewrite decode_nat_N N2Nat.id. Qed.
 End countable.
+
+Definition card_N A `{Finite A} : N := N.of_nat $ card A.
+
+Section finite.
+  Context `{Finite A}.
+  Implicit Type (x : A).
+
+  Lemma encode_N_lt_card x : encode_N x < card_N A.
+  Proof. rewrite encode_N_nat. apply N_of_nat_lt_mono, encode_lt_card. Qed.
+
+  Lemma encode_decode_N (i : N) :
+    i < card_N A →
+    ∃ x : A, decode_N i = Some x ∧ encode_N x = i.
+  Proof.
+    rewrite /card_N -{1}(N2Nat.id i). intros Hle%N_of_nat_lt_mono.
+    have [x [Hdec Henc]] := encode_decode A (N.to_nat i) Hle.
+    exists x. rewrite decode_nat_N encode_nat_N N2Nat.id in Hdec Henc.
+    by apply (inj N.to_nat) in Henc.
+  Qed.
+End finite.
 
 (* From (pieces of) [Countable] (and more) to [Finite]. *)
 Section enc_finite.
