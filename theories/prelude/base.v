@@ -138,6 +138,25 @@ Proof. by rewrite TCLeq_iff. Qed.
 Lemma TCLeq_nat x y : (TCLeq (x ?= y) <-> x <= y)%nat.
 Proof. by rewrite TCLeq_iff Nat.compare_le_iff. Qed.
 
+(** [TCLt (a ?= b)] expresses [a < b] in a way that can be proved,
+    for some [a]s and [b]s, during typeclass resolution. *)
+Variant TCLt : comparison -> Prop :=
+| TCLt_lt : TCLt Lt.
+Existing Class TCLt.
+Existing Instance TCLt_lt.
+#[global] Hint Mode TCLt + : typeclass_instances.
+
+Lemma TCLt_iff c : TCLt c <-> c = Lt.
+Proof. split. by destruct 1. by intros ->. Qed.
+Lemma TCLt_positive x y : (TCLt (x ?= y) <-> x < y)%positive.
+Proof. by rewrite TCLt_iff. Qed.
+Lemma TCLt_Z x y : (TCLt (x ?= y) <-> x < y)%Z.
+Proof. by rewrite TCLt_iff. Qed.
+Lemma TCLt_N x y : (TCLt (x ?= y) <-> x < y)%N.
+Proof. by rewrite TCLt_iff. Qed.
+Lemma TCLt_nat x y : (TCLt (x ?= y) <-> x < y)%nat.
+Proof. by rewrite TCLt_iff Nat.compare_lt_iff. Qed.
+
 (** Useful when rewriting. *)
 Lemma refl_True `(R : relation A) `{!Reflexive R} a : R a a ↔ True.
 Proof. done. Qed.
