@@ -47,9 +47,20 @@ Instance Nat_max_assoc: Assoc eq Nat.max := Nat.max_assoc.
 
 Instance Nat_land_comm : Comm eq Nat.land := Nat.land_comm.
 Instance Nat_land_assoc : Assoc eq Nat.land := Nat.land_assoc.
+Instance Nat_land_left_absorb : LeftAbsorb (=) 0 Nat.land := Nat.land_0_l.
+Instance Nat_land_right_absorb : RightAbsorb (=) 0 Nat.land := Nat.land_0_r.
 
 Instance Nat_lor_comm : Comm eq Nat.lor := Nat.lor_comm.
 Instance Nat_lor_assoc : Assoc eq Nat.lor := Nat.lor_assoc.
+Instance Nat_lor_left_id : LeftId (=) 0 Nat.lor := Nat.lor_0_l.
+Instance Nat_lor_right_id : RightId (=) 0 Nat.lor := Nat.lor_0_r.
+
+(* Non-symmetric *)
+Instance Nat_shiftl_left_absorb : LeftAbsorb (=) 0 Nat.shiftl := Nat.shiftl_0_l.
+Instance Nat_shiftl_right_id : RightId (=) 0 Nat.shiftl := Nat.shiftl_0_r.
+
+Instance Nat_shiftr_left_absorb : LeftAbsorb (=) 0 Nat.shiftr := Nat.shiftr_0_l.
+Instance Nat_shiftr_right_id : RightId (=) 0 Nat.shiftr := Nat.shiftr_0_r.
 
 (** * Natural numbers [N] *)
 
@@ -80,9 +91,20 @@ Instance N_max_assoc: Assoc eq N.max := N.max_assoc.
 
 Instance N_land_comm : Comm eq N.land := N.land_comm.
 Instance N_land_assoc : Assoc eq N.land := N.land_assoc.
+Instance N_land_left_absorb : LeftAbsorb (=) 0%N N.land := N.land_0_l.
+Instance N_land_right_absorb : RightAbsorb (=) 0%N N.land := N.land_0_r.
 
 Instance N_lor_comm : Comm eq N.lor := N.lor_comm.
 Instance N_lor_assoc : Assoc eq N.lor := N.lor_assoc.
+Instance N_lor_left_id : LeftId (=) 0%N N.lor := N.lor_0_l.
+Instance N_lor_right_id : RightId (=) 0%N N.lor := N.lor_0_r.
+
+(* Non-symmetric *)
+Instance N_shiftl_left_absorb : LeftAbsorb (=) 0%N N.shiftl := N.shiftl_0_l.
+Instance N_shiftl_right_id : RightId (=) 0%N N.shiftl := N.shiftl_0_r.
+
+Instance N_shiftr_left_absorb : LeftAbsorb (=) 0%N N.shiftr := N.shiftr_0_l.
+Instance N_shiftr_right_id : RightId (=) 0%N N.shiftr := N.shiftr_0_r.
 
 Instance N_succ_inj : Inj (=) (=) N.succ.
 Proof. intros n1 n2. lia. Qed.
@@ -199,9 +221,21 @@ Instance Z_max_assoc: Assoc eq Z.max := Z.max_assoc.
 
 Instance Z_land_comm : Comm eq Z.land := Z.land_comm.
 Instance Z_land_assoc : Assoc eq Z.land := Z.land_assoc.
+Instance Z_land_left_absorb : LeftAbsorb (=) 0%Z Z.land := Z.land_0_l.
+Instance Z_land_right_absorb : RightAbsorb (=) 0%Z Z.land := Z.land_0_r.
 
 Instance Z_lor_comm : Comm eq Z.lor := Z.lor_comm.
 Instance Z_lor_assoc : Assoc eq Z.lor := Z.lor_assoc.
+
+Instance Z_lor_left_id : LeftId (=) 0%Z Z.lor := Z.lor_0_l.
+Instance Z_lor_right_id : RightId (=) 0%Z Z.lor := Z.lor_0_r.
+
+(* Zon-symmetric *)
+Instance Z_shiftl_left_absorb : LeftAbsorb (=) 0%Z Z.shiftl := Z.shiftl_0_l.
+Instance Z_shiftl_right_id : RightId (=) 0%Z Z.shiftl := Z.shiftl_0_r.
+
+Instance Z_shiftr_left_absorb : LeftAbsorb (=) 0%Z Z.shiftr := Z.shiftr_0_l.
+Instance Z_shiftr_right_id : RightId (=) 0%Z Z.shiftr := Z.shiftr_0_r.
 
 Instance Z_succ_inj : Inj (=) (=) Z.succ.
 Proof. intros n1 n2. lia. Qed.
