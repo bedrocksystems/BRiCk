@@ -8,6 +8,8 @@
 From stdpp Require Export finite.
 From bedrock.prelude Require Import base numbers list_numbers gmap list.
 
+#[local] Open Scope N_scope.
+
 (**
 Extensions of [stdpp.finite], especially for variants:
 
@@ -30,6 +32,7 @@ Proof. rewrite /decode_N /encode_N N_succ_pos_pred. apply decode_encode. Qed.
 
 (* From (pieces of) [Countable] (and more) to [Finite]. *)
 Section enc_finite.
+  #[local] Close Scope N_scope.
   Context `{EqDecision A}.
   Context (to_nat : A → nat) (of_nat : nat → A) (c : nat).
   Context (of_to_nat : ∀ x, of_nat (to_nat x) = x).
@@ -49,8 +52,8 @@ Section enc_finite_N.
   Context (to_N : A → N) (of_N : N → option A) (c : N).
   Context (of_to_N : ∀ x, of_N (to_N x) = Some x).
 
-  Context (to_N_c : (∀ x, to_N x < c)%N).
-  Context (to_of_N : (∀ i, i < c → to_N (default inhabitant $ of_N i) = i)%N).
+  Context (to_N_c : ∀ x, to_N x < c).
+  Context (to_of_N : ∀ i, i < c → to_N (default inhabitant $ of_N i) = i).
 
   #[program] Definition enc_finite_N : Finite A :=
     enc_finite (N.to_nat ∘ to_N) ((λ x, default inhabitant (of_N x)) ∘ N.of_nat) (N.to_nat c) _ _ _.
@@ -255,15 +258,15 @@ Module finite_bits (BT : finite_bitmask_type_intf).
   Lemma setbit_is_alt b n : setbit b n = setbit_alt b n.
   Proof. by rewrite /setbit N.setbit_spec' comm_L. Qed.
 
-  Definition to_bits (rs : t) : N := set_fold setbit 0%N rs.
+  Definition to_bits (rs : t) : N := set_fold setbit 0 rs.
 
-  Lemma to_bits_empty : to_bits ∅ = 0%N.
+  Lemma to_bits_empty : to_bits ∅ = 0.
   Proof. apply set_fold_empty. Qed.
   Lemma to_bits_singleton x : to_bits {[x]} = BT.to_bitmask x.
   Proof. by rewrite /to_bits set_fold_singleton setbit_0. Qed.
 
   Module Import internal.
-    Definition to_bits_alt (rs : t) : N := set_fold (λ b n, setbit_alt b n) 0%N rs.
+    Definition to_bits_alt (rs : t) : N := set_fold (λ b n, setbit_alt b n) 0 rs.
     Lemma to_bits_is_alt rs : to_bits rs = to_bits_alt rs.
     Proof. apply: foldr_ext => // b a. apply setbit_is_alt. Qed.
 
@@ -272,7 +275,7 @@ Module finite_bits (BT : finite_bitmask_type_intf).
     allows reasoning with lemmas about [foldr] and [Permutation].
     See for instance [to_bits_union_singleton]. *)
     Definition to_bits_comm (rs : t) : N :=
-      foldr N.lor 0%N (BT.to_bitmask <$> elements rs).
+      foldr N.lor 0 (BT.to_bitmask <$> elements rs).
     Lemma to_bits_is_comm rs : to_bits rs = to_bits_comm rs.
     Proof. rewrite to_bits_is_alt. apply symmetry, foldr_fmap. Qed.
 
@@ -280,7 +283,7 @@ Module finite_bits (BT : finite_bitmask_type_intf).
     We could also use
 
     Definition to_bits_comm' (rs : t) : N :=
-      set_fold N.lor 0%N (set_map (D := gset N) BT.to_bitmask rs).
+      set_fold N.lor 0 (set_map (D := gset N) BT.to_bitmask rs).
 
     But it seems that more lemmas are available on the [foldr] form.
     *)
