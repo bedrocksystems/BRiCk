@@ -306,29 +306,3 @@ Module finite_bits (BT : finite_bitmask_type_intf).
   Lemma masked_opt_0 rights : masked_opt 0 rights = None.
   Proof. by rewrite /masked_opt masked_0. Qed.
 End finite_bits.
-
-
-(* Not necessarily restricted to [Finite] *)
-Lemma nat_fin_iter_lt (c : nat) (P : nat -> Prop) :
-  Forall P (seq 0 c) ->
-  forall i, i < c -> P i.
-Proof. move=>/Forall_seq /= F. eauto with lia. Qed.
-
-Lemma nat_fin_iter_le (c : nat) (P : nat -> Prop) :
-  Forall P (seq 0 (S c)) ->
-  forall i, i <= c -> P i.
-Proof. move=> F i Hle. eapply nat_fin_iter_lt; [done | lia]. Qed.
-
-Lemma N_fin_iter_lt (c : N) (P : N -> Prop) :
-  Forall P (seqN 0 c) ->
-  forall i, (i < c)%N -> P i.
-Proof.
-  move=> F i Hle. rewrite -(N2Nat.id i).
-  apply (nat_fin_iter_lt (N.to_nat c) (P ∘ N.of_nat)); [| lia] => {i Hle}.
-  rewrite -Forall_fmap. apply F.
-Qed.
-
-Lemma N_fin_iter_le (c : N) (P : N -> Prop) :
-  Forall P (seqN 0 (N.succ c)) ->
-  forall i, (i <= c)%N -> P i.
-Proof. move=> F i Hle. eapply N_fin_iter_lt; [done | lia]. Qed.
