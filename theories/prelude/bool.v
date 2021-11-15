@@ -8,6 +8,17 @@ Require Export bedrock.prelude.base.
 
 #[local] Set Printing Coercions.
 
+(**
+More flexible version of [reflect]: using [H : reflectPQ (m < n) (n ≤ m) b]
+instead of [H : reflect (m < n) b] avoids introducing [~(m < n)] in the context.
+
+Typical users will still pick [P] and [Q] such that [Q ↔ ¬P], even if that's not
+strictly enforced.
+*)
+Variant reflectPQ (P Q : Prop) : bool -> Prop :=
+| rPQ_true  (_ : P) : reflectPQ P Q true
+| rPQ_false (_ : Q) : reflectPQ P Q false.
+
 Lemma Is_true_is_true b : Is_true b ↔ is_true b.
 Proof. by destruct b. Qed.
 Lemma Is_true_eq b : Is_true b ↔ b = true.
