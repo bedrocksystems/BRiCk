@@ -321,6 +321,42 @@ Module Type finite_bitmask_type_mixin (Import F : finite_type) (Import B : bitma
 
   Lemma to_list_0 : to_list 0 = [].
   Proof. rewrite /to_list. by elim: enum. Qed.
+
+  Definition setbit (b : t) (n : N) : N := N.setbit n (to_bit b).
+  Notation setbit_alt b n := (N.lor (to_bitmask b) n).
+
+  Lemma setbit_0 x : setbit x 0 = to_bitmask x.
+  Proof. by rewrite to_bitmask_setbit. Qed.
+  Lemma setbit_is_alt b n : setbit b n = setbit_alt b n.
+  Proof. by rewrite /setbit N.setbit_spec' comm_L. Qed.
+
+  Section to_bit_inj.
+    Context`{Hinj : !Inj eq eq to_bit}.
+    #[local] Set Default Proof Using "Hinj".
+
+    Lemma testbit_setbit (x y : t) (mask : N) :
+      testbit (setbit x mask) y =
+      bool_decide (x = y) || testbit mask y.
+    Proof.
+      rewrite /testbit /setbit N_setbit_bool_decide.
+      by rewrite (bool_decide_iff _ _ (inj_iff to_bit _ _)).
+    Qed.
+
+    Lemma filter_setbit (x y z : t) mask :
+      y ∈ filter (setbit x mask) z ↔ x = y ∧ y = z ∨ y ∈ filter mask z.
+    Proof.
+      rewrite /filter (testbit_setbit x).
+      case_bool_decide; simpl; case_match; set_solver.
+    Qed.
+
+    Lemma to_list_setbit (x z : t) (mask : N) :
+      z ∈ to_list (setbit x mask) ↔ z = x ∨ z ∈ to_list mask.
+    Proof.
+      rewrite /to_list /to_list_aux !elem_of_list_bind.
+      setoid_rewrite filter_setbit.
+      naive_solver eauto using elem_of_enum.
+    Qed.
+  End to_bit_inj.
 End finite_bitmask_type_mixin.
 
 Module Type finite_bitmask_type_intf := finite_type <+ bitmask_type <+ finite_bitmask_type_mixin.
@@ -364,28 +400,20 @@ Module finite_bits (BT : finite_bitmask_type_intf).
   Lemma of_bits_0 : of_bits 0 = ∅.
   Proof. by rewrite /of_bits BT.to_list_0. Qed.
 
-  Definition setbit (b : BT.t) (n : N) : N := N.setbit n (BT.to_bit b).
-  Notation setbit_alt b n := (N.lor (BT.to_bitmask b) n).
-
-  Lemma setbit_0 x : setbit x 0 = BT.to_bitmask x.
-  Proof. by rewrite BT.to_bitmask_setbit. Qed.
-  Lemma setbit_is_alt b n : setbit b n = setbit_alt b n.
-  Proof. by rewrite /setbit N.setbit_spec' comm_L. Qed.
-
-  Definition to_bits (rs : t) : N := set_fold setbit 0 rs.
+  Definition to_bits (rs : t) : N := set_fold BT.setbit 0 rs.
 
   Lemma to_bits_empty : to_bits ∅ = 0.
   Proof. apply set_fold_empty. Qed.
   Lemma to_bits_singleton x : to_bits {[x]} = BT.to_bitmask x.
-  Proof. by rewrite /to_bits set_fold_singleton setbit_0. Qed.
+  Proof. by rewrite /to_bits set_fold_singleton BT.setbit_0. Qed.
 
   Lemma testbit_singleton (x : BT.t) : BT.testbit (to_bits {[ x ]}) x = true.
   Proof. rewrite to_bits_singleton. apply N.pow2_bits_true. Qed.
 
   Module Import internal.
-    Definition to_bits_alt (rs : t) : N := set_fold (λ b n, setbit_alt b n) 0 rs.
+    Definition to_bits_alt (rs : t) : N := set_fold (λ b n, BT.setbit_alt b n) 0 rs.
     Lemma to_bits_is_alt rs : to_bits rs = to_bits_alt rs.
-    Proof. apply: foldr_ext => // b a. apply setbit_is_alt. Qed.
+    Proof. apply: foldr_ext => // b a. apply BT.setbit_is_alt. Qed.
 
     (**
     Writing [to_bits] as a commutative, associative fold
@@ -417,7 +445,7 @@ Module finite_bits (BT : finite_bitmask_type_intf).
 
   Lemma setbit_in_idemp x xs
     (Hin : x ∈ xs) :
-    setbit x (to_bits xs) = to_bits xs.
+    BT.setbit x (to_bits xs) = to_bits xs.
   Proof.
     apply N.bits_inj_iff => i.
     rewrite N_setbit_bool_decide.
@@ -437,7 +465,7 @@ Module finite_bits (BT : finite_bitmask_type_intf).
   Proof.
     destruct (decide (x ∈ xs)). 2: exact: to_bits_union_singleton'.
     rewrite subseteq_union_1_L; [|set_solver].
-    rewrite to_bits_singleton -setbit_is_alt.
+    rewrite to_bits_singleton -BT.setbit_is_alt.
     by rewrite setbit_in_idemp.
   Qed.
 
@@ -446,34 +474,11 @@ Module finite_bits (BT : finite_bitmask_type_intf).
     Context`{Hinj : !Inj eq eq BT.to_bit}.
     #[local] Set Default Proof Using "Hinj".
 
-    Lemma testbit_setbit (x y : BT.t) (mask : N) :
-      BT.testbit (setbit x mask) y =
-      bool_decide (x = y) || BT.testbit mask y.
-    Proof.
-      rewrite /BT.testbit /setbit N_setbit_bool_decide.
-      by rewrite (bool_decide_iff _ _ (inj_iff BT.to_bit _ _)).
-    Qed.
-
-    Lemma filter_setbit (x y z : BT.t) mask :
-      y ∈ BT.filter (setbit x mask) z ↔ x = y ∧ y = z ∨ y ∈ BT.filter mask z.
-    Proof.
-      rewrite /BT.filter (testbit_setbit x).
-      case_bool_decide; simpl; case_match; set_solver.
-    Qed.
-
-    Lemma to_list_setbit (x z : BT.t) (mask : N) :
-      z ∈ BT.to_list (setbit x mask) ↔ z = x ∨ z ∈ BT.to_list mask.
-    Proof.
-      rewrite /BT.to_list /BT.to_list_aux !elem_of_list_bind.
-      setoid_rewrite filter_setbit.
-      naive_solver eauto using elem_of_enum.
-    Qed.
-
     Lemma of_bits_setbit x xs :
-      of_bits (setbit x xs) = {[x]} ∪ of_bits xs.
+      of_bits (BT.setbit x xs) = {[x]} ∪ of_bits xs.
     Proof.
       apply gset_eq => y; rewrite elem_of_union elem_of_singleton.
-      by rewrite /of_bits !elem_of_list_to_set to_list_setbit.
+      by rewrite /of_bits !elem_of_list_to_set BT.to_list_setbit.
     Qed.
 
     Lemma of_to_bits rs :
@@ -481,7 +486,7 @@ Module finite_bits (BT : finite_bitmask_type_intf).
     Proof.
       induction rs as [|x xs Hni IHxs] using set_ind_L.
       { by rewrite to_bits_empty of_bits_0. }
-      rewrite to_bits_union_singleton // to_bits_singleton -setbit_is_alt.
+      rewrite to_bits_union_singleton // to_bits_singleton -BT.setbit_is_alt.
       by rewrite of_bits_setbit IHxs.
     Qed.
 
