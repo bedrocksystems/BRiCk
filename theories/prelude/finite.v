@@ -535,4 +535,74 @@ Module simple_finite_bits (BT : simple_finite_bitmask_type_intf).
   Lemma masked_opt_max rights (Hrights : rights ≠ ∅) :
     masked_opt BT.all_bits rights = Some rights.
   Proof. by rewrite /masked_opt masked_max option_guard_True. Qed.
+
+  Lemma N_testbit_all_bits i :
+    N.testbit BT.all_bits i = bool_decide (i < card_N BT.t).
+  Proof. apply N_ones_spec. Qed.
+
+  Lemma N_testbit_to_bits rs i :
+    N.testbit (to_bits rs) i =
+    bool_decide (∃ r, BT.to_bit r = i ∧ r ∈ rs).
+  Proof.
+    induction rs as [|r rs Hni IHrs] using set_ind_L. {
+      rewrite to_bits_empty N.bits_0 bool_decide_eq_false_2 //.
+      intros (r & _ & ?). set_solver. }
+    rewrite to_bits_union_singleton N.lor_spec (comm_L orb) to_bits_singleton.
+    rewrite {}IHrs.
+    case: (bool_decide_reflect (∃ r, _ ∧ r ∈ rs)) => Hdec /=. {
+      rewrite bool_decide_eq_true_2 //. set_solver.
+    }
+    rewrite BT.to_bitmask_setbit.
+    rewrite N_setbit_bool_decide N.bits_0 right_id_L.
+    case: (bool_decide_reflect (_ = i)) Hdec => [<-|Hdec'] Hdec. {
+      rewrite bool_decide_eq_true_2 //. set_solver.
+    }
+    rewrite bool_decide_eq_false_2 => // -[r' [Hr' Hin]]. set_unfold.
+    case: Hin Hr' => [-> //|Hin Hr']. apply /Hdec. by exists r'.
+  Qed.
+
+  Lemma N_testbit_to_bits' rs i :
+    N.testbit (to_bits rs) i =
+    bool_decide (∃ r, BT.of_bit i = Some r ∧ r ∈ rs).
+  Proof.
+    rewrite N_testbit_to_bits; apply bool_decide_iff.
+    split; intros (r & Heq & Hin); exists r; subst.
+    { split; [|done]. exact: BT.of_to_bit. }
+    by rewrite (BT.of_bit_Some_to_bit _ _ Heq).
+  Qed.
+
+  Lemma N_testbit_mask_top_to_bit i :
+    N.testbit mask_top i = bool_decide (∃ r : BT.t, BT.to_bit r = i).
+  Proof.
+    rewrite /mask_top /to_bits N_testbit_to_bits.
+    apply bool_decide_iff. set_solver.
+  Qed.
+
+  Lemma N_testbit_mask_top_of_bit i :
+    N.testbit mask_top i = bool_decide (is_Some (BT.of_bit i)).
+  Proof.
+    rewrite N_testbit_mask_top_to_bit /is_Some.
+    apply bool_decide_iff; split; intros [r H]; exists r; subst.
+    { exact: BT.of_to_bit. }
+    exact: BT.of_N_Some_to_N.
+  Qed.
+
+
+  Lemma all_bits_mask_top : BT.all_bits = mask_top.
+  Proof.
+    apply N.bits_inj_iff => i.
+    rewrite N_testbit_all_bits N_testbit_mask_top_of_bit /is_Some.
+    apply bool_decide_iff.
+    split. {
+      intros (x & Hdec & Henc)%encode_decode_N.
+      by exists x; apply Hdec.
+    }
+    by intros (x & Hdec%finite_decode_N_lt).
+  Qed.
+
+  (* Conjectures: *)
+  Lemma to_of_bits `{Hinj : !Inj eq eq BT.to_bit} mask :
+    to_bits (of_bits mask) = N.land mask_top mask.
+  Abort.
+
 End simple_finite_bits.
