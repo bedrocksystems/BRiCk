@@ -6,6 +6,7 @@
  *)
 Require Export stdpp.numbers.
 Require Export bedrock.prelude.base.
+Require Import bedrock.prelude.bool.
 #[local] Set Printing Coercions.	(** Readability *)
 
 (** * Small extensions to [stdpp.numbers]. *)
@@ -46,9 +47,20 @@ Instance Nat_max_assoc: Assoc eq Nat.max := Nat.max_assoc.
 
 Instance Nat_land_comm : Comm eq Nat.land := Nat.land_comm.
 Instance Nat_land_assoc : Assoc eq Nat.land := Nat.land_assoc.
+Instance Nat_land_left_absorb : LeftAbsorb (=) 0 Nat.land := Nat.land_0_l.
+Instance Nat_land_right_absorb : RightAbsorb (=) 0 Nat.land := Nat.land_0_r.
 
 Instance Nat_lor_comm : Comm eq Nat.lor := Nat.lor_comm.
 Instance Nat_lor_assoc : Assoc eq Nat.lor := Nat.lor_assoc.
+Instance Nat_lor_left_id : LeftId (=) 0 Nat.lor := Nat.lor_0_l.
+Instance Nat_lor_right_id : RightId (=) 0 Nat.lor := Nat.lor_0_r.
+
+(* Non-symmetric *)
+Instance Nat_shiftl_left_absorb : LeftAbsorb (=) 0 Nat.shiftl := Nat.shiftl_0_l.
+Instance Nat_shiftl_right_id : RightId (=) 0 Nat.shiftl := Nat.shiftl_0_r.
+
+Instance Nat_shiftr_left_absorb : LeftAbsorb (=) 0 Nat.shiftr := Nat.shiftr_0_l.
+Instance Nat_shiftr_right_id : RightId (=) 0 Nat.shiftr := Nat.shiftr_0_r.
 
 (** * Natural numbers [N] *)
 
@@ -79,15 +91,68 @@ Instance N_max_assoc: Assoc eq N.max := N.max_assoc.
 
 Instance N_land_comm : Comm eq N.land := N.land_comm.
 Instance N_land_assoc : Assoc eq N.land := N.land_assoc.
+Instance N_land_left_absorb : LeftAbsorb (=) 0%N N.land := N.land_0_l.
+Instance N_land_right_absorb : RightAbsorb (=) 0%N N.land := N.land_0_r.
 
 Instance N_lor_comm : Comm eq N.lor := N.lor_comm.
 Instance N_lor_assoc : Assoc eq N.lor := N.lor_assoc.
+Instance N_lor_left_id : LeftId (=) 0%N N.lor := N.lor_0_l.
+Instance N_lor_right_id : RightId (=) 0%N N.lor := N.lor_0_r.
+
+(* Non-symmetric *)
+Instance N_shiftl_left_absorb : LeftAbsorb (=) 0%N N.shiftl := N.shiftl_0_l.
+Instance N_shiftl_right_id : RightId (=) 0%N N.shiftl := N.shiftl_0_r.
+
+Instance N_shiftr_left_absorb : LeftAbsorb (=) 0%N N.shiftr := N.shiftr_0_l.
+Instance N_shiftr_right_id : RightId (=) 0%N N.shiftr := N.shiftr_0_r.
 
 Instance N_succ_inj : Inj (=) (=) N.succ.
 Proof. intros n1 n2. lia. Qed.
 
+(** Misc cancellation lemmas for odd operators *)
 Lemma N_succ_pos_pred p : N.succ_pos (Pos.pred_N p) = p.
 Proof. rewrite /N.succ_pos. case E: Pos.pred_N=>[|p']; lia. Qed.
+
+Lemma Pos_of_S i :
+  Pos.of_nat (S i) = N.succ_pos (N.of_nat i).
+Proof. case: i => [//|i]. rewrite Nat2Pos.inj_succ //= Pos.of_nat_succ //. Qed.
+
+Lemma pred_nat_succ n :
+  Nat.pred (Pos.to_nat (N.succ_pos n)) = N.to_nat n.
+Proof. case: n => //= p. lia. Qed.
+
+(** [N.of_nat] is monotone re [<]. *)
+Lemma N_of_nat_lt_mono (i j : nat) :
+  (i < j)%nat ↔ (N.of_nat i < N.of_nat j)%N.
+Proof. rewrite /N.lt -Nat2N.inj_compare. apply nat_compare_lt. Qed.
+
+(** [N.of_nat] is monotone re [≤]. *)
+Lemma N_of_nat_le_mono (i j : nat) :
+  (i ≤ j)%nat ↔ (N.of_nat i ≤ N.of_nat j)%N.
+Proof. rewrite /N.le -Nat2N.inj_compare. apply nat_compare_le. Qed.
+
+(** Adapter [N.eqb] into [bool_decide]. *)
+Lemma N_eqb_bool_decide (m n : N) : N.eqb m n = bool_decide (m = n).
+Proof.
+  by rewrite -(bool_decide_iff _ _ (N.eqb_eq _ _)) bool_decide_bool_eq.
+Qed.
+
+Lemma N_leb_bool_decide (m n : N) : N.leb m n = bool_decide (m ≤ n)%N.
+Proof.
+  by rewrite -(bool_decide_iff _ _ (N.leb_le _ _)) bool_decide_bool_eq.
+Qed.
+
+(** Rephrase spec for [N.ones] using [bool_decide]. *)
+Lemma N_ones_spec (n m : N) :
+  N.testbit (N.ones n) m = bool_decide (m < n)%N.
+Proof.
+  case_bool_decide; [exact: N.ones_spec_low|].
+  apply N.ones_spec_high. lia.
+Qed.
+
+Lemma N_setbit_bool_decide (a n m : N) :
+  N.testbit (N.setbit a n) m = bool_decide (n = m) || N.testbit a m.
+Proof. by rewrite N.setbit_eqb N_eqb_bool_decide. Qed.
 
 Instance N_divide_dec : RelDecision N.divide.
 Proof.
@@ -156,9 +221,21 @@ Instance Z_max_assoc: Assoc eq Z.max := Z.max_assoc.
 
 Instance Z_land_comm : Comm eq Z.land := Z.land_comm.
 Instance Z_land_assoc : Assoc eq Z.land := Z.land_assoc.
+Instance Z_land_left_absorb : LeftAbsorb (=) 0%Z Z.land := Z.land_0_l.
+Instance Z_land_right_absorb : RightAbsorb (=) 0%Z Z.land := Z.land_0_r.
 
 Instance Z_lor_comm : Comm eq Z.lor := Z.lor_comm.
 Instance Z_lor_assoc : Assoc eq Z.lor := Z.lor_assoc.
+
+Instance Z_lor_left_id : LeftId (=) 0%Z Z.lor := Z.lor_0_l.
+Instance Z_lor_right_id : RightId (=) 0%Z Z.lor := Z.lor_0_r.
+
+(* Non-symmetric *)
+Instance Z_shiftl_left_absorb : LeftAbsorb (=) 0%Z Z.shiftl := Z.shiftl_0_l.
+Instance Z_shiftl_right_id : RightId (=) 0%Z Z.shiftl := Z.shiftl_0_r.
+
+Instance Z_shiftr_left_absorb : LeftAbsorb (=) 0%Z Z.shiftr := Z.shiftr_0_l.
+Instance Z_shiftr_right_id : RightId (=) 0%Z Z.shiftr := Z.shiftr_0_r.
 
 Instance Z_succ_inj : Inj (=) (=) Z.succ.
 Proof. intros n1 n2. lia. Qed.

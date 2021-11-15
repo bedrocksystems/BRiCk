@@ -6,7 +6,9 @@
  *)
 
 From stdpp Require Export finite.
-From bedrock.prelude Require Import base numbers list_numbers gmap list.
+From bedrock.prelude Require Import base bool numbers list_numbers gmap list.
+
+#[local] Open Scope N_scope.
 
 (**
 Extensions of [stdpp.finite], especially for variants:
@@ -23,13 +25,78 @@ Definition encode_N `{Countable A} (x : A) : N :=
   Pos.pred_N (encode x).
 Definition decode_N `{Countable A} (i : N) : option A :=
   decode (N.succ_pos i).
-#[global] Instance encode_nat_inj `{Countable A} : Inj (=) (=) (encode_N (A:=A)).
-Proof. unfold encode_N; intros x y Hxy; apply (inj encode); lia. Qed.
-Lemma decode_encode_N `{Countable A} (x : A) : decode_N (encode_N x) = Some x.
-Proof. rewrite /decode_N /encode_N N_succ_pos_pred. apply decode_encode. Qed.
+Section countable.
+  Context `{Countable A}.
+  Implicit Type (x : A).
+
+  #[global] Instance encode_N_inj : Inj (=) (=) (encode_N (A:=A)).
+  Proof. unfold encode_N; intros x y Hxy; apply (inj encode); lia. Qed.
+  Lemma decode_encode_N x : decode_N (encode_N x) = Some x.
+  Proof. rewrite /decode_N /encode_N N_succ_pos_pred. apply decode_encode. Qed.
+
+  Lemma encode_nat_N x : encode_nat x = N.to_nat (encode_N x).
+  Proof. rewrite /encode_nat /encode_N. lia. Qed.
+
+  Lemma encode_N_nat x : encode_N x = N.of_nat (encode_nat x).
+  Proof. by rewrite encode_nat_N N2Nat.id. Qed.
+  Lemma decode_nat_N i : decode_nat i =@{option A} decode_N (N.of_nat i).
+  Proof. by rewrite /decode_nat Pos_of_S. Qed.
+  Lemma decode_N_nat i : decode_N i =@{option A} decode_nat (N.to_nat i).
+  Proof. by rewrite decode_nat_N N2Nat.id. Qed.
+End countable.
+
+Definition card_N A `{Finite A} : N := N.of_nat $ card A.
+
+Section finite.
+  Context `{Finite A}.
+  Implicit Type (x : A).
+
+  (* Unfolding lemma: pretty annoying to prove inline by unfolding. *)
+  Lemma finite_decode_nat_unfold n :
+    decode_nat n = enum A !! n.
+  Proof. apply (f_equal (flip lookup (enum _))). lia. Qed.
+
+  (* To upstream! Missing companion to [encode_lt_card]. *)
+  Lemma finite_decode_nat_lt n x :
+    decode_nat n = Some x → (n < card A)%nat.
+  Proof. rewrite finite_decode_nat_unfold /card. apply lookup_lt_Some. Qed.
+
+  (** Lift the above lemmas *)
+  Lemma finite_decode_N_unfold n :
+    decode_N n = enum A !! N.to_nat n.
+  Proof. by rewrite decode_N_nat finite_decode_nat_unfold. Qed.
+
+  Lemma finite_decode_N_lt n x :
+    decode_N n = Some x → n < card_N A.
+  Proof. rewrite /card_N decode_N_nat => /finite_decode_nat_lt. lia. Qed.
+
+  Lemma encode_N_lt_card x : encode_N x < card_N A.
+  Proof. rewrite encode_N_nat. apply N_of_nat_lt_mono, encode_lt_card. Qed.
+
+  Lemma encode_decode_N (i : N) :
+    i < card_N A →
+    ∃ x : A, decode_N i = Some x ∧ encode_N x = i.
+  Proof.
+    rewrite /card_N -{1}(N2Nat.id i). intros Hle%N_of_nat_lt_mono.
+    have [x [Hdec Henc]] := encode_decode A (N.to_nat i) Hle.
+    exists x. rewrite decode_nat_N encode_nat_N N2Nat.id in Hdec Henc.
+    by apply (inj N.to_nat) in Henc.
+  Qed.
+
+  (** A partial inverse to [decode_encode_N]: if [decode_N] succeeds, we can
+  [encode_N] the result back. *)
+  Lemma decode_N_Some_encode_N (n : N) (x : A)
+    (Hdec : decode_N n = Some x) : encode_N x = n.
+  Proof.
+    pose proof (finite_decode_N_lt _ _ Hdec) as Hcmp.
+    destruct (encode_decode_N _ Hcmp) as (x' & ?Hdec & Henc).
+    naive_solver.
+  Qed.
+End finite.
 
 (* From (pieces of) [Countable] (and more) to [Finite]. *)
 Section enc_finite.
+  #[local] Close Scope N_scope.
   Context `{EqDecision A}.
   Context (to_nat : A → nat) (of_nat : nat → A) (c : nat).
   Context (of_to_nat : ∀ x, of_nat (to_nat x) = x).
@@ -49,8 +116,8 @@ Section enc_finite_N.
   Context (to_N : A → N) (of_N : N → option A) (c : N).
   Context (of_to_N : ∀ x, of_N (to_N x) = Some x).
 
-  Context (to_N_c : (∀ x, to_N x < c)%N).
-  Context (to_of_N : (∀ i, i < c → to_N (default inhabitant $ of_N i) = i)%N).
+  Context (to_N_c : ∀ x, to_N x < c).
+  Context (to_of_N : ∀ i, i < c → to_N (default inhabitant $ of_N i) = i).
 
   #[program] Definition enc_finite_N : Finite A :=
     enc_finite (N.to_nat ∘ to_N) ((λ x, default inhabitant (of_N x)) ∘ N.of_nat) (N.to_nat c) _ _ _.
@@ -74,7 +141,7 @@ Module-based infrastructure to generate Finite-based utilities.
 
 Example use for a variant.
 
-Module my_finite_type.
+Module right.
   Variant _t := FOO | BAR.
   Definition t := _t. (* Workaround Coq bug. *)
   #[global] Instance t_inh : Inhabited t.
@@ -99,11 +166,17 @@ Module my_finite_type.
   *)
   Include simple_finite_bitmask_type_mixin.
 
-  (* [simple_finite_bitmask_type_mixin] can be replaced by (some subset of). *)
+  (* [simple_finite_bitmask_type_mixin] can almost be replaced by (some subset of), but
+  enjoys extra lemmas. *)
   Include finite_type_mixin.
   Include bitmask_type_simple_mixin.
   Include finite_bitmask_type_mixin.
-End my_finite_type.
+End right.
+
+(* For bitmasks over [simple_finite_bitmask_type_intf]. *)
+Module rights := simple_finite_bits rights.
+(* Else, for bitmasks over [finite_bitmask_type_intf]. *)
+Module rights := finite_bits rights.
 *)
 Module Type eqdec_type.
   Parameter t : Type.
@@ -139,6 +212,7 @@ namespace.
 Module invert_of_N.
   Section of_N.
     Context `{!EqDecision A} `{!Finite A} (to_N : A -> N).
+    (* TODO: Use [list_find] instead? *)
     Definition of_N (r : N) : option A :=
       head $ filter (fun x => bool_decide (to_N x = r)) $ enum A.
 
@@ -153,6 +227,15 @@ Module invert_of_N.
         + rewrite bool_decide_eq_false_2. apply /IHxs /NDxs /Hin.
           intros ->%(inj to_N). apply /Hx'NiXs /Hin.
     Qed.
+
+    Lemma to_of_N (n : N) (x : A)
+      (Hof : of_N n = Some x) : to_N x = n.
+    Proof.
+      suff: Refine (x ∈ filter (fun x => bool_decide (to_N x = n)) $ enum A). {
+        intros [? _]%elem_of_list_filter. by case_bool_decide.
+      }
+      move: Hof. rewrite /of_N. case: (filter _ _) => [//|y ys /=]. set_solver.
+    Qed.
   End of_N.
 End invert_of_N.
 
@@ -165,7 +248,14 @@ End finite_encoded_type.
 
 Module Type finite_encoded_type_mixin (Import F : finite_encoded_type).
   Definition of_N := Unfold (@invert_of_N.of_N) (invert_of_N.of_N to_N).
-  Definition of_to_N := invert_of_N.of_to_N to_N.
+
+  Definition of_to_N `[Hinj : !Inj eq eq to_N] (x : t) :
+      of_N (to_N x) = Some x :=
+    invert_of_N.of_to_N to_N (Hinj := Hinj) x.
+
+  Definition to_of_N (n : N) (x : t) :
+      of_N n = Some x → to_N x = n :=
+    invert_of_N.to_of_N to_N n x.
 End finite_encoded_type_mixin.
 
 (* Mixin hierarchy 2: *)
@@ -178,8 +268,13 @@ Module Type finite_type_mixin (Import F : finite_type).
   (* Obtain encoding from [t_finite] *)
   Definition to_N : t -> N := encode_N.
   Definition of_N : N -> option t := decode_N.
+
   Lemma of_to_N x : of_N (to_N x) = Some x.
   Proof. apply decode_encode_N. Qed.
+
+  Lemma of_N_Some_to_N (n : N) (x : t) :
+    of_N n = Some x → to_N x = n.
+  Proof. apply decode_N_Some_encode_N. Qed.
 End finite_type_mixin.
 
 Module Type finite_type_intf := finite_type <+ finite_type_mixin.
@@ -201,6 +296,10 @@ Module Type bitmask_type_simple_mixin (Import F : finite_type) (Import FM : fini
 
   Lemma of_to_bit x : of_bit (to_bit x) = Some x.
   Proof. apply of_to_N. Qed.
+
+  Lemma of_bit_Some_to_bit (n : N) (x : t) :
+    of_bit n = Some x → to_bit x = n.
+  Proof. apply of_N_Some_to_N. Qed.
 End bitmask_type_simple_mixin.
 
 Module Type finite_bitmask_type_mixin (Import F : finite_type) (Import B : bitmask_type F).
@@ -209,16 +308,58 @@ Module Type finite_bitmask_type_mixin (Import F : finite_type) (Import B : bitma
   Lemma to_bitmask_setbit x : to_bitmask x = N.setbit 0 (to_bit x).
   Proof. by rewrite N.setbit_spec'. Qed.
 
-  (* Parse a bitmask into a list of flags. *)
-  Definition to_list_aux (r : N) (xs : list t) : list t :=
-    x ← xs;
-    if N.testbit r (to_bit x) then [x] else [].
+  Definition testbit (mask : N) (x : t) : bool :=
+    N.testbit mask (to_bit x).
+  Definition filter (mask : N) (x : t) : list t :=
+    if testbit mask x then [x] else [].
 
-  Definition to_list (r : N) : list t := to_list_aux r $ enum t.
+  (* Parse a bitmask into a list of flags. *)
+  Definition to_list_aux (mask : N) (xs : list t) : list t :=
+    xs ≫= filter mask.
+
+  Definition to_list (mask : N) : list t := to_list_aux mask $ enum t.
 
   Lemma to_list_0 : to_list 0 = [].
   Proof. rewrite /to_list. by elim: enum. Qed.
+
+  Definition setbit (b : t) (n : N) : N := N.setbit n (to_bit b).
+  Notation setbit_alt b n := (N.lor (to_bitmask b) n).
+
+  Lemma setbit_0 x : setbit x 0 = to_bitmask x.
+  Proof. by rewrite to_bitmask_setbit. Qed.
+  Lemma setbit_is_alt b n : setbit b n = setbit_alt b n.
+  Proof. by rewrite /setbit N.setbit_spec' comm_L. Qed.
+
+  Section to_bit_inj.
+    Context`{Hinj : !Inj eq eq to_bit}.
+    #[local] Set Default Proof Using "Hinj".
+
+    Lemma testbit_setbit (x y : t) (mask : N) :
+      testbit (setbit x mask) y =
+      bool_decide (x = y) || testbit mask y.
+    Proof.
+      rewrite /testbit /setbit N_setbit_bool_decide.
+      by rewrite (bool_decide_iff _ _ (inj_iff to_bit _ _)).
+    Qed.
+
+    Lemma filter_setbit (x y z : t) mask :
+      y ∈ filter (setbit x mask) z ↔ x = y ∧ y = z ∨ y ∈ filter mask z.
+    Proof.
+      rewrite /filter (testbit_setbit x).
+      case_bool_decide; simpl; case_match; set_solver.
+    Qed.
+
+    Lemma to_list_setbit (x z : t) (mask : N) :
+      z ∈ to_list (setbit x mask) ↔ z = x ∨ z ∈ to_list mask.
+    Proof.
+      rewrite /to_list /to_list_aux !elem_of_list_bind.
+      setoid_rewrite filter_setbit.
+      naive_solver eauto using elem_of_enum.
+    Qed.
+  End to_bit_inj.
 End finite_bitmask_type_mixin.
+
+Module Type finite_bitmask_type_intf := finite_type <+ bitmask_type <+ finite_bitmask_type_mixin.
 
 (* All the above mixins in the right order, for when [bitmask_type_simple_mixin]
 is appropriate. *)
@@ -226,14 +367,26 @@ Module Type simple_finite_bitmask_type_mixin (Import F : finite_type).
   Include finite_type_mixin F.
   Include bitmask_type_simple_mixin F.
   Include finite_bitmask_type_mixin F.
+
+  Definition all_bits : N := N.ones (N.of_nat (card F.t)).
+
+  (* Cannot be proven in [finite_bitmask_type_mixin] because we need [to_bit]'s
+  definition. *)
+  Lemma to_list_max : to_list all_bits = enum F.t.
+  Proof.
+    rewrite /to_list /to_list_aux /filter.
+    elim: enum => [//|x xs IH]; cbn; rewrite {}IH.
+    set c := testbit _ _; suff -> : c = true by []; rewrite {}/c.
+    apply N.ones_spec_iff, encode_N_lt_card.
+  Qed.
 End simple_finite_bitmask_type_mixin.
 
-Module Type finite_bitmask_type_intf := finite_type <+ bitmask_type <+ finite_bitmask_type_mixin.
+Module Type simple_finite_bitmask_type_intf := finite_type <+ simple_finite_bitmask_type_mixin.
 
 (* A type for _sets_ of flags, as opposed to the type of flags described above. *)
 Module finite_bits (BT : finite_bitmask_type_intf).
   Definition t := gset BT.t.
-  #[global] Instance top_t : Top t := list_to_set (C := t) (enum BT.t).
+  #[global] Instance top_t : Top t := fin_to_set BT.t (C := t).
 
   (*
   [to_bits] and [of_bits] implement a bitset encoding of [t] into N, given
@@ -247,32 +400,27 @@ Module finite_bits (BT : finite_bitmask_type_intf).
   Lemma of_bits_0 : of_bits 0 = ∅.
   Proof. by rewrite /of_bits BT.to_list_0. Qed.
 
-  Definition setbit (b : BT.t) (n : N) : N := N.setbit n (BT.to_bit b).
-  Notation setbit_alt b n := (N.lor (BT.to_bitmask b) n).
+  Definition to_bits (rs : t) : N := set_fold BT.setbit 0 rs.
 
-  Lemma setbit_0 x : setbit x 0 = BT.to_bitmask x.
-  Proof. by rewrite BT.to_bitmask_setbit. Qed.
-  Lemma setbit_is_alt b n : setbit b n = setbit_alt b n.
-  Proof. by rewrite /setbit N.setbit_spec' comm_L. Qed.
-
-  Definition to_bits (rs : t) : N := set_fold setbit 0%N rs.
-
-  Lemma to_bits_empty : to_bits ∅ = 0%N.
+  Lemma to_bits_empty : to_bits ∅ = 0.
   Proof. apply set_fold_empty. Qed.
   Lemma to_bits_singleton x : to_bits {[x]} = BT.to_bitmask x.
-  Proof. by rewrite /to_bits set_fold_singleton setbit_0. Qed.
+  Proof. by rewrite /to_bits set_fold_singleton BT.setbit_0. Qed.
+
+  Lemma testbit_singleton (x : BT.t) : BT.testbit (to_bits {[ x ]}) x = true.
+  Proof. rewrite to_bits_singleton. apply N.pow2_bits_true. Qed.
 
   Module Import internal.
-    Definition to_bits_alt (rs : t) : N := set_fold (λ b n, setbit_alt b n) 0%N rs.
+    Definition to_bits_alt (rs : t) : N := set_fold (λ b n, BT.setbit_alt b n) 0 rs.
     Lemma to_bits_is_alt rs : to_bits rs = to_bits_alt rs.
-    Proof. apply: foldr_ext => // b a. apply setbit_is_alt. Qed.
+    Proof. apply: foldr_ext => // b a. apply BT.setbit_is_alt. Qed.
 
     (**
     Writing [to_bits] as a commutative, associative fold
     allows reasoning with lemmas about [foldr] and [Permutation].
     See for instance [to_bits_union_singleton]. *)
     Definition to_bits_comm (rs : t) : N :=
-      foldr N.lor 0%N (BT.to_bitmask <$> elements rs).
+      foldr N.lor 0 (BT.to_bitmask <$> elements rs).
     Lemma to_bits_is_comm rs : to_bits rs = to_bits_comm rs.
     Proof. rewrite to_bits_is_alt. apply symmetry, foldr_fmap. Qed.
 
@@ -280,19 +428,73 @@ Module finite_bits (BT : finite_bitmask_type_intf).
     We could also use
 
     Definition to_bits_comm' (rs : t) : N :=
-      set_fold N.lor 0%N (set_map (D := gset N) BT.to_bitmask rs).
+      set_fold N.lor 0 (set_map (D := gset N) BT.to_bitmask rs).
 
     But it seems that more lemmas are available on the [foldr] form.
     *)
   End internal.
 
-  Lemma to_bits_union_singleton x xs (Hni : x ∉ xs) :
+  (** Use [to_bits_union_singleton]. *)
+  #[local] Lemma to_bits_union_singleton' x xs (Hni : x ∉ xs) :
     to_bits ({[x]} ∪ xs) = N.lor (to_bits {[ x ]}) (to_bits xs).
   Proof.
     rewrite to_bits_singleton !to_bits_is_comm /to_bits_comm -foldr_cons -fmap_cons.
     apply foldr_permutation_proper'; [apply _ ..|].
     f_equiv. exact: elements_union_singleton.
   Qed.
+
+  Lemma setbit_in_idemp x xs
+    (Hin : x ∈ xs) :
+    BT.setbit x (to_bits xs) = to_bits xs.
+  Proof.
+    apply N.bits_inj_iff => i.
+    rewrite N_setbit_bool_decide.
+    case_bool_decide as Hdec => //=. symmetry.
+    induction xs as [|y ys Hni IHys] using set_ind_L; first by set_solver.
+    set_unfold in Hin.
+    rewrite to_bits_union_singleton' // N.lor_spec.
+    destruct Hin as [->|Hin]; first last.
+    { rewrite IHys //. apply: right_absorb_L. }
+    clear IHys Hni.
+    suff ->: Refine (N.testbit (to_bits {[y]}) i = true) by [].
+    subst i. apply testbit_singleton.
+  Qed.
+
+  Lemma to_bits_union_singleton x xs :
+    to_bits ({[x]} ∪ xs) = N.lor (to_bits {[ x ]}) (to_bits xs).
+  Proof.
+    destruct (decide (x ∈ xs)). 2: exact: to_bits_union_singleton'.
+    rewrite subseteq_union_1_L; [|set_solver].
+    rewrite to_bits_singleton -BT.setbit_is_alt.
+    by rewrite setbit_in_idemp.
+  Qed.
+
+  (* TODO move [setbit], and these lemmas, with [BT.testbit]. *)
+  Section BT_to_bit_inj.
+    Context`{Hinj : !Inj eq eq BT.to_bit}.
+    #[local] Set Default Proof Using "Hinj".
+
+    Lemma of_bits_setbit x xs :
+      of_bits (BT.setbit x xs) = {[x]} ∪ of_bits xs.
+    Proof.
+      apply gset_eq => y; rewrite elem_of_union elem_of_singleton.
+      by rewrite /of_bits !elem_of_list_to_set BT.to_list_setbit.
+    Qed.
+
+    Lemma of_to_bits rs :
+      of_bits (to_bits rs) = rs.
+    Proof.
+      induction rs as [|x xs Hni IHxs] using set_ind_L.
+      { by rewrite to_bits_empty of_bits_0. }
+      rewrite to_bits_union_singleton // to_bits_singleton -BT.setbit_is_alt.
+      by rewrite of_bits_setbit IHxs.
+    Qed.
+
+    #[global] Instance of_to_bits_cancel : Cancel eq of_bits to_bits :=
+      of_to_bits.
+    #[global] Instance to_bits_inj : Inj eq eq to_bits := cancel_inj.
+    #[global] Instance of_bits_surj : Surj eq of_bits := cancel_surj.
+  End BT_to_bit_inj.
 
   Definition masked (mask : N) (x : t) : t :=
     x ∩ of_bits mask.
@@ -305,30 +507,107 @@ Module finite_bits (BT : finite_bitmask_type_intf).
 
   Lemma masked_opt_0 rights : masked_opt 0 rights = None.
   Proof. by rewrite /masked_opt masked_0. Qed.
+
+  Lemma masked_empty n : masked n ∅ = ∅.
+  Proof. rewrite /masked. set_solver. Qed.
+
+  Lemma masked_opt_empty n : masked_opt n ∅ = None.
+  Proof. by rewrite /masked_opt masked_empty. Qed.
+
+  (* Warning: prefer [BT.all_bits] if available, that's simpler to reason about. *)
+  Definition mask_top : N := to_bits ⊤.
+
+  Lemma masked_top `{Hinj : !Inj eq eq BT.to_bit} rights :
+    masked mask_top rights = rights.
+  Proof. rewrite /masked /mask_top of_to_bits. set_solver. Qed.
+
+  Lemma masked_opt_top `{Hinj : !Inj eq eq BT.to_bit}
+    rights (Hrights : rights ≠ ∅) :
+    masked_opt mask_top rights = Some rights.
+  Proof. by rewrite /masked_opt masked_top option_guard_True. Qed.
 End finite_bits.
 
+Module simple_finite_bits (BT : simple_finite_bitmask_type_intf).
+  Include finite_bits BT.
 
-(* Not necessarily restricted to [Finite] *)
-Lemma nat_fin_iter_lt (c : nat) (P : nat -> Prop) :
-  Forall P (seq 0 c) ->
-  forall i, i < c -> P i.
-Proof. move=>/Forall_seq /= F. eauto with lia. Qed.
+  Lemma of_bits_max : of_bits BT.all_bits = ⊤.
+  Proof. by rewrite /of_bits BT.to_list_max. Qed.
 
-Lemma nat_fin_iter_le (c : nat) (P : nat -> Prop) :
-  Forall P (seq 0 (S c)) ->
-  forall i, i <= c -> P i.
-Proof. move=> F i Hle. eapply nat_fin_iter_lt; [done | lia]. Qed.
+  Lemma masked_max rights :
+    masked BT.all_bits rights = rights.
+  Proof. rewrite /masked of_bits_max. set_solver. Qed.
 
-Lemma N_fin_iter_lt (c : N) (P : N -> Prop) :
-  Forall P (seqN 0 c) ->
-  forall i, (i < c)%N -> P i.
-Proof.
-  move=> F i Hle. rewrite -(N2Nat.id i).
-  apply (nat_fin_iter_lt (N.to_nat c) (P ∘ N.of_nat)); [| lia] => {i Hle}.
-  rewrite -Forall_fmap. apply F.
-Qed.
+  Lemma masked_opt_max rights (Hrights : rights ≠ ∅) :
+    masked_opt BT.all_bits rights = Some rights.
+  Proof. by rewrite /masked_opt masked_max option_guard_True. Qed.
 
-Lemma N_fin_iter_le (c : N) (P : N -> Prop) :
-  Forall P (seqN 0 (N.succ c)) ->
-  forall i, (i <= c)%N -> P i.
-Proof. move=> F i Hle. eapply N_fin_iter_lt; [done | lia]. Qed.
+  Lemma N_testbit_all_bits i :
+    N.testbit BT.all_bits i = bool_decide (i < card_N BT.t).
+  Proof. apply N_ones_spec. Qed.
+
+  Lemma N_testbit_to_bits rs i :
+    N.testbit (to_bits rs) i =
+    bool_decide (∃ r, BT.to_bit r = i ∧ r ∈ rs).
+  Proof.
+    induction rs as [|r rs Hni IHrs] using set_ind_L. {
+      rewrite to_bits_empty N.bits_0 bool_decide_eq_false_2 //.
+      intros (r & _ & ?). set_solver. }
+    rewrite to_bits_union_singleton N.lor_spec (comm_L orb) to_bits_singleton.
+    rewrite {}IHrs.
+    case: (bool_decide_reflect (∃ r, _ ∧ r ∈ rs)) => Hdec /=. {
+      rewrite bool_decide_eq_true_2 //. set_solver.
+    }
+    rewrite BT.to_bitmask_setbit.
+    rewrite N_setbit_bool_decide N.bits_0 right_id_L.
+    case: (bool_decide_reflect (_ = i)) Hdec => [<-|Hdec'] Hdec. {
+      rewrite bool_decide_eq_true_2 //. set_solver.
+    }
+    rewrite bool_decide_eq_false_2 => // -[r' [Hr' Hin]]. set_unfold.
+    case: Hin Hr' => [-> //|Hin Hr']. apply /Hdec. by exists r'.
+  Qed.
+
+  Lemma N_testbit_to_bits' rs i :
+    N.testbit (to_bits rs) i =
+    bool_decide (∃ r, BT.of_bit i = Some r ∧ r ∈ rs).
+  Proof.
+    rewrite N_testbit_to_bits; apply bool_decide_iff.
+    split; intros (r & Heq & Hin); exists r; subst.
+    { split; [|done]. exact: BT.of_to_bit. }
+    by rewrite (BT.of_bit_Some_to_bit _ _ Heq).
+  Qed.
+
+  Lemma N_testbit_mask_top_to_bit i :
+    N.testbit mask_top i = bool_decide (∃ r : BT.t, BT.to_bit r = i).
+  Proof.
+    rewrite /mask_top /to_bits N_testbit_to_bits.
+    apply bool_decide_iff. set_solver.
+  Qed.
+
+  Lemma N_testbit_mask_top_of_bit i :
+    N.testbit mask_top i = bool_decide (is_Some (BT.of_bit i)).
+  Proof.
+    rewrite N_testbit_mask_top_to_bit /is_Some.
+    apply bool_decide_iff; split; intros [r H]; exists r; subst.
+    { exact: BT.of_to_bit. }
+    exact: BT.of_N_Some_to_N.
+  Qed.
+
+
+  Lemma all_bits_mask_top : BT.all_bits = mask_top.
+  Proof.
+    apply N.bits_inj_iff => i.
+    rewrite N_testbit_all_bits N_testbit_mask_top_of_bit /is_Some.
+    apply bool_decide_iff.
+    split. {
+      intros (x & Hdec & Henc)%encode_decode_N.
+      by exists x; apply Hdec.
+    }
+    by intros (x & Hdec%finite_decode_N_lt).
+  Qed.
+
+  (* Conjectures: *)
+  Lemma to_of_bits `{Hinj : !Inj eq eq BT.to_bit} mask :
+    to_bits (of_bits mask) = N.land mask_top mask.
+  Abort.
+
+End simple_finite_bits.

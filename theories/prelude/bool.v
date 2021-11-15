@@ -26,3 +26,22 @@ Section implb.
   Lemma implb_prop_elim a b : implb a b → a → b.
   Proof. by rewrite implb_True. Qed.
 End implb.
+
+Lemma bool_decide_Is_true (b : bool) : bool_decide (Is_true b) = b.
+Proof. by case: b. Qed.
+
+Lemma bool_decide_bool_eq b : bool_decide (b = true) = b.
+Proof. by case: b. Qed.
+
+Lemma bool_decide_is_true b : bool_decide (is_true b) = b.
+Proof. by case: b. Qed.
+
+#[global] Instance andb_left_id : LeftId (=) true andb := andb_true_l.
+#[global] Instance andb_right_id : RightId (=) true andb := andb_true_r.
+#[global] Instance andb_left_absorb : LeftAbsorb (=) false andb := andb_false_l.
+#[global] Instance andb_right_absorb : RightAbsorb (=) false andb := andb_false_r.
+
+#[global] Instance orb_left_id : LeftId (=) false orb := orb_false_l.
+#[global] Instance orb_right_id : RightId (=) false orb := orb_false_r.
+#[global] Instance orb_left_absorb : LeftAbsorb (=) true orb := orb_true_l.
+#[global] Instance orb_right_absorb : RightAbsorb (=) true orb := orb_true_r.

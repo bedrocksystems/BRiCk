@@ -69,9 +69,6 @@ End flip_app.
 Lemma negb_bool_decide `{Hdec : Decision P} : negb (bool_decide P) = bool_decide (not P).
 Proof. by case: Hdec. Qed.
 
-Lemma bool_decide_Is_true (b : bool) : bool_decide (Is_true b) = b.
-Proof. by case: b. Qed.
-
 (* Very incomplete set of monadic liftings. *)
 Definition liftM2 `{MRet M, MBind M} `(f : A → B → C) : M A → M B → M C :=
   λ mx my,
