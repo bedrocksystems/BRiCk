@@ -230,7 +230,7 @@ Instance Z_lor_assoc : Assoc eq Z.lor := Z.lor_assoc.
 Instance Z_lor_left_id : LeftId (=) 0%Z Z.lor := Z.lor_0_l.
 Instance Z_lor_right_id : RightId (=) 0%Z Z.lor := Z.lor_0_r.
 
-(* Zon-symmetric *)
+(* Non-symmetric *)
 Instance Z_shiftl_left_absorb : LeftAbsorb (=) 0%Z Z.shiftl := Z.shiftl_0_l.
 Instance Z_shiftl_right_id : RightId (=) 0%Z Z.shiftl := Z.shiftl_0_r.
 
