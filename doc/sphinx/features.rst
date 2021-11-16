@@ -25,7 +25,7 @@ While not supported right now, some features are on our roadmap.
 * :cpp:`new[]` and :cpp:`delete[]` (i.e. array forms of :cpp:`new` and :cpp:`delete`)
 * Translation unit initialization (i.e. initialization of globals)
 * Order of evaluation for function calls follows pre-C++ 17 semantics where argument evaluation can be arbitrarily interleaved.
-* :cpp:`template` code can only be reasoned about *after* for a particular instantiation.
+* :cpp:`template` code can only be reasoned about *after* instantiating it to specific arguments.
 * Weak memory accesses. |project| currently requires that all atomic accesses are sequentially consistent [#weak-mem]_.
 * Member pointers (and associated operators, i.e. :cpp:`.*` and :cpp:`->*`)
 * Member functions, constructors, and destructors are modeled by translating them to functions. This is unsound but requires :cpp:`reinterpret_cast` to exploit.
