@@ -4,8 +4,7 @@
 Pointers and pointer provenance
 ###############################
 
-TODO: move the background on the standard out-of-line, to be skippable by people
-familiar with the standard.
+.. todo:: move the background on the standard out-of-line, to be skippable by people familiar with the standard.
 
 Surprisingly, C++ pointers are not just addresses; here we explain what they are
 in the C++ standard and in |project|.
