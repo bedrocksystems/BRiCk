@@ -130,9 +130,61 @@ each such object will have a distinct allocation ID [#invalid-ptr-no-alloc-id].
 Importantly, the ID of a complete object differs from the ID of any character
 array that provides storage to the object.
 
-Moreover, a pointer identifies a "path" inside the complete object, where each
+Pointers and subobjects in |project|
+------------------------------------
+A pointer identifies a "path" inside the complete object, where each
 step goes to a subobject; this is less common, but follows both Krebbers (2015)
-for C and Ramananandro for C++.
+for C and Ramananandro for C++. For instance:
+- if pointer `p` points to a `struct` instance,
+then pointer `p ., _field field` points to the field identified by `field``.
+- if pointer `p` points to an array of 10 integers (hence, also to its first
+element), then pointer `p ., _sub T_int 1` points to the second element.
+
+Above, `p ,. o` represents the pointer resulting from updating pointer `p` with
+*pointer offset* `o`, and is a notation for `_offset_ptr p o`.
+To simplify reasoning about pointers, we provide an equational theory of pointer
+equality, which helps us show that C++ snippets like `p + 2` and `p + 1 + 1`
+produce the same pointer.
+
+Pointer offsets form a *monoid* under concatenation, and `_offset_ptr` represent
+their *monoid action* over pointers. That is, we can compose offsets (via
+`o_dot`, also written `.,`), this composition has an identity (`o_id`) and is
+associative, and compositions with pointers is well-behaved. Moreover, specific
+axioms allow us to collapse adjacent offsets, such as consecutive `_sub` offsets.
+
+Here are a few of the algebraic equations that apply to pointers and offsets.
+
+.. code-block:: coq
+
+    offset_ptr_id : p ., o_id = p
+    offset_ptr_dot : p ., o1 ., o2 = p ., (o1 ., o2)
+
+    id_dot : o ., o_id = o
+    dot_id : o_id ., o = o
+    dot_assoc : o1 ., (o2 ., o3) = (o1 ., o2) ., o3
+
+    o_sub_0 : _sub ty 0 = o_id (* Under side conditions on [ty] *)
+    o_dot_sub : _sub T n1 ., _sub T n2 = _sub T (n1 + n2)
+
+This is formalized in Coq in `theories/lang/cpp/semantics/ptrs.v`, here's a
+fragment of the formalization:
+
+.. code-block:: coq
+
+  (** Offsets form a monoid *)
+  Parameter o_id  :                     offset.
+  Parameter o_dot : offset -> offset -> offset.
+
+  Axiom id_dot    : LeftId  (=) o_id o_dot.
+  Axiom dot_id    : RightId (=) o_id o_dot.
+  Axiom dot_assoc : Assoc   (=)      o_dot.
+
+  #[global] Existing Instances id_dot dot_id dot_assoc.
+
+  (** combine an offset and a pointer to get a new pointer;
+    this is a right monoid action.
+   *)
+  Parameter _offset_ptr : ptr -> offset -> ptr.
 
 Integer-pointer casts
 ---------------------
@@ -146,12 +198,21 @@ from the C++ semantics.
 
 As in Cerberus, casting pointers to integers marks the allocation ID of the
 pointer as _exposed_. Casting an integer to a pointer can produce any pointer
-with the same address and an exposed allocation ID.
+with the same address and an exposed allocation ID for an allocation containing
+the given address.
 
 Unlike in Cerberus, more than two allocation IDs can cover the same address.
 In C complete objects are generally disjoint, except that a past-the-end-pointer
 can overlap with a pointer to another object; however, in C++ a complete object
-can be nested within an array that provides storage to it.
+with pointer `p` (with provenance `aid1 : alloc_id`) can be nested within a
+character array that provides storage to it (with provenance `aid2`), which can
+be nested inside another character array providing storage to it (with
+provenance `aid3`), and so on. We assume that each of those provenances can be exposed
+indipendently; casting the integer address of `p` to a pointer follows the same
+rules as above, so it can produce a pointer with any exposed allocation IDs. In
+all cases, we assume the C++ abstract machine follows an extension of the
+PNVI-ae-udi model; in particular, the provenance remains ambiguous until some
+option is eliminated by triggering undefined behavior.
 
 .. _no-pointer-zapping:
 
