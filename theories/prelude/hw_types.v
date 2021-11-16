@@ -18,8 +18,10 @@ Module cpu.
   Include wrapper.
 
   (* Valid CPU IDs range from [0] to [max - 1]. *)
-  Definition max : t := of_N $ pow2N 16.
+  Definition count : N := pow2N 16.
+  Definition max : t := of_N (count - 1).
 End cpu.
+Notation cpuT := cpu.t (only parsing).
 
 Module mmio_idx.
   Include wrapper.
