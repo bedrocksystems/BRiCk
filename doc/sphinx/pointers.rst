@@ -29,14 +29,15 @@ is similar to the restriction we show in :ref:`undefined_behavior`.
     //...
   }
 
-More generally, a pointer is associated with the "object" to which it points, and pointer
-arithmetic is only allowed to produce pointers to different objects in limited circumstances.
+More generally, a pointer identifies the "object" to which it points, and pointer
+arithmetic is only allowed to produce pointers to unrelated objects in limited circumstances.
 
 Objects in the C++ standard
 ================================================
 
-Unlike in traditional object oriented programming jargon, the C++ standard uses the word "object" to mean an instance of some type (not necessarily a class type). This is similar
-to the way that the C standard uses the term object. Objects include variables and what
+Unlike in traditional object-oriented programming jargon,
+in the C++ and C standards the word "object" means an instance of some
+type (not necessarily a class type). Objects include variables and what
 is created by :cpp:`new` expressions. These and other cases are introduced by
 `[intro.object] <https://eel.is/c++draft/intro.object>`_.
 
