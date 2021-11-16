@@ -28,3 +28,10 @@ https://gitlab.mpi-sws.org/iris/stdpp/-/merge_requests/298. *)
 definition and interfere with TC search. *)
 Lemma gset_eq `{Countable A} (X1 X2 : gset A) : X1 = X2 ↔ ∀ x, x ∈ X1 ↔ x ∈ X2.
 Proof. apply mapset_eq. Qed.
+
+(** [set_map] specialized to [gset]; avoids awkward type annotations such as
+[set_map (C := gset A) (D := gset B)].
+No lemmas provided, and meant to be unfolded.
+*)
+Definition gset_map {A B} `{Countable A, Countable B} : (A → B) → gset A → gset B :=
+  set_map.
