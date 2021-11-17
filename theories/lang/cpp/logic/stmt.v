@@ -452,6 +452,12 @@ Module Type Stmt.
 
   End with_resolver.
 
+  (* ideally, we would like to use the following line, but [cbn] does not seem to
+       like the !.
+      Arguments wp_decl_var _ _ _ _ !_ _ /. *)
+  #[global] Arguments wp_decl_var _ _ _ _ _ _ _ _ _ _ /.
+  #[global] Arguments wp_decl _ _ _ _ _  _ _ _ /. (* ! should occur on [d] *)
+
 End Stmt.
 
 Declare Module S : Stmt.

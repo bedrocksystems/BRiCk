@@ -1022,7 +1022,6 @@ Module Type Expr.
            end
       |-- wp_init addr (Econstructor cnd es (Tnamed cls)) Q.
 
-    (** TODO the use of [wp_initialize] here is awkward. XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX *)
     Fixpoint wp_array_init (ety : type) (base : ptr) (es : list Expr) (idx : Z) (Q : FreeTemps -> mpred) : mpred :=
       match es with
       | nil =>
@@ -1033,6 +1032,9 @@ Module Type Expr.
                reflect the fact that the C++ Standard introduces
                sequence-points between all of the elements of an
                initializer list (c.f. http://eel.is/c++draft/dcl.init.list#4)
+
+               NOTE the use of [wp_initialize] here is essentially the same as [wp_init]
+               because you can not have arrays of reference-type.
            *)
          wp_initialize ety (base .[ ety ! idx ]) e
                        (fun free => interp free $ wp_array_init ety base rest (Z.succ idx) Q)

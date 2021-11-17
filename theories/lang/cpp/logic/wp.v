@@ -621,7 +621,7 @@ Section with_cpp.
         if is_primitive (type_of e) then
           @wp_operand resolve M ρ e (fun _ free => Q free)
         else
-          @wp_prval resolve M ρ e (fun p free frees => Q (free >*> frees)%free)
+          Forall p, @wp_init resolve M ρ p e (fun free frees => Q (free >*> frees)%free)
       | Xvalue => @wp_xval resolve M ρ e (fun _ => Q)
       end.
 
