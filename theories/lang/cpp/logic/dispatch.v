@@ -56,7 +56,7 @@ Section with_cpp.
          *)
     (Exists q, this |-> identityR (σ:=σ') cls (Some mdc) q  **
                  [| class_compatible σ.(genv_tu) σ'.(genv_tu) cls |] ** True) //\\
-              (* ^ the [class_compatible σ' mdc cls] ensures that the virtual
+              (* ^ the [class_compatible σ σ' cls] ensures that the virtual
                    tables the [cls] class are compatible between the (possibly
                    different) translation units.
                *)
