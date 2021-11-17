@@ -14,7 +14,7 @@ on how they're constructed, and C/C++ optimizers are allowed to treat them
 differently.
 
 For instance, in the following snippet `px1` and `py` are always different
-pointers, even when they have the same address. In particular, since `px1` is
+pointers, even when they often have the same address. In particular, since `px1` is
 created from a pointer to `x`, it cannot be used to read or write to `y`; this
 is similar to the restriction we show in :ref:`undefined_behavior`.
 
@@ -86,7 +86,8 @@ pointer value might not point to an object. Specifically:
   might not point to an actual object.
 
 For instance, in the following program, at line 3, we can say that the pointer
-value `x_ptr` points to an integer object with value `42`.
+value `x_ptr` points to an integer object with value `42`. Note that the name
+of the variable used for the pointer is not important.
 
 .. code-block:: cpp
   :linenos:
@@ -140,17 +141,17 @@ then pointer `p ., _field field` points to the field identified by `field``.
 - if pointer `p` points to an array of 10 integers (hence, also to its first
 element), then pointer `p ., _sub T_int 1` points to the second element.
 
-Above, `p ,. o` represents the pointer resulting from updating pointer `p` with
-*pointer offset* `o`, and is a notation for `_offset_ptr p o`.
+Above, `p ,. o` represents the pointer resulting from applying the *pointer offset* `o`
+to the pointer `p`, and is a notation for `_offset_ptr p o`.
 To simplify reasoning about pointers, we provide an equational theory of pointer
-equality, which helps us show that C++ snippets like `p + 2` and `p + 1 + 1`
+equality, which helps us show that C++ snippets such as `p + 2` and `p + 1 + 1`
 produce the same pointer.
 
-Pointer offsets form a *monoid* under concatenation, and `_offset_ptr` represent
+Pointer offsets form a *monoid* under concatenation, and |link:bedrock.lang.cpp.semantics.ptrs#PTRS._offset_ptr| represent
 their *monoid action* over pointers. That is, we can compose offsets (via
-`o_dot`, also written `.,`), this composition has an identity (`o_id`) and is
+|link:bedrock.lang.cpp.semantics.ptrs#PTRS.o_dot|, also written `.,`), this composition has an identity (|link:bedrock.lang.cpp.semantics.ptrs#PTRS.o_id|) and is
 associative, and compositions with pointers is well-behaved. Moreover, specific
-axioms allow us to collapse adjacent offsets, such as consecutive `_sub` offsets.
+axioms allow us to collapse adjacent offsets, such as consecutive |link:bedrock.lang.cpp.semantics.ptrs#PTRS.o_sub| offsets.
 
 Here are a few of the algebraic equations that apply to pointers and offsets.
 
@@ -166,7 +167,7 @@ Here are a few of the algebraic equations that apply to pointers and offsets.
     o_sub_0 : _sub ty 0 = o_id (* Under side conditions on [ty] *)
     o_dot_sub : _sub T n1 ., _sub T n2 = _sub T (n1 + n2)
 
-This is formalized in Coq in `theories/lang/cpp/semantics/ptrs.v`, here's a
+This is formalized in Coq in |link:bedrock.lang.cpp.semantics.ptrs|, here's a
 fragment of the formalization:
 
 .. code-block:: coq
