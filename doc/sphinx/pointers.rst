@@ -194,8 +194,7 @@ provenance `aid3`), and so on. We assume that each of those provenances can be e
 indipendently; casting the integer address of `p` to a pointer follows the same
 rules as above, so it can produce a pointer with any exposed allocation IDs. In
 all cases, we assume the C++ abstract machine follows an extension of the
-PNVI-ae-udi model; in particular, the provenance remains ambiguous until some
-option is eliminated by triggering undefined behavior.
+PNVI-ae-udi model; in particular, the provenance remains ambiguous until such a point that all provenances except for one can be shown to produce undefined behavior.
 
 .. _no-pointer-zapping:
 
