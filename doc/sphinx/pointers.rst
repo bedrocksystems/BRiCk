@@ -167,25 +167,7 @@ Here are a few of the algebraic equations that apply to pointers and offsets.
     o_sub_0 : _sub ty 0 = o_id (* Under side conditions on [ty] *)
     o_dot_sub : _sub T n1 ., _sub T n2 = _sub T (n1 + n2)
 
-This is formalized in Coq in |link:bedrock.lang.cpp.semantics.ptrs|, here's a
-fragment of the formalization:
-
-.. code-block:: coq
-
-  (** Offsets form a monoid *)
-  Parameter o_id  :                     offset.
-  Parameter o_dot : offset -> offset -> offset.
-
-  Axiom id_dot    : LeftId  (=) o_id o_dot.
-  Axiom dot_id    : RightId (=) o_id o_dot.
-  Axiom dot_assoc : Assoc   (=)      o_dot.
-
-  #[global] Existing Instances id_dot dot_id dot_assoc.
-
-  (** combine an offset and a pointer to get a new pointer;
-    this is a right monoid action.
-   *)
-  Parameter _offset_ptr : ptr -> offset -> ptr.
+This is formalized in Coq in |link:bedrock.lang.cpp.semantics.ptrs|.
 
 Integer-pointer casts
 ---------------------
