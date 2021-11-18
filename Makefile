@@ -119,7 +119,13 @@ redoc:
 	$(MAKE) doc-clean
 	$(MAKE) doc
 
-html doc: coq coqdocjs
+# This target does a quick build of the sphinx output for local testing.
+sphinx:
+#	Generate html files in `doc/sphinx/_build/html` using coqdoc outputs and
+#	other sources in `doc/`
+	+$(DOCMK) html
+
+coqdoc: coq coqdocjs
 #	Cleanup existing artifacts (if there are any)
 	rm -rf html
 
@@ -129,9 +135,10 @@ html doc: coq coqdocjs
 	mkdir -p doc/sphinx/_static/coqdoc
 	mv html/* doc/sphinx/_static/coqdoc && rmdir html
 
+html doc: coqdoc
 #	Generate html files in `doc/sphinx/_build/html` using coqdoc outputs and
 #	other sources in `doc/`
-	+$(DOCMK) html
+	$(MAKE) sphinx
 
 coqdocjs:
 #	Copy (custom) `coqdocjs` resources into `doc/sphinx/_static`, removing all
