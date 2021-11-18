@@ -115,7 +115,10 @@ test-coq: cpp2v coq
 
 .PHONY: html coqdocjs doc public redoc
 
-redoc: doc-clean doc
+redoc:
+	$(MAKE) doc-clean
+	$(MAKE) doc
+
 html doc: coq coqdocjs
 #	Cleanup existing artifacts (if there are any)
 	rm -rf public
