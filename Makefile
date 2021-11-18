@@ -121,7 +121,6 @@ redoc:
 
 html doc: coq coqdocjs
 #	Cleanup existing artifacts (if there are any)
-	rm -rf public
 	rm -rf html
 
 #	Invoke `coqdoc` using the existing `_CoqProject` file, and move the artifacts
@@ -143,6 +142,7 @@ coqdocjs:
 	cp -r coqdocjs/extra/resources/*.js doc/sphinx/_static/js/coqdocjs
 
 public: html
+	rm -rf public
 	cp -R doc/sphinx/_build/html public
 
 doc-open: doc
