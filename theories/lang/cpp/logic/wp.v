@@ -199,11 +199,6 @@ Inductive region : Set :=
 | Remp (this : option ptr) (_ : type)
 | Rbind (_ : localname) (_ : ptr) (_ : region).
 
-Definition Rbind_check (x : ident) (p : ptr) (r : region) : region :=
-  if decide (x = ""%bs)
-  then r
-  else Rbind x p r.
-
 Fixpoint get_location (ρ : region) (b : localname) : option ptr :=
   match ρ with
   | Remp _ _ => None
