@@ -25,7 +25,7 @@ Some high-level features (and non-features) include the following:
 
 Our full feature set (as well as known issues) can be found on the `features <features>`_ page.
 
-BRiCk is a work in progress. We welcome feedback, colloaborations, and contributions.
+|project| is a work in progress. We welcome feedback, collaborations, and contributions.
 
 .. toctree::
    :maxdepth: 2

@@ -327,7 +327,10 @@ class GlobalSubstitutions(Transform):
                         if '#' in path:
                             m,d = path.split('#')
                             target = '_static/coqdoc/{module}.html#{defn}'.format(module=m, defn=d)
-                            text = d
+                            if '.' in d:
+                                text = d[d.rindex('.')+1:]
+                            else:
+                                text = d
                         else:
                             target = '_static/coqdoc/{module}.html'.format(module=path)
                             text = path

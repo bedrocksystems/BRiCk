@@ -4,8 +4,7 @@
 Pointers and pointer provenance
 ###############################
 
-TODO: move the background on the standard out-of-line, to be skippable by people
-familiar with the standard.
+.. todo:: move the background on the standard out-of-line, to be skippable by people familiar with the standard.
 
 Surprisingly, C++ pointers are not just addresses; here we explain what they are
 in the C++ standard and in |project|.
@@ -15,7 +14,7 @@ on how they're constructed, and C/C++ optimizers are allowed to treat them
 differently.
 
 For instance, in the following snippet `px1` and `py` are always different
-pointers, even when they have the same address. In particular, since `px1` is
+pointers, even when they often have the same address. In particular, since `px1` is
 created from a pointer to `x`, it cannot be used to read or write to `y`; this
 is similar to the restriction we show in :ref:`undefined_behavior`.
 
@@ -29,14 +28,15 @@ is similar to the restriction we show in :ref:`undefined_behavior`.
     //...
   }
 
-More generally, a pointer is associated with the "object" to which it points, and pointer
-arithmetic is only allowed to produce pointers to different objects in limited circumstances.
+More generally, a pointer identifies the "object" to which it points, and pointer
+arithmetic is only allowed to produce pointers to unrelated objects in limited circumstances.
 
 Objects in the C++ standard
 ================================================
 
-Unlike in traditional object oriented programming jargon, the C++ standard uses the word "object" to mean an instance of some type (not necessarily a class type). This is similar
-to the way that the C standard uses the term object. Objects include variables and what
+Unlike in traditional object-oriented programming jargon,
+in the C++ and C standards the word "object" means an instance of some
+type (not necessarily a class type). Objects include variables and what
 is created by :cpp:`new` expressions. These and other cases are introduced by
 `[intro.object] <https://eel.is/c++draft/intro.object>`_.
 
@@ -86,7 +86,8 @@ pointer value might not point to an object. Specifically:
   might not point to an actual object.
 
 For instance, in the following program, at line 3, we can say that the pointer
-value `x_ptr` points to an integer object with value `42`.
+value `x_ptr` points to an integer object with value `42`. Note that the name
+of the variable used for the pointer is not important.
 
 .. code-block:: cpp
   :linenos:
@@ -130,9 +131,43 @@ each such object will have a distinct allocation ID [#invalid-ptr-no-alloc-id].
 Importantly, the ID of a complete object differs from the ID of any character
 array that provides storage to the object.
 
-Moreover, a pointer identifies a "path" inside the complete object, where each
+Pointers and subobjects in |project|
+------------------------------------
+A pointer identifies a "path" inside the complete object, where each
 step goes to a subobject; this is less common, but follows both Krebbers (2015)
-for C and Ramananandro for C++.
+for C and Ramananandro for C++. For instance:
+- if pointer `p` points to a `struct` instance,
+then pointer `p ., _field field` points to the field identified by `field``.
+- if pointer `p` points to an array of 10 integers (hence, also to its first
+element), then pointer `p ., _sub T_int 1` points to the second element.
+
+Above, `p ,. o` represents the pointer resulting from applying the *pointer offset* `o`
+to the pointer `p`, and is a notation for `_offset_ptr p o`.
+To simplify reasoning about pointers, we provide an equational theory of pointer
+equality, which helps us show that C++ snippets such as `p + 2` and `p + 1 + 1`
+produce the same pointer.
+
+Pointer offsets form a *monoid* under concatenation, and |link:bedrock.lang.cpp.semantics.ptrs#PTRS._offset_ptr| represent
+their *monoid action* over pointers. That is, we can compose offsets (via
+|link:bedrock.lang.cpp.semantics.ptrs#PTRS.o_dot|, also written `.,`), this composition has an identity (|link:bedrock.lang.cpp.semantics.ptrs#PTRS.o_id|) and is
+associative, and compositions with pointers is well-behaved. Moreover, specific
+axioms allow us to collapse adjacent offsets, such as consecutive |link:bedrock.lang.cpp.semantics.ptrs#PTRS.o_sub| offsets.
+
+Here are a few of the algebraic equations that apply to pointers and offsets.
+
+.. code-block:: coq
+
+    offset_ptr_id : p ., o_id = p
+    offset_ptr_dot : p ., o1 ., o2 = p ., (o1 ., o2)
+
+    id_dot : o ., o_id = o
+    dot_id : o_id ., o = o
+    dot_assoc : o1 ., (o2 ., o3) = (o1 ., o2) ., o3
+
+    o_sub_0 : _sub ty 0 = o_id (* Under side conditions on [ty] *)
+    o_dot_sub : _sub T n1 ., _sub T n2 = _sub T (n1 + n2)
+
+This is formalized in Coq in |link:bedrock.lang.cpp.semantics.ptrs|.
 
 Integer-pointer casts
 ---------------------
@@ -146,12 +181,20 @@ from the C++ semantics.
 
 As in Cerberus, casting pointers to integers marks the allocation ID of the
 pointer as _exposed_. Casting an integer to a pointer can produce any pointer
-with the same address and an exposed allocation ID.
+with the same address and an exposed allocation ID for an allocation containing
+the given address.
 
 Unlike in Cerberus, more than two allocation IDs can cover the same address.
 In C complete objects are generally disjoint, except that a past-the-end-pointer
 can overlap with a pointer to another object; however, in C++ a complete object
-can be nested within an array that provides storage to it.
+with pointer `p` (with provenance `aid1 : alloc_id`) can be nested within a
+character array that provides storage to it (with provenance `aid2`), which can
+be nested inside another character array providing storage to it (with
+provenance `aid3`), and so on. We assume that each of those provenances can be exposed
+indipendently; casting the integer address of `p` to a pointer follows the same
+rules as above, so it can produce a pointer with any exposed allocation IDs. In
+all cases, we assume the C++ abstract machine follows an extension of the
+PNVI-ae-udi model; in particular, the provenance remains ambiguous until such a point that all provenances except for one can be shown to produce undefined behavior.
 
 .. _no-pointer-zapping:
 
