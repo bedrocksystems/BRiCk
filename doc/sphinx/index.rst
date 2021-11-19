@@ -23,7 +23,7 @@ Some high-level features (and non-features) include the following:
 * Some features have restricted use: e.g. BRiCk's support for switch statements does not support Duff's device.
 * BRiCk adopts (limited) extensions to the C++ standard, based on existing research, e.g. for multi-address spaces, assembly interoperability, integer-to-pointer casts, and pointer provenance.
 
-Our full feature set (as well as known issues) can be found on the `features <features>`_ page.
+Our full feature set (as well as known issues) can be found on the :ref:`features <features>` page.
 
 |project| is a work in progress. We welcome feedback, collaborations, and contributions.
 
@@ -40,9 +40,11 @@ Our full feature set (as well as known issues) can be found on the `features <fe
    bibliography
    acknowledgements
 
-Indices and tables
-==================
+.. todo:: actually do something with these
+..
+   Indices and tables
+   ==================
 
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
+   * :ref:`genindex`
+   * :ref:`modindex`
+   * :ref:`search`

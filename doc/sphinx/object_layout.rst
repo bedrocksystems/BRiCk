@@ -34,6 +34,48 @@ of the high-level representation is handled (i.e. padding).
   Much of the reasoning described in this section is still experimental and subject to change.
   In practice, most C++ programs do not require this level of reasoning.
 
+Representing Values
+====================
+
+.. The C++ standard `talks explicitly about when materialization occurs <https://eel.is/c++draft/class.temporary#2>`_.
+
+In the |project| separation logic, we choose to immediately materialize all aggregates (i.e. aggregates do not have a Coq-value representation), and address the delayed materialization through the fact that not all pointers (|link:bedrock.lang.cpp.semantics.ptrs#ptr|) are required to be backed by memory.
+
+Pinned Pointers
+----------------
+
+In certain instances, especially when communicating pointers with assembly, it is necessary to connect pointers to their virtual addresses.
+To do this, |project| exposes a separation logic assertion `pinned_ptr : ptr -> vaddr -> mpred` (|link:bedrock.lang.cpp.logic.pred#pinned_ptr|) which relates the `ptr` to the virtual address that backs it.
+
+
+Function Call Semantics
+------------------------
+
+.. todo::
+
+  determine whether this is going to change before the release.
+
+Following options:
+
+**Pass as everything as values**: (as e.g. in RefinedC)
+
+- Both primitives and aggregates are passed as values to and from functions
+- Callee allocates space to put the values
+- Con: Needs representation of structures as values (works in C, but more tricky in C++)
+
+**Pass as everything via locations**: (as e.g. in Cerberus)
+
+- Both primitives and aggregates are passed via locations to and from functions
+- Caller allocates locations, stores values there and then passes them to the function
+- Pro: Aggregates only need to be represented in locations, never as values
+- Con: Since primitives are passed via the heap, the specification cannot directly destruct them
+
+**Pass primitives as values and aggregates via locations**: (as currently in cpp2v)
+
+- Primitives are passed as values and aggregates via locations
+- Pro: Primitives can be directly destructed in specifications
+- Con: Probably break templates because an instantiation with a primitive value would produce quite different code than an instantiatation with an aggregate value
+
 Reasoning about the layout of a struct in memory
 =================================================
 
@@ -178,7 +220,7 @@ How is this reflected in |project|?
 
 The virtual address offset of a |link:bedrock.lang.cpp.semantics.ptrs#offset| is determined by |link:bedrock.lang.cpp.semantics.ptrs#eval_offset|.
 |project| currently supports reasoning about the layout of (a limited number of) aggregates by embedding the layout information from the Clang front-end into the |project| abstract syntax tree (see |link:bedrock.lang.cpp.syntax.translation_unit#Struct| and |link:bedrock.lang.cpp.syntax.translation_unit#Union|\ ).
-Because the C++ standard only requires portability of the layout of certain types of aggregates we limit the use of this information in our axioms to POD and standard layout classes (see |link:bedrock.lang.cpp.semantics.ptrs#eval_o_field|\ .
+Because the C++ standard only requires portability of the layout of certain types of aggregates we limit the use of this information in our axioms to POD and standard layout classes (see |link:bedrock.lang.cpp.semantics.ptrs#eval_o_field|\ ).
 
 .. The `Definition struct_def <_static/coqdoc/bedrock.lang.cpp.logic.layout.html>`_ characterizes how a `struct` can be viewed as its constituent pieces and padding.
 .. which shows how the `anyR` of a `struct` can be broken down into its constituent fields and padding but there are no axioms , but it only applies to `anyR (Tnamed cls)` and it represents padding as a magic wand. No axiom gives information about field offsets of a struct.
@@ -282,49 +324,6 @@ How is this reflected in |project|?
 |project| provides access to the low-level view of data via the `Vraw r` value where `r` represents a "raw byte". cpp2v is parametric in this notion of raw byte, but a simple model would instantiate it with `byte | pointer fragment | poison` (i.e. `runtime_val` in `simple_pred`).    `layout.v <https://gitlab.com/bedrocksystems/cpp2v-core/-/blob/master/theories/lang/cpp/logic/layout.v>`_ provides axioms for converting between the high-level representation (e.g. `primR`) and the low-level representation based on `Vraw`.
 
 Thus, the example above can be verified by first converting the struct to raw bytes, copying the raw bytes and then converting the raw bytes back into the struct.
-
-
-Representing Values
-====================
-
-.. The C++ standard `talks explicitly about when materialization occurs <https://eel.is/c++draft/class.temporary#2>`_.
-
-In the |project| separation logic, we choose to immediately materialize all aggregates (i.e. aggregates do not have a Coq-value representation), and address the delayed materialization through the fact that not all pointers (|link:bedrock.lang.cpp.semantics.ptrs#ptr|) are required to be backed by memory.
-
-Pinned Pointers
-----------------
-
-In certain instances, especially when communicating pointers with assembly, it is necessary to connect pointers to the virtual addresses.
-To do this, |project| exposes a separation logic assertion `pinned_ptr : ptr -> vaddr -> mpred` (|link:bedrock.lang.cpp.logic.pred#pinned_ptr|) that connects the `ptr` to the virtual address that backs it.
-
-
-Function Call Semantics
-------------------------
-
-.. todo::
-
-  determine whether this is going to change before the release.
-
-Following options:
-
-**Pass as everything as values**: (as e.g. in RefinedC)
-
-- Both primitives and aggregates are passed as values to and from functions
-- Callee allocates space to put the values
-- Con: Needs representation of structures as values (works in C, but more tricky in C++)
-
-**Pass as everything via locations**: (as e.g. in Cerberus)
-
-- Both primitives and aggregates are passed via locations to and from functions
-- Caller allocates locations, stores values there and then passes them to the function
-- Pro: Aggregates only need to be represented in locations, never as values
-- Con: Since primitives are passed via the heap, the specification cannot directly destruct them
-
-**Pass primitives as values and aggregates via locations**: (as currently in cpp2v)
-
-- Primitives are passed as values and aggregates via locations
-- Pro: Primitives can be directly destructed in specifications
-- Con: Probably break templates because an instantiation with a primitive value would produce quite different code than an instantiatation with an aggregate value
 
 
 .. rubric:: Footnotes

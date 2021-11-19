@@ -136,10 +136,11 @@ Pointers and subobjects in |project|
 A pointer identifies a "path" inside the complete object, where each
 step goes to a subobject; this is less common, but follows both Krebbers (2015)
 for C and Ramananandro for C++. For instance:
-- if pointer `p` points to a `struct` instance,
-then pointer `p ., _field field` points to the field identified by `field``.
-- if pointer `p` points to an array of 10 integers (hence, also to its first
-element), then pointer `p ., _sub T_int 1` points to the second element.
+
+- if pointer `p` points to a `struct` instance, then pointer `p ., _field field`
+  points to the field identified by `field`.
+- if pointer `p` points to an array of 10 integers (hence, also to its first element),
+  then pointer `p ., _sub T_int 1` points to the second element.
 
 Above, `p ,. o` represents the pointer resulting from applying the *pointer offset* `o`
 to the pointer `p`, and is a notation for `_offset_ptr p o`.
@@ -175,26 +176,26 @@ Integer-pointer casts
 Beyond what is provided by the C++ standard, we assume useful semantics for
 integer-to-pointer casts, in particular, the PNVI-ae-udi model by the Cerberus
 project (as in the `N2577 paper from the C standard committee <http://www.open-std.org/jtc1/sc22/wg14/www/docs/n2577.pdf>`_).
+As in Cerberus:
+
+- Casting a pointer to an integer marks the allocation ID of the pointer as *exposed*.
+- Casting an integer to a pointer can produce any pointer with the same address
+  so long as that pointer's allocation ID has *already* been exposed.
 
 However, some twists are required to account for the more complex memory model
-from the C++ semantics.
-
-As in Cerberus, casting pointers to integers marks the allocation ID of the
-pointer as _exposed_. Casting an integer to a pointer can produce any pointer
-with the same address and an exposed allocation ID for an allocation containing
-the given address.
-
-Unlike in Cerberus, more than two allocation IDs can cover the same address.
-In C complete objects are generally disjoint, except that a past-the-end-pointer
-can overlap with a pointer to another object; however, in C++ a complete object
+from the C++ semantics. **Unlike in Cerberus**, more than two allocation IDs can cover
+the same address. In C complete objects are generally disjoint, except that a past-the-end-pointer
+can overlap with a pointer to another object. However, in C++ a complete object
 with pointer `p` (with provenance `aid1 : alloc_id`) can be nested within a
 character array that provides storage to it (with provenance `aid2`), which can
 be nested inside another character array providing storage to it (with
 provenance `aid3`), and so on. We assume that each of those provenances can be exposed
 indipendently; casting the integer address of `p` to a pointer follows the same
-rules as above, so it can produce a pointer with any exposed allocation IDs. In
-all cases, we assume the C++ abstract machine follows an extension of the
-PNVI-ae-udi model; in particular, the provenance remains ambiguous until such a point that all provenances except for one can be shown to produce undefined behavior.
+rules as above, so it can produce a pointer with any exposed allocation IDs.
+
+In all cases, we assume the C++ abstract machine follows an extension of the
+PNVI-ae-udi model; in particular, the provenance remains ambiguous until such a point
+that all provenances except for one can be shown to produce undefined behavior.
 
 .. _no-pointer-zapping:
 
@@ -210,7 +211,7 @@ assumptions on our compilers, here and elsewhere:
   `C memory object and value semantics: the space of de facto and ISO standards
   <https://www.cl.cam.ac.uk/~pes20/cerberus/notes30.pdf>`_.
 - Support for effective types is also incomplete; similarly to Cerberus,
-  we still assume users use options such as `-fno-strict-aliasing` GCC/Clang's.
+  we still assume users use options such as GCC/Clang's `-fno-strict-aliasing`.
 
 Further readings
 ================================================
