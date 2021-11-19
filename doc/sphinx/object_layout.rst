@@ -53,7 +53,7 @@ Function Call Semantics
 
 .. todo::
 
-  determine whether this is going to change before the release.
+  @gregory determine whether this is going to change before the release.
 
 Following options:
 
@@ -75,6 +75,27 @@ Following options:
 - Primitives are passed as values and aggregates via locations
 - Pro: Primitives can be directly destructed in specifications
 - Con: Probably break templates because an instantiation with a primitive value would produce quite different code than an instantiatation with an aggregate value
+
+Reasoning about the layout of an array in memory
+=================================================
+
+The C++ standard defines the `layout of arrays <http://eel.is/c++draft/dcl.array#6>`_ as
+follows:
+
+.. pull-quote::
+
+  An object of type “array of N U” contains a contiguously allocated non-empty set of N
+  subobjects of type U, known as the elements of the array, and numbered 0 to N-1.
+
+This means that there is no padding between elements of an array.
+
+How is this reflected in |project|?
+-------------------------------------
+
+The `Axiom` |link:bedrock.lang.cpp.semantics.ptrs#eval_o_sub| is defined to compute the the numerical
+offset needed to subscript into an array based on the size of the underlying type and the index which
+is being used for the subscript. Furthermore, none of the definitions and the related theories of
+arrays contained within |link:bedrock.lang.cpp.logic.arr| mention padding in any capacity.
 
 Reasoning about the layout of a struct in memory
 =================================================
@@ -135,86 +156,6 @@ guarantees that:
    We also make an **additional assumption**: For :ref:`Plain Old Data (POD) <object_layout.pod>`,
    compilers only insert padding between fields if it is necessary to achieve alignment.
 
-.. _object_layout.pod:
-
-Plain Old Data (POD) vs Standard-Layout/Trivial Data
-------------------------------------------------------------------------------------------
-
-The C++ Standard defines `Plain Old Data (POD) <https://eel.is/c++draft/depr.meta.types#:POD>`_ as:
-
-.. pull-quote::
-
-   [...] a class that is both a trivial class and a standard-layout class, and has no
-   non-static data members of type non-POD class (or array thereof). A POD type is a scalar type,
-   a POD class, an array of such a type, or a cv-qualified version of one of these types.
-
-While this concept has been deprecated - and redefined in terms of - the more granular
-:ref:`standard-layout class <object_layout.standard_layout>` and :ref:`trivial class <object_layout.trivial>`
-concepts, it is an easier-to-characterize side-condition as it is stronger than either
-of the previous two concepts. Furthermore, the data which we've encountered while
-reasoning explicitly about the layout of structs within the BedRock Hypervisor™
-has fallen into the category of **POD**. In the future we will want to refine the
-C++-concepts which we expose within the semantics and relax our axioms accordingly.
-
-
-.. _object_layout.standard_layout:
-
-Standard-Layout Data
-++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-
-The C++ Standard defines a `standard-layout class <https://eel.is/c++draft/class.prop#3>`_
-in the following way:
-
-::
-
-  (3) A class S is a standard-layout class if it:
-  (3.1) has no non-static data members of type non-standard-layout class (or array of
-        such types) or reference,
-  (3.2) has no virtual functions and no virtual base classes,
-  (3.3) has the same access control for all non-static data members,
-  (3.4) has no non-standard-layout base classes,
-  (3.5) has at most one base class subobject of any given type,
-  (3.6) has all non-static data members and bit-fields in the class and its base classes
-        first declared in the same class, and
-  (3.7) has no element of the set M(S) of types as a base class, where for any type X,
-        M(X) is defined as follows.
-        [Note 2: M(X) is the set of the types of all non-base-class subobjects that can be
-         at a zero offset in X. — end note]
-  (3.7.1) If X is a non-union class type with no non-static data members, the set M(X)
-          is empty.
-  (3.7.2) If X is a non-union class type with a non-static data member of type X0 that
-          is either of zero size or is the first non-static data member of X (where said
-          member may be an anonymous union), the set M(X) consists of X0 and the elements
-          of M(X0).
-  (3.7.3) If X is a union type, the set M(X) is the union of all M(Ui) and the set containing
-          all Ui, where each Ui is the type of the ith non-static data member of X.
-  (3.7.4) If X is an array type with element type Xe, the set M(X) consists of Xe and the
-          elements of M(Xe).
-  (3.7.5) If X is a non-class, non-array type, the set M(X) is empty.
-
-.. _object_layout.trivial:
-
-Trivial Data
-++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-
-The C++ Standard defines a `trivial class <https://eel.is/c++draft/class.prop#2>`_
-in the following way:
-
-::
-
-  (1) A trivially copyable class is a class:
-  (1.1) that has at least one eligible copy constructor, move constructor, copy assignment
-        operator, or move assignment operator ([special], [class.copy.ctor],
-        [class.copy.assign]),
-  (1.2) where each eligible copy constructor, move constructor, copy assignment operator,
-        and move assignment operator is trivial, and
-  (1.3) that has a trivial, non-deleted destructor ([class.dtor]).
-
-  (2) A trivial class is a class that is trivially copyable and has one or more eligible
-      default constructors ([class.default.ctor]), all of which are trivial.
-      [Note 1: In particular, a trivially copyable or trivial class does not have virtual
-       functions or virtual base classes. — end note]
-
 How is this reflected in |project|?
 ------------------------------------
 
@@ -227,27 +168,6 @@ Because the C++ standard only requires portability of the layout of certain type
 
 We believe that a good, platform independent way to reason about layout information is to use a combination of :cpp:`static_assert` and :cpp:`offsetof`.
 |project| does not currently support this level of reasoning about :cpp:`offsetof`, but it is likely to be added in the future by connecting |link:bedrock.lang.cpp.semantics.ptrs#eval_offset| to the semantics of :cpp:`offsetof`.
-
-
-Reasoning about the layout of an array in memory
-=================================================
-
-The C++ standard defines the `layout of arrays <http://eel.is/c++draft/dcl.array#6>`_ as
-follows:
-
-.. pull-quote::
-
-  An object of type “array of N U” contains a contiguously allocated non-empty set of N
-  subobjects of type U, known as the elements of the array, and numbered 0 to N-1.
-
-This means that there is no padding between elements of an array.
-
-How is this reflected in |project|?
--------------------------------------
-
-.. The fact that there is no padding in arrays is exploited by `_sub_def <https://gitlab.com/bedrocksystems/cpp2v-core/-/blob/232541a3a7410ac585908a35c50583007c3a391c/theories/lang/cpp/logic/path_pred.v#L306>`_ in combination with `Axiom wp_lval_subscript <https://gitlab.com/bedrocksystems/cpp2v-core/-/blob/232541a3a7410ac585908a35c50583007c3a391c/theories/lang/cpp/logic/expr.v#L141>`_.
-
-.. Additionally `Axiom decompose_array <https://gitlab.com/bedrocksystems/cpp2v-core/-/blob/232541a3a7410ac585908a35c50583007c3a391c/theories/lang/cpp/logic/layout.v#L75>`_ as well as `ArrayR (cpp2v) <https://gitlab.com/bedrocksystems/cpp2v/-/blob/86cde4b410d50adcb05d78de31bdbcf6e04ec109/theories/lib/array.v#L34>`_ do not mention padding for arrays.
 
 Reasoning about the layout of a union in memory
 ==========================================================================================
@@ -288,7 +208,7 @@ Working with the low-level representation of objects
 
 .. TODO: FIX THIS SECTION UP AND ADD UP TO DATE QUOTES
 
-Consider the following code that does not exhibit undefined behavior (can be checked using `Cerberus <https://cerberus.cl.cam.ac.uk/cerberus>`_):
+Consider the following code that does not exhibit undefined behavior (which can be checked using `Cerberus <https://cerberus.cl.cam.ac.uk/cerberus>`_):
 
 .. code-block:: cpp
 
@@ -325,6 +245,86 @@ How is this reflected in |project|?
 
 Thus, the example above can be verified by first converting the struct to raw bytes, copying the raw bytes and then converting the raw bytes back into the struct.
 
+
+.. _object_layout.pod:
+
+Plain Old Data (POD) vs Standard-Layout/Trivial Data
+================================================================================
+
+The C++ Standard defines `Plain Old Data (POD) <https://eel.is/c++draft/depr.meta.types#:POD>`_ as:
+
+.. pull-quote::
+
+   [...] a class that is both a trivial class and a standard-layout class, and has no
+   non-static data members of type non-POD class (or array thereof). A POD type is a scalar type,
+   a POD class, an array of such a type, or a cv-qualified version of one of these types.
+
+While this concept has been deprecated - and redefined in terms of - the more granular
+:ref:`standard-layout class <object_layout.standard_layout>` and :ref:`trivial class <object_layout.trivial>`
+concepts, it is an easier-to-characterize side-condition as it is stronger than either
+of the previous two concepts. Furthermore, the data which we've encountered while
+reasoning explicitly about the layout of structs within the BedRock Hypervisor™
+has fallen into the category of **POD**. In the future we will want to refine the
+C++-concepts which we expose within the semantics and relax our axioms accordingly.
+
+
+.. _object_layout.standard_layout:
+
+Standard-Layout Data
+------------------------------------------------------------------------------------------
+
+The C++ Standard defines a `standard-layout class <https://eel.is/c++draft/class.prop#3>`_
+in the following way:
+
+::
+
+  (3) A class S is a standard-layout class if it:
+  (3.1) has no non-static data members of type non-standard-layout class (or array of
+        such types) or reference,
+  (3.2) has no virtual functions and no virtual base classes,
+  (3.3) has the same access control for all non-static data members,
+  (3.4) has no non-standard-layout base classes,
+  (3.5) has at most one base class subobject of any given type,
+  (3.6) has all non-static data members and bit-fields in the class and its base classes
+        first declared in the same class, and
+  (3.7) has no element of the set M(S) of types as a base class, where for any type X,
+        M(X) is defined as follows.
+        [Note 2: M(X) is the set of the types of all non-base-class subobjects that can be
+         at a zero offset in X. — end note]
+  (3.7.1) If X is a non-union class type with no non-static data members, the set M(X)
+          is empty.
+  (3.7.2) If X is a non-union class type with a non-static data member of type X0 that
+          is either of zero size or is the first non-static data member of X (where said
+          member may be an anonymous union), the set M(X) consists of X0 and the elements
+          of M(X0).
+  (3.7.3) If X is a union type, the set M(X) is the union of all M(Ui) and the set containing
+          all Ui, where each Ui is the type of the ith non-static data member of X.
+  (3.7.4) If X is an array type with element type Xe, the set M(X) consists of Xe and the
+          elements of M(Xe).
+  (3.7.5) If X is a non-class, non-array type, the set M(X) is empty.
+
+.. _object_layout.trivial:
+
+Trivial Data
+------------------------------------------------------------------------------------------
+
+The C++ Standard defines a `trivial class <https://eel.is/c++draft/class.prop#2>`_
+in the following way:
+
+::
+
+  (1) A trivially copyable class is a class:
+  (1.1) that has at least one eligible copy constructor, move constructor, copy assignment
+        operator, or move assignment operator ([special], [class.copy.ctor],
+        [class.copy.assign]),
+  (1.2) where each eligible copy constructor, move constructor, copy assignment operator,
+        and move assignment operator is trivial, and
+  (1.3) that has a trivial, non-deleted destructor ([class.dtor]).
+
+  (2) A trivial class is a class that is trivially copyable and has one or more eligible
+      default constructors ([class.default.ctor]), all of which are trivial.
+      [Note 1: In particular, a trivially copyable or trivial class does not have virtual
+       functions or virtual base classes. — end note]
 
 .. rubric:: Footnotes
 

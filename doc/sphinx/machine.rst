@@ -26,6 +26,8 @@ When C++ code is running, the C++ abstract machines *owns* the underlying memory
 This characterization makes it possible (and even natural) to escape the abstract machine in limited circumstances and interact at a lower-level of abstraction.
 For example, a viable model of inline assembly is to borrow resources from the abstract machine, run the assembly, and then return the underlying resources back to the abstract machine.
 
+.. QUESTION: This content is duplicated; should it live here or in the `object_layout.rst`?
+
 Low-level Object Layout
 ========================
 
