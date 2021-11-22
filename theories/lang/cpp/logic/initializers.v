@@ -17,14 +17,14 @@ Module Type Init.
 
   Section with_resolve.
     Context `{Σ : cpp_logic thread_info} {σ:genv}.
-    Variables (M : coPset) (ρ : region).
+    Variables (ρ : region).
 
-    #[local] Notation wp := (wp M ρ).
-    #[local] Notation wp_lval := (wp_lval M ρ).
-    #[local] Notation wp_prval := (wp_prval M ρ).
-    #[local] Notation wp_operand := (wp_operand M ρ).
-    #[local] Notation wp_xval := (wp_xval M ρ).
-    #[local] Notation wp_init := (wp_init M ρ).
+    #[local] Notation wp := (wp ρ).
+    #[local] Notation wp_lval := (wp_lval ρ).
+    #[local] Notation wp_prval := (wp_prval ρ).
+    #[local] Notation wp_operand := (wp_operand ρ).
+    #[local] Notation wp_xval := (wp_xval ρ).
+    #[local] Notation wp_init := (wp_init ρ).
     #[local] Notation fspec := (@fspec _ Σ σ.(genv_tu).(globals)).
     #[local] Notation mspec := (@mspec _ Σ σ.(genv_tu).(globals)).
 
@@ -197,12 +197,12 @@ Module Type Init.
 
   Section frames.
     Context `{Σ : cpp_logic thread_info} {σ1 σ2 :genv}.
-    Variables (M : coPset) (ρ : region).
+    Variables (ρ : region).
     Hypothesis MOD : genv_leq σ1 σ2.
 
     Lemma wp_initialize_frame obj ty e Q Q' :
       (Forall free, Q free -* Q' free)
-      |-- wp_initialize (σ:=σ2) M ρ ty obj e Q -* wp_initialize (σ:=σ2) M ρ ty obj e Q'.
+      |-- wp_initialize (σ:=σ2) ρ ty obj e Q -* wp_initialize (σ:=σ2) ρ ty obj e Q'.
     Proof using.
       rewrite /wp_initialize.
       case_eq (drop_qualifiers ty) =>/=; intros; eauto;
@@ -216,12 +216,12 @@ Module Type Init.
     Qed.
 
     Lemma wp_initialize_wand obj ty e Q Q' :
-      wp_initialize (σ:=σ2) M ρ ty obj e Q
-      |-- (Forall free, Q free -* Q' free) -* wp_initialize (σ:=σ2) M ρ ty obj e Q'.
+      wp_initialize (σ:=σ2) ρ ty obj e Q
+      |-- (Forall free, Q free -* Q' free) -* wp_initialize (σ:=σ2) ρ ty obj e Q'.
     Proof. by iIntros "H Y"; iRevert "H"; iApply wp_initialize_frame. Qed.
 
     Theorem wpi_frame (cls : globname) (this : ptr) (e : Initializer) k1 k2 :
-      k1 -* k2 |-- wpi (σ:=σ1) M ρ cls this e k1 -* wpi (σ:=σ2) M ρ cls this e k2.
+      k1 -* k2 |-- wpi (σ:=σ1) ρ cls this e k1 -* wpi (σ:=σ2) ρ cls this e k2.
     Proof. Abort. (* This is not quite provable *)
 
   End frames.
@@ -234,10 +234,10 @@ Module Type Init.
      *)
 
     Context `{Σ : cpp_logic thread_info} {σ : genv}.
-    Variables (M : coPset) (ρ : region).
+    Variables (ρ : region).
 
     Theorem wpi_frame (cls : globname) (this : ptr) (e : Initializer) k1 k2 :
-      k1 -* k2 |-- wpi M ρ cls this e k1 -* wpi M ρ cls this e k2.
+      k1 -* k2 |-- wpi ρ cls this e k1 -* wpi ρ cls this e k2.
     Proof.
       clear.
       iIntros "X". rewrite /wpi. iApply wp_initialize_frame.

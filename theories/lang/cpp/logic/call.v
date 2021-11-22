@@ -12,9 +12,9 @@ Require Import bedrock.lang.cpp.heap_notations.
 
 Section with_resolve.
   Context `{Σ : cpp_logic} {σ : genv}.
-  Variables (M : coPset) (ρ : region).
+  Variables (ρ : region).
 
-  #[local] Notation wp_call_initialize := (wp_call_initialize M ρ).
+  #[local] Notation wp_call_initialize := (wp_call_initialize ρ).
 
   Definition arg_types (ty : type) : option (list type) :=
     match ty with

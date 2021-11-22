@@ -20,9 +20,9 @@ Section with_Σ.
 
   Implicit Type (Q : val → mpred).
 
-  #[local] Notation wp_prval := (wp_prval M ρ).
-  #[local] Notation wp_operand := (wp_operand M ρ).
-  #[local] Notation wp_args := (wp_args M ρ).
+  #[local] Notation wp_prval := (wp_prval ρ).
+  #[local] Notation wp_operand := (wp_operand ρ).
+  #[local] Notation wp_args := (wp_args ρ).
 
   (* Builtins for Atomic operations. We follow those provided by GCC.
    * https://gcc.gnu.org/onlinedocs/gcc/_005f_005fatomic-Builtins.html

@@ -54,13 +54,13 @@ Module Type Expr__newdelete.
 
     Section with_resolve.
       Context {resolve:genv}.
-      Variables (M : coPset) (ρ : region).
+      Variables (ρ : region).
 
-      #[local] Notation wp_prval := (wp_prval M ρ).
-      #[local] Notation wp_init := (wp_init M ρ).
-      #[local] Notation wp_initialize := (wp_initialize M ρ).
-      #[local] Notation wp_operand := (wp_operand M ρ).
-      #[local] Notation wp_args := (wp_args M ρ).
+      #[local] Notation wp_prval := (wp_prval ρ).
+      #[local] Notation wp_init := (wp_init ρ).
+      #[local] Notation wp_initialize := (wp_initialize ρ).
+      #[local] Notation wp_operand := (wp_operand ρ).
+      #[local] Notation wp_args := (wp_args ρ).
       #[local] Notation fspec := (fspec resolve.(genv_tu).(globals)).
 
       #[local] Notation size_of := (@size_of resolve) (only parsing).
