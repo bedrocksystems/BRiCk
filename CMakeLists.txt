@@ -84,3 +84,8 @@ target_link_libraries(cpp2v
   ${LibClangTooling_LIBRARIES}
   tocoq
 )
+
+#target_link_directories(cpp2v
+#	PUBLIC
+#	${LLVM_LIB_DIR}
+#)

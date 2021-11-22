@@ -1,5 +1,5 @@
 find_program (LLVM_CONFIG
-  NAMES llvm-config-12 llvm-config-11 llvm-config-10 llvm-config
+  NAMES llvm-config-13 llvm-config-12 llvm-config-11 llvm-config-10 llvm-config
   DOC "llvm-config program. if this fails, check that you have the -dev dependencies installed")
 
 execute_process(

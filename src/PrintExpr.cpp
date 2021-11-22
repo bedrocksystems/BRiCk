@@ -531,11 +531,13 @@ public:
                              ClangPrinter& cprint, const ASTContext&,
                              OpaqueNames&) {
         print.ctor("Eint", false);
+        SmallString<32> s;
         if (lit->getType()->isSignedIntegerOrEnumerationType()) {
-            print.output() << lit->getValue().toString(10, true) << "%Z";
+            lit->getValue().toStringSigned(s);
         } else {
-            print.output() << lit->getValue().toString(10, false);
+            lit->getValue().toStringUnsigned(s);
         }
+        print.output() << s << "%Z";
         done(lit, print, cprint);
     }
 
