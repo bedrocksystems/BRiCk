@@ -2,20 +2,6 @@
 Object representation, layout and padding
 #############################################################
 
-.. todo::
-
-   - primR
-   - what makes up a struct (struct_def)
-     - struct_paddingR
-     - identityR
-   - what makes up a union (union_def)
-     - union_paddingR
-   - implicit destruction
-   - raw
-     - Vraw
-     - rawR
-     - maybe? blockR and tblockR
-
 This document highlights some tricky aspects around object
 representation, layout and padding in C++ and describes how |project| deals with them.
 
@@ -40,6 +26,18 @@ Representing Values
 .. The C++ standard `talks explicitly about when materialization occurs <https://eel.is/c++draft/class.temporary#2>`_.
 
 In the |project| separation logic, we choose to immediately materialize all aggregates (i.e. aggregates do not have a Coq-value representation), and address the delayed materialization through the fact that not all pointers (|link:bedrock.lang.cpp.semantics.ptrs#ptr|) are required to be backed by memory.
+
+Representing Values in Memory
+-----------------------------------
+
+Given that we materialize all aggregates, we can give a simple characterization of the different types of Coq-values (|link:bedrock.lang.cpp.semantics.values#val|) in which all values are either:
+
+- |link:bedrock.lang.cpp.semantics.values#Vptr| - for C++ pointer and reference values
+- |link:bedrock.lang.cpp.semantics.values#Vint| - for C++ integral values (excluding floating-point values)
+- |link:bedrock.lang.cpp.semantics.values#Vraw| - for the low-level representation of C++ objects; refer to :ref:`this section <object_layout.axiomatized_memory_model>` for more details
+- |link:bedrock.lang.cpp.semantics.values#Vundef| - for uninitialized values, upon which all operationrs yield :ref:`Undefined Behavior <undefined_behavior>`
+
+This characterization enables us to utilize a single abstraction for the in-memory represntation of C++ values - called |link:bedrock.lang.cpp.logic.heap_pred#primR| `: ptr -> type -> Qp -> val -> mpred` - which reflects the fractional ownership of some C++ `val`\ ue of a given `type` (which has been materialized to a given `ptr`\ ).
 
 Pinned Pointers
 ----------------
@@ -153,11 +151,17 @@ guarantees that:
 
 .. note::
 
-   We also make an **additional assumption**: For :ref:`Plain Old Data (POD) <object_layout.pod>`,
+   We also make an **additional assumption**: For :ref:`Plain Old Data (POD) <object_layout.concepts.pod>`,
    compilers only insert padding between fields if it is necessary to achieve alignment.
 
 How is this reflected in |project|?
 ------------------------------------
+
+.. todo::
+
+   - what makes up a struct (struct_def)
+     - struct_paddingR
+     - identityR
 
 The virtual address offset of a |link:bedrock.lang.cpp.semantics.ptrs#offset| is determined by |link:bedrock.lang.cpp.semantics.ptrs#eval_offset|.
 |project| currently supports reasoning about the layout of (a limited number of) aggregates by embedding the layout information from the Clang front-end into the |project| abstract syntax tree (see |link:bedrock.lang.cpp.syntax.translation_unit#Struct| and |link:bedrock.lang.cpp.syntax.translation_unit#Union|\ ).
@@ -198,15 +202,33 @@ How is this reflected in cpp2v?
 
 .. TODO: FIX THIS SECTION UP AND ADD UP TO DATE QUOTES
 
+.. todo::
+
+   - what makes up a union (union_def)
+     - union_paddingR
+
 cpp2v does not reflect that all members of the same union have the same address.
 `Axiom decompose_union <https://gitlab.com/bedrocksystems/cpp2v-core/-/blob/232541a3a7410ac585908a35c50583007c3a391c/theories/lang/cpp/logic/layout.v#L61>`_ uses `_field` that in turn uses `offset_of` that uses opaque offset information from the translation unit.
 
 **Potential solution**: Allow the user to assume some facts about the offset information in the translation unit.
 
+
+Implicit Destruction
+==========================================================================================
+
+.. todo:: implicit destruction
+
+.. _object_layout.axiomatized_memory_model:
+
 Working with the low-level representation of objects
 ==========================================================================================
 
-.. TODO: FIX THIS SECTION UP AND ADD UP TO DATE QUOTES
+.. todo::
+
+   - Technical details regarding our axiomatization of C++'s memory model
+     * blockR and tblockR; relate to primR
+     * raw/Vraw/rawR
+
 
 Consider the following code that does not exhibit undefined behavior (which can be checked using `Cerberus <https://cerberus.cl.cam.ac.uk/cerberus>`_):
 
@@ -246,10 +268,13 @@ How is this reflected in |project|?
 Thus, the example above can be verified by first converting the struct to raw bytes, copying the raw bytes and then converting the raw bytes back into the struct.
 
 
-.. _object_layout.pod:
+C++ Standard Concepts
+================================================================================
+
+.. _object_layout.concepts.pod:
 
 Plain Old Data (POD) vs Standard-Layout/Trivial Data
-================================================================================
+------------------------------------------------------------------------------------------
 
 The C++ Standard defines `Plain Old Data (POD) <https://eel.is/c++draft/depr.meta.types#:POD>`_ as:
 
@@ -260,18 +285,18 @@ The C++ Standard defines `Plain Old Data (POD) <https://eel.is/c++draft/depr.met
    a POD class, an array of such a type, or a cv-qualified version of one of these types.
 
 While this concept has been deprecated - and redefined in terms of - the more granular
-:ref:`standard-layout class <object_layout.standard_layout>` and :ref:`trivial class <object_layout.trivial>`
+:ref:`standard-layout class <object_layout.concepts.standard_layout>` and
+:ref:`trivial class <object_layout.concepts.trivial>`
 concepts, it is an easier-to-characterize side-condition as it is stronger than either
 of the previous two concepts. Furthermore, the data which we've encountered while
 reasoning explicitly about the layout of structs within the BedRock Hypervisor™
 has fallen into the category of **POD**. In the future we will want to refine the
 C++-concepts which we expose within the semantics and relax our axioms accordingly.
 
-
-.. _object_layout.standard_layout:
+.. _object_layout.concepts.standard_layout:
 
 Standard-Layout Data
-------------------------------------------------------------------------------------------
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 The C++ Standard defines a `standard-layout class <https://eel.is/c++draft/class.prop#3>`_
 in the following way:
@@ -303,10 +328,10 @@ in the following way:
           elements of M(Xe).
   (3.7.5) If X is a non-class, non-array type, the set M(X) is empty.
 
-.. _object_layout.trivial:
+.. _object_layout.concepts.trivial:
 
 Trivial Data
-------------------------------------------------------------------------------------------
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 The C++ Standard defines a `trivial class <https://eel.is/c++draft/class.prop#2>`_
 in the following way:
@@ -325,6 +350,13 @@ in the following way:
       default constructors ([class.default.ctor]), all of which are trivial.
       [Note 1: In particular, a trivially copyable or trivial class does not have virtual
        functions or virtual base classes. — end note]
+
+.. _object_layout.concepts.trivially_destructible:
+
+Trivially Destructible Objects
+------------------------------------------------------------------------------------------
+
+.. todo:: trivially destructible
 
 .. rubric:: Footnotes
 
