@@ -72,7 +72,7 @@ Following options:
 - Pro: Aggregates only need to be represented in locations, never as values
 - Con: Since primitives are passed via the heap, the specification cannot directly destruct them
 
-**Pass primitives as values and aggregates via locations**: (as currently in cpp2v)
+**Pass primitives as values and aggregates via locations**: (as currently in |project|)
 
 - Primitives are passed as values and aggregates via locations
 - Pro: Primitives can be directly destructed in specifications
@@ -200,10 +200,9 @@ The C++ standard defines the `layout of unions <http://eel.is/c++draft/class.uni
 
    The fact that all members "have the same address" does not mean that the same
    pointer can safely be used to access all of them. In particular, accessing
-   a member which is not the **active** member of a union is UB. This is currently
-   the source of a `soundness bug in cpp2v <https://gitlab.com/bedrocksystems/cpp2v-core/-/issues/101>`_.
+   a member which is not the **active** member of a union is UB.
 
-How is this reflected in cpp2v?
+How is this reflected in |project|?
 ------------------------------------------------------------------------------------------
 
 The virtual address offset of a |link:bedrock.lang.cpp.semantics.ptrs#PTRS.offset| is determined by |link:bedrock.lang.cpp.semantics.ptrs#PTRS.eval_offset|.
@@ -337,16 +336,15 @@ In particular, there are parts of memory that are not accessible via the high-le
 How is this reflected in |project|?
 ------------------------------------
 
-.. todo::
+|project| provides access to the low-level view of data via the `Vraw r` value - where `r` represents a "raw byte".
+|project| is parametric in this notion of raw byte, but a simple model would instantiate it with `byte | pointer fragment | poison` (i.e. |link:bedrock.lang.cpp.model.simple_pred#runtime_val'| in |link:bedrock.lang.cpp.model.simple_pred|\ ).
+|link:bedrock.lang.cpp.semantics.values#RAW_BYTES|, |link:bedrock.lang.cpp.semantics.values#RAW_BYTES_VAL| and |link:bedrock.lang.cpp.semantics.values#RAW_BYTES_MIXIN| contain the various axioms and definitions which underly our notion of "raw bytes".
 
-   - raw/Vraw/rawR
-   - struct_to_raw
-   - Vint raw stuff
+|link:bedrock.lang.cpp.semantics.values#RAW_BYTES_VAL.raw_bytes_of_val| and |link:bedrock.lang.cpp.semantics.values#RAW_BYTES_VAL.raw_bytes_of_struct| represent the core predicates which relate high-level C++ objects to their "raw" representations.
+|link:bedrock.lang.cpp.logic.raw| utilizes |link:bedrock.lang.cpp.semantics.values#RAW_BYTES_VAL.raw_bytes_of_val| to expose conversions from `primR` to `rawsR` - which is itself an array of `Vraw` values.
+|link:bedrock.lang.cpp.logic.layout| utilizes |link:bedrock.lang.cpp.semantics.values#RAW_BYTES_VAL.raw_bytes_of_struct| - and the definitions within |link:bedrock.lang.cpp.logic.raw| - to axiomatize |link:bedrock.lang.cpp.logic.layout#struct_to_raw| which allows for verifiers to convert :ref:`Plain Old Data <object_layout.concepts.pod>` structs into their low-level representation.
 
-|project| provides access to the low-level view of data via the `Vraw r` value where `r` represents a "raw byte". cpp2v is parametric in this notion of raw byte, but a simple model would instantiate it with `byte | pointer fragment | poison` (i.e. `runtime_val` in `simple_pred`). |link:bedrock.lang.cpp.logic.layout| provides axioms for converting between the high-level representation (e.g. `primR`) and the low-level representation based on `Vraw`.
-
-Thus, the example above can be verified by first converting the struct to raw bytes, copying the raw bytes and then converting the raw bytes back into the struct.
-
+Therefore, the example above can be verified by first converting the struct to raw bytes using |link:bedrock.lang.cpp.logic.layout#struct_to_raw|, copying the raw bytes and then converting the raw bytes back into the struct using |link:bedrock.lang.cpp.logic.layout#struct_to_raw| once again.
 
 C++ Standard Concepts
 ================================================================================
