@@ -53,7 +53,23 @@ Section finset.
     split; last by [move->]. intros Heq.
     apply leibniz_equiv, elements_set_equiv_1, Heq.
   Qed.
+
+  Lemma size_empty_iff_L `{!LeibnizEquiv C} X : size X = 0 ↔ X = ∅.
+  Proof. unfold_leibniz. apply size_empty_iff. Qed.
 End finset.
+
+(** [set_seq] *)
+Section set_seq.
+  Lemma size_set_seq `{FinSet nat C} start len :
+    size (set_seq (C:=C) start len) = len.
+  Proof.
+    revert start; induction len as [|n IH]=>start; csimpl.
+    { by rewrite size_empty. }
+    rewrite size_union.
+    - by rewrite size_singleton IH.
+    - rewrite disjoint_singleton_l elem_of_set_seq. lia.
+  Qed.
+End set_seq.
 
 (** The [set_map] operation *)
 Section set_map.
@@ -84,6 +100,51 @@ Section set_map.
   Lemma set_map_union_L `{!LeibnizEquiv D} (f : A → B) (X Y : C) :
     set_map (D:=D) f (X ∪ Y) = set_map (D:=D) f X ∪ set_map (D:=D) f Y.
   Proof. unfold_leibniz. apply set_map_union. Qed.
+
+  Lemma set_map_empty `{Set_ B D} (f : A -> B) : set_map (C:=C) (D:=D) f ∅ = ∅.
+  Proof. rewrite /set_map. by rewrite elements_empty. Qed.
+End set_map.
+
+Section set_map.
+  #[local] Set Default Proof Using "Type*".
+  Context `{FinSet A C, Set_ B D}.
+
+  Lemma set_map_empty_iff `{FinSet B D} (f : A -> B) X :
+    set_map (C:=C) (D:=D) f X ≡ ∅ <-> X ≡ ∅.
+  Proof.
+    split; first last.
+    - move=>->. by rewrite set_map_empty.
+    - rewrite - !size_empty_iff.
+      pattern X. apply set_ind; clear X; first by intros ?? ->.
+      { by rewrite size_empty. }
+      intros x X Hni IH.
+      rewrite set_map_union set_map_singleton.
+      rewrite (comm union) size_union_alt.
+      intros Hsz.
+      assert (size (set_map (D := D) f X) = 0) as Hsz0 by lia.
+      exfalso. move: Hsz. rewrite Hsz0 /=.
+      have {Hsz0} IH := IH Hsz0; rewrite (size_empty_inv _ IH).
+      by rewrite set_map_empty difference_empty size_singleton.
+  Qed.
+
+  Lemma set_map_empty_iff_L `{FinSet B D, !LeibnizEquiv C, !LeibnizEquiv D}
+      (f : A -> B) X :
+    set_map (C:=C) (D:=D) f X = ∅ <-> X = ∅.
+  Proof. unfold_leibniz. exact: set_map_empty_iff. Qed.
+
+  Lemma size_map_inj `{FinSet B D} (f : A -> B) `{!Inj (=) (=) f} (X : C) :
+    size (C:=D) (set_map f X) = size X.
+  Proof.
+    pattern X. apply set_ind; clear X.
+    { by intros X1 X2 ->. }
+    { by rewrite set_map_empty !size_empty. }
+    intros x X Hx IH.
+    rewrite set_map_union !size_union.
+    - by rewrite set_map_singleton !size_singleton IH.
+    - intros y ->%elem_of_singleton. by apply Hx.
+    - clear IH. rewrite set_map_singleton. intros y ->%elem_of_singleton.
+      intros (y & Hy & He)%elem_of_map_1. by simplify_eq.
+  Qed.
 End set_map.
 
 (** Pairwise disjointness *)
