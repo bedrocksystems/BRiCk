@@ -56,7 +56,7 @@ In particular, there must not be padding at the start of the :cpp:`struct` and b
 Low-level Layout in |project|
 ------------------------------
 
-The virtual address offset of a |link:bedrock.lang.cpp.semantics.ptrs#PTRS.offset| is determined by |link:bedrock.lang.cpp.semantics.ptrs#eval_offset| (discussed more in :ref:`pointers-and-pointer-provenance`).
+The virtual address offset of a |link:bedrock.lang.cpp.semantics.ptrs#PTRS.offset| is determined by |link:bedrock.lang.cpp.semantics.ptrs#PTRS.eval_offset| (discussed more in :ref:`pointers-and-pointer-provenance`).
 |project| exposes this information in the logic in the lemma
-Because the C++ standard only requires portability of the layout of certain types of aggregates we limit the use of this information in our axioms to POD and standard layout classes (see |link:bedrock.lang.cpp.semantics.ptrs#eval_o_field|\ .
+Because the C++ standard only requires portability of the layout of certain types of aggregates we limit the use of this information in our axioms to POD and standard layout classes (see |link:bedrock.lang.cpp.semantics.ptrs#PTRS.eval_o_field|\ ).
 

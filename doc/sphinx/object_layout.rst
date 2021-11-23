@@ -27,17 +27,17 @@ Representing Values
 
 .. The C++ standard `talks explicitly about when materialization occurs <https://eel.is/c++draft/class.temporary#2>`_.
 
-In the |project| separation logic, we choose to immediately materialize all aggregates (i.e. aggregates do not have a Coq-value representation), and address the delayed materialization through the fact that not all pointers (|link:bedrock.lang.cpp.semantics.ptrs#ptr|) are required to be backed by memory.
+In the |project| separation logic, we choose to immediately materialize all aggregates (i.e. aggregates do not have a Coq-value representation), and address the delayed materialization through the fact that not all pointers (|link:bedrock.lang.cpp.semantics.ptrs#PTRS.ptr|) are required to be backed by memory.
 
 Representing Values in Memory
 -----------------------------------
 
-Given that we materialize all aggregates, we can provide a simple characterization of the different types of Coq values (|link:bedrock.lang.cpp.semantics.values#val|) which model C++ values; all values are one of:
+Given that we materialize all aggregates, we can provide a simple characterization of the different types of Coq values (|link:bedrock.lang.cpp.semantics.values#VAL_MIXIN.val|) which model C++ values; all values are one of:
 
-- |link:bedrock.lang.cpp.semantics.values#Vptr| - for C++ pointer and reference values
-- |link:bedrock.lang.cpp.semantics.values#Vint| - for C++ integral values (excluding floating-point values)
-- |link:bedrock.lang.cpp.semantics.values#Vraw| - for the low-level representation of C++ objects; refer to :ref:`this section <object_layout.axiomatized_memory_model>` for more details
-- |link:bedrock.lang.cpp.semantics.values#Vundef| - for uninitialized values, upon which all operationrs yield :ref:`Undefined Behavior <undefined_behavior>`
+- |link:bedrock.lang.cpp.semantics.values#VAL_MIXIN.Vptr| - for C++ pointer and reference values
+- |link:bedrock.lang.cpp.semantics.values#VAL_MIXIN.Vint| - for C++ integral values (excluding floating-point values)
+- |link:bedrock.lang.cpp.semantics.values#VAL_MIXIN.Vraw| - for the low-level representation of C++ objects; refer to :ref:`this section <object_layout.axiomatized_memory_model>` for more details
+- |link:bedrock.lang.cpp.semantics.values#VAL_MIXIN.Vundef| - for uninitialized values, upon which all operationrs yield :ref:`Undefined Behavior <undefined_behavior>`
 
 This characterization enables us to utilize a single abstraction to model the in-memory representation of C++ values - called |link:bedrock.lang.cpp.logic.heap_pred#primR| `: type -> Qp -> val -> Rep` - which reflects the fractional ownership (`Qp`\ ) of some Coq-model `val`\ ue of a given C++ `type`.
 `Rep : ptr -> mpred` models the location agnostic in-memory representation of some resource, and for any given `p : ptr` and `R : Rep`\ , `p |-> R` reflects the materialization of the resource modeled by `R` at the logical pointer `p`.
@@ -95,7 +95,7 @@ This means that there is no padding between elements of an array.
 How is this reflected in |project|?
 -------------------------------------
 
-The `Axiom` |link:bedrock.lang.cpp.semantics.ptrs#eval_o_sub| is defined to compute the the numerical
+The `Axiom` |link:bedrock.lang.cpp.semantics.ptrs#PTRS.eval_o_sub| is defined to compute the the numerical
 offset needed to subscript into an array based on the size of the underlying type and the index which
 is being used for the subscript. Furthermore, none of the definitions and the related theories of
 arrays contained within |link:bedrock.lang.cpp.logic.arr| mention padding in any capacity.
@@ -170,9 +170,9 @@ How is this reflected in |project|?
      - struct_paddingR
      - identityR
 
-The virtual address offset of a |link:bedrock.lang.cpp.semantics.ptrs#offset| is determined by |link:bedrock.lang.cpp.semantics.ptrs#eval_offset|.
+The virtual address offset of a |link:bedrock.lang.cpp.semantics.ptrs#PTRS.offset| is determined by |link:bedrock.lang.cpp.semantics.ptrs#PTRS.eval_offset|.
 |project| currently supports reasoning about the layout of (a limited number of) aggregates by embedding the layout information from the Clang front-end into the |project| abstract syntax tree (see |link:bedrock.lang.cpp.syntax.translation_unit#Struct| and |link:bedrock.lang.cpp.syntax.translation_unit#Union|\ ).
-Because the C++ standard only requires portability of the layout of certain types of aggregates we limit the use of this information in our axioms to POD and standard layout classes (see |link:bedrock.lang.cpp.semantics.ptrs#eval_o_field|\ ).
+Because the C++ standard only requires portability of the layout of certain types of aggregates we limit the use of this information in our axioms to POD and standard layout classes (see |link:bedrock.lang.cpp.semantics.ptrs#PTRS.eval_o_field|\ ).
 
 
 
@@ -220,8 +220,10 @@ How is this reflected in cpp2v?
    - what makes up a union (union_def)
      - union_paddingR
 
-cpp2v does not reflect that all members of the same union have the same address.
-`Axiom decompose_union <https://gitlab.com/bedrocksystems/cpp2v-core/-/blob/232541a3a7410ac585908a35c50583007c3a391c/theories/lang/cpp/logic/layout.v#L61>`_ uses `_field` that in turn uses `offset_of` that uses opaque offset information from the translation unit.
+..
+
+  cpp2v does not reflect that all members of the same union have the same address.
+  `Axiom decompose_union <https://gitlab.com/bedrocksystems/cpp2v-core/-/blob/232541a3a7410ac585908a35c50583007c3a391c/theories/lang/cpp/logic/layout.v#L61>`_ uses `_field` that in turn uses `offset_of` that uses opaque offset information from the translation unit.
 
 **Potential solution**: Allow the user to assume some facts about the offset information in the translation unit.
 
@@ -240,7 +242,7 @@ The following axioms reflect the current support for **Implicit Destruction** in
   * |link:bedrock.lang.cpp.logic.layout#implicit_destruct_nullptr|
   * |link:bedrock.lang.cpp.logic.layout#implicit_destruct_ptr|
   * |link:bedrock.lang.cpp.logic.layout#implicit_destruct_member_pointer|
-- Aggregates (based on |link:bedrock.lang.cpp.logic.layout#struct_def| and |link:bedrock.lang.cpp.logic.layout#struct_def|, which are discussed in the :ref:`struct <object_layout.structs>` and :ref:`union <object_layout.unions>` sections above)
+- Aggregates (based on |link:bedrock.lang.cpp.logic.layout#struct_def| and |link:bedrock.lang.cpp.logic.layout#union_def|, which are discussed in the :ref:`struct <object_layout.structs>` and :ref:`union <object_layout.unions>` sections above)
 
   * |link:bedrock.lang.cpp.logic.layout#implicit_destruct_struct|
   * |link:bedrock.lang.cpp.logic.layout#implicit_destruct_union|
@@ -260,6 +262,7 @@ Working with the low-level representation of objects
      * blockR and tblockR; relate to primR
      * raw/Vraw/rawR
 
+.. @paolo this page requires credentials.
 
 Consider the following code that does not exhibit undefined behavior (which can be checked using `Cerberus <https://cerberus.cl.cam.ac.uk/cerberus>`_):
 
@@ -294,7 +297,7 @@ In particular, there are parts of memory that are not accessible via the high-le
 How is this reflected in |project|?
 ------------------------------------
 
-|project| provides access to the low-level view of data via the `Vraw r` value where `r` represents a "raw byte". cpp2v is parametric in this notion of raw byte, but a simple model would instantiate it with `byte | pointer fragment | poison` (i.e. `runtime_val` in `simple_pred`).    `layout.v <https://gitlab.com/bedrocksystems/cpp2v-core/-/blob/master/theories/lang/cpp/logic/layout.v>`_ provides axioms for converting between the high-level representation (e.g. `primR`) and the low-level representation based on `Vraw`.
+|project| provides access to the low-level view of data via the `Vraw r` value where `r` represents a "raw byte". cpp2v is parametric in this notion of raw byte, but a simple model would instantiate it with `byte | pointer fragment | poison` (i.e. `runtime_val` in `simple_pred`). |link:bedrock.lang.cpp.logic.layout| provides axioms for converting between the high-level representation (e.g. `primR`) and the low-level representation based on `Vraw`.
 
 Thus, the example above can be verified by first converting the struct to raw bytes, copying the raw bytes and then converting the raw bytes back into the struct.
 
