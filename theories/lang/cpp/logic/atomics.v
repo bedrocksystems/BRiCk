@@ -37,8 +37,6 @@ Section with_Σ.
         AtomicOp -> type (* the access type of the atomic operation *) ->
         list val -> (val -> mpred) -> mpred.
 
-  #[local] Notation wp_atom' := (@wp_atom resolve M) (only parsing).
-
   Definition pointee_type (t : type) : option type :=
     match t with
     | Tpointer t => Some t
@@ -78,13 +76,15 @@ Section with_Σ.
         | None => False
         | Some acc_type =>
           wp_args targs es (fun (vs : list val) (free : FreeTemps) =>
-            wp_atom' ao acc_type vs (fun v => Q v free))
+            wp_atom top ao acc_type vs (fun v => Q v free))
         end)
     |-- wp_operand (Eatomic ao es ty) Q.
   (** ^ TODO the calling convention for atomics should change to be
       more uniform. e.g. atomics should be treated more like builtin
       functions.
    *)
+
+  #[local] Notation wp_atom' := (@wp_atom resolve M) (only parsing).
 
   (* Memory Ordering Patterns: Now we only have _SEQ_CST *)
   Definition _SEQ_CST := Vint 5.
