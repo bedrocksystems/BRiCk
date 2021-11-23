@@ -20,6 +20,8 @@ of the high-level representation is handled (i.e. padding).
   Much of the reasoning described in this section is still experimental and subject to change.
   In practice, most C++ programs do not require this level of reasoning.
 
+.. _object_layout.values:
+
 Representing Values
 ====================
 
@@ -30,14 +32,15 @@ In the |project| separation logic, we choose to immediately materialize all aggr
 Representing Values in Memory
 -----------------------------------
 
-Given that we materialize all aggregates, we can give a simple characterization of the different types of Coq-values (|link:bedrock.lang.cpp.semantics.values#val|) in which all values are either:
+Given that we materialize all aggregates, we can provide a simple characterization of the different types of Coq values (|link:bedrock.lang.cpp.semantics.values#val|) which model C++ values; all values are one of:
 
 - |link:bedrock.lang.cpp.semantics.values#Vptr| - for C++ pointer and reference values
 - |link:bedrock.lang.cpp.semantics.values#Vint| - for C++ integral values (excluding floating-point values)
 - |link:bedrock.lang.cpp.semantics.values#Vraw| - for the low-level representation of C++ objects; refer to :ref:`this section <object_layout.axiomatized_memory_model>` for more details
 - |link:bedrock.lang.cpp.semantics.values#Vundef| - for uninitialized values, upon which all operationrs yield :ref:`Undefined Behavior <undefined_behavior>`
 
-This characterization enables us to utilize a single abstraction for the in-memory represntation of C++ values - called |link:bedrock.lang.cpp.logic.heap_pred#primR| `: ptr -> type -> Qp -> val -> mpred` - which reflects the fractional ownership of some C++ `val`\ ue of a given `type` (which has been materialized to a given `ptr`\ ).
+This characterization enables us to utilize a single abstraction to model the in-memory representation of C++ values - called |link:bedrock.lang.cpp.logic.heap_pred#primR| `: type -> Qp -> val -> Rep` - which reflects the fractional ownership (`Qp`\ ) of some Coq-model `val`\ ue of a given C++ `type`.
+`Rep : ptr -> mpred` models the location agnostic in-memory representation of some resource, and for any given `p : ptr` and `R : Rep`\ , `p |-> R` reflects the materialization of the resource modeled by `R` at the logical pointer `p`.
 
 Pinned Pointers
 ----------------
@@ -74,6 +77,8 @@ Following options:
 - Pro: Primitives can be directly destructed in specifications
 - Con: Probably break templates because an instantiation with a primitive value would produce quite different code than an instantiatation with an aggregate value
 
+.. _object_layout.arrays:
+
 Reasoning about the layout of an array in memory
 =================================================
 
@@ -94,6 +99,8 @@ The `Axiom` |link:bedrock.lang.cpp.semantics.ptrs#eval_o_sub| is defined to comp
 offset needed to subscript into an array based on the size of the underlying type and the index which
 is being used for the subscript. Furthermore, none of the definitions and the related theories of
 arrays contained within |link:bedrock.lang.cpp.logic.arr| mention padding in any capacity.
+
+.. _object_layout.structs:
 
 Reasoning about the layout of a struct in memory
 =================================================
@@ -167,11 +174,17 @@ The virtual address offset of a |link:bedrock.lang.cpp.semantics.ptrs#offset| is
 |project| currently supports reasoning about the layout of (a limited number of) aggregates by embedding the layout information from the Clang front-end into the |project| abstract syntax tree (see |link:bedrock.lang.cpp.syntax.translation_unit#Struct| and |link:bedrock.lang.cpp.syntax.translation_unit#Union|\ ).
 Because the C++ standard only requires portability of the layout of certain types of aggregates we limit the use of this information in our axioms to POD and standard layout classes (see |link:bedrock.lang.cpp.semantics.ptrs#eval_o_field|\ ).
 
+
+
 .. The `Definition struct_def <_static/coqdoc/bedrock.lang.cpp.logic.layout.html>`_ characterizes how a `struct` can be viewed as its constituent pieces and padding.
 .. which shows how the `anyR` of a `struct` can be broken down into its constituent fields and padding but there are no axioms , but it only applies to `anyR (Tnamed cls)` and it represents padding as a magic wand. No axiom gives information about field offsets of a struct.
 
-We believe that a good, platform independent way to reason about layout information is to use a combination of :cpp:`static_assert` and :cpp:`offsetof`.
-|project| does not currently support this level of reasoning about :cpp:`offsetof`, but it is likely to be added in the future by connecting |link:bedrock.lang.cpp.semantics.ptrs#eval_offset| to the semantics of :cpp:`offsetof`.
+.. note::
+
+   We believe that a good, platform independent way to reason about layout information is to use a combination of :cpp:`static_assert` and :cpp:`offsetof`.
+   |project| does not currently support this level of reasoning about :cpp:`offsetof`, but it is likely to be added in the future by connecting |link:bedrock.lang.cpp.semantics.ptrs#PTRS.eval_offset| to the semantics of :cpp:`offsetof`.
+
+.. _object_layout.unions:
 
 Reasoning about the layout of a union in memory
 ==========================================================================================
@@ -212,11 +225,29 @@ cpp2v does not reflect that all members of the same union have the same address.
 
 **Potential solution**: Allow the user to assume some facts about the offset information in the translation unit.
 
+.. _object_layout.implicit_destruction:
 
 Implicit Destruction
 ==========================================================================================
 
-.. todo:: implicit destruction
+A :ref:`Trivially Destructible Object <object_layout.concepts.trivially_destructible>` supports **Implicit Destruction** - in which the compiler reclaims the underlying storage of the object *without* running any code.
+The following axioms reflect the current support for **Implicit Destruction** in |project|; please refer to :ref:`this section <object_layout.axiomatized_memory_model>` for more details regarding our axiomatization of the C++ memory model:
+
+- Scalars (based on |link:bedrock.lang.cpp.logic.layout#implicit_destruct_ty|)
+
+  * |link:bedrock.lang.cpp.logic.layout#implicit_destruct_int|
+  * |link:bedrock.lang.cpp.logic.layout#implicit_destruct_bool|
+  * |link:bedrock.lang.cpp.logic.layout#implicit_destruct_nullptr|
+  * |link:bedrock.lang.cpp.logic.layout#implicit_destruct_ptr|
+  * |link:bedrock.lang.cpp.logic.layout#implicit_destruct_member_pointer|
+- Aggregates (based on |link:bedrock.lang.cpp.logic.layout#struct_def| and |link:bedrock.lang.cpp.logic.layout#struct_def|, which are discussed in the :ref:`struct <object_layout.structs>` and :ref:`union <object_layout.unions>` sections above)
+
+  * |link:bedrock.lang.cpp.logic.layout#implicit_destruct_struct|
+  * |link:bedrock.lang.cpp.logic.layout#implicit_destruct_union|
+
+.. note::
+
+   We do not axiomatize **Implicit Destruction** for arrays of :ref:`Trivially Destructible Objects <object_layout.concepts.trivially_destructible>` because we have yet to encounter a use case for it in our code-base.
 
 .. _object_layout.axiomatized_memory_model:
 
@@ -356,7 +387,19 @@ in the following way:
 Trivially Destructible Objects
 ------------------------------------------------------------------------------------------
 
-.. todo:: trivially destructible
+The C++ Standard defines a `trivial destructor <https://eel.is/c++draft/class.dtor#8>`_
+in the following way:
+
+::
+
+  (8) A destructor is trivial if it is not user-provided and if:
+  (8.1) the destructor is not virtual,
+  (8.2) all of the direct base classes of its class have trivial destructors, and
+  (8.3) for all of the non-static data members of its class that are of class type (or array thereof), each such class has a trivial destructor.
+  (8) Otherwise, the destructor is non-trivial.
+
+Scalars, :ref:`trivial data <object_layout.concepts.trivial>` which uses a trivial destructor and arrays of such objects
+are known as **Trivially Destructible Objects**.
 
 .. rubric:: Footnotes
 
