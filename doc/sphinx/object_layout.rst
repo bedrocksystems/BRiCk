@@ -203,29 +203,34 @@ The C++ standard defines the `layout of unions <http://eel.is/c++draft/class.uni
 
 .. note::
 
-   .. TODO: FIX THIS SECTION UP AND ADD UP TO DATE QUOTES
-
-   All members sharing the same address does not mean that the same
-   pointer is valid to access all of them. In particular, accessing
-   the member that is not the active member of a union is UB. This is currently
+   The fact that all members "have the same address" does not mean that the same
+   pointer can safely be used to access all of them. In particular, accessing
+   a member which is not the **active** member of a union is UB. This is currently
    the source of a `soundness bug in cpp2v <https://gitlab.com/bedrocksystems/cpp2v-core/-/issues/101>`_.
 
 How is this reflected in cpp2v?
 ------------------------------------------------------------------------------------------
 
-.. TODO: FIX THIS SECTION UP AND ADD UP TO DATE QUOTES
+The virtual address offset of a |link:bedrock.lang.cpp.semantics.ptrs#PTRS.offset| is determined by |link:bedrock.lang.cpp.semantics.ptrs#PTRS.eval_offset|.
+|project| currently supports reasoning about the layout of (a limited number of) aggregates by embedding the layout information from the Clang front-end into the |project| abstract syntax tree (see |link:bedrock.lang.cpp.syntax.translation_unit#Struct| and |link:bedrock.lang.cpp.syntax.translation_unit#Union|\ ).
 
-.. todo::
+In particular, |link:bedrock.lang.cpp.logic.layout#union_def| utilizes the information from the Clang front-end to provide a disjunction of all of the properly-|link:bedrock.lang.cpp.semantics.ptrs#PTRS.offset| fields of a given union.
+Furthermore, |link:bedrock.lang.cpp.logic.layout#union_paddingR| tracks the padding which the compiler (may have) inserted *as well as* an identifier which reflects the **active member**.
+|link:bedrock.lang.cpp.logic.layout#anyR_union| enables the "shattering" of a (potentially uninitialized) union into its (potentially uninitialized) constitutent pieces (as well as its |link:bedrock.lang.cpp.logic.layout#struct_paddingR| and |link:bedrock.lang.cpp.logic.heap_pred#identityR|, if necessary).
 
-   - what makes up a union (union_def)
-     - union_paddingR
+Because the C++ standard only requires portability of the layout of certain types of aggregates we limit the use of this information in our axioms to POD and standard layout classes (see |link:bedrock.lang.cpp.semantics.ptrs#PTRS.eval_o_field|\ ).
 
-..
+.. note::
 
-  cpp2v does not reflect that all members of the same union have the same address.
-  `Axiom decompose_union <https://gitlab.com/bedrocksystems/cpp2v-core/-/blob/232541a3a7410ac585908a35c50583007c3a391c/theories/lang/cpp/logic/layout.v#L61>`_ uses `_field` that in turn uses `offset_of` that uses opaque offset information from the translation unit.
+   We believe that a good, platform independent way to reason about layout information is to use a combination of :cpp:`static_assert` and :cpp:`offsetof`.
+   |project| does not currently support this level of reasoning about :cpp:`offsetof`, but it is likely to be added in the future by connecting |link:bedrock.lang.cpp.semantics.ptrs#PTRS.eval_offset| to the semantics of :cpp:`offsetof`.
 
-**Potential solution**: Allow the user to assume some facts about the offset information in the translation unit.
+.. note::
+
+  |project| does not reflect that all members of the same union have the same address.
+  |link:bedrock.lang.cpp.logic.layout#union_def| uses |link:bedrock.lang.cpp.semantics.ptrs#PTRS_MIXIN._field| which itself uses |link:bedrock.lang.cpp.semantics.types#offset_of|; |link:bedrock.lang.cpp.semantics.types#offset_of| uses opaque offset information from the translation unit.
+
+  If provers require this level of reasoning in the future we could provide additional assumptions regarding the offset information contained within a given translation unit.
 
 .. _object_layout.implicit_destruction:
 
