@@ -131,6 +131,8 @@ each such object will have a distinct allocation ID [#invalid-ptr-no-alloc-id].
 Importantly, the ID of a complete object differs from the ID of any character
 array that provides storage to the object.
 
+.. _pointers-and-pointer-provenance.provenance.subobjects:
+
 Pointers and subobjects in |project|
 ------------------------------------
 A pointer identifies a "path" inside the complete object, where each

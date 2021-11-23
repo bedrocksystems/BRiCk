@@ -42,12 +42,13 @@ Given that we materialize all aggregates, we can provide a simple characterizati
 This characterization enables us to utilize a single abstraction to model the in-memory representation of C++ values - called |link:bedrock.lang.cpp.logic.heap_pred#primR| `: type -> Qp -> val -> Rep` - which reflects the fractional ownership (`Qp`\ ) of some Coq-model `val`\ ue of a given C++ `type`.
 `Rep : ptr -> mpred` models the location agnostic in-memory representation of some resource, and for any given `p : ptr` and `R : Rep`\ , `p |-> R` reflects the materialization of the resource modeled by `R` at the logical pointer `p`.
 
+.. jh: The following two sections don't really belong here; where should they go?
+
 Pinned Pointers
 ----------------
 
 In certain instances, especially when communicating pointers with assembly, it is necessary to connect pointers to their virtual addresses.
 To do this, |project| exposes a separation logic assertion `pinned_ptr : ptr -> vaddr -> mpred` (|link:bedrock.lang.cpp.logic.pred#pinned_ptr|) which relates the `ptr` to the virtual address that backs it.
-
 
 Function Call Semantics
 ------------------------
@@ -164,12 +165,6 @@ guarantees that:
 How is this reflected in |project|?
 ------------------------------------
 
-.. todo::
-
-   - what makes up a struct (struct_def)
-     - struct_paddingR
-     - identityR
-
 The virtual address offset of a |link:bedrock.lang.cpp.semantics.ptrs#PTRS.offset| is determined by |link:bedrock.lang.cpp.semantics.ptrs#PTRS.eval_offset|.
 |project| currently supports reasoning about the layout of (a limited number of) aggregates by embedding the layout information from the Clang front-end into the |project| abstract syntax tree (see |link:bedrock.lang.cpp.syntax.translation_unit#Struct| and |link:bedrock.lang.cpp.syntax.translation_unit#Union|\ ).
 
@@ -258,14 +253,54 @@ The following axioms reflect the current support for **Implicit Destruction** in
 
 .. _object_layout.axiomatized_memory_model:
 
-Working with the low-level representation of objects
+Axiomatizing C++'s Memory Model
 ==========================================================================================
 
-.. todo::
+While the |project| axiomatization of C++'s memory model is an ongoing research and development problem - with regards to weak memory and multi C++ Abstract Machine interaction, to name a few examples - there are some important characteristics which are relatively stable.
 
-   - Technical details regarding our axiomatization of C++'s memory model
-     * blockR and tblockR; relate to primR
-     * raw/Vraw/rawR
+.. _object_layout.axiomatized_memory_model.high_level:
+
+Working with the high-level representation of objects
+--------------------------------------------------------------------------------
+
+C++ programmers are usually concerned with (live) C++ objects rather than the memory in which they are resident.
+To wit, our specifications speak in terms of high-level C++ objects such as |link:bedrock.lang.cpp.logic.heap_pred#primR|.
+Variable declarations (c.f. |link:bedrock.lang.cpp.logic.stmt#wp_decl_var|\ ) similarly yield high-level C++ objects (which our axiomatization directly reclaims when they go out of scope).
+
+However, the C++ Abstract Machine manages memory in which there are no resident (live) C++ objects.
+Implementers of custom allocators will also need a way to reason about chunks of memory in which there are no resident (live) C++ objects.
+Therefore we define |link:bedrock.lang.cpp.logic.heap_pred#blockR| (c.f. |link:bedrock.lang.cpp.logic.heap_pred#blockR_def|\ ) and axiomatize |link:bedrock.lang.cpp.logic.pred#provides_storage|.
+This enables us to talk about (untyped) memory which is managed by the C++ Abstract Machine **and** to relate high-level C++ objects to the memory which backs them when necessary, respectively.
+
+.. _object_layout.axiomatized_memory_model.high_level.blockR:
+
+Reasoning about physical memory with `blockR` and `tblockR`
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+.. note::
+
+   |link:bedrock.lang.cpp.logic.heap_pred#blockR_def| speaks in terms of |link:bedrock.lang.cpp.logic.heap_pred#anyR| (c.f. |link:bedrock.lang.cpp.logic.heap_pred#anyR_def|\ ) which itself speaks in terms of |link:bedrock.lang.cpp.logic.heap_pred#primR| (c.f. |link:bedrock.lang.cpp.logic.heap_pred#primR_def|\ ).
+   While `primR` models initialized C++ values of a given type, we can think of the physical memory managed by the C++ abstract machine as a bunch of character arrays, and indeed this view is sound *and* relevant when dealing with custom allocators (see :ref:`this section <object_layout.axiomatized_memory_model.high_level.provides_storage>`\ ).
+
+`blockR (sz : N) (q : Qp) : Rep` is a definition which represents fractional ownership (`Qp`) of a contiguous chunk of `sz` bytes - where each byte is either uninitialized or initialized to contain some concrete value of type `char`.
+`tblockR (ty : type) (q : Qp) : Rep` is a definition which represents fractional ownership (`Qp`) of a contiguous chunk of `size_of ty` bytes (c.f. |link:bedrock.lang.cpp.semantics.types#size_of|\ ) - where each byte is either uninitialized or initialized to contain some concrete value of type `char`, and where the first byte respects `align_of ty` (c.f. |link:bedrock.lang.cpp.semantics.types#align_of|\ ).
+Numerous axioms and definitions within |link:bedrock.lang.cpp.logic| make use of `blockR` and `tblockR` in order to reflect the transfer of physical memory between the C++ Abstract Machine and the executing code (although most of this is hidden from verifiers).
+
+.. _object_layout.axiomatized_memory_model.high_level.provides_storage:
+
+Relating physical memory to the high-level object which it `provides_storage` for
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+One place in which verifiers *are* exposed to the `blockR`/`tblockR` definitions is when proving the correctness of custom (de)allocation functions.
+In particular, reasoning about C++ dynamic memory management - as axiomatized within |link:bedrock.lang.cpp.logic.new_delete| - requires the explicit tracking of the high-level C++ object which was created *as well as* the physical memory which |link:bedrock.lang.cpp.logic.pred#provides_storage| for the high-level C++ object.
+
+When it is used (c.f. |link:bedrock.lang.cpp.logic.new_delete#wp_prval_new|\ ), `provides_storage (storage object : ptr) (storage_type : type) : mpred` relates the physical memory associated with the logical `storage` pointer to the high-level C++ object associated with the logical `object` pointer (and of type `storage_type`).
+This decoupling enables useful high-level reasoning for verifiers after allocation *while also* enabling the sound reclamation of that high-level object and the physical memory in which it resides.
+
+.. _object_layout.axiomatized_memory_model.low_level:
+
+Working with the low-level representation of objects
+--------------------------------------------------------------------------------
 
 .. @paolo this page requires credentials.
 
@@ -301,6 +336,12 @@ In particular, there are parts of memory that are not accessible via the high-le
 
 How is this reflected in |project|?
 ------------------------------------
+
+.. todo::
+
+   - raw/Vraw/rawR
+   - struct_to_raw
+   - Vint raw stuff
 
 |project| provides access to the low-level view of data via the `Vraw r` value where `r` represents a "raw byte". cpp2v is parametric in this notion of raw byte, but a simple model would instantiate it with `byte | pointer fragment | poison` (i.e. `runtime_val` in `simple_pred`). |link:bedrock.lang.cpp.logic.layout| provides axioms for converting between the high-level representation (e.g. `primR`) and the low-level representation based on `Vraw`.
 
