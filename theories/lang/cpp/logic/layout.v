@@ -120,6 +120,7 @@ Section with_Σ.
   Axiom implicit_destruct_union
   : forall (cls : globname) un,
       glob_def σ cls = Some (Gunion un) ->
+      un.(u_trivially_destructible) ->
           type_ptrR (Tnamed cls)
       |-- (Reduce (union_def (fun ty => tblockR ty 1) cls un)) -* |={↑pred_ns}=> tblockR (Tnamed cls) 1.
 
