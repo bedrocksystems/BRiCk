@@ -59,6 +59,7 @@ Module Type Expr__newdelete.
       #[local] Notation wp_prval := (wp_prval M ρ).
       #[local] Notation wp_init := (wp_init M ρ).
       #[local] Notation wp_initialize := (wp_initialize M ρ).
+      #[local] Notation wp_operand := (wp_operand M ρ).
       #[local] Notation wp_args := (wp_args M ρ).
       #[local] Notation fspec := (fspec resolve.(genv_tu).(globals)).
 
@@ -109,7 +110,7 @@ Module Type Expr__newdelete.
             - Currently, we do not model coalescing of multiple allocations
               (https://eel.is/c++draft/expr.new#14).
          *)
-        Axiom wp_prval_new :
+        Axiom wp_operand_new :
           forall (oinit : option Expr)
             new_fn new_args aty ty Q targs sz
             (nfty := normalize_type new_fn.2)
@@ -144,7 +145,7 @@ Module Type Expr__newdelete.
                                                           obj_ptr |-> new_tokenR aty -*
                                                           Q (Vptr obj_ptr) (free' >*> free))
                                   | Some init => (* Use [init] to initialize the memory *)
-                                    wp_init aty obj_ptr init
+                                    wp_initialize aty obj_ptr init
                                             (fun free' =>
                                                (* Track the type we are allocating
                                                   so it can be checked at [delete]
@@ -152,9 +153,9 @@ Module Type Expr__newdelete.
                                                obj_ptr |-> new_tokenR aty -*
                                                Q (Vptr obj_ptr) (free' >*> free))
                                   end))))
-        |-- wp_prval (Enew (Some new_fn) new_args aty None oinit ty) Q.
+        |-- wp_operand (Enew (Some new_fn) new_args aty None oinit ty) Q.
 
-        Axiom wp_prval_array_new :
+        Axiom wp_operand_array_new :
           forall (array_size : Expr) (oinit : option Expr)
             new_fn new_args aty ty Q targs sz
             (nfty := normalize_type new_fn.2)
@@ -174,7 +175,7 @@ Module Type Expr__newdelete.
                to a constant value of type [size_t] /and/ that it must be sequenced
                before we call the [new_fn].
              *)
-            wp_prval array_size (fun v free =>
+            wp_operand array_size (fun v free =>
               (* Valid C++ programs require this value to be a [Vint] (see the quote from
                  [expr.new#7] above). *)
               Exists array_sizeN, [| v = Vn array_sizeN |] **
@@ -228,7 +229,7 @@ Module Type Expr__newdelete.
                                                       Q (Vptr obj_ptr)
                                                         (free'' >*> free' >*> free))
                                    end))))
-        |-- wp_prval (Enew (Some new_fn) new_args aty (Some array_size) oinit ty) Q.
+        |-- wp_operand (Enew (Some new_fn) new_args aty (Some array_size) oinit ty) Q.
       End new.
 
       Section delete.
@@ -255,9 +256,9 @@ Module Type Expr__newdelete.
            NOTE: [Edelete]'s first argument is [true] iff the expression corresponds to
            an array-delete ([delete[]]).
          *)
-        Axiom wp_prval_delete : forall delete_fn e ty destroyed_type Q,
+        Axiom wp_operand_delete : forall delete_fn e ty destroyed_type Q,
           (* call the destructor on the object, and then call delete_fn *)
-          wp_prval e (fun v free =>
+          wp_operand e (fun v free =>
              Exists obj_ptr, [| v = Vptr obj_ptr |] **
              if bool_decide (obj_ptr = nullptr)
              then
@@ -282,13 +283,13 @@ Module Type Expr__newdelete.
                       (storage_ptr |-> blockR sz 1 -*
                        (* v---- Calling deallocator with storage pointer *)
                        fspec delete_fn.2 (Vptr $ _global delete_fn.1)
-                             (Vptr storage_ptr :: nil) (fun v => Q v free)))))
-        |-- wp_prval (Edelete false (Some delete_fn) e destroyed_type ty) Q.
+                             (Vptr storage_ptr :: nil) (fun _ => Q Vvoid free)))))
+        |-- wp_operand (Edelete false (Some delete_fn) e destroyed_type ty) Q.
 
         (* NOTE: [destroyed_type] will refer to the /element/ of the array *)
-        Axiom wp_prval_array_delete : forall delete_fn e ty carrier_type array_size Q,
+        Axiom wp_operand_array_delete : forall delete_fn e ty carrier_type array_size Q,
           (* call the destructor on the object, and then call delete_fn *)
-          wp_prval e (fun v free =>
+          wp_operand e (fun v free =>
              Exists obj_ptr, [| v = Vptr obj_ptr |] **
              if bool_decide (obj_ptr = nullptr)
              then
@@ -319,8 +320,8 @@ Module Type Expr__newdelete.
                       (storage_ptr |-> blockR (sz' + sz) 1 -*
                        (* v---- Calling deallocator with storage pointer *)
                        fspec delete_fn.2 (Vptr $ _global delete_fn.1)
-                             (Vptr storage_ptr :: nil) (fun v => Q v free)))))
-        |-- wp_prval (Edelete true (Some delete_fn) e carrier_type ty) Q.
+                             (Vptr storage_ptr :: nil) (fun v => Q Vvoid free)))))
+        |-- wp_operand (Edelete true (Some delete_fn) e carrier_type ty) Q.
 
         Section NOTE_potentially_relaxing_array_delete.
           (* While (we currently think) it is UB to delete [auto p = new int[5][6]]

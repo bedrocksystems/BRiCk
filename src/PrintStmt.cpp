@@ -242,13 +242,11 @@ public:
     void VisitReturnStmt(const ReturnStmt *stmt, CoqPrinter &print,
                          ClangPrinter &cprint, ASTContext &) {
         if (auto rv = stmt->getRetValue()) {
-            print.ctor("Sreturn (Some") << "(";
-            cprint.printValCat(rv, print);
-            print.output() << "," << fmt::nbsp;
+            print.ctor("Sreturn_val");
             cprint.printExpr(rv, print);
-            print.output() << "))" << fmt::rparen;
+            print.end_ctor();
         } else {
-            print.output() << "(Sreturn None)";
+            print.output() << "Sreturn_void";
         }
     }
 

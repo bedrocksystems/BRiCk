@@ -21,9 +21,10 @@ Module Type Stmt.
     Local Notation wp := (wp M).
     Local Notation wp_lval := (wp_lval M).
     Local Notation wp_prval := (wp_prval M).
+    Local Notation wp_operand := (wp_operand M).
     Local Notation wp_xval := (wp_xval M).
     Local Notation wp_init := (wp_init M).
-    Local Notation wpe := (wpe M).
+    Local Notation wp_discard := (wp_discard M).
 
     Local Notation glob_def := (glob_def resolve) (only parsing).
 
@@ -70,26 +71,13 @@ Module Type Stmt.
         get_return_type ρ = Tvoid ->
         Q ReturnVoid |-- wp ρ (Sreturn None) Q.
 
-    Axiom wp_return : forall ρ c e (Q : KpredI),
-           match c with
-           | Prvalue =>
-             let rty := get_return_type ρ in
-             if is_aggregate rty then
-               (* ^ C++ erases the reference information on types for an unknown
-                * reason, see http://eel.is/c++draft/expr.prop#expr.type-1.sentence-1
-                * so we need to re-construct this information from the value
-                * category of the expression.
-                *)
-               Forall ra : ptr,
-               wp_init ρ (erase_qualifiers rty) ra e (fun free => interp free $ Q (ReturnVal (Vptr ra)))
-             else
-               wp_prval ρ e (fun v free => interp free $ Q (ReturnVal v))
-           | Lvalue =>
-             wp_lval ρ e (fun v free => interp free $ Q (ReturnVal (Vptr v)))
-           | Xvalue =>
-             wp_xval ρ e (fun v free => interp free $ Q (ReturnVal (Vptr v)))
-           end
-       |-- wp ρ (Sreturn (Some (c, e))) Q.
+    Axiom wp_return : forall ρ e (Q : KpredI),
+          (let rty := erase_qualifiers (get_return_type ρ) in
+           wp_call_initialize M ρ rty e (fun v _ frees =>
+                                           interp frees (Q (ReturnVal v))))
+           (* ^ NOTE discard [free] because we are extruding the scope of the value *)
+       |-- wp ρ (Sreturn (Some e)) Q.
+
     Axiom wp_return_frame : forall ρ rv (Q Q' : KpredI),
         match rv with
         | None => Q ReturnVoid -* Q' ReturnVoid
@@ -109,7 +97,7 @@ Module Type Stmt.
         Q Continue -* Q' Continue |-- wp ρ Scontinue Q -* wp ρ Scontinue Q'.
 
     Axiom wp_expr : forall ρ vc e Q,
-        |> wpe ρ vc e (fun _ free => interp free (Q Normal))
+        |> wp_discard ρ vc e (fun free => interp free (Q Normal))
         |-- wp ρ (Sexpr vc e) Q.
 
     (* This definition performs allocation of local variables.
@@ -120,92 +108,20 @@ Module Type Stmt.
      * TODO there is a lot of overlap between this and [wp_initialize] (which does initialization
      * of aggregate fields).
      *)
-    Fixpoint wp_decl_var (ρ ρ_init : region) (x : ident) (ty : type) (init : option Expr)
-               (k : region -> FreeTemps -> mpredI)
-    : mpred :=
-      match ty with
-      | Tvoid => ERROR "declaration of void"
-
-        (* primitives *)
-      | Tpointer _
-      | Tmember_pointer _ _
-      | Tbool
-      | Tint _ _ =>
+    Definition wp_decl_var (ρ ρ_init : region) (x : ident) (ty : type) (init : option Expr)
+               (k : region -> FreeTemp -> mpredI)
+      : mpred :=
+      Forall (addr : ptr),
         let rty := erase_qualifiers ty in
-        Forall a : ptr,
-        let continue :=
-            k (Rbind x a ρ) (FreeTemps.delete rty a)
+        let destroy frees :=
+            interp frees (k (Rbind x addr ρ) (FreeTemps.delete rty addr))
         in
         match init with
-        | None =>
-          a |-> uninitR rty 1 -* continue
-        | Some init =>
-          wp_prval ρ_init init (fun v free => interp free $ a |-> primR rty 1 v -* continue)
-        end
+        | Some init => wp_initialize M ρ_init ty addr init $ fun frees => destroy frees
+        | None => default_initialize ty addr (fun frees => destroy frees)
+        end.
 
-      | Tnamed cls =>
-        match init with
-        | None => ERROR "uninitialized class"
-                 (* NOTE this does not occur within our semantics because constructors
-                    are explicit. *)
-        | Some init =>
-          Forall a : ptr,
-          wp_init ρ_init ty a init (fun free => interp free $ k (Rbind x a ρ) (FreeTemps.delete ty a))
-        end
-      | Tarray ty' N =>
-        let rty := erase_qualifiers ty in
-        Forall a : ptr,
-        let continue := k (Rbind x a ρ) (FreeTemps.delete rty a) in
-        match init with
-        | None =>
-          default_initialize ty a (fun free => interp free continue)
-        | Some init =>
-          wp_init ρ_init ty a init (fun free => interp free continue)
-        end
-
-        (* references *)
-      | Trv_ref ty =>
-        let rty := Tref $ erase_qualifiers ty in
-        (* NOTE: we always allocate a [Tref]. *)
-        match init with
-        | None => ERROR "uninitialized reference"
-          (* ^ references must be initialized *)
-        | Some init =>
-          (* i should use the type here *)
-          wp_xval ρ init (fun p free =>
-             interp free $ Forall r, r |-> primR rty 1 (Vref p) -* k (Rbind x r ρ) (FreeTemps.delete rty r))
-        end
-
-      | Tref t as ty =>
-        let rty := erase_qualifiers ty in
-        match init with
-        | None => ERROR "uninitialized reference"
-          (* ^ references must be initialized *)
-        | Some init =>
-          (* i should use the type here *)
-          wp_lval ρ init (fun p free =>
-             interp free $ Forall r, r |-> primR rty 1 (Vref p) -* k (Rbind x r ρ) (FreeTemps.delete rty r))
-        end
-
-      | Tfunction _ _ => UNSUPPORTED "local function declarations are not supported" (* not supported *)
-
-      | Tqualified _ ty => wp_decl_var ρ ρ_init x ty init k
-      | Tnullptr =>
-        Forall a : ptr,
-        let continue :=
-            k (Rbind x a ρ) (FreeTemps.delete Tnullptr a)
-        in
-        match init with
-        | None =>
-          a |-> primR Tnullptr 1 (Vptr nullptr) -* continue
-        | Some init =>
-          wp_prval ρ_init init (fun v free => interp free $
-             (a |-> primR Tnullptr 1 v -* continue))
-        end
-      | Tfloat _ => UNSUPPORTED "floating point declarations" (* not supportd *)
-      | Tarch _ _ => UNSUPPORTED "architecure specific declarations" (* not supported *)
-      end%I%bs.
-
+    (*
     Lemma decl_prim (x : ident) (ρ ρ_init : region) (init : option Expr) (ty : type)
            (k k' : region → FreeTemps → mpred) :
              Forall (a : region) b, k a b -* k' a b
@@ -244,52 +160,16 @@ Module Type Stmt.
         iIntros "h h'";iDestruct ("h" with "h'") as "h".
         by iApply "K". }
     Qed.
-
+*)
     Lemma wp_decl_var_frame : forall x ρ ρ_init init ty (k k' : region -> FreeTemps -> mpred),
         Forall a (b : _), k a b -* k' a b
         |-- wp_decl_var ρ ρ_init x ty init k -* wp_decl_var ρ ρ_init x ty init k'.
     Proof.
-      induction ty using type_ind'.
-      { intros; apply decl_prim with (ty:=Tptr ty). }
-      { destruct init; intros.
-        { iIntros "X"; iApply wp_lval_frame; first reflexivity.
-          iIntros (??); iApply interp_frame.
-          iIntros "Y" (?) "a"; iSpecialize ("Y" with "a"); iRevert "Y"; iApply "X". }
-        { iIntros "? $". } }
-      { destruct init; intros.
-        { iIntros "X"; iApply wp_xval_frame; first reflexivity.
-          iIntros (??); iApply interp_frame.
-          iIntros "Y" (?) "a"; iSpecialize ("Y" with "a"); iRevert "Y"; iApply "X". }
-        { iIntros "? $". } }
-      { intros; apply decl_prim with (ty:=Tint _ _). }
-      { intros; iIntros "? $". }
-      { destruct init; intros.
-        { iIntros "X Y" (aa); iSpecialize ("Y" $! aa);
-            iRevert "Y"; iApply wp_init_frame; first reflexivity.
-          iIntros (?); iApply interp_frame; iApply "X". }
-        { iIntros "X Y" (?). iSpecialize ("Y" $! a).
-          iRevert "Y". iApply default_initialize_frame.
-          iIntros (?); iApply interp_frame; iApply "X". } }
-      { simpl. intros.
-        destruct init; intros; last by iIntros "? $".
-        { iIntros "X Y" (aa); iSpecialize ("Y" $! aa);
-            iRevert "Y"; iApply wp_init_frame; first reflexivity.
-          iIntros (?); iApply interp_frame; iApply "X". } }
-      { intros. iIntros "? $". }
-      { intros; apply decl_prim with (ty:=Tbool). }
-      { intros; apply decl_prim with (ty:=Tmember_pointer _ _). }
-      { intros; iIntros "? $". }
-      { intros. iIntros "X"; iApply IHty; eauto. }
-      { intros; destruct init; iIntros "k Y" (a).
-        { iDestruct ("Y" $! a) as "Y"; iRevert "Y".
-          iApply wp_prval_frame; first reflexivity.
-          iIntros (??); iApply interp_frame.
-          iIntros "a b". iDestruct ("a" with "b") as "a"; iRevert "a".
-          iApply "k". }
-        { iDestruct ("Y" $! a) as "Y"; iRevert "Y".
-          iIntros "x y"; iDestruct ("x" with "y") as "x"; iRevert "x".
-          iApply "k". } }
-      { intros; iIntros "? $". }
+      rewrite /wp_decl_var; intros.
+      iIntros "X Y" (addr); iSpecialize ("Y" $! addr); iRevert "Y".
+      case_match;
+        [ iApply wp_initialize_frame | iApply default_initialize_frame ];
+        iIntros (?); iApply interp_frame; iApply "X".
     Qed.
 
     Fixpoint wp_decl (ρ ρ_init : region) (d : VarDecl) (k : region -> FreeTemps -> mpred) {struct d} : mpred :=
@@ -306,14 +186,14 @@ Module Type Stmt.
         let do_init :=
             match init with
             | None => default_initialize ty (_global nm) (k ρ)
-            | Some init => wp_init ρ_init ty (_global nm) init (k ρ)
+            | Some init => wp_initialize M ρ_init ty (_global nm) init (k ρ)
             end
         in
         if ts then
           (* thread safe initialization is not currently supported *)
           False%I
         else
-          do_init (* NOTE: this currently consumes the [tblockR] *)
+          _global nm |-> tblockR ty 1 ** do_init
       end.
 
     Lemma wp_decl_frame : forall ds ρ ρ_init m m',
@@ -330,8 +210,8 @@ Module Type Stmt.
           iIntros (??) "Z". iRevert "Z". iApply (IHl with "x"); eauto. } }
       { case_match; eauto.
         case_match.
-        { iIntros "?"; iApply wp_init_frame => //. }
-        { iIntros "?"; iApply default_initialize_frame => //. } }
+        { iIntros "? [$ X]"; iRevert "X"; iApply wp_initialize_frame => //; iIntros (?); done. }
+        { iIntros "? [$ X]"; iRevert "X"; iApply default_initialize_frame => //. } }
     Qed.
 
     Fixpoint wp_decls (ρ ρ_init : region) (ds : list VarDecl)
@@ -392,7 +272,7 @@ Module Type Stmt.
         wp_block ρ ss Q |-- wp ρ (Sseq ss) Q.
 
     Axiom wp_if : forall ρ e thn els Q,
-        |> wp_prval ρ e (fun v free =>
+        |> wp_operand ρ e (fun v free =>
              match is_true v with
              | None => False
              | Some c =>
@@ -428,13 +308,13 @@ Module Type Stmt.
           Inv |-- wp ρ (Sseq (b :: Scontinue :: nil))
               (Kloop match incr with
                      | None => Inv
-                     | Some (vc,incr) => wpe ρ vc incr (fun _ free => interp free Inv)
+                     | Some (vc,incr) => wp_discard ρ vc incr (fun free => interp free Inv)
                      end Q)
         | Some test =>
           Inv |-- wp ρ (Sif None test (Sseq (b :: Scontinue :: nil)) Sskip)
               (Kloop match incr with
                      | None => Inv
-                     | Some (vc,incr) => wpe ρ vc incr (fun _ free => interp free Inv)
+                     | Some (vc,incr) => wp_discard ρ vc incr (fun free => interp free Inv)
                      end Q)
         end ->
         Inv |-- wp ρ (Sfor None test incr b) Q.
@@ -557,7 +437,7 @@ Module Type Stmt.
         match wp_switch_block (Some $ default_from_cases (get_cases b)) b with
         | None => False
         | Some cases =>
-          wp_prval ρ e (fun v free => interp free $
+          wp_operand ρ e (fun v free => interp free $
                     Exists vv : Z, [| v = Vint vv |] **
                     [∧list] x ∈ cases, [| x.1 vv |] -* wp_block ρ x.2 (Kswitch Q))
         end
@@ -570,6 +450,12 @@ Module Type Stmt.
     Axiom wp_default : forall ρ Q, Q Normal |-- wp ρ Sdefault Q.
 
   End with_resolver.
+
+  (* ideally, we would like to use the following line, but [cbn] does not seem to
+       like the !.
+      Arguments wp_decl_var _ _ _ _ !_ _ /. *)
+  #[global] Arguments wp_decl_var _ _ _ _ _ _ _ _ _ _ /.
+  #[global] Arguments wp_decl _ _ _ _ _  _ _ _ /. (* ! should occur on [d] *)
 
 End Stmt.
 

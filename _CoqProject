@@ -129,6 +129,7 @@ theories/lang/cpp/logic/path_pred.v
 theories/lang/cpp/logic/operator.v
 theories/lang/cpp/logic/rep.v
 theories/lang/cpp/logic/heap_pred.v
+theories/lang/cpp/logic/cptr.v
 theories/lang/cpp/logic/wp.v
 theories/lang/cpp/logic/destroy.v
 theories/lang/cpp/logic/initializers.v

@@ -105,3 +105,17 @@ Definition class_name (t : type) : option globname :=
   | Tnamed gn => Some gn
   | _ => None
   end.
+
+(** [is_primitive t] returns [true] if [t] is a primitive type.
+ *)
+Definition is_primitive (t : type) : bool :=
+  match drop_qualifiers t with
+  | Tint _ _
+  | Tbool
+  | Tptr _
+  | Tnullptr
+  | Tfloat _
+  | Tmember_pointer _ _
+  | Tvoid => true
+  | _ => false
+  end.
