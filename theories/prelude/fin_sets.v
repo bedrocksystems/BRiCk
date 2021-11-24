@@ -10,6 +10,8 @@ Require Import bedrock.prelude.sets.
 
 (** * Small extensions to [stdpp.fin_sets]. *)
 
+(** TODO: Drop this once it lands in stdpp. *)
+#[global] Instance: Params (@set_map) 8 := {}.
 Section finset.
   #[local] Set Default Proof Using "Type*".
   Context `{FinSet A C}.
