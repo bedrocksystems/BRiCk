@@ -40,7 +40,7 @@ Deviations from the Standard
 In certain instances, |project|'s semantics deviates from the C++ standard.
 
 * Our semantics do not currently permit "pointer zapping". See :ref:`no-pointer-zapping`.
-* Function call semantics are do not currently (precisely) follow the standard. We believe that this encoding is sound but are currently working on an approach that more closely tracks teh standard text.
+* Function call semantics are do not currently (precisely) follow the standard. We believe that this encoding is sound but are currently working on an approach that more closely tracks the standard text.
 
 Extensions to the Standard
 ===========================
