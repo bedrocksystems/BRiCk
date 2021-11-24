@@ -27,6 +27,12 @@ Lemma trim_0_r:
     trim w 0 = 0.
 Proof. move=> w; rewrite /trim Z.mod_0_l; [ | apply Z.pow_nonzero ]; lia. Qed.
 
+Lemma trim_idem w v : trim w (trim w v) = trim w v.
+Proof.
+  rewrite /trim.
+  by rewrite Zmod_mod.
+Qed.
+
 (** [to_unsigned sz z] is used when C++ converts signed values to unsigned
     values.
 
