@@ -48,7 +48,6 @@ Module Type CPP_LOGIC_CLASS_MIXIN (Import CC : CPP_LOGIC_CLASS_BASE).
       := OfeT mpred (ofe_mixin (monPredO ti (iPropI _Σ))).
   End with_cpp.
 
-  Bind Scope bi_scope with bi_car.
   Bind Scope bi_scope with mpred.
 End CPP_LOGIC_CLASS_MIXIN.
 

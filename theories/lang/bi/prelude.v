@@ -47,6 +47,8 @@ Global Notation lexists := (bi_exist) (only parsing).
 
 Ltac split' := intros; apply (anti_symm (⊢)).
 
+Bind Scope bi_scope with bi_car.
+
 (* Charge notation levels *)
 Module ChargeNotation.
 
