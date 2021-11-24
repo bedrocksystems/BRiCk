@@ -1,0 +1,83 @@
+(**
+ * Copyright (C) 2021 BedRock Systems, Inc.
+ * All rights reserved.
+ *
+ * SPDX-License-Identifier: LGPL-2.1 WITH BedRock Exception for use over network, see repository root for details.
+ *
+ *
+ * Some of the following code is derived from code original to the
+ * Iris project. That original code is
+ *
+ *	Copyright Iris developers and contributors
+ *
+ * and used according to the following license.
+ *
+ *	SPDX-License-Identifier: BSD-3-Clause
+ *
+ * Original Code:
+ * https://gitlab.mpi-sws.org/iris/iris/-/blob/bbaf3eaf932b4540f5e8c51545930e8591e5cf14/iris/bi/notation.v
+ *
+ * Original Iris License:
+ * https://gitlab.mpi-sws.org/iris/iris/-/blob/bbaf3eaf932b4540f5e8c51545930e8591e5cf14/LICENSE-CODE
+
+ *)
+
+(** These conflict with AC/AU.
+Reserved Infix "<<" (at level 35).	(** cf [≪] *)
+Reserved Infix ">>" (at level 35).	(** cf [≫] *)
+*)
+Reserved Infix "\" (at level 40, left associativity).	(** cf [∖] *)
+
+(** ** Iris big ops *)
+(**
+ * We stick with the levels and associativity used in Iris' big ops
+ * notation. Compared to that notation, we:
+ *
+ * - add an optional break and indentation after binders
+ * (significantly improving readability)
+ *
+ * - use [**], [/\], [\/], [ |-> ] instead of [∗], [∧], [∨], [↦]
+ * (slightly improving typeability)
+ *)
+
+(** Big separating conjunction *)
+
+Reserved Notation "'[**' 'list]' i |-> x ∈ l , P"
+  (at level 200, l at level 10, i, x at level 1, right associativity,
+   format "'[  ' [**  list]  i  |->  x  ∈  l ,  '/' P ']'").
+Reserved Notation "'[**' 'list]' x ∈ l , P"
+  (at level 200, l at level 10, x at level 1, right associativity,
+   format "'[  ' [**  list]  x  ∈  l ,  '/' P ']'").
+
+Reserved Notation "'[**' 'map]' k |-> x ∈ m , P"
+  (at level 200, m at level 10, k, x at level 1, right associativity,
+   format "'[  ' [**  map]  k  |->  x  ∈  m ,  '/' P ']'").
+Reserved Notation "'[**' 'map]' x ∈ m , P"
+  (at level 200, m at level 10, x at level 1, right associativity,
+   format "'[  ' [**  map]  x  ∈  m ,  '/' P ']'").
+
+Reserved Notation "'[**' 'set]' x ∈ X , P"
+  (at level 200, X at level 10, x at level 1, right associativity,
+   format "'[  ' [**  set]  x  ∈  X ,  '/'  P ']'").
+
+Reserved Notation "'[**' 'mset]' x ∈ X , P"
+  (at level 200, X at level 10, x at level 1, right associativity,
+   format "'[  ' [**  mset]  x  ∈  X ,  '/' P ']'").
+
+(** Big conjunction *)
+
+Reserved Notation "'[/\' 'list]' i |-> x ∈ l , P"
+  (at level 200, l at level 10, i, x at level 1, right associativity,
+   format "'[  ' [/\  list]  i  |->  x  ∈  l ,  '/' P ']'").
+Reserved Notation "'[/\' 'list]' x ∈ l , P"
+  (at level 200, l at level 10, x at level 1, right associativity,
+   format "'[  ' [/\  list]  x  ∈  l ,  '/' P ']'").
+
+(** Big disjunction *)
+
+Reserved Notation "'[\/' 'list]' i |-> x ∈ l , P"
+  (at level 200, l at level 10, i, x at level 1, right associativity,
+   format "'[  ' [\/  list]  i  |->  x  ∈  l ,  '/' P ']'").
+Reserved Notation "'[\/' 'list]' x ∈ l , P"
+  (at level 200, l at level 10, x at level 1, right associativity,
+   format "'[  ' [\/  list]  x  ∈  l ,  '/' P ']'").
