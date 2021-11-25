@@ -33,7 +33,7 @@ From iris.algebra Require Export cmra.
 From iris.algebra Require Import updates local_updates.
 From iris.prelude Require Import options.
 
-(** Misplaced: Upstream to [bedrock.algebra.coGset] or [iris.algebra.coGset]. *)
+(** Misplaced: Upstream to [iris.algebra.coGset]? *)
 
 (** * The union CMRA *)
 Section coGset.
