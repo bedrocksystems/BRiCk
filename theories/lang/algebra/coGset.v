@@ -1,8 +1,8 @@
-(**
- * Copyright (C) 2021 BedRock Systems, Inc.
- * All rights reserved.
+(*
+ * Copyright (c) 2020 BedRock Systems, Inc.
  *
- * SPDX-License-Identifier: LGPL-2.1 WITH BedRock Exception for use over network, see repository root for details.
+ * This software is distributed under the terms of the BedRock Open-Source License.
+ * See the LICENSE-BedRock file in the repository root for details.
  *
  * This file defines union and disjoint union CMRAs for [coGset A]. It
  * was originally written (and not distributed) in March 2020 by David
