@@ -1,7 +1,8 @@
 #
-# Copyright (C) BedRock Systems Inc. 2019-2020
+# Copyright (c) 2019-2020 BedRock Systems, Inc.
 #
-# SPDX-License-Identifier: LGPL-2.1 WITH BedRock Exception for use over network, see repository root for details.
+# This software is distributed under the terms of the BedRock Open-Source License.
+# See the LICENSE-BedRock file in the repository root for details.
 #
 
 default_target: coq cpp2v

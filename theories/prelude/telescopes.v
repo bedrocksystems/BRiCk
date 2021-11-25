@@ -1,7 +1,8 @@
 (*
- * Copyright (C) BedRock Systems Inc. 2020-21
+ * Copyright (c) 2020-2021 BedRock Systems, Inc.
  *
- * SPDX-License-Identifier: LGPL-2.1 WITH BedRock Exception for use over network, see repository root for details.
+ * This software is distributed under the terms of the BedRock Open-Source License.
+ * See the LICENSE-BedRock file in the repository root for details.
  *)
 Require Export stdpp.telescopes.
 Require Export bedrock.prelude.base.
