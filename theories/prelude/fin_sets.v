@@ -109,14 +109,14 @@ End set_map.
 
 Section set_map.
   #[local] Set Default Proof Using "Type*".
-  Context `{FinSet A C, Set_ B D}.
+  Context `{FinSet A C, FinSet B D}.
 
-  Lemma set_map_empty_iff `{FinSet B D} (f : A -> B) X :
+  Lemma set_map_empty_iff (f : A -> B) X :
     set_map (C:=C) (D:=D) f X ≡ ∅ <-> X ≡ ∅.
   Proof.
     split; first last.
     - move=>->. by rewrite set_map_empty.
-    - rewrite - !size_empty_iff.
+    - rewrite -!size_empty_iff.
       pattern X. apply set_ind; clear X; first by intros ?? ->.
       { by rewrite size_empty. }
       intros x X Hni IH.
@@ -129,12 +129,12 @@ Section set_map.
       by rewrite set_map_empty difference_empty size_singleton.
   Qed.
 
-  Lemma set_map_empty_iff_L `{FinSet B D, !LeibnizEquiv C, !LeibnizEquiv D}
+  Lemma set_map_empty_iff_L `{!LeibnizEquiv C, !LeibnizEquiv D}
       (f : A -> B) X :
     set_map (C:=C) (D:=D) f X = ∅ <-> X = ∅.
   Proof. unfold_leibniz. exact: set_map_empty_iff. Qed.
 
-  Lemma size_map_inj `{FinSet B D} (f : A -> B) `{!Inj (=) (=) f} (X : C) :
+  Lemma size_map_inj (f : A -> B) `{!Inj (=) (=) f} (X : C) :
     size (C:=D) (set_map f X) = size X.
   Proof.
     pattern X. apply set_ind; clear X.
