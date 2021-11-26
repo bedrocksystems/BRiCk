@@ -61,6 +61,7 @@ theories/lang/prelude/addr.v
 
 # OFE modules
 theories/lang/algebra/telescopes.v
+theories/lang/algebra/coGset.v
 
 # BI-polymorphic modules
 theories/lang/bi/entailsN.v
