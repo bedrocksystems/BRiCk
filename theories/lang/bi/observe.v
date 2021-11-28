@@ -293,7 +293,7 @@ Section monpred.
     by rewrite monPred_at_only_provable.
   Qed.
 
-  Lemma monPred_observe_2_only_provalbe (Q : Prop) P1 P2
+  Lemma monPred_observe_2_only_provable (Q : Prop) P1 P2
     (Hobs : ∀ i, Observe2 [| Q |] (P1 i) (P2 i)) :
     Observe2 [| Q |] P1 P2.
   Proof.
