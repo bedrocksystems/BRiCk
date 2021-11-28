@@ -7,7 +7,7 @@ From iris.bi Require Import bi.
 (* This export ensures that [upredI] is registered as a canonical structure everywhere. *)
 From iris.base_logic Require Export bi.
 From iris.proofmode Require Import classes.
-From bedrock.prelude Require Export base gmap letstar list_numbers reserved_notation.
+From bedrock.prelude Require Export base gmap letstar list_numbers.
 From bedrock.lang.bi Require Export only_provable derived_laws.
 
 #[global] Instance into_pure_emp PROP : IntoPure (PROP := PROP) emp%I True.
@@ -44,9 +44,6 @@ Global Notation lor := (bi_or) (only parsing).
 Global Notation limpl := (bi_impl) (only parsing).
 Global Notation lforall := (bi_forall) (only parsing).
 Global Notation lexists := (bi_exist) (only parsing).
-
-Infix "∖" := difference (only parsing) : stdpp_scope.
-Infix "\" := difference : stdpp_scope.
 
 Ltac split' := intros; apply (anti_symm (⊢)).
 
