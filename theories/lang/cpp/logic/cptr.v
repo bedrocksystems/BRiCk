@@ -3,7 +3,7 @@
  * This software is distributed under the terms of the BedRock Open-Source License.
  * See the LICENSE-BedRock file in the repository root for details.
  *)
-From iris.bi Require Export monpred.
+From bedrock.lang.bi Require Export monpred.
 From iris.proofmode Require Import tactics monpred.
 From iris_string_ident Require Import ltac2_string_ident.
 
