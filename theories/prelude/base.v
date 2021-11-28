@@ -66,6 +66,11 @@ Section flip_app.
   Proof. apply: flip_assoc. Qed.
 End flip_app.
 
+(** Not an instance to avoid TC resolution loops *)
+Lemma subrelation_flip {A} (R S : relation A) :
+  subrelation R S -> subrelation (flip R) (flip S).
+Proof. intros HR x y ?. exact: HR. Qed.
+
 Lemma negb_bool_decide `{Hdec : Decision P} : negb (bool_decide P) = bool_decide (not P).
 Proof. by case: Hdec. Qed.
 
