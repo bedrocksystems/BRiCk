@@ -1,9 +1,9 @@
 [![pipeline status](https://gitlab.com/bedrocksystems/cpp2v/badges/master/pipeline.svg)](https://gitlab.com/bedrocksystems/cpp2v/commits/master)
 
 
-# cpp2v
+# BRiCk
 
-Tool for converting C++ files into Coq files.
+A tool for converting C++ files into Coq files accompanied with a C++ axiomatic semantics.
 
 ## Running
 
