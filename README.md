@@ -3,7 +3,7 @@
 
 # BRiCk
 
-Tool for converting C++ files into Coq files.
+A tool for converting C++ files into Coq files accompanied with a C++ axiomatic semantics.
 
 ## Running
 
