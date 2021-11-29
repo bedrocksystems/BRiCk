@@ -3,6 +3,7 @@
 .coqdeps.d
 Makefile.coq
 Makefile.coq.conf
+Makefile.coqfast
 *.glob
 *.vo
 *.vok
