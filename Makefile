@@ -25,7 +25,7 @@ DOCOPEN ?= xdg-open
 ROOT := $(shell pwd)
 include Makefile.doc
 
-OPAM_PREFIX := $(shell opam config var prefix)
+OPAM_PREFIX := $(shell opam var prefix)
 BINDIR = $(OPAM_PREFIX)/bin
 
 
