@@ -55,9 +55,7 @@ To do this, |project| exposes a separation logic assertion `pinned_ptr : ptr -> 
 Function Call Semantics
 ------------------------
 
-.. todo::
-
-  @gregory determine whether this is going to change before the release.
+.. todo:: @gregory needs to massage this some more and (potentially) split this off into another file which covers the various `wp_xxx` parameters.
 
 Following options:
 
