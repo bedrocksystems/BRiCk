@@ -301,9 +301,7 @@ This decoupling enables useful high-level reasoning for verifiers after allocati
 Working with the low-level representation of objects
 --------------------------------------------------------------------------------
 
-.. @paolo this page requires credentials.
-
-Consider the following code that does not exhibit undefined behavior (which can be checked using `Cerberus <https://cerberus.cl.cam.ac.uk/cerberus>`_):
+Consider the following code that does not exhibit undefined behavior (which can be checked using `Cerberus <https://www.cl.cam.ac.uk/~pes20/cerberus/>`_):
 
 .. code-block:: cpp
 
