@@ -37,8 +37,12 @@ variables:
   LLVM_ALT_MAJ_VER: "10"
   cur_main_docker_img: registry.gitlab.com/bedrocksystems/docker-image:cpp2v-llvm${LLVM_CUR_MAJ_VER}
   alt_main_docker_img: registry.gitlab.com/bedrocksystems/docker-image:cpp2v-llvm${LLVM_ALT_MAJ_VER}
-  public_main_docker_img: registry.gitlab.com/bedrocksystems/docker-image:cpp2v-public-llvm${LLVM_PUBLIC_CUR_MAJ_VER}
   fm_docs_img: registry.gitlab.com/bedrocksystems/docker-image:fm-docs
+
+.public:
+  image: registry.gitlab.com/bedrocksystems/docker-image:cpp2v-public-llvm${LLVM_PUBLIC_CUR_MAJ_VER}
+  variables:
+    LLVM_MAJ_VER: ${LLVM_PUBLIC_CUR_MAJ_VER}
 
 stages:
   - build
@@ -125,10 +129,9 @@ build_alternate:
     LLVM_MAJ_VER: ${LLVM_ALT_MAJ_VER}
 
 build_public:
-  extends: .build_aux
-  image: ${public_main_docker_img}
-  variables:
-    LLVM_MAJ_VER: ${LLVM_PUBLIC_CUR_MAJ_VER}
+  extends:
+  - .build_aux
+  - .public
 
 test_latest:
   extends: .test
@@ -148,13 +151,11 @@ test_alternate:
     LLVM_MAJ_VER: ${LLVM_ALT_MAJ_VER}
 
 test_public:
-  extends: .test
+  extends:
+  - .test
+  - .public
   needs:
     - build_public
-  # Must match build_public:
-  image: ${public_main_docker_img}
-  variables:
-    LLVM_MAJ_VER: ${LLVM_PUBLIC_CUR_MAJ_VER}
 
 prepare_env:
   image: ${cur_main_docker_img}
