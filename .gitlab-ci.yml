@@ -33,16 +33,24 @@
 
 variables:
   LLVM_CUR_MAJ_VER: "12"
-  LLVM_PUBLIC_CUR_MAJ_VER: "12"
-  LLVM_ALT_MAJ_VER: "10"
-  cur_main_docker_img: registry.gitlab.com/bedrocksystems/docker-image:cpp2v-llvm${LLVM_CUR_MAJ_VER}
-  alt_main_docker_img: registry.gitlab.com/bedrocksystems/docker-image:cpp2v-llvm${LLVM_ALT_MAJ_VER}
-  fm_docs_img: registry.gitlab.com/bedrocksystems/docker-image:fm-docs
+  docker_img_prefix: registry.gitlab.com/bedrocksystems/docker-image
+  fm_docs_img: ${docker_img_prefix}:fm-docs
+
+# Configs
+.latest:
+  image: ${docker_img_prefix}:cpp2v-llvm${LLVM_CUR_MAJ_VER}
+  variables:
+    LLVM_MAJ_VER: ${LLVM_CUR_MAJ_VER}
+
+.alternate:
+  image: ${docker_img_prefix}:cpp2v-llvm10
+  variables:
+    LLVM_MAJ_VER: 10
 
 .public:
-  image: registry.gitlab.com/bedrocksystems/docker-image:cpp2v-public-llvm${LLVM_PUBLIC_CUR_MAJ_VER}
+  image: ${docker_img_prefix}:cpp2v-public-llvm12
   variables:
-    LLVM_MAJ_VER: ${LLVM_PUBLIC_CUR_MAJ_VER}
+    LLVM_MAJ_VER: 12
 
 stages:
   - build
@@ -109,10 +117,9 @@ stages:
     - fm.shared
 
 build_latest:
-  extends: .build
-  image: ${cur_main_docker_img}
-  variables:
-    LLVM_MAJ_VER: ${LLVM_CUR_MAJ_VER}
+  extends:
+    - .build
+    - .latest
   after_script:
     # ARTIFACT_JOB_ID is used for downstream jobs to get artifacts from
     # this build. The value of CI_JOB_ID is only available in this
@@ -123,47 +130,42 @@ build_latest:
       dotenv: build.env
 
 build_alternate:
-  extends: .build_aux
-  image: ${alt_main_docker_img}
-  variables:
-    LLVM_MAJ_VER: ${LLVM_ALT_MAJ_VER}
+  extends:
+    - .build_aux
+    - .alternate
 
 build_public:
   extends:
-  - .build_aux
-  - .public
+    - .build_aux
+    - .public
 
 test_latest:
-  extends: .test
-  image: ${cur_main_docker_img}
+  extends:
+    - .test
+    - .latest
   needs:
     - build_latest
-  variables:
-    LLVM_MAJ_VER: ${LLVM_CUR_MAJ_VER}
 
 test_alternate:
-  extends: .test
+  extends:
+    - .test
+    - .alternate
   needs:
     - build_alternate
-  # Must match build_alternate:
-  image: ${alt_main_docker_img}
-  variables:
-    LLVM_MAJ_VER: ${LLVM_ALT_MAJ_VER}
 
 test_public:
   extends:
-  - .test
-  - .public
+    - .test
+    - .public
   needs:
     - build_public
 
 prepare_env:
-  image: ${cur_main_docker_img}
+  extends:
+    - .latest
   stage: prepare_env_for_downstream
   needs:
     - build_latest
-  variables:
-    LLVM_MAJ_VER: ${LLVM_CUR_MAJ_VER}
   script:
     # The branch of cpp2v is by default master,
     # but if CI::cpp2v-same-branch label is specified,
@@ -222,20 +224,18 @@ build_cpp2v_master:
     - master
 
 release_latest:
-  extends: .release
-  image: ${cur_main_docker_img}
+  extends:
+    - .release
+    - .latest
   needs:
     - build_latest
-  variables:
-    LLVM_MAJ_VER: ${LLVM_CUR_MAJ_VER}
 
 # release_alternate:
-#   extends: .release
-#   image: ${alt_main_docker_img}
+#   extends:
+#   - .release
+#   - .alternate
 #   needs:
 #     - build_alternate
-#   variables:
-#     LLVM_MAJ_VER: ${LLVM_ALT_MAJ_VER}
 
 
 prepare_pages:
