@@ -43,17 +43,17 @@ Module Type Expr.
 
   Section with_resolve.
     Context `{Σ : cpp_logic thread_info} {resolve:genv}.
-    Variables (M : coPset) (ρ : region).
+    Variables (ρ : region).
 
-    #[local] Notation wp_lval := (wp_lval M ρ).
-    #[local] Notation wp_prval := (wp_prval M ρ).
-    #[local] Notation wp_xval := (wp_xval M ρ).
-    #[local] Notation wp_init := (wp_init M ρ).
-    #[local] Notation wp_operand := (wp_operand M ρ).
-    #[local] Notation wp_initialize := (wp_initialize M ρ).
-    #[local] Notation wp_discard := (wp_discard M ρ).
-    #[local] Notation wp_glval := (wp_glval M ρ).
-    #[local] Notation wp_args := (wp_args M ρ).
+    #[local] Notation wp_lval := (wp_lval ρ).
+    #[local] Notation wp_prval := (wp_prval ρ).
+    #[local] Notation wp_xval := (wp_xval ρ).
+    #[local] Notation wp_init := (wp_init ρ).
+    #[local] Notation wp_operand := (wp_operand ρ).
+    #[local] Notation wp_initialize := (wp_initialize ρ).
+    #[local] Notation wp_discard := (wp_discard ρ).
+    #[local] Notation wp_glval := (wp_glval ρ).
+    #[local] Notation wp_args := (wp_args ρ).
     #[local] Notation fspec := (fspec resolve.(genv_tu).(globals)).
     #[local] Notation mspec := (mspec resolve.(genv_tu).(globals)).
 
@@ -1070,15 +1070,6 @@ Module Type Expr.
   (* `Earrayloop_init` needs to extend the region, so we need to start a new section. *)
   Section with_resolve__arrayloop.
     Context `{Σ : cpp_logic thread_info} {resolve:genv}.
-    Variables (M : coPset).
-
-    (* These are the only ones that we need here. *)
-    #[local] Notation wp_lval := (wp_lval M).
-    #[local] Notation wp_prval := (wp_prval M).
-    #[local] Notation wp_operand := (wp_operand M).
-    #[local] Notation wp_init := (wp_init M).
-    #[local] Notation wp_initialize := (wp_initialize M).
-    #[local] Notation wp_glval := (wp_glval M).
 
     (* `Earrayloop_init` and `Earrayloop_index` correspond, respectively,
        to the `ArrayInitLoopExpr`[1] and `ArrayInitIndexExpr`[2] expressions

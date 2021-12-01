@@ -20,9 +20,9 @@ Section with_Σ.
 
   Implicit Type (Q : val → mpred).
 
-  #[local] Notation wp_prval := (wp_prval M ρ).
-  #[local] Notation wp_operand := (wp_operand M ρ).
-  #[local] Notation wp_args := (wp_args M ρ).
+  #[local] Notation wp_prval := (wp_prval ρ).
+  #[local] Notation wp_operand := (wp_operand ρ).
+  #[local] Notation wp_args := (wp_args ρ).
 
   (* Builtins for Atomic operations. We follow those provided by GCC.
    * https://gcc.gnu.org/onlinedocs/gcc/_005f_005fatomic-Builtins.html
@@ -36,8 +36,6 @@ Section with_Σ.
       forall {resolve:genv}, coPset ->
         AtomicOp -> type (* the access type of the atomic operation *) ->
         list val -> (val -> mpred) -> mpred.
-
-  #[local] Notation wp_atom' := (@wp_atom resolve M) (only parsing).
 
   Definition pointee_type (t : type) : option type :=
     match t with
@@ -78,13 +76,15 @@ Section with_Σ.
         | None => False
         | Some acc_type =>
           wp_args targs es (fun (vs : list val) (free : FreeTemps) =>
-            wp_atom' ao acc_type vs (fun v => Q v free))
+            wp_atom top ao acc_type vs (fun v => Q v free))
         end)
     |-- wp_operand (Eatomic ao es ty) Q.
   (** ^ TODO the calling convention for atomics should change to be
       more uniform. e.g. atomics should be treated more like builtin
       functions.
    *)
+
+  #[local] Notation wp_atom' := (@wp_atom resolve M) (only parsing).
 
   (* Memory Ordering Patterns: Now we only have _SEQ_CST *)
   Definition _SEQ_CST := Vint 5.

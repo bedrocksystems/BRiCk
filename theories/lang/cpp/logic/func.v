@@ -203,11 +203,11 @@ Section with_cpp.
         let ρ := Remp None f.(f_return) in
         bind_vars f.(f_params) args ρ (fun ρ frees =>
         |> if is_void f.(f_return) then
-             wp ⊤ ρ body (Kfree frees $ void_return (|={⊤}=> |> Q Vvoid))
+             wp ρ body (Kfree frees $ void_return (|={⊤}=> |> Q Vvoid))
            else
-             wp ⊤ ρ body (Kfree frees $ val_return (fun x => |={⊤}=> |> Q x)))
+             wp ρ body (Kfree frees $ val_return (fun x => |={⊤}=> |> Q x)))
       | Builtin builtin =>
-        wp_builtin ⊤ builtin (Tfunction (cc:=f.(f_cc)) f.(f_return) (List.map snd f.(f_params))) args Q
+        wp_builtin builtin (Tfunction (cc:=f.(f_cc)) f.(f_return) (List.map snd f.(f_params))) args Q
       end
     end.
 
@@ -229,9 +229,9 @@ Section with_cpp.
         let ρ := Remp (Some thisp) m.(m_return) in
         bind_vars m.(m_params) rest_vals ρ (fun ρ frees =>
         |> if is_void m.(m_return) then
-             wp ⊤ ρ body (Kfree frees (void_return (|={⊤}=> |>Q Vvoid)))
+             wp ρ body (Kfree frees (void_return (|={⊤}=> |>Q Vvoid)))
            else
-             wp ⊤ ρ body (Kfree frees (val_return (fun x => |={⊤}=> |>Q x))))
+             wp ρ body (Kfree frees (val_return (fun x => |={⊤}=> |>Q x))))
       | _ => False
       end
     | Some _ => UNSUPPORTED "defaulted methods"%bs
@@ -273,7 +273,7 @@ Section with_cpp.
           match is' with
           | nil =>
             (* there is a *unique* initializer for this field *)
-            wpi ⊤ ρ cls this i (wpi_members ρ cls this members inits Q)
+            wpi ρ cls this i (wpi_members ρ cls this members inits Q)
           | _ =>
             (* there are multiple initializers for this field *)
             ERROR $ "multiple initializers for field: " ++ cls ++ "::" ++ m.(mem_name)
@@ -301,7 +301,7 @@ Section with_cpp.
         ERROR $ "missing base class initializer: " ++ cls
       | i :: nil =>
         (* there is an initializer for this class *)
-        wpi ⊤ ρ cls this i (wpi_bases ρ cls this bases inits Q)
+        wpi ρ cls this i (wpi_bases ρ cls this bases inits Q)
       | _ :: _ :: _ =>
         (* there are multiple initializers for this, so we fail *)
         ERROR $ "multiple initializers for base: " ++ cls ++ "::" ++ b
@@ -345,7 +345,7 @@ Section with_cpp.
       | _ :: nil =>
         if bool_decide (drop_qualifiers ty = Tnamed cls) then
           (* this is a delegating constructor, simply delegate. *)
-          wp_init ⊤ ρ this e (fun _ frees => interp frees Q)
+          wp_init ρ this e (fun _ frees => interp frees Q)
         else
           (* the type names do not match, this should never happen *)
           ERROR "type name mismatch"
@@ -395,7 +395,7 @@ Section with_cpp.
       | _ :: nil =>
         if bool_decide (drop_qualifiers ty = Tnamed cls) then
           (* this is a delegating constructor, simply delegate *)
-          wp_init ⊤ ρ this e (fun _ frees => interp frees Q)
+          wp_init ρ this e (fun _ frees => interp frees Q)
         else
           (* the type names do not match, this should never happen *)
           ERROR "type name mismatch"
@@ -477,7 +477,7 @@ Section with_cpp.
           |> let ρ := Remp (Some thisp) Tvoid in
              bind_vars ctor.(c_params) rest_vals ρ (fun ρ frees =>
                (wp_struct_initializer_list cls ρ ctor.(c_class) thisp inits
-                  (wp ⊤ ρ body (Kfree frees (void_return (|={⊤}=> |> Q Vvoid))))))
+                  (wp ρ body (Kfree frees (void_return (|={⊤}=> |> Q Vvoid))))))
         | Some (Gunion union) =>
         (* this is a union *)
           thisp |-> tblockR ty 1 **
@@ -487,7 +487,7 @@ Section with_cpp.
           |> let ρ := Remp (Some thisp) Tvoid in
              bind_vars ctor.(c_params) rest_vals ρ (fun ρ frees =>
                (wp_union_initializer_list union ρ ctor.(c_class) thisp inits
-                  (wp ⊤ ρ body (Kfree frees (void_return (|={⊤}=> |> Q Vvoid))))))
+                  (wp ρ body (Kfree frees (void_return (|={⊤}=> |> Q Vvoid))))))
         | Some _ =>
           ERROR $ "constructor for non-aggregate (" ++ ctor.(c_class) ++ ")"
         | None => False
@@ -590,7 +590,7 @@ Section with_cpp.
       | Some epilog , Vptr thisp :: nil =>
         let ρ := Remp (Some thisp) Tvoid in
           |> (* the function prolog consumes a step. *)
-             wp ⊤ ρ body (void_return (epilog thisp))
+             wp ρ body (void_return (epilog thisp))
       | _ , _ => False
       end
     end%bs%I.

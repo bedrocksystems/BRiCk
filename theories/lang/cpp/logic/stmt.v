@@ -16,17 +16,6 @@ Module Type Stmt.
    *)
   Section with_resolver.
     Context `{Σ : cpp_logic thread_info} {resolve:genv}.
-    Variables (M : coPset).
-
-    Local Notation wp := (wp M).
-    Local Notation wp_lval := (wp_lval M).
-    Local Notation wp_prval := (wp_prval M).
-    Local Notation wp_operand := (wp_operand M).
-    Local Notation wp_xval := (wp_xval M).
-    Local Notation wp_init := (wp_init M).
-    Local Notation wp_discard := (wp_discard M).
-
-    Local Notation glob_def := (glob_def resolve) (only parsing).
 
     Implicit Types Q : KpredI.
 
@@ -73,8 +62,8 @@ Module Type Stmt.
 
     Axiom wp_return : forall ρ e (Q : KpredI),
           (let rty := erase_qualifiers (get_return_type ρ) in
-           wp_call_initialize M ρ rty e (fun v _ frees =>
-                                           interp frees (Q (ReturnVal v))))
+           wp_call_initialize ρ rty e (fun v _ frees =>
+                                         interp frees (Q (ReturnVal v))))
            (* ^ NOTE discard [free] because we are extruding the scope of the value *)
        |-- wp ρ (Sreturn (Some e)) Q.
 
@@ -117,7 +106,7 @@ Module Type Stmt.
             interp frees (k (Rbind x addr ρ) (FreeTemps.delete rty addr))
         in
         match init with
-        | Some init => wp_initialize M ρ_init ty addr init $ fun frees => destroy frees
+        | Some init => wp_initialize ρ_init ty addr init $ fun frees => destroy frees
         | None => default_initialize ty addr (fun frees => destroy frees)
         end.
 
@@ -186,7 +175,7 @@ Module Type Stmt.
         let do_init :=
             match init with
             | None => default_initialize ty (_global nm) (k ρ)
-            | Some init => wp_initialize M ρ_init ty (_global nm) init (k ρ)
+            | Some init => wp_initialize ρ_init ty (_global nm) init (k ρ)
             end
         in
         if ts then
@@ -454,8 +443,8 @@ Module Type Stmt.
   (* ideally, we would like to use the following line, but [cbn] does not seem to
        like the !.
       Arguments wp_decl_var _ _ _ _ !_ _ /. *)
-  #[global] Arguments wp_decl_var _ _ _ _ _ _ _ _ _ _ /.
-  #[global] Arguments wp_decl _ _ _ _ _  _ _ _ /. (* ! should occur on [d] *)
+  #[global] Arguments wp_decl_var _ _ _ _ _ _ _ _ _ /.
+  #[global] Arguments wp_decl _ _ _ _ _ _ _ /. (* ! should occur on [d] *)
 
 End Stmt.
 
