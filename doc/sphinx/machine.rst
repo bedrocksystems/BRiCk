@@ -4,7 +4,7 @@
 Assembly Interoperation
 #############################################################
 
-This section describes the mechanisms that |project| uses to connect C++ concepts to the underlying generated machine code
+This section describes the mechanisms that |project| uses to connect C++ concepts to the underlying generated machine code.
 These connections are generally necessary in low-level code that inter-operates with assembly.
 For example, accessing C++ memory from assembly, calling C++ functions from assembly, changing the address space that the C++ program is running in, etc.
 
