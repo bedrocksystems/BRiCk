@@ -66,6 +66,8 @@ stages:
       - build/gitshas.txt
       - build/cpp2v
       - build/bedrock
+  tags:
+    - fm.shared
 
 # Build both the merge request job, and the branch job, whose artifact is to be
 # used downstream.
@@ -98,6 +100,8 @@ stages:
     - if: '$CI_MERGE_REQUEST_LABELS =~ /.*CI-skip-proofs.*/'
       when: never
     - if: $CI_MERGE_REQUEST_IID
+  tags:
+    - fm.shared
 
 build_latest:
   extends: .build
@@ -264,6 +268,8 @@ prepare_pages:
   artifacts:
     paths:
       - doc/sphinx/_build
+  tags:
+    - fm.shared
 
 pages:
   stage: pages
@@ -283,3 +289,5 @@ pages:
   artifacts:
     paths:
       - public
+  tags:
+    - fm.shared
