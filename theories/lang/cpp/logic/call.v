@@ -54,40 +54,17 @@ Section with_resolve.
   Lemma wp_args'_frame_strong : forall ts es Q Q',
       Forall vs free, [| length vs = length es |] -* Q vs free -* Q' vs free
       |-- wp_args' ts es Q -* wp_args' ts es Q'.
-  Proof. (*
+  Proof.
     elim; destruct es => /=; try solve [ by intros; iIntros "? []" ].
     { by iIntros (? ?) "H"; iApply "H". }
-    { destruct (valcat_of_type a) => /=; intros.
-      { iIntros "X Y".
-        iDestruct "Y" as (Qa) "[Y Ys]".
-        iExists Qa. iFrame.
-        iRevert "Ys". iApply H.
-        iIntros (??) "% H"; iIntros (??) "H'".
-        iDestruct ("H" with "H'") as "H".
-        iRevert "H". iApply "X". iPureIntro. simpl; eauto. }
-      { case_match.
-        { iIntros "X Y" (?).
-          iDestruct ("Y" $! a0) as (?) "Y".
-          iExists _. iDestruct "Y" as "[$ A]".
-          iRevert "A"; iApply H.
-          iIntros (??) "% Y"; iIntros (?) "Z".
-          iApply "X"; first by simpl; eauto.
-            by iApply "Y". }
-        { iIntros "X Y".
-          iDestruct "Y" as (?) "Y".
-          iExists _; iDestruct "Y" as "[$ Y]".
-          iRevert "Y"; iApply H.
-          iIntros (??) "% Y"; iIntros (??) "Z".
-          iApply "X"; first by simpl; eauto.
-          by iApply "Y". } }
-      { iIntros "X Y".
-        iDestruct "Y" as (?) "[Y Ys]".
-        iExists _. iFrame.
-        iRevert "Ys". iApply H.
-        iIntros (??) "% H"; iIntros (??) "H'".
-        iDestruct ("H" with "H'") as "H".
-        iRevert "H". iApply "X". iPureIntro. simpl; eauto. } }
-  Qed. *) Admitted.
+    { intros. iIntros "X Y".
+      iDestruct "Y" as (Qa) "[Y Ys]".
+      iExists Qa. iFrame.
+      iRevert "Ys". iApply H.
+      iIntros (??) "% Y"; iIntros (???) "?".
+      iApply "X"; simpl; eauto.
+      by iApply "Y". }
+  Qed.
 
   Definition wp_args ts es Q :=
     wp_args' ts es (fun vs frees => Q vs (FreeTemps.pars frees)).
