@@ -273,6 +273,10 @@ prepare_pages:
 
 pages:
   stage: pages
+  # Just Gitlab's default.
+  # TODO: an even lighter one would work, or maybe we
+  # could move this step into prepare_pages somehow?
+  image: ruby:2.5
   needs:
     - prepare_pages
   script:
