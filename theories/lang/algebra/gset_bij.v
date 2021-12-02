@@ -7,7 +7,6 @@
 Require Export iris.algebra.lib.gset_bij.
 Require Import bedrock.prelude.base.
 
-(** PDS: Misplaced. *)
 Section gset_bij.
   Context `{Countable A, Countable B}.
   Implicit Types a : A.
