@@ -101,13 +101,15 @@ write_globals(::Module &mod, CoqPrinter &print, ClangPrinter &cprint) {
             print_path(print, td->getDeclContext(), true);
             print.output() << td->getNameAsString() << "'\" :=" << fmt::nbsp;
             cprint.printQualType(td->getUnderlyingType(), print);
-            print.output() << " (in custom cppglobal at level 0)." << fmt::line;
+            print.output() << " (only parsing, in custom cppglobal at level 0)."
+                           << fmt::line;
         } else if (const auto *ta = dyn_cast<TypeAliasDecl>(def)) {
             print.output() << "Notation \"'";
             print_path(print, ta->getDeclContext(), true);
             print.output() << ta->getNameAsString() << "'\" :=" << fmt::nbsp;
             cprint.printQualType(ta->getUnderlyingType(), print);
-            print.output() << " (only parsing, in custom cppglobal at level 0)." << fmt::line;
+            print.output() << " (only parsing, in custom cppglobal at level 0)."
+                           << fmt::line;
         } else if (isa<VarDecl>(def) || isa<EnumDecl>(def) ||
                    isa<EnumConstantDecl>(def)) {
         } else {
