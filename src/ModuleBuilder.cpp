@@ -17,18 +17,18 @@
 
 using namespace clang;
 
-class ElaborateModule : public DeclVisitorArgs<ElaborateModule, void, bool> {
+class Elaborate : public DeclVisitorArgs<Elaborate, void, bool> {
 private:
     clang::CompilerInstance *const ci_;
     std::set<int64_t> visited_;
 
 public:
-    ElaborateModule(clang::CompilerInstance *ci) : ci_(ci) {}
+    Elaborate(clang::CompilerInstance *ci) : ci_(ci) {}
 
     void Visit(Decl *d, bool s) {
         if (visited_.find(d->getID()) == visited_.end()) {
             visited_.insert(d->getID());
-            DeclVisitorArgs<ElaborateModule, void, bool>::Visit(d, s);
+            DeclVisitorArgs<Elaborate, void, bool>::Visit(d, s);
         }
     }
 
@@ -392,7 +392,7 @@ build_module(clang::TranslationUnitDecl *tu, ::Module &mod, Filter &filter,
         // these at all. This would decrease our file representation size and
         // bring us a little bit closer to the semantics rather than relying
         // on choices for how clang implements defaulted operations.
-        ElaborateModule(ci).VisitTranslationUnitDecl(tu, false);
+        Elaborate(ci).VisitTranslationUnitDecl(tu, false);
 
         // Once we are done visiting the AST, we run all the actions that
         // are pending in the translation unit.
