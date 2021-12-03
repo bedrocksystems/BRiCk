@@ -10,6 +10,7 @@
 #include <map>
 #include <set>
 #include <utility>
+
 namespace clang {
 class CompilerInstance;
 };
@@ -39,8 +40,8 @@ public:
     Module() : imports_(), definitions_() {}
 
 private:
-    std::map<const clang::NamedDecl*, bool> imports_;
-    std::set<const clang::NamedDecl*> definitions_;
+    std::list<std::pair<const clang::NamedDecl*, bool>> imports_;
+    std::list<const clang::NamedDecl*> definitions_;
 
     std::list<const clang::StaticAssertDecl*> asserts_;
 };

@@ -411,6 +411,8 @@ void ::Module::add_definition(const clang::NamedDecl *d, bool opaque) {
     if (opaque) {
         add_declaration(d);
     } else {
+        definitions_.push_back(d);
+#if 0
         auto found = definitions_.find(d);
         if (found == definitions_.end()) {
             definitions_.insert(d);
@@ -418,10 +420,13 @@ void ::Module::add_definition(const clang::NamedDecl *d, bool opaque) {
             logging::debug() << "Error: Duplicate definition: "
                              << d->getQualifiedNameAsString() << "\n";
         }
+#endif
     }
 }
 
 void ::Module::add_declaration(const clang::NamedDecl *d) {
+    imports_.push_back(std::make_pair(d, true));
+#if 0
     auto found = imports_.find(d);
     if (found == imports_.end()) {
         imports_.insert(std::make_pair(d, true));
@@ -429,4 +434,5 @@ void ::Module::add_declaration(const clang::NamedDecl *d) {
         logging::debug() << "Error: Duplicate declaration: "
                          << d->getQualifiedNameAsString() << "\n";
     }
+#endif
 }
