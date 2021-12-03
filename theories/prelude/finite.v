@@ -397,6 +397,11 @@ Module finite_bits (BT : finite_bitmask_type_intf).
   *)
   Definition of_bits (mask : N) : t := list_to_set $ BT.to_list mask.
 
+  (* The right-hand side computes nicely, for closed goals. *)
+  Lemma elem_of_bits x y : x ∈ of_bits y <->
+    bool_decide (x ∈ elements (of_bits y)) = true.
+  Proof. by rewrite -elem_of_elements bool_decide_eq_true. Qed.
+
   Lemma of_bits_0 : of_bits 0 = ∅.
   Proof. by rewrite /of_bits BT.to_list_0. Qed.
 
@@ -525,6 +530,10 @@ Module finite_bits (BT : finite_bitmask_type_intf).
     rights (Hrights : rights ≠ ∅) :
     masked_opt mask_top rights = Some rights.
   Proof. by rewrite /masked_opt masked_top option_guard_True. Qed.
+
+  Lemma elem_of_masked mask r rs :
+    r ∈ rs → r ∈ of_bits mask → r ∈ masked mask rs.
+  Proof. intros. exact /elem_of_intersection. Qed.
 End finite_bits.
 
 Module simple_finite_bits (BT : simple_finite_bitmask_type_intf).
