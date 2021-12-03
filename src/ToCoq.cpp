@@ -63,7 +63,7 @@ ToCoqConsumer::toCoqModule(clang::ASTContext *ctxt,
             ClangPrinter cprint(compiler_, ctxt);
 
             fmt << "Require Import bedrock.lang.cpp.parser." << fmt::line
-                << fmt::line << "Local Open Scope bs_scope." << fmt::line;
+                << fmt::line << "#[local] Open Scope bs_scope." << fmt::line;
             // << "Import ListNotations." << fmt::line;
 
             fmt << fmt::line
