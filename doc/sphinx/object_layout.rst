@@ -14,13 +14,13 @@ data [#krebbers-thesis-2.5]_:
 - In a *low-level* way using unstructured and untyped byte representations.
 
 This especially affects reasoning about the representation of an object in memory, i.e.
-how it is laid out and how data that is part of the low-level presentation, but not part
-of the high-level representation is handled (i.e. padding).
+how its data is laid out, especially data like padding which is part of the low-level presentation
+but *not* part of the high-level representation.
 
 .. warning::
 
   Much of the reasoning described in this section is still experimental and subject to change.
-  In practice, most C++ programs do not require this level of reasoning.
+  In practice, many C++ programs do not require this level of reasoning.
 
 .. _object_layout.values:
 
@@ -38,19 +38,13 @@ Given that we materialize all aggregates, we can provide a simple characterizati
 
 - |link:bedrock.lang.cpp.semantics.values#VAL_MIXIN.Vptr| - for C++ pointer and reference values
 - |link:bedrock.lang.cpp.semantics.values#VAL_MIXIN.Vint| - for C++ integral values (excluding floating-point values)
-- |link:bedrock.lang.cpp.semantics.values#VAL_MIXIN.Vraw| - for the low-level representation of C++ objects; refer to :ref:`this section <object_layout.axiomatized_memory_model>` for more details
+- |link:bedrock.lang.cpp.semantics.values#VAL_MIXIN.Vraw| - for the low-level representation of C++ objects; refer to :ref:`this section <object_layout.axiomatized_object_model>` for more details
 - |link:bedrock.lang.cpp.semantics.values#VAL_MIXIN.Vundef| - for uninitialized values, upon which all operationrs yield :ref:`Undefined Behavior <undefined_behavior>`
 
-This characterization enables us to utilize a single abstraction to model the in-memory representation of C++ values - called |link:bedrock.lang.cpp.logic.heap_pred#primR| `: type -> Qp -> val -> Rep` - which reflects the fractional ownership (`Qp`\ ) of some Coq-model `val`\ ue of a given C++ `type`.
-`Rep : ptr -> mpred` models the location agnostic in-memory representation of some resource, and for any given `p : ptr` and `R : Rep`\ , `p |-> R` reflects the materialization of the resource modeled by `R` at the logical pointer `p`.
+This characterization enables us to use a single abstraction to model the in-memory representation of C++ values - called |link:bedrock.lang.cpp.logic.heap_pred#primR| `: type -> Qp -> val -> Rep` - which reflects the fractional ownership (`Qp`\ ) of some Coq-model `val`\ ue of a given C++ `type`.
+`Rep ~= ptr -> mpred` models the location agnostic in-memory representation of some resource, and for any given `p : ptr` and `R : Rep`\ , `p |-> R` reflects the materialization of the resource modeled by `R` at the logical pointer `p`.
 
 .. jh: The following two sections don't really belong here; where should they go?
-
-Pinned Pointers
-----------------
-
-In certain instances, especially when communicating pointers with assembly, it is necessary to connect pointers to their virtual addresses.
-To do this, |project| exposes a separation logic assertion `pinned_ptr : ptr -> vaddr -> mpred` (|link:bedrock.lang.cpp.logic.pred#pinned_ptr|) which relates the `ptr` to the virtual address that backs it.
 
 Function Call Semantics
 ------------------------
@@ -119,7 +113,7 @@ For example, consider the following code:
 
   void do_dma() {
     struct dma_struct *ptr = dma_address;
-    // This example ignores many concerns including (but not limited to):
+    // This example ignores many concerns including:
     // - UB via data-races
     // - the compiler reordering writes
     // - endianness
@@ -145,6 +139,10 @@ guarantees about the `layout of structs <http://eel.is/c++draft/class.mem#26>`_:
    object inserted by an implementation, but not at its beginning, as necessary to
    achieve appropriate alignment. — end note]
 
+.. note::
+
+   A standard-layout class object has non-static data members **xor** base classes (c.f. `this set of examples <https://eel.is/c++draft/class.prop#4>`_ from the standard).
+
 Thus, the C++ standard guarantees that the write on line `(1)` goes to  `dma_address + 0`,
 but on its own it does not guarantee the exclusion of padding between `a` and `b`.
 However, more concrete guarantees are given by the platform ABI and we rely on those for
@@ -165,14 +163,14 @@ guarantees that:
 How is this reflected in |project|?
 ------------------------------------
 
-The virtual address offset of a |link:bedrock.lang.cpp.semantics.ptrs#PTRS.offset| is determined by |link:bedrock.lang.cpp.semantics.ptrs#PTRS.eval_offset|.
+The address offset of a |link:bedrock.lang.cpp.semantics.ptrs#PTRS.offset| is determined by |link:bedrock.lang.cpp.semantics.ptrs#PTRS.eval_offset|.
 |project| currently supports reasoning about the layout of (a limited number of) aggregates by embedding the layout information from the Clang front-end into the |project| abstract syntax tree (see |link:bedrock.lang.cpp.syntax.translation_unit#Struct| and |link:bedrock.lang.cpp.syntax.translation_unit#Union|\ ).
 
-In particular, |link:bedrock.lang.cpp.logic.layout#struct_def| utilizes the information from the Clang front-end to enumerate the properly-|link:bedrock.lang.cpp.semantics.ptrs#PTRS.offset| bases and fields of a given struct.
+In particular, |link:bedrock.lang.cpp.logic.layout#struct_def| uses the information from the Clang front-end to enumerate the properly-|link:bedrock.lang.cpp.semantics.ptrs#PTRS.offset| bases and fields of a given struct.
 Furthermore, |link:bedrock.lang.cpp.logic.layout#struct_paddingR| tracks the padding which the compiler (may have) inserted and |link:bedrock.lang.cpp.logic.heap_pred#identityR| tracks the object identity for objects which have a vtable.
 |link:bedrock.lang.cpp.logic.layout#anyR_struct| enables the "shattering" of a (potentially uninitialized) struct into its (potentially uninitialized) constitutent pieces (as well as its |link:bedrock.lang.cpp.logic.layout#struct_paddingR| and |link:bedrock.lang.cpp.logic.heap_pred#identityR|, if necessary).
 
-Because the C++ standard only requires portability of the layout of certain types of aggregates we limit the use of this information in our axioms to POD and standard layout classes (see |link:bedrock.lang.cpp.semantics.ptrs#PTRS.eval_o_field|\ ).
+Because the C++ standard only requires portability of the layout of certain types of aggregates, we limit the use of this information in our axioms to POD and standard layout classes (see |link:bedrock.lang.cpp.semantics.ptrs#PTRS.eval_o_field|\ ).
 
 .. note::
 
@@ -208,9 +206,9 @@ How is this reflected in |project|?
 The virtual address offset of a |link:bedrock.lang.cpp.semantics.ptrs#PTRS.offset| is determined by |link:bedrock.lang.cpp.semantics.ptrs#PTRS.eval_offset|.
 |project| currently supports reasoning about the layout of (a limited number of) aggregates by embedding the layout information from the Clang front-end into the |project| abstract syntax tree (see |link:bedrock.lang.cpp.syntax.translation_unit#Struct| and |link:bedrock.lang.cpp.syntax.translation_unit#Union|\ ).
 
-In particular, |link:bedrock.lang.cpp.logic.layout#union_def| utilizes the information from the Clang front-end to provide a disjunction of all of the properly-|link:bedrock.lang.cpp.semantics.ptrs#PTRS.offset| fields of a given union.
+In particular, |link:bedrock.lang.cpp.logic.layout#union_def| uses the information from the Clang front-end to provide a disjunction of all of the properly-|link:bedrock.lang.cpp.semantics.ptrs#PTRS.offset| fields of a given union.
 Furthermore, |link:bedrock.lang.cpp.logic.layout#union_paddingR| tracks the padding which the compiler (may have) inserted *as well as* an identifier which reflects the **active member**.
-|link:bedrock.lang.cpp.logic.layout#anyR_union| enables the "shattering" of a (potentially uninitialized) union into its (potentially uninitialized) constitutent pieces (as well as its |link:bedrock.lang.cpp.logic.layout#struct_paddingR| and |link:bedrock.lang.cpp.logic.heap_pred#identityR|, if necessary).
+|link:bedrock.lang.cpp.logic.layout#anyR_union| enables "translating between" different members of the union.
 
 Because the C++ standard only requires portability of the layout of certain types of aggregates we limit the use of this information in our axioms to POD and standard layout classes (see |link:bedrock.lang.cpp.semantics.ptrs#PTRS.eval_o_field|\ ).
 
@@ -232,7 +230,7 @@ Implicit Destruction
 ==========================================================================================
 
 A :ref:`Trivially Destructible Object <object_layout.concepts.trivially_destructible>` supports **Implicit Destruction** - in which the compiler reclaims the underlying storage of the object *without* running any code.
-The following axioms reflect the current support for **Implicit Destruction** in |project|; please refer to :ref:`this section <object_layout.axiomatized_memory_model>` for more details regarding our axiomatization of the C++ memory model:
+The following axioms reflect the current support for **Implicit Destruction** in |project|; please refer to :ref:`this section <object_layout.axiomatized_object_model>` for more details regarding our axiomatization of the C++ memory model:
 
 - Scalars (based on |link:bedrock.lang.cpp.logic.layout#implicit_destruct_ty|)
 
@@ -250,14 +248,14 @@ The following axioms reflect the current support for **Implicit Destruction** in
 
    We do not axiomatize **Implicit Destruction** for arrays of :ref:`Trivially Destructible Objects <object_layout.concepts.trivially_destructible>` because we have yet to encounter a use case for it in our code-base.
 
-.. _object_layout.axiomatized_memory_model:
+.. _object_layout.axiomatized_object_model:
 
-Axiomatizing C++'s Memory Model
+Axiomatizing C++'s Object Model
 ==========================================================================================
 
-While the |project| axiomatization of C++'s memory model is an ongoing research and development problem - with regards to weak memory and multi C++ Abstract Machine interaction, to name a few examples - there are some important characteristics which are relatively stable.
+While the |project| axiomatization of C++'s object model is an ongoing research and development problem - with regards to weak memory and multi C++ Abstract Machine interaction, to name a few examples - there are some important characteristics which are relatively stable.
 
-.. _object_layout.axiomatized_memory_model.high_level:
+.. _object_layout.axiomatized_object_model.high_level:
 
 Working with the high-level representation of objects
 --------------------------------------------------------------------------------
@@ -271,7 +269,7 @@ Implementers of custom allocators will also need a way to reason about chunks of
 Therefore we define |link:bedrock.lang.cpp.logic.heap_pred#blockR| (c.f. |link:bedrock.lang.cpp.logic.heap_pred#blockR_def|\ ) and axiomatize |link:bedrock.lang.cpp.logic.pred#provides_storage|.
 This enables us to talk about (untyped) memory which is managed by the C++ Abstract Machine **and** to relate high-level C++ objects to the memory which backs them when necessary, respectively.
 
-.. _object_layout.axiomatized_memory_model.high_level.blockR:
+.. _object_layout.axiomatized_object_model.high_level.blockR:
 
 Reasoning about physical memory with `blockR` and `tblockR`
 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -279,24 +277,24 @@ Reasoning about physical memory with `blockR` and `tblockR`
 .. note::
 
    |link:bedrock.lang.cpp.logic.heap_pred#blockR_def| speaks in terms of |link:bedrock.lang.cpp.logic.heap_pred#anyR| (c.f. |link:bedrock.lang.cpp.logic.heap_pred#anyR_def|\ ) which itself speaks in terms of |link:bedrock.lang.cpp.logic.heap_pred#primR| (c.f. |link:bedrock.lang.cpp.logic.heap_pred#primR_def|\ ).
-   While `primR` models initialized C++ values of a given type, we can think of the physical memory managed by the C++ abstract machine as a bunch of character arrays, and indeed this view is sound *and* relevant when dealing with custom allocators (see :ref:`this section <object_layout.axiomatized_memory_model.high_level.provides_storage>`\ ).
+   While `primR` models initialized C++ values of a given type, we can think of the physical memory managed by the C++ abstract machine as a bunch of character arrays, and indeed this view is sound *and* relevant when dealing with custom allocators (see :ref:`this section <object_layout.axiomatized_object_model.high_level.provides_storage>`\ ).
 
 `blockR (sz : N) (q : Qp) : Rep` is a definition which represents fractional ownership (`Qp`) of a contiguous chunk of `sz` bytes - where each byte is either uninitialized or initialized to contain some concrete value of type `char`.
 `tblockR (ty : type) (q : Qp) : Rep` is a definition which represents fractional ownership (`Qp`) of a contiguous chunk of `size_of ty` bytes (c.f. |link:bedrock.lang.cpp.semantics.types#size_of|\ ) - where each byte is either uninitialized or initialized to contain some concrete value of type `char`, and where the first byte respects `align_of ty` (c.f. |link:bedrock.lang.cpp.semantics.types#align_of|\ ).
 Numerous axioms and definitions within |link:bedrock.lang.cpp.logic| make use of `blockR` and `tblockR` in order to reflect the transfer of physical memory between the C++ Abstract Machine and the executing code (although most of this is hidden from verifiers).
 
-.. _object_layout.axiomatized_memory_model.high_level.provides_storage:
+.. _object_layout.axiomatized_object_model.high_level.provides_storage:
 
 Relating physical memory to the high-level object which it `provides_storage` for
 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-One place in which verifiers *are* exposed to the `blockR`/`tblockR` definitions is when proving the correctness of custom (de)allocation functions.
+One place in which verifiers *are* exposed to the `blockR`/\ `tblockR` definitions is when proving the correctness of custom (de)allocation functions.
 In particular, reasoning about C++ dynamic memory management - as axiomatized within |link:bedrock.lang.cpp.logic.new_delete| - requires the explicit tracking of the high-level C++ object which was created *as well as* the physical memory which |link:bedrock.lang.cpp.logic.pred#provides_storage| for the high-level C++ object.
 
 When it is used (c.f. |link:bedrock.lang.cpp.logic.new_delete#wp_prval_new|\ ), `provides_storage (storage object : ptr) (storage_type : type) : mpred` relates the physical memory associated with the logical `storage` pointer to the high-level C++ object associated with the logical `object` pointer (and of type `storage_type`).
 This decoupling enables useful high-level reasoning for verifiers after allocation *while also* enabling the sound reclamation of that high-level object and the physical memory in which it resides.
 
-.. _object_layout.axiomatized_memory_model.low_level:
+.. _object_layout.axiomatized_object_model.low_level:
 
 Working with the low-level representation of objects
 --------------------------------------------------------------------------------
@@ -339,8 +337,8 @@ How is this reflected in |project|?
 |link:bedrock.lang.cpp.semantics.values#RAW_BYTES|, |link:bedrock.lang.cpp.semantics.values#RAW_BYTES_VAL| and |link:bedrock.lang.cpp.semantics.values#RAW_BYTES_MIXIN| contain the various axioms and definitions which underly our notion of "raw bytes".
 
 |link:bedrock.lang.cpp.semantics.values#RAW_BYTES_VAL.raw_bytes_of_val| and |link:bedrock.lang.cpp.semantics.values#RAW_BYTES_VAL.raw_bytes_of_struct| represent the core predicates which relate high-level C++ objects to their "raw" representations.
-|link:bedrock.lang.cpp.logic.raw| utilizes |link:bedrock.lang.cpp.semantics.values#RAW_BYTES_VAL.raw_bytes_of_val| to expose conversions from `primR` to `rawsR` - which is itself an array of `Vraw` values.
-|link:bedrock.lang.cpp.logic.layout| utilizes |link:bedrock.lang.cpp.semantics.values#RAW_BYTES_VAL.raw_bytes_of_struct| - and the definitions within |link:bedrock.lang.cpp.logic.raw| - to axiomatize |link:bedrock.lang.cpp.logic.layout#struct_to_raw| which allows for verifiers to convert :ref:`Plain Old Data <object_layout.concepts.pod>` structs into their low-level representation.
+|link:bedrock.lang.cpp.logic.raw| uses |link:bedrock.lang.cpp.semantics.values#RAW_BYTES_VAL.raw_bytes_of_val| to expose conversions from `primR` to `rawsR` - which is itself an array of `Vraw` values.
+|link:bedrock.lang.cpp.logic.layout| uses |link:bedrock.lang.cpp.semantics.values#RAW_BYTES_VAL.raw_bytes_of_struct| - and the definitions within |link:bedrock.lang.cpp.logic.raw| - to axiomatize |link:bedrock.lang.cpp.logic.layout#struct_to_raw| which allows for verifiers to convert :ref:`Plain Old Data <object_layout.concepts.pod>` structs into their low-level representation.
 
 Therefore, the example above can be verified by first converting the struct to raw bytes using |link:bedrock.lang.cpp.logic.layout#struct_to_raw|, copying the raw bytes and then converting the raw bytes back into the struct using |link:bedrock.lang.cpp.logic.layout#struct_to_raw| once again.
 
