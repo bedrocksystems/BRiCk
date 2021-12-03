@@ -17,18 +17,18 @@
 
 using namespace clang;
 
-class ElaborateModule : public DeclVisitorArgs<ElaborateModule, void, bool> {
+class Elaborate : public DeclVisitorArgs<Elaborate, void, bool> {
 private:
     clang::CompilerInstance *const ci_;
     std::set<int64_t> visited_;
 
 public:
-    ElaborateModule(clang::CompilerInstance *ci) : ci_(ci) {}
+    Elaborate(clang::CompilerInstance *ci) : ci_(ci) {}
 
     void Visit(Decl *d, bool s) {
         if (visited_.find(d->getID()) == visited_.end()) {
             visited_.insert(d->getID());
-            DeclVisitorArgs<ElaborateModule, void, bool>::Visit(d, s);
+            DeclVisitorArgs<Elaborate, void, bool>::Visit(d, s);
         }
     }
 
@@ -392,7 +392,7 @@ build_module(clang::TranslationUnitDecl *tu, ::Module &mod, Filter &filter,
         // these at all. This would decrease our file representation size and
         // bring us a little bit closer to the semantics rather than relying
         // on choices for how clang implements defaulted operations.
-        ElaborateModule(ci).VisitTranslationUnitDecl(tu, false);
+        Elaborate(ci).VisitTranslationUnitDecl(tu, false);
 
         // Once we are done visiting the AST, we run all the actions that
         // are pending in the translation unit.
@@ -411,6 +411,8 @@ void ::Module::add_definition(const clang::NamedDecl *d, bool opaque) {
     if (opaque) {
         add_declaration(d);
     } else {
+        definitions_.push_back(d);
+#if 0
         auto found = definitions_.find(d);
         if (found == definitions_.end()) {
             definitions_.insert(d);
@@ -418,10 +420,13 @@ void ::Module::add_definition(const clang::NamedDecl *d, bool opaque) {
             logging::debug() << "Error: Duplicate definition: "
                              << d->getQualifiedNameAsString() << "\n";
         }
+#endif
     }
 }
 
 void ::Module::add_declaration(const clang::NamedDecl *d) {
+    imports_.push_back(std::make_pair(d, true));
+#if 0
     auto found = imports_.find(d);
     if (found == imports_.end()) {
         imports_.insert(std::make_pair(d, true));
@@ -429,4 +434,5 @@ void ::Module::add_declaration(const clang::NamedDecl *d) {
         logging::debug() << "Error: Duplicate declaration: "
                          << d->getQualifiedNameAsString() << "\n";
     }
+#endif
 }
