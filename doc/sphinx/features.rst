@@ -1,3 +1,5 @@
+.. _features:
+
 #################
 Language Support
 #################
@@ -22,7 +24,6 @@ Limitations of |project|
 
 While not supported right now, some features are on our roadmap.
 
-* :cpp:`new[]` and :cpp:`delete[]` (i.e. array forms of :cpp:`new` and :cpp:`delete`)
 * Translation unit initialization (i.e. initialization of globals)
 * Order of evaluation for function calls follows pre-C++ 17 semantics where argument evaluation can be arbitrarily interleaved.
 * :cpp:`template` code can only be reasoned about *after* instantiating it to specific arguments.

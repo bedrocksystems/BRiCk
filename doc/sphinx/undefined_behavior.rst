@@ -6,7 +6,7 @@ Undefined behavior and optimizations
 
 C++ programmers want compilers to produce fast code without exploiting undefined
 behavior. But that is impossible, so (optimizing) compilers opt to produce fast
-code instead. Hence, to formally verify C++ program are correct, we must prevent
+code instead. Hence, to formally verify C++ programs are correct, we must prevent
 programs from having UB.
 
 This page motivates informally the need for some UB, by showing that exploiting
@@ -72,5 +72,4 @@ through this pointer.
 .. [#provenance-example] Based on `this example
   <https://web.archive.org/web/20210819142604/https://news.ycombinator.com/item?id=27562962>`_.
 
-.. [#godbolt-example] At least on a specific compiler, according to `Godbolt
-  <https://web.archive.org/web/20210819221041/https://godbolt.org/z/8cha4Ebfo>`_.
+.. [#godbolt-example] At least on a specific compiler, according to `Godbolt <https://godbolt.org/z/8cha4Ebfo>`_.
