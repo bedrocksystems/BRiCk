@@ -214,11 +214,6 @@ Because the C++ standard only requires portability of the layout of certain type
 
 .. note::
 
-   We believe that a good, platform independent way to reason about layout information is to use a combination of :cpp:`static_assert` and :cpp:`offsetof`.
-   |project| does not currently support this level of reasoning about :cpp:`offsetof`, but it is likely to be added in the future by connecting |link:bedrock.lang.cpp.semantics.ptrs#PTRS.eval_offset| to the semantics of :cpp:`offsetof`.
-
-.. note::
-
   |project| does not reflect that all members of the same union have the same address.
   |link:bedrock.lang.cpp.logic.layout#union_def| uses |link:bedrock.lang.cpp.semantics.ptrs#PTRS_MIXIN._field| which itself uses |link:bedrock.lang.cpp.semantics.types#offset_of|; |link:bedrock.lang.cpp.semantics.types#offset_of| uses opaque offset information from the translation unit.
 
