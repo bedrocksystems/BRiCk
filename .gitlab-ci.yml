@@ -16,10 +16,10 @@
 #      In fact, "latest" does not depend on the latest version, but on the main
 #      supported one.
 #
-#   2. build_alternate -> test_alternate
+#   2. build_llvmX -> test_llvmX
 #
-#      This builds cpp2v against the alternate major
-#      version of llvm. It tests only the cpp2v
+#      This builds cpp2v against an alternate major
+#      version of llvm - llvmX. It tests only the cpp2v
 #      frontend.
 #
 # The build* jobs extend the .build template job.
@@ -46,7 +46,7 @@ variables:
   variables:
     LLVM_MAJ_VER: ${LLVM_CUR_MAJ_VER}
 
-.alternate:
+.llvm10:
   extends: .base
   variables:
     LLVM_MAJ_VER: 10
@@ -72,7 +72,7 @@ stages:
   - build_proofs_downstream
 
 #This is a template job that's extended below by the real jobs
-# build_{latest,alternate,public} (see, e.g., https://docs.gitlab.com/ee/ci/yaml/#extends).
+# build_{latest,llvm10,llvm13,public} (see, e.g., https://docs.gitlab.com/ee/ci/yaml/#extends).
 .build_base:
   stage: build
   script:
@@ -139,10 +139,10 @@ build_latest:
     reports:
       dotenv: build.env
 
-build_alternate:
+build_llvm10:
   extends:
     - .build_aux
-    - .alternate
+    - .llvm10
 
 build_llvm13:
   extends:
@@ -161,12 +161,12 @@ test_latest:
   needs:
     - build_latest
 
-test_alternate:
+test_llvm10:
   extends:
     - .test
-    - .alternate
+    - .llvm10
   needs:
-    - build_alternate
+    - build_llvm10
 
 test_llvm13:
   extends:
@@ -252,12 +252,12 @@ release_latest:
   needs:
     - build_latest
 
-# release_alternate:
+# release_llvm10:
 #   extends:
 #   - .release
-#   - .alternate
+#   - .llvm10
 #   needs:
-#     - build_alternate
+#     - build_llvm10
 
 
 prepare_pages:
