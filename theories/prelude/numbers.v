@@ -394,3 +394,9 @@ Section with_Z.
     have := Z_ones_nonneg _ Hbits. lia.
   Qed.
 End with_Z.
+
+(** [Qp] *)
+
+#[global] Instance Qp_mul_left_id : LeftId (=) 1%Qp Qp_mul := Qp_mul_1_l.
+#[global] Instance Qp_mul_right_id : RightId (=) 1%Qp Qp_mul := Qp_mul_1_r.
+#[global] Instance Qp_div_right_id : RightId (=) 1%Qp Qp_div := Qp_div_1.
