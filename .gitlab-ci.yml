@@ -16,10 +16,10 @@
 #      In fact, "latest" does not depend on the latest version, but on the main
 #      supported one.
 #
-#   2. build_alternate -> test_alternate
+#   2. build_llvmX -> test_llvmX
 #
-#      This builds cpp2v against the alternate major
-#      version of llvm. It tests only the cpp2v
+#      This builds cpp2v against an alternate major
+#      version of llvm - llvmX. It tests only the cpp2v
 #      frontend.
 #
 # The build* jobs extend the .build template job.
@@ -33,11 +33,34 @@
 
 variables:
   LLVM_CUR_MAJ_VER: "12"
-  LLVM_ALT_MAJ_VER: "10"
-  cur_main_docker_img: registry.gitlab.com/bedrocksystems/docker-image:cpp2v-llvm${LLVM_CUR_MAJ_VER}
-  alt_main_docker_img: registry.gitlab.com/bedrocksystems/docker-image:cpp2v-llvm${LLVM_ALT_MAJ_VER}
-  public_main_docker_img: registry.gitlab.com/bedrocksystems/docker-image:cpp2v-public-llvm${LLVM_CUR_MAJ_VER}
-  fm_docs_img: registry.gitlab.com/bedrocksystems/docker-image:fm-docs
+  docker_img_prefix: registry.gitlab.com/bedrocksystems/docker-image
+  fm_docs_img: ${docker_img_prefix}:fm-docs
+  img_prefix: cpp2v-llvm
+
+# Configs
+.base:
+  image: ${docker_img_prefix}:${img_prefix}${LLVM_MAJ_VER}
+
+.latest:
+  extends: .base
+  variables:
+    LLVM_MAJ_VER: ${LLVM_CUR_MAJ_VER}
+
+.llvm10:
+  extends: .base
+  variables:
+    LLVM_MAJ_VER: 10
+
+.llvm13:
+  extends: .base
+  variables:
+    LLVM_MAJ_VER: 13
+
+.public:
+  extends: .base
+  variables:
+    img_prefix: cpp2v-public-llvm
+    LLVM_MAJ_VER: 12
 
 stages:
   - build
@@ -49,7 +72,7 @@ stages:
   - build_proofs_downstream
 
 #This is a template job that's extended below by the real jobs
-# build_{latest,alternate,public} (see, e.g., https://docs.gitlab.com/ee/ci/yaml/#extends).
+# build_{latest,llvm10,llvm13,public} (see, e.g., https://docs.gitlab.com/ee/ci/yaml/#extends).
 .build_base:
   stage: build
   script:
@@ -104,10 +127,9 @@ stages:
     - fm.shared
 
 build_latest:
-  extends: .build
-  image: ${cur_main_docker_img}
-  variables:
-    LLVM_MAJ_VER: ${LLVM_CUR_MAJ_VER}
+  extends:
+    - .build
+    - .latest
   after_script:
     # ARTIFACT_JOB_ID is used for downstream jobs to get artifacts from
     # this build. The value of CI_JOB_ID is only available in this
@@ -117,51 +139,55 @@ build_latest:
     reports:
       dotenv: build.env
 
-build_alternate:
-  extends: .build_aux
-  image: ${alt_main_docker_img}
-  variables:
-    LLVM_MAJ_VER: ${LLVM_ALT_MAJ_VER}
+build_llvm10:
+  extends:
+    - .build_aux
+    - .llvm10
+
+build_llvm13:
+  extends:
+    - .build_aux
+    - .llvm13
 
 build_public:
-  extends: .build_aux
-  image: ${public_main_docker_img}
-  variables:
-    LLVM_MAJ_VER: ${LLVM_CUR_MAJ_VER}
+  extends:
+    - .build_aux
+    - .public
 
 test_latest:
-  extends: .test
-  image: ${cur_main_docker_img}
+  extends:
+    - .test
+    - .latest
   needs:
     - build_latest
-  variables:
-    LLVM_MAJ_VER: ${LLVM_CUR_MAJ_VER}
 
-test_alternate:
-  extends: .test
+test_llvm10:
+  extends:
+    - .test
+    - .llvm10
   needs:
-    - build_alternate
-  # Must match build_alternate:
-  image: ${alt_main_docker_img}
-  variables:
-    LLVM_MAJ_VER: ${LLVM_ALT_MAJ_VER}
+    - build_llvm10
+
+test_llvm13:
+  extends:
+    - .test
+    - .llvm13
+  needs:
+    - build_llvm13
 
 test_public:
-  extends: .test
+  extends:
+    - .test
+    - .public
   needs:
     - build_public
-  # Must match build_public:
-  image: ${public_main_docker_img}
-  variables:
-    LLVM_MAJ_VER: ${LLVM_CUR_MAJ_VER}
 
 prepare_env:
-  image: ${cur_main_docker_img}
+  extends:
+    - .latest
   stage: prepare_env_for_downstream
   needs:
     - build_latest
-  variables:
-    LLVM_MAJ_VER: ${LLVM_CUR_MAJ_VER}
   script:
     # The branch of cpp2v is by default master,
     # but if CI::cpp2v-same-branch label is specified,
@@ -220,20 +246,18 @@ build_cpp2v_master:
     - master
 
 release_latest:
-  extends: .release
-  image: ${cur_main_docker_img}
+  extends:
+    - .release
+    - .latest
   needs:
     - build_latest
-  variables:
-    LLVM_MAJ_VER: ${LLVM_CUR_MAJ_VER}
 
-# release_alternate:
-#   extends: .release
-#   image: ${alt_main_docker_img}
+# release_llvm10:
+#   extends:
+#   - .release
+#   - .llvm10
 #   needs:
-#     - build_alternate
-#   variables:
-#     LLVM_MAJ_VER: ${LLVM_ALT_MAJ_VER}
+#     - build_llvm10
 
 
 prepare_pages:
