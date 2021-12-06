@@ -51,6 +51,11 @@ variables:
   variables:
     LLVM_MAJ_VER: 10
 
+.llvm13:
+  extends: .base
+  variables:
+    LLVM_MAJ_VER: 13
+
 .public:
   extends: .base
   variables:
@@ -139,6 +144,11 @@ build_alternate:
     - .build_aux
     - .alternate
 
+build_llvm13:
+  extends:
+    - .build_aux
+    - .llvm13
+
 build_public:
   extends:
     - .build_aux
@@ -157,6 +167,13 @@ test_alternate:
     - .alternate
   needs:
     - build_alternate
+
+test_llvm13:
+  extends:
+    - .test
+    - .llvm13
+  needs:
+    - build_llvm13
 
 test_public:
   extends:
