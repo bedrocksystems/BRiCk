@@ -35,21 +35,26 @@ variables:
   LLVM_CUR_MAJ_VER: "12"
   docker_img_prefix: registry.gitlab.com/bedrocksystems/docker-image
   fm_docs_img: ${docker_img_prefix}:fm-docs
+  img_prefix: cpp2v-llvm
 
 # Configs
+.base:
+  image: ${docker_img_prefix}:${img_prefix}${LLVM_MAJ_VER}
+
 .latest:
-  image: ${docker_img_prefix}:cpp2v-llvm${LLVM_CUR_MAJ_VER}
+  extends: .base
   variables:
     LLVM_MAJ_VER: ${LLVM_CUR_MAJ_VER}
 
 .alternate:
-  image: ${docker_img_prefix}:cpp2v-llvm10
+  extends: .base
   variables:
     LLVM_MAJ_VER: 10
 
 .public:
-  image: ${docker_img_prefix}:cpp2v-public-llvm12
+  extends: .base
   variables:
+    img_prefix: cpp2v-public-llvm
     LLVM_MAJ_VER: 12
 
 stages:
