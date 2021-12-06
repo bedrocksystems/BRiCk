@@ -32,6 +32,7 @@ Our full feature set (as well as known issues) can be found on the :ref:`feature
    :caption: Table of Contents
 
    features
+   evaluation
    undefined_behavior
    pointers
    object_layout

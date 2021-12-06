@@ -28,6 +28,7 @@ Module FreeTemps.
 Section FreeTemps.
   Context `{Σ : cpp_logic thread_info}.
 
+  (* BEGIN FreeTemps.t *)
   Inductive t : Type :=
   | id (* = fun x => x *)
   | delete (ty : type) (p : ptr) (* = delete_val ty p  *)
@@ -36,6 +37,7 @@ Section FreeTemps.
     (* = fun x => Exists Qf Qg, f Qf ** g Qg ** (Qf -* Qg -* x)
      *)
   .
+  (* END FreeTemps.t *)
 
   Inductive t_eq : t -> t -> Prop :=
   | refl l : t_eq l l
@@ -265,6 +267,7 @@ Section with_cpp.
    *)
 
   (** lvalues *)
+  (* BEGIN wp_lval *)
   (* [wp_lval σ E ρ e Q] evaluates the expression [e] in region [ρ]
    * with mask [E] and continutation [Q].
    *)
@@ -273,6 +276,7 @@ Section with_cpp.
         Expr ->
         (ptr -> FreeTemps -> epred) -> (* result -> free -> post *)
         mpred. (* pre-condition *)
+  (* END wp_lval *)
 
   Axiom wp_lval_shift : forall {σ:genv} ρ e Q,
       (|={top}=> wp_lval ρ e (fun v free => |={top}=> Q v free))
@@ -337,6 +341,7 @@ Section with_cpp.
    * as specified by the context in which it appears,..."
    *)
 
+  (* BEGIN wp_init *)
   (* evaluate a prvalue that "initializes an object".
 
      The memory that is being initialized is already owned by the C++ abstract machine.
@@ -364,6 +369,7 @@ Section with_cpp.
                         ptr -> Expr ->
                         (FreeTemp -> FreeTemps -> epred) -> (* top-free -> free -> post *)
                         mpred. (* pre-condition *)
+  (* END wp_init *)
 
   Axiom wp_init_shift : forall {σ:genv} ρ v e Q,
       (|={top}=> wp_init ρ v e (fun free frees => |={top}=> Q free frees))
@@ -418,12 +424,15 @@ Section with_cpp.
     Qed.
   End wp_init.
 
+  (* BEGIN wp_prval *)
   Definition wp_prval {resolve:genv} (ρ : region)
              (e : Expr) (Q : ptr -> FreeTemp -> FreeTemps -> epred) : mpred :=
-    ∀ p, wp_init ρ p e (Q p).
+    ∀ p : ptr, wp_init ρ p e (Q p).
+  (* END wp_prval *)
 
   (** TODO prove instances for [wp_prval] *)
 
+  (* BEGIN wp_operand *)
   (* evaluate a prvalue that "computes the value of an operand of an operator"
    *)
   Parameter wp_operand
@@ -431,6 +440,7 @@ Section with_cpp.
         Expr ->
         (val -> FreeTemps -> epred) -> (* result -> free -> post *)
         mpred. (* pre-condition *)
+  (* END wp_operand *)
 
   Axiom wp_operand_shift : forall {σ:genv} ρ e Q,
       (|={top}=> wp_operand (resolve:=σ) ρ e (fun v free => |={top}=> Q v free))
@@ -441,6 +451,7 @@ Section with_cpp.
       genv_leq σ1 σ2 ->
       Forall v f, k1 v f -* k2 v f |-- @wp_operand σ1 ρ e k1 -* @wp_operand σ2 ρ e k2.
 
+  (* BEGIN wp_init <-> wp_operand *)
   Axiom wp_operand_wp_init : forall {σ : genv} ρ addr e Q (ty := type_of e),
       is_primitive ty ->
       wp_operand ρ e (fun v frees => _at addr (primR ty 1 v) -* Q (FreeTemps.delete ty addr) frees)
@@ -457,6 +468,8 @@ Section with_cpp.
     |-- wp_operand M ρ e Q.
     ]]
    *)
+  (* END wp_init <-> wp_operand *)
+
 
   #[global] Instance Proper_wp_operand :
     Proper (genv_leq ==> eq ==> eq ==>
