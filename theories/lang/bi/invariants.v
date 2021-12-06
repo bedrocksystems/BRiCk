@@ -117,7 +117,7 @@ Proof.
 Qed.
 
 Lemma inv_combine_dup_l `{BiAffine PROP} N P Q :
-  □ (P -∗ P ∗ P) -∗
+  □ ▷ (P -∗ P ∗ P) -∗
   inv N P -∗ inv N Q -∗ inv N (P ∗ Q).
 Proof.
   rewrite inv_eq. iIntros "#HPdup #HinvP #HinvQ !>" (E SUB).
