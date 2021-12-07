@@ -1,6 +1,6 @@
 # BRiCk
 
-A tool for converting C++ files into Coq files accompanied with a C++ axiomatic semantics.
+A program logic for verifying concurrent C++ in Coq.
 
 ## Running
 
