@@ -189,55 +189,21 @@ Section with_cpp.
   Qed.
 
   (** [anyR] The argument pointers points to a value of C++ type [ty] that might be
-      uninitialized.
-
-      TODO generalize this to support aggregate types
-   *)
-  Definition anyR_def {resolve} (ty : type) (q : Qp) : Rep :=
-    (Exists v, primR ty q v) \\// uninitR ty q.
-  Definition anyR_aux : seal (@anyR_def). Proof. by eexists. Qed.
-  Definition anyR := anyR_aux.(unseal).
-  Definition anyR_eq : @anyR = _ := anyR_aux.(seal_eq).
+      uninitialized. *)
+  Parameter anyR : ∀ {resolve} (ty : type) (q : Qp), Rep.
   #[global] Arguments anyR {resolve} ty q : rename.
+  Axiom anyR_timeless : ∀ resolve ty q, Timeless (anyR ty q).
+  Axiom anyR_fractional : ∀ resolve ty, Fractional (anyR ty).
+  Axiom anyR_observe_frac_valid : ∀ resolve ty (q : Qp),
+    Observe [| q ≤ 1 |]%Qp (anyR ty q).
+  Axiom primR_anyR : ∀ resolve t q v, primR t q v |-- anyR t q.
+  Axiom uninitR_anyR : ∀ resolve t q, uninitR t q |-- anyR t q.
+  Axiom anyR_type_ptr_observe : ∀ σ ty q, Observe (type_ptrR ty) (anyR ty q).
 
-  #[global] Instance anyR_timeless resolve ty q : Timeless (anyR ty q).
-  Proof. rewrite anyR_eq. apply _. Qed.
-  #[global] Instance anyR_fractional resolve ty :
-    Fractional (anyR ty).
-  Proof.
-    rewrite anyR_eq /anyR_def. intros q1 q2.
-    apply Rep_equiv_at => p. rewrite !_at_sep !_at_or !_at_exists.
-    split'.
-    { iDestruct 1 as "[V|U]".
-      - rewrite -!bi.or_intro_l.
-        iDestruct "V" as (v) "V".
-        rewrite _at_eq/_at_def.
-        iDestruct "V" as "[V1 V2]".
-        iSplitL "V1"; iExists v; [iFrame "V1"|iFrame "V2"].
-      - iDestruct "U" as "[U1 U2]".
-        iSplitL "U1"; iRight; [iFrame "U1"|iFrame "U2"]. }
-    iDestruct 1 as "[[V1|U1] [V2|U2]]".
-    - iDestruct "V1" as (v1) "V1". iDestruct "V2" as (v2) "V2".
-      iDestruct (observe_2 [| v1 = v2 |] with "V1 V2") as %->.
-      iLeft. iExists v2. rewrite primR_fractional _at_sep. iFrame "V1 V2".
-    - iDestruct "V1" as (v) "V1".
-      rewrite _at_eq/_at_def.
-      iDestruct (primR_uninitR with "V1 U2") as "V".
-      iLeft. iExists _. iFrame "V".
-    - iDestruct "V2" as (v) "V2".
-      rewrite _at_eq/_at_def.
-      iDestruct (primR_uninitR with "V2 U1") as "V".
-      iLeft. iExists _. rewrite comm_L. iFrame "V".
-    - iRight. rewrite uninitR_fractional _at_sep. iFrame "U1 U2".
-  Qed.
+  #[global] Existing Instances anyR_timeless anyR_fractional anyR_observe_frac_valid anyR_type_ptr_observe.
   #[global] Instance anyR_as_fractional resolve ty q :
     AsFractional (anyR ty q) (anyR ty) q.
   Proof. exact: Build_AsFractional. Qed.
-
-  #[global] Instance anyR_observe_frac_valid resolve ty (q : Qp) :
-    Observe [| q ≤ 1 |]%Qp (anyR ty q).
-  Proof. rewrite anyR_eq. apply _. Qed.
-
 End with_cpp.
 
 Typeclasses Opaque primR.
@@ -447,13 +413,6 @@ Section with_cpp.
     apply: observe.
   Qed.
 
-  #[global]
-  Instance anyR_type_ptr_observe σ ty q : Observe (type_ptrR ty) (anyR ty q).
-  Proof.
-    red. rewrite anyR_eq/anyR_def.
-    apply: observe.
-  Qed.
-
   (** Observing [valid_ptr] *)
   #[global]
   Instance primR_valid_observe {σ : genv} {ty q v} : Observe validR (primR ty q v).
@@ -508,10 +467,8 @@ Section with_cpp.
   Proof.
     rewrite is_nonnull_eq uninitR_eq. apply monPred_observe=>p /=. apply _.
   Qed.
-  #[global]
-  Instance anyR_nonnull_observe {σ} {ty q} :
-    Observe is_nonnull (anyR ty q).
-  Proof. rewrite anyR_eq /anyR_def. apply _. Qed.
+  Axiom anyR_nonnull_observe : ∀ {σ} {ty q}, Observe is_nonnull (anyR ty q).
+  #[global] Existing Instance anyR_nonnull_observe.
 
   #[global] Instance blockR_nonnull {σ : genv} n q :
     TCLt (0 ?= n)%N -> Observe is_nonnull (blockR n q).
