@@ -271,7 +271,7 @@ Reasoning about physical memory with `blockR` and `tblockR`
 
 .. note::
 
-   |link:bedrock.lang.cpp.logic.heap_pred#blockR_def| speaks in terms of |link:bedrock.lang.cpp.logic.heap_pred#anyR| (c.f. |link:bedrock.lang.cpp.logic.heap_pred#anyR_def|\ ) which itself speaks in terms of |link:bedrock.lang.cpp.logic.heap_pred#primR| (c.f. |link:bedrock.lang.cpp.logic.heap_pred#primR_def|\ ).
+   |link:bedrock.lang.cpp.logic.heap_pred#blockR_def| speaks in terms of |link:bedrock.lang.cpp.logic.heap_pred#anyR| which itself relates to |link:bedrock.lang.cpp.logic.heap_pred#primR| and |link:bedrock.lang.cpp.logic.heap_pred#uninitR| (c.f. |link:bedrock.lang.cpp.logic.heap_pred#primR_anyR|\ and |link:bedrock.lang.cpp.logic.heap_pred#uninitR_anyR|\ ).
    While `primR` models initialized C++ values of a given type, we can think of the physical memory managed by the C++ abstract machine as a bunch of character arrays, and indeed this view is sound *and* relevant when dealing with custom allocators (see :ref:`this section <object_layout.axiomatized_object_model.high_level.provides_storage>`\ ).
 
 `blockR (sz : N) (q : Qp) : Rep` is a definition which represents fractional ownership (`Qp`) of a contiguous chunk of `sz` bytes - where each byte is either uninitialized or initialized to contain some concrete value of type `char`.
