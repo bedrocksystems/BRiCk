@@ -19,12 +19,12 @@ Due to the structure of C++, |project| contains a separate weakest pre-condition
 Expressions
 ==============
 
-In |project| we break expression evaluation into four weakest pre-condition assertions representing the different `value categories <http://eel.is/c++draft/expr.prop#basic.lval-1>`_ of a C++ expression: temporaries, l-values, x-values, and pr-values.
+In |project| we break expression evaluation down into four weakest pre-condition assertions representing the different `value categories <http://eel.is/c++draft/expr.prop#basic.lval-1>`_ of a C++ expression.
 
 Modeling Temporaries
 ---------------------
 
-In the course of evaluating C++ programs, the language can construct objects that are later destroyed. This occurs for `automatic storage duration <https://eel.is/c++draft/basic.stc.auto#1>`_ variables (i.e. stack allocated variables and temporaries).
+In the course of evaluating C++ programs, the language can construct objects that are later destroyed, this occurs for `automatic storage duration <https://eel.is/c++draft/basic.stc.auto#1>`_ variables (i.e. stack allocated variables and temporaries).
 C++ semantics guarantees that the lifetime of temporaries is well-bracketed, meaning that objects will be destroyed in the reverse order that they were constructed.
 In |project| we capture the stack of objects to be destroyed using the type |link:bedrock.lang.cpp.logic.wp#FreeTemps.t|.
 
@@ -39,7 +39,7 @@ Note that virtual dispatch is *not* used when invoking the destructor.
 `seq a b` means that the temporaries in `a` must be destroyed *before* the temporaries in `b`.
 `par a b` means that the temporaries in `a` and the temporaries in `b` are destroyed in an interleaved manner [#parallel-destruction]_.
 
-The meaning of these constructs is made precise by interpreting the syntax using |link:bedrock.lang.cpp.logic.destroy#interp|.
+The meaning of these constructs is make precise by interpreting the syntax using |link:bedrock.lang.cpp.logic.destroy#interp|.
 
 .. literalinclude:: ../../theories/lang/cpp/logic/destroy.v
    :start-after: (* BEGIN interp *)
@@ -90,7 +90,7 @@ On top of `wp_init`, we can *define* `wp_prval` by universally quantifying the p
    :end-before: (* END wp_prval *)
 
 Note that the pointer `p` is completely unconstrained in this definition.
-In practice the C++ abstract machine will pick this pointer to be fresh and reserve it at this point, proceeding to initialize it when evaluating `e`.
+In practice the C++ abstract machine will pick this pointer to be fresh and reserve at this point and then proceed to initalize it when evaluating `e`.
 
 
 Operands
@@ -112,9 +112,53 @@ The relationship between |link:wp_operand| and |link:wp_init| can be precisely c
    :end-before: (* END wp_init <-> wp_operand *)
 
 The first of these axioms states that initializing *a primitive* using an expression `e` can be viewed as evaluating `e` using operand semantics and then materializing a value (using |link:bedrock.lang.cpp.logic.heap_pred#primR|) with the value and the type of the expression.
-The second of these axioms, which is not technically justified by the standard and is therefore only provided for documentation purposes, states that evaluating an operand can be viewed as initializing a fresh primitive object, reading the value out of it, destroying it, and then returning the result to the continuation `Q`.
+The second of these axioms, which is not technically justified by the standard and is therefore only provided for documentation purposes states that evaluating an operand can be viewed as initializing a fresh primitive object, reading the value out of it, destroying it, and then returning the result to the continuation `Q`.
 The reason that this rule is not technically justified by the standard is because the C++ standard states explicitly that there is no identity associated with this sort of value.
 However, since the existance of a pointer does not imply that the object has a location in the |project| model, we can create a fresh `ptr` and then immediately destroy it.
 
+
+Function Call Semantics
+------------------------
+
+The semantics for function calls is concerned with the way that we pass arguments to functions and (potentially) recieve the return value.
+We note that it is important to handle the passing of primitives as well as aggregates, both of which are very common in C++.
+Further, because C++ has destrutors, it is important that the caller gets to determine the order of destruction since it needs to be the reverse of the order of construction.
+
+The current function call semantics are in the process of changing.
+Here, we discuss the current and the under-development behavior.
+
+Hybrid Argument Passing (Current |project|)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+C++ distinguishes (in a stronger way than C) the difference between primitive types, e.g. :cpp:`int` and :cpp:`C*`, and aggregate types, i.e. :cpp:`struct C` or :cpp:`union C`.
+Due to this distinguishing characteristic, on option is a hybrid argument passing style where primitives are passed directly and aggregates are passed materialized.
+
+- Primitives are passed as values and aggregates via locations
+- Pro: Primitives can be directly destructed in specifications
+- Con: Probably break templates because an instantiation with a primitive value would produce quite different code than an instantiatation with an aggregate value
+
+
+Uniform Location Passing (future |project|)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The C++ semantics `describes parameter passing (and return) using initialization semantics <https://eel.is/c++draft/expr.call#7>`_ and following this approach would give |project| the closest connection to the standard.
+It is also the style taken by `Cerberus <https://www.cl.cam.ac.uk/~pes20/cerberus/>`_.
+
+
+The main benefit of this approach is that it enables a (mostly) uniform treatment of arguments to functions which is important when reasoning about :cpp:`template`-d code.
+Another beneift is that all of the information is present in the specification rather than geting some of the type information from the function's type.
+
+The drawback of this approach is mostly a matter of assertion size.
+In the case of passing primtives in this style, the *caller* needs to allocate state within the logic when passing primitives.
+
+Uniform Value Passing
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Given the hybrid nature, it might seem reasonable to have a uniform value passing semantics.
+This approach is taken in other systems such as `RefinedC <https://gitlab.mpi-sws.org/iris/refinedc>`_.
+Following this approach in |project| would require that we have a value representation for aggregates which, we believe, would be difficult and would require that we replicate a lot of reasoning at this value level.
+
+
+
 .. rubric:: Footnotes
-.. [#parallel-destruction] We use `par` to under-approximate the destruction order of temporaries when C++ does not guarantee it statically. For example, in the function call `f(a,b,c)`, the expressions `a`, `b`, and `c` can be evaluated in any order and we can approximate the ordering provided by C++ by saying they are destroyed in parallel.
+.. [#parallel-destruction] We use `par` to under approximate the destruction order of temporaries when C++ does not guarantee it statically. For example, in the function call `f(a,b,c)`, the expressions `a`, `b`, and `c` can be evaluated in any order and we can approximate the ordering provided by c++ by saying they are destroyed in parallel.

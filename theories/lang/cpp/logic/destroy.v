@@ -133,8 +133,9 @@ Section destroy.
   (* BEGIN interp *)
   (** [interp free Q] "runs" [free] and then acts like [Q].
 
-      TODO it might make sense for this to be like a [wp] where this
-      will have fancy update modalities.
+      NOTE this could directly support update modalities like regular [wp]s
+           but in practice it is always going to occur at the end of a [wp] which
+           means it will already have access to a fancy update.
    *)
   Fixpoint interp (free : FreeTemps) (Q : epred) : mpred :=
     match free with
