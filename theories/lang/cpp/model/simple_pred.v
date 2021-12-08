@@ -15,7 +15,12 @@ Require Import bedrock.lang.cpp.logic.own_instances.
 
 From bedrock.prelude Require Import base option.
 Require Import bedrock.lang.cpp.arith.z_to_bytes.
-From bedrock.lang.cpp Require Import ast semantics.
+From bedrock.lang.cpp.syntax Require Import
+     names
+     types
+     typing
+     translation_unit.
+From bedrock.lang.cpp.semantics Require Import values subtyping.
 From bedrock.lang.cpp.logic Require Import mpred pred.
 
 Implicit Types (vt : validity_type) (σ resolve : genv).
