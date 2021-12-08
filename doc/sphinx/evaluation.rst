@@ -31,6 +31,7 @@ In |project| we capture the stack of objects to be destroyed using the type |lin
 .. literalinclude:: ../../theories/lang/cpp/logic/wp.v
    :start-after: (* BEGIN FreeTemps.t *)
    :end-before: (* END FreeTemps.t *)
+   :dedent:
 
 Here |link:bedrock.lang.cpp.logic.wp#FreeTemps.id| represents the identity, characterizing that nothing needs to be destroyed.
 `delete ty p` represents that the value at pointer `p` (which should have type `ty`) needs to be destroyed.
@@ -44,6 +45,7 @@ The meaning of these constructs is make precise by interpreting the syntax using
 .. literalinclude:: ../../theories/lang/cpp/logic/destroy.v
    :start-after: (* BEGIN interp *)
    :end-before: (* END interp *)
+   :dedent:
 
 l-values & x-values
 ----------------------
@@ -54,15 +56,16 @@ Their weakest precondition rules are captured by |link:bedrock.lang.cpp.logic.wp
 .. literalinclude:: ../../theories/lang/cpp/logic/wp.v
    :start-after: (* BEGIN wp_lval *)
    :end-before: (* END wp_lval *)
-
+   :dedent:
 
 pr-values
 ----------------------
 
 The final value category of C++ (pr-values) is slightly more complex than l-values and x-values.
-The `C++ standard describes them as follows <http://eel.is/c++draft/expr.prop#basic.lval-1.2>`_:
+The `C++ standard <http://eel.is/c++draft/expr.prop#basic.lval-1.2>`_ describes them as follows:
 
 .. quote:
+
    A prvalue is an expression whose evaluation initializes an object or
    computes the value of an operand of an operator, as specified by the
    context in which it appears, or an expression that has type cv void."
@@ -73,6 +76,7 @@ The parameter is the following:
 .. literalinclude:: ../../theories/lang/cpp/logic/wp.v
    :start-after: (* BEGIN wp_init *)
    :end-before: (* END wp_init *)
+   :dedent:
 
 This definition has two interesting differences from `wp_lval` and `wp_xval`.
 The first is that it takes a |link:bedrock.lang.cpp.semantics.values#PTRS.ptr| that reprsents the location that the object is being consructed into.
@@ -88,6 +92,7 @@ On top of `wp_init`, we can *define* `wp_prval` by universally quantifying the p
 .. literalinclude:: ../../theories/lang/cpp/logic/wp.v
    :start-after: (* BEGIN wp_prval *)
    :end-before: (* END wp_prval *)
+   :dedent:
 
 Note that the pointer `p` is completely unconstrained in this definition.
 In practice the C++ abstract machine will pick this pointer to be fresh and reserve at this point and then proceed to initalize it when evaluating `e`.
@@ -101,6 +106,7 @@ Note that in C++, an operand is *always* a primitive since operators that accept
 .. literalinclude:: ../../theories/lang/cpp/logic/wp.v
    :start-after: (* BEGIN wp_operand *)
    :end-before: (* END wp_operand *)
+   :dedent:
 
 Unlike `wp_init` and `wp_prval`, operands return |link:bedrock.lang.cpp.semantics.value#val|\ s.
 Because the value returned does not have an identity, there is nothing to destroy, so, unlike `wp_prval` and `wp_init`, the continuation takes a single `FreeTemps` representing the way to destroy the temporaries created when evaluating the operand.
@@ -110,6 +116,7 @@ The relationship between |link:wp_operand| and |link:wp_init| can be precisely c
 .. literalinclude:: ../../theories/lang/cpp/logic/wp.v
    :start-after: (* BEGIN wp_init <-> wp_operand *)
    :end-before: (* END wp_init <-> wp_operand *)
+   :dedent:
 
 The first of these axioms states that initializing *a primitive* using an expression `e` can be viewed as evaluating `e` using operand semantics and then materializing a value (using |link:bedrock.lang.cpp.logic.heap_pred#primR|) with the value and the type of the expression.
 The second of these axioms, which is not technically justified by the standard and is therefore only provided for documentation purposes states that evaluating an operand can be viewed as initializing a fresh primitive object, reading the value out of it, destroying it, and then returning the result to the continuation `Q`.
