@@ -3,7 +3,7 @@
 ## This software is distributed under the terms of the BedRock Open-Source License.
 ## See the LICENSE-BedRock file in the repository root for details.
 ##
-cmake_minimum_required(VERSION 3.13.4)
+cmake_minimum_required(VERSION 3.10.2)
 project(cpp2v)
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14")
@@ -12,22 +12,18 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14")
 set(CMAKE_FIND_PACKAGE_SORT_ORDER NATURAL)
 set(CMAKE_FIND_PACKAGE_SORT_DIRECTION DEC)
 
-#find_package(LLVM REQUIRED CONFIG)
-#message(STATUS "Found LLVM ${LLVM_PACKAGE_VERSION}")
-#message(STATUS "Using LLVMConfig.cmake in: ${LLVM_DIR}")
-
 find_package(Clang REQUIRED CONFIG)
-message(STATUS "Found LLVM ${LLVM_PACKAGE_VERSION}")
+message(STATUS "Found LLVM: ${LLVM_INSTALL_PREFIX} (version ${LLVM_PACKAGE_VERSION})")
 message(STATUS "Using ClangConfig.cmake in: ${CLANG_CMAKE_DIR}")
 message(STATUS "Using LLVMConfig.cmake in: ${LLVM_DIR}")
 
 set(CMAKE_MODULE_PATH
   ${CMAKE_MODULE_PATH}
   "${LLVM_CMAKE_DIR}"
+  "${CLANG_CMAKE_DIR}"
 )
 
 include(AddLLVM)
-#include(AddClang)
 
 include_directories(
   ${LLVM_INCLUDE_DIRS}
@@ -75,16 +71,12 @@ add_llvm_library(tocoq
 set_property(TARGET tocoq PROPERTY POSITION_INDEPENDENT_CODE ON)
 add_compile_options(-fno-rtti)
 
-#add_clang_executable(cpp2v
-#add_executable(cpp2v
 add_llvm_executable(cpp2v
   src/cpp2v.cpp
 )
 
 
 # Link against LLVM/Clang and tocoq libraries
-#target_link_libraries(cpp2v ${llvm_libs} clangTooling)
-#target_link_libraries(cpp2v PUBLIC ${llvm_libs} tocoq)
 target_link_libraries(cpp2v PUBLIC clang-cpp tocoq)
 
 
