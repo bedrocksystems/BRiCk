@@ -1,0 +1,302 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<!--
+-- Copyright (c) 2020 BedRock Systems, Inc.
+-- This software is distributed under the terms of the BedRock Open-Source License.
+-- See the LICENSE-BedRock file in the repository root for details.
+-->
+
+<!--
+-- SPDX-LIcense-Identifier:BSD-2-Clause
+-->
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+<meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
+<link href="../css/coqdocjs/coqdoc.css" rel="stylesheet" type="text/css" />
+<link href="../css/coqdocjs/coqdocjs.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="../js/coqdocjs/config.js"></script>
+<script type="text/javascript" src="../js/coqdocjs/coqdocjs.js"></script>
+</head>
+
+<body onload="document.getElementById('content').focus()">
+  <div id="header">
+    <span class="left">
+      <span class="modulename"> <script> document.write(document.title) </script> </span>
+    </span>
+
+    <span class="button" id="toggle-proofs"></span>
+
+    <!-- NOTE: These are displayed right to left on the page -->
+    <span class="right">
+      <a href="./indexpage.html"> Index </a>
+      <a href="./toc.html"> `theories/` </a>
+      <a href="../../index.html"> Toplevel </a>
+    </span>
+</div>
+    <div id="content" tabindex="-1" onblur="document.getElementById('content').focus()">
+    <div id="main">
+<h1 class="libtitle">bedrock.lang.cpp.syntax.expr</h1>
+
+<div class="code">
+<span class="comment">(*<br/>
+&nbsp;*&nbsp;Copyright&nbsp;(c)&nbsp;2020&nbsp;BedRock&nbsp;Systems,&nbsp;Inc.<br/>
+&nbsp;*&nbsp;This&nbsp;software&nbsp;is&nbsp;distributed&nbsp;under&nbsp;the&nbsp;terms&nbsp;of&nbsp;the&nbsp;BedRock&nbsp;Open-Source&nbsp;License.<br/>
+&nbsp;*&nbsp;See&nbsp;the&nbsp;LICENSE-BedRock&nbsp;file&nbsp;in&nbsp;the&nbsp;repository&nbsp;root&nbsp;for&nbsp;details.<br/>
+&nbsp;*)</span><br/>
+<span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <a class="idref" href="bedrock.prelude.base.html#"><span class="id" title="library">bedrock.prelude.base</span></a>.<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">bedrock.lang.cpp.syntax</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <a class="idref" href="bedrock.lang.cpp.syntax.names.html#"><span class="id" title="library">names</span></a> <a class="idref" href="bedrock.lang.cpp.syntax.types.html#"><span class="id" title="library">types</span></a>.<br/>
+
+<br/>
+<span class="id" title="keyword">Set</span> <span class="id" title="var">Primitive</span> <span class="id" title="var">Projections</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Variant</span> <a id="UnOp" class="idref" href="#UnOp"><span class="id" title="inductive">UnOp</span></a> : <span class="id" title="keyword">Set</span> :=<br/>
+| <a id="Uminus" class="idref" href="#Uminus"><span class="id" title="constructor">Uminus</span></a><br/>
+| <a id="Unot" class="idref" href="#Unot"><span class="id" title="constructor">Unot</span></a><br/>
+| <a id="Ubnot" class="idref" href="#Ubnot"><span class="id" title="constructor">Ubnot</span></a><br/>
+| <a id="Uother" class="idref" href="#Uother"><span class="id" title="constructor">Uother</span></a> (<span class="id" title="var">_</span> : <a class="idref" href="bedrock.prelude.bytestring_core.html#BS.Bytestring_notations.bs"><span class="id" title="abbreviation">bs</span></a>).<br/>
+<span class="id" title="keyword">Instance</span>: <a class="idref" href="https://plv.mpi-sws.org/coqdoc/stdpp//stdpp.base.html#EqDecision"><span class="id" title="abbreviation">EqDecision</span></a> <a class="idref" href="bedrock.lang.cpp.syntax.expr.html#UnOp"><span class="id" title="inductive">UnOp</span></a>.<br/>
+<span class="id" title="keyword">Proof</span>. <span class="id" title="var">solve_decision</span>. <span class="id" title="keyword">Defined</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Variant</span> <a id="BinOp" class="idref" href="#BinOp"><span class="id" title="inductive">BinOp</span></a> : <span class="id" title="keyword">Set</span> :=<br/>
+| <a id="Badd" class="idref" href="#Badd"><span class="id" title="constructor">Badd</span></a><br/>
+| <a id="Band" class="idref" href="#Band"><span class="id" title="constructor">Band</span></a> <span class="comment">(*&nbsp;&amp;&nbsp;*)</span><br/>
+| <a id="Bcmp" class="idref" href="#Bcmp"><span class="id" title="constructor">Bcmp</span></a> <span class="comment">(*&nbsp;&lt;=&gt;&nbsp;*)</span><br/>
+| <a id="Bdiv" class="idref" href="#Bdiv"><span class="id" title="constructor">Bdiv</span></a> <span class="comment">(*&nbsp;/&nbsp;*)</span><br/>
+| <a id="Beq" class="idref" href="#Beq"><span class="id" title="constructor">Beq</span></a><br/>
+| <a id="Bge" class="idref" href="#Bge"><span class="id" title="constructor">Bge</span></a><br/>
+| <a id="Bgt" class="idref" href="#Bgt"><span class="id" title="constructor">Bgt</span></a><br/>
+| <a id="Ble" class="idref" href="#Ble"><span class="id" title="constructor">Ble</span></a><br/>
+| <a id="Blt" class="idref" href="#Blt"><span class="id" title="constructor">Blt</span></a><br/>
+| <a id="Bmul" class="idref" href="#Bmul"><span class="id" title="constructor">Bmul</span></a><br/>
+| <a id="Bneq" class="idref" href="#Bneq"><span class="id" title="constructor">Bneq</span></a><br/>
+| <a id="Bor" class="idref" href="#Bor"><span class="id" title="constructor">Bor</span></a>  <span class="comment">(*&nbsp;|&nbsp;*)</span><br/>
+| <a id="Bmod" class="idref" href="#Bmod"><span class="id" title="constructor">Bmod</span></a><br/>
+| <a id="Bshl" class="idref" href="#Bshl"><span class="id" title="constructor">Bshl</span></a><br/>
+| <a id="Bshr" class="idref" href="#Bshr"><span class="id" title="constructor">Bshr</span></a><br/>
+| <a id="Bsub" class="idref" href="#Bsub"><span class="id" title="constructor">Bsub</span></a><br/>
+| <a id="Bxor" class="idref" href="#Bxor"><span class="id" title="constructor">Bxor</span></a> <span class="comment">(*&nbsp;^&nbsp;*)</span><br/>
+| <a id="Bdotp" class="idref" href="#Bdotp"><span class="id" title="constructor">Bdotp</span></a> <span class="comment">(*&nbsp;.*&nbsp;*)</span><br/>
+| <a id="Bdotip" class="idref" href="#Bdotip"><span class="id" title="constructor">Bdotip</span></a> <span class="comment">(*&nbsp;-&gt;*&nbsp;*)</span><br/>
+.<br/>
+<span class="id" title="keyword">Instance</span>: <a class="idref" href="https://plv.mpi-sws.org/coqdoc/stdpp//stdpp.base.html#EqDecision"><span class="id" title="abbreviation">EqDecision</span></a> <a class="idref" href="bedrock.lang.cpp.syntax.expr.html#BinOp"><span class="id" title="inductive">BinOp</span></a>.<br/>
+<span class="id" title="keyword">Proof</span>. <span class="id" title="var">solve_decision</span>. <span class="id" title="keyword">Defined</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Variant</span> <a id="AtomicOp" class="idref" href="#AtomicOp"><span class="id" title="inductive">AtomicOp</span></a> : <span class="id" title="keyword">Set</span> :=<br/>
+| <a id="AO__atomic_load" class="idref" href="#AO__atomic_load"><span class="id" title="constructor">AO__atomic_load</span></a><br/>
+| <a id="AO__atomic_load_n" class="idref" href="#AO__atomic_load_n"><span class="id" title="constructor">AO__atomic_load_n</span></a><br/>
+| <a id="AO__atomic_store" class="idref" href="#AO__atomic_store"><span class="id" title="constructor">AO__atomic_store</span></a><br/>
+| <a id="AO__atomic_store_n" class="idref" href="#AO__atomic_store_n"><span class="id" title="constructor">AO__atomic_store_n</span></a><br/>
+| <a id="AO__atomic_compare_exchange" class="idref" href="#AO__atomic_compare_exchange"><span class="id" title="constructor">AO__atomic_compare_exchange</span></a><br/>
+| <a id="AO__atomic_compare_exchange_n" class="idref" href="#AO__atomic_compare_exchange_n"><span class="id" title="constructor">AO__atomic_compare_exchange_n</span></a><br/>
+| <a id="AO__atomic_exchange" class="idref" href="#AO__atomic_exchange"><span class="id" title="constructor">AO__atomic_exchange</span></a><br/>
+| <a id="AO__atomic_exchange_n" class="idref" href="#AO__atomic_exchange_n"><span class="id" title="constructor">AO__atomic_exchange_n</span></a><br/>
+| <a id="AO__atomic_fetch_add" class="idref" href="#AO__atomic_fetch_add"><span class="id" title="constructor">AO__atomic_fetch_add</span></a><br/>
+| <a id="AO__atomic_fetch_sub" class="idref" href="#AO__atomic_fetch_sub"><span class="id" title="constructor">AO__atomic_fetch_sub</span></a><br/>
+| <a id="AO__atomic_fetch_and" class="idref" href="#AO__atomic_fetch_and"><span class="id" title="constructor">AO__atomic_fetch_and</span></a><br/>
+| <a id="AO__atomic_fetch_or" class="idref" href="#AO__atomic_fetch_or"><span class="id" title="constructor">AO__atomic_fetch_or</span></a><br/>
+| <a id="AO__atomic_fetch_xor" class="idref" href="#AO__atomic_fetch_xor"><span class="id" title="constructor">AO__atomic_fetch_xor</span></a><br/>
+| <a id="AO__atomic_fetch_nand" class="idref" href="#AO__atomic_fetch_nand"><span class="id" title="constructor">AO__atomic_fetch_nand</span></a><br/>
+| <a id="AO__atomic_add_fetch" class="idref" href="#AO__atomic_add_fetch"><span class="id" title="constructor">AO__atomic_add_fetch</span></a><br/>
+| <a id="AO__atomic_sub_fetch" class="idref" href="#AO__atomic_sub_fetch"><span class="id" title="constructor">AO__atomic_sub_fetch</span></a><br/>
+| <a id="AO__atomic_and_fetch" class="idref" href="#AO__atomic_and_fetch"><span class="id" title="constructor">AO__atomic_and_fetch</span></a><br/>
+| <a id="AO__atomic_or_fetch" class="idref" href="#AO__atomic_or_fetch"><span class="id" title="constructor">AO__atomic_or_fetch</span></a><br/>
+| <a id="AO__atomic_xor_fetch" class="idref" href="#AO__atomic_xor_fetch"><span class="id" title="constructor">AO__atomic_xor_fetch</span></a><br/>
+| <a id="AO__atomic_nand_fetch" class="idref" href="#AO__atomic_nand_fetch"><span class="id" title="constructor">AO__atomic_nand_fetch</span></a><br/>
+.<br/>
+<span class="id" title="keyword">Instance</span>: <a class="idref" href="https://plv.mpi-sws.org/coqdoc/stdpp//stdpp.base.html#EqDecision"><span class="id" title="abbreviation">EqDecision</span></a> <a class="idref" href="bedrock.lang.cpp.syntax.expr.html#AtomicOp"><span class="id" title="inductive">AtomicOp</span></a>.<br/>
+<span class="id" title="keyword">Proof</span>. <span class="id" title="var">solve_decision</span>. <span class="id" title="keyword">Defined</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Variant</span> <a id="BuiltinFn" class="idref" href="#BuiltinFn"><span class="id" title="inductive">BuiltinFn</span></a> : <span class="id" title="keyword">Set</span> :=<br/>
+| <a id="Bin_alloca" class="idref" href="#Bin_alloca"><span class="id" title="constructor">Bin_alloca</span></a><br/>
+| <a id="Bin_alloca_with_align" class="idref" href="#Bin_alloca_with_align"><span class="id" title="constructor">Bin_alloca_with_align</span></a><br/>
+| <a id="Bin_launder" class="idref" href="#Bin_launder"><span class="id" title="constructor">Bin_launder</span></a><br/>
+| <a id="Bin_expect" class="idref" href="#Bin_expect"><span class="id" title="constructor">Bin_expect</span></a><br/>
+| <a id="Bin_unreachable" class="idref" href="#Bin_unreachable"><span class="id" title="constructor">Bin_unreachable</span></a><br/>
+| <a id="Bin_trap" class="idref" href="#Bin_trap"><span class="id" title="constructor">Bin_trap</span></a><br/>
+| <a id="Bin_bswap16" class="idref" href="#Bin_bswap16"><span class="id" title="constructor">Bin_bswap16</span></a><br/>
+| <a id="Bin_bswap32" class="idref" href="#Bin_bswap32"><span class="id" title="constructor">Bin_bswap32</span></a><br/>
+| <a id="Bin_bswap64" class="idref" href="#Bin_bswap64"><span class="id" title="constructor">Bin_bswap64</span></a><br/>
+| <a id="Bin_bswap128" class="idref" href="#Bin_bswap128"><span class="id" title="constructor">Bin_bswap128</span></a><br/>
+| <a id="Bin_bzero" class="idref" href="#Bin_bzero"><span class="id" title="constructor">Bin_bzero</span></a><br/>
+| <a id="Bin_ffs" class="idref" href="#Bin_ffs"><span class="id" title="constructor">Bin_ffs</span></a><br/>
+| <a id="Bin_ffsl" class="idref" href="#Bin_ffsl"><span class="id" title="constructor">Bin_ffsl</span></a><br/>
+| <a id="Bin_ffsll" class="idref" href="#Bin_ffsll"><span class="id" title="constructor">Bin_ffsll</span></a><br/>
+| <a id="Bin_clz" class="idref" href="#Bin_clz"><span class="id" title="constructor">Bin_clz</span></a><br/>
+| <a id="Bin_clzl" class="idref" href="#Bin_clzl"><span class="id" title="constructor">Bin_clzl</span></a><br/>
+| <a id="Bin_clzll" class="idref" href="#Bin_clzll"><span class="id" title="constructor">Bin_clzll</span></a><br/>
+| <a id="Bin_ctz" class="idref" href="#Bin_ctz"><span class="id" title="constructor">Bin_ctz</span></a><br/>
+| <a id="Bin_ctzl" class="idref" href="#Bin_ctzl"><span class="id" title="constructor">Bin_ctzl</span></a><br/>
+| <a id="Bin_ctzll" class="idref" href="#Bin_ctzll"><span class="id" title="constructor">Bin_ctzll</span></a><br/>
+| <a id="Bin_popcount" class="idref" href="#Bin_popcount"><span class="id" title="constructor">Bin_popcount</span></a><br/>
+| <a id="Bin_popcountl" class="idref" href="#Bin_popcountl"><span class="id" title="constructor">Bin_popcountl</span></a><br/>
+| <a id="Bin_unknown" class="idref" href="#Bin_unknown"><span class="id" title="constructor">Bin_unknown</span></a> (<span class="id" title="var">_</span> : <a class="idref" href="bedrock.prelude.bytestring_core.html#BS.Bytestring_notations.bs"><span class="id" title="abbreviation">bs</span></a>)<br/>
+.<br/>
+<span class="id" title="keyword">Instance</span>: <a class="idref" href="https://plv.mpi-sws.org/coqdoc/stdpp//stdpp.base.html#EqDecision"><span class="id" title="abbreviation">EqDecision</span></a> <a class="idref" href="bedrock.lang.cpp.syntax.expr.html#BuiltinFn"><span class="id" title="inductive">BuiltinFn</span></a>.<br/>
+<span class="id" title="keyword">Proof</span>. <span class="id" title="var">solve_decision</span>. <span class="id" title="keyword">Defined</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<a id="lab77"></a><h1 class="section">Casts</h1>
+
+</div>
+<div class="code">
+<span class="id" title="keyword">Variant</span> <a id="Cast" class="idref" href="#Cast"><span class="id" title="inductive">Cast</span></a> : <span class="id" title="keyword">Set</span> :=<br/>
+| <a id="Cdependent" class="idref" href="#Cdependent"><span class="id" title="constructor">Cdependent</span></a> <span class="comment">(*&nbsp;this&nbsp;doesn't&nbsp;have&nbsp;any&nbsp;semantics&nbsp;*)</span><br/>
+| <a id="Cbitcast" class="idref" href="#Cbitcast"><span class="id" title="constructor">Cbitcast</span></a><br/>
+| <a id="Clvaluebitcast" class="idref" href="#Clvaluebitcast"><span class="id" title="constructor">Clvaluebitcast</span></a><br/>
+| <a id="Cl2r" class="idref" href="#Cl2r"><span class="id" title="constructor">Cl2r</span></a><br/>
+| <a id="Cnoop" class="idref" href="#Cnoop"><span class="id" title="constructor">Cnoop</span></a><br/>
+| <a id="Carray2pointer" class="idref" href="#Carray2pointer"><span class="id" title="constructor">Carray2pointer</span></a><br/>
+| <a id="Cfunction2pointer" class="idref" href="#Cfunction2pointer"><span class="id" title="constructor">Cfunction2pointer</span></a><br/>
+| <a id="Cint2pointer" class="idref" href="#Cint2pointer"><span class="id" title="constructor">Cint2pointer</span></a><br/>
+| <a id="Cpointer2int" class="idref" href="#Cpointer2int"><span class="id" title="constructor">Cpointer2int</span></a><br/>
+| <a id="Cptr2bool" class="idref" href="#Cptr2bool"><span class="id" title="constructor">Cptr2bool</span></a><br/>
+| <a id="Cderived2base" class="idref" href="#Cderived2base"><span class="id" title="constructor">Cderived2base</span></a><br/>
+| <a id="Cbase2derived" class="idref" href="#Cbase2derived"><span class="id" title="constructor">Cbase2derived</span></a><br/>
+| <a id="Cintegral" class="idref" href="#Cintegral"><span class="id" title="constructor">Cintegral</span></a><br/>
+| <a id="Cint2bool" class="idref" href="#Cint2bool"><span class="id" title="constructor">Cint2bool</span></a><br/>
+| <a id="Cnull2ptr" class="idref" href="#Cnull2ptr"><span class="id" title="constructor">Cnull2ptr</span></a><br/>
+| <a id="Cbuiltin2function" class="idref" href="#Cbuiltin2function"><span class="id" title="constructor">Cbuiltin2function</span></a><br/>
+| <a id="Cconstructorconversion" class="idref" href="#Cconstructorconversion"><span class="id" title="constructor">Cconstructorconversion</span></a><br/>
+| <a id="C2void" class="idref" href="#C2void"><span class="id" title="constructor">C2void</span></a><br/>
+| <a id="Cuser" class="idref" href="#Cuser"><span class="id" title="constructor">Cuser</span></a>        (<a id="conversion_function:11" class="idref" href="#conversion_function:11"><span class="id" title="binder">conversion_function</span></a> : <a class="idref" href="bedrock.lang.cpp.syntax.names.html#obj_name"><span class="id" title="definition">obj_name</span></a>)<br/>
+| <a id="Creinterpret" class="idref" href="#Creinterpret"><span class="id" title="constructor">Creinterpret</span></a> (<span class="id" title="var">_</span> : <a class="idref" href="bedrock.lang.cpp.syntax.types.html#type"><span class="id" title="inductive">type</span></a>)<br/>
+| <a id="Cstatic" class="idref" href="#Cstatic"><span class="id" title="constructor">Cstatic</span></a>      (<a id="from:12" class="idref" href="#from:12"><span class="id" title="binder">from</span></a> <a id="to:13" class="idref" href="#to:13"><span class="id" title="binder">to</span></a> : <a class="idref" href="bedrock.lang.cpp.syntax.names.html#globname"><span class="id" title="definition">globname</span></a>)<br/>
+| <a id="Cdynamic" class="idref" href="#Cdynamic"><span class="id" title="constructor">Cdynamic</span></a>     (<a id="from:14" class="idref" href="#from:14"><span class="id" title="binder">from</span></a> <a id="to:15" class="idref" href="#to:15"><span class="id" title="binder">to</span></a> : <a class="idref" href="bedrock.lang.cpp.syntax.names.html#globname"><span class="id" title="definition">globname</span></a>)<br/>
+| <a id="Cconst" class="idref" href="#Cconst"><span class="id" title="constructor">Cconst</span></a>       (<span class="id" title="var">_</span> : <a class="idref" href="bedrock.lang.cpp.syntax.types.html#type"><span class="id" title="inductive">type</span></a>).<br/>
+<span class="id" title="keyword">Instance</span> <a id="Cast_eqdec" class="idref" href="#Cast_eqdec"><span class="id" title="instance">Cast_eqdec</span></a>: <a class="idref" href="https://plv.mpi-sws.org/coqdoc/stdpp//stdpp.base.html#EqDecision"><span class="id" title="abbreviation">EqDecision</span></a> <a class="idref" href="bedrock.lang.cpp.syntax.expr.html#Cast"><span class="id" title="inductive">Cast</span></a>.<br/>
+<span class="id" title="keyword">Proof</span>. <span class="id" title="var">solve_decision</span>. <span class="id" title="keyword">Defined</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<a id="lab78"></a><h1 class="section">References</h1>
+
+</div>
+<div class="code">
+<span class="id" title="keyword">Variant</span> <a id="VarRef" class="idref" href="#VarRef"><span class="id" title="inductive">VarRef</span></a> : <span class="id" title="keyword">Set</span> :=<br/>
+| <a id="Lname" class="idref" href="#Lname"><span class="id" title="constructor">Lname</span></a> (<span class="id" title="var">_</span> : <a class="idref" href="bedrock.lang.cpp.syntax.names.html#localname"><span class="id" title="definition">localname</span></a>)<br/>
+| <a id="Gname" class="idref" href="#Gname"><span class="id" title="constructor">Gname</span></a> (<span class="id" title="var">_</span> : <a class="idref" href="bedrock.lang.cpp.syntax.names.html#globname"><span class="id" title="definition">globname</span></a>).<br/>
+<span class="id" title="keyword">Instance</span>: <a class="idref" href="https://plv.mpi-sws.org/coqdoc/stdpp//stdpp.base.html#EqDecision"><span class="id" title="abbreviation">EqDecision</span></a> <a class="idref" href="bedrock.lang.cpp.syntax.expr.html#VarRef"><span class="id" title="inductive">VarRef</span></a>.<br/>
+<span class="id" title="keyword">Proof</span>. <span class="id" title="var">solve_decision</span>. <span class="id" title="keyword">Defined</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Variant</span> <a id="call_type" class="idref" href="#call_type"><span class="id" title="inductive">call_type</span></a> : <span class="id" title="keyword">Set</span> := <a id="Virtual" class="idref" href="#Virtual"><span class="id" title="constructor">Virtual</span></a> | <a id="Direct" class="idref" href="#Direct"><span class="id" title="constructor">Direct</span></a>.<br/>
+<span class="id" title="keyword">Instance</span>: <a class="idref" href="https://plv.mpi-sws.org/coqdoc/stdpp//stdpp.base.html#EqDecision"><span class="id" title="abbreviation">EqDecision</span></a> <a class="idref" href="bedrock.lang.cpp.syntax.expr.html#call_type"><span class="id" title="inductive">call_type</span></a>.<br/>
+<span class="id" title="keyword">Proof</span>. <span class="id" title="var">solve_decision</span>. <span class="id" title="keyword">Defined</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Variant</span> <a id="ValCat" class="idref" href="#ValCat"><span class="id" title="inductive">ValCat</span></a> : <span class="id" title="keyword">Set</span> := <a id="Lvalue" class="idref" href="#Lvalue"><span class="id" title="constructor">Lvalue</span></a> | <a id="Prvalue" class="idref" href="#Prvalue"><span class="id" title="constructor">Prvalue</span></a> | <a id="Xvalue" class="idref" href="#Xvalue"><span class="id" title="constructor">Xvalue</span></a>.<br/>
+<span class="id" title="keyword">Instance</span>: <a class="idref" href="https://plv.mpi-sws.org/coqdoc/stdpp//stdpp.base.html#EqDecision"><span class="id" title="abbreviation">EqDecision</span></a> <a class="idref" href="bedrock.lang.cpp.syntax.expr.html#ValCat"><span class="id" title="inductive">ValCat</span></a>.<br/>
+<span class="id" title="keyword">Proof</span>. <span class="id" title="var">solve_decision</span>. <span class="id" title="keyword">Defined</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Inductive</span> <a id="Expr" class="idref" href="#Expr"><span class="id" title="inductive">Expr</span></a> : <span class="id" title="keyword">Set</span> :=<br/>
+| <a id="Econst_ref" class="idref" href="#Econst_ref"><span class="id" title="constructor">Econst_ref</span></a> (<span class="id" title="var">_</span> : <a class="idref" href="bedrock.lang.cpp.syntax.expr.html#VarRef"><span class="id" title="inductive">VarRef</span></a>) (<span class="id" title="var">_</span> : <a class="idref" href="bedrock.lang.cpp.syntax.types.html#type"><span class="id" title="inductive">type</span></a>)<br/>
+&nbsp;&nbsp;<span class="comment">(*&nbsp;^&nbsp;these&nbsp;are&nbsp;different&nbsp;because&nbsp;they&nbsp;do&nbsp;not&nbsp;have&nbsp;addresses&nbsp;*)</span><br/>
+| <a id="Evar" class="idref" href="#Evar"><span class="id" title="constructor">Evar</span></a>     (<span class="id" title="var">_</span> : <a class="idref" href="bedrock.lang.cpp.syntax.expr.html#VarRef"><span class="id" title="inductive">VarRef</span></a>) (<span class="id" title="var">_</span> : <a class="idref" href="bedrock.lang.cpp.syntax.types.html#type"><span class="id" title="inductive">type</span></a>)<br/>
+&nbsp;&nbsp;<span class="comment">(*&nbsp;^&nbsp;local&nbsp;and&nbsp;global&nbsp;variable&nbsp;reference&nbsp;*)</span><br/>
+<br/>
+| <a id="Echar" class="idref" href="#Echar"><span class="id" title="constructor">Echar</span></a>    (<span class="id" title="var">_</span> : <a class="idref" href="http://coq.inria.fr/distrib/V8.13.2/stdlib//Coq.Numbers.BinNums.html#Z"><span class="id" title="inductive">Z</span></a>) (<span class="id" title="var">_</span> : <a class="idref" href="bedrock.lang.cpp.syntax.types.html#type"><span class="id" title="inductive">type</span></a>)<br/>
+| <a id="Estring" class="idref" href="#Estring"><span class="id" title="constructor">Estring</span></a>  (<span class="id" title="var">_</span> : <a class="idref" href="bedrock.prelude.bytestring_core.html#BS.Bytestring_notations.bs"><span class="id" title="abbreviation">bs</span></a>) (<span class="id" title="var">_</span> : <a class="idref" href="bedrock.lang.cpp.syntax.types.html#type"><span class="id" title="inductive">type</span></a>)<br/>
+| <a id="Eint" class="idref" href="#Eint"><span class="id" title="constructor">Eint</span></a>     (<span class="id" title="var">_</span> : <a class="idref" href="http://coq.inria.fr/distrib/V8.13.2/stdlib//Coq.Numbers.BinNums.html#Z"><span class="id" title="inductive">Z</span></a>) (<span class="id" title="var">_</span> : <a class="idref" href="bedrock.lang.cpp.syntax.types.html#type"><span class="id" title="inductive">type</span></a>)<br/>
+| <a id="Ebool" class="idref" href="#Ebool"><span class="id" title="constructor">Ebool</span></a>    (<span class="id" title="var">_</span> : <a class="idref" href="http://coq.inria.fr/distrib/V8.13.2/stdlib//Coq.Init.Datatypes.html#bool"><span class="id" title="inductive">bool</span></a>)<br/>
+&nbsp;&nbsp;<span class="comment">(*&nbsp;^&nbsp;literals&nbsp;*)</span><br/>
+<br/>
+| <a id="Eunop" class="idref" href="#Eunop"><span class="id" title="constructor">Eunop</span></a>    (<span class="id" title="var">_</span> : <a class="idref" href="bedrock.lang.cpp.syntax.expr.html#UnOp"><span class="id" title="inductive">UnOp</span></a>) (<span class="id" title="var">_</span> : <a class="idref" href="bedrock.lang.cpp.syntax.expr.html#Expr:22"><span class="id" title="inductive">Expr</span></a>) (<span class="id" title="var">_</span> : <a class="idref" href="bedrock.lang.cpp.syntax.types.html#type"><span class="id" title="inductive">type</span></a>)<br/>
+| <a id="Ebinop" class="idref" href="#Ebinop"><span class="id" title="constructor">Ebinop</span></a>   (<span class="id" title="var">_</span> : <a class="idref" href="bedrock.lang.cpp.syntax.expr.html#BinOp"><span class="id" title="inductive">BinOp</span></a>) (<span class="id" title="var">_</span> <span class="id" title="var">_</span> : <a class="idref" href="bedrock.lang.cpp.syntax.expr.html#Expr:22"><span class="id" title="inductive">Expr</span></a>) (<span class="id" title="var">_</span> : <a class="idref" href="bedrock.lang.cpp.syntax.types.html#type"><span class="id" title="inductive">type</span></a>)<br/>
+&nbsp;<span class="comment">(*&nbsp;^&nbsp;note(gmm):&nbsp;overloaded&nbsp;operators&nbsp;are&nbsp;already&nbsp;resolved.&nbsp;so&nbsp;an&nbsp;overloaded<br/>
+&nbsp;&nbsp;*&nbsp;operator&nbsp;shows&nbsp;up&nbsp;as&nbsp;a&nbsp;function&nbsp;call,&nbsp;not&nbsp;a&nbsp;`Eunop`&nbsp;or&nbsp;`Ebinop`.<br/>
+&nbsp;&nbsp;*&nbsp;this&nbsp;includes&nbsp;the&nbsp;assignment&nbsp;operator&nbsp;for&nbsp;classes.<br/>
+&nbsp;&nbsp;*)</span><br/>
+| <a id="Eread_ref" class="idref" href="#Eread_ref"><span class="id" title="constructor">Eread_ref</span></a> (<a id="e:24" class="idref" href="#e:24"><span class="id" title="binder">e</span></a> : <a class="idref" href="bedrock.lang.cpp.syntax.expr.html#Expr:22"><span class="id" title="inductive">Expr</span></a>) <span class="comment">(*&nbsp;type&nbsp;=&nbsp;type_of&nbsp;e&nbsp;*)</span><br/>
+| <a id="Ederef" class="idref" href="#Ederef"><span class="id" title="constructor">Ederef</span></a> (<a id="e:25" class="idref" href="#e:25"><span class="id" title="binder">e</span></a> : <a class="idref" href="bedrock.lang.cpp.syntax.expr.html#Expr:22"><span class="id" title="inductive">Expr</span></a>) (<span class="id" title="var">_</span> : <a class="idref" href="bedrock.lang.cpp.syntax.types.html#type"><span class="id" title="inductive">type</span></a>) <span class="comment">(*&nbsp;XXX&nbsp;type&nbsp;=&nbsp;strip&nbsp;<span class="inlinecode"><span class="id" title="var">Tptr</span></span>&nbsp;from&nbsp;<span class="inlinecode"><span class="id" title="var">type_of</span></span> <span class="inlinecode"><span class="id" title="var">e</span></span>&nbsp;*)</span><br/>
+| <a id="Eaddrof" class="idref" href="#Eaddrof"><span class="id" title="constructor">Eaddrof</span></a> (<a id="e:26" class="idref" href="#e:26"><span class="id" title="binder">e</span></a> : <a class="idref" href="bedrock.lang.cpp.syntax.expr.html#Expr:22"><span class="id" title="inductive">Expr</span></a>) <span class="comment">(*&nbsp;type&nbsp;=&nbsp;Tptr&nbsp;(type_of&nbsp;e)&nbsp;*)</span><br/>
+| <a id="Eassign" class="idref" href="#Eassign"><span class="id" title="constructor">Eassign</span></a> (<a id="e:27" class="idref" href="#e:27"><span class="id" title="binder">e</span></a> <span class="id" title="var">_</span> : <a class="idref" href="bedrock.lang.cpp.syntax.expr.html#Expr:22"><span class="id" title="inductive">Expr</span></a>) (<span class="id" title="var">_</span> : <a class="idref" href="bedrock.lang.cpp.syntax.types.html#type"><span class="id" title="inductive">type</span></a>) <span class="comment">(*&nbsp;XXX&nbsp;type&nbsp;=&nbsp;type_of&nbsp;e&nbsp;*)</span><br/>
+| <a id="Eassign_op" class="idref" href="#Eassign_op"><span class="id" title="constructor">Eassign_op</span></a> (<span class="id" title="var">_</span> : <a class="idref" href="bedrock.lang.cpp.syntax.expr.html#BinOp"><span class="id" title="inductive">BinOp</span></a>) (<a id="e:28" class="idref" href="#e:28"><span class="id" title="binder">e</span></a> <span class="id" title="var">_</span> : <a class="idref" href="bedrock.lang.cpp.syntax.expr.html#Expr:22"><span class="id" title="inductive">Expr</span></a>) (<span class="id" title="var">_</span> : <a class="idref" href="bedrock.lang.cpp.syntax.types.html#type"><span class="id" title="inductive">type</span></a>) <span class="comment">(*&nbsp;XXX&nbsp;=&nbsp;type_of&nbsp;e&nbsp;*)</span><br/>
+&nbsp;&nbsp;<span class="comment">(*&nbsp;^&nbsp;these&nbsp;are&nbsp;specialized&nbsp;because&nbsp;they&nbsp;are&nbsp;common&nbsp;*)</span><br/>
+<br/>
+| <a id="Epreinc" class="idref" href="#Epreinc"><span class="id" title="constructor">Epreinc</span></a> (<span class="id" title="var">_</span> : <a class="idref" href="bedrock.lang.cpp.syntax.expr.html#Expr:22"><span class="id" title="inductive">Expr</span></a>) (<span class="id" title="var">_</span> : <a class="idref" href="bedrock.lang.cpp.syntax.types.html#type"><span class="id" title="inductive">type</span></a>)<br/>
+| <a id="Epostinc" class="idref" href="#Epostinc"><span class="id" title="constructor">Epostinc</span></a> (<span class="id" title="var">_</span> : <a class="idref" href="bedrock.lang.cpp.syntax.expr.html#Expr:22"><span class="id" title="inductive">Expr</span></a>) (<span class="id" title="var">_</span> : <a class="idref" href="bedrock.lang.cpp.syntax.types.html#type"><span class="id" title="inductive">type</span></a>)<br/>
+| <a id="Epredec" class="idref" href="#Epredec"><span class="id" title="constructor">Epredec</span></a> (<span class="id" title="var">_</span> : <a class="idref" href="bedrock.lang.cpp.syntax.expr.html#Expr:22"><span class="id" title="inductive">Expr</span></a>) (<span class="id" title="var">_</span> : <a class="idref" href="bedrock.lang.cpp.syntax.types.html#type"><span class="id" title="inductive">type</span></a>)<br/>
+| <a id="Epostdec" class="idref" href="#Epostdec"><span class="id" title="constructor">Epostdec</span></a> (<span class="id" title="var">_</span> : <a class="idref" href="bedrock.lang.cpp.syntax.expr.html#Expr:22"><span class="id" title="inductive">Expr</span></a>) (<span class="id" title="var">_</span> : <a class="idref" href="bedrock.lang.cpp.syntax.types.html#type"><span class="id" title="inductive">type</span></a>)<br/>
+&nbsp;&nbsp;<span class="comment">(*&nbsp;^&nbsp;special&nbsp;unary&nbsp;operators&nbsp;*)</span><br/>
+<br/>
+| <a id="Eseqand" class="idref" href="#Eseqand"><span class="id" title="constructor">Eseqand</span></a> (<span class="id" title="var">_</span> <span class="id" title="var">_</span> : <a class="idref" href="bedrock.lang.cpp.syntax.expr.html#Expr:22"><span class="id" title="inductive">Expr</span></a>) <span class="comment">(*&nbsp;type&nbsp;=&nbsp;Tbool&nbsp;*)</span><br/>
+| <a id="Eseqor" class="idref" href="#Eseqor"><span class="id" title="constructor">Eseqor</span></a>  (<span class="id" title="var">_</span> <span class="id" title="var">_</span> : <a class="idref" href="bedrock.lang.cpp.syntax.expr.html#Expr:22"><span class="id" title="inductive">Expr</span></a>) <span class="comment">(*&nbsp;type&nbsp;=&nbsp;Tbool&nbsp;*)</span><br/>
+| <a id="Ecomma" class="idref" href="#Ecomma"><span class="id" title="constructor">Ecomma</span></a> (<a id="vc:29" class="idref" href="#vc:29"><span class="id" title="binder">vc</span></a> : <a class="idref" href="bedrock.lang.cpp.syntax.expr.html#ValCat"><span class="id" title="inductive">ValCat</span></a>) (<a id="e1:30" class="idref" href="#e1:30"><span class="id" title="binder">e1</span></a> <a id="e2:31" class="idref" href="#e2:31"><span class="id" title="binder">e2</span></a> : <a class="idref" href="bedrock.lang.cpp.syntax.expr.html#Expr:22"><span class="id" title="inductive">Expr</span></a>) <span class="comment">(*&nbsp;type&nbsp;=&nbsp;type_of&nbsp;e2&nbsp;*)</span><br/>
+&nbsp;&nbsp;<span class="comment">(*&nbsp;^&nbsp;these&nbsp;are&nbsp;specialized&nbsp;because&nbsp;they&nbsp;have&nbsp;special&nbsp;control&nbsp;flow&nbsp;semantics&nbsp;*)</span><br/>
+<br/>
+| <a id="Ecall" class="idref" href="#Ecall"><span class="id" title="constructor">Ecall</span></a>    (<span class="id" title="var">_</span> : <a class="idref" href="bedrock.lang.cpp.syntax.expr.html#Expr:22"><span class="id" title="inductive">Expr</span></a>) (<span class="id" title="var">_</span> : <a class="idref" href="http://coq.inria.fr/distrib/V8.13.2/stdlib//Coq.Init.Datatypes.html#list"><span class="id" title="inductive">list</span></a> <a class="idref" href="bedrock.lang.cpp.syntax.expr.html#Expr:22"><span class="id" title="inductive">Expr</span></a>) (<span class="id" title="var">_</span> : <a class="idref" href="bedrock.lang.cpp.syntax.types.html#type"><span class="id" title="inductive">type</span></a>)<br/>
+| <a id="Ecast" class="idref" href="#Ecast"><span class="id" title="constructor">Ecast</span></a>    (<span class="id" title="var">_</span> : <a class="idref" href="bedrock.lang.cpp.syntax.expr.html#Cast"><span class="id" title="inductive">Cast</span></a>) (<span class="id" title="var">_</span> : <a class="idref" href="bedrock.lang.cpp.syntax.expr.html#ValCat"><span class="id" title="inductive">ValCat</span></a>) (<a id="e:32" class="idref" href="#e:32"><span class="id" title="binder">e</span></a> : <a class="idref" href="bedrock.lang.cpp.syntax.expr.html#Expr:22"><span class="id" title="inductive">Expr</span></a>) (<span class="id" title="var">_</span> : <a class="idref" href="bedrock.lang.cpp.syntax.types.html#type"><span class="id" title="inductive">type</span></a>)<br/>
+<br/>
+| <a id="Emember" class="idref" href="#Emember"><span class="id" title="constructor">Emember</span></a>  (<span class="id" title="var">_</span> : <a class="idref" href="bedrock.lang.cpp.syntax.expr.html#ValCat"><span class="id" title="inductive">ValCat</span></a>) (<a id="obj:33" class="idref" href="#obj:33"><span class="id" title="binder">obj</span></a> : <a class="idref" href="bedrock.lang.cpp.syntax.expr.html#Expr:22"><span class="id" title="inductive">Expr</span></a>) (<span class="id" title="var">_</span> : <a class="idref" href="bedrock.lang.cpp.syntax.names.html#field"><span class="id" title="record">field</span></a>) (<span class="id" title="var">_</span> : <a class="idref" href="bedrock.lang.cpp.syntax.types.html#type"><span class="id" title="inductive">type</span></a>)<br/>
+&nbsp;&nbsp;<span class="comment">(*&nbsp;TODO:&nbsp;maybe&nbsp;replace&nbsp;the&nbsp;left&nbsp;branch&nbsp;use&nbsp;<span class="inlinecode"><span class="id" title="var">Expr</span></span>&nbsp;here?&nbsp;*)</span><br/>
+| <a id="Emember_call" class="idref" href="#Emember_call"><span class="id" title="constructor">Emember_call</span></a> (<a id="method:34" class="idref" href="#method:34"><span class="id" title="binder">method</span></a> : <a class="idref" href="http://coq.inria.fr/distrib/V8.13.2/stdlib//Coq.Init.Datatypes.html#e03f39daf98516fa530d3f6f5a1b4d92"><span class="id" title="notation">(</span></a><a class="idref" href="bedrock.lang.cpp.syntax.names.html#obj_name"><span class="id" title="definition">obj_name</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.13.2/stdlib//Coq.Init.Datatypes.html#11c698c8685bb8ab1cf725545c085ac4"><span class="id" title="notation">*</span></a> <a class="idref" href="bedrock.lang.cpp.syntax.expr.html#call_type"><span class="id" title="inductive">call_type</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.13.2/stdlib//Coq.Init.Datatypes.html#11c698c8685bb8ab1cf725545c085ac4"><span class="id" title="notation">*</span></a> <a class="idref" href="bedrock.lang.cpp.syntax.types.html#type"><span class="id" title="inductive">type</span></a><a class="idref" href="http://coq.inria.fr/distrib/V8.13.2/stdlib//Coq.Init.Datatypes.html#e03f39daf98516fa530d3f6f5a1b4d92"><span class="id" title="notation">)</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.13.2/stdlib//Coq.Init.Datatypes.html#e03f39daf98516fa530d3f6f5a1b4d92"><span class="id" title="notation">+</span></a> <a class="idref" href="bedrock.lang.cpp.syntax.expr.html#Expr:22"><span class="id" title="inductive">Expr</span></a>) (<span class="id" title="var">_</span> : <a class="idref" href="bedrock.lang.cpp.syntax.expr.html#ValCat"><span class="id" title="inductive">ValCat</span></a>) (<a id="obj:35" class="idref" href="#obj:35"><span class="id" title="binder">obj</span></a> : <a class="idref" href="bedrock.lang.cpp.syntax.expr.html#Expr:22"><span class="id" title="inductive">Expr</span></a>) (<span class="id" title="var">_</span> : <a class="idref" href="http://coq.inria.fr/distrib/V8.13.2/stdlib//Coq.Init.Datatypes.html#list"><span class="id" title="inductive">list</span></a> <a class="idref" href="bedrock.lang.cpp.syntax.expr.html#Expr:22"><span class="id" title="inductive">Expr</span></a>) (<span class="id" title="var">_</span> : <a class="idref" href="bedrock.lang.cpp.syntax.types.html#type"><span class="id" title="inductive">type</span></a>)<br/>
+<br/>
+| <a id="Esubscript" class="idref" href="#Esubscript"><span class="id" title="constructor">Esubscript</span></a> (<span class="id" title="var">_</span> : <a class="idref" href="bedrock.lang.cpp.syntax.expr.html#Expr:22"><span class="id" title="inductive">Expr</span></a>) (<span class="id" title="var">_</span> : <a class="idref" href="bedrock.lang.cpp.syntax.expr.html#Expr:22"><span class="id" title="inductive">Expr</span></a>) (<span class="id" title="var">_</span> : <a class="idref" href="bedrock.lang.cpp.syntax.types.html#type"><span class="id" title="inductive">type</span></a>)<br/>
+| <a id="Esize_of" class="idref" href="#Esize_of"><span class="id" title="constructor">Esize_of</span></a> (<span class="id" title="var">_</span> : <a class="idref" href="bedrock.lang.cpp.syntax.types.html#type"><span class="id" title="inductive">type</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.13.2/stdlib//Coq.Init.Datatypes.html#e03f39daf98516fa530d3f6f5a1b4d92"><span class="id" title="notation">+</span></a> <a class="idref" href="bedrock.lang.cpp.syntax.expr.html#Expr:22"><span class="id" title="inductive">Expr</span></a>) (<span class="id" title="var">_</span> : <a class="idref" href="bedrock.lang.cpp.syntax.types.html#type"><span class="id" title="inductive">type</span></a>)<br/>
+| <a id="Ealign_of" class="idref" href="#Ealign_of"><span class="id" title="constructor">Ealign_of</span></a> (<span class="id" title="var">_</span> : <a class="idref" href="bedrock.lang.cpp.syntax.types.html#type"><span class="id" title="inductive">type</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.13.2/stdlib//Coq.Init.Datatypes.html#e03f39daf98516fa530d3f6f5a1b4d92"><span class="id" title="notation">+</span></a> <a class="idref" href="bedrock.lang.cpp.syntax.expr.html#Expr:22"><span class="id" title="inductive">Expr</span></a>) (<span class="id" title="var">_</span> : <a class="idref" href="bedrock.lang.cpp.syntax.types.html#type"><span class="id" title="inductive">type</span></a>)<br/>
+| <a id="Econstructor" class="idref" href="#Econstructor"><span class="id" title="constructor">Econstructor</span></a> (<span class="id" title="var">_</span> : <a class="idref" href="bedrock.lang.cpp.syntax.names.html#obj_name"><span class="id" title="definition">obj_name</span></a>) (<span class="id" title="var">_</span> : <a class="idref" href="http://coq.inria.fr/distrib/V8.13.2/stdlib//Coq.Init.Datatypes.html#list"><span class="id" title="inductive">list</span></a> <a class="idref" href="bedrock.lang.cpp.syntax.expr.html#Expr:22"><span class="id" title="inductive">Expr</span></a>) (<span class="id" title="var">_</span> : <a class="idref" href="bedrock.lang.cpp.syntax.types.html#type"><span class="id" title="inductive">type</span></a>)<br/>
+| <a id="Eimplicit" class="idref" href="#Eimplicit"><span class="id" title="constructor">Eimplicit</span></a> (<span class="id" title="var">_</span> : <a class="idref" href="bedrock.lang.cpp.syntax.expr.html#Expr:22"><span class="id" title="inductive">Expr</span></a>)<br/>
+| <a id="Eimplicit_init" class="idref" href="#Eimplicit_init"><span class="id" title="constructor">Eimplicit_init</span></a> (<span class="id" title="var">_</span> : <a class="idref" href="bedrock.lang.cpp.syntax.types.html#type"><span class="id" title="inductive">type</span></a>)<br/>
+| <a id="Eif" class="idref" href="#Eif"><span class="id" title="constructor">Eif</span></a>       (<span class="id" title="var">_</span> <span class="id" title="var">_</span> <span class="id" title="var">_</span> : <a class="idref" href="bedrock.lang.cpp.syntax.expr.html#Expr:22"><span class="id" title="inductive">Expr</span></a>) (<span class="id" title="var">_</span> : <a class="idref" href="bedrock.lang.cpp.syntax.types.html#type"><span class="id" title="inductive">type</span></a>)<br/>
+<br/>
+| <a id="Ethis" class="idref" href="#Ethis"><span class="id" title="constructor">Ethis</span></a> (<span class="id" title="var">_</span> : <a class="idref" href="bedrock.lang.cpp.syntax.types.html#type"><span class="id" title="inductive">type</span></a>)<br/>
+| <a id="Enull" class="idref" href="#Enull"><span class="id" title="constructor">Enull</span></a><br/>
+| <a id="Einitlist" class="idref" href="#Einitlist"><span class="id" title="constructor">Einitlist</span></a> (<span class="id" title="var">_</span> : <a class="idref" href="http://coq.inria.fr/distrib/V8.13.2/stdlib//Coq.Init.Datatypes.html#list"><span class="id" title="inductive">list</span></a> <a class="idref" href="bedrock.lang.cpp.syntax.expr.html#Expr:22"><span class="id" title="inductive">Expr</span></a>) (<span class="id" title="var">_</span> : <a class="idref" href="http://coq.inria.fr/distrib/V8.13.2/stdlib//Coq.Init.Datatypes.html#option"><span class="id" title="inductive">option</span></a> <a class="idref" href="bedrock.lang.cpp.syntax.expr.html#Expr:22"><span class="id" title="inductive">Expr</span></a>) (<span class="id" title="var">_</span> : <a class="idref" href="bedrock.lang.cpp.syntax.types.html#type"><span class="id" title="inductive">type</span></a>)<br/>
+<br/>
+| <a id="Enew" class="idref" href="#Enew"><span class="id" title="constructor">Enew</span></a> (<a id="new_fn:36" class="idref" href="#new_fn:36"><span class="id" title="binder">new_fn</span></a> : <a class="idref" href="http://coq.inria.fr/distrib/V8.13.2/stdlib//Coq.Init.Datatypes.html#option"><span class="id" title="inductive">option</span></a> (<a class="idref" href="bedrock.lang.cpp.syntax.names.html#obj_name"><span class="id" title="definition">obj_name</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.13.2/stdlib//Coq.Init.Datatypes.html#11c698c8685bb8ab1cf725545c085ac4"><span class="id" title="notation">*</span></a> <a class="idref" href="bedrock.lang.cpp.syntax.types.html#type"><span class="id" title="inductive">type</span></a>)) (<a id="new_args:37" class="idref" href="#new_args:37"><span class="id" title="binder">new_args</span></a> : <a class="idref" href="http://coq.inria.fr/distrib/V8.13.2/stdlib//Coq.Init.Datatypes.html#list"><span class="id" title="inductive">list</span></a> <a class="idref" href="bedrock.lang.cpp.syntax.expr.html#Expr:22"><span class="id" title="inductive">Expr</span></a>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<a id="alloc_ty:38" class="idref" href="#alloc_ty:38"><span class="id" title="binder">alloc_ty</span></a> : <a class="idref" href="bedrock.lang.cpp.syntax.types.html#type"><span class="id" title="inductive">type</span></a>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<a id="array_size:39" class="idref" href="#array_size:39"><span class="id" title="binder">array_size</span></a> : <a class="idref" href="http://coq.inria.fr/distrib/V8.13.2/stdlib//Coq.Init.Datatypes.html#option"><span class="id" title="inductive">option</span></a> <a class="idref" href="bedrock.lang.cpp.syntax.expr.html#Expr:22"><span class="id" title="inductive">Expr</span></a>) (<a id="init:40" class="idref" href="#init:40"><span class="id" title="binder">init</span></a> : <a class="idref" href="http://coq.inria.fr/distrib/V8.13.2/stdlib//Coq.Init.Datatypes.html#option"><span class="id" title="inductive">option</span></a> <a class="idref" href="bedrock.lang.cpp.syntax.expr.html#Expr:22"><span class="id" title="inductive">Expr</span></a>) (<span class="id" title="var">_</span> : <a class="idref" href="bedrock.lang.cpp.syntax.types.html#type"><span class="id" title="inductive">type</span></a>)<br/>
+| <a id="Edelete" class="idref" href="#Edelete"><span class="id" title="constructor">Edelete</span></a> (<a id="is_array:41" class="idref" href="#is_array:41"><span class="id" title="binder">is_array</span></a> : <a class="idref" href="http://coq.inria.fr/distrib/V8.13.2/stdlib//Coq.Init.Datatypes.html#bool"><span class="id" title="inductive">bool</span></a>) (<a id="delete_fn:42" class="idref" href="#delete_fn:42"><span class="id" title="binder">delete_fn</span></a> : <a class="idref" href="http://coq.inria.fr/distrib/V8.13.2/stdlib//Coq.Init.Datatypes.html#option"><span class="id" title="inductive">option</span></a> (<a class="idref" href="bedrock.lang.cpp.syntax.names.html#obj_name"><span class="id" title="definition">obj_name</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.13.2/stdlib//Coq.Init.Datatypes.html#11c698c8685bb8ab1cf725545c085ac4"><span class="id" title="notation">*</span></a> <a class="idref" href="bedrock.lang.cpp.syntax.types.html#type"><span class="id" title="inductive">type</span></a>)) (<a id="arg:43" class="idref" href="#arg:43"><span class="id" title="binder">arg</span></a> : <a class="idref" href="bedrock.lang.cpp.syntax.expr.html#Expr:22"><span class="id" title="inductive">Expr</span></a>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<a id="deleted_type:44" class="idref" href="#deleted_type:44"><span class="id" title="binder">deleted_type</span></a> : <a class="idref" href="bedrock.lang.cpp.syntax.types.html#type"><span class="id" title="inductive">type</span></a>) (<span class="id" title="var">_</span> : <a class="idref" href="bedrock.lang.cpp.syntax.types.html#type"><span class="id" title="inductive">type</span></a>)<br/>
+<br/>
+| <a id="Eandclean" class="idref" href="#Eandclean"><span class="id" title="constructor">Eandclean</span></a> (<span class="id" title="var">_</span> : <a class="idref" href="bedrock.lang.cpp.syntax.expr.html#Expr:22"><span class="id" title="inductive">Expr</span></a>)<br/>
+| <a id="Ematerialize_temp" class="idref" href="#Ematerialize_temp"><span class="id" title="constructor">Ematerialize_temp</span></a> (<span class="id" title="var">_</span> : <a class="idref" href="bedrock.lang.cpp.syntax.expr.html#Expr:22"><span class="id" title="inductive">Expr</span></a>)<br/>
+<br/>
+| <a id="Ebuiltin" class="idref" href="#Ebuiltin"><span class="id" title="constructor">Ebuiltin</span></a> (<span class="id" title="var">_</span> : <a class="idref" href="bedrock.lang.cpp.syntax.expr.html#BuiltinFn"><span class="id" title="inductive">BuiltinFn</span></a>) (<span class="id" title="var">_</span> : <a class="idref" href="bedrock.lang.cpp.syntax.types.html#type"><span class="id" title="inductive">type</span></a>)<br/>
+| <a id="Eatomic" class="idref" href="#Eatomic"><span class="id" title="constructor">Eatomic</span></a> (<span class="id" title="var">_</span> : <a class="idref" href="bedrock.lang.cpp.syntax.expr.html#AtomicOp"><span class="id" title="inductive">AtomicOp</span></a>) (<span class="id" title="var">_</span> : <a class="idref" href="http://coq.inria.fr/distrib/V8.13.2/stdlib//Coq.Init.Datatypes.html#list"><span class="id" title="inductive">list</span></a> <a class="idref" href="bedrock.lang.cpp.syntax.expr.html#Expr:22"><span class="id" title="inductive">Expr</span></a>) (<span class="id" title="var">_</span> : <a class="idref" href="bedrock.lang.cpp.syntax.types.html#type"><span class="id" title="inductive">type</span></a>)<br/>
+| <a id="Eva_arg" class="idref" href="#Eva_arg"><span class="id" title="constructor">Eva_arg</span></a> (<span class="id" title="var">_</span> : <a class="idref" href="bedrock.lang.cpp.syntax.expr.html#Expr:22"><span class="id" title="inductive">Expr</span></a>) (<span class="id" title="var">_</span> : <a class="idref" href="bedrock.lang.cpp.syntax.types.html#type"><span class="id" title="inductive">type</span></a>)<br/>
+| <a id="Epseudo_destructor" class="idref" href="#Epseudo_destructor"><span class="id" title="constructor">Epseudo_destructor</span></a> (<span class="id" title="var">_</span> : <a class="idref" href="bedrock.lang.cpp.syntax.types.html#type"><span class="id" title="inductive">type</span></a>) (<span class="id" title="var">_</span> : <a class="idref" href="bedrock.lang.cpp.syntax.expr.html#Expr:22"><span class="id" title="inductive">Expr</span></a>)<br/>
+<br/>
+| <a id="Earrayloop_init" class="idref" href="#Earrayloop_init"><span class="id" title="constructor">Earrayloop_init</span></a> (<a id="oname:45" class="idref" href="#oname:45"><span class="id" title="binder">oname</span></a> : <a class="idref" href="http://coq.inria.fr/distrib/V8.13.2/stdlib//Coq.Numbers.BinNums.html#N"><span class="id" title="inductive">N</span></a>) (<a id="src_vc:46" class="idref" href="#src_vc:46"><span class="id" title="binder">src_vc</span></a> : <a class="idref" href="bedrock.lang.cpp.syntax.expr.html#ValCat"><span class="id" title="inductive">ValCat</span></a>) (<a id="src:47" class="idref" href="#src:47"><span class="id" title="binder">src</span></a> : <a class="idref" href="bedrock.lang.cpp.syntax.expr.html#Expr:22"><span class="id" title="inductive">Expr</span></a>) (<a id="level:48" class="idref" href="#level:48"><span class="id" title="binder">level</span></a> : <a class="idref" href="http://coq.inria.fr/distrib/V8.13.2/stdlib//Coq.Numbers.BinNums.html#N"><span class="id" title="inductive">N</span></a>) (<a id="length:49" class="idref" href="#length:49"><span class="id" title="binder">length</span></a> : <a class="idref" href="http://coq.inria.fr/distrib/V8.13.2/stdlib//Coq.Numbers.BinNums.html#N"><span class="id" title="inductive">N</span></a>) (<a id="init:50" class="idref" href="#init:50"><span class="id" title="binder">init</span></a> : <a class="idref" href="bedrock.lang.cpp.syntax.expr.html#Expr:22"><span class="id" title="inductive">Expr</span></a>) (<span class="id" title="var">_</span> : <a class="idref" href="bedrock.lang.cpp.syntax.types.html#type"><span class="id" title="inductive">type</span></a>)<br/>
+| <a id="Earrayloop_index" class="idref" href="#Earrayloop_index"><span class="id" title="constructor">Earrayloop_index</span></a> (<a id="level:51" class="idref" href="#level:51"><span class="id" title="binder">level</span></a> : <a class="idref" href="http://coq.inria.fr/distrib/V8.13.2/stdlib//Coq.Numbers.BinNums.html#N"><span class="id" title="inductive">N</span></a>) (<span class="id" title="var">_</span> : <a class="idref" href="bedrock.lang.cpp.syntax.types.html#type"><span class="id" title="inductive">type</span></a>)<br/>
+| <a id="Eopaque_ref" class="idref" href="#Eopaque_ref"><span class="id" title="constructor">Eopaque_ref</span></a> (<a id="name:52" class="idref" href="#name:52"><span class="id" title="binder">name</span></a> : <a class="idref" href="http://coq.inria.fr/distrib/V8.13.2/stdlib//Coq.Numbers.BinNums.html#N"><span class="id" title="inductive">N</span></a>) (<span class="id" title="var">_</span> : <a class="idref" href="bedrock.lang.cpp.syntax.types.html#type"><span class="id" title="inductive">type</span></a>)<br/>
+<br/>
+| <a id="Eunsupported" class="idref" href="#Eunsupported"><span class="id" title="constructor">Eunsupported</span></a> (<span class="id" title="var">_</span> : <a class="idref" href="bedrock.prelude.bytestring_core.html#BS.Bytestring_notations.bs"><span class="id" title="abbreviation">bs</span></a>) (<span class="id" title="var">_</span> : <a class="idref" href="bedrock.lang.cpp.syntax.types.html#type"><span class="id" title="inductive">type</span></a>).<br/>
+<span class="id" title="keyword">Instance</span> <a id="Expr_eq_dec" class="idref" href="#Expr_eq_dec"><span class="id" title="instance">Expr_eq_dec</span></a> : <a class="idref" href="https://plv.mpi-sws.org/coqdoc/stdpp//stdpp.base.html#EqDecision"><span class="id" title="abbreviation">EqDecision</span></a> <a class="idref" href="bedrock.lang.cpp.syntax.expr.html#Expr"><span class="id" title="inductive">Expr</span></a>.<br/>
+<span class="id" title="keyword">Proof</span>.<br/>
+&nbsp;&nbsp;<span class="id" title="tactic">rewrite</span> /<a class="idref" href="https://plv.mpi-sws.org/coqdoc/stdpp//stdpp.base.html#RelDecision"><span class="id" title="class">RelDecision</span></a> /<a class="idref" href="https://plv.mpi-sws.org/coqdoc/stdpp//stdpp.base.html#Decision"><span class="id" title="class">Decision</span></a>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">fix</span> <span class="id" title="var">IHe</span> 1.<br/>
+&nbsp;&nbsp;<span class="id" title="tactic">rewrite</span> -{1}/(<a class="idref" href="https://plv.mpi-sws.org/coqdoc/stdpp//stdpp.base.html#EqDecision"><span class="id" title="abbreviation">EqDecision</span></a> <a class="idref" href="bedrock.lang.cpp.syntax.expr.html#Expr"><span class="id" title="inductive">Expr</span></a>) <span class="id" title="tactic">in</span> <span class="id" title="var">IHe</span>.<br/>
+&nbsp;&nbsp;<span class="id" title="var">decide</span> <span class="id" title="var">equality</span>; <span class="id" title="tactic">try</span> <span class="id" title="var">solve_trivial_decision</span>.<br/>
+<span class="id" title="keyword">Defined</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Definition</span> <a id="Edefault_init_expr" class="idref" href="#Edefault_init_expr"><span class="id" title="definition">Edefault_init_expr</span></a> (<a id="e:53" class="idref" href="#e:53"><span class="id" title="binder">e</span></a> : <a class="idref" href="bedrock.lang.cpp.syntax.expr.html#Expr"><span class="id" title="inductive">Expr</span></a>) : <a class="idref" href="bedrock.lang.cpp.syntax.expr.html#Expr"><span class="id" title="inductive">Expr</span></a> := <a class="idref" href="bedrock.lang.cpp.syntax.expr.html#e:53"><span class="id" title="variable">e</span></a>.<br/>
+</div>
+<!--
+-- Copyright (c) 2020 BedRock Systems, Inc.
+-- This software is distributed under the terms of the BedRock Open-Source License.
+-- See the LICENSE-BedRock file in the repository root for details.
+-->
+
+<!--
+-- SPDX-LIcense-Identifier:BSD-2-Clause
+-->
+</div>
+<div id="footer">
+  Generated by <a href="http://coq.inria.fr/">coqdoc</a> and improved with <a href="https://github.com/tebbi/coqdocjs">CoqdocJS</a>
+</div>
+</div>
+</body>
+
+</html>

@@ -1,0 +1,134 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<!--
+-- Copyright (c) 2020 BedRock Systems, Inc.
+-- This software is distributed under the terms of the BedRock Open-Source License.
+-- See the LICENSE-BedRock file in the repository root for details.
+-->
+
+<!--
+-- SPDX-LIcense-Identifier:BSD-2-Clause
+-->
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+<meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
+<link href="../css/coqdocjs/coqdoc.css" rel="stylesheet" type="text/css" />
+<link href="../css/coqdocjs/coqdocjs.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="../js/coqdocjs/config.js"></script>
+<script type="text/javascript" src="../js/coqdocjs/coqdocjs.js"></script>
+</head>
+
+<body onload="document.getElementById('content').focus()">
+  <div id="header">
+    <span class="left">
+      <span class="modulename"> <script> document.write(document.title) </script> </span>
+    </span>
+
+    <span class="button" id="toggle-proofs"></span>
+
+    <!-- NOTE: These are displayed right to left on the page -->
+    <span class="right">
+      <a href="./indexpage.html"> Index </a>
+      <a href="./toc.html"> `theories/` </a>
+      <a href="../../index.html"> Toplevel </a>
+    </span>
+</div>
+    <div id="content" tabindex="-1" onblur="document.getElementById('content').focus()">
+    <div id="main">
+<h1 class="libtitle">bedrock.lang.cpp.logic.mpred</h1>
+
+<div class="code">
+<span class="comment">(*<br/>
+&nbsp;*&nbsp;Copyright&nbsp;(c)&nbsp;2020&nbsp;BedRock&nbsp;Systems,&nbsp;Inc.<br/>
+&nbsp;*&nbsp;This&nbsp;software&nbsp;is&nbsp;distributed&nbsp;under&nbsp;the&nbsp;terms&nbsp;of&nbsp;the&nbsp;BedRock&nbsp;Open-Source&nbsp;License.<br/>
+&nbsp;*&nbsp;See&nbsp;the&nbsp;LICENSE-BedRock&nbsp;file&nbsp;in&nbsp;the&nbsp;repository&nbsp;root&nbsp;for&nbsp;details.<br/>
+&nbsp;*)</span><br/>
+</div>
+
+<div class="doc">
+This file defines the core <span class="inlinecode"><a class="idref" href="bedrock.lang.bi.derived_laws.html#bi"><span class="id" title="module">bi</span></a></span> (called <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.logic.mpred.html#CPP_LOGIC_CLASS_MIXIN.mpred"><span class="id" title="definition">mpred</span></a></span>) that we use for C++.
+The core logic is defined in <span class="inlinecode"><span class="id" title="var">pred.v</span></span>. 
+</div>
+<div class="code">
+<span class="id" title="keyword">From</span> <span class="id" title="var">iris.base_logic.lib</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <a class="idref" href="https://plv.mpi-sws.org/coqdoc/iris//iris.base_logic.lib.own.html#"><span class="id" title="library">own</span></a> <a class="idref" href="https://plv.mpi-sws.org/coqdoc/iris//iris.base_logic.lib.cancelable_invariants.html#"><span class="id" title="library">cancelable_invariants</span></a>.<br/>
+<span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <a class="idref" href="https://plv.mpi-sws.org/coqdoc/iris//iris.bi.monpred.html#"><span class="id" title="library">iris.bi.monpred</span></a>.<br/>
+
+<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">bedrock.prelude</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <a class="idref" href="bedrock.prelude.base.html#"><span class="id" title="library">base</span></a>.<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">bedrock.lang</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <a class="idref" href="bedrock.lang.bi.prelude.html#"><span class="id" title="library">bi.prelude</span></a>.<br/>
+<span class="id" title="keyword">Import</span> <span class="id" title="var">ChargeNotation</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Module</span> <span class="id" title="keyword">Type</span> <a id="CPP_LOGIC_CLASS_BASE" class="idref" href="#CPP_LOGIC_CLASS_BASE"><span class="id" title="module">CPP_LOGIC_CLASS_BASE</span></a>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Parameter</span> <a id="CPP_LOGIC_CLASS_BASE.cppG" class="idref" href="#CPP_LOGIC_CLASS_BASE.cppG"><span class="id" title="axiom">cppG</span></a> : <a class="idref" href="https://plv.mpi-sws.org/coqdoc/iris//iris.base_logic.lib.iprop.html#gFunctors"><span class="id" title="definition">gFunctors</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.13.2/stdlib//Coq.Init.Logic.html#::type_scope:x_'-&gt;'_x"><span class="id" title="notation">-&gt;</span></a> <span class="id" title="keyword">Type</span>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Axiom</span> <a id="CPP_LOGIC_CLASS_BASE.has_inv" class="idref" href="#CPP_LOGIC_CLASS_BASE.has_inv"><span class="id" title="axiom">has_inv</span></a> : <a class="idref" href="https://plv.mpi-sws.org/coqdoc/stdpp//stdpp.base.html#a46514f7419edb3d22453078cf7c9fb7"><span class="id" title="notation">forall</span></a> <a id="ebf069dbc779b42a15c441a6d39d5f83" class="idref" href="#ebf069dbc779b42a15c441a6d39d5f83"><span class="id" title="binder">Σ</span></a><a class="idref" href="https://plv.mpi-sws.org/coqdoc/stdpp//stdpp.base.html#a46514f7419edb3d22453078cf7c9fb7"><span class="id" title="notation">,</span></a> <a class="idref" href="bedrock.lang.cpp.logic.mpred.html#CPP_LOGIC_CLASS_BASE.cppG"><span class="id" title="axiom">cppG</span></a> <a class="idref" href="bedrock.lang.cpp.logic.mpred.html#ebf069dbc779b42a15c441a6d39d5f83"><span class="id" title="variable">Σ</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.13.2/stdlib//Coq.Init.Logic.html#::type_scope:x_'-&gt;'_x"><span class="id" title="notation">-&gt;</span></a> <a class="idref" href="https://plv.mpi-sws.org/coqdoc/iris//iris.base_logic.lib.wsat.html#invG.invG"><span class="id" title="class">invG</span></a> <a class="idref" href="bedrock.lang.cpp.logic.mpred.html#ebf069dbc779b42a15c441a6d39d5f83"><span class="id" title="variable">Σ</span></a>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Axiom</span> <a id="CPP_LOGIC_CLASS_BASE.has_cinv" class="idref" href="#CPP_LOGIC_CLASS_BASE.has_cinv"><span class="id" title="axiom">has_cinv</span></a> : <a class="idref" href="https://plv.mpi-sws.org/coqdoc/stdpp//stdpp.base.html#a46514f7419edb3d22453078cf7c9fb7"><span class="id" title="notation">forall</span></a> <a id="9c6d78f4cdf6dede5e109a175164bdaa" class="idref" href="#9c6d78f4cdf6dede5e109a175164bdaa"><span class="id" title="binder">Σ</span></a><a class="idref" href="https://plv.mpi-sws.org/coqdoc/stdpp//stdpp.base.html#a46514f7419edb3d22453078cf7c9fb7"><span class="id" title="notation">,</span></a> <a class="idref" href="bedrock.lang.cpp.logic.mpred.html#CPP_LOGIC_CLASS_BASE.cppG"><span class="id" title="axiom">cppG</span></a> <a class="idref" href="bedrock.lang.cpp.logic.mpred.html#9c6d78f4cdf6dede5e109a175164bdaa"><span class="id" title="variable">Σ</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.13.2/stdlib//Coq.Init.Logic.html#::type_scope:x_'-&gt;'_x"><span class="id" title="notation">-&gt;</span></a> <a class="idref" href="https://plv.mpi-sws.org/coqdoc/iris//iris.base_logic.lib.cancelable_invariants.html#cinvG"><span class="id" title="class">cinvG</span></a> <a class="idref" href="bedrock.lang.cpp.logic.mpred.html#9c6d78f4cdf6dede5e109a175164bdaa"><span class="id" title="variable">Σ</span></a>.<br/>
+
+<br/>
+&nbsp;&nbsp;#[<span class="id" title="var">global</span>] <span class="id" title="var">Existing</span> <span class="id" title="var">Instances</span> <span class="id" title="var">has_inv</span> <span class="id" title="var">has_cinv</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="var">Existing</span> <span class="id" title="keyword">Class</span> <span class="id" title="var">cppG</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Parameter</span> <a id="CPP_LOGIC_CLASS_BASE._cpp_ghost" class="idref" href="#CPP_LOGIC_CLASS_BASE._cpp_ghost"><span class="id" title="axiom">_cpp_ghost</span></a> : <span class="id" title="keyword">Type</span>.<br/>
+<span class="id" title="keyword">End</span> <a class="idref" href="bedrock.lang.cpp.logic.mpred.html#CPP_LOGIC_CLASS_BASE"><span class="id" title="module">CPP_LOGIC_CLASS_BASE</span></a>.<br/>
+
+<br/>
+<span class="id" title="keyword">Module</span> <span class="id" title="keyword">Type</span> <a id="CPP_LOGIC_CLASS_MIXIN" class="idref" href="#CPP_LOGIC_CLASS_MIXIN"><span class="id" title="module">CPP_LOGIC_CLASS_MIXIN</span></a> (<span class="id" title="keyword">Import</span> <span class="id" title="var">CC</span> : <a class="idref" href="bedrock.lang.cpp.logic.mpred.html#CPP_LOGIC_CLASS_BASE"><span class="id" title="module">CPP_LOGIC_CLASS_BASE</span></a>).<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Class</span> <a id="CPP_LOGIC_CLASS_MIXIN.cpp_logic" class="idref" href="#CPP_LOGIC_CLASS_MIXIN.cpp_logic"><span class="id" title="record">cpp_logic</span></a> {<a id="thread_info:7" class="idref" href="#thread_info:7"><span class="id" title="binder">thread_info</span></a> : <a class="idref" href="https://plv.mpi-sws.org/coqdoc/iris//iris.bi.monpred.html#biIndex"><span class="id" title="record">biIndex</span></a>} : <span class="id" title="keyword">Type</span> :=<br/>
+&nbsp;&nbsp;{ <a id="ee6591ec165f26241f77fdb59baa70cf" class="idref" href="#ee6591ec165f26241f77fdb59baa70cf"><span class="id" title="projection">_Σ</span></a>       : <a class="idref" href="https://plv.mpi-sws.org/coqdoc/iris//iris.base_logic.lib.iprop.html#gFunctors"><span class="id" title="definition">gFunctors</span></a><br/>
+&nbsp;&nbsp;; <a id="CPP_LOGIC_CLASS_MIXIN._ghost" class="idref" href="#CPP_LOGIC_CLASS_MIXIN._ghost"><span class="id" title="projection">_ghost</span></a>   : <a class="idref" href="bedrock.lang.cpp.logic.mpred.html#CC._cpp_ghost"><span class="id" title="axiom">_cpp_ghost</span></a><br/>
+&nbsp;&nbsp;; <a id="CPP_LOGIC_CLASS_MIXIN.has_cppG" class="idref" href="#CPP_LOGIC_CLASS_MIXIN.has_cppG"><span class="id" title="projection">has_cppG</span></a> : <a class="idref" href="bedrock.lang.cpp.logic.mpred.html#CC.cppG"><span class="id" title="class">cppG</span></a> <a class="idref" href="bedrock.lang.cpp.logic.mpred.html#3f4a7a3e6991e7423e0f90358c3c08aa"><span class="id" title="method">_Σ</span></a><br/>
+&nbsp;&nbsp;}.<br/>
+&nbsp;&nbsp;<span class="id" title="var">Arguments</span> <a class="idref" href="bedrock.lang.cpp.logic.mpred.html#CPP_LOGIC_CLASS_MIXIN.cpp_logic"><span class="id" title="class">cpp_logic</span></a> : <span class="id" title="tactic">clear</span> <span class="id" title="var">implicits</span>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Coercion</span> <a class="idref" href="bedrock.lang.cpp.logic.mpred.html#ee6591ec165f26241f77fdb59baa70cf"><span class="id" title="method">_Σ</span></a> <a class="idref" href="bedrock.lang.cpp.logic.mpred.html#ee6591ec165f26241f77fdb59baa70cf"><span class="id" title="method">:</span></a> <a class="idref" href="bedrock.lang.cpp.logic.mpred.html#ee6591ec165f26241f77fdb59baa70cf"><span class="id" title="method">cpp_logic</span></a> <a class="idref" href="bedrock.lang.cpp.logic.mpred.html#ee6591ec165f26241f77fdb59baa70cf"><span class="id" title="method">&gt;-&gt;</span></a> <a class="idref" href="bedrock.lang.cpp.logic.mpred.html#ee6591ec165f26241f77fdb59baa70cf"><span class="id" title="method">gFunctors</span></a>.<br/>
+
+<br/>
+&nbsp;&nbsp;#[<span class="id" title="var">global</span>] <span class="id" title="var">Existing</span> <span class="id" title="keyword">Instance</span> <span class="id" title="var">has_cppG</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Section</span> <a id="CPP_LOGIC_CLASS_MIXIN.with_cpp" class="idref" href="#CPP_LOGIC_CLASS_MIXIN.with_cpp"><span class="id" title="section">with_cpp</span></a>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Context</span> `{<a id="H:13" class="idref" href="#H:13"><span class="id" title="binder">cpp_logic</span></a> <a id="H:13" class="idref" href="#H:13"><span class="id" title="binder">ti</span></a>}.<br/>
+
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <a id="CPP_LOGIC_CLASS_MIXIN.mpredI" class="idref" href="#CPP_LOGIC_CLASS_MIXIN.mpredI"><span class="id" title="definition">mpredI</span></a> : <a class="idref" href="https://plv.mpi-sws.org/coqdoc/iris//iris.bi.interface.html#bi"><span class="id" title="record">bi</span></a> := <a class="idref" href="https://plv.mpi-sws.org/coqdoc/iris//iris.bi.monpred.html#monPredI"><span class="id" title="definition">monPredI</span></a> <a class="idref" href="bedrock.lang.cpp.logic.mpred.html#CPP_LOGIC_CLASS_MIXIN.with_cpp.ti"><span class="id" title="variable">ti</span></a> (<a class="idref" href="https://plv.mpi-sws.org/coqdoc/iris//iris.base_logic.lib.iprop.html#iProp_solution.iPropI"><span class="id" title="abbreviation">iPropI</span></a> <a class="idref" href="bedrock.lang.cpp.logic.mpred.html#ee6591ec165f26241f77fdb59baa70cf"><span class="id" title="method">_Σ</span></a>).<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <a id="CPP_LOGIC_CLASS_MIXIN.mpred" class="idref" href="#CPP_LOGIC_CLASS_MIXIN.mpred"><span class="id" title="definition">mpred</span></a> := <a class="idref" href="https://plv.mpi-sws.org/coqdoc/iris//iris.bi.interface.html#bi_car"><span class="id" title="projection">bi_car</span></a> <a class="idref" href="bedrock.lang.cpp.logic.mpred.html#CPP_LOGIC_CLASS_MIXIN.mpredI"><span class="id" title="definition">mpredI</span></a>.<br/>
+
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="comment">(*&nbsp;TODO:&nbsp;seal&nbsp;*)</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Canonical</span> <span class="id" title="keyword">Structure</span> <a id="CPP_LOGIC_CLASS_MIXIN.mpredO" class="idref" href="#CPP_LOGIC_CLASS_MIXIN.mpredO"><span class="id" title="definition">mpredO</span></a> : <a class="idref" href="https://plv.mpi-sws.org/coqdoc/iris//iris.algebra.ofe.html#ofeT"><span class="id" title="record">ofeT</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:= <a class="idref" href="https://plv.mpi-sws.org/coqdoc/iris//iris.algebra.ofe.html#OfeT"><span class="id" title="constructor">OfeT</span></a> <a class="idref" href="bedrock.lang.cpp.logic.mpred.html#CPP_LOGIC_CLASS_MIXIN.mpred"><span class="id" title="definition">mpred</span></a> (<a class="idref" href="https://plv.mpi-sws.org/coqdoc/iris//iris.algebra.ofe.html#ofe_mixin"><span class="id" title="projection">ofe_mixin</span></a> (<a class="idref" href="https://plv.mpi-sws.org/coqdoc/iris//iris.bi.monpred.html#monPredO"><span class="id" title="definition">monPredO</span></a> <a class="idref" href="bedrock.lang.cpp.logic.mpred.html#CPP_LOGIC_CLASS_MIXIN.with_cpp.ti"><span class="id" title="variable">ti</span></a> (<a class="idref" href="https://plv.mpi-sws.org/coqdoc/iris//iris.base_logic.lib.iprop.html#iProp_solution.iPropI"><span class="id" title="abbreviation">iPropI</span></a> <a class="idref" href="bedrock.lang.cpp.logic.mpred.html#ee6591ec165f26241f77fdb59baa70cf"><span class="id" title="method">_Σ</span></a>))).<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">End</span> <a class="idref" href="bedrock.lang.cpp.logic.mpred.html#CPP_LOGIC_CLASS_MIXIN.with_cpp"><span class="id" title="section">with_cpp</span></a>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Bind</span> <span class="id" title="keyword">Scope</span> <span class="id" title="var">bi_scope</span> <span class="id" title="keyword">with</span> <span class="id" title="var">bi_car</span>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Bind</span> <span class="id" title="keyword">Scope</span> <span class="id" title="var">bi_scope</span> <span class="id" title="keyword">with</span> <span class="id" title="var">mpred</span>.<br/>
+<span class="id" title="keyword">End</span> <a class="idref" href="bedrock.lang.cpp.logic.mpred.html#CPP_LOGIC_CLASS_MIXIN"><span class="id" title="module">CPP_LOGIC_CLASS_MIXIN</span></a>.<br/>
+
+<br/>
+<span class="id" title="keyword">Module</span> <span class="id" title="keyword">Type</span> <a id="CPP_LOGIC_CLASS" class="idref" href="#CPP_LOGIC_CLASS"><span class="id" title="module">CPP_LOGIC_CLASS</span></a> := <a class="idref" href="bedrock.lang.cpp.logic.mpred.html#CPP_LOGIC_CLASS_BASE"><span class="id" title="module">CPP_LOGIC_CLASS_BASE</span></a> &lt;+ <a class="idref" href="bedrock.lang.cpp.logic.mpred.html#CPP_LOGIC_CLASS_MIXIN"><span class="id" title="module">CPP_LOGIC_CLASS_MIXIN</span></a>.<br/>
+
+<br/>
+<span class="id" title="keyword">Declare Module</span> <a id="LC" class="idref" href="#LC"><span class="id" title="module">LC</span></a> : <a class="idref" href="bedrock.lang.cpp.logic.mpred.html#CPP_LOGIC_CLASS"><span class="id" title="module">CPP_LOGIC_CLASS</span></a>.<br/>
+<span class="id" title="keyword">Export</span> <span class="id" title="var">LC</span>.<br/>
+</div>
+<!--
+-- Copyright (c) 2020 BedRock Systems, Inc.
+-- This software is distributed under the terms of the BedRock Open-Source License.
+-- See the LICENSE-BedRock file in the repository root for details.
+-->
+
+<!--
+-- SPDX-LIcense-Identifier:BSD-2-Clause
+-->
+</div>
+<div id="footer">
+  Generated by <a href="http://coq.inria.fr/">coqdoc</a> and improved with <a href="https://github.com/tebbi/coqdocjs">CoqdocJS</a>
+</div>
+</div>
+</body>
+
+</html>

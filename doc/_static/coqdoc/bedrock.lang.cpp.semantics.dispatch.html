@@ -1,0 +1,154 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<!--
+-- Copyright (c) 2020 BedRock Systems, Inc.
+-- This software is distributed under the terms of the BedRock Open-Source License.
+-- See the LICENSE-BedRock file in the repository root for details.
+-->
+
+<!--
+-- SPDX-LIcense-Identifier:BSD-2-Clause
+-->
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+<meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
+<link href="../css/coqdocjs/coqdoc.css" rel="stylesheet" type="text/css" />
+<link href="../css/coqdocjs/coqdocjs.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="../js/coqdocjs/config.js"></script>
+<script type="text/javascript" src="../js/coqdocjs/coqdocjs.js"></script>
+</head>
+
+<body onload="document.getElementById('content').focus()">
+  <div id="header">
+    <span class="left">
+      <span class="modulename"> <script> document.write(document.title) </script> </span>
+    </span>
+
+    <span class="button" id="toggle-proofs"></span>
+
+    <!-- NOTE: These are displayed right to left on the page -->
+    <span class="right">
+      <a href="./indexpage.html"> Index </a>
+      <a href="./toc.html"> `theories/` </a>
+      <a href="../../index.html"> Toplevel </a>
+    </span>
+</div>
+    <div id="content" tabindex="-1" onblur="document.getElementById('content').focus()">
+    <div id="main">
+<h1 class="libtitle">bedrock.lang.cpp.semantics.dispatch</h1>
+
+<div class="code">
+<span class="comment">(*<br/>
+&nbsp;*&nbsp;Copyright&nbsp;(C)&nbsp;BedRock&nbsp;Systems&nbsp;Inc.&nbsp;2020&nbsp;Gregory&nbsp;Malecha<br/>
+&nbsp;*<br/>
+&nbsp;*&nbsp;SPDX-License-Identifier:AGPL-3.0-or-later<br/>
+&nbsp;*)</span><br/>
+<span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <a class="idref" href="https://plv.mpi-sws.org/coqdoc/stdpp//stdpp.decidable.html#"><span class="id" title="library">stdpp.decidable</span></a>.<br/>
+<span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <a class="idref" href="bedrock.lang.cpp.ast.html#"><span class="id" title="library">bedrock.lang.cpp.ast</span></a>.<br/>
+<span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <a class="idref" href="bedrock.lang.cpp.semantics.genv.html#"><span class="id" title="library">bedrock.lang.cpp.semantics.genv</span></a>.<br/>
+<span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <a class="idref" href="bedrock.lang.cpp.semantics.subtyping.html#"><span class="id" title="library">bedrock.lang.cpp.semantics.subtyping</span></a>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+Dispatching to a virtual function contains two pieces:
+    1. Finding the correct function to invoke
+    2. Fixing up the dispatch object.
+    Consider the following example
+    <br/>
+<span class="inlinecode">&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">struct</span> <span class="id" title="var">A</span> { <span class="id" title="var">virtual</span> <span class="id" title="var">void</span> <span class="id" title="var">foo</span>() = 0; };<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">struct</span> <span class="id" title="var">B</span> : <span class="id" title="var">public</span> <span class="id" title="var">A</span> { <span class="id" title="var">virtual</span> <span class="id" title="var">void</span> <span class="id" title="var">foo</span>() { } };<br/>
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">A</span>* <span class="id" title="var">a</span> = <a class="idref" href="bedrock.lang.cpp.logic.new_delete.html#Expr__newdelete.with_cpp_logic.with_resolve.new"><span class="id" title="section">new</span></a> <span class="id" title="var">B</span>();<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">a</span>-&gt;<span class="id" title="var">foo</span>(); // <span class="id" title="var">same</span> <span class="id" title="keyword">as</span> [<span class="id" title="var">static_cast</span>&lt;<span class="id" title="var">B</span>*&gt;(<span class="id" title="var">a</span>)-&gt;<span class="id" title="var">B</span>::<span class="id" title="var">foo</span>()]
+<div class="paragraph"> </div>
+
+</span>    note that in order to dispatch to the overridden function
+    the dispatch also introduces a <span class="inlinecode"><span class="id" title="var">static_cast</span></span> to get a pointer
+    of the correct type.
+ 
+</div>
+<div class="code">
+<span class="id" title="keyword">Record</span> <a id="vhandle" class="idref" href="#vhandle"><span class="id" title="record">vhandle</span></a> {<a id="037d1dbc1a02d6ef6874dcc89df346e1" class="idref" href="#037d1dbc1a02d6ef6874dcc89df346e1"><span class="id" title="binder">σ</span></a> : <a class="idref" href="bedrock.lang.cpp.semantics.genv.html#genv"><span class="id" title="class">genv</span></a>} : <span class="id" title="keyword">Set</span> :=<br/>
+&nbsp;&nbsp;{ <span class="comment">(*&nbsp;the&nbsp;name&nbsp;of&nbsp;the&nbsp;method&nbsp;that&nbsp;implements&nbsp;the&nbsp;function<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="inlinecode"><span class="id" title="var">None</span></span>&nbsp;means&nbsp;that&nbsp;there&nbsp;is&nbsp;no&nbsp;body.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;*)</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<a id="vimpl" class="idref" href="#vimpl"><span class="id" title="projection">vimpl</span></a>      : <a class="idref" href="http://coq.inria.fr/distrib/V8.13.2/stdlib//Coq.Init.Datatypes.html#option"><span class="id" title="inductive">option</span></a> <a class="idref" href="bedrock.lang.cpp.syntax.names.html#obj_name"><span class="id" title="definition">obj_name</span></a><br/>
+&nbsp;&nbsp;; <a id="voverrider" class="idref" href="#voverrider"><span class="id" title="projection">voverrider</span></a> : <a class="idref" href="bedrock.lang.cpp.syntax.names.html#globname"><span class="id" title="definition">globname</span></a><br/>
+&nbsp;&nbsp;; <a id="vfrom" class="idref" href="#vfrom"><span class="id" title="projection">vfrom</span></a>      : <a class="idref" href="bedrock.lang.cpp.syntax.names.html#globname"><span class="id" title="definition">globname</span></a><br/>
+&nbsp;&nbsp;; <span class="comment">(*&nbsp;the&nbsp;cast&nbsp;for&nbsp;the&nbsp;<span class="inlinecode"><span class="id" title="var">this</span></span>&nbsp;parameter&nbsp;*)</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<a id="derivation" class="idref" href="#derivation"><span class="id" title="projection">derivation</span></a> : <a class="idref" href="bedrock.lang.cpp.semantics.subtyping.html#class_derives"><span class="id" title="class">class_derives</span></a> <a class="idref" href="bedrock.lang.cpp.semantics.dispatch.html#037d1dbc1a02d6ef6874dcc89df346e1"><span class="id" title="variable">σ</span></a> <a class="idref" href="bedrock.lang.cpp.semantics.dispatch.html#voverrider:4"><span class="id" title="method">voverrider</span></a> <a class="idref" href="bedrock.lang.cpp.semantics.dispatch.html#vfrom:5"><span class="id" title="method">vfrom</span></a> }.<br/>
+<span class="id" title="var">Arguments</span> <a class="idref" href="bedrock.lang.cpp.semantics.dispatch.html#vhandle"><span class="id" title="record">vhandle</span></a> σ : <span class="id" title="tactic">clear</span> <span class="id" title="var">implicits</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Section</span> <a id="dispatch" class="idref" href="#dispatch"><span class="id" title="section">dispatch</span></a>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Context</span> (<a id="8fe0309a395dd0f70ca736ba68316e70" class="idref" href="#8fe0309a395dd0f70ca736ba68316e70"><span class="id" title="binder">σ</span></a> : <a class="idref" href="bedrock.lang.cpp.semantics.genv.html#genv"><span class="id" title="class">genv</span></a>).<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <a id="list_get" class="idref" href="#list_get"><span class="id" title="definition">list_get</span></a> {<a id="T:8" class="idref" href="#T:8"><span class="id" title="binder">T</span></a>} (<a id="t:9" class="idref" href="#t:9"><span class="id" title="binder">t</span></a> : <a class="idref" href="bedrock.lang.cpp.syntax.names.html#obj_name"><span class="id" title="definition">obj_name</span></a>) (<a id="l:10" class="idref" href="#l:10"><span class="id" title="binder">l</span></a> : <a class="idref" href="http://coq.inria.fr/distrib/V8.13.2/stdlib//Coq.Init.Datatypes.html#list"><span class="id" title="inductive">list</span></a> (<a class="idref" href="bedrock.lang.cpp.syntax.names.html#obj_name"><span class="id" title="definition">obj_name</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.13.2/stdlib//Coq.Init.Datatypes.html#11c698c8685bb8ab1cf725545c085ac4"><span class="id" title="notation">*</span></a> <a class="idref" href="bedrock.lang.cpp.semantics.dispatch.html#T:8"><span class="id" title="variable">T</span></a>)) : <a class="idref" href="http://coq.inria.fr/distrib/V8.13.2/stdlib//Coq.Init.Datatypes.html#option"><span class="id" title="inductive">option</span></a> <a class="idref" href="bedrock.lang.cpp.semantics.dispatch.html#T:8"><span class="id" title="variable">T</span></a> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="http://coq.inria.fr/distrib/V8.13.2/stdlib//Coq.Init.Datatypes.html#snd"><span class="id" title="definition">snd</span></a> <a class="idref" href="https://plv.mpi-sws.org/coqdoc/stdpp//stdpp.base.html#2eea06883886179dcc86cdc5a1870594"><span class="id" title="notation">&lt;$&gt;</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.13.2/stdlib//Coq.Lists.List.html#find"><span class="id" title="definition">List.find</span></a> (<span class="id" title="keyword">fun</span> '<a id="pat:12" class="idref" href="#pat:12"><span class="id" title="binder">(</span></a><a id="pat:12" class="idref" href="#pat:12"><span class="id" title="binder">t'</span></a><a id="pat:12" class="idref" href="#pat:12"><span class="id" title="binder">,</span></a><a id="pat:12" class="idref" href="#pat:12"><span class="id" title="binder">_</span></a><a id="pat:12" class="idref" href="#pat:12"><span class="id" title="binder">)</span></a> =&gt; <a class="idref" href="https://plv.mpi-sws.org/coqdoc/stdpp//stdpp.decidable.html#bool_decide"><span class="id" title="definition">bool_decide</span></a> (<a class="idref" href="bedrock.lang.cpp.semantics.dispatch.html#t:9"><span class="id" title="variable">t</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.13.2/stdlib//Coq.Init.Logic.html#6cd0f7b28b6092304087c7049437bb1a"><span class="id" title="notation">=</span></a> <a class="idref" href="bedrock.lang.cpp.semantics.dispatch.html#t':11"><span class="id" title="variable">t'</span></a>)) <a class="idref" href="bedrock.lang.cpp.semantics.dispatch.html#l:10"><span class="id" title="variable">l</span></a>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.semantics.dispatch.html#dispatch'"><span class="id" title="definition">dispatch'</span></a></span> <span class="inlinecode"><span class="id" title="var">mdc</span></span> <span class="inlinecode"><span class="id" title="var">from</span></span> <span class="inlinecode"><span class="id" title="var">deriv</span></span> <span class="inlinecode"><span class="id" title="var">final</span></span> <span class="inlinecode">=</span> <span class="inlinecode">(<a class="idref" href="http://coq.inria.fr/distrib/V8.13.2/stdlib//Coq.Program.Basics.html#impl"><span class="id" title="definition">impl</span></a>,</span> <span class="inlinecode"><span class="id" title="var">cand</span>)</span>
+      <span class="inlinecode"><a class="idref" href="http://coq.inria.fr/distrib/V8.13.2/stdlib//Coq.Program.Basics.html#impl"><span class="id" title="definition">impl</span></a></span> is the function to dispatch to and the fixup logic.
+      <span class="inlinecode"><span class="id" title="var">cand</span></span> is the name of the implementation, which might be further overridden.
+   
+</div>
+<div class="code">
+&nbsp;&nbsp;#[<span class="id" title="var">local</span>] <span class="id" title="keyword">Fixpoint</span> <a id="dispatch'" class="idref" href="#dispatch'"><span class="id" title="definition">dispatch'</span></a> `(<a id="d:15" class="idref" href="#d:15"><span class="id" title="binder">d</span></a> : !<a class="idref" href="bedrock.lang.cpp.semantics.subtyping.html#class_derives"><span class="id" title="class">class_derives</span></a> <a class="idref" href="bedrock.lang.cpp.semantics.dispatch.html#683f48580a9346a243cba22d6fa74bb8"><span class="id" title="variable">σ</span></a> <a id="mdc:13" class="idref" href="#mdc:13"><span class="id" title="binder">mdc</span></a> <a id="from:14" class="idref" href="#from:14"><span class="id" title="binder">from</span></a>) (<a id="final:16" class="idref" href="#final:16"><span class="id" title="binder">final</span></a> : <a class="idref" href="bedrock.lang.cpp.syntax.names.html#obj_name"><span class="id" title="definition">obj_name</span></a>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;: <a class="idref" href="bedrock.lang.cpp.semantics.dispatch.html#vhandle"><span class="id" title="record">vhandle</span></a> <a class="idref" href="bedrock.lang.cpp.semantics.dispatch.html#683f48580a9346a243cba22d6fa74bb8"><span class="id" title="variable">σ</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.13.2/stdlib//Coq.Init.Datatypes.html#11c698c8685bb8ab1cf725545c085ac4"><span class="id" title="notation">*</span></a> <a class="idref" href="bedrock.lang.cpp.syntax.names.html#obj_name"><span class="id" title="definition">obj_name</span></a> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">match</span> <a class="idref" href="bedrock.lang.cpp.semantics.dispatch.html#d:15"><span class="id" title="variable">d</span></a> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <a class="idref" href="bedrock.lang.cpp.semantics.subtyping.html#Derives_here"><span class="id" title="constructor">Derives_here</span></a> <span class="id" title="var">st</span> <span class="id" title="var">_</span> =&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="http://coq.inria.fr/distrib/V8.13.2/stdlib//Coq.Init.Datatypes.html#e6756e10c36f149b18b4a8741ed83079"><span class="id" title="notation">({|</span></a> <a class="idref" href="bedrock.lang.cpp.semantics.dispatch.html#vimpl"><span class="id" title="projection">vimpl</span></a> := <a class="idref" href="https://plv.mpi-sws.org/coqdoc/stdpp//stdpp.base.html#mjoin"><span class="id" title="definition">mjoin</span></a> (<a class="idref" href="bedrock.lang.cpp.semantics.dispatch.html#list_get"><span class="id" title="definition">list_get</span></a> <a class="idref" href="bedrock.lang.cpp.semantics.dispatch.html#final:16"><span class="id" title="variable">final</span></a> <span class="id" title="var">st</span>.(<a class="idref" href="bedrock.lang.cpp.syntax.translation_unit.html#s_virtuals"><span class="id" title="projection">s_virtuals</span></a>))<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;; <a class="idref" href="bedrock.lang.cpp.semantics.dispatch.html#voverrider"><span class="id" title="projection">voverrider</span></a> := <a class="idref" href="bedrock.lang.cpp.semantics.dispatch.html#mdc:13"><span class="id" title="variable">mdc</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;; <a class="idref" href="bedrock.lang.cpp.semantics.dispatch.html#vfrom"><span class="id" title="projection">vfrom</span></a> := <a class="idref" href="bedrock.lang.cpp.semantics.dispatch.html#from:14"><span class="id" title="variable">from</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;; <a class="idref" href="bedrock.lang.cpp.semantics.dispatch.html#derivation"><span class="id" title="projection">derivation</span></a> := <a class="idref" href="bedrock.lang.cpp.semantics.dispatch.html#d:15"><span class="id" title="variable">d</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.13.2/stdlib//Coq.Init.Datatypes.html#e6756e10c36f149b18b4a8741ed83079"><span class="id" title="notation">|},</span></a> <a class="idref" href="bedrock.lang.cpp.semantics.dispatch.html#final:16"><span class="id" title="variable">final</span></a><a class="idref" href="http://coq.inria.fr/distrib/V8.13.2/stdlib//Coq.Init.Datatypes.html#e6756e10c36f149b18b4a8741ed83079"><span class="id" title="notation">)</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <a class="idref" href="bedrock.lang.cpp.semantics.subtyping.html#Derives_base"><span class="id" title="constructor">Derives_base</span></a> <span class="id" title="var">base</span> <span class="id" title="var">st</span> <span class="id" title="var">_</span> <span class="id" title="var">_</span> <span class="id" title="var">_</span> <span class="id" title="var">_</span> <span class="id" title="var">d'</span> =&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">let</span> <a id="result:19" class="idref" href="#result:19"><span class="id" title="binder">result</span></a> := <a class="idref" href="bedrock.lang.cpp.semantics.dispatch.html#dispatch':17"><span class="id" title="definition">dispatch'</span></a> <span class="id" title="var">d'</span> <a class="idref" href="bedrock.lang.cpp.semantics.dispatch.html#final:16"><span class="id" title="variable">final</span></a> <span class="id" title="tactic">in</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">match</span> <a class="idref" href="bedrock.lang.cpp.semantics.dispatch.html#list_get"><span class="id" title="definition">list_get</span></a> <a class="idref" href="bedrock.lang.cpp.semantics.dispatch.html#result:19"><span class="id" title="variable">result</span></a><a class="idref" href="https://plv.mpi-sws.org/coqdoc/stdpp//stdpp.base.html#:::x_'.2'"><span class="id" title="notation">.2</span></a> <span class="id" title="var">st</span>.(<a class="idref" href="bedrock.lang.cpp.syntax.translation_unit.html#s_overrides"><span class="id" title="projection">s_overrides</span></a>) <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <a class="idref" href="http://coq.inria.fr/distrib/V8.13.2/stdlib//Coq.Init.Datatypes.html#None"><span class="id" title="constructor">None</span></a> =&gt; <a class="idref" href="bedrock.lang.cpp.semantics.dispatch.html#result:19"><span class="id" title="variable">result</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <a class="idref" href="http://coq.inria.fr/distrib/V8.13.2/stdlib//Coq.Init.Datatypes.html#Some"><span class="id" title="constructor">Some</span></a> <span class="id" title="var">cand'</span> =&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="http://coq.inria.fr/distrib/V8.13.2/stdlib//Coq.Init.Datatypes.html#e6756e10c36f149b18b4a8741ed83079"><span class="id" title="notation">({|</span></a> <a class="idref" href="bedrock.lang.cpp.semantics.dispatch.html#vimpl"><span class="id" title="projection">vimpl</span></a> := <a class="idref" href="http://coq.inria.fr/distrib/V8.13.2/stdlib//Coq.Init.Datatypes.html#Some"><span class="id" title="constructor">Some</span></a> <span class="id" title="var">cand'</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;; <a class="idref" href="bedrock.lang.cpp.semantics.dispatch.html#voverrider"><span class="id" title="projection">voverrider</span></a> := <a class="idref" href="bedrock.lang.cpp.semantics.dispatch.html#mdc:13"><span class="id" title="variable">mdc</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;; <a class="idref" href="bedrock.lang.cpp.semantics.dispatch.html#vfrom"><span class="id" title="projection">vfrom</span></a> := <a class="idref" href="bedrock.lang.cpp.semantics.dispatch.html#from:14"><span class="id" title="variable">from</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;; <a class="idref" href="bedrock.lang.cpp.semantics.dispatch.html#derivation"><span class="id" title="projection">derivation</span></a> := <a class="idref" href="bedrock.lang.cpp.semantics.dispatch.html#d:15"><span class="id" title="variable">d</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.13.2/stdlib//Coq.Init.Datatypes.html#e6756e10c36f149b18b4a8741ed83079"><span class="id" title="notation">|},</span></a> <span class="id" title="var">cand'</span><a class="idref" href="http://coq.inria.fr/distrib/V8.13.2/stdlib//Coq.Init.Datatypes.html#e6756e10c36f149b18b4a8741ed83079"><span class="id" title="notation">)</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">end</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">end</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.semantics.dispatch.html#dispatch'"><span class="id" title="definition">dispatch'</span></a></span> <span class="inlinecode"><span class="id" title="var">mdc</span></span> <span class="inlinecode"><span class="id" title="var">from</span></span> <span class="inlinecode"><span class="id" title="var">deriv</span></span> <span class="inlinecode"><span class="id" title="var">final</span></span> determines the function to
+      dispatch to and the fixup logic when calling <span class="inlinecode"><span class="id" title="var">final</span></span> on an object
+      whose most derived class is <span class="inlinecode"><span class="id" title="var">mdc</span></span>.
+   
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <a id="dispatch" class="idref" href="#dispatch"><span class="id" title="definition">dispatch</span></a> `(<a id="d:22" class="idref" href="#d:22"><span class="id" title="binder">d</span></a> : !<a class="idref" href="bedrock.lang.cpp.semantics.subtyping.html#class_derives"><span class="id" title="class">class_derives</span></a> <a class="idref" href="bedrock.lang.cpp.semantics.dispatch.html#683f48580a9346a243cba22d6fa74bb8"><span class="id" title="variable">σ</span></a> <a id="mdc:20" class="idref" href="#mdc:20"><span class="id" title="binder">mdc</span></a> <a id="from:21" class="idref" href="#from:21"><span class="id" title="binder">from</span></a>) (<a id="final:23" class="idref" href="#final:23"><span class="id" title="binder">final</span></a> : <a class="idref" href="bedrock.lang.cpp.syntax.names.html#obj_name"><span class="id" title="definition">obj_name</span></a>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;: <a class="idref" href="bedrock.lang.cpp.semantics.dispatch.html#vhandle"><span class="id" title="record">vhandle</span></a> <a class="idref" href="bedrock.lang.cpp.semantics.dispatch.html#683f48580a9346a243cba22d6fa74bb8"><span class="id" title="variable">σ</span></a> := <a class="idref" href="https://plv.mpi-sws.org/coqdoc/stdpp//stdpp.base.html#:::x_'.1'"><span class="id" title="notation">(</span></a><a class="idref" href="bedrock.lang.cpp.semantics.dispatch.html#dispatch'"><span class="id" title="definition">dispatch'</span></a> <a class="idref" href="bedrock.lang.cpp.semantics.dispatch.html#d:22"><span class="id" title="variable">d</span></a> <a class="idref" href="bedrock.lang.cpp.semantics.dispatch.html#final:23"><span class="id" title="variable">final</span></a><a class="idref" href="https://plv.mpi-sws.org/coqdoc/stdpp//stdpp.base.html#:::x_'.1'"><span class="id" title="notation">).1</span></a>.<br/>
+
+<br/>
+<span class="id" title="keyword">End</span> <a class="idref" href="bedrock.lang.cpp.semantics.dispatch.html#dispatch"><span class="id" title="section">dispatch</span></a>.<br/>
+</div>
+<!--
+-- Copyright (c) 2020 BedRock Systems, Inc.
+-- This software is distributed under the terms of the BedRock Open-Source License.
+-- See the LICENSE-BedRock file in the repository root for details.
+-->
+
+<!--
+-- SPDX-LIcense-Identifier:BSD-2-Clause
+-->
+</div>
+<div id="footer">
+  Generated by <a href="http://coq.inria.fr/">coqdoc</a> and improved with <a href="https://github.com/tebbi/coqdocjs">CoqdocJS</a>
+</div>
+</div>
+</body>
+
+</html>

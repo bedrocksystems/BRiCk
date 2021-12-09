@@ -1,0 +1,335 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<!--
+-- Copyright (c) 2020 BedRock Systems, Inc.
+-- This software is distributed under the terms of the BedRock Open-Source License.
+-- See the LICENSE-BedRock file in the repository root for details.
+-->
+
+<!--
+-- SPDX-LIcense-Identifier:BSD-2-Clause
+-->
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+<meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
+<link href="../css/coqdocjs/coqdoc.css" rel="stylesheet" type="text/css" />
+<link href="../css/coqdocjs/coqdocjs.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="../js/coqdocjs/config.js"></script>
+<script type="text/javascript" src="../js/coqdocjs/coqdocjs.js"></script>
+</head>
+
+<body onload="document.getElementById('content').focus()">
+  <div id="header">
+    <span class="left">
+      <span class="modulename"> <script> document.write(document.title) </script> </span>
+    </span>
+
+    <span class="button" id="toggle-proofs"></span>
+
+    <!-- NOTE: These are displayed right to left on the page -->
+    <span class="right">
+      <a href="./indexpage.html"> Index </a>
+      <a href="./toc.html"> `theories/` </a>
+      <a href="../../index.html"> Toplevel </a>
+    </span>
+</div>
+    <div id="content" tabindex="-1" onblur="document.getElementById('content').focus()">
+    <div id="main">
+<h1 class="libtitle">bedrock.lang.bi.linearity</h1>
+
+<div class="code">
+<span class="comment">(*<br/>
+&nbsp;*&nbsp;Copyright&nbsp;(c)&nbsp;2020-2021&nbsp;BedRock&nbsp;Systems,&nbsp;Inc.<br/>
+&nbsp;*&nbsp;This&nbsp;software&nbsp;is&nbsp;distributed&nbsp;under&nbsp;the&nbsp;terms&nbsp;of&nbsp;the&nbsp;BedRock&nbsp;Open-Source&nbsp;License.<br/>
+&nbsp;*&nbsp;See&nbsp;the&nbsp;LICENSE-BedRock&nbsp;file&nbsp;in&nbsp;the&nbsp;repository&nbsp;root&nbsp;for&nbsp;details.<br/>
+&nbsp;*)</span><br/>
+
+<br/>
+</div>
+
+<div class="doc">
+Import this module to make uPred mostly non-affine, while still assuming <span class="inlinecode">▷</span> <span class="inlinecode"><span class="id" title="var">emp</span></span>
+<span class="inlinecode">⊣⊢</span> <span class="inlinecode"><span class="id" title="var">emp</span></span> and other principles that do not cause leaks.
+
+<div class="paragraph"> </div>
+
+All changes to <span class="inlinecode"><span class="id" title="var">typeclass_instances</span></span> will not propagate to your clients:
+technically, they have <span class="inlinecode">#[<span class="id" title="var">export</span>]</span> visibility.
+
+</div>
+<div class="code">
+
+<br/>
+<span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <a class="idref" href="bedrock.prelude.base.html#"><span class="id" title="library">bedrock.prelude.base</span></a>.<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">bedrock.lang</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <a class="idref" href="bedrock.lang.bi.prelude.html#"><span class="id" title="library">bi.prelude</span></a> <a class="idref" href="bedrock.lang.bi.only_provable.html#"><span class="id" title="library">bi.only_provable</span></a>.<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">iris.bi</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <a class="idref" href="https://plv.mpi-sws.org/coqdoc/iris//iris.bi.monpred.html#"><span class="id" title="library">monpred</span></a>.<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">iris.proofmode</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <a class="idref" href="https://plv.mpi-sws.org/coqdoc/iris//iris.proofmode.tactics.html#"><span class="id" title="library">tactics</span></a>.<br/>
+
+<br/>
+<span class="comment">(*&nbsp;Disable&nbsp;<span class="inlinecode"><span class="id" title="var">BiAffine</span></span> <span class="inlinecode"><span class="id" title="var">uPred</span></span>&nbsp;*)</span><br/>
+#[<span class="id" title="var">export</span>] <span class="id" title="var">Remove</span> <span class="id" title="var">Hints</span> <span class="id" title="var">uPred_affine</span> : <span class="id" title="var">typeclass_instances</span>.<br/>
+
+<br/>
+<span class="comment">(*<br/>
+As&nbsp;a&nbsp;small&nbsp;optimization,&nbsp;we&nbsp;can&nbsp;remove&nbsp;dependent&nbsp;instances.<br/>
+This&nbsp;causes&nbsp;further&nbsp;incompleteness&nbsp;if&nbsp;other&nbsp;affine&nbsp;logics&nbsp;are&nbsp;relevant.<br/>
+*)</span><br/>
+#[<span class="id" title="var">export</span>] <span class="id" title="var">Remove</span> <span class="id" title="var">Hints</span> <span class="id" title="var">monPred_bi_affine</span> : <span class="id" title="var">typeclass_instances</span>.<br/>
+#[<span class="id" title="var">export</span>] <span class="id" title="var">Remove</span> <span class="id" title="var">Hints</span> <span class="id" title="var">absorbing_bi</span> : <span class="id" title="var">typeclass_instances</span>.<br/>
+
+<br/>
+<span class="comment">(*&nbsp;Potentially&nbsp;useful&nbsp;to&nbsp;exploit&nbsp;<span class="inlinecode"><span class="id" title="var">siProp_affine</span></span>.&nbsp;*)</span><br/>
+<span class="id" title="keyword">Module</span> <a id="enable_absorbing_bi" class="idref" href="#enable_absorbing_bi"><span class="id" title="module">enable_absorbing_bi</span></a>.<br/>
+&nbsp;&nbsp;#[<span class="id" title="var">export</span>] <span class="id" title="keyword">Hint</span> <span class="id" title="keyword">Resolve</span> <span class="id" title="var">absorbing_bi</span> : <span class="id" title="var">typeclass_instances</span>.<br/>
+<span class="id" title="keyword">End</span> <a class="idref" href="bedrock.lang.bi.linearity.html#enable_absorbing_bi"><span class="id" title="module">enable_absorbing_bi</span></a>.<br/>
+
+<br/>
+<span class="id" title="keyword">Import</span> <span class="id" title="var">bi</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Section</span> <a id="with_later_emp" class="idref" href="#with_later_emp"><span class="id" title="section">with_later_emp</span></a>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Context</span> {<a id="PROP:1" class="idref" href="#PROP:1"><span class="id" title="binder">PROP</span></a> : <a class="idref" href="https://plv.mpi-sws.org/coqdoc/iris//iris.bi.interface.html#bi"><span class="id" title="record">bi</span></a>} (<a id="Hlater_emp:2" class="idref" href="#Hlater_emp:2"><span class="id" title="binder">Hlater_emp</span></a> : <a class="idref" href="https://plv.mpi-sws.org/coqdoc/iris//iris.bi.interface.html#1ab064278224e8da215d0768a08713fe"><span class="id" title="notation">▷</span></a> <a class="idref" href="https://plv.mpi-sws.org/coqdoc/iris//iris.bi.interface.html#::bi_scope:'emp'"><span class="id" title="notation">emp</span></a> <a class="idref" href="https://plv.mpi-sws.org/coqdoc/iris//iris.bi.interface.html#339ab4f22dde4fec5350c24306973201"><span class="id" title="notation">⊣⊢@{</span></a><a class="idref" href="bedrock.lang.bi.linearity.html#PROP:1"><span class="id" title="variable">PROP</span></a><a class="idref" href="https://plv.mpi-sws.org/coqdoc/iris//iris.bi.interface.html#339ab4f22dde4fec5350c24306973201"><span class="id" title="notation">}</span></a> <a class="idref" href="https://plv.mpi-sws.org/coqdoc/iris//iris.bi.interface.html#::bi_scope:'emp'"><span class="id" title="notation">emp</span></a>).<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Local</span> <span class="id" title="keyword">Set</span> <span class="id" title="var">Default</span> <span class="id" title="keyword">Proof</span> <span class="id" title="var">Using</span> "Hlater_emp".<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Local</span> <span class="id" title="keyword">Notation</span> "'emp'" := (<a class="idref" href="https://plv.mpi-sws.org/coqdoc/iris//iris.bi.interface.html#bi_emp"><span class="id" title="projection">bi_emp</span></a> (<span class="id" title="var">PROP</span> := <a class="idref" href="bedrock.lang.bi.linearity.html#with_later_emp.PROP"><span class="id" title="variable">PROP</span></a>)) : <span class="id" title="var">bi_scope</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+  Very explicit proofs of some desirable principles, for any <span class="inlinecode"><a class="idref" href="bedrock.lang.bi.derived_laws.html#bi"><span class="id" title="module">bi</span></a></span>
+  supporting <span class="inlinecode"><span class="id" title="var">Hlater_emp</span></span>.
+
+<div class="paragraph"> </div>
+
+  All lemmas use suffix <span class="inlinecode"><span class="id" title="var">_with_later_emp</span></span>.
+  
+</div>
+<div class="code">
+
+<br/>
+&nbsp;&nbsp;#[<span class="id" title="var">local</span>] <span class="id" title="keyword">Lemma</span> <a id="timeless_emp_with_later_emp" class="idref" href="#timeless_emp_with_later_emp"><span class="id" title="lemma">timeless_emp_with_later_emp</span></a> : <a class="idref" href="https://plv.mpi-sws.org/coqdoc/iris//iris.bi.derived_connectives.html#Timeless"><span class="id" title="class">Timeless</span></a> <a class="idref" href="bedrock.lang.bi.linearity.html#with_later_emp.::bi_scope:'emp'"><span class="id" title="notation">emp</span></a>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Proof</span>. <span class="id" title="tactic">by</span> <span class="id" title="tactic">rewrite</span> /<a class="idref" href="https://plv.mpi-sws.org/coqdoc/iris//iris.bi.derived_connectives.html#Timeless"><span class="id" title="class">Timeless</span></a> -<a class="idref" href="https://plv.mpi-sws.org/coqdoc/iris//iris.bi.derived_laws_later.html#bi.except_0_intro"><span class="id" title="lemma">except_0_intro</span></a> <a class="idref" href="bedrock.lang.bi.linearity.html#with_later_emp.Hlater_emp"><span class="id" title="variable">Hlater_emp</span></a>. <span class="id" title="keyword">Qed</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;#[<span class="id" title="var">local</span>] <span class="id" title="keyword">Instance</span> <a id="affine_later_emp_with_later_emp" class="idref" href="#affine_later_emp_with_later_emp"><span class="id" title="instance">affine_later_emp_with_later_emp</span></a> : <a class="idref" href="https://plv.mpi-sws.org/coqdoc/iris//iris.bi.derived_connectives.html#Affine"><span class="id" title="class">Affine</span></a> (<a class="idref" href="https://plv.mpi-sws.org/coqdoc/iris//iris.bi.interface.html#1ab064278224e8da215d0768a08713fe"><span class="id" title="notation">▷</span></a> <a class="idref" href="bedrock.lang.bi.linearity.html#with_later_emp.::bi_scope:'emp'"><span class="id" title="notation">emp</span></a>).<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Proof</span>. <span class="id" title="tactic">by</span> <span class="id" title="tactic">rewrite</span> /<a class="idref" href="https://plv.mpi-sws.org/coqdoc/iris//iris.bi.derived_connectives.html#Affine"><span class="id" title="class">Affine</span></a> <a class="idref" href="bedrock.lang.bi.linearity.html#with_later_emp.Hlater_emp"><span class="id" title="variable">Hlater_emp</span></a>. <span class="id" title="keyword">Qed</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;#[<span class="id" title="var">local</span>] <span class="id" title="keyword">Lemma</span> <a id="affine_later_with_later_emp" class="idref" href="#affine_later_with_later_emp"><span class="id" title="lemma">affine_later_with_later_emp</span></a> {<a id="P:3" class="idref" href="#P:3"><span class="id" title="binder">P</span></a> : <a class="idref" href="bedrock.lang.bi.linearity.html#with_later_emp.PROP"><span class="id" title="variable">PROP</span></a>} `{<a id="Affine0:4" class="idref" href="#Affine0:4"><span class="id" title="binder">!</span></a><a id="Affine0:4" class="idref" href="#Affine0:4"><span class="id" title="binder">Affine</span></a> <a id="Affine0:4" class="idref" href="#Affine0:4"><span class="id" title="binder">P</span></a>} :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="https://plv.mpi-sws.org/coqdoc/iris//iris.bi.derived_connectives.html#Affine"><span class="id" title="class">Affine</span></a> (<a class="idref" href="https://plv.mpi-sws.org/coqdoc/iris//iris.bi.interface.html#1ab064278224e8da215d0768a08713fe"><span class="id" title="notation">▷</span></a> <a class="idref" href="bedrock.lang.bi.linearity.html#P:3"><span class="id" title="variable">P</span></a>).<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Proof</span>. <span class="id" title="tactic">intros</span>. <span class="id" title="tactic">by</span> <span class="id" title="tactic">rewrite</span> /<a class="idref" href="https://plv.mpi-sws.org/coqdoc/iris//iris.bi.derived_connectives.html#Affine"><span class="id" title="class">Affine</span></a> (<a class="idref" href="https://plv.mpi-sws.org/coqdoc/iris//iris.bi.derived_connectives.html#affine"><span class="id" title="definition">affine</span></a> <span class="id" title="var">P</span>) (<a class="idref" href="https://plv.mpi-sws.org/coqdoc/iris//iris.bi.derived_connectives.html#affine"><span class="id" title="definition">affine</span></a> (<a class="idref" href="https://plv.mpi-sws.org/coqdoc/iris//iris.bi.interface.html#1ab064278224e8da215d0768a08713fe"><span class="id" title="notation">▷</span></a> <a class="idref" href="bedrock.lang.bi.linearity.html#with_later_emp.::bi_scope:'emp'"><span class="id" title="notation">emp</span></a>)). <span class="id" title="keyword">Qed</span>.<br/>
+<span class="id" title="keyword">End</span> <a class="idref" href="bedrock.lang.bi.linearity.html#with_later_emp"><span class="id" title="section">with_later_emp</span></a>.<br/>
+
+<br/>
+<span class="comment">(*&nbsp;Here,&nbsp;we&nbsp;assume&nbsp;<span class="inlinecode"><span class="id" title="var">affinely_sep</span></span>&nbsp;as&nbsp;reasonable,<br/>
+and&nbsp;derive&nbsp;desirable&nbsp;consequences,&nbsp;such&nbsp;as&nbsp;BiPositive.&nbsp;*)</span><br/>
+<span class="id" title="keyword">Section</span> <a id="with_affinely_sep" class="idref" href="#with_affinely_sep"><span class="id" title="section">with_affinely_sep</span></a>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Context</span> {<a id="PROP:5" class="idref" href="#PROP:5"><span class="id" title="binder">PROP</span></a> : <a class="idref" href="https://plv.mpi-sws.org/coqdoc/iris//iris.bi.interface.html#bi"><span class="id" title="record">bi</span></a>} (<a id="Haffinely_sep:8" class="idref" href="#Haffinely_sep:8"><span class="id" title="binder">Haffinely_sep</span></a> : <a class="idref" href="http://coq.inria.fr/distrib/V8.13.2/stdlib//Coq.Unicode.Utf8_core.html#e15f3fa8414cf45e36c73a91b3f5f2c2"><span class="id" title="notation">∀</span></a> <a id="P:6" class="idref" href="#P:6"><span class="id" title="binder">P</span></a> <a id="Q:7" class="idref" href="#Q:7"><span class="id" title="binder">Q</span></a> : <a class="idref" href="bedrock.lang.bi.linearity.html#PROP:5"><span class="id" title="variable">PROP</span></a><a class="idref" href="http://coq.inria.fr/distrib/V8.13.2/stdlib//Coq.Unicode.Utf8_core.html#e15f3fa8414cf45e36c73a91b3f5f2c2"><span class="id" title="notation">,</span></a> <a class="idref" href="https://plv.mpi-sws.org/coqdoc/iris//iris.bi.derived_connectives.html#::bi_scope:'&lt;affine&gt;'_x"><span class="id" title="notation">&lt;</span></a><a class="idref" href="https://plv.mpi-sws.org/coqdoc/iris//iris.bi.derived_connectives.html#::bi_scope:'&lt;affine&gt;'_x"><span class="id" title="notation">affine</span></a><a class="idref" href="https://plv.mpi-sws.org/coqdoc/iris//iris.bi.derived_connectives.html#::bi_scope:'&lt;affine&gt;'_x"><span class="id" title="notation">&gt;</span></a> <a class="idref" href="https://plv.mpi-sws.org/coqdoc/iris//iris.bi.derived_connectives.html#::bi_scope:'&lt;affine&gt;'_x"><span class="id" title="notation">(</span></a><a class="idref" href="bedrock.lang.bi.linearity.html#P:6"><span class="id" title="variable">P</span></a> <a class="idref" href="https://plv.mpi-sws.org/coqdoc/iris//iris.bi.interface.html#17a7b93bfefac02a752836d54e5bc9da"><span class="id" title="notation">∗</span></a> <a class="idref" href="bedrock.lang.bi.linearity.html#Q:7"><span class="id" title="variable">Q</span></a><a class="idref" href="https://plv.mpi-sws.org/coqdoc/iris//iris.bi.derived_connectives.html#::bi_scope:'&lt;affine&gt;'_x"><span class="id" title="notation">)</span></a> <a class="idref" href="https://plv.mpi-sws.org/coqdoc/iris//iris.bi.interface.html#ab77735a6abb55d5a41bcd1956005829"><span class="id" title="notation">⊣⊢</span></a> <a class="idref" href="https://plv.mpi-sws.org/coqdoc/iris//iris.bi.derived_connectives.html#::bi_scope:'&lt;affine&gt;'_x"><span class="id" title="notation">&lt;</span></a><a class="idref" href="https://plv.mpi-sws.org/coqdoc/iris//iris.bi.derived_connectives.html#::bi_scope:'&lt;affine&gt;'_x"><span class="id" title="notation">affine</span></a><a class="idref" href="https://plv.mpi-sws.org/coqdoc/iris//iris.bi.derived_connectives.html#::bi_scope:'&lt;affine&gt;'_x"><span class="id" title="notation">&gt;</span></a> <a class="idref" href="bedrock.lang.bi.linearity.html#P:6"><span class="id" title="variable">P</span></a> <a class="idref" href="https://plv.mpi-sws.org/coqdoc/iris//iris.bi.interface.html#17a7b93bfefac02a752836d54e5bc9da"><span class="id" title="notation">∗</span></a> <a class="idref" href="https://plv.mpi-sws.org/coqdoc/iris//iris.bi.derived_connectives.html#::bi_scope:'&lt;affine&gt;'_x"><span class="id" title="notation">&lt;</span></a><a class="idref" href="https://plv.mpi-sws.org/coqdoc/iris//iris.bi.derived_connectives.html#::bi_scope:'&lt;affine&gt;'_x"><span class="id" title="notation">affine</span></a><a class="idref" href="https://plv.mpi-sws.org/coqdoc/iris//iris.bi.derived_connectives.html#::bi_scope:'&lt;affine&gt;'_x"><span class="id" title="notation">&gt;</span></a> <a class="idref" href="bedrock.lang.bi.linearity.html#Q:7"><span class="id" title="variable">Q</span></a>).<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Local</span> <span class="id" title="keyword">Set</span> <span class="id" title="var">Default</span> <span class="id" title="keyword">Proof</span> <span class="id" title="var">Using</span> "Haffinely_sep".<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="comment">(*&nbsp;Iris&nbsp;proves&nbsp;<span class="inlinecode"><span class="id" title="var">affinely_sep</span></span>&nbsp;from&nbsp;<span class="inlinecode"><span class="id" title="var">BiPositive</span></span> <span class="inlinecode"><span class="id" title="var">PROP</span></span>;&nbsp;we&nbsp;prove&nbsp;the&nbsp;converse&nbsp;holds&nbsp;*)</span><br/>
+&nbsp;&nbsp;<span class="comment">(*&nbsp;<span class="inlinecode"><span class="id" title="var">BiPositive</span></span> <span class="inlinecode"><span class="id" title="var">PROP</span></span>&nbsp;is&nbsp;equivalent&nbsp;to&nbsp;<span class="inlinecode"><span class="id" title="var">affinely_sep</span></span>,&nbsp;which&nbsp;in&nbsp;turn&nbsp;seems<br/>
+&nbsp;&nbsp;perfectly&nbsp;natural.&nbsp;*)</span><br/>
+&nbsp;&nbsp;#[<span class="id" title="var">local</span>] <span class="id" title="keyword">Instance</span> <a id="bi_positive_with_affinely_sep" class="idref" href="#bi_positive_with_affinely_sep"><span class="id" title="instance">bi_positive_with_affinely_sep</span></a> : <a class="idref" href="https://plv.mpi-sws.org/coqdoc/iris//iris.bi.derived_connectives.html#BiPositive"><span class="id" title="class">BiPositive</span></a> <a class="idref" href="bedrock.lang.bi.linearity.html#with_affinely_sep.PROP"><span class="id" title="variable">PROP</span></a>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Proof</span>. <span class="id" title="tactic">intros</span> <span class="id" title="var">P</span> <span class="id" title="var">Q</span>. <span class="id" title="tactic">by</span> <span class="id" title="tactic">rewrite</span> (<a class="idref" href="bedrock.lang.bi.linearity.html#with_affinely_sep.Haffinely_sep"><span class="id" title="variable">Haffinely_sep</span></a> <span class="id" title="var">P</span> <span class="id" title="var">Q</span>) (<a class="idref" href="https://plv.mpi-sws.org/coqdoc/iris//iris.bi.derived_laws.html#bi.affinely_elim"><span class="id" title="lemma">affinely_elim</span></a> <span class="id" title="var">Q</span>). <span class="id" title="keyword">Qed</span>.<br/>
+<span class="id" title="keyword">End</span> <a class="idref" href="bedrock.lang.bi.linearity.html#with_affinely_sep"><span class="id" title="section">with_affinely_sep</span></a>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+Specialize the lemmas in <span class="inlinecode"><span class="id" title="keyword">Section</span></span> <span class="inlinecode"><a class="idref" href="bedrock.lang.bi.linearity.html#with_later_emp"><span class="id" title="section">with_later_emp</span></a></span> to <span class="inlinecode"><a class="idref" href="bedrock.lang.bi.linearity.html#uPred"><span class="id" title="section">uPred</span></a></span> (hence
+<span class="inlinecode"><a class="idref" href="https://plv.mpi-sws.org/coqdoc/iris//iris.base_logic.lib.iprop.html#iProp_solution.iProp"><span class="id" title="abbreviation">iProp</span></a></span> and for now <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.logic.mpred.html#CPP_LOGIC_CLASS_MIXIN.mpred"><span class="id" title="definition">mpred</span></a></span>).
+
+<div class="paragraph"> </div>
+
+All lemmas use suffix <span class="inlinecode"><span class="id" title="var">_uPred</span></span>.
+
+</div>
+<div class="code">
+
+<br/>
+<span class="id" title="keyword">Section</span> <a id="uPred_with_later_emp" class="idref" href="#uPred_with_later_emp"><span class="id" title="section">uPred_with_later_emp</span></a>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Context</span> (<a id="M:9" class="idref" href="#M:9"><span class="id" title="binder">M</span></a> : <a class="idref" href="https://plv.mpi-sws.org/coqdoc/iris//iris.algebra.cmra.html#ucmraT"><span class="id" title="record">ucmraT</span></a>).<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <a id="later_emp_uPred" class="idref" href="#later_emp_uPred"><span class="id" title="definition">later_emp_uPred</span></a> := @<a class="idref" href="https://plv.mpi-sws.org/coqdoc/iris//iris.bi.derived_laws_later.html#bi.later_emp"><span class="id" title="lemma">bi.later_emp</span></a> <span class="id" title="var">_</span> (<a class="idref" href="https://plv.mpi-sws.org/coqdoc/iris//iris.base_logic.bi.html#uPred_affine"><span class="id" title="instance">uPred_affine</span></a> <a class="idref" href="bedrock.lang.bi.linearity.html#uPred_with_later_emp.M"><span class="id" title="variable">M</span></a>).<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="comment">(*&nbsp;TODO:&nbsp;switch&nbsp;to&nbsp;<span class="inlinecode">#[<span class="id" title="var">export</span>]</span> <span class="inlinecode"><span class="id" title="keyword">Instance</span></span>&nbsp;when&nbsp;Coq&nbsp;supports&nbsp;it.&nbsp;*)</span><br/>
+&nbsp;&nbsp;#[<span class="id" title="var">local</span>] <span class="id" title="keyword">Instance</span> <a id="timeless_emp_uPred" class="idref" href="#timeless_emp_uPred"><span class="id" title="instance">timeless_emp_uPred</span></a> : <a class="idref" href="https://plv.mpi-sws.org/coqdoc/iris//iris.bi.derived_connectives.html#Timeless"><span class="id" title="class">Timeless</span></a> (<span class="id" title="var">PROP</span> := <a class="idref" href="https://plv.mpi-sws.org/coqdoc/iris//iris.base_logic.bi.html#uPredI"><span class="id" title="definition">uPredI</span></a> <a class="idref" href="bedrock.lang.bi.linearity.html#uPred_with_later_emp.M"><span class="id" title="variable">M</span></a>) <a class="idref" href="https://plv.mpi-sws.org/coqdoc/iris//iris.bi.interface.html#::bi_scope:'emp'"><span class="id" title="notation">emp</span></a>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Proof</span>. <span class="id" title="tactic">apply</span> <a class="idref" href="bedrock.lang.bi.linearity.html#timeless_emp_with_later_emp"><span class="id" title="lemma">timeless_emp_with_later_emp</span></a>, <a class="idref" href="bedrock.lang.bi.linearity.html#later_emp_uPred"><span class="id" title="definition">later_emp_uPred</span></a>. <span class="id" title="keyword">Qed</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;#[<span class="id" title="var">local</span>] <span class="id" title="keyword">Instance</span> <a id="affine_later_emp_uPred" class="idref" href="#affine_later_emp_uPred"><span class="id" title="instance">affine_later_emp_uPred</span></a> : <a class="idref" href="https://plv.mpi-sws.org/coqdoc/iris//iris.bi.derived_connectives.html#Affine"><span class="id" title="class">Affine</span></a> (<span class="id" title="var">PROP</span> := <a class="idref" href="https://plv.mpi-sws.org/coqdoc/iris//iris.base_logic.bi.html#uPredI"><span class="id" title="definition">uPredI</span></a> <a class="idref" href="bedrock.lang.bi.linearity.html#uPred_with_later_emp.M"><span class="id" title="variable">M</span></a>) (<a class="idref" href="https://plv.mpi-sws.org/coqdoc/iris//iris.bi.interface.html#1ab064278224e8da215d0768a08713fe"><span class="id" title="notation">▷</span></a> <a class="idref" href="https://plv.mpi-sws.org/coqdoc/iris//iris.bi.interface.html#::bi_scope:'emp'"><span class="id" title="notation">emp</span></a>).<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Proof</span>. <span class="id" title="tactic">apply</span> <a class="idref" href="bedrock.lang.bi.linearity.html#affine_later_emp_with_later_emp"><span class="id" title="instance">affine_later_emp_with_later_emp</span></a>, <a class="idref" href="bedrock.lang.bi.linearity.html#later_emp_uPred"><span class="id" title="definition">later_emp_uPred</span></a>. <span class="id" title="keyword">Qed</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;#[<span class="id" title="var">local</span>] <span class="id" title="keyword">Instance</span> <a id="affine_later_uPred" class="idref" href="#affine_later_uPred"><span class="id" title="instance">affine_later_uPred</span></a> (<a id="P:10" class="idref" href="#P:10"><span class="id" title="binder">P</span></a> : <a class="idref" href="https://plv.mpi-sws.org/coqdoc/iris//iris.base_logic.bi.html#uPredI"><span class="id" title="definition">uPredI</span></a> <a class="idref" href="bedrock.lang.bi.linearity.html#uPred_with_later_emp.M"><span class="id" title="variable">M</span></a>) :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="https://plv.mpi-sws.org/coqdoc/iris//iris.bi.derived_connectives.html#Affine"><span class="id" title="class">Affine</span></a> <a class="idref" href="bedrock.lang.bi.linearity.html#P:10"><span class="id" title="variable">P</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.13.2/stdlib//Coq.Unicode.Utf8_core.html#c41c566ddac4c1298b9e7dd2bae1c794"><span class="id" title="notation">→</span></a> <a class="idref" href="https://plv.mpi-sws.org/coqdoc/iris//iris.bi.derived_connectives.html#Affine"><span class="id" title="class">Affine</span></a> (<a class="idref" href="https://plv.mpi-sws.org/coqdoc/iris//iris.bi.interface.html#1ab064278224e8da215d0768a08713fe"><span class="id" title="notation">▷</span></a> <a class="idref" href="bedrock.lang.bi.linearity.html#P:10"><span class="id" title="variable">P</span></a>).<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Proof</span>. <span class="id" title="tactic">apply</span> <a class="idref" href="bedrock.lang.bi.linearity.html#affine_later_with_later_emp"><span class="id" title="lemma">affine_later_with_later_emp</span></a>, <a class="idref" href="bedrock.lang.bi.linearity.html#later_emp_uPred"><span class="id" title="definition">later_emp_uPred</span></a>. <span class="id" title="keyword">Qed</span>.<br/>
+<span class="id" title="keyword">End</span> <a class="idref" href="bedrock.lang.bi.linearity.html#uPred_with_later_emp"><span class="id" title="section">uPred_with_later_emp</span></a>.<br/>
+
+<br/>
+#[<span class="id" title="var">export</span>] <span class="id" title="keyword">Hint</span> <span class="id" title="keyword">Resolve</span> <span class="id" title="var">timeless_emp_uPred</span> <span class="id" title="var">affine_later_emp_uPred</span> <span class="id" title="var">affine_later_uPred</span> : <span class="id" title="var">typeclass_instances</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<a id="lab68"></a><h3 class="section">Other instances that we derive from affinity but seem safe.</h3>
+
+</div>
+<div class="code">
+<span class="id" title="keyword">Section</span> <a id="uPred" class="idref" href="#uPred"><span class="id" title="section">uPred</span></a>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Context</span> (<a id="M:11" class="idref" href="#M:11"><span class="id" title="binder">M</span></a> : <a class="idref" href="https://plv.mpi-sws.org/coqdoc/iris//iris.algebra.cmra.html#ucmraT"><span class="id" title="record">ucmraT</span></a>).<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <a id="affinely_sep_uPred" class="idref" href="#affinely_sep_uPred"><span class="id" title="definition">affinely_sep_uPred</span></a> := @<a class="idref" href="https://plv.mpi-sws.org/coqdoc/iris//iris.bi.derived_laws.html#bi.affinely_sep"><span class="id" title="lemma">affinely_sep</span></a> <span class="id" title="var">_</span> (@<a class="idref" href="https://plv.mpi-sws.org/coqdoc/iris//iris.bi.derived_laws.html#bi.bi_affine_positive"><span class="id" title="instance">bi_affine_positive</span></a> <span class="id" title="var">_</span> (<a class="idref" href="https://plv.mpi-sws.org/coqdoc/iris//iris.base_logic.bi.html#uPred_affine"><span class="id" title="instance">uPred_affine</span></a> <a class="idref" href="bedrock.lang.bi.linearity.html#uPred.M"><span class="id" title="variable">M</span></a>)).<br/>
+
+<br/>
+&nbsp;&nbsp;#[<span class="id" title="var">local</span>] <span class="id" title="keyword">Instance</span> <a id="bi_positive_uPred" class="idref" href="#bi_positive_uPred"><span class="id" title="instance">bi_positive_uPred</span></a> : <a class="idref" href="https://plv.mpi-sws.org/coqdoc/iris//iris.bi.derived_connectives.html#BiPositive"><span class="id" title="class">BiPositive</span></a> (<a class="idref" href="https://plv.mpi-sws.org/coqdoc/iris//iris.base_logic.bi.html#uPredI"><span class="id" title="definition">uPredI</span></a> <a class="idref" href="bedrock.lang.bi.linearity.html#uPred.M"><span class="id" title="variable">M</span></a>).<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Proof</span>. <span class="id" title="tactic">apply</span> <a class="idref" href="bedrock.lang.bi.linearity.html#bi_positive_with_affinely_sep"><span class="id" title="instance">bi_positive_with_affinely_sep</span></a>, <a class="idref" href="bedrock.lang.bi.linearity.html#affinely_sep_uPred"><span class="id" title="definition">affinely_sep_uPred</span></a>. <span class="id" title="keyword">Qed</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="comment">(*<br/>
+&nbsp;&nbsp;This&nbsp;instance&nbsp;is&nbsp;needed&nbsp;by&nbsp;some&nbsp;<span class="inlinecode"><span class="id" title="var">only_provable</span></span>&nbsp;lemmas.&nbsp;It&nbsp;proves&nbsp;that<br/>
+&nbsp;&nbsp;<span class="inlinecode"></span> <span class="inlinecode">(∀</span> <span class="inlinecode"><span class="id" title="var">x</span></span> <span class="inlinecode">:</span> <span class="inlinecode"><span class="id" title="var">A</span>,</span> <span class="inlinecode">[|</span> <span class="inlinecode">φ</span> <span class="inlinecode"><span class="id" title="var">x</span></span> <span class="inlinecode">|])</span> <span class="inlinecode">⊢@{<span class="id" title="var">PROP</span>}</span> <span class="inlinecode">&lt;<span class="id" title="var">affine</span>&gt;</span> <span class="inlinecode">(∀</span> <span class="inlinecode"><span class="id" title="var">x</span></span> <span class="inlinecode">:</span> <span class="inlinecode"><span class="id" title="var">A</span>,</span> <span class="inlinecode">[|</span> <span class="inlinecode">φ</span> <span class="inlinecode"><span class="id" title="var">x</span></span> <span class="inlinecode">|])</span> <span class="inlinecode"></span><br/>
+&nbsp;&nbsp;so&nbsp;it&nbsp;seems&nbsp;related&nbsp;to&nbsp;<span class="inlinecode"><span class="id" title="var">affinely_sep</span></span>.<br/>
+&nbsp;&nbsp;*)</span><br/>
+&nbsp;&nbsp;#[<span class="id" title="var">local</span>] <span class="id" title="keyword">Instance</span> <a id="bi_emp_forall_only_provable_uPred" class="idref" href="#bi_emp_forall_only_provable_uPred"><span class="id" title="instance">bi_emp_forall_only_provable_uPred</span></a> (<a id="M:12" class="idref" href="#M:12"><span class="id" title="binder">M</span></a> : <a class="idref" href="https://plv.mpi-sws.org/coqdoc/iris//iris.algebra.cmra.html#ucmraT"><span class="id" title="record">ucmraT</span></a>) : <a class="idref" href="bedrock.lang.bi.only_provable.html#BiEmpForallOnlyProvable"><span class="id" title="class">BiEmpForallOnlyProvable</span></a> (<a class="idref" href="https://plv.mpi-sws.org/coqdoc/iris//iris.base_logic.bi.html#uPredI"><span class="id" title="definition">uPredI</span></a> <a class="idref" href="bedrock.lang.bi.linearity.html#M:12"><span class="id" title="variable">M</span></a>) :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="bedrock.lang.bi.only_provable.html#bi_affine_emp_forall_only_provable"><span class="id" title="instance">bi_affine_emp_forall_only_provable</span></a> (<a class="idref" href="https://plv.mpi-sws.org/coqdoc/iris//iris.base_logic.bi.html#uPred_affine"><span class="id" title="instance">uPred_affine</span></a> <span class="id" title="var">M</span>).<br/>
+<span class="id" title="keyword">End</span> <a class="idref" href="bedrock.lang.bi.linearity.html#uPred"><span class="id" title="section">uPred</span></a>.<br/>
+
+<br/>
+#[<span class="id" title="var">export</span>] <span class="id" title="keyword">Hint</span> <span class="id" title="keyword">Resolve</span> <span class="id" title="var">bi_positive_uPred</span> <span class="id" title="var">bi_emp_forall_only_provable_uPred</span> : <span class="id" title="var">typeclass_instances</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<a id="lab69"></a><h3 class="section">Lift over <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.logic.monpred_own.html#monPred"><span class="id" title="abbreviation">monPred</span></a></span> instances declared above.</h3>
+
+</div>
+<div class="code">
+<span class="id" title="keyword">Section</span> <a id="monPred_lift" class="idref" href="#monPred_lift"><span class="id" title="section">monPred_lift</span></a>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Context</span> (<a id="PROP:13" class="idref" href="#PROP:13"><span class="id" title="binder">PROP</span></a> : <a class="idref" href="https://plv.mpi-sws.org/coqdoc/iris//iris.bi.interface.html#bi"><span class="id" title="record">bi</span></a>).<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Context</span> (<a id="I:14" class="idref" href="#I:14"><span class="id" title="binder">I</span></a> : <a class="idref" href="https://plv.mpi-sws.org/coqdoc/iris//iris.bi.monpred.html#biIndex"><span class="id" title="record">biIndex</span></a>).<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Local</span> <span class="id" title="keyword">Notation</span> <a id="monPredI" class="idref" href="#monPredI"><span class="id" title="abbreviation">monPredI</span></a> := (<a class="idref" href="https://plv.mpi-sws.org/coqdoc/iris//iris.bi.monpred.html#monPredI"><span class="id" title="definition">monPredI</span></a> <a class="idref" href="bedrock.lang.bi.linearity.html#monPred_lift.I"><span class="id" title="variable">I</span></a> <a class="idref" href="bedrock.lang.bi.linearity.html#monPred_lift.PROP"><span class="id" title="variable">PROP</span></a>).<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="comment">(*&nbsp;TODO:&nbsp;switch&nbsp;to&nbsp;<span class="inlinecode">#[<span class="id" title="var">export</span>]</span> <span class="inlinecode"><span class="id" title="keyword">Instance</span></span>&nbsp;when&nbsp;Coq&nbsp;supports&nbsp;it.&nbsp;*)</span><br/>
+&nbsp;&nbsp;#[<span class="id" title="var">local</span>] <span class="id" title="keyword">Instance</span> <a id="timeless_emp_monPred_lift" class="idref" href="#timeless_emp_monPred_lift"><span class="id" title="instance">timeless_emp_monPred_lift</span></a> (<a id="HT:15" class="idref" href="#HT:15"><span class="id" title="binder">HT</span></a> : <a class="idref" href="https://plv.mpi-sws.org/coqdoc/iris//iris.bi.derived_connectives.html#Timeless"><span class="id" title="class">Timeless</span></a> (<span class="id" title="var">PROP</span> := <a class="idref" href="bedrock.lang.bi.linearity.html#monPred_lift.PROP"><span class="id" title="variable">PROP</span></a>) <a class="idref" href="https://plv.mpi-sws.org/coqdoc/iris//iris.bi.interface.html#::bi_scope:'emp'"><span class="id" title="notation">emp</span></a>) :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="https://plv.mpi-sws.org/coqdoc/iris//iris.bi.derived_connectives.html#Timeless"><span class="id" title="class">Timeless</span></a> (<span class="id" title="var">PROP</span> := <a class="idref" href="bedrock.lang.bi.linearity.html#monPredI"><span class="id" title="abbreviation">monPredI</span></a>) <a class="idref" href="https://plv.mpi-sws.org/coqdoc/iris//iris.bi.interface.html#::bi_scope:'emp'"><span class="id" title="notation">emp</span></a>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Proof</span>. <span class="id" title="tactic">constructor</span>=&gt; <span class="id" title="var">i</span>. <span class="id" title="tactic">rewrite</span> <a class="idref" href="https://plv.mpi-sws.org/coqdoc/iris//iris.bi.monpred.html#monPred_at_later"><span class="id" title="lemma">monPred_at_later</span></a> <a class="idref" href="https://plv.mpi-sws.org/coqdoc/iris//iris.bi.monpred.html#monPred_at_except_0"><span class="id" title="lemma">monPred_at_except_0</span></a> <a class="idref" href="https://plv.mpi-sws.org/coqdoc/iris//iris.bi.monpred.html#monPred_at_emp"><span class="id" title="lemma">monPred_at_emp</span></a>. <span class="id" title="tactic">exact</span> <span class="id" title="var">HT</span>. <span class="id" title="keyword">Qed</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;#[<span class="id" title="var">local</span>] <span class="id" title="keyword">Instance</span> <a id="affine_later_emp_monPred_lift" class="idref" href="#affine_later_emp_monPred_lift"><span class="id" title="instance">affine_later_emp_monPred_lift</span></a> (<a id="HA:16" class="idref" href="#HA:16"><span class="id" title="binder">HA</span></a> : <a class="idref" href="https://plv.mpi-sws.org/coqdoc/iris//iris.bi.derived_connectives.html#Affine"><span class="id" title="class">Affine</span></a> (<span class="id" title="var">PROP</span> := <a class="idref" href="bedrock.lang.bi.linearity.html#monPred_lift.PROP"><span class="id" title="variable">PROP</span></a>) (<a class="idref" href="https://plv.mpi-sws.org/coqdoc/iris//iris.bi.interface.html#1ab064278224e8da215d0768a08713fe"><span class="id" title="notation">▷</span></a> <a class="idref" href="https://plv.mpi-sws.org/coqdoc/iris//iris.bi.interface.html#::bi_scope:'emp'"><span class="id" title="notation">emp</span></a>)) :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="https://plv.mpi-sws.org/coqdoc/iris//iris.bi.derived_connectives.html#Affine"><span class="id" title="class">Affine</span></a> (<span class="id" title="var">PROP</span> := <a class="idref" href="bedrock.lang.bi.linearity.html#monPredI"><span class="id" title="abbreviation">monPredI</span></a>) (<a class="idref" href="https://plv.mpi-sws.org/coqdoc/iris//iris.bi.interface.html#1ab064278224e8da215d0768a08713fe"><span class="id" title="notation">▷</span></a> <a class="idref" href="https://plv.mpi-sws.org/coqdoc/iris//iris.bi.interface.html#::bi_scope:'emp'"><span class="id" title="notation">emp</span></a>).<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Proof</span>. <span class="id" title="tactic">constructor</span>=&gt; <span class="id" title="var">i</span>. <span class="id" title="tactic">rewrite</span> <a class="idref" href="https://plv.mpi-sws.org/coqdoc/iris//iris.bi.monpred.html#monPred_at_later"><span class="id" title="lemma">monPred_at_later</span></a> <a class="idref" href="https://plv.mpi-sws.org/coqdoc/iris//iris.bi.monpred.html#monPred_at_emp"><span class="id" title="lemma">monPred_at_emp</span></a>. <span class="id" title="tactic">exact</span> <span class="id" title="var">HA</span>. <span class="id" title="keyword">Qed</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;#[<span class="id" title="var">local</span>] <span class="id" title="keyword">Instance</span> <a id="affine_later_monPred_lift" class="idref" href="#affine_later_monPred_lift"><span class="id" title="instance">affine_later_monPred_lift</span></a> (<a id="P:17" class="idref" href="#P:17"><span class="id" title="binder">P</span></a> : <a class="idref" href="bedrock.lang.bi.linearity.html#monPredI"><span class="id" title="abbreviation">monPredI</span></a>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<a id="HA:19" class="idref" href="#HA:19"><span class="id" title="binder">HA</span></a> : <a class="idref" href="http://coq.inria.fr/distrib/V8.13.2/stdlib//Coq.Unicode.Utf8_core.html#e15f3fa8414cf45e36c73a91b3f5f2c2"><span class="id" title="notation">∀</span></a> <a id="P:18" class="idref" href="#P:18"><span class="id" title="binder">P</span></a> : <a class="idref" href="bedrock.lang.bi.linearity.html#monPred_lift.PROP"><span class="id" title="variable">PROP</span></a><a class="idref" href="http://coq.inria.fr/distrib/V8.13.2/stdlib//Coq.Unicode.Utf8_core.html#e15f3fa8414cf45e36c73a91b3f5f2c2"><span class="id" title="notation">,</span></a> <a class="idref" href="https://plv.mpi-sws.org/coqdoc/iris//iris.bi.derived_connectives.html#Affine"><span class="id" title="class">Affine</span></a> <a class="idref" href="bedrock.lang.bi.linearity.html#P:18"><span class="id" title="variable">P</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.13.2/stdlib//Coq.Unicode.Utf8_core.html#c41c566ddac4c1298b9e7dd2bae1c794"><span class="id" title="notation">→</span></a> <a class="idref" href="https://plv.mpi-sws.org/coqdoc/iris//iris.bi.derived_connectives.html#Affine"><span class="id" title="class">Affine</span></a> (<a class="idref" href="https://plv.mpi-sws.org/coqdoc/iris//iris.bi.interface.html#1ab064278224e8da215d0768a08713fe"><span class="id" title="notation">▷</span></a> <a class="idref" href="bedrock.lang.bi.linearity.html#P:18"><span class="id" title="variable">P</span></a>)) :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="https://plv.mpi-sws.org/coqdoc/iris//iris.bi.derived_connectives.html#Affine"><span class="id" title="class">Affine</span></a> <a class="idref" href="bedrock.lang.bi.linearity.html#P:17"><span class="id" title="variable">P</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.13.2/stdlib//Coq.Unicode.Utf8_core.html#c41c566ddac4c1298b9e7dd2bae1c794"><span class="id" title="notation">→</span></a> <a class="idref" href="https://plv.mpi-sws.org/coqdoc/iris//iris.bi.derived_connectives.html#Affine"><span class="id" title="class">Affine</span></a> (<a class="idref" href="https://plv.mpi-sws.org/coqdoc/iris//iris.bi.interface.html#1ab064278224e8da215d0768a08713fe"><span class="id" title="notation">▷</span></a> <a class="idref" href="bedrock.lang.bi.linearity.html#P:17"><span class="id" title="variable">P</span></a>).<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Proof</span>. <span class="id" title="tactic">intros</span> <span class="id" title="var">AP</span>. <span class="id" title="tactic">constructor</span>=&gt; <span class="id" title="var">i</span>. <span class="id" title="tactic">rewrite</span> <a class="idref" href="https://plv.mpi-sws.org/coqdoc/iris//iris.bi.monpred.html#monPred_at_later"><span class="id" title="lemma">monPred_at_later</span></a> <a class="idref" href="https://plv.mpi-sws.org/coqdoc/iris//iris.bi.monpred.html#monPred_at_emp"><span class="id" title="lemma">monPred_at_emp</span></a>. <span class="id" title="tactic">apply</span> <span class="id" title="var">HA</span>, <a class="idref" href="https://plv.mpi-sws.org/coqdoc/iris//iris.bi.monpred.html#monPred_at_affine"><span class="id" title="instance">monPred_at_affine</span></a>, <span class="id" title="var">AP</span>. <span class="id" title="keyword">Qed</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+Liftings for <span class="inlinecode"><a class="idref" href="https://plv.mpi-sws.org/coqdoc/iris//iris.bi.derived_connectives.html#BiPositive"><span class="id" title="class">BiPositive</span></a></span> and <span class="inlinecode"><a class="idref" href="bedrock.lang.bi.only_provable.html#BiEmpForallOnlyProvable"><span class="id" title="record">BiEmpForallOnlyProvable</span></a></span> are declared elsewhere. 
+</div>
+<div class="code">
+<span class="id" title="keyword">End</span> <a class="idref" href="bedrock.lang.bi.linearity.html#monPred_lift"><span class="id" title="section">monPred_lift</span></a>.<br/>
+
+<br/>
+#[<span class="id" title="var">export</span>] <span class="id" title="keyword">Hint</span> <span class="id" title="keyword">Resolve</span> <span class="id" title="var">timeless_emp_monPred_lift</span> <span class="id" title="var">affine_later_emp_monPred_lift</span> <span class="id" title="var">affine_later_monPred_lift</span> : <span class="id" title="var">typeclass_instances</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+FM-569: Backport fixed priorities of IPM <span class="inlinecode"><span class="id" title="var">Frame</span></span> instances from our upstream
+contribution at https://gitlab.mpi-sws.org/iris/iris/-/merge_requests/715.
+Drop this upon Iris bump.
+
+<div class="paragraph"> </div>
+
+For simplicity, we include all upstream instances marked with priority 2,
+including those that have that as default.
+
+<div class="paragraph"> </div>
+
+We do not adjust the priorities of <span class="inlinecode"><span class="id" title="var">weakestpre.frame_wp</span></span> and
+<span class="inlinecode"><span class="id" title="var">total_weakestpre.frame_twp</span></span> as we do not use the Iris program logic.
+
+</div>
+<div class="code">
+<span class="id" title="keyword">Import</span> <span class="id" title="var">frame_instances</span>.<br/>
+<span class="id" title="keyword">Require</span> <a class="idref" href="https://plv.mpi-sws.org/coqdoc/iris//iris.proofmode.monpred.html#"><span class="id" title="library">iris.proofmode.monpred</span></a>.<br/>
+
+<br/>
+#[<span class="id" title="var">export</span>] <span class="id" title="var">Remove</span> <span class="id" title="var">Hints</span><br/>
+&nbsp;&nbsp;<span class="id" title="var">frame_here_pure_persistent</span><br/>
+&nbsp;&nbsp;<span class="id" title="var">frame_here_pure</span><br/>
+&nbsp;&nbsp;<span class="id" title="var">frame_embed</span><br/>
+&nbsp;&nbsp;<span class="id" title="var">frame_pure_embed</span><br/>
+&nbsp;&nbsp;<span class="id" title="var">frame_big_sepL_cons</span><br/>
+&nbsp;&nbsp;<span class="id" title="var">frame_big_sepL_app</span><br/>
+&nbsp;&nbsp;<span class="id" title="var">frame_big_sepMS_disj_union</span><br/>
+&nbsp;&nbsp;<span class="id" title="var">frame_wand</span><br/>
+&nbsp;&nbsp;<span class="id" title="var">frame_intuitionistically</span><br/>
+&nbsp;&nbsp;<span class="id" title="var">frame_absorbingly</span><br/>
+&nbsp;&nbsp;<span class="id" title="var">frame_persistently</span><br/>
+&nbsp;&nbsp;<span class="id" title="var">frame_exist</span><br/>
+&nbsp;&nbsp;<span class="id" title="var">frame_texist</span><br/>
+&nbsp;&nbsp;<span class="id" title="var">frame_forall</span><br/>
+&nbsp;&nbsp;<span class="id" title="var">frame_tforall</span><br/>
+&nbsp;&nbsp;<span class="id" title="var">frame_impl_persistent</span><br/>
+&nbsp;&nbsp;<span class="id" title="var">frame_bupd</span><br/>
+&nbsp;&nbsp;<span class="id" title="var">frame_fupd</span><br/>
+&nbsp;&nbsp;<span class="id" title="var">frame_except_0</span><br/>
+&nbsp;&nbsp;<span class="id" title="var">monpred.frame_monPred_at_enter</span><br/>
+&nbsp;&nbsp;: <span class="id" title="var">typeclass_instances</span>.<br/>
+
+<br/>
+#[<span class="id" title="var">export</span>] <span class="id" title="keyword">Hint</span> <span class="id" title="keyword">Resolve</span><br/>
+&nbsp;&nbsp;<span class="id" title="var">frame_here_pure_persistent</span><br/>
+&nbsp;&nbsp;<span class="id" title="var">frame_here_pure</span><br/>
+&nbsp;&nbsp;<span class="id" title="var">frame_embed</span><br/>
+&nbsp;&nbsp;<span class="id" title="var">frame_pure_embed</span><br/>
+&nbsp;&nbsp;<span class="id" title="var">frame_big_sepL_cons</span><br/>
+&nbsp;&nbsp;<span class="id" title="var">frame_big_sepL_app</span><br/>
+&nbsp;&nbsp;<span class="id" title="var">frame_big_sepMS_disj_union</span><br/>
+&nbsp;&nbsp;<span class="id" title="var">frame_wand</span><br/>
+&nbsp;&nbsp;<span class="id" title="var">frame_intuitionistically</span><br/>
+&nbsp;&nbsp;<span class="id" title="var">frame_absorbingly</span><br/>
+&nbsp;&nbsp;<span class="id" title="var">frame_persistently</span><br/>
+&nbsp;&nbsp;<span class="id" title="var">frame_exist</span><br/>
+&nbsp;&nbsp;<span class="id" title="var">frame_texist</span><br/>
+&nbsp;&nbsp;<span class="id" title="var">frame_forall</span><br/>
+&nbsp;&nbsp;<span class="id" title="var">frame_tforall</span><br/>
+&nbsp;&nbsp;<span class="id" title="var">frame_impl_persistent</span><br/>
+&nbsp;&nbsp;<span class="id" title="var">frame_bupd</span><br/>
+&nbsp;&nbsp;<span class="id" title="var">frame_fupd</span><br/>
+&nbsp;&nbsp;<span class="id" title="var">frame_except_0</span><br/>
+&nbsp;&nbsp;<span class="id" title="var">monpred.frame_monPred_at_enter</span><br/>
+&nbsp;&nbsp;| 2 : <span class="id" title="var">typeclass_instances</span>.<br/>
+</div>
+<!--
+-- Copyright (c) 2020 BedRock Systems, Inc.
+-- This software is distributed under the terms of the BedRock Open-Source License.
+-- See the LICENSE-BedRock file in the repository root for details.
+-->
+
+<!--
+-- SPDX-LIcense-Identifier:BSD-2-Clause
+-->
+</div>
+<div id="footer">
+  Generated by <a href="http://coq.inria.fr/">coqdoc</a> and improved with <a href="https://github.com/tebbi/coqdocjs">CoqdocJS</a>
+</div>
+</div>
+</body>
+
+</html>
