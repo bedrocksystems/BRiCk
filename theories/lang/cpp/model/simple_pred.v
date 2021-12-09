@@ -15,7 +15,12 @@ Require Import bedrock.lang.cpp.logic.own_instances.
 
 From bedrock.prelude Require Import base option.
 Require Import bedrock.lang.cpp.arith.z_to_bytes.
-From bedrock.lang.cpp Require Import ast semantics.
+From bedrock.lang.cpp.syntax Require Import
+     names
+     types
+     typing
+     translation_unit.
+From bedrock.lang.cpp.semantics Require Import values subtyping.
 From bedrock.lang.cpp.logic Require Import mpred pred.
 
 Implicit Types (vt : validity_type) (σ resolve : genv).
@@ -72,8 +77,8 @@ End fractional.
 From bedrock.lang.cpp.model Require Import inductive_pointers.
 (* Stand-in for actual models.
 Ensures that everything needed is properly functorized. *)
-Declare Module VALUES_DEFS_IMPL : VALUES_INTF_FUNCTOR PTRS_IMPL.
-Module Import VALUES_FULL_IMPL <: VALUES_INTF := PTRS_IMPL <+ VALUES_DEFS_IMPL.
+Import PTRS_IMPL.
+Declare Module Import VALUES_DEFS_IMPL : VALUES_INTF_FUNCTOR PTRS_IMPL.
 
 Implicit Types (p : ptr).
 
@@ -1101,10 +1106,10 @@ Module SimpleCPP.
 
 End SimpleCPP.
 
-Module Type SimpleCPP_INTF := CPP_LOGIC_CLASS <+ CPP_LOGIC VALUES_FULL_IMPL.
+Module Type SimpleCPP_INTF := CPP_LOGIC_CLASS <+ CPP_LOGIC PTRS_IMPL VALUES_DEFS_IMPL.
 Module L <: SimpleCPP_INTF := SimpleCPP.
 
-Module VALID_PTR : VALID_PTR_AXIOMS VALUES_FULL_IMPL L L.
+Module VALID_PTR : VALID_PTR_AXIOMS PTRS_IMPL VALUES_DEFS_IMPL L L.
   Import SimpleCPP.
 
   Notation strict_valid_ptr := (_valid_ptr Strict).

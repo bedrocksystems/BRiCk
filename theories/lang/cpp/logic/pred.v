@@ -40,7 +40,10 @@ Implicit Types (n : N) (z : Z).
 (* Namespace for the invariants of the C++ abstraction's ghost state. *)
 Definition pred_ns : namespace := nroot .@@ "bedrock" .@@ "lang" .@@ "cpp_logic".
 
-Module Type CPP_LOGIC (Import INTF : VALUES_INTF) (Import CC : CPP_LOGIC_CLASS).
+Module Type CPP_LOGIC
+  (Import P : PTRS_INTF)
+  (Import INTF : VALUES_INTF_FUNCTOR P)
+  (Import CC : CPP_LOGIC_CLASS).
 
   Implicit Types (p : ptr).
 
@@ -426,7 +429,11 @@ Module Type CPP_LOGIC (Import INTF : VALUES_INTF) (Import CC : CPP_LOGIC_CLASS).
 End CPP_LOGIC.
 
 (* Pointer axioms. XXX Not modeled for now. *)
-Module Type VALID_PTR_AXIOMS (Import INTF : VALUES_INTF) (Import CC : CPP_LOGIC_CLASS) (Import CPP : CPP_LOGIC INTF CC).
+Module Type VALID_PTR_AXIOMS
+  (Import P : PTRS_INTF)
+  (Import INTF : VALUES_INTF_FUNCTOR P)
+  (Import CC : CPP_LOGIC_CLASS)
+  (Import CPP : CPP_LOGIC P INTF CC).
 
   Section with_cpp.
     Context `{cpp_logic} {σ : genv}.
@@ -515,10 +522,10 @@ Module Type VALID_PTR_AXIOMS (Import INTF : VALUES_INTF) (Import CC : CPP_LOGIC_
   End with_cpp.
 End VALID_PTR_AXIOMS.
 
-Declare Module L : CPP_LOGIC VALUES_INTF_AXIOM LC.
+Declare Module L : CPP_LOGIC PTRS_INTF_AXIOM VALUES_INTF_AXIOM LC.
 Export L.
 
-Declare Module Export VALID_PTR : VALID_PTR_AXIOMS VALUES_INTF_AXIOM LC L.
+Declare Module Export VALID_PTR : VALID_PTR_AXIOMS PTRS_INTF_AXIOM VALUES_INTF_AXIOM LC L.
 
 Section valid_ptr_code.
   Context `{Σ : cpp_logic} {σ : genv}.
