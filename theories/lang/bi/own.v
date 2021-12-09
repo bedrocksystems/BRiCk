@@ -97,7 +97,7 @@ Arguments HasOwnValid _ {_} _{_}.
 
 (* own_update and own_alloc *)
 Class HasOwnUpd `{!BiBUpd PROP} `{!HasOwn PROP A} : Type := {
-  (* TODO: we might need own_updateP *)
+  own_updateP P γ (a : A) : a ~~>: P → own γ a ==∗ ∃ a', ⌜P a'⌝ ∗ own γ a';
   own_update γ (a a' : A) : a ~~> a' -> own γ a ==∗ own γ a' ;
   own_alloc_strong_dep (f : gname → A) (P : gname → Prop) :
     pred_infinite P → (∀ γ, P γ → ✓ (f γ)) → ⊢ |==> ∃ γ, <affine> ⌜P γ⌝ ∗ own γ (f γ)
