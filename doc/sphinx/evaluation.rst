@@ -12,7 +12,7 @@ The general form of these rules is the following:
    Parameter wp : input_1 -> .. -> input_n -> (output_1 -> ... -> output_n -> PROP) -> PROP
 
 Note that `wp` is a predicate in our separation logic (the fact that it returns a `PROP`).
-Informally you can think of it as capturing the pre-condition to the inputs (one of which is normally an expression) that are sufficient such that if and when the expression terminates, it terminates in a state where its outputs statisfy the "continuation" (i.e. the final function argument to `wp`).
+Informally you can think of it as capturing the pre-condition to the inputs (one of which is normally an expression) that are sufficient such that the code is safe and if the expression terminates, it terminates in a state in which its outputs statisfy the "continuation" (i.e. the final function argument to `wp`).
 
 Due to the structure of C++, |project| contains a separate weakest pre-condition modality for each syntactic category. These are defined in |link:bedrock.lang.cpp.logic.wp|.
 
@@ -141,10 +141,8 @@ Hybrid Argument Passing (Current |project|)
 C++ distinguishes (in a stronger way than C) between primitive types, e.g. :cpp:`int` and :cpp:`C*`, and aggregate types, i.e. :cpp:`struct C` or :cpp:`union C`.
 Due to this distinguishing characteristic, one option is a hybrid argument passing style where primitives are passed directly and aggregates are passed materialized.
 
-- Primitives are passed as values and aggregates via locations
-- Pro: Primitives can be directly destructed in specifications
-- Con: Probably break templates because an instantiation with a primitive value would produce quite different code than an instantiatation with an aggregate value
-
+We believe that this is sound because primitives have no destructors and so the order in which destruction occurs is not observable [#non-observable-destructors]_.
+We see two downsides to this approach: first, the soundness relies on the above argument; second, the semantics of calls with type variables (not currently supported by |project|) is more complex.
 
 Uniform Location Passing (future |project|)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -159,14 +157,7 @@ Another benefit is that all of the information is present in the specification r
 Unfortunately, this approach produces larger spatial contexts when reasoning about function calls: instead of passing primitive values directly, we must materialize them into the stack and reason about the used memory.
 When passing primitives in this style, the *caller* needs to allocate memory within the logic.
 
-Uniform Value Passing
-~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-Given the hybrid nature, it might seem reasonable to have a uniform value passing semantics.
-This approach is taken in other systems such as `RefinedC <https://gitlab.mpi-sws.org/iris/refinedc>`_.
-Following this approach in |project| would require that we have a value representation for aggregates which, we believe, would be difficult and would require that we replicate a lot of reasoning at this value level.
-
-
 
 .. rubric:: Footnotes
 .. [#parallel-destruction] We use `par` to under approximate the destruction order of temporaries when C++ does not guarantee it statically. For example, in the function call `f(a,b,c)`, the expressions `a`, `b`, and `c` can be evaluated in any order and we can approximate the ordering provided by c++ by saying they are destroyed in parallel.
+.. [#non-observable-destructors] Part of the justification for this is that the arguments to functions do not have names in the callees stack frame, so the locations of those objects are not accessible to other objects (something that could influence the semantics due to live pointers).
