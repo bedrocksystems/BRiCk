@@ -130,10 +130,12 @@ Section destroy.
           iIntros (?) "[$ Q]"; iApply "X"; done. } } }
   Qed.
 
+  (* BEGIN interp *)
   (** [interp free Q] "runs" [free] and then acts like [Q].
 
-      TODO it might make sense for this to be like a [wp] where this
-      will have fancy update modalities.
+      NOTE this could directly support update modalities like regular [wp]s
+           but in practice it is always going to occur at the end of a [wp] which
+           means it will already have access to a fancy update.
    *)
   Fixpoint interp (free : FreeTemps) (Q : epred) : mpred :=
     match free with
@@ -142,6 +144,7 @@ Section destroy.
     | FreeTemps.par f g => Exists Qf Qg, interp f Qf ** interp g Qg ** (Qf -* Qg -* Q)
     | FreeTemps.delete ty addr => delete_val false ty addr (fun _ _ => Q)
     end.
+  (* END interp *)
 
   Lemma interp_frame free : forall Q1 Q2,
       Q1 -* Q2 |-- interp free Q1 -* interp free Q2.

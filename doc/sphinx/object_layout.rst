@@ -44,34 +44,6 @@ Given that we materialize all aggregates, we can provide a simple characterizati
 This characterization enables us to use a single abstraction to model the in-memory representation of C++ values - called |link:bedrock.lang.cpp.logic.heap_pred#primR| `: type -> Qp -> val -> Rep` - which reflects the fractional ownership (`Qp`\ ) of some Coq-model `val`\ ue of a given C++ `type`.
 `Rep ~= ptr -> mpred` models the location agnostic in-memory representation of some resource, and for any given `p : ptr` and `R : Rep`\ , `p |-> R` reflects the materialization of the resource modeled by `R` at the logical pointer `p`.
 
-.. jh: The following two sections don't really belong here; where should they go?
-
-Function Call Semantics
-------------------------
-
-.. todo:: @gregory needs to massage this some more and (potentially) split this off into another file which covers the various `wp_xxx` parameters.
-
-Following options:
-
-**Pass as everything as values**: (as e.g. in RefinedC)
-
-- Both primitives and aggregates are passed as values to and from functions
-- Callee allocates space to put the values
-- Con: Needs representation of structures as values (works in C, but more tricky in C++)
-
-**Pass as everything via locations**: (as e.g. in Cerberus)
-
-- Both primitives and aggregates are passed via locations to and from functions
-- Caller allocates locations, stores values there and then passes them to the function
-- Pro: Aggregates only need to be represented in locations, never as values
-- Con: Since primitives are passed via the heap, the specification cannot directly destruct them
-
-**Pass primitives as values and aggregates via locations**: (as currently in |project|)
-
-- Primitives are passed as values and aggregates via locations
-- Pro: Primitives can be directly destructed in specifications
-- Con: Probably break templates because an instantiation with a primitive value would produce quite different code than an instantiatation with an aggregate value
-
 .. _object_layout.arrays:
 
 Reasoning about the layout of an array in memory
@@ -122,9 +94,9 @@ For example, consider the following code:
     ptr->b = ...; // (2) This write must go to dma_address + 8
   }
 
-This code communicates with a device via DMA by casting a pointer to a `struct` and then uses field accesses to write to memory.
+This code communicates with a device via DMA by casting a pointer to a :cpp:`struct` and then uses field accesses to write to memory.
 The important point is that the writes on line `(1)` and `(2)`, must go to the address `dma_address + 0` resp. `dma_address + 8` for correctness.
-In particular, there must not be padding at the start of the `struct` and between `a` and `b`.
+In particular, there must not be padding at the start of the :cpp:`struct` and between `a` and `b`.
 
 *How can this reasoning be justified?* The C++ standard itself only gives light
 guarantees about the `layout of structs <http://eel.is/c++draft/class.mem#26>`_:
