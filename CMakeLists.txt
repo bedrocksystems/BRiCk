@@ -87,7 +87,7 @@ add_llvm_executable(cpp2v
 # with simple
 #
 # set(CPP2V_LLVM_COMPONENTS support core bitreader)
-# llvm_config(cpp2v ${CPP2V_LLVM_COMPONENTS})
+# llvm_config(cpp2v USE_SHARED ${CPP2V_LLVM_COMPONENTS})
 #
 find_library(LLVM_MONO_LIB LLVM ${LLVM_LIBRARY_DIR})
 if(NOT LLVM_MONO_LIB)
