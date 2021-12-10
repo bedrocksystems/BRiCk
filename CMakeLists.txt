@@ -75,7 +75,26 @@ add_llvm_executable(cpp2v
   src/cpp2v.cpp
 )
 
-llvm_map_components_to_libnames(llvm_libs support core bitreader)
+set(CPP2V_LLVM_COMPONENTS support core bitreader)
+
+find_library(LLVM_MONO_LIB LLVM ${LLVM_LIBRARY_DIR})
+if(NOT LLVM_MONO_LIB)
+  message(STATUS "Monolithic LLVM library not found, gathering component libraries...")
+
+  llvm_map_components_to_libnames(llvm_libs ${CPP2V_LLVM_COMPONENTS})
+  foreach(lib_name ${llvm_libs})
+    find_library(${lib_name}_found ${lib_name} ${LLVM_LIBRARY_DIR})
+    if(NOT ${${lib_name}_found})
+        message(FATAL_ERROR "Library (LLVM component) not found: ${lib_name}")
+    endif(NOT ${${lib_name}_found})
+
+    message(STATUS "Linking against LLVM component: ${lib_names} (${${lib_name}_found})")
+  endforeach(lib_name ${llvm_libs})
+else(NOT LLVM_MONO_LIB)
+  set(llvm_libs)
+  message(STATUS "Linking against monolithic libLLVM (${LLVM_MONO_LIB})")
+endif(NOT LLVM_MONO_LIB)
+
 
 # Link against LLVM/Clang and tocoq libraries
 target_link_libraries(cpp2v PUBLIC ${llvm_libs} clang-cpp tocoq)
