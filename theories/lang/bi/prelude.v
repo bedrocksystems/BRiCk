@@ -1,9 +1,9 @@
 (*
- * Copyright (c) 2020 BedRock Systems, Inc.
+ * Copyright (c) 2020-21 BedRock Systems, Inc.
  * This software is distributed under the terms of the BedRock Open-Source License.
  * See the LICENSE-BedRock file in the repository root for details.
  *)
-From iris.bi Require Import bi.
+From iris.bi Require Import bi big_op.
 (* This export ensures that [upredI] is registered as a canonical structure everywhere. *)
 From iris.base_logic Require Export bi.
 From iris.proofmode Require Import classes.
@@ -80,3 +80,58 @@ Module ChargeNotation.
     (at level 85, no associativity, only parsing).
 
 End ChargeNotation.
+
+(** ** Big op notation *)
+(*
+ * Iris big ops look horrible when formatting boxes overflow: Things
+ * shift far to the right. We therefore disable the Iris notation for
+ * printing by redeclaring it parsing only, and define our own
+ * notation (which includes an optional break after binders---see
+ * [../../prelude/reserved_notation.v]).
+ *
+ * Quoting TFM: "If a notation to be used both for parsing and
+ * printing is overridden, both the parsing and printing are
+ * invalided, even if the overriding rule is only parsing."
+ *
+ * On Coq 8.13.2, it seems we need not disable printing for Iris
+ * notation. Rather, that version of Coq seems to print a term using
+ * the last registered notation. Were this documented as Coq's
+ * intended behavior, we could drop all of the "only parsing"
+ * declarations that follow.
+ *)
+
+(** Big separating conjunction *)
+
+Notation "'[∗' 'list]' i ↦ x ∈ l , P" := (big_opL bi_sep (λ i x, P) l) (only parsing) : bi_scope.
+Notation "'[**' 'list]' i |-> x ∈ l , P" := (big_opL bi_sep (λ i x, P) l) : bi_scope.
+
+Notation "'[∗' 'list]' x ∈ l , P" := (big_opL bi_sep (λ _ x, P) l) (only parsing) : bi_scope.
+Notation "'[**' 'list]' x ∈ l , P" := (big_opL bi_sep (λ _ x, P) l) : bi_scope.
+
+Notation "'[∗' 'map]' k ↦ x ∈ m , P" := (big_opM bi_sep (λ k x, P) m) (only parsing) : bi_scope.
+Notation "'[**' 'map]' k |-> x ∈ m , P" := (big_opM bi_sep (λ k x, P) m) : bi_scope.
+
+Notation "'[∗' 'map]' x ∈ m , P" := (big_opM bi_sep (λ _ x, P) m) (only parsing) : bi_scope.
+Notation "'[**' 'map]' x ∈ m , P" := (big_opM bi_sep (λ _ x, P) m) : bi_scope.
+
+Notation "'[∗' 'set]' x ∈ X , P" := (big_opS bi_sep (λ x, P) X) (only parsing) : bi_scope.
+Notation "'[**' 'set]' x ∈ X , P" := (big_opS bi_sep (λ x, P) X) : bi_scope.
+
+Notation "'[∗' 'mset]' x ∈ X , P" := (big_opMS bi_sep (λ x, P) X) (only parsing) : bi_scope.
+Notation "'[**' 'mset]' x ∈ X , P" := (big_opMS bi_sep (λ x, P) X) : bi_scope.
+
+(** Big conjunction *)
+
+Notation "'[∧' 'list]' i ↦ x ∈ l , P" := (big_opL bi_and (λ i x, P) l) (only parsing) : bi_scope.
+Notation "'[/\' 'list]' i |-> x ∈ l , P" := (big_opL bi_and (λ i x, P) l) : bi_scope.
+
+Notation "'[∧' 'list]' x ∈ l , P" := (big_opL bi_and (λ _ x, P) l) (only parsing) : bi_scope.
+Notation "'[/\' 'list]' x ∈ l , P" := (big_opL bi_and (λ _ x, P) l) : bi_scope.
+
+(** Big disjunction *)
+
+Notation "'[∨' 'list]' i ↦ x ∈ l , P" := (big_opL bi_or (λ i x, P) l) (only parsing) : bi_scope.
+Notation "'[\/' 'list]' i |-> x ∈ l , P" := (big_opL bi_or (λ i x, P) l) : bi_scope.
+
+Notation "'[∨' 'list]' x ∈ l , P" := (big_opL bi_or (λ _ x, P) l) (only parsing) : bi_scope.
+Notation "'[\/' 'list]' x ∈ l , P" := (big_opL bi_or (λ _ x, P) l) : bi_scope.
