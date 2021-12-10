@@ -25,6 +25,8 @@ set(CMAKE_MODULE_PATH
 
 include(AddLLVM)
 
+set(CPP2V_LLVM_COMPONENTS support core bitreader)
+
 include_directories(
   ${LLVM_INCLUDE_DIRS}
   include
@@ -75,7 +77,6 @@ add_llvm_executable(cpp2v
   src/cpp2v.cpp
 )
 
-set(CPP2V_LLVM_COMPONENTS support core bitreader)
 
 find_library(LLVM_MONO_LIB LLVM ${LLVM_LIBRARY_DIR})
 if(NOT LLVM_MONO_LIB)
@@ -88,7 +89,7 @@ if(NOT LLVM_MONO_LIB)
         message(FATAL_ERROR "Library (LLVM component) not found: ${lib_name}")
     endif(NOT ${lib_name}_found)
 
-    message(STATUS "Linking against LLVM component: ${lib_names} (${${lib_name}_found})")
+    message(STATUS "Linking against LLVM component: ${lib_name} (${${lib_name}_found})")
   endforeach(lib_name ${llvm_libs})
 else(NOT LLVM_MONO_LIB)
   set(llvm_libs)
