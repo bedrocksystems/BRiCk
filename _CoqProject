@@ -79,6 +79,7 @@ theories/lang/bi/embedding.v
 theories/lang/bi/monpred.v
 theories/lang/bi/invariants.v
 theories/lang/bi/own.v
+theories/lang/bi/na_invariants.v
 theories/lang/bi/cancelable_invariants.v
 theories/lang/bi/prelude.v
 theories/lang/bi/IrisBridge.v

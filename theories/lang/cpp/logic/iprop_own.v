@@ -132,6 +132,7 @@ Section iprop_instances.
   #[global] Instance has_own_update_iprop : HasOwnUpd iPropI A.
   Proof.
     constructor; rewrite has_own_iprop_eq /=.
+    - by apply base_logic.lib.own.own_updateP.
     - by apply base_logic.lib.own.own_update.
     - setoid_rewrite (bi.affine_affinely (bi_pure _)).
       by apply base_logic.lib.own.own_alloc_strong_dep.

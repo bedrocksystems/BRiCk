@@ -38,6 +38,8 @@ Reserved Infix "\" (at level 40, left associativity).	(** cf [∖] *)
  *
  * - use [**], [/\], [\/], [ |-> ] instead of [∗], [∧], [∨], [↦]
  * (slightly improving typeability)
+ *
+ * TODO: Upstream the formatting box changes.
  *)
 
 (** Big separating conjunction *)

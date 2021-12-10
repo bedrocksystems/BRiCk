@@ -23,6 +23,7 @@ From iris.bi.lib Require Import fractional.
 From iris.proofmode Require Import tactics.
 From iris_string_ident Require Import ltac2_string_ident.
 
+Require Import bedrock.lang.bi.na_invariants.
 Require Import bedrock.lang.bi.cancelable_invariants.
 Export ChargeNotation.
 
