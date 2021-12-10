@@ -3,29 +3,37 @@
 ## This software is distributed under the terms of the BedRock Open-Source License.
 ## See the LICENSE-BedRock file in the repository root for details.
 ##
-cmake_minimum_required(VERSION 2.8...3.19)
+cmake_minimum_required(VERSION 3.10.2)
 project(cpp2v)
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14")
-
-set(CMAKE_MODULE_PATH
-  ${CMAKE_MODULE_PATH}
-  "${CMAKE_SOURCE_DIR}/cmake/modules"
-)
 
 # Picks the newest version of clang, see https://github.com/CastXML/CastXML/issues/148
 set(CMAKE_FIND_PACKAGE_SORT_ORDER NATURAL)
 set(CMAKE_FIND_PACKAGE_SORT_DIRECTION DEC)
 
-find_package(LibClangTooling REQUIRED)
+find_package(Clang REQUIRED CONFIG)
+message(STATUS "Found LLVM: ${LLVM_INSTALL_PREFIX} (version ${LLVM_PACKAGE_VERSION})")
+message(STATUS "Using ClangConfig.cmake in: ${CLANG_CMAKE_DIR}")
+message(STATUS "Using LLVMConfig.cmake in: ${LLVM_DIR}")
 
-add_definitions(${LibClangTooling_DEFINITIONS})
+set(CMAKE_MODULE_PATH
+  ${CMAKE_MODULE_PATH}
+  "${LLVM_CMAKE_DIR}"
+  "${CLANG_CMAKE_DIR}"
+)
+
+include(AddLLVM)
+
+set(CPP2V_LLVM_COMPONENTS support core bitreader)
 
 include_directories(
-  ${LibClangTooling_INCLUDE_DIRS}
+  ${LLVM_INCLUDE_DIRS}
   include
   llvm-include
 )
+separate_arguments(LLVM_DEFINITIONS_LIST NATIVE_COMMAND ${LLVM_DEFINITIONS})
+add_definitions(${LLVM_DEFINITIONS_LIST})
 
 IF(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/.git)
   FIND_PACKAGE(Git)
@@ -44,7 +52,7 @@ ENDIF(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/.git)
 
 add_definitions( -DGIT_VERSION="${GIT_VERSION}")
 
-add_library(tocoq
+add_llvm_library(tocoq
   STATIC
   src/Version.cpp
   src/PrintExpr.cpp
@@ -61,31 +69,48 @@ add_library(tocoq
   src/ClangPrinter.cpp
   src/ToCoq.cpp
 )
+
 set_property(TARGET tocoq PROPERTY POSITION_INDEPENDENT_CODE ON)
 add_compile_options(-fno-rtti)
-IF (APPLE)
-   message(STATUS "Apple environment detected")
-   set(CMAKE_MACOSX_RPATH ON)
 
-   IF (NOT(DEFINED ENV{CLANG_DIR}))
-      # LLVM_LIB_DIR defined in cmake/modules/FindLLVM.cmake
-      set(CMAKE_EXE_LINKER_FLAGS "-L${LLVM_LIB_DIR}")
-      message(STATUS "Building outside Nix")
-   ELSE ()
-      message(STATUS "Building under Nix")
-   ENDIF ()
-ENDIF (APPLE)
-
-add_executable(cpp2v
+add_llvm_executable(cpp2v
   src/cpp2v.cpp
 )
 
-target_link_libraries(cpp2v
-  ${LibClangTooling_LIBRARIES}
-  tocoq
-)
 
-#target_link_directories(cpp2v
-#	PUBLIC
-#	${LLVM_LIB_DIR}
-#)
+# TODO(franta) Older versions of LLVM are affected with the following
+# bug in LLVM:
+#
+# https://bugs.llvm.org/show_bug.cgi?id=35245
+#
+# eventually, the bellow monolithic/component mapping should be replaced
+# with simple
+#
+# set(CPP2V_LLVM_COMPONENTS support core bitreader)
+# llvm_config(cpp2v USE_SHARED ${CPP2V_LLVM_COMPONENTS})
+#
+find_library(LLVM_MONO_LIB LLVM ${LLVM_LIBRARY_DIR})
+if(NOT LLVM_MONO_LIB)
+  message(STATUS "Monolithic LLVM library not found, gathering component libraries...")
+
+  llvm_map_components_to_libnames(llvm_libs ${CPP2V_LLVM_COMPONENTS})
+  foreach(lib_name ${llvm_libs})
+    find_library(${lib_name}_found ${lib_name} ${LLVM_LIBRARY_DIR})
+    if(NOT ${lib_name}_found)
+        message(FATAL_ERROR "Library (LLVM component) not found: ${lib_name}")
+    endif(NOT ${lib_name}_found)
+
+    message(STATUS "Linking against LLVM component: ${lib_name} (${${lib_name}_found})")
+  endforeach(lib_name ${llvm_libs})
+else(NOT LLVM_MONO_LIB)
+  set(llvm_libs)
+  message(STATUS "Linking against monolithic libLLVM (${LLVM_MONO_LIB})")
+endif(NOT LLVM_MONO_LIB)
+#
+# END TODO(franta)
+#
+
+# Link against LLVM/Clang and tocoq libraries
+target_link_libraries(cpp2v PUBLIC ${llvm_libs} clang-cpp tocoq)
+
+
