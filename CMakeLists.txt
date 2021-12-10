@@ -78,6 +78,17 @@ add_llvm_executable(cpp2v
 )
 
 
+# TODO(franta) Older versions of LLVM are affected with the following
+# bug in LLVM:
+#
+# https://bugs.llvm.org/show_bug.cgi?id=35245
+#
+# eventually, the bellow monolithic/component mapping should be replaced
+# with simple
+#
+# set(CPP2V_LLVM_COMPONENTS support core bitreader)
+# llvm_config(cpp2v ${CPP2V_LLVM_COMPONENTS})
+#
 find_library(LLVM_MONO_LIB LLVM ${LLVM_LIBRARY_DIR})
 if(NOT LLVM_MONO_LIB)
   message(STATUS "Monolithic LLVM library not found, gathering component libraries...")
@@ -95,7 +106,9 @@ else(NOT LLVM_MONO_LIB)
   set(llvm_libs)
   message(STATUS "Linking against monolithic libLLVM (${LLVM_MONO_LIB})")
 endif(NOT LLVM_MONO_LIB)
-
+#
+# END TODO(franta)
+#
 
 # Link against LLVM/Clang and tocoq libraries
 target_link_libraries(cpp2v PUBLIC ${llvm_libs} clang-cpp tocoq)
