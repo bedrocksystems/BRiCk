@@ -37,6 +37,11 @@ Section finset.
     f_equiv=>x. by rewrite set_not_elem_of.
   Qed.
 
+  (* The right-hand side computes nicely on closed goals (at least on [gset]. *)
+  Lemma set_elem_of_bool_decide x X :
+    x ∈ X <-> bool_decide (x ∈ elements X) = true.
+  Proof. by rewrite -elem_of_elements bool_decide_eq_true. Qed.
+
   (* Temporarily imported from new upstream stdpp START. Drop at the next bump *)
   Lemma list_to_set_elements X : list_to_set (elements X) ≡ X.
   Proof. intros ?. rewrite elem_of_list_to_set. apply elem_of_elements. Qed.
