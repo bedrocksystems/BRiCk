@@ -17,8 +17,8 @@ Section finset.
   Context `{FinSet A C}.
   Implicit Types X Y : C.
 
-  Lemma set_not_elem_of x Y `{Hdec : Decision (x ∈ Y)} : ¬ (x ∉ Y) ↔ x ∈ Y.
-  Proof. split. by destruct Hdec. by destruct Hdec; auto. Qed.
+  Lemma set_not_elem_of x X `{Hdec : Decision (x ∈ X)} : ¬ (x ∉ X) ↔ x ∈ X.
+  Proof. destruct Hdec; tauto. Qed.
 
   Lemma set_not_Forall (P : A -> Prop) `{Hdec : !∀ x, Decision (P x)} X :
     ¬ set_Forall P X <-> exists x, x ∈ X /\ ¬ P x.
@@ -36,6 +36,11 @@ Section finset.
     rewrite set_disjoint_not_Forall_1 set_not_Forall.
     f_equiv=>x. by rewrite set_not_elem_of.
   Qed.
+
+  (* The right-hand side computes nicely on closed goals (at least on [gset]. *)
+  Lemma set_elem_of_bool_decide x X :
+    x ∈ X <-> bool_decide (x ∈ elements X) = true.
+  Proof. by rewrite -elem_of_elements bool_decide_eq_true. Qed.
 
   (* Temporarily imported from new upstream stdpp START. Drop at the next bump *)
   Lemma list_to_set_elements X : list_to_set (elements X) ≡ X.
