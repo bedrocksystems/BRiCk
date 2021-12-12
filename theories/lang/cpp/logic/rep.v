@@ -209,6 +209,9 @@ Section with_cpp.
   Lemma as_Rep_later P : as_Rep (λ p, |> P p) -|- |> as_Rep P.
   Proof. constructor=>p /=. by rewrite monPred_at_later. Qed.
 
+  Lemma as_Rep_internal_eq (P Q : mpred) : as_Rep (λ _, P ≡ Q) -|- P ≡ Q.
+  Proof. constructor=>p /=. by rewrite monPred_at_internal_eq. Qed.
+
   Lemma Rep_wand_force (R1 R2 : Rep) p : (R1 -* R2) p -|- R1 p -* R2 p.
   Proof. split'. apply monPred_wand_force. by iIntros "a" (? <-%ptr_rel_elim). Qed.
   Lemma Rep_impl_force (R1 R2 : Rep) p : (R1 -->> R2) p -|- R1 p -->> R2 p.
@@ -645,6 +648,9 @@ Section with_cpp.
 
   Lemma pureR_later (P : mpred) : pureR (|> P) -|- |> pureR P.
   Proof. exact: as_Rep_later. Qed.
+
+  Lemma pureR_internal_eq (P1 P2 : mpred) : pureR (P1 ≡ P2) -|- P1 ≡ P2.
+  Proof. exact: as_Rep_internal_eq. Qed.
 
   #[global] Instance pureR_observe Q (P : mpred) :
     Observe [| Q |] P → Observe [| Q |] (pureR P).
