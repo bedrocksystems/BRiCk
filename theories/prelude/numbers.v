@@ -109,6 +109,12 @@ Instance N_shiftr_right_id : RightId (=) 0%N N.shiftr := N.shiftr_0_r.
 Instance N_succ_inj : Inj (=) (=) N.succ.
 Proof. intros n1 n2. lia. Qed.
 
+(** Shorter and more memorable name. *)
+Lemma N_ext n m : (∀ i, N.testbit n i = N.testbit m i) -> n = m.
+Proof. apply N.bits_inj_iff. Qed.
+Lemma N_ext_iff n m : (∀ i, N.testbit n i = N.testbit m i) <-> n = m.
+Proof. apply N.bits_inj_iff. Qed.
+
 (** Misc cancellation lemmas for odd operators *)
 Lemma N_succ_pos_pred p : N.succ_pos (Pos.pred_N p) = p.
 Proof. rewrite /N.succ_pos. case E: Pos.pred_N=>[|p']; lia. Qed.
@@ -196,6 +202,9 @@ Definition pow2N := pow2N_aux.(unseal).
 Definition pow2N_eq : pow2N = _ := pow2N_aux.(seal_eq).
 #[global] Hint Opaque pow2N : typeclass_instances.
 
+Lemma pow2N_spec n : pow2N n = (2 ^ n)%N.
+Proof. by rewrite pow2N_eq. Qed.
+
 (** * Integers *)
 
 Arguments Z.ones _ : simpl never, assert.
@@ -242,6 +251,12 @@ Proof. intros n1 n2. lia. Qed.
 
 Instance Z_pred_inj : Inj (=) (=) Z.pred.
 Proof. intros n1 n2. lia. Qed.
+
+(** Shorter and more memorable name. *)
+Lemma Z_ext n m : (∀ i, Z.testbit n i = Z.testbit m i) -> n = m.
+Proof. apply Z.bits_inj_iff. Qed.
+Lemma Z_ext_iff n m : (∀ i, Z.testbit n i = Z.testbit m i) <-> n = m.
+Proof. apply Z.bits_inj_iff. Qed.
 
 (* Z.max and other operations *)
 Lemma Z_max_add_distr_l (a b c : Z) :
