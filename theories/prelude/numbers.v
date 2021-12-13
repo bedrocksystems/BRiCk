@@ -6,6 +6,7 @@
  *)
 Require Export stdpp.numbers.
 Require Export bedrock.prelude.base.
+Require Import bedrock.prelude.reserved_notation.
 Require Import bedrock.prelude.bool.
 #[local] Set Printing Coercions.	(** Readability *)
 
@@ -65,6 +66,10 @@ Instance Nat_shiftr_right_id : RightId (=) 0 Nat.shiftr := Nat.shiftr_0_r.
 (** * Natural numbers [N] *)
 
 Arguments N.ones _ : simpl never, assert.
+
+Infix "`lor`" := N.lor : N_scope.
+Infix "`land`" := N.land : N_scope.
+Infix "`ldiff`" := N.ldiff : N_scope.
 
 (** cf [Z_scope] notation in [stdpp.numbers] *)
 Infix "≫" := N.shiftr : N_scope.
@@ -206,6 +211,10 @@ Lemma pow2N_spec n : pow2N n = (2 ^ n)%N.
 Proof. by rewrite pow2N_eq. Qed.
 
 (** * Integers *)
+
+Infix "`lor`" := Z.lor : Z_scope.
+Infix "`land`" := Z.land : Z_scope.
+Infix "`ldiff`" := Z.ldiff : Z_scope.
 
 Arguments Z.ones _ : simpl never, assert.
 
