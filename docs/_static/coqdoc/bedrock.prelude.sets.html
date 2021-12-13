@@ -1,0 +1,164 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<!--
+-- Copyright (c) 2020 BedRock Systems, Inc.
+-- This software is distributed under the terms of the BedRock Open-Source License.
+-- See the LICENSE-BedRock file in the repository root for details.
+-->
+
+<!--
+-- SPDX-LIcense-Identifier:BSD-2-Clause
+-->
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+<meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
+<link href="../css/coqdocjs/coqdoc.css" rel="stylesheet" type="text/css" />
+<link href="../css/coqdocjs/coqdocjs.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="../js/coqdocjs/config.js"></script>
+<script type="text/javascript" src="../js/coqdocjs/coqdocjs.js"></script>
+</head>
+
+<body onload="document.getElementById('content').focus()">
+  <div id="header">
+    <span class="left">
+      <span class="modulename"> <script> document.write(document.title) </script> </span>
+    </span>
+
+    <span class="button" id="toggle-proofs"></span>
+
+    <!-- NOTE: These are displayed right to left on the page -->
+    <span class="right">
+      <a href="./indexpage.html"> Index </a>
+      <a href="./toc.html"> `theories/` </a>
+      <a href="../../index.html"> Toplevel </a>
+    </span>
+</div>
+    <div id="content" tabindex="-1" onblur="document.getElementById('content').focus()">
+    <div id="main">
+<h1 class="libtitle">bedrock.prelude.sets</h1>
+
+<div class="code">
+<span class="comment">(*<br/>
+&nbsp;*&nbsp;Copyright&nbsp;(C)&nbsp;BedRock&nbsp;Systems&nbsp;Inc.&nbsp;2021<br/>
+&nbsp;*<br/>
+&nbsp;*&nbsp;This&nbsp;software&nbsp;is&nbsp;distributed&nbsp;under&nbsp;the&nbsp;terms&nbsp;of&nbsp;the&nbsp;BedRock&nbsp;Open-Source&nbsp;License.<br/>
+&nbsp;*&nbsp;See&nbsp;the&nbsp;LICENSE-BedRock&nbsp;file&nbsp;in&nbsp;the&nbsp;repository&nbsp;root&nbsp;for&nbsp;details.<br/>
+&nbsp;*)</span><br/>
+<span class="id" title="keyword">Require</span> <span class="id" title="keyword">Export</span> <a class="idref" href="https://plv.mpi-sws.org/coqdoc/stdpp//stdpp.sets.html#"><span class="id" title="library">stdpp.sets</span></a>.<br/>
+<span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <a class="idref" href="bedrock.prelude.base.html#"><span class="id" title="library">bedrock.prelude.base</span></a>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<a id="lab48"></a><h1 class="section">Small extensions to <span class="inlinecode"><span class="id" title="library">stdpp.sets</span></span>.</h1>
+
+</div>
+<div class="code">
+
+<br/>
+#[<span class="id" title="var">global</span>] <span class="id" title="keyword">Instance</span> <a id="set_pairwise_disjoint" class="idref" href="#set_pairwise_disjoint"><span class="id" title="instance">set_pairwise_disjoint</span></a> `{<a id="H:3" class="idref" href="#H:3"><span class="id" title="binder">ElemOf</span></a> <a id="H:3" class="idref" href="#H:3"><span class="id" title="binder">C</span></a> <a id="H:3" class="idref" href="#H:3"><span class="id" title="binder">D</span></a>, <a id="H0:4" class="idref" href="#H0:4"><span class="id" title="binder">Disjoint</span></a> <a id="H0:4" class="idref" href="#H0:4"><span class="id" title="binder">C</span></a>} :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="bedrock.prelude.base.html#PairwiseDisjoint"><span class="id" title="class">PairwiseDisjoint</span></a> <a class="idref" href="bedrock.prelude.sets.html#D:2"><span class="id" title="variable">D</span></a> | 100 :=	</div>
+
+<div class="doc">
+high cost supports specialization  Leibniz equality here is fine for all finite sets, <span class="inlinecode"><span class="id" title="library">coPset</span></span>, and
+      <span class="inlinecode"><a class="idref" href="bedrock.lang.algebra.coGset.html#coGset"><span class="id" title="section">coGset</span></a></span>. We could presumably generalize to setoid equivalence. 
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">fun</span> <a id="Xs:5" class="idref" href="#Xs:5"><span class="id" title="binder">Xs</span></a> <a id="Ys:6" class="idref" href="#Ys:6"><span class="id" title="binder">Ys</span></a> =&gt; <a class="idref" href="https://plv.mpi-sws.org/coqdoc/stdpp//stdpp.sets.html#set_Forall"><span class="id" title="definition">set_Forall</span></a> (<span class="id" title="keyword">fun</span> <a id="X:7" class="idref" href="#X:7"><span class="id" title="binder">X</span></a> =&gt; <a class="idref" href="https://plv.mpi-sws.org/coqdoc/stdpp//stdpp.sets.html#set_Forall"><span class="id" title="definition">set_Forall</span></a> (<span class="id" title="keyword">fun</span> <a id="Y:8" class="idref" href="#Y:8"><span class="id" title="binder">Y</span></a> =&gt; <a class="idref" href="bedrock.prelude.sets.html#X:7"><span class="id" title="variable">X</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.13.2/stdlib//Coq.Init.Logic.html#6cd0f7b28b6092304087c7049437bb1a"><span class="id" title="notation">=</span></a> <a class="idref" href="bedrock.prelude.sets.html#Y:8"><span class="id" title="variable">Y</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.13.2/stdlib//Coq.Init.Logic.html#f031fe1957c4a4a8e217aa46af2b4e25"><span class="id" title="notation">\/</span></a> <a class="idref" href="bedrock.prelude.sets.html#X:7"><span class="id" title="variable">X</span></a> <a class="idref" href="https://plv.mpi-sws.org/coqdoc/stdpp//stdpp.base.html#3866d0c63613c88d80a7220a09df936b"><span class="id" title="notation">##</span></a> <a class="idref" href="bedrock.prelude.sets.html#Y:8"><span class="id" title="variable">Y</span></a>) <a class="idref" href="bedrock.prelude.sets.html#Ys:6"><span class="id" title="variable">Ys</span></a>) <a class="idref" href="bedrock.prelude.sets.html#Xs:5"><span class="id" title="variable">Xs</span></a>.<br/>
+
+<br/>
+#[<span class="id" title="var">global</span>] <span class="id" title="keyword">Instance</span> <a id="set_pairwise_disjoint_symmetric" class="idref" href="#set_pairwise_disjoint_symmetric"><span class="id" title="instance">set_pairwise_disjoint_symmetric</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;`{<a id="H:11" class="idref" href="#H:11"><span class="id" title="binder">ElemOf</span></a> <a id="H:11" class="idref" href="#H:11"><span class="id" title="binder">C</span></a> <a id="H:11" class="idref" href="#H:11"><span class="id" title="binder">D</span></a>, <a id="H0:12" class="idref" href="#H0:12"><span class="id" title="binder">Disjoint</span></a> <a id="H0:12" class="idref" href="#H0:12"><span class="id" title="binder">C</span></a>, <a id="Symmetric0:13" class="idref" href="#Symmetric0:13"><span class="id" title="binder">!</span></a><a id="Symmetric0:13" class="idref" href="#Symmetric0:13"><span class="id" title="binder">Symmetric</span></a> <a id="Symmetric0:13" class="idref" href="#Symmetric0:13"><span class="id" title="binder">(##@{</span></a><a id="Symmetric0:13" class="idref" href="#Symmetric0:13"><span class="id" title="binder">C</span></a><a id="Symmetric0:13" class="idref" href="#Symmetric0:13"><span class="id" title="binder">})</span></a>} :<br/>
+&nbsp;&nbsp;<a class="idref" href="http://coq.inria.fr/distrib/V8.13.2/stdlib//Coq.Classes.RelationClasses.html#Symmetric"><span class="id" title="class">Symmetric</span></a> <a class="idref" href="bedrock.prelude.base.html#2bc46b9e34a9a546a1659e7162689789"><span class="id" title="notation">(##ₚ@{</span></a><a class="idref" href="bedrock.prelude.sets.html#D:10"><span class="id" title="variable">D</span></a><a class="idref" href="bedrock.prelude.base.html#2bc46b9e34a9a546a1659e7162689789"><span class="id" title="notation">})</span></a> | 100. </div>
+
+<div class="doc">
+high cost supports specialization 
+</div>
+<div class="code">
+<span class="id" title="keyword">Proof</span>. <span class="id" title="tactic">intros</span> ?? <span class="id" title="var">HD</span> ? <span class="id" title="var">HY</span> ? <span class="id" title="var">HX</span>. <span class="id" title="tactic">destruct</span> (<span class="id" title="var">HD</span> <span class="id" title="var">_</span> <span class="id" title="var">HX</span> <span class="id" title="var">_</span> <span class="id" title="var">HY</span>). <span class="id" title="tactic">by</span> <span class="id" title="tactic">left</span>. <span class="id" title="tactic">by</span> <span class="id" title="tactic">right</span>. <span class="id" title="keyword">Qed</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Section</span> <a id="semi_set" class="idref" href="#semi_set"><span class="id" title="section">semi_set</span></a>.<br/>
+&nbsp;&nbsp;#[<span class="id" title="var">local</span>] <span class="id" title="keyword">Set</span> <span class="id" title="var">Default</span> <span class="id" title="keyword">Proof</span> <span class="id" title="var">Using</span> "Type*".<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Context</span> `{<a id="H3:20" class="idref" href="#H3:20"><span class="id" title="binder">SemiSet</span></a> <a id="H3:20" class="idref" href="#H3:20"><span class="id" title="binder">A</span></a> <a id="H3:20" class="idref" href="#H3:20"><span class="id" title="binder">C</span></a>}.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Implicit</span> <span class="id" title="keyword">Types</span> <span class="id" title="var">X</span> <span class="id" title="var">Y</span> : <a class="idref" href="bedrock.prelude.sets.html#semi_set.C"><span class="id" title="variable">C</span></a>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+Witnesses for disjoint semisets 
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <a id="set_disjoint_not_Forall_1" class="idref" href="#set_disjoint_not_Forall_1"><span class="id" title="lemma">set_disjoint_not_Forall_1</span></a> <a id="X:21" class="idref" href="#X:21"><span class="id" title="binder">X</span></a> <a id="Y:22" class="idref" href="#Y:22"><span class="id" title="binder">Y</span></a> : <a class="idref" href="bedrock.prelude.sets.html#X:21"><span class="id" title="variable">X</span></a> <a class="idref" href="https://plv.mpi-sws.org/coqdoc/stdpp//stdpp.base.html#3866d0c63613c88d80a7220a09df936b"><span class="id" title="notation">##</span></a> <a class="idref" href="bedrock.prelude.sets.html#Y:22"><span class="id" title="variable">Y</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.13.2/stdlib//Coq.Init.Logic.html#::type_scope:x_'&lt;-&gt;'_x"><span class="id" title="notation">&lt;-&gt;</span></a> <a class="idref" href="https://plv.mpi-sws.org/coqdoc/stdpp//stdpp.sets.html#set_Forall"><span class="id" title="definition">set_Forall</span></a> <a class="idref" href="https://plv.mpi-sws.org/coqdoc/stdpp//stdpp.base.html#9fd5d00c63a364b2be34e16c106c5955"><span class="id" title="notation">(.∉</span></a> <a class="idref" href="bedrock.prelude.sets.html#Y:22"><span class="id" title="variable">Y</span></a><a class="idref" href="https://plv.mpi-sws.org/coqdoc/stdpp//stdpp.base.html#9fd5d00c63a364b2be34e16c106c5955"><span class="id" title="notation">)</span></a> <a class="idref" href="bedrock.prelude.sets.html#X:21"><span class="id" title="variable">X</span></a>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Proof</span>. <span class="id" title="var">done</span>. <span class="id" title="keyword">Qed</span>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <a id="set_disjoint_not_Forall_2" class="idref" href="#set_disjoint_not_Forall_2"><span class="id" title="lemma">set_disjoint_not_Forall_2</span></a> <a id="X:23" class="idref" href="#X:23"><span class="id" title="binder">X</span></a> <a id="Y:24" class="idref" href="#Y:24"><span class="id" title="binder">Y</span></a> : <a class="idref" href="bedrock.prelude.sets.html#X:23"><span class="id" title="variable">X</span></a> <a class="idref" href="https://plv.mpi-sws.org/coqdoc/stdpp//stdpp.base.html#3866d0c63613c88d80a7220a09df936b"><span class="id" title="notation">##</span></a> <a class="idref" href="bedrock.prelude.sets.html#Y:24"><span class="id" title="variable">Y</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.13.2/stdlib//Coq.Init.Logic.html#::type_scope:x_'&lt;-&gt;'_x"><span class="id" title="notation">&lt;-&gt;</span></a> <a class="idref" href="https://plv.mpi-sws.org/coqdoc/stdpp//stdpp.sets.html#set_Forall"><span class="id" title="definition">set_Forall</span></a> <a class="idref" href="https://plv.mpi-sws.org/coqdoc/stdpp//stdpp.base.html#9fd5d00c63a364b2be34e16c106c5955"><span class="id" title="notation">(.∉</span></a> <a class="idref" href="bedrock.prelude.sets.html#X:23"><span class="id" title="variable">X</span></a><a class="idref" href="https://plv.mpi-sws.org/coqdoc/stdpp//stdpp.base.html#9fd5d00c63a364b2be34e16c106c5955"><span class="id" title="notation">)</span></a> <a class="idref" href="bedrock.prelude.sets.html#Y:24"><span class="id" title="variable">Y</span></a>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Proof</span>. <span class="id" title="tactic">by</span> <span class="id" title="tactic">rewrite</span> [<span class="id" title="var">X</span> <a class="idref" href="https://plv.mpi-sws.org/coqdoc/stdpp//stdpp.base.html#3866d0c63613c88d80a7220a09df936b"><span class="id" title="notation">##</span></a> <span class="id" title="var">Y</span>]<a class="idref" href="https://plv.mpi-sws.org/coqdoc/stdpp//stdpp.base.html#symmetry_iff"><span class="id" title="lemma">symmetry_iff</span></a>. <span class="id" title="keyword">Qed</span>.<br/>
+<span class="id" title="keyword">End</span> <a class="idref" href="bedrock.prelude.sets.html#semi_set"><span class="id" title="section">semi_set</span></a>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+Pairwise disjointness for <span class="inlinecode"><a class="idref" href="https://plv.mpi-sws.org/coqdoc/stdpp//stdpp.base.html#SemiSet"><span class="id" title="class">SemiSet</span></a></span> 
+</div>
+<div class="code">
+<span class="id" title="keyword">Section</span> <a id="semi_set" class="idref" href="#semi_set"><span class="id" title="section">semi_set</span></a>.<br/>
+&nbsp;&nbsp;#[<span class="id" title="var">local</span>] <span class="id" title="keyword">Set</span> <span class="id" title="var">Default</span> <span class="id" title="keyword">Proof</span> <span class="id" title="var">Using</span> "Type*".<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Context</span> `{<a id="H3:31" class="idref" href="#H3:31"><span class="id" title="binder">SemiSet</span></a> <a id="H3:31" class="idref" href="#H3:31"><span class="id" title="binder">C</span></a> <a id="H3:31" class="idref" href="#H3:31"><span class="id" title="binder">D</span></a>, <a id="H4:32" class="idref" href="#H4:32"><span class="id" title="binder">Disjoint</span></a> <a id="H4:32" class="idref" href="#H4:32"><span class="id" title="binder">C</span></a>}.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Implicit</span> <span class="id" title="keyword">Types</span> <span class="id" title="var">X</span> <span class="id" title="var">Y</span> : <a class="idref" href="bedrock.prelude.sets.html#semi_set.C"><span class="id" title="variable">C</span></a>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Implicit</span> <span class="id" title="keyword">Types</span> <span class="id" title="var">Xs</span> <span class="id" title="var">Ys</span> : <a class="idref" href="bedrock.prelude.sets.html#semi_set.D"><span class="id" title="variable">D</span></a>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <a id="pairwise_disjoint_singleton" class="idref" href="#pairwise_disjoint_singleton"><span class="id" title="lemma">pairwise_disjoint_singleton</span></a> <a id="X:33" class="idref" href="#X:33"><span class="id" title="binder">X</span></a> : <a class="idref" href="bedrock.prelude.base.html#fd0a110f7a0e93b712a53a005d35a49c"><span class="id" title="notation">[##ₚ@{</span></a><a class="idref" href="bedrock.prelude.sets.html#semi_set.D"><span class="id" title="variable">D</span></a><a class="idref" href="bedrock.prelude.base.html#fd0a110f7a0e93b712a53a005d35a49c"><span class="id" title="notation">}</span></a> <a class="idref" href="https://plv.mpi-sws.org/coqdoc/stdpp//stdpp.base.html#bb8184054cdbc2cb76438a0b028fc3e8"><span class="id" title="notation">{[</span></a><a class="idref" href="bedrock.prelude.sets.html#X:33"><span class="id" title="variable">X</span></a><a class="idref" href="https://plv.mpi-sws.org/coqdoc/stdpp//stdpp.base.html#bb8184054cdbc2cb76438a0b028fc3e8"><span class="id" title="notation">]}</span></a><a class="idref" href="bedrock.prelude.base.html#fd0a110f7a0e93b712a53a005d35a49c"><span class="id" title="notation">]</span></a>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Proof</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">rewrite</span>/<a class="idref" href="bedrock.prelude.base.html#pairwise_disjoint"><span class="id" title="definition">pairwise_disjoint</span></a>/<a class="idref" href="bedrock.prelude.sets.html#set_pairwise_disjoint"><span class="id" title="instance">set_pairwise_disjoint</span></a>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">rewrite</span> !<a class="idref" href="https://plv.mpi-sws.org/coqdoc/stdpp//stdpp.sets.html#set_Forall_singleton"><span class="id" title="lemma">set_Forall_singleton</span></a>. <span class="id" title="tactic">by</span> <span class="id" title="tactic">left</span>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Qed</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <a id="pairwise_disjoint_union_1" class="idref" href="#pairwise_disjoint_union_1"><span class="id" title="lemma">pairwise_disjoint_union_1</span></a> <a id="Xs:34" class="idref" href="#Xs:34"><span class="id" title="binder">Xs</span></a> <a id="Ys:35" class="idref" href="#Ys:35"><span class="id" title="binder">Ys</span></a> :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="bedrock.prelude.base.html#0a36fe3a26bd4dfd10251c3ac12cab60"><span class="id" title="notation">[##ₚ</span></a> <a class="idref" href="bedrock.prelude.sets.html#Xs:34"><span class="id" title="variable">Xs</span></a> <a class="idref" href="https://plv.mpi-sws.org/coqdoc/stdpp//stdpp.base.html#e8953ae2b2281f9c2fbbd0d5d6e30fd3"><span class="id" title="notation">∪</span></a> <a class="idref" href="bedrock.prelude.sets.html#Ys:35"><span class="id" title="variable">Ys</span></a><a class="idref" href="bedrock.prelude.base.html#0a36fe3a26bd4dfd10251c3ac12cab60"><span class="id" title="notation">]</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.13.2/stdlib//Coq.Init.Logic.html#::type_scope:x_'-&gt;'_x"><span class="id" title="notation">-&gt;</span></a> <a class="idref" href="bedrock.prelude.base.html#0a36fe3a26bd4dfd10251c3ac12cab60"><span class="id" title="notation">[##ₚ</span></a> <a class="idref" href="bedrock.prelude.sets.html#Xs:34"><span class="id" title="variable">Xs</span></a><a class="idref" href="bedrock.prelude.base.html#0a36fe3a26bd4dfd10251c3ac12cab60"><span class="id" title="notation">]</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.13.2/stdlib//Coq.Init.Logic.html#ba2b0e492d2b4675a0acf3ea92aabadd"><span class="id" title="notation">/\</span></a> <a class="idref" href="bedrock.prelude.base.html#0a36fe3a26bd4dfd10251c3ac12cab60"><span class="id" title="notation">[##ₚ</span></a> <a class="idref" href="bedrock.prelude.sets.html#Ys:35"><span class="id" title="variable">Ys</span></a><a class="idref" href="bedrock.prelude.base.html#0a36fe3a26bd4dfd10251c3ac12cab60"><span class="id" title="notation">]</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.13.2/stdlib//Coq.Init.Logic.html#ba2b0e492d2b4675a0acf3ea92aabadd"><span class="id" title="notation">/\</span></a> <a class="idref" href="bedrock.prelude.sets.html#Xs:34"><span class="id" title="variable">Xs</span></a> <a class="idref" href="bedrock.prelude.base.html#4b06dcd25bffd42b1127ad047fabc431"><span class="id" title="notation">##ₚ</span></a> <a class="idref" href="bedrock.prelude.sets.html#Ys:35"><span class="id" title="variable">Ys</span></a>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Proof</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">intros</span> <span class="id" title="var">HD</span>. <span class="id" title="var">split_and</span>?.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;- <span class="id" title="tactic">apply</span> (<a class="idref" href="https://plv.mpi-sws.org/coqdoc/stdpp//stdpp.sets.html#set_Forall_union_inv_1"><span class="id" title="lemma">set_Forall_union_inv_1</span></a> <span class="id" title="var">_</span> <span class="id" title="var">_</span> <span class="id" title="var">Ys</span>)=&gt;<span class="id" title="var">X</span> /<span class="id" title="var">HD</span>. <span class="id" title="tactic">by</span> <span class="id" title="tactic">apply</span> <a class="idref" href="https://plv.mpi-sws.org/coqdoc/stdpp//stdpp.sets.html#set_Forall_union_inv_1"><span class="id" title="lemma">set_Forall_union_inv_1</span></a>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;- <span class="id" title="tactic">apply</span> (<a class="idref" href="https://plv.mpi-sws.org/coqdoc/stdpp//stdpp.sets.html#set_Forall_union_inv_2"><span class="id" title="lemma">set_Forall_union_inv_2</span></a> <span class="id" title="var">_</span> <span class="id" title="var">Xs</span>)=&gt;<span class="id" title="var">X</span> /<span class="id" title="var">HD</span>. <span class="id" title="tactic">by</span> <span class="id" title="tactic">apply</span> <a class="idref" href="https://plv.mpi-sws.org/coqdoc/stdpp//stdpp.sets.html#set_Forall_union_inv_2"><span class="id" title="lemma">set_Forall_union_inv_2</span></a>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;- <span class="id" title="tactic">apply</span> (<a class="idref" href="https://plv.mpi-sws.org/coqdoc/stdpp//stdpp.sets.html#set_Forall_union_inv_1"><span class="id" title="lemma">set_Forall_union_inv_1</span></a> <span class="id" title="var">_</span> <span class="id" title="var">_</span> <span class="id" title="var">Ys</span>)=&gt;<span class="id" title="var">X</span> /<span class="id" title="var">HD</span>. <span class="id" title="tactic">by</span> <span class="id" title="tactic">apply</span> <a class="idref" href="https://plv.mpi-sws.org/coqdoc/stdpp//stdpp.sets.html#set_Forall_union_inv_2"><span class="id" title="lemma">set_Forall_union_inv_2</span></a>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Qed</span>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <a id="pairwise_disjoint_union_2" class="idref" href="#pairwise_disjoint_union_2"><span class="id" title="lemma">pairwise_disjoint_union_2</span></a> `{<a id="Symmetric0:36" class="idref" href="#Symmetric0:36"><span class="id" title="binder">!</span></a><a id="Symmetric0:36" class="idref" href="#Symmetric0:36"><span class="id" title="binder">Symmetric</span></a> <a id="Symmetric0:36" class="idref" href="#Symmetric0:36"><span class="id" title="binder">(##@{</span></a><a id="Symmetric0:36" class="idref" href="#Symmetric0:36"><span class="id" title="binder">C</span></a><a id="Symmetric0:36" class="idref" href="#Symmetric0:36"><span class="id" title="binder">})</span></a>} <a id="Xs:37" class="idref" href="#Xs:37"><span class="id" title="binder">Xs</span></a> <a id="Ys:38" class="idref" href="#Ys:38"><span class="id" title="binder">Ys</span></a> :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="bedrock.prelude.base.html#0a36fe3a26bd4dfd10251c3ac12cab60"><span class="id" title="notation">[##ₚ</span></a> <a class="idref" href="bedrock.prelude.sets.html#Xs:37"><span class="id" title="variable">Xs</span></a><a class="idref" href="bedrock.prelude.base.html#0a36fe3a26bd4dfd10251c3ac12cab60"><span class="id" title="notation">]</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.13.2/stdlib//Coq.Init.Logic.html#::type_scope:x_'-&gt;'_x"><span class="id" title="notation">-&gt;</span></a> <a class="idref" href="bedrock.prelude.base.html#0a36fe3a26bd4dfd10251c3ac12cab60"><span class="id" title="notation">[##ₚ</span></a> <a class="idref" href="bedrock.prelude.sets.html#Ys:38"><span class="id" title="variable">Ys</span></a><a class="idref" href="bedrock.prelude.base.html#0a36fe3a26bd4dfd10251c3ac12cab60"><span class="id" title="notation">]</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.13.2/stdlib//Coq.Init.Logic.html#::type_scope:x_'-&gt;'_x"><span class="id" title="notation">-&gt;</span></a> <a class="idref" href="bedrock.prelude.sets.html#Xs:37"><span class="id" title="variable">Xs</span></a> <a class="idref" href="bedrock.prelude.base.html#4b06dcd25bffd42b1127ad047fabc431"><span class="id" title="notation">##ₚ</span></a> <a class="idref" href="bedrock.prelude.sets.html#Ys:38"><span class="id" title="variable">Ys</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.13.2/stdlib//Coq.Init.Logic.html#::type_scope:x_'-&gt;'_x"><span class="id" title="notation">-&gt;</span></a> <a class="idref" href="bedrock.prelude.base.html#0a36fe3a26bd4dfd10251c3ac12cab60"><span class="id" title="notation">[##ₚ</span></a> <a class="idref" href="bedrock.prelude.sets.html#Xs:37"><span class="id" title="variable">Xs</span></a> <a class="idref" href="https://plv.mpi-sws.org/coqdoc/stdpp//stdpp.base.html#e8953ae2b2281f9c2fbbd0d5d6e30fd3"><span class="id" title="notation">∪</span></a> <a class="idref" href="bedrock.prelude.sets.html#Ys:38"><span class="id" title="variable">Ys</span></a><a class="idref" href="bedrock.prelude.base.html#0a36fe3a26bd4dfd10251c3ac12cab60"><span class="id" title="notation">]</span></a>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Proof</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">intros</span> <span class="id" title="var">HXs</span> <span class="id" title="var">HYs</span> <span class="id" title="var">HXYs</span>. <span class="id" title="tactic">apply</span> <a class="idref" href="https://plv.mpi-sws.org/coqdoc/stdpp//stdpp.sets.html#set_Forall_union"><span class="id" title="lemma">set_Forall_union</span></a>=&gt;<span class="id" title="var">X</span> <span class="id" title="var">HX</span>; <span class="id" title="tactic">apply</span> <a class="idref" href="https://plv.mpi-sws.org/coqdoc/stdpp//stdpp.sets.html#set_Forall_union"><span class="id" title="lemma">set_Forall_union</span></a>=&gt;<span class="id" title="var">Y</span> <span class="id" title="var">HY</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;- <span class="id" title="tactic">exact</span>: <span class="id" title="var">HXs</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;- <span class="id" title="tactic">exact</span>: <span class="id" title="var">HXYs</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;- <span class="id" title="tactic">apply</span> <a class="idref" href="http://coq.inria.fr/distrib/V8.13.2/stdlib//Coq.Classes.RelationClasses.html#symmetry"><span class="id" title="definition">symmetry</span></a> <span class="id" title="tactic">in</span> <span class="id" title="var">HXYs</span>. <span class="id" title="tactic">exact</span>: <span class="id" title="var">HXYs</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;- <span class="id" title="tactic">exact</span>: <span class="id" title="var">HYs</span>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Qed</span>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <a id="pairwise_disjoint_union" class="idref" href="#pairwise_disjoint_union"><span class="id" title="lemma">pairwise_disjoint_union</span></a> `{<a id="Symmetric0:39" class="idref" href="#Symmetric0:39"><span class="id" title="binder">!</span></a><a id="Symmetric0:39" class="idref" href="#Symmetric0:39"><span class="id" title="binder">Symmetric</span></a> <a id="Symmetric0:39" class="idref" href="#Symmetric0:39"><span class="id" title="binder">(##@{</span></a><a id="Symmetric0:39" class="idref" href="#Symmetric0:39"><span class="id" title="binder">C</span></a><a id="Symmetric0:39" class="idref" href="#Symmetric0:39"><span class="id" title="binder">})</span></a>} <a id="Xs:40" class="idref" href="#Xs:40"><span class="id" title="binder">Xs</span></a> <a id="Ys:41" class="idref" href="#Ys:41"><span class="id" title="binder">Ys</span></a> :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="bedrock.prelude.base.html#0a36fe3a26bd4dfd10251c3ac12cab60"><span class="id" title="notation">[##ₚ</span></a> <a class="idref" href="bedrock.prelude.sets.html#Xs:40"><span class="id" title="variable">Xs</span></a> <a class="idref" href="https://plv.mpi-sws.org/coqdoc/stdpp//stdpp.base.html#e8953ae2b2281f9c2fbbd0d5d6e30fd3"><span class="id" title="notation">∪</span></a> <a class="idref" href="bedrock.prelude.sets.html#Ys:41"><span class="id" title="variable">Ys</span></a><a class="idref" href="bedrock.prelude.base.html#0a36fe3a26bd4dfd10251c3ac12cab60"><span class="id" title="notation">]</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.13.2/stdlib//Coq.Init.Logic.html#::type_scope:x_'&lt;-&gt;'_x"><span class="id" title="notation">&lt;-&gt;</span></a> <a class="idref" href="bedrock.prelude.base.html#0a36fe3a26bd4dfd10251c3ac12cab60"><span class="id" title="notation">[##ₚ</span></a> <a class="idref" href="bedrock.prelude.sets.html#Xs:40"><span class="id" title="variable">Xs</span></a><a class="idref" href="bedrock.prelude.base.html#0a36fe3a26bd4dfd10251c3ac12cab60"><span class="id" title="notation">]</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.13.2/stdlib//Coq.Init.Logic.html#ba2b0e492d2b4675a0acf3ea92aabadd"><span class="id" title="notation">/\</span></a> <a class="idref" href="bedrock.prelude.base.html#0a36fe3a26bd4dfd10251c3ac12cab60"><span class="id" title="notation">[##ₚ</span></a> <a class="idref" href="bedrock.prelude.sets.html#Ys:41"><span class="id" title="variable">Ys</span></a><a class="idref" href="bedrock.prelude.base.html#0a36fe3a26bd4dfd10251c3ac12cab60"><span class="id" title="notation">]</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.13.2/stdlib//Coq.Init.Logic.html#ba2b0e492d2b4675a0acf3ea92aabadd"><span class="id" title="notation">/\</span></a> <a class="idref" href="bedrock.prelude.sets.html#Xs:40"><span class="id" title="variable">Xs</span></a> <a class="idref" href="bedrock.prelude.base.html#4b06dcd25bffd42b1127ad047fabc431"><span class="id" title="notation">##ₚ</span></a> <a class="idref" href="bedrock.prelude.sets.html#Ys:41"><span class="id" title="variable">Ys</span></a>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Proof</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">split</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;- <span class="id" title="tactic">by</span> <span class="id" title="tactic">apply</span> <a class="idref" href="bedrock.prelude.sets.html#pairwise_disjoint_union_1"><span class="id" title="lemma">pairwise_disjoint_union_1</span></a>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;- <span class="id" title="tactic">intros</span> (? &amp; ? &amp; ?). <span class="id" title="tactic">by</span> <span class="id" title="tactic">apply</span> <a class="idref" href="bedrock.prelude.sets.html#pairwise_disjoint_union_2"><span class="id" title="lemma">pairwise_disjoint_union_2</span></a>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Qed</span>.<br/>
+<span class="id" title="keyword">End</span> <a class="idref" href="bedrock.prelude.sets.html#semi_set"><span class="id" title="section">semi_set</span></a>.<br/>
+#[<span class="id" title="var">global</span>] <span class="id" title="keyword">Hint</span> <span class="id" title="keyword">Resolve</span> <span class="id" title="var">pairwise_disjoint_union_2</span> : <span class="id" title="var">core</span>.<br/>
+</div>
+<!--
+-- Copyright (c) 2020 BedRock Systems, Inc.
+-- This software is distributed under the terms of the BedRock Open-Source License.
+-- See the LICENSE-BedRock file in the repository root for details.
+-->
+
+<!--
+-- SPDX-LIcense-Identifier:BSD-2-Clause
+-->
+</div>
+<div id="footer">
+  Generated by <a href="http://coq.inria.fr/">coqdoc</a> and improved with <a href="https://github.com/tebbi/coqdocjs">CoqdocJS</a>
+</div>
+</div>
+</body>
+
+</html>

@@ -1,0 +1,183 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<!--
+-- Copyright (c) 2020 BedRock Systems, Inc.
+-- This software is distributed under the terms of the BedRock Open-Source License.
+-- See the LICENSE-BedRock file in the repository root for details.
+-->
+
+<!--
+-- SPDX-LIcense-Identifier:BSD-2-Clause
+-->
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+<meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
+<link href="../css/coqdocjs/coqdoc.css" rel="stylesheet" type="text/css" />
+<link href="../css/coqdocjs/coqdocjs.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="../js/coqdocjs/config.js"></script>
+<script type="text/javascript" src="../js/coqdocjs/coqdocjs.js"></script>
+</head>
+
+<body onload="document.getElementById('content').focus()">
+  <div id="header">
+    <span class="left">
+      <span class="modulename"> <script> document.write(document.title) </script> </span>
+    </span>
+
+    <span class="button" id="toggle-proofs"></span>
+
+    <!-- NOTE: These are displayed right to left on the page -->
+    <span class="right">
+      <a href="./indexpage.html"> Index </a>
+      <a href="./toc.html"> `theories/` </a>
+      <a href="../../index.html"> Toplevel </a>
+    </span>
+</div>
+    <div id="content" tabindex="-1" onblur="document.getElementById('content').focus()">
+    <div id="main">
+<h1 class="libtitle">bedrock.prelude.reserved_notation</h1>
+
+<div class="code">
+<span class="comment">(*<br/>
+&nbsp;*&nbsp;Copyright&nbsp;(c)&nbsp;2021&nbsp;BedRock&nbsp;Systems,&nbsp;Inc.<br/>
+&nbsp;*<br/>
+&nbsp;*&nbsp;This&nbsp;software&nbsp;is&nbsp;distributed&nbsp;under&nbsp;the&nbsp;terms&nbsp;of&nbsp;the&nbsp;BedRock&nbsp;Open-Source&nbsp;License.<br/>
+&nbsp;*&nbsp;See&nbsp;the&nbsp;LICENSE-BedRock&nbsp;file&nbsp;in&nbsp;the&nbsp;repository&nbsp;root&nbsp;for&nbsp;details.<br/>
+&nbsp;*<br/>
+&nbsp;*<br/>
+&nbsp;*&nbsp;Some&nbsp;of&nbsp;the&nbsp;following&nbsp;code&nbsp;is&nbsp;derived&nbsp;from&nbsp;code&nbsp;original&nbsp;to&nbsp;the<br/>
+&nbsp;*&nbsp;Iris&nbsp;project.&nbsp;That&nbsp;original&nbsp;code&nbsp;is<br/>
+&nbsp;*<br/>
+&nbsp;*&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Copyright&nbsp;Iris&nbsp;developers&nbsp;and&nbsp;contributors<br/>
+&nbsp;*<br/>
+&nbsp;*&nbsp;and&nbsp;used&nbsp;according&nbsp;to&nbsp;the&nbsp;following&nbsp;license.<br/>
+&nbsp;*<br/>
+&nbsp;*&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;SPDX-License-Identifier:&nbsp;BSD-3-Clause<br/>
+&nbsp;*<br/>
+&nbsp;*&nbsp;Original&nbsp;Code:<br/>
+&nbsp;*&nbsp;https://gitlab.mpi-sws.org/iris/iris/-/blob/bbaf3eaf932b4540f5e8c51545930e8591e5cf14/iris/bi/notation.v<br/>
+&nbsp;*<br/>
+&nbsp;*&nbsp;Original&nbsp;Iris&nbsp;License:<br/>
+&nbsp;*&nbsp;https://gitlab.mpi-sws.org/iris/iris/-/blob/bbaf3eaf932b4540f5e8c51545930e8591e5cf14/LICENSE-CODE<br/>
+<br/>
+&nbsp;*)</span><br/>
+
+<br/>
+</div>
+
+<div class="doc">
+These conflict with AC/AU.
+Reserved Infix "<code>" (at level 35).	(** cf [≪] *)
+</code>Reserved Infix "&gt;&gt;" (at level 35).	<span class="comment">(**&nbsp;cf&nbsp;<span class="inlinecode">≫</span>&nbsp;*)</span><br/>
+
+</div>
+<div class="code">
+<span class="id" title="var">Reserved</span> <span class="id" title="keyword">Infix</span> "\" (<span class="id" title="tactic">at</span> <span class="id" title="keyword">level</span> 40, <span class="id" title="tactic">left</span> <span class="id" title="keyword">associativity</span>). </div>
+
+<div class="doc">
+cf <span class="inlinecode">∖</span> 
+<div class="paragraph"> </div>
+
+<a id="lab29"></a><h2 class="section">Iris big ops</h2>
+
+<div class="paragraph"> </div>
+
+<a id="lab30"></a><h1 class="section">We stick with the levels and associativity used in Iris' big ops</h1>
+
+<a id="lab31"></a><h1 class="section">notation. Compared to that notation, we:</h1>
+
+ *
+<a id="lab32"></a><h1 class="section">- add an optional break and indentation after binders</h1>
+
+<a id="lab33"></a><h1 class="section">(significantly improving readability)</h1>
+
+ *
+<a id="lab34"></a><h1 class="section">- use <span class="inlinecode">**</span>, <span class="inlinecode">/\</span>, <span class="inlinecode">\/</span>, <span class="inlinecode"></span> <span class="inlinecode">|-&gt;</span> <span class="inlinecode"></span> instead of <span class="inlinecode">∗</span>, <span class="inlinecode">∧</span>, <span class="inlinecode">∨</span>, <span class="inlinecode">↦</span></h1>
+
+<a id="lab35"></a><h1 class="section">(slightly improving typeability)</h1>
+
+ *
+<a id="lab36"></a><h1 class="section">TODO: Upstream the formatting box changes.</h1>
+
+ 
+<div class="paragraph"> </div>
+
+ Big separating conjunction 
+</div>
+<div class="code">
+
+<br/>
+<span class="id" title="keyword">Reserved Notation</span> &quot;'[**' 'list]' i |-&gt; x ∈ l , P"<br/>
+&nbsp;&nbsp;(<span class="id" title="tactic">at</span> <span class="id" title="keyword">level</span> 200, <span class="id" title="var">l</span> <span class="id" title="tactic">at</span> <span class="id" title="keyword">level</span> 10, <span class="id" title="var">i</span>, <span class="id" title="var">x</span> <span class="id" title="tactic">at</span> <span class="id" title="keyword">level</span> 1, <span class="id" title="tactic">right</span> <span class="id" title="keyword">associativity</span>,<br/>
+&nbsp;&nbsp;&nbsp;<span class="id" title="var">format</span> "'[  ' [**  list]  i  |-&gt;  x  ∈  l ,  '/' P ']'").<br/>
+<span class="id" title="keyword">Reserved Notation</span> &quot;'[**' 'list]' x ∈ l , P"<br/>
+&nbsp;&nbsp;(<span class="id" title="tactic">at</span> <span class="id" title="keyword">level</span> 200, <span class="id" title="var">l</span> <span class="id" title="tactic">at</span> <span class="id" title="keyword">level</span> 10, <span class="id" title="var">x</span> <span class="id" title="tactic">at</span> <span class="id" title="keyword">level</span> 1, <span class="id" title="tactic">right</span> <span class="id" title="keyword">associativity</span>,<br/>
+&nbsp;&nbsp;&nbsp;<span class="id" title="var">format</span> "'[  ' [**  list]  x  ∈  l ,  '/' P ']'").<br/>
+
+<br/>
+<span class="id" title="keyword">Reserved Notation</span> &quot;'[**' 'map]' k |-&gt; x ∈ m , P"<br/>
+&nbsp;&nbsp;(<span class="id" title="tactic">at</span> <span class="id" title="keyword">level</span> 200, <span class="id" title="var">m</span> <span class="id" title="tactic">at</span> <span class="id" title="keyword">level</span> 10, <span class="id" title="var">k</span>, <span class="id" title="var">x</span> <span class="id" title="tactic">at</span> <span class="id" title="keyword">level</span> 1, <span class="id" title="tactic">right</span> <span class="id" title="keyword">associativity</span>,<br/>
+&nbsp;&nbsp;&nbsp;<span class="id" title="var">format</span> "'[  ' [**  map]  k  |-&gt;  x  ∈  m ,  '/' P ']'").<br/>
+<span class="id" title="keyword">Reserved Notation</span> &quot;'[**' 'map]' x ∈ m , P"<br/>
+&nbsp;&nbsp;(<span class="id" title="tactic">at</span> <span class="id" title="keyword">level</span> 200, <span class="id" title="var">m</span> <span class="id" title="tactic">at</span> <span class="id" title="keyword">level</span> 10, <span class="id" title="var">x</span> <span class="id" title="tactic">at</span> <span class="id" title="keyword">level</span> 1, <span class="id" title="tactic">right</span> <span class="id" title="keyword">associativity</span>,<br/>
+&nbsp;&nbsp;&nbsp;<span class="id" title="var">format</span> "'[  ' [**  map]  x  ∈  m ,  '/' P ']'").<br/>
+
+<br/>
+<span class="id" title="keyword">Reserved Notation</span> &quot;'[**' 'set]' x ∈ X , P"<br/>
+&nbsp;&nbsp;(<span class="id" title="tactic">at</span> <span class="id" title="keyword">level</span> 200, <span class="id" title="var">X</span> <span class="id" title="tactic">at</span> <span class="id" title="keyword">level</span> 10, <span class="id" title="var">x</span> <span class="id" title="tactic">at</span> <span class="id" title="keyword">level</span> 1, <span class="id" title="tactic">right</span> <span class="id" title="keyword">associativity</span>,<br/>
+&nbsp;&nbsp;&nbsp;<span class="id" title="var">format</span> "'[  ' [**  set]  x  ∈  X ,  '/'  P ']'").<br/>
+
+<br/>
+<span class="id" title="keyword">Reserved Notation</span> &quot;'[**' 'mset]' x ∈ X , P"<br/>
+&nbsp;&nbsp;(<span class="id" title="tactic">at</span> <span class="id" title="keyword">level</span> 200, <span class="id" title="var">X</span> <span class="id" title="tactic">at</span> <span class="id" title="keyword">level</span> 10, <span class="id" title="var">x</span> <span class="id" title="tactic">at</span> <span class="id" title="keyword">level</span> 1, <span class="id" title="tactic">right</span> <span class="id" title="keyword">associativity</span>,<br/>
+&nbsp;&nbsp;&nbsp;<span class="id" title="var">format</span> "'[  ' [**  mset]  x  ∈  X ,  '/' P ']'").<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+Big conjunction 
+</div>
+<div class="code">
+
+<br/>
+<span class="id" title="keyword">Reserved Notation</span> &quot;'[/\' 'list]' i |-&gt; x ∈ l , P"<br/>
+&nbsp;&nbsp;(<span class="id" title="tactic">at</span> <span class="id" title="keyword">level</span> 200, <span class="id" title="var">l</span> <span class="id" title="tactic">at</span> <span class="id" title="keyword">level</span> 10, <span class="id" title="var">i</span>, <span class="id" title="var">x</span> <span class="id" title="tactic">at</span> <span class="id" title="keyword">level</span> 1, <span class="id" title="tactic">right</span> <span class="id" title="keyword">associativity</span>,<br/>
+&nbsp;&nbsp;&nbsp;<span class="id" title="var">format</span> "'[  ' [/\  list]  i  |-&gt;  x  ∈  l ,  '/' P ']'").<br/>
+<span class="id" title="keyword">Reserved Notation</span> &quot;'[/\' 'list]' x ∈ l , P"<br/>
+&nbsp;&nbsp;(<span class="id" title="tactic">at</span> <span class="id" title="keyword">level</span> 200, <span class="id" title="var">l</span> <span class="id" title="tactic">at</span> <span class="id" title="keyword">level</span> 10, <span class="id" title="var">x</span> <span class="id" title="tactic">at</span> <span class="id" title="keyword">level</span> 1, <span class="id" title="tactic">right</span> <span class="id" title="keyword">associativity</span>,<br/>
+&nbsp;&nbsp;&nbsp;<span class="id" title="var">format</span> "'[  ' [/\  list]  x  ∈  l ,  '/' P ']'").<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+Big disjunction 
+</div>
+<div class="code">
+
+<br/>
+<span class="id" title="keyword">Reserved Notation</span> &quot;'[\/' 'list]' i |-&gt; x ∈ l , P"<br/>
+&nbsp;&nbsp;(<span class="id" title="tactic">at</span> <span class="id" title="keyword">level</span> 200, <span class="id" title="var">l</span> <span class="id" title="tactic">at</span> <span class="id" title="keyword">level</span> 10, <span class="id" title="var">i</span>, <span class="id" title="var">x</span> <span class="id" title="tactic">at</span> <span class="id" title="keyword">level</span> 1, <span class="id" title="tactic">right</span> <span class="id" title="keyword">associativity</span>,<br/>
+&nbsp;&nbsp;&nbsp;<span class="id" title="var">format</span> "'[  ' [\/  list]  i  |-&gt;  x  ∈  l ,  '/' P ']'").<br/>
+<span class="id" title="keyword">Reserved Notation</span> &quot;'[\/' 'list]' x ∈ l , P"<br/>
+&nbsp;&nbsp;(<span class="id" title="tactic">at</span> <span class="id" title="keyword">level</span> 200, <span class="id" title="var">l</span> <span class="id" title="tactic">at</span> <span class="id" title="keyword">level</span> 10, <span class="id" title="var">x</span> <span class="id" title="tactic">at</span> <span class="id" title="keyword">level</span> 1, <span class="id" title="tactic">right</span> <span class="id" title="keyword">associativity</span>,<br/>
+&nbsp;&nbsp;&nbsp;<span class="id" title="var">format</span> "'[  ' [\/  list]  x  ∈  l ,  '/' P ']'").<br/>
+</div>
+<!--
+-- Copyright (c) 2020 BedRock Systems, Inc.
+-- This software is distributed under the terms of the BedRock Open-Source License.
+-- See the LICENSE-BedRock file in the repository root for details.
+-->
+
+<!--
+-- SPDX-LIcense-Identifier:BSD-2-Clause
+-->
+</div>
+<div id="footer">
+  Generated by <a href="http://coq.inria.fr/">coqdoc</a> and improved with <a href="https://github.com/tebbi/coqdocjs">CoqdocJS</a>
+</div>
+</div>
+</body>
+
+</html>

@@ -1,0 +1,494 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<!--
+-- Copyright (c) 2020 BedRock Systems, Inc.
+-- This software is distributed under the terms of the BedRock Open-Source License.
+-- See the LICENSE-BedRock file in the repository root for details.
+-->
+
+<!--
+-- SPDX-LIcense-Identifier:BSD-2-Clause
+-->
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+<meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
+<link href="../css/coqdocjs/coqdoc.css" rel="stylesheet" type="text/css" />
+<link href="../css/coqdocjs/coqdocjs.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="../js/coqdocjs/config.js"></script>
+<script type="text/javascript" src="../js/coqdocjs/coqdocjs.js"></script>
+</head>
+
+<body onload="document.getElementById('content').focus()">
+  <div id="header">
+    <span class="left">
+      <span class="modulename"> <script> document.write(document.title) </script> </span>
+    </span>
+
+    <span class="button" id="toggle-proofs"></span>
+
+    <!-- NOTE: These are displayed right to left on the page -->
+    <span class="right">
+      <a href="./indexpage.html"> Index </a>
+      <a href="./toc.html"> `theories/` </a>
+      <a href="../../index.html"> Toplevel </a>
+    </span>
+</div>
+    <div id="content" tabindex="-1" onblur="document.getElementById('content').focus()">
+    <div id="main">
+<h1 class="libtitle">bedrock.noimport.doc.cpp.logic</h1>
+
+<div class="code">
+<span class="comment">(*<br/>
+&nbsp;*&nbsp;Copyright&nbsp;(c)&nbsp;2020&nbsp;BedRock&nbsp;Systems,&nbsp;Inc.<br/>
+&nbsp;*&nbsp;This&nbsp;software&nbsp;is&nbsp;distributed&nbsp;under&nbsp;the&nbsp;terms&nbsp;of&nbsp;the&nbsp;BedRock&nbsp;Open-Source&nbsp;License.<br/>
+&nbsp;*&nbsp;See&nbsp;the&nbsp;LICENSE-BedRock&nbsp;file&nbsp;in&nbsp;the&nbsp;repository&nbsp;root&nbsp;for&nbsp;details.<br/>
+&nbsp;*)</span><br/>
+
+<br/>
+</div>
+
+<div class="doc">
+This tutorial assumes basic understanding of functional programming and logic.
+A good way to revise these concepts is to read the first 5 chapters
+(Preface,..., Polymorphism and Higher order functions) of the
+<a href=https://softwarefoundations.cis.upenn.edu/lf-current/deps.html>Software Foundations</a> book
+
+<div class="paragraph"> </div>
+
+Just like that book, this tutorial is produced from Coq .v files, which can be found in <i>cpp2v/doc</i>.
+If you want to play with the Coq code in this tutorial, you may want to open the .v source file
+in a Coq editor, instead of opening the html output in a web brower.
+In the html, identifiers are hyperlinked to their definition.
+Your Coq editor may also provide a facility to jump to definition (M-. in emacs (company-coq mode))
+
+</div>
+<div class="code">
+<span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <a class="idref" href="bedrock.lang.cpp.html#"><span class="id" title="library">bedrock.lang.cpp</span></a>.<br/>
+
+<br/>
+<span class="id" title="keyword">Section</span> <a id="with_Sigma" class="idref" href="#with_Sigma"><span class="id" title="section">with_Sigma</span></a>.<br/>
+<span class="id" title="keyword">Context</span> `{<a id="Sigma:2" class="idref" href="#Sigma:2"><span class="id" title="binder">Sigma</span></a>: <a class="idref" href="bedrock.lang.cpp.logic.mpred.html#LC.cpp_logic"><span class="id" title="class">cpp_logic</span></a>} {<a id="CU:3" class="idref" href="#CU:3"><span class="id" title="binder">CU</span></a>:<a class="idref" href="bedrock.lang.cpp.semantics.genv.html#genv"><span class="id" title="class">genv</span></a>}.<br/>
+<span class="id" title="keyword">Import</span> <span class="id" title="var">primitives</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Variable</span> <a id="with_Sigma.x" class="idref" href="#with_Sigma.x"><span class="id" title="variable">x</span></a>:<a class="idref" href="bedrock.lang.cpp.semantics.values.html#PTRS_INTF_AXIOM.ptr"><span class="id" title="axiom">ptr</span></a>.<br/>
+<span class="id" title="keyword">Variable</span> <a id="with_Sigma.y" class="idref" href="#with_Sigma.y"><span class="id" title="variable">y</span></a>:<a class="idref" href="bedrock.lang.cpp.semantics.values.html#PTRS_INTF_AXIOM.ptr"><span class="id" title="axiom">ptr</span></a>.<br/>
+<span class="id" title="keyword">Variable</span> <a id="with_Sigma.r" class="idref" href="#with_Sigma.r"><span class="id" title="variable">r</span></a>:<a class="idref" href="bedrock.lang.cpp.logic.rep.html#Rep"><span class="id" title="definition">Rep</span></a>.<br/>
+<span class="id" title="keyword">Variable</span> <a id="with_Sigma.q" class="idref" href="#with_Sigma.q"><span class="id" title="variable">q</span></a>:<a class="idref" href="https://plv.mpi-sws.org/coqdoc/stdpp//stdpp.numbers.html#Qp"><span class="id" title="record">Qp</span></a>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<a id="lab17"></a><h1 class="section">|-&gt;</h1>
+
+
+<div class="paragraph"> </div>
+
+
+<div class="paragraph"> </div>
+
+Separation logic assertions are of type <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.logic.mpred.html#CPP_LOGIC_CLASS_MIXIN.mpred"><span class="id" title="definition">mpred</span></a></span>.
+The main assertion is of the form:
+ 
+</div>
+<div class="code">
+<span class="id" title="keyword">Example</span> <a id="ex" class="idref" href="#ex"><span class="id" title="definition">ex</span></a>: <a class="idref" href="bedrock.lang.cpp.logic.mpred.html#LC.mpred"><span class="id" title="definition">mpred</span></a> := <a class="idref" href="bedrock.noimport.doc.cpp.logic.html#with_Sigma.x"><span class="id" title="variable">x</span></a> <a class="idref" href="bedrock.lang.cpp.heap_notations.html#819be4dc49a8dae2dc0d3d5326586385"><span class="id" title="notation">|-&gt;</span></a> <a class="idref" href="bedrock.noimport.doc.cpp.logic.html#with_Sigma.r"><span class="id" title="variable">r</span></a>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+As declared above, <span class="inlinecode"><a class="idref" href="bedrock.noimport.doc.cpp.logic.html#with_Sigma.x"><span class="id" title="variable">x</span></a></span> is a pointer (memory location)
+and <span class="inlinecode"><a class="idref" href="bedrock.noimport.doc.cpp.logic.html#with_Sigma.r"><span class="id" title="variable">r</span></a></span> is a memory representation. <span class="inlinecode"><a class="idref" href="bedrock.noimport.doc.cpp.logic.html#ex"><span class="id" title="definition">ex</span></a></span> asserts that x is a valid location and that location contains
+the memory representation r.
+
+<div class="paragraph"> </div>
+
+As an example, <span class="inlinecode"><a class="idref" href="bedrock.noimport.doc.cpp.logic.html#ex2"><span class="id" title="definition">ex2</span></a></span> below asserts that the memory location <span class="inlinecode"><a class="idref" href="bedrock.noimport.doc.cpp.logic.html#with_Sigma.x"><span class="id" title="variable">x</span></a></span> contains
+the long value 2. <span class="inlinecode"><a class="idref" href="bedrock.noimport.doc.cpp.logic.html#ex2"><span class="id" title="definition">ex2</span></a></span> also asserts ownership fraction q
+ ownership over the memory location <span class="inlinecode"><a class="idref" href="bedrock.noimport.doc.cpp.logic.html#with_Sigma.x"><span class="id" title="variable">x</span></a></span>.
+
+</div>
+<div class="code">
+<span class="id" title="keyword">Example</span> <a id="ex2" class="idref" href="#ex2"><span class="id" title="definition">ex2</span></a> : <a class="idref" href="bedrock.lang.cpp.logic.mpred.html#LC.mpred"><span class="id" title="definition">mpred</span></a> := <a class="idref" href="bedrock.noimport.doc.cpp.logic.html#with_Sigma.x"><span class="id" title="variable">x</span></a> <a class="idref" href="bedrock.lang.cpp.heap_notations.html#819be4dc49a8dae2dc0d3d5326586385"><span class="id" title="notation">|-&gt;</span></a> <a class="idref" href="bedrock.lang.cpp.heap_notations.html#819be4dc49a8dae2dc0d3d5326586385"><span class="id" title="notation">(</span></a><a class="idref" href="bedrock.lang.cpp.primitives.html#:::'longR'_x_x"><span class="id" title="notation">longR</span></a> <a class="idref" href="bedrock.noimport.doc.cpp.logic.html#with_Sigma.q"><span class="id" title="variable">q</span></a> 2<a class="idref" href="bedrock.lang.cpp.heap_notations.html#819be4dc49a8dae2dc0d3d5326586385"><span class="id" title="notation">)</span></a>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+the right hand side of <span class="inlinecode"><span class="id" title="var">_</span></span> <span class="inlinecode">|-&gt;</span> <span class="inlinecode"><span class="id" title="var">_</span></span> has type <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.logic.rep.html#Rep"><span class="id" title="definition">Rep</span></a></span> which stands for
+memory representations. 
+</div>
+<div class="code">
+<span class="id" title="keyword">Definition</span> <a id="ex3" class="idref" href="#ex3"><span class="id" title="definition">ex3</span></a> : <a class="idref" href="bedrock.lang.cpp.logic.rep.html#Rep"><span class="id" title="definition">Rep</span></a> :=  <a class="idref" href="bedrock.lang.cpp.primitives.html#:::'longR'_x_x"><span class="id" title="notation">longR</span></a> 1 2.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<span class="inlinecode"><a class="idref" href="bedrock.noimport.doc.cpp.logic.html#with_Sigma.q"><span class="id" title="variable">q</span></a></span> of type <span class="inlinecode"><a class="idref" href="https://plv.mpi-sws.org/coqdoc/stdpp//stdpp.numbers.html#Qp"><span class="id" title="record">Qp</span></a></span> is a positive rational number.
+In our context, it must be in range (0,1].
+<span class="inlinecode">1</span> implies full ownership, which can be used to update or delete
+the memory location. lesser ownership can be used to read the location. 
+</div>
+<div class="code">
+
+<br/>
+<span class="id" title="keyword">Example</span> <a id="eFrac1" class="idref" href="#eFrac1"><span class="id" title="definition">eFrac1</span></a> : <a class="idref" href="https://plv.mpi-sws.org/coqdoc/stdpp//stdpp.numbers.html#Qp"><span class="id" title="record">Qp</span></a> := 1.<br/>
+<span class="id" title="keyword">Example</span> <a id="eFrac2" class="idref" href="#eFrac2"><span class="id" title="definition">eFrac2</span></a> : <a class="idref" href="https://plv.mpi-sws.org/coqdoc/stdpp//stdpp.numbers.html#Qp"><span class="id" title="record">Qp</span></a> := 2<a class="idref" href="https://plv.mpi-sws.org/coqdoc/stdpp//stdpp.numbers.html#b367fe1f60d28d5f2cdbe098c5012f78"><span class="id" title="notation">/</span></a>4.<br/>
+
+<br/>
+<span class="id" title="keyword">Variable</span> <a id="with_Sigma.z" class="idref" href="#with_Sigma.z"><span class="id" title="variable">z</span></a>:<a class="idref" href="http://coq.inria.fr/distrib/V8.13.2/stdlib//Coq.Numbers.BinNums.html#Z"><span class="id" title="inductive">Z</span></a>.<br/>
+</div>
+
+<div class="doc">
+There are similar primitives for other primitive types as well: 
+</div>
+<div class="code">
+<span class="id" title="keyword">Example</span> <a id="e4" class="idref" href="#e4"><span class="id" title="definition">e4</span></a> : <a class="idref" href="bedrock.lang.cpp.logic.rep.html#Rep"><span class="id" title="definition">Rep</span></a> := <a class="idref" href="bedrock.lang.cpp.primitives.html#:::'intR'_x_x"><span class="id" title="notation">intR</span></a> <a class="idref" href="bedrock.noimport.doc.cpp.logic.html#with_Sigma.q"><span class="id" title="variable">q</span></a> <a class="idref" href="bedrock.noimport.doc.cpp.logic.html#with_Sigma.z"><span class="id" title="variable">z</span></a>. </div>
+
+<div class="doc">
+similarly, <span class="inlinecode"><span class="id" title="var">sintR</span></span> and <span class="inlinecode"><span class="id" title="var">uingR</span></span> 
+</div>
+<div class="code">
+<span class="id" title="keyword">Example</span> <a id="e6" class="idref" href="#e6"><span class="id" title="definition">e6</span></a> : <a class="idref" href="bedrock.lang.cpp.logic.rep.html#Rep"><span class="id" title="definition">Rep</span></a> := <a class="idref" href="bedrock.lang.cpp.primitives.html#:::'charR'_x_x"><span class="id" title="notation">charR</span></a> <a class="idref" href="bedrock.noimport.doc.cpp.logic.html#with_Sigma.q"><span class="id" title="variable">q</span></a> <a class="idref" href="bedrock.noimport.doc.cpp.logic.html#with_Sigma.z"><span class="id" title="variable">z</span></a>. </div>
+
+<div class="doc">
+similarly, <span class="inlinecode"><span class="id" title="var">scharR</span></span> for signed and <span class="inlinecode"><span class="id" title="var">ucharR</span></span> for unsigned 
+</div>
+<div class="code">
+<span class="id" title="keyword">Example</span> <a id="e5" class="idref" href="#e5"><span class="id" title="definition">e5</span></a> : <a class="idref" href="bedrock.lang.cpp.logic.rep.html#Rep"><span class="id" title="definition">Rep</span></a> := <a class="idref" href="bedrock.lang.cpp.primitives.html#:::'shortR'_x_x"><span class="id" title="notation">shortR</span></a> <a class="idref" href="bedrock.noimport.doc.cpp.logic.html#with_Sigma.q"><span class="id" title="variable">q</span></a> <a class="idref" href="bedrock.noimport.doc.cpp.logic.html#with_Sigma.z"><span class="id" title="variable">z</span></a>. </div>
+
+<div class="doc">
+similarly, <span class="inlinecode"><span class="id" title="var">ushortR</span></span> and <span class="inlinecode"><span class="id" title="var">sshortR</span></span> 
+</div>
+<div class="code">
+<span class="id" title="keyword">Example</span> <a id="e7" class="idref" href="#e7"><span class="id" title="definition">e7</span></a> : <a class="idref" href="bedrock.lang.cpp.logic.rep.html#Rep"><span class="id" title="definition">Rep</span></a> := <a class="idref" href="bedrock.lang.cpp.primitives.html#:::'longR'_x_x"><span class="id" title="notation">longR</span></a> <a class="idref" href="bedrock.noimport.doc.cpp.logic.html#with_Sigma.q"><span class="id" title="variable">q</span></a> <a class="idref" href="bedrock.noimport.doc.cpp.logic.html#with_Sigma.z"><span class="id" title="variable">z</span></a>. </div>
+
+<div class="doc">
+similarly, <span class="inlinecode"><span class="id" title="var">ulongR</span></span> and <span class="inlinecode"><span class="id" title="var">slongR</span></span> 
+</div>
+<div class="code">
+<span class="id" title="keyword">Example</span> <a id="e8" class="idref" href="#e8"><span class="id" title="definition">e8</span></a> : <a class="idref" href="bedrock.lang.cpp.logic.rep.html#Rep"><span class="id" title="definition">Rep</span></a> := <a class="idref" href="bedrock.lang.cpp.primitives.html#:::'longlongR'_x_x"><span class="id" title="notation">longlongR</span></a> <a class="idref" href="bedrock.noimport.doc.cpp.logic.html#with_Sigma.q"><span class="id" title="variable">q</span></a> <a class="idref" href="bedrock.noimport.doc.cpp.logic.html#with_Sigma.z"><span class="id" title="variable">z</span></a>. </div>
+
+<div class="doc">
+similarly, <span class="inlinecode"><span class="id" title="var">ulonglongR</span></span> and <span class="inlinecode"><span class="id" title="var">slonglongR</span></span> 
+</div>
+<div class="code">
+<span class="id" title="keyword">Example</span> <a id="e9" class="idref" href="#e9"><span class="id" title="definition">e9</span></a> : <a class="idref" href="bedrock.lang.cpp.logic.rep.html#Rep"><span class="id" title="definition">Rep</span></a>  := <a class="idref" href="bedrock.lang.cpp.primitives.html#:::'int8R'_x_x"><span class="id" title="notation">int8R</span></a> <a class="idref" href="bedrock.noimport.doc.cpp.logic.html#with_Sigma.q"><span class="id" title="variable">q</span></a> <a class="idref" href="bedrock.noimport.doc.cpp.logic.html#with_Sigma.z"><span class="id" title="variable">z</span></a>. </div>
+
+<div class="doc">
+similarly, <span class="inlinecode"><span class="id" title="var">int16</span></span>, <span class="inlinecode"><span class="id" title="var">int32</span></span>, <span class="inlinecode"><span class="id" title="var">uni64</span></span>. Prefix 'u' for the unsigned variants 
+</div>
+<div class="code">
+<span class="id" title="keyword">Variable</span> <a id="with_Sigma.b" class="idref" href="#with_Sigma.b"><span class="id" title="variable">b</span></a>: <a class="idref" href="http://coq.inria.fr/distrib/V8.13.2/stdlib//Coq.Init.Datatypes.html#bool"><span class="id" title="inductive">bool</span></a>.<br/>
+<span class="id" title="keyword">Example</span> <a id="e11" class="idref" href="#e11"><span class="id" title="definition">e11</span></a>: <a class="idref" href="http://coq.inria.fr/distrib/V8.13.2/stdlib//Coq.Init.Datatypes.html#bool"><span class="id" title="inductive">bool</span></a>:=<a class="idref" href="http://coq.inria.fr/distrib/V8.13.2/stdlib//Coq.Init.Datatypes.html#true"><span class="id" title="constructor">true</span></a>.<br/>
+<span class="id" title="keyword">Example</span> <a id="e10" class="idref" href="#e10"><span class="id" title="definition">e10</span></a> : <a class="idref" href="bedrock.lang.cpp.logic.rep.html#Rep"><span class="id" title="definition">Rep</span></a> := <a class="idref" href="bedrock.lang.cpp.primitives.html#:::'boolR'_x_x"><span class="id" title="notation">boolR</span></a> <a class="idref" href="bedrock.lang.cpp.primitives.html#:::'boolR'_x_x"><span class="id" title="notation">(</span></a>1<a class="idref" href="https://plv.mpi-sws.org/coqdoc/stdpp//stdpp.numbers.html#b367fe1f60d28d5f2cdbe098c5012f78"><span class="id" title="notation">/</span></a>2<a class="idref" href="bedrock.lang.cpp.primitives.html#:::'boolR'_x_x"><span class="id" title="notation">)</span></a> <a class="idref" href="bedrock.noimport.doc.cpp.logic.html#with_Sigma.b"><span class="id" title="variable">b</span></a>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+Some locations (e.g. the "next" field of linked list) store pointers.
+<span class="inlinecode"><span class="id" title="var">ptrR</span></span> can be used to describe the memory representation of pointers.
+ 
+</div>
+<div class="code">
+<span class="id" title="keyword">Variable</span> <a id="with_Sigma.ctype" class="idref" href="#with_Sigma.ctype"><span class="id" title="variable">ctype</span></a>:<a class="idref" href="bedrock.lang.cpp.syntax.types.html#type"><span class="id" title="inductive">type</span></a>.<br/>
+<span class="id" title="keyword">Variable</span> <a id="with_Sigma.p" class="idref" href="#with_Sigma.p"><span class="id" title="variable">p</span></a>:<a class="idref" href="bedrock.lang.cpp.semantics.values.html#PTRS_INTF_AXIOM.ptr"><span class="id" title="axiom">ptr</span></a>.<br/>
+<span class="id" title="keyword">Example</span> <a id="eptr" class="idref" href="#eptr"><span class="id" title="definition">eptr</span></a> : <a class="idref" href="bedrock.lang.cpp.logic.rep.html#Rep"><span class="id" title="definition">Rep</span></a> := <a class="idref" href="bedrock.lang.cpp.primitives.html#:::'ptrR&lt;'_x_'&gt;'_x_x"><span class="id" title="notation">ptrR</span></a><a class="idref" href="bedrock.lang.cpp.primitives.html#:::'ptrR&lt;'_x_'&gt;'_x_x"><span class="id" title="notation">&lt;</span></a><a class="idref" href="bedrock.noimport.doc.cpp.logic.html#with_Sigma.ctype"><span class="id" title="variable">ctype</span></a><a class="idref" href="bedrock.lang.cpp.primitives.html#:::'ptrR&lt;'_x_'&gt;'_x_x"><span class="id" title="notation">&gt;</span></a> <a class="idref" href="bedrock.noimport.doc.cpp.logic.html#with_Sigma.q"><span class="id" title="variable">q</span></a> <a class="idref" href="bedrock.noimport.doc.cpp.logic.html#with_Sigma.p"><span class="id" title="variable">p</span></a>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<span class="inlinecode"><a class="idref" href="bedrock.noimport.doc.cpp.logic.html#with_Sigma.ctype"><span class="id" title="variable">ctype</span></a></span> is the C++ type of the pointer.
+Click at <span class="inlinecode"><span class="id" title="keyword">type</span></span> to see the current definition of C++ types.
+For example, below, we are saying that the pointer is of type
+signed 64 bit (long * ) 
+</div>
+<div class="code">
+<span class="id" title="keyword">Example</span> <a id="eptr2" class="idref" href="#eptr2"><span class="id" title="definition">eptr2</span></a> : <a class="idref" href="bedrock.lang.cpp.logic.rep.html#Rep"><span class="id" title="definition">Rep</span></a> := <a class="idref" href="bedrock.lang.cpp.primitives.html#:::'ptrR&lt;'_x_'&gt;'_x_x"><span class="id" title="notation">ptrR</span></a><a class="idref" href="bedrock.lang.cpp.primitives.html#:::'ptrR&lt;'_x_'&gt;'_x_x"><span class="id" title="notation">&lt;</span></a><a class="idref" href="bedrock.lang.cpp.syntax.types.html#Tint"><span class="id" title="constructor">Tint</span></a> <a class="idref" href="bedrock.lang.cpp.arith.types.html#W64"><span class="id" title="constructor">W64</span></a> <a class="idref" href="bedrock.lang.cpp.arith.types.html#Signed"><span class="id" title="constructor">Signed</span></a><a class="idref" href="bedrock.lang.cpp.primitives.html#:::'ptrR&lt;'_x_'&gt;'_x_x"><span class="id" title="notation">&gt;</span></a> <a class="idref" href="bedrock.noimport.doc.cpp.logic.html#with_Sigma.q"><span class="id" title="variable">q</span></a> <a class="idref" href="bedrock.noimport.doc.cpp.logic.html#with_Sigma.p"><span class="id" title="variable">p</span></a>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+To refer to (named) struct types, use the <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.syntax.types.html#Tnamed"><span class="id" title="constructor">Tnamed</span></a></span> constructor,
+which takes as argument the mangled name of the class/struct.
+We can use the notations defined in the names file to write
+unmangled names. More about this in the next chapters.
+
+</div>
+<div class="code">
+<span class="id" title="keyword">Example</span> <a id="eptr3" class="idref" href="#eptr3"><span class="id" title="definition">eptr3</span></a> : <a class="idref" href="bedrock.lang.cpp.logic.rep.html#Rep"><span class="id" title="definition">Rep</span></a> := <a class="idref" href="bedrock.lang.cpp.primitives.html#:::'ptrR&lt;'_x_'&gt;'_x_x"><span class="id" title="notation">ptrR</span></a><a class="idref" href="bedrock.lang.cpp.primitives.html#:::'ptrR&lt;'_x_'&gt;'_x_x"><span class="id" title="notation">&lt;</span></a><a class="idref" href="bedrock.lang.cpp.syntax.types.html#Tnamed"><span class="id" title="constructor">Tnamed</span></a> "listZ5"<a class="idref" href="bedrock.lang.cpp.primitives.html#:::'ptrR&lt;'_x_'&gt;'_x_x"><span class="id" title="notation">&gt;</span></a> <a class="idref" href="bedrock.noimport.doc.cpp.logic.html#with_Sigma.q"><span class="id" title="variable">q</span></a> <a class="idref" href="bedrock.noimport.doc.cpp.logic.html#with_Sigma.p"><span class="id" title="variable">p</span></a>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<a id="lab18"></a><h1 class="section">Separation</h1>
+
+
+</div>
+<div class="code">
+<span class="id" title="keyword">Variable</span> <a id="with_Sigma.pl" class="idref" href="#with_Sigma.pl"><span class="id" title="variable">pl</span></a>: <a class="idref" href="bedrock.lang.cpp.logic.mpred.html#LC.mpred"><span class="id" title="definition">mpred</span></a>.<br/>
+<span class="id" title="keyword">Variable</span> <a id="with_Sigma.pr" class="idref" href="#with_Sigma.pr"><span class="id" title="variable">pr</span></a>: <a class="idref" href="bedrock.lang.cpp.logic.mpred.html#LC.mpred"><span class="id" title="definition">mpred</span></a>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+Any two <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.logic.mpred.html#CPP_LOGIC_CLASS_MIXIN.mpred"><span class="id" title="definition">mpred</span></a></span>s can be combined together using the infix operator <span class="inlinecode">**</span>
+to get an <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.logic.mpred.html#CPP_LOGIC_CLASS_MIXIN.mpred"><span class="id" title="definition">mpred</span></a></span>:
+
+</div>
+<div class="code">
+<span class="id" title="keyword">Example</span> <a id="e12" class="idref" href="#e12"><span class="id" title="definition">e12</span></a>: <a class="idref" href="bedrock.lang.cpp.logic.mpred.html#LC.mpred"><span class="id" title="definition">mpred</span></a> := <a class="idref" href="bedrock.noimport.doc.cpp.logic.html#with_Sigma.pl"><span class="id" title="variable">pl</span></a> <a class="idref" href="bedrock.lang.bi.prelude.html#edd4b90f66987f0e4145840adec59ece"><span class="id" title="notation">**</span></a> <a class="idref" href="bedrock.noimport.doc.cpp.logic.html#with_Sigma.pr"><span class="id" title="variable">pr</span></a>.<br/>
+</div>
+
+<div class="doc">
+<span class="inlinecode"><a class="idref" href="bedrock.noimport.doc.cpp.logic.html#e12"><span class="id" title="definition">e12</span></a></span> asserts that <span class="inlinecode"><a class="idref" href="bedrock.noimport.doc.cpp.logic.html#with_Sigma.pl"><span class="id" title="variable">pl</span></a></span> and <span class="inlinecode"><a class="idref" href="bedrock.noimport.doc.cpp.logic.html#with_Sigma.pr"><span class="id" title="variable">pr</span></a></span> hold *separately*, meaning that their ownership
+of resources is disjoint. For example, the following assertion is invalid because
+both the left side and the right side talk about the same (1) ownership of <span class="inlinecode"><a class="idref" href="bedrock.noimport.doc.cpp.logic.html#with_Sigma.x"><span class="id" title="variable">x</span></a></span>.
+
+</div>
+<div class="code">
+<span class="id" title="keyword">Example</span> <a id="e13" class="idref" href="#e13"><span class="id" title="definition">e13</span></a> : <a class="idref" href="bedrock.lang.cpp.logic.mpred.html#LC.mpred"><span class="id" title="definition">mpred</span></a> := <a class="idref" href="bedrock.noimport.doc.cpp.logic.html#with_Sigma.x"><span class="id" title="variable">x</span></a> <a class="idref" href="bedrock.lang.cpp.heap_notations.html#819be4dc49a8dae2dc0d3d5326586385"><span class="id" title="notation">|-&gt;</span></a> <a class="idref" href="bedrock.lang.cpp.heap_notations.html#819be4dc49a8dae2dc0d3d5326586385"><span class="id" title="notation">(</span></a><a class="idref" href="bedrock.lang.cpp.primitives.html#:::'intR'_x_x"><span class="id" title="notation">intR</span></a> 1 4<a class="idref" href="bedrock.lang.cpp.heap_notations.html#819be4dc49a8dae2dc0d3d5326586385"><span class="id" title="notation">)</span></a> <a class="idref" href="bedrock.lang.bi.prelude.html#edd4b90f66987f0e4145840adec59ece"><span class="id" title="notation">**</span></a> <a class="idref" href="bedrock.noimport.doc.cpp.logic.html#with_Sigma.x"><span class="id" title="variable">x</span></a> <a class="idref" href="bedrock.lang.cpp.heap_notations.html#819be4dc49a8dae2dc0d3d5326586385"><span class="id" title="notation">|-&gt;</span></a> <a class="idref" href="bedrock.lang.cpp.heap_notations.html#819be4dc49a8dae2dc0d3d5326586385"><span class="id" title="notation">(</span></a><a class="idref" href="bedrock.lang.cpp.primitives.html#:::'intR'_x_x"><span class="id" title="notation">intR</span></a> 1 4<a class="idref" href="bedrock.lang.cpp.heap_notations.html#819be4dc49a8dae2dc0d3d5326586385"><span class="id" title="notation">)</span></a>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+We can prove that <span class="inlinecode"><a class="idref" href="bedrock.noimport.doc.cpp.logic.html#e13"><span class="id" title="definition">e13</span></a></span> implies <span class="inlinecode"><span class="id" title="var">False</span></span> (<span class="inlinecode"><span class="id" title="var">_</span></span> <span class="inlinecode">|--</span> <span class="inlinecode"><span class="id" title="var">_</span></span> should be read as "entails" ("implies")):
+</div>
+<div class="code">
+<span class="id" title="keyword">Lemma</span> <a id="l1" class="idref" href="#l1"><span class="id" title="lemma">l1</span></a>: <a class="idref" href="bedrock.noimport.doc.cpp.logic.html#e13"><span class="id" title="definition">e13</span></a> <a class="idref" href="bedrock.lang.bi.prelude.html#0582ac70d883d93be3a66ac50f1c9225"><span class="id" title="notation">|--</span></a> <a class="idref" href="bedrock.lang.bi.only_provable.html#d95ff2fe2904cc1067c71e0d017740c6"><span class="id" title="notation">[|</span></a> <a class="idref" href="https://plv.mpi-sws.org/coqdoc/stdpp//stdpp.base.html#::type_scope:'False'"><span class="id" title="notation">False</span></a> <a class="idref" href="bedrock.lang.bi.only_provable.html#d95ff2fe2904cc1067c71e0d017740c6"><span class="id" title="notation">|]</span></a>.<br/>
+<span class="id" title="keyword">Abort</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+However, the following is fine: 
+</div>
+<div class="code">
+<span class="id" title="keyword">Example</span> <a id="e14" class="idref" href="#e14"><span class="id" title="definition">e14</span></a> : <a class="idref" href="bedrock.lang.cpp.logic.mpred.html#LC.mpred"><span class="id" title="definition">mpred</span></a> := <a class="idref" href="bedrock.noimport.doc.cpp.logic.html#with_Sigma.x"><span class="id" title="variable">x</span></a> <a class="idref" href="bedrock.lang.cpp.heap_notations.html#819be4dc49a8dae2dc0d3d5326586385"><span class="id" title="notation">|-&gt;</span></a> <a class="idref" href="bedrock.lang.cpp.primitives.html#:::'intR'_x_x"><span class="id" title="notation">intR</span></a> <a class="idref" href="bedrock.lang.cpp.primitives.html#:::'intR'_x_x"><span class="id" title="notation">(</span></a>1<a class="idref" href="https://plv.mpi-sws.org/coqdoc/stdpp//stdpp.numbers.html#b367fe1f60d28d5f2cdbe098c5012f78"><span class="id" title="notation">/</span></a>2<a class="idref" href="bedrock.lang.cpp.primitives.html#:::'intR'_x_x"><span class="id" title="notation">)</span></a> 4 <a class="idref" href="bedrock.lang.bi.prelude.html#edd4b90f66987f0e4145840adec59ece"><span class="id" title="notation">**</span></a> <a class="idref" href="bedrock.noimport.doc.cpp.logic.html#with_Sigma.x"><span class="id" title="variable">x</span></a> <a class="idref" href="bedrock.lang.cpp.heap_notations.html#819be4dc49a8dae2dc0d3d5326586385"><span class="id" title="notation">|-&gt;</span></a> <a class="idref" href="bedrock.lang.cpp.primitives.html#:::'intR'_x_x"><span class="id" title="notation">intR</span></a> <a class="idref" href="bedrock.lang.cpp.primitives.html#:::'intR'_x_x"><span class="id" title="notation">(</span></a>1<a class="idref" href="https://plv.mpi-sws.org/coqdoc/stdpp//stdpp.numbers.html#b367fe1f60d28d5f2cdbe098c5012f78"><span class="id" title="notation">/</span></a>2<a class="idref" href="bedrock.lang.cpp.primitives.html#:::'intR'_x_x"><span class="id" title="notation">)</span></a> 4.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+if <span class="inlinecode"><a class="idref" href="bedrock.noimport.doc.cpp.logic.html#with_Sigma.x"><span class="id" title="variable">x</span></a></span> and <span class="inlinecode"><a class="idref" href="bedrock.noimport.doc.cpp.logic.html#with_Sigma.y"><span class="id" title="variable">y</span></a></span> are different locations, the following is also fine 
+</div>
+<div class="code">
+<span class="id" title="keyword">Example</span> <a id="e15" class="idref" href="#e15"><span class="id" title="definition">e15</span></a> : <a class="idref" href="bedrock.lang.cpp.logic.mpred.html#LC.mpred"><span class="id" title="definition">mpred</span></a> := <a class="idref" href="bedrock.noimport.doc.cpp.logic.html#with_Sigma.x"><span class="id" title="variable">x</span></a> <a class="idref" href="bedrock.lang.cpp.heap_notations.html#819be4dc49a8dae2dc0d3d5326586385"><span class="id" title="notation">|-&gt;</span></a> <a class="idref" href="bedrock.lang.cpp.primitives.html#:::'intR'_x_x"><span class="id" title="notation">intR</span></a> 1 4 <a class="idref" href="bedrock.lang.bi.prelude.html#edd4b90f66987f0e4145840adec59ece"><span class="id" title="notation">**</span></a> <a class="idref" href="bedrock.noimport.doc.cpp.logic.html#with_Sigma.y"><span class="id" title="variable">y</span></a> <a class="idref" href="bedrock.lang.cpp.heap_notations.html#819be4dc49a8dae2dc0d3d5326586385"><span class="id" title="notation">|-&gt;</span></a> <a class="idref" href="bedrock.lang.cpp.primitives.html#:::'intR'_x_x"><span class="id" title="notation">intR</span></a> <a class="idref" href="bedrock.lang.cpp.primitives.html#:::'intR'_x_x"><span class="id" title="notation">(</span></a>1<a class="idref" href="https://plv.mpi-sws.org/coqdoc/stdpp//stdpp.numbers.html#b367fe1f60d28d5f2cdbe098c5012f78"><span class="id" title="notation">/</span></a>2<a class="idref" href="bedrock.lang.cpp.primitives.html#:::'intR'_x_x"><span class="id" title="notation">)</span></a> 4.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+This separateness part of the <span class="inlinecode">**</span> (instead of vanilla conjunction) gives the main modularity properties of separation logic.
+For example, if a thread <span class="inlinecode"><a class="idref" href="bedrock.lang.bi.bytes_at.html#t1"><span class="id" title="definition">t1</span></a></span> has precondition <span class="inlinecode"><span class="id" title="var">P1</span></span> and postcondition <span class="inlinecode"><span class="id" title="var">Q2</span></span>,
+and a thread <span class="inlinecode"><a class="idref" href="bedrock.lang.bi.bytes_at.html#t2"><span class="id" title="definition">t2</span></a></span> has precondition <span class="inlinecode"><span class="id" title="var">P2</span></span> and postcondition <span class="inlinecode"><span class="id" title="var">Q2</span></span>,
+the thread <span class="inlinecode"><a class="idref" href="bedrock.lang.bi.bytes_at.html#t1"><span class="id" title="definition">t1</span></a></span> <span class="inlinecode">||</span> <span class="inlinecode"><a class="idref" href="bedrock.lang.bi.bytes_at.html#t2"><span class="id" title="definition">t2</span></a></span> (<span class="inlinecode"><a class="idref" href="bedrock.lang.bi.bytes_at.html#t1"><span class="id" title="definition">t1</span></a></span> and <span class="inlinecode"><a class="idref" href="bedrock.lang.bi.bytes_at.html#t2"><span class="id" title="definition">t2</span></a></span> running in parallel) has precondition
+<span class="inlinecode"><span class="id" title="var">P1</span>**<span class="id" title="var">P2</span></span> and postcondition <span class="inlinecode"><span class="id" title="var">Q1</span>**<span class="id" title="var">Q2</span></span>.
+Also, separation logic has the frame property: if we can prove a precondition <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.syntax.types.html#type_ind'.P"><span class="id" title="variable">P</span></a></span> and postcondition <span class="inlinecode"><span class="id" title="var">Q</span></span> for a function <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.syntax.types.html#qual_norm.f"><span class="id" title="variable">f</span></a></span>,
+then for any assertion <span class="inlinecode"><span class="id" title="var">H</span></span> separate from <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.syntax.types.html#type_ind'.P"><span class="id" title="variable">P</span></a></span> and <span class="inlinecode"><span class="id" title="var">Q</span></span>, the <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.syntax.types.html#type_ind'.P"><span class="id" title="variable">P</span></a>**<span class="id" title="var">H</span></span> and <span class="inlinecode"><span class="id" title="var">Q</span>**<span class="id" title="var">H</span></span>
+are also valid pre- and post- conditions respectively.
+
+<div class="paragraph"> </div>
+
+<a id="lab19"></a><h1 class="section">Structured Reps</h1>
+
+
+<div class="paragraph"> </div>
+
+
+<div class="paragraph"> </div>
+
+In the examples above (e.g. <span class="inlinecode"><a class="idref" href="bedrock.noimport.doc.cpp.logic.html#ex"><span class="id" title="definition">ex</span></a></span>), in the <span class="inlinecode"><a class="idref" href="bedrock.noimport.doc.cpp.logic.html#with_Sigma.x"><span class="id" title="variable">x</span></a></span> <span class="inlinecode">|-&gt;</span> <span class="inlinecode"><a class="idref" href="bedrock.noimport.doc.cpp.logic.html#with_Sigma.r"><span class="id" title="variable">r</span></a></span> notation, the LHS (<span class="inlinecode"><a class="idref" href="bedrock.noimport.doc.cpp.logic.html#with_Sigma.x"><span class="id" title="variable">x</span></a></span>) must be an *absolute* location,
+RHS is a <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.logic.rep.html#Rep"><span class="id" title="definition">Rep</span></a></span> and the whole term (<span class="inlinecode"><a class="idref" href="bedrock.noimport.doc.cpp.logic.html#with_Sigma.x"><span class="id" title="variable">x</span></a></span> <span class="inlinecode">|-&gt;</span> <span class="inlinecode"><a class="idref" href="bedrock.noimport.doc.cpp.logic.html#with_Sigma.r"><span class="id" title="variable">r</span></a></span>) has type <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.logic.mpred.html#CPP_LOGIC_CLASS_MIXIN.mpred"><span class="id" title="definition">mpred</span></a></span>.
+We have also overloaded the same notation to the case where <span class="inlinecode"><a class="idref" href="bedrock.noimport.doc.cpp.logic.html#with_Sigma.x"><span class="id" title="variable">x</span></a></span> is *relative* location, e.g. an offset
+defined by a field or an array index and type (size of elements) of array.
+
+</div>
+<div class="code">
+
+<br/>
+<span class="id" title="keyword">Variable</span> <a id="with_Sigma.struct_field" class="idref" href="#with_Sigma.struct_field"><span class="id" title="variable">struct_field</span></a> <a id="with_Sigma.struct_field2" class="idref" href="#with_Sigma.struct_field2"><span class="id" title="variable">struct_field2</span></a> : <a class="idref" href="bedrock.lang.cpp.syntax.names.html#field"><span class="id" title="record">field</span></a>.<br/>
+
+<br/>
+<span class="id" title="keyword">Example</span> <a id="structRep1" class="idref" href="#structRep1"><span class="id" title="definition">structRep1</span></a> : <a class="idref" href="bedrock.lang.cpp.logic.rep.html#Rep"><span class="id" title="definition">Rep</span></a> := <a class="idref" href="bedrock.noimport.doc.cpp.logic.html#with_Sigma.struct_field"><span class="id" title="variable">struct_field</span></a> <a class="idref" href="bedrock.lang.cpp.heap_notations.html#819be4dc49a8dae2dc0d3d5326586385"><span class="id" title="notation">|-&gt;</span></a> <a class="idref" href="bedrock.noimport.doc.cpp.logic.html#with_Sigma.r"><span class="id" title="variable">r</span></a>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+Note that in this case, the whole term <span class="inlinecode"><span class="id" title="var">structRep</span></span> has type <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.logic.rep.html#Rep"><span class="id" title="definition">Rep</span></a></span> (memory representation) instead of <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.logic.mpred.html#CPP_LOGIC_CLASS_MIXIN.mpred"><span class="id" title="definition">mpred</span></a></span>.
+Such <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.logic.rep.html#Rep"><span class="id" title="definition">Rep</span></a></span>s typically describe the memory representation of some (yet to be plugged in) *absolute* location holding structured data, e.g. structs, arrays, classes.
+
+<div class="paragraph"> </div>
+
+Note that a <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.logic.rep.html#Rep"><span class="id" title="definition">Rep</span></a></span> is like "Even", it isn't meaningful to say "Even is true",
+it is only meaningful to say "Even n" is true. Similarly, it isn't meaningful
+to say that a <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.logic.rep.html#Rep"><span class="id" title="definition">Rep</span></a></span> holds, until you say what location it holds on.
+ 
+</div>
+<div class="code">
+
+<br/>
+<span class="id" title="keyword">Variable</span> <a id="with_Sigma.this" class="idref" href="#with_Sigma.this"><span class="id" title="variable">this</span></a>:<a class="idref" href="bedrock.lang.cpp.semantics.values.html#PTRS_INTF_AXIOM.ptr"><span class="id" title="axiom">ptr</span></a>.<br/>
+
+<br/>
+<span class="id" title="keyword">Example</span> <a id="e17" class="idref" href="#e17"><span class="id" title="definition">e17</span></a> : <a class="idref" href="bedrock.lang.cpp.logic.mpred.html#LC.mpred"><span class="id" title="definition">mpred</span></a> := <a class="idref" href="bedrock.noimport.doc.cpp.logic.html#with_Sigma.this"><span class="id" title="variable">this</span></a> <a class="idref" href="bedrock.lang.cpp.heap_notations.html#819be4dc49a8dae2dc0d3d5326586385"><span class="id" title="notation">|-&gt;</span></a> <a class="idref" href="bedrock.noimport.doc.cpp.logic.html#structRep1"><span class="id" title="definition">structRep1</span></a>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+we can also unfold <span class="inlinecode"><a class="idref" href="bedrock.noimport.doc.cpp.logic.html#structRep1"><span class="id" title="definition">structRep1</span></a></span> above and write 
+</div>
+<div class="code">
+
+<br/>
+<span class="id" title="keyword">Example</span> <a id="e18" class="idref" href="#e18"><span class="id" title="definition">e18</span></a> : <a class="idref" href="bedrock.lang.cpp.logic.mpred.html#LC.mpred"><span class="id" title="definition">mpred</span></a> := <a class="idref" href="bedrock.noimport.doc.cpp.logic.html#with_Sigma.this"><span class="id" title="variable">this</span></a> <a class="idref" href="bedrock.lang.cpp.heap_notations.html#819be4dc49a8dae2dc0d3d5326586385"><span class="id" title="notation">|-&gt;</span></a> <a class="idref" href="bedrock.lang.cpp.heap_notations.html#819be4dc49a8dae2dc0d3d5326586385"><span class="id" title="notation">(</span></a><a class="idref" href="bedrock.noimport.doc.cpp.logic.html#with_Sigma.struct_field"><span class="id" title="variable">struct_field</span></a> <a class="idref" href="bedrock.lang.cpp.heap_notations.html#819be4dc49a8dae2dc0d3d5326586385"><span class="id" title="notation">|-&gt;</span></a> <a class="idref" href="bedrock.noimport.doc.cpp.logic.html#with_Sigma.r"><span class="id" title="variable">r</span></a><a class="idref" href="bedrock.lang.cpp.heap_notations.html#819be4dc49a8dae2dc0d3d5326586385"><span class="id" title="notation">)</span></a>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+Because the notation <span class="inlinecode"><span class="id" title="var">_</span></span> <span class="inlinecode">|-&gt;</span> <span class="inlinecode"><span class="id" title="var">_</span></span> is declared right associative, we can drop the parens: 
+</div>
+<div class="code">
+
+<br/>
+<span class="id" title="keyword">Example</span> <a id="e19" class="idref" href="#e19"><span class="id" title="definition">e19</span></a> : <a class="idref" href="bedrock.lang.cpp.logic.mpred.html#LC.mpred"><span class="id" title="definition">mpred</span></a> := <a class="idref" href="bedrock.noimport.doc.cpp.logic.html#with_Sigma.this"><span class="id" title="variable">this</span></a> <a class="idref" href="bedrock.lang.cpp.heap_notations.html#819be4dc49a8dae2dc0d3d5326586385"><span class="id" title="notation">|-&gt;</span></a> <a class="idref" href="bedrock.noimport.doc.cpp.logic.html#with_Sigma.struct_field"><span class="id" title="variable">struct_field</span></a> <a class="idref" href="bedrock.lang.cpp.heap_notations.html#819be4dc49a8dae2dc0d3d5326586385"><span class="id" title="notation">|-&gt;</span></a> <a class="idref" href="bedrock.noimport.doc.cpp.logic.html#with_Sigma.r"><span class="id" title="variable">r</span></a>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+Note that the <span class="inlinecode">**</span> notation is overloaded to work on <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.logic.rep.html#Rep"><span class="id" title="definition">Rep</span></a></span>s as well as <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.logic.mpred.html#CPP_LOGIC_CLASS_MIXIN.mpred"><span class="id" title="definition">mpred</span></a></span>s;
+however, the meaning is intuitively the same. That is, the following <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.logic.rep.html#Rep"><span class="id" title="definition">Rep</span></a></span>
+states that the relative locations are disjoint (i.e. for any *single* absolute
+location <span class="inlinecode"><span class="id" title="var">l</span></span>, <span class="inlinecode"><span class="id" title="var">l</span></span> <span class="inlinecode">.,</span> <span class="inlinecode"><a class="idref" href="bedrock.noimport.doc.cpp.logic.html#with_Sigma.struct_field"><span class="id" title="variable">struct_field</span></a></span> <span class="inlinecode">|-&gt;</span> <span class="inlinecode"><a class="idref" href="bedrock.noimport.doc.cpp.logic.html#with_Sigma.r"><span class="id" title="variable">r</span></a></span> <span class="inlinecode">**</span> <span class="inlinecode"><span class="id" title="var">l</span></span> <span class="inlinecode">.,</span> <span class="inlinecode"><a class="idref" href="bedrock.noimport.doc.cpp.logic.html#with_Sigma.struct_field2"><span class="id" title="variable">struct_field2</span></a></span> <span class="inlinecode">|-&gt;</span> <span class="inlinecode"><a class="idref" href="bedrock.noimport.doc.cpp.logic.html#with_Sigma.r"><span class="id" title="variable">r</span></a></span>).
+
+</div>
+<div class="code">
+
+<br/>
+<span class="id" title="keyword">Example</span> <a id="e20" class="idref" href="#e20"><span class="id" title="definition">e20</span></a> : <a class="idref" href="bedrock.lang.cpp.logic.rep.html#Rep"><span class="id" title="definition">Rep</span></a> := <a class="idref" href="bedrock.lang.bi.prelude.html#edd4b90f66987f0e4145840adec59ece"><span class="id" title="notation">(</span></a><a class="idref" href="bedrock.noimport.doc.cpp.logic.html#with_Sigma.struct_field"><span class="id" title="variable">struct_field</span></a> <a class="idref" href="bedrock.lang.cpp.heap_notations.html#819be4dc49a8dae2dc0d3d5326586385"><span class="id" title="notation">|-&gt;</span></a> <a class="idref" href="bedrock.noimport.doc.cpp.logic.html#with_Sigma.r"><span class="id" title="variable">r</span></a><a class="idref" href="bedrock.lang.bi.prelude.html#edd4b90f66987f0e4145840adec59ece"><span class="id" title="notation">)</span></a> <a class="idref" href="bedrock.lang.bi.prelude.html#edd4b90f66987f0e4145840adec59ece"><span class="id" title="notation">**</span></a> <a class="idref" href="bedrock.lang.bi.prelude.html#edd4b90f66987f0e4145840adec59ece"><span class="id" title="notation">(</span></a><a class="idref" href="bedrock.noimport.doc.cpp.logic.html#with_Sigma.struct_field2"><span class="id" title="variable">struct_field2</span></a> <a class="idref" href="bedrock.lang.cpp.heap_notations.html#819be4dc49a8dae2dc0d3d5326586385"><span class="id" title="notation">|-&gt;</span></a> <a class="idref" href="bedrock.noimport.doc.cpp.logic.html#with_Sigma.r"><span class="id" title="variable">r</span></a><a class="idref" href="bedrock.lang.bi.prelude.html#edd4b90f66987f0e4145840adec59ece"><span class="id" title="notation">)</span></a>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+More examples in the next two chapters. Parentheses are optional above because
+the precedence between <span class="inlinecode"><span class="id" title="var">_</span></span> <span class="inlinecode">**</span> <span class="inlinecode"><span class="id" title="var">_</span></span> and <span class="inlinecode"><span class="id" title="var">_</span></span> <span class="inlinecode">|-&gt;</span> <span class="inlinecode"><span class="id" title="var">_</span></span> has been defined appropriately. 
+<div class="paragraph"> </div>
+
+<a id="lab20"></a><h1 class="section">Magic Wand</h1>
+
+<div class="paragraph"> </div>
+
+
+<div class="paragraph"> </div>
+
+The following assertion asserts that
+you have the resources
+of <span class="inlinecode"><a class="idref" href="bedrock.noimport.doc.cpp.logic.html#with_Sigma.pr"><span class="id" title="variable">pr</span></a></span> "minus" the resources in <span class="inlinecode"><a class="idref" href="bedrock.noimport.doc.cpp.logic.html#with_Sigma.pl"><span class="id" title="variable">pl</span></a></span>.
+
+</div>
+<div class="code">
+
+<br/>
+<span class="id" title="keyword">Example</span> <a id="wand1" class="idref" href="#wand1"><span class="id" title="definition">wand1</span></a> : <a class="idref" href="bedrock.lang.cpp.logic.mpred.html#LC.mpred"><span class="id" title="definition">mpred</span></a> := <a class="idref" href="bedrock.noimport.doc.cpp.logic.html#with_Sigma.pl"><span class="id" title="variable">pl</span></a> <a class="idref" href="bedrock.lang.bi.prelude.html#1ceed28b6e47de516f82862d053216fa"><span class="id" title="notation">-*</span></a> <a class="idref" href="bedrock.noimport.doc.cpp.logic.html#with_Sigma.pr"><span class="id" title="variable">pr</span></a>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+The main reasoning rule for this construct is the following, which says that once you separately get the missing piece, you get the whole thing back.:
+
+</div>
+<div class="code">
+
+<br/>
+<span class="id" title="keyword">Check</span> @<a class="idref" href="https://plv.mpi-sws.org/coqdoc/iris//iris.bi.derived_laws.html#bi.wand_elim_r"><span class="id" title="lemma">bi.wand_elim_r</span></a> <a class="idref" href="bedrock.lang.cpp.logic.mpred.html#LC.mpredI"><span class="id" title="definition">mpredI</span></a>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<a id="lab21"></a><h1 class="section">Pure Assertions</h1>
+
+
+<div class="paragraph"> </div>
+
+
+<div class="paragraph"> </div>
+
+Some assertions are pure in the sense that they
+are not asserting anything about the current state
+of memory or devices. Examples:
+
+</div>
+<div class="code">
+
+<br/>
+<span class="id" title="keyword">Example</span> <a id="pure1" class="idref" href="#pure1"><span class="id" title="definition">pure1</span></a> : <span class="id" title="keyword">Prop</span> := 1<a class="idref" href="http://coq.inria.fr/distrib/V8.13.2/stdlib//Coq.Init.Logic.html#6cd0f7b28b6092304087c7049437bb1a"><span class="id" title="notation">=</span></a>1.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+the following is a false assertion, but a valid assertion nevertheless 
+</div>
+<div class="code">
+<span class="id" title="keyword">Example</span> <a id="pure2" class="idref" href="#pure2"><span class="id" title="definition">pure2</span></a> : <span class="id" title="keyword">Prop</span> := 1<a class="idref" href="http://coq.inria.fr/distrib/V8.13.2/stdlib//Coq.Init.Logic.html#6cd0f7b28b6092304087c7049437bb1a"><span class="id" title="notation">=</span></a>2.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+In Coq, pure assertions have type <span class="inlinecode"><span class="id" title="keyword">Prop</span></span>. However, in function specs, pre and post conditions have type <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.logic.mpred.html#CPP_LOGIC_CLASS_MIXIN.mpred"><span class="id" title="definition">mpred</span></a></span>. To convert an <span class="inlinecode"><span class="id" title="keyword">Prop</span></span> to an <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.logic.mpred.html#CPP_LOGIC_CLASS_MIXIN.mpred"><span class="id" title="definition">mpred</span></a></span>, we put them inside <span class="inlinecode">|</span> <span class="inlinecode"><span class="id" title="var">_</span></span> <span class="inlinecode">|</span> 
+</div>
+<div class="code">
+
+<br/>
+<span class="id" title="keyword">Definition</span> <a id="pureMpred" class="idref" href="#pureMpred"><span class="id" title="definition">pureMpred</span></a> : <a class="idref" href="bedrock.lang.cpp.logic.mpred.html#LC.mpred"><span class="id" title="definition">mpred</span></a> := <a class="idref" href="bedrock.lang.bi.only_provable.html#d95ff2fe2904cc1067c71e0d017740c6"><span class="id" title="notation">[|</span></a> 1<a class="idref" href="http://coq.inria.fr/distrib/V8.13.2/stdlib//Coq.Init.Logic.html#6cd0f7b28b6092304087c7049437bb1a"><span class="id" title="notation">=</span></a>1 <a class="idref" href="bedrock.lang.bi.only_provable.html#d95ff2fe2904cc1067c71e0d017740c6"><span class="id" title="notation">|]</span></a>.<br/>
+
+<br/>
+<span class="comment">(*<br/>
+TO&nbsp;Add:<br/>
+<br/>
+Exists<br/>
+<br/>
+Forall<br/>
+<br/>
+Best&nbsp;practices:<br/>
+think&nbsp;about&nbsp;finiteness&nbsp;of&nbsp;words<br/>
+pattern&nbsp;match&nbsp;on&nbsp;return&nbsp;value<br/>
+<br/>
+*)</span><br/>
+<span class="id" title="keyword">End</span> <a class="idref" href="bedrock.noimport.doc.cpp.logic.html#with_Sigma"><span class="id" title="section">with_Sigma</span></a>.<br/>
+</div>
+<!--
+-- Copyright (c) 2020 BedRock Systems, Inc.
+-- This software is distributed under the terms of the BedRock Open-Source License.
+-- See the LICENSE-BedRock file in the repository root for details.
+-->
+
+<!--
+-- SPDX-LIcense-Identifier:BSD-2-Clause
+-->
+</div>
+<div id="footer">
+  Generated by <a href="http://coq.inria.fr/">coqdoc</a> and improved with <a href="https://github.com/tebbi/coqdocjs">CoqdocJS</a>
+</div>
+</div>
+</body>
+
+</html>

@@ -1,0 +1,300 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  
+  <title>The BRiCk C++ Program Logic &mdash; BedRock BRiCk alpha documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/alectryon.css" type="text/css" />
+  <link rel="stylesheet" href="_static/tango_subtle.min.css" type="text/css" />
+  <link rel="stylesheet" href="_static/css/justify.css" type="text/css" />
+
+  
+  
+
+  
+  
+
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/doctools.js"></script>
+        <script src="_static/alectryon.js"></script>
+    
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Language Support" href="features.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="#" class="icon icon-home"> BedRock BRiCk
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.5.0
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption" role="heading"><span class="caption-text">Table of Contents</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="features.html">Language Support</a></li>
+<li class="toctree-l1"><a class="reference internal" href="evaluation.html">Evaluation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="undefined_behavior.html">Undefined behavior and optimizations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="pointers.html">Pointers and pointer provenance</a></li>
+<li class="toctree-l1"><a class="reference internal" href="object_layout.html">Object representation, layout and padding</a></li>
+<li class="toctree-l1"><a class="reference internal" href="machine.html">Assembly Interoperation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="documentation.html">Code Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="bibliography.html">Related work and bibliography</a></li>
+<li class="toctree-l1"><a class="reference internal" href="acknowledgements.html">Acknowledgements</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="#">BedRock BRiCk</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content style-external-links">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="#" class="icon icon-home"></a> &raquo;</li>
+        
+      <li>The BRiCk C++ Program Logic</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+          
+            <a href="_sources/index.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="the-brick-c-program-logic">
+<h1>The BRiCk C++ Program Logic<a class="headerlink" href="#the-brick-c-program-logic" title="Permalink to this headline">¶</a></h1>
+<p>BRiCk is a program logic for low-level, concurrent C++ built on the Iris separation logic.
+BRiCk’s goal is to develop a clear and compositional semantics of C++ programs, that can be used across many levels of abstraction.
+It is not meant to provide usable verification tooling to apply these principles to real C++ programs.</p>
+<div class="topic">
+<p class="topic-title">Disclaimer</p>
+<p>This code is experimental and not feature complete. If it breaks, you get to keep both pieces.</p>
+</div>
+<p>The BRiCk release contains two pieces:</p>
+<ul class="simple">
+<li><p>The cpp2v tool transforms C++ programs into a format that is digestible by the Coq proof assistant;</p></li>
+<li><p>The BRiCk program logic describes the meaning of C++ constructs in terms of reasoning principles that enable users to modularly derive the meaning of programs from their constituent pieces.</p></li>
+</ul>
+<p>BRiCk focuses on a tailored (but relatively large) portion of modern C++.
+Some high-level features (and non-features) include the following:</p>
+<ul class="simple">
+<li><p>BRiCk does not support some C++ features: e.g. member pointers, exceptions, goto, and virtual inheritance.</p></li>
+<li><p>BRiCk is currently limited to reasoning about templated code after it has been instantiated.</p></li>
+<li><p>Some features have restricted use: e.g. BRiCk’s support for switch statements does not support Duff’s device.</p></li>
+<li><p>BRiCk adopts (limited) extensions to the C++ standard, based on existing research, e.g. for multi-address spaces, assembly interoperability, integer-to-pointer casts, and pointer provenance.</p></li>
+</ul>
+<p>Our full feature set (as well as known issues) can be found on the <a class="reference internal" href="features.html#features"><span class="std std-ref">features</span></a> page.</p>
+<p>BRiCk is a work in progress. We welcome feedback, collaborations, and contributions.</p>
+<div class="toctree-wrapper compound">
+<p class="caption" role="heading"><span class="caption-text">Table of Contents</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="features.html">Language Support</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="features.html#limitations-of-project">Limitations of BRiCk</a></li>
+<li class="toctree-l2"><a class="reference internal" href="features.html#deviations-from-the-standard">Deviations from the Standard</a></li>
+<li class="toctree-l2"><a class="reference internal" href="features.html#extensions-to-the-standard">Extensions to the Standard</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="evaluation.html">Evaluation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="evaluation.html#expressions">Expressions</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="undefined_behavior.html">Undefined behavior and optimizations</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="undefined_behavior.html#a-minimal-example">A minimal example</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="pointers.html">Pointers and pointer provenance</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="pointers.html#objects-in-the-c-standard">Objects in the C++ standard</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pointers.html#pointers-pointer-values-and-objects">Pointers, pointer values and objects</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pointers.html#pointer-provenance-in-project">Pointer provenance in BRiCk</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pointers.html#assumptions-beyond-the-standard">Assumptions beyond the standard</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pointers.html#further-readings">Further readings</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="object_layout.html">Object representation, layout and padding</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="object_layout.html#representing-values">Representing Values</a></li>
+<li class="toctree-l2"><a class="reference internal" href="object_layout.html#reasoning-about-the-layout-of-an-array-in-memory">Reasoning about the layout of an array in memory</a></li>
+<li class="toctree-l2"><a class="reference internal" href="object_layout.html#reasoning-about-the-layout-of-a-struct-in-memory">Reasoning about the layout of a struct in memory</a></li>
+<li class="toctree-l2"><a class="reference internal" href="object_layout.html#reasoning-about-the-layout-of-a-union-in-memory">Reasoning about the layout of a union in memory</a></li>
+<li class="toctree-l2"><a class="reference internal" href="object_layout.html#implicit-destruction">Implicit Destruction</a></li>
+<li class="toctree-l2"><a class="reference internal" href="object_layout.html#axiomatizing-c-s-object-model">Axiomatizing C++’s Object Model</a></li>
+<li class="toctree-l2"><a class="reference internal" href="object_layout.html#appendix-c-standard-concepts">Appendix: C++ Standard Concepts</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="machine.html">Assembly Interoperation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="machine.html#compiler-correctness">Compiler Correctness</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="documentation.html">Code Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="bibliography.html">Related work and bibliography</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="bibliography.html#pointer-and-object-model">Pointer and object model</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="acknowledgements.html">Acknowledgements</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="acknowledgements.html#projects">Projects</a></li>
+<li class="toctree-l2"><a class="reference internal" href="acknowledgements.html#c-and-c-semantics">C++ (and C) Semantics</a></li>
+<li class="toctree-l2"><a class="reference internal" href="acknowledgements.html#separation-logic-iris">Separation Logic (Iris)</a></li>
+</ul>
+</li>
+</ul>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+        <a href="features.html" class="btn btn-neutral float-right" title="Language Support" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &#169; Copyright 2021 BedRock Systems.
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>
