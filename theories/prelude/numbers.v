@@ -27,6 +27,8 @@ https://gitlab.mpi-sws.org/iris/iris/-/blob/master/docs/proof_guide.md
 
 (** * Natural numbers [nat] *)
 
+#[global] Hint Resolve N.le_0_l | 0 : core.
+
 Instance Nat_add_assoc : Assoc (=) Nat.add := Nat.add_assoc.
 Instance Nat_add_comm : Comm (=) Nat.add := Nat.add_comm.
 Instance Nat_add_left_id : LeftId (=) 0%nat Nat.add := Nat.add_0_l.
