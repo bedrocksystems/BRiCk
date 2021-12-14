@@ -159,6 +159,12 @@ Proof. by rewrite TCLt_iff. Qed.
 Lemma TCLt_nat x y : (TCLt (x ?= y) <-> x < y)%nat.
 Proof. by rewrite TCLt_iff Nat.compare_lt_iff. Qed.
 
+(** Let TC resolution discharge side-conditions [n <> 0] (sometimes). *)
+Class NNonZero (n : N) : Prop := N_non_zero : (n ≠ 0)%N.
+#[global] Hint Mode NNonZero ! : typeclass_instances.
+#[global] Instance N_non_empty p : NNonZero (Npos p).
+Proof. done. Qed.
+
 (** Useful when rewriting. *)
 Lemma refl_True `(R : relation A) `{!Reflexive R} a : R a a ↔ True.
 Proof. done. Qed.
