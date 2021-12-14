@@ -76,6 +76,14 @@ Section set_seq.
     - by rewrite size_singleton IH.
     - rewrite disjoint_singleton_l elem_of_set_seq. lia.
   Qed.
+
+  Lemma elements_set_seq `{FinSet nat C} start count :
+    elements (C:=C) (set_seq start count) ≡ₚ seq start count.
+  Proof.
+    revert start. induction count as [|n IH]=>i; csimpl; first by rewrite elements_empty.
+    rewrite elements_union_singleton; first by rewrite IH.
+    generalize (set_seq_S_start_disjoint (C:=C) i n). by rewrite disjoint_singleton_l.
+  Qed.
 End set_seq.
 
 (** The [set_map] operation *)
