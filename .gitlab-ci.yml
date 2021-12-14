@@ -311,6 +311,32 @@ pages:
     # While there is likely a solution which allows us to continue using `make pages` directly,
     # we're taking the easy way out to avoid being nerd-sniped by CI.
     - cp -R doc/sphinx/_build/html public
+
+    # Note: in order to "push" up-to-date documentation to our public github repo /without/
+    # muddying [master] we maintain a separate /protected/ branch called [gh-pages]. This branch
+    # /will not/ track the actual contents of our repository; it is up for debate whether or not
+    # we remove everything besides [brick/doc/]. Instead, every successful publish of the
+    # /gitlab/ pages will also commit the new html artifacts to [brick/doc/@gh-pages] (replacing
+    # the existing ones). We configure the [gh-pages] branch to be automatically mirrored to
+    # github, and we configure github to use [gh-pages] as the branch for the public pages
+    # documentation.
+    #
+    # Note: taken from here <https://forum.gitlab.com/t/is-it-possible-to-commit-artifacts-into-the-git/22218/7>
+    - git clone https://${BRICK_BOT_USERNAME}:${BRICK_BOT_TOKEN}@gitlab.com/bedrocksystems/cpp2v-core.git # Clone repo
+    - git remote set-url origin https://${BRICK_BOT_USERNAME}:${BRICK_BOT_TOKEN}@gitlab.com/bedrocksystems/cpp2v-core.git # git configuration
+    # QUESTION (JH): Are these exposed within the (protected) [master] branch?
+    - git config --global user.email "${BRICK_BOT_EMAIL}" && git config --global user.name "${BRICK_BOT_USERNAME}"
+    - cd cpp2v-core
+    # switch to our protected branch 
+    - git checkout gh-pages
+    # remove the old documentation
+    - git rm -r docs/
+    # add the new documentation
+    - cp -R ../doc/sphinx/_build/html docs && git add -f docs/
+    - touch docs/.nojekyll
+    - git add docs/.nojekyll
+    - git commit -m "[github pages] BRiCk documentation created from $CI_COMMIT_SHORT_SHA" --allow-empty
+    - git push origin gh-pages
   rules:
     # Run on master
     - if: '$CI_COMMIT_BRANCH == "master"'
