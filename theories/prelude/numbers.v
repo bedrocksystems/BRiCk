@@ -6,6 +6,7 @@
  *)
 Require Export stdpp.numbers.
 Require Export bedrock.prelude.base.
+Require Import bedrock.prelude.reserved_notation.
 Require Import bedrock.prelude.bool.
 #[local] Set Printing Coercions.	(** Readability *)
 
@@ -25,6 +26,8 @@ https://gitlab.mpi-sws.org/iris/iris/-/blob/master/docs/proof_guide.md
 #[global] Coercion Z.of_N : N >-> Z.
 
 (** * Natural numbers [nat] *)
+
+#[global] Hint Resolve N.le_0_l | 0 : core.
 
 Instance Nat_add_assoc : Assoc (=) Nat.add := Nat.add_assoc.
 Instance Nat_add_comm : Comm (=) Nat.add := Nat.add_comm.
@@ -65,6 +68,10 @@ Instance Nat_shiftr_right_id : RightId (=) 0 Nat.shiftr := Nat.shiftr_0_r.
 (** * Natural numbers [N] *)
 
 Arguments N.ones _ : simpl never, assert.
+
+Infix "`lor`" := N.lor : N_scope.
+Infix "`land`" := N.land : N_scope.
+Infix "`ldiff`" := N.ldiff : N_scope.
 
 (** cf [Z_scope] notation in [stdpp.numbers] *)
 Infix "≫" := N.shiftr : N_scope.
@@ -108,6 +115,12 @@ Instance N_shiftr_right_id : RightId (=) 0%N N.shiftr := N.shiftr_0_r.
 
 Instance N_succ_inj : Inj (=) (=) N.succ.
 Proof. intros n1 n2. lia. Qed.
+
+(** Shorter and more memorable name. *)
+Lemma N_ext n m : (∀ i, N.testbit n i = N.testbit m i) -> n = m.
+Proof. apply N.bits_inj_iff. Qed.
+Lemma N_ext_iff n m : (∀ i, N.testbit n i = N.testbit m i) <-> n = m.
+Proof. apply N.bits_inj_iff. Qed.
 
 (** Misc cancellation lemmas for odd operators *)
 Lemma N_succ_pos_pred p : N.succ_pos (Pos.pred_N p) = p.
@@ -196,7 +209,14 @@ Definition pow2N := pow2N_aux.(unseal).
 Definition pow2N_eq : pow2N = _ := pow2N_aux.(seal_eq).
 #[global] Hint Opaque pow2N : typeclass_instances.
 
+Lemma pow2N_spec n : pow2N n = (2 ^ n)%N.
+Proof. by rewrite pow2N_eq. Qed.
+
 (** * Integers *)
+
+Infix "`lor`" := Z.lor : Z_scope.
+Infix "`land`" := Z.land : Z_scope.
+Infix "`ldiff`" := Z.ldiff : Z_scope.
 
 Arguments Z.ones _ : simpl never, assert.
 
@@ -242,6 +262,12 @@ Proof. intros n1 n2. lia. Qed.
 
 Instance Z_pred_inj : Inj (=) (=) Z.pred.
 Proof. intros n1 n2. lia. Qed.
+
+(** Shorter and more memorable name. *)
+Lemma Z_ext n m : (∀ i, Z.testbit n i = Z.testbit m i) -> n = m.
+Proof. apply Z.bits_inj_iff. Qed.
+Lemma Z_ext_iff n m : (∀ i, Z.testbit n i = Z.testbit m i) <-> n = m.
+Proof. apply Z.bits_inj_iff. Qed.
 
 (* Z.max and other operations *)
 Lemma Z_max_add_distr_l (a b c : Z) :

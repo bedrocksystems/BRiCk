@@ -26,6 +26,10 @@
 Reserved Infix "<<" (at level 35).	(** cf [≪] *)
 Reserved Infix ">>" (at level 35).	(** cf [≫] *)
 *)
+
+Reserved Infix "`lor`" (at level 50, left associativity).
+Reserved Infix "`land`" (at level 40, left associativity).
+Reserved Infix "`ldiff`" (at level 40, left associativity).
 Reserved Infix "\" (at level 40, left associativity).	(** cf [∖] *)
 
 (** ** Iris big ops *)
