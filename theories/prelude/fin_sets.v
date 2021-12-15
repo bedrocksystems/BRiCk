@@ -41,6 +41,9 @@ Section finset.
   Lemma set_elem_of_bool_decide x X :
     x ∈ X <-> bool_decide (x ∈ elements X) = true.
   Proof. by rewrite -elem_of_elements bool_decide_eq_true. Qed.
+  Lemma not_set_elem_of_bool_decide x X :
+    x ∉ X <-> bool_decide (x ∈ elements X) = false.
+  Proof. by rewrite set_elem_of_bool_decide; case_bool_decide. Qed.
 
   (* Temporarily imported from new upstream stdpp START. Drop at the next bump *)
   Lemma list_to_set_elements X : list_to_set (elements X) ≡ X.
