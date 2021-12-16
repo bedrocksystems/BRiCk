@@ -208,7 +208,7 @@ Module Type Expr__newdelete.
                                    address (see [provides_storage_same_address]) *)
                                    provides_storage
                                      (storage_ptr .[Tint W8 Unsigned ! sz'])
-                                     obj_ptr aty -*
+                                     obj_ptr array_ty -*
                                    match oinit with
                                    | None => (* default_initialize the memory *)
                                      default_initialize array_ty obj_ptr
