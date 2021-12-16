@@ -112,7 +112,7 @@ Module Type CPP_LOGIC
     (** Formalizes the notion of "provides storage",
     http://eel.is/c++draft/intro.object#def:provides_storage *)
     Parameter provides_storage :
-      forall (storage : ptr) (object : ptr) (storage_type : type), mpred.
+      forall (storage : ptr) (object : ptr) (object_type : type), mpred.
 
     Axiom provides_storage_timeless :
       forall storage_ptr obj_ptr ty,
