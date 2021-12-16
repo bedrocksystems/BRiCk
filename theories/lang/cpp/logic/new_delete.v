@@ -306,14 +306,13 @@ Module Type Expr__newdelete.
                (* /---- Calling destructor with object pointer
                   v     Note: virtual dispatch is not allowed for [delete[]] *)
                delete_val false array_ty obj_ptr
-                 (* Note: [delete_val] guarantees that [ty = Tarray destroyed_type array_size] *)
-                 (fun this' ty =>
+                 (fun this' _ (* [= array_ty], thanks to [delete_val] because arrays do not support virtual destruction. *) =>
                     Exists storage_ptr (sz sz' : N),
-                      [| size_of ty = Some sz |] **
+                      [| size_of array_ty = Some sz |] **
                       (* v---- Token for converting obj memory to storage memory *)
                       provides_storage
                         (storage_ptr .[Tint W8 Unsigned ! sz'])
-                        this' ty **
+                        this' array_ty **
                       (* Transfer memory to underlying storage pointer; unlike in
                          [end_provides_storage], this memory was pre-destructed by
                          [delete_val]. *)
