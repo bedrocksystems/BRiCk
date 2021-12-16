@@ -287,7 +287,7 @@ Module Type Expr__newdelete.
         |-- wp_operand (Edelete false (Some delete_fn) e destroyed_type ty) Q.
 
         (* NOTE: [destroyed_type] will refer to the /element/ of the array *)
-        Axiom wp_operand_array_delete : forall delete_fn e ty carrier_type array_size Q,
+        Axiom wp_operand_array_delete : forall delete_fn e ty destroyed_type array_size Q,
           (* call the destructor on the object, and then call delete_fn *)
           wp_operand e (fun v free =>
              Exists obj_ptr, [| v = Vptr obj_ptr |] **
@@ -299,7 +299,7 @@ Module Type Expr__newdelete.
                         (v :: nil) (fun _ => Q Vvoid free))
                ∧ Q Vvoid free
              else (
-               let array_ty := Tarray carrier_type array_size in
+               let array_ty := Tarray destroyed_type array_size in
                (* /---- Token for distinguishing between array and
                   v     non-array allocations *)
                obj_ptr |-> new_tokenR array_ty **
@@ -321,7 +321,7 @@ Module Type Expr__newdelete.
                        (* v---- Calling deallocator with storage pointer *)
                        fspec delete_fn.2 (Vptr $ _global delete_fn.1)
                              (Vptr storage_ptr :: nil) (fun v => Q Vvoid free)))))
-        |-- wp_operand (Edelete true (Some delete_fn) e carrier_type ty) Q.
+        |-- wp_operand (Edelete true (Some delete_fn) e destroyed_type ty) Q.
 
         Section NOTE_potentially_relaxing_array_delete.
           (* While (we currently think) it is UB to delete [auto p = new int[5][6]]
