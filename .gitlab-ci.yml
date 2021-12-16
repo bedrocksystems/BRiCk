@@ -335,8 +335,9 @@ pages:
     - cp -R ../doc/sphinx/_build/html docs && git add -f docs/
     - touch docs/.nojekyll
     - git add docs/.nojekyll
-    - git commit -m "[github pages] BRiCk documentation created from $CI_COMMIT_SHORT_SHA" --allow-empty
-    - git push origin gh-pages
+    - git diff-index --quiet HEAD ||
+      ( git commit -m "[github pages] BRiCk documentation created from $CI_COMMIT_SHORT_SHA" ;
+        git push origin gh-pages )
   rules:
     # Run on master
     - if: '$CI_COMMIT_BRANCH == "master"'
