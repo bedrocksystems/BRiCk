@@ -320,6 +320,7 @@ Module Type Expr__newdelete.
                        (* v---- Calling deallocator with storage pointer *)
                        fspec delete_fn.2 (Vptr $ _global delete_fn.1)
                              (Vptr storage_ptr :: nil) (fun v => Q Vvoid free)))))
+        (* TODO: drop [ty] from the AST, it's always void. *)
         |-- wp_operand (Edelete true (Some delete_fn) e destroyed_type ty) Q.
 
         Section NOTE_potentially_relaxing_array_delete.
