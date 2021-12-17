@@ -256,7 +256,10 @@ Module Type Expr__newdelete.
            NOTE: [Edelete]'s first argument is [true] iff the expression corresponds to
            an array-delete ([delete[]]).
          *)
-        Axiom wp_operand_delete : forall delete_fn e ty destroyed_type Q,
+        Axiom wp_operand_delete :
+          forall delete_fn e ty destroyed_type Q
+            (dfty := normalize_type delete_fn.2)
+            (_ : arg_types dfty = Some [Tptr destroyed_type]),
           (* call the destructor on the object, and then call delete_fn *)
           wp_operand e (fun v free =>
              Exists obj_ptr, [| v = Vptr obj_ptr |] **
@@ -264,7 +267,7 @@ Module Type Expr__newdelete.
              then
                (* this conjunction justifies the compiler calling the delete function
                   or not calling it. *)
-                 (fspec delete_fn.2 (Vptr $ _global delete_fn.1)
+                 (fspec dfty (Vptr $ _global delete_fn.1)
                         (v :: nil) (fun _ => Q Vvoid free))
                ∧ Q Vvoid free
              else (
@@ -282,12 +285,15 @@ Module Type Expr__newdelete.
                          [delete_val]. *)
                       (storage_ptr |-> blockR sz 1 -*
                        (* v---- Calling deallocator with storage pointer *)
-                       fspec delete_fn.2 (Vptr $ _global delete_fn.1)
+                       fspec dfty (Vptr $ _global delete_fn.1)
                              (Vptr storage_ptr :: nil) (fun _ => Q Vvoid free)))))
         |-- wp_operand (Edelete false (Some delete_fn) e destroyed_type ty) Q.
 
         (* NOTE: [destroyed_type] will refer to the /element/ of the array *)
-        Axiom wp_operand_array_delete : forall delete_fn e ty destroyed_type array_size Q,
+        Axiom wp_operand_array_delete :
+          forall delete_fn e ty destroyed_type array_size Q
+            (dfty := normalize_type delete_fn.2)
+            (_ : arg_types dfty = Some [Tptr destroyed_type]),
           (* call the destructor on the object, and then call delete_fn *)
           wp_operand e (fun v free =>
              Exists obj_ptr, [| v = Vptr obj_ptr |] **
@@ -295,7 +301,7 @@ Module Type Expr__newdelete.
              then
                (* this conjunction justifies the compiler calling the delete function
                   or not calling it. *)
-                 (fspec delete_fn.2 (Vptr $ _global delete_fn.1)
+                 (fspec dfty (Vptr $ _global delete_fn.1)
                         (v :: nil) (fun _ => Q Vvoid free))
                ∧ Q Vvoid free
              else (
@@ -318,7 +324,7 @@ Module Type Expr__newdelete.
                          [delete_val]. *)
                       (storage_ptr |-> blockR (sz' + sz) 1 -*
                        (* v---- Calling deallocator with storage pointer *)
-                       fspec delete_fn.2 (Vptr $ _global delete_fn.1)
+                       fspec dfty (Vptr $ _global delete_fn.1)
                              (Vptr storage_ptr :: nil) (fun v => Q Vvoid free)))))
         (* TODO: drop [ty] from the AST, it's always void. *)
         |-- wp_operand (Edelete true (Some delete_fn) e destroyed_type ty) Q.
