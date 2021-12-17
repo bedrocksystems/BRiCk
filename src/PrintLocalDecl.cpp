@@ -52,6 +52,7 @@ public:
             print.ctor("Dinit");
             print.output() << fmt::BOOL(thread_safe) << fmt::nbsp;
             cprint.printObjName(decl, print, false);
+            print.output() << fmt::nbsp;
         } else {
             print.ctor("Dvar")
                 << "\"" << decl->getNameAsString() << "\"" << fmt::nbsp;
