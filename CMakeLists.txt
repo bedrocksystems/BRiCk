@@ -52,31 +52,58 @@ ENDIF(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/.git)
 
 add_definitions( -DGIT_VERSION="${GIT_VERSION}")
 
-add_llvm_library(tocoq
-  STATIC
-  src/Version.cpp
-  src/PrintExpr.cpp
-  src/PrintStmt.cpp
-  src/PrintType.cpp
-  src/PrintDecl.cpp
-  src/PrintLocalDecl.cpp
-  src/ModuleBuilder.cpp
-  src/CommentScanner.cpp
-  src/SpecWriter.cpp
-  src/NotationWriter.cpp
-  src/Formatter.cpp
-  src/Logging.cpp
-  src/ClangPrinter.cpp
-  src/ToCoq.cpp
-)
+IF (${LLVM_VERSION} VERSION_LESS 11.0.0)
+  MESSAGE(STATUS "LLVM version " ${LLVM_VERSION} " less than 11, partial sources not permitted")
+
+  add_llvm_library(tocoq
+    STATIC
+    src/Version.cpp
+    src/PrintExpr.cpp
+    src/PrintStmt.cpp
+    src/PrintType.cpp
+    src/PrintDecl.cpp
+    src/PrintLocalDecl.cpp
+    src/ModuleBuilder.cpp
+    src/CommentScanner.cpp
+    src/SpecWriter.cpp
+    src/NotationWriter.cpp
+    src/Formatter.cpp
+    src/Logging.cpp
+    src/ClangPrinter.cpp
+    src/ToCoq.cpp
+  )
+
+  add_llvm_executable(cpp2v
+    src/cpp2v.cpp
+  )
+ELSE(${LLVM_VERSION} VERSION_LESS 11.0.0)
+  add_llvm_library(tocoq
+    STATIC
+    PARTIAL_SOURCES_INTENDED
+    src/Version.cpp
+    src/PrintExpr.cpp
+    src/PrintStmt.cpp
+    src/PrintType.cpp
+    src/PrintDecl.cpp
+    src/PrintLocalDecl.cpp
+    src/ModuleBuilder.cpp
+    src/CommentScanner.cpp
+    src/SpecWriter.cpp
+    src/NotationWriter.cpp
+    src/Formatter.cpp
+    src/Logging.cpp
+    src/ClangPrinter.cpp
+    src/ToCoq.cpp
+  )
+
+  add_llvm_executable(cpp2v
+    PARTIAL_SOURCES_INTENDED
+    src/cpp2v.cpp
+    )
+ENDIF(${LLVM_VERSION} VERSION_LESS 11.0.0)
 
 set_property(TARGET tocoq PROPERTY POSITION_INDEPENDENT_CODE ON)
 add_compile_options(-fno-rtti)
-
-add_llvm_executable(cpp2v
-  src/cpp2v.cpp
-)
-
 
 # TODO(franta) Older versions of LLVM are affected with the following
 # bug in LLVM:
