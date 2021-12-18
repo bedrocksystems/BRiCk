@@ -123,6 +123,9 @@ Module Type wrapper.
   Definition to_N : t -> N := unwrapN.
   Lemma of_to_N x : of_N (to_N x) = x.
   Proof. apply cancel_unwrapN. Qed.
+  Lemma to_of_N x : to_N (of_N x) = x.
+  Proof. apply (inj of_N). by rewrite of_to_N. Qed.
+
 End wrapper.
 
 Module Type succ_wrapper (Import W : wrapper).
