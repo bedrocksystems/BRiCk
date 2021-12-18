@@ -89,12 +89,16 @@ private:
 
     void printVarRef(const ValueDecl* decl, CoqPrinter& print,
                      ClangPrinter& cprint, OpaqueNames& on) {
+        auto check_static_local = [](const ValueDecl* decl) {
+            auto t = dyn_cast<VarDecl>(decl);
+            return t && t->isStaticLocal();
+        };
         auto t = on.find_anon(decl);
         if (t != -1) {
             print.ctor("Lname", false) << "\"$" << t << "\"";
             print.end_ctor();
         } else if (decl->getDeclContext()->isFunctionOrMethod() and
-                   not isa<FunctionDecl>(decl)) {
+                   not(isa<FunctionDecl>(decl) or check_static_local(decl))) {
             print.ctor("Lname", false) << fmt::nbsp;
             if (auto pd = dyn_cast<ParmVarDecl>(decl)) {
                 cprint.printParamName(pd, print);
