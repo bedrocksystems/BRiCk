@@ -199,8 +199,8 @@ Next Obligation. solve_finite_nodup. Qed.
 Next Obligation. solve_finite_total. Qed.
 >>
 *)
-Ltac solve_finite_nodup := repeat (constructor; first set_solver); constructor.
-Ltac solve_finite_total := intros []; set_solver.
+Ltac solve_finite_nodup := vm_decide.
+Ltac solve_finite_total := intros []; vm_decide.
 
 (*
 TODO: unclear how to best present this abstraction, without adding an
