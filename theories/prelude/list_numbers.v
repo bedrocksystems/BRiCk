@@ -34,7 +34,8 @@ Section seqN.
   Proof. by rewrite /seqN !N2Nat.inj_succ -cons_seq fmap_cons N2Nat.id. Qed.
 
   (* Lifts stdpp's [seq_S_end_app] aka stdlib's [seq_S] *)
-  Lemma seqN_S_end_app j n : seqN j (N.succ n) = seqN j n ++ [j + n].
+  Lemma seqN_S_end_app start len :
+    seqN start (N.succ len) = seqN start len ++ [start + len].
   Proof.
     rewrite /seqN !N2Nat.inj_succ seq_S_end_app fmap_app /=.
     by rewrite -N2Nat.inj_add N2Nat.id.
@@ -51,9 +52,7 @@ Section seqN.
   Proof. move->. apply seqN_S_end_app. Qed.
 
   Lemma seqN_lengthN len start : lengthN (seqN start len) = len.
-  Proof.
-    by rewrite /seqN fmap_lengthN /lengthN seq_length N2Nat.id.
-  Qed.
+  Proof. by rewrite /seqN fmap_lengthN /lengthN seq_length N2Nat.id. Qed.
 
   Lemma NoDup_seqN j n : NoDup (seqN j n).
   Proof. apply /NoDup_fmap_2 /NoDup_seq. Qed.
