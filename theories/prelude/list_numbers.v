@@ -29,9 +29,22 @@ Lemma length_lengthN {A} (xs : list A) :
 Proof. by rewrite /lengthN Nat2N.id. Qed.
 
 Section seqN.
+  Lemma seqN_0 n : seqN n 0 = [].
+  Proof. done. Qed.
+
   Lemma cons_seqN len start :
     start :: seqN (N.succ start) len = seqN start (N.succ len).
   Proof. by rewrite /seqN !N2Nat.inj_succ -cons_seq fmap_cons N2Nat.id. Qed.
+
+  (** More natural version of [cons_seqN]. *)
+  Lemma seqN_S_start start len :
+    seqN start (N.succ len) = start :: seqN (N.succ start) len.
+  Proof. apply symmetry, cons_seqN. Qed.
+
+  (** [seqN_S_start], but without matching against [N.succ]. *)
+  Lemma seqN_S_start' start len (Hpos : 0 < len) :
+    seqN start len = start :: seqN (N.succ start) (N.pred len).
+  Proof. by rewrite -{1}(N.succ_pred_pos len) // seqN_S_start. Qed.
 
   (* Lifts stdpp's [seq_S_end_app] aka stdlib's [seq_S] *)
   Lemma seqN_S_end_app start len :
@@ -41,15 +54,10 @@ Section seqN.
     by rewrite -N2Nat.inj_add N2Nat.id.
   Qed.
 
-  Lemma cons_seqN' [len start] sstart :
-    sstart = N.succ start ->
-    start :: seqN sstart len = seqN start (N.succ len).
-  Proof. move->. apply cons_seqN. Qed.
-
-  Lemma seqN_S_end_app' [w n] sn :
-    sn = N.succ n ->
-    seqN w sn = seqN w n ++ [w + n].
-  Proof. move->. apply seqN_S_end_app. Qed.
+  (** [seqN_S_end_app], but without matching against [N.succ]. *)
+  Lemma seqN_S_end_app' start len (Hpos : 0 < len) :
+    seqN start len = seqN start (N.pred len) ++ [start + N.pred len].
+  Proof. by rewrite -{1}(N.succ_pred_pos len) // seqN_S_end_app. Qed.
 
   Lemma seqN_lengthN len start : lengthN (seqN start len) = len.
   Proof. by rewrite /seqN fmap_lengthN /lengthN seq_length N2Nat.id. Qed.
