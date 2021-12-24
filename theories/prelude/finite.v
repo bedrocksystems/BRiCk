@@ -271,9 +271,7 @@ Module Type finite_type_mixin (Import F : finite_type).
 
   Lemma of_to_N x : of_N (to_N x) = Some x.
   Proof. apply decode_encode_N. Qed.
-
-  Lemma of_N_Some_to_N (n : N) (x : t) :
-    of_N n = Some x → to_N x = n.
+  Lemma to_of_N n x : of_N n = Some x → to_N x = n.
   Proof. apply decode_N_Some_encode_N. Qed.
 End finite_type_mixin.
 
@@ -296,10 +294,8 @@ Module Type bitmask_type_simple_mixin (Import F : finite_type) (Import FM : fini
 
   Lemma of_to_bit x : of_bit (to_bit x) = Some x.
   Proof. apply of_to_N. Qed.
-
-  Lemma of_bit_Some_to_bit (n : N) (x : t) :
-    of_bit n = Some x → to_bit x = n.
-  Proof. apply of_N_Some_to_N. Qed.
+  Lemma to_of_bit n x : of_bit n = Some x → to_bit x = n.
+  Proof. apply to_of_N. Qed.
 End bitmask_type_simple_mixin.
 
 Module Type finite_bitmask_type_mixin (Import F : finite_type) (Import B : bitmask_type F).
@@ -577,7 +573,7 @@ Module simple_finite_bits (BT : simple_finite_bitmask_type_intf).
     rewrite N_testbit_to_bits; apply bool_decide_iff.
     split; intros (r & Heq & Hin); exists r; subst.
     { split; [|done]. exact: BT.of_to_bit. }
-    by rewrite (BT.of_bit_Some_to_bit _ _ Heq).
+    by rewrite (BT.to_of_bit _ _ Heq).
   Qed.
 
   Lemma N_testbit_mask_top_to_bit i :
@@ -593,7 +589,7 @@ Module simple_finite_bits (BT : simple_finite_bitmask_type_intf).
     rewrite N_testbit_mask_top_to_bit /is_Some.
     apply bool_decide_iff; split; intros [r H]; exists r; subst.
     { exact: BT.of_to_bit. }
-    exact: BT.of_N_Some_to_N.
+    exact: BT.to_of_N.
   Qed.
 
 
