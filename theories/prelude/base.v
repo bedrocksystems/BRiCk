@@ -22,6 +22,9 @@ explosion. *)
 
 (** * Small extensions to [stdpp.base] *)
 
+(** Solve decidable goal [P] via [vm_compute] on [bool_decide P]. *)
+Ltac vm_decide := apply: bool_decide_eq_true_1; vm_compute; reflexivity.
+
 Lemma TCElemOf_iff {A} (x : A) (l : list A) : TCElemOf x l ↔ x ∈ l.
 Proof. split; induction 1; by constructor. Qed.
 
