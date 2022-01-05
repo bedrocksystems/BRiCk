@@ -310,8 +310,8 @@ Next Obligation. solve_finite_total. Qed.
 
 </div>
 <div class="code">
-<span class="id" title="keyword">Ltac</span> <span class="id" title="var">solve_finite_nodup</span> := <span class="id" title="tactic">repeat</span> (<span class="id" title="tactic">constructor</span>; <span class="id" title="tactic">first</span> <span class="id" title="var">set_solver</span>); <span class="id" title="tactic">constructor</span>.<br/>
-<span class="id" title="keyword">Ltac</span> <span class="id" title="var">solve_finite_total</span> := <span class="id" title="tactic">intros</span> []; <span class="id" title="var">set_solver</span>.<br/>
+<span class="id" title="keyword">Ltac</span> <span class="id" title="var">solve_finite_nodup</span> := <span class="id" title="var">vm_decide</span>.<br/>
+<span class="id" title="keyword">Ltac</span> <span class="id" title="var">solve_finite_total</span> := <span class="id" title="tactic">intros</span> []; <span class="id" title="var">vm_decide</span>.<br/>
 
 <br/>
 <span class="comment">(*<br/>
