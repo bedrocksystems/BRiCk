@@ -41,9 +41,9 @@ Fixpoint type_of (e : Expr) : type :=
   | Ethis t => t
   | Enull => Tnullptr
   | Einitlist _ _ t
-  | Eimplicit_init t
-  | Enew _ _ _ _ _ t
-  | Edelete _ _ _ _ t => t
+  | Eimplicit_init t => t
+  | Enew _ _ aty _ _ => Tptr aty
+  | Edelete _ _ _ _ => Tvoid
   | Eandclean e => type_of e
   | Ematerialize_temp e => type_of e
   | Ebuiltin _ t => t

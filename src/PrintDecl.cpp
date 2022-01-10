@@ -311,21 +311,20 @@ public:
         // cprint.printObjName(dtor, print) << fmt::nbsp;
 
         // trivially destructable
-        print.output() << fmt::BOOL(decl->hasTrivialDestructor());
+        print.output() << fmt::BOOL(decl->hasTrivialDestructor()) << fmt::nbsp;
 
-#if 0
+        // [operator delete] used to delete allocations of this type.
         if (auto dtor = decl->getDestructor()) {
-            print.output() << fmt::nbsp;
-            cprint.printObjName(dtor, print);
-            print.output() << fmt::line << fmt::BOOL(dtor->isTrivial());
+            if (auto del = dtor->getOperatorDelete()) {
+                print.some();
+                cprint.printObjName(dtor->getOperatorDelete(), print);
+                print.end_ctor();
+            } else {
+                print.none();
+            }
         } else {
-            logging::fatal()
-                << "Error: union '" << decl->getQualifiedNameAsString()
-                << "' is missing a destructor at "
-                << cprint.sourceRange(decl->getSourceRange()) << "\n";
-            logging::die();
+            print.none();
         }
-#endif
 
         print.output() << fmt::line << layout.getSize().getQuantity()
                        << fmt::nbsp << layout.getAlignment().getQuantity()
@@ -424,7 +423,20 @@ public:
         // cprint.printObjName(dtor, print) << fmt::nbsp;
 
         // trivially destructable
-        print.output() << fmt::BOOL(decl->hasTrivialDestructor());
+        print.output() << fmt::BOOL(decl->hasTrivialDestructor()) << fmt::nbsp;
+
+        // [operator delete] used to delete allocations of this type.
+        if (auto dtor = decl->getDestructor()) {
+            if (auto del = dtor->getOperatorDelete()) {
+                print.some();
+                cprint.printObjName(dtor->getOperatorDelete(), print);
+                print.end_ctor();
+            } else {
+                print.none();
+            }
+        } else {
+            print.none();
+        }
 
         // print the layout information
         print.output() << fmt::line;
