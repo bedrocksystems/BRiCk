@@ -243,7 +243,7 @@ Module Type Expr__newdelete.
 
            Hence, the destructor is passed a pointer to the object, and the
            deallocation function [delete] is passed a pointer to the
-           underlying storage.
+           underlying storage (of type [void *]).
 
            On deleting null:
            From the C++ standard (https://en.cppreference.com/w/cpp/language/delete)
@@ -259,7 +259,7 @@ Module Type Expr__newdelete.
         Axiom wp_operand_delete :
           forall delete_fn e ty destroyed_type Q
             (dfty := normalize_type delete_fn.2)
-            (_ : arg_types dfty = Some [Tptr destroyed_type]),
+            (_ : arg_types dfty = Some [Tptr Tvoid]),
           (* call the destructor on the object, and then call delete_fn *)
           wp_operand e (fun v free =>
              Exists obj_ptr, [| v = Vptr obj_ptr |] **
@@ -293,7 +293,7 @@ Module Type Expr__newdelete.
         Axiom wp_operand_array_delete :
           forall delete_fn e ty destroyed_type array_size Q
             (dfty := normalize_type delete_fn.2)
-            (_ : arg_types dfty = Some [Tptr destroyed_type]),
+            (_ : arg_types dfty = Some [Tptr Tvoid]),
           (* call the destructor on the object, and then call delete_fn *)
           wp_operand e (fun v free =>
              Exists obj_ptr, [| v = Vptr obj_ptr |] **
