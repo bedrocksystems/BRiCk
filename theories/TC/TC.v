@@ -112,10 +112,13 @@ Definition genLens (T : Type) : TemplateMonad unit :=
   end.
 
 (*
+[genLensK] can be used instead of [genLens] to avoid introducing
+some universe constraints.
+
 for an inductive X in file A.B.C,
 basename:kername := (MPfile ["C"; "B"; "A"], "X")%string.
 
-If the definition of F refers to any other inductive, they should not
+If the definition of X refers to any other inductive, they should not
 be in the current section(s).
  *)
 Definition genLensK (baseName : kername) : TemplateMonad unit :=
