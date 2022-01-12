@@ -43,72 +43,75 @@ Section destroy.
       { iIntros "X"; iApply "X". } }
   Qed.
 
-  (* [delete_val dispatch t this Q] destruct [this] (which is of type [t]).
-     The memory is returned to the C++ abstract machine.
+  (** [delete_val dispatch ty this Q] destruct [this] (which is of type [ty]).
+      The memory is returned to the C++ abstract machine. The continuation [Q]
+      is applied to the destroyed pointer [p] (it might not be equal to [this]
+      when virtual dispatch is used) and the type [ty] from which qualifiers
+      are erased.
 
-     The [dispatch] parameter determines whether the call is a *potentially*
-     virtual call. If [dispatch] is true *and the destructor of the class is
-     virtual*, then the call is a virtual call.
+      The [dispatch] parameter determines whether the call is a *potentially*
+      virtual call. If [dispatch] is true *and the destructor of the class is
+      virtual*, then the call is a virtual call.
 
-     NOTE in our semantics (unlike the standard) all objects are destroyed
-     via destructors. This is justified because the only objects
-     that do not have destructors according to the standard have
-     no-op destructors. Thus, we can model the "not having a destructor"
-     as an optimization. This choice makes the semantics more uniform.
-   *)
-  Fixpoint delete_val (dispatch : bool) (t : type) (this : ptr) (Q : ptr -> type -> mpred)
-           {struct t}
-  : mpred :=
-    match t with
-    | Tqualified _ t => delete_val dispatch t this Q
-    | Tnamed cls =>
+      NOTE in our semantics (unlike the standard) all objects are destroyed
+      via destructors. This is justified because the only objects that do not
+      have destructors according to the standard have no-op destructors. Thus,
+      we can model the "not having a destructor" as an optimization. This
+      choice makes the semantics more uniform. *)
+  Fixpoint delete_val (dispatch : bool) (ty : type) (this : ptr)
+                      (Q : ptr -> type -> mpred) {struct ty} : mpred :=
+    match ty with
+    | Tqualified _ ty => delete_val dispatch ty this Q
+    | Tnamed cls      =>
       match σ.(genv_tu) !! cls with
       | Some (Gstruct s) =>
-        (** when [dispatch:=true], we should use virtual dispatch
-            to invoke the destructor.
-         *)
-        if dispatch && has_virtual_dtor s then
+        match dispatch && has_virtual_dtor s with
+        | true =>
+          (* In this case, use virtual dispatch to invoke the destructor. *)
           resolve_dtor cls this (fun fimpl impl_class this' =>
-            let ty := Tfunction Tvoid nil in
-            |> mspec σ.(genv_tu).(globals) (Tnamed impl_class) ty (Vptr fimpl) (Vptr this' :: nil) (fun _ =>
-                     this' |-> tblockR (Tnamed impl_class) 1 ** Q this' (Tnamed impl_class)))
-        else
+            let r_ty := Tnamed impl_class in
+            |> mspec σ.(genv_tu).(globals) r_ty (Tfunction Tvoid nil)
+                     (Vptr fimpl) (Vptr this' :: nil)
+                     (fun _ => this' |-> tblockR r_ty 1 ** Q this' r_ty)
+          )
+        | _    =>
           (* NOTE the setup with explicit destructors (even when those destructors are trivial)
                   abstracts away some of the complexities of the underlying C++ semantics that
                   the semantics itself seems less than clear about. [CITATION NEEDED]
 
-             TODO let's find some justification in the standard.
-           *)
+             TODO let's find some justification in the standard. *)
           (* In the current implementation, we generate destructor even when they are implicit
              to make the framework a bit more uniform (all objects have destructors) and allow
              for direct desructor calls, e.g. [c.~C()], which are encoded as
              [Emember_call ... "~C" ..] *)
-          (let dtor := s.(s_dtor) in
-           let ty := Tfunction Tvoid nil in (** NOTE this implicitly requires all destructors to have C calling convention *)
-           |> mspec σ.(genv_tu).(globals) (Tnamed cls) ty (Vptr $ _global s.(s_dtor)) (Vptr this :: nil) (fun _ =>
-                    this |-> tblockR (Tnamed cls) 1 ** Q this t))
-
-      | Some (Gunion u) =>
-          (* unions can not have [virtual] destructors, so we directly invoke
-             the destructor.
-           *)
-          (let dtor := u.(u_dtor) in
-           let ty := Tfunction Tvoid nil in
-           |> mspec σ.(genv_tu).(globals) (Tnamed cls) ty (Vptr $ _global u.(u_dtor)) (Vptr this :: nil) (fun _ =>
-                    this |-> tblockR (Tnamed cls) 1 ** Q this t))
-      | _ => False
+          (* NOTE using [Tfunction Tvoid nil] implicitly requires all destructors
+             to have C calling convention. *)
+          |> mspec σ.(genv_tu).(globals) ty (Tfunction Tvoid nil)
+                   (Vptr $ _global s.(s_dtor)) (Vptr this :: nil)
+                   (fun _ => this |-> tblockR ty 1 ** Q this ty)
+        end
+      | Some (Gunion u)  =>
+        (* Unions cannot have [virtual] destructors: we directly invoke the destructor. *)
+        |> mspec σ.(genv_tu).(globals) ty (Tfunction Tvoid nil)
+                 (Vptr $ _global u.(u_dtor)) (Vptr this :: nil)
+                 (fun _ => this |-> tblockR ty 1 ** Q this ty)
+      | _                => False
       end
-    | Tarray ety sz =>
-      (* NOTE when destroying an array, elements of the array are destroyed with non-virtual dispatch. *)
+    | Tarray ety sz   =>
+      (* NOTE array elements are destroyed with non-virtual dispatch. *)
+      (* TODO replace [fold_right ... rev] by [fold_left]? *)
       fold_right (fun i Q =>
-                    valid_ptr (this .[ ety ! Z.of_nat i ]) **
-                    delete_val false ety (this .[ ety ! Z.of_nat i ]) (fun _ _ => Q))
-                 (Q this t) (List.rev (seq 0 (N.to_nat sz)))
-    | Trv_ref ty
-    | Tref ty =>
-      (* |={↑pred_ns}=> *) this |-> anyR (Tref $ erase_qualifiers ty) 1 ** Q this t
-    | _ =>
-      (* |={↑pred_ns}=> *) this |-> anyR (erase_qualifiers t) 1 ** Q this t
+        let p := this .[ erase_qualifiers ety ! Z.of_nat i ] in
+        valid_ptr p ** delete_val false ety p (fun _ _ => Q)
+      ) (Q this (erase_qualifiers ty)) (rev (seq 0 (N.to_nat sz)))
+    | Tref r_ty
+    | Trv_ref r_ty    =>
+      (* NOTE rvalue references [Trv_ref] are represented as references [Tref]. *)
+      this |-> anyR (Tref $ erase_qualifiers r_ty) 1 **
+      Q this (erase_qualifiers ty)
+    | ty              =>
+      this |-> anyR (erase_qualifiers ty) 1 **
+      Q this (erase_qualifiers ty)
     end%I.
 
   Lemma delete_val_frame dispatch : forall ty this Q Q',
