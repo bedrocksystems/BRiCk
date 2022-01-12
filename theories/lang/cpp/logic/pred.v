@@ -117,10 +117,13 @@ Module Type CPP_LOGIC
     Axiom provides_storage_persistent :
       forall storage_ptr obj_ptr ty,
       Persistent (provides_storage storage_ptr obj_ptr ty).
+    Axiom provides_storage_affine :
+      forall storage_ptr obj_ptr ty,
+      Affine (provides_storage storage_ptr obj_ptr ty).
     Axiom provides_storage_timeless :
       forall storage_ptr obj_ptr ty,
       Timeless (provides_storage storage_ptr obj_ptr ty).
-    #[global] Existing Instances provides_storage_persistent provides_storage_timeless.
+    #[global] Existing Instances provides_storage_persistent provides_storage_affine provides_storage_timeless.
 
     (**
     Typed points-to predicate. Fact [tptsto t q p v] asserts the following things:

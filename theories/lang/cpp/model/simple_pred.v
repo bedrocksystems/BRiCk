@@ -288,6 +288,8 @@ Module SimpleCPP.
       [| same_address storage_ptr obj_ptr |] ** valid_ptr storage_ptr ** valid_ptr obj_ptr.
     Global Instance provides_storage_persistent storage_ptr obj_ptr ty :
       Persistent (provides_storage storage_ptr obj_ptr ty) := _.
+    Global Instance provides_storage_affine storage_ptr obj_ptr ty :
+      Affine (provides_storage storage_ptr obj_ptr ty) := _.
     Global Instance provides_storage_timeless storage_ptr obj_ptr ty :
       Timeless (provides_storage storage_ptr obj_ptr ty) := _.
     Global Instance provides_storage_same_address storage_ptr obj_ptr ty :
