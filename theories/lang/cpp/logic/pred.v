@@ -112,12 +112,18 @@ Module Type CPP_LOGIC
     (** Formalizes the notion of "provides storage",
     http://eel.is/c++draft/intro.object#def:provides_storage *)
     Parameter provides_storage :
-      forall (storage : ptr) (object : ptr) (storage_type : type), mpred.
+      forall (storage : ptr) (object : ptr) (object_type : type), mpred.
 
+    Axiom provides_storage_persistent :
+      forall storage_ptr obj_ptr ty,
+      Persistent (provides_storage storage_ptr obj_ptr ty).
+    Axiom provides_storage_affine :
+      forall storage_ptr obj_ptr ty,
+      Affine (provides_storage storage_ptr obj_ptr ty).
     Axiom provides_storage_timeless :
       forall storage_ptr obj_ptr ty,
       Timeless (provides_storage storage_ptr obj_ptr ty).
-    #[global] Existing Instance provides_storage_timeless.
+    #[global] Existing Instances provides_storage_persistent provides_storage_affine provides_storage_timeless.
 
     (**
     Typed points-to predicate. Fact [tptsto t q p v] asserts the following things:

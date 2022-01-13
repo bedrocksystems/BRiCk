@@ -208,7 +208,7 @@ Module Type Expr__newdelete.
                                    address (see [provides_storage_same_address]) *)
                                    provides_storage
                                      (storage_ptr .[Tint W8 Unsigned ! sz'])
-                                     obj_ptr aty -*
+                                     obj_ptr array_ty -*
                                    match oinit with
                                    | None => (* default_initialize the memory *)
                                      default_initialize array_ty obj_ptr
@@ -243,7 +243,7 @@ Module Type Expr__newdelete.
 
            Hence, the destructor is passed a pointer to the object, and the
            deallocation function [delete] is passed a pointer to the
-           underlying storage.
+           underlying storage (of type [void *]).
 
            On deleting null:
            From the C++ standard (https://en.cppreference.com/w/cpp/language/delete)
@@ -256,7 +256,10 @@ Module Type Expr__newdelete.
            NOTE: [Edelete]'s first argument is [true] iff the expression corresponds to
            an array-delete ([delete[]]).
          *)
-        Axiom wp_operand_delete : forall delete_fn e ty destroyed_type Q,
+        Axiom wp_operand_delete :
+          forall delete_fn e ty destroyed_type Q
+            (dfty := normalize_type delete_fn.2)
+            (_ : arg_types dfty = Some [Tptr Tvoid]),
           (* call the destructor on the object, and then call delete_fn *)
           wp_operand e (fun v free =>
              Exists obj_ptr, [| v = Vptr obj_ptr |] **
@@ -264,7 +267,7 @@ Module Type Expr__newdelete.
              then
                (* this conjunction justifies the compiler calling the delete function
                   or not calling it. *)
-                 (fspec delete_fn.2 (Vptr $ _global delete_fn.1)
+                 (fspec dfty (Vptr $ _global delete_fn.1)
                         (v :: nil) (fun _ => Q Vvoid free))
                ∧ Q Vvoid free
              else (
@@ -282,12 +285,15 @@ Module Type Expr__newdelete.
                          [delete_val]. *)
                       (storage_ptr |-> blockR sz 1 -*
                        (* v---- Calling deallocator with storage pointer *)
-                       fspec delete_fn.2 (Vptr $ _global delete_fn.1)
+                       fspec dfty (Vptr $ _global delete_fn.1)
                              (Vptr storage_ptr :: nil) (fun _ => Q Vvoid free)))))
         |-- wp_operand (Edelete false (Some delete_fn) e destroyed_type ty) Q.
 
         (* NOTE: [destroyed_type] will refer to the /element/ of the array *)
-        Axiom wp_operand_array_delete : forall delete_fn e ty carrier_type array_size Q,
+        Axiom wp_operand_array_delete :
+          forall delete_fn e ty destroyed_type array_size Q
+            (dfty := normalize_type delete_fn.2)
+            (_ : arg_types dfty = Some [Tptr Tvoid]),
           (* call the destructor on the object, and then call delete_fn *)
           wp_operand e (fun v free =>
              Exists obj_ptr, [| v = Vptr obj_ptr |] **
@@ -295,33 +301,33 @@ Module Type Expr__newdelete.
              then
                (* this conjunction justifies the compiler calling the delete function
                   or not calling it. *)
-                 (fspec delete_fn.2 (Vptr $ _global delete_fn.1)
+                 (fspec dfty (Vptr $ _global delete_fn.1)
                         (v :: nil) (fun _ => Q Vvoid free))
                ∧ Q Vvoid free
              else (
-               let array_ty := Tarray carrier_type array_size in
+               let array_ty := Tarray destroyed_type array_size in
                (* /---- Token for distinguishing between array and
                   v     non-array allocations *)
                obj_ptr |-> new_tokenR array_ty **
                (* /---- Calling destructor with object pointer
                   v     Note: virtual dispatch is not allowed for [delete[]] *)
                delete_val false array_ty obj_ptr
-                 (* Note: [delete_val] guarantees that [ty = Tarray destroyed_type array_size] *)
-                 (fun this' ty =>
+                 (fun this' _ (* [= array_ty], thanks to [delete_val] because arrays do not support virtual destruction. *) =>
                     Exists storage_ptr (sz sz' : N),
-                      [| size_of ty = Some sz |] **
+                      [| size_of array_ty = Some sz |] **
                       (* v---- Token for converting obj memory to storage memory *)
                       provides_storage
                         (storage_ptr .[Tint W8 Unsigned ! sz'])
-                        this' ty **
+                        this' array_ty **
                       (* Transfer memory to underlying storage pointer; unlike in
                          [end_provides_storage], this memory was pre-destructed by
                          [delete_val]. *)
                       (storage_ptr |-> blockR (sz' + sz) 1 -*
                        (* v---- Calling deallocator with storage pointer *)
-                       fspec delete_fn.2 (Vptr $ _global delete_fn.1)
+                       fspec dfty (Vptr $ _global delete_fn.1)
                              (Vptr storage_ptr :: nil) (fun v => Q Vvoid free)))))
-        |-- wp_operand (Edelete true (Some delete_fn) e carrier_type ty) Q.
+        (* TODO: drop [ty] from the AST, it's always void. *)
+        |-- wp_operand (Edelete true (Some delete_fn) e destroyed_type ty) Q.
 
         Section NOTE_potentially_relaxing_array_delete.
           (* While (we currently think) it is UB to delete [auto p = new int[5][6]]
