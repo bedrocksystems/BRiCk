@@ -579,7 +579,18 @@ Module Type Expr.
         match unptr ty with
         | Some ptype =>
           wp_operand e (fun v free => Exists va : N, [| v = Vint (Z.of_N va) |] **
-             (([| (0 < va)%N |] ** Exists p, pinned_ptr va p ** type_ptr (resolve:=resolve) ptype p ** Q (Vptr p) free) \\//
+             (([| (0 < va)%N |] **
+               Exists p,
+                 pinned_ptr va p **
+                 (* NOTE: In the future when we properly handle cv-qualifiers
+                    we will need to replace this with some existentially
+                    quantified [ptype'] which is less cv-qualified than
+                    [ptype].
+
+                    <https://eel.is/c++draft/conv.qual#note-3>
+                  *)
+                 type_ptr (resolve:=resolve) (erase_qualifiers ptype) p **
+                 Q (Vptr p) free) \\//
               ([| va = 0%N |] ** Q (Vptr nullptr) free)))
         | _ => False
         end
