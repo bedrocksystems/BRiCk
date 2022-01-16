@@ -13,6 +13,7 @@ From bedrock.lang.cpp.logic Require Export
      destroy
      call
      operator
+     new_delete
      expr
      stmt
      initializers
