@@ -89,6 +89,49 @@ Fixpoint drop_qualifiers (t : type) : type :=
   | _ => t
   end.
 
+Lemma drop_qualifiers_Tptr : forall [ty ty'],
+    drop_qualifiers ty = Tptr ty' -> erase_qualifiers ty = Tptr (erase_qualifiers ty').
+Proof. induction ty; simpl; intros; try congruence; eauto. Qed.
+Lemma drop_qualifiers_Tref : forall [ty ty'],
+    drop_qualifiers ty = Tref ty' -> erase_qualifiers ty = Tref (erase_qualifiers ty').
+Proof. induction ty; simpl; intros; try congruence; eauto. Qed.
+Lemma drop_qualifiers_Trv_ref : forall [ty ty'],
+    drop_qualifiers ty = Trv_ref ty' -> erase_qualifiers ty = Trv_ref (erase_qualifiers ty').
+Proof. induction ty; simpl; intros; try congruence; eauto. Qed.
+Lemma drop_qualifiers_Tmember_pointer : forall [ty cls ty'],
+    drop_qualifiers ty = Tmember_pointer cls ty' ->
+    erase_qualifiers ty = Tmember_pointer cls (erase_qualifiers ty').
+Proof. induction ty; simpl; intros; try congruence; eauto. Qed.
+Lemma drop_qualifiers_Tint : forall [ty sz sgn],
+    drop_qualifiers ty = Tint sz sgn -> erase_qualifiers ty = Tint sz sgn.
+Proof. induction ty; simpl; intros; try congruence; eauto. Qed.
+Lemma drop_qualifiers_Tfloat : forall [ty sz],
+    drop_qualifiers ty = Tfloat sz -> erase_qualifiers ty = Tfloat sz.
+Proof. induction ty; simpl; intros; try congruence; eauto. Qed.
+Lemma drop_qualifiers_Tbool : forall [ty],
+    drop_qualifiers ty = Tbool -> erase_qualifiers ty = Tbool.
+Proof. induction ty; simpl; intros; try congruence; eauto. Qed.
+Lemma drop_qualifiers_Tvoid : forall [ty],
+    drop_qualifiers ty = Tvoid -> erase_qualifiers ty = Tvoid.
+Proof. induction ty; simpl; intros; try congruence; eauto. Qed.
+Lemma drop_qualifiers_Tnullptr : forall [ty],
+    drop_qualifiers ty = Tnullptr -> erase_qualifiers ty = Tnullptr.
+Proof. induction ty; simpl; intros; try congruence; eauto. Qed.
+
+(** simplify instances where you have [drop_qualifiers ty = Txxx ..] for some [Txxx] *)
+Ltac simpl_drop_qualifiers :=
+  match goal with
+  | H : drop_qualifiers _ = _ |- _ =>
+    first [ rewrite (drop_qualifiers_Tbool H)
+          | rewrite (drop_qualifiers_Tfloat H)
+          | rewrite (drop_qualifiers_Tint H)
+          | rewrite (drop_qualifiers_Tmember_pointer H)
+          | rewrite (drop_qualifiers_Tnullptr H)
+          | rewrite (drop_qualifiers_Tvoid H)
+          | rewrite (drop_qualifiers_Tptr H) ]
+  end.
+
+
 (** [unptr t] returns the type of the object that a value of type [t] points to
     or [None] if [t] is not a pointer type.
  *)
