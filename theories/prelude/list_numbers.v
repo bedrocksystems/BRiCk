@@ -19,7 +19,8 @@ Definition lengthN {A} xs := N.of_nat (length (A := A) xs).
 Definition resizeN {A} n := resize (A := A) (N.to_nat n).
 Definition rotateN {A} n xs :=
   dropN (A := A) (n mod lengthN xs) xs ++ takeN (A := A) (n mod lengthN xs) xs.
-#[global] Instance lookupN {A}: Lookup N A (list A) := fun i xs => lookup (N.to_nat i) xs.
+#[global] Instance list_lookupN {A}: Lookup N A (list A) := fun i xs => lookup (N.to_nat i) xs.
+#[global] Notation lookupN := list_lookupN.
 
 
 Lemma fmap_lengthN {A B} (f : A → B) (l : list A) :
