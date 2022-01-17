@@ -45,6 +45,14 @@ In certain instances, |project|'s semantics deviates from the C++ standard.
 * Function call semantics are do not currently (precisely) follow the standard. We believe that this encoding is sound but are currently working on an approach that more closely tracks the standard text.
 * |project| uses `Tint sz sgn` to represent all integer types rather than the standard types :cpp:`char`, :cpp:`short`, :cpp:`int`, :cpp:`long`, :cpp:`long long`.
 
+Known Issues
+=============
+
+There are several known issues with the current |project| semantics, we are working ot support these.
+
+* The definition of `anyR` does not support aggreate types, but it should.
+* |project| semantics does not currently support flexible array members. These are not officially supported by the standard but are frequently used in C++ programs.
+
 Extensions to the Standard
 ===========================
 
