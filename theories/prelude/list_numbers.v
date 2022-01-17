@@ -1,4 +1,3 @@
-From stdpp Require Import propset option.
 From bedrock.prelude Require Import base.
 From bedrock.prelude Require Export list numbers.
 
