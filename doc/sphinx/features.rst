@@ -48,7 +48,7 @@ In certain instances, |project|'s semantics deviates from the C++ standard.
 Known Issues
 =============
 
-There are several known issues with the current |project| semantics, we are working ot support these.
+There are several known issues with the current |project| semantics; we are working to support these.
 
 * The definition of `anyR` does not support aggreate types, but it should.
 * |project| semantics does not currently support flexible array members. These are not officially supported by the standard but are frequently used in C++ programs.
