@@ -917,15 +917,14 @@ public:
                          OpaqueNames& li) {
         print.ctor("Enew");
         if (expr->getOperatorNew()) {
-            print.some();
             print.begin_tuple();
             cprint.printObjName(expr->getOperatorNew(), print);
             print.next_tuple();
             cprint.printQualType(expr->getOperatorNew()->getType(), print);
             print.end_tuple();
-            print.end_ctor();
         } else {
-            print.none();
+            logging::fatal() << "missing operator [new]\n";
+            logging::die();
         }
 
         print.list(expr->placement_arguments(), [&](auto print, auto arg) {
@@ -948,7 +947,7 @@ public:
             print.none();
         }
 
-        done(expr, print, cprint);
+        print.end_ctor();
     }
 
     // todo(gmm): duplicated
@@ -969,15 +968,14 @@ public:
         print.output() << fmt::BOOL(expr->isArrayForm()) << fmt::nbsp;
 
         if (expr->getOperatorDelete()) {
-            print.some();
             print.begin_tuple();
             cprint.printObjName(expr->getOperatorDelete(), print);
             print.next_tuple();
             cprint.printQualType(expr->getOperatorDelete()->getType(), print);
             print.end_tuple();
-            print.end_ctor();
         } else {
-            print.none();
+            logging::fatal() << "missing [delete] operator\n";
+            logging::die();
         }
         print.output() << fmt::nbsp;
 
@@ -987,9 +985,8 @@ public:
 
         cprint.printQualType(expr->getDestroyedType(), print);
 
-        print.output() << fmt::nbsp;
-
-        done(expr, print, cprint);
+        // no need to print the type information on [delete]
+        print.end_ctor();
     }
 
     void VisitExprWithCleanups(const ExprWithCleanups* expr, CoqPrinter& print,

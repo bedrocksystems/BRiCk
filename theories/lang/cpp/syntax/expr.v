@@ -192,11 +192,14 @@ Inductive Expr : Set :=
 | Enull
 | Einitlist (_ : list Expr) (_ : option Expr) (_ : type)
 
-| Enew (new_fn : option (obj_name * type)) (new_args : list Expr)
+| Enew (new_fn : obj_name * type) (new_args : list Expr)
        (alloc_ty : type)
-       (array_size : option Expr) (init : option Expr) (_ : type)
-| Edelete (is_array : bool) (delete_fn : option (obj_name * type)) (arg : Expr)
-          (deleted_type : type) (_ : type)
+       (array_size : option Expr) (init : option Expr) (* type = Tptr alloc_ty *)
+| Edelete (is_array : bool) (del_fn : obj_name * type)
+          (* When [deleted_type] is a class with a [virtual] destructor and the
+             most derived class has an [operator delete], [del_fn] will be
+             ignored. *)
+          (arg : Expr) (deleted_type : type) (* type = Tvoid *)
 
 | Eandclean (_ : Expr)
 | Ematerialize_temp (_ : Expr)

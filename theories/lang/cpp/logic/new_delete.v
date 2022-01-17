@@ -7,10 +7,11 @@
  * Semantics of [new] and [delete] expressions
  * (expressed in weakest pre-condition style)
  *)
+Require Import iris.proofmode.tactics.
 From bedrock.lang.cpp Require Import ast semantics.
 From bedrock.lang.cpp.logic Require Import
      pred path_pred heap_pred
-     destroy initializers
+     destroy initializers dispatch
      wp call.
 
 Require Import bedrock.lang.cpp.heap_notations.
@@ -112,7 +113,7 @@ Module Type Expr__newdelete.
          *)
         Axiom wp_operand_new :
           forall (oinit : option Expr)
-            new_fn new_args aty ty Q targs sz
+            new_fn new_args aty Q targs sz
             (nfty := normalize_type new_fn.2)
             (_ : arg_types nfty = Some (Tint sz Unsigned :: targs)),
             (** TODO this needs a side-condition requiring that [new] with no
@@ -153,11 +154,11 @@ Module Type Expr__newdelete.
                                                obj_ptr |-> new_tokenR aty -*
                                                Q (Vptr obj_ptr) (free' >*> free))
                                   end))))
-        |-- wp_operand (Enew (Some new_fn) new_args aty None oinit ty) Q.
+        |-- wp_operand (Enew new_fn new_args aty None oinit) Q.
 
         Axiom wp_operand_array_new :
           forall (array_size : Expr) (oinit : option Expr)
-            new_fn new_args aty ty Q targs sz
+            new_fn new_args aty Q targs sz
             (nfty := normalize_type new_fn.2)
             (_ : arg_types nfty = Some (Tint sz Unsigned :: targs)),
             (** TODO this needs a side-condition requiring that [new] with no
@@ -229,10 +230,75 @@ Module Type Expr__newdelete.
                                                       Q (Vptr obj_ptr)
                                                         (free'' >*> free' >*> free))
                                    end))))
-        |-- wp_operand (Enew (Some new_fn) new_args aty (Some array_size) oinit ty) Q.
+        |-- wp_operand (Enew new_fn new_args aty (Some array_size) oinit) Q.
       End new.
 
       Section delete.
+        (* [delete_val default ty p Q] is the weakest pre-condition of deleting [p] (of type [ty]).
+           In the case that [ty] has a custom [operator delete], that function will be called, otherwise
+           the [default] delete operator will be used.
+         *)
+        Definition delete_val (default : obj_name * type) (ty : type) (p : ptr) (Q : mpred) : mpred :=
+          let del_type := Tfunction Tvoid (Tptr Tvoid :: nil) in
+          let del '(fn, ty) := fspec ty (Vptr $ _global fn) (Vptr p :: nil) (fun _ => Q) in
+          match erase_qualifiers ty with
+          | Tnamed nm =>
+            match resolve.(genv_tu).(globals) !! nm with
+            | Some (Gstruct s) =>
+              del $ from_option (fun x => (x, del_type)) default s.(s_delete)
+            | Some (Gunion u) =>
+              del $ from_option (fun x => (x, del_type)) default u.(u_delete)
+            | _ => False
+            end
+          | _ => del default
+          end.
+
+        Lemma delete_val_frame : forall default ty p Q Q',
+            Q -* Q' |-- delete_val default ty p Q -* delete_val default ty p Q'.
+        Proof.
+          rewrite /delete_val; intros.
+          iIntros "X"; repeat case_match; eauto; try solve [ iApply fspec_frame; iIntros (?); eauto ].
+        Qed.
+
+        (** [resolve_dtor ty this Q] resolves the destructor for the object [this] (of type [ty]).
+            The continuation [Q] is passed the pointer to the most-derived-object of [this] and its type.
+         *)
+        Definition resolve_dtor (ty : type) (this : ptr) (Q : ptr -> type -> mpred) : mpred :=
+          match drop_qualifiers ty with
+          | Tqualified _ ty => False (* unreachable *)
+          | Tnamed cls      =>
+            match resolve.(genv_tu).(globals) !! cls with
+            | Some (Gstruct s) =>
+              if has_virtual_dtor s then
+                (* NOTE [has_virtual_dtor] could be derived from the vtable... *)
+                (* In this case, use virtual dispatch to invoke the destructor. *)
+                resolve_virtual this cls s.(s_dtor) (fun fimpl impl_class this' =>
+                   let r_ty := Tnamed impl_class in
+                   Q this' r_ty)
+              else
+                Q this (erase_qualifiers ty)
+            | Some (Gunion u)  =>
+              (* Unions cannot have [virtual] destructors: we directly invoke the destructor. *)
+              Q this (erase_qualifiers ty)
+            | _                => False
+            end
+          | Tarray ety sz   =>
+            False (* arrays can not be deleted with direct delete *)
+          | Tref r_ty
+          | Trv_ref r_ty    =>
+            False (* references can not be deleted, only destroyed *)
+          | ty              =>
+            Q this (erase_qualifiers ty)
+          end%I.
+
+        Lemma resolve_dtor_frame : forall ty p Q Q',
+            Forall p t, Q p t -* Q' p t |-- resolve_dtor ty p Q -* resolve_dtor ty p Q'.
+        Proof.
+          rewrite /resolve_dtor; intros.
+          iIntros "X"; repeat case_match; eauto; try solve [ iApply fspec_frame; iIntros (?); eauto ].
+          iApply resolve_virtual_frame. iIntros (???); iApply "X".
+        Qed.
+
         (* delete
 
            https://eel.is/c++draft/expr.delete
@@ -257,7 +323,7 @@ Module Type Expr__newdelete.
            an array-delete ([delete[]]).
          *)
         Axiom wp_operand_delete :
-          forall delete_fn e ty destroyed_type Q
+          forall delete_fn e destroyed_type Q
             (dfty := normalize_type delete_fn.2)
             (_ : arg_types dfty = Some [Tptr Tvoid]),
           (* call the destructor on the object, and then call delete_fn *)
@@ -270,28 +336,25 @@ Module Type Expr__newdelete.
                  (fspec dfty (Vptr $ _global delete_fn.1)
                         (v :: nil) (fun _ => Q Vvoid free))
                ∧ Q Vvoid free
-             else (
-               (* /---- Token for distinguishing between array and
-                  v     non-array allocations *)
-               obj_ptr |-> new_tokenR destroyed_type **
+             else
                (* v---- Calling destructor with object pointer *)
-               delete_val true destroyed_type obj_ptr
-                 (fun this' ty =>
-                    Exists storage_ptr sz, [| size_of ty = Some sz |] **
+               resolve_dtor destroyed_type obj_ptr (fun this' mdc_ty =>
+                    this' |-> new_tokenR mdc_ty **
+                    (destroy_val mdc_ty this' $
+                    Exists storage_ptr sz, [| size_of mdc_ty = Some sz |] **
                       (* v---- Token for converting obj memory to storage memory *)
-                      provides_storage storage_ptr this' ty **
+                      provides_storage storage_ptr this' mdc_ty **
                       (* Transfer memory to underlying storage pointer; unlike in
                          [end_provides_storage], this memory was pre-destructed by
                          [delete_val]. *)
                       (storage_ptr |-> blockR sz 1 -*
                        (* v---- Calling deallocator with storage pointer *)
-                       fspec dfty (Vptr $ _global delete_fn.1)
-                             (Vptr storage_ptr :: nil) (fun _ => Q Vvoid free)))))
-        |-- wp_operand (Edelete false (Some delete_fn) e destroyed_type ty) Q.
+                       delete_val delete_fn mdc_ty storage_ptr (Q Vvoid free)))))
+        |-- wp_operand (Edelete false delete_fn e destroyed_type) Q.
 
         (* NOTE: [destroyed_type] will refer to the /element/ of the array *)
         Axiom wp_operand_array_delete :
-          forall delete_fn e ty destroyed_type array_size Q
+          forall delete_fn e destroyed_type Q
             (dfty := normalize_type delete_fn.2)
             (_ : arg_types dfty = Some [Tptr Tvoid]),
           (* call the destructor on the object, and then call delete_fn *)
@@ -305,29 +368,30 @@ Module Type Expr__newdelete.
                         (v :: nil) (fun _ => Q Vvoid free))
                ∧ Q Vvoid free
              else (
+               Exists array_size,
                let array_ty := Tarray destroyed_type array_size in
                (* /---- Token for distinguishing between array and
                   v     non-array allocations *)
                obj_ptr |-> new_tokenR array_ty **
                (* /---- Calling destructor with object pointer
                   v     Note: virtual dispatch is not allowed for [delete[]] *)
-               delete_val false array_ty obj_ptr
-                 (fun this' _ (* [= array_ty], thanks to [delete_val] because arrays do not support virtual destruction. *) =>
+               destroy_val array_ty obj_ptr (
                     Exists storage_ptr (sz sz' : N),
                       [| size_of array_ty = Some sz |] **
                       (* v---- Token for converting obj memory to storage memory *)
                       provides_storage
                         (storage_ptr .[Tint W8 Unsigned ! sz'])
-                        this' array_ty **
+                        obj_ptr array_ty **
                       (* Transfer memory to underlying storage pointer; unlike in
                          [end_provides_storage], this memory was pre-destructed by
                          [delete_val]. *)
                       (storage_ptr |-> blockR (sz' + sz) 1 -*
-                       (* v---- Calling deallocator with storage pointer *)
+                       (* v---- Calling deallocator with storage pointer.
+                          Note: we rely on the AST to have correctly resolved this since the dispatch is statically known.
+                        *)
                        fspec dfty (Vptr $ _global delete_fn.1)
                              (Vptr storage_ptr :: nil) (fun v => Q Vvoid free)))))
-        (* TODO: drop [ty] from the AST, it's always void. *)
-        |-- wp_operand (Edelete true (Some delete_fn) e destroyed_type ty) Q.
+        |-- wp_operand (Edelete true delete_fn e destroyed_type) Q.
 
         Section NOTE_potentially_relaxing_array_delete.
           (* While (we currently think) it is UB to delete [auto p = new int[5][6]]

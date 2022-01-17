@@ -16,121 +16,76 @@ Require Import bedrock.lang.cpp.heap_notations.
 Section destroy.
   Context `{Σ : cpp_logic thread_info} {σ:genv}.
 
-  (** [resolve_dtor cls this Q] reduces to [Q dtor' this'] where [dtor'] is the
-      destructor to be called on [this'] which is used to destroy [this].
+  (* [wp_destructor ty dtor this Q] is the weakest pre-condition of invoking the destructor
+     [dtor] (which is the destructor for [ty] on [this].
    *)
-  Definition resolve_dtor (cls : globname) (this : ptr) (Q : forall (faddr : ptr) (cls_name : globname) (this_addr : ptr), mpred)
-    : mpred :=
-    match σ.(genv_tu) !! cls with
-    | Some (Gstruct s) =>
-      if has_virtual_dtor s then
-        resolve_virtual this cls s.(s_dtor) Q
-      else
-        Q (_global s.(s_dtor)) cls this
-    | Some (Gunion u) => Q (_global u.(u_dtor)) cls this
-    | _ => False
-    end%I.
+  #[local] Definition wp_destructor (ty : type) (dtor : ptr) (this : ptr) (Q : epred) : mpred :=
+    (* NOTE using [Tfunction Tvoid nil] implicitly requires all destructors
+       to have C calling convention. *)
+    mspec σ.(genv_tu).(globals) ty (Tfunction Tvoid nil)
+                                (Vptr dtor) (Vptr this :: nil)
+                                (fun _ => this |-> tblockR ty 1 ** Q).
 
-  Lemma resolve_dtor_frame : forall cls this Q Q',
-      Forall a b c, Q a b c -* Q' a b c |-- resolve_dtor cls this Q -* resolve_dtor cls this Q'.
-  Proof.
-    rewrite /resolve_dtor.
-    intros. case_match; eauto.
-    case_match; eauto.
-    { iIntros "X"; iApply "X". }
-    { case_match.
-      { iApply resolve_virtual_frame. }
-      { iIntros "X"; iApply "X". } }
-  Qed.
+(** [destroy_val ty this Q] destructs [this] (which has [ty] as its most specific type).
+      If [this] is an aggregate, we invoke [ty]'s destructor (leaving any virtual
+      lookup to the caller). The memory is returned to the C++ abstract machine and the 
+      continuation [Q] is invoked.
 
-  (** [delete_val dispatch ty this Q] destruct [this] (which is of type [ty]).
-      The memory is returned to the C++ abstract machine. The continuation [Q]
-      is applied to the destroyed pointer [p] (it might not be equal to [this]
-      when virtual dispatch is used) and the type [ty] from which qualifiers
-      are erased.
-
-      The [dispatch] parameter determines whether the call is a *potentially*
-      virtual call. If [dispatch] is true *and the destructor of the class is
-      virtual*, then the call is a virtual call.
-
-      NOTE in our semantics (unlike the standard) all objects are destroyed
+      NOTE in our semantics (unlike the standard) all aggregates are destroyed
       via destructors. This is justified because the only objects that do not
       have destructors according to the standard have no-op destructors. Thus,
       we can model the "not having a destructor" as an optimization. This
       choice makes the semantics more uniform. *)
-  Fixpoint delete_val (dispatch : bool) (ty : type) (this : ptr)
-                      (Q : ptr -> type -> mpred) {struct ty} : mpred :=
+  Fixpoint destroy_val (ty : type) (this : ptr) (Q : epred) {struct ty} : mpred :=
     match ty with
-    | Tqualified _ ty => delete_val dispatch ty this Q
+    | Tqualified _ ty => destroy_val ty this Q
     | Tnamed cls      =>
       match σ.(genv_tu) !! cls with
       | Some (Gstruct s) =>
-        match dispatch && has_virtual_dtor s with
-        | true =>
-          (* In this case, use virtual dispatch to invoke the destructor. *)
-          resolve_dtor cls this (fun fimpl impl_class this' =>
-            let r_ty := Tnamed impl_class in
-            |> mspec σ.(genv_tu).(globals) r_ty (Tfunction Tvoid nil)
-                     (Vptr fimpl) (Vptr this' :: nil)
-                     (fun _ => this' |-> tblockR r_ty 1 ** Q this' r_ty)
-          )
-        | _    =>
-          (* NOTE the setup with explicit destructors (even when those destructors are trivial)
+         (* NOTE the setup with explicit destructors (even when those destructors are trivial)
                   abstracts away some of the complexities of the underlying C++ semantics that
                   the semantics itself seems less than clear about. [CITATION NEEDED]
 
              TODO let's find some justification in the standard. *)
           (* In the current implementation, we generate destructor even when they are implicit
-             to make the framework a bit more uniform (all objects have destructors) and allow
-             for direct desructor calls, e.g. [c.~C()], which are encoded as
+             to make the framework a bit more uniform (all types have destructors) and allow
+             for direct destructor calls, e.g. [c.~C()], which are encoded as
              [Emember_call ... "~C" ..] *)
-          (* NOTE using [Tfunction Tvoid nil] implicitly requires all destructors
-             to have C calling convention. *)
-          |> mspec σ.(genv_tu).(globals) ty (Tfunction Tvoid nil)
-                   (Vptr $ _global s.(s_dtor)) (Vptr this :: nil)
-                   (fun _ => this |-> tblockR ty 1 ** Q this ty)
-        end
+        |> wp_destructor ty (_global s.(s_dtor)) this Q
       | Some (Gunion u)  =>
         (* Unions cannot have [virtual] destructors: we directly invoke the destructor. *)
-        |> mspec σ.(genv_tu).(globals) ty (Tfunction Tvoid nil)
-                 (Vptr $ _global u.(u_dtor)) (Vptr this :: nil)
-                 (fun _ => this |-> tblockR ty 1 ** Q this ty)
-      | _                => False
+        |> wp_destructor ty (_global u.(u_dtor)) this Q
+      | _ => False
       end
     | Tarray ety sz   =>
       (* NOTE array elements are destroyed with non-virtual dispatch. *)
       (* TODO replace [fold_right ... rev] by [fold_left]? *)
       fold_right (fun i Q =>
         let p := this .[ erase_qualifiers ety ! Z.of_nat i ] in
-        valid_ptr p ** delete_val false ety p (fun _ _ => Q)
-      ) (Q this (erase_qualifiers ty)) (rev (seq 0 (N.to_nat sz)))
+        valid_ptr p ** destroy_val ety p Q
+      ) Q (rev (seq 0 (N.to_nat sz)))
     | Tref r_ty
     | Trv_ref r_ty    =>
       (* NOTE rvalue references [Trv_ref] are represented as references [Tref]. *)
-      this |-> anyR (Tref $ erase_qualifiers r_ty) 1 **
-      Q this (erase_qualifiers ty)
+      this |-> anyR (Tref $ erase_qualifiers r_ty) 1 ** Q
     | ty              =>
-      this |-> anyR (erase_qualifiers ty) 1 **
-      Q this (erase_qualifiers ty)
+      this |-> anyR (erase_qualifiers ty) 1 ** Q
     end%I.
 
-  Lemma delete_val_frame dispatch : forall ty this Q Q',
-      Forall this' ty, Q this' ty -* Q' this' ty |-- delete_val dispatch ty this Q -* delete_val dispatch ty this Q'.
+  Lemma destroy_val_frame : forall ty this (Q Q' : epred),
+      Q -* Q' |-- destroy_val ty this Q -* destroy_val ty this Q'.
   Proof.
     intro ty; generalize dependent dispatch; induction ty; simpl; eauto;
       try solve [ intros; iIntros "Q [$ X]"; iRevert "X"; done ].
     { induction (rev _); simpl; intros.
       { iIntros "X"; iApply "X". }
-      { iIntros "Q [$ V]". iRevert "V"; iApply IHty; iIntros (??); iApply IHl; eauto. } }
+      { iIntros "Q [$ V]". iRevert "V"; iApply IHty; eauto. iApply IHl; eauto. } }
     { intros. case_match; eauto.
       case_match; eauto.
       { iIntros "X Y"; iNext; iRevert "Y"; iApply mspec_frame.
         iIntros (?) "[$ Q]"; iApply "X"; done. }
-      { case_match.
-        { iIntros "X"; iApply resolve_dtor_frame; iIntros (???) "B"; iNext; iRevert "B".
-          iApply mspec_frame; iIntros (?) "[$ Q]"; iApply "X"; done. }
-        { iIntros "X Y"; iNext; iRevert "Y"; iApply mspec_frame.
-          iIntros (?) "[$ Q]"; iApply "X"; done. } } }
+      { iIntros "X Y"; iNext; iRevert "Y"; iApply mspec_frame.
+        iIntros (?) "[$ Q]"; iApply "X"; done. } }
   Qed.
 
   (* BEGIN interp *)
@@ -145,7 +100,7 @@ Section destroy.
     | FreeTemps.id => Q
     | FreeTemps.seq f g => interp f $ interp g Q
     | FreeTemps.par f g => Exists Qf Qg, interp f Qf ** interp g Qg ** (Qf -* Qg -* Q)
-    | FreeTemps.delete ty addr => delete_val false ty addr (fun _ _ => Q)
+    | FreeTemps.delete ty addr => destroy_val ty addr Q
     end.
   (* END interp *)
 
@@ -153,7 +108,7 @@ Section destroy.
       Q1 -* Q2 |-- interp free Q1 -* interp free Q2.
   Proof.
     induction free; simpl; intros; eauto.
-    { iIntros "X"; iApply delete_val_frame; iIntros (??); done. }
+    { iIntros "X"; iApply destroy_val_frame; done. }
     { iIntros "a"; iApply IHfree1; iApply IHfree2; done. }
     { iIntros "a b"; iDestruct "b" as (??) "(x & y & z)"; iExists _; iExists _; iFrame.
       iIntros "f g"; iApply "a"; iRevert "g"; by iApply "z". }

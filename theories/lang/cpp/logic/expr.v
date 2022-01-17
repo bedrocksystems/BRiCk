@@ -8,7 +8,6 @@
  * (expressed in weakest pre-condition style)
  *)
 Require Export bedrock.prelude.numbers.
-Require Export bedrock.lang.cpp.logic.new_delete.
 
 From bedrock.lang.cpp Require Import ast semantics.
 From bedrock.lang.cpp.logic Require Import
