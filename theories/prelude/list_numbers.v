@@ -20,7 +20,7 @@ Definition resizeN {A} n := resize (A := A) (N.to_nat n).
 Definition rotateN {A} n xs :=
   dropN (A := A) (n mod lengthN xs) xs ++ takeN (A := A) (n mod lengthN xs) xs.
 #[global] Instance list_lookupN {A}: Lookup N A (list A) := fun i xs => lookup (N.to_nat i) xs.
-#[global] Notation lookupN := list_lookupN.
+#[global] Notation lookupN := (lookup (K := N)).
 
 
 Lemma fmap_lengthN {A B} (f : A → B) (l : list A) :
@@ -106,15 +106,6 @@ Section listN.
   Lemma Forall_seqN P i n :
     List.Forall P (seqN i n) ↔ (∀ j : N, i <= j < i + n → P j).
   Proof. rewrite Forall_forall. by setoid_rewrite elem_of_seqN. Qed.
-
-  (* TODO: extend the theory of [lengthN], we have few lemmas here. *)
-  Lemma nil_lengthN :
-    lengthN (A := A) [] = 0.
-  Proof. done. Qed.
-
-  Lemma cons_lengthN x xs :
-    lengthN (x :: xs) = N.succ (lengthN xs).
-  Proof. by rewrite /lengthN cons_length Nat2N.inj_succ. Qed.
 
   Lemma replicateN_zero x :
     replicateN 0 x = [].
@@ -373,7 +364,7 @@ Section listN.
   Lemma tail_drop xs : tail xs = drop 1 xs.
   Proof. reflexivity. Qed.
 
-  Lemma head_take xs : head_list xs = take 1 xs.
+  Lemma head_list_take xs : head_list xs = take 1 xs.
   Proof. by case: xs. Qed.
 
   Lemma rotateN_iter k xs :
@@ -382,7 +373,7 @@ Section listN.
     elim/N.induction: k xs=> [|k IH] xs.
     { by rewrite /rotateN/rotate/= app_nil_r. }
     rewrite N.iter_succ//= -IH -N.add_1_r.
-    rewrite -!rotateN_fold /rotate tail_drop head_take.
+    rewrite -!rotateN_fold /rotate tail_drop head_list_take.
     case: xs=> [|x1 xs]; first by do !rewrite drop_nil take_nil.
     case: xs=> [|x2 xs]; first by rewrite !Z.mod_1_r/=.
     set n := length (x1 :: x2 :: xs). rewrite !N_nat_Z.
@@ -493,9 +484,13 @@ Section listN.
     (@rotateN_zero, @rotateN_one, @rotateN_succ,
      @rotateN_modulo, @rotateN_singleton, @rotateN_replicateN).
 
+  Lemma lookupN_fold {A'} i (xs : list A') :
+    xs !! N.to_nat i = lookupN i xs.
+  Proof. reflexivity. Qed.
+
   Lemma lookupN_nil i :
-    lookupN (A := A) i [] = None.
-  Proof. rewrite /lookupN. by apply: lookup_nil. Qed.
+    lookupN i [] = @None A.
+  Proof. rewrite -lookupN_fold. by apply: lookup_nil. Qed.
 
   Lemma lookupN_cons_zero x xs :
     lookupN 0 (x :: xs) = Some x.
@@ -503,29 +498,29 @@ Section listN.
 
   Lemma lookupN_cons_succ x xs i :
     lookupN (i + 1) (x :: xs) = lookupN i xs.
-  Proof. by rewrite /lookupN N.add_1_r N2Nat.inj_succ -lookup_tail. Qed.
+  Proof. by rewrite -!lookupN_fold N.add_1_r N2Nat.inj_succ -lookup_tail. Qed.
 
   Lemma lookupN_dropN xs k i :
     lookupN i (dropN k xs) = lookupN (k + i) xs.
-  Proof. rewrite /lookupN/dropN N2Nat.inj_add. by apply: lookup_drop. Qed.
+  Proof. rewrite -!lookupN_fold /dropN N2Nat.inj_add. by apply: lookup_drop. Qed.
 
   Lemma lookupN_takeN xs k i :
     i < k ->
     lookupN i (takeN k xs) = lookupN i xs.
-  Proof. rewrite /lookupN/takeN=> H. by apply: lookup_take; lia. Qed.
+  Proof. rewrite -!lookupN_fold /takeN=> H. by apply: lookup_take; lia. Qed.
 
   Lemma lookupN_is_Some xs i :
     i < lengthN xs <-> is_Some (lookupN i xs).
-  Proof. rewrite /lookupN/lengthN lookup_lt_is_Some. lia. Qed.
+  Proof. rewrite -lookupN_fold /lengthN lookup_lt_is_Some. lia. Qed.
 
   Lemma lookupN_is_None {A'} (xs : list A') i :
     i >= lengthN xs <-> lookupN i xs = None.
-  Proof. rewrite /lookupN/lengthN lookup_ge_None. lia. Qed.
+  Proof. rewrite -lookupN_fold /lengthN lookup_ge_None. lia. Qed.
 
   Lemma lookupN_replicateN n x i :
     lookupN i (replicateN n x) = Some x <-> i < n.
   Proof.
-    rewrite /lookupN/replicateN lookup_replicate. split; [|split=> //]; lia.
+    rewrite -lookupN_fold /replicateN lookup_replicate. split; [|split=> //]; lia.
   Qed.
 
   Lemma lookupN_head xs :
@@ -534,20 +529,20 @@ Section listN.
 
   Lemma lookupN_tail xs i :
     lookupN i (tail xs) = lookupN (i + 1) xs.
-  Proof. rewrite /lookupN N.add_1_r N2Nat.inj_succ. by apply: lookup_tail. Qed.
+  Proof. rewrite -!lookupN_fold N.add_1_r N2Nat.inj_succ. by apply: lookup_tail. Qed.
 
   Lemma lookupN_app_l xs1 xs2 i :
     i < lengthN xs1 ->
     lookupN i (xs1 ++ xs2) = lookupN i xs1.
   Proof.
-    rewrite /lookupN/lengthN=> H. by apply: lookup_app_l; lia.
+    rewrite -!lookupN_fold /lengthN=> H. by apply: lookup_app_l; lia.
   Qed.
 
   Lemma lookupN_app_r xs1 xs2 i :
     i >= lengthN xs1 ->
     lookupN i (xs1 ++ xs2) = lookupN (i - lengthN xs1) xs2.
   Proof.
-    rewrite /lookupN/lengthN N2Nat.inj_sub Nat2N.id=> H.
+    rewrite -!lookupN_fold /lengthN N2Nat.inj_sub Nat2N.id=> H.
     by apply: lookup_app_r; lia.
   Qed.
 
@@ -555,8 +550,8 @@ Section listN.
     lookupN i xs = nth_error xs (N.to_nat i).
   Proof.
     elim/N.induction: i xs=> [|i IH]//=; case=> [|x xs]//=.
-    - rewrite /lookupN lookup_nil. by case: (N.to_nat).
-    - rewrite N2Nat.inj_succ/= /lookupN N2Nat.inj_succ -lookup_tail/=.
+    - rewrite -lookupN_fold lookup_nil. by case: (N.to_nat).
+    - rewrite N2Nat.inj_succ/= -lookupN_fold N2Nat.inj_succ -lookup_tail/=.
       by apply: IH.
   Qed.
 
@@ -573,7 +568,7 @@ Section listN.
     i < lengthN xs ->
     lookupN i (rotateN k xs) = lookupN ((k + i) mod lengthN xs) xs.
   Proof.
-    rewrite /lookupN -rotateN_fold /lengthN=> H.
+    rewrite -!lookupN_fold -rotateN_fold /lengthN=> H.
     rewrite lookup_rotate_r /rotate_nat_add; last by lia.
     f_equal. rewrite !N_nat_Z -N2Z.inj_add -nat_N_Z -N2Z.inj_mod; last by lia.
     by rewrite -Z_N_nat N2Z.id.
@@ -619,6 +614,9 @@ Section listN.
      @lookupN_map,
      @lookupN_rotateN).
 End listN.
+About cons_lengthN.
+#[global] Notation cons_lengthN := lengthN_cons.
+#[global] Notation nil_lengthN := lengthN_nil.
 
 (* Not necessarily restricted to [Finite] *)
 Lemma nat_fin_iter_lt (c : nat) (P : nat -> Prop) :
@@ -645,6 +643,9 @@ Lemma N_fin_iter_le (c : N) (P : N -> Prop) :
   forall i, i <= c -> P i.
 Proof. move=> F i Hle. eapply N_fin_iter_lt; [done | lia]. Qed.
 
+(* Given [n < k] for some constant value [k], asserts that
+ * [(n = 0) \/ (n = 1) \/ ... (n = k - 1)]; for example, [n < 3] gives
+ * [(n = 0) \/ (n = 1) \/ (n = 2)]. *)
 Lemma N_enumerate n m :
   n < m -> N.recursion False (fun k H => (n = k) \/ H) m.
 Proof.
