@@ -26,17 +26,12 @@ Section destroy.
                                 (Vptr dtor) (Vptr this :: nil)
                                 (fun _ => this |-> tblockR ty 1 ** Q).
 
-  (** [destroy_val dispatch ty this Q] destruct [this] (which is of type [ty]).
-      The memory is returned to the C++ abstract machine. The continuation [Q]
-      is applied to the destroyed pointer [p] (it might not be equal to [this]
-      when virtual dispatch is used) and the type [ty] from which qualifiers
-      are erased.
+(** [destroy_val ty this Q] destructs [this] (which has [ty] as its most specific type).
+      If [this] is an aggregate, we invoke [ty]'s destructor (leaving any virtual
+      lookup to the caller). The memory is returned to the C++ abstract machine and the 
+      continuation [Q] is invoked.
 
-      The [dispatch] parameter determines whether the call is a *potentially*
-      virtual call. If [dispatch] is true *and the destructor of the class is
-      virtual*, then the call is a virtual call.
-
-      NOTE in our semantics (unlike the standard) all objects are destroyed
+      NOTE in our semantics (unlike the standard) all aggregates are destroyed
       via destructors. This is justified because the only objects that do not
       have destructors according to the standard have no-op destructors. Thus,
       we can model the "not having a destructor" as an optimization. This
