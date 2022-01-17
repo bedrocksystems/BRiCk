@@ -232,7 +232,7 @@ Fixpoint interp (free : FreeTemps) (Q : epred) : mpred :=
   | FreeTemps.id =&gt; Q
   | FreeTemps.seq f g =&gt; interp f $ interp g Q
   | FreeTemps.par f g =&gt; Exists Qf Qg, interp f Qf ** interp g Qg ** (Qf -* Qg -* Q)
-  | FreeTemps.delete ty addr =&gt; delete_val false ty addr (fun _ _ =&gt; Q)
+  | FreeTemps.delete ty addr =&gt; destroy_val ty addr Q
   end.
 </pre></div>
 </div>
