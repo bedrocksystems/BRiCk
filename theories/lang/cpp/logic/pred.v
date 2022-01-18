@@ -617,13 +617,32 @@ Section pinned_ptr_def.
     ptr_vaddr p = Some va -> exposed_ptr p |-- pinned_ptr va p.
   Proof. rewrite pinned_ptr_eq /pinned_ptr_def. by iIntros (?) "$". Qed.
 
-  Lemma pinned_ptr_change_va p va va' :
-    ptr_vaddr p = Some va -> pinned_ptr va' p |-- pinned_ptr va p.
-  Proof. rewrite pinned_ptr_eq /pinned_ptr_def. by iIntros (?) "(_ & $)". Qed.
-
-  #[global] Instance pinned_ptr_pinned_ptr_pure va p :
+  #[global] Instance pinned_ptr_ptr_vaddr va p :
     Observe [| ptr_vaddr p = Some va |] (pinned_ptr va p).
   Proof. rewrite pinned_ptr_eq. apply _. Qed.
+
+  Lemma pinned_ptr_change_va_eq (p : ptr) (va va' : vaddr)
+    (Heq : ptr_vaddr p = Some va) :
+    pinned_ptr va' p |--  [| va' = va |] ** pinned_ptr va p.
+  Proof.
+    iIntros "#P".
+    iDestruct (observe_elim_pure (ptr_vaddr p = Some va') with "P") as %?.
+    simplify_eq. auto.
+  Qed.
+
+  Lemma pinned_ptr_change_va p va va'
+    (Heq : ptr_vaddr p = Some va) :
+    pinned_ptr va' p |-- pinned_ptr va p.
+  Proof. rewrite pinned_ptr_change_va_eq //. by iIntros "[_ $]". Qed.
+
+  #[global] Instance pinned_ptr_agree va1 va2 p :
+    Observe2 [| va1 = va2 |] (pinned_ptr va1 p) (pinned_ptr va2 p).
+  Proof.
+    iIntros "#P1 #P2 !>".
+    iDestruct (observe_elim_pure (_ = _) with "P1") as %?.
+    iDestruct (observe_elim_pure (_ = _) with "P2") as %?; simplify_eq.
+    by [].
+  Qed.
 
   #[global] Instance pinned_ptr_valid va p :
     Observe (valid_ptr p) (pinned_ptr va p).
@@ -636,6 +655,9 @@ Section pinned_ptr_def.
     provides_storage storage_ptr obj_ptr aty |-- [| ptr_vaddr obj_ptr = Some va |].
   Proof. rewrite provides_storage_same_address. by iIntros (HP <-). Qed.
 End pinned_ptr_def.
+
+#[deprecated(note="Use pinned_ptr_ptr_vaddr", since="2022-01-18")]
+Notation pinned_ptr_pinned_ptr_pure := pinned_ptr_ptr_vaddr (only parsing).
 
 Section with_cpp.
   Context `{Σ : cpp_logic} {σ : genv}.
