@@ -614,7 +614,6 @@ Section listN.
      @lookupN_map,
      @lookupN_rotateN).
 End listN.
-About cons_lengthN.
 #[global] Notation cons_lengthN := lengthN_cons.
 #[global] Notation nil_lengthN := lengthN_nil.
 
