@@ -74,6 +74,39 @@ Module Import BS.
 
   #[deprecated(since="2021-09-21", note="Use [decide (arg1 = arg2)]")]
   Notation t_dec := bytestring_eq_dec.
+
+  (* [sepBy sep ls] concatenates the elements in [ls] using
+    the separator [sep] *)
+  Fixpoint sepBy (sep : bs) (ls : list bs) : bs :=
+    match ls with
+    | nil => ""
+    | l :: nil => l
+    | l :: ls => l ++ sep ++ sepBy sep ls
+    end.
+
+  Fixpoint take (n : nat) (acc b : bs) : bs * bs :=
+    match n with
+    | 0 => (BS.rev BS.EmptyString acc, b)
+    | S n => match b with
+            | BS.String x y => take n (BS.String x acc) y
+            | BS.EmptyString => (BS.rev BS.EmptyString acc, b)
+            end
+    end.
+
+  Fixpoint drop (n : nat) (b : bs) : bs :=
+    match n with
+    | 0 => b
+    | S n => match b with
+            | BS.String _ b => drop n b
+            | _ => b
+            end
+    end.
+
+  Fixpoint last (b : bs) (o : option Byte.byte) : option Byte.byte :=
+    match b with
+    | BS.EmptyString => o
+    | BS.String s b => last b (Some s)
+    end.
 End BS.
 
 (* stdpp-specific. *)
