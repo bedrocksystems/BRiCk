@@ -582,7 +582,7 @@ Section listN.
   Proof.
     move=> x0 H. case: (lookupN i xs)=> [y|].
     - case/(_ y): H=> x + /(_ x) []. by apply.
-    - by case/(_ x0).
+    - by move/(_ x0).
   Qed.
 
   Lemma lookupN_mid i xs zs :
