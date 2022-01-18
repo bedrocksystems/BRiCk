@@ -32,7 +32,7 @@
 ################################################
 
 variables:
-  LLVM_CUR_MAJ_VER: "12"
+  LLVM_CUR_MAJ_VER: "13"
   docker_img_prefix: registry.gitlab.com/bedrocksystems/docker-image
   fm_docs_img: ${docker_img_prefix}:fm-docs
   img_prefix: cpp2v-llvm
@@ -51,10 +51,10 @@ variables:
   variables:
     LLVM_MAJ_VER: 10
 
-.llvm13:
+.llvm12:
   extends: .base
   variables:
-    LLVM_MAJ_VER: 13
+    LLVM_MAJ_VER: 12
 
 .public:
   extends: .base
@@ -72,7 +72,7 @@ stages:
   - build_proofs_downstream
 
 #This is a template job that's extended below by the real jobs
-# build_{latest,llvm10,llvm13,public} (see, e.g., https://docs.gitlab.com/ee/ci/yaml/#extends).
+# build_{latest,llvm10,llvm12,public} (see, e.g., https://docs.gitlab.com/ee/ci/yaml/#extends).
 .build_base:
   stage: build
   script:
@@ -144,10 +144,10 @@ build_llvm10:
     - .build_aux
     - .llvm10
 
-build_llvm13:
+build_llvm12:
   extends:
     - .build_aux
-    - .llvm13
+    - .llvm12
 
 build_public:
   extends:
@@ -168,12 +168,12 @@ test_llvm10:
   needs:
     - build_llvm10
 
-test_llvm13:
+test_llvm12:
   extends:
     - .test
-    - .llvm13
+    - .llvm12
   needs:
-    - build_llvm13
+    - build_llvm12
 
 test_public:
   extends:
