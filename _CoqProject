@@ -10,6 +10,7 @@
 -arg -w -arg -ssr-search-moved
 # Turn warning on hints into error:
 -arg -w -arg +deprecated-hint-without-locality
+-arg -w -arg +unknown-option
 
 -Q theories/prelude bedrock.prelude
 -Q theories/lang bedrock.lang
