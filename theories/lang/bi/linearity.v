@@ -78,7 +78,7 @@ All lemmas use suffix [_uPred].
 *)
 
 Section uPred_with_later_emp.
-  Context (M : ucmraT).
+  Context (M : ucmra).
 
   Definition later_emp_uPred := @bi.later_emp _ (uPred_affine M).
 
@@ -98,7 +98,7 @@ End uPred_with_later_emp.
 
 (** *** Other instances that we derive from affinity but seem safe. *)
 Section uPred.
-  Context (M : ucmraT).
+  Context (M : ucmra).
   Definition affinely_sep_uPred := @affinely_sep _ (@bi_affine_positive _ (uPred_affine M)).
 
   #[local] Instance bi_positive_uPred : BiPositive (uPredI M).
@@ -109,7 +109,7 @@ Section uPred.
   [ (∀ x : A, [| φ x |]) ⊢@{PROP} <affine> (∀ x : A, [| φ x |]) ]
   so it seems related to [affinely_sep].
   *)
-  #[local] Instance bi_emp_forall_only_provable_uPred (M : ucmraT) : BiEmpForallOnlyProvable (uPredI M) :=
+  #[local] Instance bi_emp_forall_only_provable_uPred (M : ucmra) : BiEmpForallOnlyProvable (uPredI M) :=
     bi_affine_emp_forall_only_provable (uPred_affine M).
 End uPred.
 

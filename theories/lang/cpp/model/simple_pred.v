@@ -26,7 +26,7 @@ From bedrock.lang.cpp.logic Require Import mpred pred.
 Implicit Types (vt : validity_type) (σ resolve : genv).
 
 (* todo: does this not exist as a library somewhere? *)
-Definition fractionalR (V : Type) : cmraT :=
+Definition fractionalR (V : Type) : cmra :=
   prodR fracR (agreeR (leibnizO V)).
 Definition frac {V : Type} (q : Qp) (v : V) : fractionalR V :=
   (q, to_agree v).
@@ -112,7 +112,7 @@ Module SimpleCPP_BASE <: CPP_LOGIC_CLASS.
   Definition _cpp_ghost := cpp_ghost.
 
   Record cppG' (Σ : gFunctors) : Type :=
-    { heapG : inG Σ (gmapR addr (fractionalR runtime_val'))
+    { heapGS : inG Σ (gmapR addr (fractionalR runtime_val'))
       (* ^ this represents the contents of physical memory *)
     ; ghost_memG : inG Σ (gmapR ptr (fractionalR val))
       (* ^ this represents the contents of the C++ runtime that might
@@ -128,7 +128,7 @@ Module SimpleCPP_BASE <: CPP_LOGIC_CLASS.
     ; codeG : inG Σ (gmapUR ptr (agreeR (leibnizO (Func + Method + Ctor + Dtor))))
       (* ^ this carries the (compiler-supplied) mapping from C++ locations
          to the code stored at that location *)
-    ; has_inv' : invG Σ
+    ; has_inv' : invGS Σ
     ; has_cinv' : cinvG Σ
     }.
 
@@ -138,7 +138,7 @@ Module SimpleCPP_BASE <: CPP_LOGIC_CLASS.
   should not hurt now. *)
   Typeclasses Opaque cppG.
 
-  #[global] Instance has_inv Σ : cppG Σ -> invG Σ := @has_inv' Σ.
+  #[global] Instance has_inv Σ : cppG Σ -> invGS Σ := @has_inv' Σ.
   #[global] Instance has_cinv Σ : cppG Σ -> cinvG Σ := @has_cinv' Σ.
 
   Include CPP_LOGIC_CLASS_MIXIN.
@@ -148,7 +148,7 @@ Module SimpleCPP_BASE <: CPP_LOGIC_CLASS.
 
     Existing Class cppG'.
     #[local] Instance cppG_cppG' Σ : cppG Σ -> cppG' Σ := id.
-    #[local] Existing Instances heapG ghost_memG mem_injG blocksG codeG.
+    #[local] Existing Instances heapGS ghost_memG mem_injG blocksG codeG.
 
     Definition heap_own (a : addr) (q : Qp) (r : runtime_val') : mpred :=
       own (A := gmapR addr (fractionalR runtime_val'))

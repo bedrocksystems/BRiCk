@@ -15,7 +15,7 @@ Import ChargeNotation.
 
 Module Type CPP_LOGIC_CLASS_BASE.
   Parameter cppG : gFunctors -> Type.
-  Axiom has_inv : forall Σ, cppG Σ -> invG Σ.
+  Axiom has_inv : forall Σ, cppG Σ -> invGS Σ.
   Axiom has_cinv : forall Σ, cppG Σ -> cinvG Σ.
 
   #[global] Existing Instances has_inv has_cinv.
@@ -44,8 +44,8 @@ Module Type CPP_LOGIC_CLASS_MIXIN (Import CC : CPP_LOGIC_CLASS_BASE).
     Definition mpred := bi_car mpredI.
 
     (* TODO: seal *)
-    Canonical Structure mpredO : ofeT
-      := OfeT mpred (ofe_mixin (monPredO ti (iPropI _Σ))).
+    Canonical Structure mpredO : ofe
+      := Ofe mpred (ofe_mixin (monPredO ti (iPropI _Σ))).
   End with_cpp.
 
   Bind Scope bi_scope with mpred.

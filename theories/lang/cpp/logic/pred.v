@@ -927,7 +927,7 @@ Section with_cpp.
           * etrans. by apply HPQ. done.
       - intros n P Q []. split. done. by apply dist_S.
     Qed.
-    Canonical Structure function_specO := OfeT function_spec function_spec_ofe_mixin.
+    Canonical Structure function_specO := Ofe function_spec function_spec_ofe_mixin.
 
     #[global] Instance type_of_spec_ne (n : nat) :
       Proper (dist n ==> eq) type_of_spec.

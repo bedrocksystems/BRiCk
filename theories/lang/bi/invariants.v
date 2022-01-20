@@ -26,7 +26,7 @@
 
   TODO: These should be upstreamed to Iris. **)
 
-Require Export iris.base_logic.lib.invariants. (* << export [invG] *)
+Require Export iris.base_logic.lib.invariants. (* << export [invGS] *)
 
 From iris.proofmode Require Import proofmode.
 

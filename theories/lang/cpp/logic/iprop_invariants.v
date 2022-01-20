@@ -34,7 +34,7 @@ Require Import bedrock.lang.cpp.logic.iprop_own.
 (* Copy from
   https://gitlab.mpi-sws.org/iris/iris/-/blob/7ccdfe0df5832b69742306302144b5358c9ed843/iris/base_logic/lib/invariants.v *)
 Section inv.
-  Context `{!invG Σ}.
+  Context `{!invGS Σ}.
   Implicit Types (P : iProp Σ).
 
   #[local] Lemma own_inv_to_inv M P: own_inv M P -∗ inv M P.
@@ -63,7 +63,7 @@ Typeclasses Transparent na_own na_inv.
   https://gitlab.mpi-sws.org/iris/iris/-/blob/90b6007faea2b61546aed01fe0ed9936b55468d1/iris/base_logic/lib/na_invariants.v *)
 Section na_inv.
   Import iris.algebra.gset iris.algebra.coPset.
-  Context `{!invG Σ, !na_invG Σ}.
+  Context `{!invGS Σ, !na_invG Σ}.
   Implicit Types (P : iProp Σ).
 
   Lemma na_inv_alloc p E N P : ▷ P ={E}=∗ na_inv p N P.
@@ -92,7 +92,7 @@ Typeclasses Transparent cinv_own cinv.
 (* Copy from
   https://gitlab.mpi-sws.org/iris/iris/-/blob/7ccdfe0df5832b69742306302144b5358c9ed843/iris/base_logic/lib/cancelable_invariants.v *)
 Section cinv.
-  Context `{!invG Σ, !cinvG Σ}.
+  Context `{!invGS Σ, !cinvG Σ}.
   Implicit Types (P : iProp Σ).
   (*** Allocation rules. *)
   (** The "strong" variants permit any infinite [I], and choosing [P] is delayed

@@ -33,7 +33,7 @@ Section gset_bij.
   #[global] Instance gset_bij_auth_is_op q q1 q2 L :
     IsOp q q1 q2 ->
     IsOp' (gset_bij_auth q L) (gset_bij_auth q1 L) (gset_bij_auth q2 L).
-  Proof. by rewrite /IsOp' /IsOp gset_bij_auth_frac_op=>->. Qed.
+  Proof. by rewrite /IsOp' /IsOp gset_bij_auth_dfrac_op=>->. Qed.
 
 End gset_bij.
 #[global] Hint Opaque gset_bij_auth gset_bij_elem : typeclass_instances.

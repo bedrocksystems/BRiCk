@@ -324,7 +324,7 @@ Section lemmas.
   Proof.
     rewrite atomic_update_eq atomic1_update_eq /atomic1_update_def /=.
     iIntros "HAU".
-    iApply (greatest_fixpoint_coind _ (λ _, atomic_update_def Eo Ei α β Φ)); last done.
+    iApply (greatest_fixpoint_coiter _ (λ _, atomic_update_def Eo Ei α β Φ)); last done.
     iIntros "!> *". rewrite {1}/atomic_update_def /= greatest_fixpoint_unfold.
     iApply make_laterable_wand. iIntros "!>".
     by iApply atomic_acc_atomic1_acc.
@@ -336,7 +336,7 @@ Section lemmas.
   Proof.
     rewrite atomic1_update_eq {2}/atomic1_update_def /=.
     iIntros (Heo) "HAU".
-    iApply (greatest_fixpoint_coind _ (λ _, atomic1_update_def Eo1 Ei α β Φ)); last done.
+    iApply (greatest_fixpoint_coiter _ (λ _, atomic1_update_def Eo1 Ei α β Φ)); last done.
     iIntros "!> *". rewrite {1}/atomic1_update_def /= greatest_fixpoint_unfold.
     iApply make_laterable_wand. iIntros "!>".
     iApply atomic1_acc_mask_weaken. done.
@@ -382,7 +382,7 @@ Section lemmas.
   Proof.
     rewrite atomic1_update_eq {1}/atomic1_update_def /=.
     iIntros (??? HAU) "[#HP HQ]".
-    iApply (greatest_fixpoint_coind _ (λ _, Q)); last done. iIntros "!>" ([]) "HQ".
+    iApply (greatest_fixpoint_coiter _ (λ _, Q)); last done. iIntros "!>" ([]) "HQ".
     iApply (make_laterable_intro Q with "[] HQ"). iIntros "!> >HQ".
     iApply HAU. by iFrame.
   Qed.
