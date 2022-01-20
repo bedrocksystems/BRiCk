@@ -8,7 +8,6 @@ From iris.algebra.lib Require Import frac_auth.
 From iris.bi Require Import monpred.
 From iris.bi.lib Require Import fractional.
 From iris.proofmode Require Import proofmode.
-From iris_string_ident Require Import ltac2_string_ident.
 
 Require Import bedrock.lang.bi.cancelable_invariants.
 Require Import bedrock.lang.cpp.logic.own_instances.

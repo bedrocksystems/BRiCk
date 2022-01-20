@@ -4,7 +4,6 @@
  * See the LICENSE-BedRock file in the repository root for details.
  *)
 Require Import iris.proofmode.proofmode.
-From iris_string_ident Require Import ltac2_string_ident.
 From bedrock.prelude Require Import base option.
 From bedrock.lang.cpp Require Import ast semantics.values semantics.operator.
 From bedrock.lang.cpp Require Import logic.pred.

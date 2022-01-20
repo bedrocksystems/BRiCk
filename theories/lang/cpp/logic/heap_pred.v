@@ -6,7 +6,6 @@
 From bedrock.lang.bi Require Export monpred.
 From iris.proofmode Require Import proofmode monpred.
 Require Import iris.bi.lib.fractional.
-From iris_string_ident Require Import ltac2_string_ident.
 
 Require Import bedrock.prelude.base.
 

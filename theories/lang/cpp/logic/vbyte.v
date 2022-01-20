@@ -4,7 +4,6 @@
  * See the LICENSE-BedRock file in the repository root for details.
  *)
 From iris.proofmode Require Import proofmode.
-From iris_string_ident Require Import ltac2_string_ident.
 
 From iris.bi.lib Require Import fractional.
 
