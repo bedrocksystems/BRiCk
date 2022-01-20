@@ -665,7 +665,7 @@ Section with_cpp.
   Lemma same_address_bool_null p tv :
     _valid_ptr tv p |--
     [| same_address_bool p nullptr = bool_decide (p = nullptr) |].
-  Proof. rewrite same_address_eq_null; iIntros "!%". apply bool_decide_iff. Qed.
+  Proof. rewrite same_address_eq_null; iIntros "!%". apply bool_decide_ext. Qed.
 
   Lemma valid_ptr_nonnull_nonzero p :
     p <> nullptr ->

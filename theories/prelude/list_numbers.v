@@ -49,11 +49,11 @@ Section seqN.
     seqN start len = start :: seqN (N.succ start) (N.pred len).
   Proof. by rewrite -{1}(N.succ_pred_pos len) // seqN_S_start. Qed.
 
-  (* Lifts stdpp's [seq_S_end_app] aka stdlib's [seq_S] *)
+  (* Lifts stdpp's [seq_S] aka stdlib's [seq_S] *)
   Lemma seqN_S_end_app start len :
     seqN start (N.succ len) = seqN start len ++ [start + len].
   Proof.
-    rewrite /seqN !N2Nat.inj_succ seq_S_end_app fmap_app /=.
+    rewrite /seqN !N2Nat.inj_succ seq_S fmap_app /=.
     by rewrite -N2Nat.inj_add N2Nat.id.
   Qed.
 

@@ -350,13 +350,13 @@ Module Type PTRS_MIXIN (Import P : PTRS_INTF_MINIMAL).
   Definition same_address_bool p1 p2 := bool_decide (same_address p1 p2).
 
   #[global] Instance same_address_bool_comm : Comm eq same_address_bool.
-  Proof. move=> p1 p2. apply bool_decide_iff, comm, _. Qed.
+  Proof. move=> p1 p2. apply bool_decide_ext, comm, _. Qed.
 
   Lemma same_address_bool_eq {p1 p2 va1 va2} :
     ptr_vaddr p1 = Some va1 → ptr_vaddr p2 = Some va2 →
     same_address_bool p1 p2 = bool_decide (va1 = va2).
   Proof.
-    intros Hs1 Hs2. apply bool_decide_iff.
+    intros Hs1 Hs2. apply bool_decide_ext.
     rewrite same_address_eq same_property_iff. naive_solver.
   Qed.
 

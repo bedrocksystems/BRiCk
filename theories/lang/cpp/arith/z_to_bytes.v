@@ -231,7 +231,7 @@ Section FromToBytes.
     Proof.
       induction cnt => //=.
       rewrite /_Z_to_bytes_unsigned_le'.
-      rewrite seq_S_end_app map_app repeat_cons_app //=.
+      rewrite seq_S map_app repeat_cons_app //=.
       rewrite _get_byte_0; f_equal=> //=.
     Qed.
 
@@ -269,7 +269,7 @@ Section FromToBytes.
         induction cnt; intros=> //=.
       - by rewrite Nat.add_0_r.
       - rewrite /_Z_to_bytes_unsigned_le'.
-        rewrite seq_S_end_app map_app //=.
+        rewrite seq_S map_app //=.
     Qed.
 
     Lemma _Z_to_bytes_unsigned_le_S_cnt:
