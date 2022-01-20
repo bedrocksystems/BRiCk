@@ -16,9 +16,8 @@ Require Export bedrock.lang.bi.own.
 
 (* Embedding of si in iProp. It seems that such an embedding doesn't exist
   upstream yet. *)
-
 Program Definition si_embed_def {M} : Embed siPropI (uPredI M) :=
-  λ P, {| uPred_holds n x := P n |}.
+  λ P, {| uPred_holds n x := siProp_holds P n |}.
 Solve Obligations with naive_solver eauto using siProp_closed.
 Definition si_embed_aux : seal (@si_embed_def). Proof. by eexists. Qed.
 Definition si_embed := si_embed_aux.(unseal).
@@ -32,6 +31,7 @@ Section si_embedding.
 
   #[local] Arguments siProp_holds !_ _ / : assert.
   #[local] Arguments uPred_holds _ !_ _ _ / : assert.
+  #[local] Coercion uPred_holds : uPred >-> Funclass.
 
   Program Definition si_unembed (P : PROP) : siProp :=
     {| siProp_holds n := P n ε |}.
