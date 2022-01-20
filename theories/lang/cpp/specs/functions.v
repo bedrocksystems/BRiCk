@@ -204,7 +204,7 @@ Section with_cpp.
         rewrite -{1}[P1](left_id emp%I bi_sep) -assoc. f_equiv.
         exact: only_provable_introN. }
       rewrite {F1}HF. f_equiv=>x2. rewrite /F2 {F2} tele_app_bind.
-      rewrite /M2 {M2} tele_app_bind tele_map_app. simpl. f_equiv.
+      rewrite /M2 {M2} tele_app_bind tele_map_app. simpl. f_equiv; [|done].
       apply only_provable_elimN'=>->. exact: only_provable_introN.
     Qed.
 

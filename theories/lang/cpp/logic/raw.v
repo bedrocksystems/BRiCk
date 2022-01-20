@@ -102,14 +102,14 @@ Section with_Σ.
             + by subst.
             + destruct rs; inversion Hrs; subst; simpl.
               rewrite !arrR_cons; eauto.
-              rewrite -IHl /=; [| auto]. f_equiv. f_equiv.
+              rewrite -IHl /=; [| auto]. f_equiv; [done|]. f_equiv; [|done].
                 by rewrite raw_int_byte_primR.
           - iDestruct 1 as (rs l) "(Harray & $ & %Hdec & %Hbytes)".
             iExists rs; iSplit => //; eauto with iFrame. clear Hdec; rewrite -{}Hbytes.
             rewrite /rawsR arrayR_eq/arrayR_def; iStopProof.
             induction l => // /=.
             rewrite !arrR_cons; eauto.
-            rewrite -IHl /=. f_equiv. f_equiv.
+            rewrite -IHl /=. f_equiv; [done|]. f_equiv; [|done].
               by rewrite raw_int_byte_primR.
         Qed.
       End decodes.
