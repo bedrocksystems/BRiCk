@@ -6,7 +6,7 @@
 *)
 Require Export iris.bi.lib.laterable.
 Require Import iris.bi.monpred.
-Require Import iris.proofmode.tactics.
+Require Import iris.proofmode.proofmode.
 Set Default Proof Using "Type".
 
 (** Replace the TC instance [big_sepL_laterable] with a version that

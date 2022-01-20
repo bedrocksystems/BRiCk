@@ -7,7 +7,7 @@ From iris.algebra Require Import excl gmap.
 From iris.algebra.lib Require Import frac_auth.
 From iris.bi Require Import monpred.
 From iris.bi.lib Require Import fractional.
-From iris.proofmode Require Import tactics.
+From iris.proofmode Require Import proofmode.
 From iris_string_ident Require Import ltac2_string_ident.
 
 Require Import bedrock.lang.bi.cancelable_invariants.

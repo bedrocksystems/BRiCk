@@ -10,7 +10,7 @@ Require Import bedrock.prelude.base.
 
 Require Import stdpp.coPset.
 Require Import iris.bi.monpred.
-From iris.proofmode Require Import tactics classes.
+From iris.proofmode Require Import proofmode classes.
 
 From bedrock.lang.cpp Require Import
      ast semantics logic.pred logic.heap_pred.

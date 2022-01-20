@@ -10,7 +10,7 @@ From bedrock.lang.cpp.logic Require Import
 Require Import bedrock.lang.cpp.heap_notations.
 Require Import bedrock.lang.cpp.logic.atomics.
 
-Require Import iris.proofmode.tactics.
+Require Import iris.proofmode.proofmode.
 
 Section cmpxchg_derived.
   Context `{Σ : cpp_logic thread_info} {resolve:genv}.

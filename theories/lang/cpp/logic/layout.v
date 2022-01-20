@@ -4,7 +4,7 @@
  * See the LICENSE-BedRock file in the repository root for details.
  *)
 From bedrock.prelude Require Import base numbers list.
-Require Import iris.proofmode.tactics.
+Require Import iris.proofmode.proofmode.
 From iris.bi.lib Require Import fractional.
 
 Require Import bedrock.lang.cpp.arith.z_to_bytes.

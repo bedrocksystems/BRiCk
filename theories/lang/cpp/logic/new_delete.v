@@ -7,7 +7,7 @@
  * Semantics of [new] and [delete] expressions
  * (expressed in weakest pre-condition style)
  *)
-Require Import iris.proofmode.tactics.
+Require Import iris.proofmode.proofmode.
 From bedrock.lang.cpp Require Import ast semantics.
 From bedrock.lang.cpp.logic Require Import
      pred path_pred heap_pred

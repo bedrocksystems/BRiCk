@@ -35,7 +35,7 @@ Require Export iris.base_logic.lib.cancelable_invariants. (* << exporting [cinvG
 Require Import iris.bi.derived_laws.
 Import bi.
 
-Require Import iris.proofmode.tactics.
+Require Import iris.proofmode.proofmode.
 
 Require Export bedrock.lang.bi.invariants.
 Require Export bedrock.lang.bi.own.

@@ -28,7 +28,7 @@
 
 Require Export iris.base_logic.lib.invariants. (* << export [invG] *)
 
-From iris.proofmode Require Import tactics.
+From iris.proofmode Require Import proofmode.
 
 Set Default Proof Using "Type".
 Set Suggest Proof Using.

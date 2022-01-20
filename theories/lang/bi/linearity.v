@@ -15,7 +15,7 @@ technically, they have [#[export]] visibility.
 Require Import bedrock.prelude.base.
 From bedrock.lang Require Import bi.prelude bi.only_provable.
 From iris.bi Require Import monpred.
-From iris.proofmode Require Import tactics.
+From iris.proofmode Require Import proofmode.
 
 (* Disable [BiAffine uPred] *)
 #[export] Remove Hints uPred_affine : typeclass_instances.

@@ -6,7 +6,7 @@
 Require Import bedrock.lang.bi.ChargeCompat.
 Require Import bedrock.lang.bi.errors.
 Require Import bedrock.lang.cpp.logic.entailsN.
-Require Import iris.proofmode.tactics.	(** Early to get the right [ident] *)
+Require Import iris.proofmode.proofmode.	(** Early to get the right [ident] *)
 Require Import bedrock.lang.cpp.ast.
 Require Import bedrock.lang.cpp.semantics.
 From bedrock.lang.cpp.logic Require Import

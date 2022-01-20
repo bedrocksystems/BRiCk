@@ -4,7 +4,7 @@
  * See the LICENSE-BedRock file in the repository root for details.
  *)
 Require Import Coq.Lists.List.
-Require Import iris.proofmode.tactics.
+Require Import iris.proofmode.proofmode.
 Require Import bedrock.prelude.numbers.
 Require Import bedrock.lang.cpp.ast.
 Require Import bedrock.lang.cpp.semantics.

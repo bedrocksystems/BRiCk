@@ -23,7 +23,7 @@ Require Import iris.algebra.gset iris.algebra.coPset.
 Require Export iris.base_logic.lib.na_invariants. (* << exporting [na_inv_pool_name], [na_invG] *)
 Require Import iris.bi.bi.
 
-Require Import iris.proofmode.tactics.
+Require Import iris.proofmode.proofmode.
 
 Require Export bedrock.lang.bi.invariants.
 Require Import bedrock.lang.bi.own.

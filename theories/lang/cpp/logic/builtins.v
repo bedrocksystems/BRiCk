@@ -4,7 +4,7 @@
  * See the LICENSE-BedRock file in the repository root for details.
  *)
 Require Import bedrock.prelude.base.
-Require Import iris.proofmode.tactics.
+Require Import iris.proofmode.proofmode.
 Require Import bedrock.lang.bi.ChargeCompat.
 From bedrock.lang.cpp Require Import ast semantics.
 Require Import bedrock.lang.cpp.arith.builtins.

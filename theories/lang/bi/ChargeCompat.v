@@ -4,7 +4,7 @@
  * See the LICENSE-BedRock file in the repository root for details.
  *)
 From iris Require Import bi.bi.
-From iris.proofmode Require Import tactics.
+From iris.proofmode Require Import proofmode.
 Require Import bedrock.lang.bi.prelude.
 Import ChargeNotation.
 

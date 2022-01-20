@@ -23,7 +23,7 @@
 (* NOTES FOR MAINTAINER: this is the iProp instances for invariants. This is
   needed when mpred is still iProp. Once mpred is fixed to monPred, then this
   can be removed. *)
-From iris.proofmode Require Import tactics.
+From iris.proofmode Require Import proofmode.
 
 Require Import bedrock.lang.bi.na_invariants.
 Require Import bedrock.lang.bi.cancelable_invariants.

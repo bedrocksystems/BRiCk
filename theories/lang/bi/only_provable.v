@@ -5,7 +5,7 @@
  *)
 Require Import bedrock.prelude.base.
 From iris.bi Require Import bi monpred embedding fractional.
-From iris.proofmode Require Import tactics.
+From iris.proofmode Require Import proofmode.
 
 (**
 [only_provable P], written [ [| P |] ], is a variant of [⌜ P ⌝] that, in a

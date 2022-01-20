@@ -22,7 +22,7 @@
 
 From stdpp Require Import coPset namespaces.
 From iris.bi.lib Require Import fixpoint.
-From iris.proofmode Require Import coq_tactics tactics reduction.
+From iris.proofmode Require Import coq_tactics proofmode reduction.
 From iris.prelude Require Import options.
 From iris.bi.lib Require Import atomic.
 
