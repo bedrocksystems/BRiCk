@@ -79,7 +79,7 @@ Section definition.
     commit_acc b Eo1 Ei α β Φ -∗ commit_acc b Eo2 Ei α β Φ.
   Proof.
     iIntros (HE) "Hstep".
-    iMod fupd_intro_mask' as "Hclose1"; first done.
+    iMod fupd_mask_subseteq as "Hclose1"; first done.
     iMod "Hstep" as (x) "[Hα Hclose2]". iIntros "!>". iExists x.
     iFrame. iIntros "!>" (y) "Hβ". iMod ("Hclose2" with "Hβ") as "$". done.
   Qed.
@@ -495,7 +495,7 @@ Section lemmas.
     commit_acc b Eo Ei α β Φ).
   Proof.
     iIntros (? x) "Hα Hclose".
-    iMod fupd_intro_mask' as "Hclose'"; last iModIntro; first set_solver.
+    iMod fupd_mask_subseteq as "Hclose'"; last iModIntro; first set_solver.
     iExists x. iFrame.
     iIntros "!>" (y) "Hβ". iMod "Hclose'" as "_". iApply "Hclose". done.
   Qed.
@@ -511,7 +511,7 @@ Section lemmas.
     rewrite /ElimAcc.
     iIntros (_) "Hinner >Hacc". iDestruct "Hacc" as (x') "[Hα' Hclose]".
     iMod ("Hinner" with "Hα'") as (x) "[Hα Hclose']".
-    iMod (fupd_intro_mask') as "Hclose''"; last iModIntro; first done.
+    iMod (fupd_mask_subseteq) as "Hclose''"; last iModIntro; first done.
     iExists x. iFrame.
     iIntros "!>" (y) "Hβ". iMod "Hclose''" as "_".
     iMod ("Hclose'" with "Hβ") as "Hβ'".
