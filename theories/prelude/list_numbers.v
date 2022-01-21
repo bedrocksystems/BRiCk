@@ -21,6 +21,8 @@ Definition rotateN {A} n xs :=
   dropN (A := A) (n mod lengthN xs) xs ++ takeN (A := A) (n mod lengthN xs) xs.
 #[global] Instance list_lookupN {A}: Lookup N A (list A) | 10 := fun i xs => lookup (N.to_nat i) xs.
 #[global] Notation lookupN := (lookup (K := N)).
+#[global] Instance list_insertN {A} : Insert N A (list A) | 10 := fun i x xs => <[N.to_nat i := x]> xs.
+#[global] Notation insertN := list_insertN.
 
 (* A proof appears in
 https://github.com/coq/coq/commit/f6a63e3181c7c9691c59e07ad55a9e5a5b8d51e6,
@@ -210,6 +212,10 @@ Section listN.
     lengthN (replicateN n x) = n.
   Proof. by rewrite /lengthN/replicateN replicate_length N2Nat.id. Qed.
 
+  Lemma lengthN_insertN i x xs :
+    lengthN (<[i:=x]> xs) = lengthN xs.
+  Proof. rewrite /lengthN. f_equal. by apply: insert_length. Qed.
+
   Definition lengthN_simpl :=
     (@lengthN_fold,
      @lengthN_nil, @lengthN_cons,
@@ -310,6 +316,35 @@ Section listN.
     by rewrite /dropN /resizeN drop_resize_le // N2Nat.inj_sub.
   Qed.
 
+  Lemma dropN_lookupN i xs x__i :
+    xs !! i = Some x__i ->
+    dropN i xs = x__i :: dropN (i + 1) xs.
+  Proof.
+    rewrite /lookup/list_lookupN/dropN/= N.add_1_r N2Nat.inj_succ.
+    elim: (N.to_nat i) xs=> {i} [|i IH] [|x xs]//=.
+    - by case=> ->.
+    - by apply: IH.
+  Qed.
+
+  Lemma dropN_insertN_ge i n x xs :
+    (i >= n)%N ->
+    dropN n (<[i:=x]> xs) = <[(i - n)%N:=x]> (dropN n xs).
+  Proof.
+    move/N.ge_le/N2Nat_inj_le. rewrite /insert/insertN N2Nat.inj_sub.
+    by apply: drop_insert_le.
+  Qed.
+
+  Lemma dropN_insertN_lt i n x xs :
+    (i < n)%N ->
+    dropN n (<[i:=x]> xs) = dropN n xs.
+  Proof. move=> H. apply: drop_insert_gt. lia. Qed.
+
+  Lemma dropN_congr n1 n2 xs1 xs2 :
+    n1 = n2 ->
+    xs1 = xs2 ->
+    dropN n1 xs1 = dropN n2 xs2.
+  Proof. by move=> -> ->. Qed.
+
   Lemma takeN_zero xs :
     takeN 0 xs = [].
   Proof. reflexivity. Qed.
@@ -363,6 +398,22 @@ Section listN.
     n ≤ m →
     takeN n (resizeN m x l) = resizeN n x l.
   Proof. move=> /N2Nat_inj_le. apply take_resize_le. Qed.
+
+  Lemma takeN_insertN_ge i n x xs :
+    (i >= n)%N ->
+    takeN n (<[i:=x]> xs) = takeN n xs.
+  Proof. move/N.ge_le/N2Nat_inj_le. by apply: take_insert. Qed.
+
+  Lemma takeN_insertN_lt i n x xs :
+    (i < n)%N ->
+    takeN n (<[i:=x]> xs) = <[i:=x]> (takeN n xs).
+  Proof. move=> H. apply: take_insert_lt. lia. Qed.
+
+  Lemma takeN_congr n1 n2 xs1 xs2 :
+    n1 = n2 ->
+    xs1 = xs2 ->
+    takeN n1 xs1 = takeN n2 xs2.
+  Proof. by move=> -> ->. Qed.
 
   Lemma rotateN_fold k xs :
     rotate (N.to_nat k) xs = rotateN k xs.
@@ -565,6 +616,16 @@ Section listN.
     by apply: lookup_app_r; lia.
   Qed.
 
+  Lemma lookupN_insertN_eq i x xs :
+    (i < lengthN xs)%N ->
+    <[i:=x]> xs !! i = Some x.
+  Proof. rewrite /lengthN. move=> H. apply: list_lookup_insert. lia. Qed.
+
+  Lemma lookupN_insertN_neq i j x xs :
+    i <> j ->
+    <[i:=x]> xs !! j = xs !! j.
+  Proof. move=> H. apply: list_lookup_insert_ne. lia. Qed.
+
   Lemma lookupN_nth_error {A'} i (xs : list A') :
     lookupN i xs = nth_error xs (N.to_nat i).
   Proof.
@@ -632,6 +693,61 @@ Section listN.
      @lookupN_app_l, @lookupN_app_r,
      @lookupN_map,
      @lookupN_rotateN).
+
+  Lemma insertN_id i x xs :
+    xs !! i = Some x ->
+    <[i:=x]> xs = xs.
+  Proof. by apply: list_insert_id. Qed.
+
+  Lemma insertN_nil i x :
+    <[i:=x]> [] = [].
+  Proof. reflexivity. Qed.
+
+  Lemma insertN_cons_zero x x' xs :
+    <[0%N:=x']> (x :: xs) = x' :: xs.
+  Proof. reflexivity. Qed.
+
+  Lemma insertN_cons_succ i x x' xs :
+    <[(i + 1)%N:=x']> (x :: xs) = x :: <[i:=x']> xs.
+  Proof. by rewrite /insert/list_insertN N.add_1_r N2Nat.inj_succ. Qed.
+
+  Lemma insertN_lengthN i x xs :
+    (i >= lengthN xs)%N ->
+    <[i:=x]> xs = xs.
+  Proof. move/N.ge_le/N2Nat_inj_le. rewrite /lengthN Nat2N.id. by apply: list_insert_ge. Qed.
+
+  Lemma insertN_insertN i x x' xs :
+    <[i:=x']> (<[i:=x]> xs) = <[i:=x']> xs.
+  Proof. by apply: list_insert_insert. Qed.
+
+  Lemma insertN_comm i j x x' xs :
+  i <> j ->
+  <[i:=x]> (<[j:=x']> xs) = <[j:=x']> (<[i:=x]> xs).
+  Proof. move=> H. apply: list_insert_commute. lia. Qed.
+
+  Lemma insertN_app_l i x xs1 xs2 :
+    (i < lengthN xs1)%N ->
+    <[i:=x]> (xs1 ++ xs2) = <[i:=x]> xs1 ++ xs2.
+  Proof. rewrite /lengthN. move=> H. apply: insert_app_l. lia. Qed.
+
+  Lemma insertN_app_r i x xs1 xs2 :
+    (i >= lengthN xs1)%N ->
+    <[i:=x]> (xs1 ++ xs2) = xs1 ++ <[(i - lengthN xs1)%N:=x]> xs2.
+  Proof.
+    move/N.ge_le/N2Nat_inj_le. rewrite /insert/insertN/lengthN N2Nat.inj_sub Nat2N.id.
+    by apply: insert_app_r_alt.
+  Qed.
+
+  Lemma map_insertN {B} (f : A -> B) i x xs :
+    f <$> (<[i:=x]> xs) = <[i:=f x]> (f <$> xs).
+  Proof. by apply: list_fmap_insert. Qed.
+
+  Lemma insertN_replicateN i n x :
+    <[i:=x]> (replicateN n x) = replicateN n x.
+  Proof. rewrite /replicateN. by apply: insert_replicate. Qed.
+
+  Definition insertN_simpl :=
+    (@insertN_nil, @insertN_cons_zero, @insertN_cons_succ).
 End listN.
 #[global] Notation cons_lengthN := lengthN_cons.
 #[global] Notation nil_lengthN := lengthN_nil.
