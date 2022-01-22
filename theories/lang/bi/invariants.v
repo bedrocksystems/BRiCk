@@ -111,7 +111,7 @@ Proof.
   rewrite inv_eq. iIntros (??) "#HinvP #HinvQ !>"; iIntros (E ?).
   iMod ("HinvP" with "[%]") as "[$ HcloseP]"; first set_solver.
   iMod ("HinvQ" with "[%]") as "[$ HcloseQ]"; first set_solver.
-  iMod (fupd_mask_subseteq _ (E ∖ ↑N)) as "Hclose"; first set_solver.
+  iMod (fupd_mask_subseteq (E ∖ ↑N)) as "Hclose"; first set_solver.
   iIntros "!> [HP HQ]".
   iMod "Hclose" as "_". iMod ("HcloseQ" with "HQ") as "?". by iMod ("HcloseP" with "HP").
 Qed.
