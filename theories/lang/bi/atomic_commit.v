@@ -438,7 +438,7 @@ Section lemmas.
     atomic_commit false Eo Ei α β Φ -∗ atomic_commit true Eo Ei α β Φ.
   Proof.
     rewrite atomic_commit_eq /atomic_commit_def /=.
-    iApply make_laterable_wand. iIntros "!>".
+    iApply make_laterable_intuitionistic_wand. iIntros "!>".
     by iApply commit_acc_commit1_acc.
   Qed.
 
@@ -448,7 +448,7 @@ Section lemmas.
   Proof.
     rewrite atomic_commit_eq /atomic_commit_def.
     iIntros (Heo) "HAU".
-    iApply (make_laterable_wand with "[] HAU"). iIntros "!>".
+    iApply (make_laterable_intuitionistic_wand with "[] HAU"). iIntros "!>".
     iApply commit_acc_mask_weaken. done.
   Qed.
 
@@ -457,7 +457,7 @@ Section lemmas.
     atomic_commit b Eo Ei α β Φ -∗ commit_acc b Eo Ei α β Φ.
   Proof.
     rewrite atomic_commit_eq /atomic_commit_def. iIntros "HUpd".
-    iApply make_laterable_elim. done.
+    by iMod (make_laterable_elim with "HUpd").
   Qed.
 
   (* This lets you eliminate atomic commits with iMod. *)
@@ -485,7 +485,7 @@ Section lemmas.
   Proof.
     rewrite atomic_commit_eq /atomic_commit_def.
     iIntros (??? HAU) "[#HP HQ]".
-    iApply (make_laterable_intro Q with "[] HQ"). iIntros "!> >HQ".
+    iApply (make_laterable_intro Q with "[] HQ"). iIntros "!> HQ".
     iApply HAU. by iFrame.
   Qed.
 
