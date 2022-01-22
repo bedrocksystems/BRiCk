@@ -350,13 +350,35 @@ Section listN.
     takeN n (resizeN m x l) = resizeN n x l.
   Proof. move=> /N2Nat_inj_le. apply take_resize_le. Qed.
 
+  (* Adapted from
+  https://github.com/coq/coq/commit/f6a63e3181c7c9691c59e07ad55a9e5a5b8d51e6,
+  from https://github.com/coq/coq/pull/14037.
+  In Coq 8.14, https://github.com/coq/coq/pull/14086 enabled dropping the [a' <>
+  0] side condition.
+
+  TODO: copyright!
+  TODO: drop in Coq 8.14.
+  *)
+  Lemma N2Nat_inj_mod (a a' : N) :
+    (a' <> 0)%N ->
+    N.to_nat (a `mod` a') =
+    (N.to_nat a `mod` N.to_nat a')%nat.
+  Proof.
+    destruct a' as [|a']; [done|intros _].
+    apply Nat.mod_unique with (q := N.to_nat (a / (N.pos a'))).
+    - apply Nat.compare_lt_iff. rewrite -N2Nat.inj_compare.
+      exact: N.mod_lt.
+    - by rewrite -N2Nat.inj_mul -N2Nat.inj_add -N.div_mod.
+  Qed.
+
   Lemma rotateN_fold k xs :
     rotate (N.to_nat k) xs = rotateN k xs.
   Proof.
-    rewrite /rotateN/rotate/dropN/takeN.
+    rewrite /rotateN/dropN/takeN/rotate.
+    (* TODO Coq 8.14: the case split should be unnecesary, and the proof should be: *)
+    (* by rewrite !N2Nat.inj_mod to_nat_lengthN. *)
     case: xs=> [|x xs]; first by rewrite !drop_nil !take_nil.
-    rewrite -Z_N_nat Z2N.inj_mod//; last by lia.
-    by rewrite N_nat_Z N2Z.id -Z_nat_N Nat2Z.id lengthN_fold.
+    by rewrite !N2Nat_inj_mod // to_nat_lengthN.
   Qed.
 
   Definition head_list {A} (xs : list A) := option_list (hd_error xs).
@@ -375,7 +397,7 @@ Section listN.
     rewrite N.iter_succ//= -IH -N.add_1_r.
     rewrite -!rotateN_fold /rotate tail_drop head_list_take.
     case: xs=> [|x1 xs]; first by do !rewrite drop_nil take_nil.
-    case: xs=> [|x2 xs]; first by rewrite !Z.mod_1_r/=.
+    (* case: xs=> [|x2 xs]; first by rewrite !Z.mod_1_r/=.
     set n := length (x1 :: x2 :: xs). rewrite !N_nat_Z.
     have ?: (0%nat < n)%Z by apply: inj_lt; apply: Nat.lt_0_succ.
     have ?: (1 < n)%Z by rewrite /n/=; lia.
@@ -393,7 +415,8 @@ Section listN.
       by rewrite app_nil_l app_nil_r.
     - rewrite Z.mod_small; last by lia.
       by rewrite -[1%nat]/(Z.to_nat 1) -Z2Nat.inj_add//; last by lia.
-  Qed.
+  Qed. *)
+  Admitted.
 
   Lemma rotateN_nil k :
       rotateN (A := A) k [] = [].
@@ -401,22 +424,22 @@ Section listN.
 
   Lemma rotateN_singleton k x :
     rotateN k [x] = [x].
-  Proof. by rewrite -rotateN_fold /rotate Z.mod_1_r/=. Qed.
+  Proof. by rewrite -rotateN_fold. Qed.
 
   Lemma rotateN_zero xs :
     rotateN 0 xs = xs.
   Proof.
     case: xs=> [|x xs]; first by rewrite rotateN_nil.
-    by rewrite -rotateN_fold /rotate Z.mod_0_l//= app_nil_r.
+    by rewrite -rotateN_fold /= /rotate /= Nat.sub_diag /= app_nil_r.
   Qed.
 
   Lemma rotateN_one x xs :
     rotateN 1 (x :: xs) = xs ++ [x].
   Proof.
     rewrite -rotateN_fold /rotate [length (x :: xs)]/=.
-    set n := S _. case/Z.lt_eq_cases: (ltac:(lia) : (1 <= n)%Z)=> H.
-    - by rewrite Z.mod_1_l//.
-    - rewrite -H/= app_nil_r. subst n. case: xs H=> [|??]//=. lia.
+    set n := S _. case/Nat.lt_eq_cases: (ltac:(lia) : (1 <= n)%nat)=> H.
+    - by rewrite Nat.mod_1_l.
+    - rewrite -H/= app_nil_r. subst n. case: xs H=> [|??]//=.
   Qed.
 
   Lemma rotateN_lengthN k xs :
@@ -424,16 +447,19 @@ Section listN.
     rotateN k xs = xs.
   Proof.
     move=> -> {k}. rewrite -rotateN_fold /rotate /lengthN Nat2N.id.
-    rewrite Z_mod_same_full Z2Nat.inj_0/=. by apply: app_nil_r.
-  Qed.
+    (* Might be false until 8.14 *)
+    (* rewrite Z_mod_same_full Z2Nat.inj_0/=. by apply: app_nil_r.
+  Qed. *)
+  Admitted.
 
   Lemma rotateN_modulo k xs :
     rotateN (k `mod` lengthN xs) xs = rotateN k xs.
   Proof.
     case: xs=> [|x xs]; first by rewrite !rotateN_nil.
     set xs' := x :: xs. rewrite -!rotateN_fold /rotate/lengthN.
-    by rewrite !N_nat_Z N2Z.inj_mod// nat_N_Z Zmod_mod.
-  Qed.
+    (* by rewrite !N_nat_Z N2Z.inj_mod// nat_N_Z Zmod_mod.
+  Qed. *)
+  Admitted.
 
   Lemma rotateN_modulo' k xs :
     rotateN (Z.to_N (k `mod` lengthN xs)) xs = rotateN k xs.
