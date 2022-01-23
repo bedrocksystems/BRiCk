@@ -1,81 +1,40 @@
-
-
 <!DOCTYPE html>
 <html class="writer-html5" lang="en" >
 <head>
   <meta charset="utf-8" />
-  
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  
   <title>Evaluation &mdash; BedRock BRiCk alpha documentation</title>
-  
-
-  
-  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
-  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
-  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
-  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
-  <link rel="stylesheet" href="_static/alectryon.css" type="text/css" />
-  <link rel="stylesheet" href="_static/tango_subtle.min.css" type="text/css" />
-  <link rel="stylesheet" href="_static/css/justify.css" type="text/css" />
-
-  
-  
-
-  
-  
-
-  
-
-  
+      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="_static/alectryon.css" type="text/css" />
+      <link rel="stylesheet" href="_static/tango_subtle.min.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/justify.css" type="text/css" />
   <!--[if lt IE 9]>
     <script src="_static/js/html5shiv.min.js"></script>
   <![endif]-->
   
-    
-      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
         <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
         <script src="_static/jquery.js"></script>
         <script src="_static/underscore.js"></script>
         <script src="_static/doctools.js"></script>
         <script src="_static/alectryon.js"></script>
-    
-    <script type="text/javascript" src="_static/js/theme.js"></script>
-
-    
+    <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="Undefined behavior and optimizations" href="undefined_behavior.html" />
     <link rel="prev" title="Language Support" href="features.html" /> 
 </head>
 
-<body class="wy-body-for-nav">
-
-   
+<body class="wy-body-for-nav"> 
   <div class="wy-grid-for-nav">
-    
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
       <div class="wy-side-scroll">
         <div class="wy-side-nav-search" >
-          
-
-          
             <a href="index.html" class="icon icon-home"> BedRock BRiCk
-          
-
-          
           </a>
-
-          
-            
-            
               <div class="version">
                 0.5.0
               </div>
-            
-          
-
-          
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
     <input type="text" name="q" placeholder="Search docs" />
@@ -83,18 +42,7 @@
     <input type="hidden" name="area" value="default" />
   </form>
 </div>
-
-          
-        </div>
-
-        
-        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
-          
-            
-            
-              
-            
-            
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
               <p class="caption" role="heading"><span class="caption-text">Table of Contents</span></p>
 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="features.html">Language Support</a></li>
@@ -124,83 +72,42 @@
 <li class="toctree-l1"><a class="reference internal" href="acknowledgements.html">Acknowledgements</a></li>
 </ul>
 
-            
-          
         </div>
-        
       </div>
     </nav>
 
-    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
-
-      
-      <nav class="wy-nav-top" aria-label="top navigation">
-        
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
           <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
           <a href="index.html">BedRock BRiCk</a>
-        
       </nav>
 
-
       <div class="wy-nav-content">
-        
         <div class="rst-content style-external-links">
-        
-          
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-<div role="navigation" aria-label="breadcrumbs navigation">
-
+          <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
-    
       <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
-        
       <li>Evaluation</li>
-    
-    
       <li class="wy-breadcrumbs-aside">
-        
-          
             <a href="_sources/evaluation.rst.txt" rel="nofollow"> View page source</a>
-          
-        
       </li>
-    
   </ul>
-
-  
   <hr/>
 </div>
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
-            
+             
   <div class="section" id="evaluation">
-<span id="id1"></span><h1>Evaluation<a class="headerlink" href="#evaluation" title="Permalink to this headline">¶</a></h1>
+<span id="id1"></span><h1>Evaluation<a class="headerlink" href="#evaluation" title="Permalink to this headline"></a></h1>
 <p>The semantics of C++ programs in BRiCk are written in <a class="reference external" href="https://en.wikipedia.org/wiki/Predicate_transformer_semantics">weakest (liberal) pre-condition style</a>.
 The general form of these rules is the following:</p>
 <p>Note that <code class="code highlight coq docutils literal notranslate"><span class="n"><span class="pre">wp</span></span></code> is a predicate in our separation logic (the fact that it returns a <code class="code highlight coq docutils literal notranslate"><span class="n"><span class="pre">PROP</span></span></code>).
 Informally you can think of it as capturing the pre-condition to the inputs (one of which is normally an expression) that are sufficient such that the code is safe and if the expression terminates, it terminates in a state in which its outputs statisfy the “continuation” (i.e. the final function argument to <code class="code highlight coq docutils literal notranslate"><span class="n"><span class="pre">wp</span></span></code>).</p>
 <p>Due to the structure of C++, BRiCk contains a separate weakest pre-condition modality for each syntactic category. These are defined in <a class="reference external" href="_static/coqdoc/bedrock.lang.cpp.logic.wp.html">bedrock.lang.cpp.logic.wp</a>.</p>
 <div class="section" id="expressions">
-<h2>Expressions<a class="headerlink" href="#expressions" title="Permalink to this headline">¶</a></h2>
+<h2>Expressions<a class="headerlink" href="#expressions" title="Permalink to this headline"></a></h2>
 <p>In BRiCk we break expression evaluation down into four weakest pre-condition assertions representing the different <a class="reference external" href="http://eel.is/c++draft/expr.prop#basic.lval-1">value categories</a> of a C++ expression.</p>
 <div class="section" id="modeling-temporaries">
-<h3>Modeling Temporaries<a class="headerlink" href="#modeling-temporaries" title="Permalink to this headline">¶</a></h3>
+<h3>Modeling Temporaries<a class="headerlink" href="#modeling-temporaries" title="Permalink to this headline"></a></h3>
 <p>In the course of evaluating C++ programs, the language can construct objects that are later destroyed, this occurs for <a class="reference external" href="https://eel.is/c++draft/basic.stc.auto#1">automatic storage duration</a> variables (i.e. stack allocated variables and temporaries).
 C++ semantics guarantees that the lifetime of temporaries is well-bracketed, meaning that objects will be destroyed in the reverse order that they were constructed.
 In BRiCk we capture the stack of objects to be destroyed using the type <a class="reference external" href="_static/coqdoc/bedrock.lang.cpp.logic.wp.html#FreeTemps.t">t</a>.</p>
@@ -238,7 +145,7 @@ Fixpoint interp (free : FreeTemps) (Q : epred) : mpred :=
 </div>
 </div>
 <div class="section" id="l-values-x-values">
-<h3>l-values &amp; x-values<a class="headerlink" href="#l-values-x-values" title="Permalink to this headline">¶</a></h3>
+<h3>l-values &amp; x-values<a class="headerlink" href="#l-values-x-values" title="Permalink to this headline"></a></h3>
 <p>l-values and x-values follow the same general structure.
 Their weakest precondition rules are captured by <a class="reference external" href="_static/coqdoc/bedrock.lang.cpp.logic.wp.html#WPE.wp_lval">wp_lval</a> and <a class="reference external" href="_static/coqdoc/bedrock.lang.cpp.logic.wp.html#WPE.wp_xval">wp_xval</a> respectively (we show <code class="code highlight coq docutils literal notranslate"><span class="n"><span class="pre">wp_lval</span></span></code> as our example).</p>
 <div class="highlight-text notranslate"><div class="highlight"><pre><span></span>(* [wp_lval σ E ρ e Q] evaluates the expression [e] in region [ρ]
@@ -253,7 +160,7 @@ Parameter wp_lval
 </div>
 </div>
 <div class="section" id="pr-values">
-<h3>pr-values<a class="headerlink" href="#pr-values" title="Permalink to this headline">¶</a></h3>
+<h3>pr-values<a class="headerlink" href="#pr-values" title="Permalink to this headline"></a></h3>
 <p>The final value category of C++ (pr-values) is slightly more complex than l-values and x-values.
 The <a class="reference external" href="http://eel.is/c++draft/expr.prop#basic.lval-1.2">C++ standard</a> describes them as follows:</p>
 <p><a class="reference external" href="_static/coqdoc/bedrock.lang.cpp.logic.wp.html#WPE.wp_init">wp_init</a> handles the second of these two.
@@ -304,7 +211,7 @@ In this case, the constructed value (of type <code class="code highlight coq doc
 <p>Note that the pointer <code class="code highlight coq docutils literal notranslate"><span class="n"><span class="pre">p</span></span></code> is completely unconstrained in this definition.
 In practice the C++ abstract machine will pick this pointer to be fresh and reserve it before proceeding to initialize it when evaluating <code class="code highlight coq docutils literal notranslate"><span class="n"><span class="pre">e</span></span></code>.</p>
 <div class="section" id="operands">
-<h4>Operands<a class="headerlink" href="#operands" title="Permalink to this headline">¶</a></h4>
+<h4>Operands<a class="headerlink" href="#operands" title="Permalink to this headline"></a></h4>
 <p><a class="reference external" href="_static/coqdoc/bedrock.lang.cpp.logic.wp.html#WPE.wp_operand">wp_operand</a> is used to evaluate a operand of a primitive operator.
 These operands are <em>always</em> primitives, since operators that accept aggregates are desugared to functions or methods.</p>
 <div class="highlight-text notranslate"><div class="highlight"><pre><span></span>(* evaluate a prvalue that &quot;computes the value of an operand of an operator&quot;
@@ -344,7 +251,7 @@ However, since the existence of a pointer does not imply that the object has a l
 </div>
 </div>
 <div class="section" id="function-call-semantics">
-<h3>Function Call Semantics<a class="headerlink" href="#function-call-semantics" title="Permalink to this headline">¶</a></h3>
+<h3>Function Call Semantics<a class="headerlink" href="#function-call-semantics" title="Permalink to this headline"></a></h3>
 <p>The semantics for function calls is concerned with the way that we pass arguments to functions and (potentially) recieve the return value.
 We note that it is important to handle the passing of primitives as well as aggregates, both of which are very common in C++.
 The semantics for function calls specifies how to pass arguments to functions and (potentially) get back the return value, both for primitives and for aggregates.
@@ -352,14 +259,14 @@ According to the standard, this involves initializing the arguments on function 
 <p>The current function call semantics are in the process of changing.
 Here, we discuss the current and the under-development behavior.</p>
 <div class="section" id="hybrid-argument-passing-current-project">
-<h4>Hybrid Argument Passing (Current BRiCk)<a class="headerlink" href="#hybrid-argument-passing-current-project" title="Permalink to this headline">¶</a></h4>
+<h4>Hybrid Argument Passing (Current BRiCk)<a class="headerlink" href="#hybrid-argument-passing-current-project" title="Permalink to this headline"></a></h4>
 <p>C++ distinguishes (in a stronger way than C) between primitive types, e.g. <code class="code highlight cpp docutils literal notranslate"><span class="kt"><span class="pre">int</span></span></code> and <code class="code highlight cpp docutils literal notranslate"><span class="n"><span class="pre">C</span></span><span class="o"><span class="pre">*</span></span></code>, and aggregate types, i.e. <code class="code highlight cpp docutils literal notranslate"><span class="k"><span class="pre">struct</span></span> <span class="n"><span class="pre">C</span></span></code> or <code class="code highlight cpp docutils literal notranslate"><span class="k"><span class="pre">union</span></span> <span class="n"><span class="pre">C</span></span></code>.
 Due to this distinguishing characteristic, one option is a hybrid argument passing style where primitives are passed directly and aggregates are passed materialized.</p>
 <p>We believe that this is sound because primitives have no destructors and so the order in which destruction occurs is not observable <a class="footnote-reference brackets" href="#non-observable-destructors" id="id3">2</a>.
 We see two downsides to this approach: first, the soundness relies on the above argument; second, the semantics of calls with type variables (not currently supported by BRiCk) is more complex.</p>
 </div>
 <div class="section" id="uniform-location-passing-future-project">
-<h4>Uniform Location Passing (future BRiCk)<a class="headerlink" href="#uniform-location-passing-future-project" title="Permalink to this headline">¶</a></h4>
+<h4>Uniform Location Passing (future BRiCk)<a class="headerlink" href="#uniform-location-passing-future-project" title="Permalink to this headline"></a></h4>
 <p>The C++ semantics <a class="reference external" href="https://eel.is/c++draft/expr.call#7">describes parameter passing (and return) using initialization semantics</a> and following this approach would give BRiCk the closest connection to the standard.
 It is also the style taken by <a class="reference external" href="https://www.cl.cam.ac.uk/~pes20/cerberus/">Cerberus</a>.</p>
 <p>The main benefit of this approach is that it enables a (mostly) uniform treatment of arguments to functions which is important when reasoning about <code class="code highlight cpp docutils literal notranslate"><span class="k"><span class="pre">template</span></span></code>-d code.
@@ -382,50 +289,33 @@ When passing primitives in this style, the <em>caller</em> needs to allocate mem
 
 
            </div>
-           
           </div>
-          <footer>
-    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
-        <a href="undefined_behavior.html" class="btn btn-neutral float-right" title="Undefined behavior and optimizations" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
         <a href="features.html" class="btn btn-neutral float-left" title="Language Support" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="undefined_behavior.html" class="btn btn-neutral float-right" title="Undefined behavior and optimizations" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 
   <hr/>
 
   <div role="contentinfo">
-    <p>
-        &#169; Copyright 2021 BedRock Systems.
-
-    </p>
+    <p>&#169; Copyright 2021 BedRock Systems.</p>
   </div>
-    
-    
-    
-    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
-    
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
-    
-    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
 
 </footer>
         </div>
       </div>
-
     </section>
-
   </div>
-  
-
-  <script type="text/javascript">
+  <script>
       jQuery(function () {
           SphinxRtdTheme.Navigation.enable(true);
       });
-  </script>
-
-  
-  
-    
-   
+  </script> 
 
 </body>
 </html>

@@ -1,81 +1,40 @@
-
-
 <!DOCTYPE html>
 <html class="writer-html5" lang="en" >
 <head>
   <meta charset="utf-8" />
-  
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  
   <title>Language Support &mdash; BedRock BRiCk alpha documentation</title>
-  
-
-  
-  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
-  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
-  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
-  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
-  <link rel="stylesheet" href="_static/alectryon.css" type="text/css" />
-  <link rel="stylesheet" href="_static/tango_subtle.min.css" type="text/css" />
-  <link rel="stylesheet" href="_static/css/justify.css" type="text/css" />
-
-  
-  
-
-  
-  
-
-  
-
-  
+      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="_static/alectryon.css" type="text/css" />
+      <link rel="stylesheet" href="_static/tango_subtle.min.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/justify.css" type="text/css" />
   <!--[if lt IE 9]>
     <script src="_static/js/html5shiv.min.js"></script>
   <![endif]-->
   
-    
-      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
         <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
         <script src="_static/jquery.js"></script>
         <script src="_static/underscore.js"></script>
         <script src="_static/doctools.js"></script>
         <script src="_static/alectryon.js"></script>
-    
-    <script type="text/javascript" src="_static/js/theme.js"></script>
-
-    
+    <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="Evaluation" href="evaluation.html" />
     <link rel="prev" title="The BRiCk C++ Program Logic" href="index.html" /> 
 </head>
 
-<body class="wy-body-for-nav">
-
-   
+<body class="wy-body-for-nav"> 
   <div class="wy-grid-for-nav">
-    
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
       <div class="wy-side-scroll">
         <div class="wy-side-nav-search" >
-          
-
-          
             <a href="index.html" class="icon icon-home"> BedRock BRiCk
-          
-
-          
           </a>
-
-          
-            
-            
               <div class="version">
                 0.5.0
               </div>
-            
-          
-
-          
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
     <input type="text" name="q" placeholder="Search docs" />
@@ -83,18 +42,7 @@
     <input type="hidden" name="area" value="default" />
   </form>
 </div>
-
-          
-        </div>
-
-        
-        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
-          
-            
-            
-              
-            
-            
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
               <p class="caption" role="heading"><span class="caption-text">Table of Contents</span></p>
 <ul class="current">
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Language Support</a><ul>
@@ -114,76 +62,35 @@
 <li class="toctree-l1"><a class="reference internal" href="acknowledgements.html">Acknowledgements</a></li>
 </ul>
 
-            
-          
         </div>
-        
       </div>
     </nav>
 
-    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
-
-      
-      <nav class="wy-nav-top" aria-label="top navigation">
-        
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
           <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
           <a href="index.html">BedRock BRiCk</a>
-        
       </nav>
 
-
       <div class="wy-nav-content">
-        
         <div class="rst-content style-external-links">
-        
-          
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-<div role="navigation" aria-label="breadcrumbs navigation">
-
+          <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
-    
       <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
-        
       <li>Language Support</li>
-    
-    
       <li class="wy-breadcrumbs-aside">
-        
-          
             <a href="_sources/features.rst.txt" rel="nofollow"> View page source</a>
-          
-        
       </li>
-    
   </ul>
-
-  
   <hr/>
 </div>
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
-            
+             
   <div class="section" id="language-support">
-<span id="features"></span><h1>Language Support<a class="headerlink" href="#language-support" title="Permalink to this headline">¶</a></h1>
+<span id="features"></span><h1>Language Support<a class="headerlink" href="#language-support" title="Permalink to this headline"></a></h1>
 <p>The BRiCk program logic is aimed to be a formalization of pragmatic C++. Its feature set is guided by the requirements of low-level program verification and also some pragmatic considerations.</p>
 <div class="section" id="limitations-of-project">
-<h2>Limitations of BRiCk<a class="headerlink" href="#limitations-of-project" title="Permalink to this headline">¶</a></h2>
+<h2>Limitations of BRiCk<a class="headerlink" href="#limitations-of-project" title="Permalink to this headline"></a></h2>
 <p>BRiCk does not cover the full feature set of C++. Some features that are explicitly <strong>not supported</strong> are:</p>
 <ul class="simple">
 <li><p>The BRiCk program logic <em>assumes</em> that the abstract syntax tree is well-typed and uses this assumption to avoid performing type checking within the semantics. If you are using <code class="code highlight coq docutils literal notranslate"><span class="n"><span class="pre">cpp2v</span></span></code> to generate the AST, then Clang will ensure that the syntax tree is well typed.</p></li>
@@ -212,7 +119,7 @@
 </ul>
 </div>
 <div class="section" id="deviations-from-the-standard">
-<h2>Deviations from the Standard<a class="headerlink" href="#deviations-from-the-standard" title="Permalink to this headline">¶</a></h2>
+<h2>Deviations from the Standard<a class="headerlink" href="#deviations-from-the-standard" title="Permalink to this headline"></a></h2>
 <p>In certain instances, BRiCk’s semantics deviates from the C++ standard.</p>
 <ul class="simple">
 <li><p>Our semantics do not currently permit “pointer zapping”. See <a class="reference internal" href="pointers.html#no-pointer-zapping"><span class="std std-ref">Assumptions beyond the standard</span></a>.</p></li>
@@ -221,7 +128,7 @@
 </ul>
 </div>
 <div class="section" id="known-issues">
-<h2>Known Issues<a class="headerlink" href="#known-issues" title="Permalink to this headline">¶</a></h2>
+<h2>Known Issues<a class="headerlink" href="#known-issues" title="Permalink to this headline"></a></h2>
 <p>There are several known issues with the current BRiCk semantics; we are working to support these.</p>
 <ul class="simple">
 <li><p>The definition of <code class="code highlight coq docutils literal notranslate"><span class="n"><span class="pre">anyR</span></span></code> does not support aggreate types, but it should.</p></li>
@@ -229,7 +136,7 @@
 </ul>
 </div>
 <div class="section" id="extensions-to-the-standard">
-<h2>Extensions to the Standard<a class="headerlink" href="#extensions-to-the-standard" title="Permalink to this headline">¶</a></h2>
+<h2>Extensions to the Standard<a class="headerlink" href="#extensions-to-the-standard" title="Permalink to this headline"></a></h2>
 <p>BRiCk also extends the C++ standard in limited ways to make low-level program verification possible.
 For example, interoperation with assembly (see <a class="reference internal" href="machine.html#machine-interop"><span class="std std-ref">Assembly Interoperation</span></a>), sharing data across address spaces, etc.
 We believe that our extensions are conservative and characterize the way that low-level programmers rely on compilers to work.</p>
@@ -246,50 +153,33 @@ We believe that our extensions are conservative and characterize the way that lo
 
 
            </div>
-           
           </div>
-          <footer>
-    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
-        <a href="evaluation.html" class="btn btn-neutral float-right" title="Evaluation" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
         <a href="index.html" class="btn btn-neutral float-left" title="The BRiCk C++ Program Logic" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="evaluation.html" class="btn btn-neutral float-right" title="Evaluation" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 
   <hr/>
 
   <div role="contentinfo">
-    <p>
-        &#169; Copyright 2021 BedRock Systems.
-
-    </p>
+    <p>&#169; Copyright 2021 BedRock Systems.</p>
   </div>
-    
-    
-    
-    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
-    
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
-    
-    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
 
 </footer>
         </div>
       </div>
-
     </section>
-
   </div>
-  
-
-  <script type="text/javascript">
+  <script>
       jQuery(function () {
           SphinxRtdTheme.Navigation.enable(true);
       });
-  </script>
-
-  
-  
-    
-   
+  </script> 
 
 </body>
 </html>
