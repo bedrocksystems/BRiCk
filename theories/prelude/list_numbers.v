@@ -22,6 +22,20 @@ Definition rotateN {A} n xs :=
 #[global] Instance list_lookupN {A}: Lookup N A (list A) | 10 := fun i xs => lookup (N.to_nat i) xs.
 #[global] Notation lookupN := (lookup (K := N)).
 
+(* A proof appears in
+https://github.com/coq/coq/commit/f6a63e3181c7c9691c59e07ad55a9e5a5b8d51e6,
+from https://github.com/coq/coq/pull/14037.
+In Coq 8.14, https://github.com/coq/coq/pull/14086 enabled dropping the [a' <>
+0] side condition.
+
+TODO: drop in Coq 8.14.
+*)
+Lemma N2Nat_inj_mod (a a' : N) :
+  (a' <> 0)%N ->
+  N.to_nat (a `mod` a') =
+  (N.to_nat a `mod` N.to_nat a')%nat.
+Proof.
+Admitted.
 
 Lemma fmap_lengthN {A B} (f : A → B) (l : list A) :
   lengthN (f <$> l) = lengthN l.
@@ -349,27 +363,6 @@ Section listN.
     n ≤ m →
     takeN n (resizeN m x l) = resizeN n x l.
   Proof. move=> /N2Nat_inj_le. apply take_resize_le. Qed.
-
-  (* Adapted from
-  https://github.com/coq/coq/commit/f6a63e3181c7c9691c59e07ad55a9e5a5b8d51e6,
-  from https://github.com/coq/coq/pull/14037.
-  In Coq 8.14, https://github.com/coq/coq/pull/14086 enabled dropping the [a' <>
-  0] side condition.
-
-  TODO: copyright!
-  TODO: drop in Coq 8.14.
-  *)
-  Lemma N2Nat_inj_mod (a a' : N) :
-    (a' <> 0)%N ->
-    N.to_nat (a `mod` a') =
-    (N.to_nat a `mod` N.to_nat a')%nat.
-  Proof.
-    destruct a' as [|a']; [done|intros _].
-    apply Nat.mod_unique with (q := N.to_nat (a / (N.pos a'))).
-    - apply Nat.compare_lt_iff. rewrite -N2Nat.inj_compare.
-      exact: N.mod_lt.
-    - by rewrite -N2Nat.inj_mul -N2Nat.inj_add -N.div_mod.
-  Qed.
 
   Lemma rotateN_fold k xs :
     rotate (N.to_nat k) xs = rotateN k xs.
