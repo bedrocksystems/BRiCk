@@ -95,6 +95,8 @@ Definition bindM2 `{MBind M} `(f : A → B → M C) : M A → M B → M C :=
   ltac:(let H := eval hnf in tm in exact H) (only parsing).
 #[global] Notation Cbn tm :=
   ltac:(let H := eval cbn in tm in exact H) (only parsing).
+#[global] Notation Beta tm :=
+  ltac:(let H := eval cbv beta in tm in exact H) (only parsing).
 #[global] Notation Evaluate tm :=
   ltac:(let H := eval vm_compute in tm in exact H) (only parsing).
 
