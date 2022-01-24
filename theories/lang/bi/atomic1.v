@@ -22,7 +22,7 @@
 
 From stdpp Require Import coPset namespaces.
 From iris.bi.lib Require Import fixpoint.
-From iris.proofmode Require Import coq_tactics tactics reduction.
+From iris.proofmode Require Import coq_tactics proofmode reduction.
 From iris.prelude Require Import options.
 From iris.bi.lib Require Import atomic.
 
@@ -126,7 +126,7 @@ Section definition.
     atomic1_acc Eo1 Ei α P β Φ -∗ atomic1_acc Eo2 Ei α P β Φ.
   Proof.
     iIntros (HE) "Hstep".
-    iMod fupd_intro_mask' as "Hclose1"; first done.
+    iMod fupd_mask_subseteq as "Hclose1"; first done.
     iMod "Hstep" as (x) "[Hα Hclose2]". iIntros "!>". iExists x.
     iFrame. iSplitWith "Hclose2".
     - iIntros "Hα". iMod ("Hclose2" with "Hα") as "$". done.
@@ -144,8 +144,8 @@ Section definition.
   Local Instance atomic1_update_pre_mono : BiMonoPred atomic1_update_pre.
   Proof.
     constructor.
-    - iIntros (P1 P2) "#HP12". iIntros ([]) "AU".
-      iApply (make_laterable_wand with "[] AU").
+    - iIntros (P1 P2 ??) "#HP12". iIntros ([]) "AU".
+      iApply (make_laterable_intuitionistic_wand with "[] AU").
       iIntros "!> AA". iApply (atomic1_acc_wand with "[HP12] AA").
       iSplit; last by eauto. iApply "HP12".
     - intros ??. solve_proper.
@@ -324,9 +324,9 @@ Section lemmas.
   Proof.
     rewrite atomic_update_eq atomic1_update_eq /atomic1_update_def /=.
     iIntros "HAU".
-    iApply (greatest_fixpoint_coind _ (λ _, atomic_update_def Eo Ei α β Φ)); last done.
+    iApply (greatest_fixpoint_coiter _ (λ _, atomic_update_def Eo Ei α β Φ)); last done.
     iIntros "!> *". rewrite {1}/atomic_update_def /= greatest_fixpoint_unfold.
-    iApply make_laterable_wand. iIntros "!>".
+    iApply make_laterable_intuitionistic_wand. iIntros "!>".
     by iApply atomic_acc_atomic1_acc.
   Qed.
 
@@ -336,9 +336,9 @@ Section lemmas.
   Proof.
     rewrite atomic1_update_eq {2}/atomic1_update_def /=.
     iIntros (Heo) "HAU".
-    iApply (greatest_fixpoint_coind _ (λ _, atomic1_update_def Eo1 Ei α β Φ)); last done.
+    iApply (greatest_fixpoint_coiter _ (λ _, atomic1_update_def Eo1 Ei α β Φ)); last done.
     iIntros "!> *". rewrite {1}/atomic1_update_def /= greatest_fixpoint_unfold.
-    iApply make_laterable_wand. iIntros "!>".
+    iApply make_laterable_intuitionistic_wand. iIntros "!>".
     iApply atomic1_acc_mask_weaken. done.
   Qed.
 
@@ -349,7 +349,7 @@ Section lemmas.
   Proof using Type*.
     rewrite atomic1_update_eq {1}/atomic1_update_def /=. iIntros "HUpd".
     iPoseProof (greatest_fixpoint_unfold_1 with "HUpd") as "HUpd".
-    iApply make_laterable_elim. done.
+    by iMod (make_laterable_elim with "HUpd").
   Qed.
 
   (* This lets you eliminate atomic updates with iMod. *)
@@ -382,8 +382,8 @@ Section lemmas.
   Proof.
     rewrite atomic1_update_eq {1}/atomic1_update_def /=.
     iIntros (??? HAU) "[#HP HQ]".
-    iApply (greatest_fixpoint_coind _ (λ _, Q)); last done. iIntros "!>" ([]) "HQ".
-    iApply (make_laterable_intro Q with "[] HQ"). iIntros "!> >HQ".
+    iApply (greatest_fixpoint_coiter _ (λ _, Q)); last done. iIntros "!>" ([]) "HQ".
+    iApply (make_laterable_intro Q with "[] HQ"). iIntros "!> HQ".
     iApply HAU. by iFrame.
   Qed.
 
@@ -393,7 +393,7 @@ Section lemmas.
     atomic1_acc Eo Ei α P β Φ).
   Proof.
     iIntros (? x) "Hα Hclose".
-    iMod fupd_intro_mask' as "Hclose'"; last iModIntro; first set_solver.
+    iMod fupd_mask_subseteq as "Hclose'"; last iModIntro; first set_solver.
     iExists x. iFrame. iSplitWith "Hclose".
     - iIntros "Hα". iMod "Hclose'" as "_". iApply "Hclose". done.
     - iIntros "!>" (y) "Hβ". iMod "Hclose'" as "_". iApply "Hclose". done.
@@ -412,7 +412,7 @@ Section lemmas.
        to happen only if one argument is a constructor. *)
     iIntros (_) "Hinner >Hacc". iDestruct "Hacc" as (x') "[Hα' Hclose]".
     iMod ("Hinner" with "Hα'") as (x) "[Hα Hclose']".
-    iMod (fupd_intro_mask') as "Hclose''"; last iModIntro; first done.
+    iMod (fupd_mask_subseteq) as "Hclose''"; last iModIntro; first done.
     iExists x. iFrame. iSplitWith "Hclose'".
     - iIntros "Hα". iMod "Hclose''" as "_".
       iMod ("Hclose'" with "Hα") as "[Hβ' HPas]".

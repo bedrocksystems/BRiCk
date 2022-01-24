@@ -7,7 +7,7 @@ Require Import bedrock.lang.bi.ChargeCompat.
 Require Import bedrock.lang.bi.telescopes.
 Require Import bedrock.lang.cpp.logic.entailsN.
 Require Import bedrock.lang.bi.errors.
-Require Import iris.proofmode.tactics.	(** Early to get the right [ident] *)
+Require Import iris.proofmode.proofmode.	(** Early to get the right [ident] *)
 Require Import bedrock.lang.cpp.logic.
 Require Export bedrock.lang.cpp.specs.with_pre_post.
 Require Import bedrock.lang.cpp.heap_notations.
@@ -204,7 +204,7 @@ Section with_cpp.
         rewrite -{1}[P1](left_id emp%I bi_sep) -assoc. f_equiv.
         exact: only_provable_introN. }
       rewrite {F1}HF. f_equiv=>x2. rewrite /F2 {F2} tele_app_bind.
-      rewrite /M2 {M2} tele_app_bind tele_map_app. simpl. f_equiv.
+      rewrite /M2 {M2} tele_app_bind tele_map_app. simpl. f_equiv; [|done].
       apply only_provable_elimN'=>->. exact: only_provable_introN.
     Qed.
 

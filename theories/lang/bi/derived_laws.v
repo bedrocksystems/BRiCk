@@ -6,7 +6,7 @@
 (** *)
 
 From iris.bi Require Import bi lib.fractional.
-From iris.proofmode Require Import tactics.
+From iris.proofmode Require Import proofmode.
 From bedrock.lang.bi Require only_provable.
 
 (**

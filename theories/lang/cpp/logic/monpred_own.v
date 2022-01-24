@@ -33,7 +33,7 @@ Section si_monpred_embedding.
     This is to be fixed upstream in Iris. *)
   Lemma monPred_si_cmra_valid_validI `{inG Σ A} (a : A) :
     ⎡ si_cmra_valid a ⎤ ⊣⊢@{monPredI} ⎡ uPred_cmra_valid a ⎤.
-  Proof. by rewrite -si_cmra_valid_validI embed_embed. Qed.
+  Proof. by rewrite -si_cmra_valid_validI embedding.embed_embed. Qed.
 End si_monpred_embedding.
 
 Section monpred_instances.
@@ -59,7 +59,7 @@ Section monpred_instances.
     constructor; intros; rewrite /own has_own_monpred_eq /has_own_monpred_def; red.
 
   #[global] Instance has_own_valid_monpred: HasOwnValid monPredI A.
-  Proof. unseal_monpred. by rewrite own_valid -embed_embed. Qed.
+  Proof. unseal_monpred. by rewrite own_valid -embedding.embed_embed. Qed.
 
   #[global] Instance has_own_update_monpred : HasOwnUpd monPredI A.
   Proof.
@@ -82,7 +82,7 @@ Section monpred_instances.
   Proof. rewrite has_own_monpred_eq. apply _. Qed.
 End monpred_instances.
 
-Instance has_own_unit_monpred {I : biIndex} {Σ} {A : ucmraT} `{Hin: inG Σ A} :
+Instance has_own_unit_monpred {I : biIndex} {Σ} {A : ucmra} `{Hin: inG Σ A} :
   HasOwnUnit (monPredI I (iPropI Σ)) A.
 Proof.
   constructor; intros; rewrite /own has_own_monpred_eq /has_own_monpred_def; red.

@@ -7,7 +7,7 @@
 From Coq Require Import ZArith.BinInt Lists.List.
 From Coq.Strings Require Export Ascii.
 
-From iris.proofmode Require Import tactics.
+From iris.proofmode Require Import proofmode.
 
 Require Import bedrock.prelude.stdpp_ssreflect.
 Require bedrock.prelude.bytestring.

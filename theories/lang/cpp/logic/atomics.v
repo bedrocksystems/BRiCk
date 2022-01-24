@@ -4,7 +4,7 @@
  * See the LICENSE-BedRock file in the repository root for details.
  *)
 
-Require Import iris.proofmode.tactics.
+Require Import iris.proofmode.proofmode.
 Require Import bedrock.lang.bi.ChargeCompat.
 Require Export bedrock.lang.bi.atomic1.
 From bedrock.lang.cpp Require Import ast semantics.

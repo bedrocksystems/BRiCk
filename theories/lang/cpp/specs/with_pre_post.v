@@ -92,7 +92,7 @@ Section wpp_ofe.
   Proof.
     exact: (iso_ofe_mixin (A:=ARGS -d> (RESULT -> PROP) -d> PROP) WppGD).
   Qed.
-  Canonical Structure WithPrePostGO := OfeT WPP wpp_ofe_mixin.
+  Canonical Structure WithPrePostGO := Ofe WPP wpp_ofe_mixin.
 End wpp_ofe.
 End wpp_ofe.
 Arguments WithPrePostGO : clear implicits.

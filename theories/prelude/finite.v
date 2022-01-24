@@ -335,7 +335,7 @@ Module Type finite_bitmask_type_mixin (Import F : finite_type) (Import B : bitma
       bool_decide (x = y) || testbit mask y.
     Proof.
       rewrite /testbit /setbit N_setbit_bool_decide.
-      by rewrite (bool_decide_iff _ _ (inj_iff to_bit _ _)).
+      by rewrite (bool_decide_ext _ _ (inj_iff to_bit _ _)).
     Qed.
 
     Lemma filter_setbit (x y z : t) mask :
@@ -570,7 +570,7 @@ Module simple_finite_bits (BT : simple_finite_bitmask_type_intf).
     N.testbit (to_bits rs) i =
     bool_decide (∃ r, BT.of_bit i = Some r ∧ r ∈ rs).
   Proof.
-    rewrite N_testbit_to_bits; apply bool_decide_iff.
+    rewrite N_testbit_to_bits; apply bool_decide_ext.
     split; intros (r & Heq & Hin); exists r; subst.
     { split; [|done]. exact: BT.of_to_bit. }
     by rewrite (BT.to_of_bit _ _ Heq).
@@ -580,14 +580,14 @@ Module simple_finite_bits (BT : simple_finite_bitmask_type_intf).
     N.testbit mask_top i = bool_decide (∃ r : BT.t, BT.to_bit r = i).
   Proof.
     rewrite /mask_top /to_bits N_testbit_to_bits.
-    apply bool_decide_iff. set_solver.
+    apply bool_decide_ext. set_solver.
   Qed.
 
   Lemma N_testbit_mask_top_of_bit i :
     N.testbit mask_top i = bool_decide (is_Some (BT.of_bit i)).
   Proof.
     rewrite N_testbit_mask_top_to_bit /is_Some.
-    apply bool_decide_iff; split; intros [r H]; exists r; subst.
+    apply bool_decide_ext; split; intros [r H]; exists r; subst.
     { exact: BT.of_to_bit. }
     exact: BT.to_of_N.
   Qed.
@@ -597,7 +597,7 @@ Module simple_finite_bits (BT : simple_finite_bitmask_type_intf).
   Proof.
     apply N.bits_inj_iff => i.
     rewrite N_testbit_all_bits N_testbit_mask_top_of_bit /is_Some.
-    apply bool_decide_iff.
+    apply bool_decide_ext.
     split. {
       intros (x & Hdec & Henc)%encode_decode_N.
       by exists x; apply Hdec.

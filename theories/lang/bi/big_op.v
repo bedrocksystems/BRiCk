@@ -6,7 +6,7 @@
 
 From iris.algebra Require Import list.
 From iris.bi Require Import monpred big_op.
-From iris.proofmode Require Import tactics.
+From iris.proofmode Require Import proofmode.
 Require Import bedrock.prelude.list.
 
 Section big_op.

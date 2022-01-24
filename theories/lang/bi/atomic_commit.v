@@ -23,7 +23,7 @@ Require Import stdpp.coPset stdpp.namespaces.
 Require Export iris.bi.bi iris.bi.updates.
 Require Export bedrock.lang.bi.laterable.
 Require Import bedrock.lang.bi.telescopes.
-Require Import iris.proofmode.tactics.
+Require Import iris.proofmode.proofmode.
 Set Default Proof Using "Type".
 
 (** * Atomic commits *)
@@ -79,7 +79,7 @@ Section definition.
     commit_acc b Eo1 Ei α β Φ -∗ commit_acc b Eo2 Ei α β Φ.
   Proof.
     iIntros (HE) "Hstep".
-    iMod fupd_intro_mask' as "Hclose1"; first done.
+    iMod fupd_mask_subseteq as "Hclose1"; first done.
     iMod "Hstep" as (x) "[Hα Hclose2]". iIntros "!>". iExists x.
     iFrame. iIntros "!>" (y) "Hβ". iMod ("Hclose2" with "Hβ") as "$". done.
   Qed.
@@ -438,7 +438,7 @@ Section lemmas.
     atomic_commit false Eo Ei α β Φ -∗ atomic_commit true Eo Ei α β Φ.
   Proof.
     rewrite atomic_commit_eq /atomic_commit_def /=.
-    iApply make_laterable_wand. iIntros "!>".
+    iApply make_laterable_intuitionistic_wand. iIntros "!>".
     by iApply commit_acc_commit1_acc.
   Qed.
 
@@ -448,7 +448,7 @@ Section lemmas.
   Proof.
     rewrite atomic_commit_eq /atomic_commit_def.
     iIntros (Heo) "HAU".
-    iApply (make_laterable_wand with "[] HAU"). iIntros "!>".
+    iApply (make_laterable_intuitionistic_wand with "[] HAU"). iIntros "!>".
     iApply commit_acc_mask_weaken. done.
   Qed.
 
@@ -457,7 +457,7 @@ Section lemmas.
     atomic_commit b Eo Ei α β Φ -∗ commit_acc b Eo Ei α β Φ.
   Proof.
     rewrite atomic_commit_eq /atomic_commit_def. iIntros "HUpd".
-    iApply make_laterable_elim. done.
+    by iMod (make_laterable_elim with "HUpd").
   Qed.
 
   (* This lets you eliminate atomic commits with iMod. *)
@@ -485,7 +485,7 @@ Section lemmas.
   Proof.
     rewrite atomic_commit_eq /atomic_commit_def.
     iIntros (??? HAU) "[#HP HQ]".
-    iApply (make_laterable_intro Q with "[] HQ"). iIntros "!> >HQ".
+    iApply (make_laterable_intro Q with "[] HQ"). iIntros "!> HQ".
     iApply HAU. by iFrame.
   Qed.
 
@@ -495,7 +495,7 @@ Section lemmas.
     commit_acc b Eo Ei α β Φ).
   Proof.
     iIntros (? x) "Hα Hclose".
-    iMod fupd_intro_mask' as "Hclose'"; last iModIntro; first set_solver.
+    iMod fupd_mask_subseteq as "Hclose'"; last iModIntro; first set_solver.
     iExists x. iFrame.
     iIntros "!>" (y) "Hβ". iMod "Hclose'" as "_". iApply "Hclose". done.
   Qed.
@@ -511,7 +511,7 @@ Section lemmas.
     rewrite /ElimAcc.
     iIntros (_) "Hinner >Hacc". iDestruct "Hacc" as (x') "[Hα' Hclose]".
     iMod ("Hinner" with "Hα'") as (x) "[Hα Hclose']".
-    iMod (fupd_intro_mask') as "Hclose''"; last iModIntro; first done.
+    iMod (fupd_mask_subseteq) as "Hclose''"; last iModIntro; first done.
     iExists x. iFrame.
     iIntros "!>" (y) "Hβ". iMod "Hclose''" as "_".
     iMod ("Hclose'" with "Hβ") as "Hβ'".

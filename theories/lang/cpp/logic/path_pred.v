@@ -5,7 +5,7 @@
  *)
 Require Import bedrock.prelude.base.
 
-Require Import iris.proofmode.tactics.
+Require Import iris.proofmode.proofmode.
 From bedrock.lang.cpp Require Import semantics logic.pred ast.
 
 Notation Loc := ptr (only parsing).

@@ -5,6 +5,7 @@
  * See the LICENSE-BedRock file in the repository root for details.
  *)
 Require Import iris.bi.bi.
+Require Import iris.bi.extensions.
 Require Export bedrock.lang.bi.prelude.
 
 (** * Step-indexed entailment *)
@@ -330,9 +331,9 @@ Section theory.
   Proof. repeat intro. by apply wand_monoN. Qed.
 
   (** [bi_persitently] *)
-  Lemma persistently_forall_2N {A} (P : A → PROP) n :
+  Lemma persistently_forall_2N `{BiPersistentlyForall PROP} {A} (P : A → PROP) n :
     (∀ a, <pers> P a) ⊢{n} <pers> (∀ a, P a).
-  Proof. apply entails_entailsN, bi.persistently_forall_2. Qed.
+  Proof. apply entails_entailsN, persistently_forall_2. Qed.
 
   (** [bi_later] *)
   Lemma later_forall_2N {A} (P : A → PROP) n : (∀ a, ▷ P a) ⊢{n} ▷ (∀ a, P a).

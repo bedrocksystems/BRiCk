@@ -147,12 +147,12 @@ Proof. rewrite /N.le -Nat2N.inj_compare. apply nat_compare_le. Qed.
 (** Adapter [N.eqb] into [bool_decide]. *)
 Lemma N_eqb_bool_decide (m n : N) : N.eqb m n = bool_decide (m = n).
 Proof.
-  by rewrite -(bool_decide_iff _ _ (N.eqb_eq _ _)) bool_decide_bool_eq.
+  by rewrite -(bool_decide_ext _ _ (N.eqb_eq _ _)) bool_decide_bool_eq.
 Qed.
 
 Lemma N_leb_bool_decide (m n : N) : N.leb m n = bool_decide (m ≤ n)%N.
 Proof.
-  by rewrite -(bool_decide_iff _ _ (N.leb_le _ _)) bool_decide_bool_eq.
+  by rewrite -(bool_decide_ext _ _ (N.leb_le _ _)) bool_decide_bool_eq.
 Qed.
 
 (** Rephrase spec for [N.ones] using [bool_decide]. *)

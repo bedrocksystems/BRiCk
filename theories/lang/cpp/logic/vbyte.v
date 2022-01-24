@@ -3,8 +3,7 @@
  * This software is distributed under the terms of the BedRock Open-Source License.
  * See the LICENSE-BedRock file in the repository root for details.
  *)
-From iris.proofmode Require Import tactics.
-From iris_string_ident Require Import ltac2_string_ident.
+From iris.proofmode Require Import proofmode.
 
 From iris.bi.lib Require Import fractional.
 

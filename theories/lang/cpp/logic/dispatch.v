@@ -6,7 +6,7 @@
 (**
  * reflecting virtual function dispatch in the logic.
  *)
-Require Import iris.proofmode.tactics.
+Require Import iris.proofmode.proofmode.
 Require Import bedrock.lang.cpp.ast.
 Require Import bedrock.lang.cpp.semantics.
 From bedrock.lang.cpp.logic Require Import pred heap_pred path_pred.

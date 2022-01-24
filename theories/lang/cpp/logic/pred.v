@@ -20,8 +20,7 @@ From iris.base_logic.lib Require Export iprop.
 (* TODO: ^^ only needed to export uPredI, should be removed. *)
 Require Import iris.bi.monpred.
 From iris.bi.lib Require Import fractional.
-From iris.proofmode Require Import tactics.
-From iris_string_ident Require Import ltac2_string_ident.
+From iris.proofmode Require Import proofmode.
 
 Require Import bedrock.lang.bi.na_invariants.
 Require Import bedrock.lang.bi.cancelable_invariants.
@@ -665,7 +664,7 @@ Section with_cpp.
   Lemma same_address_bool_null p tv :
     _valid_ptr tv p |--
     [| same_address_bool p nullptr = bool_decide (p = nullptr) |].
-  Proof. rewrite same_address_eq_null; iIntros "!%". apply bool_decide_iff. Qed.
+  Proof. rewrite same_address_eq_null; iIntros "!%". apply bool_decide_ext. Qed.
 
   Lemma valid_ptr_nonnull_nonzero p :
     p <> nullptr ->
@@ -927,7 +926,7 @@ Section with_cpp.
           * etrans. by apply HPQ. done.
       - intros n P Q []. split. done. by apply dist_S.
     Qed.
-    Canonical Structure function_specO := OfeT function_spec function_spec_ofe_mixin.
+    Canonical Structure function_specO := Ofe function_spec function_spec_ofe_mixin.
 
     #[global] Instance type_of_spec_ne (n : nat) :
       Proper (dist n ==> eq) type_of_spec.

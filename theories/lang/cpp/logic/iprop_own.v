@@ -16,9 +16,8 @@ Require Export bedrock.lang.bi.own.
 
 (* Embedding of si in iProp. It seems that such an embedding doesn't exist
   upstream yet. *)
-
 Program Definition si_embed_def {M} : Embed siPropI (uPredI M) :=
-  λ P, {| uPred_holds n x := P n |}.
+  λ P, {| uPred_holds n x := siProp_holds P n |}.
 Solve Obligations with naive_solver eauto using siProp_closed.
 Definition si_embed_aux : seal (@si_embed_def). Proof. by eexists. Qed.
 Definition si_embed := si_embed_aux.(unseal).
@@ -27,11 +26,12 @@ Definition si_embed_eq : @si_embed = _ := si_embed_aux.(seal_eq).
 
 Section si_embedding.
   #[local] Existing Instance si_embed.
-  Context {M : ucmraT}.
+  Context {M : ucmra}.
   Notation PROP := (uPredI M).
 
   #[local] Arguments siProp_holds !_ _ / : assert.
   #[local] Arguments uPred_holds _ !_ _ _ / : assert.
+  #[local] Coercion uPred_holds : uPred >-> Funclass.
 
   Program Definition si_unembed (P : PROP) : siProp :=
     {| siProp_holds n := P n ε |}.
@@ -91,7 +91,7 @@ Section si_embedding.
 
   (* TODO: uPred_cmra_valid should have been defined as si_cmra_valid.
     This is to be fixed upstream. *)
-  Lemma si_cmra_valid_validI {A : cmraT} (a : A) :
+  Lemma si_cmra_valid_validI {A : cmra} (a : A) :
     ⎡ si_cmra_valid a ⎤ ⊣⊢@{uPredI M} uPred_cmra_valid a.
   Proof.
     constructor => ???. unseal. by rewrite si_cmra_valid_eq.
@@ -139,6 +139,6 @@ Section iprop_instances.
   Qed.
 End iprop_instances.
 
-Instance has_own_unit_iprop {Σ} {A : ucmraT} `{Hin: inG Σ A} :
+Instance has_own_unit_iprop {Σ} {A : ucmra} `{Hin: inG Σ A} :
   HasOwnUnit (iPropI Σ) A.
 Proof. constructor; rewrite has_own_iprop_eq /=. by apply base_logic.lib.own.own_unit. Qed.

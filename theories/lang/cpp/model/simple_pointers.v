@@ -226,7 +226,7 @@ Module SIMPLE_PTRS_IMPL <: PTRS_INTF.
   Lemma raw_valid_o_sub_size σ p ty i :
     is_Some (ptr_vaddr (p .., o_sub σ ty i)) ->
     is_Some (size_of σ ty).
-  Proof. rewrite /o_sub /o_sub_off. case: size_of=> //. by eexists. Qed.
+  Proof. rewrite /o_sub /o_sub_off. case: size_of=> //. Qed.
 
   Definition eval_offset (_ : genv) (o : offset) : option Z := o.
   Lemma eval_o_sub σ ty (i : Z) :

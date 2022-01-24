@@ -8,10 +8,10 @@ Require Import bedrock.lang.bi.entailsN.
 
 (** [uPred M] supports [entailsN] *)
 Section uPred_entailsN.
-  Context {M : ucmraT}.
+  Context {M : ucmra}.
 
   Inductive uPred_entailsN' (n : nat) (P Q : uPred M) : Prop :=
-    { uPred_in_entailsN : ∀ n' x, n' ≤ n -> ✓{n'} x → P n' x → Q n' x }.
+    { uPred_in_entailsN : ∀ n' x, n' ≤ n -> ✓{n'} x → uPred_holds P n' x → uPred_holds Q n' x }.
   #[local] Instance uPred_entailsN : EntailsN (uPred M) := uPred_entailsN'.
 
   Lemma uPred_entailsN_mixin : BiEntailsNMixin (uPredI M).

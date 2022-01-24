@@ -7,7 +7,7 @@
 From iris.algebra Require Import list.
 From iris.bi Require Import monpred big_op.
 From iris.bi.lib Require Import fractional.
-From iris.proofmode Require Import tactics.
+From iris.proofmode Require Import proofmode.
 From bedrock.prelude Require Import numbers.
 From bedrock.lang Require Import bi.observe bi.big_op.
 From bedrock.lang.cpp.semantics Require Import types genv.

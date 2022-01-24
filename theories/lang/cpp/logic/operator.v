@@ -3,8 +3,7 @@
  * This software is distributed under the terms of the BedRock Open-Source License.
  * See the LICENSE-BedRock file in the repository root for details.
  *)
-Require Import iris.proofmode.tactics.
-From iris_string_ident Require Import ltac2_string_ident.
+Require Import iris.proofmode.proofmode.
 From bedrock.prelude Require Import base option.
 From bedrock.lang.cpp Require Import ast semantics.values semantics.operator.
 From bedrock.lang.cpp Require Import logic.pred.

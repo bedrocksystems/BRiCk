@@ -55,7 +55,7 @@ Section finset.
   (* In general, the only converse we get is [elements_proper]. *)
   Lemma elements_set_equiv_1 (x y : C) :
     elements x = elements y -> x ≡ y.
-  Proof. intros Heq. apply elem_of_equiv => e. by rewrite -!elem_of_elements Heq. Qed.
+  Proof. intros Heq. apply set_equiv => e. by rewrite -!elem_of_elements Heq. Qed.
 
   Lemma elements_set_equiv_L `{!LeibnizEquiv C} (x y : C) :
     elements x = elements y <-> x = y.

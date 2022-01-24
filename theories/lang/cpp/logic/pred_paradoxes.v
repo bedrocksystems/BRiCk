@@ -4,7 +4,7 @@
  * See the LICENSE-BedRock file in the repository root for details.
  *)
 (* Demonstrate paradoxes from alluring but incorrect axioms. *)
-Require Import iris.proofmode.tactics.
+Require Import iris.proofmode.proofmode.
 Require Import bedrock.prelude.base.
 
 From bedrock.lang.cpp Require Import semantics logic.pred ast.

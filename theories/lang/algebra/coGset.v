@@ -76,7 +76,7 @@ Section coGset.
 
   Lemma coGset_ucmra_mixin : UcmraMixin C.
   Proof. split; [done| |done]. intros X. by rewrite coGset_op_union left_id. Qed.
-  Canonical Structure coGsetUR := UcmraT C coGset_ucmra_mixin.
+  Canonical Structure coGsetUR := Ucmra C coGset_ucmra_mixin.
 
   Global Instance coGset_core_id X : CoreId X.
   Proof. apply core_id_total. by rewrite coGset_core_self. Qed.
@@ -185,7 +185,7 @@ Section set_disj.
 
   Lemma coGset_disj_ucmra_mixin : UcmraMixin (coGset_disj A).
   Proof. split; try apply _ || done. intros [X|]; coGset_disj_solve. Qed.
-  Canonical Structure coGset_disjUR := UcmraT (coGset_disj A) coGset_disj_ucmra_mixin.
+  Canonical Structure coGset_disjUR := Ucmra (coGset_disj A) coGset_disj_ucmra_mixin.
 
   Global Instance coGset_disj_core_id : CoreId (CoGSet (∅ : coGset A)).
   Proof. by rewrite/CoreId /pcore. Qed.
