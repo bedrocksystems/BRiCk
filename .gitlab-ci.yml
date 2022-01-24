@@ -56,11 +56,14 @@ variables:
   variables:
     LLVM_MAJ_VER: 12
 
-.public:
-  extends: .base
-  variables:
-    img_prefix: cpp2v-public-llvm
-    LLVM_MAJ_VER: 12
+# Configuration to test against upstream Coq. Temporarily disabled for now,
+# unnecessary with Coq 8.15.
+
+# .public:
+#   extends: .base
+#   variables:
+#     img_prefix: cpp2v-public-llvm
+#     LLVM_MAJ_VER: 12
 
 stages:
   - build
@@ -149,10 +152,10 @@ build_llvm12:
     - .build_aux
     - .llvm12
 
-build_public:
-  extends:
-    - .build_aux
-    - .public
+# build_public:
+#   extends:
+#     - .build_aux
+#     - .public
 
 test_latest:
   extends:
@@ -175,12 +178,12 @@ test_llvm12:
   needs:
     - build_llvm12
 
-test_public:
-  extends:
-    - .test
-    - .public
-  needs:
-    - build_public
+# test_public:
+#   extends:
+#     - .test
+#     - .public
+#   needs:
+#     - build_public
 
 prepare_env:
   extends:
