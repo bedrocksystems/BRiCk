@@ -203,6 +203,8 @@ prepare_env:
   artifacts:
     reports:
       dotenv: build.env
+  tags:
+    - fm.shared
 
 .build_cpp2v_base:
   stage: build_proofs_downstream
