@@ -61,14 +61,16 @@
 <span class="id" title="keyword">Ltac</span> <span class="id" title="var">done</span> := <span class="id" title="var">stdpp.tactics.done</span>.<br/>
 
 <br/>
-<span class="comment">(*&nbsp;TODO:&nbsp;to&nbsp;enable&nbsp;after&nbsp;the&nbsp;Iris&nbsp;bump.&nbsp;*)</span><br/>
-<span class="comment">(*<br/>
-<span class="comment">(**&nbsp;Iris&nbsp;itself&nbsp;and&nbsp;many&nbsp;dependencies&nbsp;still&nbsp;rely&nbsp;on&nbsp;this&nbsp;coercion.&nbsp;*)</span><br/>
-Coercion&nbsp;Z.of_nat&nbsp;:&nbsp;nat&nbsp;&gt;-&gt;&nbsp;Z.<br/>
+</div>
+
+<div class="doc">
+Iris itself and many dependencies still rely on this coercion. 
+</div>
+<div class="code">
+<span class="id" title="keyword">Coercion</span> <a class="idref" href="http://coq.inria.fr/distrib/V8.13.2/stdlib//Coq.ZArith.BinInt.html#Z.of_nat"><span class="id" title="definition">Z.of_nat</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.13.2/stdlib//Coq.ZArith.BinInt.html#Z.of_nat"><span class="id" title="definition">:</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.13.2/stdlib//Coq.ZArith.BinInt.html#Z.of_nat"><span class="id" title="definition">nat</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.13.2/stdlib//Coq.ZArith.BinInt.html#Z.of_nat"><span class="id" title="definition">&gt;-&gt;</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.13.2/stdlib//Coq.ZArith.BinInt.html#Z.of_nat"><span class="id" title="definition">Z</span></a>.<br/>
+
 <br/>
-<span class="comment">(*&nbsp;No&nbsp;Hint&nbsp;Mode&nbsp;set&nbsp;in&nbsp;stdpp&nbsp;because&nbsp;of&nbsp;Coq&nbsp;bugs&nbsp;5735 and 9058,&nbsp;only<br/>
-fixed&nbsp;in&nbsp;Coq&nbsp;&gt;=&nbsp;8.12,&nbsp;which&nbsp;Iris&nbsp;depends&nbsp;on.&nbsp;*)</span><br/>
-[global] Hint Mode Equiv ! : typeclass_instances. *)</span><br/>
+#[<span class="id" title="var">global</span>] <span class="id" title="keyword">Hint</span> <span class="id" title="var">Mode</span> <a class="idref" href="https://plv.mpi-sws.org/coqdoc/stdpp//stdpp.base.html#Equiv"><span class="id" title="class">Equiv</span></a> ! : <span class="id" title="var">typeclass_instances</span>.<br/>
 </div>
 <!--
 -- Copyright (c) 2020 BedRock Systems, Inc.
