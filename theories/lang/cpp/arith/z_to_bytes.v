@@ -110,8 +110,7 @@ Section FromToBytes.
             rewrite Z.bits_above_log2 ?andb_false_l ?andb_false_r //.
             -- apply Z.le_trans with (m := (2^(8*offset))%Z);
                  eauto; apply Z.pow_nonneg; lia.
-            -- apply Z.log2_lt_pow2; try lia.
-               eapply Z.lt_le_trans; eauto; apply Z.pow_pos_nonneg; lia.
+            -- apply Z.log2_lt_pow2; lia.
           * apply Z.eqb_neq in Hn''.
             assert (n < 8 + 8 * offset)%Z as Hn''' by lia.
             rewrite Z.ones_spec_low ?andb_true_l //; lia.

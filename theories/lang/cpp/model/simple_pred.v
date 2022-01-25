@@ -583,7 +583,8 @@ Module SimpleCPP.
       byte_ a b q ** byte_ a b' q' |-- byte_ a b (q + q') ** [| b = b' |].
     Proof.
       iIntros "[Hb Hb']".
-      iDestruct (byte_agree with "Hb Hb'") as %->. by iFrame.
+      iDestruct (byte_agree with "Hb Hb'") as %->.
+      iCombine "Hb Hb'" as "Hb". by iFrame.
     Qed.
 
     Lemma byte_update (a : addr) (rv rv' : runtime_val) :
@@ -604,9 +605,8 @@ Module SimpleCPP.
     Lemma bytes_cons a v vs q :
       bytes a (v :: vs) q -|- byte_ a v q ** bytes (N.succ a) vs q.
     Proof.
-      rewrite /bytes big_sepL_cons/=. do 2!f_equiv.
-      - lia.
-      - move=>o v'. f_equiv. lia.
+      rewrite /bytes big_sepL_cons /= N.add_0_r. do 2 f_equiv.
+      move => ?. do 2 f_equiv. apply leibniz_equiv_iff. lia.
     Qed.
 
     Lemma bytes_agree {a vs1 vs2 q1 q2} :

@@ -30,23 +30,6 @@ Definition rotateN {A} n xs :=
 #[global] Instance list_insertN {A} : Insert N A (list A) | 10 := fun i x xs => <[N.to_nat i := x]> xs.
 #[global] Notation insertN := (insert (K := N)) (only parsing).
 
-(* A proof appears in
- * https://github.com/coq/coq/commit/f6a63e3181c7c9691c59e07ad55a9e5a5b8d51e6,
- * from https://github.com/coq/coq/pull/14037.
- * In Coq 8.14, https://github.com/coq/coq/pull/14086 enabled dropping the
- * [a' <> 0] side condition.
- *
- * TODO: Drop after upgrade to Coq 8.14.
-*)
-Lemma N2Nat_inj_mod (a a' : N) :
-  (a' <> 0)%N ->
-  N.to_nat (a `mod` a') =
-  (N.to_nat a `mod` N.to_nat a')%nat.
-Proof.
-  move=> H. apply: Z_of_nat_inj.
-  by rewrite Nat2Z_inj_mod !N_nat_Z N2Z.inj_mod//.
-Qed.
-
 Lemma fmap_lengthN {A B} (f : A → B) (l : list A) :
   lengthN (f <$> l) = lengthN l.
 Proof. by rewrite /lengthN fmap_length. Qed.
@@ -431,7 +414,7 @@ Section listN.
     (* TODO Coq 8.14: the case split should be unnecesary, and the proof should be: *)
     (* by rewrite !N2Nat.inj_mod to_nat_lengthN. *)
     case: xs=> [|x xs]; first by rewrite !drop_nil !take_nil.
-    by rewrite !N2Nat_inj_mod // to_nat_lengthN.
+    by rewrite !N2Nat.inj_mod // to_nat_lengthN.
   Qed.
 
   Definition head_list {A} (xs : list A) := option_list (hd_error xs).
@@ -503,7 +486,7 @@ Section listN.
   Proof.
     case: xs=> [|x xs]; first by rewrite !rotateN_nil.
     rewrite -!rotateN_fold /rotate/lengthN.
-    rewrite N2Nat_inj_mod// Nat2N.id.
+    rewrite N2Nat.inj_mod// Nat2N.id.
     by rewrite Nat.mod_mod//.
   Qed.
 
@@ -652,7 +635,7 @@ Section listN.
   Proof.
     rewrite -!lookupN_fold -rotateN_fold /lengthN=> H.
     rewrite lookup_rotate_r /rotate_nat_add; last by lia.
-    f_equal. rewrite !N_nat_Z -N2Z.inj_add -nat_N_Z -N2Z.inj_mod; last by lia.
+    f_equal. rewrite !N_nat_Z -N2Z.inj_add -nat_N_Z -N2Z.inj_mod.
     by rewrite -Z_N_nat N2Z.id.
   Qed.
 

@@ -39,7 +39,7 @@ Section uPred_entailsN.
       uPred.unseal. intros [x Hx]. by apply (HPQ x).
     - (** sep_monoN *) intros P P' Q Q' n [HPQ] [HPQ']. uPred.unseal.
       constructor=>n' x Hn Hv. intros (y1 & y2 & Hy & HP1 & HP2).
-      rewrite {}Hy in Hv * =>Hv. exists y1, y2.
+      rewrite {}Hy in Hv *. exists y1, y2.
       naive_solver eauto using cmra_validN_op_l, cmra_validN_op_r.
     - (** wand_introN_r *) uPred.unseal=>P Q R n -[HPQ].
       split=>n1 x1 Hn1 Hv1 HP n2 x2 Hn2 Hv2 HQ. apply HPQ; [by etrans|done|].

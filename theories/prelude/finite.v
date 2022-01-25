@@ -541,7 +541,7 @@ Module Type simple_finite_bitmask_type_mixin (Import F : finite_type).
   definition. *)
   Lemma to_list_max : to_list all_bits = enum F.t.
   Proof.
-    rewrite /to_list /to_list_aux /filter.
+    rewrite /to_list /to_list_aux /filter /mbind.
     elim: enum => [//|x xs IH]; cbn; rewrite {}IH.
     set c := testbit _ _; suff -> : c = true by []; rewrite {}/c.
     apply N.ones_spec_iff, encode_N_lt_card.

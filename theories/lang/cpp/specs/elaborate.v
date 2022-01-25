@@ -25,7 +25,7 @@ Section with_cpp.
   #[local] Set Universe Polymorphism.
   Polymorphic Universes X Z Y.
 
-  #[local] Notation WPP := (WithPrePostG@{X Z Y Set Set} mpredI).
+  #[local] Notation WPP := (WithPrePostG@{X Z Y _ (*Set*) Set} mpredI).
 
   Definition add_prim_arg {R} (t : type) (s : names.ident) (v : val)
              (wpp : WPP (list ptr) R) : WPP (list ptr) R :=
