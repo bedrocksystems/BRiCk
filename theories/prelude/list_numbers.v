@@ -25,19 +25,21 @@ Definition rotateN {A} n xs :=
 #[global] Notation insertN := (insert (K := N)) (only parsing).
 
 (* A proof appears in
-https://github.com/coq/coq/commit/f6a63e3181c7c9691c59e07ad55a9e5a5b8d51e6,
-from https://github.com/coq/coq/pull/14037.
-In Coq 8.14, https://github.com/coq/coq/pull/14086 enabled dropping the [a' <>
-0] side condition.
-
-TODO: drop in Coq 8.14.
+ * https://github.com/coq/coq/commit/f6a63e3181c7c9691c59e07ad55a9e5a5b8d51e6,
+ * from https://github.com/coq/coq/pull/14037.
+ * In Coq 8.14, https://github.com/coq/coq/pull/14086 enabled dropping the
+ * [a' <> 0] side condition.
+ *
+ * TODO: Drop after upgrade to Coq 8.14.
 *)
 Lemma N2Nat_inj_mod (a a' : N) :
   (a' <> 0)%N ->
   N.to_nat (a `mod` a') =
   (N.to_nat a `mod` N.to_nat a')%nat.
 Proof.
-Admitted.
+  move=> H. apply: Z_of_nat_inj.
+  by rewrite Nat2Z_inj_mod !N_nat_Z N2Z.inj_mod//.
+Qed.
 
 Lemma fmap_lengthN {A B} (f : A → B) (l : list A) :
   lengthN (f <$> l) = lengthN l.
@@ -442,26 +444,23 @@ Section listN.
     rewrite N.iter_succ//= -IH -N.add_1_r.
     rewrite -!rotateN_fold /rotate tail_drop head_list_take.
     case: xs=> [|x1 xs]; first by do !rewrite drop_nil take_nil.
-    (* case: xs=> [|x2 xs]; first by rewrite !Z.mod_1_r/=.
-    set n := length (x1 :: x2 :: xs). rewrite !N_nat_Z.
-    have ?: (0%nat < n)%Z by apply: inj_lt; apply: Nat.lt_0_succ.
-    have ?: (1 < n)%Z by rewrite /n/=; lia.
-    have ?: (0 <= k)%Z by apply: N2Z.is_nonneg.
-    have ?: (0 <= k `mod` n < n)%Z by apply: Z.mod_pos_bound.
-    have ?: (1 <= n - Z.to_nat (k `mod` n))%nat by lia.
+    case: xs=> [|x2 xs]; first by rewrite !Nat.mod_1_r/=.
+    set n := length (x1 :: x2 :: xs).
+    have ?: (n <> 0)%nat by rewrite /n/=.
+    (* have ?: (0 < n)%nat by apply: inj_lt; apply: Nat.lt_0_succ. *)
+    have ?: (1 < n)%nat by rewrite /n/=; lia.
+    (* have ?: (0 <= k)%Z by apply: N2Z.is_nonneg. *)
+    have ?: (N.to_nat k `mod` n < n)%nat by apply: Nat.mod_upper_bound=> //.
+    have ?: (1 <= n - (N.to_nat k `mod` n))%nat by lia.
     rewrite drop_app_le; last by rewrite drop_length -/n.
     rewrite take_app_le; last by rewrite drop_length -/n.
     rewrite drop_drop -app_assoc take_take_drop.
-    rewrite N2Z.inj_add/= -Zplus_mod_idemp_l.
-    case/decide: (k `mod` n + 1 = n)%Z=> E.
-    - rewrite E Z_mod_same_full/=.
-      rewrite -[1%nat]/(Z.to_nat 1) -Z2Nat.inj_add//; last by lia.
-      rewrite E Nat2Z.id drop_all firstn_all.
+    rewrite N2Nat.inj_add -[N.to_nat 1]/1%nat -Nat.add_mod_idemp_l//.
+    case/decide: (N.to_nat k `mod` n + 1 = n)%nat=> E.
+    - rewrite E Nat.mod_same//= drop_all firstn_all.
       by rewrite app_nil_l app_nil_r.
-    - rewrite Z.mod_small; last by lia.
-      by rewrite -[1%nat]/(Z.to_nat 1) -Z2Nat.inj_add//; last by lia.
-  Qed. *)
-  Admitted.
+    - rewrite Nat.mod_small//. lia.
+  Qed.
 
   Lemma rotateN_nil k :
       rotateN (A := A) k [] = [].
