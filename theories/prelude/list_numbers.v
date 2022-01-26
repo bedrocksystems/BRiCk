@@ -20,9 +20,9 @@ Definition resizeN {A} n := resize (A := A) (N.to_nat n).
 Definition rotateN {A} n xs :=
   dropN (A := A) (n mod lengthN xs) xs ++ takeN (A := A) (n mod lengthN xs) xs.
 #[global] Instance list_lookupN {A}: Lookup N A (list A) | 10 := fun i xs => lookup (N.to_nat i) xs.
-#[global] Notation lookupN := (lookup (K := N)).
+#[global] Notation lookupN := (lookup (K := N)) (only parsing).
 #[global] Instance list_insertN {A} : Insert N A (list A) | 10 := fun i x xs => <[N.to_nat i := x]> xs.
-#[global] Notation insertN := list_insertN.
+#[global] Notation insertN := (insertN (K := N)) (only parsing).
 
 (* A proof appears in
 https://github.com/coq/coq/commit/f6a63e3181c7c9691c59e07ad55a9e5a5b8d51e6,
