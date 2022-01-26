@@ -447,9 +447,7 @@ Section listN.
     case: xs=> [|x2 xs]; first by rewrite !Nat.mod_1_r/=.
     set n := length (x1 :: x2 :: xs).
     have ?: (n <> 0)%nat by rewrite /n/=.
-    (* have ?: (0 < n)%nat by apply: inj_lt; apply: Nat.lt_0_succ. *)
     have ?: (1 < n)%nat by rewrite /n/=; lia.
-    (* have ?: (0 <= k)%Z by apply: N2Z.is_nonneg. *)
     have ?: (N.to_nat k `mod` n < n)%nat by apply: Nat.mod_upper_bound=> //.
     have ?: (1 <= n - (N.to_nat k `mod` n))%nat by lia.
     rewrite drop_app_le; last by rewrite drop_length -/n.
