@@ -330,7 +330,7 @@ Section listN.
     (i >= n)%N ->
     dropN n (<[i:=x]> xs) = <[(i - n)%N:=x]> (dropN n xs).
   Proof.
-    move/N.ge_le/N2Nat_inj_le. rewrite /insert/insertN N2Nat.inj_sub.
+    move/N.ge_le/N2Nat_inj_le. rewrite /insert/list_insertN N2Nat.inj_sub.
     by apply: drop_insert_le.
   Qed.
 
@@ -734,7 +734,7 @@ Section listN.
     (i >= lengthN xs1)%N ->
     <[i:=x]> (xs1 ++ xs2) = xs1 ++ <[(i - lengthN xs1)%N:=x]> xs2.
   Proof.
-    move/N.ge_le/N2Nat_inj_le. rewrite /insert/insertN/lengthN N2Nat.inj_sub Nat2N.id.
+    move/N.ge_le/N2Nat_inj_le. rewrite /insert/list_insertN/lengthN N2Nat.inj_sub Nat2N.id.
     by apply: insert_app_r_alt.
   Qed.
 
