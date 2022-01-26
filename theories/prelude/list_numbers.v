@@ -489,10 +489,8 @@ Section listN.
     rotateN k xs = xs.
   Proof.
     move=> -> {k}. rewrite -rotateN_fold /rotate /lengthN Nat2N.id.
-    (* Might be false until 8.14 *)
-    (* rewrite Z_mod_same_full Z2Nat.inj_0/=. by apply: app_nil_r.
-  Qed. *)
-  Admitted.
+    case: xs=> [|x xs]//. by rewrite Nat.mod_same//= app_nil_r.
+  Qed.
 
   Lemma rotateN_modulo k xs :
     rotateN (k `mod` lengthN xs) xs = rotateN k xs.
