@@ -496,10 +496,10 @@ Section listN.
     rotateN (k `mod` lengthN xs) xs = rotateN k xs.
   Proof.
     case: xs=> [|x xs]; first by rewrite !rotateN_nil.
-    set xs' := x :: xs. rewrite -!rotateN_fold /rotate/lengthN.
-    (* by rewrite !N_nat_Z N2Z.inj_mod// nat_N_Z Zmod_mod.
-  Qed. *)
-  Admitted.
+    rewrite -!rotateN_fold /rotate/lengthN.
+    rewrite N2Nat_inj_mod// Nat2N.id.
+    by rewrite Nat.mod_mod//.
+  Qed.
 
   Lemma rotateN_modulo' k xs :
     rotateN (Z.to_N (k `mod` lengthN xs)) xs = rotateN k xs.
