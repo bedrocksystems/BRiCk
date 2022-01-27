@@ -411,10 +411,7 @@ Section listN.
     rotate (N.to_nat k) xs = rotateN k xs.
   Proof.
     rewrite /rotateN/dropN/takeN/rotate.
-    (* TODO Coq 8.14: the case split should be unnecesary, and the proof should be: *)
-    (* by rewrite !N2Nat.inj_mod to_nat_lengthN. *)
-    case: xs=> [|x xs]; first by rewrite !drop_nil !take_nil.
-    by rewrite !N2Nat.inj_mod // to_nat_lengthN.
+    by rewrite !N2Nat.inj_mod to_nat_lengthN.
   Qed.
 
   Definition head_list {A} (xs : list A) := option_list (hd_error xs).
