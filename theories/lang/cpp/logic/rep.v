@@ -703,5 +703,5 @@ Section with_cpp.
 
 End with_cpp.
 
-Typeclasses Opaque _at _offsetR pureR as_Rep.
+#[global] Typeclasses Opaque _at _offsetR pureR as_Rep.
 #[global] Opaque _at _offsetR.

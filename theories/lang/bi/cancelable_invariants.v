@@ -168,4 +168,4 @@ Section proofs.
   Qed.
 End proofs.
 
-Typeclasses Opaque cinv_own cinv.
+#[global] Typeclasses Opaque cinv_own cinv.

@@ -135,7 +135,7 @@ Module SimpleCPP_BASE <: CPP_LOGIC_CLASS.
   Existing Class cppG.
   (* Used to be needed to prevent turning instances of cppG' into cppG and risking loops in this file;
   should not hurt now. *)
-  Typeclasses Opaque cppG.
+  #[global] Typeclasses Opaque cppG.
 
   #[global] Instance has_inv Σ : cppG Σ -> invGS Σ := @has_inv' Σ.
   #[global] Instance has_cinv Σ : cppG Σ -> cinvG Σ := @has_cinv' Σ.
@@ -174,7 +174,7 @@ Module SimpleCPP_BASE <: CPP_LOGIC_CLASS.
     #[global] Instance _code_own_affine p f : Affine (_code_own p f) := _.
     #[global] Instance _code_own_timeless p f : Timeless (_code_own p f) := _.
   End with_cpp.
-  Typeclasses Opaque mem_inj_own _code_own.
+  #[global] Typeclasses Opaque mem_inj_own _code_own.
 End SimpleCPP_BASE.
 
 (* TODO: provide an instance for this. *)

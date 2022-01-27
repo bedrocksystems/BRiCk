@@ -462,7 +462,7 @@ Module Type finite_bitmask_type_mixin (Import F : finite_type) (Import B : bitma
     by rewrite (set_unfold_elem_of _ _ P) (set_unfold_elem_of _ _ Q).
   Qed.
 
-  Typeclasses Opaque filter.
+  #[global] Typeclasses Opaque filter.
 
   (** Technically redundant, but a leaf, and it cleans up [set_unfold] output. *)
   #[global] Instance set_unfold_filter_0 m x y :

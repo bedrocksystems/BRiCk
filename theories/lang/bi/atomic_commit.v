@@ -599,7 +599,7 @@ Tactic Notation "iCaccIntro" "with" constr(sel) :=
   end.
 
 (* From here on, prevent TC search from implicitly unfolding these. *)
-Typeclasses Opaque commit_acc atomic_commit.
+#[global] Typeclasses Opaque commit_acc atomic_commit.
 
 Section derived.
   Context `{BiFUpd PROP} {TA TB : tele}.
