@@ -51,8 +51,8 @@ Module SIMPLE_PTRS_IMPL <: PTRS_INTF.
   Proof. done. Qed.
 
   Definition offset := option Z.
-  Instance offset_eq_dec : EqDecision offset := _.
-  Instance offset_countable : Countable offset := _.
+  #[global] Instance offset_eq_dec : EqDecision offset := _.
+  #[global] Instance offset_countable : Countable offset := _.
 
   Declare Scope ptr_scope.
   Bind Scope ptr_scope with ptr.
@@ -62,8 +62,8 @@ Module SIMPLE_PTRS_IMPL <: PTRS_INTF.
   Bind Scope offset_scope with offset.
   Delimit Scope offset_scope with offset.
 
-  Instance ptr_eq_dec : EqDecision ptr := _.
-  Instance ptr_countable : Countable ptr := _.
+  #[global] Instance ptr_eq_dec : EqDecision ptr := _.
+  #[global] Instance ptr_countable : Countable ptr := _.
   Definition ptr_eq_dec' := ptr_eq_dec.
 
   Lemma ptr_vaddr_nullptr : ptr_vaddr nullptr = Some 0%N.
@@ -73,11 +73,11 @@ Module SIMPLE_PTRS_IMPL <: PTRS_INTF.
   Definition o_dot : offset → offset → offset := liftM2 Z.add.
   Notation "o1 .., o2" := (o_dot o1 o2) : offset_scope.
 
-  Instance dot_id : RightId (=) o_id o_dot.
+  #[global] Instance dot_id : RightId (=) o_id o_dot.
   Proof. case => [o|//] /=. by rewrite right_id_L. Qed.
-  Instance id_dot : LeftId (=) o_id o_dot.
+  #[global] Instance id_dot : LeftId (=) o_id o_dot.
   Proof. case => [o|//] /=. by rewrite left_id_L. Qed.
-  Instance dot_assoc : Assoc (=) o_dot.
+  #[global] Instance dot_assoc : Assoc (=) o_dot.
   Proof. case => [x|//] [y|//] [z|//] /=. by rewrite assoc. Qed.
 
   (**
@@ -194,12 +194,12 @@ Module SIMPLE_PTRS_IMPL <: PTRS_INTF.
   Lemma global_ptr_nonnull_aid tu o : ptr_alloc_id (global_ptr tu o) <> Some null_alloc_id.
   Proof. rewrite ptr_alloc_id_global_ptr. done. Qed.
 
-  Instance global_ptr_inj tu : Inj (=) (=) (global_ptr tu).
+  #[global] Instance global_ptr_inj tu : Inj (=) (=) (global_ptr tu).
   Proof. by intros o1 o2 [?%(inj global_ptr_encode_aid) _]%(inj Some)%(inj2 _). Qed.
 
-  Instance global_ptr_addr_inj tu : Inj (=) (=) (λ o, ptr_vaddr (global_ptr tu o)).
+  #[global] Instance global_ptr_addr_inj tu : Inj (=) (=) (λ o, ptr_vaddr (global_ptr tu o)).
   Proof. intros ??. rewrite !ptr_vaddr_global_ptr. by intros ?%(inj _)%(inj _). Qed.
-  Instance global_ptr_aid_inj tu : Inj (=) (=) (λ o, ptr_alloc_id (global_ptr tu o)).
+  #[global] Instance global_ptr_aid_inj tu : Inj (=) (=) (λ o, ptr_alloc_id (global_ptr tu o)).
   Proof. intros ??. rewrite !ptr_alloc_id_global_ptr. by intros ?%(inj _)%(inj _). Qed.
 
   Lemma ptr_vaddr_o_sub_eq p σ ty n1 n2 sz
@@ -211,7 +211,7 @@ Module SIMPLE_PTRS_IMPL <: PTRS_INTF.
     case: p => [[aid va]|] Haddr ?; simplify_option_eq. nia.
   Qed.
 
-  Instance o_sub_mono :
+  #[global] Instance o_sub_mono :
     Proper (genv_leq ==> eq ==> eq ==> Roption_leq eq) (@o_sub).
   Proof.
     move => σ1 σ2 /Proper_size_of + _ ty -> _ n -> => /(_ ty ty eq_refl).

@@ -29,7 +29,7 @@ Module Type RAW_BYTES.
    *)
   Parameter raw_byte : Set.
   Parameter raw_byte_eq_dec : EqDecision raw_byte.
-  Existing Instance raw_byte_eq_dec.
+  #[global] Existing Instance raw_byte_eq_dec.
 
   Axiom raw_int_byte : N -> raw_byte.
 

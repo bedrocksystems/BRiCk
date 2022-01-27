@@ -37,35 +37,35 @@ Record genv_leq {l r : genv} : Prop :=
 ; pointer_size_le : l.(pointer_size_bitsize) = r.(pointer_size_bitsize) }.
 Arguments genv_leq _ _ : clear implicits.
 
-Instance PreOrder_genv_leq : PreOrder genv_leq.
+#[global] Instance PreOrder_genv_leq : PreOrder genv_leq.
 Proof.
   constructor.
   { constructor; auto; reflexivity. }
   { red. destruct 1; destruct 1; constructor; try etransitivity; eauto. }
 Qed.
-Instance: RewriteRelation genv_leq := {}.
+#[global] Instance: RewriteRelation genv_leq := {}.
 
 Definition genv_eq (l r : genv) : Prop :=
   genv_leq l r /\ genv_leq r l.
 
-Instance genv_tu_proper : Proper (genv_leq ==> sub_module) genv_tu.
+#[global] Instance genv_tu_proper : Proper (genv_leq ==> sub_module) genv_tu.
 Proof. solve_proper. Qed.
-Instance genv_tu_flip_proper : Proper (flip genv_leq ==> flip sub_module) genv_tu.
+#[global] Instance genv_tu_flip_proper : Proper (flip genv_leq ==> flip sub_module) genv_tu.
 Proof. solve_proper. Qed.
 
 (* Sadly, neither instance is picked up by [f_equiv]. *)
-Instance pointer_size_bitsize_proper : Proper (genv_leq ==> eq) pointer_size_bitsize.
+#[global] Instance pointer_size_bitsize_proper : Proper (genv_leq ==> eq) pointer_size_bitsize.
 Proof. solve_proper. Qed.
-Instance pointer_size_bitsize_flip_proper : Proper (flip genv_leq ==> eq) pointer_size_bitsize.
+#[global] Instance pointer_size_bitsize_flip_proper : Proper (flip genv_leq ==> eq) pointer_size_bitsize.
 Proof. by intros ?? <-. Qed.
-Instance pointer_size_proper : Proper (genv_leq ==> eq) pointer_size.
+#[global] Instance pointer_size_proper : Proper (genv_leq ==> eq) pointer_size.
 Proof. unfold pointer_size; intros ???. f_equiv. exact: pointer_size_bitsize_proper. Qed.
-Instance pointer_size_flip_proper : Proper (flip genv_leq ==> eq) pointer_size.
+#[global] Instance pointer_size_flip_proper : Proper (flip genv_leq ==> eq) pointer_size.
 Proof. by intros ?? <-. Qed.
 
-Instance genv_byte_order_proper : Proper (genv_leq ==> eq) genv_byte_order.
+#[global] Instance genv_byte_order_proper : Proper (genv_leq ==> eq) genv_byte_order.
 Proof. intros ???. apply sub_module.byte_order_proper. solve_proper. Qed.
-Instance genv_byte_order_flip_proper : Proper (flip genv_leq ==> eq) genv_byte_order.
+#[global] Instance genv_byte_order_flip_proper : Proper (flip genv_leq ==> eq) genv_byte_order.
 Proof. by intros ?? <-. Qed.
 (* this states that the [genv] is compatible with the given [translation_unit]
  * it essentially means that the [genv] records all the types from the
@@ -85,12 +85,12 @@ Proof. intros. apply byte_order_flip_proper, tu_compat. Qed.
 Theorem genv_compat_submodule : forall m σ, m ⊧ σ -> sub_module m σ.(genv_tu).
 Proof. by destruct 1. Qed.
 
-Instance genv_compat_proper : Proper (flip sub_module ==> genv_leq ==> impl) genv_compat.
+#[global] Instance genv_compat_proper : Proper (flip sub_module ==> genv_leq ==> impl) genv_compat.
 Proof.
   intros ?? Heq1 ?? [Heq2 _] [Heq3]; constructor.
   by rewrite Heq1 Heq3.
 Qed.
-Instance genv_compat_flip_proper : Proper (sub_module ==> flip genv_leq ==> flip impl) genv_compat.
+#[global] Instance genv_compat_flip_proper : Proper (sub_module ==> flip genv_leq ==> flip impl) genv_compat.
 Proof. solve_proper. Qed.
 
 Lemma module_le_genv_tu_models X σ :

@@ -180,7 +180,7 @@ End ObjValue_ler.
 (* TODO: consider replacing [type_table_le]'s definition with [type_table_le_alt] *)
 Definition type_table_le_alt : type_table -> type_table -> Prop :=
   map_included GlobDecl_ler.
-Instance: PreOrder type_table_le_alt := _.
+#[global] Instance: PreOrder type_table_le_alt := _.
 
 Definition type_table_le (te1 te2 : type_table) : Prop :=
   forall (gn : globname) gv,
@@ -190,7 +190,7 @@ Definition type_table_le (te1 te2 : type_table) : Prop :=
 (* Ditto. *)
 Definition syms_table_le_alt : symbol_table -> symbol_table -> Prop :=
   map_included ObjValue_ler.
-Instance: PreOrder syms_table_le_alt := _.
+#[global] Instance: PreOrder syms_table_le_alt := _.
 
 Definition syms_table_le (a b : symbol_table) :=
   forall (on : obj_name) v,
@@ -214,14 +214,14 @@ Proof.
   repeat case_match; naive_solver.
 Qed.
 
-Instance: PreOrder type_table_le.
+#[global] Instance: PreOrder type_table_le.
 Proof.
   eapply preorder_proper.
   apply: type_table_le_equiv.
   apply _.
 Qed.
 
-Instance: PreOrder syms_table_le.
+#[global] Instance: PreOrder syms_table_le.
 Proof.
   eapply preorder_proper.
   apply: syms_table_le_equiv.
@@ -300,7 +300,7 @@ Section sub_module.
 
   #[global] Instance: PreOrder sub_module := {}.
 End sub_module.
-Instance: RewriteRelation sub_module := {}.
+#[global] Instance: RewriteRelation sub_module := {}.
 
 Lemma sub_module_preserves_globdecl {m1 m2 gn g1} :
   sub_module m1 m2 ->
@@ -356,9 +356,9 @@ Proof.
   destruct g2 => //= /require_eq_success. naive_solver.
 Qed.
 
-Instance byte_order_proper : Proper (sub_module ==> eq) byte_order.
+#[global] Instance byte_order_proper : Proper (sub_module ==> eq) byte_order.
 Proof. by destruct 1. Qed.
-Instance byte_order_flip_proper : Proper (flip sub_module ==> eq) byte_order.
+#[global] Instance byte_order_flip_proper : Proper (flip sub_module ==> eq) byte_order.
 Proof. by destruct 1. Qed.
 
 Definition compat_le {T}
@@ -490,7 +490,7 @@ Proof.
   destruct (module_le a b); constructor; eauto.
 Qed.
 
-Instance sub_module_dec : RelDecision sub_module :=
+#[global] Instance sub_module_dec : RelDecision sub_module :=
   fun l r => match module_le l r as X
                 return (if X then
                           sub_module l r

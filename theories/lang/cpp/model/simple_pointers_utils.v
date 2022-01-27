@@ -20,9 +20,9 @@ Module canonical_tu.
   Definition symbol_table_canon : Set := gmap BS.t ObjValue.
   Definition type_table_canon : Set := gmap BS.t GlobDecl.
 
-  Instance symbol_table_canon_eq_dec : EqDecision symbol_table_canon.
+  #[global] Instance symbol_table_canon_eq_dec : EqDecision symbol_table_canon.
   Proof. solve_decision. Qed.
-  Instance type_table_canon_eq_dec : EqDecision type_table_canon.
+  #[global] Instance type_table_canon_eq_dec : EqDecision type_table_canon.
   Proof. solve_decision. Qed.
 
   Record translation_unit_canon : Set := Build_translation_unit_canon
@@ -30,10 +30,10 @@ Module canonical_tu.
   ; globals    : type_table_canon
   ; byte_order : endian
   }.
-  Instance translation_unit_canon_eq_dec : EqDecision translation_unit_canon.
+  #[global] Instance translation_unit_canon_eq_dec : EqDecision translation_unit_canon.
   Proof. solve_decision. Qed.
 
-  Instance symbol_canon_lookup : Lookup obj_name ObjValue translation_unit_canon :=
+  #[global] Instance symbol_canon_lookup : Lookup obj_name ObjValue translation_unit_canon :=
     fun k m => m.(symbols) !! k.
 
   Record genv_canon : Set := Build_genv_canon
@@ -42,7 +42,7 @@ Module canonical_tu.
   ; pointer_size_bitsize : bitsize
     (* ^ the size of a pointer *)
   }.
-  Instance genv_canon_eq_dec : EqDecision genv_canon.
+  #[global] Instance genv_canon_eq_dec : EqDecision genv_canon.
   Proof. solve_decision. Qed.
 
   Definition tu_to_canon (tu : translation_unit) : translation_unit_canon :=
@@ -77,8 +77,8 @@ This model would fail proving that objects are disjoint or that
 Definition global_ptr_encode_vaddr (o : obj_name) : vaddr := Npos (encode o).
 Definition global_ptr_encode_aid (o : obj_name) : alloc_id := MkAllocId (global_ptr_encode_vaddr o).
 
-Instance global_ptr_encode_vaddr_inj : Inj (=) (=) global_ptr_encode_vaddr := _.
-Instance global_ptr_encode_aid_inj : Inj (=) (=) global_ptr_encode_aid := _.
+#[global] Instance global_ptr_encode_vaddr_inj : Inj (=) (=) global_ptr_encode_vaddr := _.
+#[global] Instance global_ptr_encode_aid_inj : Inj (=) (=) global_ptr_encode_aid := _.
 
 Lemma global_ptr_encode_vaddr_nonnull o va : va = global_ptr_encode_vaddr o -> va <> 0%N.
 Proof. by move->. Qed.

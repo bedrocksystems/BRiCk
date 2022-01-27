@@ -12,7 +12,7 @@ Set Primitive Projections.
 Variant SwitchBranch : Set :=
 | Exact (_ : Z)
 | Range (_ _ : Z).
-Instance: EqDecision SwitchBranch.
+#[global] Instance: EqDecision SwitchBranch.
 Proof. solve_decision. Defined.
 
 Inductive VarDecl : Set :=
@@ -20,7 +20,7 @@ Inductive VarDecl : Set :=
 | Ddecompose (_ : Expr) (anon_var : ident) (_ : list VarDecl)
   (* initialization of a function-local [static]. See https://eel.is/c++draft/stmt.dcl#3 *)
 | Dinit (thread_safe : bool) (name : obj_name) (_ : type) (init : option Expr).
-Instance: EqDecision VarDecl.
+#[global] Instance: EqDecision VarDecl.
 Proof.
   refine (fix dec (x y : VarDecl) : {x = y} + {x <> y} :=
             match x as x , y as y return {x = y} + {x <> y} with
@@ -84,7 +84,7 @@ Inductive Stmt : Set :=
 | Slabeled (_ : ident) (_ : Stmt)
 | Sgoto (_ : ident)
 | Sunsupported (_ : bs).
-Instance Stmt_eq_dec : EqDecision Stmt.
+#[global] Instance Stmt_eq_dec : EqDecision Stmt.
 Proof.
   rewrite /RelDecision /Decision.
   fix IHs 1.
@@ -99,5 +99,5 @@ Variant OrDefault {t : Set} : Set :=
 | UserDefined (_ : t).
 Arguments OrDefault : clear implicits.
 
-Instance OrDefault_eq_dec: forall {T: Set}, EqDecision T -> EqDecision (OrDefault T).
+#[global] Instance OrDefault_eq_dec: forall {T: Set}, EqDecision T -> EqDecision (OrDefault T).
 Proof. solve_decision. Defined.

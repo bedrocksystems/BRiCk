@@ -29,41 +29,41 @@ https://gitlab.mpi-sws.org/iris/iris/-/blob/master/docs/proof_guide.md
 
 #[global] Hint Resolve N.le_0_l | 0 : core.
 
-Instance Nat_add_assoc : Assoc (=) Nat.add := Nat.add_assoc.
-Instance Nat_add_comm : Comm (=) Nat.add := Nat.add_comm.
-Instance Nat_add_left_id : LeftId (=) 0%nat Nat.add := Nat.add_0_l.
-Instance Nat_add_right_id : RightId (=) 0%nat Nat.add := Nat.add_0_r.
+#[global] Instance Nat_add_assoc : Assoc (=) Nat.add := Nat.add_assoc.
+#[global] Instance Nat_add_comm : Comm (=) Nat.add := Nat.add_comm.
+#[global] Instance Nat_add_left_id : LeftId (=) 0%nat Nat.add := Nat.add_0_l.
+#[global] Instance Nat_add_right_id : RightId (=) 0%nat Nat.add := Nat.add_0_r.
 
-Instance Nat_mul_assoc : Assoc (=) Nat.mul := Nat.mul_assoc.
-Instance Nat_mul_comm : Comm (=) Nat.mul := Nat.mul_comm.
-Instance Nat_mul_left_id : LeftId (=) 1%nat Nat.mul := Nat.mul_1_l.
-Instance Nat_mul_right_id : RightId (=) 1%nat Nat.mul := Nat.mul_1_r.
-Instance Nat_mul_left_absorb : LeftAbsorb (=) 0%nat Nat.mul := Nat.mul_0_l.
-Instance Nat_mul_right_absorb : RightAbsorb (=) 0%nat Nat.mul := Nat.mul_0_r.
-Instance Nat_trychotomyT : TrichotomyT Nat.lt := nat_lexico_trichotomy.
+#[global] Instance Nat_mul_assoc : Assoc (=) Nat.mul := Nat.mul_assoc.
+#[global] Instance Nat_mul_comm : Comm (=) Nat.mul := Nat.mul_comm.
+#[global] Instance Nat_mul_left_id : LeftId (=) 1%nat Nat.mul := Nat.mul_1_l.
+#[global] Instance Nat_mul_right_id : RightId (=) 1%nat Nat.mul := Nat.mul_1_r.
+#[global] Instance Nat_mul_left_absorb : LeftAbsorb (=) 0%nat Nat.mul := Nat.mul_0_l.
+#[global] Instance Nat_mul_right_absorb : RightAbsorb (=) 0%nat Nat.mul := Nat.mul_0_r.
+#[global] Instance Nat_trychotomyT : TrichotomyT Nat.lt := nat_lexico_trichotomy.
 
-Instance Nat_min_comm: Comm eq Nat.min := Nat.min_comm.
-Instance Nat_min_assoc: Assoc eq Nat.min := Nat.min_assoc.
+#[global] Instance Nat_min_comm: Comm eq Nat.min := Nat.min_comm.
+#[global] Instance Nat_min_assoc: Assoc eq Nat.min := Nat.min_assoc.
 
-Instance Nat_max_comm: Comm eq Nat.max := Nat.max_comm.
-Instance Nat_max_assoc: Assoc eq Nat.max := Nat.max_assoc.
+#[global] Instance Nat_max_comm: Comm eq Nat.max := Nat.max_comm.
+#[global] Instance Nat_max_assoc: Assoc eq Nat.max := Nat.max_assoc.
 
-Instance Nat_land_comm : Comm eq Nat.land := Nat.land_comm.
-Instance Nat_land_assoc : Assoc eq Nat.land := Nat.land_assoc.
-Instance Nat_land_left_absorb : LeftAbsorb (=) 0 Nat.land := Nat.land_0_l.
-Instance Nat_land_right_absorb : RightAbsorb (=) 0 Nat.land := Nat.land_0_r.
+#[global] Instance Nat_land_comm : Comm eq Nat.land := Nat.land_comm.
+#[global] Instance Nat_land_assoc : Assoc eq Nat.land := Nat.land_assoc.
+#[global] Instance Nat_land_left_absorb : LeftAbsorb (=) 0 Nat.land := Nat.land_0_l.
+#[global] Instance Nat_land_right_absorb : RightAbsorb (=) 0 Nat.land := Nat.land_0_r.
 
-Instance Nat_lor_comm : Comm eq Nat.lor := Nat.lor_comm.
-Instance Nat_lor_assoc : Assoc eq Nat.lor := Nat.lor_assoc.
-Instance Nat_lor_left_id : LeftId (=) 0 Nat.lor := Nat.lor_0_l.
-Instance Nat_lor_right_id : RightId (=) 0 Nat.lor := Nat.lor_0_r.
+#[global] Instance Nat_lor_comm : Comm eq Nat.lor := Nat.lor_comm.
+#[global] Instance Nat_lor_assoc : Assoc eq Nat.lor := Nat.lor_assoc.
+#[global] Instance Nat_lor_left_id : LeftId (=) 0 Nat.lor := Nat.lor_0_l.
+#[global] Instance Nat_lor_right_id : RightId (=) 0 Nat.lor := Nat.lor_0_r.
 
 (* Non-symmetric *)
-Instance Nat_shiftl_left_absorb : LeftAbsorb (=) 0 Nat.shiftl := Nat.shiftl_0_l.
-Instance Nat_shiftl_right_id : RightId (=) 0 Nat.shiftl := Nat.shiftl_0_r.
+#[global] Instance Nat_shiftl_left_absorb : LeftAbsorb (=) 0 Nat.shiftl := Nat.shiftl_0_l.
+#[global] Instance Nat_shiftl_right_id : RightId (=) 0 Nat.shiftl := Nat.shiftl_0_r.
 
-Instance Nat_shiftr_left_absorb : LeftAbsorb (=) 0 Nat.shiftr := Nat.shiftr_0_l.
-Instance Nat_shiftr_right_id : RightId (=) 0 Nat.shiftr := Nat.shiftr_0_r.
+#[global] Instance Nat_shiftr_left_absorb : LeftAbsorb (=) 0 Nat.shiftr := Nat.shiftr_0_l.
+#[global] Instance Nat_shiftr_right_id : RightId (=) 0 Nat.shiftr := Nat.shiftr_0_r.
 
 (** * Natural numbers [N] *)
 
@@ -77,43 +77,43 @@ Infix "`ldiff`" := N.ldiff : N_scope.
 Infix "≫" := N.shiftr : N_scope.
 Infix "≪" := N.shiftl : N_scope.
 
-Instance N_add_assoc : Assoc (=) N.add := N.add_assoc.
-Instance N_add_comm : Comm (=) N.add := N.add_comm.
-Instance N_add_left_id : LeftId (=) 0%N N.add := N.add_0_l.
-Instance N_add_right_id : RightId (=) 0%N N.add := N.add_0_r.
+#[global] Instance N_add_assoc : Assoc (=) N.add := N.add_assoc.
+#[global] Instance N_add_comm : Comm (=) N.add := N.add_comm.
+#[global] Instance N_add_left_id : LeftId (=) 0%N N.add := N.add_0_l.
+#[global] Instance N_add_right_id : RightId (=) 0%N N.add := N.add_0_r.
 
-Instance N_mul_assoc : Assoc (=) N.mul := N.mul_assoc.
-Instance N_mul_comm : Comm (=) N.mul := N.mul_comm.
-Instance N_mul_left_id : LeftId (=) 1%N N.mul := N.mul_1_l.
-Instance N_mul_right_id : RightId (=) 1%N N.mul := N.mul_1_r.
-Instance N_mul_left_absorb : LeftAbsorb (=) 0%N N.mul := N.mul_0_l.
-Instance N_mul_right_absorb : RightAbsorb (=) 0%N N.mul := N.mul_0_r.
-Instance N_trychotomyT : TrichotomyT N.lt := N_lexico_trichotomy.
+#[global] Instance N_mul_assoc : Assoc (=) N.mul := N.mul_assoc.
+#[global] Instance N_mul_comm : Comm (=) N.mul := N.mul_comm.
+#[global] Instance N_mul_left_id : LeftId (=) 1%N N.mul := N.mul_1_l.
+#[global] Instance N_mul_right_id : RightId (=) 1%N N.mul := N.mul_1_r.
+#[global] Instance N_mul_left_absorb : LeftAbsorb (=) 0%N N.mul := N.mul_0_l.
+#[global] Instance N_mul_right_absorb : RightAbsorb (=) 0%N N.mul := N.mul_0_r.
+#[global] Instance N_trychotomyT : TrichotomyT N.lt := N_lexico_trichotomy.
 
-Instance N_min_comm: Comm eq N.min := N.min_comm.
-Instance N_min_assoc: Assoc eq N.min := N.min_assoc.
+#[global] Instance N_min_comm: Comm eq N.min := N.min_comm.
+#[global] Instance N_min_assoc: Assoc eq N.min := N.min_assoc.
 
-Instance N_max_comm: Comm eq N.max := N.max_comm.
-Instance N_max_assoc: Assoc eq N.max := N.max_assoc.
+#[global] Instance N_max_comm: Comm eq N.max := N.max_comm.
+#[global] Instance N_max_assoc: Assoc eq N.max := N.max_assoc.
 
-Instance N_land_comm : Comm eq N.land := N.land_comm.
-Instance N_land_assoc : Assoc eq N.land := N.land_assoc.
-Instance N_land_left_absorb : LeftAbsorb (=) 0%N N.land := N.land_0_l.
-Instance N_land_right_absorb : RightAbsorb (=) 0%N N.land := N.land_0_r.
+#[global] Instance N_land_comm : Comm eq N.land := N.land_comm.
+#[global] Instance N_land_assoc : Assoc eq N.land := N.land_assoc.
+#[global] Instance N_land_left_absorb : LeftAbsorb (=) 0%N N.land := N.land_0_l.
+#[global] Instance N_land_right_absorb : RightAbsorb (=) 0%N N.land := N.land_0_r.
 
-Instance N_lor_comm : Comm eq N.lor := N.lor_comm.
-Instance N_lor_assoc : Assoc eq N.lor := N.lor_assoc.
-Instance N_lor_left_id : LeftId (=) 0%N N.lor := N.lor_0_l.
-Instance N_lor_right_id : RightId (=) 0%N N.lor := N.lor_0_r.
+#[global] Instance N_lor_comm : Comm eq N.lor := N.lor_comm.
+#[global] Instance N_lor_assoc : Assoc eq N.lor := N.lor_assoc.
+#[global] Instance N_lor_left_id : LeftId (=) 0%N N.lor := N.lor_0_l.
+#[global] Instance N_lor_right_id : RightId (=) 0%N N.lor := N.lor_0_r.
 
 (* Non-symmetric *)
-Instance N_shiftl_left_absorb : LeftAbsorb (=) 0%N N.shiftl := N.shiftl_0_l.
-Instance N_shiftl_right_id : RightId (=) 0%N N.shiftl := N.shiftl_0_r.
+#[global] Instance N_shiftl_left_absorb : LeftAbsorb (=) 0%N N.shiftl := N.shiftl_0_l.
+#[global] Instance N_shiftl_right_id : RightId (=) 0%N N.shiftl := N.shiftl_0_r.
 
-Instance N_shiftr_left_absorb : LeftAbsorb (=) 0%N N.shiftr := N.shiftr_0_l.
-Instance N_shiftr_right_id : RightId (=) 0%N N.shiftr := N.shiftr_0_r.
+#[global] Instance N_shiftr_left_absorb : LeftAbsorb (=) 0%N N.shiftr := N.shiftr_0_l.
+#[global] Instance N_shiftr_right_id : RightId (=) 0%N N.shiftr := N.shiftr_0_r.
 
-Instance N_succ_inj : Inj (=) (=) N.succ.
+#[global] Instance N_succ_inj : Inj (=) (=) N.succ.
 Proof. intros n1 n2. lia. Qed.
 
 (** Shorter and more memorable name. *)
@@ -167,7 +167,7 @@ Lemma N_setbit_bool_decide (a n m : N) :
   N.testbit (N.setbit a n) m = bool_decide (n = m) || N.testbit a m.
 Proof. by rewrite N.setbit_eqb N_eqb_bool_decide. Qed.
 
-Instance N_divide_dec : RelDecision N.divide.
+#[global] Instance N_divide_dec : RelDecision N.divide.
 Proof.
   refine (λ a b, cast_if (decide (N.gcd a b = a)));
     abstract (by rewrite N.divide_gcd_iff').
@@ -220,47 +220,47 @@ Infix "`ldiff`" := Z.ldiff : Z_scope.
 
 Arguments Z.ones _ : simpl never, assert.
 
-Instance Z_add_assoc : Assoc (=) Z.add := Z.add_assoc.
-Instance Z_add_comm : Comm (=) Z.add := Z.add_comm.
-Instance Z_add_left_id : LeftId (=) 0%Z Z.add := Z.add_0_l.
-Instance Z_add_right_id : RightId (=) 0%Z Z.add := Z.add_0_r.
+#[global] Instance Z_add_assoc : Assoc (=) Z.add := Z.add_assoc.
+#[global] Instance Z_add_comm : Comm (=) Z.add := Z.add_comm.
+#[global] Instance Z_add_left_id : LeftId (=) 0%Z Z.add := Z.add_0_l.
+#[global] Instance Z_add_right_id : RightId (=) 0%Z Z.add := Z.add_0_r.
 
-Instance Z_mul_assoc : Assoc (=) Z.mul := Z.mul_assoc.
-Instance Z_mul_comm : Comm (=) Z.mul := Z.mul_comm.
-Instance Z_mul_left_id : LeftId (=) 1%Z Z.mul := Z.mul_1_l.
-Instance Z_mul_right_id : RightId (=) 1%Z Z.mul := Z.mul_1_r.
-Instance Z_mul_left_absorb : LeftAbsorb (=) 0%Z Z.mul := Z.mul_0_l.
-Instance Z_mul_right_absorb : RightAbsorb (=) 0%Z Z.mul := Z.mul_0_r.
-Instance Z_trychotomyT : TrichotomyT Z.lt := Z_lexico_trichotomy.
+#[global] Instance Z_mul_assoc : Assoc (=) Z.mul := Z.mul_assoc.
+#[global] Instance Z_mul_comm : Comm (=) Z.mul := Z.mul_comm.
+#[global] Instance Z_mul_left_id : LeftId (=) 1%Z Z.mul := Z.mul_1_l.
+#[global] Instance Z_mul_right_id : RightId (=) 1%Z Z.mul := Z.mul_1_r.
+#[global] Instance Z_mul_left_absorb : LeftAbsorb (=) 0%Z Z.mul := Z.mul_0_l.
+#[global] Instance Z_mul_right_absorb : RightAbsorb (=) 0%Z Z.mul := Z.mul_0_r.
+#[global] Instance Z_trychotomyT : TrichotomyT Z.lt := Z_lexico_trichotomy.
 
-Instance Z_min_comm: Comm eq Z.min := Z.min_comm.
-Instance Z_min_assoc: Assoc eq Z.min := Z.min_assoc.
+#[global] Instance Z_min_comm: Comm eq Z.min := Z.min_comm.
+#[global] Instance Z_min_assoc: Assoc eq Z.min := Z.min_assoc.
 
-Instance Z_max_comm: Comm eq Z.max := Z.max_comm.
-Instance Z_max_assoc: Assoc eq Z.max := Z.max_assoc.
+#[global] Instance Z_max_comm: Comm eq Z.max := Z.max_comm.
+#[global] Instance Z_max_assoc: Assoc eq Z.max := Z.max_assoc.
 
-Instance Z_land_comm : Comm eq Z.land := Z.land_comm.
-Instance Z_land_assoc : Assoc eq Z.land := Z.land_assoc.
-Instance Z_land_left_absorb : LeftAbsorb (=) 0%Z Z.land := Z.land_0_l.
-Instance Z_land_right_absorb : RightAbsorb (=) 0%Z Z.land := Z.land_0_r.
+#[global] Instance Z_land_comm : Comm eq Z.land := Z.land_comm.
+#[global] Instance Z_land_assoc : Assoc eq Z.land := Z.land_assoc.
+#[global] Instance Z_land_left_absorb : LeftAbsorb (=) 0%Z Z.land := Z.land_0_l.
+#[global] Instance Z_land_right_absorb : RightAbsorb (=) 0%Z Z.land := Z.land_0_r.
 
-Instance Z_lor_comm : Comm eq Z.lor := Z.lor_comm.
-Instance Z_lor_assoc : Assoc eq Z.lor := Z.lor_assoc.
+#[global] Instance Z_lor_comm : Comm eq Z.lor := Z.lor_comm.
+#[global] Instance Z_lor_assoc : Assoc eq Z.lor := Z.lor_assoc.
 
-Instance Z_lor_left_id : LeftId (=) 0%Z Z.lor := Z.lor_0_l.
-Instance Z_lor_right_id : RightId (=) 0%Z Z.lor := Z.lor_0_r.
+#[global] Instance Z_lor_left_id : LeftId (=) 0%Z Z.lor := Z.lor_0_l.
+#[global] Instance Z_lor_right_id : RightId (=) 0%Z Z.lor := Z.lor_0_r.
 
 (* Non-symmetric *)
-Instance Z_shiftl_left_absorb : LeftAbsorb (=) 0%Z Z.shiftl := Z.shiftl_0_l.
-Instance Z_shiftl_right_id : RightId (=) 0%Z Z.shiftl := Z.shiftl_0_r.
+#[global] Instance Z_shiftl_left_absorb : LeftAbsorb (=) 0%Z Z.shiftl := Z.shiftl_0_l.
+#[global] Instance Z_shiftl_right_id : RightId (=) 0%Z Z.shiftl := Z.shiftl_0_r.
 
-Instance Z_shiftr_left_absorb : LeftAbsorb (=) 0%Z Z.shiftr := Z.shiftr_0_l.
-Instance Z_shiftr_right_id : RightId (=) 0%Z Z.shiftr := Z.shiftr_0_r.
+#[global] Instance Z_shiftr_left_absorb : LeftAbsorb (=) 0%Z Z.shiftr := Z.shiftr_0_l.
+#[global] Instance Z_shiftr_right_id : RightId (=) 0%Z Z.shiftr := Z.shiftr_0_r.
 
-Instance Z_succ_inj : Inj (=) (=) Z.succ.
+#[global] Instance Z_succ_inj : Inj (=) (=) Z.succ.
 Proof. intros n1 n2. lia. Qed.
 
-Instance Z_pred_inj : Inj (=) (=) Z.pred.
+#[global] Instance Z_pred_inj : Inj (=) (=) Z.pred.
 Proof. intros n1 n2. lia. Qed.
 
 (** Shorter and more memorable name. *)

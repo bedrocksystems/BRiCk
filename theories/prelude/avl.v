@@ -9,55 +9,55 @@ Require Import Coq.FSets.FMapAVL.
 
 Module IM := FMapAVL.Make OT_bs.
 
-Instance IMR_lookup {V} : Lookup bs V (IM.Raw.t V) :=
+#[global] Instance IMR_lookup {V} : Lookup bs V (IM.Raw.t V) :=
   @IM.Raw.find _.
 
-Instance IMR_empty {V} : Empty (IM.Raw.t V) :=
+#[global] Instance IMR_empty {V} : Empty (IM.Raw.t V) :=
   @IM.Raw.empty _.
 
-Instance IMR_insert {V} : Insert bs V (IM.Raw.t V) :=
+#[global] Instance IMR_insert {V} : Insert bs V (IM.Raw.t V) :=
   @IM.Raw.add _.
 
-Instance IMR_map : FMap IM.Raw.t := @IM.Raw.map.
+#[global] Instance IMR_map : FMap IM.Raw.t := @IM.Raw.map.
 
-Instance IMR_merge : Merge IM.Raw.t := IM.Raw.map2.
+#[global] Instance IMR_merge : Merge IM.Raw.t := IM.Raw.map2.
 
-Instance IMR_maptolist A : FinMapToList bs A (IM.Raw.t A) := IM.Raw.elements (elt := A).
+#[global] Instance IMR_maptolist A : FinMapToList bs A (IM.Raw.t A) := IM.Raw.elements (elt := A).
 
-Instance IMR_singleton {V} : SingletonM bs V (IM.Raw.t V) :=
+#[global] Instance IMR_singleton {V} : SingletonM bs V (IM.Raw.t V) :=
   fun k v => <[ k := v ]> ∅.
 
-Instance IMR_delete {V} : Delete bs (IM.Raw.t V) :=
+#[global] Instance IMR_delete {V} : Delete bs (IM.Raw.t V) :=
   fun k m => IM.Raw.remove k m.
 
-Instance IMR_omap : OMap IM.Raw.t := fun _ _ f =>
+#[global] Instance IMR_omap : OMap IM.Raw.t := fun _ _ f =>
   IM.Raw.map_option (fun _ v => f v).
 
 
-Instance IM_lookup {V} : Lookup bs V (IM.t V) :=
+#[global] Instance IM_lookup {V} : Lookup bs V (IM.t V) :=
   @IM.find _.
 
-Instance IM_empty {V} : Empty (IM.t V) :=
+#[global] Instance IM_empty {V} : Empty (IM.t V) :=
   @IM.empty _.
 
-Instance IM_insert {V} : Insert bs V (IM.t V) :=
+#[global] Instance IM_insert {V} : Insert bs V (IM.t V) :=
   @IM.add _.
 
-Instance IM_map : FMap IM.t := @IM.map.
+#[global] Instance IM_map : FMap IM.t := @IM.map.
 
-Instance IM_merge : Merge IM.t := IM.map2.
+#[global] Instance IM_merge : Merge IM.t := IM.map2.
 
-Instance IM_maptolist A : FinMapToList bs A (IM.t A) := IM.elements (elt := A).
+#[global] Instance IM_maptolist A : FinMapToList bs A (IM.t A) := IM.elements (elt := A).
 
-Instance IM_singleton {V} : SingletonM bs V (IM.t V) :=
+#[global] Instance IM_singleton {V} : SingletonM bs V (IM.t V) :=
   fun k v => <[ k := v ]> ∅.
 
-Instance IM_delete {V} : Delete bs (IM.t V) :=
+#[global] Instance IM_delete {V} : Delete bs (IM.t V) :=
   fun k m => IM.remove k m.
 
 (* TODO: more efficient implementation, doing a single tree traversal (like in
 stdpp), not one for lookup and one for insertion. *)
-Instance IM_partial_alter {V} : PartialAlter bs V (IM.t V) :=
+#[global] Instance IM_partial_alter {V} : PartialAlter bs V (IM.t V) :=
   fun f k m =>
   match f (m !! k) with
   | Some v => <[ k := v ]> m

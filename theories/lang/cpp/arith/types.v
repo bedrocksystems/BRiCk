@@ -15,9 +15,9 @@ Variant bitsize : Set :=
 | W32
 | W64
 | W128.
-Instance bitsize_eq: EqDecision bitsize.
+#[global] Instance bitsize_eq: EqDecision bitsize.
 Proof. solve_decision. Defined.
-Instance bitsize_countable : Countable bitsize.
+#[global] Instance bitsize_countable : Countable bitsize.
 Proof.
   apply (inj_countable'
     (λ b,
@@ -68,9 +68,9 @@ Proof. destruct w; reflexivity. Qed.
 
 (* Signed and Unsigned *)
 Variant signed : Set := Signed | Unsigned.
-Instance signed_eq_dec: EqDecision signed.
+#[global] Instance signed_eq_dec: EqDecision signed.
 Proof. solve_decision. Defined.
-Instance signed_countable : Countable signed.
+#[global] Instance signed_countable : Countable signed.
 Proof.
   apply (inj_countable'
     (λ s, if s is Signed then true else false)
@@ -79,7 +79,7 @@ Proof.
 Defined.
 
 Variant endian : Set := Little | Big.
-Instance endian_dec : EqDecision endian.
+#[global] Instance endian_dec : EqDecision endian.
 Proof. solve_decision. Defined.
 
 Definition max_val (bits : bitsize) (sgn : signed) : Z :=

@@ -139,6 +139,6 @@ Section iprop_instances.
   Qed.
 End iprop_instances.
 
-Instance has_own_unit_iprop {Σ} {A : ucmra} `{Hin: inG Σ A} :
+#[global] Instance has_own_unit_iprop {Σ} {A : ucmra} `{Hin: inG Σ A} :
   HasOwnUnit (iPropI Σ) A.
 Proof. constructor; rewrite has_own_iprop_eq /=. by apply base_logic.lib.own.own_unit. Qed.

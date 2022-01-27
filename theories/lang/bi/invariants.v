@@ -64,7 +64,7 @@ Section defs.
 End defs.
 
 Arguments inv {_ _} N P%I.
-Instance : Params (@inv) 3 := {}.
+#[global] Instance : Params (@inv) 3 := {}.
 
 (* TODO: allocation rules are missing. These rely on the specific model of PROP,
   so the client of this library needs the provide the corresponding model of

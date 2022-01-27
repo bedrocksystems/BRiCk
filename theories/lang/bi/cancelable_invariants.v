@@ -55,7 +55,7 @@ Section defs.
     inv N (P ∨ cinv_own γ 1).
 End defs.
 
-Instance: Params (@cinv) 5 := {}.
+#[global] Instance: Params (@cinv) 5 := {}.
 
 (* TODO: allocation rules are missing. These rely on the specific model of PROP,
   so the client of this library needs the provide the corresponding model of
