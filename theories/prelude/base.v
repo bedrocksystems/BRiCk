@@ -33,14 +33,14 @@ Lemma iff_forall T P Q :
   (forall i: T, P i) <-> (forall i: T, Q i).
 Proof. naive_solver. Qed.
 
-Instance reflexive_proper A :
+#[global] Instance reflexive_proper A :
   Proper (pointwise_relation A (pointwise_relation A iff) ==> iff) Reflexive.
 Proof.
   unfold Reflexive=> r1 r2 Heq.
   apply iff_forall => i. by rewrite Heq.
 Qed.
 
-Instance transitive_proper A :
+#[global] Instance transitive_proper A :
   Proper (pointwise_relation A (pointwise_relation A iff) ==> iff) Transitive.
 Proof.
   unfold Reflexive=> r1 r2 Heq.
@@ -50,7 +50,7 @@ Proof.
   by rewrite Heq.
 Qed.
 
-Instance preorder_proper A :
+#[global] Instance preorder_proper A :
   Proper (pointwise_relation A (pointwise_relation A iff) ==> iff) PreOrder.
 Proof. by intros r1 r2 Heq; split => -[]; [rewrite Heq|rewrite -Heq]. Qed.
 
@@ -131,7 +131,7 @@ Variant TCLeq : comparison -> Prop :=
 | TCLeq_eq : TCLeq Eq
 | TCLeq_lt : TCLeq Lt.
 Existing Class TCLeq.
-Existing Instances TCLeq_eq TCLeq_lt.
+#[global] Existing Instances TCLeq_eq TCLeq_lt.
 #[global] Hint Mode TCLeq + : typeclass_instances.
 
 Lemma TCLeq_iff c : TCLeq c <-> c ≠ Gt.
@@ -150,7 +150,7 @@ Proof. by rewrite TCLeq_iff Nat.compare_le_iff. Qed.
 Variant TCLt : comparison -> Prop :=
 | TCLt_lt : TCLt Lt.
 Existing Class TCLt.
-Existing Instance TCLt_lt.
+#[global] Existing Instance TCLt_lt.
 #[global] Hint Mode TCLt + : typeclass_instances.
 
 Lemma TCLt_iff c : TCLt c <-> c = Lt.

@@ -16,7 +16,7 @@ Set Default Proof Using "Type".
 
 Class ListNonEmpty {A} (l : list A) : Prop := list_non_empty : l ≠ nil.
 #[global] Hint Mode ListNonEmpty - ! : typeclass_instances.
-Instance cons_non_empty {A} (x : A) l : ListNonEmpty (x :: l).
+#[global] Instance cons_non_empty {A} (x : A) l : ListNonEmpty (x :: l).
 Proof. done. Qed.
 
 Section laterable.

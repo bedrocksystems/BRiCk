@@ -14,8 +14,8 @@ Require Import bedrocktest.test_translation_unit_validity_cpp.
 #[local] Hint Constructors valid_decl : core.
 #[local] Hint Extern 10 => done : core.
 
-Instance: OMap avl.IM.t. Admitted.
-Instance: FinMap bs avl.IM.t. Admitted.
+#[global] Instance: OMap avl.IM.t. Admitted.
+#[global] Instance: FinMap bs avl.IM.t. Admitted.
 
 #[local] Hint Extern 10 => match goal with
 | H : In _ _ |- _ => simpl in *; intuition simplify_eq

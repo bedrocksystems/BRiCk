@@ -13,7 +13,7 @@ Variant UnOp : Set :=
 | Unot
 | Ubnot
 | Uother (_ : bs).
-Instance: EqDecision UnOp.
+#[global] Instance: EqDecision UnOp.
 Proof. solve_decision. Defined.
 
 Variant BinOp : Set :=
@@ -37,7 +37,7 @@ Variant BinOp : Set :=
 | Bdotp (* .* *)
 | Bdotip (* ->* *)
 .
-Instance: EqDecision BinOp.
+#[global] Instance: EqDecision BinOp.
 Proof. solve_decision. Defined.
 
 
@@ -63,7 +63,7 @@ Variant AtomicOp : Set :=
 | AO__atomic_xor_fetch
 | AO__atomic_nand_fetch
 .
-Instance: EqDecision AtomicOp.
+#[global] Instance: EqDecision AtomicOp.
 Proof. solve_decision. Defined.
 
 Variant BuiltinFn : Set :=
@@ -91,7 +91,7 @@ Variant BuiltinFn : Set :=
 | Bin_popcountl
 | Bin_unknown (_ : bs)
 .
-Instance: EqDecision BuiltinFn.
+#[global] Instance: EqDecision BuiltinFn.
 Proof. solve_decision. Defined.
 
 (** * Casts *)
@@ -119,22 +119,22 @@ Variant Cast : Set :=
 | Cstatic      (from to : globname)
 | Cdynamic     (from to : globname)
 | Cconst       (_ : type).
-Instance Cast_eqdec: EqDecision Cast.
+#[global] Instance Cast_eqdec: EqDecision Cast.
 Proof. solve_decision. Defined.
 
 (** * References *)
 Variant VarRef : Set :=
 | Lname (_ : localname)
 | Gname (_ : globname).
-Instance: EqDecision VarRef.
+#[global] Instance: EqDecision VarRef.
 Proof. solve_decision. Defined.
 
 Variant call_type : Set := Virtual | Direct.
-Instance: EqDecision call_type.
+#[global] Instance: EqDecision call_type.
 Proof. solve_decision. Defined.
 
 Variant ValCat : Set := Lvalue | Prvalue | Xvalue.
-Instance: EqDecision ValCat.
+#[global] Instance: EqDecision ValCat.
 Proof. solve_decision. Defined.
 
 Inductive Expr : Set :=
@@ -214,7 +214,7 @@ Inductive Expr : Set :=
 | Eopaque_ref (name : N) (_ : type)
 
 | Eunsupported (_ : bs) (_ : type).
-Instance Expr_eq_dec : EqDecision Expr.
+#[global] Instance Expr_eq_dec : EqDecision Expr.
 Proof.
   rewrite /RelDecision /Decision.
   fix IHe 1.

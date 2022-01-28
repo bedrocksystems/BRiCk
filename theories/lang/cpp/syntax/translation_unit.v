@@ -12,7 +12,7 @@ From bedrock.lang.cpp.syntax Require Import names expr stmt types.
 (** Record an offset in _bits_. *)
 Record LayoutInfo : Set :=
 { li_offset : Z }.
-Instance: EqDecision LayoutInfo.
+#[global] Instance: EqDecision LayoutInfo.
 Proof. solve_decision. Defined.
 
 Variant InitPath : Set :=
@@ -20,14 +20,14 @@ Variant InitPath : Set :=
 | InitField (_ : ident)
 | InitIndirect (anon_path : list (ident * globname)) (_ : ident)
 | InitThis.
-Instance: EqDecision InitPath.
+#[global] Instance: EqDecision InitPath.
 Proof. solve_decision. Defined.
 
 Record Initializer :=
   { init_path : InitPath
   ; init_type : type
   ; init_init : Expr }.
-Instance: EqDecision Initializer.
+#[global] Instance: EqDecision Initializer.
 Proof. solve_decision. Defined.
 
 Record Ctor : Set :=
@@ -36,7 +36,7 @@ Record Ctor : Set :=
 ; c_cc     : calling_conv
 ; c_body   : option (OrDefault (list Initializer * Stmt))
 }.
-Instance: EqDecision Ctor.
+#[global] Instance: EqDecision Ctor.
 Proof. solve_decision. Defined.
 
 Record Dtor : Set :=
@@ -44,14 +44,14 @@ Record Dtor : Set :=
 ; d_cc     : calling_conv
 ; d_body   : option (OrDefault Stmt)
 }.
-Instance: EqDecision Dtor.
+#[global] Instance: EqDecision Dtor.
 Proof. solve_decision. Defined.
 
 Variant FunctionBody : Set :=
 | Impl (_ : Stmt)
 | Builtin (_ : BuiltinFn)
 .
-Instance: EqDecision FunctionBody.
+#[global] Instance: EqDecision FunctionBody.
 Proof. solve_decision. Defined.
 
 Record Func : Set :=
@@ -60,7 +60,7 @@ Record Func : Set :=
 ; f_cc     : calling_conv
 ; f_body   : option FunctionBody
 }.
-Instance: EqDecision Func.
+#[global] Instance: EqDecision Func.
 Proof. solve_decision. Defined.
 
 Record Method : Set :=
@@ -71,7 +71,7 @@ Record Method : Set :=
 ; m_cc      : calling_conv
 ; m_body    : option (OrDefault Stmt)
 }.
-Instance: EqDecision Method.
+#[global] Instance: EqDecision Method.
 Proof. solve_decision. Defined.
 
 Record Member : Set := mkMember
@@ -79,7 +79,7 @@ Record Member : Set := mkMember
 ; mem_type : type
 ; mem_init : option Expr
 ; mem_layout : LayoutInfo }.
-Instance: EqDecision Member.
+#[global] Instance: EqDecision Member.
 Proof. solve_decision. Defined.
 
 
@@ -97,12 +97,12 @@ Record Union : Set :=
 ; u_alignment : N
   (* ^ alignment of the union *)
 }.
-Instance: EqDecision Union.
+#[global] Instance: EqDecision Union.
 Proof. solve_decision. Defined.
 
 
 Variant LayoutType : Set := POD | Standard | Unspecified.
-Instance: EqDecision LayoutType.
+#[global] Instance: EqDecision LayoutType.
 Proof. solve_decision. Defined.
 
 
@@ -135,7 +135,7 @@ Record Struct : Set :=
 ; s_alignment : N
   (* ^ alignment of the structure *)
 }.
-Instance: EqDecision Struct.
+#[global] Instance: EqDecision Struct.
 Proof. solve_decision. Defined.
 
 Definition has_vtable (s : Struct) : bool :=
@@ -149,7 +149,7 @@ Definition has_virtual_dtor (s : Struct) : bool :=
   List.existsb (fun '(a,_) => bool_decide (a = s.(s_dtor))) s.(s_virtuals).
 
 Variant Ctor_type : Set := Ct_Complete | Ct_Base | Ct_alloc | Ct_Comdat.
-Instance: EqDecision Ctor_type.
+#[global] Instance: EqDecision Ctor_type.
 Proof. solve_decision. Defined.
 
 
@@ -165,7 +165,7 @@ Proof. solve_decision. Defined.
 (*   end. *)
 
 Variant Dtor_type : Set := Dt_Deleting | Dt_Complete | Dt_Base | Dt_Comdat.
-Instance: EqDecision Dtor_type.
+#[global] Instance: EqDecision Dtor_type.
 Proof. solve_decision. Defined.
 
 Definition dtor_name (type : Dtor_type) (cls : globname) : obj_name :=
@@ -187,7 +187,7 @@ Variant ObjValue : Set :=
 | Omethod      (_ : Method)
 | Oconstructor (_ : Ctor)
 | Odestructor  (_ : Dtor).
-Instance: EqDecision ObjValue.
+#[global] Instance: EqDecision ObjValue.
 Proof. solve_decision. Defined.
 
 (* [Tmember_func ty fty] constructs the function type for a
@@ -225,15 +225,15 @@ Variant GlobDecl : Set :=
 | Genum     (_ : type) (_ : list ident) (* *)
 | Gconstant (_ : type) (init : option Expr) (* used for enumerator constants*)
 | Gtypedef  (_ : type).
-Instance: EqDecision GlobDecl.
+#[global] Instance: EqDecision GlobDecl.
 Proof. solve_decision. Defined.
 
 Definition symbol_table : Type := IM.t ObjValue.
 
 Definition type_table : Type := IM.t GlobDecl.
 
-Instance Singleton_symbol_table : SingletonM obj_name ObjValue symbol_table := _.
-Instance Singleton_type_table : SingletonM globname GlobDecl type_table := _.
+#[global] Instance Singleton_symbol_table : SingletonM obj_name ObjValue symbol_table := _.
+#[global] Instance Singleton_type_table : SingletonM globname GlobDecl type_table := _.
 
 Fixpoint ref_to_type (t : type) : option type :=
   match t with
@@ -530,7 +530,7 @@ Record translation_unit : Type :=
 ; byte_order : endian
 }.
 
-Instance global_lookup : Lookup globname GlobDecl translation_unit :=
+#[global] Instance global_lookup : Lookup globname GlobDecl translation_unit :=
   fun k m => m.(globals) !! k.
-Instance symbol_lookup : Lookup obj_name ObjValue translation_unit :=
+#[global] Instance symbol_lookup : Lookup obj_name ObjValue translation_unit :=
   fun k m => m.(symbols) !! k.

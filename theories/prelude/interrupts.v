@@ -18,7 +18,7 @@ Variant IntTrigger :=
 | TriggerLevel (active_low : bool).
   (* ^ int is low-level triggered [active_low = true]; otherwise, high-level triggered *)
 
-Instance int_trigger_decision : EqDecision IntTrigger.
+#[global] Instance int_trigger_decision : EqDecision IntTrigger.
 Proof. solve_decision. Defined.
 
 Variant IntOwner :=
@@ -27,12 +27,12 @@ Variant IntOwner :=
 | GuestInt.
 (* ^ int is guest owned (VM passthrough) *)
 
-Instance int_owner_decision : EqDecision IntOwner.
+#[global] Instance int_owner_decision : EqDecision IntOwner.
 Proof. solve_decision. Defined.
 
 Variant IntStatus : Set := IntMasked | IntEnabled.
 
-Instance int_status_decision : EqDecision IntStatus.
+#[global] Instance int_status_decision : EqDecision IntStatus.
 Proof. solve_decision. Defined.
 
 Record IntConfig : Set :=
@@ -49,7 +49,7 @@ Definition initialIntConfig :=
   ;  int_status := IntMasked
   |}.
 
-Instance int_cfg_decision : EqDecision IntConfig.
+#[global] Instance int_cfg_decision : EqDecision IntConfig.
 Proof. solve_decision. Defined.
 
 (** [intline_of (x : T)]: The interrupt line attached to some value [x : T] *)
@@ -73,7 +73,7 @@ Definition int_types_match (sig : InterruptSignal) (ty : IntConfig) : Prop :=
   | EdgeSig => ty.(int_trigger) = Some TriggerEdge
   end.
 
-Instance int_types_match_decision sig cfg : Decision (int_types_match sig cfg).
+#[global] Instance int_types_match_decision sig cfg : Decision (int_types_match sig cfg).
 Proof. case: cfg => ?; case: sig => /=; by apply: _. Defined.
 
 (** [intcfg_valid cfg own sig] means that [cfg] matches [sig], the interrupt line was
@@ -84,11 +84,11 @@ Definition intcfg_valid (cfg : IntConfig) (own : IntOwner) (sig : InterruptSigna
     cfg.(int_status) = IntEnabled.
 
 (* Confirm these instances are already derivable. *)
-Instance intline_elem_of_dec :
+#[global] Instance intline_elem_of_dec :
   @RelDecision (int_line * IntConfig) (list (int_line * IntConfig)) elem_of.
 Proof. apply _. Abort.
 
-Instance intcfg_valid_decision cfg own sig : Decision (intcfg_valid cfg own sig).
+#[global] Instance intcfg_valid_decision cfg own sig : Decision (intcfg_valid cfg own sig).
 Proof. apply _. Abort.
 
 Record IntAction :=

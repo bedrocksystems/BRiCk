@@ -53,12 +53,12 @@ Definition bi_cmra_valid
 (* TODO: figure out if overwriting Iris's notation for [uPred_cmra_valid] works robustly, until this is upstreamed. *)
 Notation "✓ x" := (bi_cmra_valid x) (at level 20) : bi_scope.
 
-Instance prop_valid_plain
+#[global] Instance prop_valid_plain
   {PROP : bi} `{!BiEmbed siPropI PROP} `{BiPlainly PROP}
   {BEP : BiEmbedPlainly siPropI PROP} {A : cmra} (a : A) :
   Plain (✓ a) := _.
 
-Instance prop_valid_persistent
+#[global] Instance prop_valid_persistent
   {PROP : bi} `{!BiEmbed siPropI PROP} {A : cmra} (a : A) :
   Persistent (✓ a) := _.
 
@@ -84,9 +84,9 @@ Class HasOwn {PROP : bi} {A : cmra} : Type := {
 
 Arguments HasOwn : clear implicits.
 Arguments own {_ _ _} _ _.
-Instance : Params (@own) 4 := {}.
+#[global] Instance : Params (@own) 4 := {}.
 
-Instance own_proper `{!HasOwn PROP A} γ :
+#[global] Instance own_proper `{!HasOwn PROP A} γ :
   Proper ((≡) ==> (⊣⊢)) (@own PROP A _ γ) := ne_proper _.
 
 (* own_valid *)

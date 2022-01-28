@@ -25,11 +25,11 @@ Inductive TCOrT (P1 P2 : Type) : Type :=
   | TCOrT_l : P1 → TCOrT P1 P2
   | TCOrT_r : P2 → TCOrT P1 P2.
 Existing Class TCOrT.
-Existing Instance TCOrT_l | 9.
-Existing Instance TCOrT_r | 10.
+#[global] Existing Instance TCOrT_l | 9.
+#[global] Existing Instance TCOrT_r | 10.
 #[global] Hint Mode TCOrT ! ! : typeclass_instances.
 
 Inductive TCAndT (P1 P2 : Type) : Type := TCAndT_intro : P1 → P2 → TCAndT P1 P2.
 Existing Class TCAndT.
-Existing Instance TCAndT_intro.
+#[global] Existing Instance TCAndT_intro.
 #[global] Hint Mode TCAndT ! ! : typeclass_instances.

@@ -53,11 +53,11 @@ Proof. by intros ?? [=]. Qed.
 
 Module Import wrapN_notations.
   Class WrapNAdd {T U R : Set} := wrapN_add : T -> U -> R.
-  Instance wrapNN_add {Phant} : @WrapNAdd (WrapN Phant) N (WrapN Phant) :=
+  #[global] Instance wrapNN_add {Phant} : @WrapNAdd (WrapN Phant) N (WrapN Phant) :=
     fun w n => MkWrapN (unwrapN w + n).
-  Instance NwrapN_add {Phant} : @WrapNAdd N (WrapN Phant) (WrapN Phant) :=
+  #[global] Instance NwrapN_add {Phant} : @WrapNAdd N (WrapN Phant) (WrapN Phant) :=
     fun n w => MkWrapN (n + unwrapN w).
-  Instance wrapNwrapN_add {Phant} : @WrapNAdd (WrapN Phant) (WrapN Phant) (WrapN Phant) :=
+  #[global] Instance wrapNwrapN_add {Phant} : @WrapNAdd (WrapN Phant) (WrapN Phant) (WrapN Phant) :=
     fun w1 w2 => MkWrapN (unwrapN w1 + unwrapN w2).
   Notation "0" := (MkWrapN 0) (only parsing) : wrapN_scope.
   Infix "+" := wrapN_add (only parsing) : wrapN_scope.

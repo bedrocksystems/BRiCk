@@ -125,7 +125,7 @@ Definition arrR_aux : seal (@arrR_def). Proof. by eexists. Qed.
 Definition arrR := arrR_aux.(unseal).
 Definition arrR_eq : @arrR = _ := arrR_aux.(seal_eq).
 Arguments arrR {_ _ _} _ _%list_scope : assert.
-Instance: Params (@arrR) 4 := {}.	(** TODO: [genv] weakening *)
+#[global] Instance: Params (@arrR) 4 := {}.	(** TODO: [genv] weakening *)
 
 Section arrR.
   Context `{Σ : cpp_logic, σ : genv}.
@@ -257,7 +257,7 @@ Definition arrayR_aux : seal (@arrayR_def). Proof. by eexists. Qed.
 Definition arrayR := arrayR_aux.(unseal).
 Definition arrayR_eq : @arrayR = _ := arrayR_aux.(seal_eq).
 Arguments arrayR {_ _ _ _} _ _%function_scope _%list_scope : assert.
-Instance: Params (@arrayR) 5 := {}.	(** TODO: [genv] weakening *)
+#[global] Instance: Params (@arrayR) 5 := {}.	(** TODO: [genv] weakening *)
 
 Section array.
   Context `{Σ : cpp_logic, resolve : genv}.

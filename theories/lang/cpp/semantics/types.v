@@ -25,14 +25,14 @@ Variant Roption_leq {T} (R : T -> T -> Prop) : option T -> option T -> Prop :=
 | Rleq_Some {x y} (_ : R x y) : Roption_leq R (Some x) (Some y).
 
 
-Instance proper_GlobDecl_size_of: Proper (GlobDecl_ler ==> Roption_leq eq) GlobDecl_size_of.
+#[global] Instance proper_GlobDecl_size_of: Proper (GlobDecl_ler ==> Roption_leq eq) GlobDecl_size_of.
 Proof.
   rewrite /GlobDecl_size_of => x y Heq.
   repeat (case_match; try constructor);
     simplify_eq/= => //;
     apply require_eq_success in Heq; naive_solver.
 Qed.
-Instance proper_GlobDecl_align_of: Proper (GlobDecl_ler ==> Roption_leq eq) GlobDecl_align_of.
+#[global] Instance proper_GlobDecl_align_of: Proper (GlobDecl_ler ==> Roption_leq eq) GlobDecl_align_of.
 Proof.
   rewrite /GlobDecl_align_of => x y Heq.
   repeat (case_match; try constructor);

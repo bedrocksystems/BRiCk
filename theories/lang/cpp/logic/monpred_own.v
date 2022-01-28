@@ -82,7 +82,7 @@ Section monpred_instances.
   Proof. rewrite has_own_monpred_eq. apply _. Qed.
 End monpred_instances.
 
-Instance has_own_unit_monpred {I : biIndex} {Σ} {A : ucmra} `{Hin: inG Σ A} :
+#[global] Instance has_own_unit_monpred {I : biIndex} {Σ} {A : ucmra} `{Hin: inG Σ A} :
   HasOwnUnit (monPredI I (iPropI Σ)) A.
 Proof.
   constructor; intros; rewrite /own has_own_monpred_eq /has_own_monpred_def; red.

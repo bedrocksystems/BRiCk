@@ -35,7 +35,7 @@ Module PTRS_IMPL <: PTRS_INTF.
   | o_invalid_.
   #[local] Instance raw_offset_seg_eq_dec : EqDecision raw_offset_seg.
   Proof. solve_decision. Defined.
-  Declare Instance raw_offset_seg_countable : Countable raw_offset_seg.
+  #[global] Declare Instance raw_offset_seg_countable : Countable raw_offset_seg.
 
   Definition offset_seg : Set := raw_offset_seg * Z.
   #[local] Instance offset_seg_eq_dec : EqDecision offset_seg := _.
@@ -169,7 +169,7 @@ Module PTRS_IMPL <: PTRS_INTF.
   Definition raw_offset_wf (ro : raw_offset) : Prop :=
     raw_offset_collapse ro = ro.
   Arguments raw_offset_wf !_ /.
-  Instance raw_offset_wf_pi ro : ProofIrrel (raw_offset_wf ro) := _.
+  #[global] Instance raw_offset_wf_pi ro : ProofIrrel (raw_offset_wf ro) := _.
   Lemma singleton_raw_offset_wf {os}
     (Hn0 : isnt os (o_sub_ _ 0, _)) :
     raw_offset_wf [os].
@@ -341,9 +341,9 @@ Module PTRS_IMPL <: PTRS_INTF.
     f (xs1 ++ xs2) = f (f xs1 ++ f xs2).
   Class Involutive {X} (f : X → X) :=
     invol : ∀ x, f (f x) = f x.
-  Instance raw_offset_collapse_involutive : Involutive raw_offset_collapse.
+  #[global] Instance raw_offset_collapse_involutive : Involutive raw_offset_collapse.
   Admitted.
-  Instance raw_offset_collapse_invol_app : InvolApp raw_offset_collapse.
+  #[global] Instance raw_offset_collapse_invol_app : InvolApp raw_offset_collapse.
   Admitted.
 
   Program Definition o_dot : offset → offset → offset :=
@@ -359,7 +359,7 @@ Module PTRS_IMPL <: PTRS_INTF.
 
   #[local] Instance root_ptr_eq_dec : EqDecision root_ptr.
   Proof. solve_decision. Defined.
-  Declare Instance root_ptr_countable : Countable root_ptr.
+  #[global] Declare Instance root_ptr_countable : Countable root_ptr.
   #[global] Instance global_ptr__inj : Inj2 (=) (=) (=) global_ptr_.
   Proof. by intros ???? [=]. Qed.
 
@@ -419,7 +419,7 @@ Module PTRS_IMPL <: PTRS_INTF.
   Lemma global_ptr_nonnull tu o : global_ptr tu o <> nullptr.
   Proof. done. Qed.
 
-  Instance global_ptr_inj tu : Inj (=) (=) (global_ptr tu) := _.
+  #[global] Instance global_ptr_inj tu : Inj (=) (=) (global_ptr tu) := _.
 
   (* Some proofs using these helpers could be shortened, tactic-wise, but I find
   them clearer this way, and they work in both models. *)
@@ -435,9 +435,9 @@ Module PTRS_IMPL <: PTRS_INTF.
   Lemma global_ptr_nonnull_aid tu o : ptr_alloc_id (global_ptr tu o) <> Some null_alloc_id.
   Proof. rewrite ptr_alloc_id_global_ptr. done. Qed.
 
-  Instance global_ptr_addr_inj tu : Inj (=) (=) (λ o, ptr_vaddr (global_ptr tu o)).
+  #[global] Instance global_ptr_addr_inj tu : Inj (=) (=) (λ o, ptr_vaddr (global_ptr tu o)).
   Proof. intros ??. rewrite !ptr_vaddr_global_ptr. by intros ?%(inj _)%(inj _). Qed.
-  Instance global_ptr_aid_inj tu : Inj (=) (=) (λ o, ptr_alloc_id (global_ptr tu o)).
+  #[global] Instance global_ptr_aid_inj tu : Inj (=) (=) (λ o, ptr_alloc_id (global_ptr tu o)).
   Proof. intros ??. rewrite !ptr_alloc_id_global_ptr. by intros ?%(inj _)%(inj _). Qed.
 
   Lemma ptr_vaddr_nullptr : ptr_vaddr nullptr = Some 0%N.

@@ -10,22 +10,22 @@ Require Export bedrock.prelude.bytestring_core.
 
 (** Bytestring extensions. Integrate with stdpp and strings. *)
 (** bytes *)
-Instance byte_inhabited : Inhabited Byte.byte := populate Byte.x00.
-Instance byte_eq_dec : EqDecision Byte.byte := Byte.byte_eq_dec.
+#[global] Instance byte_inhabited : Inhabited Byte.byte := populate Byte.x00.
+#[global] Instance byte_eq_dec : EqDecision Byte.byte := Byte.byte_eq_dec.
 
 #[deprecated(since="2021-09-21", note="Use [byte_eq_dec]")]
 Notation byte_dec := byte_eq_dec.
 
-Instance byte_countable : Countable Byte.byte.
+#[global] Instance byte_countable : Countable Byte.byte.
 Proof.
   apply (inj_countable Byte.to_N Byte.of_N).
   abstract (by intros []).
 Defined.
 
-Instance bytestring_eq_dec : EqDecision bs := BS.eq_dec.
+#[global] Instance bytestring_eq_dec : EqDecision bs := BS.eq_dec.
 
-Instance bytestring_inhabited : Inhabited bs := populate ""%bs.
-Instance bytestring_countable : Countable bs.
+#[global] Instance bytestring_inhabited : Inhabited bs := populate ""%bs.
+#[global] Instance bytestring_countable : Countable bs.
 Proof.
   apply (inj_countable' BS.print BS.parse),
     BS.print_parse_inv.

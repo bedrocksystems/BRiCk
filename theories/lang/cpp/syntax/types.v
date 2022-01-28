@@ -13,9 +13,9 @@ Set Primitive Projections.
 Record type_qualifiers : Set :=
 { q_const : bool
 ; q_volatile : bool }.
-Instance qual_eq: EqDecision type_qualifiers.
+#[global] Instance qual_eq: EqDecision type_qualifiers.
 Proof. solve_decision. Defined.
-Instance qual_countable : Countable type_qualifiers.
+#[global] Instance qual_countable : Countable type_qualifiers.
 Proof.
   apply (inj_countable'
     (λ q, (q_const q, q_volatile q))
@@ -45,10 +45,10 @@ Variant calling_conv : Set :=
 | CC_C
 | CC_MsAbi
 | CC_RegCall.
-Instance calling_conv_inhabited : Inhabited calling_conv := populate CC_C.
-Instance calling_conv_eq_dec: EqDecision calling_conv.
+#[global] Instance calling_conv_inhabited : Inhabited calling_conv := populate CC_C.
+#[global] Instance calling_conv_eq_dec: EqDecision calling_conv.
 Proof. solve_decision. Defined.
-Instance calling_conv_countable : Countable calling_conv.
+#[global] Instance calling_conv_countable : Countable calling_conv.
 Proof.
   apply (inj_countable'
     (λ cc,
@@ -69,7 +69,7 @@ Defined.
    calling convention explicitly.
  *)
 Existing Class calling_conv.
-Existing Instance CC_C.
+#[global] Existing Instance CC_C.
 
 (* types *)
 Inductive type : Set :=
@@ -90,7 +90,7 @@ Inductive type : Set :=
    some Tarch types, like ARM SVE, are "sizeless", hence [option size]. *)
 | Tarch (_ : option bitsize) (name : bs)
 .
-Instance type_inhabited : Inhabited type := populate Tvoid.
+#[global] Instance type_inhabited : Inhabited type := populate Tvoid.
 
 (** Strengthened Induction Principle for [type]
 
@@ -177,7 +177,7 @@ Proof.
   rewrite -{1}/(EqDecision type) in IHty1.
   decide equality; try solve_trivial_decision.
 Defined.
-Instance type_eq: EqDecision type := type_eq_dec.
+#[global] Instance type_eq: EqDecision type := type_eq_dec.
 Section type_countable.
   #[local] Notation BS x      := (GenLeaf (inr x)).
   #[local] Notation QUAL x    := (GenLeaf (inl (inr x))).

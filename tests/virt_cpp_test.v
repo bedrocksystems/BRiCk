@@ -9,19 +9,19 @@ Require Import bedrock.lang.cpp.semantics.subtyping.
 Require Import bedrock.lang.cpp.logic.dispatch.
 
 Require Import bedrocktest.virt_cpp.
-Instance resolve : genv.genv :=
+#[global] Instance resolve : genv.genv :=
   genv.Build_genv module W32.
 
-Instance AA : @class_derives _ "_Z1A" "_Z1A".
+#[global] Instance AA : @class_derives _ "_Z1A" "_Z1A".
 Proof. econstructor; reflexivity. Defined.
 
-Instance  AB : @class_derives _ "_Z1B" "_Z1A".
+#[global] Instance AB : @class_derives _ "_Z1B" "_Z1A".
 Proof. econstructor; [ reflexivity | simpl; tauto | refine _ ]. Defined.
 
-Instance  AC : @class_derives _ "_Z1C" "_Z1A".
+#[global] Instance AC : @class_derives _ "_Z1C" "_Z1A".
 Proof. econstructor; [ reflexivity | simpl; tauto | refine _ ]. Defined.
 
-Instance  AD : @class_derives _ "_Z1D" "_Z1A".
+#[global] Instance AD : @class_derives _ "_Z1D" "_Z1A".
 Proof. econstructor; [ reflexivity | simpl; tauto | refine _ ]. Defined.
 
 Goal (dispatch _ AC "_ZN1A3fooEv").(derivation) = AC.
