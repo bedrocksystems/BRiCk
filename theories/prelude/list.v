@@ -125,3 +125,6 @@ Proof.
   intros H.
   destruct l; simpl in *; by lia.
 Qed.
+
+(* Make [take 0 xs] reduce with [cbn] *)
+#[global] Arguments take : simpl nomatch.
