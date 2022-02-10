@@ -197,6 +197,10 @@ Witnesses for non-disjoint lists
 &nbsp;&nbsp;<span class="id" title="tactic">intros</span> <span class="id" title="var">H</span>.<br/>
 &nbsp;&nbsp;<span class="id" title="tactic">destruct</span> <span class="id" title="var">l</span>; <span class="id" title="tactic">simpl</span> <span class="id" title="tactic">in</span> *; <span class="id" title="tactic">by</span> <span class="id" title="var">lia</span>.<br/>
 <span class="id" title="keyword">Qed</span>.<br/>
+
+<br/>
+<span class="comment">(*&nbsp;Make&nbsp;<span class="inlinecode"><span class="id" title="var">take</span></span> <span class="inlinecode">0</span> <span class="inlinecode"><span class="id" title="var">xs</span></span>&nbsp;reduce&nbsp;with&nbsp;<span class="inlinecode"><span class="id" title="var">cbn</span></span>&nbsp;*)</span><br/>
+#[<span class="id" title="var">global</span>] <span class="id" title="var">Arguments</span> <a class="idref" href="http://coq.inria.fr/distrib/V8.13.2/stdlib//Coq.Lists.List.html#firstn"><span class="id" title="definition">take</span></a> : <span class="id" title="tactic">simpl</span> <span class="id" title="var">nomatch</span>.<br/>
 </div>
 <!--
 -- Copyright (c) 2020 BedRock Systems, Inc.
