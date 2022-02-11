@@ -22,7 +22,6 @@ Section defs.
     as_Rep (fun p =>
          strict_valid_ptr p **
          □ (Forall vs Q,
-         [| List.length vs = List.length fs.(fs_arguments) |] -*
          fs.(fs_spec) vs Q -*
          fspec resolve.(genv_tu).(globals) (type_of_spec fs) (Vptr p) vs Q)).
   Definition cptrR_aux : seal (@cptrR_def). Proof. by eexists. Qed.
@@ -58,18 +57,18 @@ Section with_cpp.
   Proof.
     rewrite cptrR_eq/cptrR_def /pureR /as_Rep.
     constructor => p; rewrite Rep_wand_force; iIntros "#(%ty & fs_impl)" => /=.
-    iIntros "(val & #rest)"; iFrame. iIntros (vs Q len).
-    rewrite ty. iModIntro. iIntros "fs_g".
-    iApply "rest"; first by apply length_type_of_spec in ty; rewrite -ty len.
+    iIntros "(val & #rest)"; iFrame.
+    rewrite ty. iModIntro. iIntros (vs Q) "fs_g".
+    iApply "rest".
     by iApply "fs_impl".
   Qed.
 
 (* TODO: Proper wrt [genv_leq]. *)
   #[global] Instance cptrR_ne : NonExpansive cptrR.
   Proof.
-    intros n P Q HPQ. rewrite cptrR_eq. rewrite/cptrR_def.
-    rewrite (length_fs_arguments_ne _ _ _ HPQ) (type_of_spec_ne _ _ _ HPQ).
-    apply as_Rep_ne=>p. (do 2!f_equiv). do 6 f_equiv. by apply fs_spec_ne.
+    intros n P Q HPQ. rewrite cptrR_eq/cptrR_def.
+    apply as_Rep_ne=>p. (do 2!f_equiv). do 5 f_equiv. by apply fs_spec_ne.
+    f_equiv. apply HPQ.
   Qed.
   #[global] Instance cptrR_proper : Proper (equiv ==> equiv) cptrR.
   Proof. exact: ne_proper. Qed.
