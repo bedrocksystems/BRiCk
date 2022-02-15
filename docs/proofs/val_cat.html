@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>val_cat - Stress Testing Calling Conventions &mdash; BedRock BRiCk alpha documentation</title>
+      <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../_static/alectryon.css" type="text/css" />
+      <link rel="stylesheet" href="../_static/tango_subtle.min.css" type="text/css" />
+      <link rel="stylesheet" href="../_static/css/justify.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/underscore.js"></script>
+        <script src="../_static/doctools.js"></script>
+        <script src="../_static/alectryon.js"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Related work and bibliography" href="../bibliography.html" />
+    <link rel="prev" title="Proof Examples" href="../proof_examples.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../index.html" class="icon icon-home"> BedRock BRiCk
+          </a>
+              <div class="version">
+                0.5.0
+              </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Table of Contents</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../features.html">Language Support</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../evaluation.html">Evaluation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../undefined_behavior.html">Undefined behavior and optimizations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pointers.html">Pointers and pointer provenance</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../object_layout.html">Object representation, layout and padding</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../machine.html">Assembly Interoperation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../documentation.html">Code Documentation</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../proof_examples.html">Proof Examples</a><ul class="current">
+<li class="toctree-l2 current"><a class="current reference internal" href="#"><code class="code highlight coq docutils literal notranslate"><span class="n"><span class="pre">val_cat</span></span></code> - Stress Testing Calling Conventions</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../bibliography.html">Related work and bibliography</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../acknowledgements.html">Acknowledgements</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">BedRock BRiCk</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content style-external-links">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
+          <li><a href="../proof_examples.html">Proof Examples</a> &raquo;</li>
+      <li><code class="code highlight coq docutils literal notranslate"><span class="n"><span class="pre">val_cat</span></span></code> - Stress Testing Calling Conventions</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/proofs/val_cat.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <div class="section" id="val-cat-stress-testing-calling-conventions">
+<h1><code class="code highlight coq docutils literal notranslate"><span class="n"><span class="pre">val_cat</span></span></code> - Stress Testing Calling Conventions<a class="headerlink" href="#val-cat-stress-testing-calling-conventions" title="Permalink to this headline"></a></h1>
+<p>This test stress tests BRiCk’s calling convention ensuring that we properly handle pass-by-value, pass-by-references, and pass-by-rvalue-reference.
+We also use it as small performance test for out automation.</p>
+<ul class="simple">
+<li><p><a class="reference external" href="./../_static/proof_examples/val_cat_cpp_spec.v.html">specification</a></p></li>
+</ul>
+<div class="highlight-cpp notranslate"><div class="highlight"><pre><span></span><span class="cm">/*</span>
+<span class="cm"> * Copyright (C) BedRock Systems Inc. 2019 Gregory Malecha</span>
+<span class="cm"> *</span>
+<span class="cm"> * SPDX-License-Identifier:MIT-0</span>
+<span class="cm"> */</span>
+
+<span class="k">struct</span> <span class="n">P</span> <span class="p">{</span>
+    <span class="kt">int</span> <span class="n">x</span><span class="p">;</span>
+
+    <span class="cm">/**</span>
+<span class="cm">     * \internal</span>
+<span class="cm">     *</span>
+<span class="cm">     * \post _at (_eq this) (PR 0)</span>
+<span class="cm">     */</span>
+    <span class="n">P</span><span class="p">()</span><span class="o">:</span><span class="n">x</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span> <span class="p">{}</span>
+    <span class="cm">/**</span>
+<span class="cm">     * \internal</span>
+<span class="cm">     *</span>
+<span class="cm">     * \arg{x} &quot;x&quot; (Vint x)</span>
+<span class="cm">     * \post this |-&gt; PR x</span>
+<span class="cm">     */</span>
+    <span class="n">P</span><span class="p">(</span><span class="kt">int</span> <span class="n">x</span><span class="p">)</span><span class="o">:</span><span class="n">x</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="p">{}</span>
+
+    <span class="cm">/**</span>
+<span class="cm">     * \internal</span>
+<span class="cm">     *</span>
+<span class="cm">     * \arg{p} &quot;p&quot; (Vptr p)</span>
+<span class="cm">     * \prepost{m} p |-&gt; PR m</span>
+<span class="cm">     * \post this |-&gt; PR m</span>
+<span class="cm">     */</span>
+    <span class="n">P</span><span class="p">(</span><span class="k">const</span> <span class="n">P</span><span class="o">&amp;</span><span class="n">p</span><span class="p">)</span><span class="o">:</span><span class="n">x</span><span class="p">(</span><span class="n">p</span><span class="p">.</span><span class="n">x</span><span class="p">)</span> <span class="p">{}</span>
+
+    <span class="cm">/**</span>
+<span class="cm">     * Note, this specification is the same as the copy-constructor which is a stronger specification</span>
+<span class="cm">     * than what is required for more-cosntructors.</span>
+<span class="cm">     *</span>
+<span class="cm">     * \internal</span>
+<span class="cm">     *</span>
+<span class="cm">     * \arg{p} &quot;p&quot; (Vptr p)</span>
+<span class="cm">     * \prepost{m} p |-&gt; PR m</span>
+<span class="cm">     * \post this |-&gt; PR m</span>
+<span class="cm">     */</span>
+    <span class="n">P</span><span class="p">(</span><span class="k">const</span> <span class="n">P</span><span class="o">&amp;&amp;</span> <span class="n">p</span><span class="p">)</span><span class="o">:</span><span class="n">x</span><span class="p">(</span><span class="n">p</span><span class="p">.</span><span class="n">x</span><span class="p">)</span> <span class="p">{}</span>
+
+    <span class="cm">/**</span>
+<span class="cm">     * \internal</span>
+<span class="cm">     *</span>
+<span class="cm">     * \pre{m} this |-&gt; PR m</span>
+<span class="cm">     * \post emp</span>
+<span class="cm">     */</span>
+    <span class="o">~</span><span class="n">P</span><span class="p">()</span> <span class="p">{}</span>
+<span class="p">};</span>
+
+<span class="k">struct</span> <span class="n">Q</span> <span class="p">{</span>
+    <span class="kt">int</span> <span class="n">x</span><span class="p">;</span>
+    <span class="k">explicit</span> <span class="nf">Q</span><span class="p">()</span> <span class="p">{}</span>
+<span class="p">};</span>
+
+<span class="cm">/**</span>
+<span class="cm"> * \internal</span>
+<span class="cm"> *</span>
+<span class="cm"> * \arg{x} &quot;x&quot; (Vptr x)</span>
+<span class="cm"> * \prepost{m} x |-&gt; PR m</span>
+<span class="cm"> * \post[Vint m] emp</span>
+<span class="cm"> */</span>
+<span class="kt">int</span> <span class="nf">by_ref</span><span class="p">(</span><span class="n">P</span><span class="o">&amp;</span> <span class="n">x</span><span class="p">)</span> <span class="p">{</span> <span class="k">return</span> <span class="n">x</span><span class="p">.</span><span class="n">x</span><span class="p">;</span> <span class="p">}</span>
+
+<span class="cm">/**</span>
+<span class="cm"> * \internal</span>
+<span class="cm"> *</span>
+<span class="cm"> * \arg{x} &quot;x&quot; (Vptr x)</span>
+<span class="cm"> * \prepost{m} x |-&gt; PR m</span>
+<span class="cm"> * \post[Vint m] emp</span>
+<span class="cm"> */</span>
+<span class="kt">int</span> <span class="nf">by_val</span><span class="p">(</span><span class="n">P</span> <span class="n">x</span><span class="p">)</span> <span class="p">{</span> <span class="k">return</span> <span class="n">x</span><span class="p">.</span><span class="n">x</span><span class="p">;</span> <span class="p">}</span>
+
+<span class="cm">/**</span>
+<span class="cm"> * \internal</span>
+<span class="cm"> *</span>
+<span class="cm"> * \arg{x} &quot;x&quot; (Vptr x)</span>
+<span class="cm"> * \prepost{m} x |-&gt; PR m</span>
+<span class="cm"> * \post[Vint m] emp</span>
+<span class="cm"> */</span>
+<span class="kt">int</span> <span class="nf">by_ptr</span><span class="p">(</span><span class="n">P</span> <span class="o">*</span><span class="n">x</span><span class="p">)</span> <span class="p">{</span> <span class="k">return</span> <span class="n">x</span><span class="o">-&gt;</span><span class="n">x</span><span class="p">;</span> <span class="p">}</span>
+
+<span class="cm">/**</span>
+<span class="cm"> * \internal</span>
+<span class="cm"> *</span>
+<span class="cm"> * \arg{x} &quot;x&quot; (Vptr x)</span>
+<span class="cm"> * \prepost{m} x |-&gt; PR m</span>
+<span class="cm"> * \post[Vint m] emp</span>
+<span class="cm"> */</span>
+<span class="kt">int</span> <span class="nf">by_rref</span><span class="p">(</span><span class="n">P</span> <span class="o">&amp;&amp;</span><span class="n">x</span><span class="p">)</span> <span class="p">{</span> <span class="k">return</span> <span class="n">x</span><span class="p">.</span><span class="n">x</span><span class="p">;</span> <span class="p">}</span>
+
+<span class="cm">/**</span>
+<span class="cm"> * \internal</span>
+<span class="cm"> *</span>
+<span class="cm"> * \post{p}[Vptr p] p |-&gt; PR 1</span>
+<span class="cm"> */</span>
+<span class="n">P</span> <span class="nf">ret_val</span><span class="p">()</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="n">P</span><span class="p">(</span><span class="mi">1</span><span class="p">);</span>
+<span class="p">}</span>
+
+<span class="cm">/**</span>
+<span class="cm"> * \internal</span>
+<span class="cm"> *</span>
+<span class="cm"> * \arg{x} &quot;x&quot; (Vptr x)</span>
+<span class="cm"> * \prepost{m} x |-&gt; PR m</span>
+<span class="cm"> * \post{p}[Vptr x] emp</span>
+<span class="cm"> */</span>
+<span class="n">P</span><span class="o">&amp;</span> <span class="n">ret_ref</span><span class="p">(</span><span class="n">P</span><span class="o">&amp;</span> <span class="n">x</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="n">x</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="cm">/**</span>
+<span class="cm"> * \internal</span>
+<span class="cm"> *</span>
+<span class="cm"> * \arg{x} &quot;x&quot; (Vptr x)</span>
+<span class="cm"> * \prepost{m} x |-&gt; PR m</span>
+<span class="cm"> * \post{p}[Vptr x] emp</span>
+<span class="cm"> */</span>
+<span class="n">P</span><span class="o">&amp;&amp;</span> <span class="n">ret_rref</span><span class="p">(</span><span class="n">P</span><span class="o">&amp;</span> <span class="n">x</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="k">static_cast</span><span class="o">&lt;</span><span class="n">P</span><span class="o">&amp;&amp;&gt;</span><span class="p">(</span><span class="n">x</span><span class="p">);</span>
+<span class="p">}</span>
+
+<span class="cm">/**</span>
+<span class="cm"> * \arg{a} &quot;a&quot; (Vbool a)</span>
+<span class="cm"> * \require a = true</span>
+<span class="cm"> * \post emp</span>
+<span class="cm"> */</span>
+<span class="k">extern</span> <span class="kt">void</span> <span class="n">assert</span><span class="p">(</span><span class="kt">int</span> <span class="n">a</span><span class="p">);</span>
+
+<span class="cm">/**</span>
+<span class="cm"> * \post[Vint 0] emp</span>
+<span class="cm"> */</span>
+<span class="kt">int</span> <span class="nf">main</span><span class="p">()</span> <span class="p">{</span>
+    <span class="n">P</span> <span class="n">p</span><span class="p">;</span>
+
+    <span class="n">by_ref</span><span class="p">(</span><span class="n">p</span><span class="p">);</span>
+
+    <span class="n">by_val</span><span class="p">(</span><span class="n">p</span><span class="p">);</span>
+
+    <span class="n">by_ptr</span><span class="p">(</span><span class="o">&amp;</span><span class="n">p</span><span class="p">);</span>
+
+    <span class="n">by_val</span><span class="p">(</span><span class="n">P</span><span class="p">());</span>
+
+    <span class="n">by_val</span><span class="p">(</span><span class="n">P</span><span class="p">(</span><span class="n">P</span><span class="p">().</span><span class="n">x</span><span class="p">));</span>
+
+    <span class="n">by_val</span><span class="p">(</span><span class="n">P</span><span class="p">(</span><span class="n">ret_val</span><span class="p">().</span><span class="n">x</span><span class="p">));</span>
+
+    <span class="n">by_rref</span><span class="p">(</span><span class="n">P</span><span class="p">());</span>
+
+    <span class="p">(</span><span class="kt">void</span><span class="p">)(</span><span class="n">P</span><span class="p">().</span><span class="n">x</span><span class="p">);</span>
+
+    <span class="n">by_ref</span><span class="p">(</span><span class="n">ret_ref</span><span class="p">(</span><span class="n">p</span><span class="p">));</span>
+
+    <span class="n">by_val</span><span class="p">(</span><span class="n">ret_rref</span><span class="p">(</span><span class="n">p</span><span class="p">));</span>
+
+    <span class="n">by_val</span><span class="p">(</span><span class="n">ret_val</span><span class="p">());</span>
+
+    <span class="n">ret_val</span><span class="p">();</span>
+
+    <span class="n">P</span> <span class="n">pp</span><span class="p">(</span><span class="n">ret_rref</span><span class="p">(</span><span class="n">p</span><span class="p">));</span>
+
+    <span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</div>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="../proof_examples.html" class="btn btn-neutral float-left" title="Proof Examples" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="../bibliography.html" class="btn btn-neutral float-right" title="Related work and bibliography" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2021 BedRock Systems.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

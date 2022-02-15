@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html class="alectryon-standalone"><head><title>val_cat_cpp_spec.v</title><meta charset="utf-8"><meta content="Alectryon" name="generator"><meta name="viewport" content="width=device-width, initial-scale=1"><link href="alectryon.css" rel="stylesheet"><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/IBM-type/0.5.4/css/ibm-type.min.css" integrity="sha512-sky5cf9Ts6FY1kstGOBHSybfKqdHR41M0Ldb0BjNiv3ifltoQIsg0zIaQ+wwdwgQ0w9vKFW7Js50lxH9vqNSSw==" crossorigin="anonymous" /><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/firacode/5.2.0/fira_code.min.css" integrity="sha512-MbysAYimH1hH2xYzkkMHB6MqxBqfP0megxsCLknbYqHVwXTCg9IqHbk+ZP/vnhO8UEW6PaXAkKe2vQ+SWACxxA==" crossorigin="anonymous" /><script src="alectryon.js"></script><style type="text/css">pre { line-height: 125%; margin: 0; }
+td.linenos pre { color: #000000; background-color: #f0f0f0; padding: 0 5px 0 5px; }
+span.linenos { color: #000000; background-color: #f0f0f0; padding: 0 5px 0 5px; }
+td.linenos pre.special { color: #000000; background-color: #ffffc0; padding: 0 5px 0 5px; }
+span.linenos.special { color: #000000; background-color: #ffffc0; padding: 0 5px 0 5px; }
+.highlight .hll { background-color: #ffffcc }
+.highlight .c { color: #555753; font-style: italic } /* Comment */
+.highlight .err { color: #a40000; border: 1px solid #cc0000 } /* Error */
+.highlight .g { color: #000000 } /* Generic */
+.highlight .k { color: #8f5902 } /* Keyword */
+.highlight .l { color: #2e3436 } /* Literal */
+.highlight .n { color: #000000 } /* Name */
+.highlight .o { color: #000000 } /* Operator */
+.highlight .x { color: #2e3436 } /* Other */
+.highlight .p { color: #000000 } /* Punctuation */
+.highlight .ch { color: #555753; font-weight: bold; font-style: italic } /* Comment.Hashbang */
+.highlight .cm { color: #555753; font-style: italic } /* Comment.Multiline */
+.highlight .cp { color: #3465a4; font-style: italic } /* Comment.Preproc */
+.highlight .cpf { color: #555753; font-style: italic } /* Comment.PreprocFile */
+.highlight .c1 { color: #555753; font-style: italic } /* Comment.Single */
+.highlight .cs { color: #3465a4; font-weight: bold; font-style: italic } /* Comment.Special */
+.highlight .gd { color: #a40000 } /* Generic.Deleted */
+.highlight .ge { color: #000000; font-style: italic } /* Generic.Emph */
+.highlight .gr { color: #a40000 } /* Generic.Error */
+.highlight .gh { color: #a40000; font-weight: bold } /* Generic.Heading */
+.highlight .gi { color: #4e9a06 } /* Generic.Inserted */
+.highlight .go { color: #000000; font-style: italic } /* Generic.Output */
+.highlight .gp { color: #8f5902 } /* Generic.Prompt */
+.highlight .gs { color: #000000; font-weight: bold } /* Generic.Strong */
+.highlight .gu { color: #000000; font-weight: bold } /* Generic.Subheading */
+.highlight .gt { color: #000000; font-style: italic } /* Generic.Traceback */
+.highlight .kc { color: #204a87; font-weight: bold } /* Keyword.Constant */
+.highlight .kd { color: #4e9a06; font-weight: bold } /* Keyword.Declaration */
+.highlight .kn { color: #4e9a06; font-weight: bold } /* Keyword.Namespace */
+.highlight .kp { color: #204a87 } /* Keyword.Pseudo */
+.highlight .kr { color: #8f5902 } /* Keyword.Reserved */
+.highlight .kt { color: #204a87 } /* Keyword.Type */
+.highlight .ld { color: #2e3436 } /* Literal.Date */
+.highlight .m { color: #2e3436 } /* Literal.Number */
+.highlight .s { color: #ad7fa8 } /* Literal.String */
+.highlight .na { color: #c4a000 } /* Name.Attribute */
+.highlight .nb { color: #75507b } /* Name.Builtin */
+.highlight .nc { color: #204a87 } /* Name.Class */
+.highlight .no { color: #ce5c00 } /* Name.Constant */
+.highlight .nd { color: #3465a4; font-weight: bold } /* Name.Decorator */
+.highlight .ni { color: #c4a000; text-decoration: underline } /* Name.Entity */
+.highlight .ne { color: #cc0000 } /* Name.Exception */
+.highlight .nf { color: #a40000 } /* Name.Function */
+.highlight .nl { color: #3465a4; font-weight: bold } /* Name.Label */
+.highlight .nn { color: #000000 } /* Name.Namespace */
+.highlight .nx { color: #000000 } /* Name.Other */
+.highlight .py { color: #000000 } /* Name.Property */
+.highlight .nt { color: #a40000 } /* Name.Tag */
+.highlight .nv { color: #ce5c00 } /* Name.Variable */
+.highlight .ow { color: #8f5902 } /* Operator.Word */
+.highlight .w { color: #d3d7cf; text-decoration: underline } /* Text.Whitespace */
+.highlight .mb { color: #2e3436 } /* Literal.Number.Bin */
+.highlight .mf { color: #2e3436 } /* Literal.Number.Float */
+.highlight .mh { color: #2e3436 } /* Literal.Number.Hex */
+.highlight .mi { color: #2e3436 } /* Literal.Number.Integer */
+.highlight .mo { color: #2e3436 } /* Literal.Number.Oct */
+.highlight .sa { color: #ad7fa8 } /* Literal.String.Affix */
+.highlight .sb { color: #ad7fa8 } /* Literal.String.Backtick */
+.highlight .sc { color: #ad7fa8; font-weight: bold } /* Literal.String.Char */
+.highlight .dl { color: #ad7fa8 } /* Literal.String.Delimiter */
+.highlight .sd { color: #ad7fa8 } /* Literal.String.Doc */
+.highlight .s2 { color: #ad7fa8 } /* Literal.String.Double */
+.highlight .se { color: #ad7fa8; font-weight: bold } /* Literal.String.Escape */
+.highlight .sh { color: #ad7fa8; text-decoration: underline } /* Literal.String.Heredoc */
+.highlight .si { color: #ce5c00 } /* Literal.String.Interpol */
+.highlight .sx { color: #ad7fa8 } /* Literal.String.Other */
+.highlight .sr { color: #ad7fa8 } /* Literal.String.Regex */
+.highlight .s1 { color: #ad7fa8 } /* Literal.String.Single */
+.highlight .ss { color: #8f5902 } /* Literal.String.Symbol */
+.highlight .bp { color: #5c35cc } /* Name.Builtin.Pseudo */
+.highlight .fm { color: #a40000 } /* Name.Function.Magic */
+.highlight .vc { color: #ce5c00 } /* Name.Variable.Class */
+.highlight .vg { color: #ce5c00; text-decoration: underline } /* Name.Variable.Global */
+.highlight .vi { color: #ce5c00 } /* Name.Variable.Instance */
+.highlight .vm { color: #ce5c00 } /* Name.Variable.Magic */
+.highlight .il { color: #2e3436 } /* Literal.Number.Integer.Long */</style></head><body><article class="alectryon-root alectryon-centered"><div class="alectryon-banner">Built with <a href="https://github.com/cpitclaudel/alectryon/">Alectryon</a>, running Coq+SerAPI v8.13.0+0.13.0. Bubbles (<span class="alectryon-bubble"></span>) indicate interactive fragments: hover for details, tap to reveal contents. Use <kbd>Ctrl+↑</kbd> <kbd>Ctrl+↓</kbd> to navigate, <kbd>Ctrl+🖱️</kbd> to focus. On Mac, use <kbd>⌘</kbd> instead of <kbd>Ctrl</kbd>.</div><pre class="alectryon-io highlight"><!-- Generator: Alectryon --><span class="alectryon-wsp"><span class="c">(*</span>
+<span class="c"> * Copyright (C) BedRock Systems Inc. 2019 Gregory Malecha</span>
+<span class="c"> *</span>
+<span class="c"> * This software is distributed under the terms of the BedRock Open-Source License.</span>
+<span class="c"> * See the LICENSE-BedRock file in the repository root for details.</span>
+<span class="c"> *)</span>
+</span><span class="alectryon-sentence"><input class="alectryon-toggle" id="val-cat-cpp-spec-v-chk0" style="display: none" type="checkbox"><label class="alectryon-input" for="val-cat-cpp-spec-v-chk0"><span class="kn">Require Import</span> bedrock.<span class="nb">auto</span>.cpp.specs.</label><small class="alectryon-output"><div><div class="alectryon-messages"><blockquote class="alectryon-message"><span class="kn">Notation</span> <span class="s2">&quot;[∗ list] _ ↦ _ ∈ _ , _&quot;</span> was already used <span class="kr">in</span>
+scope bi_scope. [notation-overridden,parsing]</blockquote><blockquote class="alectryon-message"><span class="kn">Notation</span> <span class="s2">&quot;[∗ list] _ ∈ _ , _&quot;</span> was already used <span class="kr">in</span>
+scope bi_scope. [notation-overridden,parsing]</blockquote><blockquote class="alectryon-message"><span class="kn">Notation</span> <span class="s2">&quot;[∧ list] _ ↦ _ ∈ _ , _&quot;</span> was already used <span class="kr">in</span>
+scope bi_scope. [notation-overridden,parsing]</blockquote><blockquote class="alectryon-message"><span class="kn">Notation</span> <span class="s2">&quot;[∧ list] _ ∈ _ , _&quot;</span> was already used <span class="kr">in</span>
+scope bi_scope. [notation-overridden,parsing]</blockquote><blockquote class="alectryon-message"><span class="kn">Notation</span> <span class="s2">&quot;[∨ list] _ ↦ _ ∈ _ , _&quot;</span> was already used <span class="kr">in</span>
+scope bi_scope. [notation-overridden,parsing]</blockquote><blockquote class="alectryon-message"><span class="kn">Notation</span> <span class="s2">&quot;[∨ list] _ ∈ _ , _&quot;</span> was already used <span class="kr">in</span>
+scope bi_scope. [notation-overridden,parsing]</blockquote><blockquote class="alectryon-message"><span class="kn">Notation</span> <span class="s2">&quot;[∗ map] _ ↦ _ ∈ _ , _&quot;</span> was already used <span class="kr">in</span>
+scope bi_scope. [notation-overridden,parsing]</blockquote><blockquote class="alectryon-message"><span class="kn">Notation</span> <span class="s2">&quot;[∗ map] _ ∈ _ , _&quot;</span> was already used <span class="kr">in</span> scope
+bi_scope. [notation-overridden,parsing]</blockquote><blockquote class="alectryon-message"><span class="kn">Notation</span> <span class="s2">&quot;[∗ set] _ ∈ _ , _&quot;</span> was already used <span class="kr">in</span> scope
+bi_scope. [notation-overridden,parsing]</blockquote><blockquote class="alectryon-message"><span class="kn">Notation</span> <span class="s2">&quot;[∗ mset] _ ∈ _ , _&quot;</span> was already used <span class="kr">in</span>
+scope bi_scope. [notation-overridden,parsing]</blockquote></div></div></small><span class="alectryon-wsp">
+</span></span><span class="alectryon-sentence"><span class="alectryon-input"><span class="kn">Require Import</span> bedrock.lib.module.</span><span class="alectryon-wsp">
+</span></span><span class="alectryon-sentence"><input class="alectryon-toggle" id="val-cat-cpp-spec-v-chk1" style="display: none" type="checkbox"><label class="alectryon-input" for="val-cat-cpp-spec-v-chk1"><span class="kn">From</span> bedrock_auto.tests.val_cat <span class="kn">Require Import</span> val_cat_cpp val_cat_cpp_names.</label><small class="alectryon-output"><div><div class="alectryon-messages"><blockquote class="alectryon-message">Custom entry cppglobal has been overridden.
+[<span class="kn">custom</span>-entry-overridden,parsing]</blockquote></div></div></small><span class="alectryon-wsp">
+</span></span><span class="alectryon-sentence"><span class="alectryon-input"><span class="kn">Local Open Scope</span> Z_scope.</span><span class="alectryon-wsp">
+</span></span><span class="alectryon-sentence"><span class="alectryon-input"><span class="kn">Import</span> primitives.</span><span class="alectryon-wsp">
+</span></span><span class="alectryon-sentence"><span class="alectryon-input"><span class="kn">Import</span> _&#39;.</span><span class="alectryon-wsp">
+</span></span><span class="alectryon-wsp">
+</span><span class="alectryon-sentence"><span class="alectryon-input"><span class="kn">Section</span> <span class="nf">with_Σ</span>.</span><span class="alectryon-wsp">
+</span></span><span class="alectryon-wsp">  </span><span class="alectryon-sentence"><span class="alectryon-input"><span class="kn">Context</span> `{Σ : cpp_logic} `{MOD : val_cat_cpp.module ⊧ σ}.</span><span class="alectryon-wsp">
+</span></span><span class="alectryon-wsp">
+</span><span class="alectryon-wsp">  </span><span class="alectryon-sentence"><span class="alectryon-input"><span class="kn">Definition</span> <span class="nf">PR_def</span> <span class="nv">q</span> (<span class="nv">m</span> : Z) : Rep :=
+    _field `::P::x` |-&gt; intR q m **
+    _paddingR q <span class="s2">&quot;_Z1P&quot;</span>.</span><span class="alectryon-wsp">
+</span></span><span class="alectryon-wsp">  </span><span class="alectryon-sentence"><input class="alectryon-toggle" id="val-cat-cpp-spec-v-chk2" style="display: none" type="checkbox"><label class="alectryon-input" for="val-cat-cpp-spec-v-chk2"><span class="kn">Definition</span> <span class="nf">PR_aux</span> : seal (@PR_def).</label><small class="alectryon-output"><div><div class="alectryon-goals"><blockquote class="alectryon-goal"><div class="goal-hyps"><div><var>thread_info</var><span class="hyp-type"><b>:</b><span>biIndex</span></span></div><div><var>Σ</var><span class="hyp-type"><b>:</b><span>cpp_logic thread_info</span></span></div><div><var>σ</var><span class="hyp-type"><b>:</b><span>genv</span></span></div><div><var>MOD</var><span class="hyp-type"><b>:</b><span>module ⊧ σ</span></span></div></div><span class="goal-separator"><hr></span><div class="goal-conclusion">seal PR_def</div></blockquote></div></div></small><span class="alectryon-wsp"> </span></span><span class="alectryon-sentence"><input class="alectryon-toggle" id="val-cat-cpp-spec-v-chk3" style="display: none" type="checkbox"><label class="alectryon-input" for="val-cat-cpp-spec-v-chk3"><span class="kn">Proof</span>.</label><small class="alectryon-output"><div><div class="alectryon-goals"><blockquote class="alectryon-goal"><div class="goal-hyps"><div><var>thread_info</var><span class="hyp-type"><b>:</b><span>biIndex</span></span></div><div><var>Σ</var><span class="hyp-type"><b>:</b><span>cpp_logic thread_info</span></span></div><div><var>σ</var><span class="hyp-type"><b>:</b><span>genv</span></span></div><div><var>MOD</var><span class="hyp-type"><b>:</b><span>module ⊧ σ</span></span></div></div><span class="goal-separator"><hr></span><div class="goal-conclusion">seal PR_def</div></blockquote></div></div></small><span class="alectryon-wsp"> </span></span><span class="alectryon-sentence"><span class="alectryon-input"><span class="bp">by</span> <span class="nb">eexists</span>.</span><span class="alectryon-wsp"> </span></span><span class="alectryon-sentence"><span class="alectryon-input"><span class="kn">Qed</span>.</span><span class="alectryon-wsp">
+</span></span><span class="alectryon-wsp">  </span><span class="alectryon-sentence"><span class="alectryon-input"><span class="kn">Definition</span> <span class="nf">PR</span> := PR_aux.(unseal).</span><span class="alectryon-wsp">
+</span></span><span class="alectryon-wsp">  </span><span class="alectryon-sentence"><span class="alectryon-input"><span class="kn">Definition</span> <span class="nf">PR_eq</span> : @PR = _ := PR_aux.(seal_eq).</span><span class="alectryon-wsp">
+</span></span><span class="alectryon-wsp">
+
+</span><span class="alectryon-wsp">  </span><span class="alectryon-sentence"><span class="alectryon-input"><span class="kn">Definition</span> <span class="nf">_ZN1PC1Ev_spec</span> := [CHECK]
+    SPECIFY (mangled <span class="s2">&quot;P::P()&quot;</span>) (<span class="kr">fun</span> <span class="nv">this</span> =&gt;
+        \post this |-&gt; PR <span class="mi">1</span> <span class="mi">0</span>
+      ).</span><span class="alectryon-wsp">
+</span></span><span class="alectryon-wsp">
+</span><span class="alectryon-wsp">  </span><span class="alectryon-sentence"><span class="alectryon-input"><span class="kn">Definition</span> <span class="nf">_ZN1PC1Ei_spec</span> := [CHECK]
+    SPECIFY (mangled <span class="s2">&quot;P::P(int)&quot;</span>) (<span class="kr">fun</span> <span class="nv">this</span> =&gt;
+        \arg{i} <span class="s2">&quot;i&quot;</span> (Vint i)
+        \post this |-&gt; PR <span class="mi">1</span> i
+      ).</span><span class="alectryon-wsp">
+</span></span><span class="alectryon-wsp">
+</span><span class="alectryon-wsp">  </span><span class="alectryon-sentence"><span class="alectryon-input"><span class="kn">Definition</span> <span class="nf">_ZN1PC1ERKS__spec</span> := [CHECK]
+    SPECIFY (mangled <span class="s2">&quot;P::P(const P&amp;)&quot;</span>) (<span class="kr">fun</span> <span class="nv">this</span> =&gt;
+        \arg{p} <span class="s2">&quot;p&quot;</span> (Vptr p)
+        \pre{m q}  p |-&gt; PR q m
+        \post p |-&gt; PR q m ** this |-&gt; PR <span class="mi">1</span> m
+      ).</span><span class="alectryon-wsp">
+</span></span><span class="alectryon-wsp">
+</span><span class="alectryon-wsp">  </span><span class="alectryon-sentence"><span class="alectryon-input"><span class="kn">Definition</span> <span class="nf">_ZN1PC1EOKS__spec</span> := [CHECK]
+    SPECIFY (mangled <span class="s2">&quot;P::P(const P&amp;&amp;)&quot;</span>) (<span class="kr">fun</span> <span class="nv">this</span> =&gt;
+        \arg{p} <span class="s2">&quot;p&quot;</span> (Vptr p)
+        \pre{m q}  p |-&gt; PR q m
+        \post Exists m&#39;, p |-&gt; PR q m&#39; ** this |-&gt; PR <span class="mi">1</span> m
+      ).</span><span class="alectryon-wsp">
+</span></span><span class="alectryon-wsp">
+</span><span class="alectryon-wsp">  </span><span class="alectryon-sentence"><span class="alectryon-input"><span class="kn">Definition</span> <span class="nf">_ZN1PD0Ev_spec</span> := [CHECK]
+    SPECIFY (mangled <span class="s2">&quot;P::~P()&quot;</span>) (<span class="kr">fun</span> <span class="nv">this</span> =&gt;
+        \pre  this |-&gt; anyR (Tnamed <span class="s2">&quot;_Z1P&quot;</span>) <span class="mi">1</span>
+        \post emp
+      ).</span><span class="alectryon-wsp">
+</span></span><span class="alectryon-wsp">
+</span><span class="alectryon-wsp">  </span><span class="alectryon-sentence"><span class="alectryon-input"><span class="kn">Definition</span> <span class="nf">_Z6by_refR1P_spec</span> := [CHECK]
+    SPECIFY (mangled <span class="s2">&quot;by_ref(P&amp;)&quot;</span>)
+      (\arg{x} <span class="s2">&quot;x&quot;</span> (Vptr x)
+       \pre{q m}     x |-&gt; PR q m
+       \post[Vint m] x |-&gt; PR q m
+      ).</span><span class="alectryon-wsp">
+</span></span><span class="alectryon-wsp">
+</span><span class="alectryon-wsp">  </span><span class="alectryon-sentence"><span class="alectryon-input"><span class="kn">Definition</span> <span class="nf">_Z6by_val1P_spec</span> := [CHECK]
+    SPECIFY (mangled <span class="s2">&quot;by_val(P)&quot;</span>)
+      (\arg{x} <span class="s2">&quot;x&quot;</span> (Vptr x)
+       \pre{m}       x |-&gt; PR <span class="mi">1</span> m
+       \post[Vint m] x |-&gt; PR <span class="mi">1</span> m
+      ).</span><span class="alectryon-wsp">
+</span></span><span class="alectryon-wsp">
+</span><span class="alectryon-wsp">  </span><span class="alectryon-sentence"><span class="alectryon-input"><span class="kn">Definition</span> <span class="nf">_Z6by_ptrP1P_spec</span> := [CHECK]
+    SPECIFY (mangled <span class="s2">&quot;by_ptr(P*)&quot;</span>)
+      (\arg{x} <span class="s2">&quot;x&quot;</span> (Vptr x)
+       \pre{q m}            x |-&gt; PR q m
+       \post[Vint m] x |-&gt; PR q m
+      ).</span><span class="alectryon-wsp">
+</span></span><span class="alectryon-wsp">
+</span><span class="alectryon-wsp">  </span><span class="alectryon-sentence"><span class="alectryon-input"><span class="kn">Definition</span> <span class="nf">_Z7by_rrefO1P_spec</span> := [CHECK]
+    SPECIFY (mangled <span class="s2">&quot;by_rref(P&amp;&amp;)&quot;</span>)
+      (\arg{x} <span class="s2">&quot;x&quot;</span> (Vptr x)
+       \pre{q m}            x |-&gt; PR q m
+       \post[Vint m] x |-&gt; PR q m
+      ).</span><span class="alectryon-wsp">
+</span></span><span class="alectryon-wsp">
+</span><span class="alectryon-wsp">  </span><span class="alectryon-sentence"><span class="alectryon-input"><span class="kn">Definition</span> <span class="nf">_Z7ret_valv_spec</span> := [CHECK]
+    SPECIFY (mangled <span class="s2">&quot;ret_val()&quot;</span>)
+      (\post{r}[Vptr r] r |-&gt; PR <span class="mi">1</span> <span class="mi">1</span>
+      ).</span><span class="alectryon-wsp">
+</span></span><span class="alectryon-wsp">
+</span><span class="alectryon-wsp">  </span><span class="alectryon-sentence"><span class="alectryon-input"><span class="kn">Definition</span> <span class="nf">_Z7ret_refR1P_spec</span> := [CHECK]
+    SPECIFY (mangled <span class="s2">&quot;ret_ref(P&amp;)&quot;</span>)
+      (\arg{x} <span class="s2">&quot;x&quot;</span> (Vptr x)
+       \pre{q m}     x |-&gt; PR q m
+       \post[Vptr x] x |-&gt; PR q m
+      ).</span><span class="alectryon-wsp">
+</span></span><span class="alectryon-wsp">
+</span><span class="alectryon-wsp">  </span><span class="alectryon-sentence"><span class="alectryon-input"><span class="kn">Definition</span> <span class="nf">_Z8ret_rrefR1P_spec</span> := [CHECK]
+    SPECIFY (mangled <span class="s2">&quot;ret_rref(P&amp;)&quot;</span>)
+      (\<span class="kr">with</span> m q
+       \arg{x} <span class="s2">&quot;x&quot;</span> (Vptr x)
+       \pre            x |-&gt; PR q m
+       \post[Vptr x] x |-&gt; PR q m
+      ).</span><span class="alectryon-wsp">
+</span></span><span class="alectryon-wsp">
+</span><span class="alectryon-wsp">  </span><span class="alectryon-sentence"><span class="alectryon-input"><span class="kn">Definition</span> <span class="nf">_Z4main_spec</span> := [CHECK]
+    SPECIFY (<span class="bp">exact</span> <span class="s2">&quot;main&quot;</span>)
+      (\pre  emp
+       \post[Vint <span class="mi">0</span>] emp
+      ).</span><span class="alectryon-wsp">
+</span></span><span class="alectryon-wsp">
+</span><span class="alectryon-wsp">  </span><span class="alectryon-sentence"><span class="alectryon-input"><span class="kn">Definition</span> <span class="nf">internal_spec</span> : mpred :=
+    _ZN1PC1Ev_spec **
+    _ZN1PC1Ei_spec **
+    _ZN1PC1ERKS__spec **
+    _ZN1PC1EOKS__spec **
+    _ZN1PD0Ev_spec **
+    _Z6by_refR1P_spec **
+    _Z6by_val1P_spec **
+    _Z6by_ptrP1P_spec **
+    _Z7by_rrefO1P_spec **
+    _Z7ret_valv_spec **
+    _Z7ret_refR1P_spec **
+    _Z8ret_rrefR1P_spec.</span><span class="alectryon-wsp">
+</span></span><span class="alectryon-wsp">
+</span><span class="alectryon-wsp">  </span><span class="alectryon-sentence"><span class="alectryon-input"><span class="kn">Definition</span> <span class="nf">public_spec</span> : mpred :=
+    mspec emp _Z4main_spec.</span><span class="alectryon-wsp">
+</span></span><span class="alectryon-wsp">
+</span><span class="alectryon-sentence"><span class="alectryon-input"><span class="kn">End</span> <span class="nf">with_Σ</span>.</span><span class="alectryon-wsp">
+</span></span><span class="alectryon-wsp">
+</span></pre></article></body></html>
