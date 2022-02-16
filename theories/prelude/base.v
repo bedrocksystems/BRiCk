@@ -9,6 +9,8 @@
 From stdpp Require Export prelude countable.
 From bedrock.prelude Require Export stdpp_ssreflect tc_cond_type notations.
 
+#[global] Hint Opaque elem_of : typeclass_instances.
+
 (** Workaround https://github.com/coq/coq/issues/4230. Taken from Software Foundations. *)
 #[global] Remove Hints Bool.trans_eq_bool : core.
 
