@@ -240,27 +240,6 @@ Section preimage.
   Proof. rewrite /inverse => Hof. by apply elem_of_preimage, head_Some_elem_of. Qed.
 End preimage.
 
-(*
-TODO: unclear how to best present this abstraction, without adding an
-operational typeclass for [of_N].
-
-For now, we nest these functions in a module, to avoid polluting the global
-namespace.
-*)
-Module invert_of_N.
-  Section of_N.
-    Context `{!EqDecision A} `{!Finite A} (to_N : A -> N).
-    Definition of_N (r : N) : option A := inverse to_N r.
-
-    Lemma of_to_N `[Hinj : !Inj eq eq to_N] x : of_N (to_N x) = Some x.
-    Proof. by rewrite /of_N inverse_inj. Qed.
-
-    Lemma to_of_N (n : N) (x : A) :
-      of_N n = Some x → to_N x = n.
-    Proof. apply inverse_Some_direct. Qed.
-  End of_N.
-End invert_of_N.
-
 (* Mixin hierarchy 1: given a Finite instance and a [to_N] function, we can
 create an [of_N] function. This contains [finite_encoded_type] *)
 Module Type finite_encoded_type <: finite_type.
@@ -269,15 +248,15 @@ Module Type finite_encoded_type <: finite_type.
 End finite_encoded_type.
 
 Module Type finite_encoded_type_mixin (Import F : finite_encoded_type).
-  Definition of_N := Unfold (@invert_of_N.of_N) (invert_of_N.of_N to_N).
+  Definition of_N n := inverse to_N n.
 
-  Definition of_to_N `[Hinj : !Inj eq eq to_N] (x : t) :
-      of_N (to_N x) = Some x :=
-    invert_of_N.of_to_N to_N (Hinj := Hinj) x.
+  Lemma of_to_N `[Hinj : !Inj eq eq to_N] (x : t) :
+    of_N (to_N x) = Some x.
+  Proof. apply inverse_inj. Qed.
 
-  Definition to_of_N (n : N) (x : t) :
-      of_N n = Some x → to_N x = n :=
-    invert_of_N.to_of_N to_N n x.
+  Lemma to_of_N (n : N) (x : t) :
+    of_N n = Some x → to_N x = n.
+  Proof. apply inverse_Some_direct. Qed.
 End finite_encoded_type_mixin.
 
 (* Mixin hierarchy 2: *)
