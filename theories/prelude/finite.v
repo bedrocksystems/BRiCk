@@ -133,7 +133,7 @@ Section enc_finite_N.
   Next Obligation. move=> /= x Hle. rewrite to_of_N; lia. Qed.
 End enc_finite_N.
 
-(** Useful to prove NoDup when lifting [Finite] over constructor [f]. *)
+(** Useful to prove [NoDup] when lifting [Finite] over constructor [f]. *)
 Lemma NoDup_app_fmap_l {A B} `{Finite A} (f : A -> B) xs :
   Inj eq eq f →
   NoDup xs →
@@ -141,6 +141,13 @@ Lemma NoDup_app_fmap_l {A B} `{Finite A} (f : A -> B) xs :
   NoDup ((f <$> enum A) ++ xs).
 Proof.
   intros. rewrite NoDup_app. by split_and!; first apply /NoDup_fmap_2 /NoDup_enum.
+Qed.
+
+(** Useful to [elem_of_enum] when lifting [Finite] over constructor [f]. *)
+Lemma elem_of_app_fmap_enum_l `{Finite A} `(f : A → B) x (ys : list B) :
+  f x ∈ (f <$> enum A) ++ ys.
+Proof.
+  by apply/elem_of_app; left; apply/elem_of_list_fmap_1/elem_of_enum.
 Qed.
 
 (**
