@@ -128,3 +128,15 @@ Qed.
 
 (* Make [take 0 xs] reduce with [cbn] *)
 #[global] Arguments take : simpl nomatch.
+
+Lemma head_Some_elem_of {A} (x : A) (xs : list A) : head xs = Some x → x ∈ xs.
+Proof. destruct xs => [//|[->]]. by apply elem_of_cons; left. Qed.
+
+Lemma list_singleton_eq_ext {A} (x : A) xs (HnoDup : NoDup xs) :
+  (∀ y, y ∈ xs ↔ y = x) ↔ xs = [x].
+Proof.
+  split => [H | -> y]; last by rewrite elem_of_list_singleton.
+  apply symmetry, Permutation_singleton_l, NoDup_Permutation;
+    [apply NoDup_singleton|done|..] => z.
+  rewrite elem_of_list_singleton. naive_solver.
+Qed.

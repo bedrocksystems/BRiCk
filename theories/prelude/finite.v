@@ -21,6 +21,13 @@ Lemma subset_of_enum `{Finite A} xs :
   xs ⊆ enum A.
 Proof. intros x _. apply elem_of_enum. Qed.
 
+Lemma elem_of_filter_enum `{Finite A} {P : A → Prop} `{∀ x, Decision (P x)} a :
+  a ∈ filter P (enum A) ↔ P a.
+Proof.
+  rewrite elem_of_list_filter.
+  pose proof (elem_of_enum a). naive_solver.
+Qed.
+
 Definition encode_N `{Countable A} (x : A) : N :=
   Pos.pred_N (encode x).
 Definition decode_N `{Countable A} (i : N) : option A :=
