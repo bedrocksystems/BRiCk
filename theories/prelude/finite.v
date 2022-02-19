@@ -209,6 +209,37 @@ Next Obligation. solve_finite_total. Qed.
 Ltac solve_finite_nodup := vm_decide.
 Ltac solve_finite_total := intros []; vm_decide.
 
+Section preimage.
+  Context `{Finite A} `{EqDecision B}.
+  Implicit Types (a : A) (b : B) (f : A → B).
+
+  Definition preimage f b : list A := filter (λ a, f a = b) (enum A).
+
+  Lemma elem_of_preimage f a b :
+    a ∈ preimage f b ↔ f a = b.
+  Proof. apply: elem_of_filter_enum. Qed.
+
+  Lemma preimage_inj_singleton `{!Inj eq eq f} a :
+    preimage f (f a) = [a].
+  Proof.
+    suff <-: Refine (filter (.= a) (enum A) = [a]). {
+      apply list_filter_iff => x. by rewrite (inj_iff f).
+    }
+    apply list_singleton_eq_ext, elem_of_filter_enum.
+    apply NoDup_filter, NoDup_enum.
+  Qed.
+
+  Definition inverse f b : option A := head $ preimage f b.
+
+  Lemma inverse_inj `{!Inj eq eq f} a :
+    inverse f (f a) = Some a.
+  Proof. by rewrite /inverse preimage_inj_singleton. Qed.
+
+  Lemma inverse_Some_direct f a b :
+    inverse f b = Some a → f a = b.
+  Proof. rewrite /inverse => Hof. by apply elem_of_preimage, head_Some_elem_of. Qed.
+End preimage.
+
 (*
 TODO: unclear how to best present this abstraction, without adding an
 operational typeclass for [of_N].
@@ -219,30 +250,14 @@ namespace.
 Module invert_of_N.
   Section of_N.
     Context `{!EqDecision A} `{!Finite A} (to_N : A -> N).
-    (* TODO: Use [list_find] instead? *)
-    Definition of_N (r : N) : option A :=
-      head $ filter (fun x => bool_decide (to_N x = r)) $ enum A.
+    Definition of_N (r : N) : option A := inverse to_N r.
 
     Lemma of_to_N `[Hinj : !Inj eq eq to_N] x : of_N (to_N x) = Some x.
-    Proof.
-      rewrite /of_N.
-      generalize (NoDup_enum A); generalize (elem_of_enum x).
-      elim: (enum A) => [|x' xs IHxs]; cbn.
-      - by move /elem_of_nil.
-      - move=> /elem_of_cons [{IHxs} ->|Hin] /NoDup_cons [Hx'NiXs NDxs].
-        + by rewrite bool_decide_eq_true_2.
-        + rewrite bool_decide_eq_false_2. apply /IHxs /NDxs /Hin.
-          intros ->%(inj to_N). apply /Hx'NiXs /Hin.
-    Qed.
+    Proof. by rewrite /of_N inverse_inj. Qed.
 
-    Lemma to_of_N (n : N) (x : A)
-      (Hof : of_N n = Some x) : to_N x = n.
-    Proof.
-      suff: Refine (x ∈ filter (fun x => bool_decide (to_N x = n)) $ enum A). {
-        intros [? _]%elem_of_list_filter. by case_bool_decide.
-      }
-      move: Hof. rewrite /of_N. case: (filter _ _) => [//|y ys /=]. set_solver.
-    Qed.
+    Lemma to_of_N (n : N) (x : A) :
+      of_N n = Some x → to_N x = n.
+    Proof. apply inverse_Some_direct. Qed.
   End of_N.
 End invert_of_N.
 
