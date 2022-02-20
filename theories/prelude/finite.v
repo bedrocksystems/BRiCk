@@ -62,22 +62,28 @@ Section finite_preimage.
     rewrite /finite_inverse => Hof.
     by apply elem_of_finite_preimage, head_Some_elem_of.
   Qed.
+End finite_preimage.
 
-  Section finite_preimage_gset.
-    Context `{!Countable B}.
-    Implicit Types (bs : gset B).
+Section finite_preimage_gset.
+    Context `{FinSet A C} `{FinSet B D}.
+    Context `{!Finite A}.
+    #[local] Set Default Proof Using "Type*".
 
-    Definition finite_preimage_gset f (bs : gset B) : gset A :=
+    Implicit Types (a : A) (b : B) (f : A → B) (bs : D).
+
+    Definition finite_preimage_gset (f : A → B) (bs : D) : C :=
       list_to_set (elements bs ≫= finite_preimage f).
 
     Lemma finite_preimage_gset_empty f :
-      finite_preimage_gset f ∅ = ∅.
+      finite_preimage_gset f ∅ ≡ ∅.
     Proof. set_solver. Qed.
+    Instance finite_preimage_gset_proper f : Proper (equiv ==> equiv) (finite_preimage_gset f).
+    Proof. solve_proper. Qed.
 
     Lemma elem_of_finite_preimage_gset f a bs :
       a ∈ finite_preimage_gset f bs ↔ f a ∈ bs.
     Proof.
-      pattern bs; apply set_ind_L.
+      pattern bs; apply set_ind; first solve_proper.
       { rewrite finite_preimage_gset_empty. set_solver. }
       set_solver.
     Qed.
@@ -91,19 +97,36 @@ Section finite_preimage.
     Qed.
 
     Lemma finite_preimage_gset_union f bs1 bs2 :
-      finite_preimage_gset f (bs1 ∪ bs2) =
+      finite_preimage_gset f (bs1 ∪ bs2) ≡
       finite_preimage_gset f bs1 ∪ finite_preimage_gset f bs2.
     Proof. set_solver. Qed.
 
     Lemma finite_preimage_gset_singleton f b :
-      finite_preimage_gset f {[ b ]} = list_to_set $ finite_preimage f b.
+      finite_preimage_gset f {[ b ]} ≡ list_to_set $ finite_preimage f b.
     Proof. set_solver. Qed.
 
     Lemma finite_preimage_gset_inj_singleton `{!Inj eq eq f} a :
-      finite_preimage_gset f {[ f a ]} = {[ a ]}.
+      finite_preimage_gset f {[ f a ]} ≡ {[ a ]}.
     Proof. set_solver. Qed.
-  End finite_preimage_gset.
-End finite_preimage.
+
+  Section finite_preimage_gset_leibniz.
+    Context `{!LeibnizEquiv C} `{!LeibnizEquiv D}.
+
+    Lemma finite_preimage_gset_empty_L f :
+      finite_preimage_gset f ∅ = ∅.
+    Proof. unfold_leibniz. apply finite_preimage_gset_empty. Qed.
+    Lemma finite_preimage_gset_union_L f bs1 bs2 :
+      finite_preimage_gset f (bs1 ∪ bs2) =
+      finite_preimage_gset f bs1 ∪ finite_preimage_gset f bs2.
+    Proof. unfold_leibniz. apply finite_preimage_gset_union. Qed.
+    Lemma finite_preimage_gset_singleton_L f b :
+      finite_preimage_gset f {[ b ]} ≡ list_to_set $ finite_preimage f b.
+    Proof. unfold_leibniz. apply finite_preimage_gset_singleton. Qed.
+    Lemma finite_preimage_gset_inj_singleton_L `{!Inj eq eq f} a :
+      finite_preimage_gset f {[ f a ]} ≡ {[ a ]}.
+    Proof. unfold_leibniz. apply finite_preimage_gset_inj_singleton. Qed.
+  End finite_preimage_gset_leibniz.
+End finite_preimage_gset.
 
 Definition encode_N `{Countable A} (x : A) : N :=
   Pos.pred_N (encode x).
