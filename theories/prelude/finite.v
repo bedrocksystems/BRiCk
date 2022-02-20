@@ -128,6 +128,9 @@ Section finite_preimage_set.
   End finite_preimage_set_leibniz.
 End finite_preimage_set.
 
+Notation finite_preimage_gset :=
+  (finite_preimage_set (C := gset _) (D := gset _)) (only parsing).
+
 Definition encode_N `{Countable A} (x : A) : N :=
   Pos.pred_N (encode x).
 Definition decode_N `{Countable A} (i : N) : option A :=
