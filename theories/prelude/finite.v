@@ -545,6 +545,14 @@ Module finite_bits (BT : finite_bitmask_type_intf).
     by rewrite setbit_in_idemp.
   Qed.
 
+  Lemma to_bits_union xs ys :
+    to_bits (xs ∪ ys) = N.lor (to_bits xs) (to_bits ys).
+  Proof.
+    pattern xs. apply set_ind_L. { by rewrite to_bits_empty !left_id_L. }
+    move=> x X Hni IH.
+    by rewrite -(assoc_L _ {[x]}) !to_bits_union_singleton IH assoc_L.
+  Qed.
+
   (* TODO move [setbit], and these lemmas, with [BT.testbit]. *)
   Section BT_to_bit_inj.
     Context`{Hinj : !Inj eq eq BT.to_bit}.
