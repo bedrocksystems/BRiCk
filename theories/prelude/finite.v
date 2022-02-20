@@ -48,15 +48,15 @@ Section finite_preimage.
     apply NoDup_filter, NoDup_enum.
   Qed.
 
-  Definition inverse f b : option A := head $ finite_preimage f b.
+  Definition finite_inverse f b : option A := head $ finite_preimage f b.
 
-  Lemma inverse_inj `{!Inj eq eq f} a :
-    inverse f (f a) = Some a.
-  Proof. by rewrite /inverse finite_preimage_inj_singleton. Qed.
+  Lemma finite_inverse_inj `{!Inj eq eq f} a :
+    finite_inverse f (f a) = Some a.
+  Proof. by rewrite /finite_inverse finite_preimage_inj_singleton. Qed.
 
-  Lemma inverse_Some_direct f a b :
-    inverse f b = Some a → f a = b.
-  Proof. rewrite /inverse => Hof. by apply elem_of_finite_preimage, head_Some_elem_of. Qed.
+  Lemma finite_inverse_Some_direct f a b :
+    finite_inverse f b = Some a → f a = b.
+  Proof. rewrite /finite_inverse => Hof. by apply elem_of_finite_preimage, head_Some_elem_of. Qed.
 End finite_preimage.
 
 Definition encode_N `{Countable A} (x : A) : N :=
@@ -255,15 +255,15 @@ Module Type finite_encoded_type <: finite_type.
 End finite_encoded_type.
 
 Module Type finite_encoded_type_mixin (Import F : finite_encoded_type).
-  Definition of_N n := inverse to_N n.
+  Definition of_N n := finite_inverse to_N n.
 
   Lemma of_to_N `[Hinj : !Inj eq eq to_N] (x : t) :
     of_N (to_N x) = Some x.
-  Proof. apply inverse_inj. Qed.
+  Proof. apply finite_inverse_inj. Qed.
 
   Lemma to_of_N (n : N) (x : t) :
     of_N n = Some x → to_N x = n.
-  Proof. apply inverse_Some_direct. Qed.
+  Proof. apply finite_inverse_Some_direct. Qed.
 End finite_encoded_type_mixin.
 
 (* Mixin hierarchy 2: *)
