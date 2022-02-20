@@ -64,7 +64,8 @@ Module fin.
   #[global] Instance fin_pos_inhabited p : Inhabited (t (Npos p)) := populate (of_N _ 0).
   #[global] Hint Opaque t : typeclass_instances.
 
-  (* Error-checked, for concrete values. *)
+  (** The [mk m] notation works if both [m] and the bound [n] are ground,
+      since then [eq_refl] is a valid proof of [m < n]. *)
   Definition mk' (m : N) {n : N} (prf : m < n) : fin.t n :=
     m ↾ prf.
   #[global] Arguments mk' m & {n} prf. (* [&] = infer [n] from return type. *)

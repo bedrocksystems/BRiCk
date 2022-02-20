@@ -10,6 +10,12 @@ Export bedrock.prelude.base.
 
 (** * Small extensions to [stdpp.list]. *)
 
+(* Upstreamed in https://gitlab.mpi-sws.org/iris/stdpp/-/merge_requests/366 *)
+#[global] Instance set_unfold_list_bind {A B} (f : A → list B) l P Q y :
+  (∀ x, SetUnfoldElemOf x l (P x)) → (∀ x, SetUnfoldElemOf y (f x) (Q x)) →
+  SetUnfoldElemOf y (l ≫= f) (∃ x, Q x ∧ P x).
+Proof. constructor. rewrite elem_of_list_bind. naive_solver. Qed.
+
 Lemma foldr_cons {A B} (f : A -> B -> B) x y ys : foldr f x (y :: ys) = f y (foldr f x ys).
 Proof. done. Qed.
 
@@ -128,3 +134,15 @@ Qed.
 
 (* Make [take 0 xs] reduce with [cbn] *)
 #[global] Arguments take : simpl nomatch.
+
+Lemma head_Some_elem_of {A} (x : A) (xs : list A) : head xs = Some x → x ∈ xs.
+Proof. destruct xs => [//|[->]]. by apply elem_of_cons; left. Qed.
+
+Lemma list_singleton_eq_ext {A} (x : A) xs (HnoDup : NoDup xs) :
+  (∀ y, y ∈ xs ↔ y = x) ↔ xs = [x].
+Proof.
+  split => [H | -> y]; last by rewrite elem_of_list_singleton.
+  apply symmetry, Permutation_singleton_l, NoDup_Permutation;
+    [apply NoDup_singleton|done|..] => z.
+  rewrite elem_of_list_singleton. naive_solver.
+Qed.

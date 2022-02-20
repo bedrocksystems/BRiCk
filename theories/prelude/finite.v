@@ -21,6 +21,116 @@ Lemma subset_of_enum `{Finite A} xs :
   xs ⊆ enum A.
 Proof. intros x _. apply elem_of_enum. Qed.
 
+Lemma elem_of_filter_enum `{Finite A} {P : A → Prop} `{∀ x, Decision (P x)} a :
+  a ∈ filter P (enum A) ↔ P a.
+Proof.
+  rewrite elem_of_list_filter.
+  pose proof (elem_of_enum a). naive_solver.
+Qed.
+
+Section finite_preimage.
+  Context `{Finite A} `{EqDecision B}.
+  Implicit Types (a : A) (b : B) (f : A → B).
+
+  Definition finite_preimage f b : list A := filter (λ a, f a = b) (enum A).
+
+  Lemma elem_of_finite_preimage f a b :
+    a ∈ finite_preimage f b ↔ f a = b.
+  Proof. apply: elem_of_filter_enum. Qed.
+
+  (** Teach [set_solver] to use [elem_of_finite_preimage]! *)
+  #[global] Instance set_unfold_finite_preimage f a b :
+    SetUnfoldElemOf a (finite_preimage f b) (f a = b).
+  Proof. split; apply elem_of_finite_preimage. Qed.
+
+  Lemma finite_preimage_inj_singleton `{!Inj eq eq f} a :
+    finite_preimage f (f a) = [a].
+  Proof.
+    apply list_singleton_eq_ext. { apply NoDup_filter, NoDup_enum. }
+    set_solver.
+  Qed.
+
+  Definition finite_inverse f b : option A := head $ finite_preimage f b.
+
+  Lemma finite_inverse_inj `{!Inj eq eq f} a :
+    finite_inverse f (f a) = Some a.
+  Proof. by rewrite /finite_inverse finite_preimage_inj_singleton. Qed.
+
+  Lemma finite_inverse_Some_direct f a b :
+    finite_inverse f b = Some a → f a = b.
+  Proof.
+    rewrite /finite_inverse => Hof.
+    by apply elem_of_finite_preimage, head_Some_elem_of.
+  Qed.
+End finite_preimage.
+
+Section finite_preimage_set.
+  Context `{FinSet A C} `{FinSet B D}.
+  Context `{!Finite A}.
+  #[local] Set Default Proof Using "Type*".
+
+  Implicit Types (a : A) (b : B) (f : A → B) (bs : D).
+
+  Definition finite_preimage_set (f : A → B) (bs : D) : C :=
+    list_to_set (elements bs ≫= finite_preimage f).
+
+  Lemma finite_preimage_set_empty f :
+    finite_preimage_set f ∅ ≡ ∅.
+  Proof. set_solver. Qed.
+  Instance finite_preimage_set_proper f : Proper (equiv ==> equiv) (finite_preimage_set f).
+  Proof. solve_proper. Qed.
+
+  Lemma elem_of_finite_preimage_set f a bs :
+    a ∈ finite_preimage_set f bs ↔ f a ∈ bs.
+  Proof.
+    pattern bs; apply set_ind; first solve_proper.
+    { rewrite finite_preimage_set_empty. set_solver. }
+    set_solver.
+  Qed.
+
+  #[global] Instance set_unfold_finite_preimage_set f a bs Q :
+    SetUnfoldElemOf (f a) bs Q →
+    SetUnfoldElemOf a (finite_preimage_set f bs) Q.
+  Proof.
+    constructor.
+    by rewrite elem_of_finite_preimage_set (set_unfold_elem_of (f a) bs Q).
+  Qed.
+
+  Lemma finite_preimage_set_union f bs1 bs2 :
+    finite_preimage_set f (bs1 ∪ bs2) ≡
+    finite_preimage_set f bs1 ∪ finite_preimage_set f bs2.
+  Proof. set_solver. Qed.
+
+  Lemma finite_preimage_set_singleton f b :
+    finite_preimage_set f {[ b ]} ≡ list_to_set $ finite_preimage f b.
+  Proof. set_solver. Qed.
+
+  Lemma finite_preimage_set_inj_singleton `{!Inj eq eq f} a :
+    finite_preimage_set f {[ f a ]} ≡ {[ a ]}.
+  Proof. set_solver. Qed.
+
+  Section finite_preimage_set_leibniz.
+    Context `{!LeibnizEquiv C} `{!LeibnizEquiv D}.
+
+    Lemma finite_preimage_set_empty_L f :
+      finite_preimage_set f ∅ = ∅.
+    Proof. unfold_leibniz. apply finite_preimage_set_empty. Qed.
+    Lemma finite_preimage_set_union_L f bs1 bs2 :
+      finite_preimage_set f (bs1 ∪ bs2) =
+      finite_preimage_set f bs1 ∪ finite_preimage_set f bs2.
+    Proof. unfold_leibniz. apply finite_preimage_set_union. Qed.
+    Lemma finite_preimage_set_singleton_L f b :
+      finite_preimage_set f {[ b ]} ≡ list_to_set $ finite_preimage f b.
+    Proof. unfold_leibniz. apply finite_preimage_set_singleton. Qed.
+    Lemma finite_preimage_set_inj_singleton_L `{!Inj eq eq f} a :
+      finite_preimage_set f {[ f a ]} ≡ {[ a ]}.
+    Proof. unfold_leibniz. apply finite_preimage_set_inj_singleton. Qed.
+  End finite_preimage_set_leibniz.
+End finite_preimage_set.
+
+Notation finite_preimage_gset :=
+  (finite_preimage_set (C := gset _) (D := gset _)) (only parsing).
+
 Definition encode_N `{Countable A} (x : A) : N :=
   Pos.pred_N (encode x).
 Definition decode_N `{Countable A} (i : N) : option A :=
@@ -126,7 +236,7 @@ Section enc_finite_N.
   Next Obligation. move=> /= x Hle. rewrite to_of_N; lia. Qed.
 End enc_finite_N.
 
-(** Useful to prove NoDup when lifting [Finite] over constructor [f]. *)
+(** Useful to prove [NoDup] when lifting [Finite] over constructor [f]. *)
 Lemma NoDup_app_fmap_l {A B} `{Finite A} (f : A -> B) xs :
   Inj eq eq f →
   NoDup xs →
@@ -134,6 +244,13 @@ Lemma NoDup_app_fmap_l {A B} `{Finite A} (f : A -> B) xs :
   NoDup ((f <$> enum A) ++ xs).
 Proof.
   intros. rewrite NoDup_app. by split_and!; first apply /NoDup_fmap_2 /NoDup_enum.
+Qed.
+
+(** Useful to [elem_of_enum] when lifting [Finite] over constructor [f]. *)
+Lemma elem_of_app_fmap_enum_l `{Finite A} `(f : A → B) x (ys : list B) :
+  f x ∈ (f <$> enum A) ++ ys.
+Proof.
+  by apply/elem_of_app; left; apply/elem_of_list_fmap_1/elem_of_enum.
 Qed.
 
 (**
@@ -202,43 +319,6 @@ Next Obligation. solve_finite_total. Qed.
 Ltac solve_finite_nodup := vm_decide.
 Ltac solve_finite_total := intros []; vm_decide.
 
-(*
-TODO: unclear how to best present this abstraction, without adding an
-operational typeclass for [of_N].
-
-For now, we nest these functions in a module, to avoid polluting the global
-namespace.
-*)
-Module invert_of_N.
-  Section of_N.
-    Context `{!EqDecision A} `{!Finite A} (to_N : A -> N).
-    (* TODO: Use [list_find] instead? *)
-    Definition of_N (r : N) : option A :=
-      head $ filter (fun x => bool_decide (to_N x = r)) $ enum A.
-
-    Lemma of_to_N `[Hinj : !Inj eq eq to_N] x : of_N (to_N x) = Some x.
-    Proof.
-      rewrite /of_N.
-      generalize (NoDup_enum A); generalize (elem_of_enum x).
-      elim: (enum A) => [|x' xs IHxs]; cbn.
-      - by move /elem_of_nil.
-      - move=> /elem_of_cons [{IHxs} ->|Hin] /NoDup_cons [Hx'NiXs NDxs].
-        + by rewrite bool_decide_eq_true_2.
-        + rewrite bool_decide_eq_false_2. apply /IHxs /NDxs /Hin.
-          intros ->%(inj to_N). apply /Hx'NiXs /Hin.
-    Qed.
-
-    Lemma to_of_N (n : N) (x : A)
-      (Hof : of_N n = Some x) : to_N x = n.
-    Proof.
-      suff: Refine (x ∈ filter (fun x => bool_decide (to_N x = n)) $ enum A). {
-        intros [? _]%elem_of_list_filter. by case_bool_decide.
-      }
-      move: Hof. rewrite /of_N. case: (filter _ _) => [//|y ys /=]. set_solver.
-    Qed.
-  End of_N.
-End invert_of_N.
-
 (* Mixin hierarchy 1: given a Finite instance and a [to_N] function, we can
 create an [of_N] function. This contains [finite_encoded_type] *)
 Module Type finite_encoded_type <: finite_type.
@@ -247,15 +327,15 @@ Module Type finite_encoded_type <: finite_type.
 End finite_encoded_type.
 
 Module Type finite_encoded_type_mixin (Import F : finite_encoded_type).
-  Definition of_N := Unfold (@invert_of_N.of_N) (invert_of_N.of_N to_N).
+  Definition of_N n := finite_inverse to_N n.
 
-  Definition of_to_N `[Hinj : !Inj eq eq to_N] (x : t) :
-      of_N (to_N x) = Some x :=
-    invert_of_N.of_to_N to_N (Hinj := Hinj) x.
+  Lemma of_to_N `[Hinj : !Inj eq eq to_N] (x : t) :
+    of_N (to_N x) = Some x.
+  Proof. apply finite_inverse_inj. Qed.
 
-  Definition to_of_N (n : N) (x : t) :
-      of_N n = Some x → to_N x = n :=
-    invert_of_N.to_of_N to_N n x.
+  Lemma to_of_N (n : N) (x : t) :
+    of_N n = Some x → to_N x = n.
+  Proof. apply finite_inverse_Some_direct. Qed.
 End finite_encoded_type_mixin.
 
 (* Mixin hierarchy 2: *)
@@ -463,6 +543,14 @@ Module finite_bits (BT : finite_bitmask_type_intf).
     rewrite subseteq_union_1_L; [|set_solver].
     rewrite to_bits_singleton -BT.setbit_is_alt.
     by rewrite setbit_in_idemp.
+  Qed.
+
+  Lemma to_bits_union xs ys :
+    to_bits (xs ∪ ys) = N.lor (to_bits xs) (to_bits ys).
+  Proof.
+    pattern xs. apply set_ind_L. { by rewrite to_bits_empty !left_id_L. }
+    move=> x X Hni IH.
+    by rewrite -(assoc_L _ {[x]}) !to_bits_union_singleton IH assoc_L.
   Qed.
 
   (* TODO move [setbit], and these lemmas, with [BT.testbit]. *)
