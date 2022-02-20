@@ -28,18 +28,18 @@ Proof.
   pose proof (elem_of_enum a). naive_solver.
 Qed.
 
-Section preimage.
+Section finite_preimage.
   Context `{Finite A} `{EqDecision B}.
   Implicit Types (a : A) (b : B) (f : A → B).
 
-  Definition preimage f b : list A := filter (λ a, f a = b) (enum A).
+  Definition finite_preimage f b : list A := filter (λ a, f a = b) (enum A).
 
-  Lemma elem_of_preimage f a b :
-    a ∈ preimage f b ↔ f a = b.
+  Lemma elem_of_finite_preimage f a b :
+    a ∈ finite_preimage f b ↔ f a = b.
   Proof. apply: elem_of_filter_enum. Qed.
 
-  Lemma preimage_inj_singleton `{!Inj eq eq f} a :
-    preimage f (f a) = [a].
+  Lemma finite_preimage_inj_singleton `{!Inj eq eq f} a :
+    finite_preimage f (f a) = [a].
   Proof.
     suff <-: Refine (filter (.= a) (enum A) = [a]). {
       apply list_filter_iff => x. by rewrite (inj_iff f).
@@ -48,16 +48,16 @@ Section preimage.
     apply NoDup_filter, NoDup_enum.
   Qed.
 
-  Definition inverse f b : option A := head $ preimage f b.
+  Definition inverse f b : option A := head $ finite_preimage f b.
 
   Lemma inverse_inj `{!Inj eq eq f} a :
     inverse f (f a) = Some a.
-  Proof. by rewrite /inverse preimage_inj_singleton. Qed.
+  Proof. by rewrite /inverse finite_preimage_inj_singleton. Qed.
 
   Lemma inverse_Some_direct f a b :
     inverse f b = Some a → f a = b.
-  Proof. rewrite /inverse => Hof. by apply elem_of_preimage, head_Some_elem_of. Qed.
-End preimage.
+  Proof. rewrite /inverse => Hof. by apply elem_of_finite_preimage, head_Some_elem_of. Qed.
+End finite_preimage.
 
 Definition encode_N `{Countable A} (x : A) : N :=
   Pos.pred_N (encode x).
