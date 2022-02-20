@@ -28,6 +28,37 @@ Proof.
   pose proof (elem_of_enum a). naive_solver.
 Qed.
 
+Section preimage.
+  Context `{Finite A} `{EqDecision B}.
+  Implicit Types (a : A) (b : B) (f : A → B).
+
+  Definition preimage f b : list A := filter (λ a, f a = b) (enum A).
+
+  Lemma elem_of_preimage f a b :
+    a ∈ preimage f b ↔ f a = b.
+  Proof. apply: elem_of_filter_enum. Qed.
+
+  Lemma preimage_inj_singleton `{!Inj eq eq f} a :
+    preimage f (f a) = [a].
+  Proof.
+    suff <-: Refine (filter (.= a) (enum A) = [a]). {
+      apply list_filter_iff => x. by rewrite (inj_iff f).
+    }
+    apply list_singleton_eq_ext, elem_of_filter_enum.
+    apply NoDup_filter, NoDup_enum.
+  Qed.
+
+  Definition inverse f b : option A := head $ preimage f b.
+
+  Lemma inverse_inj `{!Inj eq eq f} a :
+    inverse f (f a) = Some a.
+  Proof. by rewrite /inverse preimage_inj_singleton. Qed.
+
+  Lemma inverse_Some_direct f a b :
+    inverse f b = Some a → f a = b.
+  Proof. rewrite /inverse => Hof. by apply elem_of_preimage, head_Some_elem_of. Qed.
+End preimage.
+
 Definition encode_N `{Countable A} (x : A) : N :=
   Pos.pred_N (encode x).
 Definition decode_N `{Countable A} (i : N) : option A :=
@@ -215,37 +246,6 @@ Next Obligation. solve_finite_total. Qed.
 *)
 Ltac solve_finite_nodup := vm_decide.
 Ltac solve_finite_total := intros []; vm_decide.
-
-Section preimage.
-  Context `{Finite A} `{EqDecision B}.
-  Implicit Types (a : A) (b : B) (f : A → B).
-
-  Definition preimage f b : list A := filter (λ a, f a = b) (enum A).
-
-  Lemma elem_of_preimage f a b :
-    a ∈ preimage f b ↔ f a = b.
-  Proof. apply: elem_of_filter_enum. Qed.
-
-  Lemma preimage_inj_singleton `{!Inj eq eq f} a :
-    preimage f (f a) = [a].
-  Proof.
-    suff <-: Refine (filter (.= a) (enum A) = [a]). {
-      apply list_filter_iff => x. by rewrite (inj_iff f).
-    }
-    apply list_singleton_eq_ext, elem_of_filter_enum.
-    apply NoDup_filter, NoDup_enum.
-  Qed.
-
-  Definition inverse f b : option A := head $ preimage f b.
-
-  Lemma inverse_inj `{!Inj eq eq f} a :
-    inverse f (f a) = Some a.
-  Proof. by rewrite /inverse preimage_inj_singleton. Qed.
-
-  Lemma inverse_Some_direct f a b :
-    inverse f b = Some a → f a = b.
-  Proof. rewrite /inverse => Hof. by apply elem_of_preimage, head_Some_elem_of. Qed.
-End preimage.
 
 (* Mixin hierarchy 1: given a Finite instance and a [to_N] function, we can
 create an [of_N] function. This contains [finite_encoded_type] *)
