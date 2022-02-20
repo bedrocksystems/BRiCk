@@ -41,11 +41,8 @@ Section finite_preimage.
   Lemma finite_preimage_inj_singleton `{!Inj eq eq f} a :
     finite_preimage f (f a) = [a].
   Proof.
-    suff <-: Refine (filter (.= a) (enum A) = [a]). {
-      apply list_filter_iff => x. by rewrite (inj_iff f).
-    }
-    apply list_singleton_eq_ext, elem_of_filter_enum.
-    apply NoDup_filter, NoDup_enum.
+    apply list_singleton_eq_ext. { apply NoDup_filter, NoDup_enum. }
+    intros y. rewrite elem_of_finite_preimage; naive_solver.
   Qed.
 
   Definition finite_inverse f b : option A := head $ finite_preimage f b.
