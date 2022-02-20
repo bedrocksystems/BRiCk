@@ -56,7 +56,10 @@ Section finite_preimage.
 
   Lemma finite_inverse_Some_direct f a b :
     finite_inverse f b = Some a → f a = b.
-  Proof. rewrite /finite_inverse => Hof. by apply elem_of_finite_preimage, head_Some_elem_of. Qed.
+  Proof.
+    rewrite /finite_inverse => Hof.
+    by apply elem_of_finite_preimage, head_Some_elem_of.
+  Qed.
 End finite_preimage.
 
 Definition encode_N `{Countable A} (x : A) : N :=
