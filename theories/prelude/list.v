@@ -10,6 +10,12 @@ Export bedrock.prelude.base.
 
 (** * Small extensions to [stdpp.list]. *)
 
+(* Upstreamed in https://gitlab.mpi-sws.org/iris/stdpp/-/merge_requests/366 *)
+#[global] Instance set_unfold_list_bind {A B} (f : A → list B) l P Q y :
+  (∀ x, SetUnfoldElemOf x l (P x)) → (∀ x, SetUnfoldElemOf y (f x) (Q x)) →
+  SetUnfoldElemOf y (l ≫= f) (∃ x, Q x ∧ P x).
+Proof. constructor. rewrite elem_of_list_bind. naive_solver. Qed.
+
 Lemma foldr_cons {A B} (f : A -> B -> B) x y ys : foldr f x (y :: ys) = f y (foldr f x ys).
 Proof. done. Qed.
 
