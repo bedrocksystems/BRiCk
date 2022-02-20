@@ -31,7 +31,5 @@ Proof. apply mapset_eq. Qed.
 
 (** [set_map] specialized to [gset]; avoids awkward type annotations such as
 [set_map (C := gset A) (D := gset B)].
-No lemmas provided, and meant to be unfolded.
 *)
-Definition gset_map {A B} `{Countable A, Countable B} : (A → B) → gset A → gset B :=
-  set_map.
+Notation gset_map := (set_map (C := gset _) (D := gset _)) (only parsing).
