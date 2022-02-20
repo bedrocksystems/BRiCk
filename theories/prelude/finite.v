@@ -62,6 +62,47 @@ Section finite_preimage.
     rewrite /finite_inverse => Hof.
     by apply elem_of_finite_preimage, head_Some_elem_of.
   Qed.
+
+  Section finite_preimage_gset.
+    Context `{!Countable B}.
+    Implicit Types (bs : gset B).
+
+    Definition finite_preimage_gset f (bs : gset B) : gset A :=
+      list_to_set (elements bs ≫= finite_preimage f).
+
+    Lemma finite_preimage_gset_empty f :
+      finite_preimage_gset f ∅ = ∅.
+    Proof. set_solver. Qed.
+
+    Lemma elem_of_finite_preimage_gset f a bs :
+      a ∈ finite_preimage_gset f bs ↔ f a ∈ bs.
+    Proof.
+      pattern bs; apply set_ind_L.
+      { rewrite finite_preimage_gset_empty. set_solver. }
+      set_solver.
+    Qed.
+
+    #[global] Instance set_unfold_finite_preimage_gset f a bs Q :
+      SetUnfoldElemOf (f a) bs Q →
+      SetUnfoldElemOf a (finite_preimage_gset f bs) Q.
+    Proof.
+      constructor.
+      by rewrite elem_of_finite_preimage_gset (set_unfold_elem_of (f a) bs Q).
+    Qed.
+
+    Lemma finite_preimage_gset_union f bs1 bs2 :
+      finite_preimage_gset f (bs1 ∪ bs2) =
+      finite_preimage_gset f bs1 ∪ finite_preimage_gset f bs2.
+    Proof. set_solver. Qed.
+
+    Lemma finite_preimage_gset_singleton f b :
+      finite_preimage_gset f {[ b ]} = list_to_set $ finite_preimage f b.
+    Proof. set_solver. Qed.
+
+    Lemma finite_preimage_gset_inj_singleton `{!Inj eq eq f} a :
+      finite_preimage_gset f {[ f a ]} = {[ a ]}.
+    Proof. set_solver. Qed.
+  End finite_preimage_gset.
 End finite_preimage.
 
 Definition encode_N `{Countable A} (x : A) : N :=
