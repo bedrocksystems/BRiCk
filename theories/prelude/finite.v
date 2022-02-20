@@ -38,11 +38,16 @@ Section finite_preimage.
     a ∈ finite_preimage f b ↔ f a = b.
   Proof. apply: elem_of_filter_enum. Qed.
 
+  (** Teach [set_solver] to use [elem_of_finite_preimage]! *)
+  #[global] Instance set_unfold_finite_preimage f a b :
+    SetUnfoldElemOf a (finite_preimage f b) (f a = b).
+  Proof. split; apply elem_of_finite_preimage. Qed.
+
   Lemma finite_preimage_inj_singleton `{!Inj eq eq f} a :
     finite_preimage f (f a) = [a].
   Proof.
     apply list_singleton_eq_ext. { apply NoDup_filter, NoDup_enum. }
-    intros y. rewrite elem_of_finite_preimage; naive_solver.
+    set_solver.
   Qed.
 
   Definition finite_inverse f b : option A := head $ finite_preimage f b.
