@@ -86,7 +86,7 @@ Section fin_maps.
     rewrite map_disjoint_singleton_l. exact: lookup_singleton_ne.
   Qed.
 
-  Lemma insert_map_difference (m : M A) i x :
+  Lemma map_insert_difference (m : M A) i x :
     <[i:=x]> m ∖ {[ i := x ]} = m ∖ {[ i := x ]}.
   Proof. by rewrite insert_union_singleton_l map_union_difference. Qed.
 
