@@ -23,30 +23,13 @@ Export iris.bi.bi.bi.
 Section derived_laws.
   Context {PROP : bi}.
 
-  (* Variant of [fractional_big_sepL], upstreamed in
-  https://gitlab.mpi-sws.org/iris/iris/-/merge_requests/737. *)
-  #[global] Instance fractional_big_sepL2 {A B} l1 l2 Ψ :
-    (∀ k (x1 : A) (x2 : B), Fractional (Ψ k x1 x2)) →
-    Fractional (PROP:=PROP) (λ q, [∗ list] k↦x1; x2 ∈ l1; l2 , Ψ k x1 x2 q)%I.
-  Proof. intros ? q q'. rewrite -big_sepL2_sep. by setoid_rewrite fractional. Qed.
-
   Lemma exist_pure_eq_sep {A P} v:
     P v ⊢@{PROP} ∃ x : A, ⌜ x = v ⌝ ∗ P x.
   Proof. iIntros. iExists v; eauto. Qed.
 
-  (* Upstream as [exist_exist], https://gitlab.mpi-sws.org/iris/iris/-/merge_requests/552 *)
-  Lemma exist_exist {A B} (Φ : A → B → PROP) :
-    (∃ a b, Φ a b) ⊣⊢ (∃ b a, Φ a b).
-  Proof. iSplit; iDestruct 1 as (??) "H"; eauto. Qed.
-
   Lemma exist_and_exist {A B P Q} :
     (∃ (a : A), P a ∧ ∃ (b : B), Q a b) ⊣⊢@{PROP} ∃ b a, P a ∧ Q a b.
   Proof. rewrite exist_exist; f_equiv => a. apply bi.and_exist_l. Qed.
-
-  (* Upstream as [exist_forall], ditto. *)
-  Lemma exist_forall {A B} (Φ : A → B → PROP) :
-    (∃ a, ∀ b, Φ a b) ⊢ (∀ b, ∃ a, Φ a b).
-  Proof. iDestruct 1 as (a) "H". iIntros (b). iExists a. by iApply "H". Qed.
 
   (* Provided just for uniformity with [and_exist_and_r]. *)
   Lemma and_exist_and_l {A P Q R} :
@@ -137,30 +120,15 @@ Section derived_laws.
   Qed.
 
   (** Lemmas about modalities. *)
-  (* Upstreamed in https://gitlab.mpi-sws.org/iris/iris/-/merge_requests/685. *)
-  Lemma fupd_and `{BiFUpd PROP} E1 E2 P Q :
-    (|={E1,E2}=> (P ∧ Q)) ⊢@{PROP} (|={E1,E2}=> P) ∧ (|={E1,E2}=> Q).
-  Proof. apply and_intro; apply fupd_mono; [apply and_elim_l | apply and_elim_r]. Qed.
-
   Lemma intuitionistically_and_sep P Q : □ (P ∧ Q) ⊣⊢@{PROP} □ P ∗ □ Q.
   Proof.
     by rewrite bi.intuitionistically_and bi.and_sep_intuitionistically.
   Qed.
 
-  (* See https://gitlab.mpi-sws.org/iris/iris/-/merge_requests/556 *)
-  Lemma intuitionistic_sep_dup (P : PROP) `{!Persistent P, !Affine P} :
-    P ⊣⊢ P ∗ P.
-  Proof.
-    apply (anti_symm (⊢)).
-    by rewrite -{1}(bi.intuitionistic_intuitionistically P)
-      bi.intuitionistically_sep_dup bi.intuitionistically_elim.
-    by rewrite {1}(affine P) left_id.
-  Qed.
-
   Lemma persistent_sep_distr_l (P Q R : PROP) `{!Persistent P, !Affine P} :
     P ∗ Q ∗ R ⊣⊢ (P ∗ Q) ∗ (P ∗ R).
   Proof.
-    rewrite {1}(intuitionistic_sep_dup P).
+    rewrite {1}(persistent_sep_dup P).
     iSplit; iIntros "[[$$] [$$]]".
   Qed.
 

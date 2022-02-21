@@ -45,13 +45,6 @@ Section finset.
     x ∉ X <-> bool_decide (x ∈ elements X) = false.
   Proof. by rewrite set_elem_of_bool_decide; case_bool_decide. Qed.
 
-  (* Temporarily imported from new upstream stdpp START. Drop at the next bump *)
-  Lemma list_to_set_elements X : list_to_set (elements X) ≡ X.
-  Proof. intros ?. rewrite elem_of_list_to_set. apply elem_of_elements. Qed.
-  Lemma list_to_set_elements_L `{!LeibnizEquiv C} X : list_to_set (elements X) = X.
-  Proof. unfold_leibniz. apply list_to_set_elements. Qed.
-  (* Temporarily imported from new upstream stdpp END. *)
-
   (* In general, the only converse we get is [elements_proper]. *)
   Lemma elements_set_equiv_1 (x y : C) :
     elements x = elements y -> x ≡ y.
