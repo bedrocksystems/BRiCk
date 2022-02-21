@@ -77,7 +77,9 @@ Section finite_preimage_set.
   Lemma finite_preimage_set_empty f :
     finite_preimage_set f ∅ ≡ ∅.
   Proof. set_solver. Qed.
-  Instance finite_preimage_set_proper f : Proper (equiv ==> equiv) (finite_preimage_set f).
+
+  #[global] Instance finite_preimage_set_proper f :
+    Proper (equiv ==> equiv) (finite_preimage_set f).
   Proof. solve_proper. Qed.
 
   Lemma elem_of_finite_preimage_set f a bs :
@@ -127,6 +129,9 @@ Section finite_preimage_set.
     Proof. unfold_leibniz. apply finite_preimage_set_inj_singleton. Qed.
   End finite_preimage_set_leibniz.
 End finite_preimage_set.
+
+#[global] Instance
+  finite_preimage_set_params : Params (@finite_preimage_set) 12 := {}.
 
 Notation finite_preimage_gset :=
   (finite_preimage_set (C := gset _) (D := gset _)) (only parsing).
