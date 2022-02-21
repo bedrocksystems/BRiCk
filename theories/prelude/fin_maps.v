@@ -97,4 +97,12 @@ Section fin_maps.
     apply map_filter_ext => j r /= _.
     by rewrite !lookup_singleton_None.
   Qed.
+
+  Lemma map_Forall_fmap {B} (m : M A) (f : A -> B) P :
+    map_Forall (λ k _, P k) (f <$> m) <-> map_Forall (λ k _, P k) m.
+  Proof.
+    rewrite /map_Forall; setoid_rewrite lookup_fmap.
+    split; intros Hin i d Hs. { eapply Hin. by rewrite Hs. }
+    specialize (Hin i). destruct (m !! i); naive_solver.
+  Qed.
 End fin_maps.
