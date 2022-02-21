@@ -19,13 +19,6 @@
 
 From bedrock.prelude Require Import base.
 
-(* From stdpp START, to drop on bump. *)
-Lemma option_guard_True_pi {A} P `{Decision P, ProofIrrel P} (f : P → option A)
-    (HP : P) :
-  mguard P f = f HP.
-Proof. intros. case_option_guard; [|done]. f_equal; apply proof_irrel. Qed.
-(* From stdpp END. *)
-
 Definition on {A B C} (R : B -> B -> C) (f : A -> B) (x y : A) : C :=
   R (f x) (f y).
 

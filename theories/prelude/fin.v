@@ -20,16 +20,6 @@
 From stdpp Require Import base decidable countable.
 From bedrock.prelude Require Import base option list_numbers finite.
 
-(* From stdpp START, to drop on bump. *)
-#[global] Program Instance countable_sig `{Countable A} (P : A → Prop)
-        `{!∀ x, Decision (P x), !∀ x, ProofIrrel (P x)} :
-  Countable { x : A | P x } :=
-  inj_countable proj1_sig (λ x, guard (P x) as Hx; Some (x ↾ Hx)) _.
-Next Obligation.
-  intros A ?? P ?? [x Hx]. by erewrite (option_guard_True_pi (P x)).
-Qed.
-(* From stdpp END. *)
-
 #[local] Open Scope N_scope.
 
 Implicit Types (n : N) (p : positive).
