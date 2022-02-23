@@ -393,9 +393,69 @@ Module Type finite_bitmask_type_mixin (Import F : finite_type) (Import B : bitma
 
   Definition testbit (mask : N) (x : t) : bool :=
     N.testbit mask (to_bit x).
+
+  Lemma testbit_lor m1 m2 x :
+    testbit (m1 `lor` m2) x =
+    testbit m1 x || testbit m2 x.
+  Proof. apply N.lor_spec. Qed.
+
+  Lemma testbit_land m1 m2 x :
+    testbit (m1 `land` m2) x =
+    testbit m1 x && testbit m2 x.
+  Proof. apply N.land_spec. Qed.
+
   Definition filter (mask : N) (x : t) : list t :=
     if testbit mask x then [x] else [].
 
+  Lemma elem_of_filter m (x y : t) :
+    y ∈ filter m x ↔
+    y = x ∧ testbit m x.
+  Proof. rewrite /filter; case_match; set_solver. Qed.
+
+  Lemma filter_0 x : filter 0 x = [].
+  Proof. done. Qed.
+
+  Lemma elem_of_filter_lor m1 m2 (x y : t) :
+    y ∈ filter (m1 `lor` m2) x ↔
+    y ∈ filter m1 x ∨ y ∈ filter m2 x.
+  Proof.
+    rewrite /filter testbit_lor.
+    case: (testbit m1 x) (testbit m2 x) => [|] [|] /=; set_solver.
+  Qed.
+
+  Lemma elem_of_filter_land m1 m2 (x y : t) :
+    y ∈ filter (m1 `land` m2) x ↔
+    y ∈ filter m1 x ∧ y ∈ filter m2 x.
+  Proof.
+    rewrite /filter testbit_land.
+    case: (testbit m1 x) (testbit m2 x) => [|] [|] /=; set_solver.
+  Qed.
+
+  (* The high priority is important.
+  this is only a fallback after other instances apply. *)
+  #[global] Instance set_unfold_filter m x y :
+    SetUnfoldElemOf y (filter m x) (y = x ∧ testbit m x) | 100.
+  Proof. constructor. by rewrite elem_of_filter. Qed.
+
+  #[global] Instance set_unfold_filter_lor m1 m2 x y P Q :
+    SetUnfoldElemOf y (filter m1 x) P →
+    SetUnfoldElemOf y (filter m2 x) Q →
+    SetUnfoldElemOf y (filter (m1 `lor` m2) x) (P ∨ Q).
+  Proof.
+    constructor. rewrite elem_of_filter_lor.
+    by rewrite (set_unfold_elem_of _ _ P) (set_unfold_elem_of _ _ Q).
+  Qed.
+
+  #[global] Instance set_unfold_filter_land m1 m2 x y P Q :
+    SetUnfoldElemOf y (filter m1 x) P →
+    SetUnfoldElemOf y (filter m2 x) Q →
+    SetUnfoldElemOf y (filter (m1 `land` m2) x) (P ∧ Q).
+  Proof.
+    constructor. rewrite elem_of_filter_land.
+    by rewrite (set_unfold_elem_of _ _ P) (set_unfold_elem_of _ _ Q).
+  Qed.
+
+  Typeclasses Opaque filter.
   (* Parse a bitmask into a list of flags. *)
   Definition to_list_aux (mask : N) (xs : list t) : list t :=
     xs ≫= filter mask.
@@ -404,6 +464,14 @@ Module Type finite_bitmask_type_mixin (Import F : finite_type) (Import B : bitma
 
   Lemma to_list_0 : to_list 0 = [].
   Proof. rewrite /to_list. by elim: enum. Qed.
+
+  Lemma elem_of_to_list_or x m n :
+    x ∈ to_list (m `lor` n) ↔ x ∈ to_list m ∨ x ∈ to_list n.
+  Proof. set_solver. Qed.
+
+  Lemma elem_of_to_list_and x m n :
+    x ∈ to_list (m `land` n) ↔ x ∈ to_list m ∧ x ∈ to_list n.
+  Proof. set_solver. Qed.
 
   Definition setbit (b : t) (n : N) : N := N.setbit n (to_bit b).
   Notation setbit_alt b n := (N.lor (to_bitmask b) n).
@@ -483,6 +551,12 @@ Module finite_bits (BT : finite_bitmask_type_intf).
 
   Lemma of_bits_0 : of_bits 0 = ∅.
   Proof. by rewrite /of_bits BT.to_list_0. Qed.
+
+  Lemma of_bits_or m n : of_bits (m `lor` n) = of_bits m ∪ of_bits n.
+  Proof. set_solver. Qed.
+
+  Lemma of_bits_and m n : of_bits (m `land` n) = of_bits m ∩ of_bits n.
+  Proof. set_solver. Qed.
 
   Definition to_bits (rs : t) : N := set_fold BT.setbit 0 rs.
 
