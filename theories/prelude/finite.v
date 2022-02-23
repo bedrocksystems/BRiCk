@@ -384,6 +384,8 @@ Module Type bitmask_type_simple_mixin (Import F : finite_type) (Import FM : fini
 End bitmask_type_simple_mixin.
 
 Module Type finite_bitmask_type_mixin (Import F : finite_type) (Import B : bitmask_type F).
+  Implicit Type (x : t) (m n : N).
+
   Definition to_bitmask (r : t) : N := 2 ^ to_bit r.
 
   Lemma to_bitmask_setbit x : to_bitmask x = N.setbit 0 (to_bit x).
@@ -469,6 +471,7 @@ Module finite_bits (BT : finite_bitmask_type_intf).
   Definition t := gset BT.t.
   #[global] Instance top_t : Top t := fin_to_set BT.t (C := t).
 
+  Implicit Type (x : BT.t) (m n : N).
   (*
   [to_bits] and [of_bits] implement a bitset encoding of [t] into N, given
   the encoding [to_bit : BT.t -> N].
