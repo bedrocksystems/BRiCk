@@ -17,16 +17,23 @@ From the [Finite] typeclass, like from Haskell's [Enum], one can generate
 conversion to and from [N], both for individual elements and bitsets of them.
 *)
 
+(** Rewriting-oriented variant of [elem_of_enum]; inspired by [elem_of_top]. *)
+Lemma elem_of_enum' `{Finite A} (x : A) :
+  x ∈ enum A ↔ True.
+Proof. naive_solver eauto using elem_of_enum. Qed.
+
+(* To upstream. *)
+#[global] Instance set_unfold_elem_of_enum `{Finite A} (x : A) :
+  SetUnfoldElemOf x (enum A) True.
+Proof. constructor. by rewrite elem_of_enum'. Qed.
+
 Lemma subset_of_enum `{Finite A} xs :
   xs ⊆ enum A.
-Proof. intros x _. apply elem_of_enum. Qed.
+Proof. set_solver. Qed.
 
-Lemma elem_of_filter_enum `{Finite A} {P : A → Prop} `{∀ x, Decision (P x)} a :
+Lemma elem_of_filter_enum `{Finite A} `{∀ x, Decision (P x)} (a : A) :
   a ∈ filter P (enum A) ↔ P a.
-Proof.
-  rewrite elem_of_list_filter.
-  pose proof (elem_of_enum a). naive_solver.
-Qed.
+Proof. set_solver. Qed.
 
 Section finite_preimage.
   Context `{Finite A} `{EqDecision B}.
@@ -463,7 +470,11 @@ Module Type finite_bitmask_type_mixin (Import F : finite_type) (Import B : bitma
   Definition to_list (mask : N) : list t := to_list_aux mask $ enum t.
 
   Lemma to_list_0 : to_list 0 = [].
-  Proof. rewrite /to_list. by elim: enum. Qed.
+  Proof. apply list_empty_eq_ext; set_solver. Qed.
+
+  Lemma elem_of_to_list_0 x :
+    x ∈ to_list 0 ↔ False.
+  Proof. set_solver. Qed.
 
   Lemma elem_of_to_list_or x m n :
     x ∈ to_list (m `lor` n) ↔ x ∈ to_list m ∨ x ∈ to_list n.
@@ -504,8 +515,7 @@ Module Type finite_bitmask_type_mixin (Import F : finite_type) (Import B : bitma
       z ∈ to_list (setbit x mask) ↔ z = x ∨ z ∈ to_list mask.
     Proof.
       rewrite /to_list /to_list_aux !elem_of_list_bind.
-      setoid_rewrite filter_setbit.
-      naive_solver eauto using elem_of_enum.
+      setoid_rewrite filter_setbit. set_solver.
     Qed.
   End to_bit_inj.
 End finite_bitmask_type_mixin.
