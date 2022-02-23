@@ -463,6 +463,12 @@ Module Type finite_bitmask_type_mixin (Import F : finite_type) (Import B : bitma
   Qed.
 
   Typeclasses Opaque filter.
+
+  (** Technically redundant, but a leaf, and it cleans up [set_unfold] output. *)
+  #[global] Instance set_unfold_filter_0 m x y :
+    SetUnfoldElemOf y (filter 0 x) False.
+  Proof. constructor. set_solver. Qed.
+
   (* Parse a bitmask into a list of flags. *)
   Definition to_list_aux (mask : N) (xs : list t) : list t :=
     xs ≫= filter mask.
