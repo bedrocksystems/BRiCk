@@ -4,6 +4,20 @@
  * This software is distributed under the terms of the BedRock Open-Source License.
  * See the LICENSE-BedRock file in the repository root for details.
  *)
+(*
+ * The following code contains code derived from code original to the
+ * stdpp project. That original code is
+ *
+ *	Copyright stdpp developers and contributors
+ *
+ * and used according to the following license.
+ *
+ *	SPDX-License-Identifier: BSD-3-Clause
+ *
+ * Original stdpp License:
+ * https://gitlab.mpi-sws.org/iris/stdpp/-/blob/221197c43d43ce34b211068b84eff0ec4a9ee57a/LICENSE
+ *)
+
 Require Export stdpp.list.
 From bedrock.prelude Require Import base numbers.
 Export bedrock.prelude.base.
@@ -15,6 +29,16 @@ Export bedrock.prelude.base.
   (∀ x, SetUnfoldElemOf x l (P x)) → (∀ x, SetUnfoldElemOf y (f x) (Q x)) →
   SetUnfoldElemOf y (l ≫= f) (∃ x, Q x ∧ P x).
 Proof. constructor. rewrite elem_of_list_bind. naive_solver. Qed.
+
+(* To upstream, based on upstream [set_unfold_filter]. *)
+#[global] Instance set_unfold_list_filter
+    {A} (P : A → Prop) `{!∀ x, Decision (P x)}
+    (xs : list A) Q x :
+  SetUnfoldElemOf x xs Q →
+  SetUnfoldElemOf x (filter P xs) (P x ∧ Q).
+Proof.
+  intros ?; constructor. by rewrite elem_of_list_filter (set_unfold_elem_of _ _ Q).
+Qed.
 
 Lemma foldr_cons {A B} (f : A -> B -> B) x y ys : foldr f x (y :: ys) = f y (foldr f x ys).
 Proof. done. Qed.
@@ -138,11 +162,15 @@ Qed.
 Lemma head_Some_elem_of {A} (x : A) (xs : list A) : head xs = Some x → x ∈ xs.
 Proof. destruct xs => [//|[->]]. by apply elem_of_cons; left. Qed.
 
+Lemma list_empty_eq_ext {A} (xs : list A) :
+  (∀ x : A, x ∈ xs ↔ False) ↔ xs = [].
+Proof. case: xs; set_solver. Qed.
+
 Lemma list_singleton_eq_ext {A} (x : A) xs (HnoDup : NoDup xs) :
   (∀ y, y ∈ xs ↔ y = x) ↔ xs = [x].
 Proof.
-  split => [H | -> y]; last by rewrite elem_of_list_singleton.
+  split => [H | -> y]; last by set_solver.
   apply symmetry, Permutation_singleton_l, NoDup_Permutation;
     [apply NoDup_singleton|done|..] => z.
-  rewrite elem_of_list_singleton. naive_solver.
+  set_solver.
 Qed.

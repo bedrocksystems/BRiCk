@@ -1,3 +1,9 @@
+(*
+ * Copyright (C) BedRock Systems Inc. 2022
+ *
+ * This software is distributed under the terms of the BedRock Open-Source License.
+ * See the LICENSE-BedRock file in the repository root for details.
+ *)
 From bedrock.prelude Require Import base.
 From bedrock.prelude Require Export list numbers.
 
