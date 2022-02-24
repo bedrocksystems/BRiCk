@@ -230,6 +230,10 @@ Section finite.
     repeat split;
       naive_solver eauto using decode_encode_N, decode_N_Some_encode_N.
   Qed.
+
+  Lemma decode_N_is_inverse n x :
+    finite_inverse encode_N n = Some x <-> decode_N n = Some x.
+  Proof. set_solver. Qed.
 End finite.
 
 (* From (pieces of) [Countable] (and more) to [Finite]. *)
