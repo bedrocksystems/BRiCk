@@ -726,25 +726,6 @@ Module finite_bits (BT : finite_bitmask_type_intf).
   Lemma elem_of_masked mask r rs :
     r ∈ rs → r ∈ of_bits mask → r ∈ masked mask rs.
   Proof. intros. exact /elem_of_intersection. Qed.
-End finite_bits.
-
-Module simple_finite_bits (BT : simple_finite_bitmask_type_intf).
-  Include finite_bits BT.
-
-  Lemma of_bits_max : of_bits BT.all_bits = ⊤.
-  Proof. by rewrite /of_bits BT.to_list_max. Qed.
-
-  Lemma masked_max rights :
-    masked BT.all_bits rights = rights.
-  Proof. rewrite /masked of_bits_max. set_solver. Qed.
-
-  Lemma masked_opt_max rights (Hrights : rights ≠ ∅) :
-    masked_opt BT.all_bits rights = Some rights.
-  Proof. by rewrite /masked_opt masked_max option_guard_True. Qed.
-
-  Lemma N_testbit_all_bits i :
-    N.testbit BT.all_bits i = bool_decide (i < card_N BT.t).
-  Proof. apply N_ones_spec. Qed.
 
   Lemma N_testbit_to_bits rs i :
     N.testbit (to_bits rs) i =
@@ -767,6 +748,32 @@ Module simple_finite_bits (BT : simple_finite_bitmask_type_intf).
     case: Hin Hr' => [-> //|Hin Hr']. apply /Hdec. by exists r'.
   Qed.
 
+  Lemma N_testbit_mask_top_to_bit i :
+    N.testbit mask_top i = bool_decide (∃ r : BT.t, BT.to_bit r = i).
+  Proof.
+    rewrite /mask_top /to_bits N_testbit_to_bits.
+    apply bool_decide_ext. set_solver.
+  Qed.
+End finite_bits.
+
+Module simple_finite_bits (BT : simple_finite_bitmask_type_intf).
+  Include finite_bits BT.
+
+  Lemma of_bits_max : of_bits BT.all_bits = ⊤.
+  Proof. by rewrite /of_bits BT.to_list_max. Qed.
+
+  Lemma masked_max rights :
+    masked BT.all_bits rights = rights.
+  Proof. rewrite /masked of_bits_max. set_solver. Qed.
+
+  Lemma masked_opt_max rights (Hrights : rights ≠ ∅) :
+    masked_opt BT.all_bits rights = Some rights.
+  Proof. by rewrite /masked_opt masked_max option_guard_True. Qed.
+
+  Lemma N_testbit_all_bits i :
+    N.testbit BT.all_bits i = bool_decide (i < card_N BT.t).
+  Proof. apply N_ones_spec. Qed.
+
   Lemma N_testbit_to_bits' rs i :
     N.testbit (to_bits rs) i =
     bool_decide (∃ r, BT.of_bit i = Some r ∧ r ∈ rs).
@@ -775,13 +782,6 @@ Module simple_finite_bits (BT : simple_finite_bitmask_type_intf).
     split; intros (r & Heq & Hin); exists r; subst.
     { split; [|done]. exact: BT.of_to_bit. }
     by rewrite (BT.to_of_bit _ _ Heq).
-  Qed.
-
-  Lemma N_testbit_mask_top_to_bit i :
-    N.testbit mask_top i = bool_decide (∃ r : BT.t, BT.to_bit r = i).
-  Proof.
-    rewrite /mask_top /to_bits N_testbit_to_bits.
-    apply bool_decide_ext. set_solver.
   Qed.
 
   Lemma N_testbit_mask_top_of_bit i :
