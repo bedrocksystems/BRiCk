@@ -791,9 +791,19 @@ Module simple_finite_bits (BT : simple_finite_bitmask_type_intf).
     by intros (x & Hdec%finite_decode_N_lt).
   Qed.
 
-  (* Conjectures: *)
-  Lemma to_of_bits `{Hinj : !Inj eq eq BT.to_bit} mask :
+  Lemma to_of_bits mask :
     to_bits (of_bits mask) = N.land mask_top mask.
-  Abort.
-
+  Proof.
+    apply N.bits_inj_iff => i.
+    rewrite N.land_spec N_testbit_mask_top_of_bit N_testbit_to_bits.
+    rewrite -(bool_decide_Is_true (N.testbit _ _)) -bool_decide_and /is_Some.
+    apply bool_decide_ext.
+    set_unfold; firstorder; simplify_eq;
+      try naive_solver eauto using BT.of_to_bit, BT.to_of_bit.
+    eexists; split. exact: BT.to_of_bit.
+    eexists.
+    firstorder; subst; try naive_solver eauto using BT.of_to_bit, BT.to_of_bit.
+    unfold BT.testbit.
+    by erewrite BT.to_of_bit.
+  Qed.
 End simple_finite_bits.
