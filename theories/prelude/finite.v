@@ -754,6 +754,16 @@ Module finite_bits (BT : finite_bitmask_type_intf).
     rewrite /mask_top /to_bits N_testbit_to_bits.
     apply bool_decide_ext. set_solver.
   Qed.
+
+  Lemma to_of_bits `{!Inj eq eq BT.to_bit} mask :
+    to_bits (of_bits mask) = N.land mask_top mask.
+  Proof.
+    apply N.bits_inj_iff => i.
+    rewrite N.land_spec N_testbit_mask_top_to_bit N_testbit_to_bits.
+    rewrite -(bool_decide_Is_true (N.testbit _ _)) -bool_decide_and /is_Some.
+    apply bool_decide_ext.
+    set_solver.
+  Qed.
 End finite_bits.
 
 Module simple_finite_bits (BT : simple_finite_bitmask_type_intf).
@@ -801,15 +811,5 @@ Module simple_finite_bits (BT : simple_finite_bitmask_type_intf).
       by exists x; apply Hdec.
     }
     by intros (x & Hdec%finite_decode_N_lt).
-  Qed.
-
-  Lemma to_of_bits mask :
-    to_bits (of_bits mask) = N.land mask_top mask.
-  Proof.
-    apply N.bits_inj_iff => i.
-    rewrite N.land_spec N_testbit_mask_top_of_bit N_testbit_to_bits.
-    rewrite -(bool_decide_Is_true (N.testbit _ _)) -bool_decide_and /is_Some.
-    apply bool_decide_ext.
-    set_solver.
   Qed.
 End simple_finite_bits.
