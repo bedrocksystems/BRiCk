@@ -662,9 +662,8 @@ Module finite_bits (BT : finite_bitmask_type_intf).
   Lemma to_bits_union xs ys :
     to_bits (xs ∪ ys) = N.lor (to_bits xs) (to_bits ys).
   Proof.
-    pattern xs. apply set_ind_L. { by rewrite to_bits_empty !left_id_L. }
-    move=> x X Hni IH.
-    by rewrite -(assoc_L _ {[x]}) !to_bits_union_singleton IH assoc_L.
+    induction xs as [|??? IHxs] using set_ind_L. { by rewrite to_bits_empty !left_id_L. }
+    by rewrite -(assoc_L _ {[x]}) !to_bits_union_singleton IHxs assoc_L.
   Qed.
 
   (* TODO move [setbit], and these lemmas, with [BT.testbit]. *)
@@ -789,11 +788,8 @@ Module simple_finite_bits (BT : simple_finite_bitmask_type_intf).
     N.testbit mask_top i = bool_decide (is_Some (BT.of_bit i)).
   Proof.
     rewrite N_testbit_mask_top_to_bit /is_Some.
-    apply bool_decide_ext; split; intros [r H]; exists r; subst.
-    { exact: BT.of_to_bit. }
-    exact: BT.to_of_N.
+    apply bool_decide_ext. set_solver.
   Qed.
-
 
   Lemma all_bits_mask_top : BT.all_bits = mask_top.
   Proof.
