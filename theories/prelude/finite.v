@@ -69,6 +69,13 @@ Section finite_preimage.
     rewrite /finite_inverse => Hof.
     by apply elem_of_finite_preimage, head_Some_elem_of.
   Qed.
+
+  #[global] Instance set_unfold_finite_inverse_Some x n `{!Inj eq eq f} :
+    SetUnfold (finite_inverse f n = Some x) (f x = n).
+  Proof.
+    repeat split; naive_solver eauto
+      using finite_inverse_inj, finite_inverse_Some_direct.
+  Qed.
 End finite_preimage.
 
 Section finite_preimage_set.
@@ -147,6 +154,8 @@ Definition encode_N `{Countable A} (x : A) : N :=
   Pos.pred_N (encode x).
 Definition decode_N `{Countable A} (i : N) : option A :=
   decode (N.succ_pos i).
+#[global] Arguments decode_N : simpl never.
+
 Section countable.
   Context `{Countable A}.
   Implicit Type (x : A).
@@ -213,6 +222,13 @@ Section finite.
     pose proof (finite_decode_N_lt _ _ Hdec) as Hcmp.
     destruct (encode_decode_N _ Hcmp) as (x' & ?Hdec & Henc).
     naive_solver.
+  Qed.
+
+  #[global] Instance set_unfold_decode_N_Some x n :
+    SetUnfold (decode_N n = Some x) (encode_N x = n).
+  Proof.
+    repeat split;
+      naive_solver eauto using decode_encode_N, decode_N_Some_encode_N.
   Qed.
 End finite.
 
@@ -798,12 +814,6 @@ Module simple_finite_bits (BT : simple_finite_bitmask_type_intf).
     rewrite N.land_spec N_testbit_mask_top_of_bit N_testbit_to_bits.
     rewrite -(bool_decide_Is_true (N.testbit _ _)) -bool_decide_and /is_Some.
     apply bool_decide_ext.
-    set_unfold; firstorder; simplify_eq;
-      try naive_solver eauto using BT.of_to_bit, BT.to_of_bit.
-    eexists; split. exact: BT.to_of_bit.
-    eexists.
-    firstorder; subst; try naive_solver eauto using BT.of_to_bit, BT.to_of_bit.
-    unfold BT.testbit.
-    by erewrite BT.to_of_bit.
+    set_solver.
   Qed.
 End simple_finite_bits.
