@@ -205,7 +205,7 @@ Section with_cpp.
   Proof. exact: Build_AsFractional. Qed.
 End with_cpp.
 
-Typeclasses Opaque primR.
+#[global] Typeclasses Opaque primR.
 #[global] Opaque primR.
 
 Section with_cpp.
@@ -507,5 +507,5 @@ Section with_cpp.
 
 End with_cpp.
 
-Typeclasses Opaque identityR.
-Typeclasses Opaque type_ptrR validR svalidR alignedR.
+#[global] Typeclasses Opaque identityR.
+#[global] Typeclasses Opaque type_ptrR validR svalidR alignedR.

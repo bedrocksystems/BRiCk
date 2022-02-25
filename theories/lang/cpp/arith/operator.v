@@ -125,14 +125,8 @@ Proof.
     + rewrite bool_decide_eq_false_2; last by lia.
       rewrite bool_decide_eq_true_2 /=; last by [lia].
       rewrite Z.mod_small; (intuition auto with lia); first last.
-      * eapply Z.lt_trans; eauto.
-        assert (Z.of_N bits - 1 < 0 \/ Z.of_N bits - 1 = 0 \/ Z.of_N bits - 1 > 0)
-          as [Hexp | [Hexp | Hexp]] by lia.
-        -- rewrite Z.pow_neg_r; lia.
-        -- rewrite Hexp; rewrite Z.pow_0_r; lia.
-        -- pose proof (Z.pow_pos_nonneg 2 (Z.of_N bits - 1) ltac:(lia) ltac:(lia)); lia.
-      * rewrite -{1}(Zplus_minus 1 (Z.of_N bits)) Z.add_1_l.
-        rewrite Z.pow_succ_r; lia.
+      rewrite -{1}(Zplus_minus 1 (Z.of_N bits)) Z.add_1_l.
+      rewrite Z.pow_succ_r; lia.
 Qed.
 
 Lemma to_signed_neg : forall x (n : bitsize),
@@ -219,7 +213,6 @@ Proof.
   - assert (bits = 0 \/ 0 < bits)%N as [Hbits | Hbits] by lia; subst.
     + rewrite trim_0_r /to_signed_bits bool_decide_eq_true_2; lia.
     + rewrite trim_0_r to_signed_bits_id; intuition eauto with lia.
-      apply Z.pow_pos_nonneg; lia.
   - rewrite /trim /to_signed_bits Zdiv.Zmod_mod.
     assert (bits = 0 \/ 0 < bits)%N as [Hbits | Hbits] by lia; subst.
     { rewrite bool_decide_eq_true_2 //;

@@ -135,7 +135,7 @@ Module SimpleCPP_BASE <: CPP_LOGIC_CLASS.
   Existing Class cppG.
   (* Used to be needed to prevent turning instances of cppG' into cppG and risking loops in this file;
   should not hurt now. *)
-  Typeclasses Opaque cppG.
+  #[global] Typeclasses Opaque cppG.
 
   #[global] Instance has_inv Σ : cppG Σ -> invGS Σ := @has_inv' Σ.
   #[global] Instance has_cinv Σ : cppG Σ -> cinvG Σ := @has_cinv' Σ.
@@ -174,7 +174,7 @@ Module SimpleCPP_BASE <: CPP_LOGIC_CLASS.
     #[global] Instance _code_own_affine p f : Affine (_code_own p f) := _.
     #[global] Instance _code_own_timeless p f : Timeless (_code_own p f) := _.
   End with_cpp.
-  Typeclasses Opaque mem_inj_own _code_own.
+  #[global] Typeclasses Opaque mem_inj_own _code_own.
 End SimpleCPP_BASE.
 
 (* TODO: provide an instance for this. *)
@@ -583,7 +583,8 @@ Module SimpleCPP.
       byte_ a b q ** byte_ a b' q' |-- byte_ a b (q + q') ** [| b = b' |].
     Proof.
       iIntros "[Hb Hb']".
-      iDestruct (byte_agree with "Hb Hb'") as %->. by iFrame.
+      iDestruct (byte_agree with "Hb Hb'") as %->.
+      iCombine "Hb Hb'" as "Hb". by iFrame.
     Qed.
 
     Lemma byte_update (a : addr) (rv rv' : runtime_val) :
@@ -604,9 +605,8 @@ Module SimpleCPP.
     Lemma bytes_cons a v vs q :
       bytes a (v :: vs) q -|- byte_ a v q ** bytes (N.succ a) vs q.
     Proof.
-      rewrite /bytes big_sepL_cons/=. do 2!f_equiv.
-      - lia.
-      - move=>o v'. f_equiv. lia.
+      rewrite /bytes big_sepL_cons /= N.add_0_r. do 2 f_equiv.
+      move => ?. do 2 f_equiv. apply leibniz_equiv_iff. lia.
     Qed.
 
     Lemma bytes_agree {a vs1 vs2 q1 q2} :

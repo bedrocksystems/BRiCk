@@ -58,7 +58,7 @@ Section inv.
 End inv.
 
 (*** Non-atomic invariants for iProp *)
-Typeclasses Transparent na_own na_inv.
+#[global] Typeclasses Transparent na_own na_inv.
 (* Copy from
   https://gitlab.mpi-sws.org/iris/iris/-/blob/90b6007faea2b61546aed01fe0ed9936b55468d1/iris/base_logic/lib/na_invariants.v *)
 Section na_inv.
@@ -85,10 +85,10 @@ Section na_inv.
     iNext. iLeft. by iFrame.
   Qed.
 End na_inv.
-Typeclasses Opaque na_own na_inv.
+#[global] Typeclasses Opaque na_own na_inv.
 
 (*** Cancelable invariants for iProp *)
-Typeclasses Transparent cinv_own cinv.
+#[global] Typeclasses Transparent cinv_own cinv.
 (* Copy from
   https://gitlab.mpi-sws.org/iris/iris/-/blob/7ccdfe0df5832b69742306302144b5358c9ed843/iris/base_logic/lib/cancelable_invariants.v *)
 Section cinv.
@@ -153,4 +153,4 @@ Section cinv.
   Qed.
 End cinv.
 
-Typeclasses Opaque cinv_own cinv.
+#[global] Typeclasses Opaque cinv_own cinv.

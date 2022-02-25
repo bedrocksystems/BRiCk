@@ -60,7 +60,7 @@ Section defs.
 End defs.
 
 Global Instance: Params (@na_inv) 5 := {}.
-Typeclasses Opaque na_own na_inv.
+#[global] Typeclasses Opaque na_own na_inv.
 
 (* TODO: allocation rules are missing. These rely on the specific model of PROP,
   so the client of this library needs the provide the corresponding model of

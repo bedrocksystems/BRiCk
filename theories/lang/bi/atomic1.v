@@ -663,7 +663,7 @@ Tactic Notation "iAaccIntro1" "with" constr(sel) :=
   end.
 
 (* From here on, prevent TC search from implicitly unfolding these. *)
-Typeclasses Opaque atomic1_acc atomic1_update.
+#[global] Typeclasses Opaque atomic1_acc atomic1_update.
 
 Section derived.
   Context `{BiFUpd PROP} {TA TB : tele}.

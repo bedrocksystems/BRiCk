@@ -51,19 +51,11 @@ variables:
   variables:
     LLVM_MAJ_VER: 10
 
-.llvm12:
+.public:
   extends: .base
   variables:
-    LLVM_MAJ_VER: 12
-
-# Configuration to test against upstream Coq. Temporarily disabled for now,
-# unnecessary with Coq 8.15.
-
-# .public:
-#   extends: .base
-#   variables:
-#     img_prefix: cpp2v-public-llvm
-#     LLVM_MAJ_VER: 12
+    img_prefix: cpp2v-public-llvm
+    LLVM_MAJ_VER: 13
 
 stages:
   - build
@@ -75,7 +67,7 @@ stages:
   - build_proofs_downstream
 
 #This is a template job that's extended below by the real jobs
-# build_{latest,llvm10,llvm12,public} (see, e.g., https://docs.gitlab.com/ee/ci/yaml/#extends).
+# build_{latest,llvm10,public} (see, e.g., https://docs.gitlab.com/ee/ci/yaml/#extends).
 .build_base:
   stage: build
   script:
@@ -147,15 +139,10 @@ build_llvm10:
     - .build_aux
     - .llvm10
 
-build_llvm12:
+build_public:
   extends:
     - .build_aux
-    - .llvm12
-
-# build_public:
-#   extends:
-#     - .build_aux
-#     - .public
+    - .public
 
 test_latest:
   extends:
@@ -171,19 +158,12 @@ test_llvm10:
   needs:
     - build_llvm10
 
-test_llvm12:
+test_public:
   extends:
     - .test
-    - .llvm12
+    - .public
   needs:
-    - build_llvm12
-
-# test_public:
-#   extends:
-#     - .test
-#     - .public
-#   needs:
-#     - build_public
+    - build_public
 
 prepare_env:
   extends:

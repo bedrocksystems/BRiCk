@@ -24,7 +24,7 @@ Section non_beginning_ptr.
   #[global] Instance non_beginning_ptr_timeless p : Timeless (non_beginning_ptr p) := _.
 End non_beginning_ptr.
 
-Typeclasses Opaque non_beginning_ptr.
+#[global] Typeclasses Opaque non_beginning_ptr.
 
 Section with_Σ.
   Context `{has_cpp : cpp_logic} {resolve : genv}.
