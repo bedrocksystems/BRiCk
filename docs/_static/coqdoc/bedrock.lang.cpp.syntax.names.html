@@ -56,12 +56,12 @@
 <br/>
 <span class="comment">(*&nbsp;this&nbsp;represents&nbsp;names&nbsp;that&nbsp;exist&nbsp;in&nbsp;object&nbsp;files.&nbsp;*)</span><br/>
 <span class="id" title="keyword">Definition</span> <a id="obj_name" class="idref" href="#obj_name"><span class="id" title="definition">obj_name</span></a> : <span class="id" title="keyword">Set</span> := <a class="idref" href="bedrock.prelude.bytestring_core.html#BS.Bytestring_notations.bs"><span class="id" title="abbreviation">bs</span></a>.<br/>
-<span class="id" title="keyword">Bind</span> <span class="id" title="keyword">Scope</span> <span class="id" title="var">bs_scope</span> <span class="id" title="keyword">with</span> <span class="id" title="var">obj_name</span>.<br/>
+<span class="id" title="keyword">Bind Scope</span> <span class="id" title="var">bs_scope</span> <span class="id" title="keyword">with</span> <span class="id" title="var">obj_name</span>.<br/>
 #[<span class="id" title="var">global</span>] <span class="id" title="keyword">Instance</span> <a id="obj_name_eq" class="idref" href="#obj_name_eq"><span class="id" title="instance">obj_name_eq</span></a>: <a class="idref" href="https://plv.mpi-sws.org/coqdoc/stdpp//stdpp.base.html#EqDecision"><span class="id" title="abbreviation">EqDecision</span></a> <a class="idref" href="bedrock.lang.cpp.syntax.names.html#obj_name"><span class="id" title="definition">obj_name</span></a> := <span class="id" title="var">_</span>.<br/>
 
 <br/>
 <span class="id" title="keyword">Definition</span> <a id="ident" class="idref" href="#ident"><span class="id" title="definition">ident</span></a> : <span class="id" title="keyword">Set</span> := <a class="idref" href="bedrock.prelude.bytestring_core.html#BS.Bytestring_notations.bs"><span class="id" title="abbreviation">bs</span></a>.<br/>
-<span class="id" title="keyword">Bind</span> <span class="id" title="keyword">Scope</span> <span class="id" title="var">bs_scope</span> <span class="id" title="keyword">with</span> <span class="id" title="var">ident</span>.<br/>
+<span class="id" title="keyword">Bind Scope</span> <span class="id" title="var">bs_scope</span> <span class="id" title="keyword">with</span> <span class="id" title="var">ident</span>.<br/>
 #[<span class="id" title="var">global</span>] <span class="id" title="keyword">Instance</span> <a id="ident_eq" class="idref" href="#ident_eq"><span class="id" title="instance">ident_eq</span></a>: <a class="idref" href="https://plv.mpi-sws.org/coqdoc/stdpp//stdpp.base.html#EqDecision"><span class="id" title="abbreviation">EqDecision</span></a> <a class="idref" href="bedrock.lang.cpp.syntax.names.html#ident"><span class="id" title="definition">ident</span></a> := <span class="id" title="var">_</span>.<br/>
 
 <br/>
@@ -77,7 +77,7 @@
 &nbsp;*&nbsp;-&nbsp;there&nbsp;are&nbsp;also&nbsp;"unnamed"&nbsp;functions,&nbsp;e.g.&nbsp;constructors&nbsp;and&nbsp;destructors<br/>
 &nbsp;*)</span><br/>
 <span class="id" title="keyword">Definition</span> <a id="globname" class="idref" href="#globname"><span class="id" title="definition">globname</span></a> : <span class="id" title="keyword">Set</span> := <a class="idref" href="bedrock.lang.cpp.syntax.names.html#ident"><span class="id" title="definition">ident</span></a>.<br/>
-<span class="id" title="keyword">Bind</span> <span class="id" title="keyword">Scope</span> <span class="id" title="var">bs_scope</span> <span class="id" title="keyword">with</span> <span class="id" title="var">globname</span>.<br/>
+<span class="id" title="keyword">Bind Scope</span> <span class="id" title="var">bs_scope</span> <span class="id" title="keyword">with</span> <span class="id" title="var">globname</span>.<br/>
 &nbsp;&nbsp;<span class="comment">(*&nbsp;these&nbsp;are&nbsp;mangled&nbsp;names.&nbsp;for&nbsp;consistency,&nbsp;we're&nbsp;going&nbsp;to<br/>
 &nbsp;&nbsp;&nbsp;*&nbsp;mangle&nbsp;everything.<br/>
 &nbsp;&nbsp;&nbsp;*)</span><br/>
@@ -86,7 +86,7 @@
 <br/>
 <span class="comment">(*&nbsp;local&nbsp;names&nbsp;*)</span><br/>
 <span class="id" title="keyword">Definition</span> <a id="localname" class="idref" href="#localname"><span class="id" title="definition">localname</span></a> : <span class="id" title="keyword">Set</span> := <a class="idref" href="bedrock.lang.cpp.syntax.names.html#ident"><span class="id" title="definition">ident</span></a>.<br/>
-<span class="id" title="keyword">Bind</span> <span class="id" title="keyword">Scope</span> <span class="id" title="var">bs_scope</span> <span class="id" title="keyword">with</span> <span class="id" title="var">localname</span>.<br/>
+<span class="id" title="keyword">Bind Scope</span> <span class="id" title="var">bs_scope</span> <span class="id" title="keyword">with</span> <span class="id" title="var">localname</span>.<br/>
 #[<span class="id" title="var">global</span>] <span class="id" title="keyword">Instance</span> <a id="localname_eq" class="idref" href="#localname_eq"><span class="id" title="instance">localname_eq</span></a>: <a class="idref" href="https://plv.mpi-sws.org/coqdoc/stdpp//stdpp.base.html#EqDecision"><span class="id" title="abbreviation">EqDecision</span></a> <a class="idref" href="bedrock.lang.cpp.syntax.names.html#localname"><span class="id" title="definition">localname</span></a> := <span class="id" title="var">_</span>.<br/>
 
 <br/>
