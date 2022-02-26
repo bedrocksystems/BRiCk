@@ -59,16 +59,26 @@ Section finite_preimage.
 
   Definition finite_inverse f b : option A := head $ finite_preimage f b.
 
-  Lemma finite_inverse_inj `{!Inj eq eq f} a :
-    finite_inverse f (f a) = Some a.
-  Proof. by rewrite /finite_inverse finite_preimage_inj_singleton. Qed.
-
-  Lemma finite_inverse_Some_direct f a b :
+  Lemma finite_inverse_spec_1 f a b :
     finite_inverse f b = Some a → f a = b.
   Proof.
     rewrite /finite_inverse => Hof.
     by apply elem_of_finite_preimage, head_Some_elem_of.
   Qed.
+
+  Lemma finite_inverse_spec_2 `{!Inj eq eq f} a :
+    finite_inverse f (f a) = Some a.
+  Proof. by rewrite /finite_inverse finite_preimage_inj_singleton. Qed.
+
+  Lemma finite_inverse_spec f `{!Inj eq eq f} a b :
+    finite_inverse f b = Some a ↔ f a = b.
+  Proof.
+    naive_solver eauto using finite_inverse_spec_1, finite_inverse_spec_2.
+  Qed.
+
+  #[global] Instance set_unfold_finite_inverse_Some x n `{!Inj eq eq f} :
+    SetUnfold (finite_inverse f n = Some x) (f x = n).
+  Proof. split. apply: finite_inverse_spec. Qed.
 End finite_preimage.
 
 Section finite_preimage_set.
@@ -147,6 +157,8 @@ Definition encode_N `{Countable A} (x : A) : N :=
   Pos.pred_N (encode x).
 Definition decode_N `{Countable A} (i : N) : option A :=
   decode (N.succ_pos i).
+#[global] Arguments decode_N : simpl never.
+
 Section countable.
   Context `{Countable A}.
   Implicit Type (x : A).
@@ -214,6 +226,17 @@ Section finite.
     destruct (encode_decode_N _ Hcmp) as (x' & ?Hdec & Henc).
     naive_solver.
   Qed.
+
+  #[global] Instance set_unfold_decode_N_Some x n :
+    SetUnfold (decode_N n = Some x) (encode_N x = n).
+  Proof.
+    repeat split;
+      naive_solver eauto using decode_encode_N, decode_N_Some_encode_N.
+  Qed.
+
+  Lemma decode_N_is_inverse n x :
+    finite_inverse encode_N n = Some x <-> decode_N n = Some x.
+  Proof. set_solver. Qed.
 End finite.
 
 (* From (pieces of) [Countable] (and more) to [Finite]. *)
@@ -343,11 +366,11 @@ Module Type finite_encoded_type_mixin (Import F : finite_encoded_type).
 
   Lemma of_to_N `[Hinj : !Inj eq eq to_N] (x : t) :
     of_N (to_N x) = Some x.
-  Proof. apply finite_inverse_inj. Qed.
+  Proof. exact: finite_inverse_spec_2. Qed.
 
   Lemma to_of_N (n : N) (x : t) :
     of_N n = Some x → to_N x = n.
-  Proof. apply finite_inverse_Some_direct. Qed.
+  Proof. apply finite_inverse_spec_1. Qed.
 End finite_encoded_type_mixin.
 
 (* Mixin hierarchy 2: *)
@@ -646,9 +669,8 @@ Module finite_bits (BT : finite_bitmask_type_intf).
   Lemma to_bits_union xs ys :
     to_bits (xs ∪ ys) = N.lor (to_bits xs) (to_bits ys).
   Proof.
-    pattern xs. apply set_ind_L. { by rewrite to_bits_empty !left_id_L. }
-    move=> x X Hni IH.
-    by rewrite -(assoc_L _ {[x]}) !to_bits_union_singleton IH assoc_L.
+    induction xs as [|??? IHxs] using set_ind_L. { by rewrite to_bits_empty !left_id_L. }
+    by rewrite -(assoc_L _ {[x]}) !to_bits_union_singleton IHxs assoc_L.
   Qed.
 
   (* TODO move [setbit], and these lemmas, with [BT.testbit]. *)
@@ -711,25 +733,6 @@ Module finite_bits (BT : finite_bitmask_type_intf).
   Lemma elem_of_masked mask r rs :
     r ∈ rs → r ∈ of_bits mask → r ∈ masked mask rs.
   Proof. intros. exact /elem_of_intersection. Qed.
-End finite_bits.
-
-Module simple_finite_bits (BT : simple_finite_bitmask_type_intf).
-  Include finite_bits BT.
-
-  Lemma of_bits_max : of_bits BT.all_bits = ⊤.
-  Proof. by rewrite /of_bits BT.to_list_max. Qed.
-
-  Lemma masked_max rights :
-    masked BT.all_bits rights = rights.
-  Proof. rewrite /masked of_bits_max. set_solver. Qed.
-
-  Lemma masked_opt_max rights (Hrights : rights ≠ ∅) :
-    masked_opt BT.all_bits rights = Some rights.
-  Proof. by rewrite /masked_opt masked_max option_guard_True. Qed.
-
-  Lemma N_testbit_all_bits i :
-    N.testbit BT.all_bits i = bool_decide (i < card_N BT.t).
-  Proof. apply N_ones_spec. Qed.
 
   Lemma N_testbit_to_bits rs i :
     N.testbit (to_bits rs) i =
@@ -752,6 +755,42 @@ Module simple_finite_bits (BT : simple_finite_bitmask_type_intf).
     case: Hin Hr' => [-> //|Hin Hr']. apply /Hdec. by exists r'.
   Qed.
 
+  Lemma N_testbit_mask_top_to_bit i :
+    N.testbit mask_top i = bool_decide (∃ r : BT.t, BT.to_bit r = i).
+  Proof.
+    rewrite /mask_top /to_bits N_testbit_to_bits.
+    apply bool_decide_ext. set_solver.
+  Qed.
+
+  Lemma to_of_bits `{!Inj eq eq BT.to_bit} mask :
+    to_bits (of_bits mask) = N.land mask_top mask.
+  Proof.
+    apply N.bits_inj_iff => i.
+    rewrite N.land_spec N_testbit_mask_top_to_bit N_testbit_to_bits.
+    rewrite -(bool_decide_Is_true (N.testbit _ _)) -bool_decide_and /is_Some.
+    apply bool_decide_ext.
+    set_solver.
+  Qed.
+End finite_bits.
+
+Module simple_finite_bits (BT : simple_finite_bitmask_type_intf).
+  Include finite_bits BT.
+
+  Lemma of_bits_max : of_bits BT.all_bits = ⊤.
+  Proof. by rewrite /of_bits BT.to_list_max. Qed.
+
+  Lemma masked_max rights :
+    masked BT.all_bits rights = rights.
+  Proof. rewrite /masked of_bits_max. set_solver. Qed.
+
+  Lemma masked_opt_max rights (Hrights : rights ≠ ∅) :
+    masked_opt BT.all_bits rights = Some rights.
+  Proof. by rewrite /masked_opt masked_max option_guard_True. Qed.
+
+  Lemma N_testbit_all_bits i :
+    N.testbit BT.all_bits i = bool_decide (i < card_N BT.t).
+  Proof. apply N_ones_spec. Qed.
+
   Lemma N_testbit_to_bits' rs i :
     N.testbit (to_bits rs) i =
     bool_decide (∃ r, BT.of_bit i = Some r ∧ r ∈ rs).
@@ -762,22 +801,12 @@ Module simple_finite_bits (BT : simple_finite_bitmask_type_intf).
     by rewrite (BT.to_of_bit _ _ Heq).
   Qed.
 
-  Lemma N_testbit_mask_top_to_bit i :
-    N.testbit mask_top i = bool_decide (∃ r : BT.t, BT.to_bit r = i).
-  Proof.
-    rewrite /mask_top /to_bits N_testbit_to_bits.
-    apply bool_decide_ext. set_solver.
-  Qed.
-
   Lemma N_testbit_mask_top_of_bit i :
     N.testbit mask_top i = bool_decide (is_Some (BT.of_bit i)).
   Proof.
     rewrite N_testbit_mask_top_to_bit /is_Some.
-    apply bool_decide_ext; split; intros [r H]; exists r; subst.
-    { exact: BT.of_to_bit. }
-    exact: BT.to_of_N.
+    apply bool_decide_ext. set_solver.
   Qed.
-
 
   Lemma all_bits_mask_top : BT.all_bits = mask_top.
   Proof.
@@ -790,10 +819,4 @@ Module simple_finite_bits (BT : simple_finite_bitmask_type_intf).
     }
     by intros (x & Hdec%finite_decode_N_lt).
   Qed.
-
-  (* Conjectures: *)
-  Lemma to_of_bits `{Hinj : !Inj eq eq BT.to_bit} mask :
-    to_bits (of_bits mask) = N.land mask_top mask.
-  Abort.
-
 End simple_finite_bits.
