@@ -289,6 +289,9 @@ printSimpleContext(const DeclContext *dc, CoqPrinter &print,
             print.output() << sout;
             return 1;
         }
+    } else if (auto ls = dyn_cast<LinkageSpecDecl>(dc)) {
+        auto parent = ls->getDeclContext();
+        return printSimpleContext(parent, print, cprint, mangle, remaining);
     } else {
         logging::fatal() << "Unknown type (" << dc->getDeclKindName()
                          << ") in [printSimpleContext]\n";
