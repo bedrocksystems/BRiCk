@@ -51,6 +51,7 @@ theories/prelude/list.v
 theories/prelude/list_numbers.v
 
 theories/prelude/bool.v
+theories/prelude/fin_maps.v
 theories/prelude/fin_sets.v
 theories/prelude/listset_nodup.v
 theories/prelude/prelude.v
