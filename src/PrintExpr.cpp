@@ -582,6 +582,15 @@ public:
         }
     }
 
+    void VisitFloatingLiteral(const FloatingLiteral* lit, CoqPrinter& print,
+                              ClangPrinter& cprint, const ASTContext&,
+                              OpaqueNames&) {
+        print.ctor("Eunsupported") << fmt::nbsp << "float: \"";
+        lit->getValue().print(print.output().nobreak());
+        print.output() << "\"";
+        done(lit, print, cprint);
+    }
+
     void VisitMemberExpr(const MemberExpr* expr, CoqPrinter& print,
                          ClangPrinter& cprint, const ASTContext&,
                          OpaqueNames& li) {
