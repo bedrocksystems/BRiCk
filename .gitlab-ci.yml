@@ -73,7 +73,7 @@ stages:
   script:
     - mkdir -p build
     - echo "fmdeps/cpp2v-core:$(git rev-parse HEAD)" | tee build/gitshas.txt
-    - cd build; CC=`llvm-config-${LLVM_MAJ_VER} --bindir`/clang CXX=`llvm-config-${LLVM_MAJ_VER} --bindir`/clang++ cmake -DLLVM_CONFIG=`which llvm-config-${LLVM_MAJ_VER}` ../; cd ..
+    - cd build; CC=`llvm-config-${LLVM_MAJ_VER} --bindir`/clang CXX=`llvm-config-${LLVM_MAJ_VER} --bindir`/clang++ cmake ../; cd ..
     - make -j ${NJOBS} cpp2v
     - make -j ${NJOBS} coq
     - rm -f build/bedrock
