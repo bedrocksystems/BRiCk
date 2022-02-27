@@ -110,6 +110,7 @@ Variant Cast : Set :=
 | Cbase2derived
 | Cintegral
 | Cint2bool
+| Cfloat2int
 | Cnull2ptr
 | Cbuiltin2function
 | Cconstructorconversion
