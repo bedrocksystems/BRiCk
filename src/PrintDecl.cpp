@@ -22,6 +22,8 @@ getCallingConv(const Type *type) {
         return ft->getCallConv();
     } else if (auto at = dyn_cast_or_null<AttributedType>(type)) {
         return getCallingConv(at->getModifiedType().getTypePtr());
+    } else if (auto toe = dyn_cast_or_null<TypeOfExprType>(type)) {
+        return getCallingConv(toe->desugar().getTypePtr());
     } else {
         type->dump();
         assert(false && "FunctionDecl type is not FunctionType");
