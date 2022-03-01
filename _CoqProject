@@ -161,15 +161,18 @@ theories/lang/cpp/logic/vbyte.v
 theories/lang/cpp/logic.v
 
 # Specifications
-theories/lang/cpp/specs/with_pre_post.v
+theories/lang/cpp/specs/spec_notations.v
+theories/lang/cpp/specs/classy.v
+theories/lang/cpp/specs/arg_errors.v
+theories/lang/cpp/specs/wp_spec_compat.v
 theories/lang/cpp/specs/functions.v
+theories/lang/cpp/specs/cpp_specs.v
 theories/lang/cpp/specs.v
 
 # Notations
 theories/lang/cpp/heap_notations.v
 theories/lang/cpp/primitives.v
 theories/lang/cpp/specs/elaborate.v
-theories/lang/cpp/specs/spec_notations.v
 
 # Notations for cpp2v
 theories/lang/cpp/parser.v
