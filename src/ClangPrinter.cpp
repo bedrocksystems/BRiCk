@@ -370,7 +370,7 @@ ClangPrinter::printObjName(const ValueDecl *decl, CoqPrinter &print, bool raw) {
         print.output() << "\"";
     } else {
         print.output() << "\"";
-        decl->printQualifiedName(print.output().nobreak());
+        decl->printName(print.output().nobreak());
         print.output() << "\"";
     }
 }
