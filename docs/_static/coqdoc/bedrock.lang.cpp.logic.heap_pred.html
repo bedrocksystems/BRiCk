@@ -457,6 +457,13 @@ This seems odd, but it's relevant to proof that <span class="inlinecode"><a clas
 &nbsp;&nbsp;<span class="id" title="keyword">Qed</span>.<br/>
 
 <br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <a id="null_validR" class="idref" href="#null_validR"><span class="id" title="lemma">null_validR</span></a> : <a class="idref" href="bedrock.lang.cpp.logic.heap_pred.html#is_null"><span class="id" title="definition">is_null</span></a> <a class="idref" href="bedrock.lang.bi.prelude.html#0582ac70d883d93be3a66ac50f1c9225"><span class="id" title="notation">|--</span></a> <a class="idref" href="bedrock.lang.cpp.logic.heap_pred.html#validR"><span class="id" title="definition">validR</span></a>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Proof</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">rewrite</span> <a class="idref" href="bedrock.lang.cpp.logic.heap_pred.html#is_null_eq"><span class="id" title="definition">is_null_eq</span></a> /<a class="idref" href="bedrock.lang.cpp.logic.heap_pred.html#is_null_def"><span class="id" title="definition">is_null_def</span></a> <a class="idref" href="bedrock.lang.cpp.logic.heap_pred.html#validR_eq"><span class="id" title="definition">validR_eq</span></a> /<a class="idref" href="bedrock.lang.cpp.logic.heap_pred.html#validR_def"><span class="id" title="definition">validR_def</span></a>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">constructor</span> =&gt; <span class="id" title="var">p</span> /=. <span class="id" title="var">iIntros</span> "-&gt;". <span class="id" title="var">iApply</span> <a class="idref" href="bedrock.lang.cpp.logic.pred.html#L.valid_ptr_nullptr"><span class="id" title="axiom">valid_ptr_nullptr</span></a>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Qed</span>.<br/>
+
+<br/>
 </div>
 
 <div class="doc">
@@ -581,6 +588,11 @@ Observing <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.model
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">apply</span> <a class="idref" href="bedrock.lang.bi.observe.html#monPred_observe_only_provable"><span class="id" title="lemma">monPred_observe_only_provable</span></a> =&gt; <span class="id" title="var">p</span>.<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">rewrite</span> <a class="idref" href="bedrock.lang.cpp.logic.heap_pred.html#monPred_at_type_ptrR"><span class="id" title="lemma">monPred_at_type_ptrR</span></a>. <span class="id" title="tactic">apply</span> <span class="id" title="var">_</span>.<br/>
 &nbsp;&nbsp;<span class="id" title="keyword">Qed</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;#[<span class="id" title="var">global</span>]<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Instance</span> <a id="null_valid_observe" class="idref" href="#null_valid_observe"><span class="id" title="instance">null_valid_observe</span></a> : <a class="idref" href="bedrock.lang.bi.observe.html#Observe"><span class="id" title="class">Observe</span></a> <a class="idref" href="bedrock.lang.cpp.logic.heap_pred.html#validR"><span class="id" title="definition">validR</span></a> <a class="idref" href="bedrock.lang.cpp.logic.heap_pred.html#is_null"><span class="id" title="definition">is_null</span></a>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Proof</span>. <span class="id" title="tactic">rewrite</span> -<a class="idref" href="bedrock.lang.cpp.logic.heap_pred.html#null_validR"><span class="id" title="lemma">null_validR</span></a>. <span class="id" title="tactic">refine</span> <span class="id" title="var">_</span>. <span class="id" title="keyword">Qed</span>.<br/>
 
 <br/>
 &nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <a id="off_validR" class="idref" href="#off_validR"><span class="id" title="lemma">off_validR</span></a> <a id="o:191" class="idref" href="#o:191"><span class="id" title="binder">o</span></a><br/>
