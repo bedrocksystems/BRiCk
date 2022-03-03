@@ -333,6 +333,12 @@ Section with_cpp.
     by iIntros "->" (? <-%ptr_rel_elim) "%".
   Qed.
 
+  Lemma null_validR : is_null |-- validR.
+  Proof.
+    rewrite is_null_eq /is_null_def validR_eq /validR_def.
+    constructor => p /=. iIntros "->". iApply valid_ptr_nullptr.
+  Qed.
+
   (** [blockR sz q] represents [q] ownership of a contiguous chunk of
       [sz] bytes without any C++ structure on top of it. *)
   Definition blockR_def {σ} sz (q : Qp) : Rep :=
@@ -434,6 +440,10 @@ Section with_cpp.
     apply monPred_observe_only_provable => p.
     rewrite monPred_at_type_ptrR. apply _.
   Qed.
+
+  #[global]
+  Instance null_valid_observe : Observe validR is_null.
+  Proof. rewrite -null_validR. refine _. Qed.
 
   Lemma off_validR o
     (Hv : ∀ p, valid_ptr (p .., o) |-- valid_ptr p) :
