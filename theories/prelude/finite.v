@@ -529,8 +529,8 @@ Module Type finite_bitmask_type_mixin (Import F : finite_type) (Import B : bitma
       testbit (setbit x mask) y =
       bool_decide (x = y) || testbit mask y.
     Proof.
-      rewrite /testbit /setbit N_setbit_bool_decide.
-      by rewrite (bool_decide_ext _ _ (inj_iff to_bit _ _)).
+      rewrite /testbit /setbit N_setbit_bool_decide. f_equiv.
+      apply bool_decide_ext, (inj_iff _).
     Qed.
 
     Lemma filter_setbit (x y z : t) mask :
@@ -740,7 +740,7 @@ Module finite_bits (BT : finite_bitmask_type_intf).
   Proof.
     induction rs as [|r rs Hni IHrs] using set_ind_L. {
       rewrite to_bits_empty N.bits_0 bool_decide_eq_false_2 //.
-      intros (r & _ & ?). set_solver. }
+      set_solver. }
     rewrite to_bits_union_singleton N.lor_spec (comm_L orb) to_bits_singleton.
     rewrite {}IHrs.
     case: (bool_decide_reflect (∃ r, _ ∧ r ∈ rs)) => Hdec /=. {
@@ -768,8 +768,7 @@ Module finite_bits (BT : finite_bitmask_type_intf).
     apply N.bits_inj_iff => i.
     rewrite N.land_spec N_testbit_mask_top_to_bit N_testbit_to_bits.
     rewrite -(bool_decide_Is_true (N.testbit _ _)) -bool_decide_and /is_Some.
-    apply bool_decide_ext.
-    set_solver.
+    apply bool_decide_ext. set_solver.
   Qed.
 End finite_bits.
 
