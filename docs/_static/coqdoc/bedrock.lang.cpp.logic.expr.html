@@ -46,9 +46,9 @@
 </div>
 
 <div class="doc">
-<a id="lab99"></a><h1 class="section">Semantics of expressions</h1>
+<a id="lab100"></a><h1 class="section">Semantics of expressions</h1>
 
-<a id="lab100"></a><h1 class="section">(expressed in weakest pre-condition style)</h1>
+<a id="lab101"></a><h1 class="section">(expressed in weakest pre-condition style)</h1>
 
  
 </div>
@@ -79,7 +79,7 @@
 </div>
 
 <div class="doc">
-<a id="lab101"></a><h1 class="section">Weakest pre-condition for expressions</h1>
+<a id="lab102"></a><h1 class="section">Weakest pre-condition for expressions</h1>
 
 
 <div class="paragraph"> </div>
@@ -128,7 +128,7 @@
 </div>
 
 <div class="doc">
-<a id="lab102"></a><h1 class="section">References</h1>
+<a id="lab103"></a><h1 class="section">References</h1>
 
 
 <div class="paragraph"> </div>
@@ -177,7 +177,7 @@
 </div>
 
 <div class="doc">
-<a id="lab103"></a><h1 class="section">String Literals</h1>
+<a id="lab104"></a><h1 class="section">String Literals</h1>
 
 
 <div class="paragraph"> </div>
@@ -352,7 +352,7 @@
 </div>
 
 <div class="doc">
-<a id="lab104"></a><h1 class="section">Unary Operators</h1>
+<a id="lab105"></a><h1 class="section">Unary Operators</h1>
 
         NOTE the following axioms assume that <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.semantics.operator.html#OPERATOR_INTF_FUNCTOR.eval_unop"><span class="id" title="axiom">eval_unop</span></a></span> is deterministic when it is defined
      
@@ -421,7 +421,7 @@
 </div>
 
 <div class="doc">
-<a id="lab105"></a><h1 class="section">Binary Operators</h1>
+<a id="lab106"></a><h1 class="section">Binary Operators</h1>
 
 </div>
 <div class="code">
@@ -528,7 +528,7 @@ short-circuting operators
 </div>
 
 <div class="doc">
-<a id="lab106"></a><h1 class="section">Casts</h1>
+<a id="lab107"></a><h1 class="section">Casts</h1>
 
         Casts apply exclusively to primitive types, all other casts in C++
         are represented as overloaded functions.
@@ -739,7 +739,7 @@ https://eel.is/c++draft/expr.reinterpret.cast
 
 <div class="doc">
 You can cast anything to void, but an expression of type
-<a id="lab107"></a><h1 class="section"><span class="inlinecode"><span class="id" title="var">void</span></span> can only be a pr_value</h1>
+<a id="lab108"></a><h1 class="section"><span class="inlinecode"><span class="id" title="var">void</span></span> can only be a pr_value</h1>
 
 </div>
 <div class="code">
@@ -807,16 +807,16 @@ You can cast anything to void, but an expression of type
 
 <div class="doc">
 <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.syntax.expr.html#Cderived2base"><span class="id" title="constructor">Cderived2base</span></a></span> casts from a derived class to a base
-<a id="lab108"></a><h1 class="section">class. Casting is only permitted on pointers and references</h1>
+<a id="lab109"></a><h1 class="section">class. Casting is only permitted on pointers and references</h1>
 
-<a id="lab109"></a><h1 class="section">- references occur with lvalues and xvalues</h1>
+<a id="lab110"></a><h1 class="section">- references occur with lvalues and xvalues</h1>
 
-<a id="lab110"></a><h1 class="section">- pointers occur with prvalues</h1>
+<a id="lab111"></a><h1 class="section">- pointers occur with prvalues</h1>
 
      *
-<a id="lab111"></a><h1 class="section">TODO <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.specs.functions.html#_base"><span class="id" title="abbreviation">_base</span></a></span> only supports casting up a single level of the</h1>
+<a id="lab112"></a><h1 class="section">TODO <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.specs.functions.html#_base"><span class="id" title="abbreviation">_base</span></a></span> only supports casting up a single level of the</h1>
 
-<a id="lab112"></a><h1 class="section">heirarchy at a time, so we need to construct a full path.</h1>
+<a id="lab113"></a><h1 class="section">heirarchy at a time, so we need to construct a full path.</h1>
 
      
 </div>
@@ -899,11 +899,11 @@ You can cast anything to void, but an expression of type
 
 <div class="doc">
 the ternary operator <span class="inlinecode"><span class="id" title="var">_</span></span> <span class="inlinecode">?</span> <span class="inlinecode"><span class="id" title="var">_</span></span> <span class="inlinecode">:</span> <span class="inlinecode"><span class="id" title="var">_</span></span> has the value category
-<a id="lab113"></a><h1 class="section">of the "then" and "else" expressions (which must be the same).</h1>
+<a id="lab114"></a><h1 class="section">of the "then" and "else" expressions (which must be the same).</h1>
 
-<a id="lab114"></a><h1 class="section">We express this with 4 rules, one for each of <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.logic.expr.html#Expr.wp_lval"><span class="id" title="abbreviation">wp_lval</span></a></span>,</h1>
+<a id="lab115"></a><h1 class="section">We express this with 4 rules, one for each of <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.logic.expr.html#Expr.wp_lval"><span class="id" title="abbreviation">wp_lval</span></a></span>,</h1>
 
-<a id="lab115"></a><h1 class="section"><span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.logic.atomics.html#wp_operand"><span class="id" title="abbreviation">wp_operand</span></a></span>, <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.logic.expr.html#Expr.wp_xval"><span class="id" title="abbreviation">wp_xval</span></a></span>, and <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.logic.new_delete.html#Expr__newdelete.wp_init"><span class="id" title="abbreviation">wp_init</span></a></span>.</h1>
+<a id="lab116"></a><h1 class="section"><span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.logic.atomics.html#wp_operand"><span class="id" title="abbreviation">wp_operand</span></a></span>, <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.logic.expr.html#Expr.wp_xval"><span class="id" title="abbreviation">wp_xval</span></a></span>, and <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.logic.new_delete.html#Expr__newdelete.wp_init"><span class="id" title="abbreviation">wp_init</span></a></span>.</h1>
 
      
 </div>
@@ -1065,7 +1065,7 @@ function calls
 </div>
 
 <div class="doc">
-<a id="lab116"></a><h1 class="section">Member calls</h1>
+<a id="lab117"></a><h1 class="section">Member calls</h1>
 
 </div>
 <div class="code">
