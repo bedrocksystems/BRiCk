@@ -82,8 +82,6 @@ Section big_sepL.
   Proof. apply big_opL_gen; apply _. Qed.
 End big_sepL.
 
-
-
 Lemma big_sepL_mono_elem {PROP : bi} {A : Type} (Φ Ψ : A → PROP) (l : list A):
   (∀ (y : A),  y ∈ l -> Φ y  ⊢ Ψ y)
   → ([∗ list] y ∈ l, Φ y) ⊢ ([∗ list] y ∈ l, Ψ y).
@@ -93,24 +91,6 @@ Proof using.
   intros.
   apply Hin.
   eauto using elem_of_list_lookup_2.
-Qed.
-
-Lemma list_difference_id {T} {dec: EqDecision T} (l: list T) (x: T) :
-  (¬ x ∈ l) ->
-  list_difference l [x] = l.
-Proof using.
-  intros Hin.
-  induction l; [reflexivity | ].
-  simpl in *.
-  setoid_rewrite decide_False; eauto;[ | intros xx].
-  {
-    f_equal. apply IHl. rewrite -> elem_of_cons in Hin. tauto.
-  }
-  {
-    rewrite -> elem_of_cons in Hin.
-    inversion xx; subst; try tauto.
-    rewrite -> @elem_of_nil in *. tauto.
-  }
 Qed.
 
 Lemma big_sepL_difference_one {PROP: bi} {A} {eqd: EqDecision A} (f  : A -> PROP) (l: list A) (x: A):
