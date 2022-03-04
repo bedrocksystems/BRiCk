@@ -56,3 +56,21 @@ Proof. by case: b. Qed.
 #[global] Instance orb_right_id : RightId (=) false orb := orb_false_r.
 #[global] Instance orb_left_absorb : LeftAbsorb (=) true orb := orb_true_l.
 #[global] Instance orb_right_absorb : RightAbsorb (=) true orb := orb_true_r.
+
+#[global] Instance set_unfold_negb (b : bool) P :
+  SetUnfold b P → SetUnfold (negb b) (¬ P).
+Proof. constructor. rewrite negb_True. set_solver. Qed.
+
+#[global] Instance set_unfold_andb (b1 b2 : bool) P Q :
+  SetUnfold b1 P → SetUnfold b2 Q →
+  SetUnfold (b1 && b2) (P ∧ Q).
+Proof. constructor. rewrite andb_True. set_solver. Qed.
+
+#[global] Instance set_unfold_orb (b1 b2 : bool) P Q :
+  SetUnfold b1 P → SetUnfold b2 Q →
+  SetUnfold (b1 || b2) (P ∨ Q).
+Proof. constructor. rewrite orb_True. set_solver. Qed.
+
+#[global] Instance set_unfold_bool_decide (P Q : Prop) `{!Decision P} :
+  SetUnfold P Q → SetUnfold (bool_decide P) Q.
+Proof. constructor. rewrite bool_decide_spec. set_solver. Qed.

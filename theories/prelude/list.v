@@ -24,6 +24,9 @@ Export bedrock.prelude.base.
 
 (** * Small extensions to [stdpp.list]. *)
 
+(** ** Teach [set_solver] to reason about more list operations, similarly to set
+operations. *)
+
 (* Upstreamed in https://gitlab.mpi-sws.org/iris/stdpp/-/merge_requests/366 *)
 #[global] Instance set_unfold_list_bind {A B} (f : A → list B) l P Q y :
   (∀ x, SetUnfoldElemOf x l (P x)) → (∀ x, SetUnfoldElemOf y (f x) (Q x)) →
@@ -36,9 +39,57 @@ Proof. constructor. rewrite elem_of_list_bind. naive_solver. Qed.
     (xs : list A) Q x :
   SetUnfoldElemOf x xs Q →
   SetUnfoldElemOf x (filter P xs) (P x ∧ Q).
-Proof.
-  intros ?; constructor. by rewrite elem_of_list_filter (set_unfold_elem_of _ _ Q).
-Qed.
+Proof. constructor. rewrite elem_of_list_filter. set_solver. Qed.
+
+#[global] Instance set_unfold_list_difference `{EqDecision A} (x : A) l k P Q :
+  SetUnfoldElemOf x l P → SetUnfoldElemOf x k Q →
+  SetUnfoldElemOf x (list_difference l k) (P ∧ ¬ Q).
+Proof. constructor. rewrite elem_of_list_difference. set_solver. Qed.
+
+#[global] Instance set_unfold_list_intersection `{EqDecision A} (x : A) l k P Q :
+  SetUnfoldElemOf x l P → SetUnfoldElemOf x k Q →
+  SetUnfoldElemOf x (list_intersection l k) (P ∧ Q).
+Proof. constructor. rewrite elem_of_list_intersection. set_solver. Qed.
+
+#[global] Instance set_unfold_list_union `{EqDecision A} (x : A) l k P Q :
+  SetUnfoldElemOf x l P → SetUnfoldElemOf x k Q →
+  SetUnfoldElemOf x (list_union l k) (P ∨ Q).
+Proof. constructor. rewrite elem_of_list_union. set_solver. Qed.
+
+#[global] Instance set_unfold_list_intersection_with `{EqDecision A} (y : A) l k P Q R f :
+  (∀ x, SetUnfoldElemOf x l (P x)) → (∀ x, SetUnfoldElemOf x k (Q x)) →
+  (∀ x1 x2, SetUnfold (f x1 x2 = Some y) (R x1 x2)) →
+  SetUnfoldElemOf y (list_intersection_with f l k) (∃ x1 x2 : A, P x1 ∧ Q x2 ∧ R x1 x2).
+Proof. constructor. rewrite elem_of_list_intersection_with. set_solver. Qed.
+
+(* [list_union_with] does not exist. *)
+
+#[global] Instance set_unfold_in {A} (x : A) l P :
+  SetUnfoldElemOf x l P → SetUnfold (In x l) P.
+Proof. constructor. rewrite -elem_of_list_In. set_solver. Qed.
+
+#[global] Instance set_unfold_list_ret {A} (x y : A) P :
+  SetUnfold (x = y) P →
+  SetUnfoldElemOf x (mret (M := list) y) P.
+Proof. constructor. rewrite elem_of_list_ret. set_solver. Qed.
+
+#[global] Instance set_unfold_list_mjoin {A} (x : A) (xss : list (list A)) P Q :
+  (∀ xs, SetUnfoldElemOf x xs (P xs)) → (∀ xs, SetUnfoldElemOf xs xss (Q xs)) →
+  SetUnfoldElemOf x (mjoin (M := list) xss) (∃ xs, P xs ∧ Q xs).
+Proof. constructor. rewrite elem_of_list_join. set_solver. Qed.
+
+#[global] Instance set_unfold_list_omap {A B} (y : B) xs (f : A → option B) P Q :
+  (∀ x, SetUnfoldElemOf x xs (P x)) → (∀ x, SetUnfold (f x = Some y) (Q x)) →
+  SetUnfoldElemOf y (omap (M := list) f xs) (∃ x : A, P x ∧ Q x).
+Proof. constructor. rewrite elem_of_list_omap. set_solver. Qed.
+
+(*
+Outside this theory remain [elem_of_list_split*], [elem_of_list_lookup] and
+[elem_of_list_lookup_total].
+
+Of those, [elem_of_list_lookup] seems interesting but might be a breaking
+change.
+*)
 
 Lemma foldr_cons {A B} (f : A -> B -> B) x y ys : foldr f x (y :: ys) = f y (foldr f x ys).
 Proof. done. Qed.
