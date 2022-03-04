@@ -225,3 +225,39 @@ Proof.
     [apply NoDup_singleton|done|..] => z.
   set_solver.
 Qed.
+
+Lemma not_elem_of_list_lookup {A} {i} {xs : list A} {x} y :
+  xs !! i = Some x → y ∉ xs → x ≠ y.
+Proof. intros Hl Hni ->. eapply Hni, elem_of_list_lookup_2, Hl. Qed.
+
+Lemma list_difference_delete `{EqDecision A} i (x : A) (xs : list A) :
+  xs !! i = Some x →
+  NoDup xs -> (* Needed because [list_difference xs [x]] removes all occurrences of [x]. *)
+  list_difference xs [x] = delete i xs.
+Proof.
+  elim: xs i => [//|y xs /= IHxs] [[->] |i /= Hl] /NoDup_cons [Hni HnoDup] /=. {
+    by rewrite decide_True ?list_difference_singleton_not_in ?elem_of_list_singleton.
+  }
+  rewrite decide_False ?(IHxs i) // elem_of_list_singleton.
+  by have := not_elem_of_list_lookup _ Hl Hni.
+Qed.
+
+Lemma list_remove_delete `{EqDecision A} i (x : A) (xs : list A) :
+  xs !! i = Some x →
+  NoDup xs -> (* Needed because [i] might not be the first occurrence. *)
+  list_remove x xs = Some (delete i xs).
+Proof.
+  elim: xs i => /= [|y xs IHxs] // [/= [->]|i /= Hl] //= /NoDup_cons [Hni HnoDup].
+  { by rewrite decide_True. }
+  rewrite decide_False ?(IHxs i Hl) //.
+  by have := not_elem_of_list_lookup _ Hl Hni.
+Qed.
+
+Lemma list_difference_remove `{EqDecision A} (x : A) (xs : list A) :
+  x ∈ xs →
+  NoDup xs ->
+  list_remove x xs = Some (list_difference xs [x]).
+Proof.
+  intros [i Hl]%elem_of_list_lookup_1 HnoDup.
+  by rewrite !(list_remove_delete i, list_difference_delete i).
+Qed.
