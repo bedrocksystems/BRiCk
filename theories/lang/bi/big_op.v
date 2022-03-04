@@ -52,7 +52,7 @@ Section big_sepL.
   Qed.
 
   (** In contrast with [big_sepL_proper], the lists need not be equal. *)
-  Lemma big_sepL_gen_proper `{!Equiv A} f g l1 l2 :
+  Lemma big_sepL_gen_proper f g l1 l2 :
     length l1 = length l2 →
     (∀ k y1 y2, l1 !! k = Some y1 → l2 !! k = Some y2 → f k y1 ≡ g k y2) →
     ([∗ list] k↦y ∈ l1, f k y)%I ≡ ([∗ list] k↦y ∈ l2, g k y)%I.
