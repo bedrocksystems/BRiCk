@@ -516,6 +516,10 @@ Module Type finite_bitmask_type_mixin (Import F : finite_type) (Import B : bitma
   Definition setbit (b : t) (n : N) : N := N.setbit n (to_bit b).
   Notation setbit_alt b n := (N.lor (to_bitmask b) n).
 
+  (* Prevent [set_solver] from exposing the implementation. *)
+  #[global] Typeclasses Opaque setbit.
+  #[global] Arguments setbit : simpl never.
+
   Lemma setbit_0 x : setbit x 0 = to_bitmask x.
   Proof. by rewrite to_bitmask_setbit. Qed.
   Lemma setbit_is_alt b n : setbit b n = setbit_alt b n.
