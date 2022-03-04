@@ -578,6 +578,9 @@ Module finite_bits (BT : finite_bitmask_type_intf).
   Definition t := gset BT.t.
   #[global] Instance top_t : Top t := fin_to_set BT.t (C := t).
 
+  #[global] Instance topset_t : TopSet BT.t t.
+  Proof. split. apply _. apply elem_of_fin_to_set. Qed.
+
   Implicit Type (x : BT.t) (m n : N).
   (*
   [to_bits] and [of_bits] implement a bitset encoding of [t] into N, given
