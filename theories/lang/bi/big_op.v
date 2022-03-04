@@ -65,6 +65,24 @@ Section big_sepL.
     - done.
   Qed.
 
+  (** Unlike [big_sepL_delete] and [big_sepL_delete'], this one uses [delete],
+  but is restricted to comprehensions that do not use the list index.
+  Unlike [big_sepL_difference_singleton], this works on lists with duplicates.
+  TODO: This name would make more sense if the upstream lemmas were renamed, say,
+  into [big_sepL_delete_{if,ne}].
+  *)
+  Lemma big_sepL_delete_delete xs i x (f : A → PROP)
+    (Hl : xs !! i = Some x) :
+    ([∗ list] k ∈ xs, f k) ⊣⊢ f x ∗ [∗ list] k ∈ delete i xs, f k.
+  Proof.
+    rewrite big_sepL_delete; last exact: Hl. f_equiv.
+    elim: xs i Hl => [//|x' xs IHxs] [|i] /= Hl. {
+      rewrite left_id. by apply big_sepL_proper.
+    }
+    f_equiv. rewrite -(IHxs i Hl). apply big_sepL_proper => k y Hl'.
+    rewrite (decide_ext (S k = S i) (k = i)) //. lia.
+  Qed.
+
   (** In contrast with [big_sepL_timeless], [big_sepL_persistent], and
       [big_sepL_affine], the following offer [xs !! k = Some x] in
       their premisses. *)
@@ -85,39 +103,18 @@ End big_sepL.
 Lemma big_sepL_mono_elem {PROP : bi} {A : Type} (Φ Ψ : A → PROP) (l : list A):
   (∀ (y : A),  y ∈ l -> Φ y  ⊢ Ψ y)
   → ([∗ list] y ∈ l, Φ y) ⊢ ([∗ list] y ∈ l, Ψ y).
-Proof using.
-  intros Hin.
-  apply big_sepL_mono.
-  intros.
-  apply Hin.
-  eauto using elem_of_list_lookup_2.
+Proof.
+  intros Hin. apply big_sepL_mono => k y Hl. eapply Hin, elem_of_list_lookup_2, Hl.
 Qed.
 
 Lemma big_sepL_difference_singleton {PROP : bi} `{EqDecision A} (x : A)
     (f : A -> PROP) (l : list A) :
   x ∈ l ->
   NoDup l ->
-  ([∗ list] i ∈ l, f i)%I ≡ ((f x) ∗ (([∗ list] id ∈ (list_difference l [x]), f id)))%I.
-Proof using.
-  induction l; intros Hin Hnd; [ inversion Hin |].
-  inversion Hnd; subst; clear Hnd.
-  unfold decide_rel. unfold elem_of_list_dec.
-  simpl.
-  case_decide.
-  {
-    rewrite -> @elem_of_list_singleton in *.
-    subst.
-    rewrite list_difference_id; auto.
-  }
-  {
-    inversion Hin; subst;
-      rewrite -> @elem_of_list_singleton in *; try tauto;[].
-    rewrite -> IHl; auto.
-    simpl.
-    do 2 rewrite assoc.
-    rewrite (comm _ (f a) (f x)).
-    reflexivity.
-  }
+  ([∗ list] i ∈ l, f i) ⊣⊢ f x ∗ [∗ list] id ∈ list_difference l [x], f id.
+Proof.
+  intros [j Hl]%elem_of_list_lookup_1 HnoDup.
+  by rewrite big_sepL_delete_delete // (list_difference_delete j).
 Qed.
 
 Lemma big_sepL_difference_two {PROP: bi} {A} {eqd: EqDecision A} (f  : A -> PROP) l x y:
@@ -126,17 +123,11 @@ Lemma big_sepL_difference_two {PROP: bi} {A} {eqd: EqDecision A} (f  : A -> PROP
   y ∈ l ->
   NoDup l -> (* we only need x to be not duplicated *)
   ([∗ list] id ∈ l, f id)%I ≡ (f x ∗ f y ∗ (([∗ list] id ∈ (list_difference l [x;y]), f id)))%I.
-Proof using.
-  clear.
+Proof.
   intros Hneq H1l H2l Hnd.
-  rewrite -> big_sepL_difference_singleton with (x:=x); eauto.
-  rewrite -> big_sepL_difference_singleton with (x:=y); eauto using NoDup_list_difference;
-    [|rewrite elem_of_list_difference; split; set_solver].
-  f_equiv.
-  f_equiv.
-  change [x;y] with ([x]++[y]).
-  rewrite list_difference_app_r.
-  reflexivity.
+  rewrite (big_sepL_difference_singleton x) //.
+  rewrite (big_sepL_difference_singleton y); [| set_solver | exact: NoDup_list_difference].
+  by rewrite (list_difference_app_r l [x] [y]).
 Qed.
 
 #[deprecated(note="Use big_sepL_difference_singleton")]
