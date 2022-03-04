@@ -93,7 +93,8 @@ Proof using.
   eauto using elem_of_list_lookup_2.
 Qed.
 
-Lemma big_sepL_difference_one {PROP: bi} {A} {eqd: EqDecision A} (f  : A -> PROP) (l: list A) (x: A):
+Lemma big_sepL_difference_singleton {PROP : bi} `{EqDecision A} (x : A)
+    (f : A -> PROP) (l : list A) :
   x ∈ l ->
   NoDup l ->
   ([∗ list] i ∈ l, f i)%I ≡ ((f x) ∗ (([∗ list] id ∈ (list_difference l [x]), f id)))%I.
@@ -128,8 +129,8 @@ Lemma big_sepL_difference_two {PROP: bi} {A} {eqd: EqDecision A} (f  : A -> PROP
 Proof using.
   clear.
   intros Hneq H1l H2l Hnd.
-  rewrite -> big_sepL_difference_one with (x:=x); eauto.
-  rewrite -> big_sepL_difference_one with (x:=y); eauto using NoDup_list_difference;
+  rewrite -> big_sepL_difference_singleton with (x:=x); eauto.
+  rewrite -> big_sepL_difference_singleton with (x:=y); eauto using NoDup_list_difference;
     [|rewrite elem_of_list_difference; split; set_solver].
   f_equiv.
   f_equiv.
@@ -137,3 +138,6 @@ Proof using.
   rewrite list_difference_app_r.
   reflexivity.
 Qed.
+
+#[deprecated(note="Use big_sepL_difference_singleton")]
+Notation big_sepL_difference_one := big_sepL_difference_singleton (only parsing).
