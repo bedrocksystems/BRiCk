@@ -110,10 +110,7 @@ Section finite_preimage_set.
   #[global] Instance set_unfold_finite_preimage_set f a bs Q :
     SetUnfoldElemOf (f a) bs Q →
     SetUnfoldElemOf a (finite_preimage_set f bs) Q.
-  Proof.
-    constructor.
-    by rewrite elem_of_finite_preimage_set (set_unfold_elem_of (f a) bs Q).
-  Qed.
+  Proof. constructor. rewrite elem_of_finite_preimage_set. set_solver. Qed.
 
   Lemma finite_preimage_set_union f bs1 bs2 :
     finite_preimage_set f (bs1 ∪ bs2) ≡
@@ -424,6 +421,9 @@ Module Type finite_bitmask_type_mixin (Import F : finite_type) (Import B : bitma
   Definition testbit (mask : N) (x : t) : bool :=
     N.testbit mask (to_bit x).
 
+  Lemma testbit_0 x : testbit 0 x = false.
+  Proof. by rewrite /testbit N.bits_0. Qed.
+
   Lemma testbit_lor m1 m2 x :
     testbit (m1 `lor` m2) x =
     testbit m1 x || testbit m2 x.
@@ -434,13 +434,33 @@ Module Type finite_bitmask_type_mixin (Import F : finite_type) (Import B : bitma
     testbit m1 x && testbit m2 x.
   Proof. apply N.land_spec. Qed.
 
+  #[global] Instance set_unfold_testbit_lor m1 m2 x P Q :
+    SetUnfold (testbit m1 x) P →
+    SetUnfold (testbit m2 x) Q →
+    SetUnfold (testbit (m1 `lor` m2) x) (P ∨ Q).
+  Proof. constructor. rewrite testbit_lor. set_solver. Qed.
+
+  #[global] Instance set_unfold_testbit_land m1 m2 x P Q :
+    SetUnfold (testbit m1 x) P →
+    SetUnfold (testbit m2 x) Q →
+    SetUnfold (testbit (m1 `land` m2) x) (P ∧ Q).
+  Proof. constructor. rewrite testbit_land. set_solver. Qed.
+
   Definition filter (mask : N) (x : t) : list t :=
     if testbit mask x then [x] else [].
 
   Lemma elem_of_filter m (x y : t) :
     y ∈ filter m x ↔
-    y = x ∧ testbit m x.
+    x = y ∧ testbit m x.
   Proof. rewrite /filter; case_match; set_solver. Qed.
+
+  (* The high priority is important.
+  this is only a fallback after other instances apply. *)
+  #[global] Instance set_unfold_filter m x y P Q :
+    SetUnfold (x = y) P →
+    SetUnfold (testbit m x) Q →
+    SetUnfoldElemOf y (filter m x) (P ∧ Q) | 100.
+  Proof. constructor. rewrite elem_of_filter. set_solver. Qed.
 
   Lemma filter_0 x : filter 0 x = [].
   Proof. done. Qed.
@@ -448,44 +468,15 @@ Module Type finite_bitmask_type_mixin (Import F : finite_type) (Import B : bitma
   Lemma elem_of_filter_lor m1 m2 (x y : t) :
     y ∈ filter (m1 `lor` m2) x ↔
     y ∈ filter m1 x ∨ y ∈ filter m2 x.
-  Proof.
-    rewrite /filter testbit_lor.
-    case: (testbit m1 x) (testbit m2 x) => [|] [|] /=; set_solver.
-  Qed.
+  Proof. set_solver. Qed.
 
   Lemma elem_of_filter_land m1 m2 (x y : t) :
     y ∈ filter (m1 `land` m2) x ↔
     y ∈ filter m1 x ∧ y ∈ filter m2 x.
-  Proof.
-    rewrite /filter testbit_land.
-    case: (testbit m1 x) (testbit m2 x) => [|] [|] /=; set_solver.
-  Qed.
-
-  (* The high priority is important.
-  this is only a fallback after other instances apply. *)
-  #[global] Instance set_unfold_filter m x y :
-    SetUnfoldElemOf y (filter m x) (y = x ∧ testbit m x) | 100.
-  Proof. constructor. by rewrite elem_of_filter. Qed.
-
-  #[global] Instance set_unfold_filter_lor m1 m2 x y P Q :
-    SetUnfoldElemOf y (filter m1 x) P →
-    SetUnfoldElemOf y (filter m2 x) Q →
-    SetUnfoldElemOf y (filter (m1 `lor` m2) x) (P ∨ Q).
-  Proof.
-    constructor. rewrite elem_of_filter_lor.
-    by rewrite (set_unfold_elem_of _ _ P) (set_unfold_elem_of _ _ Q).
-  Qed.
-
-  #[global] Instance set_unfold_filter_land m1 m2 x y P Q :
-    SetUnfoldElemOf y (filter m1 x) P →
-    SetUnfoldElemOf y (filter m2 x) Q →
-    SetUnfoldElemOf y (filter (m1 `land` m2) x) (P ∧ Q).
-  Proof.
-    constructor. rewrite elem_of_filter_land.
-    by rewrite (set_unfold_elem_of _ _ P) (set_unfold_elem_of _ _ Q).
-  Qed.
+  Proof. set_solver. Qed.
 
   #[global] Typeclasses Opaque filter.
+  #[global] Arguments filter : simpl never.
 
   (** Technically redundant, but a leaf, and it cleans up [set_unfold] output. *)
   #[global] Instance set_unfold_filter_0 m x y :
@@ -516,6 +507,10 @@ Module Type finite_bitmask_type_mixin (Import F : finite_type) (Import B : bitma
   Definition setbit (b : t) (n : N) : N := N.setbit n (to_bit b).
   Notation setbit_alt b n := (N.lor (to_bitmask b) n).
 
+  (* Prevent [set_solver] from exposing the implementation. *)
+  #[global] Typeclasses Opaque setbit.
+  #[global] Arguments setbit : simpl never.
+
   Lemma setbit_0 x : setbit x 0 = to_bitmask x.
   Proof. by rewrite to_bitmask_setbit. Qed.
   Lemma setbit_is_alt b n : setbit b n = setbit_alt b n.
@@ -529,23 +524,36 @@ Module Type finite_bitmask_type_mixin (Import F : finite_type) (Import B : bitma
       testbit (setbit x mask) y =
       bool_decide (x = y) || testbit mask y.
     Proof.
-      rewrite /testbit /setbit N_setbit_bool_decide.
-      by rewrite (bool_decide_ext _ _ (inj_iff to_bit _ _)).
+      rewrite /testbit /setbit N_setbit_bool_decide. f_equiv.
+      apply bool_decide_ext, (inj_iff _).
     Qed.
 
-    Lemma filter_setbit (x y z : t) mask :
+    #[global] Instance set_unfold_testbit_setbit (x y : t) (mask : N) P Q :
+      SetUnfold (x = y) P →
+      SetUnfold (testbit mask y) Q →
+      SetUnfold (testbit (setbit x mask) y) (P ∨ Q).
+    Proof. constructor. rewrite testbit_setbit. set_solver. Qed.
+
+    Lemma testbit_to_bitmask (x z : t) :
+      testbit (to_bitmask x) z = bool_decide (x = z).
+    Proof. by rewrite -setbit_0 testbit_setbit testbit_0 right_id. Qed.
+
+    #[global] Instance set_unfold_testbit_to_bitmask (x z : t) P :
+      SetUnfold (x = z) P →
+      SetUnfold (testbit (to_bitmask x) z) P.
+    Proof. constructor. rewrite testbit_to_bitmask. set_solver. Qed.
+
+    Lemma filter_setbit' (x y z : t) (mask : N) :
+      y ∈ filter (setbit x mask) z ↔ y ∈ filter (to_bitmask x) z ∨ y ∈ filter mask z.
+    Proof. set_solver. Qed.
+
+    Lemma filter_setbit (x y z : t) (mask : N) :
       y ∈ filter (setbit x mask) z ↔ x = y ∧ y = z ∨ y ∈ filter mask z.
-    Proof.
-      rewrite /filter (testbit_setbit x).
-      case_bool_decide; simpl; case_match; set_solver.
-    Qed.
+    Proof. set_solver. Qed.
 
     Lemma to_list_setbit (x z : t) (mask : N) :
       z ∈ to_list (setbit x mask) ↔ z = x ∨ z ∈ to_list mask.
-    Proof.
-      rewrite /to_list /to_list_aux !elem_of_list_bind.
-      setoid_rewrite filter_setbit. set_solver.
-    Qed.
+    Proof. set_solver. Qed.
   End to_bit_inj.
 End finite_bitmask_type_mixin.
 
@@ -577,6 +585,9 @@ Module Type simple_finite_bitmask_type_intf := finite_type <+ simple_finite_bitm
 Module finite_bits (BT : finite_bitmask_type_intf).
   Definition t := gset BT.t.
   #[global] Instance top_t : Top t := fin_to_set BT.t (C := t).
+
+  #[global] Instance topset_t : TopSet BT.t t.
+  Proof. split. apply _. apply elem_of_fin_to_set. Qed.
 
   Implicit Type (x : BT.t) (m n : N).
   (*
@@ -680,10 +691,7 @@ Module finite_bits (BT : finite_bitmask_type_intf).
 
     Lemma of_bits_setbit x xs :
       of_bits (BT.setbit x xs) = {[x]} ∪ of_bits xs.
-    Proof.
-      apply gset_eq => y; rewrite elem_of_union elem_of_singleton.
-      by rewrite /of_bits !elem_of_list_to_set BT.to_list_setbit.
-    Qed.
+    Proof. set_solver. Qed.
 
     Lemma of_to_bits rs :
       of_bits (to_bits rs) = rs.
@@ -740,7 +748,7 @@ Module finite_bits (BT : finite_bitmask_type_intf).
   Proof.
     induction rs as [|r rs Hni IHrs] using set_ind_L. {
       rewrite to_bits_empty N.bits_0 bool_decide_eq_false_2 //.
-      intros (r & _ & ?). set_solver. }
+      set_solver. }
     rewrite to_bits_union_singleton N.lor_spec (comm_L orb) to_bits_singleton.
     rewrite {}IHrs.
     case: (bool_decide_reflect (∃ r, _ ∧ r ∈ rs)) => Hdec /=. {
@@ -748,11 +756,7 @@ Module finite_bits (BT : finite_bitmask_type_intf).
     }
     rewrite BT.to_bitmask_setbit.
     rewrite N_setbit_bool_decide N.bits_0 right_id_L.
-    case: (bool_decide_reflect (_ = i)) Hdec => [<-|Hdec'] Hdec. {
-      rewrite bool_decide_eq_true_2 //. set_solver.
-    }
-    rewrite bool_decide_eq_false_2 => // -[r' [Hr' Hin]]. set_unfold.
-    case: Hin Hr' => [-> //|Hin Hr']. apply /Hdec. by exists r'.
+    apply bool_decide_ext. set_solver.
   Qed.
 
   Lemma N_testbit_mask_top_to_bit i :
@@ -768,8 +772,7 @@ Module finite_bits (BT : finite_bitmask_type_intf).
     apply N.bits_inj_iff => i.
     rewrite N.land_spec N_testbit_mask_top_to_bit N_testbit_to_bits.
     rewrite -(bool_decide_Is_true (N.testbit _ _)) -bool_decide_and /is_Some.
-    apply bool_decide_ext.
-    set_solver.
+    apply bool_decide_ext. set_solver.
   Qed.
 End finite_bits.
 
