@@ -478,18 +478,6 @@ Module Type finite_bitmask_type_mixin (Import F : finite_type) (Import B : bitma
   #[global] Typeclasses Opaque filter.
   #[global] Arguments filter : simpl never.
 
-  #[global] Instance set_unfold_filter_lor m1 m2 x y P Q :
-    SetUnfoldElemOf y (filter m1 x) P →
-    SetUnfoldElemOf y (filter m2 x) Q →
-    SetUnfoldElemOf y (filter (m1 `lor` m2) x) (P ∨ Q).
-  Proof. constructor. rewrite elem_of_filter_lor. set_solver. Qed.
-
-  #[global] Instance set_unfold_filter_land m1 m2 x y P Q :
-    SetUnfoldElemOf y (filter m1 x) P →
-    SetUnfoldElemOf y (filter m2 x) Q →
-    SetUnfoldElemOf y (filter (m1 `land` m2) x) (P ∧ Q).
-  Proof. constructor. rewrite elem_of_filter_land. set_solver. Qed.
-
   (** Technically redundant, but a leaf, and it cleans up [set_unfold] output. *)
   #[global] Instance set_unfold_filter_0 m x y :
     SetUnfoldElemOf y (filter 0 x) False.
@@ -562,12 +550,6 @@ Module Type finite_bitmask_type_mixin (Import F : finite_type) (Import B : bitma
     Lemma filter_setbit (x y z : t) (mask : N) :
       y ∈ filter (setbit x mask) z ↔ x = y ∧ y = z ∨ y ∈ filter mask z.
     Proof. set_solver. Qed.
-
-    #[global] Instance set_unfold_filter_setbit (x y z : t) mask P Q R :
-      SetUnfold (x = y) P → SetUnfold (y = z) Q →
-      SetUnfoldElemOf y (filter mask z) R →
-      SetUnfoldElemOf y (filter (setbit x mask) z) (P ∧ Q ∨ R).
-    Proof. constructor. rewrite filter_setbit. set_solver. Qed.
 
     Lemma to_list_setbit (x z : t) (mask : N) :
       z ∈ to_list (setbit x mask) ↔ z = x ∨ z ∈ to_list mask.
