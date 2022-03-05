@@ -64,16 +64,6 @@ Section finite_preimage.
     finite_inverse f b = Some a → f a = b.
   Proof. intros Hof%head_Some_elem_of. set_solver. Qed.
 
-  Lemma finite_inverse_inj_cancel `{!Inj eq eq f} a :
-    finite_inverse f (f a) = Some a.
-  Proof. by rewrite /finite_inverse finite_preimage_inj_singleton. Qed.
-
-  Lemma finite_inverse_inj_Some_equiv f `{!Inj eq eq f} a b :
-    finite_inverse f b = Some a ↔ f a = b.
-  Proof.
-    naive_solver eauto using finite_inverse_Some_inv, finite_inverse_inj_cancel.
-  Qed.
-
   Lemma finite_inverse_is_Some f a b :
     f a = b → is_Some (finite_inverse f b).
   Proof.
@@ -89,15 +79,30 @@ Section finite_preimage.
     by intros [a ?%finite_inverse_is_Some].
   Qed.
 
-  #[global] Instance set_unfold_finite_inverse_inj_Some `{!Inj eq eq f} a b P :
-    SetUnfold (f a = b) P →
-    SetUnfold (finite_inverse f b = Some a) P.
-  Proof. constructor. rewrite finite_inverse_inj_Some_equiv. set_solver. Qed.
-
   #[global] Instance set_unfold_finite_inverse_None f b P :
     (∀ a, SetUnfold (f a = b) (P a)) →
     SetUnfold (finite_inverse f b = None) (¬ (∃ a, P a)).
   Proof. constructor. rewrite finite_inverse_None_equiv. set_solver. Qed.
+
+  Section finite_preimage_inj.
+    Context `{Hinj : !Inj eq eq f}.
+    #[local] Set Default Proof Using "Type*".
+
+    Lemma finite_inverse_inj_cancel a :
+      finite_inverse f (f a) = Some a.
+    Proof. by rewrite /finite_inverse finite_preimage_inj_singleton. Qed.
+
+    Lemma finite_inverse_inj_Some_equiv a b :
+      finite_inverse f b = Some a ↔ f a = b.
+    Proof.
+      naive_solver eauto using finite_inverse_Some_inv, finite_inverse_inj_cancel.
+    Qed.
+
+    #[global] Instance set_unfold_finite_inverse_inj_Some a b P :
+      SetUnfold (f a = b) P →
+      SetUnfold (finite_inverse f b = Some a) P.
+    Proof. constructor. rewrite finite_inverse_inj_Some_equiv. set_solver. Qed.
+  End finite_preimage_inj.
 End finite_preimage.
 
 Section finite_preimage_set.
