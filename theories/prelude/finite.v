@@ -62,10 +62,7 @@ Section finite_preimage.
 
   Lemma finite_inverse_spec_1 f a b :
     finite_inverse f b = Some a → f a = b.
-  Proof.
-    rewrite /finite_inverse => Hof.
-    by apply elem_of_finite_preimage, head_Some_elem_of.
-  Qed.
+  Proof. intros Hof%head_Some_elem_of. set_solver. Qed.
 
   Lemma finite_inverse_spec_2 `{!Inj eq eq f} a :
     finite_inverse f (f a) = Some a.
@@ -77,10 +74,30 @@ Section finite_preimage.
     naive_solver eauto using finite_inverse_spec_1, finite_inverse_spec_2.
   Qed.
 
+  Lemma finite_inverse_exists f a b :
+    f a = b → is_Some (finite_inverse f b).
+  Proof.
+    intros Heq%elem_of_finite_preimage%elem_of_not_nil.
+    exact /head_is_Some.
+  Qed.
+
+  Lemma finite_inverse_None_equiv f b :
+    finite_inverse f b = None ↔ ¬(∃ a, f a = b).
+  Proof.
+    rewrite eq_None_not_Some. f_equiv.
+    split. { intros [a ?%finite_inverse_spec_1]. by exists a. }
+    by intros [a ?%finite_inverse_exists].
+  Qed.
+
   #[global] Instance set_unfold_finite_inverse_Some x n `{!Inj eq eq f} P :
     SetUnfold (f x = n) P →
     SetUnfold (finite_inverse f n = Some x) P.
   Proof. constructor. rewrite finite_inverse_spec. set_solver. Qed.
+
+  #[global] Instance set_unfold_finite_inverse_None f b P :
+    (∀ a, SetUnfold (f a = b) (P a)) →
+    SetUnfold (finite_inverse f b = None) (¬ (∃ a, P a)).
+  Proof. constructor. rewrite finite_inverse_None_equiv. set_solver. Qed.
 End finite_preimage.
 
 Section finite_preimage_set.
@@ -103,11 +120,7 @@ Section finite_preimage_set.
 
   Lemma elem_of_finite_preimage_set f a bs :
     a ∈ finite_preimage_set f bs ↔ f a ∈ bs.
-  Proof.
-    pattern bs; apply set_ind; first solve_proper.
-    { rewrite finite_preimage_set_empty. set_solver. }
-    set_solver.
-  Qed.
+  Proof. set_solver. Qed.
 
   #[global] Instance set_unfold_finite_preimage_set f a bs Q :
     SetUnfoldElemOf (f a) bs Q →
@@ -235,9 +248,21 @@ Section finite.
     SetUnfold (decode_N n = Some x) P.
   Proof. constructor. rewrite decode_N_encode_N. set_solver. Qed.
 
-  Lemma decode_N_is_inverse n x :
-    finite_inverse encode_N n = Some x <-> decode_N n = Some x.
-  Proof. set_solver. Qed.
+  Lemma decode_N_None_encode_N (n : N) :
+    decode_N (A := A) n = None ↔ ¬(∃ x, encode_N x = n).
+  Proof.
+    rewrite eq_None_not_Some /is_Some.
+    by setoid_rewrite decode_N_encode_N.
+  Qed.
+
+  #[global] Instance set_unfold_decode_N_None n P :
+    (∀ x, SetUnfold (encode_N x = n) (P x)) →
+    SetUnfold (decode_N (A := A) n = None) (¬∃ x, P x).
+  Proof. constructor. rewrite decode_N_None_encode_N. set_solver. Qed.
+
+  Lemma decode_N_is_inverse n :
+    finite_inverse encode_N n = decode_N (A := A) n.
+  Proof. destruct decode_N eqn:?; set_solver. Qed.
 End finite.
 
 (* From (pieces of) [Countable] (and more) to [Finite]. *)
