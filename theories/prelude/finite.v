@@ -60,21 +60,21 @@ Section finite_preimage.
 
   Definition finite_inverse f b : option A := head $ finite_preimage f b.
 
-  Lemma finite_inverse_spec_1 f a b :
+  Lemma finite_inverse_Some_inv f a b :
     finite_inverse f b = Some a → f a = b.
   Proof. intros Hof%head_Some_elem_of. set_solver. Qed.
 
-  Lemma finite_inverse_spec_2 `{!Inj eq eq f} a :
+  Lemma finite_inverse_inj_cancel `{!Inj eq eq f} a :
     finite_inverse f (f a) = Some a.
   Proof. by rewrite /finite_inverse finite_preimage_inj_singleton. Qed.
 
-  Lemma finite_inverse_spec f `{!Inj eq eq f} a b :
+  Lemma finite_inverse_inj_Some_equiv f `{!Inj eq eq f} a b :
     finite_inverse f b = Some a ↔ f a = b.
   Proof.
-    naive_solver eauto using finite_inverse_spec_1, finite_inverse_spec_2.
+    naive_solver eauto using finite_inverse_Some_inv, finite_inverse_inj_cancel.
   Qed.
 
-  Lemma finite_inverse_exists f a b :
+  Lemma finite_inverse_is_Some f a b :
     f a = b → is_Some (finite_inverse f b).
   Proof.
     intros Heq%elem_of_finite_preimage%elem_of_not_nil.
@@ -85,14 +85,14 @@ Section finite_preimage.
     finite_inverse f b = None ↔ ¬(∃ a, f a = b).
   Proof.
     rewrite eq_None_not_Some. f_equiv.
-    split. { intros [a ?%finite_inverse_spec_1]. by exists a. }
-    by intros [a ?%finite_inverse_exists].
+    split. { intros [a ?%finite_inverse_Some_inv]. by exists a. }
+    by intros [a ?%finite_inverse_is_Some].
   Qed.
 
-  #[global] Instance set_unfold_finite_inverse_Some x n `{!Inj eq eq f} P :
-    SetUnfold (f x = n) P →
-    SetUnfold (finite_inverse f n = Some x) P.
-  Proof. constructor. rewrite finite_inverse_spec. set_solver. Qed.
+  #[global] Instance set_unfold_finite_inverse_inj_Some `{!Inj eq eq f} a b P :
+    SetUnfold (f a = b) P →
+    SetUnfold (finite_inverse f b = Some a) P.
+  Proof. constructor. rewrite finite_inverse_inj_Some_equiv. set_solver. Qed.
 
   #[global] Instance set_unfold_finite_inverse_None f b P :
     (∀ a, SetUnfold (f a = b) (P a)) →
@@ -392,11 +392,11 @@ Module Type finite_encoded_type_mixin (Import F : finite_encoded_type).
 
   Lemma of_to_N `[Hinj : !Inj eq eq to_N] (x : t) :
     of_N (to_N x) = Some x.
-  Proof. exact: finite_inverse_spec_2. Qed.
+  Proof. exact: finite_inverse_inj_cancel. Qed.
 
   Lemma to_of_N (n : N) (x : t) :
     of_N n = Some x → to_N x = n.
-  Proof. apply finite_inverse_spec_1. Qed.
+  Proof. apply finite_inverse_Some_inv. Qed.
 End finite_encoded_type_mixin.
 
 (* Mixin hierarchy 2: *)
