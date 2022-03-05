@@ -46,9 +46,10 @@ Section finite_preimage.
   Proof. apply: elem_of_filter_enum. Qed.
 
   (** Teach [set_solver] to use [elem_of_finite_preimage]! *)
-  #[global] Instance set_unfold_finite_preimage f a b :
-    SetUnfoldElemOf a (finite_preimage f b) (f a = b).
-  Proof. split; apply elem_of_finite_preimage. Qed.
+  #[global] Instance set_unfold_finite_preimage f a b P :
+    SetUnfold (f a = b) P →
+    SetUnfoldElemOf a (finite_preimage f b) P.
+  Proof. split. rewrite elem_of_finite_preimage. set_solver. Qed.
 
   Lemma finite_preimage_inj_singleton `{!Inj eq eq f} a :
     finite_preimage f (f a) = [a].
@@ -76,9 +77,10 @@ Section finite_preimage.
     naive_solver eauto using finite_inverse_spec_1, finite_inverse_spec_2.
   Qed.
 
-  #[global] Instance set_unfold_finite_inverse_Some x n `{!Inj eq eq f} :
-    SetUnfold (finite_inverse f n = Some x) (f x = n).
-  Proof. split. apply: finite_inverse_spec. Qed.
+  #[global] Instance set_unfold_finite_inverse_Some x n `{!Inj eq eq f} P :
+    SetUnfold (f x = n) P →
+    SetUnfold (finite_inverse f n = Some x) P.
+  Proof. constructor. rewrite finite_inverse_spec. set_solver. Qed.
 End finite_preimage.
 
 Section finite_preimage_set.
@@ -224,12 +226,14 @@ Section finite.
     naive_solver.
   Qed.
 
-  #[global] Instance set_unfold_decode_N_Some x n :
-    SetUnfold (decode_N n = Some x) (encode_N x = n).
-  Proof.
-    repeat split;
-      naive_solver eauto using decode_encode_N, decode_N_Some_encode_N.
-  Qed.
+  Lemma decode_N_encode_N (n : N) (x : A) :
+    decode_N n = Some x ↔ encode_N x = n.
+  Proof. naive_solver eauto using decode_encode_N, decode_N_Some_encode_N. Qed.
+
+  #[global] Instance set_unfold_decode_N_Some x n P :
+    SetUnfold (encode_N x = n) P →
+    SetUnfold (decode_N n = Some x) P.
+  Proof. constructor. rewrite decode_N_encode_N. set_solver. Qed.
 
   Lemma decode_N_is_inverse n x :
     finite_inverse encode_N n = Some x <-> decode_N n = Some x.
