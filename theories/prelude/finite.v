@@ -144,8 +144,8 @@ Section finite_preimage_set.
   End finite_preimage_set_leibniz.
 End finite_preimage_set.
 
-#[global] Instance
-  finite_preimage_set_params : Params (@finite_preimage_set) 12 := {}.
+#[global] Instance finite_preimage_set_params :
+  Params (@finite_preimage_set) 12 := {}.
 
 Notation finite_preimage_gset :=
   (finite_preimage_set (C := gset _) (D := gset _)) (only parsing).
