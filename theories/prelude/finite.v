@@ -46,9 +46,10 @@ Section finite_preimage.
   Proof. apply: elem_of_filter_enum. Qed.
 
   (** Teach [set_solver] to use [elem_of_finite_preimage]! *)
-  #[global] Instance set_unfold_finite_preimage f a b :
-    SetUnfoldElemOf a (finite_preimage f b) (f a = b).
-  Proof. split; apply elem_of_finite_preimage. Qed.
+  #[global] Instance set_unfold_finite_preimage f a b P :
+    SetUnfold (f a = b) P →
+    SetUnfoldElemOf a (finite_preimage f b) P.
+  Proof. split. rewrite elem_of_finite_preimage. set_solver. Qed.
 
   Lemma finite_preimage_inj_singleton `{!Inj eq eq f} a :
     finite_preimage f (f a) = [a].
@@ -59,26 +60,49 @@ Section finite_preimage.
 
   Definition finite_inverse f b : option A := head $ finite_preimage f b.
 
-  Lemma finite_inverse_spec_1 f a b :
+  Lemma finite_inverse_Some_inv f a b :
     finite_inverse f b = Some a → f a = b.
+  Proof. intros Hof%head_Some_elem_of. set_solver. Qed.
+
+  Lemma finite_inverse_is_Some f a b :
+    f a = b → is_Some (finite_inverse f b).
   Proof.
-    rewrite /finite_inverse => Hof.
-    by apply elem_of_finite_preimage, head_Some_elem_of.
+    intros Heq%elem_of_finite_preimage%elem_of_not_nil.
+    exact /head_is_Some.
   Qed.
 
-  Lemma finite_inverse_spec_2 `{!Inj eq eq f} a :
-    finite_inverse f (f a) = Some a.
-  Proof. by rewrite /finite_inverse finite_preimage_inj_singleton. Qed.
-
-  Lemma finite_inverse_spec f `{!Inj eq eq f} a b :
-    finite_inverse f b = Some a ↔ f a = b.
+  Lemma finite_inverse_None_equiv f b :
+    finite_inverse f b = None ↔ ¬(∃ a, f a = b).
   Proof.
-    naive_solver eauto using finite_inverse_spec_1, finite_inverse_spec_2.
+    rewrite eq_None_not_Some. f_equiv.
+    split. { intros [a ?%finite_inverse_Some_inv]. by exists a. }
+    by intros [a ?%finite_inverse_is_Some].
   Qed.
 
-  #[global] Instance set_unfold_finite_inverse_Some x n `{!Inj eq eq f} :
-    SetUnfold (finite_inverse f n = Some x) (f x = n).
-  Proof. split. apply: finite_inverse_spec. Qed.
+  #[global] Instance set_unfold_finite_inverse_None f b P :
+    (∀ a, SetUnfold (f a = b) (P a)) →
+    SetUnfold (finite_inverse f b = None) (¬ (∃ a, P a)).
+  Proof. constructor. rewrite finite_inverse_None_equiv. set_solver. Qed.
+
+  Section finite_preimage_inj.
+    Context `{Hinj : !Inj eq eq f}.
+    #[local] Set Default Proof Using "Type*".
+
+    Lemma finite_inverse_inj_cancel a :
+      finite_inverse f (f a) = Some a.
+    Proof. by rewrite /finite_inverse finite_preimage_inj_singleton. Qed.
+
+    Lemma finite_inverse_inj_Some_equiv a b :
+      finite_inverse f b = Some a ↔ f a = b.
+    Proof.
+      naive_solver eauto using finite_inverse_Some_inv, finite_inverse_inj_cancel.
+    Qed.
+
+    #[global] Instance set_unfold_finite_inverse_inj_Some a b P :
+      SetUnfold (f a = b) P →
+      SetUnfold (finite_inverse f b = Some a) P.
+    Proof. constructor. rewrite finite_inverse_inj_Some_equiv. set_solver. Qed.
+  End finite_preimage_inj.
 End finite_preimage.
 
 Section finite_preimage_set.
@@ -101,11 +125,7 @@ Section finite_preimage_set.
 
   Lemma elem_of_finite_preimage_set f a bs :
     a ∈ finite_preimage_set f bs ↔ f a ∈ bs.
-  Proof.
-    pattern bs; apply set_ind; first solve_proper.
-    { rewrite finite_preimage_set_empty. set_solver. }
-    set_solver.
-  Qed.
+  Proof. set_solver. Qed.
 
   #[global] Instance set_unfold_finite_preimage_set f a bs Q :
     SetUnfoldElemOf (f a) bs Q →
@@ -144,8 +164,8 @@ Section finite_preimage_set.
   End finite_preimage_set_leibniz.
 End finite_preimage_set.
 
-#[global] Instance
-  finite_preimage_set_params : Params (@finite_preimage_set) 12 := {}.
+#[global] Instance finite_preimage_set_params :
+  Params (@finite_preimage_set) 12 := {}.
 
 Notation finite_preimage_gset :=
   (finite_preimage_set (C := gset _) (D := gset _)) (only parsing).
@@ -224,16 +244,30 @@ Section finite.
     naive_solver.
   Qed.
 
-  #[global] Instance set_unfold_decode_N_Some x n :
-    SetUnfold (decode_N n = Some x) (encode_N x = n).
+  Lemma decode_N_encode_N (n : N) (x : A) :
+    decode_N n = Some x ↔ encode_N x = n.
+  Proof. naive_solver eauto using decode_encode_N, decode_N_Some_encode_N. Qed.
+
+  #[global] Instance set_unfold_decode_N_Some x n P :
+    SetUnfold (encode_N x = n) P →
+    SetUnfold (decode_N n = Some x) P.
+  Proof. constructor. rewrite decode_N_encode_N. set_solver. Qed.
+
+  Lemma decode_N_None_encode_N (n : N) :
+    decode_N (A := A) n = None ↔ ¬(∃ x, encode_N x = n).
   Proof.
-    repeat split;
-      naive_solver eauto using decode_encode_N, decode_N_Some_encode_N.
+    rewrite eq_None_not_Some /is_Some.
+    by setoid_rewrite decode_N_encode_N.
   Qed.
 
-  Lemma decode_N_is_inverse n x :
-    finite_inverse encode_N n = Some x <-> decode_N n = Some x.
-  Proof. set_solver. Qed.
+  #[global] Instance set_unfold_decode_N_None n P :
+    (∀ x, SetUnfold (encode_N x = n) (P x)) →
+    SetUnfold (decode_N (A := A) n = None) (¬∃ x, P x).
+  Proof. constructor. rewrite decode_N_None_encode_N. set_solver. Qed.
+
+  Lemma decode_N_is_inverse n :
+    finite_inverse encode_N n = decode_N (A := A) n.
+  Proof. destruct decode_N eqn:?; set_solver. Qed.
 End finite.
 
 (* From (pieces of) [Countable] (and more) to [Finite]. *)
@@ -363,11 +397,11 @@ Module Type finite_encoded_type_mixin (Import F : finite_encoded_type).
 
   Lemma of_to_N `[Hinj : !Inj eq eq to_N] (x : t) :
     of_N (to_N x) = Some x.
-  Proof. exact: finite_inverse_spec_2. Qed.
+  Proof. exact: finite_inverse_inj_cancel. Qed.
 
   Lemma to_of_N (n : N) (x : t) :
     of_N n = Some x → to_N x = n.
-  Proof. apply finite_inverse_spec_1. Qed.
+  Proof. apply finite_inverse_Some_inv. Qed.
 End finite_encoded_type_mixin.
 
 (* Mixin hierarchy 2: *)
