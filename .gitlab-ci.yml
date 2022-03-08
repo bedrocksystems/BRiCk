@@ -73,7 +73,13 @@ stages:
   script:
     - mkdir -p build
     - echo "fmdeps/cpp2v-core:$(git rev-parse HEAD)" | tee build/gitshas.txt
-    - cd build; CC=`llvm-config-${LLVM_MAJ_VER} --bindir`/clang CXX=`llvm-config-${LLVM_MAJ_VER} --bindir`/clang++ cmake ../; cd ..
+    # NOTE: keep these settings in sync with the cpp2v-core repository: see
+    # https://bedrocksystems.atlassian.net/browse/FM-1874.
+    # We use `/usr/lib/llvm/bin/llvm-config` instead of
+    # `llvm-config-${LLVM_MAJ_VER}` to avoid depending on the LLVM version.
+    - export CC=`/usr/lib/llvm/bin/llvm-config --bindir`/clang
+    - export CXX=`/usr/lib/llvm/bin/llvm-config --bindir`/clang++
+    - cd build; cmake ../; cd ..
     - make -j ${NJOBS} cpp2v
     - make -j ${NJOBS} coq
     - rm -f build/bedrock
