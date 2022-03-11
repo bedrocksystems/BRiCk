@@ -736,6 +736,12 @@ Module finite_bits (BT : finite_bitmask_type_intf).
       by rewrite of_bits_setbit IHxs.
     Qed.
 
+    Lemma of_bits_singleton x : {[x]} = of_bits $ BT.to_bitmask x.
+    Proof.
+      rewrite -[ {[_]} ]of_to_bits.
+      by f_equal; apply: to_bits_singleton.
+    Qed.
+
     #[global] Instance of_to_bits_cancel : Cancel eq of_bits to_bits :=
       of_to_bits.
     #[global] Instance to_bits_inj : Inj eq eq to_bits := cancel_inj.
