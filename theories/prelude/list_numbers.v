@@ -7,6 +7,11 @@
 From bedrock.prelude Require Import base.
 From bedrock.prelude Require Export list numbers.
 
+#[global] Instance set_unfold_elem_of_seq (n start len : nat) P :
+  SetUnfold (start ≤ n < start + len)%nat P →
+  SetUnfoldElemOf n (seq start len) P.
+Proof. constructor. rewrite elem_of_seq. set_solver. Qed.
+
 #[local] Open Scope N_scope.
 
 Definition seqN (from count : N) : list N :=
@@ -30,14 +35,28 @@ Definition rotateN {A} n xs :=
   fun i xs => lookup (N.to_nat i) xs.
 #[global] Notation lookupN := (lookup (K := N)) (only parsing).
 
-(* TODO: Define in terms of the [list_alter] instance. *)
+(** Instead of lifting the [list_lookup] theory to [list_lookupN] we provide an unfolding lemma. *)
+Lemma list_lookupN_lookup {A} (xs : list A) (n : N) :
+  xs !! n = xs !! N.to_nat n.
+Proof. done. Qed.
+
 #[global] Instance list_insertN {A} : Insert N A (list A) | 10 :=
   fun i x xs => <[N.to_nat i := x]> xs.
 #[global] Notation insertN := (insert (K := N)) (only parsing).
 
+(* Instead of lifting the [list_insert] theory to [list_insertN] we provide an unfolding lemma. *)
+Lemma list_insertN_insert {A} (xs : list A) (i : N) (x : A) :
+  <[i := x]> xs = <[N.to_nat i := x]> xs.
+Proof. done. Qed.
+
 #[global] Instance list_alterN {A} : Alter N A (list A) | 10 :=
-  fun f i xs => if xs !! i is Some x then <[i:=f x]> xs else xs.
+  fun f i xs => alter f (N.to_nat i) xs.
 #[global] Notation alterN := (alter (K := N)) (only parsing).
+
+(* Instead of lifting the [list_alter] theory to [list_alterN] we provide an unfolding lemma. *)
+Lemma list_alterN_alter {A} (xs : list A) (i : N) f :
+  alter f i xs = alter f (N.to_nat i) xs.
+Proof. done. Qed.
 
 Lemma fmap_lengthN {A B} (f : A → B) (l : list A) :
   lengthN (f <$> l) = lengthN l.
@@ -83,6 +102,23 @@ Section seqN.
 
   Lemma NoDup_seqN j n : NoDup (seqN j n).
   Proof. apply /NoDup_fmap_2 /NoDup_seq. Qed.
+
+  Lemma elem_of_seqN (len start n : N) :
+    n ∈ seqN start len ↔ start <= n < start + len.
+  Proof.
+    rewrite /seqN -{1} (N2Nat.id n) elem_of_list_fmap_inj.
+    rewrite elem_of_seq. lia.
+  Qed.
+
+  #[global] Instance set_unfold_elem_of_seqN (n start len : N) P :
+    SetUnfold (start ≤ n < start + len)%N P →
+    SetUnfoldElemOf n (seqN start len) P.
+  Proof. constructor. rewrite elem_of_seqN. set_solver. Qed.
+  #[global] Typeclasses Opaque seqN.
+
+  Lemma Forall_seqN P i n :
+    List.Forall P (seqN i n) ↔ (∀ j : N, i <= j < i + n → P j).
+  Proof. rewrite Forall_forall. by setoid_rewrite elem_of_seqN. Qed.
 End seqN.
 
 Lemma repeatN_replicateN {A} (x : A) n :
@@ -111,17 +147,6 @@ Section listN.
     n ≤ m ->
     (N.to_nat n <= N.to_nat m)%nat.
   Proof. lia. Qed.
-
-  Lemma elem_of_seqN (len start n : N) :
-    n ∈ seqN start len ↔ start <= n < start + len.
-  Proof.
-    rewrite /seqN -{1} (N2Nat.id n) elem_of_list_fmap_inj.
-    rewrite elem_of_seq. lia.
-  Qed.
-
-  Lemma Forall_seqN P i n :
-    List.Forall P (seqN i n) ↔ (∀ j : N, i <= j < i + n → P j).
-  Proof. rewrite Forall_forall. by setoid_rewrite elem_of_seqN. Qed.
 
   Lemma replicateN_zero x :
     replicateN 0 x = [].
@@ -573,9 +598,13 @@ Section listN.
     lookupN 0 (x :: xs) = Some x.
   Proof. reflexivity. Qed.
 
+  Lemma lookupN_cons_Nsucc x xs i :
+    lookupN (N.succ i) (x :: xs) = lookupN i xs.
+  Proof. by rewrite -!lookupN_fold N2Nat.inj_succ -lookup_tail. Qed.
+
   Lemma lookupN_cons_succ x xs i :
     lookupN (i + 1) (x :: xs) = lookupN i xs.
-  Proof. by rewrite -!lookupN_fold N.add_1_r N2Nat.inj_succ -lookup_tail. Qed.
+  Proof. by rewrite N.add_1_r lookupN_cons_Nsucc. Qed.
 
   Lemma lookupN_dropN xs k i :
     lookupN i (dropN k xs) = lookupN (k + i) xs.
@@ -715,6 +744,29 @@ Section listN.
      @lookupN_map,
      @lookupN_rotateN).
 
+  Lemma lookupN_ge_None xs i :
+    xs !! i = None ↔ lengthN xs <= i.
+  Proof. rewrite list_lookupN_lookup /lengthN lookup_ge_None; lia. Qed.
+
+  Lemma lookupN_seqN_ge j n i : n ≤ i → seqN j n !! i = None.
+  Proof.
+    intros. rewrite /seqN list_lookupN_lookup list_lookup_fmap.
+    rewrite lookup_seq_ge //; lia.
+  Qed.
+  Lemma lookupN_seqN_lt j n i : i < n → seqN j n !! i = Some (j + i).
+  Proof.
+    intros. rewrite /seqN list_lookupN_lookup list_lookup_fmap.
+    rewrite lookup_seq_lt //=; [f_equiv|]; lia.
+  Qed.
+  Lemma lookupN_seqN : ∀ j n i j', seqN j n !! i = Some j' ↔ j' = j + i ∧ i < n.
+  Proof.
+    intros. rewrite /seqN list_lookupN_lookup list_lookup_fmap.
+    trans (seq (N.to_nat j) (N.to_nat n) !! N.to_nat i = Some (N.to_nat j')); first last.
+    { rewrite lookup_seq //=; lia. }
+    split; last by move ->; rewrite /= N2Nat.id.
+    rewrite !fmap_Some. intros (x' & ? & ->). by rewrite Nat2N.id.
+  Qed.
+
   Lemma insertN_id i x xs :
     xs !! i = Some x ->
     <[i:=x]> xs = xs.
@@ -777,11 +829,15 @@ Section listN.
       by rewrite -N.add_lt_mono_r=> /IH ->.
   Qed.
 
+  Lemma list_alterN_insertN xs i f :
+    alter f i xs = if xs !! i is Some x then <[i:=f x]> xs else xs.
+  Proof. by rewrite list_alterN_alter list_alter_insert. Qed.
+
   Lemma alterN_explode xs x i f :
     xs !! i = Some x ->
     alter f i xs = takeN i xs ++ [f x] ++ dropN (i + 1) xs.
   Proof.
-    move=> H. rewrite /alter/list_alterN H.
+    move=> H. rewrite list_alterN_insertN H.
     by rewrite insertN_explode; last by rewrite lookupN_is_Some H.
   Qed.
 

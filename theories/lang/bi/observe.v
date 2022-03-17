@@ -123,14 +123,14 @@ Section observe.
 
   (** Alternatives for eliminating observations *)
   (** We favor declaring observations with [only_provable] over [bi_pure]. *)
-  Lemma observe_elim_pure (Q : Prop) P `{!Observe [| Q |] P} : P ⊢ ⌜Q⌝.
+  Lemma observe_elim_pure (Q : Prop) P {O : Observe [| Q |] P} : P ⊢ ⌜Q⌝.
   Proof. rewrite (observe [| _ |] P). by iIntros "#%". Qed.
-  Lemma observe_elim_strong Q P `{!Observe Q P} : P ⊢ P ∗ □ Q.
+  Lemma observe_elim_strong Q P {O : Observe Q P} : P ⊢ P ∗ □ Q.
   Proof.
     rewrite -{1}(idemp bi_and P) {2}(observe Q P).
     by rewrite bi.persistently_and_intuitionistically_sep_r.
   Qed.
-  Lemma observe_elim Q P `{!Observe Q P} : P ⊢ P ∗ Q.
+  Lemma observe_elim Q P {O : Observe Q P} : P ⊢ P ∗ Q.
   Proof.
     by rewrite {1}(observe_elim_strong Q P) bi.intuitionistically_elim.
   Qed.
@@ -138,16 +138,16 @@ Section observe.
   Lemma observe_equiv Q P `{!Observe Q P} `{!Affine Q} : P ∗ Q ⊣⊢ P.
   Proof. split'; first iIntros "[$ ?]". apply: observe_elim. Qed.
 
-  Lemma observe_2_elim_pure (Q : Prop) P1 P2 `{!Observe2 [| Q |] P1 P2} :
+  Lemma observe_2_elim_pure (Q : Prop) P1 P2 {O : Observe2 [| Q |] P1 P2} :
     P1 ⊢ P2 -∗ ⌜Q⌝.
   Proof. rewrite (observe_2 [| _ |] P1 P2). f_equiv. by iIntros "#%". Qed.
-  Lemma observe_2_elim_strong Q P1 P2 `{!Observe2 Q P1 P2} :
+  Lemma observe_2_elim_strong Q P1 P2 {O : Observe2 Q P1 P2} :
     P1 ⊢ P2 -∗ P1 ∗ P2 ∗ □ Q.
   Proof.
     apply bi.wand_intro_r. rewrite assoc.
     by apply observe_elim_strong, observe_curry.
   Qed.
-  Lemma observe_2_elim Q P1 P2 `{!Observe2 Q P1 P2} : P1 ⊢ P2 -∗ P1 ∗ P2 ∗ Q.
+  Lemma observe_2_elim Q P1 P2 {O : Observe2 Q P1 P2} : P1 ⊢ P2 -∗ P1 ∗ P2 ∗ Q.
   Proof.
     by rewrite {1}(observe_2_elim_strong Q P1 P2) bi.intuitionistically_elim.
   Qed.
