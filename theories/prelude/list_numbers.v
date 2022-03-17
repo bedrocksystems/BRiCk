@@ -573,9 +573,13 @@ Section listN.
     lookupN 0 (x :: xs) = Some x.
   Proof. reflexivity. Qed.
 
+  Lemma lookupN_cons_Nsucc x xs i :
+    lookupN (N.succ i) (x :: xs) = lookupN i xs.
+  Proof. by rewrite -!lookupN_fold N2Nat.inj_succ -lookup_tail. Qed.
+
   Lemma lookupN_cons_succ x xs i :
     lookupN (i + 1) (x :: xs) = lookupN i xs.
-  Proof. by rewrite -!lookupN_fold N.add_1_r N2Nat.inj_succ -lookup_tail. Qed.
+  Proof. by rewrite N.add_1_r lookupN_cons_Nsucc. Qed.
 
   Lemma lookupN_dropN xs k i :
     lookupN i (dropN k xs) = lookupN (k + i) xs.
