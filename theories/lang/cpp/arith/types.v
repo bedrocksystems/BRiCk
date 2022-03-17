@@ -41,6 +41,9 @@ Definition bitsN (s : bitsize) : N :=
   | W128 => 128
   end.
 
+#[global] Instance bitsN_inj : Inj (=) (=) bitsN.
+Proof. red; intros x y H; by (destruct x; destruct y). Qed.
+
 Definition bitsZ (s : bitsize) : Z :=
   Z.of_N (bitsN s).
 
