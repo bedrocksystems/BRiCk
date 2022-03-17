@@ -99,10 +99,6 @@ Lemma repeat_replicate {A} (x : A) n :
   repeat x n = replicate n x.
 Proof. by elim: n => [//| n /= ->]. Qed.
 
-Lemma elem_of_seq (len start n : nat) :
-  n ∈ seq start len ↔ start <= n < start + len.
-Proof. by rewrite elem_of_list_In in_seq. Qed.
-
 Section list.
   Context {A : Type}.
   Implicit Types l k : list A.
