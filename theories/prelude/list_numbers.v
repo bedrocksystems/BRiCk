@@ -83,6 +83,17 @@ Section seqN.
 
   Lemma NoDup_seqN j n : NoDup (seqN j n).
   Proof. apply /NoDup_fmap_2 /NoDup_seq. Qed.
+
+  Lemma elem_of_seqN (len start n : N) :
+    n ∈ seqN start len ↔ start <= n < start + len.
+  Proof.
+    rewrite /seqN -{1} (N2Nat.id n) elem_of_list_fmap_inj.
+    rewrite elem_of_seq. lia.
+  Qed.
+
+  Lemma Forall_seqN P i n :
+    List.Forall P (seqN i n) ↔ (∀ j : N, i <= j < i + n → P j).
+  Proof. rewrite Forall_forall. by setoid_rewrite elem_of_seqN. Qed.
 End seqN.
 
 Lemma repeatN_replicateN {A} (x : A) n :
@@ -111,17 +122,6 @@ Section listN.
     n ≤ m ->
     (N.to_nat n <= N.to_nat m)%nat.
   Proof. lia. Qed.
-
-  Lemma elem_of_seqN (len start n : N) :
-    n ∈ seqN start len ↔ start <= n < start + len.
-  Proof.
-    rewrite /seqN -{1} (N2Nat.id n) elem_of_list_fmap_inj.
-    rewrite elem_of_seq. lia.
-  Qed.
-
-  Lemma Forall_seqN P i n :
-    List.Forall P (seqN i n) ↔ (∀ j : N, i <= j < i + n → P j).
-  Proof. rewrite Forall_forall. by setoid_rewrite elem_of_seqN. Qed.
 
   Lemma replicateN_zero x :
     replicateN 0 x = [].
