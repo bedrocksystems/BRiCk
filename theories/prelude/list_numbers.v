@@ -25,10 +25,18 @@ Definition lengthN {A} xs := N.of_nat (length (A := A) xs).
 Definition resizeN {A} n := resize (A := A) (N.to_nat n).
 Definition rotateN {A} n xs :=
   dropN (A := A) (n mod lengthN xs) xs ++ takeN (A := A) (n mod lengthN xs) xs.
-#[global] Instance list_lookupN {A}: Lookup N A (list A) | 10 := fun i xs => lookup (N.to_nat i) xs.
+
+#[global] Instance list_lookupN {A}: Lookup N A (list A) | 10 :=
+  fun i xs => lookup (N.to_nat i) xs.
 #[global] Notation lookupN := (lookup (K := N)) (only parsing).
-#[global] Instance list_insertN {A} : Insert N A (list A) | 10 := fun i x xs => <[N.to_nat i := x]> xs.
+
+#[global] Instance list_insertN {A} : Insert N A (list A) | 10 :=
+  fun i x xs => <[N.to_nat i := x]> xs.
 #[global] Notation insertN := (insert (K := N)) (only parsing).
+
+#[global] Instance list_alterN {A} : Alter N A (list A) | 10 :=
+  fun f i xs => if xs !! i is Some x then <[i:=f x]> xs else xs.
+#[global] Notation alterN := (alter (K := N)) (only parsing).
 
 Lemma fmap_lengthN {A B} (f : A → B) (l : list A) :
   lengthN (f <$> l) = lengthN l.
@@ -273,20 +281,28 @@ Section listN.
     dropN 1 (x :: xs) = xs.
   Proof. reflexivity. Qed.
 
-  Lemma dropN_nil n :
-    dropN (A := A) n [] = [].
-  Proof. rewrite /dropN. by case: (N.to_nat _). Qed.
-
-  Lemma dropN_app n xs1 xs2 :
-    dropN n (xs1 ++ xs2) = dropN n xs1 ++ dropN (n - lengthN xs1) xs2.
-  Proof.
-    rewrite /dropN/lengthN N2Nat.inj_sub Nat2N.id. by apply: skipn_app.
-  Qed.
+  Lemma dropN_tail xs :
+    dropN 1 xs = tail xs.
+  Proof. by case: xs. Qed.
 
   Lemma dropN_dropN n m xs :
     dropN n (dropN m xs) = dropN (n + m) xs.
   Proof.
     rewrite /dropN N2Nat.inj_add Nat.add_comm. by apply: drop_drop.
+  Qed.
+
+  Lemma dropN_nil n :
+    dropN (A := A) n [] = [].
+  Proof. rewrite /dropN. by case: (N.to_nat _). Qed.
+
+  Lemma dropN_cons_succ x xs i :
+    dropN (i + 1) (x :: xs) = dropN i xs.
+  Proof. by rewrite -dropN_dropN dropN_one. Qed.
+
+  Lemma dropN_app n xs1 xs2 :
+    dropN n (xs1 ++ xs2) = dropN n xs1 ++ dropN (n - lengthN xs1) xs2.
+  Proof.
+    rewrite /dropN/lengthN N2Nat.inj_sub Nat2N.id. by apply: skipn_app.
   Qed.
 
   Lemma dropN_takeN n m xs :
@@ -345,10 +361,6 @@ Section listN.
     takeN 1 (x :: xs) = [x].
   Proof. reflexivity. Qed.
 
-  Lemma takeN_nil n :
-    takeN (A := A) n [] = [].
-  Proof. rewrite /takeN. by case: (N.to_nat _). Qed.
-
   Lemma takeN_lengthN n xs :
     lengthN xs <= n -> takeN n xs = xs.
   Proof.
@@ -356,11 +368,23 @@ Section listN.
     by apply: take_ge.
   Qed.
 
+  Lemma takeN_singleton x i :
+    takeN (i + 1) [x] = [x].
+  Proof. rewrite takeN_lengthN// lengthN_one. lia. Qed.
+
   Lemma takeN_app n xs1 xs2 :
     takeN n (xs1 ++ xs2) = takeN n xs1 ++ takeN (n - lengthN xs1) xs2.
   Proof.
     rewrite /takeN/lengthN N2Nat.inj_sub Nat2N.id. by apply: firstn_app.
   Qed.
+
+  Lemma takeN_nil n :
+    takeN (A := A) n [] = [].
+  Proof. rewrite /takeN. by case: (N.to_nat _). Qed.
+
+  Lemma takeN_cons_succ x xs i :
+    takeN (i + 1) (x :: xs) = x :: takeN i xs.
+  Proof. by rewrite -/([x] ++ xs) takeN_app lengthN_one takeN_singleton/= N.add_sub. Qed.
 
   Lemma takeN_takeN n m xs :
     takeN n (takeN m xs) = takeN (n `min` m) xs.
@@ -569,6 +593,10 @@ Section listN.
     i >= lengthN xs <-> lookupN i xs = None.
   Proof. rewrite -lookupN_fold /lengthN lookup_ge_None. lia. Qed.
 
+  Lemma lookupN_bound xs i x :
+    is_Some (xs !! i) -> i < lengthN xs.
+  Proof. by rewrite lookupN_is_Some. Qed.
+
   Lemma lookupN_replicateN n x i :
     lookupN i (replicateN n x) = Some x <-> i < n.
   Proof.
@@ -666,6 +694,16 @@ Section listN.
         by rewrite -[(x :: xs) ++ _]app_comm_cons lookupN_cons_succ.
   Qed.
 
+  Lemma lookupN_explode xs x i :
+    xs !! i = Some x ->
+    xs = takeN i xs ++ [x] ++ dropN (i + 1) xs.
+  Proof.
+    elim/N.induction: i xs=> [|i IH]; case=> [|x0 xs]//.
+    - by rewrite -[0+1]/1 lookupN_head/= dropN_one=> - [->].
+    - rewrite -N.add_1_r/= lookupN_cons_succ. move/IH=> {1}-> {IH}.
+      by rewrite takeN_cons_succ dropN_cons_succ/=.
+  Qed.
+
   Definition lookupN_simpl :=
     (@lookupN_nil, @lookupN_cons_zero, @lookupN_cons_succ,
      @lookupN_dropN, @lookupN_takeN,
@@ -727,6 +765,24 @@ Section listN.
   Lemma insertN_replicateN i n x :
     <[i:=x]> (replicateN n x) = replicateN n x.
   Proof. rewrite /replicateN. by apply: insert_replicate. Qed.
+
+  Lemma insertN_explode xs x i :
+    i < lengthN xs ->
+    <[i:=x]> xs = takeN i xs ++ [x] ++ dropN (i + 1) xs.
+  Proof.
+    elim/N.induction: i xs=> [|i IH]; case=> [|x0 xs]//; rewrite -N.add_1_r !lengthN_simpl.
+    - lia.
+    - rewrite insertN_cons_succ takeN_cons_succ dropN_cons_succ.
+      by rewrite -N.add_lt_mono_r=> /IH ->.
+  Qed.
+
+  Lemma alterN_explode xs x i f :
+    xs !! i = Some x ->
+    alter f i xs = takeN i xs ++ [f x] ++ dropN (i + 1) xs.
+  Proof.
+    move=> H. rewrite /alter/list_alterN H.
+    by rewrite insertN_explode; last by rewrite lookupN_is_Some H.
+  Qed.
 
   Definition insertN_simpl :=
     (@insertN_nil, @insertN_cons_zero, @insertN_cons_succ).

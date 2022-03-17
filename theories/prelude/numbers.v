@@ -116,6 +116,9 @@ Infix "≪" := N.shiftl : N_scope.
 #[global] Instance N_succ_inj : Inj (=) (=) N.succ.
 Proof. intros n1 n2. lia. Qed.
 
+Lemma N_minE {n m : N} : (n <= m)%N -> (n `min` m)%N = n.
+Proof. case: (N.min_spec n m)=> [[]|[]]//. lia. Qed.
+
 (** Shorter and more memorable name. *)
 Lemma N_ext n m : (∀ i, N.testbit n i = N.testbit m i) -> n = m.
 Proof. apply N.bits_inj_iff. Qed.
