@@ -146,9 +146,53 @@ Section list.
     by destruct (decide (x = y)); simplify_eq.
   Qed.
 End list.
+
 #[global] Hint Resolve NoDup_nil_2 | 0 : core.
 #[global] Hint Resolve NoDup_cons_2 : core.
 #[global] Hint Resolve not_elem_of_nil | 0 : core.
+
+Section lists.
+  Context {A B : Type}.
+  Implicit Types (xs : list A) (ys : list B).
+
+  Section zip_with.
+    Context {C : Type}.
+
+    Lemma NoDup_zip_with_fst_gen xs ys (f : A -> B -> C) :
+      (∀ x1 x2 y1 y2, f x1 y1 = f x2 y2 -> x1 = x2) ->
+      NoDup xs → NoDup (zip_with f xs ys).
+    Proof.
+      move=> Hinj. elim: xs ys => /= [//|x xs IHxs] [//|y ys] /NoDup_cons [Hni Hnd].
+      apply NoDup_cons, conj, IHxs, Hnd.
+      intros ?%elem_of_zip_with. naive_solver.
+    Qed.
+
+    Lemma NoDup_zip_with_fst_inj xs ys (f : A -> B -> C) `{!Inj2 eq eq eq f} :
+      NoDup xs → NoDup (zip_with f xs ys).
+    Proof. apply NoDup_zip_with_fst_gen. naive_solver. Qed.
+
+    Lemma NoDup_zip_with_snd_gen xs ys (f : A -> B -> C) :
+      (∀ x1 x2 y1 y2, f x1 y1 = f x2 y2 -> y1 = y2) ->
+      NoDup ys → NoDup (zip_with f xs ys).
+    Proof.
+      move=> Hinj. elim: xs ys => /= [//|x xs IHxs] [//|y ys] /NoDup_cons [Hni Hnd].
+      apply NoDup_cons, conj, IHxs, Hnd.
+      intros ?%elem_of_zip_with. naive_solver.
+    Qed.
+
+    Lemma NoDup_zip_with_snd_inj xs ys `(f : A -> B -> C) `{!Inj2 eq eq eq f} :
+      NoDup ys → NoDup (zip_with f xs ys).
+    Proof. apply NoDup_zip_with_snd_gen. naive_solver. Qed.
+  End zip_with.
+
+  Lemma NoDup_zip_fst xs ys :
+    NoDup xs → NoDup (zip xs ys).
+  Proof. exact: NoDup_zip_with_fst_inj. Qed.
+
+  Lemma NoDup_zip_snd xs ys :
+    NoDup ys → NoDup (zip xs ys).
+  Proof. exact: NoDup_zip_with_snd_inj. Qed.
+End lists.
 
 Section list_difference.
   Context `{EqDecision A}.
