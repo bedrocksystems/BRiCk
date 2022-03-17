@@ -30,6 +30,7 @@ Definition rotateN {A} n xs :=
   fun i xs => lookup (N.to_nat i) xs.
 #[global] Notation lookupN := (lookup (K := N)) (only parsing).
 
+(* TODO: Define in terms of the [list_alter] instance. *)
 #[global] Instance list_insertN {A} : Insert N A (list A) | 10 :=
   fun i x xs => <[N.to_nat i := x]> xs.
 #[global] Notation insertN := (insert (K := N)) (only parsing).
