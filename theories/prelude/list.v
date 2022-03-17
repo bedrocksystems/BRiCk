@@ -145,6 +145,13 @@ Section list.
     move/not_Forall_Exists=>/Exists_exists [] y [] Hy /=.
     by destruct (decide (x = y)); simplify_eq.
   Qed.
+
+  Lemma list_alter_insert l (i : nat) f :
+    alter f i l = if l !! i is Some x then <[i:=f x]> l else l.
+  Proof.
+    elim: l i => [//|x l IHl] [//|i]; csimpl.
+    rewrite IHl. by case_match.
+  Qed.
 End list.
 
 #[global] Hint Resolve NoDup_nil_2 | 0 : core.

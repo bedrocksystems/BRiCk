@@ -35,7 +35,6 @@ Definition rotateN {A} n xs :=
   fun i xs => lookup (N.to_nat i) xs.
 #[global] Notation lookupN := (lookup (K := N)) (only parsing).
 
-(* TODO: Define in terms of the [list_alter] instance. *)
 (** Instead of lifting the [list_lookup] theory to [list_lookupN] we provide an unfolding lemma. *)
 Lemma list_lookupN_lookup {A} (xs : list A) (n : N) :
   xs !! n = xs !! N.to_nat n.
@@ -51,8 +50,13 @@ Lemma list_insertN_insert {A} (xs : list A) (i : N) (x : A) :
 Proof. done. Qed.
 
 #[global] Instance list_alterN {A} : Alter N A (list A) | 10 :=
-  fun f i xs => if xs !! i is Some x then <[i:=f x]> xs else xs.
+  fun f i xs => alter f (N.to_nat i) xs.
 #[global] Notation alterN := (alter (K := N)) (only parsing).
+
+(* Instead of lifting the [list_alter] theory to [list_alterN] we provide an unfolding lemma. *)
+Lemma list_alterN_alter {A} (xs : list A) (i : N) f :
+  alter f i xs = alter f (N.to_nat i) xs.
+Proof. done. Qed.
 
 Lemma fmap_lengthN {A B} (f : A → B) (l : list A) :
   lengthN (f <$> l) = lengthN l.
@@ -825,11 +829,15 @@ Section listN.
       by rewrite -N.add_lt_mono_r=> /IH ->.
   Qed.
 
+  Lemma list_alterN_insertN xs i f :
+    alter f i xs = if xs !! i is Some x then <[i:=f x]> xs else xs.
+  Proof. by rewrite list_alterN_alter list_alter_insert. Qed.
+
   Lemma alterN_explode xs x i f :
     xs !! i = Some x ->
     alter f i xs = takeN i xs ++ [f x] ++ dropN (i + 1) xs.
   Proof.
-    move=> H. rewrite /alter/list_alterN H.
+    move=> H. rewrite list_alterN_insertN H.
     by rewrite insertN_explode; last by rewrite lookupN_is_Some H.
   Qed.
 
