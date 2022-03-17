@@ -645,5 +645,24 @@ Proof.
   iIntros "[-> A]". rewrite arg_ok. iExists _; iSplitR; eauto.
 Qed.
 
+Lemma spec_add_pre {PROP : bi} {ARG RESULT : Type} : forall P (PQ : WpSpec PROP ARG RESULT) args K,
+    P ∗ PQ args K ⊢ add_pre P PQ args K.
+Proof.
+  intros. rewrite /wp_specD/=. rewrite pre_ok. done.
+Qed.
+Lemma spec_add_post {PROP : bi} {ARG RESULT : Type} : forall P (PQ : WpSpec PROP ARG RESULT) args K,
+    PQ args (fun res => P -∗ K res) ⊢ add_post P PQ args K.
+Proof.
+  intros. rewrite /wp_specD/=.
+  change [P] with ([] ++ [P]).
+  rewrite post_ok. done.
+Qed.
+Lemma spec_add_prepost {PROP : bi} {ARG RESULT : Type} : forall P (PQ : WpSpec PROP ARG RESULT) args K,
+    P ∗ PQ args (fun res => P -∗ K res) ⊢ add_prepost P PQ args K.
+Proof.
+  intros. rewrite /add_prepost.
+  by rewrite -spec_add_pre -spec_add_post.
+Qed.
+
 Arguments list_sep_into {PROP} !_ _/.
 Arguments rev_append {T} !_ _.
