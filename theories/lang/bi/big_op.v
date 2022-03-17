@@ -35,10 +35,10 @@ End big_op.
 Section big_sepL.
   Context {PROP : bi} {A : Type}.
   Implicit Types xs : list A.
-  Implicit Types f g : nat → A → PROP.
+  Implicit Types f : nat → A → PROP.
 
   (** In contrast with [big_sepL_ne], the lists need not be equal. *)
-  Lemma big_sepL_gen_ne f g l1 l2 n :
+  Lemma big_sepL_gen_ne {B} f g (l1 : list A) (l2 : list B) n :
     length l1 = length l2 →
     (∀ k y1 y2, l1 !! k = Some y1 → l2 !! k = Some y2 → f k y1 ≡{n}≡ g k y2) →
     ([∗ list] k↦y ∈ l1, f k y)%I ≡{n}≡ ([∗ list] k↦y ∈ l2, g k y)%I.
@@ -52,10 +52,10 @@ Section big_sepL.
   Qed.
 
   (** In contrast with [big_sepL_proper], the lists need not be equal. *)
-  Lemma big_sepL_gen_proper f g l1 l2 :
+  Lemma big_sepL_gen_proper {B} f g (l1 : list A) (l2 : list B) :
     length l1 = length l2 →
     (∀ k y1 y2, l1 !! k = Some y1 → l2 !! k = Some y2 → f k y1 ≡ g k y2) →
-    ([∗ list] k↦y ∈ l1, f k y)%I ≡ ([∗ list] k↦y ∈ l2, g k y)%I.
+    ([∗ list] k↦y ∈ l1, f k y) ⊣⊢ [∗ list] k↦y ∈ l2, g k y.
   Proof.
     intros ? Hf. apply big_opL_gen_proper_2; [done|by apply _| ].
     move=>k. destruct (l1 !! k) eqn:Hl1, (l2 !! k) eqn:Hl2.
