@@ -25,11 +25,11 @@ Section extends.
    *)
   Inductive class_derives (derived : globname) : globname -> Set :=
   | Derives_here {st}
-      {_ : σ.(genv_tu).(globals) !! derived = Some (Gstruct st)}
+      {_ : σ.(genv_tu) !! derived = Some (Gstruct st)}
     : class_derives derived derived
 
   | Derives_base base {st li result}
-      {_ : σ.(genv_tu).(globals) !! derived = Some (Gstruct st)}
+      {_ : σ.(genv_tu) !! derived = Some (Gstruct st)}
       {_ : In (base, li) st.(s_bases)}
       (_ : class_derives base result)
     : class_derives derived result
@@ -54,7 +54,7 @@ Existing Class class_derives.
 
 #[global] Instance class_derives_here tu σ derived st :
   tu ⊧ σ ->
-  TCEq (tu.(globals) !! derived) (Some (Gstruct st)) ->
+  TCEq (tu !! derived) (Some (Gstruct st)) ->
   class_derives σ derived derived.
 Proof.
   intros. eapply Derives_here, glob_def_genv_compat_struct.
@@ -63,7 +63,7 @@ Defined.
 
 #[global] Instance class_derives_base tu σ derived base st li result :
   tu ⊧ σ ->
-  TCEq (tu.(globals) !! derived) (Some (Gstruct st)) ->
+  TCEq (tu !! derived) (Some (Gstruct st)) ->
   TCElemOf (base, li) st.(s_bases) ->
   class_derives σ base result ->
   class_derives σ derived result.

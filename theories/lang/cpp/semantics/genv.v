@@ -105,16 +105,16 @@ Qed.
 
 (** TODO deprecate this in favor of inlining it *)
 Definition glob_def (g : genv) (gn : globname) : option GlobDecl :=
-  g.(genv_tu).(globals) !! gn.
+  g.(genv_tu) !! gn.
 
 (* Supersedes glob_def_submodule *)
 Lemma glob_def_genv_compat_struct {σ gn tu} {Hσ : tu ⊧ σ} st
-  (Hl : tu.(globals) !! gn = Some (Gstruct st)) :
+  (Hl : tu !! gn = Some (Gstruct st)) :
   glob_def σ gn = Some (Gstruct st).
 Proof. move: Hσ Hl => /genv_compat_submodule. apply: sub_module_preserves_gstruct. Qed.
 
 Lemma glob_def_genv_compat_union {σ gn tu} {Hσ : tu ⊧ σ} st
-  (Hl : tu.(globals) !! gn = Some (Gunion st)) :
+  (Hl : tu !! gn = Some (Gunion st)) :
   glob_def σ gn = Some (Gunion st).
 Proof. move: Hσ Hl => /genv_compat_submodule. apply: sub_module_preserves_gunion. Qed.
 
