@@ -117,7 +117,7 @@ Section seqN.
   #[global] Typeclasses Opaque seqN.
 
   Lemma Forall_seqN P i n :
-    List.Forall P (seqN i n) ↔ (∀ j : N, i <= j < i + n → P j).
+    Forall P (seqN i n) ↔ (∀ j : N, i <= j < i + n → P j).
   Proof. rewrite Forall_forall. by setoid_rewrite elem_of_seqN. Qed.
 End seqN.
 
