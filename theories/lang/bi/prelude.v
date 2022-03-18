@@ -3,7 +3,7 @@
  * This software is distributed under the terms of the BedRock Open-Source License.
  * See the LICENSE-BedRock file in the repository root for details.
  *)
-From iris.bi Require Import bi big_op.
+From iris.bi Require Export bi.
 (* This export ensures that [upredI] is registered as a canonical structure everywhere. *)
 From iris.base_logic Require Export bi.
 From iris.proofmode Require Import classes.
