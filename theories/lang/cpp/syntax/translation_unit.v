@@ -530,7 +530,16 @@ Record translation_unit : Type :=
 ; byte_order : endian
 }.
 
+(** These [Lookup] instances come with no theory; use instead the unfolding lemmas below and the `fin_maps` theory. *)
 #[global] Instance global_lookup : Lookup globname GlobDecl translation_unit :=
   fun k m => m.(globals) !! k.
 #[global] Instance symbol_lookup : Lookup obj_name ObjValue translation_unit :=
   fun k m => m.(symbols) !! k.
+
+Lemma tu_lookup_globals (t : translation_unit) (n : globname) :
+  t !! n = t.(globals) !! n.
+Proof. done. Qed.
+
+Lemma tu_lookup_symbols (t : translation_unit) (n : obj_name) :
+  t !! n = t.(symbols) !! n.
+Proof. done. Qed.

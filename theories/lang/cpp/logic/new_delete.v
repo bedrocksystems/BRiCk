@@ -243,7 +243,7 @@ Module Type Expr__newdelete.
           let del '(fn, ty) := fspec ty (Vptr $ _global fn) (Vptr p :: nil) (fun _ => Q) in
           match erase_qualifiers ty with
           | Tnamed nm =>
-            match resolve.(genv_tu).(globals) !! nm with
+            match resolve.(genv_tu) !! nm with
             | Some (Gstruct s) =>
               del $ from_option (fun x => (x, del_type)) default s.(s_delete)
             | Some (Gunion u) =>
@@ -267,7 +267,7 @@ Module Type Expr__newdelete.
           match drop_qualifiers ty with
           | Tqualified _ ty => False (* unreachable *)
           | Tnamed cls      =>
-            match resolve.(genv_tu).(globals) !! cls with
+            match resolve.(genv_tu) !! cls with
             | Some (Gstruct s) =>
               if has_virtual_dtor s then
                 (* NOTE [has_virtual_dtor] could be derived from the vtable... *)

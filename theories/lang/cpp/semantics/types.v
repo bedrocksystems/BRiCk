@@ -69,9 +69,10 @@ Proof.
   all: try exact: pointer_size_proper.
   - by destruct IHt; constructor; subst.
   - move: Hle => [[ /(_ g) Hle _] _ _].
-    unfold glob_def, globals in *.
-    destruct (globals (genv_tu x) !! g) as [g1| ]; last constructor.
-    move: Hle => /(_ _ eq_refl) [g2 [-> HH]] /=.
+    unfold glob_def. rewrite -tu_lookup_globals in Hle.
+    destruct ((genv_tu x) !! g) as [g1| ]; last constructor.
+    move: Hle => /(_ _ eq_refl). rewrite -tu_lookup_globals.
+    move => [g2 [-> HH]] /=.
     exact: proper_GlobDecl_size_of.
   - by destruct o; constructor.
 Qed.
@@ -123,7 +124,7 @@ Proof. reflexivity. Qed.
 might need to inline the proof. *)
 Lemma size_of_genv_compat tu σ gn st
       (Hσ : tu ⊧ σ)
-      (Hl : tu.(globals) !! gn = Some (Gstruct st)) :
+      (Hl : tu !! gn = Some (Gstruct st)) :
   size_of σ (Tnamed gn) = GlobDecl_size_of (Gstruct st).
 Proof. by rewrite /= (glob_def_genv_compat_struct st Hl). Qed.
 
@@ -150,7 +151,7 @@ Qed.
 
 #[global] Instance named_struct_size_of tu σ gn st n :
   genv_compat tu σ ->
-  TCEq (globals tu !! gn) (Some (Gstruct st)) ->
+  TCEq (tu !! gn) (Some (Gstruct st)) ->
   TCEq st.(s_size) n ->
   SizeOf (Tnamed gn) n.
 Proof.
@@ -160,7 +161,7 @@ Qed.
 
 #[global] Instance named_union_size_of tu σ gn u n :
   genv_compat tu σ ->
-  TCEq (globals tu !! gn) (Some (Gunion u)) ->
+  TCEq (tu !! gn) (Some (Gunion u)) ->
   TCEq u.(u_size) n ->
   SizeOf (Tnamed gn) n.
 Proof.
@@ -280,6 +281,6 @@ Axiom Proper_align_of : Proper (genv_leq ==> eq ==> Roption_leq eq) (@align_of).
 
 Lemma align_of_genv_compat tu σ gn st
       (Hσ : tu ⊧ σ)
-      (Hl : tu.(globals) !! gn = Some (Gstruct st)) :
+      (Hl : tu !! gn = Some (Gstruct st)) :
   align_of (Tnamed gn) = GlobDecl_align_of (Gstruct st).
 Proof. by rewrite /= align_of_named (glob_def_genv_compat_struct st Hl). Qed.
