@@ -45,7 +45,7 @@ Proof. done. Qed.
 #[global] Notation insertN := (insert (K := N)) (only parsing).
 
 (* Instead of lifting the [list_insert] theory to [list_insertN] we provide an unfolding lemma. *)
-Lemma list_insertN_insert {A} (xs : list A) (i : N) (x : A) :
+Lemma list_insertN_insert {A} (i : N) (x : A) (xs : list A) :
   <[i := x]> xs = <[N.to_nat i := x]> xs.
 Proof. done. Qed.
 
@@ -54,7 +54,7 @@ Proof. done. Qed.
 #[global] Notation alterN := (alter (K := N)) (only parsing).
 
 (* Instead of lifting the [list_alter] theory to [list_alterN] we provide an unfolding lemma. *)
-Lemma list_alterN_alter {A} (xs : list A) (i : N) f :
+Lemma list_alterN_alter {A} (i : N) (xs : list A) f :
   alter f i xs = alter f (N.to_nat i) xs.
 Proof. done. Qed.
 
