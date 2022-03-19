@@ -152,6 +152,23 @@ Section list.
     elim: l i => [//|x l IHl] [//|i]; csimpl.
     rewrite IHl. by case_match.
   Qed.
+
+  Lemma list_filter_empty_iff (xs : list A) `(∀ x, Decision (P x)) :
+    filter P xs = [] ↔ List.Forall (λ x, ¬P x) xs.
+  Proof.
+    elim: xs => [//|x xs IH] /=.
+    rewrite filter_cons Forall_cons.
+    case_decide; naive_solver.
+  Qed.
+
+  Lemma list_fmap_filter {B} P Q (xs : list A) (f : A -> B)
+      `(∀ x, Decision (P x)) `(∀ x, Decision (Q x)) :
+    (∀ x, P x <-> Q (f x)) →
+    f <$> filter P xs = filter Q (f <$> xs).
+  Proof.
+    move=> Heq. elim: xs => [//|x xs IH]; csimpl; rewrite !filter_cons.
+    repeat case_decide; csimpl; rewrite IH; naive_solver.
+  Qed.
 End list.
 
 #[global] Hint Resolve NoDup_nil_2 | 0 : core.
@@ -199,6 +216,10 @@ Section lists.
   Lemma NoDup_zip_snd xs ys :
     NoDup ys → NoDup (zip xs ys).
   Proof. exact: NoDup_zip_with_snd_inj. Qed.
+
+  Lemma elem_of_zip x1 x2 xs ys :
+    (x1, x2) ∈ zip xs ys → x1 ∈ xs ∧ x2 ∈ ys.
+  Proof. intros. eauto using elem_of_zip_l, elem_of_zip_r. Qed.
 End lists.
 
 Section list_difference.
