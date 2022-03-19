@@ -16,3 +16,5 @@ Proof. apply mapset_eq. Qed.
 [set_map (C := gset A) (D := gset B)].
 *)
 Notation gset_map := (set_map (C := gset _) (D := gset _)) (only parsing).
+
+Notation gdom := (dom (gset _)) (only parsing).
