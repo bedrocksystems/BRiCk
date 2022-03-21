@@ -279,14 +279,14 @@ Module Type Stmt.
 
     (* note(gmm): this rule is not sound for a total hoare logic
      *)
-    Axiom wp_while : forall ρ t b Q I,
-        I |-- wp ρ (Sif None t (Sseq (b :: Scontinue :: nil)) Sskip)
+    Axiom wp_while : forall ρ test body Q I,
+        I |-- wp ρ (Sif None test (Sseq (body :: Scontinue :: nil)) Sskip)
                 (Kloop I Q) ->
-        I |-- wp ρ (Swhile None t b) Q.
+        I |-- wp ρ (Swhile None test body) Q.
 
-    Axiom wp_while_decl : forall ρ d t b Q,
-        wp ρ (Sseq (Sdecl (d :: nil) :: Swhile None t b :: nil)) Q
-        |-- wp ρ (Swhile (Some d) t b) Q.
+    Axiom wp_while_decl : forall ρ d test body Q,
+        wp ρ (Sseq (Sdecl (d :: nil) :: Swhile None test body :: nil)) Q
+        |-- wp ρ (Swhile (Some d) test body) Q.
 
 
     (* note(gmm): this rule is not sound for a total hoare logic
@@ -325,9 +325,9 @@ Module Type Stmt.
           | rt => Q rt
           end).
 
-    Axiom wp_do : forall ρ t b Q I,
-        I |-- wp ρ (Sseq (b :: nil)) (Kdo ρ t I Q) ->
-        I |-- wp ρ (Sdo b t) Q.
+    Axiom wp_do : forall ρ test body Q I,
+        I |-- wp ρ (Sseq (body :: nil)) (Kdo ρ test I Q) ->
+        I |-- wp ρ (Sdo body test) Q.
 
     (* compute the [Prop] that is known if this switch branch is taken *)
     Definition wp_switch_branch (s : SwitchBranch) (v : Z) : Prop :=
