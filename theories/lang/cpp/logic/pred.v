@@ -679,6 +679,10 @@ Section with_cpp.
     type_ptr ty p |-- [| p <> nullptr |].
   Proof. rewrite -{1}(offset_ptr_id p). apply type_ptr_off_nonnull. Qed.
 
+  #[global] Instance type_ptr_observe_nonnull ty p :
+    Observe [| p <> nullptr |] (type_ptr ty p).
+  Proof. rewrite type_ptr_nonnull. refine _. Qed.
+
   #[global] Instance provides_storage_preserves_nullptr {storage_ptr obj_ptr aty} :
     Observe [| storage_ptr = nullptr <-> obj_ptr = nullptr |] (provides_storage storage_ptr obj_ptr aty).
   Proof.

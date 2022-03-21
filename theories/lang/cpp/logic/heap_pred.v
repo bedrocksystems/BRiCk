@@ -515,6 +515,12 @@ Section with_cpp.
     case_match; refine _.
   Qed.
 
+  #[global] Instance type_ptrR_observe_nonnull {σ} ty :
+    Observe is_nonnull (type_ptrR ty).
+  Proof.
+    apply monPred_observe=>p /=.
+    rewrite monPred_at_type_ptrR is_nonnull_eq /=. refine _.
+  Qed.
 End with_cpp.
 
 #[global] Typeclasses Opaque identityR.
