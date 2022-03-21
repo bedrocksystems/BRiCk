@@ -519,7 +519,7 @@ Section with_cpp.
     Observe is_nonnull (type_ptrR ty).
   Proof.
     apply monPred_observe=>p /=.
-    rewrite monPred_at_type_ptrR is_nonnull_eq /= type_ptr_nonnull. refine _.
+    rewrite monPred_at_type_ptrR is_nonnull_eq /=. refine _.
   Qed.
 End with_cpp.
 
