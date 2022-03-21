@@ -558,6 +558,86 @@ Section FromToBytes.
       - now rewrite bswap64_set_byte_reverse.
       - now rewrite bswap128_set_byte_reverse.
     Qed.
+
+    Lemma _Z_from_bytes_unsigned_le'_singleton idx a :
+      _Z_from_bytes_unsigned_le' idx [a] = (_set_byte (Z.of_N a) idx).
+    Proof.
+      rewrite/_Z_from_bytes_unsigned_le'.
+      cbn.
+      by rewrite Z.lor_0_r.
+    Qed.
+
+    Lemma _Z_from_bytes_unsigned_le'_bounds bytes idx b :
+      (256 ^ (length bytes + Z.of_nat idx)%Z <= b)%Z ->
+      (0 ≤ _Z_from_bytes_unsigned_le' idx bytes < b)%Z.
+    Proof.
+      move: b idx.
+      elim bytes.
+      {
+        move => ? ?.
+        rewrite Z.add_0_l.
+        move => ?.
+        split; [by []|].
+        cbn.
+        eapply Z.lt_le_trans.
+        2: { eassumption. }
+        apply Z.pow_pos_nonneg; [ by[] | ].
+        exact: Zle_0_nat.
+      }
+      move => a l IH b idx /= H.
+      rewrite _Z_from_bytes_unsigned_le'_cons.
+      rewrite _Z_from_bytes_unsigned_le'_S_idx.
+      assert (
+          (0
+             ≤ Z.lor (_Z_from_bytes_unsigned_le' idx [a]) (_Z_from_bytes_unsigned_le' idx l ≪ 8) <
+             2 ^ (Z.of_N $ N.of_nat (8 * (S (length l) + idx))))%Z
+        ) as H1.
+      {
+        apply ZlorRange.
+        {
+          rewrite _Z_from_bytes_unsigned_le'_singleton.
+          move: (_set_byte_bound (Z.of_N a) idx) => [L0 L1].
+          split; first assumption.
+          eapply Z.lt_le_trans; first eassumption.
+          apply Z.pow_le_mono_r; first done.
+          lia.
+        }
+        move: (IH (2 ^ Z.of_N (N.of_nat (8 * (S (length l) + idx))))%Z (S idx)).
+        rewrite _Z_from_bytes_unsigned_le'_S_idx.
+        apply.
+        rewrite nat_N_Z.
+        rewrite Nat2Z.inj_mul.
+        rewrite Z.pow_mul_r //.
+        apply: Z.pow_le_mono.
+        1: done.
+        lia.
+      }
+      split; first tauto.
+      eapply Z.lt_le_trans.
+      {
+        move: H1 => [_ max].
+        eassumption.
+      }
+      rewrite nat_N_Z.
+      rewrite Nat2Z.inj_mul.
+      rewrite Z.pow_mul_r //.
+      cbn.
+      eapply Z.le_trans.
+      2: eassumption.
+      apply: Z.pow_le_mono.
+      1: done.
+      lia.
+    Qed.
+
+    Lemma _Z_from_bytes_unsigned_le_bounds bytes b :
+      (256 ^ length bytes <= b)%Z ->
+      (0 <= _Z_from_bytes_unsigned_le bytes < b)%Z.
+    Proof.
+      move => H.
+      apply _Z_from_bytes_unsigned_le'_bounds.
+      by rewrite Z.add_0_r.
+    Qed.
+
   End FromBytesFacts_internal.
 
   Section FromToFacts_internal.
@@ -774,6 +854,17 @@ Section FromToBytes.
         try rewrite rev_involutive;
         by apply _Z_from_signed_to_unsigned_bytes_le.
     Qed.
+
+    Lemma _Z_from_bytes_Big_Unsigned_bound_internal:
+      forall lst,
+        (0 <= _Z_from_bytes_def Big Unsigned (rev lst) < 256 ^ (length $ rev lst))%Z.
+    Proof.
+      rewrite/_Z_from_bytes_def.
+      rewrite/_Z_from_bytes_le.
+      move => lst.
+      apply _Z_from_bytes_unsigned_le_bounds.
+      by rewrite !rev_length.
+    Qed.
   End FromToFacts_internal.
 
   Section ToBytes_external.
@@ -815,6 +906,15 @@ Section FromToBytes.
       forall endianness sgn (cnt: nat),
         _Z_from_bytes endianness sgn (repeat 0%N cnt) = 0%Z.
     Proof. move=> *; rewrite _Z_from_bytes_eq; apply _Z_from_bytes_def_0s. Qed.
+    Lemma _Z_to_bytes_Big_Unsigned_bound:
+      forall lst,
+        (0 <= _Z_from_bytes Big Unsigned lst < 256 ^ (length lst))%Z.
+    Proof.
+      move => lst.
+      rewrite -[lst]rev_involutive.
+      rewrite _Z_from_bytes_eq.
+      exact: _Z_from_bytes_Big_Unsigned_bound_internal.
+    Qed.
   End FromBytesFacts_external.
 
   Section FromToFacts_external.
