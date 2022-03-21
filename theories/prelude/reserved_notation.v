@@ -1,5 +1,5 @@
 (*
- * Copyright (c) 2021 BedRock Systems, Inc.
+ * Copyright (c) 2021-2022 BedRock Systems, Inc.
  *
  * This software is distributed under the terms of the BedRock Open-Source License.
  * See the LICENSE-BedRock file in the repository root for details.
@@ -31,6 +31,9 @@ Reserved Infix "`lor`" (at level 50, left associativity).
 Reserved Infix "`land`" (at level 40, left associativity).
 Reserved Infix "`ldiff`" (at level 40, left associativity).
 Reserved Infix "\" (at level 40, left associativity).	(** cf [∖] *)
+
+Reserved Notation "A -mon> B"
+  (at level 99, B at level 200, right associativity).
 
 (** ** Iris big ops *)
 (**
