@@ -110,46 +110,6 @@ Module Type Stmt.
         | None => default_initialize ty addr (fun frees => destroy frees)
         end.
 
-    (*
-    Lemma decl_prim (x : ident) (ρ ρ_init : region) (init : option Expr) (ty : type)
-           (k k' : region → FreeTemps → mpred) :
-             Forall (a : region) b, k a b -* k' a b
-         |-- (Forall a : ptr,
-                         match init with
-                         | Some init0 =>
-                           wp_prval ρ_init init0
-                                    (λ (v : val) (free : FreeTemps),
-                                     interp free $
-                                          (a |-> heap_pred.primR (erase_qualifiers ty) 1 v -*
-                                             k (Rbind x a ρ) (FreeTemps.delete (erase_qualifiers ty) a)))
-                         | None =>
-                           a |-> heap_pred.uninitR (erase_qualifiers ty) 1 -*
-                             k (Rbind x a ρ) (FreeTemps.delete (erase_qualifiers ty) a)
-                         end) -*
-         (Forall a : ptr,
-                     match init with
-                     | Some init0 =>
-                       wp_prval ρ_init init0
-                                (λ (v : val) (free : FreeTemps),
-                                 interp free $
-                                      (a |-> heap_pred.primR (erase_qualifiers ty) 1 v -*
-                                         k' (Rbind x a ρ) (FreeTemps.delete (erase_qualifiers ty) a)))
-                     | None =>
-                       a |-> heap_pred.uninitR (erase_qualifiers ty) 1 -*
-                         k' (Rbind x a ρ) (FreeTemps.delete (erase_qualifiers ty) a)
-                     end).
-    Proof.
-      case: init=>[e | ];iIntros "K h" (a).
-      { iSpecialize ("h" $! a);iRevert "h".
-        iApply wp_prval_frame;first by done.
-        iIntros (v f);iApply interp_frame.
-        iIntros "h h'";iDestruct ("h" with "h'") as "h".
-        by iApply "K". }
-      { iSpecialize ("h" $! a);iRevert "h".
-        iIntros "h h'";iDestruct ("h" with "h'") as "h".
-        by iApply "K". }
-    Qed.
-*)
     Lemma wp_decl_var_frame : forall x ρ ρ_init init ty (k k' : region -> FreeTemps -> mpred),
         Forall a (b : _), k a b -* k' a b
         |-- wp_decl_var ρ ρ_init x ty init k -* wp_decl_var ρ ρ_init x ty init k'.
