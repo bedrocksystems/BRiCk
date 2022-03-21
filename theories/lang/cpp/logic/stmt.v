@@ -312,8 +312,21 @@ Module Type Stmt.
         wp ρ (Sseq (init :: Sfor None test incr b :: nil)) Q
         |-- wp ρ (Sfor (Some init) test incr b) Q.
 
+    Definition Kdo (ρ : region) (e : Expr) (I : mpred) (Q : KpredI) : KpredI :=
+      KP (funI rt =>
+          match rt with
+          | Break => Q Normal
+          | Continue | Normal =>
+            wp_operand ρ e (fun v free =>
+                              match is_true v with
+                              | None => False
+                              | Some c => interp free $ if c then I else Q Normal
+                              end)
+          | rt => Q rt
+          end).
+
     Axiom wp_do : forall ρ t b Q I,
-        I |-- wp ρ (Sseq (b :: (Sif None t Scontinue Sskip) :: nil)) (Kloop I Q) ->
+        I |-- wp ρ (Sseq (b :: nil)) (Kdo ρ t I Q) ->
         I |-- wp ρ (Sdo b t) Q.
 
     (* compute the [Prop] that is known if this switch branch is taken *)
