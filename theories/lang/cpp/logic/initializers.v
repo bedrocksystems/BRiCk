@@ -102,6 +102,9 @@ Module Type Init.
         iModIntro. iIntros (???) "a". by iApply IHty. }
     Qed.
 
+    (* error used when using [e] to initialize a value of type [ty]. *)
+    Variant initializing_type (ty : type) (e : Expr) : Prop := ANY.
+
     (** [wp_initialize] provides "constructor" semantics for types.
         For aggregates, simply delegates to [wp_init], but for primitives,
         the semantics is to evaluate the primitive and initialize the location
@@ -115,7 +118,15 @@ Module Type Init.
      *)
     Definition wp_initialize (ty : type) (addr : ptr) (init : Expr) (k : FreeTemps -> mpred) : mpred :=
       match drop_qualifiers ty with
-      | Tvoid => False
+      | Tvoid =>
+        (* [wp_initialize] is used to `return` from a function.
+           The following is legal in C++:
+           ```
+           void f();
+           void g() { return f(); }
+           ```
+         *)
+        wp_operand init (fun v frees => [| v = Vvoid |] ** (addr |-> primR Tvoid 1 Vvoid -*  k frees))
       | Tpointer _ as ty
       | Tmember_pointer _ _ as ty
       | Tbool as ty
@@ -137,11 +148,11 @@ Module Type Init.
         let rty := Tref $ erase_qualifiers ty in
         wp_xval init (fun p free =>
                         addr |-> primR rty 1 (Vref p) -* k free)
-      | Tfunction _ _ => False (* functions not supported *)
+      | Tfunction _ _ => UNSUPPORTED (initializing_type ty init)
 
       | Tqualified _ ty => False (* unreachable *)
-      | Tarch _ _ => False (* vendor-specific types are not supported *)
-      | Tfloat _ => False (* floating point numbers are not supported *)
+      | Tarch _ _ => UNSUPPORTED (initializing_type ty init)
+      | Tfloat _ => UNSUPPORTED (initializing_type ty init)
       end.
     #[global] Arguments wp_initialize !_ _ _ _ /.
 
@@ -186,6 +197,8 @@ Module Type Init.
                                  | iApply wp_lval_frame
                                  | iApply wp_xval_frame ]; try reflexivity;
               iIntros (v f) "X Y"; iApply "a"; iApply "X"; eauto ].
+      { iIntros "a". iApply wp_operand_frame => //; iIntros (??) => //.
+        iIntros "[$ X] Y"; iApply "a"; iApply "X" => //. }
       { iIntros "a". iApply wp_init_frame => //; iIntros (?) => //. }
       { iIntros "a". iApply wp_init_frame => //; iIntros (?) => //. }
     Qed.
@@ -197,7 +210,7 @@ Module Type Init.
 
     Theorem wpi_frame (cls : globname) (this : ptr) (e : Initializer) k1 k2 :
       k1 -* k2 |-- wpi (σ:=σ1) ρ cls this e k1 -* wpi (σ:=σ2) ρ cls this e k2.
-    Proof. Abort. (* This is not quite provable *)
+    Proof. Abort. (* This is not provable *)
 
   End frames.
 
