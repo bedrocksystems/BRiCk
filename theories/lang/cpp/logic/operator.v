@@ -12,7 +12,7 @@ Parameter eval_binop_impure : forall `{has_cpp : cpp_logic} {resolve : genv}, Bi
 
 (** Pointer [p'] is not at the beginning of a block. *)
 Definition non_beginning_ptr `{has_cpp : cpp_logic} p' : mpred :=
-  ∃ p o, [| p' = p .., o /\
+  ∃ p o, [| p' = p ,, o /\
     (* ensure that o is > 0 *)
     some_Forall2 N.lt (ptr_vaddr p) (ptr_vaddr p') |] ∧ valid_ptr p.
 
@@ -41,8 +41,8 @@ Section with_Σ.
 
   (* Two pointers into the same array are [ptr_ord_comparable]. *)
   Lemma ptr_ord_comparable_off_off o1 o2 base p1 p2 f res :
-    p1 = base .., o1 ->
-    p2 = base .., o2 ->
+    p1 = base ,, o1 ->
+    p2 = base ,, o2 ->
     (forall va1 va2, ptr_vaddr p1 = Some va1 -> ptr_vaddr p2 = Some va2 -> f va1 va2 = res) ->
     valid_ptr p1 ∗ valid_ptr p2 ⊢ ptr_ord_comparable p1 p2 f res.
   Proof.
@@ -53,7 +53,7 @@ Section with_Σ.
   Qed.
 
   Lemma ptr_ord_comparable_off o1 base p1 f res :
-    p1 = base .., o1 ->
+    p1 = base ,, o1 ->
     (forall va1 va2, ptr_vaddr p1 = Some va1 -> ptr_vaddr base = Some va2 -> f va1 va2 = res) ->
     valid_ptr p1 ∗ valid_ptr base ⊢ ptr_ord_comparable p1 base f res.
   Proof.
@@ -158,8 +158,8 @@ Section with_Σ.
   Qed.
 
   Lemma ptr_comparable_off_off o1 o2 base p1 p2 res :
-    p1 = base .., o1 ->
-    p2 = base .., o2 ->
+    p1 = base ,, o1 ->
+    p2 = base ,, o2 ->
     same_address_bool p1 p2 = res ->
     valid_ptr p1 ∗ valid_ptr p2 ⊢ ptr_comparable p1 p2 res.
   Proof.
@@ -169,7 +169,7 @@ Section with_Σ.
   Qed.
 
   Lemma ptr_comparable_off o1 base p1 res :
-    p1 = base .., o1 ->
+    p1 = base ,, o1 ->
     same_address_bool p1 base = res ->
     valid_ptr p1 ∗ valid_ptr base ⊢ ptr_comparable p1 base res.
   Proof.
@@ -234,7 +234,7 @@ Section with_Σ.
   #[local] Definition eval_ptr_int_op (bo : BinOp) (f : Z -> Z) : Prop :=
     forall w s p1 p2 o ty,
       is_Some (size_of resolve ty) ->
-      p2 = p1 .., _sub ty (f o) ->
+      p2 = p1 ,, _sub ty (f o) ->
       valid_ptr p1 ∧ valid_ptr p2 ⊢
       eval_binop_impure bo
                 (Tpointer ty) (Tint w s) (Tpointer ty)
@@ -243,7 +243,7 @@ Section with_Σ.
   #[local] Definition eval_int_ptr_op (bo : BinOp) (f : Z -> Z) : Prop :=
     forall w s p1 p2 o ty,
       is_Some (size_of resolve ty) ->
-      p2 = p1 .., _sub ty (f o) ->
+      p2 = p1 ,, _sub ty (f o) ->
       valid_ptr p1 ∧ valid_ptr p2 ⊢
       eval_binop_impure bo
                 (Tint w s) (Tpointer ty) (Tpointer ty)
@@ -288,8 +288,8 @@ Section with_Σ.
   Axiom eval_ptr_ptr_sub :
     forall w p1 p2 o1 o2 base ty,
       is_Some (size_of resolve ty) ->
-      p1 = base .., _sub ty o1 ->
-      p2 = base .., _sub ty o2 ->
+      p1 = base ,, _sub ty o1 ->
+      p2 = base ,, _sub ty o2 ->
       (* Side condition to prevent overflow; needed per https://eel.is/c++draft/expr.add#note-1 *)
       has_type (Vint (o1 - o2)) (Tint w Signed) ->
       valid_ptr p1 ∧ valid_ptr p2 ⊢

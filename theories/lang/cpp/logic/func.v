@@ -11,8 +11,9 @@ Require Import bedrock.lang.cpp.ast.
 Require Import bedrock.lang.cpp.semantics.
 From bedrock.lang.cpp.logic Require Import
   pred path_pred heap_pred wp builtins
-  layout initializers destroy.
+  layout initializers destroy arr.
 Require Import bedrock.lang.cpp.heap_notations.
+
 
 #[local] Set Printing Coercions.
 
@@ -122,7 +123,7 @@ Section with_cpp.
     |-- p |-> init_identity cls (p |-> revert_identity cls (p |-> REQ ** Q)).
   Proof.
     rewrite /revert_identity/init_identity => ->.
-    rewrite !_at_sep !_at_wand !_at_pureR.
+    rewrite !at_sep !at_wand !at_pureR.
     iIntros "[$ $] $ $ $".
   Qed.
 
@@ -149,7 +150,7 @@ Section with_cpp.
         let rty := Tref $ erase_qualifiers ty in
         match v with
         | Vptr p =>
-          Forall a, a |-> primR rty 1 (Vref p) -*
+          Forall (a : ptr), a |-> primR rty 1 (Vref p) -*
           bind_vars xs vs (Rbind x a ρ) (fun r free => Q r (FreeTemps.delete rty a >*> free))
           (* NOTE: when we create a reference, we always use [Tref] *)
         | _ => ERROR $ "non-pointer passed for reference"
@@ -265,7 +266,7 @@ Section with_cpp.
            (see https://eel.is/c++draft/dcl.init#general-7 )
          *)
         default_initialize m.(mem_type)
-          (this ., _field {| f_type := cls ; f_name := m.(mem_name) |})
+          (this ,, _field {| f_type := cls ; f_name := m.(mem_name) |})
           (fun frees => interp frees (wpi_members ρ cls this members inits Q))
       | i :: is' =>
         match i.(init_path) with
@@ -379,7 +380,7 @@ Section with_cpp.
       rewrite /init_identity.
       case_match; eauto.
       case_match; eauto.
-      rewrite !_at_sep !_at_wand !_at_pureR.
+      rewrite !at_sep !at_wand !at_pureR.
       iIntros "[$ x]".
       iIntros "b c"; iDestruct ("x" with "b c") as "x".
       iRevert "x"; iApply wpi_members_frame. iIntros "b c".
@@ -429,7 +430,7 @@ Section with_cpp.
      [[
          type_validity (Tnamed cls) this
      |-- strict_valid_ptr this **
-         [∗list] f ∈ s_fields , type_validity f.(f_type) (this ., _field f)
+         [∗list] f ∈ s_fields , type_validity f.(f_type) (this ,, _field f)
      ]]
 
      TODO we leave this trivival for now.
@@ -505,7 +506,7 @@ Section with_cpp.
 
   (** ** Weakest precondition of a destructor *)
   Definition wpd_bases (cls : globname) (this : ptr) (bases : list globname) : epred -> mpred :=
-    let del_base base := FreeTemps.delete (Tnamed base) (this ., _base cls base) in
+    let del_base base := FreeTemps.delete (Tnamed base) (this ,, _base cls base) in
     interp (FreeTemps.seqsR (List.map del_base bases)).
 
   Lemma wpd_bases_frame cls this : forall bases Q Q',
@@ -513,7 +514,7 @@ Section with_cpp.
   Proof. intros. apply interp_frame. Qed.
 
   Definition wpd_members (cls : globname) (this : ptr) (members : list Member) : epred -> mpred :=
-    let del_member m := FreeTemps.delete m.(mem_type) (this ., _field {| f_name := m.(mem_name) ; f_type := cls |}) in
+    let del_member m := FreeTemps.delete m.(mem_type) (this ,, _field {| f_name := m.(mem_name) ; f_type := cls |}) in
     interp (FreeTemps.seqsR (List.map del_member members)).
 
   Lemma wpd_members_frame cls this : forall members Q Q',

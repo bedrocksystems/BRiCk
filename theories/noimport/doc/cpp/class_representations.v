@@ -102,10 +102,10 @@ represented, we define a Gallina record to denote the mathematical model of what
 
   Definition taggedR (m : M) : Rep :=
     match m with
-    | AnInt z => tag_field |-> boolR 1 true **
-                 x_field |-> intR 1 z
-    | ABool b => tag_field |-> boolR 1 false **
-                 y_field |-> boolR 1 b
+    | AnInt z => _field tag_field |-> boolR 1 true **
+                 _field x_field |-> intR 1 z
+    | ABool b => _field tag_field |-> boolR 1 false **
+                 _field y_field |-> boolR 1 b
     end.
   (** note that in this definition, the [x_field] and [y_field] are *not*
       disjoint.
@@ -113,10 +113,10 @@ represented, we define a Gallina record to denote the mathematical model of what
       an equivalent way to write this definition is the following.
    *)
   Definition taggedR' (m : M) : Rep :=
-    tag_field |-> boolR 1 (is_an_int m) **
+    _field tag_field |-> boolR 1 (is_an_int m) **
     match m with
-    | AnInt z => x_field |-> intR 1 z
-    | ABool b => y_field |-> boolR 1 b
+    | AnInt z => _field x_field |-> intR 1 z
+    | ABool b => _field y_field |-> boolR 1 b
     end.
   (** a benefit to this approach is that is is clear that, regardless of the
       value of the model, it is always safe to access the [tag] field.
@@ -169,11 +169,11 @@ represented, we define a Gallina record to denote the mathematical model of what
   Parameters word_field high_field low_field : field.
 
   Definition OrBytes_wordR (q : Qp) (w : Z) : Rep :=
-    word_field |-> intR q w.
+    _field word_field |-> intR q w.
 
   Definition OrBytes_high_lowR (q : Qp) (h l : Z) : Rep :=
-    high_field |-> intR q h **
-    low_field |-> intR q l.
+    _field high_field |-> intR q h **
+    _field low_field |-> intR q l.
 
   (** Now, when we write the representation predidate for [OrBytes], we pick
       one of the two representations as primary. Here, we will pick

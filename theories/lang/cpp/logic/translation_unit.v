@@ -25,6 +25,7 @@ Section with_cpp.
   Local Notation method_at := (@method_at _ Σ) (only parsing).
   Local Notation ctor_at := (@ctor_at _ Σ) (only parsing).
   Local Notation dtor_at := (@dtor_at _ Σ) (only parsing).
+  Local Open Scope bi_scope. (*Does this scope need to be exported?*)
 
   Definition denoteSymbol (n : obj_name) (o : ObjValue) : mpred :=
     _at (_global n)

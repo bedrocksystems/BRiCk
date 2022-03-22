@@ -51,7 +51,7 @@ Fixpoint path_to_Offset (resolve:genv) (from : globname) (final : ident)
   match ls with
   | [] => o_field resolve {| f_type := from ; f_name := final |}
   | (i, c) :: ls =>
-    o_dot (o_field resolve {| f_type := from ; f_name := i |}) (path_to_Offset resolve c final ls)
+    o_field resolve {| f_type := from ; f_name := i |} ,, path_to_Offset resolve c final ls
   end.
 
 (** [offset_for cls f] returns the [offset] of [f] where the base is [this] and has type

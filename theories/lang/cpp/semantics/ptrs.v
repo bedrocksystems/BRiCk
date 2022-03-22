@@ -11,6 +11,8 @@ C++ pointers are subtle to model.
 The definitions in this file are based on the C and C++ standards, and
 formalizations of their memory object models (see [doc/sphinx/bibliography.rst]).
  *)
+From elpi Require Import locker.
+
 From bedrock.prelude Require Import base addr option numbers.
 
 Require Import bedrock.lang.cpp.ast.
@@ -34,7 +36,33 @@ Proof. solve_decision. Qed.
 #[global] Instance alloc_id_countable : Countable alloc_id.
 Proof. by apply: (inj_countable' alloc_id_car MkAllocId) => -[?]. Qed.
 
-Reserved Notation "p .., o" (at level 11, left associativity).
+Module Type PTRS_SYNTAX_INPUTS.
+  Parameter ptr : Set.
+  Parameter offset : Set.
+  Parameter __offset_ptr : ptr -> offset -> ptr.
+  Parameter __o_dot : offset -> offset -> offset.
+End PTRS_SYNTAX_INPUTS.
+
+Module Type PTRS_SYNTAX_MIXIN (Import Inputs : PTRS_SYNTAX_INPUTS).
+  Structure DOT : Type :=
+    { #[canonical=yes] DOT_from : Type
+    ; #[canonical=yes] DOT_to :> Type
+    ; #[canonical=no] DOT_dot : DOT_from -> offset -> DOT_to }.
+  #[global] Arguments DOT_dot {DOT} _ _ : rename, simpl never.
+  Canonical Structure DOT_ptr_offset : DOT :=
+    {| DOT_from := ptr; DOT_to := ptr; DOT_dot p o := __offset_ptr p o |}.
+  Canonical Structure DOT_offset_offset : DOT :=
+    {| DOT_from := offset; DOT_to := offset; DOT_dot o1 o2 := __o_dot o1 o2 |}.
+
+  mlock Definition _dot := @DOT_dot.
+  #[global] Arguments _dot {DOT} _ _ : rename, simpl never.
+
+  #[global] Notation _offset_ptr := (@_dot DOT_ptr_offset) (only parsing).
+  #[global] Notation o_dot := (@_dot DOT_offset_offset) (only parsing).
+
+  #[global] Notation "p ,, o" := (_dot p o)
+    (at level 11, left associativity, format "p  ,,  o") : stdpp_scope.
+End PTRS_SYNTAX_MIXIN.
 
 Module Type PTRS.
   (** * Pointers.
@@ -103,9 +131,6 @@ Module Type PTRS.
   one is [PTRS_IMPL].
   *)
   Parameter ptr : Set.
-  Declare Scope ptr_scope.
-  Bind Scope ptr_scope with ptr.
-  Delimit Scope ptr_scope with ptr.
 
   Axiom ptr_eq_dec : forall (x y : ptr), { x = y } + { x <> y }.
   #[global] Instance ptr_eq_dec' : EqDecision ptr := ptr_eq_dec.
@@ -124,44 +149,39 @@ Module Type PTRS.
       Offsets represent paths between objects and subobjects.
 
       If [p] points to an object and [o] is an offset to a subobject,
-      [p .., o] is a pointer to that subobject. If no such object exist,
-      [valid_ptr (p .., o)] will not hold.
+      [p ,, o] is a pointer to that subobject. If no such object exist,
+      [valid_ptr (p ,, o)] will not hold.
 
       For instance, if [p->x] is a C++ object but [p->y] isn't, in Coq,
       the pointer [p ., o_field "x"] will be valid but [p ., o_field "y"]
       will not.
    *)
   Parameter offset : Set.
-  Declare Scope offset_scope.
-  Bind Scope offset_scope with offset.
-  Delimit Scope offset_scope with offset.
 
   Axiom offset_eq_dec : EqDecision offset.
   #[global] Existing Instance offset_eq_dec.
   Axiom offset_countable : Countable offset.
   #[global] Existing Instance offset_countable.
 
+  (** combine an offset and a pointer to get a new pointer;
+    this is a right monoid action.
+   *)
+  #[local] Parameter __offset_ptr : ptr -> offset -> ptr.
+  #[local] Parameter __o_dot : offset -> offset -> offset.
+
+  Include PTRS_SYNTAX_MIXIN.
+
   (** Offsets form a monoid *)
-  Parameter o_id  :                     offset.
-  Parameter o_dot : offset -> offset -> offset.
+  Parameter o_id  : offset.
 
   Axiom id_dot    : LeftId  (=) o_id o_dot.
   Axiom dot_id    : RightId (=) o_id o_dot.
   Axiom dot_assoc : Assoc   (=)      o_dot.
-
   #[global] Existing Instances id_dot dot_id dot_assoc.
 
-  (** combine an offset and a pointer to get a new pointer;
-    this is a right monoid action.
-   *)
-  Parameter _offset_ptr : ptr -> offset -> ptr.
-  Notation "p .., o"   := (_offset_ptr p o) : ptr_scope.
-  Notation "o1 .., o2" := (o_dot o1 o2)     : offset_scope.
-  #[global] Open Scope ptr_scope.
-
-  Axiom offset_ptr_id : forall p, p .., o_id = p.
-  Axiom offset_ptr_dot : forall p o1 o2,
-    p .., (o1 .., o2) = p .., o1 .., o2.
+  Axiom offset_ptr_id : forall p : ptr, p ,, o_id = p.
+  Axiom offset_ptr_dot : forall (p : ptr) o1 o2,
+    p ,, (o1 ,, o2) = p ,, o1 ,, o2.
 
   (** C++ provides a distinguished pointer [nullptr] that is *never
       dereferenceable*
@@ -207,21 +227,26 @@ Module Type PTRS.
    *)
 
   (* If [p : cls*] points to an object with type [cls] and field [f],
-     then [p .., o_field cls f] points to [p -> f].
+     then [p ,, o_field cls f] points to [p -> f].
    *)
   Parameter o_field : genv -> field -> offset.
 
+  #[global] Notation "p ., o" := (_dot p (o_field _ o))
+    (at level 11, left associativity, only parsing, format "p  .,  o") : stdpp_scope.
+
   (* If [p : cls*] points to an array object with [n] elements and [i ≤ n],
-     [p .., o_sub ty i] represents [p + i] (which might be a past-the-end pointer).
+     [p ,, o_sub ty i] represents [p + i] (which might be a past-the-end pointer).
    *)
   Parameter o_sub : genv -> type -> Z -> offset.
+
+  #[global] Notation "p .[ t ! n ]" := (_dot p (o_sub _ t n))
+    (at level 11, left associativity, only parsing) : stdpp_scope.
+  #[global] Notation ".[ t ! n ]" := (o_sub _ t n) (at level 11, only parsing) : stdpp_scope.
 
   (* [o_sub_0] axiom is required because any object is a 1-object array
      (https://eel.is/c++draft/expr.add#footnote-80).
    *)
-  Axiom o_sub_0 : ∀ σ ty,
-    is_Some (size_of σ ty) ->
-    o_sub σ ty 0 = o_id.
+  Axiom o_sub_0 : ∀ σ ty, is_Some (size_of σ ty) -> .[ty ! 0] = o_id.
   (* TODO: drop (is_Some (size_of σ ty)) via
      `displacement (o_sub σ ty i) = if (i = 0) then 0 else i * size_of σ ty`
    *)
@@ -240,8 +265,8 @@ Module Type PTRS.
     ptr_alloc_id nullptr = Some null_alloc_id.
 
   Axiom ptr_alloc_id_offset : forall {p o},
-    is_Some (ptr_alloc_id (p .., o)) ->
-    ptr_alloc_id (p .., o) = ptr_alloc_id p.
+    is_Some (ptr_alloc_id (p ,, o)) ->
+    ptr_alloc_id (p ,, o) = ptr_alloc_id p.
 
   (** Map pointers to the address they represent,
       (https://eel.is/c++draft/basic.compound#def:represents_the_address).
@@ -269,10 +294,10 @@ Module Type PTRS.
   Wrapped by [same_address_o_sub_eq]. *)
   Axiom ptr_vaddr_o_sub_eq : forall p σ ty n1 n2 sz,
     size_of σ ty = Some sz -> (sz > 0)%N ->
-    same_property ptr_vaddr (p .., o_sub _ ty n1) (p .., o_sub _ ty n2) ->
+    same_property ptr_vaddr (p ,, o_sub _ ty n1) (p ,, o_sub _ ty n2) ->
     n1 = n2.
   Axiom o_dot_sub : ∀ {σ : genv} i j ty,
-    o_dot (o_sub _ ty i) (o_sub _ ty j) = o_sub _ ty (i + j).
+    (o_sub _ ty i) ,, (o_sub _ ty j) = o_sub _ ty (i + j).
 
   (** [eval_offset] and associated axioms are more advanced, only to be used
   in special cases. *)
@@ -391,22 +416,22 @@ Module Type PTRS_MIXIN (Import P : PTRS_INTF_MINIMAL).
 
 
   Lemma ptr_alloc_id_base p o
-    (Hs : is_Some (ptr_alloc_id (p .., o))) :
+    (Hs : is_Some (ptr_alloc_id (p ,, o))) :
     is_Some (ptr_alloc_id p).
   Proof. by rewrite -(ptr_alloc_id_offset Hs). Qed.
 
   Lemma same_alloc_offset p o
-    (Hs : is_Some (ptr_alloc_id (p .., o))) :
-    same_alloc p (p .., o).
+    (Hs : is_Some (ptr_alloc_id (p ,, o))) :
+    same_alloc p (p ,, o).
   Proof.
     case: (Hs) => aid Eq. rewrite same_alloc_iff.
     exists aid. by rewrite -(ptr_alloc_id_offset Hs).
   Qed.
 
   Lemma same_alloc_offset_2 p o1 o2 p1 p2
-    (E1 : p1 = p .., o1) (E2 : p2 = p .., o2)
-    (Hs1 : is_Some (ptr_alloc_id (p .., o1)))
-    (Hs2 : is_Some (ptr_alloc_id (p .., o2))) :
+    (E1 : p1 = p ,, o1) (E2 : p2 = p ,, o2)
+    (Hs1 : is_Some (ptr_alloc_id (p ,, o1)))
+    (Hs2 : is_Some (ptr_alloc_id (p ,, o2))) :
     same_alloc p1 p2.
   Proof.
     subst; move: (Hs1) => [aid Eq]; rewrite same_alloc_iff; exists aid; move: Eq.
@@ -414,8 +439,8 @@ Module Type PTRS_MIXIN (Import P : PTRS_INTF_MINIMAL).
   Qed.
 
   Lemma same_alloc_offset_1 p o
-    (Hs : is_Some (ptr_alloc_id (p .., o))) :
-    same_alloc p (p .., o).
+    (Hs : is_Some (ptr_alloc_id (p ,, o))) :
+    same_alloc p (p ,, o).
   Proof.
     apply: (same_alloc_offset_2 p o_id o); rewrite ?offset_ptr_id //.
     exact: ptr_alloc_id_base Hs.
@@ -425,12 +450,11 @@ Module Type PTRS_MIXIN (Import P : PTRS_INTF_MINIMAL).
   Wrapper by [ptr_vaddr_o_sub_eq]. *)
   Lemma same_address_o_sub_eq p σ ty n1 n2 sz :
     size_of σ ty = Some sz -> (sz > 0)%N ->
-    same_address (p .., o_sub _ ty n1) (p .., o_sub _ ty n2) -> n1 = n2.
+    same_address (p ,, o_sub _ ty n1) (p ,, o_sub _ ty n2) -> n1 = n2.
   Proof. rewrite same_address_eq. exact: ptr_vaddr_o_sub_eq. Qed.
 
-  Lemma offset_ptr_sub_0 p ty resolve
-    (Hsz : is_Some (size_of resolve ty)) :
-    _offset_ptr p (o_sub _ ty 0) = p.
+  Lemma offset_ptr_sub_0 (p : ptr) ty resolve (Hsz : is_Some (size_of resolve ty)) :
+    p .[ty ! 0] = p.
   Proof. by rewrite o_sub_0 // offset_ptr_id. Qed.
 
   (** [aligned_ptr] states that the pointer (if it exists in memory) has
@@ -494,12 +518,11 @@ Module Type PTRS_MIXIN (Import P : PTRS_INTF_MINIMAL).
     naive_solver.
   Qed.
 
-  Lemma o_sub_sub p ty i j σ :
-    p .., o_sub _ ty i .., o_sub _ ty j = (p .., o_sub _ ty (i + j)).
+  Lemma o_sub_sub (p : ptr) ty i j σ :
+    p .[ ty ! i] .[ty ! j] = p .[ ty ! i + j].
   Proof. by rewrite -offset_ptr_dot o_dot_sub. Qed.
 
   Notation _id := o_id (only parsing).
-  Notation _dot := (o_dot) (only parsing).
   (** access a field *)
   Notation _field := (@o_field _) (only parsing).
   (** subscript an array *)
@@ -511,3 +534,4 @@ Module Type PTRS_MIXIN (Import P : PTRS_INTF_MINIMAL).
 End PTRS_MIXIN.
 
 Module Type PTRS_INTF := PTRS_INTF_MINIMAL <+ PTRS_MIXIN.
+

@@ -30,7 +30,7 @@ Module Type Init.
 
     Definition default_initialize_array (default_initialize : type -> ptr -> (FreeTemps -> epred) -> mpred)
                (ty : type) (len : N) (p : ptr) (Q : FreeTemps -> epred) : mpred :=
-      fold_right (fun i PP => default_initialize ty (p ., o_sub _ ty (Z.of_N i)) (fun free' => interp free' PP))
+      fold_right (fun i PP => default_initialize ty (p ,, o_sub _ ty (Z.of_N i)) (fun free' => interp free' PP))
                  (p .[ ty ! Z.of_N len ] |-> validR -* Q FreeTemps.id) (seqN 0 len).
     #[global] Arguments default_initialize_array : simpl never.
 
@@ -187,7 +187,7 @@ Module Type Init.
         See [https://eel.is/c++draft/class.init#class.base.init-note-2].
      *)
     Definition wpi (cls : globname) (thisp : ptr) (init : Initializer) (Q : epred) : mpred :=
-        let p' := thisp ., offset_for cls init.(init_path) in
+        let p' := thisp ,, offset_for cls init.(init_path) in
         wp_initialize (erase_qualifiers init.(init_type)) p' init.(init_init) (fun free => interp free Q).
     #[global] Arguments wpi _ _ _ _ /.
 

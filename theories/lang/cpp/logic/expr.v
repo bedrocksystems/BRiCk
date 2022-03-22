@@ -164,7 +164,7 @@ Module Type Expr.
         | Prvalue => False
         | Lvalue =>
           wp_lval a (fun base free =>
-                       let addr := base ., _field m in
+                       let addr := base ,, _field m in
                        valid_ptr addr ** Q addr free)
         | Xvalue => False
           (* NOTE If the object is a temporary, then the field access will also be a
@@ -183,7 +183,7 @@ Module Type Expr.
            *)
         | Xvalue =>
           wp_xval a (fun base free =>
-                       let addr := base ., _field m in
+                       let addr := base ,, _field m in
                        valid_ptr addr ** Q addr free)
         | _ => False
         end%I
@@ -211,7 +211,7 @@ Module Type Expr.
       Forall base free idx free',
          Qbase base free -* Qidx idx free' -*
          (Exists i, [| idx = Vint i |] **
-          let addr := base .[ erase_qualifiers t ! i ] in
+          let addr := _eqv base .[ erase_qualifiers t ! i ] in
           valid_ptr addr ** Q addr (free' |*| free)))
       |-- wp_lval (Esubscript e i t) Q.
 
@@ -228,8 +228,8 @@ Module Type Expr.
          Qbase base free -* Qidx idx free' -*
           (* TODO: here and elsewhere, consider avoiding locations and switching to *)
           (* (Exists i basep, [| idx = Vint i /\ base = Vptr basep |] **
-            ((valid_ptr (basep .., o_sub resolve (erase_qualifiers t) i) ** True) //\\
-            Q (Vptr (basep .., o_sub resolve (erase_qualifiers t) i)) (free' ** free)))) *)
+            ((valid_ptr (basep .,, o_sub resolve (erase_qualifiers t) i) ** True) //\\
+            Q (Vptr (basep .,, o_sub resolve (erase_qualifiers t) i)) (free' ** free)))) *)
           (Exists i, [| idx = Vint i |] **
            let addr := _eqv base .[ erase_qualifiers t ! i ] in
            valid_ptr addr ** Q addr (free' |*| free)))
@@ -543,7 +543,7 @@ Module Type Expr.
     Axiom wp_operand_static_cast : forall from to e ty Q,
       wp_operand e (fun addr free =>
                     (Exists path : @class_derives resolve to from,
-                     let addr' := _eqv addr ., base_to_derived path in
+                     let addr' := _eqv addr ,, base_to_derived path in
                      valid_ptr addr' ** Q (Vptr addr') free))
       |-- wp_operand (Ecast (Cstatic from to) Prvalue e ty) Q.
 
@@ -608,7 +608,7 @@ Module Type Expr.
         match drop_qualifiers (type_of e), drop_qualifiers ty with
         | Tnamed derived , Tnamed base => (*<-- is this the only case here?*)
           Exists path : @class_derives resolve derived base,
-          let addr' := addr ., derived_to_base path in
+          let addr' := addr ,, derived_to_base path in
           valid_ptr addr' ** Q addr' free
         | _, _ => False
         end)
@@ -619,7 +619,7 @@ Module Type Expr.
         match drop_qualifiers (type_of e), drop_qualifiers ty with
         | Tnamed derived , Tnamed base => (*<-- is this the only case here?*)
           Exists path : @class_derives resolve derived base,
-          let addr' := addr ., derived_to_base path in
+          let addr' := addr ,, derived_to_base path in
           valid_ptr addr' ** Q addr' free
         | _, _ => False
         end)
@@ -630,7 +630,7 @@ Module Type Expr.
         match drop_qualifiers <$> unptr (type_of e), drop_qualifiers <$> unptr ty with
         | Some (Tnamed derived) , Some (Tnamed base) =>
           Exists path : @class_derives resolve derived base,
-          let addr' := _eqv addr ., derived_to_base path in
+          let addr' := _eqv addr ,, derived_to_base path in
           valid_ptr addr' ** Q (Vptr addr') free
         | _, _ => False
         end)
@@ -643,7 +643,7 @@ Module Type Expr.
         match drop_qualifiers (type_of e), drop_qualifiers ty with
         | Tnamed base, Tnamed derived => (*<-- is this the only case here?*)
           Exists path : @class_derives resolve derived base,
-          let addr' := addr ., base_to_derived path in
+          let addr' := addr ,, base_to_derived path in
           valid_ptr addr' ** Q addr' free
         | _, _ => False
         end)
@@ -654,7 +654,7 @@ Module Type Expr.
         match drop_qualifiers (type_of e), drop_qualifiers ty with
         | Tnamed base, Tnamed derived => (*<-- is this the only case here?*)
           Exists path : @class_derives resolve derived base,
-          let addr' := addr ., base_to_derived path in
+          let addr' := addr ,, base_to_derived path in
           valid_ptr addr' ** Q addr' free
         | _, _ => False
         end)
@@ -665,7 +665,7 @@ Module Type Expr.
         match drop_qualifiers <$> unptr (type_of e), drop_qualifiers <$> unptr ty with
         | Some (Tnamed base), Some (Tnamed derived) =>
           Exists path : @class_derives resolve derived base,
-          let addr' := _eqv addr ., base_to_derived path in
+          let addr' := _eqv addr ,, base_to_derived path in
           valid_ptr addr' ** Q (Vptr addr') free
         | _, _ => False
         end)
@@ -976,7 +976,7 @@ Module Type Expr.
           Q (Vbool false) FreeTemps.id
       |-- wp_operand (Eimplicit_init ty) Q.
 
-    Axiom wp_init_constructor : forall cls addr cnd es Q,
+    Axiom wp_init_constructor : forall cls (addr : ptr) cnd es Q,
         (* NOTE because the AST does not include the types of the arguments of
            the constructor, we have to look up the type in the environment.
          *)

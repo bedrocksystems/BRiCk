@@ -346,7 +346,7 @@ Module PTRS_IMPL <: PTRS_INTF.
   #[global] Instance raw_offset_collapse_invol_app : InvolApp raw_offset_collapse.
   Admitted.
 
-  Program Definition o_dot : offset → offset → offset :=
+  Program Definition __o_dot : offset → offset → offset :=
     λ o1 o2, (raw_offset_merge (proj1_sig o1) (proj1_sig o2)) ↾ _.
   Next Obligation.
     move=> o1 o2 /=.
@@ -446,26 +446,6 @@ Module PTRS_IMPL <: PTRS_INTF.
   Lemma ptr_alloc_id_nullptr : ptr_alloc_id nullptr = Some null_alloc_id.
   Proof. done. Qed.
 
-
-  #[global] Instance id_dot : LeftId (=) o_id o_dot.
-  Proof. intros o. apply /sig_eq_pi. by case: o. Qed.
-  #[global] Instance dot_id : RightId (=) o_id o_dot.
-  Proof.
-    intros o. apply /sig_eq_pi.
-    rewrite /= /raw_offset_merge (right_id []).
-    by case: o.
-  Qed.
-  #[global] Instance dot_assoc : Assoc (=) o_dot.
-  Proof.
-    intros o1 o2 o3. apply /sig_eq_pi.
-    move: o1 o2 o3 => [ro1 /= wf1]
-      [ro2 /= wf2] [ro3 /= wf3].
-      rewrite /raw_offset_merge.
-      rewrite -{1}wf1 -{2}wf3.
-      rewrite -!invol_app; f_equiv.
-      apply: assoc.
-  Qed.
-
   #[local] Instance ptr_eq_dec' : EqDecision ptr := ptr_eq_dec.
 
   (* Instance ptr_equiv : Equiv ptr := (=).
@@ -478,19 +458,9 @@ Module PTRS_IMPL <: PTRS_INTF.
   (* Instance dot_assoc : Assoc (≡) o_dot := _. *)
   (* Instance dot_proper : Proper ((≡) ==> (≡) ==> (≡)) o_dot := _. *)
 
-
-  Declare Scope ptr_scope.
-  Bind Scope ptr_scope with ptr.
-  Delimit Scope ptr_scope with ptr.
-
-  Declare Scope offset_scope.
-  Bind Scope offset_scope with offset.
-  Delimit Scope offset_scope with offset.
-  Notation "o1 .., o2" := (o_dot o1 o2) : offset_scope.
-
-  Definition _offset_ptr (p : ptr) (o : offset) : ptr :=
+  Definition __offset_ptr (p : ptr) (o : offset) : ptr :=
     match p with
-    | offset_ptr p' o' => offset_ptr p' (o' .., o)
+    | offset_ptr p' o' => offset_ptr p' (__o_dot o' o)
     | invalid_ptr_ => invalid_ptr_ (* too eager! *)
     | fun_ptr_ _ _ =>
       match `o with
@@ -498,15 +468,42 @@ Module PTRS_IMPL <: PTRS_INTF.
       | _ => invalid_ptr_
       end
     end.
-  Notation "p .., o" := (_offset_ptr p o) : ptr_scope.
 
-  Lemma offset_ptr_id p : (p .., o_id = p)%ptr.
-  Proof. case: p => // p o. by rewrite /_offset_ptr (right_id o_id o_dot). Qed.
+  Include PTRS_SYNTAX_MIXIN.
 
-  Lemma offset_ptr_dot p o1 o2 :
-    (p .., (o1 .., o2) = p .., o1 .., o2)%ptr.
+  #[local] Ltac UNFOLD_dot := rewrite _dot.unlock/DOT_dot/=.
+
+  #[global] Instance id_dot : LeftId (=) o_id o_dot.
+  Proof. UNFOLD_dot. intros o. apply /sig_eq_pi. by case: o. Qed.
+  Lemma __o_dot_id : RightId (=) o_id __o_dot.
+  Proof.
+    intros o. apply /sig_eq_pi.
+    rewrite /= /raw_offset_merge (right_id []).
+    by case: o.
+  Qed.
+  #[global] Instance dot_id : RightId (=) o_id o_dot.
+  Proof. UNFOLD_dot. apply __o_dot_id. Qed.
+  #[global] Instance dot_assoc : Assoc (=) o_dot.
+  Proof.
+    UNFOLD_dot.
+    intros o1 o2 o3. apply /sig_eq_pi.
+    move: o1 o2 o3 => [ro1 /= wf1]
+      [ro2 /= wf2] [ro3 /= wf3].
+      rewrite /raw_offset_merge.
+      rewrite -{1}wf1 -{2}wf3.
+      rewrite -!invol_app; f_equiv.
+      apply: assoc.
+  Qed.
+
+  Implicit Types (p : ptr) (o : offset).
+
+  Lemma offset_ptr_id p : p ,, o_id = p.
+  Proof. UNFOLD_dot. case: p => // p o. by rewrite /__offset_ptr __o_dot_id. Qed.
+
+  Lemma offset_ptr_dot p o1 o2 : p ,, (o1 ,, o2) = p ,, o1 ,, o2.
   Proof.
     (* TO FIX: collapse function pointers with offsets less eagerly. *)
+    UNFOLD_dot.
     destruct p; rewrite //= ?assoc //=.
     move: o1 o2 => [o1 /= +] [o2 /= +]; rewrite /raw_offset_wf => WF1 WF2.
     repeat (case_match; simplify_eq/= => //).
@@ -519,19 +516,20 @@ Module PTRS_IMPL <: PTRS_INTF.
   Proof. rewrite /o_sub; case_decide=>// -[?]; by case: size_of. Qed.
 
   Lemma ptr_alloc_id_offset {p o} :
-    let p' := (p .., o)%ptr in
+    let p' := p ,, o in
     is_Some (ptr_alloc_id p') -> ptr_alloc_id p' = ptr_alloc_id p.
-  Proof. by destruct p, o as [[] ?] => //= /is_Some_None []. Qed.
+  Proof. UNFOLD_dot. by destruct p, o as [[] ?] => //= /is_Some_None []. Qed.
 
   Axiom ptr_vaddr_o_sub_eq : forall p σ ty n1 n2 sz,
     size_of σ ty = Some sz -> (sz > 0)%N ->
-    (same_property ptr_vaddr (p .., o_sub _ ty n1) (p .., o_sub _ ty n2) ->
-    n1 = n2)%ptr.
+    same_property ptr_vaddr (p ,, o_sub _ ty n1) (p ,, o_sub _ ty n2) ->
+    n1 = n2.
 
   Arguments mk_offset_seg _ !_ /.
   Lemma o_dot_sub σ (z1 z2 : Z) ty :
-    (o_sub σ ty z1 .., o_sub σ ty z2 = o_sub σ ty (z1 + z2))%offset.
+    o_sub σ ty z1 ,, o_sub σ ty z2 = o_sub σ ty (z1 + z2).
   Proof.
+    UNFOLD_dot.
     intros. apply /sig_eq_pi => /=.
     rewrite /o_sub /= /mkOffset. repeat case_decide => //=.
     all: subst; try lia.

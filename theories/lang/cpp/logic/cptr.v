@@ -44,7 +44,8 @@ Section with_cpp.
   Lemma cptrR_strict_valid_observe (p : ptr) f : Observe (strict_valid_ptr p) (_at p (cptrR f)).
   Proof.
     apply observe_intro_persistent; refine _.
-    rewrite cptrR_eq/cptrR_def _at_as_Rep.
+    rewrite cptrR_eq/cptrR_def.
+    rewrite _at_as_Rep.
     iIntros "[$ _]".
   Qed.
 
@@ -84,4 +85,4 @@ Section with_cpp.
 End with_cpp.
 
 #[global] Instance Persistent_spec `{Σ:cpp_logic ti} {resolve:genv} p s :
-  Persistent (_at (Σ:=Σ) p (cptrR s)) := _.
+  Persistent (_at p (cptrR s)) := _.
