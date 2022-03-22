@@ -4,7 +4,10 @@
  * See the LICENSE-BedRock file in the repository root for details.
  *)
 Require Export iris.bi.monpred.
-Require Import bedrock.prelude.base.
+Require Import bedrock.lang.bi.prelude.
+
+Notation "A -mon> B" := (monPred A B%bi_type) : stdpp_scope.
+Notation "A -mon> B" := (monPredI A B) : bi_type_scope.
 
 #[global] Instance: Params (@Objective) 2 := {}.
 

@@ -1,5 +1,5 @@
 (*
- * Copyright (c) 2020-21 BedRock Systems, Inc.
+ * Copyright (c) 2020-2022 BedRock Systems, Inc.
  * This software is distributed under the terms of the BedRock Open-Source License.
  * See the LICENSE-BedRock file in the repository root for details.
  *)
@@ -48,6 +48,10 @@ Global Notation lexists := (bi_exist) (only parsing).
 Ltac split' := intros; apply (anti_symm (⊢)).
 
 Bind Scope bi_scope with bi_car.
+
+(** For [bi] constructors like [monPredI], as opposed to [monPred] *)
+Declare Scope bi_type_scope.
+Delimit Scope bi_type_scope with bi_type.
 
 (* Charge notation levels *)
 Module ChargeNotation.
