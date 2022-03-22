@@ -1,0 +1,160 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<!--
+-- Copyright (c) 2020 BedRock Systems, Inc.
+-- This software is distributed under the terms of the BedRock Open-Source License.
+-- See the LICENSE-BedRock file in the repository root for details.
+-->
+
+<!--
+-- SPDX-LIcense-Identifier:BSD-2-Clause
+-->
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+<meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
+<link href="../css/coqdocjs/coqdoc.css" rel="stylesheet" type="text/css" />
+<link href="../css/coqdocjs/coqdocjs.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="../js/coqdocjs/config.js"></script>
+<script type="text/javascript" src="../js/coqdocjs/coqdocjs.js"></script>
+</head>
+
+<body onload="document.getElementById('content').focus()">
+  <div id="header">
+    <span class="left">
+      <span class="modulename"> <script> document.write(document.title) </script> </span>
+    </span>
+
+    <span class="button" id="toggle-proofs"></span>
+
+    <!-- NOTE: These are displayed right to left on the page -->
+    <span class="right">
+      <a href="./indexpage.html"> Index </a>
+      <a href="./toc.html"> `theories/` </a>
+      <a href="../../index.html"> Toplevel </a>
+    </span>
+</div>
+    <div id="content" tabindex="-1" onblur="document.getElementById('content').focus()">
+    <div id="main">
+<h1 class="libtitle">bedrock.lang.cpp.logic.rep_defs</h1>
+
+<div class="code">
+<span class="comment">(*<br/>
+&nbsp;*&nbsp;Copyright&nbsp;(c)&nbsp;2020-21&nbsp;BedRock&nbsp;Systems,&nbsp;Inc.<br/>
+&nbsp;*&nbsp;This&nbsp;software&nbsp;is&nbsp;distributed&nbsp;under&nbsp;the&nbsp;terms&nbsp;of&nbsp;the&nbsp;BedRock&nbsp;Open-Source&nbsp;License.<br/>
+&nbsp;*&nbsp;See&nbsp;the&nbsp;LICENSE-BedRock&nbsp;file&nbsp;in&nbsp;the&nbsp;repository&nbsp;root&nbsp;for&nbsp;details.<br/>
+&nbsp;*)</span><br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">bedrock.lang.bi</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Export</span> <a class="idref" href="bedrock.lang.bi.monpred.html#"><span class="id" title="library">monpred</span></a>.<br/>
+
+<br/>
+<span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <a class="idref" href="bedrock.prelude.base.html#"><span class="id" title="library">bedrock.prelude.base</span></a>.<br/>
+
+<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">bedrock.lang.cpp</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <a class="idref" href="bedrock.lang.cpp.semantics.values.html#"><span class="id" title="library">semantics.values</span></a> <a class="idref" href="bedrock.lang.cpp.logic.mpred.html#"><span class="id" title="library">logic.mpred</span></a>.<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">bedrock.lang.bi</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <a class="idref" href="bedrock.lang.bi.prelude.html#"><span class="id" title="library">prelude</span></a>.<br/>
+
+<br/>
+<span class="id" title="keyword">Import</span> <a class="idref" href="bedrock.lang.bi.prelude.html#ChargeNotation"><span class="id" title="module">ChargeNotation</span></a>.<br/>
+<span class="id" title="keyword">Implicit</span> <span class="id" title="keyword">Types</span> (σ <span class="id" title="var">resolve</span> : <a class="idref" href="bedrock.lang.cpp.semantics.genv.html#genv"><span class="id" title="class">genv</span></a>) (<span class="id" title="var">p</span> : <a class="idref" href="bedrock.lang.cpp.semantics.values.html#PTRS_INTF_AXIOM.ptr"><span class="id" title="axiom">ptr</span></a>) (<span class="id" title="var">o</span> : <a class="idref" href="bedrock.lang.cpp.semantics.values.html#PTRS_INTF_AXIOM.offset"><span class="id" title="axiom">offset</span></a>).<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+representations are predicates over a location, they should be used to
+<a id="lab88"></a><h1 class="section">assert properties of the heap</h1>
+
+  
+</div>
+<div class="code">
+<span class="id" title="keyword">Canonical</span> <span class="id" title="keyword">Structure</span> <a id="ptr_bi_index" class="idref" href="#ptr_bi_index"><span class="id" title="definition">ptr_bi_index</span></a> : <a class="idref" href="https://plv.mpi-sws.org/coqdoc/iris//iris.bi.monpred.html#biIndex"><span class="id" title="record">biIndex</span></a> :=<br/>
+&nbsp;&nbsp;<a class="idref" href="https://plv.mpi-sws.org/coqdoc/iris//iris.bi.monpred.html#BiIndex"><span class="id" title="constructor">BiIndex</span></a> <a class="idref" href="bedrock.lang.cpp.semantics.values.html#PTRS_INTF_AXIOM.ptr"><span class="id" title="axiom">ptr</span></a> <span class="id" title="var">_</span> <a class="idref" href="http://coq.inria.fr/distrib/V8.15.0/stdlib//Coq.Init.Logic.html#eq"><span class="id" title="inductive">eq</span></a> <span class="id" title="var">_</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+The tactic <span class="inlinecode"><span class="id" title="tactic">intros</span></span> <span class="inlinecode">-&gt;%<a class="idref" href="bedrock.lang.cpp.logic.rep_defs.html#ptr_rel_elim"><span class="id" title="lemma">ptr_rel_elim</span></a></span> is much faster than <span class="inlinecode"><span class="id" title="tactic">intros</span></span>
+    <span class="inlinecode">-&gt;</span> when introducing <span class="inlinecode"><span class="id" title="var">p1</span></span> <span class="inlinecode">⊑</span> <span class="inlinecode"><span class="id" title="var">p2</span></span> (when the latter works at all). 
+</div>
+<div class="code">
+<span class="id" title="keyword">Lemma</span> <a id="ptr_rel_elim" class="idref" href="#ptr_rel_elim"><span class="id" title="lemma">ptr_rel_elim</span></a> (<a id="p1:1" class="idref" href="#p1:1"><span class="id" title="binder">p1</span></a> <a id="p2:2" class="idref" href="#p2:2"><span class="id" title="binder">p2</span></a> : <a class="idref" href="bedrock.lang.cpp.semantics.values.html#PTRS_INTF_AXIOM.ptr"><span class="id" title="axiom">ptr</span></a>) : <a class="idref" href="bedrock.lang.cpp.logic.rep_defs.html#p1:1"><span class="id" title="variable">p1</span></a> <a class="idref" href="https://plv.mpi-sws.org/coqdoc/stdpp//stdpp.base.html#df701c570a2112babeefa6296ee609c4"><span class="id" title="notation">⊑</span></a> <a class="idref" href="bedrock.lang.cpp.logic.rep_defs.html#p2:2"><span class="id" title="variable">p2</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.15.0/stdlib//Coq.Unicode.Utf8_core.html#c41c566ddac4c1298b9e7dd2bae1c794"><span class="id" title="notation">→</span></a> <a class="idref" href="bedrock.lang.cpp.logic.rep_defs.html#p1:1"><span class="id" title="variable">p1</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.15.0/stdlib//Coq.Init.Logic.html#6cd0f7b28b6092304087c7049437bb1a"><span class="id" title="notation">=</span></a> <a class="idref" href="bedrock.lang.cpp.logic.rep_defs.html#p2:2"><span class="id" title="variable">p2</span></a>.<br/>
+<span class="id" title="keyword">Proof</span>. <span class="id" title="var">done</span>. <span class="id" title="keyword">Qed</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Definition</span> <a id="Rep" class="idref" href="#Rep"><span class="id" title="definition">Rep</span></a> `{<a id="9c6d78f4cdf6dede5e109a175164bdaa" class="idref" href="#9c6d78f4cdf6dede5e109a175164bdaa"><span class="id" title="binder">Σ</span></a> : <a class="idref" href="bedrock.lang.cpp.logic.mpred.html#LC.cpp_logic"><span class="id" title="class">cpp_logic</span></a>} := <a class="idref" href="https://plv.mpi-sws.org/coqdoc/iris//iris.bi.monpred.html#monPred"><span class="id" title="record">monPred</span></a> <a class="idref" href="bedrock.lang.cpp.logic.rep_defs.html#ptr_bi_index"><span class="id" title="definition">ptr_bi_index</span></a> <a class="idref" href="bedrock.lang.cpp.logic.mpred.html#LC.mpredI"><span class="id" title="definition">mpredI</span></a>.<br/>
+<span class="id" title="keyword">Canonical</span> <span class="id" title="keyword">Structure</span> <a id="RepI" class="idref" href="#RepI"><span class="id" title="definition">RepI</span></a> `{<a id="f525610baade8c1419220d275a93fff0" class="idref" href="#f525610baade8c1419220d275a93fff0"><span class="id" title="binder">Σ</span></a> : <a class="idref" href="bedrock.lang.cpp.logic.mpred.html#LC.cpp_logic"><span class="id" title="class">cpp_logic</span></a>} := <a class="idref" href="https://plv.mpi-sws.org/coqdoc/iris//iris.bi.monpred.html#monPredI"><span class="id" title="definition">monPredI</span></a> <a class="idref" href="bedrock.lang.cpp.logic.rep_defs.html#ptr_bi_index"><span class="id" title="definition">ptr_bi_index</span></a> <a class="idref" href="bedrock.lang.cpp.logic.mpred.html#LC.mpredI"><span class="id" title="definition">mpredI</span></a>.<br/>
+<span class="id" title="keyword">Canonical</span> <span class="id" title="keyword">Structure</span> <a id="RepO" class="idref" href="#RepO"><span class="id" title="definition">RepO</span></a> `{<a id="cb3edd5393c7bbdf625595792a237037" class="idref" href="#cb3edd5393c7bbdf625595792a237037"><span class="id" title="binder">Σ</span></a> : <a class="idref" href="bedrock.lang.cpp.logic.mpred.html#LC.cpp_logic"><span class="id" title="class">cpp_logic</span></a>} := <a class="idref" href="https://plv.mpi-sws.org/coqdoc/iris//iris.bi.monpred.html#monPredO"><span class="id" title="definition">monPredO</span></a> <a class="idref" href="bedrock.lang.cpp.logic.rep_defs.html#ptr_bi_index"><span class="id" title="definition">ptr_bi_index</span></a> <a class="idref" href="bedrock.lang.cpp.logic.mpred.html#LC.mpredI"><span class="id" title="definition">mpredI</span></a>.<br/>
+
+<br/>
+<span class="id" title="keyword">Bind Scope</span> <span class="id" title="var">bi_scope</span> <span class="id" title="keyword">with</span> <span class="id" title="var">Rep</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Section</span> <a id="defs" class="idref" href="#defs"><span class="id" title="section">defs</span></a>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Context</span> `{<a id="2ab75602e9b8af2ca6fd6dbdb1e68a19" class="idref" href="#2ab75602e9b8af2ca6fd6dbdb1e68a19"><span class="id" title="binder">Σ</span></a> : <a class="idref" href="bedrock.lang.cpp.logic.mpred.html#LC.cpp_logic"><span class="id" title="class">cpp_logic</span></a>}.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <a id="as_Rep" class="idref" href="#as_Rep"><span class="id" title="definition">as_Rep</span></a> (<a id="P:11" class="idref" href="#P:11"><span class="id" title="binder">P</span></a> : <a class="idref" href="bedrock.lang.cpp.semantics.values.html#PTRS_INTF_AXIOM.ptr"><span class="id" title="axiom">ptr</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.15.0/stdlib//Coq.Init.Logic.html#::type_scope:x_'-&gt;'_x"><span class="id" title="notation">-&gt;</span></a> <a class="idref" href="bedrock.lang.cpp.logic.mpred.html#LC.mpred"><span class="id" title="definition">mpred</span></a>) : <a class="idref" href="bedrock.lang.cpp.logic.rep_defs.html#Rep"><span class="id" title="definition">Rep</span></a> := <a class="idref" href="https://plv.mpi-sws.org/coqdoc/iris//iris.bi.monpred.html#MonPred"><span class="id" title="constructor">MonPred</span></a> <a class="idref" href="bedrock.lang.cpp.logic.rep_defs.html#P:11"><span class="id" title="variable">P</span></a> <span class="id" title="var">_</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.heap_notations.html#_at"><span class="id" title="abbreviation">_at</span></a></span> <span class="inlinecode"><span class="id" title="library">base</span></span> <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.logic.zstring.html#zstring.R"><span class="id" title="definition">R</span></a></span> states that <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.logic.zstring.html#zstring.R"><span class="id" title="definition">R</span></a></span> <span class="inlinecode"><span class="id" title="library">base</span></span> holds.
+
+<div class="paragraph"> </div>
+
+      NOTE This is "weakly at"
+   
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <a id="_at_def" class="idref" href="#_at_def"><span class="id" title="definition">_at_def</span></a> (<a id="base:12" class="idref" href="#base:12"><span class="id" title="binder">base</span></a> : <a class="idref" href="bedrock.lang.cpp.semantics.values.html#PTRS_INTF_AXIOM.ptr"><span class="id" title="axiom">ptr</span></a>) (<a id="R:13" class="idref" href="#R:13"><span class="id" title="binder">R</span></a> : <a class="idref" href="bedrock.lang.cpp.logic.rep_defs.html#Rep"><span class="id" title="definition">Rep</span></a>) : <a class="idref" href="bedrock.lang.cpp.logic.mpred.html#LC.mpred"><span class="id" title="definition">mpred</span></a> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="bedrock.lang.cpp.logic.rep_defs.html#R:13"><span class="id" title="variable">R</span></a>.(<a class="idref" href="https://plv.mpi-sws.org/coqdoc/iris//iris.bi.monpred.html#monPred_at"><span class="id" title="projection">monPred_at</span></a>) <a class="idref" href="bedrock.lang.cpp.logic.rep_defs.html#base:12"><span class="id" title="variable">base</span></a>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <a id="_at_aux" class="idref" href="#_at_aux"><span class="id" title="definition">_at_aux</span></a> : <a class="idref" href="https://plv.mpi-sws.org/coqdoc/stdpp//stdpp.base.html#seal"><span class="id" title="record">seal</span></a> (@<a class="idref" href="bedrock.lang.cpp.logic.rep_defs.html#_at_def"><span class="id" title="definition">_at_def</span></a>). <span class="id" title="keyword">Proof</span>. <span class="id" title="tactic">by</span> <span class="id" title="tactic">eexists</span>. <span class="id" title="keyword">Qed</span>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <a id="_at" class="idref" href="#_at"><span class="id" title="definition">_at</span></a> := <a class="idref" href="bedrock.lang.cpp.logic.rep_defs.html#_at_aux"><span class="id" title="definition">_at_aux</span></a>.(<a class="idref" href="https://plv.mpi-sws.org/coqdoc/stdpp//stdpp.base.html#unseal"><span class="id" title="projection">unseal</span></a>).<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <a id="_at_eq" class="idref" href="#_at_eq"><span class="id" title="definition">_at_eq</span></a> : @<a class="idref" href="bedrock.lang.cpp.logic.rep_defs.html#_at"><span class="id" title="definition">_at</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.15.0/stdlib//Coq.Init.Logic.html#6cd0f7b28b6092304087c7049437bb1a"><span class="id" title="notation">=</span></a> <span class="id" title="var">_</span> := <a class="idref" href="bedrock.lang.cpp.logic.rep_defs.html#_at_aux"><span class="id" title="definition">_at_aux</span></a>.(<a class="idref" href="https://plv.mpi-sws.org/coqdoc/stdpp//stdpp.base.html#seal_eq"><span class="id" title="projection">seal_eq</span></a>).<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <a id="_offsetR_def" class="idref" href="#_offsetR_def"><span class="id" title="definition">_offsetR_def</span></a> (<a id="o:14" class="idref" href="#o:14"><span class="id" title="binder">o</span></a> : <a class="idref" href="bedrock.lang.cpp.semantics.values.html#PTRS_INTF_AXIOM.offset"><span class="id" title="axiom">offset</span></a>) (<a id="r:15" class="idref" href="#r:15"><span class="id" title="binder">r</span></a> : <a class="idref" href="bedrock.lang.cpp.logic.rep_defs.html#Rep"><span class="id" title="definition">Rep</span></a>) : <a class="idref" href="bedrock.lang.cpp.logic.rep_defs.html#Rep"><span class="id" title="definition">Rep</span></a> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="bedrock.lang.cpp.logic.rep_defs.html#as_Rep"><span class="id" title="definition">as_Rep</span></a> (<span class="id" title="keyword">fun</span> <a id="base:16" class="idref" href="#base:16"><span class="id" title="binder">base</span></a> =&gt; <a class="idref" href="bedrock.lang.cpp.logic.rep_defs.html#r:15"><span class="id" title="variable">r</span></a>.(<a class="idref" href="https://plv.mpi-sws.org/coqdoc/iris//iris.bi.monpred.html#monPred_at"><span class="id" title="projection">monPred_at</span></a>) (<a class="idref" href="bedrock.lang.cpp.logic.rep_defs.html#base:16"><span class="id" title="variable">base</span></a> <a class="idref" href="bedrock.lang.cpp.semantics.ptrs.html#b9e497c99ddaa35509f86113be739391"><span class="id" title="notation">,,</span></a> <a class="idref" href="bedrock.lang.cpp.logic.rep_defs.html#o:14"><span class="id" title="variable">o</span></a>)).<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <a id="_offsetR_aux" class="idref" href="#_offsetR_aux"><span class="id" title="definition">_offsetR_aux</span></a> : <a class="idref" href="https://plv.mpi-sws.org/coqdoc/stdpp//stdpp.base.html#seal"><span class="id" title="record">seal</span></a> (@<a class="idref" href="bedrock.lang.cpp.logic.rep_defs.html#_offsetR_def"><span class="id" title="definition">_offsetR_def</span></a>). <span class="id" title="keyword">Proof</span>. <span class="id" title="tactic">by</span> <span class="id" title="tactic">eexists</span>. <span class="id" title="keyword">Qed</span>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <a id="_offsetR" class="idref" href="#_offsetR"><span class="id" title="definition">_offsetR</span></a> := <a class="idref" href="bedrock.lang.cpp.logic.rep_defs.html#_offsetR_aux"><span class="id" title="definition">_offsetR_aux</span></a>.(<a class="idref" href="https://plv.mpi-sws.org/coqdoc/stdpp//stdpp.base.html#unseal"><span class="id" title="projection">unseal</span></a>).<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <a id="_offsetR_eq" class="idref" href="#_offsetR_eq"><span class="id" title="definition">_offsetR_eq</span></a> : @<a class="idref" href="bedrock.lang.cpp.logic.rep_defs.html#_offsetR"><span class="id" title="definition">_offsetR</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.15.0/stdlib//Coq.Init.Logic.html#6cd0f7b28b6092304087c7049437bb1a"><span class="id" title="notation">=</span></a> <span class="id" title="var">_</span> := <a class="idref" href="bedrock.lang.cpp.logic.rep_defs.html#_offsetR_aux"><span class="id" title="definition">_offsetR_aux</span></a>.(<a class="idref" href="https://plv.mpi-sws.org/coqdoc/stdpp//stdpp.base.html#seal_eq"><span class="id" title="projection">seal_eq</span></a>).<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+Values
+<a id="lab89"></a><h1 class="section">These `Rep` predicates wrap `ptsto` facts</h1>
+
+   
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="comment">(*&nbsp;todo(gmm):&nbsp;make&nbsp;opaque&nbsp;*)</span><br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <a id="pureR" class="idref" href="#pureR"><span class="id" title="definition">pureR</span></a> (<a id="P:17" class="idref" href="#P:17"><span class="id" title="binder">P</span></a> : <a class="idref" href="bedrock.lang.cpp.logic.mpred.html#LC.mpred"><span class="id" title="definition">mpred</span></a>) : <a class="idref" href="bedrock.lang.cpp.logic.rep_defs.html#Rep"><span class="id" title="definition">Rep</span></a> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="bedrock.lang.cpp.logic.rep_defs.html#as_Rep"><span class="id" title="definition">as_Rep</span></a> (<span class="id" title="keyword">fun</span> <span class="id" title="var">_</span> =&gt; <a class="idref" href="bedrock.lang.cpp.logic.rep_defs.html#P:17"><span class="id" title="variable">P</span></a>).<br/>
+<span class="id" title="keyword">End</span> <a class="idref" href="bedrock.lang.cpp.logic.rep_defs.html#defs"><span class="id" title="section">defs</span></a>.<br/>
+
+<br/>
+#[<span class="id" title="var">global</span>] <span class="id" title="keyword">Instance</span>: <a class="idref" href="http://coq.inria.fr/distrib/V8.15.0/stdlib//Coq.Classes.Morphisms.html#Params"><span class="id" title="class">Params</span></a> (@<a class="idref" href="bedrock.lang.cpp.logic.rep_defs.html#_at"><span class="id" title="definition">_at</span></a>) 3 := {}.<br/>
+#[<span class="id" title="var">global</span>] <span class="id" title="keyword">Instance</span>: <a class="idref" href="http://coq.inria.fr/distrib/V8.15.0/stdlib//Coq.Classes.Morphisms.html#Params"><span class="id" title="class">Params</span></a> (@<a class="idref" href="bedrock.lang.cpp.logic.rep_defs.html#as_Rep"><span class="id" title="definition">as_Rep</span></a>) 2 := {}.<br/>
+#[<span class="id" title="var">global</span>] <span class="id" title="keyword">Instance</span>: <a class="idref" href="http://coq.inria.fr/distrib/V8.15.0/stdlib//Coq.Classes.Morphisms.html#Params"><span class="id" title="class">Params</span></a> (@<a class="idref" href="bedrock.lang.cpp.logic.rep_defs.html#_offsetR"><span class="id" title="definition">_offsetR</span></a>) 3 := {}.<br/>
+#[<span class="id" title="var">global</span>] <span class="id" title="keyword">Instance</span>: <a class="idref" href="http://coq.inria.fr/distrib/V8.15.0/stdlib//Coq.Classes.Morphisms.html#Params"><span class="id" title="class">Params</span></a> (@<a class="idref" href="bedrock.lang.cpp.logic.rep_defs.html#pureR"><span class="id" title="definition">pureR</span></a>) 2 := {}.<br/>
+</div>
+<!--
+-- Copyright (c) 2020 BedRock Systems, Inc.
+-- This software is distributed under the terms of the BedRock Open-Source License.
+-- See the LICENSE-BedRock file in the repository root for details.
+-->
+
+<!--
+-- SPDX-LIcense-Identifier:BSD-2-Clause
+-->
+</div>
+<div id="footer">
+  Generated by <a href="http://coq.inria.fr/">coqdoc</a> and improved with <a href="https://github.com/tebbi/coqdocjs">CoqdocJS</a>
+</div>
+</div>
+</body>
+
+</html>
