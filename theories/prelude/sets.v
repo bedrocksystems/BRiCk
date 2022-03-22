@@ -30,6 +30,12 @@ Section semi_set.
   Proof. done. Qed.
   Lemma set_disjoint_not_Forall_2 X Y : X ## Y <-> set_Forall (.∉ X) Y.
   Proof. by rewrite [X ## Y]symmetry_iff. Qed.
+
+  (* More convenient for rewriting than [set_Forall_union_inv_1,
+  set_Forall_union_inv_2, set_Forall_union]. *)
+  Lemma set_Forall_union_equiv (P : A → Prop) X Y :
+    set_Forall P (X ∪ Y) ↔ set_Forall P X ∧ set_Forall P Y.
+  Proof. unfold set_Forall. set_solver. Qed.
 End semi_set.
 
 (** Pairwise disjointness for [SemiSet] *)

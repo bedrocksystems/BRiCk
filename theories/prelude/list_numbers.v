@@ -12,6 +12,14 @@ From bedrock.prelude Require Export list numbers.
   SetUnfoldElemOf n (seq start len) P.
 Proof. constructor. rewrite elem_of_seq. set_solver. Qed.
 
+Lemma insert_seq (i j k : nat) :
+  <[ k := i + k ]> (seq i j) = seq i j.
+Proof.
+  destruct (decide (k < j)).
+  by rewrite list_insert_id // lookup_seq_lt.
+  by rewrite list_insert_ge // seq_length; lia.
+Qed.
+
 #[local] Open Scope N_scope.
 
 Definition seqN (from count : N) : list N :=
@@ -39,24 +47,37 @@ Definition rotateN {A} n xs :=
 Lemma list_lookupN_lookup {A} (xs : list A) (n : N) :
   xs !! n = xs !! N.to_nat n.
 Proof. done. Qed.
+(** Folding lemma. *)
+Lemma list_lookup_lookupN {A} (xs : list A) (n : nat) :
+  xs !! n = xs !! N.of_nat n.
+Proof. by rewrite list_lookupN_lookup Nat2N.id. Qed.
 
 #[global] Instance list_insertN {A} : Insert N A (list A) | 10 :=
   fun i x xs => <[N.to_nat i := x]> xs.
 #[global] Notation insertN := (insert (K := N)) (only parsing).
 
 (* Instead of lifting the [list_insert] theory to [list_insertN] we provide an unfolding lemma. *)
-Lemma list_insertN_insert {A} (xs : list A) (i : N) (x : A) :
+Lemma list_insertN_insert {A} (i : N) (x : A) (xs : list A) :
   <[i := x]> xs = <[N.to_nat i := x]> xs.
 Proof. done. Qed.
+(** Folding lemma. *)
+Lemma list_insert_insertN {A} (i : nat) (x : A) (xs : list A) :
+  <[i := x]> xs = <[N.of_nat i := x]> xs.
+Proof. by rewrite list_insertN_insert Nat2N.id. Qed.
 
 #[global] Instance list_alterN {A} : Alter N A (list A) | 10 :=
   fun f i xs => alter f (N.to_nat i) xs.
 #[global] Notation alterN := (alter (K := N)) (only parsing).
 
 (* Instead of lifting the [list_alter] theory to [list_alterN] we provide an unfolding lemma. *)
-Lemma list_alterN_alter {A} (xs : list A) (i : N) f :
+Lemma list_alterN_alter {A} (i : N) (xs : list A) f :
   alter f i xs = alter f (N.to_nat i) xs.
 Proof. done. Qed.
+
+(** Folding lemma. *)
+Lemma list_alter_alterN {A} (i : nat) (xs : list A) f :
+  alter f i xs = alter f (N.of_nat i) xs.
+Proof. by rewrite list_alterN_alter Nat2N.id. Qed.
 
 Lemma fmap_lengthN {A B} (f : A → B) (l : list A) :
   lengthN (f <$> l) = lengthN l.
@@ -117,7 +138,7 @@ Section seqN.
   #[global] Typeclasses Opaque seqN.
 
   Lemma Forall_seqN P i n :
-    List.Forall P (seqN i n) ↔ (∀ j : N, i <= j < i + n → P j).
+    Forall P (seqN i n) ↔ (∀ j : N, i <= j < i + n → P j).
   Proof. rewrite Forall_forall. by setoid_rewrite elem_of_seqN. Qed.
 End seqN.
 
@@ -765,6 +786,14 @@ Section listN.
     { rewrite lookup_seq //=; lia. }
     split; last by move ->; rewrite /= N2Nat.id.
     rewrite !fmap_Some. intros (x' & ? & ->). by rewrite Nat2N.id.
+  Qed.
+
+  Lemma insertN_seqN (i j k : N) :
+    <[ k := (i + k)%N ]> (seqN i j) = seqN i j.
+  Proof.
+    rewrite list_insertN_insert; destruct (decide (k < j)%N).
+    by rewrite list_insert_id // -list_lookupN_lookup lookupN_seqN_lt.
+    by rewrite list_insert_ge // length_lengthN seqN_lengthN; lia.
   Qed.
 
   Lemma insertN_id i x xs :
