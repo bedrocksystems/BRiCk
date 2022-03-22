@@ -1,5 +1,5 @@
 (*
- * Copyright (c) 2020-2021 BedRock Systems, Inc.
+ * Copyright (c) 2020-2022 BedRock Systems, Inc.
  * This software is distributed under the terms of the BedRock Open-Source License.
  * See the LICENSE-BedRock file in the repository root for details.
  *)
@@ -18,6 +18,7 @@ From bedrock.lang.cpp.logic Require Import
      wp call string
      translation_unit
      dispatch.
+Require Import bedrock.lang.bi.errors.
 
 Require Import bedrock.lang.cpp.heap_notations.
 
@@ -438,7 +439,7 @@ Module Type Expr.
     Axiom wp_operand_cast_int2bool : forall ty e Q,
         wp_operand e (fun v free =>
                       match is_true v with
-                      | None => False
+                      | None => ERROR (is_true_None v)
                       | Some v => Q (Vbool v) free
                       end)
         |-- wp_operand (Ecast Cint2bool Prvalue e ty) Q.
@@ -446,7 +447,7 @@ Module Type Expr.
     Axiom wp_operand_cast_ptr2bool : forall ty e Q,
         wp_operand e (fun v free =>
                       match is_true v with
-                      | None => False
+                      | None => ERROR (is_true_None v)
                       | Some v => Q (Vbool v) free
                       end)
         |-- wp_operand (Ecast Cptr2bool Prvalue e ty) Q.

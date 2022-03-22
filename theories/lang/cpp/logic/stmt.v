@@ -84,6 +84,9 @@ Module Type Stmt.
         iIntros (?); iApply interp_frame; iApply "X".
     Qed.
 
+    (* An error used to say that thread safe initializers are not supported *)
+    Record thread_safe_initializer (d : VarDecl) : Prop := {}.
+
     Fixpoint wp_decl (ρ ρ_init : region) (d : VarDecl) (k : region -> FreeTemps -> mpred) {struct d} : mpred :=
       match d with
       | Dvar x ty init => wp_decl_var ρ ρ_init x ty init k
@@ -102,7 +105,7 @@ Module Type Stmt.
             end
         in
         if ts then
-          UNSUPPORTED "thread safe initialization"
+          UNSUPPORTED (thread_safe_initializer d)
         else
           _global nm |-> tblockR ty 1 ** do_init
       end.
@@ -188,7 +191,7 @@ Module Type Stmt.
     Axiom wp_if : forall ρ e thn els Q,
         |> wp_operand ρ e (fun v free =>
              match is_true v with
-             | None => ERROR "is_true"
+             | None => ERROR (is_true_None v)
              | Some c =>
                interp free $
                if c then
@@ -262,7 +265,7 @@ Module Type Stmt.
           | Continue | Normal =>
             wp_operand ρ e (fun v free =>
                               match is_true v with
-                              | None => ERROR "is_true"
+                              | None => ERROR (is_true_None v)
                               | Some c => interp free $ if c then I else Q Normal
                               end)
           | rt => Q rt
@@ -416,9 +419,12 @@ Module Type Stmt.
         wp ρ (Sseq (Sdecl (d :: nil) :: Sswitch None e ls :: nil)) Q
         |-- wp ρ (Sswitch (Some d) e ls) Q.
 
+    (* An error to say that a `switch` block with [body] is not supported *)
+    Record switch_block (body : list Stmt) : Prop := {}.
+
     Axiom wp_switch : forall ρ e b Q,
         match wp_switch_block (Some $ default_from_cases (get_cases b)) b with
-        | None => False
+        | None => UNSUPPORTED (switch_block b)
         | Some cases =>
           wp_operand ρ e (fun v free => interp free $
                     Exists vv : Z, [| v = Vint vv |] **
