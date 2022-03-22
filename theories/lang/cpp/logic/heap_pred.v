@@ -10,8 +10,13 @@ Require Import iris.bi.lib.fractional.
 Require Import bedrock.prelude.base.
 
 From bedrock.lang.cpp Require Import
-     semantics ast logic.pred logic.path_pred logic.rep.
+  semantics ast logic.pred logic.rep logic.rep_defs heap_notations.
+
+From bedrock.lang.cpp Require Import
+     semantics ast logic.pred logic.path_pred logic.rep logic.rep_defs heap_notations.
+
 Export bedrock.lang.cpp.logic.rep.
+Export bedrock.lang.cpp.heap_notations.
 
 Implicit Types (σ resolve : genv) (p : ptr) (o : offset).
 
@@ -219,10 +224,12 @@ Section with_cpp.
   #[global] Instance validR_affine : Affine validR.
   Proof. rewrite validR_eq; refine _. Qed.
 
+  Import heap_notations.INTERNAL.
+
   Lemma monPred_at_validR p : validR p -|- valid_ptr p.
   Proof. by rewrite validR_eq. Qed.
   Lemma _at_validR (p : ptr) : _at p validR -|- valid_ptr p.
-  Proof. by rewrite validR_eq _at_eq. Qed.
+  Proof. by rewrite validR_eq _at_eq /_at_def. Qed.
 
   #[global] Instance svalidR_persistent : Persistent svalidR.
   Proof. rewrite svalidR_eq; refine _. Qed.
@@ -339,6 +346,7 @@ Section with_cpp.
     constructor => p /=. iIntros "->". iApply valid_ptr_nullptr.
   Qed.
 
+
   (** [blockR sz q] represents [q] ownership of a contiguous chunk of
       [sz] bytes without any C++ structure on top of it. *)
   Definition blockR_def {σ} sz (q : Qp) : Rep :=
@@ -354,7 +362,7 @@ Section with_cpp.
 
   #[global] Instance blockR_timeless {resolve : genv} sz q :
     Timeless (blockR sz q).
-  Proof. rewrite blockR_eq. apply _. Qed.
+  Proof. rewrite blockR_eq /blockR_def. unfold_at. apply _. Qed.
   #[global] Instance blockR_fractional resolve sz :
     Fractional (blockR sz).
   Proof.
@@ -446,7 +454,7 @@ Section with_cpp.
   Proof. rewrite -null_validR. refine _. Qed.
 
   Lemma off_validR o
-    (Hv : ∀ p, valid_ptr (p .., o) |-- valid_ptr p) :
+    (Hv : ∀ p, valid_ptr (p ,, o) |-- valid_ptr p) :
     _offsetR o validR |-- validR.
   Proof.
     apply Rep_entails_at => p. by rewrite _at_offsetR !_at_validR.

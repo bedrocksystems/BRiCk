@@ -41,7 +41,7 @@ Section with_env.
       can also hold at them.
    *)
   Example _2 : mpred := p |-> R.
-  Example _3 : mpred := v |-> R.
+  Example _3 : mpred := _eqv v |-> R.
 
   (** all of these mean that the location is valid, i.e. it is a valid C/C++
       pointer, but do not (necessarily) imply that the pointer is non-null.
@@ -53,7 +53,7 @@ Section with_env.
   Example _4 : Rep := o |-> R.
 
   (** because [field] is also "offset"-like, they can be used as well. *)
-  Example _5 : Rep := f |-> R.
+  Example _5 : Rep := _field f |-> R.
 
   (** note: the value to the right of a [_ |-> _] is *always* a [Rep] regardless
       of whether the left-side is a [ptr] or an [offset]
@@ -64,14 +64,14 @@ Section with_env.
    *)
   Example _6 : ptr := l ., f.
 
-  (** note that this also works for offsets *)
-  Example _7 : ptr := l ., o.
+  (** note that this also works for offsets, but with slightly different syntax: *)
+  Example _7 : ptr := l ,, o.
 
-  (** [_ ., _] can also be used to combine [offset]s into larger [offset]s *)
-  Example _8 : offset := o ., f.
-  Example _9 : offset := f ., o.
+  (** [_ ,, _] can also be used to combine [offset]s into larger [offset]s *)
+  Example _8 : offset := o ,, _field f.
+  Example _9 : offset := _field f ,, o.
 
-  Example _10 : offset := o ., f ., f. (* is parsed as [(o ., f) ., f] *)
+  Example _10 : offset := o ,, _field f ,, _field f. (* is parsed as [(o ,, f) ,, f] *)
 
   (** using this notation, you can also assert that a [Rep] holds at a compound
       location, e.g. the following means that [R] holds at the location `l.f`.
@@ -85,18 +85,18 @@ Section with_env.
   (** for uniformity, arbitrary [Rep]s can be positioned, allowing us to write
       predicates such as the following, which is logically equivalent to [_11].
    *)
-  Example _11' : mpred := l |-> f |-> R.
+  Example _11' : mpred := l |-> _field f |-> R.
 
   (** a benefit to the nested style is that it allows us to factor repeated paths
       out, e.g.
    *)
   Example _12 : mpred :=
-    l ., f |-> (f |-> R ** o |-> R ** R).
+    l ., f |-> (_field f |-> R ** o |-> R ** R).
 
   (** which is logically equivalent to the following *)
   Example _12' : mpred :=
     l ., f ., f |-> R **
-    l ., f ., o |-> R **
+    l ., f ,, o |-> R **
     l ., f |-> R.
 
 
@@ -115,7 +115,7 @@ Section with_env.
   Example _17 : Rep := o .[ T_int ! -20 ] |-> R.
 
   (** paths can be chained arbitrarily *)
-  Example _20 := l |-> f .[ T_int ! 0 ] |-> R.
+  Example _20 := l |-> _field f .[ T_int ! 0 ] |-> R.
 
   Example _21 := l .[ T_int ! 0 ] .[ T_int ! 3 ] |-> R.
 
@@ -131,10 +131,10 @@ Section with_env.
 
   Example _27 := .[ T_int ! 1 ] |-> R.
 
-  Example _28 := f .[ T_int ! 1 ] |-> R.
+  Example _28 := _field f .[ T_int ! 1 ] |-> R.
 
   Example _29 := p .[ T_int ! 1 ] |-> R.
 
-  Example _30 := v .[ T_int ! 1 ] |-> R.
+  Example _30 := _eqv v .[ T_int ! 1 ] |-> R.
 
 End with_env.

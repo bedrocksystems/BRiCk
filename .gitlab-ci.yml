@@ -1,5 +1,5 @@
 ##
-## Copyright (c) 2020 BedRock Systems, Inc.
+## Copyright (c) 2020-2022 BedRock Systems, Inc.
 ## This software is distributed under the terms of the BedRock Open-Source License.
 ## See the LICENSE-BedRock file in the repository root for details.
 ##
@@ -54,8 +54,9 @@ variables:
 .public:
   extends: .base
   variables:
-    img_prefix: cpp2v-public-llvm
-    LLVM_MAJ_VER: 13
+    #img_prefix: cpp2v-public-llvm
+    #LLVM_MAJ_VER: 13
+  image: ${docker_img_prefix}:cpp2v-public-llvm13-coq815-coqelpi1130
 
 stages:
   - build
@@ -149,6 +150,8 @@ build_public:
   extends:
     - .build_aux
     - .public
+  variables:
+    image: "cpp2v-public-llvm13-coq815-coqelpi1130" #not sure why extending .public doesn't pick this up
 
 test_latest:
   extends:
@@ -318,7 +321,7 @@ pages:
     # QUESTION (JH): Are these exposed within the (protected) [master] branch?
     - git config --global user.email "${BRICK_BOT_EMAIL}" && git config --global user.name "${BRICK_BOT_USERNAME}"
     - cd cpp2v-core
-    # switch to our protected branch 
+    # switch to our protected branch
     - git checkout gh-pages
     # remove the old documentation
     - git rm -r docs/

@@ -59,7 +59,7 @@ Definition SDestructor `{Σ : cpp_logic, resolve : genv} {cc : calling_conv}
     (base_to_derived : option offset) (wpp : ptr -> SPEC)
   : SPEC :=
   \arg{this} "this"
-   (Vptr (if base_to_derived is Some o then (this ., o ) else this))
+   (Vptr (if base_to_derived is Some o then (this ,, o ) else this))
   \exact (wpp this).
 #[local] Definition SMethodOptCast `{Σ : cpp_logic} {cc : calling_conv}
     (class : globname) (base_to_derived : option offset) (qual : type_qualifiers)

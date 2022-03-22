@@ -144,7 +144,7 @@ defined by a field or an array index and type (size of elements) of array.
 
 Variable struct_field struct_field2 : field.
 
-Example structRep1 : Rep := struct_field |-> r.
+Example structRep1 : Rep := _field struct_field |-> r.
 
 (**
 Note that in this case, the whole term [structRep] has type [Rep] (memory representation) instead of [mpred].
@@ -162,12 +162,12 @@ Example e17 : mpred := this |-> structRep1.
 
 (** we can also unfold [structRep1] above and write *)
 
-Example e18 : mpred := this |-> (struct_field |-> r).
+Example e18 : mpred := this |-> (_field struct_field |-> r).
 
 (**
 Because the notation [_ |-> _] is declared right associative, we can drop the parens: *)
 
-Example e19 : mpred := this |-> struct_field |-> r.
+Example e19 : mpred := this |-> _field struct_field |-> r.
 
 (**
 Note that the [**] notation is overloaded to work on [Rep]s as well as [mpred]s;
@@ -176,7 +176,7 @@ states that the relative locations are disjoint (i.e. for any *single* absolute
 location [l], [l ., struct_field |-> r ** l ., struct_field2 |-> r]).
 *)
 
-Example e20 : Rep := (struct_field |-> r) ** (struct_field2 |-> r).
+Example e20 : Rep := (_field struct_field |-> r) ** (_field struct_field2 |-> r).
 
 (** More examples in the next two chapters. Parentheses are optional above because
 the precedence between [_ ** _] and [_ |-> _] has been defined appropriately. *)

@@ -136,6 +136,7 @@ theories/lang/cpp/logic/pred_paradoxes.v
 theories/lang/cpp/logic/path_pred.v
 theories/lang/cpp/logic/operator.v
 theories/lang/cpp/logic/rep.v
+theories/lang/cpp/logic/rep_defs.v
 theories/lang/cpp/logic/heap_pred.v
 theories/lang/cpp/logic/cptr.v
 theories/lang/cpp/logic/wp.v

@@ -220,9 +220,9 @@ Fixpoint treeR (q : Qp) (t : tree A) : Rep :=
               Exists (lp : ptr) (rp : ptr),
               lp |-> treeR q l **
               rp |-> treeR q r **
-              this |-> (_data |-> R q d **
-                        _left |-> ptrR<_Tree> q lp **
-                        _right |-> ptrR<_Tree> q rp)
+              this |-> (_field _data |-> R q d **
+                        _field _left |-> ptrR<_Tree> q lp **
+                        _field _right |-> ptrR<_Tree> q rp)
             end
          ).
 
@@ -414,8 +414,8 @@ Arguments Entry _ : clear implicits.
 
 (** Here's the corresponding representation predicate: *)
 Definition EntryR (q : Qp) (e : Entry Z) : Rep :=
-  _range |-> RangeR q e.(range) **
-  _payload |-> intR q e.(payload).
+  _field _range |-> RangeR q e.(range) **
+  _field _payload |-> intR q e.(payload).
 
 (** One range is less than another if its [begin] value is less-than. *)
 Definition Range_lt (r1 r2 : Range) : Prop :=

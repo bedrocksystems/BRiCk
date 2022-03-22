@@ -277,13 +277,13 @@ Module Type CPP_LOGIC
     Axiom offset_pinned_ptr_pure : forall σ o z va p,
       eval_offset σ o = Some z ->
       ptr_vaddr p = Some va ->
-      valid_ptr (p .., o) |--
-      [| ptr_vaddr (p .., o) = Some (Z.to_N (Z.of_N va + z)) |].
+      valid_ptr (p ,, o) |--
+      [| ptr_vaddr (p ,, o) = Some (Z.to_N (Z.of_N va + z)) |].
 
     Axiom offset_inv_pinned_ptr_pure : forall σ o z va p,
       eval_offset σ o = Some z ->
-      ptr_vaddr (p .., o) = Some va ->
-      valid_ptr (p .., o) |--
+      ptr_vaddr (p ,, o) = Some va ->
+      valid_ptr (p ,, o) |--
       [| 0 <= Z.of_N va - z |]%Z **
       [| ptr_vaddr p = Some (Z.to_N (Z.of_N va - z)) |].
 
@@ -351,7 +351,7 @@ Module Type CPP_LOGIC
       type_ptr ty p |-- [| aligned_ptr_ty ty p |].
 
     Axiom type_ptr_off_nonnull : forall {σ ty p o},
-      type_ptr ty (p .., o) |-- [| p <> nullptr |].
+      type_ptr ty (p ,, o) |-- [| p <> nullptr |].
 
     Axiom tptsto_type_ptr : forall (σ : genv) ty q p v,
       Observe (type_ptr ty p) (tptsto ty q p v).
@@ -372,7 +372,7 @@ Module Type CPP_LOGIC
       type_ptr ty p |-- strict_valid_ptr p.
     (** Hence they can be incremented into (possibly past-the-end) valid pointers. *)
     Axiom type_ptr_valid_plus_one : forall resolve ty p,
-      type_ptr ty p |-- valid_ptr (p .., o_sub resolve ty 1).
+      type_ptr ty p |-- valid_ptr (p ,, o_sub resolve ty 1).
 
     (**
      ** Deducing pointer equalities
@@ -449,14 +449,14 @@ Module Type VALID_PTR_AXIOMS
 
     (** Justified by [https://eel.is/c++draft/expr.add#4.1]. *)
     Axiom _valid_ptr_nullptr_sub_false : forall vt ty (i : Z) (_ : i <> 0),
-      _valid_ptr vt (nullptr .., o_sub σ ty i) |-- False.
+      _valid_ptr vt (nullptr ,, o_sub σ ty i) |-- False.
     (*
     TODO Controversial; if [f] is the first field, [nullptr->f] or casts relying on
     https://eel.is/c++draft/basic.compound#4 might invalidate this.
     To make this valid, we could ensure our axiomatic semantics produces
     [nullptr] instead of [nullptr ., o_field]. *)
     (* Axiom _valid_ptr_nullptr_field_false : forall vt f,
-      _valid_ptr vt (nullptr .., o_field σ f) |-- False. *)
+      _valid_ptr vt (nullptr ,, o_field σ f) |-- False. *)
 
     (** These axioms are named after the predicate in the conclusion. *)
 
@@ -469,48 +469,48 @@ Module Type VALID_PTR_AXIOMS
     *)
     Axiom strict_valid_ptr_sub : ∀ (i j k : Z) p ty vt1 vt2,
       (i <= j < k)%Z ->
-      _valid_ptr vt1 (p .., o_sub σ ty i) |--
-      _valid_ptr vt2 (p .., o_sub σ ty k) -* strict_valid_ptr (p .., o_sub σ ty j).
+      _valid_ptr vt1 (p ,, o_sub σ ty i) |--
+      _valid_ptr vt2 (p ,, o_sub σ ty k) -* strict_valid_ptr (p ,, o_sub σ ty j).
 
     (** XXX: this axiom is convoluted but
     TODO: The intended proof of [strict_valid_ptr_field_sub] (and friends) is that
     (1) if [p'] normalizes to [p'' ., [ ty ! i ]], then [valid_ptr p'] implies
     [valid_ptr p''].
-    (2) [p .., o_field σ f .., o_sub σ ty i] will normalize to [p .., o_field
-    σ f .., o_sub σ ty i], without cancellation.
+    (2) [p ,, o_field σ f ,, o_sub σ ty i] will normalize to [p ,, o_field
+    σ f ,, o_sub σ ty i], without cancellation.
     *)
-    Axiom strict_valid_ptr_field_sub : ∀ p ty (i : Z) f vt,
+    Axiom strict_valid_ptr_field_sub : ∀ (p : ptr) ty (i : Z) f vt,
       (0 < i)%Z ->
-      _valid_ptr vt (p .., o_field σ f .., o_sub σ ty i) |-- strict_valid_ptr (p .., o_field σ f).
+      _valid_ptr vt (p ,, o_field σ f ,, o_sub σ ty i) |-- strict_valid_ptr (p ,, o_field σ f).
 
     (* TODO: can we deduce that [p] is strictly valid? *)
     Axiom _valid_ptr_base : ∀ p base derived vt,
-      _valid_ptr vt (p .., o_base σ derived base) |-- _valid_ptr vt p.
+      _valid_ptr vt (p ,, o_base σ derived base) |-- _valid_ptr vt p.
     (* TODO: can we deduce that [p] is strictly valid? *)
     Axiom _valid_ptr_derived : ∀ p base derived vt,
-      _valid_ptr vt (p .., o_derived σ base derived) |-- _valid_ptr vt p.
+      _valid_ptr vt (p ,, o_derived σ base derived) |-- _valid_ptr vt p.
     (* TODO: can we deduce that [p] is strictly valid? *)
     Axiom _valid_ptr_field : ∀ p f vt,
-      _valid_ptr vt (p .., o_field σ f) |-- _valid_ptr vt p.
+      _valid_ptr vt (p ,, o_field σ f) |-- _valid_ptr vt p.
     (* TODO: Pointers to fields can't be past-the-end, right?
     Except 0-size arrays. *)
     (* Axiom strict_valid_ptr_field : ∀ p f,
-      valid_ptr (p .., o_field σ f) |--
-      strict_valid_ptr (p .., o_field σ f). *)
+      valid_ptr (p ,, o_field σ f) |--
+      strict_valid_ptr (p ,, o_field σ f). *)
     (* TODO: if we add [strict_valid_ptr_field], we can derive
     [_valid_ptr_field] from just [strict_valid_ptr_field] *)
     (* Axiom strict_valid_ptr_field : ∀ p f,
-      strict_valid_ptr (p .., o_field σ f) |-- strict_valid_ptr p. *)
+      strict_valid_ptr (p ,, o_field σ f) |-- strict_valid_ptr p. *)
 
     (* We're ignoring virtual inheritance here, since we have no plans to
     support it for now, but this might hold there too. *)
     Axiom o_base_derived : forall p base derived,
-      strict_valid_ptr (p .., o_base σ derived base) |--
-      [| p .., o_base σ derived base .., o_derived σ base derived = p |].
+      strict_valid_ptr (p ,, o_base σ derived base) |--
+      [| p ,, o_base σ derived base ,, o_derived σ base derived = p |].
 
     Axiom o_derived_base : forall p base derived,
-      strict_valid_ptr (p .., o_derived σ base derived) |--
-      [| p .., o_derived σ base derived .., o_base σ derived base = p |].
+      strict_valid_ptr (p ,, o_derived σ base derived) |--
+      [| p ,, o_derived σ base derived ,, o_base σ derived base = p |].
 
     (* Without the validity premise to the cancellation axioms ([o_sub_sub],
       [o_base_derived], [o_derived_base]) we could incorrectly deduce that
@@ -520,11 +520,11 @@ Module Type VALID_PTR_AXIOMS
 
     (* TODO: maybe add a validity of offsets to allow stating this more generally. *)
     Axiom valid_o_sub_size : forall p ty i vt,
-      _valid_ptr vt (p .., o_sub σ ty i) |-- [| is_Some (size_of σ ty) |].
+      _valid_ptr vt (p ,, o_sub σ ty i) |-- [| is_Some (size_of σ ty) |].
 
     Axiom type_ptr_o_base : forall derived base p,
       class_derives _ derived base ->
-      type_ptr (Tnamed derived) p ⊢ type_ptr (Tnamed base) (p .., _base derived base).
+      type_ptr (Tnamed derived) p ⊢ type_ptr (Tnamed base) (p ,, _base derived base).
   End with_cpp.
 End VALID_PTR_AXIOMS.
 
@@ -573,7 +573,7 @@ Section pinned_ptr_def.
   Qed.
 
   Lemma offset_exposed_ptr p o :
-    valid_ptr (p .., o) |-- exposed_ptr p -* exposed_ptr (p .., o).
+    valid_ptr (p ,, o) |-- exposed_ptr p -* exposed_ptr (p ,, o).
   Proof.
     rewrite exposed_ptr_eq /exposed_ptr_def.
     iIntros "#V' #[V E]". iDestruct (valid_ptr_alloc_id with "V'") as %?.
@@ -581,7 +581,7 @@ Section pinned_ptr_def.
   Qed.
 
   Lemma offset2_exposed_ptr p o1 o2 :
-    valid_ptr (p .., o2) |-- exposed_ptr (p .., o1) -* exposed_ptr (p .., o2).
+    valid_ptr (p ,, o2) |-- exposed_ptr (p ,, o1) -* exposed_ptr (p ,, o2).
   Proof.
     rewrite exposed_ptr_eq /exposed_ptr_def.
     iIntros "#V2 #[V1 E]"; iFrame "V2".
@@ -591,7 +591,7 @@ Section pinned_ptr_def.
   Qed.
 
   Lemma offset_inv_exposed_ptr p o :
-    valid_ptr p |-- exposed_ptr (p .., o) -* exposed_ptr p.
+    valid_ptr p |-- exposed_ptr (p ,, o) -* exposed_ptr p.
   Proof. rewrite -{1 3}(offset_ptr_id p). apply offset2_exposed_ptr. Qed.
 
   (** Physical representation of pointers. *)
@@ -714,9 +714,9 @@ Section with_cpp.
   Lemma offset_2_pinned_ptr_pure o1 o2 z1 z2 va p :
     eval_offset σ o1 = Some z1 ->
     eval_offset σ o2 = Some z2 ->
-    ptr_vaddr (p .., o1) = Some va ->
-    valid_ptr p |-- valid_ptr (p .., o1) -* valid_ptr (p .., o2) -*
-    [| ptr_vaddr (p .., o2) = Some (Z.to_N (Z.of_N va - z1 + z2)) |].
+    ptr_vaddr (p ,, o1) = Some va ->
+    valid_ptr p |-- valid_ptr (p ,, o1) -* valid_ptr (p ,, o2) -*
+    [| ptr_vaddr (p ,, o2) = Some (Z.to_N (Z.of_N va - z1 + z2)) |].
   Proof.
     iIntros (He1 He2 Hpin1) "V V1 V2".
     iDestruct (offset_inv_pinned_ptr_pure with "V1") as %[??]; [done..|].
@@ -733,8 +733,8 @@ Section with_cpp.
 
   Lemma offset_pinned_ptr o z va p :
     eval_offset _ o = Some z ->
-    valid_ptr (p .., o) |--
-    pinned_ptr va p -* pinned_ptr (Z.to_N (Z.of_N va + z)) (p .., o).
+    valid_ptr (p ,, o) |--
+    pinned_ptr va p -* pinned_ptr (Z.to_N (Z.of_N va + z)) (p ,, o).
   Proof.
     rewrite pinned_ptr_eq /pinned_ptr_def.
     iIntros (He) "#V' #(%P & E)".
@@ -744,7 +744,7 @@ Section with_cpp.
 
   Lemma offset_inv_pinned_ptr o z va p :
     eval_offset _ o = Some z ->
-    valid_ptr p |-- pinned_ptr va (p .., o) -*
+    valid_ptr p |-- pinned_ptr va (p ,, o) -*
     [| 0 <= Z.of_N va - z |]%Z ** pinned_ptr (Z.to_N (Z.of_N va - z)) p.
   Proof.
     rewrite pinned_ptr_eq /pinned_ptr_def.
@@ -757,9 +757,9 @@ Section with_cpp.
   Lemma offset2_pinned_ptr o1 o2 z1 z2 va p :
     eval_offset σ o1 = Some z1 ->
     eval_offset σ o2 = Some z2 ->
-    valid_ptr p |-- valid_ptr (p .., o1) -* valid_ptr (p .., o2) -*
-    pinned_ptr va (p .., o1) -*
-    pinned_ptr (Z.to_N (Z.of_N va - z1 + z2)) (p .., o2).
+    valid_ptr p |-- valid_ptr (p ,, o1) -* valid_ptr (p ,, o2) -*
+    pinned_ptr va (p ,, o1) -*
+    pinned_ptr (Z.to_N (Z.of_N va - z1 + z2)) (p ,, o2).
   Proof.
     rewrite pinned_ptr_eq /pinned_ptr_def.
     iIntros (He1 He2) "V V1 #V2 #(%P & E)".
@@ -791,9 +791,9 @@ Section with_cpp.
     iIntros "#? #(? & _)". by iApply pinned_ptr_pure_type_divide_1.
   Qed.
 
-  Lemma shift_pinned_ptr_sub ty z va (p1 : ptr) p2 o:
+  Lemma shift_pinned_ptr_sub ty z va (p1 p2 : ptr) o:
     size_of σ ty = Some o ->
-    _offset_ptr p1 (o_sub _ ty z) = p2 ->
+    p1 ,, o_sub _ ty z = p2 ->
         valid_ptr p2 ** pinned_ptr va p1
     |-- pinned_ptr (Z.to_N (Z.of_N va + z * Z.of_N o)) p2.
   Proof.
@@ -808,16 +808,16 @@ Section with_cpp.
 
   Lemma valid_ptr_sub (i j k : Z) p ty vt
     (Hj : (i <= j <= k)%Z) :
-    _valid_ptr vt (p .., o_sub σ ty i) |--
-    _valid_ptr vt (p .., o_sub σ ty k) -* valid_ptr (p .., o_sub σ ty j).
+    _valid_ptr vt (p ,, o_sub σ ty i) |--
+    _valid_ptr vt (p ,, o_sub σ ty k) -* valid_ptr (p ,, o_sub σ ty j).
   Proof.
     destruct (decide (j = k)) as [->|Hne].
     { rewrite -_valid_valid. by iIntros "_ $". }
     rewrite -strict_valid_valid. apply strict_valid_ptr_sub. lia.
   Qed.
 
-  Lemma _valid_ptr_field_sub (i : Z) p ty f vt (Hle : (0 <= i)%Z) :
-    _valid_ptr vt (p .., o_field σ f .., o_sub σ ty i) |-- _valid_ptr vt (p .., o_field σ f).
+  Lemma _valid_ptr_field_sub (i : Z) (p : ptr) ty f vt (Hle : (0 <= i)%Z) :
+    _valid_ptr vt (p ,, o_field σ f ,, o_sub σ ty i) |-- _valid_ptr vt (p ,, o_field σ f).
   Proof.
     iIntros "V". case: (decide (i = 0)%Z) Hle => [-> _|Hne Hle].
     - iDestruct (valid_o_sub_size with "V") as %?.
@@ -1086,7 +1086,7 @@ Section with_cpp.
   Proof. by rewrite -type_ptr_strict_valid. Qed.
 
   Lemma observe_type_ptr_valid_plus_one
-    `(Hobs : !Observe (type_ptr ty p) P) : Observe (valid_ptr (p .., o_sub σ ty 1)) P.
+    `(Hobs : !Observe (type_ptr ty p) P) : Observe (valid_ptr (p ,, o_sub σ ty 1)) P.
   Proof. by rewrite -type_ptr_valid_plus_one. Qed.
 
   Lemma type_ptr_valid ty p : type_ptr ty p |-- valid_ptr p.
@@ -1098,21 +1098,21 @@ Section with_cpp.
 
   #[global] Instance valid_ptr_sub_0 (p : ptr) (ty : type) :
     HasSize ty ->
-    Observe (valid_ptr (p .., o_sub σ ty 0)) (valid_ptr p).
+    Observe (valid_ptr (p ,, o_sub σ ty 0)) (valid_ptr p).
   Proof. intros. rewrite o_sub_0 // offset_ptr_id. refine _. Qed.
   #[global] Instance type_ptr_sub_0 (p : ptr) (ty : type) :
     HasSize ty ->
-    Observe (valid_ptr (p .., o_sub σ ty 0)) (type_ptr ty p).
+    Observe (valid_ptr (p ,, o_sub σ ty 0)) (type_ptr ty p).
   Proof.
     intros. by rewrite type_ptr_valid; apply valid_ptr_sub_0.
   Qed.
   #[global] Instance type_ptr_valid_ptr_next (p : ptr) (ty : type) (m n : Z) :
     (m = n + 1)%Z ->
-    Observe (valid_ptr (p .., o_sub σ ty m)) (type_ptr ty (p .., o_sub σ ty n)).
+    Observe (valid_ptr (p ,, o_sub σ ty m)) (type_ptr ty (p ,, o_sub σ ty n)).
   Proof.
     intros; subst.
     iIntros "X".
-    iDestruct (observe (valid_ptr (p .., o_sub _ _ _ .., o_sub _ _ _)) with "X") as "z".
+    iDestruct (observe (valid_ptr (p ,, o_sub _ _ _ ,, o_sub _ _ _)) with "X") as "z".
     apply observe_type_ptr_valid_plus_one. refine _.
     by rewrite o_sub_sub.
   Qed.
