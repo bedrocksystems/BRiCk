@@ -217,6 +217,10 @@ Section with_cpp.
   Context `{Σ : cpp_logic}.
 
   (********************* DERIVED CONCEPTS ****************************)
+  #[global] Instance identityR_timeless σ cls mdc q : Timeless (identityR cls mdc q) := _.
+  #[global] Instance identityR_frac σ cls mdc : Fractional (identityR cls mdc) := _.
+  #[global] Instance identityR_as_frac σ cls mdc q : AsFractional (identityR cls mdc q) (identityR cls mdc) q := _.
+
   #[global] Instance validR_persistent : Persistent validR.
   Proof. rewrite validR_eq; refine _. Qed.
   #[global] Instance validR_timeless : Timeless validR.
