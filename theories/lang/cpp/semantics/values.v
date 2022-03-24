@@ -97,6 +97,9 @@ Module Type VAL_MIXIN (Import P : PTRS) (Import R : RAW_BYTES).
     | Vundef | Vraw _ => None
     end.
 
+  (* An error used to say that [is_true] failed on the value [v] *)
+  Record is_true_None (v : val) : Prop := {}.
+
   Theorem is_true_int : forall i,
       is_true (Vint i) = Some (bool_decide (i <> 0)).
   Proof. reflexivity. Qed.
