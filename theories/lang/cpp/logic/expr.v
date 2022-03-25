@@ -528,6 +528,13 @@ Module Type Expr.
              (void* )0 to the integral type.
            *)
           wp_operand e (fun _ free => Q (Vint 0) free)
+        | Tptr (Tint _ _), Tptr (Tint W8 _) =>
+          (* A narrow special case where the pointer does not change.
+             This intentionally avoids the sources of struct pointers and union
+             pointers because those might hit the "pointer-interconvertible"
+             cases, where the pointer value might change.
+           *)
+            wp_operand e Q
         | ty1 , ty2 => UNSUPPORTED_reinterpret_cast ty1 ty2
         end
         |-- wp_operand (Ecast (Creinterpret qt) Prvalue e ty) Q.
