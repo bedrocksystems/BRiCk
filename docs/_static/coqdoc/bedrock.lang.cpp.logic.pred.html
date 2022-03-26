@@ -110,11 +110,6 @@ this file defines the core logic (called <span class="inlinecode"><a class="idre
 &nbsp;&nbsp;<span class="id" title="keyword">Implicit</span> <span class="id" title="keyword">Types</span> (<span class="id" title="var">p</span> : <a class="idref" href="bedrock.lang.cpp.logic.pred.html#P.ptr"><span class="id" title="axiom">ptr</span></a>).<br/>
 
 <br/>
-&nbsp;&nbsp;<span class="comment">(*&nbsp;XXX&nbsp;why&nbsp;does&nbsp;this&nbsp;not&nbsp;work&nbsp;in&nbsp;the&nbsp;module&nbsp;type.&nbsp;*)</span><br/>
-&nbsp;&nbsp;<span class="id" title="keyword">Bind Scope</span> <span class="id" title="var">ptr_scope</span> <span class="id" title="keyword">with</span> <span class="id" title="var">ptr</span>.<br/>
-&nbsp;&nbsp;<span class="id" title="keyword">Bind Scope</span> <span class="id" title="var">offset_scope</span> <span class="id" title="keyword">with</span> <span class="id" title="var">offset</span>.<br/>
-
-<br/>
 &nbsp;&nbsp;<span class="id" title="keyword">Section</span> <a id="CPP_LOGIC.with_cpp" class="idref" href="#CPP_LOGIC.with_cpp"><span class="id" title="section">with_cpp</span></a>.<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Context</span> `{<a id="9c6d78f4cdf6dede5e109a175164bdaa" class="idref" href="#9c6d78f4cdf6dede5e109a175164bdaa"><span class="id" title="binder">Σ</span></a> : <a class="idref" href="bedrock.lang.cpp.logic.pred.html#CC.cpp_logic"><span class="id" title="class">cpp_logic</span></a>}.<br/>
 
@@ -506,7 +501,7 @@ the pointer points to the code
       This implies:
       - the pointer is strictly valid [type_ptr_strict_valid], and
         "p + 1" is also valid (while possibly past-the-end) [type_ptr_valid_plus_one].
-      - the pointer is not null [type_ptr_nonnull]
+      - the pointer is not (an offset of) null pointers [type_ptr_off_nonnull, type_ptr_nonnull]
       - the pointer is properly aligned [type_ptr_aligned_pure]
 
       [type_ptr] is persistent and survives deallocation of the pointed-to
