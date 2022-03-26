@@ -374,7 +374,6 @@ Section array.
     intros []. have := arrayR_sub_type_ptr_nat_obs (Z.to_nat i) xs.
     rewrite Z2Nat.id //. apply. lia.
   Qed.
-Check @_at_observe.
 
   Lemma at_observe p (Q P : Rep) (_ : Observe Q P) : Observe (p |-> Q) (p |-> P).
   Proof. by apply _at_observe. Qed.
