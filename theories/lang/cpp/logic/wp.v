@@ -138,8 +138,6 @@ Section Kpred.
   Definition KP (P : _) : KpredI := @MonPred rt_biIndex _ P _.
   Arguments KP _%I.
 
-  Instance Kpred_fupd: FUpd KpredI :=
-    funI l r Q => KP (fun v => |={l,r}=> Q v).
 
   Definition void_return (P : mpred) : KpredI :=
     KP (funI rt =>
