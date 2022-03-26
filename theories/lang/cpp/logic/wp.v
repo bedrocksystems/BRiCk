@@ -126,7 +126,7 @@ Variant ReturnType : Set :=
 #[global] Instance ReturnType_ihn : Inhabited ReturnType.
 Proof. repeat constructor. Qed.
 
-Definition rt_biIndex : biIndex :=
+Canonical Structure rt_biIndex : biIndex :=
   {| bi_index_type := ReturnType
    ; bi_index_rel := eq
    |}.
@@ -136,9 +136,8 @@ Section Kpred.
 
   Definition KpredI : bi := monPredI rt_biIndex mpredI.
   #[local] Notation Kpred := KpredI.
-  Definition KP (P : _) : KpredI := @MonPred rt_biIndex _ P _.
-  Arguments KP _%I.
-
+  Definition KP (P : ReturnType -> mpred) : KpredI := MonPred P _.
+  #[global] Arguments KP _%I.
 
   Definition void_return (P : mpred) : KpredI :=
     KP (funI rt =>
