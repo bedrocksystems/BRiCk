@@ -1,5 +1,5 @@
 (*
- * Copyright (c) 2020 BedRock Systems, Inc.
+ * Copyright (c) 2020-2022 BedRock Systems, Inc.
  * This software is distributed under the terms of the BedRock Open-Source License.
  * See the LICENSE-BedRock file in the repository root for details.
  *)
@@ -85,6 +85,13 @@ Section derived_laws.
     (∃ a, Φ a ∧ Ψ a) ⊣⊢ (∃ a, Φ a) ∧ (∃ a, Ψ a).
   Proof. apply (anti_symm (⊢)); eauto using exist_and_1, exist_and_2. Qed.
 
+  Lemma forall_sep_bot {A} (Φ1 Φ2 : A → PROP) (R : relation A) (bot : A) :
+    (∀ x, R bot x) → Proper (R ==> (⊢)) Φ1 → Proper (R ==> (⊢)) Φ2 →
+    (∀ a, Φ1 a ∗ Φ2 a) ⊢ (∀ a, Φ1 a) ∗ (∀ a, Φ2 a).
+  Proof.
+    intros. rewrite (forall_elim bot). f_equiv; auto using forall_intro.
+  Qed.
+
   Lemma and_forall {A} (P Q : A -> PROP) :
     (∀ x : A, P x) ∧ (∀ x : A, Q x) ⊣⊢ (∀ x : A, P x ∧ Q x).
   Proof.
@@ -120,6 +127,37 @@ Section derived_laws.
   Qed.
 
   (** Lemmas about modalities. *)
+
+  Lemma forall_affinely_bot {A} (Φ : A → PROP) (R : relation A) (bot : A) :
+    (∀ x, R bot x) → Proper (R ==> (⊢)) Φ →
+    (∀ a, <affine> (Φ a)) ⊢ <affine> (∀ a, Φ a).
+  Proof.
+    intros. rewrite (forall_elim bot). f_equiv. auto using forall_intro.
+  Qed.
+
+  Lemma forall_intuitionistically_bot `{!BiPersistentlyForall PROP}
+      {A} (Φ : A → PROP) (R : relation A) (bot : A) :
+    (∀ x, R bot x) → Proper (R ==> (⊢)) Φ →
+    (∀ a, □ (Φ a)) ⊢ □ (∀ a, Φ a).
+  Proof.
+    intros Hbot ?. rewrite /bi_intuitionistically.
+    rewrite persistently_forall. apply (forall_affinely_bot _ _ _ Hbot).
+    solve_proper.
+  Qed.
+
+  Lemma intuitionistically_if_forall b {A} (Φ : A → PROP) :
+    □?b (∀ x : A, Φ x) -∗ ∀ x : A, □?b Φ x.
+  Proof.
+    destruct b; [|done]. apply intuitionistically_forall.
+  Qed.
+  Lemma forall_intuitionistically_if_bot `{!BiPersistentlyForall PROP}
+      b {A} (Φ : A → PROP) (R : relation A) (bot : A) :
+    (∀ x, R bot x) → Proper (R ==> (⊢)) Φ →
+    (∀ a, □?b (Φ a)) ⊢ □?b (∀ a, Φ a).
+  Proof.
+    intros. destruct b; [|done]. exact: forall_intuitionistically_bot.
+  Qed.
+
   Lemma intuitionistically_and_sep P Q : □ (P ∧ Q) ⊣⊢@{PROP} □ P ∗ □ Q.
   Proof.
     by rewrite bi.intuitionistically_and bi.and_sep_intuitionistically.
