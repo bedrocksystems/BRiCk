@@ -123,12 +123,13 @@ Variant ReturnType : Set :=
 | ReturnVal (_ : val)
 | ReturnVoid
 .
+#[global] Instance ReturnType_ihn : Inhabited ReturnType.
+Proof. repeat constructor. Qed.
 
 Definition rt_biIndex : biIndex :=
   {| bi_index_type := ReturnType
-   ; bi_index_inhabited := populate Normal
-   ; bi_index_rel := @eq ReturnType
-   ; bi_index_rel_preorder := _ |}.
+   ; bi_index_rel := eq
+   |}.
 
 Section Kpred.
   Context `{Σ : cpp_logic thread_info}.
