@@ -19,9 +19,6 @@ Module Type Stmt.
 
     Implicit Types Q : KpredI.
 
-    Instance Kpred_fupd: FUpd KpredI :=
-      funI l r Q => KP (fun v => |={l,r}=> Q v).
-
     Definition Kseq (Q : KpredI -> mpred) (k : KpredI) : KpredI :=
       KP (funI rt =>
           match rt with

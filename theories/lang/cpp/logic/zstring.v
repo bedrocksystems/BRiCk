@@ -536,17 +536,17 @@ Module zstring.
             assert (size zs <= sz - 1) by (rewrite size_cons in Hsz; by lia).
             iDestruct (observe [| has_type (Vint z) _ |] with "Hz") as "%".
             assert (WF zs) by (apply WF_cons in HWF; assumption).
-            rewrite !offsetR_sep !offsetR_only_provable
-                    size_cons -offsetR_sub_sub
+            rewrite !_offsetR_sep !_offsetR_only_provable
+                    size_cons -_offsetR_sub_sub
                     Z.sub_add_distr;
               by iFrame "∗%".
-          - rewrite /bufR arrayR_cons !offsetR_sep !offsetR_only_provable;
+          - rewrite /bufR arrayR_cons !_offsetR_sep !_offsetR_only_provable;
               iIntros "[H [%Hsz [? [%HWF Hrest]]]]".
             iDestruct (observe (type_ptrR T_uchar) with "H") as "#?".
             assert (size (z :: zs) <= sz) by (rewrite size_cons; by lia).
             iDestruct (observe [| has_type (Vint z) _ |] with "H") as "%".
             assert (WF (z :: zs)) by (apply WF_cons; assumption).
-            rewrite size_cons -!offsetR_sub_sub Z.sub_add_distr.
+            rewrite size_cons -!_offsetR_sub_sub Z.sub_add_distr.
             iFrame "∗#%"; iPureIntro; by lia.
         Qed.
 
@@ -586,7 +586,7 @@ Module zstring.
               iDestruct (observe [| a <> 0 |]%Z with "H") as "%H''"; iStopProof.
               rewrite {1}bufR_cons; auto; rewrite primR_has_type IHzs.
               iIntros "[[? %has_type] ?]"; iStopProof.
-              rewrite offsetR_sep offsetR_only_provable.
+              rewrite _offsetR_sep _offsetR_only_provable.
               iIntros "[head [tail %has_types]]"; iCombine "head tail" as "H".
               rewrite -bufR_cons; [| done]; iFrame "∗"; iPureIntro.
               apply Forall_cons_2; auto.
@@ -647,7 +647,7 @@ Module zstring.
             Observe (.[T_uchar ! z] |-> validR) (bufR q sz zs).
         Proof.
           intros **; generalize dependent zs; induction z; intros **; simpl in *.
-          - rewrite ->o_sub_0 by eauto; rewrite offsetR_id; refine _.
+          - rewrite ->o_sub_0 by eauto; rewrite _offsetR_id; refine _.
           - assert (Z.pos p < sz \/ Z.pos p = sz)%Z
               as [Hp | Hp] by lia; last by (rewrite Hp; refine _).
             unfold Observe, bufR.
@@ -669,7 +669,7 @@ Module zstring.
                 as [z' [Hz'' Hneg]]
                 by (exists (z - size zs)%Z; unfold size; lia);
                 subst.
-              rewrite -offsetR_sub_sub; apply offsetR_observe.
+              rewrite -_offsetR_sub_sub; apply _offsetR_observe.
               pose proof (arrayR_valid_obs
                             (fun c => primR (Tint char_bits Unsigned) q 0)
                             (Tint char_bits Unsigned) (Z.to_nat z')
@@ -767,7 +767,7 @@ Module zstring.
             iDestruct (observe (.[T_uchar ! size zs] |-> validR) with "array") as "#?". 1: {
               unfold size; apply arrayR_valid_obs; by lia.
             }
-            rewrite offsetR_sep offsetR_only_provable;
+            rewrite _offsetR_sep _offsetR_only_provable;
               iFrame "#∗%"; iPureIntro; by eauto.
           - iIntros "[%Hzs [array [%HWF rest]]]"; by iFrame "∗%".
         Qed.
@@ -825,7 +825,7 @@ Module zstring.
             Observe (.[T_uchar ! strlen zs] |-> .[T_uchar ! 1] |-> validR) (R q zs).
         Proof.
           intros *; pose proof (R_validR_end_observe q zs).
-          rewrite offsetR_sub_sub; unfold size, strlen in *.
+          rewrite _offsetR_sub_sub; unfold size, strlen in *.
           unfold size in *.
           by replace (length zs - 1 + 1)%Z
             with (Z.of_nat (length zs))

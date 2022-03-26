@@ -47,10 +47,6 @@ Module Type CPP_LOGIC
 
   Implicit Types (p : ptr).
 
-  (* XXX why does this not work in the module type. *)
-  Bind Scope ptr_scope with ptr.
-  Bind Scope offset_scope with offset.
-
   Section with_cpp.
     Context `{Σ : cpp_logic}.
 
@@ -325,7 +321,7 @@ Module Type CPP_LOGIC
       This implies:
       - the pointer is strictly valid [type_ptr_strict_valid], and
         "p + 1" is also valid (while possibly past-the-end) [type_ptr_valid_plus_one].
-      - the pointer is not null [type_ptr_nonnull]
+      - the pointer is not (an offset of) null pointers [type_ptr_off_nonnull, type_ptr_nonnull]
       - the pointer is properly aligned [type_ptr_aligned_pure]
 
       [type_ptr] is persistent and survives deallocation of the pointed-to

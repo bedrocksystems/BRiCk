@@ -54,14 +54,6 @@ Module SIMPLE_PTRS_IMPL <: PTRS_INTF.
   #[global] Instance offset_eq_dec : EqDecision offset := _.
   #[global] Instance offset_countable : Countable offset := _.
 
-  Declare Scope ptr_scope.
-  Bind Scope ptr_scope with ptr.
-  Delimit Scope ptr_scope with ptr.
-
-  Declare Scope offset_scope.
-  Bind Scope offset_scope with offset.
-  Delimit Scope offset_scope with offset.
-
   #[global] Instance ptr_eq_dec : EqDecision ptr := _.
   #[global] Instance ptr_countable : Countable ptr := _.
   Definition ptr_eq_dec' := ptr_eq_dec.
@@ -138,8 +130,8 @@ Module SIMPLE_PTRS_IMPL <: PTRS_INTF.
   Definition o_derived σ base derived := o_derived_off σ base derived.
 
   Lemma o_base_derived_raw σ p derived base :
-    (p ,, o_base σ derived base)%ptr <> invalid_ptr ->
-    (p ,, o_base σ derived base ,, o_derived σ base derived = p)%ptr.
+    (p ,, o_base σ derived base) <> invalid_ptr ->
+    (p ,, o_base σ derived base ,, o_derived σ base derived = p).
   Proof.
     UNFOLD_dot.
     rewrite /o_base /o_base_off /o_derived /o_derived_off.
@@ -147,8 +139,8 @@ Module SIMPLE_PTRS_IMPL <: PTRS_INTF.
   Qed.
 
   Lemma o_derived_base_raw σ p derived base :
-    (p ,, o_derived σ base derived)%ptr <> invalid_ptr ->
-    (p ,, o_derived σ base derived ,, o_base σ derived base = p)%ptr.
+    (p ,, o_derived σ base derived) <> invalid_ptr ->
+    (p ,, o_derived σ base derived ,, o_base σ derived base = p).
   Proof.
     UNFOLD_dot.
     rewrite /o_base /o_base_off /o_derived /o_derived_off.
@@ -156,7 +148,7 @@ Module SIMPLE_PTRS_IMPL <: PTRS_INTF.
   Qed.
 
   Lemma o_sub_sub_raw σ p ty n1 n2 :
-    (p ,, o_sub σ ty n1 ,, o_sub σ ty n2 = p ,, o_sub σ ty (n1 + n2))%ptr.
+    (p ,, o_sub σ ty n1 ,, o_sub σ ty n2 = p ,, o_sub σ ty (n1 + n2)).
   Proof.
     UNFOLD_dot.
     rewrite /o_sub /o_sub_off. case: size_of => [o|//] /=.
@@ -214,7 +206,7 @@ Module SIMPLE_PTRS_IMPL <: PTRS_INTF.
   Lemma ptr_vaddr_o_sub_eq p σ ty n1 n2 sz
     (Hsz : size_of σ ty = Some sz) (Hsz0 : (sz > 0)%N) :
     (same_property ptr_vaddr (p ,, o_sub σ ty n1) (p ,, o_sub σ ty n2) ->
-    n1 = n2)%ptr.
+    n1 = n2).
   Proof.
     UNFOLD_dot.
     rewrite same_property_iff /ptr_vaddr /o_sub /o_sub_off Hsz => -[addr []] /=.

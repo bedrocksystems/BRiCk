@@ -123,23 +123,21 @@ Variant ReturnType : Set :=
 | ReturnVal (_ : val)
 | ReturnVoid
 .
+#[global] Instance ReturnType_ihn : Inhabited ReturnType.
+Proof. repeat constructor. Qed.
 
-Definition rt_biIndex : biIndex :=
+Canonical Structure rt_biIndex : biIndex :=
   {| bi_index_type := ReturnType
-   ; bi_index_inhabited := populate Normal
-   ; bi_index_rel := @eq ReturnType
-   ; bi_index_rel_preorder := _ |}.
+   ; bi_index_rel := eq
+   |}.
 
 Section Kpred.
   Context `{Σ : cpp_logic thread_info}.
 
   Definition KpredI : bi := monPredI rt_biIndex mpredI.
   #[local] Notation Kpred := KpredI.
-  Definition KP (P : _) : KpredI := @MonPred rt_biIndex _ P _.
-  Arguments KP _%I.
-
-  Instance Kpred_fupd: FUpd KpredI :=
-    funI l r Q => KP (fun v => |={l,r}=> Q v).
+  Definition KP (P : ReturnType -> mpred) : KpredI := MonPred P _.
+  #[global] Arguments KP _%I.
 
   Definition void_return (P : mpred) : KpredI :=
     KP (funI rt =>
