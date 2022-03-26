@@ -40,12 +40,10 @@ End simpl_never.
 (** PDS: Misplaced *)
 Section offsetR.
   Context `{Σ : cpp_logic}.
-  Import heap_notations.INTERNAL.
-  Ltac unfold_dot := rewrite /DOT_dot/= !_dot.unlock.
 
   Lemma monPred_at_offsetR offs (R : Rep) (p : ptr) :
     (_offsetR offs R) p -|- R (p ,, offs).
-  Proof. by rewrite _offsetR_eq; unfold_dot. Qed.
+  Proof. by rewrite INTERNAL._offsetR_eq. Qed.
 End offsetR.
 
 Implicit Types (p : ptr) (σ : genv).
@@ -100,23 +98,20 @@ Section validR.
     p ,, (.[ ty ! 0 ]) |-> R -|- p |-> R.
   Proof. by rewrite offset_ptr_sub_0. Qed.
 
-  Lemma at_offsetR (l : ptr) (o : offset) (r : Rep) : l |-> o |-> r -|- l ,, o |-> r.
-  Proof. by rewrite _at_offsetR. Qed.
-
   Lemma _at_sub_sub p ty a b R :
     p ,, (.[ ty ! a ]) |-> (.[ ty ! b ] |-> R) ⊣⊢
     p ,, (.[ ty ! a + b ]) |-> R.
-  Proof. by rewrite -!at_offsetR _offsetR_sub_sub. Qed.
+  Proof. by rewrite -!_at_offsetR _offsetR_sub_sub. Qed.
 
   Lemma _at_succ_sub p ty z R :
     p ,, (.[ ty ! 1 ]) |-> (.[ ty ! z ] |-> R) ⊣⊢
     p ,, (.[ ty ! Z.succ z]) |-> R.
-  Proof. by rewrite -!at_offsetR _offsetR_succ_sub. Qed.
+  Proof. by rewrite -!_at_offsetR _offsetR_succ_sub. Qed.
 
   Lemma _at_sub_succ p ty z R :
     p ,, (.[ ty ! z ]) |-> (.[ ty ! 1 ] |-> R) ⊣⊢
     p .[ ty ! Z.succ z] |-> R.
-  Proof. by rewrite -!at_offsetR _offsetR_sub_succ. Qed.
+  Proof. by rewrite -!_at_offsetR _offsetR_sub_succ. Qed.
 End validR.
 
 Definition arrR_def `{Σ : cpp_logic} {σ : genv} (ty : type) (Rs : list Rep) : Rep :=
@@ -327,24 +322,12 @@ Section array.
     arrayR ty R (xs ++ [y]) -|- arrayR ty R xs ** .[ ty ! length xs ] |-> (type_ptrR ty ** R y).
   Proof. by rewrite arrayR_eq /arrayR_def fmap_app arrR_snoc fmap_length. Qed.
 
-  Lemma at_sep (l : ptr) (P Q : Rep) : l |-> (P ** Q) -|- l |-> P ** l |-> Q.
-  Proof. apply _at_sep. Qed.
-
-  Lemma at_wand (l : ptr) (P Q : Rep) : l |-> (P -* Q) -|- l |-> P -* l |-> Q.
-  Proof. apply _at_wand. Qed.
-
-  Lemma at_pure (l : ptr) (P : Prop) : l |-> ⌜P⌝ -|- ⌜P⌝.
-  Proof. apply _at_pure. Qed.
-
-  Lemma at_pureR (x : ptr) (P : mpred) : (x |-> pureR P)%stdpp -|- P.
-  Proof. apply _at_pureR. Qed.
-
   Lemma arrayR_snoc_obs p xs y
         `{Hobs : ∀ x, Observe (type_ptrR ty) (R x)} :
         p |-> arr.arrayR ty R (xs ++ [y])
     -|- p |-> arr.arrayR ty R xs ** p ,, (.[ty ! Z.of_nat (length xs)]) |-> R y.
   Proof.
-    rewrite arrayR_snoc !at_sep !at_offsetR at_sep. f_equiv.
+    rewrite arrayR_snoc !_at_sep !_at_offsetR _at_sep. f_equiv.
     rewrite (comm bi_sep).
     exact: observe_equiv.
   Qed.
@@ -375,21 +358,18 @@ Section array.
     rewrite Z2Nat.id //. apply. lia.
   Qed.
 
-  Lemma at_observe p (Q P : Rep) (_ : Observe Q P) : Observe (p |-> Q) (p |-> P).
-  Proof. by apply _at_observe. Qed.
-
   Lemma _at_arrayR_sub_type_ptrR_nat_obs (i : nat) p xs
         (Hlen : i < length xs) :
     Observe (p .[ ty ! i ] |-> type_ptrR ty) (p |-> arrayR ty R xs).
   Proof.
-    rewrite -at_offsetR //. by apply at_observe, arrayR_sub_type_ptr_nat_obs.
+    rewrite -_at_offsetR. by apply _at_observe, arrayR_sub_type_ptr_nat_obs.
   Qed.
 
   Lemma _at_arrayR_sub_type_ptrR_obs (i : Z) p xs
         (Hlen : (0 ≤ i < Z.of_nat $ length xs)%Z) :
     Observe (p .[ ty ! i ] |-> type_ptrR ty) (p |-> arrayR ty R xs).
   Proof.
-    rewrite -at_offsetR //. by apply at_observe, arrayR_sub_type_ptr_obs.
+    rewrite -_at_offsetR. by apply _at_observe, arrayR_sub_type_ptr_obs.
   Qed.
 
   Lemma arrayR_sub_svalidR_obs (i : Z) xs  :
@@ -414,8 +394,8 @@ Section array.
         (Hi : i ≤ length xs) :
     Observe (p .[ ty ! i ] |-> validR) (p |-> arrayR ty R xs).
   Proof.
-    rewrite -at_offsetR.
-    by apply at_observe, arrayR_valid_obs.
+    rewrite -_at_offsetR.
+    by apply _at_observe, arrayR_valid_obs.
   Qed.
 
   #[global] Instance arrayR_valid_base_obs {xs} : Observe validR (arrayR ty R xs).

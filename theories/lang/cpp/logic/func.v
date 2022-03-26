@@ -123,7 +123,7 @@ Section with_cpp.
     |-- p |-> init_identity cls (p |-> revert_identity cls (p |-> REQ ** Q)).
   Proof.
     rewrite /revert_identity/init_identity => ->.
-    rewrite !at_sep !at_wand !at_pureR.
+    rewrite !_at_sep !_at_wand !_at_pureR.
     iIntros "[$ $] $ $ $".
   Qed.
 
@@ -380,7 +380,7 @@ Section with_cpp.
       rewrite /init_identity.
       case_match; eauto.
       case_match; eauto.
-      rewrite !at_sep !at_wand !at_pureR.
+      rewrite !_at_sep !_at_wand !_at_pureR.
       iIntros "[$ x]".
       iIntros "b c"; iDestruct ("x" with "b c") as "x".
       iRevert "x"; iApply wpi_members_frame. iIntros "b c".
