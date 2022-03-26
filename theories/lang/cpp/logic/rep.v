@@ -249,7 +249,7 @@ Section with_cpp.
   Proof.
     rewrite _offsetR_eq /_offsetR_def /as_Rep/=.
     constructor =>p; rewrite /= !monPred_at_exist.
-    by iSplit; iIntros "H"; iDestruct "H" as (x) "H"; iExists x; rewrite _offsetR_eq.
+    f_equiv=>x. by rewrite _offsetR_eq.
   Qed.
 
   Lemma _offsetR_forall o T (P : T -> Rep) :
@@ -257,7 +257,7 @@ Section with_cpp.
   Proof.
     rewrite _offsetR_eq /as_Rep/=.
     constructor =>p; rewrite /= !monPred_at_forall.
-    by iSplit; iIntros "H" (x); iSpecialize ("H" $! x); rewrite _offsetR_eq.
+    f_equiv=>x. by rewrite _offsetR_eq.
   Qed.
 
   Lemma _offsetR_pers o R : o |-> (<pers> R) -|- <pers> o |-> R.
