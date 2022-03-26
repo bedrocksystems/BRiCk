@@ -232,7 +232,7 @@ Module Type PTRS.
   Parameter o_field : genv -> field -> offset.
 
   #[global] Notation "p ., o" := (_dot p (o_field _ o))
-    (at level 11, left associativity, only parsing, format "p  .,  o") : stdpp_scope.
+    (at level 11, left associativity, only parsing) : stdpp_scope.
 
   (* If [p : cls*] points to an array object with [n] elements and [i ≤ n],
      [p ,, o_sub ty i] represents [p + i] (which might be a past-the-end pointer).

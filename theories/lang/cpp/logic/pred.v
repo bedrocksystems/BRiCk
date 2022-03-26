@@ -47,10 +47,6 @@ Module Type CPP_LOGIC
 
   Implicit Types (p : ptr).
 
-  (* XXX why does this not work in the module type. *)
-  Bind Scope ptr_scope with ptr.
-  Bind Scope offset_scope with offset.
-
   Section with_cpp.
     Context `{Σ : cpp_logic}.
 
