@@ -15,7 +15,7 @@ Structure AT : Type :=
   ; #[canonical=yes] AT_Result : Type
   ; #[canonical=no] AT_at : AT_LHS -> AT_RHS -> AT_Result }.
 Canonical Structure AT_ptr `{Σ : cpp_logic} : AT :=
-  {| AT_LHS := ptr; AT_RHS := Rep; AT_Result := mpred; AT_at := rep_defs._at |}.
+  {| AT_LHS := ptr; AT_RHS := Rep; AT_Result := mpred; AT_at := _at |}.
 Canonical Structure AT_offset `{Σ : cpp_logic} : AT :=
   {| AT_LHS := offset; AT_RHS := Rep; AT_Result := Rep; AT_at := _offsetR |}.
 #[global] Arguments AT_at {AT} _ _ : rename, simpl never.
