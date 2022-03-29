@@ -92,6 +92,8 @@ Inductive type : Set :=
 .
 #[global] Instance type_inhabited : Inhabited type := populate Tvoid.
 
+Notation Tchar := Tint (only parsing).
+
 (** Strengthened Induction Principle for [type]
 
     [type] is a `Nested Inductive Type` due to the use of [list type]
@@ -168,7 +170,6 @@ Section type_ind'.
     end.
 End type_ind'.
 
-Notation Tchar := Tint (only parsing).
 (* XXX merge type_eq_dec into type_eq. *)
 Definition type_eq_dec : forall (ty1 ty2 : type), { ty1 = ty2 } + { ty1 <> ty2 }.
 Proof.
@@ -356,16 +357,38 @@ Definition decompose_type : type -> type_qualifiers * type :=
 
 (* types with explicit size information
  *)
-Definition T_int8    := Tint W8 Signed.
-Definition T_uint8   := Tint W8 Unsigned.
-Definition T_int16   := Tint W16 Signed.
-Definition T_uint16  := Tint W16 Unsigned.
-Definition T_int32   := Tint W32 Signed.
-Definition T_uint32  := Tint W32 Unsigned.
-Definition T_int64   := Tint W64 Signed.
-Definition T_uint64  := Tint W64 Unsigned.
-Definition T_int128  := Tint W128 Signed.
-Definition T_uint128 := Tint W128 Unsigned.
+
+Notation Ti8    := (Tint W8 Signed).
+Notation Tu8    := (Tint W8 Unsigned).
+Notation Ti16   := (Tint W16 Signed).
+Notation Tu16   := (Tint W16 Unsigned).
+Notation Ti32   := (Tint W32 Signed).
+Notation Tu32   := (Tint W32 Unsigned).
+Notation Ti64   := (Tint W64 Signed).
+Notation Tu64   := (Tint W64 Unsigned).
+Notation Ti128  := (Tint W128 Signed).
+Notation Tu128  := (Tint W128 Unsigned).
+
+#[deprecated(since="2022-04-1", note="use [Ti8]")]
+Notation T_int8    := (Tint W8 Signed) (only parsing).
+#[deprecated(since="2022-04-1", note="use [Tu8]")]
+Notation T_uint8   := (Tint W8 Unsigned) (only parsing).
+#[deprecated(since="2022-04-1", note="use [Ti16]")]
+Notation T_int16   := (Tint W16 Signed) (only parsing).
+#[deprecated(since="2022-04-1", note="use [Tu16]")]
+Notation T_uint16  := (Tint W16 Unsigned) (only parsing).
+#[deprecated(since="2022-04-1", note="use [Ti32]")]
+Notation T_int32   := (Tint W32 Signed) (only parsing).
+#[deprecated(since="2022-04-1", note="use [Tu32]")]
+Notation T_uint32  := (Tint W32 Unsigned) (only parsing).
+#[deprecated(since="2022-04-1", note="use [Tu64]")]
+Notation T_int64   := (Tint W64 Signed) (only parsing).
+#[deprecated(since="2022-04-1", note="use [Ti64]")]
+Notation T_uint64  := (Tint W64 Unsigned) (only parsing).
+#[deprecated(since="2022-04-1", note="use [Ti128]")]
+Notation T_int128  := (Tint W128 Signed) (only parsing).
+#[deprecated(since="2022-04-1", note="use [Tu128]")]
+Notation T_uint128 := (Tint W128 Unsigned) (only parsing).
 
 (* note(gmm): types without explicit size information need to
  * be parameters of the underlying code, otherwise we can't
@@ -380,21 +403,37 @@ the warning below.
 In future, we may want to parametrize by a data model, or
 the machine word size.
 *)
-Definition char_bits : bitsize := W8.
-Definition short_bits : bitsize := W16.
-Definition int_bits : bitsize := W32.
-Definition long_bits : bitsize := W64. (** warning: LLP64 model uses 32 *)
-Definition long_long_bits : bitsize := W64.
+Notation char_bits :=  (W8)  (only parsing).
+Notation short_bits := (W16) (only parsing).
+Notation int_bits :=   (W32) (only parsing).
 
-Definition T_ushort : type := Tint short_bits Unsigned.
-Definition T_short : type := Tint short_bits Signed.
-Definition T_ulong : type := Tint long_bits Unsigned.
-Definition T_long : type := Tint long_bits Signed.
-Definition T_ulonglong : type := Tint long_long_bits Unsigned.
-Definition T_longlong : type := Tint long_long_bits Signed.
-Definition T_uint : type := Tint int_bits Unsigned.
-Definition T_int : type := Tint int_bits Signed.
+(** warning: LLP64 model uses [long_bits := W32] *)
+Notation long_bits :=      (W64) (only parsing).
+Notation long_long_bits := (W64) (only parsing).
 
-Notation T_schar := (Tchar char_bits Signed) (only parsing).
-Notation T_uchar := (Tchar char_bits Unsigned) (only parsing).
+Notation Tschar  := (Tint char_bits Signed).
+Notation Tuchar  := (Tint char_bits Unsigned).
+
+
+#[deprecated(since="2022-04-1", note="use [Tushort]")]
+Notation T_ushort := (Tint short_bits Unsigned) (only parsing).
+#[deprecated(since="2022-04-1", note="use [Tshort]")]
+Notation T_short := (Tint short_bits Signed) (only parsing).
+#[deprecated(since="2022-04-1", note="use [Tulong]")]
+Notation T_ulong := (Tint long_bits Unsigned) (only parsing).
+#[deprecated(since="2022-04-1", note="use [Tlong]")]
+Notation T_long := (Tint long_bits Signed) (only parsing).
+#[deprecated(since="2022-04-1", note="use [Tulonglong]")]
+Notation T_ulonglong := (Tint long_long_bits Unsigned) (only parsing).
+#[deprecated(since="2022-04-1", note="use [Tlonglong]")]
+Notation T_longlong := (Tint long_long_bits Signed) (only parsing).
+#[deprecated(since="2022-04-1", note="use [Tuint] or [Tu32]")]
+Notation T_uint := (Tint int_bits Unsigned) (only parsing).
+#[deprecated(since="2022-04-1", note="use [Ti32]")]
+Notation T_int := (Tint int_bits Signed) (only parsing).
+
+#[deprecated(since="2022-04-1", note="use [Tschar]")]
+Notation T_schar := (Tint char_bits Signed) (only parsing).
+#[deprecated(since="2022-04-1", note="use [Tuchar]")]
+Notation T_uchar := (Tint char_bits Unsigned) (only parsing).
 
