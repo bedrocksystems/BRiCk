@@ -1,5 +1,5 @@
 (*
- * Copyright (c) 2020-21 BedRock Systems, Inc.
+ * Copyright (c) 2020-22 BedRock Systems, Inc.
  * This software is distributed under the terms of the BedRock Open-Source License.
  * See the LICENSE-BedRock file in the repository root for details.
  *)
@@ -74,6 +74,9 @@ Section with_cpp.
     iIntros "!>" (p' ->%ptr_rel_elim).
     by rewrite monPred_at_later monPred_at_except_0/=.
   Qed.
+
+  Lemma as_Rep_embed P : as_Rep (λ _, P) -|- embed P.
+  Proof. constructor=>p /=. by rewrite monPred_at_embed. Qed.
 
   Lemma as_Rep_emp : as_Rep (λ p, emp) -|- emp.
   Proof. constructor => p. by rewrite monPred_at_emp. Qed.
@@ -550,6 +553,9 @@ Section with_cpp.
       by rewrite (bi.forall_elim inhabitant) embed_only_provable.
     - constructor=>p. by rewrite monPred_at_only_provable.
   Qed.
+
+  Lemma pureR_embed P : pureR P -|- embed P.
+  Proof. exact: as_Rep_embed. Qed.
 
   Lemma pureR_emp : pureR emp -|- emp.
   Proof. exact: as_Rep_emp. Qed.
