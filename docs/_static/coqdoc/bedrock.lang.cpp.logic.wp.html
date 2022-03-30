@@ -355,6 +355,34 @@
 <span class="id" title="keyword">Arguments</span> <a class="idref" href="bedrock.lang.cpp.logic.wp.html#_this"><span class="id" title="definition">_this</span></a> !<span class="id" title="var">_</span> / : <span class="id" title="tactic">assert</span>.<br/>
 
 <br/>
+</div>
+
+<div class="doc">
+Region notations
+ 
+</div>
+<div class="code">
+#[<span class="id" title="var">global</span>] <span class="id" title="var">Declare</span> <span class="id" title="var">Custom</span> <span class="id" title="var">Entry</span> <span class="id" title="var">cpp_region</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Notation</span> <a id=":cpp_region::'return'_x" class="idref" href="#:cpp_region::'return'_x"><span class="id" title="notation">&quot;</span></a>'return' ty" :=<br/>
+&nbsp;&nbsp;(<a class="idref" href="bedrock.lang.cpp.logic.wp.html#Remp"><span class="id" title="constructor">Remp</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.15.0/stdlib//Coq.Init.Datatypes.html#None"><span class="id" title="constructor">None</span></a> <span class="id" title="var">ty</span>)<br/>
+&nbsp;&nbsp;(<span class="id" title="tactic">in</span> <span class="id" title="var">custom</span> <span class="id" title="var">cpp_region</span> <span class="id" title="tactic">at</span> <span class="id" title="keyword">level</span> 0, <span class="id" title="var">ty</span> <span class="id" title="keyword">constr</span>,<br/>
+&nbsp;&nbsp;&nbsp;<span class="id" title="var">format</span> "'[  ' return  ty ']'").<br/>
+<span class="id" title="keyword">Notation</span> <a id="ad3b08b1827faab9692808a79f1e9b4f" class="idref" href="#ad3b08b1827faab9692808a79f1e9b4f"><span class="id" title="notation">&quot;</span></a>[ 'this' := ptr ] ; 'return' ty" :=<br/>
+&nbsp;&nbsp;(<a class="idref" href="bedrock.lang.cpp.logic.wp.html#Remp"><span class="id" title="constructor">Remp</span></a> (<a class="idref" href="http://coq.inria.fr/distrib/V8.15.0/stdlib//Coq.Init.Datatypes.html#Some"><span class="id" title="constructor">Some</span></a> <span class="id" title="var">ptr</span>) <span class="id" title="var">ty</span>)<br/>
+&nbsp;&nbsp;(<span class="id" title="tactic">in</span> <span class="id" title="var">custom</span> <span class="id" title="var">cpp_region</span> <span class="id" title="tactic">at</span> <span class="id" title="keyword">level</span> 1, <span class="id" title="var">ptr</span> <span class="id" title="keyword">constr</span>, <span class="id" title="var">ty</span> <span class="id" title="keyword">constr</span>,<br/>
+&nbsp;&nbsp;&nbsp;<span class="id" title="var">format</span> "'[' [ this  :=  ptr ] ']' ;  '/' '[  ' return  '/' ty ']'").<br/>
+<span class="id" title="keyword">Notation</span> <a id="91dd67b7be792d0e6b9c893946ebc372" class="idref" href="#91dd67b7be792d0e6b9c893946ebc372"><span class="id" title="notation">&quot;</span></a>v @ p ';' ρ " :=<br/>
+&nbsp;&nbsp;(<a class="idref" href="bedrock.lang.cpp.logic.wp.html#Rbind"><span class="id" title="constructor">Rbind</span></a> <span class="id" title="var">v</span> <span class="id" title="var">p</span> ρ)<br/>
+&nbsp;&nbsp;(<span class="id" title="tactic">in</span> <span class="id" title="var">custom</span> <span class="id" title="var">cpp_region</span> <span class="id" title="tactic">at</span> <span class="id" title="keyword">level</span> 1, <span class="id" title="var">v</span> <span class="id" title="keyword">constr</span>, <span class="id" title="var">p</span> <span class="id" title="keyword">constr</span>, ρ <span class="id" title="var">custom</span> <span class="id" title="var">cpp_region</span> <span class="id" title="tactic">at</span> <span class="id" title="keyword">level</span> 1,<br/>
+&nbsp;&nbsp;&nbsp;<span class="id" title="var">format</span> "'[' v  @  p ']' ;  '/' ρ").<br/>
+<span class="id" title="keyword">Notation</span> <a id="f42797071561ce84f1a66ab8247a9961" class="idref" href="#f42797071561ce84f1a66ab8247a9961"><span class="id" title="notation">&quot;</span></a>'[region:' ρ ]" :=<br/>
+&nbsp;&nbsp;(ρ)<br/>
+&nbsp;&nbsp;(<span class="id" title="tactic">at</span> <span class="id" title="keyword">level</span> 0, ρ <span class="id" title="var">custom</span> <span class="id" title="var">cpp_region</span> <span class="id" title="tactic">at</span> <span class="id" title="keyword">level</span> 1,<br/>
+&nbsp;&nbsp;&nbsp;<span class="id" title="var">format</span> "'[hv' [region:  '/ ' '[' ρ ']' ']' ]").<br/>
+
+<br/>
 <span class="id" title="keyword">Module</span> <a id="WPE" class="idref" href="#WPE"><span class="id" title="module">WPE</span></a>.<br/>
 <span class="id" title="keyword">Section</span> <a id="WPE.with_cpp" class="idref" href="#WPE.with_cpp"><span class="id" title="section">with_cpp</span></a>.<br/>
 &nbsp;&nbsp;<span class="id" title="keyword">Context</span> `{<a id="213a0dec94e9cf112034b0b076aaefbc" class="idref" href="#213a0dec94e9cf112034b0b076aaefbc"><span class="id" title="binder">Σ</span></a> : <a class="idref" href="bedrock.lang.cpp.logic.mpred.html#LC.cpp_logic"><span class="id" title="class">cpp_logic</span></a> <a id="thread_info:80" class="idref" href="#thread_info:80"><span class="id" title="binder">thread_info</span></a>}.<br/>
