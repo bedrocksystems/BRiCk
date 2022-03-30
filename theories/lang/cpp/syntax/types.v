@@ -355,8 +355,7 @@ Definition decompose_type : type -> type_qualifiers * type :=
   qual_norm (fun q t => (q, t)).
 
 
-(* types with explicit size information
- *)
+(** ** Types with explicit size information. *)
 
 Notation Ti8    := (Tint W8 Signed).
 Notation Tu8    := (Tint W8 Unsigned).
@@ -411,30 +410,45 @@ Notation int_bits :=   (W32) (only parsing).
 Notation long_bits :=      (W64) (only parsing).
 Notation long_long_bits := (W64) (only parsing).
 
+(** ** Types with implicit size information. *)
+
 Notation Tschar  := Ti8 (only parsing).
 Notation Tuchar  := Tu8 (only parsing).
 
+Notation Tushort := (Tint short_bits Unsigned) (only parsing).
+Notation Tshort := (Tint short_bits Signed) (only parsing).
 
+(** XXX This is the odd-name out, but [Tint] is taken. *)
 (* #[deprecated(since="2022-04-1", note="use [Ti32]")] *)
 Notation T_int := (Tint int_bits Signed) (only parsing).
+Notation Tuint := (Tint int_bits Unsigned) (only parsing).
+
+Notation Tulong := (Tint long_bits Unsigned) (only parsing).
+Notation Tlong := (Tint long_bits Signed) (only parsing).
+
+Notation Tulonglong := (Tint long_long_bits Unsigned) (only parsing).
+Notation Tlonglong := (Tint long_long_bits Signed) (only parsing).
+
+(** *** Types with implicit size information --- deprecated variants. *)
+#[deprecated(since="2022-04-1", note="use [Tschar]")]
+Notation T_schar := Tschar (only parsing).
+#[deprecated(since="2022-04-1", note="use [Tuchar]")]
+Notation T_uchar := Tuchar (only parsing).
 
 #[deprecated(since="2022-04-1", note="use [Tushort]")]
-Notation T_ushort := (Tint short_bits Unsigned) (only parsing).
+Notation T_ushort := Tushort (only parsing).
 #[deprecated(since="2022-04-1", note="use [Tshort]")]
-Notation T_short := (Tint short_bits Signed) (only parsing).
-#[deprecated(since="2022-04-1", note="use [Tulong]")]
-Notation T_ulong := (Tint long_bits Unsigned) (only parsing).
-#[deprecated(since="2022-04-1", note="use [Tlong]")]
-Notation T_long := (Tint long_bits Signed) (only parsing).
-#[deprecated(since="2022-04-1", note="use [Tulonglong]")]
-Notation T_ulonglong := (Tint long_long_bits Unsigned) (only parsing).
-#[deprecated(since="2022-04-1", note="use [Tlonglong]")]
-Notation T_longlong := (Tint long_long_bits Signed) (only parsing).
+Notation T_short := Tshort (only parsing).
+
 #[deprecated(since="2022-04-1", note="use [Tuint]")]
-Notation T_uint := (Tint int_bits Unsigned) (only parsing).
+Notation T_uint := Tuint (only parsing).
 
-#[deprecated(since="2022-04-1", note="use [Tschar]")]
-Notation T_schar := (Tint char_bits Signed) (only parsing).
-#[deprecated(since="2022-04-1", note="use [Tuchar]")]
-Notation T_uchar := (Tint char_bits Unsigned) (only parsing).
+#[deprecated(since="2022-04-1", note="use [Tulong]")]
+Notation T_ulong := Tulong (only parsing).
+#[deprecated(since="2022-04-1", note="use [Tlong]")]
+Notation T_long := Tlong (only parsing).
 
+#[deprecated(since="2022-04-1", note="use [Tulonglong]")]
+Notation T_ulonglong := Tulonglong (only parsing).
+#[deprecated(since="2022-04-1", note="use [Tlonglong]")]
+Notation T_longlong := Tlonglong (only parsing).
