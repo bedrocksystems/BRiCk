@@ -46,22 +46,22 @@ Notation i32R q v := (primR Ti32 q (Vint v)).
 Notation i64R q v := (primR Ti64 q (Vint v)).
 
 #[deprecated(since="2022-04-1", note="use [u8R]")]
-Notation uint8R q v := (ucharR q v) (only parsing).
+Notation uint8R q v := (u8R q v) (only parsing).
 #[deprecated(since="2022-04-1", note="use [u16R]")]
-Notation uint16R q v := (ushortR q v) (only parsing).
+Notation uint16R q v := (u16R q v) (only parsing).
 #[deprecated(since="2022-04-1", note="use [u32R]")]
-Notation uint32R q v := (uintR q v) (only parsing).
+Notation uint32R q v := (u32R q v) (only parsing).
 #[deprecated(since="2022-04-1", note="use [u64R]")]
-Notation uint64R q v := (ulonglongR q v) (only parsing).
+Notation uint64R q v := (u64R q v) (only parsing).
 
 #[deprecated(since="2022-04-1", note="use [i8R]")]
-Notation int8R q v := (scharR q v) (only parsing).
+Notation int8R q v := (i8R q v) (only parsing).
 #[deprecated(since="2022-04-1", note="use [i16R]")]
-Notation int16R q v := (shortR q v) (only parsing).
+Notation int16R q v := (i16R q v) (only parsing).
 #[deprecated(since="2022-04-1", note="use [i32R]")]
-Notation int32R q v := (intR q v) (only parsing).
+Notation int32R q v := (i32R q v) (only parsing).
 #[deprecated(since="2022-04-1", note="use [i64R]")]
-Notation int64R q v := (longlongR q v) (only parsing).
+Notation int64R q v := (i64R q v) (only parsing).
 
 
 Notation "'ptrR<' ty '>' q p" := (primR (Tpointer ty) q (Vptr p)) (at level 10, ty at level 20, q at level 1, p at level 1, format "'ptrR<' ty '>'  q  p").
