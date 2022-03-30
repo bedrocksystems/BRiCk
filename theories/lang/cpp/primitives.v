@@ -12,9 +12,9 @@ Notation boolR q v := (primR Tbool q (Vbool v)).
 (* note(gmm): these might need to become definitions if we want to be generic
  * across sizes
  *)
-Notation scharR q v := (primR (Tschar) q (Vint v)).
-Notation ucharR q v := (primR (Tuchar) q (Vint v)).
-Notation charR q v := (ucharR q v).
+Notation scharR q v := (primR (Tschar) q (Vint v)) (only parsing).
+Notation ucharR q v := (primR (Tuchar) q (Vint v)) (only parsing).
+Notation charR q v := (ucharR q v) (only parsing).
 
 Notation sshortR q v := (primR (Tint W16 Signed) q (Vint v)) (only parsing).
 Notation ushortR q v := (primR (Tint W16 Unsigned) q (Vint v)) (only parsing).
