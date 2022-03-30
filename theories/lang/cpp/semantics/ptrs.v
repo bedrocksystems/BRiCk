@@ -240,8 +240,8 @@ Module Type PTRS.
   Parameter o_sub : genv -> type -> Z -> offset.
 
   #[global] Notation "p .[ t ! n ]" := (_dot p (o_sub _ t n))
-    (at level 11, left associativity, only parsing) : stdpp_scope.
-  #[global] Notation ".[ t ! n ]" := (o_sub _ t n) (at level 11, only parsing) : stdpp_scope.
+    (at level 11, left associativity, format "p  .[  t  '!'  n  ]") : stdpp_scope.
+  #[global] Notation ".[ t ! n ]" := (o_sub _ t n) (at level 11, no associativity, format ".[  t  !  n  ]") : stdpp_scope.
 
   (* [o_sub_0] axiom is required because any object is a 1-object array
      (https://eel.is/c++draft/expr.add#footnote-80).
