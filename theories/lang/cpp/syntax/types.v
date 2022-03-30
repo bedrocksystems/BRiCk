@@ -415,6 +415,9 @@ Notation Tschar  := Ti8 (only parsing).
 Notation Tuchar  := Tu8 (only parsing).
 
 
+(* #[deprecated(since="2022-04-1", note="use [Ti32]")] *)
+Notation T_int := (Tint int_bits Signed) (only parsing).
+
 #[deprecated(since="2022-04-1", note="use [Tushort]")]
 Notation T_ushort := (Tint short_bits Unsigned) (only parsing).
 #[deprecated(since="2022-04-1", note="use [Tshort]")]
@@ -427,10 +430,8 @@ Notation T_long := (Tint long_bits Signed) (only parsing).
 Notation T_ulonglong := (Tint long_long_bits Unsigned) (only parsing).
 #[deprecated(since="2022-04-1", note="use [Tlonglong]")]
 Notation T_longlong := (Tint long_long_bits Signed) (only parsing).
-#[deprecated(since="2022-04-1", note="use [Tuint] or [Tu32]")]
+#[deprecated(since="2022-04-1", note="use [Tuint]")]
 Notation T_uint := (Tint int_bits Unsigned) (only parsing).
-#[deprecated(since="2022-04-1", note="use [Ti32]")]
-Notation T_int := (Tint int_bits Signed) (only parsing).
 
 #[deprecated(since="2022-04-1", note="use [Tschar]")]
 Notation T_schar := (Tint char_bits Signed) (only parsing).
