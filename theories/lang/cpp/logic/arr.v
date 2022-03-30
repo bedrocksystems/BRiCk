@@ -95,21 +95,21 @@ Section validR.
 
   Lemma _at_sub_0 p ty R
     (Hsz : is_Some (size_of resolve ty)) :
-    p ,, (.[ ty ! 0 ]) |-> R -|- p |-> R.
+    p .[ ty ! 0 ] |-> R -|- p |-> R.
   Proof. by rewrite offset_ptr_sub_0. Qed.
 
   Lemma _at_sub_sub p ty a b R :
-    p ,, (.[ ty ! a ]) |-> (.[ ty ! b ] |-> R) ⊣⊢
-    p ,, (.[ ty ! a + b ]) |-> R.
+    p .[ ty ! a ] |-> (.[ ty ! b ] |-> R) ⊣⊢
+    p .[ ty ! a + b ] |-> R.
   Proof. by rewrite -!_at_offsetR _offsetR_sub_sub. Qed.
 
   Lemma _at_succ_sub p ty z R :
-    p ,, (.[ ty ! 1 ]) |-> (.[ ty ! z ] |-> R) ⊣⊢
-    p ,, (.[ ty ! Z.succ z]) |-> R.
+    p .[ ty ! 1 ] |-> (.[ ty ! z ] |-> R) ⊣⊢
+    p .[ ty ! Z.succ z] |-> R.
   Proof. by rewrite -!_at_offsetR _offsetR_succ_sub. Qed.
 
   Lemma _at_sub_succ p ty z R :
-    p ,, (.[ ty ! z ]) |-> (.[ ty ! 1 ] |-> R) ⊣⊢
+    p .[ ty ! z ] |-> .[ ty ! 1 ] |-> R ⊣⊢
     p .[ ty ! Z.succ z] |-> R.
   Proof. by rewrite -!_at_offsetR _offsetR_sub_succ. Qed.
 End validR.
@@ -297,7 +297,7 @@ Section array.
   Lemma arrayR_snoc_obs p xs y
         `{Hobs : ∀ x, Observe (type_ptrR ty) (R x)} :
         p |-> arr.arrayR ty R (xs ++ [y])
-    -|- p |-> arr.arrayR ty R xs ** p ,, (.[ty ! Z.of_nat (length xs)]) |-> R y.
+    -|- p |-> arr.arrayR ty R xs ** p .[ty ! Z.of_nat (length xs)] |-> R y.
   Proof.
     rewrite arrayR_snoc !_at_sep !_at_offsetR _at_sep. f_equiv.
     rewrite (comm bi_sep).
