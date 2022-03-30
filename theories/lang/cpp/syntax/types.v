@@ -411,8 +411,8 @@ Notation int_bits :=   (W32) (only parsing).
 Notation long_bits :=      (W64) (only parsing).
 Notation long_long_bits := (W64) (only parsing).
 
-Notation Tschar  := (Tint char_bits Signed).
-Notation Tuchar  := (Tint char_bits Unsigned).
+Notation Tschar  := Ti8 (only parsing).
+Notation Tuchar  := Tu8 (only parsing).
 
 
 #[deprecated(since="2022-04-1", note="use [Tushort]")]
