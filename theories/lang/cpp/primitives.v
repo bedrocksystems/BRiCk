@@ -42,26 +42,26 @@ Notation int64R q v := (i64R q v) (only parsing).
 (* note(gmm): these might need to become definitions if we want to be generic
  * across sizes
  *)
-Notation scharR q v := (primR (Tschar) q (Vint v)) (only parsing).
-Notation ucharR q v := (primR (Tuchar) q (Vint v)) (only parsing).
-Notation charR q v := (ucharR q v) (only parsing).
+Notation scharR q v := (i8R q v) (only parsing).
+Notation ucharR q v := (u8R q v) (only parsing).
+Notation charR q v := (u8R q v) (only parsing).
 
-Notation sshortR q v := (primR (Tint W16 Signed) q (Vint v)) (only parsing).
-Notation ushortR q v := (primR (Tint W16 Unsigned) q (Vint v)) (only parsing).
-Notation shortR q v := (sshortR q v) (only parsing).
+Notation sshortR q v := (i16R q v) (only parsing).
+Notation ushortR q v := (u16R q v) (only parsing).
+Notation shortR q v := (i16R q v) (only parsing).
 
 
-Notation sintR q v := (primR (Tint int_bits Signed) q (Vint v)) (only parsing).
-Notation uintR q v := (primR (Tint int_bits Unsigned) q (Vint v)) (only parsing).
-Notation intR q v := (sintR q v) (only parsing).
+Notation sintR q v := (i32R q v) (only parsing).
+Notation uintR q v := (u32R q v) (only parsing).
+Notation intR q v := (i32R q v) (only parsing).
 
-Notation slongR q v := (primR (Tint long_bits Signed) q (Vint v)) (only parsing).
-Notation ulongR q v := (primR (Tint long_bits Unsigned) q (Vint v)) (only parsing).
-Notation longR q v := (slongR q v) (only parsing).
+Notation slongR q v := (i64R q v) (only parsing).
+Notation ulongR q v := (u64R q v) (only parsing).
+Notation longR q v := (i64R q v) (only parsing).
 
-Notation slonglongR q v := (primR (Tint W64 Signed) q (Vint v)) (only parsing).
-Notation ulonglongR q v := (primR (Tint W64 Unsigned) q (Vint v)) (only parsing).
-Notation longlongR q v := (slonglongR q v) (only parsing).
+Notation slonglongR q v := (i64R q v) (only parsing).
+Notation ulonglongR q v := (u64R q v) (only parsing).
+Notation longlongR q v := (i64R q v) (only parsing).
 
 
 Notation "'ptrR<' ty '>' q p" := (primR (Tpointer ty) q (Vptr p)) (at level 10, ty at level 20, q at level 1, p at level 1, format "'ptrR<' ty '>'  q  p").
