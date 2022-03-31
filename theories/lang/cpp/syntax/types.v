@@ -124,7 +124,7 @@ Section type_ind'.
   Hypothesis Trv_ref_ind' : forall (ty : type),
     P ty -> P (Trv_ref ty).
   Hypothesis Tint_ind' : forall (size : bitsize) (sign : signed),
-    P (Tint size sign).
+    P (Tnum size sign).
   Hypothesis Tvoid_ind' : P Tvoid.
   Hypothesis Tarray_ind' : forall (ty : type) (sz : N),
     P ty -> P (Tarray ty sz).
@@ -148,7 +148,7 @@ Section type_ind'.
     | Tptr ty                 => Tptr_ind' ty (type_ind' ty)
     | Tref ty                 => Tref_ind' ty (type_ind' ty)
     | Trv_ref ty              => Trv_ref_ind' ty (type_ind' ty)
-    | Tint sz sgn             => Tint_ind' sz sgn
+    | Tnum sz sgn             => Tint_ind' sz sgn
     | Tvoid                   => Tvoid_ind'
     | Tarray ty sz            => Tarray_ind' ty sz (type_ind' ty)
     | Tnamed name             => Tnamed_ind' name
@@ -196,7 +196,7 @@ Section type_countable.
       | Tptr t => GenNode 0 [go t]
       | Tref t => GenNode 1 [go t]
       | Trv_ref t => GenNode 2 [go t]
-      | Tint sz sgn => GenNode 3 [BITSIZE sz; SIGNED sgn]
+      | Tnum sz sgn => GenNode 3 [BITSIZE sz; SIGNED sgn]
       | Tvoid => GenNode 4 []
       | Tarray t n => GenNode 5 [go t; N n]
       | Tnamed gn => GenNode 6 [BS gn]
@@ -214,7 +214,7 @@ Section type_countable.
       | GenNode 0 [t] => Tptr (go t)
       | GenNode 1 [t] => Tref (go t)
       | GenNode 2 [t] => Trv_ref (go t)
-      | GenNode 3 [BITSIZE sz; SIGNED sgn] => Tint sz sgn
+      | GenNode 3 [BITSIZE sz; SIGNED sgn] => Tnum sz sgn
       | GenNode 4 [] => Tvoid
       | GenNode 5 [t; N n] => Tarray (go t) n
       | GenNode 6 [BS gn] => Tnamed gn
@@ -297,7 +297,7 @@ Fixpoint normalize_type (t : type) : type :=
     Tfunction (cc:=cc) (drop_norm r) (List.map drop_norm args)
   | Tmember_pointer gn t => Tmember_pointer gn (normalize_type t)
   | Tqualified q t => qual_norm q t
-  | Tint _ _ => t
+  | Tnum _ _ => t
   | Tbool => t
   | Tvoid => t
   | Tnamed _ => t
@@ -360,16 +360,16 @@ Definition decompose_type : type -> type_qualifiers * type :=
 
 (** ** Types with explicit size information. *)
 
-Notation Ti8    := (Tint W8 Signed).
-Notation Tu8    := (Tint W8 Unsigned).
-Notation Ti16   := (Tint W16 Signed).
-Notation Tu16   := (Tint W16 Unsigned).
-Notation Ti32   := (Tint W32 Signed).
-Notation Tu32   := (Tint W32 Unsigned).
-Notation Ti64   := (Tint W64 Signed).
-Notation Tu64   := (Tint W64 Unsigned).
-Notation Ti128  := (Tint W128 Signed).
-Notation Tu128  := (Tint W128 Unsigned).
+Notation Ti8    := (Tnum W8 Signed).
+Notation Tu8    := (Tnum W8 Unsigned).
+Notation Ti16   := (Tnum W16 Signed).
+Notation Tu16   := (Tnum W16 Unsigned).
+Notation Ti32   := (Tnum W32 Signed).
+Notation Tu32   := (Tnum W32 Unsigned).
+Notation Ti64   := (Tnum W64 Signed).
+Notation Tu64   := (Tnum W64 Unsigned).
+Notation Ti128  := (Tnum W128 Signed).
+Notation Tu128  := (Tnum W128 Unsigned).
 
 #[deprecated(since="2022-04-1", note="use [Ti8]")]
 Notation T_int8    := Ti8 (only parsing).
@@ -418,19 +418,19 @@ Notation long_long_bits := (W64) (only parsing).
 Notation Tschar  := Ti8 (only parsing).
 Notation Tuchar  := Tu8 (only parsing).
 
-Notation Tushort := (Tint short_bits Unsigned) (only parsing).
-Notation Tshort := (Tint short_bits Signed) (only parsing).
+Notation Tushort := (Tnum short_bits Unsigned) (only parsing).
+Notation Tshort := (Tnum short_bits Signed) (only parsing).
 
-(** XXX This is the odd-name out, but [Tint] is taken. *)
+(** XXX This is the odd-name out, but [Tnum] is taken. *)
 (* #[deprecated(since="2022-04-1", note="use [Ti32]")] *)
-Notation T_int := (Tint int_bits Signed) (only parsing).
-Notation Tuint := (Tint int_bits Unsigned) (only parsing).
+Notation T_int := (Tnum int_bits Signed) (only parsing).
+Notation Tuint := (Tnum int_bits Unsigned) (only parsing).
 
-Notation Tulong := (Tint long_bits Unsigned) (only parsing).
-Notation Tlong := (Tint long_bits Signed) (only parsing).
+Notation Tulong := (Tnum long_bits Unsigned) (only parsing).
+Notation Tlong := (Tnum long_bits Signed) (only parsing).
 
-Notation Tulonglong := (Tint long_long_bits Unsigned) (only parsing).
-Notation Tlonglong := (Tint long_long_bits Signed) (only parsing).
+Notation Tulonglong := (Tnum long_long_bits Unsigned) (only parsing).
+Notation Tlonglong := (Tnum long_long_bits Signed) (only parsing).
 
 (** *** Types with implicit size information --- deprecated variants. *)
 #[deprecated(since="2022-04-1", note="use [Tschar]")]
