@@ -369,25 +369,25 @@ Notation Ti128  := (Tint W128 Signed).
 Notation Tu128  := (Tint W128 Unsigned).
 
 #[deprecated(since="2022-04-1", note="use [Ti8]")]
-Notation T_int8    := (Tint W8 Signed) (only parsing).
+Notation T_int8    := Ti8 (only parsing).
 #[deprecated(since="2022-04-1", note="use [Tu8]")]
-Notation T_uint8   := (Tint W8 Unsigned) (only parsing).
+Notation T_uint8   := Tu8 (only parsing).
 #[deprecated(since="2022-04-1", note="use [Ti16]")]
-Notation T_int16   := (Tint W16 Signed) (only parsing).
+Notation T_int16   := Ti16 (only parsing).
 #[deprecated(since="2022-04-1", note="use [Tu16]")]
-Notation T_uint16  := (Tint W16 Unsigned) (only parsing).
+Notation T_uint16  := Tu16 (only parsing).
 #[deprecated(since="2022-04-1", note="use [Ti32]")]
-Notation T_int32   := (Tint W32 Signed) (only parsing).
+Notation T_int32   := Ti32 (only parsing).
 #[deprecated(since="2022-04-1", note="use [Tu32]")]
-Notation T_uint32  := (Tint W32 Unsigned) (only parsing).
+Notation T_uint32  := Tu32 (only parsing).
 #[deprecated(since="2022-04-1", note="use [Tu64]")]
-Notation T_int64   := (Tint W64 Signed) (only parsing).
+Notation T_int64   := Ti64 (only parsing).
 #[deprecated(since="2022-04-1", note="use [Ti64]")]
-Notation T_uint64  := (Tint W64 Unsigned) (only parsing).
+Notation T_uint64  := Tu64 (only parsing).
 #[deprecated(since="2022-04-1", note="use [Ti128]")]
-Notation T_int128  := (Tint W128 Signed) (only parsing).
+Notation T_int128  := Ti128 (only parsing).
 #[deprecated(since="2022-04-1", note="use [Tu128]")]
-Notation T_uint128 := (Tint W128 Unsigned) (only parsing).
+Notation T_uint128 := Tu128 (only parsing).
 
 (* note(gmm): types without explicit size information need to
  * be parameters of the underlying code, otherwise we can't
