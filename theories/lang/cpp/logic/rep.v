@@ -181,8 +181,6 @@ Section with_cpp.
   Proof. unfold_at. solve_proper. Qed.
   #[global] Instance _offsetR_mono o : Proper ((⊢) ==> (⊢)) (_offsetR o).
   Proof. unfold_at. solve_proper. Qed.
-  #[local] Lemma _offsetR_mono_old : Proper (eq ==> (⊢) ==> (⊢)) _offsetR.
-  Proof. unfold_at. solve_proper. Qed.
   #[global] Instance _offsetR_flip_mono o : Proper (flip (⊢) ==> flip (⊢)) (_offsetR o).
   Proof. unfold_at. solve_proper. Qed.
 
