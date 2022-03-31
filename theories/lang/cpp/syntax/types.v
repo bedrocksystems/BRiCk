@@ -76,7 +76,7 @@ Inductive type : Set :=
 | Tptr (_ : type)
 | Tref (_ : type)
 | Trv_ref (_ : type)
-| Tint (size : bitsize) (signed : signed)
+| Tnum (size : bitsize) (signed : signed)
 | Tvoid
 | Tarray (_ : type) (_ : N) (* unknown sizes are represented by pointers *)
 | Tnamed (_ : globname)
@@ -92,7 +92,10 @@ Inductive type : Set :=
 .
 #[global] Instance type_inhabited : Inhabited type := populate Tvoid.
 
-Notation Tchar := Tint (only parsing).
+Notation Tchar := Tnum (only parsing).
+
+(* For compatibility; once we stop using it, we should rename [T_int] into [Tint]. *)
+Notation Tint := Tnum (only parsing).
 
 (** Strengthened Induction Principle for [type]
 
