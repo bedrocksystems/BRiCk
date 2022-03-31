@@ -80,7 +80,7 @@ formalizations of their memory object models (see <span class="inlinecode"><span
 </div>
 
 <div class="doc">
-<a id="lab72"></a><h2 class="section">Allocation IDs. We use them to model pointer provenance, following</h2>
+<a id="lab75"></a><h2 class="section">Allocation IDs. We use them to model pointer provenance, following</h2>
 
 Cerberus. 
 </div>
@@ -133,7 +133,7 @@ Cerberus.
 </div>
 
 <div class="doc">
-<a id="lab73"></a><h1 class="section">Pointers.</h1>
+<a id="lab76"></a><h1 class="section">Pointers.</h1>
 
 
 <div class="paragraph"> </div>
@@ -246,7 +246,7 @@ Cerberus.
 </div>
 
 <div class="doc">
-<a id="lab74"></a><h1 class="section">Pointer offsets.</h1>
+<a id="lab77"></a><h1 class="section">Pointer offsets.</h1>
 
       Offsets represent paths between objects and subobjects.
 
@@ -362,7 +362,7 @@ An invalid pointer, included as a sentinel value. Other pointers might
 </div>
 
 <div class="doc">
-<a id="lab75"></a><h2 class="section">Concrete pointer offsets.</h2>
+<a id="lab78"></a><h2 class="section">Concrete pointer offsets.</h2>
 
 
 <div class="paragraph"> </div>
@@ -391,8 +391,8 @@ An invalid pointer, included as a sentinel value. Other pointers might
 
 <br/>
 &nbsp;&nbsp;#[<span class="id" title="var">global</span>] <span class="id" title="keyword">Notation</span> "p .[ t ! n ]" := (<a class="idref" href="bedrock.lang.cpp.semantics.ptrs.html#PTRS._dot"><span class="id" title="abbreviation">_dot</span></a> <span class="id" title="var">p</span> (<a class="idref" href="bedrock.lang.cpp.semantics.ptrs.html#PTRS.o_sub"><span class="id" title="axiom">o_sub</span></a> <span class="id" title="var">_</span> <span class="id" title="var">t</span> <span class="id" title="var">n</span>))<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="tactic">at</span> <span class="id" title="keyword">level</span> 11, <span class="id" title="tactic">left</span> <span class="id" title="keyword">associativity</span>, <span class="id" title="var">only</span> <span class="id" title="var">parsing</span>) : <span class="id" title="var">stdpp_scope</span>.<br/>
-&nbsp;&nbsp;#[<span class="id" title="var">global</span>] <span class="id" title="keyword">Notation</span> ".[ t ! n ]" := (<a class="idref" href="bedrock.lang.cpp.semantics.ptrs.html#PTRS.o_sub"><span class="id" title="axiom">o_sub</span></a> <span class="id" title="var">_</span> <span class="id" title="var">t</span> <span class="id" title="var">n</span>) (<span class="id" title="tactic">at</span> <span class="id" title="keyword">level</span> 11, <span class="id" title="var">only</span> <span class="id" title="var">parsing</span>) : <span class="id" title="var">stdpp_scope</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="tactic">at</span> <span class="id" title="keyword">level</span> 11, <span class="id" title="tactic">left</span> <span class="id" title="keyword">associativity</span>, <span class="id" title="var">format</span> "p  .[  t  '!'  n  ]") : <span class="id" title="var">stdpp_scope</span>.<br/>
+&nbsp;&nbsp;#[<span class="id" title="var">global</span>] <span class="id" title="keyword">Notation</span> ".[ t ! n ]" := (<a class="idref" href="bedrock.lang.cpp.semantics.ptrs.html#PTRS.o_sub"><span class="id" title="axiom">o_sub</span></a> <span class="id" title="var">_</span> <span class="id" title="var">t</span> <span class="id" title="var">n</span>) (<span class="id" title="tactic">at</span> <span class="id" title="keyword">level</span> 11, <span class="id" title="keyword">no</span> <span class="id" title="keyword">associativity</span>, <span class="id" title="var">format</span> ".[  t  !  n  ]") : <span class="id" title="var">stdpp_scope</span>.<br/>
 
 <br/>
 &nbsp;&nbsp;<span class="comment">(*&nbsp;<span class="inlinecode"><span class="id" title="var">o_sub_0</span></span>&nbsp;axiom&nbsp;is&nbsp;required&nbsp;because&nbsp;any&nbsp;object&nbsp;is&nbsp;a&nbsp;1-object&nbsp;array<br/>
@@ -550,7 +550,7 @@ Pointers into the same array with the same address have the same index.
 </div>
 
 <div class="doc">
-<a id="lab76"></a><h2 class="section"><span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.model.simple_pointers_utils.html#PTRS_DERIVED_MIXIN.same_address"><span class="id" title="definition">same_address</span></a></span> lemmas</h2>
+<a id="lab79"></a><h2 class="section"><span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.model.simple_pointers_utils.html#PTRS_DERIVED_MIXIN.same_address"><span class="id" title="definition">same_address</span></a></span> lemmas</h2>
 
 </div>
 <div class="code">
@@ -595,7 +595,7 @@ Pointers into the same array with the same address have the same index.
 </div>
 
 <div class="doc">
-<a id="lab77"></a><h2 class="section"><span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.semantics.ptrs.html#PTRS_MIXIN.same_address_bool"><span class="id" title="definition">same_address_bool</span></a></span> lemmas</h2>
+<a id="lab80"></a><h2 class="section"><span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.semantics.ptrs.html#PTRS_MIXIN.same_address_bool"><span class="id" title="definition">same_address_bool</span></a></span> lemmas</h2>
 
 </div>
 <div class="code">
@@ -627,7 +627,7 @@ Pointers into the same array with the same address have the same index.
 </div>
 
 <div class="doc">
-<a id="lab78"></a><h2 class="section"><span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.model.simple_pointers_utils.html#PTRS_DERIVED_MIXIN.same_alloc"><span class="id" title="definition">same_alloc</span></a></span> lemmas</h2>
+<a id="lab81"></a><h2 class="section"><span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.model.simple_pointers_utils.html#PTRS_DERIVED_MIXIN.same_alloc"><span class="id" title="definition">same_alloc</span></a></span> lemmas</h2>
 
 </div>
 <div class="code">
