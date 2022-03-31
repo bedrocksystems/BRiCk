@@ -123,7 +123,7 @@ Section type_ind'.
     P ty -> P (Tref ty).
   Hypothesis Trv_ref_ind' : forall (ty : type),
     P ty -> P (Trv_ref ty).
-  Hypothesis Tint_ind' : forall (size : bitsize) (sign : signed),
+  Hypothesis Tnum_ind' : forall (size : bitsize) (sign : signed),
     P (Tnum size sign).
   Hypothesis Tvoid_ind' : P Tvoid.
   Hypothesis Tarray_ind' : forall (ty : type) (sz : N),
@@ -148,7 +148,7 @@ Section type_ind'.
     | Tptr ty                 => Tptr_ind' ty (type_ind' ty)
     | Tref ty                 => Tref_ind' ty (type_ind' ty)
     | Trv_ref ty              => Trv_ref_ind' ty (type_ind' ty)
-    | Tnum sz sgn             => Tint_ind' sz sgn
+    | Tnum sz sgn             => Tnum_ind' sz sgn
     | Tvoid                   => Tvoid_ind'
     | Tarray ty sz            => Tarray_ind' ty sz (type_ind' ty)
     | Tnamed name             => Tnamed_ind' name
