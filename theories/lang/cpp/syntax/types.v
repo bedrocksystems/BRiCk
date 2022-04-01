@@ -94,9 +94,6 @@ Inductive type : Set :=
 
 Notation Tchar := Tnum (only parsing).
 
-(* For compatibility; once we stop using it, we should rename [T_int] into [Tint]. *)
-Notation Tint := Tnum (only parsing).
-
 (** Strengthened Induction Principle for [type]
 
     [type] is a `Nested Inductive Type` due to the use of [list type]
@@ -371,27 +368,6 @@ Notation Tu64   := (Tnum W64 Unsigned).
 Notation Ti128  := (Tnum W128 Signed).
 Notation Tu128  := (Tnum W128 Unsigned).
 
-#[deprecated(since="2022-04-1", note="use [Ti8]")]
-Notation T_int8    := Ti8 (only parsing).
-#[deprecated(since="2022-04-1", note="use [Tu8]")]
-Notation T_uint8   := Tu8 (only parsing).
-#[deprecated(since="2022-04-1", note="use [Ti16]")]
-Notation T_int16   := Ti16 (only parsing).
-#[deprecated(since="2022-04-1", note="use [Tu16]")]
-Notation T_uint16  := Tu16 (only parsing).
-#[deprecated(since="2022-04-1", note="use [Ti32]")]
-Notation T_int32   := Ti32 (only parsing).
-#[deprecated(since="2022-04-1", note="use [Tu32]")]
-Notation T_uint32  := Tu32 (only parsing).
-#[deprecated(since="2022-04-1", note="use [Tu64]")]
-Notation T_int64   := Ti64 (only parsing).
-#[deprecated(since="2022-04-1", note="use [Ti64]")]
-Notation T_uint64  := Tu64 (only parsing).
-#[deprecated(since="2022-04-1", note="use [Ti128]")]
-Notation T_int128  := Ti128 (only parsing).
-#[deprecated(since="2022-04-1", note="use [Tu128]")]
-Notation T_uint128 := Tu128 (only parsing).
-
 (* note(gmm): types without explicit size information need to
  * be parameters of the underlying code, otherwise we can't
  * describe the semantics correctly.
@@ -431,27 +407,3 @@ Notation Tlong := (Tnum long_bits Signed) (only parsing).
 
 Notation Tulonglong := (Tnum long_long_bits Unsigned) (only parsing).
 Notation Tlonglong := (Tnum long_long_bits Signed) (only parsing).
-
-(** *** Types with implicit size information --- deprecated variants. *)
-#[deprecated(since="2022-04-1", note="use [Tschar]")]
-Notation T_schar := Tschar (only parsing).
-#[deprecated(since="2022-04-1", note="use [Tuchar]")]
-Notation T_uchar := Tuchar (only parsing).
-
-#[deprecated(since="2022-04-1", note="use [Tushort]")]
-Notation T_ushort := Tushort (only parsing).
-#[deprecated(since="2022-04-1", note="use [Tshort]")]
-Notation T_short := Tshort (only parsing).
-
-#[deprecated(since="2022-04-1", note="use [Tuint]")]
-Notation T_uint := Tuint (only parsing).
-
-#[deprecated(since="2022-04-1", note="use [Tulong]")]
-Notation T_ulong := Tulong (only parsing).
-#[deprecated(since="2022-04-1", note="use [Tlong]")]
-Notation T_long := Tlong (only parsing).
-
-#[deprecated(since="2022-04-1", note="use [Tulonglong]")]
-Notation T_ulonglong := Tulonglong (only parsing).
-#[deprecated(since="2022-04-1", note="use [Tlonglong]")]
-Notation T_longlong := Tlonglong (only parsing).

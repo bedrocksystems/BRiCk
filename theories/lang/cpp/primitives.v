@@ -20,24 +20,6 @@ Notation i16R q v := (primR Ti16 q (Vint v)).
 Notation i32R q v := (primR Ti32 q (Vint v)).
 Notation i64R q v := (primR Ti64 q (Vint v)).
 
-#[deprecated(since="2022-04-1", note="use [u8R]")]
-Notation uint8R q v := (u8R q v) (only parsing).
-#[deprecated(since="2022-04-1", note="use [u16R]")]
-Notation uint16R q v := (u16R q v) (only parsing).
-#[deprecated(since="2022-04-1", note="use [u32R]")]
-Notation uint32R q v := (u32R q v) (only parsing).
-#[deprecated(since="2022-04-1", note="use [u64R]")]
-Notation uint64R q v := (u64R q v) (only parsing).
-
-#[deprecated(since="2022-04-1", note="use [i8R]")]
-Notation int8R q v := (i8R q v) (only parsing).
-#[deprecated(since="2022-04-1", note="use [i16R]")]
-Notation int16R q v := (i16R q v) (only parsing).
-#[deprecated(since="2022-04-1", note="use [i32R]")]
-Notation int32R q v := (i32R q v) (only parsing).
-#[deprecated(since="2022-04-1", note="use [i64R]")]
-Notation int64R q v := (i64R q v) (only parsing).
-
 (* integers with implicit sizes *)
 (* note(gmm): these might need to become definitions if we want to be generic
  * across sizes
