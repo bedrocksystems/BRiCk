@@ -43,7 +43,7 @@ In certain instances, |project|'s semantics deviates from the C++ standard.
 
 * Our semantics do not currently permit "pointer zapping". See :ref:`no-pointer-zapping`.
 * Function call semantics are do not currently (precisely) follow the standard. We believe that this encoding is sound but are currently working on an approach that more closely tracks the standard text.
-* |project| uses `Tint sz sgn` to represent all integer types rather than the standard types :cpp:`char`, :cpp:`short`, :cpp:`int`, :cpp:`long`, :cpp:`long long`.
+* |project| uses `Tnum sz sgn` to represent all integer types rather than the standard types :cpp:`char`, :cpp:`short`, :cpp:`int`, :cpp:`long`, :cpp:`long long`.
 
 Known Issues
 =============
