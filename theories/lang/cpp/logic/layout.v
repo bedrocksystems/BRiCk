@@ -72,7 +72,7 @@ Section with_Σ.
   #[local] Definition implicit_destruct_ty (ty : type) := anyR ty 1 |-- |={↑pred_ns}=> tblockR ty 1.
 
   (** implicit destruction of a primitive *)
-  Axiom implicit_destruct_int : forall sz sgn, Reduce (implicit_destruct_ty (Tint sz sgn)).
+  Axiom implicit_destruct_int : forall sz sgn, Reduce (implicit_destruct_ty (Tnum sz sgn)).
   Axiom implicit_destruct_bool : Reduce (implicit_destruct_ty Tbool).
   Axiom implicit_destruct_nullptr : Reduce (implicit_destruct_ty Tnullptr).
   Axiom implicit_destruct_ptr : forall ty, Reduce (implicit_destruct_ty (Tptr ty)).
@@ -204,9 +204,9 @@ Section with_Σ.
   Lemma tblockR_array_better t n q sz :
         size_of σ t = Some sz ->
         tblockR (Tarray t n) q
-    -|- .[ T_uint8 ! Z.of_N (n * sz) ] |-> validR **
+    -|- .[ Tu8 ! Z.of_N (n * sz) ] |-> validR **
         [∗list] i ∈ seq 0 (N.to_nat n),
-           .[ T_uint8 ! Z.of_N (N.of_nat i * sz) ] |-> tblockR t q.
+           .[ Tu8 ! Z.of_N (N.of_nat i * sz) ] |-> tblockR t q.
   Proof.
     rewrite /tblockR /= => Hsz.
     rewrite Hsz /= align_of_array.

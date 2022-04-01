@@ -30,7 +30,7 @@ Section with_Σ.
   Proof. intros. iIntros "[]". Qed.
 
   Axiom wp_expect : forall exp c Q,
-      Q exp |-- wp_builtin Bin_expect (Tfunction (Tint W64 Signed) (Tint W64 Signed :: Tint W64 Signed :: nil)) (exp :: c :: nil) Q.
+      Q exp |-- wp_builtin Bin_expect (Tfunction Ti64 (Ti64 :: Ti64 :: nil)) (exp :: c :: nil) Q.
 
   (** Bit computations
    *)
@@ -38,76 +38,76 @@ Section with_Σ.
   (* Returns one plus the index of the least significant 1-bit of x,
      or if x is zero, returns zero. *)
   Definition ffs_spec (sz : bitsize) (n : Z) (Q : val -> mpred) : mpred :=
-    [| has_type (Vint n) (Tint sz Signed) |] ** Q (Vint (first_set sz n)).
+    [| has_type (Vint n) (Tnum sz Signed) |] ** Q (Vint (first_set sz n)).
 
   Axiom wp_ffs : forall sz c Q,
           ffs_spec sz c Q
-      |-- wp_builtin Bin_ffs (Tfunction (Tint sz Signed) (Tint sz Signed :: nil)) (Vint c :: nil) Q.
+      |-- wp_builtin Bin_ffs (Tfunction (Tnum sz Signed) (Tnum sz Signed :: nil)) (Vint c :: nil) Q.
 
   Axiom wp_ffsl : forall sz c Q,
           ffs_spec sz c Q
-      |-- wp_builtin Bin_ffsl (Tfunction (Tint sz Signed) (Tint sz Signed :: nil)) (Vint c :: nil) Q.
+      |-- wp_builtin Bin_ffsl (Tfunction (Tnum sz Signed) (Tnum sz Signed :: nil)) (Vint c :: nil) Q.
 
   Axiom wp_ffsll : forall sz c Q,
           ffs_spec sz c Q
-      |-- wp_builtin Bin_ffsll (Tfunction (Tint sz Signed) (Tint sz Signed :: nil)) (Vint c :: nil) Q.
+      |-- wp_builtin Bin_ffsll (Tfunction (Tnum sz Signed) (Tnum sz Signed :: nil)) (Vint c :: nil) Q.
 
   (* Returns the number of trailing 0-bits in x, starting at the least
      significant bit position. If x is 0, the result is undefined. *)
 
 
   Definition ctz_spec (sz : bitsize) (n : Z) (Q : val -> mpred) : mpred :=
-    [| has_type (Vint n) (Tint sz Unsigned) |] ** [| n <> 0 |] ** Q (Vint (trailing_zeros sz n)).
+    [| has_type (Vint n) (Tnum sz Unsigned) |] ** [| n <> 0 |] ** Q (Vint (trailing_zeros sz n)).
 
   Axiom wp_ctz : forall sz c Q,
           ctz_spec sz c Q
-      |-- wp_builtin Bin_ctz (Tfunction (Tint sz Unsigned) (Tint sz Unsigned :: nil)) (Vint c :: nil) Q.
+      |-- wp_builtin Bin_ctz (Tfunction (Tnum sz Unsigned) (Tnum sz Unsigned :: nil)) (Vint c :: nil) Q.
 
   Axiom wp_ctzl : forall sz c Q,
           ctz_spec sz c Q
-      |-- wp_builtin Bin_ctzl (Tfunction (Tint sz Unsigned) (Tint sz Unsigned :: nil)) (Vint c :: nil) Q.
+      |-- wp_builtin Bin_ctzl (Tfunction (Tnum sz Unsigned) (Tnum sz Unsigned :: nil)) (Vint c :: nil) Q.
 
   Axiom wp_ctzll : forall sz c Q,
           ctz_spec sz c Q
-      |-- wp_builtin Bin_ctzll (Tfunction (Tint sz Unsigned) (Tint sz Unsigned :: nil)) (Vint c :: nil) Q.
+      |-- wp_builtin Bin_ctzll (Tfunction (Tnum sz Unsigned) (Tnum sz Unsigned :: nil)) (Vint c :: nil) Q.
 
   (* Returns the number of leading 0-bits in x, starting at the most significant
      bit position. If x is 0, the result is undefined. *)
   Definition clz_spec (sz : bitsize) (n : Z) (Q : val -> mpred) : mpred :=
-    [| has_type (Vint n) (Tint sz Unsigned) |] ** [| n <> 0 |] ** Q (Vint (leading_zeros sz n)).
+    [| has_type (Vint n) (Tnum sz Unsigned) |] ** [| n <> 0 |] ** Q (Vint (leading_zeros sz n)).
 
   Axiom wp_clz : forall sz c Q,
           clz_spec sz c Q
-      |-- wp_builtin Bin_clz (Tfunction (Tint sz Unsigned) (Tint sz Unsigned :: nil)) (Vint c :: nil) Q.
+      |-- wp_builtin Bin_clz (Tfunction (Tnum sz Unsigned) (Tnum sz Unsigned :: nil)) (Vint c :: nil) Q.
 
   Axiom wp_clzl : forall sz c Q,
           clz_spec sz c Q
-      |-- wp_builtin Bin_clzl (Tfunction (Tint sz Unsigned) (Tint sz Unsigned :: nil)) (Vint c :: nil) Q.
+      |-- wp_builtin Bin_clzl (Tfunction (Tnum sz Unsigned) (Tnum sz Unsigned :: nil)) (Vint c :: nil) Q.
 
   Axiom wp_clzll : forall sz c Q,
           clz_spec sz c Q
-      |-- wp_builtin Bin_clzll (Tfunction (Tint sz Unsigned) (Tint sz Unsigned :: nil)) (Vint c :: nil) Q.
+      |-- wp_builtin Bin_clzll (Tfunction (Tnum sz Unsigned) (Tnum sz Unsigned :: nil)) (Vint c :: nil) Q.
 
   (* Returns x with the order of the bytes reversed; for example, 0xaabb becomes
      0xbbaa. Byte here always means exactly 8 bits. *)
   Axiom wp_bswap16 : forall x Q,
-          [| has_type (Vint x) (Tint W16 Unsigned) |] ** Q (Vint (bswap W16 x))
-      |-- wp_builtin Bin_bswap16 (Tfunction (Tint W16 Unsigned) (Tint W16 Unsigned :: nil))
+          [| has_type (Vint x) Tu16 |] ** Q (Vint (bswap W16 x))
+      |-- wp_builtin Bin_bswap16 (Tfunction Tu16 (Tu16 :: nil))
           (Vint x :: nil) Q.
 
   Axiom wp_bswap32 : forall x Q,
-          [| has_type (Vint x) (Tint W32 Unsigned) |] ** Q (Vint (bswap W32 x))
-      |-- wp_builtin Bin_bswap32 (Tfunction (Tint W32 Unsigned) (Tint W32 Unsigned :: nil))
+          [| has_type (Vint x) Tu32 |] ** Q (Vint (bswap W32 x))
+      |-- wp_builtin Bin_bswap32 (Tfunction Tu32 (Tu32 :: nil))
           (Vint x :: nil) Q.
 
   Axiom wp_bswap64 : forall x Q,
-          [| has_type (Vint x) (Tint W64 Unsigned) |] ** Q (Vint (bswap W64 x))
-      |-- wp_builtin Bin_bswap64 (Tfunction (Tint W64 Unsigned) (Tint W64 Unsigned :: nil))
+          [| has_type (Vint x) Tu64 |] ** Q (Vint (bswap W64 x))
+      |-- wp_builtin Bin_bswap64 (Tfunction Tu64 (Tu64 :: nil))
           (Vint x :: nil) Q.
 
   Axiom wp_bswap128 : forall x Q,
-          [| has_type (Vint x) (Tint W128 Unsigned) |] ** Q (Vint (bswap W128 x))
-      |-- wp_builtin Bin_bswap128 (Tfunction (Tint W128 Unsigned) (Tint W128 Unsigned :: nil))
+          [| has_type (Vint x) Tu128 |] ** Q (Vint (bswap W128 x))
+      |-- wp_builtin Bin_bswap128 (Tfunction Tu128 (Tu128 :: nil))
           (Vint x :: nil) Q.
 
 

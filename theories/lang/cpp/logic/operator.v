@@ -237,7 +237,7 @@ Section with_Σ.
       p2 = p1 ,, _sub ty (f o) ->
       valid_ptr p1 ∧ valid_ptr p2 ⊢
       eval_binop_impure bo
-                (Tpointer ty) (Tint w s) (Tpointer ty)
+                (Tpointer ty) (Tnum w s) (Tpointer ty)
                 (Vptr p1)     (Vint o)   (Vptr p2).
 
   #[local] Definition eval_int_ptr_op (bo : BinOp) (f : Z -> Z) : Prop :=
@@ -246,7 +246,7 @@ Section with_Σ.
       p2 = p1 ,, _sub ty (f o) ->
       valid_ptr p1 ∧ valid_ptr p2 ⊢
       eval_binop_impure bo
-                (Tint w s) (Tpointer ty) (Tpointer ty)
+                (Tnum w s) (Tpointer ty) (Tpointer ty)
                 (Vint o)   (Vptr p1)     (Vptr p2).
 
   (**
@@ -291,9 +291,9 @@ Section with_Σ.
       p1 = base ,, _sub ty o1 ->
       p2 = base ,, _sub ty o2 ->
       (* Side condition to prevent overflow; needed per https://eel.is/c++draft/expr.add#note-1 *)
-      has_type (Vint (o1 - o2)) (Tint w Signed) ->
+      has_type (Vint (o1 - o2)) (Tnum w Signed) ->
       valid_ptr p1 ∧ valid_ptr p2 ⊢
       eval_binop_impure Bsub
-                (Tpointer ty) (Tpointer ty) (Tint w Signed)
+                (Tpointer ty) (Tpointer ty) (Tnum w Signed)
                 (Vptr p1)     (Vptr p2)     (Vint (o1 - o2)).
 End with_Σ.

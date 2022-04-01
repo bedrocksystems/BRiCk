@@ -23,7 +23,7 @@ Section cmpxchg_derived.
     stored in expected_p. *)
   Lemma wp_atom_compare_exchange_n_cst_suc :
     forall p expected_p desired weak succmemord failmemord Q sz sgn v,
-      let ty := Tint sz sgn in
+      let ty := Tnum sz sgn in
       [| weak = Vbool false |] **
       [| succmemord = _SEQ_CST |] ** [| failmemord = _SEQ_CST |] **
       (* local pre-cond *)
@@ -53,7 +53,7 @@ Section cmpxchg_derived.
     truly different. *)
   Lemma wp_atom_compare_exchange_n_cst_fail :
     forall p val_p desired weak succmemord failmemord Q sz sgn v expected_v,
-      let ty := Tint sz sgn in
+      let ty := Tnum sz sgn in
       [| weak = Vbool false |] **
       [| succmemord = _SEQ_CST |] ** [| failmemord = _SEQ_CST |] **
       (* we know that the values are different *)
@@ -81,7 +81,7 @@ Section cmpxchg_derived.
   Lemma wp_atom_compare_exchange_cst_suc :
     forall q p expected_p desired_p weak succmemord failmemord Q
       sz sgn expected desired,
-      let ty := Tint sz sgn in
+      let ty := Tnum sz sgn in
       [| weak = Vbool false |] **
       [| succmemord = _SEQ_CST |] ** [| failmemord = _SEQ_CST |] **
       |> ((* local pre-cond *)
@@ -110,7 +110,7 @@ Section cmpxchg_derived.
   Lemma wp_atom_compare_exchange_cst_fail :
     forall q p expected_p desired_p weak succmemord failmemord Q
       sz sgn v expected desired,
-      let ty := Tint sz sgn in
+      let ty := Tnum sz sgn in
       [| weak = Vbool false |] **
       [| succmemord = _SEQ_CST |] ** [| failmemord = _SEQ_CST |] **
       (* we know that the values are different *)

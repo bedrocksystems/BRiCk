@@ -122,7 +122,7 @@ Module Type VAL_MIXIN (Import P : PTRS) (Import R : RAW_BYTES).
   Fixpoint get_default (t : type) : option val :=
     match t with
     | Tpointer _ => Some (Vptr nullptr)
-    | Tint _ _ => Some (Vint 0%Z)
+    | Tnum _ _ => Some (Vint 0%Z)
     | Tbool => Some (Vbool false)
     | Tnullptr => Some (Vptr nullptr)
     | Tqualified _ t => get_default t
@@ -145,8 +145,8 @@ Module Type RAW_BYTES_VAL
       raw_bytes_of_val σ ty v rs -> raw_bytes_of_val σ ty v rs' -> rs = rs'.
 
   Axiom raw_bytes_of_val_int_unique_val : forall {σ sz sgn z z' rs},
-      raw_bytes_of_val σ (Tint sz sgn) (Vint z) rs ->
-      raw_bytes_of_val σ (Tint sz sgn) (Vint z') rs ->
+      raw_bytes_of_val σ (Tnum sz sgn) (Vint z) rs ->
+      raw_bytes_of_val σ (Tnum sz sgn) (Vint z') rs ->
       z = z'.
 
   Axiom raw_bytes_of_val_sizeof : forall {σ ty v rs},
@@ -154,7 +154,7 @@ Module Type RAW_BYTES_VAL
 
   (* TODO Maybe add?
     Axiom raw_bytes_of_val_int : forall σ sz z rs,
-        raw_bytes_of_val σ (Tint sz Unsigned) (Vint z) rs <->
+        raw_bytes_of_val σ (Tnum sz Unsigned) (Vint z) rs <->
         exists l,
           (_Z_from_bytes (genv_byte_order σ) Unsigned l = z) /\
           rs = raw_int_byte <$> l.
@@ -181,11 +181,11 @@ Module Type RAW_BYTES_MIXIN
       val_related σ ty v1 v2 ->
       val_related σ (Tqualified t ty) v1 v2
   | Vraw_uint8 σ raw z
-      (Hraw : raw_bytes_of_val σ (Tint W8 Unsigned) (Vint z) [raw]) :
-      val_related σ (Tint W8 Unsigned) (Vraw raw) (Vint z)
+      (Hraw : raw_bytes_of_val σ Tu8 (Vint z) [raw]) :
+      val_related σ Tu8 (Vraw raw) (Vint z)
   | Vuint8_raw σ z raw
-      (Hraw : raw_bytes_of_val σ (Tint W8 Unsigned) (Vint z) [raw]) :
-      val_related σ (Tint W8 Unsigned) (Vint z) (Vraw raw).
+      (Hraw : raw_bytes_of_val σ Tu8 (Vint z) [raw]) :
+      val_related σ Tu8 (Vint z) (Vraw raw).
 
   Lemma val_related_qual :
     forall σ t ty v1 v2,
@@ -228,7 +228,7 @@ Module Type RAW_BYTES_MIXIN
   Qed.
 
   Lemma raw_bytes_of_val_uint_length : forall σ v rs sz sgn,
-      raw_bytes_of_val σ (Tint sz sgn) v rs ->
+      raw_bytes_of_val σ (Tnum sz sgn) v rs ->
       length rs = bytesNat sz.
   Proof.
     intros * Hraw_bytes_of_val%raw_bytes_of_val_sizeof.
@@ -250,7 +250,7 @@ Module Type HAS_TYPE (Import P : PTRS) (Import R : RAW_BYTES) (Import V : VAL_MI
     ^---- TODO: <https://gitlab.com/bedrocksystems/cpp2v-core/-/issues/319>
   - if [ty = Tvoid], then [v = Vundef].
   - if [ty = Tnullptr], then [v = Vptr nullptr].
-  - if [ty = Tint sz sgn], then [v] fits the appropriate bounds (see
+  - if [ty = Tnum sz sgn], then [v] fits the appropriate bounds (see
     [has_int_type']).
   - if [ty] is a type of pointers/aggregates, we only ensure that [v = Vptr p].
     + NOTE: We require that - for a type [Tnamed nm] - the name resolves to some
@@ -284,10 +284,10 @@ Module Type HAS_TYPE (Import P : PTRS) (Import R : RAW_BYTES) (Import V : VAL_MI
   Axiom has_type_bool : forall v,
       has_type v Tbool <-> exists b, v = Vbool b.
 
-  (** Note that from [has_type v (Tint sz sgn)] does not follow
-    [v = Vint _] since [v] might also be [Vraw _] (for [T_uchar]). *)
+  (** Note that from [has_type v (Tnum sz sgn)] does not follow
+    [v = Vint _] since [v] might also be [Vraw _] (for [Tuchar]). *)
   Axiom has_int_type' : forall sz sgn v,
-      has_type v (Tint sz sgn) <-> (exists z, v = Vint z /\ bound sz sgn z) \/ (exists r, v = Vraw r /\ Tint sz sgn = T_uchar).
+      has_type v (Tnum sz sgn) <-> (exists z, v = Vint z /\ bound sz sgn z) \/ (exists r, v = Vraw r /\ Tnum sz sgn = Tuchar).
 
   Axiom has_type_qual : forall t q x,
       has_type x (drop_qualifiers t) ->
@@ -307,7 +307,7 @@ Module Type HAS_TYPE_MIXIN (Import P : PTRS) (Import R : RAW_BYTES) (Import V : 
   Qed.
 
   Lemma has_int_type : forall sz (sgn : signed) z,
-      bound sz sgn z <-> has_type (Vint z) (Tint sz sgn).
+      bound sz sgn z <-> has_type (Vint z) (Tnum sz sgn).
   Proof. move => *. rewrite has_int_type'. naive_solver. Qed.
 
   Theorem has_char_type : forall sz (sgn : signed) z,
@@ -326,33 +326,33 @@ Module Type HAS_TYPE_MIXIN (Import P : PTRS) (Import R : RAW_BYTES) (Import V : 
   Section has_type.
     Lemma has_type_bswap8:
       forall v,
-        has_type (Vint (bswap8 v)) (Tint W8 Unsigned).
+        has_type (Vint (bswap8 v)) Tu8.
     Proof. intros *; apply has_int_type; red; generalize (bswap8_bounded v); simpl; lia. Qed.
 
     Lemma has_type_bswap16:
       forall v,
-        has_type (Vint (bswap16 v)) (Tint W16 Unsigned).
+        has_type (Vint (bswap16 v)) Tu16.
     Proof. intros *; apply has_int_type; red; generalize (bswap16_bounded v); simpl; lia. Qed.
 
     Lemma has_type_bswap32:
       forall v,
-        has_type (Vint (bswap32 v)) (Tint W32 Unsigned).
+        has_type (Vint (bswap32 v)) Tu32.
     Proof. intros *; apply has_int_type; red; generalize (bswap32_bounded v); simpl; lia. Qed.
 
     Lemma has_type_bswap64:
       forall v,
-        has_type (Vint (bswap64 v)) (Tint W64 Unsigned).
+        has_type (Vint (bswap64 v)) Tu64.
     Proof. intros *; apply has_int_type; red; generalize (bswap64_bounded v); simpl; lia. Qed.
 
     Lemma has_type_bswap128:
       forall v,
-        has_type (Vint (bswap128 v)) (Tint W128 Unsigned).
+        has_type (Vint (bswap128 v)) Tu128.
     Proof. intros *; apply has_int_type; red; generalize (bswap128_bounded v); simpl; lia. Qed.
   End has_type.
 
   Lemma has_type_bswap:
     forall sz v,
-      has_type (Vint (bswap sz v)) (Tint sz Unsigned).
+      has_type (Vint (bswap sz v)) (Tnum sz Unsigned).
   Proof.
     intros *; destruct sz;
       eauto using
@@ -368,25 +368,25 @@ Module Type HAS_TYPE_MIXIN (Import P : PTRS) (Import R : RAW_BYTES) (Import V : 
   (** Integral conversions. For use in the semantics of C++ operators. *)
   Definition conv_int (from to : type) (v v' : val) : Prop :=
     match drop_qualifiers from , drop_qualifiers to with
-    | Tbool , Tint _ _ =>
+    | Tbool , Tnum _ _ =>
       match is_true v with
       | Some v => v' = Vbool v
       | _ => False
       end
-    | Tint _ _ , Tbool =>
+    | Tnum _ _ , Tbool =>
       match v with
       | Vint v =>
         v' = Vbool (if Z.eqb 0 v then false else true)
       | _ => False
       end
-    | Tint _ _ , Tint sz Unsigned =>
+    | Tnum _ _ , Tnum sz Unsigned =>
       match v with
       | Vint v =>
         v' = Vint (to_unsigned sz v)
       | _ => False
       end
-    | Tint _ _ , Tint sz Signed =>
-      has_type v (Tint sz Signed) /\ v' = v
+    | Tnum _ _ , Tnum sz Signed =>
+      has_type v (Tnum sz Signed) /\ v' = v
     | _ , _ => False
     end.
   Arguments conv_int !_ !_ _ _ /.

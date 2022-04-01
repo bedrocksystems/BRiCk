@@ -80,7 +80,7 @@ Require Export bedrock.lang.cpp.logic.zstring.
        ```
        cstring.R q cstr **
        Exists l,
-         .[T_uchar ! cstring.size cstr] |-> arrayR T_uchar (fun _ => anyR q T_uchar) l **
+         .[Tuchar ! cstring.size cstr] |-> arrayR Tuchar (fun _ => anyR q Tuchar) l **
          [| cstring.size cstr + length l = sz |]
        ```
 
@@ -89,12 +89,12 @@ Require Export bedrock.lang.cpp.logic.zstring.
     require our string to be null-terminated in memory, it is not obvious how we would
     justify such `push_back`/`pop_back` reasoning principles while avoiding an explicit
     binding and characterization of the tail of the buffer. To address this we we
-    restrict our definition of [cstring.bufR q sz cstr] to use [primR T_uchar q 0]
-    instead of [anyR q T_uchar].
+    restrict our definition of [cstring.bufR q sz cstr] to use [primR Tuchar q 0]
+    instead of [anyR q Tuchar].
 
     With this approach, a [cstring.bufR q sz cstr] fact allows you to `push_back` a new
     character to the [cstring.t] model by writing it to the [cstring.bufR]
-    at position [.[T_uchar ! cstring.size cstr]]. Furthermore, the tail of the
+    at position [.[Tuchar ! cstring.size cstr]]. Furthermore, the tail of the
     [cstring.t] model can be removed by zeroing that portion of the [cstring.bufR].
 
     Note: at the moment the theory supporting this `push_back`/`pop_back` use-case

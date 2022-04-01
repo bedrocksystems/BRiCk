@@ -395,7 +395,7 @@ Module SimpleCPP.
 
       Definition pure_encodes (t : type) (v : val) (vs : list runtime_val) : Prop :=
         match erase_qualifiers t with
-        | Tint sz sgn =>
+        | Tnum sz sgn =>
           match v with
           | Vint v =>
             in_Z_to_bytes_bounds sz sgn v /\
@@ -464,7 +464,7 @@ Module SimpleCPP.
         pure_encodes t v vs ->
           length vs = match erase_qualifiers t with
           | Tbool => 1
-          | Tint sz _ => bytesNat sz
+          | Tnum sz _ => bytesNat sz
 
           | Tmember_pointer _ _ | Tnullptr | Tpointer _
           | Tfunction _ _ | Tref _ | Trv_ref _ =>
@@ -880,7 +880,7 @@ Module SimpleCPP.
     Admitted.
 
     (* XXX move *)
-    Axiom align_of_uchar : forall resolve, @align_of resolve T_uchar = Some 1%N.
+    Axiom align_of_uchar : forall resolve, @align_of resolve Tuchar = Some 1%N.
 
     (* Requirememnt is too strong, we'd want just [(strict_)valid_ptr p]; see comment
     above on [aligned_ptr_mpred] and [mem_inj_own].
@@ -888,8 +888,8 @@ Module SimpleCPP.
     *)
     Local Lemma valid_type_uchar resolve p (Hnn : p <> nullptr) va :
       pinned_ptr va p ⊢
-      valid_ptr (p ,, o_sub resolve T_uchar 1) -∗
-      type_ptr (resolve := resolve) T_uchar p.
+      valid_ptr (p ,, o_sub resolve Tuchar 1) -∗
+      type_ptr (resolve := resolve) Tuchar p.
     Proof.
       iIntros "#P #V".
       iApply (pinned_ptr_type_divide_2 (n := 1)) => //. {
@@ -1079,8 +1079,8 @@ Module SimpleCPP.
     Axiom same_address_eq_type_ptr : forall resolve ty p1 p2 n,
       same_address p1 p2 ->
       size_of resolve ty = Some n ->
-      (* if [ty = T_uchar], one of these pointer could provide storage for the other. *)
-      ty <> T_uchar ->
+      (* if [ty = Tuchar], one of these pointer could provide storage for the other. *)
+      ty <> Tuchar ->
       (n > 0)%N ->
       type_ptr ty p1 ∧ type_ptr ty p2 ∧ live_ptr p1 ∧ live_ptr p2 ⊢
         |={↑pred_ns}=> [| p1 = p2 |].

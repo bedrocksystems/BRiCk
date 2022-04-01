@@ -20,13 +20,13 @@ Section with_Σ.
 
   (** [rawR q rs]: the argument pointer points to [raw_byte] [r] within the C++ abstract machine. *)
   Definition rawR_def (q : Qp) (r : raw_byte) : Rep :=
-    as_Rep (fun p => tptsto T_uchar q p (Vraw r)).
+    as_Rep (fun p => tptsto Tuchar q p (Vraw r)).
   Definition rawR_aux : seal (@rawR_def). Proof. by eexists. Qed.
   Definition rawR := rawR_aux.(unseal).
   Definition rawR_eq : @rawR = _ := rawR_aux.(seal_eq).
   #[global] Arguments rawR q raw : rename.
 
-  Definition rawsR (q : Qp) (rs : list raw_byte) : Rep := arrayR T_uchar (rawR q) rs.
+  Definition rawsR (q : Qp) (rs : list raw_byte) : Rep := arrayR Tuchar (rawR q) rs.
 
   Section Theory.
     Section primR_Axiom.
@@ -43,12 +43,12 @@ Section with_Σ.
 
       Lemma raw_int_byte_primR : forall q r z,
         (raw_int_byte z = r)%Z ->
-        rawR q r -|- primR T_uchar q (Vn z).
+        rawR q r -|- primR Tuchar q (Vn z).
       Proof.
         intros * Hz; subst; rewrite primR_to_rawsR; split'.
         - iIntros "HrawR"; iExists [raw_int_byte z].
           rewrite /rawsR arrayR_singleton.
-          iDestruct (observe (type_ptrR (Tint char_bits Unsigned)) with "HrawR")
+          iDestruct (observe (type_ptrR (Tnum char_bits Unsigned)) with "HrawR")
             as "#Htype_ptrR". {
             rewrite rawR_eq/rawR_def type_ptrR_eq/type_ptrR_def;
               apply as_Rep_observe=> p; apply _.
@@ -65,9 +65,9 @@ Section with_Σ.
         (* TODO (JH): Determine if we can axiomatize a more specific property and use it
              to derive this reasoning principle. *)
         Axiom decode_uint_anyR : forall q sz,
-          anyR (Tint sz Unsigned) q -|-
-          anyR (Tarray T_uchar (bytesN sz)) q **
-          type_ptrR (Tint sz Unsigned).
+          anyR (Tnum sz Unsigned) q -|-
+          anyR (Tarray Tuchar (bytesN sz)) q **
+          type_ptrR (Tnum sz Unsigned).
 
         Definition decodes (endianness: endian) (sgn: signed) (l: list N) (z: Z) :=
           _Z_from_bytes endianness sgn l = z.
@@ -78,15 +78,15 @@ Section with_Σ.
 
         (* JH: TODO: Determine what new axioms we should add here. *)
         Axiom raw_byte_of_int_eq : forall sz x rs,
-            raw_bytes_of_val σ (Tint sz Unsigned) (Vint x) rs <->
+            raw_bytes_of_val σ (Tnum sz Unsigned) (Vint x) rs <->
             (exists l, decodes_uint l x /\ raw_int_byte <$> l = rs).
 
         (** TODO: determine whether this is correct with respect to pointers *)
         Lemma decode_uint_primR : forall q sz (x : Z),
-          primR (Tint sz Unsigned) q (Vint x) -|-
+          primR (Tnum sz Unsigned) q (Vint x) -|-
           Exists (rs : list raw_byte) (l : list N),
-            arrayR (Tint W8 Unsigned) (fun c => primR (Tint W8 Unsigned) q (Vint c)) (Z.of_N <$> l) **
-            type_ptrR (Tint sz Unsigned) **
+            arrayR Tu8 (fun c => primR Tu8 q (Vint c)) (Z.of_N <$> l) **
+            type_ptrR (Tnum sz Unsigned) **
             [| decodes_uint l x |] **
             [| raw_int_byte <$> l = rs |].
         Proof.

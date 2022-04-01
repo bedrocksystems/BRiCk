@@ -509,26 +509,26 @@ Module Type Expr.
      *)
     Axiom wp_operand_cast_reinterpret : forall e qt ty Q,
         match (* source *) type_of e , (* target *) qt with
-        | Tptr _ , Tint _ _ =>
+        | Tptr _ , Tnum _ _ =>
           (* https://eel.is/c++draft/expr.reinterpret.cast#4
              A pointer can be explicitly converted to any integral type large
              enough to hold all values of its type. The mapping function is
              implementation-defined. *)
           wp_operand (Ecast Cpointer2int Prvalue e ty) Q
-        | Tint _ _ , Tptr _ =>
+        | Tnum _ _ , Tptr _ =>
           (* A value of integral type or enumeration type can be explicitly
              converted to a pointer. A pointer converted to an integer of sufficient
              size (if any such exists on the implementation) and back to the same
              pointer type will have its original value; mappings between pointers
              and integers are otherwise implementation-defined. *)
           wp_operand (Ecast Cint2pointer Prvalue e ty) Q
-        | Tnullptr , Tint _ _ =>
+        | Tnullptr , Tnum _ _ =>
           (* A value of type [std​::​nullptr_t] can be converted to an integral type;
              the conversion has the same meaning and validity as a conversion of
              (void* )0 to the integral type.
            *)
           wp_operand e (fun _ free => Q (Vint 0) free)
-        | Tptr (Tint _ _), Tptr (Tint W8 _) =>
+        | Tptr (Tnum _ _), Tptr (Tnum W8 _) =>
           (* A narrow special case where the pointer does not change.
              This intentionally avoids the sources of struct pointers and union
              pointers because those might hit the "pointer-interconvertible"
@@ -569,7 +569,7 @@ Module Type Expr.
      *)
     Axiom wp_operand_pointer2int : forall e ty Q,
         match drop_qualifiers (type_of e) , ty with
-        | Tptr _ , Tint sz sgn =>
+        | Tptr _ , Tnum sz sgn =>
           wp_operand e (fun v free => Exists p, [| v = Vptr p |] **
             (Forall va, pinned_ptr va p -* Q (Vint (match sgn with
                                                     | Signed => to_signed sz
@@ -975,7 +975,7 @@ Module Type Expr.
        [4] https://eel.is/c++draft/dcl.init#general-6
      *)
     Axiom wp_operand_implicit_init_int : forall ty sz sgn Q,
-        drop_qualifiers ty = Tint sz sgn ->
+        drop_qualifiers ty = Tnum sz sgn ->
           Q (Vint 0) FreeTemps.id
       |-- wp_operand (Eimplicit_init ty) Q.
 
@@ -1159,10 +1159,10 @@ Module Type Expr.
          match sz with
          | O => Q emp
          | S sz' =>
-           _at loop_index (primR (Tint W64 Unsigned) (1/2) idx) -*
+           _at loop_index (primR Tu64 (1/2) idx) -*
            wp_init ρ ty (Vptr $ _offset_ptr targetp $ o_sub resolve ty idx) init
                    (fun free => free **
-                      _at loop_index (primR (Tint W64 Unsigned) (1/2) idx) **
+                      _at loop_index (primR Tu64 (1/2) idx) **
                       _arrayloop_init level sz' ρ (S idx) targetp init ty Q)
          end%I.
        ```
@@ -1187,14 +1187,14 @@ Module Type Expr.
                            to the program to make it read-only.
                          NOTE that no "correct" program will ever modify this variable
                            anyways. *)
-                      loop_index |-> primR (Tint W64 Unsigned) (1/2) idx -*
+                      loop_index |-> primR Tu64 (1/2) idx -*
                       wp_initialize ρ ty (targetp .[ ty ! idx ]) init
                               (fun free => interp free $
-                                 loop_index |-> primR (Tint W64 Unsigned) (1/2) idx **
+                                 loop_index |-> primR Tu64 (1/2) idx **
                                  rest (N.succ idx))) sz idx.
 
     Axiom wp_init_arrayloop_init : forall oname level sz ρ (trg : ptr) vc src init ty Q,
-          has_type (Vn sz) (Tint W64 Unsigned) ->
+          has_type (Vn sz) Tu64 ->
           wp_glval ρ vc src
                    (fun p free =>
                       Forall idxp,

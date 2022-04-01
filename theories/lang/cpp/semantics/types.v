@@ -49,7 +49,7 @@ Fixpoint size_of (resolve : genv) (t : type) : option N :=
   | Tpointer _ => Some (pointer_size resolve)
   | Tref _ => None
   | Trv_ref _ => None
-  | Tint sz _ => Some (bytesN sz)
+  | Tnum sz _ => Some (bytesN sz)
   | Tvoid => None
   | Tarray t n => N.mul n <$> size_of resolve t
   | Tnamed nm => glob_def resolve nm ≫= GlobDecl_size_of
@@ -79,7 +79,7 @@ Qed.
 
 
 Theorem size_of_int : forall {c : genv} s w,
-    @size_of c (Tint w s) = Some (bytesN w).
+    @size_of c (Tnum w s) = Some (bytesN w).
 Proof. reflexivity. Qed.
 Theorem size_of_char : forall {c : genv} s w,
     @size_of c (Tchar w s) = Some (bytesN w).
@@ -173,7 +173,7 @@ Qed.
 Proof. done. Qed.
 
 #[global] Instance int_size_of {σ : genv} sz sgn n :
-  TCEq (bytesN sz) n -> SizeOf (Tint sz sgn) n.
+  TCEq (bytesN sz) n -> SizeOf (Tnum sz sgn) n.
 Proof. by rewrite /SizeOf TCEq_eq=><-. Qed.
 
 #[global] Instance qualified_size_of {σ : genv} qual ty n :

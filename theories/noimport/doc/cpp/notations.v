@@ -102,7 +102,7 @@ Section with_env.
 
   (** in addition to fields, we can also use array subscripts *)
   Example _13 : ptr := l .[ T_int ! 5 ]. (* l[[5]] (when [l] is an `int *`) *)
-  Example _14 : ptr := l .[ T_uchar ! 5 ]. (* l[[5]] (when [l] is an `unsigned char *`) *)
+  Example _14 : ptr := l .[ Tuchar ! 5 ]. (* l[[5]] (when [l] is an `unsigned char *`) *)
 
 
   (** since these are locations, we can use them to position representation

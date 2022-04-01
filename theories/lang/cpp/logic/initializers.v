@@ -67,7 +67,7 @@ Module Type Init.
     Fixpoint default_initialize
                (ty : type) (p : ptr) (Q : FreeTemps → epred) {struct ty} : mpred :=
       match ty with
-      | Tint _ _ as rty
+      | Tnum _ _ as rty
       | Tptr _ as rty
       | Tbool as rty
       | Tfloat _ as rty
@@ -119,7 +119,7 @@ Module Type Init.
       | Tpointer _ as ty
       | Tmember_pointer _ _ as ty
       | Tbool as ty
-      | Tint _ _ as ty
+      | Tnum _ _ as ty
       | Tnullptr as ty =>
         wp_operand init (fun v free =>
                           addr |-> primR (erase_qualifiers ty) 1 v -* k free)
@@ -157,7 +157,7 @@ Module Type Init.
       | Tmember_pointer _ _ as ty
       | Tbool as ty
       | Tnullptr as ty
-      | Tint _ _ as ty =>
+      | Tnum _ _ as ty =>
         wp_operand init (fun v frees => k v FreeTemps.id frees)
 
         (* non-primitives are handled via prvalue-initialization semantics *)
