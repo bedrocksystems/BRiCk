@@ -52,7 +52,7 @@ to ensure that the addition does not overflow).
 
 ```coq
 \arg{n} "n" (Vint n)
-\require has_type (n+1) (Tint W32 Signed)
+\require has_type (n+1) (Tnum W32 Signed)
 \post{}[Vint (n + 1)] empSP
 ```
 

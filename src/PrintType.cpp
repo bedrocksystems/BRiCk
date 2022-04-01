@@ -129,7 +129,7 @@ public:
                 print.output() << "T_int128";
                 break;
             default:
-                print.output() << "(Tint " << bitsize(sz) << " Signed)";
+                print.output() << "(Tnum " << bitsize(sz) << " Signed)";
             }
         } else if (type->isUnsignedIntegerType()) {
             switch (auto sz = cprint.getTypeSize(type)) {
@@ -149,7 +149,7 @@ public:
                 print.output() << "T_uint128";
                 break;
             default:
-                print.output() << "(Tint " << bitsize(sz) << " Unsigned)";
+                print.output() << "(Tnum " << bitsize(sz) << " Unsigned)";
             }
         }
     }
@@ -195,7 +195,7 @@ public:
                     << "(Tfloat " << bitsize(cprint.getTypeSize(type)) << ")";
             } else if (type->isIntegerType()) {
                 print.output()
-                    << "(Tint " << bitsize(cprint.getTypeSize(type)) << " "
+                    << "(Tnum " << bitsize(cprint.getTypeSize(type)) << " "
                     << (type->isSignedInteger() ? "Signed" : "Unsigned") << ")";
 #if CLANG_VERSION_MAJOR >= 11
             } else if (type->isSizelessBuiltinType()) {
