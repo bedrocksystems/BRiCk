@@ -67,7 +67,7 @@ Fixpoint erase_qualifiers (t : type) : type :=
   | Tpointer t => Tpointer (erase_qualifiers t)
   | Tref t => Tref (erase_qualifiers t)
   | Trv_ref t => Trv_ref (erase_qualifiers t)
-  | Tint _ _
+  | Tnum _ _
   | Tbool
   | Tvoid
   | Tfloat _
@@ -103,7 +103,7 @@ Lemma drop_qualifiers_Tmember_pointer : forall [ty cls ty'],
     erase_qualifiers ty = Tmember_pointer cls (erase_qualifiers ty').
 Proof. induction ty; simpl; intros; try congruence; eauto. Qed.
 Lemma drop_qualifiers_Tint : forall [ty sz sgn],
-    drop_qualifiers ty = Tint sz sgn -> erase_qualifiers ty = Tint sz sgn.
+    drop_qualifiers ty = Tnum sz sgn -> erase_qualifiers ty = Tnum sz sgn.
 Proof. induction ty; simpl; intros; try congruence; eauto. Qed.
 Lemma drop_qualifiers_Tfloat : forall [ty sz],
     drop_qualifiers ty = Tfloat sz -> erase_qualifiers ty = Tfloat sz.
@@ -153,7 +153,7 @@ Definition class_name (t : type) : option globname :=
  *)
 Definition is_primitive (t : type) : bool :=
   match drop_qualifiers t with
-  | Tint _ _
+  | Tnum _ _
   | Tbool
   | Tptr _
   | Tnullptr

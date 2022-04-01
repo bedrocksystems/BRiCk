@@ -233,7 +233,7 @@ Section with_Σ.
     handled in the future. Tracked by cpp2v-core#306. *)
   Axiom wp_atom_compare_exchange_n_cst :
     forall p expected_p expected_v desired weak succmemord failmemord Q sz sgn,
-    let ty := Tint sz sgn in
+    let ty := Tnum sz sgn in
       [| weak = Vbool false |] **
       [| succmemord = _SEQ_CST |] ** [| failmemord = _SEQ_CST |] **
       (* local pre-cond : placeholder for the expected value *)
@@ -263,7 +263,7 @@ Section with_Σ.
   (* TODO: support for pointers, see cpp2v-core#306. *)
   Axiom wp_atom_compare_exchange_n_cst_weak :
     forall p expected_p expected_v desired weak succmemord failmemord Q sz sgn,
-      let ty := Tint sz sgn in
+      let ty := Tnum sz sgn in
       [| weak = Vbool true |] **
       [| succmemord = _SEQ_CST |] ** [| failmemord = _SEQ_CST |] **
       (* local pre-cond : placeholder for the expected value *)
@@ -286,7 +286,7 @@ Section with_Σ.
   Axiom wp_atom_compare_exchange_cst :
     forall q p expected_p desired_p weak succmemord failmemord Q
       sz sgn expected desired,
-      let ty := Tint sz sgn in
+      let ty := Tnum sz sgn in
       [| weak = Vbool false |] **
       [| succmemord = _SEQ_CST |] ** [| failmemord = _SEQ_CST |] **
       |> ((* local pre-cond *)
@@ -310,7 +310,7 @@ Section with_Σ.
   Axiom wp_atom_compare_exchange_cst_weak :
     forall q p expected_p desired_p weak succmemord failmemord Q
       sz sgn expected desired,
-      let ty := Tint sz sgn in
+      let ty := Tnum sz sgn in
       [| weak = Vbool true |] **
       [| succmemord = _SEQ_CST |] ** [| failmemord = _SEQ_CST |] **
       |> ((* local pre-cond *)
@@ -345,7 +345,7 @@ Section with_Σ.
   (* atomic fetch and xxx rule *)
   Definition wp_fetch_xxx_cst (ao : AtomicOp) (op : Z -> Z -> Z) : Prop :=
     forall p arg memorder Q sz sgn,
-      let acc_type := Tint sz sgn in
+      let acc_type := Tnum sz sgn in
       [| memorder = _SEQ_CST |] **
       [| has_type (Vint arg) acc_type |] **
       wrap_shift (fun Q =>
@@ -370,7 +370,7 @@ Section with_Σ.
   (* atomic xxx and fetch rule *)
   Definition wp_xxx_fetch_cst (ao : AtomicOp) (op : Z -> Z -> Z) : Prop :=
     forall p arg memorder Q sz sgn,
-      let acc_type := Tint sz sgn in
+      let acc_type := Tnum sz sgn in
       [| memorder = _SEQ_CST |] **
       [| has_type (Vint arg) acc_type |] **
       wrap_shift (fun Q =>
@@ -461,7 +461,7 @@ Section with_Σ.
   Lemma AU1_atom_fetch_xxx_cst ao op :
     wp_fetch_xxx_cst ao op ->
     forall p arg memorder Q sz sgn,
-      let acc_type := Tint sz sgn in
+      let acc_type := Tnum sz sgn in
       [| memorder = _SEQ_CST |] **
       [| has_type (Vint arg) acc_type |] **
       atom_fetch_xxx_cst_AU1 op acc_type p arg Q sz sgn
@@ -498,7 +498,7 @@ Section with_Σ.
   Lemma AU1_atom_xxx_fetch_cst ao op :
     wp_xxx_fetch_cst ao op ->
     forall p arg memorder Q sz sgn,
-      let acc_type := Tint sz sgn in
+      let acc_type := Tnum sz sgn in
       [| memorder = _SEQ_CST |] **
       [| has_type (Vint arg) acc_type |] **
       atom_xxx_fetch_cst_AU1 op acc_type p arg Q sz sgn

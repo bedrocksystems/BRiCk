@@ -115,7 +115,7 @@ Module Type Expr__newdelete.
           forall (oinit : option Expr)
             new_fn new_args aty Q targs sz
             (nfty := normalize_type new_fn.2)
-            (_ : arg_types nfty = Some (Tint sz Unsigned :: targs)),
+            (_ : arg_types nfty = Some (Tnum sz Unsigned :: targs)),
             (** TODO this needs a side-condition requiring that [new] with no
                 arguments does not return [nullptr] because the C++ standard
                 permits the assumption. *)
@@ -160,7 +160,7 @@ Module Type Expr__newdelete.
           forall (array_size : Expr) (oinit : option Expr)
             new_fn new_args aty Q targs sz
             (nfty := normalize_type new_fn.2)
-            (_ : arg_types nfty = Some (Tint sz Unsigned :: targs)),
+            (_ : arg_types nfty = Some (Tnum sz Unsigned :: targs)),
             (** TODO this needs a side-condition requiring that [new] with no
                 arguments does not return [nullptr] because the C++ standard
                 permits the assumption. *)
@@ -200,7 +200,7 @@ Module Type Expr__newdelete.
                           else
                             (* [blockR sz -|- tblockR (Tarray aty array_size)] *)
                             (storage_ptr |-> blockR (sz' + sz) 1 **
-                             storage_ptr .[Tint W8 Unsigned ! sz'] |-> alignedR al) **
+                             storage_ptr .[Tu8 ! sz'] |-> alignedR al) **
                              (* todo: ^ This misses an condition that [storage_ptr]
                               is suitably aligned, accounting for
                               __STDCPP_DEFAULT_NEW_ALIGNMENT__ (issue #149) *)
@@ -208,7 +208,7 @@ Module Type Expr__newdelete.
                                    (* This also ensures these pointers share their
                                    address (see [provides_storage_same_address]) *)
                                    provides_storage
-                                     (storage_ptr .[Tint W8 Unsigned ! sz'])
+                                     (storage_ptr .[Tu8 ! sz'])
                                      obj_ptr array_ty -*
                                    match oinit with
                                    | None => (* default_initialize the memory *)
@@ -380,7 +380,7 @@ Module Type Expr__newdelete.
                       [| size_of array_ty = Some sz |] **
                       (* v---- Token for converting obj memory to storage memory *)
                       provides_storage
-                        (storage_ptr .[Tint W8 Unsigned ! sz'])
+                        (storage_ptr .[Tu8 ! sz'])
                         obj_ptr array_ty **
                       (* Transfer memory to underlying storage pointer; unlike in
                          [end_provides_storage], this memory was pre-destructed by

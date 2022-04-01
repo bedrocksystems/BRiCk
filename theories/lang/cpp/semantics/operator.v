@@ -30,22 +30,22 @@ Section operator_axioms.
 
 Let eval_int_op (bo : BinOp) (o : Z -> Z -> Z) : Prop :=
   forall resolve w (s : signed) (a b c : Z),
-    has_type (Vint a) (Tint w s) ->
-    has_type (Vint b) (Tint w s) ->
+    has_type (Vint a) (Tnum w s) ->
+    has_type (Vint b) (Tnum w s) ->
     c = match s with
         | Signed => o a b
         | Unsigned => trim (bitsN w) (o a b)
         end ->
-    has_type (Vint c) (Tint w s) ->
-    eval_binop_pure (resolve:=resolve) bo (Tint w s) (Tint w s) (Tint w s) (Vint a) (Vint b) (Vint c).
+    has_type (Vint c) (Tnum w s) ->
+    eval_binop_pure (resolve:=resolve) bo (Tnum w s) (Tnum w s) (Tnum w s) (Vint a) (Vint b) (Vint c).
 
 (* this is bitwise operators *)
 Let eval_int_bitwise_op (bo : BinOp) (o : Z -> Z -> Z) : Prop :=
   forall resolve w (s : signed) (a b c : Z),
-    has_type (Vint a) (Tint w s) ->
-    has_type (Vint b) (Tint w s) ->
+    has_type (Vint a) (Tnum w s) ->
+    has_type (Vint b) (Tnum w s) ->
     c = o a b -> (* note that bitwise operators respect bounds *)
-    eval_binop_pure (resolve:=resolve) bo (Tint w s) (Tint w s) (Tint w s) (Vint a) (Vint b) (Vint c).
+    eval_binop_pure (resolve:=resolve) bo (Tnum w s) (Tnum w s) (Tnum w s) (Vint a) (Vint b) (Vint c).
 
 
 Axiom eval_not_bool : forall resolve a,
@@ -59,8 +59,8 @@ Axiom eval_minus_int : forall resolve (s : signed) a c w,
         | Signed => 0 - a
         | Unsigned => trim (bitsN w) (0 - a)
         end ->
-    has_type (Vint c) (Tint w s) ->
-    eval_unop (resolve:=resolve) Uminus (Tint w s) (Tint w s)
+    has_type (Vint c) (Tnum w s) ->
+    eval_unop (resolve:=resolve) Uminus (Tnum w s) (Tnum w s)
               (Vint a) (Vint c).
 
 (* arithmetic operators *)
@@ -81,17 +81,17 @@ Axiom eval_xor : Hnf (eval_int_bitwise_op Bxor Z.lxor).
 Axiom eval_div :
   forall resolve (w : bitsize) (s : signed) (a b c : Z),
     b <> 0%Z ->
-    has_type (Vint a) (Tint w s) ->
-    has_type (Vint b) (Tint w s) ->
+    has_type (Vint a) (Tnum w s) ->
+    has_type (Vint b) (Tnum w s) ->
     c = Z.quot a b ->
-    eval_binop_pure (resolve:=resolve) Bdiv (Tint w s) (Tint w s) (Tint w s) (Vint a) (Vint b) (Vint c).
+    eval_binop_pure (resolve:=resolve) Bdiv (Tnum w s) (Tnum w s) (Tnum w s) (Vint a) (Vint b) (Vint c).
 Axiom eval_mod :
   forall resolve (w : bitsize) (s : signed) (a b c : Z),
     b <> 0%Z ->
-    has_type (Vint a) (Tint w s) ->
-    has_type (Vint b) (Tint w s) ->
+    has_type (Vint a) (Tnum w s) ->
+    has_type (Vint b) (Tnum w s) ->
     c = Z.rem a b ->
-    eval_binop_pure (resolve:=resolve) Bmod (Tint w s) (Tint w s) (Tint w s) (Vint a) (Vint b) (Vint c).
+    eval_binop_pure (resolve:=resolve) Bmod (Tnum w s) (Tnum w s) (Tnum w s) (Vint a) (Vint b) (Vint c).
 
 (* C++14 <= VER < C++20 *)
 (* The value of E1 << E2 is E1 left-shifted E2 bit positions; vacated
@@ -116,14 +116,14 @@ Axiom eval_shl :
   forall resolve (w : bitsize) w2 (s s2 : signed) (a b c : Z),
     (0 <= b < bitsZ w)%Z ->
     (0 <= a)%Z ->
-    has_type (Vint a) (Tint w s) ->
-    has_type (Vint b) (Tint w2 s2) ->
+    has_type (Vint a) (Tnum w s) ->
+    has_type (Vint b) (Tnum w2 s2) ->
     c = match s with
         | Signed => Z.shiftl a b
         | Unsigned => trim (bitsN w) (Z.shiftl a b)
         end ->
-    has_type (Vint c) (Tint w s) ->
-    eval_binop_pure (resolve:=resolve) Bshl (Tint w s) (Tint w2 s2) (Tint w s) (Vint a) (Vint b) (Vint c).
+    has_type (Vint c) (Tnum w s) ->
+    eval_binop_pure (resolve:=resolve) Bshl (Tnum w s) (Tnum w2 s2) (Tnum w s) (Vint a) (Vint b) (Vint c).
 
 (* C++14 <= VER < C++20: The value of E1 >> E2 is E1 right-shifted E2 bit
    positions. If E1 has an unsigned type or if E1 has a signed type
@@ -134,10 +134,10 @@ Axiom eval_shr :
   forall resolve (w : bitsize) w2 (s s2: signed) (a b c : Z),
     (0 <= b < bitsZ w)%Z ->
     (0 <= a)%Z ->
-    has_type (Vint a) (Tint w s) ->
-    has_type (Vint b) (Tint w2 s2) ->
+    has_type (Vint a) (Tnum w s) ->
+    has_type (Vint b) (Tnum w2 s2) ->
     c = match s with Signed => Z.shiftr a b | Unsigned => trim (bitsN w) (Z.shiftr a b) end ->
-    eval_binop_pure (resolve:=resolve) Bshr (Tint w s) (Tint w2 s2) (Tint w s) (Vint a) (Vint b) (Vint c).
+    eval_binop_pure (resolve:=resolve) Bshr (Tnum w s) (Tnum w2 s2) (Tnum w s) (Vint a) (Vint b) (Vint c).
 
 (* Arithmetic comparison operators *)
 
@@ -149,10 +149,10 @@ Axiom eval_shr :
   forall resolve w s a b (av bv : Z) c,
     a = Vint av ->
     b = Vint bv ->
-    has_type a (Tint w s) ->
-    has_type b (Tint w s) ->
+    has_type a (Tnum w s) ->
+    has_type b (Tnum w s) ->
     c = bool_decide (o av bv) ->
-    eval_binop_pure (resolve:=resolve) bo (Tint w s) (Tint w s) Tbool a b (Vbool c).
+    eval_binop_pure (resolve:=resolve) bo (Tnum w s) (Tnum w s) Tbool a b (Vbool c).
 
 Axiom eval_eq_bool : Hnf (eval_int_rel_op eq Beq).
 Axiom eval_neq_bool :
@@ -174,10 +174,10 @@ Definition b2i (b : bool) : Z := if b then 1 else 0.
   forall resolve w s a b (av bv : Z) c,
     a = Vint av ->
     b = Vint bv ->
-    has_type a (Tint w s) ->
-    has_type b (Tint w s) ->
+    has_type a (Tnum w s) ->
+    has_type b (Tnum w s) ->
     c = bool_decide (o av bv) ->
-    eval_binop_pure (resolve:=resolve) bo (Tint w s) (Tint w s) T_int a b (Vint $ b2i c).
+    eval_binop_pure (resolve:=resolve) bo (Tnum w s) (Tnum w s) T_int a b (Vint $ b2i c).
 
 Axiom eval_eq_int : Hnf (eval_int_rel_op_int eq Beq).
 Axiom eval_neq_int :
@@ -198,8 +198,8 @@ Definition bitFlipZU (len: bitsize) (z:Z) : Z :=
 Axiom eval_unop_not:
   forall {genv} (w : bitsize) (sgn : signed) (a b : Z),
     b = match sgn with Signed => -1 - a | Unsigned => bitFlipZU w a end ->
-    has_type (Vint b) (Tint w sgn) ->
-    @eval_unop genv Ubnot (Tint w sgn) (Tint w sgn)  (Vint a) (Vint b).
+    has_type (Vint b) (Tnum w sgn) ->
+    @eval_unop genv Ubnot (Tnum w sgn) (Tnum w sgn)  (Vint a) (Vint b).
 
 End operator_axioms.
 End OPERATOR_INTF_FUNCTOR.
@@ -215,8 +215,8 @@ End OPERATOR_INTF_AXIOM.
  *)
 Fixpoint companion_type (t : type) : option type :=
   match t with
-  | Tpointer _ => Some (Tint int_bits Signed)
-  | Tint _ _ => Some t
+  | Tpointer _ => Some (Tnum int_bits Signed)
+  | Tnum _ _ => Some t
   | Tqualified _ t => companion_type t
   | _ => None
   end.

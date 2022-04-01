@@ -69,7 +69,7 @@ Example e6 : Rep := charR q z. (** similarly, [scharR] for signed and [ucharR] f
 Example e5 : Rep := shortR q z. (** similarly, [ushortR] and [sshortR] *)
 Example e7 : Rep := longR q z. (** similarly, [ulongR] and [slongR] *)
 Example e8 : Rep := longlongR q z. (** similarly, [ulonglongR] and [slonglongR] *)
-Example e9 : Rep  := int8R q z. (** similarly, [int16], [int32], [uni64]. Prefix 'u' for the unsigned variants *)
+Example e9 : Rep  := i8R q z. (** similarly, [int16], [int32], [uni64]. Prefix 'u' for the unsigned variants *)
 Variable b: bool.
 Example e11: bool:=true.
 Example e10 : Rep := boolR (1/2) b.
@@ -87,7 +87,7 @@ Example eptr : Rep := ptrR<ctype> q p.
 Click at [type] to see the current definition of C++ types.
 For example, below, we are saying that the pointer is of type
 signed 64 bit (long * ) *)
-Example eptr2 : Rep := ptrR<Tint W64 Signed> q p.
+Example eptr2 : Rep := ptrR<Ti64> q p.
 
 (**
 To refer to (named) struct types, use the [Tnamed] constructor,

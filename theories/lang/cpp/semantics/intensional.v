@@ -38,7 +38,7 @@ Fixpoint is_void (t : type) : bool :=
 Fixpoint prim_initializable (t : type) : bool :=
   match t with
   | Tpointer _
-  | Tint _ _
+  | Tnum _ _
   | Tbool
   | Tnullptr => true
   | Tqualified _ t => prim_initializable t
