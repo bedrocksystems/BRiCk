@@ -147,10 +147,6 @@ dummy
 <span class="id" title="keyword">Notation</span> <a id="Tchar" class="idref" href="#Tchar"><span class="id" title="abbreviation">Tchar</span></a> := <a class="idref" href="bedrock.lang.cpp.syntax.types.html#Tnum"><span class="id" title="constructor">Tnum</span></a> (<span class="id" title="var">only</span> <span class="id" title="var">parsing</span>).<br/>
 
 <br/>
-<span class="comment">(*&nbsp;For&nbsp;compatibility;&nbsp;once&nbsp;we&nbsp;stop&nbsp;using&nbsp;it,&nbsp;we&nbsp;should&nbsp;rename&nbsp;<span class="inlinecode"><span class="id" title="var">T_int</span></span>&nbsp;into&nbsp;<span class="inlinecode"><span class="id" title="var">Tint</span></span>.&nbsp;*)</span><br/>
-<span class="id" title="keyword">Notation</span> <a id="Tint" class="idref" href="#Tint"><span class="id" title="abbreviation">Tint</span></a> := <a class="idref" href="bedrock.lang.cpp.syntax.types.html#Tnum"><span class="id" title="constructor">Tnum</span></a> (<span class="id" title="var">only</span> <span class="id" title="var">parsing</span>).<br/>
-
-<br/>
 </div>
 
 <div class="doc">
@@ -471,28 +467,6 @@ normalization of types
 <span class="id" title="keyword">Notation</span> <a id="Tu128" class="idref" href="#Tu128"><span class="id" title="abbreviation">Tu128</span></a>  := (<a class="idref" href="bedrock.lang.cpp.syntax.types.html#Tnum"><span class="id" title="constructor">Tnum</span></a> <a class="idref" href="bedrock.lang.cpp.arith.types.html#W128"><span class="id" title="constructor">W128</span></a> <a class="idref" href="bedrock.lang.cpp.arith.types.html#Unsigned"><span class="id" title="constructor">Unsigned</span></a>).<br/>
 
 <br/>
-#[<span class="id" title="var">deprecated</span>(<span class="id" title="var">since</span>="2022-04-1", <span class="id" title="var">note</span>="use [Ti8]")]<br/>
-<span class="id" title="keyword">Notation</span> <a id="T_int8" class="idref" href="#T_int8"><span class="id" title="abbreviation">T_int8</span></a>    := <a class="idref" href="bedrock.lang.cpp.syntax.types.html#Ti8"><span class="id" title="abbreviation">Ti8</span></a> (<span class="id" title="var">only</span> <span class="id" title="var">parsing</span>).<br/>
-#[<span class="id" title="var">deprecated</span>(<span class="id" title="var">since</span>="2022-04-1", <span class="id" title="var">note</span>="use [Tu8]")]<br/>
-<span class="id" title="keyword">Notation</span> <a id="T_uint8" class="idref" href="#T_uint8"><span class="id" title="abbreviation">T_uint8</span></a>   := <a class="idref" href="bedrock.lang.cpp.syntax.types.html#Tu8"><span class="id" title="abbreviation">Tu8</span></a> (<span class="id" title="var">only</span> <span class="id" title="var">parsing</span>).<br/>
-#[<span class="id" title="var">deprecated</span>(<span class="id" title="var">since</span>="2022-04-1", <span class="id" title="var">note</span>="use [Ti16]")]<br/>
-<span class="id" title="keyword">Notation</span> <a id="T_int16" class="idref" href="#T_int16"><span class="id" title="abbreviation">T_int16</span></a>   := <a class="idref" href="bedrock.lang.cpp.syntax.types.html#Ti16"><span class="id" title="abbreviation">Ti16</span></a> (<span class="id" title="var">only</span> <span class="id" title="var">parsing</span>).<br/>
-#[<span class="id" title="var">deprecated</span>(<span class="id" title="var">since</span>="2022-04-1", <span class="id" title="var">note</span>="use [Tu16]")]<br/>
-<span class="id" title="keyword">Notation</span> <a id="T_uint16" class="idref" href="#T_uint16"><span class="id" title="abbreviation">T_uint16</span></a>  := <a class="idref" href="bedrock.lang.cpp.syntax.types.html#Tu16"><span class="id" title="abbreviation">Tu16</span></a> (<span class="id" title="var">only</span> <span class="id" title="var">parsing</span>).<br/>
-#[<span class="id" title="var">deprecated</span>(<span class="id" title="var">since</span>="2022-04-1", <span class="id" title="var">note</span>="use [Ti32]")]<br/>
-<span class="id" title="keyword">Notation</span> <a id="T_int32" class="idref" href="#T_int32"><span class="id" title="abbreviation">T_int32</span></a>   := <a class="idref" href="bedrock.lang.cpp.syntax.types.html#Ti32"><span class="id" title="abbreviation">Ti32</span></a> (<span class="id" title="var">only</span> <span class="id" title="var">parsing</span>).<br/>
-#[<span class="id" title="var">deprecated</span>(<span class="id" title="var">since</span>="2022-04-1", <span class="id" title="var">note</span>="use [Tu32]")]<br/>
-<span class="id" title="keyword">Notation</span> <a id="T_uint32" class="idref" href="#T_uint32"><span class="id" title="abbreviation">T_uint32</span></a>  := <a class="idref" href="bedrock.lang.cpp.syntax.types.html#Tu32"><span class="id" title="abbreviation">Tu32</span></a> (<span class="id" title="var">only</span> <span class="id" title="var">parsing</span>).<br/>
-#[<span class="id" title="var">deprecated</span>(<span class="id" title="var">since</span>="2022-04-1", <span class="id" title="var">note</span>="use [Tu64]")]<br/>
-<span class="id" title="keyword">Notation</span> <a id="T_int64" class="idref" href="#T_int64"><span class="id" title="abbreviation">T_int64</span></a>   := <a class="idref" href="bedrock.lang.cpp.syntax.types.html#Ti64"><span class="id" title="abbreviation">Ti64</span></a> (<span class="id" title="var">only</span> <span class="id" title="var">parsing</span>).<br/>
-#[<span class="id" title="var">deprecated</span>(<span class="id" title="var">since</span>="2022-04-1", <span class="id" title="var">note</span>="use [Ti64]")]<br/>
-<span class="id" title="keyword">Notation</span> <a id="T_uint64" class="idref" href="#T_uint64"><span class="id" title="abbreviation">T_uint64</span></a>  := <a class="idref" href="bedrock.lang.cpp.syntax.types.html#Tu64"><span class="id" title="abbreviation">Tu64</span></a> (<span class="id" title="var">only</span> <span class="id" title="var">parsing</span>).<br/>
-#[<span class="id" title="var">deprecated</span>(<span class="id" title="var">since</span>="2022-04-1", <span class="id" title="var">note</span>="use [Ti128]")]<br/>
-<span class="id" title="keyword">Notation</span> <a id="T_int128" class="idref" href="#T_int128"><span class="id" title="abbreviation">T_int128</span></a>  := <a class="idref" href="bedrock.lang.cpp.syntax.types.html#Ti128"><span class="id" title="abbreviation">Ti128</span></a> (<span class="id" title="var">only</span> <span class="id" title="var">parsing</span>).<br/>
-#[<span class="id" title="var">deprecated</span>(<span class="id" title="var">since</span>="2022-04-1", <span class="id" title="var">note</span>="use [Tu128]")]<br/>
-<span class="id" title="keyword">Notation</span> <a id="T_uint128" class="idref" href="#T_uint128"><span class="id" title="abbreviation">T_uint128</span></a> := <a class="idref" href="bedrock.lang.cpp.syntax.types.html#Tu128"><span class="id" title="abbreviation">Tu128</span></a> (<span class="id" title="var">only</span> <span class="id" title="var">parsing</span>).<br/>
-
-<br/>
 <span class="comment">(*&nbsp;note(gmm):&nbsp;types&nbsp;without&nbsp;explicit&nbsp;size&nbsp;information&nbsp;need&nbsp;to<br/>
 &nbsp;*&nbsp;be&nbsp;parameters&nbsp;of&nbsp;the&nbsp;underlying&nbsp;code,&nbsp;otherwise&nbsp;we&nbsp;can't<br/>
 &nbsp;*&nbsp;describe&nbsp;the&nbsp;semantics&nbsp;correctly.<br/>
@@ -559,41 +533,6 @@ XXX This is the odd-name out, but <span class="inlinecode"><a class="idref" href
 <br/>
 <span class="id" title="keyword">Notation</span> <a id="Tulonglong" class="idref" href="#Tulonglong"><span class="id" title="abbreviation">Tulonglong</span></a> := (<a class="idref" href="bedrock.lang.cpp.syntax.types.html#Tnum"><span class="id" title="constructor">Tnum</span></a> <a class="idref" href="bedrock.lang.cpp.syntax.types.html#long_long_bits"><span class="id" title="abbreviation">long_long_bits</span></a> <a class="idref" href="bedrock.lang.cpp.arith.types.html#Unsigned"><span class="id" title="constructor">Unsigned</span></a>) (<span class="id" title="var">only</span> <span class="id" title="var">parsing</span>).<br/>
 <span class="id" title="keyword">Notation</span> <a id="Tlonglong" class="idref" href="#Tlonglong"><span class="id" title="abbreviation">Tlonglong</span></a> := (<a class="idref" href="bedrock.lang.cpp.syntax.types.html#Tnum"><span class="id" title="constructor">Tnum</span></a> <a class="idref" href="bedrock.lang.cpp.syntax.types.html#long_long_bits"><span class="id" title="abbreviation">long_long_bits</span></a> <a class="idref" href="bedrock.lang.cpp.arith.types.html#Signed"><span class="id" title="constructor">Signed</span></a>) (<span class="id" title="var">only</span> <span class="id" title="var">parsing</span>).<br/>
-
-<br/>
-</div>
-
-<div class="doc">
-<a id="lab72"></a><h3 class="section">Types with implicit size information --- deprecated variants.</h3>
-
-</div>
-<div class="code">
-#[<span class="id" title="var">deprecated</span>(<span class="id" title="var">since</span>="2022-04-1", <span class="id" title="var">note</span>="use [Tschar]")]<br/>
-<span class="id" title="keyword">Notation</span> <a id="T_schar" class="idref" href="#T_schar"><span class="id" title="abbreviation">T_schar</span></a> := <a class="idref" href="bedrock.lang.cpp.syntax.types.html#Tschar"><span class="id" title="abbreviation">Tschar</span></a> (<span class="id" title="var">only</span> <span class="id" title="var">parsing</span>).<br/>
-#[<span class="id" title="var">deprecated</span>(<span class="id" title="var">since</span>="2022-04-1", <span class="id" title="var">note</span>="use [Tuchar]")]<br/>
-<span class="id" title="keyword">Notation</span> <a id="T_uchar" class="idref" href="#T_uchar"><span class="id" title="abbreviation">T_uchar</span></a> := <a class="idref" href="bedrock.lang.cpp.syntax.types.html#Tuchar"><span class="id" title="abbreviation">Tuchar</span></a> (<span class="id" title="var">only</span> <span class="id" title="var">parsing</span>).<br/>
-
-<br/>
-#[<span class="id" title="var">deprecated</span>(<span class="id" title="var">since</span>="2022-04-1", <span class="id" title="var">note</span>="use [Tushort]")]<br/>
-<span class="id" title="keyword">Notation</span> <a id="T_ushort" class="idref" href="#T_ushort"><span class="id" title="abbreviation">T_ushort</span></a> := <a class="idref" href="bedrock.lang.cpp.syntax.types.html#Tushort"><span class="id" title="abbreviation">Tushort</span></a> (<span class="id" title="var">only</span> <span class="id" title="var">parsing</span>).<br/>
-#[<span class="id" title="var">deprecated</span>(<span class="id" title="var">since</span>="2022-04-1", <span class="id" title="var">note</span>="use [Tshort]")]<br/>
-<span class="id" title="keyword">Notation</span> <a id="T_short" class="idref" href="#T_short"><span class="id" title="abbreviation">T_short</span></a> := <a class="idref" href="bedrock.lang.cpp.syntax.types.html#Tshort"><span class="id" title="abbreviation">Tshort</span></a> (<span class="id" title="var">only</span> <span class="id" title="var">parsing</span>).<br/>
-
-<br/>
-#[<span class="id" title="var">deprecated</span>(<span class="id" title="var">since</span>="2022-04-1", <span class="id" title="var">note</span>="use [Tuint]")]<br/>
-<span class="id" title="keyword">Notation</span> <a id="T_uint" class="idref" href="#T_uint"><span class="id" title="abbreviation">T_uint</span></a> := <a class="idref" href="bedrock.lang.cpp.syntax.types.html#Tuint"><span class="id" title="abbreviation">Tuint</span></a> (<span class="id" title="var">only</span> <span class="id" title="var">parsing</span>).<br/>
-
-<br/>
-#[<span class="id" title="var">deprecated</span>(<span class="id" title="var">since</span>="2022-04-1", <span class="id" title="var">note</span>="use [Tulong]")]<br/>
-<span class="id" title="keyword">Notation</span> <a id="T_ulong" class="idref" href="#T_ulong"><span class="id" title="abbreviation">T_ulong</span></a> := <a class="idref" href="bedrock.lang.cpp.syntax.types.html#Tulong"><span class="id" title="abbreviation">Tulong</span></a> (<span class="id" title="var">only</span> <span class="id" title="var">parsing</span>).<br/>
-#[<span class="id" title="var">deprecated</span>(<span class="id" title="var">since</span>="2022-04-1", <span class="id" title="var">note</span>="use [Tlong]")]<br/>
-<span class="id" title="keyword">Notation</span> <a id="T_long" class="idref" href="#T_long"><span class="id" title="abbreviation">T_long</span></a> := <a class="idref" href="bedrock.lang.cpp.syntax.types.html#Tlong"><span class="id" title="abbreviation">Tlong</span></a> (<span class="id" title="var">only</span> <span class="id" title="var">parsing</span>).<br/>
-
-<br/>
-#[<span class="id" title="var">deprecated</span>(<span class="id" title="var">since</span>="2022-04-1", <span class="id" title="var">note</span>="use [Tulonglong]")]<br/>
-<span class="id" title="keyword">Notation</span> <a id="T_ulonglong" class="idref" href="#T_ulonglong"><span class="id" title="abbreviation">T_ulonglong</span></a> := <a class="idref" href="bedrock.lang.cpp.syntax.types.html#Tulonglong"><span class="id" title="abbreviation">Tulonglong</span></a> (<span class="id" title="var">only</span> <span class="id" title="var">parsing</span>).<br/>
-#[<span class="id" title="var">deprecated</span>(<span class="id" title="var">since</span>="2022-04-1", <span class="id" title="var">note</span>="use [Tlonglong]")]<br/>
-<span class="id" title="keyword">Notation</span> <a id="T_longlong" class="idref" href="#T_longlong"><span class="id" title="abbreviation">T_longlong</span></a> := <a class="idref" href="bedrock.lang.cpp.syntax.types.html#Tlonglong"><span class="id" title="abbreviation">Tlonglong</span></a> (<span class="id" title="var">only</span> <span class="id" title="var">parsing</span>).<br/>
 </div>
 <!--
 -- Copyright (c) 2020 BedRock Systems, Inc.
