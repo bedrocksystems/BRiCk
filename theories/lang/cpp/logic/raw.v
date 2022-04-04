@@ -79,7 +79,7 @@ Section with_Σ.
         (* JH: TODO: Determine what new axioms we should add here. *)
         Axiom raw_byte_of_int_eq : forall sz x rs,
             raw_bytes_of_val σ (Tnum sz Unsigned) (Vint x) rs <->
-            (exists l, decodes_uint l x /\ raw_int_byte <$> l = rs).
+            (exists l, decodes_uint l x /\ raw_int_byte <$> l = rs /\ length l = bytesNat sz).
 
         (** TODO: determine whether this is correct with respect to pointers *)
         Lemma decode_uint_primR : forall q sz (x : Z),
@@ -88,24 +88,29 @@ Section with_Σ.
             arrayR Tu8 (fun c => primR Tu8 q (Vint c)) (Z.of_N <$> l) **
             type_ptrR (Tnum sz Unsigned) **
             [| decodes_uint l x |] **
-            [| raw_int_byte <$> l = rs |].
+            [| raw_int_byte <$> l = rs |] **
+            [| length l = bytesNat sz |].
         Proof.
           move => q sz x.
           rewrite primR_to_rawsR. setoid_rewrite raw_byte_of_int_eq.
           iSplit.
           - iDestruct 1 as (rs) "(Hraw & H & $)".
-            iDestruct "H" as %[l [Hdec Hrs]].
+            iDestruct "H" as %[l [Hdec [Hrs Hlen]]].
             iExists rs, _; iSplit => //. clear Hdec.
             rewrite /rawsR arrayR_eq/arrayR_def. iStopProof.
             (* TODO i need to do induction here because the [Proper] instances are too weak. *)
-            generalize dependent rs; induction l => rs Hrs // /=; simpl in Hrs.
+            clear Hlen.
+            generalize dependent rs.
+            induction l => rs Hrs // /=; simpl in Hrs.
             + by subst.
             + destruct rs; inversion Hrs; subst; simpl.
               rewrite !arrR_cons; eauto.
               rewrite -IHl /=; [| auto];
               by rewrite raw_int_byte_primR.
-          - iDestruct 1 as (rs l) "(Harray & $ & %Hdec & %Hbytes)".
-            iExists rs; iSplit => //; eauto with iFrame. clear Hdec; rewrite -{}Hbytes.
+          - iDestruct 1 as (rs l) "(Harray & $ & %Hdec & %Hbytes & %Hlen)".
+            iExists rs; iSplit => //; eauto with iFrame.
+            clear Hlen.
+            clear Hdec; rewrite -{}Hbytes.
             rewrite /rawsR arrayR_eq/arrayR_def; iStopProof.
             induction l => // /=.
             rewrite !arrR_cons; eauto.
