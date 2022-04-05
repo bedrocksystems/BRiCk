@@ -109,8 +109,7 @@ Section with_Σ.
               by rewrite raw_int_byte_primR.
           - iDestruct 1 as (rs l) "(Harray & $ & %Hdec & %Hbytes & %Hlen)".
             iExists rs; iSplit => //; eauto with iFrame.
-            clear Hlen.
-            clear Hdec; rewrite -{}Hbytes.
+            clear Hlen Hdec; rewrite -{}Hbytes.
             rewrite /rawsR arrayR_eq/arrayR_def; iStopProof.
             induction l => // /=.
             rewrite !arrR_cons; eauto.
