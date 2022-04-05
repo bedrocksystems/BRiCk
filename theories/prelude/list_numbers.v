@@ -246,9 +246,17 @@ Section listN.
     lengthN (dropN k xs) = lengthN xs - k.
   Proof. by rewrite /lengthN/dropN drop_length Nat2N.inj_sub N2Nat.id. Qed.
 
+  Lemma length_dropN (k : N) xs :
+    (length (dropN k xs) = length xs - (N.to_nat k))%nat.
+  Proof. by rewrite /dropN drop_length. Qed.
+
   Lemma lengthN_takeN k xs :
     lengthN (takeN k xs) = k `min` lengthN xs.
   Proof. by rewrite /lengthN/takeN take_length Nat2N.inj_min N2Nat.id. Qed.
+
+  Lemma length_takeN (k : N) xs :
+    (length (takeN k xs) = (N.to_nat k) `min` length xs)%nat.
+  Proof. by rewrite /takeN take_length. Qed.
 
   Lemma lengthN_rotateN k xs :
     lengthN (rotateN k xs) = lengthN xs.
