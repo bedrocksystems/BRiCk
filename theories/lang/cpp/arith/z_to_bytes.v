@@ -5,6 +5,7 @@
  *)
 
 Require Import bedrock.prelude.base.
+Require Import bedrock.prelude.list_numbers.
 From bedrock.lang.cpp.arith Require Import types builtins operator.
 
 Import arith.builtins.churn_bits.
@@ -878,6 +879,13 @@ Section FromToBytes.
       forall (cnt: nat) endianness sgn v,
         length (_Z_to_bytes cnt endianness sgn v) = cnt.
     Proof. move=> *; rewrite _Z_to_bytes_eq; apply _Z_to_bytes_def_length. Qed.
+    Lemma _Z_to_bytes_lengthN:
+      forall (cnt: nat) endianness sgn v,
+        lengthN (_Z_to_bytes cnt endianness sgn v) = N.of_nat cnt.
+    Proof.
+      intros.
+      by rewrite/lengthN _Z_to_bytes_length.
+    Qed.
 
     Lemma _Z_to_bytes_0_bytes:
       forall sgn endianness v,
@@ -914,6 +922,13 @@ Section FromToBytes.
       rewrite -[lst]rev_involutive.
       rewrite _Z_from_bytes_eq.
       exact: _Z_from_bytes_Big_Unsigned_bound_internal.
+    Qed.
+    Lemma _Z_to_bytes_Big_Unsigned_boundN:
+      forall lst,
+        (0 <= _Z_from_bytes Big Unsigned lst < 256 ^ (lengthN lst))%Z.
+    Proof.
+      move=> *; rewrite/lengthN length_lengthN Nat2N.id nat_N_Z.
+      exact: _Z_to_bytes_Big_Unsigned_bound.
     Qed.
   End FromBytesFacts_external.
 
