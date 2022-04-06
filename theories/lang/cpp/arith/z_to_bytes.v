@@ -927,11 +927,7 @@ Section FromToBytes.
       forall lst,
         (0 <= _Z_from_bytes Big Unsigned lst < 256 ^ (lengthN lst))%Z.
     Proof.
-      move => ?.
-      rewrite/lengthN.
-      rewrite length_lengthN.
-      rewrite Nat2N.id.
-      rewrite nat_N_Z.
+      move=> *; rewrite/lengthN length_lengthN Nat2N.id nat_N_Z.
       exact: _Z_to_bytes_Big_Unsigned_bound.
     Qed.
   End FromBytesFacts_external.
