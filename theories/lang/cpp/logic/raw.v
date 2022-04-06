@@ -70,6 +70,7 @@ Section with_Σ.
           type_ptrR (Tnum sz Unsigned).
 
         Definition decodes (endianness: endian) (sgn: signed) (l: list N) (z: Z) :=
+          List.Forall (fun v => has_type (Vn v) Tu8) l /\
           _Z_from_bytes endianness sgn l = z.
 
         (* JH: TODO: Deprecate the following stuff *)
@@ -79,7 +80,8 @@ Section with_Σ.
         (* JH: TODO: Determine what new axioms we should add here. *)
         Axiom raw_byte_of_int_eq : forall sz x rs,
             raw_bytes_of_val σ (Tnum sz Unsigned) (Vint x) rs <->
-            (exists l, decodes_uint l x /\ raw_int_byte <$> l = rs /\ length l = bytesNat sz).
+            (exists l, decodes_uint l x /\ raw_int_byte <$> l = rs /\
+                    length l = bytesNat sz).
 
         (** TODO: determine whether this is correct with respect to pointers *)
         Lemma decode_uint_primR : forall q sz (x : Z),
