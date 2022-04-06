@@ -151,20 +151,10 @@ Section monPred_lift.
     apply HA, monPred_at_affine, AP.
   Qed.
 
-  (* XXX upstream. *)
-  #[local] Definition monPred_simpl :=
-    (@monPred_at_sep, @monPred_at_later, @monPred_at_wand, @monPred_at_except_0,
-    @monPred_at_intuitionistically, @monPred_at_embed, @monPred_at_exist).
-
   #[local] Instance persistent_affine_laterable_monPred_lift P
-    (HA : ∀ P : PROP, Persistent P → Affine P → Laterable P) :
+    (HT : Timeless (PROP := PROP) emp) :
     Persistent P → Affine P → Laterable P.
-  Proof.
-    intros PP AP. constructor=> i.
-    rewrite (laterable (P i)) monPred_at_exist; iDestruct 1 as (Q) "[? #W]".
-    iExists (⎡ Q ⎤)%I; rewrite !monPred_simpl; iFrame; iIntros "!>" (j Hj) "Q".
-    rewrite !monPred_simpl Hj; by iApply "W".
-  Qed.
+  Proof. intros. apply: intuitionistic_laterable. Qed.
   (** Liftings for [BiPositive] and [BiEmpForallOnlyProvable] are declared elsewhere. *)
 End monPred_lift.
 
