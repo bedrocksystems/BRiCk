@@ -177,7 +177,7 @@ Definition b2i (b : bool) : Z := if b then 1 else 0.
     has_type a (Tnum w s) ->
     has_type b (Tnum w s) ->
     c = bool_decide (o av bv) ->
-    eval_binop_pure (resolve:=resolve) bo (Tnum w s) (Tnum w s) T_int a b (Vint $ b2i c).
+    eval_binop_pure (resolve:=resolve) bo (Tnum w s) (Tnum w s) Tint a b (Vint $ b2i c).
 
 Axiom eval_eq_int : Hnf (eval_int_rel_op_int eq Beq).
 Axiom eval_neq_int :
@@ -185,7 +185,7 @@ Axiom eval_neq_int :
     a = Vint av ->
     b = Vint bv ->
     c = bool_decide (av <> bv) ->
-    eval_binop_pure (resolve:=resolve) Bneq ty ty T_int a b (Vbool c).
+    eval_binop_pure (resolve:=resolve) Bneq ty ty Tint a b (Vbool c).
 Axiom eval_lt_int : Hnf (eval_int_rel_op_int Z.lt Blt).
 Axiom eval_gt_int : Hnf (eval_int_rel_op_int Z.gt Bgt).
 Axiom eval_le_int : Hnf (eval_int_rel_op_int Z.le Ble).

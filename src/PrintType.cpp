@@ -114,19 +114,19 @@ public:
         if (type->isSignedIntegerType()) {
             switch (auto sz = cprint.getTypeSize(type)) {
             case 8:
-                print.output() << "T_int8";
+                print.output() << "Ti8";
                 break;
             case 16:
-                print.output() << "T_int16";
+                print.output() << "Ti16";
                 break;
             case 32:
-                print.output() << "T_int32";
+                print.output() << "Ti32";
                 break;
             case 64:
-                print.output() << "T_int64";
+                print.output() << "Ti64";
                 break;
             case 128:
-                print.output() << "T_int128";
+                print.output() << "Ti128";
                 break;
             default:
                 print.output() << "(Tnum " << bitsize(sz) << " Signed)";
@@ -134,19 +134,19 @@ public:
         } else if (type->isUnsignedIntegerType()) {
             switch (auto sz = cprint.getTypeSize(type)) {
             case 8:
-                print.output() << "T_uint8";
+                print.output() << "Tu8";
                 break;
             case 16:
-                print.output() << "T_uint16";
+                print.output() << "Tu16";
                 break;
             case 32:
-                print.output() << "T_uint32";
+                print.output() << "Tu32";
                 break;
             case 64:
-                print.output() << "T_uint64";
+                print.output() << "Tu64";
                 break;
             case 128:
-                print.output() << "T_uint128";
+                print.output() << "Tu128";
                 break;
             default:
                 print.output() << "(Tnum " << bitsize(sz) << " Unsigned)";

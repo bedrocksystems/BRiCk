@@ -101,40 +101,40 @@ Section with_env.
 
 
   (** in addition to fields, we can also use array subscripts *)
-  Example _13 : ptr := l .[ T_int ! 5 ]. (* l[[5]] (when [l] is an `int *`) *)
+  Example _13 : ptr := l .[ Tint ! 5 ]. (* l[[5]] (when [l] is an `int *`) *)
   Example _14 : ptr := l .[ Tuchar ! 5 ]. (* l[[5]] (when [l] is an `unsigned char *`) *)
 
 
   (** since these are locations, we can use them to position representation
       predicates *)
   Example _15 : mpred :=
-    l .[ T_int ! 5 ] |-> R.
+    l .[ Tint ! 5 ] |-> R.
 
   (** similarly, they can be used with [offset]s and [Rep]s *)
-  Example _16 : Rep := .[ T_int ! 3 ] |-> R.
-  Example _17 : Rep := o .[ T_int ! -20 ] |-> R.
+  Example _16 : Rep := .[ Tint ! 3 ] |-> R.
+  Example _17 : Rep := o .[ Tint ! -20 ] |-> R.
 
   (** paths can be chained arbitrarily *)
-  Example _20 := l |-> _field f .[ T_int ! 0 ] |-> R.
+  Example _20 := l |-> _field f .[ Tint ! 0 ] |-> R.
 
-  Example _21 := l .[ T_int ! 0 ] .[ T_int ! 3 ] |-> R.
+  Example _21 := l .[ Tint ! 0 ] .[ Tint ! 3 ] |-> R.
 
-  Example _22 := l ., f .[ T_int ! 0 ] ., f |-> R.
+  Example _22 := l ., f .[ Tint ! 0 ] ., f |-> R.
 
-  Example _23 := l ., f .[ T_int ! 1 ] .[ T_int ! 0 ] ., f |-> R.
+  Example _23 := l ., f .[ Tint ! 1 ] .[ Tint ! 0 ] ., f |-> R.
 
-  Example _24 := p ., f .[ T_int ! 1 ] .[ T_int ! 0 ] ., f |-> R.
+  Example _24 := p ., f .[ Tint ! 1 ] .[ Tint ! 0 ] ., f |-> R.
 
-  Example _25 := o ., f .[ T_int ! 1 ] .[ T_int ! 0 ] ., f |-> R.
+  Example _25 := o ., f .[ Tint ! 1 ] .[ Tint ! 0 ] ., f |-> R.
 
-  Example _26 := o ., f .[ T_int ! 1 ] .[ T_int ! 0 ] ., f |-> R.
+  Example _26 := o ., f .[ Tint ! 1 ] .[ Tint ! 0 ] ., f |-> R.
 
-  Example _27 := .[ T_int ! 1 ] |-> R.
+  Example _27 := .[ Tint ! 1 ] |-> R.
 
-  Example _28 := _field f .[ T_int ! 1 ] |-> R.
+  Example _28 := _field f .[ Tint ! 1 ] |-> R.
 
-  Example _29 := p .[ T_int ! 1 ] |-> R.
+  Example _29 := p .[ Tint ! 1 ] |-> R.
 
-  Example _30 := _eqv v .[ T_int ! 1 ] |-> R.
+  Example _30 := _eqv v .[ Tint ! 1 ] |-> R.
 
 End with_env.
