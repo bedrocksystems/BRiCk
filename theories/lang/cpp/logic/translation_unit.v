@@ -54,17 +54,9 @@ Section with_cpp.
         end.
 
   #[global] Instance denoteSymbol_persistent {n o} : Persistent (denoteSymbol n o).
-  Proof using .
-    rewrite /denoteSymbol; destruct o; simpl; red.
-    - iIntros "#H"; iModIntro; iFrame "#".
-    - iIntros "#H"; iModIntro; iFrame "#".
-    - iIntros "#H"; iModIntro; iFrame "#".
-    - iIntros "#H"; iModIntro; iFrame "#".
-    - iIntros "#H"; iModIntro; iFrame "#".
-  Qed.
+  Proof. rewrite /denoteSymbol; repeat case_match; apply _. Qed.
 
-  #[global] Instance denoteSymbol_affine {n o} : Affine (denoteSymbol n o).
-  Proof using . refine _. Qed.
+  #[global] Instance denoteSymbol_affine {n o} : Affine (denoteSymbol n o) := _.
 
   Definition initSymbol (n : obj_name) (o : ObjValue) : mpred :=
     _at (_global n)
