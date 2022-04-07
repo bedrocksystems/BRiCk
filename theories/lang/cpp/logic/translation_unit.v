@@ -34,7 +34,7 @@ Section with_cpp.
           (* no need for [erase_qualifiers], we only check the head *)
           match drop_qualifiers t with
           | Tarray _ 0 =>
-            (* an empty array type? *)
+            (* TODO: maybe arrays of unknown size should also use [validR]? *)
             validR
           | _ =>
             svalidR
