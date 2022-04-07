@@ -397,9 +397,7 @@ Notation Tuchar  := Tu8 (only parsing).
 Notation Tushort := (Tnum short_bits Unsigned) (only parsing).
 Notation Tshort := (Tnum short_bits Signed) (only parsing).
 
-(** XXX This is the odd-name out, but [Tnum] is taken. *)
-(* #[deprecated(since="2022-04-1", note="use [Ti32]")] *)
-Notation T_int := (Tnum int_bits Signed) (only parsing).
+Notation Tint := (Tnum int_bits Signed) (only parsing).
 Notation Tuint := (Tnum int_bits Unsigned) (only parsing).
 
 Notation Tulong := (Tnum long_bits Unsigned) (only parsing).
@@ -407,3 +405,7 @@ Notation Tlong := (Tnum long_bits Signed) (only parsing).
 
 Notation Tulonglong := (Tnum long_long_bits Unsigned) (only parsing).
 Notation Tlonglong := (Tnum long_long_bits Signed) (only parsing).
+
+(** XXX This is the odd-name out, but [Tnum] is taken. *)
+(* #[deprecated(since="2022-04-1", note="use [Ti32]")] *)
+Notation T_int := Tint (only parsing).
