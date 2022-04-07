@@ -16,6 +16,7 @@ Require Import bedrock.prelude.base.
 From bedrock.lang Require Import bi.prelude bi.only_provable.
 From iris.bi Require Import monpred.
 From iris.proofmode Require Import proofmode.
+From iris.bi Require Import laterable.
 
 (* Disable [BiAffine uPred] *)
 #[export] Remove Hints uPred_affine : typeclass_instances.
@@ -26,6 +27,7 @@ This causes further incompleteness if other affine logics are relevant.
 *)
 #[export] Remove Hints monPred_bi_affine : typeclass_instances.
 #[export] Remove Hints absorbing_bi : typeclass_instances.
+#[export] Remove Hints persistent_laterable : typeclass_instances.
 
 (* Potentially useful to exploit [siProp_affine]. *)
 Module enable_absorbing_bi.
@@ -55,6 +57,10 @@ Section with_later_emp.
   #[local] Lemma affine_later_with_later_emp {P : PROP} `{!Affine P} :
     Affine (▷ P).
   Proof. intros. by rewrite /Affine (affine P) (affine (▷ emp)). Qed.
+
+  #[local] Lemma persistent_affine_laterable (P : PROP) :
+    Persistent P → Affine P → Laterable P.
+  Proof. intros. apply /intuitionistic_laterable /timeless_emp_with_later_emp. Qed.
 End with_later_emp.
 
 (* Here, we assume [affinely_sep] as reasonable,
@@ -79,29 +85,31 @@ All lemmas use suffix [_uPred].
 
 Section uPred_with_later_emp.
   Context (M : ucmra).
+  Implicit Type (P : uPredI M).
 
   Definition later_emp_uPred := @bi.later_emp _ (uPred_affine M).
 
-  (* TODO: switch to [#[export] Instance] when Coq supports it. *)
-  #[local] Instance timeless_emp_uPred : Timeless (PROP := uPredI M) emp.
+  #[export] Instance timeless_emp_uPred : Timeless (PROP := uPredI M) emp.
   Proof. apply timeless_emp_with_later_emp, later_emp_uPred. Qed.
 
-  #[local] Instance affine_later_emp_uPred : Affine (PROP := uPredI M) (▷ emp).
+  #[export] Instance affine_later_emp_uPred : Affine (PROP := uPredI M) (▷ emp).
   Proof. apply affine_later_emp_with_later_emp, later_emp_uPred. Qed.
 
-  #[local] Instance affine_later_uPred (P : uPredI M) :
+  #[export] Instance affine_later_uPred P :
     Affine P → Affine (▷ P).
   Proof. apply affine_later_with_later_emp, later_emp_uPred. Qed.
-End uPred_with_later_emp.
 
-#[export] Hint Resolve timeless_emp_uPred affine_later_emp_uPred affine_later_uPred : typeclass_instances.
+  #[export] Instance persistent_affine_laterable_upred P :
+    Persistent P → Affine P → Laterable P.
+  Proof. apply persistent_affine_laterable, later_emp_uPred. Qed.
+End uPred_with_later_emp.
 
 (** *** Other instances that we derive from affinity but seem safe. *)
 Section uPred.
   Context (M : ucmra).
   Definition affinely_sep_uPred := @affinely_sep _ (@bi_affine_positive _ (uPred_affine M)).
 
-  #[local] Instance bi_positive_uPred : BiPositive (uPredI M).
+  #[export] Instance bi_positive_uPred : BiPositive (uPredI M).
   Proof. apply bi_positive_with_affinely_sep, affinely_sep_uPred. Qed.
 
   (*
@@ -109,33 +117,36 @@ Section uPred.
   [ (∀ x : A, [| φ x |]) ⊢@{PROP} <affine> (∀ x : A, [| φ x |]) ]
   so it seems related to [affinely_sep].
   *)
-  #[local] Instance bi_emp_forall_only_provable_uPred (M : ucmra) : BiEmpForallOnlyProvable (uPredI M) :=
+  #[export] Instance bi_emp_forall_only_provable_uPred (M : ucmra) : BiEmpForallOnlyProvable (uPredI M) :=
     bi_affine_emp_forall_only_provable (uPred_affine M).
 End uPred.
-
-#[export] Hint Resolve bi_positive_uPred bi_emp_forall_only_provable_uPred : typeclass_instances.
 
 (** *** Lift over [monPred] instances declared above. *)
 Section monPred_lift.
   Context (PROP : bi).
   Context (I : biIndex).
   Local Notation monPredI := (monPredI I PROP).
+  Implicit Type (P : monPredI).
 
-  (* TODO: switch to [#[export] Instance] when Coq supports it. *)
-  #[local] Instance timeless_emp_monPred_lift (HT : Timeless (PROP := PROP) emp) :
+  #[export] Instance timeless_emp_monPred_lift (HT : Timeless (PROP := PROP) emp) :
     Timeless (PROP := monPredI) emp.
   Proof. constructor=> i. rewrite monPred_at_later monPred_at_except_0 monPred_at_emp. exact HT. Qed.
 
-  #[local] Instance affine_later_emp_monPred_lift (HA : Affine (PROP := PROP) (▷ emp)) :
+  #[export] Instance affine_later_emp_monPred_lift (HA : Affine (PROP := PROP) (▷ emp)) :
     Affine (PROP := monPredI) (▷ emp).
   Proof. constructor=> i. rewrite monPred_at_later monPred_at_emp. exact HA. Qed.
 
-  #[local] Instance affine_later_monPred_lift (P : monPredI)
+  #[export] Instance affine_later_monPred_lift P
     (HA : ∀ P : PROP, Affine P → Affine (▷ P)) :
     Affine P → Affine (▷ P).
-  Proof. intros AP. constructor=> i. rewrite monPred_at_later monPred_at_emp. apply HA, monPred_at_affine, AP. Qed.
+  Proof.
+    intros AP. constructor=> i. rewrite monPred_at_later monPred_at_emp.
+    apply HA, monPred_at_affine, AP.
+  Qed.
 
+  #[export] Instance persistent_affine_laterable_monPred_lift P
+    (HT : Timeless (PROP := PROP) emp) :
+    Persistent P → Affine P → Laterable P.
+  Proof. intros. apply: intuitionistic_laterable. Qed.
   (** Liftings for [BiPositive] and [BiEmpForallOnlyProvable] are declared elsewhere. *)
 End monPred_lift.
-
-#[export] Hint Resolve timeless_emp_monPred_lift affine_later_emp_monPred_lift affine_later_monPred_lift : typeclass_instances.

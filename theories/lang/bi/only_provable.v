@@ -98,6 +98,10 @@ Section bi.
   Proof.
     intros. by rewrite /only_provable bi.pure_False// bi.affinely_False.
   Qed.
+  Lemma only_provable_True' : [| True |] ⊣⊢@{PROP} emp.
+  Proof. by rewrite only_provable_True. Qed.
+  Lemma only_provable_False' : [| False |] ⊣⊢@{PROP} False.
+  Proof. rewrite only_provable_False; naive_solver. Qed.
   Lemma only_provable_sep P Q : [|P ∧ Q|] ⊣⊢ [| P |] ∗ [| Q |].
   Proof. apply (anti_symm _); auto. Qed.
   Lemma only_provable_and P Q : [|P ∧ Q|] ⊣⊢ [| P |] ∧ [| Q |].
