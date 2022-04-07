@@ -485,7 +485,7 @@ Definition lookup_spec (this : ptr) : WpSpec_cpp :=
       [| ~exists p, payload_of_address t x p |] **
       (** (Note: This spec allows the implementation to change the [out] parameter
        arbitrarily in the [error] case.) *)
-      out |-> anyR T_int 1 **
+      out |-> anyR Tint 1 **
       this |-> Entry_bstR q t.
 
 End with_Sigma.
