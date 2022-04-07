@@ -276,6 +276,13 @@ Section bi.
   Proof. iDestruct 1 as "[]". Qed.
   Global Instance observe_2_from_false_2 Q P : Observe2 Q P False.
   Proof. iDestruct 2 as "[]". Qed.
+
+  Global Instance observe_intuitionistically Q P :
+    Observe Q P → Observe Q (□ P).
+  Proof. intros. iIntros "#P". iApply (observe with "P"). Qed.
+  Global Instance observe_2_intuitionistically Q P1 P2 :
+    Observe2 Q P1 P2 → Observe2 Q (□ P1) (□ P2).
+  Proof. intros. iIntros "#P1 #P2". iApply (observe_2 with "P1 P2"). Qed.
 End bi.
 
 Section monpred.
