@@ -896,6 +896,36 @@ Section FromToBytes.
       forall (cnt: nat) endianness sgn,
         _Z_to_bytes cnt endianness sgn 0%Z = repeat 0%N cnt.
     Proof. move=> *; rewrite _Z_to_bytes_eq; apply _Z_to_bytes_def_0_value. Qed.
+
+    Lemma _Z_to_bytes_unsigned_le_range cnt v :
+      Forall (λ v : N, (v < 256)%N) (_Z_to_bytes_unsigned_le cnt v).
+    Proof.
+      rewrite/_Z_to_bytes_unsigned_le/_Z_to_bytes_unsigned_le'.
+      rewrite Forall_map.
+      apply: Forall_true.
+      move => x.
+      move: (_get_byte_bound v x).
+      cbn.
+      lia.
+    Qed.
+
+    Lemma _Z_to_bytes_le_range z cnt sign :
+      Forall (λ v : N, v < 256)%N (_Z_to_bytes_le cnt sign z).
+    Proof.
+      rewrite/_Z_to_bytes_le.
+      move: sign => []; exact: _Z_to_bytes_unsigned_le_range.
+    Qed.
+
+    Lemma _Z_to_bytes_range z cnt endianness sign:
+      Forall (λ v : N, v < 256)%N (_Z_to_bytes cnt endianness sign z).
+    Proof.
+      rewrite _Z_to_bytes_eq/_Z_to_bytes_def.
+      move: endianness => [].
+      { exact: _Z_to_bytes_le_range. }
+      apply: Forall_rev.
+      exact: _Z_to_bytes_le_range.
+    Qed.
+
   End ToBytesFacts_external.
 
   Section FromBytes_external.
