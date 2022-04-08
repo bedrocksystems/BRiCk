@@ -142,7 +142,7 @@ for C and Ramananandro for C++. For instance:
 - if pointer `p` points to a `struct` instance, then pointer `p ., _field field`
   points to the field identified by `field`.
 - if pointer `p` points to an array of 10 integers (hence, also to its first element),
-  then pointer `p ., _sub T_int 1` points to the second element.
+  then pointer `p ., _sub Tint 1` points to the second element.
 
 Above, `p ,. o` represents the pointer resulting from applying the *pointer offset* `o`
 to the pointer `p`, and is a notation for `_offset_ptr p o`.
