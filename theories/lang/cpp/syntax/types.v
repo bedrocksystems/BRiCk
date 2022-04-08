@@ -405,6 +405,3 @@ Notation Tlong := (Tnum long_bits Signed) (only parsing).
 
 Notation Tulonglong := (Tnum long_long_bits Unsigned) (only parsing).
 Notation Tlonglong := (Tnum long_long_bits Signed) (only parsing).
-
-#[deprecated(since="2022-04-1", note="use [Tint]")]
-Notation T_int := Tint (only parsing).
