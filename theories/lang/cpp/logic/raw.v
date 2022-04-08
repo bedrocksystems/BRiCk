@@ -80,7 +80,8 @@ Section with_Σ.
         (* JH: TODO: Determine what new axioms we should add here. *)
         Axiom raw_byte_of_int_eq : forall sz x rs,
             raw_bytes_of_val σ (Tnum sz Unsigned) (Vint x) rs <->
-            (exists l, decodes_uint l x /\ raw_int_byte <$> l = rs /\ lengthN l = bytesN sz).
+            (exists l, decodes_uint l x /\ raw_int_byte <$> l = rs /\
+                    length l = bytesNat sz).
 
         (** TODO: determine whether this is correct with respect to pointers *)
         Lemma decode_uint_primR : forall q sz (x : Z),
@@ -90,7 +91,7 @@ Section with_Σ.
             type_ptrR (Tnum sz Unsigned) **
             [| decodes_uint l x |] **
             [| raw_int_byte <$> l = rs |] **
-            [| lengthN l = bytesN sz |].
+            [| length l = bytesNat sz |].
         Proof.
           move => q sz x.
           rewrite primR_to_rawsR. setoid_rewrite raw_byte_of_int_eq.
