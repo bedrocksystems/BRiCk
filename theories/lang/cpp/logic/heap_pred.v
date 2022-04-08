@@ -278,35 +278,35 @@ Section with_cpp.
   #[global] Instance type_ptrR_svalidR_observe σ t : Observe svalidR (type_ptrR t).
   Proof. rewrite type_ptrR_svalidR; red; iIntros "#$". Qed.
 
-  Definition is_null_def : Rep :=
+  Definition nullR_def : Rep :=
     as_Rep (fun addr => [| addr = nullptr |]).
-  Definition is_null_aux : seal (@is_null_def). Proof. by eexists. Qed.
-  Definition is_null := is_null_aux.(unseal).
-  Definition is_null_eq : @is_null = _ := is_null_aux.(seal_eq).
+  Definition nullR_aux : seal (@nullR_def). Proof. by eexists. Qed.
+  Definition nullR := nullR_aux.(unseal).
+  Definition nullR_eq : @nullR = _ := nullR_aux.(seal_eq).
 
-  #[global] Instance is_null_persistent : Persistent is_null.
-  Proof. rewrite is_null_eq. apply _. Qed.
-  #[global] Instance is_null_affine : Affine is_null.
-  Proof. rewrite is_null_eq. apply _. Qed.
-  #[global] Instance is_null_timeless : Timeless is_null.
-  Proof. rewrite is_null_eq. apply _. Qed.
-  #[global] Instance is_null_fractional : Fractional (λ _, is_null).
+  #[global] Instance nullR_persistent : Persistent nullR.
+  Proof. rewrite nullR_eq. apply _. Qed.
+  #[global] Instance nullR_affine : Affine nullR.
+  Proof. rewrite nullR_eq. apply _. Qed.
+  #[global] Instance nullR_timeless : Timeless nullR.
+  Proof. rewrite nullR_eq. apply _. Qed.
+  #[global] Instance nullR_fractional : Fractional (λ _, nullR).
   Proof. apply _. Qed.
-  #[global] Instance is_null_as_fractional q : AsFractional is_null (λ _, is_null) q.
+  #[global] Instance nullR_as_fractional q : AsFractional nullR (λ _, nullR) q.
   Proof. exact: Build_AsFractional. Qed.
 
-  Definition is_nonnull_def : Rep :=
+  Definition nonnullR_def : Rep :=
     as_Rep (fun addr => [| addr <> nullptr |]).
-  Definition is_nonnull_aux : seal (@is_nonnull_def). Proof. by eexists. Qed.
-  Definition is_nonnull := is_nonnull_aux.(unseal).
-  Definition is_nonnull_eq : @is_nonnull = _ := is_nonnull_aux.(seal_eq).
+  Definition nonnullR_aux : seal (@nonnullR_def). Proof. by eexists. Qed.
+  Definition nonnullR := nonnullR_aux.(unseal).
+  Definition nonnullR_eq : @nonnullR = _ := nonnullR_aux.(seal_eq).
 
-  #[global] Instance is_nonnull_persistent : Persistent is_nonnull.
-  Proof. rewrite is_nonnull_eq. apply _. Qed.
-  #[global] Instance is_nonnull_affine : Affine is_nonnull.
-  Proof. rewrite is_nonnull_eq. apply _. Qed.
-  #[global] Instance is_nonnull_timeless : Timeless is_nonnull.
-  Proof. rewrite is_nonnull_eq. apply _. Qed.
+  #[global] Instance nonnullR_persistent : Persistent nonnullR.
+  Proof. rewrite nonnullR_eq. apply _. Qed.
+  #[global] Instance nonnullR_affine : Affine nonnullR.
+  Proof. rewrite nonnullR_eq. apply _. Qed.
+  #[global] Instance nonnullR_timeless : Timeless nonnullR.
+  Proof. rewrite nonnullR_eq. apply _. Qed.
 
   Definition alignedR_def (al : N) : Rep := as_Rep (λ p, [| aligned_ptr al p |]).
   Definition alignedR_aux : seal (@alignedR_def). Proof. by eexists. Qed.
@@ -336,16 +336,16 @@ Section with_cpp.
     alignedR m ⊢ alignedR n.
   Proof. by move->. Qed.
 
-  Lemma null_nonnull (R : Rep) : is_null |-- is_nonnull -* R.
+  Lemma null_nonnull (R : Rep) : nullR |-- nonnullR -* R.
   Proof.
-    rewrite is_null_eq /is_null_def is_nonnull_eq /is_nonnull_def.
+    rewrite nullR_eq /nullR_def nonnullR_eq /nonnullR_def.
     constructor=>p /=. rewrite monPred_at_wand/=.
     by iIntros "->" (? <-%ptr_rel_elim) "%".
   Qed.
 
-  Lemma null_validR : is_null |-- validR.
+  Lemma null_validR : nullR |-- validR.
   Proof.
-    rewrite is_null_eq /is_null_def validR_eq /validR_def.
+    rewrite nullR_eq /nullR_def validR_eq /validR_def.
     constructor => p /=. iIntros "->". iApply valid_ptr_nullptr.
   Qed.
 
@@ -453,7 +453,7 @@ Section with_cpp.
   Qed.
 
   #[global]
-  Instance null_valid_observe : Observe validR is_null.
+  Instance null_valid_observe : Observe validR nullR.
   Proof. rewrite -null_validR. refine _. Qed.
 
   Lemma off_validR o
@@ -474,24 +474,24 @@ Section with_cpp.
     _offsetR (_derived base derived) validR |-- validR.
   Proof. apply off_validR => p. apply _valid_ptr_derived. Qed.
 
-  (** Observation of [is_nonnull] *)
+  (** Observation of [nonnullR] *)
   #[global]
   Instance primR_nonnull_observe {σ} {ty q v} :
-    Observe is_nonnull (primR ty q v).
+    Observe nonnullR (primR ty q v).
   Proof.
-    rewrite is_nonnull_eq primR_eq. apply monPred_observe=>p /=. apply _.
+    rewrite nonnullR_eq primR_eq. apply monPred_observe=>p /=. apply _.
   Qed.
   #[global]
   Instance uninitR_nonnull_observe {σ} {ty q} :
-    Observe is_nonnull (uninitR ty q).
+    Observe nonnullR (uninitR ty q).
   Proof.
-    rewrite is_nonnull_eq uninitR_eq. apply monPred_observe=>p /=. apply _.
+    rewrite nonnullR_eq uninitR_eq. apply monPred_observe=>p /=. apply _.
   Qed.
-  Axiom anyR_nonnull_observe : ∀ {σ} {ty q}, Observe is_nonnull (anyR ty q).
+  Axiom anyR_nonnull_observe : ∀ {σ} {ty q}, Observe nonnullR (anyR ty q).
   #[global] Existing Instance anyR_nonnull_observe.
 
   #[global] Instance blockR_nonnull {σ : genv} n q :
-    TCLt (0 ?= n)%N -> Observe is_nonnull (blockR n q).
+    TCLt (0 ?= n)%N -> Observe nonnullR (blockR n q).
   Proof.
     rewrite TCLt_N blockR_eq/blockR_def.
     destruct (N.to_nat n) eqn:Hn; [ lia | ] => {Hn} /=.
@@ -514,7 +514,7 @@ Section with_cpp.
 
   #[global] Instance tblockR_nonnull {σ} n ty q :
     SizeOf ty n -> TCLt (0 ?= n)%N ->
-    Observe is_nonnull (tblockR ty q).
+    Observe nonnullR (tblockR ty q).
   Proof.
     intros Heq ?. rewrite/tblockR {}Heq.
     case_match; by apply _.
@@ -527,12 +527,26 @@ Section with_cpp.
   Qed.
 
   #[global] Instance type_ptrR_observe_nonnull {σ} ty :
-    Observe is_nonnull (type_ptrR ty).
+    Observe nonnullR (type_ptrR ty).
   Proof.
     apply monPred_observe=>p /=.
-    rewrite monPred_at_type_ptrR is_nonnull_eq /=. refine _.
+    rewrite monPred_at_type_ptrR nonnullR_eq /=. refine _.
   Qed.
 End with_cpp.
 
 #[global] Typeclasses Opaque identityR.
 #[global] Typeclasses Opaque type_ptrR validR svalidR alignedR.
+
+#[deprecated(note="since 2022-04-07; use `nonnullR` instead")]
+Notation is_nonnull := nonnullR.
+#[deprecated(note="since 2022-04-07; use `nonnullR_eq` instead")]
+Notation is_nonnull_eq := nonnullR_eq.
+#[deprecated(note="since 2022-04-07; use `nonnullR_def` instead")]
+Notation is_nonnull_def := nonnullR_def.
+
+#[deprecated(note="since 2022-04-07; use `nullR` instead")]
+Notation is_null := nullR.
+#[deprecated(note="since 2022-04-07; use `nullR_eq` instead")]
+Notation is_null_eq := nullR_eq.
+#[deprecated(note="since 2022-04-07; use `nullR_def` instead")]
+Notation is_null_def := nullR_def.
