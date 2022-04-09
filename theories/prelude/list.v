@@ -152,15 +152,6 @@ Section list.
     case_decide; naive_solver.
   Qed.
 
-  Lemma list_fmap_filter {B} P Q (xs : list A) (f : A -> B)
-      `(∀ x, Decision (P x)) `(∀ x, Decision (Q x)) :
-    (∀ x, P x <-> Q (f x)) →
-    f <$> filter P xs = filter Q (f <$> xs).
-  Proof.
-    move=> Heq. elim: xs => [//|x xs IH]; csimpl; rewrite !filter_cons.
-    repeat case_decide; csimpl; rewrite IH; naive_solver.
-  Qed.
-
   (** List variant of
   << map_filter_insert : ...
     filter P (<[i:=x]> m) =
@@ -180,6 +171,16 @@ Section list.
   Proof.
     move=> Hle; rewrite insert_take_drop // delete_take_drop.
     by rewrite !(filter_app, filter_cons, filter_nil); case_decide.
+  Qed.
+
+  (** Properties of [list_fmap] *)
+  Lemma list_fmap_filter {B} P Q xs (f : A -> B)
+      `(∀ x, Decision (P x)) `(∀ x, Decision (Q x)) :
+    (∀ x, P x <-> Q (f x)) →
+    f <$> filter P xs = filter Q (f <$> xs).
+  Proof.
+    move=> Heq. elim: xs => [//|x xs IH]; csimpl; rewrite !filter_cons.
+    repeat case_decide; csimpl; rewrite IH; naive_solver.
   Qed.
 End list.
 
