@@ -215,7 +215,7 @@ Context {A : Type} (R : Qp -> A -> Rep).
 Fixpoint treeR (q : Qp) (t : tree A) : Rep :=
   as_Rep (fun this =>
             match t with
-            | leaf => [| this = nullptr |] (*this |-> is_null*)
+            | leaf => [| this = nullptr |] (*this |-> nullR*)
             | node d l r =>
               Exists (lp : ptr) (rp : ptr),
               lp |-> treeR q l **
