@@ -101,7 +101,7 @@ Proof. by elim: n => [//| n /= ->]. Qed.
 
 Section list.
   Context {A : Type}.
-  Implicit Types l k : list A.
+  Implicit Types (l k xs : list A) (i j : nat).
 
   Lemma fmap_ext_in {B} (f g : A → B) l :
     (∀ a : A, a ∈ l → f a = g a) → f <$> l = g <$> l.
@@ -137,14 +137,14 @@ Section list.
   Lemma disjoint_cons_r l x k : l ## x :: k <-> x ∉ l /\ l ## k.
   Proof. set_solver+. Qed.
 
-  Lemma list_alter_insert l (i : nat) f :
+  Lemma list_alter_insert l i f :
     alter f i l = if l !! i is Some x then <[i:=f x]> l else l.
   Proof.
     elim: l i => [//|x l IHl] [//|i]; csimpl.
     rewrite IHl. by case_match.
   Qed.
 
-  Lemma list_filter_empty_iff (xs : list A) `(∀ x, Decision (P x)) :
+  Lemma list_filter_empty_iff xs `(∀ x, Decision (P x)) :
     filter P xs = [] ↔ List.Forall (λ x, ¬P x) xs.
   Proof.
     elim: xs => [//|x xs IH] /=.
@@ -170,7 +170,7 @@ Section list.
   In the [P x] branch, we cannot reuse [<[i:=x]> (filter P m)]:
   [x] must be inserted not at position [i] but [length (filter P (take i xs))].
   Instead, we use an alternative version. *)
-  Lemma list_filter_insert (i : nat) x (xs : list A) P `(∀ x, Decision (P x)) :
+  Lemma list_filter_insert i x xs P `(∀ x, Decision (P x)) :
     i < length xs →
     filter P (<[i:=x]> xs) =
       if decide (P x) then
