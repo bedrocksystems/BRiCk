@@ -26,6 +26,8 @@ Proof. by rewrite Is_true_is_true. Qed.
 
 #[global] Instance orb_comm' : Comm (=) orb := orb_comm.
 #[global] Instance orb_assoc' : Assoc (=) orb := orb_assoc.
+#[global] Instance andb_comm' : Comm (=) andb := andb_comm.
+#[global] Instance andb_assoc' : Assoc (=) andb := andb_assoc.
 
 Section implb.
   Implicit Types a b : bool.
