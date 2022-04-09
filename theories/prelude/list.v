@@ -169,6 +169,27 @@ Section list.
     move=> Heq. elim: xs => [//|x xs IH]; csimpl; rewrite !filter_cons.
     repeat case_decide; csimpl; rewrite IH; naive_solver.
   Qed.
+
+  (** List variant of
+  << map_filter_insert : ...
+    filter P (<[i:=x]> m) =
+      if decide (P (i, x))
+        then <[i:=x]> (filter P m)
+        else filter P (delete i m) ].
+  In the [P x] branch, we cannot reuse [<[i:=x]> (filter P m)]:
+  [x] must be inserted not at position [i] but [length (filter P (take i xs))].
+  Instead, we use an alternative version. *)
+  Lemma list_filter_insert (i : nat) x (xs : list A) P `(∀ x, Decision (P x)) :
+    i < length xs →
+    filter P (<[i:=x]> xs) =
+      if decide (P x) then
+        filter P (take i xs) ++ [x] ++ filter P (drop (S i) xs)
+      else
+        filter P (delete i xs).
+  Proof.
+    move=> Hle; rewrite insert_take_drop // delete_take_drop.
+    by rewrite !(filter_app, filter_cons, filter_nil); case_decide.
+  Qed.
 End list.
 
 #[global] Hint Resolve NoDup_nil_2 | 0 : core.
