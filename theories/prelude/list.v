@@ -137,15 +137,6 @@ Section list.
   Lemma disjoint_cons_r l x k : l ## x :: k <-> x ∉ l /\ l ## k.
   Proof. set_solver+. Qed.
 
-  #[local] Lemma not_elem_of_list_alt x l : x ∉ l <-> List.Forall (x ≠.) l.
-  Proof. rewrite Forall_forall. set_solver. Qed.
-  Lemma not_elem_of_list `{EqDecision A} x l : ¬ (x ∉ l) ↔ x ∈ l.
-  Proof.
-    split; last set_solver. rewrite not_elem_of_list_alt.
-    move/not_Forall_Exists=>/Exists_exists [] y [] Hy /=.
-    by destruct (decide (x = y)); simplify_eq.
-  Qed.
-
   Lemma list_alter_insert l (i : nat) f :
     alter f i l = if l !! i is Some x then <[i:=f x]> l else l.
   Proof.
@@ -195,6 +186,11 @@ End list.
 #[global] Hint Resolve NoDup_nil_2 | 0 : core.
 #[global] Hint Resolve NoDup_cons_2 : core.
 #[global] Hint Resolve not_elem_of_nil | 0 : core.
+
+Lemma _not_elem_of_list `{EqDecision A} x (l : list A) : ¬ (x ∉ l) ↔ x ∈ l.
+Proof. exact: dec_stable_iff. Qed.
+#[deprecated(note="Use [dec_stable_iff]")]
+Notation not_elem_of_list := _not_elem_of_list.
 
 Section lists.
   Context {A B : Type}.

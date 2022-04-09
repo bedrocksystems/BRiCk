@@ -17,8 +17,8 @@ Section finset.
   Context `{FinSet A C}.
   Implicit Types X Y : C.
 
-  Lemma set_not_elem_of x X `{Hdec : Decision (x ∈ X)} : ¬ (x ∉ X) ↔ x ∈ X.
-  Proof. destruct Hdec; tauto. Qed.
+  Lemma set_not_elem_of x X `{Decision (x ∈ X)} : ¬ (x ∉ X) ↔ x ∈ X.
+  Proof. apply dec_stable_iff. Qed.
 
   Lemma set_not_Forall (P : A -> Prop) `{Hdec : !∀ x, Decision (P x)} X :
     ¬ set_Forall P X <-> exists x, x ∈ X /\ ¬ P x.

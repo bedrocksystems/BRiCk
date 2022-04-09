@@ -79,6 +79,9 @@ Proof. intros HR x y ?. exact: HR. Qed.
 Lemma negb_bool_decide `{Hdec : Decision P} : negb (bool_decide P) = bool_decide (not P).
 Proof. by case: Hdec. Qed.
 
+Lemma dec_stable_iff `{Decision P} : ¬ ¬ P ↔ P.
+Proof. split. apply dec_stable. tauto. Qed.
+
 (* Very incomplete set of monadic liftings. *)
 Definition liftM2 `{MRet M, MBind M} `(f : A → B → C) : M A → M B → M C :=
   λ mx my,
