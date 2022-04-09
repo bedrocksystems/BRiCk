@@ -538,15 +538,15 @@ End with_cpp.
 #[global] Typeclasses Opaque type_ptrR validR svalidR alignedR.
 
 #[deprecated(note="since 2022-04-07; use `nonnullR` instead")]
-Notation is_nonnull := nonnullR.
+Notation is_nonnull := nonnullR (only parsing).
 #[deprecated(note="since 2022-04-07; use `nonnullR_eq` instead")]
-Notation is_nonnull_eq := nonnullR_eq.
+Notation is_nonnull_eq := nonnullR_eq (only parsing).
 #[deprecated(note="since 2022-04-07; use `nonnullR_def` instead")]
-Notation is_nonnull_def := nonnullR_def.
+Notation is_nonnull_def := nonnullR_def (only parsing).
 
 #[deprecated(note="since 2022-04-07; use `nullR` instead")]
-Notation is_null := nullR.
+Notation is_null := nullR (only parsing).
 #[deprecated(note="since 2022-04-07; use `nullR_eq` instead")]
-Notation is_null_eq := nullR_eq.
+Notation is_null_eq := nullR_eq (only parsing).
 #[deprecated(note="since 2022-04-07; use `nullR_def` instead")]
-Notation is_null_def := nullR_def.
+Notation is_null_def := nullR_def (only parsing).
