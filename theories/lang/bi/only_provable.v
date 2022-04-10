@@ -55,6 +55,9 @@ Section bi.
   Lemma only_provable_equiv P : [| P |] ⊣⊢ emp ∧ ⌜ P ⌝.
   Proof. done. Qed.
 
+  Lemma only_provable_pure φ : [| φ |] ⊢@{PROP} ⌜φ⌝.
+  Proof. rewrite /only_provable. by rewrite bi.affinely_elim. Qed.
+
   Global Instance only_provable_ne n :
     Proper (iff ==> dist n) (@only_provable PROP).
   Proof. solve_proper. Qed.
@@ -85,9 +88,9 @@ Section bi.
   Lemma only_provable_intro P p `{!Affine p} : P → p ⊢ [| P |].
   Proof. intros ?. apply: bi.affinely_intro. exact: bi.pure_intro. Qed.
   Lemma only_provable_elim' P p : (P → True ⊢ p) → [| P |] ⊢ p.
-  Proof. rewrite/only_provable bi.affinely_elim. exact: bi.pure_elim'. Qed.
+  Proof. rewrite only_provable_pure. apply bi.pure_elim'. Qed.
   Lemma only_provable_elim_l P q r : (P → q ⊢ r) → [| P |] ∧ q ⊢ r.
-  Proof. rewrite /only_provable bi.affinely_elim. apply bi.pure_elim_l. Qed.
+  Proof. rewrite only_provable_pure. apply bi.pure_elim_l. Qed.
   Lemma only_provable_elim_r P q r : (P → q ⊢ r) → q ∧ [| P |] ⊢ r.
   Proof. rewrite comm. apply only_provable_elim_l. Qed.
   Lemma only_provable_emp : [| True |] ⊣⊢ emp.
@@ -154,7 +157,7 @@ Section bi.
   Qed.
   Lemma only_provable_wand_forall_2 P q `{!Absorbing q} :
     (∀ _ : P, q) ⊢ ([| P |] -∗ q).
-  Proof. by rewrite /only_provable -bi.pure_wand_forall// bi.affinely_elim. Qed.
+  Proof. rewrite only_provable_pure. by rewrite -bi.pure_wand_forall. Qed.
   Lemma only_provable_wand_forall P q `{!Absorbing q} :
     ([| P |] -∗ q) ⊣⊢ (∀ _ : P, q).
   Proof.
@@ -228,7 +231,7 @@ Section proofmode.
    * rather than [only_provable].
    *)
   Global Instance into_pure_only_provable P : @IntoPure PROP [| P |] P.
-  Proof. by rewrite/IntoPure/only_provable bi.affinely_elim. Qed.
+  Proof. apply only_provable_pure. Qed.
   Global Instance from_pure_only_provable P : @FromPure PROP true [| P |] P.
   Proof. by rewrite/FromPure/only_provable. Qed.
   Global Instance into_wand_only_provable p (P : Prop) Q :

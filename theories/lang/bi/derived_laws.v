@@ -7,7 +7,7 @@
 
 From iris.bi Require Import bi lib.fractional.
 From iris.proofmode Require Import proofmode.
-From bedrock.lang.bi Require only_provable.
+From bedrock.lang.bi Require Import only_provable.
 
 (**
 Derived BI laws, similarly to iris.bi.derived_laws.
@@ -22,6 +22,14 @@ Export iris.bi.bi.bi.
 
 Section derived_laws.
   Context {PROP : bi}.
+
+  Lemma affinely_pure φ  : <affine> ⌜φ⌝ ⊣⊢@{PROP} [| φ |].
+  Proof. done. Qed.
+
+  Lemma intuitionistically_pure φ  : □ ⌜φ⌝ ⊣⊢@{PROP} [| φ |].
+  Proof.
+    by rewrite /bi_intuitionistically bi.persistently_pure affinely_pure.
+  Qed.
 
   Lemma exist_pure_eq_sep {A P} v:
     P v ⊢@{PROP} ∃ x : A, ⌜ x = v ⌝ ∗ P x.
@@ -192,7 +200,6 @@ Section derived_laws.
 End derived_laws.
 
 Section only_provable_derived_laws.
-  Import only_provable.
   Context {PROP : bi}.
 
   Lemma exist_only_provable_eq_sep {A P} v:
