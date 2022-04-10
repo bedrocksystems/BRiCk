@@ -61,13 +61,17 @@
 
 <div class="doc">
 representations are predicates over a location, they should be used to
-<a id="lab90"></a><h1 class="section">assert properties of the heap</h1>
+<a id="lab91"></a><h1 class="section">assert properties of the heap</h1>
 
   
 </div>
 <div class="code">
 <span class="id" title="keyword">Canonical</span> <span class="id" title="keyword">Structure</span> <a id="ptr_bi_index" class="idref" href="#ptr_bi_index"><span class="id" title="definition">ptr_bi_index</span></a> : <a class="idref" href="https://plv.mpi-sws.org/coqdoc/iris//iris.bi.monpred.html#biIndex"><span class="id" title="record">biIndex</span></a> :=<br/>
 &nbsp;&nbsp;<a class="idref" href="https://plv.mpi-sws.org/coqdoc/iris//iris.bi.monpred.html#BiIndex"><span class="id" title="constructor">BiIndex</span></a> <a class="idref" href="bedrock.lang.cpp.semantics.values.html#PTRS_INTF_AXIOM.ptr"><span class="id" title="axiom">ptr</span></a> <span class="id" title="var">_</span> <a class="idref" href="http://coq.inria.fr/distrib/V8.15.0/stdlib//Coq.Init.Logic.html#eq"><span class="id" title="inductive">eq</span></a> <span class="id" title="var">_</span>.<br/>
+
+<br/>
+#[<span class="id" title="var">global</span>] <span class="id" title="keyword">Instance</span> <a id="ptr_bi_index_discrete" class="idref" href="#ptr_bi_index_discrete"><span class="id" title="instance">ptr_bi_index_discrete</span></a> : <a class="idref" href="bedrock.lang.bi.monpred.html#BiIndexDiscrete"><span class="id" title="class">BiIndexDiscrete</span></a> <a class="idref" href="bedrock.lang.cpp.logic.rep_defs.html#ptr_bi_index"><span class="id" title="definition">ptr_bi_index</span></a>.<br/>
+<span class="id" title="keyword">Proof</span>. <span class="id" title="tactic">by</span> <span class="id" title="tactic">move</span>=&gt;<span class="id" title="var">i</span> <span class="id" title="var">i'</span>. <span class="id" title="keyword">Qed</span>.<br/>
 
 <br/>
 </div>
@@ -125,7 +129,7 @@ The tactic <span class="inlinecode"><span class="id" title="tactic">intros</span
 
 <div class="doc">
 Values
-<a id="lab91"></a><h1 class="section">These `Rep` predicates wrap `ptsto` facts</h1>
+<a id="lab92"></a><h1 class="section">These `Rep` predicates wrap `ptsto` facts</h1>
 
    
 </div>
