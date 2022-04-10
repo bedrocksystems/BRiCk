@@ -6,7 +6,7 @@
  *)
 
 From stdpp Require Export finite.
-From bedrock.prelude Require Import base bool numbers list_numbers gmap list.
+From bedrock.prelude Require Import base bool numbers list_numbers gmap list fin_sets.
 
 #[local] Open Scope N_scope.
 
@@ -113,7 +113,7 @@ Section finite_preimage_set.
   Implicit Types (a : A) (b : B) (f : A → B) (bs : D).
 
   Definition finite_preimage_set (f : A → B) (bs : D) : C :=
-    list_to_set (elements bs ≫= finite_preimage f).
+    set_concat_map (finite_preimage f) bs.
 
   Lemma finite_preimage_set_empty f :
     finite_preimage_set f ∅ ≡ ∅.

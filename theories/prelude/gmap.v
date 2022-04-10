@@ -5,7 +5,7 @@
  *)
 
 From stdpp Require Export gmap mapset.
-From bedrock.prelude Require Import base.
+From bedrock.prelude Require Import base fin_sets.
 
 (* To upstream to Iris: using [mapseq_eq] directly would unfold a TC opaque
 definition and interfere with TC search. *)
@@ -21,3 +21,6 @@ Proof. apply mapset_eq. Qed.
 [dom (C := gset _)].
 *)
 #[global] Notation gdom := (dom (gset _)) (only parsing).
+
+#[global] Notation gset_concat_map :=
+  (set_concat_map (C := gset _) (D := gset _)) (only parsing).
