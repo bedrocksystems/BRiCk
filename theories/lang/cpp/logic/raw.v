@@ -128,11 +128,8 @@ Section with_Σ.
         Proper ((=) ==> (=) ==> (⊢)) (@rawR).
       Proof. by intros ??-> ??->. Qed.
 
-      #[global] Instance rawR_affine q raw
-        : Affine (rawR q raw).
-      Proof. rewrite rawR_eq. apply _. Qed.
-      #[global] Instance rawR_timeless q raw
-        : Timeless (rawR q raw).
+      #[global] Instance rawR_timeless q raw :
+        Timeless (rawR q raw).
       Proof. rewrite rawR_eq. apply _. Qed.
 
       #[global] Instance rawR_fractional raw :
@@ -165,11 +162,8 @@ Section with_Σ.
         Proper ((=) ==> (=) ==> (⊢)) (@rawsR).
       Proof. by intros ??-> ??->. Qed.
 
-      #[global] Instance rawsR_affine q rs
-        : Affine (rawsR q rs).
-      Proof. apply _. Qed.
-      #[global] Instance rawsR_timeless q rs
-        : Timeless (rawsR q rs).
+      #[global] Instance rawsR_timeless q rs :
+        Timeless (rawsR q rs).
       Proof. apply _. Qed.
 
       #[global] Instance rawsR_fractional rs :
