@@ -117,11 +117,10 @@ Section finite_preimage_set.
 
   Lemma finite_preimage_set_empty f :
     finite_preimage_set f ∅ ≡ ∅.
-  Proof. set_solver. Qed.
+  Proof. apply set_concat_map_empty. Qed.
 
   #[global] Instance finite_preimage_set_proper f :
-    Proper (equiv ==> equiv) (finite_preimage_set f).
-  Proof. solve_proper. Qed.
+    Proper (equiv ==> equiv) (finite_preimage_set f) := _.
 
   Lemma elem_of_finite_preimage_set f a bs :
     a ∈ finite_preimage_set f bs ↔ f a ∈ bs.
@@ -135,11 +134,11 @@ Section finite_preimage_set.
   Lemma finite_preimage_set_union f bs1 bs2 :
     finite_preimage_set f (bs1 ∪ bs2) ≡
     finite_preimage_set f bs1 ∪ finite_preimage_set f bs2.
-  Proof. set_solver. Qed.
+  Proof. apply set_concat_map_union. Qed.
 
   Lemma finite_preimage_set_singleton f b :
     finite_preimage_set f {[ b ]} ≡ list_to_set $ finite_preimage f b.
-  Proof. set_solver. Qed.
+  Proof. apply set_concat_map_singleton. Qed.
 
   Lemma finite_preimage_set_inj_singleton `{!Inj eq eq f} a :
     finite_preimage_set f {[ f a ]} ≡ {[ a ]}.
@@ -150,14 +149,14 @@ Section finite_preimage_set.
 
     Lemma finite_preimage_set_empty_L f :
       finite_preimage_set f ∅ = ∅.
-    Proof. unfold_leibniz. apply finite_preimage_set_empty. Qed.
+    Proof. apply set_concat_map_empty_L. Qed.
     Lemma finite_preimage_set_union_L f bs1 bs2 :
       finite_preimage_set f (bs1 ∪ bs2) =
       finite_preimage_set f bs1 ∪ finite_preimage_set f bs2.
-    Proof. unfold_leibniz. apply finite_preimage_set_union. Qed.
+    Proof. apply set_concat_map_union_L. Qed.
     Lemma finite_preimage_set_singleton_L f b :
       finite_preimage_set f {[ b ]} = list_to_set $ finite_preimage f b.
-    Proof. unfold_leibniz. apply finite_preimage_set_singleton. Qed.
+    Proof. apply set_concat_map_singleton_L. Qed.
     Lemma finite_preimage_set_inj_singleton_L `{!Inj eq eq f} a :
       finite_preimage_set f {[ f a ]} = {[ a ]}.
     Proof. unfold_leibniz. apply finite_preimage_set_inj_singleton. Qed.
