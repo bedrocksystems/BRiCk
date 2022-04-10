@@ -156,10 +156,10 @@ Section finite_preimage_set.
       finite_preimage_set f bs1 ∪ finite_preimage_set f bs2.
     Proof. unfold_leibniz. apply finite_preimage_set_union. Qed.
     Lemma finite_preimage_set_singleton_L f b :
-      finite_preimage_set f {[ b ]} ≡ list_to_set $ finite_preimage f b.
+      finite_preimage_set f {[ b ]} = list_to_set $ finite_preimage f b.
     Proof. unfold_leibniz. apply finite_preimage_set_singleton. Qed.
     Lemma finite_preimage_set_inj_singleton_L `{!Inj eq eq f} a :
-      finite_preimage_set f {[ f a ]} ≡ {[ a ]}.
+      finite_preimage_set f {[ f a ]} = {[ a ]}.
     Proof. unfold_leibniz. apply finite_preimage_set_inj_singleton. Qed.
   End finite_preimage_set_leibniz.
 End finite_preimage_set.
