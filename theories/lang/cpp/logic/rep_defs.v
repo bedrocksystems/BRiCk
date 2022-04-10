@@ -19,6 +19,9 @@ Implicit Types (σ resolve : genv) (p : ptr) (o : offset).
 Canonical Structure ptr_bi_index : biIndex :=
   BiIndex ptr _ eq _.
 
+#[global] Instance ptr_bi_index_discrete : BiIndexDiscrete ptr_bi_index.
+Proof. by move=>i i'. Qed.
+
 (** The tactic [intros ->%ptr_rel_elim] is much faster than [intros
     ->] when introducing [p1 ⊑ p2] (when the latter works at all). *)
 Lemma ptr_rel_elim (p1 p2 : ptr) : p1 ⊑ p2 → p1 = p2.
