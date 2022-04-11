@@ -382,7 +382,9 @@ Next Obligation. solve_finite_total. Qed.
 >>
 *)
 Ltac solve_finite_nodup := vm_decide.
-Ltac solve_finite_total := intros []; vm_decide.
+(* Crucially, [case] does not introduce variables: hence [solve_finite_total]
+works even for constructors taking arguments from finite domains. *)
+Ltac solve_finite_total := case; vm_decide.
 
 (* Mixin hierarchy 1: given a Finite instance and a [to_N] function, we can
 create an [of_N] function. This contains [finite_encoded_type] *)
