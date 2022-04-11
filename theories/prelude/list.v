@@ -101,7 +101,7 @@ Proof. by elim: n => [//| n /= ->]. Qed.
 
 Section list.
   Context {A : Type}.
-  Implicit Types l k : list A.
+  Implicit Types (l k xs : list A) (i j : nat).
 
   Lemma fmap_ext_in {B} (f g : A → B) l :
     (∀ a : A, a ∈ l → f a = g a) → f <$> l = g <$> l.
@@ -137,23 +137,14 @@ Section list.
   Lemma disjoint_cons_r l x k : l ## x :: k <-> x ∉ l /\ l ## k.
   Proof. set_solver+. Qed.
 
-  #[local] Lemma not_elem_of_list_alt x l : x ∉ l <-> List.Forall (x ≠.) l.
-  Proof. rewrite Forall_forall. set_solver. Qed.
-  Lemma not_elem_of_list `{EqDecision A} x l : ¬ (x ∉ l) ↔ x ∈ l.
-  Proof.
-    split; last set_solver. rewrite not_elem_of_list_alt.
-    move/not_Forall_Exists=>/Exists_exists [] y [] Hy /=.
-    by destruct (decide (x = y)); simplify_eq.
-  Qed.
-
-  Lemma list_alter_insert l (i : nat) f :
+  Lemma list_alter_insert l i f :
     alter f i l = if l !! i is Some x then <[i:=f x]> l else l.
   Proof.
     elim: l i => [//|x l IHl] [//|i]; csimpl.
     rewrite IHl. by case_match.
   Qed.
 
-  Lemma list_filter_empty_iff (xs : list A) `(∀ x, Decision (P x)) :
+  Lemma list_filter_empty_iff xs `(∀ x, Decision (P x)) :
     filter P xs = [] ↔ List.Forall (λ x, ¬P x) xs.
   Proof.
     elim: xs => [//|x xs IH] /=.
@@ -161,7 +152,29 @@ Section list.
     case_decide; naive_solver.
   Qed.
 
-  Lemma list_fmap_filter {B} P Q (xs : list A) (f : A -> B)
+  (** List variant of
+  << map_filter_insert : ...
+    filter P (<[i:=x]> m) =
+      if decide (P (i, x))
+        then <[i:=x]> (filter P m)
+        else filter P (delete i m) ].
+  In the [P x] branch, we cannot reuse [<[i:=x]> (filter P m)]:
+  [x] must be inserted not at position [i] but [length (filter P (take i xs))].
+  Instead, we use an alternative version. *)
+  Lemma list_filter_insert i x xs P `(∀ x, Decision (P x)) :
+    i < length xs →
+    filter P (<[i:=x]> xs) =
+      if decide (P x) then
+        filter P (take i xs) ++ [x] ++ filter P (drop (S i) xs)
+      else
+        filter P (delete i xs).
+  Proof.
+    move=> Hle; rewrite insert_take_drop // delete_take_drop.
+    by rewrite !(filter_app, filter_cons, filter_nil); case_decide.
+  Qed.
+
+  (** Properties of [list_fmap] *)
+  Lemma list_fmap_filter {B} P Q xs (f : A -> B)
       `(∀ x, Decision (P x)) `(∀ x, Decision (Q x)) :
     (∀ x, P x <-> Q (f x)) →
     f <$> filter P xs = filter Q (f <$> xs).
@@ -169,11 +182,54 @@ Section list.
     move=> Heq. elim: xs => [//|x xs IH]; csimpl; rewrite !filter_cons.
     repeat case_decide; csimpl; rewrite IH; naive_solver.
   Qed.
+
+  Lemma list_fmap_id' l (f : A -> A):
+    (forall x, f x = x) -> f <$> l = l.
+  Proof. move => ?. elim: l => // ?? {2}<-. csimpl. by f_equal. Qed.
+
+  Lemma fmap_add_seq_0 j n :
+    Nat.add j <$> seq 0 n = seq j n.
+  Proof. rewrite fmap_add_seq. f_equal. lia. Qed.
+
+  (** Properties of [list_delete] *)
+  Lemma list_delete_elem_of_1 l i x y:
+    l !! i = Some y -> x ≠ y ->
+    x ∈ l -> x ∈ delete i l.
+  Proof. move => Hl ?. rewrite {1}(delete_Permutation _ _ _ Hl). set_solver. Qed.
+
+  Lemma list_delete_elem_of_2 l x i:
+    x ∈ delete i l -> x ∈ l.
+  Proof. elim: l i => // a l IH [ |i]/=; set_solver. Qed.
+
+  (** Properties of [NoDup] *)
+  Lemma NoDup_Permutation' l k:
+    NoDup l -> length l = length k -> (∀ x : A, x ∈ l -> x ∈ k) → l ≡ₚ k.
+  Proof. move => ???. apply submseteq_Permutation_length_eq => //. by apply NoDup_submseteq. Qed.
+
+  Lemma NoDup_fmap_strong {B} l (f : A -> B):
+    NoDup l -> (forall x y, x ∈ l -> y ∈ l -> f x = f y -> x = y) ->
+    NoDup (f <$> l).
+  Proof.
+    elim; csimpl. { move => ?. constructor. }
+    move => x ??? IH Heq. constructor; [ | set_solver ].
+    rewrite elem_of_list_fmap => -[y [Hxy ?]].
+    suff : (x = y) by set_solver.
+    apply Heq => //; set_solver.
+  Qed.
+
+  Lemma NoDup_not_in_delete l i x:
+    NoDup l -> l !! i = Some x -> x ∉ delete i l.
+  Proof. move => + Hin. by rewrite {1}(delete_Permutation _ _ _ Hin) => /NoDup_cons[??]. Qed.
 End list.
 
 #[global] Hint Resolve NoDup_nil_2 | 0 : core.
 #[global] Hint Resolve NoDup_cons_2 : core.
 #[global] Hint Resolve not_elem_of_nil | 0 : core.
+
+Lemma _not_elem_of_list `{EqDecision A} x (l : list A) : ¬ (x ∉ l) ↔ x ∈ l.
+Proof. exact: dec_stable_iff. Qed.
+#[deprecated(note="Use [dec_stable_iff]")]
+Notation not_elem_of_list := _not_elem_of_list.
 
 Section lists.
   Context {A B : Type}.

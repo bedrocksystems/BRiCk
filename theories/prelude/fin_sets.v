@@ -5,20 +5,17 @@
  * See the LICENSE-BedRock file in the repository root for details.
  *)
 Require Export stdpp.fin_sets.
-Require Import bedrock.prelude.base.
-Require Import bedrock.prelude.sets.
+From bedrock.prelude Require Import base sets list.
 
 (** * Small extensions to [stdpp.fin_sets]. *)
 
-(** TODO: Drop this once it lands in stdpp. *)
-#[global] Instance: Params (@set_map) 8 := {}.
 Section finset.
   #[local] Set Default Proof Using "Type*".
   Context `{FinSet A C}.
   Implicit Types X Y : C.
 
-  Lemma set_not_elem_of x X `{Hdec : Decision (x ∈ X)} : ¬ (x ∉ X) ↔ x ∈ X.
-  Proof. destruct Hdec; tauto. Qed.
+  Lemma set_not_elem_of x X `{Decision (x ∈ X)} : ¬ (x ∉ X) ↔ x ∈ X.
+  Proof. apply dec_stable_iff. Qed.
 
   Lemma set_not_Forall (P : A -> Prop) `{Hdec : !∀ x, Decision (P x)} X :
     ¬ set_Forall P X <-> exists x, x ∈ X /\ ¬ P x.
@@ -157,6 +154,61 @@ Section set_map.
       intros (y & Hy & He)%elem_of_map_1. by simplify_eq.
   Qed.
 End set_map.
+
+(* An [mbind]-like operator for sets, but taking [f : A → list B], like stdlib's
+[concat_map]. *)
+Section set_concat_map.
+  Context `{FinSet A C} `{FinSet B D}.
+  #[local] Set Default Proof Using "Type*".
+
+  Definition set_concat_map (f : A → list B) (xs : C) : D :=
+    list_to_set (elements xs ≫= f).
+  Implicit Types (a x : A) (b y : B) (f : A → list B) (xs : C).
+
+  Lemma set_concat_map_empty f :
+    set_concat_map f ∅ ≡ ∅.
+  Proof. set_solver. Qed.
+
+  #[global] Instance set_concat_map_proper f :
+    Proper (equiv ==> equiv) (set_concat_map f).
+  Proof. solve_proper. Qed.
+
+  Lemma elem_of_set_concat_map f b xs :
+    b ∈ set_concat_map f xs ↔ ∃ x, x ∈ xs ∧ b ∈ f x.
+  Proof. set_solver. Qed.
+
+  #[global] Instance set_unfold_set_concat_map f b xs P Q :
+    (∀ x, SetUnfoldElemOf x xs (P x)) → (∀ x, SetUnfoldElemOf b (f x) (Q x)) →
+    SetUnfoldElemOf b (set_concat_map f xs) (∃ x, P x ∧ Q x).
+  Proof. constructor. rewrite elem_of_set_concat_map. set_solver. Qed.
+
+  Lemma set_concat_map_union f xs1 xs2 :
+    set_concat_map f (xs1 ∪ xs2) ≡
+    set_concat_map f xs1 ∪ set_concat_map f xs2.
+  Proof. set_solver. Qed.
+
+  Lemma set_concat_map_singleton f a :
+    set_concat_map f {[ a ]} ≡ list_to_set $ f a.
+  Proof. set_solver. Qed.
+
+  Section set_concat_map_leibniz.
+    Context `{!LeibnizEquiv C} `{!LeibnizEquiv D}.
+
+    Lemma set_concat_map_empty_L f :
+      set_concat_map f ∅ = ∅.
+    Proof. unfold_leibniz. apply set_concat_map_empty. Qed.
+    Lemma set_concat_map_union_L f bs1 bs2 :
+      set_concat_map f (bs1 ∪ bs2) =
+      set_concat_map f bs1 ∪ set_concat_map f bs2.
+    Proof. unfold_leibniz. apply set_concat_map_union. Qed.
+    Lemma set_concat_map_singleton_L f a :
+      set_concat_map f {[ a ]} = list_to_set $ f a.
+    Proof. unfold_leibniz. apply set_concat_map_singleton. Qed.
+  End set_concat_map_leibniz.
+End set_concat_map.
+
+#[global] Instance set_concat_map_params :
+  Params (@set_concat_map) 9 := {}.
 
 (** Pairwise disjointness *)
 Section fin_set.
