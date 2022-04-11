@@ -226,11 +226,6 @@ End list.
 #[global] Hint Resolve NoDup_cons_2 : core.
 #[global] Hint Resolve not_elem_of_nil | 0 : core.
 
-Lemma _not_elem_of_list `{EqDecision A} x (l : list A) : ¬ (x ∉ l) ↔ x ∈ l.
-Proof. exact: dec_stable_iff. Qed.
-#[deprecated(note="Use [dec_stable_iff]")]
-Notation not_elem_of_list := _not_elem_of_list.
-
 Section lists.
   Context {A B : Type}.
   Implicit Types (xs : list A) (ys : list B).
