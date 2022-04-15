@@ -23,7 +23,14 @@ Section with_Σ.
 
   (** TODO move to pred.v *)
   Axiom struct_paddingR : forall {σ:genv}, Qp -> globname -> Rep.
-  Axiom union_paddingR : forall {σ:genv}, Qp -> globname -> nat -> Rep.
+
+  (* [union_paddingR q cls active_member] is [q] fractional ownership of
+     the union padding for union [cls] for the active member
+     [active_member]. When there is no active member the [active_member]
+     is [None], otherwise it is [Some idx] where [idx] is the numeric
+     index of member field.
+  *)
+  Axiom union_paddingR : forall {σ:genv}, Qp -> globname -> option nat -> Rep.
 
   Context {σ : genv}.
 
@@ -111,10 +118,11 @@ Section with_Σ.
     -|- Reduce (struct_def (fun ty => anyR ty 1) cls st).
 
   Definition union_def (R : type -> Rep) (cls : globname) (st : translation_unit.Union) : Rep :=
+    union_paddingR 1 cls None \\//
     [∨list] idx↦it ∈ st.(u_fields),
        let f := _field {| f_name := it.(mem_name) ; f_type := cls |} in
        f |-> R (erase_qualifiers it.(mem_type)) **
-       union_paddingR 1 cls idx.
+       union_paddingR 1 cls (Some idx).
 
   (** implicit destruction of a union. *)
   Axiom implicit_destruct_union
@@ -139,18 +147,15 @@ Section with_Σ.
           across this operation.
    *)
   Axiom union_change
-  : forall (cls : globname) st,
-      glob_def resolve cls = Some (Gunion st) ->
-(*      st.(u_trivially_destructible) -> *)
+  : forall (cls : globname) un,
+      glob_def resolve cls = Some (Gunion un) ->
+(*      un.(u_trivially_destructible) -> *)
       type_ptrR (Tnamed cls)
-      |-- ([∨ list] idx ↦ it ∈ st.(u_fields),
-           let f := _field {| f_name := it.(mem_name) ; f_type := cls |} in
-           f |-> tblockR (erase_qualifiers it.(mem_type)) 1 **
-           union_paddingR resolve 1 cls idx)
-      -* [∧ list] idx ↦ it ∈ st.(u_fields),
+      |-- (union_def (fun ty => tblockR ty 1) cls un)
+      -* [∧ list] idx ↦ it ∈ un.(u_fields),
           let f := _field {| f_name := it.(mem_name) ; f_type := cls |} in
           |={↑pred_ns}=> f |-> tblockR (erase_qualifiers it.(mem_type)) 1 **
-               union_paddingR resolve 1 cls idx.
+               union_paddingR resolve 1 cls (Some idx).
 *)
 
   (** decompose a union into the classical disjunction of the alternatives
