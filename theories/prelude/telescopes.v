@@ -24,27 +24,17 @@ Definition tele_fun_pointwise@{X Z Y} {t : tele@{X}} {A : Type@{Z}}
 
     To apply this, use [tapplyT].
  *)
-Fixpoint tforallT {TT : tele} : (TT -> Type) -> Type :=
-  match TT as TT return (TT -> Type) -> Type with
-  | TeleO => fun F => F TargO
-  | TeleS f => fun F => forall x, tforallT (fun arg => F (TargS x arg))
-  end.
+Definition tforallT {TT : tele} (Ψ : TT → Type) : Type :=
+  tele_fold (λ (T : Type) (b : T → Type), ∀ x : T, b x) (λ x, x) (tele_bind Ψ).
 
 Definition targ_0 {T F} (t : tele_arg (@TeleS T F)) : T :=
-  match t in tele_arg X return match X with
-                               | TeleO => unit
-                               | @TeleS x f => x
-                               end
-  with
-  | TargO => tt
-  | TargS x _ => x
-  end.
+  tele_arg_head _ t.
 
 (** [tapplyT F args] applys [F] to [args] *)
-Fixpoint tapplyT {TT : tele} f (ff : @tforallT TT f) (x: TT) {struct x} : f x :=
-  match x as x in tele_arg X
-        return forall f : X -> Type, tforallT f -> f x
-  with
-  | TargO => fun _ F => F
-  | TargS y t => fun _ F => tapplyT (fun x => _ (TargS y x)) (F y) t
-  end f ff.
+Fixpoint tapplyT {TT : tele} (f : TT -> Type) (ff : @tforallT TT f) (x: TT) {struct TT} : f x.
+Proof.
+  destruct TT.
+  - destruct x. apply ff.
+  - destruct x as [y t].
+    refine (tapplyT _ (fun x => _ (TargS y x)) (ff y) t).
+Defined.
