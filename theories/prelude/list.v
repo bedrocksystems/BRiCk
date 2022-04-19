@@ -206,16 +206,11 @@ Section list.
     NoDup l -> length l = length k -> (∀ x : A, x ∈ l -> x ∈ k) → l ≡ₚ k.
   Proof. move => ???. apply submseteq_Permutation_length_eq => //. by apply NoDup_submseteq. Qed.
 
+  (* TODO: deprecate? *)
   Lemma NoDup_fmap_strong {B} l (f : A -> B):
     NoDup l -> (forall x y, x ∈ l -> y ∈ l -> f x = f y -> x = y) ->
     NoDup (f <$> l).
-  Proof.
-    elim; csimpl. { move => ?. constructor. }
-    move => x ??? IH Heq. constructor; [ | set_solver ].
-    rewrite elem_of_list_fmap => -[y [Hxy ?]].
-    suff : (x = y) by set_solver.
-    apply Heq => //; set_solver.
-  Qed.
+  Proof. intros; exact: NoDup_fmap_2_strong. Qed.
 
   Lemma NoDup_not_in_delete l i x:
     NoDup l -> l !! i = Some x -> x ∉ delete i l.
