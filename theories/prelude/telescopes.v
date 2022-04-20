@@ -27,9 +27,6 @@ Definition tele_fun_pointwise@{X Z Y} {t : tele@{X}} {A : Type@{Z}}
 Definition tforallT {TT : tele} (Ψ : TT → Type) : Type :=
   tele_fold (λ (T : Type) (b : T → Type), ∀ x : T, b x) (λ x, x) (tele_bind Ψ).
 
-Definition targ_0 {T F} (t : tele_arg (@TeleS T F)) : T :=
-  tele_arg_head _ t.
-
 (** [tapplyT F args] applys [F] to [args] *)
 Fixpoint tapplyT {TT : tele} (f : TT -> Type) (ff : @tforallT TT f) (x: TT) {struct TT} : f x.
 Proof.
