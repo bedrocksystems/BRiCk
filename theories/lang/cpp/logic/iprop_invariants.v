@@ -64,6 +64,8 @@ End inv.
 Section na_inv.
   Import iris.algebra.gset iris.algebra.coPset.
   Context `{!invGS Σ, !na_invG Σ}.
+  #[local] Existing Instance na_inv_inG.
+
   Implicit Types (P : iProp Σ).
 
   Lemma na_inv_alloc p E N P : ▷ P ={E}=∗ na_inv p N P.
@@ -93,7 +95,10 @@ End na_inv.
   https://gitlab.mpi-sws.org/iris/iris/-/blob/7ccdfe0df5832b69742306302144b5358c9ed843/iris/base_logic/lib/cancelable_invariants.v *)
 Section cinv.
   Context `{!invGS Σ, !cinvG Σ}.
+  #[local] Existing Instance cinv_inG.
+
   Implicit Types (P : iProp Σ).
+
   (*** Allocation rules. *)
   (** The "strong" variants permit any infinite [I], and choosing [P] is delayed
   until after [γ] was chosen.*)
