@@ -85,7 +85,6 @@ theories/lang/bi/own.v
 theories/lang/bi/na_invariants.v
 theories/lang/bi/cancelable_invariants.v
 theories/lang/bi/prelude.v
-theories/lang/bi/IrisBridge.v
 theories/lang/bi/ChargeCompat.v
 theories/lang/bi/errors.v
 theories/lang/bi/linearity.v
