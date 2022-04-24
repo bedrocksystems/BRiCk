@@ -4,7 +4,7 @@
  * See the LICENSE-BedRock file in the repository root for details.
  *)
 From iris Require Import bi.bi.
-From bedrock Require Import IrisBridge.
+From bedrock Require Import bi.prelude.
 Require Import bedrock.prelude.addr.
 Import ChargeNotation.
 Local Open Scope N_scope.
