@@ -54,9 +54,8 @@ variables:
 .public:
   extends: .base
   variables:
-    #img_prefix: cpp2v-public-llvm
-    #LLVM_MAJ_VER: 13
-  image: ${docker_img_prefix}:cpp2v-public-llvm13-coq815-coqelpi1130
+    img_prefix: cpp2v-public-llvm
+    LLVM_MAJ_VER: 13
 
 stages:
   - build
