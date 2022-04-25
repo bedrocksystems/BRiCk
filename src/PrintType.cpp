@@ -47,7 +47,7 @@ public:
 
     void VisitType(const Type* type, CoqPrinter& print, ClangPrinter& cprint) {
         print.ctor("Tunsupported", false);
-        print.output() << "\"" << type->getTypeClassName() << "\"";
+        print.str(type->getTypeClassName());
         print.end_ctor();
 
         using namespace logging;
