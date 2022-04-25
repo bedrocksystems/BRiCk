@@ -47,20 +47,17 @@ public:
 
     void VisitType(const Type* type, CoqPrinter& print, ClangPrinter& cprint) {
         print.ctor("Tunsupported", false);
-        print.output() << "\"";
+        print.output() << "\"" << type->getTypeClassName() << "\"";
+        print.end_ctor();
 
         using namespace logging;
         unsupported() << "[WARN] unsupported type (" << type->getTypeClassName()
                 << "):";
 #if CLANG_VERSION_MAJOR >= 11
-        type->dump(fatal(), cprint.getContext());
-        type->dump(print.output().nobreak(), cprint.getContext());
+        type->dump(unsupported(), cprint.getContext());
 #else
         type->dump(unsupported());
-        type->dump(print.output().nobreak());
 #endif
-        print.output() << "\"";
-        print.end_ctor();
 
         unsupported() << "\n";
     }
