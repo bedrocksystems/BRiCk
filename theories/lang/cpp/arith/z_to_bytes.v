@@ -744,6 +744,83 @@ Section FromToBytes.
       rewrite Z.mul_0_r Z.pow_0_r Zmod_1_r; lia.
     Qed.
 
+    Lemma _get_set_later_bytes_irrelevant idx start lst :
+      (idx < start)%nat ->
+      _get_byte
+          (foldr
+            (λ '(idx0, byte) (acc : Z),
+               (_set_byte (Z.of_N byte) idx0 `lor` acc)%Z) 0%Z
+            (zip (seq start (length lst)) lst)) idx = 0%Z.
+    Proof.
+      move: idx start.
+      induction lst.
+      {
+        move => ? ? ?.
+        by rewrite _get_byte_0.
+      }
+      move => ? ? ?.
+      cbn.
+      rewrite _get_byte_lor.
+      rewrite _get_set_byte_no_overlap.
+      2: lia.
+      rewrite Z.lor_0_l.
+      apply: IHlst.
+      lia.
+    Qed.
+
+    Lemma _get_byte_0_small_id (z : Z) :
+      _get_byte z 0 = Z.modulo z 256.
+    Proof. by rewrite/_get_byte /Z.of_nat Z.mul_0_r Z.shiftr_0_r Z.land_ones. Qed.
+
+    Lemma _Z_to_from_bytes_unsigned_le'_roundtrip (bytes : list N) (idx cnt : nat) :
+      Forall (λ b : N, (b < 256)%N) bytes →
+      cnt = length bytes →
+      _Z_to_bytes_unsigned_le' idx cnt (_Z_from_bytes_unsigned_le' idx bytes) = bytes.
+    Proof.
+      move: idx bytes.
+      induction cnt.
+      { by move => ? []. }
+      move => idx [].
+      { done. }
+      move => hd tl smallH.
+      apply Forall_cons_1 in smallH.
+      move: smallH => [small_hdH small_tlH].
+      move => [] cnt_eq.
+      rewrite/_Z_to_bytes_unsigned_le'.
+      cbn.
+      f_equal.
+      {
+        rewrite _get_byte_lor _get_set_later_bytes_irrelevant.
+        2: lia.
+        rewrite Z.lor_0_r _get_set_byte_roundtrip _get_byte_0_small_id Z2N.inj_mod.
+        2: lia.
+        2: lia.
+        by rewrite N2Z.id N.mod_small.
+      }
+      move: (IHcnt (S idx) tl small_tlH cnt_eq).
+      rewrite /_Z_to_bytes_unsigned_le' /_Z_from_bytes_unsigned_le'.
+      move => IH.
+      rewrite -{3}IH.
+      apply: map_ext_Forall.
+      rewrite Forall_seq.
+      move => ? ?.
+      cbn.
+      f_equal.
+      rewrite _get_byte_lor _get_set_byte_no_overlap.
+      2: lia.
+      by rewrite Z.lor_0_l.
+    Qed.
+
+    Lemma _Z_to_from_bytes_unsigned_le_roundtrip (bytes : list N) (cnt : nat) :
+      Forall (fun b => b < 256)%N bytes ->
+      cnt = length bytes ->
+      (_Z_to_bytes_unsigned_le cnt $ _Z_from_bytes_unsigned_le bytes) = bytes.
+    Proof.
+      move => ? ?.
+      by rewrite/_Z_to_bytes_unsigned_le/_Z_from_bytes_unsigned_le
+        _Z_to_from_bytes_unsigned_le'_roundtrip.
+    Qed.
+
     Lemma _Z_from_to_bytes_le_roundtrip:
       forall (cnt: nat) (sgn: signed) (v: Z),
         match sgn with
@@ -828,6 +905,54 @@ Section FromToBytes.
         intros cnt [ | ] sgn v H;
         try rewrite rev_involutive;
         by apply _Z_from_to_bytes_le_roundtrip.
+    Qed.
+
+    Lemma _Z_to_from_bytes_le_round_trip sgn cnt bytes :
+      Forall (λ b : N, (b < 256)%N) bytes ->
+      cnt = length bytes ->
+      _Z_to_bytes_le cnt sgn (_Z_from_bytes_le sgn bytes) = bytes.
+    Proof.
+      move => small cntH.
+      move: sgn => [].
+      2: {
+        cbn.
+        rewrite/_Z_to_bytes_le.
+        by apply: _Z_to_from_bytes_unsigned_le_roundtrip.
+      }
+      rewrite/_Z_to_bytes_le.
+      cbn.
+      rewrite !cntH.
+      rewrite trim_to_signed_bits_agree.
+      rewrite to_unsigned_bits_id.
+      { by apply: _Z_to_from_bytes_unsigned_le_roundtrip. }
+      apply: _Z_from_bytes_unsigned_le_bounds.
+      set bits := (match N.of_nat _ with 0%N => _ | N.pos _ => _ end).
+      rewrite -(Z.pow_mul_r 2 8).
+      2: done.
+      2: lia.
+      rewrite/bits.
+      apply: Z.eq_le_incl.
+      f_equal.
+      rewrite -nat_N_Z.
+      case (N.of_nat (length bytes)).
+      { lia. }
+      move => ?.
+      lia.
+    Qed.
+
+    Lemma _Z_to_from_bytes_def_roundtrip bytes sgn endianness cnt :
+      Forall (λ b : N, (b < 256)%N) bytes →
+      cnt = length bytes →
+      _Z_to_bytes_def cnt endianness sgn (_Z_from_bytes_def endianness sgn bytes) = bytes.
+    Proof.
+      move => small cntH.
+      rewrite/_Z_from_bytes_def/_Z_to_bytes_def.
+      move: endianness => [].
+      { exact: _Z_to_from_bytes_le_round_trip. }
+      rewrite _Z_to_from_bytes_le_round_trip.
+      { exact: rev_involutive. }
+      { exact: Forall_rev. }
+      by rewrite rev_length.
     Qed.
 
     Lemma _Z_from_unsigned_to_signed_bytes_def:
@@ -973,6 +1098,15 @@ Section FromToBytes.
     Proof.
       move=> *; rewrite _Z_from_bytes_eq _Z_to_bytes_eq;
         by apply _Z_from_to_bytes_def_roundtrip.
+    Qed.
+
+    Lemma _Z_to_from_bytes_roundtrip bytes sgn endianness cnt :
+      Forall (λ b : N, (b < 256)%N) bytes →
+      cnt = length bytes →
+      _Z_to_bytes cnt endianness sgn (_Z_from_bytes endianness sgn bytes) = bytes.
+    Proof.
+      move=> *; rewrite _Z_from_bytes_eq _Z_to_bytes_eq;
+        by apply _Z_to_from_bytes_def_roundtrip.
     Qed.
 
     Lemma _Z_from_unsigned_to_signed_bytes:
