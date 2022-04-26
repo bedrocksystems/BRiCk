@@ -92,6 +92,10 @@ Inductive type : Set :=
 .
 #[global] Instance type_inhabited : Inhabited type := populate Tvoid.
 
+(** [description] is meant to be only used for documentation. *)
+Definition Tunsupported (description : bs) : type.
+Proof. exact inhabitant. Qed.
+
 Notation Tchar := Tnum (only parsing).
 
 (** Strengthened Induction Principle for [type]

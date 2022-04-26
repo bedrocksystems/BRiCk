@@ -46,17 +46,20 @@ public:
     static PrintType printer;
 
     void VisitType(const Type* type, CoqPrinter& print, ClangPrinter& cprint) {
+        print.ctor("Tunsupported", false);
+        print.str(type->getTypeClassName());
+        print.end_ctor();
+
         using namespace logging;
-        fatal() << "[ERR] unsupported type (" << type->getTypeClassName()
+        unsupported() << "[WARN] unsupported type (" << type->getTypeClassName()
                 << "):";
 #if CLANG_VERSION_MAJOR >= 11
-        type->dump(fatal(), cprint.getContext());
+        type->dump(unsupported(), cprint.getContext());
 #else
-        type->dump(fatal());
+        type->dump(unsupported());
 #endif
 
-        fatal() << "\n";
-        die();
+        unsupported() << "\n";
     }
 
     void VisitAttributedType(const AttributedType* type, CoqPrinter& print,
