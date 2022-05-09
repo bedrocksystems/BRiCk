@@ -113,3 +113,15 @@ End BS.
 Notation "N .@@ x" := (ndot (A := bs) N x%bs)
   (at level 19, left associativity, format "N .@@ x") : stdpp_scope.
 Notation "(.@@)" := (ndot (A := bs)) (only parsing) : stdpp_scope.
+
+(* [sepBy sep ls] concatenates the elements in [ls] using
+   the separator [sep] *)
+Fixpoint sepBy (b : bs) (ls : list bs) : bs :=
+  match ls with
+  | nil => ""
+  | l :: ls =>
+    match ls with
+    | nil => l
+    | _ :: _ => l ++ b ++ sepBy b ls
+    end
+  end.

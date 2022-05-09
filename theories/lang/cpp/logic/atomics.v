@@ -70,12 +70,22 @@ Section with_Σ.
     are compiled such that there is at least a full barrier betwen an SC load
     and an SC store.
     See https://www.cl.cam.ac.uk/~pes20/cpp/cpp0xmappings.html *)
+
+  Fixpoint wp_operand_args (es : list Expr) (Q : list val -> FreeTemps -> epred) : mpred :=
+    match es with
+    | nil => Q nil FreeTemps.id
+    | e :: es =>
+      Exists Qarg,
+      wp_operand e Qarg **
+                 wp_operand_args es (fun vs frees => Exists v fr, Qarg v fr -* Q (v :: vs) (fr |*| frees)%free)
+    end.
+
   Axiom wp_prval_atomic: forall ao es ty (Q : val → FreeTemps → epred),
        (let targs := List.map type_of es in
         match get_acc_type ao ty targs with
         | None => False
         | Some acc_type =>
-          wp_args targs es (fun (vs : list val) (free : FreeTemps) =>
+          wp_operand_args es (fun (vs : list val) (free : FreeTemps) =>
             wp_atom top ao acc_type vs (fun v => Q v free))
         end)
     |-- wp_operand (Eatomic ao es ty) Q.

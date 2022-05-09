@@ -23,10 +23,19 @@ Section destroy.
     (* NOTE using [Tfunction Tvoid nil] implicitly requires all destructors
        to have C calling convention. *)
     mspec σ.(genv_tu).(globals) ty (Tfunction Tvoid nil)
-                                (Vptr dtor) (Vptr this :: nil)
-                                (fun _ => this |-> tblockR ty 1 ** Q).
+          dtor (this :: nil) (* NOTE this is the correct calling convention for member functions *)
+          (fun p => Exists v, p |-> primR Tvoid 1 v ** this |-> tblockR ty 1 ** Q).
+              (* ^ this is inlining [operand_receive] which is not accessible due to cirularity *)
 
-(** [destroy_val ty this Q] destructs [this] (which has [ty] as its most specific type).
+  Lemma wp_destructor_frame ty dtor this Q Q' :
+    Q -* Q' |-- wp_destructor ty dtor this Q -* wp_destructor ty dtor this Q'.
+  Proof.
+    rewrite /wp_destructor. iIntros "X"; iApply mspec_frame; iIntros (?) "Y".
+    iDestruct "Y" as (vv) "Y".
+    iExists vv. iDestruct "Y" as "[$ [$ ?]]". by iApply "X".
+  Qed.
+
+  (** [destroy_val ty this Q] destructs [this] (which has [ty] as its most specific type).
       If [this] is an aggregate, we invoke [ty]'s destructor (leaving any virtual
       lookup to the caller). The memory is returned to the C++ abstract machine and the 
       continuation [Q] is invoked.
@@ -43,7 +52,7 @@ Section destroy.
       match σ.(genv_tu) !! cls with
       | Some (Gstruct s) =>
          (* NOTE the setup with explicit destructors (even when those destructors are trivial)
-                  abstracts away some of the complexities of the underlying C++ semantics that
+                 abstracts away some of the complexities of the underlying C++ semantics that
                   the semantics itself seems less than clear about. [CITATION NEEDED]
 
              TODO let's find some justification in the standard. *)
@@ -81,11 +90,7 @@ Section destroy.
       { iIntros "X"; iApply "X". }
       { iIntros "Q [$ V]". iRevert "V"; iApply IHty; eauto. iApply IHl; eauto. } }
     { intros. case_match; eauto.
-      case_match; eauto.
-      { iIntros "X Y"; iNext; iRevert "Y"; iApply mspec_frame.
-        iIntros (?) "[$ Q]"; iApply "X"; done. }
-      { iIntros "X Y"; iNext; iRevert "Y"; iApply mspec_frame.
-        iIntros (?) "[$ Q]"; iApply "X"; done. } }
+      case_match; eauto; iIntros "A B"; iModIntro; iRevert "B"; by iApply wp_destructor_frame. }
   Qed.
 
   (* BEGIN interp *)

@@ -15,11 +15,33 @@ Section with_Σ.
   Context `{Σ : cpp_logic thread_info} {resolve:genv}.
 
   (****** Wp Semantics for builtins
+
+    NOTE: we use a non-standard calling convention where values are passed
+          as if they were all evaluated using [wp_operand].
    *)
   Parameter wp_builtin :
       forall {resolve:genv},
         BuiltinFn -> type (* the type of the builtin *) ->
         list val -> (val -> mpred) -> mpred.
+
+  Fixpoint read_args (targs : list type) (ls : list ptr) (Q : list val -> mpred) : mpred :=
+    match targs , ls with
+    | nil , nil => Q nil
+    | t :: ts , p :: ps =>
+      Exists v, (Exists q, _at p (primR t q v)) //\\ read_args ts ps (fun vs => Q (v :: vs))
+    | _ , _ => False
+    end.
+
+  (** [wp_builtin_func b fty ls Q] captures the semantics of a builtin function in the
+      standard calling convention.
+   *)
+  Definition wp_builtin_func (b : BuiltinFn) (fty : type)
+             (ls : list ptr) (Q : ptr -> mpred) : mpred :=
+    match fty with
+    | Tfunction rty targs =>
+      read_args targs ls $ fun vs => wp_builtin b fty vs $ fun v => Forall p, _at p (primR rty 1 v) -* Q p
+    | _ => False
+    end.
 
   Lemma wp_unreachable : forall Q,
       False |-- wp_builtin Bin_unreachable (Tfunction Tvoid nil) nil Q.

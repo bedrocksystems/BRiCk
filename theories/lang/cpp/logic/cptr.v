@@ -15,6 +15,211 @@ Export bedrock.lang.cpp.logic.rep.
 Section defs.
   Context `{Σ : cpp_logic}.
 
+  (**
+  Function specifications written in weakest pre-condition style.
+
+  In other words, [fs_spec] asserts that arguments satisfy the function's
+  precondition _and_ that the continuation coincides with the function's
+  postcondition.
+   *)
+  Record function_spec : Type :=
+    { fs_cc : calling_conv
+    ; fs_return : type
+    ; fs_arguments : list type
+    ; fs_spec : list ptr -d> (ptr -> mpred) -d> mpredO
+    }.
+
+  #[global] Instance function_spec_inhabited : Inhabited function_spec :=
+    populate (Build_function_spec inhabitant inhabitant inhabitant inhabitant).
+
+  Definition type_of_spec (fs : function_spec) : type :=
+    normalize_type (Tfunction (cc:=fs.(fs_cc)) fs.(fs_return) fs.(fs_arguments)).
+
+  Lemma cc_type_of_spec fs1 fs2 :
+    type_of_spec fs1 = type_of_spec fs2 →
+    fs1.(fs_cc) = fs2.(fs_cc).
+  Proof.
+    destruct fs1, fs2. intros [=]. by simplify_eq/=.
+  Qed.
+
+  Lemma length_type_of_spec fs1 fs2 :
+    type_of_spec fs1 = type_of_spec fs2 →
+    length (fs_arguments fs1) = length (fs_arguments fs2).
+  Proof.
+    destruct fs1, fs2; rewrite /type_of_spec/=; intros [= _ _ Hmap].
+    erewrite <-map_length, Hmap.
+    by rewrite map_length.
+  Qed.
+
+  Section ofe.
+    Implicit Types P Q : function_spec.
+
+    Instance function_spec_equiv : Equiv function_spec := fun P Q =>
+      type_of_spec P = type_of_spec Q /\
+      P.(fs_spec) ≡ Q.(fs_spec).
+    Instance function_spec_dist : Dist function_spec := fun (n : nat) P Q =>
+      type_of_spec P = type_of_spec Q /\
+      P.(fs_spec) ≡{n}≡ Q.(fs_spec).
+
+    Lemma function_spec_ofe_mixin : OfeMixin function_spec.
+    Proof.
+      split.
+      - intros P Q. split.
+        + intros [] n. split. done. by apply equiv_dist.
+        + intros HPQ. split; first by destruct (HPQ 0).
+          apply equiv_dist=>n. by destruct (HPQ n).
+      - intros n. split.
+        + done.
+        + by intros P Q [].
+        + intros P Q R [Ht1 HPQ] [Ht2 HQR]. split.
+          * by rewrite Ht1 Ht2.
+          * etrans. by apply HPQ. done.
+      - intros n P Q []. split. done. by apply dist_S.
+    Qed.
+    Canonical Structure function_specO := Ofe function_spec function_spec_ofe_mixin.
+
+    #[global] Instance type_of_spec_ne (n : nat) :
+      Proper (dist n ==> eq) type_of_spec.
+    Proof. by intros P Q [? _]. Qed.
+
+    #[global] Instance fs_spec_ne : NonExpansive fs_spec.
+    Proof. by intros n P Q [_ ?]. Qed.
+
+    #[global] Instance fs_cc_ne (n : nat) : Proper (dist n ==> eq) fs_cc.
+    Proof. move=>P Q /type_of_spec_ne. exact: cc_type_of_spec. Qed.
+
+    #[global] Instance length_fs_arguments_ne (n : nat) :
+      Proper (dist n ==> eq) (fun P => length (fs_arguments P)).
+    Proof. move=>P Q /type_of_spec_ne. exact: length_type_of_spec. Qed.
+  End ofe.
+
+  #[global] Program Instance function_spec_cofe : Cofe function_specO := {|
+    compl c := {|
+      fs_cc := (c 0).(fs_cc);
+      fs_return := (c 0).(fs_return);
+      fs_arguments := (c 0).(fs_arguments);
+      fs_spec := compl (chain_map fs_spec c);
+    |}
+  |}.
+  Next Obligation.
+    intros n c. split; simpl.
+    - destruct (chain_cauchy c 0 n) as [-> _]. lia. done.
+    - intros. apply conv_compl.
+  Qed.
+
+  Lemma fs_equivI_type P Q :
+    P ≡ Q ⊢@{mpredI} [| type_of_spec P = type_of_spec Q |].
+  Proof.
+    rewrite only_provable_equiv.
+    constructor => ?.
+    rewrite monPred_at_internal_eq monPred_at_and monPred_at_emp monPred_at_pure.
+    repeat uPred.unseal. constructor => n x ?. by intros [? _].
+  Qed.
+
+  Lemma fs_equivI_spec P Q vs K :
+    P ≡ Q ⊢@{mpredI} P.(fs_spec) vs K ≡ Q.(fs_spec) vs K.
+  Proof.
+    constructor => ?. rewrite !monPred_at_internal_eq.
+    repeat uPred.unseal. constructor=>n x ? [_ HPQ]. apply HPQ.
+  Qed.
+
+  Lemma fs_equivI_intro P Q :
+    type_of_spec P = type_of_spec Q ->
+    Forall vs K, P.(fs_spec) vs K ≡ Q.(fs_spec) vs K ⊢@{mpredI} P ≡ Q.
+  Proof.
+    intros.
+    constructor => ?.
+    repeat setoid_rewrite monPred_at_forall.
+    repeat setoid_rewrite monPred_at_internal_eq.
+    repeat uPred.unseal. constructor=>x ?; by split.
+  Qed.
+
+  Lemma fs_equivI P Q :
+    P ≡ Q ⊣⊢@{mpredI}
+    [| type_of_spec P = type_of_spec Q |] **
+    Forall vs K, P.(fs_spec) vs K ≡ Q.(fs_spec) vs K.
+  Proof.
+    split'.
+    - iIntros "?". iSplit; first by rewrite fs_equivI_type.
+      iIntros (vs K). by rewrite fs_equivI_spec.
+    - iIntros "[% ?]". by rewrite fs_equivI_intro.
+  Qed.
+
+  (** [mpred] implication on [function_spec].
+  Here, [Q] is a lower-level spec, and [P] is a derived/higher-level spec.
+   *)
+  Definition fs_impl (Q P : function_spec) : mpred :=
+    [| type_of_spec P = type_of_spec Q |] ∗
+    □ ∀ vs K, P.(fs_spec) vs K -∗ Q.(fs_spec) vs K.
+  Lemma fs_impl_reflexive P : |-- fs_impl P P.
+  Proof. iSplit; auto. Qed.
+  Lemma fs_impl_transitive P Q R : fs_impl P Q |-- fs_impl Q R -* fs_impl P R.
+  Proof.
+    rewrite /fs_impl; iIntros "(-> & #H1) (-> & #H2)".
+    iSplit; first done.
+    iIntros "!>" (vs K) "Y".
+    iApply ("H1" with "(H2 Y)").
+  Qed.
+
+  Definition fs_entails (P Q : function_spec) : Prop := |-- fs_impl P Q.
+
+  #[global] Instance fs_entails_preorder : PreOrder fs_entails.
+  Proof.
+    split; rewrite /fs_entails.
+    - intro x. exact: fs_impl_reflexive.
+    - intros ? ? ? H1 H2. by iApply (fs_impl_transitive).
+  Qed.
+  #[global] Instance : RewriteRelation fs_entails := {}.
+
+  (* [mpred] bi-implication on [function_spec] *)
+  Definition fs_equiv (P Q : function_spec) : mpred :=
+    [| type_of_spec P = type_of_spec Q |] ∗
+    □ ∀ vs K, P.(fs_spec) vs K ∗-∗ Q.(fs_spec) vs K.
+
+  Lemma fs_equivI_equiv P Q : P ≡ Q |-- fs_equiv P Q.
+  Proof.
+    rewrite fs_equivI /fs_equiv. f_equiv.
+    rewrite -(bi.intuitionistic_intuitionistically (Forall _, _)).
+    repeat f_equiv. rewrite prop_ext plainly_elim_persistently.
+    by iIntros "#$".
+  Qed.
+
+  Lemma fs_equiv_equivI P Q : ■ fs_equiv P Q |-- P ≡ Q.
+  Proof.
+    iIntros "[% #EQ]". iApply fs_equivI_intro; first done.
+    iIntros (vs K). iApply prop_ext. iModIntro. iApply "EQ".
+  Qed.
+
+  Lemma fs_equiv_split P Q : fs_equiv P Q -|- fs_impl P Q ** fs_impl Q P.
+  Proof.
+    rewrite /fs_equiv /fs_impl; iSplit.
+    - iIntros "(-> & #W)"; repeat iSplit => //;
+      iIntros "!>" (??) "A"; iApply ("W" with "A").
+    - iIntros "((-> & #W1) & (_ & #W2))".
+      iSplit => //; iIntros "!>" (??); iSplit;
+        [by iApply "W2" | by iApply "W1"].
+  Qed.
+
+  Lemma function_spec_equiv_iff P Q : P ≡ Q <-> |-- fs_equiv P Q.
+  Proof.
+    enough (HEQ : P ≡ Q <-> ⊢@{mpredI} P ≡ Q).
+    { rewrite {}HEQ. split.
+      - by rewrite fs_equivI_equiv.
+      - rewrite /bi_emp_valid {2}plainly_emp_2=>->. by rewrite fs_equiv_equivI. }
+    split.
+    - intros->. apply internal_eq_refl.
+    - rewrite monPred_internal_eq_unfold => /embed_emp_valid_inj.
+      apply uPred.internal_eq_soundness.
+  Qed.
+
+  Lemma function_spec_equiv_split P Q : P ≡ Q ↔ fs_entails P Q /\ fs_entails Q P.
+  Proof.
+    rewrite /fs_entails function_spec_equiv_iff fs_equiv_split; split.
+    { by intros H; split; iDestruct H as "[??]". }
+    { intros [H1 H2]. iDestruct H1 as "$". iDestruct H2 as "$". }
+  Qed.
+
+
   (* this is the core definition that the program logic will be based on.
      it is really an assertion about assembly.
    *)
@@ -23,7 +228,7 @@ Section defs.
          strict_valid_ptr p **
          □ (Forall vs Q,
          fs.(fs_spec) vs Q -*
-         fspec resolve.(genv_tu).(globals) (type_of_spec fs) (Vptr p) vs Q)).
+         fspec resolve.(genv_tu).(globals) (type_of_spec fs) p vs Q)).
   Definition cptrR_aux : seal (@cptrR_def). Proof. by eexists. Qed.
   Definition cptrR := cptrR_aux.(unseal).
   Definition cptrR_eq : @cptrR = _ := cptrR_aux.(seal_eq).
