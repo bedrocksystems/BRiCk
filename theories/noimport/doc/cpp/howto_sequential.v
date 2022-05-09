@@ -300,7 +300,8 @@ number of nodes in a BST:
 unsigned int Tree::count() const;
 ]]
  *)
-Definition count_spec (this : ptr) : WpSpec_cpp :=
+Definition count_spec (this : ptr) :=
+  cpp_spec Tint [] $
   \with (q : Qp) (t : tree Z)
   \prepost this |-> treeR (fun q z => uintR q z) q t
   \post{}[Vint (trim 32 (count t))] emp.
@@ -325,17 +326,18 @@ Alternatively, we could impose a bounds condition in the precondition:
 (** Here's the spec for a function that inserts a key into a tree:
 
 [[
-bool Tree::insert();
+bool Tree::insert(int);
 ]]
 
 On duplicate keys, [insert] does nothing (we treat the tree as a set rather
 than a multiset).
-*)
-Definition insert_spec (this : ptr) : WpSpec_cpp :=
-  \with (t : tree Z)
-  \arg{x} "x" (Vint x)
-  \pre this |-> ZbstR 1 t
-  \post Exists t',
+ *)
+Definition insert_spec (this : ptr) :=
+  cpp_spec Tbool [Tint] $
+    \with (t : tree Z)
+    \arg{x} "x" (Vint x)
+    \pre this |-> ZbstR 1 t
+    \post Exists t',
         this |-> ZbstR 1 t' **
         [| forall y, in_tree y t' <-> (y=x \/ in_tree y t) |].
 
@@ -351,11 +353,12 @@ Fixpoint insert x (t : tree Z) : tree Z :=
          else t
   end.
 
-Definition insert_spec' (this : ptr) : WpSpec_cpp :=
-  \with (t : tree Z)
-  \arg{x} "x" (Vint x)
-  \pre this |-> ZbstR 1 t
-  \post this |-> ZbstR 1 (insert x t).
+Definition insert_spec' (this : ptr) :=
+  cpp_spec Tbool [Tint] $
+    \with (t : tree Z)
+    \arg{x} "x" (Vint x)
+    \pre this |-> ZbstR 1 t
+    \post this |-> ZbstR 1 (insert x t).
 
 (** ** EXERCISE: Linked Lists
 
@@ -459,33 +462,34 @@ Definition borrow_from (all borrow : mpred) : mpred :=
 (**
 Using borrow, we can write the specification for [lookup]:
  *)
-Definition lookup_spec (this : ptr) : WpSpec_cpp :=
-  \arg{x} "x" (Vint x)
-  \arg{out} "out" (Vptr out)
-  \with (q : Qp) (t : tree (Entry Z))
-  \pre out |-> anyR (Tpointer (Tnamed _Entry)) 1
-  \prepost this |-> Entry_bstR q t
-  \post{r}[Vbool r]
-    (** The postcondition is keyed on the Boolean result [r], with [r=true]
-     indicating a successful lookup.*)
-    if r then
-      (Exists e,
-        [| in_tree e t |] **
-        [| in_range e.(range) x |] **
-        Exists p,
-          (** A pointer to the looked-up entry is passed in the
-           out parameter [out].*)
-          out |-> ptrR<Tnamed _Entry> q p **
-          (** We also return a "borrow" from the [Entry_bstR q t], the fact
-           that at [p] there's an [EntryR q e] with a matching [Range]. *)
-          borrow_from (this |-> Entry_bstR q t) (p |-> EntryR q e))
-    else
-      (** When [r=false], we assert that there was no payload [p] corresponding
-       to the looked-up value [x]. *)
-      [| ~exists p, payload_of_address t x p |] **
-      (** (Note: This spec allows the implementation to change the [out] parameter
-       arbitrarily in the [error] case.) *)
-      out |-> anyR Tint 1 **
-      this |-> Entry_bstR q t.
+Definition lookup_spec (this : ptr) :=
+  cpp_spec Tbool [Tint; Tptr Tint] $
+    \arg{x} "x" (Vint x)
+    \arg{out} "out" (Vptr out)
+    \with (q : Qp) (t : tree (Entry Z))
+    \pre out |-> anyR (Tptr (Tnamed _Entry)) 1
+    \prepost this |-> Entry_bstR q t
+    \post{r}[Vbool r]
+      (** The postcondition is keyed on the Boolean result [r], with [r=true]
+      indicating a successful lookup.*)
+      if r then
+        (Exists e,
+          [| in_tree e t |] **
+          [| in_range e.(range) x |] **
+          Exists p,
+            (** A pointer to the looked-up entry is passed in the
+            out parameter [out].*)
+            out |-> ptrR<Tnamed _Entry> q p **
+            (** We also return a "borrow" from the [Entry_bstR q t], the fact
+            that at [p] there's an [EntryR q e] with a matching [Range]. *)
+            borrow_from (this |-> Entry_bstR q t) (p |-> EntryR q e))
+      else
+        (** When [r=false], we assert that there was no payload [p] corresponding
+        to the looked-up value [x]. *)
+        [| ~exists p, payload_of_address t x p |] **
+        (** (Note: This spec allows the implementation to change the [out] parameter
+        arbitrarily in the [error] case.) *)
+        out |-> anyR Tint 1 **
+        this |-> Entry_bstR q t.
 
 End with_Sigma.

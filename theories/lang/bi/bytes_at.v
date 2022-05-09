@@ -4,15 +4,16 @@
  * See the LICENSE-BedRock file in the repository root for details.
  *)
 From iris Require Import bi.bi.
-From bedrock Require Import bi.prelude.
+From bedrock Require Import lang.bi.prelude.
 Require Import bedrock.prelude.addr.
 Import ChargeNotation.
-Local Open Scope N_scope.
+
+#[local] Open Scope N_scope.
 Section lift.
   Context {PROP: bi}.
   Variable byte_at : forall (hpa:paddr) (hpaFrac : Qp) (value : N), PROP.
 
-  Local Fixpoint lift_aux n (pa : paddr) (q:Qp) (v : N) :=
+  #[local] Fixpoint lift_aux n (pa : paddr) (q:Qp) (v : N) :=
     match n with
     | O => byte_at pa q v
     | S n => let bytesize :N := (2 ^ (N.of_nat n)) in
@@ -35,14 +36,8 @@ Section lift.
       short_at pa q (N.land v (2^16 - 1))
       ** short_at (pa + 2)%N q (N.shiftr v 16).
 
-    Example t1 pa q v : short_at pa q v = bytes_at 2 pa q v.
-    Proof.
-      reflexivity.
-    Abort.
-    Example t2 pa q v : word_at pa q v = bytes_at 4 pa q v.
-    Proof.
-      reflexivity.
-    Abort.
+    Succeed Example t1 pa q v : short_at pa q v = bytes_at 2 pa q v := eq_refl.
+    Succeed Example t2 pa q v : word_at pa q v = bytes_at 4 pa q v := eq_refl.
   End test.
 
 End lift.

@@ -6,4 +6,5 @@
 From bedrock.lang.cpp.specs Require Export
      functions
      spec_notations
-     cpp_specs.
+     cpp_specs
+     elaborate.

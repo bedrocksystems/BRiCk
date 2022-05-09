@@ -7,7 +7,7 @@ Require Import iris.proofmode.proofmode.
 Require Import bedrock.lang.cpp.ast.
 Require Import bedrock.lang.cpp.semantics.
 From bedrock.lang.cpp.logic Require Import
-     pred path_pred heap_pred wp destroy initializers.
+     pred path_pred heap_pred wp initializers.
 Require Import bedrock.lang.cpp.heap_notations.
 
 Section with_resolve.
@@ -26,23 +26,19 @@ Section with_resolve.
      [wp_args' ts es Q] evaluates the arguments [es] to a function taking types [ts]
      and invokes [Q] with the values and the temporary destruction expression.
 
+     > When a function is called, each parameter ([dcl.fct]) is initialized
+     > ([dcl.init], [class.copy.ctor]) with its corresponding argument.
+
      This is encapsulated because the order of evaluation of function arguments is not
      specified in C++.
      NOTE this definition is *not* sound in the presence of exceptions.
-
-     NOTE that this deviates from the standard because it uses a different parameter
-     passing convention.
   *)
   (** TODO [Q] could be [list ptr -> FreeTemps -> mpred] *)
-  Fixpoint wp_args' (ts : list type) (es : list Expr) (Q : list val -> list FreeTemps -> mpred)
+  Fixpoint wp_args' (ts : list type) (es : list Expr) (Q : list ptr -> list FreeTemps -> mpred)
   : mpred :=
     match ts , es with
     | nil , nil => Q nil nil
     | t :: ts , e :: es =>
-     (* the (more) correct definition would use initialization semantics for each expression.
-        > When a function is called, each parameter ([dcl.fct]) is initialized ([dcl.init], [class.copy.ctor])
-        > with its corresponding argument.
-      *)
       Exists Qarg,
         wp_call_initialize t e Qarg **
         wp_args' ts es (fun vs frees' =>
@@ -84,5 +80,53 @@ Section with_resolve.
     iApply wp_args_frame_strong.
       by iIntros (vs free) "% H"; iApply "X".
   Qed.
+
+  (*
+     The following definitions describe the "return"-convention. Specifically,
+     they describe how the returned pointer is recieved into the value category that
+     it is called with.
+     We consolidate these definitions here because they are shared between all
+     function calls.
+   *)
+  Definition xval_receive (ty : type) (res : ptr) (Q : ptr -> mpred) : mpred :=
+    Exists p, res |-> primR (Tref ty) 1 (Vref p) ** Q p.
+
+  Lemma xval_receive_frame ty res Q Q' :
+      Forall v, Q v -* Q' v |-- xval_receive ty res Q -* xval_receive ty res Q'.
+  Proof.
+    rewrite /xval_receive. iIntros "X Y"; iDestruct "Y" as (x) "[? ?]"; iExists x; iFrame; by iApply "X".
+  Qed.
+
+  Definition lval_receive (ty : type) (res : ptr) (Q : ptr -> mpred) : mpred :=
+    Exists p, res |-> primR (Tref ty) 1 (Vref p) ** Q p.
+
+  Lemma lval_receive_frame ty res Q Q' :
+      Forall v, Q v -* Q' v |-- lval_receive ty res Q -* lval_receive ty res Q'.
+  Proof.
+    rewrite /lval_receive. iIntros "X Y"; iDestruct "Y" as (x) "[? ?]"; iExists x; iFrame; by iApply "X".
+  Qed.
+
+  Definition operand_receive (ty : type) (res : ptr) (Q : val -> mpred) : mpred :=
+    Exists v, res |-> primR ty 1 v ** Q v.
+
+  Lemma operand_receive_frame ty res Q Q' :
+      Forall v, Q v -* Q' v |-- operand_receive ty res Q -* operand_receive ty res Q'.
+  Proof.
+    rewrite /operand_receive. iIntros "X Y"; iDestruct "Y" as (x) "[? ?]"; iExists x; iFrame; by iApply "X".
+  Qed.
+
+  Definition init_receive (ty : type) (addr : ptr) (res : ptr) (Q : FreeTemp -> mpred) : mpred :=
+    ([| addr = res |] -* Q (FreeTemps.delete ty addr)).
+
+  Lemma init_receive_frame ty addr res Q Q' :
+      Forall v, Q v -* Q' v |-- init_receive ty addr res Q -* init_receive ty addr res Q'.
+  Proof.
+    rewrite /init_receive. iIntros "X Y Z"; iApply "X"; iApply "Y"; done.
+  Qed.
+
+  #[global] Arguments xval_receive _ _ _ /.
+  #[global] Arguments lval_receive _ _ _ /.
+  #[global] Arguments operand_receive _ _ _ /.
+  #[global] Arguments init_receive _ _ _ _ /.
 
 End with_resolve.

@@ -150,35 +150,10 @@ Module Type Init.
        specifications.
      *)
     Definition wp_call_initialize (ty : type) (init : Expr)
-               (k : val -> FreeTemp -> FreeTemps -> epred) : mpred :=
-      match drop_qualifiers ty with
-      | Tvoid => False
-      | Tpointer _ as ty
-      | Tmember_pointer _ _ as ty
-      | Tbool as ty
-      | Tnullptr as ty
-      | Tnum _ _ as ty =>
-        wp_operand init (fun v frees => k v FreeTemps.id frees)
+               (k : ptr -> FreeTemp -> FreeTemps -> epred) : mpred :=
+      Forall p, wp_initialize ty p init (fun frees => k p (FreeTemps.delete ty p) frees).
 
-        (* non-primitives are handled via prvalue-initialization semantics *)
-      | Tarray _ _
-      | Tnamed _ => Forall addr, wp_init addr init (k (Vptr addr))
-        (* NOTE because we are initializing an object, we drop the destruction of the temporary *)
-
-      | Treference _ as ty =>
-        wp_lval init (fun p free => k (Vref p) FreeTemps.id free)
-
-      | Trv_reference _ as ty =>
-        wp_xval init (fun p free => k (Vref p) FreeTemps.id free)
-
-      | Tfunction _ _ => False (* functions not supported *)
-
-      | Tqualified _ ty => False (* unreachable *)
-      | Tarch _ _ => False (* vendor-specific types are not supported *)
-      | Tfloat _ => False (* floating point numbers are not supported *)
-      end.
-
-    (** [wpi cls this init Q] evaluates the initializer [init] form the
+    (** [wpi cls this init Q] evaluates the initializer [init] from the
         object [thisp] (of type [Tnamed cls]) and then proceeds as [Q].
 
         NOTE that temporaries introduced by the evaluation of [init] are cleaned

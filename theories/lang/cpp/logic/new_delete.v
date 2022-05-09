@@ -66,6 +66,12 @@ Module Type Expr__newdelete.
 
       #[local] Notation size_of := (@size_of resolve) (only parsing).
 
+      #[local] Notation Tsize_t := Tu64 (only parsing).
+      #[local] Notation Tbyte := Tuchar (only parsing).
+
+      Definition alloc_size_t (sz : N) (Q : ptr -> (mpred -> mpred) -> mpred) : mpred :=
+        Forall p : ptr, p |-> primR Tsize_t 1 (Vn sz) -* Q p (fun Q => p |-> anyR Tsize_t 1 ** Q).
+
       Section new.
         (** [new (...) C(...)] <https://eel.is/c++draft/expr.new>
             - invokes a C++ new operator [new_fn], which returns a storage pointer [storage_ptr];
@@ -116,16 +122,13 @@ Module Type Expr__newdelete.
             new_fn new_args aty Q targs sz
             (nfty := normalize_type new_fn.2)
             (_ : arg_types nfty = Some (Tnum sz Unsigned :: targs)),
-            (** TODO this needs a side-condition requiring that [new] with no
-                arguments does not return [nullptr] because the C++ standard
-                permits the assumption. *)
             wp_args targs new_args (fun vs free =>
-              Exists sz al, [| size_of aty = Some sz |] ** [| align_of aty = Some al |] **
-                |> fspec nfty (Vptr $ _global new_fn.1) (Vn sz :: vs) (fun res =>
-                      Exists storage_ptr : ptr,
-                        [| res = Vptr storage_ptr |] **
+                Exists sz al, [| size_of aty = Some sz |] ** [| has_type sz Tsize_t |] ** [| align_of aty = Some al |] **
+                Reduce (alloc_size_t sz (fun p FR =>
+                |> fspec nfty (_global new_fn.1) (p :: vs) (fun res => FR $
+                      Exists storage_ptr : ptr, res |-> primR (Tptr Tvoid) 1 (Vptr storage_ptr) **
                         if bool_decide (storage_ptr = nullptr) then
-                          Q res free
+                          [| new_args <> nil |] ** Q (Vptr storage_ptr) free
                         else
                           (* [blockR sz -|- tblockR aty] *)
                           (storage_ptr |-> (blockR sz 1 ** alignedR al) **
@@ -153,7 +156,7 @@ Module Type Expr__newdelete.
                                                 *)
                                                obj_ptr |-> new_tokenR aty -*
                                                Q (Vptr obj_ptr) (free' >*> free))
-                                  end))))
+                                  end))))))
         |-- wp_operand (Enew new_fn new_args aty None oinit) Q.
 
         Axiom wp_operand_array_new :
@@ -161,9 +164,6 @@ Module Type Expr__newdelete.
             new_fn new_args aty Q targs sz
             (nfty := normalize_type new_fn.2)
             (_ : arg_types nfty = Some (Tnum sz Unsigned :: targs)),
-            (** TODO this needs a side-condition requiring that [new] with no
-                arguments does not return [nullptr] because the C++ standard
-                permits the assumption. *)
             (* <https://eel.is/c++draft/expr.new#7>
                | (7) Every constant-expression in a noptr-new-declarator shall be a
                |     converted constant expression ([expr.const]) of type std​::​size_t
@@ -186,17 +186,22 @@ Module Type Expr__newdelete.
                   Exists sz al,
                     let array_ty := Tarray aty array_sizeN in
                     [| size_of array_ty = Some sz |] **
+                    [| has_type (2 * sz)%N Tu64 |] **
+                    (* ^^ the overhead, [sz'] below, is less than or equal the
+                    size of the object, and the sum of the overhead and the
+                    allocation size must fit in a `size_t`. See
+                     https://eel.is/c++draft/expr.new#16 for more information *)
                     [| align_of aty = Some al |] **
                     (* NOTE: This is [Forall sz'] because the C++ Abstract Machine can choose
                              however many bytes it wants to use for metadata when handling
                              dynamically allocated arrays.
                      *)
                     Forall sz',
-                      |> fspec nfty (Vptr $ _global new_fn.1) (Vn (sz' + sz) :: vs) (fun res =>
-                        Exists storage_ptr : ptr,
-                          [| res = Vptr storage_ptr |] **
+                      Reduce (alloc_size_t (sz' + sz) (fun psz FR =>
+                      |> fspec nfty (_global new_fn.1) (psz :: vs) (fun res => FR $
+                        Exists storage_ptr : ptr, res |-> primR (Tptr Tvoid) 1 (Vptr storage_ptr) **
                           if bool_decide (storage_ptr = nullptr) then
-                            Q res free
+                            [| new_args <> nil |] ** Q (Vptr storage_ptr) free
                           else
                             (* [blockR sz -|- tblockR (Tarray aty array_size)] *)
                             (storage_ptr |-> blockR (sz' + sz) 1 **
@@ -229,18 +234,32 @@ Module Type Expr__newdelete.
                                                       obj_ptr |-> new_tokenR array_ty -*
                                                       Q (Vptr obj_ptr)
                                                         (free'' >*> free' >*> free))
-                                   end))))
+                                   end))))))
         |-- wp_operand (Enew new_fn new_args aty (Some array_size) oinit) Q.
       End new.
 
       Section delete.
+        Definition alloc_pointer (pv : ptr) (Q : ptr -> FreeTemp -> mpred) : mpred :=
+          Forall p : ptr, p |-> primR (Tptr Tvoid) 1 (Vptr pv) -* Q p (FreeTemps.delete (Tptr Tvoid) p).
+
+        Lemma alloc_pointer_frame : forall p Q Q',
+            Forall p fr, Q p fr -* Q' p fr |-- alloc_pointer p Q -* alloc_pointer p Q'.
+        Proof.
+          intros; rewrite /alloc_pointer. iIntros "X Y".
+          iIntros (?) "p"; iApply "X"; iApply "Y"; done.
+        Qed.
+
         (* [delete_val default ty p Q] is the weakest pre-condition of deleting [p] (of type [ty]).
            In the case that [ty] has a custom [operator delete], that function will be called, otherwise
            the [default] delete operator will be used.
          *)
         Definition delete_val (default : obj_name * type) (ty : type) (p : ptr) (Q : mpred) : mpred :=
           let del_type := Tfunction Tvoid (Tptr Tvoid :: nil) in
-          let del '(fn, ty) := fspec ty (Vptr $ _global fn) (Vptr p :: nil) (fun _ => Q) in
+          (** TODO this should use [operand_receive Tvoid] *)
+          let del '(fn, ty) :=
+              alloc_pointer p (fun p' free => fspec ty (_global fn) (p' :: nil) (fun p =>
+                operand_receive Tvoid p (fun _ => interp free Q)))
+          in
           match erase_qualifiers ty with
           | Tnamed nm =>
             match resolve.(genv_tu) !! nm with
@@ -257,7 +276,8 @@ Module Type Expr__newdelete.
             Q -* Q' |-- delete_val default ty p Q -* delete_val default ty p Q'.
         Proof.
           rewrite /delete_val; intros.
-          iIntros "X"; repeat case_match; eauto; try solve [ iApply fspec_frame; iIntros (?); eauto ].
+          iIntros "X"; repeat case_match; eauto; iApply alloc_pointer_frame; iIntros (??);
+          iApply fspec_frame; iIntros (?); iApply operand_receive_frame; iIntros (?); iApply interp_frame; done.
         Qed.
 
         (** [resolve_dtor ty this Q] resolves the destructor for the object [this] (of type [ty]).
@@ -299,6 +319,7 @@ Module Type Expr__newdelete.
           iApply resolve_virtual_frame. iIntros (???); iApply "X".
         Qed.
 
+
         (* delete
 
            https://eel.is/c++draft/expr.delete
@@ -333,8 +354,7 @@ Module Type Expr__newdelete.
              then
                (* this conjunction justifies the compiler calling the delete function
                   or not calling it. *)
-                 (fspec dfty (Vptr $ _global delete_fn.1)
-                        (v :: nil) (fun _ => Q Vvoid free))
+                 delete_val delete_fn destroyed_type nullptr (Q Vvoid free)
                ∧ Q Vvoid free
              else
                (* v---- Calling destructor with object pointer *)
@@ -350,6 +370,7 @@ Module Type Expr__newdelete.
                       (storage_ptr |-> blockR sz 1 -*
                        (* v---- Calling deallocator with storage pointer *)
                        delete_val delete_fn mdc_ty storage_ptr (Q Vvoid free)))))
+
         |-- wp_operand (Edelete false delete_fn e destroyed_type) Q.
 
         (* NOTE: [destroyed_type] will refer to the /element/ of the array *)
@@ -364,8 +385,7 @@ Module Type Expr__newdelete.
              then
                (* this conjunction justifies the compiler calling the delete function
                   or not calling it. *)
-                 (fspec dfty (Vptr $ _global delete_fn.1)
-                        (v :: nil) (fun _ => Q Vvoid free))
+                  delete_val delete_fn destroyed_type nullptr (Q Vvoid free)
                ∧ Q Vvoid free
              else (
                Exists array_size,
@@ -389,8 +409,9 @@ Module Type Expr__newdelete.
                        (* v---- Calling deallocator with storage pointer.
                           Note: we rely on the AST to have correctly resolved this since the dispatch is statically known.
                         *)
-                       fspec dfty (Vptr $ _global delete_fn.1)
-                             (Vptr storage_ptr :: nil) (fun v => Q Vvoid free)))))
+                       Reduce (alloc_pointer storage_ptr (fun p FR =>
+                         fspec delete_fn.2 (_global delete_fn.1)
+                             (p :: nil) (fun p => operand_receive Tvoid p (fun _ => interp FR $ Q Vvoid free))))))))
         |-- wp_operand (Edelete true delete_fn e destroyed_type) Q.
 
         Section NOTE_potentially_relaxing_array_delete.

@@ -15,12 +15,9 @@ Require Import bedrock.lang.cpp.heap_notations.
 #[local] Set Printing Universes.
 #[local] Set Printing Coercions.
 
-Arguments ERROR {_ _} _%bs.
-Arguments UNSUPPORTED {_ _} _%bs.
-
 (** * Wrappers to build [function_spec] from a [WithPrePost] *)
 
-#[local] Notation SPEC := (WpSpec_cpp) (only parsing).
+#[local] Notation SPEC := (WpSpec_cpp_ptr) (only parsing).
 
 (* A specification for a function  *)
 Definition SFunction `{Σ : cpp_logic} {cc : calling_conv}
@@ -37,7 +34,7 @@ Definition SConstructor `{Σ : cpp_logic, resolve : genv} {cc : calling_conv}
     : function_spec :=
   let this_type := Qmut (Tnamed class) in
   SFunction (cc:=cc) (Qmut Tvoid) (Qconst (Tpointer this_type) :: targs)
-            (\arg{this} "this" (Vptr this)
+            (\arg{this : ptr} "this" this
              \pre this |-> tblockR (Tnamed class) 1
              \exact PQ this).
 
@@ -49,7 +46,7 @@ Definition SDestructor `{Σ : cpp_logic, resolve : genv} {cc : calling_conv}
   (** ^ NOTE the size of an object might be different in the presence
       of virtual base classes. *)
   SFunction (cc:=cc) (Qmut Tvoid) (Qconst (Tpointer this_type) :: nil)
-           (\arg{this} "this" (Vptr this)
+           (\arg{this} "this" this
             \exact add_post (_at this (tblockR (Tnamed class) 1)) (PQ this)).
 
 (* A specification for a method *)
@@ -58,8 +55,8 @@ Definition SDestructor `{Σ : cpp_logic, resolve : genv} {cc : calling_conv}
 #[local] Definition SMethodOptCast_wpp`{Σ : cpp_logic}
     (base_to_derived : option offset) (wpp : ptr -> SPEC)
   : SPEC :=
-  \arg{this} "this"
-   (Vptr (if base_to_derived is Some o then (this ,, o ) else this))
+  \arg{this : ptr} "this"
+   (if base_to_derived is Some o then (this ,, o ) else this)
   \exact (wpp this).
 #[local] Definition SMethodOptCast `{Σ : cpp_logic} {cc : calling_conv}
     (class : globname) (base_to_derived : option offset) (qual : type_qualifiers)
