@@ -654,4 +654,15 @@ Section derived.
   (* We can't quite derive [atomic_commit_weak_ppost_wand] from
   [atomic_commit_ppost_wand] as-is; we must also assume [Timeless emp] to apply
   [intuitionistic_laterable]. *)
+  Lemma atomic_commit_weak_ppost_wand_alt Eo Ei α β Φ1 Φ2 `{Timeless PROP emp} :
+    atomic_commit false Eo Ei α β Φ1 ⊢
+    □ (∀.. x y, Φ1 x y -∗ Φ2 x y) -∗
+    atomic_commit false Eo Ei α β Φ2.
+  Proof.
+    iIntros "AC1 W". iApply (atomic_commit_ppost_wand with "AC1").
+    iApply (make_laterable_intro with "[] W").
+    apply: intuitionistic_laterable.
+    iIntros "!> #$".
+    all: fail.
+  Abort.
 End derived.
