@@ -88,6 +88,9 @@ Notation "'\prepost{' x .. y '}' pp X" :=
 
 Notation "'\let' x ':=' e X" := (let_pre_spec (let x := e in X%pre_spec)).
 
+Notation "'\let{' x .. y '}' z ':=' e X" :=
+  (add_with (fun x => .. (add_with (fun y => let_pre_spec (let z := e in X%pre_spec))) ..)).
+
 Notation "'\arg' nm v X" := (add_named_arg nm%bs v X%pre_spec).
 
 Notation "'\arg{' x .. y } nm v X" :=
