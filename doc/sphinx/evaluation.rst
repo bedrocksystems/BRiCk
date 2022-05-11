@@ -130,33 +130,9 @@ Function Call Semantics
 The semantics for function calls is concerned with the way that we pass arguments to functions and (potentially) recieve the return value.
 We note that it is important to handle the passing of primitives as well as aggregates, both of which are very common in C++.
 The semantics for function calls specifies how to pass arguments to functions and (potentially) get back the return value, both for primitives and for aggregates.
-According to the standard, this involves initializing the arguments on function entry, and destructing them (in reverse order) after the function returns (not necessarily immediately).
 
-The current function call semantics are in the process of changing.
-Here, we discuss the current and the under-development behavior.
-
-Hybrid Argument Passing (Current |project|)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-C++ distinguishes (in a stronger way than C) between primitive types, e.g. :cpp:`int` and :cpp:`C*`, and aggregate types, i.e. :cpp:`struct C` or :cpp:`union C`.
-Due to this distinguishing characteristic, one option is a hybrid argument passing style where primitives are passed directly and aggregates are passed materialized.
-
-We believe that this is sound because primitives have no destructors and so the order in which destruction occurs is not observable [#non-observable-destructors]_.
-We see two downsides to this approach: first, the soundness relies on the above argument; second, the semantics of calls with type variables (not currently supported by |project|) is more complex.
-
-Uniform Location Passing (future |project|)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-The C++ semantics `describes parameter passing (and return) using initialization semantics <https://eel.is/c++draft/expr.call#7>`_ and following this approach would give |project| the closest connection to the standard.
+|project| follows the C++ standard by `using initialization semantics to pass (and return) data to (and from) functions <https://eel.is/c++draft/expr.call#7>`_.
 It is also the style taken by `Cerberus <https://www.cl.cam.ac.uk/~pes20/cerberus/>`_.
-
-
-The main benefit of this approach is that it enables a (mostly) uniform treatment of arguments to functions which is important when reasoning about :cpp:`template`-d code.
-Another benefit is that all of the information is present in the specification rather than getting some of the type information from the function's type.
-
-Unfortunately, this approach produces larger spatial contexts when reasoning about function calls: instead of passing primitive values directly, we must materialize them into the stack and reason about the used memory.
-When passing primitives in this style, the *caller* needs to allocate memory within the logic.
-
 
 .. rubric:: Footnotes
 .. [#parallel-destruction] We use `par` to under approximate the destruction order of temporaries when C++ does not guarantee it statically. For example, in the function call `f(a,b,c)`, the expressions `a`, `b`, and `c` can be evaluated in any order and we can approximate the ordering provided by c++ by saying they are destroyed in parallel.
