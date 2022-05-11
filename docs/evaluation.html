@@ -54,11 +54,7 @@
 <li class="toctree-l4"><a class="reference internal" href="#operands">Operands</a></li>
 </ul>
 </li>
-<li class="toctree-l3"><a class="reference internal" href="#function-call-semantics">Function Call Semantics</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="#hybrid-argument-passing-current-project">Hybrid Argument Passing (Current BRiCk)</a></li>
-<li class="toctree-l4"><a class="reference internal" href="#uniform-location-passing-future-project">Uniform Location Passing (future BRiCk)</a></li>
-</ul>
-</li>
+<li class="toctree-l3"><a class="reference internal" href="#function-call-semantics">Function Call Semantics</a></li>
 </ul>
 </li>
 </ul>
@@ -255,35 +251,18 @@ However, since the existence of a pointer does not imply that the object has a l
 <h3>Function Call Semantics<a class="headerlink" href="#function-call-semantics" title="Permalink to this headline"></a></h3>
 <p>The semantics for function calls is concerned with the way that we pass arguments to functions and (potentially) recieve the return value.
 We note that it is important to handle the passing of primitives as well as aggregates, both of which are very common in C++.
-The semantics for function calls specifies how to pass arguments to functions and (potentially) get back the return value, both for primitives and for aggregates.
-According to the standard, this involves initializing the arguments on function entry, and destructing them (in reverse order) after the function returns (not necessarily immediately).</p>
-<p>The current function call semantics are in the process of changing.
-Here, we discuss the current and the under-development behavior.</p>
-<div class="section" id="hybrid-argument-passing-current-project">
-<h4>Hybrid Argument Passing (Current BRiCk)<a class="headerlink" href="#hybrid-argument-passing-current-project" title="Permalink to this headline"></a></h4>
-<p>C++ distinguishes (in a stronger way than C) between primitive types, e.g. <code class="code highlight cpp docutils literal notranslate"><span class="kt"><span class="pre">int</span></span></code> and <code class="code highlight cpp docutils literal notranslate"><span class="n"><span class="pre">C</span></span><span class="o"><span class="pre">*</span></span></code>, and aggregate types, i.e. <code class="code highlight cpp docutils literal notranslate"><span class="k"><span class="pre">struct</span></span> <span class="n"><span class="pre">C</span></span></code> or <code class="code highlight cpp docutils literal notranslate"><span class="k"><span class="pre">union</span></span> <span class="n"><span class="pre">C</span></span></code>.
-Due to this distinguishing characteristic, one option is a hybrid argument passing style where primitives are passed directly and aggregates are passed materialized.</p>
-<p>We believe that this is sound because primitives have no destructors and so the order in which destruction occurs is not observable <a class="footnote-reference brackets" href="#non-observable-destructors" id="id3">2</a>.
-We see two downsides to this approach: first, the soundness relies on the above argument; second, the semantics of calls with type variables (not currently supported by BRiCk) is more complex.</p>
-</div>
-<div class="section" id="uniform-location-passing-future-project">
-<h4>Uniform Location Passing (future BRiCk)<a class="headerlink" href="#uniform-location-passing-future-project" title="Permalink to this headline"></a></h4>
-<p>The C++ semantics <a class="reference external" href="https://eel.is/c++draft/expr.call#7">describes parameter passing (and return) using initialization semantics</a> and following this approach would give BRiCk the closest connection to the standard.
+The semantics for function calls specifies how to pass arguments to functions and (potentially) get back the return value, both for primitives and for aggregates.</p>
+<p>BRiCk follows the C++ standard by <a class="reference external" href="https://eel.is/c++draft/expr.call#7">using initialization semantics to pass (and return) data to (and from) functions</a>.
 It is also the style taken by <a class="reference external" href="https://www.cl.cam.ac.uk/~pes20/cerberus/">Cerberus</a>.</p>
-<p>The main benefit of this approach is that it enables a (mostly) uniform treatment of arguments to functions which is important when reasoning about <code class="code highlight cpp docutils literal notranslate"><span class="k"><span class="pre">template</span></span></code>-d code.
-Another benefit is that all of the information is present in the specification rather than getting some of the type information from the function’s type.</p>
-<p>Unfortunately, this approach produces larger spatial contexts when reasoning about function calls: instead of passing primitive values directly, we must materialize them into the stack and reason about the used memory.
-When passing primitives in this style, the <em>caller</em> needs to allocate memory within the logic.</p>
 <p class="rubric">Footnotes</p>
 <dl class="footnote brackets">
 <dt class="label" id="parallel-destruction"><span class="brackets"><a class="fn-backref" href="#id2">1</a></span></dt>
 <dd><p>We use <code class="code highlight coq docutils literal notranslate"><span class="n"><span class="pre">par</span></span></code> to under approximate the destruction order of temporaries when C++ does not guarantee it statically. For example, in the function call <code class="code highlight coq docutils literal notranslate"><span class="n"><span class="pre">f</span></span><span class="o"><span class="pre">(</span></span><span class="n"><span class="pre">a</span></span><span class="o"><span class="pre">,</span></span><span class="n"><span class="pre">b</span></span><span class="o"><span class="pre">,</span></span><span class="n"><span class="pre">c</span></span><span class="o"><span class="pre">)</span></span></code>, the expressions <code class="code highlight coq docutils literal notranslate"><span class="n"><span class="pre">a</span></span></code>, <code class="code highlight coq docutils literal notranslate"><span class="n"><span class="pre">b</span></span></code>, and <code class="code highlight coq docutils literal notranslate"><span class="n"><span class="pre">c</span></span></code> can be evaluated in any order and we can approximate the ordering provided by c++ by saying they are destroyed in parallel.</p>
 </dd>
-<dt class="label" id="non-observable-destructors"><span class="brackets"><a class="fn-backref" href="#id3">2</a></span></dt>
+<dt class="label" id="non-observable-destructors"><span class="brackets">2</span></dt>
 <dd><p>Part of the justification for this is that the arguments to functions do not have names in the callees stack frame, so the locations of those objects are not accessible to other objects (something that could influence the semantics due to live pointers).</p>
 </dd>
 </dl>
-</div>
 </div>
 </div>
 </div>
