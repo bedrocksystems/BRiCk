@@ -27,6 +27,10 @@ Reserved Notation "'\let' x ':=' e X"
   (at level 10, x pattern, e at level 150, X at level 200, right associativity,
    format "'[v' '[hv  ' '\let'      x  ':='  '/' e ']' '//' X ']'").
 
+Reserved Notation "'\let{' x .. y '}' z ':=' e X"
+  (at level 10, x binder, y binder, z pattern, e at level 149, X at level 200, right associativity,
+   format "'[v' '[hv  ' '\let{' x  ..  y '}'      z  ':='  '/' e ']' '//' X ']'").
+
 Reserved Notation "'\require' pre X"
   (at level 10, pre at level 200, X at level 200, left associativity,
    format "'[v' '[' '\require'  pre ']' '//' X ']'").
