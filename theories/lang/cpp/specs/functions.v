@@ -121,6 +121,71 @@ Section with_cpp.
     Proof. solve_proper. Qed.
   End SFunction.
 
+  Section SConstructor.
+    Import disable_proofmode_telescopes.
+    Context {cc : calling_conv} (class : globname) (targs : list type).
+    Implicit Types (wpp : ptr → WpSpec mpredI ptr ptr).
+
+    Lemma SConstructor_mono wpp1 wpp2 :
+      (forall this, wpspec_entails (wpp2 this) (wpp1 this)) ->
+      fs_entails
+        (SConstructor (cc:=cc) class targs wpp1)
+        (SConstructor (cc:=cc) class targs wpp2).
+    Proof.
+      rewrite /wpspec_entails/wp_specD/=.
+      intros Hwpp; apply SFunction_mono => /=.
+      iIntros (vs K) "[%this wpp] /="; iExists this.
+      rewrite /exact_spec 2!pre_ok -/([]++[this]) 2!arg_ok.
+      iDestruct "wpp" as "[$ (% & % & wpp)]".
+      iExists _; iFrame; iSplit; [done|].
+      by iApply Hwpp.
+    Qed.
+    #[global] Instance: Params (@SConstructor) 6 := {}.
+
+    #[global] Instance SConstructor_mono' :
+      Proper (flip (pointwise_relation _ wpspec_entails) ==> fs_entails)
+        (SConstructor (cc:=cc) class targs).
+    Proof. repeat intro. by apply SConstructor_mono. Qed.
+
+    #[global] Instance SConstructor_flip_mono' :
+      Proper (pointwise_relation _ wpspec_entails ==> flip fs_entails)
+        (SConstructor (cc:=cc) class targs).
+    Proof. solve_proper. Qed.
+  End SConstructor.
+
+  Section SDestructor.
+    Import disable_proofmode_telescopes.
+    Context {cc : calling_conv} (class : globname).
+    Implicit Types (wpp : ptr → WpSpec mpredI ptr ptr).
+
+    Lemma SDestructor_mono wpp1 wpp2 :
+      (forall this, wpspec_entails (wpp2 this) (wpp1 this)) ->
+      fs_entails
+        (SDestructor (cc:=cc) class wpp1)
+        (SDestructor (cc:=cc) class wpp2).
+    Proof.
+      rewrite /wpspec_entails/wp_specD/=/SDestructor.
+      intros Hwpp; apply SFunction_mono.
+      iIntros (vs K) "[%this wpp] /="; iExists this.
+      rewrite -/([]++[λ _: ptr, _]) 2!post_ok.
+      rewrite -/([]++[this])%list 2!arg_ok.
+      iDestruct "wpp" as "(% & % & wpp)".
+      iExists _; iFrame; iSplit; [done|].
+      by iApply Hwpp.
+    Qed.
+    #[global] Instance: Params (@SDestructor) 5 := {}.
+
+    #[global] Instance SDestructor_mono' :
+      Proper (flip (pointwise_relation _ wpspec_entails) ==> fs_entails)
+        (SDestructor (cc:=cc) class).
+    Proof. repeat intro. by apply SDestructor_mono. Qed.
+
+    #[global] Instance SDestructor_flip_mono' :
+      Proper (pointwise_relation _ wpspec_entails ==> flip fs_entails)
+        (SDestructor (cc:=cc) class).
+    Proof. solve_proper. Qed.
+  End SDestructor.
+
   Section SMethod.
     Import disable_proofmode_telescopes.
     Context {cc : calling_conv} (class : globname) (qual : type_qualifiers).
