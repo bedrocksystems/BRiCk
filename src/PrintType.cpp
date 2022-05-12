@@ -258,6 +258,11 @@ public:
         print.ctor("@Tfunction");
         cprint.printCallingConv(type->getCallConv(), print);
         print.output() << fmt::nbsp;
+        if (type->isVariadic())
+          print.output() << "Ar_Variadic";
+        else
+          print.output() << "Ar_Definite";
+        print.output() << fmt::nbsp;
         cprint.printQualType(type->getReturnType(), print);
         print.output() << fmt::nbsp;
         print.list(type->param_types(),

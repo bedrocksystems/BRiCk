@@ -24,16 +24,17 @@ Section defs.
    *)
   Record function_spec : Type :=
     { fs_cc : calling_conv
+    ; fs_arity : function_arity
     ; fs_return : type
     ; fs_arguments : list type
     ; fs_spec : list ptr -d> (ptr -> mpred) -d> mpredO
     }.
 
   #[global] Instance function_spec_inhabited : Inhabited function_spec :=
-    populate (Build_function_spec inhabitant inhabitant inhabitant inhabitant).
+    populate (Build_function_spec inhabitant inhabitant inhabitant inhabitant inhabitant).
 
   Definition type_of_spec (fs : function_spec) : type :=
-    normalize_type (Tfunction (cc:=fs.(fs_cc)) fs.(fs_return) fs.(fs_arguments)).
+    normalize_type (Tfunction (cc:=fs.(fs_cc)) (ar:=fs.(fs_arity)) fs.(fs_return) fs.(fs_arguments)).
 
   Lemma cc_type_of_spec fs1 fs2 :
     type_of_spec fs1 = type_of_spec fs2 →
@@ -46,7 +47,7 @@ Section defs.
     type_of_spec fs1 = type_of_spec fs2 →
     length (fs_arguments fs1) = length (fs_arguments fs2).
   Proof.
-    destruct fs1, fs2; rewrite /type_of_spec/=; intros [= _ _ Hmap].
+    destruct fs1, fs2; rewrite /type_of_spec/=; intros [= _ _ _ Hmap].
     erewrite <-map_length, Hmap.
     by rewrite map_length.
   Qed.
@@ -96,6 +97,7 @@ Section defs.
   #[global] Program Instance function_spec_cofe : Cofe function_specO := {|
     compl c := {|
       fs_cc := (c 0).(fs_cc);
+      fs_arity := (c 0).(fs_arity);
       fs_return := (c 0).(fs_return);
       fs_arguments := (c 0).(fs_arguments);
       fs_spec := compl (chain_map fs_spec c);

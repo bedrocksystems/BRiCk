@@ -32,6 +32,7 @@ Section FreeTemps.
   Inductive t : Type :=
   | id (* = fun x => x *)
   | delete (ty : type) (p : ptr) (* = delete_val ty p  *)
+  | delete_va (va : list vararg) (p : ptr)
   | seq (f g : t) (* = fun x => f $ g x *)
   | par (f g : t)
     (* = fun x => Exists Qf Qg, f Qf ** g Qg ** (Qf -* Qg -* x)

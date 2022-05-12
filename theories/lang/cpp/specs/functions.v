@@ -20,10 +20,11 @@ Require Import bedrock.lang.cpp.heap_notations.
 #[local] Notation SPEC := (WpSpec_cpp_ptr) (only parsing).
 
 (* A specification for a function  *)
-Definition SFunction `{Σ : cpp_logic} {cc : calling_conv}
+Definition SFunction `{Σ : cpp_logic} {cc : calling_conv} {ar : function_arity}
     (ret : type) (targs : list type) (PQ : SPEC)
     : function_spec :=
   {| fs_cc        := cc
+   ; fs_arity     := ar
    ; fs_return    := ret
    ; fs_arguments := targs
    ; fs_spec      := wp_specD PQ |}.
@@ -89,13 +90,13 @@ Section with_cpp.
       necessarily give up on both (i) and (ii). *)
   Section SFunction.
     Import disable_proofmode_telescopes.
-    Context {cc : calling_conv} (ret : type) (targs : list type).
+    Context {cc : calling_conv} {ar : function_arity} (ret : type) (targs : list type).
 
     Lemma SFunction_mono wpp1 wpp2 :
       wpspec_entails wpp2 wpp1 ->
       fs_entails
-        (SFunction (cc:=cc) ret targs wpp1)
-        (SFunction (cc:=cc) ret targs wpp2).
+        (SFunction (cc:=cc) (ar:=ar) ret targs wpp1)
+        (SFunction (cc:=cc) (ar:=ar) ret targs wpp2).
     Proof.
       intros Hwpp. iSplit; first by rewrite/type_of_spec. simpl.
       iIntros "!>" (vs K) "wpp". by iApply Hwpp.

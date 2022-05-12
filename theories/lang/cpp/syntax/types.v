@@ -71,6 +71,27 @@ Defined.
 Existing Class calling_conv.
 #[global] Existing Instance CC_C.
 
+Variant function_arity : Set :=
+| Ar_Definite
+| Ar_Variadic.
+#[global] Instance function_arity_inhabited : Inhabited function_arity := populate Ar_Definite.
+#[global] Instance function_arity_eq_dec: EqDecision function_arity.
+Proof. solve_decision. Defined.
+#[global] Instance function_arity_countable : Countable function_arity.
+Proof.
+  apply (inj_countable'
+    (λ ar,
+      match ar with Ar_Definite => 0 | Ar_Variadic => 1 end)
+    (λ n,
+      match n with 0 => Ar_Definite | _ => Ar_Variadic end)).
+  abstract (by intros []).
+Defined.
+
+(* In almost all contexts, we will use [Ar_Definite], so that is the default. *)
+Existing Class function_arity.
+#[global] Existing Instance Ar_Definite.
+
+
 (* types *)
 Inductive type : Set :=
 | Tptr (_ : type)
@@ -80,7 +101,7 @@ Inductive type : Set :=
 | Tvoid
 | Tarray (_ : type) (_ : N) (* unknown sizes are represented by pointers *)
 | Tnamed (_ : globname)
-| Tfunction {cc : calling_conv} (_ : type) (_ : list type)
+| Tfunction {cc : calling_conv} {ar : function_arity} (_ : type) (_ : list type)
 | Tbool
 | Tmember_pointer (_ : globname) (_ : type)
 | Tfloat (_ : bitsize)
@@ -131,7 +152,7 @@ Section type_ind'.
     P ty -> P (Tarray ty sz).
   Hypothesis Tnamed_ind' : forall (name : globname),
     P (Tnamed name).
-  Hypothesis Tfunction_ind' : forall {cc : calling_conv} (ty : type) (tys : list type),
+  Hypothesis Tfunction_ind' : forall {cc : calling_conv} {ar : function_arity} (ty : type) (tys : list type),
     P ty -> Forall P tys -> P (Tfunction ty tys).
   Hypothesis Tbool_ind' : P Tbool.
   Hypothesis Tmember_pointer_ind' : forall (name : globname) (ty : type),
@@ -189,7 +210,8 @@ Section type_countable.
   #[local] Notation BITSIZE x := (GenLeaf (inl (inl (inr x)))).
   #[local] Notation SIGNED x  := (GenLeaf (inl (inl (inl (inr x))))).
   #[local] Notation CC x      := (GenLeaf (inl (inl (inl (inl (inr x)))))).
-  #[local] Notation N x       := (GenLeaf (inl (inl (inl (inl (inl x)))))).
+  #[local] Notation AR x      := (GenLeaf (inl (inl (inl (inl (inl (inr x))))))).
+  #[local] Notation N x       := (GenLeaf (inl (inl (inl (inl (inl (inl x))))))).
   #[global] Instance type_countable : Countable type.
   Proof.
     set enc := fix go (t : type) :=
@@ -201,7 +223,7 @@ Section type_countable.
       | Tvoid => GenNode 4 []
       | Tarray t n => GenNode 5 [go t; N n]
       | Tnamed gn => GenNode 6 [BS gn]
-      | @Tfunction cc ret args => GenNode 7 $ (CC cc) :: go ret :: (go <$> args)
+      | @Tfunction cc ar ret args => GenNode 7 $ (CC cc) :: (AR ar) :: go ret :: (go <$> args)
       | Tbool => GenNode 8 []
       | Tmember_pointer gn t => GenNode 9 [BS gn; go t]
       | Tfloat sz => GenNode 10 [BITSIZE sz]
@@ -219,7 +241,7 @@ Section type_countable.
       | GenNode 4 [] => Tvoid
       | GenNode 5 [t; N n] => Tarray (go t) n
       | GenNode 6 [BS gn] => Tnamed gn
-      | GenNode 7 (CC cc :: ret :: args) => @Tfunction cc (go ret) (go <$> args)
+      | GenNode 7 (CC cc :: AR ar :: ret :: args) => @Tfunction cc ar (go ret) (go <$> args)
       | GenNode 8 [] => Tbool
       | GenNode 9 [BS gn; t] => Tmember_pointer gn (go t)
       | GenNode 10 [BITSIZE sz] => Tfloat sz
@@ -230,7 +252,7 @@ Section type_countable.
       | _ => Tvoid	(** dummy *)
       end.
     apply (inj_countable' enc dec). refine (fix go t := _).
-    destruct t as [| | | | | | |cc ret args| | | | | |[]]; simpl; f_equal; try done.
+    destruct t as [| | | | | | |cc ar ret args| | | | | |[]]; simpl; f_equal; try done.
     induction args; simpl; f_equal; done.
   Defined.
 End type_countable.
@@ -294,8 +316,8 @@ Fixpoint normalize_type (t : type) : type :=
   | Tref t => Tref (normalize_type t)
   | Trv_ref t => Trv_ref (normalize_type t)
   | Tarray t n => Tarray (normalize_type t) n
-  | @Tfunction cc r args =>
-    Tfunction (cc:=cc) (drop_norm r) (List.map drop_norm args)
+  | @Tfunction cc ar r args =>
+    Tfunction (cc:=cc) (ar:=ar) (drop_norm r) (List.map drop_norm args)
   | Tmember_pointer gn t => Tmember_pointer gn (normalize_type t)
   | Tqualified q t => qual_norm q t
   | Tnum _ _ => t

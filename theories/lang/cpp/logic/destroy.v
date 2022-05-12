@@ -37,7 +37,7 @@ Section destroy.
 
   (** [destroy_val ty this Q] destructs [this] (which has [ty] as its most specific type).
       If [this] is an aggregate, we invoke [ty]'s destructor (leaving any virtual
-      lookup to the caller). The memory is returned to the C++ abstract machine and the 
+      lookup to the caller). The memory is returned to the C++ abstract machine and the
       continuation [Q] is invoked.
 
       NOTE in our semantics (unlike the standard) all aggregates are destroyed
@@ -106,6 +106,7 @@ Section destroy.
     | FreeTemps.seq f g => interp f $ interp g Q
     | FreeTemps.par f g => Exists Qf Qg, interp f Qf ** interp g Qg ** (Qf -* Qg -* Q)
     | FreeTemps.delete ty addr => destroy_val ty addr Q
+    | FreeTemps.delete_va va addr => addr |-> variadicR va ** Q
     end.
   (* END interp *)
 
@@ -114,6 +115,7 @@ Section destroy.
   Proof.
     induction free; simpl; intros; eauto.
     { iIntros "X"; iApply destroy_val_frame; done. }
+    { iIntros "X [$ Y]". iApply "X". done. }
     { iIntros "a"; iApply IHfree1; iApply IHfree2; done. }
     { iIntros "a b"; iDestruct "b" as (??) "(x & y & z)"; iExists _; iExists _; iFrame.
       iIntros "f g"; iApply "a"; iRevert "g"; by iApply "z". }
