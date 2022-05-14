@@ -111,6 +111,8 @@ printFunction(const FunctionDecl *decl, CoqPrinter &print,
 
     cprint.printCallingConv(getCallingConv(decl), print);
     print.output() << fmt::nbsp;
+    cprint.printVariadic(decl->isVariadic(), print);
+    print.output() << fmt::line;
 
     if (decl->getBody()) {
         print.ctor("Some", false);
@@ -146,6 +148,8 @@ printMethod(const CXXMethodDecl *decl, CoqPrinter &print,
     }) << fmt::nbsp;
 
     cprint.printCallingConv(getCallingConv(decl), print);
+    print.output() << fmt::nbsp;
+    cprint.printVariadic(decl->isVariadic(), print);
 
     print.output() << fmt::line;
     if (decl->getBody()) {
@@ -529,6 +533,9 @@ public:
         print.output() << fmt::nbsp;
 
         cprint.printCallingConv(getCallingConv(decl), print);
+        print.output() << fmt::nbsp;
+
+        cprint.printVariadic(decl->isVariadic(), print);
 
         if (decl->getBody()) {
             print.some();

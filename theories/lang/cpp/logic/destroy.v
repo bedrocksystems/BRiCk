@@ -106,7 +106,7 @@ Section destroy.
     | FreeTemps.seq f g => interp f $ interp g Q
     | FreeTemps.par f g => Exists Qf Qg, interp f Qf ** interp g Qg ** (Qf -* Qg -* Q)
     | FreeTemps.delete ty addr => destroy_val ty addr Q
-    | FreeTemps.delete_va va addr => addr |-> variadicR va ** Q
+    | FreeTemps.delete_va va addr => addr |-> varargsR va ** Q
     end.
   (* END interp *)
 

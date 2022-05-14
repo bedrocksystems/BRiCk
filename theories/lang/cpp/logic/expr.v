@@ -764,7 +764,7 @@ Module Type Expr.
         Exists fp, [| f = Vptr fp |] **
         match arg_types fty with
         | Some targs =>
-          wp_args targs.1 targs.2 es $ fun vs free => |> fspec fty fp vs (fun v => Q v free)
+          wp_args targs es $ fun vs free => |> fspec fty fp vs (fun v => Q v free)
         | _ => False
         end
       | None => False
@@ -827,7 +827,7 @@ Module Type Expr.
       Exists fp, [| f = Vptr fp|] **
       match arg_types fty with
       | Some targs =>
-        wp_args targs.1 targs.2 es $ fun vs free => |> mspec this_type fty fp (this :: vs) (fun v => Q v free)
+        wp_args targs es $ fun vs free => |> mspec this_type fty fp (this :: vs) (fun v => Q v free)
       | _ => False
       end.
 

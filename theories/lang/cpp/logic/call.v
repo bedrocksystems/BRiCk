@@ -23,22 +23,39 @@ Section with_resolve.
     | _ => None
     end.
 
-  Fixpoint wp_varargs' (es : list Expr) (Q : list vararg -> list FreeTemps -> mpred)
+  (** [wp_varargs' es Q] evaluates each argument by promoting its type
+      according to the rules of default argument promotion.
+   *)
+  Fixpoint wp_varargs' (es : list Expr) (Q : list (type * ptr) -> list FreeTemps -> mpred)
   : mpred :=
     match es with
     | nil => Q nil nil
     | e :: es =>
       let t := type_of e in
-      Exists Qarg,
+      match vararg_promote t with
+      | Some vt =>
+        Exists Qarg,
         wp_call_initialize t e Qarg **
-        wp_varargs' es
-          (fun varargs frees' =>
-             Forall v free frees,
-               if to_vararg t v is Some vararg then
-                 Qarg v free frees -* Q (vararg :: varargs) (free >*> frees :: frees')
-               else
-                 False)
+        wp_varargs' es (fun varargs frees' =>
+           Forall p free frees,
+             Qarg p free frees -* Q ((vt, p) :: varargs) (free >*> frees :: frees'))
+      | None => False
+      end
     end%I%free.
+
+  Lemma wp_varargs'_frame es : forall Q Q',
+    (Forall a b, Q a b -* Q' a b) |-- wp_varargs' es Q -* wp_varargs' es Q'.
+  Proof.
+    induction es; simpl; intros.
+    { iIntros "A"; iApply "A". }
+    { iIntros "A B".
+      case_match; eauto.
+      iDestruct "B" as (?) "[B C]".
+      iExists _; iFrame.
+      iRevert "C"; iApply IHes.
+      iIntros (??).
+      iIntros "B" (???) "C". iApply "A". by iApply "B". }
+  Qed.
 
   (**
      [wp_args' ts es Q] evaluates the arguments [es] to a function taking types [ts]
@@ -60,10 +77,10 @@ Section with_resolve.
         wp_varargs' es
           (fun varargs frees =>
              Forall p,
-               p |-> variadicR varargs -*
+               p |-> varargsR varargs -*
                Q [p] (FreeTemps.delete_va varargs p :: frees))
       else
-        [| es = [] |]
+        [| es = [] |] ** Q [] []
     | t :: ts =>
       match es with
       | [] => False
@@ -79,33 +96,44 @@ Section with_resolve.
     end%I%free.
 
   Lemma wp_args'_frame_strong : forall ts ar es Q Q',
-      Forall vs free, [| length vs = length es |] -* Q vs free -* Q' vs free
+      Forall vs free, [| if ar is Ar_Variadic then
+                           length vs = length ts + 1
+                         else length vs = length es |] -* Q vs free -* Q' vs free
       |-- wp_args' ts ar es Q -* wp_args' ts ar es Q'.
   Proof.
-    elim; destruct es => /=; try solve [ by intros; iIntros "? []" ].
-    (* { by iIntros (? ?) "H"; iApply "H". } *)
-    (* { intros. iIntros "X Y". *)
-    (*   iDestruct "Y" as (Qa) "[Y Ys]". *)
-    (*   iExists Qa. iFrame. *)
-    (*   iRevert "Ys". iApply H. *)
-    (*   iIntros (??) "% Y"; iIntros (???) "?". *)
-    (*   iApply "X"; simpl; eauto. *)
-    (*   by iApply "Y".} *)
-  Admitted.
+    induction ts => /=; intros.
+    { case_match.
+      { iIntros "A [% B]"; subst.
+        iSplitR; eauto. iApply "A"; eauto. }
+      { iIntros "X"; iApply wp_varargs'_frame.
+        iIntros (??) "A"; iIntros (?) "B".
+        iApply "X"; eauto. by iApply "A". } }
+    { destruct es; simpl; intros; eauto.
+      iIntros "H A".
+      iDestruct "A" as (?) "[A B]".
+      iExists _; iFrame.
+      iRevert "B"; iApply IHts.
+      iIntros (??) "% A". iIntros (???) "B".
+      iApply "H".
+      { iPureIntro; case_match; simpl; lia. }
+      { by iApply "A". } }
+  Qed.
 
-  Definition wp_args ts ar es Q :=
-    wp_args' ts ar es (fun vs frees => Q vs (FreeTemps.pars frees)).
+  Definition wp_args ts_ar es Q :=
+    wp_args' ts_ar.1 ts_ar.2 es (fun vs frees => Q vs (FreeTemps.pars frees)).
 
-  Lemma wp_args_frame_strong : forall ts ar es Q Q',
-      (Forall vs free, [| length vs = length es |] -* Q vs free -* Q' vs free) |-- wp_args ts ar es Q -* wp_args ts ar es Q'.
+  Lemma wp_args_frame_strong : forall ts_ar es Q Q',
+      (Forall vs free, [| if ts_ar.2 is Ar_Variadic then
+                            length vs = length ts_ar.1 + 1
+                          else length vs = length es |] -* Q vs free -* Q' vs free) |-- wp_args ts_ar es Q -* wp_args ts_ar es Q'.
   Proof.
     intros.
     iIntros "X". iApply wp_args'_frame_strong.
     iIntros (? ?) "%". by iApply "X".
   Qed.
 
-  Lemma wp_args_frame : forall ts ar es Q Q',
-      (Forall vs free, Q vs free -* Q' vs free) |-- wp_args ts ar es Q -* wp_args ts ar es Q'.
+  Lemma wp_args_frame : forall ts_ar es Q Q',
+      (Forall vs free, Q vs free -* Q' vs free) |-- wp_args ts_ar es Q -* wp_args ts_ar es Q'.
   Proof.
     intros; iIntros "X".
     iApply wp_args_frame_strong.

@@ -52,33 +52,10 @@ Arguments type_ptrR {_ Σ σ} _.
 Section with_cpp.
   Context `{Σ : cpp_logic}.
 
-  Variant vararg : Set :=
-  | va_int (s : signed) (p : ptr)
-  | va_long (s : signed) (p : ptr)
-  | va_double (p : ptr)
-  | va_ptr (t : type) (p : ptr)
-  | va_memptr (n : globname) (t : type) (p : ptr).
-
-  Definition to_vararg (t : type) (p : ptr) : option vararg :=
-    match t with
-    | Tnum W8 s | Tnum W16 s | Tnum W32 s => Some $ va_int s p
-    | Tnum W64 s => Some $ va_long s p
-    | Tfloat _ => Some $ va_double p
-    | Tptr t => Some $ va_ptr t p
-    | Tmember_pointer n t => Some $ va_memptr n t p
-    | _ => None
-    end.
-
-  Definition of_vararg (va : vararg) : type * ptr :=
-    match va with
-    | va_int s p => (Tnum W32 s, p)
-    | va_long s p => (Tnum W64 s, p)
-    | va_double p => (Tfloat W64, p)
-    | va_ptr t p => (Tptr t, p)
-    | va_memptr n t p => (Tmember_pointer n t, p)
-    end.
-
-  Parameter variadicR : list vararg -> Rep.
+  (** [varargsR ts_ps] is the ownership of a group of variadic arguments.
+      The [type] is the type of the argument and the [ptr] is the location
+      of the argument. *)
+  Parameter varargsR : list (type * ptr) -> Rep.
 
   (** [primR ty q v]: the argument pointer points to an initialized value [v] of C++ type [ty].
    *

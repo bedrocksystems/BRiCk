@@ -108,7 +108,7 @@ Inductive type : Set :=
 | Tqualified (_ : type_qualifiers) (_ : type)
 | Tnullptr
 (* architecture-specific types; currently unused.
-   some Tarch types, like ARM SVE, are "sizeless", hence [option size]. *)
+   some [Tarch] types, e.g. ARM SVE, are "sizeless", hence [option size]. *)
 | Tarch (_ : option bitsize) (name : bs)
 .
 #[global] Instance type_inhabited : Inhabited type := populate Tvoid.

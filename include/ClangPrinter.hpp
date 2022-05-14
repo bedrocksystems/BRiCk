@@ -68,6 +68,8 @@ public:
 
     void printCallingConv(clang::CallingConv, CoqPrinter&) const;
 
+    void printVariadic(bool, CoqPrinter&) const;
+
     unsigned getTypeSize(const clang::BuiltinType* type) const;
 
     std::string sourceRange(const clang::SourceRange sr) const;

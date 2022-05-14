@@ -29,31 +29,38 @@ Section with_cpp.
       assuming that [wpp] takes the arguments in [args] (in reverse order) and the
       remaining arguments in [ts].
    *)
-  Fixpoint elaborate (ret : type) (ts : list type) (wpp : WpSpec_cpp_val) (args : list val) : WpSpec mpredI ptr ptr :=
+  Fixpoint elaborate (ret : type) (ts : list type) (ar : function_arity) (wpp : WpSpec_cpp_val) (args : list val) : WpSpec mpredI ptr ptr :=
     match ts with
     | nil =>
-        match mtype ret with
-        | inl cls =>
-            wp_spec_bind wpp args (fun rv => WITH (fun pr : ptr => DONE pr [| Vptr pr = rv |]))
-        | inr t =>
-            wp_spec_bind wpp args (fun rv => WITH (fun pr : ptr => DONE pr (_at pr (primR t 1 rv))))
+        let finish args :=
+          match mtype ret with
+          | inl cls =>
+              wp_spec_bind wpp args (fun rv => WITH (fun pr : ptr => DONE pr [| Vptr pr = rv |]))
+          | inr t =>
+              wp_spec_bind wpp args (fun rv => WITH (fun pr : ptr => DONE pr (_at pr (primR t 1 rv))))
+          end
+        in
+        match ar with
+        | Ar_Definite => finish args
+        | Ar_Variadic =>
+            add_with (fun pv : ptr => add_arg pv $ finish (args ++ [Vptr pv]))
         end
     | t :: ts =>
         match mtype t with
         | inl cls =>
-            add_with (fun pv : ptr => add_arg pv (elaborate ret ts wpp (args ++ [Vptr pv])))
+            add_with (fun pv : ptr => add_arg pv (elaborate ret ts ar wpp (args ++ [Vptr pv])))
         | inr t =>
             add_with (fun pv : ptr => add_with (fun v : val => add_arg pv (
                                            add_pre (_at pv (primR t 1 v)) (add_post (Exists v, _at pv (primR t 1 v))
-                                                                                    (elaborate ret ts wpp (args ++ [v]))))))
+                                                                                    (elaborate ret ts ar wpp (args ++ [v]))))))
         end
     end.
 
   (** [cpp_spec ret ts spec] is the elaborated version of the [spec]
       (operand-based) spec that is based on materialized values.
    *)
-  Definition cpp_spec (ret : type) (ts : list type) (wpp : WpSpec_cpp_val) : WpSpec_cpp_ptr :=
-    elaborate ret ts wpp nil.
+  Definition cpp_spec (ret : type) (ts : list type) {ar : function_arity} (wpp : WpSpec_cpp_val) : WpSpec_cpp_ptr :=
+    elaborate ret ts ar wpp nil.
 
   (** Specification implications
 
@@ -79,22 +86,24 @@ Section with_cpp.
     iIntros (??). iApply H.
   Qed.
 
-  Lemma elab_impl (Q P : WpSpec mpredI val val) ret ts :
-    spec_impl Q P |-- spec_impl (cpp_spec ret ts Q) (cpp_spec ret ts P).
+  Lemma elab_impl (Q P : WpSpec mpredI val val) ret ts ar :
+    spec_impl Q P |-- spec_impl (cpp_spec ret ts (ar:=ar) Q) (cpp_spec ret ts (ar:=ar) P).
   Proof.
     rewrite /spec_impl/wp_specD/cpp_spec.
     assert (forall ps xs Ps Qs,
                (∀ (vs : list val) (K : val → mpred), spec_internal P [] [] [] vs K -∗ spec_internal Q [] [] [] vs K) -∗
                ∀ (vs : list ptr) (K : ptr → mpred),
-                 spec_internal (elaborate ret ts P ps) xs Ps Qs vs K -∗ spec_internal (elaborate ret ts Q ps) xs Ps Qs vs K).
+                 spec_internal (elaborate ret ts ar P ps) xs Ps Qs vs K -∗ spec_internal (elaborate ret ts ar Q ps) xs Ps Qs vs K).
     { induction ts; simpl; intros.
-      { case_match; rewrite /wp_spec_bind/=.
-        { iIntros "H" (??) "[$ P]".
-          iRevert "P"; iApply list_sep_into_frame.
-          iApply "H". }
-        { iIntros "H" (??) "[$ P]".
-          iRevert "P"; iApply list_sep_into_frame.
-          iApply "H"; eauto. } }
+      { case_match; case_match; rewrite /wp_spec_bind/=;
+          try solve [ iIntros "H" (??) "[$ P]";
+                      iRevert "P"; iApply list_sep_into_frame;
+                      iApply "H"
+                    | iIntros "H" (??) "P";
+                      iDestruct "P" as (x) "[% P]";
+                      iExists x; iFrame "%";
+                      iRevert "P"; iApply list_sep_into_frame;
+                      iApply "H"; eauto ]. }
       { case_match; rewrite /wp_spec_bind/=.
         { iIntros "H" (??) "P".
           iDestruct "P" as (x) "P".
@@ -109,12 +118,12 @@ Section with_cpp.
     { eauto. }
   Qed.
 
-  Lemma elab_entails (Q P : WpSpec mpredI val val) ret ts :
+  Lemma elab_entails (Q P : WpSpec mpredI val val) ret ts ar :
     spec_entails Q P ->
-    spec_entails (cpp_spec ret ts Q) (cpp_spec ret ts P).
+    spec_entails (cpp_spec ret ts (ar:=ar) Q) (cpp_spec ret ts (ar:=ar) P).
   Proof. intros H%spec_entails_impl. iApply elab_impl. iApply H. Qed.
 
-  #[global] Instance cpp_spec_mono ret ts :
-    Proper (spec_entails ==> spec_entails) (cpp_spec ret ts).
+  #[global] Instance cpp_spec_mono ret ts ar :
+    Proper (spec_entails ==> spec_entails) (cpp_spec ret ts (ar:=ar)).
   Proof. intros ???. exact: elab_entails. Qed.
 End with_cpp.

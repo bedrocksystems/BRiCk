@@ -32,7 +32,7 @@ Section FreeTemps.
   Inductive t : Type :=
   | id (* = fun x => x *)
   | delete (ty : type) (p : ptr) (* = delete_val ty p  *)
-  | delete_va (va : list vararg) (p : ptr)
+  | delete_va (va : list (type * ptr)) (p : ptr)
   | seq (f g : t) (* = fun x => f $ g x *)
   | par (f g : t)
     (* = fun x => Exists Qf Qg, f Qf ** g Qg ** (Qf -* Qg -* x)
@@ -197,12 +197,12 @@ End Kpred.
     (implemented as an association list).
 *)
 Inductive region : Set :=
-| Remp (this : option ptr) (_ : type)
+| Remp (this var_arg : option ptr) (ret_type : type)
 | Rbind (_ : localname) (_ : ptr) (_ : region).
 
 Fixpoint get_location (ρ : region) (b : localname) : option ptr :=
   match ρ with
-  | Remp _ _ => None
+  | Remp _ _ _ => None
   | Rbind x p rs =>
     if decide (b = x) then Some p
     else get_location rs b
@@ -210,14 +210,20 @@ Fixpoint get_location (ρ : region) (b : localname) : option ptr :=
 
 Fixpoint get_this (ρ : region) : option ptr :=
   match ρ with
-  | Remp this _ => this
+  | Remp this _ _ => this
   | Rbind _ _ rs => get_this rs
   end.
 
 Fixpoint get_return_type (ρ : region) : type :=
   match ρ with
-  | Remp _ ty => ty
+  | Remp _ _ ty => ty
   | Rbind _ _ rs => get_return_type rs
+  end.
+
+Fixpoint get_va (ρ : region) : option ptr :=
+  match ρ with
+  | Remp _ va _ => va
+  | Rbind _ _ rs => get_va rs
   end.
 
 (** [_local ρ b] returns the [ptr] that stores the local variable [b].
@@ -246,13 +252,21 @@ Arguments _this !_ / : assert.
 #[global] Declare Custom Entry cpp_region.
 
 Notation "'return' ty" :=
-  (Remp None ty)
+  (Remp None ty None)
   (in custom cpp_region at level 0, ty constr,
    format "'[  ' return  ty ']'").
 Notation "[ 'this' := ptr ] ; 'return' ty" :=
-  (Remp (Some ptr) ty)
+  (Remp (Some ptr) ty None)
   (in custom cpp_region at level 1, ptr constr, ty constr,
    format "'[' [ this  :=  ptr ] ']' ;  '/' '[  ' return  '/' ty ']'").
+Notation "[ 'var_args' := ptr ] ; 'return' ty" :=
+  (Remp None ty (Some ptr))
+  (in custom cpp_region at level 0, ty constr,
+   format "'[' [ var_args  :=  ptr ] ']' ;  '/' '[  ' return  '/' ty ']'").
+Notation "[ 'this' := ptr ; 'var_args' := va ] ; 'return' ty" :=
+  (Remp (Some ptr) ty (Some va))
+  (in custom cpp_region at level 1, ptr constr, ty constr,
+   format "'[' [ this  :=  ptr ;  var_args  :=  va ] ']' ;  '/' '[  ' return  '/' ty ']'").
 Notation "v @ p ';' ρ " :=
   (Rbind v p ρ)
   (in custom cpp_region at level 1, v constr, p constr, ρ custom cpp_region at level 1,
@@ -751,7 +765,7 @@ Section with_cpp.
   (* this is the low-level specification of C++ code blocks.
    *
    * [addr] represents the address of the entry point of the code.
-   * note: the [list val] will be related to the register set.
+   * note: the [list ptr] will be related to the register set.
    *)
   Parameter fspec
     : forall (tt : type_table) (fun_type : type)
