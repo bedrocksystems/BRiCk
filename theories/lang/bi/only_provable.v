@@ -45,6 +45,12 @@ Section bi.
   Lemma only_provable_equiv P : [| P |] ⊣⊢ emp ∧ ⌜ P ⌝.
   Proof. done. Qed.
 
+  Lemma pure_absorb_only_provable (φ : Prop) : ⌜ φ ⌝ ⊣⊢@{PROP} <absorb> [| φ |].
+  Proof. by rewrite /only_provable bi.persistent_absorbingly_affinely. Qed.
+
+  Lemma pure_True_only_provable (φ : Prop) : ⌜ φ ⌝ ⊣⊢@{PROP} True ∗ [| φ |].
+  Proof. apply pure_absorb_only_provable. Qed.
+
   Lemma only_provable_pure φ : [| φ |] ⊢@{PROP} ⌜φ⌝.
   Proof. rewrite /only_provable. by rewrite bi.affinely_elim. Qed.
 
