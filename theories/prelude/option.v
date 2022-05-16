@@ -29,14 +29,15 @@ Module on_props.
 Section on_props.
   Context `{R : relation B} `{f : A -> B}.
 
-  #[local] Instance on_reflexive `{!Reflexive R} : Reflexive (on R f).
+  #[export] Instance on_reflexive `{!Reflexive R} : Reflexive (on R f).
   Proof. rewrite /on. by intros ?. Qed.
-  #[local] Instance on_symmetric `{!Symmetric R} : Symmetric (on R f).
+  #[export] Instance on_symmetric `{!Symmetric R} : Symmetric (on R f).
   Proof. rewrite /on. by intros ?. Qed.
-  #[local] Instance on_transitive `{!Transitive R} : Transitive (on R f).
+  #[export] Instance on_transitive `{!Transitive R} : Transitive (on R f).
   Proof. rewrite /on. by intros ???; etrans. Qed.
+  (* No [Equivalence] or [PER] instance at this level.
+  Since it's a bundling instance, declare it on wrappers after fixing [R]. *)
 End on_props.
-#[export] Hint Resolve on_reflexive on_symmetric on_transitive : typeclass_instances.
 End on_props.
 
 Definition some_Forall2 `(R : relation A) (oa1 oa2 : option A) :=
