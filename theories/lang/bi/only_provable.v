@@ -32,16 +32,6 @@ Class BiEmpForallOnlyProvable (PROP : bi) :=
   emp_forall_only_provable A φ : (∀ x : A, [| φ x |]) ⊢@{PROP} <affine> (∀ x : A, [| φ x |]).
 Global Hint Mode BiEmpForallOnlyProvable + : typeclass_instances.
 
-(*
-Patch [persistent_fractional] for [persistent_sep_dup] update.
-
-Misplaced, being upstreamed in https://gitlab.mpi-sws.org/iris/iris/-/merge_requests/717.
-*)
-Global Remove Hints persistent_fractional : typeclass_instances.
-Global Instance persistent_fractional {PROP : bi} (P : PROP) :
-  Persistent P → TCOr (Affine P) (Absorbing P) → Fractional (λ _, P).
-Proof. intros ?? q q'. apply: bi.persistent_sep_dup. Qed.
-
 (** * Properties of [only_provable]. *)
 Section bi.
   Context {PROP : bi} `{PF : BiPureForall PROP}.
@@ -54,6 +44,12 @@ Section bi.
   (** [ [| P |] ] indeed holds no resources. This is also an unfolding lemma, since [only_provable] is [Opaque]. *)
   Lemma only_provable_equiv P : [| P |] ⊣⊢ emp ∧ ⌜ P ⌝.
   Proof. done. Qed.
+
+  Lemma pure_absorb_only_provable (φ : Prop) : ⌜ φ ⌝ ⊣⊢@{PROP} <absorb> [| φ |].
+  Proof. by rewrite /only_provable bi.persistent_absorbingly_affinely. Qed.
+
+  Lemma pure_True_only_provable (φ : Prop) : ⌜ φ ⌝ ⊣⊢@{PROP} True ∗ [| φ |].
+  Proof. apply pure_absorb_only_provable. Qed.
 
   Lemma only_provable_pure φ : [| φ |] ⊢@{PROP} ⌜φ⌝.
   Proof. rewrite /only_provable. by rewrite bi.affinely_elim. Qed.
