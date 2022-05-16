@@ -37,6 +37,10 @@ Section on_props.
   Proof. rewrite /on. by intros ???; etrans. Qed.
   (* No [Equivalence] or [PER] instance at this level.
   Since it's a bundling instance, declare it on wrappers after fixing [R]. *)
+
+  (* We can safely make this global. *)
+  #[global] Instance on_decidable `{!RelDecision R} : RelDecision (on R f).
+  Proof. rewrite /on => ??. apply _. Defined.
 End on_props.
 End on_props.
 
