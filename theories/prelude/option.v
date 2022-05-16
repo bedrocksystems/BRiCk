@@ -21,6 +21,7 @@ From bedrock.prelude Require Import base.
 
 Definition on {A B C} (R : B -> B -> C) (f : A -> B) (x y : A) : C :=
   R (f x) (f y).
+#[global] Typeclasses Opaque on.
 
 (** Preorder properties lift through [on].
 These instances can lead to divergence of setoid rewriting, so they're only
