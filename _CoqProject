@@ -139,6 +139,8 @@ theories/lang/cpp/logic/rep_defs.v
 theories/lang/cpp/logic/heap_pred.v
 theories/lang/cpp/logic/cptr.v
 theories/lang/cpp/logic/wp.v
+theories/lang/cpp/logic/code_notations.v
+theories/lang/cpp/logic/wp_notations.v
 theories/lang/cpp/logic/destroy.v
 theories/lang/cpp/logic/initializers.v
 theories/lang/cpp/logic/dispatch.v
