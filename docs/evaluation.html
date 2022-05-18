@@ -111,6 +111,7 @@ In BRiCk we capture the stack of objects to be destroyed using the type <a class
 <div class="highlight-text notranslate"><div class="highlight"><pre><span></span>Inductive t : Type :=
 | id (* = fun x =&gt; x *)
 | delete (ty : type) (p : ptr) (* = delete_val ty p  *)
+| delete_va (va : list (type * ptr)) (p : ptr)
 | seq (f g : t) (* = fun x =&gt; f $ g x *)
 | par (f g : t)
   (* = fun x =&gt; Exists Qf Qg, f Qf ** g Qg ** (Qf -* Qg -* x)
@@ -137,6 +138,7 @@ Fixpoint interp (free : FreeTemps) (Q : epred) : mpred :=
   | FreeTemps.seq f g =&gt; interp f $ interp g Q
   | FreeTemps.par f g =&gt; Exists Qf Qg, interp f Qf ** interp g Qg ** (Qf -* Qg -* Q)
   | FreeTemps.delete ty addr =&gt; destroy_val ty addr Q
+  | FreeTemps.delete_va va addr =&gt; addr |-&gt; varargsR va ** Q
   end.
 </pre></div>
 </div>
