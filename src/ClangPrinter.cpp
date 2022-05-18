@@ -498,6 +498,11 @@ ClangPrinter::sourceRange(const SourceRange sr) const {
 }
 
 void
+ClangPrinter::printVariadic(bool va, CoqPrinter &print) const {
+    print.output() << (va ? "Ar_Variadic" : "Ar_Definite");
+}
+
+void
 ClangPrinter::printCallingConv(clang::CallingConv cc, CoqPrinter &print) const {
 #define PRINT(x)                                                               \
     case CallingConv::x:                                                       \

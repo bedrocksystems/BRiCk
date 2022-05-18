@@ -808,7 +808,7 @@ Module Type Expr.
     (** * Member calls *)
     Definition member_arg_types (fty : type) : option (list type) :=
       match fty with
-      | @Tfunction _ _ (_ :: args) => Some args
+      | Tfunction _ (_ :: args) => Some args
       | _ => None
       end.
 

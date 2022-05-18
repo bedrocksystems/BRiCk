@@ -52,7 +52,7 @@ public:
 
         using namespace logging;
         unsupported() << "[WARN] unsupported type (" << type->getTypeClassName()
-                << "):";
+                      << "):";
 #if CLANG_VERSION_MAJOR >= 11
         type->dump(unsupported(), cprint.getContext());
 #else
@@ -257,6 +257,8 @@ public:
                                 CoqPrinter& print, ClangPrinter& cprint) {
         print.ctor("@Tfunction");
         cprint.printCallingConv(type->getCallConv(), print);
+        print.output() << fmt::nbsp;
+        cprint.printVariadic(type->isVariadic(), print);
         print.output() << fmt::nbsp;
         cprint.printQualType(type->getReturnType(), print);
         print.output() << fmt::nbsp;

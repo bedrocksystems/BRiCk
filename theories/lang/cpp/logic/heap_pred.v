@@ -52,6 +52,11 @@ Arguments type_ptrR {_ Σ σ} _.
 Section with_cpp.
   Context `{Σ : cpp_logic}.
 
+  (** [varargsR ts_ps] is the ownership of a group of variadic arguments.
+      The [type] is the type of the argument and the [ptr] is the location
+      of the argument. *)
+  Parameter varargsR : list (type * ptr) -> Rep.
+
   (** [primR ty q v]: the argument pointer points to an initialized value [v] of C++ type [ty].
    *
    * NOTE [ty] *must* be a primitive type.

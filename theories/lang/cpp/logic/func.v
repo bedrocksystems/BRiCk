@@ -3,17 +3,16 @@
  * This software is distributed under the terms of the BedRock Open-Source License.
  * See the LICENSE-BedRock file in the repository root for details.
  *)
+Require Import iris.proofmode.proofmode.	(** Early to get the right [ident] *)
 Require Import bedrock.lang.bi.ChargeCompat.
 Require Import bedrock.lang.bi.errors.
 Require Import bedrock.lang.cpp.logic.entailsN.
-Require Import iris.proofmode.proofmode.	(** Early to get the right [ident] *)
 Require Import bedrock.lang.cpp.ast.
 Require Import bedrock.lang.cpp.semantics.
 From bedrock.lang.cpp.logic Require Import
   pred path_pred heap_pred wp builtins cptr
   layout initializers destroy.
 Require Import bedrock.lang.cpp.heap_notations.
-
 
 #[local] Set Printing Coercions.
 
@@ -139,21 +138,39 @@ Section with_cpp.
       just be a list of [ptr] and the signature would be:
       [bind_vars : list (ident * type) -> list ptr -> region -> region]
    *)
-  Fixpoint bind_vars (args : list (ident * type)) (ptrs : list ptr) (ρ : region)
+  Fixpoint bind_vars (args : list (ident * type)) (ar : function_arity) (ptrs : list ptr) (ρ : option ptr -> region)
            (Q : region -> FreeTemps -> mpred) : mpred :=
-    match args , ptrs with
-    | nil , nil => Q ρ FreeTemps.id
-    | (x,_) :: xs , p :: ps  =>
-      bind_vars xs ps (Rbind x p ρ) Q
-    | _ , _ => ERROR "bind_vars: argument mismatch"
+    match args with
+    | nil =>
+        match ar with
+        | Ar_Definite =>
+            match ptrs with
+            | nil => Q (ρ None) FreeTemps.id
+            | _ :: _ => ERROR "bind_vars: extra arguments"
+            end
+        | Ar_Variadic =>
+            match ptrs with
+            | vap :: nil => Q (ρ $ Some vap) FreeTemps.id
+            | _ => ERROR "bind_vars: variadic function missing varargs"
+            end
+        end
+    | (x,_) :: xs =>
+        match ptrs with
+        | p :: ps  =>
+            bind_vars xs ar ps (fun vap => Rbind x p $ ρ vap) Q
+        | nil => ERROR "bind_vars: insufficient arguments"
+        end
     end%I.
 
-  Lemma bind_vars_frame : forall ts args ρ Q Q',
+  Lemma bind_vars_frame : forall ts ar args ρ Q Q',
         Forall ρ free, Q ρ free -* Q' ρ free
-    |-- bind_vars ts args ρ Q -* bind_vars ts args ρ Q'.
+    |-- bind_vars ts ar args ρ Q -* bind_vars ts ar args ρ Q'.
   Proof.
     induction ts; destruct args => /= *; eauto.
-    { iIntros "A B"; iApply "A"; eauto. }
+    { case_match; eauto.
+      iIntros "A B"; iApply "A"; eauto. }
+    { case_match; eauto.  case_match; eauto.
+      iIntros "A"; iApply "A". }
     { iIntros "A B". destruct a.
       iRevert "B"; by iApply IHts. }
   Qed.
@@ -167,8 +184,8 @@ Section with_cpp.
     | Some body =>
       match body with
       | Impl body =>
-        let ρ := Remp None f.(f_return) in
-        bind_vars f.(f_params) args ρ (fun ρ frees =>
+        let ρ va := Remp None va f.(f_return) in
+        bind_vars f.(f_params) f.(f_arity) args ρ (fun ρ frees =>
         |> if is_void f.(f_return) then
              wp ρ body (Kfree frees $ void_return (|={⊤}=> |> Forall p, p |-> primR Tvoid 1 Vvoid -* Q p))
            else
@@ -197,8 +214,8 @@ Section with_cpp.
     | Some (UserDefined body) =>
       match args with
       | thisp :: rest_vals =>
-        let ρ := Remp (Some thisp) m.(m_return) in
-        bind_vars m.(m_params) rest_vals ρ (fun ρ frees =>
+        let ρ va := Remp (Some thisp) va m.(m_return) in
+        bind_vars m.(m_params) m.(m_arity) rest_vals ρ (fun ρ frees =>
         |> if is_void m.(m_return) then
              wp ρ body (Kfree frees (void_return (|={⊤}=> |> Forall p, p |-> primR Tvoid 1 Vvoid -* Q p)))
            else
@@ -445,8 +462,8 @@ Section with_cpp.
           (* ^ this requires that you give up the *entire* block of memory that the object
              will use.
            *)
-          |> let ρ := Remp (Some thisp) Tvoid in
-             bind_vars ctor.(c_params) rest_vals ρ (fun ρ frees =>
+          |> let ρ va := Remp (Some thisp) va Tvoid in
+             bind_vars ctor.(c_params) ctor.(c_arity) rest_vals ρ (fun ρ frees =>
                (wp_struct_initializer_list cls ρ ctor.(c_class) thisp inits
                   (wp ρ body (Kfree frees (void_return (|={⊤}=> |> Forall p, p |-> primR Tvoid 1 Vvoid -* Q p))))))
         | Some (Gunion union) =>
@@ -455,8 +472,8 @@ Section with_cpp.
           (* ^ this requires that you give up the *entire* block of memory that the object
              will use.
            *)
-          |> let ρ := Remp (Some thisp) Tvoid in
-             bind_vars ctor.(c_params) rest_vals ρ (fun ρ frees =>
+          |> let ρ va := Remp (Some thisp) va Tvoid in
+             bind_vars ctor.(c_params) ctor.(c_arity) rest_vals ρ (fun ρ frees =>
                (wp_union_initializer_list union ρ ctor.(c_class) thisp inits
                   (wp ρ body (Kfree frees (void_return (|={⊤}=> |> Forall p, p |-> primR Tvoid 1 Vvoid -* Q p))))))
         | Some _ =>
@@ -539,7 +556,7 @@ Section with_cpp.
       in
       match epilog , args with
       | Some epilog , thisp :: nil =>
-        let ρ := Remp (Some thisp) Tvoid in
+        let ρ := Remp (Some thisp) None Tvoid in
           |> (* the function prolog consumes a step. *)
              wp ρ body (void_return (epilog thisp))
       | _ , _ => False

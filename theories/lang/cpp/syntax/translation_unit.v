@@ -34,6 +34,7 @@ Record Ctor : Set :=
 { c_class  : globname
 ; c_params : list (ident * type)
 ; c_cc     : calling_conv
+; c_arity  : function_arity
 ; c_body   : option (OrDefault (list Initializer * Stmt))
 }.
 #[global] Instance: EqDecision Ctor.
@@ -58,6 +59,7 @@ Record Func : Set :=
 { f_return : type
 ; f_params : list (ident * type)
 ; f_cc     : calling_conv
+; f_arity  : function_arity
 ; f_body   : option FunctionBody
 }.
 #[global] Instance: EqDecision Func.
@@ -69,6 +71,7 @@ Record Method : Set :=
 ; m_this_qual : type_qualifiers
 ; m_params  : list (ident * type)
 ; m_cc      : calling_conv
+; m_arity   : function_arity
 ; m_body    : option (OrDefault Stmt)
 }.
 #[global] Instance: EqDecision Method.
@@ -200,7 +203,7 @@ Proof. solve_decision. Defined.
  *)
 Definition Tmember_func (ty : type) (fty : type) : type :=
   match fty with
-  | @Tfunction cc ret args => Tfunction (cc:=cc) ret (Tptr ty :: args)
+  | @Tfunction cc ar ret args => Tfunction (cc:=cc) (ar:=ar) ret (Tptr ty :: args)
   | _ => fty
   end.
 
@@ -209,11 +212,11 @@ Definition type_of_value (o : ObjValue) : type :=
   normalize_type
   match o with
   | Ovar t _ => t
-  | Ofunction f => Tfunction (cc:=f.(f_cc)) f.(f_return) $ snd <$> f.(f_params)
+  | Ofunction f => Tfunction (cc:=f.(f_cc)) (ar:=f.(f_arity)) f.(f_return) $ snd <$> f.(f_params)
   | Omethod m =>
-    Tmember_func (Tqualified m.(m_this_qual) (Tnamed m.(m_class))) $ Tfunction (cc:=m.(m_cc)) m.(m_return) $ snd <$> m.(m_params)
+    Tmember_func (Tqualified m.(m_this_qual) (Tnamed m.(m_class))) $ Tfunction (cc:=m.(m_cc)) (ar:=m.(m_arity)) m.(m_return) $ snd <$> m.(m_params)
   | Oconstructor c =>
-    Tmember_func (Tnamed c.(c_class)) $ Tfunction (cc:=c.(c_cc)) Tvoid $ snd <$> c.(c_params)
+    Tmember_func (Tnamed c.(c_class)) $ Tfunction (cc:=c.(c_cc)) (ar:=c.(c_arity)) Tvoid $ snd <$> c.(c_params)
   | Odestructor d =>
     Tmember_func (Tnamed d.(d_class)) $ Tfunction (cc:=d.(d_cc)) Tvoid nil
   end.
