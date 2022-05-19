@@ -170,6 +170,74 @@ Lemma N_setbit_bool_decide (a n m : N) :
   N.testbit (N.setbit a n) m = bool_decide (n = m) || N.testbit a m.
 Proof. by rewrite N.setbit_eqb N_eqb_bool_decide. Qed.
 
+(* monotonicity of land *)
+Lemma N_double_succ_double_le_mono (n m : N) : (n <= m)%N -> (N.double n <= N.succ_double m)%N.
+Proof.
+  move=> H; rewrite N.double_spec N.succ_double_spec.
+  apply: N.le_trans; first by apply/N.mul_le_mono_l/H.
+  by apply: N.le_add_r.
+Qed.
+
+Lemma N_land_double_double (a b : N) :
+  (N.double a `land` N.double b)%N = N.double (a `land` b).
+Proof.
+  apply: N.bits_inj => n; rewrite !N.double_spec N.land_spec.
+  move: n; apply: N.peano_rect; first by rewrite !N.testbit_even_0.
+  move=>p IH''; rewrite !N.testbit_even_succ; try by apply N.le_0_l.
+  by rewrite N.land_spec.
+Qed.
+
+Lemma N_land_double_succ_double (a b : N) :
+  (N.double a `land` N.succ_double b)%N = N.double (a `land` b).
+Proof.
+  apply: N.bits_inj => n; rewrite N.succ_double_spec !N.double_spec N.land_spec.
+  move: n; apply: N.peano_rect; first by rewrite !N.testbit_even_0.
+  move=>p IH''. rewrite !N.testbit_even_succ ?N.testbit_odd_succ; try by apply N.le_0_l.
+  by rewrite N.land_spec.
+Qed.
+
+Lemma N_land_succ_double_double (a b : N) :
+  (N.succ_double a `land` N.double b)%N = N.double (a `land` b).
+Proof.
+  apply: N.bits_inj => n; rewrite !N.double_spec N.succ_double_spec N.land_spec.
+  move: n; apply: N.peano_rect; first by rewrite N.testbit_odd_0 !N.testbit_even_0.
+  move=>p IH''; rewrite !N.testbit_even_succ ?N.testbit_odd_succ; try by apply N.le_0_l.
+  by rewrite N.land_spec.
+Qed.
+
+Lemma N_land_succ_double_succ_double (a b : N) :
+  (N.succ_double a `land` N.succ_double b)%N = N.succ_double (a `land` b).
+Proof.
+  apply: N.bits_inj => n; rewrite !N.succ_double_spec N.land_spec.
+  move: n; apply: N.peano_rect; first by rewrite !N.testbit_odd_0.
+  move=>p IH''; rewrite !N.testbit_odd_succ; try by apply N.le_0_l.
+  by rewrite N.land_spec.
+Qed.
+
+Lemma N_land_mono_r (a b : N) : (a `land` b <= a)%N.
+Proof.
+  move: a b; apply: N.binary_ind.
+  - by move=> ?; rewrite N.land_0_l.
+  - move=>a IH b.
+    move: b a IH.
+    apply: N.binary_ind.
+    + move=> b IH; rewrite N.land_0_r.
+      by apply: N.le_0_l.
+    + by move=>b IH a IH'; rewrite N_land_double_double; apply/N.double_le_mono/IH'.
+    + by move=>b IH a IH'; rewrite N_land_double_succ_double; apply/N.double_le_mono/IH'.
+  - move=>a IH b.
+    move: b a IH.
+    apply: N.binary_ind.
+    + move=> b IH; rewrite N.land_0_r.
+      by apply: N.le_0_l.
+    + by move=>b IH a IH'; rewrite N_land_succ_double_double; apply/N_double_succ_double_le_mono/IH'.
+    + move=>b IH a IH'.
+      rewrite N_land_succ_double_succ_double; apply/N.succ_double_le_mono/IH'.
+Qed.
+
+Lemma N_land_mono_l (a b : N) : (a `land` b <= b)%N.
+Proof. by rewrite N.land_comm; apply: N_land_mono_r. Qed.
+
 #[global] Instance N_divide_dec : RelDecision N.divide.
 Proof.
   refine (λ a b, cast_if (decide (N.gcd a b = a)));
