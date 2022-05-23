@@ -424,6 +424,9 @@ Section with_cpp.
       p |-> (P -* Q) -|- p |-> P -* p |-> Q.
   Proof. by rewrite !_at_loc Rep_wand_force. Qed.
 
+  Lemma _at_impl p R1 R2 : p |-> (R1 -->> R2) -|- p |-> R1 -->> p |-> R2.
+  Proof. by rewrite !_at_loc Rep_impl_force. Qed.
+
   Lemma _at_pers  p  R : p |-> (<pers> R) -|- <pers> p |-> R.
   Proof. by rewrite !_at_loc monPred_at_persistently. Qed.
 
