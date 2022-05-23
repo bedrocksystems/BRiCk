@@ -424,6 +424,9 @@ Section with_cpp.
       p |-> (P -* Q) -|- p |-> P -* p |-> Q.
   Proof. by rewrite !_at_loc Rep_wand_force. Qed.
 
+  Lemma _at_impl p R1 R2 : p |-> (R1 -->> R2) -|- p |-> R1 -->> p |-> R2.
+  Proof. by rewrite !_at_loc Rep_impl_force. Qed.
+
   Lemma _at_pers  p  R : p |-> (<pers> R) -|- <pers> p |-> R.
   Proof. by rewrite !_at_loc monPred_at_persistently. Qed.
 
@@ -449,6 +452,9 @@ Section with_cpp.
 
   Lemma _at_later p R : p |-> |> R -|- |> p |-> R.
   Proof. by rewrite !_at_eq/_at_def; rewrite monPred_at_later. Qed.
+
+  Lemma _at_internal_eq p {A : ofe} x y : p |-> (x ≡@{A} y) -|- x ≡ y.
+  Proof. by rewrite _at_loc monPred_at_internal_eq. Qed.
 
   Lemma _at_offsetR  p  (o : offset) (r : Rep) :
       _at p (_offsetR o r) -|- _at (p ,, o) r.
@@ -502,6 +508,14 @@ Section with_cpp.
   #[global] Instance _at_observe_2_pure Q p (R1 R2 : Rep) :
     Observe2 [! Q !] R1 R2 → Observe2 [! Q !] (p |-> R1) (p |-> R2).
   Proof. rewrite -_at_pure. apply _. Qed.
+
+  #[global] Instance observe_2_internal_eq_at {A : ofe} x y R1 R2 p :
+    Observe2 (x ≡@{A} y) R1 R2 -> Observe2 (x ≡ y) (p |-> R1) (p |-> R2).
+  Proof. rewrite !_at_loc. apply _. Qed.
+  #[global] Instance observe_2_later_internal_eq_at {A : ofe} x y R1 R2 p :
+    Observe2 (|> (x ≡@{A} y)) R1 R2 ->
+    Observe2 (|> (x ≡ y)) (p |-> R1) (p |-> R2).
+  Proof. rewrite !_at_loc. apply _. Qed.
 
   Lemma _at_obs  p  (r : Rep) P :
     r |-- r ** [| P |] →
