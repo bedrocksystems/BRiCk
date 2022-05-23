@@ -55,3 +55,39 @@ Module Type CPP_LOGIC_CLASS := CPP_LOGIC_CLASS_BASE <+ CPP_LOGIC_CLASS_MIXIN.
 
 Declare Module LC : CPP_LOGIC_CLASS.
 Export LC.
+
+(**
+To implement higher-order ghost state mentioning [mpred], we
+presuppose [mpred ≈ I -mon> iProp] and use the discrete OFE [I -d>
+iProp Σ] rather than [monPredO]. We cannot use [monPredO] because Iris
+lacks a functor [monPredOF].
+*)
+Definition later_mpredO (Σ : gFunctors) (ti : biIndex) : ofe :=
+  laterO (ti -d> iPropI Σ).
+Definition later_mpredOF (ti : biIndex) : oFunctor :=
+  laterOF (ti -d> idOF).
+Definition later_mpred `{Σ : cpp_logic ti} (P : mpred) :
+    later (ti -d> iPropI Σ) :=
+  Next (monPred_at P).
+
+Section later_mpred.
+  Context `{Σ : cpp_logic ti}.
+
+  #[global] Instance later_mpred_contractive : Contractive later_mpred.
+  Proof.
+    intros n P1 P2 HP. apply Next_contractive. destruct n as [|n]; first done.
+    by destruct HP.
+  Qed.
+  #[global] Instance later_mpred_ne : NonExpansive later_mpred.
+  Proof. exact: contractive_ne. Qed.
+  #[global] Instance later_mpred_proper : Proper (equiv ==> equiv) later_mpred.
+  Proof. exact: ne_proper. Qed.
+
+  Lemma equivI_later_mpred P Q :
+    later_mpred P ≡ later_mpred Q -|-@{mpredI} |> (P ≡ Q).
+  Proof.
+    rewrite /later_mpred later_equivI.
+    by rewrite discrete_fun_equivI monPred_equivI.
+  Qed.
+End later_mpred.
+#[global] Hint Opaque later_mpred : typeclass_instances.
