@@ -138,6 +138,11 @@ Variant ValCat : Set := Lvalue | Prvalue | Xvalue.
 #[global] Instance: EqDecision ValCat.
 Proof. solve_decision. Defined.
 
+Variant OffsetInfo : Set :=
+  | Oo_Field (_ : field).
+#[global] Instance: EqDecision OffsetInfo.
+Proof. solve_decision. Defined.
+
 Inductive Expr : Set :=
 | Econst_ref (_ : VarRef) (_ : type)
   (* ^ these are different because they do not have addresses *)
@@ -184,6 +189,7 @@ Inductive Expr : Set :=
 | Esubscript (_ : Expr) (_ : Expr) (_ : type)
 | Esize_of (_ : type + Expr) (_ : type)
 | Ealign_of (_ : type + Expr) (_ : type)
+| Eoffset_of (_ : OffsetInfo) (_ : type)
 | Econstructor (_ : obj_name) (_ : list Expr) (_ : type)
 | Eimplicit (_ : Expr)
 | Eimplicit_init (_ : type)
