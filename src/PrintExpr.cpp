@@ -916,6 +916,31 @@ public:
         }
     }
 
+    void VisitOffsetOfExpr(const OffsetOfExpr* expr, CoqPrinter& print,
+                           ClangPrinter& cprint, const ASTContext& ctxt,
+                           OpaqueNames&) {
+        print.ctor("Eoffset_of");
+        assert(expr->getNumComponents() == 1);
+        auto comm = expr->getComponent(0);
+        switch (comm.getKind()) {
+        case OffsetOfNode::Kind::Field:
+            print.ctor("Oo_Field");
+            cprint.printField(comm.getField(), print);
+            print.end_ctor();
+            break;
+
+        default:
+            using namespace logging;
+            unsupported()
+                << "offsetof() is only supported on fields and base classes: "
+                << expr->getSourceRange().printToString(ctxt.getSourceManager())
+                << "\n";
+            die();
+            break;
+        }
+        done(expr, print, cprint);
+    }
+
     void
     VisitSubstNonTypeTemplateParmExpr(const SubstNonTypeTemplateParmExpr* expr,
                                       CoqPrinter& print, ClangPrinter& cprint,

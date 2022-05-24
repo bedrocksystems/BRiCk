@@ -35,6 +35,7 @@ Fixpoint type_of (e : Expr) : type :=
   | Esubscript _ _ t
   | Esize_of _ t
   | Ealign_of _ t
+  | Eoffset_of _ t
   | Econstructor _ _ t => t
   | Eimplicit e => type_of e
   | Eif _ _ _ t
