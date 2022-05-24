@@ -106,20 +106,34 @@ Module Export TypeNotations.
        , N constr
        , format "'[' ty [ N ] ']'").
   Notation "nm" := (Tnamed nm) (in custom CPP_type at level 0, nm constr).
-  Notation "'extern' cc '???()' '→' rty"
-    := (@Tfunction cc rty nil)
+  Notation "'extern' cc '???()' '->' rty"
+    := (@Tfunction cc Ar_Definite rty nil)
        ( in custom CPP_type at level 100
        , cc constr at level 0
        , rty custom CPP_type at level 200
-       , format "'[' extern  cc  ???()  →  rty ']'").
-  Notation "'extern' cc '???(' aty1 , .. , aty2 ')' '→' rty"
-    := (@Tfunction cc rty (cons aty1 .. (cons aty2 nil) ..))
+       , format "'[' extern  cc  ???()  ->  rty ']'").
+  Notation "'extern' cc '???(' aty1 , .. , aty2 ')' '->' rty"
+    := (@Tfunction cc Ar_Definite rty (cons aty1 .. (cons aty2 nil) ..))
        ( in custom CPP_type at level 100
        , cc constr at level 0
        , rty custom CPP_type at level 200
        , aty1 custom CPP_type at level 200
        , aty2 custom CPP_type at level 200
-       , format "'[' extern  cc  ???( '[hv' aty1 ,  '/' .. ,  '/' aty2 ']' )  →  rty ']'").
+       , format "'[' extern  cc  ???( '[hv' aty1 ,  '/' .. ,  '/' aty2 ']' )  ->  rty ']'").
+  Notation "'extern' cc '???()(...)' '->' rty"
+    := (@Tfunction cc Ar_Variadic rty nil)
+       ( in custom CPP_type at level 100
+       , cc constr at level 0
+       , rty custom CPP_type at level 200
+       , format "'[' extern  cc  ???()(...)  ->  rty ']'").
+  Notation "'extern' cc '???(' aty1 , .. , aty2 ')(...)' '->' rty"
+    := (@Tfunction cc Ar_Variadic rty (cons aty1 .. (cons aty2 nil) ..))
+       ( in custom CPP_type at level 100
+       , cc constr at level 0
+       , rty custom CPP_type at level 200
+       , aty1 custom CPP_type at level 200
+       , aty2 custom CPP_type at level 200
+       , format "'[' extern  cc  ???( '[hv' aty1 ,  '/' .. ,  '/' aty2 ']' )(...)  ->  rty ']'").
   Notation "'bool'" := Tbool (in custom CPP_type at level 0).
   Notation "'ptr[' nm ']<' ty '>'"
     := (Tmember_pointer nm ty)
@@ -212,18 +226,32 @@ Section TestTypeNotations.
   #[local] Definition Notation_Tnamed_1 : Tnamed "foobarbaz" = {type: "foobarbaz"} := eq_refl.
   #[local] Definition Notation_Tnamed_2 nm : Tnamed nm = {type: nm} := eq_refl.
 
-  #[local] Definition Notation_Tfunction_noargs_1 : Tfunction Tvoid nil = {type: extern CC_C ???() → void} := eq_refl.
-  #[local] Definition Notation_Tfunction_noargs_2 rty : Tfunction rty nil = {type: extern CC_C ???() → {coq: rty}} := eq_refl.
+  #[local] Definition Notation_Tfunction_novariadic_noargs_1 : Tfunction Tvoid nil = {type: extern CC_C ???() -> void} := eq_refl.
+  #[local] Definition Notation_Tfunction_novariadic_noargs_2 rty : Tfunction rty nil = {type: extern CC_C ???() -> {coq: rty}} := eq_refl.
 
-  #[local] Definition Notation_Tfunction_args_nowrap_1 : Tfunction Tvoid (cons Tbool (cons Tnullptr nil)) = {type: extern CC_C ???(bool, nullptr_t) → void} := eq_refl.
-  #[local] Definition Notation_Tfunction_noargs_nowrap_2 rty aty1 aty2 :
-    Tfunction rty (cons aty1 (cons Tvoid (cons aty2 nil))) = {type: extern CC_C ???({coq: aty1}, void, {coq: aty2}) → {coq: rty}} := eq_refl.
+  #[local] Definition Notation_Tfunction_novariadic_args_nowrap_1 : Tfunction Tvoid (cons Tbool (cons Tnullptr nil)) = {type: extern CC_C ???(bool, nullptr_t) -> void} := eq_refl.
+  #[local] Definition Notation_Tfunction_novariadic_noargs_nowrap_2 rty aty1 aty2 :
+    Tfunction rty (cons aty1 (cons Tvoid (cons aty2 nil))) = {type: extern CC_C ???({coq: aty1}, void, {coq: aty2}) -> {coq: rty}} := eq_refl.
 
-  #[local] Definition Notation_Tfunction_args_wrap :
+  #[local] Definition Notation_Tfunction_novariadic_args_wrap :
     Tfunction Tvoid (cons (Tnamed "askldjfo;lasjdlkfj;aklsdjg;blkajl;ksdjfl;aksdjf;lkasjdf;lkajsd;lfkjas;dlkfj;alskdjf;kalsdjf;lk")
                           (cons (Tnamed "askldjflk;ajsdkl;gjasdklgjakl;sdjgl;kasdjfl;kjasdlfhajklsdgljkasdhfgjkahsdfljk") nil))
       = {type: extern CC_C ???("askldjfo;lasjdlkfj;aklsdjg;blkajl;ksdjfl;aksdjf;lkasjdf;lkajsd;lfkjas;dlkfj;alskdjf;kalsdjf;lk",
-                               "askldjflk;ajsdkl;gjasdklgjakl;sdjgl;kasdjfl;kjasdlfhajklsdgljkasdhfgjkahsdfljk") → void} := eq_refl.
+                               "askldjflk;ajsdkl;gjasdklgjakl;sdjgl;kasdjfl;kjasdlfhajklsdgljkasdhfgjkahsdfljk") -> void} := eq_refl.
+
+  #[local] Definition Notation_Tfunction_variadic_noargs_1 : Tfunction (ar:=Ar_Variadic) Tvoid nil = {type: extern CC_C ???()(...) -> void} := eq_refl.
+  #[local] Definition Notation_Tfunction_variadic_noargs_2 rty : Tfunction (ar:=Ar_Variadic) rty nil = {type: extern CC_C ???()(...) -> {coq: rty}} := eq_refl.
+
+  #[local] Definition Notation_Tfunction_variadic_args_nowrap_1 : Tfunction (ar:=Ar_Variadic) Tvoid (cons Tbool (cons Tnullptr nil)) = {type: extern CC_C ???(bool, nullptr_t)(...) -> void} := eq_refl.
+  #[local] Definition Notation_Tfunction_variadic_noargs_nowrap_2 rty aty1 aty2 :
+    Tfunction (ar:=Ar_Variadic) rty (cons aty1 (cons Tvoid (cons aty2 nil))) = {type: extern CC_C ???({coq: aty1}, void, {coq: aty2})(...) -> {coq: rty}} := eq_refl.
+
+  #[local] Definition Notation_Tfunction_variadic_args_wrap :
+    Tfunction (ar:=Ar_Variadic)
+              Tvoid (cons (Tnamed "askldjfo;lasjdlkfj;aklsdjg;blkajl;ksdjfl;aksdjf;lkasjdf;lkajsd;lfkjas;dlkfj;alskdjf;kalsdjf;lk")
+                          (cons (Tnamed "askldjflk;ajsdkl;gjasdklgjakl;sdjgl;kasdjfl;kjasdlfhajklsdgljkasdhfgjkahsdfljk") nil))
+      = {type: extern CC_C ???("askldjfo;lasjdlkfj;aklsdjg;blkajl;ksdjfl;aksdjf;lkasjdf;lkajsd;lfkjas;dlkfj;alskdjf;kalsdjf;lk",
+                               "askldjflk;ajsdkl;gjasdklgjakl;sdjgl;kasdjfl;kjasdlfhajklsdgljkasdhfgjkahsdfljk")(...) -> void} := eq_refl.
 
   #[local] Definition Notation_Tbool : Tbool = {type: bool} := eq_refl.
 
