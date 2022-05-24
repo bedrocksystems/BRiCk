@@ -101,7 +101,7 @@ private:
             print.end_ctor();
         } else if (decl->getDeclContext()->isFunctionOrMethod() and
                    not(isa<FunctionDecl>(decl) or check_static_local(decl))) {
-            print.ctor("Lname", false) << fmt::nbsp;
+            print.ctor("Lname", false);
             if (auto pd = dyn_cast<ParmVarDecl>(decl)) {
                 cprint.printParamName(pd, print);
             } else {
@@ -932,7 +932,7 @@ public:
             cprint.printObjName(expr->getOperatorNew(), print);
             print.next_tuple();
             cprint.printQualType(expr->getOperatorNew()->getType(), print);
-            print.end_tuple();
+            print.end_tuple() << fmt::nbsp;
         } else {
             logging::fatal() << "missing operator [new]\n";
             logging::die();
