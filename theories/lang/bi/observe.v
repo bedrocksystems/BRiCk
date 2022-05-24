@@ -270,6 +270,15 @@ Section bi.
     - iApply (observe_2 with "R1 R2").
   Qed.
 
+  #[global] Instance observe_later Q P : Observe Q P → Observe (▷ Q) (▷ P).
+  Proof. rewrite /Observe=>->. by rewrite bi.later_persistently. Qed.
+  #[global] Instance observe_2_later Q P1 P2 :
+    Observe2 Q P1 P2 → Observe2 (▷ Q) (▷ P1) (▷ P2).
+  Proof.
+    intros. apply observe_uncurry. rewrite -bi.later_sep.
+    by apply observe_later, observe_curry.
+  Qed.
+
   Global Instance observe_from_false Q : Observe Q False.
   Proof. iDestruct 1 as "[]". Qed.
   Global Instance observe_2_from_false_1 Q P : Observe2 Q False P.
