@@ -17,6 +17,8 @@ Module Export TypeNotations.
   Declare Custom Entry CPP_type.
   Declare Scope CPP_type_scope.
   Delimit Scope CPP_type_scope with cpp_type.
+  (* TODO (JH): Determine if we want (something like) this, and then do it. *)
+  Bind Scope CPP_type_scope with type.
 
   (* Injection from [constr] in case we're printing this at the top-level *)
   Notation "'{type:' ty '}'"
@@ -167,36 +169,519 @@ Module Export TypeNotations.
        , format "'[hv' {arch:  nm ;  '/' size:  sz } ']'").
 End TypeNotations.
 
-Module Export cpp_expr.
-  Declare Custom Entry cpp_expr.
-  Declare Scope cppexpr_scope.
-  Delimit Scope cppexpr_scope with cexpr.
+(* TODO (JH): Investigate which (if any) of the subsequent notations we can make
+   printing/parsing
+ *)
+
+Module Export ExprNotations.
+  Declare Custom Entry CPP_expr.
+  Declare Scope CPP_expr_scope.
+  Delimit Scope CPP_expr_scope with cpp_expr.
+
+  (* NOTE: precedences taken from cppreference
+       (cf. https://en.cppreference.com/w/cpp/language/operator_precedence).
+   *)
 
   (* Quotation mechanism for [Expr]s *)
   Notation "'{expr:' e }" := e
     ( at level 200
-    , e custom cpp_expr at level 200
+    , e custom CPP_expr at level 200
     , format "'[hv' {expr:  '/' e } ']'"
-    , only printing) : cppexpr_scope.
-End cpp_expr.
+    , only printing) : CPP_expr_scope.
+  (* Injection into [constr] in case we're printing a subterm we don't recognize *)
+  Notation "'{coq:' e '}'"
+    := e
+       ( in custom CPP_expr at level 0
+       , e constr
+       , format "'[hv' {coq:  '/' e } ']'").
 
-Module Export cpp_stmt.
-  Declare Custom Entry cpp_stmt.
-  Declare Scope cppstmt_scope.
-  Delimit Scope cppstmt_scope with cstmt.
+  Notation "$ v"
+      := (Econst_ref (Lname v%bs) _)
+         ( in custom CPP_expr at level 0
+         , v constr
+         , format "'[' $ v ']'"
+         , only printing).
+  Notation "$ :: v"
+      := (Econst_ref (Gname v%bs) _)
+         ( in custom CPP_expr at level 0
+         , v constr
+         , format "'[' $ :: v ']'"
+         , only printing).
+
+  Notation "$ v"
+      := (Evar (Lname v%bs) _)
+         ( in custom CPP_expr at level 0
+         , v constr
+         , format "'[' $ v ']'"
+         , only printing).
+  Notation "$ :: v"
+      := (Evar (Gname v%bs) _)
+         ( in custom CPP_expr at level 0
+         , v constr
+         , format "'[' $ :: v ']'"
+         , only printing).
+
+  Notation "'ASCII#' ascii_code"
+      := (Echar ascii_code%Z _)
+         ( in custom CPP_expr at level 0
+         , ascii_code constr
+         , format "'[' ASCII# ascii_code ']'"
+         , only printing).
+
+  Notation "# s"
+      := (Estring s%bs _)
+         ( in custom CPP_expr at level 0
+         , s constr
+         , format "'[' # s ']'"
+         , only printing).
+
+  Notation "# v"
+      := (Eint v%Z _)
+         ( in custom CPP_expr at level 0
+         , v constr
+         , format "'[' # v ']'"
+         , only printing).
+
+  Notation "# v"
+      := (Ebool v)
+         ( in custom CPP_expr at level 0
+         , v constr
+         , format "'[' # v ']'").
+
+  Notation "'-'" := (Uminus) (in custom CPP_expr at level 0) : CPP_expr_scope.
+  Notation "'!'" := (Unot) (in custom CPP_expr at level 0) : CPP_expr_scope.
+  Notation "'~'" := (Ubnot) (in custom CPP_expr at level 0) : CPP_expr_scope.
+  Notation "'{unop:' op }"
+      := (Uother op%bs)
+         ( in custom CPP_expr at level 0
+         , op constr
+         , format "'[' {unop:  '/' op } ']'"
+         , only printing).
+
+  (* QUESTION (JH): Is this the right level? *)
+  Notation "op x"
+      := (Eunop op x _)
+         ( in custom CPP_expr at level 30
+         , x custom CPP_expr at level 200
+         , op custom CPP_expr at level 0
+         , format "'[' op x ']'"
+         , only printing).
+
+  Notation "'+'" := (Badd) (in custom CPP_expr at level 0) : CPP_expr_scope.
+  Notation "'&'" := (Band) (in custom CPP_expr at level 0) : CPP_expr_scope.
+  Notation "'<=>'" := (Bcmp) (in custom CPP_expr at level 0) : CPP_expr_scope.
+  Notation "'/'" := (Bdiv) (in custom CPP_expr at level 0) : CPP_expr_scope.
+  Notation "'=='" := (Beq) (in custom CPP_expr at level 0) : CPP_expr_scope.
+  (* We exclude the following two [BinOp] notations since they conflict with
+     parsing nested ptr/ref [type]s.
+
+     NOTE (JH): These should only ever be used directly within [Ebinop], so we
+     aren't losing anything in practice.
+   *)
+  Notation "'>='" := (Bge) (in custom CPP_expr at level 0) : CPP_expr_scope.
+  Notation "'>'" := (Bgt) (in custom CPP_expr at level 0) : CPP_expr_scope.
+  Notation "'<='" := (Ble) (in custom CPP_expr at level 0) : CPP_expr_scope.
+  Notation "'<'" := (Blt) (in custom CPP_expr at level 0) : CPP_expr_scope.
+  Notation "'*'" := (Bmul) (in custom CPP_expr at level 0) : CPP_expr_scope.
+  Notation "'!='" := (Bneq) (in custom CPP_expr at level 0) : CPP_expr_scope.
+  Notation "'|'" := (Bor) (in custom CPP_expr at level 0) : CPP_expr_scope.
+  Notation "'%'" := (Bmod) (in custom CPP_expr at level 0) : CPP_expr_scope.
+  Notation "'<<'" := (Bshl) (in custom CPP_expr at level 0) : CPP_expr_scope.
+  Notation "'>>'" := (Bshr) (in custom CPP_expr at level 0) : CPP_expr_scope.
+  Notation "'-'" := (Bsub) (in custom CPP_expr at level 0) : CPP_expr_scope.
+  Notation "'^'" := (Bxor) (in custom CPP_expr at level 0) : CPP_expr_scope.
+  Notation "'.*'" := (Bdotp) (in custom CPP_expr at level 0) : CPP_expr_scope.
+  Notation "'->*'" := (Bdotip) (in custom CPP_expr at level 0) : CPP_expr_scope.
+
+  (* TODO (JH): Look into ways of fusing direct nestings of [{binop: ...}] *)
+
+  Notation "'{binop:' x .* y }"
+      := (Ebinop Bdotp x y _)
+         ( in custom CPP_expr at level 40
+         , x custom CPP_expr at level 200
+         , y custom CPP_expr at level 200
+         , format "'[hv   ' {binop:  '/' x .* y } ']'"
+         , only printing).
+  Notation "'{binop:' x ->* y }"
+      := (Ebinop Bdotip x y _)
+         ( in custom CPP_expr at level 40
+         , x custom CPP_expr at level 200
+         , y custom CPP_expr at level 200
+         , format "'[hv   ' {binop:  '/' x ->* y } ']'"
+         , only printing).
+
+  Notation "'{binop:' x * y }"
+      := (Ebinop Bmul x y _)
+         ( in custom CPP_expr at level 50
+         , x custom CPP_expr at level 200
+         , y custom CPP_expr at level 200
+         , format "'[hv   ' {binop:  '/' x  *  y } ']'"
+         , only printing).
+  Notation "'{binop:' x / y }"
+      := (Ebinop Bdiv x y _)
+         ( in custom CPP_expr at level 50
+         , x custom CPP_expr at level 200
+         , y custom CPP_expr at level 200
+         , format "'[hv   ' {binop:  '/' x  /  y } ']'"
+         , only printing).
+  Notation "'{binop:' x % y }"
+      := (Ebinop Bmod x y _)
+         ( in custom CPP_expr at level 50
+         , x custom CPP_expr at level 200
+         , y custom CPP_expr at level 200
+         , format "'[hv   ' {binop:  '/' x  %  y } ']'"
+         , only printing).
+
+  Notation "'{binop:' x + y }"
+      := (Ebinop Badd x y _)
+         ( in custom CPP_expr at level 60
+         , x custom CPP_expr at level 200
+         , y custom CPP_expr at level 200
+         , format "'[hv   ' {binop:  '/' x  +  y } ']'"
+         , only printing).
+  Notation "'{binop:' x - y }"
+      := (Ebinop Bsub x y _)
+         ( in custom CPP_expr at level 60
+         , x custom CPP_expr at level 200
+         , y custom CPP_expr at level 200
+         , format "'[hv   ' {binop:  '/' x  -  y } ']'"
+         , only printing).
+
+  Notation "'{binop:' x << y }"
+      := (Ebinop Bshl x y _)
+         ( in custom CPP_expr at level 70
+         , x custom CPP_expr at level 200
+         , y custom CPP_expr at level 200
+         , format "'[hv   ' {binop:  '/' x  <<  y } ']'"
+         , only printing).
+  Notation "'{binop:' x >> y }"
+      := (Ebinop Bshr x y _)
+         ( in custom CPP_expr at level 70
+         , x custom CPP_expr at level 200
+         , y custom CPP_expr at level 200
+         , format "'[hv   ' {binop:  '/' x  >>  y } ']'"
+         , only printing).
+
+  Notation "'{binop:' x <=> y }"
+      := (Ebinop Bcmp x y _)
+         ( in custom CPP_expr at level 80
+         , x custom CPP_expr at level 200
+         , y custom CPP_expr at level 200
+         , format "'[hv   ' {binop:  '/' x  <=>  y } ']'"
+         , only printing).
+
+  Notation "'{binop:' x < y }"
+      := (Ebinop Blt x y _)
+         ( in custom CPP_expr at level 90
+         , x custom CPP_expr at level 200
+         , y custom CPP_expr at level 200
+         , format "'[hv   ' {binop:  '/' x  <  y } ']'"
+         , only printing).
+  Notation "'{binop:' x <= y }"
+      := (Ebinop Ble x y _)
+         ( in custom CPP_expr at level 90
+         , x custom CPP_expr at level 200
+         , y custom CPP_expr at level 200
+         , format "'[hv   ' {binop:  '/' x  <=  y } ']'"
+         , only printing).
+  Notation "'{binop:' x > y }"
+      := (Ebinop Bgt x y _)
+         ( in custom CPP_expr at level 90
+         , x custom CPP_expr at level 200
+         , y custom CPP_expr at level 200
+         , format "'[hv   ' {binop:  '/' x  >  y } ']'"
+         , only printing).
+  Notation "'{binop:' x >= y }"
+      := (Ebinop Bge x y _)
+         ( in custom CPP_expr at level 90
+         , x custom CPP_expr at level 200
+         , y custom CPP_expr at level 200
+         , format "'[hv   ' {binop:  '/' x  >=  y } ']'"
+         , only printing).
+
+  Notation "'{binop:' x == y }"
+      := (Ebinop Beq x y _)
+         ( in custom CPP_expr at level 100
+         , x custom CPP_expr at level 200
+         , y custom CPP_expr at level 200
+         , format "'[hv   ' {binop:  '/' x  ==  y } ']'"
+         , only printing).
+  Notation "'{binop:' x != y }"
+      := (Ebinop Bneq x y _)
+         ( in custom CPP_expr at level 100
+         , x custom CPP_expr at level 200
+         , y custom CPP_expr at level 200
+         , format "'[hv   ' {binop:  '/' x  !=  y } ']'"
+         , only printing).
+
+  Notation "'{binop:' x & y }"
+      := (Ebinop Band x y _)
+         ( in custom CPP_expr at level 110
+         , x custom CPP_expr at level 200
+         , y custom CPP_expr at level 200
+         , format "'[hv   ' {binop:  '/' x  &  y } ']'"
+         , only printing).
+
+  Notation "'{binop:' x ^ y }"
+      := (Ebinop Band x y _)
+         ( in custom CPP_expr at level 120
+         , x custom CPP_expr at level 200
+         , y custom CPP_expr at level 200
+         , format "'[hv   ' {binop:  '/' x  ^  y } ']'"
+         , only printing).
+
+  Notation "'{binop:' x | y }"
+      := (Ebinop Band x y _)
+         ( in custom CPP_expr at level 130
+         , x custom CPP_expr at level 200
+         , y custom CPP_expr at level 200
+         , format "'[hv   ' {binop:  '/' x  |  y } ']'"
+         , only printing).
+
+  Notation "$ v"
+      := (Eread_ref (Evar (Lname v%bs) _))
+         ( in custom CPP_expr at level 0
+         , v constr
+         , format "'[' $ v ']'"
+         , only printing).
+  Notation "$ :: v"
+      := (Eread_ref (Evar (Gname v%bs) _))
+         ( in custom CPP_expr at level 0
+         , v constr
+         , format "'[' $ :: v ']'"
+         , only printing).
+
+  Notation "* e"
+      := (Ederef e _)
+         ( in custom CPP_expr at level 30
+         , e custom CPP_expr at level 200
+         , format "'[' * e ']'"
+         , only printing).
+
+  Notation "& e"
+      := (Eaddrof e _)
+         ( in custom CPP_expr at level 30
+         , e custom CPP_expr at level 200
+         , format "'[' & e ']'"
+         , only printing).
+
+  Notation "v = e"
+      := (Eassign v e _)
+         ( in custom CPP_expr at level 160
+         , e custom CPP_expr at level 200
+         , v custom CPP_expr at level 200
+         , format "'[hv  ' v  =  '/' e ']'"
+         , only printing).
+
+  Notation "v bop = e"
+      := (Eassign_op bop v e)
+         ( in custom CPP_expr at level 160
+         , e custom CPP_expr at level 200
+         , v custom CPP_expr at level 200
+         , bop custom CPP_expr at level 0
+         , format "'[hv  ' v  bop =  '/' e ']'"
+         , only printing).
+
+  Notation "++ e"
+      := (Epreinc e _)
+         ( in custom CPP_expr at level 30
+         , e custom CPP_expr at level 200
+         , format "'[' ++ e ']'"
+         , only printing).
+  Notation "e ++"
+      := (Epostinc e _)
+         ( in custom CPP_expr at level 30
+         , e custom CPP_expr at level 200
+         , format "'[' e ++ ']'"
+         , only printing).
+  Notation "-- e"
+      := (Epredec e _)
+         ( in custom CPP_expr at level 30
+         , e custom CPP_expr at level 200
+         , format "'[' -- e ']'"
+         , only printing).
+  Notation "e --"
+      := (Epostdec e _)
+         ( in custom CPP_expr at level 30
+         , e custom CPP_expr at level 200
+         , format "'[' e -- ']'"
+         , only printing).
+
+  Notation "'{binop:' e1 && e2 }"
+      := (Eseqand e1 e2)
+         ( in custom CPP_expr at level 140
+         , e1 custom CPP_expr at level 200
+         , e2 custom CPP_expr at level 200
+         , format "'[hv   ' {binop:  '/' e1  &&  e2 } ']'").
+
+  Notation "'{binop:' e1 || e2 }"
+      := (Eseqor e1 e2)
+         ( in custom CPP_expr at level 150
+         , e1 custom CPP_expr at level 200
+         , e2 custom CPP_expr at level 200
+         , format "'[hv   ' {binop:  '/' e1  ||  e2 } ']'").
+
+  Notation "'{comma:' e1 , e2 }"
+    := (Ecomma _ e1 e2)
+       ( in custom CPP_expr at level 170
+       , e1 custom CPP_expr at level 200
+       , e2 custom CPP_expr at level 200
+       , format "'[hv   ' {comma:  '/' e1 ,  e2 } ']'").
+
+  Notation "e '()'"
+      := (Ecall e nil _)
+         ( in custom CPP_expr at level 200
+         , e custom CPP_expr at level 200
+         , format "'[' e () ']'"
+         , only printing).
+  Notation "e ( a1 , .. , a2 )"
+      := (Ecall e (cons a1 (.. (cons a2 nil) .. )) _)
+         ( in custom CPP_expr at level 200
+         , e custom CPP_expr at level 200
+         , a1 custom CPP_expr at level 200
+         , a2 custom CPP_expr at level 200
+         , format "'[' e ( '[hv' a1 ,  '/' .. ,  '/' a2 ']' ) ']'"
+         , only printing).
+
+  (* TODO (JH): Determine which casts we actually want to print something for *)
+  Notation "e"
+      := (Ecast _ _ e _)
+         ( in custom CPP_expr at level 0
+         , e custom CPP_expr at level 200
+         , only printing).
+
+  (* TODO (JH): [Emember]/[Emember_call] *)
+  Notation "cls . fld"
+      := (Build_field cls fld)
+         ( in custom CPP_expr at level 0
+         , cls constr
+         , fld constr
+         , format "'[' cls . fld ']'"
+         , only printing).
+
+  Notation "e [ n ]"
+      := (Esubscript e n _)
+         ( in custom CPP_expr at level 20
+         , e custom CPP_expr at level 200
+         , n custom CPP_expr at level 200
+         , format "'[' e [ n ] ']'"
+         , only printing).
+
+  Notation "'sizeof(ty:' ty )"
+      := (Esize_of (inl ty) _)
+         ( in custom CPP_expr at level 200
+         , ty custom CPP_type at level 200
+         , format "'[' sizeof(ty:  ty ) ']'"
+         , only printing).
+  Notation "'sizeof(expr:' e )"
+      := (Esize_of (inr e) _)
+         ( in custom CPP_expr at level 200
+         , e custom CPP_expr at level 200
+         , format "'[' sizeof(expr:  e ) ']'"
+         , only printing).
+
+  Notation "'alignof(ty:' ty )"
+      := (Ealign_of (inl ty) _)
+         ( in custom CPP_expr at level 200
+         , ty custom CPP_type at level 200
+         , format "'[' alignof(ty:  ty ) ']'"
+         , only printing).
+  Notation "'alignof(expr:' e )"
+      := (Ealign_of (inr e) _)
+         ( in custom CPP_expr at level 200
+         , e custom CPP_expr at level 200
+         , format "'[' alignof(expr:  e ) ']'"
+         , only printing).
+
+  Notation "f" :=
+      (Oo_Field f)
+      ( in custom CPP_expr at level 0
+      , f custom CPP_expr at level 200
+      , format "'[' f ']'"
+      , only printing).
+
+  Notation "'offsetof(' offset_info )"
+      := (Eoffset_of offset_info _)
+         ( in custom CPP_expr at level 200
+         , offset_info custom CPP_expr at level 200
+         , format "'[' offsetof( offset_info ) ']'"
+         , only printing).
+
+  (* TODO (JH): [Econstructor]/[Eimplicit]/[Eimplicit_init] *)
+
+  Notation "c ? t : e"
+      := (Eif c t e _)
+         ( in custom CPP_expr at level 160
+         , c custom CPP_expr at level 200
+         , t custom CPP_expr at level 200
+         , e custom CPP_expr at level 200
+         , format "'[hv   ' c  '/' ?  t  '/' :  e ']'"
+         , only printing).
+
+  Notation "'this'" := (Ethis _) (in custom CPP_expr at level 0, only printing).
+  Notation "'nullptr'" := (Enull) (in custom CPP_expr at level 0).
+
+  (* NOTE: [Einitlist nil (Some _) _] corresponds to an ill-formed program
+     (cf. the [Lt] case of [wp_array_init_fill])
+   *)
+  Notation "( ty ){ }"
+      := (Einitlist nil None ty)
+         ( in custom CPP_expr at level 100
+         , ty custom CPP_type at level 200
+         , format "'[' ( ty ){  } ']'").
+  Notation "( ty ){ e1 , .. , e2 }"
+    := (Einitlist (cons e1 .. (cons e2 nil) ..) None ty)
+       ( in custom CPP_expr at level 100
+       , e1 custom CPP_expr at level 200
+       , e2 custom CPP_expr at level 200
+       , ty custom CPP_type at level 200
+       , format "'[' ( ty ){ '[hv' e1 ,  '/' .. ,  '/' e2 ']' } ']'").
+  Notation "( ty ){ e1 , .. , e2 '}{default:' edefault '}'"
+    := (Einitlist (cons e1 .. (cons e2 nil) ..) (Some edefault) ty)
+       ( in custom CPP_expr at level 100
+       , e1 custom CPP_expr at level 200
+       , e2 custom CPP_expr at level 200
+       , edefault custom CPP_expr at level 200
+       , ty custom CPP_type at level 200
+       , format "'[' ( ty ){ '[hv' e1 ,  '/' .. ,  '/' e2 ']' }{default:  '/' edefault } ']'").
+
+  (* TODO (JH): [Enew]/[Edelete] *)
+
+  (* TODO (JH): [Eandclean]/[Ematerialize_temp] *)
+
+  (* TODO (JH): [Ebuiltin]/[Eatomic] *)
+
+  (* TODO (JH): [Eva_arg] *)
+
+  (* TODO (JH): [Epseudo_destructor] *)
+
+  (* TODO (JH): [Earrayloop_init]/[Earrayloop_index]/[Eopaque_ref] *)
+
+  Notation "'{UNSUPPORTED:' msg }"
+      := (Eunsupported msg%bs _)
+         ( in custom CPP_expr at level 200
+         , msg constr
+         , format "'[hv   ' {UNSUPPORTED:  '/' msg } ']'"
+         , only printing).
+End ExprNotations.
+
+Module Export StmtNotations.
+  Declare Custom Entry CPP_stmt.
+  Declare Scope CPP_stmt_scope.
+  Delimit Scope CPP_stmt_scope with cpp_stmt.
 
   (* Quotation mechanism for [Stmt]s *)
   Notation "'{stmt:' s }" := s
     ( at level 200
-    , s custom cpp_stmt at level 200
+    , s custom CPP_stmt at level 200
     , format "'[hv' {stmt:  '/' s } ']'"
-    , only printing) : cppstmt_scope.
-End cpp_stmt.
+    , only printing) : CPP_stmt_scope.
+End StmtNotations.
 
 Module Export CodeNotations.
   Export TypeNotations.
-  (* Export ExprNotations. *)
-  (* Export StmtNotations. *)
+  Export ExprNotations.
+  Export StmtNotations.
 End CodeNotations.
 
 (* NOTE: The following [Section]s are only used for testing purposes; if you break one of these
@@ -215,8 +700,11 @@ Section TestTypeNotations.
   #[local] Definition Notation_Trv_ref_1 : Trv_ref Tbool = {type: ref&&<bool>} := eq_refl.
   #[local] Definition Notation_Trv_ref_2 ty : Trv_ref ty = {type: ref&&<{coq: ty}>} := eq_refl.
 
-  #[local] Definition Notation_Tref_Trv_ref ty : Tref (Trv_ref ty) = {type: ref&<ref&&<{coq: ty}>>} := eq_refl.
-  #[local] Definition Notation_Trv_ref_Tref_1 ty : Trv_ref (Tref ty) = {type: ref&&<ref&<{coq: ty}>>} := eq_refl.
+  (* TODO (JH): determine why we must insert the extra space between [>>] in order to
+     get it parsing
+   *)
+  #[local] Definition Notation_Tref_Trv_ref ty : Tref (Trv_ref ty) = {type: ref&<ref&&<{coq: ty}> >} := eq_refl.
+  #[local] Definition Notation_Trv_ref_Tref_1 ty : Trv_ref (Tref ty) = {type: ref&&<ref&<{coq: ty}> >} := eq_refl.
 
   #[local] Definition Notation_void : Tvoid = {type: void} := eq_refl.
 
@@ -272,223 +760,21 @@ Section TestTypeNotations.
   End Qualifiers.
 End TestTypeNotations.
 
-(* [cpp2v/theories/auto/cpp/notations/code.v@janno/code-notations], but that branch is out of date
-Declare Custom Entry CPP.
-Declare Custom Entry CPP_expr.
-Declare Custom Entry CPP_stmt.
-
-Declare Scope CPP_scope.
-Declare Scope CPP_expr_scope.
-Declare Scope CPP_stmt_scope.
-
-Delimit Scope CPP_scope with cpp.
-Delimit Scope CPP_expr_scope with cpp_expr.
-Delimit Scope CPP_stmt_scope with cpp_stmt.
-
-Module ExprNotations.
-End ExprNotations.
-
 Section TestExprNotations.
 End TestExprNotations.
-
-Module StmtNotations.
-End StmtNotations.
 
 Section TestStmtNotations.
 End TestStmtNotations.
 
-(* TODO (JH): Something to test that the signatures are correctly used for all notations *)
+(* [cpp2v/theories/auto/cpp/notations/code.v@janno/code-notations], but that branch is out of date
+Declare Custom Entry CPP.
+Declare Scope CPP_scope.
+Delimit Scope CPP_scope with cpp.
 
 (** Notations for expressions *)
-Notation "'{expr:' e }"
-    := e
-       ( at level 200
-       , e custom cpp_expr at level 200
-       , format "'[hv' {expr:  '/' e } ']'"
-       , only printing) : cppexpr_scope.
-(*
-Notation "( e )" := e (in custom cpp_expr at level 0, e custom cpp_expr at level 200, only printing, format "'[' (  e  ) ']'").
-*)
 
 
 
-Notation "( ty ){ e1 , .. , e2 }"
-    := (Einitlist (cons e1 .. (cons e2 nil) ..) _ ty)
-       ( in custom cpp_expr at level 10
-       , e1 custom cpp_expr at level 10
-       , e2 custom cpp_expr at level 10
-       , ty custom cpp_type
-       , format "( ty ){  e1 ,  .. ,  e2  }"
-       , only printing).
-Notation "( ty ){ }"
-    := (Einitlist nil _ ty)
-       ( in custom cpp_expr at level 10
-       , ty custom cpp_type
-       , format "( ty ){  }"
-       , only printing).
-
-
-
-Notation "e '()'"
-    := (Ecall e nil _)
-       ( in custom cpp_expr at level 200
-       , e custom cpp_expr at level 200
-       , format "'[' e () ']'"
-       , only printing).
-Notation "e ( a1 , .. , a2 )"
-    := (Ecall e (cons a1 (.. (cons a2 nil) .. )) _)
-       ( in custom cpp_expr at level 200
-       , e custom cpp_expr at level 200
-       , a1 custom cpp_expr at level 200
-       , a2 custom cpp_expr at level 200
-       , format "e ( a1 ,  .. ,  a2 )"
-       , only printing).
-
-
-Notation "& e"
-    := (Eaddrof e _)
-       ( in custom cpp_expr at level 10
-       , e custom cpp_expr at level 10
-       , format "& e"
-       , only printing).
-Notation "* e"
-    := (Ederef e _)
-       ( in custom cpp_expr at level 10
-       , e custom cpp_expr at level 10
-       , format " * e"
-       , only printing).
-Notation "# v"
-    := (Eint v%Z _)
-       ( in custom cpp_expr at level 1
-       , v constr
-       , format "# v"
-       , only printing).
-Notation "# v"
-    := (Ebool v)
-       ( in custom cpp_expr at level 1
-       , v constr
-       , format "# v"
-       , only printing).
-Notation "# s"
-    := (Estring s%bs _)
-       ( in custom cpp_expr at level 1
-       , s constr
-       , format "# s"
-       , only printing).
-
-
-Notation "$ v"
-    := (Econst_ref (Lname v%bs) _)
-       ( in custom cpp_expr at level 1
-       , v constr
-       , format "$ v"
-       , only printing).
-Notation "$ :: v"
-    := (Econst_ref (Gname v%bs) _)
-       ( in custom cpp_expr at level 1
-       , v constr
-       , format "$ :: v"
-       , only printing).
-
-
-Notation "e --"
-    := (Epostdec e _)
-       ( in custom cpp_expr at level 5
-       , format "e --"
-       , only printing).
-Notation "-- e"
-    := (Epredec e _)
-       ( in custom cpp_expr at level 5
-       , e custom cpp_expr at level 5
-       , format "-- e"
-       , only printing).
-Notation "e ++"
-    := (Epostinc e _)
-       ( in custom cpp_expr at level 5
-       , format "e ++"
-       , only printing).
-Notation "++ e"
-    := (Epreinc e _)
-       ( in custom cpp_expr at level 5
-       , e custom cpp_expr at level 5
-       , format "++ e"
-       , only printing).
-Notation "e1 + e2"
-    := (Ebinop Badd e1 e2 _)
-       ( in custom cpp_expr at level 50
-       , e1 custom cpp_expr
-       , e2 custom cpp_expr at level 51
-       , left associativity
-       , only printing).
-Notation "$ v"
-    := (Evar (Lname v%bs) _)
-       ( in custom cpp_expr at level 1
-       , v constr
-       , format "$ v"
-       , only printing).
-Notation "$ :: v"
-    := (Evar (Gname v%bs) _)
-       ( in custom cpp_expr at level 1
-       , v constr
-       , format "$ :: v"
-       , only printing).
-
-Notation "$ v"
-    := (Eread_ref (Evar (Lname v%bs) _))
-       ( in custom cpp_expr at level 1
-       , v constr
-       , format "$ v"
-       , only printing).
-Notation "$ :: v"
-    := (Eread_ref (Evar (Gname v%bs) _))
-       ( in custom cpp_expr at level 1
-       , v constr
-       , format "$ :: v"
-       , only printing).
-
-
-Notation "v = e"
-    := (Eassign v e _)
-       ( in custom cpp_expr at level 10
-       , e custom cpp_expr at level 200
-       , v custom cpp_expr
-       , format "'[hv  ' v  =  '/' e ']'"
-       , only printing).
-
-(* QUESTION (JH): Is this the right level? *)
-Notation "op x"
-    := (Eunop op x _)
-       ( in custom cpp_expr at level 75
-       , x custom cpp_expr at level 200
-       , op constr
-       , format "'[' op x ']'"
-       , only printing).
-Notation "-" := (Uminus) (at level 200, only printing).
-Notation "!" := (Unot) (at level 200, only printing).
-Notation "~" := (Ubnot) (at level 200, only printing).
-Notation "'{unop:' op }"
-    := (Uother op)
-       ( at level 200
-       , format "'[' {unop:  op } ']'"
-       , only printing).
-
-Check (Eassign (Evar (Lname "foo") Tvoid) (Eunop Unot (Evar (Lname "bar") Tvoid) Tvoid) Tvoid).
-
-Notation "'{binop:' op ; x ; y }"
-    := (Ebinop op x y _)
-       ( in custom cpp_expr at level 1
-       , op constr
-       , x custom cpp_expr
-       , y custom cpp_expr
-       , format "'[hv   ' {binop:  '/' op ;  '/' x ;  '/' y } ']'"
-       , only printing).
-
-
-Notation "e"
-    := (Ecast _ _ e _)
-       ( in custom cpp_expr at level 0
-       , e custom cpp_expr at level 200
-       , only printing).
 
 
 (** Notations for statements *)
