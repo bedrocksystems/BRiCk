@@ -288,20 +288,24 @@ public:
 
     void VisitIncompleteArrayType(const IncompleteArrayType* type,
                                   CoqPrinter& print, ClangPrinter& cprint) {
-        // note(gmm): i might want to note the sugar.
-        print.ctor("Qconst");
-        print.ctor("Tptr", false);
+        print.ctor("Tincomplete_array");
         cprint.printQualType(type->getElementType(), print);
         print.end_ctor();
+    }
+
+    void VisitVariableArrayType(const VariableArrayType* type,
+                                CoqPrinter& print, ClangPrinter& cprint) {
+        print.ctor("Tvariable_array");
+        cprint.printQualType(type->getElementType(), print);
+        print.output() << fmt::nbsp;
+        cprint.printExpr(type->getSizeExpr(), print);
         print.end_ctor();
     }
 
     void VisitDecayedType(const DecayedType* type, CoqPrinter& print,
                           ClangPrinter& cprint) {
-        print.ctor("Qconst");
-        print.ctor("Tptr", false);
+        print.ctor("Tdecay_type");
         cprint.printQualType(type->getPointeeType(), print);
-        print.end_ctor();
         print.end_ctor();
     }
 

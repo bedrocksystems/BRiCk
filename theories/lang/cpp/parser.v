@@ -78,6 +78,9 @@ Module Export cpp_notation.
   Open Scope cpp_scope.
 End cpp_notation.
 
+Notation Tdecay_type ty := (Qconst (Tptr ty)) (only parsing).
+Notation Tincomplete_array ty := (Qconst (Tptr ty)) (only parsing).
+Notation Tvariable_array ty e := (Qconst (Tptr ty)) (only parsing).
 
 (** this is the compatibility layer, cpp2v generates these definitions
  *)
