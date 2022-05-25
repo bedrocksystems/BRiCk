@@ -6,7 +6,10 @@
 
 Require Import Coq.ZArith.ZArith.
 Require Import Coq.Strings.String.
-Require Import bedrock.lang.cpp.ast.
+(* TODO (JH): Determine why importing [parser] causes the [Tarray] parsing notation
+   to stop working
+ *)
+From bedrock.lang.cpp Require Import ast (* parser *).
 
 #[local] Open Scope Z_scope.
 #[local] Open Scope string_scope.
@@ -20,54 +23,54 @@ Module Export TypeNotations.
   (* TODO (JH): Determine if we want (something like) this, and then do it. *)
   Bind Scope CPP_type_scope with type.
 
-  (* Injection from [constr] in case we're printing this at the top-level *)
+  (* Injection into [constr] in case we're printing this at the top-level *)
   Notation "'{type:' ty '}'"
-    := ty
-       ( at level 100
-       , ty custom CPP_type at level 200
-       , format "'[hv' {type:  '/' ty } ']'")
-     : CPP_type_scope.
-  (* Injection into [constr] in case we're printing a subterm we don't recognize *)
+      := ty
+         ( at level 100
+         , ty custom CPP_type at level 200
+         , format "'[hv' {type:  '/' ty } ']'")
+       : CPP_type_scope.
+  (* Injection from [constr] in case we're printing a subterm we don't recognize *)
   Notation "'{coq:' ty '}'"
-    := ty
-       ( in custom CPP_type at level 0
-       , ty constr
-       , format "'[hv' {coq:  '/' ty } ']'").
+      := ty
+         ( in custom CPP_type at level 0
+         , ty constr
+         , format "'[hv' {coq:  '/' ty } ']'").
 
   (* [type_qualifiers] - leaf nodes get the highest priority *)
   Notation "'mut'" := QM (in custom CPP_type at level 0).
   Notation "'const'" := QC (in custom CPP_type at level 0).
   Notation "'volatile'" := QV (in custom CPP_type at level 0).
   Notation "'const' 'volatile'"
-    := QCV
-       ( in custom CPP_type at level 0
-       , format "'[' const  volatile ']'").
+      := QCV
+         ( in custom CPP_type at level 0
+         , format "'[' const  volatile ']'").
 
   (* [Tqualified] types *)
   Notation "'mut' ty"
-    := (Qmut ty)
-       ( in custom CPP_type at level 100
-       , ty custom CPP_type at level 200
-       , right associativity
-       , format "'[' mut  ty ']'").
+      := (Qmut ty)
+         ( in custom CPP_type at level 100
+         , ty custom CPP_type at level 200
+         , right associativity
+         , format "'[' mut  ty ']'").
   Notation "'const' ty"
-    := (Qconst ty)
-       ( in custom CPP_type at level 100
-       , ty custom CPP_type at level 200
-       , right associativity
-       , format "'[' const  ty ']'").
+      := (Qconst ty)
+         ( in custom CPP_type at level 100
+         , ty custom CPP_type at level 200
+         , right associativity
+         , format "'[' const  ty ']'").
   Notation "'volatile' ty"
-    := (Qmut_volatile ty)
-       ( in custom CPP_type at level 100
-       , ty custom CPP_type at level 200
-       , right associativity
-       , format "'[' volatile  ty ']'").
+      := (Qmut_volatile ty)
+         ( in custom CPP_type at level 100
+         , ty custom CPP_type at level 200
+         , right associativity
+         , format "'[' volatile  ty ']'").
   Notation "'const' 'volatile' ty"
-    := (Qconst_volatile ty)
-       ( in custom CPP_type at level 100
-       , ty custom CPP_type at level 200
-       , right associativity
-       , format "'[' const  volatile  ty ']'").
+      := (Qconst_volatile ty)
+         ( in custom CPP_type at level 100
+         , ty custom CPP_type at level 200
+         , right associativity
+         , format "'[' const  volatile  ty ']'").
 
   (* [Tnum] variants *)
   Notation "'int8'" := Ti8 (in custom CPP_type at level 0).
@@ -83,90 +86,90 @@ Module Export TypeNotations.
 
   (* The rest of the [type]s *)
   Notation "'ptr<' ty '>'"
-    := (Tptr ty)
-       ( in custom CPP_type at level 100
-       , ty custom CPP_type at level 200
-       , left associativity
-       , format "'[' ptr< ty > ']'").
+      := (Tptr ty)
+         ( in custom CPP_type at level 100
+         , ty custom CPP_type at level 200
+         , left associativity
+         , format "'[' ptr< ty > ']'").
   Notation "'ref&<' ty '>'"
-    := (Tref ty)
-       ( in custom CPP_type at level 100
-       , ty custom CPP_type at level 200
-       , left associativity
-       , format "'[' ref&< ty > ']'").
+      := (Tref ty)
+         ( in custom CPP_type at level 100
+         , ty custom CPP_type at level 200
+         , left associativity
+         , format "'[' ref&< ty > ']'").
   Notation "'ref&&<' ty '>'"
-    := (Trv_ref ty)
-       ( in custom CPP_type at level 100
-       , ty custom CPP_type at level 200
-       , left associativity
-       , format "'[' ref&&< ty > ']'").
+      := (Trv_ref ty)
+         ( in custom CPP_type at level 100
+         , ty custom CPP_type at level 200
+         , left associativity
+         , format "'[' ref&&< ty > ']'").
   Notation "'void'" := Tvoid (in custom CPP_type at level 0).
   Notation "ty [ N ]"
-    := (Tarray ty N)
-       ( in custom CPP_type at level 80
-       , ty custom CPP_type
-       , N constr
-       , format "'[' ty [ N ] ']'").
+      := (Tarray ty N)
+         ( in custom CPP_type at level 80
+         , ty custom CPP_type
+         , N constr
+         , format "'[' ty [ N ] ']'").
   Notation "nm" := (Tnamed nm) (in custom CPP_type at level 0, nm constr).
   Notation "'extern' cc '???()' '->' rty"
-    := (@Tfunction cc Ar_Definite rty nil)
-       ( in custom CPP_type at level 100
-       , cc constr at level 0
-       , rty custom CPP_type at level 200
-       , format "'[' extern  cc  ???()  ->  rty ']'").
+      := (@Tfunction cc Ar_Definite rty nil)
+         ( in custom CPP_type at level 100
+         , cc constr at level 0
+         , rty custom CPP_type at level 200
+         , format "'[' extern  cc  ???()  ->  rty ']'").
   Notation "'extern' cc '???(' aty1 , .. , aty2 ')' '->' rty"
-    := (@Tfunction cc Ar_Definite rty (cons aty1 .. (cons aty2 nil) ..))
-       ( in custom CPP_type at level 100
-       , cc constr at level 0
-       , rty custom CPP_type at level 200
-       , aty1 custom CPP_type at level 200
-       , aty2 custom CPP_type at level 200
-       , format "'[' extern  cc  ???( '[hv' aty1 ,  '/' .. ,  '/' aty2 ']' )  ->  rty ']'").
+      := (@Tfunction cc Ar_Definite rty (cons aty1 .. (cons aty2 nil) ..))
+         ( in custom CPP_type at level 100
+         , cc constr at level 0
+         , rty custom CPP_type at level 200
+         , aty1 custom CPP_type at level 200
+         , aty2 custom CPP_type at level 200
+         , format "'[' extern  cc  ???( '[hv' aty1 ,  '/' .. ,  '/' aty2 ']' )  ->  rty ']'").
   Notation "'extern' cc '???()(...)' '->' rty"
-    := (@Tfunction cc Ar_Variadic rty nil)
-       ( in custom CPP_type at level 100
-       , cc constr at level 0
-       , rty custom CPP_type at level 200
-       , format "'[' extern  cc  ???()(...)  ->  rty ']'").
+      := (@Tfunction cc Ar_Variadic rty nil)
+         ( in custom CPP_type at level 100
+         , cc constr at level 0
+         , rty custom CPP_type at level 200
+         , format "'[' extern  cc  ???()(...)  ->  rty ']'").
   Notation "'extern' cc '???(' aty1 , .. , aty2 ')(...)' '->' rty"
-    := (@Tfunction cc Ar_Variadic rty (cons aty1 .. (cons aty2 nil) ..))
-       ( in custom CPP_type at level 100
-       , cc constr at level 0
-       , rty custom CPP_type at level 200
-       , aty1 custom CPP_type at level 200
-       , aty2 custom CPP_type at level 200
-       , format "'[' extern  cc  ???( '[hv' aty1 ,  '/' .. ,  '/' aty2 ']' )(...)  ->  rty ']'").
+      := (@Tfunction cc Ar_Variadic rty (cons aty1 .. (cons aty2 nil) ..))
+         ( in custom CPP_type at level 100
+         , cc constr at level 0
+         , rty custom CPP_type at level 200
+         , aty1 custom CPP_type at level 200
+         , aty2 custom CPP_type at level 200
+         , format "'[' extern  cc  ???( '[hv' aty1 ,  '/' .. ,  '/' aty2 ']' )(...)  ->  rty ']'").
   Notation "'bool'" := Tbool (in custom CPP_type at level 0).
   Notation "'ptr[' nm ']<' ty '>'"
-    := (Tmember_pointer nm ty)
-       ( in custom CPP_type at level 100
-       , nm constr
-       , ty custom CPP_type
-       , left associativity
-       , format "'[' ptr[ nm ]< ty > ']'").
+      := (Tmember_pointer nm ty)
+         ( in custom CPP_type at level 100
+         , nm constr
+         , ty custom CPP_type
+         , left associativity
+         , format "'[' ptr[ nm ]< ty > ']'").
   Notation "'{float:' sz '}'"
-    := (Tfloat sz)
-       ( in custom CPP_type at level 0
-       , sz constr
-       , format "'[hv' {float:  '/' sz } ']'").
+      := (Tfloat sz)
+         ( in custom CPP_type at level 0
+         , sz constr
+         , format "'[hv' {float:  '/' sz } ']'").
   Notation "'(' qual ty ')'"
-    := (Tqualified qual ty)
-       ( in custom CPP_type at level 100
-       , qual custom CPP_type at level 0
-       , ty custom CPP_type at level 200
-       , format "'[' ( qual  ty ) ']'").
+      := (Tqualified qual ty)
+         ( in custom CPP_type at level 100
+         , qual custom CPP_type at level 0
+         , ty custom CPP_type at level 200
+         , format "'[' ( qual  ty ) ']'").
   Notation "'nullptr_t'" := Tnullptr (in custom CPP_type at level 0).
   Notation "'{arch:' nm '}'"
-    := (Tarch None nm)
-       ( in custom CPP_type at level 0
-       , nm constr
-       , format "'[hv' {arch:  '/' nm } ']'").
+      := (Tarch None nm)
+         ( in custom CPP_type at level 0
+         , nm constr
+         , format "'[hv' {arch:  '/' nm } ']'").
   Notation "'{arch:' nm ';' 'size:' sz '}'"
-    := (Tarch (Some sz) nm)
-       ( in custom CPP_type at level 0
-       , sz constr
-       , nm constr
-       , format "'[hv' {arch:  nm ;  '/' size:  sz } ']'").
+      := (Tarch (Some sz) nm)
+         ( in custom CPP_type at level 0
+         , sz constr
+         , nm constr
+         , format "'[hv' {arch:  nm ;  '/' size:  sz } ']'").
 End TypeNotations.
 
 (* TODO (JH): Investigate which (if any) of the subsequent notations we can make
@@ -183,17 +186,18 @@ Module Export ExprNotations.
    *)
 
   (* Quotation mechanism for [Expr]s *)
-  Notation "'{expr:' e }" := e
-    ( at level 200
-    , e custom CPP_expr at level 200
-    , format "'[hv' {expr:  '/' e } ']'"
-    , only printing) : CPP_expr_scope.
+  Notation "'{expr:' e }"
+      := e
+         ( at level 200
+         , e custom CPP_expr at level 200
+         , format "'[hv' {expr:  '/' e } ']'"
+         , only printing) : CPP_expr_scope.
   (* Injection into [constr] in case we're printing a subterm we don't recognize *)
   Notation "'{coq:' e '}'"
-    := e
-       ( in custom CPP_expr at level 0
-       , e constr
-       , format "'[hv' {coq:  '/' e } ']'").
+      := e
+         ( in custom CPP_expr at level 0
+         , e constr
+         , format "'[hv' {coq:  '/' e } ']'").
 
   Notation "$ v"
       := (Econst_ref (Lname v%bs) _)
@@ -248,9 +252,9 @@ Module Export ExprNotations.
          , v constr
          , format "'[' # v ']'").
 
-  Notation "'-'" := (Uminus) (in custom CPP_expr at level 0) : CPP_expr_scope.
-  Notation "'!'" := (Unot) (in custom CPP_expr at level 0) : CPP_expr_scope.
-  Notation "'~'" := (Ubnot) (in custom CPP_expr at level 0) : CPP_expr_scope.
+  Notation "'-'" := (Uminus) (in custom CPP_expr at level 0).
+  Notation "'!'" := (Unot) (in custom CPP_expr at level 0).
+  Notation "'~'" := (Ubnot) (in custom CPP_expr at level 0).
   Notation "'{unop:' op }"
       := (Uother op%bs)
          ( in custom CPP_expr at level 0
@@ -267,31 +271,29 @@ Module Export ExprNotations.
          , format "'[' op x ']'"
          , only printing).
 
-  Notation "'+'" := (Badd) (in custom CPP_expr at level 0) : CPP_expr_scope.
-  Notation "'&'" := (Band) (in custom CPP_expr at level 0) : CPP_expr_scope.
-  Notation "'<=>'" := (Bcmp) (in custom CPP_expr at level 0) : CPP_expr_scope.
-  Notation "'/'" := (Bdiv) (in custom CPP_expr at level 0) : CPP_expr_scope.
-  Notation "'=='" := (Beq) (in custom CPP_expr at level 0) : CPP_expr_scope.
-  (* We exclude the following two [BinOp] notations since they conflict with
-     parsing nested ptr/ref [type]s.
-
-     NOTE (JH): These should only ever be used directly within [Ebinop], so we
-     aren't losing anything in practice.
+  Notation "'+'" := (Badd) (in custom CPP_expr at level 0).
+  Notation "'&'" := (Band) (in custom CPP_expr at level 0).
+  Notation "'<=>'" := (Bcmp) (in custom CPP_expr at level 0).
+  Notation "'/'" := (Bdiv) (in custom CPP_expr at level 0).
+  Notation "'=='" := (Beq) (in custom CPP_expr at level 0).
+  Notation "'>='" := (Bge) (in custom CPP_expr at level 0).
+  Notation "'>'" := (Bgt) (in custom CPP_expr at level 0).
+  Notation "'<='" := (Ble) (in custom CPP_expr at level 0).
+  Notation "'<'" := (Blt) (in custom CPP_expr at level 0).
+  Notation "'*'" := (Bmul) (in custom CPP_expr at level 0).
+  Notation "'!='" := (Bneq) (in custom CPP_expr at level 0).
+  Notation "'|'" := (Bor) (in custom CPP_expr at level 0).
+  Notation "'%'" := (Bmod) (in custom CPP_expr at level 0).
+  Notation "'<<'" := (Bshl) (in custom CPP_expr at level 0).
+  (* NOTE (JH): The following [Bshr] notation conflicts with parsing nested [ptr<ptr<...>>]
+     [type]s, so we leave it disabled and provide explicit notations for the [Ebinop] and
+     [Eassign_op] notations.
    *)
-  Notation "'>='" := (Bge) (in custom CPP_expr at level 0) : CPP_expr_scope.
-  Notation "'>'" := (Bgt) (in custom CPP_expr at level 0) : CPP_expr_scope.
-  Notation "'<='" := (Ble) (in custom CPP_expr at level 0) : CPP_expr_scope.
-  Notation "'<'" := (Blt) (in custom CPP_expr at level 0) : CPP_expr_scope.
-  Notation "'*'" := (Bmul) (in custom CPP_expr at level 0) : CPP_expr_scope.
-  Notation "'!='" := (Bneq) (in custom CPP_expr at level 0) : CPP_expr_scope.
-  Notation "'|'" := (Bor) (in custom CPP_expr at level 0) : CPP_expr_scope.
-  Notation "'%'" := (Bmod) (in custom CPP_expr at level 0) : CPP_expr_scope.
-  Notation "'<<'" := (Bshl) (in custom CPP_expr at level 0) : CPP_expr_scope.
-  Notation "'>>'" := (Bshr) (in custom CPP_expr at level 0) : CPP_expr_scope.
-  Notation "'-'" := (Bsub) (in custom CPP_expr at level 0) : CPP_expr_scope.
-  Notation "'^'" := (Bxor) (in custom CPP_expr at level 0) : CPP_expr_scope.
-  Notation "'.*'" := (Bdotp) (in custom CPP_expr at level 0) : CPP_expr_scope.
-  Notation "'->*'" := (Bdotip) (in custom CPP_expr at level 0) : CPP_expr_scope.
+  (* Notation "'>>'" := (Bshr) (in custom CPP_expr at level 0). *)
+  Notation "'-'" := (Bsub) (in custom CPP_expr at level 0).
+  Notation "'^'" := (Bxor) (in custom CPP_expr at level 0).
+  Notation "'.*'" := (Bdotp) (in custom CPP_expr at level 0).
+  Notation "'->*'" := (Bdotip) (in custom CPP_expr at level 0).
 
   (* TODO (JH): Look into ways of fusing direct nestings of [{binop: ...}] *)
 
@@ -473,6 +475,13 @@ Module Export ExprNotations.
          , format "'[hv  ' v  =  '/' e ']'"
          , only printing).
 
+  Notation "v >>= e"
+      := (Eassign_op Bshr v e)
+         ( in custom CPP_expr at level 159
+         , e custom CPP_expr at level 200
+         , v custom CPP_expr at level 200
+         , format "'[hv  ' v  >>=  '/' e ']'"
+         , only printing).
   Notation "v bop = e"
       := (Eassign_op bop v e)
          ( in custom CPP_expr at level 160
@@ -522,21 +531,21 @@ Module Export ExprNotations.
          , format "'[hv   ' {binop:  '/' e1  ||  e2 } ']'").
 
   Notation "'{comma:' e1 , e2 }"
-    := (Ecomma _ e1 e2)
-       ( in custom CPP_expr at level 170
-       , e1 custom CPP_expr at level 200
-       , e2 custom CPP_expr at level 200
-       , format "'[hv   ' {comma:  '/' e1 ,  e2 } ']'").
+      := (Ecomma _ e1 e2)
+         ( in custom CPP_expr at level 170
+         , e1 custom CPP_expr at level 200
+         , e2 custom CPP_expr at level 200
+         , format "'[hv   ' {comma:  '/' e1 ,  e2 } ']'").
 
   Notation "e '()'"
       := (Ecall e nil _)
-         ( in custom CPP_expr at level 200
+         ( in custom CPP_expr at level 20
          , e custom CPP_expr at level 200
          , format "'[' e () ']'"
          , only printing).
   Notation "e ( a1 , .. , a2 )"
       := (Ecall e (cons a1 (.. (cons a2 nil) .. )) _)
-         ( in custom CPP_expr at level 200
+         ( in custom CPP_expr at level 20
          , e custom CPP_expr at level 200
          , a1 custom CPP_expr at level 200
          , a2 custom CPP_expr at level 200
@@ -550,13 +559,32 @@ Module Export ExprNotations.
          , e custom CPP_expr at level 200
          , only printing).
 
-  (* TODO (JH): [Emember]/[Emember_call] *)
-  Notation "cls . fld"
-      := (Build_field cls fld)
-         ( in custom CPP_expr at level 0
-         , cls constr
+  Notation "e . fld"
+      := (Emember _ e (Build_field _ fld%bs) _)
+         ( in custom CPP_expr at level 20
+         , e custom CPP_expr at level 200
          , fld constr
-         , format "'[' cls . fld ']'"
+         , format "'[' e . fld ']'"
+         , only printing).
+
+  (* NOTE (JH): [Emember_call (inr ...) ...] doesn't seem to be used so we don't
+     include a notation for it.
+   *)
+  Notation "e . fn ()"
+      := (Emember_call (inl (fn%bs, _, _)) _ e nil _)
+         ( in custom CPP_expr at level 20
+         , e custom CPP_expr at level 200
+         , fn constr
+         , format "'[' e . fn () ']'"
+         , only printing).
+  Notation "e . fn ( a1 , .. , a2 )"
+      := (Emember_call (inl (fn, _, _)) _ e (cons a1 .. (cons a2 nil) ..) _)
+         ( in custom CPP_expr at level 20
+         , e custom CPP_expr at level 200
+         , a1 custom CPP_expr at level 200
+         , a2 custom CPP_expr at level 200
+         , fn constr
+         , format "'[' e . fn ( '[hv' a1 ,  '/' .. ,  '/' a2 ']' ) ']'"
          , only printing).
 
   Notation "e [ n ]"
@@ -593,12 +621,12 @@ Module Export ExprNotations.
          , format "'[' alignof(expr:  e ) ']'"
          , only printing).
 
-  Notation "f" :=
-      (Oo_Field f)
-      ( in custom CPP_expr at level 0
-      , f custom CPP_expr at level 200
-      , format "'[' f ']'"
-      , only printing).
+  Notation "f"
+      := (Oo_Field f)
+         ( in custom CPP_expr at level 0
+         , f custom CPP_expr at level 200
+         , format "'[' f ']'"
+         , only printing).
 
   Notation "'offsetof(' offset_info )"
       := (Eoffset_of offset_info _)
@@ -607,7 +635,32 @@ Module Export ExprNotations.
          , format "'[' offsetof( offset_info ) ']'"
          , only printing).
 
-  (* TODO (JH): [Econstructor]/[Eimplicit]/[Eimplicit_init] *)
+  Notation "'#' cls ()"
+      := (Econstructor cls%bs nil _)
+         ( in custom CPP_expr at level 20
+         , cls constr
+         , format "'[' # cls () ']'"
+         , only printing).
+  Notation "'#' cls ( a1 , .. , a2 )"
+      := (Econstructor cls%bs (cons a1 .. (cons a2 nil) ..) _)
+         ( in custom CPP_expr at level 20
+         , a1 custom CPP_expr at level 200
+         , a2 custom CPP_expr at level 200
+         , cls constr
+         , format "'[' # cls ( '[hv' a1 ,  '/' .. ,  '/' a2 ']' ) ']'"
+         , only printing).
+
+  Notation "e"
+      := (Eimplicit e)
+         ( in custom CPP_expr at level 0
+         , e custom CPP_expr at level 200
+         , only printing).
+  Notation "ty '{{VALUE' 'INIT}}'"
+      := (Eimplicit_init ty)
+         ( in custom CPP_expr at level 0
+         , ty custom CPP_type at level 200
+         , format "'[' ty {{VALUE  INIT}} ']'"
+         , only printing).
 
   Notation "c ? t : e"
       := (Eif c t e _)
@@ -630,30 +683,123 @@ Module Export ExprNotations.
          , ty custom CPP_type at level 200
          , format "'[' ( ty ){  } ']'").
   Notation "( ty ){ e1 , .. , e2 }"
-    := (Einitlist (cons e1 .. (cons e2 nil) ..) None ty)
-       ( in custom CPP_expr at level 100
-       , e1 custom CPP_expr at level 200
-       , e2 custom CPP_expr at level 200
-       , ty custom CPP_type at level 200
-       , format "'[' ( ty ){ '[hv' e1 ,  '/' .. ,  '/' e2 ']' } ']'").
+      := (Einitlist (cons e1 .. (cons e2 nil) ..) None ty)
+         ( in custom CPP_expr at level 100
+         , e1 custom CPP_expr at level 200
+         , e2 custom CPP_expr at level 200
+         , ty custom CPP_type at level 200
+         , format "'[' ( ty ){ '[hv' e1 ,  '/' .. ,  '/' e2 ']' } ']'").
   Notation "( ty ){ e1 , .. , e2 '}{default:' edefault '}'"
-    := (Einitlist (cons e1 .. (cons e2 nil) ..) (Some edefault) ty)
-       ( in custom CPP_expr at level 100
-       , e1 custom CPP_expr at level 200
-       , e2 custom CPP_expr at level 200
-       , edefault custom CPP_expr at level 200
-       , ty custom CPP_type at level 200
-       , format "'[' ( ty ){ '[hv' e1 ,  '/' .. ,  '/' e2 ']' }{default:  '/' edefault } ']'").
+      := (Einitlist (cons e1 .. (cons e2 nil) ..) (Some edefault) ty)
+         ( in custom CPP_expr at level 100
+         , e1 custom CPP_expr at level 200
+         , e2 custom CPP_expr at level 200
+         , edefault custom CPP_expr at level 200
+         , ty custom CPP_type at level 200
+         , format "'[' ( ty ){ '[hv' e1 ,  '/' .. ,  '/' e2 ']' }{default:  '/' edefault } ']'").
 
-  (* TODO (JH): [Enew]/[Edelete] *)
+  Notation "'new' '(nothrow)' ty"
+      := (Enew _ nil ty None _)
+         ( in custom CPP_expr at level 30
+         , ty custom CPP_type at level 200
+         , format "'[' new  (nothrow)  ty ']'"
+         , only printing).
+  Notation "'new' '(nothrow)' ty ( a1 , .. , a2 )"
+      := (Enew _ (cons a1 .. (cons a2 nil) ..) ty None _)
+         ( in custom CPP_expr at level 30
+         , a1 custom CPP_expr at level 200
+         , a2 custom CPP_expr at level 200
+         , ty custom CPP_type at level 200
+         , format "'[' new  (nothrow)  ty ( '[hv' a1 ,  '/' .. ,  '/' a2 ']' ) ']'"
+         , only printing).
 
-  (* TODO (JH): [Eandclean]/[Ematerialize_temp] *)
+  (* NOTE (JH): array-[new] expressions shouldn't have argument lists *)
+  Notation "'new' '(nothrow)' ty [ esz ]"
+      := (Enew _ _ ty (Some esz) _)
+         ( in custom CPP_expr at level 30
+         , esz custom CPP_expr at level 200
+         , ty custom CPP_type at level 200
+         , format "'[' new  (nothrow)  ty [ esz ] ']'"
+         , only printing).
 
-  (* TODO (JH): [Ebuiltin]/[Eatomic] *)
+  Notation "'delete' e"
+      := (Edelete false _ e _)
+         ( in custom CPP_expr at level 30
+         , e custom CPP_expr at level 200
+         , format "'[' delete  e ']'"
+         , only printing).
 
-  (* TODO (JH): [Eva_arg] *)
+  Notation "'delete[]' e"
+      := (Edelete true _ e _)
+         ( in custom CPP_expr at level 30
+         , e custom CPP_expr at level 200
+         , format "'[' delete[]  e ']'"
+         , only printing).
 
-  (* TODO (JH): [Epseudo_destructor] *)
+  (* QUESTION (JH): should we have notations which display sequence points? *)
+  Notation "e"
+      := (Eandclean e)
+         ( in custom CPP_expr at level 0
+         , e custom CPP_expr at level 200
+         , only printing).
+  Notation "e"
+      := (Ematerialize_temp e)
+         ( in custom CPP_expr at level 0
+         , e custom CPP_expr at level 200
+         , only printing).
+
+  (* TODO (JH): [Ebuiltin] *)
+  Notation "'__builtin_alloca'" := (Bin_alloca) ( in custom CPP_expr at level 0).
+  Notation "'__builtin_alloca_with_align'" := (Bin_alloca_with_align) ( in custom CPP_expr at level 0).
+  Notation "'__builtin_launder'" := (Bin_launder) ( in custom CPP_expr at level 0).
+  Notation "'__builtin_expect'" := (Bin_expect) ( in custom CPP_expr at level 0).
+  Notation "'__builtin_unreachable'" := (Bin_unreachable) ( in custom CPP_expr at level 0).
+  Notation "'__builtin_trap'" := (Bin_trap) ( in custom CPP_expr at level 0).
+  Notation "'__builtin_bswap16'" := (Bin_bswap16) ( in custom CPP_expr at level 0).
+  Notation "'__builtin_bswap32'" := (Bin_bswap32) ( in custom CPP_expr at level 0).
+  Notation "'__builtin_bswap64'" := (Bin_bswap64) ( in custom CPP_expr at level 0).
+  Notation "'__builtin_bswap128'" := (Bin_bswap128) ( in custom CPP_expr at level 0).
+  Notation "'__builtin_bzero'" := (Bin_bzero) ( in custom CPP_expr at level 0).
+  Notation "'__builtin_ffs'" := (Bin_ffs) ( in custom CPP_expr at level 0).
+  Notation "'__builtin_ffsl'" := (Bin_ffsl) ( in custom CPP_expr at level 0).
+  Notation "'__builtin_ffsll'" := (Bin_ffsll) ( in custom CPP_expr at level 0).
+  Notation "'__builtin_clz'" := (Bin_clz) ( in custom CPP_expr at level 0).
+  Notation "'__builtin_clzl'" := (Bin_clzl) ( in custom CPP_expr at level 0).
+  Notation "'__builtin_clzll'" := (Bin_clzll) ( in custom CPP_expr at level 0).
+  Notation "'__builtin_ctz'" := (Bin_ctz) ( in custom CPP_expr at level 0).
+  Notation "'__builtin_ctzl'" := (Bin_ctzl) ( in custom CPP_expr at level 0).
+  Notation "'__builtin_ctzll'" := (Bin_ctzll) ( in custom CPP_expr at level 0).
+  Notation "'__builtin_popcount'" := (Bin_popcount) ( in custom CPP_expr at level 0).
+  Notation "'__builtin_popcountl'" := (Bin_popcountl) ( in custom CPP_expr at level 0).
+  Notation "'__builtin_UNKNOWN_' nm"
+      := (Bin_unknown nm%bs)
+         ( in custom CPP_expr at level 0
+         , nm constr
+         , format "'[' __builtin_UNKNOWN_ nm ']'").
+
+  Notation "'{builtin:' bin ';' 'signature:' ty '}'"
+      := (Ebuiltin bin ty)
+         ( in custom CPP_expr at level 20
+         , bin custom CPP_expr at level 0
+         , ty custom CPP_type at level 200
+         , format "'[' {builtin:  bin ;  signature:  ty } ']'").
+
+  (* TODO (JH): [Eatomic] *)
+
+  (* QUESTION (JH): is this notation sufficient for [Eva_arg]? *)
+  Notation "e"
+      := (Eva_arg e _)
+         ( in custom CPP_expr at level 0
+         , e custom CPP_expr at level 200
+         , only printing).
+
+  (* QUESTION (JH): is this notation sufficient for [Epseudo_destructor]? *)
+  Notation "e"
+      := (Epseudo_destructor _ e)
+         ( in custom CPP_expr at level 0
+         , e custom CPP_expr at level 200
+         , only printing).
+
 
   (* TODO (JH): [Earrayloop_init]/[Earrayloop_index]/[Eopaque_ref] *)
 
@@ -700,11 +846,8 @@ Section TestTypeNotations.
   #[local] Definition Notation_Trv_ref_1 : Trv_ref Tbool = {type: ref&&<bool>} := eq_refl.
   #[local] Definition Notation_Trv_ref_2 ty : Trv_ref ty = {type: ref&&<{coq: ty}>} := eq_refl.
 
-  (* TODO (JH): determine why we must insert the extra space between [>>] in order to
-     get it parsing
-   *)
-  #[local] Definition Notation_Tref_Trv_ref ty : Tref (Trv_ref ty) = {type: ref&<ref&&<{coq: ty}> >} := eq_refl.
-  #[local] Definition Notation_Trv_ref_Tref_1 ty : Trv_ref (Tref ty) = {type: ref&&<ref&<{coq: ty}> >} := eq_refl.
+  #[local] Definition Notation_Tref_Trv_ref ty : Tref (Trv_ref ty) = {type: ref&<ref&&<{coq: ty}>>} := eq_refl.
+  #[local] Definition Notation_Trv_ref_Tref_1 ty : Trv_ref (Tref ty) = {type: ref&&<ref&<{coq: ty}>>} := eq_refl.
 
   #[local] Definition Notation_void : Tvoid = {type: void} := eq_refl.
 
