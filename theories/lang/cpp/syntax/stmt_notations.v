@@ -280,69 +280,40 @@ Section TestStmtNotations.
   Import StmtNotations. #[local] Open Scope CPP_stmt_scope.
 
 (* Check (Sexpr Lvalue (Eassign (Evar (Lname "foo") Tvoid) (Eunop Unot (Evar (Lname "bar") Tvoid) Tvoid) Tvoid)). *)
-End TestStmtNotations.
-
-(* [cpp2v/theories/auto/cpp/notations/code.v@janno/code-notations], but that branch is out of date
-Declare Custom Entry CPP.
-Declare Scope CPP_scope.
-Delimit Scope CPP_scope with cpp.
-
-(** Notations for statements *)
-
-(* Statements that provide their own line break *)
-
 
 (** Tests *)
-Definition E (e : Expr) : Prop := True.
-Definition S (s : Stmt) : Prop := True.
-Definition T (t : type) : Prop := True.
+(* Check (Ebinop Badd (Ederef (Eaddrof (Evar (Lname "hello") Tvoid)) Tvoid) *)
+(*               (Eint 3%Z Tvoid) Tvoid). *)
 
-Arguments E (_%cexpr).
-Arguments S (_%cstmt).
+
+(* Check (Sseq (Sexpr Lvalue (Evar (Lname "hello") Tvoid) :: Scontinue :: Sbreak :: Sexpr Lvalue (Evar (Lname "world") Tvoid) :: Sif None (Evar (Lname "world") Tvoid) Scontinue Sbreak :: nil)). *)
 
 (*
-Check E (Ebinop Badd (Ederef (Eaddrof (Evar (Lname "hello") Tvoid)) Tvoid)
-                (Eint 3%Z Tvoid) Tvoid).
-
-
-Check S (Sseq (Sexpr Lvalue (Evar (Lname "hello") Tvoid) :: Scontinue :: Sbreak :: Sexpr Lvalue (Evar (Lname "world") Tvoid) :: Sif None (Evar (Lname "world") Tvoid) Scontinue Sbreak :: nil)).
+Import List.ListNotations.
+Set Printing Width 300.
+Check
+  (Sseq (
+            [ Sif
+              (Some (Dvar "x" (Qmut Ti32) (Some (Eint (0) (Qmut Ti32)))))
+              (Ecast Cint2bool Prvalue
+                  (Ecast Cl2r Lvalue (Evar (Lname  "x") (Qmut Ti32)) (Qmut Ti32)) (Qmut Tbool))
+              (Sseq [Scontinue;Scontinue;Scontinue;Scontinue])
+              Sbreak
+            ; Sif
+              (Some (Dvar "x" (Qmut Ti32) (Some (Eint (0) (Qmut Ti32)))))
+              (Ecast Cint2bool Prvalue
+                  (Ecast Cl2r Lvalue (Evar (Lname  "x") (Qmut Ti32)) (Qmut Ti32)) (Qmut Tbool))
+              (Sseq [])
+              Sbreak
+            ; Sreturn (Some (Evar (Lname "x") Ti32))
+            ; Sexpr Lvalue (Ecast Cint2bool Prvalue
+                  (Ecast Cl2r Lvalue (Evar (Lname  "x") (Qmut Ti32)) (Qmut Ti32)) (Qmut Tbool))
+            ; Sreturn None
+            ]
+  )).
 *)
 
-Notation "'if' ( t $ i = e ) { thn } 'else' { els }"
-    := (Sif (Some (Dvar i%bs t (Some e))) _ thn els)
-       ( in custom cpp_stmt at level 200
-       , t custom cpp_type at level 100
-       , e custom cpp_expr at level 200
-       , thn custom cpp_stmt at level 200
-       , els custom cpp_stmt at level 200
-       , i constr
-       , format "'[hv' if ( '[  ' t  $ i  =  e ']' )  { '//'   thn '//' }  else  { '//'   els '//' } ']'"
-       , only printing).
-
-Import List.ListNotations.
-Set Printing Width 400.
-Check
-  S (Sseq (
-              [ Sif
-                (Some (Dvar "x" (Qmut Ti32) (Some (Eint (0) (Qmut Ti32)))))
-                (Ecast Cint2bool Prvalue
-                    (Ecast Cl2r Lvalue (Evar (Lname  "x") (Qmut Ti32)) (Qmut Ti32)) (Qmut Tbool))
-                (Sseq [Scontinue;Scontinue;Scontinue;Scontinue])
-                Sbreak
-              ; Sif
-                (Some (Dvar "x" (Qmut Ti32) (Some (Eint (0) (Qmut Ti32)))))
-                (Ecast Cint2bool Prvalue
-                    (Ecast Cl2r Lvalue (Evar (Lname  "x") (Qmut Ti32)) (Qmut Ti32)) (Qmut Tbool))
-                (Sseq [])
-                Sbreak
-              ; Sreturn (Some (Evar (Lname "x") Ti32))
-              ; Sexpr Lvalue (Ecast Cint2bool Prvalue
-                    (Ecast Cl2r Lvalue (Evar (Lname  "x") (Qmut Ti32)) (Qmut Ti32)) (Qmut Tbool))
-
-              ; Sreturn None
-              ]
-    )).
-
+(*
 Check
   S (Sseq (
               [ Sif
@@ -452,3 +423,5 @@ Check
                      [] Tbool) Tbool)
                Tbool)).
 *)
+
+End TestStmtNotations.

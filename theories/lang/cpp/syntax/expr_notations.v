@@ -302,7 +302,7 @@ Module Export ExprNotations.
          , only printing).
 
   Notation "& e"
-      := (Eaddrof e _)
+      := (Eaddrof e)
          ( in custom CPP_expr at level 30
          , e custom CPP_expr at level 200
          , format "'[' & e ']'"
@@ -659,4 +659,7 @@ Section TestExprNotations.
   Import bedrock.lang.cpp.ast.
   Import TypeNotations. #[local] Open Scope CPP_type_scope.
   Import ExprNotations. #[local] Open Scope CPP_expr_scope.
+
+  (* Check (Ebinop Badd (Ederef (Eaddrof (Evar (Lname "hello") Tvoid)) Tvoid) *)
+  (*               (Eint 3%Z Tvoid) Tvoid). *)
 End TestExprNotations.
