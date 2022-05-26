@@ -111,7 +111,7 @@ Module Type Init.
 
         NOTE [wp_initialize] is very similar to [wp_init] except that [wp_initialize]
         can be used to initialize all values (including references) whereas [wp_init]
-        is only safe to initialize C-style values (primitives or aggregates).
+        is only safe to initialize non-primitives (arrays and aggregates).
      *)
     Definition wp_initialize (ty : type) (addr : ptr) (init : Expr) (k : FreeTemps -> mpred) : mpred :=
       match drop_qualifiers ty with
@@ -125,8 +125,8 @@ Module Type Init.
                           addr |-> primR (erase_qualifiers ty) 1 v -* k free)
 
         (* non-primitives are handled via prvalue-initialization semantics *)
-      | Tarray _ _
-      | Tnamed _ => wp_init addr init (fun _ frees => k frees)
+      | Tarray _ _ as ty
+      | Tnamed _ as ty => wp_init ty addr init (fun _ frees => k frees)
         (* NOTE that just like this function [wp_init] will consume the object. *)
 
       | Tref ty =>

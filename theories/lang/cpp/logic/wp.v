@@ -402,33 +402,32 @@ Section with_cpp.
    *)
   Parameter wp_init
     : forall {resolve:genv}, region ->
-                        ptr -> Expr ->
+                        type -> ptr -> Expr ->
                         (FreeTemp -> FreeTemps -> epred) -> (* top-free -> free -> post *)
                         mpred. (* pre-condition *)
   (* END wp_init *)
 
-  Axiom wp_init_shift : forall {σ:genv} ρ v e Q,
-      (|={top}=> wp_init ρ v e (fun free frees => |={top}=> Q free frees))
-    ⊢ wp_init ρ v e Q.
+  Axiom wp_init_shift : forall {σ:genv} ρ ty p e Q,
+      (|={top}=> wp_init ρ ty p e (fun free frees => |={top}=> Q free frees))
+    ⊢ wp_init ρ ty p e Q.
 
-  Axiom wp_init_frame :
-    forall σ1 σ2 ρ v e k1 k2,
+  Axiom wp_init_frame : forall σ1 σ2 ρ ty p e k1 k2,
       genv_leq σ1 σ2 ->
-      Forall f fs, k1 f fs -* k2 f fs |-- @wp_init σ1 ρ v e k1 -* @wp_init σ2 ρ v e k2.
+      Forall f fs, k1 f fs -* k2 f fs |-- @wp_init σ1 ρ ty p e k1 -* @wp_init σ2 ρ ty p e k2.
 
   #[global] Instance Proper_wp_init :
-    Proper (genv_leq ==> eq ==> eq ==> eq ==>
+    Proper (genv_leq ==> eq ==> eq ==> eq ==> eq ==>
             pointwise_relation _ (pointwise_relation _ (⊢)) ==> (⊢))
            (@wp_init).
   Proof.
     repeat red; intros; subst.
     iIntros "X"; iRevert "X"; iApply wp_init_frame; eauto.
-    iIntros (??); iApply H3.
+    iIntros (??); iApply H4.
   Qed.
 
   Section wp_init.
-    Context {σ : genv} (ρ : region) (p : ptr) (e : Expr).
-    Local Notation WP := (wp_init ρ p e) (only parsing).
+    Context {σ : genv} (ρ : region) (ty : type) (p : ptr) (e : Expr).
+    Local Notation WP := (wp_init ρ ty p e) (only parsing).
     Implicit Types P : mpred.
     Implicit Types Q : FreeTemp -> FreeTemps → epred.
 
@@ -463,7 +462,7 @@ Section with_cpp.
   (* BEGIN wp_prval *)
   Definition wp_prval {resolve:genv} (ρ : region)
              (e : Expr) (Q : ptr -> FreeTemp -> FreeTemps -> epred) : mpred :=
-    ∀ p : ptr, wp_init ρ p e (Q p).
+    ∀ p : ptr, wp_init ρ (type_of e) p e (Q p).
   (* END wp_prval *)
 
   (** TODO prove instances for [wp_prval] *)
@@ -488,10 +487,10 @@ Section with_cpp.
       Forall v f, k1 v f -* k2 v f |-- @wp_operand σ1 ρ e k1 -* @wp_operand σ2 ρ e k2.
 
   (* BEGIN wp_init <-> wp_operand *)
-  Axiom wp_operand_wp_init : forall {σ : genv} ρ addr e Q (ty := type_of e),
+  Axiom wp_operand_wp_init : forall {σ : genv} ρ ty addr e Q,
       is_primitive ty ->
       wp_operand ρ e (fun v frees => _at addr (primR ty 1 v) -* Q (FreeTemps.delete ty addr) frees)
-    |-- wp_init ρ addr e Q.
+    |-- wp_init ρ ty addr e Q.
 
   (** This is justified in the logic but technically not sactioned by the standard
 
@@ -665,7 +664,7 @@ Section with_cpp.
         if is_primitive (type_of e) then
           @wp_operand resolve ρ e (fun _ free => Q free)
         else
-          Forall p, @wp_init resolve ρ p e (fun free frees => Q (free >*> frees)%free)
+          Forall p, @wp_init resolve ρ (type_of e) p e (fun free frees => Q (free >*> frees)%free)
       | Xvalue => @wp_xval resolve ρ e (fun _ => Q)
       end.
 

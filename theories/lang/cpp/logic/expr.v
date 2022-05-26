@@ -361,9 +361,9 @@ Module Type Expr.
         wp_discard vc e1 (fun free1 => wp_operand e2 (fun val free2 => Q val (free2 >*> free1)))
         |-- wp_operand (Ecomma vc e1 e2) Q.
 
-    Axiom wp_init_comma : forall {vc} p e1 e2 Q,
-        wp_discard vc e1 (fun free1 => wp_init p e2 (fun free free2 => Q free (free2 >*> free1)))
-        |-- wp_init p (Ecomma vc e1 e2) Q.
+    Axiom wp_init_comma : forall {vc} ty p e1 e2 Q,
+        wp_discard vc e1 (fun free1 => wp_init ty p e2 (fun free2 => Q (free2 >*> free1)))
+        |-- wp_init ty p (Ecomma vc e1 e2) Q.
 
     (** short-circuting operators *)
     Axiom wp_operand_seqand : forall e1 e2 Q,
@@ -413,9 +413,9 @@ Module Type Expr.
         |-- wp_operand (Ecast Cl2r Xvalue e ty) Q.
 
     (** [Cnoop] casts are no-op casts. *)
-    Axiom wp_init_cast_noop : forall ty e p Q,
-        wp_init p e Q
-        |-- wp_init p (Ecast Cnoop Prvalue e ty) Q.
+    Axiom wp_init_cast_noop : forall ty ty' e p Q,
+        wp_init ty p e Q
+        |-- wp_init ty p (Ecast Cnoop Prvalue e ty') Q.
     Axiom wp_operand_cast_noop : forall ty e Q,
         wp_operand e Q
         |-- wp_operand (Ecast Cnoop Prvalue e ty) Q.
@@ -493,9 +493,9 @@ Module Type Expr.
     (* note(gmm): in the clang AST, the subexpression is the call.
      * in essence, [Ecast (Cuser ..)] is a syntax annotation.
      *)
-    Axiom wp_init_cast_user : forall e p ty Z Q,
-        wp_init p e Q
-        |-- wp_init p (Ecast (Cuser Z) Prvalue e ty) Q.
+    Axiom wp_init_cast_user : forall ty' e p ty Z Q,
+        wp_init ty' p e Q
+        |-- wp_init ty' p (Ecast (Cuser Z) Prvalue e ty) Q.
 
     Axiom wp_operand_cast_user : forall e ty Z Q,
         wp_operand e Q
@@ -707,14 +707,14 @@ Module Type Expr.
         wp_operand tst (fun v1 free =>
            Exists c : bool, [| is_true v1 = Some c |] **
            if c
-           then wp_init addr th (fun free' frees => Q free' (frees >*> free))
-           else wp_init addr el (fun free' frees => Q free' (frees >*> free)))
-        |-- wp_init addr (Eif tst th el ty) Q.
+           then wp_init ty addr th (fun free' frees => Q free' (frees >*> free))
+           else wp_init ty addr el (fun free' frees => Q free' (frees >*> free)))
+        |-- wp_init ty addr (Eif tst th el ty) Q.
 
     Axiom wp_operand_implicit: forall  e Q,
         wp_operand e Q |-- wp_operand (Eimplicit e) Q.
-    Axiom wp_init_implicit: forall  e p Q,
-        wp_init p e Q |-- wp_init p (Eimplicit e) Q.
+    Axiom wp_init_implicit: forall  ty e p Q,
+        wp_init ty p e Q |-- wp_init ty p (Eimplicit e) Q.
 
     (** [sizeof] and [alignof] do not evaluate their arguments *)
     Axiom wp_operand_sizeof : forall ty' ty Q,
@@ -799,11 +799,11 @@ Module Type Expr.
            Reduce (operand_receive ty res $ fun v => Q v (free_args >*> free_f)))
        |-- wp_operand (Ecall f es ty) Q.
 
-    Axiom wp_init_call : forall f es Q (addr : ptr) ty,
+    Axiom wp_init_call : forall f es Q (addr : ptr) ty ty',
           (* ^ give the memory back to the C++ abstract machine *)
           wp_operand f (fun fn free_f => wp_call (type_of f) fn es $ fun res free_args =>
              Reduce (init_receive ty addr res $ fun free => Q free (free_args >*> free_f)))
-      |-- wp_init addr (Ecall f es ty) Q.
+      |-- wp_init ty addr (Ecall f es ty') Q.
 
     (** * Member calls *)
     Definition member_arg_types (fty : type) : option (list type) :=
@@ -862,7 +862,7 @@ Module Type Expr.
     Axiom wp_init_member_call : forall f fty es (addr : ptr) ty vc obj Q,
         wp_glval vc obj (fun this free_this => wp_mcall (Vptr $ _global f) this (type_of obj) fty es $ fun res free_args =>
            init_receive ty addr res $ fun free => Q free (free_args >*> free_this))
-        |-- wp_init addr (Emember_call (inl (f, Direct, fty)) vc obj es ty) Q.
+        |-- wp_init ty addr (Emember_call (inl (f, Direct, fty)) vc obj es ty) Q.
 
     (** virtual functions
         these are slightly more complex because we need to compute the address of the function
@@ -901,7 +901,7 @@ Module Type Expr.
     Axiom wp_init_virtual_call : forall f fty es (addr : ptr) ty vc obj Q,
         wp_glval vc obj (fun this free_this => wp_virtual_call f this (type_of obj) fty es $ fun res free_args =>
            init_receive ty addr res $ fun free => Q free (free_args >*> free_this))
-        |-- wp_init addr (Emember_call (inl (f, Virtual, fty)) vc obj es ty) Q.
+        |-- wp_init ty addr (Emember_call (inl (f, Virtual, fty)) vc obj es ty) Q.
 
     (* null *)
     Axiom wp_null : forall Q,
@@ -933,7 +933,7 @@ Module Type Expr.
        Therefore, we destroy temporaries created when evaluating [e]
        before running the continuation.
 
-       NOTE: We follow C++'s AST rules for destroying temporaries appropraitely
+       NOTE: We follow C++'s AST rules for destroying temporaries appropriately
        so these nodes should effectively be no-ops, though there are certain
        places in the AST that has odd evaluation semantics
      *)
@@ -946,9 +946,9 @@ Module Type Expr.
     Axiom wp_operand_clean : forall e Q,
           wp_operand e (fun v frees => interp frees $ Q v FreeTemps.id)
       |-- wp_operand (Eandclean e) Q.
-    Axiom wp_init_clean : forall e addr Q,
-        wp_init addr e (fun free frees => interp frees $ Q free FreeTemps.id)
-      |-- wp_init addr (Eandclean e) Q.
+    Axiom wp_init_clean : forall ty e addr Q,
+          wp_init ty addr e (fun free frees => interp frees $ Q free FreeTemps.id)
+      |-- wp_init ty addr (Eandclean e) Q.
 
     (** [Ematerialize_temp e ty] is an xvalue that gets memory (with automatic
         storage duration) and initializes it using the expression.
@@ -956,13 +956,13 @@ Module Type Expr.
     Axiom wp_xval_temp : forall e Q,
         (let ty := type_of e in
          Forall a : ptr,
-         wp_init a e (fun free frees => Q a (free >*> frees)))
+         wp_initialize ty a e (fun frees => Q a (FreeTemps.delete ty a >*> frees)))
         |-- wp_xval (Ematerialize_temp e) Q.
 
     Axiom wp_lval_temp : forall e Q,
         (let ty := type_of e in
          Forall a : ptr,
-         wp_init a e (fun free frees => Q a (free >*> frees)))
+         wp_initialize ty a e (fun frees => Q a (FreeTemps.delete ty a >*> frees)))
         |-- wp_lval (Ematerialize_temp e) Q.
 
     (** Pseudo destructors arise from calling the destructor on
@@ -1021,7 +1021,7 @@ Module Type Expr.
                p |-> primR Tvoid 1 Vvoid ** Q (FreeTemps.delete (Tnamed cls) addr) free)
            | _ => False
            end
-      |-- wp_init addr (Econstructor cnd es (Tnamed cls)) Q.
+      |-- wp_init (Tnamed cls) addr (Econstructor cnd es (Tnamed cls)) Q.
 
     Fixpoint wp_array_init (ety : type) (base : ptr) (es : list Expr) (idx : Z) (Q : FreeTemps -> mpred) : mpred :=
       match es with
@@ -1065,9 +1065,29 @@ Module Type Expr.
       | Gt => False
       end.
 
-    Axiom wp_init_initlist_array :forall ls fill ety (sz : N) (base : ptr) Q,
+    (** [is_array_of aty ety] checks that [aty] is a type representing an
+        array of [ety].
+        NOTE that cpp2v currently prints the type `int[]` as [int* const]
+             so we also permit that type.
+     *)
+    Definition is_array_of (aty ety : type) : Prop :=
+      match aty with
+      | Tarray ety' _ => ety = ety'
+      | Tptr ety' => ety = ety'
+      | _ => False
+      end.
+
+    (** Initializing an array using an initializer list.
+        In the clang AST, the types [ty] and [Tarray ety sz] are now always the
+        same, in particular, in the expression `new C[10]{}`. We say that
+        the index to [wp_init] is the dynamic type and [type_of (Einitlist ..)]
+        is the static type. For santity, we require that the general shape of the
+        two types match, but we pull the size of the array from the dynamic type.
+     *)
+    Axiom wp_init_initlist_array :forall ls fill ty ety (sz : N) (base : ptr) Q, (* sz' <= sz *)
+          is_array_of ty ety ->
           wp_array_init_fill ety base ls fill sz (Q (FreeTemps.delete (Tarray ety sz) base))
-      |-- wp_init base (Einitlist ls fill (Tarray ety sz)) Q.
+      |-- wp_init (Tarray ety sz) base (Einitlist ls fill ty) Q.
 
 
     (* https://eel.is/c++draft/dcl.init#general-7.2 says that "To
@@ -1091,9 +1111,10 @@ Module Type Expr.
     initialization. For this reason, the rule for default initalization
     simply defers to the rule for initialization with an empty initializer
     list. *)
-    Axiom wp_init_default_array : forall ety sz base ctorname args Q,
-      wp_init base (Einitlist [] (Some (Econstructor ctorname args ety)) (Tarray ety sz)) Q
-      |-- wp_init base (Econstructor ctorname args (Tarray ety sz)) Q.
+    Axiom wp_init_default_array : forall ty ety sz base ctorname args Q,
+          is_array_of ty ety ->
+          wp_init ty base (Einitlist [] (Some (Econstructor ctorname args ety)) (Tarray ety sz)) Q
+      |-- wp_init (Tarray ety sz) base (Econstructor ctorname args ty) Q.
 
     Axiom wp_operand_initlist_default : forall t Q,
           match get_default t with
@@ -1218,19 +1239,20 @@ Module Type Expr.
                                  loop_index |-> primR Tu64 (1/2) idx **
                                  rest (N.succ idx))) sz idx.
 
-    Axiom wp_init_arrayloop_init : forall oname level sz ρ (trg : ptr) vc src init ty Q,
+    Axiom wp_init_arrayloop_init : forall oname level sz ρ (trg : ptr) vc src init ety ty Q,
           has_type (Vn sz) Tu64 ->
+          is_array_of ty ety ->
           wp_glval ρ vc src
                    (fun p free =>
                       Forall idxp,
                       trg |-> validR -*
                       _arrayloop_init (Rbind (opaque_val oname) p
                                              (Rbind (arrayloop_loop_index level) idxp ρ))
-                                      level trg init ty
-                                      (Q (FreeTemps.delete (Tarray ty sz) trg) free)
+                                      level trg init ety
+                                      (Q (FreeTemps.delete (Tarray ety sz) trg) free)
                                       sz 0)
-      |-- wp_init ρ trg
-                    (Earrayloop_init oname vc src level sz init (Tarray ty sz)) Q.
+      |-- wp_init ρ (Tarray ety sz) trg
+                    (Earrayloop_init oname vc src level sz init ty) Q.
 
   End with_resolve__arrayloop.
 End Expr.
