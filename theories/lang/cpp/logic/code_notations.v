@@ -6,10 +6,7 @@
 
 Require Import Coq.ZArith.ZArith.
 Require Import Coq.Strings.String.
-(* TODO (JH): Determine why importing [parser] causes the [Tarray] parsing notation
-   to stop working
- *)
-From bedrock.lang.cpp Require Import ast (* parser *).
+From bedrock.lang.cpp Require Import ast parser.
 
 #[local] Open Scope Z_scope.
 #[local] Open Scope string_scope.
@@ -24,18 +21,18 @@ Module Export TypeNotations.
   Bind Scope CPP_type_scope with type.
 
   (* Injection into [constr] in case we're printing this at the top-level *)
-  Notation "'{type:' ty '}'"
+  Notation "'{(type:' ty ')}'"
       := ty
          ( at level 100
          , ty custom CPP_type at level 200
-         , format "'[hv' {type:  '/' ty } ']'")
+         , format "'[hv' {(type:  '/' ty )} ']'")
        : CPP_type_scope.
   (* Injection from [constr] in case we're printing a subterm we don't recognize *)
-  Notation "'{coq:' ty '}'"
+  Notation "'{(coq:' ty ')}'"
       := ty
          ( in custom CPP_type at level 0
          , ty constr
-         , format "'[hv' {coq:  '/' ty } ']'").
+         , format "'[hv' {(coq:  '/' ty )} ']'").
 
   (* [type_qualifiers] - leaf nodes get the highest priority *)
   Notation "'mut'" := QM (in custom CPP_type at level 0).
@@ -185,19 +182,19 @@ Module Export ExprNotations.
        (cf. https://en.cppreference.com/w/cpp/language/operator_precedence).
    *)
 
-  (* Quotation mechanism for [Expr]s *)
-  Notation "'{expr:' e }"
+  (* Injection into [constr] in case we're printing this at the top-level *)
+  Notation "'{(expr:' e ')}'"
       := e
          ( at level 200
          , e custom CPP_expr at level 200
-         , format "'[hv' {expr:  '/' e } ']'"
+         , format "'[hv' {(expr:  '/' e )} ']'"
          , only printing) : CPP_expr_scope.
-  (* Injection into [constr] in case we're printing a subterm we don't recognize *)
-  Notation "'{coq:' e '}'"
+  (* Injection from [constr] in case we're printing a subterm we don't recognize *)
+  Notation "'{(coq:' e ')}'"
       := e
          ( in custom CPP_expr at level 0
          , e constr
-         , format "'[hv' {coq:  '/' e } ']'").
+         , format "'[hv' {(coq:  '/' e )} ']'").
 
   Notation "$ v"
       := (Econst_ref (Lname v%bs) _)
@@ -837,69 +834,69 @@ End CodeNotations.
 Section TestTypeNotations.
   Import TypeNotations. #[local] Open Scope CPP_type_scope.
 
-  #[local] Definition Notation_Tptr_1 : Tptr Tbool = {type: ptr<bool>} := eq_refl.
-  #[local] Definition Notation_Tptr_2 ty : Tptr ty = {type: ptr<{coq: ty}>} := eq_refl.
+  #[local] Definition Notation_Tptr_1 : Tptr Tbool = {(type: ptr<bool>)} := eq_refl.
+  #[local] Definition Notation_Tptr_2 ty : Tptr ty = {(type: ptr<{(coq: ty)}>)} := eq_refl.
 
-  #[local] Definition Notation_Tref_1 : Tref Tbool = {type: ref&<bool>} := eq_refl.
-  #[local] Definition Notation_Tref_2 ty : Tref ty = {type: ref&<{coq: ty}>} := eq_refl.
+  #[local] Definition Notation_Tref_1 : Tref Tbool = {(type: ref&<bool>)} := eq_refl.
+  #[local] Definition Notation_Tref_2 ty : Tref ty = {(type: ref&<{(coq: ty)}>)} := eq_refl.
 
-  #[local] Definition Notation_Trv_ref_1 : Trv_ref Tbool = {type: ref&&<bool>} := eq_refl.
-  #[local] Definition Notation_Trv_ref_2 ty : Trv_ref ty = {type: ref&&<{coq: ty}>} := eq_refl.
+  #[local] Definition Notation_Trv_ref_1 : Trv_ref Tbool = {(type: ref&&<bool>)} := eq_refl.
+  #[local] Definition Notation_Trv_ref_2 ty : Trv_ref ty = {(type: ref&&<{(coq: ty)}>)} := eq_refl.
 
-  #[local] Definition Notation_Tref_Trv_ref ty : Tref (Trv_ref ty) = {type: ref&<ref&&<{coq: ty}>>} := eq_refl.
-  #[local] Definition Notation_Trv_ref_Tref_1 ty : Trv_ref (Tref ty) = {type: ref&&<ref&<{coq: ty}>>} := eq_refl.
+  #[local] Definition Notation_Tref_Trv_ref ty : Tref (Trv_ref ty) = {(type: ref&<ref&&<{(coq: ty)}>>)} := eq_refl.
+  #[local] Definition Notation_Trv_ref_Tref_1 ty : Trv_ref (Tref ty) = {(type: ref&&<ref&<{(coq: ty)}>>)} := eq_refl.
 
-  #[local] Definition Notation_void : Tvoid = {type: void} := eq_refl.
+  #[local] Definition Notation_void : Tvoid = {(type: void)} := eq_refl.
 
-  #[local] Definition Notation_Tarray_1 : Tarray Tnullptr 100 = {type: nullptr_t[100]} := eq_refl.
-  #[local] Definition Notation_Tarray_2 ty n : Tarray ty n = {type: {coq: ty}[n]} := eq_refl.
+  #[local] Definition Notation_Tarray_1 : Tarray Tnullptr 100 = {(type: nullptr_t[100])} := eq_refl.
+  #[local] Definition Notation_Tarray_2 ty n : Tarray ty n = {(type: {(coq: ty)}[n])} := eq_refl.
 
-  #[local] Definition Notation_Tnamed_1 : Tnamed "foobarbaz" = {type: "foobarbaz"} := eq_refl.
-  #[local] Definition Notation_Tnamed_2 nm : Tnamed nm = {type: nm} := eq_refl.
+  #[local] Definition Notation_Tnamed_1 : Tnamed "foobarbaz" = {(type: "foobarbaz")} := eq_refl.
+  #[local] Definition Notation_Tnamed_2 nm : Tnamed nm = {(type: nm)} := eq_refl.
 
-  #[local] Definition Notation_Tfunction_novariadic_noargs_1 : Tfunction Tvoid nil = {type: extern CC_C ???() -> void} := eq_refl.
-  #[local] Definition Notation_Tfunction_novariadic_noargs_2 rty : Tfunction rty nil = {type: extern CC_C ???() -> {coq: rty}} := eq_refl.
+  #[local] Definition Notation_Tfunction_novariadic_noargs_1 : Tfunction Tvoid nil = {(type: extern CC_C ???() -> void)} := eq_refl.
+  #[local] Definition Notation_Tfunction_novariadic_noargs_2 rty : Tfunction rty nil = {(type: extern CC_C ???() -> {(coq: rty)})} := eq_refl.
 
-  #[local] Definition Notation_Tfunction_novariadic_args_nowrap_1 : Tfunction Tvoid (cons Tbool (cons Tnullptr nil)) = {type: extern CC_C ???(bool, nullptr_t) -> void} := eq_refl.
+  #[local] Definition Notation_Tfunction_novariadic_args_nowrap_1 : Tfunction Tvoid (cons Tbool (cons Tnullptr nil)) = {(type: extern CC_C ???(bool, nullptr_t) -> void)} := eq_refl.
   #[local] Definition Notation_Tfunction_novariadic_noargs_nowrap_2 rty aty1 aty2 :
-    Tfunction rty (cons aty1 (cons Tvoid (cons aty2 nil))) = {type: extern CC_C ???({coq: aty1}, void, {coq: aty2}) -> {coq: rty}} := eq_refl.
+    Tfunction rty (cons aty1 (cons Tvoid (cons aty2 nil))) = {(type: extern CC_C ???({(coq: aty1)}, void, {(coq: aty2)}) -> {(coq: rty)})} := eq_refl.
 
   #[local] Definition Notation_Tfunction_novariadic_args_wrap :
     Tfunction Tvoid (cons (Tnamed "askldjfo;lasjdlkfj;aklsdjg;blkajl;ksdjfl;aksdjf;lkasjdf;lkajsd;lfkjas;dlkfj;alskdjf;kalsdjf;lk")
                           (cons (Tnamed "askldjflk;ajsdkl;gjasdklgjakl;sdjgl;kasdjfl;kjasdlfhajklsdgljkasdhfgjkahsdfljk") nil))
-      = {type: extern CC_C ???("askldjfo;lasjdlkfj;aklsdjg;blkajl;ksdjfl;aksdjf;lkasjdf;lkajsd;lfkjas;dlkfj;alskdjf;kalsdjf;lk",
-                               "askldjflk;ajsdkl;gjasdklgjakl;sdjgl;kasdjfl;kjasdlfhajklsdgljkasdhfgjkahsdfljk") -> void} := eq_refl.
+      = {(type: extern CC_C ???("askldjfo;lasjdlkfj;aklsdjg;blkajl;ksdjfl;aksdjf;lkasjdf;lkajsd;lfkjas;dlkfj;alskdjf;kalsdjf;lk",
+                               "askldjflk;ajsdkl;gjasdklgjakl;sdjgl;kasdjfl;kjasdlfhajklsdgljkasdhfgjkahsdfljk") -> void)} := eq_refl.
 
-  #[local] Definition Notation_Tfunction_variadic_noargs_1 : Tfunction (ar:=Ar_Variadic) Tvoid nil = {type: extern CC_C ???()(...) -> void} := eq_refl.
-  #[local] Definition Notation_Tfunction_variadic_noargs_2 rty : Tfunction (ar:=Ar_Variadic) rty nil = {type: extern CC_C ???()(...) -> {coq: rty}} := eq_refl.
+  #[local] Definition Notation_Tfunction_variadic_noargs_1 : Tfunction (ar:=Ar_Variadic) Tvoid nil = {(type: extern CC_C ???()(...) -> void)} := eq_refl.
+  #[local] Definition Notation_Tfunction_variadic_noargs_2 rty : Tfunction (ar:=Ar_Variadic) rty nil = {(type: extern CC_C ???()(...) -> {(coq: rty)})} := eq_refl.
 
-  #[local] Definition Notation_Tfunction_variadic_args_nowrap_1 : Tfunction (ar:=Ar_Variadic) Tvoid (cons Tbool (cons Tnullptr nil)) = {type: extern CC_C ???(bool, nullptr_t)(...) -> void} := eq_refl.
+  #[local] Definition Notation_Tfunction_variadic_args_nowrap_1 : Tfunction (ar:=Ar_Variadic) Tvoid (cons Tbool (cons Tnullptr nil)) = {(type: extern CC_C ???(bool, nullptr_t)(...) -> void)} := eq_refl.
   #[local] Definition Notation_Tfunction_variadic_noargs_nowrap_2 rty aty1 aty2 :
-    Tfunction (ar:=Ar_Variadic) rty (cons aty1 (cons Tvoid (cons aty2 nil))) = {type: extern CC_C ???({coq: aty1}, void, {coq: aty2})(...) -> {coq: rty}} := eq_refl.
+    Tfunction (ar:=Ar_Variadic) rty (cons aty1 (cons Tvoid (cons aty2 nil))) = {(type: extern CC_C ???({(coq: aty1)}, void, {(coq: aty2)})(...) -> {(coq: rty)})} := eq_refl.
 
   #[local] Definition Notation_Tfunction_variadic_args_wrap :
     Tfunction (ar:=Ar_Variadic)
               Tvoid (cons (Tnamed "askldjfo;lasjdlkfj;aklsdjg;blkajl;ksdjfl;aksdjf;lkasjdf;lkajsd;lfkjas;dlkfj;alskdjf;kalsdjf;lk")
                           (cons (Tnamed "askldjflk;ajsdkl;gjasdklgjakl;sdjgl;kasdjfl;kjasdlfhajklsdgljkasdhfgjkahsdfljk") nil))
-      = {type: extern CC_C ???("askldjfo;lasjdlkfj;aklsdjg;blkajl;ksdjfl;aksdjf;lkasjdf;lkajsd;lfkjas;dlkfj;alskdjf;kalsdjf;lk",
-                               "askldjflk;ajsdkl;gjasdklgjakl;sdjgl;kasdjfl;kjasdlfhajklsdgljkasdhfgjkahsdfljk")(...) -> void} := eq_refl.
+      = {(type: extern CC_C ???("askldjfo;lasjdlkfj;aklsdjg;blkajl;ksdjfl;aksdjf;lkasjdf;lkajsd;lfkjas;dlkfj;alskdjf;kalsdjf;lk",
+                               "askldjflk;ajsdkl;gjasdklgjakl;sdjgl;kasdjfl;kjasdlfhajklsdgljkasdhfgjkahsdfljk")(...) -> void)} := eq_refl.
 
-  #[local] Definition Notation_Tbool : Tbool = {type: bool} := eq_refl.
+  #[local] Definition Notation_Tbool : Tbool = {(type: bool)} := eq_refl.
 
-  #[local] Definition Notation_Tmember_pointer_1 : Tmember_pointer "foobarbaz" Ti8 = {type: ptr["foobarbaz"]<int8>} := eq_refl.
+  #[local] Definition Notation_Tmember_pointer_1 : Tmember_pointer "foobarbaz" Ti8 = {(type: ptr["foobarbaz"]<int8>)} := eq_refl.
 
   Section Qualifiers.
-    #[local] Definition Notation_mut_1 : Qmut Tbool = {type: mut bool} := eq_refl.
-    #[local] Definition Notation_mut_2 : Qmut (Qmut Tbool) = {type: mut (mut bool)} := eq_refl.
+    #[local] Definition Notation_mut_1 : Qmut Tbool = {(type: mut bool)} := eq_refl.
+    #[local] Definition Notation_mut_2 : Qmut (Qmut Tbool) = {(type: mut (mut bool))} := eq_refl.
 
-    #[local] Definition Notation_const_1 : Qconst Tbool = {type: const bool} := eq_refl.
-    #[local] Definition Notation_const_2 : Qconst (Tptr (Qconst Tvoid)) = {type: const ptr<const void>} := eq_refl.
+    #[local] Definition Notation_const_1 : Qconst Tbool = {(type: const bool)} := eq_refl.
+    #[local] Definition Notation_const_2 : Qconst (Tptr (Qconst Tvoid)) = {(type: const ptr<const void>)} := eq_refl.
 
-    #[local] Definition Notation_volatile_1 : Qmut_volatile Tbool = {type: volatile bool} := eq_refl.
-    #[local] Definition Notation_volatile_2 : Qmut_volatile (Tptr (Qconst Tvoid)) = {type: volatile ptr<const void>} := eq_refl.
+    #[local] Definition Notation_volatile_1 : Qmut_volatile Tbool = {(type: volatile bool)} := eq_refl.
+    #[local] Definition Notation_volatile_2 : Qmut_volatile (Tptr (Qconst Tvoid)) = {(type: volatile ptr<const void>)} := eq_refl.
 
-    #[local] Definition Notation_const_volatile_1 : Qconst_volatile Tbool = {type: const volatile bool} := eq_refl.
-    #[local] Definition Notation_const_volatile_2 : Qconst_volatile (Tptr (Qconst_volatile Tvoid)) = {type: const volatile ptr<const volatile void>} := eq_refl.
+    #[local] Definition Notation_const_volatile_1 : Qconst_volatile Tbool = {(type: const volatile bool)} := eq_refl.
+    #[local] Definition Notation_const_volatile_2 : Qconst_volatile (Tptr (Qconst_volatile Tvoid)) = {(type: const volatile ptr<const volatile void>)} := eq_refl.
   End Qualifiers.
 End TestTypeNotations.
 
