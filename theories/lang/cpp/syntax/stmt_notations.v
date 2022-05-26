@@ -5,7 +5,8 @@
  *)
 Require Import Coq.ZArith.ZArith.
 
-From bedrock.lang.cpp.syntax Require Import names stmt.
+Require bedrock.lang.cpp.ast.
+From bedrock.lang.cpp.syntax Require Import names stmt expr_notations type_notations.
 
 #[local] Open Scope Z_scope.
 #[local] Open Scope bs_scope.
@@ -17,6 +18,8 @@ Module Export StmtNotations.
   Declare Custom Entry CPP_stmt.
   Declare Scope CPP_stmt_scope.
   Delimit Scope CPP_stmt_scope with cpp_stmt.
+  (* TODO (JH): Determine if we want (something like) this, and then do it. *)
+  Bind Scope CPP_stmt_scope with Stmt.
 
   (* Injection into [constr] in case we're printing this at the top-level *)
   Notation "'{(stmt:' s )}" := s
@@ -30,6 +33,240 @@ Module Export StmtNotations.
          ( in custom CPP_stmt at level 0
          , e constr
          , format "'[hv' {(coq:  '/' e )} ']'").
+
+  (* Statements that provide their own line break
+
+     NOTES (JH):
+     - [Stmt]s will be enclosed in [{(stmt: ...)}], so we don't include curly braces here.
+     - terminal [Stmt]s will have notations which insert semicolons (and the appropriate
+       spacing after them).
+   *)
+  Notation "'//' 'end' 'block'"
+      := (Sseq nil)
+         ( in custom CPP_stmt at level 0
+         , format "'[' //  end  block ']'"
+         , only printing).
+  Notation "s"
+      := (Sseq (cons s nil))
+         ( in custom CPP_stmt at level 0
+         , s custom CPP_stmt at level 200
+         , format "'[' s ']'"
+         , only printing).
+  Notation "s1 .. s2 '//' 'end' 'block'"
+      := (Sseq (cons s1 .. (cons s2 nil) ..))
+         ( in custom CPP_stmt at level 0
+         , s1 custom CPP_stmt at level 200
+         , s2 custom CPP_stmt at level 200
+         , format "'[v' s1 '/' .. '/' s2 '//' //  end  block ']'"
+         , only printing).
+
+  (* TODO (JH): Notations for other [VarDecl] forms *)
+  Notation "ty $ v = e ;"
+      := (Dvar v%bs ty (Some e))
+         ( in custom CPP_stmt at level 0
+         , e custom CPP_expr at level 200
+         , ty custom CPP_type at level 200
+         , v constr
+         , format "'[' ty  $ v  =  e ; ']'"
+         , only printing).
+
+  Notation "'//' 'end' 'decl' 'block'"
+      := (Sdecl nil)
+         ( in custom CPP_stmt at level 0
+         , format "//  end  decl  block"
+         , only printing).
+  Notation "d"
+      := (Sdecl (cons d nil))
+         ( in custom CPP_stmt at level 0
+         , d custom CPP_stmt at level 200
+         , format "'[' d ']'"
+         , only printing).
+  Notation "d1 .. d2"
+      := (Sdecl (cons d1 .. (cons d2 nil) ..))
+         ( in custom CPP_stmt at level 0
+         , d1 custom CPP_stmt at level 200
+         , d2 custom CPP_stmt at level 200
+         , format "'[v' d1 '/' .. '/' d2 ']' '//'"
+         , only printing).
+
+  Notation "'if' ( cond ) { thn } 'else' { els }"
+      := (Sif None cond thn els)
+         ( in custom CPP_stmt at level 200
+         , cond custom CPP_expr at level 200
+         , thn custom CPP_stmt at level 200
+         , els custom CPP_stmt at level 200
+         , format "'[hv' if  ( cond )  { '//'   thn '//' }  else  { '//'   els '//' } ']'"
+         , only printing).
+  Notation "'if' ( decl cond ) { thn } 'else' { els }"
+      := (Sif (Some decl) cond thn els)
+         ( in custom CPP_stmt at level 200
+         , decl custom CPP_stmt
+         , cond custom CPP_expr at level 200
+         , thn custom CPP_stmt at level 200
+         , els custom CPP_stmt at level 200
+         , format "'[hv' if  ( '[hv   ' decl  '/' cond ']' )  { '//'   thn '//' }  else  { '//'   els '//' } ']'"
+         , only printing).
+
+  Notation "'while' ( cond ) { body }"
+      := (Swhile None cond body)
+         ( in custom CPP_stmt at level 200
+         , cond custom CPP_expr at level 200
+         , body custom CPP_stmt at level 200
+         , format "'[hv' while  ( cond )  { '//'   body '//' } ']'"
+         , only printing).
+  Notation "'while' ( decl cond ) { body }"
+      := (Swhile (Some decl) cond body)
+         ( in custom CPP_stmt at level 200
+         , decl custom CPP_stmt at level 200
+         , cond custom CPP_expr at level 200
+         , body custom CPP_stmt at level 200
+         , format "'[hv' while  ( '[hv  ' decl  '/' cond ']' )  { '//'   body '//' } ']'"
+         , only printing).
+
+  Notation "'for' '(;;)' { body }"
+      := (Sfor None None None body)
+         ( in custom CPP_stmt at level 200
+         , body custom CPP_stmt at level 200
+         , format "'[hv' for  (;;)  { '//'   body '//' } ']'"
+         , only printing).
+  (* NOTE (JH): init will insert a semicolon since it will be a terminal stmt in realistic ASTs *)
+  Notation "'for' ( init ';)' { body }"
+      := (Sfor (Some init) None None body)
+         ( in custom CPP_stmt at level 200
+         , init custom CPP_stmt at level 200
+         , body custom CPP_stmt at level 200
+         , format "'[hv' for  ( init  ;)  { '//'   body '//' } ']'"
+         , only printing).
+  Notation "'for' '(;' cond ';)' { body }"
+      := (Sfor None (Some cond) None body)
+         ( in custom CPP_stmt at level 200
+         , cond custom CPP_expr at level 200
+         , body custom CPP_stmt at level 200
+         , format "'[hv' for  (;  cond ;)  { '//'   body '//' } ']'"
+         , only printing).
+  Notation "'for' '(;;' incr ) { body }"
+      := (Sfor None None (Some (_, incr)) body)
+         ( in custom CPP_stmt at level 200
+         , incr custom CPP_expr at level 200
+         , body custom CPP_stmt at level 200
+         , format "'[hv' for  (;;  incr )  { '//'   body '//' } ']'"
+         , only printing).
+  (* NOTE (JH): init will insert a semicolon since it will be a terminal stmt in realistic ASTs *)
+  Notation "'for' ( init cond ';)' { body }"
+      := (Sfor (Some init) (Some cond) None body)
+         ( in custom CPP_stmt at level 200
+         , init custom CPP_stmt at level 200
+         , cond custom CPP_expr at level 200
+         , body custom CPP_stmt at level 200
+         , format "'[hv' for  ( init  cond ;)  { '//'   body '//' } ']'"
+         , only printing).
+  (* NOTE (JH): init will insert a semicolon since it will be a terminal stmt in realistic ASTs *)
+  Notation "'for' ( init ; incr ) { body }"
+      := (Sfor (Some init) None (Some (_, incr)) body)
+         ( in custom CPP_stmt at level 200
+         , init custom CPP_stmt at level 200
+         , incr custom CPP_expr at level 200
+         , body custom CPP_stmt at level 200
+         , format "'[hv' for  ( init ;  incr )  { '//'   body '//' } ']'"
+         , only printing).
+  Notation "'for' (; cond ; incr ) { body }"
+      := (Sfor None (Some cond) (Some (_, incr)) body)
+         ( in custom CPP_stmt at level 200
+         , cond custom CPP_expr at level 200
+         , incr custom CPP_expr at level 200
+         , body custom CPP_stmt at level 200
+         , format "'[hv' for  (;  cond ;  incr )  { '//'   body '//' } ']'"
+         , only printing).
+  (* NOTE (JH): init will insert a semicolon since it will be a terminal stmt in realistic ASTs *)
+  Notation "'for' ( init cond ; incr ) { body }"
+      := (Sfor (Some init) (Some cond) (Some (_, incr)) body)
+         ( in custom CPP_stmt at level 200
+         , init custom CPP_stmt at level 200
+         , cond custom CPP_expr at level 200
+         , incr custom CPP_expr at level 200
+         , body custom CPP_stmt at level 200
+         , format "'[hv' for  ( init  cond ;  incr )  { '//'   body '//' } ']'"
+         , only printing).
+
+  Notation "'do' { bod } 'while' ( e ) ;"
+      := (Sdo bod e)
+         ( in custom CPP_stmt at level 200
+         , e custom CPP_expr at level 200
+         , bod custom CPP_stmt at level 200
+         , format "'[hv' do  { '//'   bod '//' }  while ( e ) ; ']'"
+         , only printing).
+
+  (* TODO (JH): [Sswitch]/[Scase]/[Sdefault] *)
+
+  Notation "'break;'"
+      := (Sbreak)
+         ( in custom CPP_stmt at level 0
+         , format "'[' break;  ']'"
+         , only printing).
+
+  Notation "'continue;'"
+      := (Scontinue)
+         ( in custom CPP_stmt at level 0
+         , format "'[' continue;  ']'"
+         , only printing).
+
+  Notation "'return;'"
+      := (Sreturn None)
+         ( in custom CPP_stmt at level 0
+         , format "'[' return;  ']'"
+         , only printing).
+  Notation "'return' e ;"
+      := (Sreturn (Some e))
+         ( in custom CPP_stmt at level 0
+         , e custom CPP_expr at level 200
+         , format "'[' return  e ;  ']'"
+         , only printing).
+
+  Notation "e ;"
+      := (Sexpr _ e)
+         ( in custom CPP_stmt at level 0
+         , e custom CPP_expr at level 200
+         , format "'[' e ; ']'"
+         , only printing).
+
+  Notation "s"
+      := (Sattr nil s)
+         ( in custom CPP_stmt at level 0
+         , s custom CPP_stmt at level 200
+         , format "'[' s ']'"
+         , only printing).
+  Notation "'[[' attr1 , .. , attr2 ']]' s"
+      := (Sattr (cons attr1%bs .. (cons attr2%bs nil) ..) s)
+         ( in custom CPP_stmt at level 0
+         , attr1 constr
+         , attr2 constr
+         , s custom CPP_stmt at level 200
+         , format "'[' [[ '[hv' attr1 ,  '/' .. ,  '/' attr2 ']' ]]  s ']'"
+         , only printing).
+
+  (* TODO (JH): [Sasm] *)
+
+  Notation "'<LABEL:' lbl > s"
+      := (Slabeled lbl%bs s)
+         ( in custom CPP_stmt at level 0
+         , lbl constr
+         , s custom CPP_stmt at level 200
+         , format "'[' <LABEL:  lbl >  s ']'"
+         , only printing).
+
+  Notation "'goto' lbl ;"
+      := (Sgoto lbl%bs)
+         ( in custom CPP_stmt at level 0
+         , lbl constr
+         , format "'[' goto  lbl ; ']'"
+         , only printing).
+
+  Notation "'{UNSUPPORTED:' msg }"
+      := (Sunsupported msg%bs)
+         ( in custom CPP_stmt at level 0
+         , msg constr
+         , format "'[hv   ' {UNSUPPORTED:  '/' msg } ']'"
+         , only printing).
 End StmtNotations.
 
 (* NOTE: The following [Section]s are only used for testing purposes; if you break one of these
@@ -37,6 +274,12 @@ End StmtNotations.
  *)
 
 Section TestStmtNotations.
+  Import bedrock.lang.cpp.ast.
+  Import TypeNotations. #[local] Open Scope CPP_type_scope.
+  Import ExprNotations. #[local] Open Scope CPP_expr_scope.
+  Import StmtNotations. #[local] Open Scope CPP_stmt_scope.
+
+(* Check (Sexpr Lvalue (Eassign (Evar (Lname "foo") Tvoid) (Eunop Unot (Evar (Lname "bar") Tvoid) Tvoid) Tvoid)). *)
 End TestStmtNotations.
 
 (* [cpp2v/theories/auto/cpp/notations/code.v@janno/code-notations], but that branch is out of date
@@ -45,160 +288,9 @@ Declare Scope CPP_scope.
 Delimit Scope CPP_scope with cpp.
 
 (** Notations for statements *)
-Notation "'{stmt:' e }"
-    := e
-       ( at level 0
-       , e custom cpp_stmt at level 200
-       , format "{stmt:  e }"
-       , only printing)
-    : cppstmt_scope.
 
 (* Statements that provide their own line break *)
-(* NOTE (JH): statements will be enclosed in [{stmt: ...}], so we don't include curly
-   braces here.
- *)
-(* NOTE (JH): statements terminal [Stmt]s will have notations which insert semicolons
-   (and the appropriate spacing after them).
- *)
-Notation "'//' 'end' 'block'"
-    := (Sseq nil)
-       ( in custom cpp_stmt at level 0
-       , format "'[' //  end  block ']'"
-       , only printing).
-Notation "s"
-    := (Sseq (cons s nil))
-       ( in custom cpp_stmt at level 0
-       , s custom cpp_stmt at level 200
-       , format "'[' s ']'"
-       , only printing).
-Notation "s1 .. s2 '//' 'end' 'block'"
-    := (Sseq (cons s1 .. (cons s2 (nil)) ..))
-       ( in custom cpp_stmt at level 0
-       , s1 custom cpp_stmt at level 200
-       , s2 custom cpp_stmt at level 200
-       , format "'[v' s1 '/' .. '/' s2 '//' //  end  block ']'"
-       , only printing).
 
-(* Statements that provide their own line break *)
-(* Notation "{ s1 ; .. ; s2 ; }" *)
-(*     := (Sseq (cons s1 .. (cons s2 (nil)) ..)) *)
-(*        ( in custom cpp_stmt at level 0 *)
-(*        , s1 custom cpp_stmt at level 200 *)
-(*        , s2 custom cpp_stmt at level 200 *)
-(*        , format "'/' { '//'  '[v' s1 ';' '//' .. ';' '//' s2 ';' ']' '//' }" *)
-(*        , only printing). *)
-
-(* Notation "{ s1 ; .. ; s2 ; }" := (Sseq (@cons Stmt s1 .. (@cons Stmt s2 (@nil Stmt)) ..)) *)
-(*                                (in custom cpp_stmt at level 0, *)
-(*                                 s1 custom cpp_stmt at level 200, *)
-(*                                 s2 custom cpp_stmt at level 200, *)
-(*                                 only printing, *)
-(*                                 format "'[  ' { '//' '[v' s1 ';' '//' .. ';' '//' s2 ';' ']' '//' ']' }"). *)
-
-(* Notation "s1 ; .. ; s2 ;" := (Sseq (@cons Stmt s1 .. (@cons Stmt s2 (@nil Stmt)) ..)) *)
-(*                                (in custom cpp_stmt_unbraced at level 0, *)
-(*                                 s1 custom cpp_stmt at level 200, *)
-(*                                 s2 custom cpp_stmt at level 200, *)
-(*                                 only printing, *)
-(*                                 format "'[v' '//' s1 ';' '//' .. ';' '//' s2 ';' ']' '//'"). *)
-
-(* Notation "s" := (Sseq (@cons s nil)) (in custom cpp_stmt at level 0, s custom cpp_stmt). *)
-
-(* Notation "s" := (s) (in custom cpp_stmt_unbraced at level 0, s custom cpp_stmt at level 200, only printing). *)
-
-Notation "e ;"
-    := (Sexpr _ e)
-       ( in custom cpp_stmt at level 0
-       , e custom cpp_expr at level 200
-       , format "'[' e ; ']'"
-       , only printing).
-
-(* Check (Sexpr Lvalue (Eassign (Evar (Lname "foo") Tvoid) (Eunop Unot (Evar (Lname "bar") Tvoid) Tvoid) Tvoid)). *)
-
-Notation "'continue;'"
-    := Scontinue
-       ( in custom cpp_stmt at level 0
-       , format "'[' continue;  ']'"
-       , only printing).
-Notation "'break;'"
-    := Sbreak
-       ( in custom cpp_stmt at level 0
-       , format "'[' break;  ']'"
-       , only printing).
-Notation "'return' e ;"
-    := (Sreturn (Some (e)))
-       ( in custom cpp_stmt at level 0
-       , e custom cpp_expr at level 200
-       , format "'[' return  e ;  ']'"
-       , only printing).
-Notation "'return;'"
-    := (Sreturn None)
-       ( in custom cpp_stmt at level 199
-       , format "'[' return;  ']'"
-       , only printing).
-
-Notation "'//' 'empty' 'decl' 'block'"
-    := (Sdecl nil)
-       ( in custom cpp_stmt at level 0
-       , format "//  empty  decl  block"
-       , only printing).
-Notation "d"
-    := (Sdecl (cons d nil))
-       ( in custom cpp_stmt at level 0
-       , d custom cpp_stmt at level 200
-       , format "'[' d ']'"
-       , only printing).
-Notation "d1 .. d2"
-    := (Sdecl (cons d1 .. (cons d2 nil) ..))
-       ( in custom cpp_stmt at level 0
-       , d1 custom cpp_stmt at level 200
-       , d2 custom cpp_stmt at level 200
-       , format "'[v' d1 '/' .. '/' d2 ']' '//'"
-       , only printing).
-
-Notation "ty $ v = e ;"
-    := (Dvar v ty (Some e))
-       ( in custom cpp_stmt at level 0
-       , e custom cpp_expr at level 200
-       , ty custom cpp_type at level 200
-       , v constr
-       , format "'[' ty  $ v  =  e ; ']'"
-       , only printing).
-
-
-Notation "'if' ( t ) { thn } 'else' { els }"
-    := (Sif None t thn els)
-       ( in custom cpp_stmt at level 200
-       , t custom cpp_expr at level 200
-       , thn custom cpp_stmt at level 200
-       , els custom cpp_stmt at level 200
-       , format "'[hv' if ( t )  { '//'   thn '//' }  else  { '//'   els '//' } ']'"
-       , only printing).
-Notation "'while' ( t ) { bod }"
-    := (Swhile None t bod)
-       ( in custom cpp_stmt at level 200
-       , t custom cpp_expr at level 200
-       , bod at level 100
-       , format "'[hv' while ( t )  { '//'   bod '//' } ']'"
-       , only printing).
-Notation "'while' ( t $ i = e ) { bod }"
-    := (Swhile (Some (Dvar i t (Some e))) _ bod)
-       ( in custom cpp_stmt at level 200
-       , t custom cpp_type at level 100
-       , e custom cpp_expr at level 200
-       , bod at level 100
-       , i constr
-       , format "'[hv' while ( '[' t  $ i  =  e ']' )  { '//'   bod '//' } ']'"
-       , only printing).
-
-
-Notation "'do' { bod } 'while' ( e ) ;"
-    := (Sdo bod e)
-       ( in custom cpp_stmt at level 200
-       , e custom cpp_expr at level 200
-       , bod custom cpp_stmt at level 200
-       , format "'[hv' do  { '//'   bod '//' }  while ( e ) ; ']'"
-       , only printing).
 
 (** Tests *)
 Definition E (e : Expr) : Prop := True.

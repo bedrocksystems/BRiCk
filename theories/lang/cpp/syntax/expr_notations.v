@@ -5,7 +5,8 @@
  *)
 Require Import Coq.ZArith.ZArith.
 
-From bedrock.lang.cpp.syntax Require Import expr names.
+Require bedrock.lang.cpp.ast.
+From bedrock.lang.cpp.syntax Require Import expr names type_notations.
 
 #[local] Open Scope Z_scope.
 #[local] Open Scope bs_scope.
@@ -18,6 +19,8 @@ Module Export ExprNotations.
   Declare Custom Entry CPP_expr.
   Declare Scope CPP_expr_scope.
   Delimit Scope CPP_expr_scope with cpp_expr.
+  (* TODO (JH): Determine if we want (something like) this, and then do it. *)
+  Bind Scope CPP_expr_scope with Expr.
 
   (* NOTE: precedences taken from cppreference
        (cf. https://en.cppreference.com/w/cpp/language/operator_precedence).
@@ -586,7 +589,6 @@ Module Export ExprNotations.
          , e custom CPP_expr at level 200
          , only printing).
 
-  (* TODO (JH): [Ebuiltin] *)
   Notation "'__builtin_alloca'" := (Bin_alloca) ( in custom CPP_expr at level 0).
   Notation "'__builtin_alloca_with_align'" := (Bin_alloca_with_align) ( in custom CPP_expr at level 0).
   Notation "'__builtin_launder'" := (Bin_launder) ( in custom CPP_expr at level 0).
@@ -643,7 +645,7 @@ Module Export ExprNotations.
 
   Notation "'{UNSUPPORTED:' msg }"
       := (Eunsupported msg%bs _)
-         ( in custom CPP_expr at level 200
+         ( in custom CPP_expr at level 0
          , msg constr
          , format "'[hv   ' {UNSUPPORTED:  '/' msg } ']'"
          , only printing).
@@ -654,4 +656,7 @@ End ExprNotations.
  *)
 
 Section TestExprNotations.
+  Import bedrock.lang.cpp.ast.
+  Import TypeNotations. #[local] Open Scope CPP_type_scope.
+  Import ExprNotations. #[local] Open Scope CPP_expr_scope.
 End TestExprNotations.

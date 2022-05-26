@@ -5,6 +5,7 @@
  *)
 Require Import Coq.ZArith.ZArith.
 
+Require bedrock.lang.cpp.ast.
 From bedrock.lang.cpp.syntax Require Import names types.
 
 #[local] Open Scope Z_scope.
@@ -171,6 +172,7 @@ End TypeNotations.
  *)
 
 Section TestTypeNotations.
+  Import bedrock.lang.cpp.ast.
   Import TypeNotations. #[local] Open Scope CPP_type_scope.
 
   #[local] Definition Notation_Tptr_1 : Tptr Tbool = {(type: ptr<bool>)} := eq_refl.
