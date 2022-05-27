@@ -1039,7 +1039,18 @@ Module Type Expr.
            *)
          wp_initialize ety (base .[ ety ! idx ]) e
                        (fun free => interp free $ wp_array_init ety base rest (Z.succ idx) Q)
-      end%I.
+      end.
+
+    Lemma wp_array_init_frame ety base : forall es ix Q Q',
+      (Forall f, Q f -* Q' f)
+      |-- wp_array_init ety base es ix Q -*
+          wp_array_init ety base es ix Q'.
+    Proof.
+      induction es; simpl; intros; iIntros "X".
+      { iIntros "A B"; iApply "X"; iApply "A"; done. }
+      { iApply wp_initialize_frame; iIntros (?).
+        iApply interp_frame. by iApply IHes. }
+    Qed.
 
     Definition fill_initlist (desiredsz : N) (es : list Expr) (f : Expr) : list Expr :=
       let actualsz := N.of_nat (length es) in
@@ -1064,6 +1075,18 @@ Module Type Expr.
        *)
       | Gt => False
       end.
+
+    Lemma wp_array_init_fill_frame ety base es f sz Q Q' :
+      (Forall f, Q f -* Q' f)
+      |-- wp_array_init_fill ety base es f sz Q -*
+          wp_array_init_fill ety base es f sz Q'.
+    Proof.
+      rewrite /wp_array_init_fill.
+      case_match; eauto.
+      { iIntros "X"; iApply wp_array_init_frame. done. }
+      { case_match; eauto.
+        iApply wp_array_init_frame. }
+    Qed.
 
     (** [is_array_of aty ety] checks that [aty] is a type representing an
         array of [ety].
@@ -1145,6 +1168,15 @@ Module Type Expr.
              (fun free => interp free $ init_fields cls base fs es Q)
       | _ , _ => False
       end.
+
+    Lemma init_fields_frame cls base : forall fs es Q Q',
+        Q -* Q' |-- init_fields cls base fs es Q -* init_fields cls base fs es Q'.
+    Proof.
+      induction fs; simpl; intros; case_match; eauto.
+      iIntros "X"; iApply wp_initialize_frame.
+      iIntros (?); iApply interp_frame.
+      by iApply IHfs.
+    Qed.
 
     (** Using an initializer list to create a `struct` or `union`.
 

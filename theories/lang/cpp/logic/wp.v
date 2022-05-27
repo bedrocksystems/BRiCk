@@ -673,13 +673,20 @@ Section with_cpp.
   Lemma wp_discard_frame σ1 σ2 ρ vc e k1 k2:
     genv_leq σ1 σ2 ->
     Forall f, k1 f -* k2 f |-- wp_discard (resolve := σ1) ρ vc e k1 -* wp_discard (resolve:=σ2) ρ vc e k2.
-  Proof. (*
-    destruct vc => /=; [ | apply wp_prval_frame | ].
+  Proof.
+    destruct vc => /=.
     - intros. rewrite -wp_lval_frame; eauto.
       iIntros "h" (v f) "x"; iApply "h"; iFrame.
+    - intros. case_match.
+      + iIntros "h"; iApply wp_operand_frame; eauto.
+        iIntros (??); iApply "h".
+      + iIntros "a b" (p).
+        iSpecialize ("b" $! p).
+        iRevert "b"; iApply wp_init_frame; eauto.
+        iIntros (??); iApply "a".
     - intros. rewrite -wp_xval_frame; eauto.
       iIntros "h" (v f) "x"; iApply "h"; iFrame.
-  Qed. *) Admitted.
+  Qed.
 
   #[global] Instance Proper_wpe :
     Proper (genv_leq ==> eq ==> eq ==> eq ==> ((≡) ==> (⊢)) ==> (⊢))
