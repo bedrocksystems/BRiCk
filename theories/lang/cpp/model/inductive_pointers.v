@@ -470,6 +470,9 @@ Module PTRS_IMPL <: PTRS_INTF.
     end.
 
   Include PTRS_SYNTAX_MIXIN.
+  (* Duplicated. *)
+  #[global] Notation "p ., o" := (_dot p (o_field _ o))
+    (at level 11, left associativity, only parsing) : stdpp_scope.
 
   #[local] Ltac UNFOLD_dot := rewrite _dot.unlock/DOT_dot/=.
 
