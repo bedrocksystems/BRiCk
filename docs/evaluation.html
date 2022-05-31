@@ -188,7 +188,7 @@ The parameter is the following:</p>
  *)
 Parameter wp_init
   : forall {resolve:genv}, region -&gt;
-                      ptr -&gt; Expr -&gt;
+                      type -&gt; ptr -&gt; Expr -&gt;
                       (FreeTemp -&gt; FreeTemps -&gt; epred) -&gt; (* top-free -&gt; free -&gt; post *)
                       mpred. (* pre-condition *)
 </pre></div>
@@ -204,7 +204,7 @@ In this case, the constructed value (of type <code class="code highlight coq doc
 <p>On top of <code class="code highlight coq docutils literal notranslate"><span class="n"><span class="pre">wp_init</span></span></code>, we can <em>define</em> <code class="code highlight coq docutils literal notranslate"><span class="n"><span class="pre">wp_prval</span></span></code> by universally quantifying the pointer that is being initialized and passing it to the continuation.</p>
 <div class="highlight-text notranslate"><div class="highlight"><pre><span></span>Definition wp_prval {resolve:genv} (ρ : region)
            (e : Expr) (Q : ptr -&gt; FreeTemp -&gt; FreeTemps -&gt; epred) : mpred :=
-  ∀ p : ptr, wp_init ρ p e (Q p).
+  ∀ p : ptr, wp_init ρ (type_of e) p e (Q p).
 </pre></div>
 </div>
 <p>Note that the pointer <code class="code highlight coq docutils literal notranslate"><span class="n"><span class="pre">p</span></span></code> is completely unconstrained in this definition.
@@ -225,10 +225,10 @@ Parameter wp_operand
 <p>Unlike <code class="code highlight coq docutils literal notranslate"><span class="n"><span class="pre">wp_init</span></span></code> and <code class="code highlight coq docutils literal notranslate"><span class="n"><span class="pre">wp_prval</span></span></code>, operands return <a class="reference external" href="_static/coqdoc/bedrock.lang.cpp.semantics.value.html#val">val</a>s.
 Because the value returned does not have an identity, there is nothing to destroy, so, unlike <code class="code highlight coq docutils literal notranslate"><span class="n"><span class="pre">wp_prval</span></span></code> and <code class="code highlight coq docutils literal notranslate"><span class="n"><span class="pre">wp_init</span></span></code>, the continuation takes a single <code class="code highlight coq docutils literal notranslate"><span class="n"><span class="pre">FreeTemps</span></span></code>, which will destroy the temporaries created when evaluating the operand.</p>
 <p>The relationship between <a class="reference external" href="_static/coqdoc/wp_operand.html">wp_operand</a> and <a class="reference external" href="_static/coqdoc/wp_init.html">wp_init</a> can be precisely characterized by the following two axioms.</p>
-<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>Axiom wp_operand_wp_init : forall {σ : genv} ρ addr e Q (ty := type_of e),
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>Axiom wp_operand_wp_init : forall {σ : genv} ρ ty addr e Q,
     is_primitive ty -&gt;
     wp_operand ρ e (fun v frees =&gt; _at addr (primR ty 1 v) -* Q (FreeTemps.delete ty addr) frees)
-  |-- wp_init ρ addr e Q.
+  |-- wp_init ρ ty addr e Q.
 
 (** This is justified in the logic but technically not sactioned by the standard
 
