@@ -77,7 +77,9 @@ Module Type Expr.
     (* constants are rvalues *)
     Axiom wp_operand_constant : forall ty cnst e Q,
       glob_def cnst = Some (Gconstant ty (Some e)) ->
-      wp_operand e Q
+          (* evaluation of the expression does not get access to
+             local variables, so it gets [Remp] rather than [ρ] *)
+          WPE.wp_operand (Remp None None ty) e Q
       |-- wp_operand (Econst_ref (Gname cnst) ty) Q.
 
     (* integer literals are prvalues *)
