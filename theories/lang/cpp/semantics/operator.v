@@ -191,9 +191,6 @@ Axiom eval_gt_int : Hnf (eval_int_rel_op_int Z.gt Bgt).
 Axiom eval_le_int : Hnf (eval_int_rel_op_int Z.le Ble).
 Axiom eval_ge_int : Hnf (eval_int_rel_op_int Z.ge Bge).
 
-Definition bitFlipZU (len: bitsize) (z:Z) : Z :=
-  to_unsigned len (Z.lnot z).
-
 (* note [Z.lnot a = -1 - a] *)
 Axiom eval_unop_not:
   forall {genv} (w : bitsize) (sgn : signed) (a b : Z),
