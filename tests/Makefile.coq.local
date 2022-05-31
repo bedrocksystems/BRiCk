@@ -8,8 +8,8 @@
 CPPFLAGS=-std=c++17
 CFLAGS=-std=c99
 
-CPP2V = ../build/cpp2v
-override CPP2V_WANT := $(abspath $(dir $(realpath $(lastword $(MAKEFILE_LIST))))/$(CPP2V))
+CPP2V_RELATIVE = ../build/cpp2v
+override CPP2V_WANT := $(abspath $(dir $(realpath $(lastword $(MAKEFILE_LIST))))/$(CPP2V_RELATIVE))
 override CPP2V := $(realpath $(CPP2V_WANT))
 
 # Force the cpp2v binary to exist rather than run the wrong recipes.
@@ -36,3 +36,38 @@ endif
 	$(CPP2V) -v -names $@ $< -- $(CPPFLAGS)
 %_hpp_names.v: %.hpp $(CPP2V)
 	$(CPP2V) -v -names $@ $< -- $(CPPFLAGS)
+
+# Note: The [notation_test] rule and logic are adapted from [stdpp]'s [Makefile.coq.local]
+# Link tagged May 31, 2022:  <https://gitlab.mpi-sws.org/iris/stdpp/-/blob/5b7d0bf68d9b0f4396f77c0d1bee8230368b7498/Makefile.coq.local>
+
+# Use NO_NOTATION_TEST=1 to skip the notation tests
+NO_NOTATION_TEST?=
+
+# Use MAKE_NOTATION_REF=1 to generate new notation reference files
+MAKE_NOTATION_REF?=
+
+real-all: $(if $(NO_NOTATION_TEST),,notation-test)
+
+COQ_NOTATION_TEST?=$(COQTOP) $(COQDEBUG) -batch -test-mode
+
+NOTATION_TESTFILES:=type_notation_tests.v # expr_notation_tests.v stmt_notation_tests.v code_notation_tests.v
+
+notation-test: $(NOTATION_TESTFILES:.v=.vo)
+.PHONY: notation-test
+
+# Main test script (comments out-of-line because macOS otherwise barfs?!?)
+# - Determine reference file (`REF`).
+# - Print user-visible status line.
+# - unset env vars that change Coq's output
+# - Dump Coq output into a temporary file.
+# - Either compare the result with the reference file, or move it over the reference file.
+# - Cleanup, and mark as done for make.
+$(NOTATION_TESTFILES:.v=.vo): %.vo: %.v $(if $(MAKE_NOTATION_REF),,%.ref)
+	$(HIDE)REF=$*".ref" && \
+	echo "COQ_NOTATION_TEST$(if $(MAKE_NOTATION_REF), [make notation ref],) $< (notation ref: $$REF)" && \
+	TMPFILE="$$(mktemp)" && \
+	unset OCAMLRUNPARAM && \
+	$(TIMER) $(COQ_NOTATION_TEST) $(COQFLAGS) $(COQLIBS) -load-vernac-source $< > "$$TMPFILE" && \
+	$(if $(MAKE_NOTATION_REF),mv "$$TMPFILE" "$$REF",diff --strip-trailing-cr -u "$$REF" "$$TMPFILE") && \
+	rm -f "$$TMPFILE" && \
+	touch $@

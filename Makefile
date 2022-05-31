@@ -92,7 +92,7 @@ test-cpp2v: build-minimal cpp2v
 .PHONY: test-cpp2v
 
 test-coq: cpp2v coq
-	+@$(MAKE) -C tests CPP2V=$(ROOT)/build/cpp2v
+	+@$(MAKE) -C tests CPP2V=$(ROOT)/build/cpp2v MAKE_NOTATION_REF=$(MAKE_NOTATION_REF) NO_NOTATION_TEST=$(NO_NOTATION_TEST)
 .PHONY: test-cpp2v
 
 
