@@ -18,7 +18,7 @@ From bedrock.lang.cpp.logic Require Import
      initializers
      wp call string
      translation_unit
-     dispatch.
+     dispatch layout.
 Require Import bedrock.lang.bi.errors.
 
 Require Import bedrock.lang.cpp.heap_notations.
@@ -1128,6 +1128,53 @@ Module Type Expr.
            then wp_operand e Q
            else False)
       |-- wp_operand (Einitlist (e :: nil) None t) Q.
+
+    (** Initialize the fields of the class [cls] (at [base]) using the
+        expressions [es] and then proceed as [Q].
+     *)
+    Fixpoint init_fields (cls : globname) (base : ptr)
+      (fs : list Member) (es : list Expr) (Q : epred) {struct fs} : mpred :=
+      match fs , es with
+      | nil , nil => Q
+      | f :: fs , e :: es =>
+          (* note that there is a sequence point after each field initialization.
+             See <https://eel.is/c++draft/dcl.init.list#4>
+           *)
+          let ff := {| f_type := cls ; f_name := f.(mem_name) |} in
+          wp_initialize f.(mem_type) (base ., ff) e
+             (fun free => interp free $ init_fields cls base fs es Q)
+      | _ , _ => False
+      end.
+
+    (** Using an initializer list to create a `struct` or `union`.
+
+       NOTE clang elaborates the initializer list to directly match the members
+       of the target class. For example, consider `struct C { int x; int y{3}; };`
+       1. `{0}` is elaborated into `{0, 3}`;
+       2. `{.y = 7, .x = 2}` is elaborated into `{2, 7}`
+     *)
+    Axiom wp_init_initlist_agg : forall cls (base : ptr) es t Q,
+        let cont :=
+          base |-> struct_paddingR 1 cls ** base |-> identityR cls (Some cls) 1 -*
+            Q (FreeTemps.delete (Tnamed cls) base) FreeTemps.id
+        in
+        match resolve.(genv_tu).(globals) !! cls with
+        | Some (Gstruct s) =>
+            (* these constraints are enforced by clang, see note above *)
+            [| s.(s_bases) = nil /\ length s.(s_fields) = length es |] **
+            init_fields cls base s.(s_fields) es
+               (base |-> struct_paddingR 1 cls ** (if has_vtable s then base |-> identityR cls (Some cls) 1 else emp) -*
+                Q (FreeTemps.delete (Tnamed cls) base) FreeTemps.id)
+
+        | Some (Gunion u) =>
+            (* to initialize a union, the list must be exactly 1 element long *)
+            [| length es = 1 |] **
+            init_fields cls base (firstn 1 u.(u_fields)) es
+               (base |-> union_paddingR 1 cls (Some 0) -*
+                Q (FreeTemps.delete (Tnamed cls) base) FreeTemps.id)
+        | _ => False
+        end
+      |-- wp_init (Tnamed cls) base (Einitlist es None t) Q.
 
   End with_resolve.
 
