@@ -106,11 +106,11 @@ theories/lang/cpp/arith/z_to_bytes.v
 # Syntax
 theories/lang/cpp/syntax/names.v
 theories/lang/cpp/syntax/types.v
-theories/lang/cpp/syntax/type_notations.
+theories/lang/cpp/syntax/type_notations.v
 theories/lang/cpp/syntax/expr.v
-theories/lang/cpp/syntax/expr_notations.
+theories/lang/cpp/syntax/expr_notations.v
 theories/lang/cpp/syntax/stmt.v
-theories/lang/cpp/syntax/stmt_notations.
+theories/lang/cpp/syntax/stmt_notations.v
 theories/lang/cpp/syntax/translation_unit.v
 theories/lang/cpp/syntax/typing.v
 theories/lang/cpp/ast.v
