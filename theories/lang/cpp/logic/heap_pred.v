@@ -118,6 +118,13 @@ Section with_cpp.
     by iPureIntro.
   Qed.
 
+  (* Typical [f] are [Vint], [Vn] etc; this gives agreement for [u64R] etc. *)
+  #[global] Instance primR_observe_agree_constr resolve ty q1 q2 {A} f `{!Inj eq eq f} (v1 v2 : A) :
+    Observe2 [| v1 = v2 |]
+      (primR ty q1 (f v1))
+      (primR ty q2 (f v2)).
+  Proof. apply (observe2_inj f), _. Qed.
+
   #[global] Instance primR_observe_has_type resolve ty q v :
     Observe [| has_type v (drop_qualifiers ty) |] (primR ty q v).
   Proof. rewrite primR_eq. apply _. Qed.
