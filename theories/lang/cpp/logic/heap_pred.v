@@ -105,17 +105,14 @@ Section with_cpp.
       (primR ty q1 v1)
       (primR ty q2 v2).
   Proof.
-    rewrite primR_eq/primR_def;
-      apply: as_Rep_only_provable_observe_2=> p;
-      apply: observe_2_intro_only_provable.
+    rewrite primR_eq/primR_def; apply: as_Rep_only_provable_observe_2=> p.
     iIntros "(Htptsto1 & %Hnotraw1 & %Hhas_type1)
              (Htptsto2 & %Hnotraw2 & %Hhas_type2)".
-    iDestruct (observe_2_elim_pure with "Htptsto1 Htptsto2") as %Hvs.
-    assert (v1 = v2)
-      by (induction Hvs; subst; auto; exfalso;
-          [apply Hnotraw1 | apply Hnotraw2];
-          eauto).
-    by iPureIntro.
+    iApply (observe_2 with "Htptsto1 Htptsto2").
+    iApply observe_2_derive_only_provable => Hvs.
+    induction Hvs; subst; auto; exfalso;
+        [apply Hnotraw1 | apply Hnotraw2];
+        eauto.
   Qed.
 
   (* Typical [f] are [Vint], [Vn] etc; this gives agreement for [u64R] etc. *)
