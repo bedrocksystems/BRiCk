@@ -170,6 +170,15 @@ Section with_cpp.
     by iApply denoteSymbol_valid.
   Qed.
 
+  #[global] Instance denoteModule_models_observe tu : Observe [| tu ⊧ resolve |] (denoteModule tu).
+  Proof.
+    apply observe_intro_only_provable.
+    rewrite denoteModule_eq/denoteModule_def.
+    iIntros "[_ %]". iPureIntro. constructor.
+    destruct (module_le_spec tu (genv_tu resolve)); eauto.
+    destruct H.
+  Qed.
+
 End with_cpp.
 
 Arguments denoteModule _ : simpl never.
