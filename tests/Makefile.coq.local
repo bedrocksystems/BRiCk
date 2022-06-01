@@ -4,6 +4,23 @@
 # This software is distributed under the terms of the BedRock Open-Source License.
 # See the LICENSE-BedRock file in the repository root for details.
 #
+# Some of the rules/logic are "... ADAPTED FROM [stdpp/Makefile.coq.local]". The original
+# code is
+#
+#	Copyright: std++ developers and contributors
+#
+# and used according to the following license.
+#
+#	SPDX-License-Identifier: BSD-3-Clause
+#
+# Original code (tagged May 31, 2022):
+#
+# 	<https://gitlab.mpi-sws.org/iris/stdpp/-/blob/5b7d0bf68d9b0f4396f77c0d1bee8230368b7498/Makefile.coq.local>
+#
+# Original stdpp license:
+#
+#	<https://gitlab.mpi-sws.org/iris/stdpp/-/blob/5b7d0bf68d9b0f4396f77c0d1bee8230368b7498/LICENSE>
+#
 
 CPPFLAGS=-std=c++17
 CFLAGS=-std=c99
@@ -37,8 +54,9 @@ endif
 %_hpp_names.v: %.hpp $(CPP2V)
 	$(CPP2V) -v -names $@ $< -- $(CPPFLAGS)
 
-# Note: The [notation_test] rule and logic are adapted from [stdpp]'s [Makefile.coq.local]
-# Link tagged May 31, 2022:  <https://gitlab.mpi-sws.org/iris/stdpp/-/blob/5b7d0bf68d9b0f4396f77c0d1bee8230368b7498/Makefile.coq.local>
+################################################################################
+### THE FOLLOWING IS ADAPTED FROM [stdpp/Makefile.coq.local] ###################
+################################################################################
 
 # Use NO_NOTATION_TEST=1 to skip the notation tests
 NO_NOTATION_TEST?=
