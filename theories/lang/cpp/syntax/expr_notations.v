@@ -27,11 +27,11 @@ Module Export ExprNotations.
    *)
 
   (* Injection into [constr] in case we're printing this at the top-level *)
-  Notation "'{(expr:' e ')}'"
+  Notation "'{(e:' e ')}'"
       := e
          ( at level 200
          , e custom CPP_expr at level 200
-         , format "'[hv' {(expr:  '/' e )} ']'"
+         , format "'[hv' {(e:  '/' e )} ']'"
          , only printing) : CPP_expr_scope.
   (* Injection from [constr] in case we're printing a subterm we don't recognize *)
   Notation "'{(coq:' e ')}'"

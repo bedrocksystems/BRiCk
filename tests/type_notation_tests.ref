@@ -1,125 +1,118 @@
 Notation_Tptr_1 = eq_refl
-     : ({(type: ptr<bool>)}) = ({(type: ptr<bool>)})
+     : ({(t: ptr<bool>)}) = ({(t: ptr<bool>)})
 Notation_Tptr_2 = 
 eq_refl
-     : ({(type: ptr<{(coq: ty)}>)}) = ({(type: ptr<{(coq: ty)}>)})
-Notation_Tref_1 = 
-eq_refl
-     : ({(type: ref&<bool>)}) = ({(type: ref&<bool>)})
+     : ({(t: ptr<{(coq: ty)}>)}) = ({(t: ptr<{(coq: ty)}>)})
+Notation_Tref_1 = eq_refl
+     : ({(t: ref&<bool>)}) = ({(t: ref&<bool>)})
 Notation_Tref_2 = 
 eq_refl
-     : ({(type: ref&<{(coq: ty)}>)}) = ({(type: ref&<{(coq: ty)}>)})
+     : ({(t: ref&<{(coq: ty)}>)}) = ({(t: ref&<{(coq: ty)}>)})
 Notation_Trv_ref_1 = 
 eq_refl
-     : ({(type: ref&&<bool>)}) = ({(type: ref&&<bool>)})
+     : ({(t: ref&&<bool>)}) = ({(t: ref&&<bool>)})
 Notation_Trv_ref_2 = 
 eq_refl
-     : ({(type: ref&&<{(coq: ty)}>)}) = ({(type: ref&&<{(coq: ty)}>)})
+     : ({(t: ref&&<{(coq: ty)}>)}) = ({(t: ref&&<{(coq: ty)}>)})
 Notation_Tref_Trv_ref = 
 eq_refl
-     : ({(type: ref&<ref&&<{(coq: ty)}>>)}) =
-       ({(type: ref&<ref&&<{(coq: ty)}>>)})
+     : ({(t: ref&<ref&&<{(coq: ty)}>>)}) = ({(t: ref&<ref&&<{(coq: ty)}>>)})
 Notation_Trv_ref_Tref = 
 eq_refl
-     : ({(type: ref&&<ref&<{(coq: ty)}>>)}) =
-       ({(type: ref&&<ref&<{(coq: ty)}>>)})
+     : ({(t: ref&&<ref&<{(coq: ty)}>>)}) = ({(t: ref&&<ref&<{(coq: ty)}>>)})
 Notation_void = eq_refl
-     : ({(type: void)}) = ({(type: void)})
+     : ({(t: void)}) = ({(t: void)})
 Notation_Tarray_1 = 
 eq_refl
-     : ({(type: nullptr_t[100])}) = ({(type: nullptr_t[100])})
+     : ({(t: nullptr_t[100])}) = ({(t: nullptr_t[100])})
 Notation_Tarray_2 = 
 eq_refl
-     : ({(type: {(coq: ty)}[n])}) = ({(type: {(coq: ty)}[n])})
-Notation_Tnamed_1 = 
-eq_refl
-     : ({(type: "foobarbaz")}) = ({(type: "foobarbaz")})
+     : ({(t: {(coq: ty)}[n])}) = ({(t: {(coq: ty)}[n])})
+Notation_Tnamed_1 = eq_refl
+     : ({(t: "foobarbaz")}) = ({(t: "foobarbaz")})
 Notation_Tnamed_2 = eq_refl
-     : ({(type: nm)}) = ({(type: nm)})
+     : ({(t: nm)}) = ({(t: nm)})
 Notation_Tfunction_novariadic_noargs_1 = 
 eq_refl
-     : ({(type: extern CC_C ???() -> void)}) =
-       ({(type: extern CC_C ???() -> void)})
+     : ({(t: extern CC_C ???() -> void)}) =
+       ({(t: extern CC_C ???() -> void)})
 Notation_Tfunction_novariadic_noargs_2 = 
 eq_refl
-     : ({(type: extern CC_C ???() -> {(coq: rty)})}) =
-       ({(type: extern CC_C ???() -> {(coq: rty)})})
+     : ({(t: extern CC_C ???() -> {(coq: rty)})}) =
+       ({(t: extern CC_C ???() -> {(coq: rty)})})
 Notation_Tfunction_novariadic_args_nowrap_1 = 
 eq_refl
-     : ({(type: extern CC_C ???(bool, nullptr_t) -> void)}) =
-       ({(type: extern CC_C ???(bool, nullptr_t) -> void)})
+     : ({(t: extern CC_C ???(bool, nullptr_t) -> void)}) =
+       ({(t: extern CC_C ???(bool, nullptr_t) -> void)})
 Notation_Tfunction_novariadic_args_nowrap_2 = 
 eq_refl
-     : ({(type:
+     : ({(t:
         extern CC_C ???({(coq: aty1)}, void, {(coq: aty2)}) -> {(coq: rty)})}) =
-       ({(type:
+       ({(t:
         extern CC_C ???({(coq: aty1)}, void, {(coq: aty2)}) -> {(coq: rty)})})
 Notation_Tfunction_novariadic_args_wrap = 
 eq_refl
-     : ({(type:
+     : ({(t:
         extern CC_C ???("askldjfo;lasjdlkfj;aklsdjg;blkajl;ksdjfl;aksdjf;lkasjdf;lkajsd;lfkjas;dlkfj;alskdjf;kalsdjf;lk",
                         "askldjflk;ajsdkl;gjasdklgjakl;sdjgl;kasdjfl;kjasdlfhajklsdgljkasdhfgjkahsdfljk") -> void)}) =
-       ({(type:
+       ({(t:
         extern CC_C ???("askldjfo;lasjdlkfj;aklsdjg;blkajl;ksdjfl;aksdjf;lkasjdf;lkajsd;lfkjas;dlkfj;alskdjf;kalsdjf;lk",
                         "askldjflk;ajsdkl;gjasdklgjakl;sdjgl;kasdjfl;kjasdlfhajklsdgljkasdhfgjkahsdfljk") -> void)})
 Notation_Tfunction_variadic_noargs_1 = 
 eq_refl
-     : ({(type: extern CC_C ???()(...) -> void)}) =
-       ({(type: extern CC_C ???()(...) -> void)})
+     : ({(t: extern CC_C ???()(...) -> void)}) =
+       ({(t: extern CC_C ???()(...) -> void)})
 Notation_Tfunction_variadic_noargs_2 = 
 eq_refl
-     : ({(type: extern CC_C ???()(...) -> {(coq: rty)})}) =
-       ({(type: extern CC_C ???()(...) -> {(coq: rty)})})
+     : ({(t: extern CC_C ???()(...) -> {(coq: rty)})}) =
+       ({(t: extern CC_C ???()(...) -> {(coq: rty)})})
 Notation_Tfunction_variadic_args_nowrap_1 = 
 eq_refl
-     : ({(type: extern CC_C ???(bool, nullptr_t)(...) -> void)}) =
-       ({(type: extern CC_C ???(bool, nullptr_t)(...) -> void)})
+     : ({(t: extern CC_C ???(bool, nullptr_t)(...) -> void)}) =
+       ({(t: extern CC_C ???(bool, nullptr_t)(...) -> void)})
 Notation_Tfunction_variadic_args_nowrap_2 = 
 eq_refl
-     : ({(type:
+     : ({(t:
         extern CC_C ???({(coq: aty1)}, void, {(coq: aty2)})(...) -> 
         {(coq:
         rty)})}) =
-       ({(type:
+       ({(t:
         extern CC_C ???({(coq: aty1)}, void, {(coq: aty2)})(...) -> 
         {(coq:
         rty)})})
 Notation_Tfunction_variadic_args_wrap = 
 eq_refl
-     : ({(type:
+     : ({(t:
         extern CC_C ???("askldjfo;lasjdlkfj;aklsdjg;blkajl;ksdjfl;aksdjf;lkasjdf;lkajsd;lfkjas;dlkfj;alskdjf;kalsdjf;lk",
                         "askldjflk;ajsdkl;gjasdklgjakl;sdjgl;kasdjfl;kjasdlfhajklsdgljkasdhfgjkahsdfljk")(...) -> void)}) =
-       ({(type:
+       ({(t:
         extern CC_C ???("askldjfo;lasjdlkfj;aklsdjg;blkajl;ksdjfl;aksdjf;lkasjdf;lkajsd;lfkjas;dlkfj;alskdjf;kalsdjf;lk",
                         "askldjflk;ajsdkl;gjasdklgjakl;sdjgl;kasdjfl;kjasdlfhajklsdgljkasdhfgjkahsdfljk")(...) -> void)})
 Notation_Tbool = eq_refl
-     : ({(type: bool)}) = ({(type: bool)})
+     : ({(t: bool)}) = ({(t: bool)})
 Notation_Tmember_pointer_1 = 
 eq_refl
-     : ({(type: ptr["foobarbaz"]<int8>)}) =
-       ({(type: ptr["foobarbaz"]<int8>)})
+     : ({(t: ptr["foobarbaz"]<int8>)}) = ({(t: ptr["foobarbaz"]<int8>)})
 Notation_mut_1 = eq_refl
-     : ({(type: mut bool)}) = ({(type: mut bool)})
+     : ({(t: mut bool)}) = ({(t: mut bool)})
 Notation_mut_2 = 
 eq_refl
-     : ({(type: mut mut bool)}) = ({(type: mut (mut bool))})
-Notation_const_1 = 
-eq_refl
-     : ({(type: const bool)}) = ({(type: const bool)})
+     : ({(t: mut mut bool)}) = ({(t: mut (mut bool))})
+Notation_const_1 = eq_refl
+     : ({(t: const bool)}) = ({(t: const bool)})
 Notation_const_2 = 
 eq_refl
-     : ({(type: const ptr<const void>)}) = ({(type: const ptr<const void>)})
+     : ({(t: const ptr<const void>)}) = ({(t: const ptr<const void>)})
 Notation_volatile_1 = 
 eq_refl
-     : ({(type: volatile bool)}) = ({(type: volatile bool)})
+     : ({(t: volatile bool)}) = ({(t: volatile bool)})
 Notation_volatile_2 = 
 eq_refl
-     : ({(type: volatile ptr<const void>)}) =
-       ({(type: volatile ptr<const void>)})
+     : ({(t: volatile ptr<const void>)}) = ({(t: volatile ptr<const void>)})
 Notation_const_volatile_1 = 
 eq_refl
-     : ({(type: const volatile bool)}) = ({(type: const volatile bool)})
+     : ({(t: const volatile bool)}) = ({(t: const volatile bool)})
 Notation_const_volatile_2 = 
 eq_refl
-     : ({(type: const volatile ptr<const volatile void>)}) =
-       ({(type: const volatile ptr<const volatile void>)})
+     : ({(t: const volatile ptr<const volatile void>)}) =
+       ({(t: const volatile ptr<const volatile void>)})

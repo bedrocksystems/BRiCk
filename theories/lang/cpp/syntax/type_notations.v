@@ -23,11 +23,11 @@ Module Export TypeNotations.
   Bind Scope CPP_type_scope with type.
 
   (* Injection into [constr] in case we're printing this at the top-level *)
-  Notation "'{(type:' ty ')}'"
+  Notation "'{(t:' ty ')}'"
       := ty
-         ( at level 100
+         ( at level 200
          , ty custom CPP_type at level 200
-         , format "'[hv' {(type:  '/' ty )} ']'")
+         , format "'[hv' {(t:  '/' ty )} ']'")
        : CPP_type_scope.
   (* Injection from [constr] in case we're printing a subterm we don't recognize *)
   Notation "'{(coq:' ty ')}'"

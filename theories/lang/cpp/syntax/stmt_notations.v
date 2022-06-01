@@ -22,10 +22,10 @@ Module Export StmtNotations.
   Bind Scope CPP_stmt_scope with Stmt.
 
   (* Injection into [constr] in case we're printing this at the top-level *)
-  Notation "'{(stmt:' s )}" := s
+  Notation "'{(s:' s )}" := s
     ( at level 200
     , s custom CPP_stmt at level 200
-    , format "'[hv' {(stmt:  '/' s )} ']'"
+    , format "'[hv' {(s:  '/' s )} ']'"
     , only printing) : CPP_stmt_scope.
   (* Injection from [constr] in case we're printing a subterm we don't recognize *)
   Notation "'{(coq:' e ')}'"
