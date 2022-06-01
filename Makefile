@@ -83,7 +83,7 @@ test: test-cpp2v test-coq
 build-minimal: Makefile.coq
 	+@$(COQMK) theories/lang/cpp/parser.vo
 	mkdir -p build
-	rm -f build/bedrock
+	rm -rf build/bedrock
 	ln -s $(ROOT)/theories build/bedrock
 .PHONY: build-minimal
 
