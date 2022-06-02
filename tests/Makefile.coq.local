@@ -68,7 +68,7 @@ real-all: $(if $(NO_NOTATION_TEST),,notation-test)
 
 COQ_NOTATION_TEST?=$(COQTOP) $(COQDEBUG) -batch -test-mode
 
-NOTATION_TESTFILES:=type_notation_tests.v # expr_notation_tests.v stmt_notation_tests.v code_notation_tests.v
+NOTATION_TESTFILES:=type_notation_tests.v expr_notation_tests.v # stmt_notation_tests.v code_notation_tests.v
 
 notation-test: $(NOTATION_TESTFILES:.v=.vo)
 .PHONY: notation-test
