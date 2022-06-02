@@ -105,18 +105,22 @@ Section with_cpp.
       (primR ty q1 v1)
       (primR ty q2 v2).
   Proof.
-    rewrite primR_eq/primR_def;
-      apply: as_Rep_only_provable_observe_2=> p;
-      apply: observe_2_intro_only_provable.
+    rewrite primR_eq/primR_def; apply: as_Rep_only_provable_observe_2=> p.
     iIntros "(Htptsto1 & %Hnotraw1 & %Hhas_type1)
              (Htptsto2 & %Hnotraw2 & %Hhas_type2)".
-    iDestruct (observe_2_elim_pure with "Htptsto1 Htptsto2") as %Hvs.
-    assert (v1 = v2)
-      by (induction Hvs; subst; auto; exfalso;
-          [apply Hnotraw1 | apply Hnotraw2];
-          eauto).
-    by iPureIntro.
+    iApply (observe_2 with "Htptsto1 Htptsto2").
+    iApply observe_2_derive_only_provable => Hvs.
+    induction Hvs; subst; auto; exfalso;
+        [apply Hnotraw1 | apply Hnotraw2];
+        eauto.
   Qed.
+
+  (* Typical [f] are [Vint], [Vn] etc; this gives agreement for [u64R] etc. *)
+  #[global] Instance primR_observe_agree_constr resolve ty q1 q2 {A} f `{!Inj eq eq f} (v1 v2 : A) :
+    Observe2 [| v1 = v2 |]
+      (primR ty q1 (f v1))
+      (primR ty q2 (f v2)).
+  Proof. apply (observe2_inj f), _. Qed.
 
   #[global] Instance primR_observe_has_type resolve ty q v :
     Observe [| has_type v (drop_qualifiers ty) |] (primR ty q v).
