@@ -29,11 +29,11 @@ Module Export StmtNotations.
     , format "'[hv' {(s:  '/' s )} ']'"
     , only printing) : CPP_stmt_scope.
   (* Injection from [constr] in case we're printing a subterm we don't recognize *)
-  Notation "'{(coq:' e ')}'"
+  Notation "'{(coq:' e ')};'"
       := e
          ( in custom CPP_stmt at level 0
          , e constr
-         , format "'[hv' {(coq:  '/' e )} ']'").
+         , format "'[hv' {(coq:  '/' e )}; ']'").
 
   (* Statements that provide their own line break
 
@@ -62,6 +62,13 @@ Module Export StmtNotations.
          , only printing).
 
   (* TODO (JH): Notations for other [VarDecl] forms *)
+  Notation "ty $ v ;"
+      := (Dvar v%bs ty None)
+         ( in custom CPP_stmt at level 0
+         , ty custom CPP_type at level 200
+         , v constr
+         , format "'[' ty  $ v ; ']'"
+         , only printing).
   Notation "ty $ v = e ;"
       := (Dvar v%bs ty (Some e))
          ( in custom CPP_stmt at level 0
@@ -87,7 +94,7 @@ Module Export StmtNotations.
          ( in custom CPP_stmt at level 0
          , d1 custom CPP_stmt at level 200
          , d2 custom CPP_stmt at level 200
-         , format "'[v' d1 '/' .. '/' d2 ']' '//'"
+         , format "'[v' d1 '/' .. '/' d2 ']'"
          , only printing).
 
   Notation "'if' ( cond ) { thn } 'else' { els }"
@@ -136,7 +143,7 @@ Module Export StmtNotations.
          ( in custom CPP_stmt at level 200
          , init custom CPP_stmt at level 200
          , body custom CPP_stmt at level 200
-         , format "'[hv' for  ( init  ;)  { '//'   body '//' } ']'"
+         , format "'[hv' for  ( init ;)  { '//'   body '//' } ']'"
          , only printing).
   Notation "'for' '(;' cond ';)' { body }"
       := (Sfor None (Some cond) None body)
@@ -269,160 +276,3 @@ Module Export StmtNotations.
          , format "'[hv   ' {UNSUPPORTED:  '/' msg } ']'"
          , only printing).
 End StmtNotations.
-
-(* NOTE: The following [Section]s are only used for testing purposes; if you break one of these
-   tests - or add a new notation - please update things accordingly.
- *)
-
-Section TestStmtNotations.
-  Import bedrock.lang.cpp.ast.
-  Import TypeNotations. #[local] Open Scope CPP_type_scope.
-  Import ExprNotations. #[local] Open Scope CPP_expr_scope.
-  Import StmtNotations. #[local] Open Scope CPP_stmt_scope.
-
-(* Check (Sexpr Lvalue (Eassign (Evar (Lname "foo") Tvoid) (Eunop Unot (Evar (Lname "bar") Tvoid) Tvoid) Tvoid)). *)
-
-(** Tests *)
-(* Check (Ebinop Badd (Ederef (Eaddrof (Evar (Lname "hello") Tvoid)) Tvoid) *)
-(*               (Eint 3%Z Tvoid) Tvoid). *)
-
-
-(* Check (Sseq (Sexpr Lvalue (Evar (Lname "hello") Tvoid) :: Scontinue :: Sbreak :: Sexpr Lvalue (Evar (Lname "world") Tvoid) :: Sif None (Evar (Lname "world") Tvoid) Scontinue Sbreak :: nil)). *)
-
-(*
-Import List.ListNotations.
-Set Printing Width 300.
-Check
-  (Sseq (
-            [ Sif
-              (Some (Dvar "x" (Qmut Ti32) (Some (Eint (0) (Qmut Ti32)))))
-              (Ecast Cint2bool Prvalue
-                  (Ecast Cl2r Lvalue (Evar (Lname  "x") (Qmut Ti32)) (Qmut Ti32)) (Qmut Tbool))
-              (Sseq [Scontinue;Scontinue;Scontinue;Scontinue])
-              Sbreak
-            ; Sif
-              (Some (Dvar "x" (Qmut Ti32) (Some (Eint (0) (Qmut Ti32)))))
-              (Ecast Cint2bool Prvalue
-                  (Ecast Cl2r Lvalue (Evar (Lname  "x") (Qmut Ti32)) (Qmut Ti32)) (Qmut Tbool))
-              (Sseq [])
-              Sbreak
-            ; Sreturn (Some (Evar (Lname "x") Ti32))
-            ; Sexpr Lvalue (Ecast Cint2bool Prvalue
-                  (Ecast Cl2r Lvalue (Evar (Lname  "x") (Qmut Ti32)) (Qmut Ti32)) (Qmut Tbool))
-            ; Sreturn None
-            ]
-  )).
-*)
-
-(*
-Check
-  S (Sseq (
-              [ Sif
-                (Some (Dvar "x" (Qmut Ti32) (Some (Eint (0) (Qmut Ti32)))))
-                (Ecast Cint2bool Prvalue
-                    (Ecast Cl2r Lvalue (Evar (Lname  "x") (Qmut Ti32)) (Qmut Ti32)) (Qmut Tbool))
-                (Scontinue)
-                (Sseq [Scontinue;Scontinue;Scontinue;Scontinue])
-              ; Sreturn (Some (Evar (Lname "x") Ti32))
-              ; Sreturn None
-              ]
-    )).
-
-Check
-  S (Sseq (
-              [ Sif
-                (Some (Dvar "x" (Qmut Ti32) (Some (Eint (0) (Qmut Ti32)))))
-                (Ecast Cint2bool Prvalue
-                    (Ecast Cl2r Lvalue (Evar (Lname  "x") (Qmut Ti32)) (Qmut Ti32)) (Qmut Tbool))
-                (Scontinue)
-                (Scontinue)
-              ; Sreturn (Some (Evar (Lname "x") Ti32))
-              ; Sreturn None
-              ]
-    )).
-
-Check
-  S (Sseq (
-              (Sif
-                (Some (Dvar "x" (Qmut Ti32) (Some (Eint (0) (Qmut Ti32)))))
-                (Ecast Cint2bool Prvalue
-                    (Ecast Cl2r Lvalue (Evar (Lname  "x") (Qmut Ti32)) (Qmut Ti32)) (Qmut Tbool))
-                (Sseq (
-                    (Sexpr Prvalue
-                      (Epostinc (Evar (Lname  "x") (Qmut Ti32)) (Qmut Ti32))) :: nil))
-                Scontinue) ::
-              nil)).
-
-Check
-  S (Sseq (
-              (Sif
-                (Some (Dvar "x" (Qmut Ti32) (Some (Eint (0) (Qmut Ti32)))))
-                (Ecast Cint2bool Prvalue
-                    (Ecast Cl2r Lvalue (Evar (Lname  "x") (Qmut Ti32)) (Qmut Ti32)) (Qmut Tbool))
-                (Sseq (
-                    (Sexpr Prvalue
-                      (Epostinc (Evar (Lname  "x") (Qmut Ti32)) (Qmut Ti32))) :: nil))
-                (Sseq (
-                    (Sexpr Lvalue
-                      (Epredec (Evar (Lname  "x") (Qmut Ti32)) (Qmut Ti32))) :: nil))) ::
-              (Swhile
-                (Some (Dvar "x" (Qmut Ti32) (Some (Eint (0) (Qmut Ti32)))))
-                (Ecast Cint2bool Prvalue
-                    (Ecast Cl2r Lvalue (Evar (Lname  "x") (Qmut Ti32)) (Qmut Ti32)) (Qmut Tbool))
-                (Sseq (
-                    (Sexpr Prvalue
-                      (Epostdec (Evar (Lname  "x") (Qmut Ti32)) (Qmut Ti32))) :: nil))) :: nil)).
-
-Check
-  S (Sseq (
-         (Sdo
-            (Sseq (
-                 (Sexpr Prvalue
-                        (Epostdec (Evar (Lname  "x") (Qmut Ti32)) (Qmut Ti32))) :: nil))
-            (Ecast Cl2r Lvalue (Evar (Lname  "x") (Qmut Ti32)) (Qmut Ti32))
-         ) :: nil)).
-
-Check
-  S (Sseq (
-         (Sdo
-            (Sseq (
-                 (Sexpr Lvalue
-                        (Eassign (Evar (Lname "foo") Tvoid) (Eunop Unot (Evar (Lname "bar") Tvoid) Tvoid) Tvoid)) :: nil))
-            (Ecast Cl2r Lvalue (Evar (Lname  "x") (Qmut Ti32)) (Qmut Ti32))
-         ) :: nil)).
-
-Check
-  S (Sexpr Lvalue
-            (Eassign (Evar (Lname "should_continue") Tbool)
-               (Eunop Unot
-                  (Ecall
-                     (Ecast Cfunction2pointer Lvalue
-                        (Evar (Gname "_Z15process_commandPKN4Zeta8Zeta_ctxEPcR9UmxSharedRmR5Admin")
-                           (Tfunction Tbool
-                              [Tqualified {| q_const := true; q_volatile := false |}
-                                 (Tptr
-                                    (Tqualified {| q_const := true; q_volatile := false |} Tvoid));
-                              Tptr Tu8; Tref (Tnamed "_Z9UmxShared"); Tref Tu64; 
-                              Tref Ti32]))
-                        (Tptr
-                           (Tfunction Tbool
-                              [Tqualified {| q_const := true; q_volatile := false |}
-                                 (Tptr
-                                    (Tqualified {| q_const := true; q_volatile := false |} Tvoid));
-                              Tptr Tu8; Tref (Tnamed "_Z9UmxShared"); Tref Tu64; 
-                              Tref Ti32])))
-(*
-                     [Ecast Cl2r Lvalue
-                        (Evar (Lname "ctx")
-                           (Tqualified {| q_const := true; q_volatile := false |}
-                              (Tptr (Tqualified {| q_const := true; q_volatile := false |} Tvoid))))
-                        (Tptr (Tqualified {| q_const := true; q_volatile := false |} Tvoid));
-                     Ecast Carray2pointer Lvalue (Evar (Lname "buffer") (Tarray Tu8 1024)) (Tptr Tu8);
-                     Eread_ref (Evar (Lname "shared") (Tnamed "_Z9UmxShared"));
-                     Eread_ref (Evar (Lname "client") Tu64); Evar (Lname "result") Ti32]
-*)
-                     [] Tbool) Tbool)
-               Tbool)).
-*)
-
-End TestStmtNotations.
