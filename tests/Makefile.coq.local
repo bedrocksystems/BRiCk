@@ -58,20 +58,20 @@ endif
 ### THE FOLLOWING IS ADAPTED FROM [stdpp/Makefile.coq.local] ###################
 ################################################################################
 
-# Use NO_NOTATION_TEST=1 to skip the notation tests
-NO_NOTATION_TEST?=
+# Use NO_PRINTING_TESTS=1 to skip the notation tests
+NO_PRINTING_TESTS?=
 
-# Use MAKE_NOTATION_REF=1 to generate new notation reference files
-MAKE_NOTATION_REF?=
+# Use MAKE_PRINTING_REFS=1 to generate new notation reference files
+MAKE_PRINTING_REFS?=
 
-real-all: $(if $(NO_NOTATION_TEST),,notation-test)
+real-all: $(if $(NO_PRINTING_TESTs),,printing-tests)
 
-COQ_NOTATION_TEST?=$(COQTOP) $(COQDEBUG) -batch -test-mode
+COQ_PRINTING_TEST?=$(COQTOP) $(COQDEBUG) -batch -test-mode
 
-NOTATION_TESTFILES:=type_notation_tests.v expr_notation_tests.v stmt_notation_tests.v code_notation_tests.v
+PRINTING_TESTFILES:=type_notation_tests.v expr_notation_tests.v stmt_notation_tests.v code_notation_tests.v
 
-notation-test: $(NOTATION_TESTFILES:.v=.vo)
-.PHONY: notation-test
+printing-tests: $(PRINTING_TESTFILES:.v=.vo)
+.PHONY: printing-tests
 
 # Main test script (comments out-of-line because macOS otherwise barfs?!?)
 # - Determine reference file (`REF`).
@@ -80,12 +80,12 @@ notation-test: $(NOTATION_TESTFILES:.v=.vo)
 # - Dump Coq output into a temporary file.
 # - Either compare the result with the reference file, or move it over the reference file.
 # - Cleanup, and mark as done for make.
-$(NOTATION_TESTFILES:.v=.vo): %.vo: %.v $(if $(MAKE_NOTATION_REF),,%.ref)
+$(PRINTING_TESTFILES:.v=.vo): %.vo: %.v $(if $(MAKE_PRINTING_REFS),,%.ref)
 	$(HIDE)REF=$*".ref" && \
-	echo "COQ_NOTATION_TEST$(if $(MAKE_NOTATION_REF), [make notation ref],) $< (notation ref: $$REF)" && \
+	echo "COQ_PRINTING_TEST$(if $(MAKE_PRINTING_REFS), [make printing ref],) $< (printing ref: $$REF)" && \
 	TMPFILE="$$(mktemp)" && \
 	unset OCAMLRUNPARAM && \
-	$(TIMER) $(COQ_NOTATION_TEST) $(COQFLAGS) $(COQLIBS) -load-vernac-source $< > "$$TMPFILE" && \
-	$(if $(MAKE_NOTATION_REF),mv "$$TMPFILE" "$$REF",diff --strip-trailing-cr -u "$$REF" "$$TMPFILE") && \
+	$(TIMER) $(COQ_PRINTING_TEST) $(COQFLAGS) $(COQLIBS) -load-vernac-source $< > "$$TMPFILE" && \
+	$(if $(MAKE_PRINTING_REFS),mv "$$TMPFILE" "$$REF",diff --strip-trailing-cr -u "$$REF" "$$TMPFILE") && \
 	rm -f "$$TMPFILE" && \
 	touch $@
