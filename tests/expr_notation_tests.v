@@ -6,7 +6,7 @@
 Require Import Ascii ZArith.
 
 Require Import bedrock.prelude.base.
-From bedrock.lang Require Import ast syntax.expr_notations.
+From bedrock.lang.cpp Require Import ast notations code_notations.
 
 Section TestExprNotations.
   Context (ty : type) (e : Expr).

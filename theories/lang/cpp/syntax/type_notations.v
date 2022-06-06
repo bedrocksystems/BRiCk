@@ -11,17 +11,20 @@ From bedrock.lang.cpp.syntax Require Import names types.
 #[local] Open Scope Z_scope.
 #[local] Open Scope bs_scope.
 
-(* NOTE (JH): [tests/type_notation_tests.v] contains tests of parsing/printing notations
-   as well as [Check]s whose output is compared against a reference file.
- *)
-
-Module Export TypeNotations.
+Module Export TypeNotationsInterface.
   Declare Custom Entry CPP_type.
   Declare Scope CPP_type_scope.
   Delimit Scope CPP_type_scope with cpp_type.
-  (* TODO (JH): Determine if we want (something like) this, and then do it. *)
-  Bind Scope CPP_type_scope with type.
 
+  Bind Scope CPP_type_scope with type.
+  Bind Scope CPP_type_scope with type_qualifiers.
+
+  (* Injection from [constr] in case we're printing a subterm we don't recognize *)
+  Notation "'{(coq:' ty ')}'"
+      := ty
+         ( in custom CPP_type at level 0
+         , ty constr
+         , format "'[hv' {(coq:  '/' ty )} ']'").
   (* Injection into [constr] in case we're printing this at the top-level *)
   Notation "'{(t:' ty ')}'"
       := ty
@@ -29,13 +32,13 @@ Module Export TypeNotations.
          , ty custom CPP_type at level 200
          , format "'[hv' {(t:  '/' ty )} ']'")
        : CPP_type_scope.
-  (* Injection from [constr] in case we're printing a subterm we don't recognize *)
-  Notation "'{(coq:' ty ')}'"
-      := ty
-         ( in custom CPP_type at level 0
-         , ty constr
-         , format "'[hv' {(coq:  '/' ty )} ']'").
+End TypeNotationsInterface.
 
+(* NOTE (JH): [tests/type_notation_tests.v] contains tests of parsing/printing notations
+   as well as [Check]s whose output is compared against a reference file.
+ *)
+
+Module Export TypeNotations.
   (* [type_qualifiers] - leaf nodes get the highest priority *)
   Notation "'mut'" := QM (in custom CPP_type at level 0).
   Notation "'const'" := QC (in custom CPP_type at level 0).

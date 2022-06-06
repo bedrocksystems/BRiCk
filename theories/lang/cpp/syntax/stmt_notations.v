@@ -12,29 +12,33 @@ From bedrock.lang.cpp.syntax Require Export expr_notations type_notations.
 #[local] Open Scope Z_scope.
 #[local] Open Scope bs_scope.
 
-(* TODO (JH): Investigate which (if any) of the subsequent notations we can make
-   printing/parsing
- *)
-Module Export StmtNotations.
+Module Export StmtNotationsInterface.
   Declare Custom Entry CPP_stmt.
   Declare Scope CPP_stmt_scope.
   Delimit Scope CPP_stmt_scope with cpp_stmt.
-  (* TODO (JH): Determine if we want (something like) this, and then do it. *)
-  Bind Scope CPP_stmt_scope with Stmt.
 
-  (* Injection into [constr] in case we're printing this at the top-level *)
-  Notation "'{(s:' s )}" := s
-    ( at level 200
-    , s custom CPP_stmt at level 200
-    , format "'[hv' {(s:  '/' s )} ']'"
-    , only printing) : CPP_stmt_scope.
+  Bind Scope CPP_stmt_scope with Stmt.
+  Bind Scope CPP_stmt_scope with VarDecl.
+
   (* Injection from [constr] in case we're printing a subterm we don't recognize *)
   Notation "'{(coq:' e ')};'"
       := e
          ( in custom CPP_stmt at level 0
          , e constr
          , format "'[hv' {(coq:  '/' e )}; ']'").
+  (* Injection into [constr] in case we're printing this at the top-level *)
+  Notation "'{(s:' s )}" := s
+    ( at level 200
+    , s custom CPP_stmt at level 200
+    , format "'[hv' {(s:  '/' s )} ']'"
+    , only printing) : CPP_stmt_scope.
+End StmtNotationsInterface.
 
+(* TODO (JH): Investigate which (if any) of the subsequent notations we can make
+   printing/parsing
+ *)
+
+Module StmtNotations.
   (* Statements that provide their own line break
 
      NOTES (JH):

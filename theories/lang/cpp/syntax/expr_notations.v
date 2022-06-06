@@ -12,21 +12,22 @@ Require Export bedrock.lang.cpp.syntax.type_notations.
 #[local] Open Scope Z_scope.
 #[local] Open Scope bs_scope.
 
-(* TODO (JH): Investigate which (if any) of the subsequent notations we can make
-   printing/parsing
- *)
-
-Module Export ExprNotations.
+Module Export ExprNotationsInterface.
   Declare Custom Entry CPP_expr.
   Declare Scope CPP_expr_scope.
   Delimit Scope CPP_expr_scope with cpp_expr.
-  (* TODO (JH): Determine if we want (something like) this, and then do it. *)
+
   Bind Scope CPP_expr_scope with Expr.
+  Bind Scope CPP_expr_scope with UnOp.
+  Bind Scope CPP_expr_scope with BinOp.
+  Bind Scope CPP_expr_scope with BuiltinFn.
 
-  (* NOTE: precedences taken from cppreference
-       (cf. https://en.cppreference.com/w/cpp/language/operator_precedence).
-   *)
-
+  (* Injection from [constr] in case we're printing a subterm we don't recognize *)
+  Notation "'{(coq:' e ')}'"
+      := e
+         ( in custom CPP_expr at level 0
+         , e constr
+         , format "'[hv' {(coq:  '/' e )} ']'").
   (* Injection into [constr] in case we're printing this at the top-level *)
   Notation "'{(e:' e ')}'"
       := e
@@ -34,12 +35,17 @@ Module Export ExprNotations.
          , e custom CPP_expr at level 200
          , format "'[hv' {(e:  '/' e )} ']'"
          , only printing) : CPP_expr_scope.
-  (* Injection from [constr] in case we're printing a subterm we don't recognize *)
-  Notation "'{(coq:' e ')}'"
-      := e
-         ( in custom CPP_expr at level 0
-         , e constr
-         , format "'[hv' {(coq:  '/' e )} ']'").
+
+End ExprNotationsInterface.
+
+(* TODO (JH): Investigate which (if any) of the subsequent notations we can make
+   printing/parsing
+ *)
+
+Module ExprNotations.
+  (* NOTE: precedences taken from cppreference
+       (cf. https://en.cppreference.com/w/cpp/language/operator_precedence).
+   *)
 
   Notation "$ v"
       := (Econst_ref (Lname v%bs) _)

@@ -3,7 +3,7 @@
  * This software is distributed under the terms of the BedRock Open-Source License.
  * See the LICENSE-BedRock file in the repository root for details.
  *)
-From bedrock.lang Require Import ast syntax.type_notations.
+From bedrock.lang.cpp Require Import ast notations.
 
 Section TestTypeNotations.
   Context (ty rty aty1 aty2 : type) (n : N) (nm : bs).

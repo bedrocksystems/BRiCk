@@ -1,3 +1,5 @@
+-arg -w -arg -notation-overridden
+
 -Q ../theories bedrock
 -Q . bedrocktest
 

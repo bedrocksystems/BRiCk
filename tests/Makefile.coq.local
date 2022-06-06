@@ -68,7 +68,7 @@ real-all: $(if $(NO_PRINTING_TESTs),,printing-tests)
 
 COQ_PRINTING_TEST?=$(COQTOP) $(COQDEBUG) -batch -test-mode
 
-PRINTING_TESTFILES:=type_notation_tests.v expr_notation_tests.v stmt_notation_tests.v code_notation_tests.v
+PRINTING_TESTFILES:=type_notation_tests.v expr_notation_tests.v stmt_notation_tests.v code_notation_tests.v wp_notation_tests.v
 
 printing-tests: $(PRINTING_TESTFILES:.v=.vo)
 .PHONY: printing-tests

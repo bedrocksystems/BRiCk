@@ -247,37 +247,6 @@ Definition _this (ρ : region) : ptr :=
   end.
 Arguments _this !_ / : assert.
 
-(** Region notations
- *)
-#[global] Declare Custom Entry cpp_region.
-
-Notation "'return' ty" :=
-  (Remp None ty None)
-  (in custom cpp_region at level 0, ty constr,
-   format "'[  ' return  ty ']'").
-Notation "[ 'this' := ptr ] ; 'return' ty" :=
-  (Remp (Some ptr) ty None)
-  (in custom cpp_region at level 1, ptr constr, ty constr,
-   format "'[' [ this  :=  ptr ] ']' ;  '/' '[  ' return  '/' ty ']'").
-Notation "[ 'var_args' := ptr ] ; 'return' ty" :=
-  (Remp None ty (Some ptr))
-  (in custom cpp_region at level 0, ty constr,
-   format "'[' [ var_args  :=  ptr ] ']' ;  '/' '[  ' return  '/' ty ']'").
-Notation "[ 'this' := ptr ; 'var_args' := va ] ; 'return' ty" :=
-  (Remp (Some ptr) ty (Some va))
-  (in custom cpp_region at level 1, ptr constr, ty constr,
-   format "'[' [ this  :=  ptr ;  var_args  :=  va ] ']' ;  '/' '[  ' return  '/' ty ']'").
-Notation "v @ p ';' ρ " :=
-  (Rbind v p ρ)
-  (in custom cpp_region at level 1, v constr, p constr, ρ custom cpp_region at level 1,
-   format "'[' v  @  p ']' ;  '/' ρ").
-Notation "'[region:' ρ ]" :=
-  (ρ)
-  (at level 0, ρ custom cpp_region at level 1,
-   format "'[hv' [region:  '/ ' '[' ρ ']' ']' ]").
-
-
-
 Module WPE.
 Section with_cpp.
   Context `{Σ : cpp_logic thread_info}.
