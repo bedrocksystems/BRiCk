@@ -1,497 +1,474 @@
-Econst_ref_lname = {(e: $"FooBarBaz")}
+Econst_ref_lname = {e: $"FooBarBaz"}
      : Expr
-Econst_ref_gname = {(e: $::"FooBarBaz")}
+Econst_ref_gname = {e: $::"FooBarBaz"}
      : Expr
-Evar_lname = {(e: $"FooBarBaz")}
+Evar_lname = {e: $"FooBarBaz"}
      : Expr
-Evar_gname = {(e: $::"FooBarBaz")}
+Evar_gname = {e: $::"FooBarBaz"}
      : Expr
-Echar_letter = {(e: ASCII#65)}
+Echar_letter = {e: ASCII#65}
      : Expr
-Echar_newline = {(e: ASCII#10)}
+Echar_newline = {e: ASCII#10}
      : Expr
-Estring_1 = {(e: #"FooBarBazQux")}
+Estring_1 = {e: #"FooBarBazQux"}
      : Expr
-Eint_1 = {(e: #42)}
+Eint_1 = {e: #42}
      : Expr
-Eint_2 = {(e: #314)}
+Eint_2 = {e: #314}
      : Expr
-Ebool_true = {(e: #true)}
+Ebool_true = {e: #true}
      : Expr
-Ebool_false = {(e: #false)}
+Ebool_false = {e: #false}
      : Expr
-{(e: -)}
+{e: -}
      : UnOp
-{(e: !)}
+{e: !}
      : UnOp
-{(e: ~)}
+{e: ~}
      : UnOp
-{(e: {unop: "FooBarBaz"})}
+{e: {:unop:"FooBarBaz":}}
      : UnOp
-Eunop_1 = {(e: -#42)}
+Eunop_1 = {e: -#42}
      : Expr
-Eunop_2 = {(e: !#false)}
+Eunop_2 = {e: !#false}
      : Expr
-Eunop_3 = {(e: ~#314)}
+Eunop_3 = {e: ~#314}
      : Expr
-Eunop_4 = {(e: {unop: "FooBarBaz"}{(coq: e)})}
+Eunop_4 = {e: {:unop:"FooBarBaz":}{?: e}}
      : Expr
-{(e: +)}
+{e: +}
      : BinOp
-{(e: &)}
+{e: &}
      : BinOp
-{(e: <=>)}
+{e: <=>}
      : BinOp
-{(e: /)}
+{e: /}
      : BinOp
-{(e: ==)}
+{e: ==}
      : BinOp
-{(e: >=)}
+{e: >=}
      : BinOp
-{(e: >)}
+{e: >}
      : BinOp
-{(e: <=)}
+{e: <=}
      : BinOp
-{(e: <)}
+{e: <}
      : BinOp
-{(e: *)}
+{e: *}
      : BinOp
-{(e: !=)}
+{e: !=}
      : BinOp
-{(e: |)}
+{e: |}
      : BinOp
-{(e: %)}
+{e: %}
      : BinOp
-{(e: <<)}
+{e: <<}
      : BinOp
-{(e: -)}
+{e: -}
      : BinOp
-{(e: ^)}
+{e: ^}
      : BinOp
-{(e: .*)}
+{e: .*}
      : BinOp
-{(e: ->*)}
+{e: ->*}
      : BinOp
-Ebinop_custom_Bdotp_nowrap = {(e: ($"FooBarBaz".*$"Qux"))}
+Ebinop_custom_Bdotp_nowrap = {e: ($"FooBarBaz".*$"Qux")}
      : Expr
-Ebinop_custom_Bdotip_nowrap = {(e: ($"FooBarBaz"->*$"Qux"))}
+Ebinop_custom_Bdotip_nowrap = {e: ($"FooBarBaz"->*$"Qux")}
      : Expr
-Ebinop_custom_Bshr_nowrap = {(e: (#314 >> #42))}
+Ebinop_custom_Bshr_nowrap = {e: (#314 >> #42)}
      : Expr
 Ebinop_custom_Bdotp_wrap = 
-{(e:
-($"FooBarBazFooBarBazFooBarBazFooBarBazFooBarBazFooBarBazFooBarBazFooBarBazFooBarBazFooBarBaz"
-   .*$"Qux"))}
+{e: ($"FooBarBazFooBarBazFooBarBazFooBarBazFooBarBazFooBarBazFooBarBazFooBarBazFooBarBazFooBarBaz"
+       .*$"Qux")}
      : Expr
 Ebinop_custom_Bdotip_wrap = 
-{(e:
-($"FooBarBazFooBarBazFooBarBazFooBarBazFooBarBazFooBarBazFooBarBazFooBarBazFooBarBaz"
-   ->*$"Qux"))}
+{e: ($"FooBarBazFooBarBazFooBarBazFooBarBazFooBarBazFooBarBazFooBarBazFooBarBazFooBarBaz"
+       ->*$"Qux")}
      : Expr
 Ebinop_custom_Bshr_wrap = 
-{(e:
-(#31415926535897932384626433832795028841971693993751058209749445923078164062862089986280348253421170679
-   >> #42))}
+{e: (#31415926535897932384626433832795028841971693993751058209749445923078164062862089986280348253421170679
+       >> #42)}
      : Expr
-Ebinop_default_Badd = {(e: (#42 + #314))}
+Ebinop_default_Badd = {e: (#42 + #314)}
      : Expr
-Ebinop_default_Band = {(e: (#42 & #314))}
+Ebinop_default_Band = {e: (#42 & #314)}
      : Expr
-Ebinop_default_Bcmp = {(e: (#42 <=> #314))}
+Ebinop_default_Bcmp = {e: (#42 <=> #314)}
      : Expr
-Ebinop_default_Bdiv = {(e: (#42 / #314))}
+Ebinop_default_Bdiv = {e: (#42 / #314)}
      : Expr
-Ebinop_default_Beq = {(e: (#42 == #314))}
+Ebinop_default_Beq = {e: (#42 == #314)}
      : Expr
-Ebinop_default_Bge = {(e: (#42 >= #314))}
+Ebinop_default_Bge = {e: (#42 >= #314)}
      : Expr
-Ebinop_default_Bgt = {(e: (#42 > #314))}
+Ebinop_default_Bgt = {e: (#42 > #314)}
      : Expr
-Ebinop_default_Ble = {(e: (#42 <= #314))}
+Ebinop_default_Ble = {e: (#42 <= #314)}
      : Expr
-Ebinop_default_Blt = {(e: (#42 < #314))}
+Ebinop_default_Blt = {e: (#42 < #314)}
      : Expr
-Ebinop_default_Bmul = {(e: (#42 * #314))}
+Ebinop_default_Bmul = {e: (#42 * #314)}
      : Expr
-Ebinop_default_Bneq = {(e: (#42 != #314))}
+Ebinop_default_Bneq = {e: (#42 != #314)}
      : Expr
-Ebinop_default_Bor = {(e: (#42 | #314))}
+Ebinop_default_Bor = {e: (#42 | #314)}
      : Expr
-Ebinop_default_Bmod = {(e: (#42 % #314))}
+Ebinop_default_Bmod = {e: (#42 % #314)}
      : Expr
-Ebinop_default_Bshl = {(e: (#42 << #314))}
+Ebinop_default_Bshl = {e: (#42 << #314)}
      : Expr
-Ebinop_default_Bsub = {(e: (#42 - #314))}
+Ebinop_default_Bsub = {e: (#42 - #314)}
      : Expr
-Ebinop_default_Bxor = {(e: (#42 ^ #314))}
+Ebinop_default_Bxor = {e: (#42 ^ #314)}
      : Expr
-Ebinop_compound_1 = {(e: ((#42 >> #2) << #314))}
+Ebinop_compound_1 = {e: ((#42 >> #2) << #314)}
      : Expr
 Ebinop_compound_2 = 
-{(e: (#-1 * (($::"FOOBAR" ^ (#42 / #2)) - #314)))}
+{e: (#-1 * (($::"FOOBAR" ^ (#42 / #2)) - #314))}
      : Expr
-Eread_ref_lname = {(e: $"FooBarBaz")}
+Eread_ref_lname = {e: $"FooBarBaz"}
      : Expr
-Eread_ref_gname = {(e: $::"FooBarBaz")}
+Eread_ref_gname = {e: $::"FooBarBaz"}
      : Expr
-Ederef_Evar = {(e: *$"Qux")}
+Ederef_Evar = {e: *$"Qux"}
      : Expr
-Ederef_Enull = {(e: *nullptr)}
+Ederef_Enull = {e: *nullptr}
      : Expr
-Eaddrof_Evar_lname = {(e: &$"Qux")}
+Eaddrof_Evar_lname = {e: &$"Qux"}
      : Expr
-Eaddrof_Evar_gname = {(e: &$::"Qux")}
+Eaddrof_Evar_gname = {e: &$::"Qux"}
      : Expr
-Eassign_1 = {(e: $"pi" = #314)}
+Eassign_1 = {e: $"pi" = #314}
      : Expr
-Eassign_op_custom_Bshr = {(e: $"foo" >>= #21)}
+Eassign_op_custom_Bshr = {e: $"foo" >>= #21}
      : Expr
-Eassign_op_default_Badd = {(e: #42 += #314)}
+Eassign_op_default_Badd = {e: #42 += #314}
      : Expr
-Eassign_op_default_Band = {(e: #42 &= #314)}
+Eassign_op_default_Band = {e: #42 &= #314}
      : Expr
-Eassign_op_default_Bdiv = {(e: #42 /= #314)}
+Eassign_op_default_Bdiv = {e: #42 /= #314}
      : Expr
-Eassign_op_default_Bmul = {(e: #42 *= #314)}
+Eassign_op_default_Bmul = {e: #42 *= #314}
      : Expr
-Eassign_op_default_Bor = {(e: #42 |= #314)}
+Eassign_op_default_Bor = {e: #42 |= #314}
      : Expr
-Eassign_op_default_Bmod = {(e: #42 %= #314)}
+Eassign_op_default_Bmod = {e: #42 %= #314}
      : Expr
-Eassign_op_default_Bshl = {(e: #42 <<= #314)}
+Eassign_op_default_Bshl = {e: #42 <<= #314}
      : Expr
-Eassign_op_default_Bsub = {(e: #42 -= #314)}
+Eassign_op_default_Bsub = {e: #42 -= #314}
      : Expr
-Eassign_op_default_Bxor = {(e: #42 ^= #314)}
+Eassign_op_default_Bxor = {e: #42 ^= #314}
      : Expr
-Epreinc_1 = {(e: ++{(coq: e)})}
+Epreinc_1 = {e: ++{?: e}}
      : Expr
-Epreinc_2 = {(e: ++#41)}
+Epreinc_2 = {e: ++#41}
      : Expr
-Epostinc_1 = {(e: {(coq: e)}++)}
+Epostinc_1 = {e: {?: e}++}
      : Expr
-Epostinc_2 = {(e: #41++)}
+Epostinc_2 = {e: #41++}
      : Expr
-Epredec_1 = {(e: --{(coq: e)})}
+Epredec_1 = {e: --{?: e}}
      : Expr
-Epredec_2 = {(e: --#41)}
+Epredec_2 = {e: --#41}
      : Expr
-Epostdec_1 = {(e: {(coq: e)}--)}
+Epostdec_1 = {e: {?: e}--}
      : Expr
-Epostdec_2 = {(e: #41--)}
+Epostdec_2 = {e: #41--}
      : Expr
-Eseqand_1 = {(e: (#true && #false))}
+Eseqand_1 = {e: (#true && #false)}
      : Expr
-Eseqand_2 = {(e: (#true && (#false && #true)))}
+Eseqand_2 = {e: (#true && (#false && #true))}
      : Expr
-Eseqor_1 = {(e: (#true || #false))}
+Eseqor_1 = {e: (#true || #false)}
      : Expr
-Eseqor_2 = {(e: (#true || (#false || #true)))}
+Eseqor_2 = {e: (#true || (#false || #true))}
      : Expr
-Ecomma_1 = {(e: {comma: {(coq: e)}, {(coq: e)}})}
+Ecomma_1 = {e: {:comma:{?: e}, {?: e}:}}
      : Expr
-Ecomma_2 = {(e: {comma: ++$"baz", {(coq: e)}})}
+Ecomma_2 = {e: {:comma:++$"baz", {?: e}:}}
      : Expr
-Ecall_nil_1 = {(e: {(coq: e)}())}
+Ecall_nil_1 = {e: {?: e}()}
      : Expr
-Ecall_nil_2 = {(e: $::"fn"())}
+Ecall_nil_2 = {e: $::"fn"()}
      : Expr
-Ecall_cons_nowrap_1 = {(e: {(coq: e)}(#42, #false))}
+Ecall_cons_nowrap_1 = {e: {?: e}(#42, #false)}
      : Expr
-Ecall_cons_nowrap_2 = {(e: $::"fn"(#42, #false))}
+Ecall_cons_nowrap_2 = {e: $::"fn"(#42, #false)}
      : Expr
 Ecall_cons_wrap_1 = 
-{(e:
-{(coq: e)}(#42,
+{e: {?: e}(#42,
            #false,
-           #"FooBarBazfoobarbazfoobarbazfoobarbazfoobarbazfoobarbazfoobarbazfoobarbazfoobarbazfoobarbaz"))}
+           #"FooBarBazfoobarbazfoobarbazfoobarbazfoobarbazfoobarbazfoobarbazfoobarbazfoobarbazfoobarbaz")}
      : Expr
 Ecall_cons_wrap_2 = 
-{(e:
-$::"fn"(#42,
-        #false,
-        #"FooBarBazfoobarbazfoobarbazfoobarbazfoobarbazfoobarbazfoobarbazfoobarbazfoobarbazfoobarbaz"))}
+{e: $::"fn"(#42,
+            #false,
+            #"FooBarBazfoobarbazfoobarbazfoobarbazfoobarbazfoobarbazfoobarbazfoobarbazfoobarbazfoobarbaz")}
      : Expr
 Ecast_elide_1 = 
-λ (cast : Cast) (vc : ValCat), {(e: {(coq: e)})}
+λ (cast : Cast) (vc : ValCat), {e: {?: e}}
      : Cast → ValCat → Expr
 
 Arguments Ecast_elide_1 cast vc
 Ecast_elide_2 = 
-λ (cast : Cast) (vc : ValCat), {(e: #314)}
+λ (cast : Cast) (vc : ValCat), {e: #314}
      : Cast → ValCat → Expr
 
 Arguments Ecast_elide_2 cast vc
-Emember_1 = {(e: $"foo"."bar")}
+Emember_1 = {e: $"foo"."bar"}
      : Expr
-Emember_call_nil_1 = {(e: {(coq: e)}."fn"())}
+Emember_call_nil_1 = {e: {?: e}."fn"()}
      : Expr
-Emember_call_nil_2 = {(e: $::"foo"."fn"())}
+Emember_call_nil_2 = {e: $::"foo"."fn"()}
      : Expr
-Emember_call_cons_nowrap_1 = 
-{(e: {(coq: e)}."fn"%bs(#42, #false))}
+Emember_call_cons_nowrap_1 = {e: {?: e}."fn"%bs(#42, #false)}
      : Expr
-Emember_call_cons_nowrap_2 = {(e: $::"foo"."fn"%bs(#42, #false))}
+Emember_call_cons_nowrap_2 = {e: $::"foo"."fn"%bs(#42, #false)}
      : Expr
 Emember_call_cons_wrap_1 = 
-{(e:
-{(coq: e)}."fn"%bs(#42,
+{e: {?: e}."fn"%bs(#42,
                    #false,
-                   #"FooBarBazfoobarbazfoobarbazfoobarbazfoobarbazfoobarbazfoobarbazfoobarbaz"))}
+                   #"FooBarBazfoobarbazfoobarbazfoobarbazfoobarbazfoobarbazfoobarbazfoobarbaz")}
      : Expr
 Emember_call_cons_wrap_2 = 
-{(e:
-$::"foo"."fn"%bs(#42,
-                 #false,
-                 #"FooBarBazfoobarbazfoobarbazfoobarbazfoobarbazfoobarbazfoobarbazfoobarbaz"))}
+{e: $::"foo"."fn"%bs(#42,
+                     #false,
+                     #"FooBarBazfoobarbazfoobarbazfoobarbazfoobarbazfoobarbazfoobarbazfoobarbaz")}
      : Expr
-Esubscript_1 = {(e: {(coq: e)}[#42])}
+Esubscript_1 = {e: {?: e}[#42]}
      : Expr
-Esubscript_2 = {(e: $"foo"[#314])}
+Esubscript_2 = {e: $"foo"[#314]}
      : Expr
-Esize_of_type_1 = {(e: sizeof(ty: {(coq: ty)}))}
+Esize_of_type_1 = {e: sizeof(ty: {?: ty})}
      : Expr
-Esize_of_type_2 = {(e: sizeof(ty: ptr<uint8>))}
+Esize_of_type_2 = {e: sizeof(ty: ptr<uint8>)}
      : Expr
-Esize_of_type_3 = {(e: sizeof(ty: "Foo"))}
+Esize_of_type_3 = {e: sizeof(ty: "Foo")}
      : Expr
-Esize_of_Expr_1 = {(e: sizeof(expr: {(coq: e)}))}
+Esize_of_Expr_1 = {e: sizeof(expr: {?: e})}
      : Expr
-Esize_of_Expr_2 = {(e: sizeof(expr: #314))}
+Esize_of_Expr_2 = {e: sizeof(expr: #314)}
      : Expr
-Esize_of_Expr_3 = {(e: sizeof(expr: $"foo"))}
+Esize_of_Expr_3 = {e: sizeof(expr: $"foo")}
      : Expr
-Ealign_of_type_1 = {(e: alignof(ty: {(coq: ty)}))}
+Ealign_of_type_1 = {e: alignof(ty: {?: ty})}
      : Expr
-Ealign_of_type_2 = {(e: alignof(ty: ptr<uint8>))}
+Ealign_of_type_2 = {e: alignof(ty: ptr<uint8>)}
      : Expr
-Ealign_of_type_3 = {(e: alignof(ty: "Foo"))}
+Ealign_of_type_3 = {e: alignof(ty: "Foo")}
      : Expr
-Ealign_of_Expr_1 = {(e: alignof(expr: {(coq: e)}))}
+Ealign_of_Expr_1 = {e: alignof(expr: {?: e})}
      : Expr
-Ealign_of_Expr_2 = {(e: alignof(expr: #314))}
+Ealign_of_Expr_2 = {e: alignof(expr: #314)}
      : Expr
-Ealign_of_Expr_3 = {(e: alignof(expr: $"foo"))}
+Ealign_of_Expr_3 = {e: alignof(expr: $"foo")}
      : Expr
-Eoffset_of_1 = {(e: offsetof("bar"))}
+Eoffset_of_1 = {e: offsetof("bar")}
      : Expr
-Econstructor_nil = {(e: #"Foo"())}
+Econstructor_nil = {e: #"Foo"()}
      : Expr
-Econstructor_cons_nowrap = {(e: #"Foo"(#42, #false))}
+Econstructor_cons_nowrap = {e: #"Foo"(#42, #false)}
      : Expr
 Econstructor_cons_wrap = 
-{(e:
-#"Qux::Zop"(#42,
-            #false,
-            #"FooBarBazfoobarbazfoobarbazfoobarbazfoobarbazfoobarbazfoobarbazfoobarbaz"))}
+{e: #"Qux::Zop"(#42,
+                #false,
+                #"FooBarBazfoobarbazfoobarbazfoobarbazfoobarbazfoobarbazfoobarbazfoobarbaz")}
      : Expr
-Eimplicit_1 = {(e: {(coq: e)})}
+Eimplicit_1 = {e: {?: e}}
      : Expr
-Eimplicit_2 = {(e: #"Foo"())}
+Eimplicit_2 = {e: #"Foo"()}
      : Expr
-Eimplicit_init_1 = {(e: {(coq: ty)}{{VALUE INIT}})}
+Eimplicit_init_1 = {e: {?: ty}{{VALUE INIT}}}
      : Expr
-Eimplicit_init_2 = {(e: uint8{{VALUE INIT}})}
+Eimplicit_init_2 = {e: uint8{{VALUE INIT}}}
      : Expr
-Eif_1 = {(e: #true ? $"fn"() : $"foo" *= $"bar")}
+Eif_1 = {e: #true ? $"fn"() : $"foo" *= $"bar"}
      : Expr
-{(e: this)}
+{e: this}
      : Expr
-{(e: nullptr)}
+{e: nullptr}
      : Expr
-Einitlist_nil_1 = {(e: ({(coq: ty)}){})}
+Einitlist_nil_1 = {e: ({?: ty}){}}
      : Expr
-Einitlist_nil_2 = {(e: (uint64){})}
+Einitlist_nil_2 = {e: (uint64){}}
      : Expr
-Einitlist_cons_no_wrap_no_default_1 = 
-{(e: ({(coq: ty)}){#42, #false})}
+Einitlist_cons_no_wrap_no_default_1 = {e: ({?: ty}){#42, #false}}
      : Expr
-Einitlist_cons_no_wrap_no_default_2 = {(e: (uint64){#42, #false})}
+Einitlist_cons_no_wrap_no_default_2 = {e: (uint64){#42, #false}}
      : Expr
 Einitlist_cons_wrap_no_default_1 = 
-{(e:
-({(coq: ty)}){#42,
+{e: ({?: ty}){#42,
               #false,
-              #"FooBarBazfoobarbazfoobarbazfoobarbazfoobarbazfoobarbazfoobarbazfoobarbazfoobarbazfoobarbaz"})}
+              #"FooBarBazfoobarbazfoobarbazfoobarbazfoobarbazfoobarbazfoobarbazfoobarbazfoobarbazfoobarbaz"}}
      : Expr
 Einitlist_cons_wrap_no_default_2 = 
-{(e:
-(uint64){#42,
-         #false,
-         #"FooBarBazfoobarbazfoobarbazfoobarbazfoobarbazfoobarbazfoobarbazfoobarbazfoobarbazfoobarbaz"})}
+{e: (uint64){#42,
+             #false,
+             #"FooBarBazfoobarbazfoobarbazfoobarbazfoobarbazfoobarbazfoobarbazfoobarbazfoobarbazfoobarbaz"}}
      : Expr
 Einitlist_cons_no_wrap_default_1 = 
-{(e: ({(coq: ty)}){#42, #false}{default: #314})}
+{e: ({?: ty}){#42, #false}{default: #314}}
      : Expr
 Einitlist_cons_no_wrap_default_2 = 
-{(e: (uint64){#42, #false}{default: #314})}
+{e: (uint64){#42, #false}{default: #314}}
      : Expr
 Einitlist_cons_wrap_default_1 = 
-{(e:
-({(coq: ty)}){#42,
+{e: ({?: ty}){#42,
               #false,
               #"FooBarBazfoobarbazfoobarbazfoobarbazfoobarbazfoobarbazfoobarbazfoobarbazfoobarbazfoobarbaz"}{default:
-#314})}
+    #314}}
      : Expr
 Einitlist_cons_wrap_default_2 = 
-{(e:
-(uint64){#42,
-         #false,
-         #"FooBarBazfoobarbazfoobarbazfoobarbazfoobarbazfoobarbazfoobarbazfoobarbazfoobarbazfoobarbaz"}{default:
-#314})}
+{e: (uint64){#42,
+             #false,
+             #"FooBarBazfoobarbazfoobarbazfoobarbazfoobarbazfoobarbazfoobarbazfoobarbazfoobarbazfoobarbaz"}{default:
+    #314}}
      : Expr
-Enew_nonarray_nil_1 = {(e: new (nothrow) {(coq: ty)})}
+Enew_nonarray_nil_1 = {e: new (nothrow) {?: ty}}
      : Expr
-Enew_nonarray_nil_2 = {(e: new (nothrow) uint8)}
+Enew_nonarray_nil_2 = {e: new (nothrow) uint8}
      : Expr
-Enew_nonarray_cons_1 = 
-{(e: new (nothrow) {(coq: ty)}(#42, #false))}
+Enew_nonarray_cons_1 = {e: new (nothrow) {?: ty}(#42, #false)}
      : Expr
-Enew_nonarray_cons_2 = {(e: new (nothrow) "Foo"(#42, #false))}
+Enew_nonarray_cons_2 = {e: new (nothrow) "Foo"(#42, #false)}
      : Expr
-Enew_array_nil_1 = {(e: new (nothrow) {(coq: ty)}[#314])}
+Enew_array_nil_1 = {e: new (nothrow) {?: ty}[#314]}
      : Expr
-Enew_array_nil_2 = {(e: new (nothrow) uint8[#314])}
+Enew_array_nil_2 = {e: new (nothrow) uint8[#314]}
      : Expr
-Edelete_nonarray_1 = {(e: delete {(coq: e)})}
+Edelete_nonarray_1 = {e: delete {?: e}}
      : Expr
-Edelete_nonarray_2 = {(e: delete $"foo")}
+Edelete_nonarray_2 = {e: delete $"foo"}
      : Expr
-Edelete_array_1 = {(e: delete[] {(coq: e)})}
+Edelete_array_1 = {e: delete[] {?: e}}
      : Expr
-Edelete_array_2 = {(e: delete[] $"foo")}
+Edelete_array_2 = {e: delete[] $"foo"}
      : Expr
-Eandclean_1 = {(e: {(coq: e)})}
+Eandclean_1 = {e: {?: e}}
      : Expr
-Eandclean_2 = {(e: $"foo")}
+Eandclean_2 = {e: $"foo"}
      : Expr
-Ematerialize_temp_1 = {(e: {(coq: e)})}
+Ematerialize_temp_1 = {e: {?: e}}
      : Expr
-Ematerialize_temp_2 = {(e: $"foo")}
+Ematerialize_temp_2 = {e: $"foo"}
      : Expr
-{(e: __builtin_alloca)}
+{e: __builtin_alloca}
      : BuiltinFn
-{(e: __builtin_alloca_with_align)}
+{e: __builtin_alloca_with_align}
      : BuiltinFn
-{(e: __builtin_launder)}
+{e: __builtin_launder}
      : BuiltinFn
-{(e: __builtin_expect)}
+{e: __builtin_expect}
      : BuiltinFn
-{(e: __builtin_unreachable)}
+{e: __builtin_unreachable}
      : BuiltinFn
-{(e: __builtin_trap)}
+{e: __builtin_trap}
      : BuiltinFn
-{(e: __builtin_bswap16)}
+{e: __builtin_bswap16}
      : BuiltinFn
-{(e: __builtin_bswap32)}
+{e: __builtin_bswap32}
      : BuiltinFn
-{(e: __builtin_bswap64)}
+{e: __builtin_bswap64}
      : BuiltinFn
-{(e: __builtin_bswap128)}
+{e: __builtin_bswap128}
      : BuiltinFn
-{(e: __builtin_bzero)}
+{e: __builtin_bzero}
      : BuiltinFn
-{(e: __builtin_ffs)}
+{e: __builtin_ffs}
      : BuiltinFn
-{(e: __builtin_ffsl)}
+{e: __builtin_ffsl}
      : BuiltinFn
-{(e: __builtin_ffsll)}
+{e: __builtin_ffsll}
      : BuiltinFn
-{(e: __builtin_clz)}
+{e: __builtin_clz}
      : BuiltinFn
-{(e: __builtin_clzl)}
+{e: __builtin_clzl}
      : BuiltinFn
-{(e: __builtin_clzll)}
+{e: __builtin_clzll}
      : BuiltinFn
-{(e: __builtin_ctz)}
+{e: __builtin_ctz}
      : BuiltinFn
-{(e: __builtin_ctzl)}
+{e: __builtin_ctzl}
      : BuiltinFn
-{(e: __builtin_ctzll)}
+{e: __builtin_ctzll}
      : BuiltinFn
-{(e: __builtin_popcount)}
+{e: __builtin_popcount}
      : BuiltinFn
-{(e: __builtin_popcountl)}
+{e: __builtin_popcountl}
      : BuiltinFn
-{(e: __builtin_UNKNOWN_"__builtin__foobarbaz")}
+{e: __builtin_UNKNOWN_"__builtin__foobarbaz"}
      : BuiltinFn
 Ebuiltin_alloca = 
-{(e: {builtin: __builtin_alloca; signature: {(coq: ty)}})}
+{e: {builtin: __builtin_alloca; signature: {?: ty}}}
      : Expr
 Ebuiltin_alloca_with_align = 
-{(e: {builtin: __builtin_alloca_with_align; signature: {(coq: ty)}})}
+{e: {builtin: __builtin_alloca_with_align; signature: {?: ty}}}
      : Expr
 Ebuiltin_launder = 
-{(e: {builtin: __builtin_launder; signature: {(coq: ty)}})}
+{e: {builtin: __builtin_launder; signature: {?: ty}}}
      : Expr
 Ebuiltin_expect = 
-{(e: {builtin: __builtin_expect; signature: {(coq: ty)}})}
+{e: {builtin: __builtin_expect; signature: {?: ty}}}
      : Expr
 Ebuiltin_unreachable = 
-{(e: {builtin: __builtin_unreachable; signature: {(coq: ty)}})}
+{e: {builtin: __builtin_unreachable; signature: {?: ty}}}
      : Expr
-Ebuiltin_trap = 
-{(e: {builtin: __builtin_trap; signature: {(coq: ty)}})}
+Ebuiltin_trap = {e: {builtin: __builtin_trap; signature: {?: ty}}}
      : Expr
 Ebuiltin_bswap16 = 
-{(e: {builtin: __builtin_bswap16; signature: {(coq: ty)}})}
+{e: {builtin: __builtin_bswap16; signature: {?: ty}}}
      : Expr
 Ebuiltin_bswap32 = 
-{(e: {builtin: __builtin_bswap32; signature: {(coq: ty)}})}
+{e: {builtin: __builtin_bswap32; signature: {?: ty}}}
      : Expr
 Ebuiltin_bswap64 = 
-{(e: {builtin: __builtin_bswap64; signature: {(coq: ty)}})}
+{e: {builtin: __builtin_bswap64; signature: {?: ty}}}
      : Expr
 Ebuiltin_bswap128 = 
-{(e: {builtin: __builtin_bswap128; signature: {(coq: ty)}})}
+{e: {builtin: __builtin_bswap128; signature: {?: ty}}}
      : Expr
 Ebuiltin_bzero = 
-{(e: {builtin: __builtin_bzero; signature: {(coq: ty)}})}
+{e: {builtin: __builtin_bzero; signature: {?: ty}}}
      : Expr
-Ebuiltin_ffs = 
-{(e: {builtin: __builtin_ffs; signature: {(coq: ty)}})}
+Ebuiltin_ffs = {e: {builtin: __builtin_ffs; signature: {?: ty}}}
      : Expr
-Ebuiltin_ffsl = 
-{(e: {builtin: __builtin_ffsl; signature: {(coq: ty)}})}
+Ebuiltin_ffsl = {e: {builtin: __builtin_ffsl; signature: {?: ty}}}
      : Expr
 Ebuiltin_ffsll = 
-{(e: {builtin: __builtin_ffsll; signature: {(coq: ty)}})}
+{e: {builtin: __builtin_ffsll; signature: {?: ty}}}
      : Expr
-Ebuiltin_clz = 
-{(e: {builtin: __builtin_clz; signature: {(coq: ty)}})}
+Ebuiltin_clz = {e: {builtin: __builtin_clz; signature: {?: ty}}}
      : Expr
-Ebuiltin_clzl = 
-{(e: {builtin: __builtin_clzl; signature: {(coq: ty)}})}
+Ebuiltin_clzl = {e: {builtin: __builtin_clzl; signature: {?: ty}}}
      : Expr
 Ebuiltin_clzll = 
-{(e: {builtin: __builtin_clzll; signature: {(coq: ty)}})}
+{e: {builtin: __builtin_clzll; signature: {?: ty}}}
      : Expr
-Ebuiltin_ctz = 
-{(e: {builtin: __builtin_ctz; signature: {(coq: ty)}})}
+Ebuiltin_ctz = {e: {builtin: __builtin_ctz; signature: {?: ty}}}
      : Expr
-Ebuiltin_ctzl = 
-{(e: {builtin: __builtin_ctzl; signature: {(coq: ty)}})}
+Ebuiltin_ctzl = {e: {builtin: __builtin_ctzl; signature: {?: ty}}}
      : Expr
 Ebuiltin_ctzll = 
-{(e: {builtin: __builtin_ctzll; signature: {(coq: ty)}})}
+{e: {builtin: __builtin_ctzll; signature: {?: ty}}}
      : Expr
 Ebuiltin_popcount = 
-{(e: {builtin: __builtin_popcount; signature: {(coq: ty)}})}
+{e: {builtin: __builtin_popcount; signature: {?: ty}}}
      : Expr
 Ebuiltin_popcountl = 
-{(e: {builtin: __builtin_popcountl; signature: {(coq: ty)}})}
+{e: {builtin: __builtin_popcountl; signature: {?: ty}}}
      : Expr
 Ebuiltin_unknown = 
-{(e:
-{builtin: __builtin_UNKNOWN_"__builtin_foobarbaz"; signature: {(coq: ty)}})}
+{e: {builtin: __builtin_UNKNOWN_"__builtin_foobarbaz"; signature: {?: ty}}}
      : Expr
-Eva_arg_1 = {(e: {(coq: e)})}
+Eva_arg_1 = {e: {?: e}}
      : Expr
-Eva_arg_2 = {(e: #217)}
+Eva_arg_2 = {e: #217}
      : Expr
-Epseudo_destructor_1 = {(e: {(coq: e)})}
+Epseudo_destructor_1 = {e: {?: e}}
      : Expr
-Epseudo_destructor_2 = {(e: #217)}
+Epseudo_destructor_2 = {e: #217}
      : Expr
-{(e: {UNSUPPORTED: "This was an unsupported operation"})}
+{e: {UNSUPPORTED: "This was an unsupported operation"}}
      : Expr

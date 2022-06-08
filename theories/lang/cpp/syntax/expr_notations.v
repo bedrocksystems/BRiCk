@@ -23,19 +23,18 @@ Module Export ExprNotationsInterface.
   Bind Scope CPP_expr_scope with BuiltinFn.
 
   (* Injection from [constr] in case we're printing a subterm we don't recognize *)
-  Notation "'{(coq:' e ')}'"
+  Notation "'{?:' e '}'"
       := e
          ( in custom CPP_expr at level 0
          , e constr
-         , format "'[hv' {(coq:  '/' e )} ']'").
+         , format "'[hv' {?:  e } ']'").
   (* Injection into [constr] in case we're printing this at the top-level *)
-  Notation "'{(e:' e ')}'"
+  Notation "'{e:' e '}'"
       := e
          ( at level 200
          , e custom CPP_expr at level 200
-         , format "'[hv' {(e:  '/' e )} ']'"
+         , format "'[hv' {e:  e } ']'"
          , only printing) : CPP_expr_scope.
-
 End ExprNotationsInterface.
 
 (* TODO (JH): Investigate which (if any) of the subsequent notations we can make
@@ -104,11 +103,11 @@ Module ExprNotations.
   Notation "'-'" := (Uminus) (in custom CPP_expr at level 0, only printing).
   Notation "'!'" := (Unot) (in custom CPP_expr at level 0, only printing).
   Notation "'~'" := (Ubnot) (in custom CPP_expr at level 0, only printing).
-  Notation "'{unop:' op }"
+  Notation "'{:unop:' op ':}'"
       := (Uother op%bs)
          ( in custom CPP_expr at level 0
          , op constr
-         , format "'[' {unop:  '/' op } ']'"
+         , format "'[' {:unop: op :} ']'"
          , only printing).
 
   (* QUESTION (JH): Is this the right level? *)
@@ -271,12 +270,12 @@ Module ExprNotations.
          , format "'[hv   ' ( e1  '/' ||  e2 ) ']'"
          , only printing).
 
-  Notation "'{comma:' e1 , e2 }"
+  Notation "'{:comma:' e1 , e2 ':}'"
       := (Ecomma _ e1 e2)
          ( in custom CPP_expr at level 170
          , e1 custom CPP_expr at level 200
          , e2 custom CPP_expr at level 200
-         , format "'[hv   ' {comma:  '/' e1 ,  e2 } ']'"
+         , format "'[hv   ' {:comma: e1 ,  e2 :} ']'"
          , only printing).
 
   Notation "e '()'"
@@ -542,10 +541,10 @@ Module ExprNotations.
 
   (* TODO (JH): [Earrayloop_init]/[Earrayloop_index]/[Eopaque_ref] *)
 
-  Notation "'{UNSUPPORTED:' msg }"
+  Notation "'{UNSUPPORTED:' msg '}'"
       := (Eunsupported msg%bs _)
          ( in custom CPP_expr at level 0
          , msg constr
-         , format "'[hv   ' {UNSUPPORTED:  '/' msg } ']'"
+         , format "'[hv   ' {UNSUPPORTED:  msg } ']'"
          , only printing).
 End ExprNotations.

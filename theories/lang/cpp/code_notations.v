@@ -17,7 +17,10 @@ From bedrock.lang.cpp.syntax Require Import type_notations expr_notations stmt_n
  *)
 
 Module Export CodeNotations.
+  Export TypeNotationsInterface.
   Export TypeNotations.
+  Export ExprNotationsInterface.
   Export ExprNotations.
+  Export StmtNotationsInterface.
   Export StmtNotations.
 End CodeNotations.

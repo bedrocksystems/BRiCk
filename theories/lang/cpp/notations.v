@@ -10,8 +10,9 @@ Require bedrock.lang.cpp.logic.wp_notations.
    notations might break existing clients. Clients can use [Import code_notations] to
    opt-in to the new [Expr]/[Stmt] notations.
  *)
-Export heap_notations.
+Export type_notations.TypeNotationsInterface.
 Export expr_notations.ExprNotationsInterface.
 Export stmt_notations.StmtNotationsInterface.
-Export type_notations.
+
+Export heap_notations.
 Export wp_notations.

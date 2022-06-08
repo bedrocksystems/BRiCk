@@ -20,17 +20,17 @@ Module Export TypeNotationsInterface.
   Bind Scope CPP_type_scope with type_qualifiers.
 
   (* Injection from [constr] in case we're printing a subterm we don't recognize *)
-  Notation "'{(coq:' ty ')}'"
+  Notation "'{?:' ty '}'"
       := ty
          ( in custom CPP_type at level 0
          , ty constr
-         , format "'[hv' {(coq:  '/' ty )} ']'").
+         , format "'[hv' {?:  ty } ']'").
   (* Injection into [constr] in case we're printing this at the top-level *)
-  Notation "'{(t:' ty ')}'"
+  Notation "'{t:' ty '}'"
       := ty
          ( at level 200
          , ty custom CPP_type at level 200
-         , format "'[hv' {(t:  '/' ty )} ']'")
+         , format "'[hv' {t:  ty } ']'")
        : CPP_type_scope.
 End TypeNotationsInterface.
 
@@ -39,6 +39,160 @@ End TypeNotationsInterface.
  *)
 
 Module Export TypeNotations.
+  (* [type_qualifiers] - leaf nodes get the highest priority *)
+  Notation "'mut'" := QM (in custom CPP_type at level 0, only printing).
+  Notation "'const'" := QC (in custom CPP_type at level 0, only printing).
+  Notation "'volatile'" := QV (in custom CPP_type at level 0, only printing).
+  Notation "'const' 'volatile'"
+      := QCV
+         ( in custom CPP_type at level 0
+         , format "'[' const  volatile ']'"
+         , only printing).
+
+  (* [Tqualified] types *)
+  Notation "'mut' ty"
+      := (Qmut ty)
+         ( in custom CPP_type at level 100
+         , ty custom CPP_type at level 200
+         , right associativity
+         , format "'[' mut  ty ']'"
+         , only printing).
+  Notation "'const' ty"
+      := (Qconst ty)
+         ( in custom CPP_type at level 100
+         , ty custom CPP_type at level 200
+         , right associativity
+         , format "'[' const  ty ']'"
+         , only printing).
+  Notation "'volatile' ty"
+      := (Qmut_volatile ty)
+         ( in custom CPP_type at level 100
+         , ty custom CPP_type at level 200
+         , right associativity
+         , format "'[' volatile  ty ']'"
+         , only printing).
+  Notation "'const' 'volatile' ty"
+      := (Qconst_volatile ty)
+         ( in custom CPP_type at level 100
+         , ty custom CPP_type at level 200
+         , right associativity
+         , format "'[' const  volatile  ty ']'"
+         , only printing).
+
+  (* [Tnum] variants *)
+  Notation "'int8'" := Ti8 (in custom CPP_type at level 0, only printing).
+  Notation "'uint8'" := Tu8 (in custom CPP_type at level 0, only printing).
+  Notation "'int16'" := Ti16 (in custom CPP_type at level 0, only printing).
+  Notation "'uint16'" := Tu16 (in custom CPP_type at level 0, only printing).
+  Notation "'int32'" := Ti32 (in custom CPP_type at level 0, only printing).
+  Notation "'uint32'" := Tu32 (in custom CPP_type at level 0, only printing).
+  Notation "'int64'" := Ti64 (in custom CPP_type at level 0, only printing).
+  Notation "'uint64'" := Tu64 (in custom CPP_type at level 0, only printing).
+  Notation "'int128'" := Ti128 (in custom CPP_type at level 0, only printing).
+  Notation "'uint128'" := Tu128 (in custom CPP_type at level 0, only printing).
+
+  (* The rest of the [type]s *)
+  Notation "'ptr<' ty '>'"
+      := (Tptr ty)
+         ( in custom CPP_type at level 100
+         , ty custom CPP_type at level 200
+         , left associativity
+         , format "'[' ptr< ty > ']'"
+         , only printing).
+  Notation "'ref&<' ty '>'"
+      := (Tref ty)
+         ( in custom CPP_type at level 100
+         , ty custom CPP_type at level 200
+         , left associativity
+         , format "'[' ref&< ty > ']'"
+         , only printing).
+  Notation "'ref&&<' ty '>'"
+      := (Trv_ref ty)
+         ( in custom CPP_type at level 100
+         , ty custom CPP_type at level 200
+         , left associativity
+         , format "'[' ref&&< ty > ']'"
+         , only printing).
+  Notation "'void'" := Tvoid (in custom CPP_type at level 0, only printing).
+  Notation "ty [ n ]"
+      := (Tarray ty n%N)
+         ( in custom CPP_type at level 80
+         , ty custom CPP_type
+         , n constr
+         , format "'[' ty [ n ] ']'", only printing).
+  Notation "nm" := (Tnamed nm%bs) (in custom CPP_type at level 0, nm constr, only printing).
+  Notation "'extern' cc '???()' '->' rty"
+      := (@Tfunction cc Ar_Definite rty nil)
+         ( in custom CPP_type at level 100
+         , cc constr at level 0
+         , rty custom CPP_type at level 200
+         , format "'[' extern  cc  ???()  ->  rty ']'"
+         , only printing).
+  Notation "'extern' cc '???(' aty1 , .. , aty2 ')' '->' rty"
+      := (@Tfunction cc Ar_Definite rty (cons aty1 .. (cons aty2 nil) ..))
+         ( in custom CPP_type at level 100
+         , cc constr at level 0
+         , rty custom CPP_type at level 200
+         , aty1 custom CPP_type at level 200
+         , aty2 custom CPP_type at level 200
+         , format "'[' extern  cc  ???( '[hv' aty1 ,  '/' .. ,  '/' aty2 ']' )  ->  rty ']'"
+         , only printing).
+  Notation "'extern' cc '???()(...)' '->' rty"
+      := (@Tfunction cc Ar_Variadic rty nil)
+         ( in custom CPP_type at level 100
+         , cc constr at level 0
+         , rty custom CPP_type at level 200
+         , format "'[' extern  cc  ???()(...)  ->  rty ']'"
+         , only printing).
+  Notation "'extern' cc '???(' aty1 , .. , aty2 ')(...)' '->' rty"
+      := (@Tfunction cc Ar_Variadic rty (cons aty1 .. (cons aty2 nil) ..))
+         ( in custom CPP_type at level 100
+         , cc constr at level 0
+         , rty custom CPP_type at level 200
+         , aty1 custom CPP_type at level 200
+         , aty2 custom CPP_type at level 200
+         , format "'[' extern  cc  ???( '[hv' aty1 ,  '/' .. ,  '/' aty2 ']' )(...)  ->  rty ']'"
+         , only printing).
+  Notation "'bool'" := Tbool (in custom CPP_type at level 0, only printing).
+  Notation "'ptr[' nm ']<' ty '>'"
+      := (Tmember_pointer nm%bs ty)
+         ( in custom CPP_type at level 100
+         , nm constr
+         , ty custom CPP_type
+         , left associativity
+         , format "'[' ptr[ nm ]< ty > ']'"
+         , only printing).
+  Notation "'{float:' sz '}'"
+      := (Tfloat sz)
+         ( in custom CPP_type at level 0
+         , sz constr
+         , format "'[hv' {float:  sz } ']'"
+         , only printing).
+  Notation "'(' qual ty ')'"
+      := (Tqualified qual ty)
+         ( in custom CPP_type at level 100
+         , qual custom CPP_type at level 0
+         , ty custom CPP_type at level 200
+         , format "'[' ( qual  ty ) ']'"
+         , only printing).
+  Notation "'nullptr_t'" := Tnullptr (in custom CPP_type at level 0, only printing).
+  Notation "'{arch:' nm '}'"
+      := (Tarch None nm%bs)
+         ( in custom CPP_type at level 0
+         , nm constr
+         , format "'[hv' {arch:  nm } ']'"
+         , only printing).
+  Notation "'{arch:' nm ';' 'size:' sz '}'"
+      := (Tarch (Some sz) nm%bs)
+         ( in custom CPP_type at level 0
+         , sz constr
+         , nm constr
+         , format "'[hv' {arch:  nm ;  size:  sz } ']'"
+         , only printing).
+End TypeNotations.
+
+(*
+Module Export TypeNotationsParsing.
   (* [type_qualifiers] - leaf nodes get the highest priority *)
   Notation "'mut'" := QM (in custom CPP_type at level 0).
   Notation "'const'" := QC (in custom CPP_type at level 0).
@@ -149,11 +303,11 @@ Module Export TypeNotations.
          , ty custom CPP_type
          , left associativity
          , format "'[' ptr[ nm ]< ty > ']'").
-  Notation "'{float:' sz '}'"
+  Notation "'float:{{' sz '}}'"
       := (Tfloat sz)
          ( in custom CPP_type at level 0
          , sz constr
-         , format "'[hv' {float:  '/' sz } ']'").
+         , format "'[hv' float:{{ sz }} ']'").
   Notation "'(' qual ty ')'"
       := (Tqualified qual ty)
          ( in custom CPP_type at level 100
@@ -161,15 +315,16 @@ Module Export TypeNotations.
          , ty custom CPP_type at level 200
          , format "'[' ( qual  ty ) ']'").
   Notation "'nullptr_t'" := Tnullptr (in custom CPP_type at level 0).
-  Notation "'{arch:' nm '}'"
+  Notation "'arch:{{' nm '}}'"
       := (Tarch None nm%bs)
          ( in custom CPP_type at level 0
          , nm constr
-         , format "'[hv' {arch:  '/' nm } ']'").
-  Notation "'{arch:' nm ';' 'size:' sz '}'"
+         , format "'[hv' arch:{{ nm }} ']'").
+  Notation "'arch:{{' nm ';' 'size:' sz '}}'"
       := (Tarch (Some sz) nm%bs)
          ( in custom CPP_type at level 0
          , sz constr
          , nm constr
-         , format "'[hv' {arch:  nm ;  '/' size:  sz } ']'").
-End TypeNotations.
+         , format "'[hv' arch:{{ nm ;  size:  sz }} ']'").
+End TypeNotationsParsing.
+*)

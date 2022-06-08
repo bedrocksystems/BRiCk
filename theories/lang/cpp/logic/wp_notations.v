@@ -70,7 +70,7 @@ End RegionNotations.
 (* NOTES (JH):
    - we intentionally use [constr] for all [Compact]/[Verbose] notations to ensure
      that the [region]/[Expr]/[Stmt]s are printed in the appropriate
-     "quotation" (e.g. [{(e: ...)}], [[region: ...]], [{(s: ...)}].
+     "quotation" (e.g. [expr:{{...}}], [[region: ...]], [stmt:{{...}}].
    - [Compact]/[Verbose] alternatives for [type]/[Expr]/[Stmt] might provide
      an ad-hoc way of "disabling" a notation (by importing a new [Module] which
      fully shadows the notations you wish to "swap out".
@@ -90,34 +90,34 @@ Module Export Compact.
          , only printing).
 
   (* Special WPs*)
-  Notation "'::wpAtomic' '(Mask' ↦ M ; 'Type' ↦ ty ) '{(e:' atomic '())}'"
+  Notation "'::wpAtomic' '(Mask' ↦ M ; 'Type' ↦ ty ) '{e:' atomic '()}'"
       := (wp_atom M atomic ty%cpp_type nil _)
          ( at level 0
          , ty custom CPP_type at level 200
          , atomic custom CPP_expr at level 200
-         , format "'[hv  ' ::wpAtomic  '/' '[hv' '[hv' (Mask  ↦  M ;  '/' Type  ↦  ty )  ']' '/' '[' {(e:  atomic ())} ']' ']' ']'"
+         , format "'[hv  ' ::wpAtomic  '/' '[hv' '[hv' (Mask  ↦  M ;  '/' Type  ↦  ty )  ']' '/' '[' {e:  atomic ()} ']' ']' ']'"
          , only printing).
-  Notation "'::wpAtomic' '(Mask' ↦ M ; 'Type' ↦ ty ) '{(e:' atomic '(' v1 , .. , v2 '))}'"
+  Notation "'::wpAtomic' '(Mask' ↦ M ; 'Type' ↦ ty ) '{e:' atomic '(' v1 , .. , v2 ')}'"
       := (wp_atom M atomic ty%cpp_type (cons v1 (.. (cons v2 nil) ..)) _)
          ( at level 0
          , ty custom CPP_type at level 200
          , atomic custom CPP_expr at level 200
-         , format "'[hv  ' ::wpAtomic  '/' '[hv' '[hv' (Mask  ↦  M ;  '/' Type  ↦  ty )  ']' '/' '[' {(e:  atomic ( '[hv' v1 ,  '/' .. ,  '/' v2 ']' ))} ']' ']' ']'"
+         , format "'[hv  ' ::wpAtomic  '/' '[hv' '[hv' (Mask  ↦  M ;  '/' Type  ↦  ty )  ']' '/' '[' {e:  atomic ( '[hv' v1 ,  '/' .. ,  '/' v2 ']' )} ']' ']' ']'"
          , only printing).
 
-  Notation "'::wpBuiltin' '(Type' ↦ ty ) '{(e:' builtin '())}'"
+  Notation "'::wpBuiltin' '(Type' ↦ ty ) '{e:' builtin '()}'"
       := (wp_builtin builtin%cpp_expr ty%cpp_type nil _)
          ( at level 0
          , ty custom CPP_type at level 200
          , builtin custom CPP_expr at level 200
-         , format "'[hv  ' ::wpBuiltin  '/' '[hv' '[hv' (Type  ↦  ty )  ']' '/' '[' {(e:  builtin ())} ']' ']' ']'"
+         , format "'[hv  ' ::wpBuiltin  '/' '[hv' '[hv' (Type  ↦  ty )  ']' '/' '[' {e:  builtin ()} ']' ']' ']'"
          , only printing).
-  Notation "'::wpBuiltin' '(Type' ↦ ty ) '{(e:' builtin '(' v1 , .. , v2 '))}'"
+  Notation "'::wpBuiltin' '(Type' ↦ ty ) '{e:' builtin '(' v1 , .. , v2 ')}'"
       := (wp_builtin builtin%cpp_expr ty%cpp_type (cons v1 (.. (cons v2 nil) ..)) _)
          ( at level 0
          , ty custom CPP_type at level 200
          , builtin custom CPP_expr at level 200
-         , format "'[hv  ' ::wpBuiltin  '/' '[hv' '[hv' (Type  ↦  ty )  ']' '/' '[' {(e:  builtin ( '[hv' v1 ,  '/' .. ,  '/' v2 ']' ))} ']' ']' ']'"
+         , format "'[hv  ' ::wpBuiltin  '/' '[hv' '[hv' (Type  ↦  ty )  ']' '/' '[' {e:  builtin ( '[hv' v1 ,  '/' .. ,  '/' v2 ']' )} ']' ']' ']'"
          , only printing).
 
   (* Destruction/cleanup-interpretation of temporaries *)
@@ -239,30 +239,30 @@ Module Verbose.
          , only printing).
 
   (* Special WPs*)
-  Notation "'::wpAtomic' '(Mask' ↦ M ; 'Type' ↦ ty ) '{(e:' atomic '())}' Q"
+  Notation "'::wpAtomic' '(Mask' ↦ M ; 'Type' ↦ ty ) '{e:' atomic '()}' Q"
       := (wp_atom M atomic ty%cpp_type nil Q)
          ( at level 0
          , ty custom CPP_type at level 200
-         , format "'[hv  ' ::wpAtomic  '/' '[hv' '[hv' (Mask  ↦  M ;  '/' Type  ↦  ty )  ']' '/'  '[' {(e:  atomic ())} ']' ']'  '/' Q ']'"
+         , format "'[hv  ' ::wpAtomic  '/' '[hv' '[hv' (Mask  ↦  M ;  '/' Type  ↦  ty )  ']' '/'  '[' {e:  atomic ()} ']' ']'  '/' Q ']'"
          , only printing).
-  Notation "'::wpAtomic' '(Mask' ↦ M ; 'Type' ↦ ty ) '{(e:' atomic '(' v1 , .. , v2 '))}' Q"
+  Notation "'::wpAtomic' '(Mask' ↦ M ; 'Type' ↦ ty ) '{e:' atomic '(' v1 , .. , v2 ')}' Q"
       := (wp_atom M atomic ty%cpp_type (cons v1 (.. (cons v2 nil) ..)) Q)
          ( at level 0
          , ty custom CPP_type at level 200
-         , format "'[hv  ' ::wpAtomic  '/' '[hv' '[hv' (Mask  ↦  M ;  '/' Type  ↦  ty )  ']' '/'  '[' {(e:  atomic ( '[hv' v1 ,  '/' .. ,  '/' v2 ']' ))} ']' ']'  '/' Q ']'"
+         , format "'[hv  ' ::wpAtomic  '/' '[hv' '[hv' (Mask  ↦  M ;  '/' Type  ↦  ty )  ']' '/'  '[' {e:  atomic ( '[hv' v1 ,  '/' .. ,  '/' v2 ']' )} ']' ']'  '/' Q ']'"
          , only printing).
 
-  Notation "'::wpBuiltin' '(Type' ↦ ty ) '{(e:' builtin '())}' Q"
+  Notation "'::wpBuiltin' '(Type' ↦ ty ) '{e:' builtin '()}' Q"
       := (wp_builtin builtin%cpp_expr ty%cpp_type nil Q)
          ( at level 0
          , ty custom CPP_type at level 200
-         , format "'[hv  ' ::wpBuiltin  '/' '[hv' '[hv' (Type  ↦  ty )  ']' '/' '[' {(e:  builtin ())} ']' ']'  '/' Q ']'"
+         , format "'[hv  ' ::wpBuiltin  '/' '[hv' '[hv' (Type  ↦  ty )  ']' '/' '[' {e:  builtin ()} ']' ']'  '/' Q ']'"
          , only printing).
-  Notation "'::wpBuiltin' '(Type' ↦ ty ) '{(e:' builtin '(' v1 , .. , v2 '))}' Q"
+  Notation "'::wpBuiltin' '(Type' ↦ ty ) '{e:' builtin '(' v1 , .. , v2 ')}' Q"
       := (wp_builtin builtin%cpp_expr ty%cpp_type (cons v1 (.. (cons v2 nil) ..)) Q)
          ( at level 0
          , ty custom CPP_type at level 200
-         , format "'[hv  ' ::wpBuiltin  '/' '[hv' '[hv' (Type  ↦  ty )  ']' '/' '[' {(e:  builtin ( '[hv' v1 ,  '/' .. ,  '/' v2 ']' ))} ']' ']'  '/' Q ']'"
+         , format "'[hv  ' ::wpBuiltin  '/' '[hv' '[hv' (Type  ↦  ty )  ']' '/' '[' {e:  builtin ( '[hv' v1 ,  '/' .. ,  '/' v2 ']' )} ']' ']'  '/' Q ']'"
          , only printing).
 
   (* Destruction/cleanup-interpretation of temporaries *)

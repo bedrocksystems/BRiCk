@@ -21,16 +21,16 @@ Module Export StmtNotationsInterface.
   Bind Scope CPP_stmt_scope with VarDecl.
 
   (* Injection from [constr] in case we're printing a subterm we don't recognize *)
-  Notation "'{(coq:' e ')};'"
-      := e
+  Notation "'{?:' s '};'"
+      := s
          ( in custom CPP_stmt at level 0
-         , e constr
-         , format "'[hv' {(coq:  '/' e )}; ']'").
+         , s constr
+         , format "'[hv' {?:  s }; ']'").
   (* Injection into [constr] in case we're printing this at the top-level *)
-  Notation "'{(s:' s )}" := s
+  Notation "'{s:' s '}'" := s
     ( at level 200
     , s custom CPP_stmt at level 200
-    , format "'[hv' {(s:  '/' s )} ']'"
+    , format "'[hv' {s:  s } ']'"
     , only printing) : CPP_stmt_scope.
 End StmtNotationsInterface.
 
@@ -273,10 +273,10 @@ Module StmtNotations.
          , format "'[' goto  lbl ; ']'"
          , only printing).
 
-  Notation "'{UNSUPPORTED:' msg }"
+  Notation "'{UNSUPPORTED:' msg '}'"
       := (Sunsupported msg%bs)
          ( in custom CPP_stmt at level 0
          , msg constr
-         , format "'[hv   ' {UNSUPPORTED:  '/' msg } ']'"
+         , format "'[hv   ' {UNSUPPORTED:  msg } ']'"
          , only printing).
 End StmtNotations.
