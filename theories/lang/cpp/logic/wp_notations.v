@@ -124,7 +124,8 @@ Module Export Compact.
   Notation "'::destroy_val' ( p '|->' 'type_ptrR' ty )"
       := (destroy_val ty%cpp_type p _)
          ( at level 0
-         , ty custom CPP_type at level 200
+         (* TODO (JH): Re-add this after [cpp2v/Compact]/[cpp2v/Verbose] are re-defined in terms of this *)
+         (* , ty custom CPP_type at level 200 *)
          , format "'[hv  ' ::destroy_val  '/' '[hv   ' ( p  |->  '/' type_ptrR  ty ) ']' ']'"
          , only printing).
   (* NOTE (JH): large [free]s are printed a bit strangely (cf. [NOTATIONS_interp_wrap]) *)
@@ -269,7 +270,8 @@ Module Verbose.
   Notation "'::destroy_val' ( p '|->' 'type_ptrR' ty ) E"
       := (destroy_val ty%cpp_type p E)
          ( at level 0
-         , ty custom CPP_type at level 200
+         (* TODO (JH): Re-add this after [cpp2v/Compact]/[cpp2v/Verbose] are re-defined in terms of this *)
+         (* , ty custom CPP_type at level 200 *)
          , format "'[hv  ' ::destroy_val  '/' '[hv   ' ( p  |->  '/' type_ptrR  ty ) ']'  '/' E ']'"
          , only printing).
   (* NOTE (JH): large [free]s are printed a bit strangely (cf. [NOTATIONS_interp_wrap]) *)
