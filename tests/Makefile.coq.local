@@ -64,7 +64,7 @@ NO_PRINTING_TESTS?=
 # Use MAKE_PRINTING_REFS=1 to generate new notation reference files
 MAKE_PRINTING_REFS?=
 
-real-all: $(if $(NO_PRINTING_TESTs),,printing-tests)
+real-all: $(if $(NO_PRINTING_TESTS),,printing-tests)
 
 COQ_PRINTING_TEST?=$(COQTOP) $(COQDEBUG) -batch -test-mode
 
