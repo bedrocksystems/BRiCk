@@ -25,13 +25,16 @@ Module Export StmtNotationsInterface.
       := s
          ( in custom CPP_stmt at level 0
          , s constr
-         , format "'[hv' {?:  s }; ']'").
+         , format "'[hv' {?:  s }; ']'"
+         , only printing).
   (* Injection into [constr] in case we're printing this at the top-level *)
-  Notation "'{s:' s '}'" := s
-    ( at level 200
-    , s custom CPP_stmt at level 200
-    , format "'[hv' {s:  s } ']'"
-    , only printing) : CPP_stmt_scope.
+  Notation "'{s:' s '}'"
+      := (s)
+         ( at level 200
+         , s custom CPP_stmt at level 200
+         , format "'[hv' {s:  s } ']'"
+         , only printing)
+    : CPP_stmt_scope.
 End StmtNotationsInterface.
 
 (* TODO (JH): Investigate which (if any) of the subsequent notations we can make

@@ -24,14 +24,16 @@ Module Export TypeNotationsInterface.
       := ty
          ( in custom CPP_type at level 0
          , ty constr
-         , format "'[hv' {?:  ty } ']'").
+         , format "'[hv' {?:  ty } ']'"
+         , only printing).
   (* Injection into [constr] in case we're printing this at the top-level *)
   Notation "'{t:' ty '}'"
       := ty
          ( at level 200
          , ty custom CPP_type at level 200
-         , format "'[hv' {t:  ty } ']'")
-       : CPP_type_scope.
+         , format "'[hv' {t:  ty } ']'"
+         , only printing)
+    : CPP_type_scope.
 End TypeNotationsInterface.
 
 (* NOTE (JH): [tests/type_notation_tests.v] contains tests of parsing/printing notations

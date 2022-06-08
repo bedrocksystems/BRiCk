@@ -27,14 +27,16 @@ Module Export ExprNotationsInterface.
       := e
          ( in custom CPP_expr at level 0
          , e constr
-         , format "'[hv' {?:  e } ']'").
+         , format "'[hv' {?:  e } ']'"
+         , only printing).
   (* Injection into [constr] in case we're printing this at the top-level *)
   Notation "'{e:' e '}'"
       := e
          ( at level 200
          , e custom CPP_expr at level 200
          , format "'[hv' {e:  e } ']'"
-         , only printing) : CPP_expr_scope.
+         , only printing)
+    : CPP_expr_scope.
 End ExprNotationsInterface.
 
 (* TODO (JH): Investigate which (if any) of the subsequent notations we can make
