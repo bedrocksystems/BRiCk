@@ -124,13 +124,13 @@ NOTATION_wp_builtin_cons_wrap =
 
 Arguments NOTATION_wp_builtin_cons_wrap Q%function_scope
 NOTATION_destroy_val_nowrap = 
-::destroy_val (WpTestDefns.p |-> type_ptrR ptr<void>)
+::destroy_val (WpTestDefns.p |-> type_ptrR {t: ptr<void>})
      : mpred
 NOTATION_destroy_val_wrap = 
 λ aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa : ptr,
   ::destroy_val
     (aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa |->
-       type_ptrR ptr<void>)
+       type_ptrR {t: ptr<void>})
      : ptr → mpred
 
 Arguments NOTATION_destroy_val_wrap
@@ -529,13 +529,13 @@ NOTATION_wp_builtin_cons_wrap =
 
 Arguments NOTATION_wp_builtin_cons_wrap Q%function_scope
 NOTATION_destroy_val_nowrap = 
-::destroy_val (WpTestDefns.p |-> type_ptrR ptr<void>) (WpTestDefns.E)
+::destroy_val (WpTestDefns.p |-> type_ptrR {t: ptr<void>}) (WpTestDefns.E)
      : mpred
 NOTATION_destroy_val_wrap = 
 λ aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa : ptr,
   ::destroy_val
     (aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa |->
-       type_ptrR ptr<void>)
+       type_ptrR {t: ptr<void>})
     (WpTestDefns.E)
      : ptr → mpred
 
