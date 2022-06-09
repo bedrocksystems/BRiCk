@@ -1,0 +1,121 @@
+(*
+ * Copyright (c) 2022 BedRock Systems, Inc.
+ * This software is distributed under the terms of the BedRock Open-Source License.
+ * See the LICENSE-BedRock file in the repository root for details.
+ *)
+Require Import ZArith.
+
+Require Import bedrock.prelude.base.
+From bedrock.lang.cpp Require Import ast notations code_notations.
+
+Section TestStmtNotations.
+  Context (ty : type) (e : Expr) (s : Stmt).
+
+  #[local] Definition Sseq_nil : Stmt := Sseq []%list.
+  #[local] Definition Sseq_singleton : Stmt := Sseq [Sreturn None]%list.
+  #[local] Definition Sseq_cons : Stmt := Sseq [Sreturn None; s; Sreturn (Some Enull)]%list.
+  Print Sseq_nil. Print Sseq_singleton. Print Sseq_cons.
+
+  #[local] Definition Sdecl_nil : Stmt := Sdecl []%list.
+  #[local] Definition Sdecl_singleton_no_init : Stmt := Sdecl [Dvar "foo" ty None]%list.
+  #[local] Definition Sdecl_singleton_init : Stmt := Sdecl [Dvar "foo" ty (Some Enull)]%list.
+  #[local] Definition Sdecl_cons : Stmt := Sdecl [Dvar "foo" ty None; Dvar "bar" ty (Some Enull)]%list.
+  Print Sdecl_nil. Print Sdecl_singleton_no_init. Print Sdecl_singleton_init. Print Sdecl_cons.
+
+  #[local] Definition Sif_no_decl : Stmt := Sif None (Evar (Lname "is_true") ty) (Sreturn None) Sbreak.
+  #[local] Definition Sif_decl_no_init : Stmt := Sif (Some (Dvar "foo" ty None)) (Evar (Lname "foo") ty) (Sreturn None) Sbreak.
+  #[local] Definition Sif_decl_init : Stmt := Sif (Some (Dvar "foo" ty (Some (Eint 314 ty)))) (Evar (Lname "foo") ty) (Sreturn None) Sbreak.
+  #[local] Definition Sif_decl_init_multiline : Stmt := Sif (Some (Dvar "foo" ty (Some (Eint 314 ty)))) (Evar (Lname "foo") ty) (Sreturn None) (Sseq [Scontinue; Sbreak; Sreturn (Some Enull)]%list).
+  Print Sif_no_decl. Print Sif_decl_no_init. Print Sif_decl_init.
+
+  #[local] Definition Swhile_no_decl : Stmt := Swhile None (Evar (Lname "is_true") ty) Scontinue.
+  #[local] Definition Swhile_decl_no_init : Stmt := Swhile (Some (Dvar "foo" ty None)) (Evar (Lname "foo") ty) Scontinue.
+  #[local] Definition Swhile_decl_init : Stmt := Swhile (Some (Dvar "foo" ty (Some (Eint 314 ty)))) (Evar (Lname "foo") ty) Scontinue.
+  #[local] Definition Swhile_decl_init_multiline : Stmt := Swhile (Some (Dvar "foo" ty (Some (Eint 314 ty)))) (Evar (Lname "foo") ty) (Sseq [Scontinue; Sbreak; s; Sreturn (Some Enull)]%list).
+  Print Swhile_no_decl. Print Swhile_decl_no_init.
+  Print Swhile_decl_init. Print Swhile_decl_init_multiline.
+
+  (* TODO (JH): Custom inlined version of [Sdecl] notation which uses commas rather than
+     semicolons as delimiters.
+   *)
+
+  #[local] Definition Sfor_no_init_no_cond_no_incr_empty : Stmt := Sfor None None None (Sseq []%list).
+  #[local] Definition Sfor_no_init_no_cond_no_incr_singleton : Stmt := Sfor None None None (Sseq [Sreturn None]%list).
+  #[local] Definition Sfor_no_init_no_cond_no_incr_multiline : Stmt := Sfor None None None (Sseq [Scontinue; Sbreak; s; Sreturn (Some Enull)]%list).
+  Print Sfor_no_init_no_cond_no_incr_empty.
+  Print Sfor_no_init_no_cond_no_incr_singleton.
+  Print Sfor_no_init_no_cond_no_incr_multiline.
+
+  #[local] Definition Sfor_no_init_no_cond_incr_empty : Stmt := Sfor None None (Some (Lvalue, Epreinc (Evar (Lname "bar") ty) ty)) (Sseq []%list).
+  #[local] Definition Sfor_no_init_no_cond_incr_singleton : Stmt := Sfor None None (Some (Lvalue, Epreinc (Evar (Lname "bar") ty) ty)) (Sseq [Sreturn None]%list).
+  #[local] Definition Sfor_no_init_no_cond_incr_multiline : Stmt := Sfor None None (Some (Lvalue, Epreinc (Evar (Lname "bar") ty) ty)) (Sseq [Scontinue; Sbreak; s; Sreturn (Some Enull)]%list).
+  Print Sfor_no_init_no_cond_incr_empty.
+  Print Sfor_no_init_no_cond_incr_singleton.
+  Print Sfor_no_init_no_cond_incr_multiline.
+
+  #[local] Definition Sfor_no_init_cond_no_incr_empty : Stmt := Sfor None (Some (Evar (Lname "foo") ty)) None (Sseq []%list).
+  #[local] Definition Sfor_no_init_cond_no_incr_singleton : Stmt := Sfor None (Some (Evar (Lname "foo") ty)) None (Sseq [Sreturn None]%list).
+  #[local] Definition Sfor_no_init_cond_no_incr_multiline : Stmt := Sfor None (Some (Evar (Lname "foo") ty)) None (Sseq [Scontinue; Sbreak; s; Sreturn (Some Enull)]%list).
+  Print Sfor_no_init_cond_no_incr_empty.
+  Print Sfor_no_init_cond_no_incr_singleton.
+  Print Sfor_no_init_cond_no_incr_multiline.
+
+  #[local] Definition Sfor_init_no_cond_no_incr_empty : Stmt := Sfor (Some (Sdecl [Dvar "foo" ty None; Dvar "bar" ty (Some (Eint 314 ty))]%list)) None None (Sseq []%list).
+  #[local] Definition Sfor_init_no_cond_no_incr_singleton : Stmt := Sfor (Some (Sdecl [Dvar "foo" ty None; Dvar "bar" ty (Some (Eint 314 ty))]%list)) None None (Sseq [Sreturn None]%list).
+  #[local] Definition Sfor_init_no_cond_no_incr_multiline : Stmt := Sfor (Some (Sdecl [Dvar "foo" ty None; Dvar "bar" ty (Some (Eint 314 ty))]%list)) None None (Sseq [Scontinue; Sbreak; s; Sreturn (Some Enull)]%list).
+  Print Sfor_init_no_cond_no_incr_empty.
+  Print Sfor_init_no_cond_no_incr_singleton.
+  Print Sfor_init_no_cond_no_incr_multiline.
+
+  #[local] Definition Sfor_init_cond_no_incr_empty : Stmt := Sfor (Some (Sdecl [Dvar "foo" ty None; Dvar "bar" ty (Some (Eint 314 ty))]%list)) (Some (Evar (Lname "foo") ty)) None (Sseq []%list).
+  #[local] Definition Sfor_init_cond_no_incr_singleton : Stmt := Sfor (Some (Sdecl [Dvar "foo" ty None; Dvar "bar" ty (Some (Eint 314 ty))]%list)) (Some (Evar (Lname "foo") ty)) None (Sseq [Sreturn None]%list).
+  #[local] Definition Sfor_init_cond_no_incr_multiline : Stmt := Sfor (Some (Sdecl [Dvar "foo" ty None; Dvar "bar" ty (Some (Eint 314 ty))]%list)) (Some (Evar (Lname "foo") ty)) None (Sseq [Scontinue; Sbreak; s; Sreturn (Some Enull)]%list).
+  Print Sfor_init_cond_no_incr_empty.
+  Print Sfor_init_cond_no_incr_singleton.
+  Print Sfor_init_cond_no_incr_multiline.
+
+  #[local] Definition Sfor_init_no_cond_incr_empty : Stmt := Sfor (Some (Sdecl [Dvar "foo" ty None; Dvar "bar" ty (Some (Eint 314 ty))]%list)) None (Some (Lvalue, Epreinc (Evar (Lname "bar") ty) ty)) (Sseq []%list).
+  #[local] Definition Sfor_init_no_cond_incr_singleton : Stmt := Sfor (Some (Sdecl [Dvar "foo" ty None; Dvar "bar" ty (Some (Eint 314 ty))]%list)) None (Some (Lvalue, Epreinc (Evar (Lname "bar") ty) ty)) (Sseq [Sreturn None]%list).
+  #[local] Definition Sfor_init_no_cond_incr_multiline : Stmt := Sfor (Some (Sdecl [Dvar "foo" ty None; Dvar "bar" ty (Some (Eint 314 ty))]%list)) None (Some (Lvalue, Epreinc (Evar (Lname "bar") ty) ty)) (Sseq [Scontinue; Sbreak; s; Sreturn (Some Enull)]%list).
+  Print Sfor_init_no_cond_incr_empty.
+  Print Sfor_init_no_cond_incr_singleton.
+  Print Sfor_init_no_cond_incr_multiline.
+
+  #[local] Definition Sfor_no_init_cond_incr_empty : Stmt := Sfor None (Some (Evar (Lname "foo") ty)) (Some (Lvalue, Epreinc (Evar (Lname "bar") ty) ty)) (Sseq []%list).
+  #[local] Definition Sfor_no_init_cond_incr_singleton : Stmt := Sfor None (Some (Evar (Lname "foo") ty)) (Some (Lvalue, Epreinc (Evar (Lname "bar") ty) ty)) (Sseq [Sreturn None]%list).
+  #[local] Definition Sfor_no_init_cond_incr_multiline : Stmt := Sfor None (Some (Evar (Lname "foo") ty)) (Some (Lvalue, Epreinc (Evar (Lname "bar") ty) ty)) (Sseq [Scontinue; Sbreak; s; Sreturn (Some Enull)]%list).
+  Print Sfor_no_init_cond_incr_empty.
+  Print Sfor_no_init_cond_incr_singleton.
+  Print Sfor_no_init_cond_incr_multiline.
+
+  #[local] Definition Sfor_init_cond_incr_empty : Stmt := Sfor (Some (Sdecl [Dvar "foo" ty None; Dvar "bar" ty (Some (Eint 314 ty))]%list)) (Some (Evar (Lname "foo") ty)) (Some (Lvalue, Epreinc (Evar (Lname "bar") ty) ty)) (Sseq []%list).
+  #[local] Definition Sfor_init_cond_incr_singleton : Stmt := Sfor (Some (Sdecl [Dvar "foo" ty None; Dvar "bar" ty (Some (Eint 314 ty))]%list)) (Some (Evar (Lname "foo") ty)) (Some (Lvalue, Epreinc (Evar (Lname "bar") ty) ty)) (Sseq [Sreturn None]%list).
+  #[local] Definition Sfor_init_cond_incr_multiline : Stmt := Sfor (Some (Sdecl [Dvar "foo" ty None; Dvar "bar" ty (Some (Eint 314 ty))]%list)) (Some (Evar (Lname "foo") ty)) (Some (Lvalue, Epreinc (Evar (Lname "bar") ty) ty)) (Sseq [Scontinue; Sbreak; s; Sreturn (Some Enull)]%list).
+  Print Sfor_init_cond_incr_empty.
+  Print Sfor_init_cond_incr_singleton.
+  Print Sfor_init_cond_incr_multiline.
+
+  #[local] Definition Sdo_empty : Stmt := Sdo (Sseq []%list) (Ebool false).
+  #[local] Definition Sdo_singleton : Stmt := Sdo (Sseq [Scontinue]%list) (Ebool true).
+  #[local] Definition Sdo_multiline : Stmt := Sdo (Sseq [Scontinue; Sbreak; s; Sreturn (Some (Eint 217 ty))]%list) (Ebool true).
+  Print Sdo_empty. Print Sdo_singleton. Print Sdo_multiline.
+
+  Check Sbreak. Check Scontinue.
+
+  #[local] Definition Sreturn_None : Stmt := Sreturn None.
+  #[local] Definition Sreturn_Some : Stmt := Sreturn (Some (Eint 314 ty)).
+  Print Sreturn_None. Print Sreturn_Some.
+
+  #[local] Definition Sexpr_simple : Stmt := Sexpr Lvalue Enull.
+  #[local] Definition Sexpr_complex : Stmt := Sexpr Lvalue (Eif (Ebool true) (Evar (Lname "foo") ty) (Evar (Lname "bar") ty) ty).
+  Print Sexpr_simple. Print Sexpr_complex.
+
+  #[local] Definition Sattr_nil : Stmt := Sattr []%list Scontinue.
+  #[local] Definition Sattr_cons : Stmt := Sattr ["foo"; "bar"; "baz"]%list%bs Sbreak.
+  Print Sattr_nil. Print Sattr_cons.
+
+  Check Slabeled "FOO_BAR" (Sreturn None). Check Sgoto "FOO_BAR".
+  Check Sseq [Slabeled "FOO_BAR" Scontinue; Sgoto "FOO_BAR"]%list.
+
+  Check (Eunsupported "This was an unsupported operation" ty).
+End TestStmtNotations.

@@ -1,0 +1,278 @@
+Sseq_nil = {s: // end block}
+     : Stmt
+Sseq_singleton = {s: return; 
+                     // end block}
+     : Stmt
+Sseq_cons = {s: return; 
+                {?: s};
+                return nullptr; 
+                // end block}
+     : Stmt
+Sdecl_nil = {s: // end decl block}
+     : Stmt
+Sdecl_singleton_no_init = {s: {?: ty} $"foo";}
+     : Stmt
+Sdecl_singleton_init = {s: {?: ty} $"foo" = nullptr;}
+     : Stmt
+Sdecl_cons = {s: {?: ty} $"foo";
+                 {?: ty} $"bar" = nullptr;}
+     : Stmt
+Sif_no_decl = {s: if ($"is_true") {
+                    return; 
+                  } else {
+                    break; 
+                  }}
+     : Stmt
+Sif_decl_no_init = 
+{s: if ({?: ty} $"foo"; $"foo") {
+      return; 
+    } else {
+      break; 
+    }}
+     : Stmt
+Sif_decl_init = 
+{s: if ({?: ty} $"foo" = #314; $"foo") {
+      return; 
+    } else {
+      break; 
+    }}
+     : Stmt
+Swhile_no_decl = {s: while ($"is_true") {
+                       continue; 
+                     }}
+     : Stmt
+Swhile_decl_no_init = 
+{s: while ({?: ty} $"foo"; $"foo") {
+      continue; 
+    }}
+     : Stmt
+Swhile_decl_init = 
+{s: while ({?: ty} $"foo" = #314; $"foo") {
+      continue; 
+    }}
+     : Stmt
+Swhile_decl_init_multiline = 
+{s: while ({?: ty} $"foo" = #314; $"foo") {
+      continue; 
+      break; 
+      {?: s};
+      return nullptr; 
+      // end block
+    }}
+     : Stmt
+Sfor_no_init_no_cond_no_incr_empty = 
+{s: for (;;) {
+      // end block
+    }}
+     : Stmt
+Sfor_no_init_no_cond_no_incr_singleton = 
+{s: for (;;) {
+      return; 
+      // end block
+    }}
+     : Stmt
+Sfor_no_init_no_cond_no_incr_multiline = 
+{s: for (;;) {
+      continue; 
+      break; 
+      {?: s};
+      return nullptr; 
+      // end block
+    }}
+     : Stmt
+Sfor_no_init_no_cond_incr_empty = 
+{s: for (;; ++$"bar") {
+      // end block
+    }}
+     : Stmt
+Sfor_no_init_no_cond_incr_singleton = 
+{s: for (;; ++$"bar") {
+      return; 
+      // end block
+    }}
+     : Stmt
+Sfor_no_init_no_cond_incr_multiline = 
+{s: for (;; ++$"bar") {
+      continue; 
+      break; 
+      {?: s};
+      return nullptr; 
+      // end block
+    }}
+     : Stmt
+Sfor_no_init_cond_no_incr_empty = 
+{s: for (; $"foo";) {
+      // end block
+    }}
+     : Stmt
+Sfor_no_init_cond_no_incr_singleton = 
+{s: for (; $"foo";) {
+      return; 
+      // end block
+    }}
+     : Stmt
+Sfor_no_init_cond_no_incr_multiline = 
+{s: for (; $"foo";) {
+      continue; 
+      break; 
+      {?: s};
+      return nullptr; 
+      // end block
+    }}
+     : Stmt
+Sfor_init_no_cond_no_incr_empty = 
+{s: for ({?: ty} $"foo";
+         {?: ty} $"bar" = #314;;) {
+      // end block
+    }}
+     : Stmt
+Sfor_init_no_cond_no_incr_singleton = 
+{s: for ({?: ty} $"foo";
+         {?: ty} $"bar" = #314;;) {
+      return; 
+      // end block
+    }}
+     : Stmt
+Sfor_init_no_cond_no_incr_multiline = 
+{s: for ({?: ty} $"foo";
+         {?: ty} $"bar" = #314;;) {
+      continue; 
+      break; 
+      {?: s};
+      return nullptr; 
+      // end block
+    }}
+     : Stmt
+Sfor_init_cond_no_incr_empty = 
+{s: for ({?: ty} $"foo";
+         {?: ty} $"bar" = #314; $"foo";) {
+      // end block
+    }}
+     : Stmt
+Sfor_init_cond_no_incr_singleton = 
+{s: for ({?: ty} $"foo";
+         {?: ty} $"bar" = #314; $"foo";) {
+      return; 
+      // end block
+    }}
+     : Stmt
+Sfor_init_cond_no_incr_multiline = 
+{s: for ({?: ty} $"foo";
+         {?: ty} $"bar" = #314; $"foo";) {
+      continue; 
+      break; 
+      {?: s};
+      return nullptr; 
+      // end block
+    }}
+     : Stmt
+Sfor_init_no_cond_incr_empty = 
+{s: for ({?: ty} $"foo";
+         {?: ty} $"bar" = #314;; ++$"bar") {
+      // end block
+    }}
+     : Stmt
+Sfor_init_no_cond_incr_singleton = 
+{s: for ({?: ty} $"foo";
+         {?: ty} $"bar" = #314;; ++$"bar") {
+      return; 
+      // end block
+    }}
+     : Stmt
+Sfor_init_no_cond_incr_multiline = 
+{s: for ({?: ty} $"foo";
+         {?: ty} $"bar" = #314;; ++$"bar") {
+      continue; 
+      break; 
+      {?: s};
+      return nullptr; 
+      // end block
+    }}
+     : Stmt
+Sfor_no_init_cond_incr_empty = 
+{s: for (; $"foo"; ++$"bar") {
+      // end block
+    }}
+     : Stmt
+Sfor_no_init_cond_incr_singleton = 
+{s: for (; $"foo"; ++$"bar") {
+      return; 
+      // end block
+    }}
+     : Stmt
+Sfor_no_init_cond_incr_multiline = 
+{s: for (; $"foo"; ++$"bar") {
+      continue; 
+      break; 
+      {?: s};
+      return nullptr; 
+      // end block
+    }}
+     : Stmt
+Sfor_init_cond_incr_empty = 
+{s: for ({?: ty} $"foo";
+         {?: ty} $"bar" = #314; $"foo"; ++$"bar") {
+      // end block
+    }}
+     : Stmt
+Sfor_init_cond_incr_singleton = 
+{s: for ({?: ty} $"foo";
+         {?: ty} $"bar" = #314; $"foo"; ++$"bar") {
+      return; 
+      // end block
+    }}
+     : Stmt
+Sfor_init_cond_incr_multiline = 
+{s: for ({?: ty} $"foo";
+         {?: ty} $"bar" = #314; $"foo"; ++$"bar") {
+      continue; 
+      break; 
+      {?: s};
+      return nullptr; 
+      // end block
+    }}
+     : Stmt
+Sdo_empty = {s: do {
+                  // end block
+                } while(#false);}
+     : Stmt
+Sdo_singleton = {s: do {
+                      continue; 
+                      // end block
+                    } while(#true);}
+     : Stmt
+Sdo_multiline = 
+{s: do {
+      continue; 
+      break; 
+      {?: s};
+      return #217; 
+      // end block
+    } while(#true);}
+     : Stmt
+{s: break; }
+     : Stmt
+{s: continue; }
+     : Stmt
+Sreturn_None = {s: return; }
+     : Stmt
+Sreturn_Some = {s: return #314; }
+     : Stmt
+Sexpr_simple = {s: nullptr;}
+     : Stmt
+Sexpr_complex = {s: #true ? $"foo" : $"bar";}
+     : Stmt
+Sattr_nil = {s: continue; }
+     : Stmt
+Sattr_cons = {s: [["foo", "bar", "baz"]] break; }
+     : Stmt
+{s: <LABEL: "FOO_BAR"> return; }
+     : Stmt
+{s: goto "FOO_BAR";}
+     : Stmt
+{s: <LABEL: "FOO_BAR"> continue; 
+    goto "FOO_BAR";
+    // end block}
+     : Stmt
+{e: {UNSUPPORTED: "This was an unsupported operation"}}
+     : Expr
