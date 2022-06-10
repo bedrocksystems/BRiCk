@@ -121,11 +121,11 @@ Module Export Compact.
          , only printing).
 
   (* Destruction/cleanup-interpretation of temporaries *)
-  Notation "'::destroy_val' ( p '|->' 'type_ptrR' ty )"
+  Notation "'::destroy_val' '{pointer:' p ';' 'type:' ty '}'"
       := (destroy_val ty%cpp_type p _)
          ( at level 0
          , ty custom CPP_type at level 200
-         , format "'[hv  ' ::destroy_val  '/' '[hv   ' ( p  |->  '/' type_ptrR  ty ) ']' ']'"
+         , format "'[hv  ' ::destroy_val  '/' '[hv   ' {pointer:  p ; '/'  type:  ty } ']' ']'"
          , only printing).
   (* NOTE (JH): large [free]s are printed a bit strangely (cf. [NOTATIONS_interp_wrap]) *)
   Notation "'::interp' { free }"
@@ -266,11 +266,11 @@ Module Verbose.
          , only printing).
 
   (* Destruction/cleanup-interpretation of temporaries *)
-  Notation "'::destroy_val' ( p '|->' 'type_ptrR' ty ) E"
+  Notation "'::destroy_val' '{pointer:' p ';' 'type:' ty '}' E"
       := (destroy_val ty%cpp_type p E)
          ( at level 0
          , ty custom CPP_type at level 200
-         , format "'[hv  ' ::destroy_val  '/' '[hv   ' ( p  |->  '/' type_ptrR  ty ) ']'  '/' E ']'"
+         , format "'[hv  ' ::destroy_val  '/' '[hv   ' {pointer:  p ; '/'  type:  ty } ']'  '/' E ']'"
          , only printing).
   (* NOTE (JH): large [free]s are printed a bit strangely (cf. [NOTATIONS_interp_wrap]) *)
   Notation "'::interp' { free } E"
