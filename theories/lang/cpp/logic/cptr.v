@@ -293,3 +293,5 @@ End with_cpp.
 
 #[global] Instance Persistent_spec `{Σ:cpp_logic ti} {resolve:genv} p s :
   Persistent (_at p (cptrR s)) := _.
+#[global] Instance Affine_spec `{Σ:cpp_logic ti} {resolve:genv} p s :
+  Affine (_at p (cptrR s)) := _.
