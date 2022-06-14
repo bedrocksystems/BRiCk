@@ -261,57 +261,63 @@ Module Type Expr.
     Axiom wp_operand_unop : forall o e ty Q,
         wp_operand e (fun v free => (* todo: rval? *)
           Exists v',
-          [| eval_unop o (erase_qualifiers (type_of e)) (erase_qualifiers ty) v v' |] **
+          [| eval_unop o (drop_qualifiers (type_of e)) (drop_qualifiers ty) v v' |] **
           Q v' free)
         |-- wp_operand (Eunop o e ty) Q.
 
     Axiom wp_lval_preinc : forall e ty Q,
-        match companion_type (type_of e) with
-        | Some cty =>
+        (let ety := type_of e in
+         let eety := erase_qualifiers ety in
+         match companion_type eety with
+         | Some cty =>
           wp_lval e (fun a free => Exists v' v'',
-              (eval_binop Badd (erase_qualifiers (type_of e)) cty
-                (erase_qualifiers ty) v' (Vint 1) v'' ** True) //\\
-              (a |-> primR (erase_qualifiers ty) 1 v' **
-                (a |-> primR (erase_qualifiers ty) 1 v'' -* Q a free)))
-        | None => False
-        end
+              (eval_binop Badd eety cty (erase_qualifiers ty) v' (Vint 1) v'' ** True) //\\
+              (a |-> primR eety 1 v' **
+                (a |-> primR eety 1 v'' -* Q a free)))
+         | None => False
+         end)
         |-- wp_lval (Epreinc e ty) Q.
 
     Axiom wp_lval_predec : forall e ty Q,
-        match companion_type (type_of e) with
-        | Some cty =>
+        (let ety := type_of e in
+         let eety := erase_qualifiers ety in
+         match companion_type eety with
+         | Some cty =>
           wp_lval e (fun a free => Exists v' v'',
-              (eval_binop Bsub (erase_qualifiers (type_of e)) cty
-                (erase_qualifiers ty) v' (Vint 1) v'' ** True) //\\
-              (a |-> primR (erase_qualifiers ty) 1 v' **
-                (a |-> primR (erase_qualifiers ty) 1 v'' -* Q a free)))
-        | None => False
-        end
+              (eval_binop Bsub eety cty (erase_qualifiers ty) v' (Vint 1) v'' ** True) //\\
+              (a |-> primR eety 1 v' **
+                (a |-> primR eety 1 v'' -* Q a free)))
+         | None => False
+         end)
         |-- wp_lval (Epredec e ty) Q.
 
     Axiom wp_operand_postinc : forall e ty Q,
-        match companion_type (type_of e) with
-        | Some cty =>
-          wp_lval e (fun a free => Exists v', Exists v'',
-              (eval_binop Badd (erase_qualifiers (type_of e)) cty
-                (erase_qualifiers ty) v' (Vint 1) v'' ** True) //\\
-              (a |-> primR (erase_qualifiers ty) 1 v' **
-                (a |-> primR (erase_qualifiers ty) 1 v'' -* Q v' free)))
-        | None => False
-        end
-        |-- wp_operand (Epostinc e ty) Q.
+        (let ety := type_of e in
+         let eety := erase_qualifiers ety in
+         match companion_type eety with
+         | Some cty =>
+             wp_lval e (fun a free => Exists v', Exists v'',
+                          (eval_binop Badd eety cty
+                             (erase_qualifiers ty) v' (Vint 1) v'' ** True) //\\
+                            (a |-> primR eety 1 v' **
+                               (a |-> primR eety 1 v'' -* Q v' free)))
+         | None => False
+         end)
+      |-- wp_operand (Epostinc e ty) Q.
 
     Axiom wp_operand_postdec : forall e ty Q,
-        match companion_type (type_of e) with
-        | Some cty =>
-          wp_lval e (fun a free => Exists v', Exists v'',
-              (eval_binop Bsub (erase_qualifiers (type_of e)) cty
-                (erase_qualifiers ty) v' (Vint 1) v'' ** True) //\\
-              (a |-> primR (erase_qualifiers ty) 1 v' **
-                (a |-> primR (erase_qualifiers ty) 1 v'' -* Q v' free)))
-        | None => False
-        end
-        |-- wp_operand (Epostdec e ty) Q.
+        (let ety := type_of e in
+         let eety := erase_qualifiers ety in
+         match companion_type eety with
+         | Some cty =>
+             wp_lval e (fun a free => Exists v', Exists v'',
+                          (eval_binop Bsub eety cty
+                             (erase_qualifiers ty) v' (Vint 1) v'' ** True) //\\
+                            (a |-> primR eety 1 v' **
+                               (a |-> primR eety 1 v'' -* Q v' free)))
+         | None => False
+         end)
+     |-- wp_operand (Epostdec e ty) Q.
 
     (** * Binary Operators *)
     (* NOTE the following axioms assume that [eval_binop] is deterministic *)
@@ -321,8 +327,8 @@ Module Type Expr.
             Forall v1 v2 free1 free2, Ql v1 free1 -* Qr v2 free2 -*
                Exists v',
                   (eval_binop o
-                    (erase_qualifiers (type_of e1)) (erase_qualifiers (type_of e2))
-                    (erase_qualifiers ty) v1 v2 v' ** True) //\\
+                    (drop_qualifiers (type_of e1)) (drop_qualifiers (type_of e2))
+                    (drop_qualifiers ty) v1 v2 v' ** True) //\\
                   Q v' (free1 >*> free2))
         |-- wp_operand (Ebinop o e1 e2 ty) Q.
 

@@ -119,6 +119,12 @@ Lemma drop_qualifiers_Tnullptr : forall [ty],
     drop_qualifiers ty = Tnullptr -> erase_qualifiers ty = Tnullptr.
 Proof. induction ty; simpl; intros; try congruence; eauto. Qed.
 
+Lemma drop_erase : forall t, drop_qualifiers (erase_qualifiers t) = erase_qualifiers t.
+Proof. induction t; simpl; eauto. Qed.
+
+Lemma erase_drop : forall t, erase_qualifiers (drop_qualifiers t) = erase_qualifiers t.
+Proof. induction t; simpl; eauto. Qed.
+
 (** simplify instances where you have [drop_qualifiers ty = Txxx ..] for some [Txxx] *)
 Ltac simpl_drop_qualifiers :=
   match goal with

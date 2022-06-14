@@ -463,6 +463,12 @@ Section with_cpp.
       genv_leq σ1 σ2 ->
       Forall v f, k1 v f -* k2 v f |-- @wp_operand σ1 ρ e k1 -* @wp_operand σ2 ρ e k2.
 
+  (** C++ evaluation semantics guarantees that all expressions of type [t] that
+      evaluate without UB evaluate to a well-typed value of type [t] *)
+  Axiom wp_operand_well_typed : forall {σ : genv} ρ e Q,
+      wp_operand ρ e (fun v frees => [| has_type v (type_of e) |] -* Q v frees)
+    |-- wp_operand ρ e Q.
+
   (* BEGIN wp_init <-> wp_operand *)
   Axiom wp_operand_wp_init : forall {σ : genv} ρ ty addr e Q,
       is_primitive ty ->

@@ -208,7 +208,7 @@ Module Export OPERATOR_INTF_AXIOM <: OPERATOR_INTF_FUNCTOR PTRS_INTF_AXIOM VALUE
 End OPERATOR_INTF_AXIOM.
 
 (** for pre- and post- increment/decrement, this function determines the type
-    of the [1] that is added or subtracted
+    of the [1] that is added or subtracted.
  *)
 Fixpoint companion_type (t : type) : option type :=
   match t with
@@ -217,3 +217,13 @@ Fixpoint companion_type (t : type) : option type :=
   | Tqualified _ t => companion_type t
   | _ => None
   end.
+
+(* [1] is well-typed in any type that is a companion type *)
+Lemma companion_type_1 t : forall ct,
+    companion_type t = Some ct ->
+    has_type 1 ct.
+Proof.
+  induction t; simpl; try congruence; eauto.
+  - inversion 1; subst. by apply has_int_type.
+  - inversion 1; subst. apply has_int_type. destruct size, signed; done.
+Qed.
