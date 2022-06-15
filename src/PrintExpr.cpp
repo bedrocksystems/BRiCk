@@ -186,6 +186,20 @@ public:
         done(expr, print, cprint);
     }
 
+#if CLANG_VERSION_MAJOR >= 11
+    void VisitRecoveryExpr(const RecoveryExpr* expr, CoqPrinter& print, ClangPrinter& cprint,
+                   const ASTContext&, OpaqueNames&) {
+        using namespace logging;
+        unsupported() << "Error detected when typechecking C++ code at "
+                      << cprint.sourceRange(expr->getSourceRange())
+                      << "\n"
+                      << "Try fixing earlier errors\n";
+        print.ctor("Eunsupported");
+        print.str(expr->getStmtClassName());
+        done(expr, print, cprint);
+    }
+#endif
+
     void printBinaryOperator(BinaryOperator::Opcode op, StringRef def,
                              CoqPrinter& print, const ASTContext& ctxt) {
         switch (op) {
