@@ -169,6 +169,15 @@ public:
         case BuiltinType::Kind::NullPtr:
             print.output() << "Tnullptr";
             break;
+        case BuiltinType::Kind::Dependent:
+            print.output() << "Tunsupported \"type-dependent type\"";
+            using namespace logging;
+            fatal() << "Clang failed to resolve type, due to earlier errors or "
+                       "unresolved templates\n"
+                    << "Try fixing earlier errors, or ask for help. Aborting\n";
+            die();
+
+            break;
 #if CLANG_VERSION_MAJOR == 10
         case BuiltinType::Kind::SveInt8:
         case BuiltinType::Kind::SveInt16:
