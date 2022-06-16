@@ -69,6 +69,8 @@
 &nbsp;&nbsp;<span class="comment">(*&nbsp;^&nbsp;int&nbsp;is&nbsp;low-level&nbsp;triggered&nbsp;<span class="inlinecode"><span class="id" title="var">active_low</span></span> <span class="inlinecode">=</span> <span class="inlinecode"><span class="id" title="var">true</span></span>;&nbsp;otherwise,&nbsp;high-level&nbsp;triggered&nbsp;*)</span><br/>
 
 <br/>
+#[<span class="id" title="var">global</span>] <span class="id" title="keyword">Instance</span> <a id="int_trigger_inh" class="idref" href="#int_trigger_inh"><span class="id" title="instance">int_trigger_inh</span></a> : <a class="idref" href="https://plv.mpi-sws.org/coqdoc/stdpp//stdpp.base.html#Inhabited"><span class="id" title="class">Inhabited</span></a> <a class="idref" href="bedrock.prelude.interrupts.html#IntTrigger"><span class="id" title="inductive">IntTrigger</span></a>.<br/>
+<span class="id" title="keyword">Proof</span>. <span class="id" title="var">solve_inhabited</span>. <span class="id" title="keyword">Qed</span>.<br/>
 #[<span class="id" title="var">global</span>] <span class="id" title="keyword">Instance</span> <a id="int_trigger_decision" class="idref" href="#int_trigger_decision"><span class="id" title="instance">int_trigger_decision</span></a> : <a class="idref" href="https://plv.mpi-sws.org/coqdoc/stdpp//stdpp.base.html#EqDecision"><span class="id" title="abbreviation">EqDecision</span></a> <a class="idref" href="bedrock.prelude.interrupts.html#IntTrigger"><span class="id" title="inductive">IntTrigger</span></a>.<br/>
 <span class="id" title="keyword">Proof</span>. <span class="id" title="var">solve_decision</span>. <span class="id" title="keyword">Defined</span>.<br/>
 
@@ -80,6 +82,8 @@
 <span class="comment">(*&nbsp;^&nbsp;int&nbsp;is&nbsp;guest&nbsp;owned&nbsp;(VM&nbsp;passthrough)&nbsp;*)</span><br/>
 
 <br/>
+#[<span class="id" title="var">global</span>] <span class="id" title="keyword">Instance</span> <a id="int_owner_inh" class="idref" href="#int_owner_inh"><span class="id" title="instance">int_owner_inh</span></a> : <a class="idref" href="https://plv.mpi-sws.org/coqdoc/stdpp//stdpp.base.html#Inhabited"><span class="id" title="class">Inhabited</span></a> <a class="idref" href="bedrock.prelude.interrupts.html#IntOwner"><span class="id" title="inductive">IntOwner</span></a>.<br/>
+<span class="id" title="keyword">Proof</span>. <span class="id" title="var">solve_inhabited</span>. <span class="id" title="keyword">Qed</span>.<br/>
 #[<span class="id" title="var">global</span>] <span class="id" title="keyword">Instance</span> <a id="int_owner_decision" class="idref" href="#int_owner_decision"><span class="id" title="instance">int_owner_decision</span></a> : <a class="idref" href="https://plv.mpi-sws.org/coqdoc/stdpp//stdpp.base.html#EqDecision"><span class="id" title="abbreviation">EqDecision</span></a> <a class="idref" href="bedrock.prelude.interrupts.html#IntOwner"><span class="id" title="inductive">IntOwner</span></a>.<br/>
 <span class="id" title="keyword">Proof</span>. <span class="id" title="var">solve_decision</span>. <span class="id" title="keyword">Defined</span>.<br/>
 
@@ -87,6 +91,8 @@
 <span class="id" title="keyword">Variant</span> <a id="IntStatus" class="idref" href="#IntStatus"><span class="id" title="inductive">IntStatus</span></a> : <span class="id" title="keyword">Set</span> := <a id="IntMasked" class="idref" href="#IntMasked"><span class="id" title="constructor">IntMasked</span></a> | <a id="IntEnabled" class="idref" href="#IntEnabled"><span class="id" title="constructor">IntEnabled</span></a>.<br/>
 
 <br/>
+#[<span class="id" title="var">global</span>] <span class="id" title="keyword">Instance</span> <a id="int_status_inh" class="idref" href="#int_status_inh"><span class="id" title="instance">int_status_inh</span></a> : <a class="idref" href="https://plv.mpi-sws.org/coqdoc/stdpp//stdpp.base.html#Inhabited"><span class="id" title="class">Inhabited</span></a> <a class="idref" href="bedrock.prelude.interrupts.html#IntStatus"><span class="id" title="inductive">IntStatus</span></a>.<br/>
+<span class="id" title="keyword">Proof</span>. <span class="id" title="var">solve_inhabited</span>. <span class="id" title="keyword">Qed</span>.<br/>
 #[<span class="id" title="var">global</span>] <span class="id" title="keyword">Instance</span> <a id="int_status_decision" class="idref" href="#int_status_decision"><span class="id" title="instance">int_status_decision</span></a> : <a class="idref" href="https://plv.mpi-sws.org/coqdoc/stdpp//stdpp.base.html#EqDecision"><span class="id" title="abbreviation">EqDecision</span></a> <a class="idref" href="bedrock.prelude.interrupts.html#IntStatus"><span class="id" title="inductive">IntStatus</span></a>.<br/>
 <span class="id" title="keyword">Proof</span>. <span class="id" title="var">solve_decision</span>. <span class="id" title="keyword">Defined</span>.<br/>
 
@@ -107,6 +113,8 @@
 &nbsp;&nbsp;|}.<br/>
 
 <br/>
+#[<span class="id" title="var">global</span>] <span class="id" title="keyword">Instance</span> <a id="int_config_inh" class="idref" href="#int_config_inh"><span class="id" title="instance">int_config_inh</span></a> : <a class="idref" href="https://plv.mpi-sws.org/coqdoc/stdpp//stdpp.base.html#Inhabited"><span class="id" title="class">Inhabited</span></a> <a class="idref" href="bedrock.prelude.interrupts.html#IntConfig"><span class="id" title="record">IntConfig</span></a>.<br/>
+<span class="id" title="keyword">Proof</span>. <span class="id" title="var">solve_inhabited</span>. <span class="id" title="keyword">Qed</span>.<br/>
 #[<span class="id" title="var">global</span>] <span class="id" title="keyword">Instance</span> <a id="int_cfg_decision" class="idref" href="#int_cfg_decision"><span class="id" title="instance">int_cfg_decision</span></a> : <a class="idref" href="https://plv.mpi-sws.org/coqdoc/stdpp//stdpp.base.html#EqDecision"><span class="id" title="abbreviation">EqDecision</span></a> <a class="idref" href="bedrock.prelude.interrupts.html#IntConfig"><span class="id" title="record">IntConfig</span></a>.<br/>
 <span class="id" title="keyword">Proof</span>. <span class="id" title="var">solve_decision</span>. <span class="id" title="keyword">Defined</span>.<br/>
 
@@ -118,6 +126,7 @@
 </div>
 <div class="code">
 <span class="id" title="keyword">Class</span> <a id="IntLines" class="idref" href="#IntLines"><span class="id" title="record">IntLines</span></a> (<a id="T:13" class="idref" href="#T:13"><span class="id" title="binder">T</span></a> : <span class="id" title="keyword">Type</span>) := <a id="intline_of" class="idref" href="#intline_of"><span class="id" title="projection">intline_of</span></a> : <a class="idref" href="bedrock.prelude.interrupts.html#T:13"><span class="id" title="variable">T</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.15.1/stdlib//Coq.Init.Logic.html#::type_scope:x_'-&gt;'_x"><span class="id" title="notation">-&gt;</span></a> <a class="idref" href="bedrock.prelude.hw_types.html#types.int_line"><span class="id" title="abbreviation">int_line</span></a>.<br/>
+#[<span class="id" title="var">global</span>] <span class="id" title="keyword">Hint</span> <span class="id" title="var">Mode</span> <a class="idref" href="bedrock.prelude.interrupts.html#IntLines"><span class="id" title="class">IntLines</span></a> + : <span class="id" title="var">typeclass_instances</span>.<br/>
 
 <br/>
 </div>
@@ -136,6 +145,12 @@
 &nbsp;&nbsp;&nbsp;*&nbsp;<span class="inlinecode"><span class="id" title="var">LevelSig</span></span> <span class="inlinecode"><span class="id" title="var">true</span>,</span> <span class="inlinecode"><span class="id" title="var">LevelSig</span></span> <span class="inlinecode"><span class="id" title="var">false</span></span>&nbsp;because&nbsp;arbitrary&nbsp;scheduling&nbsp;can&nbsp;occur&nbsp;between<br/>
 &nbsp;&nbsp;&nbsp;*&nbsp;two&nbsp;events,&nbsp;so&nbsp;the&nbsp;<span class="inlinecode"><span class="id" title="var">LevelSig</span></span> <span class="inlinecode"><span class="id" title="var">true</span></span>&nbsp;might&nbsp;hide&nbsp;other&nbsp;interrupts.<br/>
 &nbsp;&nbsp;&nbsp;*)</span><br/>
+
+<br/>
+#[<span class="id" title="var">global</span>] <span class="id" title="keyword">Instance</span> <a id="InterruptSignal_inh" class="idref" href="#InterruptSignal_inh"><span class="id" title="instance">InterruptSignal_inh</span></a> : <a class="idref" href="https://plv.mpi-sws.org/coqdoc/stdpp//stdpp.base.html#Inhabited"><span class="id" title="class">Inhabited</span></a> <a class="idref" href="bedrock.prelude.interrupts.html#InterruptSignal"><span class="id" title="inductive">InterruptSignal</span></a>.<br/>
+<span class="id" title="keyword">Proof</span>. <span class="id" title="var">solve_inhabited</span>. <span class="id" title="keyword">Qed</span>.<br/>
+#[<span class="id" title="var">global</span>] <span class="id" title="keyword">Instance</span> <a id="InterruptSignal_eqdec" class="idref" href="#InterruptSignal_eqdec"><span class="id" title="instance">InterruptSignal_eqdec</span></a> : <a class="idref" href="https://plv.mpi-sws.org/coqdoc/stdpp//stdpp.base.html#EqDecision"><span class="id" title="abbreviation">EqDecision</span></a> <a class="idref" href="bedrock.prelude.interrupts.html#InterruptSignal"><span class="id" title="inductive">InterruptSignal</span></a>.<br/>
+<span class="id" title="keyword">Proof</span>. <span class="id" title="var">solve_decision</span>. <span class="id" title="keyword">Defined</span>.<br/>
 
 <br/>
 <span class="id" title="keyword">Definition</span> <a id="int_types_match" class="idref" href="#int_types_match"><span class="id" title="definition">int_types_match</span></a> (<a id="sig:18" class="idref" href="#sig:18"><span class="id" title="binder">sig</span></a> : <a class="idref" href="bedrock.prelude.interrupts.html#InterruptSignal"><span class="id" title="inductive">InterruptSignal</span></a>) (<a id="ty:19" class="idref" href="#ty:19"><span class="id" title="binder">ty</span></a> : <a class="idref" href="bedrock.prelude.interrupts.html#IntConfig"><span class="id" title="record">IntConfig</span></a>) : <span class="id" title="keyword">Prop</span> :=<br/>
@@ -178,6 +193,12 @@
 { <a id="line" class="idref" href="#line"><span class="id" title="projection">line</span></a> : <a class="idref" href="bedrock.prelude.hw_types.html#types.int_line"><span class="id" title="abbreviation">int_line</span></a><br/>
 ; <a id="to" class="idref" href="#to"><span class="id" title="projection">to</span></a> : <a class="idref" href="bedrock.prelude.interrupts.html#InterruptSignal"><span class="id" title="inductive">InterruptSignal</span></a><br/>
 }.<br/>
+
+<br/>
+#[<span class="id" title="var">global</span>] <span class="id" title="keyword">Instance</span> <a id="IntAction_inh" class="idref" href="#IntAction_inh"><span class="id" title="instance">IntAction_inh</span></a> : <a class="idref" href="https://plv.mpi-sws.org/coqdoc/stdpp//stdpp.base.html#Inhabited"><span class="id" title="class">Inhabited</span></a> <a class="idref" href="bedrock.prelude.interrupts.html#IntAction"><span class="id" title="record">IntAction</span></a>.<br/>
+<span class="id" title="keyword">Proof</span>. <span class="id" title="var">solve_inhabited</span>. <span class="id" title="keyword">Defined</span>.<br/>
+#[<span class="id" title="var">global</span>] <span class="id" title="keyword">Instance</span> <a id="IntAction_eqdec" class="idref" href="#IntAction_eqdec"><span class="id" title="instance">IntAction_eqdec</span></a> : <a class="idref" href="https://plv.mpi-sws.org/coqdoc/stdpp//stdpp.base.html#EqDecision"><span class="id" title="abbreviation">EqDecision</span></a> <a class="idref" href="bedrock.prelude.interrupts.html#IntAction"><span class="id" title="record">IntAction</span></a>.<br/>
+<span class="id" title="keyword">Proof</span>. <span class="id" title="var">solve_decision</span>. <span class="id" title="keyword">Defined</span>.<br/>
 </div>
 <!--
 -- Copyright (c) 2020 BedRock Systems, Inc.
