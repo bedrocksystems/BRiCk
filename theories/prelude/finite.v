@@ -34,6 +34,20 @@ Section fin_fun_eqdec.
   is proof-irrelevant. *)
   #[local] Instance fin_fun_eq_pi f g : ProofIrrel (f = g).
   Proof. apply _. Abort.
+
+  (* Examples using proof irrelevance for functions with finite domains. *)
+  #[local] Lemma fin_fun_decide_True_pi f g (E : f = g) :
+    decide (f = g) = left E.
+  Proof. apply decide_True_pi. Abort.
+
+  #[local] Lemma fin_fun_eq_refl f :
+    decide (f = f) = left eq_refl.
+  Proof. apply decide_True_pi. Abort.
+
+  Import EqNotations.
+  #[local] Lemma fin_fun_eq_refl_transport f g (E : f = g) :
+    rew [λ f', {f' = g} + {f' ≠ g}] E in decide (f = g) = left eq_refl.
+  Proof. rewrite decide_True_pi. by destruct E. Abort.
 End fin_fun_eqdec.
 
 (** Rewriting-oriented variant of [elem_of_enum]; inspired by [elem_of_top]. *)
