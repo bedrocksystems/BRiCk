@@ -50,6 +50,7 @@ theories/prelude/gmap.v
 theories/prelude/list.v
 theories/prelude/list_numbers.v
 
+theories/prelude/axioms/funext.v
 theories/prelude/bool.v
 theories/prelude/fin_maps.v
 theories/prelude/fin_sets.v
