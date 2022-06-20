@@ -1208,11 +1208,10 @@ Module VALID_PTR : VALID_PTR_AXIOMS PTRS_IMPL VALUES_DEFS_IMPL L L.
       class_derives _ derived base ->
       type_ptr (Tnamed derived) p ⊢ type_ptr (Tnamed base) (p ,, _base derived base).
 
-    Axiom type_ptr_o_field : forall p fld cls fieldT (st : Struct),
-      (* σ ⊨ tu → *)
+    Axiom type_ptr_o_field_type_ptr : forall p fld cls (st : Struct),
       glob_def σ cls = Some (Gstruct st) ->
       fld ∈ s_fields st →
-      type_ptr (Tnamed cls) p ⊢ type_ptr (Tnamed fieldT) (p .,
+      type_ptr (Tnamed cls) p ⊢ type_ptr fld.(mem_type) (p .,
         {| f_name := fld.(mem_name) ; f_type := cls |}).
   End with_cpp.
 End VALID_PTR.
