@@ -65,6 +65,7 @@ stages:
   - pages
   - prepare_env_for_downstream
   - build_proofs_downstream
+  - dune-build
 
 #This is a template job that's extended below by the real jobs
 # build_{latest,llvm10,public} (see, e.g., https://docs.gitlab.com/ee/ci/yaml/#extends).
@@ -340,3 +341,36 @@ pages:
       - public
   tags:
     - fm.shared
+
+.setup-dunecache:
+  stage: dune-build
+  before_script:
+    # Create Directory structure for dune
+    - mkdir -p /tmp/build-dir/fmdeps/ ~/.cache/ && cp -ra $CI_PROJECT_DIR /tmp/build-dir/fmdeps/cpp2v-core
+    - rsync -raz ${DUNE_USER}@${FM_CACHE_SERVER}:${RSYNC_CACHE_PATH}/dune_cache/ ~/.cache/
+    - ls ~/.cache/dune
+    - mkdir -p ~/.config/dune/ ; cp $CI_PROJECT_DIR/dune_config ~/.config/dune/config
+
+.postupdate-dunecache:
+  after_script:
+    - rsync -raz ~/.cache/dune ${DUNE_USER}@${FM_CACHE_SERVER}:${RSYNC_CACHE_PATH}/dune_cache
+    - ssh ${DUNE_USER}@${FM_CACHE_SERVER} bash -c "'echo `date  +%Y%m%d%H%M%S` - $CI_PROJECT_NAME - $CI_JOB_NAME - $CI_JOB_ID >> ${RSYNC_CACHE_PATH}/test_rsync_fm1.txt'"
+
+dune-build:
+  extends:
+    - .setup-dunecache
+    - .postupdate-dunecache
+  needs: []
+  stage: dune-build
+  image: ${docker_img_prefix}:coq815-llvm13-usermod
+  variables:
+    CPP2V_CORE: cpp2v-core
+  script:
+    - cd /tmp/build-dir/
+    - cp fmdeps/${CPP2V_CORE}/dune-project.template dune-project
+    - ln -sf fmdeps/${CPP2V_CORE}/coq-cpp2v-bin.opam coq-cpp2v-bin.opam
+    - dune build
+  tags:
+    - ${DUNE_TAG}
+  rules:
+    - if: $CI_MERGE_REQUEST_IID
