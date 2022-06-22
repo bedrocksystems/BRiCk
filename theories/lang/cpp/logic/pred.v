@@ -437,6 +437,8 @@ Module Type VALID_PTR_AXIOMS
   (Import CC : CPP_LOGIC_CLASS)
   (Import CPP : CPP_LOGIC P INTF CC).
 
+  Implicit Types (p : ptr).
+
   Section with_cpp.
     Context `{cpp_logic} {σ : genv}.
 
