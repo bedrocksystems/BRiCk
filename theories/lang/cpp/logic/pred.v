@@ -437,6 +437,8 @@ Module Type VALID_PTR_AXIOMS
   (Import CC : CPP_LOGIC_CLASS)
   (Import CPP : CPP_LOGIC P INTF CC).
 
+  Implicit Types (p : ptr).
+
   Section with_cpp.
     Context `{cpp_logic} {σ : genv}.
 
@@ -826,6 +828,24 @@ Section with_cpp.
       by rewrite offset_ptr_sub_0.
     - rewrite strict_valid_ptr_field_sub; last by lia.
       case: vt => //. by rewrite strict_valid_valid.
+  Qed.
+
+  Lemma o_derived_base_type p base derived ty :
+    type_ptr ty (p ,, o_derived σ base derived) |--
+    [| p ,, o_derived σ base derived ,, o_base σ derived base = p |].
+  Proof. rewrite type_ptr_strict_valid. apply (o_derived_base p). Qed.
+
+  (** [_inv] because unlike [type_ptr_o_base] [type_ptr_o_field_type_ptr],
+  this lemma goes to smaller pointers.
+  *)
+  Lemma type_ptr_o_derived_inv derived base p :
+    class_derives _ derived base ->
+    type_ptr (Tnamed derived) (p ,, _derived base derived) |--
+    type_ptr (Tnamed base) p.
+  Proof.
+    iIntros (Hcd) "T".
+    iDestruct (o_derived_base_type with "T") as %Hp.
+    by rewrite (type_ptr_o_base _ _ _ Hcd) Hp.
   Qed.
 
   (** [p] is a valid pointer value in the sense of the standard, or
