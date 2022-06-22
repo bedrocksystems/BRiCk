@@ -35,6 +35,18 @@ Lemma elem_of_filter_enum `{Finite A} `{∀ x, Decision (P x)} (a : A) :
   a ∈ filter P (enum A) ↔ P a.
 Proof. set_solver. Qed.
 
+(* stdlib adapters *)
+
+Section finite_stdlib.
+  Context `{Finite A}.
+
+  Lemma ListNoDup_enum : List.NoDup (enum A).
+  Proof. apply NoDup_ListNoDup, NoDup_enum. Qed.
+
+  Lemma list_In_enum x : In x (enum A).
+  Proof. apply elem_of_list_In, elem_of_enum. Qed.
+End finite_stdlib.
+
 Section finite_preimage.
   Context `{Finite A} `{EqDecision B}.
   Implicit Types (a : A) (b : B) (f : A → B).

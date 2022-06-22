@@ -68,8 +68,11 @@ Module fin.
     | Npos max => fin.of_N max <$> seqN 0 (Npos max)
     end.
 
-  Lemma seq_len n : lengthN (seq n) = n.
+  Lemma seq_lenN n : lengthN (seq n) = n.
   Proof. case: n => [//| p]. by rewrite fmap_lengthN seqN_lengthN. Qed.
+
+  Lemma seq_len n : length (seq n) = N.to_nat n.
+  Proof. by rewrite length_lengthN seq_lenN. Qed.
 
   Lemma seq_NoDup n : NoDup (seq n).
   Proof.
