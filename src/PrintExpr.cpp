@@ -445,6 +445,26 @@ public:
             // note: the Clang AST records a "FunctionalCastExpr" with a constructor
             // but the child node of this is the constructor!
             cprint.printExpr(expr->getSubExpr(), print);
+        } else if (expr->getCastKind() == CastKind::CK_BaseToDerived or
+                   expr->getCastKind() == CastKind::CK_DerivedToBase or
+                   expr->getCastKind() == CastKind::CK_UncheckedDerivedToBase) {
+            print.ctor("Ecast");
+            print.ctor(expr->getCastKind() == CastKind::CK_BaseToDerived ?
+                           "Cbase2derived" :
+                           "Cderived2base");
+            // note that [path] does *not* include the type of the argument
+            print.list(expr->path(), [&](auto print, auto i) {
+                if (const Type* t = i->getType().getTypePtrOrNull()) {
+                    cprint.printTypeName(t->getAsRecordDecl(), print);
+                } else {
+                    assert(false && "no type");
+                }
+            });
+            print.end_ctor() << fmt::nbsp;
+            cprint.printValCat(expr->getSubExpr(), print);
+            print.output() << fmt::nbsp;
+            cprint.printExpr(expr->getSubExpr(), print);
+            done(expr, print, cprint);
         } else if (auto cf = expr->getConversionFunction()) {
             // desugar user casts to function calls
             auto vd = dyn_cast<ValueDecl>(cf);

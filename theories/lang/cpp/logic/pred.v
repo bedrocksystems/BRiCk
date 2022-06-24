@@ -199,8 +199,8 @@ Module Type CPP_LOGIC
         using the *path* [mdc].
         - if [mdc = []] then this object identity is not initialized yet,
           e.g. because its base classes are still being constructed.
-        - otherwise, [mdc] is the *path* from this object to the most derived
-          class. For example, suppose you have:
+        - otherwise, [mdc] is the *path* from the most derived class to this
+          object. For example, suppose you have:
           ```c++
           struct A { virtual int f() { return 0; } };
           struct B : public A { virtual int f() { return 1; } };

@@ -106,8 +106,22 @@ Variant Cast : Set :=
 | Cint2pointer
 | Cpointer2int
 | Cptr2bool
-| Cderived2base
-| Cbase2derived
+  (* in [Cderived2base] and [Cbase2derived], the list is a tree
+     from (top..bottom], i.e. **in both cases** the most derived
+     class is not included in the list and the base class is at
+     the end of the list. For example, with
+     ```c++
+     class A {};
+     class B : public A {};
+     class C : public B {};
+     ```
+     A cast from `C` to `A` will be [Cderived2base ["::B";"::A"]] and
+       the "::C" comes from the type of the sub-expression.
+     A cast from `A` to `C` will be [Cbase2derived ["::B";"::A"]] and
+       the "::C" comes form the type of the expression.
+   *)
+| Cderived2base (_ : list globname)
+| Cbase2derived (_ : list globname)
 | Cintegral
 | Cint2bool
 | Cfloat2int

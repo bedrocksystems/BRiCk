@@ -33,9 +33,7 @@ Section with_cpp.
     Kat_exit (interp free).
 
   (** * Aggregate identity *)
-  (** [all_identities' f path cls] is all of the identities of [cls]
-      with path ([path]) to the most derived class.
-   *)
+  (* Part of [all_identities path cls], but indexed by fuel [f]. *)
   #[local]
   Fixpoint all_identities' (f : nat) (include_base : bool) (path : list globname) (cls : globname) : Rep :=
     match f with
