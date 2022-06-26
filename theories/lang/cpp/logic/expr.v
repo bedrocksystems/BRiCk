@@ -1200,10 +1200,6 @@ Module Type Expr.
        2. `{.y = 7, .x = 2}` is elaborated into `{2, 7}`
      *)
     Axiom wp_init_initlist_agg : forall cls (base : ptr) es t Q,
-        let cont :=
-          base |-> struct_paddingR 1 cls ** base |-> identityR cls (Some cls) 1 -*
-            Q (FreeTemps.delete (Tnamed cls) base) FreeTemps.id
-        in
         match resolve.(genv_tu).(globals) !! cls with
         | Some (Gstruct s) =>
             (* these constraints are enforced by clang, see note above *)
