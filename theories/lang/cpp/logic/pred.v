@@ -835,9 +835,9 @@ Section with_cpp.
     [| p ,, o_derived σ base derived ,, o_base σ derived base = p |].
   Proof. rewrite type_ptr_strict_valid. apply (o_derived_base p). Qed.
 
-  (** [_inv] because unlike [type_ptr_o_base] [type_ptr_o_field_type_ptr],
-  this lemma goes to smaller pointers.
-  *)
+  (** [_inv] because unlike [type_ptr_o_base] and [type_ptr_o_field_type_ptr],
+  this lemma fits the [type_ptr _ (p ,, o) ⊢ type_ptr _ p] schema instead of the
+  converse. *)
   Lemma type_ptr_o_derived_inv derived base p :
     class_derives _ derived base ->
     type_ptr (Tnamed derived) (p ,, _derived base derived) |--
