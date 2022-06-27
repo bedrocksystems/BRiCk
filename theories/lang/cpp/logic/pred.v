@@ -195,9 +195,44 @@ Module Type CPP_LOGIC
       @tptsto σ ty q p v |-- live_ptr p ** True.
 
     (** [identity σ this mdc q p] state that [p] is a pointer to a (live)
-        object of type [this] that is part of an object of type [mdc].
-        - if [mdc = None] then this object identity is not initialized yet,
+        object of type [this] that is part of an object that can be reached
+        using the *path* [mdc].
+        - if [mdc = []] then this object identity is not initialized yet,
           e.g. because its base classes are still being constructed.
+        - otherwise, [mdc] is the *path* from this object to the most derived
+          class. For example, suppose you have:
+          ```c++
+          struct A { virtual int f() { return 0; } };
+          struct B : public A { virtual int f() { return 1; } };
+          struct C : public A { };
+          struct D : public B, public C {};
+
+          int doB(B* b) { return b->f(); }
+          int doC(C* c) { return c->f(); }
+          int test() {
+              D d;
+              return doB(&d) /* = 1 */
+                   + doC(&d) /* = 0 */;
+          }
+          ```
+          for a fully constructed object of type `D` (at pointer [d]), you would
+          have:
+          [[
+          identity "::D" ["::D"]           1  d **
+          identity "::B" ["::D","::B"]      1 (d ., _base "::B") **
+          identity "::A" ["::D","::B","::A"] 1 (d ,, _base "::B" ,, _base "::A") **
+          identity "::C" ["::D","::C"]      1 (d ,, _base "::C") **
+          idenitty "::A" ["::D","::C","::A"] 1 (d ,, _base "::C" ,, _base "::A")
+          ]]
+          in the partially constructed state, where "::C" has not yet been constructed
+          but the base classes have been, you have the following:
+          [[
+          identity "::D" []          1  d **
+          identity "::B" ["::B"]      1 (d ., _base "::B") **
+          identity "::A" ["::B","::A"] 1 (d ,, _base "::B" ,, _base "::A") **
+          identity "::C" ["::C"]      1 (d ,, _base "::C") **
+          idenitty "::A" ["::C","::A"] 1 (d ,, _base "::C" ,, _base "::A")
+          ]]
 
         the information is primarily used to dispatch virtual function calls.
 
@@ -205,7 +240,7 @@ Module Type CPP_LOGIC
         tables.
      *)
     Parameter identity : forall {σ : genv}
-        (this : globname) (most_derived : option globname),
+        (this : globname) (most_derived : list globname),
         Qp -> ptr -> mpred.
     Axiom identity_fractional : forall σ this mdc p, Fractional (λ q, identity this mdc q p).
     Axiom identity_timeless : forall σ this mdc q p, Timeless (identity this mdc q p).
@@ -217,7 +252,7 @@ Module Type CPP_LOGIC
         placement [new] over an existing object.
      *)
     Axiom identity_forget : forall σ mdc this p,
-        @identity σ this (Some mdc) 1 p |-- |={↑pred_ns}=> @identity σ this None 1 p.
+        @identity σ this mdc 1 p |-- |={↑pred_ns}=> @identity σ this nil 1 p.
 
     (** the pointer points to the code
 
@@ -512,7 +547,7 @@ Module Type VALID_PTR_AXIOMS
       _valid_ptr vt (p ,, o_sub σ ty i) |-- [| is_Some (size_of σ ty) |].
 
     Axiom type_ptr_o_base : forall derived base p,
-      class_derives _ derived base ->
+      class_derives derived [base] ->
       type_ptr (Tnamed derived) p ⊢ type_ptr (Tnamed base) (p ,, _base derived base).
 
     Axiom type_ptr_o_field_type_ptr : forall p fld cls (st : Struct),
@@ -848,7 +883,7 @@ Section with_cpp.
   this lemma fits the [type_ptr _ (p ,, o) ⊢ type_ptr _ p] schema instead of the
   converse. *)
   Lemma type_ptr_o_derived_inv derived base p :
-    class_derives _ derived base ->
+    class_derives derived [base] ->
     type_ptr (Tnamed derived) (p ,, _derived base derived) |--
     type_ptr (Tnamed base) p.
   Proof.

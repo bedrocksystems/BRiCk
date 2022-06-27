@@ -899,7 +899,7 @@ Module SimpleCPP.
 
     (* todo(gmm): this isn't accurate, but it is sufficient to show that the axioms are
     instantiatable. *)
-    Definition identity {σ : genv} (this : globname) (most_derived : option globname)
+    Definition identity {σ : genv} (this : globname) (most_derived : list globname)
                (q : Qp) (p : ptr) : mpred := True.
 
     Instance identity_fractional σ this mdc p : Fractional (λ q, identity this mdc q p).
@@ -911,7 +911,7 @@ Module SimpleCPP.
         placement [new] over an existing object.
      *)
     Theorem identity_forget : forall σ mdc this p,
-        @identity σ this (Some mdc) 1 p |-- |={↑pred_ns}=> @identity σ this None 1 p.
+        @identity σ this mdc 1 p |-- |={↑pred_ns}=> @identity σ this nil 1 p.
     Proof. rewrite /identity. eauto. Qed.
 
     Definition tptsto' {σ : genv} (t : type) (q : Qp) (p : ptr) (v : val) : mpred :=
@@ -1199,7 +1199,7 @@ Module VALID_PTR : VALID_PTR_AXIOMS PTRS_IMPL VALUES_DEFS_IMPL L L.
       _valid_ptr vt (p ,, o_sub σ ty i) |-- [| is_Some (size_of σ ty) |].
 
     Axiom type_ptr_o_base : forall derived base p,
-      class_derives _ derived base ->
+      class_derives derived [base] ->
       type_ptr (Tnamed derived) p ⊢ type_ptr (Tnamed base) (p ,, _base derived base).
 
     Axiom type_ptr_o_field_type_ptr : forall p fld cls (st : Struct),

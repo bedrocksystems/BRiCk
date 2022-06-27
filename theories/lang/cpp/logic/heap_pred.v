@@ -24,7 +24,7 @@ Section defs.
   Context `{Σ : cpp_logic}.
 
   (** object identity *)
-  Definition identityR {σ : genv} (cls : globname) (mdc : option globname)
+  Definition identityR {σ : genv} (cls : globname) (mdc : list globname)
              (q : Qp) : Rep :=
     as_Rep (@identity _ _ σ cls mdc q).
   (** cpp2v-core#194: [Fractional], [AsFractional], [Timeless]? *)
