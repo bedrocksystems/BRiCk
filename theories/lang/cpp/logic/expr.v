@@ -624,27 +624,27 @@ Module Type Expr.
      * TODO [_base] only supports casting up a single level of the
      * heirarchy at a time, so we need to construct a full path.
      *)
-    Axiom wp_lval_cast_derived2base : forall e ty Q,
+    Axiom wp_lval_cast_derived2base : forall e vc ty Q,
       match drop_qualifiers (type_of e), drop_qualifiers ty with
       | Tnamed derived , Tnamed base => (*<-- is this the only case here?*)
           Exists path, [| class_derives derived (path ++ [base]) |] **
-          wp_lval e (fun addr free =>
+          wp_glval vc e (fun addr free =>
             let addr' := addr ,, derived_to_base derived (path ++ [base]) in
             valid_ptr addr' ** Q addr' free)
       | _, _ => False
       end
-      |-- wp_lval (Ecast Cderived2base Lvalue e ty) Q.
+      |-- wp_lval (Ecast Cderived2base vc e ty) Q.
 
-    Axiom wp_xval_cast_derived2base : forall e ty Q,
+    Axiom wp_xval_cast_derived2base : forall e vc ty Q,
       match drop_qualifiers (type_of e), drop_qualifiers ty with
       | Tnamed derived , Tnamed base => (*<-- is this the only case here?*)
           Exists path, [| class_derives derived (path ++ [base]) |] **
-          wp_xval e (fun addr free =>
+          wp_glval vc e (fun addr free =>
             let addr' := addr ,, derived_to_base derived (path ++ [base]) in
             valid_ptr addr' ** Q addr' free)
       | _, _ => False
       end
-      |-- wp_xval (Ecast Cderived2base Xvalue e ty) Q.
+      |-- wp_xval (Ecast Cderived2base vc e ty) Q.
 
     Axiom wp_operand_cast_derived2base : forall e ty Q,
       match drop_qualifiers <$> unptr (type_of e), drop_qualifiers <$> unptr  ty with
@@ -659,27 +659,27 @@ Module Type Expr.
 
     (* [Cbase2derived] casts from a base class to a derived class.
      *)
-    Axiom wp_lval_cast_base2derived : forall e ty Q,
+    Axiom wp_lval_cast_base2derived : forall e vc ty Q,
       match drop_qualifiers (type_of e), drop_qualifiers ty with
       | Tnamed derived , Tnamed base => (*<-- is this the only case here?*)
           Exists path, [| class_derives derived (path ++ [base]) |] **
-          wp_lval e (fun addr free =>
+          wp_glval vc e (fun addr free =>
             let addr' := addr ,, base_to_derived base (rev path ++ [derived]) in
             valid_ptr addr' ** Q addr' free)
       | _, _ => False
       end
-      |-- wp_lval (Ecast Cbase2derived Lvalue e ty) Q.
+      |-- wp_lval (Ecast Cbase2derived vc e ty) Q.
 
-    Axiom wp_xval_cast_base2derived : forall e ty Q,
+    Axiom wp_xval_cast_base2derived : forall e vc ty Q,
       match drop_qualifiers (type_of e), drop_qualifiers ty with
       | Tnamed derived , Tnamed base => (*<-- is this the only case here?*)
           Exists path, [| class_derives derived (path ++ [base]) |] **
-          wp_xval e (fun addr free =>
+          wp_glval vc e (fun addr free =>
             let addr' := addr ,, base_to_derived base (rev path ++ [derived]) in
             valid_ptr addr' ** Q addr' free)
       | _, _ => False
       end
-      |-- wp_xval (Ecast Cbase2derived Xvalue e ty) Q.
+      |-- wp_xval (Ecast Cbase2derived vc e ty) Q.
 
     Axiom wp_operand_cast_base2derived : forall e ty Q,
         match drop_qualifiers <$> unptr (type_of e), drop_qualifiers <$> unptr ty with
