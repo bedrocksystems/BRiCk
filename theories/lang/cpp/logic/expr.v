@@ -467,12 +467,12 @@ Module Type Expr.
                       end)
         |-- wp_operand (Ecast Cptr2bool Prvalue e ty) Q.
 
-    (* [Cfunction2pointer] is a cast from a function to a pointer.
-     *
-     * note that C and C++ classify function names differently, so we
-     * end up with two cases
-     * - in C, function names are Rvalues, and
-     * - in C++, function names are Lvalues
+    (** [Cfunction2pointer] is a cast from a function to a pointer.
+
+       note that C and C++ classify function names differently, so we
+       end up with two cases
+       - in C, function names are Rvalues, and
+       - in C++, function names are Lvalues
      *)
     Axiom wp_operand_cast_function2pointer_c : forall ty ty' g Q,
         wp_lval (Evar (Gname g) ty') (fun v => Q (Vptr v))
