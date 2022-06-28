@@ -7,6 +7,7 @@
 
 From stdpp Require Export finite.
 From bedrock.prelude Require Import base bool numbers list_numbers gmap list fin_sets.
+From bedrock.prelude.axioms Require Import funext.
 
 #[local] Open Scope N_scope.
 
@@ -16,6 +17,38 @@ Extensions of [stdpp.finite], especially for variants:
 From the [Finite] typeclass, like from Haskell's [Enum], one can generate
 conversion to and from [N], both for individual elements and bitsets of them.
 *)
+
+Section fin_fun_eqdec.
+  Context `{Finite A} `{EqDecision B}.
+  Implicit Types (f g : A -> B).
+
+  #[global, refine] Instance fin_fun_eqdec : EqDecision (A -> B) := fun r1 r2 =>
+    cast_if (decide (∀ n, r1 n = r2 n)).
+  Proof using Type*.
+    abstract by funext.
+    abstract by intros ?; subst.
+  Defined.
+
+  (* Thanks to [Hedberg]'s theorem ([stdpp.proof_irrel.eq_pi]) and its corollary
+  [stdpp.decidable.decide_True_pi], the above use of [functional_extensionality]
+  is proof-irrelevant. *)
+  #[local] Instance fin_fun_eq_pi f g : ProofIrrel (f = g).
+  Proof. apply _. Abort.
+
+  (* Examples using proof irrelevance for functions with finite domains. *)
+  #[local] Lemma fin_fun_decide_True_pi f g (E : f = g) :
+    decide (f = g) = left E.
+  Proof. apply decide_True_pi. Abort.
+
+  #[local] Lemma fin_fun_eq_refl f :
+    decide (f = f) = left eq_refl.
+  Proof. apply decide_True_pi. Abort.
+
+  Import EqNotations.
+  #[local] Lemma fin_fun_eq_refl_transport f g (E : f = g) :
+    rew [λ f', {f' = g} + {f' ≠ g}] E in decide (f = g) = left eq_refl.
+  Proof. rewrite decide_True_pi. by destruct E. Abort.
+End fin_fun_eqdec.
 
 (** Rewriting-oriented variant of [elem_of_enum]; inspired by [elem_of_top]. *)
 Lemma elem_of_enum' `{Finite A} (x : A) :
