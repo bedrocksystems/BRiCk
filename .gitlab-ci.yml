@@ -347,7 +347,7 @@ pages:
   before_script:
     # Create Directory structure for dune
     - mkdir -p /tmp/build-dir/fmdeps/ ~/.cache/ && cp -ra $CI_PROJECT_DIR /tmp/build-dir/fmdeps/cpp2v-core
-    - rsync -raz ${DUNE_USER}@${FM_CACHE_SERVER}:${RSYNC_CACHE_PATH}/dune_cache/ ~/.cache/
+    - time rsync -raz ${DUNE_USER}@${FM_CACHE_SERVER}:${RSYNC_CACHE_PATH}/dune_cache/ ~/.cache/
     - ls ~/.cache/dune
     - mkdir -p ~/.config/dune/ ; cp $CI_PROJECT_DIR/dune_config ~/.config/dune/config
 
