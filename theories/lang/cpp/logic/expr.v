@@ -616,18 +616,22 @@ Module Type Expr.
         end
         |-- wp_operand (Ecast Cint2pointer Prvalue e ty) Q.
 
-    (** [Cderived2base] casts from a derived class to a base
-     * class. Casting is only permitted on pointers and references
-     * - references occur with lvalues and xvalues
-     * - pointers occur with prvalues
-     *
-     * TODO [_base] only supports casting up a single level of the
-     * heirarchy at a time, so we need to construct a full path.
+    (** * [Cderived2base]
+        casts from a derived class to a base class. Casting is only permitted
+        on pointers and references
+        - references occur with lvalues and xvalues
+        - pointers occur with prvalues
+
+        NOTE these casts require a side-condition that the [path] is valid
+             in the program. We express this using the [valid_ptr] side
+             condition, i.e. [valid_ptr addr] requires that [addr] only
+             has valid paths.
+             It would technically be a little nicer if this side condition
+             was checked at "compile" time rather than at runtime.
      *)
     Axiom wp_lval_cast_derived2base : forall e vc ty path Q,
       match drop_qualifiers (type_of e), drop_qualifiers ty with
-      | Tnamed derived , Tnamed base => (*<-- is this the only case here?*)
-          [| class_derives derived path |] **
+      | Tnamed derived , Tnamed base =>
           wp_glval vc e (fun addr free =>
             let addr' := addr ,, derived_to_base derived path in
             valid_ptr addr' ** Q addr' free)
@@ -637,19 +641,17 @@ Module Type Expr.
 
     Axiom wp_xval_cast_derived2base : forall e vc ty path Q,
       match drop_qualifiers (type_of e), drop_qualifiers ty with
-      | Tnamed derived , Tnamed base => (*<-- is this the only case here?*)
-          [| class_derives derived path |] **
+      | Tnamed derived , Tnamed base =>
           wp_glval vc e (fun addr free =>
             let addr' := addr ,, derived_to_base derived path in
             valid_ptr addr' ** Q addr' free)
       | _, _ => False
       end
-      |-- wp_xval (Ecast (Cderived2base path) Xvalue e ty) Q.
+      |-- wp_xval (Ecast (Cderived2base path) vc e ty) Q.
 
     Axiom wp_operand_cast_derived2base : forall e ty path Q,
       match drop_qualifiers <$> unptr (type_of e), drop_qualifiers <$> unptr  ty with
       | Some (Tnamed derived) , Some (Tnamed base) =>
-          [| class_derives derived path |] **
           wp_operand e (fun addr free =>
             let addr' := _eqv addr ,, derived_to_base derived path in
             valid_ptr addr' ** Q (Vptr addr') free)
@@ -661,10 +663,9 @@ Module Type Expr.
      *)
     Axiom wp_lval_cast_base2derived : forall e vc ty path Q,
       match drop_qualifiers (type_of e), drop_qualifiers ty with
-      | Tnamed derived , Tnamed base => (*<-- is this the only case here?*)
-          [| class_derives derived (tl $ rev path) |] **
+      | Tnamed base , Tnamed derived =>
           wp_glval vc e (fun addr free =>
-            let addr' := addr ,, base_to_derived base path in
+            let addr' := addr ,, base_to_derived derived path in
             valid_ptr addr' ** Q addr' free)
       | _, _ => False
       end
@@ -672,10 +673,9 @@ Module Type Expr.
 
     Axiom wp_xval_cast_base2derived : forall e vc ty path Q,
       match drop_qualifiers (type_of e), drop_qualifiers ty with
-      | Tnamed derived , Tnamed base => (*<-- is this the only case here?*)
-          [| class_derives derived (tl $ rev path) |] **
+      | Tnamed base , Tnamed derived =>
           wp_glval vc e (fun addr free =>
-            let addr' := addr ,, base_to_derived base path in
+            let addr' := addr ,, base_to_derived derived path in
             valid_ptr addr' ** Q addr' free)
       | _, _ => False
       end
@@ -684,9 +684,8 @@ Module Type Expr.
     Axiom wp_operand_cast_base2derived : forall e ty path Q,
          match drop_qualifiers <$> unptr (type_of e), drop_qualifiers <$> unptr ty with
          | Some (Tnamed base), Some (Tnamed derived) =>
-          [| class_derives derived (tl $ rev path) |] **
           wp_operand e (fun addr free =>
-            let addr' := _eqv addr ,, derived_to_base derived path in
+            let addr' := _eqv addr ,, base_to_derived derived path in
             valid_ptr addr' ** Q (Vptr addr') free)
          | _, _ => False
         end

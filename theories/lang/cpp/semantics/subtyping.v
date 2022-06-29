@@ -19,8 +19,8 @@ Section extends.
   Context (σ : genv).
 
   (** [class_derives σ derived path]
-      - [derived] is the most derived class name
-      - [path] is the path from the most-derived class (head of the list)
+      - [derived] is the derived class name
+      - [path] is the path from the derived class (head of the list)
         to the base class (end of the list)
       An example,
       ```c++
@@ -47,12 +47,24 @@ Section extends.
   (* this does not currently support `virtual` inheritence. *)
   .
 
+  (** [class_derives] is closed under prefixes. *)
+  #[local]
+  Lemma class_derives_drop path1 path2 : forall derived,
+    class_derives derived (path1 ++ path2) ->
+    class_derives derived path1.
+  Proof.
+    induction path1 => /= ? H.
+    { inversion H; subst; try econstructor; eauto. }
+    { inversion H; subst. econstructor; eauto. }
+  Qed.
+
 End extends.
 
 Arguments Derives_here {_ _} _ _.
 Arguments Derives_base {_ _} _.
 Arguments class_derives {σ} derived path : rename.
 
+(** TODO: REMOVE THIS
 (** The following instances enable TC resolution to prove
 [class_derives σ derived base] when the translation unit [tu] and
 class names [derived], [base] are ground.
@@ -122,3 +134,4 @@ Proof.
     by apply (iffLR (TCEq_eq _ _)).
   - by apply (iffLR (TCElemOf_iff _ _)).
 Defined.
+*)
