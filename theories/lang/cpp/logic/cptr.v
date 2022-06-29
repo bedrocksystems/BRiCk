@@ -149,6 +149,14 @@ Section defs.
 
   (** [mpred] implication on [function_spec].
   Here, [Q] is a lower-level spec, and [P] is a derived/higher-level spec.
+
+    [fs_impl] and [fs_entails] are mostly used to derive
+    properties like properness and non-expansiveness for [cptrR].
+
+    Note that [function_spec] and co ([fs_impl] and [fs_entails])
+    do not package the usually expected properties for
+    weakest-precondition.
+    [cptrR] gets those properties from axioms for [fspec].
    *)
   Definition fs_impl (Q P : function_spec) : mpred :=
     [| type_of_spec P = type_of_spec Q |] ∗
@@ -234,6 +242,15 @@ Section defs.
   Definition cptrR_aux : seal (@cptrR_def). Proof. by eexists. Qed.
   Definition cptrR := cptrR_aux.(unseal).
   Definition cptrR_eq : @cptrR = _ := cptrR_aux.(seal_eq).
+
+  (** A version of [fs_impl] and [fs_entails] with [fupd].
+    These are used in stating strong wp properties for [cptrR],
+    like [cptrR_fs_impl_fupd] and [cptrR_fs_entails_fupd] (see below).
+   *)
+  Definition fs_impl_fupd (Q P : function_spec) : mpred :=
+    [| type_of_spec P = type_of_spec Q |] ∗
+    □ ∀ vs K, P.(fs_spec) vs K -∗ |={top}=> Q.(fs_spec) vs (λ v, |={top}=> K v).
+  Definition fs_entails_fupd (P Q : function_spec) : Prop := |-- fs_impl_fupd P Q.
 End defs.
 
 #[global] Instance: Params (@cptrR) 3 := {}.
@@ -271,6 +288,18 @@ Section with_cpp.
     by iApply "fs_impl".
   Qed.
 
+  Lemma cptrR_fs_impl_fupd f g :
+    pureR (fs_impl_fupd f g) |-- cptrR f -* cptrR g.
+  Proof.
+    rewrite cptrR_eq/cptrR_def /pureR /as_Rep.
+    constructor => p; rewrite Rep_wand_force; iIntros "#(%ty & fs_impl)" => /=.
+    iIntros "(val & #rest)"; iFrame.
+    rewrite ty. iModIntro. iIntros (vs Q) "fs_g".
+    iApply fspec_fupd. iApply fupd_spec.
+    iApply "rest".
+    by iApply "fs_impl".
+  Qed.
+
 (* TODO: Proper wrt [genv_leq]. *)
   #[global] Instance cptrR_ne : NonExpansive cptrR.
   Proof.
@@ -289,6 +318,15 @@ Section with_cpp.
 
   #[global] Instance cptrR_flip_mono : Proper (flip fs_entails ==> flip (⊢)) cptrR.
   Proof. by intros ?? <-. Qed.
+
+  Lemma cptrR_mono_fupd : Proper (fs_entails_fupd ==> (⊢)) cptrR.
+  Proof.
+    intros ??; rewrite /fs_entails_fupd/flip => impl. iApply cptrR_fs_impl_fupd.
+    by rewrite -impl pureR_emp.
+  Qed.
+
+  Lemma cptrR_flip_mono_fupd : Proper (flip fs_entails_fupd ==> flip (⊢)) cptrR.
+  Proof. repeat intro. by rewrite -cptrR_mono_fupd. Qed.
 End with_cpp.
 
 #[global] Instance Persistent_spec `{Σ:cpp_logic ti} {resolve:genv} p s :
