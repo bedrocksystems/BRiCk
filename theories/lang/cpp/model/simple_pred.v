@@ -1166,12 +1166,6 @@ Module VALID_PTR : VALID_PTR_AXIOMS PTRS_IMPL VALUES_DEFS_IMPL L L.
       _valid_ptr vt (p ,, o_field σ f ,, o_sub σ ty i) |-- strict_valid_ptr (p ,, o_field σ f).
 
     (* TODO: can we deduce that [p] is strictly valid? *)
-    Axiom _valid_ptr_base : ∀ p base derived vt,
-      _valid_ptr vt (p ,, o_base σ derived base) |-- _valid_ptr vt p.
-    (* TODO: can we deduce that [p] is strictly valid? *)
-    Axiom _valid_ptr_derived : ∀ p base derived vt,
-      _valid_ptr vt (p ,, o_derived σ base derived) |-- _valid_ptr vt p.
-    (* TODO: can we deduce that [p] is strictly valid? *)
     Axiom _valid_ptr_field : ∀ p f vt,
       _valid_ptr vt (p ,, o_field σ f) |-- _valid_ptr vt p.
     (* TODO: Pointers to fields can't be past-the-end, right?

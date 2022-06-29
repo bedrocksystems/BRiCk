@@ -482,12 +482,6 @@ Module Type VALID_PTR_AXIOMS
       _valid_ptr vt (p ,, o_field σ f ,, o_sub σ ty i) |-- strict_valid_ptr (p ,, o_field σ f).
 
     (* TODO: can we deduce that [p] is strictly valid? *)
-    Axiom _valid_ptr_base : ∀ p base derived vt,
-      _valid_ptr vt (p ,, o_base σ derived base) |-- _valid_ptr vt p.
-    (* TODO: can we deduce that [p] is strictly valid? *)
-    Axiom _valid_ptr_derived : ∀ p base derived vt,
-      _valid_ptr vt (p ,, o_derived σ base derived) |-- _valid_ptr vt p.
-    (* TODO: can we deduce that [p] is strictly valid? *)
     Axiom _valid_ptr_field : ∀ p f vt,
       _valid_ptr vt (p ,, o_field σ f) |-- _valid_ptr vt p.
     (* TODO: Pointers to fields can't be past-the-end, right?
@@ -509,12 +503,6 @@ Module Type VALID_PTR_AXIOMS
     Axiom o_derived_base : forall p base derived,
       strict_valid_ptr (p ,, o_derived σ base derived) |--
       [| p ,, o_derived σ base derived ,, o_base σ derived base = p |].
-
-    (* Without the validity premise to the cancellation axioms
-      ([o_base_derived], [o_derived_base]) we could incorrectly deduce that
-      [valid_ptr p] entails [valid_ptr (p ., o_base derived base ., o_derived
-      base derived)] which entails [valid_ptr (p ., o_base derived base)].
-    *)
 
     (* TODO: maybe add a validity of offsets to allow stating this more generally. *)
     Axiom valid_o_sub_size : forall p ty i vt,

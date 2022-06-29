@@ -475,14 +475,6 @@ Section with_cpp.
   Lemma _field_validR σ f : _offsetR (_field f) validR |-- validR.
   Proof. apply off_validR => p. apply _valid_ptr_field. Qed.
 
-  Lemma _base_validR σ derived base :
-    _offsetR (_base derived base) validR |-- validR.
-  Proof. apply off_validR => p. apply _valid_ptr_base. Qed.
-
-  Lemma _derived_validR σ base derived :
-    _offsetR (_derived base derived) validR |-- validR.
-  Proof. apply off_validR => p. apply _valid_ptr_derived. Qed.
-
   (** Observation of [nonnullR] *)
   #[global]
   Instance primR_nonnull_observe {σ} {ty q v} :
