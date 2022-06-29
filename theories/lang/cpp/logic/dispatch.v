@@ -54,7 +54,7 @@ Section with_cpp.
     : option (ptr * globname * offset) :=
     match dispatch.dispatch σ base path f with
     | None => None
-    | Some (path, cls, fptr) => Some (_global fptr, cls, base_to_derived base path)
+    | Some (cls, path, fptr) => Some (_global fptr, cls, base_to_derived cls path)
     end.
 
   (** [resolve_virtual σ this cls f Q] returns [Q fa this'] if resolving [f] on

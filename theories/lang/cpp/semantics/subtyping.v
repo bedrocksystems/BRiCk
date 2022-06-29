@@ -64,7 +64,6 @@ Arguments Derives_here {_ _} _ _.
 Arguments Derives_base {_ _} _.
 Arguments class_derives {σ} derived path : rename.
 
-(** TODO: REMOVE THIS
 (** The following instances enable TC resolution to prove
 [class_derives σ derived base] when the translation unit [tu] and
 class names [derived], [base] are ground.
@@ -90,29 +89,30 @@ Section tu.
     | _ => false
     end.
 
-(*
   Context {σ : genv} {M : tu ⊧ σ}.
-  Theorem tu_class_derives_sound : forall path,
-      tu_class_derives path -> class_derives σ path.
+  Theorem tu_class_derives_sound : forall path cls,
+      tu_class_derives cls path -> class_derives cls path.
   Proof using M.
     induction path =>///=.
-    case_match.
-    { repeat case_match => //.
+    { intros; case_match.
+      { repeat case_match => //.
+        apply glob_def_genv_compat_struct in Heqo.
+        econstructor. eassumption. }
+      { inversion H. } }
+    { intros; repeat (case_bool_decide || case_match) =>//.
       apply glob_def_genv_compat_struct in Heqo.
-      intro.
-      econstructor. eassumption. }
-    { repeat (case_bool_decide || case_match) =>//.
-      apply glob_def_genv_compat_struct in Heqo.
-      intro.
-      eapply elem_of_list_fmap_2 in H.
-      destruct H as [?[??]].
+      eapply elem_of_list_fmap_2 in H0.
+      destruct H0 as [?[??]].
       destruct x; simpl in H; subst.
       econstructor; try eassumption.
       by apply IHpath. }
   Qed.
-*)
 End tu.
 
+#[global] Hint Extern 0 (class_derives _ _) =>
+  eapply tu_class_derives_sound; [ eassumption | vm_compute; exact I ] : typeclass_instances.
+
+(*
 #[global] Instance class_derives_here tu σ derived st :
   tu ⊧ σ ->
   TCEq (tu !! derived) (Some (Gstruct st)) ->
