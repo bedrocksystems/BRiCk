@@ -571,7 +571,7 @@ Module Type Expr.
       |-- wp_operand (Ecast (Cstatic from to) Prvalue e ty) Q.
 
     (** You can cast anything to void, but an expression of type
-     * [void] can only be a pr_value *)
+        [void] can only be a pr_value *)
     Axiom wp_operand_cast_tovoid : forall vc e Q,
           wp_discard vc e (fun free => Q Vundef free)
       |-- wp_operand (Ecast C2void vc e Tvoid) Q.
