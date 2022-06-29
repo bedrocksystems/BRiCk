@@ -197,6 +197,17 @@ Notation wpspec_entails := (wpspec_relation bi_entails) (only parsing).
 Notation wpspec_dist n := (wpspec_relation (dist n)) (only parsing).
 Notation wpspec_equiv := (wpspec_relation equiv) (only parsing).
 
+Definition wpspec_relation_fupd {PROP : bi} `{BiFUpd PROP} (R : relation PROP)
+    {ARGS : Type} {RESULT : Type}
+    (wpp1 : WpSpec PROP ARGS RESULT)
+    (wpp2 : WpSpec PROP ARGS RESULT) : Prop :=
+  (** We use a single [K] rather than pointwise equal [K1], [K2] for
+      compatibility with [fs_entails_fupd], [fs_impl_fupd]. *)
+  forall xs K, R (wpp1 xs K) (|={top}=> wpp2 xs (λ v, |={top}=> K v))%I.
+#[global] Instance: Params (@wpspec_relation_fupd) 4 := {}.
+
+Notation wpspec_entails_fupd := (wpspec_relation_fupd bi_entails) (only parsing).
+
 Section wpspec_relations.
   Context `{!BiEntailsN PROP}.
 
