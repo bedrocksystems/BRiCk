@@ -554,19 +554,12 @@ Module Type Expr.
         end
         |-- wp_operand (Ecast (Creinterpret qt) Prvalue e ty) Q.
 
-    (* [Cstatic from to] represents a static cast from [from] to
-     * [to].
-     *
-     * NOTE Our AST (based on Clang's AST) *seems to* generate this only when
-     *      [from] is equal to [to], when casts are actually involved,
-     *      the AST inserts a more informative cast, e.g. [Cderived2base],
-     *      [Cintegral], etc. To accomodate this, we require that [from = to].
+    (** [Cstatic c] represents a use of `static_cast` to perform the underlying
+        cast.
      *)
-    Axiom wp_operand_static_cast : forall from e ty Q,
-      wp_operand e (fun addr free =>
-                      let addr' := _eqv addr in
-                      valid_ptr addr' ** Q (Vptr addr') free)
-      |-- wp_operand (Ecast (Cstatic from from) Prvalue e ty) Q.
+    Axiom wp_operand_static_cast : forall c vc e ty Q,
+          wp_operand (Ecast c vc e ty) Q
+      |-- wp_operand (Ecast (Cstatic c) vc e ty) Q.
 
     (** You can cast anything to void, but an expression of type
         [void] can only be a pr_value *)

@@ -95,7 +95,7 @@ Variant BuiltinFn : Set :=
 Proof. solve_decision. Defined.
 
 (** * Casts *)
-Variant Cast : Set :=
+Inductive Cast : Set :=
 | Cdependent (* this doesn't have any semantics *)
 | Cbitcast
 | Clvaluebitcast
@@ -131,7 +131,7 @@ Variant Cast : Set :=
 | C2void
 | Cuser        (conversion_function : obj_name)
 | Creinterpret (_ : type)
-| Cstatic      (from to : globname)
+| Cstatic      (_ : Cast)
 | Cdynamic     (from to : globname)
 | Cconst       (_ : type).
 #[global] Instance Cast_eqdec: EqDecision Cast.
