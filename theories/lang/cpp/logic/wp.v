@@ -771,8 +771,24 @@ Section with_cpp.
   (* this axiom is the standard rule of consequence for weakest
      pre-condition.
    *)
-  Axiom fspec_frame : forall tt ft a ls Q1 Q2,
-      Forall v, Q1 v -* Q2 v |-- @fspec tt ft a ls Q1 -* @fspec tt ft a ls Q2.
+  Axiom fspec_frame_fupd : forall tt ft a ls Q1 Q2,
+      (Forall v, Q1 v -* |={top}=> Q2 v)
+      |-- @fspec tt ft a ls Q1 -* @fspec tt ft a ls Q2.
+
+  Lemma fspec_frame : forall tt ft a ls Q1 Q2,
+    (Forall v, Q1 v -* Q2 v)
+    |-- fspec tt ft a ls Q1 -* fspec tt ft a ls Q2.
+  Proof.
+    intros. iIntros "H". iApply fspec_frame_fupd.
+    iIntros (v) "? !>". by iApply "H".
+  Qed.
+
+  (* the following two axioms say that we can perform fupd's
+     around the weakeast pre-condition. *)
+  Axiom fspec_fupd : forall te ft a ls Q,
+      fspec te ft a ls (λ v, |={top}=> Q v) |-- fspec te ft a ls Q.
+  Axiom fupd_spec : forall te ft a ls Q,
+      (|={top}=> fspec te ft a ls Q) |-- fspec te ft a ls Q.
 
   #[global] Instance Proper_fspec : forall tt ft a ls,
       Proper (pointwise_relation _ lentails ==> lentails) (@fspec tt ft a ls).
@@ -786,6 +802,12 @@ Section with_cpp.
     Context {tt : type_table} {tf : type} (addr : ptr) (ls : list ptr).
     Local Notation WP := (fspec tt tf addr ls) (only parsing).
     Implicit Types Q : ptr → epred.
+
+    Lemma fspec_wand_fupd Q1 Q2 : WP Q1 |-- (∀ v, Q1 v -* |={top}=> Q2 v) -* WP Q2.
+    Proof. iIntros "Hwp HK".
+           iDestruct (fspec_complete_type with "Hwp") as "[Hwp %]".
+           iApply (fspec_frame_fupd with "HK Hwp").
+    Qed.
 
     Lemma fspec_wand Q1 Q2 : WP Q1 |-- (∀ v, Q1 v -* Q2 v) -* WP Q2.
     Proof. iIntros "Hwp HK".
@@ -817,6 +839,10 @@ Section with_cpp.
       Forall v, Q v -* Q' v |-- mspec t1 t t0 v l Q -* mspec t1 t t0 v l Q'.
   Proof. intros; apply fspec_frame. Qed.
 
+  Lemma mspec_frame_fupd :
+    ∀ (t : type) (l : list ptr) (v : ptr) (t0 : type) (t1 : type_table) (Q Q' : ptr -> _),
+      (Forall v, Q v -* |={top}=> Q' v) |-- mspec t1 t t0 v l Q -* mspec t1 t t0 v l Q'.
+  Proof. intros; apply fspec_frame_fupd. Qed.
 End with_cpp.
 End WPE.
 
