@@ -510,8 +510,8 @@ Module Type VALID_PTR_AXIOMS
       strict_valid_ptr (p ,, o_derived σ base derived) |--
       [| p ,, o_derived σ base derived ,, o_base σ derived base = p |].
 
-    (* Without the validity premise to the cancellation axioms ([o_sub_sub],
-      [o_base_derived], [o_derived_base]) we could incorrectly deduce that
+    (* Without the validity premise to the cancellation axioms
+      ([o_base_derived], [o_derived_base]) we could incorrectly deduce that
       [valid_ptr p] entails [valid_ptr (p ., o_base derived base ., o_derived
       base derived)] which entails [valid_ptr (p ., o_base derived base)].
     *)
