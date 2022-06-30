@@ -244,8 +244,8 @@ Definition offset_of (resolve : genv) (t : globname) (f : ident) : option Z :=
   | _ => None
   end.
 
-Definition parent_offset (resolve : genv) (t : globname) (f : globname) : option Z :=
-  match glob_def resolve t with
+Definition parent_offset (tu : translation_unit) (t : globname) (f : globname) : option Z :=
+  match tu !! t with
   | Some (Gstruct s) => find_assoc_list f (List.map (fun '(s,l) => (s,l.(li_offset) / 8)) s.(s_bases))
   | _ => None
   end.
