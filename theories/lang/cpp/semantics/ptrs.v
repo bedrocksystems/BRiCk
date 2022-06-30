@@ -132,6 +132,8 @@ Module Type PTRS.
   *)
   Parameter ptr : Set.
 
+  Implicit Type (p : ptr).
+
   Axiom ptr_eq_dec : forall (x y : ptr), { x = y } + { x <> y }.
   #[global] Instance ptr_eq_dec' : EqDecision ptr := ptr_eq_dec.
   (* TODO AUTO: replace [ptr_eq_dec'] with:
@@ -254,6 +256,15 @@ Module Type PTRS.
   (** going up and down the class hierarchy, one step at a time. *)
   Parameter o_base : genv -> forall (derived base : globname), offset.
   Parameter o_derived : genv -> forall (base derived : globname), offset.
+
+  (* We're ignoring virtual inheritance here, since we have no plans to
+  support it for now, but this might hold there too. *)
+  Axiom o_base_derived : forall σ p base derived,
+    is_Some (parent_offset σ.(genv_tu) derived base) ->
+    p ,, o_base σ derived base ,, o_derived σ base derived = p.
+  Axiom o_derived_base : forall σ p base derived,
+    is_Some (parent_offset σ.(genv_tu) derived base) ->
+    p ,, o_derived σ base derived ,, o_base σ derived base = p.
 
   (** Map pointers to allocation IDs; total on valid pointers thanks to
       [valid_ptr_alloc_id].

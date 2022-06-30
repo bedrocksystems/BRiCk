@@ -543,6 +543,53 @@ Module PTRS_IMPL <: PTRS_INTF.
     repeat (lia || f_equiv).
   Qed.
 
+  Lemma o_base_derived σ p base derived :
+    is_Some (parent_offset σ.(genv.genv_tu) derived base) ->
+    p ,, o_base σ derived base ,, o_derived σ base derived = p.
+  Proof.
+    rewrite -offset_ptr_dot.
+    UNFOLD_dot.
+    intros Hsome. destruct p => //=.
+    (* TODO: this model collapses invalid offsets on fun_ptr_ to invalid pointers too eagerly. *)
+    admit.
+    f_equiv.
+    apply (sig_eq_pi _) => /=.
+    rewrite /o_base_off /o_derived_off /=.
+    move: Hsome => [?].
+    destruct parent_offset => //= -[_] /=.
+    rewrite /raw_offset_merge/=.
+    rewrite /raw_offset_collapse /=.
+    rewrite foldr_app /=.
+    (* TODO: here we should prove that cancellation works out, but the
+    ill-behaved normalization makes this too complex. *)
+  Admitted.
+
+  Lemma o_derived_base σ p base derived :
+    is_Some (parent_offset σ.(genv.genv_tu) derived base) ->
+    p ,, o_derived σ base derived ,, o_base σ derived base = p.
+  Proof.
+    rewrite -offset_ptr_dot.
+    UNFOLD_dot.
+    intros Hsome. destruct p => //=.
+    {
+      case_match => //.
+      exfalso.
+      Fail repeat case_match; naive_solver.
+      (* TODO: this model collapses invalid offsets on fun_ptr_ to invalid
+      pointers too eagerly. *)
+      admit.
+    }
+    f_equiv.
+    case: o => o. rewrite /raw_offset_wf => Hwf.
+    apply (sig_eq_pi _) => /=.
+    rewrite /o_base_off /o_derived_off /=.
+    move: Hsome => [?].
+    destruct parent_offset => //= -[_] /=.
+    rewrite decide_True //=.
+    rewrite /raw_offset_merge/= app_nil_r //.
+    all: done.
+  Admitted.
+
   Include PTRS_DERIVED_MIXIN.
   Include PTRS_MIXIN.
 End PTRS_IMPL.

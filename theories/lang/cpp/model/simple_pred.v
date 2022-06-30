@@ -1207,5 +1207,13 @@ Module VALID_PTR : VALID_PTR_AXIOMS PTRS_IMPL VALUES_DEFS_IMPL L L.
       fld ∈ s_fields st →
       type_ptr (Tnamed cls) p ⊢ type_ptr fld.(mem_type) (p .,
         {| f_name := fld.(mem_name) ; f_type := cls |}).
+
+    Axiom o_base_parent_offset : forall p base derived,
+      strict_valid_ptr (p ,, o_base σ derived base) |--
+      [| is_Some (parent_offset σ.(genv_tu) derived base) |].
+
+    Axiom o_derived_parent_offset : forall p base derived,
+      strict_valid_ptr (p ,, o_derived σ base derived) |--
+      [| is_Some (parent_offset σ.(genv_tu) derived base) |].
   End with_cpp.
 End VALID_PTR.
