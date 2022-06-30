@@ -101,10 +101,10 @@ Inductive Cast : Set :=
 | Clvaluebitcast
 | Cl2r
 | Cnoop
-| Carray2pointer
-| Cfunction2pointer
-| Cint2pointer
-| Cpointer2int
+| Carray2ptr
+| Cfun2ptr
+| Cint2ptr
+| Cptr2int
 | Cptr2bool
   (* in [Cderived2base] and [Cbase2derived], the list is a tree
      from (top..bottom], i.e. **in both cases** the most derived
@@ -126,8 +126,8 @@ Inductive Cast : Set :=
 | Cint2bool
 | Cfloat2int
 | Cnull2ptr
-| Cbuiltin2function
-| Cconstructorconversion
+| Cbuiltin2fun
+| Cctor
 | C2void
 | Cuser        (conversion_function : obj_name)
 | Creinterpret (_ : type)

@@ -467,21 +467,21 @@ Module Type Expr.
                       end)
         |-- wp_operand (Ecast Cptr2bool Prvalue e ty) Q.
 
-    (** [Cfunction2pointer] is a cast from a function to a pointer.
+    (** [Cfun2ptr] is a cast from a function to a pointer.
 
        note that C and C++ classify function names differently, so we
        end up with two cases
        - in C, function names are Rvalues, and
        - in C++, function names are Lvalues
      *)
-    Axiom wp_operand_cast_function2pointer_c : forall ty ty' g Q,
+    Axiom wp_operand_cast_fun2ptr_c : forall ty ty' g Q,
         wp_lval (Evar (Gname g) ty') (fun v => Q (Vptr v))
             (* even though they are [prvalues], we reuse the [Lvalue] rule for
                evaluating them. *)
-        |-- wp_operand (Ecast Cfunction2pointer Prvalue (Evar (Gname g) ty') ty) Q.
-    Axiom wp_operand_cast_function2pointer_cpp : forall ty ty' g Q,
+        |-- wp_operand (Ecast Cfun2ptr Prvalue (Evar (Gname g) ty') ty) Q.
+    Axiom wp_operand_cast_fun2ptr_cpp : forall ty ty' g Q,
         wp_lval (Evar (Gname g) ty') (fun v => Q (Vptr v))
-        |-- wp_operand (Ecast Cfunction2pointer Lvalue (Evar (Gname g) ty') ty) Q.
+        |-- wp_operand (Ecast Cfun2ptr Lvalue (Evar (Gname g) ty') ty) Q.
 
     (** Known places that bitcasts occur
         - casting between [void*] and [T*] for some [T].
@@ -529,14 +529,14 @@ Module Type Expr.
              A pointer can be explicitly converted to any integral type large
              enough to hold all values of its type. The mapping function is
              implementation-defined. *)
-          wp_operand (Ecast Cpointer2int Prvalue e ty) Q
+          wp_operand (Ecast Cptr2int Prvalue e ty) Q
         | Tnum _ _ , Tptr _ =>
           (* A value of integral type or enumeration type can be explicitly
              converted to a pointer. A pointer converted to an integer of sufficient
              size (if any such exists on the implementation) and back to the same
              pointer type will have its original value; mappings between pointers
              and integers are otherwise implementation-defined. *)
-          wp_operand (Ecast Cint2pointer Prvalue e ty) Q
+          wp_operand (Ecast Cint2ptr Prvalue e ty) Q
         | Tnullptr , Tnum _ _ =>
           (* A value of type [std​::​nullptr_t] can be converted to an integral type;
              the conversion has the same meaning and validity as a conversion of
@@ -567,13 +567,13 @@ Module Type Expr.
           wp_discard vc e (fun free => Q Vundef free)
       |-- wp_operand (Ecast C2void vc e Tvoid) Q.
 
-    Axiom wp_operand_cast_array2pointer : forall vc e t Q,
+    Axiom wp_operand_cast_array2ptr : forall vc e t Q,
         wp_glval vc e (fun p => Q (Vptr p))
-        |-- wp_operand (Ecast Carray2pointer vc e t) Q.
+        |-- wp_operand (Ecast Carray2ptr vc e t) Q.
 
-    (** [Cpointer2int] exposes the pointer, which is expressed with [pinned_ptr]
+    (** [Cptr2int] exposes the pointer, which is expressed with [pinned_ptr]
      *)
-    Axiom wp_operand_pointer2int : forall e ty Q,
+    Axiom wp_operand_ptr2int : forall e ty Q,
         match drop_qualifiers (type_of e) , ty with
         | Tptr _ , Tnum sz sgn =>
           wp_operand e (fun v free => Exists p, [| v = Vptr p |] **
@@ -583,12 +583,12 @@ Module Type Expr.
                                                     end (Z.of_N va))) free))
         | _ , _ => False
         end
-        |-- wp_operand (Ecast Cpointer2int Prvalue e ty) Q.
+        |-- wp_operand (Ecast Cptr2int Prvalue e ty) Q.
 
-    (** [Cint2pointer] uses "angelic non-determinism" to allow the developer to
+    (** [Cint2ptr] uses "angelic non-determinism" to allow the developer to
         pick any pointer that was previously exposed as the given integer.
      *)
-    Axiom wp_operand_int2pointer : forall e ty Q,
+    Axiom wp_operand_int2ptr : forall e ty Q,
         match unptr ty with
         | Some ptype =>
           wp_operand e (fun v free => Exists va : N, [| v = Vint (Z.of_N va) |] **
@@ -607,7 +607,7 @@ Module Type Expr.
               ([| va = 0%N |] ** Q (Vptr nullptr) free)))
         | _ => False
         end
-        |-- wp_operand (Ecast Cint2pointer Prvalue e ty) Q.
+        |-- wp_operand (Ecast Cint2ptr Prvalue e ty) Q.
 
     (** * [Cderived2base]
         casts from a derived class to a base class. Casting is only permitted

@@ -31,50 +31,30 @@ is_builtin(const Decl* d) {
 
 void
 printCast(const CastExpr* ce, CoqPrinter& print, ClangPrinter& cprint) {
-    auto& out = print.output();
     switch (ce->getCastKind()) {
-    case CastKind::CK_LValueToRValue:
-        out << "Cl2r";
+#define CASE(a, b)                                                             \
+    case CastKind::CK_##a:                                                     \
+        print.output() << #b;                                                  \
         break;
-    case CastKind::CK_Dependent:
-        out << "Cdependent";
-        break;
-    case CastKind::CK_FunctionToPointerDecay:
-        out << "Cfunction2pointer";
-        break;
-    case CastKind::CK_NoOp:
-        out << "Cnoop";
-        break;
-    case CastKind::CK_BitCast:
-        out << "Cbitcast";
-        break;
-    case CastKind::CK_IntegralCast:
-        out << "Cintegral";
-        break;
-    case CastKind::CK_IntegralToBoolean:
-        out << "Cint2bool";
-        break;
-    case CastKind::CK_PointerToBoolean:
-        out << "Cptr2bool";
-        break;
-    case CastKind::CK_PointerToIntegral:
-        out << "Cpointer2int";
-        break;
-    case CastKind::CK_IntegralToPointer:
-        out << "Cint2pointer";
-        break;
-    case CastKind::CK_ArrayToPointerDecay:
-        out << "Carray2pointer";
-        break;
-    case CastKind::CK_ConstructorConversion:
-        out << "Cconstructorconversion";
-        break;
-    case CastKind::CK_BuiltinFnToFnPtr:
-        out << "Cbuiltin2function";
-        break;
-    case CastKind::CK_NullToPointer:
-        out << "Cnull2ptr";
-        break;
+
+        CASE(LValueToRValue, Cl2r)
+        CASE(Dependent, Cdependent)
+        CASE(FunctionToPointerDecay, Cfun2ptr)
+        CASE(NoOp, Cnoop)
+        CASE(BitCast, Cbitcast)
+        CASE(IntegralCast, Cintegral)
+        CASE(IntegralToBoolean, Cint2bool)
+        CASE(PointerToBoolean, Cptr2bool)
+        CASE(PointerToIntegral, Cptr2int)
+        CASE(IntegralToPointer, Cint2ptr)
+        CASE(ArrayToPointerDecay, Carray2ptr)
+        CASE(ConstructorConversion, Cctor)
+        CASE(BuiltinFnToFnPtr, Cbuiltin2fun)
+        CASE(NullToPointer, Cnull2ptr)
+        CASE(ToVoid, C2void)
+        CASE(FloatingToIntegral, Cfloat2int)
+#undef CASE
+
     case CastKind::CK_DerivedToBase:
     case CastKind::CK_UncheckedDerivedToBase: {
         print.ctor("Cderived2base");
@@ -101,21 +81,10 @@ printCast(const CastExpr* ce, CoqPrinter& print, ClangPrinter& cprint) {
         });
         print.end_ctor();
         break;
-    case CastKind::CK_ToVoid:
-        out << "C2void";
-        break;
-    case CastKind::CK_FloatingToIntegral:
-        out << "Cfloat2int";
-        break;
     default:
-#if CLANG_VERSION_MAJOR >= 7
         logging::unsupported()
-            << "unsupported cast kind \""
-            << CastExpr::getCastKindName(ce->getCastKind()) << "\"\n";
-#else
-        logging::unsupported() << "unsupported cast kind ..." << ck << "\n";
-#endif
-        out << "Cunsupported";
+            << "unsupported cast kind \"" << ce->getCastKindName() << "\"\n";
+        print.output() << "Cunsupported";
     }
 }
 

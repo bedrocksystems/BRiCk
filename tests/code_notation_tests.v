@@ -123,7 +123,7 @@ Section TestCodeNotations.
               (Eassign (Evar (Lname "should_continue") Tbool)
                  (Eunop Unot
                     (Ecall
-                       (Ecast Cfunction2pointer Lvalue
+                       (Ecast Cfun2ptr Lvalue
                           (Evar (Gname "_Z15process_commandPKN4Zeta8Zeta_ctxEPcR9UmxSharedRmR5Admin")
                              (Tfunction Tbool
                                 [Tqualified {| q_const := true; q_volatile := false |}
@@ -143,7 +143,7 @@ Section TestCodeNotations.
                              (Tqualified {| q_const := true; q_volatile := false |}
                                 (Tptr (Tqualified {| q_const := true; q_volatile := false |} Tvoid))))
                           (Tptr (Tqualified {| q_const := true; q_volatile := false |} Tvoid));
-                       Ecast Carray2pointer Lvalue (Evar (Lname "buffer") (Tarray Tu8 1024)) (Tptr Tu8);
+                       Ecast Carray2ptr Lvalue (Evar (Lname "buffer") (Tarray Tu8 1024)) (Tptr Tu8);
                        Eread_ref (Evar (Lname "shared") (Tnamed "_Z9UmxShared"));
                        Eread_ref (Evar (Lname "client") Tu64); Evar (Lname "result") Ti32]%list
                        Tbool) Tbool)
@@ -230,7 +230,7 @@ Section TestCodeNotations.
             (Eassign (Evar (Lname "should_continue") Tbool)
                (Eunop Unot
                   (Ecall
-                     (Ecast Cfunction2pointer Lvalue
+                     (Ecast Cfun2ptr Lvalue
                         (Evar (Gname "_Z15process_commandPKN4Zeta8Zeta_ctxEPcR9UmxSharedRmR5Admin")
                            (Tfunction Tbool
                               [Tqualified {| q_const := true; q_volatile := false |}
@@ -250,7 +250,7 @@ Section TestCodeNotations.
                            (Tqualified {| q_const := true; q_volatile := false |}
                               (Tptr (Tqualified {| q_const := true; q_volatile := false |} Tvoid))))
                         (Tptr (Tqualified {| q_const := true; q_volatile := false |} Tvoid));
-                     Ecast Carray2pointer Lvalue (Evar (Lname "buffer") (Tarray Tu8 1024)) (Tptr Tu8);
+                     Ecast Carray2ptr Lvalue (Evar (Lname "buffer") (Tarray Tu8 1024)) (Tptr Tu8);
                      Eread_ref (Evar (Lname "shared") (Tnamed "_Z9UmxShared"));
                      Eread_ref (Evar (Lname "client") Tu64); Evar (Lname "result") Ti32]
                      Tbool) Tbool)
