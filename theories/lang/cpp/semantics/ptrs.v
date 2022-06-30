@@ -343,6 +343,7 @@ End PTRS_DERIVED.
 Module Type PTRS_INTF_MINIMAL := PTRS <+ PTRS_DERIVED.
 
 Module Type PTRS_MIXIN (Import P : PTRS_INTF_MINIMAL).
+  Implicit Type (p : ptr).
   (**
   Explictly declare that all Iris equalities on pointers are trivial.
   We only add such explicit declarations as actually needed.
@@ -532,6 +533,16 @@ Module Type PTRS_MIXIN (Import P : PTRS_INTF_MINIMAL).
   Lemma o_sub_sub (p : ptr) ty i j σ :
     p .[ ty ! i] .[ty ! j] = p .[ ty ! i + j].
   Proof. by rewrite -offset_ptr_dot o_dot_sub. Qed.
+
+  Lemma o_base_derived_tu `{Hσ : tu ⊧ σ} p base derived :
+    is_Some (parent_offset tu derived base) ->
+    p ,, o_base σ derived base ,, o_derived σ base derived = p.
+  Proof. intros [??%parent_offset_genv_compat]. exact: o_base_derived. Qed.
+
+  Lemma o_derived_base_tu `{Hσ : tu ⊧ σ} p base derived :
+    is_Some (parent_offset tu derived base) ->
+    p ,, o_derived σ base derived ,, o_base σ derived base = p.
+  Proof. intros [??%parent_offset_genv_compat]. exact: o_derived_base. Qed.
 
   Notation _id := o_id (only parsing).
   (** access a field *)
