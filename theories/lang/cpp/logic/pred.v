@@ -520,6 +520,10 @@ Module Type VALID_PTR_AXIOMS
       fld ∈ s_fields st →
       type_ptr (Tnamed cls) p ⊢ type_ptr fld.(mem_type) (p .,
         {| f_name := fld.(mem_name) ; f_type := cls |}).
+
+    Axiom type_ptr_o_sub : forall p (m n : N) ty,
+      (m < n)%N ->
+      type_ptr (Tarray ty n) p ⊢ type_ptr ty (p ,, _sub ty m).
   End with_cpp.
 End VALID_PTR_AXIOMS.
 
