@@ -29,7 +29,7 @@ Section with_cpp.
       assuming that [wpp] takes the arguments in [args] (in reverse order) and the
       remaining arguments in [ts].
    *)
-  Fixpoint elaborate (ret : type) (ts : list type) (ar : function_arity) (wpp : WpSpec_cpp_val) (args : list val) : WpSpec mpredI ptr ptr :=
+  Fixpoint elaborate (ret : type) (ts : list type) (ar : function_arity) (args : list val) (wpp : WpSpec_cpp_val) : WpSpec mpredI ptr ptr :=
     match ts with
     | nil =>
         let finish args :=
@@ -48,11 +48,11 @@ Section with_cpp.
     | t :: ts =>
         match mtype t with
         | inl cls =>
-            add_with (fun pv : ptr => add_arg pv (elaborate ret ts ar wpp (args ++ [Vptr pv])))
+            add_with (fun pv : ptr => add_arg pv (elaborate ret ts ar (args ++ [Vptr pv]) wpp))
         | inr t =>
             add_with (fun pv : ptr => add_with (fun v : val => add_arg pv (
                                            add_pre (_at pv (primR t 1 v)) (add_post (Exists v, _at pv (primR t 1 v))
-                                                                                    (elaborate ret ts ar wpp (args ++ [v]))))))
+                                                                                    (elaborate ret ts ar (args ++ [v]) wpp)))))
         end
     end.
 
@@ -60,7 +60,21 @@ Section with_cpp.
       (operand-based) spec that is based on materialized values.
    *)
   Definition cpp_spec (ret : type) (ts : list type) {ar : function_arity} (wpp : WpSpec_cpp_val) : WpSpec_cpp_ptr :=
-    elaborate ret ts ar wpp nil.
+    elaborate ret ts ar nil wpp.
+
+  #[global] Instance elaborate_ne ret ts ar : forall vs,
+    NonExpansive (elaborate ret ts ar vs).
+  Proof.
+    induction ts; simpl; intros.
+    { case_match; [case_match|]; repeat red; intros; [solve_proper..|].
+      do 5 f_equiv; solve_proper. }
+    { case_match; repeat red; intros; repeat f_equiv; done. }
+  Qed.
+
+  #[global] Instance cpp_spec_ne ret ts {ar} : NonExpansive (@cpp_spec ret ts ar).
+  Proof. intros. apply elaborate_ne. Qed.
+
+  #[global] Instance : Params (@cpp_spec) 6 := {}.
 
   (** Specification implications
 
@@ -93,7 +107,7 @@ Section with_cpp.
     assert (forall ps xs Ps Qs,
                (∀ (vs : list val) (K : val → mpred), spec_internal P [] [] [] vs K -∗ spec_internal Q [] [] [] vs K) -∗
                ∀ (vs : list ptr) (K : ptr → mpred),
-                 spec_internal (elaborate ret ts ar P ps) xs Ps Qs vs K -∗ spec_internal (elaborate ret ts ar Q ps) xs Ps Qs vs K).
+                 spec_internal (elaborate ret ts ar ps P) xs Ps Qs vs K -∗ spec_internal (elaborate ret ts ar ps Q) xs Ps Qs vs K).
     { induction ts; simpl; intros.
       { case_match; case_match; rewrite /wp_spec_bind/=;
           try solve [ iIntros "H" (??) "[$ P]";
