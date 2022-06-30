@@ -221,13 +221,13 @@ Qed.
 
 (** [offset_of] *)
 
-Fixpoint find_field {T} (f : ident) (fs : list (ident * T)) : option T :=
+Fixpoint find_assoc_list {T} (f : ident) (fs : list (ident * T)) : option T :=
   match fs with
   | nil => None
   | (f',v) :: fs =>
     if decide (f = f') then
       Some v
-    else find_field f fs
+    else find_assoc_list f fs
   end%list.
 
 #[local] Close Scope nat_scope.
@@ -238,15 +238,15 @@ Fixpoint find_field {T} (f : ident) (fs : list (ident * T)) : option T :=
 Definition offset_of (resolve : genv) (t : globname) (f : ident) : option Z :=
   match glob_def resolve t with
   | Some (Gstruct s) =>
-    find_field f (List.map (fun m => (m.(mem_name),m.(mem_layout).(li_offset) / 8)) s.(s_fields))
+    find_assoc_list f (List.map (fun m => (m.(mem_name),m.(mem_layout).(li_offset) / 8)) s.(s_fields))
   | Some (Gunion u) =>
-    find_field f (List.map (fun m => (m.(mem_name),m.(mem_layout).(li_offset) / 8)) u.(u_fields))
+    find_assoc_list f (List.map (fun m => (m.(mem_name),m.(mem_layout).(li_offset) / 8)) u.(u_fields))
   | _ => None
   end.
 
 Definition parent_offset (resolve : genv) (t : globname) (f : globname) : option Z :=
   match glob_def resolve t with
-  | Some (Gstruct s) => find_field f (List.map (fun '(s,l) => (s,l.(li_offset) / 8)) s.(s_bases))
+  | Some (Gstruct s) => find_assoc_list f (List.map (fun '(s,l) => (s,l.(li_offset) / 8)) s.(s_bases))
   | _ => None
   end.
 
