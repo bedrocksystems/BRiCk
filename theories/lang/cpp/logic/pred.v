@@ -496,11 +496,11 @@ Module Type VALID_PTR_AXIOMS
 
     (* We're ignoring virtual inheritance here, since we have no plans to
     support it for now, but this might hold there too. *)
-    Axiom o_base_derived : forall p base derived,
+    Axiom o_base_derived_strict : forall p base derived,
       strict_valid_ptr (p ,, o_base σ derived base) |--
       [| p ,, o_base σ derived base ,, o_derived σ base derived = p |].
 
-    Axiom o_derived_base : forall p base derived,
+    Axiom o_derived_base_strict : forall p base derived,
       strict_valid_ptr (p ,, o_derived σ base derived) |--
       [| p ,, o_derived σ base derived ,, o_base σ derived base = p |].
 
@@ -821,7 +821,7 @@ Section with_cpp.
   Lemma o_derived_base_type p base derived ty :
     type_ptr ty (p ,, o_derived σ base derived) |--
     [| p ,, o_derived σ base derived ,, o_base σ derived base = p |].
-  Proof. rewrite type_ptr_strict_valid. apply (o_derived_base p). Qed.
+  Proof. rewrite type_ptr_strict_valid. apply (o_derived_base_strict p). Qed.
 
   (** [_inv] because unlike [type_ptr_o_base] and [type_ptr_o_field_type_ptr],
   this lemma fits the [type_ptr _ (p ,, o) ⊢ type_ptr _ p] schema instead of the
