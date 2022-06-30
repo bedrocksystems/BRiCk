@@ -561,6 +561,14 @@ Module Type Expr.
           wp_operand (Ecast c vc e ty) Q
       |-- wp_operand (Ecast (Cstatic c) vc e ty) Q.
 
+    Axiom wp_lval_static_cast : forall c vc e ty Q,
+          wp_lval (Ecast c vc e ty) Q
+      |-- wp_lval (Ecast (Cstatic c) vc e ty) Q.
+
+    Axiom wp_xval_static_cast : forall c vc e ty Q,
+          wp_xval (Ecast c vc e ty) Q
+      |-- wp_xval (Ecast (Cstatic c) vc e ty) Q.
+
     (** You can cast anything to void, but an expression of type
         [void] can only be a pr_value *)
     Axiom wp_operand_cast_tovoid : forall vc e Q,
