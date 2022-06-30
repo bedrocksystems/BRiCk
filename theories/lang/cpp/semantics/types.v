@@ -230,6 +230,16 @@ Fixpoint find_assoc_list {T} (f : ident) (fs : list (ident * T)) : option T :=
     else find_assoc_list f fs
   end%list.
 
+Lemma find_assoc_list_elem_of {T} base xs :
+  (∃ v, (base, v) ∈ xs) ->
+  ∃ y, find_assoc_list (T := T) base xs = Some y.
+Proof.
+  move=>[v]. elim: xs => /= [/elem_of_nil //|[k w] xs IH]
+    /elem_of_cons [|] Hin; simplify_eq.
+  { rewrite decide_True; eauto. }
+  case_decide; eauto.
+Qed.
+
 #[local] Close Scope nat_scope.
 #[local] Open Scope Z_scope.
 (* note: we expose the fact that reference fields are compiled to pointers,
@@ -249,6 +259,25 @@ Definition parent_offset (tu : translation_unit) (t : globname) (f : globname) :
   | Some (Gstruct s) => find_assoc_list f (List.map (fun '(s,l) => (s,l.(li_offset) / 8)) s.(s_bases))
   | _ => None
   end.
+
+Lemma find_assoc_list_parent_offset tu derived st base li :
+  tu !! derived = Some (Gstruct st) ->
+  (base, li) ∈ st.(s_bases) ->
+  ∃ z, parent_offset tu derived base = Some z.
+Proof.
+  rewrite /parent_offset => -> Hin.
+  apply /find_assoc_list_elem_of.
+  eexists; apply /elem_of_list_fmap; by exists (base, li).
+Qed.
+
+Lemma parent_offset_genv_compat {σ tu derived base z} {Hσ : tu ⊧ σ} :
+  parent_offset tu derived base = Some z ->
+  parent_offset σ.(genv_tu) derived base = Some z.
+Proof.
+  rewrite /parent_offset -/(glob_def σ derived).
+  case E: (tu !! derived) => [ gd //= | // ]; destruct gd => //.
+  by erewrite glob_def_genv_compat_struct.
+Qed.
 
 (** * alignof() *)
 Parameter align_of : forall {resolve : genv} (t : type), option N.
