@@ -261,10 +261,10 @@ Module Type PTRS.
   (* We're ignoring virtual inheritance here, since we have no plans to
   support it for now, but this might hold there too. *)
   Axiom o_base_derived : forall σ p base derived,
-    is_Some (parent_offset_tu σ.(genv_tu) derived base) ->
+    is_Some (parent_offset σ derived base) ->
     p ,, o_base σ derived base ,, o_derived σ base derived = p.
   Axiom o_derived_base : forall σ p base derived,
-    is_Some (parent_offset_tu σ.(genv_tu) derived base) ->
+    is_Some (parent_offset σ derived base) ->
     p ,, o_derived σ base derived ,, o_base σ derived base = p.
 
   (** Map pointers to allocation IDs; total on valid pointers thanks to
