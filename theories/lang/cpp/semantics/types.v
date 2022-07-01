@@ -254,11 +254,14 @@ Definition offset_of (resolve : genv) (t : globname) (f : ident) : option Z :=
   | _ => None
   end.
 
-Definition parent_offset_tu (tu : translation_unit) (t : globname) (f : globname) : option Z :=
-  match tu !! t with
-  | Some (Gstruct s) => find_assoc_list f (List.map (fun '(s,l) => (s,l.(li_offset) / 8)) s.(s_bases))
+Definition parent_offset_tu (tu : translation_unit) (derived : globname) (base : globname) : option Z :=
+  match tu !! derived with
+  | Some (Gstruct s) => find_assoc_list base (List.map (fun '(s,l) => (s,l.(li_offset) / 8)) s.(s_bases))
   | _ => None
   end.
+Notation parent_offset σ derived base := (parent_offset_tu σ.(genv_tu) derived base).
+Notation directly_derives_tu tu derived base := (is_Some (parent_offset_tu tu derived base)).
+Notation directly_derives σ derived base := (is_Some (parent_offset σ derived base)).
 
 Lemma find_assoc_list_parent_offset tu derived st base li :
   tu !! derived = Some (Gstruct st) ->
@@ -272,7 +275,7 @@ Qed.
 
 Lemma parent_offset_genv_compat {σ tu derived base z} {Hσ : tu ⊧ σ} :
   parent_offset_tu tu derived base = Some z ->
-  parent_offset_tu σ.(genv_tu) derived base = Some z.
+  parent_offset σ derived base = Some z.
 Proof.
   rewrite /parent_offset_tu -/(glob_def σ derived).
   case E: (tu !! derived) => [ gd //= | // ]; destruct gd => //.
