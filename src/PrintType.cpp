@@ -95,8 +95,7 @@ public:
         print.ctor("@Tenum", false);
         cprint.printTypeName(ed, print);
         print.output() << fmt::nbsp;
-        // TODO this should use [getIntegerType]
-        cprint.printQualType(ed->getPromotionType(), print);
+        cprint.printQualType(ed->getIntegerType(), print);
         print.end_ctor();
     }
 
