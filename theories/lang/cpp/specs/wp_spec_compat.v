@@ -654,6 +654,13 @@ Section bind.
     repeat red; rewrite /wp_spec_bind /=.
     intros ?? H ??? ??? ??. subst. f_equiv. by apply H.
   Qed.
+
+  #[global] Instance wp_spec_bind_proper :
+    Proper (equiv ==> eq ==> eq ==> equiv) wp_spec_bind.
+  Proof.
+    repeat red; rewrite /wp_spec_bind /=.
+    intros ?? H ??? ??? ??. subst. f_equiv. by apply H.
+  Qed.
 End bind.
 
 #[global] Instance: Params (@wp_spec_bind) 5 := {}.
@@ -664,6 +671,13 @@ Proof.
   repeat red; rewrite /add_with/wpspec_relation/=; intros ?? H ??.
   f_equiv. f_equiv. by apply H.
 Qed.
+#[global] Instance add_with_proper PROP A R T :
+  Proper (pointwise_relation _ equiv ==> equiv) (@add_with PROP A R T).
+Proof.
+  repeat red; rewrite /add_with/wpspec_relation/=; intros ?? H ??.
+  f_equiv. f_equiv. by apply H.
+Qed.
+
 #[global] Instance add_pre_ne PROP A R :
   NonExpansive2 (@add_pre PROP A R).
 Proof.
@@ -671,6 +685,10 @@ Proof.
   rewrite -(app_nil_r [x]) -(app_nil_r [y]) !pres_ok.
   f_equiv. solve_proper. by apply H.
 Qed.
+#[global] Instance add_pre_proper PROP A R :
+  Proper (equiv ==> equiv ==> equiv) (@add_pre PROP A R).
+Proof. exact : ne_proper_2. Qed.
+
 #[global] Instance add_post_with_ne PROP A R n :
   Proper (eq ==> dist n ==> dist n)
          (@add_post_with PROP A R).
@@ -679,12 +697,28 @@ Proof.
   rewrite -(app_nil_l [x]) -(app_nil_l [y]) !posts_ok.
   subst. by apply H.
 Qed.
+#[global] Instance add_post_with_proper PROP A R :
+  Proper (eq ==> equiv ==> equiv)
+         (@add_post_with PROP A R).
+Proof.
+  do 6 red; rewrite /add_post/wpspec_relation/=; intros x y ? ?? H ??.
+  rewrite -(app_nil_l [x]) -(app_nil_l [y]) !posts_ok.
+  subst. by apply H.
+Qed.
+
 #[global] Instance add_post_ne PROP A R n :
   Proper (eq ==> dist n ==> dist n)
          (@add_post PROP A R).
 Proof.
   repeat red; intros. apply add_post_with_ne; eauto. by subst.
 Qed.
+#[global] Instance add_post_proper PROP A R :
+  Proper (eq ==> equiv ==> equiv)
+         (@add_post PROP A R).
+Proof.
+  repeat red; intros. apply add_post_with_proper; eauto. by subst.
+Qed.
+
 #[global] Instance list_sep_into_ne {PROP : bi} n :
   Proper (Forall2 (dist n) ==> dist n ==> dist n) (@list_sep_into PROP).
 Proof.
@@ -698,8 +732,15 @@ Proof.
   rewrite -(app_nil_l [x]) !arg_ok.
   do 3 f_equiv. by apply H.
 Qed.
+#[global] Instance add_arg_proper {PROP : bi} {A R} (x : A) :
+  Proper (equiv ==> equiv) (@add_arg PROP A R x).
+Proof. exact : ne_proper. Qed.
+
 #[global] Instance wp_specD_ne {PROP : bi} {A R} n
   : Proper (dist n ==> eq ==> eq ==> dist n) (@wp_specD PROP A R).
+Proof. repeat red; intros ?? H ??? ???; subst; by apply H. Qed.
+#[global] Instance wp_specD_proper {PROP : bi} {A R}
+  : Proper (equiv ==> eq ==> eq ==> equiv) (@wp_specD PROP A R).
 Proof. repeat red; intros ?? H ??? ???; subst; by apply H. Qed.
 
 Lemma spec_add_with {PROP : bi} {ARG RESULT : Type} : forall T (PQ : T -> WpSpec PROP ARG RESULT) args K,

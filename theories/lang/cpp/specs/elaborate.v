@@ -70,9 +70,15 @@ Section with_cpp.
       do 5 f_equiv; solve_proper. }
     { case_match; repeat red; intros; repeat f_equiv; done. }
   Qed.
+  #[global] Instance elaborate_proper ret ts ar vs :
+    Proper (equiv ==> equiv) (elaborate ret ts ar vs).
+  Proof. exact: ne_proper. Qed.
 
   #[global] Instance cpp_spec_ne ret ts {ar} : NonExpansive (@cpp_spec ret ts ar).
   Proof. intros. apply elaborate_ne. Qed.
+  #[global] Instance cpp_spec_proper ret ts {ar} :
+    Proper (equiv ==> equiv) (@cpp_spec ret ts ar).
+  Proof. exact: ne_proper. Qed.
 
   #[global] Instance : Params (@cpp_spec) 6 := {}.
 
