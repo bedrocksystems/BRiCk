@@ -366,6 +366,7 @@ dune-build:
   variables:
     CPP2V_CORE: cpp2v-core
   script:
+    - export PATH="/usr/lib/llvm/bin/:$PATH"
     - cd /tmp/build-dir/
     - cp fmdeps/${CPP2V_CORE}/dune-project.template dune-project
     - ln -sf fmdeps/${CPP2V_CORE}/coq-cpp2v-bin.opam coq-cpp2v-bin.opam
