@@ -76,8 +76,8 @@ Existing Class class_derives.
 Section tu.
   Variable tu : translation_unit.
 
-  Fixpoint tu_class_derives (cls : globname) (path : list globname) : bool :=
-    match tu !! cls with
+  Fixpoint tu_class_derives (derived : globname) (path : list globname) : bool :=
+    match tu !! derived with
     | Some (Gstruct st) =>
         match path with
         | nil => true
@@ -90,8 +90,8 @@ Section tu.
     end.
 
   Context {σ : genv} {M : tu ⊧ σ}.
-  Theorem tu_class_derives_sound : forall path cls,
-      tu_class_derives cls path -> class_derives cls path.
+  Theorem tu_class_derives_sound : forall path derived,
+      tu_class_derives derived path -> class_derives derived path.
   Proof using M.
     induction path =>///=.
     { intros; case_match.
