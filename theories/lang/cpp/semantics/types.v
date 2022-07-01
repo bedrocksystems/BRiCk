@@ -3,6 +3,7 @@
  * This software is distributed under the terms of the BedRock Open-Source License.
  * See the LICENSE-BedRock file in the repository root for details.
  *)
+From elpi Require Import locker.
 From bedrock.prelude Require Import base.
 From bedrock.lang.cpp.syntax Require Import names expr stmt types typing.
 From bedrock.lang.cpp.semantics Require Import genv.
@@ -259,7 +260,8 @@ Definition parent_offset_tu (tu : translation_unit) (derived : globname) (base :
   | Some (Gstruct s) => find_assoc_list base (List.map (fun '(s,l) => (s,l.(li_offset) / 8)) s.(s_bases))
   | _ => None
   end.
-Notation parent_offset σ derived base := (parent_offset_tu σ.(genv_tu) derived base).
+(* We hide whether [genv_tu] exists. *)
+mlock Definition parent_offset σ derived base := parent_offset_tu σ.(genv_tu) derived base.
 Notation directly_derives_tu tu derived base := (is_Some (parent_offset_tu tu derived base)).
 Notation directly_derives σ derived base := (is_Some (parent_offset σ derived base)).
 
@@ -277,7 +279,7 @@ Lemma parent_offset_genv_compat {σ tu derived base z} {Hσ : tu ⊧ σ} :
   parent_offset_tu tu derived base = Some z ->
   parent_offset σ derived base = Some z.
 Proof.
-  rewrite /parent_offset_tu -/(glob_def σ derived).
+  rewrite parent_offset.unlock /parent_offset_tu -/(glob_def σ derived).
   case E: (tu !! derived) => [ gd //= | // ]; destruct gd => //.
   by erewrite glob_def_genv_compat_struct.
 Qed.

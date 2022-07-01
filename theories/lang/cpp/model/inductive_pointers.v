@@ -547,15 +547,14 @@ Module PTRS_IMPL <: PTRS_INTF.
     is_Some (parent_offset σ derived base) ->
     p ,, o_base σ derived base ,, o_derived σ base derived = p.
   Proof.
-    rewrite -offset_ptr_dot.
-    UNFOLD_dot.
+    rewrite -offset_ptr_dot; UNFOLD_dot.
     intros Hsome. destruct p => //=.
     (* TODO: this model collapses invalid offsets on fun_ptr_ to invalid pointers too eagerly. *)
     admit.
     f_equiv.
     apply (sig_eq_pi _) => /=.
-    rewrite /o_base_off /o_derived_off /=.
     move: Hsome => [?].
+    rewrite /o_base_off /o_derived_off parent_offset.unlock.
     destruct parent_offset_tu => //= -[_] /=.
     rewrite /raw_offset_merge/=.
     rewrite /raw_offset_collapse /=.
@@ -568,8 +567,7 @@ Module PTRS_IMPL <: PTRS_INTF.
     is_Some (parent_offset σ derived base) ->
     p ,, o_derived σ base derived ,, o_base σ derived base = p.
   Proof.
-    rewrite -offset_ptr_dot.
-    UNFOLD_dot.
+    rewrite -offset_ptr_dot; UNFOLD_dot.
     intros Hsome. destruct p => //=.
     {
       case_match => //.
@@ -582,8 +580,8 @@ Module PTRS_IMPL <: PTRS_INTF.
     f_equiv.
     case: o => o. rewrite /raw_offset_wf => Hwf.
     apply (sig_eq_pi _) => /=.
-    rewrite /o_base_off /o_derived_off /=.
     move: Hsome => [?].
+    rewrite /o_base_off /o_derived_off parent_offset.unlock.
     destruct parent_offset_tu => //= -[_] /=.
     rewrite decide_True //=.
     rewrite /raw_offset_merge/= app_nil_r //.
