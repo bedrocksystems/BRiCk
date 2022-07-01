@@ -130,30 +130,30 @@ Module SIMPLE_PTRS_IMPL <: PTRS_INTF.
   Definition o_derived σ base derived := o_derived_off σ base derived.
 
   Lemma o_base_derived σ p base derived :
-    is_Some (parent_offset σ.(genv_tu) derived base) ->
+    is_Some (parent_offset_tu σ.(genv_tu) derived base) ->
     p ,, o_base σ derived base ,, o_derived σ base derived = p.
   Proof.
     UNFOLD_dot; rewrite /o_base /o_base_off /o_derived /o_derived_off.
-    case: parent_offset => [o /= Hval |[? //]]. apply offset_ptr_raw_cancel0. lia.
+    case: parent_offset_tu => [o /= Hval |[? //]]. apply offset_ptr_raw_cancel0. lia.
   Qed.
 
   Lemma o_derived_base σ p base derived :
-    is_Some (parent_offset σ.(genv_tu) derived base) ->
+    is_Some (parent_offset_tu σ.(genv_tu) derived base) ->
     p ,, o_derived σ base derived ,, o_base σ derived base = p.
   Proof.
     UNFOLD_dot; rewrite /o_base /o_base_off /o_derived /o_derived_off.
-    case: parent_offset => [o /= Hval|[? //]]. apply: offset_ptr_raw_cancel0. lia.
+    case: parent_offset_tu => [o /= Hval|[? //]]. apply: offset_ptr_raw_cancel0. lia.
   Qed.
 
   Lemma parent_offset_some_o_base σ p derived base :
     (p ,, o_base σ derived base) <> invalid_ptr ->
-    is_Some (parent_offset σ.(genv_tu) derived base).
-  Proof. UNFOLD_dot; rewrite /o_base /o_base_off. by case: parent_offset. Qed.
+    is_Some (parent_offset_tu σ.(genv_tu) derived base).
+  Proof. UNFOLD_dot; rewrite /o_base /o_base_off. by case: parent_offset_tu. Qed.
 
   Lemma parent_offset_some_o_derived σ p derived base :
     (p ,, o_derived σ base derived) <> invalid_ptr ->
-    is_Some (parent_offset σ.(genv_tu) derived base).
-  Proof. UNFOLD_dot; rewrite /o_derived /o_derived_off. by case: parent_offset. Qed.
+    is_Some (parent_offset_tu σ.(genv_tu) derived base).
+  Proof. UNFOLD_dot; rewrite /o_derived /o_derived_off. by case: parent_offset_tu. Qed.
 
   Lemma o_base_derived_raw σ p derived base :
     (p ,, o_base σ derived base) <> invalid_ptr ->

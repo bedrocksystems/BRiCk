@@ -501,11 +501,11 @@ Module Type VALID_PTR_AXIOMS
     support it for now, but this might hold there too. *)
     Axiom o_base_parent_offset : forall p base derived,
       strict_valid_ptr (p ,, o_base σ derived base) |--
-      [| is_Some (parent_offset σ.(genv_tu) derived base) |].
+      [| is_Some (parent_offset_tu σ.(genv_tu) derived base) |].
 
     Axiom o_derived_parent_offset : forall p base derived,
       strict_valid_ptr (p ,, o_derived σ base derived) |--
-      [| is_Some (parent_offset σ.(genv_tu) derived base) |].
+      [| is_Some (parent_offset_tu σ.(genv_tu) derived base) |].
 
     (* TODO: maybe add a validity of offsets to allow stating this more generally. *)
     Axiom valid_o_sub_size : forall p ty i vt,

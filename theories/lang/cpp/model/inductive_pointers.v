@@ -544,7 +544,7 @@ Module PTRS_IMPL <: PTRS_INTF.
   Qed.
 
   Lemma o_base_derived σ p base derived :
-    is_Some (parent_offset σ.(genv.genv_tu) derived base) ->
+    is_Some (parent_offset_tu σ.(genv.genv_tu) derived base) ->
     p ,, o_base σ derived base ,, o_derived σ base derived = p.
   Proof.
     rewrite -offset_ptr_dot.
@@ -556,7 +556,7 @@ Module PTRS_IMPL <: PTRS_INTF.
     apply (sig_eq_pi _) => /=.
     rewrite /o_base_off /o_derived_off /=.
     move: Hsome => [?].
-    destruct parent_offset => //= -[_] /=.
+    destruct parent_offset_tu => //= -[_] /=.
     rewrite /raw_offset_merge/=.
     rewrite /raw_offset_collapse /=.
     rewrite foldr_app /=.
@@ -565,7 +565,7 @@ Module PTRS_IMPL <: PTRS_INTF.
   Admitted.
 
   Lemma o_derived_base σ p base derived :
-    is_Some (parent_offset σ.(genv.genv_tu) derived base) ->
+    is_Some (parent_offset_tu σ.(genv.genv_tu) derived base) ->
     p ,, o_derived σ base derived ,, o_base σ derived base = p.
   Proof.
     rewrite -offset_ptr_dot.
@@ -584,7 +584,7 @@ Module PTRS_IMPL <: PTRS_INTF.
     apply (sig_eq_pi _) => /=.
     rewrite /o_base_off /o_derived_off /=.
     move: Hsome => [?].
-    destruct parent_offset => //= -[_] /=.
+    destruct parent_offset_tu => //= -[_] /=.
     rewrite decide_True //=.
     rewrite /raw_offset_merge/= app_nil_r //.
     all: done.

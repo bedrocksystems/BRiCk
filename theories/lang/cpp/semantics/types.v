@@ -254,7 +254,7 @@ Definition offset_of (resolve : genv) (t : globname) (f : ident) : option Z :=
   | _ => None
   end.
 
-Definition parent_offset (tu : translation_unit) (t : globname) (f : globname) : option Z :=
+Definition parent_offset_tu (tu : translation_unit) (t : globname) (f : globname) : option Z :=
   match tu !! t with
   | Some (Gstruct s) => find_assoc_list f (List.map (fun '(s,l) => (s,l.(li_offset) / 8)) s.(s_bases))
   | _ => None
@@ -263,18 +263,18 @@ Definition parent_offset (tu : translation_unit) (t : globname) (f : globname) :
 Lemma find_assoc_list_parent_offset tu derived st base li :
   tu !! derived = Some (Gstruct st) ->
   (base, li) ∈ st.(s_bases) ->
-  ∃ z, parent_offset tu derived base = Some z.
+  ∃ z, parent_offset_tu tu derived base = Some z.
 Proof.
-  rewrite /parent_offset => -> Hin.
+  rewrite /parent_offset_tu => -> Hin.
   apply /find_assoc_list_elem_of.
   eexists; apply /elem_of_list_fmap; by exists (base, li).
 Qed.
 
 Lemma parent_offset_genv_compat {σ tu derived base z} {Hσ : tu ⊧ σ} :
-  parent_offset tu derived base = Some z ->
-  parent_offset σ.(genv_tu) derived base = Some z.
+  parent_offset_tu tu derived base = Some z ->
+  parent_offset_tu σ.(genv_tu) derived base = Some z.
 Proof.
-  rewrite /parent_offset -/(glob_def σ derived).
+  rewrite /parent_offset_tu -/(glob_def σ derived).
   case E: (tu !! derived) => [ gd //= | // ]; destruct gd => //.
   by erewrite glob_def_genv_compat_struct.
 Qed.
