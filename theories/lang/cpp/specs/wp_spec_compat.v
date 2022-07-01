@@ -185,8 +185,8 @@ Notation WithPrePostO PROP := (WpSpecO PROP ptr ptr).
 (** Relations between WPPs. *)
 Definition wpspec_relation {PROP : bi} (R : relation PROP)
     {ARGS : Type} {RESULT : Type}
-    (wpp1 : WpSpec PROP ARGS RESULT)
-    (wpp2 : WpSpec PROP ARGS RESULT) : Prop :=
+    (wpp2 : WpSpec PROP ARGS RESULT)
+    (wpp1 : WpSpec PROP ARGS RESULT) : Prop :=
   (** We use a single [K] rather than pointwise equal [K1], [K2] for
       compatibility with [fs_entails], [fs_impl]. *)
   forall xs K, R (wpp1 xs K) (wpp2 xs K).
@@ -194,19 +194,33 @@ Definition wpspec_relation {PROP : bi} (R : relation PROP)
 
 Notation wpspec_entailsN n := (wpspec_relation (entailsN n)) (only parsing).
 Notation wpspec_entails := (wpspec_relation bi_entails) (only parsing).
-Notation wpspec_dist n := (wpspec_relation (dist n)) (only parsing).
-Notation wpspec_equiv := (wpspec_relation equiv) (only parsing).
+Notation wpspec_dist n := (wpspec_relation (flip (dist n))) (only parsing).
+Notation wpspec_equiv := (wpspec_relation (flip equiv)) (only parsing).
 
 Definition wpspec_relation_fupd {PROP : bi} `{BiFUpd PROP} (R : relation PROP)
     {ARGS : Type} {RESULT : Type}
-    (wpp1 : WpSpec PROP ARGS RESULT)
-    (wpp2 : WpSpec PROP ARGS RESULT) : Prop :=
+    (wpp2 : WpSpec PROP ARGS RESULT)
+    (wpp1 : WpSpec PROP ARGS RESULT) : Prop :=
   (** We use a single [K] rather than pointwise equal [K1], [K2] for
       compatibility with [fs_entails_fupd], [fs_impl_fupd]. *)
   forall xs K, R (wpp1 xs K) (|={top}=> wpp2 xs (λ v, |={top}=> K v))%I.
 #[global] Instance: Params (@wpspec_relation_fupd) 4 := {}.
 
 Notation wpspec_entails_fupd := (wpspec_relation_fupd bi_entails) (only parsing).
+
+Definition wpspec_relationI {PROP : bi}
+    (R : PROP -> PROP -> PROP)
+    {ARGS : Type} {RESULT : Type}
+    (R' : (RESULT -> PROP) -> (RESULT -> PROP))
+    (wpp2 : WpSpec PROP ARGS RESULT)
+    (wpp1 : WpSpec PROP ARGS RESULT) : PROP :=
+  ∀ xs K, R (wpp1 xs K) (wpp2 xs (R' K)).
+
+#[global] Instance: Params (@wpspec_relationI) 5 := {}.
+
+Notation wpspec_wand := (wpspec_relationI bi_wand id) (only parsing).
+Notation wpspec_wand_fupd :=
+  (wpspec_relationI (bi_wand ∘ fupd ⊤ ⊤) (λ K v, |={⊤}=> K v)%I) (only parsing).
 
 Section wpspec_relations.
   Context `{!BiEntailsN PROP}.

@@ -90,17 +90,14 @@ Section with_cpp.
       NOTE: this can be strengthened with extra fancy updates.
    *)
   Definition spec_impl {A R} (Q P : WpSpec mpredI A R) : mpredI :=
-    ∀ (vs : list A) (K : R → mpred), P vs K -∗ Q vs K.
+    wpspec_wand Q P.
 
-  (* TODO: some upstream proper instances use [wpspec_entails], unify the uses.
-  TODO: we should flip [wpspec_relation] like we flipped [fs_entails] for the
-  same reason. *)
-  Definition spec_entails {A R} :=
-    flip (wpspec_relation (PROP := mpredI) bi_entails (ARGS := A) (RESULT := R)).
+  Definition spec_entails {A R} (Q P : WpSpec mpredI A R) :=
+    wpspec_entails Q P.
 
   Lemma spec_entails_impl {A R} Q P :
     (|-- @spec_impl A R P Q) ↔
-    spec_entails P Q.
+    wpspec_entails P Q.
   Proof.
     rewrite /spec_impl/wpspec_relation; split; intros H **; first iApply H.
     iIntros (??). iApply H.
