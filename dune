@@ -1,8 +1,26 @@
 ; Explain Dune how to find and build cpp2v binary
 (subdir build
  (rule
+  (targets llvm-lib-path.txt)
+  (deps (universe))
+  (action
+   (with-outputs-to llvm-lib-path.txt
+    ; Compute path of the LLVM library. The output looks like one of:
+    ; ```
+    ; /opt/homebrew/Cellar/llvm/14.0.6/lib/libLLVM-14.dylib
+    ; /opt/homebrew/Cellar/llvm@13/13.0.1/lib/libLLVM-13.dylib
+    ; /usr/lib/llvm-13/lib/libLLVM-13.so
+    ; ```
+    ; and changes when upgrading LLVM.
+    (run llvm-config --libfiles))))
+ (rule
   (targets cpp2v cpp2v-make.log)
-  (deps ../Makefile ../Makefile.doc ../CMakeLists.txt (source_tree ../src)
+  (deps
+    ; This code depends on the LLVM library, to try rebuilding `cpp2v` if LLVM
+    ; is upgraded.
+    ; TODO: Check this is sound — does `cmake` might detect LLVM/Clang in other ways?
+    %{read-lines:llvm-lib-path.txt}
+    ../Makefile ../Makefile.doc ../CMakeLists.txt (source_tree ../src)
     (source_tree ../cmake) (source_tree ../include) (source_tree ../doc)
     (source_tree ../llvm-include)
     (env_var PATH) (env_var LLVM_DIR) (env_var CLANG_DIR))
