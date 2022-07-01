@@ -1214,10 +1214,10 @@ Module VALID_PTR : VALID_PTR_AXIOMS PTRS_IMPL VALUES_DEFS_IMPL L L.
 
     Axiom o_base_parent_offset : forall p base derived,
       strict_valid_ptr (p ,, o_base σ derived base) |--
-      [| is_Some (parent_offset σ derived base) |].
+      [| directly_derives σ derived base |].
 
     Axiom o_derived_parent_offset : forall p base derived,
       strict_valid_ptr (p ,, o_derived σ base derived) |--
-      [| is_Some (parent_offset σ derived base) |].
+      [| directly_derives σ derived base |].
   End with_cpp.
 End VALID_PTR.

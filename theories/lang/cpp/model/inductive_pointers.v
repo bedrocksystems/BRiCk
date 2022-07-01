@@ -544,7 +544,7 @@ Module PTRS_IMPL <: PTRS_INTF.
   Qed.
 
   Lemma o_base_derived σ p base derived :
-    is_Some (parent_offset σ derived base) ->
+    directly_derives σ derived base ->
     p ,, o_base σ derived base ,, o_derived σ base derived = p.
   Proof.
     rewrite -offset_ptr_dot; UNFOLD_dot.
@@ -564,7 +564,7 @@ Module PTRS_IMPL <: PTRS_INTF.
   Admitted.
 
   Lemma o_derived_base σ p base derived :
-    is_Some (parent_offset σ derived base) ->
+    directly_derives σ derived base ->
     p ,, o_derived σ base derived ,, o_base σ derived base = p.
   Proof.
     rewrite -offset_ptr_dot; UNFOLD_dot.

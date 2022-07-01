@@ -261,10 +261,10 @@ Module Type PTRS.
   (* We're ignoring virtual inheritance here, since we have no plans to
   support it for now, but this might hold there too. *)
   Axiom o_base_derived : forall σ p base derived,
-    is_Some (parent_offset σ derived base) ->
+    directly_derives σ derived base ->
     p ,, o_base σ derived base ,, o_derived σ base derived = p.
   Axiom o_derived_base : forall σ p base derived,
-    is_Some (parent_offset σ derived base) ->
+    directly_derives σ derived base ->
     p ,, o_derived σ base derived ,, o_base σ derived base = p.
 
   (** Map pointers to allocation IDs; total on valid pointers thanks to
@@ -536,12 +536,12 @@ Module Type PTRS_MIXIN (Import P : PTRS_INTF_MINIMAL).
   Proof. by rewrite -offset_ptr_dot o_dot_sub. Qed.
 
   Lemma o_base_derived_tu `{Hσ : tu ⊧ σ} p base derived :
-    is_Some (parent_offset_tu tu derived base) ->
+    directly_derives_tu tu derived base ->
     p ,, o_base σ derived base ,, o_derived σ base derived = p.
   Proof. intros [??%parent_offset_genv_compat]. exact: o_base_derived. Qed.
 
   Lemma o_derived_base_tu `{Hσ : tu ⊧ σ} p base derived :
-    is_Some (parent_offset_tu tu derived base) ->
+    directly_derives_tu tu derived base ->
     p ,, o_derived σ base derived ,, o_base σ derived base = p.
   Proof. intros [??%parent_offset_genv_compat]. exact: o_derived_base. Qed.
 
