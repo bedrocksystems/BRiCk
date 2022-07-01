@@ -62,7 +62,7 @@ Section dispatch.
         else None
     | next :: rest =>
         dispatch base rest fn ≫= fun rr =>
-          match σ.(genv_tu) !! next with
+          match glob_def σ next with
           | Some (Gstruct st) =>
               let '(_, _, override) := rr in
               match list_get override st.(s_overrides) with
