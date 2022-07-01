@@ -482,12 +482,6 @@ Module Type VALID_PTR_AXIOMS
       _valid_ptr vt (p ,, o_field σ f ,, o_sub σ ty i) |-- strict_valid_ptr (p ,, o_field σ f).
 
     (* TODO: can we deduce that [p] is strictly valid? *)
-    Axiom _valid_ptr_base : ∀ p base derived vt,
-      _valid_ptr vt (p ,, o_base σ derived base) |-- _valid_ptr vt p.
-    (* TODO: can we deduce that [p] is strictly valid? *)
-    Axiom _valid_ptr_derived : ∀ p base derived vt,
-      _valid_ptr vt (p ,, o_derived σ base derived) |-- _valid_ptr vt p.
-    (* TODO: can we deduce that [p] is strictly valid? *)
     Axiom _valid_ptr_field : ∀ p f vt,
       _valid_ptr vt (p ,, o_field σ f) |-- _valid_ptr vt p.
     (* TODO: Pointers to fields can't be past-the-end, right?
@@ -502,19 +496,16 @@ Module Type VALID_PTR_AXIOMS
 
     (* We're ignoring virtual inheritance here, since we have no plans to
     support it for now, but this might hold there too. *)
-    Axiom o_base_derived : forall p base derived,
+
+    (* We're ignoring virtual inheritance here, since we have no plans to
+    support it for now, but this might hold there too. *)
+    Axiom o_base_directly_derives : forall p base derived,
       strict_valid_ptr (p ,, o_base σ derived base) |--
-      [| p ,, o_base σ derived base ,, o_derived σ base derived = p |].
+      [| directly_derives σ derived base |].
 
-    Axiom o_derived_base : forall p base derived,
+    Axiom o_derived_directly_derives : forall p base derived,
       strict_valid_ptr (p ,, o_derived σ base derived) |--
-      [| p ,, o_derived σ base derived ,, o_base σ derived base = p |].
-
-    (* Without the validity premise to the cancellation axioms ([o_sub_sub],
-      [o_base_derived], [o_derived_base]) we could incorrectly deduce that
-      [valid_ptr p] entails [valid_ptr (p ., o_base derived base ., o_derived
-      base derived)] which entails [valid_ptr (p ., o_base derived base)].
-    *)
+      [| directly_derives σ derived base |].
 
     (* TODO: maybe add a validity of offsets to allow stating this more generally. *)
     Axiom valid_o_sub_size : forall p ty i vt,
@@ -529,6 +520,10 @@ Module Type VALID_PTR_AXIOMS
       fld ∈ s_fields st →
       type_ptr (Tnamed cls) p ⊢ type_ptr fld.(mem_type) (p .,
         {| f_name := fld.(mem_name) ; f_type := cls |}).
+
+    Axiom type_ptr_o_sub : forall p (m n : N) ty,
+      (m < n)%N ->
+      type_ptr (Tarray ty n) p ⊢ type_ptr ty (p ,, _sub ty m).
   End with_cpp.
 End VALID_PTR_AXIOMS.
 
@@ -830,10 +825,24 @@ Section with_cpp.
       case: vt => //. by rewrite strict_valid_valid.
   Qed.
 
+  Lemma o_base_derived_strict p base derived :
+    strict_valid_ptr (p ,, o_base σ derived base) |--
+    [| p ,, o_base σ derived base ,, o_derived σ base derived = p |].
+  Proof.
+    rewrite o_base_directly_derives. f_equiv => ?. exact: o_base_derived.
+  Qed.
+
+  Lemma o_derived_base_strict p base derived :
+    strict_valid_ptr (p ,, o_derived σ base derived) |--
+    [| p ,, o_derived σ base derived ,, o_base σ derived base = p |].
+  Proof.
+    rewrite o_derived_directly_derives. f_equiv => ?. exact: o_derived_base.
+  Qed.
+
   Lemma o_derived_base_type p base derived ty :
     type_ptr ty (p ,, o_derived σ base derived) |--
     [| p ,, o_derived σ base derived ,, o_base σ derived base = p |].
-  Proof. rewrite type_ptr_strict_valid. apply (o_derived_base p). Qed.
+  Proof. rewrite type_ptr_strict_valid. apply (o_derived_base_strict p). Qed.
 
   (** [_inv] because unlike [type_ptr_o_base] and [type_ptr_o_field_type_ptr],
   this lemma fits the [type_ptr _ (p ,, o) ⊢ type_ptr _ p] schema instead of the

@@ -132,6 +132,8 @@ Module Type PTRS.
   *)
   Parameter ptr : Set.
 
+  Implicit Type (p : ptr).
+
   Axiom ptr_eq_dec : forall (x y : ptr), { x = y } + { x <> y }.
   #[global] Instance ptr_eq_dec' : EqDecision ptr := ptr_eq_dec.
   (* TODO AUTO: replace [ptr_eq_dec'] with:
@@ -251,9 +253,19 @@ Module Type PTRS.
      `displacement (o_sub σ ty i) = if (i = 0) then 0 else i * size_of σ ty`
    *)
 
-  (** going up and down the class hierarchy, one step at a time. *)
+  (** going up and down the class hierarchy, one step at a time;
+  these offsets are only for non-virtual inheritance. *)
   Parameter o_base : genv -> forall (derived base : globname), offset.
   Parameter o_derived : genv -> forall (base derived : globname), offset.
+
+  (* We're ignoring virtual inheritance here, since we have no plans to
+  support it for now, but this might hold there too. *)
+  Axiom o_base_derived : forall σ p base derived,
+    directly_derives σ derived base ->
+    p ,, o_base σ derived base ,, o_derived σ base derived = p.
+  Axiom o_derived_base : forall σ p base derived,
+    directly_derives σ derived base ->
+    p ,, o_derived σ base derived ,, o_base σ derived base = p.
 
   (** Map pointers to allocation IDs; total on valid pointers thanks to
       [valid_ptr_alloc_id].
@@ -332,6 +344,7 @@ End PTRS_DERIVED.
 Module Type PTRS_INTF_MINIMAL := PTRS <+ PTRS_DERIVED.
 
 Module Type PTRS_MIXIN (Import P : PTRS_INTF_MINIMAL).
+  Implicit Type (p : ptr).
   (**
   Explictly declare that all Iris equalities on pointers are trivial.
   We only add such explicit declarations as actually needed.
@@ -521,6 +534,16 @@ Module Type PTRS_MIXIN (Import P : PTRS_INTF_MINIMAL).
   Lemma o_sub_sub (p : ptr) ty i j σ :
     p .[ ty ! i] .[ty ! j] = p .[ ty ! i + j].
   Proof. by rewrite -offset_ptr_dot o_dot_sub. Qed.
+
+  Lemma o_base_derived_tu `{Hσ : tu ⊧ σ} p base derived :
+    directly_derives_tu tu derived base ->
+    p ,, o_base σ derived base ,, o_derived σ base derived = p.
+  Proof. intros [??%parent_offset_genv_compat]. exact: o_base_derived. Qed.
+
+  Lemma o_derived_base_tu `{Hσ : tu ⊧ σ} p base derived :
+    directly_derives_tu tu derived base ->
+    p ,, o_derived σ base derived ,, o_base σ derived base = p.
+  Proof. intros [??%parent_offset_genv_compat]. exact: o_derived_base. Qed.
 
   Notation _id := o_id (only parsing).
   (** access a field *)

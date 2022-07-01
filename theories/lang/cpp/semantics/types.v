@@ -3,6 +3,7 @@
  * This software is distributed under the terms of the BedRock Open-Source License.
  * See the LICENSE-BedRock file in the repository root for details.
  *)
+From elpi Require Import locker.
 From bedrock.prelude Require Import base.
 From bedrock.lang.cpp.syntax Require Import names expr stmt types typing.
 From bedrock.lang.cpp.semantics Require Import genv.
@@ -221,14 +222,24 @@ Qed.
 
 (** [offset_of] *)
 
-Fixpoint find_field {T} (f : ident) (fs : list (ident * T)) : option T :=
+Fixpoint find_assoc_list {T} (f : ident) (fs : list (ident * T)) : option T :=
   match fs with
   | nil => None
   | (f',v) :: fs =>
     if decide (f = f') then
       Some v
-    else find_field f fs
+    else find_assoc_list f fs
   end%list.
+
+Lemma find_assoc_list_elem_of {T} base xs :
+  (∃ v, (base, v) ∈ xs) ->
+  ∃ y, find_assoc_list (T := T) base xs = Some y.
+Proof.
+  move=>[v]. elim: xs => /= [/elem_of_nil //|[k w] xs IH]
+    /elem_of_cons [|] Hin; simplify_eq.
+  { rewrite decide_True; eauto. }
+  case_decide; eauto.
+Qed.
 
 #[local] Close Scope nat_scope.
 #[local] Open Scope Z_scope.
@@ -238,17 +249,40 @@ Fixpoint find_field {T} (f : ident) (fs : list (ident * T)) : option T :=
 Definition offset_of (resolve : genv) (t : globname) (f : ident) : option Z :=
   match glob_def resolve t with
   | Some (Gstruct s) =>
-    find_field f (List.map (fun m => (m.(mem_name),m.(mem_layout).(li_offset) / 8)) s.(s_fields))
+    find_assoc_list f (List.map (fun m => (m.(mem_name),m.(mem_layout).(li_offset) / 8)) s.(s_fields))
   | Some (Gunion u) =>
-    find_field f (List.map (fun m => (m.(mem_name),m.(mem_layout).(li_offset) / 8)) u.(u_fields))
+    find_assoc_list f (List.map (fun m => (m.(mem_name),m.(mem_layout).(li_offset) / 8)) u.(u_fields))
   | _ => None
   end.
 
-Definition parent_offset (resolve : genv) (t : globname) (f : globname) : option Z :=
-  match glob_def resolve t with
-  | Some (Gstruct s) => find_field f (List.map (fun '(s,l) => (s,l.(li_offset) / 8)) s.(s_bases))
+Definition parent_offset_tu (tu : translation_unit) (derived : globname) (base : globname) : option Z :=
+  match tu !! derived with
+  | Some (Gstruct s) => find_assoc_list base (List.map (fun '(s,l) => (s,l.(li_offset) / 8)) s.(s_bases))
   | _ => None
   end.
+(* We hide whether [genv_tu] exists. *)
+mlock Definition parent_offset σ derived base := parent_offset_tu σ.(genv_tu) derived base.
+Notation directly_derives_tu tu derived base := (is_Some (parent_offset_tu tu derived base)).
+Notation directly_derives σ derived base := (is_Some (parent_offset σ derived base)).
+
+Lemma find_assoc_list_parent_offset tu derived st base li :
+  tu !! derived = Some (Gstruct st) ->
+  (base, li) ∈ st.(s_bases) ->
+  ∃ z, parent_offset_tu tu derived base = Some z.
+Proof.
+  rewrite /parent_offset_tu => -> Hin.
+  apply /find_assoc_list_elem_of.
+  eexists; apply /elem_of_list_fmap; by exists (base, li).
+Qed.
+
+Lemma parent_offset_genv_compat {σ tu derived base z} {Hσ : tu ⊧ σ} :
+  parent_offset_tu tu derived base = Some z ->
+  parent_offset σ derived base = Some z.
+Proof.
+  rewrite parent_offset.unlock /parent_offset_tu -/(glob_def σ derived).
+  case E: (tu !! derived) => [ gd //= | // ]; destruct gd => //.
+  by erewrite glob_def_genv_compat_struct.
+Qed.
 
 (** * alignof() *)
 Parameter align_of : forall {resolve : genv} (t : type), option N.

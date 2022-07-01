@@ -129,23 +129,47 @@ Module SIMPLE_PTRS_IMPL <: PTRS_INTF.
   Definition o_base σ derived base := o_base_off σ derived base.
   Definition o_derived σ base derived := o_derived_off σ base derived.
 
+  Lemma o_base_derived σ p base derived :
+    directly_derives σ derived base ->
+    p ,, o_base σ derived base ,, o_derived σ base derived = p.
+  Proof.
+    UNFOLD_dot; rewrite /o_base /o_base_off /o_derived /o_derived_off parent_offset.unlock.
+    case: parent_offset_tu => [o /= Hval |[? //]]. apply offset_ptr_raw_cancel0. lia.
+  Qed.
+
+  Lemma o_derived_base σ p base derived :
+    directly_derives σ derived base ->
+    p ,, o_derived σ base derived ,, o_base σ derived base = p.
+  Proof.
+    UNFOLD_dot; rewrite /o_base /o_base_off /o_derived /o_derived_off parent_offset.unlock.
+    case: parent_offset_tu => [o /= Hval|[? //]]. apply: offset_ptr_raw_cancel0. lia.
+  Qed.
+
+  Lemma parent_offset_some_o_base σ p derived base :
+    (p ,, o_base σ derived base) <> invalid_ptr ->
+    directly_derives σ derived base.
+  Proof.
+    UNFOLD_dot; rewrite /o_base /o_base_off parent_offset.unlock.
+    by case: parent_offset_tu.
+  Qed.
+
+  Lemma parent_offset_some_o_derived σ p derived base :
+    (p ,, o_derived σ base derived) <> invalid_ptr ->
+    directly_derives σ derived base.
+  Proof.
+    UNFOLD_dot; rewrite /o_derived /o_derived_off parent_offset.unlock.
+    by case: parent_offset_tu.
+  Qed.
+
   Lemma o_base_derived_raw σ p derived base :
     (p ,, o_base σ derived base) <> invalid_ptr ->
     (p ,, o_base σ derived base ,, o_derived σ base derived = p).
-  Proof.
-    UNFOLD_dot.
-    rewrite /o_base /o_base_off /o_derived /o_derived_off.
-    case: parent_offset => [o|//] /= Hval. apply offset_ptr_raw_cancel0. lia.
-  Qed.
+  Proof. by move=> /parent_offset_some_o_base /o_base_derived. Qed.
 
   Lemma o_derived_base_raw σ p derived base :
     (p ,, o_derived σ base derived) <> invalid_ptr ->
     (p ,, o_derived σ base derived ,, o_base σ derived base = p).
-  Proof.
-    UNFOLD_dot.
-    rewrite /o_base /o_base_off /o_derived /o_derived_off.
-    case: parent_offset => [o|//] /= Hval. apply: offset_ptr_raw_cancel0. lia.
-  Qed.
+  Proof. by move=> /parent_offset_some_o_derived /o_derived_base. Qed.
 
   Lemma o_sub_sub_raw σ p ty n1 n2 :
     (p ,, o_sub σ ty n1 ,, o_sub σ ty n2 = p ,, o_sub σ ty (n1 + n2)).

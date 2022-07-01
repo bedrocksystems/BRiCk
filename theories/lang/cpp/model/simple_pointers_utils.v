@@ -59,8 +59,10 @@ Section eval_offset_seg.
   Context σ.
   Definition o_field_off (f : field) : option Z := offset_of σ f.(f_type) f.(f_name).
   Definition o_sub_off ty z : option Z := Z.mul z <$> (Z.of_N <$> size_of σ ty).
-  Definition o_base_off derived base : option Z := parent_offset σ derived base.
-  Definition o_derived_off base derived : option Z := Z.opp <$> parent_offset σ derived base.
+  Definition o_base_off derived base : option Z :=
+    parent_offset σ derived base.
+  Definition o_derived_off base derived : option Z :=
+    Z.opp <$> parent_offset σ derived base.
 End eval_offset_seg.
 
 (*
