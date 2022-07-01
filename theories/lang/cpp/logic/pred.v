@@ -207,12 +207,11 @@ Module Type CPP_LOGIC
           struct C : public A { };
           struct D : public B, public C {};
 
-          int doB(B* b) { return b->f(); }
-          int doC(C* c) { return c->f(); }
+          int doA(A* a) { return a->f(); }
           int test() {
               D d;
-              return doB(&d) /* = 1 */
-                   + doC(&d) /* = 0 */;
+              return doA(static_cast<B*>(&d)) /* = 1 */
+                   + doA(static_cast<C*>(&d)) /* = 0 */;
           }
           ```
           for a fully constructed object of type `D` (at pointer [d]), you would
