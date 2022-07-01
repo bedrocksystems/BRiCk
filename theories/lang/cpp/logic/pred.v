@@ -499,11 +499,11 @@ Module Type VALID_PTR_AXIOMS
 
     (* We're ignoring virtual inheritance here, since we have no plans to
     support it for now, but this might hold there too. *)
-    Axiom o_base_parent_offset : forall p base derived,
+    Axiom o_base_directly_derives : forall p base derived,
       strict_valid_ptr (p ,, o_base σ derived base) |--
       [| directly_derives σ derived base |].
 
-    Axiom o_derived_parent_offset : forall p base derived,
+    Axiom o_derived_directly_derives : forall p base derived,
       strict_valid_ptr (p ,, o_derived σ base derived) |--
       [| directly_derives σ derived base |].
 
@@ -829,14 +829,14 @@ Section with_cpp.
     strict_valid_ptr (p ,, o_base σ derived base) |--
     [| p ,, o_base σ derived base ,, o_derived σ base derived = p |].
   Proof.
-    rewrite o_base_parent_offset. f_equiv => ?. exact: o_base_derived.
+    rewrite o_base_directly_derives. f_equiv => ?. exact: o_base_derived.
   Qed.
 
   Lemma o_derived_base_strict p base derived :
     strict_valid_ptr (p ,, o_derived σ base derived) |--
     [| p ,, o_derived σ base derived ,, o_base σ derived base = p |].
   Proof.
-    rewrite o_derived_parent_offset. f_equiv => ?. exact: o_derived_base.
+    rewrite o_derived_directly_derives. f_equiv => ?. exact: o_derived_base.
   Qed.
 
   Lemma o_derived_base_type p base derived ty :

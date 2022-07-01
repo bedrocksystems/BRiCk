@@ -1212,11 +1212,11 @@ Module VALID_PTR : VALID_PTR_AXIOMS PTRS_IMPL VALUES_DEFS_IMPL L L.
       (m < n)%N ->
       type_ptr (Tarray ty n) p ⊢ type_ptr ty (p ,, _sub ty m).
 
-    Axiom o_base_parent_offset : forall p base derived,
+    Axiom o_base_directly_derives : forall p base derived,
       strict_valid_ptr (p ,, o_base σ derived base) |--
       [| directly_derives σ derived base |].
 
-    Axiom o_derived_parent_offset : forall p base derived,
+    Axiom o_derived_directly_derives : forall p base derived,
       strict_valid_ptr (p ,, o_derived σ base derived) |--
       [| directly_derives σ derived base |].
   End with_cpp.
