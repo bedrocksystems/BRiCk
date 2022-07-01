@@ -203,7 +203,11 @@ Section with_cpp.
     #[global] Instance SConstructor_ne n :
       Proper (pointwise_relation _ (dist n) ==> dist n)
         (SConstructor (cc:=cc) class targs (ar:=ar)).
-    Proof. intros ???. apply SFunction_ne. f_equiv => ?. do 4!f_equiv. Qed.
+    Proof. intros ???. apply SFunction_ne. repeat f_equiv. Qed.
+    #[global] Instance SConstructor_proper :
+      Proper (pointwise_relation _ equiv ==> equiv)
+        (SConstructor (cc:=cc) class targs (ar:=ar)).
+    Proof. intros ???. apply SFunction_proper. repeat f_equiv. Qed.
   End SConstructor.
 
   Section SDestructor.
@@ -271,7 +275,11 @@ Section with_cpp.
     #[global] Instance SDestructor_ne n :
       Proper (pointwise_relation _ (dist n) ==> dist n)
         (SDestructor (cc:=cc) class).
-    Proof. intros ???. apply SFunction_ne. f_equiv => ?. do 4!f_equiv. Qed.
+    Proof. intros ???. apply SFunction_ne. repeat f_equiv. Qed.
+    #[global] Instance SDestructor_proper :
+      Proper (pointwise_relation _ equiv ==> equiv)
+        (SDestructor (cc:=cc) class).
+    Proof. intros ???. apply SFunction_proper. repeat f_equiv. Qed.
   End SDestructor.
 
   Section SMethod.
