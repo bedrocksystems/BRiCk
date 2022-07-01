@@ -253,7 +253,8 @@ Module Type PTRS.
      `displacement (o_sub σ ty i) = if (i = 0) then 0 else i * size_of σ ty`
    *)
 
-  (** going up and down the class hierarchy, one step at a time. *)
+  (** going up and down the class hierarchy, one step at a time;
+  these offsets are only for non-virtual inheritance. *)
   Parameter o_base : genv -> forall (derived base : globname), offset.
   Parameter o_derived : genv -> forall (base derived : globname), offset.
 
