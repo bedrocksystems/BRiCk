@@ -112,7 +112,7 @@ Section with_cpp.
       iIntros "!>" (vs K) "wpp". by iApply Hwpp.
     Qed.
 
-    #[global] Instance: Params (@SFunction) 5 := {}.
+    #[global] Instance: Params (@SFunction) 6 := {}.
     #[global] Instance SFunction_ne : NonExpansive (SFunction (cc:=cc) ret targs).
     Proof.
       intros n wpp1 wpp2 Hwpp. split; by rewrite/type_of_spec/=.
@@ -162,7 +162,7 @@ Section with_cpp.
       iExists _; iFrame; iSplit; [done|].
       by iApply Hwpp.
     Qed.
-    #[global] Instance: Params (@SConstructor) 6 := {}.
+    #[global] Instance: Params (@SConstructor) 7 := {}.
 
     Lemma SConstructor_mono_fupd wpp1 wpp2 :
       (forall this, wpspec_entails_fupd (wpp2 this) (wpp1 this)) ->
@@ -199,6 +199,11 @@ Section with_cpp.
       Proper (pointwise_relation _ wpspec_entails_fupd ==> flip fs_entails_fupd)
         (SConstructor (cc:=cc) class targs (ar:=ar)).
     Proof. solve_proper. Qed.
+
+    #[global] Instance SConstructor_ne n :
+      Proper (pointwise_relation _ (dist n) ==> dist n)
+        (SConstructor (cc:=cc) class targs (ar:=ar)).
+    Proof. intros ???. apply SFunction_ne. f_equiv => ?. do 4!f_equiv. Qed.
   End SConstructor.
 
   Section SDestructor.
@@ -262,6 +267,11 @@ Section with_cpp.
       Proper (pointwise_relation _ wpspec_entails_fupd ==> flip fs_entails_fupd)
         (SDestructor (cc:=cc) class).
     Proof. solve_proper. Qed.
+
+    #[global] Instance SDestructor_ne n :
+      Proper (pointwise_relation _ (dist n) ==> dist n)
+        (SDestructor (cc:=cc) class).
+    Proof. intros ???. apply SFunction_ne. f_equiv => ?. do 4!f_equiv. Qed.
   End SDestructor.
 
   Section SMethod.
@@ -404,8 +414,8 @@ Section with_cpp.
       SMethod (cc:=cc) class qual ret targs (ar:=ar) wpp2.
     Proof. exact: SMethodOptCast_proper. Qed.
 
-    #[global] Instance: Params (@SMethodCast) 8 := {}.
-    #[global] Instance: Params (@SMethod) 7 := {}.
+    #[global] Instance: Params (@SMethodCast) 9 := {}.
+    #[global] Instance: Params (@SMethod) 8 := {}.
     #[global] Instance SMethodCast_ne' cast n :
       Proper (dist (A:=ptr -d> WithPrePostO mpredI) n ==> dist n)
         (SMethodCast (cc:=cc) class cast qual ret targs (ar:=ar)).
