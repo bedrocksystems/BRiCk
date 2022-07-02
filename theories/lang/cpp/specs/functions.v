@@ -92,7 +92,7 @@ Section with_cpp.
     Context (ret : type) (targs : list type).
 
     Lemma SFunction_mono wpp1 wpp2 :
-      wpspec_entails wpp2 wpp1 ->
+      wpspec_entails wpp1 wpp2 ->
       fs_entails
         (SFunction (cc:=cc) (ar:=ar) ret targs wpp1)
         (SFunction (cc:=cc) (ar:=ar) ret targs wpp2).
@@ -102,7 +102,7 @@ Section with_cpp.
     Qed.
 
     Lemma SFunction_mono_fupd wpp1 wpp2 :
-      wpspec_entails_fupd wpp2 wpp1 ->
+      wpspec_entails_fupd wpp1 wpp2 ->
       fs_entails_fupd
         (SFunction (cc:=cc) (ar:=ar) ret targs wpp1)
         (SFunction (cc:=cc) (ar:=ar) ret targs wpp2).
@@ -123,21 +123,21 @@ Section with_cpp.
     Proof. exact: ne_proper. Qed.
 
     #[global] Instance SFunction_mono' :
-      Proper (flip wpspec_entails ==> fs_entails) (SFunction (cc:=cc) ret targs).
+      Proper (wpspec_entails ==> fs_entails) (SFunction (cc:=cc) ret targs).
     Proof. repeat intro. by apply SFunction_mono. Qed.
 
     #[global] Instance SFunction_flip_mono' :
-      Proper (wpspec_entails ==> flip fs_entails)
+      Proper (flip wpspec_entails ==> flip fs_entails)
         (SFunction (cc:=cc) ret targs).
     Proof. solve_proper. Qed.
 
     #[global] Instance SFunction_mono_fupd' :
-      Proper (flip wpspec_entails_fupd ==> fs_entails_fupd)
+      Proper (wpspec_entails_fupd ==> fs_entails_fupd)
         (SFunction (cc:=cc) ret targs).
     Proof. repeat intro. by apply SFunction_mono_fupd. Qed.
 
     #[global] Instance SFunction_flip_mono_fupd' :
-      Proper (wpspec_entails_fupd ==> flip fs_entails_fupd)
+      Proper (flip wpspec_entails_fupd ==> flip fs_entails_fupd)
         (SFunction (cc:=cc) ret targs).
     Proof. solve_proper. Qed.
   End SFunction.
@@ -149,7 +149,7 @@ Section with_cpp.
     Implicit Types (wpp : ptr → WpSpec mpredI ptr ptr).
 
     Lemma SConstructor_mono wpp1 wpp2 :
-      (forall this, wpspec_entails (wpp2 this) (wpp1 this)) ->
+      (forall this, wpspec_entails (wpp1 this) (wpp2 this)) ->
       fs_entails
         (SConstructor (cc:=cc) class targs (ar:=ar) wpp1)
         (SConstructor (cc:=cc) class targs (ar:=ar) wpp2).
@@ -165,7 +165,7 @@ Section with_cpp.
     #[global] Instance: Params (@SConstructor) 7 := {}.
 
     Lemma SConstructor_mono_fupd wpp1 wpp2 :
-      (forall this, wpspec_entails_fupd (wpp2 this) (wpp1 this)) ->
+      (forall this, wpspec_entails_fupd (wpp1 this) (wpp2 this)) ->
       fs_entails_fupd
         (SConstructor (cc:=cc) class targs (ar:=ar) wpp1)
         (SConstructor (cc:=cc) class targs (ar:=ar) wpp2).
@@ -181,22 +181,22 @@ Section with_cpp.
     Qed.
 
     #[global] Instance SConstructor_mono' :
-      Proper (flip (pointwise_relation _ wpspec_entails) ==> fs_entails)
+      Proper (pointwise_relation _ wpspec_entails ==> fs_entails)
         (SConstructor (cc:=cc) class targs (ar:=ar)).
     Proof. repeat intro. by apply SConstructor_mono. Qed.
 
     #[global] Instance SConstructor_flip_mono' :
-      Proper (pointwise_relation _ wpspec_entails ==> flip fs_entails)
+      Proper (flip (pointwise_relation _ wpspec_entails) ==> flip fs_entails)
         (SConstructor (cc:=cc) class targs (ar:=ar)).
     Proof. solve_proper. Qed.
 
     #[global] Instance SConstructor_mono_fupd' :
-      Proper (flip (pointwise_relation _ wpspec_entails_fupd) ==> fs_entails_fupd)
+      Proper (pointwise_relation _ wpspec_entails_fupd ==> fs_entails_fupd)
         (SConstructor (cc:=cc) class targs (ar:=ar)).
     Proof. repeat intro. by apply SConstructor_mono_fupd. Qed.
 
     #[global] Instance SConstructor_flip_mono_fupd' :
-      Proper (pointwise_relation _ wpspec_entails_fupd ==> flip fs_entails_fupd)
+      Proper (flip (pointwise_relation _ wpspec_entails_fupd) ==> flip fs_entails_fupd)
         (SConstructor (cc:=cc) class targs (ar:=ar)).
     Proof. solve_proper. Qed.
 
@@ -216,7 +216,7 @@ Section with_cpp.
     Implicit Types (wpp : ptr → WpSpec mpredI ptr ptr).
 
     Lemma SDestructor_mono wpp1 wpp2 :
-      (forall this, wpspec_entails (wpp2 this) (wpp1 this)) ->
+      (forall this, wpspec_entails (wpp1 this) (wpp2 this)) ->
       fs_entails
         (SDestructor (cc:=cc) class wpp1)
         (SDestructor (cc:=cc) class wpp2).
@@ -233,7 +233,7 @@ Section with_cpp.
     #[global] Instance: Params (@SDestructor) 5 := {}.
 
     Lemma SDestructor_mono_fupd wpp1 wpp2 :
-      (forall this, wpspec_entails_fupd (wpp2 this) (wpp1 this)) ->
+      (forall this, wpspec_entails_fupd (wpp1 this) (wpp2 this)) ->
       fs_entails_fupd
         (SDestructor (cc:=cc) class wpp1)
         (SDestructor (cc:=cc) class wpp2).
@@ -253,22 +253,22 @@ Section with_cpp.
     Qed.
 
     #[global] Instance SDestructor_mono' :
-      Proper (flip (pointwise_relation _ wpspec_entails) ==> fs_entails)
+      Proper (pointwise_relation _ wpspec_entails ==> fs_entails)
         (SDestructor (cc:=cc) class).
     Proof. repeat intro. by apply SDestructor_mono. Qed.
 
     #[global] Instance SDestructor_flip_mono' :
-      Proper (pointwise_relation _ wpspec_entails ==> flip fs_entails)
+      Proper (flip(pointwise_relation _ wpspec_entails) ==> flip fs_entails)
         (SDestructor (cc:=cc) class).
     Proof. solve_proper. Qed.
 
     #[global] Instance SDestructor_mono_fupd' :
-      Proper (flip (pointwise_relation _ wpspec_entails_fupd) ==> fs_entails_fupd)
+      Proper (pointwise_relation _ wpspec_entails_fupd ==> fs_entails_fupd)
         (SDestructor (cc:=cc) class).
     Proof. repeat intro. by apply SDestructor_mono_fupd. Qed.
 
     #[global] Instance SDestructor_flip_mono_fupd' :
-      Proper (pointwise_relation _ wpspec_entails_fupd ==> flip fs_entails_fupd)
+      Proper (flip (pointwise_relation _ wpspec_entails_fupd) ==> flip fs_entails_fupd)
         (SDestructor (cc:=cc) class).
     Proof. solve_proper. Qed.
 
@@ -292,7 +292,7 @@ Section with_cpp.
         [SMethod_wpspec_monoN]. We retain this proof because it's easier
         to understand and it goes through without [BiEntailsN]. *)
     #[local] Lemma SMethodOptCast_mono cast wpp1 wpp2 :
-      (∀ this, wpspec_entails (wpp2 this) (wpp1 this)) ->
+      (∀ this, wpspec_entails (wpp1 this) (wpp2 this)) ->
       fs_entails
         (SMethodOptCast (cc:=cc) class cast qual ret targs (ar:=ar) wpp1)
         (SMethodOptCast (cc:=cc) class cast qual ret targs (ar:=ar) wpp2).
@@ -301,20 +301,12 @@ Section with_cpp.
       apply SFunction_mono => vs K.
       rewrite /= /exact_spec.
       f_equiv => this.
-      move: Hwpp.
-      match goal with
-      | |- context [ spec_internal _ (?A :: nil) _ _ _ _ ] =>
-          change (A :: nil) with ([] ++ [A])
-      end.
-      rewrite !arg_ok.
-      intros.
-      apply bi.exist_mono; intro.
-      apply bi.sep_mono; eauto.
-      apply Hwpp.
+      rewrite -(app_nil_l [_]) !arg_ok.
+      repeat f_equiv. apply Hwpp.
     Qed.
 
     #[local] Lemma SMethodOptCast_mono_fupd cast wpp1 wpp2 :
-      (∀ this, wpspec_entails_fupd (wpp2 this) (wpp1 this)) ->
+      (∀ this, wpspec_entails_fupd (wpp1 this) (wpp2 this)) ->
       fs_entails_fupd
         (SMethodOptCast (cc:=cc) class cast qual ret targs (ar:=ar) wpp1)
         (SMethodOptCast (cc:=cc) class cast qual ret targs (ar:=ar) wpp2).
@@ -325,11 +317,7 @@ Section with_cpp.
       rewrite /= /exact_spec.
       iDestruct 1 as (this) "wpp". iExists this.
       move: Hwpp.
-      match goal with
-      | |- context [ spec_internal _ (?A :: nil) _ _ _ _ ] =>
-          change (A :: nil) with ([] ++ [A])
-      end.
-      rewrite !arg_ok.
+      rewrite -(app_nil_l [_]) !arg_ok.
       intros.
       iDestruct "wpp" as "(% & % & wpp)".
       iExists _; iFrame; iSplitR; [done|].
@@ -337,28 +325,28 @@ Section with_cpp.
     Qed.
 
     Lemma SMethodCast_mono cast wpp1 wpp2 :
-      (∀ this, wpspec_entails (wpp2 this) (wpp1 this)) ->
+      (∀ this, wpspec_entails (wpp1 this) (wpp2 this)) ->
       fs_entails
         (SMethodOptCast (cc:=cc) class cast qual ret targs (ar:=ar) wpp1)
         (SMethodOptCast (cc:=cc) class cast qual ret targs (ar:=ar) wpp2).
     Proof. exact: SMethodOptCast_mono. Qed.
 
     Lemma SMethod_mono wpp1 wpp2 :
-      (∀ this, wpspec_entails (wpp2 this) (wpp1 this)) ->
+      (∀ this, wpspec_entails (wpp1 this) (wpp2 this)) ->
       fs_entails
         (SMethod (cc:=cc) class qual ret targs (ar:=ar) wpp1)
         (SMethod (cc:=cc) class qual ret targs (ar:=ar) wpp2).
     Proof. exact: SMethodOptCast_mono. Qed.
 
     Lemma SMethodCast_mono_fupd cast wpp1 wpp2 :
-      (∀ this, wpspec_entails_fupd (wpp2 this) (wpp1 this)) ->
+      (∀ this, wpspec_entails_fupd (wpp1 this) (wpp2 this)) ->
       fs_entails_fupd
         (SMethodOptCast (cc:=cc) class cast qual ret targs (ar:=ar) wpp1)
         (SMethodOptCast (cc:=cc) class cast qual ret targs (ar:=ar) wpp2).
     Proof. exact: SMethodOptCast_mono_fupd. Qed.
 
     Lemma SMethod_mono_fupd wpp1 wpp2 :
-      (∀ this, wpspec_entails_fupd (wpp2 this) (wpp1 this)) ->
+      (∀ this, wpspec_entails_fupd (wpp1 this) (wpp2 this)) ->
       fs_entails_fupd
         (SMethod (cc:=cc) class qual ret targs (ar:=ar) wpp1)
         (SMethod (cc:=cc) class qual ret targs (ar:=ar) wpp2).
@@ -367,18 +355,12 @@ Section with_cpp.
     #[local] Lemma SMethodOptCast_wpspec_monoN
         c wpp1 wpp2 vs K n :
       (∀ this, wpspec_entailsN n (wpp1 this) (wpp2 this)) ->
-      SMethodOptCast_wpp c wpp1 vs K ⊢{n}
-      SMethodOptCast_wpp c wpp2 vs K.
+      SMethodOptCast_wpp c wpp2 vs K ⊢{n}
+      SMethodOptCast_wpp c wpp1 vs K.
     Proof.
       move=>Hwpp /=. rewrite /exact_spec. f_equiv=>this.
-      match goal with
-      | |- context [ ?A :: nil ] =>
-          change (A :: nil) with ([] ++ [A])
-      end.
-      rewrite !arg_ok.
-      f_equiv. intro.
-      f_equiv.
-      apply Hwpp.
+      rewrite -(app_nil_l [_]) !arg_ok.
+      repeat f_equiv. apply Hwpp.
     Qed.
 
     #[local] Lemma SMethodOptCast_ne cast wpp1 wpp2 n :
@@ -443,38 +425,38 @@ Section with_cpp.
     Proof. exact: ne_proper. Qed.
 
     #[global] Instance SMethodCast_mono' cast :
-      Proper (pointwise_relation _ (flip wpspec_entails) ==> fs_entails)
+      Proper (pointwise_relation _ wpspec_entails ==> fs_entails)
         (SMethodCast (cc:=cc) class cast qual ret targs (ar:=ar)).
     Proof. repeat intro. by apply SMethodCast_mono. Qed.
     #[global] Instance SMethod_mono' :
-      Proper (pointwise_relation _ (flip wpspec_entails) ==> fs_entails)
+      Proper (pointwise_relation _ wpspec_entails ==> fs_entails)
         (SMethod (cc:=cc) class qual ret targs (ar:=ar)).
     Proof. repeat intro. by apply SMethod_mono. Qed.
 
     #[global] Instance SMethodCast_flip_mono' cast :
-      Proper (pointwise_relation _ wpspec_entails ==> flip fs_entails)
+      Proper (flip (pointwise_relation _ wpspec_entails) ==> flip fs_entails)
         (SMethodCast (cc:=cc) class cast qual ret targs (ar:=ar)).
     Proof. repeat intro. by apply SMethodCast_mono. Qed.
     #[global] Instance SMethod_flip_mono' :
-      Proper (pointwise_relation _ wpspec_entails ==> flip fs_entails)
+      Proper (flip (pointwise_relation _ wpspec_entails) ==> flip fs_entails)
         (SMethod (cc:=cc) class qual ret targs (ar:=ar)).
     Proof. repeat intro. by apply SMethod_mono. Qed.
 
     #[global] Instance SMethodCast_mono_fupd' cast :
-      Proper (pointwise_relation _ (flip wpspec_entails_fupd) ==> fs_entails_fupd)
+      Proper (pointwise_relation _ wpspec_entails_fupd ==> fs_entails_fupd)
         (SMethodCast (cc:=cc) class cast qual ret targs (ar:=ar)).
     Proof. repeat intro. by apply SMethodCast_mono_fupd. Qed.
     #[global] Instance SMethod_mono_fupd' :
-      Proper (pointwise_relation _ (flip wpspec_entails_fupd) ==> fs_entails_fupd)
+      Proper (pointwise_relation _ wpspec_entails_fupd ==> fs_entails_fupd)
         (SMethod (cc:=cc) class qual ret targs (ar:=ar)).
     Proof. repeat intro. by apply SMethod_mono_fupd. Qed.
 
     #[global] Instance SMethodCast_flip_mono_fupd' cast :
-      Proper (pointwise_relation _ wpspec_entails_fupd ==> flip fs_entails_fupd)
+      Proper (flip (pointwise_relation _ wpspec_entails_fupd) ==> flip fs_entails_fupd)
         (SMethodCast (cc:=cc) class cast qual ret targs (ar:=ar)).
     Proof. repeat intro. by apply SMethodCast_mono_fupd. Qed.
     #[global] Instance SMethod_flip_mono_fupd' :
-      Proper (pointwise_relation _ wpspec_entails_fupd ==> flip fs_entails_fupd)
+      Proper (flip (pointwise_relation _ wpspec_entails_fupd) ==> flip fs_entails_fupd)
         (SMethod (cc:=cc) class qual ret targs (ar:=ar)).
     Proof. repeat intro. by apply SMethod_mono_fupd. Qed.
   End SMethod.
