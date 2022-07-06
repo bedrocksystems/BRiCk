@@ -12,7 +12,7 @@
     ; /usr/lib/llvm-13/lib/libLLVM-13.so
     ; ```
     ; and changes when upgrading LLVM.
-    (run llvm-config --libfiles))))
+    (pipe-outputs (run llvm-config --libfiles) (run sed "s/ /\\n/g")))))
  (rule
   (targets cpp2v cpp2v-make.log)
   (deps
