@@ -276,7 +276,7 @@ Module Type Stmt.
 
     Axiom wp_return : forall ρ e (Q : KpredI),
           (let rty := erase_qualifiers (get_return_type ρ) in
-           wp_call_initialize ρ rty e (fun v _ frees =>
+           wp_call_initialize ρ rty e (fun v frees =>
                                          interp frees (Q (ReturnVal v))))
            (* ^ NOTE discard [free] because we are extruding the scope of the value *)
        |-- wp ρ (Sreturn (Some e)) Q.

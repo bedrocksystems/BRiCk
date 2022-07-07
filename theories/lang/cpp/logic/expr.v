@@ -1230,7 +1230,7 @@ Module Type Expr.
             init_fields cls base s.(s_fields) es
                (base |-> struct_paddingR 1 cls **
                 (if has_vtable s then base |-> identityR cls [cls] 1 else emp) -*
-                Q (FreeTemps.delete (Tnamed cls) base) FreeTemps.id)
+                Q (Tnamed cls) FreeTemps.id)
 
         | Some (Gunion u) =>
             (* to initialize a union, the list must be exactly 1 element long *)
