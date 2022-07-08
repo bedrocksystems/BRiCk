@@ -49,10 +49,10 @@ BUILD_TYPE ?= Release
 CPP2V_LOGS := cpp2v-cmake.log cpp2v-make.log
 
 build/Makefile: Makefile CMakeLists.txt
-	$(CMAKE) -B build $(BUILDARG) -DCMAKE_BUILD_TYPE=$(BUILD_TYPE) &> cpp2v-cmake.log || cat cpp2v-cmake.log
+	$(CMAKE) -B build $(BUILDARG) -DCMAKE_BUILD_TYPE=$(BUILD_TYPE) &> cpp2v-cmake.log || { cat cpp2v-cmake.log; exit 1; }
 
 cpp2v: build/Makefile
-	+$(CPPMK) cpp2v &> cpp2v-make.log || cat cpp2v-make.log
+	+$(CPPMK) cpp2v &> cpp2v-make.log || { cat cpp2v-make.log; exit 1; }
 .PHONY: cpp2v
 
 
