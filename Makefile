@@ -49,11 +49,7 @@ BUILD_TYPE ?= Release
 build/Makefile: Makefile CMakeLists.txt
 	$(CMAKE) -B build $(BUILDARG) -DCMAKE_BUILD_TYPE=$(BUILD_TYPE)
 
-tocoq: build/Makefile
-	+$(CPPMK) tocoq
-.PHONY: tocoq
-
-cpp2v: tocoq
+cpp2v: build/Makefile
 	+$(CPPMK) cpp2v
 .PHONY: cpp2v
 
