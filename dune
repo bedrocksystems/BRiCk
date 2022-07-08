@@ -14,7 +14,7 @@
     ; and changes when upgrading LLVM.
     (pipe-outputs (run llvm-config --libfiles) (run sed "s/ /\\n/g")))))
  (rule
-  (targets cpp2v cpp2v-make.log)
+  (targets cpp2v)
   (deps
     ; This code depends on the LLVM library, to try rebuilding `cpp2v` if LLVM
     ; is upgraded.
@@ -24,9 +24,7 @@
     (source_tree ../cmake) (source_tree ../include) (source_tree ../doc)
     (source_tree ../llvm-include)
     (env_var PATH) (env_var LLVM_DIR) (env_var CLANG_DIR))
-  (action
-   (with-outputs-to cpp2v-make.log
-    (run make -j 7 -C .. cpp2v))))
+  (action (run make -j 7 -C .. cpp2v)))
  ; The install rule is also necessary to _use_ cpp2v in other actions
  (install
   (section bin)
