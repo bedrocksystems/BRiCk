@@ -46,11 +46,13 @@ SYS := $(shell uname)
 BUILDARG=
 BUILD_TYPE ?= Release
 
+CPP2V_LOGS := cpp2v-cmake.log cpp2v-make.log
+
 build/Makefile: Makefile CMakeLists.txt
-	$(CMAKE) -B build $(BUILDARG) -DCMAKE_BUILD_TYPE=$(BUILD_TYPE)
+	$(CMAKE) -B build $(BUILDARG) -DCMAKE_BUILD_TYPE=$(BUILD_TYPE) &> cpp2v-cmake.log || cat cpp2v-cmake.log
 
 cpp2v: build/Makefile
-	+$(CPPMK) cpp2v
+	+$(CPPMK) cpp2v &> cpp2v-make.log || cat cpp2v-make.log
 .PHONY: cpp2v
 
 
@@ -156,6 +158,7 @@ clean: doc-clean
 	+@if test -f Makefile.coq; then $(COQMK) cleanall; fi
 	rm -f Makefile.coq Makefile.coq.conf
 	find . ! -path '*/.git/*' -name '.lia.cache' -type f -print0 | xargs -0 rm -f
+	rm -f $(CPP2V_LOGS)
 .PHONY: clean doc-clean
 
 
