@@ -38,10 +38,6 @@ static cl::OptionCategory Cpp2V("cpp2v options");
 // It's nice to have this help message in all tools.
 static cl::extrahelp CommonHelp(CommonOptionsParser::HelpMessage);
 
-static cl::opt<std::string>
-    SpecFile("spec", cl::desc("path to generate specifications"), cl::Optional,
-             cl::cat(Cpp2V));
-
 static cl::opt<std::string> NamesFile("names",
                                       cl::desc("path to generate names"),
                                       cl::Optional, cl::cat(Cpp2V));
@@ -78,7 +74,7 @@ public:
 		}
 #endif
         auto result = new ToCoqConsumer(&Compiler, to_opt(VFileOutput),
-                                        to_opt(SpecFile), to_opt(NamesFile));
+                                        to_opt(NamesFile));
         return std::unique_ptr<clang::ASTConsumer>(result);
     }
 
