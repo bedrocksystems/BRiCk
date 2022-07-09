@@ -115,14 +115,14 @@ ToCoqConsumer::toCoqModule(clang::ASTContext *ctxt,
 
             NoInclude source(ctxt.getSourceManager());
 
-            print.output() << "(*" << fmt::line
-                           << " * Notations extracted from "
-                           << ctxt.getSourceManager()
-                                  .getFileEntryForID(
-                                      ctxt.getSourceManager().getMainFileID())
-                                  ->getName()
-                           << fmt::line << " *)" << fmt::line
-                           << "Require Export bedrock.lang.cpp.parser."
+            // print.output() << "(*" << fmt::line
+            //                << " * Notations extracted from "
+            //                << ctxt.getSourceManager()
+            //                       .getFileEntryForID(
+            //                           ctxt.getSourceManager().getMainFileID())
+            //                       ->getName()
+            //                << fmt::line << " *)" << fmt::line;
+            print.output() << "Require Export bedrock.lang.cpp.parser."
                            << fmt::line << fmt::line;
 
             // generate all of the record fields
