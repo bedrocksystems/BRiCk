@@ -896,7 +896,7 @@ public:
                                        CoqPrinter& print, ClangPrinter& cprint,
                                        const ASTContext& ctxt,
                                        OpaqueNames& li) {
-        auto do_arg = [&print, &cprint, &ctxt, &li, expr]() {
+        auto do_arg = [&print, &cprint, &li, expr]() {
             if (expr->isArgumentType()) {
                 print.ctor("inl", false);
                 cprint.printQualType(expr->getArgumentType(), print);

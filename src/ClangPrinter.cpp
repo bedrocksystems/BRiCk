@@ -60,6 +60,7 @@ ClangPrinter::printTypeName(const TypeDecl *decl, CoqPrinter &print) const {
     print.output() << "\"_Z" << sout << "\"";
 }
 #else /* CLANG_NAMES */
+#ifdef STRUCTURED_NAMES
 namespace {
 unsigned
 getAnonymousIndex(const NamedDecl *here) {
@@ -85,7 +86,6 @@ getAnonymousIndex(const NamedDecl *here) {
 }
 } // namespace
 
-#ifdef STRUCTURED_NAMES
 void
 ClangPrinter::printTypeName(const TypeDecl *here, CoqPrinter &print) const {
     if (auto ts = dyn_cast<ClassTemplateSpecializationDecl>(here)) {

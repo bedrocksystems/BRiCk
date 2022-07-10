@@ -28,7 +28,7 @@ class TypeDecl;
 }
 
 class CoqPrinter;
-class OpaqueNames;
+struct OpaqueNames;
 
 class ClangPrinter {
 public:
