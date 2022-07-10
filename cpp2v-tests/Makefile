@@ -15,6 +15,9 @@ ALL	= $(wildcard *.cpp)
 all: $(ALL:%.cpp=%_cpp.vo) $(ALL:%.cpp=%_cpp_names.vo) reject
 .PHONY: all
 
+vos: $(ALL:%.cpp=%_cpp.vos) $(ALL:%.cpp=%_cpp_names.vos) reject
+.PHONY: vos
+
 ast: $(ALL:%.cpp=%_cpp.v) $(ALL:%.cpp=%_cpp_names.v)
 .PHONY: ast
 
@@ -28,6 +31,9 @@ clean:
 
 %.vo: %.v
 	$(COQC) $(WARN) -Q $(QPATH) bedrock $<
+
+%.vos: %.v
+	$(COQC) $(WARN) -vos -Q $(QPATH) bedrock $<
 
 .PRECIOUS: %_cpp.v
 

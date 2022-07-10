@@ -80,15 +80,25 @@ coq: Makefile.coq
 test: test-cpp2v test-coq
 .PHONY: test
 
-build-minimal: Makefile.coq
-	+$(COQMK) theories/lang/cpp/parser.vo
+minimal-install:
 	mkdir -p build
 	rm -rf build/bedrock
 	ln -s $(ROOT)/theories build/bedrock
+
+build-minimal: Makefile.coq
+	+$(COQMK) theories/lang/cpp/parser.vo
+	$(MAKE) minimal-install
+.PHONY: build-minimal
+
+build-minimal-vos: Makefile.coq
+	+$(COQMK) theories/lang/cpp/parser.vos
+	$(MAKE) minimal-install
 .PHONY: build-minimal
 
 test-cpp2v: build-minimal cpp2v
 	$(MAKE) -C cpp2v-tests CPP2V=$(ROOT)/build/cpp2v
+test-cpp2v-vos: build-minimal-vos cpp2v
+	$(MAKE) -C cpp2v-tests CPP2V=$(ROOT)/build/cpp2v vos
 .PHONY: test-cpp2v
 
 test-coq: cpp2v coq
