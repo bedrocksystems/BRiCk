@@ -3,6 +3,7 @@
  * This software is distributed under the terms of the BedRock Open-Source License.
  * See the LICENSE-BedRock file in the repository root for details.
  */
+#include "StringPrettyPrinter.hpp"
 #include "ClangPrinter.hpp"
 #include "CoqPrinter.hpp"
 #include "Formatter.hpp"
@@ -572,17 +573,7 @@ public:
                             ClangPrinter& cprint, const ASTContext&,
                             OpaqueNames&) {
         print.ctor("Estring", false);
-        for (auto i = lit->getBytes().begin(), end = lit->getBytes().end();
-             i != end; ++i) {
-            char buf[25];
-            sprintf(buf, "Byte.x%02x", (unsigned char)*i);
-            print.output() << "(BS.String " << buf << " ";
-        }
-        print.output() << "BS.EmptyString";
-        for (auto i = lit->getBytes().begin(), end = lit->getBytes().end();
-             i != end; ++i) {
-            print.output() << ")";
-        }
+        string_pretty_print(lit, print);
         done(lit, print, cprint);
     }
 
