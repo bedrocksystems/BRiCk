@@ -562,7 +562,7 @@ public:
                     auto im = init->getIndirectMember();
                     print.ctor("InitIndirect");
 
-                    bool completed = false;
+                    __attribute__((unused)) bool completed = false;
                     print.begin_list();
                     for (auto i : im->chain()) {
                         if (i->getName() == "") {

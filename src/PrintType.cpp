@@ -373,7 +373,7 @@ PrintType PrintType::printer;
 
 void
 ClangPrinter::printType(const clang::Type* type, CoqPrinter& print) {
-    auto depth = print.output().get_depth();
+    __attribute__((unused)) auto depth = print.output().get_depth();
     PrintType::printer.Visit(type, print, *this);
     assert(depth == print.output().get_depth());
 }

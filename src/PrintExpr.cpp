@@ -654,7 +654,7 @@ public:
         print.ctor("Emember");
 
         auto base = expr->getBase();
-        auto record_type = expr->getMemberDecl()->getDeclContext();
+        __attribute__((unused)) auto record_type = expr->getMemberDecl()->getDeclContext();
         // TODO Assert that the type of the base is the type of the field.
         if (expr->isArrow()) {
             print.output() << "Lvalue" << fmt::nbsp;

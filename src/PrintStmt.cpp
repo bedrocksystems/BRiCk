@@ -354,7 +354,7 @@ PrintStmt PrintStmt::printer;
 
 void
 ClangPrinter::printStmt(const clang::Stmt *stmt, CoqPrinter &print) {
-    auto depth = print.output().get_depth();
+    __attribute__((unused)) auto depth = print.output().get_depth();
     PrintStmt::printer.Visit(stmt, print, *this, *this->context_);
     assert(depth == print.output().get_depth());
 }
