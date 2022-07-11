@@ -3,7 +3,8 @@
  * This software is distributed under the terms of the BedRock Open-Source License.
  * See the LICENSE-BedRock file in the repository root for details.
  */
-#include "StringPrettyPrinter.hpp"
+#include "CoqPrinter.hpp"
+#include <clang/AST/Expr.h>
 
 using namespace clang;
 using namespace fmt;
@@ -70,7 +71,7 @@ private:
 
     /**
      * @brief Pretty-prints a special character c as encoded.
-     * For instance, "\xe2" is encoded as "(BS.String Byte.xe2".
+     * For instance, "\xe2" is encoded by printing "(BS.String Byte.xe2", and deferring ")".
      */
     void toEscape(unsigned char c) {
         switch_st(PrettyState::ESCAPE);
@@ -155,7 +156,7 @@ private:
     }
 };
 
-void
-string_pretty_print(const StringLiteral* lit, CoqPrinter& print) {
-    StringPrettyPrinter(print).pretty_print(lit);
+fmt::Formatter& CoqPrinter::escaped_str(const clang::StringLiteral* lit) {
+    StringPrettyPrinter(*this).pretty_print(lit);
+    return this->output();
 }

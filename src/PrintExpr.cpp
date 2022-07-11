@@ -3,7 +3,6 @@
  * This software is distributed under the terms of the BedRock Open-Source License.
  * See the LICENSE-BedRock file in the repository root for details.
  */
-#include "StringPrettyPrinter.hpp"
 #include "ClangPrinter.hpp"
 #include "CoqPrinter.hpp"
 #include "Formatter.hpp"
@@ -573,7 +572,7 @@ public:
                             ClangPrinter& cprint, const ASTContext&,
                             OpaqueNames&) {
         print.ctor("Estring", false);
-        string_pretty_print(lit, print);
+        print.escaped_str(lit);
         done(lit, print, cprint);
     }
 
