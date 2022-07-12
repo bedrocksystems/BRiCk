@@ -362,7 +362,7 @@ dune-build:
     - .postupdate-dunecache
   needs: []
   stage: dune-build
-  image: ${docker_img_prefix}:coq815-llvm13-usermod
+  image: ${docker_img_prefix}:cpp2v-llvm13-usermod-1
   variables:
     CPP2V_CORE: cpp2v-core
   script:
