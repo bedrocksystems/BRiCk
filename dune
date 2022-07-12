@@ -1,3 +1,28 @@
+;
+; Copyright (C) BedRock Systems Inc. 2022
+; All rights reserved.
+;
+; This software is distributed under the terms of the BedRock Open-Source License.
+; See the LICENSE-BedRock file in the repository root for details.
+
+(env
+ (dev
+  (flags :standard)
+  (coq
+   (flags
+    (:standard
+      ;see https://gitlab.mpi-sws.org/iris/iris/-/blob/master/_CoqProject
+      -w -notation-overridden
+      ; Similar to notation warnings.
+      -w -custom-entry-overridden
+      -w -redundant-canonical-projection
+      -w -ambiguous-paths
+      ; Turn warning on hints into error:
+      -w +deprecated-hint-without-locality
+      -w +deprecated-instance-without-locality
+      -w +unknown-option
+)))))
+
 ; Explain Dune how to find and build cpp2v binary
 (subdir build
  (rule
