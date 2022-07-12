@@ -153,7 +153,6 @@ private:
     Filter &filter_;
     SpecCollector &specs_;
     clang::ASTContext *const context_;
-    clang::CompilerInstance *const ci_;
     std::set<int64_t> visited_;
 
 private:
@@ -179,8 +178,7 @@ private:
 public:
     BuildModule(::Module &m, Filter &filter, clang::ASTContext *context,
                 SpecCollector &specs, clang::CompilerInstance *ci)
-        : module_(m), filter_(filter), specs_(specs), context_(context),
-          ci_(ci) {}
+        : module_(m), filter_(filter), specs_(specs), context_(context) {}
 
     void Visit(const Decl *d, bool s) {
         if (visited_.find(d->getID()) == visited_.end()) {

@@ -654,7 +654,7 @@ public:
         print.ctor("Emember");
 
         auto base = expr->getBase();
-        auto record_type = expr->getMemberDecl()->getDeclContext();
+        __attribute__((unused)) auto record_type = expr->getMemberDecl()->getDeclContext();
         // TODO Assert that the type of the base is the type of the field.
         if (expr->isArrow()) {
             print.output() << "Lvalue" << fmt::nbsp;
@@ -896,7 +896,7 @@ public:
                                        CoqPrinter& print, ClangPrinter& cprint,
                                        const ASTContext& ctxt,
                                        OpaqueNames& li) {
-        auto do_arg = [&print, &cprint, &ctxt, &li, expr]() {
+        auto do_arg = [&print, &cprint, &li, expr]() {
             if (expr->isArgumentType()) {
                 print.ctor("inl", false);
                 cprint.printQualType(expr->getArgumentType(), print);

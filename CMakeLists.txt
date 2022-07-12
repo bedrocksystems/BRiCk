@@ -141,3 +141,7 @@ endif(NOT LLVM_MONO_LIB)
 target_link_libraries(cpp2v PUBLIC ${llvm_libs} clang-cpp tocoq)
 
 
+target_compile_options(tocoq PUBLIC -Wall -Wimplicit-fallthrough)
+# This PUBLIC setting gets inherited by clients. That's good enough without
+# external clients; otherwise, we'd enable warnings for cpp2v as well.
+# target_compile_options(cpp2v PRIVATE -Wall -Wimplicit-fallthrough)

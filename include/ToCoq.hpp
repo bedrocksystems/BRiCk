@@ -27,10 +27,9 @@ class ToCoqConsumer : public clang::ASTConsumer {
 public:
     explicit ToCoqConsumer(clang::CompilerInstance *compiler,
                            const llvm::Optional<std::string> output_file,
-                           const llvm::Optional<std::string> spec_file,
                            const llvm::Optional<std::string> notations_file,
                            bool elaborate = true)
-        : compiler_(compiler), spec_file_(spec_file), output_file_(output_file),
+        : compiler_(compiler), output_file_(output_file),
           notations_file_(notations_file), elaborate_(elaborate) {}
 
     virtual void HandleTranslationUnit(clang::ASTContext &Context) {
@@ -42,7 +41,6 @@ private:
 
 private:
     clang::CompilerInstance *compiler_;
-    const Optional<std::string> spec_file_;
     const Optional<std::string> output_file_;
     const Optional<std::string> notations_file_;
     bool elaborate_;

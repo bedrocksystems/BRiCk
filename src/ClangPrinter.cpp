@@ -60,6 +60,7 @@ ClangPrinter::printTypeName(const TypeDecl *decl, CoqPrinter &print) const {
     print.output() << "\"_Z" << sout << "\"";
 }
 #else /* CLANG_NAMES */
+#ifdef STRUCTURED_NAMES
 namespace {
 unsigned
 getAnonymousIndex(const NamedDecl *here) {
@@ -85,7 +86,6 @@ getAnonymousIndex(const NamedDecl *here) {
 }
 } // namespace
 
-#ifdef STRUCTURED_NAMES
 void
 ClangPrinter::printTypeName(const TypeDecl *here, CoqPrinter &print) const {
     if (auto ts = dyn_cast<ClassTemplateSpecializationDecl>(here)) {
@@ -438,7 +438,7 @@ ClangPrinter::printValCat(const Expr *d, CoqPrinter &print) {
 
 void
 ClangPrinter::printExprAndValCat(const Expr *d, CoqPrinter &print) {
-    auto depth = print.output().get_depth();
+    __attribute__((unused)) auto depth = print.output().get_depth();
     print.output() << fmt::lparen;
     printValCat(d, print);
     print.output() << "," << fmt::nbsp;
@@ -450,7 +450,7 @@ ClangPrinter::printExprAndValCat(const Expr *d, CoqPrinter &print) {
 void
 ClangPrinter::printExprAndValCat(const Expr *d, CoqPrinter &print,
                                  OpaqueNames &li) {
-    auto depth = print.output().get_depth();
+    __attribute__((unused)) auto depth = print.output().get_depth();
     print.output() << fmt::lparen;
     printValCat(d, print);
     print.output() << "," << fmt::nbsp;

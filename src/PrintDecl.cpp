@@ -562,7 +562,7 @@ public:
                     auto im = init->getIndirectMember();
                     print.ctor("InitIndirect");
 
-                    bool completed = false;
+                    __attribute__((unused)) bool completed = false;
                     print.begin_list();
                     for (auto i : im->chain()) {
                         if (i->getName() == "") {
@@ -716,7 +716,7 @@ public:
             print.output() << fmt::nbsp;
 
             // TODO the values are not necessary.
-            print.list(decl->enumerators(), [&cprint](auto &print, auto i) {
+            print.list(decl->enumerators(), [](auto &print, auto i) {
                 print.output() << fmt::line << "(";
                 print.str(i->getNameAsString());
                 print.output() << "," << fmt::nbsp << "("

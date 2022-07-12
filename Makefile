@@ -8,7 +8,7 @@
 default_target: coq cpp2v
 .PHONY: default_target
 
-CMAKE=$$(which cmake)
+CMAKE=cmake
 COQMAKEFILE=$(COQBIN)coq_makefile
 
 # To avoid "jobserver unavailable" warnings, prepend + to recursive make
