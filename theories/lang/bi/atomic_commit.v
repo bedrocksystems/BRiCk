@@ -512,8 +512,8 @@ Section lemmas.
   Qed.
 
   (* Everything that fancy updates can eliminate without changing, commit
-  accessors can eliminate as well.  This is a forwarding instance needed becuase
-  commit_acc is becoming opaque. *)
+  accessors can eliminate as well.  This is a forwarding instance needed because
+  commit_acc is opaque. *)
   Global Instance elim_modal_commit_acc p q φ P P' b Eo Ei α β Φ :
     (∀ Q, ElimModal φ p q P P' (|={Eo,Ei}=> Q) (|={Eo,Ei}=> Q)) →
     ElimModal φ p q P P'
