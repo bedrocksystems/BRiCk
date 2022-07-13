@@ -220,7 +220,7 @@ Definition wpspec_relationI {PROP : bi}
 
 Notation wpspec_wand := (wpspec_relationI bi_wand id) (only parsing).
 Notation wpspec_wand_fupd :=
-  (wpspec_relationI (bi_wand ∘ fupd ⊤ ⊤) (λ K v, |={⊤}=> K v)%I) (only parsing).
+  (wpspec_relationI (λ P1 P2, P1 -∗ |={⊤}=> P2)%I (λ K v, |={⊤}=> K v)%I) (only parsing).
 
 Section wpspec_relations.
   Context `{!BiEntailsN PROP}.

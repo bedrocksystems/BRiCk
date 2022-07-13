@@ -143,4 +143,95 @@ Section with_cpp.
   #[global] Instance cpp_spec_mono ret ts ar :
     Proper (spec_entails ==> spec_entails) (cpp_spec ret ts (ar:=ar)).
   Proof. intros ???. exact: elab_entails. Qed.
+
+
+  Definition spec_entails_fupd {A R} (Q P : WpSpec mpredI A R) :=
+    wpspec_entails_fupd Q P.
+
+  Definition spec_impl_fupd {A R} (Q P : WpSpec mpredI A R) : mpredI :=
+    wpspec_wand_fupd Q P.
+
+  Lemma spec_entails_impl_fupd {A R} Q P :
+    (|-- @spec_impl_fupd A R P Q) ↔
+    spec_entails_fupd P Q.
+  Proof.
+    rewrite /spec_impl_fupd/spec_entails_fupd; split; intros H **; first iApply H.
+    iIntros (??). iApply H.
+  Qed.
+
+  Lemma list_sep_into_frame_fupd : forall ls (P P' : mpred),
+    (P -∗ |={top}=> P') ⊢ list_sep_into ls P -∗ |={top}=> list_sep_into ls P'.
+  Proof.
+    intros. iIntros "A".
+    rewrite (list_sep_into_take _ P) (list_sep_into_take _ P').
+    iIntros "[X $]". iApply "A"; done.
+  Qed.
+
+  (* Variant of [elab_impl] allowing for fancy updates; neither statement implies the other.
+  TODO: maybe the proof could be merged with [elab_impl]'s, by using a _conditional_ fancy update `|={ E }=>?b` and abstracting over `b`. *)
+  Lemma elab_impl_fupd (Q P : WpSpec mpredI val val) ret ts ar :
+    wpspec_wand_fupd Q P |--
+    wpspec_wand_fupd (cpp_spec ret ts (ar:=ar) Q) (cpp_spec ret ts (ar:=ar) P).
+  Proof.
+    rewrite /wpspec_wand_fupd/wp_specD/cpp_spec/=.
+    assert (forall ps xs Ps Qs,
+              (∀ (vs : list val) (K : val → mpred),
+                spec_internal P [] [] [] vs K -∗ |={⊤}=> spec_internal Q [] [] [] vs (λ v, |={⊤}=> K v)) -∗
+              ∀ (vs : list ptr) (K : ptr → mpred),
+                spec_internal (elaborate ret ts ar ps P) xs Ps Qs vs K -∗
+                |={⊤}=> spec_internal (elaborate ret ts ar ps Q) xs Ps Qs vs (λ v, |={⊤}=> K v)).
+    { induction ts; simpl; intros.
+      { case_match; case_match; rewrite /wp_spec_bind/=.
+        - iIntros "H" (??) "[$ P]".
+          iRevert "P"; iApply list_sep_into_frame_fupd.
+          iIntros "P".
+          iDestruct ("H" with "P") as ">Q".
+          iIntros "!>". iRevert "Q".
+          iApply spec_internal_frame.
+          iIntros (r) ">Q". iIntros (r') "L !>". by iApply "Q".
+        - iIntros "H" (??) "[$ P]".
+          iRevert "P"; iApply list_sep_into_frame_fupd.
+          iIntros "P".
+          iDestruct ("H" with "P") as ">Q".
+          iIntros "!>". iRevert "Q".
+          iApply spec_internal_frame.
+          iIntros (r) ">Q". iIntros (r') "L !>". by iApply "Q".
+        - iIntros "H" (??) "(%x & % & P)".
+          iExists x; iFrame "%".
+          iRevert "P"; iApply list_sep_into_frame_fupd.
+          iIntros "P".
+          iDestruct ("H" with "P") as ">Q".
+          iIntros "!>". iRevert "Q".
+          iApply spec_internal_frame.
+          iIntros (r) ">Q". iIntros (r') "L !>". by iApply "Q".
+        - iIntros "H" (??) "(%x & % & P)".
+          iExists x; iFrame "%".
+          iRevert "P"; iApply list_sep_into_frame_fupd.
+          iIntros "P".
+          iDestruct ("H" with "P") as ">Q".
+          iIntros "!>". iRevert "Q".
+          iApply spec_internal_frame.
+          iIntros (r) ">Q". iIntros (r') "L !>". by iApply "Q". }
+      { case_match; rewrite /wp_spec_bind/=.
+        { iIntros "H" (??) "P".
+          iDestruct "P" as (x) "P".
+          iExists x.
+          iDestruct (IHts with "H") as "H".
+          by iApply "H". }
+        { iIntros "H" (??) "P".
+          iDestruct "P" as (x y) "P".
+          iExists x, y.
+          iDestruct (IHts with "H") as "H".
+          by iApply "H". } } }
+    { eauto. }
+  Qed.
+
+  Lemma elab_entails_fupd (Q P : WpSpec mpredI val val) ret ts ar :
+    spec_entails_fupd Q P ->
+    spec_entails_fupd (cpp_spec ret ts (ar:=ar) Q) (cpp_spec ret ts (ar:=ar) P).
+  Proof. intros H%spec_entails_impl_fupd. iApply elab_impl_fupd. iApply H. Qed.
+
+  #[global] Instance cpp_spec_mono_fupd ret ts ar :
+    Proper (spec_entails_fupd ==> spec_entails_fupd) (cpp_spec ret ts (ar:=ar)).
+  Proof. intros ???. exact: elab_entails_fupd. Qed.
 End with_cpp.
