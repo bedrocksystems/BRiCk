@@ -572,17 +572,7 @@ public:
                             ClangPrinter& cprint, const ASTContext&,
                             OpaqueNames&) {
         print.ctor("Estring", false);
-        for (auto i = lit->getBytes().begin(), end = lit->getBytes().end();
-             i != end; ++i) {
-            char buf[25];
-            sprintf(buf, "Byte.x%02x", (unsigned char)*i);
-            print.output() << "(BS.String " << buf << " ";
-        }
-        print.output() << "BS.EmptyString";
-        for (auto i = lit->getBytes().begin(), end = lit->getBytes().end();
-             i != end; ++i) {
-            print.output() << ")";
-        }
+        print.escaped_str(lit);
         done(lit, print, cprint);
     }
 

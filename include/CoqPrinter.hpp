@@ -6,7 +6,8 @@
 #pragma once
 
 #include "Formatter.hpp"
-#include "llvm/ADT/StringRef.h"
+#include <clang/AST/Expr.h>
+#include <llvm/ADT/StringRef.h>
 
 class CoqPrinter {
 public:
@@ -60,9 +61,14 @@ public:
         return this->output_;
     }
 
+    /** Print a "plain" string (no special characters) */
     fmt::Formatter& str(const char* str) {
         return this->output_ << "\"" << str << "\"";
     }
+
+    /** Print a "complex" string (special characters will be escaped) */
+    fmt::Formatter& escaped_str(const clang::StringLiteral* lit);
+
     fmt::Formatter& str(llvm::StringRef str) {
         return this->output_ << "\"" << str << "\"";
     }

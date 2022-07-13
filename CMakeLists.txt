@@ -70,6 +70,7 @@ IF (${LLVM_VERSION} VERSION_LESS 11.0.0)
     src/Formatter.cpp
     src/Logging.cpp
     src/ClangPrinter.cpp
+    src/StringPrettyPrinter.cpp
     src/ToCoq.cpp
   )
 
@@ -93,6 +94,7 @@ ELSE(${LLVM_VERSION} VERSION_LESS 11.0.0)
     src/Formatter.cpp
     src/Logging.cpp
     src/ClangPrinter.cpp
+    src/StringPrettyPrinter.cpp
     src/ToCoq.cpp
   )
 
