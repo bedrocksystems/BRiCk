@@ -64,12 +64,19 @@ cpp2v: build/Makefile
 Makefile.coq Makefile.coq.conf: _CoqProject Makefile
 	+$(COQMAKEFILE) -f _CoqProject -o Makefile.coq
 
-coq: Makefile.coq
+# We must extract `coq-minimal` as a task, and share it between
+# `build-minimal` and `coq`, because `test` depends on both:
+# `test -> test-cpp2v -> build-minimal -> coq-minimal`
+# `test -> test-coq -> coq -> coq-minimal`
+coq-minimal: theories/lang/cpp/parser.vo
+.PHONY: coq-minimal
+
+coq: coq-minimal
 	+$(COQMK)
 .PHONY: coq
 
 # Pass a few useful targets on to the Coq makefile
-%.vo %.required_vo: Makefile.coq
+%.vo %.vos %.required_vo: Makefile.coq
 	+@$(COQMK) $@
 
 
@@ -85,13 +92,11 @@ minimal-install:
 	rm -rf build/bedrock
 	ln -s $(ROOT)/theories build/bedrock
 
-build-minimal: Makefile.coq
-	+$(COQMK) theories/lang/cpp/parser.vo
+build-minimal: coq-minimal
 	$(MAKE) minimal-install
 .PHONY: build-minimal
 
-build-minimal-vos: Makefile.coq
-	+$(COQMK) theories/lang/cpp/parser.vos
+build-minimal-vos: theories/lang/cpp/parser.vos
 	$(MAKE) minimal-install
 .PHONY: build-minimal
 
