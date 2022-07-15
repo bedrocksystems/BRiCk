@@ -350,8 +350,12 @@ Module Type Expr.
                  (la |-> primR (erase_qualifiers ty) 1 v' -* Q la (free1 |*| free2)))))
         |-- wp_lval (Eassign_op o l r ty) Q.
 
-    (* The comma operator can be both an lvalue and a prvalue
-     * depending on what the second expression is.
+    (** The comma operator can be both an lvalue and a prvalue
+        depending on what the second expression is.
+
+        `a, b` runs `a`, discards the value (but does not clean it up yet),
+        then runs `b`. the value (and temporaries) of `a` are destroyed
+        after `b` completes (usually at the end of the statement).
      *)
     Axiom wp_lval_comma : forall {vc} e1 e2 Q,
         wp_discard vc e1 (fun free1 => wp_lval e2 (fun val free2 => Q val (free2 >*> free1)))
@@ -366,7 +370,7 @@ Module Type Expr.
         |-- wp_operand (Ecomma vc e1 e2) Q.
 
     Axiom wp_init_comma : forall {vc} ty p e1 e2 Q,
-        wp_discard vc e1 (fun free1 => wp_init ty p e2 (fun free2 => Q (free2 >*> free1)))
+        wp_discard vc e1 (fun free1 => wp_init ty p e2 (fun fval free2 => Q fval (free2 >*> free1)))
         |-- wp_init ty p (Ecomma vc e1 e2) Q.
 
     (** short-circuting operators *)
