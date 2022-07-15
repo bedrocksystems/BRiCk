@@ -349,6 +349,14 @@ Section with_cpp.
   (* BEGIN wp_init *)
   (* evaluate a prvalue that "initializes an object".
 
+     The continuation is passed two [FreeTemp.t]s, the first is to delete the
+     value being initialized, the second is to delete temporaries created while
+     creating the value. To delete both correctly, you must destroy the value
+     *before* destroying the temporaries.
+     Only destroying temporaries (and discarding the first argument) is legal
+     when mandated by the semantics, for example, in a variable declaration.
+     `int x = (C{}, 2);`
+
      The memory that is being initialized is already owned by the C++ abstract machine.
      Therefore, schematically, a [wp_init ty addr e Q] looks like the following:
        [[
