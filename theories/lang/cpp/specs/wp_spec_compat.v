@@ -256,6 +256,13 @@ Section wpspec_relations.
     - intros [] vs K. by apply dist_entailsN.
   Qed.
 
+  Lemma wpspec_entails_entails_fupd `{BiFUpd PROP} {ARGS : Type}
+      {RESULT : Type} (wpp1 wpp2 : WpSpec PROP ARGS RESULT) :
+    wpspec_entails wpp1 wpp2 -> wpspec_entails_fupd wpp1 wpp2.
+  Proof.
+    iIntros (EN vs K). rewrite EN.
+    iIntros "WPP !>". iApply (spec_internal_frame with "[] WPP"). eauto.
+  Qed.
 End wpspec_relations.
 
 Require Import iris.proofmode.tactics.
