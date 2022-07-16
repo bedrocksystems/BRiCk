@@ -318,27 +318,3 @@ Lemma align_of_genv_compat tu σ gn st
       (Hl : tu !! gn = Some (Gstruct st)) :
   align_of (Tnamed gn) = GlobDecl_align_of (Gstruct st).
 Proof. by rewrite /= align_of_named (glob_def_genv_compat_struct st Hl). Qed.
-
-
-(** [vararg_promote t] returns the type that [t] is promoted to when
-    passed as a variadic function argument.
-
-    See: https://eel.is/c++draft/expr.call#12
- *)
-Definition vararg_promote (t : type) : option type :=
-  match erase_qualifiers t with
-  | Tnullptr => Some $ Tptr Tvoid
-  (* integral promotions *)
-  | Tnum W8 s | Tnum W16 s | Tnum W32 s => Some $ Tnum W32 s
-  | Tnum W64 s => Some $ Tnum W64 s
-  (* floating point promotions *)
-  | Tfloat _ => Some $ Tfloat W64
-  (* pointers and member pointers are not changed *)
-  | Tptr _ as t
-  | Tmember_pointer _ _ as t => Some t
-  (* aggregates are conditionally supported if they have a
-     corresponding copy-constructor this is handled in the
-     logic *)
-  | Tnamed _ as t => Some t
-  | _ => None
-  end.

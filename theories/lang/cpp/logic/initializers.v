@@ -156,14 +156,6 @@ Module Type Init.
       end.
     #[global] Arguments wp_initialize !_ _ _ _ /.
 
-    (* TEMPORARY we use a slightly different semantics for calls
-       because we need to revise the way that we define function
-       specifications.
-     *)
-    Definition wp_call_initialize (ty : type) (init : Expr)
-               (k : ptr -> FreeTemp -> FreeTemps -> epred) : mpred :=
-      Forall p, wp_initialize ty p init (fun frees => k p (FreeTemps.delete ty p) frees).
-
     (** [wpi cls this init Q] evaluates the initializer [init] from the
         object [thisp] (of type [Tnamed cls]) and then proceeds as [Q].
 
