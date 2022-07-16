@@ -289,9 +289,9 @@ Module Type HAS_TYPE (Import P : PTRS) (Import R : RAW_BYTES) (Import V : VAL_MI
   Axiom has_int_type' : forall sz sgn v,
       has_type v (Tnum sz sgn) <-> (exists z, v = Vint z /\ bound sz sgn z) \/ (exists r, v = Vraw r /\ Tnum sz sgn = Tuchar).
 
-  Axiom has_type_qual : forall t q x,
-      has_type x (drop_qualifiers t) ->
-      has_type x (Tqualified q t).
+  Axiom has_type_qual_iff : forall t q x,
+      has_type x t <-> has_type x (Tqualified q t).
+
 End HAS_TYPE.
 
 Module Type HAS_TYPE_MIXIN (Import P : PTRS) (Import R : RAW_BYTES) (Import V : VAL_MIXIN P R)
@@ -313,6 +313,21 @@ Module Type HAS_TYPE_MIXIN (Import P : PTRS) (Import R : RAW_BYTES) (Import V : 
   Theorem has_char_type : forall sz (sgn : signed) z,
       bound sz sgn z <-> has_type (Vint z) (Tchar sz sgn).
   Proof. apply has_int_type. Qed.
+
+  Lemma has_type_drop_qualifiers
+    : forall v ty, has_type v ty <-> has_type v (drop_qualifiers ty).
+  Proof.
+    induction ty; simpl; eauto.
+    by rewrite -has_type_qual_iff -IHty.
+  Qed.
+
+  (* TODO fix naming convention *)
+  Lemma has_type_qual  t q x :
+      has_type x (drop_qualifiers t) ->
+      has_type x (Tqualified q t).
+  Proof.
+    intros. by apply has_type_drop_qualifiers.
+  Qed.
 
   #[global] Hint Resolve has_type_qual : has_type.
 
@@ -390,6 +405,7 @@ Module Type HAS_TYPE_MIXIN (Import P : PTRS) (Import R : RAW_BYTES) (Import V : 
     | _ , _ => False
     end.
   Arguments conv_int !_ !_ _ _ /.
+
 End HAS_TYPE_MIXIN.
 
 (* Collect all the axioms. *)
