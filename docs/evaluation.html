@@ -166,6 +166,14 @@ The <a class="reference external" href="http://eel.is/c++draft/expr.prop#basic.l
 The parameter is the following:</p>
 <div class="highlight-text notranslate"><div class="highlight"><pre><span></span>(* evaluate a prvalue that &quot;initializes an object&quot;.
 
+   The continuation is passed two [FreeTemp.t]s, the first is to delete the
+   value being initialized, the second is to delete temporaries created while
+   creating the value. To delete both correctly, you must destroy the value
+   *before* destroying the temporaries.
+   Only destroying temporaries (and discarding the first argument) is legal
+   when mandated by the semantics, for example, in a variable declaration.
+   `int x = (C{}, 2);`
+
    The memory that is being initialized is already owned by the C++ abstract machine.
    Therefore, schematically, a [wp_init ty addr e Q] looks like the following:
      [[

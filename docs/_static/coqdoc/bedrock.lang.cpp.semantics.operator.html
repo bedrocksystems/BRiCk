@@ -286,7 +286,7 @@ L&nbsp;operator&gt;&gt;(L,&nbsp;R)<br/>
 
 <div class="doc">
 for pre- and post- increment/decrement, this function determines the type
-    of the <span class="inlinecode">1</span> that is added or subtracted
+    of the <span class="inlinecode">1</span> that is added or subtracted.
  
 </div>
 <div class="code">
@@ -297,6 +297,17 @@ for pre- and post- increment/decrement, this function determines the type
 &nbsp;&nbsp;| <a class="idref" href="bedrock.lang.cpp.syntax.types.html#Tqualified"><span class="id" title="constructor">Tqualified</span></a> <span class="id" title="var">_</span> <span class="id" title="var">t</span> =&gt; <a class="idref" href="bedrock.lang.cpp.semantics.operator.html#companion_type:139"><span class="id" title="definition">companion_type</span></a> <a class="idref" href="bedrock.lang.cpp.semantics.operator.html#t:138"><span class="id" title="variable">t</span></a><br/>
 &nbsp;&nbsp;| <span class="id" title="var">_</span> =&gt; <a class="idref" href="http://coq.inria.fr/distrib/V8.15.1/stdlib//Coq.Init.Datatypes.html#None"><span class="id" title="constructor">None</span></a><br/>
 &nbsp;&nbsp;<span class="id" title="keyword">end</span>.<br/>
+
+<br/>
+<span class="comment">(*&nbsp;<span class="inlinecode">1</span>&nbsp;is&nbsp;well-typed&nbsp;in&nbsp;any&nbsp;type&nbsp;that&nbsp;is&nbsp;a&nbsp;companion&nbsp;type&nbsp;*)</span><br/>
+<span class="id" title="keyword">Lemma</span> <a id="companion_type_1" class="idref" href="#companion_type_1"><span class="id" title="lemma">companion_type_1</span></a> <a id="t:141" class="idref" href="#t:141"><span class="id" title="binder">t</span></a> : <a class="idref" href="https://plv.mpi-sws.org/coqdoc/stdpp//stdpp.base.html#a46514f7419edb3d22453078cf7c9fb7"><span class="id" title="notation">forall</span></a> <a id="ct:142" class="idref" href="#ct:142"><span class="id" title="binder">ct</span></a><a class="idref" href="https://plv.mpi-sws.org/coqdoc/stdpp//stdpp.base.html#a46514f7419edb3d22453078cf7c9fb7"><span class="id" title="notation">,</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="bedrock.lang.cpp.semantics.operator.html#companion_type"><span class="id" title="definition">companion_type</span></a> <a class="idref" href="bedrock.lang.cpp.semantics.operator.html#t:141"><span class="id" title="variable">t</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.15.1/stdlib//Coq.Init.Logic.html#6cd0f7b28b6092304087c7049437bb1a"><span class="id" title="notation">=</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.15.1/stdlib//Coq.Init.Datatypes.html#Some"><span class="id" title="constructor">Some</span></a> <a class="idref" href="bedrock.lang.cpp.semantics.operator.html#ct:142"><span class="id" title="variable">ct</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.15.1/stdlib//Coq.Init.Logic.html#::type_scope:x_'-&gt;'_x"><span class="id" title="notation">-&gt;</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="bedrock.lang.cpp.semantics.values.html#VALUES_INTF_AXIOM.has_type"><span class="id" title="axiom">has_type</span></a> 1 <a class="idref" href="bedrock.lang.cpp.semantics.operator.html#ct:142"><span class="id" title="variable">ct</span></a>.<br/>
+<span class="id" title="keyword">Proof</span>.<br/>
+&nbsp;&nbsp;<span class="id" title="tactic">induction</span> <span class="id" title="var">t</span>; <span class="id" title="tactic">simpl</span>; <span class="id" title="tactic">try</span> <span class="id" title="tactic">congruence</span>; <span class="id" title="tactic">eauto</span>.<br/>
+&nbsp;&nbsp;- <span class="id" title="tactic">inversion</span> 1; <span class="id" title="tactic">subst</span>. <span class="id" title="tactic">by</span> <span class="id" title="tactic">apply</span> <a class="idref" href="bedrock.lang.cpp.semantics.values.html#VALUES_INTF_AXIOM.has_int_type"><span class="id" title="lemma">has_int_type</span></a>.<br/>
+&nbsp;&nbsp;- <span class="id" title="tactic">inversion</span> 1; <span class="id" title="tactic">subst</span>. <span class="id" title="tactic">apply</span> <a class="idref" href="bedrock.lang.cpp.semantics.values.html#VALUES_INTF_AXIOM.has_int_type"><span class="id" title="lemma">has_int_type</span></a>. <span class="id" title="tactic">destruct</span> <span class="id" title="var">size</span>, <span class="id" title="var">signed</span>; <span class="id" title="var">done</span>.<br/>
+<span class="id" title="keyword">Qed</span>.<br/>
 </div>
 <!--
 -- Copyright (c) 2020 BedRock Systems, Inc.
