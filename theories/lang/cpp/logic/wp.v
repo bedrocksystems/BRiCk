@@ -49,11 +49,20 @@ Section FreeTemps.
   | seqA x y z : t_eq (seq x (seq y z)) (seq (seq x y) z)
   | seq_id_unitR l : t_eq (seq l id) l
   | seq_id_unitL l : t_eq (seq id l) l
+  | seq_proper_ {a b c d} : t_eq a b -> t_eq c d -> t_eq (seq a c) (seq b d)
 
   | parC r l : t_eq (par l r) (par r l)
   | parA x y z : t_eq (par x (par y z)) (par (par x y) z)
   | par_id_unitR l : t_eq (par l id) l
-  | par_id_unitL l : t_eq (par id l) l.
+  | par_id_unitL l : t_eq (par id l) l
+  | par_proper_ {a b c d} : t_eq a b -> t_eq c d -> t_eq (par a c) (par b d)
+  .
+
+  #[global] Instance seq_proper : Proper (t_eq ==> t_eq ==> t_eq) seq.
+  Proof. repeat intro. apply seq_proper_; auto. Qed.
+
+  #[global] Instance par_proper : Proper (t_eq ==> t_eq ==> t_eq) par.
+  Proof. repeat intro. apply par_proper_; auto. Qed.
 
   #[global] Instance t_Equiv : Equiv t := t_eq.
 
