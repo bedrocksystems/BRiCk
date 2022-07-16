@@ -210,36 +210,30 @@ Module Type Expr.
      *    an array2pointer cast)
      *)
     Axiom wp_lval_subscript : forall e i t Q,
-      (Exists Qbase Qidx,
-       (if is_pointer (type_of e) then
-         wp_operand e Qbase ** wp_operand i Qidx
-       else
-         wp_operand e Qidx ** wp_operand i Qbase) **
-      Forall base free idx free',
-         Qbase base free -* Qidx idx free' -*
-         (Exists i, [| idx = Vint i |] **
-          let addr := _eqv base .[ erase_qualifiers t ! i ] in
-          valid_ptr addr ** Q addr (free' |*| free)))
+      nd_seq (wp_operand e) (wp_operand i) (fun '(ev, iv) free =>
+         let '(base, idx) :=
+           if is_pointer (type_of e) then (ev,iv) else (iv,ev)
+         in
+         Exists i, [| idx = Vint i |] **
+         let addr := _eqv base .[ erase_qualifiers t ! i ] in
+         valid_ptr addr ** Q addr free)
       |-- wp_lval (Esubscript e i t) Q.
 
     (* [Esubscript e i t]
      * - where one operand is an array rvalue
      *)
     Axiom wp_xval_subscript : forall e i t Q,
-      (Exists Qbase Qidx,
-       (if is_pointer (type_of e) then
-         wp_operand e Qbase ** wp_operand i Qidx
-       else
-         wp_operand e Qidx ** wp_operand i Qbase) **
-      Forall base free idx free',
-         Qbase base free -* Qidx idx free' -*
+      nd_seq (wp_operand e) (wp_operand i) (fun '(ev, iv) free =>
+         let '(base, idx) :=
+           if is_pointer (type_of e) then (ev,iv) else (iv,ev)
+         in
           (* TODO: here and elsewhere, consider avoiding locations and switching to *)
           (* (Exists i basep, [| idx = Vint i /\ base = Vptr basep |] **
             ((valid_ptr (basep .,, o_sub resolve (erase_qualifiers t) i) ** True) //\\
             Q (Vptr (basep .,, o_sub resolve (erase_qualifiers t) i)) (free' ** free)))) *)
           (Exists i, [| idx = Vint i |] **
            let addr := _eqv base .[ erase_qualifiers t ! i ] in
-           valid_ptr addr ** Q addr (free' |*| free)))
+           valid_ptr addr ** Q addr free))
       |-- wp_xval (Esubscript e i t) Q.
 
     (** * Unary Operators
@@ -351,25 +345,21 @@ Module Type Expr.
     (** * Binary Operators *)
     (* NOTE the following axioms assume that [eval_binop] is deterministic *)
     Axiom wp_operand_binop : forall o e1 e2 ty Q,
-        (Exists Ql Qr,
-        wp_operand e1 Ql ** wp_operand e2 Qr **
-            Forall v1 v2 free1 free2, Ql v1 free1 -* Qr v2 free2 -*
-               Exists v',
-                  (eval_binop o
-                    (drop_qualifiers (type_of e1)) (drop_qualifiers (type_of e2))
-                    (drop_qualifiers ty) v1 v2 v' ** True) //\\
-                  Q v' (free1 >*> free2))
+        nd_seq (wp_operand e1) (wp_operand e2) (fun '(v1,v2) free =>
+          Exists v',
+            (eval_binop o
+                (drop_qualifiers (type_of e1)) (drop_qualifiers (type_of e2))
+                (drop_qualifiers ty) v1 v2 v' ** True) //\\
+            Q v' free)
         |-- wp_operand (Ebinop o e1 e2 ty) Q.
 
     (* NOTE the right operand is sequenced before the left operand in C++20,
        check when this started. (cppreference.com doesn't seem to have this information)
      *)
     Axiom wp_lval_assign : forall ty l r Q,
-        (Exists Ql Qr,
-         wp_lval l Ql ** wp_operand r Qr **
-         Forall la free1 rv free2, Ql la free1 -* Qr rv free2 -*
+        nd_seq (wp_lval l) (wp_operand r) (fun '(la, rv) free =>
             la |-> anyR (erase_qualifiers ty) 1 **
-           (la |-> primR (erase_qualifiers ty) 1 rv -* Q la (free1 |*| free2)))
+           (la |-> primR (erase_qualifiers ty) 1 rv -* Q la free))
         |-- wp_lval (Eassign l r ty) Q.
 
     (* Assignemnt operators are *almost* like regular assignments except that they
@@ -377,12 +367,10 @@ Module Type Expr.
        which is what would come from the standard desugaring)
      *)
     Axiom wp_lval_bop_assign : forall ty o l r Q,
-        (Exists Ql Qr,
-        wp_lval l Ql ** wp_operand r Qr **
-        Forall la free1 rv free2, Ql la free1 -* Qr rv free2 -*
+        nd_seq (wp_lval l) (wp_operand r) (fun '(la, rv) free =>
              (Exists v v', la |-> primR (erase_qualifiers ty) 1 v **
                  ((eval_binop o (erase_qualifiers (type_of l)) (erase_qualifiers (type_of r)) (erase_qualifiers (type_of l)) v rv v' ** True) //\\
-                 (la |-> primR (erase_qualifiers ty) 1 v' -* Q la (free1 |*| free2)))))
+                 (la |-> primR (erase_qualifiers ty) 1 v' -* Q la free))))
         |-- wp_lval (Eassign_op o l r ty) Q.
 
     (** The comma operator can be both an lvalue and a prvalue
@@ -839,7 +827,7 @@ Module Type Expr.
     Axiom wp_init_call : forall f es Q (addr : ptr) ty ty',
           (* ^ give the memory back to the C++ abstract machine *)
           wp_operand f (fun fn free_f => wp_call (type_of f) fn es $ fun res free_args =>
-             Reduce (init_receive ty addr res $ fun free => Q free (free_args >*> free_f)))
+             Reduce (init_receive ty addr res $ fun free => Q ty (free_args >*> free_f)))
       |-- wp_init ty addr (Ecall f es ty') Q.
 
     (** * Member calls *)
@@ -898,7 +886,7 @@ Module Type Expr.
 
     Axiom wp_init_member_call : forall f fty es (addr : ptr) ty vc obj Q,
         wp_glval vc obj (fun this free_this => wp_mcall (Vptr $ _global f) this (type_of obj) fty es $ fun res free_args =>
-           init_receive ty addr res $ fun free => Q free (free_args >*> free_this))
+           init_receive ty addr res $ fun free => Q ty (free_args >*> free_this))
         |-- wp_init ty addr (Emember_call (inl (f, Direct, fty)) vc obj es ty) Q.
 
     (** virtual functions
@@ -937,7 +925,7 @@ Module Type Expr.
 
     Axiom wp_init_virtual_call : forall f fty es (addr : ptr) ty vc obj Q,
         wp_glval vc obj (fun this free_this => wp_virtual_call f this (type_of obj) fty es $ fun res free_args =>
-           init_receive ty addr res $ fun free => Q free (free_args >*> free_this))
+           init_receive ty addr res $ fun free => Q ty (free_args >*> free_this))
         |-- wp_init ty addr (Emember_call (inl (f, Virtual, fty)) vc obj es ty) Q.
 
     (* null *)
@@ -1055,7 +1043,7 @@ Module Type Expr.
              (* ^^ The semantics currently has constructors take ownership of a [tblockR] *)
              wp_mcall (Vptr $ _global cnd) addr (Tnamed cls) (type_of_value cv) es (fun p free =>
                (* in the semantics, constructors return [void] *)
-               p |-> primR Tvoid 1 Vvoid ** Q (FreeTemps.delete (Tnamed cls) addr) free)
+               p |-> primR Tvoid 1 Vvoid ** Q (Tnamed cls) free)
            | _ => False
            end
       |-- wp_init (Tnamed cls) addr (Econstructor cnd es (Tnamed cls)) Q.
@@ -1146,7 +1134,7 @@ Module Type Expr.
      *)
     Axiom wp_init_initlist_array :forall ls fill ty ety (sz : N) (base : ptr) Q, (* sz' <= sz *)
           is_array_of ty ety ->
-          wp_array_init_fill ety base ls fill sz (Q (FreeTemps.delete (Tarray ety sz) base))
+          wp_array_init_fill ety base ls fill sz (Q (Tarray ety sz))
       |-- wp_init (Tarray ety sz) base (Einitlist ls fill ty) Q.
 
 
@@ -1237,7 +1225,7 @@ Module Type Expr.
             [| length es = 1 |] **
             init_fields cls base (firstn 1 u.(u_fields)) es
                (base |-> union_paddingR 1 cls (Some 0) -*
-                Q (FreeTemps.delete (Tnamed cls) base) FreeTemps.id)
+                Q (Tnamed cls) FreeTemps.id)
         | _ => False
         end
       |-- wp_init (Tnamed cls) base (Einitlist es None t) Q.
@@ -1362,7 +1350,7 @@ Module Type Expr.
                       _arrayloop_init (Rbind (opaque_val oname) p
                                              (Rbind (arrayloop_loop_index level) idxp ρ))
                                       level trg init ety
-                                      (Q (FreeTemps.delete (Tarray ety sz) trg) free)
+                                      (Q (Tarray ety sz) free)
                                       sz 0)
       |-- wp_init ρ (Tarray ety sz) trg
                     (Earrayloop_init oname vc src level sz init ty) Q.
