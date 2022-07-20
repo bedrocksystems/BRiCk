@@ -35,16 +35,16 @@ Section with_cpp.
   (** * Aggregate identity *)
   (* Part of [all_identities path cls], but indexed by fuel [f]. *)
   #[local]
-  Fixpoint all_identities' (f : nat) (include_base : bool) (path : list globname) (cls : globname) : Rep :=
+  Fixpoint all_identities' (f : nat) (include_base : bool) (path : list globname) (cls : globname) (q : Qp) : Rep :=
     match f with
     | 0 => False
     | S f =>
       match resolve.(genv_tu) !! cls with
       | Some (Gstruct st) =>
-        (if include_base && has_vtable st then identityR cls path 1 else emp) **
+        (if include_base && has_vtable st then identityR cls path q else emp) **
         [∗list] b ∈ st.(s_bases),
            let '(base,_) := b in
-           _base cls base |-> all_identities' f true (path ++ [base]) base
+           _base cls base |-> all_identities' f true (path ++ [base]) base q
       | _ => False
       end
     end.
@@ -64,7 +64,7 @@ Section with_cpp.
       _base "::B" "::A" |-> identityR "::A" ["::C","::B","::A"]
       ]]
    *)
-  Definition all_identities : bool -> list globname -> globname -> Rep :=
+  Definition all_identities : bool -> list globname -> globname -> Qp -> Rep :=
     let size := avl.IM.cardinal resolve.(genv_tu).(globals) in
     (* ^ the number of global entries is an upper bound on the height of the
        derivation tree.
@@ -76,8 +76,8 @@ Section with_cpp.
      assertions for all base classes.
    *)
   Definition init_identity (cls : globname) (Q : mpred) : Rep :=
-    all_identities false [] cls **
-    (all_identities true [cls] cls -* pureR Q).
+    all_identities false [] cls 1 **
+    (all_identities true [cls] cls 1 -* pureR Q).
 
   Theorem init_identity_frame cls Q Q' :
     pureR (Q' -* Q) |-- init_identity cls Q' -* init_identity cls Q.
@@ -89,8 +89,8 @@ Section with_cpp.
   Qed.
 
   Definition revert_identity (cls : globname) (Q : mpred) : Rep :=
-    all_identities true [cls] cls **
-    (all_identities false [] cls -* pureR Q).
+    all_identities true [cls] cls 1 **
+    (all_identities false [] cls 1 -* pureR Q).
 
   Theorem revert_identity_frame cls Q Q' :
     pureR (Q' -* Q) |-- revert_identity cls Q' -* revert_identity cls Q.
@@ -103,7 +103,7 @@ Section with_cpp.
 
   (** sanity chect that initialization and revert are inverses *)
   Corollary init_revert cls Q p :
-    let REQ := all_identities false [] cls in
+    let REQ := all_identities false [] cls 1 in
         p |-> REQ ** Q
     |-- p |-> init_identity cls (p |-> revert_identity cls (p |-> REQ ** Q)).
   Proof.
