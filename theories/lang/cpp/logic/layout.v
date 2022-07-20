@@ -96,7 +96,7 @@ Section with_Σ.
                          object is trivially destructible. *)
      then identityR cls None 1 (** NOTE this doesn't really work out because i generally
                                    require a fancy update to forget the MDC. *)
-     else emp) **
+     else emp)%I **
     struct_paddingR 1 cls.
 
 
