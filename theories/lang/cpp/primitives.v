@@ -48,4 +48,4 @@ Notation longlongR q v := (i64R q v) (only parsing).
 
 Notation "'ptrR<' ty '>' q p" := (primR (Tpointer ty) q (Vptr p)) (at level 10, ty at level 20, q at level 1, p at level 1, format "'ptrR<' ty '>'  q  p").
 
-Notation "'refR<' ty '>' p" := (primR (Tref ty) (Vptr p)) (at level 10, ty at level 20, p at level 1, format "'refR<' ty '>'  p").
+Notation "'refR<' ty '>' q p" := (primR (Tref ty) q (Vptr p)) (at level 10, ty at level 20, q at level 1, p at level 1, format "'refR<' ty '>'  q  p").
