@@ -14,6 +14,7 @@ From iris.proofmode Require Import proofmode classes.
 
 From bedrock.lang.cpp Require Import
      ast semantics logic.pred logic.heap_pred.
+Require Import bedrock.lang.bi.errors.
 
 #[local] Set Primitive Projections.
 
@@ -526,6 +527,18 @@ Section with_cpp.
       rewrite/AddModal. by rewrite fupd_frame_r bi.wand_elim_r fupd_wp_operand.
     Qed.
   End wp_operand.
+
+  (** ** boolean operands *)
+
+  (** [wp_test ρ e Q] evaluates [e] as an operand converting the value to a
+      boolean before passing it to [Q].
+   *)
+  Definition wp_test {σ : genv} (ρ : region) (e : Expr) (Q : bool -> FreeTemps -> epred) : mpred :=
+    wp_operand ρ e (fun v free =>
+                      match is_true v with
+                      | Some c => Q c free
+                      | None => ERROR (is_true_None v)
+                      end).
 
   (** * xvalues *)
 

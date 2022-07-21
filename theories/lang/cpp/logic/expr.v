@@ -24,7 +24,8 @@ Require Import bedrock.lang.bi.errors.
 Require Import bedrock.lang.cpp.heap_notations.
 
 Module Type Expr.
-
+  (* Needed for [Unfold wp_test] *)
+  #[local] Arguments wp_test [_ _ _] _ _ _.
   #[local] Open Scope free_scope.
 
   (**
@@ -409,33 +410,25 @@ Module Type Expr.
 
     (** short-circuting operators *)
     Axiom wp_operand_seqand : forall e1 e2 Q,
-        wp_operand e1 (fun v1 free1 =>
+        Unfold wp_test (wp_test ρ e1 (fun c free1 =>
         (* ^ note: technically an rvalue, but it must be a primitive,
            otherwise there will be an implicit cast to bool, to it is
            always an rvalue *)
-           Exists c : bool, [| is_true v1 = Some c |] **
            if c
-           then wp_operand e2 (fun v2 free2 => (* see comment above *)
-                                     Exists c : bool, [| is_true v2 = Some c |] **
-                                     if c
-                                     then Q (Vint 1) (free2 >*> free1)
-                                     else Q (Vint 0) (free2 >*> free1))
-           else Q (Vint 0) free1)
+           then wp_test ρ e2 (fun c free2 => (* see comment above *)
+                              Q (Vbool c) (free2 >*> free1))
+           else Q (Vbool c) free1))
         |-- wp_operand (Eseqand e1 e2) Q.
 
     Axiom wp_operand_seqor : forall e1 e2 Q,
-        wp_operand e1 (fun v1 free1 =>
+        Unfold wp_test (wp_test ρ e1 (fun c free1 =>
         (* ^ note: technically an rvalue, but it must be a primitive,
            otherwise there will be an implicit cast to bool, to it is
            always an rvalue *)
-           Exists c : bool, [| is_true v1 = Some c |] **
            if c
-           then Q (Vint 1) free1
-           else wp_operand e2 (fun v2 free2 => (* see comment above *)
-                                     Exists c : bool, [| is_true v2 = Some c |] **
-                                     if c
-                                     then Q (Vint 1) (free2 >*> free1)
-                                     else Q (Vint 0) (free2 >*> free1)))
+           then Q (Vbool c) free1
+           else wp_test ρ e2 (fun c free2 => (* see comment above *)
+                              Q (Vbool c) (free2 >*> free1))))
         |-- wp_operand (Eseqor e1 e2) Q.
 
     (** * Casts
@@ -725,13 +718,12 @@ Module Type Expr.
      * We express this with 4 rules, one for each of [wp_lval],
      * [wp_operand], [wp_xval], and [wp_init].
      *)
-    Definition wp_cond {T} wp : Prop :=
+    Definition wp_cond {T} (wp : Expr -> (T -> FreeTemps.t -> epred) -> mpred) : Prop :=
       forall ty tst th el (Q : T -> FreeTemps -> mpred),
-        wp_operand tst (fun v1 free =>
-           Exists c : bool, [| is_true v1 = Some c |] **
+        Unfold wp_test (wp_test ρ tst (fun c free =>
            if c
            then wp th (fun v free' => Q v (free' >*> free))
-           else wp el (fun v free' => Q v (free' >*> free)))
+           else wp el (fun v free' => Q v (free' >*> free))))
         |-- wp (Eif tst th el ty) Q.
 
     Axiom wp_lval_condition :
@@ -743,12 +735,12 @@ Module Type Expr.
     Axiom wp_operand_condition :
       ltac:(let v := eval unfold wp_cond in (wp_cond wp_operand) in
                 exact v).
+
     Axiom wp_init_condition : forall ty addr tst th el Q,
-        wp_operand tst (fun v1 free =>
-           Exists c : bool, [| is_true v1 = Some c |] **
+        Unfold wp_test (wp_test ρ tst (fun c free =>
            if c
            then wp_init ty addr th (fun free' frees => Q free' (frees >*> free))
-           else wp_init ty addr el (fun free' frees => Q free' (frees >*> free)))
+           else wp_init ty addr el (fun free' frees => Q free' (frees >*> free))))
         |-- wp_init ty addr (Eif tst th el ty) Q.
 
     Axiom wp_operand_implicit: forall  e Q,
