@@ -726,15 +726,9 @@ Module Type Expr.
            else wp el (fun v free' => Q v (free' >*> free))))
         |-- wp (Eif tst th el ty) Q.
 
-    Axiom wp_lval_condition :
-      ltac:(let v := eval unfold wp_cond in (wp_cond wp_lval) in
-                exact v).
-    Axiom wp_xval_condition :
-      ltac:(let v := eval unfold wp_cond in (wp_cond wp_xval) in
-            exact v).
-    Axiom wp_operand_condition :
-      ltac:(let v := eval unfold wp_cond in (wp_cond wp_operand) in
-                exact v).
+    Axiom wp_lval_condition : Reduce (wp_cond wp_lval).
+    Axiom wp_xval_condition : Reduce (wp_cond wp_xval).
+    Axiom wp_operand_condition : Reduce (wp_cond wp_operand).
 
     Axiom wp_init_condition : forall ty addr tst th el Q,
         Unfold wp_test (wp_test ρ tst (fun c free =>
@@ -743,9 +737,9 @@ Module Type Expr.
            else wp_init ty addr el (fun free' frees => Q free' (frees >*> free))))
         |-- wp_init ty addr (Eif tst th el ty) Q.
 
-    Axiom wp_operand_implicit: forall  e Q,
+    Axiom wp_operand_implicit : forall e Q,
         wp_operand e Q |-- wp_operand (Eimplicit e) Q.
-    Axiom wp_init_implicit: forall  ty e p Q,
+    Axiom wp_init_implicit : forall ty e p Q,
         wp_init ty p e Q |-- wp_init ty p (Eimplicit e) Q.
 
     (** Gets the type used in an expression like `sizeof` and `alignof` *)
@@ -770,7 +764,7 @@ Module Type Expr.
         Exists align, [| align_of (drop_reference $ get_type ety) = Some align |] ** Q (Vint (Z.of_N align)) FreeTemps.id
         |-- wp_operand (Ealign_of ety ty) Q.
 
-    (** function calls
+    (** * Function calls
 
         The next few axioms rely on the evaluation order specified
         since C++17 (implemented in Clang >= 4):
