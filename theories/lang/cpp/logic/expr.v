@@ -472,19 +472,25 @@ Module Type Expr.
         wp_lval e Q
         |-- wp_xval (Ecast Cnoop Lvalue e ty) Q.
 
+    Definition int2bool_not_num (v : val) : Set.
+    Proof. exact unit. Qed.
+
     Axiom wp_operand_cast_int2bool : forall ty e Q,
         wp_operand e (fun v free =>
-                      match is_true v with
-                      | None => ERROR (is_true_None v)
-                      | Some v => Q (Vbool v) free
-                      end)
+                        match v with
+                        | Vint n => Q (Vbool (bool_decide (n <> 0))) free
+                        | _ => ERROR (int2bool_not_num v)
+                        end)
         |-- wp_operand (Ecast Cint2bool Prvalue e ty) Q.
+
+    Definition ptr2bool_not_ptr (v : val) : Set.
+    Proof. exact unit. Qed.
 
     Axiom wp_operand_cast_ptr2bool : forall ty e Q,
         wp_operand e (fun v free =>
-                      match is_true v with
-                      | None => ERROR (is_true_None v)
-                      | Some v => Q (Vbool v) free
+                      match v with
+                      | Vptr p => Q (Vbool (bool_decide (p <> nullptr))) free
+                      | _ => ERROR (ptr2bool_not_ptr v)
                       end)
         |-- wp_operand (Ecast Cptr2bool Prvalue e ty) Q.
 
