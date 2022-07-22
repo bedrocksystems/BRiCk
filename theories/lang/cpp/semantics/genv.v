@@ -8,10 +8,22 @@ From bedrock.lang.cpp.syntax Require Export names types stmt translation_unit.
 From bedrock.lang.cpp.semantics Require Export sub_module.
 
 (**
-A [genv] describes the dynamic semantics of one (TODO: or more?) translation
-units.
-It contains the represented translation units, plus any additional
+A [genv] describes the dynamic semantics of a potentially incomplete program,
+comprising one or more C++ translation units.
+Most proofs only quantify over a single `σ : genv`, representing the complete
+program being verified.
+
+The interface includes:
+- an injection of C++ translation units to genvs (which represents compilation).
+- and a composition of [genv]s (which represents linking).
+
+Today, we compose [genv]s by composing [translation_unit]s, but this is an
+implementation detail that might change (see FM-2738).
+
+A [genv] contains the result of linking translation units, plus any additional
 information supplied by compiler/linker/loader/...
+
+If we add support for dynamic linking, additional [genv]s might be involved.
 
 If we want to do things like word-size agnostic verification, then
 information about sizes etc. would need to move in here as well.
@@ -20,7 +32,8 @@ TODO: seal this?
 *)
 Record genv : Type :=
 { genv_tu : translation_unit
-  (* ^ the [translation_unit] *)
+  (* ^ Implementation detail: the result of merging all the [translation_unit]s
+  in the program. Might be replaced when fixing FM-2738. *)
 ; pointer_size_bitsize : bitsize
   (* ^ the size of a pointer *)
 }.
