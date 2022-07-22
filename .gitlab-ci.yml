@@ -350,6 +350,11 @@ pages:
     - time rsync -raz ${DUNE_USER}@${FM_CACHE_SERVER}:${RSYNC_CACHE_PATH}/dune_cache/ ~/.cache/
     - ls ~/.cache/dune
     - mkdir -p ~/.config/dune/ ; cp $CI_PROJECT_DIR/dune_config ~/.config/dune/config
+    - CPP2V_CORE_COMMIT_HASH=$(git -C $CI_PROJECT_DIR rev-parse HEAD)
+    - echo "CPP2V_CORE_COMMIT_HASH=$CPP2V_CORE_COMMIT_HASH" >> build.env
+  artifacts:
+    reports:
+      dotenv: build.env
 
 .postupdate-dunecache:
   after_script:
@@ -375,3 +380,50 @@ dune-build:
     - ${DUNE_TAG}
   rules:
     - if: $CI_MERGE_REQUEST_IID
+
+
+prepare_cpp2v_env:
+  stage: dune-build
+  extends:
+    - .latest
+  needs:
+    - dune-build
+  script:
+    - >
+      if [[ $CI_MERGE_REQUEST_LABELS =~ .*CI::cpp2v-same-branch.* ]] ; then
+         git ls-remote --exit-code --heads   https://gitlab-ci-token:${CI_JOB_TOKEN}@gitlab.com/bedrocksystems/cpp2v.git refs/heads/$CI_MERGE_REQUEST_SOURCE_BRANCH_NAME && 
+         echo "DOWNSTREAM_CPP2V_BRANCH=$CI_MERGE_REQUEST_SOURCE_BRANCH_NAME" >> build.env || echo "DOWNSTREAM_CPP2V_BRANCH=master" >> build.env;
+         else echo "DOWNSTREAM_CPP2V_BRANCH=master" >> build.env ; fi
+  artifacts:
+    reports:
+      dotenv: build.env
+  tags:
+    - fm.shared
+  rules:
+    - if: '$CI_MERGE_REQUEST_LABELS =~ /.*CI-skip-proofs.*/'
+      when: never
+    - if: '$CI_PIPELINE_SOURCE =~ /^(push)$/ && $CI_COMMIT_BRANCH && $CI_COMMIT_REF_NAME != "master"'
+      when: never
+    - if: '$CI_PIPELINE_SOURCE =~ /^(api|chat|external|external_pull_request_event)$/'
+      when: never
+    - when: always
+
+
+build-cpp2v-trigger:
+  stage: dune-build
+  needs:
+    - prepare_cpp2v_env
+  variables:
+    UPSTREAM_CPP2V_CORE_COMMIT_HASH: $CPP2V_CORE_COMMIT_HASH
+  trigger:
+    project: bedrocksystems/cpp2v
+    branch: $DOWNSTREAM_CPP2V_BRANCH
+    strategy: depend
+  rules:
+    - if: '$CI_MERGE_REQUEST_LABELS =~ /.*CI-skip-proofs.*/'
+      when: never
+    - if: '$CI_PIPELINE_SOURCE =~ /^(push)$/ && $CI_COMMIT_BRANCH && $CI_COMMIT_REF_NAME != "master"'
+      when: never
+    - if: '$CI_PIPELINE_SOURCE =~ /^(api|chat|external|external_pull_request_event)$/'
+      when: never
+    - when: always
