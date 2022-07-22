@@ -352,6 +352,7 @@ pages:
     - mkdir -p ~/.config/dune/ ; cp $CI_PROJECT_DIR/dune_config ~/.config/dune/config
     - CPP2V_CORE_COMMIT_HASH=$(git -C $CI_PROJECT_DIR rev-parse HEAD)
     - echo "CPP2V_CORE_COMMIT_HASH=$CPP2V_CORE_COMMIT_HASH" >> build.env
+    - echo $CPP2V_CORE_COMMIT_HASH 
   artifacts:
     reports:
       dotenv: build.env
