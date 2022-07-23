@@ -64,12 +64,10 @@ Arguments Derives_here {_ _} _ _.
 Arguments Derives_base {_ _} _.
 Arguments class_derives {σ} derived path : rename.
 
-(** The following instances enable TC resolution to prove
+(** The following instance enables TC resolution to prove
 [class_derives σ derived base] when the translation unit [tu] and
 class names [derived], [base] are ground.
-
-The proofs use [iffLR] to avoid destructing [iff]. While verbose,
-that's presumably faster. *)
+*)
 Existing Class class_derives.
 #[global] Hint Mode class_derives - + + : typeclass_instances.
 
@@ -111,27 +109,3 @@ End tu.
 
 #[global] Hint Extern 0 (class_derives _ _) =>
   eapply tu_class_derives_sound; [ eassumption | vm_compute; exact I ] : typeclass_instances.
-
-(*
-#[global] Instance class_derives_here tu σ derived st :
-  tu ⊧ σ ->
-  TCEq (tu !! derived) (Some (Gstruct st)) ->
-  class_derives derived [].
-Proof.
-  intros. eapply Derives_here, glob_def_genv_compat_struct.
-  by apply (iffLR (TCEq_eq _ _)).
-Defined.
-
-#[global] Instance class_derives_base tu σ rest derived base st li :
-  tu ⊧ σ ->
-  TCEq (tu !! derived) (Some (Gstruct st)) ->
-  TCElemOf (base, li) st.(s_bases) ->
-  class_derives base rest ->
-  class_derives derived (base :: rest).
-Proof.
-  intros. eapply Derives_base; last done.
-  - eapply glob_def_genv_compat_struct.
-    by apply (iffLR (TCEq_eq _ _)).
-  - by apply (iffLR (TCElemOf_iff _ _)).
-Defined.
-*)
