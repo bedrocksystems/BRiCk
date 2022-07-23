@@ -58,10 +58,16 @@ Section with_cpp.
       class B : public A {};
       class C : public B {};
       ```
-      here, [all_identities true ["::C"] "::B"] produces:
+      here, [all_identities true ["::C"] "::B" q] produces:
       [[
-      identityR "::B" ["::C","::B"] **
-      _base "::B" "::A" |-> identityR "::A" ["::C","::B","::A"]
+      identityR "::B" ["::C","::B"] q **
+      _base "::B" "::A" |-> identityR "::A" ["::C","::B","::A"] q
+      ]]
+
+      while [all_identities true [] "::C" q] produces all the identities for A, B and C:
+      [[
+      identityR "::C" ["::C"] q **
+      _base "::C" "::B" |-> all_identities true ["::C"] "::B" q
       ]]
    *)
   Definition all_identities : bool -> list globname -> globname -> Qp -> Rep :=
