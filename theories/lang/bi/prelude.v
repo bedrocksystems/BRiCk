@@ -32,18 +32,18 @@ Notation "'letI*' x , .. , z := t 'in' f" :=
     (only parsing, at level 200, x closed binder, z closed binder).
 
 (* ASCII alias for [bi_pure] notation [⌜P⌝]. *)
-Global Notation "[! P !]" := (bi_pure P%type%stdpp) (only parsing) : bi_scope.
+Notation "[! P !]" := (bi_pure P%type%stdpp) (only parsing) : bi_scope.
 
 (* Old, pre-Iris notations *)
-Global Notation lentails := (bi_entails) (only parsing).
-Global Notation lequiv := (≡) (only parsing).
-Global Notation ltrue := (True%I) (only parsing).
-Global Notation lfalse := (False%I) (only parsing).
-Global Notation land := (bi_and) (only parsing).
-Global Notation lor := (bi_or) (only parsing).
-Global Notation limpl := (bi_impl) (only parsing).
-Global Notation lforall := (bi_forall) (only parsing).
-Global Notation lexists := (bi_exist) (only parsing).
+Notation lentails := (bi_entails) (only parsing).
+Notation lequiv := (≡) (only parsing).
+Notation ltrue := (True%I) (only parsing).
+Notation lfalse := (False%I) (only parsing).
+Notation land := (bi_and) (only parsing).
+Notation lor := (bi_or) (only parsing).
+Notation limpl := (bi_impl) (only parsing).
+Notation lforall := (bi_forall) (only parsing).
+Notation lexists := (bi_exist) (only parsing).
 
 Ltac split' := intros; apply (anti_symm (⊢)).
 
