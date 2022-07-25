@@ -47,8 +47,6 @@ Notation lexists := (bi_exist) (only parsing).
 
 Ltac split' := intros; apply (anti_symm (⊢)).
 
-Bind Scope bi_scope with bi_car.
-
 (** For [bi] constructors like [monPredI], as opposed to [monPred] *)
 Declare Scope bi_type_scope.
 Delimit Scope bi_type_scope with bi_type.
