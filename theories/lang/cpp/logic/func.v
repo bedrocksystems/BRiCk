@@ -39,7 +39,7 @@ Section with_cpp.
     | S f =>
       match resolve.(genv_tu) !! cls with
       | Some (Gstruct st) =>
-        (if has_vtable st then identityR cls mdc 1 else emp%I) **
+        (if has_vtable st then identityR cls mdc 1 else emp) **
         [∗list] b ∈ st.(s_bases),
            let '(base,_) := b in
            _base cls base |-> all_identities' f mdc base
@@ -68,7 +68,7 @@ Section with_cpp.
       ([∗list] b ∈ st.(s_bases),
          let '(base,_) := b in
          _base cls base |-> all_identities (Some base) base) **
-      ((if has_vtable st then identityR cls (Some cls) 1 else emp%I) -*
+      ((if has_vtable st then identityR cls (Some cls) 1 else emp) -*
        ([∗list] b ∈ st.(s_bases),
           let '(base,_) := b in
           _base cls base |-> all_identities (Some cls) base) -* pureR Q)
@@ -90,7 +90,7 @@ Section with_cpp.
   Definition revert_identity (cls : globname) (Q : mpred) : Rep :=
     match resolve.(genv_tu) !! cls with
     | Some (Gstruct st) =>
-      (if has_vtable st then identityR cls (Some cls) 1 else emp%I) **
+      (if has_vtable st then identityR cls (Some cls) 1 else emp) **
       ([∗list] b ∈ st.(s_bases),
           let '(base,_) := b in
           _base cls base |-> all_identities (Some cls) base) **
@@ -422,7 +422,7 @@ Section with_cpp.
 
      TODO we leave this trivival for now.
    *)
-  Definition type_valdity : type -> ptr -> mpred := fun _ _ => emp%I.
+  Definition type_valdity : type -> ptr -> mpred := fun _ _ => emp.
 
   (**
      [wp_ctor ctor args Q] is the weakest pre-condition (with post-condition [Q])

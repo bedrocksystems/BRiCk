@@ -438,7 +438,7 @@ Section post_val.
     repeat match goal with
            | |- context [ list_sep_into _ ?X ] =>
                lazymatch X with
-               | emp%I => fail
+               | emp => fail
                | _ => rewrite (list_sep_into_take _ X)
                end
            end.

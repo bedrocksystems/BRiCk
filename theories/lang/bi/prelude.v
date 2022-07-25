@@ -10,8 +10,8 @@ From iris.proofmode Require Import classes.
 From bedrock.prelude Require Export base gmap letstar list_numbers.
 From bedrock.lang.bi Require Export only_provable derived_laws.
 
-#[global] Instance into_pure_emp PROP : IntoPure (PROP := PROP) emp%I True.
-Proof. by rewrite /IntoPure (bi.pure_intro True emp%I). Qed.
+#[global] Instance into_pure_emp PROP : IntoPure (PROP := PROP) emp True.
+Proof. by rewrite /IntoPure (bi.pure_intro True emp). Qed.
 
 #[global] Hint Opaque uPred_emp : typeclass_instances.
 
@@ -33,6 +33,9 @@ Notation "'letI*' x , .. , z := t 'in' f" :=
 
 (* ASCII alias for [bi_pure] notation [⌜P⌝]. *)
 Notation "[! P !]" := (bi_pure P%type%stdpp) (only parsing) : bi_scope.
+
+(* Avoid some [%I] annotations; this is a workaround for issues with scopes and if, functions, etc. *)
+Notation "'emp'" := (bi_emp) : stdpp_scope.
 
 (* Old, pre-Iris notations *)
 Notation lentails := (bi_entails) (only parsing).
