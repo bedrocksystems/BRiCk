@@ -151,7 +151,7 @@ Section with_Σ.
     soundness-wise, it is convenient for clients to be able strip some laters
     when providing the pre-conditions. *)
   Definition wrap_shift (F : (val -> mpred) -> mpred) (Q : val -> mpred) : mpred :=
-    Exists mid, (|={M,mid}=> |> F (fun result => |={mid,M}=> Q result)).
+    Exists mid, (|={M,mid}=> |> F (funI result => |={mid,M}=> Q result)).
 
   (* An SC load Ld reads a value that is written by:
     (1) the latest SEQ_CST store that is immediately before Ld in S, *or*

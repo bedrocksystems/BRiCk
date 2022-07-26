@@ -189,7 +189,7 @@ Section with_cpp.
         |> if is_void f.(f_return) then
              wp ρ body (Kfree frees $ void_return (|={⊤}=> |> Forall p, p |-> primR Tvoid 1 Vvoid -* Q p))
            else
-             wp ρ body (Kfree frees $ val_return (fun x => |={⊤}=> |> Q x)))
+             wp ρ body (Kfree frees $ val_return (funI x => |={⊤}=> |> Q x)))
       | Builtin builtin =>
         wp_builtin_func builtin (Tfunction (cc:=f.(f_cc)) f.(f_return) (List.map snd f.(f_params))) args Q
       end
@@ -219,7 +219,7 @@ Section with_cpp.
         |> if is_void m.(m_return) then
              wp ρ body (Kfree frees (void_return (|={⊤}=> |> Forall p, p |-> primR Tvoid 1 Vvoid -* Q p)))
            else
-             wp ρ body (Kfree frees (val_return (fun x => |={⊤}=> |>Q x))))
+             wp ρ body (Kfree frees (val_return (funI x => |={⊤}=> |>Q x))))
       | _ => False
       end
     | Some _ => UNSUPPORTED "defaulted methods"%bs
@@ -422,7 +422,7 @@ Section with_cpp.
 
      TODO we leave this trivival for now.
    *)
-  Definition type_valdity : type -> ptr -> mpred := fun _ _ => emp%I.
+  Definition type_valdity : type -> ptr -> mpred := fun _ _ => emp.
 
   (**
      [wp_ctor ctor args Q] is the weakest pre-condition (with post-condition [Q])

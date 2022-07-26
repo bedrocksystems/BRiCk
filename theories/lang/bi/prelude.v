@@ -10,8 +10,8 @@ From iris.proofmode Require Import classes.
 From bedrock.prelude Require Export base gmap letstar list_numbers.
 From bedrock.lang.bi Require Export only_provable derived_laws.
 
-#[global] Instance into_pure_emp PROP : IntoPure (PROP := PROP) emp%I True.
-Proof. by rewrite /IntoPure (bi.pure_intro True emp%I). Qed.
+#[global] Instance into_pure_emp PROP : IntoPure (PROP := PROP) emp True.
+Proof. by rewrite /IntoPure (bi.pure_intro True emp). Qed.
 
 #[global] Hint Opaque uPred_emp : typeclass_instances.
 
@@ -32,22 +32,23 @@ Notation "'letI*' x , .. , z := t 'in' f" :=
     (only parsing, at level 200, x closed binder, z closed binder).
 
 (* ASCII alias for [bi_pure] notation [⌜P⌝]. *)
-Global Notation "[! P !]" := (bi_pure P%type%stdpp) (only parsing) : bi_scope.
+Notation "[! P !]" := (bi_pure P%type%stdpp) (only parsing) : bi_scope.
+
+(* Avoid some [%I] annotations; this is a workaround for issues with scopes and if, functions, etc. *)
+Notation "'emp'" := (bi_emp) : stdpp_scope.
 
 (* Old, pre-Iris notations *)
-Global Notation lentails := (bi_entails) (only parsing).
-Global Notation lequiv := (≡) (only parsing).
-Global Notation ltrue := (True%I) (only parsing).
-Global Notation lfalse := (False%I) (only parsing).
-Global Notation land := (bi_and) (only parsing).
-Global Notation lor := (bi_or) (only parsing).
-Global Notation limpl := (bi_impl) (only parsing).
-Global Notation lforall := (bi_forall) (only parsing).
-Global Notation lexists := (bi_exist) (only parsing).
+Notation lentails := (bi_entails) (only parsing).
+Notation lequiv := (≡) (only parsing).
+Notation ltrue := (True%I) (only parsing).
+Notation lfalse := (False%I) (only parsing).
+Notation land := (bi_and) (only parsing).
+Notation lor := (bi_or) (only parsing).
+Notation limpl := (bi_impl) (only parsing).
+Notation lforall := (bi_forall) (only parsing).
+Notation lexists := (bi_exist) (only parsing).
 
 Ltac split' := intros; apply (anti_symm (⊢)).
-
-Bind Scope bi_scope with bi_car.
 
 (** For [bi] constructors like [monPredI], as opposed to [monPred] *)
 Declare Scope bi_type_scope.
@@ -60,24 +61,24 @@ Module ChargeNotation.
   Notation "P '|-@{' PROP } Q" := (P%I ⊢@{PROP} Q%I)
     (at level 80, no associativity, only parsing).
 
-  Notation "P //\\ Q"   := (P ∧ Q)%I (at level 75, right associativity).
-  Notation "P \\// Q"   := (P ∨ Q)%I (at level 76, right associativity).
-  Notation "P -->> Q"   := (P → Q)%I (at level 77, right associativity).
+  Notation "P //\\ Q"   := (bi_and P Q) (at level 75, right associativity).
+  Notation "P \\// Q"   := (bi_or P Q) (at level 76, right associativity).
+  Notation "P -->> Q"   := (bi_impl P Q) (at level 77, right associativity).
   Notation "'Forall' x .. y , p" :=
-    (lforall (fun x => .. (lforall (fun y => p)) ..))%I (at level 78, x binder, y binder, right associativity).
+    (bi_forall (fun x => .. (bi_forall (funI y => p)) ..)) (at level 78, x binder, y binder, right associativity).
 
   Notation "'Exists' x .. y , p" :=
-    (lexists (fun x => .. (lexists (fun y => p)) ..))%I (at level 78, x binder, y binder, right associativity).
+    (bi_exist (fun x => .. (bi_exist (funI y => p)) ..)) (at level 78, x binder, y binder, right associativity).
 
   Notation "|--  P" := (⊢ P%I) (at level 85, no associativity).
   Notation "'|-@{' PROP } P" := (⊢@{PROP} P%I)
     (at level 85, no associativity, only parsing).
 
-  Notation "P ** Q" := (P ∗ Q)%I (at level 58, right associativity).
-  Notation "P -* Q" := (P -∗ Q)%I (at level 60, right associativity).
+  Notation "P ** Q" := (bi_sep P Q) (at level 58, right associativity).
+  Notation "P -* Q" := (bi_wand P Q) (at level 60, right associativity).
 
   (* Notation "'|>' P" := (▷  P)%I (at level 71). *)
-  Notation "|> P" := (▷  P)%I (at level 20, right associativity).
+  Notation "|> P" := (bi_later P) (at level 20, right associativity).
 
   Notation "P -|- Q"  := (P ⊣⊢ Q) (at level 85, no associativity).
   Notation "P '-|-@{' PROP } Q"  := (P%I ⊣⊢@{PROP} Q%I)
