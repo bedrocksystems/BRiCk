@@ -387,8 +387,7 @@ prepare_cpp2v_env:
     - >
       if [[ $CI_MERGE_REQUEST_LABELS =~ .*CI::cpp2v-same-branch.* ]] ; then
         git ls-remote --exit-code --heads   https://gitlab-ci-token:${CI_JOB_TOKEN}@gitlab.com/bedrocksystems/cpp2v.git refs/heads/$CI_MERGE_REQUEST_SOURCE_BRANCH_NAME &&
-         echo "DOWNSTREAM_CPP2V_BRANCH=$CI_MERGE_REQUEST_SOURCE_BRANCH_NAME" >> build.env &&
-         echo "CPP2V_SAME_BRANCH_LABEL=$CI_MERGE_REQUEST_LABELS" >> build.env ||
+         echo "DOWNSTREAM_CPP2V_BRANCH=$CI_MERGE_REQUEST_SOURCE_BRANCH_NAME" >> build.env ||
          echo "DOWNSTREAM_CPP2V_BRANCH=master" >> build.env;
          else echo "DOWNSTREAM_CPP2V_BRANCH=master" >> build.env ; fi
     - CPP2V_CORE_COMMIT_HASH=$(git -C $CI_PROJECT_DIR rev-parse HEAD)
@@ -416,6 +415,7 @@ build-cpp2v-trigger:
   variables:
     UPSTREAM_CPP2V_CORE_COMMIT_HASH: $CPP2V_CORE_COMMIT_HASH
     UPSTREAM_CPP2V_SAME_BRANCH_LABEL: $CPP2V_SAME_BRANCH_LABEL
+    DOWNSTREAM_CPP2V_BRANCH: $DOWNSTREAM_CPP2V_BRANCH
   trigger:
     project: bedrocksystems/cpp2v
     branch: $DOWNSTREAM_CPP2V_BRANCH
