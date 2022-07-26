@@ -386,8 +386,7 @@ prepare_cpp2v_env:
   script:
     - >
       if [[ $CI_MERGE_REQUEST_LABELS =~ .*CI::cpp2v-same-branch.* ]] ; then
-        git ls-remote --exit-code --heads   https://gitlab-ci-token:${CI_JOB_TOKEN}@gitlab.com/bedrocksystems/cpp2v.git
-         refs/heads/$CI_MERGE_REQUEST_SOURCE_BRANCH_NAME &&
+        git ls-remote --exit-code --heads   https://gitlab-ci-token:${CI_JOB_TOKEN}@gitlab.com/bedrocksystems/cpp2v.git refs/heads/$CI_MERGE_REQUEST_SOURCE_BRANCH_NAME &&
          echo "DOWNSTREAM_CPP2V_BRANCH=$CI_MERGE_REQUEST_SOURCE_BRANCH_NAME" >> build.env &&
          echo "CPP2V_SAME_BRANCH_LABEL=$CI_MERGE_REQUEST_LABELS" >> build.env ||
          echo "DOWNSTREAM_CPP2V_BRANCH=master" >> build.env;
