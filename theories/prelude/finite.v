@@ -425,11 +425,21 @@ To define [finite_type] for enums, the following will work:
 Next Obligation. solve_finite_nodup. Qed.
 Next Obligation. solve_finite_total. Qed.
 >>
+Newer, shorter option:
+<<
+#[global] Instance t_finite : Finite t.
+Proof. solve_finite [GET; SET]. Defined.
+>>
 *)
 Ltac solve_finite_nodup := vm_decide.
 (* Crucially, [case] does not introduce variables: hence [solve_finite_total]
 works even for constructors taking arguments from finite domains. *)
 Ltac solve_finite_total := case; vm_decide.
+
+Ltac solve_finite Fields :=
+  refine (@Build_Finite _ _ Fields _ _);
+  [ abstract solve_finite_nodup
+  | abstract solve_finite_total ].
 
 (* Mixin hierarchy 1: given a Finite instance and a [to_N] function, we can
 create an [of_N] function. This contains [finite_encoded_type] *)
