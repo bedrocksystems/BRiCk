@@ -33,9 +33,11 @@ Section with_cpp.
     Kat_exit (interp free).
 
   (** * Aggregate identity *)
-  (* Part of [all_identities path cls], but indexed by fuel [f]. *)
+  (* Part of [all_identities path cls], but indexed by fuel [f].
+     TODO replace this with a version that is built by well-founded recursion.
+   *)
   #[local]
-  Fixpoint all_identities' (f : nat) (include_base : bool) (path : list globname) (cls : globname) (q : Qp) : Rep :=
+  Fixpoint identitiesR' (f : nat) (include_base : bool) (cls : globname) (path : list globname) (q : Qp) : Rep :=
     match f with
     | 0 => False
     | S f =>
@@ -44,12 +46,12 @@ Section with_cpp.
         (if include_base && has_vtable st then identityR cls path q else emp) **
         [∗list] b ∈ st.(s_bases),
            let '(base,_) := b in
-           _base cls base |-> all_identities' f true (path ++ [base]) base q
+           _base cls base |-> identitiesR' f true base (path ++ [base]) q
       | _ => False
       end
     end.
 
-  (** [this |-> all_identities include_base path cls] is all of the object
+  (** [this |-> identitiesR include_base cls path q] is all of the object
       identities of the [this] object (of type [cls]) where the most derived
       class is reached from [cls] using [path]. For example, consider the
       following
@@ -58,32 +60,32 @@ Section with_cpp.
       class B : public A {};
       class C : public B {};
       ```
-      here, [all_identities true ["::C"] "::B" q] produces:
+      here, [identitiesR true "::B" ["::C"] q] produces:
       [[
       identityR "::B" ["::C","::B"] q **
       _base "::B" "::A" |-> identityR "::A" ["::C","::B","::A"] q
       ]]
 
-      while [all_identities true [] "::C" q] produces all the identities for A, B and C:
+      while [identitiesR true "::C" [] q] produces all the identities for A, B and C:
       [[
       identityR "::C" ["::C"] q **
-      _base "::C" "::B" |-> all_identities true ["::C"] "::B" q
+      _base "::C" "::B" |-> identityR true "::B" ["::C"] q
       ]]
    *)
-  Definition all_identities : bool -> list globname -> globname -> Qp -> Rep :=
+  Definition identitiesR : bool -> globname -> list globname -> Qp -> Rep :=
     let size := avl.IM.cardinal resolve.(genv_tu).(globals) in
     (* ^ the number of global entries is an upper bound on the height of the
        derivation tree.
      *)
-    all_identities' size.
+    identitiesR' size.
 
   (** [init_identities cls Q] initializes the identities of this function creates
      an [identity] fact for this class *and*, transitively, updates the [identity]
      assertions for all base classes.
    *)
   Definition init_identity (cls : globname) (Q : mpred) : Rep :=
-    all_identities false [] cls 1 **
-    (all_identities true [cls] cls 1 -* pureR Q).
+    identitiesR false cls [] 1 **
+    (identitiesR true cls [cls] 1 -* pureR Q).
 
   Theorem init_identity_frame cls Q Q' :
     pureR (Q' -* Q) |-- init_identity cls Q' -* init_identity cls Q.
@@ -95,8 +97,8 @@ Section with_cpp.
   Qed.
 
   Definition revert_identity (cls : globname) (Q : mpred) : Rep :=
-    all_identities true [cls] cls 1 **
-    (all_identities false [] cls 1 -* pureR Q).
+    identitiesR true cls [cls] 1 **
+    (identitiesR false cls [] 1 -* pureR Q).
 
   Theorem revert_identity_frame cls Q Q' :
     pureR (Q' -* Q) |-- revert_identity cls Q' -* revert_identity cls Q.
@@ -109,7 +111,7 @@ Section with_cpp.
 
   (** sanity chect that initialization and revert are inverses *)
   Corollary init_revert cls Q p :
-    let REQ := all_identities false [] cls 1 in
+    let REQ := identitiesR false cls [] 1 in
         p |-> REQ ** Q
     |-- p |-> init_identity cls (p |-> revert_identity cls (p |-> REQ ** Q)).
   Proof.
@@ -586,3 +588,6 @@ Section with_cpp.
       spec.(fs_spec) vals Q -* wp_dtor dtor vals Q.
 
 End with_cpp.
+(* conveniences for the common pattern *)
+Notation init_identityR cls path q := (identityR cls%bs (path%bs ++ [cls%bs]) q).
+Notation init_identitiesR cls path q := (identitiesR cls%bs (path%bs ++ [cls%bs]) q).
