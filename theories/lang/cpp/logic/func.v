@@ -122,11 +122,6 @@ Section with_cpp.
 
   (** [bind_vars args vals r Q] preforms initialization of the parameters
       given the values being passed.
-
-      TODO this is technically inaccurate, because the caller of the function
-      should be constructing the pointers. In this setup, [vals] should
-      just be a list of [ptr] and the signature would be:
-      [bind_vars : list (ident * type) -> list ptr -> region -> region]
    *)
   Fixpoint bind_vars (args : list (ident * type)) (ar : function_arity) (ptrs : list ptr)
     (ρ : option ptr -> region) (Q : region -> FreeTemps -> mpred) : mpred :=
