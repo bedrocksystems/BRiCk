@@ -900,12 +900,14 @@ Module SimpleCPP.
     (* todo(gmm): this isn't accurate, but it is sufficient to show that the axioms are
     instantiatable. *)
     Definition identity {σ : genv} (this : globname) (most_derived : list globname)
-               (q : Qp) (p : ptr) : mpred := True.
+               (q : Qp) (p : ptr) : mpred := strict_valid_ptr p.
 
     Instance identity_fractional σ this mdc p : Fractional (λ q, identity this mdc q p).
-    Proof. move =>q1 q2. by rewrite /identity left_id. Qed.
+    Proof. move =>q1 q2. rewrite /identity. iSplit; [ iIntros "#P" | iIntros "[#P ?]" ]; iFrame "#". Qed.
     (* No frac_valid. *)
     Instance identity_timeless σ this mdc q p : Timeless (identity this mdc q p) := _.
+    Instance identity_strict_valid σ this mdc q p : Observe (strict_valid_ptr p) (identity this mdc q p).
+    Proof. refine _. Qed.
 
     (** this allows you to forget an object identity, necessary for doing
         placement [new] over an existing object.

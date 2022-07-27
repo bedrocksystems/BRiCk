@@ -243,7 +243,8 @@ Module Type CPP_LOGIC
         Qp -> ptr -> mpred.
     Axiom identity_fractional : forall σ this mdc p, Fractional (λ q, identity this mdc q p).
     Axiom identity_timeless : forall σ this mdc q p, Timeless (identity this mdc q p).
-    #[global] Existing Instances identity_fractional identity_timeless.
+    Axiom identity_strict_valid : forall σ this mdc q p, Observe (strict_valid_ptr p) (identity this mdc q p).
+    #[global] Existing Instances identity_fractional identity_timeless identity_strict_valid.
 
     (** cpp2v-core#194: The fraction is valid? Agreement? *)
 
