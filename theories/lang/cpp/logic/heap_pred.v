@@ -24,7 +24,7 @@ Section defs.
   Context `{Σ : cpp_logic}.
 
   (** object identity *)
-  Definition identityR {σ : genv} (cls : globname) (mdc : option globname)
+  Definition identityR {σ : genv} (cls : globname) (mdc : list globname)
              (q : Qp) : Rep :=
     as_Rep (@identity _ _ σ cls mdc q).
   (** cpp2v-core#194: [Fractional], [AsFractional], [Timeless]? *)
@@ -228,6 +228,12 @@ Section with_cpp.
   #[global] Instance identityR_timeless σ cls mdc q : Timeless (identityR cls mdc q) := _.
   #[global] Instance identityR_frac σ cls mdc : Fractional (identityR cls mdc) := _.
   #[global] Instance identityR_as_frac σ cls mdc q : AsFractional (identityR cls mdc q) (identityR cls mdc) q := _.
+  #[global] Instance identityR_strict_valid σ cls mdc q : Observe svalidR (identityR cls mdc q).
+  Proof.
+    red. eapply Rep_entails_at. intros.
+    rewrite _at_as_Rep _at_pers svalidR_eq _at_as_Rep.
+    apply identity_strict_valid.
+  Qed.
 
   #[global] Instance validR_persistent : Persistent validR.
   Proof. rewrite validR_eq; refine _. Qed.

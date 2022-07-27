@@ -33,113 +33,98 @@ Section with_cpp.
     Kat_exit (interp free).
 
   (** * Aggregate identity *)
-  #[local] Fixpoint all_identities' (f : nat) (mdc : option globname) (cls : globname) : Rep :=
+  (* Part of [all_identities path cls], but indexed by fuel [f]. *)
+  #[local]
+  Fixpoint all_identities' (f : nat) (include_base : bool) (path : list globname) (cls : globname) (q : Qp) : Rep :=
     match f with
     | 0 => False
     | S f =>
       match resolve.(genv_tu) !! cls with
       | Some (Gstruct st) =>
-        (if has_vtable st then identityR cls mdc 1 else emp) **
+        (if include_base && has_vtable st then identityR cls path q else emp) **
         [∗list] b ∈ st.(s_bases),
            let '(base,_) := b in
-           _base cls base |-> all_identities' f mdc base
+           _base cls base |-> all_identities' f true (path ++ [base]) base q
       | _ => False
       end
     end.
 
-  (** [this |-> all_identities mdc cls] is all of the object identities
-      of the [this] object where [this] is of type [cls*] and is part of
-      a most-derived-class [cls].
+  (** [this |-> all_identities include_base path cls] is all of the object
+      identities of the [this] object (of type [cls]) where the most derived
+      class is reached from [cls] using [path]. For example, consider the
+      following
+      ```c++
+      class A {};
+      class B : public A {};
+      class C : public B {};
+      ```
+      here, [all_identities true ["::C"] "::B" q] produces:
+      [[
+      identityR "::B" ["::C","::B"] q **
+      _base "::B" "::A" |-> identityR "::A" ["::C","::B","::A"] q
+      ]]
+
+      while [all_identities true [] "::C" q] produces all the identities for A, B and C:
+      [[
+      identityR "::C" ["::C"] q **
+      _base "::C" "::B" |-> all_identities true ["::C"] "::B" q
+      ]]
    *)
-  Definition all_identities : option globname -> globname -> Rep :=
+  Definition all_identities : bool -> list globname -> globname -> Qp -> Rep :=
     let size := avl.IM.cardinal resolve.(genv_tu).(globals) in
     (* ^ the number of global entries is an upper bound on the height of the
        derivation tree.
      *)
     all_identities' size.
 
-  (* [init_identities cls Q] initializes the identities of this function creates an [_instance_of] fact for this class *and*,
-     transitively, updates all of the [_instance_of] assertions for all base
-     classes.
+  (** [init_identities cls Q] initializes the identities of this function creates
+     an [identity] fact for this class *and*, transitively, updates the [identity]
+     assertions for all base classes.
    *)
   Definition init_identity (cls : globname) (Q : mpred) : Rep :=
-    match resolve.(genv_tu) !! cls with
-    | Some (Gstruct st) =>
-      ([∗list] b ∈ st.(s_bases),
-         let '(base,_) := b in
-         _base cls base |-> all_identities (Some base) base) **
-      ((if has_vtable st then identityR cls (Some cls) 1 else emp) -*
-       ([∗list] b ∈ st.(s_bases),
-          let '(base,_) := b in
-          _base cls base |-> all_identities (Some cls) base) -* pureR Q)
-    | _ => False
-    end.
+    all_identities false [] cls 1 **
+    (all_identities true [cls] cls 1 -* pureR Q).
 
   Theorem init_identity_frame cls Q Q' :
     pureR (Q' -* Q) |-- init_identity cls Q' -* init_identity cls Q.
   Proof.
     rewrite /init_identity.
-    case_match; eauto.
-    case_match; eauto.
-    iIntros "X [$ Y] Z K".
-    iDestruct ("Y" with "Z K") as "Y".
-    iStopProof. rewrite -pureR_sep. apply pureR_mono.
-    iIntros "[X Y]"; iApply "X"; eauto.
+    iIntros "X [$ Y] Z".
+    rewrite pureR_wand.
+    by iApply "X"; iApply "Y".
   Qed.
 
   Definition revert_identity (cls : globname) (Q : mpred) : Rep :=
-    match resolve.(genv_tu) !! cls with
-    | Some (Gstruct st) =>
-      (if has_vtable st then identityR cls (Some cls) 1 else emp) **
-      ([∗list] b ∈ st.(s_bases),
-          let '(base,_) := b in
-          _base cls base |-> all_identities (Some cls) base) **
-      (([∗list] b ∈ st.(s_bases),
-         let '(base,_) := b in
-         _base cls base |-> all_identities (Some base) base) -* pureR Q)
-    | _ => False
-    end.
+    all_identities true [cls] cls 1 **
+    (all_identities false [] cls 1 -* pureR Q).
 
   Theorem revert_identity_frame cls Q Q' :
     pureR (Q' -* Q) |-- revert_identity cls Q' -* revert_identity cls Q.
   Proof.
-    rewrite /revert_identity.
-    case_match; eauto.
-    case_match; eauto.
-    iIntros "X [$ [$ Y]] Z".
-    iDestruct ("Y" with "Z") as "Y".
-    iStopProof. rewrite -pureR_sep. apply pureR_mono.
-    iIntros "[X Y]"; iApply "X"; eauto.
+    rewrite /init_identity.
+    iIntros "X [$ Y] Z".
+    rewrite pureR_wand.
+    by iApply "X"; iApply "Y".
   Qed.
 
   (** sanity chect that initialization and revert are inverses *)
-  Corollary init_revert cls Q p st :
-   (genv_tu resolve) !! cls = Some (Gstruct st) ->
-    let REQ :=
-        ([∗ list] b ∈ s_bases st,
-          let '(base, _) := b in
-          _base cls base |-> all_identities (Some base) base)%I
-    in
+  Corollary init_revert cls Q p :
+    let REQ := all_identities false [] cls 1 in
         p |-> REQ ** Q
     |-- p |-> init_identity cls (p |-> revert_identity cls (p |-> REQ ** Q)).
   Proof.
-    rewrite /revert_identity/init_identity => ->.
+    rewrite /revert_identity/init_identity.
     rewrite !_at_sep !_at_wand !_at_pureR.
-    iIntros "[$ $] $ $ $".
+    iIntros "[$ $] $ $".
   Qed.
 
   (** * Binding parameters *)
 
   (** [bind_vars args vals r Q] preforms initialization of the parameters
       given the values being passed.
-
-      TODO this is technically inaccurate, because the caller of the function
-      should be constructing the pointers. In this setup, [vals] should
-      just be a list of [ptr] and the signature would be:
-      [bind_vars : list (ident * type) -> list ptr -> region -> region]
    *)
-  Fixpoint bind_vars (args : list (ident * type)) (ar : function_arity) (ptrs : list ptr) (ρ : option ptr -> region)
-           (Q : region -> FreeTemps -> mpred) : mpred :=
+  Fixpoint bind_vars (args : list (ident * type)) (ar : function_arity) (ptrs : list ptr)
+    (ρ : option ptr -> region) (Q : region -> FreeTemps -> mpred) : mpred :=
     match args with
     | nil =>
         match ar with
@@ -160,7 +145,7 @@ Section with_cpp.
             bind_vars xs ar ps (fun vap => Rbind x p $ ρ vap) Q
         | nil => ERROR "bind_vars: insufficient arguments"
         end
-    end%I.
+    end.
 
   Lemma bind_vars_frame : forall ts ar args ρ Q Q',
         Forall ρ free, Q ρ free -* Q' ρ free
@@ -365,14 +350,12 @@ Section with_cpp.
       iIntros (??); by iApply interp_frame. }
     { iIntros "a"; iApply wpi_bases_frame.
       rewrite /init_identity.
-      case_match; eauto.
-      case_match; eauto.
       rewrite !_at_sep !_at_wand !_at_pureR.
-      iIntros "[$ x]".
-      iIntros "b c"; iDestruct ("x" with "b c") as "x".
-      iRevert "x"; iApply wpi_members_frame. iIntros "b c".
-      iApply "a".
-      iApply ("b" with "c"). }
+      iIntros "[$ x] b".
+      iDestruct ("x" with "b") as "x"; iRevert "x".
+      iApply wpi_members_frame.
+      iIntros "b c".
+      by iApply "a"; iApply "b". }
   Qed.
 
   Definition wp_union_initializer_list (s : translation_unit.Union) (ρ : region) (cls : globname) (this : ptr)
@@ -395,7 +378,7 @@ Section with_cpp.
     | None =>
       UNSUPPORTED "union initialization"
       (* TODO what is the right thing to do when initializing unions? *)
-    end%bs%I.
+    end%bs.
 
   Lemma wp_union_initializer_list_frame : forall ρ cls p ty li Q Q',
         Q -* Q'
@@ -420,7 +403,7 @@ Section with_cpp.
          [∗list] f ∈ s_fields , type_validity f.(f_type) (this ,, _field f)
      ]]
 
-     TODO we leave this trivival for now.
+     TODO we leave this trivial for now.
    *)
   Definition type_valdity : type -> ptr -> mpred := fun _ _ => emp.
 

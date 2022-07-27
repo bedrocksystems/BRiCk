@@ -30,52 +30,61 @@ is_builtin(const Decl* d) {
 }
 
 void
-printCastKind(Formatter& out, const CastKind ck) {
-    if (ck == CastKind::CK_LValueToRValue) {
-        out << "Cl2r";
-    } else if (ck == CastKind::CK_Dependent) {
-        out << "Cdependent";
-    } else if (ck == CastKind::CK_FunctionToPointerDecay) {
-        out << "Cfunction2pointer";
-    } else if (ck == CastKind::CK_NoOp) {
-        out << "Cnoop";
-    } else if (ck == CastKind::CK_BitCast) {
-        out << "Cbitcast";
-    } else if (ck == CastKind::CK_IntegralCast) {
-        out << "Cintegral";
-    } else if (ck == CastKind::CK_IntegralToBoolean) {
-        out << "Cint2bool";
-    } else if (ck == CastKind::CK_PointerToBoolean) {
-        out << "Cptr2bool";
-    } else if (ck == CastKind::CK_PointerToIntegral) {
-        out << "Cpointer2int";
-    } else if (ck == CastKind::CK_IntegralToPointer) {
-        out << "Cint2pointer";
-    } else if (ck == CastKind::CK_ArrayToPointerDecay) {
-        out << "Carray2pointer";
-    } else if (ck == CastKind::CK_ConstructorConversion) {
-        out << "Cconstructorconversion";
-    } else if (ck == CastKind::CK_BuiltinFnToFnPtr) {
-        out << "Cbuiltin2function";
-    } else if (ck == CastKind::CK_NullToPointer) {
-        out << "Cnull2ptr";
-    } else if (ck == CastKind::CK_DerivedToBase ||
-               ck == CastKind::CK_UncheckedDerivedToBase) {
-        out << "Cderived2base";
-    } else if (ck == CastKind::CK_BaseToDerived) {
-        out << "Cbase2derived";
-    } else if (ck == CastKind::CK_ToVoid) {
-        out << "C2void";
-    } else if (ck == CastKind::CK_FloatingToIntegral) {
-        out << "Cfloat2int";
-    } else {
-#if CLANG_VERSION_MAJOR >= 7
-        logging::unsupported() << "unsupported cast kind \""
-                               << CastExpr::getCastKindName(ck) << "\"\n";
-#else
-        logging::unsupported() << "unsupported cast kind ..." << ck << "\n";
-#endif
-        out << "Cunsupported";
+printCast(const CastExpr* ce, CoqPrinter& print, ClangPrinter& cprint) {
+    switch (ce->getCastKind()) {
+#define CASE(a, b)                                                             \
+    case CastKind::CK_##a:                                                     \
+        print.output() << #b;                                                  \
+        break;
+
+        CASE(LValueToRValue, Cl2r)
+        CASE(Dependent, Cdependent)
+        CASE(FunctionToPointerDecay, Cfun2ptr)
+        CASE(NoOp, Cnoop)
+        CASE(BitCast, Cbitcast)
+        CASE(IntegralCast, Cintegral)
+        CASE(IntegralToBoolean, Cint2bool)
+        CASE(PointerToBoolean, Cptr2bool)
+        CASE(PointerToIntegral, Cptr2int)
+        CASE(IntegralToPointer, Cint2ptr)
+        CASE(ArrayToPointerDecay, Carray2ptr)
+        CASE(ConstructorConversion, Cctor)
+        CASE(BuiltinFnToFnPtr, Cbuiltin2fun)
+        CASE(NullToPointer, Cnull2ptr)
+        CASE(ToVoid, C2void)
+        CASE(FloatingToIntegral, Cfloat2int)
+#undef CASE
+
+    case CastKind::CK_DerivedToBase:
+    case CastKind::CK_UncheckedDerivedToBase: {
+        print.ctor("Cderived2base");
+        // note that [path] does *not* include the type of the argument
+        print.list(ce->path(), [&](auto print, auto i) {
+            if (const Type* t = i->getType().getTypePtrOrNull()) {
+                cprint.printTypeName(t->getAsRecordDecl(), print);
+            } else {
+                assert(false && "no type");
+            }
+        });
+        print.end_ctor();
+        break;
+    }
+    case CastKind::CK_BaseToDerived:
+        print.ctor("Cbase2derived");
+        // note that [path] does *not* include the type of the argument
+        print.list(ce->path(), [&](auto print, auto i) {
+            if (const Type* t = i->getType().getTypePtrOrNull()) {
+                cprint.printTypeName(t->getAsRecordDecl(), print);
+            } else {
+                assert(false && "no type");
+            }
+        });
+        print.end_ctor();
+        break;
+    default:
+        logging::unsupported()
+            << "unsupported cast kind \"" << ce->getCastKindName() << "\"\n";
+        print.output() << "Cunsupported";
     }
 }
 
@@ -187,12 +196,12 @@ public:
     }
 
 #if CLANG_VERSION_MAJOR >= 11
-    void VisitRecoveryExpr(const RecoveryExpr* expr, CoqPrinter& print, ClangPrinter& cprint,
-                   const ASTContext&, OpaqueNames&) {
+    void VisitRecoveryExpr(const RecoveryExpr* expr, CoqPrinter& print,
+                           ClangPrinter& cprint, const ASTContext&,
+                           OpaqueNames&) {
         using namespace logging;
         unsupported() << "Error detected when typechecking C++ code at "
-                      << cprint.sourceRange(expr->getSourceRange())
-                      << "\n"
+                      << cprint.sourceRange(expr->getSourceRange()) << "\n"
                       << "Try fixing earlier errors\n";
         print.ctor("Eunsupported");
         print.str(expr->getStmtClassName());
@@ -458,10 +467,9 @@ public:
             print.output() << fmt::nbsp;
             cprint.printExpr(expr->getSubExpr(), print, li);
             done(expr, print, cprint);
-
         } else {
             print.ctor("Ecast");
-            printCastKind(print.output(), expr->getCastKind());
+            printCast(expr, print, cprint);
 
             print.output() << fmt::nbsp;
             cprint.printValCat(expr->getSubExpr(), print);
@@ -508,27 +516,15 @@ public:
             cprint.printQualType(expr->getType(), print);
             print.end_ctor();
         } else if (isa<CXXStaticCastExpr>(expr)) {
-            auto from = expr->getSubExpr()
-                            ->getType()
-                            .getTypePtr()
-                            ->getPointeeCXXRecordDecl();
-            auto to = expr->getType().getTypePtr()->getPointeeCXXRecordDecl();
-            if (from && to) {
-                print.ctor("Cstatic", false);
-                cprint.printTypeName(from, print);
-                print.output() << fmt::nbsp;
-                cprint.printTypeName(to, print);
-                print.end_ctor();
-            } else {
-                printCastKind(print.output(), expr->getCastKind());
-            }
+            print.ctor("Cstatic", false);
+            printCast(expr, print, cprint);
+            print.end_ctor();
         } else if (isa<CXXDynamicCastExpr>(expr)) {
-            using namespace logging;
-            fatal() << "Error: dynamic casts are not supported (at "
-                    << expr->getSourceRange().printToString(
-                           ctxt.getSourceManager())
-                    << ")\n";
-            die();
+            print.ctor("Cdynamic", false);
+            cprint.printQualType(expr->getSubExpr()->getType(), print);
+            print.output() << fmt::nbsp;
+            cprint.printQualType(expr->getType(), print);
+            print.end_ctor();
         } else {
             using namespace logging;
             fatal() << "Error: unknown named cast" << expr->getCastKindName()
@@ -644,7 +640,8 @@ public:
         print.ctor("Emember");
 
         auto base = expr->getBase();
-        __attribute__((unused)) auto record_type = expr->getMemberDecl()->getDeclContext();
+        __attribute__((unused)) auto record_type =
+            expr->getMemberDecl()->getDeclContext();
         // TODO Assert that the type of the base is the type of the field.
         if (expr->isArrow()) {
             print.output() << "Lvalue" << fmt::nbsp;

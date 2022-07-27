@@ -84,7 +84,7 @@ Section destroy.
   Lemma destroy_val_frame : forall ty this (Q Q' : epred),
       Q -* Q' |-- destroy_val ty this Q -* destroy_val ty this Q'.
   Proof.
-    intro ty; generalize dependent dispatch; induction ty; simpl; eauto;
+    intro ty; induction ty; simpl; eauto;
       try solve [ intros; iIntros "Q [$ X]"; iRevert "X"; done ].
     { induction (rev _); simpl; intros.
       { iIntros "X"; iApply "X". }

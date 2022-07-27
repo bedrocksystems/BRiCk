@@ -467,21 +467,21 @@ Module Type Expr.
                       end)
         |-- wp_operand (Ecast Cptr2bool Prvalue e ty) Q.
 
-    (* [Cfunction2pointer] is a cast from a function to a pointer.
-     *
-     * note that C and C++ classify function names differently, so we
-     * end up with two cases
-     * - in C, function names are Rvalues, and
-     * - in C++, function names are Lvalues
+    (** [Cfun2ptr] is a cast from a function to a pointer.
+
+       note that C and C++ classify function names differently, so we
+       end up with two cases
+       - in C, function names are Rvalues, and
+       - in C++, function names are Lvalues
      *)
-    Axiom wp_operand_cast_function2pointer_c : forall ty ty' g Q,
+    Axiom wp_operand_cast_fun2ptr_c : forall ty ty' g Q,
         wp_lval (Evar (Gname g) ty') (fun v => Q (Vptr v))
             (* even though they are [prvalues], we reuse the [Lvalue] rule for
                evaluating them. *)
-        |-- wp_operand (Ecast Cfunction2pointer Prvalue (Evar (Gname g) ty') ty) Q.
-    Axiom wp_operand_cast_function2pointer_cpp : forall ty ty' g Q,
+        |-- wp_operand (Ecast Cfun2ptr Prvalue (Evar (Gname g) ty') ty) Q.
+    Axiom wp_operand_cast_fun2ptr_cpp : forall ty ty' g Q,
         wp_lval (Evar (Gname g) ty') (fun v => Q (Vptr v))
-        |-- wp_operand (Ecast Cfunction2pointer Lvalue (Evar (Gname g) ty') ty) Q.
+        |-- wp_operand (Ecast Cfun2ptr Lvalue (Evar (Gname g) ty') ty) Q.
 
     (** Known places that bitcasts occur
         - casting between [void*] and [T*] for some [T].
@@ -529,14 +529,14 @@ Module Type Expr.
              A pointer can be explicitly converted to any integral type large
              enough to hold all values of its type. The mapping function is
              implementation-defined. *)
-          wp_operand (Ecast Cpointer2int Prvalue e ty) Q
+          wp_operand (Ecast Cptr2int Prvalue e ty) Q
         | Tnum _ _ , Tptr _ =>
           (* A value of integral type or enumeration type can be explicitly
              converted to a pointer. A pointer converted to an integer of sufficient
              size (if any such exists on the implementation) and back to the same
              pointer type will have its original value; mappings between pointers
              and integers are otherwise implementation-defined. *)
-          wp_operand (Ecast Cint2pointer Prvalue e ty) Q
+          wp_operand (Ecast Cint2ptr Prvalue e ty) Q
         | Tnullptr , Tnum _ _ =>
           (* A value of type [std​::​nullptr_t] can be converted to an integral type;
              the conversion has the same meaning and validity as a conversion of
@@ -554,35 +554,34 @@ Module Type Expr.
         end
         |-- wp_operand (Ecast (Creinterpret qt) Prvalue e ty) Q.
 
-    (* [Cstatic from to] represents a static cast from [from] to
-     * [to].
-     *
-     * NOTE Our AST (based on Clang's AST) *seems to* generate this only when
-     *      [from] is a (transitive) base class of [to]. In other instances
-     *      an implicit cast, e.g. [Cderived2base], [Cintegral], etc, are
-     *      inserted. This (essentially) desugars most uses of [static_cast]
-     *      to simpler casts that are captured by other rules.
+    (** [Cstatic c] represents a use of `static_cast` to perform the underlying
+        cast.
      *)
-    Axiom wp_operand_static_cast : forall from to e ty Q,
-      wp_operand e (fun addr free =>
-                    (Exists path : @class_derives resolve to from,
-                     let addr' := _eqv addr ,, base_to_derived path in
-                     valid_ptr addr' ** Q (Vptr addr') free))
-      |-- wp_operand (Ecast (Cstatic from to) Prvalue e ty) Q.
+    Axiom wp_operand_static_cast : forall c vc e ty Q,
+          wp_operand (Ecast c vc e ty) Q
+      |-- wp_operand (Ecast (Cstatic c) vc e ty) Q.
+
+    Axiom wp_lval_static_cast : forall c vc e ty Q,
+          wp_lval (Ecast c vc e ty) Q
+      |-- wp_lval (Ecast (Cstatic c) vc e ty) Q.
+
+    Axiom wp_xval_static_cast : forall c vc e ty Q,
+          wp_xval (Ecast c vc e ty) Q
+      |-- wp_xval (Ecast (Cstatic c) vc e ty) Q.
 
     (** You can cast anything to void, but an expression of type
-     * [void] can only be a pr_value *)
+        [void] can only be a pr_value *)
     Axiom wp_operand_cast_tovoid : forall vc e Q,
           wp_discard vc e (fun free => Q Vundef free)
       |-- wp_operand (Ecast C2void vc e Tvoid) Q.
 
-    Axiom wp_operand_cast_array2pointer : forall vc e t Q,
+    Axiom wp_operand_cast_array2ptr : forall vc e t Q,
         wp_glval vc e (fun p => Q (Vptr p))
-        |-- wp_operand (Ecast Carray2pointer vc e t) Q.
+        |-- wp_operand (Ecast Carray2ptr vc e t) Q.
 
-    (** [Cpointer2int] exposes the pointer, which is expressed with [pinned_ptr]
+    (** [Cptr2int] exposes the pointer, which is expressed with [pinned_ptr]
      *)
-    Axiom wp_operand_pointer2int : forall e ty Q,
+    Axiom wp_operand_ptr2int : forall e ty Q,
         match drop_qualifiers (type_of e) , ty with
         | Tptr _ , Tnum sz sgn =>
           wp_operand e (fun v free => Exists p, [| v = Vptr p |] **
@@ -592,12 +591,12 @@ Module Type Expr.
                                                     end (Z.of_N va))) free))
         | _ , _ => False
         end
-        |-- wp_operand (Ecast Cpointer2int Prvalue e ty) Q.
+        |-- wp_operand (Ecast Cptr2int Prvalue e ty) Q.
 
-    (** [Cint2pointer] uses "angelic non-determinism" to allow the developer to
+    (** [Cint2ptr] uses "angelic non-determinism" to allow the developer to
         pick any pointer that was previously exposed as the given integer.
      *)
-    Axiom wp_operand_int2pointer : forall e ty Q,
+    Axiom wp_operand_int2ptr : forall e ty Q,
         match unptr ty with
         | Some ptype =>
           wp_operand e (fun v free => Exists va : N, [| v = Vint (Z.of_N va) |] **
@@ -616,83 +615,82 @@ Module Type Expr.
               ([| va = 0%N |] ** Q (Vptr nullptr) free)))
         | _ => False
         end
-        |-- wp_operand (Ecast Cint2pointer Prvalue e ty) Q.
+        |-- wp_operand (Ecast Cint2ptr Prvalue e ty) Q.
 
-    (** [Cderived2base] casts from a derived class to a base
-     * class. Casting is only permitted on pointers and references
-     * - references occur with lvalues and xvalues
-     * - pointers occur with prvalues
-     *
-     * TODO [_base] only supports casting up a single level of the
-     * heirarchy at a time, so we need to construct a full path.
+    (** * [Cderived2base]
+        casts from a derived class to a base class. Casting is only permitted
+        on pointers and references
+        - references occur with lvalues and xvalues
+        - pointers occur with prvalues
+
+        NOTE these casts require a side-condition that the [path] is valid
+             in the program. We express this using the [valid_ptr] side
+             condition, i.e. [valid_ptr addr] requires that [addr] only
+             has valid paths.
+             It would technically be a little nicer if this side condition
+             was checked at "compile" time rather than at runtime.
      *)
-    Axiom wp_lval_cast_derived2base : forall e ty Q,
-      wp_lval e (fun addr free =>
-        match drop_qualifiers (type_of e), drop_qualifiers ty with
-        | Tnamed derived , Tnamed base => (*<-- is this the only case here?*)
-          Exists path : @class_derives resolve derived base,
-          let addr' := addr ,, derived_to_base path in
-          valid_ptr addr' ** Q addr' free
-        | _, _ => False
-        end)
-      |-- wp_lval (Ecast Cderived2base Lvalue e ty) Q.
+    Axiom wp_lval_cast_derived2base : forall e vc ty path Q,
+      match drop_qualifiers (type_of e), drop_qualifiers ty with
+      | Tnamed derived , Tnamed base =>
+          wp_glval vc e (fun addr free =>
+            let addr' := addr ,, derived_to_base derived path in
+            valid_ptr addr' ** Q addr' free)
+      | _, _ => False
+      end
+      |-- wp_lval (Ecast (Cderived2base path) vc e ty) Q.
 
-    Axiom wp_xval_cast_derived2base : forall e ty Q,
-      wp_xval e (fun addr free =>
-        match drop_qualifiers (type_of e), drop_qualifiers ty with
-        | Tnamed derived , Tnamed base => (*<-- is this the only case here?*)
-          Exists path : @class_derives resolve derived base,
-          let addr' := addr ,, derived_to_base path in
-          valid_ptr addr' ** Q addr' free
-        | _, _ => False
-        end)
-      |-- wp_xval (Ecast Cderived2base Xvalue e ty) Q.
+    Axiom wp_xval_cast_derived2base : forall e vc ty path Q,
+      match drop_qualifiers (type_of e), drop_qualifiers ty with
+      | Tnamed derived , Tnamed base =>
+          wp_glval vc e (fun addr free =>
+            let addr' := addr ,, derived_to_base derived path in
+            valid_ptr addr' ** Q addr' free)
+      | _, _ => False
+      end
+      |-- wp_xval (Ecast (Cderived2base path) vc e ty) Q.
 
-    Axiom wp_operand_cast_derived2base : forall e ty Q,
-      wp_operand e (fun addr free =>
-        match drop_qualifiers <$> unptr (type_of e), drop_qualifiers <$> unptr ty with
-        | Some (Tnamed derived) , Some (Tnamed base) =>
-          Exists path : @class_derives resolve derived base,
-          let addr' := _eqv addr ,, derived_to_base path in
-          valid_ptr addr' ** Q (Vptr addr') free
-        | _, _ => False
-        end)
-      |-- wp_operand (Ecast Cderived2base Prvalue e ty) Q.
+    Axiom wp_operand_cast_derived2base : forall e ty path Q,
+      match drop_qualifiers <$> unptr (type_of e), drop_qualifiers <$> unptr  ty with
+      | Some (Tnamed derived) , Some (Tnamed base) =>
+          wp_operand e (fun addr free =>
+            let addr' := _eqv addr ,, derived_to_base derived path in
+            valid_ptr addr' ** Q (Vptr addr') free)
+      | _, _ => False
+        end
+      |-- wp_operand (Ecast (Cderived2base path) Prvalue e ty) Q.
 
     (* [Cbase2derived] casts from a base class to a derived class.
      *)
-    Axiom wp_lval_cast_base2derived : forall e ty Q,
-      wp_lval e (fun addr free =>
-        match drop_qualifiers (type_of e), drop_qualifiers ty with
-        | Tnamed base, Tnamed derived => (*<-- is this the only case here?*)
-          Exists path : @class_derives resolve derived base,
-          let addr' := addr ,, base_to_derived path in
-          valid_ptr addr' ** Q addr' free
-        | _, _ => False
-        end)
-      |-- wp_lval (Ecast Cbase2derived Lvalue e ty) Q.
+    Axiom wp_lval_cast_base2derived : forall e vc ty path Q,
+      match drop_qualifiers (type_of e), drop_qualifiers ty with
+      | Tnamed base , Tnamed derived =>
+          wp_glval vc e (fun addr free =>
+            let addr' := addr ,, base_to_derived derived path in
+            valid_ptr addr' ** Q addr' free)
+      | _, _ => False
+      end
+      |-- wp_lval (Ecast (Cbase2derived path) vc e ty) Q.
 
-    Axiom wp_xval_cast_base2derived : forall e ty Q,
-      wp_xval e (fun addr free =>
-        match drop_qualifiers (type_of e), drop_qualifiers ty with
-        | Tnamed base, Tnamed derived => (*<-- is this the only case here?*)
-          Exists path : @class_derives resolve derived base,
-          let addr' := addr ,, base_to_derived path in
-          valid_ptr addr' ** Q addr' free
-        | _, _ => False
-        end)
-      |-- wp_xval (Ecast Cbase2derived Xvalue e ty) Q.
+    Axiom wp_xval_cast_base2derived : forall e vc ty path Q,
+      match drop_qualifiers (type_of e), drop_qualifiers ty with
+      | Tnamed base , Tnamed derived =>
+          wp_glval vc e (fun addr free =>
+            let addr' := addr ,, base_to_derived derived path in
+            valid_ptr addr' ** Q addr' free)
+      | _, _ => False
+      end
+      |-- wp_xval (Ecast (Cbase2derived path) vc e ty) Q.
 
-    Axiom wp_operand_cast_base2derived : forall e ty Q,
-      wp_operand e (fun addr free =>
-        match drop_qualifiers <$> unptr (type_of e), drop_qualifiers <$> unptr ty with
-        | Some (Tnamed base), Some (Tnamed derived) =>
-          Exists path : @class_derives resolve derived base,
-          let addr' := _eqv addr ,, base_to_derived path in
-          valid_ptr addr' ** Q (Vptr addr') free
-        | _, _ => False
-        end)
-      |-- wp_operand (Ecast Cbase2derived Prvalue e ty) Q.
+    Axiom wp_operand_cast_base2derived : forall e ty path Q,
+         match drop_qualifiers <$> unptr (type_of e), drop_qualifiers <$> unptr ty with
+         | Some (Tnamed base), Some (Tnamed derived) =>
+          wp_operand e (fun addr free =>
+            let addr' := _eqv addr ,, base_to_derived derived path in
+            valid_ptr addr' ** Q (Vptr addr') free)
+         | _, _ => False
+        end
+      |-- wp_operand (Ecast (Cbase2derived path) Prvalue e ty) Q.
 
     (** the ternary operator [_ ? _ : _] has the value category
      * of the "then" and "else" expressions (which must be the same).
@@ -1200,16 +1198,13 @@ Module Type Expr.
        2. `{.y = 7, .x = 2}` is elaborated into `{2, 7}`
      *)
     Axiom wp_init_initlist_agg : forall cls (base : ptr) es t Q,
-        let cont :=
-          base |-> struct_paddingR 1 cls ** base |-> identityR cls (Some cls) 1 -*
-            Q (FreeTemps.delete (Tnamed cls) base) FreeTemps.id
-        in
         match resolve.(genv_tu).(globals) !! cls with
         | Some (Gstruct s) =>
             (* these constraints are enforced by clang, see note above *)
             [| s.(s_bases) = nil /\ length s.(s_fields) = length es |] **
             init_fields cls base s.(s_fields) es
-               (base |-> struct_paddingR 1 cls ** (if has_vtable s then base |-> identityR cls (Some cls) 1 else emp) -*
+               (base |-> struct_paddingR 1 cls **
+                (if has_vtable s then base |-> identityR cls [cls] 1 else emp) -*
                 Q (FreeTemps.delete (Tnamed cls) base) FreeTemps.id)
 
         | Some (Gunion u) =>
