@@ -597,6 +597,11 @@ To define <span class="inlinecode"><a class="idref" href="bedrock.prelude.finite
 Next Obligation. solve_finite_nodup. Qed.
 Next Obligation. solve_finite_total. Qed.
 </pre>
+Newer, shorter option:
+<pre>
+#[global] Instance t_finite : Finite t.
+Proof. solve_finite [GET; SET]. Defined.
+</pre>
 
 </div>
 <div class="code">
@@ -604,6 +609,12 @@ Next Obligation. solve_finite_total. Qed.
 <span class="comment">(*&nbsp;Crucially,&nbsp;<span class="inlinecode"><span class="id" title="tactic">case</span></span>&nbsp;does&nbsp;not&nbsp;introduce&nbsp;variables:&nbsp;hence&nbsp;<span class="inlinecode"><span class="id" title="var">solve_finite_total</span></span><br/>
 works&nbsp;even&nbsp;for&nbsp;constructors&nbsp;taking&nbsp;arguments&nbsp;from&nbsp;finite&nbsp;domains.&nbsp;*)</span><br/>
 <span class="id" title="keyword">Ltac</span> <span class="id" title="var">solve_finite_total</span> := <span class="id" title="tactic">case</span>; <span class="id" title="var">vm_decide</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Ltac</span> <span class="id" title="var">solve_finite</span> <span class="id" title="var">Fields</span> :=<br/>
+&nbsp;&nbsp;<span class="id" title="tactic">refine</span> (@<a class="idref" href="https://plv.mpi-sws.org/coqdoc/stdpp//stdpp.finite.html#Build_Finite"><span class="id" title="constructor">Build_Finite</span></a> <span class="id" title="var">_</span> <span class="id" title="var">_</span> <span class="id" title="var">Fields</span> <span class="id" title="var">_</span> <span class="id" title="var">_</span>);<br/>
+&nbsp;&nbsp;[ <span class="id" title="tactic">abstract</span> <span class="id" title="var">solve_finite_nodup</span><br/>
+&nbsp;&nbsp;| <span class="id" title="tactic">abstract</span> <span class="id" title="var">solve_finite_total</span> ].<br/>
 
 <br/>
 <span class="comment">(*&nbsp;Mixin&nbsp;hierarchy&nbsp;1:&nbsp;given&nbsp;a&nbsp;Finite&nbsp;instance&nbsp;and&nbsp;a&nbsp;<span class="inlinecode"><span class="id" title="var">to_N</span></span>&nbsp;function,&nbsp;we&nbsp;can<br/>
