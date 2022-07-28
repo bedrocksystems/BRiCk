@@ -368,6 +368,7 @@ pages:
   after_script:
     - rsync -raz ~/.cache/dune ${DUNE_USER}@${FM_CACHE_SERVER}:${RSYNC_CACHE_PATH}/dune_cache
     - ssh ${DUNE_USER}@${FM_CACHE_SERVER} bash -c "'echo `date  +%Y%m%d%H%M%S` - $CI_PROJECT_NAME - $CI_JOB_NAME - $CI_JOB_ID >> ${RSYNC_CACHE_PATH}/test_rsync_fm1.txt'"
+    - *prepare_cpp2v_env
 
 dune-build:
   extends:
@@ -384,9 +385,11 @@ dune-build:
     - cp fmdeps/${CPP2V_CORE}/dune-project.template dune-project
     - ln -sf fmdeps/${CPP2V_CORE}/coq-cpp2v-bin.opam coq-cpp2v-bin.opam
     - dune build -j ${NJOBS}
-    - *prepare_cpp2v_env
   tags:
     - ${DUNE_TAG}
+  artifacts:
+    reports:
+      dotenv: build.env
   rules:
     - if: $CI_MERGE_REQUEST_IID
 
