@@ -79,43 +79,45 @@ Section with_cpp.
      *)
     identitiesR' size.
 
-  (** [init_identities cls Q] initializes the identities of this function creates
-     an [identity] fact for this class *and*, transitively, updates the [identity]
-     assertions for all base classes.
+  (** [wp_init_identity cls Q] updates the identities of "this" by updating the
+      [identity] of all base classes (transitively) and producing the new identity
+      for "this".
    *)
-  Definition init_identity (cls : globname) (Q : mpred) : Rep :=
+  Definition wp_init_identity (cls : globname) (Q : mpred) : Rep :=
     identitiesR false cls [] 1 **
     (identitiesR true cls [cls] 1 -* pureR Q).
 
-  Theorem init_identity_frame cls Q Q' :
-    pureR (Q' -* Q) |-- init_identity cls Q' -* init_identity cls Q.
+  Theorem wp_init_identity_frame cls Q Q' :
+    pureR (Q' -* Q) |-- wp_init_identity cls Q' -* wp_init_identity cls Q.
   Proof.
-    rewrite /init_identity.
     iIntros "X [$ Y] Z".
     rewrite pureR_wand.
     by iApply "X"; iApply "Y".
   Qed.
 
-  Definition revert_identity (cls : globname) (Q : mpred) : Rep :=
+  (** [wp_revert_identity cls Q] updates the identities of "this" by taking the
+      [identity] of this class and transitively updating the [identity] of all base
+      classes to remove [cls] as the most derived class.
+   *)
+  Definition wp_revert_identity (cls : globname) (Q : mpred) : Rep :=
     identitiesR true cls [cls] 1 **
     (identitiesR false cls [] 1 -* pureR Q).
 
-  Theorem revert_identity_frame cls Q Q' :
-    pureR (Q' -* Q) |-- revert_identity cls Q' -* revert_identity cls Q.
+  Theorem wp_revert_identity_frame cls Q Q' :
+    pureR (Q' -* Q) |-- wp_revert_identity cls Q' -* wp_revert_identity cls Q.
   Proof.
-    rewrite /init_identity.
     iIntros "X [$ Y] Z".
     rewrite pureR_wand.
     by iApply "X"; iApply "Y".
   Qed.
 
   (** sanity chect that initialization and revert are inverses *)
-  Corollary init_revert cls Q p :
+  Corollary wp_init_revert cls Q p :
     let REQ := identitiesR false cls [] 1 in
         p |-> REQ ** Q
-    |-- p |-> init_identity cls (p |-> revert_identity cls (p |-> REQ ** Q)).
+    |-- p |-> wp_init_identity cls (p |-> wp_revert_identity cls (p |-> REQ ** Q)).
   Proof.
-    rewrite /revert_identity/init_identity.
+    rewrite /wp_revert_identity/wp_init_identity.
     rewrite !_at_sep !_at_wand !_at_pureR.
     iIntros "[$ $] $ $".
   Qed.
@@ -326,7 +328,7 @@ Section with_cpp.
     | None =>
       let bases := wpi_bases ρ cls this (List.map fst s.(s_bases)) inits in
       let members := wpi_members ρ cls this s.(s_fields) inits in
-      let ident Q := this |-> init_identity cls Q in
+      let ident Q := this |-> wp_init_identity cls Q in
       (** initialize the bases, then the identity, then the members *)
       bases (ident (members (this |-> struct_paddingR 1 cls -*  Q)))
       (* NOTE we get the [struct_paddingR] at the end since
@@ -345,7 +347,7 @@ Section with_cpp.
       iApply wp_init_frame => //.
       iIntros (??); by iApply interp_frame. }
     { iIntros "a"; iApply wpi_bases_frame.
-      rewrite /init_identity.
+      rewrite /wp_init_identity.
       rewrite !_at_sep !_at_wand !_at_pureR.
       iIntros "[$ x] b".
       iDestruct ("x" with "b") as "x"; iRevert "x".
@@ -516,7 +518,7 @@ Section with_cpp.
             thisp |-> struct_paddingR 1 dtor.(d_class) **
             wpd_members dtor.(d_class) thisp s.(s_fields)
                (* ^ fields are destroyed *)
-               (thisp |-> revert_identity dtor.(d_class)
+               (thisp |-> wp_revert_identity dtor.(d_class)
                (* ^ the identity of the object is destroyed *)
                   (wpd_bases dtor.(d_class) thisp (List.map fst s.(s_bases))
                   (* ^ the base classes are destroyed (reverse order) *)
