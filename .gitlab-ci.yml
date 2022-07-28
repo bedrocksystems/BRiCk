@@ -363,7 +363,6 @@ pages:
     - time rsync -raz ${DUNE_USER}@${FM_CACHE_SERVER}:${RSYNC_CACHE_PATH}/dune_cache/ ~/.cache/
     - ls ~/.cache/dune
     - mkdir -p ~/.config/dune/ ; cp $CI_PROJECT_DIR/dune_config ~/.config/dune/config
-    - *prepare_cpp2v_env
 
 .postupdate-dunecache:
   after_script:
@@ -385,6 +384,7 @@ dune-build:
     - cp fmdeps/${CPP2V_CORE}/dune-project.template dune-project
     - ln -sf fmdeps/${CPP2V_CORE}/coq-cpp2v-bin.opam coq-cpp2v-bin.opam
     - dune build -j ${NJOBS}
+    - *prepare_cpp2v_env
   tags:
     - ${DUNE_TAG}
   rules:
