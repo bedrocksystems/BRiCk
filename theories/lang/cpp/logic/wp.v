@@ -140,19 +140,13 @@ Section Kpred.
   Definition KP (P : ReturnType -> mpred) : KpredI := MonPred P _.
   #[global] Arguments KP _%I.
 
-  Definition void_return (P : mpred) : KpredI :=
+  Definition Kreturn {σ : genv} (P : ptr -> mpred) : KpredI :=
     KP (funI rt =>
           match rt with
-          | Normal | ReturnVoid => P
+          | Normal | ReturnVoid => Forall p : ptr, p |-> primR Tvoid 1 Vvoid -* P p
+          | ReturnVal p => P p
           | _ => False
           end).
-
-  Definition val_return (P : ptr -> mpred) : KpredI :=
-    KP (funI rt =>
-        match rt with
-        | ReturnVal v => P v
-        | _ => False
-        end).
 
   Definition Kseq (Q : Kpred -> mpred) (k : Kpred) : Kpred :=
     KP (funI rt =>
