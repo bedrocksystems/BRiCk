@@ -352,39 +352,30 @@ Section with_cpp.
       by iApply "a"; iApply "b". }
   Qed.
 
-  Definition wp_union_initializer_list (s : translation_unit.Union) (ρ : region) (cls : globname) (this : ptr)
-             (inits : list Initializer) (Q : mpred) : mpred :=
-    match List.find (fun i => bool_decide (i.(init_path) = InitThis)) inits with
-    | Some {| init_type := ty ; init_init := e |} =>
-      match inits with
-      | _ :: nil =>
-        if bool_decide (drop_qualifiers ty = Tnamed cls) then
-          (* this is a delegating constructor, simply delegate *)
-          wp_init ρ (Tnamed cls) this e (fun _ frees => interp frees Q)
-        else
-          (* the type names do not match, this should never happen *)
-          ERROR "type name mismatch"
-      | _ =>
-        (* delegating constructors are not allowed to have any other initializers
-         *)
-        ERROR "delegating constructor has other initializers"
-      end
-    | None =>
-      UNSUPPORTED "union initialization"
-      (* TODO what is the right thing to do when initializing unions? *)
-    end%bs.
+  Definition wp_union_initializer_list (u : translation_unit.Union) (ρ : region) (cls : globname) (this : ptr)
+             (inits : list Initializer) (Q : option nat -> epred) : mpred :=
+    match inits with
+    | [] => Q None
+    | [{| init_path := InitField f ; init_type := te ; init_init := e |} as init] =>
+        match list_find (fun m => f = m.(mem_name)) u.(u_fields) with
+        | None => ERROR "field not found in union initialization"
+        | Some (n, m) => wpi ρ cls this init $ Q (Some n)
+        end
+    | _ =>
+      UNSUPPORTED "indirect (or self) union initialization is not currently supported"
+    end.
 
-  Lemma wp_union_initializer_list_frame : forall ρ cls p ty li Q Q',
-        Q -* Q'
+  Lemma wp_union_initializer_list_frame : forall ρ cls p ty li (Q Q' : option nat -> epred),
+        (Forall n, Q n -* Q' n)
     |-- wp_union_initializer_list cls ρ ty p li Q -*
         wp_union_initializer_list cls ρ ty p li Q'.
   Proof.
     rewrite /wp_union_initializer_list/=. intros. case_match; eauto.
-    { case_match => //.
-      destruct l; eauto.
-      case_bool_decide; eauto.
-      iIntros "X".
-      iApply wp_init_frame. reflexivity. iIntros (??); by iApply interp_frame. }
+    { iIntros "K"; iApply "K". }
+    { iIntros "K".
+      repeat case_match; eauto.
+      iApply wp_initialize_frame.
+      iIntros (?). iApply interp_frame. iApply "K". }
   Qed.
 
   (* [type_validity ty p] is the pointer validity of a class that is learned
@@ -466,7 +457,8 @@ Section with_cpp.
           |> let ρ va := Remp (Some thisp) va Tvoid in
              bind_vars ctor.(c_params) ctor.(c_arity) rest_vals ρ (fun ρ frees =>
                (wp_union_initializer_list union ρ ctor.(c_class) thisp inits
-                  (wp ρ body (Kfree frees (Kreturn_void (|={⊤}=> |> Forall p, p |-> primR Tvoid 1 Vvoid -* Q p))))))
+                  (fun which => wp ρ body (Kfree frees (Kreturn_void (thisp |-> union_paddingR 1 ctor.(c_class) which -*
+                                                                       |={⊤}=> |> Forall p, p |-> primR Tvoid 1 Vvoid -* Q p))))))
         | Some _ =>
           ERROR $ "constructor for non-aggregate (" ++ ctor.(c_class) ++ ")"
         | None => False
@@ -538,7 +530,8 @@ Section with_cpp.
                Instead, the epilog provides a fancy update to destroy things.
 
                In practice, this means that programs can only destroy unions
-               automatically where they can prove the active entry has a trivial destructor.
+               automatically where they can prove the active entry has a trivial destructor
+               or is already destroyed.
              *)
             |={⊤}=> thisp |-> tblockR (Tnamed dtor.(d_class)) 1 **
                    (thisp |-> tblockR (Tnamed dtor.(d_class)) 1 -* |={⊤}=> |> Forall p : ptr, p |-> primR Tvoid 1 Vvoid -* Q p)
