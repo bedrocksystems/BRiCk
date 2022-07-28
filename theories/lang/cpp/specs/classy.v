@@ -59,6 +59,9 @@ Section with_prop.
   Definition exact_spec {T : Type} (x : T) : T := x.
 
 End with_prop.
+#[global] Hint Mode SpecGen - ! : typeclass_instances.
+#[global] Hint Mode WithArg ! - : typeclass_instances.
+#[global] Hint Mode WithPost - ! - : typeclass_instances.
 Arguments SpecGen : clear implicits.
 Arguments WithArg : clear implicits.
 Arguments WithPost : clear implicits.
