@@ -222,19 +222,9 @@ End with_cpp.
 #[global] Opaque primR.
 
 Section with_cpp.
-  Context `{Σ : cpp_logic}.
+  Context `{Σ : cpp_logic} {σ : genv}.
 
   (********************* DERIVED CONCEPTS ****************************)
-  #[global] Instance identityR_timeless σ cls mdc q : Timeless (identityR cls mdc q) := _.
-  #[global] Instance identityR_frac σ cls mdc : Fractional (identityR cls mdc) := _.
-  #[global] Instance identityR_as_frac σ cls mdc q : AsFractional (identityR cls mdc q) (identityR cls mdc) q := _.
-  #[global] Instance identityR_strict_valid σ cls mdc q : Observe svalidR (identityR cls mdc q).
-  Proof.
-    red. eapply Rep_entails_at. intros.
-    rewrite _at_as_Rep _at_pers svalidR_eq _at_as_Rep.
-    apply identity_strict_valid.
-  Qed.
-
   #[global] Instance validR_persistent : Persistent validR.
   Proof. rewrite validR_eq; refine _. Qed.
   #[global] Instance validR_timeless : Timeless validR.
@@ -261,16 +251,16 @@ Section with_cpp.
   Lemma _at_svalidR (p : ptr) : _at p svalidR -|- strict_valid_ptr p.
   Proof. by rewrite svalidR_eq _at_eq. Qed.
 
-  #[global] Instance type_ptrR_persistent σ t : Persistent (type_ptrR t).
+  #[global] Instance type_ptrR_persistent t : Persistent (type_ptrR t).
   Proof. rewrite type_ptrR_eq; refine _. Qed.
-  #[global] Instance type_ptrR_timeless σ t : Timeless (type_ptrR t).
+  #[global] Instance type_ptrR_timeless t : Timeless (type_ptrR t).
   Proof. rewrite type_ptrR_eq; refine _. Qed.
-  #[global] Instance type_ptrR_affine σ t : Affine (type_ptrR t).
+  #[global] Instance type_ptrR_affine t : Affine (type_ptrR t).
   Proof. rewrite type_ptrR_eq; refine _. Qed.
 
-  Lemma monPred_at_type_ptrR ty σ p : type_ptrR ty p -|- type_ptr ty p.
+  Lemma monPred_at_type_ptrR ty p : type_ptrR ty p -|- type_ptr ty p.
   Proof. by rewrite type_ptrR_eq. Qed.
-  Lemma _at_type_ptrR σ (p : ptr) ty : _at p (type_ptrR ty) -|- type_ptr ty p.
+  Lemma _at_type_ptrR (p : ptr) ty : _at p (type_ptrR ty) -|- type_ptr ty p.
   Proof. by rewrite type_ptrR_eq _at_eq. Qed.
 
 
@@ -280,17 +270,17 @@ Section with_cpp.
     rewrite validR_eq/validR_def svalidR_eq/svalidR_def.
     constructor =>p /=. by apply strict_valid_valid.
   Qed.
-  Lemma type_ptrR_svalidR σ ty : type_ptrR ty |-- svalidR.
+  Lemma type_ptrR_svalidR ty : type_ptrR ty |-- svalidR.
   Proof.
     rewrite type_ptrR_eq/type_ptrR_def svalidR_eq/svalidR_def.
     constructor =>p /=. by apply type_ptr_strict_valid.
   Qed.
-  Lemma type_ptrR_validR σ ty : type_ptrR ty |-- validR.
+  Lemma type_ptrR_validR ty : type_ptrR ty |-- validR.
   Proof. by rewrite type_ptrR_svalidR svalidR_validR. Qed.
 
   #[global] Instance svalidR_validR_observe : Observe validR svalidR.
   Proof. rewrite svalidR_validR. red; iIntros "#$". Qed.
-  #[global] Instance type_ptrR_svalidR_observe σ t : Observe svalidR (type_ptrR t).
+  #[global] Instance type_ptrR_svalidR_observe t : Observe svalidR (type_ptrR t).
   Proof. rewrite type_ptrR_svalidR; red; iIntros "#$". Qed.
 
   Definition nullR_def : Rep :=
@@ -409,35 +399,54 @@ Section with_cpp.
     | _ , _  => False
     end.
 
-  #[global] Instance tblockR_timeless {σ} ty q :
+  #[global] Instance tblockR_timeless ty q :
     Timeless (tblockR ty q).
   Proof. rewrite/tblockR. case_match; apply _. Qed.
-  #[global] Instance tblockR_fractional {σ} ty :
+  #[global] Instance tblockR_fractional ty :
     Fractional (tblockR ty).
   Proof.
     rewrite/tblockR. do 2!(case_match; last by apply _).
     apply _.
   Qed.
-  #[global] Instance tblockR_as_fractional {σ} ty q :
+  #[global] Instance tblockR_as_fractional ty q :
     AsFractional (tblockR ty q) (tblockR ty) q.
   Proof. exact: Build_AsFractional. Qed.
-  #[global] Instance tblockR_observe_frac_valid {σ} ty q n :
+  #[global] Instance tblockR_observe_frac_valid ty q n :
     SizeOf ty n -> TCLt (0 ?= n)%N ->
     Observe [| q ≤ 1 |]%Qp (tblockR ty q).
   Proof.
     rewrite/tblockR=>-> ?. case_match; by apply _.
   Qed.
 
+  #[global] Instance identityR_timeless cls mdc q : Timeless (identityR cls mdc q) := _.
+  #[global] Instance identityR_frac cls mdc : Fractional (identityR cls mdc) := _.
+  #[global] Instance identityR_as_frac cls mdc q : AsFractional (identityR cls mdc q) (identityR cls mdc) q := _.
+  #[global] Instance identityR_strict_valid cls mdc q : Observe svalidR (identityR cls mdc q).
+  Proof.
+    red. eapply Rep_entails_at. intros.
+    rewrite _at_as_Rep _at_pers svalidR_eq _at_as_Rep.
+    apply identity_strict_valid.
+  Qed.
+  #[global] Instance identity_not_null p cls path q : Observe [| p <> nullptr |] (p |-> identityR cls path q).
+  Proof.
+    red.
+    iIntros "X".
+    destruct (decide (p = nullptr)); eauto.
+    iDestruct (observe (p |-> svalidR) with "X") as "#SV".
+    subst; rewrite _at_svalidR not_strictly_valid_ptr_nullptr.
+    iDestruct "SV" as "[]".
+  Qed.
+
   (** Observing [type_ptr] *)
   #[global]
-  Instance primR_type_ptr_observe σ ty q v : Observe (type_ptrR ty) (primR ty q v).
+  Instance primR_type_ptr_observe ty q v : Observe (type_ptrR ty) (primR ty q v).
   Proof.
     red. rewrite primR_eq/primR_def.
     apply Rep_entails_at => p. rewrite _at_as_Rep _at_pers _at_type_ptrR.
     apply: observe.
   Qed.
   #[global]
-  Instance uninitR_type_ptr_observe σ ty q : Observe (type_ptrR ty) (uninitR ty q).
+  Instance uninitR_type_ptr_observe ty q : Observe (type_ptrR ty) (uninitR ty q).
   Proof.
     red. rewrite uninitR_eq/uninitR_def.
     apply Rep_entails_at => p. rewrite _at_as_Rep _at_pers _at_type_ptrR.
@@ -446,21 +455,21 @@ Section with_cpp.
 
   (** Observing [valid_ptr] *)
   #[global]
-  Instance primR_valid_observe {σ : genv} {ty q v} : Observe validR (primR ty q v).
+  Instance primR_valid_observe {ty q v} : Observe validR (primR ty q v).
   Proof. rewrite -svalidR_validR -type_ptrR_svalidR; refine _. Qed.
   #[global]
-  Instance anyR_valid_observe {σ : genv} {ty q} : Observe validR (anyR ty q).
+  Instance anyR_valid_observe {ty q} : Observe validR (anyR ty q).
   Proof. rewrite -svalidR_validR -type_ptrR_svalidR; refine _. Qed.
   #[global]
-  Instance uninitR_valid_observe {σ : genv} {ty q} : Observe validR (uninitR ty q).
+  Instance uninitR_valid_observe {ty q} : Observe validR (uninitR ty q).
   Proof. rewrite -svalidR_validR -type_ptrR_svalidR; refine _. Qed.
 
   #[global]
-  Instance observe_type_ptr_pointsto σ (p : ptr) ty (R : Rep) :
+  Instance observe_type_ptr_pointsto (p : ptr) ty (R : Rep) :
     Observe (type_ptrR ty) R -> Observe (type_ptr ty p) (_at p R).
   Proof. rewrite -_at_type_ptrR. apply _at_observe. Qed.
 
-  #[global] Instance type_ptrR_size_observe σ ty :
+  #[global] Instance type_ptrR_size_observe ty :
     Observe [| is_Some (size_of σ ty) |] (type_ptrR ty).
   Proof.
     apply monPred_observe_only_provable => p.
@@ -478,26 +487,26 @@ Section with_cpp.
     apply Rep_entails_at => p. by rewrite _at_offsetR !_at_validR.
   Qed.
 
-  Lemma _field_validR σ f : _offsetR (_field f) validR |-- validR.
+  Lemma _field_validR f : _offsetR (_field f) validR |-- validR.
   Proof. apply off_validR => p. apply _valid_ptr_field. Qed.
 
   (** Observation of [nonnullR] *)
   #[global]
-  Instance primR_nonnull_observe {σ} {ty q v} :
+  Instance primR_nonnull_observe {ty q v} :
     Observe nonnullR (primR ty q v).
   Proof.
     rewrite nonnullR_eq primR_eq. apply monPred_observe=>p /=. apply _.
   Qed.
   #[global]
-  Instance uninitR_nonnull_observe {σ} {ty q} :
+  Instance uninitR_nonnull_observe {ty q} :
     Observe nonnullR (uninitR ty q).
   Proof.
     rewrite nonnullR_eq uninitR_eq. apply monPred_observe=>p /=. apply _.
   Qed.
-  Axiom anyR_nonnull_observe : ∀ {σ} {ty q}, Observe nonnullR (anyR ty q).
+  Axiom anyR_nonnull_observe : ∀ {ty q}, Observe nonnullR (anyR ty q).
   #[global] Existing Instance anyR_nonnull_observe.
 
-  #[global] Instance blockR_nonnull {σ : genv} n q :
+  #[global] Instance blockR_nonnull n q :
     TCLt (0 ?= n)%N -> Observe nonnullR (blockR n q).
   Proof.
     rewrite TCLt_N blockR_eq/blockR_def.
@@ -505,7 +514,7 @@ Section with_cpp.
     rewrite o_sub_0 ?_offsetR_id; [ | by eauto].
     apply _.
   Qed.
-  #[global] Instance blockR_valid_ptr {σ} sz q : Observe validR (blockR sz q).
+  #[global] Instance blockR_valid_ptr sz q : Observe validR (blockR sz q).
   Proof.
     rewrite blockR_eq/blockR_def.
     destruct sz.
@@ -519,7 +528,7 @@ Section with_cpp.
       iApply (observe with "X"). }
   Qed.
 
-  #[global] Instance tblockR_nonnull {σ} n ty q :
+  #[global] Instance tblockR_nonnull n ty q :
     SizeOf ty n -> TCLt (0 ?= n)%N ->
     Observe nonnullR (tblockR ty q).
   Proof.
@@ -527,13 +536,13 @@ Section with_cpp.
     case_match; by apply _.
   Qed.
 
-  #[global] Instance tblockR_valid_ptr {σ} ty q : Observe validR (tblockR ty q).
+  #[global] Instance tblockR_valid_ptr ty q : Observe validR (tblockR ty q).
   Proof.
     rewrite /tblockR. case_match; refine _.
     case_match; refine _.
   Qed.
 
-  #[global] Instance type_ptrR_observe_nonnull {σ} ty :
+  #[global] Instance type_ptrR_observe_nonnull ty :
     Observe nonnullR (type_ptrR ty).
   Proof.
     apply monPred_observe=>p /=.
