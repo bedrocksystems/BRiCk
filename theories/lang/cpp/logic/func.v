@@ -171,10 +171,7 @@ Section with_cpp.
       | Impl body =>
         let ρ va := Remp None va f.(f_return) in
         bind_vars f.(f_params) f.(f_arity) args ρ (fun ρ frees =>
-        |> if is_void f.(f_return) then
-             wp ρ body (Kfree frees $ void_return (|={⊤}=> |> Forall p, p |-> primR Tvoid 1 Vvoid -* Q p))
-           else
-             wp ρ body (Kfree frees $ val_return (funI x => |={⊤}=> |> Q x)))
+        |> wp ρ body (Kfree frees $ Kreturn (funI x => |={⊤}=> |> Q x)))
       | Builtin builtin =>
         wp_builtin_func builtin (Tfunction (cc:=f.(f_cc)) f.(f_return) (List.map snd f.(f_params))) args Q
       end
@@ -201,10 +198,7 @@ Section with_cpp.
       | thisp :: rest_vals =>
         let ρ va := Remp (Some thisp) va m.(m_return) in
         bind_vars m.(m_params) m.(m_arity) rest_vals ρ (fun ρ frees =>
-        |> if is_void m.(m_return) then
-             wp ρ body (Kfree frees (void_return (|={⊤}=> |> Forall p, p |-> primR Tvoid 1 Vvoid -* Q p)))
-           else
-             wp ρ body (Kfree frees (val_return (funI x => |={⊤}=> |>Q x))))
+        |> wp ρ body (Kfree frees (Kreturn (funI x => |={⊤}=> |>Q x))))
       | _ => False
       end
     | Some _ => UNSUPPORTED "defaulted methods"%bs
@@ -358,39 +352,30 @@ Section with_cpp.
       by iApply "a"; iApply "b". }
   Qed.
 
-  Definition wp_union_initializer_list (s : translation_unit.Union) (ρ : region) (cls : globname) (this : ptr)
-             (inits : list Initializer) (Q : mpred) : mpred :=
-    match List.find (fun i => bool_decide (i.(init_path) = InitThis)) inits with
-    | Some {| init_type := ty ; init_init := e |} =>
-      match inits with
-      | _ :: nil =>
-        if bool_decide (drop_qualifiers ty = Tnamed cls) then
-          (* this is a delegating constructor, simply delegate *)
-          wp_init ρ (Tnamed cls) this e (fun _ frees => interp frees Q)
-        else
-          (* the type names do not match, this should never happen *)
-          ERROR "type name mismatch"
-      | _ =>
-        (* delegating constructors are not allowed to have any other initializers
-         *)
-        ERROR "delegating constructor has other initializers"
-      end
-    | None =>
-      UNSUPPORTED "union initialization"
-      (* TODO what is the right thing to do when initializing unions? *)
-    end%bs.
+  Definition wp_union_initializer_list (u : translation_unit.Union) (ρ : region) (cls : globname) (this : ptr)
+             (inits : list Initializer) (Q : option nat -> epred) : mpred :=
+    match inits with
+    | [] => Q None
+    | [{| init_path := InitField f ; init_type := te ; init_init := e |} as init] =>
+        match list_find (fun m => f = m.(mem_name)) u.(u_fields) with
+        | None => ERROR "field not found in union initialization"
+        | Some (n, m) => wpi ρ cls this init $ Q (Some n)
+        end
+    | _ =>
+      UNSUPPORTED "indirect (or self) union initialization is not currently supported"
+    end.
 
-  Lemma wp_union_initializer_list_frame : forall ρ cls p ty li Q Q',
-        Q -* Q'
+  Lemma wp_union_initializer_list_frame : forall ρ cls p ty li (Q Q' : option nat -> epred),
+        (Forall n, Q n -* Q' n)
     |-- wp_union_initializer_list cls ρ ty p li Q -*
         wp_union_initializer_list cls ρ ty p li Q'.
   Proof.
     rewrite /wp_union_initializer_list/=. intros. case_match; eauto.
-    { case_match => //.
-      destruct l; eauto.
-      case_bool_decide; eauto.
-      iIntros "X".
-      iApply wp_init_frame. reflexivity. iIntros (??); by iApply interp_frame. }
+    { iIntros "K"; iApply "K". }
+    { iIntros "K".
+      repeat case_match; eauto.
+      iApply wp_initialize_frame.
+      iIntros (?). iApply interp_frame. iApply "K". }
   Qed.
 
   (* [type_validity ty p] is the pointer validity of a class that is learned
@@ -406,6 +391,20 @@ Section with_cpp.
      TODO we leave this trivial for now.
    *)
   Definition type_valdity : type -> ptr -> mpred := fun _ _ => emp.
+
+  (** A special version of return to match the C++ rule that
+     constructors and destructors must not syntactically return a value, e.g.
+     `return f()` for `void f()` are not allowed.
+
+     NOTE: we could drop this in favor of relying on the compiler to
+           check this.
+   *)
+  Definition Kreturn_void (P : mpred) : KpredI :=
+    KP (funI rt =>
+          match rt with
+          | Normal | ReturnVoid => P
+          | _ => False
+          end).
 
   (**
      [wp_ctor ctor args Q] is the weakest pre-condition (with post-condition [Q])
@@ -448,7 +447,7 @@ Section with_cpp.
           |> let ρ va := Remp (Some thisp) va Tvoid in
              bind_vars ctor.(c_params) ctor.(c_arity) rest_vals ρ (fun ρ frees =>
                (wp_struct_initializer_list cls ρ ctor.(c_class) thisp inits
-                  (wp ρ body (Kfree frees (void_return (|={⊤}=> |> Forall p, p |-> primR Tvoid 1 Vvoid -* Q p))))))
+                  (wp ρ body (Kfree frees (Kreturn_void (|={⊤}=> |> Forall p : ptr, p |-> primR Tvoid 1 Vvoid -* Q p))))))
         | Some (Gunion union) =>
         (* this is a union *)
           thisp |-> tblockR ty 1 **
@@ -458,7 +457,8 @@ Section with_cpp.
           |> let ρ va := Remp (Some thisp) va Tvoid in
              bind_vars ctor.(c_params) ctor.(c_arity) rest_vals ρ (fun ρ frees =>
                (wp_union_initializer_list union ρ ctor.(c_class) thisp inits
-                  (wp ρ body (Kfree frees (void_return (|={⊤}=> |> Forall p, p |-> primR Tvoid 1 Vvoid -* Q p))))))
+                  (fun which => wp ρ body (Kfree frees (Kreturn_void (thisp |-> union_paddingR 1 ctor.(c_class) which -*
+                                                                       |={⊤}=> |> Forall p, p |-> primR Tvoid 1 Vvoid -* Q p))))))
         | Some _ =>
           ERROR $ "constructor for non-aggregate (" ++ ctor.(c_class) ++ ")"
         | None => False
@@ -510,7 +510,7 @@ Section with_cpp.
     | Some (UserDefined body) =>
       let epilog :=
           match resolve.(genv_tu) !! dtor.(d_class) with
-          | Some (Gstruct s) => Some $ fun thisp : ptr =>
+          | Some (Gstruct s) => Some $ fun (thisp : ptr) =>
             thisp |-> struct_paddingR 1 dtor.(d_class) **
             wpd_members dtor.(d_class) thisp s.(s_fields)
                (* ^ fields are destroyed *)
@@ -518,22 +518,23 @@ Section with_cpp.
                (* ^ the identity of the object is destroyed *)
                   (wpd_bases dtor.(d_class) thisp (List.map fst s.(s_bases))
                   (* ^ the base classes are destroyed (reverse order) *)
-                     (thisp |-> tblockR (Tnamed dtor.(d_class)) 1 -* |={⊤}=> |> Forall p, p |-> primR Tvoid 1 Vvoid -* Q p)))
+                     (thisp |-> tblockR (Tnamed dtor.(d_class)) 1 -* |={⊤}=> |> Forall p : ptr, p |-> primR Tvoid 1 Vvoid -* Q p)))
                      (* ^ the operations above destroy each object returning its memory to
                         the abstract machine. Then the abstract machine gives this memory
                         back to the program.
                         NOTE the [|>] here is for the function epilog.
                       *)
-          | Some (Gunion u) => Some $ fun thisp : ptr =>
+          | Some (Gunion u) => Some $ fun (thisp : ptr) =>
             (* the function epilog of a union destructor doesn't actually destroy anything
                because it isn't clear what to destroy (this is dictated by the C++ standard).
                Instead, the epilog provides a fancy update to destroy things.
 
                In practice, this means that programs can only destroy unions
-               automatically where they can prove the active entry has a trivial destructor.
+               automatically where they can prove the active entry has a trivial destructor
+               or is already destroyed.
              *)
             |={⊤}=> thisp |-> tblockR (Tnamed dtor.(d_class)) 1 **
-                   (thisp |-> tblockR (Tnamed dtor.(d_class)) 1 -* |={⊤}=> |> Forall p, p |-> primR Tvoid 1 Vvoid -* Q p)
+                   (thisp |-> tblockR (Tnamed dtor.(d_class)) 1 -* |={⊤}=> |> Forall p : ptr, p |-> primR Tvoid 1 Vvoid -* Q p)
           | _ => None
           end%I
       in
@@ -541,7 +542,7 @@ Section with_cpp.
       | Some epilog , thisp :: nil =>
         let ρ := Remp (Some thisp) None Tvoid in
           |> (* the function prolog consumes a step. *)
-             wp ρ body (void_return (epilog thisp))
+             wp ρ body (Kreturn_void (epilog thisp))
       | _ , _ => False
       end
     end%bs%I.
