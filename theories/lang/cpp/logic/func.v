@@ -33,9 +33,11 @@ Section with_cpp.
     Kat_exit (interp free).
 
   (** * Aggregate identity *)
-  (* Part of [all_identities path cls], but indexed by fuel [f]. *)
+  (* Part of [all_identities path cls], but indexed by fuel [f].
+     TODO replace this with a version that is built by well-founded recursion.
+   *)
   #[local]
-  Fixpoint all_identities' (f : nat) (include_base : bool) (path : list globname) (cls : globname) (q : Qp) : Rep :=
+  Fixpoint identitiesR' (f : nat) (include_base : bool) (cls : globname) (path : list globname) (q : Qp) : Rep :=
     match f with
     | 0 => False
     | S f =>
@@ -44,12 +46,12 @@ Section with_cpp.
         (if include_base && has_vtable st then identityR cls path q else emp) **
         [∗list] b ∈ st.(s_bases),
            let '(base,_) := b in
-           _base cls base |-> all_identities' f true (path ++ [base]) base q
+           _base cls base |-> identitiesR' f true base (path ++ [base]) q
       | _ => False
       end
     end.
 
-  (** [this |-> all_identities include_base path cls] is all of the object
+  (** [this |-> identitiesR include_base cls path q] is all of the object
       identities of the [this] object (of type [cls]) where the most derived
       class is reached from [cls] using [path]. For example, consider the
       following
@@ -58,62 +60,64 @@ Section with_cpp.
       class B : public A {};
       class C : public B {};
       ```
-      here, [all_identities true ["::C"] "::B" q] produces:
+      here, [identitiesR true "::B" ["::C"] q] produces:
       [[
       identityR "::B" ["::C","::B"] q **
       _base "::B" "::A" |-> identityR "::A" ["::C","::B","::A"] q
       ]]
 
-      while [all_identities true [] "::C" q] produces all the identities for A, B and C:
+      while [identitiesR true "::C" [] q] produces all the identities for A, B and C:
       [[
       identityR "::C" ["::C"] q **
-      _base "::C" "::B" |-> all_identities true ["::C"] "::B" q
+      _base "::C" "::B" |-> identityR true "::B" ["::C"] q
       ]]
    *)
-  Definition all_identities : bool -> list globname -> globname -> Qp -> Rep :=
+  Definition identitiesR : bool -> globname -> list globname -> Qp -> Rep :=
     let size := avl.IM.cardinal resolve.(genv_tu).(globals) in
     (* ^ the number of global entries is an upper bound on the height of the
        derivation tree.
      *)
-    all_identities' size.
+    identitiesR' size.
 
-  (** [init_identities cls Q] initializes the identities of this function creates
-     an [identity] fact for this class *and*, transitively, updates the [identity]
-     assertions for all base classes.
+  (** [wp_init_identity cls Q] updates the identities of "this" by updating the
+      [identity] of all base classes (transitively) and producing the new identity
+      for "this".
    *)
-  Definition init_identity (cls : globname) (Q : mpred) : Rep :=
-    all_identities false [] cls 1 **
-    (all_identities true [cls] cls 1 -* pureR Q).
+  Definition wp_init_identity (cls : globname) (Q : mpred) : Rep :=
+    identitiesR false cls [] 1 **
+    (identitiesR true cls [cls] 1 -* pureR Q).
 
-  Theorem init_identity_frame cls Q Q' :
-    pureR (Q' -* Q) |-- init_identity cls Q' -* init_identity cls Q.
+  Theorem wp_init_identity_frame cls Q Q' :
+    pureR (Q' -* Q) |-- wp_init_identity cls Q' -* wp_init_identity cls Q.
   Proof.
-    rewrite /init_identity.
     iIntros "X [$ Y] Z".
     rewrite pureR_wand.
     by iApply "X"; iApply "Y".
   Qed.
 
-  Definition revert_identity (cls : globname) (Q : mpred) : Rep :=
-    all_identities true [cls] cls 1 **
-    (all_identities false [] cls 1 -* pureR Q).
+  (** [wp_revert_identity cls Q] updates the identities of "this" by taking the
+      [identity] of this class and transitively updating the [identity] of all base
+      classes to remove [cls] as the most derived class.
+   *)
+  Definition wp_revert_identity (cls : globname) (Q : mpred) : Rep :=
+    identitiesR true cls [cls] 1 **
+    (identitiesR false cls [] 1 -* pureR Q).
 
-  Theorem revert_identity_frame cls Q Q' :
-    pureR (Q' -* Q) |-- revert_identity cls Q' -* revert_identity cls Q.
+  Theorem wp_revert_identity_frame cls Q Q' :
+    pureR (Q' -* Q) |-- wp_revert_identity cls Q' -* wp_revert_identity cls Q.
   Proof.
-    rewrite /init_identity.
     iIntros "X [$ Y] Z".
     rewrite pureR_wand.
     by iApply "X"; iApply "Y".
   Qed.
 
   (** sanity chect that initialization and revert are inverses *)
-  Corollary init_revert cls Q p :
-    let REQ := all_identities false [] cls 1 in
+  Corollary wp_init_revert cls Q p :
+    let REQ := identitiesR false cls [] 1 in
         p |-> REQ ** Q
-    |-- p |-> init_identity cls (p |-> revert_identity cls (p |-> REQ ** Q)).
+    |-- p |-> wp_init_identity cls (p |-> wp_revert_identity cls (p |-> REQ ** Q)).
   Proof.
-    rewrite /revert_identity/init_identity.
+    rewrite /wp_revert_identity/wp_init_identity.
     rewrite !_at_sep !_at_wand !_at_pureR.
     iIntros "[$ $] $ $".
   Qed.
@@ -324,7 +328,7 @@ Section with_cpp.
     | None =>
       let bases := wpi_bases ρ cls this (List.map fst s.(s_bases)) inits in
       let members := wpi_members ρ cls this s.(s_fields) inits in
-      let ident Q := this |-> init_identity cls Q in
+      let ident Q := this |-> wp_init_identity cls Q in
       (** initialize the bases, then the identity, then the members *)
       bases (ident (members (this |-> struct_paddingR 1 cls -*  Q)))
       (* NOTE we get the [struct_paddingR] at the end since
@@ -343,7 +347,7 @@ Section with_cpp.
       iApply wp_init_frame => //.
       iIntros (??); by iApply interp_frame. }
     { iIntros "a"; iApply wpi_bases_frame.
-      rewrite /init_identity.
+      rewrite /wp_init_identity.
       rewrite !_at_sep !_at_wand !_at_pureR.
       iIntros "[$ x] b".
       iDestruct ("x" with "b") as "x"; iRevert "x".
@@ -514,7 +518,7 @@ Section with_cpp.
             thisp |-> struct_paddingR 1 dtor.(d_class) **
             wpd_members dtor.(d_class) thisp s.(s_fields)
                (* ^ fields are destroyed *)
-               (thisp |-> revert_identity dtor.(d_class)
+               (thisp |-> wp_revert_identity dtor.(d_class)
                (* ^ the identity of the object is destroyed *)
                   (wpd_bases dtor.(d_class) thisp (List.map fst s.(s_bases))
                   (* ^ the base classes are destroyed (reverse order) *)
@@ -586,3 +590,6 @@ Section with_cpp.
       spec.(fs_spec) vals Q -* wp_dtor dtor vals Q.
 
 End with_cpp.
+(* conveniences for the common pattern *)
+Notation init_identityR cls path q := (identityR cls%bs (path%bs ++ [cls%bs]) q).
+Notation init_identitiesR cls path q := (identitiesR cls%bs (path%bs ++ [cls%bs]) q).

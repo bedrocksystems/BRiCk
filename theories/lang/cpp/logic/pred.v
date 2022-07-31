@@ -223,17 +223,19 @@ Module Type CPP_LOGIC
           identity "::C" ["::D","::C"]      1 (d ,, _base "::C") **
           idenitty "::A" ["::D","::C","::A"] 1 (d ,, _base "::C" ,, _base "::A")
           ]]
-          in the partially constructed state, where "::C" has not yet been constructed
+          in the partially constructed state, where "::D" has not yet been constructed
           but the base classes have been, you have the following:
           [[
-          identity "::D" []          1  d **
           identity "::B" ["::B"]      1 (d ., _base "::B") **
           identity "::A" ["::B","::A"] 1 (d ,, _base "::B" ,, _base "::A") **
           identity "::C" ["::C"]      1 (d ,, _base "::C") **
           idenitty "::A" ["::C","::A"] 1 (d ,, _base "::C" ,, _base "::A")
           ]]
+          note that you do not get [identity "::D" [] 1 d] at this point, you
+          get [identity "::D" ["::D"] 1 d] when you update all the other identities
+          (but not atomically)
 
-        the information is primarily used to dispatch virtual function calls.
+        [identity] is primarily used to dispatch virtual function calls.
 
         compilers can use the ownership here to represent dynamic dispatch
         tables.
