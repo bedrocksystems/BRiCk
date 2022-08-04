@@ -63,9 +63,9 @@ stages:
   - release
   - prepare_pages
   - pages
+  - dune-build
   - prepare_env_for_downstream
   - build_proofs_downstream
-  - dune-build
 
 #This is a template job that's extended below by the real jobs
 # build_{latest,llvm10,public} (see, e.g., https://docs.gitlab.com/ee/ci/yaml/#extends).
