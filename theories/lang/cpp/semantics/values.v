@@ -77,8 +77,11 @@ Module Type VAL_MIXIN (Import P : PTRS) (Import R : RAW_BYTES).
   #[global] Instance val_inhabited : Inhabited val := populate (Vint 0).
 
   (** wrappers for constructing certain values *)
-  Definition Vchar (a : Ascii.ascii) : val :=
-    Vint (Z.of_N (N_of_ascii a)).
+  (** [Vchar] is currently not well supported. *)
+  Definition Vchar (a : Byte.byte) : val :=
+    Vint (Z.of_N (Byte.to_N a)).
+
+  (** wrappers for constructing certain values *)
   Definition Vbool (b : bool) : val :=
     Vint (if b then 1 else 0).
   Definition Vnat (b : nat) : val :=
