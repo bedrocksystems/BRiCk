@@ -172,57 +172,57 @@ test_public:
   needs:
     - build_public
 
-prepare_env:
-  extends:
-    - .latest
-  stage: prepare_env_for_downstream
-  needs:
-    - build_latest
-  script:
-    # The branch of cpp2v is by default master,
-    # but if CI::cpp2v-same-branch label is specified,
-    # the same branch name as the current MR
-    - if [[ $CI_MERGE_REQUEST_LABELS =~ .*CI::cpp2v-same-branch.* ]]; then echo "CPP2V_BRANCH=$CI_MERGE_REQUEST_SOURCE_BRANCH_NAME" >> build.env; else echo "CPP2V_BRANCH=master" >> build.env; fi
-    - echo "ARTIFACT_JOB_ID=$ARTIFACT_JOB_ID" >> build.env
-  rules:
-    - if: '$CI_MERGE_REQUEST_LABELS =~ /.*CI-skip-proofs.*/'
-      when: never
-    - if: $CI_MERGE_REQUEST_IID
-    - if: $CI_COMMIT_TAG
-    - if: '$CI_COMMIT_BRANCH == "master"'
-  artifacts:
-    reports:
-      dotenv: build.env
-  tags:
-    - fm.shared
-
-.build_cpp2v_base:
-  stage: build_proofs_downstream
-  needs:
-    - prepare_env
-  trigger:
-    project: bedrocksystems/cpp2v
-    # If CPP2V_BRANCH is not master, .gitlab-ci.yml in the cpp2v branch has
-    # to be modified to allow build_latest on branches.
-    branch: $CPP2V_BRANCH
-    # Currently, the whole pipeline succeeds even if the cpp2v build fails
-  variables:
-    UPSTREAM_CPP2V_CORE_JOB_ID: $ARTIFACT_JOB_ID
-
-build_cpp2v:
-  extends: .build_cpp2v_base
-  trigger:
-    strategy: depend
-  rules:
-    - if: '$CI_MERGE_REQUEST_LABELS =~ /.*CI-skip-proofs.*/'
-      when: never
-    - if: $CI_MERGE_REQUEST_IID
-    - if: $CI_COMMIT_TAG
-
-build_cpp2v_master:
-  extends: .build_cpp2v_base
-  rules:
-    - if: '$CI_COMMIT_BRANCH == "master"'
+#prepare_env:
+#  extends:
+#    - .latest
+#  stage: prepare_env_for_downstream
+#  needs:
+#    - build_latest
+#  script:
+#    # The branch of cpp2v is by default master,
+#    # but if CI::cpp2v-same-branch label is specified,
+#    # the same branch name as the current MR
+#    - if [[ $CI_MERGE_REQUEST_LABELS =~ .*CI::cpp2v-same-branch.* ]]; then echo "CPP2V_BRANCH=$CI_MERGE_REQUEST_SOURCE_BRANCH_NAME" >> build.env; else echo "CPP2V_BRANCH=master" >> build.env; fi
+#    - echo "ARTIFACT_JOB_ID=$ARTIFACT_JOB_ID" >> build.env
+#  rules:
+#    - if: '$CI_MERGE_REQUEST_LABELS =~ /.*CI-skip-proofs.*/'
+#      when: never
+#    - if: $CI_MERGE_REQUEST_IID
+#    - if: $CI_COMMIT_TAG
+#    - if: '$CI_COMMIT_BRANCH == "master"'
+#  artifacts:
+#    reports:
+#      dotenv: build.env
+#  tags:
+#    - fm.shared
+#
+#.build_cpp2v_base:
+#  stage: build_proofs_downstream
+#  needs:
+#    - prepare_env
+#  trigger:
+#    project: bedrocksystems/cpp2v
+#    # If CPP2V_BRANCH is not master, .gitlab-ci.yml in the cpp2v branch has
+#    # to be modified to allow build_latest on branches.
+#    branch: $CPP2V_BRANCH
+#    # Currently, the whole pipeline succeeds even if the cpp2v build fails
+#  variables:
+#    UPSTREAM_CPP2V_CORE_JOB_ID: $ARTIFACT_JOB_ID
+#
+#build_cpp2v:
+#  extends: .build_cpp2v_base
+#  trigger:
+#    strategy: depend
+#  rules:
+#    - if: '$CI_MERGE_REQUEST_LABELS =~ /.*CI-skip-proofs.*/'
+#      when: never
+#    - if: $CI_MERGE_REQUEST_IID
+#    - if: $CI_COMMIT_TAG
+#
+#build_cpp2v_master:
+#  extends: .build_cpp2v_base
+#  rules:
+#    - if: '$CI_COMMIT_BRANCH == "master"'
 
 .release:
   stage: release
@@ -342,19 +342,40 @@ pages:
   tags:
     - fm.shared
 
-.prepare_cpp2v_env: &prepare_cpp2v_env
-  - >
-    if [[ $CI_MERGE_REQUEST_LABELS =~ .*CI::same-branch.* ]] ; then
-       git ls-remote --exit-code --heads   https://gitlab-ci-token:${CI_JOB_TOKEN}@gitlab.com/bedrocksystems/cpp2v.git refs/heads/$CI_MERGE_REQUEST_SOURCE_BRANCH_NAME &&
-       echo "DOWNSTREAM_CPP2V_BRANCH=$CI_MERGE_REQUEST_SOURCE_BRANCH_NAME" >> build.env ||
-       echo "DOWNSTREAM_CPP2V_BRANCH=master" >> build.env;
-       echo "DOWNSTREAM_BRANCH=$CI_MERGE_REQUEST_SOURCE_BRANCH_NAME" >> build.env ;
-    else echo "DOWNSTREAM_CPP2V_BRANCH=master" >> build.env ;
-         echo "DOWNSTREAM_BRANCH=master" >> build.env ; fi
-  - CPP2V_CORE_COMMIT_HASH=$(git -C $CI_PROJECT_DIR rev-parse HEAD)
-  - echo "CPP2V_CORE_COMMIT_HASH=$CPP2V_CORE_COMMIT_HASH" >> build.env
-  - echo $CPP2V_CORE_COMMIT_HASH
-  - cat build.env
+prepare_cpp2v_env:
+  extends:
+    - .latest
+  stage: prepare_env_for_downstream
+  needs:
+    - dune-build
+    - build_latest
+  script:
+    - echo "ARTIFACT_JOB_ID=$ARTIFACT_JOB_ID" >> build.env
+    - >
+      if [[ $CI_MERGE_REQUEST_LABELS =~ .*CI::same-branch.* ]] ; then
+        export DOWNSTREAM_BRANCH=$CI_MERGE_REQUEST_SOURCE_BRANCH_NAME ;
+        git ls-remote --exit-code --heads   https://gitlab-ci-token:${CI_JOB_TOKEN}@gitlab.com/bedrocksystems/cpp2v.git refs/heads/$DOWNSTREAM_BRANCH &&
+         export DOWNSTREAM_CPP2V_BRANCH=$DOWNSTREAM_BRANCH ||
+         export DOWNSTREAM_CPP2V_BRANCH="master" ;
+      else export DOWNSTREAM_CPP2V_BRANCH="master" ;
+           export DOWNSTREAM_BRANCH="master" ; fi
+    - echo "DOWNSTREAM_CPP2V_BRANCH=$DOWNSTREAM_CPP2V_BRANCH" >> build.env
+    - echo "DOWNSTREAM_BRANCH=$DOWNSTREAM_BRANCH" >> build.env
+    - CPP2V_CORE_COMMIT_HASH=$(git -C $CI_PROJECT_DIR rev-parse HEAD)
+    - echo "CPP2V_CORE_COMMIT_HASH=$CPP2V_CORE_COMMIT_HASH" >> build.env
+    - echo $CPP2V_CORE_COMMIT_HASH
+    - cat build.env
+  artifacts:
+    reports:
+      dotenv: build.env
+  rules:
+    - if: '$CI_MERGE_REQUEST_LABELS =~ /.*CI-skip-proofs.*/'
+      when: never
+    - if: '$CI_PIPELINE_SOURCE =~ /^(push)$/ && $CI_COMMIT_BRANCH && $CI_COMMIT_REF_NAME != "master"'
+      when: never
+    - if: '$CI_PIPELINE_SOURCE =~ /^(api|chat|external|external_pull_request_event)$/'
+      when: never
+    - when: always
 
 .setup-dunecache:
   stage: dune-build
@@ -369,7 +390,6 @@ pages:
   after_script:
     - rsync -raz ~/.cache/dune ${DUNE_USER}@${FM_CACHE_SERVER}:${RSYNC_CACHE_PATH}/dune_cache
     - ssh ${DUNE_USER}@${FM_CACHE_SERVER} bash -c "'echo `date  +%Y%m%d%H%M%S` - $CI_PROJECT_NAME - $CI_JOB_NAME - $CI_JOB_ID >> ${RSYNC_CACHE_PATH}/test_rsync_fm1.txt'"
-    - *prepare_cpp2v_env
 
 dune-build:
   extends:
@@ -388,19 +408,17 @@ dune-build:
     - dune build -j ${NJOBS}
   tags:
     - ${DUNE_TAG}
-  artifacts:
-    reports:
-      dotenv: build.env
   rules:
     - if: $CI_MERGE_REQUEST_IID
 
 build-cpp2v-trigger:
-  stage: dune-build
+  stage: build_proofs_downstream
   needs:
-    - dune-build
+    - prepare_cpp2v_env
   variables:
     UPSTREAM_CPP2V_CORE_COMMIT_HASH: $CPP2V_CORE_COMMIT_HASH
     DOWNSTREAM_BRANCH: $DOWNSTREAM_BRANCH
+    UPSTREAM_CPP2V_CORE_JOB_ID: $ARTIFACT_JOB_ID
   trigger:
     project: bedrocksystems/cpp2v
     branch: $DOWNSTREAM_CPP2V_BRANCH
