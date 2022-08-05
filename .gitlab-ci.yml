@@ -383,6 +383,9 @@ prepare_cpp2v_env:
 
 .setup-dunecache:
   stage: dune-build
+  variables:
+    DUNE_CACHE: enabled
+    DUNE_CACHE_STORAGE_MODE: copy
   before_script:
     # Create Directory structure for dune
     - mkdir -p /tmp/build-dir/fmdeps/ ~/.cache/ && cp -ra $CI_PROJECT_DIR /tmp/build-dir/fmdeps/cpp2v-core
