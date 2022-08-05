@@ -399,6 +399,7 @@ dune-build:
   extends:
     - .setup-dunecache
     - .postupdate-dunecache
+    - .proof-trigger
   needs: []
   stage: dune-build
   image: ${docker_img_prefix}:cpp2v-llvm13-usermod-1
@@ -412,8 +413,6 @@ dune-build:
     - dune build -j ${NJOBS}
   tags:
     - ${DUNE_TAG}
-  rules:
-    - if: $CI_MERGE_REQUEST_IID
 
 build-cpp2v-trigger:
   extends:
