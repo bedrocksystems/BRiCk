@@ -58,12 +58,12 @@ variables:
     LLVM_MAJ_VER: 13
 
 stages:
+  - dune-build
   - build
   - test
   - release
   - prepare_pages
   - pages
-  - dune-build
   - prepare_env_for_downstream
   - build_proofs_downstream
 
@@ -71,6 +71,7 @@ stages:
 # build_{latest,llvm10,public} (see, e.g., https://docs.gitlab.com/ee/ci/yaml/#extends).
 .build_base:
   stage: build
+  needs: []
   script:
     - mkdir -p build
     - echo "fmdeps/cpp2v-core:$(git rev-parse HEAD)" | tee build/gitshas.txt
