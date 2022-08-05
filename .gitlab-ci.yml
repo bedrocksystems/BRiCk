@@ -67,6 +67,16 @@ stages:
   - prepare_env_for_downstream
   - build_proofs_downstream
 
+.proof-trigger:
+  rules:
+    - if: '$CI_MERGE_REQUEST_LABELS =~ /.*CI-skip-proofs.*/'
+      when: never
+    - if: '$CI_PIPELINE_SOURCE =~ /^(push)$/ && $CI_COMMIT_BRANCH && $CI_COMMIT_REF_NAME != "master"'
+      when: never
+    - if: '$CI_PIPELINE_SOURCE =~ /^(api|chat|external|external_pull_request_event)$/'
+      when: never
+    - when: always
+
 #This is a template job that's extended below by the real jobs
 # build_{latest,llvm10,public} (see, e.g., https://docs.gitlab.com/ee/ci/yaml/#extends).
 .build_base:
@@ -346,6 +356,7 @@ pages:
 prepare_cpp2v_env:
   extends:
     - .latest
+    - .proof-trigger
   stage: prepare_env_for_downstream
   needs:
     - dune-build
@@ -369,14 +380,6 @@ prepare_cpp2v_env:
   artifacts:
     reports:
       dotenv: build.env
-  rules:
-    - if: '$CI_MERGE_REQUEST_LABELS =~ /.*CI-skip-proofs.*/'
-      when: never
-    - if: '$CI_PIPELINE_SOURCE =~ /^(push)$/ && $CI_COMMIT_BRANCH && $CI_COMMIT_REF_NAME != "master"'
-      when: never
-    - if: '$CI_PIPELINE_SOURCE =~ /^(api|chat|external|external_pull_request_event)$/'
-      when: never
-    - when: always
 
 .setup-dunecache:
   stage: dune-build
@@ -396,6 +399,7 @@ dune-build:
   extends:
     - .setup-dunecache
     - .postupdate-dunecache
+    - .proof-trigger
   needs: []
   stage: dune-build
   image: ${docker_img_prefix}:cpp2v-llvm13-usermod-1
@@ -409,10 +413,10 @@ dune-build:
     - dune build -j ${NJOBS}
   tags:
     - ${DUNE_TAG}
-  rules:
-    - if: $CI_MERGE_REQUEST_IID
 
 build-cpp2v-trigger:
+  extends:
+    - .proof-trigger
   stage: build_proofs_downstream
   needs:
     - prepare_cpp2v_env
@@ -425,11 +429,3 @@ build-cpp2v-trigger:
     project: bedrocksystems/cpp2v
     branch: $DOWNSTREAM_CPP2V_BRANCH
     strategy: depend
-  rules:
-    - if: '$CI_MERGE_REQUEST_LABELS =~ /.*CI-skip-proofs.*/'
-      when: never
-    - if: '$CI_PIPELINE_SOURCE =~ /^(push)$/ && $CI_COMMIT_BRANCH && $CI_COMMIT_REF_NAME != "master"'
-      when: never
-    - if: '$CI_PIPELINE_SOURCE =~ /^(api|chat|external|external_pull_request_event)$/'
-      when: never
-    - when: always
