@@ -413,7 +413,7 @@ dune-build:
     - cd /tmp/build-dir/
     - cp fmdeps/${CPP2V_CORE}/dune-project.template dune-project
     - ln -sf fmdeps/${CPP2V_CORE}/coq-cpp2v-bin.opam coq-cpp2v-bin.opam
-    - dune build -j ${NJOBS}
+    - time dune build -j ${NJOBS}
   tags:
     - ${DUNE_TAG}
 
