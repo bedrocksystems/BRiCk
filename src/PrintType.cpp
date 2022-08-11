@@ -367,6 +367,14 @@ public:
                                  CoqPrinter& print, ClangPrinter& cprint) {
         cprint.printQualType(type->getModifiedType(), print);
     }
+
+#if CLANG_VERSION_MAJOR >= 14
+    void VisitUsingType(const UsingType* type, CoqPrinter& print,
+                        ClangPrinter& cprint) {
+        assert(type->isSugared());
+        cprint.printQualType(type->getUnderlyingType(), print);
+    }
+#endif
 };
 
 PrintType PrintType::printer;
