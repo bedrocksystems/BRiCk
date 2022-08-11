@@ -241,7 +241,19 @@ Module Type Expr.
            valid_ptr addr ** Q addr (free' |*| free)))
       |-- wp_xval (Esubscript e i t) Q.
 
-    (* the `*` operator is an lvalue *)
+    (** * Unary Operators
+     *)
+
+    (** the `*` operator is an lvalue
+
+        > The unary * operator performs indirection: the expression to which it is applied
+        > shall be a pointer to an object type, or a pointer to a function type and the
+        > result is an lvalue referring to the object or function to which the expression
+        > points. If the type of the expression is “pointer to T”, the type of the result
+        > is “T”.
+
+        https://eel.is/c++draft/expr.unary.op#1
+     *)
     Axiom wp_lval_deref : forall ty e Q,
         wp_operand e (fun v free =>
                       match v with
@@ -250,13 +262,17 @@ Module Type Expr.
                       end)
         |-- wp_lval (Ederef e ty) Q.
 
-    (* the `&` operator is a prvalue *)
+    (** the `&` operator
+
+        https://eel.is/c++draft/expr.unary.op#3
+     *)
     Axiom wp_operand_addrof : forall e Q,
         wp_lval e (fun p free => Q (Vptr p) free)
         |-- wp_operand (Eaddrof e) Q.
 
-    (** * Unary Operators
-        NOTE the following axioms assume that [eval_unop] is deterministic when it is defined
+    (** "pure" uncary operators on primmitives, e.g. `-`, `!`, etc.
+
+        NOTE this rule assumes that [eval_unop] is deterministic.
      *)
     Axiom wp_operand_unop : forall o e ty Q,
         wp_operand e (fun v free => (* todo: rval? *)
@@ -265,6 +281,9 @@ Module Type Expr.
           Q v' free)
         |-- wp_operand (Eunop o e ty) Q.
 
+    (** `++e`
+        https://eel.is/c++draft/expr.pre.incr#1
+     *)
     Axiom wp_lval_preinc : forall e ty Q,
         (let ety := type_of e in
          let eety := erase_qualifiers ety in
@@ -278,6 +297,9 @@ Module Type Expr.
          end)
         |-- wp_lval (Epreinc e ty) Q.
 
+    (** `--e`
+        https://eel.is/c++draft/expr.pre.incr#2
+     *)
     Axiom wp_lval_predec : forall e ty Q,
         (let ety := type_of e in
          let eety := erase_qualifiers ety in
@@ -291,6 +313,9 @@ Module Type Expr.
          end)
         |-- wp_lval (Epredec e ty) Q.
 
+    (** `e++`
+        https://eel.is/c++draft/expr.post.incr#1
+     *)
     Axiom wp_operand_postinc : forall e ty Q,
         (let ety := type_of e in
          let eety := erase_qualifiers ety in
@@ -305,6 +330,9 @@ Module Type Expr.
          end)
       |-- wp_operand (Epostinc e ty) Q.
 
+    (** `e--`
+        https://eel.is/c++draft/expr.post.incr#2
+     *)
     Axiom wp_operand_postdec : forall e ty Q,
         (let ety := type_of e in
          let eety := erase_qualifiers ety in
