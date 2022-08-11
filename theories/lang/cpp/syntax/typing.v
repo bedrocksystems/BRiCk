@@ -148,6 +148,16 @@ Definition unptr (t : type) : option type :=
   | _ => None
   end.
 
+(** [drop_reference t] drops leading reference types to get the underlying type.
+ *)
+Fixpoint drop_reference (t : type) : type :=
+  match t with
+  | Tref t => drop_reference t
+  | Trv_ref t => drop_reference t
+  | Tqualified q t => drop_reference t
+  | _ => t
+  end.
+
 (** [class_name t] returns the name of the class that this type refers to
  *)
 Definition class_name (t : type) : option globname :=

@@ -756,22 +756,27 @@ Module Type Expr.
     Axiom wp_init_implicit: forall  ty e p Q,
         wp_init ty p e Q |-- wp_init ty p (Eimplicit e) Q.
 
-    (** [sizeof] and [alignof] do not evaluate their arguments *)
-    Axiom wp_operand_sizeof : forall ty' ty Q,
-        Exists sz, [| size_of ty = Some sz |]  ** Q (Vint (Z.of_N sz)) FreeTemps.id
-        |-- wp_operand (Esize_of (inl ty) ty') Q.
+    (** Gets the type used in an expression like `sizeof` and `alignof` *)
+    Definition get_type (ety : type + Expr) : type :=
+      match ety with
+      | inl ty => ty
+      | inr e => type_of e
+      end.
 
-    Axiom wp_operand_sizeof_e : forall ty' e Q,
-        wp_operand (Esize_of (inl (type_of e)) ty') Q
-        |-- wp_operand (Esize_of (inr e) ty') Q.
+    (** `sizeof(ty)`
+        https://eel.is/c++draft/expr.sizeof#1 and https://eel.is/c++draft/expr.sizeof#2
+        When applied to a reference type, the size of the referenced type is used.
+     *)
+    Axiom wp_operand_sizeof : forall ety ty Q,
+        Exists sz, [| size_of (drop_reference $ get_type ety) = Some sz |]  ** Q (Vn sz) FreeTemps.id
+        |-- wp_operand (Esize_of ety ty) Q.
 
-    Axiom wp_operand_alignof : forall ty' ty Q,
-        Exists align, [| align_of ty = Some align |] ** Q (Vint (Z.of_N align)) FreeTemps.id
-        |-- wp_operand (Ealign_of (inl ty) ty') Q.
-
-    Axiom wp_operand_alignof_e : forall ty' e Q,
-        wp_operand (Ealign_of (inl (type_of e)) ty') Q
-        |-- wp_operand (Ealign_of (inr e) ty') Q.
+    (** `alignof(e)`
+        https://eel.is/c++draft/expr.alignof
+     *)
+    Axiom wp_operand_alignof : forall ety ty Q,
+        Exists align, [| align_of (drop_reference $ get_type ety) = Some align |] ** Q (Vint (Z.of_N align)) FreeTemps.id
+        |-- wp_operand (Ealign_of ety ty) Q.
 
     (** function calls
 
