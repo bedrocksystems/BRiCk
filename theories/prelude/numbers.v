@@ -238,6 +238,24 @@ Qed.
 Lemma N_land_mono_l (a b : N) : (a `land` b <= b)%N.
 Proof. by rewrite N.land_comm; apply: N_land_mono_r. Qed.
 
+Lemma N2Z_land (a b : N) : Z.land a b = N.land a b.
+Proof. by case: a; case: b. Qed.
+
+Lemma N2Z_lor (a b : N) : Z.lor a b = N.lor a b.
+Proof. by case: a; case: b. Qed.
+
+Lemma N2Z_shiftl (a n : N) : Z.shiftl a n = N.shiftl a n.
+Proof.
+  apply: Z.bits_inj'=>idx Hidx.
+  rewrite Z.shiftl_spec //= -{2}(Z2N.id idx) //= Z.testbit_of_N.
+  move: (Z.lt_ge_cases idx (Z.of_N n)) =>[ Hle | Hlt ].
+  - rewrite N.shiftl_spec_low; last by rewrite N2Z.inj_lt Z2N.id.
+    by apply: Z.testbit_neg_r; rewrite Z.lt_sub_0.
+  - rewrite N.shiftl_spec_high; try by rewrite N2Z.inj_le Z2N.id.
+    have->: (idx - Z.of_N n = Z.of_N (Z.to_N idx - n))%Z; last by apply: Z.testbit_of_N.
+    by rewrite N2Z.inj_sub ?Z2N.id //= N2Z.inj_le Z2N.id.
+Qed.
+
 #[global] Instance N_divide_dec : RelDecision N.divide.
 Proof.
   refine (λ a b, cast_if (decide (N.gcd a b = a)));
