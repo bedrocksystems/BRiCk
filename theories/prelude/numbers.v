@@ -171,80 +171,23 @@ Lemma N_setbit_bool_decide (a n m : N) :
 Proof. by rewrite N.setbit_eqb N_eqb_bool_decide. Qed.
 
 (* monotonicity of land *)
-Lemma N_double_succ_double_le_mono (n m : N) : (n <= m)%N -> (N.double n <= N.succ_double m)%N.
-Proof.
-  move=> H; rewrite N.double_spec N.succ_double_spec.
-  apply: N.le_trans; first by apply/N.mul_le_mono_l/H.
-  by apply: N.le_add_r.
-Qed.
-
-Lemma N_land_double_double (a b : N) :
-  (N.double a `land` N.double b)%N = N.double (a `land` b).
-Proof.
-  apply: N.bits_inj => n; rewrite !N.double_spec N.land_spec.
-  move: n; apply: N.peano_rect; first by rewrite !N.testbit_even_0.
-  move=>p IH''; rewrite !N.testbit_even_succ; try by apply N.le_0_l.
-  by rewrite N.land_spec.
-Qed.
-
-Lemma N_land_double_succ_double (a b : N) :
-  (N.double a `land` N.succ_double b)%N = N.double (a `land` b).
-Proof.
-  apply: N.bits_inj => n; rewrite N.succ_double_spec !N.double_spec N.land_spec.
-  move: n; apply: N.peano_rect; first by rewrite !N.testbit_even_0.
-  move=>p IH''. rewrite !N.testbit_even_succ ?N.testbit_odd_succ; try by apply N.le_0_l.
-  by rewrite N.land_spec.
-Qed.
-
-Lemma N_land_succ_double_double (a b : N) :
-  (N.succ_double a `land` N.double b)%N = N.double (a `land` b).
-Proof.
-  apply: N.bits_inj => n; rewrite !N.double_spec N.succ_double_spec N.land_spec.
-  move: n; apply: N.peano_rect; first by rewrite N.testbit_odd_0 !N.testbit_even_0.
-  move=>p IH''; rewrite !N.testbit_even_succ ?N.testbit_odd_succ; try by apply N.le_0_l.
-  by rewrite N.land_spec.
-Qed.
-
-Lemma N_land_succ_double_succ_double (a b : N) :
-  (N.succ_double a `land` N.succ_double b)%N = N.succ_double (a `land` b).
-Proof.
-  apply: N.bits_inj => n; rewrite !N.succ_double_spec N.land_spec.
-  move: n; apply: N.peano_rect; first by rewrite !N.testbit_odd_0.
-  move=>p IH''; rewrite !N.testbit_odd_succ; try by apply N.le_0_l.
-  by rewrite N.land_spec.
-Qed.
-
 Lemma N_land_mono_r (a b : N) : (a `land` b <= a)%N.
 Proof.
-  move: a b; apply: N.binary_ind.
-  - by move=> ?; rewrite N.land_0_l.
-  - move=>a IH b.
-    move: b a IH.
-    apply: N.binary_ind.
-    + move=> b IH; rewrite N.land_0_r.
-      by apply: N.le_0_l.
-    + by move=>b IH a IH'; rewrite N_land_double_double; apply/N.double_le_mono/IH'.
-    + by move=>b IH a IH'; rewrite N_land_double_succ_double; apply/N.double_le_mono/IH'.
-  - move=>a IH b.
-    move: b a IH.
-    apply: N.binary_ind.
-    + move=> b IH; rewrite N.land_0_r.
-      by apply: N.le_0_l.
-    + by move=>b IH a IH'; rewrite N_land_succ_double_double; apply/N_double_succ_double_le_mono/IH'.
-    + move=>b IH a IH'.
-      rewrite N_land_succ_double_succ_double; apply/N.succ_double_le_mono/IH'.
+  apply: N.ldiff_le; rewrite -N.bits_inj_iff=>n.
+  rewrite N.ldiff_spec N.land_spec andb_comm.
+  by case: (N.testbit a n).
 Qed.
 
 Lemma N_land_mono_l (a b : N) : (a `land` b <= b)%N.
 Proof. by rewrite N.land_comm; apply: N_land_mono_r. Qed.
 
-Lemma N2Z_land (a b : N) : Z.land a b = N.land a b.
+Lemma N2Z_land (a b : N) : Z.land (Z.of_N a) (Z.of_N b) = Z.of_N (N.land a b).
 Proof. by case: a; case: b. Qed.
 
-Lemma N2Z_lor (a b : N) : Z.lor a b = N.lor a b.
+Lemma N2Z_lor (a b : N) : Z.lor (Z.of_N a) (Z.of_N b) = Z.of_N (N.lor a b).
 Proof. by case: a; case: b. Qed.
 
-Lemma N2Z_shiftl (a n : N) : Z.shiftl a n = N.shiftl a n.
+Lemma N2Z_shiftl (a n : N) : Z.shiftl (Z.of_N a) (Z.of_N n) = Z.of_N (N.shiftl a n).
 Proof.
   apply: Z.bits_inj'=>idx Hidx.
   rewrite Z.shiftl_spec //= -{2}(Z2N.id idx) //= Z.testbit_of_N.
@@ -254,6 +197,35 @@ Proof.
   - rewrite N.shiftl_spec_high; try by rewrite N2Z.inj_le Z2N.id.
     have->: (idx - Z.of_N n = Z.of_N (Z.to_N idx - n))%Z; last by apply: Z.testbit_of_N.
     by rewrite N2Z.inj_sub ?Z2N.id //= N2Z.inj_le Z2N.id.
+Qed.
+
+Lemma N2Z_lxor (a b : N) : Z.lxor (Z.of_N a) (Z.of_N b) = Z.of_N (N.lxor a b).
+Proof. by case: a; case: b. Qed.
+
+Lemma N2Z_lnot_trim (w : N) : Z.modulo (Z.lnot 0) (Z.pow 2 (Z.of_N w)) = Z.of_N (N.lnot 0 w).
+Proof.
+  rewrite Z.lnot_0; apply: Z.bits_inj'=>idx Hidx.
+  move: (Z.lt_ge_cases idx w)=>[Hlt|Hle].
+  - rewrite Z.mod_pow2_bits_low //= Z.bits_opp //= -Z.sub_1_r //= Z.bits_0.
+    by rewrite Z.testbit_of_N' //= N.ones_spec_low //= N2Z.inj_lt Z2N.id.
+  - rewrite Z.mod_pow2_bits_high //=; last by split=>//=; case w.
+    by rewrite Z.testbit_of_N' //= N.ones_spec_high //= N2Z.inj_le Z2N.id.
+Qed.
+
+Lemma N2Z_lnot (a w : N) : (a < 2 ^ w)%N -> Z.modulo (Z.lnot a) (Z.pow 2 (Z.of_N w)) = Z.of_N (N.lnot a w).
+Proof.
+  move=>Hu; apply: Z.bits_inj'=>idx Hidx.
+  move: (Z.lt_ge_cases idx w) =>[ Hle | Hlt ].
+  - rewrite Z.mod_pow2_bits_low //= Z.testbit_of_N' //= Z.lnot_spec //=.
+    rewrite N.lnot_spec_low; last by rewrite N2Z.inj_lt Z2N.id.
+    by rewrite Z.testbit_of_N'.
+  - move: (N.eq_0_gt_0_cases a)=>[->|Hu']; first by rewrite N2Z_lnot_trim.
+    rewrite Z.mod_pow2_bits_high; last by split=>//=; apply/N2Z.is_nonneg.
+    rewrite Z.testbit_of_N' //=.
+    rewrite N.lnot_spec_high; last by rewrite N2Z.inj_le Z2N.id.
+    rewrite N.bits_above_log2 //=.
+    apply:N.lt_le_trans; last by rewrite N2Z.inj_le Z2N.id.
+    by rewrite -N.log2_lt_pow2.
 Qed.
 
 #[global] Instance N_divide_dec : RelDecision N.divide.
