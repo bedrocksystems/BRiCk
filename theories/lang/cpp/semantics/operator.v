@@ -64,6 +64,14 @@ Axiom eval_unop_not : forall {genv} (w : bitsize) (sgn : signed) (a b : Z),
     has_type (Vint b) (Tnum w sgn) ->
     @eval_unop genv Ubnot (Tnum w sgn) (Tnum w sgn)  (Vint a) (Vint b).
 
+(* The builtin unary `+` operator is the identity on arithmetic types.
+   https://eel.is/c++draft/expr.unary.op#7
+ *)
+Axiom eval_plus_int : forall resolve (s : signed) a w,
+    has_type (Vint a) (Tnum w s) ->
+    eval_unop (resolve:=resolve) Uplus (Tnum w s) (Tnum w s)
+              (Vint a) (Vint a).
+
 (* The builtin unary `-` operator calculates the negative of its
    promoted operand. For unsigned a, the value of -a is 2^b -a, where b
    is the number of bits after promotion.
