@@ -148,7 +148,8 @@ Definition unptr (t : type) : option type :=
   | _ => None
   end.
 
-(** [drop_reference t] drops leading reference types to get the underlying type.
+(** [drop_reference t] drops leading reference and qualifiers to get the underlying
+    type.
  *)
 Fixpoint drop_reference (t : type) : type :=
   match t with

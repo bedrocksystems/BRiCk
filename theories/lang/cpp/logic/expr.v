@@ -270,7 +270,7 @@ Module Type Expr.
         wp_lval e (fun p free => Q (Vptr p) free)
         |-- wp_operand (Eaddrof e) Q.
 
-    (** "pure" uncary operators on primmitives, e.g. `-`, `!`, etc.
+    (** "pure" unary operators on primmitives, e.g. `-`, `!`, etc.
 
         NOTE this rule assumes that [eval_unop] is deterministic.
      *)

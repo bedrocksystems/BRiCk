@@ -47,13 +47,28 @@ Let eval_int_bitwise_op (bo : BinOp) (o : Z -> Z -> Z) : Prop :=
     c = o a b -> (* note that bitwise operators respect bounds *)
     eval_binop_pure (resolve:=resolve) bo (Tnum w s) (Tnum w s) (Tnum w s) (Vint a) (Vint b) (Vint c).
 
-
+(* The builtin unary `!` operator logically negates its argument, i.e. `true` -> `false` and
+   `false` -> `true`.
+   https://eel.is/c++draft/expr.unary.op#9
+ *)
 Axiom eval_not_bool : forall resolve a,
     eval_unop (resolve:=resolve) Unot Tbool Tbool (Vbool a) (Vbool (negb a)).
 
-(* The builtin unary minus operator calculates the negative of its
+(* The builtin unary `~` operator computes the bitwise negation of the operator
+   https://eel.is/c++draft/expr.unary.op#10
+
+   NOTE [Z.lnot a = -1 - a]
+ *)
+Axiom eval_unop_not : forall {genv} (w : bitsize) (sgn : signed) (a b : Z),
+    b = match sgn with Signed => -1 - a | Unsigned => bitFlipZU w a end ->
+    has_type (Vint b) (Tnum w sgn) ->
+    @eval_unop genv Ubnot (Tnum w sgn) (Tnum w sgn)  (Vint a) (Vint b).
+
+(* The builtin unary `-` operator calculates the negative of its
    promoted operand. For unsigned a, the value of -a is 2^b -a, where b
-   is the number of bits after promotion.  *)
+   is the number of bits after promotion.
+   https://eel.is/c++draft/expr.unary.op#8
+ *)
 Axiom eval_minus_int : forall resolve (s : signed) a c w,
     c = match s with
         | Signed => 0 - a
@@ -190,13 +205,6 @@ Axiom eval_lt_int : Hnf (eval_int_rel_op_int Z.lt Blt).
 Axiom eval_gt_int : Hnf (eval_int_rel_op_int Z.gt Bgt).
 Axiom eval_le_int : Hnf (eval_int_rel_op_int Z.le Ble).
 Axiom eval_ge_int : Hnf (eval_int_rel_op_int Z.ge Bge).
-
-(* note [Z.lnot a = -1 - a] *)
-Axiom eval_unop_not:
-  forall {genv} (w : bitsize) (sgn : signed) (a b : Z),
-    b = match sgn with Signed => -1 - a | Unsigned => bitFlipZU w a end ->
-    has_type (Vint b) (Tnum w sgn) ->
-    @eval_unop genv Ubnot (Tnum w sgn) (Tnum w sgn)  (Vint a) (Vint b).
 
 End operator_axioms.
 End OPERATOR_INTF_FUNCTOR.
