@@ -391,7 +391,7 @@ prepare_cpp2v_env:
     - mkdir -p /tmp/build-dir/fmdeps/ ~/.cache/ && cp -ra $CI_PROJECT_DIR /tmp/build-dir/fmdeps/cpp2v-core
     - time rsync -raz ${DUNE_USER}@${FM_CACHE_SERVER}:${RSYNC_CACHE_PATH}/dune_cache/ ~/.cache/
     - ls ~/.cache/dune
-    - mkdir -p ~/.config/dune/ ; cp $CI_PROJECT_DIR/dune_config ~/.config/dune/config
+    - mkdir -p ~/.config/dune/ ; cp $CI_PROJECT_DIR/dune-ci/dune_config ~/.config/dune/config
 
 .postupdate-dunecache:
   after_script:
