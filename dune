@@ -7,7 +7,6 @@
 
 (env
  (dev
-  (flags :standard)
   (coq
    (flags
     (-q
