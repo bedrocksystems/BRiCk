@@ -23,9 +23,3 @@ Ltac done := stdpp.tactics.done.
 Coercion Z.of_nat : nat >-> Z.
 
 #[global] Hint Mode Equiv ! : typeclass_instances.
-
-#[global] Instance Proper_under `{Equiv T} `{!Equivalence $ @equiv T _} : Proper (equiv ==> eq ==> iff) (Under_rel T equiv).
-Proof.
-  move => ? ? H10 ? _ <-.
-  rewrite Under_relE H10 //.
-Qed.
