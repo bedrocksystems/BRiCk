@@ -388,6 +388,7 @@ prepare_cpp2v_env:
     DUNE_CACHE_STORAGE_MODE: copy
   before_script:
     # Create Directory structure for dune
+    # We simulate a dune project composition to work around https://github.com/ocaml/dune/issues/6005.
     - mkdir -p /tmp/build-dir/fmdeps/ ~/.cache/ && cp -ra $CI_PROJECT_DIR /tmp/build-dir/fmdeps/cpp2v-core
     - time rsync -raz ${DUNE_USER}@${FM_CACHE_SERVER}:${RSYNC_CACHE_PATH}/dune_cache/ ~/.cache/
     - ls ~/.cache/dune
@@ -409,6 +410,7 @@ dune-build:
   script:
     - export PATH="/usr/lib/llvm/bin/:$PATH"
     - cd /tmp/build-dir/
+    # The next line is a temporary workaround for FM-2813; will be fixed better with FM-2681
     - ./fmdeps/cpp2v-core/dune-ci/setup-build-root.sh
     - time dune build -j ${NJOBS}
   tags:
