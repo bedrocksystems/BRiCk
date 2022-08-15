@@ -380,6 +380,8 @@ prepare_cpp2v_env:
   artifacts:
     reports:
       dotenv: build.env
+  tags:
+    - fm.shared
 
 .setup-dunecache:
   stage: dune-build
