@@ -417,7 +417,7 @@ dune-build:
   script:
     - export PATH="/usr/lib/llvm/bin/:$PATH"
     - cd /tmp/build-dir/
-    # The next line is a temporary workaround for FM-2813; will be fixed better with FM-2681
+    # We simulate a dune project composition to work around https://github.com/ocaml/dune/issues/6005.
     - ./fmdeps/cpp2v-core/dune-ci/setup-build-root.sh
     - cd fmdeps/cpp2v-core
     - time dune build -j ${NJOBS}
