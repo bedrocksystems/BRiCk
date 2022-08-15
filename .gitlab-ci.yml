@@ -419,7 +419,10 @@ dune-build:
     - cd /tmp/build-dir/
     # The next line is a temporary workaround for FM-2813; will be fixed better with FM-2681
     - ./fmdeps/cpp2v-core/dune-ci/setup-build-root.sh
+    - cd fmdeps/cpp2v-core
     - time dune build -j ${NJOBS}
+    - time dune build -j ${NJOBS} coq-cpp2v.install coq-cpp2v-bin.install
+    - time dune build -j ${NJOBS} -p coq-cpp2v,coq-cpp2v-bin --display short
   tags:
     - ${DUNE_TAG}
 
