@@ -406,13 +406,10 @@ dune-build:
   needs: []
   stage: dune-build
   image: ${docker_img_prefix}:cpp2v-llvm13-usermod-1
-  variables:
-    CPP2V_CORE: cpp2v-core
   script:
     - export PATH="/usr/lib/llvm/bin/:$PATH"
     - cd /tmp/build-dir/
-    - cp fmdeps/${CPP2V_CORE}/dune-project.template dune-project
-    - ln -sf fmdeps/${CPP2V_CORE}/coq-cpp2v-bin.opam coq-cpp2v-bin.opam
+    - ./fmdeps/cpp2v-core/dune-ci/setup-build-root.sh
     - time dune build -j ${NJOBS}
   tags:
     - ${DUNE_TAG}
