@@ -2,14 +2,13 @@
 # The Iris  [_CoqProject](https://gitlab.mpi-sws.org/iris/iris/-/blob/master/_CoqProject)
 # explains some of them.
 -arg -w -arg -notation-overridden
--arg -w -arg -ambiguous-paths
--arg -w -arg -redundant-canonical-projection
 # Similar to notation warnings.
 -arg -w -arg -custom-entry-overridden
-# Warns about correct usage:
--arg -w -arg -ssr-search-moved
+-arg -w -arg -redundant-canonical-projection
+-arg -w -arg -ambiguous-paths
 # Turn warning on hints into error:
 -arg -w -arg +deprecated-hint-without-locality
+-arg -w -arg +deprecated-instance-without-locality
 -arg -w -arg +unknown-option
 
 -Q theories/prelude bedrock.prelude

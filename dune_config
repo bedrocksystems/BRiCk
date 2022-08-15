@@ -1,4 +1,0 @@
-(lang dune 3.0)
-(cache enabled)
-(cache-storage-mode copy)
-(display short)

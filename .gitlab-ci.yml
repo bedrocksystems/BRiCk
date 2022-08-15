@@ -383,12 +383,16 @@ prepare_cpp2v_env:
 
 .setup-dunecache:
   stage: dune-build
+  variables:
+    DUNE_CACHE: enabled
+    DUNE_CACHE_STORAGE_MODE: copy
   before_script:
     # Create Directory structure for dune
+    # We simulate a dune project composition to work around https://github.com/ocaml/dune/issues/6005.
     - mkdir -p /tmp/build-dir/fmdeps/ ~/.cache/ && cp -ra $CI_PROJECT_DIR /tmp/build-dir/fmdeps/cpp2v-core
     - time rsync -raz ${DUNE_USER}@${FM_CACHE_SERVER}:${RSYNC_CACHE_PATH}/dune_cache/ ~/.cache/
     - ls ~/.cache/dune
-    - mkdir -p ~/.config/dune/ ; cp $CI_PROJECT_DIR/dune_config ~/.config/dune/config
+    - mkdir -p ~/.config/dune/ ; cp $CI_PROJECT_DIR/dune-ci/dune_config ~/.config/dune/config
 
 .postupdate-dunecache:
   after_script:
@@ -403,14 +407,12 @@ dune-build:
   needs: []
   stage: dune-build
   image: ${docker_img_prefix}:cpp2v-llvm13-usermod-1
-  variables:
-    CPP2V_CORE: cpp2v-core
   script:
     - export PATH="/usr/lib/llvm/bin/:$PATH"
     - cd /tmp/build-dir/
-    - cp fmdeps/${CPP2V_CORE}/dune-project.template dune-project
-    - ln -sf fmdeps/${CPP2V_CORE}/coq-cpp2v-bin.opam coq-cpp2v-bin.opam
-    - dune build -j ${NJOBS}
+    # The next line is a temporary workaround for FM-2813; will be fixed better with FM-2681
+    - ./fmdeps/cpp2v-core/dune-ci/setup-build-root.sh
+    - time dune build -j ${NJOBS}
   tags:
     - ${DUNE_TAG}
 
