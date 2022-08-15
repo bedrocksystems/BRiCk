@@ -10,6 +10,7 @@ Set Primitive Projections.
 
 Variant UnOp : Set :=
 | Uminus
+| Uplus
 | Unot
 | Ubnot
 | Uother (_ : bs).

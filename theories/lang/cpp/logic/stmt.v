@@ -12,6 +12,8 @@ Require Import bedrock.lang.bi.errors.
 Require Import bedrock.lang.cpp.heap_notations.
 
 Module Type Stmt.
+  #[local] Arguments wp_test [_ _ _] _ _ _.
+
   (** weakest pre-condition for statements
    *)
   Section with_resolver.
@@ -186,16 +188,11 @@ Module Type Stmt.
     (** [if] *)
 
     Axiom wp_if : forall ρ e thn els Q,
-        |> wp_operand ρ e (fun v free =>
-             match is_true v with
-             | None => ERROR (is_true_None v)
-             | Some c =>
+        |> Unfold wp_test (wp_test ρ e (fun c free =>
                interp free $
-               if c then
-                 wp ρ thn Q
-               else
-                 wp ρ els Q
-             end)
+               if c
+               then wp ρ thn Q
+               else wp ρ els Q))
       |-- wp ρ (Sif None e thn els) Q.
 
     Axiom wp_if_decl : forall ρ d e thn els Q,
@@ -260,11 +257,7 @@ Module Type Stmt.
           match rt with
           | Break => Q Normal
           | Continue | Normal =>
-            wp_operand ρ e (fun v free =>
-                              match is_true v with
-                              | None => ERROR (is_true_None v)
-                              | Some c => interp free $ if c then I else Q Normal
-                              end)
+            Unfold wp_test (wp_test ρ e (fun c free => interp free $ if c then I else Q Normal))
           | rt => Q rt
           end).
 

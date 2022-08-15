@@ -324,6 +324,7 @@ public:
     case UnaryOperatorKind::UO_##k:                                            \
         print.output() << s;                                                   \
         break;
+            CASE(Plus, "Uplus")
             CASE(Minus, "Uminus")
             CASE(Not, "Ubnot")
             CASE(LNot, "Unot")

@@ -24,7 +24,8 @@ Require Import bedrock.lang.bi.errors.
 Require Import bedrock.lang.cpp.heap_notations.
 
 Module Type Expr.
-
+  (* Needed for [Unfold wp_test] *)
+  #[local] Arguments wp_test [_ _ _] _ _ _.
   #[local] Open Scope free_scope.
 
   (**
@@ -241,7 +242,19 @@ Module Type Expr.
            valid_ptr addr ** Q addr (free' |*| free)))
       |-- wp_xval (Esubscript e i t) Q.
 
-    (* the `*` operator is an lvalue *)
+    (** * Unary Operators
+     *)
+
+    (** the `*` operator is an lvalue
+
+        > The unary * operator performs indirection: the expression to which it is applied
+        > shall be a pointer to an object type, or a pointer to a function type and the
+        > result is an lvalue referring to the object or function to which the expression
+        > points. If the type of the expression is “pointer to T”, the type of the result
+        > is “T”.
+
+        https://eel.is/c++draft/expr.unary.op#1
+     *)
     Axiom wp_lval_deref : forall ty e Q,
         wp_operand e (fun v free =>
                       match v with
@@ -250,13 +263,17 @@ Module Type Expr.
                       end)
         |-- wp_lval (Ederef e ty) Q.
 
-    (* the `&` operator is a prvalue *)
+    (** the `&` operator
+
+        https://eel.is/c++draft/expr.unary.op#3
+     *)
     Axiom wp_operand_addrof : forall e Q,
         wp_lval e (fun p free => Q (Vptr p) free)
         |-- wp_operand (Eaddrof e) Q.
 
-    (** * Unary Operators
-        NOTE the following axioms assume that [eval_unop] is deterministic when it is defined
+    (** "pure" unary operators on primmitives, e.g. `-`, `!`, etc.
+
+        NOTE this rule assumes that [eval_unop] is deterministic.
      *)
     Axiom wp_operand_unop : forall o e ty Q,
         wp_operand e (fun v free => (* todo: rval? *)
@@ -265,6 +282,9 @@ Module Type Expr.
           Q v' free)
         |-- wp_operand (Eunop o e ty) Q.
 
+    (** `++e`
+        https://eel.is/c++draft/expr.pre.incr#1
+     *)
     Axiom wp_lval_preinc : forall e ty Q,
         (let ety := type_of e in
          let eety := erase_qualifiers ety in
@@ -278,6 +298,9 @@ Module Type Expr.
          end)
         |-- wp_lval (Epreinc e ty) Q.
 
+    (** `--e`
+        https://eel.is/c++draft/expr.pre.incr#2
+     *)
     Axiom wp_lval_predec : forall e ty Q,
         (let ety := type_of e in
          let eety := erase_qualifiers ety in
@@ -291,6 +314,9 @@ Module Type Expr.
          end)
         |-- wp_lval (Epredec e ty) Q.
 
+    (** `e++`
+        https://eel.is/c++draft/expr.post.incr#1
+     *)
     Axiom wp_operand_postinc : forall e ty Q,
         (let ety := type_of e in
          let eety := erase_qualifiers ety in
@@ -305,6 +331,9 @@ Module Type Expr.
          end)
       |-- wp_operand (Epostinc e ty) Q.
 
+    (** `e--`
+        https://eel.is/c++draft/expr.post.incr#2
+     *)
     Axiom wp_operand_postdec : forall e ty Q,
         (let ety := type_of e in
          let eety := erase_qualifiers ety in
@@ -381,33 +410,25 @@ Module Type Expr.
 
     (** short-circuting operators *)
     Axiom wp_operand_seqand : forall e1 e2 Q,
-        wp_operand e1 (fun v1 free1 =>
+        Unfold wp_test (wp_test ρ e1 (fun c free1 =>
         (* ^ note: technically an rvalue, but it must be a primitive,
            otherwise there will be an implicit cast to bool, to it is
            always an rvalue *)
-           Exists c : bool, [| is_true v1 = Some c |] **
            if c
-           then wp_operand e2 (fun v2 free2 => (* see comment above *)
-                                     Exists c : bool, [| is_true v2 = Some c |] **
-                                     if c
-                                     then Q (Vint 1) (free2 >*> free1)
-                                     else Q (Vint 0) (free2 >*> free1))
-           else Q (Vint 0) free1)
+           then wp_test ρ e2 (fun c free2 => (* see comment above *)
+                              Q (Vbool c) (free2 >*> free1))
+           else Q (Vbool c) free1))
         |-- wp_operand (Eseqand e1 e2) Q.
 
     Axiom wp_operand_seqor : forall e1 e2 Q,
-        wp_operand e1 (fun v1 free1 =>
+        Unfold wp_test (wp_test ρ e1 (fun c free1 =>
         (* ^ note: technically an rvalue, but it must be a primitive,
            otherwise there will be an implicit cast to bool, to it is
            always an rvalue *)
-           Exists c : bool, [| is_true v1 = Some c |] **
            if c
-           then Q (Vint 1) free1
-           else wp_operand e2 (fun v2 free2 => (* see comment above *)
-                                     Exists c : bool, [| is_true v2 = Some c |] **
-                                     if c
-                                     then Q (Vint 1) (free2 >*> free1)
-                                     else Q (Vint 0) (free2 >*> free1)))
+           then Q (Vbool c) free1
+           else wp_test ρ e2 (fun c free2 => (* see comment above *)
+                              Q (Vbool c) (free2 >*> free1))))
         |-- wp_operand (Eseqor e1 e2) Q.
 
     (** * Casts
@@ -451,19 +472,25 @@ Module Type Expr.
         wp_lval e Q
         |-- wp_xval (Ecast Cnoop Lvalue e ty) Q.
 
+    Definition int2bool_not_num (v : val) : Set.
+    Proof. exact unit. Qed.
+
     Axiom wp_operand_cast_int2bool : forall ty e Q,
         wp_operand e (fun v free =>
-                      match is_true v with
-                      | None => ERROR (is_true_None v)
-                      | Some v => Q (Vbool v) free
-                      end)
+                        match v with
+                        | Vint n => Q (Vbool (bool_decide (n <> 0))) free
+                        | _ => ERROR (int2bool_not_num v)
+                        end)
         |-- wp_operand (Ecast Cint2bool Prvalue e ty) Q.
+
+    Definition ptr2bool_not_ptr (v : val) : Set.
+    Proof. exact unit. Qed.
 
     Axiom wp_operand_cast_ptr2bool : forall ty e Q,
         wp_operand e (fun v free =>
-                      match is_true v with
-                      | None => ERROR (is_true_None v)
-                      | Some v => Q (Vbool v) free
+                      match v with
+                      | Vptr p => Q (Vbool (bool_decide (p <> nullptr))) free
+                      | _ => ERROR (ptr2bool_not_ptr v)
                       end)
         |-- wp_operand (Ecast Cptr2bool Prvalue e ty) Q.
 
@@ -697,55 +724,53 @@ Module Type Expr.
      * We express this with 4 rules, one for each of [wp_lval],
      * [wp_operand], [wp_xval], and [wp_init].
      *)
-    Definition wp_cond {T} wp : Prop :=
+    Definition wp_cond {T} (wp : Expr -> (T -> FreeTemps.t -> epred) -> mpred) : Prop :=
       forall ty tst th el (Q : T -> FreeTemps -> mpred),
-        wp_operand tst (fun v1 free =>
-           Exists c : bool, [| is_true v1 = Some c |] **
+        Unfold wp_test (wp_test ρ tst (fun c free =>
            if c
            then wp th (fun v free' => Q v (free' >*> free))
-           else wp el (fun v free' => Q v (free' >*> free)))
+           else wp el (fun v free' => Q v (free' >*> free))))
         |-- wp (Eif tst th el ty) Q.
 
-    Axiom wp_lval_condition :
-      ltac:(let v := eval unfold wp_cond in (wp_cond wp_lval) in
-                exact v).
-    Axiom wp_xval_condition :
-      ltac:(let v := eval unfold wp_cond in (wp_cond wp_xval) in
-            exact v).
-    Axiom wp_operand_condition :
-      ltac:(let v := eval unfold wp_cond in (wp_cond wp_operand) in
-                exact v).
+    Axiom wp_lval_condition : Reduce (wp_cond wp_lval).
+    Axiom wp_xval_condition : Reduce (wp_cond wp_xval).
+    Axiom wp_operand_condition : Reduce (wp_cond wp_operand).
+
     Axiom wp_init_condition : forall ty addr tst th el Q,
-        wp_operand tst (fun v1 free =>
-           Exists c : bool, [| is_true v1 = Some c |] **
+        Unfold wp_test (wp_test ρ tst (fun c free =>
            if c
            then wp_init ty addr th (fun free' frees => Q free' (frees >*> free))
-           else wp_init ty addr el (fun free' frees => Q free' (frees >*> free)))
+           else wp_init ty addr el (fun free' frees => Q free' (frees >*> free))))
         |-- wp_init ty addr (Eif tst th el ty) Q.
 
-    Axiom wp_operand_implicit: forall  e Q,
+    Axiom wp_operand_implicit : forall e Q,
         wp_operand e Q |-- wp_operand (Eimplicit e) Q.
-    Axiom wp_init_implicit: forall  ty e p Q,
+    Axiom wp_init_implicit : forall ty e p Q,
         wp_init ty p e Q |-- wp_init ty p (Eimplicit e) Q.
 
-    (** [sizeof] and [alignof] do not evaluate their arguments *)
-    Axiom wp_operand_sizeof : forall ty' ty Q,
-        Exists sz, [| size_of ty = Some sz |]  ** Q (Vint (Z.of_N sz)) FreeTemps.id
-        |-- wp_operand (Esize_of (inl ty) ty') Q.
+    (** Gets the type used in an expression like `sizeof` and `alignof` *)
+    Definition get_type (ety : type + Expr) : type :=
+      match ety with
+      | inl ty => ty
+      | inr e => type_of e
+      end.
 
-    Axiom wp_operand_sizeof_e : forall ty' e Q,
-        wp_operand (Esize_of (inl (type_of e)) ty') Q
-        |-- wp_operand (Esize_of (inr e) ty') Q.
+    (** `sizeof(ty)`
+        https://eel.is/c++draft/expr.sizeof#1 and https://eel.is/c++draft/expr.sizeof#2
+        When applied to a reference type, the size of the referenced type is used.
+     *)
+    Axiom wp_operand_sizeof : forall ety ty Q,
+        Exists sz, [| size_of (drop_reference $ get_type ety) = Some sz |]  ** Q (Vn sz) FreeTemps.id
+        |-- wp_operand (Esize_of ety ty) Q.
 
-    Axiom wp_operand_alignof : forall ty' ty Q,
-        Exists align, [| align_of ty = Some align |] ** Q (Vint (Z.of_N align)) FreeTemps.id
-        |-- wp_operand (Ealign_of (inl ty) ty') Q.
+    (** `alignof(e)`
+        https://eel.is/c++draft/expr.alignof
+     *)
+    Axiom wp_operand_alignof : forall ety ty Q,
+        Exists align, [| align_of (drop_reference $ get_type ety) = Some align |] ** Q (Vint (Z.of_N align)) FreeTemps.id
+        |-- wp_operand (Ealign_of ety ty) Q.
 
-    Axiom wp_operand_alignof_e : forall ty' e Q,
-        wp_operand (Ealign_of (inl (type_of e)) ty') Q
-        |-- wp_operand (Ealign_of (inr e) ty') Q.
-
-    (** function calls
+    (** * Function calls
 
         The next few axioms rely on the evaluation order specified
         since C++17 (implemented in Clang >= 4):
