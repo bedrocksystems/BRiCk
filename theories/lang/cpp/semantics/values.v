@@ -99,6 +99,7 @@ Module Type VAL_MIXIN (Import P : PTRS) (Import R : RAW_BYTES).
     | Vptr p => Some (bool_decide (p <> nullptr))
     | Vundef | Vraw _ => None
     end.
+  #[global] Arguments is_true !_.
 
   (* An error used to say that [is_true] failed on the value [v] *)
   Record is_true_None (v : val) : Prop := {}.
