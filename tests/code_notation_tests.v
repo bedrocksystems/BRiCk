@@ -126,23 +126,23 @@ Section TestCodeNotations.
                        (Ecast Cfun2ptr Lvalue
                           (Evar (Gname "_Z15process_commandPKN4Zeta8Zeta_ctxEPcR9UmxSharedRmR5Admin")
                              (Tfunction Tbool
-                                [Tqualified {| q_const := true; q_volatile := false |}
+                                [Tqualified QC
                                    (Tptr
-                                      (Tqualified {| q_const := true; q_volatile := false |} Tvoid));
+                                      (Tqualified QC Tvoid));
                                 Tptr Tu8; Tref (Tnamed "_Z9UmxShared"); Tref Tu64;
                                 Tref Ti32]%list))
                           (Tptr
                              (Tfunction Tbool
-                                [Tqualified {| q_const := true; q_volatile := false |}
+                                [Tqualified QC
                                    (Tptr
-                                      (Tqualified {| q_const := true; q_volatile := false |} Tvoid));
+                                      (Tqualified QC Tvoid));
                                 Tptr Tu8; Tref (Tnamed "_Z9UmxShared"); Tref Tu64;
                                 Tref Ti32]%list)))
                        [Ecast Cl2r Lvalue
                           (Evar (Lname "ctx")
-                             (Tqualified {| q_const := true; q_volatile := false |}
-                                (Tptr (Tqualified {| q_const := true; q_volatile := false |} Tvoid))))
-                          (Tptr (Tqualified {| q_const := true; q_volatile := false |} Tvoid));
+                             (Tqualified QC
+                                (Tptr (Tqualified QC Tvoid))))
+                          (Tptr (Tqualified QC Tvoid));
                        Ecast Carray2ptr Lvalue (Evar (Lname "buffer") (Tarray Tu8 1024)) (Tptr Tu8);
                        Eread_ref (Evar (Lname "shared") (Tnamed "_Z9UmxShared"));
                        Eread_ref (Evar (Lname "client") Tu64); Evar (Lname "result") Ti32]%list
@@ -233,23 +233,23 @@ Section TestCodeNotations.
                      (Ecast Cfun2ptr Lvalue
                         (Evar (Gname "_Z15process_commandPKN4Zeta8Zeta_ctxEPcR9UmxSharedRmR5Admin")
                            (Tfunction Tbool
-                              [Tqualified {| q_const := true; q_volatile := false |}
+                              [Tqualified QC
                                  (Tptr
-                                    (Tqualified {| q_const := true; q_volatile := false |} Tvoid));
+                                    (Tqualified QC Tvoid));
                               Tptr Tu8; Tref (Tnamed "_Z9UmxShared"); Tref Tu64;
                               Tref Ti32]))
                         (Tptr
                            (Tfunction Tbool
-                              [Tqualified {| q_const := true; q_volatile := false |}
+                              [Tqualified QC
                                  (Tptr
-                                    (Tqualified {| q_const := true; q_volatile := false |} Tvoid));
+                                    (Tqualified QC Tvoid));
                               Tptr Tu8; Tref (Tnamed "_Z9UmxShared"); Tref Tu64;
                               Tref Ti32])))
                      [Ecast Cl2r Lvalue
                         (Evar (Lname "ctx")
-                           (Tqualified {| q_const := true; q_volatile := false |}
-                              (Tptr (Tqualified {| q_const := true; q_volatile := false |} Tvoid))))
-                        (Tptr (Tqualified {| q_const := true; q_volatile := false |} Tvoid));
+                           (Tqualified QC
+                              (Tptr (Tqualified QC Tvoid))))
+                        (Tptr (Tqualified QC Tvoid));
                      Ecast Carray2ptr Lvalue (Evar (Lname "buffer") (Tarray Tu8 1024)) (Tptr Tu8);
                      Eread_ref (Evar (Lname "shared") (Tnamed "_Z9UmxShared"));
                      Eread_ref (Evar (Lname "client") Tu64); Evar (Lname "result") Ti32]
