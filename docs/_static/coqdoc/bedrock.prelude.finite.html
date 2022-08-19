@@ -537,10 +537,8 @@ Module right.
 
 <div class="paragraph"> </div>
 
-  [global,program] Instance t_finite : Finite t :=
-  { enum := [FOO; BAR] }.
-  Next Obligation. solve_finite_nodup. Qed.
-  Next Obligation. solve_finite_total. Qed.
+  [global] Instance t_finite : Finite t.
+  Proof. solve_finite [FOO; BAR]. Defined.
 
   (* Option 1: specify [to_N] by hand:  
 </div>
@@ -588,19 +586,19 @@ Module right.
 
 <div class="doc">
 To define <span class="inlinecode"><a class="idref" href="bedrock.prelude.finite.html#finite_type"><span class="id" title="module">finite_type</span></a></span> for enums, the following will work:
+<pre>
+#[global] Instance t_finite : Finite t.
+Proof. solve_finite [GET; SET]. Defined.
+</pre>
 
 <div class="paragraph"> </div>
 
+Older option (deprecated: more verbose for no gain):
 <pre>
 #[global,program] Instance t_finite : Finite t :=
 { enum := [GET; SET] }.
 Next Obligation. solve_finite_nodup. Qed.
 Next Obligation. solve_finite_total. Qed.
-</pre>
-Newer, shorter option:
-<pre>
-#[global] Instance t_finite : Finite t.
-Proof. solve_finite [GET; SET]. Defined.
 </pre>
 
 </div>
