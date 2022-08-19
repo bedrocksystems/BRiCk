@@ -323,3 +323,7 @@ Module OT_bs <: OrderedType.OrderedType with Definition t := bs.
 
   Definition eq_dec := BS.eq_dec.
 End OT_bs.
+
+(* The [Arguments] line for [Byte.to_bits] speeds up [simpl] quite considerably,
+   especially when [simpl] makes no progress. *)
+#[global] Arguments Byte.to_bits !_ / : simpl nomatch.
