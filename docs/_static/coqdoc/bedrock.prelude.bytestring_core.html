@@ -426,6 +426,11 @@ Module <span class="inlinecode"><span class="id" title="var">Bytestring_notation
 <br/>
 &nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <a id="OT_bs.eq_dec" class="idref" href="#OT_bs.eq_dec"><span class="id" title="definition">eq_dec</span></a> := <a class="idref" href="bedrock.prelude.bytestring_core.html#BS.eq_dec"><span class="id" title="definition">BS.eq_dec</span></a>.<br/>
 <span class="id" title="keyword">End</span> <a class="idref" href="bedrock.prelude.bytestring_core.html#OT_bs"><span class="id" title="module">OT_bs</span></a>.<br/>
+
+<br/>
+<span class="comment">(*&nbsp;The&nbsp;<span class="inlinecode"><span class="id" title="var">Arguments</span></span>&nbsp;line&nbsp;for&nbsp;<span class="inlinecode"><span class="id" title="var">Byte.to_bits</span></span>&nbsp;speeds&nbsp;up&nbsp;<span class="inlinecode"><span class="id" title="tactic">simpl</span></span>&nbsp;quite&nbsp;considerably,<br/>
+&nbsp;&nbsp;&nbsp;especially&nbsp;when&nbsp;<span class="inlinecode"><span class="id" title="tactic">simpl</span></span>&nbsp;makes&nbsp;no&nbsp;progress.&nbsp;*)</span><br/>
+#[<span class="id" title="var">global</span>] <span class="id" title="var">Arguments</span> <a class="idref" href="http://coq.inria.fr/distrib/V8.15.1/stdlib//Coq.Init.Byte.html#to_bits"><span class="id" title="definition">Byte.to_bits</span></a> !<span class="id" title="var">_</span> / : <span class="id" title="tactic">simpl</span> <span class="id" title="var">nomatch</span>.<br/>
 </div>
 <!--
 -- Copyright (c) 2020 BedRock Systems, Inc.
