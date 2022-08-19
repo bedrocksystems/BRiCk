@@ -370,10 +370,12 @@ prepare_cpp2v_env:
          export DOWNSTREAM_CPP2V_BRANCH="master";
       else export DOWNSTREAM_CPP2V_BRANCH="master";
            export DOWNSTREAM_BRANCH="master"; fi
+    - if [[ $CI_MERGE_REQUEST_LABELS =~ .*FM-CI-timing.* ]]; then FULL_TIMING=1; else FULL_TIMING=0; fi
     - export CPP2V_CORE_COMMIT_HASH=$(git -C $CI_PROJECT_DIR rev-parse HEAD)
     - echo "DOWNSTREAM_CPP2V_BRANCH=$DOWNSTREAM_CPP2V_BRANCH" >> build.env
     - echo "DOWNSTREAM_BRANCH=$DOWNSTREAM_BRANCH" >> build.env
     - echo "CPP2V_CORE_COMMIT_HASH=$CPP2V_CORE_COMMIT_HASH" >> build.env
+    - echo "FULL_TIMING=$FULL_TIMING" >> build.env
     # TODO remove eventually; only for legacy builds
     - echo "ARTIFACT_JOB_ID=$ARTIFACT_JOB_ID" >> build.env
     - cat build.env
@@ -427,6 +429,7 @@ build-cpp2v-trigger:
   variables:
     UPSTREAM_CPP2V_CORE_COMMIT_HASH: $CPP2V_CORE_COMMIT_HASH
     DOWNSTREAM_BRANCH: $DOWNSTREAM_BRANCH
+    FULL_TIMING: $FULL_TIMING
     # TODO remove eventually; only for legacy builds
     UPSTREAM_CPP2V_CORE_JOB_ID: $ARTIFACT_JOB_ID
   trigger:
