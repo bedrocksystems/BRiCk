@@ -376,10 +376,8 @@ Module right.
   #[global] Instance t_eqdec : EqDecision t.
   Proof. solve_decision. Defined.
 
-  #[global,program] Instance t_finite : Finite t :=
-  { enum := [FOO; BAR] }.
-  Next Obligation. solve_finite_nodup. Qed.
-  Next Obligation. solve_finite_total. Qed.
+  #[global] Instance t_finite : Finite t.
+  Proof. solve_finite [FOO; BAR]. Defined.
 
   (* Option 1: specify [to_N] by hand:  *)
   Definition to_N : t -> N := ..
@@ -418,17 +416,17 @@ End finite_type.
 
 (**
 To define [finite_type] for enums, the following will work:
+<<
+#[global] Instance t_finite : Finite t.
+Proof. solve_finite [GET; SET]. Defined.
+>>
 
+Older option (deprecated: more verbose for no gain):
 <<
 #[global,program] Instance t_finite : Finite t :=
 { enum := [GET; SET] }.
 Next Obligation. solve_finite_nodup. Qed.
 Next Obligation. solve_finite_total. Qed.
->>
-Newer, shorter option:
-<<
-#[global] Instance t_finite : Finite t.
-Proof. solve_finite [GET; SET]. Defined.
 >>
 *)
 Ltac solve_finite_nodup := vm_decide.
