@@ -407,6 +407,90 @@ Module Type CPP_LOGIC
     Axiom type_ptr_valid_plus_one : forall resolve ty p,
       type_ptr ty p |-- valid_ptr (p ,, o_sub resolve ty 1).
 
+    (* When [p] is a [ptr] to a C++ object of type [ty], [p] is /also/ a pointer
+       to the "object representation" of [ty] - which consists of "the sequence
+       of [sizeof(ty)] unsigned char objects taken up by the object of
+       type [ty]" [1].
+
+       Detailed Justification:
+       a) From the comment above the axiomatization of [type_ptr]:
+          | [type_ptr ty p] asserts that [p] points to a (possibly dead) object of type [ty].
+       b) In [basic.types.general#4] [1] the C++ Standard states that:
+          | The object representation of an object of type T is the sequence of N unsigned
+          | char objects taken up by the object of type T, where N equals sizeof(T).
+       d) (????) All C++ objects are pointer-interconvertible with their "object representation"
+       e) (a)+(b)+(d) implies that a (potentially dead) object representation for type [ty]
+          exists at [ptr] [p]
+       f) (a)+(c)+(e) implies that [type_ptr Tu8 (p .[ Tu8 ! i ])] holds (regardless of whether
+          not the object/"object representation" is alive)
+
+       NOTE: There is no need to deal with past-the-end pointers explicitly since
+       [type_ptr] explicitly excludes them; validity of past-the-end pointers
+       can be established using [type_ptr_valid_plus_one].
+
+       [1] <https://eel.is/c++draft/basic.types.general#4>
+     *)
+    Section type_ptr_object_representation.
+      (* This section is intended to axiomatize a /sufficient/ and /sound/
+         set of transport rules for [type_ptr] facts which can be used to
+         satisfy the preconditions required when using [ptr_congP] to
+         transport other resources.
+       *)
+
+      (* The following [Axiom] reflects a trivially faithful encoding of
+         the quote from the C++ standard above [Section type_ptr_object_representation].
+
+         NOTE: To practically use this [Axiom], [type_ptr] must be [Persistent];
+         a reasonable alternative axiomatization which sidestepts this issue
+         could produce /all/ of the [type_ptr] facts for the "object representation"
+         at once:
+         | ... ->
+         |     type_ptr ty p
+         | |-- [∗list] i ∈ seqN 0 (sizeof ty), type_ptr Tu8 (p .[ Tu8 ! i ])
+       *)
+      Section conservative.
+        Axiom type_ptr_obj_repr_byte :
+          forall (σ : genv) (ty : type) (p : ptr) (i sz : N),
+            size_of σ ty = Some sz -> (* 1) [ty] has some byte-size [sz] *)
+            (i < sz)%N ->             (* 2) by (1), [sz] is nonzero and [i] is a
+                                            byte-offset into the object rooted at [p ,, o]
+
+                                         NOTE: [forall ty, size_of (Tarray ty 0) = Some 0],
+                                         but zero-length arrays are not permitted by the Standard
+                                         (cf. <https://eel.is/c++draft/dcl.array#def:array,bound>).
+                                         NOTE: if support for flexible array members is ever added,
+                                         it will need to be carefully coordinated with these sorts
+                                         of transport lemmas.
+                                       *)
+            (* 4) The existence of the "object representation" of an object of type [ty] -
+               |  in conjunction with the premises - justifies "lowering" any
+               |  [type_ptr ty p] fact to a collection of [type_ptr Tu8 (p ,, .[Tu8 ! i])]
+               |  facts - where [i] is a byte-offset within the [ty] ([0 <= i < sizeof(ty)]).
+               v *)
+            type_ptr ty p |-- type_ptr Tu8 (p ,, .[ Tu8 ! i ]).
+      End conservative.
+
+      (* NOTE: This might be reasonable to axiomatize directly; cf. the [NOTE] above
+         [Section conservative].
+       *)
+      Section all_at_once.
+        Lemma type_ptr_obj_repr :
+          forall (σ : genv) (ty : type) (p : ptr) (sz : N),
+            size_of σ ty = Some sz ->
+            type_ptr ty p |-- [∗list] i ∈ seqN 0 sz, type_ptr Tu8 (p .[ Tu8 ! Z.of_N i ]).
+        Proof.
+          intros * Hsz; iIntros "#tptr".
+          iApply big_sepL_intro; iIntros "!>" (k n) "%Hn'".
+          assert (lookup (K:=N) (N.of_nat k) (seqN 0%N sz) = Some n)
+            as Hn
+            by (unfold lookupN, list_lookupN; rewrite Nat2N.id //);
+            clear Hn'.
+          apply lookupN_seqN in Hn as [? ?].
+          iDestruct (type_ptr_obj_repr_byte σ ty p n sz Hsz ltac:(lia) with "tptr") as "$".
+        Qed.
+      End all_at_once.
+    End type_ptr_object_representation.
+
     (**
      ** Deducing pointer equalities
      The following axioms, together with [same_address_o_sub_eq], enable going
