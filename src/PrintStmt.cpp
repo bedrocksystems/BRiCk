@@ -98,15 +98,13 @@ public:
 
     void VisitCXXForRangeStmt(const CXXForRangeStmt *stmt, CoqPrinter &print,
                               ClangPrinter &cprint, ASTContext &) {
-        print.ctor("Sseq");
-        print.begin_list();
+        print.ctor("Sforeach");
         cprint.printStmt(stmt->getRangeStmt(), print);
-        print.cons();
+        print.output() << fmt::nbsp;
         cprint.printStmt(stmt->getBeginStmt(), print);
-        print.cons();
+        print.output() << fmt::nbsp;
         cprint.printStmt(stmt->getEndStmt(), print);
-        print.cons();
-        print.ctor("Sfor");
+        print.output() << fmt::nbsp;
         if (auto v = stmt->getInit()) {
             print.some();
             cprint.printStmt(v, print);
@@ -131,10 +129,9 @@ public:
             print.none();
         }
         print.output() << fmt::nbsp;
+        cprint.printStmt(stmt->getLoopVarStmt(), print);
+        print.output() << fmt::nbsp;
         cprint.printStmt(stmt->getBody(), print);
-        print.end_ctor();
-        print.cons();
-        print.end_list();
         print.end_ctor();
     }
 
