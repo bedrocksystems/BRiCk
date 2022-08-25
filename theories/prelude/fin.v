@@ -49,13 +49,13 @@ Module fin.
 
   (** Declared an instance, because it is not redudant after [t] is made opaque. *)
   #[global] Instance to_N_inj n : Inj eq eq (to_N (n := n)) := _.
-  #[global] Instance fin_eq_dec n : EqDecision (t n) := _.
-  #[global] Instance fin_countable n : Countable (t n) := _.
+  #[global] Instance t_eq_dec n : EqDecision (t n) := _.
+  #[global] Instance t_countable n : Countable (t n) := _.
 
-  #[global] Instance fin_pos_inhabited p : Inhabited (t (Npos p)) := populate (of_N _ 0).
+  #[global] Instance t_pos_inhabited p : Inhabited (t (Npos p)) := populate (of_N _ 0).
 
-  (* More flexible variant of [fin_pos_inhabited]. *)
-  Lemma fin_gt_inhabited n : (0 < n)%N -> Inhabited (fin.t n).
+  (* More flexible variant of [t_pos_inhabited]. *)
+  Lemma t_gt_inhabited n : 0 < n -> Inhabited (t n).
   Proof. case: n; [lia|]; apply _. Qed.
 
   #[global] Hint Opaque t : typeclass_instances.
