@@ -26,7 +26,61 @@ Section with_Σ.
   Definition rawR_eq : @rawR = _ := rawR_aux.(seal_eq).
   #[global] Arguments rawR q raw : rename.
 
+  Lemma _at_rawR_ptr_congP_transport (p1 p2 : ptr) (q : Qp) (r : raw_byte) :
+    ptr_congP σ p1 p2 |-- p1 |-> rawR q r -* p2 |-> rawR q r.
+  Proof.
+    rewrite rawR_eq/rawR_def !_at_as_Rep.
+    iApply tptsto_ptr_congP_transport.
+  Qed.
+
+  Lemma _at_rawR_offset_congP_transport (p : ptr) (o1 o2 : offset) (q : Qp) (r : raw_byte) :
+        offset_congP σ o1 o2 ** type_ptr Tu8 (p ,, o2)
+    |-- p ,, o1 |-> rawR q r -* p ,, o2 |-> rawR q r.
+  Proof.
+    iIntros "[%cong #tptr'] raw".
+    iDestruct (observe (type_ptr Tu8 (p ,, o1)) with "raw") as "#tptr". 1: {
+      rewrite rawR_eq/rawR_def !_at_as_Rep; by apply: _.
+    }
+    iRevert "raw"; iApply _at_rawR_ptr_congP_transport.
+    unfold ptr_congP; iFrame "#"; iPureIntro.
+    unfold ptr_cong; exists p, o1, o2; intuition.
+  Qed.
+
   Definition rawsR (q : Qp) (rs : list raw_byte) : Rep := arrayR Tuchar (rawR q) rs.
+
+  Lemma _at_rawsR_ptr_congP_transport (p1 p2 : ptr) (q : Qp) (rs : list raw_byte) :
+    ptr_congP σ p1 p2 ** p2 |-> arrayR Tu8 (const emp) rs |-- p1 |-> rawsR q rs -* p2 |-> rawsR q rs.
+  Proof.
+    generalize dependent p2; generalize dependent p1; induction rs;
+      iIntros (p1 p2) "[#congP tptrs]"; iAssert (ptr_congP σ p1 p2) as "(% & #tptr1 & #tptr2)"=> //.
+    - rewrite /rawsR !arrayR_nil !_at_sep !_at_only_provable !_at_validR.
+      iIntros "[_ %]"; iFrame "%"; iApply (type_ptr_valid with "tptr2").
+    - rewrite /rawsR !arrayR_cons !_at_sep !_at_type_ptrR !_at_offsetR; fold (rawsR q rs).
+      iIntros "[_ [raw raws]]"; iFrame "#"; iSplitL "raw".
+      + iApply (_at_rawR_ptr_congP_transport with "congP"); iFrame "∗".
+      + destruct rs.
+        * rewrite /rawsR !arrayR_nil !_at_sep !_at_only_provable !_at_validR.
+          iDestruct "raws" as "[#valid %]"; iFrame "%".
+          iApply type_ptr_valid_plus_one; iFrame "#".
+        * specialize (IHrs (p1 .[ Tu8 ! 1 ]) (p2 .[ Tu8 ! 1 ])).
+
+          iDestruct (observe (type_ptr Tu8 (p1 .[ Tu8 ! 1 ])) with "raws") as "#tptr1'". 1: {
+            rewrite /rawsR arrayR_cons; apply: _.
+          }
+
+          iDestruct "tptrs" as "(_ & _ & tptrs)".
+          iDestruct (observe (type_ptr Tu8 (p2 .[ Tu8 ! 1 ])) with "tptrs") as "#tptr2'". 1: {
+            rewrite /rawsR arrayR_cons; apply: _.
+          }
+
+          iApply (IHrs with "[tptrs]"); iFrame "∗".
+          unfold ptr_congP, ptr_cong; iFrame "#"; iPureIntro.
+          destruct H as [p [o1 [o2 [Ho1 [Ho2 Hoffset_cong]]]]]; subst.
+          exists p, (o1 .[ Tu8 ! 1 ]), (o2 .[ Tu8 ! 1 ]).
+          rewrite ?offset_ptr_dot; intuition.
+          unfold offset_cong in *.
+          by rewrite !eval_offset_dot Hoffset_cong.
+  Qed.
 
   Section Theory.
     Section primR_Axiom.
