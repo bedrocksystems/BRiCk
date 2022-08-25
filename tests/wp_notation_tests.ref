@@ -55,7 +55,7 @@ NOTATION_wp_wrap =
        // end block})
      : mpred
 NOTATION_wp_decl_nowrap = 
-λ (decl : VarDecl) (Q : region → FreeTemps → mpred),
+λ (decl : VarDecl) (Q : region → FreeTemps → epred),
   ::wpD
     [region:
       "bar" @ WpTestDefns.p'; "foo" @ WpTestDefns.p;
@@ -64,7 +64,7 @@ NOTATION_wp_decl_nowrap =
     ([region:
        "bar" @ WpTestDefns.p'; "foo" @ WpTestDefns.p;
        [this := WpTestDefns.this]; return ptr<void>])
-     : VarDecl → (region → FreeTemps → mpred) → mpred
+     : VarDecl → (region → FreeTemps → epred) → mpred
 
 Arguments NOTATION_wp_decl_nowrap decl%CPP_stmt_scope Q%function_scope
 NOTATION_wp_atomic_nil = 
@@ -166,18 +166,18 @@ NOTATION_wp_lval_wrap =
 
 Arguments NOTATION_wp_lval_wrap Q%function_scope
 NOTATION_wp_init_nowrap = 
-λ Q : FreeTemps → FreeTemps → epred,
+λ Q : type → FreeTemps → epred,
   ::wpPRᵢ
     [region:
       "bar" @ WpTestDefns.p'; "foo" @ WpTestDefns.p;
       [this := WpTestDefns.this]; return ptr<void>]
     (Pointer ↦ WpTestDefns.this) 
     ({e: ($"foo" + $"bar")})
-     : (FreeTemps → FreeTemps → epred) → mpred
+     : (type → FreeTemps → epred) → mpred
 
 Arguments NOTATION_wp_init_nowrap Q%function_scope
 NOTATION_wp_init_wrap = 
-λ Q : FreeTemps → FreeTemps → epred,
+λ Q : type → FreeTemps → epred,
   ::wpPRᵢ
     [region:
       "qux" @ WpTestDefns.p'''; "baz" @ WpTestDefns.p'';
@@ -185,28 +185,28 @@ NOTATION_wp_init_wrap =
       [this := WpTestDefns.this]; return ptr<void>]
     (Pointer ↦ WpTestDefns.this) 
     ({e: ($"foo" + $"bar")})
-     : (FreeTemps → FreeTemps → epred) → mpred
+     : (type → FreeTemps → epred) → mpred
 
 Arguments NOTATION_wp_init_wrap Q%function_scope
 NOTATION_wp_prval_nowrap = 
-λ Q : ptr → FreeTemps → FreeTemps → epred,
+λ Q : ptr → type → FreeTemps → epred,
   ::wpPR
     [region:
       "bar" @ WpTestDefns.p'; "foo" @ WpTestDefns.p;
       [this := WpTestDefns.this]; return ptr<void>]
     ({e: ($"foo" + $"bar")})
-     : (ptr → FreeTemps → FreeTemps → epred) → mpred
+     : (ptr → type → FreeTemps → epred) → mpred
 
 Arguments NOTATION_wp_prval_nowrap Q%function_scope
 NOTATION_wp_prval_wrap = 
-λ Q : ptr → FreeTemps → FreeTemps → epred,
+λ Q : ptr → type → FreeTemps → epred,
   ::wpPR
     [region:
       "qux" @ WpTestDefns.p'''; "baz" @ WpTestDefns.p'';
       "bar" @ WpTestDefns.p'; "foo" @ WpTestDefns.p;
       [this := WpTestDefns.this]; return ptr<void>]
     ({e: ($"foo" + $"bar")})
-     : (ptr → FreeTemps → FreeTemps → epred) → mpred
+     : (ptr → type → FreeTemps → epred) → mpred
 
 Arguments NOTATION_wp_prval_wrap Q%function_scope
 NOTATION_wp_operand_nowrap = 
@@ -252,18 +252,18 @@ NOTATION_wp_xval_wrap =
 
 Arguments NOTATION_wp_xval_wrap Q%function_scope
 NOTATION_wp_glval_nowrap = 
-λ Q : ptr → FreeTemps → mpred,
+λ Q : ptr → FreeTemps → epred,
   ::wpGL
     [region:
       "bar" @ WpTestDefns.p'; "foo" @ WpTestDefns.p;
       [this := WpTestDefns.this]; return ptr<void>]
     (ValCat ↦ expr.Lvalue) 
     ({e: ($"foo" + $"bar")})
-     : (ptr → FreeTemps → mpred) → mpred
+     : (ptr → FreeTemps → epred) → mpred
 
 Arguments NOTATION_wp_glval_nowrap Q%function_scope
 NOTATION_wp_glval_wrap = 
-λ Q : ptr → FreeTemps → mpred,
+λ Q : ptr → FreeTemps → epred,
   ::wpGL
     [region:
       "qux" @ WpTestDefns.p'''; "baz" @ WpTestDefns.p'';
@@ -271,7 +271,7 @@ NOTATION_wp_glval_wrap =
       [this := WpTestDefns.this]; return ptr<void>]
     (ValCat ↦ expr.Xvalue) 
     ({e: ($"foo" + $"bar")})
-     : (ptr → FreeTemps → mpred) → mpred
+     : (ptr → FreeTemps → epred) → mpred
 
 Arguments NOTATION_wp_glval_wrap Q%function_scope
 NOTATION_wp_discard_nowrap = 
@@ -454,7 +454,7 @@ NOTATION_wp_wrap =
   (WpTestDefns.K)
      : mpred
 NOTATION_wp_decl_nowrap = 
-λ (decl : VarDecl) (Q : region → FreeTemps → mpred),
+λ (decl : VarDecl) (Q : region → FreeTemps → epred),
   ::wpD
     [region:
       "bar" @ WpTestDefns.p'; "foo" @ WpTestDefns.p;
@@ -464,7 +464,7 @@ NOTATION_wp_decl_nowrap =
       "bar" @ WpTestDefns.p'; "foo" @ WpTestDefns.p;
       [this := WpTestDefns.this]; return ptr<void>]
     (Q)
-     : VarDecl → (region → FreeTemps → mpred) → mpred
+     : VarDecl → (region → FreeTemps → epred) → mpred
 
 Arguments NOTATION_wp_decl_nowrap decl%CPP_stmt_scope Q%function_scope
 NOTATION_wp_atomic_nil = 
@@ -576,7 +576,7 @@ NOTATION_wp_lval_wrap =
 
 Arguments NOTATION_wp_lval_wrap Q%function_scope
 NOTATION_wp_init_nowrap = 
-λ Q : FreeTemps → FreeTemps → epred,
+λ Q : type → FreeTemps → epred,
   ::wpPRᵢ
     [region:
       "bar" @ WpTestDefns.p'; "foo" @ WpTestDefns.p;
@@ -584,11 +584,11 @@ NOTATION_wp_init_nowrap =
     (Pointer ↦ {t: ptr<void>}) 
     WpTestDefns.this
     ({e: ($"foo" + $"bar")}) Q
-     : (FreeTemps → FreeTemps → epred) → mpred
+     : (type → FreeTemps → epred) → mpred
 
 Arguments NOTATION_wp_init_nowrap Q%function_scope
 NOTATION_wp_init_wrap = 
-λ Q : FreeTemps → FreeTemps → epred,
+λ Q : type → FreeTemps → epred,
   ::wpPRᵢ
     [region:
       "qux" @ WpTestDefns.p'''; "baz" @ WpTestDefns.p'';
@@ -597,22 +597,22 @@ NOTATION_wp_init_wrap =
     (Pointer ↦ {t: ptr<void>}) 
     WpTestDefns.this
     ({e: ($"foo" + $"bar")}) Q
-     : (FreeTemps → FreeTemps → epred) → mpred
+     : (type → FreeTemps → epred) → mpred
 
 Arguments NOTATION_wp_init_wrap Q%function_scope
 NOTATION_wp_prval_nowrap = 
-λ Q : ptr → FreeTemps → FreeTemps → epred,
+λ Q : ptr → type → FreeTemps → epred,
   ::wpPR
     [region:
       "bar" @ WpTestDefns.p'; "foo" @ WpTestDefns.p;
       [this := WpTestDefns.this]; return ptr<void>]
     {e: ($"foo" + $"bar")}
     (Q)
-     : (ptr → FreeTemps → FreeTemps → epred) → mpred
+     : (ptr → type → FreeTemps → epred) → mpred
 
 Arguments NOTATION_wp_prval_nowrap Q%function_scope
 NOTATION_wp_prval_wrap = 
-λ Q : ptr → FreeTemps → FreeTemps → epred,
+λ Q : ptr → type → FreeTemps → epred,
   ::wpPR
     [region:
       "qux" @ WpTestDefns.p'''; "baz" @ WpTestDefns.p'';
@@ -620,7 +620,7 @@ NOTATION_wp_prval_wrap =
       [this := WpTestDefns.this]; return ptr<void>]
     {e: ($"foo" + $"bar")}
     (Q)
-     : (ptr → FreeTemps → FreeTemps → epred) → mpred
+     : (ptr → type → FreeTemps → epred) → mpred
 
 Arguments NOTATION_wp_prval_wrap Q%function_scope
 NOTATION_wp_operand_nowrap = 
@@ -670,7 +670,7 @@ NOTATION_wp_xval_wrap =
 
 Arguments NOTATION_wp_xval_wrap Q%function_scope
 NOTATION_wp_glval_nowrap = 
-λ Q : ptr → FreeTemps → mpred,
+λ Q : ptr → FreeTemps → epred,
   ::wpGL
     [region:
       "bar" @ WpTestDefns.p'; "foo" @ WpTestDefns.p;
@@ -678,11 +678,11 @@ NOTATION_wp_glval_nowrap =
     (ValCat ↦ expr.Lvalue) 
     {e: ($"foo" + $"bar")}
     (Q)
-     : (ptr → FreeTemps → mpred) → mpred
+     : (ptr → FreeTemps → epred) → mpred
 
 Arguments NOTATION_wp_glval_nowrap Q%function_scope
 NOTATION_wp_glval_wrap = 
-λ Q : ptr → FreeTemps → mpred,
+λ Q : ptr → FreeTemps → epred,
   ::wpGL
     [region:
       "qux" @ WpTestDefns.p'''; "baz" @ WpTestDefns.p'';
@@ -691,7 +691,7 @@ NOTATION_wp_glval_wrap =
     (ValCat ↦ expr.Xvalue) 
     {e: ($"foo" + $"bar")}
     (Q)
-     : (ptr → FreeTemps → mpred) → mpred
+     : (ptr → FreeTemps → epred) → mpred
 
 Arguments NOTATION_wp_glval_wrap Q%function_scope
 NOTATION_wp_discard_nowrap = 
