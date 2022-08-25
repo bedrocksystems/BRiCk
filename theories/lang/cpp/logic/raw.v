@@ -79,7 +79,10 @@ Section with_Σ.
           exists p, (o1 .[ Tu8 ! 1 ]), (o2 .[ Tu8 ! 1 ]).
           rewrite ?offset_ptr_dot; intuition.
           unfold offset_cong in *.
-          by rewrite !eval_offset_dot Hoffset_cong.
+          apply option.same_property_iff in Hoffset_cong as [? [Ho1 Ho2]].
+          apply option.same_property_iff.
+          rewrite !eval_offset_dot !eval_o_sub Ho1 Ho2 /=.
+          by eauto.
   Qed.
 
   Section Theory.
