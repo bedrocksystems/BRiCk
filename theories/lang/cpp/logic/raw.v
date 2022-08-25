@@ -30,9 +30,9 @@ Section with_Σ.
 
   Section Theory.
     Section primR_Axiom.
-      (* TODO (JH): We might be able to provide a derived lemma for the special case
-           of primitive integers; I don't think we use this axiom for anything besides
-           integres.
+      (* TODO: improve our axiomatic support for raw values - including "shattering"
+         non-raw values into their constituent raw pieces - to enable deriving
+         [primR_to_rawsR].
        *)
       Axiom primR_to_rawsR: forall ty q v,
         primR ty q v -|-

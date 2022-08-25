@@ -491,6 +491,50 @@ Module Type CPP_LOGIC
       End all_at_once.
     End type_ptr_object_representation.
 
+    (* [offset_congP] hoists [offset_cong] to [mpred] *)
+    Definition offset_congP (σ : genv) (o1 o2 : offset) : mpred :=
+      [| offset_cong σ o1 o2 |].
+
+    (* [ptr_congP σ p1 p2] is an [mpred] which quotients [ptr_cong σ p1 p2]
+       by requiring that [type_ptr Tu8] holds for both [p1] /and/ [p2]. This property
+       is intended to be sound and sufficient for transporting certain physical
+       resources between [p1] and [p2] - and we hypothesize that it is also
+       necessary.
+     *)
+    Definition ptr_congP (σ : genv) (p1 p2 : ptr) : mpred :=
+      [| ptr_cong σ p1 p2 |] ** type_ptr Tu8 p1 ** type_ptr Tu8 p2.
+
+    (* All [tptsto] facts can be transported over [ptr_congP] [ptr]s.
+
+       The standard justifies this as follows:
+       1) (cf. [tptsto] comment) [tptsto ty q p v] ensures that [p] points to a memory
+          location with C++ type [ty] and which has some value [v].
+       2) (cf. [Section type_ptr_object_representation]) [type_ptr Tu8] holds for all of the
+          bytes (i.e. the "object reprsentation") constituting well-typed C++ objects.
+       3) NOTE (JH): the following isn't quite true yet, but we'll want this when we flesh
+          out [rawR]/[RAW_BYTES]:
+          a) all values [v] can be converted into (potentially many) [raw_byte]s -
+             which capture its "object representation"
+          b) all [tptsto ty] facts can be shattered into (potentially many)
+             [tptsto Tu8 _ _ (Vraw _)] facts corresponding to its "object representation"
+       4) [tptsto Tu8 _ _ (Vraw _)] can be transported over [ptr_congP] [ptr]s:
+          a) [tptso Tu8 _ _ (Vraw _)] facts deal with the "object representation" directly
+             and thus permit erasing the structure of pointers in favor of reasoning about
+             relative byte offsets from a shared [ptr]-prefix.
+          b) the [ptr]s are [ptr_congP] so we know that:
+             i) they share a common base pointer [p_base]
+             ii) the byte-offset values of the C++ offsets which reconstitute the src/dst from
+                 [p_base] are equal
+             iii) NOTE: (cf. [valid_ptr_nonnull_nonzero]/[type_ptr_valid_ptr]/[type_ptr_nonnull] below)
+                  [p_base] has some [vaddr], but we don't currently rely on this fact.
+     *)
+    (* TODO: improve our axiomatic support for raw values - including "shattering"
+       non-raw values into their constituent raw pieces - to enable deriving
+       [tptsto_ptr_congP_transport] from [tptsto_raw_ptr_congP_transport].
+     *)
+    Axiom tptsto_ptr_congP_transport : forall {σ} ty q p1 p2 v,
+      ptr_congP σ p1 p2 |-- @tptsto σ ty q p1 v -* @tptsto σ ty q p2 v.
+
     (**
      ** Deducing pointer equalities
      The following axioms, together with [same_address_o_sub_eq], enable going
