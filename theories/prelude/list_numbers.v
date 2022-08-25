@@ -652,7 +652,7 @@ Section listN.
     i >= lengthN xs <-> lookupN i xs = None.
   Proof. rewrite -lookupN_fold /lengthN lookup_ge_None. lia. Qed.
 
-  Lemma lookupN_bound xs i x :
+  Lemma lookupN_bound xs i :
     is_Some (xs !! i) -> i < lengthN xs.
   Proof. by rewrite lookupN_is_Some. Qed.
 
