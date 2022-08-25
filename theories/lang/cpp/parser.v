@@ -42,6 +42,11 @@ Definition impl_virt (x : obj_name) : obj_name * option obj_name :=
 
 Definition Sreturn_void : Stmt := Sreturn None.
 Definition Sreturn_val (e : Expr) : Stmt := Sreturn (Some e).
+Definition Sforeach (range ibegin iend : Stmt)
+  (init : option Stmt) (cond : option Expr) (inc : option (ValCat * Expr))
+  (decl body : Stmt) : Stmt :=
+  Sseq [range; ibegin; iend; Sfor init cond inc
+        (Sseq [decl; body])].
 
 (* Indicate that [underlying] is used to represent alias type [name]. Enums are treated similarly. *)
 Definition Talias (name : globname) {underlying : type} : type :=
