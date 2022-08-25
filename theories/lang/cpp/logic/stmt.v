@@ -19,9 +19,9 @@ Module Type Stmt.
   Section with_resolver.
     Context `{Σ : cpp_logic thread_info} {resolve:genv}.
 
-    Implicit Types Q : KpredI.
+    Implicit Types Q : Kpred.
 
-    Definition Kseq (Q : KpredI -> mpred) (k : KpredI) : KpredI :=
+    Definition Kseq (Q : Kpred -> mpred) (k : Kpred) : Kpred :=
       KP (funI rt =>
           match rt with
           | Normal => Q k
@@ -33,7 +33,7 @@ Module Type Stmt.
       destruct rt; try apply H; apply H0.
     Qed.
 
-    Definition Kfree (free : FreeTemp) : KpredI -> KpredI :=
+    Definition Kfree (free : FreeTemp) : Kpred -> Kpred :=
       Kat_exit (interp free).
 
     Lemma Kfree_frame free Q Q' rt :
@@ -60,7 +60,7 @@ Module Type Stmt.
      * of aggregate fields).
      *)
     Definition wp_decl_var (ρ ρ_init : region) (x : ident) (ty : type) (init : option Expr)
-               (k : region -> FreeTemp -> mpredI)
+               (k : region -> FreeTemp -> epred)
       : mpred :=
       Forall (addr : ptr),
         let rty := erase_qualifiers ty in
@@ -72,7 +72,7 @@ Module Type Stmt.
         | None => default_initialize ty addr (fun frees => destroy frees)
         end.
 
-    Lemma wp_decl_var_frame : forall x ρ ρ_init init ty (k k' : region -> FreeTemps -> mpred),
+    Lemma wp_decl_var_frame : forall x ρ ρ_init init ty (k k' : region -> FreeTemps -> epred),
         Forall a (b : _), k a b -* k' a b
         |-- wp_decl_var ρ ρ_init x ty init k -* wp_decl_var ρ ρ_init x ty init k'.
     Proof.
@@ -86,7 +86,7 @@ Module Type Stmt.
     (* An error used to say that thread safe initializers are not supported *)
     Record thread_safe_initializer (d : VarDecl) : Prop := {}.
 
-    Fixpoint wp_decl (ρ ρ_init : region) (d : VarDecl) (k : region -> FreeTemps -> mpred) {struct d} : mpred :=
+    Fixpoint wp_decl (ρ ρ_init : region) (d : VarDecl) (k : region -> FreeTemps -> epred) {struct d} : mpred :=
       match d with
       | Dvar x ty init => wp_decl_var ρ ρ_init x ty init k
       | Ddecompose init x ds =>
@@ -128,13 +128,13 @@ Module Type Stmt.
     Qed.
 
     Fixpoint wp_decls (ρ ρ_init : region) (ds : list VarDecl)
-             (k : region -> FreeTemps -> mpred) : mpred :=
+             (k : region -> FreeTemps -> epred) : mpred :=
       match ds with
       | nil => k ρ FreeTemps.id
       | d :: ds => |> wp_decl ρ ρ_init d (fun ρ free => wp_decls ρ ρ_init ds (fun ρ' free' => k ρ' (FreeTemps.seq free' free)))
       end.
 
-    Lemma wp_decls_frame : forall ds ρ ρ_init (Q Q' : region -> FreeTemps -> mpred),
+    Lemma wp_decls_frame : forall ds ρ ρ_init (Q Q' : region -> FreeTemps -> epred),
         Forall a (b : _), Q a b -* Q' a b
         |-- wp_decls ρ ρ_init ds Q -* wp_decls ρ ρ_init ds Q'.
     Proof.
@@ -147,7 +147,7 @@ Module Type Stmt.
 
     (** * Blocks *)
 
-    Fixpoint wp_block (ρ : region) (ss : list Stmt) (Q : KpredI) : mpred :=
+    Fixpoint wp_block (ρ : region) (ss : list Stmt) (Q : Kpred) : mpred :=
       match ss with
       | nil => |> Q Normal
       | Sdecl ds :: ss =>
@@ -156,7 +156,7 @@ Module Type Stmt.
         |> wp ρ s (Kseq (wp_block ρ ss) Q)
       end.
 
-    Lemma wp_block_frame : forall body ρ (Q Q' : KpredI),
+    Lemma wp_block_frame : forall body ρ (Q Q' : Kpred),
         (Forall rt, Q rt -* Q' rt) |-- wp_block ρ body Q -* wp_block ρ body Q'.
     Proof.
       clear.
@@ -209,7 +209,7 @@ Module Type Stmt.
      *)
 
     (* loop with invariant `I` *)
-    Definition Kloop (I : mpred) (Q : KpredI) : KpredI :=
+    Definition Kloop (I : mpred) (Q : Kpred) : Kpred :=
       KP (funI rt =>
           match rt with
           | Break => Q Normal
@@ -252,7 +252,7 @@ Module Type Stmt.
 
     (** ** `do` loops *)
 
-    Definition Kdo (ρ : region) (e : Expr) (I : mpred) (Q : KpredI) : KpredI :=
+    Definition Kdo (ρ : region) (e : Expr) (I : mpred) (Q : Kpred) : Kpred :=
       KP (funI rt =>
           match rt with
           | Break => Q Normal
@@ -274,14 +274,14 @@ Module Type Stmt.
         get_return_type ρ = Tvoid ->
         Q ReturnVoid |-- wp ρ (Sreturn None) Q.
 
-    Axiom wp_return : forall ρ e (Q : KpredI),
+    Axiom wp_return : forall ρ e (Q : Kpred),
           (let rty := erase_qualifiers (get_return_type ρ) in
            Forall p, wp_initialize ρ rty p e (fun frees =>
                                          interp frees (Q (ReturnVal p))))
            (* ^ NOTE discard [free] because we are extruding the scope of the value *)
        |-- wp ρ (Sreturn (Some e)) Q.
 
-    Axiom wp_return_frame : forall ρ rv (Q Q' : KpredI),
+    Axiom wp_return_frame : forall ρ rv (Q Q' : Kpred),
         match rv with
         | None => Q ReturnVoid -* Q' ReturnVoid
         | Some _ =>
@@ -293,12 +293,12 @@ Module Type Stmt.
 
     Axiom wp_break : forall ρ Q,
         |> Q Break |-- wp ρ Sbreak Q.
-    Axiom wp_break_frame : forall ρ (Q Q' : KpredI),
+    Axiom wp_break_frame : forall ρ (Q Q' : Kpred),
         Q Break -* Q' Break |-- wp ρ Sbreak Q -* wp ρ Sbreak Q'.
 
     Axiom wp_continue : forall ρ Q,
         |> Q Continue |-- wp ρ Scontinue Q.
-    Axiom wp_continue_frame : forall ρ (Q Q' : KpredI),
+    Axiom wp_continue_frame : forall ρ (Q Q' : Kpred),
         Q Continue -* Q' Continue |-- wp ρ Scontinue Q -* wp ρ Scontinue Q'.
 
     (** `switch` *)
@@ -398,7 +398,7 @@ Module Type Stmt.
         end
       end.
 
-    Definition Kswitch (k : KpredI) : KpredI :=
+    Definition Kswitch (k : Kpred) : Kpred :=
       KP (fun rt =>
             match rt with
             | Break => k Normal
