@@ -1,8 +1,9 @@
 (*
- * Copyright (c) 2020 BedRock Systems, Inc.
+ * Copyright (c) 2020-2022 BedRock Systems, Inc.
  * This software is distributed under the terms of the BedRock Open-Source License.
  * See the LICENSE-BedRock file in the repository root for details.
  *)
+Require Import ExtLib.Tactics.Forward.
 Require Import iris.proofmode.proofmode.
 Require Import bedrock.lang.cpp.ast.
 Require Import bedrock.lang.cpp.semantics.
@@ -15,47 +16,11 @@ Section with_resolve.
   Variables (ρ : region).
   Implicit Types (p : ptr).
 
-  #[local] Notation wp_call_initialize := (wp_call_initialize ρ).
-
   Definition arg_types (ty : type) : option (list type * function_arity) :=
     match ty with
     | @Tfunction _ ar _ args => Some (args, ar)
     | _ => None
     end.
-
-  (** [wp_varargs' es Q] evaluates each argument by promoting its type
-      according to the rules of default argument promotion.
-   *)
-  Fixpoint wp_varargs' (es : list Expr) (Q : list (type * ptr) -> list FreeTemps -> mpred)
-  : mpred :=
-    match es with
-    | nil => Q nil nil
-    | e :: es =>
-      let t := type_of e in
-      match vararg_promote t with
-      | Some vt =>
-        Exists Qarg,
-        wp_call_initialize t e Qarg **
-        wp_varargs' es (fun varargs frees' =>
-           Forall p free frees,
-             Qarg p free frees -* Q ((vt, p) :: varargs) (free >*> frees :: frees'))
-      | None => False
-      end
-    end%I%free.
-
-  Lemma wp_varargs'_frame es : forall Q Q',
-    (Forall a b, Q a b -* Q' a b) |-- wp_varargs' es Q -* wp_varargs' es Q'.
-  Proof.
-    induction es; simpl; intros.
-    { iIntros "A"; iApply "A". }
-    { iIntros "A B".
-      case_match; eauto.
-      iDestruct "B" as (?) "[B C]".
-      iExists _; iFrame.
-      iRevert "C"; iApply IHes.
-      iIntros (??).
-      iIntros "B" (???) "C". iApply "A". by iApply "B". }
-  Qed.
 
   (**
      [wp_args' ts es Q] evaluates the arguments [es] to a function taking types [ts]
@@ -68,59 +33,81 @@ Section with_resolve.
      specified in C++.
      NOTE this definition is *not* sound in the presence of exceptions.
   *)
-  (** TODO [Q] could be [list ptr -> FreeTemps -> mpred] *)
-  Fixpoint wp_args' (ts : list type) (ar : function_arity) (es : list Expr) (Q : list ptr -> list FreeTemps -> mpred)
-  : mpred :=
+  Fixpoint zipTypes (ts : list type) (ar : function_arity) (es : list Expr) : option (list (M ptr) * option (nat * list type)) :=
+    let wp_arg_init ty init K := Forall p, wp_initialize ρ ty p init (fun frees => K p (FreeTemps.delete ty p >*> frees)%free) in
     match ts with
     | [] =>
-      if ar is Ar_Variadic then
-        wp_varargs' es
-          (fun varargs frees =>
-             Forall p,
-               p |-> varargsR varargs -*
-               Q [p] (FreeTemps.delete_va varargs p :: frees))
-      else
-        [| es = [] |] ** Q [] []
+        if ar is Ar_Variadic then
+          let rest := map (fun e => (type_of e, wp_arg_init (type_of e) e)) es in
+          Some (map snd rest, Some (0, map fst rest))
+        else None
     | t :: ts =>
-      match es with
-      | [] => False
-      | e :: es =>
-        Exists Qarg,
-          wp_call_initialize t e Qarg **
-          wp_args' ts ar es
-            (fun vs frees' =>
-               Forall v free frees,
-                 Qarg v free frees -*
-                 Q (v :: vs) (free >*> frees :: frees'))
-      end
-    end%I%free.
+        match es with
+        | [] => None
+        | e :: es =>
+            let update (x : list (M ptr) * option (nat * list type)) :=
+              (wp_arg_init t e :: x.1, (fun x => (1 + x.1, x.2)) <$> x.2)
+            in
+            update <$> zipTypes ts ar es
+        end
+    end.
 
-  Lemma wp_args'_frame_strong : forall ts ar es Q Q',
-      Forall vs free, [| if ar is Ar_Variadic then
-                           length vs = length ts + 1
-                         else length vs = length es |] -* Q vs free -* Q' vs free
-      |-- wp_args' ts ar es Q -* wp_args' ts ar es Q'.
+  Lemma zipTypes_ok : forall ts ar es ms r,
+      zipTypes ts ar es = Some (ms, r) ->
+      length ms = length es /\
+      match r with
+      | None => ar = Ar_Definite
+      | Some (n, va_ts) => ar = Ar_Variadic /\ length ms = n + length va_ts /\ n = length ts
+      end /\ |-- [∗list] m ∈ ms, Mframe m m.
   Proof.
-    induction ts => /=; intros.
-    { case_match.
-      { iIntros "A [% B]"; subst.
-        iSplitR; eauto. iApply "A"; eauto. }
-      { iIntros "X"; iApply wp_varargs'_frame.
-        iIntros (??) "A"; iIntros (?) "B".
-        iApply "X"; eauto. by iApply "A". } }
-    { destruct es; simpl; intros; eauto.
-      iIntros "H A".
-      iDestruct "A" as (?) "[A B]".
-      iExists _; iFrame.
-      iRevert "B"; iApply IHts.
-      iIntros (??) "% A". iIntros (???) "B".
-      iApply "H".
-      { iPureIntro; case_match; simpl; lia. }
-      { by iApply "A". } }
+    induction ts; simpl; intros.
+    { destruct ar; try congruence.
+      inversion H; clear H; subst.
+      rewrite !map_map !map_length.
+      split; eauto.
+      split.
+      { split; eauto. }
+      { induction es =>/=; eauto.
+        rewrite -IHes. rewrite right_id.
+        iIntros (??) "X Y". iIntros (p).
+        iSpecialize ("Y" $! p); iRevert "Y".
+        iApply wp_initialize_frame.
+        iIntros (?); iApply "X". } }
+    { destruct es; try congruence.
+      specialize (IHts ar es).
+      destruct (zipTypes ts ar es); simpl in *; try congruence.
+      inversion H; clear H; subst.
+      destruct p; simpl in *.
+      specialize (IHts _ _ eq_refl).
+      destruct IHts; split; eauto.
+      split.
+      { destruct o; simpl in *.
+        { destruct p; simpl. forward_reason. split; eauto. }
+        { destruct H0; eauto. } }
+      { iSplitL.
+        { iIntros (??) "X Y". iIntros (f).
+          iSpecialize ("Y" $! f); iRevert "Y".
+          iApply wp_initialize_frame.
+          iIntros (?); iApply "X". }
+        destruct H0. eauto. } }
   Qed.
 
-  Definition wp_args ts_ar es Q :=
-    wp_args' ts_ar.1 ts_ar.2 es (fun vs frees => Q vs (FreeTemps.pars frees)).
+  Definition wp_args (ts_ar : list type * function_arity) (es : list Expr) (Q : list ptr -> FreeTemps -> mpred)
+    : mpred :=
+    match zipTypes ts_ar.1 ts_ar.2 es with
+    | Some (args, va_info) =>
+        nd_seqs args (fun ps fs =>
+                        match va_info with
+                        | Some (non_va, types) =>
+                            let real := firstn non_va ps in
+                            let vargs := skipn non_va ps in
+                            let va_info := zip types vargs in
+                            Forall p, p |-> varargsR va_info -*
+                                      Q (real ++ [p]) (FreeTemps.delete_va va_info p >*> fs)%free
+                        | None => Q ps fs
+                        end)
+    | _ => False
+    end.
 
   Lemma wp_args_frame_strong : forall ts_ar es Q Q',
       (Forall vs free, [| if ts_ar.2 is Ar_Variadic then
@@ -128,8 +115,26 @@ Section with_resolve.
                           else length vs = length es |] -* Q vs free -* Q' vs free) |-- wp_args ts_ar es Q -* wp_args ts_ar es Q'.
   Proof.
     intros.
-    iIntros "X". iApply wp_args'_frame_strong.
-    iIntros (? ?) "%". by iApply "X".
+    iIntros "X".
+    rewrite /wp_args. destruct ts_ar; simpl.
+    generalize (zipTypes_ok l f es).
+    destruct (zipTypes l f es); eauto.
+    destruct p; eauto.
+    intros X. destruct (X _ _ eq_refl); clear X.
+    forward_reason.
+    iApply (nd_seqs_frame_strong with "[X] []"); eauto.
+    iIntros (??).
+    destruct o.
+    { destruct p.
+      iIntros "% Y" (p) "Z"; iSpecialize ("Y" $! p with "Z"); iRevert "Y".
+      iApply "X". destruct H; subst.
+      iPureIntro.
+      rewrite app_length/=.
+      rewrite firstn_length_le; try lia.
+      forward_reason; subst. eauto. }
+    { destruct H. subst.
+      iIntros "%"; iApply "X".
+      iPureIntro. eauto. }
   Qed.
 
   Lemma wp_args_frame : forall ts_ar es Q Q',
