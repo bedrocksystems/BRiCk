@@ -10,23 +10,72 @@ Require Import bedrock.lang.cpp.syntax.names.
 Set Primitive Projections.
 
 (* Type qualifiers *)
-Record type_qualifiers : Set :=
-{ q_const : bool
-; q_volatile : bool }.
+Variant type_qualifiers : Set :=
+| QCV (* const volatile *)
+| QC (* const *)
+| QV (* volatile *)
+| QM (* no qualifiers *)
+.
 #[global] Instance qual_eq: EqDecision type_qualifiers.
 Proof. solve_decision. Defined.
 #[global] Instance qual_countable : Countable type_qualifiers.
 Proof.
-  apply (inj_countable'
-    (λ q, (q_const q, q_volatile q))
-    (λ q, {| q_const := q.1; q_volatile := q.2 |})).
-  abstract (by intros []).
+    pose enc := fun (q : type_qualifiers) =>
+      match q with
+      | QM => GenNode (T:=Empty_set) 0 []
+      | QC => GenNode 1 []
+      | QV => GenNode 2 []
+      | QCV => GenNode 3 []
+     end.
+    pose dec := fun (q : gen_tree Empty_set) =>
+      match q with
+      | GenNode 0 [] => QM
+      | GenNode 1 [] => QC
+      | GenNode 2 [] => QV
+      | GenNode 3 [] => QCV
+      | _ => QM
+      end.
+    apply (inj_countable' enc dec).
+    by destruct x.
 Defined.
 
+Definition q_const (q : type_qualifiers) : bool :=
+  match q with
+  | QCV | QC => true
+  | _ => false
+  end.
+Definition q_volatile (q : type_qualifiers) : bool :=
+  match q with
+  | QCV | QV => true
+  | _ => false
+  end.
+Definition CV (const volatile : bool) :=
+  match const , volatile with
+  | true , true => QCV
+  | true , false => QC
+  | false , true => QV
+  | false , false => QM
+  end.
+
+(* [merge_tq a b] computes the join of the restrictions of [a] and [b],
+   i.e. if either [a] or [b] is const/volatile, the result will be const/volatile.
+   This is used to compress adjacent qualifiers.
+ *)
 Definition merge_tq (a b : type_qualifiers) : type_qualifiers :=
-  {| q_const := a.(q_const) || b.(q_const)
-   ; q_volatile := a.(q_volatile) || b.(q_volatile)
-   |}.
+  CV (q_const a || q_const b) (q_volatile a || q_volatile b).
+
+Lemma merge_tq_QM q : merge_tq QM q = q.
+Proof. destruct q; done. Qed.
+Lemma merge_tq__QM q : merge_tq q QM = q.
+Proof. destruct q; done. Qed.
+Lemma merge_tq_comm : forall q1 q2, merge_tq q1 q2 = merge_tq q2 q1.
+Proof. destruct q1, q2; done. Qed.
+Lemma merge_tq_assoc : forall q q' q'',
+    merge_tq q (merge_tq q' q'') = merge_tq (merge_tq q q') q''.
+Proof. destruct q, q', q''; done. Qed.
+Lemma merge_tq_QM_inj q1 q2 : merge_tq q1 q2 = QM -> q1 = QM /\ q2 = QM.
+Proof. destruct q1, q2; compute; try congruence; auto. Qed.
+
 
 (* Calling conventions are a little bit beyond what is formally blessed by
    C++, but the are necessary for low level code that links with other
@@ -261,10 +310,6 @@ Notation Tpointer := Tptr (only parsing).
 Notation Treference := Tref (only parsing).
 Notation Trv_reference := Trv_ref (only parsing).
 Notation Tfun := Tfunction (only parsing).
-Definition QCV := {| q_const := true ; q_volatile := true |}.
-Definition QC := {| q_const := true ; q_volatile := false |}.
-Definition QV := {| q_const := false ; q_volatile := true |}.
-Definition QM := {| q_const := false ; q_volatile := false |}.
 
 Definition Qconst_volatile : type -> type :=
   Tqualified QCV.
@@ -281,23 +326,20 @@ Section qual_norm.
 
   Fixpoint qual_norm' (q : type_qualifiers) (t : type) : A :=
     match t with
-    | Tqualified q' t =>
-      qual_norm' (merge_tq q q') t
-    | _ =>
-      f q t
+    | Tqualified q' t => qual_norm' (merge_tq q q') t
+    | _ => f q t
     end.
 
   Definition qual_norm : type -> A :=
-    qual_norm' {| q_const := false ; q_volatile := false |}.
+    qual_norm' QM.
 
 End qual_norm.
 
 Definition tqualified (q : type_qualifiers) (t : type) : type :=
   match q with
-  | {| q_const := false ; q_volatile := false |} => t
+  | QM => t
   | _ => Tqualified q t
   end.
-
 
 (** normalization of types
     - compresses adjacent [Tqualified] constructors
@@ -330,10 +372,6 @@ Fixpoint normalize_type (t : type) : type :=
   end.
 
 Section normalize_type_idempotent.
-  Lemma merge_tq_assoc:
-    forall q q' q'',
-      merge_tq q (merge_tq q' q'') = merge_tq (merge_tq q q') q''.
-  Proof. now intros *; rewrite /merge_tq/= !orb_assoc. Qed.
 
   Fixpoint _drop_norm_idempotent q q' ty {struct ty}:
     qual_norm' (fun _ t => normalize_type t) q (qual_norm' (fun _ t => normalize_type t) q' ty) =
@@ -356,8 +394,8 @@ Section normalize_type_idempotent.
     { (* _qual_norm_involutive *)
       intros *; generalize dependent q;
         induction ty using type_ind'; intros *; simpl;
-        try solve[destruct q as [[|] [|]]; simpl; now rewrite ?normalize_type_idempotent].
-      destruct q as [[|] [|]]; simpl;
+        try solve[destruct q; simpl; now rewrite ?normalize_type_idempotent].
+      destruct q; simpl;
         rewrite map_map /qual_norm ?_drop_norm_idempotent /merge_tq/=;
         try solve[erewrite map_ext_Forall; eauto; induction tys;
                   [ now constructor
