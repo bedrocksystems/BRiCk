@@ -151,10 +151,7 @@ Their weakest precondition rules are captured by <a class="reference external" h
  * with mask [E] and continutation [Q].
  *)
 Parameter wp_lval
-  : forall {resolve:genv}, region -&gt;
-      Expr -&gt;
-      (ptr -&gt; FreeTemps -&gt; epred) -&gt; (* result -&gt; free -&gt; post *)
-      mpred. (* pre-condition *)
+  : forall {resolve:genv}, region -&gt; Expr -&gt; M ptr.
 </pre></div>
 </div>
 </div>
@@ -193,11 +190,13 @@ The parameter is the following:</p>
    produces an explicit [Econstructor] in the AST to represent this. This seems
    necessary to have a uniform representation of the various evoluations of
    initialization between different standards, e.g. C++14, C++17, etc.
+
+   NOTE: this doesn&#39;t really fit the pattern for [M]...
  *)
 Parameter wp_init
   : forall {resolve:genv}, region -&gt;
                       type -&gt; ptr -&gt; Expr -&gt;
-                      (FreeTemp -&gt; FreeTemps -&gt; epred) -&gt; (* top-free -&gt; free -&gt; post *)
+                      (type -&gt; FreeTemps -&gt; epred) -&gt; (* type to destroy -&gt; free -&gt; post *)
                       mpred. (* pre-condition *)
 </pre></div>
 </div>
@@ -211,7 +210,7 @@ For example, suppose you are calling a constructor <code class="code highlight c
 In this case, the constructed value (of type <code class="code highlight coq docutils literal notranslate"><span class="n"><span class="pre">C</span></span></code>) would be destroyed by <code class="code highlight coq docutils literal notranslate"><span class="n"><span class="pre">FreeTemp</span></span></code>, while the temporary that <code class="code highlight coq docutils literal notranslate"><span class="mi"><span class="pre">1</span></span><span class="o"><span class="pre">+</span></span><span class="mi"><span class="pre">1</span></span></code> evaluates to would be destroyed by <code class="code highlight coq docutils literal notranslate"><span class="n"><span class="pre">FreeTemps</span></span></code>.</p>
 <p>On top of <code class="code highlight coq docutils literal notranslate"><span class="n"><span class="pre">wp_init</span></span></code>, we can <em>define</em> <code class="code highlight coq docutils literal notranslate"><span class="n"><span class="pre">wp_prval</span></span></code> by universally quantifying the pointer that is being initialized and passing it to the continuation.</p>
 <div class="highlight-text notranslate"><div class="highlight"><pre><span></span>Definition wp_prval {resolve:genv} (ρ : region)
-           (e : Expr) (Q : ptr -&gt; FreeTemp -&gt; FreeTemps -&gt; epred) : mpred :=
+           (e : Expr) (Q : ptr -&gt; type -&gt; FreeTemps -&gt; epred) : mpred :=
   ∀ p : ptr, wp_init ρ (type_of e) p e (Q p).
 </pre></div>
 </div>
@@ -223,11 +222,7 @@ In practice the C++ abstract machine will pick this pointer to be fresh and rese
 These operands are <em>always</em> primitives, since operators that accept aggregates are desugared to functions or methods.</p>
 <div class="highlight-text notranslate"><div class="highlight"><pre><span></span>(* evaluate a prvalue that &quot;computes the value of an operand of an operator&quot;
  *)
-Parameter wp_operand
-  : forall {resolve:genv}, region -&gt;
-      Expr -&gt;
-      (val -&gt; FreeTemps -&gt; epred) -&gt; (* result -&gt; free -&gt; post *)
-      mpred. (* pre-condition *)
+Parameter wp_operand : forall {resolve:genv}, region -&gt; Expr -&gt; M val.
 </pre></div>
 </div>
 <p>Unlike <code class="code highlight coq docutils literal notranslate"><span class="n"><span class="pre">wp_init</span></span></code> and <code class="code highlight coq docutils literal notranslate"><span class="n"><span class="pre">wp_prval</span></span></code>, operands return <a class="reference external" href="_static/coqdoc/bedrock.lang.cpp.semantics.value.html#val">val</a>s.
@@ -235,7 +230,7 @@ Because the value returned does not have an identity, there is nothing to destro
 <p>The relationship between <a class="reference external" href="_static/coqdoc/wp_operand.html">wp_operand</a> and <a class="reference external" href="_static/coqdoc/wp_init.html">wp_init</a> can be precisely characterized by the following two axioms.</p>
 <div class="highlight-text notranslate"><div class="highlight"><pre><span></span>Axiom wp_operand_wp_init : forall {σ : genv} ρ ty addr e Q,
     is_primitive ty -&gt;
-    wp_operand ρ e (fun v frees =&gt; _at addr (primR ty 1 v) -* Q (FreeTemps.delete ty addr) frees)
+    wp_operand ρ e (fun v frees =&gt; _at addr (primR ty 1 v) -* Q ty frees)
   |-- wp_init ρ ty addr e Q.
 
 (** This is justified in the logic but technically not sactioned by the standard
