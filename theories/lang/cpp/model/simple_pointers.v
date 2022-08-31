@@ -271,6 +271,12 @@ Module SIMPLE_PTRS_IMPL <: PTRS_INTF.
     eval_offset σ (o_field σ f) = offset_of σ (f_type f) (f_name f).
   Proof. done. Qed.
 
+  (* [eval_offset] respects the monoidal structure of [offset]s *)
+  Lemma eval_offset_dot : ∀ σ (o1 o2 : offset),
+    eval_offset σ (o1 ,, o2) =
+    add_opt (eval_offset σ o1) (eval_offset σ o2).
+  Proof. UNFOLD_dot; by unfold eval_offset, __o_dot, add_opt. Qed.
+
   Lemma offset_ptr_vaddr_raw resolve o n va va' p :
     eval_offset resolve o = Some n ->
     ptr_vaddr p = Some va ->
@@ -298,43 +304,6 @@ Module SIMPLE_PTRS_IMPL <: PTRS_INTF.
     (* have: 0 <= n by admit. *)
     (* lia. *)
   Abort.
-
-  Lemma ptr_common_prefix :
-    forall {p1 p2 : ptr} {o1 o2 : offset},
-      p1 ,, o1 = p2 ,, o2 ->
-      ∃ p oa ob,
-        p1 = p ,, oa /\ p2 = p ,, ob.
-  Proof. Admitted.
-
-  (* [eval_offset] respects the monoidal structure of [offset]s *)
-  Lemma eval_offset_dot : ∀ σ (o1 o2 : offset),
-    eval_offset σ (o1 ,, o2) =
-    add_opt (eval_offset σ o1) (eval_offset σ o2).
-  Proof. Admitted.
-
-  (* [ptr_vaddr] respects the right_monoid action of [__offset_ptr] *)
-  Lemma ptr_vaddr_dot : ∀ {σ} p (o : offset),
-    Z.of_N <$> ptr_vaddr (p ,, o) =
-    add_opt (Z.of_N <$> ptr_vaddr p) (eval_offset σ o).
-  Proof. Admitted.
-
-  (* not used. *)
-  Corollary ptr_vaddr_dot_derived {σ p o1 o2 va} :
-    same_property ptr_vaddr (p ,, o1) (p ,, o2) ->
-    ptr_vaddr p = Some va ->
-    same_property (eval_offset σ) o1 o2.
-  Proof.
-    rewrite !same_property_iff =>
-      -[va' []]
-       /(f_equal (fmap (M := option) Z.of_N)) +
-       /(f_equal (fmap (M := option) Z.of_N)) +
-       /= Hsome.
-    rewrite !ptr_vaddr_dot {}Hsome /=.
-    case: (eval_offset _ o1) (eval_offset _ o2) => [za|] [zb|] //.
-    cbn; intros Hza Hzb.
-    rewrite -{}Hzb in Hza; inversion Hza; clear Hza.
-    naive_solver eauto with f_equal lia.
-  Qed.
 
   Include PTRS_DERIVED_MIXIN.
   Include PTRS_MIXIN.

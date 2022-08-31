@@ -418,7 +418,8 @@ Module Type CPP_LOGIC
        b) In [basic.types.general#4] [1] the C++ Standard states that:
           | The object representation of an object of type T is the sequence of N unsigned
           | char objects taken up by the object of type T, where N equals sizeof(T).
-       d) (????) All C++ objects are pointer-interconvertible with their "object representation"
+       d) (NOTE: the C++ Standard lacks language regarding this point) the "object representation"
+          for an object pointed to by [ptr] [p] is /also/ accessible via [p].
        e) (a)+(b)+(d) implies that a (potentially dead) object representation for type [ty]
           exists at [ptr] [p]
        f) (a)+(c)+(e) implies that [type_ptr Tu8 (p .[ Tu8 ! i ])] holds (regardless of whether
@@ -504,7 +505,16 @@ Module Type CPP_LOGIC
     Definition ptr_congP (σ : genv) (p1 p2 : ptr) : mpred :=
       [| ptr_cong σ p1 p2 |] ** type_ptr Tu8 p1 ** type_ptr Tu8 p2.
 
-    (* All [tptsto] facts can be transported over [ptr_congP] [ptr]s.
+    (* All [tptsto Tu8] facts can be transported over [ptr_congP] [ptr]s.
+
+       High level meaning:
+       In the C++ object model, a single byte of storage can be accessed through different pointers,
+       e.g. consider [struct C { int x; int y; } c;]. The first byte of the struct can be read through
+       [static_cast<byte*>(&c)] (with pointer representation [c]) as well as [static_cast<byte*>(&c.x)]
+       (with pointer representation [c ,, _field "::C" "x"]). To put an ownership discipline on this
+       single byte, we build an equivalence relation on pointers that allows us to transport ownership
+       of the byte between these different pointers. For example, half of the ownership could live at [c]
+       and the other half of the ownership can live at [c ,, _field "::C" "x"].
 
        The standard justifies this as follows:
        1) (cf. [tptsto] comment) [tptsto ty q p v] ensures that [p] points to a memory
@@ -532,8 +542,8 @@ Module Type CPP_LOGIC
        non-raw values into their constituent raw pieces - to enable deriving
        [tptsto_ptr_congP_transport] from [tptsto_raw_ptr_congP_transport].
      *)
-    Axiom tptsto_ptr_congP_transport : forall {σ} ty q p1 p2 v,
-      ptr_congP σ p1 p2 |-- @tptsto σ ty q p1 v -* @tptsto σ ty q p2 v.
+    Axiom tptsto_ptr_congP_transport : forall {σ} q p1 p2 v,
+      ptr_congP σ p1 p2 |-- @tptsto σ Tu8 q p1 v -* @tptsto σ Tu8 q p2 v.
 
     (**
      ** Deducing pointer equalities

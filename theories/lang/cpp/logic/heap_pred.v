@@ -131,14 +131,6 @@ Section with_cpp.
     primR (resolve:=σ) ty q v ** [| has_type v (drop_qualifiers ty) |].
   Proof. apply: observe_elim. Qed.
 
-  Lemma _at_primR_ptr_congP_transport {σ} p p' ty q v :
-    ptr_congP σ p p' |-- p |-> primR ty q v -* p' |-> primR ty q v.
-  Proof.
-    rewrite primR_eq/primR_def !_at_as_Rep.
-    iIntros "cong (tptsto & $ & $)"; iRevert "tptsto".
-    by iApply tptsto_ptr_congP_transport.
-  Qed.
-
   (**
      [uninitR ty q]: the argument pointer points to an uninitialized value [Vundef] of C++ type [ty].
      Unlike [primR], does not imply [has_type].
@@ -208,13 +200,6 @@ Section with_cpp.
     iCombine "T1 T2" as "T"; by iFrame "∗%".
   Qed.
 
-  Lemma _at_uninitR_ptr_congP_transport {σ} p p' ty q :
-    ptr_congP σ p p' |-- p |-> uninitR ty q -* p' |-> uninitR ty q.
-  Proof.
-    rewrite uninitR_eq/uninitR_def !_at_as_Rep.
-    by iApply tptsto_ptr_congP_transport.
-  Qed.
-
   (** [anyR] The argument pointers points to a value of C++ type [ty] that might be
       uninitialized. *)
   Parameter anyR : ∀ {resolve} (ty : type) (q : Qp), Rep.
@@ -234,7 +219,7 @@ Section with_cpp.
   Proof. exact: Build_AsFractional. Qed.
 
   Axiom _at_anyR_ptr_congP_transport : forall {σ} p p' ty q,
-    ptr_congP σ p p' |-- p |-> anyR ty q -* p' |-> anyR ty q.
+    ptr_congP σ p p' ** type_ptr ty p' |-- p |-> anyR ty q -* p' |-> anyR ty q.
 End with_cpp.
 
 #[global] Typeclasses Opaque primR.

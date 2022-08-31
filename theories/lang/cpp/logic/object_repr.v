@@ -52,6 +52,52 @@ Section Utilities.
   Qed.
 End Utilities.
 
+Section rawsR_transport.
+  Context `{Σ : cpp_logic} {σ : genv}.
+
+  Lemma _at_rawsR_ptr_congP_transport (p1 p2 : ptr) (q : Qp) (rs : list raw_byte) :
+        ptr_congP σ p1 p2 ** ([∗list] i ∈ seqN 0 (lengthN rs), type_ptr Tu8 (p2 .[ Tu8 ! Z.of_N i ]))
+    |-- p1 |-> rawsR q rs -* p2 |-> rawsR q rs.
+  Proof.
+    generalize dependent p2; generalize dependent p1; induction rs;
+      iIntros (p1 p2) "[#congP tptrs]"; iAssert (ptr_congP σ p1 p2) as "(% & #tptr1 & #tptr2)"=> //.
+    - rewrite /rawsR !arrayR_nil !_at_sep !_at_only_provable !_at_validR.
+      iIntros "[_ %]"; iFrame "%"; iApply (type_ptr_valid with "tptr2").
+    - rewrite /rawsR !arrayR_cons !_at_sep !_at_type_ptrR !_at_offsetR; fold (rawsR q rs).
+      iIntros "[_ [raw raws]]"; iFrame "#"; iSplitL "raw".
+      + iApply (_at_rawR_ptr_congP_transport with "congP"); iFrame "∗".
+      + destruct rs.
+        * rewrite /rawsR !arrayR_nil !_at_sep !_at_only_provable !_at_validR.
+          iDestruct "raws" as "[#valid %]"; iFrame "%".
+          iApply type_ptr_valid_plus_one; iFrame "#".
+        * specialize (IHrs (p1 .[ Tu8 ! 1 ]) (p2 .[ Tu8 ! 1 ])).
+
+          iDestruct (observe (type_ptr Tu8 (p1 .[ Tu8 ! 1 ])) with "raws") as "#tptr1'". 1: {
+            rewrite /rawsR arrayR_cons; apply: _.
+          }
+
+          iDestruct (observe (type_ptr Tu8 (p2 .[ Tu8 ! 1 ])) with "tptrs") as "#tptr2'". 1: {
+            rewrite !lengthN_cons !N.add_1_r !seqN_S_start/=; apply: _.
+          }
+
+          rewrite lengthN_cons N.add_1_r seqN_S_start/=.
+          rewrite big_sepL_type_ptr_shift; auto.
+          replace (Z.of_N 1) with 1%Z by lia.
+          iDestruct "tptrs" as "#[tptr' tptrs]".
+
+          iApply (IHrs with "[tptrs]"); iFrame "#∗".
+          unfold ptr_congP, ptr_cong; iPureIntro.
+          destruct H as [p [o1 [o2 [Ho1 [Ho2 Hoffset_cong]]]]]; subst.
+          exists p, (o1 .[ Tu8 ! 1 ]), (o2 .[ Tu8 ! 1 ]).
+          rewrite ?offset_ptr_dot; intuition.
+          unfold offset_cong in *.
+          apply option.same_property_iff in Hoffset_cong as [? [Ho1 Ho2]].
+          apply option.same_property_iff.
+          rewrite !eval_offset_dot !eval_o_sub Ho1 Ho2 /=.
+          by eauto.
+  Qed.
+End rawsR_transport.
+
 (* Definitions to ease consuming and reasoning about the collection of [type_ptr Tu8]
    facts induced by [type_ptr_obj_repr].
  *)
@@ -317,6 +363,31 @@ End raw_type_ptrs.
 #[global] Arguments raw_type_ptrsR {_ Σ σ} _.
 #[global] Hint Opaque raw_type_ptrs raw_type_ptrsR : typeclass_instances.
 
+Section primR_transport.
+  Context `{Σ : cpp_logic} {σ : genv}.
+
+  Lemma _at_primR_ptr_congP_transport p p' ty q v :
+    ptr_congP σ p p' ** type_ptr ty p' |-- p |-> primR ty q v -* p' |-> primR ty q v.
+  Proof.
+    iIntros "#[cong tptr'] prim".
+    iDestruct (type_ptr_size with "tptr'") as "%Hsz"; destruct Hsz as [sz Hsz].
+    iDestruct (type_ptr_raw_type_ptrs with "tptr'") as "raw_tptrs"; eauto.
+    rewrite raw_type_ptrs_eq/raw_type_ptrs_def.
+    iDestruct "raw_tptrs" as (sz') "[%Hsz' tptrs]".
+    rewrite Hsz' in Hsz; inversion Hsz; subst.
+    rewrite primR_to_rawsR !_at_exists.
+    iDestruct "prim" as (rs) "H"; iExists rs.
+    rewrite !_at_sep !_at_only_provable !_at_type_ptrR.
+    iDestruct "H" as "(raws & %raw_bytes & _)"; iFrame "#%".
+    pose proof (raw_bytes_of_val_sizeof raw_bytes) as Hlen.
+    rewrite Hlen in Hsz'; inversion Hsz'; subst.
+    rewrite lengthN_fold.
+    iRevert "raws".
+    iApply _at_rawsR_ptr_congP_transport.
+    by iFrame "#".
+  Qed.
+End primR_transport.
+
 (* [Rep]s which can be encoded as [raw] bytes enjoy certain transport and cancellation properties *)
 Section with_rawable.
   Context `{Σ : cpp_logic} {σ : genv}.
@@ -413,7 +484,10 @@ Section with_rawable.
     assert (rs <> []) as Hrs_nonnil
         by (intro CONTRA; subst; specialize (Hencode_sz x [] Henc);
             apply Hnonzero; rewrite -Hencode_sz; by apply lengthN_nil).
-    iDestruct (raw_type_ptrs_arrayR_Tu8_emp with "raw_tptrs'") as "#arr_tptrs'"; eauto.
+    rewrite raw_type_ptrs_eq/raw_type_ptrs_def.
+    iDestruct "raw_tptrs'" as (sz') "[%Hsz' tptrs']".
+    rewrite Hsz in Hsz'; inversion Hsz'; subst.
+    assert (sz' = lengthN rs) as -> by (by erewrite <- Hencode_sz).
     iDestruct (_at_rawsR_ptr_congP_transport with "[$] [$]") as "raws'".
     iCombine "raws' tptr'" as "H".
     iDestruct (HR_decode with "H") as "H".

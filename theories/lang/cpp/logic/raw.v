@@ -48,43 +48,6 @@ Section with_Σ.
 
   Definition rawsR (q : Qp) (rs : list raw_byte) : Rep := arrayR Tuchar (rawR q) rs.
 
-  Lemma _at_rawsR_ptr_congP_transport (p1 p2 : ptr) (q : Qp) (rs : list raw_byte) :
-    ptr_congP σ p1 p2 ** p2 |-> arrayR Tu8 (const emp) rs |-- p1 |-> rawsR q rs -* p2 |-> rawsR q rs.
-  Proof.
-    generalize dependent p2; generalize dependent p1; induction rs;
-      iIntros (p1 p2) "[#congP tptrs]"; iAssert (ptr_congP σ p1 p2) as "(% & #tptr1 & #tptr2)"=> //.
-    - rewrite /rawsR !arrayR_nil !_at_sep !_at_only_provable !_at_validR.
-      iIntros "[_ %]"; iFrame "%"; iApply (type_ptr_valid with "tptr2").
-    - rewrite /rawsR !arrayR_cons !_at_sep !_at_type_ptrR !_at_offsetR; fold (rawsR q rs).
-      iIntros "[_ [raw raws]]"; iFrame "#"; iSplitL "raw".
-      + iApply (_at_rawR_ptr_congP_transport with "congP"); iFrame "∗".
-      + destruct rs.
-        * rewrite /rawsR !arrayR_nil !_at_sep !_at_only_provable !_at_validR.
-          iDestruct "raws" as "[#valid %]"; iFrame "%".
-          iApply type_ptr_valid_plus_one; iFrame "#".
-        * specialize (IHrs (p1 .[ Tu8 ! 1 ]) (p2 .[ Tu8 ! 1 ])).
-
-          iDestruct (observe (type_ptr Tu8 (p1 .[ Tu8 ! 1 ])) with "raws") as "#tptr1'". 1: {
-            rewrite /rawsR arrayR_cons; apply: _.
-          }
-
-          iDestruct "tptrs" as "(_ & _ & tptrs)".
-          iDestruct (observe (type_ptr Tu8 (p2 .[ Tu8 ! 1 ])) with "tptrs") as "#tptr2'". 1: {
-            rewrite /rawsR arrayR_cons; apply: _.
-          }
-
-          iApply (IHrs with "[tptrs]"); iFrame "∗".
-          unfold ptr_congP, ptr_cong; iFrame "#"; iPureIntro.
-          destruct H as [p [o1 [o2 [Ho1 [Ho2 Hoffset_cong]]]]]; subst.
-          exists p, (o1 .[ Tu8 ! 1 ]), (o2 .[ Tu8 ! 1 ]).
-          rewrite ?offset_ptr_dot; intuition.
-          unfold offset_cong in *.
-          apply option.same_property_iff in Hoffset_cong as [? [Ho1 Ho2]].
-          apply option.same_property_iff.
-          rewrite !eval_offset_dot !eval_o_sub Ho1 Ho2 /=.
-          by eauto.
-  Qed.
-
   Section Theory.
     Section primR_Axiom.
       (* TODO: improve our axiomatic support for raw values - including "shattering"
