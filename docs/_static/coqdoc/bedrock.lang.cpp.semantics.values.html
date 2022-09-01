@@ -68,11 +68,15 @@ The "operational" style definitions about C++ values.
 <span class="id" title="keyword">Implicit</span> <span class="id" title="keyword">Types</span> (σ : <a class="idref" href="bedrock.lang.cpp.semantics.genv.html#genv"><span class="id" title="class">genv</span></a>).<br/>
 
 <br/>
+<span class="comment">(*&nbsp;TODO:&nbsp;improve&nbsp;our&nbsp;axiomatic&nbsp;support&nbsp;for&nbsp;raw&nbsp;values&nbsp;-&nbsp;including&nbsp;"shattering"<br/>
+&nbsp;&nbsp;&nbsp;non-raw&nbsp;values&nbsp;into&nbsp;their&nbsp;constituent&nbsp;raw&nbsp;pieces&nbsp;-&nbsp;to&nbsp;enable&nbsp;deriving<br/>
+&nbsp;&nbsp;&nbsp;<span class="inlinecode"><span class="id" title="var">tptsto_ptr_congP_transport</span></span>&nbsp;from&nbsp;<span class="inlinecode"><span class="id" title="var">tptsto_raw_ptr_congP_transport</span></span>.<br/>
+&nbsp;*)</span><br/>
 <span class="id" title="keyword">Module</span> <span class="id" title="keyword">Type</span> <a id="RAW_BYTES" class="idref" href="#RAW_BYTES"><span class="id" title="module">RAW_BYTES</span></a>.<br/>
 </div>
 
 <div class="doc">
-<a id="lab82"></a><h1 class="section">Raw bytes</h1>
+<a id="lab84"></a><h1 class="section">Raw bytes</h1>
 
       Raw bytes represent the low-level view of data.
       <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.semantics.values.html#RAW_BYTES.raw_byte"><span class="id" title="axiom">raw_byte</span></a></span> abstracts over the internal structure of this low-level view of data.
@@ -111,7 +115,7 @@ The "operational" style definitions about C++ values.
 </div>
 
 <div class="doc">
-<a id="lab83"></a><h1 class="section">Values</h1>
+<a id="lab85"></a><h1 class="section">Values</h1>
 
       Primitive abstract C++ runtime values come in two flavors.
 <ul class="doclist">
@@ -372,7 +376,7 @@ we use <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.semantic
 <div class="doc">
 typedness of values
       note that only primitives fit into this, there is no <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.semantics.values.html#VAL_MIXIN.val"><span class="id" title="inductive">val</span></a></span> representation
-      of aggregates, except through <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.semantics.values.html#VAL_MIXIN.Vptr"><span class="id" title="constructor">Vptr</span></a></span> <span class="inlinecode"><a class="idref" href="bedrock.noimport.doc.cpp.logic.html#with_Sigma.p"><span class="id" title="variable">p</span></a></span> with <span class="inlinecode"><a class="idref" href="bedrock.noimport.doc.cpp.logic.html#with_Sigma.p"><span class="id" title="variable">p</span></a></span> pointing to the contents.
+      of aggregates, except through <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.semantics.values.html#VAL_MIXIN.Vptr"><span class="id" title="constructor">Vptr</span></a></span> <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.logic.pred_paradoxes.html#with_cpp.type_ptr_object_representation_full_is_unsound.p"><span class="id" title="variable">p</span></a></span> with <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.logic.pred_paradoxes.html#with_cpp.type_ptr_object_representation_full_is_unsound.p"><span class="id" title="variable">p</span></a></span> pointing to the contents.
   
 <div class="paragraph"> </div>
 
@@ -396,17 +400,17 @@ typedness of values
     <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.semantics.values.html#HAS_TYPE.has_int_type'"><span class="id" title="axiom">has_int_type'</span></a></span>).
 
 </li>
-<li> if <span class="inlinecode"><span class="id" title="var">ty</span></span> is a type of pointers/aggregates, we only ensure that <span class="inlinecode"><span class="id" title="var">v</span></span> <span class="inlinecode">=</span> <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.semantics.values.html#VAL_MIXIN.Vptr"><span class="id" title="constructor">Vptr</span></a></span> <span class="inlinecode"><a class="idref" href="bedrock.noimport.doc.cpp.logic.html#with_Sigma.p"><span class="id" title="variable">p</span></a></span>.
+<li> if <span class="inlinecode"><span class="id" title="var">ty</span></span> is a type of pointers/aggregates, we only ensure that <span class="inlinecode"><span class="id" title="var">v</span></span> <span class="inlinecode">=</span> <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.semantics.values.html#VAL_MIXIN.Vptr"><span class="id" title="constructor">Vptr</span></a></span> <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.logic.pred_paradoxes.html#with_cpp.type_ptr_object_representation_full_is_unsound.p"><span class="id" title="variable">p</span></a></span>.
     + NOTE: We require that - for a type <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.syntax.types.html#Tnamed"><span class="id" title="constructor">Tnamed</span></a></span> <span class="inlinecode"><span class="id" title="var">nm</span></span> - the name resolves to some
       <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.syntax.translation_unit.html#GlobDecl"><span class="id" title="inductive">GlobDecl</span></a></span> other than <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.syntax.translation_unit.html#Gtype"><span class="id" title="constructor">Gtype</span></a></span> in a given <span class="inlinecode">σ</span> <span class="inlinecode">:</span> <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.semantics.genv.html#genv"><span class="id" title="record">genv</span></a></span>.
 
 </li>
-<li> if <span class="inlinecode"><span class="id" title="var">ty</span></span> is a type of references, we ensure that <span class="inlinecode"><span class="id" title="var">v</span></span> <span class="inlinecode">=</span> <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.semantics.values.html#VAL_MIXIN.Vref"><span class="id" title="abbreviation">Vref</span></a></span> <span class="inlinecode"><a class="idref" href="bedrock.noimport.doc.cpp.logic.html#with_Sigma.p"><span class="id" title="variable">p</span></a></span> and
-    that <span class="inlinecode"><a class="idref" href="bedrock.noimport.doc.cpp.logic.html#with_Sigma.p"><span class="id" title="variable">p</span></a></span> <span class="inlinecode">&lt;&gt;</span> <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.model.inductive_pointers.html#PTRS_IMPL.nullptr"><span class="id" title="definition">nullptr</span></a></span>; <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.semantics.values.html#VAL_MIXIN.Vref"><span class="id" title="abbreviation">Vref</span></a></span> is an alias for <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.semantics.values.html#VAL_MIXIN.Vptr"><span class="id" title="constructor">Vptr</span></a></span>
+<li> if <span class="inlinecode"><span class="id" title="var">ty</span></span> is a type of references, we ensure that <span class="inlinecode"><span class="id" title="var">v</span></span> <span class="inlinecode">=</span> <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.semantics.values.html#VAL_MIXIN.Vref"><span class="id" title="abbreviation">Vref</span></a></span> <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.logic.pred_paradoxes.html#with_cpp.type_ptr_object_representation_full_is_unsound.p"><span class="id" title="variable">p</span></a></span> and
+    that <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.logic.pred_paradoxes.html#with_cpp.type_ptr_object_representation_full_is_unsound.p"><span class="id" title="variable">p</span></a></span> <span class="inlinecode">&lt;&gt;</span> <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.model.inductive_pointers.html#PTRS_IMPL.nullptr"><span class="id" title="definition">nullptr</span></a></span>; <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.semantics.values.html#VAL_MIXIN.Vref"><span class="id" title="abbreviation">Vref</span></a></span> is an alias for <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.semantics.values.html#VAL_MIXIN.Vptr"><span class="id" title="constructor">Vptr</span></a></span>
 
 </li>
-<li> if <span class="inlinecode"><span class="id" title="var">ty</span></span> is a type of arrays, we ensure that <span class="inlinecode"><span class="id" title="var">v</span></span> <span class="inlinecode">=</span> <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.semantics.values.html#VAL_MIXIN.Vptr"><span class="id" title="constructor">Vptr</span></a></span> <span class="inlinecode"><a class="idref" href="bedrock.noimport.doc.cpp.logic.html#with_Sigma.p"><span class="id" title="variable">p</span></a></span> and
-    that <span class="inlinecode"><a class="idref" href="bedrock.noimport.doc.cpp.logic.html#with_Sigma.p"><span class="id" title="variable">p</span></a></span> <span class="inlinecode">&lt;&gt;</span> <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.model.inductive_pointers.html#PTRS_IMPL.nullptr"><span class="id" title="definition">nullptr</span></a></span>.
+<li> if <span class="inlinecode"><span class="id" title="var">ty</span></span> is a type of arrays, we ensure that <span class="inlinecode"><span class="id" title="var">v</span></span> <span class="inlinecode">=</span> <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.semantics.values.html#VAL_MIXIN.Vptr"><span class="id" title="constructor">Vptr</span></a></span> <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.logic.pred_paradoxes.html#with_cpp.type_ptr_object_representation_full_is_unsound.p"><span class="id" title="variable">p</span></a></span> and
+    that <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.logic.pred_paradoxes.html#with_cpp.type_ptr_object_representation_full_is_unsound.p"><span class="id" title="variable">p</span></a></span> <span class="inlinecode">&lt;&gt;</span> <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.model.inductive_pointers.html#PTRS_IMPL.nullptr"><span class="id" title="definition">nullptr</span></a></span>.
     
 
 </li>

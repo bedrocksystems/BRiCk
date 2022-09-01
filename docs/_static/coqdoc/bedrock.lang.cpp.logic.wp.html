@@ -46,7 +46,7 @@
 </div>
 
 <div class="doc">
-<a id="lab94"></a><h1 class="section">Definitions for the semantics</h1>
+<a id="lab96"></a><h1 class="section">Definitions for the semantics</h1>
 
  
 </div>
@@ -286,7 +286,7 @@
 </div>
 
 <div class="doc">
-<a id="lab95"></a><h1 class="section">Regions</h1>
+<a id="lab97"></a><h1 class="section">Regions</h1>
 
     To model the stack frame in separation logic, we use a notion of regions
     that are threaded through the semantics.
@@ -355,7 +355,7 @@
 
 <div class="paragraph"> </div>
 
-    NOTE because <span class="inlinecode"><a class="idref" href="bedrock.noimport.doc.cpp.logic.html#with_Sigma.this"><span class="id" title="variable">this</span></a></span> is <span class="inlinecode"><span class="id" title="var">const</span></span>, we actually store the value directly
+    NOTE because <span class="inlinecode"><a class="idref" href="bedrock.noimport.doc.cpp.logic.html#with_Sigma.this"><span class="id" title="variable">this</span></a></span> is <span class="inlinecode"><a class="idref" href="http://coq.inria.fr/distrib/V8.15.1/stdlib//Coq.Program.Basics.html#const"><span class="id" title="definition">const</span></a></span>, we actually store the value directly
     rather than indirectly representing it in memory.
  
 </div>
@@ -419,7 +419,7 @@
 </div>
 
 <div class="doc">
-<a id="lab96"></a><h3 class="section">Indeterminately sequenced computations</h3>
+<a id="lab98"></a><h3 class="section">Indeterminately sequenced computations</h3>
 
 </div>
 <div class="code">
@@ -563,7 +563,7 @@
 </div>
 
 <div class="doc">
-<a id="lab97"></a><h3 class="section">sequencing of monadic compuations</h3>
+<a id="lab99"></a><h3 class="section">sequencing of monadic compuations</h3>
 
 </div>
 <div class="code">
@@ -574,7 +574,7 @@
 </div>
 
 <div class="doc">
-<a id="lab98"></a><h3 class="section">interleaving of monadic values</h3>
+<a id="lab100"></a><h3 class="section">interleaving of monadic values</h3>
 
 
 <div class="paragraph"> </div>
@@ -706,7 +706,7 @@ lvalues
 </div>
 
 <div class="doc">
-<a id="lab99"></a><h1 class="section">prvalue</h1>
+<a id="lab101"></a><h1 class="section">prvalue</h1>
 
 </div>
 <div class="code">
@@ -882,7 +882,7 @@ This is justified in the logic but technically not sactioned by the standard
     <br/>
 <span class="inlinecode">&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Axiom</span> <span class="id" title="var">wp_init_wp_operand</span> : <span class="id" title="keyword">forall</span> {σ : <a class="idref" href="bedrock.lang.cpp.semantics.genv.html#genv"><span class="id" title="record">genv</span></a>} <a class="idref" href="bedrock.lang.cpp.logic.atomics_derived.html#cmpxchg_derived.M"><span class="id" title="variable">M</span></a> ρ <a class="idref" href="bedrock.lang.cpp.model.simple_pred.html#SimpleCPP_BASE.addr"><span class="id" title="definition">addr</span></a> <span class="id" title="var">e</span> <span class="id" title="var">Q</span> (<span class="id" title="var">ty</span> := <a class="idref" href="bedrock.lang.cpp.syntax.typing.html#type_of"><span class="id" title="definition">type_of</span></a> <span class="id" title="var">e</span>),<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="bedrock.lang.cpp.syntax.typing.html#is_primitive"><span class="id" title="definition">is_primitive</span></a> <span class="id" title="var">ty</span> -&gt;<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="bedrock.lang.cpp.logic.atomics.html#wp_prval"><span class="id" title="abbreviation">wp_prval</span></a> <a class="idref" href="bedrock.lang.cpp.logic.atomics_derived.html#cmpxchg_derived.M"><span class="id" title="variable">M</span></a> ρ <span class="id" title="var">e</span> (<span class="id" title="keyword">fun</span> <a class="idref" href="bedrock.noimport.doc.cpp.logic.html#with_Sigma.p"><span class="id" title="variable">p</span></a> <span class="id" title="var">free</span> <span class="id" title="var">frees</span> =&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="bedrock.lang.cpp.logic.atomics.html#wp_prval"><span class="id" title="abbreviation">wp_prval</span></a> <a class="idref" href="bedrock.lang.cpp.logic.atomics_derived.html#cmpxchg_derived.M"><span class="id" title="variable">M</span></a> ρ <span class="id" title="var">e</span> (<span class="id" title="keyword">fun</span> <a class="idref" href="bedrock.lang.cpp.logic.pred_paradoxes.html#with_cpp.type_ptr_object_representation_full_is_unsound.p"><span class="id" title="variable">p</span></a> <span class="id" title="var">free</span> <span class="id" title="var">frees</span> =&gt;<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[| <span class="id" title="var">FreeTemps.t_eq</span> <span class="id" title="var">free</span> (<span class="id" title="var">FreeTemps.delete</span> <span class="id" title="var">ty</span> <a class="idref" href="bedrock.lang.cpp.model.simple_pred.html#SimpleCPP_BASE.addr"><span class="id" title="definition">addr</span></a>) |] **<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;∃ <span class="id" title="var">v</span>, <a class="idref" href="bedrock.lang.cpp.heap_notations.html#_at"><span class="id" title="abbreviation">_at</span></a> <a class="idref" href="bedrock.lang.cpp.model.simple_pred.html#SimpleCPP_BASE.addr"><span class="id" title="definition">addr</span></a> (<a class="idref" href="bedrock.lang.cpp.logic.heap_pred.html#primR"><span class="id" title="definition">primR</span></a> <span class="id" title="var">ty</span> 1 <span class="id" title="var">v</span>) ** <span class="id" title="var">Q</span> <span class="id" title="var">v</span> <span class="id" title="var">frees</span>)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;|-- <a class="idref" href="bedrock.lang.cpp.logic.atomics.html#wp_operand"><span class="id" title="abbreviation">wp_operand</span></a> <a class="idref" href="bedrock.lang.cpp.logic.atomics_derived.html#cmpxchg_derived.M"><span class="id" title="variable">M</span></a> ρ <span class="id" title="var">e</span> <span class="id" title="var">Q</span>.<br/>
@@ -945,7 +945,7 @@ This is justified in the logic but technically not sactioned by the standard
 </div>
 
 <div class="doc">
-<a id="lab100"></a><h2 class="section">boolean operands</h2>
+<a id="lab102"></a><h2 class="section">boolean operands</h2>
 
 <div class="paragraph"> </div>
 
@@ -965,7 +965,7 @@ This is justified in the logic but technically not sactioned by the standard
 </div>
 
 <div class="doc">
-<a id="lab101"></a><h1 class="section">xvalues</h1>
+<a id="lab103"></a><h1 class="section">xvalues</h1>
 
 </div>
 <div class="code">
@@ -1147,7 +1147,7 @@ Discarded values.
 </div>
 
 <div class="doc">
-<a id="lab102"></a><h1 class="section">Statements</h1>
+<a id="lab104"></a><h1 class="section">Statements</h1>
 
 </div>
 <div class="code">

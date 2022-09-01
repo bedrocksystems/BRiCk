@@ -46,9 +46,9 @@
 </div>
 
 <div class="doc">
-<a id="lab119"></a><h1 class="section">Semantics of <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.logic.new_delete.html#Expr__newdelete.with_cpp_logic.with_resolve.new"><span class="id" title="section">new</span></a></span> and <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.logic.new_delete.html#Expr__newdelete.with_cpp_logic.with_resolve.delete"><span class="id" title="section">delete</span></a></span> expressions</h1>
+<a id="lab121"></a><h1 class="section">Semantics of <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.logic.new_delete.html#Expr__newdelete.with_cpp_logic.with_resolve.new"><span class="id" title="section">new</span></a></span> and <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.logic.new_delete.html#Expr__newdelete.with_cpp_logic.with_resolve.delete"><span class="id" title="section">delete</span></a></span> expressions</h1>
 
-<a id="lab120"></a><h1 class="section">(expressed in weakest pre-condition style)</h1>
+<a id="lab122"></a><h1 class="section">(expressed in weakest pre-condition style)</h1>
 
  
 </div>
@@ -73,19 +73,19 @@
 </div>
 
 <div class="doc">
-<a id="lab121"></a><h1 class="section">Weakest pre-condition for <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.logic.new_delete.html#Expr__newdelete.with_cpp_logic.with_resolve.new"><span class="id" title="section">new</span></a></span> and <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.logic.new_delete.html#Expr__newdelete.with_cpp_logic.with_resolve.delete"><span class="id" title="section">delete</span></a></span> expressions</h1>
+<a id="lab123"></a><h1 class="section">Weakest pre-condition for <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.logic.new_delete.html#Expr__newdelete.with_cpp_logic.with_resolve.new"><span class="id" title="section">new</span></a></span> and <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.logic.new_delete.html#Expr__newdelete.with_cpp_logic.with_resolve.delete"><span class="id" title="section">delete</span></a></span> expressions</h1>
 
    *
-<a id="lab122"></a><h1 class="section">NOTE It is important that these rules are sound, but less important that</h1>
+<a id="lab124"></a><h1 class="section">NOTE It is important that these rules are sound, but less important that</h1>
 
-<a id="lab123"></a><h1 class="section">they are complete. When in doubt, we err on the side of caution and under-specify</h1>
+<a id="lab125"></a><h1 class="section">they are complete. When in doubt, we err on the side of caution and under-specify</h1>
 
-<a id="lab124"></a><h1 class="section">the behavior of various constructs.</h1>
+<a id="lab126"></a><h1 class="section">the behavior of various constructs.</h1>
 
    *
-<a id="lab125"></a><h1 class="section">If you run into code that requires addditional semantic specification, please file</h1>
+<a id="lab127"></a><h1 class="section">If you run into code that requires addditional semantic specification, please file</h1>
 
-<a id="lab126"></a><h1 class="section">an issue.</h1>
+<a id="lab128"></a><h1 class="section">an issue.</h1>
 
    
 <div class="paragraph"> </div>
@@ -179,7 +179,7 @@
 
 <ul class="doclist">
 <li> This axiom assumes that <span class="inlinecode"><span class="id" title="var">storage_ptr</span></span> points to a character array that will
-              <i>provide storage</i> for a new <i>complete object</i> <span class="inlinecode"><span class="id" title="var">o</span></span>
+              <i>provide storage</i> for a new <i>complete object</i> <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.logic.pred_paradoxes.html#with_cpp.type_ptr_object_representation_full_is_unsound.o"><span class="id" title="variable">o</span></a></span>
               (http://eel.is/c++draft/intro.objectdef:provides_storage).
 
               In that case, the C++ abstract machine can choose to make [obj_ptr
@@ -191,9 +191,9 @@
             - The created object might be a subobject of an existing object
               (pointed to by some pointer [p])
               (https://eel.is/c++draft/basic.memobjintro.object-2).
-              It is unclear whether that requires <span class="inlinecode"><span class="id" title="var">storage_ptr</span></span> <span class="inlinecode">=</span> <span class="inlinecode"><a class="idref" href="bedrock.noimport.doc.cpp.logic.html#with_Sigma.p"><span class="id" title="variable">p</span></a></span> or just
-              <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.model.simple_pred.html#SimpleCPP.provides_storage"><span class="id" title="definition">provides_storage</span></a></span> <span class="inlinecode"><span class="id" title="var">storage_ptr</span></span> <span class="inlinecode"><a class="idref" href="bedrock.noimport.doc.cpp.logic.html#with_Sigma.p"><span class="id" title="variable">p</span></a></span>.
-              In that case, we plan to allow proving that <span class="inlinecode"><span class="id" title="var">obj_ptr</span></span> = <span class="inlinecode"><a class="idref" href="bedrock.noimport.doc.cpp.logic.html#with_Sigma.p"><span class="id" title="variable">p</span></a></span> <span class="inlinecode">.,</span> <span class="inlinecode"><span class="id" title="var">o</span></span>; we
+              It is unclear whether that requires <span class="inlinecode"><span class="id" title="var">storage_ptr</span></span> <span class="inlinecode">=</span> <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.logic.pred_paradoxes.html#with_cpp.type_ptr_object_representation_full_is_unsound.p"><span class="id" title="variable">p</span></a></span> or just
+              <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.model.simple_pred.html#SimpleCPP.provides_storage"><span class="id" title="definition">provides_storage</span></a></span> <span class="inlinecode"><span class="id" title="var">storage_ptr</span></span> <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.logic.pred_paradoxes.html#with_cpp.type_ptr_object_representation_full_is_unsound.p"><span class="id" title="variable">p</span></a></span>.
+              In that case, we plan to allow proving that <span class="inlinecode"><span class="id" title="var">obj_ptr</span></span> = <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.logic.pred_paradoxes.html#with_cpp.type_ptr_object_representation_full_is_unsound.p"><span class="id" title="variable">p</span></a></span> <span class="inlinecode">.,</span> <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.logic.pred_paradoxes.html#with_cpp.type_ptr_object_representation_full_is_unsound.o"><span class="id" title="variable">o</span></a></span>; we
               offer no such support at present; we account for this case by not specifying that
               <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.model.inductive_pointers.html#PTRS_IMPL.ptr_alloc_id"><span class="id" title="definition">ptr_alloc_id</span></a></span> <span class="inlinecode"><span class="id" title="var">obj_ptr</span></span> <span class="inlinecode">&lt;&gt;</span> <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.model.inductive_pointers.html#PTRS_IMPL.ptr_alloc_id"><span class="id" title="definition">ptr_alloc_id</span></a></span> <span class="inlinecode"><span class="id" title="var">storage_ptr</span></span>.
 

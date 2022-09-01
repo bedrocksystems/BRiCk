@@ -46,9 +46,9 @@
 </div>
 
 <div class="doc">
-<a id="lab105"></a><h1 class="section">Semantics of expressions</h1>
+<a id="lab107"></a><h1 class="section">Semantics of expressions</h1>
 
-<a id="lab106"></a><h1 class="section">(expressed in weakest pre-condition style)</h1>
+<a id="lab108"></a><h1 class="section">(expressed in weakest pre-condition style)</h1>
 
  
 </div>
@@ -81,7 +81,7 @@
 </div>
 
 <div class="doc">
-<a id="lab107"></a><h1 class="section">Weakest pre-condition for expressions</h1>
+<a id="lab109"></a><h1 class="section">Weakest pre-condition for expressions</h1>
 
 
 <div class="paragraph"> </div>
@@ -130,7 +130,7 @@
 </div>
 
 <div class="doc">
-<a id="lab108"></a><h1 class="section">References</h1>
+<a id="lab110"></a><h1 class="section">References</h1>
 
 
 <div class="paragraph"> </div>
@@ -183,7 +183,7 @@
 </div>
 
 <div class="doc">
-<a id="lab109"></a><h1 class="section">String Literals</h1>
+<a id="lab111"></a><h1 class="section">String Literals</h1>
 
 
 <div class="paragraph"> </div>
@@ -336,7 +336,7 @@
 </div>
 
 <div class="doc">
-<a id="lab110"></a><h1 class="section">Unary Operators</h1>
+<a id="lab112"></a><h1 class="section">Unary Operators</h1>
 
      
 <div class="paragraph"> </div>
@@ -494,7 +494,7 @@ the `&amp;` operator
 </div>
 
 <div class="doc">
-<a id="lab111"></a><h1 class="section">Binary Operators</h1>
+<a id="lab113"></a><h1 class="section">Binary Operators</h1>
 
 </div>
 <div class="code">
@@ -598,7 +598,7 @@ short-circuting operators
 </div>
 
 <div class="doc">
-<a id="lab112"></a><h1 class="section">Casts</h1>
+<a id="lab114"></a><h1 class="section">Casts</h1>
 
         Casts apply exclusively to primitive types, all other casts in C++
         are represented as overloaded functions.
@@ -909,7 +909,7 @@ You can cast anything to void, but an expression of type
 </div>
 
 <div class="doc">
-<a id="lab113"></a><h1 class="section"><span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.syntax.expr.html#Cderived2base"><span class="id" title="constructor">Cderived2base</span></a></span></h1>
+<a id="lab115"></a><h1 class="section"><span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.syntax.expr.html#Cderived2base"><span class="id" title="constructor">Cderived2base</span></a></span></h1>
 
         casts from a derived class to a base class. Casting is only permitted
         on pointers and references
@@ -1005,11 +1005,11 @@ You can cast anything to void, but an expression of type
 
 <div class="doc">
 the ternary operator <span class="inlinecode"><span class="id" title="var">_</span></span> <span class="inlinecode">?</span> <span class="inlinecode"><span class="id" title="var">_</span></span> <span class="inlinecode">:</span> <span class="inlinecode"><span class="id" title="var">_</span></span> has the value category
-<a id="lab114"></a><h1 class="section">of the "then" and "else" expressions (which must be the same).</h1>
+<a id="lab116"></a><h1 class="section">of the "then" and "else" expressions (which must be the same).</h1>
 
-<a id="lab115"></a><h1 class="section">We express this with 4 rules, one for each of <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.logic.expr.html#Expr.wp_lval"><span class="id" title="abbreviation">wp_lval</span></a></span>,</h1>
+<a id="lab117"></a><h1 class="section">We express this with 4 rules, one for each of <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.logic.expr.html#Expr.wp_lval"><span class="id" title="abbreviation">wp_lval</span></a></span>,</h1>
 
-<a id="lab116"></a><h1 class="section"><span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.logic.atomics.html#wp_operand"><span class="id" title="abbreviation">wp_operand</span></a></span>, <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.logic.expr.html#Expr.wp_xval"><span class="id" title="abbreviation">wp_xval</span></a></span>, and <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.logic.new_delete.html#Expr__newdelete.wp_init"><span class="id" title="abbreviation">wp_init</span></a></span>.</h1>
+<a id="lab118"></a><h1 class="section"><span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.logic.atomics.html#wp_operand"><span class="id" title="abbreviation">wp_operand</span></a></span>, <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.logic.expr.html#Expr.wp_xval"><span class="id" title="abbreviation">wp_xval</span></a></span>, and <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.logic.new_delete.html#Expr__newdelete.wp_init"><span class="id" title="abbreviation">wp_init</span></a></span>.</h1>
 
      
 </div>
@@ -1085,7 +1085,7 @@ Gets the type used in an expression like `sizeof` and `alignof`
 </div>
 
 <div class="doc">
-<a id="lab117"></a><h1 class="section">Function calls</h1>
+<a id="lab119"></a><h1 class="section">Function calls</h1>
 
 
 <div class="paragraph"> </div>
@@ -1112,8 +1112,8 @@ Gets the type used in an expression like `sizeof` and `alignof`
 
         NOTE that the AST *must* insert implicit casts for casting
              qualifiers so that the types match up exactly up to top-level
-             qualifiers, e.g. <span class="inlinecode"><span class="id" title="var">foo</span>(<span class="id" title="var">const</span></span> <span class="inlinecode"><span class="id" title="var">int</span>)</span> will be passed a value of
-             type <span class="inlinecode"><span class="id" title="var">int</span></span> (not <span class="inlinecode"><span class="id" title="var">const</span></span> <span class="inlinecode"><span class="id" title="var">int</span></span>). the issue with type-level
+             qualifiers, e.g. <span class="inlinecode"><span class="id" title="var">foo</span>(<a class="idref" href="http://coq.inria.fr/distrib/V8.15.1/stdlib//Coq.Program.Basics.html#const"><span class="id" title="definition">const</span></a></span> <span class="inlinecode"><span class="id" title="var">int</span>)</span> will be passed a value of
+             type <span class="inlinecode"><span class="id" title="var">int</span></span> (not <span class="inlinecode"><a class="idref" href="http://coq.inria.fr/distrib/V8.15.1/stdlib//Coq.Program.Basics.html#const"><span class="id" title="definition">const</span></a></span> <span class="inlinecode"><span class="id" title="var">int</span></span>). the issue with type-level
              qualifiers is addressed through the use of <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.syntax.types.html#normalize_type"><span class="id" title="definition">normalize_type</span></a></span>
              below.
      
@@ -1176,7 +1176,7 @@ Gets the type used in an expression like `sizeof` and `alignof`
 </div>
 
 <div class="doc">
-<a id="lab118"></a><h1 class="section">Member calls</h1>
+<a id="lab120"></a><h1 class="section">Member calls</h1>
 
 </div>
 <div class="code">
@@ -1198,7 +1198,7 @@ Gets the type used in an expression like `sizeof` and `alignof`
 
         NOTE that the AST *must* insert implicit casts for casting qualifiers so
              that the types match up exactly up to top-level qualifiers, e.g.
-             <span class="inlinecode"><span class="id" title="var">foo</span>(<span class="id" title="var">const</span></span> <span class="inlinecode"><span class="id" title="var">int</span>)</span> will be passed a value of type <span class="inlinecode"><span class="id" title="var">int</span></span> (not <span class="inlinecode"><span class="id" title="var">const</span></span>
+             <span class="inlinecode"><span class="id" title="var">foo</span>(<a class="idref" href="http://coq.inria.fr/distrib/V8.15.1/stdlib//Coq.Program.Basics.html#const"><span class="id" title="definition">const</span></a></span> <span class="inlinecode"><span class="id" title="var">int</span>)</span> will be passed a value of type <span class="inlinecode"><span class="id" title="var">int</span></span> (not <span class="inlinecode"><a class="idref" href="http://coq.inria.fr/distrib/V8.15.1/stdlib//Coq.Program.Basics.html#const"><span class="id" title="definition">const</span></a></span>
              <span class="inlinecode"><span class="id" title="var">int</span></span>). the issue with type-level qualifiers is addressed through
              the use of <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.syntax.types.html#normalize_type"><span class="id" title="definition">normalize_type</span></a></span> below. 
 </div>
@@ -1267,7 +1267,7 @@ virtual functions
 <div class="paragraph"> </div>
 
         <span class="inlinecode"><span class="id" title="var">tq</span></span> is passed on to <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.logic.expr.html#Expr.wp_mcall"><span class="id" title="definition">wp_mcall</span></a></span> because that contains the information whether or not
-        the called method is a <span class="inlinecode"><span class="id" title="var">const</span></span> method. This matches the construction of <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.specs.functions.html#with_cpp.SMethod"><span class="id" title="section">SMethod</span></a></span>.
+        the called method is a <span class="inlinecode"><a class="idref" href="http://coq.inria.fr/distrib/V8.15.1/stdlib//Coq.Program.Basics.html#const"><span class="id" title="definition">const</span></a></span> method. This matches the construction of <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.specs.functions.html#with_cpp.SMethod"><span class="id" title="section">SMethod</span></a></span>.
      
 </div>
 <div class="code">
@@ -1544,7 +1544,7 @@ NOTE this assumes that the C++ abstract machine already owns the array
 <div class="doc">
 <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.logic.expr.html#Expr.is_array_of"><span class="id" title="definition">is_array_of</span></a></span> <span class="inlinecode"><span class="id" title="var">aty</span></span> <span class="inlinecode"><span class="id" title="var">ety</span></span> checks that <span class="inlinecode"><span class="id" title="var">aty</span></span> is a type representing an
         array of <span class="inlinecode"><span class="id" title="var">ety</span></span>.
-        NOTE that cpp2v currently prints the type `int<font size=-2>&#9744;</font>` as <span class="inlinecode"><span class="id" title="var">int</span>*</span> <span class="inlinecode"><span class="id" title="var">const</span></span>
+        NOTE that cpp2v currently prints the type `int<font size=-2>&#9744;</font>` as <span class="inlinecode"><span class="id" title="var">int</span>*</span> <span class="inlinecode"><a class="idref" href="http://coq.inria.fr/distrib/V8.15.1/stdlib//Coq.Program.Basics.html#const"><span class="id" title="definition">const</span></a></span>
              so we also permit that type.
      
 </div>

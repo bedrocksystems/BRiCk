@@ -88,7 +88,7 @@ Pointer <span class="inlinecode"><span class="id" title="var">p'</span></span> i
 </div>
 
 <div class="doc">
-<a id="lab90"></a><h1 class="section">Pointer comparison operators</h1>
+<a id="lab92"></a><h1 class="section">Pointer comparison operators</h1>
  For <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.syntax.expr.html#Ble"><span class="id" title="constructor">Ble</span></a>,</span> <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.syntax.expr.html#Blt"><span class="id" title="constructor">Blt</span></a>,</span> <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.syntax.expr.html#Bge"><span class="id" title="constructor">Bge</span></a>,</span> <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.syntax.expr.html#Bgt"><span class="id" title="constructor">Bgt</span></a></span> axioms on pointers. 
 </div>
 <div class="code">
@@ -363,8 +363,8 @@ For non-comparison operations, we do not require liveness, unlike Krebbers.
 
 <div class="paragraph"> </div>
 
-  Liveness note: when adding int <span class="inlinecode"><span class="id" title="var">i</span></span> to pointer <span class="inlinecode"><a class="idref" href="bedrock.noimport.doc.cpp.logic.html#with_Sigma.p"><span class="id" title="variable">p</span></a></span>, the standard demands
-  that <span class="inlinecode"><a class="idref" href="bedrock.noimport.doc.cpp.logic.html#with_Sigma.p"><span class="id" title="variable">p</span></a></span> points to an array (https://eel.is/c++draft/expr.add4.2),
+  Liveness note: when adding int <span class="inlinecode"><span class="id" title="var">i</span></span> to pointer <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.logic.pred_paradoxes.html#with_cpp.type_ptr_object_representation_full_is_unsound.p"><span class="id" title="variable">p</span></a></span>, the standard demands
+  that <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.logic.pred_paradoxes.html#with_cpp.type_ptr_object_representation_full_is_unsound.p"><span class="id" title="variable">p</span></a></span> points to an array (https://eel.is/c++draft/expr.add4.2),
   With https://eel.is/c++draft/basic.compound3.1 and
   https://eel.is/c++draft/basic.memobjbasic.stc.general-4, that implies that
   [p] has not been deallocated.
