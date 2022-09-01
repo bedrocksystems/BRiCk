@@ -407,6 +407,144 @@ Module Type CPP_LOGIC
     Axiom type_ptr_valid_plus_one : forall resolve ty p,
       type_ptr ty p |-- valid_ptr (p ,, o_sub resolve ty 1).
 
+    (* When [p] is a [ptr] to a C++ object of type [ty], [p] is /also/ a pointer
+       to the "object representation" of [ty] - which consists of "the sequence
+       of [sizeof(ty)] unsigned char objects taken up by the object of
+       type [ty]" [1].
+
+       Detailed Justification:
+       a) From the comment above the axiomatization of [type_ptr]:
+          | [type_ptr ty p] asserts that [p] points to a (possibly dead) object of type [ty].
+       b) In [basic.types.general#4] [1] the C++ Standard states that:
+          | The object representation of an object of type T is the sequence of N unsigned
+          | char objects taken up by the object of type T, where N equals sizeof(T).
+       d) (NOTE: the C++ Standard lacks language regarding this point) the "object representation"
+          for an object pointed to by [ptr] [p] is /also/ accessible via [p].
+       e) (a)+(b)+(d) implies that a (potentially dead) object representation for type [ty]
+          exists at [ptr] [p]
+       f) (a)+(c)+(e) implies that [type_ptr Tu8 (p .[ Tu8 ! i ])] holds (regardless of whether
+          not the object/"object representation" is alive)
+
+       NOTE: There is no need to deal with past-the-end pointers explicitly since
+       [type_ptr] explicitly excludes them; validity of past-the-end pointers
+       can be established using [type_ptr_valid_plus_one].
+
+       [1] <https://eel.is/c++draft/basic.types.general#4>
+     *)
+    Section type_ptr_object_representation.
+      (* This section is intended to axiomatize a /sufficient/ and /sound/
+         set of transport rules for [type_ptr] facts which can be used to
+         satisfy the preconditions required when using [ptr_congP] to
+         transport other resources.
+       *)
+
+      (* The following [Axiom] reflects a trivially faithful encoding of
+         the quote from the C++ standard above [Section type_ptr_object_representation].
+
+         NOTE: To practically use this [Axiom], [type_ptr] must be [Persistent];
+         a reasonable alternative axiomatization which sidestepts this issue
+         could produce /all/ of the [type_ptr] facts for the "object representation"
+         at once:
+         | ... ->
+         |     type_ptr ty p
+         | |-- [∗list] i ∈ seqN 0 (sizeof ty), type_ptr Tu8 (p .[ Tu8 ! i ])
+       *)
+      Section conservative.
+        Axiom type_ptr_obj_repr_byte :
+          forall (σ : genv) (ty : type) (p : ptr) (i sz : N),
+            size_of σ ty = Some sz -> (* 1) [ty] has some byte-size [sz] *)
+            (i < sz)%N ->             (* 2) by (1), [sz] is nonzero and [i] is a
+                                            byte-offset into the object rooted at [p ,, o]
+
+                                         NOTE: [forall ty, size_of (Tarray ty 0) = Some 0],
+                                         but zero-length arrays are not permitted by the Standard
+                                         (cf. <https://eel.is/c++draft/dcl.array#def:array,bound>).
+                                         NOTE: if support for flexible array members is ever added,
+                                         it will need to be carefully coordinated with these sorts
+                                         of transport lemmas.
+                                       *)
+            (* 4) The existence of the "object representation" of an object of type [ty] -
+               |  in conjunction with the premises - justifies "lowering" any
+               |  [type_ptr ty p] fact to a collection of [type_ptr Tu8 (p ,, .[Tu8 ! i])]
+               |  facts - where [i] is a byte-offset within the [ty] ([0 <= i < sizeof(ty)]).
+               v *)
+            type_ptr ty p |-- type_ptr Tu8 (p ,, .[ Tu8 ! i ]).
+      End conservative.
+
+      (* NOTE: This might be reasonable to axiomatize directly; cf. the [NOTE] above
+         [Section conservative].
+       *)
+      Section all_at_once.
+        Lemma type_ptr_obj_repr :
+          forall (σ : genv) (ty : type) (p : ptr) (sz : N),
+            size_of σ ty = Some sz ->
+            type_ptr ty p |-- [∗list] i ∈ seqN 0 sz, type_ptr Tu8 (p .[ Tu8 ! Z.of_N i ]).
+        Proof.
+          intros * Hsz; iIntros "#tptr".
+          iApply big_sepL_intro; iIntros "!>" (k n) "%Hn'".
+          assert (lookup (K:=N) (N.of_nat k) (seqN 0%N sz) = Some n)
+            as Hn
+            by (unfold lookupN, list_lookupN; rewrite Nat2N.id //);
+            clear Hn'.
+          apply lookupN_seqN in Hn as [? ?].
+          iDestruct (type_ptr_obj_repr_byte σ ty p n sz Hsz ltac:(lia) with "tptr") as "$".
+        Qed.
+      End all_at_once.
+    End type_ptr_object_representation.
+
+    (* [offset_congP] hoists [offset_cong] to [mpred] *)
+    Definition offset_congP (σ : genv) (o1 o2 : offset) : mpred :=
+      [| offset_cong σ o1 o2 |].
+
+    (* [ptr_congP σ p1 p2] is an [mpred] which quotients [ptr_cong σ p1 p2]
+       by requiring that [type_ptr Tu8] holds for both [p1] /and/ [p2]. This property
+       is intended to be sound and sufficient for transporting certain physical
+       resources between [p1] and [p2] - and we hypothesize that it is also
+       necessary.
+     *)
+    Definition ptr_congP (σ : genv) (p1 p2 : ptr) : mpred :=
+      [| ptr_cong σ p1 p2 |] ** type_ptr Tu8 p1 ** type_ptr Tu8 p2.
+
+    (* All [tptsto Tu8] facts can be transported over [ptr_congP] [ptr]s.
+
+       High level meaning:
+       In the C++ object model, a single byte of storage can be accessed through different pointers,
+       e.g. consider [struct C { int x; int y; } c;]. The first byte of the struct can be read through
+       [static_cast<byte*>(&c)] (with pointer representation [c]) as well as [static_cast<byte*>(&c.x)]
+       (with pointer representation [c ,, _field "::C" "x"]). To put an ownership discipline on this
+       single byte, we build an equivalence relation on pointers that allows us to transport ownership
+       of the byte between these different pointers. For example, half of the ownership could live at [c]
+       and the other half of the ownership can live at [c ,, _field "::C" "x"].
+
+       The standard justifies this as follows:
+       1) (cf. [tptsto] comment) [tptsto ty q p v] ensures that [p] points to a memory
+          location with C++ type [ty] and which has some value [v].
+       2) (cf. [Section type_ptr_object_representation]) [type_ptr Tu8] holds for all of the
+          bytes (i.e. the "object reprsentation") constituting well-typed C++ objects.
+       3) NOTE (JH): the following isn't quite true yet, but we'll want this when we flesh
+          out [rawR]/[RAW_BYTES]:
+          a) all values [v] can be converted into (potentially many) [raw_byte]s -
+             which capture its "object representation"
+          b) all [tptsto ty] facts can be shattered into (potentially many)
+             [tptsto Tu8 _ _ (Vraw _)] facts corresponding to its "object representation"
+       4) [tptsto Tu8 _ _ (Vraw _)] can be transported over [ptr_congP] [ptr]s:
+          a) [tptso Tu8 _ _ (Vraw _)] facts deal with the "object representation" directly
+             and thus permit erasing the structure of pointers in favor of reasoning about
+             relative byte offsets from a shared [ptr]-prefix.
+          b) the [ptr]s are [ptr_congP] so we know that:
+             i) they share a common base pointer [p_base]
+             ii) the byte-offset values of the C++ offsets which reconstitute the src/dst from
+                 [p_base] are equal
+             iii) NOTE: (cf. [valid_ptr_nonnull_nonzero]/[type_ptr_valid_ptr]/[type_ptr_nonnull] below)
+                  [p_base] has some [vaddr], but we don't currently rely on this fact.
+     *)
+    (* TODO: improve our axiomatic support for raw values - including "shattering"
+       non-raw values into their constituent raw pieces - to enable deriving
+       [tptsto_ptr_congP_transport] from [tptsto_raw_ptr_congP_transport].
+     *)
+    Axiom tptsto_ptr_congP_transport : forall {σ} q p1 p2 v,
+      ptr_congP σ p1 p2 |-- @tptsto σ Tu8 q p1 v -* @tptsto σ Tu8 q p2 v.
+
     (**
      ** Deducing pointer equalities
      The following axioms, together with [same_address_o_sub_eq], enable going

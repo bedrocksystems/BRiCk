@@ -99,6 +99,16 @@ Theorem size_of_array_0 : forall {c : genv} t sz,
     @size_of c (Tarray t 0) = Some 0%N.
 Proof. intros; simpl. by rewrite H. Qed.
 
+Theorem size_of_array_shatter : forall {c : genv} ty n sz,
+    @size_of c (Tarray ty n) = Some sz <-> exists sz', (sz = n * sz')%N /\ @size_of c ty = Some sz' /\ @size_of c (Tarray ty n) = Some (n * sz')%N.
+Proof.
+  simpl. intros. destruct (size_of c ty) => /=; split; intros H.
+  - inversion H; subst; eauto.
+  - by destruct H as [? [? [H1 H2]]]; inversion H1; inversion H2; subst.
+  - by inversion H.
+  - by destruct H as [? [? [? ?]]]; discriminate.
+Qed.
+
 Theorem size_of_array_pos : forall {c : genv} t n sz,
     (0 < n)%N ->
     @size_of c t = Some sz <-> @size_of c (Tarray t n) = Some (n * sz)%N.

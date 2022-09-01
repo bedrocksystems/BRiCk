@@ -210,12 +210,16 @@ Section with_cpp.
     Observe [| q ≤ 1 |]%Qp (anyR ty q).
   Axiom primR_anyR : ∀ resolve t q v, primR t q v |-- anyR t q.
   Axiom uninitR_anyR : ∀ resolve t q, uninitR t q |-- anyR t q.
+  Axiom tptsto_raw_anyR : forall resolve p q r, tptsto Tu8 q p (Vraw r) |-- p |-> anyR Tu8 q.
   Axiom anyR_type_ptr_observe : ∀ σ ty q, Observe (type_ptrR ty) (anyR ty q).
 
   #[global] Existing Instances anyR_timeless anyR_fractional anyR_observe_frac_valid anyR_type_ptr_observe.
   #[global] Instance anyR_as_fractional resolve ty q :
     AsFractional (anyR ty q) (anyR ty) q.
   Proof. exact: Build_AsFractional. Qed.
+
+  Axiom _at_anyR_ptr_congP_transport : forall {σ} p p' ty q,
+    ptr_congP σ p p' ** type_ptr ty p' |-- p |-> anyR ty q -* p' |-> anyR ty q.
 End with_cpp.
 
 #[global] Typeclasses Opaque primR.

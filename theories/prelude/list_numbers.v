@@ -156,6 +156,9 @@ Proof. done. Qed.
 Lemma replicateN_S {A} (x : A) n : replicateN (N.succ n) x = x :: replicateN n x.
 Proof. by rewrite /replicateN/= N2Nat.inj_succ. Qed.
 
+Lemma replicateN_plus {A} (x : A) n m : replicateN (n + m) x = replicateN n x ++ replicateN m x.
+Proof. unfold replicateN; rewrite N2Nat.inj_add; apply replicate_plus. Qed.
+
 Lemma elem_of_replicateN {A} (count : N) (b a : A) : a ∈ replicateN count b → b = a.
 Proof. by intros [-> _]%elem_of_replicate. Qed.
 

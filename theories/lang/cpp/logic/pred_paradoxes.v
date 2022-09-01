@@ -47,4 +47,43 @@ Section with_cpp.
     by iApply _valid_ptr_nullptr_sub_false.
   Qed.
 
+  (* The following [Axiom] reflects a generalization of the [faithful] version
+     in which arbitrary offsets can be erased down to (appropriately bounded)
+     byte offsets. THIS IS UNSOUND.
+   *)
+  Section type_ptr_object_representation_full_is_unsound.
+    Hypothesis type_ptr_obj_repr_full :
+      forall (σ : genv) (ty : type) (p : ptr) (o : offset) (i sz : N) (off : Z),
+        size_of σ ty = Some sz ->     (* 1) [ty] has some byte-size [sz] *)
+        eval_offset σ o = Some off -> (* 2) [o] has some numerical byte-offset value [off] *)
+        (off <= i < off + sz)%Z ->     (* 3) by (1) and (2), [sz] is nonzero and [i] is a
+                                            byte-offset into the object rooted at [p ,, o]
+
+                                            NOTE: [forall ty, size_of (Tarray ty 0) = Some 0],
+                                            but zero-length arrays are not permitted by the
+                                            Standard (cf. <https://eel.is/c++draft/dcl.array#def:array,bound>).
+                                            NOTE: if support for flexible array members is
+                                            ever added, it will need to be carefully
+                                            coordinated with these sorts of transport lemmas.
+                                      *)
+        (* 4) The existence of the "object representation" of an object of type [ty] -
+           |  in conjunction with the premises - justifies "lowering" any
+           |  [type_ptr ty (p ,, o)] fact to a family of [type_ptr Tu8 (p ,, .[Tu8 ! i])]
+           |  facts - where [i] is a byte-offset that "covers" the [sizeof(ty)].
+           v *)
+        type_ptr ty (p ,, o) |-- type_ptr Tu8 (p ,, .[ Tu8 ! i ]).
+    Parameter (q : ptr).
+    Let p := q .[ Tu16 ! -1000 ].
+    Let o := .[ Tu16 ! 1000 ].
+
+    Lemma type_ptr_obj_repr_full_bad :
+      type_ptr Tu8 (p ,, o) |-- type_ptr Tu8 (p ,, .[ Tu8 ! 2000 ]).
+    Proof using type_ptr_obj_repr_full.
+      subst p o.
+      iIntros "tptr".
+      iDestruct (type_ptr_obj_repr_full _ _ _ _ 2000 with "tptr")
+        as "tptr_byte"; rewrite ?eval_o_sub; simpl; eauto.
+      simpl. lia.
+    Qed.
+  End type_ptr_object_representation_full_is_unsound.
 End with_cpp.

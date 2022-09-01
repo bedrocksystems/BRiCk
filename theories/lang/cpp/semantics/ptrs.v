@@ -330,6 +330,11 @@ Module Type PTRS.
     glob_def σ cls = Some (Gstruct st) ->
     st.(s_layout) = POD \/ st.(s_layout) = Standard ->
     eval_offset σ (o_field σ f) = offset_of σ (f_type f) (f_name f).
+
+  (* [eval_offset] respects the monoidal structure of [offset]s *)
+  Axiom eval_offset_dot : ∀ σ (o1 o2 : offset),
+    eval_offset σ (o1 ,, o2) =
+    add_opt (eval_offset σ o1) (eval_offset σ o2).
 End PTRS.
 
 Module Type PTRS_DERIVED (Import P : PTRS).
@@ -351,6 +356,67 @@ Module Type PTRS_MIXIN (Import P : PTRS_INTF_MINIMAL).
   *)
   Canonical Structure ptrO := leibnizO ptr.
   #[global] Instance ptr_inhabited : Inhabited ptr := populate nullptr.
+
+  (** ** [offset] Congruence
+
+     [offset_cong σ o1 o2] expresses that [eval_offset σ o1] and [eval_offset σ o2]
+     both produce [Some] shared numerical value.
+
+     Given that offsets are typed, [offset_cong] is not generally sufficient to
+     transport resources - when the resources are even transportable in the first place.
+     However, in certain limited circumstances where the integral values of pointers are
+     meaningful - such as reasoning at the level of the byte-representation of an
+     object - [offset_cong] becomes a useful way of locally "erasing" the richer structure
+     of [ptr]s/[offset]s.
+
+     NOTE: [same_property_iff] ensures that the partial [obs]ervation ([eval_offset])
+     are both [Some]; [offset_cong] is [Reflexive] for some [o : offset] iff
+     [is_Some (eval_offset σ o)].
+   *)
+  Definition offset_cong : genv -> relation offset :=
+    fun σ o1 o2 => same_property (eval_offset σ) o1 o2.
+
+  #[global] Instance offset_cong_equiv {σ : genv} : RelationClasses.PER (offset_cong σ).
+  Proof. apply same_property_per. Qed.
+
+  (** ** [ptr] Congruence
+
+     [ptr_cong σ p1 p2] expresses that [p1] and [p2] share a common [ptr] prefix and that
+     [eval_offset σ o1 o2] holds for the suffixes which "complete" p1 and p2.
+
+     Given that [ptr]s have a rich structure, [ptr_cong σ p1 p2] is not generally sufficient to
+     transport resources - when the resources are even transportable in the first place.
+     However, in certain limited circumstances where the integral values of pointers are
+     meaningful - such as reasoning at the level of the byte-representation of an
+     object - [ptr_cong σ p1 p2] (in conjunction with [type_ptr Tu8 p1 ** type_ptr Tu8 p2])
+     /can/ be used to transport select resources.
+   *)
+  Definition ptr_cong : genv -> relation ptr :=
+    fun σ p1 p2 =>
+      exists p o1 o2,
+        p1 = p ,, o1 /\
+        p2 = p ,, o2 /\
+        offset_cong σ o1 o2.
+
+  #[global] Instance ptr_cong_reflexive {σ : genv} : Reflexive (ptr_cong σ).
+  Proof.
+    red; unfold ptr_cong; intros p; exists p, (.[ Tu8 ! 0 ]), (.[ Tu8 ! 0]).
+    intuition; try solve [rewrite o_sub_0; auto; rewrite offset_ptr_id//].
+    unfold offset_cong; apply same_property_iff.
+    rewrite eval_o_sub/= Z.mul_0_r; eauto.
+  Qed.
+
+  #[global] Instance ptr_cong_sym {σ : genv} : Symmetric (ptr_cong σ).
+  Proof.
+    red; unfold ptr_cong.
+    intros p p' [p'' [o1 [o2 [Hp [Hp' Hcong]]]]]; subst.
+    exists p'', o2, o1. naive_solver.
+  Qed.
+
+  (* NOTE (JH): [Transitive] isn't provable without a [ptr_vaddr] side-condition because
+     the intermediate [offset] might not [eval_offset] to [Some] integral value.
+   *)
+  (* #[global] Instance ptr_cong_trans {σ : genv} : Transitive (ptr_cong σ). *)
 
   (** ** [same_address] lemmas *)
 

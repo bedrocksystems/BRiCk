@@ -18,6 +18,10 @@ Local Close Scope nat_scope.
 Local Open Scope Z_scope.
 Implicit Types (σ : genv).
 
+(* TODO: improve our axiomatic support for raw values - including "shattering"
+   non-raw values into their constituent raw pieces - to enable deriving
+   [tptsto_ptr_congP_transport] from [tptsto_raw_ptr_congP_transport].
+ *)
 Module Type RAW_BYTES.
   (** * Raw bytes
       Raw bytes represent the low-level view of data.

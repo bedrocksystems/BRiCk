@@ -117,3 +117,11 @@ Section same_property.
       by right; naive_solver.
   Qed.
 End same_property.
+
+Section add_opt.
+  Definition add_opt (oz1 oz2 : option Z) : option Z := liftM2 Z.add oz1 oz2.
+  #[global] Instance add_opt_inj a : Inj eq eq (add_opt (Some a)).
+  Proof.
+    rewrite /add_opt => -[b1|] [b2|] // [?]. f_equal. lia.
+  Qed.
+End add_opt.

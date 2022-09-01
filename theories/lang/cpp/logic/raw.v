@@ -26,13 +26,33 @@ Section with_Σ.
   Definition rawR_eq : @rawR = _ := rawR_aux.(seal_eq).
   #[global] Arguments rawR q raw : rename.
 
+  Lemma _at_rawR_ptr_congP_transport (p1 p2 : ptr) (q : Qp) (r : raw_byte) :
+    ptr_congP σ p1 p2 |-- p1 |-> rawR q r -* p2 |-> rawR q r.
+  Proof.
+    rewrite rawR_eq/rawR_def !_at_as_Rep.
+    iApply tptsto_ptr_congP_transport.
+  Qed.
+
+  Lemma _at_rawR_offset_congP_transport (p : ptr) (o1 o2 : offset) (q : Qp) (r : raw_byte) :
+        offset_congP σ o1 o2 ** type_ptr Tu8 (p ,, o2)
+    |-- p ,, o1 |-> rawR q r -* p ,, o2 |-> rawR q r.
+  Proof.
+    iIntros "[%cong #tptr'] raw".
+    iDestruct (observe (type_ptr Tu8 (p ,, o1)) with "raw") as "#tptr". 1: {
+      rewrite rawR_eq/rawR_def !_at_as_Rep; by apply: _.
+    }
+    iRevert "raw"; iApply _at_rawR_ptr_congP_transport.
+    unfold ptr_congP; iFrame "#"; iPureIntro.
+    unfold ptr_cong; exists p, o1, o2; intuition.
+  Qed.
+
   Definition rawsR (q : Qp) (rs : list raw_byte) : Rep := arrayR Tuchar (rawR q) rs.
 
   Section Theory.
     Section primR_Axiom.
-      (* TODO (JH): We might be able to provide a derived lemma for the special case
-           of primitive integers; I don't think we use this axiom for anything besides
-           integres.
+      (* TODO: improve our axiomatic support for raw values - including "shattering"
+         non-raw values into their constituent raw pieces - to enable deriving
+         [primR_to_rawsR].
        *)
       Axiom primR_to_rawsR: forall ty q v,
         primR ty q v -|-

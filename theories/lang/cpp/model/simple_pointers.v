@@ -271,6 +271,12 @@ Module SIMPLE_PTRS_IMPL <: PTRS_INTF.
     eval_offset σ (o_field σ f) = offset_of σ (f_type f) (f_name f).
   Proof. done. Qed.
 
+  (* [eval_offset] respects the monoidal structure of [offset]s *)
+  Lemma eval_offset_dot : ∀ σ (o1 o2 : offset),
+    eval_offset σ (o1 ,, o2) =
+    add_opt (eval_offset σ o1) (eval_offset σ o2).
+  Proof. UNFOLD_dot; by unfold eval_offset, __o_dot, add_opt. Qed.
+
   Lemma offset_ptr_vaddr_raw resolve o n va va' p :
     eval_offset resolve o = Some n ->
     ptr_vaddr p = Some va ->

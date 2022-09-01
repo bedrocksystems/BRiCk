@@ -162,6 +162,7 @@ Module PTRS_IMPL <: PTRS_INTF.
     | (o_invalid_, z), _ => [(o_invalid_, z)]
     | _, _ => os :: oss
     end.
+
   Definition raw_offset_collapse : raw_offset -> raw_offset :=
     foldr offset_seg_cons [].
   Arguments raw_offset_collapse !_ /.
@@ -312,6 +313,11 @@ Module PTRS_IMPL <: PTRS_INTF.
   (* This is probably not generally applicable. *)
   Local Arguments liftM2 {_ _ _ _ _ _} _ !_ !_ / : simpl nomatch.
 
+  Lemma eval_offset_nil :
+    forall {σ : genv} (wf : raw_offset_wf []),
+      eval_offset σ ([] ↾ wf) = Some 0.
+  Proof. by unfold eval_offset, eval_raw_offset; simpl. Qed.
+
   Lemma eval_o_sub σ ty (i : Z) :
     eval_offset _ (o_sub _ ty i) =
       (* This order enables reducing for known ty. *)
@@ -352,6 +358,29 @@ Module PTRS_IMPL <: PTRS_INTF.
     move=> o1 o2 /=.
     exact: raw_offset_collapse_involutive.
   Qed.
+
+  Lemma __o_dot_nil_r :
+    forall o (wf_o : raw_offset_wf o) (wf_nil : raw_offset_wf []),
+      __o_dot (o ↾ wf_o) ([] ↾ wf_nil) = o ↾ wf_o.
+  Proof.
+    intros **.
+    unfold __o_dot, raw_offset_merge, raw_offset_collapse; simpl.
+    induction o=> //=.
+    - rewrite (proof_irrel (__o_dot_obligation_1 ([] ↾ wf_o) ([] ↾ wf_nil))).
+      by rewrite (proof_irrel wf_o).
+    - rewrite (proof_irrel (__o_dot_obligation_1 ((a :: o) ↾ wf_o) ([] ↾ wf_nil))). 1: {
+        unfold raw_offset_wf, raw_offset_collapse, raw_offset_merge; simpl.
+        rewrite app_nil_r.
+        unfold raw_offset_merge, raw_offset_collapse in wf_o; simpl in wf_o.
+        rewrite wf_o.
+        done.
+      }
+      unfold raw_offset_merge, raw_offset_collapse; simpl; rewrite app_nil_r.
+      unfold raw_offset_wf, raw_offset_collapse in wf_o; simpl in wf_o.
+      rewrite wf_o; intros wf_o'.
+      by erewrite (proof_irrel wf_o).
+  Qed.
+
   Inductive root_ptr : Set :=
   | nullptr_
   | global_ptr_ (tu : translation_unit_canon) (o : obj_name)
@@ -475,6 +504,33 @@ Module PTRS_IMPL <: PTRS_INTF.
     (at level 11, left associativity, only parsing) : stdpp_scope.
 
   #[local] Ltac UNFOLD_dot := rewrite _dot.unlock/DOT_dot/=.
+
+  (* [eval_offset] respects the monoidal structure of [offset]s *)
+  Lemma eval_offset_dot : ∀ σ (o1 o2 : offset),
+    eval_offset σ (o1 ,, o2) =
+    add_opt (eval_offset σ o1) (eval_offset σ o2).
+  Proof.
+    intros **; UNFOLD_dot.
+    destruct o1 as [[] ?]; destruct o2 as [[] ?]=> //=.
+    - unfold __o_dot, raw_offset_merge, raw_offset_collapse; simpl.
+      unfold eval_offset, eval_raw_offset; simpl.
+      unfold raw_offset_wf, raw_offset_collapse in r0; simpl in r0.
+      rewrite r0/=.
+      destruct (eval_offset_seg o);
+        destruct (foldr (liftM2 Z.add) (Some 0) (map eval_offset_seg l))=> //.
+    - rewrite __o_dot_nil_r.
+      unfold eval_offset, eval_raw_offset=> /=.
+      destruct (liftM2 Z.add (eval_offset_seg o)
+                       (foldr (liftM2 Z.add) (Some 0) (map eval_offset_seg l)))=> //.
+      unfold add_opt; simpl.
+      by rewrite Z.add_0_r.
+    - unfold __o_dot, raw_offset_merge, raw_offset_collapse, eval_offset, eval_raw_offset.
+      unfold proj1_sig; rewrite foldr_app.
+      unfold raw_offset_wf, raw_offset_collapse in *.
+      rewrite !foldr_fmap.
+      rewrite r0.
+      admit.
+  Admitted.
 
   #[global] Instance id_dot : LeftId (=) o_id o_dot.
   Proof. UNFOLD_dot. intros o. apply /sig_eq_pi. by case: o. Qed.
