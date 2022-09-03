@@ -209,9 +209,9 @@ public:
     }
 #endif
 
-    void printBinaryOperator(BinaryOperator::Opcode op, StringRef def,
-                             CoqPrinter& print, const ASTContext& ctxt) {
-        switch (op) {
+    void printBinaryOperator(const BinaryOperator* expr, CoqPrinter& print,
+                             ClangPrinter& cprint, const ASTContext& ctxt) {
+        switch (expr->getOpcode()) {
 #define CASE(k, s)                                                             \
     case BinaryOperatorKind::BO_##k:                                           \
         print.output() << s;                                                   \
@@ -238,7 +238,7 @@ public:
 #undef CASE
         default:
             logging::unsupported() << "defaulting binary operator\n";
-            print.ctor("Bother") << "\"" << def << "\"" << fmt::rparen;
+            print.ctor("Bother") << "\"" << expr->getOpcodeStr() << "\"" << fmt::rparen;
             break;
         }
     }
@@ -296,8 +296,7 @@ public:
             ACASE(Xor, Bxor)
         default:
             print.ctor("Ebinop");
-            printBinaryOperator(expr->getOpcode(), expr->getOpcodeStr(), print,
-                                ctxt);
+            printBinaryOperator(expr, print, cprint, ctxt);
             print.output() << fmt::nbsp;
             break;
         }
@@ -318,8 +317,9 @@ public:
                                                           ctxt, li);
     }
 
-    void printUnaryOperator(UnaryOperator::Opcode op, CoqPrinter& print) {
-        switch (op) {
+    void printUnaryOperator(const UnaryOperator* expr, CoqPrinter& print,
+                            ClangPrinter& cprint) {
+        switch (expr->getOpcode()) {
 #define CASE(k, s)                                                             \
     case UnaryOperatorKind::UO_##k:                                            \
         print.output() << s;                                                   \
@@ -335,7 +335,7 @@ public:
 #undef CASE
         default:
             logging::unsupported() << "Error: unsupported unary operator\n";
-            print.output() << "(Uother \"" << UnaryOperator::getOpcodeStr(op)
+            print.output() << "(Uother \"" << UnaryOperator::getOpcodeStr(expr->getOpcode())
                            << "\")";
             break;
         }
@@ -367,7 +367,7 @@ public:
             break;
         default:
             print.ctor("Eunop");
-            printUnaryOperator(expr->getOpcode(), print);
+            printUnaryOperator(expr, print, cprint);
             print.output() << fmt::nbsp;
         }
         cprint.printExpr(expr->getSubExpr(), print, li);
