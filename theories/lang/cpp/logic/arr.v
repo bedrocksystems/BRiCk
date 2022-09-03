@@ -17,9 +17,14 @@ From bedrock.lang.cpp.semantics Require Import values.
 
 #[local] Set Printing Coercions.	(** Readability *)
 
-(** PDS: Mispalced *)
+(** PDS: Misplaced *)
 #[local] Arguments N.of_nat _ : simpl never.
 #[local] Arguments N.to_nat _ : simpl never.
+
+#[local] Ltac iCancel :=
+  iIntros; repeat iDestruct select (bi_sep _ _) as "[? ?]";
+  iRevert "∗"; iIntros;
+  iFrame "#∗".
 
 Lemma size_of_array_0_Some σ ty :
   is_Some (size_of σ ty) → size_of σ (Tarray ty 0) = Some 0%N.
@@ -256,7 +261,7 @@ Definition arrayR_eq : @arrayR = _ := arrayR_aux.(seal_eq).
 Arguments arrayR {_ _ _ _} _ _%function_scope _%list_scope : assert.
 #[global] Instance: Params (@arrayR) 5 := {}.	(** TODO: [genv] weakening *)
 
-Section array.
+Section with_array_R.
   Context `{Σ : cpp_logic, resolve : genv}.
   Context {X : Type} (R : X -> Rep) (ty : type).
 
@@ -435,24 +440,25 @@ Section array.
     { apply take_length_le.
       apply lookup_lt_Some in Hl. lia. }
   Qed.
+End with_array_R.
 
-End array.
+Section with_array_frac.
+  Context `{Σ : cpp_logic, resolve : genv} {X : Type} (ty : type).
+  Context (R : Qp -> X -> Rep).
 
-#[global] Instance arrayR_fractional `{Σ : cpp_logic, σ : genv} {T} t (P : Qp → T → Rep) l
- `{!∀ x, Fractional (λ q, P q x)} :
-  Fractional (λ q, arrayR t (P q) l).
-Proof.
-  red. intros.
-  induction l.
-  { rewrite !arrayR_nil. iSplit; eauto. iIntros "[[#a b] _]"; eauto. }
-  { rewrite !arrayR_cons IHl H !_offsetR_sep. iSplit.
-    { iIntros "(#a & [b c] & d & e)"; iFrame "∗#". }
-    { iIntros "([a [b c]] & [_ [e f]])"; iFrame. } }
-Qed.
+  #[global] Instance arrayR_fractional l
+  `{HF : !∀ x, Fractional (λ q, R q x)} :
+    Fractional (λ q, arrayR ty (R q) l).
+  Proof.
+    red. intros.
+    induction l.
+    { rewrite !arrayR_nil. iSplit; iCancel. }
+    { rewrite !arrayR_cons IHl HF !_offsetR_sep. iSplit; iCancel. }
+  Qed.
 
-#[global] Instance arrayR_as_fractional `{Σ : cpp_logic, σ : genv} {T} t (P : Qp → T → Rep) l q
- `{!∀ x, Fractional (λ q, P q x)} :
-  AsFractional (arrayR t (P q) l) (λ q, arrayR t (P q) l) q.
-Proof. exact: Build_AsFractional. Qed.
+  #[global] Instance arrayR_as_fractional l q `{!∀ x, Fractional (λ q, R q x)} :
+    AsFractional (arrayR ty (R q) l) (λ q, arrayR ty (R q) l) q.
+  Proof. exact: Build_AsFractional. Qed.
+End with_array_frac.
 
 #[global] Hint Opaque arrR arrayR : typeclass_instances.
