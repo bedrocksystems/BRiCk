@@ -442,9 +442,55 @@ Section with_array_R.
   Qed.
 End with_array_R.
 
+Section with_array_Rs.
+  Context `{Σ : cpp_logic, resolve : genv} {X : Type} {ty : type}.
+
+  Lemma arrayR_sep {V} (A B : V -> Rep) xs :
+    arrayR ty (fun v : V => A v ** B v) xs -|-
+    arrayR ty (fun v : V => A v) xs **
+    arrayR ty (fun v : V => B v) xs.
+  Proof.
+    elim: xs => [|x xs IH] /=;
+      rewrite !(arrayR_nil, arrayR_cons).
+    2: rewrite {}IH _offsetR_sep.
+    all: iSplit; iCancel.
+  Qed.
+
+  Lemma arrayR_pureR (R : X -> mpred) (l : list X) :
+    arrayR ty (λ v, pureR (R v)) l ⊣⊢
+    pureR ([∗ list] x ∈ l, R x) ∗ arrayR ty (funI _ => emp) l.
+  Proof.
+    elim: l => [|x xs IH] /=;
+      rewrite !(arrayR_nil, arrayR_cons).
+    { by rewrite pureR_emp left_id. }
+    rewrite {}IH !_offsetR_sep.
+    rewrite !_offsetR_pureR !pureR_sep.
+    iSplit; iCancel.
+  Qed.
+End with_array_Rs.
+
 Section with_array_frac.
   Context `{Σ : cpp_logic, resolve : genv} {X : Type} (ty : type).
   Context (R : Qp -> X -> Rep).
+
+  (** This is not phrased as an instance because TC resolution cannot
+      always solve the unification problem for [R]. *)
+  Lemma arrayR_agree q1 q2 l k :
+    (∀ q1 q2 x1 x2, Observe2 [| x1 = x2 |] (R q1 x1) (R q2 x2)) ->
+    length l = length k ->
+    Observe2 [| l = k |] (arrayR ty (R q1) l) (arrayR ty (R q2) k).
+  Proof.
+    intros ? Hlen.
+    rewrite -(_offsetR_id (arrayR _ _ l)) -(_offsetR_id (arrayR _ _ k));
+      move: o_id => o.
+    iIntros "L K". iInduction k as [|y k IH] "IH" forall (o l Hlen).
+    { apply nil_length_inv in Hlen. simplify_eq. by auto. }
+    destruct l as [|x l]; first done.
+    rewrite !arrayR_cons !_offsetR_sep.
+    iDestruct "L" as "(_ & X & L)". iDestruct "K" as "(_ & Y & K)".
+    iDestruct (observe_2 [| x = y |] with "X Y") as %->.
+    rewrite !_offsetR_dot. iDestruct ("IH" with "[] L K") as %->; auto.
+  Qed.
 
   #[global] Instance arrayR_fractional l
   `{HF : !∀ x, Fractional (λ q, R q x)} :
