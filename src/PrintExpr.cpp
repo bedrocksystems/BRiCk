@@ -83,7 +83,8 @@ printCast(const CastExpr* ce, CoqPrinter& print, ClangPrinter& cprint) {
         break;
     default:
         logging::unsupported()
-            << "unsupported cast kind \"" << ce->getCastKindName() << "\"\n";
+            << "unsupported cast kind \"" << ce->getCastKindName() << "\""
+            << " (at " << cprint.sourceRange(ce->getSourceRange()) << ")\n";
         print.output() << "Cunsupported";
     }
 }
@@ -237,7 +238,9 @@ public:
             CASE(PtrMemI, "Bdotip")
 #undef CASE
         default:
-            logging::unsupported() << "defaulting binary operator\n";
+            logging::unsupported()
+                << "defaulting binary operator"
+                << " (at " << cprint.sourceRange(expr->getSourceRange()) << ")\n";
             print.ctor("Bother") << "\"" << expr->getOpcodeStr() << "\"" << fmt::rparen;
             break;
         }
@@ -334,7 +337,9 @@ public:
             CASE(PreInc, "<PreInc>")
 #undef CASE
         default:
-            logging::unsupported() << "Error: unsupported unary operator\n";
+            logging::unsupported()
+                << "Error: unsupported unary operator"
+                << " (at " << cprint.sourceRange(expr->getSourceRange()) << ")\n";
             print.output() << "(Uother \"" << UnaryOperator::getOpcodeStr(expr->getOpcode())
                            << "\")";
             break;
@@ -768,8 +773,10 @@ public:
             }
         } else if (auto bo = dyn_cast<BinaryOperator>(callee)) {
             assert(bo != nullptr && "expecting a binary operator");
-            logging::unsupported() << "member pointers are currently not "
-                                      "supported in the logic.\n";
+            logging::unsupported()
+                << "member pointers are currently not "
+                   "supported in the logic."
+                << " (at " << cprint.sourceRange(bo->getSourceRange()) << ")\n";
             print.ctor("inr");
             cprint.printExpr(bo->getRHS(), print, li);
             print.end_ctor() << fmt::nbsp;

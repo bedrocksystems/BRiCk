@@ -364,7 +364,8 @@ public:
                                                             auto base) {
             if (base.isVirtual()) {
                 logging::unsupported()
-                    << "virtual base classes not supported\n";
+                    << "virtual base classes not supported"
+                    << " (at " << cprint.sourceRange(decl->getSourceRange()) << ")\n";
             }
 
             auto rec = base.getType().getTypePtr()->getAsCXXRecordDecl();
