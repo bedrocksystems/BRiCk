@@ -83,7 +83,8 @@ printCast(const CastExpr* ce, CoqPrinter& print, ClangPrinter& cprint) {
         break;
     default:
         logging::unsupported()
-            << "unsupported cast kind \"" << ce->getCastKindName() << "\"\n";
+            << "unsupported cast kind \"" << ce->getCastKindName() << "\""
+            << " (at " << cprint.sourceRange(ce->getSourceRange()) << ")\n";
         print.output() << "Cunsupported";
     }
 }
@@ -209,9 +210,9 @@ public:
     }
 #endif
 
-    void printBinaryOperator(BinaryOperator::Opcode op, StringRef def,
-                             CoqPrinter& print, const ASTContext& ctxt) {
-        switch (op) {
+    void printBinaryOperator(const BinaryOperator* expr, CoqPrinter& print,
+                             ClangPrinter& cprint, const ASTContext& ctxt) {
+        switch (expr->getOpcode()) {
 #define CASE(k, s)                                                             \
     case BinaryOperatorKind::BO_##k:                                           \
         print.output() << s;                                                   \
@@ -237,8 +238,10 @@ public:
             CASE(PtrMemI, "Bdotip")
 #undef CASE
         default:
-            logging::unsupported() << "defaulting binary operator\n";
-            print.ctor("Bother") << "\"" << def << "\"" << fmt::rparen;
+            logging::unsupported()
+                << "defaulting binary operator"
+                << " (at " << cprint.sourceRange(expr->getSourceRange()) << ")\n";
+            print.ctor("Bother") << "\"" << expr->getOpcodeStr() << "\"" << fmt::rparen;
             break;
         }
     }
@@ -296,8 +299,7 @@ public:
             ACASE(Xor, Bxor)
         default:
             print.ctor("Ebinop");
-            printBinaryOperator(expr->getOpcode(), expr->getOpcodeStr(), print,
-                                ctxt);
+            printBinaryOperator(expr, print, cprint, ctxt);
             print.output() << fmt::nbsp;
             break;
         }
@@ -318,8 +320,9 @@ public:
                                                           ctxt, li);
     }
 
-    void printUnaryOperator(UnaryOperator::Opcode op, CoqPrinter& print) {
-        switch (op) {
+    void printUnaryOperator(const UnaryOperator* expr, CoqPrinter& print,
+                            ClangPrinter& cprint) {
+        switch (expr->getOpcode()) {
 #define CASE(k, s)                                                             \
     case UnaryOperatorKind::UO_##k:                                            \
         print.output() << s;                                                   \
@@ -334,8 +337,10 @@ public:
             CASE(PreInc, "<PreInc>")
 #undef CASE
         default:
-            logging::unsupported() << "Error: unsupported unary operator\n";
-            print.output() << "(Uother \"" << UnaryOperator::getOpcodeStr(op)
+            logging::unsupported()
+                << "Error: unsupported unary operator"
+                << " (at " << cprint.sourceRange(expr->getSourceRange()) << ")\n";
+            print.output() << "(Uother \"" << UnaryOperator::getOpcodeStr(expr->getOpcode())
                            << "\")";
             break;
         }
@@ -367,7 +372,7 @@ public:
             break;
         default:
             print.ctor("Eunop");
-            printUnaryOperator(expr->getOpcode(), print);
+            printUnaryOperator(expr, print, cprint);
             print.output() << fmt::nbsp;
         }
         cprint.printExpr(expr->getSubExpr(), print, li);
@@ -768,8 +773,10 @@ public:
             }
         } else if (auto bo = dyn_cast<BinaryOperator>(callee)) {
             assert(bo != nullptr && "expecting a binary operator");
-            logging::unsupported() << "member pointers are currently not "
-                                      "supported in the logic.\n";
+            logging::unsupported()
+                << "member pointers are currently not "
+                   "supported in the logic."
+                << " (at " << cprint.sourceRange(bo->getSourceRange()) << ")\n";
             print.ctor("inr");
             cprint.printExpr(bo->getRHS(), print, li);
             print.end_ctor() << fmt::nbsp;

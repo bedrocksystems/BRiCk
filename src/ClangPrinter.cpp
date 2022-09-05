@@ -215,8 +215,8 @@ printSimpleContext(const DeclContext *dc, CoqPrinter &print,
         } else {
             print.output() << "~<empty>";
             logging::unsupported()
-                << "empty anonymous namespaces are not supported. (at "
-                << cprint.sourceRange(ns->getSourceRange()) << ")\n";
+                << "empty anonymous namespaces are not supported."
+                << " (at " << cprint.sourceRange(ns->getSourceRange()) << ")\n";
         }
         if (remaining == 0 && 0 < compound)
             print.output() << "E";
@@ -265,9 +265,8 @@ printSimpleContext(const DeclContext *dc, CoqPrinter &print,
                 // no idea what to do
                 print.output() << "~<empty-enum>";
                 logging::unsupported()
-                    << "empty anonymous enumerations are not supported. (at "
-                    << cprint.sourceRange(ed->getSourceRange()) << ")\n";
-
+                    << "empty anonymous namespaces are not supported."
+                    << " (at " << cprint.sourceRange(ed->getSourceRange()) << ")\n";
             } else {
                 print.output() << "~";
                 ed->enumerators().begin()->printName(print.output().nobreak());
