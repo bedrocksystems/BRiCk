@@ -22,7 +22,7 @@ Section lift.
             ** lift_aux n (pa+bytesize) q (N.shiftr v bitsize)
     end.
 
-  (* byte by byte, layout the bits of [v] starting at [paddr], msb first, using the [byte_at] parameter to lay out each byte *)
+  (* byte by byte, layout the bits of [v] starting at [paddr], lsb first (little-endian), using the [byte_at] parameter to lay out each byte *)
   Definition bytes_at (nbytes:N) (pa : paddr) (q:Qp) (v : N) :=
     lift_aux (N.to_nat (BinNatDef.N.log2 nbytes)) pa q v.
 
