@@ -94,6 +94,7 @@ Arguments ObjValue_ler !_ _ /.
 Definition GlobDecl_le (a b : GlobDecl) : option unit :=
   match a , b with
   | Gtype , Gtype
+  | Gtype , Genum _ _
   | Gtype , Gunion _
   | Gtype , Gstruct _ => Some tt
   | Gunion _ , Gtype
@@ -274,10 +275,17 @@ Proof.
     destruct (Hsub _ _ Hlook) as (st1 & Hlook1 & _).
     eapply (complete_pt_named _ Hlook1).
   }
-  intros * Hlook Hct IH ? Hsub.
-  destruct (Hsub _ _ Hlook) as (st1 & Hlook1 & Hle).
-  apply (complete_named _ Hlook1).
-  apply (complete_decl_respects_GlobDecl_le Hle), IH, Hsub.
+  - intros * Hlook Hct IH ? Hsub.
+    destruct (Hsub _ _ Hlook) as (st1 & Hlook1 & Hle).
+    inversion Hle. destruct st1; try congruence.
+    eapply complete_pt_enum; eauto.
+    apply require_eq_success in H0. destruct H0; subst.
+    eapply IH; eauto.
+  - intros * Hlook Hct IH ? Hsub.
+    destruct (Hsub _ _ Hlook) as (st1 & Hlook1 & Hle).
+    inversion Hle.
+    apply (complete_named _ Hlook1).
+    apply (complete_decl_respects_GlobDecl_le Hle), IH, Hsub.
 Qed.
 
 Lemma complete_type_respects_sub_table te1 te2 t :

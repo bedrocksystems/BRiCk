@@ -51,8 +51,6 @@ Definition Sforeach (range ibegin iend : Stmt)
 (* Indicate that [underlying] is used to represent alias type [name]. Enums are treated similarly. *)
 Definition Talias (name : globname) {underlying : type} : type :=
   underlying.
-Definition Tenum (name : globname) {underlying : type} : type :=
-  underlying.
 Definition Tunderlying (enum : type) {underlying : type} : type :=
   underlying.
 

@@ -325,6 +325,14 @@ Section with_type_table.
      *)
     te !! n = Some decl ->
     complete_pointee_type (Tnamed n)
+  | complete_pt_enum {n ty branches} :
+    (* This check could not appear in a Krebbers-style definition.
+       And it is not needed to enable computation on complete types.
+     *)
+    te !! n = Some (Genum ty branches) ->
+    complete_basic_type ty ->
+    complete_pointee_type (Tenum n)
+
   (* Beware:
   [Tfunction] represents a function type; somewhat counterintuitively,
   a pointer to a function type is complete even if the argument/return types

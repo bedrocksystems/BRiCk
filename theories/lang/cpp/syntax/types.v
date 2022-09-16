@@ -150,6 +150,7 @@ Inductive type : Set :=
 | Tvoid
 | Tarray (_ : type) (_ : N) (* unknown sizes are represented by pointers *)
 | Tnamed (_ : globname)
+| Tenum (_ : globname) (* enumerations *)
 | Tfunction {cc : calling_conv} {ar : function_arity} (_ : type) (_ : list type)
 | Tbool
 | Tmember_pointer (_ : globname) (_ : type)
@@ -201,6 +202,8 @@ Section type_ind'.
     P ty -> P (Tarray ty sz).
   Hypothesis Tnamed_ind' : forall (name : globname),
     P (Tnamed name).
+  Hypothesis Tenum_ind' : forall (name : globname),
+    P (Tenum name).
   Hypothesis Tfunction_ind' : forall {cc : calling_conv} {ar : function_arity} (ty : type) (tys : list type),
     P ty -> Forall P tys -> P (Tfunction ty tys).
   Hypothesis Tbool_ind' : P Tbool.
@@ -223,6 +226,7 @@ Section type_ind'.
     | Tvoid                   => Tvoid_ind'
     | Tarray ty sz            => Tarray_ind' ty sz (type_ind' ty)
     | Tnamed name             => Tnamed_ind' name
+    | Tenum name              => Tenum_ind' name
     | Tfunction ty tys        =>
       Tfunction_ind' ty tys (type_ind' ty)
                      (* NOTE: We must use a nested [fix] in order to convince Coq that
@@ -280,6 +284,7 @@ Section type_countable.
       | Tnullptr => GenNode 12 []
       | Tarch None gn => GenNode 13 [BS gn]
       | Tarch (Some sz) gn => GenNode 14 [BITSIZE sz; BS gn]
+      | Tenum gn => GenNode 15 [BS gn]
       end.
     set dec := fix go t :=
       match t with
@@ -298,10 +303,11 @@ Section type_countable.
       | GenNode 12 [] => Tnullptr
       | GenNode 13 [BS gn] => Tarch None gn
       | GenNode 14 [BITSIZE sz; BS gn] => Tarch (Some sz) gn
+      | GenNode 15 [BS gn] => Tenum gn
       | _ => Tvoid	(** dummy *)
       end.
     apply (inj_countable' enc dec). refine (fix go t := _).
-    destruct t as [| | | | | | |cc ar ret args| | | | | |[]]; simpl; f_equal; try done.
+    destruct t as [| | | | | | | |cc ar ret args| | | | | |[]]; simpl; f_equal; try done.
     induction args; simpl; f_equal; done.
   Defined.
 End type_countable.
@@ -366,6 +372,7 @@ Fixpoint normalize_type (t : type) : type :=
   | Tbool => t
   | Tvoid => t
   | Tnamed _ => t
+  | Tenum _ => t
   | Tnullptr => t
   | Tfloat _ => t
   | Tarch _ _ => t

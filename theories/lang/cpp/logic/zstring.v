@@ -46,25 +46,26 @@ Module zstring.
   #[global] Arguments _strlen zs : simpl never.
   Notation strlen zs := (_strlen zs%Z).
 
-  Definition _WF (zs : t) : Prop :=
+  Definition _WF {σ : genv} (zs : t) : Prop :=
     exists zs', zs = zs' ++ [0] /\ not (In 0 zs') /\
     List.Forall (λ c : Z, has_type c Tuchar) zs.
-  #[global] Arguments _WF zs : simpl never.
+  #[global] Arguments _WF {σ} zs : simpl never.
   Notation WF zs := (_WF zs%Z).
 
   (* this definition is less intensional, and seems to work more
      smoothly wrt. automation: *)
-  Definition _WF' (zs : t) : Prop :=
+  Definition _WF' {σ : genv} (zs : t) : Prop :=
     (exists v, nth_error zs 0 = Some v) /\
     (forall i, Z.of_nat i <= strlen zs ->
           exists z, nth_error zs i = Some z /\ has_type (Vint z) Tuchar) /\
     (forall i, Z.of_nat i < strlen zs ->
           exists z, nth_error zs i = Some z /\ z <> 0) /\
     forall i, Z.of_nat i = strlen zs -> nth_error zs i = Some 0.
-  #[global] Arguments _WF' zs : simpl never.
+  #[global] Arguments _WF' {σ} zs : simpl never.
   Notation WF' zs := (_WF' zs%Z).
 
   Section WF_Theory.
+    Context {σ : genv}.
     Remark not_WF_nil : not (WF []).
     Proof.
       rewrite /_WF; intro CONTRA;
@@ -126,6 +127,8 @@ Module zstring.
   End WF_Theory.
 
   Section size_Theory.
+    Context {σ : genv}.
+
     (* Use [rewrite size_unfold/=] to reduce away a [size] application to a
        concrete string; if complete reduction is not possible, this is
        equivalent to unfolding the [size] notation.
@@ -184,6 +187,8 @@ Module zstring.
   End size_Theory.
 
   Section strlen_Theory.
+    Context {σ : genv}.
+
     (* Use [rewrite strlen_unfold/=] to reduce away a [strlen] application to a
        concrete string; if complete reduction is not possible, this is
        equivalent to unfolding the [strlen] notation.
@@ -268,6 +273,7 @@ Module zstring.
   End strlen_Theory.
 
   Section WFs_equiv_Theory.
+    Context {σ : genv}.
     Section helpers.
       Lemma len0_take (zs : t)
             (H0 : 0 < List.length zs)
@@ -365,7 +371,7 @@ Module zstring.
             apply has_char_type; rewrite /bound/=; by lia.
           - exfalso; eapply nth_error_strlen_contra; by eauto.
         }
-        suff: List.Forall (fun x => x <> 0 /\ has_type (Vint x) Tuchar)
+        suff: List.Forall (fun x => x <> 0 /\ has_type (σ:=σ) (Vint x) Tuchar)
                           (take (Datatypes.length zs - 1) zs).
         { clear - zs. elim: zs => //=; first by move => _ [].
           move => a zs IH /=; inversion 1; subst; first by inversion 1.
@@ -934,7 +940,7 @@ Section zstring_pure_hint_test_pre.
   Abort.
   #[local] Unset Ltac Backtrace.
 
-  Goal not (zstring.WF []).
+  Goal forall {σ : genv}, not (zstring.WF []).
   Proof. Fail (by auto with pure). Abort.
 
   Goal
@@ -968,7 +974,7 @@ End zstring_pure_hint_test_pre.
 Section zstring_pure_hint_test_post.
   #[local] Unset Ltac Backtrace.
 
-  Goal not (zstring.WF []).
+  Goal forall {σ : genv}, not (zstring.WF []).
   Proof. by auto with pure. Abort.
 
   Goal

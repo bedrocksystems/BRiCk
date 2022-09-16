@@ -71,7 +71,8 @@ Module Type Init.
       | Tptr _ as rty
       | Tbool as rty
       | Tfloat _ as rty
-      | Tnullptr as rty =>
+      | Tnullptr as rty
+      | Tenum _ as rty =>
         let rty := erase_qualifiers rty in
         p |-> uninitR rty 1 -* Q FreeTemps.id
       | Tarray ety sz =>
@@ -131,6 +132,7 @@ Module Type Init.
       | Tmember_pointer _ _ as ty
       | Tbool as ty
       | Tnum _ _ as ty
+      | Tenum _ as ty
       | Tnullptr as ty =>
         wp_operand init (fun v free =>
                           addr |-> primR (erase_qualifiers ty) 1 v -* k free)

@@ -439,6 +439,7 @@ Module SimpleCPP.
           | Vundef => pure_encodes_undef POINTER_BITSZ vs
           | _ => False
           end
+        | Tenum _ => False (* << TODO: incorrect *)
         | Tqualified _ _ => False (* unreachable *)
         | Tvoid
         | Tarray _ _

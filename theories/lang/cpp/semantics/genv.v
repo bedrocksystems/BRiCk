@@ -131,6 +131,10 @@ Lemma glob_def_genv_compat_union {σ gn tu} {Hσ : tu ⊧ σ} st
   glob_def σ gn = Some (Gunion st).
 Proof. move: Hσ Hl => /genv_compat_submodule. apply: sub_module_preserves_gunion. Qed.
 
+Lemma glob_def_genv_compat_enum {σ gn tu} {Hσ : tu ⊧ σ} ty brs
+  (Hl : tu !! gn = Some (Genum ty brs)) :
+  exists brs', glob_def σ gn = Some (Genum ty brs').
+Proof. move: Hσ Hl => /genv_compat_submodule. apply: sub_module_preserves_genum. Qed.
 
 (* XXX rename/deprecate? *)
 Theorem subModuleModels a b σ : b ⊧ σ -> sub_module a b -> a ⊧ σ.
