@@ -67,6 +67,15 @@ Module fin.
   #[global] Arguments mk' m & {n} prf. (* [&] = infer [n] from return type. *)
   Notation mk m := (mk' m eq_refl).
 
+  (** The [weaken x] notation converts [x : fin.t m] to [fin.t n].
+      This assumes both [m] and [n] are ground, since then [eq_refl] is a valid
+      proof of [m < n]. *)
+  #[program] Definition weaken' {m n} (x : fin.t m) (prf : m < n) : fin.t n :=
+    fin.mk' (fin.to_N x) _.
+  Next Obligation. move=> m n [/= ]; lia. Qed.
+  #[global] Arguments weaken' {m} & {n} x prf. (* [&] = infer [n] from return type. *)
+  Notation weaken x := (weaken' x eq_refl).
+
   (* [0; 1; 2 ... n - 1 ] *)
   Definition seq (n : N) : list (t n) :=
     match n with
@@ -98,8 +107,7 @@ Module fin.
     apply elem_of_seqN. case: i =>/=. lia.
   Qed.
 
-  #[global,program] Instance t_finite n : Finite (t n) :=
-  { enum := seq n; }.
-  Next Obligation. apply seq_NoDup. Qed.
-  Next Obligation. apply elem_of_seq. Qed.
+  #[global, refine] Instance t_finite n : Finite (t n) :=
+    { enum := seq n; }.
+  Proof. solve [apply seq_NoDup]. solve [apply elem_of_seq]. Defined.
 End fin.
