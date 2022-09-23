@@ -80,6 +80,7 @@ Proof. solve_decision. Defined.
 Record Member : Set := mkMember
 { mem_name : ident
 ; mem_type : type
+; mem_mutable : bool
 ; mem_init : option Expr
 ; mem_layout : LayoutInfo }.
 #[global] Instance: EqDecision Member.
@@ -279,10 +280,10 @@ Section with_type_table.
   [cpp2v-tests/test_translation_unit_validity.cpp]). *)
   | complete_Struct {st}
               (_ : forall b li, In (b, li) st.(s_bases) -> complete_type (Tnamed b))
-              (_ : forall x t e li, In (mkMember x t e li) st.(s_fields) -> complete_type t)
+              (_ : forall m, In m st.(s_fields) -> complete_type m.(mem_type))
     : complete_decl (Gstruct st)
   | complete_Union {u}
-              (_ : forall x t e li, In (mkMember x t e li) u.(u_fields) -> complete_type t)
+              (_ : forall m, In m u.(u_fields) -> complete_type m.(mem_type))
     : complete_decl (Gunion u)
   | complete_enum {t consts} (_ : complete_type t)
     : complete_decl (Genum t consts)
