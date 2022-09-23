@@ -67,6 +67,39 @@ public:
         cprint.printQualType(type->getModifiedType(), print);
     }
 
+    void VisitUnaryTransformType(const UnaryTransformType* type,
+            CoqPrinter& print, ClangPrinter& cprint) {
+
+        switch (type->getUTTKind()) {
+
+        case UnaryTransformType::UTTKind::EnumUnderlyingType:
+
+            // An `__underlying_type (type)` expression
+            // where `type` is a scoped enumeration type.
+            //
+            // See:
+            //
+            // https://en.cppreference.com/w/cpp/utility/to_underlying
+            // https://gcc.gnu.org/onlinedocs/gcc-11.1.0/gcc/Type-Traits.html
+
+            print.ctor("Tunderlying");
+
+            // The enumeration
+            cprint.printQualType(type->getBaseType(), print);
+            print.output() << fmt::nbsp;
+
+            // The underlying type
+            cprint.printQualType(type->getUnderlyingType(), print);
+            print.end_ctor();
+
+            break;
+
+        default:
+            VisitType (type, print, cprint);	// unsupported
+            break;
+        }
+    }
+
     void VisitDeducedType(const DeducedType* type, CoqPrinter& print,
                           ClangPrinter& cprint) {
         if (type->isDeduced()) {
