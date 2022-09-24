@@ -37,6 +37,24 @@ bitsize(unsigned n) {
     }
 }
 
+static void
+unsupported_type(const Type* type, CoqPrinter& print, ClangPrinter& cprint) {
+    print.ctor("Tunsupported", false);
+    print.str(type->getTypeClassName());
+    print.end_ctor();
+
+    using namespace logging;
+    unsupported() << "[WARN] unsupported type (" << type->getTypeClassName()
+                  << "):";
+#if CLANG_VERSION_MAJOR >= 11
+    type->dump(unsupported(), cprint.getContext());
+#else
+    type->dump(unsupported());
+#endif
+
+    unsupported() << "\n";
+}
+
 class PrintType :
     public TypeVisitor<PrintType, void, CoqPrinter&, ClangPrinter&> {
 private:
@@ -46,20 +64,7 @@ public:
     static PrintType printer;
 
     void VisitType(const Type* type, CoqPrinter& print, ClangPrinter& cprint) {
-        print.ctor("Tunsupported", false);
-        print.str(type->getTypeClassName());
-        print.end_ctor();
-
-        using namespace logging;
-        unsupported() << "[WARN] unsupported type (" << type->getTypeClassName()
-                      << "):";
-#if CLANG_VERSION_MAJOR >= 11
-        type->dump(unsupported(), cprint.getContext());
-#else
-        type->dump(unsupported());
-#endif
-
-        unsupported() << "\n";
+        unsupported_type(type, print, cprint);
     }
 
     void VisitAttributedType(const AttributedType* type, CoqPrinter& print,
@@ -95,7 +100,7 @@ public:
             break;
 
         default:
-            VisitType (type, print, cprint);	// unsupported
+            unsupported_type(type, print, cprint);
             break;
         }
     }
@@ -105,13 +110,7 @@ public:
         if (type->isDeduced()) {
             cprint.printQualType(type->getDeducedType(), print);
         } else {
-            using namespace logging;
-            logging::fatal()
-                << "\nError: Unsupported non-deduced type.\nYou probably have "
-                   "an "
-                   "instance of [auto] that can not be deduced based on the "
-                   "file.\n";
-            logging::die();
+            unsupported_type(type, print, cprint);
         }
     }
 
