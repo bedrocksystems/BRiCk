@@ -67,11 +67,11 @@ public:
     CreateASTConsumer(clang::CompilerInstance &Compiler,
                       llvm::StringRef InFile) override {
 #if 0
-		Compiler.getInvocation().getLangOpts()->CommentOpts.BlockCommandNames.push_back("with");
-		Compiler.getInvocation().getLangOpts()->CommentOpts.BlockCommandNames.push_back("internal");
-    for (auto i : Compiler.getInvocation().getLangOpts()->CommentOpts.BlockCommandNames) {
-			llvm::errs() << i << "\n";
-		}
+        Compiler.getInvocation().getLangOpts()->CommentOpts.BlockCommandNames.push_back("with");
+        Compiler.getInvocation().getLangOpts()->CommentOpts.BlockCommandNames.push_back("internal");
+        for (auto i : Compiler.getInvocation().getLangOpts()->CommentOpts.BlockCommandNames) {
+            llvm::errs() << i << "\n";
+        }
 #endif
         auto result = new ToCoqConsumer(&Compiler, to_opt(VFileOutput),
                                         to_opt(NamesFile));
