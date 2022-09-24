@@ -15,14 +15,14 @@ Require Import bedrock.lang.cpp.heap_notations.
 #[local] Open Scope Z_scope.
 
 Section with_Σ.
-  Context `{cpp_logic thread_info} {resolve:genv}.
+  Context `{cpp_logic thread_info} {resolve : genv} (tu : translation_unit).
   Variables (M : coPset) (ρ : region).
 
   Implicit Type (Q : val → mpred).
 
-  #[local] Notation wp_prval := (wp_prval ρ).
-  #[local] Notation wp_operand := (wp_operand ρ).
-  #[local] Notation wp_args := (wp_args ρ).
+  #[local] Notation wp_prval := (wp_prval tu ρ).
+  #[local] Notation wp_operand := (wp_operand tu ρ).
+  #[local] Notation wp_args := (wp_args tu ρ).
 
   (* Builtins for Atomic operations. We follow those provided by GCC.
    * https://gcc.gnu.org/onlinedocs/gcc/_005f_005fatomic-Builtins.html

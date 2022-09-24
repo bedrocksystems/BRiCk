@@ -480,30 +480,35 @@ Section with_cpp.
    * with mask [E] and continutation [Q].
    *)
   Parameter wp_lval
-    : forall {resolve:genv}, region -> Expr -> M ptr.
+    : forall {resolve:genv}, translation_unit -> region -> Expr -> M ptr.
   (* END wp_lval *)
 
-  Axiom wp_lval_shift : forall {σ:genv} ρ e Q,
-      (|={top}=> wp_lval ρ e (fun v free => |={top}=> Q v free))
-    ⊢ wp_lval ρ e Q.
+  Axiom wp_lval_shift : forall {σ:genv} tu ρ e Q,
+      (|={top}=> wp_lval tu ρ e (fun v free => |={top}=> Q v free))
+    ⊢ wp_lval tu ρ e Q.
 
   Axiom wp_lval_frame :
-    forall σ1 σ2 ρ e k1 k2,
+    forall σ1 σ2 tu ρ e k1 k2,
       genv_leq σ1 σ2 ->
-      Forall v f, k1 v f -* k2 v f |-- @wp_lval σ1 ρ e k1 -* @wp_lval σ2 ρ e k2.
+      Forall v f, k1 v f -* k2 v f |-- @wp_lval σ1 tu ρ e k1 -* @wp_lval σ2 tu ρ e k2.
+
+  (* This isn't actually correct because it requires a dependent relationship between
+     the two [genv] and [translation_unit]s.
+   *)
   #[global] Instance Proper_wp_lval :
-    Proper (genv_leq ==> eq ==> eq ==> Mrel _)
+    Proper (genv_leq ==> sub_module ==> eq ==> eq ==> Mrel _)
            (@wp_lval).
   Proof.
     repeat red. intros; subst.
     iIntros "X". iRevert "X".
-    iApply wp_lval_frame; eauto.
-    iIntros (v). iIntros (f). iApply H2. reflexivity.
-  Qed.
+    (*
+    )iApply wp_lval_frame; eauto.
+    iIntros (v). iIntros (f). iApply H2. reflexivity. *)
+  Admitted.
 
   Section wp_lval.
-    Context {σ : genv} (ρ : region) (e : Expr).
-    Local Notation WP := (wp_lval ρ e) (only parsing).
+    Context {σ : genv} (tu : translation_unit) (ρ : region) (e : Expr).
+    Local Notation WP := (wp_lval tu ρ e) (only parsing).
     Implicit Types P : mpred.
     Implicit Types Q : ptr → FreeTemps → epred.
 
@@ -579,33 +584,33 @@ Section with_cpp.
      NOTE: this doesn't really fit the pattern for [M]...
    *)
   Parameter wp_init
-    : forall {resolve:genv}, region ->
+    : forall {resolve:genv}, translation_unit -> region ->
                         type -> ptr -> Expr ->
                         (type -> FreeTemps -> epred) -> (* type to destroy -> free -> post *)
                         mpred. (* pre-condition *)
   (* END wp_init *)
 
-  Axiom wp_init_shift : forall {σ:genv} ρ ty p e Q,
-      (|={top}=> wp_init ρ ty p e (fun free frees => |={top}=> Q free frees))
-    ⊢ wp_init ρ ty p e Q.
+  Axiom wp_init_shift : forall {σ:genv} tu ρ ty p e Q,
+      (|={top}=> wp_init tu ρ ty p e (fun free frees => |={top}=> Q free frees))
+    ⊢ wp_init tu ρ ty p e Q.
 
-  Axiom wp_init_frame : forall σ1 σ2 ρ ty p e k1 k2,
+  Axiom wp_init_frame : forall σ1 σ2 tu ρ ty p e k1 k2,
       genv_leq σ1 σ2 ->
-      Forall f fs, k1 f fs -* k2 f fs |-- @wp_init σ1 ρ ty p e k1 -* @wp_init σ2 ρ ty p e k2.
+      Forall f fs, k1 f fs -* k2 f fs |-- @wp_init σ1 tu ρ ty p e k1 -* @wp_init σ2 tu ρ ty p e k2.
 
   #[global] Instance Proper_wp_init :
-    Proper (genv_leq ==> eq ==> eq ==> eq ==> eq ==>
+    Proper (genv_leq ==> sub_module ==> eq ==> eq ==> eq ==> eq ==>
             pointwise_relation _ (pointwise_relation _ (⊢)) ==> (⊢))
            (@wp_init).
-  Proof.
+  Proof. (*
     repeat red; intros; subst.
     iIntros "X"; iRevert "X"; iApply wp_init_frame; eauto.
     iIntros (??); iApply H4.
-  Qed.
+  Qed. *) Admitted.
 
   Section wp_init.
-    Context {σ : genv} (ρ : region) (ty : type) (p : ptr) (e : Expr).
-    Local Notation WP := (wp_init ρ ty p e) (only parsing).
+    Context {σ : genv} (tu : translation_unit) (ρ : region) (ty : type) (p : ptr) (e : Expr).
+    Local Notation WP := (wp_init tu ρ ty p e) (only parsing).
     Implicit Types P : mpred.
     Implicit Types Q : type -> FreeTemps → epred.
 
@@ -638,9 +643,9 @@ Section with_cpp.
   End wp_init.
 
   (* BEGIN wp_prval *)
-  Definition wp_prval {resolve:genv} (ρ : region)
+  Definition wp_prval {resolve:genv} (tu : translation_unit) (ρ : region)
              (e : Expr) (Q : ptr -> type -> FreeTemps -> epred) : mpred :=
-    ∀ p : ptr, wp_init ρ (type_of e) p e (Q p).
+    ∀ p : ptr, wp_init tu ρ (type_of e) p e (Q p).
   (* END wp_prval *)
 
   (** TODO prove instances for [wp_prval] *)
@@ -648,29 +653,29 @@ Section with_cpp.
   (* BEGIN wp_operand *)
   (* evaluate a prvalue that "computes the value of an operand of an operator"
    *)
-  Parameter wp_operand : forall {resolve:genv}, region -> Expr -> M val.
+  Parameter wp_operand : forall {resolve:genv}, translation_unit -> region -> Expr -> M val.
   (* END wp_operand *)
 
-  Axiom wp_operand_shift : forall {σ:genv} ρ e Q,
-      (|={top}=> wp_operand (resolve:=σ) ρ e (fun v free => |={top}=> Q v free))
-    ⊢ wp_operand (resolve:=σ) ρ e Q.
+  Axiom wp_operand_shift : forall {σ:genv} tu ρ e Q,
+      (|={top}=> wp_operand tu ρ e (fun v free => |={top}=> Q v free))
+    ⊢ wp_operand (resolve:=σ) tu ρ e Q.
 
   Axiom wp_operand_frame :
-    forall σ1 σ2 ρ e k1 k2,
+    forall σ1 σ2 tu ρ e k1 k2,
       genv_leq σ1 σ2 ->
-      Forall v f, k1 v f -* k2 v f |-- @wp_operand σ1 ρ e k1 -* @wp_operand σ2 ρ e k2.
+      Forall v f, k1 v f -* k2 v f |-- @wp_operand σ1 tu ρ e k1 -* @wp_operand σ2 tu ρ e k2.
 
   (** C++ evaluation semantics guarantees that all expressions of type [t] that
       evaluate without UB evaluate to a well-typed value of type [t] *)
-  Axiom wp_operand_well_typed : forall {σ : genv} ρ e Q,
-      wp_operand ρ e (fun v frees => [| has_type v (type_of e) |] -* Q v frees)
-    |-- wp_operand ρ e Q.
+  Axiom wp_operand_well_typed : forall {σ : genv} tu ρ e Q,
+      wp_operand tu ρ e (fun v frees => [| has_type v (type_of e) |] -* Q v frees)
+    |-- wp_operand tu ρ e Q.
 
   (* BEGIN wp_init <-> wp_operand *)
-  Axiom wp_operand_wp_init : forall {σ : genv} ρ ty addr e Q,
+  Axiom wp_operand_wp_init : forall {σ : genv} tu ρ ty addr e Q,
       is_value_type ty ->
-      wp_operand ρ e (fun v frees => _at addr (primR ty 1 v) -* Q ty frees)
-    |-- wp_init ρ ty addr e Q.
+      wp_operand tu ρ e (fun v frees => _at addr (primR ty 1 v) -* Q ty frees)
+    |-- wp_init tu ρ ty addr e Q.
 
   (** This is justified in the logic but technically not sactioned by the standard
 
@@ -687,17 +692,17 @@ Section with_cpp.
 
 
   #[global] Instance Proper_wp_operand :
-    Proper (genv_leq ==> eq ==> eq ==> Mrel _) (@wp_operand).
+    Proper (genv_leq ==> eq ==> eq ==> eq ==> Mrel _) (@wp_operand).
   Proof.
     repeat red; intros; subst.
     iIntros "X"; iRevert "X".
     iApply wp_operand_frame; eauto.
-    iIntros (v); iIntros (f); iApply H2. reflexivity.
+    iIntros (v); iIntros (f); iApply H3. reflexivity.
   Qed.
 
   Section wp_operand.
-    Context {σ : genv} (ρ : region) (e : Expr).
-    Local Notation WP := (wp_operand ρ e) (only parsing).
+    Context {σ : genv} (tu : translation_unit) (ρ : region) (e : Expr).
+    Local Notation WP := (wp_operand tu ρ e) (only parsing).
     Implicit Types P : mpred.
     Implicit Types Q : val → FreeTemps → epred.
 
@@ -734,8 +739,8 @@ Section with_cpp.
   (** [wp_test ρ e Q] evaluates [e] as an operand converting the value to a
       boolean before passing it to [Q].
    *)
-  Definition wp_test {σ : genv} (ρ : region) (e : Expr) (Q : bool -> FreeTemps -> epred) : mpred :=
-    wp_operand ρ e (fun v free =>
+  Definition wp_test {σ : genv} (tu : translation_unit)  (ρ : region) (e : Expr) (Q : bool -> FreeTemps -> epred) : mpred :=
+    wp_operand tu ρ e (fun v free =>
                       match is_true v with
                       | Some c => Q c free
                       | None => ERROR (is_true_None v)
@@ -745,29 +750,29 @@ Section with_cpp.
 
   (* evaluate an expression as an xvalue *)
   Parameter wp_xval
-    : forall {resolve:genv}, region -> Expr -> M ptr.
+    : forall {resolve:genv}, translation_unit -> region -> Expr -> M ptr.
 
-  Axiom wp_xval_shift : forall {σ:genv} ρ e Q,
-      (|={top}=> wp_xval ρ e (fun v free => |={top}=> Q v free))
-    ⊢ wp_xval ρ e Q.
+  Axiom wp_xval_shift : forall {σ:genv} tu ρ e Q,
+      (|={top}=> wp_xval tu ρ e (fun v free => |={top}=> Q v free))
+    ⊢ wp_xval tu ρ e Q.
 
   Axiom wp_xval_frame :
-    forall σ1 σ2 ρ e k1 k2,
+    forall σ1 σ2 tu ρ e k1 k2,
       genv_leq σ1 σ2 ->
-      Forall v f, k1 v f -* k2 v f |-- @wp_xval σ1 ρ e k1 -* @wp_xval σ2 ρ e k2.
+      Forall v f, k1 v f -* k2 v f |-- @wp_xval σ1 tu ρ e k1 -* @wp_xval σ2 tu ρ e k2.
   #[global] Instance Proper_wp_xval :
-    Proper (genv_leq ==> eq ==> eq ==> Mrel _)
+    Proper (genv_leq ==> eq ==> eq ==> eq ==> Mrel _)
            (@wp_xval).
   Proof.
     repeat red; intros; subst.
     iIntros "X"; iRevert "X".
     iApply wp_xval_frame; eauto.
-    iIntros (v); iIntros (f); iApply H2. reflexivity.
+    iIntros (v); iIntros (f); iApply H3. reflexivity.
   Qed.
 
   Section wp_xval.
-    Context {σ : genv} (ρ : region) (e : Expr).
-    Local Notation WP := (wp_xval ρ e) (only parsing).
+    Context {σ : genv} (tu : translation_unit) (ρ : region) (e : Expr).
+    Local Notation WP := (wp_xval tu ρ e) (only parsing).
     Implicit Types P : mpred.
     Implicit Types Q : ptr → FreeTemps → epred.
 
@@ -810,15 +815,15 @@ Section with_cpp.
      the underlying primitive value category. This makes some weakest
      pre-condition axioms a bit shorter
    *)
-  Definition wp_glval {resolve} r (vc : ValCat) (e : Expr) : M ptr :=
+  Definition wp_glval {σ} (tu : translation_unit) ρ (vc : ValCat) (e : Expr) : M ptr :=
       match vc with
-      | Lvalue => wp_lval (resolve:=resolve) r e
-      | Xvalue => wp_xval (resolve:=resolve) r e
-      | _ => wp_glval_mismatch r vc e
+      | Lvalue => wp_lval (resolve:=σ) tu ρ e
+      | Xvalue => wp_xval (resolve:=σ) tu ρ e
+      | _ => wp_glval_mismatch ρ vc e
       end%I.
 
-  Theorem wp_glval_frame {resolve : genv} r vc e Q Q' :
-    (Forall v free, Q v free -* Q' v free) |-- wp_glval r vc e Q -* wp_glval r vc e Q'.
+  Theorem wp_glval_frame {resolve : genv} tu r vc e Q Q' :
+    (Forall v free, Q v free -* Q' v free) |-- wp_glval tu r vc e Q -* wp_glval tu r vc e Q'.
   Proof.
     destruct vc; simpl.
     - apply wp_lval_frame; reflexivity.
@@ -826,8 +831,8 @@ Section with_cpp.
     - apply wp_xval_frame; reflexivity.
   Qed.
 
-  Theorem wp_glval_wand {resolve : genv} r vc e Q Q' :
-    wp_glval r vc e Q |-- (Forall v free, Q v free -* Q' v free) -* wp_glval r vc e Q'.
+  Theorem wp_glval_wand {resolve : genv} tu r vc e Q Q' :
+    wp_glval tu r vc e Q |-- (Forall v free, Q v free -* Q' v free) -* wp_glval tu r vc e Q'.
   Proof.
     iIntros "A B"; iRevert "A"; iApply wp_glval_frame; eauto.
   Qed.
@@ -842,25 +847,25 @@ Section with_cpp.
       must be embedded into the AST.
    *)
   Section wp_discard.
-    Context {resolve:genv}.
+    Context {σ : genv} (tu : translation_unit).
     Variable (ρ : region).
 
     Definition wp_discard (vc : ValCat) (e : Expr) (Q : FreeTemps -> mpred) : mpred :=
       match vc with
-      | Lvalue => wp_lval ρ e (fun _ => Q)
+      | Lvalue => wp_lval tu ρ e (fun _ => Q)
       | Prvalue =>
         if is_value_type (type_of e) then
-          @wp_operand resolve ρ e (fun _ free => Q free)
+          wp_operand tu ρ e (fun _ free => Q free)
         else
-          Forall p, wp_init ρ (type_of e) p e (fun ty frees => Q (FreeTemps.delete ty p >*> frees)%free)
-      | Xvalue => wp_xval ρ e (fun _ => Q)
+          Forall p, wp_init tu ρ (type_of e) p e (fun ty frees => Q (FreeTemps.delete ty p >*> frees)%free)
+      | Xvalue => wp_xval tu ρ e (fun _ => Q)
       end.
 
   End wp_discard.
 
-  Lemma wp_discard_frame σ1 σ2 ρ vc e k1 k2:
+  Lemma wp_discard_frame σ1 σ2 tu ρ vc e k1 k2:
     genv_leq σ1 σ2 ->
-    Forall f, k1 f -* k2 f |-- wp_discard (resolve := σ1) ρ vc e k1 -* wp_discard (resolve:=σ2) ρ vc e k2.
+    Forall f, k1 f -* k2 f |-- wp_discard (σ:=σ1) tu ρ vc e k1 -* wp_discard (σ:=σ2) tu ρ vc e k2.
   Proof.
     destruct vc => /=.
     - intros. rewrite -wp_lval_frame; eauto.
@@ -877,40 +882,40 @@ Section with_cpp.
   Qed.
 
   #[global] Instance Proper_wpe :
-    Proper (genv_leq ==> eq ==> eq ==> eq ==> ((≡) ==> (⊢)) ==> (⊢))
+    Proper (genv_leq ==> eq ==> eq ==> eq ==> eq ==> ((≡) ==> (⊢)) ==> (⊢))
            (@wp_discard).
   Proof.
     repeat red; intros; subst.
     iIntros "X"; iRevert "X"; iApply wp_discard_frame; eauto.
-    iIntros (?); iApply H3; reflexivity.
+    iIntros (?); iApply H4; reflexivity.
   Qed.
 
   #[global] Instance Proper_wpe' :
-    Proper (genv_leq ==> eq ==> eq ==> eq ==> (pointwise_relation _ lentails) ==> lentails)
+    Proper (genv_leq ==> eq ==> eq ==> eq ==> eq ==> (pointwise_relation _ lentails) ==> lentails)
            (@wp_discard).
   Proof.
     repeat red; intros; subst.
     iIntros "X"; iRevert "X"; iApply wp_discard_frame; eauto.
-    iIntros (?); iApply H3; reflexivity.
+    iIntros (?); iApply H4; reflexivity.
   Qed.
 
   (** * Statements *)
 
   (* evaluate a statement *)
   Parameter wp
-    : forall {resolve:genv}, region -> Stmt -> KpredI -> mpred.
+    : forall {resolve:genv}, translation_unit -> region -> Stmt -> KpredI -> mpred.
 
-  Axiom wp_shift : forall σ ρ s Q,
-      (|={top}=> wp (resolve:=σ) ρ s (|={top}=> Q))
-    ⊢ wp (resolve:=σ) ρ s Q.
+  Axiom wp_shift : forall σ tu ρ s Q,
+      (|={top}=> wp tu ρ s (|={top}=> Q))
+    ⊢ wp (resolve:=σ) tu ρ s Q.
 
   Axiom wp_frame :
-    forall σ1 σ2 ρ s (k1 k2 : KpredI),
+    forall σ1 σ2 tu ρ s (k1 k2 : KpredI),
       genv_leq σ1 σ2 ->
-      (Forall rt, k1 rt -* k2 rt) |-- @wp σ1 ρ s k1 -* @wp σ2 ρ s k2.
+      (Forall rt, k1 rt -* k2 rt) |-- @wp σ1 tu ρ s k1 -* @wp σ2 tu ρ s k2.
 
   #[global] Instance Proper_wp :
-    Proper (genv_leq ==> eq ==> eq ==> (⊢) ==> (⊢))
+    Proper (genv_leq ==> eq ==> eq ==> eq ==> (⊢) ==> (⊢))
            (@wp).
   Proof.
     repeat red; intros; subst.
@@ -919,15 +924,15 @@ Section with_cpp.
   Qed.
 
   Section wp.
-    Context {σ : genv} (ρ : region) (s : Stmt).
-    Local Notation WP := (wp ρ s) (only parsing).
+    Context {σ : genv} (tu : translation_unit) (ρ : region) (s : Stmt).
+    Local Notation WP := (wp tu ρ s) (only parsing).
     Implicit Types P : mpred.
     Implicit Types Q : KpredI.
 
     Lemma wp_wand (k1 k2 : KpredI) :
       WP k1 |-- (Forall rt, k1 rt -* k2 rt) -* WP k2.
     Proof.
-      iIntros "Hwp Hk". by iApply (wp_frame σ _ _ _ k1 with "[$Hk] Hwp").
+      iIntros "Hwp Hk". by iApply (wp_frame σ _ _ _ _ k1 with "[$Hk] Hwp").
     Qed.
     Lemma fupd_wp k : (|={top}=> WP k) |-- WP k.
     Proof.

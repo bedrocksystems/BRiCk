@@ -10,7 +10,7 @@ Require Import iris.proofmode.proofmode.
 Require Import bedrock.lang.cpp.ast.
 Require Import bedrock.lang.cpp.semantics.
 From bedrock.lang.cpp.logic Require Import pred heap_pred path_pred.
-Require Import bedrock.lang.cpp.logic.wp.
+From bedrock.lang.cpp.logic Require Import wp translation_unit.
 Require Import bedrock.lang.cpp.heap_notations.
 
 Section with_cpp.
@@ -91,19 +91,19 @@ Section with_cpp.
       [this] results in a function that is equivalent to calling the pointer [fa]
       passing [this'] as the "this" argument.
    *)
-  Definition resolve_virtual {σ : genv}
+  Definition resolve_virtual
              (this : ptr) (cls : globname) (f : obj_name)
              (Q : forall (faddr : ptr) (cls_type : globname) (this_addr : ptr), mpred)
     : mpred :=
-    Exists (path : list globname),
-      (Exists q, this |-> identityR (σ:=σ) cls path q ** [| path <> nil |] ** True) //\\
+    Exists (path : list globname) {σ tu}, denoteModule (resolve:=σ) tu **
+      ((Exists q, this |-> identityR cls path q ** [| path <> nil |] ** True) //\\
       match get_impl cls path f with
       | Some (fa, cls, off) => Q fa cls (_offset_ptr this off)
       | None => (* the function was not found or the implementation was pure virtual *)
         False
-      end.
+      end).
 
-  Lemma resolve_virtual_frame {σ : genv} (cls : globname) (this : ptr) s
+  Lemma resolve_virtual_frame (cls : globname) (this : ptr) s
     (Q Q' : ptr → globname → ptr → mpredI) :
         Forall (a : ptr) (b : globname) (c : ptr), Q a b c -* Q' a b c
     |-- resolve_virtual this cls (s_dtor s) Q -* resolve_virtual this cls (s_dtor s) Q'.
@@ -111,8 +111,8 @@ Section with_cpp.
     intros.
     rewrite /resolve_virtual.
     iIntros "X Y".
-    iDestruct "Y" as (path) "Y".
-    iExists path.
+    iDestruct "Y" as (path ? ?) "[? Y]".
+    iExists path, _, _; iFrame.
     iSplit.
     { iDestruct "Y" as "[$ _]". }
     { iDestruct "Y" as "[_ Y]". case_match => //.

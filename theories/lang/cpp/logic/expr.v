@@ -45,19 +45,21 @@ Module Type Expr.
 
   Section with_resolve.
     Context `{Σ : cpp_logic thread_info} {resolve:genv}.
-    Variables (ρ : region).
+    Variables (tu : translation_unit) (ρ : region).
 
-    #[local] Notation wp_lval := (wp_lval ρ).
-    #[local] Notation wp_prval := (wp_prval ρ).
-    #[local] Notation wp_xval := (wp_xval ρ).
-    #[local] Notation wp_init := (wp_init ρ).
-    #[local] Notation wp_operand := (wp_operand ρ).
-    #[local] Notation wp_initialize := (wp_initialize ρ).
-    #[local] Notation wp_discard := (wp_discard ρ).
-    #[local] Notation wp_glval := (wp_glval ρ).
-    #[local] Notation wp_args := (wp_args ρ).
-    #[local] Notation fspec := (fspec resolve.(genv_tu).(globals)).
-    #[local] Notation mspec := (mspec resolve.(genv_tu).(globals)).
+    #[local] Notation wp_lval := (wp_lval tu ρ).
+    #[local] Notation wp_prval := (wp_prval tu ρ).
+    #[local] Notation wp_xval := (wp_xval tu ρ).
+    #[local] Notation wp_init := (wp_init tu ρ).
+    #[local] Notation wp_operand := (wp_operand tu ρ).
+    #[local] Notation wp_initialize := (wp_initialize tu ρ).
+    #[local] Notation wp_test := (wp_test tu ρ).
+    #[local] Notation wp_discard := (wp_discard tu ρ).
+    #[local] Notation wp_glval := (wp_glval tu ρ).
+    #[local] Notation wp_args := (wp_args tu ρ).
+    #[local] Notation interp := (interp tu).
+    #[local] Notation fspec := (fspec tu.(globals)).
+    #[local] Notation mspec := (mspec tu.(globals)).
 
     #[local] Notation glob_def := (glob_def resolve) (only parsing).
     #[local] Notation size_of := (@size_of resolve) (only parsing).
@@ -82,7 +84,7 @@ Module Type Expr.
              local variables, so it gets [Remp] rather than [ρ].
              In addition, the evaluation is done at compile-time, so we clean
              up the temporaries eagerly. *)
-          WPE.wp_operand (Remp None None ty) e (fun v frees => interp frees $ Q v FreeTemps.id)
+          WPE.wp_operand tu (Remp None None ty) e (fun v frees => interp frees $ Q v FreeTemps.id)
       |-- wp_operand (Econst_ref (Gname cnst) ty) Q.
 
     (* integer literals are prvalues *)
@@ -401,24 +403,24 @@ Module Type Expr.
 
     (** short-circuting operators *)
     Axiom wp_operand_seqand : forall e1 e2 Q,
-        Unfold wp_test (wp_test ρ e1 (fun c free1 =>
+        Unfold WPE.wp_test (wp_test e1 (fun c free1 =>
         (* ^ note: technically an rvalue, but it must be a primitive,
            otherwise there will be an implicit cast to bool, to it is
            always an rvalue *)
            if c
-           then wp_test ρ e2 (fun c free2 => (* see comment above *)
+           then wp_test e2 (fun c free2 => (* see comment above *)
                               Q (Vbool c) (free2 >*> free1))
            else Q (Vbool c) free1))
         |-- wp_operand (Eseqand e1 e2) Q.
 
     Axiom wp_operand_seqor : forall e1 e2 Q,
-        Unfold wp_test (wp_test ρ e1 (fun c free1 =>
+        Unfold WPE.wp_test (wp_test e1 (fun c free1 =>
         (* ^ note: technically an rvalue, but it must be a primitive,
            otherwise there will be an implicit cast to bool, to it is
            always an rvalue *)
            if c
            then Q (Vbool c) free1
-           else wp_test ρ e2 (fun c free2 => (* see comment above *)
+           else wp_test e2 (fun c free2 => (* see comment above *)
                               Q (Vbool c) (free2 >*> free1))))
         |-- wp_operand (Eseqor e1 e2) Q.
 
@@ -629,7 +631,7 @@ Module Type Expr.
 
                     <https://eel.is/c++draft/conv.qual#note-3>
                   *)
-                 type_ptr (resolve:=resolve) (erase_qualifiers ptype) p **
+                 type_ptr (erase_qualifiers ptype) p **
                  Q (Vptr p) free) \\//
               ([| va = 0%N |] ** Q (Vptr nullptr) free)))
         | _ => False
@@ -718,7 +720,7 @@ Module Type Expr.
      *)
     Definition wp_cond {T} (wp : Expr -> (T -> FreeTemps.t -> epred) -> mpred) : Prop :=
       forall ty tst th el (Q : T -> FreeTemps -> mpred),
-        Unfold wp_test (wp_test ρ tst (fun c free =>
+        Unfold WPE.wp_test (wp_test tst (fun c free =>
            if c
            then wp th (fun v free' => Q v (free' >*> free))
            else wp el (fun v free' => Q v (free' >*> free))))
@@ -729,7 +731,7 @@ Module Type Expr.
     Axiom wp_operand_condition : Reduce (wp_cond wp_operand).
 
     Axiom wp_init_condition : forall ty addr tst th el Q,
-        Unfold wp_test (wp_test ρ tst (fun c free =>
+        Unfold WPE.wp_test (wp_test tst (fun c free =>
            if c
            then wp_init ty addr th (fun free' frees => Q free' (frees >*> free))
            else wp_init ty addr el (fun free' frees => Q free' (frees >*> free))))
@@ -907,7 +909,7 @@ Module Type Expr.
                (Q : ptr -> FreeTemps -> epred) : mpred :=
       match decompose_type this_type with
       | (tq, Tnamed cls) =>
-        resolve_virtual (σ:=resolve) this cls f (fun fimpl_addr impl_class thisp =>
+        resolve_virtual this cls f (fun fimpl_addr impl_class thisp => (* this would have to go away *)
             wp_mcall (Vptr fimpl_addr) thisp (tqualified tq (Tnamed impl_class)) fty es $ fun res free_args => Q res free_args)
       | _ => False
       end.
@@ -1041,7 +1043,7 @@ Module Type Expr.
         (* NOTE because the AST does not include the types of the arguments of
            the constructor, we have to look up the type in the environment.
          *)
-           match resolve.(genv_tu) !! cnd with
+           match tu !! cnd with
            | Some cv =>
              addr |-> tblockR (Tnamed cls) 1 -*
              (* ^^ The semantics currently has constructors take ownership of a [tblockR] *)
@@ -1222,7 +1224,7 @@ Module Type Expr.
     Axiom wp_init_initlist_agg : forall cls (base : ptr) es t Q,
         let mem_to_li m := (m.(mem_type), o_field _ {| f_type := cls ; f_name := m.(mem_name) |}) in
         let base_to_li '(base,_) := (Tnamed base, o_base _ cls base) in
-        match resolve.(genv_tu).(globals) !! cls with
+        match tu !! cls with
         | Some (Gstruct s) =>
             (* these constraints are enforced by clang, see note above *)
             [| length s.(s_bases) + length s.(s_fields) = length es |] **
@@ -1251,7 +1253,10 @@ Module Type Expr.
 
   (* `Earrayloop_init` needs to extend the region, so we need to start a new section. *)
   Section with_resolve__arrayloop.
-    Context `{Σ : cpp_logic thread_info} {resolve:genv}.
+    Context `{Σ : cpp_logic thread_info} {σ : genv}.
+    Variable (tu : translation_unit).
+
+    #[local] Notation interp := (interp tu).
 
     (* `Earrayloop_init` and `Earrayloop_index` correspond, respectively,
        to the `ArrayInitLoopExpr`[1] and `ArrayInitIndexExpr`[2] expressions
@@ -1298,8 +1303,8 @@ Module Type Expr.
     (* Maybe we can `Rbind (opaque n) p`, and then add `_opaque` to encapsulate looking this up in the region;
        the new premise would be (after Loc:=ptr goes in) `Q _opaque` *)
     Axiom wp_glval_opaque_ref : forall vc n ρ ty Q,
-          wp_lval ρ (Evar (Lname (opaque_val n)) ty) Q
-      |-- wp_glval ρ vc (Eopaque_ref n ty) Q.
+          wp_lval tu ρ (Evar (Lname (opaque_val n)) ty) Q
+      |-- wp_glval tu ρ vc (Eopaque_ref n ty) Q.
 
     (* Maybe do something similar to what was suggested for `wp_lval_opaque_ref` above. *)
     Axiom wp_operand_arrayloop_index : forall ρ level ty Q,
@@ -1307,7 +1312,7 @@ Module Type Expr.
             ((Exists q, _local ρ (arrayloop_loop_index level)
                                |-> primR (erase_qualifiers ty) q v) **
               True) //\\ Q v FreeTemps.id
-      |-- wp_operand ρ (Earrayloop_index level ty) Q.
+      |-- wp_operand tu ρ (Earrayloop_index level ty) Q.
 
     (* The following loop is essentially the following:
        recursion of `sz`:
@@ -1352,7 +1357,7 @@ Module Type Expr.
                          NOTE that no "correct" program will ever modify this variable
                            anyways. *)
                       loop_index |-> primR Tu64 (1/2) idx -*
-                      wp_initialize ρ ty (targetp .[ ty ! idx ]) init
+                      wp_initialize tu ρ ty (targetp .[ ty ! idx ]) init
                               (fun free => interp free $
                                  loop_index |-> primR Tu64 (1/2) idx **
                                  rest (N.succ idx))) sz idx.
@@ -1360,7 +1365,7 @@ Module Type Expr.
     Axiom wp_init_arrayloop_init : forall oname level sz ρ (trg : ptr) vc src init ety ty Q,
           has_type (Vn sz) Tu64 ->
           is_array_of ty ety ->
-          wp_glval ρ vc src
+          wp_glval tu ρ vc src
                    (fun p free =>
                       Forall idxp,
                       trg |-> validR -*
@@ -1369,7 +1374,7 @@ Module Type Expr.
                                       level trg init ety
                                       (Q (Tarray ety sz) free)
                                       sz 0)
-      |-- wp_init ρ (Tarray ety sz) trg
+      |-- wp_init tu ρ (Tarray ety sz) trg
                     (Earrayloop_init oname vc src level sz init ty) Q.
 
   End with_resolve__arrayloop.

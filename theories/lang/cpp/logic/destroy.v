@@ -15,6 +15,7 @@ Require Import bedrock.lang.cpp.heap_notations.
 
 Section destroy.
   Context `{Σ : cpp_logic thread_info} {σ:genv}.
+  Variable tu : translation_unit.
 
   (* [wp_destructor ty dtor this Q] is the weakest pre-condition of invoking the destructor
      [dtor] (which is the destructor for [ty] on [this].
@@ -22,7 +23,7 @@ Section destroy.
   #[local] Definition wp_destructor (ty : type) (dtor : ptr) (this : ptr) (Q : epred) : mpred :=
     (* NOTE using [Tfunction Tvoid nil] implicitly requires all destructors
        to have C calling convention. *)
-    mspec σ.(genv_tu).(globals) ty (Tfunction Tvoid nil)
+    mspec tu.(globals) ty (Tfunction Tvoid nil)
           dtor (this :: nil) (* NOTE this is the correct calling convention for member functions *)
           (fun p => Exists v, p |-> primR Tvoid 1 v ** this |-> tblockR ty 1 ** Q).
               (* ^ this is inlining [operand_receive] which is not accessible due to cirularity *)
@@ -49,7 +50,7 @@ Section destroy.
     match ty with
     | Tqualified _ ty => destroy_val ty this Q
     | Tnamed cls      =>
-      match σ.(genv_tu) !! cls with
+      match tu !! cls with
       | Some (Gstruct s) =>
          (* NOTE the setup with explicit destructors (even when those destructors are trivial)
                  abstracts away some of the complexities of the underlying C++ semantics that
