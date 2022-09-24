@@ -57,7 +57,7 @@ public:
     NoInclude(SourceManager &_SM) : SM(_SM) {}
 
     /* is this location in an include'd file?
-	 */
+     */
     bool isIncluded(SourceLocation loc) {
         if (!loc.isValid()) {
             return false;

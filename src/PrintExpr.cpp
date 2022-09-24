@@ -1056,12 +1056,12 @@ public:
                                        const ASTContext& ctxt,
                                        OpaqueNames& li) {
 #if 0
-	  if (expr->getExtendingDecl()) {
-		cprint.printName(expr->getExtendingDecl());
-	  } else {
-		error() << "no extending decl\n";
-	  }
-	  error() << "mangling number = " << expr->getManglingNumber() << "\n";
+        if (expr->getExtendingDecl()) {
+            cprint.printName(expr->getExtendingDecl());
+        } else {
+            error() << "no extending decl\n";
+        }
+        error() << "mangling number = " << expr->getManglingNumber() << "\n";
 #endif
 #if 0
         logging::fatal() << "Error: got a 'MaterializeTemporaryExpr' at "

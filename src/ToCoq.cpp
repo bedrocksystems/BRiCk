@@ -36,12 +36,12 @@ void
 ToCoqConsumer::toCoqModule(clang::ASTContext *ctxt,
                            clang::TranslationUnitDecl *decl) {
 #if 0
-	NoInclude noInclude(ctxt->getSourceManager());
-	FromComment fromComment(ctxt);
-	std::list<Filter*> filters;
-	filters.push_back(&noInclude);
-	filters.push_back(&fromComment);
-	Combine<Filter::What::NOTHING, Filter::max> filter(filters);
+    NoInclude noInclude(ctxt->getSourceManager());
+    FromComment fromComment(ctxt);
+    std::list<Filter*> filters;
+    filters.push_back(&noInclude);
+    filters.push_back(&fromComment);
+    Combine<Filter::What::NOTHING, Filter::max> filter(filters);
 #endif
     SpecCollector specs;
     Default filter(Filter::What::DEFINITION);
