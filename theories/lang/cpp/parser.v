@@ -53,7 +53,8 @@ Definition Talias (name : globname) {underlying : type} : type :=
   underlying.
 Definition Tenum (name : globname) {underlying : type} : type :=
   underlying.
-Definition Tunderlying (_enum underlying : type) : type := underlying.
+Definition Tunderlying (enum : type) {underlying : type} : type :=
+  underlying.
 
 Definition mk_overrides (methods : list (obj_name * obj_name)) : list (obj_name * obj_name) := methods.
 

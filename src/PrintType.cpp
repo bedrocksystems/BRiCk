@@ -87,7 +87,7 @@ public:
             // https://en.cppreference.com/w/cpp/utility/to_underlying
             // https://gcc.gnu.org/onlinedocs/gcc-11.1.0/gcc/Type-Traits.html
 
-            print.ctor("Tunderlying");
+            print.ctor("@Tunderlying", false);
 
             // The enumeration
             cprint.printQualType(type->getBaseType(), print);
