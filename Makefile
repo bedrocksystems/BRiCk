@@ -115,10 +115,18 @@ test-coq: cpp2v coq
 
 .PHONY: html coqdocjs doc public redoc
 
-redoc: doc-clean doc
-html doc: coq coqdocjs
+redoc:
+	$(MAKE) doc-clean
+	$(MAKE) doc
+
+# This target does a quick build of the sphinx output for local testing.
+sphinx:
+#	Generate html files in `doc/sphinx/_build/html` using coqdoc outputs and
+#	other sources in `doc/`
+	+$(DOCMK) html
+
+coqdoc: coq coqdocjs
 #	Cleanup existing artifacts (if there are any)
-	rm -rf public
 	rm -rf html
 
 #	Invoke `coqdoc` using the existing `_CoqProject` file, and move the artifacts
@@ -127,9 +135,10 @@ html doc: coq coqdocjs
 	mkdir -p doc/sphinx/_static/coqdoc
 	mv html/* doc/sphinx/_static/coqdoc && rmdir html
 
+html doc: coqdoc
 #	Generate html files in `doc/sphinx/_build/html` using coqdoc outputs and
 #	other sources in `doc/`
-	+$(DOCMK) html
+	$(MAKE) sphinx
 
 coqdocjs:
 #	Copy (custom) `coqdocjs` resources into `doc/sphinx/_static`, removing all
@@ -140,6 +149,7 @@ coqdocjs:
 	cp -r coqdocjs/extra/resources/*.js doc/sphinx/_static/js/coqdocjs
 
 public: html
+	rm -rf public
 	cp -R doc/sphinx/_build/html public
 
 doc-open: doc
