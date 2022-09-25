@@ -577,6 +577,16 @@ Module Type finite_bitmask_type_mixin (Import F : finite_type) (Import B : bitma
 
   Definition to_list (mask : N) : list t := to_list_aux mask $ enum t.
 
+  Lemma elem_of_to_list x n :
+    x ∈ to_list n ↔ testbit n x.
+  Proof. set_solver. Qed.
+
+  #[global] Instance set_unfold_elem_of_to_list x n P :
+    SetUnfold (testbit n x) P →
+    SetUnfoldElemOf x (to_list n) P.
+  Proof. constructor. rewrite elem_of_to_list. set_solver. Qed.
+  #[global] Typeclasses Opaque to_list.
+
   Lemma to_list_0 : to_list 0 = [].
   Proof. apply list_empty_eq_ext; set_solver. Qed.
 
@@ -687,8 +697,18 @@ Module finite_bits (BT : finite_bitmask_type_intf).
   *)
   Definition of_bits (mask : N) : t := list_to_set $ BT.to_list mask.
 
+  Lemma elem_of_of_bits x n :
+    x ∈ of_bits n ↔ BT.testbit n x.
+  Proof. set_solver. Qed.
+
+  #[global] Instance set_unfold_elem_of_to_list x n P :
+    SetUnfold (BT.testbit n x) P →
+    SetUnfoldElemOf x (of_bits n) P.
+  Proof. constructor. rewrite elem_of_of_bits. set_solver. Qed.
+  #[global] Typeclasses Opaque of_bits.
+
   Lemma of_bits_0 : of_bits 0 = ∅.
-  Proof. by rewrite /of_bits BT.to_list_0. Qed.
+  Proof. set_solver. Qed.
 
   Lemma of_bits_or m n : of_bits (m `lor` n) = of_bits m ∪ of_bits n.
   Proof. set_solver. Qed.
