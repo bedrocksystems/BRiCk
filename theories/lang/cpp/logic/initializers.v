@@ -13,6 +13,23 @@ From bedrock.lang.cpp.logic Require Import
      pred path_pred heap_pred wp destroy.
 Require Import bedrock.lang.cpp.heap_notations.
 
+(** The C++ language provides several types of initialization:
+    - default initialization <https://eel.is/c++draft/dcl.init#def:default-initialization>
+    - value initialization <https://eel.is/c++draft/dcl.init#def:value-initialization>
+    - zero initialization <https://eel.is/c++draft/dcl.init#def:zero-initialization>
+    - direct initialization <https://eel.is/c++draft/dcl.init#def:direct-initialization>
+
+    The BRiCk frontend resolves (via clang) the rules for which one of these is used in each
+    context. Therefore, in the semantics, we are left with only two cases:
+    - default initialization (implemented by [default_initialize]), which occurs when there
+      is no expression used to initialize the value
+    - expression initialization (implemented by [wp_initialize]), which occus when there is
+      an expression used to initialize the value.
+
+    Note that the frontend inserts constructor calls to default initialize objects, so
+    [Tnamed] types can *not* be default initialized.
+ *)
+
 Module Type Init.
 
   Section with_resolve.
