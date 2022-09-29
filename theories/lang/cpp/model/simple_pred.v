@@ -740,35 +740,35 @@ Module SimpleCPP.
     Proof. by rewrite code_own_strict_valid strict_valid_valid. Qed.
     Typeclasses Opaque code_own.
 
-    Definition code_at (_ : genv) (f : Func) (p : ptr) : mpred :=
+    Definition code_at (_ : genv) (_ : translation_unit) (f : Func) (p : ptr) : mpred :=
       code_own p (inl (inl (inl f))).
-    Definition method_at (_ : genv) (m : Method) (p : ptr) : mpred :=
+    Definition method_at (_ : genv) (_ : translation_unit) (m : Method) (p : ptr) : mpred :=
       code_own p (inl (inl (inr m))).
-    Definition ctor_at (_ : genv) (c : Ctor) (p : ptr) : mpred :=
+    Definition ctor_at (_ : genv) (_ : translation_unit) (c : Ctor) (p : ptr) : mpred :=
       code_own p (inl (inr c)).
-    Definition dtor_at (_ : genv) (d : Dtor) (p : ptr) : mpred :=
+    Definition dtor_at (_ : genv) (_ : translation_unit) (d : Dtor) (p : ptr) : mpred :=
       code_own p (inr d).
 
-    Instance code_at_persistent : forall s f p, Persistent (@code_at s f p) := _.
-    Instance code_at_affine : forall s f p, Affine (@code_at s f p) := _.
-    Instance code_at_timeless : forall s f p, Timeless (@code_at s f p) := _.
+    Instance code_at_persistent : forall s tu f p, Persistent (@code_at s tu f p) := _.
+    Instance code_at_affine : forall s tu f p, Affine (@code_at s tu f p) := _.
+    Instance code_at_timeless : forall s tu f p, Timeless (@code_at s tu f p) := _.
 
-    Instance method_at_persistent : forall s f p, Persistent (@method_at s f p) := _.
-    Instance method_at_affine : forall s f p, Affine (@method_at s f p) := _.
-    Instance method_at_timeless : forall s f p, Timeless (@method_at s f p) := _.
+    Instance method_at_persistent : forall s tu f p, Persistent (@method_at s tu f p) := _.
+    Instance method_at_affine : forall s tu f p, Affine (@method_at s tu f p) := _.
+    Instance method_at_timeless : forall s tu f p, Timeless (@method_at s tu f p) := _.
 
-    Instance ctor_at_persistent : forall s f p, Persistent (@ctor_at s f p) := _.
-    Instance ctor_at_affine : forall s f p, Affine (@ctor_at s f p) := _.
-    Instance ctor_at_timeless : forall s f p, Timeless (@ctor_at s f p) := _.
+    Instance ctor_at_persistent : forall s tu f p, Persistent (@ctor_at s tu f p) := _.
+    Instance ctor_at_affine : forall s tu f p, Affine (@ctor_at s tu f p) := _.
+    Instance ctor_at_timeless : forall s tu f p, Timeless (@ctor_at s tu f p) := _.
 
-    Instance dtor_at_persistent : forall s f p, Persistent (@dtor_at s f p) := _.
-    Instance dtor_at_affine : forall s f p, Affine (@dtor_at s f p) := _.
-    Instance dtor_at_timeless : forall s f p, Timeless (@dtor_at s f p) := _.
+    Instance dtor_at_persistent : forall s tu f p, Persistent (@dtor_at s tu f p) := _.
+    Instance dtor_at_affine : forall s tu f p, Affine (@dtor_at s tu f p) := _.
+    Instance dtor_at_timeless : forall s tu f p, Timeless (@dtor_at s tu f p) := _.
 
-    Axiom code_at_live   : forall s f p,   @code_at s f p |-- live_ptr p.
-    Axiom method_at_live : forall s f p, @method_at s f p |-- live_ptr p.
-    Axiom ctor_at_live   : forall s f p,   @ctor_at s f p |-- live_ptr p.
-    Axiom dtor_at_live   : forall s f p,   @dtor_at s f p |-- live_ptr p.
+    Axiom code_at_live   : forall s tu f p,   @code_at s tu f p |-- live_ptr p.
+    Axiom method_at_live : forall s tu f p, @method_at s tu f p |-- live_ptr p.
+    Axiom ctor_at_live   : forall s tu f p,   @ctor_at s tu f p |-- live_ptr p.
+    Axiom dtor_at_live   : forall s tu f p,   @dtor_at s tu f p |-- live_ptr p.
 
     Section with_genv.
       Context {σ : genv}.
@@ -777,13 +777,13 @@ Module SimpleCPP.
       Local Notation ctor_at := (ctor_at σ) (only parsing).
       Local Notation dtor_at := (dtor_at σ) (only parsing).
 
-      Lemma code_at_strict_valid   f p :   code_at f p |-- strict_valid_ptr p.
+      Lemma code_at_strict_valid tu f p :   code_at tu f p |-- strict_valid_ptr p.
       Proof. exact: code_own_strict_valid. Qed.
-      Lemma method_at_strict_valid f p :   method_at f p |-- strict_valid_ptr p.
+      Lemma method_at_strict_valid tu f p :   method_at tu f p |-- strict_valid_ptr p.
       Proof. exact: code_own_strict_valid. Qed.
-      Lemma ctor_at_strict_valid   f p :   ctor_at f p |-- strict_valid_ptr p.
+      Lemma ctor_at_strict_valid tu f p :   ctor_at tu f p |-- strict_valid_ptr p.
       Proof. exact: code_own_strict_valid. Qed.
-      Lemma dtor_at_strict_valid   f p :   dtor_at f p |-- strict_valid_ptr p.
+      Lemma dtor_at_strict_valid tu f p :   dtor_at tu f p |-- strict_valid_ptr p.
       Proof. exact: code_own_strict_valid. Qed.
     End with_genv.
 
