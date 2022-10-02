@@ -668,7 +668,7 @@ Section with_cpp.
 
   (* BEGIN wp_init <-> wp_operand *)
   Axiom wp_operand_wp_init : forall {σ : genv} ρ ty addr e Q,
-      is_primitive ty ->
+      is_value_type ty ->
       wp_operand ρ e (fun v frees => _at addr (primR ty 1 v) -* Q ty frees)
     |-- wp_init ρ ty addr e Q.
 
@@ -676,7 +676,7 @@ Section with_cpp.
 
     [[
    Axiom wp_init_wp_operand : forall {σ : genv} M ρ addr e Q (ty := type_of e),
-      is_primitive ty ->
+      is_value_type ty ->
       wp_prval M ρ e (fun p free frees =>
          [| FreeTemps.t_eq free (FreeTemps.delete ty addr) |] **
          ∃ v, _at addr (primR ty 1 v) ** Q v frees)
@@ -849,7 +849,7 @@ Section with_cpp.
       match vc with
       | Lvalue => wp_lval ρ e (fun _ => Q)
       | Prvalue =>
-        if is_primitive (type_of e) then
+        if is_value_type (type_of e) then
           @wp_operand resolve ρ e (fun _ free => Q free)
         else
           Forall p, wp_init ρ (type_of e) p e (fun ty frees => Q (FreeTemps.delete ty p >*> frees)%free)

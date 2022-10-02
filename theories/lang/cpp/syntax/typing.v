@@ -173,9 +173,10 @@ Definition class_name (t : type) : option globname :=
   | _ => None
   end.
 
-(** [is_primitive t] returns [true] if [t] is a primitive type.
+(** [is_value_type t] returns [true] if [t] has value semantics.
+    A value type is one that can be represented by [val].
  *)
-Definition is_primitive (t : type) : bool :=
+Definition is_value_type (t : type) : bool :=
   match drop_qualifiers t with
   | Tnum _ _
   | Tbool
@@ -183,6 +184,7 @@ Definition is_primitive (t : type) : bool :=
   | Tnullptr
   | Tfloat _
   | Tmember_pointer _ _
+  | Tenum _ (* enum types are value types *)
   | Tvoid => true
   | _ => false
   end.
