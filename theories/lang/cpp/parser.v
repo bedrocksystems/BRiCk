@@ -34,6 +34,8 @@ Definition Nanon (ty : globname) : globname :=
 
 Definition Cenum_const (e : globname) (x : ident) : obj_name :=
   e ++ "::" ++ x.
+Definition Eenum_const_at (e : globname) (ety ty : type) : Expr :=
+  Ecast Cintegral Prvalue (Econst_ref (Gname e) ety) ty.
 
 Definition pure_virt (x : obj_name) : obj_name * option obj_name :=
   (x, None).
