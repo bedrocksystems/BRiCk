@@ -5,7 +5,7 @@ Local Open Scope string_scope.
 
 From MetaCoq.Template Require Import
      monad_utils Ast Loader TemplateMonad.
-Import MonadNotation.
+Import MCMonadNotation.
 
 Require Import Lens.Lens.
 
@@ -71,7 +71,8 @@ Local Definition getFields (mi : mutual_inductive_body) (n : nat)
     match oib.(ind_ctors) with
     | nil => tmFail "`getFields` got empty type"
     | ctor :: nil =>
-      let '(ctor_name,ctor_type,_) := ctor in
+      let ctor_name := ctor.(cstr_name) in
+      let ctor_type := ctor.(cstr_type) in
       match oib.(ind_projs) with
       | nil =>
         let ctor_arity := get_arity ctor_type in

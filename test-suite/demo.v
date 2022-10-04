@@ -5,7 +5,7 @@ Require Import Lens.TC.TC.
 Record Oops : Set :=
 { oops1 : nat }.
 
-Fail Run TemplateProgram (genLens Oops).
+Fail MetaCoq Run (genLens Oops).
 
 Set Primitive Projections.
 
@@ -14,7 +14,7 @@ Record Foo : Set :=
 ; bar : bool }.
 
 
-Run TemplateProgram (genLens Foo).
+MetaCoq Run (genLens Foo).
 
 About _foo.
 About _bar.
