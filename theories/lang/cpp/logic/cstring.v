@@ -346,7 +346,8 @@ Module cstring.
             by (f_equal; assumption)
         end.
         rewrite Byte.of_bits_to_bits in Hb'; subst.
-        by inversion Heqa.
+        revert select (Ascii _ _ _ _ _ _ _ _ = _) => H000.
+        by inversion H000.
       }
       replace (BS.print cstr) with (BS.print (from_zstring (to_zstring cstr)))
         in H by (rewrite from_to_zstring//).

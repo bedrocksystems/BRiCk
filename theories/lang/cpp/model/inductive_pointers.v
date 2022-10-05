@@ -566,7 +566,7 @@ Module PTRS_IMPL <: PTRS_INTF.
     destruct p; rewrite //= ?assoc //=.
     move: o1 o2 => [o1 /= +] [o2 /= +]; rewrite /raw_offset_wf => WF1 WF2.
     repeat (case_match; simplify_eq/= => //).
-    by rewrite Heqr in WF2.
+    by rewrite H in WF2.
   Admitted.
 
   Lemma o_sub_0 σ ty :

@@ -86,7 +86,7 @@ Section definition.
 
   (** Atomic commits *)
   Definition atomic_commit_def b Eo Ei α β Φ : PROP :=
-    make_laterable (commit_acc b Eo Ei α β Φ).
+    commit_acc b Eo Ei α β Φ.
 
 End definition.
 
@@ -438,7 +438,6 @@ Section lemmas.
     atomic_commit false Eo Ei α β Φ -∗ atomic_commit true Eo Ei α β Φ.
   Proof.
     rewrite atomic_commit_eq /atomic_commit_def /=.
-    iApply make_laterable_intuitionistic_wand. iIntros "!>".
     by iApply commit_acc_commit1_acc.
   Qed.
 
@@ -447,17 +446,14 @@ Section lemmas.
     atomic_commit b Eo1 Ei α β Φ -∗ atomic_commit b Eo2 Ei α β Φ.
   Proof.
     rewrite atomic_commit_eq /atomic_commit_def.
-    iIntros (Heo) "HAU".
-    iApply (make_laterable_intuitionistic_wand with "[] HAU"). iIntros "!>".
-    iApply commit_acc_mask_weaken. done.
+    iIntros (Heo) "HAU". by iApply commit_acc_mask_weaken.
   Qed.
 
   (** The elimination form: a commit accessor *)
   Lemma atomic_commit_elim b Eo Ei α β Φ :
     atomic_commit b Eo Ei α β Φ -∗ commit_acc b Eo Ei α β Φ.
   Proof.
-    rewrite atomic_commit_eq /atomic_commit_def. iIntros "HUpd".
-    by iMod (make_laterable_elim with "HUpd").
+    rewrite atomic_commit_eq /atomic_commit_def. done.
   Qed.
 
   (* This lets you eliminate atomic commits with iMod. *)
@@ -474,18 +470,13 @@ Section lemmas.
     iApply "Hcont". done.
   Qed.
 
-  Global Instance atomic_commit_laterable b Eo Ei α β Φ :
-    Laterable (atomic_commit b Eo Ei α β Φ).
-  Proof. rewrite atomic_commit_eq. apply _. Qed.
-
   Lemma atomic_commit_intro P Q b α β Eo Ei Φ :
-    Affine P → Persistent P → Laterable Q →
+    Affine P → Persistent P →
     (P ∗ Q -∗ commit_acc b Eo Ei α β Φ) →
     P ∗ Q -∗ atomic_commit b Eo Ei α β Φ.
   Proof.
     rewrite atomic_commit_eq /atomic_commit_def.
-    iIntros (??? HAU) "[#HP HQ]".
-    iApply (make_laterable_intro Q with "[] HQ"). iIntros "!> HQ".
+    iIntros (?? HAU) "[#HP HQ]".
     iApply HAU. by iFrame.
   Qed.
 
@@ -573,23 +564,17 @@ Section proof_mode.
   Implicit Types (α : TA → PROP) (β Φ : TA → TB → PROP).
 
   Lemma tac_atomic_commit_intro Γp Γs n b α β Eo Ei Φ :
-    TCOr (ListNonEmpty (env_to_list Γs)) (Timeless (PROP:=PROP) emp) →
-    TCForall Laterable (env_to_list Γs) →
     envs_entails (Envs Γp Γs n) (commit_acc b Eo Ei α β Φ) →
     envs_entails (Envs Γp Γs n) (atomic_commit b Eo Ei α β Φ).
   Proof.
-    intros ??. rewrite envs_entails_eq of_envs_eq' /=.
-    exact: atomic_commit_intro.
+    by rewrite atomic_commit_eq /atomic_commit_def.
   Qed.
 End proof_mode.
 
 (** Now the coq-level tactics *)
 
 Tactic Notation "iAcIntro" :=
-  iStartProof; eapply tac_atomic_commit_intro; [
-    iSolveTC || fail "iAcIntro: spatial context not empty and emp is not timeless"
-  | iSolveTC || fail "iAcIntro: not all spatial assumptions are laterable"
-  | (* the new proof mode goal *) ].
+  iStartProof; eapply tac_atomic_commit_intro.
 Tactic Notation "iCaccIntro" "with" constr(sel) :=
   iStartProof; lazymatch goal with
   | |- environments.envs_entails _ (@commit_acc ?PROP ?H ?TA ?TB ?b ?Eo ?Ei ?α ?β ?Φ) =>

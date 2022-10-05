@@ -134,19 +134,18 @@ Section definition.
   Qed.
 
   (** atomic1_update as a fixed-point of the equation
-   AU = make_laterable $ atomic1_acc α AU β Q
+   AU = atomic1_acc α AU β Q
   *)
   Context Eo Ei α β Φ.
 
   Definition atomic1_update_pre (Ψ : () → PROP) (_ : ()) : PROP :=
-    make_laterable $ atomic1_acc Eo Ei α (Ψ ()) β Φ.
+    atomic1_acc Eo Ei α (Ψ ()) β Φ.
 
   Local Instance atomic1_update_pre_mono : BiMonoPred atomic1_update_pre.
   Proof.
     constructor.
     - iIntros (P1 P2 ??) "#HP12". iIntros ([]) "AU".
-      iApply (make_laterable_intuitionistic_wand with "[] AU").
-      iIntros "!> AA". iApply (atomic1_acc_wand with "[HP12] AA").
+      iApply (atomic1_acc_wand with "[HP12] AU").
       iSplit; last by eauto. iApply "HP12".
     - intros ??. solve_proper.
   Qed.
@@ -322,11 +321,10 @@ Section lemmas.
   Lemma atomic_update_atomic1_update Eo Ei α β Φ :
     atomic_update Eo Ei α β Φ -∗ atomic1_update Eo Ei α β Φ.
   Proof.
-    rewrite atomic_update_eq atomic1_update_eq /atomic1_update_def /=.
+    rewrite atomic.atomic_update_unseal atomic1_update_eq /atomic1_update_def /=.
     iIntros "HAU".
-    iApply (greatest_fixpoint_coiter _ (λ _, atomic_update_def Eo Ei α β Φ)); last done.
-    iIntros "!> *". rewrite {1}/atomic_update_def /= greatest_fixpoint_unfold.
-    iApply make_laterable_intuitionistic_wand. iIntros "!>".
+    iApply (greatest_fixpoint_coiter _ (λ _, atomic.atomic_update_def Eo Ei α β Φ)); last done.
+    iIntros "!> *". rewrite {1}/atomic.atomic_update_def /= greatest_fixpoint_unfold.
     by iApply atomic_acc_atomic1_acc.
   Qed.
 
@@ -338,7 +336,6 @@ Section lemmas.
     iIntros (Heo) "HAU".
     iApply (greatest_fixpoint_coiter _ (λ _, atomic1_update_def Eo1 Ei α β Φ)); last done.
     iIntros "!> *". rewrite {1}/atomic1_update_def /= greatest_fixpoint_unfold.
-    iApply make_laterable_intuitionistic_wand. iIntros "!>".
     iApply atomic1_acc_mask_weaken. done.
   Qed.
 
@@ -348,8 +345,7 @@ Section lemmas.
     atomic1_acc Eo Ei α (atomic1_update Eo Ei α β Φ) β Φ.
   Proof using Type*.
     rewrite atomic1_update_eq {1}/atomic1_update_def /=. iIntros "HUpd".
-    iPoseProof (greatest_fixpoint_unfold_1 with "HUpd") as "HUpd".
-    by iMod (make_laterable_elim with "HUpd").
+    iPoseProof (greatest_fixpoint_unfold_1 with "HUpd") as "HUpd". done.
   Qed.
 
   (* This lets you eliminate atomic updates with iMod. *)
@@ -368,22 +364,14 @@ Section lemmas.
     iApply "Hcont". done.
   Qed.
 
-  Global Instance aupd1_laterable Eo Ei α β Φ :
-    Laterable (atomic1_update Eo Ei α β Φ).
-  Proof.
-    rewrite atomic1_update_eq {1}/atomic1_update_def greatest_fixpoint_unfold.
-    apply _.
-  Qed.
-
   Lemma aupd1_intro P Q α β Eo Ei Φ :
-    Affine P → Persistent P → Laterable Q →
+    Affine P → Persistent P →
     (P ∗ Q -∗ atomic1_acc Eo Ei α Q β Φ) →
     P ∗ Q -∗ atomic1_update Eo Ei α β Φ.
   Proof.
     rewrite atomic1_update_eq {1}/atomic1_update_def /=.
-    iIntros (??? HAU) "[#HP HQ]".
+    iIntros (?? HAU) "[#HP HQ]".
     iApply (greatest_fixpoint_coiter _ (λ _, Q)); last done. iIntros "!>" ([]) "HQ".
-    iApply (make_laterable_intro Q with "[] HQ"). iIntros "!> HQ".
     iApply HAU. by iFrame.
   Qed.
 
@@ -617,6 +605,12 @@ End lemmas.
   Qed.
 End atomic.
 
+Theorem of_envs_alt' {PROP : bi} (Δ : envs PROP) :
+  of_envs Δ ⊣⊢ (⌜envs_wf Δ⌝ ∧ □ [∧] env_intuitionistic Δ) ∗ [∗] env_spatial Δ.
+Proof.
+  rewrite of_envs_alt. iSplit; [iIntros "[$[$$]]" | iIntros "[[$$]$]"].
+Qed.
+
 (** The tactic [iAuIntro1] applies lemma [aupd1_aacc] to change an Iris
     proof mode goal [P := atomic1_update Eo Ei α β Φ] into [atomic1_acc Eo
     Ei α P β Φ] _provided_ everything in the proof mode's spatial context
@@ -629,14 +623,17 @@ Section coq_tactic.
   Implicit Types (β Φ : TA → TB → PROP).
 
   Lemma tac_aupd1_intro Γp Γs n α β Eo Ei Φ P :
-    TCOr (ListNonEmpty (env_to_list Γs)) (Timeless (PROP:=PROP) emp) →
-    TCForall Laterable (env_to_list Γs) →
     P = env_to_prop Γs →
     envs_entails (Envs Γp Γs n) (atomic1_acc Eo Ei α P β Φ) →
     envs_entails (Envs Γp Γs n) (atomic1_update Eo Ei α β Φ).
   Proof.
-    intros ?? ->. rewrite envs_entails_eq of_envs_eq' /=.
-    rewrite env_to_prop_sound=>?. exact: aupd1_intro.
+    intros ->. rewrite envs_entails_unseal of_envs_eq /=.
+    setoid_rewrite env_to_prop_sound =>HAU.
+    iIntros "[#P [#Q R]]". iStopProof. apply: aupd1_intro.
+    iIntros "[#P Q]". iApply HAU.
+    iSplit; first iDestruct "P" as "[$ _]".
+    iSplit; last done.
+    iDestruct "P" as "[_ $]".
   Qed.
 End coq_tactic.
 
@@ -646,9 +643,7 @@ Proof. iIntros "AU". Fail iAuIntro. Abort.
 
 Tactic Notation "iAuIntro1" :=
   iStartProof; eapply tac_aupd1_intro; [
-    iSolveTC || fail "iAuIntro1: emp is not timeless"
-  | iSolveTC || fail "iAuIntro1: not all spatial assumptions are laterable"
-  | (* P = ...: make the P pretty *) reduction.pm_reflexivity
+    (* P = ...: make the P pretty *) reduction.pm_reflexivity
   | (* the new proof mode goal *) ].
 Lemma test_after `{BiFUpd PROP} {TA TB : tele} Eo Ei α (β Φ : TA → TB → PROP) :
   atomic1_update Eo Ei α β Φ ⊢ atomic1_update Eo Ei α β Φ.

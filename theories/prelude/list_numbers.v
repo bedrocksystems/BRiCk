@@ -157,7 +157,7 @@ Lemma replicateN_S {A} (x : A) n : replicateN (N.succ n) x = x :: replicateN n x
 Proof. by rewrite /replicateN/= N2Nat.inj_succ. Qed.
 
 Lemma replicateN_plus {A} (x : A) n m : replicateN (n + m) x = replicateN n x ++ replicateN m x.
-Proof. unfold replicateN; rewrite N2Nat.inj_add; apply replicate_plus. Qed.
+Proof. unfold replicateN; rewrite N2Nat.inj_add; apply replicate_add. Qed.
 
 Lemma elem_of_replicateN {A} (count : N) (b a : A) : a ∈ replicateN count b → b = a.
 Proof. by intros [-> _]%elem_of_replicate. Qed.
@@ -206,7 +206,7 @@ Section listN.
 
   Lemma dropN_replicateN_plus n m x :
     dropN n (replicateN (n + m) x) = replicateN m x.
-  Proof. by rewrite /dropN /replicateN N2Nat.inj_add drop_replicate_plus. Qed.
+  Proof. by rewrite /dropN /replicateN N2Nat.inj_add drop_replicate_add. Qed.
 
   (* Lift all theory about [take] and [replicate] interaction. *)
   Lemma takeN_replicateN n m x :
@@ -215,7 +215,7 @@ Section listN.
 
   Lemma takeN_replicateN_plus n m x :
     takeN n (replicateN (n + m) x) = replicateN n x.
-  Proof. by rewrite /takeN /replicateN N2Nat.inj_add take_replicate_plus. Qed.
+  Proof. by rewrite /takeN /replicateN N2Nat.inj_add take_replicate_add. Qed.
 
   Lemma to_nat_lengthN xs :
     N.to_nat (lengthN xs) = length xs.
@@ -309,7 +309,7 @@ Section listN.
 
   Lemma resizeN_plusN l n m x :
     resizeN (n + m) x l = resizeN n x l ++ resizeN m x (dropN n l).
-  Proof. by rewrite /resizeN /dropN N2Nat.inj_add resize_plus. Qed.
+  Proof. by rewrite /resizeN /dropN N2Nat.inj_add resize_add. Qed.
 
   Lemma resizeN_takeN_eq l n x :
     resizeN n x (takeN n l) = resizeN n x l.
@@ -371,7 +371,7 @@ Section listN.
 
   Lemma dropN_resizeN_plus l m n x :
     dropN n (resizeN (n + m) x l) = resizeN m x (dropN n l).
-  Proof. by rewrite /dropN /resizeN N2Nat.inj_add drop_resize_plus. Qed.
+  Proof. by rewrite /dropN /resizeN N2Nat.inj_add drop_resize_add. Qed.
 
   Lemma dropN_resizeN_le l n m x :
     n <= m →
@@ -466,7 +466,7 @@ Section listN.
 
   Lemma takeN_resizeN_plus l n m x :
     takeN n (resizeN (n + m) x l) = resizeN n x l.
-  Proof. by rewrite /takeN /resizeN N2Nat.inj_add take_resize_plus. Qed.
+  Proof. by rewrite /takeN /resizeN N2Nat.inj_add take_resize_add. Qed.
 
   Lemma takeN_resizeN_le l n m x  :
     n ≤ m →

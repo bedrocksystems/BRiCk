@@ -68,7 +68,7 @@ Section tele_fun_quantifiers.
   Proof. rewrite tbi_exist_bi_texist. f_equiv=>x. by rewrite tele_app_bind. Qed.
 
   (** Avoid the preceding lemmas which would unduly constrain universe [Y]. *)
-  Lemma tbi_exist_exist@{X Z Y} {t} (P : tele_fun@{X Z Y} t PROP) :
+  Lemma tbi_exist_exist@{X Z Y} {t : tele@{X}} (P : tele_fun@{X Z Y} t PROP) :
     tbi_exist P -|- Exists x, tele_app P x.
   Proof.
     induction t as [|B bnd IH]; simpl; split'.
@@ -80,16 +80,16 @@ Section tele_fun_quantifiers.
       rewrite -(bi.exist_intro b) IH. by rewrite -(bi.exist_intro arg).
   Qed.
 
-  Lemma tbi_exist_mono@{X Z Y} {t} (P1 P2 : tele_fun@{X Z Y} t PROP) :
+  Lemma tbi_exist_mono@{X Z Y} {t : tele@{X}} (P1 P2 : tele_fun@{X Z Y} t PROP) :
     tele_fun_pointwise@{X Z Y} (⊢) P1 P2 -> tbi_exist P1 ⊢ tbi_exist P2.
   Proof. intros. rewrite !tbi_exist_exist. solve_proper. Qed.
 
-  Lemma tbi_exist_ne@{X Z Y} {t} n (P1 P2 : tele_fun@{X Z Y} t PROP) :
+  Lemma tbi_exist_ne@{X Z Y} {t : tele@{X}} n (P1 P2 : tele_fun@{X Z Y} t PROP) :
     tele_fun_pointwise@{X Z Y} (dist n) P1 P2 ->
     dist n (tbi_exist P1) (tbi_exist P2).
   Proof. intros. rewrite !tbi_exist_exist. solve_proper. Qed.
 
-  Lemma tbi_exist_proper@{X Z Y} {t} (P1 P2 : tele_fun@{X Z Y} t PROP) :
+  Lemma tbi_exist_proper@{X Z Y} {t : tele@{X}} (P1 P2 : tele_fun@{X Z Y} t PROP) :
     tele_fun_pointwise@{X Z Y} equiv P1 P2 ->
     equiv (tbi_exist P1) (tbi_exist P2).
   Proof. intros. rewrite !tbi_exist_exist. solve_proper. Qed.
@@ -99,7 +99,7 @@ Section tele_fun_quantifiers.
   Lemma bi_tforall_tbi_forall {t} (R : t -> PROP) : (∀.. x, R x) -|- tbi_forall (tele_bind R).
   Proof. rewrite tbi_forall_bi_tforall. f_equiv=>x. by rewrite tele_app_bind. Qed.
 
-  Lemma tbi_forall_forall@{X Z Y} {t} (P : tele_fun@{X Z Y} t PROP) :
+  Lemma tbi_forall_forall@{X Z Y} {t : tele@{X}} (P : tele_fun@{X Z Y} t PROP) :
     tbi_forall P -|- Forall x, tele_app P x.
   Proof.
     induction t as [|B bnd IH]; simpl; split'.
@@ -111,16 +111,16 @@ Section tele_fun_quantifiers.
       by rewrite (bi.forall_elim (TargS b ys)).
   Qed.
 
-  Lemma tbi_forall_mono@{X Z Y} {t} (P1 P2 : tele_fun@{X Z Y} t PROP) :
+  Lemma tbi_forall_mono@{X Z Y} {t : tele@{X}} (P1 P2 : tele_fun@{X Z Y} t PROP) :
     tele_fun_pointwise@{X Z Y} (⊢) P1 P2 -> tbi_forall P1 ⊢ tbi_forall P2.
   Proof. intros. rewrite !tbi_forall_forall. solve_proper. Qed.
 
-  Lemma tbi_forall_ne@{X Z Y} {t} n (P1 P2 : tele_fun@{X Z Y} t PROP) :
+  Lemma tbi_forall_ne@{X Z Y} {t : tele@{X}} n (P1 P2 : tele_fun@{X Z Y} t PROP) :
     tele_fun_pointwise@{X Z Y} (dist n) P1 P2 ->
     dist n (tbi_forall P1) (tbi_forall P2).
   Proof. intros. rewrite !tbi_forall_forall. solve_proper. Qed.
 
-  Lemma tbi_forall_proper@{X Z Y} {t} (P1 P2 : tele_fun@{X Z Y} t PROP) :
+  Lemma tbi_forall_proper@{X Z Y} {t : tele@{X}} (P1 P2 : tele_fun@{X Z Y} t PROP) :
     tele_fun_pointwise@{X Z Y} equiv P1 P2 ->
     equiv (tbi_forall P1) (tbi_forall P2).
   Proof. intros. rewrite !tbi_forall_forall. solve_proper. Qed.

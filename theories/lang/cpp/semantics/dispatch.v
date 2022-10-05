@@ -111,9 +111,8 @@ Section dispatch.
         apply IHpath in Heq. rewrite Heq. clear IHpath Heq.
         simpl in *.
         do 2 (case_match; try congruence).
-        eapply glob_def_genv_compat_struct in Heqo0.
-        unfold glob_def in *. rewrite Heqo0.
-        case_match; eauto. }
+        revert select (_ !! _ = _) => /glob_def_genv_compat_struct.
+        unfold glob_def. move => ->. case_match; eauto. }
       { inversion H. }
     Qed.
 

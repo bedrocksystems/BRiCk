@@ -373,17 +373,10 @@ Module zstring.
         }
         suff: List.Forall (fun x => x <> 0 /\ has_type (σ:=σ) (Vint x) Tuchar)
                           (take (Datatypes.length zs - 1) zs).
-        { clear - zs. elim: zs => //=; first by move => _ [].
-          move => a zs IH /=; inversion 1; subst; first by inversion 1.
-          have X: (List.length zs - 0 = List.length zs)%nat by lia. rewrite X in H.
-          inversion H0; apply Forall_and_inv in H1 as [Hin Hforall].
-          inversion 1; subst; first move: H; destruct zs=> //.
-          apply: IH => /=.
-          { destruct zs => //=.
-            simpl in x; inversion x; subst => //. }
-          destruct zs => //=; inversion H; subst. 1: inversion H4.
-          inversion H4; subst; [by left | by right]. }
-          apply: forall_not0. apply h2. apply h3. }
+        { clear - zs. elim: zs => //= [_ [] //|a zs IH /=]. rewrite Nat.sub_0_r.
+          destruct zs as [|z zs]; first done. move => /= /Forall_cons [[??]?].
+          move => [//|]. simpl in IH. rewrite Nat.sub_0_r in IH. apply IH. done. }
+        apply: forall_not0. apply h2. apply h3. }
       case => zs' []-> h1. split.
       { destruct zs'; simpl; first by exists 0.
                                           by exists z. }
