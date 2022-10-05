@@ -1,7 +1,8 @@
 From Coq.Classes Require Import DecidableClass.
 From Coq.Lists Require Import List.
 From Coq.Strings Require Import String.
-From MetaCoq.Template Require Import utils All.
+From MetaCoq.Template Require Import utils monad_utils.
+From MetaCoq.Template Require Import Ast Loader TemplateMonad.
 From Lens Require Import Lens.
 
 Import MCMonadNotation.
