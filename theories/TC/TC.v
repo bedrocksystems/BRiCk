@@ -1,13 +1,10 @@
 Require Import Coq.Classes.DecidableClass.
 Require Import Coq.Lists.List.
 Require Import Coq.Strings.String.
-Local Open Scope string_scope.
-
-From MetaCoq.Template Require Import
-     monad_utils Ast Loader TemplateMonad.
-Import MCMonadNotation.
-
+From MetaCoq.Template Require Import utils All.
 Require Import Lens.Lens.
+
+Import MCMonadNotation.
 
 Set Primitive Projections.
 
@@ -23,8 +20,8 @@ Fixpoint countTo (n : nat) : list nat :=
   | S m => countTo m ++ (m :: nil)
   end.
 
-Definition lensName (ls : string) (i : ident) : ident :=
-  ls ++ i.
+Definition lensName (ls : String.string) (i : ident) : ident :=
+  String.of_string (ls ++ String.to_string i).
 
 MetaCoq Quote Definition cBuild_Lens := Build_Lens.
 
@@ -36,7 +33,7 @@ Local Definition mkLens (At : term) (fields : list (ident * term)) (i : nat)
     match nth_error fields i with
     | None => None
     | Some (name, Bt) =>
-      let p (x : nat) : projection := (ind, 0, x) in
+      let p (x : nat) : projection := mkProjection ind 0 x in
       let get_body := tProj (p i) (tRel 0) in
       let f x :=
           let this := tProj (p x) (tRel 0) in
@@ -77,13 +74,19 @@ Local Definition getFields (mi : mutual_inductive_body) (n : nat)
       | nil =>
         let ctor_arity := get_arity ctor_type in
         if decide (ctor_arity > get_arity oib.(ind_type)) then
-          tmFail ("info: the constructor " ++ ctor_name ++ " has no projections but an arity of " ++ MCString.string_of_nat ctor_arity ++ ". Perhaps you forgot to enable primitive projections before the definition of the Record.")
+          let name := String.to_string ctor_name in
+          let arity := String.to_string (MCString.string_of_nat ctor_arity) in
+          tmFail (String.of_string (
+            "info: the constructor " ++ name ++ " has no projections but " ++
+            "an arity of " ++ arity ++ ". Perhaps you forgot to enable " ++
+            "primitive projections before the definition of the Record."
+          )%string)
         else ret tt
       | _ => ret tt
       end ;;
       ret {| type := oib.(ind_name)
            ; ctor := ctor_name
-           ; fields := oib.(ind_projs)
+           ; fields := map (fun p => (p.(proj_name), p.(proj_type))) oib.(ind_projs)
            |}
     | _ => tmFail "`getFields` got variant type"
     end
