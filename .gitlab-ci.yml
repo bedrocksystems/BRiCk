@@ -75,7 +75,7 @@ stages:
       when: never
     - if: '$CI_PIPELINE_SOURCE =~ /^(api|chat|external|external_pull_request_event)$/'
       when: never
-    - when: always
+    - when: on_success
 
 #This is a template job that's extended below by the real jobs
 # build_{latest,llvm10,public} (see, e.g., https://docs.gitlab.com/ee/ci/yaml/#extends).
