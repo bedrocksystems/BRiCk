@@ -316,6 +316,11 @@ Section with_cpp.
     by rewrite -impl pureR_emp.
   Qed.
 
+  Lemma _at_cptrR_mono (p : ptr) (spec spec' : function_spec) :
+    fs_entails spec spec' ->
+    p |-> cptrR spec |-- p |-> cptrR spec'.
+  Proof. intros; rewrite cptrR_mono; eauto. Qed.
+
   #[global] Instance cptrR_flip_mono : Proper (flip fs_entails ==> flip (⊢)) cptrR.
   Proof. by intros ?? <-. Qed.
 

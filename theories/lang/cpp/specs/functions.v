@@ -305,6 +305,24 @@ Section with_cpp.
       repeat f_equiv. apply Hwpp.
     Qed.
 
+    #[local] Lemma SMethodOptCast_None_Some_mono (off2 : offset) wpp1 wpp2 :
+      (* NOTE (JH): contravariant use of casts *)
+      (forall (thisp : ptr), wpspec_entails (wpp1 (thisp ,, off2)) (wpp2 thisp)) ->
+      fs_entails
+        (SMethodOptCast class None qual ret targs wpp1)
+        (SMethodOptCast class (Some off2) qual ret targs wpp2).
+    Proof.
+      intros Hwpp.
+      apply SFunction_mono => argps K.
+      rewrite /exact_spec !add_with_equiv.
+      iIntros "H"; iDestruct "H" as (thisp) "wpp";
+        iExists (thisp ,, off2).
+      rewrite !add_arg_equiv.
+      destruct argps; first by done.
+      iDestruct "wpp" as "[$ wpp]".
+      by iApply Hwpp.
+    Qed.
+
     #[local] Lemma SMethodOptCast_mono_fupd cast wpp1 wpp2 :
       (∀ this, wpspec_entails_fupd (wpp1 this) (wpp2 this)) ->
       fs_entails_fupd
@@ -330,6 +348,14 @@ Section with_cpp.
         (SMethodOptCast (cc:=cc) class cast qual ret targs (ar:=ar) wpp1)
         (SMethodOptCast (cc:=cc) class cast qual ret targs (ar:=ar) wpp2).
     Proof. exact: SMethodOptCast_mono. Qed.
+
+    Lemma SMethodCast_None_Some_mono (off2 : offset) wpp1 wpp2 :
+      (* NOTE (JH): contravariant use of casts *)
+      (forall (thisp : ptr), wpspec_entails (wpp1 (thisp ,, off2)) (wpp2 thisp)) ->
+      fs_entails
+        (SMethodOptCast class None qual ret targs wpp1)
+        (SMethodOptCast class (Some off2) qual ret targs wpp2).
+    Proof. exact: SMethodOptCast_None_Some_mono. Qed.
 
     Lemma SMethod_mono wpp1 wpp2 :
       (∀ this, wpspec_entails (wpp1 this) (wpp2 this)) ->

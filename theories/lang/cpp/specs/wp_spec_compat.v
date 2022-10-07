@@ -391,6 +391,17 @@ Section list_arg.
     simpl; intros. by rewrite post_ok.
   Qed.
 
+  Lemma add_arg_nil_contra {R} (v : A) (wpp : WPP R) (PQ : R -> PROP) :
+        add_arg v wpp [] PQ ⊢ False.
+  Proof.
+    iIntros "A"; unfold add_arg.
+    destruct wpp; cbn.
+    rewrite -(app_nil_l [v]) arg_ok0.
+    iDestruct "A" as (?) "[%CONTRA _]".
+    iPureIntro.
+    discriminate.
+  Qed.
+
   #[program] Definition add_args {R} (vs : list A) (wpp : WPP R) : WPP R :=
     {| spec_internal := funI args' Q =>
                           wpp.(spec_internal) (rev_append vs args') Q |}.
@@ -764,39 +775,66 @@ Proof. repeat red; intros ?? H ??? ???; subst; by apply H. Qed.
   : Proper (equiv ==> eq ==> eq ==> equiv) (@wp_specD PROP A R).
 Proof. repeat red; intros ?? H ??? ???; subst; by apply H. Qed.
 
+Lemma add_with_equiv {PROP : bi} {ARG RESULT : Type} : forall T (PQ : T -> WpSpec PROP ARG RESULT) args K,
+    add_with PQ args K ⊣⊢ (∃ x, wp_specD (PQ x) args K).
+Proof. split'; intros; iIntros "A"; iDestruct "A" as (x) "A"; iExists x; iApply "A". Qed.
 Lemma spec_add_with {PROP : bi} {ARG RESULT : Type} : forall T (PQ : T -> WpSpec PROP ARG RESULT) args K,
     (∃ x, wp_specD (PQ x) args K) ⊢ add_with PQ args K.
+Proof. intros; by rewrite add_with_equiv. Qed.
+
+Lemma add_arg_equiv {PROP : bi} {ARG RESULT : Type} : forall v (PQ : WpSpec PROP ARG RESULT) args K,
+    add_arg v PQ args K ⊣⊢
+    match args with
+    | nil => False
+    | v' :: vs => [| v = v' |] ∗ wp_specD PQ vs K
+    end.
 Proof.
-  intros; iIntros "A"; iDestruct "A" as (x) "A". iExists x. iApply "A".
+  intros; destruct args; [| cbn].
+  - split'; last by iIntros "[]".
+    by apply add_arg_nil_contra.
+  - rewrite -(app_nil_l [v]) arg_ok.
+    split';
+      [ iIntros "A"; iDestruct "A" as (args') "[%Hargs A]"; inversion Hargs; subst
+      | iIntros "[-> A]"; iExists args
+      ].
+    all: by eauto.
 Qed.
 Lemma spec_add_arg {PROP : bi} {ARG RESULT : Type} : forall v (PQ : WpSpec PROP ARG RESULT) args K,
     match args with
     | nil => False
     | v' :: vs => [| v = v' |] ∗ wp_specD PQ vs K
     end ⊢ add_arg v PQ args K.
+Proof. intros; by rewrite add_arg_equiv. Qed.
+
+Lemma add_pre_equiv {PROP : bi} {ARG RESULT : Type} : forall P (PQ : WpSpec PROP ARG RESULT) args K,
+    add_pre P PQ args K ⊣⊢ P ∗ PQ args K.
 Proof.
-  intros; destruct args; first iIntros "[]".
-  simpl. change ([v]) with (nil ++ [v]).
-  iIntros "[-> A]". rewrite arg_ok. iExists _; iSplitR; eauto.
+  intros; rewrite /wp_specD/=; rewrite pre_ok. done.
 Qed.
 Lemma spec_add_pre {PROP : bi} {ARG RESULT : Type} : forall P (PQ : WpSpec PROP ARG RESULT) args K,
     P ∗ PQ args K ⊢ add_pre P PQ args K.
-Proof.
-  intros. rewrite /wp_specD/=. rewrite pre_ok. done.
-Qed.
-Lemma spec_add_post {PROP : bi} {ARG RESULT : Type} : forall P (PQ : WpSpec PROP ARG RESULT) args K,
-    PQ args (fun res => P -∗ K res) ⊢ add_post P PQ args K.
+Proof. intros; by rewrite add_pre_equiv. Qed.
+
+Lemma add_post_equiv {PROP : bi} {ARG RESULT : Type} : forall P (PQ : WpSpec PROP ARG RESULT) args K,
+    add_post P PQ args K ⊣⊢ PQ args (fun res => P -∗ K res).
 Proof.
   intros. rewrite /wp_specD/=.
   change [fun _ => P] with ([] ++ [fun _ : RESULT => P]).
   rewrite post_ok. done.
 Qed.
-Lemma spec_add_prepost {PROP : bi} {ARG RESULT : Type} : forall P (PQ : WpSpec PROP ARG RESULT) args K,
-    P ∗ PQ args (fun res => P -∗ K res) ⊢ add_prepost P PQ args K.
+Lemma spec_add_post {PROP : bi} {ARG RESULT : Type} : forall P (PQ : WpSpec PROP ARG RESULT) args K,
+    PQ args (fun res => P -∗ K res) ⊢ add_post P PQ args K.
+Proof. intros; by rewrite add_post_equiv. Qed.
+
+Lemma add_prepost_equiv {PROP : bi} {ARG RESULT : Type} : forall P (PQ : WpSpec PROP ARG RESULT) args K,
+    add_prepost P PQ args K ⊣⊢ P ∗ PQ args (fun res => P -∗ K res).
 Proof.
   intros. rewrite /add_prepost.
-  by rewrite -spec_add_pre -spec_add_post.
+  by rewrite -add_pre_equiv -add_post_equiv.
 Qed.
+Lemma spec_add_prepost {PROP : bi} {ARG RESULT : Type} : forall P (PQ : WpSpec PROP ARG RESULT) args K,
+    P ∗ PQ args (fun res => P -∗ K res) ⊢ add_prepost P PQ args K.
+Proof. intros; by rewrite add_prepost_equiv. Qed.
 
 Arguments list_sep_into {PROP} !_ _/.
 Arguments rev_append {T} !_ _.
