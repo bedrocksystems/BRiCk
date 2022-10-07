@@ -146,8 +146,8 @@ Definition Dconstant    (name : globname) (t : type) (e : Expr) : translation_un
   fun syms tys k => k syms $ <[ name := Gconstant t (Some e) ]> tys.
 Definition Dconstant_undef  (name : globname) (t : type) : translation_unitK :=
   fun syms tys k => k syms $ <[ name := Gconstant t None ]> tys.
-Definition Denum_constant (name : globname) (t : type) (v : Z) (init : option Expr) : translation_unitK :=
-  fun syms tys k => k syms $ <[ name := Gconstant t (Some (Eint v t)) ]> tys.
+Definition Denum_constant (name : globname) (t ut : type) (v : Z) (init : option Expr) : translation_unitK :=
+  fun syms tys k => k syms $ <[ name := Gconstant t (Some (Ecast Cintegral Prvalue (Eint v ut) t)) ]> tys.
 Definition Dtypedef     (name : globname) (t : type) : translation_unitK :=
   fun syms tys k => k syms $ <[ name := Gtypedef t ]> tys.
 Definition Dtype (name : globname) : translation_unitK :=
