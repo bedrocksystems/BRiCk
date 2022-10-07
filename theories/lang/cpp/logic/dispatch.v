@@ -57,6 +57,36 @@ Section with_cpp.
     | Some (cls, path, fptr) => Some (_global fptr, cls, base_to_derived cls path)
     end.
 
+  Section tu.
+    Context `{σ : genv}.
+    Variable tu : translation_unit.
+
+    Definition tu_get_impl (base : globname) (path : list globname) (f : obj_name)
+      : option (ptr * globname * offset) :=
+      match dispatch.tu_dispatch tu base path f with
+      | Some (cls, path, fptr) => Some (_global fptr, cls, base_to_derived cls path)
+      | None => None
+      end.
+
+    Lemma tu_get_impl_ok (MOD : tu ⊧ σ) : forall base path fn a b c,
+        tu_get_impl base path fn = Some (a, b, c) ->
+        get_impl base path fn = Some (a, b, c).
+    Proof.
+      rewrite /tu_get_impl/get_impl; intros.
+      do 3 (case_match; try congruence).
+      erewrite tu_dispatch_ok; eauto.
+    Qed.
+
+    Lemma resolve_match_get_impl (MOD : tu ⊧ σ) {PROP : bi} base path fn a b c (P : _ -> PROP) :
+        tu_get_impl base path fn = Some (a, b, c) ->
+        P (a, b, c) -|-
+      match get_impl base path fn with
+      | Some x => P x
+      | None => False
+      end.
+    Proof. intros; erewrite tu_get_impl_ok; eauto. Qed.
+  End tu.
+
   (** [resolve_virtual σ this cls f Q] returns [Q fa this'] if resolving [f] on
       [this] results in a function that is equivalent to calling the pointer [fa]
       passing [this'] as the "this" argument.
