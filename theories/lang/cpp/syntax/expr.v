@@ -135,7 +135,7 @@ Inductive Cast : Set :=
 | Cstatic      (_ : Cast)
 | Cdynamic     (from to : globname)
 | Cconst       (_ : type).
-#[global] Instance Cast_eqdec: EqDecision Cast.
+#[global] Instance Cast_eq_dec: EqDecision Cast.
 Proof. solve_decision. Defined.
 
 (** * References *)
