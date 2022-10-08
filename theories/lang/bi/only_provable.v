@@ -119,7 +119,7 @@ Section bi.
     (∀ x, [|φ x|]) ⊢@{PROP} [|∀ x, φ x|].
   Proof using PF. rewrite emp_forall_only_provable. { iIntros "!% /=". done. } Qed.
 
-  Lemma only_provable_forall_2_inh `{Inhabited A} (φ : A → Prop) :
+  Lemma only_provable_forall_2_inhabited `{Inhabited A} (φ : A → Prop) :
     (∀ x, [|φ x|]) ⊢ [|∀ x, φ x|].
   Proof using PF.
     rewrite/only_provable/bi_affinely. iIntros "Hφ". iSplit; first done.
@@ -128,7 +128,7 @@ Section bi.
   Lemma only_provable_forall_2 {A} (φ : A → Prop)
     `{HTC : TCOrT (BiEmpForallOnlyProvable PROP) (Inhabited A)} :
     (∀ x, [|φ x|]) ⊢ [|∀ x, φ x|].
-  Proof using PF. destruct HTC. apply: only_provable_forall_2_gen. apply: only_provable_forall_2_inh. Qed.
+  Proof using PF. destruct HTC. apply: only_provable_forall_2_gen. apply: only_provable_forall_2_inhabited. Qed.
   Lemma only_provable_forall {A} (φ : A → Prop)
     `{HTC : TCOrT (BiEmpForallOnlyProvable PROP) (Inhabited A)} :
     [|∀ x, φ x|] ⊣⊢ ∀ x, [|φ x|].
