@@ -371,8 +371,6 @@ Example use for a variant.
 Module right.
   Variant _t := FOO | BAR.
   Definition t := _t. (* Workaround Coq bug. *)
-  #[global] Instance t_inhabited : Inhabited t.
-  Proof. exact (populate ...). Qed.
   #[global] Instance t_eq_dec : EqDecision t.
   Proof. solve_decision. Defined.
 
@@ -405,7 +403,6 @@ Module rights := finite_bits rights.
 *)
 Module Type eqdec_type.
   Parameter t : Type.
-  #[global] Declare Instance t_inhabited : Inhabited t.
   #[global] Declare Instance t_eq_dec : EqDecision t.
 End eqdec_type.
 
