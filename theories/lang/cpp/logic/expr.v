@@ -1185,15 +1185,14 @@ Module Type Expr.
         expressions [es] and then proceed as [Q].
      *)
     Fixpoint init_fields (cls : globname) (base : ptr)
-      (fs : list Member) (es : list Expr) (Q : epred) {struct fs} : mpred :=
+      (fs : list (type * offset)) (es : list Expr) (Q : epred) {struct fs} : mpred :=
       match fs , es with
       | nil , nil => Q
-      | f :: fs , e :: es =>
-          (* note that there is a sequence point after each field initialization.
-             See <https://eel.is/c++draft/dcl.init.list#4>
+      | (ty, off) :: fs , e :: es =>
+          (* note that there is a sequence point after each element initialization.
+             See <https://eel.is/c++draft/dcl.init.aggr#7>
            *)
-          let ff := {| f_type := cls ; f_name := f.(mem_name) |} in
-          wp_initialize f.(mem_type) (base ., ff) e
+          wp_initialize ty (base ,, off) e
              (fun free => interp free $ init_fields cls base fs es Q)
       | _ , _ => False
       end.
@@ -1201,7 +1200,7 @@ Module Type Expr.
     Lemma init_fields_frame cls base : forall fs es Q Q',
         Q -* Q' |-- init_fields cls base fs es Q -* init_fields cls base fs es Q'.
     Proof.
-      induction fs; simpl; intros; case_match; eauto.
+      induction fs; simpl; intros; repeat case_match; eauto.
       iIntros "X"; iApply wp_initialize_frame.
       iIntros (?); iApply interp_frame.
       by iApply IHfs.
@@ -1213,21 +1212,35 @@ Module Type Expr.
        of the target class. For example, consider `struct C { int x; int y{3}; };`
        1. `{0}` is elaborated into `{0, 3}`;
        2. `{.y = 7, .x = 2}` is elaborated into `{2, 7}`
+
+       Base classes are also elements. See https://eel.is/c++draft/dcl.init.aggr#2.2
+
+       Note: the C++ standard text provides a special caveat for members
+       of anonymous unions, but cpp2v represents anonymous unions as regular
+       named unions and the front-end desugars initializer lists accordingly.
      *)
     Axiom wp_init_initlist_agg : forall cls (base : ptr) es t Q,
+        let mem_to_li m := (m.(mem_type), o_field _ {| f_type := cls ; f_name := m.(mem_name) |}) in
+        let base_to_li '(base,_) := (Tnamed base, o_base _ cls base) in
         match resolve.(genv_tu).(globals) !! cls with
         | Some (Gstruct s) =>
             (* these constraints are enforced by clang, see note above *)
-            [| s.(s_bases) = nil /\ length s.(s_fields) = length es |] **
-            init_fields cls base s.(s_fields) es
+            [| length s.(s_bases) + length s.(s_fields) = length es |] **
+            let fs :=
+              map base_to_li s.(s_bases) ++ map mem_to_li s.(s_fields) in
+            init_fields cls base fs es
                (base |-> struct_paddingR 1 cls **
                 (if has_vtable s then base |-> identityR cls [cls] 1 else emp) -*
                 Q (Tnamed cls) FreeTemps.id)
 
         | Some (Gunion u) =>
-            (* to initialize a union, the list must be exactly 1 element long *)
+            (* The standard allows initializaing unions in a variety of ways.
+               See https://eel.is/c++draft/dcl.init.aggr#5. However, the cpp2v
+               frontent desugars all of these to initialize exactly one element.
+             *)
             [| length es = 1 |] **
-            init_fields cls base (firstn 1 u.(u_fields)) es
+            let fs := map mem_to_li $ firstn 1 u.(u_fields) in
+            init_fields cls base fs es
                (base |-> union_paddingR 1 cls (Some 0) -*
                 Q (Tnamed cls) FreeTemps.id)
         | _ => False
