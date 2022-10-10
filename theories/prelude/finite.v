@@ -18,11 +18,11 @@ From the [Finite] typeclass, like from Haskell's [Enum], one can generate
 conversion to and from [N], both for individual elements and bitsets of them.
 *)
 
-Section fin_fun_eqdec.
+Section fin_fun_eq_dec.
   Context `{Finite A} `{EqDecision B}.
   Implicit Types (f g : A -> B).
 
-  #[global, refine] Instance fin_fun_eqdec : EqDecision (A -> B) := fun r1 r2 =>
+  #[global, refine] Instance fin_fun_eq_dec : EqDecision (A -> B) := fun r1 r2 =>
     cast_if (decide (∀ n, r1 n = r2 n)).
   Proof using Type*.
     abstract by funext.
@@ -48,7 +48,7 @@ Section fin_fun_eqdec.
   #[local] Lemma fin_fun_eq_refl_transport f g (E : f = g) :
     rew [λ f', {f' = g} + {f' ≠ g}] E in decide (f = g) = left eq_refl.
   Proof. rewrite decide_True_pi. by destruct E. Abort.
-End fin_fun_eqdec.
+End fin_fun_eq_dec.
 
 (** Rewriting-oriented variant of [elem_of_enum]; inspired by [elem_of_top]. *)
 Lemma elem_of_enum' `{Finite A} (x : A) :
@@ -371,9 +371,7 @@ Example use for a variant.
 Module right.
   Variant _t := FOO | BAR.
   Definition t := _t. (* Workaround Coq bug. *)
-  #[global] Instance t_inh : Inhabited t.
-  Proof. exact (populate ...). Qed.
-  #[global] Instance t_eqdec : EqDecision t.
+  #[global] Instance t_eq_dec : EqDecision t.
   Proof. solve_decision. Defined.
 
   #[global] Instance t_finite : Finite t.
@@ -405,8 +403,7 @@ Module rights := finite_bits rights.
 *)
 Module Type eqdec_type.
   Parameter t : Type.
-  #[global] Declare Instance t_inh : Inhabited t.
-  #[global] Declare Instance t_eqdec : EqDecision t.
+  #[global] Declare Instance t_eq_dec : EqDecision t.
 End eqdec_type.
 
 Module Type finite_type <: eqdec_type.

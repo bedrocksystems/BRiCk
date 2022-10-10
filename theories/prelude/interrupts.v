@@ -18,7 +18,7 @@ Variant IntTrigger :=
 | TriggerLevel (active_low : bool).
   (* ^ int is low-level triggered [active_low = true]; otherwise, high-level triggered *)
 
-#[global] Instance int_trigger_inh : Inhabited IntTrigger.
+#[global] Instance int_trigger_inhabited : Inhabited IntTrigger.
 Proof. solve_inhabited. Qed.
 #[global] Instance int_trigger_decision : EqDecision IntTrigger.
 Proof. solve_decision. Defined.
@@ -29,14 +29,14 @@ Variant IntOwner :=
 | GuestInt.
 (* ^ int is guest owned (VM passthrough) *)
 
-#[global] Instance int_owner_inh : Inhabited IntOwner.
+#[global] Instance int_owner_inhabited : Inhabited IntOwner.
 Proof. solve_inhabited. Qed.
 #[global] Instance int_owner_decision : EqDecision IntOwner.
 Proof. solve_decision. Defined.
 
 Variant IntStatus : Set := IntMasked | IntEnabled.
 
-#[global] Instance int_status_inh : Inhabited IntStatus.
+#[global] Instance int_status_inhabited : Inhabited IntStatus.
 Proof. solve_inhabited. Qed.
 #[global] Instance int_status_decision : EqDecision IntStatus.
 Proof. solve_decision. Defined.
@@ -55,7 +55,7 @@ Definition initialIntConfig :=
   ;  int_status := IntMasked
   |}.
 
-#[global] Instance int_config_inh : Inhabited IntConfig.
+#[global] Instance int_config_inhabited : Inhabited IntConfig.
 Proof. solve_inhabited. Qed.
 #[global] Instance int_cfg_decision : EqDecision IntConfig.
 Proof. solve_decision. Defined.
@@ -74,9 +74,9 @@ Variant InterruptSignal : Set :=
    * two events, so the [LevelSig true] might hide other interrupts.
    *)
 
-#[global] Instance InterruptSignal_inh : Inhabited InterruptSignal.
+#[global] Instance InterruptSignal_inhabited : Inhabited InterruptSignal.
 Proof. solve_inhabited. Qed.
-#[global] Instance InterruptSignal_eqdec : EqDecision InterruptSignal.
+#[global] Instance InterruptSignal_eq_dec : EqDecision InterruptSignal.
 Proof. solve_decision. Defined.
 
 Definition int_types_match (sig : InterruptSignal) (ty : IntConfig) : Prop :=
@@ -110,7 +110,7 @@ Record IntAction :=
 ; to : InterruptSignal
 }.
 
-#[global] Instance IntAction_inh : Inhabited IntAction.
+#[global] Instance IntAction_inhabited : Inhabited IntAction.
 Proof. solve_inhabited. Defined.
-#[global] Instance IntAction_eqdec : EqDecision IntAction.
+#[global] Instance IntAction_eq_dec : EqDecision IntAction.
 Proof. solve_decision. Defined.

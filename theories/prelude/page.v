@@ -34,10 +34,10 @@ Definition RW : t :=
 Definition RWX : t :=
 {| read := true ; write := true ; sexec := true ; uexec := true |}.
 
-#[global] Instance t_eqdec : EqDecision t.
+#[global] Instance t_eq_dec : EqDecision t.
 Proof. solve_decision. Defined.
 
-#[global] Instance t_inh : Inhabited t := populate R.
+#[global] Instance t_inhabited : Inhabited t := populate R.
 
 #[global] Instance t_countable : Countable t.
 Proof.
