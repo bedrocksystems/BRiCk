@@ -131,7 +131,7 @@ cpp2v-core194: [Fractional], [AsFractional], [Timeless]?  cpp2v-core194: The fra
 <div class="doc">
 <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.logic.heap_pred.html#primR"><span class="id" title="definition">primR</span></a></span> <span class="inlinecode"><span class="id" title="var">ty</span></span> <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.logic.pred_paradoxes.html#q"><span class="id" title="axiom">q</span></a></span> <span class="inlinecode"><span class="id" title="var">v</span></span>: the argument pointer points to an initialized value <span class="inlinecode"><span class="id" title="var">v</span></span> of C++ type <span class="inlinecode"><span class="id" title="var">ty</span></span>.
    *
-<a id="lab95"></a><h1 class="section">NOTE <span class="inlinecode"><span class="id" title="var">ty</span></span> *must* be a primitive type.</h1>
+<a id="lab100"></a><h1 class="section">NOTE <span class="inlinecode"><span class="id" title="var">ty</span></span> *must* be a primitive type.</h1>
 
    
 </div>
@@ -143,7 +143,7 @@ cpp2v-core194: [Fractional], [AsFractional], [Timeless]?  cpp2v-core194: The fra
 </div>
 
 <div class="doc">
-TODO what is the current status of <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.semantics.values.html#HAS_TYPE_MIXIN.has_type"><span class="id" title="section">has_type</span></a></span> and <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.semantics.values.html#VAL_MIXIN.Vundef"><span class="id" title="constructor">Vundef</span></a></span>? Does it have all types? No types?
+TODO what is the current status of <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.semantics.values.html#HAS_TYPE_MIXIN.with_env.has_type"><span class="id" title="section">has_type</span></a></span> and <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.semantics.values.html#VAL_MIXIN.Vundef"><span class="id" title="constructor">Vundef</span></a></span>? Does it have all types? No types?
    
 </div>
 <div class="code">
@@ -224,7 +224,7 @@ TODO what is the current status of <span class="inlinecode"><a class="idref" hre
 
 <div class="doc">
      <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.logic.heap_pred.html#uninitR"><span class="id" title="definition">uninitR</span></a></span> <span class="inlinecode"><span class="id" title="var">ty</span></span> <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.logic.pred_paradoxes.html#q"><span class="id" title="axiom">q</span></a></span>: the argument pointer points to an uninitialized value <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.semantics.values.html#VAL_MIXIN.Vundef"><span class="id" title="constructor">Vundef</span></a></span> of C++ type <span class="inlinecode"><span class="id" title="var">ty</span></span>.
-     Unlike <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.logic.heap_pred.html#primR"><span class="id" title="definition">primR</span></a></span>, does not imply <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.semantics.values.html#HAS_TYPE_MIXIN.has_type"><span class="id" title="section">has_type</span></a></span>.
+     Unlike <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.logic.heap_pred.html#primR"><span class="id" title="definition">primR</span></a></span>, does not imply <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.semantics.values.html#HAS_TYPE_MIXIN.with_env.has_type"><span class="id" title="section">has_type</span></a></span>.
 
 <div class="paragraph"> </div>
 

@@ -221,7 +221,7 @@ Formalizes the notion of "provides storage",
     3. Pointer <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.logic.pred_paradoxes.html#with_cpp.type_ptr_object_representation_full_is_unsound.p"><span class="id" title="variable">p</span></a></span> points to a memory location with C++ type <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.logic.zstring.html#zstring.t"><span class="id" title="definition">t</span></a></span>.
     However:
     1. Value <span class="inlinecode"><span class="id" title="var">v</span></span> need not be initialized.
-    2. Hence, <span class="inlinecode"><span class="id" title="var">v</span></span> might not satisfy <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.semantics.values.html#HAS_TYPE_MIXIN.has_type"><span class="id" title="section">has_type</span></a></span> <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.logic.zstring.html#zstring.t"><span class="id" title="definition">t</span></a></span> <span class="inlinecode"><span class="id" title="var">v</span></span>.
+    2. Hence, <span class="inlinecode"><span class="id" title="var">v</span></span> might not satisfy <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.semantics.values.html#HAS_TYPE_MIXIN.with_env.has_type"><span class="id" title="section">has_type</span></a></span> <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.logic.zstring.html#zstring.t"><span class="id" title="definition">t</span></a></span> <span class="inlinecode"><span class="id" title="var">v</span></span>.
 
 <div class="paragraph"> </div>
 
@@ -757,7 +757,7 @@ Hence they can be incremented into (possibly past-the-end) valid pointers.
 </div>
 
 <div class="doc">
-<a id="lab90"></a><h2 class="section">Deducing pointer equalities</h2>
+<a id="lab95"></a><h2 class="section">Deducing pointer equalities</h2>
 
      The following axioms, together with <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.semantics.ptrs.html#PTRS_MIXIN.same_address_o_sub_eq"><span class="id" title="lemma">same_address_o_sub_eq</span></a></span>, enable going
      from <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.model.simple_pointers_utils.html#PTRS_DERIVED_MIXIN.same_address"><span class="id" title="definition">same_address</span></a></span> (produced by C++ pointer equality) to actual pointer
@@ -1413,7 +1413,7 @@ Just a corollary of <span class="inlinecode"><a class="idref" href="bedrock.lang
 </div>
 
 <div class="doc">
-<a id="lab91"></a><h3 class="section">Just wrappers.</h3>
+<a id="lab96"></a><h3 class="section">Just wrappers.</h3>
  We can lift validity entailments through <span class="inlinecode"><a class="idref" href="bedrock.lang.bi.observe.html#Observe"><span class="id" title="record">Observe</span></a></span> (using
   <span class="inlinecode"><a class="idref" href="bedrock.lang.bi.observe.html#Observe_mono"><span class="id" title="instance">Observe_mono</span></a></span>. These are not instances, to avoid causing slowdowns in
   proof search. 

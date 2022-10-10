@@ -229,7 +229,7 @@ Parameter wp_operand : forall {resolve:genv}, region -&gt; Expr -&gt; M val.
 Because the value returned does not have an identity, there is nothing to destroy, so, unlike <code class="code highlight coq docutils literal notranslate"><span class="n"><span class="pre">wp_prval</span></span></code> and <code class="code highlight coq docutils literal notranslate"><span class="n"><span class="pre">wp_init</span></span></code>, the continuation takes a single <code class="code highlight coq docutils literal notranslate"><span class="n"><span class="pre">FreeTemps</span></span></code>, which will destroy the temporaries created when evaluating the operand.</p>
 <p>The relationship between <a class="reference external" href="_static/coqdoc/wp_operand.html">wp_operand</a> and <a class="reference external" href="_static/coqdoc/wp_init.html">wp_init</a> can be precisely characterized by the following two axioms.</p>
 <div class="highlight-text notranslate"><div class="highlight"><pre><span></span>Axiom wp_operand_wp_init : forall {σ : genv} ρ ty addr e Q,
-    is_primitive ty -&gt;
+    is_value_type ty -&gt;
     wp_operand ρ e (fun v frees =&gt; _at addr (primR ty 1 v) -* Q ty frees)
   |-- wp_init ρ ty addr e Q.
 
@@ -237,7 +237,7 @@ Because the value returned does not have an identity, there is nothing to destro
 
   [[
  Axiom wp_init_wp_operand : forall {σ : genv} M ρ addr e Q (ty := type_of e),
-    is_primitive ty -&gt;
+    is_value_type ty -&gt;
     wp_prval M ρ e (fun p free frees =&gt;
        [| FreeTemps.t_eq free (FreeTemps.delete ty addr) |] **
        ∃ v, _at addr (primR ty 1 v) ** Q v frees)

@@ -46,7 +46,7 @@
 </div>
 
 <div class="doc">
-<a id="lab96"></a><h1 class="section">Definitions for the semantics</h1>
+<a id="lab101"></a><h1 class="section">Definitions for the semantics</h1>
 
  
 </div>
@@ -286,7 +286,7 @@
 </div>
 
 <div class="doc">
-<a id="lab97"></a><h1 class="section">Regions</h1>
+<a id="lab102"></a><h1 class="section">Regions</h1>
 
     To model the stack frame in separation logic, we use a notion of regions
     that are threaded through the semantics.
@@ -419,7 +419,7 @@
 </div>
 
 <div class="doc">
-<a id="lab98"></a><h3 class="section">Indeterminately sequenced computations</h3>
+<a id="lab103"></a><h3 class="section">Indeterminately sequenced computations</h3>
 
 </div>
 <div class="code">
@@ -563,7 +563,7 @@
 </div>
 
 <div class="doc">
-<a id="lab99"></a><h3 class="section">sequencing of monadic compuations</h3>
+<a id="lab104"></a><h3 class="section">sequencing of monadic compuations</h3>
 
 </div>
 <div class="code">
@@ -574,7 +574,7 @@
 </div>
 
 <div class="doc">
-<a id="lab100"></a><h3 class="section">interleaving of monadic values</h3>
+<a id="lab105"></a><h3 class="section">interleaving of monadic values</h3>
 
 
 <div class="paragraph"> </div>
@@ -706,7 +706,7 @@ lvalues
 </div>
 
 <div class="doc">
-<a id="lab101"></a><h1 class="section">prvalue</h1>
+<a id="lab106"></a><h1 class="section">prvalue</h1>
 
 </div>
 <div class="code">
@@ -867,7 +867,7 @@ C++ evaluation semantics guarantees that all expressions of type <span class="in
 <br/>
 &nbsp;&nbsp;<span class="comment">(*&nbsp;BEGIN&nbsp;wp_init&nbsp;&lt;-&gt;&nbsp;wp_operand&nbsp;*)</span><br/>
 &nbsp;&nbsp;<span class="id" title="keyword">Axiom</span> <a id="WPE.wp_operand_wp_init" class="idref" href="#WPE.wp_operand_wp_init"><span class="id" title="axiom">wp_operand_wp_init</span></a> : <a class="idref" href="https://plv.mpi-sws.org/coqdoc/stdpp//stdpp.base.html#a46514f7419edb3d22453078cf7c9fb7"><span class="id" title="notation">forall</span></a> <a class="idref" href="https://plv.mpi-sws.org/coqdoc/stdpp//stdpp.base.html#a46514f7419edb3d22453078cf7c9fb7"><span class="id" title="notation">{</span></a><a id="6eb0b20e8cb6ee64853408bd3ef6873c" class="idref" href="#6eb0b20e8cb6ee64853408bd3ef6873c"><span class="id" title="binder">σ</span></a> : <a class="idref" href="bedrock.lang.cpp.semantics.genv.html#genv"><span class="id" title="class">genv</span></a>} <a id="5aa0cd692e5864334b222c190de9c40b" class="idref" href="#5aa0cd692e5864334b222c190de9c40b"><span class="id" title="binder">ρ</span></a> <a id="ty:323" class="idref" href="#ty:323"><span class="id" title="binder">ty</span></a> <a id="addr:324" class="idref" href="#addr:324"><span class="id" title="binder">addr</span></a> <a id="e:325" class="idref" href="#e:325"><span class="id" title="binder">e</span></a> <a id="Q:326" class="idref" href="#Q:326"><span class="id" title="binder">Q</span></a><a class="idref" href="https://plv.mpi-sws.org/coqdoc/stdpp//stdpp.base.html#a46514f7419edb3d22453078cf7c9fb7"><span class="id" title="notation">,</span></a><br/>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="bedrock.lang.cpp.syntax.typing.html#is_primitive"><span class="id" title="definition">is_primitive</span></a> <a class="idref" href="bedrock.lang.cpp.logic.wp.html#ty:323"><span class="id" title="variable">ty</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.15.1/stdlib//Coq.Init.Logic.html#::type_scope:x_'-&gt;'_x"><span class="id" title="notation">-&gt;</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="bedrock.lang.cpp.syntax.typing.html#is_value_type"><span class="id" title="definition">is_value_type</span></a> <a class="idref" href="bedrock.lang.cpp.logic.wp.html#ty:323"><span class="id" title="variable">ty</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.15.1/stdlib//Coq.Init.Logic.html#::type_scope:x_'-&gt;'_x"><span class="id" title="notation">-&gt;</span></a><br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="bedrock.lang.cpp.logic.wp.html#WPE.wp_operand"><span class="id" title="axiom">wp_operand</span></a> <a class="idref" href="bedrock.lang.cpp.logic.wp.html#5aa0cd692e5864334b222c190de9c40b"><span class="id" title="variable">ρ</span></a> <a class="idref" href="bedrock.lang.cpp.logic.wp.html#e:325"><span class="id" title="variable">e</span></a> (<span class="id" title="keyword">fun</span> <a id="v:327" class="idref" href="#v:327"><span class="id" title="binder">v</span></a> <a id="frees:328" class="idref" href="#frees:328"><span class="id" title="binder">frees</span></a> =&gt; <a class="idref" href="bedrock.lang.cpp.heap_notations.html#_at"><span class="id" title="abbreviation">_at</span></a> <a class="idref" href="bedrock.lang.cpp.logic.wp.html#addr:324"><span class="id" title="variable">addr</span></a> (<a class="idref" href="bedrock.lang.cpp.logic.heap_pred.html#primR"><span class="id" title="definition">primR</span></a> <a class="idref" href="bedrock.lang.cpp.logic.wp.html#ty:323"><span class="id" title="variable">ty</span></a> 1 <a class="idref" href="bedrock.lang.cpp.logic.wp.html#v:327"><span class="id" title="variable">v</span></a>) <a class="idref" href="bedrock.lang.bi.prelude.html#1ceed28b6e47de516f82862d053216fa"><span class="id" title="notation">-*</span></a> <a class="idref" href="bedrock.lang.cpp.logic.wp.html#Q:326"><span class="id" title="variable">Q</span></a> <a class="idref" href="bedrock.lang.cpp.logic.wp.html#ty:323"><span class="id" title="variable">ty</span></a> <a class="idref" href="bedrock.lang.cpp.logic.wp.html#frees:328"><span class="id" title="variable">frees</span></a>)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="bedrock.lang.bi.prelude.html#0582ac70d883d93be3a66ac50f1c9225"><span class="id" title="notation">|--</span></a> <a class="idref" href="bedrock.lang.cpp.logic.wp.html#WPE.wp_init"><span class="id" title="axiom">wp_init</span></a> <a class="idref" href="bedrock.lang.cpp.logic.wp.html#5aa0cd692e5864334b222c190de9c40b"><span class="id" title="variable">ρ</span></a> <a class="idref" href="bedrock.lang.cpp.logic.wp.html#ty:323"><span class="id" title="variable">ty</span></a> <a class="idref" href="bedrock.lang.cpp.logic.wp.html#addr:324"><span class="id" title="variable">addr</span></a> <a class="idref" href="bedrock.lang.cpp.logic.wp.html#e:325"><span class="id" title="variable">e</span></a> <a class="idref" href="bedrock.lang.cpp.logic.wp.html#Q:326"><span class="id" title="variable">Q</span></a>.<br/>
 
@@ -881,7 +881,7 @@ This is justified in the logic but technically not sactioned by the standard
 
     <br/>
 <span class="inlinecode">&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Axiom</span> <span class="id" title="var">wp_init_wp_operand</span> : <span class="id" title="keyword">forall</span> {σ : <a class="idref" href="bedrock.lang.cpp.semantics.genv.html#genv"><span class="id" title="record">genv</span></a>} <a class="idref" href="bedrock.lang.cpp.logic.atomics_derived.html#cmpxchg_derived.M"><span class="id" title="variable">M</span></a> ρ <a class="idref" href="bedrock.lang.cpp.model.simple_pred.html#SimpleCPP_BASE.addr"><span class="id" title="definition">addr</span></a> <span class="id" title="var">e</span> <span class="id" title="var">Q</span> (<span class="id" title="var">ty</span> := <a class="idref" href="bedrock.lang.cpp.syntax.typing.html#type_of"><span class="id" title="definition">type_of</span></a> <span class="id" title="var">e</span>),<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="bedrock.lang.cpp.syntax.typing.html#is_primitive"><span class="id" title="definition">is_primitive</span></a> <span class="id" title="var">ty</span> -&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="bedrock.lang.cpp.syntax.typing.html#is_value_type"><span class="id" title="definition">is_value_type</span></a> <span class="id" title="var">ty</span> -&gt;<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="bedrock.lang.cpp.logic.atomics.html#wp_prval"><span class="id" title="abbreviation">wp_prval</span></a> <a class="idref" href="bedrock.lang.cpp.logic.atomics_derived.html#cmpxchg_derived.M"><span class="id" title="variable">M</span></a> ρ <span class="id" title="var">e</span> (<span class="id" title="keyword">fun</span> <a class="idref" href="bedrock.lang.cpp.logic.pred_paradoxes.html#with_cpp.type_ptr_object_representation_full_is_unsound.p"><span class="id" title="variable">p</span></a> <span class="id" title="var">free</span> <span class="id" title="var">frees</span> =&gt;<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[| <span class="id" title="var">FreeTemps.t_eq</span> <span class="id" title="var">free</span> (<span class="id" title="var">FreeTemps.delete</span> <span class="id" title="var">ty</span> <a class="idref" href="bedrock.lang.cpp.model.simple_pred.html#SimpleCPP_BASE.addr"><span class="id" title="definition">addr</span></a>) |] **<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;∃ <span class="id" title="var">v</span>, <a class="idref" href="bedrock.lang.cpp.heap_notations.html#_at"><span class="id" title="abbreviation">_at</span></a> <a class="idref" href="bedrock.lang.cpp.model.simple_pred.html#SimpleCPP_BASE.addr"><span class="id" title="definition">addr</span></a> (<a class="idref" href="bedrock.lang.cpp.logic.heap_pred.html#primR"><span class="id" title="definition">primR</span></a> <span class="id" title="var">ty</span> 1 <span class="id" title="var">v</span>) ** <span class="id" title="var">Q</span> <span class="id" title="var">v</span> <span class="id" title="var">frees</span>)<br/>
@@ -945,7 +945,7 @@ This is justified in the logic but technically not sactioned by the standard
 </div>
 
 <div class="doc">
-<a id="lab102"></a><h2 class="section">boolean operands</h2>
+<a id="lab107"></a><h2 class="section">boolean operands</h2>
 
 <div class="paragraph"> </div>
 
@@ -965,7 +965,7 @@ This is justified in the logic but technically not sactioned by the standard
 </div>
 
 <div class="doc">
-<a id="lab103"></a><h1 class="section">xvalues</h1>
+<a id="lab108"></a><h1 class="section">xvalues</h1>
 
 </div>
 <div class="code">
@@ -1094,7 +1094,7 @@ Discarded values.
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">match</span> <a class="idref" href="bedrock.lang.cpp.logic.wp.html#vc:419"><span class="id" title="variable">vc</span></a> <span class="id" title="keyword">with</span><br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <a class="idref" href="bedrock.lang.cpp.syntax.expr.html#Lvalue"><span class="id" title="constructor">Lvalue</span></a> =&gt; <a class="idref" href="bedrock.lang.cpp.logic.wp.html#WPE.wp_lval"><span class="id" title="axiom">wp_lval</span></a> <a class="idref" href="bedrock.lang.cpp.logic.wp.html#e155ffaf02ea34a0d68d86051382f19d"><span class="id" title="variable">ρ</span></a> <a class="idref" href="bedrock.lang.cpp.logic.wp.html#e:420"><span class="id" title="variable">e</span></a> (<span class="id" title="keyword">fun</span> <span class="id" title="var">_</span> =&gt; <a class="idref" href="bedrock.lang.cpp.logic.wp.html#Q:421"><span class="id" title="variable">Q</span></a>)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <a class="idref" href="bedrock.lang.cpp.syntax.expr.html#Prvalue"><span class="id" title="constructor">Prvalue</span></a> =&gt;<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="http://coq.inria.fr/distrib/V8.15.1/stdlib//Coq.ssr.ssreflect.html#::general_if_scope:'if'_x_'then'_x_'else'_x"><span class="id" title="notation">if</span></a> <a class="idref" href="bedrock.lang.cpp.syntax.typing.html#is_primitive"><span class="id" title="definition">is_primitive</span></a> (<a class="idref" href="bedrock.lang.cpp.syntax.typing.html#type_of"><span class="id" title="definition">type_of</span></a> <a class="idref" href="bedrock.lang.cpp.logic.wp.html#e:420"><span class="id" title="variable">e</span></a>) <a class="idref" href="http://coq.inria.fr/distrib/V8.15.1/stdlib//Coq.ssr.ssreflect.html#::general_if_scope:'if'_x_'then'_x_'else'_x"><span class="id" title="notation">then</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="http://coq.inria.fr/distrib/V8.15.1/stdlib//Coq.ssr.ssreflect.html#::general_if_scope:'if'_x_'then'_x_'else'_x"><span class="id" title="notation">if</span></a> <a class="idref" href="bedrock.lang.cpp.syntax.typing.html#is_value_type"><span class="id" title="definition">is_value_type</span></a> (<a class="idref" href="bedrock.lang.cpp.syntax.typing.html#type_of"><span class="id" title="definition">type_of</span></a> <a class="idref" href="bedrock.lang.cpp.logic.wp.html#e:420"><span class="id" title="variable">e</span></a>) <a class="idref" href="http://coq.inria.fr/distrib/V8.15.1/stdlib//Coq.ssr.ssreflect.html#::general_if_scope:'if'_x_'then'_x_'else'_x"><span class="id" title="notation">then</span></a><br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;@<a class="idref" href="bedrock.lang.cpp.logic.wp.html#WPE.wp_operand"><span class="id" title="axiom">wp_operand</span></a> <a class="idref" href="bedrock.lang.cpp.logic.wp.html#WPE.with_cpp.wp_discard.resolve"><span class="id" title="variable">resolve</span></a> <a class="idref" href="bedrock.lang.cpp.logic.wp.html#e155ffaf02ea34a0d68d86051382f19d"><span class="id" title="variable">ρ</span></a> <a class="idref" href="bedrock.lang.cpp.logic.wp.html#e:420"><span class="id" title="variable">e</span></a> (<span class="id" title="keyword">fun</span> <span class="id" title="var">_</span> <a id="free:426" class="idref" href="#free:426"><span class="id" title="binder">free</span></a> =&gt; <a class="idref" href="bedrock.lang.cpp.logic.wp.html#Q:421"><span class="id" title="variable">Q</span></a> <a class="idref" href="bedrock.lang.cpp.logic.wp.html#free:426"><span class="id" title="variable">free</span></a>)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="http://coq.inria.fr/distrib/V8.15.1/stdlib//Coq.ssr.ssreflect.html#::general_if_scope:'if'_x_'then'_x_'else'_x"><span class="id" title="notation">else</span></a><br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="bedrock.lang.bi.prelude.html#c4d2389a489ed3709578030625aa8744"><span class="id" title="notation">Forall</span></a> <a id="p:423" class="idref" href="#p:423"><span class="id" title="binder">p</span></a><a class="idref" href="bedrock.lang.bi.prelude.html#c4d2389a489ed3709578030625aa8744"><span class="id" title="notation">,</span></a> <a class="idref" href="bedrock.lang.cpp.logic.wp.html#WPE.wp_init"><span class="id" title="axiom">wp_init</span></a> <a class="idref" href="bedrock.lang.cpp.logic.wp.html#e155ffaf02ea34a0d68d86051382f19d"><span class="id" title="variable">ρ</span></a> (<a class="idref" href="bedrock.lang.cpp.syntax.typing.html#type_of"><span class="id" title="definition">type_of</span></a> <a class="idref" href="bedrock.lang.cpp.logic.wp.html#e:420"><span class="id" title="variable">e</span></a>) <a class="idref" href="bedrock.lang.cpp.logic.wp.html#p:423"><span class="id" title="variable">p</span></a> <a class="idref" href="bedrock.lang.cpp.logic.wp.html#e:420"><span class="id" title="variable">e</span></a> (<span class="id" title="keyword">fun</span> <a id="ty:424" class="idref" href="#ty:424"><span class="id" title="binder">ty</span></a> <a id="frees:425" class="idref" href="#frees:425"><span class="id" title="binder">frees</span></a> =&gt; <a class="idref" href="bedrock.lang.cpp.logic.wp.html#Q:421"><span class="id" title="variable">Q</span></a> (<a class="idref" href="bedrock.lang.cpp.logic.wp.html#FreeTemps.delete"><span class="id" title="constructor">FreeTemps.delete</span></a> <a class="idref" href="bedrock.lang.cpp.logic.wp.html#ty:424"><span class="id" title="variable">ty</span></a> <a class="idref" href="bedrock.lang.cpp.logic.wp.html#p:423"><span class="id" title="variable">p</span></a> <a class="idref" href="bedrock.lang.cpp.logic.wp.html#e7ee732424d29ae8c030d3bb834f6f3f"><span class="id" title="notation">&gt;*&gt;</span></a> <a class="idref" href="bedrock.lang.cpp.logic.wp.html#frees:425"><span class="id" title="variable">frees</span></a>)%<span class="id" title="var">free</span>)<br/>
@@ -1147,7 +1147,7 @@ Discarded values.
 </div>
 
 <div class="doc">
-<a id="lab104"></a><h1 class="section">Statements</h1>
+<a id="lab109"></a><h1 class="section">Statements</h1>
 
 </div>
 <div class="code">
