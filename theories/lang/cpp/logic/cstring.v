@@ -116,7 +116,7 @@ Module cstring.
         by rewrite take_app BS.print_parse_inv.
     Qed.
 
-    Lemma to_from_zstring
+    Lemma to_from_zstring {σ : genv}
           (zs : zstring.t)
           (H : zstring.WF zs)
           (X : List.Forall (fun c => has_type (Vint c) Tuchar) zs) :
@@ -216,7 +216,7 @@ Module cstring.
         [| rewrite -IHcstr]; reflexivity.
     Qed.
 
-    Lemma from_zstring_to_zstring_swap :
+    Lemma from_zstring_to_zstring_swap {σ : genv} :
       forall (zs : zstring.t) (cstr : t),
         zstring.WF zs ->
         zs = to_zstring cstr <-> cstr = from_zstring zs.
@@ -240,13 +240,14 @@ Module cstring.
   Definition strlen (cstr : t) := zstring.strlen (to_zstring cstr).
   #[global] Arguments size cstr : simpl never.
 
-  Definition WF (cstr : t) : Prop := zstring.WF (to_zstring cstr).
-  #[global] Arguments WF cstr : simpl never.
+  Definition WF {σ : genv} (cstr : t) : Prop := zstring.WF (to_zstring cstr).
+  #[global] Arguments WF {σ} cstr : simpl never.
 
-  Definition WF' (cstr : t) : Prop := zstring.WF' (to_zstring cstr).
-  #[global] Arguments WF' cstr : simpl never.
+  Definition WF' {σ : genv} (cstr : t) : Prop := zstring.WF' (to_zstring cstr).
+  #[global] Arguments WF' {σ} cstr : simpl never.
 
   Section WF_Theory.
+    Context {σ : genv}.
     Remark WF_nil : WF "".
     Proof.
       rewrite /WF to_zstring_unfold/=; unfold zstring.WF.
@@ -603,6 +604,7 @@ Module cstring.
   End size_Theory.
 
   Section WFs_equiv_Theory.
+    Context {σ : genv}.
     Lemma WFs_equiv : forall (cstr : t), WF' cstr <-> WF cstr.
     Proof. intros *; rewrite /WF/WF'; by apply zstring.WFs_equiv. Qed.
 
@@ -626,8 +628,8 @@ Module cstring.
     Lemma to_zstring_WF'_cons_shrink :
       forall (b : Byte.byte) (cstr : t),
         b <> "000"%byte ->
-        zstring.WF' (to_zstring (BS.String b cstr)) ->
-        zstring.WF' (to_zstring cstr).
+        zstring._WF' (to_zstring (BS.String b cstr)) ->
+        zstring._WF' (to_zstring cstr).
     Proof.
       intros **; rewrite -> zstring.WFs_equiv in *;
         by eapply to_zstring_WF_cons_shrink.
@@ -648,7 +650,7 @@ Module cstring.
         zstring.WF' (to_zstring (BS.String Byte.x00 cstr)) ->
         cstr = ""%bs.
     Proof.
-      intros **; rewrite -> zstring.WFs_equiv in *;
+      intros **; rewrite -> zstring.WFs_equiv in H;
         by eapply to_zstring_WF_zero.
     Qed.
 

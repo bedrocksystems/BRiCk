@@ -34,6 +34,8 @@ Definition Nanon (ty : globname) : globname :=
 
 Definition Cenum_const (e : globname) (x : ident) : obj_name :=
   e ++ "::" ++ x.
+Definition Eenum_const_at (e : globname) (ety ty : type) : Expr :=
+  Ecast Cintegral Prvalue (Econst_ref (Gname e) ety) ty.
 
 Definition pure_virt (x : obj_name) : obj_name * option obj_name :=
   (x, None).
@@ -50,8 +52,6 @@ Definition Sforeach (range ibegin iend : Stmt)
 
 (* Indicate that [underlying] is used to represent alias type [name]. Enums are treated similarly. *)
 Definition Talias (name : globname) {underlying : type} : type :=
-  underlying.
-Definition Tenum (name : globname) {underlying : type} : type :=
   underlying.
 Definition Tunderlying (enum : type) {underlying : type} : type :=
   underlying.
@@ -146,8 +146,8 @@ Definition Dconstant    (name : globname) (t : type) (e : Expr) : translation_un
   fun syms tys k => k syms $ <[ name := Gconstant t (Some e) ]> tys.
 Definition Dconstant_undef  (name : globname) (t : type) : translation_unitK :=
   fun syms tys k => k syms $ <[ name := Gconstant t None ]> tys.
-Definition Denum_constant (name : globname) (t : type) (v : Z) (init : option Expr) : translation_unitK :=
-  fun syms tys k => k syms $ <[ name := Gconstant t (Some (Eint v t)) ]> tys.
+Definition Denum_constant (name : globname) (t ut : type) (v : Z) (init : option Expr) : translation_unitK :=
+  fun syms tys k => k syms $ <[ name := Gconstant t (Some (Ecast Cintegral Prvalue (Eint v ut) t)) ]> tys.
 Definition Dtypedef     (name : globname) (t : type) : translation_unitK :=
   fun syms tys k => k syms $ <[ name := Gtypedef t ]> tys.
 Definition Dtype (name : globname) : translation_unitK :=

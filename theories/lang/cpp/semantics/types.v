@@ -8,17 +8,28 @@ From bedrock.prelude Require Import base.
 From bedrock.lang.cpp.syntax Require Import names expr stmt types typing.
 From bedrock.lang.cpp.semantics Require Import genv.
 
-
 Definition GlobDecl_size_of (g : GlobDecl) : option N :=
   match g with
   | Gstruct s => Some s.(s_size)
   | Gunion u => Some u.(u_size)
+  | Genum t _ =>
+    match drop_qualifiers t with
+    | Tnum sz _ => Some $ bytesN sz
+    | Tbool => Some 1%N
+    | _ => None
+    end
   | _ => None
   end.
 Definition GlobDecl_align_of (g : GlobDecl) : option N :=
   match g with
   | Gstruct s => Some s.(s_alignment)
   | Gunion u => Some u.(u_alignment)
+  | Genum t _ =>
+    match drop_qualifiers t with
+    | Tnum sz _ => Some $ bytesN sz
+    | Tbool => Some 1%N
+    | _ => None
+    end
   | _ => None
   end.
 Variant Roption_leq {T} (R : T -> T -> Prop) : option T -> option T -> Prop :=
@@ -31,19 +42,18 @@ Proof.
   rewrite /GlobDecl_size_of => x y Heq.
   repeat (case_match; try constructor);
     simplify_eq/= => //;
-    apply require_eq_success in Heq; naive_solver.
+    apply require_eq_success in Heq; destruct Heq; subst; solve [ congruence | naive_solver ].
 Qed.
 #[global] Instance proper_GlobDecl_align_of: Proper (GlobDecl_ler ==> Roption_leq eq) GlobDecl_align_of.
 Proof.
   rewrite /GlobDecl_align_of => x y Heq.
   repeat (case_match; try constructor);
     simplify_eq/= => //;
-    apply require_eq_success in Heq; naive_solver.
+    apply require_eq_success in Heq; destruct Heq; solve [ congruence | naive_solver ].
 Qed.
 
 (** * sizeof() *)
-(** this is a partial implementation of [size_of], it doesn't indirect through
-    typedefs, but the cpp2v generator flattens these for us anyways.
+(** this is a partial implementation of [size_of] for primitives.
  *)
 Fixpoint size_of (resolve : genv) (t : type) : option N :=
   match t with
@@ -54,6 +64,7 @@ Fixpoint size_of (resolve : genv) (t : type) : option N :=
   | Tvoid => None
   | Tarray t n => N.mul n <$> size_of resolve t
   | Tnamed nm => glob_def resolve nm ≫= GlobDecl_size_of
+  | Tenum nm => glob_def resolve nm ≫= GlobDecl_size_of
   | Tfunction _ _ => None
   | Tbool => Some 1
   | Tmember_pointer _ _ => None (* TODO these are not well supported right now *)
@@ -75,9 +86,14 @@ Proof.
     move: Hle => /(_ _ eq_refl). rewrite -tu_lookup_globals.
     move => [g2 [-> HH]] /=.
     exact: proper_GlobDecl_size_of.
+  - move: Hle => [[ /(_ g) Hle _] _ _].
+    unfold glob_def. rewrite -tu_lookup_globals in Hle.
+    destruct ((genv_tu x) !! g) as [g1| ]; last constructor.
+    move: Hle => /(_ _ eq_refl). rewrite -tu_lookup_globals.
+    move => [g2 [-> HH]] /=.
+    exact: proper_GlobDecl_size_of.
   - by destruct o; constructor.
 Qed.
-
 
 Theorem size_of_int : forall {c : genv} s w,
     @size_of c (Tnum w s) = Some (bytesN w).

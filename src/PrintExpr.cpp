@@ -383,21 +383,46 @@ public:
                           ClangPrinter& cprint, const ASTContext& ctxt,
                           OpaqueNames& on) {
         auto d = expr->getDecl();
-        if (d->getType()->isReferenceType()) {
-            print.ctor("Eread_ref");
-        }
-        if (isa<EnumConstantDecl>(d)) {
-            print.ctor("Econst_ref", false);
-            print.ctor("Gname", false);
-            cprint.printObjName(d, print);
-            print.end_ctor();
+        if (auto ecd = dyn_cast<EnumConstantDecl>(d)) {
+            // References to `enum` constants are special because
+            // they can be referenced both at the enumeration type
+            // and (within the `enum` declaration) they can be
+            // referenced at the underlying type. Here, we
+            // unify these two so that the type of a reference to
+            // an `enum` constant is *always* the `enum` type.
+            // To match the type of the expression, we insert
+            // an implicit integral cast.
+            if (expr->getType()->isEnumeralType()) {
+                // nothing special to do.
+                print.ctor("Econst_ref", false);
+                print.ctor("Gname", false);
+                cprint.printObjName(d, print);
+                print.end_ctor();
+                done(expr, print, cprint);
+            } else {
+                // TODO: is is possible to determine the `DeclContext` that
+                // this expression occurs in? If so, then we could assert that
+                // this is in the scope of the enumeration.
+                print.ctor("Eenum_const_at", false);
+                cprint.printObjName(d, print);
+                print.output() << fmt::nbsp;
+                cprint.printQualType(ecd->getType(), print);
+                done(expr, print, cprint);
+            }
         } else {
+            // We add `Eread_ref` nodes when the type of the
+            // variable is a reference.
+            if (d->getType()->isReferenceType()) {
+                print.ctor("Eread_ref");
+            }
+
             print.ctor("Evar", false);
             printVarRef(d, print, cprint, on);
-        }
-        done(expr, print, cprint);
-        if (d->getType()->isReferenceType()) {
-            print.end_ctor();
+            done(expr, print, cprint);
+
+            if (d->getType()->isReferenceType()) {
+                print.end_ctor();
+            }
         }
     }
 

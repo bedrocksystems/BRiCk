@@ -8,7 +8,7 @@ From bedrock.prelude Require Import base option.
 From bedrock.lang.cpp Require Import ast semantics.values semantics.operator.
 From bedrock.lang.cpp Require Import logic.pred.
 
-Parameter eval_binop_impure : forall `{has_cpp : cpp_logic} {resolve : genv}, BinOp -> forall (lhsT rhsT resT : type) (lhs rhs res : val), mpred.
+Parameter eval_binop_impure : forall `{has_cpp : cpp_logic}, translation_unit -> BinOp -> forall (lhsT rhsT resT : type) (lhs rhs res : val), mpred.
 
 (** Pointer [p'] is not at the beginning of a block. *)
 Definition non_beginning_ptr `{has_cpp : cpp_logic} p' : mpred :=
@@ -29,8 +29,10 @@ End non_beginning_ptr.
 Section with_Σ.
   Context `{has_cpp : cpp_logic} {resolve : genv}.
 
-  Definition eval_binop (b : BinOp) (lhsT rhsT resT : type) (lhs rhs res : val) : mpred :=
-    [| eval_binop_pure b lhsT rhsT resT lhs rhs res |] ∨ eval_binop_impure b lhsT rhsT resT lhs rhs res.
+  Definition eval_binop tu (b : BinOp) (lhsT rhsT resT : type) (lhs rhs res : val) : mpred :=
+    [| eval_binop_pure tu b lhsT rhsT resT lhs rhs res |] ∨ eval_binop_impure tu b lhsT rhsT resT lhs rhs res.
+
+  Variable tu : translation_unit.
 
   (** * Pointer comparison operators *)
   (** For [Ble, Blt, Bge, Bgt] axioms on pointers. *)
@@ -178,7 +180,7 @@ Section with_Σ.
   Qed.
 
   #[local] Definition eval_ptr_eq_cmp_op (bo : BinOp) ty p1 p2 res : mpred :=
-    eval_binop_impure bo
+    eval_binop_impure tu bo
       (Tpointer ty) (Tpointer ty) Tbool
       (Vptr p1) (Vptr p2) (Vbool res) ∗ True.
 
@@ -209,7 +211,7 @@ Section with_Σ.
   #[local] Definition eval_ptr_ord_cmp_op (bo : BinOp) (f : vaddr -> vaddr -> bool) : Prop :=
     forall ty p1 p2 res,
       ptr_ord_comparable p1 p2 f res ⊢
-      eval_binop_impure bo
+      eval_binop_impure tu bo
         (Tpointer ty) (Tpointer ty) Tbool
         (Vptr p1) (Vptr p2) (Vbool res) ∗ True.
 
@@ -236,7 +238,7 @@ Section with_Σ.
       is_Some (size_of resolve ty) ->
       p2 = p1 ,, _sub ty (f o) ->
       valid_ptr p1 ∧ valid_ptr p2 ⊢
-      eval_binop_impure bo
+      eval_binop_impure tu bo
                 (Tpointer ty) (Tnum w s) (Tpointer ty)
                 (Vptr p1)     (Vint o)   (Vptr p2).
 
@@ -245,7 +247,7 @@ Section with_Σ.
       is_Some (size_of resolve ty) ->
       p2 = p1 ,, _sub ty (f o) ->
       valid_ptr p1 ∧ valid_ptr p2 ⊢
-      eval_binop_impure bo
+      eval_binop_impure tu bo
                 (Tnum w s) (Tpointer ty) (Tpointer ty)
                 (Vint o)   (Vptr p1)     (Vptr p2).
 
@@ -293,7 +295,7 @@ Section with_Σ.
       (* Side condition to prevent overflow; needed per https://eel.is/c++draft/expr.add#note-1 *)
       has_type (Vint (o1 - o2)) (Tnum w Signed) ->
       valid_ptr p1 ∧ valid_ptr p2 ⊢
-      eval_binop_impure Bsub
+      eval_binop_impure tu Bsub
                 (Tpointer ty) (Tpointer ty) (Tnum w Signed)
                 (Vptr p1)     (Vptr p2)     (Vint (o1 - o2)).
 End with_Σ.

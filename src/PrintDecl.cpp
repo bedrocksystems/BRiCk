@@ -644,21 +644,6 @@ public:
         // TODO handling of [constexpr] needs to be improved.
         if (decl->isTemplated()) {
             return false;
-        } else if (decl->isConstexpr()) {
-            if (decl->hasInit()) {
-                print.ctor("Dconstant");
-                cprint.printObjName(decl, print);
-                print.output() << fmt::nbsp;
-                cprint.printQualType(decl->getType(), print);
-                print.output() << fmt::nbsp;
-                cprint.printExpr(decl->getInit(), print);
-            } else { //no initializer
-                print.ctor("Dconstant_undef");
-                cprint.printObjName(decl, print);
-                print.output() << fmt::nbsp;
-                cprint.printQualType(decl->getType(), print);
-            }
-            print.end_ctor();
         } else {
             print.ctor("Dvariable");
             cprint.printObjName(decl, print);
@@ -733,43 +718,24 @@ public:
                                ClangPrinter &cprint, const ASTContext &) {
         assert(not decl->getNameAsString().empty());
         auto ed = dyn_cast<EnumDecl>(decl->getDeclContext());
-        if (ed->getIdentifier()) {
-            print.ctor("Denum_constant");
-            cprint.printObjName(decl, print);
-            print.output() << fmt::nbsp;
-            cprint.printQualType(decl->getType(), print);
-            print.output() << fmt::nbsp << "(" << decl->getInitVal() << ")%Z"
-                           << fmt::nbsp;
+        print.ctor("Denum_constant");
+        cprint.printObjName(decl, print);
+        print.output() << fmt::nbsp;
+        cprint.printQualType(decl->getType(), print);
+        print.output() << fmt::nbsp;
+        cprint.printQualType(ed->getIntegerType(), print);
+        print.output() << fmt::nbsp << "(" << decl->getInitVal() << ")%Z"
+                        << fmt::nbsp;
 
-            if (decl->getInitExpr()) {
-                print.some();
-                cprint.printExpr(decl->getInitExpr(), print);
-                print.end_ctor();
-            } else {
-                print.none();
-            }
-
+        if (decl->getInitExpr()) {
+            print.some();
+            cprint.printExpr(decl->getInitExpr(), print);
             print.end_ctor();
         } else {
-            // anonymous enumeration value
-            print.ctor("Dconstant");
-            cprint.printObjName(decl, print);
-            print.output() << fmt::nbsp;
-            cprint.printQualType(decl->getType(), print);
-            print.output() << fmt::nbsp;
-
-            if (decl->getInitExpr()) {
-                cprint.printExpr(decl->getInitExpr(), print);
-            } else {
-                print.ctor("Eint", false);
-                print.output()
-                    << "(" << decl->getInitVal() << ")%Z" << fmt::nbsp;
-                cprint.printQualType(ed->getIntegerType(), print);
-                print.end_ctor();
-            }
-
-            print.end_ctor();
+            print.none();
         }
+
+        print.end_ctor();
         return true;
     }
 

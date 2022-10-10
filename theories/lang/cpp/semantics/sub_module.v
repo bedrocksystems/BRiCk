@@ -94,6 +94,7 @@ Arguments ObjValue_ler !_ _ /.
 Definition GlobDecl_le (a b : GlobDecl) : option unit :=
   match a , b with
   | Gtype , Gtype
+  | Gtype , Genum _ _
   | Gtype , Gunion _
   | Gtype , Gstruct _ => Some tt
   | Gunion _ , Gtype
@@ -134,23 +135,37 @@ Section GlobDecl_ler.
     by rewrite !require_eq_refl.
   Qed.
 
+  #[local] Ltac invert_globdecl :=
+    repeat (match goal with
+            | H : require_eq _ _ _ = _ |- _ =>
+                eapply require_eq_success in H; destruct H; subst
+            (* innermost-first [case_match] *)
+            | H : context [ match ?X with _ => _ end ] |- _ =>
+              lazymatch X with
+              | context [ match _ with _ => _ end ] => fail
+              | _ =>
+                destruct X eqn:? => //
+              end
+            end || rewrite ?require_eq_refl //).
+
   #[local] Instance GlobDecl_le_trans : Transitive GlobDecl_ler.
   Proof.
-    intros a b c.
-    destruct a, b; simpl => //; destruct c; simpl => //; intros;
-      repeat (match goal with
-              | H : require_eq _ _ _ = _ |- _ =>
-                  eapply require_eq_success in H; destruct H; subst
-              | H : context [ match ?X with _ => _ end ] |- _ =>
-                lazymatch X with
-                | context [ match _ with _ => _ end ] => fail
-                | _ =>
-                  destruct X eqn:? => //
-                end
-              end || rewrite ?require_eq_refl //).
+    intros gd1 gd2 gd3.
+    destruct gd1, gd2 => //=; destruct gd3 => //=;
+      intuition idtac; invert_globdecl; intuition idtac.
   Qed.
 
   #[global] Instance: PreOrder GlobDecl_ler := {}.
+
+  (* From this, it should follow that multiple translation units from the same
+  [genv] must have compatible definitions. See [sub_modules_agree_globdecl] *)
+  Lemma GlobDecl_ler_join gd1 gd2 gd3 :
+    GlobDecl_ler gd1 gd3 -> GlobDecl_ler gd2 gd3 ->
+    GlobDecl_ler gd1 gd2 \/ GlobDecl_ler gd2 gd1.
+  Proof.
+    destruct gd1, gd2 => //=; destruct gd3 => //=;
+      intuition idtac; invert_globdecl; intuition idtac.
+  Qed.
 End GlobDecl_ler.
 
 Section ObjValue_ler.
@@ -274,10 +289,17 @@ Proof.
     destruct (Hsub _ _ Hlook) as (st1 & Hlook1 & _).
     eapply (complete_pt_named _ Hlook1).
   }
-  intros * Hlook Hct IH ? Hsub.
-  destruct (Hsub _ _ Hlook) as (st1 & Hlook1 & Hle).
-  apply (complete_named _ Hlook1).
-  apply (complete_decl_respects_GlobDecl_le Hle), IH, Hsub.
+  - intros * Hlook Hct IH ? Hsub.
+    destruct (Hsub _ _ Hlook) as (st1 & Hlook1 & Hle).
+    inversion Hle. destruct st1; try congruence.
+    eapply complete_pt_enum; eauto.
+    apply require_eq_success in H0. destruct H0; subst.
+    eapply IH; eauto.
+  - intros * Hlook Hct IH ? Hsub.
+    destruct (Hsub _ _ Hlook) as (st1 & Hlook1 & Hle).
+    inversion Hle.
+    apply (complete_named _ Hlook1).
+    apply (complete_decl_respects_GlobDecl_le Hle), IH, Hsub.
 Qed.
 
 Lemma complete_type_respects_sub_table te1 te2 t :
@@ -307,6 +329,19 @@ Lemma sub_module_preserves_globdecl {m1 m2 gn g1} :
   m1 !! gn = Some g1 ->
   ∃ g2, m2 !! gn = Some g2 ∧ GlobDecl_ler g1 g2.
 Proof. move=>/types_compat + Heq => /(_ _ _ Heq). rewrite -tu_lookup_globals. eauto. Qed.
+
+Lemma sub_modules_agree_globdecl tu1 tu2 tu3 nm gd1 gd2 :
+  sub_module tu1 tu3 ->
+  sub_module tu2 tu3 ->
+  tu1.(globals) !! nm = Some gd1 ->
+  tu2.(globals) !! nm = Some gd2 ->
+  GlobDecl_ler gd1 gd2 \/ GlobDecl_ler gd2 gd1.
+Proof.
+  move=> Hs1 Hs2
+    /(sub_module_preserves_globdecl Hs1) [] gd3 [Hlook Hl1]
+    /(sub_module_preserves_globdecl Hs2) [] ? [? Hl2]; simplify_eq.
+  exact: GlobDecl_ler_join.
+Qed.
 
 Lemma sub_module_preserves_gstruct m1 m2 gn st :
   sub_module m1 m2 ->

@@ -72,7 +72,8 @@ Fixpoint erase_qualifiers (t : type) : type :=
   | Tbool
   | Tvoid
   | Tfloat _
-  | Tnamed _ => t
+  | Tnamed _
+  | Tenum _ => t
   | Tarray t sz => Tarray (erase_qualifiers t) sz
   | @Tfunction cc ar t ts => Tfunction (cc:=cc) (ar:=ar) (erase_qualifiers t) (List.map erase_qualifiers ts)
   | Tmember_pointer cls t => Tmember_pointer cls (erase_qualifiers t)
@@ -118,6 +119,10 @@ Proof. induction ty; simpl; intros; try congruence; eauto. Qed.
 Lemma drop_qualifiers_Tnullptr : forall [ty],
     drop_qualifiers ty = Tnullptr -> erase_qualifiers ty = Tnullptr.
 Proof. induction ty; simpl; intros; try congruence; eauto. Qed.
+Lemma drop_qualifiers_Tenum : forall [ty nm],
+    drop_qualifiers ty = Tenum nm -> erase_qualifiers ty = Tenum nm.
+Proof. induction ty; simpl; intros; try congruence; eauto. Qed.
+
 
 Lemma drop_erase : forall t, drop_qualifiers (erase_qualifiers t) = erase_qualifiers t.
 Proof. induction t; simpl; eauto. Qed.
@@ -135,7 +140,8 @@ Ltac simpl_drop_qualifiers :=
           | rewrite (drop_qualifiers_Tmember_pointer H)
           | rewrite (drop_qualifiers_Tnullptr H)
           | rewrite (drop_qualifiers_Tvoid H)
-          | rewrite (drop_qualifiers_Tptr H) ]
+          | rewrite (drop_qualifiers_Tptr H)
+          | rewrite (drop_qualifiers_Tenum H) ]
   end.
 
 
@@ -167,9 +173,10 @@ Definition class_name (t : type) : option globname :=
   | _ => None
   end.
 
-(** [is_primitive t] returns [true] if [t] is a primitive type.
+(** [is_value_type t] returns [true] if [t] has value semantics.
+    A value type is one that can be represented by [val].
  *)
-Definition is_primitive (t : type) : bool :=
+Definition is_value_type (t : type) : bool :=
   match drop_qualifiers t with
   | Tnum _ _
   | Tbool
@@ -177,6 +184,7 @@ Definition is_primitive (t : type) : bool :=
   | Tnullptr
   | Tfloat _
   | Tmember_pointer _ _
+  | Tenum _ (* enum types are value types *)
   | Tvoid => true
   | _ => false
   end.

@@ -73,7 +73,7 @@ public:
     }
 
     void VisitUnaryTransformType(const UnaryTransformType* type,
-            CoqPrinter& print, ClangPrinter& cprint) {
+                                 CoqPrinter& print, ClangPrinter& cprint) {
 
         switch (type->getUTTKind()) {
 
@@ -124,10 +124,8 @@ public:
     void VisitEnumType(const EnumType* type, CoqPrinter& print,
                        ClangPrinter& cprint) {
         auto ed = type->getDecl()->getCanonicalDecl();
-        print.ctor("@Tenum", false);
+        print.ctor("Tenum", false);
         cprint.printTypeName(ed, print);
-        print.output() << fmt::nbsp;
-        cprint.printQualType(ed->getIntegerType(), print);
         print.end_ctor();
     }
 

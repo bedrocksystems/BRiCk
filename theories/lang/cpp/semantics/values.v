@@ -268,76 +268,198 @@ Module Type HAS_TYPE (Import P : PTRS) (Import R : RAW_BYTES) (Import V : VAL_MI
   - if [ty] is a type of arrays, we ensure that [v = Vptr p] and
     that [p <> nullptr].
     *)
-  Parameter has_type : val -> type -> Prop.
+  Parameter has_type : forall {σ : genv}, val -> type -> Prop.
 
-  Axiom has_type_pointer : forall v ty,
-      has_type v (Tpointer ty) -> exists p, v = Vptr p.
-  Axiom has_type_nullptr : forall v,
-      has_type v Tnullptr -> v = Vptr nullptr.
-  Axiom has_type_ref : forall v ty,
-      has_type v (Tref ty) -> exists p, v = Vref p /\ p <> nullptr.
-  Axiom has_type_rv_ref : forall v ty,
-      has_type v (Trv_ref ty) -> exists p, v = Vref p /\ p <> nullptr.
-  Axiom has_type_array : forall v ty n,
-      has_type v (Tarray ty n) -> exists p, v = Vptr p /\ p <> nullptr.
-  Axiom has_type_function : forall v cc rty args,
-      has_type v (Tfunction (cc:=cc) rty args) -> exists p, v = Vptr p /\ p <> nullptr.
+  #[global]
+  Declare Instance has_type_mono : Proper (genv_leq ==> eq ==> eq ==> Basics.impl) (@has_type).
 
-  Axiom has_type_void : forall v,
-      has_type v Tvoid -> v = Vundef.
+  #[global]
+  Instance has_type_proper : Proper (genv_eq ==> eq ==> eq ==> iff) (@has_type).
+  Proof.
+    compute; split; apply has_type_mono; eauto; tauto.
+  Qed.
 
-  Axiom has_nullptr_type : forall ty,
-      has_type (Vptr nullptr) (Tpointer ty).
+  Section with_genv.
+    Context {σ : genv}.
 
-  Axiom has_type_bool : forall v,
-      has_type v Tbool <-> exists b, v = Vbool b.
+    Axiom has_type_pointer : forall v ty,
+        has_type v (Tpointer ty) -> exists p, v = Vptr p.
+    Axiom has_type_nullptr : forall v,
+        has_type v Tnullptr -> v = Vptr nullptr.
+    Axiom has_type_ref : forall v ty,
+        has_type v (Tref ty) -> exists p, v = Vref p /\ p <> nullptr.
+    Axiom has_type_rv_ref : forall v ty,
+        has_type v (Trv_ref ty) -> exists p, v = Vref p /\ p <> nullptr.
+    Axiom has_type_array : forall v ty n,
+        has_type v (Tarray ty n) -> exists p, v = Vptr p /\ p <> nullptr.
+    Axiom has_type_function : forall v cc rty args,
+        has_type v (Tfunction (cc:=cc) rty args) -> exists p, v = Vptr p /\ p <> nullptr.
 
-  (** Note that from [has_type v (Tnum sz sgn)] does not follow
-    [v = Vint _] since [v] might also be [Vraw _] (for [Tuchar]). *)
-  Axiom has_int_type' : forall sz sgn v,
-      has_type v (Tnum sz sgn) <-> (exists z, v = Vint z /\ bound sz sgn z) \/ (exists r, v = Vraw r /\ Tnum sz sgn = Tuchar).
+    Axiom has_type_void : forall v,
+        has_type v Tvoid -> v = Vundef.
 
-  Axiom has_type_qual_iff : forall t q x,
-      has_type x t <-> has_type x (Tqualified q t).
+    Axiom has_nullptr_type : forall ty,
+        has_type (Vptr nullptr) (Tpointer ty).
+
+    Axiom has_type_bool : forall v,
+        has_type v Tbool <-> exists b, v = Vbool b.
+
+    Axiom has_type_enum : forall v nm,
+        has_type v (Tenum nm) ->
+        exists tu ty ls e, tu ⊧ σ /\ tu !! nm = Some (Genum ty ls) /\
+                  v = Vint e /\ has_type v ty.
+
+    (** Note in the case of [Tuchar], the value [v] could be a
+        raw value. *)
+    Axiom has_int_type' : forall sz sgn v,
+        has_type v (Tnum sz sgn) <->
+          (exists z, v = Vint z /\ bound sz sgn z) \/
+          (exists r, v = Vraw r /\ Tnum sz sgn = Tuchar).
+
+    Axiom has_type_qual_iff : forall t q x,
+        has_type x t <-> has_type x (Tqualified q t).
+
+  End with_genv.
 
 End HAS_TYPE.
 
 Module Type HAS_TYPE_MIXIN (Import P : PTRS) (Import R : RAW_BYTES) (Import V : VAL_MIXIN P R)
     (Import HT : HAS_TYPE P R V).
-  Lemma has_bool_type : forall z,
-    0 <= z < 2 <-> has_type (Vint z) Tbool.
-  Proof.
-    intros z. rewrite has_type_bool. split=>Hz.
-    - destruct (decide (z = 0)); simplify_eq; first by exists false.
-      destruct (decide (z = 1)); simplify_eq; first by exists true. lia.
-    - unfold Vbool in Hz. destruct Hz as [b Hb].
-      destruct b; simplify_eq; lia.
-  Qed.
+  Section with_env.
+    Context {σ : genv}.
 
-  Lemma has_int_type : forall sz (sgn : signed) z,
-      bound sz sgn z <-> has_type (Vint z) (Tnum sz sgn).
-  Proof. move => *. rewrite has_int_type'. naive_solver. Qed.
+    Lemma has_bool_type : forall z,
+      0 <= z < 2 <-> has_type (Vint z) Tbool.
+    Proof.
+      intros z. rewrite has_type_bool. split=>Hz.
+      - destruct (decide (z = 0)); simplify_eq; first by exists false.
+        destruct (decide (z = 1)); simplify_eq; first by exists true. lia.
+      - unfold Vbool in Hz. destruct Hz as [b Hb].
+        destruct b; simplify_eq; lia.
+    Qed.
 
-  Theorem has_char_type : forall sz (sgn : signed) z,
-      bound sz sgn z <-> has_type (Vint z) (Tchar sz sgn).
-  Proof. apply has_int_type. Qed.
+    Lemma has_int_type : forall sz (sgn : signed) z,
+        bound sz sgn z <-> has_type (Vint z) (Tnum sz sgn).
+    Proof. move => *. rewrite has_int_type'. naive_solver. Qed.
 
-  Lemma has_type_drop_qualifiers
-    : forall v ty, has_type v ty <-> has_type v (drop_qualifiers ty).
-  Proof.
-    induction ty; simpl; eauto.
-    by rewrite -has_type_qual_iff -IHty.
-  Qed.
+    Theorem has_char_type : forall sz (sgn : signed) z,
+        bound sz sgn z <-> has_type (Vint z) (Tchar sz sgn).
+    Proof. apply has_int_type. Qed.
 
-  (* TODO fix naming convention *)
-  Lemma has_type_qual  t q x :
-      has_type x (drop_qualifiers t) ->
-      has_type x (Tqualified q t).
-  Proof.
-    intros. by apply has_type_drop_qualifiers.
-  Qed.
+    Lemma has_type_drop_qualifiers
+      : forall v ty, has_type v ty <-> has_type v (drop_qualifiers ty).
+    Proof.
+      induction ty; simpl; eauto.
+      by rewrite -has_type_qual_iff -IHty.
+    Qed.
+
+    (* TODO fix naming convention *)
+    Lemma has_type_qual  t q x :
+        has_type x (drop_qualifiers t) ->
+        has_type x (Tqualified q t).
+    Proof.
+      intros. by apply has_type_drop_qualifiers.
+    Qed.
+
+    Section has_type.
+      Lemma has_type_bswap8:
+        forall v,
+          has_type (Vint (bswap8 v)) Tu8.
+      Proof. intros *; apply has_int_type; red; generalize (bswap8_bounded v); simpl; lia. Qed.
+
+      Lemma has_type_bswap16:
+        forall v,
+          has_type (Vint (bswap16 v)) Tu16.
+      Proof. intros *; apply has_int_type; red; generalize (bswap16_bounded v); simpl; lia. Qed.
+
+      Lemma has_type_bswap32:
+        forall v,
+          has_type (Vint (bswap32 v)) Tu32.
+      Proof. intros *; apply has_int_type; red; generalize (bswap32_bounded v); simpl; lia. Qed.
+
+      Lemma has_type_bswap64:
+        forall v,
+          has_type (Vint (bswap64 v)) Tu64.
+      Proof. intros *; apply has_int_type; red; generalize (bswap64_bounded v); simpl; lia. Qed.
+
+      Lemma has_type_bswap128:
+        forall v,
+          has_type (Vint (bswap128 v)) Tu128.
+      Proof. intros *; apply has_int_type; red; generalize (bswap128_bounded v); simpl; lia. Qed.
+    End has_type.
+
+    Lemma has_type_bswap:
+      forall sz v,
+        has_type (Vint (bswap sz v)) (Tnum sz Unsigned).
+    Proof.
+      intros *; destruct sz;
+        eauto using
+              has_type_bswap8,
+              has_type_bswap16,
+              has_type_bswap32,
+              has_type_bswap64,
+              has_type_bswap128.
+    Qed.
+
+    (** representation of integral types *)
+    Variant IntegralType : Set :=
+      | Bool
+      | Num (_ : bitsize) (_ : signed).
+
+    (** [as_integral tu ty] is the integral representation of the type if one exists.
+       In particular, this gets the underlying type of enumerations.
+     *)
+    Definition as_integral (tu : translation_unit) (ty : type) : option IntegralType :=
+      match drop_qualifiers ty with
+      | Tnum sz sgn => Some $ Num sz sgn
+      | Tenum nm =>
+          match tu !! nm with
+          | Some (Genum ty _) =>
+              match ty with
+              | Tnum sz sgn => Some $ Num sz sgn
+              | Tbool => Some Bool
+              | _ => None
+              end
+          | _ => None
+          end
+      | Tbool => Some Bool
+      | _ => None
+      end.
+
+    (** Integral conversions. For use in the semantics of C++ operators. *)
+    Definition conv_int (tu : translation_unit) (from to : type) (v v' : val) : Prop :=
+      match as_integral tu from , as_integral tu to with
+      | Some from , Some to =>
+          match from , to with
+          | Bool , Num _ _ =>
+              match is_true v with
+              | Some v => v' = Vbool v
+              | _ => False
+              end
+          | Num _ _ , Bool =>
+              match v with
+              | Vint v =>
+                  v' = Vbool (bool_decide (v <> 0))
+              | _ => False
+              end
+          | Num _ _ , Num sz Unsigned =>
+              match v with
+              | Vint v =>
+                  v' = Vint (to_unsigned sz v)
+              | _ => False
+              end
+          | Num _ _ , Num sz Signed =>
+              has_type v (Tnum sz Signed) /\ v' = v
+          | Bool , Bool => v = v'
+          end
+      | _ , _ => False
+      end.
+    Arguments conv_int !_ !_ _ _ /.
+
+  End with_env.
 
   #[global] Hint Resolve has_type_qual : has_type.
+  #[global] Hint Resolve has_type_bswap : has_type.
 
   Arguments Z.add _ _ : simpl never.
   Arguments Z.sub _ _ : simpl never.
@@ -345,74 +467,6 @@ Module Type HAS_TYPE_MIXIN (Import P : PTRS) (Import R : RAW_BYTES) (Import V : 
   Arguments Z.pow _ _ : simpl never.
   Arguments Z.opp _ : simpl never.
   Arguments Z.pow_pos _ _ : simpl never.
-
-  Section has_type.
-    Lemma has_type_bswap8:
-      forall v,
-        has_type (Vint (bswap8 v)) Tu8.
-    Proof. intros *; apply has_int_type; red; generalize (bswap8_bounded v); simpl; lia. Qed.
-
-    Lemma has_type_bswap16:
-      forall v,
-        has_type (Vint (bswap16 v)) Tu16.
-    Proof. intros *; apply has_int_type; red; generalize (bswap16_bounded v); simpl; lia. Qed.
-
-    Lemma has_type_bswap32:
-      forall v,
-        has_type (Vint (bswap32 v)) Tu32.
-    Proof. intros *; apply has_int_type; red; generalize (bswap32_bounded v); simpl; lia. Qed.
-
-    Lemma has_type_bswap64:
-      forall v,
-        has_type (Vint (bswap64 v)) Tu64.
-    Proof. intros *; apply has_int_type; red; generalize (bswap64_bounded v); simpl; lia. Qed.
-
-    Lemma has_type_bswap128:
-      forall v,
-        has_type (Vint (bswap128 v)) Tu128.
-    Proof. intros *; apply has_int_type; red; generalize (bswap128_bounded v); simpl; lia. Qed.
-  End has_type.
-
-  Lemma has_type_bswap:
-    forall sz v,
-      has_type (Vint (bswap sz v)) (Tnum sz Unsigned).
-  Proof.
-    intros *; destruct sz;
-      eauto using
-            has_type_bswap8,
-            has_type_bswap16,
-            has_type_bswap32,
-            has_type_bswap64,
-            has_type_bswap128.
-  Qed.
-
-  #[global] Hint Resolve has_type_bswap : has_type.
-
-  (** Integral conversions. For use in the semantics of C++ operators. *)
-  Definition conv_int (from to : type) (v v' : val) : Prop :=
-    match drop_qualifiers from , drop_qualifiers to with
-    | Tbool , Tnum _ _ =>
-      match is_true v with
-      | Some v => v' = Vbool v
-      | _ => False
-      end
-    | Tnum _ _ , Tbool =>
-      match v with
-      | Vint v =>
-        v' = Vbool (if Z.eqb 0 v then false else true)
-      | _ => False
-      end
-    | Tnum _ _ , Tnum sz Unsigned =>
-      match v with
-      | Vint v =>
-        v' = Vint (to_unsigned sz v)
-      | _ => False
-      end
-    | Tnum _ _ , Tnum sz Signed =>
-      has_type v (Tnum sz Signed) /\ v' = v
-    | _ , _ => False
-    end.
-  Arguments conv_int !_ !_ _ _ /.
 
 End HAS_TYPE_MIXIN.
 
