@@ -68,12 +68,12 @@ conversion to and from <span class="inlinecode"><a class="idref" href="bedrock.l
 <div class="code">
 
 <br/>
-<span class="id" title="keyword">Section</span> <a id="fin_fun_eqdec" class="idref" href="#fin_fun_eqdec"><span class="id" title="section">fin_fun_eqdec</span></a>.<br/>
+<span class="id" title="keyword">Section</span> <a id="fin_fun_eq_dec" class="idref" href="#fin_fun_eq_dec"><span class="id" title="section">fin_fun_eq_dec</span></a>.<br/>
 &nbsp;&nbsp;<span class="id" title="keyword">Context</span> `{<a id="H:3" class="idref" href="#H:3"><span class="id" title="binder">Finite</span></a> <a id="H:3" class="idref" href="#H:3"><span class="id" title="binder">A</span></a>} `{<a id="EqDecision1:5" class="idref" href="#EqDecision1:5"><span class="id" title="binder">EqDecision</span></a> <a id="EqDecision1:5" class="idref" href="#EqDecision1:5"><span class="id" title="binder">B</span></a>}.<br/>
-&nbsp;&nbsp;<span class="id" title="keyword">Implicit</span> <span class="id" title="keyword">Types</span> (<span class="id" title="var">f</span> <span class="id" title="var">g</span> : <a class="idref" href="bedrock.prelude.finite.html#fin_fun_eqdec.A"><span class="id" title="variable">A</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.15.1/stdlib//Coq.Init.Logic.html#::type_scope:x_'-&gt;'_x"><span class="id" title="notation">-&gt;</span></a> <a class="idref" href="bedrock.prelude.finite.html#fin_fun_eqdec.B"><span class="id" title="variable">B</span></a>).<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Implicit</span> <span class="id" title="keyword">Types</span> (<span class="id" title="var">f</span> <span class="id" title="var">g</span> : <a class="idref" href="bedrock.prelude.finite.html#fin_fun_eq_dec.A"><span class="id" title="variable">A</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.15.1/stdlib//Coq.Init.Logic.html#::type_scope:x_'-&gt;'_x"><span class="id" title="notation">-&gt;</span></a> <a class="idref" href="bedrock.prelude.finite.html#fin_fun_eq_dec.B"><span class="id" title="variable">B</span></a>).<br/>
 
 <br/>
-&nbsp;&nbsp;#[<span class="id" title="var">global</span>, <span class="id" title="tactic">refine</span>] <span class="id" title="keyword">Instance</span> <a id="fin_fun_eqdec" class="idref" href="#fin_fun_eqdec"><span class="id" title="instance">fin_fun_eqdec</span></a> : <a class="idref" href="https://plv.mpi-sws.org/coqdoc/stdpp//stdpp.base.html#EqDecision"><span class="id" title="abbreviation">EqDecision</span></a> (<a class="idref" href="bedrock.prelude.finite.html#fin_fun_eqdec.A"><span class="id" title="variable">A</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.15.1/stdlib//Coq.Init.Logic.html#::type_scope:x_'-&gt;'_x"><span class="id" title="notation">-&gt;</span></a> <a class="idref" href="bedrock.prelude.finite.html#fin_fun_eqdec.B"><span class="id" title="variable">B</span></a>) := <span class="id" title="keyword">fun</span> <a id="r1:6" class="idref" href="#r1:6"><span class="id" title="binder">r1</span></a> <a id="r2:7" class="idref" href="#r2:7"><span class="id" title="binder">r2</span></a> =&gt;<br/>
+&nbsp;&nbsp;#[<span class="id" title="var">global</span>, <span class="id" title="tactic">refine</span>] <span class="id" title="keyword">Instance</span> <a id="fin_fun_eq_dec" class="idref" href="#fin_fun_eq_dec"><span class="id" title="instance">fin_fun_eq_dec</span></a> : <a class="idref" href="https://plv.mpi-sws.org/coqdoc/stdpp//stdpp.base.html#EqDecision"><span class="id" title="abbreviation">EqDecision</span></a> (<a class="idref" href="bedrock.prelude.finite.html#fin_fun_eq_dec.A"><span class="id" title="variable">A</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.15.1/stdlib//Coq.Init.Logic.html#::type_scope:x_'-&gt;'_x"><span class="id" title="notation">-&gt;</span></a> <a class="idref" href="bedrock.prelude.finite.html#fin_fun_eq_dec.B"><span class="id" title="variable">B</span></a>) := <span class="id" title="keyword">fun</span> <a id="r1:6" class="idref" href="#r1:6"><span class="id" title="binder">r1</span></a> <a id="r2:7" class="idref" href="#r2:7"><span class="id" title="binder">r2</span></a> =&gt;<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="https://plv.mpi-sws.org/coqdoc/stdpp//stdpp.decidable.html#cast_if"><span class="id" title="abbreviation">cast_if</span></a> (<a class="idref" href="https://plv.mpi-sws.org/coqdoc/stdpp//stdpp.base.html#decide"><span class="id" title="definition">decide</span></a> (<a class="idref" href="http://coq.inria.fr/distrib/V8.15.1/stdlib//Coq.Unicode.Utf8_core.html#e15f3fa8414cf45e36c73a91b3f5f2c2"><span class="id" title="notation">∀</span></a> <a id="n:8" class="idref" href="#n:8"><span class="id" title="binder">n</span></a><a class="idref" href="http://coq.inria.fr/distrib/V8.15.1/stdlib//Coq.Unicode.Utf8_core.html#e15f3fa8414cf45e36c73a91b3f5f2c2"><span class="id" title="notation">,</span></a> <a class="idref" href="bedrock.prelude.finite.html#r1:6"><span class="id" title="variable">r1</span></a> <a class="idref" href="bedrock.prelude.finite.html#n:8"><span class="id" title="variable">n</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.15.1/stdlib//Coq.Init.Logic.html#6cd0f7b28b6092304087c7049437bb1a"><span class="id" title="notation">=</span></a> <a class="idref" href="bedrock.prelude.finite.html#r2:7"><span class="id" title="variable">r2</span></a> <a class="idref" href="bedrock.prelude.finite.html#n:8"><span class="id" title="variable">n</span></a>)).<br/>
 &nbsp;&nbsp;<span class="id" title="keyword">Proof</span> <span class="id" title="keyword">using</span> <span class="id" title="keyword">Type</span>*.<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">abstract</span> <span class="id" title="tactic">by</span> <span class="id" title="var">funext</span>.<br/>
@@ -103,7 +103,7 @@ conversion to and from <span class="inlinecode"><a class="idref" href="bedrock.l
 &nbsp;&nbsp;#[<span class="id" title="var">local</span>] <span class="id" title="keyword">Lemma</span> <a id="fin_fun_eq_refl_transport" class="idref" href="#fin_fun_eq_refl_transport"><span class="id" title="lemma">fin_fun_eq_refl_transport</span></a> <a id="f:15" class="idref" href="#f:15"><span class="id" title="binder">f</span></a> <a id="g:16" class="idref" href="#g:16"><span class="id" title="binder">g</span></a> (<a id="E:17" class="idref" href="#E:17"><span class="id" title="binder">E</span></a> : <a class="idref" href="bedrock.prelude.finite.html#f:15"><span class="id" title="variable">f</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.15.1/stdlib//Coq.Init.Logic.html#6cd0f7b28b6092304087c7049437bb1a"><span class="id" title="notation">=</span></a> <a class="idref" href="bedrock.prelude.finite.html#g:16"><span class="id" title="variable">g</span></a>) :<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="http://coq.inria.fr/distrib/V8.15.1/stdlib//Coq.Init.Logic.html#7734d17eb5f06d3843f509946ed5ba45"><span class="id" title="notation">rew</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.15.1/stdlib//Coq.Init.Logic.html#7734d17eb5f06d3843f509946ed5ba45"><span class="id" title="notation">[</span></a><a class="idref" href="http://coq.inria.fr/distrib/V8.15.1/stdlib//Coq.Unicode.Utf8_core.html#bc1ad27deabe143d39d35abe6be2c1a4"><span class="id" title="notation">λ</span></a> <a id="f':18" class="idref" href="#f':18"><span class="id" title="binder">f'</span></a><a class="idref" href="http://coq.inria.fr/distrib/V8.15.1/stdlib//Coq.Unicode.Utf8_core.html#bc1ad27deabe143d39d35abe6be2c1a4"><span class="id" title="notation">,</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.15.1/stdlib//Coq.Init.Specif.html#87727981cdc1579fef00b9d9c1d3b9da"><span class="id" title="notation">{</span></a><a class="idref" href="bedrock.prelude.finite.html#f':18"><span class="id" title="variable">f'</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.15.1/stdlib//Coq.Init.Logic.html#6cd0f7b28b6092304087c7049437bb1a"><span class="id" title="notation">=</span></a> <a class="idref" href="bedrock.prelude.finite.html#g:16"><span class="id" title="variable">g</span></a><a class="idref" href="http://coq.inria.fr/distrib/V8.15.1/stdlib//Coq.Init.Specif.html#87727981cdc1579fef00b9d9c1d3b9da"><span class="id" title="notation">}</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.15.1/stdlib//Coq.Init.Specif.html#87727981cdc1579fef00b9d9c1d3b9da"><span class="id" title="notation">+</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.15.1/stdlib//Coq.Init.Specif.html#87727981cdc1579fef00b9d9c1d3b9da"><span class="id" title="notation">{</span></a><a class="idref" href="bedrock.prelude.finite.html#f':18"><span class="id" title="variable">f'</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.15.1/stdlib//Coq.Unicode.Utf8_core.html#eac9b9307401b34847f15ea69bb5957f"><span class="id" title="notation">≠</span></a> <a class="idref" href="bedrock.prelude.finite.html#g:16"><span class="id" title="variable">g</span></a><a class="idref" href="http://coq.inria.fr/distrib/V8.15.1/stdlib//Coq.Init.Specif.html#87727981cdc1579fef00b9d9c1d3b9da"><span class="id" title="notation">}</span></a><a class="idref" href="http://coq.inria.fr/distrib/V8.15.1/stdlib//Coq.Init.Logic.html#7734d17eb5f06d3843f509946ed5ba45"><span class="id" title="notation">]</span></a> <a class="idref" href="bedrock.prelude.finite.html#E:17"><span class="id" title="variable">E</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.15.1/stdlib//Coq.Init.Logic.html#7734d17eb5f06d3843f509946ed5ba45"><span class="id" title="notation">in</span></a> <a class="idref" href="https://plv.mpi-sws.org/coqdoc/stdpp//stdpp.base.html#decide"><span class="id" title="definition">decide</span></a> (<a class="idref" href="bedrock.prelude.finite.html#f:15"><span class="id" title="variable">f</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.15.1/stdlib//Coq.Init.Logic.html#6cd0f7b28b6092304087c7049437bb1a"><span class="id" title="notation">=</span></a> <a class="idref" href="bedrock.prelude.finite.html#g:16"><span class="id" title="variable">g</span></a>) <a class="idref" href="http://coq.inria.fr/distrib/V8.15.1/stdlib//Coq.Init.Logic.html#6cd0f7b28b6092304087c7049437bb1a"><span class="id" title="notation">=</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.15.1/stdlib//Coq.Init.Specif.html#left"><span class="id" title="constructor">left</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.15.1/stdlib//Coq.Init.Logic.html#eq_refl"><span class="id" title="constructor">eq_refl</span></a>.<br/>
 &nbsp;&nbsp;<span class="id" title="keyword">Proof</span>. <span class="id" title="tactic">rewrite</span> <a class="idref" href="https://plv.mpi-sws.org/coqdoc/stdpp//stdpp.decidable.html#decide_True_pi"><span class="id" title="lemma">decide_True_pi</span></a>. <span class="id" title="tactic">by</span> <span class="id" title="tactic">destruct</span> <span class="id" title="var">E</span>. <span class="id" title="keyword">Abort</span>.<br/>
-<span class="id" title="keyword">End</span> <a class="idref" href="bedrock.prelude.finite.html#fin_fun_eqdec"><span class="id" title="section">fin_fun_eqdec</span></a>.<br/>
+<span class="id" title="keyword">End</span> <a class="idref" href="bedrock.prelude.finite.html#fin_fun_eq_dec"><span class="id" title="section">fin_fun_eq_dec</span></a>.<br/>
 
 <br/>
 </div>
@@ -530,49 +530,51 @@ Example use for a variant.
 Module right.
   Variant <i>t := FOO | BAR.
   Definition t := <i>t. <span class="comment">(*&nbsp;Workaround&nbsp;Coq&nbsp;bug.&nbsp;*)</span><br/>
-  [global] Instance t_inh : Inhabited t.
-  Proof. exact (populate ...). Qed.
-  <span class="inlinecode"><span class="id" title="var">global</span></span> Instance t_eqdec : EqDecision t.
+  [global] Instance t_eq_dec : EqDecision t.
   Proof. solve_decision. Defined.
+
+  <span class="inlinecode"><span class="id" title="var">global</span></span> Instance t_finite : Finite t.
+  Proof. solve_finite <span class="inlinecode"><span class="id" title="var">FOO</span>;</span> <span class="inlinecode"><span class="id" title="var">BAR</span></span>. Defined.
 
 <div class="paragraph"> </div>
 
-  [global] Instance t_finite : Finite t.
-  Proof. solve_finite [FOO; BAR]. Defined.
+  <span class="comment">(*&nbsp;Option&nbsp;1:&nbsp;specify&nbsp;<span class="inlinecode"><a class="idref" href="bedrock.prelude.finite.html#finite_type_mixin.to_N"><span class="id" title="definition">to_N</span></a></span>&nbsp;by&nbsp;hand:&nbsp;&nbsp;*)</span><br/>
+  Definition to_N : t -&gt; N := ..
 
-  (* Option 1: specify [to_N] by hand:  
-</div>
-<div class="code">
-&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <span class="id" title="var">to_N</span> : <span class="id" title="var">t</span> -&gt; <span class="id" title="var">N</span> := ..<br/>
-<br/>
-&nbsp;&nbsp;<span class="comment">(*&nbsp;get&nbsp;a&nbsp;specialized&nbsp;copy&nbsp;of&nbsp;<span class="inlinecode"><span class="id" title="var">of_N</span></span>&nbsp;and&nbsp;<span class="inlinecode"><span class="id" title="var">of_to_N</span></span>.&nbsp;*)</span><br/>
-&nbsp;&nbsp;<span class="id" title="keyword">Include</span> <span class="id" title="var">finite_encoded_type_mixin</span>.<br/>
+<div class="paragraph"> </div>
 
-<br/>
-&nbsp;&nbsp;<span class="comment">(*&nbsp;Option&nbsp;2&nbsp;(alternative&nbsp;to&nbsp;1):<br/>
-&nbsp;&nbsp;INSTEAD&nbsp;OF&nbsp;defining&nbsp;<span class="inlinecode"><span class="id" title="var">to_N</span></span>,&nbsp;obtain&nbsp;it&nbsp;from&nbsp;<span class="inlinecode"><span class="id" title="var">Finite</span></span>,&nbsp;together&nbsp;with&nbsp;various<br/>
+  <span class="comment">(*&nbsp;get&nbsp;a&nbsp;specialized&nbsp;copy&nbsp;of&nbsp;<span class="inlinecode"><a class="idref" href="bedrock.prelude.finite.html#finite_type_mixin.of_N"><span class="id" title="definition">of_N</span></a></span>&nbsp;and&nbsp;<span class="inlinecode"><a class="idref" href="bedrock.prelude.finite.html#finite_type_mixin.of_to_N"><span class="id" title="lemma">of_to_N</span></a></span>.&nbsp;*)</span><br/>
+  Include finite_encoded_type_mixin.
+
+<div class="paragraph"> </div>
+
+  <span class="comment">(*&nbsp;Option&nbsp;2&nbsp;(alternative&nbsp;to&nbsp;1):<br/>
+&nbsp;&nbsp;INSTEAD&nbsp;OF&nbsp;defining&nbsp;<span class="inlinecode"><a class="idref" href="bedrock.prelude.finite.html#finite_type_mixin.to_N"><span class="id" title="definition">to_N</span></a></span>,&nbsp;obtain&nbsp;it&nbsp;from&nbsp;<span class="inlinecode"><a class="idref" href="https://plv.mpi-sws.org/coqdoc/stdpp//stdpp.finite.html#Finite"><span class="id" title="class">Finite</span></a></span>,&nbsp;together&nbsp;with&nbsp;various<br/>
 &nbsp;&nbsp;other&nbsp;parts&nbsp;of&nbsp;an&nbsp;encoding&nbsp;into&nbsp;bitmasks.<br/>
 &nbsp;&nbsp;*)</span><br/>
-&nbsp;&nbsp;<span class="id" title="keyword">Include</span> <span class="id" title="var">simple_finite_bitmask_type_mixin</span>.<br/>
+  Include simple_finite_bitmask_type_mixin.
 
-<br/>
-&nbsp;&nbsp;<span class="comment">(*&nbsp;<span class="inlinecode"><span class="id" title="var">simple_finite_bitmask_type_mixin</span></span>&nbsp;can&nbsp;almost&nbsp;be&nbsp;replaced&nbsp;by&nbsp;(some&nbsp;subset&nbsp;of),&nbsp;but<br/>
+<div class="paragraph"> </div>
+
+  <span class="comment">(*&nbsp;<span class="inlinecode"><a class="idref" href="bedrock.prelude.finite.html#simple_finite_bitmask_type_mixin"><span class="id" title="module">simple_finite_bitmask_type_mixin</span></a></span>&nbsp;can&nbsp;almost&nbsp;be&nbsp;replaced&nbsp;by&nbsp;(some&nbsp;subset&nbsp;of),&nbsp;but<br/>
 &nbsp;&nbsp;enjoys&nbsp;extra&nbsp;lemmas.&nbsp;*)</span><br/>
-&nbsp;&nbsp;<span class="id" title="keyword">Include</span> <span class="id" title="var">finite_type_mixin</span>.<br/>
-&nbsp;&nbsp;<span class="id" title="keyword">Include</span> <span class="id" title="var">bitmask_type_simple_mixin</span>.<br/>
-&nbsp;&nbsp;<span class="id" title="keyword">Include</span> <span class="id" title="var">finite_bitmask_type_mixin</span>.<br/>
-<span class="id" title="keyword">End</span> <span class="id" title="tactic">right</span>.<br/>
+  Include finite_type_mixin.
+  Include bitmask_type_simple_mixin.
+  Include finite_bitmask_type_mixin.
+End right.
 
-<br/>
-<span class="comment">(*&nbsp;For&nbsp;bitmasks&nbsp;over&nbsp;<span class="inlinecode"><span class="id" title="var">simple_finite_bitmask_type_intf</span></span>.&nbsp;*)</span><br/>
-<span class="id" title="keyword">Module</span> <span class="id" title="var">rights</span> := <span class="id" title="var">simple_finite_bits</span> <span class="id" title="var">rights</span>.<br/>
-<span class="comment">(*&nbsp;Else,&nbsp;for&nbsp;bitmasks&nbsp;over&nbsp;<span class="inlinecode"><span class="id" title="var">finite_bitmask_type_intf</span></span>.&nbsp;*)</span><br/>
-<span class="id" title="keyword">Module</span> <span class="id" title="var">rights</span> := <span class="id" title="var">finite_bits</span> <span class="id" title="var">rights</span>.<br/>
-*)<br/>
+<div class="paragraph"> </div>
+
+<span class="comment">(*&nbsp;For&nbsp;bitmasks&nbsp;over&nbsp;<span class="inlinecode"><a class="idref" href="bedrock.prelude.finite.html#simple_finite_bitmask_type_intf"><span class="id" title="module">simple_finite_bitmask_type_intf</span></a></span>.&nbsp;*)</span><br/>
+Module rights := simple_finite_bits rights.
+<span class="comment">(*&nbsp;Else,&nbsp;for&nbsp;bitmasks&nbsp;over&nbsp;<span class="inlinecode"><a class="idref" href="bedrock.prelude.finite.html#finite_bitmask_type_intf"><span class="id" title="module">finite_bitmask_type_intf</span></a></span>.&nbsp;*)</span><br/>
+Module rights := finite_bits rights.
+
+</div>
+<div class="code">
 <span class="id" title="keyword">Module</span> <span class="id" title="keyword">Type</span> <a id="eqdec_type" class="idref" href="#eqdec_type"><span class="id" title="module">eqdec_type</span></a>.<br/>
 &nbsp;&nbsp;<span class="id" title="keyword">Parameter</span> <a id="eqdec_type.t" class="idref" href="#eqdec_type.t"><span class="id" title="axiom">t</span></a> : <span class="id" title="keyword">Type</span>.<br/>
-&nbsp;&nbsp;#[<span class="id" title="var">global</span>] <span class="id" title="var">Declare</span> <span class="id" title="keyword">Instance</span> <a id="eqdec_type.t_inh" class="idref" href="#eqdec_type.t_inh"><span class="id" title="instance">t_inh</span></a> : <a class="idref" href="https://plv.mpi-sws.org/coqdoc/stdpp//stdpp.base.html#Inhabited"><span class="id" title="class">Inhabited</span></a> <a class="idref" href="bedrock.prelude.finite.html#eqdec_type.t"><span class="id" title="axiom">t</span></a>.<br/>
-&nbsp;&nbsp;#[<span class="id" title="var">global</span>] <span class="id" title="var">Declare</span> <span class="id" title="keyword">Instance</span> <a id="eqdec_type.t_eqdec" class="idref" href="#eqdec_type.t_eqdec"><span class="id" title="instance">t_eqdec</span></a> : <a class="idref" href="https://plv.mpi-sws.org/coqdoc/stdpp//stdpp.base.html#EqDecision"><span class="id" title="abbreviation">EqDecision</span></a> <a class="idref" href="bedrock.prelude.finite.html#eqdec_type.t"><span class="id" title="axiom">t</span></a>.<br/>
+&nbsp;&nbsp;#[<span class="id" title="var">global</span>] <span class="id" title="var">Declare</span> <span class="id" title="keyword">Instance</span> <a id="eqdec_type.t_eq_dec" class="idref" href="#eqdec_type.t_eq_dec"><span class="id" title="instance">t_eq_dec</span></a> : <a class="idref" href="https://plv.mpi-sws.org/coqdoc/stdpp//stdpp.base.html#EqDecision"><span class="id" title="abbreviation">EqDecision</span></a> <a class="idref" href="bedrock.prelude.finite.html#eqdec_type.t"><span class="id" title="axiom">t</span></a>.<br/>
 <span class="id" title="keyword">End</span> <a class="idref" href="bedrock.prelude.finite.html#eqdec_type"><span class="id" title="module">eqdec_type</span></a>.<br/>
 
 <br/>
