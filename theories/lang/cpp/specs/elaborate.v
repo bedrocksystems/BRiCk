@@ -235,5 +235,3 @@ Section with_cpp.
     Proper (spec_entails_fupd ==> spec_entails_fupd) (cpp_spec ret ts (ar:=ar)).
   Proof. intros ???. exact: elab_entails_fupd. Qed.
 End with_cpp.
-
-#[global] Opaque cpp_spec.
