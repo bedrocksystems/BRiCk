@@ -17,11 +17,6 @@ Proof. apply mapset_eq. Qed.
 *)
 #[global] Notation gset_map := (set_map (C := gset _) (D := gset _)) (only parsing).
 
-(** [dom] specialized to [gset]; avoids awkward type annotations such as
-[dom (C := gset _)].
-*)
-#[global] Notation gdom := (dom (gset _)) (only parsing).
-
 #[global] Notation gset_concat_map :=
   (set_concat_map (C := gset _) (D := gset _)) (only parsing).
 
