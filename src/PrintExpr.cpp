@@ -881,21 +881,28 @@ public:
     void VisitInitListExpr(const InitListExpr* expr, CoqPrinter& print,
                            ClangPrinter& cprint, const ASTContext&,
                            OpaqueNames& li) {
-        print.ctor("Einitlist");
-
-        print.list(expr->inits(), [&](auto print, auto i) {
-            cprint.printExpr(i, print, li);
-        }) << fmt::nbsp;
-
-        if (expr->getArrayFiller()) {
-            print.some();
-            cprint.printExpr(expr->getArrayFiller(), print, li);
-            print.end_ctor();
+        if (expr->isTransparent()) {
+            // "transparent" intializer lists are no-ops in the semantics
+            // and are retained in the clang AST only for printing purposes.
+            assert(expr->inits().size() == 1);
+            cprint.printExpr(expr->getInit(0), print, li);
         } else {
-            print.none();
-        }
+            print.ctor("Einitlist");
 
-        done(expr, print, cprint);
+            print.list(expr->inits(), [&](auto print, auto i) {
+                cprint.printExpr(i, print, li);
+            }) << fmt::nbsp;
+
+            if (expr->getArrayFiller()) {
+                print.some();
+                cprint.printExpr(expr->getArrayFiller(), print, li);
+                print.end_ctor();
+            } else {
+                print.none();
+            }
+
+            done(expr, print, cprint);
+        }
     }
 
     void VisitCXXThisExpr(const CXXThisExpr* expr, CoqPrinter& print,
