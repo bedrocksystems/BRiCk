@@ -42,18 +42,25 @@ Section finset.
     x ∉ X <-> bool_decide (x ∈ elements X) = false.
   Proof. by rewrite set_elem_of_bool_decide; case_bool_decide. Qed.
 
-  (* In general, the only converse we get is [elements_proper]. *)
-  Lemma elements_set_equiv_1 (x y : C) :
-    elements x = elements y -> x ≡ y.
-  Proof. intros Heq. apply set_equiv => e. by rewrite -!elem_of_elements Heq. Qed.
+  Section elements.
+    (* In general, the only converse we get is [elements_proper]. *)
+    Lemma elements_set_equiv_1 (x y : C) :
+      elements x = elements y -> x ≡ y.
+    Proof. intros Heq. apply set_equiv => e. by rewrite -!elem_of_elements Heq. Qed.
 
-  Lemma elements_set_equiv_L `{!LeibnizEquiv C} (x y : C) :
-    elements x = elements y <-> x = y.
-  Proof.
-    split; last by [move->]. intros Heq.
-    apply leibniz_equiv, elements_set_equiv_1, Heq.
-  Qed.
+    Section elements_leibniz.
+      Context `{!LeibnizEquiv C}.
 
+      Lemma elements_set_equiv_L (x y : C) :
+        elements x = elements y <-> x = y.
+      Proof.
+        split; last by [move->]. intros Heq.
+        apply leibniz_equiv, elements_set_equiv_1, Heq.
+      Qed.
+    End elements_leibniz.
+  End elements.
+
+  (** [size] *)
   Lemma size_empty_iff_L `{!LeibnizEquiv C} X : size X = 0 ↔ X = ∅.
   Proof. unfold_leibniz. apply size_empty_iff. Qed.
 End finset.
