@@ -274,19 +274,18 @@ prepare_pages:
     - sudo chown coq.coq -R .
     # Clone the Alectryon submodule, but only in the pages jobs
     - git submodule update --init
-    # Copy compiled code. Excluded until we can use a shared OCaml version
-    # again.
+    # Copy compiled code.
     #
     # Beware: the trailing slash affects the semantics.
     # Excluded flags, compared to -a: -pgoD
     # --omit-dir-times because of https://stackoverflow.com/a/668049/53974 and
     # https://gitlab.com/bedrocksystems/cpp2v-core/-/jobs/1474918505#L1325
     # and --omit-link-times to be safe.
-    # - sudo rsync
-    #     --exclude '*.vok' --exclude '*.vos' --exclude '*.v'
-    #     -avc
-    #     --omit-link-times --omit-dir-times
-    #     build/bedrock/ theories
+    - sudo rsync
+        --exclude '*.vok' --exclude '*.vos' --exclude '*.v'
+        -avc
+        --omit-link-times --omit-dir-times
+        build/bedrock/ theories
     - make touch_deps
     - make -j ${NJOBS} doc
   rules:
