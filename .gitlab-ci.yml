@@ -40,6 +40,8 @@ variables:
 # Configs
 .base:
   image: ${docker_img_prefix}:${img_prefix}${LLVM_MAJ_VER}
+  # Note: when testing llvm bumps, use
+  #image: ${docker_img_prefix}:${img_prefix}${LLVM_MAJ_VER}-coq816
 
 .latest:
   extends: .base
