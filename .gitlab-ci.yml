@@ -32,7 +32,7 @@
 ################################################
 
 variables:
-  LLVM_CUR_MAJ_VER: "13"
+  LLVM_CUR_MAJ_VER: "14"
   docker_img_prefix: registry.gitlab.com/bedrocksystems/docker-image
   fm_docs_img: ${docker_img_prefix}:fm-docs
   img_prefix: cpp2v-llvm
@@ -46,16 +46,16 @@ variables:
   variables:
     LLVM_MAJ_VER: ${LLVM_CUR_MAJ_VER}
 
-.llvm10:
+.llvm11:
   extends: .base
   variables:
-    LLVM_MAJ_VER: 10
+    LLVM_MAJ_VER: 11
 
 .public:
   extends: .base
   variables:
     img_prefix: cpp2v-public-llvm
-    LLVM_MAJ_VER: 13
+    LLVM_MAJ_VER: ${LLVM_CUR_MAJ_VER}
 
 stages:
   - dune-build
@@ -152,10 +152,10 @@ build_latest:
     reports:
       dotenv: build.env
 
-build_llvm10:
+build_llvm11:
   extends:
     - .build_aux
-    - .llvm10
+    - .llvm11
 
 build_public:
   extends:
@@ -169,12 +169,12 @@ test_latest:
   needs:
     - build_latest
 
-test_llvm10:
+test_llvm11:
   extends:
     - .test
-    - .llvm10
+    - .llvm11
   needs:
-    - build_llvm10
+    - build_llvm11
 
 test_public:
   extends:
