@@ -18,6 +18,9 @@ From the [Finite] typeclass, like from Haskell's [Enum], one can generate
 conversion to and from [N], both for individual elements and bitsets of them.
 *)
 
+(** Enable bidirectional typechecking for [decode_fin] *)
+#[global] Arguments decode_fin & {A _ _} i. (* [&] = infer [A] from return type. *)
+
 Section fin_fun_eq_dec.
   Context `{Finite A} `{EqDecision B}.
   Implicit Types (f g : A -> B).
