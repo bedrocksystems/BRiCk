@@ -394,12 +394,17 @@ prepare_cpp2v_env:
   before_script:
     - git clone --depth 1 https://gitlab-ci-token:${CI_JOB_TOKEN}@gitlab.com/bedrocksystems/fm-ci-tools.git
     - ./fm-ci-tools/fm_dune/dune_lock_ci.py check_cleanup_job -t ${GRP_CI_TOKEN}
-    # Create Directory structure for dune
-    # We simulate a dune project composition to work around https://github.com/ocaml/dune/issues/6005.
-    - mkdir -p /tmp/build-dir/fmdeps/ ~/.cache/ && cp -ra $CI_PROJECT_DIR /tmp/build-dir/fmdeps/cpp2v-core
+    # Workaround for https://github.com/ocaml/dune/issues/6005: we must ensure
+    # that we run dune in bhv-shaped workspaces, since cache entries are keyed
+    # on relative paths from the workspace root.
+    - mkdir -p /tmp/build-dir/fmdeps/
+    - cp -ra $CI_PROJECT_DIR /tmp/build-dir/fmdeps/cpp2v-core
+    - cp $CI_PROJECT_DIR/dune-ci/root-dune-project /tmp/build-dir/dune-project
+    # Set up the cache and dune configuration.
+    - mkdir -p ~/.cache/ ~/.config/dune/
     - time ./fm-ci-tools/fm_dune/rsync_dune pull delete
     - ls ~/.cache/dune
-    - mkdir -p ~/.config/dune/ ; cp $CI_PROJECT_DIR/dune-ci/dune_config ~/.config/dune/config
+    - cp $CI_PROJECT_DIR/dune-ci/dune_config ~/.config/dune/config
 
 .postupdate-dunecache:
   after_script:
@@ -415,14 +420,30 @@ dune-build:
   needs: []
   stage: dune-build
   script:
+    # Create the directory for the artifact, and write the Git sha.
+    - mkdir build
+    - echo "fmdeps/cpp2v-core:$(git rev-parse HEAD)" | tee build/gitshas.txt
+    # Set up the environment and run the build (in the prepared workspace).
+    - cd /tmp/build-dir/fmdeps/cpp2v-core
     - export PATH="/usr/lib/llvm/bin/:$PATH"
-    - cd /tmp/build-dir/
-    # We simulate a dune project composition to work around https://github.com/ocaml/dune/issues/6005.
-    - ./fmdeps/cpp2v-core/dune-ci/setup-build-root.sh
-    - cd fmdeps/cpp2v-core
     - time dune build -j ${NJOBS}
     - time dune build -j ${NJOBS} coq-cpp2v.install coq-cpp2v-bin.install
-    - time dune build -j ${NJOBS} -p coq-cpp2v,coq-cpp2v-bin --display short
+    - time dune build -j ${NJOBS} -p coq-cpp2v,coq-cpp2v-bin
+    - cd $CI_PROJECT_DIR/
+    # Adding built files to the artifact.
+    - cp /tmp/build-dir/_build/default/fmdeps/cpp2v-core/build/cpp2v build/cpp2v
+    - cp -r /tmp/build-dir/_build/default/fmdeps/cpp2v-core/theories build/bedrock
+    # Remove some undesired files from the artifact.
+    - find build/bedrock -type f -name "*.v.d" -exec rm -rf {} \;
+    - find build/bedrock -type f -name "dune*" -exec rm -rf {} \;
+    # Tweak permissions on files (dune makes files read-only).
+    - find build/bedrock -type f -exec chmod u+w {} \;
+  artifacts:
+    name: cpp2v-${LLVM_MAJ_VER}
+    paths:
+      - build/gitshas.txt
+      - build/cpp2v
+      - build/bedrock
   tags:
     - ${DUNE_TAG}
 
