@@ -410,9 +410,9 @@ dune-build:
     - .setup-dunecache
     - .postupdate-dunecache
     - .proof-trigger
+    - .latest
   needs: []
   stage: dune-build
-  image: ${docker_img_prefix}:cpp2v-llvm13-usermod-1
   script:
     - export PATH="/usr/lib/llvm/bin/:$PATH"
     - cd /tmp/build-dir/
