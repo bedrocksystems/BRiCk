@@ -145,14 +145,6 @@ build_latest:
   extends:
     - .build
     - .latest
-  after_script:
-    # ARTIFACT_JOB_ID is used for downstream jobs to get artifacts from
-    # this build. The value of CI_JOB_ID is only available in this
-    # build_latest job, so it has to be stored here.
-    - echo "ARTIFACT_JOB_ID=$CI_JOB_ID" >> build.env
-  artifacts:
-    reports:
-      dotenv: build.env
 
 build_llvm11:
   extends:
@@ -361,7 +353,6 @@ prepare_cpp2v_env:
   stage: prepare_env_for_downstream
   needs:
     - dune-build
-    - build_latest
   script:
     - >
       if [[ $CI_MERGE_REQUEST_LABELS =~ .*CI::same-branch.* ]]; then
@@ -438,7 +429,13 @@ dune-build:
     - find build/bedrock -type f -name "dune*" -exec rm -rf {} \;
     # Tweak permissions on files (dune makes files read-only).
     - find build/bedrock -type f -exec chmod u+w {} \;
+    # ARTIFACT_JOB_ID is used for downstream jobs to get artifacts from
+    # this build. The value of CI_JOB_ID is only available in this
+    # build_latest job, so it has to be stored here.
+    - echo "ARTIFACT_JOB_ID=$CI_JOB_ID" >> build.env
   artifacts:
+    reports:
+      dotenv: build.env
     name: cpp2v-${LLVM_MAJ_VER}
     paths:
       - build/gitshas.txt
