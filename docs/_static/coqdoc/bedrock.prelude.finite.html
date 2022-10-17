@@ -64,8 +64,12 @@ Extensions of <span class="inlinecode"><span class="id" title="library">stdpp.fi
 From the <span class="inlinecode"><a class="idref" href="https://plv.mpi-sws.org/coqdoc/stdpp//stdpp.finite.html#Finite"><span class="id" title="class">Finite</span></a></span> typeclass, like from Haskell's <span class="inlinecode"><span class="id" title="var">Enum</span></span>, one can generate
 conversion to and from <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.syntax.types.html#N"><span class="id" title="abbreviation">N</span></a></span>, both for individual elements and bitsets of them.
 
+<div class="paragraph"> </div>
+
+ Enable bidirectional typechecking for <span class="inlinecode"><a class="idref" href="https://plv.mpi-sws.org/coqdoc/stdpp//stdpp.finite.html#decode_fin"><span class="id" title="definition">decode_fin</span></a></span> 
 </div>
 <div class="code">
+#[<span class="id" title="var">global</span>] <span class="id" title="var">Arguments</span> <a class="idref" href="https://plv.mpi-sws.org/coqdoc/stdpp//stdpp.finite.html#decode_fin"><span class="id" title="definition">decode_fin</span></a> &amp; {<span class="id" title="var">A</span> <span class="id" title="var">_</span> <span class="id" title="var">_</span>} <span class="id" title="var">i</span>. <span class="comment">(*&nbsp;<span class="inlinecode">&amp;</span>&nbsp;=&nbsp;infer&nbsp;<span class="inlinecode"><span class="id" title="var">A</span></span>&nbsp;from&nbsp;return&nbsp;type.&nbsp;*)</span><br/>
 
 <br/>
 <span class="id" title="keyword">Section</span> <a id="fin_fun_eq_dec" class="idref" href="#fin_fun_eq_dec"><span class="id" title="section">fin_fun_eq_dec</span></a>.<br/>
