@@ -7,6 +7,7 @@
 (** Small extensions to stdpp. *)
 From bedrock.prelude Require Export
   base
+  fin
   numbers
   sets
   fin_sets

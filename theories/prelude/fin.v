@@ -110,4 +110,33 @@ Module fin.
   #[global, refine] Instance t_finite n : Finite (t n) :=
     { enum := seq n; }.
   Proof. solve [apply seq_NoDup]. solve [apply elem_of_seq]. Defined.
+
+  (** Conversion to and from the "indexed fin" type [fin] from the stdlib. *)
+  #[program] Definition to_idx_fin' {m : N} (f : fin.t m) {n : nat} (_ : m = N.of_nat n) : fin n :=
+    nat_to_fin (p := N.to_nat (fin.to_N f)) _.
+  Next Obligation. move=> m [] /=. lia. Qed.
+  #[global] Arguments to_idx_fin' {m} f & {n} prf. (* [&] = infer [n] from return type. *)
+  Notation to_idx_fin x := (to_idx_fin' x eq_refl).
+
+  #[program] Definition of_idx_fin' {m : nat} (f : fin m) {n : N} (_ : n = N.of_nat m) : fin.t n :=
+    fin.mk' (N.of_nat (fin_to_nat f)) _.
+  Next Obligation. move=> m f n ->. have := fin_to_nat_lt f. lia. Qed.
+  #[global] Arguments of_idx_fin' {m} f & {n} prf. (* [&] = infer [n] from return type. *)
+  Notation of_idx_fin x := (of_idx_fin' x eq_refl).
+
+  Lemma of_to_idx_fin_cancel {m : N} {n : nat} (f : fin.t m) (E : m = N.of_nat n) :
+    of_idx_fin' (to_idx_fin' f E) E = f.
+  Proof. apply /t_eq. by rewrite /= fin_to_nat_to_fin N2Nat.id. Qed.
+
+  Lemma to_of_idx_fin_cancel {m : N} {n : nat} (f : fin n) (E : m = N.of_nat n) :
+    to_idx_fin' (of_idx_fin' f E) E = f.
+  Proof.
+    rewrite /to_idx_fin' /of_idx_fin' /= Fin.of_nat_ext {E} Nat2N.id.
+    exact: fin_to_nat_lt.
+    exact: nat_to_fin_to_nat.
+  Qed.
+
+  Definition decode `{Finite A} (f : fin.t (N.of_nat (card A))) : A :=
+    decode_fin (to_idx_fin f).
+  #[global] Arguments decode & {A _ _} f. (* [&] = infer [A] from return type. *)
 End fin.

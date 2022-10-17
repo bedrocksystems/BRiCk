@@ -1,5 +1,5 @@
 (*
- * Copyright (C) BedRock Systems Inc. 2020-21
+ * Copyright (C) BedRock Systems Inc. 2020-22
  *
  * This software is distributed under the terms of the BedRock Open-Source License.
  * See the LICENSE-BedRock file in the repository root for details.
@@ -42,18 +42,36 @@ Section finset.
     x ∉ X <-> bool_decide (x ∈ elements X) = false.
   Proof. by rewrite set_elem_of_bool_decide; case_bool_decide. Qed.
 
-  (* In general, the only converse we get is [elements_proper]. *)
-  Lemma elements_set_equiv_1 (x y : C) :
-    elements x = elements y -> x ≡ y.
-  Proof. intros Heq. apply set_equiv => e. by rewrite -!elem_of_elements Heq. Qed.
+  Section elements.
+    #[global] Instance list_to_set_elements_cancel :
+      Cancel (≡@{C}) list_to_set elements | 100 := list_to_set_elements.
 
-  Lemma elements_set_equiv_L `{!LeibnizEquiv C} (x y : C) :
-    elements x = elements y <-> x = y.
-  Proof.
-    split; last by [move->]. intros Heq.
-    apply leibniz_equiv, elements_set_equiv_1, Heq.
-  Qed.
+    #[global] Instance elements_inj : Inj (≡) (=) (elements (C := C)) | 100.
+    Proof. apply (cancel_inj (f := list_to_set)). Qed.
 
+    Lemma elements_set_equiv_1 (x y : C) :
+      elements x = elements y -> x ≡ y.
+    Proof. by move /(inj elements _ _). Qed.
+
+    Section elements_leibniz.
+      Context `{!LeibnizEquiv C}.
+
+      Lemma elements_set_equiv_L (x y : C) :
+        elements x = elements y <-> x = y.
+      Proof.
+        split; last by [move->].
+        by move /(inj elements _ _) /(leibniz_equiv _ _).
+      Qed.
+
+      #[global] Instance list_to_set_elements_cancel_L :
+        Cancel (=@{C}) list_to_set elements := list_to_set_elements_L.
+      #[global] Instance elements_leibniz_inj :
+        Inj (=) (=) (elements (C := C)) | 0.
+      Proof. apply (cancel_inj (f := list_to_set)). Qed.
+    End elements_leibniz.
+  End elements.
+
+  (** [size] *)
   Lemma size_empty_iff_L `{!LeibnizEquiv C} X : size X = 0 ↔ X = ∅.
   Proof. unfold_leibniz. apply size_empty_iff. Qed.
 End finset.
