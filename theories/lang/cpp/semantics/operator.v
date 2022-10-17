@@ -45,8 +45,11 @@ Axiom eval_not_bool : forall a,
 
    NOTE [Z.lnot a = -1 - a]
  *)
-Axiom eval_unop_not : forall (w : bitsize) (sgn : signed) (a b : Z),
-    b = match sgn with Signed => -1 - a | Unsigned => bitFlipZU w a end ->
+Axiom eval_unop_not : forall (w : bitsize) (sgn : signed) (a : Z),
+    let b := match sgn with
+             | Signed => -1 - a
+             | Unsigned => bitFlipZU w a
+             end in
     has_type (Vint b) (Tnum w sgn) ->
     eval_unop Ubnot (Tnum w sgn) (Tnum w sgn)
               (Vint a) (Vint b).
@@ -64,11 +67,11 @@ Axiom eval_plus_int : forall (s : signed) a w,
    is the number of bits after promotion.
    https://eel.is/c++draft/expr.unary.op#8
  *)
-Axiom eval_minus_int : forall (s : signed) a c w,
-    c = match s with
-        | Signed => 0 - a
-        | Unsigned => trim (bitsN w) (0 - a)
-        end ->
+Axiom eval_minus_int : forall (s : signed) a w,
+    let c := match s with
+             | Signed => 0 - a
+             | Unsigned => trim (bitsN w) (0 - a)
+             end in
     has_type (Vint c) (Tnum w s) ->
     eval_unop Uminus (Tnum w s) (Tnum w s)
               (Vint a) (Vint c).
@@ -77,13 +80,13 @@ Axiom eval_minus_int : forall (s : signed) a c w,
 
 (** ** arithmetic operators *)
 Let eval_int_op (bo : BinOp) (o : Z -> Z -> Z) : Prop :=
-  forall w (s : signed) (a b c : Z),
+  forall w (s : signed) (a b : Z),
     has_type (Vint a) (Tnum w s) ->
     has_type (Vint b) (Tnum w s) ->
-    c = match s with
-        | Signed => o a b
-        | Unsigned => trim (bitsN w) (o a b)
-        end ->
+    let c := match s with
+             | Signed => o a b
+             | Unsigned => trim (bitsN w) (o a b)
+             end in
     has_type (Vint c) (Tnum w s) ->
     eval_binop_pure bo (Tnum w s) (Tnum w s) (Tnum w s) (Vint a) (Vint b) (Vint c).
 
@@ -95,28 +98,32 @@ Axiom eval_mul : Hnf (eval_int_op Bmul Z.mul).
    arithmetic conversions.
    The quotient is truncated towards zero (fractional part is discarded),
    since C++11.
-   If the second operand is zero, the behavior is undefined. *)
-Axiom eval_div :
-  forall (w : bitsize) (s : signed) (a b c : Z),
+   If the second operand is zero, the behavior is undefined.
+   If the quotient is not representable, then the behavior is undefined.
+
+   See https://eel.is/c++draft/expr.mul#4
+ *)
+Axiom eval_div : forall (w : bitsize) (s : signed) (a b : Z),
     b <> 0%Z ->
     has_type (Vint a) (Tnum w s) ->
     has_type (Vint b) (Tnum w s) ->
-    c = Z.quot a b ->
+    let c := Z.quot a b in
+    has_type (Vint c) (Tnum w s) ->
     eval_binop_pure Bdiv (Tnum w s) (Tnum w s) (Tnum w s) (Vint a) (Vint b) (Vint c).
-Axiom eval_mod :
-  forall (w : bitsize) (s : signed) (a b c : Z),
+Axiom eval_mod : forall (w : bitsize) (s : signed) (a b : Z),
     b <> 0%Z ->
     has_type (Vint a) (Tnum w s) ->
     has_type (Vint b) (Tnum w s) ->
-    c = Z.rem a b ->
+    has_type (Vint (Z.quot a b)) (Tnum w s) ->
+    let c := Z.rem a b in
     eval_binop_pure Bmod (Tnum w s) (Tnum w s) (Tnum w s) (Vint a) (Vint b) (Vint c).
 
 (** ** bitwise operators *)
 Let eval_int_bitwise_op (bo : BinOp) (o : Z -> Z -> Z) : Prop :=
-  forall w (s : signed) (a b c : Z),
+  forall w (s : signed) (a b : Z),
     has_type (Vint a) (Tnum w s) ->
     has_type (Vint b) (Tnum w s) ->
-    c = o a b -> (* note that bitwise operators respect bounds *)
+    let c := o a b in (* note that bitwise operators respect bounds *)
     eval_binop_pure bo (Tnum w s) (Tnum w s) (Tnum w s) (Vint a) (Vint b) (Vint c).
 
 (* bitwise(logical) operators *)
@@ -144,15 +151,15 @@ L operator>>(L, R)
   *)
 
 Axiom eval_shl :
-  forall (w : bitsize) w2 (s s2 : signed) (a b c : Z),
+  forall (w : bitsize) w2 (s s2 : signed) (a b : Z),
     (0 <= b < bitsZ w)%Z ->
     (0 <= a)%Z ->
     has_type (Vint a) (Tnum w s) ->
     has_type (Vint b) (Tnum w2 s2) ->
-    c = match s with
-        | Signed => Z.shiftl a b
-        | Unsigned => trim (bitsN w) (Z.shiftl a b)
-        end ->
+    let c := match s with
+             | Signed => Z.shiftl a b
+             | Unsigned => trim (bitsN w) (Z.shiftl a b)
+             end in
     has_type (Vint c) (Tnum w s) ->
     eval_binop_pure Bshl (Tnum w s) (Tnum w2 s2) (Tnum w s) (Vint a) (Vint b) (Vint c).
 
@@ -162,12 +169,15 @@ Axiom eval_shl :
    part of the quotient of E1/(2^E2). If E1 has a signed type and a
    negative value, the resulting value is implementation-defined. *)
 Axiom eval_shr :
-  forall (w : bitsize) w2 (s s2: signed) (a b c : Z),
+  forall (w : bitsize) w2 (s s2: signed) (a b : Z),
     (0 <= b < bitsZ w)%Z ->
     (0 <= a)%Z ->
     has_type (Vint a) (Tnum w s) ->
     has_type (Vint b) (Tnum w2 s2) ->
-    c = match s with Signed => Z.shiftr a b | Unsigned => trim (bitsN w) (Z.shiftr a b) end ->
+    let c := match s with
+             | Signed => Z.shiftr a b
+             | Unsigned => trim (bitsN w) (Z.shiftr a b)
+             end in
     eval_binop_pure Bshr (Tnum w s) (Tnum w2 s2) (Tnum w s) (Vint a) (Vint b) (Vint c).
 
 (** ** comparison operators *)
