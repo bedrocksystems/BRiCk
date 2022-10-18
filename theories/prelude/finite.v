@@ -792,6 +792,42 @@ Module finite_bits (BT : finite_bitmask_type_intf).
     by rewrite -(assoc_L _ {[x]}) !to_bits_union_singleton IHxs assoc_L.
   Qed.
 
+  Lemma to_bitmask_land_neq `{INJ : !Inj eq eq BT.to_bit} x y (N : x <> y) :
+    BT.to_bitmask x `land` BT.to_bitmask y = 0.
+  Proof.
+    apply N.bits_inj_iff => i; rewrite N.land_spec N.bits_0.
+    have X: BT.to_bit x <> BT.to_bit y by move/INJ.
+    rewrite 2!BT.to_bitmask_setbit.
+    move: X; move: (BT.to_bit x); move: (BT.to_bit y) => a b X.
+    rewrite 2!N.setbit_eqb !N_eqb_bool_decide.
+    destruct (bool_decide_reflect (b = i)); destruct (bool_decide_reflect (a = i)) => //=.
+    subst; contradiction.
+  Qed.
+
+  Lemma to_bits_intersection_singleton `{INJ : !Inj eq eq BT.to_bit} xs y :
+    to_bits (xs ∩ {[y]}) = N.land (to_bits xs) (to_bits {[y]}).
+  Proof.
+    induction xs as [|??? IHxs] using set_ind_L.
+    { by rewrite intersection_empty_l_L to_bits_empty N.land_0_l. }
+    rewrite intersection_comm_L intersection_union_l_L 2!to_bits_union.
+    rewrite [_ ∩ X]intersection_comm_L IHxs N.land_lor_distr_l.
+    destruct (bool_decide_reflect (y = x)).
+    { subst x. rewrite intersection_singletons_L. f_equal. by rewrite N.land_diag. }
+    have ->: ({[y]} : t) ∩ {[x]} = ∅ by set_solver.
+    rewrite 2!to_bits_singleton to_bits_empty to_bitmask_land_neq; last by [].
+    by [].
+  Qed.
+
+  Lemma to_bits_intersection `{INJ : !Inj eq eq BT.to_bit} xs ys :
+    to_bits (xs ∩ ys) = N.land (to_bits xs) (to_bits ys).
+  Proof.
+    induction xs as [|??? IHxs] using set_ind_L.
+    { by rewrite intersection_empty_l_L to_bits_empty N.land_0_l. }
+    rewrite intersection_comm_L intersection_union_l_L 2!to_bits_union.
+    rewrite [_ ∩ X]intersection_comm_L IHxs N.land_lor_distr_l.
+    rewrite to_bits_intersection_singleton. f_equal. by rewrite N.land_comm.
+  Qed.
+
   (* TODO move [setbit], and these lemmas, with [BT.testbit]. *)
   Section BT_to_bit_inj.
     Context`{Hinj : !Inj eq eq BT.to_bit}.
@@ -887,6 +923,24 @@ Module finite_bits (BT : finite_bitmask_type_intf).
     rewrite N.land_spec N_testbit_mask_top_to_bit N_testbit_to_bits.
     rewrite -(bool_decide_Is_true (N.testbit _ _)) -bool_decide_and /is_Some.
     apply bool_decide_ext. set_solver.
+  Qed.
+
+  Lemma to_bits_inv_singleton `{INJ : !Inj eq eq BT.to_bit} r rs
+      (X : to_bits rs `land` BT.to_bitmask r <> 0%N) :
+    r ∈ rs.
+  Proof.
+    rewrite -to_bits_singleton -to_bits_intersection in X.
+    destruct (bool_decide_reflect (r ∈ rs)) => //.
+    have H: rs ∩ {[r]} = ∅ by set_solver.
+    by rewrite H to_bits_empty in X.
+  Qed.
+
+  Lemma to_bits_inv_singleton_Z `{INJ : !Inj eq eq BT.to_bit} r rs
+      (X : (Z.of_N (to_bits rs) `land` BT.to_bitmask r)%Z <> 0%Z) :
+    r ∈ rs.
+  Proof.
+    rewrite N2Z_land in X; apply to_bits_inv_singleton.
+    by move => Y; apply: X; rewrite Y.
   Qed.
 End finite_bits.
 
