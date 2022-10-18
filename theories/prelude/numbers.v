@@ -199,6 +199,14 @@ Proof.
     by rewrite N2Z.inj_sub ?Z2N.id //= N2Z.inj_le Z2N.id.
 Qed.
 
+Lemma N2Z_shiftr (a n : N) : Z.shiftr (Z.of_N a) (Z.of_N n) = Z.of_N (N.shiftr a n).
+Proof.
+  apply: Z.bits_inj'=>idx Hidx.
+  rewrite Z.shiftr_spec //= -{2}(Z2N.id idx) //= Z.testbit_of_N.
+  rewrite N.shiftr_spec //= -Z.testbit_of_N.
+  by f_equal; rewrite N2Z.inj_add Z2N.id.
+Qed.
+
 Lemma N2Z_lxor (a b : N) : Z.lxor (Z.of_N a) (Z.of_N b) = Z.of_N (N.lxor a b).
 Proof. by case: a; case: b. Qed.
 
