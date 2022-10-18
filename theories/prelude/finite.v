@@ -926,13 +926,21 @@ Module finite_bits (BT : finite_bitmask_type_intf).
   Qed.
 
   Lemma to_bits_inv_singleton `{INJ : !Inj eq eq BT.to_bit} r rs
-      (X : (Z.of_N (to_bits rs) `land` BT.to_bitmask r)%Z <> 0%Z) :
+      (X : to_bits rs `land` BT.to_bitmask r <> 0%N) :
     r ∈ rs.
   Proof.
-    rewrite -to_bits_singleton N2Z_land -to_bits_intersection in X.
+    rewrite -to_bits_singleton -to_bits_intersection in X.
     destruct (bool_decide_reflect (r ∈ rs)) => //.
     have H: rs ∩ {[r]} = ∅ by set_solver.
     by rewrite H to_bits_empty in X.
+  Qed.
+
+  Lemma to_bits_inv_singleton_Z `{INJ : !Inj eq eq BT.to_bit} r rs
+      (X : (Z.of_N (to_bits rs) `land` BT.to_bitmask r)%Z <> 0%Z) :
+    r ∈ rs.
+  Proof.
+    rewrite N2Z_land in X; apply to_bits_inv_singleton.
+    by move => Y; apply: X; rewrite Y.
   Qed.
 End finite_bits.
 
