@@ -935,6 +935,14 @@ Module finite_bits (BT : finite_bitmask_type_intf).
     by rewrite H to_bits_empty in X.
   Qed.
 
+  Lemma to_bits_inv_singleton_ne `{INJ : !Inj eq eq BT.to_bit} r rs
+      (X : to_bits rs `land` BT.to_bitmask r = 0%N) :
+    r ∉ rs.
+  Proof.
+    rewrite -to_bits_singleton -to_bits_intersection -to_bits_empty in X.
+    by apply to_bits_inj in X; set_solver.
+  Qed.
+
   Lemma to_bits_inv_singleton_Z `{INJ : !Inj eq eq BT.to_bit} r rs
       (X : (Z.of_N (to_bits rs) `land` BT.to_bitmask r)%Z <> 0%Z) :
     r ∈ rs.
@@ -942,6 +950,11 @@ Module finite_bits (BT : finite_bitmask_type_intf).
     rewrite N2Z_land in X; apply to_bits_inv_singleton.
     by move => Y; apply: X; rewrite Y.
   Qed.
+
+  Lemma to_bits_inv_singleton_ne_Z `{INJ : !Inj eq eq BT.to_bit} r rs
+      (X : (Z.of_N (to_bits rs) `land` BT.to_bitmask r)%Z = 0%Z) :
+    r ∉ rs.
+  Proof. rewrite N2Z_land in X; apply to_bits_inv_singleton_ne; lia. Qed.
 End finite_bits.
 
 Module simple_finite_bits (BT : simple_finite_bitmask_type_intf).
