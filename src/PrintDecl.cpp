@@ -365,7 +365,8 @@ public:
             if (base.isVirtual()) {
                 logging::unsupported()
                     << "virtual base classes not supported"
-                    << " (at " << cprint.sourceRange(decl->getSourceRange()) << ")\n";
+                    << " (at " << cprint.sourceRange(decl->getSourceRange())
+                    << ")\n";
             }
 
             auto rec = base.getType().getTypePtr()->getAsCXXRecordDecl();
@@ -725,7 +726,7 @@ public:
         print.output() << fmt::nbsp;
         cprint.printQualType(ed->getIntegerType(), print);
         print.output() << fmt::nbsp << "(" << decl->getInitVal() << ")%Z"
-                        << fmt::nbsp;
+                       << fmt::nbsp;
 
         if (decl->getInitExpr()) {
             print.some();
