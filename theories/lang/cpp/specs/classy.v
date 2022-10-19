@@ -23,7 +23,7 @@ Section with_prop.
   Class SpecGen : Type :=
     { add_pre : PROP -> spec_car -> spec_car
     ; add_post : PROP -> spec_car -> spec_car
-    ; add_with : forall {T : Type@{bi.u2}}, (T -> spec_car) -> spec_car
+    ; add_with : forall {T : Type@{universes.Quant}}, (T -> spec_car) -> spec_car
     ; add_prepost (P : PROP) (S : spec_car) : spec_car :=
       add_pre P (add_post P S)
     ; add_require (P : Prop) : spec_car -> spec_car :=
@@ -40,7 +40,7 @@ Section with_prop.
   Class WithPost {RESULT : Type} : Type :=
     { post_car : Type
     ; start_post : post_car -> spec_car
-    ; post_with : forall T : Type@{bi.u2}, (T -> post_car) -> post_car
+    ; post_with : forall T : Type@{universes.Quant}, (T -> post_car) -> post_car
     ; post_ret : RESULT -> PROP -> post_car
     }.
 

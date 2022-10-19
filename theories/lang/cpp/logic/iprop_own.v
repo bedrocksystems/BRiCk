@@ -120,7 +120,7 @@ Section iprop_instances.
     (uPred_cmra_valid a) ⊣⊢@{iPropI} bi_cmra_valid a.
   Proof.
     constructor => n x ? /=.
-    by rewrite si_cmra_valid_eq uPred_cmra_valid_eq si_embed_eq.
+    by rewrite si_cmra_valid_eq upred.uPred_cmra_valid_unseal si_embed_eq.
   Qed.
 
   #[global] Instance has_own_valid_iprop : HasOwnValid iPropI A.

@@ -55,3 +55,5 @@
   (section bin)
   (files cpp2v)
   (package coq-cpp2v-bin)))
+
+(alias (name cpp2v.install) (deps coq-cpp2v-bin.install))

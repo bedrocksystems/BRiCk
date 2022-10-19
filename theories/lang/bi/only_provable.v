@@ -90,7 +90,7 @@ Section bi.
   Lemma only_provable_elim_r P q r : (P → q ⊢ r) → q ∧ [| P |] ⊢ r.
   Proof. rewrite comm. apply only_provable_elim_l. Qed.
   Lemma only_provable_emp : [| True |] ⊣⊢ emp.
-  Proof. by rewrite/only_provable bi.affinely_True_emp bi.affinely_emp. Qed.
+  Proof. by rewrite/only_provable bi.affinely_True_emp. Qed.
   Lemma only_provable_True P : P → [| P |] ⊣⊢ emp.
   Proof. intros. by rewrite -only_provable_emp /only_provable bi.pure_True. Qed.
   Lemma only_provable_False P : ¬P → [| P |] ⊣⊢ False.

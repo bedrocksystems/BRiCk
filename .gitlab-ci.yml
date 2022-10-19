@@ -32,30 +32,34 @@
 ################################################
 
 variables:
-  LLVM_CUR_MAJ_VER: "13"
+  LLVM_CUR_MAJ_VER: "14"
   docker_img_prefix: registry.gitlab.com/bedrocksystems/docker-image
   fm_docs_img: ${docker_img_prefix}:fm-docs
+  # Note: when testing llvm bumps, use
+  #fm_docs_img: ${docker_img_prefix}:fm-docs-coq816
   img_prefix: cpp2v-llvm
 
 # Configs
 .base:
   image: ${docker_img_prefix}:${img_prefix}${LLVM_MAJ_VER}
+  # Note: when testing llvm bumps, use
+  #image: ${docker_img_prefix}:${img_prefix}${LLVM_MAJ_VER}-coq816
 
 .latest:
   extends: .base
   variables:
     LLVM_MAJ_VER: ${LLVM_CUR_MAJ_VER}
 
-.llvm10:
+.llvm11:
   extends: .base
   variables:
-    LLVM_MAJ_VER: 10
+    LLVM_MAJ_VER: 11
 
 .public:
   extends: .base
   variables:
     img_prefix: cpp2v-public-llvm
-    LLVM_MAJ_VER: 13
+    LLVM_MAJ_VER: ${LLVM_CUR_MAJ_VER}
 
 stages:
   - dune-build
@@ -143,19 +147,11 @@ build_latest:
   extends:
     - .build
     - .latest
-  after_script:
-    # ARTIFACT_JOB_ID is used for downstream jobs to get artifacts from
-    # this build. The value of CI_JOB_ID is only available in this
-    # build_latest job, so it has to be stored here.
-    - echo "ARTIFACT_JOB_ID=$CI_JOB_ID" >> build.env
-  artifacts:
-    reports:
-      dotenv: build.env
 
-build_llvm10:
+build_llvm11:
   extends:
     - .build_aux
-    - .llvm10
+    - .llvm11
 
 build_public:
   extends:
@@ -169,12 +165,12 @@ test_latest:
   needs:
     - build_latest
 
-test_llvm10:
+test_llvm11:
   extends:
     - .test
-    - .llvm10
+    - .llvm11
   needs:
-    - build_llvm10
+    - build_llvm11
 
 test_public:
   extends:
@@ -274,19 +270,18 @@ prepare_pages:
     - sudo chown coq.coq -R .
     # Clone the Alectryon submodule, but only in the pages jobs
     - git submodule update --init
-    # Copy compiled code. Excluded until we can use a shared OCaml version
-    # again.
+    # Copy compiled code.
     #
     # Beware: the trailing slash affects the semantics.
     # Excluded flags, compared to -a: -pgoD
     # --omit-dir-times because of https://stackoverflow.com/a/668049/53974 and
     # https://gitlab.com/bedrocksystems/cpp2v-core/-/jobs/1474918505#L1325
     # and --omit-link-times to be safe.
-    # - sudo rsync
-    #     --exclude '*.vok' --exclude '*.vos' --exclude '*.v'
-    #     -avc
-    #     --omit-link-times --omit-dir-times
-    #     build/bedrock/ theories
+    - sudo rsync
+        --exclude '*.vok' --exclude '*.vos' --exclude '*.v'
+        -avc
+        --omit-link-times --omit-dir-times
+        build/bedrock/ theories
     - make touch_deps
     - make -j ${NJOBS} doc
   rules:
@@ -360,7 +355,6 @@ prepare_cpp2v_env:
   stage: prepare_env_for_downstream
   needs:
     - dune-build
-    - build_latest
   script:
     - >
       if [[ $CI_MERGE_REQUEST_LABELS =~ .*CI::same-branch.* ]]; then
@@ -393,12 +387,17 @@ prepare_cpp2v_env:
   before_script:
     - git clone --depth 1 https://gitlab-ci-token:${CI_JOB_TOKEN}@gitlab.com/bedrocksystems/fm-ci-tools.git
     - ./fm-ci-tools/fm_dune/dune_lock_ci.py check_cleanup_job -t ${GRP_CI_TOKEN}
-    # Create Directory structure for dune
-    # We simulate a dune project composition to work around https://github.com/ocaml/dune/issues/6005.
-    - mkdir -p /tmp/build-dir/fmdeps/ ~/.cache/ && cp -ra $CI_PROJECT_DIR /tmp/build-dir/fmdeps/cpp2v-core
+    # Workaround for https://github.com/ocaml/dune/issues/6005: we must ensure
+    # that we run dune in bhv-shaped workspaces, since cache entries are keyed
+    # on relative paths from the workspace root.
+    - mkdir -p /tmp/build-dir/fmdeps/
+    - cp -ra $CI_PROJECT_DIR /tmp/build-dir/fmdeps/cpp2v-core
+    - cp $CI_PROJECT_DIR/dune-ci/root-dune-project /tmp/build-dir/dune-project
+    # Set up the cache and dune configuration.
+    - mkdir -p ~/.cache/ ~/.config/dune/
     - time ./fm-ci-tools/fm_dune/rsync_dune pull delete
     - ls ~/.cache/dune
-    - mkdir -p ~/.config/dune/ ; cp $CI_PROJECT_DIR/dune-ci/dune_config ~/.config/dune/config
+    - cp $CI_PROJECT_DIR/dune-ci/dune_config ~/.config/dune/config
 
 .postupdate-dunecache:
   after_script:
@@ -410,15 +409,40 @@ dune-build:
     - .setup-dunecache
     - .postupdate-dunecache
     - .proof-trigger
+    - .latest
   needs: []
   stage: dune-build
-  image: ${docker_img_prefix}:cpp2v-llvm13-usermod-1
   script:
+    # Create the directory for the artifact, and write the Git sha.
+    - mkdir build
+    - echo "fmdeps/cpp2v-core:$(git rev-parse HEAD)" | tee build/gitshas.txt
+    # Set up the environment and run the build (in the prepared workspace).
+    - cd /tmp/build-dir/fmdeps/cpp2v-core
     - export PATH="/usr/lib/llvm/bin/:$PATH"
-    - cd /tmp/build-dir/
-    # The next line is a temporary workaround for FM-2813; will be fixed better with FM-2681
-    - ./fmdeps/cpp2v-core/dune-ci/setup-build-root.sh
     - time dune build -j ${NJOBS}
+    - time dune build -j ${NJOBS} coq-cpp2v.install coq-cpp2v-bin.install
+    - time dune build -j ${NJOBS} -p coq-cpp2v,coq-cpp2v-bin
+    - cd $CI_PROJECT_DIR/
+    # Adding built files to the artifact.
+    - cp /tmp/build-dir/_build/default/fmdeps/cpp2v-core/build/cpp2v build/cpp2v
+    - cp -r /tmp/build-dir/_build/default/fmdeps/cpp2v-core/theories build/bedrock
+    # Remove some undesired files from the artifact.
+    - find build/bedrock -type f -name "*.v.d" -exec rm -rf {} \;
+    - find build/bedrock -type f -name "dune*" -exec rm -rf {} \;
+    # Tweak permissions on files (dune makes files read-only).
+    - find build/bedrock -type f -exec chmod u+w {} \;
+    # ARTIFACT_JOB_ID is used for downstream jobs to get artifacts from
+    # this build. The value of CI_JOB_ID is only available in this
+    # build_latest job, so it has to be stored here.
+    - echo "ARTIFACT_JOB_ID=$CI_JOB_ID" >> build.env
+  artifacts:
+    reports:
+      dotenv: build.env
+    name: cpp2v-${LLVM_MAJ_VER}
+    paths:
+      - build/gitshas.txt
+      - build/cpp2v
+      - build/bedrock
   tags:
     - ${DUNE_TAG}
 

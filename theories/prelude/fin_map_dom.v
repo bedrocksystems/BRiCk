@@ -13,6 +13,6 @@ Section fin_map_dom.
   #[local] Set Default Proof Using "Type*".
 
   Lemma elem_of_map_to_list_dom m k v :
-    (k, v) ∈ map_to_list m → k ∈ dom D m.
+    (k, v) ∈ map_to_list m → k ∈ dom m.
   Proof. move=> /elem_of_map_to_list. apply elem_of_dom_2. Qed.
 End fin_map_dom.

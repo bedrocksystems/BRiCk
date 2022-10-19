@@ -94,14 +94,14 @@ Section tu.
     induction path =>///=.
     { intros; case_match.
       { repeat case_match => //.
-        apply glob_def_genv_compat_struct in Heqo.
+        revert select (_ !! _ = _) => /glob_def_genv_compat_struct ?.
         econstructor. eassumption. }
       { inversion H. } }
     { intros; repeat (case_bool_decide || case_match) =>//.
-      apply glob_def_genv_compat_struct in Heqo.
-      eapply elem_of_list_fmap_2 in H0.
-      destruct H0 as [?[??]].
-      destruct x; simpl in H; subst.
+      revert select (_ !! _ = _) => /glob_def_genv_compat_struct ?.
+      revert select (_ ∈ _) => Helem.
+      eapply elem_of_list_fmap_2 in Helem.
+      destruct Helem as [[??][??]]. simplify_eq.
       econstructor; try eassumption.
       by apply IHpath. }
   Qed.

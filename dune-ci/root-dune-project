@@ -1,5 +1,5 @@
-(lang dune 2.8)
+(lang dune 3.4)
 ; Basic configuration for the Coq build tool "dune".
 ; Move to dune-project if this is the workspace root
-(using coq 0.3)
+(using coq 0.5)
 (name coq-cpp2v)

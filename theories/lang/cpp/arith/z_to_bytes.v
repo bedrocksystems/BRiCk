@@ -442,7 +442,7 @@ Section FromToBytes.
       - rewrite _Z_from_bytes_unsigned_le'_cons.
         rewrite (_Z_from_bytes_unsigned_le'_cons idx a bs1).
         rewrite IHbs1.
-        rewrite plus_Snm_nSm.
+        rewrite Nat.add_succ_r.
         by rewrite Z.lor_assoc.
     Qed.
 
@@ -837,7 +837,7 @@ Section FromToBytes.
         + apply to_signed_unsigned_bits_roundtrip; intuition;
             replace (Z.of_N (8 * N.of_nat cnt) - 1)%Z
               with (8 * cnt - 1)%Z; lia.
-        + rewrite /trim; apply Z_mod_pos;
+        + rewrite /trim; apply Z.mod_pos;
             apply Z.pow_pos_nonneg; lia.
         + rewrite /trim.
           replace (Z.of_N (8 * N.of_nat cnt))

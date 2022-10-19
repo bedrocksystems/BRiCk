@@ -118,7 +118,8 @@ Section valid.
   Local Ltac unseal :=
     constructor => n /=;
       rewrite /bi_pure /bi_and /bi_forall /= si_cmra_valid_eq
-              ?siProp_pure_eq ?siProp_and_eq ?siProp_forall_eq /=.
+              ?siprop.siProp_pure_unseal ?siprop.siProp_and_unseal
+              ?siprop.siProp_forall_unseal /=.
 
   (* Duplicates from Iris's base_logic.upred, but more general. *)
   (* TODO: need more lemmas for valid *)

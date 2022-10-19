@@ -47,7 +47,7 @@ Section with_prop.
       embeddings of this type do not enjoy this property and can introduce
       universe subtle universe issues that can be very difficult to debug.
    *)
-  Record WpSpec : Type@{bi.u0} :=
+  Record WpSpec : Type@{universes.Logic} :=
     { (* The first three arguments are accumulators that are interpreted away
          by the [wp_specD] function below.
          - [acc_arg] is the *reversed* list of arguments that we have seen already
@@ -275,7 +275,7 @@ Section with_AR.
   #[local] Notation WPP := (WpSpec PROP A R).
 
   (** [add_with T wpp] adds [T] as logical variable to [wpp] *)
-  #[program] Definition add_with {T : Type@{bi.u2}} (wpp : T -> WPP) : WPP :=
+  #[program] Definition add_with {T : Type@{universes.Quant}} (wpp : T -> WPP) : WPP :=
     {| spec_internal := funI args' P Q args K => ∃ x : T, (wpp x).(spec_internal) args' P Q args K |}.
   Next Obligation.
     intros. simpl.
@@ -480,7 +480,7 @@ Section post_val.
 
   (* We opt to reify this to avoid adding extra equalities when we do not actually need them. arguments that are awkward *)
   Inductive _post : Type :=
-  | WITH [t : Type@{bi.u2}] (_ : t -> _post)
+  | WITH [t : Type@{universes.Quant}] (_ : t -> _post)
   | DONE (_ : RESULT) (_ : PROP).
 
   Fixpoint _postD (p : _post) (ls : list (RESULT -> PROP)) (K : RESULT -> PROP) : PROP :=
