@@ -35,6 +35,8 @@ variables:
   LLVM_CUR_MAJ_VER: "14"
   docker_img_prefix: registry.gitlab.com/bedrocksystems/docker-image
   fm_docs_img: ${docker_img_prefix}:fm-docs
+  # Note: when testing llvm bumps, use
+  #fm_docs_img: ${docker_img_prefix}:fm-docs-coq816
   img_prefix: cpp2v-llvm
 
 # Configs
