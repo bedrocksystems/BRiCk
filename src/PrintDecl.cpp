@@ -8,6 +8,7 @@
 #include "DeclVisitorWithArgs.h"
 #include "Formatter.hpp"
 #include "Logging.hpp"
+#include "config.hpp"
 #include "clang/AST/Decl.h"
 #include "clang/AST/RecordLayout.h"
 #include "clang/Basic/Builtins.h"
@@ -230,12 +231,16 @@ public:
 
     bool VisitTypedefNameDecl(const TypedefNameDecl *type, CoqPrinter &print,
                               ClangPrinter &cprint, const ASTContext &) {
-        print.ctor("Dtypedef") << "\"";
-        type->printQualifiedName(print.output().nobreak());
-        print.output() << "\"" << fmt::nbsp;
-        cprint.printQualType(type->getUnderlyingType(), print);
-        print.end_ctor();
-        return true;
+        if (PRINT_TYPEDEF) {
+            print.ctor("Dtypedef") << "\"";
+            cprint.printTypeName(type, print);
+            print.output() << "\"" << fmt::nbsp;
+            cprint.printQualType(type->getUnderlyingType(), print);
+            print.end_ctor();
+            return true;
+        } else {
+            return false;
+        }
     }
 
     bool VisitTypeAliasTemplateDecl(const TypeAliasTemplateDecl *type,
