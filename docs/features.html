@@ -16,6 +16,7 @@
         <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
         <script src="_static/jquery.js"></script>
         <script src="_static/underscore.js"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
         <script src="_static/doctools.js"></script>
         <script src="_static/alectryon.js"></script>
     <script src="_static/js/theme.js"></script>
@@ -88,47 +89,47 @@
            <div itemprop="articleBody">
              
   <div class="section" id="language-support">
-<span id="features"></span><h1>Language Support<a class="headerlink" href="#language-support" title="Permalink to this headline"></a></h1>
+<span id="features"></span><h1>Language Support<a class="headerlink" href="#language-support" title="Permalink to this heading"></a></h1>
 <p>The BRiCk program logic is aimed to be a formalization of pragmatic C++. Its feature set is guided by the requirements of low-level program verification and also some pragmatic considerations.</p>
 <div class="section" id="limitations-of-project">
-<h2>Limitations of BRiCk<a class="headerlink" href="#limitations-of-project" title="Permalink to this headline"></a></h2>
+<h2>Limitations of BRiCk<a class="headerlink" href="#limitations-of-project" title="Permalink to this heading"></a></h2>
 <p>BRiCk does not cover the full feature set of C++. Some features that are explicitly <strong>not supported</strong> are:</p>
 <ul class="simple">
 <li><p>The BRiCk program logic <em>assumes</em> that the abstract syntax tree is well-typed and uses this assumption to avoid performing type checking within the semantics. If you are using <code class="code highlight coq docutils literal notranslate"><span class="n"><span class="pre">cpp2v</span></span></code> to generate the AST, then Clang will ensure that the syntax tree is well typed.</p></li>
 <li><p>BRiCk is based on the Clang frontend IR. We believe that this is a reasonable proxy for source-level C++.</p></li>
-<li><p>Exceptions. In addition to not supporting <code class="code highlight cpp docutils literal notranslate"><span class="k"><span class="pre">throw</span></span></code> and <code class="code highlight cpp docutils literal notranslate"><span class="k"><span class="pre">try</span></span></code>, BRiCk additionally assumes that function calls do not throw exceptions.</p></li>
-<li><p><code class="code highlight cpp docutils literal notranslate"><span class="k"><span class="pre">virtual</span></span></code> inheritence.</p></li>
+<li><p>Exceptions. In addition to not supporting <code class="code highlight cpp docutils literal highlight-cpp"><span class="k">throw</span></code> and <code class="code highlight cpp docutils literal highlight-cpp"><span class="k">try</span></code>, BRiCk additionally assumes that function calls do not throw exceptions.</p></li>
+<li><p><code class="code highlight cpp docutils literal highlight-cpp"><span class="k">virtual</span></code> inheritence.</p></li>
 <li><p>Floating point values and operations</p></li>
-<li><p>Labeled statements and <code class="code highlight cpp docutils literal notranslate"><span class="k"><span class="pre">goto</span></span></code> are not supported.</p></li>
-<li><p><code class="code highlight cpp docutils literal notranslate"><span class="k"><span class="pre">switch</span></span></code> statements have restricted semantics when mixed with control flow.</p></li>
+<li><p>Labeled statements and <code class="code highlight cpp docutils literal highlight-cpp"><span class="k">goto</span></code> are not supported.</p></li>
+<li><p><code class="code highlight cpp docutils literal highlight-cpp"><span class="k">switch</span></code> statements have restricted semantics when mixed with control flow.</p></li>
 <li><p>Bitfields</p></li>
-<li><p><code class="code highlight cpp docutils literal notranslate"><span class="p"><span class="pre">[</span></span><span class="n"><span class="pre">packed</span></span><span class="p"><span class="pre">]</span></span></code> data structures.</p></li>
+<li><p><code class="code highlight cpp docutils literal highlight-cpp"><span class="p">[</span><span class="n">packed</span><span class="p">]</span></code> data structures.</p></li>
 </ul>
 <p>While not supported right now, some features are on our roadmap.</p>
 <ul class="simple">
 <li><p>Translation unit initialization (i.e. initialization of globals)</p></li>
 <li><p>Order of evaluation for function calls follows pre-C++ 17 semantics where argument evaluation can be arbitrarily interleaved.</p></li>
-<li><p><code class="code highlight cpp docutils literal notranslate"><span class="k"><span class="pre">template</span></span></code> code can only be reasoned about <em>after</em> instantiating it to specific arguments.</p></li>
+<li><p><code class="code highlight cpp docutils literal highlight-cpp"><span class="k">template</span></code> code can only be reasoned about <em>after</em> instantiating it to specific arguments.</p></li>
 <li><p>Weak memory accesses. BRiCk currently requires that all atomic accesses are sequentially consistent <a class="footnote-reference brackets" href="#weak-mem" id="id1">1</a>.</p></li>
-<li><p>Member pointers (and associated operators, i.e. <code class="code highlight cpp docutils literal notranslate"><span class="p"><span class="pre">.</span></span><span class="o"><span class="pre">*</span></span></code> and <code class="code highlight cpp docutils literal notranslate"><span class="o"><span class="pre">-&gt;*</span></span></code>)</p></li>
-<li><p>Member functions, constructors, and destructors are modeled by translating them to functions. This is unsound but requires <code class="code highlight cpp docutils literal notranslate"><span class="k"><span class="pre">reinterpret_cast</span></span></code> to exploit.</p></li>
-<li><p>The semantics currently ignores <code class="code highlight cpp docutils literal notranslate"><span class="k"><span class="pre">const</span></span></code>  qualifiers <a class="footnote-reference brackets" href="#const" id="id2">2</a>.</p></li>
-<li><p>The semantics currently ignroes <code class="code highlight cpp docutils literal notranslate"><span class="k"><span class="pre">volatile</span></span></code> qualifiers.</p></li>
+<li><p>Member pointers (and associated operators, i.e. <code class="code highlight cpp docutils literal highlight-cpp"><span class="p">.</span><span class="o">*</span></code> and <code class="code highlight cpp docutils literal highlight-cpp"><span class="o">-&gt;*</span></code>)</p></li>
+<li><p>Member functions, constructors, and destructors are modeled by translating them to functions. This is unsound but requires <code class="code highlight cpp docutils literal highlight-cpp"><span class="k">reinterpret_cast</span></code> to exploit.</p></li>
+<li><p>The semantics currently ignores <code class="code highlight cpp docutils literal highlight-cpp"><span class="k">const</span></code>  qualifiers <a class="footnote-reference brackets" href="#const" id="id2">2</a>.</p></li>
+<li><p>The semantics currently ignroes <code class="code highlight cpp docutils literal highlight-cpp"><span class="k">volatile</span></code> qualifiers.</p></li>
 <li><p>We rely on the semantics of defaulted functions (e.g. default constructors, assignment operators, etc) generated by Clang. If your compiler generates different code (but still semantically correct code), this may invalidate your proof. We recommend using Clang <em>with exactly the same build parameters as those used in your build</em> for the best compatibility.</p></li>
 <li><p><a class="reference external" href="https://eel.is/c++draft/basic.life#8">Transparent replacement</a>.</p></li>
-<li><p>Verification of variadic functions (e.g. <code class="code highlight cpp docutils literal notranslate"><span class="n"><span class="pre">printf</span></span></code>) is not supported, but calling variadic functions is supported.</p></li>
+<li><p>Verification of variadic functions (e.g. <code class="code highlight cpp docutils literal highlight-cpp"><span class="n">printf</span></code>) is not supported, but calling variadic functions is supported.</p></li>
 </ul>
 </div>
 <div class="section" id="deviations-from-the-standard">
-<h2>Deviations from the Standard<a class="headerlink" href="#deviations-from-the-standard" title="Permalink to this headline"></a></h2>
+<h2>Deviations from the Standard<a class="headerlink" href="#deviations-from-the-standard" title="Permalink to this heading"></a></h2>
 <p>In certain instances, BRiCk’s semantics deviates from the C++ standard.</p>
 <ul class="simple">
 <li><p>Our semantics do not currently permit “pointer zapping”. See <a class="reference internal" href="pointers.html#no-pointer-zapping"><span class="std std-ref">Assumptions beyond the standard</span></a>.</p></li>
-<li><p>BRiCk uses <code class="code highlight coq docutils literal notranslate"><span class="n"><span class="pre">Tnum</span></span> <span class="n"><span class="pre">sz</span></span> <span class="n"><span class="pre">sgn</span></span></code> to represent all integer types rather than the standard types <code class="code highlight cpp docutils literal notranslate"><span class="kt"><span class="pre">char</span></span></code>, <code class="code highlight cpp docutils literal notranslate"><span class="kt"><span class="pre">short</span></span></code>, <code class="code highlight cpp docutils literal notranslate"><span class="kt"><span class="pre">int</span></span></code>, <code class="code highlight cpp docutils literal notranslate"><span class="kt"><span class="pre">long</span></span></code>, <code class="code highlight cpp docutils literal notranslate"><span class="kt"><span class="pre">long</span></span> <span class="kt"><span class="pre">long</span></span></code>.</p></li>
+<li><p>BRiCk uses <code class="code highlight coq docutils literal notranslate"><span class="n"><span class="pre">Tnum</span></span> <span class="n"><span class="pre">sz</span></span> <span class="n"><span class="pre">sgn</span></span></code> to represent all integer types rather than the standard types <code class="code highlight cpp docutils literal highlight-cpp"><span class="kt">char</span></code>, <code class="code highlight cpp docutils literal highlight-cpp"><span class="kt">short</span></code>, <code class="code highlight cpp docutils literal highlight-cpp"><span class="kt">int</span></code>, <code class="code highlight cpp docutils literal highlight-cpp"><span class="kt">long</span></code>, <code class="code highlight cpp docutils literal highlight-cpp"><span class="kt">long</span> <span class="kt">long</span></code>.</p></li>
 </ul>
 </div>
 <div class="section" id="known-issues">
-<h2>Known Issues<a class="headerlink" href="#known-issues" title="Permalink to this headline"></a></h2>
+<h2>Known Issues<a class="headerlink" href="#known-issues" title="Permalink to this heading"></a></h2>
 <p>There are several known issues with the current BRiCk semantics; we are working to support these.</p>
 <ul class="simple">
 <li><p>The definition of <code class="code highlight coq docutils literal notranslate"><span class="n"><span class="pre">anyR</span></span></code> does not support aggreate types, but it should.</p></li>
@@ -136,7 +137,7 @@
 </ul>
 </div>
 <div class="section" id="extensions-to-the-standard">
-<h2>Extensions to the Standard<a class="headerlink" href="#extensions-to-the-standard" title="Permalink to this headline"></a></h2>
+<h2>Extensions to the Standard<a class="headerlink" href="#extensions-to-the-standard" title="Permalink to this heading"></a></h2>
 <p>BRiCk also extends the C++ standard in limited ways to make low-level program verification possible.
 For example, interoperation with assembly (see <a class="reference internal" href="machine.html#machine-interop"><span class="std std-ref">Assembly Interoperation</span></a>), sharing data across address spaces, etc.
 We believe that our extensions are conservative and characterize the way that low-level programmers rely on compilers to work.</p>
@@ -145,7 +146,7 @@ We believe that our extensions are conservative and characterize the way that lo
 <dd><p>We plan to support weak memory C++ in the future based on other work in Iris.</p>
 </dd>
 <dt class="label" id="const"><span class="brackets"><a class="fn-backref" href="#id2">2</a></span></dt>
-<dd><p>We believe it is tractable to give a <em>semantic</em> characterization of <code class="code highlight cpp docutils literal notranslate"><span class="k"><span class="pre">const</span></span></code>, but it is not clear whether this is sound with respect to C++’s semantics.</p>
+<dd><p>We believe it is tractable to give a <em>semantic</em> characterization of <code class="code highlight cpp docutils literal highlight-cpp"><span class="k">const</span></code>, but it is not clear whether this is sound with respect to C++’s semantics.</p>
 </dd>
 </dl>
 </div>

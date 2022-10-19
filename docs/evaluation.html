@@ -16,6 +16,7 @@
         <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
         <script src="_static/jquery.js"></script>
         <script src="_static/underscore.js"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
         <script src="_static/doctools.js"></script>
         <script src="_static/alectryon.js"></script>
     <script src="_static/js/theme.js"></script>
@@ -94,17 +95,17 @@
            <div itemprop="articleBody">
              
   <div class="section" id="evaluation">
-<span id="id1"></span><h1>Evaluation<a class="headerlink" href="#evaluation" title="Permalink to this headline"></a></h1>
+<span id="id1"></span><h1>Evaluation<a class="headerlink" href="#evaluation" title="Permalink to this heading"></a></h1>
 <p>The semantics of C++ programs in BRiCk are written in <a class="reference external" href="https://en.wikipedia.org/wiki/Predicate_transformer_semantics">weakest (liberal) pre-condition style</a>.
 The general form of these rules is the following:</p>
 <p>Note that <code class="code highlight coq docutils literal notranslate"><span class="n"><span class="pre">wp</span></span></code> is a predicate in our separation logic (the fact that it returns a <code class="code highlight coq docutils literal notranslate"><span class="n"><span class="pre">PROP</span></span></code>).
 Informally you can think of it as capturing the pre-condition to the inputs (one of which is normally an expression) that are sufficient such that the code is safe and if the expression terminates, it terminates in a state in which its outputs statisfy the “continuation” (i.e. the final function argument to <code class="code highlight coq docutils literal notranslate"><span class="n"><span class="pre">wp</span></span></code>).</p>
 <p>Due to the structure of C++, BRiCk contains a separate weakest pre-condition modality for each syntactic category. These are defined in <a class="reference external" href="_static/coqdoc/bedrock.lang.cpp.logic.wp.html">bedrock.lang.cpp.logic.wp</a>.</p>
 <div class="section" id="expressions">
-<h2>Expressions<a class="headerlink" href="#expressions" title="Permalink to this headline"></a></h2>
+<h2>Expressions<a class="headerlink" href="#expressions" title="Permalink to this heading"></a></h2>
 <p>In BRiCk we break expression evaluation down into four weakest pre-condition assertions representing the different <a class="reference external" href="http://eel.is/c++draft/expr.prop#basic.lval-1">value categories</a> of a C++ expression.</p>
 <div class="section" id="modeling-temporaries">
-<h3>Modeling Temporaries<a class="headerlink" href="#modeling-temporaries" title="Permalink to this headline"></a></h3>
+<h3>Modeling Temporaries<a class="headerlink" href="#modeling-temporaries" title="Permalink to this heading"></a></h3>
 <p>In the course of evaluating C++ programs, the language can construct objects that are later destroyed, this occurs for <a class="reference external" href="https://eel.is/c++draft/basic.stc.auto#1">automatic storage duration</a> variables (i.e. stack allocated variables and temporaries).
 C++ semantics guarantees that the lifetime of temporaries is well-bracketed, meaning that objects will be destroyed in the reverse order that they were constructed.
 In BRiCk we capture the stack of objects to be destroyed using the type <a class="reference external" href="_static/coqdoc/bedrock.lang.cpp.logic.wp.html#FreeTemps.t">t</a>.</p>
@@ -144,7 +145,7 @@ Fixpoint interp (free : FreeTemps) (Q : epred) : mpred :=
 </div>
 </div>
 <div class="section" id="l-values-x-values">
-<h3>l-values &amp; x-values<a class="headerlink" href="#l-values-x-values" title="Permalink to this headline"></a></h3>
+<h3>l-values &amp; x-values<a class="headerlink" href="#l-values-x-values" title="Permalink to this heading"></a></h3>
 <p>l-values and x-values follow the same general structure.
 Their weakest precondition rules are captured by <a class="reference external" href="_static/coqdoc/bedrock.lang.cpp.logic.wp.html#WPE.wp_lval">wp_lval</a> and <a class="reference external" href="_static/coqdoc/bedrock.lang.cpp.logic.wp.html#WPE.wp_xval">wp_xval</a> respectively (we show <code class="code highlight coq docutils literal notranslate"><span class="n"><span class="pre">wp_lval</span></span></code> as our example).</p>
 <div class="highlight-text notranslate"><div class="highlight"><pre><span></span>(* [wp_lval σ E ρ e Q] evaluates the expression [e] in region [ρ]
@@ -156,7 +157,7 @@ Parameter wp_lval
 </div>
 </div>
 <div class="section" id="pr-values">
-<h3>pr-values<a class="headerlink" href="#pr-values" title="Permalink to this headline"></a></h3>
+<h3>pr-values<a class="headerlink" href="#pr-values" title="Permalink to this heading"></a></h3>
 <p>The final value category of C++ (pr-values) is slightly more complex than l-values and x-values.
 The <a class="reference external" href="http://eel.is/c++draft/expr.prop#basic.lval-1.2">C++ standard</a> describes them as follows:</p>
 <p><a class="reference external" href="_static/coqdoc/bedrock.lang.cpp.logic.wp.html#WPE.wp_init">wp_init</a> handles the second of these two.
@@ -217,7 +218,7 @@ In this case, the constructed value (of type <code class="code highlight coq doc
 <p>Note that the pointer <code class="code highlight coq docutils literal notranslate"><span class="n"><span class="pre">p</span></span></code> is completely unconstrained in this definition.
 In practice the C++ abstract machine will pick this pointer to be fresh and reserve it before proceeding to initialize it when evaluating <code class="code highlight coq docutils literal notranslate"><span class="n"><span class="pre">e</span></span></code>.</p>
 <div class="section" id="operands">
-<h4>Operands<a class="headerlink" href="#operands" title="Permalink to this headline"></a></h4>
+<h4>Operands<a class="headerlink" href="#operands" title="Permalink to this heading"></a></h4>
 <p><a class="reference external" href="_static/coqdoc/bedrock.lang.cpp.logic.wp.html#WPE.wp_operand">wp_operand</a> is used to evaluate a operand of a primitive operator.
 These operands are <em>always</em> primitives, since operators that accept aggregates are desugared to functions or methods.</p>
 <div class="highlight-text notranslate"><div class="highlight"><pre><span></span>(* evaluate a prvalue that &quot;computes the value of an operand of an operator&quot;
@@ -253,7 +254,7 @@ However, since the existence of a pointer does not imply that the object has a l
 </div>
 </div>
 <div class="section" id="function-call-semantics">
-<h3>Function Call Semantics<a class="headerlink" href="#function-call-semantics" title="Permalink to this headline"></a></h3>
+<h3>Function Call Semantics<a class="headerlink" href="#function-call-semantics" title="Permalink to this heading"></a></h3>
 <p>The semantics for function calls is concerned with the way that we pass arguments to functions and (potentially) recieve the return value.
 We note that it is important to handle the passing of primitives as well as aggregates, both of which are very common in C++.
 The semantics for function calls specifies how to pass arguments to functions and (potentially) get back the return value, both for primitives and for aggregates.</p>

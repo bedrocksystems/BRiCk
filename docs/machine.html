@@ -16,6 +16,7 @@
         <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
         <script src="_static/jquery.js"></script>
         <script src="_static/underscore.js"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
         <script src="_static/doctools.js"></script>
         <script src="_static/alectryon.js"></script>
     <script src="_static/js/theme.js"></script>
@@ -85,14 +86,14 @@
            <div itemprop="articleBody">
              
   <div class="section" id="assembly-interoperation">
-<span id="machine-interop"></span><h1>Assembly Interoperation<a class="headerlink" href="#assembly-interoperation" title="Permalink to this headline"></a></h1>
+<span id="machine-interop"></span><h1>Assembly Interoperation<a class="headerlink" href="#assembly-interoperation" title="Permalink to this heading"></a></h1>
 <p>This section describes the mechanisms that BRiCk uses to connect C++ concepts to the underlying generated machine code.
 These connections are generally necessary in low-level code that inter-operates with assembly.
 For example, accessing C++ memory from assembly, calling C++ functions from assembly, changing the address space that the C++ program is running in, etc.</p>
 <p>While crucial for low-level programs these features are generally not used in high-level programs.
 Even for low-level programs, a relatively small amount of the program requires properties at this level.</p>
 <div class="section" id="compiler-correctness">
-<h2>Compiler Correctness<a class="headerlink" href="#compiler-correctness" title="Permalink to this headline"></a></h2>
+<h2>Compiler Correctness<a class="headerlink" href="#compiler-correctness" title="Permalink to this heading"></a></h2>
 <p>BRiCk’s strategy for connecting C++ programs to machine programs is to connect the weakest pre-condition of C++ functions to a weakest pre-condition for machine code.
 The relevant definitions can be found in <a class="reference external" href="_static/coqdoc/bedrock.lang.cpp.compile.html">bedrock.lang.cpp.compile</a>.</p>
 <div class="highlight-text notranslate"><div class="highlight"><pre><span></span>  (** compilation of a function [f] is correct if the weakest pre-condition
@@ -121,7 +122,7 @@ The relevant definitions can be found in <a class="reference external" href="_st
 </pre></div>
 </div>
 <p>This approach effectively casts C++ as a stylized way to write machine code; however, it is more than simply macros.
-When C++ code is running, the C++ abstract machines <em>owns</em> the underlying memory and can use that ownership to assert invariants over the memory (e.g. that code is not written, <code class="code highlight cpp docutils literal notranslate"><span class="k"><span class="pre">const</span></span></code> objects do not change, etc).
+When C++ code is running, the C++ abstract machines <em>owns</em> the underlying memory and can use that ownership to assert invariants over the memory (e.g. that code is not written, <code class="code highlight cpp docutils literal highlight-cpp"><span class="k">const</span></code> objects do not change, etc).
 This characterization makes it possible (and even natural) to escape the abstract machine in limited circumstances and interact at a lower-level of abstraction.
 For example, a viable model of inline assembly is to borrow resources from the abstract machine, run the assembly, and then return the underlying resources back to the abstract machine.
 The <a class="reference internal" href="object_layout.html#object-layout"><span class="std std-ref">Object representation, layout and padding</span></a> section goes into more details regarding how this access to memory is coordinated within BRiCk.</p>
