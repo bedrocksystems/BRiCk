@@ -323,7 +323,7 @@ public:
         if (auto dtor = decl->getDestructor()) {
             if (auto del = dtor->getOperatorDelete()) {
                 print.some();
-                cprint.printObjName(dtor->getOperatorDelete(), print);
+                cprint.printObjName(del, print);
                 print.end_ctor();
             } else {
                 print.none();
