@@ -39,7 +39,7 @@
     ; and changes when upgrading LLVM.
     (pipe-outputs (run llvm-config --libfiles) (run sed "s/ /\\n/g")))))
  (rule
-  (targets cpp2v)
+  (targets cpp2v cpp2v-make.log)
   (deps
     ; This code depends on the LLVM library, to try rebuilding `cpp2v` if LLVM
     ; is upgraded.
