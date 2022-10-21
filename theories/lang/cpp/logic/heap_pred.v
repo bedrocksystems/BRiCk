@@ -293,6 +293,8 @@ Section with_cpp.
   Definition nullR := nullR_aux.(unseal).
   Definition nullR_eq : @nullR = _ := nullR_aux.(seal_eq).
 
+  #[global] Hint Opaque nullR : typeclass_instances.
+
   #[global] Instance nullR_persistent : Persistent nullR.
   Proof. rewrite nullR_eq. apply _. Qed.
   #[global] Instance nullR_affine : Affine nullR.
@@ -309,6 +311,8 @@ Section with_cpp.
   Definition nonnullR_aux : seal (@nonnullR_def). Proof. by eexists. Qed.
   Definition nonnullR := nonnullR_aux.(unseal).
   Definition nonnullR_eq : @nonnullR = _ := nonnullR_aux.(seal_eq).
+
+  #[global] Hint Opaque nonnullR : typeclass_instances.
 
   #[global] Instance nonnullR_persistent : Persistent nonnullR.
   Proof. rewrite nonnullR_eq. apply _. Qed.

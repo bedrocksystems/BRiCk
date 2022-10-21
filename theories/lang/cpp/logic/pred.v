@@ -729,6 +729,8 @@ Section pinned_ptr_def.
   Definition exposed_ptr := exposed_ptr_aux.(unseal).
   Definition exposed_ptr_eq : exposed_ptr = _ := exposed_ptr_aux.(seal_eq).
 
+  #[global] Hint Opaque exposed_ptr : typeclass_instances.
+
   #[global] Instance exposed_ptr_persistent p : Persistent (exposed_ptr p).
   Proof. rewrite exposed_ptr_eq. apply _. Qed.
   #[global] Instance exposed_ptr_affine p : Affine (exposed_ptr p).
@@ -778,6 +780,8 @@ Section pinned_ptr_def.
   Definition pinned_ptr_aux : seal pinned_ptr_def. Proof. by eexists. Qed.
   Definition pinned_ptr := pinned_ptr_aux.(unseal).
   Definition pinned_ptr_eq : pinned_ptr = _ := pinned_ptr_aux.(seal_eq).
+
+  #[global] Hint Opaque pinned_ptr : typeclass_instances.
 
   #[global] Instance pinned_ptr_persistent va p : Persistent (pinned_ptr va p).
   Proof. rewrite pinned_ptr_eq. apply _. Qed.

@@ -118,6 +118,8 @@ Section with_cpp.
   Definition denoteModule := denoteModule_aux.(unseal).
   Definition denoteModule_eq : @denoteModule = _ := denoteModule_aux.(seal_eq).
 
+  #[global] Hint Opaque denoteModule : typeclass_instances.
+
   #[global] Instance denoteModule_persistent {module} : Persistent (denoteModule module).
   Proof.
     red. rewrite denoteModule_eq /denoteModule_def; intros.

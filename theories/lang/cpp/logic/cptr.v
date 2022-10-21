@@ -243,6 +243,8 @@ Section defs.
   Definition cptrR := cptrR_aux.(unseal).
   Definition cptrR_eq : @cptrR = _ := cptrR_aux.(seal_eq).
 
+  #[global] Hint Opaque cptrR : typeclass_instances.
+
   (** A version of [fs_impl] and [fs_entails] with [fupd].
     These are used in stating strong wp properties for [cptrR],
     like [cptrR_fs_impl_fupd] and [cptrR_fs_entails_fupd] (see below).
