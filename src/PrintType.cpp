@@ -7,6 +7,7 @@
 #include "CoqPrinter.hpp"
 #include "Logging.hpp"
 #include "TypeVisitorWithArgs.h"
+#include "config.hpp"
 #include "clang/AST/ASTContext.h"
 #include "clang/AST/Decl.h"
 #include "clang/AST/DeclCXX.h"
@@ -281,14 +282,21 @@ public:
 
     void VisitTypedefType(const TypedefType* type, CoqPrinter& print,
                           ClangPrinter& cprint) {
-        print.ctor("@Talias", false) << "\"";
-        // cprint.printTypeName(type->getDecl(), print);
-        // printing a "humann readable" type
-        type->getDecl()->printQualifiedName(print.output().nobreak());
-        print.output() << "\"" << fmt::nbsp;
-        cprint.printQualType(
-            type->getDecl()->getCanonicalDecl()->getUnderlyingType(), print);
-        print.end_ctor();
+        if (PRINT_ALIAS) {
+            print.ctor("@Talias", false) << "\"";
+            cprint.printTypeName(type->getDecl(), print);
+            // printing a "human readable" type
+            // type->getDecl()->printQualifiedName(print.output().nobreak());
+            print.output() << "\"" << fmt::nbsp;
+            cprint.printQualType(
+                type->getDecl()->getCanonicalDecl()->getUnderlyingType(),
+                print);
+            print.end_ctor();
+        } else {
+            cprint.printQualType(
+                type->getDecl()->getCanonicalDecl()->getUnderlyingType(),
+                print);
+        }
     }
 
     void VisitFunctionProtoType(const FunctionProtoType* type,

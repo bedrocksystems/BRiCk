@@ -13,50 +13,65 @@
 #include <algorithm>
 
 // TODO this should be replaced by something else.
-void
-print_path(CoqPrinter &print, const DeclContext *dc, bool end = true) {
+bool
+print_path(llvm::raw_string_ostream &print, const DeclContext *dc,
+           bool end = true) {
     if (dc == nullptr || isa<TranslationUnitDecl>(dc)) {
         if (end)
-            print.output() << "::";
+            print << "::";
+        return true;
     } else {
-        print_path(print, dc->getParent());
+        if (not print_path(print, dc->getParent())) {
+            return false;
+        }
         if (auto ts = dyn_cast<ClassTemplateSpecializationDecl>(dc)) {
-            print.output() << ts->getNameAsString() << "<";
+            print << ts->getNameAsString() << "<";
             bool first = true;
             for (auto i : ts->getTemplateArgs().asArray()) {
                 if (!first) {
-                    print.output() << ",";
+                    print << ",";
                 }
                 first = false;
                 switch (i.getKind()) {
                 case TemplateArgument::ArgKind::Integral:
-                    print.output() << i.getAsIntegral();
+                    print << i.getAsIntegral();
                     break;
                 case TemplateArgument::ArgKind::Type: {
+                    // TODO: this is still somewhat of a hack
                     auto s = i.getAsType().getAsString();
-                    replace(s.begin(), s.end(), ' ', '_');
-                    print.output() << s;
-                    break;
+                    if (find(s.begin(), s.end(), '/') != s.end() or
+                        find(s.begin(), s.end(), '\\') != s.end()) {
+                        // a heuristic to determine if a path is being generated
+                        return false;
+                    } else {
+                        replace(s.begin(), s.end(), ' ', '_');
+                        print << s;
+                        break;
+                    }
                 }
                 default:
-                    print.output() << "?";
+                    return false;
                 }
             }
-            print.output() << (end ? ">::" : ">");
+            print << (end ? ">::" : ">");
         } else if (auto td = dyn_cast<TagDecl>(dc)) {
             if (td->getName() != "") {
-                print.output() << td->getNameAsString() << (end ? "::" : "");
-            }
+                print << td->getNameAsString() << (end ? "::" : "");
+            } else
+                return false;
         } else if (auto ns = dyn_cast<NamespaceDecl>(dc)) {
             if (!ns->isAnonymousNamespace()) {
-                print.output() << ns->getNameAsString() << (end ? "::" : "");
-            }
+                print << ns->getNameAsString() << (end ? "::" : "");
+            } else
+                return false;
         } else {
             using namespace logging;
             //logging::log() << "unknown declaration while printing path "
             //               << dc->getDeclKindName() << "\n";
+            return false;
         }
     }
+    return true;
 }
 
 void
@@ -65,18 +80,25 @@ write_globals(::Module &mod, CoqPrinter &print, ClangPrinter &cprint) {
 
     // todo(gmm): i would like to generate function names.
     for (auto def : mod.definitions()) {
+        std::string s_notation;
+        llvm::raw_string_ostream notation{s_notation};
         if (const FieldDecl *fd = dyn_cast<FieldDecl>(def)) {
-            print.output() << "Notation \"'";
-            print_path(print, fd->getParent(), true);
+            if (not print_path(notation, fd->getParent(), true)) {
+                continue;
+            }
+            notation << fd->getNameAsString();
+            print.output() << "Notation \"'" << s_notation;
             print.output() << fd->getNameAsString() << "'\" :=" << fmt::nbsp;
             cprint.printField(fd, print);
             print.output() << " (in custom cppglobal at level 0)." << fmt::line;
         } else if (const RecordDecl *rd = dyn_cast<RecordDecl>(def)) {
+            if (not print_path(notation, rd, false))
+                continue;
+
             if (!rd->isAnonymousStructOrUnion() &&
                 rd->getNameAsString() != "") {
-                print.output() << "Notation \"'";
-                print_path(print, rd, false);
-                print.output() << "'\" :=" << fmt::nbsp;
+                print.output()
+                    << "Notation \"'" << s_notation << "'\" :=" << fmt::nbsp;
 
                 cprint.printTypeName(rd, print);
                 print.output()
@@ -85,8 +107,7 @@ write_globals(::Module &mod, CoqPrinter &print, ClangPrinter &cprint) {
 
             for (auto fd : rd->fields()) {
                 if (fd->getName() != "") {
-                    print.output() << "Notation \"'";
-                    print_path(print, rd, true);
+                    print.output() << "Notation \"'" << s_notation << "::";
                     print.output()
                         << fd->getNameAsString() << "'\" :=" << fmt::nbsp;
                     cprint.printField(fd, print);
@@ -97,15 +118,19 @@ write_globals(::Module &mod, CoqPrinter &print, ClangPrinter &cprint) {
         } else if (const FunctionDecl *fd = dyn_cast<FunctionDecl>(def)) {
             // todo(gmm): skipping due to function overloading
         } else if (const TypedefDecl *td = dyn_cast<TypedefDecl>(def)) {
-            print.output() << "Notation \"'";
-            print_path(print, td->getDeclContext(), true);
+            if (not print_path(notation, td->getDeclContext(), true))
+                continue;
+
+            print.output() << "Notation \"'" << s_notation;
             print.output() << td->getNameAsString() << "'\" :=" << fmt::nbsp;
             cprint.printQualType(td->getUnderlyingType(), print);
             print.output() << " (only parsing, in custom cppglobal at level 0)."
                            << fmt::line;
         } else if (const auto *ta = dyn_cast<TypeAliasDecl>(def)) {
-            print.output() << "Notation \"'";
-            print_path(print, ta->getDeclContext(), true);
+            if (not print_path(notation, ta->getDeclContext(), true))
+                continue;
+
+            print.output() << "Notation \"'" << s_notation;
             print.output() << ta->getNameAsString() << "'\" :=" << fmt::nbsp;
             cprint.printQualType(ta->getUnderlyingType(), print);
             print.output() << " (only parsing, in custom cppglobal at level 0)."
