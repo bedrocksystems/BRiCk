@@ -13,7 +13,7 @@ Require Import iris.bi.monpred.
 From iris.proofmode Require Import proofmode classes.
 
 From bedrock.lang.cpp Require Import
-     ast semantics logic.pred logic.heap_pred.
+     ast semantics logic.pred logic.heap_pred logic.translation_unit.
 Require Import bedrock.lang.bi.errors.
 
 #[local] Set Primitive Projections.
@@ -487,6 +487,10 @@ Section with_cpp.
       (|={top}=> wp_lval tu ρ e (fun v free => |={top}=> Q v free))
     ⊢ wp_lval tu ρ e Q.
 
+  Axiom wp_lval_models : forall {σ:genv} tu ρ e Q,
+      denoteModule tu -* wp_lval tu ρ e Q
+    ⊢ wp_lval tu ρ e Q.
+
   Axiom wp_lval_frame :
     forall σ1 σ2 tu ρ e k1 k2,
       genv_leq σ1 σ2 ->
@@ -594,6 +598,10 @@ Section with_cpp.
       (|={top}=> wp_init tu ρ ty p e (fun free frees => |={top}=> Q free frees))
     ⊢ wp_init tu ρ ty p e Q.
 
+  Axiom wp_init_models : forall {σ:genv} tu ty ρ p e Q,
+      denoteModule tu -* wp_init tu ρ ty p e Q
+    ⊢ wp_init tu ρ ty p e Q.
+
   Axiom wp_init_frame : forall σ1 σ2 tu ρ ty p e k1 k2,
       genv_leq σ1 σ2 ->
       Forall f fs, k1 f fs -* k2 f fs |-- @wp_init σ1 tu ρ ty p e k1 -* @wp_init σ2 tu ρ ty p e k2.
@@ -659,6 +667,11 @@ Section with_cpp.
   Axiom wp_operand_shift : forall {σ:genv} tu ρ e Q,
       (|={top}=> wp_operand tu ρ e (fun v free => |={top}=> Q v free))
     ⊢ wp_operand (resolve:=σ) tu ρ e Q.
+
+  Axiom wp_operand_models : forall {σ:genv} tu ρ e Q,
+      denoteModule tu -* wp_operand tu ρ e Q
+    ⊢ wp_operand tu ρ e Q.
+
 
   Axiom wp_operand_frame :
     forall σ1 σ2 tu ρ e k1 k2,
@@ -754,6 +767,10 @@ Section with_cpp.
 
   Axiom wp_xval_shift : forall {σ:genv} tu ρ e Q,
       (|={top}=> wp_xval tu ρ e (fun v free => |={top}=> Q v free))
+    ⊢ wp_xval tu ρ e Q.
+
+  Axiom wp_xval_models : forall {σ:genv} tu ρ e Q,
+      denoteModule tu -* wp_xval tu ρ e Q
     ⊢ wp_xval tu ρ e Q.
 
   Axiom wp_xval_frame :
@@ -907,6 +924,10 @@ Section with_cpp.
 
   Axiom wp_shift : forall σ tu ρ s Q,
       (|={top}=> wp tu ρ s (|={top}=> Q))
+    ⊢ wp (resolve:=σ) tu ρ s Q.
+
+  Axiom wp_shift_models : forall σ tu ρ s Q,
+      denoteModule tu -* wp tu ρ s Q
     ⊢ wp (resolve:=σ) tu ρ s Q.
 
   Axiom wp_frame :
