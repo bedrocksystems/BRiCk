@@ -95,7 +95,7 @@ Section with_cpp.
              (this : ptr) (cls : globname) (f : obj_name)
              (Q : forall (faddr : ptr) (cls_type : globname) (this_addr : ptr), mpred)
     : mpred :=
-    Exists (path : list globname) {σ tu}, denoteModule (resolve:=σ) tu **
+    Exists (path : list globname) σ tu, denoteModule (resolve:=σ) tu **
       ((Exists q, this |-> identityR cls path q ** [| path <> nil |] ** True) //\\
       match get_impl cls path f with
       | Some (fa, cls, off) => Q fa cls (_offset_ptr this off)
