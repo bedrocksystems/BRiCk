@@ -11,7 +11,6 @@ Require Import bedrock.prelude.base.
 Require Import bedrock.lang.cpp.ast.
 From bedrock.lang.cpp Require Import
      semantics logic.pred logic.path_pred logic.heap_pred.
-From bedrock.lang.cpp Require Import logic.wp.
 Require Import iris.proofmode.proofmode.
 
 Import ChargeNotation.
