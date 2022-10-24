@@ -79,7 +79,7 @@ Module Type Expr.
 
     (* constants are rvalues *)
     Axiom wp_operand_constant : forall ty cnst e Q,
-      glob_def cnst = Some (Gconstant ty (Some e)) ->
+      tu.(globals) !! cnst = Some (Gconstant ty (Some e)) ->
           (* evaluation of the expression does not get access to
              local variables, so it gets [Remp] rather than [ρ].
              In addition, the evaluation is done at compile-time, so we clean
@@ -274,12 +274,9 @@ Module Type Expr.
     Axiom wp_operand_unop : forall o e ty Q,
         wp_operand e (fun v free => (* todo: rval? *)
           Exists v',
-          [| exists tu, tu ⊧ resolve /\ eval_unop tu o (drop_qualifiers (type_of e)) (drop_qualifiers ty) v v' |] **
+          [| eval_unop tu o (drop_qualifiers (type_of e)) (drop_qualifiers ty) v v' |] **
           Q v' free)
         |-- wp_operand (Eunop o e ty) Q.
-
-    Let with_tu (P : translation_unit -> mpred) : mpred :=
-          Exists tu, [| tu ⊧ resolve |] ** P tu.
 
     (** `++e`
         https://eel.is/c++draft/expr.pre.incr#1
@@ -290,7 +287,7 @@ Module Type Expr.
          match companion_type eety with
          | Some cty =>
           wp_lval e (fun a free => Exists v' v'',
-              (with_tu $ fun tu => eval_binop tu Badd eety cty (erase_qualifiers ty) v' (Vint 1) v'' ** True) //\\
+              (eval_binop tu Badd eety cty (erase_qualifiers ty) v' (Vint 1) v'' ** True) //\\
               (a |-> primR eety 1 v' **
                 (a |-> primR eety 1 v'' -* Q a free)))
          | None => False
@@ -306,7 +303,7 @@ Module Type Expr.
          match companion_type eety with
          | Some cty =>
           wp_lval e (fun a free => Exists v' v'',
-              (with_tu $ fun tu => eval_binop tu Bsub eety cty (erase_qualifiers ty) v' (Vint 1) v'' ** True) //\\
+              (eval_binop tu Bsub eety cty (erase_qualifiers ty) v' (Vint 1) v'' ** True) //\\
               (a |-> primR eety 1 v' **
                 (a |-> primR eety 1 v'' -* Q a free)))
          | None => False
@@ -322,7 +319,7 @@ Module Type Expr.
          match companion_type eety with
          | Some cty =>
              wp_lval e (fun a free => Exists v', Exists v'',
-                          (with_tu $ fun tu => eval_binop tu Badd eety cty
+                          (eval_binop tu Badd eety cty
                              (erase_qualifiers ty) v' (Vint 1) v'' ** True) //\\
                             (a |-> primR eety 1 v' **
                                (a |-> primR eety 1 v'' -* Q v' free)))
@@ -339,7 +336,7 @@ Module Type Expr.
          match companion_type eety with
          | Some cty =>
              wp_lval e (fun a free => Exists v', Exists v'',
-                          (with_tu $ fun tu => eval_binop tu Bsub eety cty
+                          (eval_binop tu Bsub eety cty
                              (erase_qualifiers ty) v' (Vint 1) v'' ** True) //\\
                             (a |-> primR eety 1 v' **
                                (a |-> primR eety 1 v'' -* Q v' free)))
@@ -352,7 +349,7 @@ Module Type Expr.
     Axiom wp_operand_binop : forall o e1 e2 ty Q,
         nd_seq (wp_operand e1) (wp_operand e2) (fun '(v1,v2) free =>
           Exists v',
-            (with_tu $ fun tu => eval_binop tu o
+            (eval_binop tu o
                 (drop_qualifiers (type_of e1)) (drop_qualifiers (type_of e2))
                 (drop_qualifiers ty) v1 v2 v' ** True) //\\
             Q v' free)
@@ -374,7 +371,7 @@ Module Type Expr.
     Axiom wp_lval_bop_assign : forall ty o l r Q,
         nd_seq (wp_lval l) (wp_operand r) (fun '(la, rv) free =>
              (Exists v v', la |-> primR (erase_qualifiers ty) 1 v **
-                 (with_tu $ fun tu => (eval_binop tu o (erase_qualifiers (type_of l)) (erase_qualifiers (type_of r)) (erase_qualifiers (type_of l)) v rv v' ** True) //\\
+                 ((eval_binop tu o (erase_qualifiers (type_of l)) (erase_qualifiers (type_of r)) (erase_qualifiers (type_of l)) v rv v' ** True) //\\
                  (la |-> primR (erase_qualifiers ty) 1 v' -* Q la free))))
         |-- wp_lval (Eassign_op o l r ty) Q.
 
