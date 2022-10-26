@@ -111,27 +111,24 @@ Lemma big_sepL_difference_singleton {PROP : bi} `{EqDecision A} (x : A)
     (f : A -> PROP) (l : list A) :
   x ∈ l ->
   NoDup l ->
-  ([∗ list] i ∈ l, f i) ⊣⊢ f x ∗ [∗ list] id ∈ list_difference l [x], f id.
+  ([∗ list] i ∈ l, f i) ⊣⊢ f x ∗ [∗ list] i ∈ list_difference l [x], f i.
 Proof.
   intros [j Hl]%elem_of_list_lookup_1 HnoDup.
   by rewrite big_sepL_delete_delete // (list_difference_delete j).
 Qed.
 
-Lemma big_sepL_difference_two {PROP: bi} {A} {eqd: EqDecision A} (f  : A -> PROP) l x y:
-  x<>y ->
+Lemma big_sepL_difference_two {PROP : bi} {A} `{EqDecision A} (f : A -> PROP) l x y:
+  x <> y ->
   x ∈ l ->
   y ∈ l ->
   NoDup l -> (* we only need x to be not duplicated *)
-  ([∗ list] id ∈ l, f id)%I ≡ (f x ∗ f y ∗ (([∗ list] id ∈ (list_difference l [x;y]), f id)))%I.
+  ([∗ list] i ∈ l, f i) ⊣⊢ f x ∗ f y ∗ [∗ list] i ∈ list_difference l [x; y], f i.
 Proof.
   intros Hneq H1l H2l Hnd.
   rewrite (big_sepL_difference_singleton x) //.
   rewrite (big_sepL_difference_singleton y); [| set_solver | exact: NoDup_list_difference].
   by rewrite (list_difference_app_r l [x] [y]).
 Qed.
-
-#[deprecated(note="Use big_sepL_difference_singleton")]
-Notation big_sepL_difference_one := big_sepL_difference_singleton (only parsing).
 
 (* This adjusts the initial index, but we pass the same arguments to [P] *)
 Lemma big_sepL_seqN_shift {PROP : bi} (P : N -> PROP) (j n m : N) :
