@@ -22,7 +22,7 @@ Section Utilities.
   Context `{Σ : cpp_logic} {σ : genv}.
 
   #[local]
-  Lemma big_sepL_shift_aux (p : ptr) (ty : type) (j n m : N) (P : ptr -> mpred) :
+  Lemma big_sepL_shift_aux {PROP : bi} (p : ptr) (ty : type) (j n m : N) (P : ptr -> PROP) :
     is_Some (size_of σ ty) ->
     (j <= n)%N ->
         ([∗list] i ∈ seqN n m, P (p .[ ty ! Z.of_N i ]))
@@ -41,7 +41,7 @@ Section Utilities.
   Qed.
 
   #[local]
-  Lemma big_sepL_shift_aux' (p : ptr) (ty : type) (j n m : nat) (P : ptr -> mpred) :
+  Lemma big_sepL_shift_aux' {PROP : bi} (p : ptr) (ty : type) (j n m : nat) (P : ptr -> PROP) :
     is_Some (size_of σ ty) ->
     (j <= n)%nat ->
         ([∗list] i ∈ seq n m, P (p .[ ty ! Z.of_nat i ]))
@@ -59,7 +59,7 @@ Section Utilities.
         by rewrite Nat.sub_succ.
   Qed.
 
-  Lemma big_sepL_mpred_shift (P : ptr -> mpred) (n m : N) :
+  Lemma big_sepL_shift {PROP : bi} (P : ptr -> PROP) (n m : N) :
     forall (p : ptr) (ty : type),
       is_Some (size_of σ ty) ->
           ([∗list] i ∈ seqN n m, P (p .[ ty ! Z.of_N i ]))
@@ -70,7 +70,7 @@ Section Utilities.
     split'; iApply big_sepL_mono; intros **=> /=; by rewrite N.sub_0_r.
   Qed.
 
-  Lemma big_sepL_mpred_shift' (P : ptr -> mpred) (n m : nat) :
+  Lemma big_sepL_shift' {PROP : bi} (P : ptr -> PROP) (n m : nat) :
     forall (p : ptr) (ty : type),
       is_Some (size_of σ ty) ->
           ([∗list] i ∈ seq n m, P (p .[ ty ! Z.of_nat i ]))
@@ -81,41 +81,19 @@ Section Utilities.
     split'; iApply big_sepL_mono; intros **=> /=; by rewrite Nat.sub_0_r.
   Qed.
 
-  Lemma big_sepL_Rep_shift (R : Rep) (n m : N) :
-    forall (p : ptr) (ty : type),
-      is_Some (size_of σ ty) ->
-          ([∗list] i ∈ seqN n m, p .[ ty ! Z.of_N i ] |-> R)
-      -|- ([∗list] i ∈ seqN 0 m, p .[ ty ! Z.of_N n ] .[ty ! Z.of_N i ] |-> R).
-  Proof.
-    intros p ty Hsz.
-    pose proof (big_sepL_shift_aux p ty 0 n m (fun p' => p' |-> R) Hsz ltac:(lia)) as ->.
-    split'; iApply big_sepL_mono; intros **=> /=; by rewrite N.sub_0_r.
-  Qed.
-
-  Lemma big_sepL_Rep_shift' (R : Rep) (n m : nat) :
-    forall (p : ptr) (ty : type),
-      is_Some (size_of σ ty) ->
-          ([∗list] i ∈ seq n m, p .[ ty ! Z.of_nat i ] |-> R)
-      -|- ([∗list] i ∈ seq 0 m, p .[ ty ! Z.of_nat n ] .[ty ! Z.of_nat i ] |-> R).
-  Proof.
-    intros p ty Hsz.
-    pose proof (big_sepL_shift_aux' p ty 0 n m (fun p' => p' |-> R) Hsz ltac:(lia)) as ->.
-    split'; iApply big_sepL_mono; intros **=> /=; by rewrite Nat.sub_0_r.
-  Qed.
-
   Lemma big_sepL_type_ptr_shift (n m : N) :
     forall (p : ptr) (ty : type),
       is_Some (size_of σ ty) ->
           ([∗list] i ∈ seqN n m, type_ptr ty (p .[ ty ! Z.of_N i ]))
       -|- ([∗list] i ∈ seqN 0 m, type_ptr ty (p .[ ty ! Z.of_N n ] .[ty ! Z.of_N i ] )).
-  Proof. intros p ty Hsz; by apply big_sepL_mpred_shift. Qed.
+  Proof. intros p ty Hsz; by apply big_sepL_shift. Qed.
 
   Lemma big_sepL_type_ptr_shift' (n m : nat) :
     forall (p : ptr) (ty : type),
       is_Some (size_of σ ty) ->
           ([∗list] i ∈ seq n m, type_ptr ty (p .[ ty ! Z.of_nat i ]))
       -|- ([∗list] i ∈ seq 0 m, type_ptr ty (p .[ ty ! Z.of_nat n ] .[ty ! Z.of_nat i ] )).
-  Proof. intros p ty Hsz; by apply big_sepL_mpred_shift'. Qed.
+  Proof. intros p ty Hsz; by apply big_sepL_shift'. Qed.
 End Utilities.
 
 Section rawsR_transport.
@@ -645,7 +623,7 @@ Section blockR_transport.
                 ** by iDestruct "tptrs" as "[$ _]".
                 ** by iDestruct "tptrs'" as "[$ _]".
           -- setoid_rewrite _at_offsetR.
-             rewrite !(big_sepL_Rep_shift' (anyR Tu8 q) 1 (N.to_nat sz')); eauto.
+             rewrite !(big_sepL_shift' (λ p, p |-> anyR Tu8 q) 1 (N.to_nat sz')); eauto.
              by iRevert "REST".
   Qed.
 End blockR_transport.
