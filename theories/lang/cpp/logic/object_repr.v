@@ -22,11 +22,11 @@ Section Utilities.
   Context `{Σ : cpp_logic} {σ : genv}.
 
   #[local]
-  Lemma big_sepL_type_ptr_shift_aux (p : ptr) (ty : type) (j n m : N) :
+  Lemma big_sepL_shift_aux (p : ptr) (ty : type) (j n m : N) (P : ptr -> mpred) :
     is_Some (size_of σ ty) ->
     (j <= n)%N ->
-        ([∗list] i ∈ seqN n m, type_ptr ty (p .[ ty ! Z.of_N i ]))
-    -|- ([∗list] i ∈ seqN j m, type_ptr ty (p .[ ty ! Z.of_N (n - j) ] .[ty ! Z.of_N i ] )).
+        ([∗list] i ∈ seqN n m, P (p .[ ty ! Z.of_N i ]))
+    -|- ([∗list] i ∈ seqN j m, P (p .[ ty ! Z.of_N (n - j) ] .[ty ! Z.of_N i ])).
   Proof.
     generalize dependent j; generalize dependent n; generalize dependent p;
       induction m as [| m' IHm'] using N.peano_ind=> p n j Hsz Hj.
@@ -40,16 +40,82 @@ Section Utilities.
         by rewrite N.sub_succ.
   Qed.
 
+  #[local]
+  Lemma big_sepL_shift_aux' (p : ptr) (ty : type) (j n m : nat) (P : ptr -> mpred) :
+    is_Some (size_of σ ty) ->
+    (j <= n)%nat ->
+        ([∗list] i ∈ seq n m, P (p .[ ty ! Z.of_nat i ]))
+    -|- ([∗list] i ∈ seq j m, P (p .[ ty ! Z.of_nat (n - j) ] .[ty ! Z.of_nat i ])).
+  Proof.
+    generalize dependent j; generalize dependent n; generalize dependent p;
+      induction m as [| m' IHm']=> p n j Hsz Hj; cbn.
+    - reflexivity.
+    - rewrite o_sub_sub.
+      replace (Z.add (Z.of_nat (n - j)) (Z.of_nat j)) with (Z.of_nat n) by lia.
+      split'; iIntros "[$ tptrs]".
+      + rewrite (IHm' _ _ (S j)); [| by auto | by lia].
+        by rewrite Nat.sub_succ.
+      + iApply (IHm' _ _ (S j)); [by auto | by lia |].
+        by rewrite Nat.sub_succ.
+  Qed.
+
+  Lemma big_sepL_mpred_shift (P : ptr -> mpred) (n m : N) :
+    forall (p : ptr) (ty : type),
+      is_Some (size_of σ ty) ->
+          ([∗list] i ∈ seqN n m, P (p .[ ty ! Z.of_N i ]))
+      -|- ([∗list] i ∈ seqN 0 m, P (p .[ ty ! Z.of_N n ] .[ty ! Z.of_N i ])).
+  Proof.
+    intros p ty Hsz.
+    pose proof (big_sepL_shift_aux p ty 0 n m P Hsz ltac:(lia)) as ->.
+    split'; iApply big_sepL_mono; intros **=> /=; by rewrite N.sub_0_r.
+  Qed.
+
+  Lemma big_sepL_mpred_shift' (P : ptr -> mpred) (n m : nat) :
+    forall (p : ptr) (ty : type),
+      is_Some (size_of σ ty) ->
+          ([∗list] i ∈ seq n m, P (p .[ ty ! Z.of_nat i ]))
+      -|- ([∗list] i ∈ seq 0 m, P (p .[ ty ! Z.of_nat n ] .[ty ! Z.of_nat i ])).
+  Proof.
+    intros p ty Hsz.
+    pose proof (big_sepL_shift_aux' p ty 0 n m P Hsz ltac:(lia)) as ->.
+    split'; iApply big_sepL_mono; intros **=> /=; by rewrite Nat.sub_0_r.
+  Qed.
+
+  Lemma big_sepL_Rep_shift (R : Rep) (n m : N) :
+    forall (p : ptr) (ty : type),
+      is_Some (size_of σ ty) ->
+          ([∗list] i ∈ seqN n m, p .[ ty ! Z.of_N i ] |-> R)
+      -|- ([∗list] i ∈ seqN 0 m, p .[ ty ! Z.of_N n ] .[ty ! Z.of_N i ] |-> R).
+  Proof.
+    intros p ty Hsz.
+    pose proof (big_sepL_shift_aux p ty 0 n m (fun p' => p' |-> R) Hsz ltac:(lia)) as ->.
+    split'; iApply big_sepL_mono; intros **=> /=; by rewrite N.sub_0_r.
+  Qed.
+
+  Lemma big_sepL_Rep_shift' (R : Rep) (n m : nat) :
+    forall (p : ptr) (ty : type),
+      is_Some (size_of σ ty) ->
+          ([∗list] i ∈ seq n m, p .[ ty ! Z.of_nat i ] |-> R)
+      -|- ([∗list] i ∈ seq 0 m, p .[ ty ! Z.of_nat n ] .[ty ! Z.of_nat i ] |-> R).
+  Proof.
+    intros p ty Hsz.
+    pose proof (big_sepL_shift_aux' p ty 0 n m (fun p' => p' |-> R) Hsz ltac:(lia)) as ->.
+    split'; iApply big_sepL_mono; intros **=> /=; by rewrite Nat.sub_0_r.
+  Qed.
+
   Lemma big_sepL_type_ptr_shift (n m : N) :
     forall (p : ptr) (ty : type),
       is_Some (size_of σ ty) ->
           ([∗list] i ∈ seqN n m, type_ptr ty (p .[ ty ! Z.of_N i ]))
       -|- ([∗list] i ∈ seqN 0 m, type_ptr ty (p .[ ty ! Z.of_N n ] .[ty ! Z.of_N i ] )).
-  Proof.
-    intros p ty Hsz.
-    pose proof (big_sepL_type_ptr_shift_aux p ty 0 n m Hsz ltac:(lia)) as ->.
-    split'; iApply big_sepL_mono; intros **=> /=; by rewrite N.sub_0_r.
-  Qed.
+  Proof. intros p ty Hsz; by apply big_sepL_mpred_shift. Qed.
+
+  Lemma big_sepL_type_ptr_shift' (n m : nat) :
+    forall (p : ptr) (ty : type),
+      is_Some (size_of σ ty) ->
+          ([∗list] i ∈ seq n m, type_ptr ty (p .[ ty ! Z.of_nat i ]))
+      -|- ([∗list] i ∈ seq 0 m, type_ptr ty (p .[ ty ! Z.of_nat n ] .[ty ! Z.of_nat i ] )).
+  Proof. intros p ty Hsz; by apply big_sepL_mpred_shift'. Qed.
 End Utilities.
 
 Section rawsR_transport.
@@ -495,3 +561,91 @@ Section with_rawable.
     by rewrite (enc_dec_uniq x x' rs).
   Qed.
 End with_rawable.
+
+Section blockR_transport.
+  Context `{Σ : cpp_logic} {σ : genv}.
+
+  Lemma blockR_ptr_congP_transport (sz : N) :
+    forall (p p' : ptr) (ty : type) (q : Qp),
+      size_of σ ty = Some sz ->
+          ptr_congP σ p p' ** type_ptr ty p ** type_ptr ty p'
+      |-- p |-> blockR sz q -* p' |-> blockR sz q.
+  Proof.
+    iIntros (p p' ty q Hty) "#(cong & tptr & tptr') block".
+    assert (sz = 0 \/ 0 < sz)%N as [Hsz | Hsz] by lia.
+    - subst; rewrite blockR_eq/blockR_def !_at_sep !_at_offsetR/=.
+      rewrite o_sub_0; eauto; rewrite !offset_ptr_id !_at_emp.
+      iDestruct "block" as "[_ $]".
+      rewrite _at_validR.
+      by iApply type_ptr_valid.
+    - rewrite blockR_eq/blockR_def !_at_sep !_at_offsetR.
+      iDestruct (type_ptr_raw_type_ptrs ty p ltac:(eauto) with "tptr") as "raw_tptrs".
+      iDestruct (type_ptr_raw_type_ptrs ty p' ltac:(eauto) with "tptr'") as "raw_tptrs'".
+      iDestruct "block" as "[block_valid block]"; iSplitL "raw_tptrs".
+      + iDestruct (raw_type_ptrs_type_ptr_Tu8_obs
+                     ty (N.pred sz) p' sz Hty ltac:(lia)
+                    with "raw_tptrs'")
+          as "#tptr_end'".
+        rewrite _at_validR.
+        iDestruct (type_ptr_valid_plus_one with "tptr_end'") as "valid_end'".
+        rewrite o_sub_sub.
+        by have ->: (N.pred sz + 1)%Z = Z.of_N sz by lia.
+      + rewrite !_at_big_sepL.
+        (* TODO: find a strengthened [big_sepL] lemma for monotonicity in a given context *)
+        rewrite raw_type_ptrs_eq/raw_type_ptrs_def.
+        iDestruct "raw_tptrs" as (sz') "[%Hty' tptrs]".
+        iDestruct "raw_tptrs'" as (sz'') "[%Hty'' tptrs']".
+        rewrite Hty' in Hty; inversion Hty; subst; clear Hty.
+        rewrite Hty'' in Hty'; inversion Hty'; subst; clear Hty' Hty''.
+        iClear "tptr tptr' block_valid".
+
+        iDestruct "tptrs" as "-#tptrs".
+        iDestruct "tptrs'" as "-#tptrs'".
+        iDestruct "cong" as "-#cong".
+        iCombine "cong tptrs tptrs'" as "?".
+        iRevert "block"; iStopProof.
+
+        generalize dependent p'; generalize dependent p;
+          induction sz as [| sz' IHsz'] using N.peano_ind;
+          first by lia.
+
+        assert (sz' = 0 \/ 0 < sz')%N as [Hsz' | Hsz'] by lia. 1: {
+          iIntros (p p') "#(cong & tptrs & tptrs')"; subst.
+          rewrite !N2Nat.inj_succ/= o_sub_0; eauto; rewrite !offset_ptr_id !_offsetR_id.
+          iIntros "[any $]"; iRevert "any".
+          iApply _at_anyR_ptr_congP_transport.
+          iFrame "cong"; by iDestruct "tptrs'" as "[$ _]".
+        }
+
+        iIntros (p p') "#(cong & tptrs & tptrs')".
+        rewrite !seqN_S_start !N2Nat.inj_succ/=.
+        rewrite o_sub_0; eauto; rewrite !_offsetR_id !offset_ptr_id.
+        iDestruct "tptrs" as "[tptr tptrs]".
+        iDestruct "tptrs'" as "[tptr' tptrs']".
+        iIntros "[any REST]"; iSplitL "any".
+        * iRevert "any"; iApply _at_anyR_ptr_congP_transport.
+          by iFrame "cong tptr'".
+        * rewrite !(big_sepL_type_ptr_shift 1 sz'); eauto.
+          specialize (IHsz' Hsz' (p .[ Tu8 ! 1%N ]) (p' .[ Tu8 ! 1%N ])).
+          iDestruct (IHsz' with "[]") as "IH".
+          -- iFrame "tptrs tptrs'"; unfold ptr_congP.
+             iDestruct "cong" as "(%Hcong & _ & _)".
+             iSplitR.
+             ++ iPureIntro; unfold ptr_cong in *.
+                destruct Hcong as [p'' [o1 [o2 [-> [-> Hcong]]]]].
+                exists p'', (o1 .[ Tu8 ! 1%N ]), (o2 .[ Tu8 ! 1%N ]).
+                rewrite !offset_ptr_dot; intuition.
+                unfold offset_cong in *.
+                rewrite -> option.same_property_iff in *.
+                destruct Hcong as [z [Ho1 Ho2]].
+                exists (z + 1)%Z; rewrite !eval_offset_dot !eval_o_sub.
+                by rewrite Ho1 Ho2//=.
+             ++ iSplitL "tptrs"; destruct sz' using N.peano_ind; try lia;
+                  rewrite seqN_S_start/= o_sub_0; eauto; rewrite !offset_ptr_id.
+                ** by iDestruct "tptrs" as "[$ _]".
+                ** by iDestruct "tptrs'" as "[$ _]".
+          -- setoid_rewrite _at_offsetR.
+             rewrite !(big_sepL_Rep_shift' (anyR Tu8 q) 1 (N.to_nat sz')); eauto.
+             by iRevert "REST".
+  Qed.
+End blockR_transport.
