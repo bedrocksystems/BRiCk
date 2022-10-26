@@ -58,8 +58,9 @@ Module Type Expr.
     #[local] Notation wp_glval := (wp_glval tu ρ).
     #[local] Notation wp_args := (wp_args tu ρ).
     #[local] Notation interp := (interp tu).
-    #[local] Notation fspec := (fspec tu.(globals)).
-    #[local] Notation mspec := (mspec tu.(globals)).
+    (* TODO Fix these *)
+    #[local] Notation fspec := (fspec resolve.(genv_tu).(globals)).
+    #[local] Notation mspec := (mspec resolve.(genv_tu).(globals)).
 
     #[local] Notation glob_def := (glob_def resolve) (only parsing).
     #[local] Notation size_of := (@size_of resolve) (only parsing).
