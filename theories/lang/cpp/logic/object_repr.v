@@ -13,6 +13,7 @@
 Require Import iris.proofmode.proofmode.
 Require Import bedrock.prelude.base.
 
+Require Import bedrock.lang.bi.big_op.
 Require Import bedrock.lang.cpp.semantics.
 From bedrock.lang.cpp.logic Require Import arr pred heap_pred layout raw.
 
@@ -21,79 +22,64 @@ Require Import bedrock.lang.cpp.heap_notations.
 Section Utilities.
   Context `{Σ : cpp_logic} {σ : genv}.
 
+  (** TODO: The next lemmas are more specialized, do we need all these statements? *)
+  (* TODO: rename to [big_sepL_shift_aux_N]? *)
   #[local]
   Lemma big_sepL_shift_aux {PROP : bi} (p : ptr) (ty : type) (j n m : N) (P : ptr -> PROP) :
-    is_Some (size_of σ ty) ->
     (j <= n)%N ->
         ([∗list] i ∈ seqN n m, P (p .[ ty ! Z.of_N i ]))
     -|- ([∗list] i ∈ seqN j m, P (p .[ ty ! Z.of_N (n - j) ] .[ty ! Z.of_N i ])).
   Proof.
-    generalize dependent j; generalize dependent n; generalize dependent p;
-      induction m as [| m' IHm'] using N.peano_ind=> p n j Hsz Hj.
-    - by rewrite !seqN_0 !big_sepL_nil.
-    - rewrite !seqN_S_start !big_sepL_cons o_sub_sub.
-      replace (Z.add (Z.of_N (n - j)) (Z.of_N j)) with (Z.of_N n) by lia.
-      split'; iIntros "[$ tptrs]".
-      + rewrite (IHm' _ _ (N.succ j)); [| by auto | by lia].
-        by rewrite N.sub_succ.
-      + iApply (IHm' _ _ (N.succ j)); [by auto | by lia |].
-        by rewrite N.sub_succ.
+    setoid_rewrite o_sub_sub.
+    intros Hsz.
+    rewrite {Hsz} (big_sepL_seqN_shift _ j _ _ Hsz).
+    f_equiv => _ i.
+    by rewrite N2Z.inj_add.
   Qed.
 
+  (* TODO: rename to [big_sepL_shift_aux_nat]? Generalize to [PROP]? *)
   #[local]
   Lemma big_sepL_shift_aux' {PROP : bi} (p : ptr) (ty : type) (j n m : nat) (P : ptr -> PROP) :
-    is_Some (size_of σ ty) ->
     (j <= n)%nat ->
         ([∗list] i ∈ seq n m, P (p .[ ty ! Z.of_nat i ]))
     -|- ([∗list] i ∈ seq j m, P (p .[ ty ! Z.of_nat (n - j) ] .[ty ! Z.of_nat i ])).
   Proof.
-    generalize dependent j; generalize dependent n; generalize dependent p;
-      induction m as [| m' IHm']=> p n j Hsz Hj; cbn.
-    - reflexivity.
-    - rewrite o_sub_sub.
-      replace (Z.add (Z.of_nat (n - j)) (Z.of_nat j)) with (Z.of_nat n) by lia.
-      split'; iIntros "[$ tptrs]".
-      + rewrite (IHm' _ _ (S j)); [| by auto | by lia].
-        by rewrite Nat.sub_succ.
-      + iApply (IHm' _ _ (S j)); [by auto | by lia |].
-        by rewrite Nat.sub_succ.
+    intros Hsz.
+    setoid_rewrite o_sub_sub.
+    rewrite {Hsz} (big_sepL_seq_shift (λ i, P (p .[ ty ! i])) _ _ _ Hsz).
+    f_equiv => _ i.
+    by rewrite Nat2Z.inj_add.
   Qed.
 
   Lemma big_sepL_shift {PROP : bi} (P : ptr -> PROP) (n m : N) :
     forall (p : ptr) (ty : type),
-      is_Some (size_of σ ty) ->
           ([∗list] i ∈ seqN n m, P (p .[ ty ! Z.of_N i ]))
       -|- ([∗list] i ∈ seqN 0 m, P (p .[ ty ! Z.of_N n ] .[ty ! Z.of_N i ])).
   Proof.
-    intros p ty Hsz.
-    pose proof (big_sepL_shift_aux p ty 0 n m P Hsz ltac:(lia)) as ->.
-    split'; iApply big_sepL_mono; intros **=> /=; by rewrite N.sub_0_r.
+    intros p ty.
+    rewrite (big_sepL_shift_aux p ty 0 n m P ltac:(lia)).
+    f_equiv=> _ i; by rewrite N.sub_0_r.
   Qed.
 
   Lemma big_sepL_shift' {PROP : bi} (P : ptr -> PROP) (n m : nat) :
     forall (p : ptr) (ty : type),
-      is_Some (size_of σ ty) ->
           ([∗list] i ∈ seq n m, P (p .[ ty ! Z.of_nat i ]))
       -|- ([∗list] i ∈ seq 0 m, P (p .[ ty ! Z.of_nat n ] .[ty ! Z.of_nat i ])).
   Proof.
-    intros p ty Hsz.
-    pose proof (big_sepL_shift_aux' p ty 0 n m P Hsz ltac:(lia)) as ->.
-    split'; iApply big_sepL_mono; intros **=> /=; by rewrite Nat.sub_0_r.
+    intros p ty.
+    rewrite (big_sepL_shift_aux' p ty 0 n m P ltac:(lia)).
+    f_equiv=> _ i; by rewrite Nat.sub_0_r.
   Qed.
 
-  Lemma big_sepL_type_ptr_shift (n m : N) :
-    forall (p : ptr) (ty : type),
-      is_Some (size_of σ ty) ->
+  Lemma big_sepL_type_ptr_shift (n m : N) (p : ptr) (ty : type) :
           ([∗list] i ∈ seqN n m, type_ptr ty (p .[ ty ! Z.of_N i ]))
       -|- ([∗list] i ∈ seqN 0 m, type_ptr ty (p .[ ty ! Z.of_N n ] .[ty ! Z.of_N i ] )).
-  Proof. intros p ty Hsz; by apply big_sepL_shift. Qed.
+  Proof. by apply big_sepL_shift. Qed.
 
-  Lemma big_sepL_type_ptr_shift' (n m : nat) :
-    forall (p : ptr) (ty : type),
-      is_Some (size_of σ ty) ->
+  Lemma big_sepL_type_ptr_shift' (n m : nat) (p : ptr) (ty : type) :
           ([∗list] i ∈ seq n m, type_ptr ty (p .[ ty ! Z.of_nat i ]))
       -|- ([∗list] i ∈ seq 0 m, type_ptr ty (p .[ ty ! Z.of_nat n ] .[ty ! Z.of_nat i ] )).
-  Proof. intros p ty Hsz; by apply big_sepL_shift'. Qed.
+  Proof. by apply big_sepL_shift'. Qed.
 End Utilities.
 
 Section rawsR_transport.
