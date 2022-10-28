@@ -22,7 +22,7 @@ Qed.
 
 Lemma fmap_add_seq_0 j n :
   Nat.add j <$> seq 0 n = seq j n.
-Proof. rewrite fmap_add_seq. f_equal. lia. Qed.
+Proof. by rewrite fmap_add_seq Nat.add_0_r. Qed.
 
 #[local] Open Scope N_scope.
 
@@ -144,6 +144,18 @@ Section seqN.
   Lemma Forall_seqN P i n :
     Forall P (seqN i n) ↔ (∀ j : N, i <= j < i + n → P j).
   Proof. rewrite Forall_forall. by setoid_rewrite elem_of_seqN. Qed.
+
+  Lemma fmap_add_seqN (j j' n : N) :
+    N.add j <$> seqN j' n = seqN (j + j') n.
+  Proof.
+    elim /N.peano_ind: n j j' => [| n IHn] j j'.
+    - by rewrite !seqN_0.
+    - by rewrite !seqN_S_start -N.add_succ_r -IHn.
+  Qed.
+
+  Lemma fmap_add_seqN_0 j n :
+    N.add j <$> seqN 0 n = seqN j n.
+  Proof. by rewrite fmap_add_seqN N.add_0_r. Qed.
 End seqN.
 
 Lemma repeatN_replicateN {A} (x : A) n :
