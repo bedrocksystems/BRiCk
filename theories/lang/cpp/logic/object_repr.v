@@ -23,27 +23,27 @@ Section Utilities.
   Context `{Σ : cpp_logic} {σ : genv}.
 
   #[local]
-  Lemma big_sepL_shift_aux_N {PROP : bi} (p : ptr) (ty : type) (j n m : N) (P : ptr -> PROP) :
+  Lemma big_sepL_shift_aux_N {PROP : bi} {p : ptr} {ty : type} (P : ptr -> PROP) (j : N) {n m : N} :
     (j <= n)%N ->
         ([∗list] i ∈ seqN n m, P (p .[ ty ! Z.of_N i ]))
     -|- ([∗list] i ∈ seqN j m, P (p .[ ty ! Z.of_N (n - j) ] .[ty ! Z.of_N i ])).
   Proof.
     setoid_rewrite o_sub_sub.
     intros Hsz.
-    rewrite {Hsz} (big_sepL_seqN_shift _ j _ _ Hsz).
+    rewrite {Hsz} (big_sepL_seqN_shift _ _ Hsz).
     f_equiv => _ i.
     by rewrite N2Z.inj_add.
   Qed.
 
   #[local]
-  Lemma big_sepL_shift_aux_nat {PROP : bi} (p : ptr) (ty : type) (j n m : nat) (P : ptr -> PROP) :
+  Lemma big_sepL_shift_aux_nat {PROP : bi} {p : ptr} {ty : type} (P : ptr -> PROP) (j : nat) {n m : nat}  :
     (j <= n)%nat ->
         ([∗list] i ∈ seq n m, P (p .[ ty ! Z.of_nat i ]))
     -|- ([∗list] i ∈ seq j m, P (p .[ ty ! Z.of_nat (n - j) ] .[ty ! Z.of_nat i ])).
   Proof.
     intros Hsz.
     setoid_rewrite o_sub_sub.
-    rewrite {Hsz} (big_sepL_seq_shift (λ i, P (p .[ ty ! i])) _ _ _ Hsz).
+    rewrite {Hsz} (big_sepL_seq_shift _ _ Hsz).
     f_equiv => _ i.
     by rewrite Nat2Z.inj_add.
   Qed.
@@ -54,7 +54,7 @@ Section Utilities.
       -|- ([∗list] i ∈ seqN 0 m, P (p .[ ty ! Z.of_N n ] .[ty ! Z.of_N i ])).
   Proof.
     intros p ty.
-    rewrite (big_sepL_shift_aux_N p ty 0 n m P ltac:(lia)).
+    rewrite (big_sepL_shift_aux_N P 0 ltac:(lia)).
     f_equiv=> _ i; by rewrite N.sub_0_r.
   Qed.
 
@@ -64,7 +64,7 @@ Section Utilities.
       -|- ([∗list] i ∈ seq 0 m, P (p .[ ty ! Z.of_nat n ] .[ty ! Z.of_nat i ])).
   Proof.
     intros p ty.
-    rewrite (big_sepL_shift_aux_nat p ty 0 n m P ltac:(lia)).
+    rewrite (big_sepL_shift_aux_nat P 0 ltac:(lia)).
     f_equiv=> _ i; by rewrite Nat.sub_0_r.
   Qed.
 
