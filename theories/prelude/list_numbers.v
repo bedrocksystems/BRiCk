@@ -20,6 +20,10 @@ Proof.
   by rewrite list_insert_ge // seq_length; lia.
 Qed.
 
+Lemma fmap_add_seq_0 j n :
+  Nat.add j <$> seq 0 n = seq j n.
+Proof. by rewrite fmap_add_seq Nat.add_0_r. Qed.
+
 #[local] Open Scope N_scope.
 
 Definition seqN (from count : N) : list N :=
@@ -140,6 +144,18 @@ Section seqN.
   Lemma Forall_seqN P i n :
     Forall P (seqN i n) ↔ (∀ j : N, i <= j < i + n → P j).
   Proof. rewrite Forall_forall. by setoid_rewrite elem_of_seqN. Qed.
+
+  Lemma fmap_add_seqN (j j' n : N) :
+    N.add j <$> seqN j' n = seqN (j + j') n.
+  Proof.
+    elim /N.peano_ind: n j j' => [| n IHn] j j'.
+    - by rewrite !seqN_0.
+    - by rewrite !seqN_S_start -N.add_succ_r -IHn.
+  Qed.
+
+  Lemma fmap_add_seqN_0 j n :
+    N.add j <$> seqN 0 n = seqN j n.
+  Proof. by rewrite fmap_add_seqN N.add_0_r. Qed.
 End seqN.
 
 Lemma repeatN_replicateN {A} (x : A) n :
@@ -183,7 +199,7 @@ Section listN.
   Lemma replicateN_succ' n x :
     replicateN (n + 1) x = replicateN n x ++ [x].
   Proof.
-    elim/N.induction: n=> [|n IH]//.
+    elim/N.peano_ind: n=> [|n IH]//.
     rewrite -N.add_1_r replicateN_succ {2}replicateN_succ/=.
     by rewrite IH.
   Qed.
@@ -507,7 +523,7 @@ Section listN.
   Lemma rotateN_iter k xs :
     rotateN k xs = N.iter k (fun xs => tail xs ++ head_list xs) xs.
   Proof.
-    elim/N.induction: k xs=> [|k IH] xs.
+    elim/N.peano_ind: k xs=> [|k IH] xs.
     { by rewrite /rotateN/rotate/= app_nil_r. }
     rewrite N.iter_succ//= -IH -N.add_1_r.
     rewrite -!rotateN_fold /rotate tail_drop head_list_take.
@@ -597,7 +613,7 @@ Section listN.
   Lemma rotateN_mid k xs zs :
     exists xs' zs', forall y, rotateN k (xs ++ [y] ++ zs) = xs' ++ [y] ++ zs'.
   Proof.
-    elim/N.induction: k xs zs=> [|k IH] xs zs.
+    elim/N.peano_ind: k xs zs=> [|k IH] xs zs.
     - exists xs. exists zs. move=> y. by rewrite rotateN_zero.
     - rewrite -N.add_1_r. case: xs=> [|x xs].
       + case/(_ zs []): IH=> [xs' [zs' IH]].
@@ -701,7 +717,7 @@ Section listN.
   Lemma lookupN_nth_error {A'} i (xs : list A') :
     lookupN i xs = nth_error xs (N.to_nat i).
   Proof.
-    elim/N.induction: i xs=> [|i IH]//=; case=> [|x xs]//=.
+    elim/N.peano_ind: i xs=> [|i IH]//=; case=> [|x xs]//=.
     - rewrite -lookupN_fold lookup_nil. by case: (N.to_nat).
     - rewrite N2Nat.inj_succ/= -lookupN_fold N2Nat.inj_succ -lookup_tail/=.
       by apply: IH.
@@ -743,7 +759,7 @@ Section listN.
     (forall y, lookupN i (xs ++ [y] ++ zs) = Some y) ->
     lengthN xs = i.
   Proof.
-    move=> x0 H. elim/N.induction: i xs zs=> [|i IH] xs zs.
+    move=> x0 H. elim/N.peano_ind: i xs zs=> [|i IH] xs zs.
     - case: xs=> [|x xs]//.
       move/(_ x): H=> [y H].
       move/(_ y). rewrite lookupN_cons_zero=> - [].
@@ -760,7 +776,7 @@ Section listN.
     xs !! i = Some x ->
     xs = takeN i xs ++ [x] ++ dropN (i + 1) xs.
   Proof.
-    elim/N.induction: i xs=> [|i IH]; case=> [|x0 xs]//.
+    elim/N.peano_ind: i xs=> [|i IH]; case=> [|x0 xs]//.
     - by rewrite -[0+1]/1 lookupN_head/= dropN_one=> - [->].
     - rewrite -N.add_1_r/= lookupN_cons_succ. move/IH=> {1}-> {IH}.
       by rewrite takeN_cons_succ dropN_cons_succ/=.
@@ -863,7 +879,7 @@ Section listN.
     i < lengthN xs ->
     <[i:=x]> xs = takeN i xs ++ [x] ++ dropN (i + 1) xs.
   Proof.
-    elim/N.induction: i xs=> [|i IH]; case=> [|x0 xs]//; rewrite -N.add_1_r !lengthN_simpl.
+    elim/N.peano_ind: i xs=> [|i IH]; case=> [|x0 xs]//; rewrite -N.add_1_r !lengthN_simpl.
     - lia.
     - rewrite insertN_cons_succ takeN_cons_succ dropN_cons_succ.
       by rewrite -N.add_lt_mono_r=> /IH ->.
@@ -918,7 +934,7 @@ Proof. move=> F i Hle. eapply N_fin_iter_lt; [done | lia]. Qed.
 Lemma N_enumerate n m :
   n < m -> N.recursion False (fun k H => (n = k) \/ H) m.
 Proof.
-  elim/N.induction: m=> [|m']//=; first by move/N.nlt_0_r.
+  elim/N.peano_ind: m=> [|m']//=; first by move/N.nlt_0_r.
   rewrite N.recursion_succ// N.lt_succ_r N.lt_eq_cases=> IH.
   case=> [{} /IH IH|H]; by [right|left].
 Qed.
