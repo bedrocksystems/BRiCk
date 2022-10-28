@@ -66,17 +66,24 @@ Section with_Σ.
   #[global] Instance union_paddingR_valid_observe q cls i : Observe validR (union_paddingR q cls i).
   Proof. rewrite -svalidR_validR; apply _. Qed.
 
-  (* TODO: Do we need type_ptrR here? *)
+  (** Convert a `struct` to its raw representation.
+   Justified by the concept of object representation.
+   https://eel.is/c++draft/basic.types.general#def:representation,object
+   *)
   Axiom struct_to_raw : forall cls st rss q,
     glob_def σ cls = Some (Gstruct st) ->
-    st.(s_layout) = POD ->
-    ([∗ list] fld ∈ st.(s_fields),
-       Exists rs, [| rss !! fld.(mem_name) = Some rs |] **
-       _offsetR (_field {| f_name := fld.(mem_name) ; f_type := cls |}) (rawsR q rs))
-      ** struct_paddingR q cls -|-
+    st.(s_layout) ∈ [POD;Standard] ->
+       struct_paddingR q cls **
+       ([∗ list] b ∈ st.(s_bases),
+          Exists rs, [| rss !! FieldOrBase.Base b.1 = Some rs |] ** _base cls b.1 |-> rawsR q rs) **
+       ([∗ list] fld ∈ st.(s_fields),
+          Exists rs, [| rss !! FieldOrBase.Field fld.(mem_name) = Some rs |] **
+            _field {| f_name := fld.(mem_name) ; f_type := cls |} |-> rawsR q rs)
+    -|- type_ptrR (Tnamed cls) **
       Exists rs, rawsR q rs ** [| raw_bytes_of_struct σ cls rss rs |].
 
-  #[local] Definition implicit_destruct_ty (ty : type) := anyR ty 1 |-- |={↑pred_ns}=> tblockR ty 1.
+  #[local] Definition implicit_destruct_ty (ty : type) :=
+    anyR ty 1 |-- |={↑pred_ns}=> tblockR ty 1.
 
   (** implicit destruction of a primitive *)
   Axiom implicit_destruct_int : forall sz sgn, Reduce (implicit_destruct_ty (Tnum sz sgn)).

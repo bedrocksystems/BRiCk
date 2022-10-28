@@ -14,8 +14,8 @@ From bedrock.lang.cpp.arith Require Import operator builtins.
 Require Import bedrock.lang.cpp.ast.
 From bedrock.lang.cpp.semantics Require Export types sub_module genv ptrs.
 
-Local Close Scope nat_scope.
-Local Open Scope Z_scope.
+#[local] Close Scope nat_scope.
+#[local] Open Scope Z_scope.
 Implicit Types (σ : genv).
 
 (* TODO: improve our axiomatic support for raw values - including "shattering"
@@ -168,14 +168,73 @@ Module Type RAW_BYTES_VAL
           rs = raw_int_byte <$> l.
   *)
 
+  Module FieldOrBase.
+    (* type for representing direct subobjects
+       *Always* qualify this name, e.g. [FieldOrBase.t]
+     *)
+    Variant t : Set :=
+    | Field (f : ident)
+    | Base (_ : globname).
+
+    #[global] Instance t_eq_dec : EqDecision t := ltac:(solve_decision).
+    #[global,program] Instance t_countable : Countable t :=
+      { encode x := encode match x with
+                      | Field a => inl a
+                      | Base b => inr b
+                      end
+      ; decode x := (fun x => match x with
+                           | inl a => Field a
+                           | inr b => Base b
+                           end) <$> decode x
+      }.
+    Next Obligation.
+      by destruct x; rewrite /= decode_encode/=.
+    Qed.
+
+  End FieldOrBase.
+
   (** [raw_bytes_of_struct σ cls rss rs] states that the struct
       consisting of fields of the raw bytes [rss] is represented by the
-      raw bytes in [rs]. [rs] should agree with [rss] on the offsets of
-      the fields. It might be possible to make some assumptions about the
+      raw bytes in [rs].
+
+      [rs] should agree with [rss] on the offsets of the fields.
+      This is captured by [raw_offsets].
+
+      It might be possible to make some assumptions about the
       parts of [rs] that represent padding based on the ABI. *)
-  (* TODO (JH): We should probably restrict this interface with some `Axiom`s. *)
   Parameter raw_bytes_of_struct :
-    genv -> globname -> gmap ident (list raw_byte) -> list raw_byte -> Prop.
+    genv -> globname -> gmap FieldOrBase.t (list raw_byte) -> list raw_byte -> Prop.
+
+  (** TODO: introduction rules for [raw_bytes_of_struct] *)
+
+  (** *** Elimination rules for [raw_bytes_of_struct] *)
+
+  (** The size of the raw bytes of an object is the size of the object *)
+  Axiom raw_bytes_of_struct_wf_size : forall σ cls flds rs,
+    raw_bytes_of_struct σ cls flds rs ->
+    Some (length rs) = N.to_nat <$> (size_of σ (Tnamed cls)).
+
+  (** The raw bytes in each field is the size of the field *)
+  Axiom raw_bytes_of_struct_wf_field : forall σ cls flds rs,
+    raw_bytes_of_struct σ cls flds rs ->
+    (forall m mty,
+    type_of_field cls m = Some mty ->
+    exists bytes, flds !! FieldOrBase.Field m = Some bytes /\
+    Some (length bytes) = N.to_nat <$> (size_of σ mty)).
+
+  (** The raw bytes in each base is the size of the base *)
+  Axiom raw_bytes_of_struct_wf_base : forall σ cls flds rs base bytes,
+    raw_bytes_of_struct σ cls flds rs ->
+    flds !! FieldOrBase.Base base = Some bytes ->
+    Some (length bytes) = N.to_nat <$> (size_of σ $ Tnamed base).
+
+  (** The bytes at the offset are the ones that are referenced by the field *)
+  Axiom raw_bytes_of_struct_offset : forall σ cls flds rs m bytes off,
+    raw_bytes_of_struct σ cls flds rs ->
+    flds !! FieldOrBase.Field m = Some bytes ->
+    offset_of σ cls m = Some off ->
+    firstn (length bytes) (skipn (Z.to_nat off) rs) = bytes.
+
 End RAW_BYTES_VAL.
 
 Module Type RAW_BYTES_MIXIN
