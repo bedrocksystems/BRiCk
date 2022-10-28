@@ -135,21 +135,16 @@ Lemma big_sepL_seqN_shift {PROP : bi} (P : N -> PROP) (j n m : N) :
   (j <= n)%N ->
   ([∗list] i ∈ seqN n m, P i) ⊣⊢ [∗list] i ∈ seqN j m, P (n - j + i)%N.
 Proof.
-  move: n j; induction m as [| m' IHm'] using N.peano_ind=> n j Hj.
-  - by rewrite !seqN_0 !big_sepL_nil.
-  - rewrite !seqN_S_start !big_sepL_cons.
-    replace (n - j + j)%N with n by lia.
-    rewrite (IHm' _ (N.succ j)); [| by lia].
-    by rewrite N.sub_succ.
+  intros Le.
+  rewrite -[in seqN n m](N.sub_add _ _ Le) -fmap_add_seqN.
+  apply big_sepL_fmap.
 Qed.
 
 Lemma big_sepL_seq_shift {PROP : bi} (P : nat -> PROP) (j n m : nat) :
   j <= n ->
   ([∗list] i ∈ seq n m, P i) ⊣⊢ [∗list] i ∈ seq j m, P (n - j + i).
 Proof.
-  move: n j; induction m as [| m' IHm'] => n j Hj /=.
-  - by [].
-  - replace (n - j + j) with n by lia.
-    rewrite (IHm' _ (S j)); [| by lia].
-    by rewrite Nat.sub_succ.
+  intros Le.
+  rewrite -[in seq n m](Nat.sub_add _ _ Le) -fmap_add_seq.
+  apply big_sepL_fmap.
 Qed.
