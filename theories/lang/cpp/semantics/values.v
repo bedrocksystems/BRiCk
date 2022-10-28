@@ -176,8 +176,8 @@ Module Type RAW_BYTES_VAL
     | Field (f : ident)
     | Base (_ : globname).
 
-    #[global] Instance FieldOrBase_eq_dec : EqDecision t := ltac:(solve_decision).
-    #[global,program] Instance FieldOrBase_countable : Countable t :=
+    #[global] Instance t_eq_dec : EqDecision t := ltac:(solve_decision).
+    #[global,program] Instance t_countable : Countable t :=
       { encode x := encode match x with
                       | Field a => inl a
                       | Base b => inr b
@@ -204,6 +204,10 @@ Module Type RAW_BYTES_VAL
       parts of [rs] that represent padding based on the ABI. *)
   Parameter raw_bytes_of_struct :
     genv -> globname -> gmap FieldOrBase.t (list raw_byte) -> list raw_byte -> Prop.
+
+  (** TODO: introduction rules for [raw_bytes_of_struct] *)
+
+  (** *** Elimination rules for [raw_bytes_of_struct] *)
 
   (** The size of the raw bytes of an object is the size of the object *)
   Axiom raw_bytes_of_struct_wf_size : forall σ cls flds rs,

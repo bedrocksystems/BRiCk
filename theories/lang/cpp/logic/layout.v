@@ -66,7 +66,10 @@ Section with_Σ.
   #[global] Instance union_paddingR_valid_observe q cls i : Observe validR (union_paddingR q cls i).
   Proof. rewrite -svalidR_validR; apply _. Qed.
 
-  (** Convert a `struct` to its raw representation *)
+  (** Convert a `struct` to its raw representation.
+   Justified by the concept of object representation.
+   https://eel.is/c++draft/basic.types.general#def:representation,object
+   *)
   Axiom struct_to_raw : forall cls st rss q,
     glob_def σ cls = Some (Gstruct st) ->
     st.(s_layout) ∈ [POD;Standard] ->
