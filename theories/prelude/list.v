@@ -187,10 +187,6 @@ Section list.
     (forall x, f x = x) -> f <$> l = l.
   Proof. move => ?. elim: l => // ?? {2}<-. csimpl. by f_equal. Qed.
 
-  Lemma fmap_add_seq_0 j n :
-    Nat.add j <$> seq 0 n = seq j n.
-  Proof. rewrite fmap_add_seq. f_equal. lia. Qed.
-
   (** Properties of [list_delete] *)
   Lemma list_delete_elem_of_1 l i x y:
     l !! i = Some y -> x ≠ y ->

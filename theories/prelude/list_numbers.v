@@ -20,6 +20,10 @@ Proof.
   by rewrite list_insert_ge // seq_length; lia.
 Qed.
 
+Lemma fmap_add_seq_0 j n :
+  Nat.add j <$> seq 0 n = seq j n.
+Proof. rewrite fmap_add_seq. f_equal. lia. Qed.
+
 #[local] Open Scope N_scope.
 
 Definition seqN (from count : N) : list N :=
