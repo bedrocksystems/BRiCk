@@ -22,10 +22,8 @@ Require Import bedrock.lang.cpp.heap_notations.
 Section Utilities.
   Context `{Σ : cpp_logic} {σ : genv}.
 
-  (** TODO: The next lemmas are more specialized, do we need all these statements? *)
-  (* TODO: rename to [big_sepL_shift_aux_N]? *)
   #[local]
-  Lemma big_sepL_shift_aux {PROP : bi} (p : ptr) (ty : type) (j n m : N) (P : ptr -> PROP) :
+  Lemma big_sepL_shift_aux_N {PROP : bi} (p : ptr) (ty : type) (j n m : N) (P : ptr -> PROP) :
     (j <= n)%N ->
         ([∗list] i ∈ seqN n m, P (p .[ ty ! Z.of_N i ]))
     -|- ([∗list] i ∈ seqN j m, P (p .[ ty ! Z.of_N (n - j) ] .[ty ! Z.of_N i ])).
@@ -37,9 +35,8 @@ Section Utilities.
     by rewrite N2Z.inj_add.
   Qed.
 
-  (* TODO: rename to [big_sepL_shift_aux_nat]? Generalize to [PROP]? *)
   #[local]
-  Lemma big_sepL_shift_aux' {PROP : bi} (p : ptr) (ty : type) (j n m : nat) (P : ptr -> PROP) :
+  Lemma big_sepL_shift_aux_nat {PROP : bi} (p : ptr) (ty : type) (j n m : nat) (P : ptr -> PROP) :
     (j <= n)%nat ->
         ([∗list] i ∈ seq n m, P (p .[ ty ! Z.of_nat i ]))
     -|- ([∗list] i ∈ seq j m, P (p .[ ty ! Z.of_nat (n - j) ] .[ty ! Z.of_nat i ])).
@@ -51,35 +48,35 @@ Section Utilities.
     by rewrite Nat2Z.inj_add.
   Qed.
 
-  Lemma big_sepL_shift {PROP : bi} (P : ptr -> PROP) (n m : N) :
+  Lemma big_sepL_shift_N {PROP : bi} (P : ptr -> PROP) (n m : N) :
     forall (p : ptr) (ty : type),
           ([∗list] i ∈ seqN n m, P (p .[ ty ! Z.of_N i ]))
       -|- ([∗list] i ∈ seqN 0 m, P (p .[ ty ! Z.of_N n ] .[ty ! Z.of_N i ])).
   Proof.
     intros p ty.
-    rewrite (big_sepL_shift_aux p ty 0 n m P ltac:(lia)).
+    rewrite (big_sepL_shift_aux_N p ty 0 n m P ltac:(lia)).
     f_equiv=> _ i; by rewrite N.sub_0_r.
   Qed.
 
-  Lemma big_sepL_shift' {PROP : bi} (P : ptr -> PROP) (n m : nat) :
+  Lemma big_sepL_shift_nat {PROP : bi} (P : ptr -> PROP) (n m : nat) :
     forall (p : ptr) (ty : type),
           ([∗list] i ∈ seq n m, P (p .[ ty ! Z.of_nat i ]))
       -|- ([∗list] i ∈ seq 0 m, P (p .[ ty ! Z.of_nat n ] .[ty ! Z.of_nat i ])).
   Proof.
     intros p ty.
-    rewrite (big_sepL_shift_aux' p ty 0 n m P ltac:(lia)).
+    rewrite (big_sepL_shift_aux_nat p ty 0 n m P ltac:(lia)).
     f_equiv=> _ i; by rewrite Nat.sub_0_r.
   Qed.
 
   Lemma big_sepL_type_ptr_shift (n m : N) (p : ptr) (ty : type) :
           ([∗list] i ∈ seqN n m, type_ptr ty (p .[ ty ! Z.of_N i ]))
       -|- ([∗list] i ∈ seqN 0 m, type_ptr ty (p .[ ty ! Z.of_N n ] .[ty ! Z.of_N i ] )).
-  Proof. by apply big_sepL_shift. Qed.
+  Proof. by apply big_sepL_shift_N. Qed.
 
   Lemma big_sepL_type_ptr_shift' (n m : nat) (p : ptr) (ty : type) :
           ([∗list] i ∈ seq n m, type_ptr ty (p .[ ty ! Z.of_nat i ]))
       -|- ([∗list] i ∈ seq 0 m, type_ptr ty (p .[ ty ! Z.of_nat n ] .[ty ! Z.of_nat i ] )).
-  Proof. by apply big_sepL_shift'. Qed.
+  Proof. by apply big_sepL_shift_nat. Qed.
 End Utilities.
 
 Section rawsR_transport.
@@ -609,7 +606,7 @@ Section blockR_transport.
                 ** by iDestruct "tptrs" as "[$ _]".
                 ** by iDestruct "tptrs'" as "[$ _]".
           -- setoid_rewrite _at_offsetR.
-             rewrite !(big_sepL_shift' (λ p, p |-> anyR Tu8 q) 1 (N.to_nat sz')); eauto.
+             rewrite !(big_sepL_shift_nat (λ p, p |-> anyR Tu8 q) 1 (N.to_nat sz')); eauto.
              by iRevert "REST".
   Qed.
 End blockR_transport.
