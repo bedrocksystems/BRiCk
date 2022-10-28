@@ -606,7 +606,7 @@ Section blockR_transport.
                 ** by iDestruct "tptrs" as "[$ _]".
                 ** by iDestruct "tptrs'" as "[$ _]".
           -- setoid_rewrite _at_offsetR.
-             rewrite !(big_sepL_shift_nat (λ p, p |-> anyR Tu8 q) 1 (N.to_nat sz')); eauto.
+             rewrite !(big_sepL_shift_nat (λ p, p |-> anyR Tu8 q) 1 (N.to_nat sz')).
              by iRevert "REST".
   Qed.
 End blockR_transport.
