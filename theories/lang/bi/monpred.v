@@ -48,7 +48,7 @@ Class BiIndexElementDiscrete {I : biIndex} (i : I) : Prop :=
 
 Class BiIndexDiscrete (I : biIndex) : Prop :=
   bi_index_discrete (i : I) :> BiIndexElementDiscrete i.
-#[global] Hint Mode BiIndexDiscrete ! : typelcass_instances.
+#[global] Hint Mode BiIndexDiscrete ! : typeclass_instances.
 
 Section bi_index_discrete.
   Context {I : biIndex}.
