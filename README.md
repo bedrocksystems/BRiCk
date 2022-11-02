@@ -25,7 +25,10 @@ Our instructions are for Linux (Ubuntu) and OSX.
 ### Native dependencies: Linux (Ubuntu)
 
 ```sh
-sudo apt install llvm-15 llvm-15-dev clang-15 libclang-15-dev libclang-cpp15-dev mlir-15-tools libmlir-15-dev clang-tools-15 clang-tidy-15 clangd-15 # tested on Ubuntu 22.10 (1 Nov 2022)
+# For Ubuntu 22.04 LTS:
+sudo apt install llvm-14 llvm-14-dev clang-14 libclang-14-dev libclang-cpp14-dev
+# For Ubuntu 22.10 (tested 1 Nov 2022):
+sudo apt install llvm-15 llvm-15-dev clang-15 libclang-15-dev libclang-cpp15-dev mlir-15-tools libmlir-15-dev clang-tools-15 clang-tidy-15 clangd-15
 sudo apt install cmake opam
 ```
 
