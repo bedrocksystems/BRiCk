@@ -79,6 +79,7 @@ Module fin.
   Proof. vm_decide. Abort.
   Goal (weaken_alt (mk 10 : fin.t 11) : fin.t 11) = (mk 10 : fin.t 11).
   Proof. vm_decide. Abort.
+  ^ We avoid this alternative because [vm_decide]'s output is significantly larger.
   *)
 
   (** [weaken_bool_decide] is equivalent to [weaken'].
