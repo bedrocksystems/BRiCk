@@ -28,7 +28,9 @@ These instances can lead to divergence of setoid rewriting, so they're only
 available when importing [on_props]. *)
 Module on_props.
 Section on_props.
-  Context `{R : relation B} `{f : A -> B}.
+  Context {A B : Type} {f : A -> B}.
+  (* We use both [R] and [strict R] *)
+  Implicit Type (R : relation B).
 
   (* We can safely make this global. *)
   #[global] Instance on_decidable `{!RelDecision R} : RelDecision (on R f).
@@ -57,6 +59,44 @@ Section on_props.
   Proof. split; apply _. Qed.
   #[export] Instance on_strict_order `{!StrictOrder R} : StrictOrder (on R f).
   Proof. split; apply _. Qed.
+
+  (** * Lift basic relation typeclasses from [stdpp.base] *)
+  #[export] Instance on_antisymm
+      (S : relation B) `{!AntiSymm S R} :
+    AntiSymm (on S f) (on R f) | 100.
+  Proof. rewrite /on. intros ??. apply: anti_symm. Qed.
+
+  (** Needed to lift [PartialOrder] *)
+  #[export] Instance on_antisymm_eq_inj
+      `{!AntiSymm (=) R} `{!Inj eq eq f} :
+    AntiSymm (=) (on R f).
+  Proof. rewrite /on. intros ????. apply (inj f). exact: anti_symm. Qed.
+
+  (** Needed to lift [TotalOrder] *)
+  #[export] Instance on_trichotomy
+      `{!Trichotomy R} `{!Inj eq eq f} :
+    Trichotomy (on R f).
+  Proof. rewrite /on. intros ??. rewrite -(inj_iff f). apply: trichotomy. Qed.
+
+  #[export, refine] Instance on_trichotomyT
+      `{!TrichotomyT R} `{!Inj eq eq f} :
+    TrichotomyT (on R f) := fun x y =>
+      match trichotomyT R (f x) (f y) with
+      | inleft (left H) => inleft (left H)
+      | inleft (right H) => inleft (right _)
+      | inright H => inright H
+      end.
+  Proof. abstract (apply (inj f _ _ H)). Defined.
+
+  (** * Lift bundled relation typeclasses from [stdpp.base] *)
+  Lemma strict_on R : strict (on R f) = on (strict R) f.
+  Proof. rewrite -[strict (on R f)]/(on (strict R) f). done. Qed.
+
+  #[export] Instance on_partial_order `{!PartialOrder R} `{!Inj eq eq f} : PartialOrder (on R f).
+  Proof. split; apply _. Qed.
+
+  #[export] Instance on_total_order `{!TotalOrder R} `{!Inj eq eq f} : TotalOrder (on R f).
+  Proof. split; rewrite ?strict_on; apply _. Qed.
 End on_props.
 End on_props.
 #[global] Typeclasses Opaque on.
