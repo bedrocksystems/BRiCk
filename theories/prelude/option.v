@@ -21,7 +21,6 @@ From bedrock.prelude Require Import base.
 
 Definition on {A B C} (R : B -> B -> C) (f : A -> B) (x y : A) : C :=
   R (f x) (f y).
-#[global] Typeclasses Opaque on.
 
 (** Preorder properties lift through [on].
 Only import locally when declaring specialized instances!
@@ -30,6 +29,10 @@ available when importing [on_props]. *)
 Module on_props.
 Section on_props.
   Context `{R : relation B} `{f : A -> B}.
+
+  (* We can safely make this global. *)
+  #[global] Instance on_decidable `{!RelDecision R} : RelDecision (on R f).
+  Proof. rewrite /on => ??. apply _. Defined.
 
   (** * Lift basic properties from [RelationClasses] *)
   #[export] Instance on_reflexive `{!Reflexive R} : Reflexive (on R f).
@@ -46,12 +49,9 @@ Section on_props.
   Proof. rewrite /on. by intros ???; etrans. Qed.
   (* No [Equivalence] or [PER] instance at this level.
   Since it's a bundling instance, declare it on wrappers after fixing [R]. *)
-
-  (* We can safely make this global. *)
-  #[global] Instance on_decidable `{!RelDecision R} : RelDecision (on R f).
-  Proof. rewrite /on => ??. apply _. Defined.
 End on_props.
 End on_props.
+#[global] Typeclasses Opaque on.
 
 Definition some_Forall2 `(R : relation A) (oa1 oa2 : option A) :=
   option_Forall2 R oa1 oa2 ∧ is_Some oa1 ∧ is_Some oa2.
