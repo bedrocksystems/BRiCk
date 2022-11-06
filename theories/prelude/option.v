@@ -34,7 +34,7 @@ Section on_props.
   #[global] Instance on_decidable `{!RelDecision R} : RelDecision (on R f).
   Proof. rewrite /on => ??. apply _. Defined.
 
-  (** * Lift basic properties from [RelationClasses] *)
+  (** * Lift basic relation typeclasses from [RelationClasses] *)
   #[export] Instance on_reflexive `{!Reflexive R} : Reflexive (on R f).
   Proof. rewrite /on. by intros ?. Qed.
   #[export] Instance on_irreflexive `{!Irreflexive R} : Irreflexive (on R f).
@@ -47,8 +47,16 @@ Section on_props.
 
   #[export] Instance on_transitive `{!Transitive R} : Transitive (on R f).
   Proof. rewrite /on. by intros ???; etrans. Qed.
-  (* No [Equivalence] or [PER] instance at this level.
-  Since it's a bundling instance, declare it on wrappers after fixing [R]. *)
+
+  (** * Lift bundled relation typeclasses from [RelationClasses] *)
+  #[export] Instance on_equivalence `{!Equivalence R} : Equivalence (on R f).
+  Proof. split; apply _. Qed.
+  #[export] Instance on_preorder `{!PreOrder R} : PreOrder (on R f).
+  Proof. split; apply _. Qed.
+  #[export] Instance on_per `{!RelationClasses.PER R} : RelationClasses.PER (on R f).
+  Proof. split; apply _. Qed.
+  #[export] Instance on_strict_order `{!StrictOrder R} : StrictOrder (on R f).
+  Proof. split; apply _. Qed.
 End on_props.
 End on_props.
 #[global] Typeclasses Opaque on.
@@ -65,6 +73,8 @@ Section some_Forall2.
   Proof. rewrite /some_Forall2. intros ?; naive_solver. Qed.
   #[global] Instance some_Forall2_transitive `{!Transitive R}: Transitive (some_Forall2 R).
   Proof. rewrite /some_Forall2. intros ?; intuition idtac. by etrans. Qed.
+  #[global] Instance some_Forall2_per `{!RelationClasses.PER R} : RelationClasses.PER (some_Forall2 R).
+  Proof. rewrite /some_Forall2. split; apply _. Qed.
 
   Lemma some_Forall2_iff oa1 oa2 :
     some_Forall2 R oa1 oa2 ↔
@@ -92,8 +102,7 @@ Section same_property.
   Context `{obs : A → option B}.
   Import on_props.
 
-  #[global] Instance same_property_per : RelationClasses.PER (same_property obs).
-  Proof. rewrite /same_property. split; apply _. Qed.
+  #[global] Instance same_property_per : RelationClasses.PER (same_property obs) := _.
   #[global] Instance: RewriteRelation (same_property obs) := {}.
 
   Lemma same_property_iff a1 a2 :
