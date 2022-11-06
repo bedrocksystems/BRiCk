@@ -62,7 +62,7 @@ End on_props.
 #[global] Typeclasses Opaque on.
 
 Definition some_Forall2 `(R : relation A) (oa1 oa2 : option A) :=
-  option_Forall2 R oa1 oa2 ∧ is_Some oa1 ∧ is_Some oa2.
+  is_Some oa1 ∧ is_Some oa2 ∧ option_Forall2 R oa1 oa2.
 
 Section some_Forall2.
   Context `{R : relation A}.
@@ -81,7 +81,7 @@ Section some_Forall2.
     ∃ (a1 a2 : A), oa1 = Some a1 ∧ oa2 = Some a2 ∧ R a1 a2.
   Proof.
     unfold some_Forall2; split.
-    { destruct 1 as (Hop & [??] & [??]); inversion Hop; naive_solver. }
+    { destruct 1 as ([??] & [??] & Hop); inversion Hop; naive_solver. }
     destruct 1 as (? & ? & -> & -> & ?); split_and!; by econstructor.
   Qed.
 
