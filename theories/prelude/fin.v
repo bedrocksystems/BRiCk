@@ -67,14 +67,38 @@ Module fin.
   #[global] Arguments mk' m & {n} prf. (* [&] = infer [n] from return type. *)
   Notation mk m := (mk' m eq_refl).
 
-  (** The [weaken x] notation converts [x : fin.t m] to [fin.t n].
-      This assumes both [m] and [n] are ground, since then [eq_refl] is a valid
-      proof of [m < n]. *)
-  #[program] Definition weaken' {m n} (x : fin.t m) (prf : m < n) : fin.t n :=
+  (** [weaken' x] notation converts [x : fin.t m] to [fin.t n] assuming [m <= n]. *)
+  #[program] Definition weaken' {m n} (x : fin.t m) (prf : m <= n) : fin.t n :=
     fin.mk' (fin.to_N x) _.
   Next Obligation. move=> m n [/= ]; lia. Qed.
   #[global] Arguments weaken' {m} & {n} x prf. (* [&] = infer [n] from return type. *)
-  Notation weaken x := (weaken' x eq_refl).
+
+  (* Alternative:
+  Notation weaken_alt x := (weaken' x ltac:(vm_decide)).
+  Goal (weaken_alt (mk 10 : fin.t 11) : fin.t 42) = (mk 10 : fin.t 42).
+  Proof. vm_decide. Abort.
+  Goal (weaken_alt (mk 10 : fin.t 11) : fin.t 11) = (mk 10 : fin.t 11).
+  Proof. vm_decide. Abort.
+  ^ We avoid this alternative because [vm_decide]'s output is significantly larger.
+  *)
+
+  (** [weaken_bool_decide] is equivalent to [weaken'].
+    But instead of [(m <= n)] we take [bool_decide (m <= n) = true], because
+    that is provable by [eq_refl] when [m] and [n] are ground. *)
+  #[program] Definition weaken_bool_decide {m n} (x : fin.t m)
+      (prf : bool_decide (m <= n) = true) : fin.t n :=
+    weaken' x _.
+  Next Obligation. intros. exact: bool_decide_eq_true_1. Qed.
+  #[global] Arguments weaken_bool_decide {m} & {n} x prf. (* [&] = infer [n] from return type. *)
+  (** The [weaken x] notation converts [x : fin.t m] to [fin.t n].
+      This assumes both [m] and [n] are ground, so that then [eq_refl] is a valid
+      argument for [prf]. *)
+  Notation weaken x := (weaken_bool_decide x eq_refl).
+
+  Goal (weaken (mk 10 : fin.t 11) : fin.t 42) = (mk 10 : fin.t 42).
+  Proof. vm_decide. Abort.
+  Goal (weaken (mk 10 : fin.t 11) : fin.t 11) = (mk 10 : fin.t 11).
+  Proof. vm_decide. Abort.
 
   (* [0; 1; 2 ... n - 1 ] *)
   Definition seq (n : N) : list (t n) :=
