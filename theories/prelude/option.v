@@ -19,6 +19,15 @@
 
 From bedrock.prelude Require Import base.
 
+(**
+Haskell's [Data.Function.on]
+(https://hackage.haskell.org/package/base-4.17.0.0/docs/Data-Function.html#v:on).
+
+Examples:
+- Lift relation [R] by precomposing with function [f] (with [C := Prop].
+  We provide theory specialized to this use-case.
+*)
+(* TODO: namespace, and move from [option]. This is only _used_ here.*)
 Definition on {A B C} (R : B -> B -> C) (f : A -> B) (x y : A) : C :=
   R (f x) (f y).
 
