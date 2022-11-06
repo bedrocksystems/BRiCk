@@ -24,16 +24,24 @@ Definition on {A B C} (R : B -> B -> C) (f : A -> B) (x y : A) : C :=
 #[global] Typeclasses Opaque on.
 
 (** Preorder properties lift through [on].
+Only import locally when declaring specialized instances!
 These instances can lead to divergence of setoid rewriting, so they're only
 available when importing [on_props]. *)
 Module on_props.
 Section on_props.
   Context `{R : relation B} `{f : A -> B}.
 
+  (** * Lift basic properties from [RelationClasses] *)
   #[export] Instance on_reflexive `{!Reflexive R} : Reflexive (on R f).
   Proof. rewrite /on. by intros ?. Qed.
+  #[export] Instance on_irreflexive `{!Irreflexive R} : Irreflexive (on R f).
+  Proof. rewrite /on. by intros ??%irreflexivity. Qed.
+
   #[export] Instance on_symmetric `{!Symmetric R} : Symmetric (on R f).
   Proof. rewrite /on. by intros ?. Qed.
+  #[export] Instance on_asymmetric `{!Asymmetric R} : Asymmetric (on R f).
+  Proof. rewrite /on. intros ??. apply: asymmetry. Qed.
+
   #[export] Instance on_transitive `{!Transitive R} : Transitive (on R f).
   Proof. rewrite /on. by intros ???; etrans. Qed.
   (* No [Equivalence] or [PER] instance at this level.
