@@ -84,6 +84,23 @@ Section some_Forall2.
     { destruct 1 as (Hop & [??] & [??]); inversion Hop; naive_solver. }
     destruct 1 as (? & ? & -> & -> & ?); split_and!; by econstructor.
   Qed.
+
+  #[global, refine] Instance option_Forall2_decision
+      `{EqDecision A} `{!RelDecision R} :
+    RelDecision (option_Forall2 R) :=
+    fun oa1 oa2 =>
+      match oa1, oa2 with
+      | None, None => left _
+      | Some a1, Some a2 => cast_if (decide (R a1 a2))
+      | _, _ => right _
+      end.
+  Proof.
+    all: abstract (intros; by [inversion_clear 1 | constructor]).
+  Defined.
+
+  #[global] Instance some_Forall2_decision `{EqDecision A} `{!RelDecision R} :
+    RelDecision (some_Forall2 R).
+  Proof. intros ??. apply _. Defined.
 End some_Forall2.
 #[global] Typeclasses Opaque some_Forall2.
 
@@ -124,16 +141,7 @@ Section same_property.
   Proof. rewrite -same_property_reflexive_equiv. naive_solver. Qed.
 
   #[global] Instance same_property_decision `{EqDecision B} :
-    RelDecision (same_property obs).
-  Proof.
-    rewrite /RelDecision => a1 a2.
-    suff: Decision (∃ (b : B), obs a1 = Some b ∧ obs a2 = Some b);
-      rewrite /Decision. { case => /same_property_iff; eauto. }
-
-    destruct (obs a1) as [b1|], (obs a2) as [b2|];
-      try destruct_decide (decide (b1 = b2)) as H; subst; eauto;
-      by right; naive_solver.
-  Qed.
+    RelDecision (same_property obs) := _.
 End same_property.
 #[global] Typeclasses Opaque same_property.
 
