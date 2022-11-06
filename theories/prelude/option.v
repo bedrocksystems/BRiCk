@@ -89,14 +89,11 @@ Section on_props.
   Proof. abstract (apply (inj f _ _ H)). Defined.
 
   (** * Lift bundled relation typeclasses from [stdpp.base] *)
-  Lemma strict_on R : strict (on R f) = on (strict R) f.
-  Proof. rewrite -[strict (on R f)]/(on (strict R) f). done. Qed.
-
   #[export] Instance on_partial_order `{!PartialOrder R} `{!Inj eq eq f} : PartialOrder (on R f).
   Proof. split; apply _. Qed.
 
   #[export] Instance on_total_order `{!TotalOrder R} `{!Inj eq eq f} : TotalOrder (on R f).
-  Proof. split; rewrite ?strict_on; apply _. Qed.
+  Proof. split; rewrite -?[strict (on R f)]/(on (strict R) f); apply _. Qed.
 End on_props.
 End on_props.
 #[global] Typeclasses Opaque on.
