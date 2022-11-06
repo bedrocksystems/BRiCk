@@ -85,6 +85,7 @@ Section some_Forall2.
     destruct 1 as (? & ? & -> & -> & ?); split_and!; by econstructor.
   Qed.
 End some_Forall2.
+#[global] Typeclasses Opaque some_Forall2.
 
 Section some_Forall2_eq.
   Context {A : Type}.
@@ -134,6 +135,7 @@ Section same_property.
       by right; naive_solver.
   Qed.
 End same_property.
+#[global] Typeclasses Opaque same_property.
 
 Section add_opt.
   Definition add_opt (oz1 oz2 : option Z) : option Z := liftM2 Z.add oz1 oz2.
