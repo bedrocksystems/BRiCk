@@ -100,17 +100,17 @@ Module WpTestDefns.
     Definition NOTATION_wp_discard_wrap Q :=
       wp_discard tu (Rbind "qux" p''' (Rbind "baz"%bs p'' (Rbind "bar"%bs p' (Rbind "foo" p (Remp (Some this) None ty))))) expr.Xvalue e Q.
 
-    Definition NOTATION_wp_func F ls Q :=
-      wp_func F ls Q.
+    Definition NOTATION_wp_func tu F ls Q :=
+      wp_func tu F ls Q.
 
-    Definition NOTATION_wp_method M ls Q :=
-      wp_method M ls Q.
+    Definition NOTATION_wp_method tu M ls Q :=
+      wp_method tu M ls Q.
 
-    Definition NOTATION_wp_ctor C ls Q :=
-      wp_ctor C ls Q.
+    Definition NOTATION_wp_ctor tu C ls Q :=
+      wp_ctor tu C ls Q.
 
-    Definition NOTATION_wp_dtor D ls Q :=
-      wp_dtor D ls Q.
+    Definition NOTATION_wp_dtor tu D ls Q :=
+      wp_dtor tu D ls Q.
 
     Definition NOTATION_wp_args_nowrap tys_ar es Q :=
       wp_args tu (Rbind "bar"%bs p' (Rbind "foo" p (Remp (Some this) None ty))) tys_ar es Q.

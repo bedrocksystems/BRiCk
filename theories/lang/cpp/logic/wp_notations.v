@@ -229,7 +229,7 @@ End Compact.
 Module Verbose.
   (* [Stmt] WP *)
   Notation "'::wpS' ρ s K"
-      := (wp ρ s K)
+      := (wp _ ρ s K)
          ( at level 0
          , format "'[hv  ' ::wpS  '/' '[hv' ρ  '/' s ']'  '/' K ']'"
          , only printing).

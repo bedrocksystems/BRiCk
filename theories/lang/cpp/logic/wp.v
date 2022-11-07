@@ -926,7 +926,7 @@ Section with_cpp.
       (|={top}=> wp tu ρ s (|={top}=> Q))
     ⊢ wp (resolve:=σ) tu ρ s Q.
 
-  Axiom wp_shift_models : forall σ tu ρ s Q,
+  Axiom wp_models : forall σ tu ρ s Q,
       denoteModule tu -* wp tu ρ s Q
     ⊢ wp (resolve:=σ) tu ρ s Q.
 

@@ -295,25 +295,29 @@ NOTATION_wp_discard_nowrap =
 
 Arguments NOTATION_wp_discard_nowrap Q%function_scope
 NOTATION_wp_func = 
-λ (F : translation_unit) (ls : Func) (Q : list ptr), ::wpFunc
+λ (tu : translation_unit) (F : Func) (ls : list ptr) (Q : ptr → epred),
+  ::wpFunc Q
      : translation_unit → Func → list ptr → (ptr → epred) → mpred
 
-Arguments NOTATION_wp_func F ls Q%list_scope Q%function_scope
+Arguments NOTATION_wp_func tu F ls%list_scope Q%function_scope
 NOTATION_wp_method = 
-λ (M : translation_unit) (ls : Method) (Q : list ptr), ::wpMethod
+λ (tu : translation_unit) (M : Method) (ls : list ptr) (Q : ptr → epred),
+  ::wpMethod Q
      : translation_unit → Method → list ptr → (ptr → epred) → mpred
 
-Arguments NOTATION_wp_method M ls Q%list_scope Q%function_scope
+Arguments NOTATION_wp_method tu M ls%list_scope Q%function_scope
 NOTATION_wp_ctor = 
-λ (C : translation_unit) (ls : Ctor) (Q : list ptr), ::wpCtor
+λ (tu : translation_unit) (C : Ctor) (ls : list ptr) (Q : ptr → epred),
+  ::wpCtor Q
      : translation_unit → Ctor → list ptr → (ptr → epred) → mpred
 
-Arguments NOTATION_wp_ctor C ls Q%list_scope Q%function_scope
+Arguments NOTATION_wp_ctor tu C ls%list_scope Q%function_scope
 NOTATION_wp_dtor = 
-λ (D : translation_unit) (ls : Dtor) (Q : list ptr), ::wpDtor
+λ (tu : translation_unit) (D : Dtor) (ls : list ptr) (Q : ptr → epred),
+  ::wpDtor Q
      : translation_unit → Dtor → list ptr → (ptr → epred) → mpred
 
-Arguments NOTATION_wp_dtor D ls Q%list_scope Q%function_scope
+Arguments NOTATION_wp_dtor tu D ls%list_scope Q%function_scope
 NOTATION_wp_args_nowrap = 
 λ (tys_ar : list type * function_arity) (es : list expr.Expr) 
   (Q : list ptr → FreeTemps → mpred),
@@ -399,59 +403,59 @@ Arguments NOTATION_wp_mcall_wrap ls%list_scope Q%function_scope
      : bs
 NOTATION_wp_nowrap = 
 ::wpS
-  WpTestDefns.tu
   [region:
     "bar" @ WpTestDefns.p'; "foo" @ WpTestDefns.p;
     [this := WpTestDefns.this]; return ptr<void>]
-  ({s: ($"foo" + $"bar");
-       break; 
-       continue; 
-       ($"foo" + $"bar");
-       ($"foo" + $"bar");
-       return; 
-       return ($"foo" + $"bar"); 
-       // end block}) WpTestDefns.K
+  {s: ($"foo" + $"bar");
+      break; 
+      continue; 
+      ($"foo" + $"bar");
+      ($"foo" + $"bar");
+      return; 
+      return ($"foo" + $"bar"); 
+      // end block}
+  (WpTestDefns.K)
      : mpred
 NOTATION_wp_wrap = 
 ::wpS
-  WpTestDefns.tu
   [region:
     "qux" @ WpTestDefns.p'''; "baz" @ WpTestDefns.p'';
     "bar" @ WpTestDefns.p'; "foo" @ WpTestDefns.p;
     [this := WpTestDefns.this]; return ptr<void>]
-  ({s: ($"foo" + $"bar");
-       break; 
-       continue; 
-       ($"foo" + $"bar");
-       ($"foo" + $"bar");
-       return; 
-       return ($"foo" + $"bar"); 
-       // end block
-       ($"foo" + $"bar");
-       break; 
-       continue; 
-       ($"foo" + $"bar");
-       ($"foo" + $"bar");
-       return; 
-       return ($"foo" + $"bar"); 
-       // end block
-       ($"foo" + $"bar");
-       break; 
-       continue; 
-       ($"foo" + $"bar");
-       ($"foo" + $"bar");
-       return; 
-       return ($"foo" + $"bar"); 
-       // end block
-       ($"foo" + $"bar");
-       break; 
-       continue; 
-       ($"foo" + $"bar");
-       ($"foo" + $"bar");
-       return; 
-       return ($"foo" + $"bar"); 
-       // end block
-       // end block}) WpTestDefns.K
+  {s: ($"foo" + $"bar");
+      break; 
+      continue; 
+      ($"foo" + $"bar");
+      ($"foo" + $"bar");
+      return; 
+      return ($"foo" + $"bar"); 
+      // end block
+      ($"foo" + $"bar");
+      break; 
+      continue; 
+      ($"foo" + $"bar");
+      ($"foo" + $"bar");
+      return; 
+      return ($"foo" + $"bar"); 
+      // end block
+      ($"foo" + $"bar");
+      break; 
+      continue; 
+      ($"foo" + $"bar");
+      ($"foo" + $"bar");
+      return; 
+      return ($"foo" + $"bar"); 
+      // end block
+      ($"foo" + $"bar");
+      break; 
+      continue; 
+      ($"foo" + $"bar");
+      ($"foo" + $"bar");
+      return; 
+      return ($"foo" + $"bar"); 
+      // end block
+      // end block}
+  (WpTestDefns.K)
      : mpred
 NOTATION_wp_decl_nowrap = 
 λ (decl : VarDecl) (Q : region → FreeTemps → epred),
@@ -717,25 +721,29 @@ NOTATION_wp_discard_nowrap =
 
 Arguments NOTATION_wp_discard_nowrap Q%function_scope
 NOTATION_wp_func = 
-λ (F : translation_unit) (ls : Func) (Q : list ptr), ::wpFunc
+λ (tu : translation_unit) (F : Func) (ls : list ptr) (Q : ptr → epred),
+  ::wpFunc (Q)
      : translation_unit → Func → list ptr → (ptr → epred) → mpred
 
-Arguments NOTATION_wp_func F ls Q%list_scope Q%function_scope
+Arguments NOTATION_wp_func tu F ls%list_scope Q%function_scope
 NOTATION_wp_method = 
-λ (M : translation_unit) (ls : Method) (Q : list ptr), ::wpMethod
+λ (tu : translation_unit) (M : Method) (ls : list ptr) (Q : ptr → epred),
+  ::wpMethod (Q)
      : translation_unit → Method → list ptr → (ptr → epred) → mpred
 
-Arguments NOTATION_wp_method M ls Q%list_scope Q%function_scope
+Arguments NOTATION_wp_method tu M ls%list_scope Q%function_scope
 NOTATION_wp_ctor = 
-λ (C : translation_unit) (ls : Ctor) (Q : list ptr), ::wpCtor
+λ (tu : translation_unit) (C : Ctor) (ls : list ptr) (Q : ptr → epred),
+  ::wpCtor (Q)
      : translation_unit → Ctor → list ptr → (ptr → epred) → mpred
 
-Arguments NOTATION_wp_ctor C ls Q%list_scope Q%function_scope
+Arguments NOTATION_wp_ctor tu C ls%list_scope Q%function_scope
 NOTATION_wp_dtor = 
-λ (D : translation_unit) (ls : Dtor) (Q : list ptr), ::wpDtor
+λ (tu : translation_unit) (D : Dtor) (ls : list ptr) (Q : ptr → epred),
+  ::wpDtor (Q)
      : translation_unit → Dtor → list ptr → (ptr → epred) → mpred
 
-Arguments NOTATION_wp_dtor D ls Q%list_scope Q%function_scope
+Arguments NOTATION_wp_dtor tu D ls%list_scope Q%function_scope
 NOTATION_wp_args_nowrap = 
 λ (tys_ar : list type * function_arity) (es : list expr.Expr) 
   (Q : list ptr → FreeTemps → mpred),

@@ -23,7 +23,7 @@ Require Import bedrock.lang.cpp.heap_notations.
     context. Therefore, in the semantics, we are left with only two cases:
     - default initialization (implemented by [default_initialize]), which occurs when there
       is no expression used to initialize the value
-    - expression initialization (implemented by [wp_initialize]), which occus when there is
+    - expression initialization (implemented by [wp_initialize]), which occurs when there is
       an expression used to initialize the value.
 
     Note that the frontend inserts constructor calls to default initialize objects, so
