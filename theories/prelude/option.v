@@ -164,9 +164,19 @@ Definition same_property `(obs : A → option B) :=
   on (some_Forall2 eq) obs.
 Section same_property.
   Context `{obs : A → option B}.
-  Import on_props.
 
-  #[global] Instance same_property_per : RelationClasses.PER (same_property obs) := _.
+  (* Lift [#[global]] and [#[export]] instances from [on_props] before making it
+  opaque. *)
+  #[global] Instance same_property_decision `{EqDecision B} :
+    RelDecision (same_property obs) := _.
+
+  Section with_on_props.
+    Import on_props.
+    #[global] Instance same_property_per : RelationClasses.PER (same_property obs) := _.
+  End with_on_props.
+
+  #[global] Typeclasses Opaque same_property.
+
   #[global] Instance: RewriteRelation (same_property obs) := {}.
 
   Lemma same_property_iff a1 a2 :
@@ -185,11 +195,7 @@ Section same_property.
   Lemma same_property_partial_reflexive a b :
     obs a = Some b → same_property obs a a.
   Proof. rewrite -same_property_reflexive_equiv. naive_solver. Qed.
-
-  #[global] Instance same_property_decision `{EqDecision B} :
-    RelDecision (same_property obs) := _.
 End same_property.
-#[global] Typeclasses Opaque same_property.
 
 Section add_opt.
   Definition add_opt (oz1 oz2 : option Z) : option Z := liftM2 Z.add oz1 oz2.
