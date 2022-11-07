@@ -206,5 +206,5 @@ observation like [Observe2 [| l ## k |] (myList l) (mList k)] is to
 - use that witness to derive a contradiction from the ownership in
   [myList l ** myList k]. *)
 
-#[global] Hint Mode Symmetric ! ! : typeclass_instances.
 #[global] Hint Mode Reflexive ! ! : typeclass_instances.
+#[global] Hint Mode Symmetric ! ! : typeclass_instances.
