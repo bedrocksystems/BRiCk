@@ -9,7 +9,7 @@ Require Export bedrock.prelude.bytestring.
 
 Set Primitive Projections.
 
-Local Open Scope N_scope.
+#[local] Open Scope N_scope.
 
 (* this represents names that exist in object files. *)
 Definition obj_name : Set := bs.

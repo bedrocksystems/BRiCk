@@ -11,7 +11,7 @@
 From bedrock.prelude Require Import base numbers.
 From bedrock.lang.cpp.arith Require Import types.
 
-Local Open Scope Z_scope.
+#[local] Open Scope Z_scope.
 
 (** truncation (used for unsigned operations) *)
 Definition trim (w : N) (v : Z) : Z :=

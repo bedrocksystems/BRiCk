@@ -6,7 +6,7 @@
 Require Import bedrock.prelude.base.
 From bedrock.lang.cpp.arith Require Import types operator.
 
-Local Open Scope Z_scope.
+#[local] Open Scope Z_scope.
 (* see
  * https://gcc.gnu.org/onlinedocs/gcc/Other-Builtins.html
  *)
