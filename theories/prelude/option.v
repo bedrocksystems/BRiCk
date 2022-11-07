@@ -43,49 +43,49 @@ Section on_props.
 
   (* We can safely make this global. *)
   #[global] Instance on_decidable `{!RelDecision R} : RelDecision (on R f).
-  Proof. rewrite /on => ??. apply _. Defined.
+  Proof. GUARD_TC. rewrite /on => ??. apply _. Defined.
 
   (** * Lift basic relation typeclasses from [RelationClasses] *)
   #[export] Instance on_reflexive `{!Reflexive R} : Reflexive (on R f).
-  Proof. rewrite /on. by intros ?. Qed.
+  Proof. GUARD_TC. rewrite /on. by intros ?. Qed.
   #[export] Instance on_irreflexive `{!Irreflexive R} : Irreflexive (on R f).
-  Proof. rewrite /on. by intros ??%irreflexivity. Qed.
+  Proof. GUARD_TC. rewrite /on. by intros ??%irreflexivity. Qed.
 
   #[export] Instance on_symmetric `{!Symmetric R} : Symmetric (on R f).
-  Proof. rewrite /on. by intros ?. Qed.
+  Proof. GUARD_TC. rewrite /on. by intros ?. Qed.
   #[export] Instance on_asymmetric `{!Asymmetric R} : Asymmetric (on R f).
-  Proof. rewrite /on. intros ??. apply: asymmetry. Qed.
+  Proof. GUARD_TC. rewrite /on. intros ??. apply: asymmetry. Qed.
 
   #[export] Instance on_transitive `{!Transitive R} : Transitive (on R f).
-  Proof. rewrite /on. by intros ???; etrans. Qed.
+  Proof. GUARD_TC. rewrite /on. by intros ???; etrans. Qed.
 
   (** * Lift bundled relation typeclasses from [RelationClasses] *)
   #[export] Instance on_equivalence `{!Equivalence R} : Equivalence (on R f).
-  Proof. split; apply _. Qed.
+  Proof. GUARD_TC. split; apply _. Qed.
   #[export] Instance on_preorder `{!PreOrder R} : PreOrder (on R f).
-  Proof. split; apply _. Qed.
+  Proof. GUARD_TC. split; apply _. Qed.
   #[export] Instance on_per `{!RelationClasses.PER R} : RelationClasses.PER (on R f).
-  Proof. split; apply _. Qed.
+  Proof. GUARD_TC. split; apply _. Qed.
   #[export] Instance on_strict_order `{!StrictOrder R} : StrictOrder (on R f).
-  Proof. split; apply _. Qed.
+  Proof. GUARD_TC. split; apply _. Qed.
 
   (** * Lift basic relation typeclasses from [stdpp.base] *)
   #[export] Instance on_antisymm
       (S : relation B) `{!AntiSymm S R} :
     AntiSymm (on S f) (on R f) | 100.
-  Proof. rewrite /on. intros ??. apply: anti_symm. Qed.
+  Proof. GUARD_TC. rewrite /on. intros ??. apply: anti_symm. Qed.
 
   (** Needed to lift [PartialOrder] *)
   #[export] Instance on_antisymm_eq_inj
       `{!AntiSymm (=) R} `{!Inj eq eq f} :
     AntiSymm (=) (on R f).
-  Proof. rewrite /on. intros ????. apply (inj f). exact: anti_symm. Qed.
+  Proof. GUARD_TC. rewrite /on. intros ????. apply (inj f). exact: anti_symm. Qed.
 
   (** Needed to lift [TotalOrder] *)
   #[export] Instance on_trichotomy
       `{!Trichotomy R} `{!Inj eq eq f} :
     Trichotomy (on R f).
-  Proof. rewrite /on. intros ??. rewrite -(inj_iff f). apply: trichotomy. Qed.
+  Proof. GUARD_TC. rewrite /on. intros ??. rewrite -(inj_iff f). apply: trichotomy. Qed.
 
   #[export, refine] Instance on_trichotomyT
       `{!TrichotomyT R} `{!Inj eq eq f} :
@@ -99,10 +99,10 @@ Section on_props.
 
   (** * Lift bundled relation typeclasses from [stdpp.base] *)
   #[export] Instance on_partial_order `{!PartialOrder R} `{!Inj eq eq f} : PartialOrder (on R f).
-  Proof. split; apply _. Qed.
+  Proof. GUARD_TC. split; apply _. Qed.
 
   #[export] Instance on_total_order `{!TotalOrder R} `{!Inj eq eq f} : TotalOrder (on R f).
-  Proof. split; rewrite -?[strict (on R f)]/(on (strict R) f); apply _. Qed.
+  Proof. GUARD_TC. split; rewrite -?[strict (on R f)]/(on (strict R) f); apply _. Qed.
 End on_props.
 End on_props.
 #[global] Typeclasses Opaque on.
@@ -116,11 +116,11 @@ Section some_Forall2.
   (* #[global] Instance some_Forall2_reflexive `{!Reflexive R}: Reflexive (some_Forall2 R).
   Proof. rewrite /some_Forall2. intros ?. Qed. *)
   #[global] Instance some_Forall2_symmetric `{!Symmetric R}: Symmetric (some_Forall2 R).
-  Proof. rewrite /some_Forall2. intros ?; naive_solver. Qed.
+  Proof. GUARD_TC. rewrite /some_Forall2. intros ?; naive_solver. Qed.
   #[global] Instance some_Forall2_transitive `{!Transitive R}: Transitive (some_Forall2 R).
-  Proof. rewrite /some_Forall2. intros ?; intuition idtac. by etrans. Qed.
+  Proof. GUARD_TC. rewrite /some_Forall2. intros ?; intuition idtac. by etrans. Qed.
   #[global] Instance some_Forall2_per `{!RelationClasses.PER R} : RelationClasses.PER (some_Forall2 R).
-  Proof. rewrite /some_Forall2. split; apply _. Qed.
+  Proof. GUARD_TC. rewrite /some_Forall2. split; apply _. Qed.
 
   Lemma some_Forall2_iff oa1 oa2 :
     some_Forall2 R oa1 oa2 ↔

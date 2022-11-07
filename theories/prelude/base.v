@@ -27,6 +27,9 @@ explosion. *)
 (** Solve decidable goal [P] via [vm_compute] on [bool_decide P]. *)
 Ltac vm_decide := apply: bool_decide_eq_true_1; vm_compute; reflexivity.
 
+(** Ensure the given instance isn't already provable. *)
+Ltac GUARD_TC := assert_fails (apply _).
+
 (**
 Solve [Inhabited foo] goals. Proof using this tactic should be closed with [Qed].
 *)
