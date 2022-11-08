@@ -8,7 +8,7 @@ Require Import bedrock.lang.cpp.
 Import heap_notations.
 #[local] Set Warnings "-non-recursive". (* disable warning about [llistR] *)
 
-Local Open Scope Z_scope.
+#[local] Open Scope Z_scope.
 
 (** * Sequential Specs *)
 
