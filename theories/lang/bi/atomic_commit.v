@@ -605,49 +605,22 @@ Section derived.
 
   Lemma atomic_commit1_weak_ppost_wand Eo Ei α β Φ1 Φ2 :
     atomic_commit true Eo Ei α β Φ1 ⊢
-    □ (∀.. x y, Φ1 x y -∗ Φ2 x y) -∗
+    (∀.. x y, Φ1 x y -∗ Φ2 x y) -∗
     atomic_commit true Eo Ei α β Φ2.
-  Proof. iIntros "AC1 #W". iApply (atomic_commit1_ppost_wand with "AC1 W"). Qed.
-
-  Lemma atomic_commit_ppost_wand Eo Ei α β Φ1 Φ2 :
-    atomic_commit false Eo Ei α β Φ1 ⊢
-    make_laterable (∀.. x y, Φ1 x y -∗ Φ2 x y) -∗
-    atomic_commit false Eo Ei α β Φ2.
-  Proof.
-    iIntros "AC1 W". iAcIntro; rewrite /commit_acc/=.
-    iMod (make_laterable_elim with "W") as "W".
-    iMod "AC1" as (x) "[A Cl]".
-    iExists _; iFrame "A". iIntros "!> % B".
-    iApply ("W" with "(Cl B)").
-  Qed.
+  Proof. iIntros "AC1 W". iApply (atomic_commit1_ppost_wand with "AC1 W"). Qed.
 
   (* This proof is almost a duplicate of [atomic_commit1_ppost_wand], but due to *)
   (* the different modalities, for simplicity we prefer duplicating it rather than *)
   (* doing conditional modality reasoning using [▷?b □?(negb b)] and trying to *)
   (* extend [iAc{1,}Intro] for this scenario. *)
-  Lemma atomic_commit_weak_ppost_wand Eo Ei α β Φ1 Φ2 :
+  Lemma atomic_commit_ppost_wand Eo Ei α β Φ1 Φ2 :
     atomic_commit false Eo Ei α β Φ1 ⊢
-    □ (∀.. x y, Φ1 x y -∗ Φ2 x y) -∗
+    (∀.. x y, Φ1 x y -∗ Φ2 x y) -∗
     atomic_commit false Eo Ei α β Φ2.
   Proof.
-    iIntros "AC1 #W". iAcIntro; rewrite /commit_acc/=.
-    iMod "AC1" as (x) "[A Cl] /=".
+    iIntros "AC1 W". iAcIntro; rewrite /commit_acc/=.
+    iMod "AC1" as (x) "[A Cl]".
     iExists _; iFrame "A". iIntros "!> % B".
     iApply ("W" with "(Cl B)").
   Qed.
-
-  (* We can't quite derive [atomic_commit_weak_ppost_wand] from
-  [atomic_commit_ppost_wand] as-is; we must also assume [Timeless emp] to apply
-  [intuitionistic_laterable]. *)
-  Lemma atomic_commit_weak_ppost_wand_alt Eo Ei α β Φ1 Φ2 `{Timeless PROP emp} :
-    atomic_commit false Eo Ei α β Φ1 ⊢
-    □ (∀.. x y, Φ1 x y -∗ Φ2 x y) -∗
-    atomic_commit false Eo Ei α β Φ2.
-  Proof.
-    iIntros "AC1 W". iApply (atomic_commit_ppost_wand with "AC1").
-    iApply (make_laterable_intro with "[] W").
-    apply: intuitionistic_laterable.
-    iIntros "!> #$".
-    all: fail.
-  Abort.
 End derived.

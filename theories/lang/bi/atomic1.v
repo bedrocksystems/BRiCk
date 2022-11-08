@@ -613,9 +613,7 @@ Qed.
 
 (** The tactic [iAuIntro1] applies lemma [aupd1_aacc] to change an Iris
     proof mode goal [P := atomic1_update Eo Ei α β Φ] into [atomic1_acc Eo
-    Ei α P β Φ] _provided_ everything in the proof mode's spatial context
-    is [Laterable] (e.g., [Timeless], an atomic update, or something under
-    the later modality). *)
+    Ei α P β Φ]. *)
 Section coq_tactic.
   Import coq_tactics.
   Context `{BiFUpd PROP} {TA TB : tele}.
@@ -678,7 +676,7 @@ Section derived.
   (* Strictly weaker, but proven for consistency. *)
   Lemma atomic_update1_weak_ppost_wand Eo Ei α β Φ1 Φ2 :
     atomic1_update Eo Ei α β Φ1 ⊢
-    □ (∀.. x y, Φ1 x y -∗ Φ2 x y) -∗
+    (∀.. x y, Φ1 x y -∗ Φ2 x y) -∗
     atomic1_update Eo Ei α β Φ2.
-  Proof. iIntros "AU1 #W". iApply (atomic_update1_ppost_wand with "AU1 W"). Qed.
+  Proof. iIntros "AU1 W". iApply (atomic_update1_ppost_wand with "AU1 W"). Qed.
 End derived.
