@@ -18,6 +18,9 @@ From bedrock.lang.cpp.logic Require Export mpred rep.
 (** ^^ Delicate; export types and canonical structures (CS) for [monPred], [mpred] and [Rep].
 Export order can affect CS inference. *)
 
+From bedrock.lang.cpp.algebra Require Export cfrac.
+Require Export bedrock.lang.cpp.bi.cfractional.
+
 From iris.base_logic.lib Require Export iprop.
 (* TODO: ^^ only needed to export uPredI, should be removed. *)
 From iris.bi.lib Require Import fractional.
@@ -32,6 +35,8 @@ From bedrock.lang.cpp.syntax Require Import
      types
      translation_unit.
 From bedrock.lang.cpp.semantics Require Import values subtyping.
+
+#[local] Set Printing Coercions.
 
 Variant validity_type : Set := Strict | Relaxed.
 
@@ -133,7 +138,7 @@ Module Type CPP_LOGIC
     We use this predicate both for pointers to actual memory and for pointers to
     C++ locations that are not stored in memory (as an optimization).
     *)
-    Parameter tptsto : forall {σ:genv} (t : type) (q : Qp) (a : ptr) (v : val), mpred.
+    Parameter tptsto : forall {σ:genv} (t : type) (q : cQp.t) (a : ptr) (v : val), mpred.
 
     Axiom tptsto_nonnull : forall {σ} ty q a,
       @tptsto σ ty q nullptr a |-- False.
@@ -144,15 +149,10 @@ Module Type CPP_LOGIC
       Proper (genv_leq ==> eq ==> eq ==> eq ==> eq ==> (⊢)) (@tptsto).
     #[global] Existing Instances tptsto_proper tptsto_mono.
 
-    Axiom tptsto_timeless :
-      forall {σ} ty q a v, Timeless (@tptsto σ ty q a v).
-    Axiom tptsto_fractional :
-      forall {σ} ty a v, Fractional (λ q, @tptsto σ ty q a v).
-    #[global] Existing Instances tptsto_timeless tptsto_fractional.
+    #[global] Declare Instance tptsto_timeless : Timeless5 (@tptsto).
+    #[global] Declare Instance tptsto_cfractional {σ} ty : CFractional2 (tptsto ty).
 
-    Axiom tptsto_frac_valid : forall {σ} t (q : Qp) p v,
-      Observe [| q ≤ 1 |]%Qp (@tptsto σ t q p v).
-    #[global] Existing Instance tptsto_frac_valid.
+    #[global] Declare Instance tptsto_cfrac_valid {σ} t : CFracValid2 (tptsto t).
 
     Axiom tptsto_agree : forall {σ} ty q1 q2 p v1 v2,
       Observe2 [| val_related σ ty v1 v2 |]
@@ -188,7 +188,7 @@ Module Type CPP_LOGIC
     simplify stating rules for pointer comparison. *)
     Axiom nullptr_live : |-- live_ptr nullptr.
 
-    Axiom tptsto_live : forall {σ} ty (q : Qp) p v,
+    Axiom tptsto_live : forall {σ} ty (q : cQp.t) p v,
       @tptsto σ ty q p v |-- live_ptr p ** True.
 
     (** [identity σ this mdc q p] state that [p] is a pointer to a (live)
@@ -239,19 +239,19 @@ Module Type CPP_LOGIC
      *)
     Parameter identity : forall {σ : genv}
         (this : globname) (most_derived : list globname),
-        Qp -> ptr -> mpred.
-    Axiom identity_fractional : forall σ this mdc p, Fractional (λ q, identity this mdc q p).
-    Axiom identity_timeless : forall σ this mdc q p, Timeless (identity this mdc q p).
-    Axiom identity_strict_valid : forall σ this mdc q p, Observe (strict_valid_ptr p) (identity this mdc q p).
-    #[global] Existing Instances identity_fractional identity_timeless identity_strict_valid.
+        cQp.t -> ptr -> mpred.
+    #[global] Declare Instance identity_cfractional σ this mdc : CFractional1 (identity this mdc).
+    #[global] Declare Instance identity_cfrac_valid {σ} cls path : CFracValid1 (identity cls path).
+    #[global] Declare Instance identity_timeless : Timeless5 (@identity).
+    #[global] Declare Instance identity_strict_valid σ this mdc q p : Observe (strict_valid_ptr p) (identity this mdc q p).
 
-    (** cpp2v-core#194: The fraction is valid? Agreement? *)
+    (** cpp2v-core#194: Agreement? *)
 
     (** this allows you to forget an object identity, necessary for doing
         placement [new] over an existing object.
      *)
     Axiom identity_forget : forall σ mdc this p,
-        @identity σ this mdc 1 p |-- |={↑pred_ns}=> @identity σ this nil 1 p.
+        @identity σ this mdc (cQp.m 1) p |-- |={↑pred_ns}=> @identity σ this nil (cQp.m 1) p.
 
     (** the pointer points to the code
 
@@ -1067,13 +1067,12 @@ Section with_cpp.
       (@tptsto _ Σ).
   Proof. repeat intro. exact: tptsto_mono. Qed.
 
-  #[global] Instance tptsto_as_fractional ty q a v :
-    AsFractional (tptsto ty q a v) (λ q, tptsto ty q a v) q.
-  Proof. exact: Build_AsFractional. Qed.
+  #[global] Instance tptsto_as_cfractional ty : AsCFractional2 (tptsto ty).
+  Proof. solve_as_cfrac. Qed.
 
-  #[global] Instance identity_as_fractional this mdc p q :
-    AsFractional (identity this mdc q p) (λ q, identity this mdc q p) q.
-  Proof. exact: Build_AsFractional. Qed.
+  #[global] Instance identity_as_cfractional this mdc :
+    AsCFractional1 (identity this mdc).
+  Proof. solve_as_cfrac. Qed.
 
   #[global] Instance tptsto_observe_nonnull t q p v :
     Observe [| p <> nullptr |] (tptsto t q p v).
@@ -1083,14 +1082,14 @@ Section with_cpp.
     rewrite {1}tptsto_nonnull. exact: bi.False_elim.
   Qed.
 
-  Lemma tptsto_disjoint : forall ty p v1 v2,
-    tptsto ty 1 p v1 ** tptsto ty 1 p v2 |-- False.
+  Lemma tptsto_disjoint : forall ty q_cv p v1 v2,
+    tptsto ty (cQp.mk q_cv 1) p v1 ** tptsto ty (cQp.mk q_cv 1) p v2 |-- False.
   Proof.
     intros *; iIntros "[T1 T2]".
     iDestruct (observe_2_elim_pure with "T1 T2") as %Hvs.
     iDestruct (tptsto_val_related_transport $! Hvs with "T1") as "T2'".
     iCombine "T2 T2'" as "T".
-    iDestruct (tptsto_frac_valid with "T") as %L => //.
+    iDestruct (tptsto_cfrac_valid with "T") as %L => //.
   Qed.
 
   (** *** Just wrappers. *)

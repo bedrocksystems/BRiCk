@@ -4,12 +4,18 @@
  * See the LICENSE-BedRock file in the repository root for details.
  *)
 From iris.proofmode Require Import proofmode.
-Require Import iris.bi.lib.fractional.
+From bedrock.lang.bi Require Import fractional.
 
 From bedrock.lang.cpp Require Import
+  bi.cfractional
   semantics ast logic.pred logic.path_pred.
 
 Export bedrock.lang.cpp.logic.pred.
+(* ^^ Should this be exported? this file is supposed to provide wrappers
+   so that clients do not work directly with [pred.v] *)
+Export bedrock.lang.cpp.algebra.cfrac.
+
+#[local] Set Printing Coercions.
 
 Implicit Types (σ resolve : genv) (p : ptr) (o : offset).
 
@@ -18,10 +24,8 @@ Section defs.
 
   (** object identity *)
   Definition identityR {σ : genv} (cls : globname) (mdc : list globname)
-             (q : Qp) : Rep :=
-    as_Rep (@identity _ _ σ cls mdc q).
-  (** cpp2v-core#194: [Fractional], [AsFractional], [Timeless]? *)
-  (** cpp2v-core#194: The fraction is valid? Agreement? *)
+             (q : cQp.t) : Rep :=
+    as_Rep (identity cls mdc q).
 
   Definition validR_def : Rep := as_Rep valid_ptr.
   Definition validR_aux : seal (@validR_def). Proof. by eexists. Qed.
@@ -54,12 +58,10 @@ Section with_cpp.
    *
    * NOTE [ty] *must* be a primitive type.
    *)
-  Definition primR_def {resolve:genv} (ty : type) (q : Qp) (v : val) : Rep :=
-    as_Rep (fun addr => tptsto ty q addr v **
-                      [| not(exists raw, v = Vraw raw) |] **
-                      [| has_type v (drop_qualifiers ty) |]).
-  (** TODO what is the current status of [has_type] and [Vundef]? Does it have all types? No types?
-   *)
+  Definition primR_def {resolve:genv} (ty : type) (q : cQp.t) (v : val) : Rep :=
+    as_Rep (fun p : ptr => tptsto ty q p v **
+             [| not(exists raw, v = Vraw raw) |] **
+             [| has_type v (drop_qualifiers ty) |]).
   Definition primR_aux : seal (@primR_def). Proof. by eexists. Qed.
   Definition primR := primR_aux.(unseal).
   Definition primR_eq : @primR = _ := primR_aux.(seal_eq).
@@ -82,16 +84,42 @@ Section with_cpp.
     : Timeless (primR ty q v).
   Proof. rewrite primR_eq. apply _. Qed.
 
-  #[global] Instance primR_fractional resolve ty v :
-    Fractional (λ q, primR ty q v).
-  Proof. rewrite primR_eq. apply _. Qed.
-  #[global] Instance primR_as_fractional resolve ty q v :
-    AsFractional (primR ty q v) (λ q, primR ty q v) q.
-  Proof. constructor. done. apply _. Qed.
 
-  #[global] Instance primR_observe_frac_valid resolve ty (q : Qp) v :
-    Observe [| q ≤ 1 |]%Qp (primR ty q v).
+  #[global] Instance primR_cfractional resolve ty :
+    CFractional1 (primR ty).
   Proof. rewrite primR_eq. apply _. Qed.
+  #[global] Instance primR_as_cfractional resolve ty :
+    AsCFractional1 (primR ty).
+  Proof. solve_as_cfrac. Qed.
+
+  #[global] Instance primR_observe_cfrac_valid resolve ty :
+    CFracValid1 (primR ty).
+  Proof. rewrite primR_eq. apply _. Qed.
+
+  Section TEST.
+    Context {σ : genv} (p : ptr).
+
+    Goal
+        p |-> primR Tint (cQp.m (1/2)) 0
+        |-- p |-> primR Tint (cQp.m (1/2)) 0 -* p |-> primR Tint (cQp.m 1) 0.
+    Proof.
+      iIntros "H1 H2".
+      iCombine "H1 H2" as "$".
+    Abort.
+
+    Goal
+        p |-> primR Tint (cQp.c 1) 0 |-- p |-> primR Tint (cQp.c (1/2)) 0 ** p |-> primR Tint (cQp.c (1/2)) 0.
+    Proof.
+      iIntros "H".
+      iDestruct "H" as "[H1 H2]".
+    Abort.
+
+    Goal p |-> primR Tint (cQp.c 1) 1 |-- True.
+    Proof.
+      iIntros "H".
+      iDestruct (observe [| 1 ≤ 1 |]%Qp with "H") as %? (* ; [] << FAILS *).
+    Abort.
+  End TEST.
 
   #[global] Instance primR_observe_agree resolve ty q1 q2 v1 v2 :
     Observe2 [| v1 = v2 |]
@@ -133,7 +161,7 @@ Section with_cpp.
      TODO is it possible to generalize this to support aggregate types? structures seem easy enough
           but unions seem more difficult, possibly we can achieve that through the use of disjunction?
    *)
-  Definition uninitR_def {resolve:genv} (ty : type) (q : Qp) : Rep :=
+  Definition uninitR_def {resolve:genv} (ty : type) (q : cQp.t) : Rep :=
     as_Rep (fun addr => @tptsto _ _ resolve ty q addr Vundef).
   Definition uninitR_aux : seal (@uninitR_def). Proof. by eexists. Qed.
   Definition uninitR := uninitR_aux.(unseal).
@@ -157,15 +185,15 @@ Section with_cpp.
     : Timeless (uninitR ty q).
   Proof. rewrite uninitR_eq. apply _. Qed.
 
-  #[global] Instance uninitR_fractional resolve ty :
-    Fractional (uninitR ty).
+  #[global] Instance uninitR_cfractional resolve ty :
+    CFractional (uninitR ty).
   Proof. rewrite uninitR_eq. apply _. Qed.
-  #[global] Instance unintR_as_fractional resolve ty q :
-    AsFractional (uninitR ty q) (uninitR ty) q.
-  Proof. constructor. done. apply _. Qed.
+  #[global] Instance unintR_as_fractional resolve ty :
+    AsCFractional0 (uninitR ty).
+  Proof. solve_as_cfrac. Qed.
 
-  #[global] Instance uninitR_observe_frac_valid resolve ty (q : Qp) :
-    Observe [| q ≤ 1 |]%Qp (uninitR ty q).
+  #[global] Instance uninitR_observe_frac_valid resolve ty :
+    CFracValid0 (uninitR ty).
   Proof. rewrite uninitR_eq. apply _. Qed.
 
   Lemma test:
@@ -178,11 +206,12 @@ Section with_cpp.
       try (by inversion Hv'); auto.
   Qed.
 
-  (** This seems odd, but it's relevant to proof that [anyR] is fractional. *)
+  (** This seems odd, but it's relevant to the (former) proof that [anyR] is
+  fractional; currently unused. *)
   Lemma primR_uninitR {resolve} ty q1 q2 v :
     primR ty q1 v |--
     uninitR ty q2 -*
-    primR ty (q1 + q2) Vundef.
+    primR ty (q1 ⋅ q2) Vundef.
   Proof.
     rewrite primR_eq/primR_def uninitR_eq/uninitR_def. constructor=>p /=.
     rewrite monPred_at_wand. iIntros "[T1 [%Hnotraw %Hty]]" (? <-%ptr_rel_elim) "/= T2".
@@ -195,21 +224,19 @@ Section with_cpp.
 
   (** [anyR] The argument pointers points to a value of C++ type [ty] that might be
       uninitialized. *)
-  Parameter anyR : ∀ {resolve} (ty : type) (q : Qp), Rep.
+  Parameter anyR : ∀ {resolve} (ty : type) (q : cQp.t), Rep.
   #[global] Arguments anyR {resolve} ty q : rename.
-  Axiom anyR_timeless : ∀ resolve ty q, Timeless (anyR ty q).
-  Axiom anyR_fractional : ∀ resolve ty, Fractional (anyR ty).
-  Axiom anyR_observe_frac_valid : ∀ resolve ty (q : Qp),
-    Observe [| q ≤ 1 |]%Qp (anyR ty q).
+  #[global] Declare Instance anyR_timeless : ∀ resolve ty q, Timeless (anyR ty q).
+  #[global] Declare Instance anyR_cfractional : ∀ resolve ty, CFractional (anyR ty).
+  #[global] Declare Instance anyR_observe_frac_valid resolve ty : CFracValid0 (anyR ty).
+
   Axiom primR_anyR : ∀ resolve t q v, primR t q v |-- anyR t q.
   Axiom uninitR_anyR : ∀ resolve t q, uninitR t q |-- anyR t q.
   Axiom tptsto_raw_anyR : forall resolve p q r, tptsto Tu8 q p (Vraw r) |-- p |-> anyR Tu8 q.
-  Axiom anyR_type_ptr_observe : ∀ σ ty q, Observe (type_ptrR ty) (anyR ty q).
+  #[global] Declare Instance anyR_type_ptr_observe σ ty q : Observe (type_ptrR ty) (anyR ty q).
 
-  #[global] Existing Instances anyR_timeless anyR_fractional anyR_observe_frac_valid anyR_type_ptr_observe.
-  #[global] Instance anyR_as_fractional resolve ty q :
-    AsFractional (anyR ty q) (anyR ty) q.
-  Proof. exact: Build_AsFractional. Qed.
+  #[global] Instance anyR_as_fractional resolve ty : AsCFractional0 (anyR ty).
+  Proof. solve_as_cfrac. Qed.
 
   Axiom _at_anyR_ptr_congP_transport : forall {σ} p p' ty q,
     ptr_congP σ p p' ** type_ptr ty p' |-- p |-> anyR ty q -* p' |-> anyR ty q.
@@ -298,6 +325,10 @@ Section with_cpp.
   Proof. apply _. Qed.
   #[global] Instance nullR_as_fractional q : AsFractional nullR (λ _, nullR) q.
   Proof. exact: Build_AsFractional. Qed.
+  #[global] Instance nullR_cfractional : CFractional (λ _, nullR).
+  Proof. apply _. Qed.
+  #[global] Instance nullR_as_cfractional q : AsCFractional nullR (λ _, nullR) q.
+  Proof. solve_as_cfrac. Qed.
 
   Definition nonnullR_def : Rep :=
     as_Rep (fun addr => [| addr <> nullptr |]).
@@ -358,7 +389,7 @@ Section with_cpp.
 
   (** [blockR sz q] represents [q] ownership of a contiguous chunk of
       [sz] bytes without any C++ structure on top of it. *)
-  Definition blockR_def {σ} sz (q : Qp) : Rep :=
+  Definition blockR_def {σ} sz (q : cQp.t) : Rep :=
     _offsetR (o_sub σ Tu8 (Z.of_N sz)) validR **
     (* ^ Encodes valid_ptr (this .[ Tu8 ! sz]). This is
     necessary to get [l |-> blockR n -|- l |-> blockR n ** l .[ Tu8 ! m] |-> blockR 0]. *)
@@ -372,18 +403,16 @@ Section with_cpp.
   #[global] Instance blockR_timeless {resolve : genv} sz q :
     Timeless (blockR sz q).
   Proof. rewrite blockR_eq /blockR_def. unfold_at. apply _. Qed.
-  #[global] Instance blockR_fractional resolve sz :
-    Fractional (blockR sz).
-  Proof.
-    by rewrite blockR_eq /blockR_def; apply _.
-  Qed.
-  #[global] Instance blockR_as_fractional resolve sz q :
-    AsFractional (blockR sz q) (blockR sz) q.
-  Proof. exact: Build_AsFractional. Qed.
+  #[global] Instance blockR_cfractional resolve sz :
+    CFractional (blockR sz).
+  Proof. rewrite blockR_eq. apply _. Qed.
+  #[global] Instance blockR_as_cfractional {resolve : genv} sz :
+    AsCFractional0 (blockR sz).
+  Proof. solve_as_cfrac. Qed.
 
-  #[global] Instance blockR_observe_frac_valid resolve sz (q : Qp) :
+  #[global] Instance blockR_observe_frac_valid {resolve : genv} sz :
     TCLt (0 ?= sz)%N ->
-    Observe [| q ≤ 1 |]%Qp (blockR sz q).
+    CFracValid0 (blockR sz).
   Proof.
     rewrite TCLt_N blockR_eq/blockR_def. intros.
     destruct (N.to_nat sz) eqn:?; [ lia | ] => /=.
@@ -394,7 +423,7 @@ Section with_cpp.
    * it is a convenient short-hand since it happens frequently, but there is nothing
    * special about it.
    *)
-  Definition tblockR {σ} (ty : type) (q : Qp) : Rep :=
+  Definition tblockR {σ} (ty : type) (q : cQp.t) : Rep :=
     match size_of σ ty , align_of ty with
     | Some sz , Some al => blockR (σ:=σ) sz q ** alignedR al
     | _ , _  => False
@@ -403,25 +432,27 @@ Section with_cpp.
   #[global] Instance tblockR_timeless ty q :
     Timeless (tblockR ty q).
   Proof. rewrite/tblockR. case_match; apply _. Qed.
-  #[global] Instance tblockR_fractional ty :
-    Fractional (tblockR ty).
+  #[global] Instance tblockR_cfractional ty :
+    CFractional (tblockR ty).
   Proof.
     rewrite/tblockR. do 2!(case_match; last by apply _).
     apply _.
   Qed.
-  #[global] Instance tblockR_as_fractional ty q :
-    AsFractional (tblockR ty q) (tblockR ty) q.
-  Proof. exact: Build_AsFractional. Qed.
-  #[global] Instance tblockR_observe_frac_valid ty q n :
+  #[global] Instance tblockR_as_cfractional ty : AsCFractional0 (tblockR ty).
+  Proof. solve_as_cfrac. Qed.
+  #[global] Instance tblockR_observe_frac_valid ty n :
     SizeOf ty n -> TCLt (0 ?= n)%N ->
-    Observe [| q ≤ 1 |]%Qp (tblockR ty q).
+    CFracValid0 (tblockR ty).
   Proof.
     rewrite/tblockR=>-> ?. case_match; by apply _.
   Qed.
 
   #[global] Instance identityR_timeless cls mdc q : Timeless (identityR cls mdc q) := _.
-  #[global] Instance identityR_frac cls mdc : Fractional (identityR cls mdc) := _.
-  #[global] Instance identityR_as_frac cls mdc q : AsFractional (identityR cls mdc q) (identityR cls mdc) q := _.
+  #[global] Instance identityR_cfractional cls mdc : CFractional (identityR cls mdc) := _.
+  #[global] Instance identityR_as_frac cls mdc :
+    AsCFractional0 (identityR cls mdc).
+  Proof. solve_as_cfrac. Qed.
+
   #[global] Instance identityR_strict_valid cls mdc q : Observe svalidR (identityR cls mdc q).
   Proof.
     red. eapply Rep_entails_at. intros.

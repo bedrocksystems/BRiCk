@@ -122,7 +122,7 @@ Module Export Compact.
 
   (* Destruction/cleanup-interpretation of temporaries *)
   Notation "'::destroy_val' '{pointer:' p ';' 'type:' ty '}'"
-      := (destroy_val _ ty%cpp_type p _)
+      := (destroy_val _ _ ty%cpp_type p _)
          ( at level 0
          , ty custom CPP_type at level 200
          , format "'[hv  ' ::destroy_val  '/' '[hv   ' {pointer:  p ; '/'  type:  ty } ']' ']'"
@@ -267,7 +267,7 @@ Module Verbose.
 
   (* Destruction/cleanup-interpretation of temporaries *)
   Notation "'::destroy_val' '{pointer:' p ';' 'type:' ty '}' E"
-      := (destroy_val _ ty%cpp_type p E)
+      := (destroy_val _ _ ty%cpp_type p E)
          ( at level 0
          , ty custom CPP_type at level 200
          , format "'[hv  ' ::destroy_val  '/' '[hv   ' {pointer:  p ; '/'  type:  ty } ']'  '/' E ']'"

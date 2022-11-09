@@ -10,6 +10,7 @@ From bedrock.lang.cpp.logic Require Export
      heap_pred
      cptr
      wp
+     const
      destroy
      call
      operator

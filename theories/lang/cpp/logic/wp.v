@@ -100,11 +100,11 @@ Section FreeTemps.
    *)
   Definition seqs : list t -> t := fold_right FreeTemps.seq FreeTemps.id.
 
-  (** [seqsR ls] is the [FreeTemp] representing the destruction
+  (** [seqs_rev ls] is the [FreeTemp] representing the destruction
       of each element in [ls] sequentially from right-to-left, i.e.
       the first element in the list is destructed last.
    *)
-  Definition seqsR : list t -> t := foldl (fun a b => FreeTemps.seq b a) FreeTemps.id.
+  Definition seqs_rev : list t -> t := foldl (fun a b => FreeTemps.seq b a) FreeTemps.id.
 
 End FreeTemps.
 End FreeTemps.
@@ -152,7 +152,7 @@ Section Kpred.
   Definition Kreturn {σ : genv} (P : ptr -> mpred) : KpredI :=
     KP (funI rt =>
           match rt with
-          | Normal | ReturnVoid => Forall p : ptr, p |-> primR Tvoid 1 Vvoid -* P p
+          | Normal | ReturnVoid => Forall p : ptr, p |-> primR Tvoid (cQp.mut 1) Vvoid -* P p
           | ReturnVal p => P p
           | _ => False
           end).
@@ -682,7 +682,7 @@ Section with_cpp.
   (* BEGIN wp_init <-> wp_operand *)
   Axiom wp_operand_wp_init : forall {σ : genv} tu ρ ty addr e Q,
       is_value_type ty ->
-      wp_operand tu ρ e (fun v frees => _at addr (primR ty 1 v) -* Q ty frees)
+      wp_operand tu ρ e (fun v frees => _at addr (primR ty (cQp.mut 1) v) -* Q ty frees)
     |-- wp_init tu ρ ty addr e Q.
 
   (** This is justified in the logic but technically not sactioned by the standard
@@ -692,7 +692,7 @@ Section with_cpp.
       is_value_type ty ->
       wp_prval M ρ e (fun p free frees =>
          [| FreeTemps.t_eq free (FreeTemps.delete ty addr) |] **
-         ∃ v, _at addr (primR ty 1 v) ** Q v frees)
+         ∃ v, _at addr (primR ty (cQp.mut 1) v) ** Q v frees)
     |-- wp_operand M ρ e Q.
     ]]
    *)

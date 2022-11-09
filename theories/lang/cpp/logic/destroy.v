@@ -8,7 +8,7 @@ Require Import iris.proofmode.proofmode.
 Require Import bedrock.lang.cpp.ast.
 Require Import bedrock.lang.cpp.semantics.
 From bedrock.lang.cpp.logic Require Import
-     pred wp path_pred heap_pred.
+     pred wp path_pred heap_pred const.
 Require Import bedrock.lang.cpp.logic.dispatch.
 
 Section destroy.
@@ -23,7 +23,7 @@ Section destroy.
        to have C calling convention. *)
     mspec tu.(globals) ty (Tfunction Tvoid nil)
           dtor (this :: nil) (* NOTE this is the correct calling convention for member functions *)
-          (fun p => Exists v, p |-> primR Tvoid 1 v ** this |-> tblockR ty 1 ** Q).
+          (fun p => Exists v, p |-> primR Tvoid (cQp.mut 1) v ** this |-> tblockR ty (cQp.mut 1) ** Q).
               (* ^ this is inlining [operand_receive] which is not accessible due to cirularity *)
 
   Lemma wp_destructor_frame ty dtor this Q Q' :
@@ -44,53 +44,85 @@ Section destroy.
       have destructors according to the standard have no-op destructors. Thus,
       we can model the "not having a destructor" as an optimization. This
       choice makes the semantics more uniform. *)
-  Fixpoint destroy_val (ty : type) (this : ptr) (Q : epred) {struct ty} : mpred :=
-    match ty with
-    | Tqualified _ ty => destroy_val ty this Q
+  Parameter destroy_val : forall {σ : genv}, translation_unit -> type -> ptr -> epred -> mpred.
+  Axiom destroy_val_frame : forall tu' ty p Q Q',
+      sub_module tu tu' ->
+      Q -* Q' |-- destroy_val tu ty p Q -* destroy_val tu' ty p Q'.
+
+  Definition destroy_val_body (destroy_val : type -> ptr -> epred -> mpred)
+    (ty : type) (this : ptr) (Q : epred) : mpred :=
+    let UNSUPPORTED Q := destroy_val ty this Q in
+    (*  ^^ we eta-expand this to avoid cbv reduction looping *)
+    let '(cv, rty) := decompose_type ty in
+    let (q, handle_const) :=
+      if q_const cv then
+        (cQp.c 1, wp_make_mutable tu this rty)
+      else (cQp.m 1, id)
+    in
+    match rty with
     | Tnamed cls      =>
-      match tu !! cls with
-      | Some (Gstruct s) =>
-         (* NOTE the setup with explicit destructors (even when those destructors are trivial)
+        |> handle_const (* << putting [handle_const] here makes things a little bit cleaner
+                           NOTE that if the type is not defined in the translation unit, then
+                                [handle_const] will also result in [False] *)
+          match tu !! cls with
+          | Some (Gstruct s) =>
+              (* NOTE the setup with explicit destructors (even when those destructors are trivial)
                  abstracts away some of the complexities of the underlying C++ semantics that
                   the semantics itself seems less than clear about. [CITATION NEEDED]
 
              TODO let's find some justification in the standard. *)
-          (* In the current implementation, we generate destructor even when they are implicit
+              (* In the current implementation, we generate destructor even when they are implicit
              to make the framework a bit more uniform (all types have destructors) and allow
              for direct destructor calls, e.g. [c.~C()], which are encoded as
              [Emember_call ... "~C" ..] *)
-        |> wp_destructor ty (_global s.(s_dtor)) this Q
-      | Some (Gunion u)  =>
-        (* Unions cannot have [virtual] destructors: we directly invoke the destructor. *)
-        |> wp_destructor ty (_global u.(u_dtor)) this Q
-      | _ => False
-      end
+              wp_destructor rty (_global s.(s_dtor)) this Q
+          | Some (Gunion u)  =>
+              (* Unions cannot have [virtual] destructors: we directly invoke the destructor. *)
+              wp_destructor rty (_global u.(u_dtor)) this Q
+          | _ => False
+          end
     | Tarray ety sz   =>
       (* NOTE array elements are destroyed with non-virtual dispatch. *)
       (* TODO replace [fold_right ... rev] by [fold_left]? *)
-      fold_right (fun i Q =>
+      |> (handle_const $ fold_right (fun i Q =>
         let p := this .[ erase_qualifiers ety ! Z.of_nat i ] in
-        valid_ptr p ** destroy_val ety p Q
-      ) Q (rev (seq 0 (N.to_nat sz)))
+        destroy_val ety p Q) Q (rev (seq 0 (N.to_nat sz))))
     | Tref r_ty
     | Trv_ref r_ty    =>
-      (* NOTE rvalue references [Trv_ref] are represented as references [Tref]. *)
-      this |-> anyR (Tref $ erase_qualifiers r_ty) 1 ** Q
-    | ty              =>
-      this |-> anyR (erase_qualifiers ty) 1 ** Q
+        (* NOTE rvalue references [Trv_ref] are represented as references [Tref]. *)
+        this |-> anyR (Tref $ erase_qualifiers r_ty) q ** Q
+    | Tnum _ _
+    | Tfloat _
+    | Tenum _
+    | Tbool
+    | Tnullptr
+    | Tptr _
+    | Tmember_pointer _ _
+    | Tvoid =>
+        (* if the field is a constant, then you only reclaim the portion given to the program *)
+        this |-> anyR (erase_qualifiers ty) q ** Q
+    | Tfunction _ _ => UNSUPPORTED Q
+    | Tarch _ _ => UNSUPPORTED Q
+    | Tqualified q ty => False
     end%I.
 
-  Lemma destroy_val_frame : forall ty this (Q Q' : epred),
-      Q -* Q' |-- destroy_val ty this Q -* destroy_val ty this Q'.
+  Axiom destroy_val_intro : forall ty p Q,
+      destroy_val_body (destroy_val tu) ty p Q |-- destroy_val tu ty p Q.
+
+  Lemma destroy_val_body_frame : forall ty q_c this (Q Q' : epred),
+      Q -* Q' |-- destroy_val q_c ty this Q -* destroy_val q_c ty this Q'.
   Proof.
+    (* TODO: Prove this
     intro ty; induction ty; simpl; eauto;
       try solve [ intros; iIntros "Q [$ X]"; iRevert "X"; done ].
-    { induction (rev _); simpl; intros.
-      { iIntros "X"; iApply "X". }
-      { iIntros "Q [$ V]". iRevert "V"; iApply IHty; eauto. iApply IHl; eauto. } }
-    { intros. case_match; eauto.
-      case_match; eauto; iIntros "A B"; iModIntro; iRevert "B"; by iApply wp_destructor_frame. }
-  Qed.
+    - induction (rev _); first done.
+      by iIntros (q_c ptr Q Q') "W"; iApply IHty; iApply IHl.
+    - intros. case_match; eauto.
+      by case_match; eauto; (try case q_c);
+        iIntros "A B !>"; iRevert "B";
+        (try iApply cv_cast_frame; try reflexivity);
+        iApply wp_destructor_frame.
+  Qed. *) Abort.
 
   (* BEGIN interp *)
   (** [interp free Q] "runs" [free] and then acts like [Q].
@@ -104,7 +136,7 @@ Section destroy.
     | FreeTemps.id => Q
     | FreeTemps.seq f g => interp f $ interp g Q
     | FreeTemps.par f g => Exists Qf Qg, interp f Qf ** interp g Qg ** (Qf -* Qg -* Q)
-    | FreeTemps.delete ty addr => destroy_val ty addr Q
+    | FreeTemps.delete ty addr => destroy_val tu ty addr Q
     | FreeTemps.delete_va va addr => addr |-> varargsR va ** Q
     end.
   (* END interp *)

@@ -33,11 +33,26 @@ Section with_resolve.
      NOTE this definition is *not* sound in the presence of exceptions.
   *)
   Fixpoint zipTypes (ts : list type) (ar : function_arity) (es : list Expr) : option (list (wp.WPE.M ptr) * option (nat * list type)) :=
-    let wp_arg_init ty init K := Forall p, wp_initialize tu ρ ty p init (fun frees => K p (FreeTemps.delete ty p >*> frees)%free) in
+    let wp_arg_init ty init K :=
+      (* top-level qualifiers on arguments are ignored, they are taken from the definition,
+         not the declaration. Dropping qualifiers here makes it possible to support code
+         like the following:
+         ```
+         // f.hpp
+         void f(int);
+         void g() { f(1); } // calls using [void f(int)] rather than [void f(const int)]
+         // f.cpp
+         void f(const int) {}
+         ```
+       *)
+      let ty := drop_qualifiers ty in
+      Forall p, wp_initialize tu ρ ty p init (fun frees => K p (FreeTemps.delete ty p >*> frees)%free)
+    in
     match ts with
     | [] =>
         if ar is Ar_Variadic then
-          let rest := map (fun e => (type_of e, wp_arg_init (type_of e) e)) es in
+          let rest := map (fun e => let ty := drop_qualifiers (type_of e) in
+                                 (ty, wp_arg_init ty e)) es in
           Some (map snd rest, Some (0, map fst rest))
         else None
     | t :: ts =>
@@ -152,7 +167,7 @@ Section with_resolve.
      function calls.
    *)
   Definition xval_receive (ty : type) (res : ptr) (Q : ptr -> mpred) : mpred :=
-    Exists p, res |-> primR (Tref ty) 1 (Vref p) ** Q p.
+    Exists p, res |-> primR (Tref ty) (cQp.mut 1) (Vref p) ** Q p.
 
   Lemma xval_receive_frame ty res Q Q' :
       Forall v, Q v -* Q' v |-- xval_receive ty res Q -* xval_receive ty res Q'.
@@ -161,7 +176,7 @@ Section with_resolve.
   Qed.
 
   Definition lval_receive (ty : type) (res : ptr) (Q : ptr -> mpred) : mpred :=
-    Exists p, res |-> primR (Tref ty) 1 (Vref p) ** Q p.
+    Exists p, res |-> primR (Tref ty) (cQp.mut 1) (Vref p) ** Q p.
 
   Lemma lval_receive_frame ty res Q Q' :
       Forall v, Q v -* Q' v |-- lval_receive ty res Q -* lval_receive ty res Q'.
@@ -170,7 +185,7 @@ Section with_resolve.
   Qed.
 
   Definition operand_receive (ty : type) (res : ptr) (Q : val -> mpred) : mpred :=
-    Exists v, res |-> primR ty 1 v ** Q v.
+    Exists v, res |-> primR ty (cQp.mut 1) v ** Q v.
 
   Lemma operand_receive_frame ty res Q Q' :
       Forall v, Q v -* Q' v |-- operand_receive ty res Q -* operand_receive ty res Q'.

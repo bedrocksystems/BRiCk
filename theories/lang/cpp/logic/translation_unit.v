@@ -95,6 +95,7 @@ Section with_cpp.
     all: intros; rewrite denoteSymbol_strict_valid //; apply strict_valid_valid.
   Qed.
 
+  (** TODO incomplete *)
   Definition initSymbol (n : obj_name) (o : ObjValue) : mpred :=
     _at (_global n)
         match o with
@@ -106,7 +107,7 @@ Section with_cpp.
 *)
       (* ^^ todo(gmm): static initialization is not yet supported *)
         | Ovar t None =>
-          uninitR (resolve:=resolve) t 1
+          uninitR (resolve:=resolve) t (cQp.m 1)
         | _ => emp
         end.
 
