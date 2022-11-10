@@ -13,20 +13,38 @@ From bedrock.lang.cpp.logic Require Import
      pred path_pred heap_pred wp destroy.
 Require Import bedrock.lang.cpp.heap_notations.
 
+(** The C++ language provides several types of initialization:
+    - default initialization <https://eel.is/c++draft/dcl.init#def:default-initialization>
+    - value initialization <https://eel.is/c++draft/dcl.init#def:value-initialization>
+    - zero initialization <https://eel.is/c++draft/dcl.init#def:zero-initialization>
+    - direct initialization <https://eel.is/c++draft/dcl.init#def:direct-initialization>
+
+    The BRiCk frontend resolves (via clang) the rules for which one of these is used in each
+    context. Therefore, in the semantics, we are left with only two cases:
+    - default initialization (implemented by [default_initialize]), which occurs when there
+      is no expression used to initialize the value
+    - expression initialization (implemented by [wp_initialize]), which occurs when there is
+      an expression used to initialize the value.
+
+    Note that the frontend inserts constructor calls to default initialize objects, so
+    [Tnamed] types can *not* be default initialized.
+ *)
+
 Module Type Init.
 
   Section with_resolve.
-    Context `{Σ : cpp_logic thread_info} {σ:genv}.
+    Context `{Σ : cpp_logic thread_info} {σ:genv} (tu : translation_unit).
     Variables (ρ : region).
 
-    #[local] Notation wp := (wp ρ).
-    #[local] Notation wp_lval := (wp_lval ρ).
-    #[local] Notation wp_prval := (wp_prval ρ).
-    #[local] Notation wp_operand := (wp_operand ρ).
-    #[local] Notation wp_xval := (wp_xval ρ).
-    #[local] Notation wp_init := (wp_init ρ).
-    #[local] Notation fspec := (@fspec _ Σ σ.(genv_tu).(globals)).
-    #[local] Notation mspec := (@mspec _ Σ σ.(genv_tu).(globals)).
+    #[local] Notation wp := (wp tu ρ).
+    #[local] Notation wp_lval := (wp_lval tu ρ).
+    #[local] Notation wp_prval := (wp_prval tu ρ).
+    #[local] Notation wp_operand := (wp_operand tu ρ).
+    #[local] Notation wp_xval := (wp_xval tu ρ).
+    #[local] Notation wp_init := (wp_init tu ρ).
+    #[local] Notation interp := (interp tu).
+    #[local] Notation fspec := (@fspec _ Σ tu.(globals)).
+    #[local] Notation mspec := (@mspec _ Σ tu.(globals)).
 
     Definition default_initialize_array (default_initialize : type -> ptr -> (FreeTemps -> epred) -> mpred)
                (ty : type) (len : N) (p : ptr) (Q : FreeTemps -> epred) : mpred :=
@@ -176,13 +194,13 @@ Module Type Init.
   #[global] Hint Opaque default_initialize_array : typeclass_instances.
 
   Section frames.
-    Context `{Σ : cpp_logic thread_info} {σ1 σ2 :genv}.
+    Context `{Σ : cpp_logic thread_info} {σ1 σ2 :genv} (tu : translation_unit).
     Variables (ρ : region).
     Hypothesis MOD : genv_leq σ1 σ2.
 
     Lemma wp_initialize_frame obj ty e Q Q' :
       (Forall free, Q free -* Q' free)
-      |-- wp_initialize (σ:=σ2) ρ ty obj e Q -* wp_initialize (σ:=σ2) ρ ty obj e Q'.
+      |-- wp_initialize (σ:=σ2) tu ρ ty obj e Q -* wp_initialize (σ:=σ2) tu ρ ty obj e Q'.
     Proof using.
       rewrite /wp_initialize.
       case_eq (drop_qualifiers ty) =>/=; intros; eauto;
@@ -198,12 +216,12 @@ Module Type Init.
     Qed.
 
     Lemma wp_initialize_wand obj ty e Q Q' :
-      wp_initialize (σ:=σ2) ρ ty obj e Q
-      |-- (Forall free, Q free -* Q' free) -* wp_initialize (σ:=σ2) ρ ty obj e Q'.
+      wp_initialize (σ:=σ2) tu ρ ty obj e Q
+      |-- (Forall free, Q free -* Q' free) -* wp_initialize (σ:=σ2) tu ρ ty obj e Q'.
     Proof. by iIntros "H Y"; iRevert "H"; iApply wp_initialize_frame. Qed.
 
     Theorem wpi_frame (cls : globname) (this : ptr) (e : Initializer) k1 k2 :
-      k1 -* k2 |-- wpi (σ:=σ1) ρ cls this e k1 -* wpi (σ:=σ2) ρ cls this e k2.
+      k1 -* k2 |-- wpi (σ:=σ1) tu ρ cls this e k1 -* wpi (σ:=σ2) tu ρ cls this e k2.
     Proof. Abort. (* This is not provable *)
 
   End frames.
@@ -215,11 +233,11 @@ Module Type Init.
        [genv] weakening.
      *)
 
-    Context `{Σ : cpp_logic thread_info} {σ : genv}.
+    Context `{Σ : cpp_logic thread_info} {σ : genv} (tu : translation_unit).
     Variables (ρ : region).
 
     Theorem wpi_frame (cls : globname) (this : ptr) (e : Initializer) k1 k2 :
-      k1 -* k2 |-- wpi ρ cls this e k1 -* wpi ρ cls this e k2.
+      k1 -* k2 |-- wpi tu ρ cls this e k1 -* wpi tu ρ cls this e k2.
     Proof.
       clear.
       iIntros "X". rewrite /wpi. iApply wp_initialize_frame.

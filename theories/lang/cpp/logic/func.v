@@ -21,6 +21,12 @@ Arguments UNSUPPORTED {_ _} _%bs.
 
 Section with_cpp.
   Context `{Σ : cpp_logic thread_info} {resolve:genv}.
+  Variable tu : translation_unit.
+
+  Notation wp := (wp tu).
+  Notation wpi := (wpi tu).
+  Notation wp_init := (wp_init tu).
+  #[local] Notation interp := (interp tu).
 
   #[local] Open Scope free_scope.
 
@@ -41,7 +47,7 @@ Section with_cpp.
     match f with
     | 0 => False
     | S f =>
-      match resolve.(genv_tu) !! cls with
+      match tu !! cls with
       | Some (Gstruct st) =>
         (if include_base && has_vtable st then identityR cls path q else emp) **
         [∗list] b ∈ st.(s_bases),
@@ -235,7 +241,7 @@ Section with_cpp.
         (* there is no initializer for this member, so we "default initialize" it
            (see https://eel.is/c++draft/dcl.init#general-7 )
          *)
-        default_initialize m.(mem_type)
+        default_initialize tu m.(mem_type)
           (this ,, _field {| f_type := cls ; f_name := m.(mem_name) |})
           (fun frees => interp frees (wpi_members ρ cls this members inits Q))
       | i :: is' =>
@@ -441,7 +447,7 @@ Section with_cpp.
       match args with
       | thisp :: rest_vals =>
         let ty := Tnamed ctor.(c_class) in
-        match resolve.(genv_tu) !! ctor.(c_class) with
+        match tu !! ctor.(c_class) with
         | Some (Gstruct cls) =>
           (* this is a structure *)
           thisp |-> tblockR ty 1 **
@@ -513,7 +519,7 @@ Section with_cpp.
       (* ^ defaulted destructors are not supported *)
     | Some (UserDefined body) =>
       let epilog :=
-          match resolve.(genv_tu) !! dtor.(d_class) with
+          match tu !! dtor.(d_class) with
           | Some (Gstruct s) => Some $ fun (thisp : ptr) =>
             thisp |-> struct_paddingR 1 dtor.(d_class) **
             wpd_members dtor.(d_class) thisp s.(s_fields)

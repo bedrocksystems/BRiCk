@@ -10,7 +10,7 @@ Require Import iris.proofmode.proofmode.
 Require Import bedrock.lang.cpp.ast.
 Require Import bedrock.lang.cpp.semantics.
 From bedrock.lang.cpp.logic Require Import pred heap_pred path_pred.
-Require Import bedrock.lang.cpp.logic.wp.
+From bedrock.lang.cpp.logic Require Import wp translation_unit.
 Require Import bedrock.lang.cpp.heap_notations.
 
 Section with_cpp.
@@ -90,18 +90,20 @@ Section with_cpp.
   (** [resolve_virtual σ this cls f Q] returns [Q fa this'] if resolving [f] on
       [this] results in a function that is equivalent to calling the pointer [fa]
       passing [this'] as the "this" argument.
+
+      TODO: this definition should be changed to use [tu_get_impl] above.
    *)
-  Definition resolve_virtual {σ : genv}
-             (this : ptr) (cls : globname) (f : obj_name)
+  Definition resolve_virtual
+             {σ : genv} (this : ptr) (cls : globname) (f : obj_name)
              (Q : forall (faddr : ptr) (cls_type : globname) (this_addr : ptr), mpred)
     : mpred :=
-    Exists (path : list globname),
-      (Exists q, this |-> identityR (σ:=σ) cls path q ** [| path <> nil |] ** True) //\\
+    Exists (path : list globname), (* denoteModule (resolve:=σ) tu ** *)
+      ((Exists q, this |-> identityR cls path q ** [| path <> nil |] ** True) //\\
       match get_impl cls path f with
       | Some (fa, cls, off) => Q fa cls (_offset_ptr this off)
       | None => (* the function was not found or the implementation was pure virtual *)
         False
-      end.
+      end).
 
   Lemma resolve_virtual_frame {σ : genv} (cls : globname) (this : ptr) s
     (Q Q' : ptr → globname → ptr → mpredI) :
@@ -112,7 +114,7 @@ Section with_cpp.
     rewrite /resolve_virtual.
     iIntros "X Y".
     iDestruct "Y" as (path) "Y".
-    iExists path.
+    iExists path; iFrame.
     iSplit.
     { iDestruct "Y" as "[$ _]". }
     { iDestruct "Y" as "[_ Y]". case_match => //.

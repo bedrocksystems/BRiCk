@@ -295,25 +295,29 @@ NOTATION_wp_discard_nowrap =
 
 Arguments NOTATION_wp_discard_nowrap Q%function_scope
 NOTATION_wp_func = 
-λ (F : Func) (ls : list ptr) (Q : ptr → epred), ::wpFunc
-     : Func → list ptr → (ptr → epred) → mpred
+λ (tu : translation_unit) (F : Func) (ls : list ptr) (Q : ptr → epred),
+  ::wpFunc Q
+     : translation_unit → Func → list ptr → (ptr → epred) → mpred
 
-Arguments NOTATION_wp_func F ls%list_scope Q%function_scope
+Arguments NOTATION_wp_func tu F ls%list_scope Q%function_scope
 NOTATION_wp_method = 
-λ (M : Method) (ls : list ptr) (Q : ptr → epred), ::wpMethod
-     : Method → list ptr → (ptr → epred) → mpred
+λ (tu : translation_unit) (M : Method) (ls : list ptr) (Q : ptr → epred),
+  ::wpMethod Q
+     : translation_unit → Method → list ptr → (ptr → epred) → mpred
 
-Arguments NOTATION_wp_method M ls%list_scope Q%function_scope
+Arguments NOTATION_wp_method tu M ls%list_scope Q%function_scope
 NOTATION_wp_ctor = 
-λ (C : Ctor) (ls : list ptr) (Q : ptr → epred), ::wpCtor
-     : Ctor → list ptr → (ptr → epred) → mpred
+λ (tu : translation_unit) (C : Ctor) (ls : list ptr) (Q : ptr → epred),
+  ::wpCtor Q
+     : translation_unit → Ctor → list ptr → (ptr → epred) → mpred
 
-Arguments NOTATION_wp_ctor C ls%list_scope Q%function_scope
+Arguments NOTATION_wp_ctor tu C ls%list_scope Q%function_scope
 NOTATION_wp_dtor = 
-λ (D : Dtor) (ls : list ptr) (Q : ptr → epred), ::wpDtor
-     : Dtor → list ptr → (ptr → epred) → mpred
+λ (tu : translation_unit) (D : Dtor) (ls : list ptr) (Q : ptr → epred),
+  ::wpDtor Q
+     : translation_unit → Dtor → list ptr → (ptr → epred) → mpred
 
-Arguments NOTATION_wp_dtor D ls%list_scope Q%function_scope
+Arguments NOTATION_wp_dtor tu D ls%list_scope Q%function_scope
 NOTATION_wp_args_nowrap = 
 λ (tys_ar : list type * function_arity) (es : list expr.Expr) 
   (Q : list ptr → FreeTemps → mpred),
@@ -717,25 +721,29 @@ NOTATION_wp_discard_nowrap =
 
 Arguments NOTATION_wp_discard_nowrap Q%function_scope
 NOTATION_wp_func = 
-λ (F : Func) (ls : list ptr) (Q : ptr → epred), ::wpFunc (Q)
-     : Func → list ptr → (ptr → epred) → mpred
+λ (tu : translation_unit) (F : Func) (ls : list ptr) (Q : ptr → epred),
+  ::wpFunc (Q)
+     : translation_unit → Func → list ptr → (ptr → epred) → mpred
 
-Arguments NOTATION_wp_func F ls%list_scope Q%function_scope
+Arguments NOTATION_wp_func tu F ls%list_scope Q%function_scope
 NOTATION_wp_method = 
-λ (M : Method) (ls : list ptr) (Q : ptr → epred), ::wpMethod (Q)
-     : Method → list ptr → (ptr → epred) → mpred
+λ (tu : translation_unit) (M : Method) (ls : list ptr) (Q : ptr → epred),
+  ::wpMethod (Q)
+     : translation_unit → Method → list ptr → (ptr → epred) → mpred
 
-Arguments NOTATION_wp_method M ls%list_scope Q%function_scope
+Arguments NOTATION_wp_method tu M ls%list_scope Q%function_scope
 NOTATION_wp_ctor = 
-λ (C : Ctor) (ls : list ptr) (Q : ptr → epred), ::wpCtor (Q)
-     : Ctor → list ptr → (ptr → epred) → mpred
+λ (tu : translation_unit) (C : Ctor) (ls : list ptr) (Q : ptr → epred),
+  ::wpCtor (Q)
+     : translation_unit → Ctor → list ptr → (ptr → epred) → mpred
 
-Arguments NOTATION_wp_ctor C ls%list_scope Q%function_scope
+Arguments NOTATION_wp_ctor tu C ls%list_scope Q%function_scope
 NOTATION_wp_dtor = 
-λ (D : Dtor) (ls : list ptr) (Q : ptr → epred), ::wpDtor (Q)
-     : Dtor → list ptr → (ptr → epred) → mpred
+λ (tu : translation_unit) (D : Dtor) (ls : list ptr) (Q : ptr → epred),
+  ::wpDtor (Q)
+     : translation_unit → Dtor → list ptr → (ptr → epred) → mpred
 
-Arguments NOTATION_wp_dtor D ls%list_scope Q%function_scope
+Arguments NOTATION_wp_dtor tu D ls%list_scope Q%function_scope
 NOTATION_wp_args_nowrap = 
 λ (tys_ar : list type * function_arity) (es : list expr.Expr) 
   (Q : list ptr → FreeTemps → mpred),

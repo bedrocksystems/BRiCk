@@ -17,7 +17,14 @@ Module Type Stmt.
   (** weakest pre-condition for statements
    *)
   Section with_resolver.
-    Context `{Σ : cpp_logic thread_info} {resolve:genv}.
+    Context `{Σ : cpp_logic thread_info} {σ : genv}.
+    Variable (tu : translation_unit).
+
+    #[local] Notation wp := (wp tu).
+    #[local] Notation interp := (interp tu).
+    #[local] Notation wp_initialize := (wp_initialize tu).
+    #[local] Notation default_initialize := (default_initialize tu).
+
 
     Implicit Types Q : Kpred.
 
@@ -46,7 +53,7 @@ Module Type Stmt.
     (** * Expression Evaluation *)
 
     Axiom wp_expr : forall ρ vc e Q,
-        |> wp_discard ρ vc e (fun free => interp free (Q Normal))
+        |> wp_discard tu ρ vc e (fun free => interp free (Q Normal))
         |-- wp ρ (Sexpr vc e) Q.
 
     (** * Declarations *)
@@ -188,7 +195,7 @@ Module Type Stmt.
     (** [if] *)
 
     Axiom wp_if : forall ρ e thn els Q,
-        |> Unfold wp_test (wp_test ρ e (fun c free =>
+        |> Unfold WPE.wp_test (wp_test tu ρ e (fun c free =>
                interp free $
                if c
                then wp ρ thn Q
@@ -232,7 +239,7 @@ Module Type Stmt.
         let incr_I :=
           match incr with
           | None => I
-          | Some (vc,incr) => wp_discard ρ vc incr (fun free => interp free I)
+          | Some (vc,incr) => wp_discard tu ρ vc incr (fun free => interp free I)
           end
         in
         match test with
@@ -257,7 +264,7 @@ Module Type Stmt.
           match rt with
           | Break => Q Normal
           | Continue | Normal =>
-            Unfold wp_test (wp_test ρ e (fun c free => interp free $ if c then I else Q Normal))
+            Unfold WPE.wp_test (wp_test tu ρ e (fun c free => interp free $ if c then I else Q Normal))
           | rt => Q rt
           end).
 
@@ -416,7 +423,7 @@ Module Type Stmt.
         match wp_switch_block (Some $ default_from_cases (get_cases b)) b with
         | None => UNSUPPORTED (switch_block b)
         | Some cases =>
-          wp_operand ρ e (fun v free => interp free $
+          wp_operand tu ρ e (fun v free => interp free $
                     Exists vv : Z, [| v = Vint vv |] **
                     [∧list] x ∈ cases, [| x.1 vv |] -* wp_block ρ x.2 (Kswitch Q))
         end

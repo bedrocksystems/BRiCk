@@ -8,7 +8,7 @@ Require Import ZArith.
 From bedrock.lang.cpp Require Import notations code_notations logic logic.builtins.
 
 Module WpTestDefns.
-  Context (ti : biIndex) (Σ : cpp_logic ti) (σ : genv) (ρ : region)
+  Context (ti : biIndex) (Σ : cpp_logic ti) (σ : genv) (tu : translation_unit) (ρ : region)
           (v : val) (p p' p'' p''' this : ptr) (vc : expr.ValCat)
           (free : FreeTemps) (E : epred) (K : Kpred).
   #[local] Notation ty := (types.Tptr types.Tvoid).
@@ -26,12 +26,12 @@ Module WpTestDefns.
 
   Section Statements.
     Definition NOTATION_wp_nowrap :=
-      wp (Rbind "bar"%bs p' (Rbind "foo" p (Remp (Some this) None ty))) s K.
+      wp tu (Rbind "bar"%bs p' (Rbind "foo" p (Remp (Some this) None ty))) s K.
     Definition NOTATION_wp_wrap :=
-      wp (Rbind "qux" p''' (Rbind "baz"%bs p'' (Rbind "bar"%bs p' (Rbind "foo" p (Remp (Some this) None ty))))) (Sseq [s; s; s; s]) K.
+      wp tu (Rbind "qux" p''' (Rbind "baz"%bs p'' (Rbind "bar"%bs p' (Rbind "foo" p (Remp (Some this) None ty))))) (Sseq [s; s; s; s]) K.
 
     Definition NOTATION_wp_decl_nowrap (decl : VarDecl) Q :=
-      wp_decl (Rbind "bar"%bs p' (Rbind "foo" p (Remp (Some this) None ty)))
+      wp_decl tu (Rbind "bar"%bs p' (Rbind "foo" p (Remp (Some this) None ty)))
                   (Rbind "bar"%bs p' (Rbind "foo" p (Remp (Some this) None ty)))
                   decl Q.
   End Statements.
@@ -54,88 +54,88 @@ Module WpTestDefns.
 
   Section Cleanup.
     Definition NOTATION_destroy_val_nowrap :=
-      destroy_val ty p E.
+      destroy_val tu ty p E.
     Definition NOTATION_destroy_val_wrap (aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa : ptr) :=
-      destroy_val ty aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa E.
+      destroy_val tu ty aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa E.
 
     Definition NOTATION_interp_nowrap :=
-      interp free E.
+      interp tu free E.
     Definition NOTATION_interp_wrap :=
-      interp (FreeTemps.id |*| FreeTemps.id |*| FreeTemps.id |*| FreeTemps.id |*| FreeTemps.id |*| FreeTemps.id |*| FreeTemps.id |*| FreeTemps.id |*| FreeTemps.id |*| FreeTemps.id |*| FreeTemps.id)%free E.
+      interp tu (FreeTemps.id |*| FreeTemps.id |*| FreeTemps.id |*| FreeTemps.id |*| FreeTemps.id |*| FreeTemps.id |*| FreeTemps.id |*| FreeTemps.id |*| FreeTemps.id |*| FreeTemps.id |*| FreeTemps.id)%free E.
   End Cleanup.
 
   Section Expressions.
     Definition NOTATION_wp_lval_nowrap Q :=
-      wp_lval (Rbind "bar"%bs p' (Rbind "foo" p (Remp (Some this) None ty))) e Q.
+      wp_lval tu (Rbind "bar"%bs p' (Rbind "foo" p (Remp (Some this) None ty))) e Q.
     Definition NOTATION_wp_lval_wrap Q :=
-      wp_lval (Rbind "qux" p''' (Rbind "baz"%bs p'' (Rbind "bar"%bs p' (Rbind "foo" p (Remp (Some this) None ty))))) e Q.
+      wp_lval tu (Rbind "qux" p''' (Rbind "baz"%bs p'' (Rbind "bar"%bs p' (Rbind "foo" p (Remp (Some this) None ty))))) e Q.
 
     Definition NOTATION_wp_init_nowrap Q :=
-      wp_init (Rbind "bar"%bs p' (Rbind "foo" p (Remp (Some this) None ty))) ty this e Q.
+      wp_init tu (Rbind "bar"%bs p' (Rbind "foo" p (Remp (Some this) None ty))) ty this e Q.
     Definition NOTATION_wp_init_wrap Q :=
-      wp_init (Rbind "qux" p''' (Rbind "baz"%bs p'' (Rbind "bar"%bs p' (Rbind "foo" p (Remp (Some this) None ty))))) ty this e Q.
+      wp_init tu (Rbind "qux" p''' (Rbind "baz"%bs p'' (Rbind "bar"%bs p' (Rbind "foo" p (Remp (Some this) None ty))))) ty this e Q.
 
     Definition NOTATION_wp_prval_nowrap Q :=
-      wp_prval (Rbind "bar"%bs p' (Rbind "foo" p (Remp (Some this) None ty))) e Q.
+      wp_prval tu (Rbind "bar"%bs p' (Rbind "foo" p (Remp (Some this) None ty))) e Q.
     Definition NOTATION_wp_prval_wrap Q :=
-      wp_prval (Rbind "qux" p''' (Rbind "baz"%bs p'' (Rbind "bar"%bs p' (Rbind "foo" p (Remp (Some this) None ty))))) e Q.
+      wp_prval tu (Rbind "qux" p''' (Rbind "baz"%bs p'' (Rbind "bar"%bs p' (Rbind "foo" p (Remp (Some this) None ty))))) e Q.
 
     Definition NOTATION_wp_operand_nowrap Q :=
-      wp_operand (Rbind "bar"%bs p' (Rbind "foo" p (Remp (Some this) None ty))) e Q.
+      wp_operand tu (Rbind "bar"%bs p' (Rbind "foo" p (Remp (Some this) None ty))) e Q.
     Definition NOTATION_wp_operand_wrap Q :=
-      wp_operand (Rbind "qux" p''' (Rbind "baz"%bs p'' (Rbind "bar"%bs p' (Rbind "foo" p (Remp (Some this) None ty))))) e Q.
+      wp_operand tu (Rbind "qux" p''' (Rbind "baz"%bs p'' (Rbind "bar"%bs p' (Rbind "foo" p (Remp (Some this) None ty))))) e Q.
 
     Definition NOTATION_wp_xval_nowrap Q :=
-      wp_xval (Rbind "bar"%bs p' (Rbind "foo" p (Remp (Some this) None ty))) e Q.
+      wp_xval tu (Rbind "bar"%bs p' (Rbind "foo" p (Remp (Some this) None ty))) e Q.
     Definition NOTATION_wp_xval_wrap Q :=
-      wp_xval (Rbind "qux" p''' (Rbind "baz"%bs p'' (Rbind "bar"%bs p' (Rbind "foo" p (Remp (Some this) None ty))))) e Q.
+      wp_xval tu (Rbind "qux" p''' (Rbind "baz"%bs p'' (Rbind "bar"%bs p' (Rbind "foo" p (Remp (Some this) None ty))))) e Q.
 
     Definition NOTATION_wp_glval_nowrap Q :=
-      wp_glval (Rbind "bar"%bs p' (Rbind "foo" p (Remp (Some this) None ty))) expr.Lvalue e Q.
+      wp_glval tu (Rbind "bar"%bs p' (Rbind "foo" p (Remp (Some this) None ty))) expr.Lvalue e Q.
     Definition NOTATION_wp_glval_wrap Q :=
-      wp_glval (Rbind "qux" p''' (Rbind "baz"%bs p'' (Rbind "bar"%bs p' (Rbind "foo" p (Remp (Some this) None ty))))) expr.Xvalue e Q.
+      wp_glval tu (Rbind "qux" p''' (Rbind "baz"%bs p'' (Rbind "bar"%bs p' (Rbind "foo" p (Remp (Some this) None ty))))) expr.Xvalue e Q.
 
     Definition NOTATION_wp_discard_nowrap Q :=
-      wp_discard (Rbind "foo" p (Remp (Some this) None ty)) expr.Lvalue e Q.
+      wp_discard tu (Rbind "foo" p (Remp (Some this) None ty)) expr.Lvalue e Q.
     Definition NOTATION_wp_discard_wrap Q :=
-      wp_discard (Rbind "qux" p''' (Rbind "baz"%bs p'' (Rbind "bar"%bs p' (Rbind "foo" p (Remp (Some this) None ty))))) expr.Xvalue e Q.
+      wp_discard tu (Rbind "qux" p''' (Rbind "baz"%bs p'' (Rbind "bar"%bs p' (Rbind "foo" p (Remp (Some this) None ty))))) expr.Xvalue e Q.
 
-    Definition NOTATION_wp_func F ls Q :=
-      wp_func F ls Q.
+    Definition NOTATION_wp_func tu F ls Q :=
+      wp_func tu F ls Q.
 
-    Definition NOTATION_wp_method M ls Q :=
-      wp_method M ls Q.
+    Definition NOTATION_wp_method tu M ls Q :=
+      wp_method tu M ls Q.
 
-    Definition NOTATION_wp_ctor C ls Q :=
-      wp_ctor C ls Q.
+    Definition NOTATION_wp_ctor tu C ls Q :=
+      wp_ctor tu C ls Q.
 
-    Definition NOTATION_wp_dtor D ls Q :=
-      wp_dtor D ls Q.
+    Definition NOTATION_wp_dtor tu D ls Q :=
+      wp_dtor tu D ls Q.
 
     Definition NOTATION_wp_args_nowrap tys_ar es Q :=
-      wp_args (Rbind "bar"%bs p' (Rbind "foo" p (Remp (Some this) None ty))) tys_ar es Q.
+      wp_args tu (Rbind "bar"%bs p' (Rbind "foo" p (Remp (Some this) None ty))) tys_ar es Q.
     Definition NOTATION_wp_args_wrap tys_ar es Q :=
-      wp_args (Rbind "qux"%bs p''' (Rbind "baz"%bs p'' (Rbind "bar"%bs p' (Rbind "foo" p (Remp (Some this) None ty))))) tys_ar es Q.
+      wp_args tu (Rbind "qux"%bs p''' (Rbind "baz"%bs p'' (Rbind "bar"%bs p' (Rbind "foo" p (Remp (Some this) None ty))))) tys_ar es Q.
 
     Definition NOTATION_wp_initialize_nowrap Q :=
-      wp_initialize (Rbind "foo" p (Remp (Some this) None ty)) ty p e Q.
+      wp_initialize tu (Rbind "foo" p (Remp (Some this) None ty)) ty p e Q.
     Definition NOTATION_wp_initialize_wrap Q :=
-      wp_initialize (Rbind "qux"%bs p''' (Rbind "baz"%bs p'' (Rbind "bar"%bs p' (Rbind "foo" p (Remp (Some this) None ty))))) ty p e Q.
+      wp_initialize tu (Rbind "qux"%bs p''' (Rbind "baz"%bs p'' (Rbind "bar"%bs p' (Rbind "foo" p (Remp (Some this) None ty))))) ty p e Q.
 
     Definition NOTATION_wp_cond_nowrap T Q :=
-      @wp_cond _ _ _ (Rbind "foo" p (Remp (Some this) None ty)) T Q.
+      @wp_cond _ _ _ tu (Rbind "foo" p (Remp (Some this) None ty)) T Q.
     Definition NOTATION_wp_cond_wrap T Q :=
-      @wp_cond _ _ _ (Rbind "qux"%bs p''' (Rbind "baz"%bs p'' (Rbind "bar"%bs p' (Rbind "foo" p (Remp (Some this) None ty)))))T Q.
+      @wp_cond _ _ _ tu (Rbind "qux"%bs p''' (Rbind "baz"%bs p'' (Rbind "bar"%bs p' (Rbind "foo" p (Remp (Some this) None ty)))))T Q.
 
     Definition NOTATION_wp_call_nowrap ls Q :=
-      wp_call (Rbind "foo" p (Remp (Some this) None ty)) ty Vundef ls Q.
+      wp_call tu (Rbind "foo" p (Remp (Some this) None ty)) ty Vundef ls Q.
     Definition NOTATION_wp_call_wrap ls Q :=
-      wp_call (Rbind "qux"%bs p''' (Rbind "baz"%bs p'' (Rbind "bar"%bs p' (Rbind "foo" p (Remp (Some this) None ty))))) ty Vundef ls Q.
+      wp_call tu (Rbind "qux"%bs p''' (Rbind "baz"%bs p'' (Rbind "bar"%bs p' (Rbind "foo" p (Remp (Some this) None ty))))) ty Vundef ls Q.
 
     Definition NOTATION_wp_mcall_nowrap ls Q :=
-      wp_mcall (Rbind "foo" p (Remp (Some this) None ty)) Vundef p ty ty ls Q.
+      wp_mcall tu (Rbind "foo" p (Remp (Some this) None ty)) Vundef p ty ty ls Q.
     Definition NOTATION_wp_mcall_wrap ls Q :=
-      wp_mcall (Rbind "qux"%bs p''' (Rbind "baz"%bs p'' (Rbind "bar"%bs p' (Rbind "foo" p (Remp (Some this) None ty))))) Vundef p ty ty ls Q.
+      wp_mcall tu (Rbind "qux"%bs p''' (Rbind "baz"%bs p'' (Rbind "bar"%bs p' (Rbind "foo" p (Remp (Some this) None ty))))) Vundef p ty ty ls Q.
   End Expressions.
 End WpTestDefns.
 

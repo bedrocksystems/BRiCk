@@ -12,7 +12,7 @@ From bedrock.lang.cpp.logic Require Import
 Require Import bedrock.lang.cpp.heap_notations.
 
 Section with_resolve.
-  Context `{Σ : cpp_logic} {σ : genv}.
+  Context `{Σ : cpp_logic} {σ : genv} (tu : translation_unit).
   Variables (ρ : region).
   Implicit Types (p : ptr).
 
@@ -34,7 +34,7 @@ Section with_resolve.
      NOTE this definition is *not* sound in the presence of exceptions.
   *)
   Fixpoint zipTypes (ts : list type) (ar : function_arity) (es : list Expr) : option (list (M ptr) * option (nat * list type)) :=
-    let wp_arg_init ty init K := Forall p, wp_initialize ρ ty p init (fun frees => K p (FreeTemps.delete ty p >*> frees)%free) in
+    let wp_arg_init ty init K := Forall p, wp_initialize tu ρ ty p init (fun frees => K p (FreeTemps.delete ty p >*> frees)%free) in
     match ts with
     | [] =>
         if ar is Ar_Variadic then

@@ -12,7 +12,7 @@ From bedrock.lang.cpp Require Import ast semantics.
 From bedrock.lang.cpp.logic Require Import
      pred path_pred heap_pred
      destroy initializers dispatch
-     wp call.
+     wp call translation_unit.
 
 Require Import bedrock.lang.cpp.heap_notations.
 
@@ -54,17 +54,17 @@ Module Type Expr__newdelete.
     Context `{Σ : cpp_logic thread_info}.
 
     Section with_resolve.
-      Context {resolve:genv}.
-      Variables (ρ : region).
+      Context {σ : genv} (ρ : region).
+      Variable (tu : translation_unit).
 
-      #[local] Notation wp_prval := (wp_prval ρ).
-      #[local] Notation wp_init := (wp_init ρ).
-      #[local] Notation wp_initialize := (wp_initialize ρ).
-      #[local] Notation wp_operand := (wp_operand ρ).
-      #[local] Notation wp_args := (wp_args ρ).
-      #[local] Notation fspec := (fspec resolve.(genv_tu).(globals)).
+      #[local] Notation wp_prval := (wp_prval tu ρ).
+      #[local] Notation wp_init := (wp_init tu ρ).
+      #[local] Notation wp_initialize := (wp_initialize tu ρ).
+      #[local] Notation default_initialize := (default_initialize tu).
+      #[local] Notation wp_operand := (wp_operand tu ρ).
+      #[local] Notation wp_args := (wp_args tu ρ).
 
-      #[local] Notation size_of := (@size_of resolve) (only parsing).
+      #[local] Notation size_of := (@size_of σ) (only parsing).
 
       #[local] Notation Tsize_t := Tu64 (only parsing).
       #[local] Notation Tbyte := Tuchar (only parsing).
@@ -122,10 +122,10 @@ Module Type Expr__newdelete.
             new_fn new_args aty Q targs sz
             (nfty := normalize_type new_fn.2)
             (_ : arg_types nfty = Some (Tnum sz Unsigned :: targs, Ar_Definite)),
-            wp_args (targs, Ar_Definite) new_args (fun vs free =>
+            wp_args  (targs, Ar_Definite) new_args (fun vs free =>
                 Exists sz al, [| size_of aty = Some sz |] ** [| has_type sz Tsize_t |] ** [| align_of aty = Some al |] **
                 Reduce (alloc_size_t sz (fun p FR =>
-                |> fspec nfty (_global new_fn.1) (p :: vs) (fun res => FR $
+                |> fspec tu.(globals) nfty (_global new_fn.1) (p :: vs) (fun res => FR $
                       Exists storage_ptr : ptr, res |-> primR (Tptr Tvoid) 1 (Vptr storage_ptr) **
                         if bool_decide (storage_ptr = nullptr) then
                           [| new_args <> nil |] ** Q (Vptr storage_ptr) free
@@ -198,7 +198,7 @@ Module Type Expr__newdelete.
                      *)
                     Forall sz',
                       Reduce (alloc_size_t (sz' + sz) (fun psz FR =>
-                      |> fspec nfty (_global new_fn.1) (psz :: vs) (fun res => FR $
+                      |> fspec tu.(globals) nfty (_global new_fn.1) (psz :: vs) (fun res => FR $
                         Exists storage_ptr : ptr, res |-> primR (Tptr Tvoid) 1 (Vptr storage_ptr) **
                           if bool_decide (storage_ptr = nullptr) then
                             [| new_args <> nil |] ** Q (Vptr storage_ptr) free
@@ -253,16 +253,15 @@ Module Type Expr__newdelete.
            In the case that [ty] has a custom [operator delete], that function will be called, otherwise
            the [default] delete operator will be used.
          *)
-        Definition delete_val (default : obj_name * type) (ty : type) (p : ptr) (Q : mpred) : mpred :=
+        Definition delete_val tu (default : obj_name * type) (ty : type) (p : ptr) (Q : mpred) : mpred :=
           let del_type := Tfunction Tvoid (Tptr Tvoid :: nil) in
-          (** TODO this should use [operand_receive Tvoid] *)
           let del '(fn, ty) :=
-              alloc_pointer p (fun p' free => fspec ty (_global fn) (p' :: nil) (fun p =>
-                operand_receive Tvoid p (fun _ => interp free Q)))
+              alloc_pointer p (fun p' free => fspec tu.(globals) ty (_global fn) (p' :: nil) (fun p =>
+                operand_receive Tvoid p (fun _ => interp tu free Q)))
           in
           match erase_qualifiers ty with
           | Tnamed nm =>
-            match resolve.(genv_tu) !! nm with
+            match tu !! nm with
             | Some (Gstruct s) =>
               del $ from_option (fun x => (x, del_type)) default s.(s_delete)
             | Some (Gunion u) =>
@@ -272,8 +271,8 @@ Module Type Expr__newdelete.
           | _ => del default
           end.
 
-        Lemma delete_val_frame : forall default ty p Q Q',
-            Q -* Q' |-- delete_val default ty p Q -* delete_val default ty p Q'.
+        Lemma delete_val_frame : forall tu default ty p Q Q',
+            Q -* Q' |-- delete_val tu default ty p Q -* delete_val tu default ty p Q'.
         Proof.
           rewrite /delete_val; intros.
           iIntros "X"; repeat case_match; eauto; iApply alloc_pointer_frame; iIntros (??);
@@ -287,7 +286,7 @@ Module Type Expr__newdelete.
           match drop_qualifiers ty with
           | Tqualified _ ty => False (* unreachable *)
           | Tnamed cls      =>
-            match resolve.(genv_tu) !! cls with
+            match tu !! cls with
             | Some (Gstruct s) =>
               if has_virtual_dtor s then
                 (* NOTE [has_virtual_dtor] could be derived from the vtable... *)
@@ -354,13 +353,15 @@ Module Type Expr__newdelete.
              then
                (* this conjunction justifies the compiler calling the delete function
                   or not calling it. *)
-                 delete_val delete_fn destroyed_type nullptr (Q Vvoid free)
+                 delete_val tu delete_fn destroyed_type nullptr (Q Vvoid free)
                ∧ Q Vvoid free
              else
                (* v---- Calling destructor with object pointer *)
                resolve_dtor destroyed_type obj_ptr (fun this' mdc_ty =>
                     this' |-> new_tokenR mdc_ty **
-                    (destroy_val mdc_ty this' $
+                    (* v---- because dispatch could be virtual, the translation unit
+                             used to destroy the object may need to be different *)
+                    Exists tu', denoteModule tu' ** destroy_val tu' mdc_ty this' (
                     Exists storage_ptr sz, [| size_of mdc_ty = Some sz |] **
                       (* v---- Token for converting obj memory to storage memory *)
                       provides_storage storage_ptr this' mdc_ty **
@@ -368,8 +369,10 @@ Module Type Expr__newdelete.
                          [end_provides_storage], this memory was pre-destructed by
                          [delete_val]. *)
                       (storage_ptr |-> blockR sz 1 -*
-                       (* v---- Calling deallocator with storage pointer *)
-                       delete_val delete_fn mdc_ty storage_ptr (Q Vvoid free)))))
+                       (* v---- Calling deallocator with storage pointer
+                                Like above, because the operation is on the MDC,
+                                we must use [tu'] *)
+                       delete_val tu' delete_fn mdc_ty storage_ptr (Q Vvoid free)))))
 
         |-- wp_operand (Edelete false delete_fn e destroyed_type) Q.
 
@@ -385,7 +388,7 @@ Module Type Expr__newdelete.
              then
                (* this conjunction justifies the compiler calling the delete function
                   or not calling it. *)
-                  delete_val delete_fn destroyed_type nullptr (Q Vvoid free)
+                  delete_val tu delete_fn destroyed_type nullptr (Q Vvoid free)
                ∧ Q Vvoid free
              else (
                Exists array_size,
@@ -395,7 +398,7 @@ Module Type Expr__newdelete.
                obj_ptr |-> new_tokenR array_ty **
                (* /---- Calling destructor with object pointer
                   v     Note: virtual dispatch is not allowed for [delete[]] *)
-               destroy_val array_ty obj_ptr (
+               destroy_val tu array_ty obj_ptr (
                     Exists storage_ptr (sz sz' : N),
                       [| size_of array_ty = Some sz |] **
                       (* v---- Token for converting obj memory to storage memory *)
@@ -410,8 +413,8 @@ Module Type Expr__newdelete.
                           Note: we rely on the AST to have correctly resolved this since the dispatch is statically known.
                         *)
                        Reduce (alloc_pointer storage_ptr (fun p FR =>
-                         fspec delete_fn.2 (_global delete_fn.1)
-                             (p :: nil) (fun p => operand_receive Tvoid p (fun _ => interp FR $ Q Vvoid free))))))))
+                         fspec tu.(globals) delete_fn.2 (_global delete_fn.1)
+                             (p :: nil) (fun p => operand_receive Tvoid p (fun _ => interp tu FR $ Q Vvoid free))))))))
         |-- wp_operand (Edelete true delete_fn e destroyed_type) Q.
 
         Section NOTE_potentially_relaxing_array_delete.

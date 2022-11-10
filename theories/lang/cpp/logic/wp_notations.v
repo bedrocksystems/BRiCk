@@ -79,12 +79,12 @@ End RegionNotations.
 Module Export Compact.
   (* [Stmt] WP *)
   Notation "'::wpS' ρ s"
-      := (wp ρ s _)
+      := (wp _ ρ s _)
          ( at level 0
          , format "'[hv  ' ::wpS  '/' '[hv' ρ  '/' s ']' ']'"
          , only printing).
   Notation "'::wpD' old_ρ decl new_ρ"
-      := (wp_decl old_ρ new_ρ decl _)
+      := (wp_decl _ old_ρ new_ρ decl _)
          ( at level 0
          , format "'[hv  ' ::wpD  '/' '[hv' old_ρ  '/' decl  '/' new_ρ ']' ']'"
          , only printing).
@@ -122,55 +122,56 @@ Module Export Compact.
 
   (* Destruction/cleanup-interpretation of temporaries *)
   Notation "'::destroy_val' '{pointer:' p ';' 'type:' ty '}'"
-      := (destroy_val ty%cpp_type p _)
+      := (destroy_val _ ty%cpp_type p _)
          ( at level 0
          , ty custom CPP_type at level 200
          , format "'[hv  ' ::destroy_val  '/' '[hv   ' {pointer:  p ; '/'  type:  ty } ']' ']'"
          , only printing).
   (* NOTE (JH): large [free]s are printed a bit strangely (cf. [NOTATIONS_interp_wrap]) *)
   Notation "'::interp' { free }"
-        := (interp free _)
+        := (interp _ free _)
            ( at level 0
            , format "'[hv  ' ::interp  '/' {  free  } ']'"
            , only printing).
 
   (* Expression WPs *)
   Notation "'::wpL' ρ e"
-        := (wp_lval ρ e _)
+        := (wp_lval _ ρ e _)
            ( at level 0
            , format "'[hv  ' ::wpL  '/' '[hv' ρ  '/' e ']' ']'"
            , only printing).
   Notation "'::wpPRᵢ' ρ '(Pointer' ↦ p ) e"
-        := (wp_init ρ _ p e _)
+        := (wp_init _ ρ _ p e _)
            ( at level 0
            , format "'[hv  ' ::wpPRᵢ  '/' '[hv' ρ  '/' '[' (Pointer  ↦  p )  ']' '/' e ']' ']'"
            , only printing).
   Notation "'::wpPR' ρ e"
-        := (wp_prval ρ e _)
+        := (wp_prval _ ρ e _)
            ( at level 0
            , format "'[hv  ' ::wpPR  '/' '[hv' ρ  '/' e ']' ']'"
            , only printing).
   Notation "'::wpOperand' ρ e"
-        := (wp_operand ρ e _)
+        := (wp_operand _ ρ e _)
            ( at level 0
            , format "'[hv  ' ::wpOperand  '/' '[hv' ρ  '/' e ']' ']'"
            , only printing).
   Notation "'::wpX' ρ e"
-        := (wp_xval ρ e _)
+        := (wp_xval _ ρ e _)
            ( at level 0
            , format "'[hv  ' ::wpX  '/' '[hv' ρ  '/' e ']' ']'"
            , only printing).
   Notation "'::wpGL' ρ '(ValCat' ↦ vc ) e"
-        := (wp_glval ρ vc e _)
+        := (wp_glval _ ρ vc e _)
            ( at level 0
            , format "'[hv  ' ::wpGL  '/' '[hv' ρ  '/' '[' (ValCat  ↦  vc )  ']' '/' e ']' ']'"
            , only printing).
   Notation "'::wpGLₓ' ρ '(ValCat' ↦ vc ) e"
-        := (wp_discard ρ vc e _)
+        := (wp_discard _ ρ vc e _)
            ( at level 0
            , format "'[hv  ' ::wpGLₓ  '/' '[hv' ρ  '/' '[' (ValCat  ↦  vc )  ']' '/' e ']' ']'"
            , only printing).
   (* NOTE (JH): There isn't anything great to print from [Func] since the name was erased *)
+  About wp_func.
   Notation "'::wpFunc'"
         := (wp_func _ _ _)
            ( at level 0
@@ -196,30 +197,30 @@ Module Export Compact.
            , only printing).
   (* TODO (JH): print something more useful *)
   Notation "'::wpArgs' ρ"
-        := (wp_args ρ _ _ _)
+        := (wp_args _ ρ _ _ _)
            ( at level 0
            , format "'[hv  ' ::wpArgs  '/' ρ ']'"
            , only printing).
   Notation "'::wpInitialize' ρ ( p '|->' 'type_ptrR' ty ) e"
-        := (wp_initialize ρ ty%cpp_type p e _)
+        := (wp_initialize _ ρ ty%cpp_type p e _)
            ( at level 0
            , ty custom CPP_type at level 200
            , format "'[hv  ' ::wpInitialize  '/' ρ  '/' '[hv   ' ( p  |->  '/' type_ptrR  ty ) ']'  '/' e ']'"
            , only printing).
   Notation "'::wpCond' ρ ( T )"
-        := (wp_cond ρ (T:=T) _)
+        := (wp_cond _ ρ (T:=T) _)
            ( at level 0
            , format "'[hv  ' ::wpCond  '/' ρ  '/' '[' ( T ) ']' ']'"
            , only printing).
   (* TODO (JH): print something more useful *)
   Notation "'::wpCall' ρ"
-        := (wp_call ρ _ _ _ _)
+        := (wp_call _ ρ _ _ _ _)
            ( at level 0
            , format "'[hv  ' ::wpCall  '/' ρ ']'"
            , only printing).
   (* TODO (JH): print something more useful *)
   Notation "'::wpMCall' ρ"
-        := (wp_mcall ρ _ _ _ _ _ _)
+        := (wp_mcall _ ρ _ _ _ _ _ _)
            ( at level 0
            , format "'[hv  ' ::wpMCall  '/' ρ ']'"
            , only printing).
@@ -228,12 +229,12 @@ End Compact.
 Module Verbose.
   (* [Stmt] WP *)
   Notation "'::wpS' ρ s K"
-      := (wp ρ s K)
+      := (wp _ ρ s K)
          ( at level 0
          , format "'[hv  ' ::wpS  '/' '[hv' ρ  '/' s ']'  '/' K ']'"
          , only printing).
   Notation "'::wpD' old_ρ decl new_ρ Q"
-      := (wp_decl old_ρ new_ρ decl Q)
+      := (wp_decl _ old_ρ new_ρ decl Q)
          ( at level 0
          , format "'[hv  ' ::wpD  '/' '[hv' old_ρ  '/' decl  '/' new_ρ ']'  '/' Q ']'"
          , only printing).
@@ -267,104 +268,104 @@ Module Verbose.
 
   (* Destruction/cleanup-interpretation of temporaries *)
   Notation "'::destroy_val' '{pointer:' p ';' 'type:' ty '}' E"
-      := (destroy_val ty%cpp_type p E)
+      := (destroy_val _ ty%cpp_type p E)
          ( at level 0
          , ty custom CPP_type at level 200
          , format "'[hv  ' ::destroy_val  '/' '[hv   ' {pointer:  p ; '/'  type:  ty } ']'  '/' E ']'"
          , only printing).
   (* NOTE (JH): large [free]s are printed a bit strangely (cf. [NOTATIONS_interp_wrap]) *)
   Notation "'::interp' { free } E"
-        := (interp free E)
+        := (interp _ free E)
            ( at level 0
            , format "'[hv  ' ::interp  '/' {  free  }   '/' E ']'"
            , only printing).
 
   (* Expression WPs *)
   Notation "'::wpL' ρ e Q"
-        := (wp_lval ρ e Q)
+        := (wp_lval _ ρ e Q)
            ( at level 0
            , format "'[hv  ' ::wpL  '/' '[hv' ρ  '/' e ']'  '/' Q ']'"
            , only printing).
   Notation "'::wpPRᵢ' ρ '(Pointer' ↦ p ) e Q"
-        := (wp_init ρ p e Q)
+        := (wp_init _ ρ p e Q)
            ( at level 0
            , format "'[hv  ' ::wpPRᵢ  '/' '[hv' ρ  '/' '[' (Pointer  ↦  p )  ']' '/' e ']'  '/' Q ']'"
            , only printing).
   Notation "'::wpPR' ρ e Q"
-        := (wp_prval ρ e Q)
+        := (wp_prval _ ρ e Q)
            ( at level 0
            , format "'[hv  ' ::wpPR  '/' '[hv' ρ  '/' e ']'  '/' Q ']'"
            , only printing).
   Notation "'::wpOperand' ρ e Q"
-        := (wp_operand ρ e Q)
+        := (wp_operand _ ρ e Q)
            ( at level 0
            , format "'[hv  ' ::wpOperand  '/' '[hv' ρ  '/' e ']'  '/' Q ']'"
            , only printing).
   Notation "'::wpX' ρ e Q"
-        := (wp_xval ρ e Q)
+        := (wp_xval _ ρ e Q)
            ( at level 0
            , format "'[hv  ' ::wpX  '/' '[hv' ρ  '/' e ']'  '/' Q ']'"
            , only printing).
   Notation "'::wpGL' ρ '(ValCat' ↦ vc ) e Q"
-        := (wp_glval ρ vc e Q)
+        := (wp_glval _ ρ vc e Q)
            ( at level 0
            , format "'[hv  ' ::wpGL  '/' '[hv' ρ  '/' '[' (ValCat  ↦  vc )  ']' '/' e ']'  '/' Q ']'"
            , only printing).
   Notation "'::wpGLₓ' ρ '(ValCat' ↦ vc ) e Q"
-        := (wp_discard ρ vc e Q)
+        := (wp_discard _ ρ vc e Q)
            ( at level 0
            , format "'[hv  ' ::wpGLₓ  '/' '[hv' ρ  '/' '[' (ValCat  ↦  vc )  ']' '/' e ']'  '/' Q ']'"
            , only printing).
   (* NOTE (JH): There isn't anything great to print from [Func] since the name was erased *)
   Notation "'::wpFunc' Q"
-        := (wp_func _ _ Q)
+        := (wp_func _ _ _ Q)
            ( at level 0
            , format "'[hv  ' ::wpFunc  '/' Q ']'"
            , only printing).
   (* NOTE (JH): There isn't anything great to print from [Method] since the name was erased *)
   Notation "'::wpMethod' Q"
-        := (wp_method _ _ Q)
+        := (wp_method _ _ _ Q)
            ( at level 0
            , format "'[hv  ' ::wpMethod  '/' Q ']'"
            , only printing).
   (* NOTE (JH): There isn't anything great to print from [Ctor] since the name is erased *)
   Notation "'::wpCtor' Q"
-        := (wp_ctor _ _ Q)
+        := (wp_ctor _ _ _ Q)
            ( at level 0
            , format "'[hv  ' ::wpCtor  '/' Q ']'"
            , only printing).
   (* NOTE (JH): There isn't anything great to print from [Dtor] since the name is erased *)
   Notation "'::wpDtor' Q"
-        := (wp_dtor _ _ Q)
+        := (wp_dtor _ _ _ Q)
            ( at level 0
            , format "'[hv  ' ::wpDtor  '/' Q ']'"
            , only printing).
   (* TODO (JH): print something more useful *)
   Notation "'::wpArgs' ρ Q"
-        := (wp_args ρ _ _ Q)
+        := (wp_args _ ρ _ _ Q)
            ( at level 0
            , format "'[hv  ' ::wpArgs  '/' ρ   '/' Q ']'"
            , only printing).
   Notation "'::wpInitialize' ρ ( p '|->' 'type_ptrR' ty ) e Q"
-        := (wp_initialize ρ ty%cpp_type p e Q)
+        := (wp_initialize _ ρ ty%cpp_type p e Q)
            ( at level 0
            , ty custom CPP_type at level 200
            , format "'[hv  ' ::wpInitialize  '/' ρ  '/' '[hv   ' ( p  |->  '/' type_ptrR  ty ) ']'  '/' e  '/' Q ']'"
            , only printing).
   Notation "'::wpCond' ρ ( T ) Q"
-        := (wp_cond ρ (T:=T) Q)
+        := (wp_cond _ ρ (T:=T) Q)
            ( at level 0
            , format "'[hv  ' ::wpCond  '/' ρ  '/' '[' ( T ) ']'  '/' Q ']'"
            , only printing).
   (* TODO (JH): print something more useful *)
   Notation "'::wpCall' ρ Q"
-        := (wp_call ρ _ _ _ Q)
+        := (wp_call _ ρ _ _ _ Q)
            ( at level 0
            , format "'[hv  ' ::wpCall  '/' ρ  '/' Q ']'"
            , only printing).
   (* TODO (JH): print something more useful *)
   Notation "'::wpMCall' ρ Q"
-        := (wp_mcall ρ _ _ _ _ _ Q)
+        := (wp_mcall _ ρ _ _ _ _ _ Q)
            ( at level 0
            , format "'[hv  ' ::wpMCall  '/' ρ  '/' Q ']'"
            , only printing).
