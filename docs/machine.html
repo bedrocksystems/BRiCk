@@ -101,24 +101,24 @@ The relevant definitions can be found in <a class="reference external" href="_st
       compiled code ([fspec]).
    *)
   Axiom code_at_ok : forall (f : Func) p,
-      code_at σ f p
-      |-- Forall ls Q, wp_func (resolve:=σ) f ls Q -*
-                       fspec (Σ:=Σ) σ.(genv_tu).(globals) (type_of_value (Ofunction f)) p ls Q.
+      code_at σ tu f p
+      |-- Forall ls Q, wp_func (resolve:=σ) tu f ls Q -*
+                       fspec (Σ:=Σ) tu.(globals) (type_of_value (Ofunction f)) p ls Q.
 
   Axiom method_at_ok : forall (m : Method) p,
-      method_at σ m p
-      |-- Forall ls Q, wp_method (resolve:=σ) m ls Q -*
-                       fspec (Σ:=Σ) σ.(genv_tu).(globals) (type_of_value (Omethod m)) p ls Q.
+      method_at σ tu m p
+      |-- Forall ls Q, wp_method (resolve:=σ) tu m ls Q -*
+                       fspec (Σ:=Σ) tu.(globals) (type_of_value (Omethod m)) p ls Q.
 
   Axiom ctor_at_ok : forall (c : Ctor) p,
-      ctor_at σ c p
-      |-- Forall ls Q, wp_ctor (resolve:=σ) c ls Q -*
-                       fspec σ.(genv_tu).(globals) (type_of_value (Oconstructor c)) p ls Q.
+      ctor_at σ tu c p
+      |-- Forall ls Q, wp_ctor (resolve:=σ) tu c ls Q -*
+                       fspec tu.(globals) (type_of_value (Oconstructor c)) p ls Q.
 
   Axiom dtor_at_ok : forall (d : Dtor) p,
-      dtor_at σ d p
-      |-- Forall ls Q, wp_dtor (resolve:=σ) d ls Q -*
-                       fspec σ.(genv_tu).(globals) (type_of_value (Odestructor d)) p ls Q.
+      dtor_at σ tu d p
+      |-- Forall ls Q, wp_dtor (resolve:=σ) tu d ls Q -*
+                       fspec tu.(globals) (type_of_value (Odestructor d)) p ls Q.
 </pre></div>
 </div>
 <p>This approach effectively casts C++ as a stylized way to write machine code; however, it is more than simply macros.

@@ -716,7 +716,7 @@ Combinators for building <span class="inlinecode"><a class="idref" href="bedrock
 </div>
 
 <div class="doc">
-<span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.specs.wp_spec_compat.html#wp_spec_bind"><span class="id" title="definition">wp_spec_bind</span></a></span> <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.logic.initializers.html#Init.wp"><span class="id" title="abbreviation">wp</span></a></span> <span class="inlinecode"><span class="id" title="var">a</span></span> <span class="inlinecode"><span class="id" title="var">K</span></span> effectively forwards to the specification of <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.logic.initializers.html#Init.wp"><span class="id" title="abbreviation">wp</span></a></span>
+<span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.specs.wp_spec_compat.html#wp_spec_bind"><span class="id" title="definition">wp_spec_bind</span></a></span> <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.logic.func.html#wp"><span class="id" title="abbreviation">wp</span></a></span> <span class="inlinecode"><span class="id" title="var">a</span></span> <span class="inlinecode"><span class="id" title="var">K</span></span> effectively forwards to the specification of <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.logic.func.html#wp"><span class="id" title="abbreviation">wp</span></a></span>
       evaluated with the arguments <span class="inlinecode"><span class="id" title="var">a</span></span> and binds the result of the call passing
       it to <span class="inlinecode"><span class="id" title="var">cont</span></span>.
 
@@ -731,7 +731,7 @@ Combinators for building <span class="inlinecode"><a class="idref" href="bedrock
 <div class="paragraph"> </div>
 
       <br/>
-<span class="inlinecode">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;\<span class="id" title="var">pre</span>{<span class="id" title="var">K</span>} <a class="idref" href="bedrock.lang.cpp.logic.initializers.html#Init.wp"><span class="id" title="abbreviation">wp</span></a> <span class="id" title="var">a</span> <span class="id" title="var">K</span><br/>
+<span class="inlinecode">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;\<span class="id" title="var">pre</span>{<span class="id" title="var">K</span>} <a class="idref" href="bedrock.lang.cpp.logic.func.html#wp"><span class="id" title="abbreviation">wp</span></a> <span class="id" title="var">a</span> <span class="id" title="var">K</span><br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;\<span class="id" title="var">post</span>{<span class="id" title="var">res'</span> ..}[...] <span class="id" title="var">K</span> <span class="id" title="var">res'</span> ** ...<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 <div class="paragraph"> </div>
@@ -739,7 +739,7 @@ Combinators for building <span class="inlinecode"><a class="idref" href="bedrock
 </span>
 <div class="paragraph"> </div>
 
-      where <span class="inlinecode"><span class="id" title="var">res'</span></span> is the return value of <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.logic.initializers.html#Init.wp"><span class="id" title="abbreviation">wp</span></a></span>.
+      where <span class="inlinecode"><span class="id" title="var">res'</span></span> is the return value of <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.logic.func.html#wp"><span class="id" title="abbreviation">wp</span></a></span>.
 
 <div class="paragraph"> </div>
 
