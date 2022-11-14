@@ -17,55 +17,140 @@
  * https://gitlab.mpi-sws.org/iris/stdpp/-/blob/5415ad3003fd4b587a2189ddc2cc29c1bd9a9999/LICENSE
  *)
 
+From elpi Require Import locker.
 From bedrock.prelude Require Import base.
 
+(**
+Haskell's [Data.Function.on]
+(https://hackage.haskell.org/package/base-4.17.0.0/docs/Data-Function.html#v:on).
+
+Examples:
+- Lift relation [R] by precomposing with function [f] (with [C := Prop].
+  We provide theory specialized to this use-case.
+*)
+(* TODO: namespace, and move from [option]. This is only _used_ here.*)
 Definition on {A B C} (R : B -> B -> C) (f : A -> B) (x y : A) : C :=
   R (f x) (f y).
-#[global] Typeclasses Opaque on.
 
 (** Preorder properties lift through [on].
+Only import locally when declaring specialized instances!
 These instances can lead to divergence of setoid rewriting, so they're only
 available when importing [on_props]. *)
 Module on_props.
 Section on_props.
-  Context `{R : relation B} `{f : A -> B}.
-
-  #[export] Instance on_reflexive `{!Reflexive R} : Reflexive (on R f).
-  Proof. rewrite /on. by intros ?. Qed.
-  #[export] Instance on_symmetric `{!Symmetric R} : Symmetric (on R f).
-  Proof. rewrite /on. by intros ?. Qed.
-  #[export] Instance on_transitive `{!Transitive R} : Transitive (on R f).
-  Proof. rewrite /on. by intros ???; etrans. Qed.
-  (* No [Equivalence] or [PER] instance at this level.
-  Since it's a bundling instance, declare it on wrappers after fixing [R]. *)
+  Context {A B : Type} {f : A -> B}.
+  (* We use both [R] and [strict R] *)
+  Implicit Type (R : relation B).
 
   (* We can safely make this global. *)
   #[global] Instance on_decidable `{!RelDecision R} : RelDecision (on R f).
-  Proof. rewrite /on => ??. apply _. Defined.
-End on_props.
-End on_props.
+  Proof. GUARD_TC. rewrite /on => ??. apply _. Defined.
 
-Definition some_Forall2 `(R : relation A) (oa1 oa2 : option A) :=
-  option_Forall2 R oa1 oa2 ∧ is_Some oa1 ∧ is_Some oa2.
+  (** * Lift basic relation typeclasses from [RelationClasses] *)
+  #[export] Instance on_reflexive `{!Reflexive R} : Reflexive (on R f).
+  Proof. GUARD_TC. rewrite /on. by intros ?. Qed.
+  #[export] Instance on_irreflexive `{!Irreflexive R} : Irreflexive (on R f).
+  Proof. GUARD_TC. rewrite /on. by intros ??%irreflexivity. Qed.
+
+  #[export] Instance on_symmetric `{!Symmetric R} : Symmetric (on R f).
+  Proof. GUARD_TC. rewrite /on. by intros ?. Qed.
+  #[export] Instance on_asymmetric `{!Asymmetric R} : Asymmetric (on R f).
+  Proof. GUARD_TC. rewrite /on. intros ??. apply: asymmetry. Qed.
+
+  #[export] Instance on_transitive `{!Transitive R} : Transitive (on R f).
+  Proof. GUARD_TC. rewrite /on. by intros ???; etrans. Qed.
+
+  (** * Lift bundled relation typeclasses from [RelationClasses] *)
+  #[export] Instance on_equivalence `{!Equivalence R} : Equivalence (on R f).
+  Proof. GUARD_TC. split; apply _. Qed.
+  #[export] Instance on_preorder `{!PreOrder R} : PreOrder (on R f).
+  Proof. GUARD_TC. split; apply _. Qed.
+  #[export] Instance on_per `{!RelationClasses.PER R} : RelationClasses.PER (on R f).
+  Proof. GUARD_TC. split; apply _. Qed.
+  #[export] Instance on_strict_order `{!StrictOrder R} : StrictOrder (on R f).
+  Proof. GUARD_TC. split; apply _. Qed.
+
+  (** * Lift basic relation typeclasses from [stdpp.base] *)
+  #[export] Instance on_antisymm
+      (S : relation B) `{!AntiSymm S R} :
+    AntiSymm (on S f) (on R f) | 100.
+  Proof. GUARD_TC. rewrite /on. intros ??. apply: anti_symm. Qed.
+
+  (** Needed to lift [PartialOrder] *)
+  #[export] Instance on_antisymm_eq_inj
+      `{!AntiSymm (=) R} `{!Inj eq eq f} :
+    AntiSymm (=) (on R f).
+  Proof. GUARD_TC. rewrite /on. intros ????. apply (inj f). exact: anti_symm. Qed.
+
+  (** Needed to lift [TotalOrder] *)
+  #[export] Instance on_trichotomy
+      `{!Trichotomy R} `{!Inj eq eq f} :
+    Trichotomy (on R f).
+  Proof. GUARD_TC. rewrite /on. intros ??. rewrite -(inj_iff f). apply: trichotomy. Qed.
+
+  #[export, refine] Instance on_trichotomyT
+      `{!TrichotomyT R} `{!Inj eq eq f} :
+    TrichotomyT (on R f) := fun x y =>
+      match trichotomyT R (f x) (f y) with
+      | inleft (left H) => inleft (left H)
+      | inleft (right H) => inleft (right _)
+      | inright H => inright H
+      end.
+  Proof. abstract (apply (inj f _ _ H)). Defined.
+
+  (** * Lift bundled relation typeclasses from [stdpp.base] *)
+  #[export] Instance on_partial_order `{!PartialOrder R} `{!Inj eq eq f} : PartialOrder (on R f).
+  Proof. GUARD_TC. split; apply _. Qed.
+
+  #[export] Instance on_total_order `{!TotalOrder R} `{!Inj eq eq f} : TotalOrder (on R f).
+  Proof. GUARD_TC. split; rewrite -?[strict (on R f)]/(on (strict R) f); apply _. Qed.
+End on_props.
+End on_props.
+#[global] Typeclasses Opaque on.
+
+mlock Definition some_Forall2 {A} (R : relation A) (oa1 oa2 : option A) :=
+  is_Some oa1 ∧ is_Some oa2 ∧ option_Forall2 R oa1 oa2.
+#[global] Arguments some_Forall2 {A} _ _ _ : assert.
+(* ^^ Necessary to workaround [mlock] bugs. *)
 
 Section some_Forall2.
   Context `{R : relation A}.
 
   (* #[global] Instance some_Forall2_reflexive `{!Reflexive R}: Reflexive (some_Forall2 R).
-  Proof. rewrite /some_Forall2. intros ?. Qed. *)
+  Proof. rewrite some_Forall2.unlock. intros ?. Qed. *)
   #[global] Instance some_Forall2_symmetric `{!Symmetric R}: Symmetric (some_Forall2 R).
-  Proof. rewrite /some_Forall2. intros ?; naive_solver. Qed.
+  Proof. GUARD_TC. rewrite some_Forall2.unlock. intros ?; naive_solver. Qed.
   #[global] Instance some_Forall2_transitive `{!Transitive R}: Transitive (some_Forall2 R).
-  Proof. rewrite /some_Forall2. intros ?; intuition idtac. by etrans. Qed.
+  Proof. GUARD_TC. rewrite some_Forall2.unlock. intros ?; intuition idtac. by etrans. Qed.
+  #[global] Instance some_Forall2_per `{!RelationClasses.PER R} : RelationClasses.PER (some_Forall2 R).
+  Proof. GUARD_TC. split; apply _. Qed.
 
   Lemma some_Forall2_iff oa1 oa2 :
     some_Forall2 R oa1 oa2 ↔
     ∃ (a1 a2 : A), oa1 = Some a1 ∧ oa2 = Some a2 ∧ R a1 a2.
   Proof.
-    unfold some_Forall2; split.
-    { destruct 1 as (Hop & [??] & [??]); inversion Hop; naive_solver. }
+    rewrite some_Forall2.unlock; split.
+    { destruct 1 as ([??] & [??] & Hop); inversion Hop; naive_solver. }
     destruct 1 as (? & ? & -> & -> & ?); split_and!; by econstructor.
   Qed.
+
+  #[global, refine] Instance option_Forall2_decision
+      `{EqDecision A} `{!RelDecision R} :
+    RelDecision (option_Forall2 R) :=
+    fun oa1 oa2 =>
+      match oa1, oa2 with
+      | None, None => left _
+      | Some a1, Some a2 => cast_if (decide (R a1 a2))
+      | _, _ => right _
+      end.
+  Proof.
+    all: abstract (intros; by [inversion_clear 1 | constructor]).
+  Defined.
+
+  #[global, refine] Instance some_Forall2_decision `{EqDecision A} `{!RelDecision R} :
+    RelDecision (some_Forall2 R) :=
+    λ oa1 oa2, cast_if (decide (is_Some oa1 ∧ is_Some oa2 ∧ option_Forall2 R oa1 oa2)).
+  Proof. all: abstract (by rewrite some_Forall2.unlock). Defined.
 End some_Forall2.
 
 Section some_Forall2_eq.
@@ -82,10 +167,19 @@ Definition same_property `(obs : A → option B) :=
   on (some_Forall2 eq) obs.
 Section same_property.
   Context `{obs : A → option B}.
-  Import on_props.
 
-  #[global] Instance same_property_per : RelationClasses.PER (same_property obs).
-  Proof. rewrite /same_property. split; apply _. Qed.
+  (* Lift [#[global]] and [#[export]] instances from [on_props] before making it
+  opaque. *)
+  #[global] Instance same_property_decision `{EqDecision B} :
+    RelDecision (same_property obs) := _.
+
+  Section with_on_props.
+    Import on_props.
+    #[global] Instance same_property_per : RelationClasses.PER (same_property obs) := _.
+  End with_on_props.
+
+  #[global] Typeclasses Opaque same_property.
+
   #[global] Instance: RewriteRelation (same_property obs) := {}.
 
   Lemma same_property_iff a1 a2 :
@@ -104,18 +198,6 @@ Section same_property.
   Lemma same_property_partial_reflexive a b :
     obs a = Some b → same_property obs a a.
   Proof. rewrite -same_property_reflexive_equiv. naive_solver. Qed.
-
-  #[global] Instance same_property_decision `{EqDecision B} :
-    RelDecision (same_property obs).
-  Proof.
-    rewrite /RelDecision => a1 a2.
-    suff: Decision (∃ (b : B), obs a1 = Some b ∧ obs a2 = Some b);
-      rewrite /Decision. { case => /same_property_iff; eauto. }
-
-    destruct (obs a1) as [b1|], (obs a2) as [b2|];
-      try destruct_decide (decide (b1 = b2)) as H; subst; eauto;
-      by right; naive_solver.
-  Qed.
 End same_property.
 
 Section add_opt.
