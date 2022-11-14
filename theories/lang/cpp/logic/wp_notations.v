@@ -171,7 +171,6 @@ Module Export Compact.
            , format "'[hv  ' ::wpGLₓ  '/' '[hv' ρ  '/' '[' (ValCat  ↦  vc )  ']' '/' e ']' ']'"
            , only printing).
   (* NOTE (JH): There isn't anything great to print from [Func] since the name was erased *)
-  About wp_func.
   Notation "'::wpFunc'"
         := (wp_func _ _ _)
            ( at level 0
