@@ -17,6 +17,7 @@
  * https://gitlab.mpi-sws.org/iris/stdpp/-/blob/5415ad3003fd4b587a2189ddc2cc29c1bd9a9999/LICENSE
  *)
 
+From elpi Require Import locker.
 From bedrock.prelude Require Import base.
 
 (**
@@ -107,26 +108,28 @@ End on_props.
 End on_props.
 #[global] Typeclasses Opaque on.
 
-Definition some_Forall2 `(R : relation A) (oa1 oa2 : option A) :=
+mlock Definition some_Forall2 {A} (R : relation A) (oa1 oa2 : option A) :=
   is_Some oa1 ∧ is_Some oa2 ∧ option_Forall2 R oa1 oa2.
+#[global] Arguments some_Forall2 {A} _ _ _ : assert.
+(* ^^ Necessary to workaround [mlock] bugs. *)
 
 Section some_Forall2.
   Context `{R : relation A}.
 
   (* #[global] Instance some_Forall2_reflexive `{!Reflexive R}: Reflexive (some_Forall2 R).
-  Proof. rewrite /some_Forall2. intros ?. Qed. *)
+  Proof. rewrite some_Forall2.unlock. intros ?. Qed. *)
   #[global] Instance some_Forall2_symmetric `{!Symmetric R}: Symmetric (some_Forall2 R).
-  Proof. GUARD_TC. rewrite /some_Forall2. intros ?; naive_solver. Qed.
+  Proof. GUARD_TC. rewrite some_Forall2.unlock. intros ?; naive_solver. Qed.
   #[global] Instance some_Forall2_transitive `{!Transitive R}: Transitive (some_Forall2 R).
-  Proof. GUARD_TC. rewrite /some_Forall2. intros ?; intuition idtac. by etrans. Qed.
+  Proof. GUARD_TC. rewrite some_Forall2.unlock. intros ?; intuition idtac. by etrans. Qed.
   #[global] Instance some_Forall2_per `{!RelationClasses.PER R} : RelationClasses.PER (some_Forall2 R).
-  Proof. GUARD_TC. rewrite /some_Forall2. split; apply _. Qed.
+  Proof. GUARD_TC. split; apply _. Qed.
 
   Lemma some_Forall2_iff oa1 oa2 :
     some_Forall2 R oa1 oa2 ↔
     ∃ (a1 a2 : A), oa1 = Some a1 ∧ oa2 = Some a2 ∧ R a1 a2.
   Proof.
-    unfold some_Forall2; split.
+    rewrite some_Forall2.unlock; split.
     { destruct 1 as ([??] & [??] & Hop); inversion Hop; naive_solver. }
     destruct 1 as (? & ? & -> & -> & ?); split_and!; by econstructor.
   Qed.
@@ -144,11 +147,11 @@ Section some_Forall2.
     all: abstract (intros; by [inversion_clear 1 | constructor]).
   Defined.
 
-  #[global] Instance some_Forall2_decision `{EqDecision A} `{!RelDecision R} :
-    RelDecision (some_Forall2 R).
-  Proof. intros ??. apply _. Defined.
+  #[global, refine] Instance some_Forall2_decision `{EqDecision A} `{!RelDecision R} :
+    RelDecision (some_Forall2 R) :=
+    λ oa1 oa2, cast_if (decide (is_Some oa1 ∧ is_Some oa2 ∧ option_Forall2 R oa1 oa2)).
+  Proof. all: abstract (by rewrite some_Forall2.unlock). Defined.
 End some_Forall2.
-#[global] Typeclasses Opaque some_Forall2.
 
 Section some_Forall2_eq.
   Context {A : Type}.
