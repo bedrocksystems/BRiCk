@@ -99,6 +99,15 @@ explosion.
 </div>
 
 <div class="doc">
+Ensure the given instance isn't already provable. 
+</div>
+<div class="code">
+<span class="id" title="keyword">Ltac</span> <span class="id" title="var">GUARD_TC</span> := <span class="id" title="var">assert_fails</span> (<span class="id" title="tactic">apply</span> <span class="id" title="var">_</span>).<br/>
+
+<br/>
+</div>
+
+<div class="doc">
 Solve <span class="inlinecode"><a class="idref" href="https://plv.mpi-sws.org/coqdoc/stdpp//stdpp.base.html#Inhabited"><span class="id" title="class">Inhabited</span></a></span> <span class="inlinecode"><span class="id" title="var">foo</span></span> goals. Proof using this tactic should be closed with <span class="inlinecode"><span class="id" title="keyword">Qed</span></span>.
 
 </div>
@@ -364,8 +373,8 @@ observation like <span class="inlinecode"><a class="idref" href="bedrock.lang.bi
 <div class="code">
 
 <br/>
-#[<span class="id" title="var">global</span>] <span class="id" title="keyword">Hint</span> <span class="id" title="var">Mode</span> <a class="idref" href="http://coq.inria.fr/distrib/V8.16.0/stdlib//Coq.Classes.RelationClasses.html#Symmetric"><span class="id" title="class">Symmetric</span></a> ! ! : <span class="id" title="var">typeclass_instances</span>.<br/>
 #[<span class="id" title="var">global</span>] <span class="id" title="keyword">Hint</span> <span class="id" title="var">Mode</span> <a class="idref" href="http://coq.inria.fr/distrib/V8.16.0/stdlib//Coq.Classes.RelationClasses.html#Reflexive"><span class="id" title="class">Reflexive</span></a> ! ! : <span class="id" title="var">typeclass_instances</span>.<br/>
+#[<span class="id" title="var">global</span>] <span class="id" title="keyword">Hint</span> <span class="id" title="var">Mode</span> <a class="idref" href="http://coq.inria.fr/distrib/V8.16.0/stdlib//Coq.Classes.RelationClasses.html#Symmetric"><span class="id" title="class">Symmetric</span></a> ! ! : <span class="id" title="var">typeclass_instances</span>.<br/>
 </div>
 <!--
 -- Copyright (c) 2020 BedRock Systems, Inc.
