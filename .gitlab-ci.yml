@@ -81,6 +81,14 @@ stages:
       when: never
     - when: on_success
 
+.proof-trigger-mr-releases:
+  rules:
+    - if: '$CI_MERGE_REQUEST_LABELS =~ /.*CI-skip-proofs.*/'
+      when: never
+    - if: $CI_MERGE_REQUEST_IID
+    - if: $CI_COMMIT_TAG
+    - if: '$CI_COMMIT_BRANCH == "master"'
+
 .clang_env: &clang_env
   # NOTE: keep these settings in sync with the cpp2v-core repository: see
   # https://bedrocksystems.atlassian.net/browse/FM-1874.
@@ -276,6 +284,8 @@ release_latest:
 
 
 prepare_pages:
+  extends:
+    - .proof-trigger-mr-releases
   image: ${fm_docs_img}
   stage: prepare_pages
   needs:
@@ -300,12 +310,6 @@ prepare_pages:
         build/bedrock/ theories
     - make touch_deps
     - make -j ${NJOBS} doc
-  rules:
-    - if: '$CI_MERGE_REQUEST_LABELS =~ /.*CI-skip-proofs.*/'
-      when: never
-    - if: $CI_MERGE_REQUEST_IID
-    - if: $CI_COMMIT_TAG
-    - if: '$CI_COMMIT_BRANCH == "master"'
   artifacts:
     paths:
       - doc/sphinx/_build
