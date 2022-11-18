@@ -86,6 +86,15 @@ stages:
       when: never
     - when: on_success
 
+.clang_env: &clang_env
+  # NOTE: keep these settings in sync with the cpp2v-core repository: see
+  # https://bedrocksystems.atlassian.net/browse/FM-1874.
+  # We use `/usr/lib/llvm/bin/llvm-config` instead of
+  # `llvm-config-${LLVM_MAJ_VER}` to avoid depending on the LLVM version.
+  - export CC=`/usr/lib/llvm/bin/llvm-config --bindir`/clang
+  - export CXX=`/usr/lib/llvm/bin/llvm-config --bindir`/clang++
+  - export PATH="/usr/lib/llvm/bin/:$PATH"
+
 #This is a template job that's extended below by the real jobs
 # build_{latest,llvm10,public} (see, e.g., https://docs.gitlab.com/ee/ci/yaml/#extends).
 .build_base:
@@ -94,12 +103,7 @@ stages:
   script:
     - mkdir -p build
     - echo "fmdeps/cpp2v-core:$(git rev-parse HEAD)" | tee build/gitshas.txt
-    # NOTE: keep these settings in sync with the cpp2v-core repository: see
-    # https://bedrocksystems.atlassian.net/browse/FM-1874.
-    # We use `/usr/lib/llvm/bin/llvm-config` instead of
-    # `llvm-config-${LLVM_MAJ_VER}` to avoid depending on the LLVM version.
-    - export CC=`/usr/lib/llvm/bin/llvm-config --bindir`/clang
-    - export CXX=`/usr/lib/llvm/bin/llvm-config --bindir`/clang++
+    - *clang_env
     - cd build; cmake ../; cd ..
     - make -j ${NJOBS} cpp2v
     - make -j ${NJOBS} coq
