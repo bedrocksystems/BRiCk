@@ -141,7 +141,8 @@ stages:
     - coqc -v
     - opam list
     - ./build/cpp2v --cpp2v-version 0 --
-    - PATH=`llvm-config-${LLVM_MAJ_VER} --bindir`:`pwd`/build:$PATH make test -j ${NJOBS} TIMED=1 QPATH=`pwd`/build/bedrock
+    - *clang_env
+    - PATH=$PWD/build:$PATH make test -j ${NJOBS} TIMED=1 QPATH=`pwd`/build/bedrock
   tags:
     - fm.shared
 
