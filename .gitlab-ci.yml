@@ -121,37 +121,27 @@ stages:
   tags:
     - fm.shared
 
-# Build both the merge request job, and the branch job, whose artifact is to be
-# used downstream.
+# Build both the merge request job, and the job on master for releases
 .build:
-  extends: .build_base
-  rules:
-    - if: '$CI_MERGE_REQUEST_LABELS =~ /.*CI-skip-proofs.*/'
-      when: never
-    - if: $CI_COMMIT_BRANCH # == $CI_DEFAULT_BRANCH
-    - if: $CI_MERGE_REQUEST_IID
-    - if: $CI_COMMIT_TAG
+  extends:
+    - .proof-trigger-mr-releases
+    - .build_base
 
 # Build only the merge request job
 .build_aux:
-  extends: .build_base
-  rules:
-    - if: '$CI_MERGE_REQUEST_LABELS =~ /.*CI-skip-proofs.*/'
-      when: never
-    - if: $CI_MERGE_REQUEST_IID
+  extends:
+    - .proof-trigger
+    - .build_base
 
 .test:
+  extends:
+    - .proof-trigger
   stage: test
   script:
     - coqc -v
     - opam list
     - ./build/cpp2v --cpp2v-version 0 --
     - PATH=`llvm-config-${LLVM_MAJ_VER} --bindir`:`pwd`/build:$PATH make test -j ${NJOBS} TIMED=1 QPATH=`pwd`/build/bedrock
-  rules:
-    # This is a negated if.
-    - if: '$CI_MERGE_REQUEST_LABELS =~ /.*CI-skip-proofs.*/'
-      when: never
-    - if: $CI_MERGE_REQUEST_IID
   tags:
     - fm.shared
 
