@@ -172,6 +172,16 @@ build_public:
     - .build_aux
     - .public
 
+# Ensure that the code builds against dependencies declared in opam files, and
+# that those match the versions in our "public" Docker image.
+build_public_opam:
+  script:
+    - *clang_env
+    - opam install --assume-depexts -y .
+  extends:
+    - .build_aux
+    - .public
+
 test_latest:
   extends:
     - .test
