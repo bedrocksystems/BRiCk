@@ -181,6 +181,8 @@ build_public_opam:
   extends:
     - .build_aux
     - .public
+  # No artifacts are needed here.
+  artifacts:
 
 test_latest:
   extends:
