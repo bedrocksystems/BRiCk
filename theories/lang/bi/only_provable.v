@@ -151,10 +151,10 @@ Section bi.
   Proof.
     apply bi.forall_intro=>?. by rewrite only_provable_True// left_id.
   Qed.
-  Lemma only_provable_wand_forall_2 P q `{!Absorbing q} :
+  Lemma only_provable_wand_forall_2 P q :
     (∀ _ : P, q) ⊢ ([| P |] -∗ q).
-  Proof. rewrite only_provable_pure. by rewrite -bi.pure_wand_forall. Qed.
-  Lemma only_provable_wand_forall P q `{!Absorbing q} :
+  Proof. iIntros "W %HP". iApply ("W" $! HP). Qed.
+  Lemma only_provable_wand_forall P q :
     ([| P |] -∗ q) ⊣⊢ (∀ _ : P, q).
   Proof.
     apply: anti_symm; auto using
@@ -231,10 +231,10 @@ Section proofmode.
   Global Instance from_pure_only_provable P : @FromPure PROP true [| P |] P.
   Proof. by rewrite/FromPure/only_provable. Qed.
   Global Instance into_wand_only_provable p (P : Prop) Q :
-    Absorbing Q → @IntoWand PROP p false (∀ _ : P, Q) [| P |] Q.
+    @IntoWand PROP p false (∀ _ : P, Q) [| P |] Q.
   Proof.
     intros. rewrite/IntoWand. rewrite (bi.intuitionistically_if_elim p) /=.
-    by rewrite -only_provable_wand_forall.
+    by rewrite -only_provable_wand_forall_2.
   Qed.
   Global Instance from_and_only_provable P Q :
     @FromAnd PROP [| P ∧ Q |] [| P |] [| Q |].
