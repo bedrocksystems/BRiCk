@@ -230,11 +230,11 @@ Section proofmode.
   Proof. apply only_provable_pure. Qed.
   Global Instance from_pure_only_provable P : @FromPure PROP true [| P |] P.
   Proof. by rewrite/FromPure/only_provable. Qed.
-  Global Instance into_wand_only_provable p (P : Prop) Q :
-    @IntoWand PROP p false (∀ _ : P, Q) [| P |] Q.
+  Global Instance into_wand_only_provable p q (P : Prop) Q :
+    @IntoWand PROP p q (∀ _ : P, Q) [| P |] Q.
   Proof.
-    intros. rewrite/IntoWand. rewrite (bi.intuitionistically_if_elim p) /=.
-    by rewrite -only_provable_wand_forall_2.
+    rewrite /IntoWand.
+    by rewrite !bi.intuitionistically_if_elim -only_provable_wand_forall_2.
   Qed.
   Global Instance from_and_only_provable P Q :
     @FromAnd PROP [| P ∧ Q |] [| P |] [| Q |].
