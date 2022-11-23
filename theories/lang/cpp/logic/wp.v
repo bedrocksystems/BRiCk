@@ -255,20 +255,20 @@ Section with_cpp.
   Context `{Σ : cpp_logic thread_info}.
 
   (* the monad for expression evaluation *)
-  Definition M (T : Type) : Type :=
+  #[local] Definition M (T : Type) : Type :=
     (T -> FreeTemps.t -> epred) -> mpred.
 
   (* the natural relation for [M] *)
-  Definition Mrel T : M T -> M T -> Prop :=
+  #[local] Definition Mrel T : M T -> M T -> Prop :=
     (pointwise_relation _ (FreeTemps.t_eq ==> (⊢)) ==> (⊢))%signature.
 
-  Definition Mframe {T} (a b : M T) : mpred :=
+  #[local] Definition Mframe {T} (a b : M T) : mpred :=
     Forall Q Q', (Forall x y, Q x y -* Q' x y) -* a Q -* b Q'.
 
-  Definition Mret {T} (t : T) : M T :=
+  #[local] Definition Mret {T} (t : T) : M T :=
     fun K => K t FreeTemps.id.
 
-  Definition Mmap {T U} (f : T -> U) (t : M T) : M U :=
+  #[local] Definition Mmap {T U} (f : T -> U) (t : M T) : M U :=
     fun K => t (fun v => K (f v)).
 
   Lemma Mmap_frame {T U} c (f : T -> U) :
@@ -278,7 +278,7 @@ Section with_cpp.
     iApply "A". iIntros (??); iApply "B".
   Qed.
 
-  Definition Mbind {T U} (c : M T) (k : T -> M U) : M U :=
+  #[local] Definition Mbind {T U} (c : M T) (k : T -> M U) : M U :=
     fun K => c (fun v f => k v (fun v' f' => K v' (f' >*> f)%free)).
 
   Lemma Mbind_frame {T U} c (k : T -> M U) :

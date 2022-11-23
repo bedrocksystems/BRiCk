@@ -33,7 +33,7 @@ Section with_resolve.
      specified in C++.
      NOTE this definition is *not* sound in the presence of exceptions.
   *)
-  Fixpoint zipTypes (ts : list type) (ar : function_arity) (es : list Expr) : option (list (M ptr) * option (nat * list type)) :=
+  Fixpoint zipTypes (ts : list type) (ar : function_arity) (es : list Expr) : option (list (wp.WPE.M ptr) * option (nat * list type)) :=
     let wp_arg_init ty init K := Forall p, wp_initialize tu ρ ty p init (fun frees => K p (FreeTemps.delete ty p >*> frees)%free) in
     match ts with
     | [] =>
@@ -45,7 +45,7 @@ Section with_resolve.
         match es with
         | [] => None
         | e :: es =>
-            let update (x : list (M ptr) * option (nat * list type)) :=
+            let update (x : list (wp.WPE.M ptr) * option (nat * list type)) :=
               (wp_arg_init t e :: x.1, (fun x => (1 + x.1, x.2)) <$> x.2)
             in
             update <$> zipTypes ts ar es
@@ -58,7 +58,7 @@ Section with_resolve.
       match r with
       | None => ar = Ar_Definite
       | Some (n, va_ts) => ar = Ar_Variadic /\ length ms = n + length va_ts /\ n = length ts
-      end /\ |-- [∗list] m ∈ ms, Mframe m m.
+      end /\ |-- [∗list] m ∈ ms, wp.WPE.Mframe m m.
   Proof.
     induction ts; simpl; intros.
     { destruct ar; try congruence.
