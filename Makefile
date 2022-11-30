@@ -60,9 +60,10 @@ cpp2v: build/Makefile
 
 
 # Build Coq theories
+COQPROJECT = _CoqProject.template
 
-Makefile.coq Makefile.coq.conf: _CoqProject Makefile
-	+$(COQMAKEFILE) -f _CoqProject -o Makefile.coq
+Makefile.coq Makefile.coq.conf: $(COQPROJECT) Makefile
+	+$(COQMAKEFILE) -f $(COQPROJECT) -o Makefile.coq
 
 # We must extract `coq-minimal` as a task, and share it between
 # `build-minimal` and `coq`, because `test` depends on both:
@@ -129,7 +130,7 @@ coqdoc: coq coqdocjs
 #	Cleanup existing artifacts (if there are any)
 	rm -rf html
 
-#	Invoke `coqdoc` using the existing `_CoqProject` file, and move the artifacts
+#	Invoke `coqdoc` using the existing `$(COQPROJECT)` file, and move the artifacts
 #	out of `html` and into `doc/sphinx/_static/coqdoc`
 	+$(COQMK) html
 	mkdir -p doc/sphinx/_static/coqdoc
@@ -227,6 +228,6 @@ touch_deps:
 
 
 
-deps.pdf: _CoqProject
-	coqdep -f _CoqProject -dumpgraphbox deps.dot > /dev/null
+deps.pdf: $(COQPROJECT)
+	coqdep -f $(COQPROJECT) -dumpgraphbox deps.dot > /dev/null
 	dot -Tpdf -o deps.pdf deps.dot
