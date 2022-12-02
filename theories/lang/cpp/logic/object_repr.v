@@ -211,6 +211,26 @@ Section raw_type_ptrs.
       Qed.
 
       #[global]
+      Instance raw_type_ptrs_Tarray_elem_observe (i : N) :
+        forall (p : ptr) (ty : types.type) (cnt sz : N)
+          (Hcnt : (cnt <> 0)%N) (Hsz : types.size_of σ ty = Some sz) (Hi : N.lt i cnt),
+          Observe (raw_type_ptrs ty (p .[Tu8 ! sz * i])) (raw_type_ptrs (Tarray ty cnt) p).
+      Proof.
+        intros **; iIntros "#raw_tptrs_array"; iModIntro.
+        rewrite raw_type_ptrs_eq/raw_type_ptrs_def.
+        iDestruct "raw_tptrs_array" as (sz_array) "[%Hsz_array tptrs]".
+        iExists sz; iSplit; first by iPureIntro.
+        rewrite -N2Z.inj_mul -(big_sepL_type_ptr_shift (sz * i) sz p Tu8).
+        iApply (big_sepL_submseteq with "tptrs").
+        apply sublist_submseteq.
+        apply seqN_sublist; first by done.
+        erewrite size_of_array in Hsz_array; eauto; inversion Hsz_array.
+        rewrite N.add_0_l -N.mul_succ_r N.mul_comm.
+        apply N.mul_le_mono_r.
+        lia.
+      Qed.
+
+      #[global]
       Lemma raw_type_ptrs_blockR_obs (ty : type) :
         forall (p : ptr) (sz : N) (q : Qp),
           size_of σ ty = Some sz ->
