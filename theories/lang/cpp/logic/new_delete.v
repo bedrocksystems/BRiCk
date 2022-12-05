@@ -7,6 +7,7 @@
  * Semantics of [new] and [delete] expressions
  * (expressed in weakest pre-condition style)
  *)
+Require Import iris.bi.lib.fractional.
 Require Import iris.proofmode.proofmode.
 From bedrock.lang.cpp Require Import ast semantics.
 From bedrock.lang.cpp.logic Require Import
@@ -44,11 +45,18 @@ Module Type Expr__newdelete.
       |     deleted and the static type shall have a virtual destructor or the behavior is
       |     undefined. In an array delete expression, if the dynamic type of the object to
       |     be deleted is not similar to its static type, the behavior is undefined.
-      [new_tokenR allocation_type] tracks this Dynamic Type information.
+      [new_tokenR q allocation_type] tracks this Dynamic Type information.
    *)
-  Parameter new_tokenR : forall `{Σ : cpp_logic ti}, type -> Rep.
-  Axiom new_tokenR_timeless : forall `{Σ : cpp_logic ti} ty, Timeless (new_tokenR ty).
-  #[global] Existing Instances new_tokenR_timeless.
+  Parameter new_tokenR : forall `{Σ : cpp_logic ti} (q : Qp) (ty : type), Rep.
+  #[global] Declare Instance new_tokenR_timeless `{Σ : cpp_logic ti} q ty :
+    Timeless (new_tokenR q ty).
+  #[global] Declare Instance new_tokenR_fractional `{Σ : cpp_logic ti} ty :
+    Fractional (fun q => new_tokenR q ty).
+  #[global] Declare Instance new_tokenR_agree `{Σ : cpp_logic ti} q ty1 ty2 :
+    Observe2 [| ty1 = ty2 |] (new_tokenR q ty1) (new_tokenR q ty2).
+  #[global] Instance new_tokenR_as_fractional `{Σ : cpp_logic ti} q ty :
+    AsFractional (new_tokenR q ty) (fun q => new_tokenR q ty) q.
+  Proof. exact: Build_AsFractional. Qed.
 
   Section with_cpp_logic.
     Context `{Σ : cpp_logic thread_info}.
@@ -146,7 +154,7 @@ Module Type Expr__newdelete.
                                                           (* Track the type we are allocating
                                                              so it can be checked at [delete]
                                                            *)
-                                                          obj_ptr |-> new_tokenR aty -*
+                                                          obj_ptr |-> new_tokenR 1 aty -*
                                                           Q (Vptr obj_ptr) (free' >*> free))
                                   | Some init => (* Use [init] to initialize the memory *)
                                     wp_initialize aty obj_ptr init
@@ -154,7 +162,7 @@ Module Type Expr__newdelete.
                                                (* Track the type we are allocating
                                                   so it can be checked at [delete]
                                                 *)
-                                               obj_ptr |-> new_tokenR aty -*
+                                               obj_ptr |-> new_tokenR 1 aty -*
                                                Q (Vptr obj_ptr) (free' >*> free))
                                   end))))))
         |-- wp_operand (Enew new_fn new_args aty None oinit) Q.
@@ -222,7 +230,7 @@ Module Type Expr__newdelete.
                                                            (* Track the type we are allocating
                                                               so it can be checked at [delete]
                                                             *)
-                                                           obj_ptr |-> new_tokenR array_ty -*
+                                                           obj_ptr |-> new_tokenR 1 array_ty -*
                                                            Q (Vptr obj_ptr)
                                                              (free'' >*> free' >*> free))
                                    | Some init => (* Use [init] to initialize the memory *)
@@ -231,7 +239,7 @@ Module Type Expr__newdelete.
                                                       (* Track the type we are allocating
                                                          so it can be checked at [delete]
                                                        *)
-                                                      obj_ptr |-> new_tokenR array_ty -*
+                                                      obj_ptr |-> new_tokenR 1 array_ty -*
                                                       Q (Vptr obj_ptr)
                                                         (free'' >*> free' >*> free))
                                    end))))))
@@ -358,7 +366,7 @@ Module Type Expr__newdelete.
              else
                (* v---- Calling destructor with object pointer *)
                resolve_dtor destroyed_type obj_ptr (fun this' mdc_ty =>
-                    this' |-> new_tokenR mdc_ty **
+                    this' |-> new_tokenR 1 mdc_ty **
                     (* v---- because dispatch could be virtual, the translation unit
                              used to destroy the object may need to be different *)
                     Exists tu', denoteModule tu' ** destroy_val tu' mdc_ty this' (
@@ -395,7 +403,7 @@ Module Type Expr__newdelete.
                let array_ty := Tarray destroyed_type array_size in
                (* /---- Token for distinguishing between array and
                   v     non-array allocations *)
-               obj_ptr |-> new_tokenR array_ty **
+               obj_ptr |-> new_tokenR 1 array_ty **
                (* /---- Calling destructor with object pointer
                   v     Note: virtual dispatch is not allowed for [delete[]] *)
                destroy_val tu array_ty obj_ptr (
