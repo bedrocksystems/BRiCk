@@ -191,7 +191,7 @@ Section raw_type_ptrs.
 
     Section observations.
       #[global]
-      Lemma raw_type_ptrs_type_ptr_Tu8_obs (ty : type) (i : N) :
+      Instance raw_type_ptrs_type_ptr_Tu8_obs (ty : type) (i : N) :
         forall (p : ptr) (sz : N),
           size_of σ ty = Some sz ->
           (i < sz)%N ->
@@ -210,13 +210,12 @@ Section raw_type_ptrs.
           by [subst | iApply IHsz'].
       Qed.
 
-      #[global]
-      Instance raw_type_ptrs_Tarray_elem_observe (i : N) :
+      Lemma raw_type_ptrs_Tarray_elem (i : N) :
         forall (p : ptr) (ty : types.type) (cnt sz : N)
           (Hcnt : (cnt <> 0)%N) (Hsz : types.size_of σ ty = Some sz) (Hi : N.lt i cnt),
-          Observe (raw_type_ptrs ty (p .[Tu8 ! sz * i])) (raw_type_ptrs (Tarray ty cnt) p).
+          raw_type_ptrs (Tarray ty cnt) p |-- raw_type_ptrs ty (p .[Tu8 ! sz * i]).
       Proof.
-        intros **; iIntros "#raw_tptrs_array"; iModIntro.
+        intros **; iIntros "#raw_tptrs_array".
         rewrite raw_type_ptrs_eq/raw_type_ptrs_def.
         iDestruct "raw_tptrs_array" as (sz_array) "[%Hsz_array tptrs]".
         iExists sz; iSplit; first by iPureIntro.
@@ -231,7 +230,14 @@ Section raw_type_ptrs.
       Qed.
 
       #[global]
-      Lemma raw_type_ptrs_blockR_obs (ty : type) :
+      Instance raw_type_ptrs_Tarray_elem_observe (i : N) :
+        forall (p : ptr) (ty : types.type) (cnt sz : N)
+          (Hcnt : (cnt <> 0)%N) (Hsz : types.size_of σ ty = Some sz) (Hi : N.lt i cnt),
+          Observe (raw_type_ptrs ty (p .[Tu8 ! sz * i])) (raw_type_ptrs (Tarray ty cnt) p).
+      Proof. intros **; rewrite (raw_type_ptrs_Tarray_elem i); eauto; by apply: _. Qed.
+
+      #[global]
+      Instance raw_type_ptrs_blockR_obs (ty : type) :
         forall (p : ptr) (sz : N) (q : Qp),
           size_of σ ty = Some sz ->
           Observe (raw_type_ptrs ty p) (p |-> blockR sz q).
@@ -585,12 +591,7 @@ End with_rawable.
 Section blockR_transport.
   Context `{Σ : cpp_logic} {σ : genv}.
 
-  (* TODO (JH):
-     1) try to prove [blockR_ptr_congP_transport] without any extra side conditions (or maybe
-        just [raw_type_ptrs].
-     2) backport [forwarding_plane_cpp_proof/axioms.v] to use the simplified phrasing of this
-   *)
-  Lemma blockR_ptr_congP_transport (sz : N) :
+  Lemma blockR_ptr_congP_transport_raw (sz : N) :
     forall (p p' : ptr) (ty : type) (q : Qp),
       size_of σ ty = Some sz ->
           ptr_congP σ p p' ** raw_type_ptrs ty p'
@@ -671,5 +672,19 @@ Section blockR_transport.
           -- setoid_rewrite _at_offsetR.
              rewrite !(big_sepL_shift_nat (λ p, p |-> anyR Tu8 q) 1 (N.to_nat sz')).
              by iRevert "REST".
+  Qed.
+
+  (* NOTE (JH): In practice this will likely be difficult to use due to the
+     [type_ptr ty p'] obligation.
+   *)
+  Lemma blockR_ptr_congP_transport (sz : N) :
+    forall (p p' : ptr) (ty : type) (q : Qp),
+      size_of σ ty = Some sz ->
+          ptr_congP σ p p' ** type_ptr ty p ** type_ptr ty p'
+      |-- p |-> blockR sz q -* p' |-> blockR sz q.
+  Proof.
+    intros **; iIntros "(cong & _ & tptr')".
+    rewrite type_ptr_raw_type_ptrs; eauto.
+    by iApply blockR_ptr_congP_transport_raw; eauto.
   Qed.
 End blockR_transport.
