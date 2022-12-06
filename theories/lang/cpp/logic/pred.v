@@ -167,10 +167,6 @@ Module Type CPP_LOGIC
     Axiom tptsto_val_related_transport : forall {σ} ty q p v1 v2,
         [| val_related σ ty v1 v2 |] |-- @tptsto σ ty q p v1 -* @tptsto σ ty q p v2.
 
-    Axiom tptsto_nonvoid : forall {σ} ty (q : Qp) p v,
-      Observe [| ty <> Tvoid |] (@tptsto σ ty q p v).
-    #[global] Existing Instance tptsto_nonvoid.
-
     (** The allocation is alive. Neither persistent nor fractional.
       See https://eel.is/c++draft/basic.stc.general#4 and
       https://eel.is/c++draft/basic.compound#3.1.
