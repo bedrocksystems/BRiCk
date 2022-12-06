@@ -1271,22 +1271,6 @@ Module VALID_PTR : VALID_PTR_AXIOMS PTRS_IMPL VALUES_DEFS_IMPL L L.
     (* Axiom strict_valid_ptr_field : ∀ p f,
       strict_valid_ptr (p ,, o_field σ f) |-- strict_valid_ptr p. *)
 
-    (* We're ignoring virtual inheritance here, since we have no plans to
-    support it for now, but this might hold there too. *)
-    Axiom o_base_derived_strict : forall p base derived,
-      strict_valid_ptr (p ,, o_base σ derived base) |--
-      [| p ,, o_base σ derived base ,, o_derived σ base derived = p |].
-
-    Axiom o_derived_base_strict : forall p base derived,
-      strict_valid_ptr (p ,, o_derived σ base derived) |--
-      [| p ,, o_derived σ base derived ,, o_base σ derived base = p |].
-
-    (* Without the validity premise to the cancellation axioms ([o_sub_sub],
-      [o_base_derived_strict], [o_derived_base]) we could incorrectly deduce that
-      [valid_ptr p] entails [valid_ptr (p ., o_base derived base ., o_derived
-      base derived)] which entails [valid_ptr (p ., o_base derived base)].
-    *)
-
     (* TODO: maybe add a validity of offsets to allow stating this more generally. *)
     Axiom valid_o_sub_size : forall p ty i vt,
       _valid_ptr vt (p ,, o_sub σ ty i) |-- [| is_Some (size_of σ ty) |].
