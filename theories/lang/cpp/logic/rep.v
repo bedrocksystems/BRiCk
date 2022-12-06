@@ -301,9 +301,10 @@ Section with_cpp.
   #[global] Instance _offsetR_fractional o (r : Qp → Rep) :
     Fractional r → Fractional (λ q, o |-> r q).
   Proof. by move => H q1 q2; rewrite fractional _offsetR_sep. Qed.
-  #[global] Instance _offsetR_as_fractional o (r : Qp → Rep) q :
-    Fractional r → AsFractional (o |-> (r q)) (λ q, o |-> (r q)) q.
-  Proof. constructor. done. apply _. Qed.
+  #[global] Instance _offsetR_as_fractional o (R : Rep) (r : Qp → Rep) q
+      `{!AsFractional R r q} :
+    AsFractional (o |-> R) (λ q, o |-> r q) q.
+  Proof. constructor. by rewrite -as_fractional. apply _. Qed.
 
   #[global] Instance _offsetR_observe {o} {Q R : Rep} :
     Observe Q R ->
@@ -475,15 +476,15 @@ Section with_cpp.
     - move => x xs IH ?. by rewrite _at_sep IH.
   Qed.
 
-  #[global] Instance _at_fractional (r : Qp → Rep)  p  `{!Fractional r} :
+  #[global] Instance _at_fractional (r : Qp → Rep)  p `{!Fractional r} :
     Fractional (λ q, p |-> (r q)).
   Proof.
     intros q1 q2; by rewrite fractional _at_sep.
   Qed.
-  #[global] Instance _at_as_fractional (r : Qp → Rep) q  p
-      `{!AsFractional (r q) r q} :
-    AsFractional (_at p (r q)) (λ q, _at p (r q)) q.
-  Proof. constructor. done. apply _. Qed.
+  #[global] Instance _at_as_fractional R (r : Qp → Rep) q p
+      `{!AsFractional R r q} :
+    AsFractional (p |-> R) (λ q, p |-> r q) q.
+  Proof. constructor. by rewrite -as_fractional. apply _. Qed.
 
   #[global] Instance _at_observe {p} {Q R : Rep} :
     Observe Q R ->
