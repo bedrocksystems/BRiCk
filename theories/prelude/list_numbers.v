@@ -156,6 +156,26 @@ Section seqN.
   Lemma fmap_add_seqN_0 j n :
     N.add j <$> seqN 0 n = seqN j n.
   Proof. by rewrite fmap_add_seqN N.add_0_r. Qed.
+
+  Lemma seqN_sublist (i j n m : N) :
+    n <= i -> i + j <= n + m ->
+    seqN i j `sublist_of` seqN n m.
+  Proof.
+    generalize dependent n; generalize dependent j; generalize dependent i.
+    induction m using N.peano_ind=> i j n Hni Hijnm.
+    - by assert (j = 0) as -> by lia.
+    - rewrite seqN_S_start.
+      assert (i = n \/ n < i) as [-> | Hni'] by lia.
+      + destruct j using N.peano_ind;
+          first by rewrite seqN_0; apply sublist_nil_l.
+        rewrite seqN_S_start.
+        apply sublist_skip.
+        by apply IHm; [done | lia].
+      + destruct j using N.peano_ind;
+          [by rewrite seqN_0; apply sublist_nil_l | clear IHj].
+        apply sublist_cons_r; left.
+        apply IHm; [lia | lia].
+  Qed.
 End seqN.
 
 Lemma repeatN_replicateN {A} (x : A) n :
