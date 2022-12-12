@@ -33,6 +33,16 @@ operations. *)
   SetUnfoldElemOf y (l ≫= f) (∃ x, Q x ∧ P x).
 Proof. constructor. rewrite elem_of_list_bind. naive_solver. Qed.
 
+#[global] Instance list_bind_mono {A B} :
+  Proper (pointwise_relation _ (⊆) ==> (⊆) ==> (⊆))
+    (mbind (M := list) (A := A) (B := B)).
+Proof. rewrite /pointwise_relation =>f1 f2 Hf xs1 xs2 Hxs. set_solver. Qed.
+
+#[global] Instance list_bind_perm {A B} :
+  Proper (pointwise_relation _ Permutation ==> Permutation ==> Permutation)
+    (mbind (M := list) (A := A) (B := B)).
+Proof. move =>f1 f2 Hf xs _ <-. elim: xs => [//|x xs IH]; csimpl. by rewrite {}IH (Hf x). Qed.
+
 (* To upstream, based on upstream [set_unfold_filter]. *)
 #[global] Instance set_unfold_list_filter
     {A} (P : A → Prop) `{!∀ x, Decision (P x)}

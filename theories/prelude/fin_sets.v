@@ -53,6 +53,14 @@ Section finset.
       elements x = elements y -> x ≡ y.
     Proof. by move /(inj elements _ _). Qed.
 
+    #[global] Instance elements_mono :
+      Proper (subseteq ==> subseteq) (elements (C := C)).
+    Proof. move=>x y Heq. set_solver. Qed.
+
+    #[global] Instance elements_perm :
+      Proper (equiv ==> Permutation) (elements (C := C)) | 100.
+    Proof. move=>x y Heq. set_solver. Qed.
+
     Section elements_leibniz.
       Context `{!LeibnizEquiv C}.
 
@@ -71,10 +79,18 @@ Section finset.
     End elements_leibniz.
   End elements.
 
+  #[global] Instance list_to_set_mono :
+    Proper (subseteq ==> subseteq) (list_to_set (C := C)).
+  Proof. move=>x y Heq. set_solver. Qed.
+  (* [Proper]ness of [list_to_set] wrt  *)
+  (* [list_to_set_perm] and [list_to_set_perm_L] already exists. *)
+
   (** [size] *)
   Lemma size_empty_iff_L `{!LeibnizEquiv C} X : size X = 0 ↔ X = ∅.
   Proof. unfold_leibniz. apply size_empty_iff. Qed.
 End finset.
+
+#[global] Instance : Params (@list_to_set) 5 := {}.
 
 (** [set_seq] *)
 Section set_seq.
