@@ -189,8 +189,9 @@ Section set_map.
   Qed.
 End set_map.
 
-(* An [mbind]-like operator for sets, but taking [f : A → list B], like stdlib's
-[concat_map]. *)
+(** An [mbind]-like operator for sets, but taking [f : A → list B], like stdlib's
+[concat_map].
+Contrast with [set_bind] (added in stdpp after we added [set_concat_map]. *)
 Section set_concat_map.
   Context `{FinSet A C} `{FinSet B D}.
   #[local] Set Default Proof Using "Type*".
