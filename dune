@@ -9,8 +9,7 @@
  (dev
   (coq
    (flags
-    (-q
-     ; TODO FM-2681: switch back from -q to :standard
+    (:standard
       ;see https://gitlab.mpi-sws.org/iris/iris/-/blob/master/_CoqProject
       -w -notation-overridden
       ; Similar to notation warnings.
