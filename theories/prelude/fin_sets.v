@@ -203,8 +203,8 @@ Section set_concat_map.
     set_concat_map f ∅ ≡ ∅.
   Proof. set_solver. Qed.
 
-  #[global] Instance set_concat_map_proper f :
-    Proper (equiv ==> equiv) (set_concat_map f).
+  #[global] Instance set_concat_map_perm_proper :
+    Proper (pointwise_relation _ Permutation ==> equiv ==> equiv) set_concat_map.
   Proof. solve_proper. Qed.
 
   Lemma elem_of_set_concat_map f b xs :
@@ -242,7 +242,7 @@ Section set_concat_map.
 End set_concat_map.
 
 #[global] Instance set_concat_map_params :
-  Params (@set_concat_map) 9 := {}.
+  Params (@set_concat_map) 8 := {}.
 
 (** Pairwise disjointness *)
 Section fin_set.
