@@ -207,6 +207,10 @@ Section set_concat_map.
     Proper (pointwise_relation _ Permutation ==> equiv ==> equiv) set_concat_map.
   Proof. solve_proper. Qed.
 
+  #[global] Instance set_concat_map_mono :
+    Proper (pointwise_relation _ (⊆) ==> (⊆) ==> (⊆)) set_concat_map.
+  Proof. solve_proper. Qed.
+
   Lemma elem_of_set_concat_map f b xs :
     b ∈ set_concat_map f xs ↔ ∃ x, x ∈ xs ∧ b ∈ f x.
   Proof. set_solver. Qed.
