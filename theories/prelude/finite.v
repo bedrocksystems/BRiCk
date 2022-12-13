@@ -168,7 +168,12 @@ Section finite_preimage_set.
   Proof. apply set_concat_map_empty. Qed.
 
   #[global] Instance finite_preimage_set_proper f :
-    Proper (equiv ==> equiv) (finite_preimage_set f) := _.
+    Proper (equiv ==> equiv) (finite_preimage_set f).
+  Proof. solve_proper. Qed.
+
+  #[global] Instance finite_preimage_set_mono f :
+    Proper (subseteq ==> subseteq) (finite_preimage_set f).
+  Proof. solve_proper. Qed.
 
   Lemma elem_of_finite_preimage_set f a bs :
     a ∈ finite_preimage_set f bs ↔ f a ∈ bs.

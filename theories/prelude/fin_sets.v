@@ -53,6 +53,14 @@ Section finset.
       elements x = elements y -> x ≡ y.
     Proof. by move /(inj elements _ _). Qed.
 
+    #[global] Instance elements_mono :
+      Proper (subseteq ==> subseteq) (elements (C := C)).
+    Proof. move=>x y Heq. set_solver. Qed.
+
+    #[global] Instance elements_perm :
+      Proper (equiv ==> Permutation) (elements (C := C)) | 100.
+    Proof. move=>x y Heq. set_solver. Qed.
+
     Section elements_leibniz.
       Context `{!LeibnizEquiv C}.
 
@@ -71,10 +79,18 @@ Section finset.
     End elements_leibniz.
   End elements.
 
+  #[global] Instance list_to_set_mono :
+    Proper (subseteq ==> subseteq) (list_to_set (C := C)).
+  Proof. move=>x y Heq. set_solver. Qed.
+  (* [Proper]ness of [list_to_set] wrt  *)
+  (* [list_to_set_perm] and [list_to_set_perm_L] already exists. *)
+
   (** [size] *)
   Lemma size_empty_iff_L `{!LeibnizEquiv C} X : size X = 0 ↔ X = ∅.
   Proof. unfold_leibniz. apply size_empty_iff. Qed.
 End finset.
+
+#[global] Instance : Params (@list_to_set) 5 := {}.
 
 (** [set_seq] *)
 Section set_seq.
@@ -173,8 +189,9 @@ Section set_map.
   Qed.
 End set_map.
 
-(* An [mbind]-like operator for sets, but taking [f : A → list B], like stdlib's
-[concat_map]. *)
+(** An [mbind]-like operator for sets, but taking [f : A → list B], like stdlib's
+[concat_map].
+Contrast with [set_bind] (added in stdpp after we added [set_concat_map]. *)
 Section set_concat_map.
   Context `{FinSet A C} `{FinSet B D}.
   #[local] Set Default Proof Using "Type*".
@@ -187,8 +204,12 @@ Section set_concat_map.
     set_concat_map f ∅ ≡ ∅.
   Proof. set_solver. Qed.
 
-  #[global] Instance set_concat_map_proper f :
-    Proper (equiv ==> equiv) (set_concat_map f).
+  #[global] Instance set_concat_map_perm_proper :
+    Proper (pointwise_relation _ Permutation ==> equiv ==> equiv) set_concat_map.
+  Proof. solve_proper. Qed.
+
+  #[global] Instance set_concat_map_mono :
+    Proper (pointwise_relation _ (⊆) ==> (⊆) ==> (⊆)) set_concat_map.
   Proof. solve_proper. Qed.
 
   Lemma elem_of_set_concat_map f b xs :
@@ -226,7 +247,7 @@ Section set_concat_map.
 End set_concat_map.
 
 #[global] Instance set_concat_map_params :
-  Params (@set_concat_map) 9 := {}.
+  Params (@set_concat_map) 8 := {}.
 
 (** Pairwise disjointness *)
 Section fin_set.
