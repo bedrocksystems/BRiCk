@@ -29,8 +29,8 @@ Notation "'funI' x .. y => t" := (fun x => .. (fun y => t%I) ..)
 (* Variant of [let*] (from [bedrock.prelude.letstar]) for the Iris scope. *)
 Notation "'letI*' x , .. , z := t 'in' f" :=
   (t (funI x => .. (funI z => f) ..))
-    (only parsing, at level 200, x closed binder, z closed binder).
-Notation "'letI*' '()' := t 'in' f" := (t f) (only parsing, at level 200).
+    (only parsing, at level 200, x closed binder, z closed binder) : bi_scope.
+Notation "'letI*' '()' := t 'in' f" := (t f) (only parsing, at level 200) : bi_scope.
 
 (* ASCII alias for [bi_pure] notation [⌜P⌝]. *)
 Notation "[! P !]" := (bi_pure P%type%stdpp) (only parsing) : bi_scope.

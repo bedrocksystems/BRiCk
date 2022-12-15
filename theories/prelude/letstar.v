@@ -5,6 +5,8 @@
  * See the LICENSE-BedRock file in the repository root for details.
  *)
 
+From stdpp Require Import base.
+
 (** * Syntax for straight-line CPS function calls
 
    [let* x, y, z := t in f] is short for [t $ fun x y z => f].
@@ -29,5 +31,5 @@
  *)
 Notation "'let*' x , .. , z := t 'in' f" :=
   (t (fun x => .. (fun z => f) ..))
-    (only parsing, at level 200, x closed binder, z closed binder).
-Notation "'let*' '()' := t 'in' f" := (t f) (only parsing, at level 200).
+    (only parsing, at level 200, x closed binder, z closed binder) : stdpp_scope.
+Notation "'let*' '()' := t 'in' f" := (t f) (only parsing, at level 200) : stdpp_scope.
