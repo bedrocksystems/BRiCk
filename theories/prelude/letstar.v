@@ -30,3 +30,4 @@
 Notation "'let*' x , .. , z := t 'in' f" :=
   (t (fun x => .. (fun z => f) ..))
     (only parsing, at level 200, x closed binder, z closed binder).
+Notation "'let*' '()' := t 'in' f" := (t f) (only parsing, at level 200).
