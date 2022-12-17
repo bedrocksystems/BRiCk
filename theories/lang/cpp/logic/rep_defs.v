@@ -27,9 +27,9 @@ Proof. by move=>i i'. Qed.
 Lemma ptr_rel_elim (p1 p2 : ptr) : p1 ⊑ p2 → p1 = p2.
 Proof. done. Qed.
 
-Definition Rep `{Σ : cpp_logic} := monPred ptr_bi_index mpredI.
 Canonical Structure RepI `{Σ : cpp_logic} := monPredI ptr_bi_index mpredI.
-Canonical Structure RepO `{Σ : cpp_logic} := monPredO ptr_bi_index mpredI.
+Definition Rep `{Σ : cpp_logic} : Type := RepI.
+Definition RepO `{Σ : cpp_logic} : ofe := RepI.
 
 Bind Scope bi_scope with Rep.
 
