@@ -15,6 +15,8 @@ Require Export bedrock.prelude.addr.
 
 From bedrock.lang.bi Require Export prelude observe.
 From bedrock.lang.cpp.logic Require Export mpred rep.
+(** ^^ Delicate; export types and canonical structures (CS) for [monPred], [mpred] and [Rep].
+Export order can affect CS inference. *)
 
 From iris.base_logic.lib Require Export iprop.
 (* TODO: ^^ only needed to export uPredI, should be removed. *)

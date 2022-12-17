@@ -3,12 +3,18 @@
  * This software is distributed under the terms of the BedRock Open-Source License.
  * See the LICENSE-BedRock file in the repository root for details.
  *)
-From bedrock.lang.bi Require Export monpred.
-From iris.proofmode Require Import proofmode monpred.
+From iris.proofmode Require Import proofmode.
 Require Import iris.bi.lib.fractional.
 
-From bedrock.lang.cpp Require Import semantics.values logic.mpred logic.rep_defs heap_notations.
 From bedrock.lang.bi Require Import prelude only_provable observe laterable.
+From bedrock.lang.bi Require Export monpred.
+(** ^^ Delicate; export canonical structure (CS) for [monPred].
+Export order can affect CS inference. *)
+
+From bedrock.lang.cpp Require Import semantics.values logic.mpred.
+From bedrock.lang.cpp Require Export logic.rep_defs heap_notations.
+(** ^^ Delicate; export canonical structure (CS) for [Rep].
+Export order can affect CS inference. *)
 
 Import ChargeNotation.
 Implicit Types (σ resolve : genv) (p : ptr) (o : offset).
@@ -677,6 +683,3 @@ Section with_cpp.
 End with_cpp.
 
 #[global] Typeclasses Opaque pureR as_Rep.
-
-Export rep_defs.
-Export heap_notations.
