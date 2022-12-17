@@ -10,10 +10,7 @@ Require Import iris.bi.lib.fractional.
 Require Import bedrock.prelude.base.
 
 From bedrock.lang.cpp Require Import
-  semantics ast logic.pred logic.rep logic.rep_defs heap_notations.
-
-From bedrock.lang.cpp Require Import
-     semantics ast logic.pred logic.path_pred logic.rep logic.rep_defs heap_notations.
+  semantics ast logic.pred logic.path_pred logic.rep heap_notations.
 
 Export bedrock.lang.cpp.logic.rep.
 Export bedrock.lang.cpp.heap_notations.
