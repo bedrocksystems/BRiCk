@@ -3,6 +3,11 @@
  * This software is distributed under the terms of the BedRock Open-Source License.
  * See the LICENSE-BedRock file in the repository root for details.
  *)
+
+(** Theory of representation predicates [Rep].
+For an introduction see
+[fmdeps/cpp2v-core/theories/noimport/doc/cpp/howto_sequential.v]. *)
+
 From iris.proofmode Require Import proofmode.
 Require Import iris.bi.lib.fractional.
 

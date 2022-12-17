@@ -3,13 +3,17 @@
  * This software is distributed under the terms of the BedRock Open-Source License.
  * See the LICENSE-BedRock file in the repository root for details.
  *)
+
+(** Most clients should import [bedrock.lang.cpp.logic.rep] instead of this file.
+This file defines the core type [Rep] of representation predicates, for use in [heap_notations].
+*)
 From bedrock.lang.bi Require Import prelude monpred.
 From bedrock.lang.cpp Require Import semantics.values logic.mpred.
 
 Import ChargeNotation.
 Implicit Types (σ resolve : genv) (p : ptr) (o : offset).
 
-(** representations are predicates over a location, they should be used to
+(** Representation predicates are implicitly indexed by a location, and should be used to
   * assert properties of the heap
   *)
 Canonical Structure ptr_bi_index : biIndex :=

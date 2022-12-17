@@ -3,10 +3,10 @@
  * This software is distributed under the terms of the BedRock Open-Source License.
  * See the LICENSE-BedRock file in the repository root for details.
  *)
-(** this file defines the core logic (called [mpred]) that we use
+(** This file defines the core logic (called [mpred]) that we use
     for C++.
 
-    known issues:
+    Known issues:
     - currently the logic is sequentially consistent
     - the memory model is simplified from the standard C++ memory
       model.
