@@ -3,15 +3,13 @@
  * This software is distributed under the terms of the BedRock Open-Source License.
  * See the LICENSE-BedRock file in the repository root for details.
  *)
-From bedrock.lang.bi Require Export monpred.
-From iris.proofmode Require Import proofmode monpred.
+From iris.proofmode Require Import proofmode.
 Require Import iris.bi.lib.fractional.
 
 From bedrock.lang.cpp Require Import
-  semantics ast logic.pred logic.path_pred logic.rep heap_notations.
+  semantics ast logic.pred logic.path_pred.
 
-Export bedrock.lang.cpp.logic.rep.
-Export bedrock.lang.cpp.heap_notations.
+Export bedrock.lang.cpp.logic.pred.
 
 Implicit Types (σ resolve : genv) (p : ptr) (o : offset).
 

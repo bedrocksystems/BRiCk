@@ -3,10 +3,8 @@
  * This software is distributed under the terms of the BedRock Open-Source License.
  * See the LICENSE-BedRock file in the repository root for details.
  *)
-From bedrock.lang.bi Require Export monpred.
-
+From bedrock.lang.bi Require Import prelude monpred.
 From bedrock.lang.cpp Require Import semantics.values logic.mpred.
-From bedrock.lang.bi Require Import prelude.
 
 Import ChargeNotation.
 Implicit Types (σ resolve : genv) (p : ptr) (o : offset).
