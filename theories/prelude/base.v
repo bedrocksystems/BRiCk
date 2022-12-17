@@ -84,8 +84,10 @@ Lemma subrelation_flip {A} (R S : relation A) :
   subrelation R S -> subrelation (flip R) (flip S).
 Proof. intros HR x y ?. exact: HR. Qed.
 
-Lemma negb_bool_decide `{Hdec : Decision P} : negb (bool_decide P) = bool_decide (not P).
-Proof. by case: Hdec. Qed.
+Lemma _negb_bool_decide `{Hdec : Decision P} : negb (bool_decide P) = bool_decide (not P).
+Proof. symmetry. apply bool_decide_not. Qed.
+#[global, deprecated(note="Use stdpp's [bool_decide_not]")]
+Notation negb_bool_decide := _negb_bool_decide.
 
 Lemma dec_stable_iff `{Decision P} : ¬ ¬ P ↔ P.
 Proof. split. apply dec_stable. tauto. Qed.
