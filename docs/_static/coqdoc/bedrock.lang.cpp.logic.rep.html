@@ -43,16 +43,42 @@
 &nbsp;*&nbsp;This&nbsp;software&nbsp;is&nbsp;distributed&nbsp;under&nbsp;the&nbsp;terms&nbsp;of&nbsp;the&nbsp;BedRock&nbsp;Open-Source&nbsp;License.<br/>
 &nbsp;*&nbsp;See&nbsp;the&nbsp;LICENSE-BedRock&nbsp;file&nbsp;in&nbsp;the&nbsp;repository&nbsp;root&nbsp;for&nbsp;details.<br/>
 &nbsp;*)</span><br/>
-<span class="id" title="keyword">From</span> <span class="id" title="var">bedrock.lang.bi</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Export</span> <a class="idref" href="bedrock.lang.bi.monpred.html#"><span class="id" title="library">monpred</span></a>.<br/>
-<span class="id" title="keyword">From</span> <span class="id" title="var">iris.proofmode</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <a class="idref" href="https://plv.mpi-sws.org/coqdoc/iris//iris.proofmode.proofmode.html#"><span class="id" title="library">proofmode</span></a> <a class="idref" href="https://plv.mpi-sws.org/coqdoc/iris//iris.proofmode.monpred.html#"><span class="id" title="library">monpred</span></a>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+Theory of representation predicates <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.logic.rep_defs.html#Rep"><span class="id" title="definition">Rep</span></a></span>.
+For an introduction see
+<span class="inlinecode"><span class="id" title="var">fmdeps</span>/<span class="id" title="var">cpp2v</span>-<a class="idref" href="https://plv.mpi-sws.org/coqdoc/iris//iris.algebra.cmra.html#core"><span class="id" title="definition">core</span></a>/<span class="id" title="var">theories</span>/<span class="id" title="var">noimport</span>/<span class="id" title="var">doc</span>/<span class="id" title="library">cpp</span>/<span class="id" title="var">howto_sequential.v</span></span>. 
+</div>
+<div class="code">
+
+<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">iris.proofmode</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <a class="idref" href="https://plv.mpi-sws.org/coqdoc/iris//iris.proofmode.proofmode.html#"><span class="id" title="library">proofmode</span></a>.<br/>
 <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <a class="idref" href="https://plv.mpi-sws.org/coqdoc/iris//iris.bi.lib.fractional.html#"><span class="id" title="library">iris.bi.lib.fractional</span></a>.<br/>
 
 <br/>
-<span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <a class="idref" href="bedrock.prelude.base.html#"><span class="id" title="library">bedrock.prelude.base</span></a>.<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">bedrock.lang.bi</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <a class="idref" href="bedrock.lang.bi.prelude.html#"><span class="id" title="library">prelude</span></a> <a class="idref" href="bedrock.lang.bi.only_provable.html#"><span class="id" title="library">only_provable</span></a> <a class="idref" href="bedrock.lang.bi.observe.html#"><span class="id" title="library">observe</span></a> <a class="idref" href="bedrock.lang.bi.laterable.html#"><span class="id" title="library">laterable</span></a>.<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">bedrock.lang.bi</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Export</span> <a class="idref" href="bedrock.lang.bi.monpred.html#"><span class="id" title="library">monpred</span></a>.<br/>
+</div>
+
+<div class="doc">
+^^ Delicate; export canonical structure (CS) for <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.logic.monpred_own.html#monPred"><span class="id" title="abbreviation">monPred</span></a></span>.
+Export order can affect CS inference. 
+</div>
+<div class="code">
 
 <br/>
-<span class="id" title="keyword">From</span> <span class="id" title="var">bedrock.lang.cpp</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <a class="idref" href="bedrock.lang.cpp.semantics.values.html#"><span class="id" title="library">semantics.values</span></a> <a class="idref" href="bedrock.lang.cpp.logic.mpred.html#"><span class="id" title="library">logic.mpred</span></a> <a class="idref" href="bedrock.lang.cpp.logic.rep_defs.html#"><span class="id" title="library">logic.rep_defs</span></a> <a class="idref" href="bedrock.lang.cpp.heap_notations.html#"><span class="id" title="library">heap_notations</span></a>.<br/>
-<span class="id" title="keyword">From</span> <span class="id" title="var">bedrock.lang.bi</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <a class="idref" href="bedrock.lang.bi.prelude.html#"><span class="id" title="library">prelude</span></a> <a class="idref" href="bedrock.lang.bi.only_provable.html#"><span class="id" title="library">only_provable</span></a> <a class="idref" href="bedrock.lang.bi.observe.html#"><span class="id" title="library">observe</span></a> <a class="idref" href="bedrock.lang.bi.laterable.html#"><span class="id" title="library">laterable</span></a>.<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">bedrock.lang.cpp</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <a class="idref" href="bedrock.lang.cpp.semantics.values.html#"><span class="id" title="library">semantics.values</span></a> <a class="idref" href="bedrock.lang.cpp.logic.mpred.html#"><span class="id" title="library">logic.mpred</span></a>.<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">bedrock.lang.cpp</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Export</span> <a class="idref" href="bedrock.lang.cpp.logic.rep_defs.html#"><span class="id" title="library">logic.rep_defs</span></a> <a class="idref" href="bedrock.lang.cpp.heap_notations.html#"><span class="id" title="library">heap_notations</span></a>.<br/>
+</div>
+
+<div class="doc">
+^^ Delicate; export canonical structure (CS) for <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.logic.rep_defs.html#Rep"><span class="id" title="definition">Rep</span></a></span>.
+Export order can affect CS inference. 
+</div>
+<div class="code">
 
 <br/>
 <span class="id" title="keyword">Import</span> <a class="idref" href="bedrock.lang.bi.prelude.html#ChargeNotation"><span class="id" title="module">ChargeNotation</span></a>.<br/>
@@ -856,10 +882,6 @@ As this isn't syntax-directed, we conservatively avoid
 
 <br/>
 #[<span class="id" title="var">global</span>] <span class="id" title="keyword">Typeclasses</span> <span class="id" title="keyword">Opaque</span> <span class="id" title="var">pureR</span> <span class="id" title="var">as_Rep</span>.<br/>
-
-<br/>
-<span class="id" title="keyword">Export</span> <a class="idref" href="bedrock.lang.cpp.logic.rep_defs.html#"><span class="id" title="module">rep_defs</span></a>.<br/>
-<span class="id" title="keyword">Export</span> <a class="idref" href="bedrock.lang.cpp.heap_notations.html#"><span class="id" title="module">heap_notations</span></a>.<br/>
 </div>
 <!--
 -- Copyright (c) 2020 BedRock Systems, Inc.

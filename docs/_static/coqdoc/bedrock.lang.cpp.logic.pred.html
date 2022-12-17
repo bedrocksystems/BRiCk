@@ -46,12 +46,12 @@
 </div>
 
 <div class="doc">
-this file defines the core logic (called <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.logic.mpred.html#CPP_LOGIC_CLASS_MIXIN.mpred"><span class="id" title="definition">mpred</span></a></span>) that we use
+This file defines the core logic (called <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.logic.mpred.html#CPP_LOGIC_CLASS_MIXIN.mpred"><span class="id" title="definition">mpred</span></a></span>) that we use
     for C++.
 
 <div class="paragraph"> </div>
 
-    known issues:
+    Known issues:
 <ul class="doclist">
 <li> currently the logic is sequentially consistent
 
@@ -69,11 +69,17 @@ this file defines the core logic (called <span class="inlinecode"><a class="idre
 <br/>
 <span class="id" title="keyword">From</span> <span class="id" title="var">bedrock.lang.bi</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Export</span> <a class="idref" href="bedrock.lang.bi.prelude.html#"><span class="id" title="library">prelude</span></a> <a class="idref" href="bedrock.lang.bi.observe.html#"><span class="id" title="library">observe</span></a>.<br/>
 <span class="id" title="keyword">From</span> <span class="id" title="var">bedrock.lang.cpp.logic</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Export</span> <a class="idref" href="bedrock.lang.cpp.logic.mpred.html#"><span class="id" title="library">mpred</span></a> <a class="idref" href="bedrock.lang.cpp.logic.rep.html#"><span class="id" title="library">rep</span></a>.<br/>
+</div>
+
+<div class="doc">
+^^ Delicate; export types and canonical structures (CS) for <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.logic.monpred_own.html#monPred"><span class="id" title="abbreviation">monPred</span></a></span>, <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.logic.mpred.html#CPP_LOGIC_CLASS_MIXIN.mpred"><span class="id" title="definition">mpred</span></a></span> and <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.logic.rep_defs.html#Rep"><span class="id" title="definition">Rep</span></a></span>.
+Export order can affect CS inference. 
+</div>
+<div class="code">
 
 <br/>
 <span class="id" title="keyword">From</span> <span class="id" title="var">iris.base_logic.lib</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Export</span> <a class="idref" href="https://plv.mpi-sws.org/coqdoc/iris//iris.base_logic.lib.iprop.html#"><span class="id" title="library">iprop</span></a>.<br/>
 <span class="comment">(*&nbsp;TODO:&nbsp;^^&nbsp;only&nbsp;needed&nbsp;to&nbsp;export&nbsp;uPredI,&nbsp;should&nbsp;be&nbsp;removed.&nbsp;*)</span><br/>
-<span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <a class="idref" href="https://plv.mpi-sws.org/coqdoc/iris//iris.bi.monpred.html#"><span class="id" title="library">iris.bi.monpred</span></a>.<br/>
 <span class="id" title="keyword">From</span> <span class="id" title="var">iris.bi.lib</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <a class="idref" href="https://plv.mpi-sws.org/coqdoc/iris//iris.bi.lib.fractional.html#"><span class="id" title="library">fractional</span></a>.<br/>
 <span class="id" title="keyword">From</span> <span class="id" title="var">iris.proofmode</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <a class="idref" href="https://plv.mpi-sws.org/coqdoc/iris//iris.proofmode.proofmode.html#"><span class="id" title="library">proofmode</span></a>.<br/>
 

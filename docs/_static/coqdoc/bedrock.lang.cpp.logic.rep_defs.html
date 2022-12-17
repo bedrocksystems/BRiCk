@@ -43,14 +43,18 @@
 &nbsp;*&nbsp;This&nbsp;software&nbsp;is&nbsp;distributed&nbsp;under&nbsp;the&nbsp;terms&nbsp;of&nbsp;the&nbsp;BedRock&nbsp;Open-Source&nbsp;License.<br/>
 &nbsp;*&nbsp;See&nbsp;the&nbsp;LICENSE-BedRock&nbsp;file&nbsp;in&nbsp;the&nbsp;repository&nbsp;root&nbsp;for&nbsp;details.<br/>
 &nbsp;*)</span><br/>
-<span class="id" title="keyword">From</span> <span class="id" title="var">bedrock.lang.bi</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Export</span> <a class="idref" href="bedrock.lang.bi.monpred.html#"><span class="id" title="library">monpred</span></a>.<br/>
 
 <br/>
-<span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <a class="idref" href="bedrock.prelude.base.html#"><span class="id" title="library">bedrock.prelude.base</span></a>.<br/>
+</div>
 
-<br/>
+<div class="doc">
+Most clients should import <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.logic.rep.html#"><span class="id" title="library">bedrock.lang.cpp.logic.rep</span></a></span> instead of this file.
+This file defines the core type <span class="inlinecode"><a class="idref" href="bedrock.lang.cpp.logic.rep_defs.html#Rep"><span class="id" title="definition">Rep</span></a></span> of representation predicates, for use in <span class="inlinecode"><span class="id" title="library">heap_notations</span></span>.
+
+</div>
+<div class="code">
+<span class="id" title="keyword">From</span> <span class="id" title="var">bedrock.lang.bi</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <a class="idref" href="bedrock.lang.bi.prelude.html#"><span class="id" title="library">prelude</span></a> <a class="idref" href="bedrock.lang.bi.monpred.html#"><span class="id" title="library">monpred</span></a>.<br/>
 <span class="id" title="keyword">From</span> <span class="id" title="var">bedrock.lang.cpp</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <a class="idref" href="bedrock.lang.cpp.semantics.values.html#"><span class="id" title="library">semantics.values</span></a> <a class="idref" href="bedrock.lang.cpp.logic.mpred.html#"><span class="id" title="library">logic.mpred</span></a>.<br/>
-<span class="id" title="keyword">From</span> <span class="id" title="var">bedrock.lang.bi</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <a class="idref" href="bedrock.lang.bi.prelude.html#"><span class="id" title="library">prelude</span></a>.<br/>
 
 <br/>
 <span class="id" title="keyword">Import</span> <a class="idref" href="bedrock.lang.bi.prelude.html#ChargeNotation"><span class="id" title="module">ChargeNotation</span></a>.<br/>
@@ -60,7 +64,7 @@
 </div>
 
 <div class="doc">
-representations are predicates over a location, they should be used to
+Representation predicates are implicitly indexed by a location, and should be used to
 <a id="lab103"></a><h1 class="section">assert properties of the heap</h1>
 
   
