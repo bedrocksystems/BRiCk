@@ -6,8 +6,6 @@
 From bedrock.lang.bi Require Export monpred.
 From iris.proofmode Require Import proofmode monpred.
 
-Require Import bedrock.prelude.base.
-
 From bedrock.lang.cpp Require Import
      semantics logic.pred logic.rep logic.wp.
 Export bedrock.lang.cpp.logic.rep.

@@ -7,8 +7,6 @@ From bedrock.lang.bi Require Export monpred.
 From iris.proofmode Require Import proofmode monpred.
 Require Import iris.bi.lib.fractional.
 
-Require Import bedrock.prelude.base.
-
 From bedrock.lang.cpp Require Import semantics.values logic.mpred logic.rep_defs heap_notations.
 From bedrock.lang.bi Require Import prelude only_provable observe laterable.
 

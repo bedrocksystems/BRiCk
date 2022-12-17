@@ -5,8 +5,6 @@
  *)
 From bedrock.lang.bi Require Export monpred.
 
-Require Import bedrock.prelude.base.
-
 From bedrock.lang.cpp Require Import semantics.values logic.mpred.
 From bedrock.lang.bi Require Import prelude.
 
