@@ -3,14 +3,10 @@
  * This software is distributed under the terms of the BedRock Open-Source License.
  * See the LICENSE-BedRock file in the repository root for details.
  *)
-From bedrock.lang.bi Require Export monpred.
-From iris.proofmode Require Import proofmode monpred.
-
-Require Import bedrock.prelude.base.
+From iris.proofmode Require Import proofmode.
 
 From bedrock.lang.cpp Require Import
-     semantics logic.pred logic.rep logic.wp.
-Export bedrock.lang.cpp.logic.rep.
+     semantics logic.pred logic.wp.
 
 Section defs.
   Context `{Σ : cpp_logic}.

@@ -3,10 +3,10 @@
  * This software is distributed under the terms of the BedRock Open-Source License.
  * See the LICENSE-BedRock file in the repository root for details.
  *)
-(** this file defines the core logic (called [mpred]) that we use
+(** This file defines the core logic (called [mpred]) that we use
     for C++.
 
-    known issues:
+    Known issues:
     - currently the logic is sequentially consistent
     - the memory model is simplified from the standard C++ memory
       model.
@@ -15,10 +15,11 @@ Require Export bedrock.prelude.addr.
 
 From bedrock.lang.bi Require Export prelude observe.
 From bedrock.lang.cpp.logic Require Export mpred rep.
+(** ^^ Delicate; export types and canonical structures (CS) for [monPred], [mpred] and [Rep].
+Export order can affect CS inference. *)
 
 From iris.base_logic.lib Require Export iprop.
 (* TODO: ^^ only needed to export uPredI, should be removed. *)
-Require Import iris.bi.monpred.
 From iris.bi.lib Require Import fractional.
 From iris.proofmode Require Import proofmode.
 
