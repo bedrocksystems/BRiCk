@@ -31,7 +31,7 @@ Canonical Structure RepI `{Σ : cpp_logic} := monPredI ptr_bi_index mpredI.
 Definition Rep `{Σ : cpp_logic} : Type := RepI.
 Definition RepO `{Σ : cpp_logic} : ofe := RepI.
 
-Bind Scope bi_scope with Rep.
+#[global] Bind Scope bi_scope with Rep.
 
 Section defs.
   Context `{Σ : cpp_logic}.
