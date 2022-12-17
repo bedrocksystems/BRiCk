@@ -32,4 +32,4 @@ From stdpp Require Import base.
 Notation "'let*' x , .. , z := t 'in' f" :=
   (t (fun x => .. (fun z => f) ..))
     (only parsing, at level 200, x closed binder, z closed binder) : stdpp_scope.
-Notation "'let*' '()' := t 'in' f" := (t f) (only parsing, at level 200) : stdpp_scope.
+Notation "'let*' := t 'in' f" := (t f) (only parsing, at level 200) : stdpp_scope.
