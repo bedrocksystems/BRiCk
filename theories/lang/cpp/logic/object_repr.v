@@ -17,8 +17,6 @@ Require Import bedrock.lang.bi.big_op.
 Require Import bedrock.lang.cpp.semantics.
 From bedrock.lang.cpp.logic Require Import arr pred heap_pred layout raw.
 
-Require Import bedrock.lang.cpp.heap_notations.
-
 Section Utilities.
   Context `{Σ : cpp_logic} {σ : genv}.
 

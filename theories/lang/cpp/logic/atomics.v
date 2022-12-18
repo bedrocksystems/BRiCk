@@ -10,7 +10,6 @@ Require Export bedrock.lang.bi.atomic1.
 From bedrock.lang.cpp Require Import ast semantics.
 From bedrock.lang.cpp.logic Require Import
      pred path_pred heap_pred wp call.
-Require Import bedrock.lang.cpp.heap_notations.
 
 #[local] Open Scope Z_scope.
 

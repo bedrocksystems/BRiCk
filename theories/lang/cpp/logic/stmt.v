@@ -9,7 +9,6 @@ From bedrock.lang.cpp Require Import ast semantics.
 From bedrock.lang.cpp.logic Require Import
      pred path_pred heap_pred destroy wp initializers call.
 Require Import bedrock.lang.bi.errors.
-Require Import bedrock.lang.cpp.heap_notations.
 
 Module Type Stmt.
   #[local] Arguments wp_test [_ _ _] _ _ _.

@@ -39,7 +39,6 @@ Require Import bedrock.lang.cpp.logic.
 Section with_Σ.
   Context `{Σ : cpp_logic ti}.
 
-  Import heap_notations heap_pred.
   #[local] Notation WPP := (WpSpec_cpp_val).
 
   Succeed Definition _1 : WPP :=

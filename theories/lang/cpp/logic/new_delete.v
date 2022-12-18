@@ -15,8 +15,6 @@ From bedrock.lang.cpp.logic Require Import
      destroy initializers dispatch
      wp call translation_unit.
 
-Require Import bedrock.lang.cpp.heap_notations.
-
 Module Type Expr__newdelete.
 
   #[local] Open Scope free_scope.

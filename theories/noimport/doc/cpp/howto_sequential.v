@@ -5,7 +5,6 @@
  * SPDX-License-Identifier: Apache-2.0
  *)
 Require Import bedrock.lang.cpp.
-Import heap_notations.
 #[local] Set Warnings "-non-recursive". (* disable warning about [llistR] *)
 
 #[local] Open Scope Z_scope.

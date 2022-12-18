@@ -7,7 +7,6 @@
 From bedrock.lang.cpp Require Import ast semantics.
 From bedrock.lang.cpp.logic Require Import
     pred path_pred heap_pred wp.
-Require Import bedrock.lang.cpp.heap_notations.
 Require Import bedrock.lang.cpp.logic.atomics.
 
 Require Import iris.proofmode.proofmode.

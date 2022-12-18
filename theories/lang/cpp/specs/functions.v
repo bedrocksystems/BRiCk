@@ -10,7 +10,6 @@ Require Import bedrock.lang.bi.errors.
 Require Import iris.proofmode.proofmode.	(** Early to get the right [ident] *)
 Require Import bedrock.lang.cpp.logic.
 Require Import bedrock.lang.cpp.specs.cpp_specs.
-Require Import bedrock.lang.cpp.heap_notations.
 
 #[local] Set Printing Universes.
 #[local] Set Printing Coercions.
