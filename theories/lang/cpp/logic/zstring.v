@@ -15,8 +15,7 @@ From bedrock.lang.bi Require Import
      prelude observe.
 From bedrock.lang.cpp Require Import
      semantics.values
-     logic.arr logic.heap_pred logic.mpred
-     heap_notations.
+     logic.arr logic.heap_pred logic.pred.
 
 Import ChargeNotation.
 #[local] Open Scope Z_scope.

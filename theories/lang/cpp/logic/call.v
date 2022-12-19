@@ -9,7 +9,6 @@ Require Import bedrock.lang.cpp.ast.
 Require Import bedrock.lang.cpp.semantics.
 From bedrock.lang.cpp.logic Require Import
      pred path_pred heap_pred wp initializers.
-Require Import bedrock.lang.cpp.heap_notations.
 
 Section with_resolve.
   Context `{Σ : cpp_logic} {σ : genv} (tu : translation_unit).

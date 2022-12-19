@@ -11,7 +11,6 @@ Require Import bedrock.lang.cpp.semantics.
 Require Import bedrock.lang.bi.errors.
 From bedrock.lang.cpp.logic Require Import
      pred path_pred heap_pred wp destroy.
-Require Import bedrock.lang.cpp.heap_notations.
 
 (** The C++ language provides several types of initialization:
     - default initialization <https://eel.is/c++draft/dcl.init#def:default-initialization>

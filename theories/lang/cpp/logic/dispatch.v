@@ -11,7 +11,6 @@ Require Import bedrock.lang.cpp.ast.
 Require Import bedrock.lang.cpp.semantics.
 From bedrock.lang.cpp.logic Require Import pred heap_pred path_pred.
 From bedrock.lang.cpp.logic Require Import wp translation_unit.
-Require Import bedrock.lang.cpp.heap_notations.
 
 Section with_cpp.
   Context `{Σ : cpp_logic}.

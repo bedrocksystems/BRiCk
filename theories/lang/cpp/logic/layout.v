@@ -15,7 +15,6 @@ Require Import bedrock.lang.cpp.semantics.
 Require Import bedrock.lang.cpp.logic.arr.
 Require Export bedrock.lang.cpp.logic.raw.
 
-Require Import bedrock.lang.cpp.heap_notations.
 Require Import bedrock.lang.bi.linearity.
 
 Section with_Σ.

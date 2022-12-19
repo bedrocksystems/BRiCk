@@ -21,8 +21,6 @@ From bedrock.lang.cpp.logic Require Import
      dispatch layout.
 Require Import bedrock.lang.bi.errors.
 
-Require Import bedrock.lang.cpp.heap_notations.
-
 Module Type Expr.
   (* Needed for [Unfold wp_test] *)
   #[local] Arguments wp_test [_ _ _] _ _ _.

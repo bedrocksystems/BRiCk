@@ -12,7 +12,6 @@ From bedrock.prelude Require Import numbers.
 From bedrock.lang Require Import bi.observe bi.big_op.
 From bedrock.lang.cpp.semantics Require Import types genv.
 From bedrock.lang.cpp.logic Require Import pred path_pred heap_pred.
-From bedrock.lang.cpp Require Import heap_notations.
 From bedrock.lang.cpp.semantics Require Import values.
 
 #[local] Set Printing Coercions.	(** Readability *)

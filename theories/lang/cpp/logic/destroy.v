@@ -11,8 +11,6 @@ From bedrock.lang.cpp.logic Require Import
      pred wp path_pred heap_pred.
 Require Import bedrock.lang.cpp.logic.dispatch.
 
-Require Import bedrock.lang.cpp.heap_notations.
-
 Section destroy.
   Context `{Σ : cpp_logic thread_info} {σ:genv}.
   Variable tu : translation_unit.

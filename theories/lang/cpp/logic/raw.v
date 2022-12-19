@@ -13,8 +13,6 @@ Require Import bedrock.lang.cpp.semantics.
 From bedrock.lang.cpp.logic Require Import
      arr heap_pred pred.
 
-Require Import bedrock.lang.cpp.heap_notations.
-
 Section with_Σ.
   Context `{Σ : cpp_logic} {σ : genv}.
 
