@@ -1033,8 +1033,7 @@ Section with_cpp.
       Proper (pointwise_relation _ lentails ==> lentails) (@fspec tt ft a ls).
   Proof.
     repeat red; intros.
-    rewrite fspec_complete_type.
-    iIntros "[X %]"; iRevert "X"; iApply fspec_frame; auto.
+    iApply fspec_frame.
     iIntros (v); iApply H.
   Qed.
 
@@ -1046,14 +1045,12 @@ Section with_cpp.
     Lemma fspec_wand_fupd Q1 Q2 : WP Q1 |-- (∀ v, Q1 v -* |={top}=> Q2 v) -* WP Q2.
     Proof.
       iIntros "Hwp HK".
-      iDestruct (fspec_complete_type with "Hwp") as "[Hwp %]".
       iApply (fspec_frame_fupd with "HK Hwp").
       reflexivity.
     Qed.
 
     Lemma fspec_wand Q1 Q2 : WP Q1 |-- (∀ v, Q1 v -* Q2 v) -* WP Q2.
     Proof. iIntros "Hwp HK".
-           iDestruct (fspec_complete_type with "Hwp") as "[Hwp %]".
            iApply (fspec_frame with "HK Hwp").
     Qed.
   End fspec.
