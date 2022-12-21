@@ -987,7 +987,7 @@ Section with_cpp.
   Axiom fspec_complete_type : forall te ft a ls Q,
       fspec te ft a ls Q
       |-- fspec te ft a ls Q **
-          [| exists cc tret targs, ft = Tfunction (cc:=cc) tret targs |].
+          [| exists cc ar tret targs, ft = Tfunction (cc:=cc) (ar:=ar) tret targs |].
 
   (* this axiom states that the type environment for an [fspec] can be
      narrowed as long as the new type environment [small]/[tt2] is smaller than
