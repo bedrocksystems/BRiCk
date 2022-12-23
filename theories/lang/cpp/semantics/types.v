@@ -39,17 +39,19 @@ Variant Roption_leq {T} (R : T -> T -> Prop) : option T -> option T -> Prop :=
 
 #[global] Instance proper_GlobDecl_size_of: Proper (GlobDecl_ler ==> Roption_leq eq) GlobDecl_size_of.
 Proof.
-  rewrite /GlobDecl_size_of => x y Heq.
-  repeat (case_match; try constructor);
-    simplify_eq/= => //;
-    apply require_eq_success in Heq; destruct Heq; subst; solve [ congruence | naive_solver ].
+  rewrite /GlobDecl_size_of/GlobDecl_ler/GlobDecl_le => x y Heq.
+  do 2 case_match; subst; try contradiction; try constructor.
+  case_bool_decide; subst; eauto. contradiction.
+  case_bool_decide; subst; eauto. contradiction.
+  case_bool_decide; subst; eauto. case_match; constructor; eauto. contradiction.
 Qed.
 #[global] Instance proper_GlobDecl_align_of: Proper (GlobDecl_ler ==> Roption_leq eq) GlobDecl_align_of.
 Proof.
-  rewrite /GlobDecl_align_of => x y Heq.
-  repeat (case_match; try constructor);
-    simplify_eq/= => //;
-    apply require_eq_success in Heq; destruct Heq; solve [ congruence | naive_solver ].
+  rewrite /GlobDecl_size_of/GlobDecl_ler/GlobDecl_le => x y Heq.
+  do 2 case_match; subst; try contradiction; try constructor.
+  case_bool_decide; subst; eauto. contradiction.
+  case_bool_decide; subst; eauto. contradiction.
+  case_bool_decide; subst; eauto. simpl. case_match; constructor; eauto. contradiction.
 Qed.
 
 (** * sizeof() *)
