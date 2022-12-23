@@ -1,5 +1,5 @@
 (*
- * Copyright (C) BedRock Systems Inc. 2020-21
+ * Copyright (C) BedRock Systems Inc. 2020-2022
  *
  * This software is distributed under the terms of the BedRock Open-Source License.
  * See the LICENSE-BedRock file in the repository root for details.
@@ -7,6 +7,9 @@
 Require Export bedrock.prelude.base.
 
 #[local] Set Printing Coercions.
+
+Infix "<=" := Bool.le : bool_scope.
+Notation "(<=)" := Bool.le (only parsing) : bool_scope.
 
 (**
 More flexible version of [reflect]: using [H : reflectPQ (m < n) (n ≤ m) b]
@@ -76,3 +79,42 @@ Proof. constructor. rewrite orb_True. set_solver. Qed.
 #[global] Instance set_unfold_bool_decide (P Q : Prop) `{!Decision P} :
   SetUnfold P Q → SetUnfold (bool_decide P) Q.
 Proof. constructor. rewrite bool_decide_spec. set_solver. Qed.
+
+(** Simple extensions to Coq's [Bool] *)
+Module Bool.
+  Export Coq.Bool.Bool.
+  #[local] Open Scope bool_scope.
+
+  (** Properties of [Bool.le] *)
+
+  Definition leb (b1 b2 : bool) : bool :=
+    if b1 then b2 else true.
+
+  Lemma le_leb b1 b2 : b1 <= b2 <-> leb b1 b2.
+  Proof. by destruct b1, b2. Qed.
+
+  #[global] Instance le_dec : RelDecision (<=).
+  Proof.
+    refine (fun b1 b2 => cast_if (decide (leb b1 b2)));
+      by rewrite le_leb.
+  Qed.
+
+  #[global] Instance le_pi a b : ProofIrrel (a <= b).
+  Proof. destruct a, b; apply _. Qed.
+
+  #[global] Instance le_preorder : PreOrder (<=).
+  Proof. split. by intros []. by intros [] [] []. Qed.
+
+  Lemma le_andb_l a b : a && b <= a.
+  Proof. by destruct a, b. Qed.
+  #[global] Hint Resolve le_andb_l : core.
+
+  Lemma le_andb_r a b : a && b <= b.
+  Proof. by destruct a, b. Qed.
+  #[global] Hint Resolve le_andb_r : core.
+
+  Lemma andb_min_l a b : a <= b -> a && b = a.
+  Proof. by destruct a, b. Qed.
+  Lemma andb_min_r a b : a <= b -> b && a = a.
+  Proof. by destruct a, b. Qed.
+End Bool.
