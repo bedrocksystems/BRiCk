@@ -79,3 +79,10 @@ $ make test
 - The implementation of the `cpp2v` tool is in `src` and `include`.
 - The definition of the accompanying Coq data types is in `theories/lang/cpp/syntax` directory. The notation in `theories/lang/cpp/parser.v` is used to setup the environment for the generated code.
 - The axiomatic semantics of the abstract syntax tree is defined in the `theories/lang/cpp/logic` directory.
+
+## Coq IDEs
+
+The following command creates a `_CoqProject` file for use by Coq IDEs.
+```sh
+$ ln -s _CoqProject.template _CoqProject
+```
