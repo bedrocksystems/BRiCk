@@ -1,13 +1,17 @@
 (*
- * Copyright (c) 2020 BedRock Systems, Inc.
+ * Copyright (c) 2020-2022 BedRock Systems, Inc.
  * This software is distributed under the terms of the BedRock Open-Source License.
  * See the LICENSE-BedRock file in the repository root for details.
  *)
 
-From iris.algebra Require Import list.
-From iris.bi Require Import monpred big_op.
+Require Export bedrock.lang.algebra.big_op.
+Require Export iris.bi.big_op.
+
+From bedrock.lang.bi Require Import prelude.
 From iris.proofmode Require Import proofmode.
-From bedrock.prelude Require Import list list_numbers.
+Import ChargeNotation.
+
+(** ** Lists *)
 
 Section big_op.
   Context `{Monoid M o}.
@@ -148,3 +152,79 @@ Proof.
   rewrite -[in seq n m](Nat.sub_add _ _ Le) -fmap_add_seq.
   apply big_sepL_fmap.
 Qed.
+
+(** ** Powers in BIs *)
+(**
+Overview:
+
+- Notation [P ^^ n := P ^^{bi_sep} n]
+
+- Monotonicity, timelessness, etc of the assertion [P ^^{o} n] for [o
+∈ bi_sep, bi_and, bi_or]
+*)
+
+Notation "P ^^ n" := (P ^^{bi_sep} n) : bi_scope.
+
+Section power.
+  Context {PROP : bi}.
+  Implicit Types (P : PROP).
+  #[local] Notation "(⊢)" := (⊢@{PROP}) (only parsing).
+  #[local] Open Scope N_scope.
+
+  #[local] Notation MONO R op :=
+    (Proper (R%signature ==> eq ==> R) (power op)) (only parsing).
+
+  #[global] Instance power_sep_mono : MONO (⊢) bi_sep.
+  Proof. apply: power_proper. Qed.
+  #[global] Instance power_and_mono : MONO (⊢) bi_and.
+  Proof. apply: power_proper. Qed.
+  #[global] Instance power_or_mono : MONO (⊢) bi_or.
+  Proof. apply: power_proper. Qed.
+
+  #[global] Instance power_sep_flip_mono : MONO (flip (⊢)) bi_sep.
+  Proof. apply: power_proper. Qed.
+  #[global] Instance power_and_flip_mono : MONO (flip (⊢)) bi_and.
+  Proof. apply: power_proper. Qed.
+  #[global] Instance power_or_flip_mono : MONO (flip (⊢)) bi_or.
+  Proof. apply: power_proper. Qed.
+
+  (**
+   * Avoid exotic goals like [Timeless emp], [Affine True] when [n] a
+   * non-zero constructor.
+   *)
+  #[local] Lemma power_closed' `{Monoid M o} (P : M -> Prop) x n :
+    TCOr (NNonZero n) (P monoid_unit) ->
+    Proper (equiv ==> iff) P ->
+    (∀ x1 x2, P x1 -> P x2 -> P (o x1 x2)) ->
+    P x -> P (x ^^{o} n).
+  Proof.
+    destruct 1; intros. exact: power_closed_nonzero. exact: power_closed.
+  Qed.
+
+  #[local] Notation CLOSED R o :=
+    (∀ (P : PROP) n, R P -> R (P ^^{o} n)) (only parsing).
+  #[local] Notation CLOSED' R u o :=
+    (∀ P n, TCOr (NNonZero n) (R (u : PROP)) -> R P -> R (P ^^{o} n)) (only parsing).
+
+  #[global] Instance power_sep_timeless : CLOSED' Timeless emp bi_sep.
+  Proof. intros. apply: power_closed'. Qed.
+  #[global] Instance power_and_timeless : CLOSED Timeless bi_and.
+  Proof. intros. apply: power_closed. Qed.
+  #[global] Instance power_or_timeless : CLOSED Timeless bi_or.
+  Proof. intros. apply: power_closed. Qed.
+
+  #[global] Instance power_sep_persistent : CLOSED Persistent bi_sep.
+  Proof. intros. apply: power_closed. Qed.
+  #[global] Instance power_and_persistent : CLOSED Persistent bi_and.
+  Proof. intros. apply: power_closed. Qed.
+  #[global] Instance power_or_persistent : CLOSED Persistent bi_or.
+  Proof. intros. apply: power_closed. Qed.
+
+  #[global] Instance power_sep_affine : CLOSED Affine bi_sep.
+  Proof. intros. apply: power_closed. Qed.
+  #[global] Instance power_and_affine : CLOSED' Affine True%I bi_and.
+  Proof. intros. apply: power_closed'. Qed.
+  #[global] Instance power_or_affine : CLOSED Affine bi_or.
+  Proof. intros. apply: power_closed. Qed.
+
+End power.
