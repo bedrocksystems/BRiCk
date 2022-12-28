@@ -5,9 +5,7 @@
  * See the LICENSE-BedRock file in the repository root for details.
  *)
 
-Require Export bedrock.lang.bi.prelude.
-
-From bedrock.lang.bi Require Import observe spec.knowledge.
+From bedrock.lang.bi Require Import prelude observe spec.knowledge.
 Import ChargeNotation.
 
 #[local] Set Primitive Projections.
