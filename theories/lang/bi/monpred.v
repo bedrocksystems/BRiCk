@@ -3,12 +3,26 @@
  * This software is distributed under the terms of the BedRock Open-Source License.
  * See the LICENSE-BedRock file in the repository root for details.
  *)
+
 Require Export iris.bi.monpred.
+
 Require Import bedrock.lang.bi.prelude.
 Require Import iris.proofmode.monpred.
 
 Notation "A -mon> B" := (monPred A B%bi_type) : stdpp_scope.
 Notation "A -mon> B" := (monPredI A B) : bi_type_scope.
+
+(**
+Do not extend this module. It exists for backwards compatibility.
+*)
+Module Export nary.
+  (** [ObjectiveN] states that predicate [P] taking [N] arguments is [Objective] *)
+  Notation Objective1 P := (∀ a, Objective (P a)).
+  Notation Objective2 P := (∀ a, Objective1 (P a)).
+  Notation Objective3 P := (∀ a, Objective2 (P a)).
+  Notation Objective4 P := (∀ a, Objective3 (P a)).
+  Notation Objective5 P := (∀ a, Objective4 (P a)).
+End nary.
 
 #[global] Instance: Params (@Objective) 2 := {}.
 

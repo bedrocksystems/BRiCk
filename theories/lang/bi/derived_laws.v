@@ -17,6 +17,40 @@ When upstreaming, add a comment (with the upstream name if different).
 When bumping Iris, drop lemmas that are now upstream.
 *)
 
+(**
+Do not extend this module. It exists for backwards compatibility.
+*)
+Module Export nary.
+  (** [PersistentN] states that predicate [P] taking [N] arguments is [Persistent] *)
+  Notation Persistent1 P := (∀ a, Persistent (P a)).
+  Notation Persistent2 P := (∀ a, Persistent1 (P a)).
+  Notation Persistent3 P := (∀ a, Persistent2 (P a)).
+  Notation Persistent4 P := (∀ a, Persistent3 (P a)).
+  Notation Persistent5 P := (∀ a, Persistent4 (P a)).
+
+  (** [AffineN] states that predicate [P] taking [N] arguments is [Affine] *)
+  Notation Affine1 P := (∀ a, Affine (P a)).
+  Notation Affine2 P := (∀ a, Affine1 (P a)).
+  Notation Affine3 P := (∀ a, Affine2 (P a)).
+  Notation Affine4 P := (∀ a, Affine3 (P a)).
+  Notation Affine5 P := (∀ a, Affine4 (P a)).
+
+  (** [AbsorbingN] states that predicate [P] taking [N] arguments is [Absorbing] *)
+  Notation Absorbing1 P := (∀ a, Absorbing (P a)).
+  Notation Absorbing2 P := (∀ a, Absorbing1 (P a)).
+  Notation Absorbing3 P := (∀ a, Absorbing2 (P a)).
+  Notation Absorbing4 P := (∀ a, Absorbing3 (P a)).
+  Notation Absorbing5 P := (∀ a, Absorbing4 (P a)).
+
+  (** [TimelessN] states that predicate [P] taking [N] arguments is [Timeless] *)
+  Notation Timeless1 P := (∀ a, Timeless (P a)).
+  Notation Timeless2 P := (∀ a, Timeless1 (P a)).
+  Notation Timeless3 P := (∀ a, Timeless2 (P a)).
+  Notation Timeless4 P := (∀ a, Timeless3 (P a)).
+  Notation Timeless5 P := (∀ a, Timeless4 (P a)).
+  Notation Timeless6 P := (∀ a, Timeless5 (P a)).
+End nary.
+
 Module bi.
 Export iris.bi.bi.bi.
 

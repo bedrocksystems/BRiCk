@@ -9,7 +9,7 @@ From iris.bi Require Import monpred.
 From iris.bi.lib Require Import fractional.
 From iris.proofmode Require Import proofmode.
 
-Require Import bedrock.lang.bi.cancelable_invariants.
+From bedrock.lang.bi Require Import fractional cancelable_invariants.
 Require Import bedrock.lang.cpp.logic.own_instances.
 
 From bedrock.prelude Require Import base option.
