@@ -35,6 +35,12 @@ Reserved Infix "\" (at level 40, left associativity).	(** cf [∖] *)
 Reserved Notation "A -mon> B"
   (at level 99, B at level 200, right associativity).
 
+(** Powers *)
+Reserved Notation "x '^^{' o '}' n"
+  (at level 30, o at level 1, right associativity,
+   format "'[  ' x  '/' ^^{ o }  n ']'").
+Reserved Infix "^^" (at level 30, right associativity).
+
 (** ** Iris big ops *)
 (**
  * We stick with the levels and associativity used in Iris' big ops

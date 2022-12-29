@@ -6,7 +6,6 @@
 Require Import bedrock.lang.bi.prelude.
 Require Import iris.bi.bi iris.bi.monpred.
 Require Import iris.proofmode.proofmode.
-From iris.bi.lib Require Import fractional.
 
 (** * Observations *)
 (** We define type classes for making observations and a few instances
@@ -28,6 +27,25 @@ Class Observe2 {PROP : bi} (Q P1 P2 : PROP) := observe_2 : P1 ⊢ P2 -∗ <pers>
 Arguments observe_2 {_} (_ _ _)%I {_} : assert.
 Arguments Observe2 {_} (_ _ _)%I : simpl never, assert.
 #[global] Hint Mode Observe2 + ! ! ! : typeclass_instances.
+
+(**
+Do not extend this module. It exists for backwards compatibility.
+*)
+Module Export nary.
+  (** [Agree1 P] states that [P a] can only holds for one possible [a]. *)
+  Notation Agree1 P := (∀ a1 a2, Observe2 [| a1 = a2 |] (P a1) (P a2)).
+
+  (**
+  [LaterAgreeN P] states that [P] takes [N] arguments and [P a_1 .. a_N]
+  only holds for one possible [a_N], UP TO later (as appropriate for
+  higher-order ghost state).
+  *)
+  Notation LaterAgree1 P := (∀ a1 a2, Observe2 (▷ (a1 ≡ a2)) (P a1) (P a2)).
+  Notation LaterAgree2 P := (∀ a, LaterAgree1 (P a)).
+  Notation LaterAgree3 P := (∀ a, LaterAgree2 (P a)).
+  Notation LaterAgree4 P := (∀ a, LaterAgree3 (P a)).
+  Notation LaterAgree5 P := (∀ a, LaterAgree4 (P a)).
+End nary.
 
 #[global] Instance Observe_mono {PROP : bi} :
   Proper ((⊢) ==> flip (⊢) ==> impl) (@Observe PROP).
@@ -396,16 +414,6 @@ Section embed.
     by apply embed_observe, observe_curry.
   Qed.
 End embed.
-
-Global Instance fractional_exist {PROP : bi} {A} (P : A → Qp → PROP)
-  (Hfrac : ∀ oa, Fractional (P oa))
-  (Hobs : ∀ a1 a2 q1 q2, Observe2 [| a1 = a2 |] (P a1 q1) (P a2 q2)) :
-  Fractional (λ q, ∃ a : A, P a q)%I.
-Proof.
-  intros q1 q2.
-  rewrite -bi.exist_sep; last by intros; exact: observe_2_elim_pure.
-  f_equiv=>oa. apply: fractional.
-Qed.
 
 (** Helpful lemmas. *)
 Section theory.

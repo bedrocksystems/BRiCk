@@ -63,10 +63,12 @@ theories/prelude/fin_map_dom.v
 theories/lang/prelude/base.v
 theories/lang/prelude/addr.v
 
-# OFE modules
+# Algebraic structures
 theories/lang/algebra/telescopes.v
 theories/lang/algebra/coGset.v
 theories/lang/algebra/gset_bij.v
+theories/lang/algebra/big_op.v
+theories/lang/algebra/monoid.v
 
 # BI-polymorphic modules
 theories/lang/bi/entailsN.v
@@ -77,6 +79,7 @@ theories/lang/bi/atomic1.v
 theories/lang/bi/atomic_commit.v
 theories/lang/bi/observe.v
 theories/lang/bi/only_provable.v
+theories/lang/bi/fractional.v
 theories/lang/bi/derived_laws.v
 theories/lang/bi/embedding.v
 theories/lang/bi/monpred.v
@@ -88,6 +91,15 @@ theories/lang/bi/prelude.v
 theories/lang/bi/ChargeCompat.v
 theories/lang/bi/errors.v
 theories/lang/bi/linearity.v
+theories/lang/bi/big_op.v
+
+# Spec building blocks
+theories/lang/bi/spec.v
+theories/lang/bi/spec/constant.v
+theories/lang/bi/spec/contender_token.v
+theories/lang/bi/spec/exclusive.v
+theories/lang/bi/spec/frac_splittable.v
+theories/lang/bi/spec/knowledge.v
 
 # Specific BIs
 theories/lang/si_logic/bi.v
