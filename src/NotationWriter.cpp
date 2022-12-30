@@ -115,7 +115,7 @@ write_globals(::Module &mod, CoqPrinter &print, ClangPrinter &cprint) {
                         << " (in custom cppglobal at level 0)." << fmt::line;
                 }
             }
-        } else if (const FunctionDecl *fd = dyn_cast<FunctionDecl>(def)) {
+        } else if (isa<FunctionDecl>(def)) {
             // todo(gmm): skipping due to function overloading
         } else if (const TypedefDecl *td = dyn_cast<TypedefDecl>(def)) {
             if (not print_path(notation, td->getDeclContext(), true))
