@@ -10,6 +10,7 @@
 #include "Formatter.hpp"
 #include "Logging.hpp"
 #include "SpecCollector.hpp"
+#include "FromClang.hpp"
 #include "clang/Basic/Builtins.h"
 #include "clang/Frontend/CompilerInstance.h"
 #include "clang/Sema/Sema.h"
@@ -49,6 +50,15 @@ public:
         }
     }
 
+    void GenerateImplicitMembers(CXXRecordDecl *decl, bool deprecated = false) {
+        Sema &sema = ci_->getSema();
+        if (deprecated) {
+            sema.ForceDeclarationOfImplicitMembers(decl);
+            return;
+        }
+        GenerateUndeprecatedImplicitMembers(decl, sema);
+    }
+
     void VisitCXXRecordDecl(CXXRecordDecl *decl, bool is_specialization) {
         if (decl->isImplicit()) {
             return;
@@ -57,8 +67,9 @@ public:
             return;
         }
 
-        if (not(decl->isImplicit() /* or decl->isAnonymousStructOrUnion() */)) {
-            ci_->getSema().ForceDeclarationOfImplicitMembers(decl);
+        if (decl->isCompleteDefinition()) {
+            // Do *not* generate deprecated members
+            GenerateImplicitMembers(decl, false);
         }
 
         // find any static functions or fields
