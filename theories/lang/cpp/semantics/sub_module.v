@@ -29,6 +29,7 @@ Lemma require_eq_success `{EqDecision T} {U} {a b : T} {c} {d : U}:
 Proof. unfold require_eq. by case_decide. Qed.
 
 Definition ObjValue_le (a b : ObjValue) : option unit :=
+  let drop_norm t := drop_qualifiers $ normalize_type t in
   match a , b with
   | Ovar t oe , Ovar t' oe' =>
     require_eq t t' $
@@ -38,47 +39,53 @@ Definition ObjValue_le (a b : ObjValue) : option unit :=
     | _ , _ => None
     end
   | Ofunction f , Ofunction f' =>
+    require_eq f.(f_cc) f'.(f_cc) $
+    require_eq f.(f_arity) f'.(f_arity) $
     require_eq (normalize_type f.(f_return)) (normalize_type f'.(f_return)) $
-    require_eq (List.map (fun '(_,b) => normalize_type b) f.(f_params))
-               (List.map (fun '(_,b) => normalize_type b) f'.(f_params)) $
+    require_eq (List.map (fun b => drop_norm b.2) f.(f_params))
+               (List.map (fun b => drop_norm b.2) f'.(f_params)) $
     match f.(f_body) , f'.(f_body) with
     | None , _ => Some tt
     | Some b , Some b' =>
       require_eq b b' $
-      require_eq (List.map (fun '(a,b) => (a,normalize_type b)) f.(f_params))
-                 (List.map (fun '(a,b) => (a,normalize_type b)) f'.(f_params)) $
+      require_eq (List.map fst f.(f_params))
+                 (List.map fst f'.(f_params)) $
       Some tt
     | _ , None => None
     end
   | Omethod m , Omethod m' =>
+    require_eq m.(m_cc) m'.(m_cc) $
+    require_eq m.(m_arity) m'.(m_arity) $
     require_eq m.(m_class) m'.(m_class) $
     require_eq m.(m_this_qual) m'.(m_this_qual) $
     require_eq (normalize_type m.(m_return)) (normalize_type m'.(m_return)) $
-    require_eq (List.map (fun '(_,b) => normalize_type b) m.(m_params))
-               (List.map (fun '(_,b) => normalize_type b) m'.(m_params)) $
+    require_eq (List.map (fun b => drop_norm b.2) m.(m_params))
+               (List.map (fun b => drop_norm b.2) m'.(m_params)) $
     match m.(m_body) , m'.(m_body) with
     | None , _ => Some tt
     | Some b , Some b' =>
-      require_eq (List.map (fun '(a,b) => (a,normalize_type b)) m.(m_params))
-                 (List.map (fun '(a,b) => (a,normalize_type b)) m'.(m_params)) $
+      require_eq (List.map fst m.(m_params))
+                 (List.map fst m'.(m_params)) $
       require_eq b b' $
       Some tt
     | _ , None => None
     end
   | Oconstructor c , Oconstructor c' =>
+    require_eq c.(c_cc) c'.(c_cc) $
+    require_eq c.(c_arity) c'.(c_arity) $
     require_eq c.(c_class) c'.(c_class) $
-
-    require_eq (List.map (fun x => normalize_type (snd x)) c.(c_params))
-               (List.map (fun x => normalize_type (snd x)) c'.(c_params)) $
+    require_eq (List.map (fun x => drop_norm x.2) c.(c_params))
+               (List.map (fun x => drop_norm x.2) c'.(c_params)) $
     match c.(c_body) , c'.(c_body) with
     | None , _ => Some tt
     | _ , None => None
     | Some x , Some y =>
-    require_eq (List.map (fun '(a,b) => (a,normalize_type b)) c.(c_params))
-               (List.map (fun '(a,b) => (a,normalize_type b)) c'.(c_params)) $
+    require_eq (List.map fst c.(c_params))
+               (List.map fst c'.(c_params)) $
       require_eq x y $ Some tt
     end
   | Odestructor dd , Odestructor dd' =>
+    require_eq dd.(d_cc) dd'.(d_cc) $
     require_eq dd.(d_class) dd'.(d_class) $
     match dd.(d_body) , dd'.(d_body) with
     | None , _ => Some tt
