@@ -55,11 +55,6 @@ variables:
   variables:
     LLVM_MAJ_VER: 15
 
-.llvm11:
-  extends: .base
-  variables:
-    LLVM_MAJ_VER: 11
-
 .public:
   extends: .base
   variables:
@@ -162,11 +157,6 @@ build_llvm15:
     - .build_aux
     - .llvm15
 
-build_llvm11:
-  extends:
-    - .build_aux
-    - .llvm11
-
 build_public:
   extends:
     - .build_aux
@@ -197,13 +187,6 @@ test_llvm15:
     - .llvm15
   needs:
     - build_llvm15
-
-test_llvm11:
-  extends:
-    - .test
-    - .llvm11
-  needs:
-    - build_llvm11
 
 test_public:
   extends:
