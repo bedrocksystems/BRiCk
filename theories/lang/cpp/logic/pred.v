@@ -845,13 +845,21 @@ Section with_cpp.
     [| same_address_bool p nullptr = bool_decide (p = nullptr) |].
   Proof. rewrite same_address_eq_null; iIntros "!%". apply bool_decide_ext. Qed.
 
+  Lemma valid_ptr_zero_null p :
+    ptr_vaddr p = Some 0%N ->
+    valid_ptr p |-- [| p = nullptr |].
+  Proof.
+    rewrite same_address_eq_null.
+    iIntros (Haddr [Hsuff _]) "!%". apply: Hsuff.
+    rewrite same_address_iff ptr_vaddr_nullptr; naive_solver.
+  Qed.
+
   Lemma valid_ptr_nonnull_nonzero p :
     p <> nullptr ->
     valid_ptr p |-- [| ptr_vaddr p <> Some 0%N |].
   Proof.
-    rewrite same_address_eq_null; iIntros (Hne Hiff) "!%".
-    have {Hne Hiff}: ~same_address p nullptr by intuition.
-    rewrite same_address_iff ptr_vaddr_nullptr. naive_solver.
+    destruct (decide (ptr_vaddr p = Some 0%N)); last naive_solver.
+    rewrite valid_ptr_zero_null; naive_solver.
   Qed.
 
   Lemma type_ptr_nonnull ty p :
@@ -908,6 +916,15 @@ Section with_cpp.
     rewrite pinned_ptr_eq /pinned_ptr_def.
     iFrame (ptr_vaddr_nullptr).
     iApply exposed_ptr_nullptr.
+  Qed.
+
+  #[global] Instance pinned_ptr_zero_is_null (p : ptr) :
+    Observe [| p = nullptr |] (pinned_ptr 0 p).
+  Proof.
+    rewrite pinned_ptr_eq /pinned_ptr_def.
+    iIntros "[%Heq #E]".
+    rewrite -valid_ptr_zero_null //.
+    by iApply (exposed_ptr_valid with "E").
   Qed.
 
   Lemma offset_pinned_ptr o z va p :
