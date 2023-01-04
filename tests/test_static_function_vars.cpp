@@ -1,3 +1,3 @@
-char foo() {
+void foo() {
   static int GLOBAL = 0;
 }

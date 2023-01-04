@@ -266,7 +266,8 @@ printSimpleContext(const DeclContext *dc, CoqPrinter &print,
                 print.output() << "~<empty-enum>";
                 logging::unsupported()
                     << "empty anonymous namespaces are not supported."
-                    << " (at " << cprint.sourceRange(ed->getSourceRange()) << ")\n";
+                    << " (at " << cprint.sourceRange(ed->getSourceRange())
+                    << ")\n";
             } else {
                 print.output() << "~";
                 ed->enumerators().begin()->printName(print.output().nobreak());
@@ -304,7 +305,7 @@ ClangPrinter::printTypeName(const TypeDecl *decl, CoqPrinter &print) const {
         print.output() << "\"";
         printSimpleContext(RD, print, *this, *mangleContext_);
         print.output() << "\"";
-    } else if (auto rd = dyn_cast<RecordDecl>(decl)) {
+    } else if (isa<RecordDecl>(decl)) {
         // NOTE: this only matches C records, not C++ records
         // therefore, we do not perform any mangling.
         logging::debug() << "RecordDecl: " << decl->getQualifiedNameAsString()
@@ -481,7 +482,7 @@ ClangPrinter::printField(const ValueDecl *decl, CoqPrinter &print) {
         this->printTypeName(meth->getParent(), print);
         print.output() << fmt::nbsp << "\"" << decl->getNameAsString() << "\"";
         print.end_ctor();
-    } else if (const VarDecl *var = dyn_cast<VarDecl>(decl)) {
+    } else if (isa<VarDecl>(decl)) {
 
     } else {
         using namespace logging;

@@ -72,6 +72,7 @@ IF (${LLVM_VERSION} VERSION_LESS 11.0.0)
     src/ClangPrinter.cpp
     src/StringPrettyPrinter.cpp
     src/ToCoq.cpp
+    src/FromClang.cpp
   )
 
   add_llvm_executable(cpp2v
@@ -96,6 +97,7 @@ ELSE(${LLVM_VERSION} VERSION_LESS 11.0.0)
     src/ClangPrinter.cpp
     src/StringPrettyPrinter.cpp
     src/ToCoq.cpp
+    src/FromClang.cpp
   )
 
   add_llvm_executable(cpp2v
