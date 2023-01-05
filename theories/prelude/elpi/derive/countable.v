@@ -80,7 +80,7 @@ Elpi Accumulate derive lp:{{
   namespace derive.countable {
     pred main i:gref, i:string, o:list prop.
     main TyGR Prefix Clauses :- std.do! [
-      remove-underscore Prefix Variant,
+      remove-final-underscore Prefix Variant,
       bedrock.get-ctors Variant Ctors,
       std.map Ctors (c\ c'\ c' = global (indc c)) CTerms,
       CountableName is Variant ^ "_countable",

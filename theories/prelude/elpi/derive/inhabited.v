@@ -15,7 +15,7 @@ Elpi Accumulate derive lp:{{
   namespace derive.inhabited {
     pred main i:gref, i:string, o:list prop.
     main TyGR Prefix Clauses :- std.do! [
-      remove-underscore Prefix Prefix',
+      remove-final-underscore Prefix Prefix',
       InstanceName is Prefix' ^ "_inhabited",
       TyInhabited = {{ Inhabited lp:{{global TyGR}} }},
       std.assert-ok! (coq.elaborate-skeleton TyInhabited _ ETyInhabited) "[derive.inh.main] [TyInhabited]",

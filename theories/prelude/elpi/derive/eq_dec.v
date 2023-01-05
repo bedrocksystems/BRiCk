@@ -23,7 +23,7 @@ Elpi Accumulate derive lp:{{
   namespace derive.eqdec {
     pred main i:gref, i:string, o:list prop.
     main TyGR Prefix Clauses :- std.do! [
-      remove-underscore Prefix Prefix',
+      remove-final-underscore Prefix Prefix',
       InstanceName is Prefix' ^ "_eq_dec",
       TyEqDecision = {{ EqDecision lp:{{global TyGR}} }},
       std.assert-ok! (coq.elaborate-skeleton TyEqDecision _ ETyEqDecision) "[derive.eqdec] [TyEqDecision]",
