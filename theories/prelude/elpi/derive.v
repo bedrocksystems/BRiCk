@@ -13,7 +13,8 @@ From elpi.apps Require Import derive.
 
 Require Import bedrock.prelude.elpi.prelude.
 
-Require Import bedrock.prelude.finite.
+From bedrock.prelude Require Import finite.
+From bedrock.prelude.elpi Require Import prelude.
 
 Definition ap {M A B} `{!MRet M, !MBind M} (mf : M (A → B)) : M A → M B :=
   λ ma, f ← mf; a ← ma; mret (f a).
