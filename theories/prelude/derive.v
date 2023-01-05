@@ -4,6 +4,8 @@
  * See the LICENSE-BedRock file in the repository root for details.
  *)
 
+Require Import ssreflect. (*for [case]*)
+
 From elpi.apps.derive Extra Dependency "derive_hook.elpi" as derive_hook.
 
 From elpi Require Import elpi.
@@ -13,25 +15,125 @@ Require Import bedrock.prelude.elpi.prelude.
 
 Require Import bedrock.prelude.finite.
 
-Require Import bedrock.prelude.elpi.deriving.
-
-Variant T := A | B | C.
-#[instance(eq_dec)] Deriving T.
-
 Definition ap {M A B} `{!MRet M, !MBind M} (mf : M (A → B)) : M A → M B :=
   λ ma, f ← mf; a ← ma; mret (f a).
 (* We use level 61 for <*> following <$>; ext-lib also has matching levels, but
 different ones. *)
 Infix "<*>" := ap (at level 61, left associativity).
 
+(*For each supported deriviation, two predicates:
+   - [myderiv TyGR DerivGR] Maps [TyGR] to its generated derivation
+    - [myderiv-done TyGR] We're done deriving [myderiv] for [TyGR].*)
 Elpi Db derive.stdpp.db lp:{{
+  pred eqdec o:gref, o:gref.
+  pred eqdec-done o:gref.
+
+  pred inhabited o:gref, o:gref.
+  pred inhabited-done o:gref.
+
+  pred countable o:gref, o:gref.
+  pred countable-done o:gref.
+
   pred finite o:gref, o:gref.
   pred finite-done o:gref.
 }}.
 
+Elpi Accumulate derive Db derive.stdpp.db.
+Elpi Accumulate derive Db bedrock.prelude.db.
+
+Elpi Accumulate derive lp:{{
+  pred remove-underscore i:string, o:string.
+  remove-underscore S S' :- std.do! [
+    rex.replace "_" "" S S',
+  ].
+}}.
+
+(***************************************************
+ EqDecision
+ ***************************************************)
+Elpi Accumulate derive lp:{{
+  /* [derive.eqdec.main TyGR Prefix Clauses] creates a global instance
+   * of type [EqDecision lp:{{global TyGR}}].
+   * It works with any type supported by [solve_decision].
+   *
+   * Example of the generated Coq code:
+   * | (* Inductive C : Set := FOO | BAR | BAZ. *)
+   * | #[global] Instance C_eq_dec : EqDecision C. Proof. ... Defined.
+   */
+  namespace derive.eqdec {
+    pred main i:gref, i:string, o:list prop.
+    main TyGR Prefix Clauses :- std.do! [
+      remove-underscore Prefix Prefix',
+      InstanceName is Prefix' ^ "_eq_dec",
+      TyEqDecision = {{ EqDecision lp:{{global TyGR}} }},
+      std.assert-ok! (coq.elaborate-skeleton TyEqDecision _ ETyEqDecision) "[derive.eqdec] [TyEqDecision]",
+      std.assert-ok! (coq.typecheck {{ lp:BoEqDecision : lp:ETyEqDecision }} _) "typechecking the [EqDecision t] instance failed",
+      coq.ltac.collect-goals BoEqDecision [SealedGoal] [],
+      coq.ltac.open (coq.ltac.call "solve_decision" []) SealedGoal [],
+      coq.env.add-const InstanceName BoEqDecision ETyEqDecision @transparent! C,
+      @global! => coq.TC.declare-instance (const C) 0,
+      Clauses = [eqdec-done TyGR, eqdec TyGR (const C)],
+      std.forall Clauses (x\
+        coq.elpi.accumulate _ "derive.stdpp.db" (clause _ _ x)
+      ),
+    ].
+    main _ _ _ :- usage.
+
+    pred usage.
+    usage :- coq.error "Usage: derive.eqdec TyGR Prefix Clauses".
+  }
+
+  derivation
+    (indt T) Prefix                         % inputs
+    (derive "eq_dec"                        % name (for dep1)
+       (derive.eqdec.main (indt T) Prefix)  % code to run
+       (eqdec-done (indt T))                % idempotency test
+    ).
+}}.
+Elpi Typecheck derive.
+
+(***************************************************
+ Inhabited
+ ***************************************************)
+Elpi Accumulate derive lp:{{
+  namespace derive.inhabited {
+    pred main i:gref, i:string, o:list prop.
+    main TyGR Prefix Clauses :- std.do! [
+      remove-underscore Prefix Prefix',
+      InstanceName is Prefix' ^ "_inhabited",
+      TyInhabited = {{ Inhabited lp:{{global TyGR}} }},
+      std.assert-ok! (coq.elaborate-skeleton TyInhabited _ ETyInhabited) "[derive.inh.main] [TyInhabited]",
+      std.assert-ok! (coq.typecheck {{ lp:BoInhabited : lp:ETyInhabited }} _) "typechecking the [Inhabited t] instance failed",
+      coq.ltac.collect-goals BoInhabited [SealedGoal] [],
+      coq.ltac.open (coq.ltac.call "solve_inhabited" []) SealedGoal [],
+      @using! "Type" => coq.env.add-const InstanceName BoInhabited ETyInhabited @opaque! C,
+      @global! => coq.TC.declare-instance (const C) 0,
+      Clauses = [inhabited-done TyGR, inhabited TyGR (const C)],
+      std.forall Clauses (x\
+        coq.elpi.accumulate _ "derive.stdpp.db" (clause _ _ x)
+      ),
+    ].
+    main _ _ _ :- usage.
+
+    pred usage.
+    usage :- coq.error "Usage: derive.inhabited TyGR Prefix Clauses".
+  }
+
+  derivation
+    (indt T) Prefix
+    (derive "inhabited"
+       (derive.inhabited.main (indt T) Prefix)
+       (inhabited-done (indt T))
+    ).
+}}.
+Elpi Typecheck derive.
+
+(***************************************************
+ Finite
+ ***************************************************)
 Elpi Db derive.finite.db lp:{{
   namespace derive.finite {
-    /* We want to process
+   /* We want to process
     * [Variant ResType : Set := A | B | C (_ : option bool) | D (_ : bool) (_ : bool).]
     * into [A :: B :: (C <$> enum (option bool)) ++ (D <$> enum bool <*> enum bool).]
     */
@@ -124,92 +226,149 @@ Elpi Db derive.finite.db lp:{{
   }
 }}.
 
-Elpi Accumulate derive Db derive.stdpp.db.
-Elpi Accumulate derive Db bedrock.prelude.db.
-
 Elpi Accumulate derive Db derive.finite.db.
 Elpi Accumulate derive lp:{{
-#line 132 "derive.v"
-  pred remove-underscore i:string, o:string.
-  remove-underscore S S' :- std.do! [
-    rex.replace "_" "" S S',
-  ].
-
   namespace derive.finite {
     pred main i:gref, i:string, o:list prop.
-    main VariantGR Prefix Clauses :- std.do! [
+    main TyGR Prefix Clauses :- std.do! [
       remove-underscore Prefix Variant,
-      coq.say Variant,
       bedrock.get-ctors Variant Ctors,
       std.map Ctors (c\ c'\ c' = global (indc c)) CTerms,
-      coq.say CTerms,
       FiniteName is Variant ^ "_finite",
-      derive.finite.mk-finite FiniteName CTerms VariantGR C,
-      coq.say C,
-      Clauses = [finite-done VariantGR, finite VariantGR (const C)],
-      coq.say Clauses,
+      derive.finite.mk-finite FiniteName CTerms TyGR C,
+      Clauses = [finite-done TyGR, finite TyGR (const C)],
       std.forall Clauses (x\
-        coq.elpi.accumulate _ "derive.finite.db" (clause _ _ x)
+        coq.elpi.accumulate _ "derive.stdpp.db" (clause _ _ x)
       ),
     ].
     main _ _ _ :- usage.
 
     pred usage.
-    usage :- coq.error "Usage: derive.finite <object name>".
+    usage :- coq.error "Usage: derive.finite VariantGR Prefix Clauses".
   }
 
+  dep1 "finite" "eq_dec".
   derivation
-  (indt T) Prefix                         % inputs
-  (derive "finite"                        % name (for dep1)
-     (derive.finite.main (indt T) Prefix) % code to run
-     (finite-done (indt T))               % idempotency test
-     ).
+    (indt T) Prefix
+    (derive "finite"
+      (derive.finite.main (indt T) Prefix)
+      (finite-done (indt T))
+    ).
 }}.
 Elpi Typecheck derive.
 
-#[verbose,only(eq_dec,finite)] derive T.
+(***************************************************
+ Countable
+ ***************************************************)
+(** This Gallina function is used at code generation time (not at runtime) to produce the
+    positive associated to a particular value [a : T], given the list of all constructors [l : list T]. *)
+Fixpoint lookup_from_ctorlist `{EqDecision T} (p : positive) (l : list T) (a : T) : positive :=
+  match l with
+  | [] => p
+  | a' :: l' => if bool_decide (a = a') then p else lookup_from_ctorlist (p + 1)%positive l' a
+  end.
 
-(*
-1. Upstream NES changes [Dave]
-   Works out kinks in upstreaming process
-2pre. Design the generalization of BuildEnum and dataclass to derive
-   (cpp.derive that internally calls derive?)
-   (how do ShowRep and DeclareRep integrate?
-    maybe they can be generalized to derive?)
-   [Dave (+Gordon)]
-2. Decide w/ Enrico on required derive extensions
-   [Dave (+others)]
-3. Upstream (to cpp2v-core) stdpp derive extensions
-   [Dave]
-4. Upstream (to cpp2v-core) br.lock (possibly using mlock instead?)
-   [Fancy-module entangling may make this difficult.]
-5. Port Rep-level deriving to coq-elpi derive
-   (FracSplittable, const, etc.)
-   (Do we support deriving just Instances or also interfaces?)
-   [Dave just FracSplittable or some other example from the "Rep" class]
-6. Port BuildEnum to derive
-   [Jasper-ish?]
-7. Port dataclass to derive
-   (dataclass calling ToFieldFromField; are generic dependencies supported
-    by derive enough or do we need richer hooks?)
-   [Dave]
-*)
+(** TODO: This generic decoding function is used in generated [Countable] instances but isn't efficient.
+    It would be better to replace it by a table that's built at code generation time. *)
+Fixpoint decode_from_encode `{EqDecision T} (encode : T -> positive) (l : list T) (x : positive) : option T :=
+  match l with
+  | [] => None
+  | a :: l' => if bool_decide (encode a = x) then Some a else decode_from_encode encode l' x
+  end.
 
-(* TODO: put in Jira task for 2pre
-   Possible generalizations of derive:
-   - NES aware: PrefixOrPath
+(** This needs to be exported for use by callers of Deriving but shouldn't be otherwise used outside this module.*)
+Ltac DERIVING_solve_countable := by case. (** TODO: [abstract] *)
 
-     #[path=Namespace] derive ...
+Elpi Db derive.countable.db lp:{{
+  namespace derive.countable {
+    /*
+    [mk-countable CtorList Name T] assumes that type [T] has
+    constructors [CtorList] and generates a global instance [Name : Countable T].
+    */
+    pred ctor-to-positive i:term, i:term, o:term.
+    ctor-to-positive CtorList K Pos :- std.do! [
+      T = {{ @lookup_from_ctorlist _ _ 1%positive lp:CtorList lp:K }},
+      std.assert-ok! (coq.elaborate-skeleton T _ EPos) "asdfasdf",
+      coq.reduction.vm.norm EPos _ Pos,
+    ].
 
-       All effects in NES namespace [Namespace]
+    pred rty i:term, i:term, i:list term, i:list term, o:term.
+    rty RTy _ _ _ RTy.
 
-     #[only(mycustomderivedthing(path=EqDecNamespace))] derive ...
+    pred to-positive-branch i:term, i:term, i:term, i:list term, i:list term, o:term.
+    to-positive-branch CtorList K _Kty _Vars _VarsTys PosEncoding :- std.do![
+      ctor-to-positive CtorList K PosEncoding
+    ].
 
-       Effects of [mycustomderivedthing] in [EqDecNamespace]
+    pred to-positive i:term, i:term, i:term, i:term, o:term.
+    to-positive CtorList S Ty RTy Match :-
+      coq.build-match S Ty (rty RTy) (to-positive-branch CtorList) Match.
 
-     Typeclass spelling out conventions
+    pred mk-countable i:list term, i:string, i:gref, o:constant.
+    mk-countable Ctors Name VariantGR C :- std.do![
+      bedrock.elpi-list->list Ctors CtorList,
+      std.assert-ok! (coq.elaborate-skeleton CtorList _ ECtorList) "[mk-countable] failed to elaborate ctors",
+      VariantTy = global VariantGR,
+      Encode = {{ fun (x : lp:VariantTy) => lp:{{ { to-positive ECtorList {{ x }} VariantTy {{ positive }} } }} }},
+      Decode = {{ @decode_from_encode lp:VariantTy _ lp:Encode lp:CtorList }},
+      Lem = {{ forall x : lp:VariantTy, lp:Decode (lp:Encode x) = Some x }},
+      std.assert-ok! (coq.elaborate-skeleton Lem _ ELem) "[mk-countable] failed to elaborate lem",
+      std.assert-ok! (coq.typecheck {{ lp:Bo : lp:ELem }} _) "[mk-countable] failed to typecheck lem",
+      coq.ltac.collect-goals Bo [SealedGoal] [],
+      coq.ltac.open (coq.ltac.call "DERIVING_solve_countable" []) SealedGoal [],
+      Inst = {{ @Build_Countable lp:VariantTy _ lp:Encode lp:Decode lp:Bo }},
+      std.assert-ok! (coq.elaborate-skeleton Inst _ EInst) "[mk-countable] failed to elaborate instance",
+      coq.env.add-const Name EInst _ ff C,
+      @global! => coq.TC.declare-instance (const C) 0, %%TODO: previously level 5; was there a reason?
+    ].
+  }
+}}.
 
-   - Programmatic access to other derivations
+Elpi Accumulate derive Db derive.countable.db.
+Elpi Accumulate derive lp:{{
+  namespace derive.countable {
+    pred main i:gref, i:string, o:list prop.
+    main TyGR Prefix Clauses :- std.do! [
+      remove-underscore Prefix Variant,
+      bedrock.get-ctors Variant Ctors,
+      std.map Ctors (c\ c'\ c' = global (indc c)) CTerms,
+      CountableName is Variant ^ "_countable",
+      derive.countable.mk-countable CTerms CountableName TyGR C,
+      Clauses = [countable-done TyGR, countable TyGR (const C)],
+      std.forall Clauses (x\
+        coq.elpi.accumulate _ "derive.stdpp.db" (clause _ _ x)
+      ),
+    ].
+    main _ _ _ :- usage.
 
-     Dependencies might be sufficient but we could need richer hooks
-*)
+    pred usage.
+    usage :- coq.error "Usage: derive.finite VariantGR Prefix Clauses".
+  }
+
+  dep1 "countable" "eq_dec".
+  derivation
+    (indt T) Prefix
+    (derive "countable"
+      (derive.countable.main (indt T) Prefix)
+      (countable-done (indt T))
+    ).
+}}.
+Elpi Typecheck derive.
+
+Module Tests.
+  Variant T1 := A1 | B1 | C1.
+  #[only(eq_dec)] derive T1.
+  #[only(inhabited)] derive T1.
+  #[only(countable)] derive T1.
+  #[only(finite)] derive T1.
+
+  (*TODO: Potential derive bug; the following produces:
+    Anomaly: Uncaught exception Failure("split dirpath")*)
+  (*#[only(finite)] derive
+   Variant T2 := A2 | B2 | C2.*)
+
+  #[only(eq_dec,inhabited)] derive
+  Variant T2 := A2 | B2 | C2.
+  #[only(countable)] derive T2.
+  #[only(finite)] derive T2.
+End Tests.
