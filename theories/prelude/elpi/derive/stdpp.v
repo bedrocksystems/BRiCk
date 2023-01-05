@@ -14,7 +14,7 @@ Require Import bedrock.prelude.elpi.prelude.
 
 (*For each supported deriviation, two predicates:
    - [myderiv TyGR DerivGR] Maps [TyGR] to its generated derivation
-    - [myderiv-done TyGR] We're done deriving [myderiv] for [TyGR].*)
+   - [myderiv-done TyGR] We're done deriving [myderiv] for [TyGR].*)
 Elpi Db derive.stdpp.db lp:{{
   pred eqdec o:gref, o:gref.
   pred eqdec-done o:gref.
@@ -31,10 +31,3 @@ Elpi Db derive.stdpp.db lp:{{
 
 Elpi Accumulate derive Db derive.stdpp.db.
 Elpi Accumulate derive Db bedrock.prelude.db.
-
-Elpi Accumulate derive lp:{{
-  pred remove-underscore i:string, o:string.
-  remove-underscore S S' :- std.do! [
-    rex.replace "_" "" S S',
-  ].
-}}.
