@@ -6,7 +6,7 @@
 From elpi Require Import elpi.
 From elpi.apps Require Import derive.
 
-From bedrock.prelude.elpi Require Import prelude derive.stdpp.
+From bedrock.prelude.elpi Require Import prelude derive.plugins.
 
 (***************************************************
  Finite
