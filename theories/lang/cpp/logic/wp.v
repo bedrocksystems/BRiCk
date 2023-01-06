@@ -989,6 +989,18 @@ Section with_cpp.
       |-- fspec te ft a ls Q **
           [| exists cc ar tret targs, ft = Tfunction (cc:=cc) (ar:=ar) tret targs |].
 
+  (* A type is callable against a type table if all of its arguments and return
+     type are [complete_type]s.
+
+     This effectively means that there is enough information to determine the
+     calling convention.
+   *)
+  Definition callable_type (tt : type_table) (t : type) : Prop :=
+    match t with
+    | Tfunction ret args => complete_type tt ret /\ List.Forall (complete_type tt) args
+    | _ => False
+    end.
+
   (* this axiom states that the type environment for an [fspec] can be
      narrowed as long as the new type environment [small]/[tt2] is smaller than
      the old type environment ([big]/[tt1]), and [ft]
@@ -999,10 +1011,7 @@ Section with_cpp.
      the public interface (the type) is need to know how to call the function.
    *)
   Axiom fspec_strengthen : forall tt1 tt2 ft a ls Q,
-      complete_type tt2.(globals) ft ->
-      (* TODO(PG): even if [ft] is complete, the argument/return types might not be
-      complete. That would make a call impossible, but does might not be
-      enough to justify [fspec_strengthen] locally (tho I expect it suffices globally). *)
+      callable_type tt2.(globals) ft ->
       sub_module tt2 tt1 ->
       fspec tt1.(globals) ft a ls Q |-- fspec tt2.(globals) ft a ls Q.
 
