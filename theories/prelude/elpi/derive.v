@@ -13,7 +13,8 @@ From bedrock.prelude.elpi.derive Require Export
   eq_dec
   inhabited
   finite
-  countable.
+  countable
+  finset.
 
 From elpi.apps Require Export derive.
 
@@ -113,3 +114,14 @@ Module Deriving2Test.
     by simpl; assert_True.
   Qed.
 End Deriving2Test.
+
+Module SimpleFiniteTest.
+  (*#[only(finset)] derive
+    Variant feature := CSUM | TSO4 | TSO6 | UFO.*) (*TODO: potential derive bug: Anomaly/split_dirpath*)
+  Variant feature := CSUM | TSO4 | TSO6 | UFO.
+  #[only(finset)] derive feature.
+  Goal feature.of_N (feature.to_N CSUM) = Some CSUM.
+  Proof. reflexivity. Qed.
+  Goal feature.of_N (feature.to_N CSUM) = Some CSUM.
+  Proof. by rewrite feature.of_to_N. Qed.
+End SimpleFiniteTest.
