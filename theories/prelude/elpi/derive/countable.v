@@ -13,7 +13,7 @@ From bedrock.prelude.elpi Require Import prelude derive.stdpp.
  ***************************************************)
 (** This Gallina function is used at code generation time (not at runtime) to produce the
     positive associated to a particular value [a : T], given the list of all constructors [l : list T]. *)
-Fixpoint lookup_from_ctorlist `{EqDecision T} (p : positive) (l : list T) (a : T) : positive :=
+#[local] Fixpoint lookup_from_ctorlist `{EqDecision T} (p : positive) (l : list T) (a : T) : positive :=
   match l with
   | [] => p
   | a' :: l' => if bool_decide (a = a') then p else lookup_from_ctorlist (p + 1)%positive l' a
@@ -21,7 +21,7 @@ Fixpoint lookup_from_ctorlist `{EqDecision T} (p : positive) (l : list T) (a : T
 
 (** TODO: This generic decoding function is used in generated [Countable] instances but isn't efficient.
     It would be better to replace it by a table that's built at code generation time. *)
-Fixpoint decode_from_encode `{EqDecision T} (encode : T -> positive) (l : list T) (x : positive) : option T :=
+#[local] Fixpoint decode_from_encode `{EqDecision T} (encode : T -> positive) (l : list T) (x : positive) : option T :=
   match l with
   | [] => None
   | a :: l' => if bool_decide (encode a = x) then Some a else decode_from_encode encode l' x
