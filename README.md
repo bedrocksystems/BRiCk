@@ -18,7 +18,7 @@ They must be run inside a clone of this repository.
 
 Our instructions are for Linux (Ubuntu) and OSX.
 
-- LLVM 15 (should be backwards compatibile with 10 & 11 & ... & 14)
+- LLVM 15 (should be backwards compatibile with 14)
 - cmake
 - [opam 2](https://opam.ocaml.org/)
 
