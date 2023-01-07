@@ -15,7 +15,7 @@ From bedrock.prelude.elpi.derive Require Export
   inhabited
   finite
   countable
-  finset.
+  finite_type.
 
 From elpi.apps Require Export derive.
 
@@ -117,10 +117,10 @@ Module Deriving2Test.
 End Deriving2Test.
 
 Module SimpleFiniteTest.
-  (*#[only(finset)] derive
+  (*#[only(finite_type)] derive
     Variant feature := CSUM | TSO4 | TSO6 | UFO.*) (*TODO: potential derive bug: Anomaly/split_dirpath*)
   Variant feature := CSUM | TSO4 | TSO6 | UFO.
-  #[only(finset)] derive feature.
+  #[only(finite_type)] derive feature.
   Goal feature.of_N (feature.to_N CSUM) = Some CSUM.
   Proof. reflexivity. Qed.
   Goal feature.of_N (feature.to_N CSUM) = Some CSUM.
@@ -136,7 +136,7 @@ Module FiniteTest.
     | TSO6 => 3
     | UFO => 5
     end)%N := {}.
-  #[only(finset)] derive feature.
+  #[only(finite_type)] derive feature.
   #[export] Instance feature_to_N_inj : Inj eq eq feature.to_N.
   Proof. case; case => //. Qed.
   Goal feature.of_N (feature.to_N CSUM) = Some CSUM.

@@ -9,13 +9,13 @@ From elpi.apps Require Import derive.
 From bedrock.prelude.elpi Require Import prelude derive.plugins.
 
 (***************************************************
- Finite Sets
- - [[ #[only(finset)] derive VariantType ]]
+ Finite Types
+ - [[ #[only(finite_type)] derive VariantType ]]
    Assembles pieces from finite.v to expose `to_N` and `of_N` functions on `VariantType`, together with laws.
    The encoding into `N` is derived automatically from the order of constructors of `VariantType`.
  ***************************************************)
-Elpi Db derive.finset.db lp:{{
-  namespace derive.finset {
+Elpi Db derive.finite_type.db lp:{{
+  namespace derive.finite_type {
     pred mk-finite-prelim i:string, i:gref.
     mk-finite-prelim TypeName TyGR :- std.do! [
       #line 21 "derive.v"
@@ -44,7 +44,7 @@ Elpi Db derive.finset.db lp:{{
 
     pred mk-simple-finite i:string, i:gref.
     mk-simple-finite TypeName TyGR :- std.do! [
-      derive.if-verbose (coq.say "[derive.finset][mk-simple-finite]" TypeName),
+      derive.if-verbose (coq.say "[derive.finite_type][mk-simple-finite]" TypeName),
       mk-finite-prelim TypeName TyGR,
       coq.env.include-module-type {coq.locate-module-type "finite_type_mixin"} coq.inline.default,
       coq.env.end-module MP_,
@@ -52,7 +52,7 @@ Elpi Db derive.finset.db lp:{{
 
     pred mk-finite i:string, i:gref, i:term.
     mk-finite TypeName TyGR ToN :- std.do! [
-      derive.if-verbose (coq.say "[derive.finset][mk-finite]" TypeName),
+      derive.if-verbose (coq.say "[derive.finite_type][mk-finite]" TypeName),
       mk-finite-prelim TypeName TyGR,
 
       coq.locate "t" GRTy,
@@ -66,35 +66,35 @@ Elpi Db derive.finset.db lp:{{
 }}.
 
 Elpi Accumulate derive lp:{{
-  namespace derive.finset {
+  namespace derive.finite_type {
     pred to-N i:term, o:term.
     :name "to-N.fail"
     to-N T F :- std.do! [
       Lem = {{ @ToN lp:T lp:F }},
-      derive.if-verbose (coq.say "[derive.finset][to-N]" Lem),
+      derive.if-verbose (coq.say "[derive.finite_type][to-N]" Lem),
       std.assert-ok! (coq.typecheck {{ lp:Bo : lp:Lem }} _) "typechecking a [ToN] instance failed",
       coq.ltac.collect-goals Bo [SealedGoal] [],
       coq.ltac.open (coq.ltac.call "typeclasses_eauto" []) SealedGoal [],
-      derive.if-verbose (coq.say "[derive.finset][to-N]" T Lem),
+      derive.if-verbose (coq.say "[derive.finite_type][to-N]" T Lem),
       %Memoize the result:
-      coq.elpi.accumulate library "derive.finset.db" (clause _ (before "to-N.fail") (to-N T F)),
+      coq.elpi.accumulate library "derive.finite_type.db" (clause _ (before "to-N.fail") (to-N T F)),
     ].
   }
 }}.
 
-(*We must export this tactic to [[ #[only(finset)] derive ]] use sites.*)
+(*We must export this tactic to [[ #[only(finite_type)] derive ]] use sites.*)
 Ltac typeclasses_eauto := typeclasses eauto.
 
-Elpi Accumulate derive Db derive.finset.db.
+Elpi Accumulate derive Db derive.finite_type.db.
 Elpi Accumulate derive lp:{{
-  namespace derive.finset {
+  namespace derive.finite_type {
     pred main i:gref, i:string, o:list prop.
     main TyGR Prefix Clauses :- std.do! [
       remove-final-underscore Prefix Variant,
-      if (derive.finset.to-N (global TyGR) ToN)
-        (derive.finset.mk-finite Variant TyGR ToN)
-        (derive.finset.mk-simple-finite Variant TyGR),
-      Clauses = [finset-done TyGR],
+      if (derive.finite_type.to-N (global TyGR) ToN)
+        (derive.finite_type.mk-finite Variant TyGR ToN)
+        (derive.finite_type.mk-simple-finite Variant TyGR),
+      Clauses = [finite-type-done TyGR],
       std.forall Clauses (x\
         coq.elpi.accumulate _ "derive.finbitset.db" (clause _ _ x)
       ),
@@ -102,15 +102,15 @@ Elpi Accumulate derive lp:{{
     main _ _ _ :- usage.
 
     pred usage.
-    usage :- coq.error "Usage: derive.finset TyGR Prefix Clauses".
+    usage :- coq.error "Usage: derive.finite_type TyGR Prefix Clauses".
   }
 
-  dep1 "finset" "finite". %finite implies eq_dec
+  dep1 "finite_type" "finite". %finite implies eq_dec
   derivation
     (indt T) Prefix
-    (derive "finset"
-      (derive.finset.main (indt T) Prefix)
-      (finset-done (indt T))
+    (derive "finite_type"
+      (derive.finite_type.main (indt T) Prefix)
+      (finite_type-done (indt T))
     ).
 }}.
 Elpi Typecheck derive.

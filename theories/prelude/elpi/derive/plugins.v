@@ -36,16 +36,16 @@ Elpi Db derive.stdpp.db lp:{{
 Elpi Accumulate derive Db derive.stdpp.db.
 
 (****************************************
- bedrock finset/bitset (finite.v) plugins
+ bedrock finie type/bitset (finite.v) plugins
  ****************************************)
 Elpi Db derive.finbitset.db lp:{{
-  pred finset-done o:gref.
+  pred finite-type-done o:gref.
   pred bitset-done o:gref.
 }}.
 Elpi Accumulate derive Db derive.finbitset.db.
 
 (** Configuration classes: *)
-(** finset *)
+(** finite type *)
 Class ToN (T : Type) (to_N : T -> N) : Type := {}.
 #[export] Hint Mode ToN + - : typeclasses. (*TODO: what's the right DB here?*)
 (** bitset *)
