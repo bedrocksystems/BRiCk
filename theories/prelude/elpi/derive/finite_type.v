@@ -71,7 +71,6 @@ Elpi Accumulate derive lp:{{
     :name "to-N.fail"
     to-N T F :- std.do! [
       Lem = {{ @ToN lp:T lp:F }},
-      derive.if-verbose (coq.say "[derive.finite_type][to-N]" Lem),
       std.assert-ok! (coq.typecheck {{ lp:Bo : lp:Lem }} _) "typechecking a [ToN] instance failed",
       coq.ltac.collect-goals Bo [SealedGoal] [],
       coq.ltac.open (coq.ltac.call "typeclasses_eauto" []) SealedGoal [],
