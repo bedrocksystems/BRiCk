@@ -15,8 +15,8 @@ depends: [
   "coq" { = "8.16.0" }
   "coq-ext-lib" { = "0.11.6" }
   "coq-iris" {(= "dev.2022-09-29.0.b335afaf")}
-  "elpi" {(= "1.16.5")}
-  "coq-elpi" {(= "1.15.6")}
+  "elpi" {(= "1.16.8")}
+  "coq-elpi" {(= "1.16.0")}
 ]
 version: "vdev"
 
