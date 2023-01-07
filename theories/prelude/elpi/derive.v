@@ -10,6 +10,7 @@ From stdpp Require Import base decidable finite countable.
 From bedrock.prelude Require Import prelude finite.
 
 From bedrock.prelude.elpi.derive Require Export
+  plugins (*configuration classes (e.g., ToN)*)
   eq_dec
   inhabited
   finite
@@ -125,3 +126,23 @@ Module SimpleFiniteTest.
   Goal feature.of_N (feature.to_N CSUM) = Some CSUM.
   Proof. by rewrite feature.of_to_N. Qed.
 End SimpleFiniteTest.
+
+Module FiniteTest.
+  Variant feature := CSUM | TSO4 | TSO6 | UFO.
+  #[export] Instance: ToN feature (fun (x : feature) =>
+    match x with
+    | CSUM => 0
+    | TSO4 => 1
+    | TSO6 => 3
+    | UFO => 5
+    end)%N := {}.
+  #[only(finset)] derive feature.
+  #[export] Instance feature_to_N_inj : Inj eq eq feature.to_N.
+  Proof. case; case => //. Qed.
+  Goal feature.of_N (feature.to_N CSUM) = Some CSUM.
+  Proof. reflexivity. Qed.
+  Goal feature.of_N (feature.to_N CSUM) = Some CSUM.
+  Proof. by rewrite feature.of_to_N. Qed.
+  Goal feature.of_N 3 = Some TSO6.
+  Proof. reflexivity. Qed.
+End FiniteTest.

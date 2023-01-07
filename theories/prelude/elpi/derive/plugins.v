@@ -43,3 +43,11 @@ Elpi Db derive.finbitset.db lp:{{
   pred bitset-done o:gref.
 }}.
 Elpi Accumulate derive Db derive.finbitset.db.
+
+(** Configuration classes: *)
+(** finset *)
+Class ToN (T : Type) (to_N : T -> N) : Type := {}.
+#[export] Hint Mode ToN + - : typeclasses. (*TODO: what's the right DB here?*)
+(** bitset *)
+Class ToBit (T : Type) (to_bit : T -> N) : Type := {}.
+#[export] Hint Mode ToBit + - : typeclasses. (*TODO: what's the right DB here?*)
