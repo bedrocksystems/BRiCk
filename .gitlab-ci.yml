@@ -71,16 +71,14 @@ stages:
   - prepare_env_for_downstream
   - build_proofs_downstream
 
+# Include only in the merge request pipeline
 .proof-trigger:
   rules:
     - if: '$CI_MERGE_REQUEST_LABELS =~ /.*CI-skip-proofs.*/'
       when: never
-    - if: '$CI_PIPELINE_SOURCE =~ /^(push)$/ && $CI_COMMIT_BRANCH && $CI_COMMIT_REF_NAME != "master"'
-      when: never
-    - if: '$CI_PIPELINE_SOURCE =~ /^(api|chat|external|external_pull_request_event)$/'
-      when: never
-    - when: on_success
+    - if: $CI_MERGE_REQUEST_IID
 
+# Include both in the merge request pipeline, and in the pipelines on the default branch
 .proof-trigger-mr-releases:
   rules:
     - if: '$CI_MERGE_REQUEST_LABELS =~ /.*CI-skip-proofs.*/'
@@ -121,13 +119,11 @@ stages:
   tags:
     - fm.shared
 
-# Build both the merge request job, and the job on master for releases
 .build:
   extends:
     - .proof-trigger-mr-releases
     - .build_base
 
-# Build only the merge request job
 .build_aux:
   extends:
     - .proof-trigger
