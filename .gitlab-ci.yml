@@ -358,7 +358,7 @@ pages:
 prepare_cpp2v_env:
   extends:
     - .latest
-    - .proof-trigger
+    - .proof-trigger-mr-releases
   stage: prepare_env_for_downstream
   needs:
     - dune-build
@@ -415,7 +415,7 @@ dune-build:
   extends:
     - .setup-dunecache
     - .postupdate-dunecache
-    - .proof-trigger
+    - .proof-trigger-mr-releases
     - .latest
   needs: []
   stage: dune-build
@@ -455,7 +455,7 @@ dune-build:
 
 build-cpp2v-trigger:
   extends:
-    - .proof-trigger
+    - .proof-trigger-mr-releases
   stage: build_proofs_downstream
   needs:
     - prepare_cpp2v_env
