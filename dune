@@ -20,6 +20,22 @@
       -w +deprecated-hint-without-locality
       -w +deprecated-instance-without-locality
       -w +unknown-option
+ ))))
+ ; same settings for release mode, for use with `-p`
+ (release
+  (coq
+   (flags
+    (:standard
+      ;see https://gitlab.mpi-sws.org/iris/iris/-/blob/master/_CoqProject
+      -w -notation-overridden
+      ; Similar to notation warnings.
+      -w -custom-entry-overridden
+      -w -redundant-canonical-projection
+      -w -ambiguous-paths
+      ; Turn warning on hints into error:
+      -w +deprecated-hint-without-locality
+      -w +deprecated-instance-without-locality
+      -w +unknown-option
 )))))
 
 ; Explain Dune how to find and build cpp2v binary
