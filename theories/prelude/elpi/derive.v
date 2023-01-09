@@ -19,6 +19,13 @@ From bedrock.prelude.elpi.derive Require Export
 
 From elpi.apps Require Export derive.
 
+Elpi Accumulate derive lp:{{
+  derivation (const C) Prefix D :-
+    coq.env.const C (some (global (indt T))) Ty_,
+    derivation (indt T) Prefix D.
+}}.
+Elpi Typecheck derive.
+
 Module BasicTests.
   Variant T1 := A1 | B1 | C1.
   #[only(eq_dec)] derive T1.
@@ -45,7 +52,8 @@ End BasicTests.
   end.
 
 Module DerivingTest.
-  Variant t := A | B | C.
+  Variant _t := A | B | C.
+  Definition t := _t.
   #[only(eq_dec,countable)] derive t.
   Goal forall x y : t, if bool_decide (x = y) then True else True.
   Proof. by move => x y; case (bool_decide_reflect (x = y)). Qed.
@@ -65,7 +73,8 @@ End DerivingTest.
 
 (*** Test derivation using Finite. *)
 Module Deriving2Test.
-  Variant t := A | B | C (_ : bool) | D (_ : option bool) (_ : bool).
+  Variant _t := A | B | C (_ : bool) | D (_ : option bool) (_ : bool).
+  Definition t := _t.
   (* #[global] Instance: EqDecision t.
   Proof. solve_decision. Defined. *)
   #[only(inhabited,eq_dec,finite)] derive t.
@@ -86,7 +95,8 @@ Module Deriving2Test.
   Print Assumptions t_finite2.
   Print t_finite2_subproof.
   *)
-  Variant t2 := E | F | G.
+  Variant _t2 := E | F | G.
+  Definition t2 := _t2.
   #[only(inhabited,eq_dec)] derive t2.
   #[only(finite)] derive t2.
   (* #[global] Instance: EqDecision t.
