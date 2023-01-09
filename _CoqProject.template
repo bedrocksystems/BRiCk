@@ -36,7 +36,6 @@ theories/prelude/wrap.v
 theories/prelude/fin.v
 theories/prelude/letstar.v
 theories/prelude/reserved_notation.v
-theories/prelude/elpi/derive.v
 
 theories/prelude/base.v
 theories/prelude/option.v
@@ -59,6 +58,15 @@ theories/prelude/prelude.v
 theories/prelude/sets.v
 theories/prelude/finite.v
 theories/prelude/fin_map_dom.v
+
+# coq-elpi derive plugins
+theories/prelude/elpi/derive.v
+theories/prelude/elpi/derive/countable.v
+theories/prelude/elpi/derive/eq_dec.v
+theories/prelude/elpi/derive/finite_type.v
+theories/prelude/elpi/derive/finite.v
+theories/prelude/elpi/derive/inhabited.v
+theories/prelude/elpi/derive/plugins.v
 
 # Adapters
 theories/lang/prelude/base.v
