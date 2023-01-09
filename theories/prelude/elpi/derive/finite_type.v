@@ -73,16 +73,15 @@ Elpi Accumulate derive lp:{{
       Lem = {{ @ToN lp:T lp:F }},
       std.assert-ok! (coq.typecheck {{ lp:Bo : lp:Lem }} _) "typechecking a [ToN] instance failed",
       coq.ltac.collect-goals Bo [SealedGoal] [],
-      coq.ltac.open (coq.ltac.call "typeclasses_eauto" []) SealedGoal [],
-      derive.if-verbose (coq.say "[derive.finite_type][to-N]" T Lem),
-      %Memoize the result:
+      coq.ltac.open (coq.ltac.call "try_typeclasses_eauto" []) SealedGoal [],
+      derive.if-verbose (coq.say "[derive.finite_type][to-N] Instance:" T Lem),
       coq.elpi.accumulate library "derive.finite_type.db" (clause _ (before "to-N.fail") (to-N T F)),
     ].
   }
 }}.
 
 (*We must export this tactic to [[ #[only(finite_type)] derive ]] use sites.*)
-Ltac typeclasses_eauto := typeclasses eauto.
+Ltac try_typeclasses_eauto := try typeclasses eauto.
 
 Elpi Accumulate derive Db derive.finite_type.db.
 Elpi Accumulate derive lp:{{
@@ -109,7 +108,7 @@ Elpi Accumulate derive lp:{{
     (indt T) Prefix
     (derive "finite_type"
       (derive.finite_type.main (indt T) Prefix)
-      (finite_type-done (indt T))
+      (finite-type-done (indt T))
     ).
 }}.
 Elpi Typecheck derive.
