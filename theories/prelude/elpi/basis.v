@@ -1,12 +1,12 @@
 (*
- * Copyright (C) BedRock Systems Inc. 2022
+ * Copyright (C) BedRock Systems Inc. 2022-2023
  *
  * SPDX-License-Identifier: LGPL-2.1 WITH BedRock Exception for use over network, see repository root for details.
  *)
 
 From elpi Require Import elpi.
 
-Elpi Db bedrock.prelude.db lp:{{
+Elpi Db bedrock.basis.db lp:{{
 
   %%% Option utilities
 

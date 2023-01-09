@@ -60,7 +60,7 @@ theories/prelude/finite.v
 theories/prelude/fin_map_dom.v
 
 # coq-elpi prelude
-theories/prelude/elpi/prelude.v
+theories/prelude/elpi/basis.v
 
 # coq-elpi derive plugins
 theories/prelude/elpi/derive.v

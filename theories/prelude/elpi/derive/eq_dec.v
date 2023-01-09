@@ -6,12 +6,12 @@
 From elpi Require Import elpi.
 From elpi.apps Require Import derive.
 
-From bedrock.prelude.elpi Require Import prelude derive.plugins.
+From bedrock.prelude.elpi Require Import basis derive.plugins.
 
 (***************************************************
  EqDecision
  ***************************************************)
-Elpi Accumulate derive lp:{{
+ Elpi Accumulate derive lp:{{
   /* [derive.eqdec.main TyGR Prefix Clauses] creates a global instance
    * of type [EqDecision lp:{{global TyGR}}].
    * It works with any type supported by [solve_decision].

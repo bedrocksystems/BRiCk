@@ -10,9 +10,9 @@ From stdpp Require Export finite.
 
 From bedrock.prelude Require Export prelude.
 
-Require Import bedrock.prelude.elpi.prelude.
+Require Import bedrock.prelude.elpi.basis.
 
-Elpi Accumulate derive Db bedrock.prelude.db.
+Elpi Accumulate derive Db bedrock.basis.db.
 
 (****************************************
  stdpp plugins
