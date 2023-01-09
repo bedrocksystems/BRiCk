@@ -17,7 +17,7 @@ Elpi Accumulate derive Db bedrock.basis.db.
 (****************************************
  stdpp plugins
  ****************************************)
-(*For each supported deriviation, two predicates:
+(*For each supported derivation, two predicates:
    - [myderiv TyGR DerivGR] Maps [TyGR] to its generated derivation
    - [myderiv-done TyGR] We're done deriving [myderiv] for [TyGR].*)
 Elpi Db derive.stdpp.db lp:{{
@@ -36,16 +36,16 @@ Elpi Db derive.stdpp.db lp:{{
 Elpi Accumulate derive Db derive.stdpp.db.
 
 (****************************************
- bedrock finie type/bitset (finite.v) plugins
+ bedrock finite type/bitset (finite.v) plugins
  ****************************************)
 
  (** Configuration classes: *)
  (** finite type *)
 Class ToN (T : Type) (to_N : T -> N) : Type := {}.
-#[export] Hint Mode ToN + - : typeclass_instances. (*TODO: what's the right DB here?*)
+#[global] Hint Mode ToN + - : typeclass_instances.
 (** bitset *)
 Class ToBit (T : Type) (to_bit : T -> N) : Type := {}.
-#[export] Hint Mode ToBit + - : typeclass_instances. (*TODO: what's the right DB here?*)
+#[global] Hint Mode ToBit + - : typeclass_instances.
 
 Elpi Db derive.finbitset.db lp:{{
   pred finite-type-done o:gref.
