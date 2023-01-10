@@ -18,6 +18,7 @@ From bedrock.prelude.elpi.derive Require Export
   finite_type.
 
 From elpi.apps Require Export derive.
+#[global] Unset Uniform Inductive Parameters.
 
 Elpi Accumulate derive lp:{{
   derivation (const C) Prefix D :-
