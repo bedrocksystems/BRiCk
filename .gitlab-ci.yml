@@ -393,6 +393,9 @@ prepare_cpp2v_env:
     DUNE_CACHE_STORAGE_MODE: copy
   before_script:
     - git clone --depth 1 https://gitlab-ci-token:${CI_JOB_TOKEN}@gitlab.com/bedrocksystems/fm-ci-tools.git
+    - cat ./fm-ci-tools/fm_dune/build_env_dune.inc.sh
+    - source ./fm-ci-tools/fm_dune/build_env_dune.inc.sh
+    - ./fm-ci-tools/fm_dune/filter_build_env_dune.sh >> build.env
     - ./fm-ci-tools/fm_dune/dune_lock_ci.py check_cleanup_job -t ${GRP_CI_TOKEN}
     # Workaround for https://github.com/ocaml/dune/issues/6005: we must ensure
     # that we run dune in bhv-shaped workspaces, since cache entries are keyed
@@ -408,6 +411,7 @@ prepare_cpp2v_env:
 
 .postupdate-dunecache:
   after_script:
+    - source build.env
     - time ./fm-ci-tools/fm_dune/rsync_dune push default
     - ssh ${DUNE_USER}@${FM_CACHE_SERVER} bash -c "'echo `date  +%Y%m%d%H%M%S` - $CI_PROJECT_NAME - $CI_JOB_NAME - $CI_JOB_ID >> ${RSYNC_CACHE_PATH}/test_rsync_fm1.txt'"
 
