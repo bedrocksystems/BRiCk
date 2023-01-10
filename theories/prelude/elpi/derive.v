@@ -15,7 +15,8 @@ From bedrock.prelude.elpi.derive Require Export
   inhabited
   finite
   countable
-  finite_type.
+  finite_type
+  bitset.
 
 From elpi.apps Require Export derive.
 #[global] Unset Uniform Inductive Parameters.
@@ -176,3 +177,32 @@ Module FiniteTest.
   Goal feature.of_N 3 = Some TSO6.
   Proof. reflexivity. Qed.
 End FiniteTest.
+
+Module SimpleBitsetTest.
+  Variant feature := CSUM | TSO4 | TSO6 | UFO.
+  #[only(bitset)] derive feature.
+  Goal feature_set.to_bits {[ CSUM ]} = 1%N.
+  Proof. reflexivity. Qed.
+  Goal feature_set.to_bits {[ TSO6 ]} = 4%N.
+  Proof. reflexivity. Qed.
+  Goal feature_set.to_bits {[ CSUM; TSO6 ]} = 5%N.
+  Proof. reflexivity. Qed.
+End SimpleBitsetTest.
+
+Module BitsetTest.
+  Variant feature := CSUM | TSO4 | TSO6 | UFO.
+  #[export] Instance: ToBit feature (fun (x : feature) =>
+    match x with
+    | CSUM => 0
+    | TSO4 => 1
+    | TSO6 => 3
+    | UFO => 5
+    end)%N := {}.
+  #[only(bitset)] derive feature.
+  Goal feature_set.to_bits {[ CSUM ]} = 1%N.
+  Proof. reflexivity. Qed.
+  Goal feature_set.to_bits {[ TSO6 ]} = 8%N.
+  Proof. reflexivity. Qed.
+  Goal feature_set.to_bits {[ CSUM; TSO6 ]} = 9%N.
+  Proof. reflexivity. Qed.
+End BitsetTest.

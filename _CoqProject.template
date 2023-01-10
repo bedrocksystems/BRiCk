@@ -67,6 +67,7 @@ theories/prelude/elpi/derive.v
 theories/prelude/elpi/derive/countable.v
 theories/prelude/elpi/derive/eq_dec.v
 theories/prelude/elpi/derive/finite_type.v
+theories/prelude/elpi/derive/bitset.v
 theories/prelude/elpi/derive/finite.v
 theories/prelude/elpi/derive/inhabited.v
 theories/prelude/elpi/derive/plugins.v
