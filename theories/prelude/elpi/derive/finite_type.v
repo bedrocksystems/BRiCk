@@ -69,15 +69,8 @@ Elpi Db derive.finite_type.db lp:{{
 Elpi Accumulate derive lp:{{
   namespace derive.finite_type {
     pred to-N i:term, o:term.
-    :name "to-N.fail"
-    to-N T F :- std.do! [
-      Lem = {{ @ToN lp:T lp:F }},
-      std.assert-ok! (coq.typecheck {{ lp:Bo : lp:Lem }} _) "typechecking a [ToN] instance failed",
-      coq.ltac.collect-goals Bo [SealedGoal] [],
-      coq.ltac.open (coq.ltac.call "try_typeclasses_eauto" []) SealedGoal [],
-      derive.if-verbose (coq.say "[derive.finite_type][to-N] Instance:" T Lem),
-      coq.elpi.accumulate library "derive.finite_type.db" (clause _ (before "to-N.fail") (to-N T F)),
-    ].
+    :name "to-N.typeclass"
+    to-N T F :- typeclass "derive.finite_type.db"  (before "to-N.typeclass") (to-N T F) {{ @ToN lp:T lp:F }} Bo_.
   }
 }}.
 

@@ -266,6 +266,17 @@ Elpi Db bedrock.basis.db lp:{{
     msg Prefix' Msg L.
   debug _Prefix _Msg _L :- !.
 
+  %% typeclass Db Grafting Done Typeclass Bo
+  %% Solve for Bo in (Bo : Typeclass), accumulating Done into Db at Grafting if successful.
+  pred typeclass i:string, i:grafting, i:prop, i:term, o:term.
+    typeclass Db Grafting Done Typeclass Bo :- std.do! [
+      std.assert-ok! (coq.typecheck {{ lp:Bo : lp:Typeclass }} _) "[typeclass] typechecking an instance failed",
+      coq.ltac.collect-goals Bo [SealedGoal] [],
+      coq.ltac.open (coq.ltac.call "try_typeclasses_eauto" []) SealedGoal [],
+      derive.if-verbose (coq.say "[typeclass] Instance:" Grafting Typeclass Bo),
+      coq.elpi.accumulate library Db (clause _ Grafting Done),
+    ].
+
   namespace bedrock {
     % get-indt VariantGR Indt: Indt is the body of Inductive type VariantGR.
     % Fails if VariantGR isn't a gref for an inductive, possibly wrapped in a
