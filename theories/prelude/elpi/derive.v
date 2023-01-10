@@ -45,6 +45,25 @@ Module BasicTests.
   #[only(finite)] derive T2.
 End BasicTests.
 
+(*Test interop of manual and generated definitions*)
+Module InteropTests.
+  Variant T1 := A1 | B1 | C1.
+  (*Test: Manual EqDecision + generated Finite:*)
+  #[local] Instance T1_eq_dec : EqDecision T1.
+  Proof. solve_decision. Defined.
+  #[only(finite)] derive T1.
+  (*Search T1. (*Should give one instance T1_eq_dec (plus a finite instance)*)*)
+
+  Variant T2 := A2 | B2 | C2.
+  (*Test: Generated EqDecision + manual Finite + generated Finite:
+    Should yield only one Finite instance*)
+  #[only(eq_dec)] derive T2.
+  #[local] Instance manual_T2_finite : Finite T2.
+  Proof. solve_finite [A2;B2;C2]. Qed.
+  #[only(finite)] derive T2.
+  (*Search T2. (*Should give one instance manual_T2_finite*)*)
+End InteropTests.
+
 (*** Test derivation using Countable. *)
 #[local] Ltac assert_True :=
   match goal with
@@ -76,8 +95,8 @@ End DerivingTest.
 Module Deriving2Test.
   Variant _t := A | B | C (_ : bool) | D (_ : option bool) (_ : bool).
   Definition t := _t.
-  (* #[global] Instance: EqDecision t.
-  Proof. solve_decision. Defined. *)
+  #[global] Instance: EqDecision t.
+  Proof. solve_decision. Defined.
   #[only(inhabited,eq_dec,finite)] derive t.
 
   (*

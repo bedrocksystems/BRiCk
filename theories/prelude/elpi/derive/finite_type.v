@@ -18,7 +18,6 @@ Elpi Db derive.finite_type.db lp:{{
   namespace derive.finite_type {
     pred mk-finite-prelim i:string, i:gref.
     mk-finite-prelim TypeName TyGR :- std.do! [
-      #line 21 "derive.v"
       %TODO: I'd like to be able to do a transparent ascription here, but
       %it doesn't seem like coq-elpi supports this (the following gives opaque ascription):
       %coq.locate-module-type "simple_finite_bitmask_type_intf" MTP,
@@ -79,9 +78,6 @@ Elpi Accumulate derive lp:{{
     ].
   }
 }}.
-
-(*We must export this tactic to [[ #[only(finite_type)] derive ]] use sites.*)
-Ltac try_typeclasses_eauto := try typeclasses eauto.
 
 Elpi Accumulate derive Db derive.finite_type.db.
 Elpi Accumulate derive lp:{{
