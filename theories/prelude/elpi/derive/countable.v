@@ -28,7 +28,7 @@ From bedrock.prelude.elpi Require Import basis derive.plugins.
   end.
 
 (** This needs to be exported for use by callers of Deriving but shouldn't be otherwise used outside this module.*)
-Ltac DERIVING_solve_countable := by case. (** TODO: [abstract] *)
+Ltac derive_solve_countable := by case. (** TODO: [abstract] *)
 
 Elpi Db derive.countable.db lp:{{
   namespace derive.countable {
@@ -66,7 +66,7 @@ Elpi Db derive.countable.db lp:{{
       std.assert-ok! (coq.elaborate-skeleton Lem _ ELem) "[mk-countable] failed to elaborate lem",
       std.assert-ok! (coq.typecheck {{ lp:Bo : lp:ELem }} _) "[mk-countable] failed to typecheck lem",
       coq.ltac.collect-goals Bo [SealedGoal] [],
-      coq.ltac.open (coq.ltac.call "DERIVING_solve_countable" []) SealedGoal [],
+      coq.ltac.open (coq.ltac.call "derive_solve_countable" []) SealedGoal [],
       Inst = {{ @Build_Countable lp:VariantTy _ lp:Encode lp:Decode lp:Bo }},
       std.assert-ok! (coq.elaborate-skeleton Inst _ EInst) "[mk-countable] failed to elaborate instance",
       coq.env.add-const Name EInst _ ff C,
