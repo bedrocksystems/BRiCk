@@ -8,7 +8,8 @@ From stdpp Require Import base.
 From elpi Require Import elpi.
 From elpi.apps Require Import derive.
 
-From bedrock.prelude.elpi Require Import basis.
+From bedrock.prelude.elpi Require Export basis.
+Elpi Accumulate derive Db bedrock.basis.db.
 
 Elpi Db derive.stdpp.inhabited.db lp:{{
   pred inhabited o:gref, o:gref.

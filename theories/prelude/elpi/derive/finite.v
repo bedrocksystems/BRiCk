@@ -3,7 +3,7 @@
  * This software is distributed under the terms of the BedRock Open-Source License.
  * See the LICENSE-BedRock file in the repository root for details.
  *)
-From stdpp Require Import finite.
+From stdpp Require Export finite.
 
 From elpi Require Import elpi.
 From elpi.apps Require Import derive.
