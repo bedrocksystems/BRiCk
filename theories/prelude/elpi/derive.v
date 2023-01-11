@@ -9,6 +9,13 @@ From stdpp Require Import base decidable finite countable.
 
 From bedrock.prelude Require Import prelude finite.
 
+(**
+This file exports and tests BedRock derive extensions.
+BedRock users should import this file rather than directly importing individual extensions.
+Alternatively, they should make sure to Unset Uniform Inductive Parameters
+as is done below.
+*)
+
 From bedrock.prelude.elpi.derive Require Export
   eq_dec
   inhabited
