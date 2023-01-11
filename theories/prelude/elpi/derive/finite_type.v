@@ -9,13 +9,14 @@ From elpi Require Import elpi.
 From elpi.apps Require Import derive.
 
 From bedrock.prelude.elpi Require Import basis.
+Elpi Accumulate derive Db bedrock.basis.db.
 
 (***************************************************
  Finite Types
  - [[ #[only(finite_type)] derive VariantType ]]
    Assembles pieces from finite.v to expose `to_N` and `of_N` functions on `VariantType`, together with laws.
    The encoding into `N` is derived automatically from the order of constructors of `VariantType`.
-   Use an instance of [ToN] to override the default behavior.
+   Use an instance of `ToN` to override the default behavior.
  ***************************************************)
 Class ToN (T : Type) (to_N : T -> N) : Type := {}.
 #[global] Hint Mode ToN + - : typeclass_instances.
@@ -98,7 +99,14 @@ Elpi Accumulate derive lp:{{
     main _ _ _ :- usage.
 
     pred usage.
-    usage :- coq.error "Usage: derive.finite_type TyGR Prefix Clauses".
+    usage :- coq.error
+"Usage: #[only(finite_type)] derive T
+where T is an inductive or a definition that unfolds to an inductive.
+
+Assembles pieces from finite.v to expose `to_N` and `of_N` functions on `VariantType`, together with laws.
+The encoding into `N` is derived automatically from the order of constructors of `VariantType`.
+Use an instance of the typeclass `ToN` to override the default behavior.
+".
   }
 
   dep1 "finite_type" "finite". %finite implies eq_dec

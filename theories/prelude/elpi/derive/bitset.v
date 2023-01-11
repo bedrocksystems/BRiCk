@@ -85,7 +85,15 @@ Elpi Accumulate derive lp:{{
     main _ _ _ :- usage.
 
     pred usage.
-    usage :- coq.error "Usage: derive.bitset TyGR Prefix Clauses".
+    usage :- coq.error
+"Usage: #[only(bitset)] derive T
+where T is an inductive or a definition that unfolds to an inductive.
+
+Assembles pieces from finite.v to expose `to_bits`, together with laws, on [gset VariantType].
+The encoding into bit indices is derived automatically from the order of constructors of `VariantType`
+(0 for the first constructor, 1 for the second, etc.).
+Add an instance of `ToBit` to override the default behavior.
+".
   }
 
   dep1 "bitset" "finite". %finite implies eq_dec

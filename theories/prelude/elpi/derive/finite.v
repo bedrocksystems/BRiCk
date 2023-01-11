@@ -140,7 +140,23 @@ Elpi Accumulate derive lp:{{
     main _ _ _ :- usage.
 
     pred usage.
-    usage :- coq.error "Usage: derive.finite VariantGR Prefix Clauses".
+    usage :- coq.error
+"Usage: #[only(finite)] derive T
+where T is an inductive or a definition that unfolds to an inductive.
+
+Example #1:
+ Variant T := A | B | C.
+ #[only(finite)] derive T
+
+Example #2:
+  #[only(finite)] derive
+  Variant T := A | B | C.
+
+Example #3:
+  Variant _T := A | B | C.
+  Definition T := _T.
+  #[only(finite)] derive T.".
+
   }
 
   dep1 "finite" "eq_dec".

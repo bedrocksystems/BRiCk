@@ -57,7 +57,23 @@ Elpi Accumulate derive lp:{{
     main _ _ _ :- usage.
 
     pred usage.
-    usage :- coq.error "Usage: derive.eqdec TyGR Prefix Clauses".
+    usage :- coq.error
+"Usage: #[only(eq_dec)] derive T
+where T is an inductive or a definition that unfolds to an inductive.
+
+Example #1:
+ Variant T := A | B | C.
+ #[only(eq_dec)] derive T
+
+Example #2:
+  #[only(eq_dec)] derive
+  Variant T := A | B | C.
+
+Example #3:
+  Variant _T := A | B | C.
+  Definition T := _T.
+  #[only(eq_dec)] derive T.".
+
   }
 
   derivation

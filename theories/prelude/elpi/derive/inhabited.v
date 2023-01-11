@@ -46,7 +46,23 @@ Elpi Accumulate derive lp:{{
     main _ _ _ :- usage.
 
     pred usage.
-    usage :- coq.error "Usage: derive.inhabited TyGR Prefix Clauses".
+    usage :- coq.error
+"Usage: #[only(inhabited)] derive T
+where T is an inductive or a definition that unfolds to an inductive.
+
+Example #1:
+ Variant T := A | B | C.
+ #[only(inhabited)] derive T
+
+Example #2:
+  #[only(inhabited)] derive
+  Variant T := A | B | C.
+
+Example #3:
+  Variant _T := A | B | C.
+  Definition T := _T.
+  #[only(inhabited)] derive T.".
+
   }
 
   derivation
