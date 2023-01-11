@@ -8,11 +8,25 @@ From stdpp Require Import finite.
 From elpi Require Import elpi.
 From elpi.apps Require Import derive.
 
-From bedrock.prelude.elpi Require Import basis derive.plugins.
+From bedrock.prelude Require Import prelude.
+From bedrock.prelude.elpi Require Import basis.
+
+Elpi Accumulate derive Db bedrock.basis.db.
 
 (***************************************************
  Finite
  ***************************************************)
+Elpi Db derive.stdpp.finite.db lp:{{
+  pred finite o:gref, o:gref.
+  pred finite-done o:gref.
+  :name "finite-done.typeclass"
+  finite-done GR :-
+    typeclass "derive.stdpp.finite.db"
+      (before "finite-done.typeclass") (finite-done GR) {{ @Finite lp:{{global GR}} _ }} Bo_.
+}}.
+Elpi Accumulate derive Db derive.stdpp.finite.db.
+Elpi Typecheck derive.
+
 Elpi Db derive.finite.db lp:{{
   namespace derive.finite {
      /* We want to process
@@ -120,7 +134,7 @@ Elpi Accumulate derive lp:{{
       derive.finite.mk-finite FiniteName CTerms TyGR C,
       Clauses = [finite-done TyGR, finite TyGR (const C)],
       std.forall Clauses (x\
-        coq.elpi.accumulate _ "derive.stdpp.db" (clause _ _ x)
+        coq.elpi.accumulate _ "derive.stdpp.finite.db" (clause _ _ x)
       ),
     ].
     main _ _ _ :- usage.

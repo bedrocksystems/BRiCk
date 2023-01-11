@@ -6,16 +6,24 @@
 From elpi Require Import elpi.
 From elpi.apps Require Import derive.
 
-From bedrock.prelude.elpi Require Import basis derive.plugins derive.finite_type.
+From bedrock.prelude Require Import prelude.
+From bedrock.prelude.elpi Require Import basis derive.finite_type.
 
 (***************************************************
- Finite Sets
- - [[ #[only(finset)] derive VariantType ]]
-   Assembles pieces from finite.v to expose `to_N` and `of_N` functions on `VariantType`, together with laws.
-   The encoding into `N` is derived automatically from the order of constructors of `VariantType`.
+ Bitsets
+ - [[ #[only(bitset)] derive VariantType ]]
+   Assembles pieces from finite.v to expose `to_bits`, together with laws, on [gset VariantType].
+   The encoding into bit indices is derived automatically from the order of constructors of `VariantType`
+   (0 for the first constructor, 1 for the second, etc.).
+   Add an instance of `ToBit` to override the default behavior.
  ***************************************************)
+Class ToBit (T : Type) (to_bit : T -> N) : Type := {}.
+#[global] Hint Mode ToBit + - : typeclass_instances.
+
 Elpi Db derive.bitset.db lp:{{
-  #line 18 "derive.v"
+  pred finite-type-done o:gref.
+  pred bitset-done o:gref.
+
   namespace derive.bitset {
     pred mk-simple-bitset i:string, i:gref.
     mk-simple-bitset TypeName TyGR :- std.do! [

@@ -70,7 +70,6 @@ theories/prelude/elpi/derive/finite_type.v
 theories/prelude/elpi/derive/bitset.v
 theories/prelude/elpi/derive/finite.v
 theories/prelude/elpi/derive/inhabited.v
-theories/prelude/elpi/derive/plugins.v
 
 # Adapters
 theories/lang/prelude/base.v

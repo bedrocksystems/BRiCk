@@ -3,14 +3,31 @@
  * This software is distributed under the terms of the BedRock Open-Source License.
  * See the LICENSE-BedRock file in the repository root for details.
  *)
+Require Import ssreflect.
+
+From stdpp Require Import countable.
+
 From elpi Require Import elpi.
 From elpi.apps Require Import derive.
 
-From bedrock.prelude.elpi Require Import basis derive.plugins.
+From bedrock.prelude.elpi Require Import basis.
+
+Elpi Accumulate derive Db bedrock.basis.db.
 
 (***************************************************
  Countable
  ***************************************************)
+Elpi Db derive.stdpp.countable.db lp:{{
+  pred countable o:gref, o:gref.
+  pred countable-done o:gref.
+  :name "coutable-done.typeclass"
+  countable-done GR :-
+    typeclass "derive.stdpp.countable.db"
+      (before "countable-done.typeclass") (countable-done GR) {{ @Countable lp:{{global GR}} _ }} Bo_.
+}}.
+Elpi Accumulate derive Db derive.stdpp.countable.db.
+Elpi Typecheck derive.
+
 (** This Gallina function is used at code generation time (not at runtime) to produce the
     positive associated to a particular value [a : T], given the list of all constructors [l : list T]. *)
 #[local] Fixpoint lookup_from_ctorlist `{EqDecision T} (p : positive) (l : list T) (a : T) : positive :=
@@ -87,7 +104,7 @@ Elpi Accumulate derive lp:{{
       derive.countable.mk-countable CTerms CountableName TyGR C,
       Clauses = [countable-done TyGR, countable TyGR (const C)],
       std.forall Clauses (x\
-        coq.elpi.accumulate _ "derive.stdpp.db" (clause _ _ x)
+        coq.elpi.accumulate _ "derive.stdpp.countable.db" (clause _ _ x)
       ),
     ].
     main _ _ _ :- usage.

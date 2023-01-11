@@ -3,10 +3,23 @@
  * This software is distributed under the terms of the BedRock Open-Source License.
  * See the LICENSE-BedRock file in the repository root for details.
  *)
+From stdpp Require Import base.
+
 From elpi Require Import elpi.
 From elpi.apps Require Import derive.
 
-From bedrock.prelude.elpi Require Import basis derive.plugins.
+From bedrock.prelude.elpi Require Import basis.
+
+Elpi Db derive.stdpp.inhabited.db lp:{{
+  pred inhabited o:gref, o:gref.
+  pred inhabited-done o:gref.
+  :name "inhabited-done.typeclass"
+  inhabited-done GR :-
+    typeclass "derive.stdpp.inhabited.db"
+      (before "inhabited-done.typeclass") (inhabited-done GR) {{ @Inhabited lp:{{global GR}} }} Bo_.
+}}.
+Elpi Accumulate derive Db derive.stdpp.inhabited.db.
+Elpi Typecheck derive.
 
 (***************************************************
  Inhabited
@@ -26,7 +39,7 @@ Elpi Accumulate derive lp:{{
       @global! => coq.TC.declare-instance (const C) 0,
       Clauses = [inhabited-done TyGR, inhabited TyGR (const C)],
       std.forall Clauses (x\
-        coq.elpi.accumulate _ "derive.stdpp.db" (clause _ _ x)
+        coq.elpi.accumulate _ "derive.stdpp.inhabited.db" (clause _ _ x)
       ),
     ].
     main _ _ _ :- usage.

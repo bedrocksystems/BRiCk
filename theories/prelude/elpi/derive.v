@@ -10,7 +10,6 @@ From stdpp Require Import base decidable finite countable.
 From bedrock.prelude Require Import prelude finite.
 
 From bedrock.prelude.elpi.derive Require Export
-  plugins (*configuration classes (e.g., ToN)*)
   eq_dec
   inhabited
   finite
@@ -73,6 +72,8 @@ End InteropTests.
   end.
 
 Module DerivingTest.
+  (*This example uses the default unfolding rule.
+    It's motivated by functor use cases.*)
   Variant _t := A | B | C.
   Definition t := _t.
   #[only(eq_dec,countable)] derive t.
@@ -160,7 +161,7 @@ End SimpleFiniteTest.
 
 Module FiniteTest.
   Variant feature := CSUM | TSO4 | TSO6 | UFO.
-  #[export] Instance: ToN feature (fun (x : feature) =>
+  #[local] Instance: ToN feature (fun (x : feature) =>
     match x with
     | CSUM => 0
     | TSO4 => 1
@@ -191,7 +192,7 @@ End SimpleBitsetTest.
 
 Module BitsetTest.
   Variant feature := CSUM | TSO4 | TSO6 | UFO.
-  #[export] Instance: ToBit feature (fun (x : feature) =>
+  #[local] Instance: ToBit feature (fun (x : feature) =>
     match x with
     | CSUM => 0
     | TSO4 => 1

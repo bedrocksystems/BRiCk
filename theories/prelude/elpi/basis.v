@@ -6,6 +6,9 @@
 
 From elpi Require Import elpi.
 
+(*Export this tactic to [typeclass] use sites.*)
+Ltac try_typeclasses_eauto := try typeclasses eauto.
+
 Elpi Db bedrock.basis.db lp:{{
 
   %%% Option utilities

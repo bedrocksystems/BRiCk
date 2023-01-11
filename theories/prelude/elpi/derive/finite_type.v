@@ -8,15 +8,22 @@ From stdpp Require Import finite.
 From elpi Require Import elpi.
 From elpi.apps Require Import derive.
 
-From bedrock.prelude.elpi Require Import basis derive.plugins.
+From bedrock.prelude.elpi Require Import basis.
 
 (***************************************************
  Finite Types
  - [[ #[only(finite_type)] derive VariantType ]]
    Assembles pieces from finite.v to expose `to_N` and `of_N` functions on `VariantType`, together with laws.
    The encoding into `N` is derived automatically from the order of constructors of `VariantType`.
+   Use an instance of [ToN] to override the default behavior.
  ***************************************************)
+Class ToN (T : Type) (to_N : T -> N) : Type := {}.
+#[global] Hint Mode ToN + - : typeclass_instances.
+
 Elpi Db derive.finite_type.db lp:{{
+  pred finite-type-done o:gref.
+  pred bitset-done o:gref.
+
   namespace derive.finite_type {
     pred mk-finite-prelim i:string, i:gref.
     mk-finite-prelim TypeName TyGR :- std.do! [
@@ -85,7 +92,7 @@ Elpi Accumulate derive lp:{{
         (derive.finite_type.mk-simple-finite Variant TyGR),
       Clauses = [finite-type-done TyGR],
       std.forall Clauses (x\
-        coq.elpi.accumulate _ "derive.finbitset.db" (clause _ _ x)
+        coq.elpi.accumulate _ "derive.finite_type.db" (clause _ _ x)
       ),
     ].
     main _ _ _ :- usage.
