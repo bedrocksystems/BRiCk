@@ -91,8 +91,8 @@ Section frac_1_gen.
     by iDestruct (observe_2 [| _ + _ ≤ _ |]%Qp with "R1 R2") as %?%Qp.not_add_le_l.
   Qed.
 
-  Global Instance frac_splittable_1_agreef_excl :
-    AgreeF1 R → Exclusive1 (R 1) := _.
+  Goal AgreeF1 R → Exclusive1 (R 1).
+  Proof. apply _. Abort.
 End frac_1_gen.
 
 Class FracSplittable_1 {A} {PROP : bi} (R : Qp → A → PROP) : Prop := {
