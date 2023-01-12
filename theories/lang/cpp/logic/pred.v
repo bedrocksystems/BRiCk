@@ -923,6 +923,21 @@ Section with_cpp.
     by iApply (exposed_ptr_valid with "E").
   Qed.
 
+  #[global] Instance pinned_ptr_null_is_zero addr :
+    Observe [| addr = 0 |]%N (pinned_ptr addr nullptr).
+  Proof.
+    rewrite pinned_ptr_eq /pinned_ptr_def ptr_vaddr_nullptr.
+    apply: (observe_derive_only_provable (Some 0%N = Some addr)); naive_solver.
+  Qed.
+
+  Lemma pinned_ptr_same_address pp1 pp2 v :
+    same_address pp1 pp2 ->
+    exposed_ptr pp2 |-- pinned_ptr v pp1 -* pinned_ptr v pp2.
+  Proof.
+    rewrite pinned_ptr_eq/pinned_ptr_def.
+    by iIntros ((? & -> & ->)%same_address_iff) "$ [%Hp _] !%".
+  Qed.
+
   Lemma offset_pinned_ptr o z va p :
     eval_offset _ o = Some z ->
     valid_ptr (p ,, o) |--
