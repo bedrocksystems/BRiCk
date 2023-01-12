@@ -59,6 +59,18 @@ theories/prelude/sets.v
 theories/prelude/finite.v
 theories/prelude/fin_map_dom.v
 
+# coq-elpi prelude
+theories/prelude/elpi/basis.v
+
+# coq-elpi derive plugins
+theories/prelude/elpi/derive.v
+theories/prelude/elpi/derive/countable.v
+theories/prelude/elpi/derive/eq_dec.v
+theories/prelude/elpi/derive/finite_type.v
+theories/prelude/elpi/derive/bitset.v
+theories/prelude/elpi/derive/finite.v
+theories/prelude/elpi/derive/inhabited.v
+
 # Adapters
 theories/lang/prelude/base.v
 theories/lang/prelude/addr.v

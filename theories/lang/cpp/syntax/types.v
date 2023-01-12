@@ -7,6 +7,8 @@ Require Import bedrock.prelude.base.
 Require Export bedrock.lang.cpp.arith.types.
 Require Import bedrock.lang.cpp.syntax.names.
 
+From bedrock.prelude.elpi Require Import derive.
+
 Set Primitive Projections.
 
 (* Type qualifiers *)
@@ -16,28 +18,7 @@ Variant type_qualifiers : Set :=
 | QV (* volatile *)
 | QM (* no qualifiers *)
 .
-#[global] Instance qual_eq: EqDecision type_qualifiers.
-Proof. solve_decision. Defined.
-#[global] Instance qual_countable : Countable type_qualifiers.
-Proof.
-    pose enc := fun (q : type_qualifiers) =>
-      match q with
-      | QM => GenNode (T:=Empty_set) 0 []
-      | QC => GenNode 1 []
-      | QV => GenNode 2 []
-      | QCV => GenNode 3 []
-     end.
-    pose dec := fun (q : gen_tree Empty_set) =>
-      match q with
-      | GenNode 0 [] => QM
-      | GenNode 1 [] => QC
-      | GenNode 2 [] => QV
-      | GenNode 3 [] => QCV
-      | _ => QM
-      end.
-    apply (inj_countable' enc dec).
-    by destruct x.
-Defined.
+#[only(inhabited,eq_dec,countable)] derive type_qualifiers.
 
 Definition q_const (q : type_qualifiers) : bool :=
   match q with
@@ -94,23 +75,8 @@ Variant calling_conv : Set :=
 | CC_C
 | CC_MsAbi
 | CC_RegCall.
-#[global] Instance calling_conv_inhabited : Inhabited calling_conv := populate CC_C.
-#[global] Instance calling_conv_eq_dec: EqDecision calling_conv.
-Proof. solve_decision. Defined.
-#[global] Instance calling_conv_countable : Countable calling_conv.
-Proof.
-  apply (inj_countable'
-    (λ cc,
-      match cc with
-      | CC_C => 0 | CC_MsAbi => 1 | CC_RegCall => 2
-      end)
-    (λ n,
-      match n with
-      | 0 => CC_C | 1 => CC_MsAbi | 2 => CC_RegCall
-      | _ => CC_C	(** dummy *)
-      end)).
-  abstract (by intros []).
-Defined.
+
+#[only(inhabited,eq_dec,countable)] derive calling_conv.
 
 (* in almost all contexts, we are going to use [CC_C], so we're going to make
    that the default. Clients interested in specifying another calling convention
@@ -123,18 +89,7 @@ Existing Class calling_conv.
 Variant function_arity : Set :=
 | Ar_Definite
 | Ar_Variadic.
-#[global] Instance function_arity_inhabited : Inhabited function_arity := populate Ar_Definite.
-#[global] Instance function_arity_eq_dec: EqDecision function_arity.
-Proof. solve_decision. Defined.
-#[global] Instance function_arity_countable : Countable function_arity.
-Proof.
-  apply (inj_countable'
-    (λ ar,
-      match ar with Ar_Definite => 0 | Ar_Variadic => 1 end)
-    (λ n,
-      match n with 0 => Ar_Definite | _ => Ar_Variadic end)).
-  abstract (by intros []).
-Defined.
+#[only(inhabited,eq_dec,countable)] derive function_arity.
 
 (* In almost all contexts, we will use [Ar_Definite], so that is the default. *)
 Existing Class function_arity.
@@ -161,7 +116,9 @@ Inductive type : Set :=
    some [Tarch] types, e.g. ARM SVE, are "sizeless", hence [option size]. *)
 | Tarch (_ : option bitsize) (name : bs)
 .
-#[global] Instance type_inhabited : Inhabited type := populate Tvoid.
+
+#[only(inhabited)] derive type.
+
 
 (** [description] is meant to be only used for documentation. *)
 Definition Tunsupported (description : bs) : type.

@@ -208,3 +208,9 @@ observation like [Observe2 [| l ## k |] (myList l) (mList k)] is to
 
 #[global] Hint Mode Reflexive ! ! : typeclass_instances.
 #[global] Hint Mode Symmetric ! ! : typeclass_instances.
+
+Definition ap {M A B} `{!MRet M, !MBind M} (mf : M (A → B)) : M A → M B :=
+  λ ma, f ← mf; a ← ma; mret (f a).
+(* We use level 61 for <*> following <$>; ext-lib also has matching levels, but
+different ones. *)
+Infix "<*>" := ap (at level 61, left associativity).
