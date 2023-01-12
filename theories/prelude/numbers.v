@@ -500,6 +500,13 @@ Module Qp.
   #[global] Instance mul_right_id : RightId (=) 1 Qp.mul := Qp.mul_1_r.
   #[global] Instance div_right_id : RightId (=) 1 Qp.div := Qp.div_1.
 
+  Lemma mul_div a b c d : (a/b) * (c/d) = (a * c) / (b * d).
+  Proof.
+    rewrite /Qp.div. rewrite Qp.inv_mul_distr.
+    rewrite -!assoc_L. f_equal. rewrite comm_L -assoc_L. f_equal.
+    by rewrite comm_L.
+  Qed.
+
   Lemma mul_2_2 : 2 * 2 = 4.
   Proof. compute_done. Qed.
 
